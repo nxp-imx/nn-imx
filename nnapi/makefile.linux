@@ -1,0 +1,110 @@
+##############################################################################
+#
+#    Copyright (c) 2005 - 2019 by Vivante Corp.  All rights reserved.
+#
+#    The material in this file is confidential and contains trade secrets
+#    of Vivante Corporation. This is proprietary information owned by
+#    Vivante Corporation. No part of this work may be disclosed,
+#    reproduced, copied, transmitted, or used in any way for any purpose,
+#    without the express written permission of Vivante Corporation.
+#
+##############################################################################
+
+
+#
+# Linux NNAPI Adapter.
+#
+
+#############################################################################
+# Include common definitions.
+
+include ./makefile.linux.def
+
+##############################################################################
+## Macros.
+
+MODULES		:=$(LIB_NN_ADAPTER)
+ifeq ($(gcdSTATIC_LINK), 1)
+   STATIC = 1
+else
+   DYNAMIC = 1
+endif
+
+ifeq ($(STATIC), 1)
+    TARGET_NAME = libneuralnetworks.a
+else
+
+    TARGET_NAME = libneuralnetworks.so
+endif
+
+#############################################################################
+# Objects.
+
+OBJECTS            =    $(OBJ_DIR)/AMemory.o \
+                    $(OBJ_DIR)/AModel.o \
+					$(OBJ_DIR)/util.o \
+                    $(OBJ_DIR)/ACompilation.o \
+                    $(OBJ_DIR)/AEvent.o \
+                    $(OBJ_DIR)/AExecution.o \
+                    $(OBJ_DIR)/NeuralNetworks.o
+ifeq ($(NN_DUMP), 1)
+    OBJECTS += $(OBJ_DIR)/jsoncpp.o
+endif
+
+################################################################################
+# Add extra flags for object files.
+ifeq ($(NN_DUMP), 1)
+    CFLAGS += -DDUMP_NEURALNETWORK
+endif
+
+ifeq ($(NN_DEBUG), 1)
+    CFLAGS += -DNN_DEBUG
+endif
+
+ifeq ($(DEBUG),1)
+
+else
+CFLAGS += -DNDEBUG
+endif
+
+CFLAGS += -std=c++0x -fPIC -D__LINUX__
+LFLAGS += -fPIC
+#################################################################################
+## Add extra library path.
+#DRIVER_LIBS += $(wildcard $(SDK_DIR)/drivers/*.so)
+#
+#LIBS += $(patsubst %.so, -L %.so, $(DRIVER_LIBS))
+#LIBS += -L $(SDK_DIR)/drivers/libOpenVXC.so
+#
+#LIBS += -L $(AQROOT)/compiler/libVSC/$(OBJ_DIR)
+LIBS += -L $(SDK_DIR)/drivers -lOpenVX -lpthread -lm
+ifeq ($(USE_STATIC_STDCxx), 1)
+LIBS += -lgcc_s -static-libgcc -static-libstdc++
+CC    = $(CROSS_COMPILE)g++
+else
+LIBS  += -lstdc++
+endif
+
+#################################################################################
+## Add extra include path.
+#
+#################################################################################
+## Define the macros used in common makefile.
+
+# installation directory
+INSTALL_DIR    := $(SDK_DIR)/drivers
+
+#################################################################################
+# Include the common makefile.
+include $(AQROOT)/common.target
+
+#################################################################################
+## Extra installation.
+install: extra_install
+
+.PHONY: extra_install
+extra_install:
+	@mkdir -p $(SDK_DIR)/drivers
+	@mkdir -p $(SDK_DIR)/include/nnapi
+#################################################################################
+# Dependencies.

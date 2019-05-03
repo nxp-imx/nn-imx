@@ -1,0 +1,119 @@
+#include "cl_viv_vx_ext.h"
+
+//-----------------------eltwise max--------------------------------
+__kernel void eltwiseMax
+    (
+    __read_only image2d_array_t input1,
+    __read_only image2d_array_t input2,
+    __write_only image2d_array_t output
+    )
+{
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);
+    vxc_short8 din0, din1;
+    vxc_half8 din0Fp16, din1Fp16, maxData;
+
+    VXC_ReadImage2DArray(din0, input1, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+    VXC_ReadImage2DArray(din1, input2, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+    _viv_asm(COPY, din0Fp16, din0, 16);
+    _viv_asm(COPY, din1Fp16, din1, 16);
+    VXC_VertMax3_Half(maxData, din0Fp16, din1Fp16, din1Fp16, VXC_MODIFIER_BIN(0, 7, 0));
+    _viv_asm(COPY, din0, maxData, 16);
+    VXC_WriteImage2DArray(output, coord, din0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+}
+
+_viv_uniform VXC_512Bits uniDFP8toDFP8Lo_2x8_0;
+_viv_uniform VXC_512Bits uniDFP8toDFP8Hi_2x8_0;
+_viv_uniform VXC_512Bits uniDFP8toDFP8Lo_2x8_1;
+_viv_uniform VXC_512Bits uniDFP8toDFP8Hi_2x8_1;
+__kernel void eltwiseMax_int8
+    (
+    __read_only image2d_array_t input1,
+    __read_only image2d_array_t input2,
+    __write_only image2d_array_t output
+    )
+{
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);
+    vxc_char16 src0, src1;
+
+    VXC_ReadImage2DArray(src0, input1, coord, 0, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));
+    VXC_ReadImage2DArray(src1, input2, coord, 0, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));
+
+    VXC_DP2x8(src0, src0, src0, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniDFP8toDFP8Lo_2x8_0);
+    VXC_DP2x8(src0, src0, src0, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1), uniDFP8toDFP8Hi_2x8_0);
+    VXC_DP2x8(src1, src1, src1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniDFP8toDFP8Lo_2x8_1);
+    VXC_DP2x8(src1, src1, src1, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1), uniDFP8toDFP8Hi_2x8_1);
+    src0 = max(src0, src1);
+
+    VXC_WriteImage2DArray(output, coord, src0, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));
+}
+__kernel void eltwiseMax_int8_nofl
+    (
+    __read_only image2d_array_t input1,
+    __read_only image2d_array_t input2,
+    __write_only image2d_array_t output
+    )
+{
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);
+    vxc_char16 src0, src1;
+
+    VXC_ReadImage2DArray(src0, input1, coord, 0, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));
+    VXC_ReadImage2DArray(src1, input2, coord, 0, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));
+
+    src0 = max(src0, src1);
+    VXC_WriteImage2DArray(output, coord, src0, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));
+}
+
+_viv_uniform VXC_512Bits uniU8MulAndPostShift0_Lo_2x8;
+_viv_uniform VXC_512Bits uniU8MulAndPostShift0_Hi_2x8;
+_viv_uniform VXC_512Bits uniU8MulAndPostShift1_Lo_2x8;
+_viv_uniform VXC_512Bits uniU8MulAndPostShift1_Hi_2x8;
+_viv_uniform int2 multAndoutZP0;//[0:15] multiplier, [31:63] output zp
+_viv_uniform int2 multAndoutZP1;//[0:15] multiplier, [31:63] output zp
+__kernel void eltwiseMax_uint8
+    (
+    __read_only image2d_array_t input1,
+    __read_only image2d_array_t input2,
+    __write_only image2d_array_t output
+    )
+{
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);
+    vxc_uchar16 src0, src1, src2, src3, dst0, dst1;
+    VXC_ReadImage2DArray(src0, input1, coord, 0, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));
+    VXC_ReadImage2DArray(src1, input2, coord, 0, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));
+
+    vxc_ushort8 mp0, mp1;
+    _viv_asm(COPY, mp0, multAndoutZP0, 16);
+    _viv_asm(COPY, mp1, multAndoutZP1, 16);
+    VXC_DP2x8(dst0, src0, mp0, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1),\
+        uniU8MulAndPostShift0_Lo_2x8);
+    VXC_DP2x8(dst0, src0, mp0, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1),\
+        uniU8MulAndPostShift0_Hi_2x8);
+    VXC_DP2x8(dst1, src1, mp1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1),\
+        uniU8MulAndPostShift1_Lo_2x8);
+    VXC_DP2x8(dst1, src1, mp1, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1),\
+        uniU8MulAndPostShift1_Hi_2x8);
+    dst0 = max(dst0, dst1);
+    VXC_WriteImage2DArray(output, coord, dst0, VXC_MODIFIER(0, 15, 0,VXC_RM_TowardZero, 0));
+}
+
+_viv_uniform VXC_512Bits uniDFP16toDFP16_2x8_0;
+_viv_uniform VXC_512Bits uniDFP16toDFP16_2x8_1;
+__kernel void eltwiseMax_int16
+    (
+    __read_only image2d_array_t input1,
+    __read_only image2d_array_t input2,
+    __write_only image2d_array_t output
+    )
+{
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);
+    vxc_short8 src0, src1;
+
+    VXC_ReadImage2DArray(src0, input1, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+    VXC_ReadImage2DArray(src1, input2, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+
+    VXC_DP2x8(src0, src0, src0, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniDFP16toDFP16_2x8_0);
+    VXC_DP2x8(src1, src1, src1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniDFP16toDFP16_2x8_1);
+    src0 = max(src0, src1);
+
+    VXC_WriteImage2DArray(output, coord, src0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+}

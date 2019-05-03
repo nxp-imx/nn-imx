@@ -1,0 +1,78 @@
+#include "cl_viv_vx_ext.h"
+
+/***************************tensor elu********************************/
+_viv_uniform VXC_512Bits uniunPackedLoData_4x4;
+_viv_uniform VXC_512Bits uniunPackedHiData_4x4;
+_viv_uniform VXC_512Bits uniExtractHalf8_2x8_elu;
+_viv_uniform float scaleLogE;
+__kernel void tensorElu_fp16_2D
+    (
+    __read_only     image2d_array_t input,
+    __write_only    image2d_array_t output
+    )
+{
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(1), 0);
+
+    vxc_ushort8 vect0, vect1;
+    vxc_half8 vec0, vec1;
+    vxc_float4 vectA, vectB, vectC;
+    VXC_ReadImage(vect0, input,  coord.xy, VXC_5BITOFFSET_XY(0, 0),\
+        VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+    _viv_asm(COPY, vec0, vect0, 16);
+    VXC_ReadImage(vect1, input,  coord.xy, VXC_5BITOFFSET_XY(0, 1),\
+        VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+    _viv_asm(COPY, vec1, vect1, 16);
+    coord.z ++;
+
+    VXC_DP4x4(vectA, vec0, vec0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\
+        uniunPackedLoData_4x4);
+    VXC_DP4x4(vectB, vec0, vec0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\
+        uniunPackedHiData_4x4);
+    vectC = vectA * scaleLogE;
+    vectC.x = exp2(vectC.x);
+    vectC.y = exp2(vectC.y);
+    vectC.z = exp2(vectC.z);
+    vectC.w = exp2(vectC.w);
+    vectC -= 1;
+    vectA = vectA > 0 ? vectA : vectC;
+    half4 dst0, dst1;
+    _viv_asm(CONV, dst0, vectA);
+    vectC = vectB * scaleLogE;
+    vectC.x = exp2(vectC.x);
+    vectC.y = exp2(vectC.y);
+    vectC.z = exp2(vectC.z);
+    vectC.w = exp2(vectC.w);
+    vectC -= 1;
+    vectB = vectB > 0 ? vectB : vectC;
+    _viv_asm(CONV, dst1, vectB);
+    VXC_DP2x8(vec0, dst0, dst1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),\
+        uniExtractHalf8_2x8_elu);
+    _viv_asm(COPY, vect0, vec0, 16);
+    VXC_WriteImage(output, coord.xy, vect0, VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0));
+
+    VXC_DP4x4(vectA, vec1, vec1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\
+        uniunPackedLoData_4x4);
+    VXC_DP4x4(vectB, vec1, vec1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\
+        uniunPackedHiData_4x4);
+    vectC = vectA * scaleLogE;
+    vectC.x = exp2(vectC.x);
+    vectC.y = exp2(vectC.y);
+    vectC.z = exp2(vectC.z);
+    vectC.w = exp2(vectC.w);
+    vectC -= 1;
+    vectA = vectA > 0 ? vectA : vectC;
+
+    _viv_asm(CONV, dst0, vectA);
+    vectC = vectB * scaleLogE;
+    vectC.x = exp2(vectC.x);
+    vectC.y = exp2(vectC.y);
+    vectC.z = exp2(vectC.z);
+    vectC.w = exp2(vectC.w);
+    vectC -= 1;
+    vectB = vectB > 0 ? vectB : vectC;
+    _viv_asm(CONV, dst1, vectB);
+    VXC_DP2x8(vec0, dst0, dst1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),\
+        uniExtractHalf8_2x8_elu);
+    _viv_asm(COPY, vect0, vec0, 16);
+    VXC_WriteImage(output, coord.xz, vect0, VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0));
+}

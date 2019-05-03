@@ -1,0 +1,40 @@
+#include "cl_viv_vx_ext.h"
+
+/*******************tensorstackconcat 16BITs********************/
+__kernel void vxcTensorStackConcat(
+    image2d_array_t input,
+    image2d_array_t index,
+    image2d_array_t output)
+{
+    int2 coord = (int2)(get_global_id(0), 0);
+    vxc_short8 src0, src1;
+    VXC_ReadImage(src0, input, coord.xy, VXC_5BITOFFSET_XY(0, 0),\
+        VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+    VXC_ReadImage(src1, input, coord.xy, VXC_5BITOFFSET_XY(8, 0),\
+        VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+    coord.y = read_imagei(index, coord.yyyy).x;
+    VXC_WriteImage(output, coord.xy, src0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+    coord.x += 8;
+    VXC_WriteImage(output, coord.xy, src1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+}
+
+/**************tensorstackconcat 8BITs***************************/
+__kernel void vxcTensorStackConcat8Bits(
+    image2d_array_t input,
+    image2d_array_t index,
+    image2d_array_t output)
+{
+    int idx = get_global_id(0);
+    int2 coord = (int2)(idx, 0);
+    vxc_char16 src0, src1;
+    VXC_ReadImage(src0, input, coord.xy, VXC_5BITOFFSET_XY(0, 0),\
+        VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));
+    coord.x += 16;
+    VXC_ReadImage(src1, input, coord.xy, VXC_5BITOFFSET_XY(0, 0),\
+        VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));
+    coord.x = idx;
+    coord.y = read_imagei(index, coord.yyyy).x;
+    VXC_WriteImage(output, coord.xy, src0, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));
+    coord.x += 16;
+    VXC_WriteImage(output, coord.xy, src1, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));
+}

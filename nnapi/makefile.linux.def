@@ -1,0 +1,40 @@
+##############################################################################
+#
+#    Copyright (c) 2005 - 2019 by Vivante Corp.  All rights reserved.
+#
+#    The material in this file is confidential and contains trade secrets
+#    of Vivante Corporation. This is proprietary information owned by
+#    Vivante Corporation. No part of this work may be disclosed,
+#    reproduced, copied, transmitted, or used in any way for any purpose,
+#    without the express written permission of Vivante Corporation.
+#
+##############################################################################
+
+
+#
+# Default definitions for the makefile
+#
+
+################################################################################
+# Include the global difinitions.
+
+include $(AQROOT)/makefile.linux.def
+
+##################################################################################
+### Supply additional include directories.
+#INCLUDE += -I$(AQROOT)/hal/inc
+#INCLUDE += -I$(AQROOT)/hal/user
+#INCLUDE += -I$(AQROOT)/sdk/inc
+#INCLUDE += -I$(AQROOT)/compiler/libVSC/include
+#INCLUDE += -I$(AQROOT)/hal/os/linux/user
+#INCLUDE += -I$(AQARCH)/cmodel/inc
+#
+INCLUDE += -I$(SDK_DIR)/include
+CFLAGS += $(INCLUDE)
+#
+#ifneq ($(USE_ARMCC), 1)
+#CFLAGS += -Werror -ansi
+#endif
+#
+#CFLAGS += $(INCLUDE)
+

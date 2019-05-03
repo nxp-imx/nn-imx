@@ -1,0 +1,162 @@
+#include "cl_viv_vx_ext.h"
+
+_viv_uniform VXC_512Bits uniConvertInt8FstFp32_4x4;
+_viv_uniform VXC_512Bits uniConvertInt8SecFp32_4x4;
+_viv_uniform VXC_512Bits uniConvertInt32toInt8_2x8;
+_viv_uniform VXC_512Bits poolingEncodeInt8_0;
+_viv_uniform VXC_512Bits poolingEncodeInt8_1;
+_viv_uniform float scaleSF_i8;
+_viv_uniform float inputfl_scale_i8;
+
+//-------------------max pooling with argmax int8---------------
+__kernel void poolingWithArgmaxInt8
+    (
+    image2d_array_t tensorIn,
+    image2d_array_t tensorOut,
+    image2d_array_t axis,
+    int type,
+    int sizeX,
+    int sizeY,
+    int paddingX,
+    int paddingY
+    )
+{
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);
+    vxc_char16 din0, din1;
+    vxc_char16 maxDataVer, maxDataVer1;
+    int4 bitExtractCoeff;
+    vxc_char16 din0EqualTmp, din1EqualTmp;
+    vxc_uchar8 axisEncode;
+    vxc_uchar8 axisOut;
+
+    VXC_ReadImage2DArray(din0, tensorIn, coord, VXC_5BITOFFSET_XY(0, 0),\
+        VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));
+    VXC_ReadImage2DArray(din1, tensorIn, coord, VXC_5BITOFFSET_XY(0, 1),\
+        VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));
+    int4 coordOut = (int4)(coord.x >> 1, coord.y >> 1, coord.z, 0);
+    VXC_VertMax3_Integer(maxDataVer, din0, din1, din1, VXC_MODIFIER_BIN(0, 15, 0));
+    maxDataVer1 = maxDataVer.s1032547698badcfe;
+    VXC_VertMax3_Integer(maxDataVer, maxDataVer1, maxDataVer, maxDataVer, VXC_MODIFIER_BIN(0, 15, 0));
+    maxDataVer1 = maxDataVer.s02468ace02468ace;//output
+    VXC_WriteImage2DArray(tensorOut, coordOut, maxDataVer1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+
+    //get axis
+    VXC_Clamp(din0EqualTmp, din0, maxDataVer, maxDataVer, VXC_MODIFIER_CLAMP(0, 15, 0, 1));
+    VXC_Clamp(din1EqualTmp, din1, maxDataVer, maxDataVer, VXC_MODIFIER_CLAMP(0, 15, 0, 1));
+    din0EqualTmp &= (vxc_char16)(1);
+    din1EqualTmp &= (vxc_char16)(1);
+    VXC_DP4x4(axisEncode, din0EqualTmp, din1EqualTmp, VXC_MODIFIER_BIN(0, 3, 0), poolingEncodeInt8_0);
+    VXC_DP4x4(axisEncode, din0EqualTmp, din1EqualTmp, VXC_MODIFIER_BIN(4, 7, 0), poolingEncodeInt8_1);
+    axisOut = clz(axisEncode);//output
+    //write data out
+    VXC_WriteImage2DArray(axis, coordOut, axisOut, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+}
+
+__kernel void poolingWithArgmaxInt8_Int8
+    (
+        image2d_array_t tensorIn,
+        image2d_array_t tensorOut,
+        image2d_array_t axis,
+        int type,
+        int sizeX,
+        int sizeY,
+        int paddingX,
+        int paddingY
+    )
+{
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);
+    vxc_char16 din0, din1;
+    vxc_char16 maxDataVer, maxDataVer1;
+    vxc_char16 din0EqualTmp, din1EqualTmp;
+    vxc_uchar8 axisEncode;
+    vxc_uchar8 axisOut;
+
+    VXC_ReadImage2DArray(din0, tensorIn, coord, VXC_5BITOFFSET_XY(0, 0),\
+        VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));
+    VXC_ReadImage2DArray(din1, tensorIn, coord, VXC_5BITOFFSET_XY(0, 1),\
+        VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));
+    int4 coordOut = (int4)(coord.x >> 1, coord.y >> 1, coord.z, 0);
+    VXC_VertMax3_Integer(maxDataVer, din0, din1, din1, VXC_MODIFIER_BIN(0, 15, 0));
+    maxDataVer1 = maxDataVer.s1032547698badcfe;
+    VXC_VertMax3_Integer(maxDataVer, maxDataVer1, maxDataVer, maxDataVer, VXC_MODIFIER_BIN(0, 15, 0));
+    maxDataVer1 = maxDataVer.s02468ace02468ace;//output
+
+    vxc_float4 tmpVal0, tmpVal1;
+    vxc_int4 tmpData0, tmpData1;
+    VXC_DP4x4(tmpVal0, maxDataVer1, maxDataVer1, VXC_MODIFIER_BIN(0, 3, 0), uniConvertInt8FstFp32_4x4);
+    VXC_DP4x4(tmpVal1, maxDataVer1, maxDataVer1, VXC_MODIFIER_BIN(0, 3, 0), uniConvertInt8SecFp32_4x4);
+    tmpVal0 *= scaleSF_i8;
+    tmpVal1 *= scaleSF_i8;
+    tmpData0 = convert_int4_rte(tmpVal0);
+    tmpData1 = convert_int4_rte(tmpVal1);
+    VXC_DP2x8(maxDataVer1, tmpData0, tmpData1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1),
+        uniConvertInt32toInt8_2x8);
+
+    //get axis
+    VXC_Clamp(din0EqualTmp, din0, maxDataVer, maxDataVer, VXC_MODIFIER_CLAMP(0, 15, 0, 1));
+    VXC_Clamp(din1EqualTmp, din1, maxDataVer, maxDataVer, VXC_MODIFIER_CLAMP(0, 15, 0, 1));
+    din0EqualTmp &= (vxc_char16)(1);
+    din1EqualTmp &= (vxc_char16)(1);
+    VXC_DP4x4(axisEncode, din0EqualTmp, din1EqualTmp, VXC_MODIFIER_BIN(0, 3, 0), poolingEncodeInt8_0);
+    VXC_DP4x4(axisEncode, din0EqualTmp, din1EqualTmp, VXC_MODIFIER_BIN(4, 7, 0), poolingEncodeInt8_1);
+    axisOut = clz(axisEncode);//output
+    //write data out
+    VXC_WriteImage2DArray(tensorOut, coordOut, maxDataVer1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+    VXC_WriteImage2DArray(axis, coordOut, axisOut, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+}
+
+_viv_uniform VXC_512Bits uniPoolConvertInt8toFp32_4x4;
+_viv_uniform VXC_512Bits uniPoolConvertInt8toFp32_4x4_2;
+_viv_uniform VXC_512Bits uniPoolQuantInt8_2x8;
+
+__kernel void poolingWithArgmaxInt8_fp16_s2k2p0
+    (
+        image2d_array_t tensorIn,
+        image2d_array_t tensorOut,
+        image2d_array_t axis,
+        int type,
+        int sizeX,
+        int sizeY,
+        int paddingX,
+        int paddingY
+    )
+{
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);
+    vxc_char16 din0, din1;
+    vxc_char16 maxDataVer, maxDataVer1;
+    vxc_char16 din0EqualTmp, din1EqualTmp;
+    vxc_uchar8 axisEncode;
+    vxc_uchar8 axisOut;
+
+    VXC_ReadImage2DArray(din0, tensorIn, coord, VXC_5BITOFFSET_XY(0, 0),\
+        VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));
+    VXC_ReadImage2DArray(din1, tensorIn, coord, VXC_5BITOFFSET_XY(0, 1),\
+        VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));
+    int4 coordOut = (int4)(coord.x >> 1, coord.y >> 1, coord.z, 0);
+    VXC_VertMax3_Integer(maxDataVer, din0, din1, din1, VXC_MODIFIER_BIN(0, 15, 0));
+    maxDataVer1 = maxDataVer.s1032547698badcfe;
+    VXC_VertMax3_Integer(maxDataVer, maxDataVer1, maxDataVer, maxDataVer, VXC_MODIFIER_BIN(0, 15, 0));
+    //maxDataVer1 = maxDataVer.s02468ace02468ace;//output
+
+    half tmpScale;
+    _viv_asm(CONV, tmpScale, inputfl_scale_i8);
+    float4 tmpVal0, tmpVal1;
+    half4 tmpData0, tmpData1;
+    vxc_short8 result;
+    vxc_half8 tmpOut;
+    VXC_DP2x8(tmpOut, maxDataVer, tmpScale, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),\
+        uniPoolQuantInt8_2x8);
+    _viv_asm(COPY, result, tmpOut, 16);
+    VXC_WriteImage2DArray(tensorOut, coordOut, result, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+
+    //get axis
+    VXC_Clamp(din0EqualTmp, din0, maxDataVer, maxDataVer, VXC_MODIFIER_CLAMP(0, 15, 0, 1));
+    VXC_Clamp(din1EqualTmp, din1, maxDataVer, maxDataVer, VXC_MODIFIER_CLAMP(0, 15, 0, 1));
+    din0EqualTmp &= (vxc_char16)(1);
+    din1EqualTmp &= (vxc_char16)(1);
+    VXC_DP4x4(axisEncode, din0EqualTmp, din1EqualTmp, VXC_MODIFIER_BIN(0, 3, 0), poolingEncodeInt8_0);
+    VXC_DP4x4(axisEncode, din0EqualTmp, din1EqualTmp, VXC_MODIFIER_BIN(4, 7, 0), poolingEncodeInt8_1);
+    axisOut = clz(axisEncode);//output
+    //write data out
+    VXC_WriteImage2DArray(axis, coordOut, axisOut, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+}

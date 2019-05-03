@@ -1,0 +1,259 @@
+#include "cl_viv_vx_ext.h"
+
+//----------------------------------argmax----------------------------
+_viv_uniform int depth;
+_viv_uniform VXC_512Bits intToShort8;
+_viv_uniform VXC_512Bits uniExtractHalfMax_2x8;
+
+__kernel void argMaxVXC
+    (
+    image2d_array_t input,
+    image2d_array_t output
+    )
+{
+    vxc_short8 z;
+    vxc_short8 zz = (vxc_short8)(-1, -1, -1, -1, -1, -1, -1, -1);
+    vxc_short8 din0, axis;
+    vxc_half8 dinHalf0, maxHalf;
+    vxc_short8 max;
+    float4 fltMax = {FLT_MIN, FLT_MIN, FLT_MIN, FLT_MIN};
+    half4 hfMax;
+    _viv_asm(CONV, hfMax, fltMax);
+    vxc_half8 maxTmp;
+    VXC_DP2x8(maxTmp, hfMax, hfMax, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniExtractHalfMax_2x8);
+
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), depth-1, 0);
+    int4 coordOut = (int4)(get_global_id(0), get_global_id(1), 0, 0);
+    VXC_DP2x8(z, depth-1, depth, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), intToShort8);
+
+    while(coord.z >= 0)
+    {
+        VXC_ReadImage2DArray(din0, input, coord, VXC_5BITOFFSET_XY(0, 0),\
+            VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+        _viv_asm(COPY, dinHalf0, din0, 16);
+        VXC_VertMax3_Half(maxHalf, maxTmp, dinHalf0, dinHalf0, VXC_MODIFIER_BIN(0, 7, 0));
+        maxTmp = maxHalf;
+        _viv_asm(COPY, max, maxTmp, 16);
+        axis = (din0 == max) ? z : axis;
+        z += zz;
+        coord.z -= 1;
+    }
+    VXC_WriteImage2DArray(output, coordOut, axis, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+}
+//----------------------------------argmax int8----------------------------
+
+__kernel void argMaxVXCInt8
+    (
+    image2d_array_t input,
+    image2d_array_t output
+    )
+{
+    vxc_char16 z;
+    vxc_char16 zz = (vxc_char16)(-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1);
+    vxc_char16 din0, axis;
+    vxc_char16 max;
+    vxc_char16 maxTmp = {-128, -128, -128, -128, -128, -128, -128, -128,
+                         -128, -128, -128, -128, -128, -128, -128, -128};
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), depth-1, 0);
+    int4 coordOut = (int4)(get_global_id(0), get_global_id(1), 0, 0);
+    VXC_DP2x8(z, depth-1, depth, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), intToShort8);
+    VXC_DP2x8(z, depth-1, depth, VXC_MODIFIER(8, 15, 0, VXC_RM_TowardZero, 0), intToShort8);
+
+    while(coord.z >= 0)
+    {
+        VXC_ReadImage2DArray(din0, input, coord, VXC_5BITOFFSET_XY(0, 0),\
+            VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));
+        VXC_VertMax3_Integer(max, maxTmp, din0, din0, VXC_MODIFIER_BIN(0, 15, 0));
+        maxTmp = max;
+        axis = (din0 == max) ? z : axis;
+        z += zz;
+        coord.z -= 1;
+    }
+    VXC_WriteImage2DArray(output, coordOut, axis, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));
+}
+
+//----------------------------------argmax int16----------------------------
+_viv_uniform int depth2;
+_viv_uniform VXC_512Bits intToShort8_2;
+
+__kernel void argMaxVXCInt16
+    (
+    image2d_array_t input,
+    image2d_array_t output
+    )
+{
+    vxc_short8 z;
+    vxc_short8 zz = (vxc_short8)(-1, -1, -1, -1, -1, -1, -1, -1);
+    vxc_short8 din0, axis;
+    vxc_short8 max;
+    vxc_short8 maxTmp = {-32768, -32768, -32768, -32768, -32768, -32768, -32768, -32768};
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), depth2-1, 0);
+    int4 coordOut = (int4)(get_global_id(0), get_global_id(1), 0, 0);
+    VXC_DP2x8(z, depth2-1, depth2, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), intToShort8_2);
+
+    while(coord.z >= 0)
+    {
+        VXC_ReadImage2DArray(din0, input, coord, VXC_5BITOFFSET_XY(0, 0),\
+            VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+        VXC_VertMax3_Integer(max, maxTmp, din0, din0, VXC_MODIFIER_BIN(0, 7, 0));
+        maxTmp = max;
+        axis = (din0 == max) ? z : axis;
+        z += zz;
+        coord.z -= 1;
+    }
+    VXC_WriteImage2DArray(output, coordOut, axis, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+}
+
+//----------------------------------argmax uint8----------------------------
+__kernel void argMaxVXCUint8
+    (
+    image2d_array_t input,
+    image2d_array_t output
+    )
+{
+    vxc_char16 z, axis;
+    vxc_char16 zz = (vxc_char16)(-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1);
+    vxc_uchar16 din0;
+    vxc_uchar16 max;
+    vxc_uchar16 maxTmp = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), depth2-1, 0);
+    int4 coordOut = (int4)(get_global_id(0), get_global_id(1), 0, 0);
+    VXC_DP2x8(z, depth2-1, depth2, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), intToShort8_2);
+    VXC_DP2x8(z, depth2-1, depth2, VXC_MODIFIER(8, 15, 0, VXC_RM_TowardZero, 0), intToShort8_2);
+
+    while(coord.z >= 0)
+    {
+        VXC_ReadImage2DArray(din0, input, coord, VXC_5BITOFFSET_XY(0, 0),\
+            VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));
+        VXC_VertMax3_Integer(max, maxTmp, din0, din0, VXC_MODIFIER_BIN(0, 15, 0));
+        maxTmp = max;
+        axis = (din0 == max) ? z : axis;
+        z += zz;
+        coord.z -= 1;
+    }
+    VXC_WriteImage2DArray(output, coordOut, axis, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));
+}
+
+__kernel void argMaxVXCUint8_Int16
+    (
+    image2d_array_t input,
+    image2d_array_t output
+    )
+{
+    vxc_short8 z, axis;
+    vxc_short8 zz = (vxc_short8)(-1, -1, -1, -1, -1, -1, -1, -1);
+    vxc_uchar8 din0, max;
+    vxc_uchar8 maxTmp = {0, 0, 0, 0, 0, 0, 0, 0};
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), depth2-1, 0);
+    int4 coordOut = (int4)(get_global_id(0), get_global_id(1), 0, 0);
+    VXC_DP2x8(z, depth2-1, depth2, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), intToShort8_2);
+
+    while(coord.z >= 0)
+    {
+        VXC_ReadImage2DArray(din0, input, coord, VXC_5BITOFFSET_XY(0, 0),\
+            VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+        VXC_VertMax3_Integer(max, maxTmp, din0, din0, VXC_MODIFIER_BIN(0, 7, 0));
+        maxTmp = max;
+        axis = (din0 == max) ? z : axis;
+        z += zz;
+        coord.z -= 1;
+    }
+    VXC_WriteImage2DArray(output, coordOut, axis, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+}
+
+_viv_uniform int depthsub1;
+_viv_uniform vxc_uint4 packedDepth;
+_viv_uniform VXC_512Bits uniPacekedU8toI16Lo_2x8;
+_viv_uniform VXC_512Bits uniPacekedU8toI16Hi_2x8;
+__kernel void argMax_U8_I16_WxHx256
+    (
+    image2d_array_t input,
+    image2d_array_t output
+    )
+{
+    vxc_uchar16 packedZ, axis = 0;
+    vxc_uchar16 src;
+    vxc_uchar16 max = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), depthsub1, 0);
+    _viv_asm(COPY, packedZ, packedDepth, 16);
+
+    do
+    {
+        VXC_ReadImage2DArray(src, input, coord, VXC_5BITOFFSET_XY(0, 0),\
+            VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));
+        packedZ --;
+        coord.z --;
+        VXC_VertMax3_Integer(max, max, src, src, VXC_MODIFIER_BIN(0, 15, 0));
+        axis = (src == max) ? packedZ : axis;
+    } while(coord.z >= 0);
+
+    vxc_short8 dst0, dst1;
+    VXC_DP2x8(dst0, axis, axis, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniPacekedU8toI16Lo_2x8);
+    VXC_DP2x8(dst1, axis, axis, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniPacekedU8toI16Hi_2x8);
+    coord.z = 0;
+    VXC_WriteImage2DArray(output, coord, dst0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+    coord.x += 8;
+    VXC_WriteImage2DArray(output, coord, dst1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+}
+
+__kernel void argMax_I8_I16_WxHx256
+    (
+    image2d_array_t input,
+    image2d_array_t output
+    )
+{
+    vxc_uchar16 packedZ, axis = 0, bits;
+    vxc_char16 src;
+    vxc_char16 maxData = {-128, -128, -128, -128, -128, -128, -128, -128, -128, -128,\
+        -128, -128, -128, -128, -128, -128};
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), depthsub1, 0);
+    _viv_asm(COPY, packedZ, packedDepth, 16);
+
+    do
+    {
+        VXC_ReadImage2DArray(src, input, coord, VXC_5BITOFFSET_XY(0, 0),\
+            VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));
+        packedZ --;
+        coord.z --;
+        maxData = max(maxData, src);
+        VXC_Clamp(bits, src, maxData, maxData, VXC_MODIFIER_CLAMP(0, 15, 0, 1));
+
+        axis = bits ? packedZ : axis;
+    } while(coord.z >= 0);
+
+    vxc_short8 dst0, dst1;
+    VXC_DP2x8(dst0, axis, axis, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniPacekedU8toI16Lo_2x8);
+    VXC_DP2x8(dst1, axis, axis, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniPacekedU8toI16Hi_2x8);
+    coord.z = 0;
+    VXC_WriteImage2DArray(output, coord, dst0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+    coord.x += 8;
+    VXC_WriteImage2DArray(output, coord, dst1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+}
+
+__kernel void argMaxVXCInt8_Int16
+    (
+    image2d_array_t input,
+    image2d_array_t output
+    )
+{
+    vxc_short8 z, axis;
+    vxc_short8 zz = (vxc_short8)(-1, -1, -1, -1, -1, -1, -1, -1);
+    vxc_char8 din0, max;
+    vxc_char8 maxTmp = {-128, -128, -128, -128, -128, -128, -128, -128};
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), depth-1, 0);
+    int4 coordOut = (int4)(get_global_id(0), get_global_id(1), 0, 0);
+    VXC_DP2x8(z, depth-1, depth, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), intToShort8);
+
+    while(coord.z >= 0)
+    {
+        VXC_ReadImage2DArray(din0, input, coord, VXC_5BITOFFSET_XY(0, 0),\
+            VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+        VXC_VertMax3_Integer(max, maxTmp, din0, din0, VXC_MODIFIER_BIN(0, 7, 0));
+        maxTmp = max;
+        axis = (din0 == max) ? z : axis;
+        z += zz;
+        coord.z -= 1;
+    }
+    VXC_WriteImage2DArray(output, coordOut, axis, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+}
+

@@ -1,0 +1,206 @@
+#include "cl_viv_vx_ext.h"
+
+_viv_uniform VXC_512Bits uniU8SubZP_MulM_PStoF16Lo_2x8;
+_viv_uniform VXC_512Bits uniU8SubZP_MulM_PStoF16Hi_2x8;
+_viv_uniform VXC_512Bits uniConvertInt32toUint8_2x8;
+_viv_uniform VXC_512Bits uniConvertUint8SubZpToFp32_4x4;
+_viv_uniform VXC_512Bits uniConvertSecUint8SubZpToFp32_4x4;
+_viv_uniform int input_ZP;
+_viv_uniform float inputScale;
+_viv_uniform VXC_512Bits uniF16MulF16_2x8;
+_viv_uniform int inputZP;
+_viv_uniform int outputZP;
+_viv_uniform VXC_512Bits uniS16AddZP_2x8;
+
+__kernel void vxcParametricReluUint8_Fp16
+    (
+    image2d_array_t input,
+    image2d_array_t para,
+    image2d_array_t output
+    )
+{
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);
+    int4 coord_para = (int4)(coord.z, 0, 0, 0);
+
+    vxc_uchar16 img_s16;
+    vxc_short8 para_s16;
+    half paraHlf;
+    float paraFp;
+    vxc_short8 outval;
+    vxc_float4 imgData0, imgData1;
+    float4 tmpOut0, tmpOut1;
+    half4 tmpVal0, tmpVal1;
+
+    VXC_ReadImage2DArray(img_s16, input, coord, VXC_5BITOFFSET_XY(0,0),\
+        VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+    VXC_ReadImage(para_s16, para, coord_para.xy, VXC_5BITOFFSET_XY(0,0),\
+        VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));
+
+    short zp = input_ZP;
+
+    VXC_DP4x4(imgData0, img_s16, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\
+        uniConvertUint8SubZpToFp32_4x4);
+    VXC_DP4x4(imgData1, img_s16, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\
+        uniConvertSecUint8SubZpToFp32_4x4);
+
+    _viv_asm(COPY, paraHlf, para_s16, 4);
+    _viv_asm(CONV, paraFp, paraHlf);
+    imgData0 *= inputScale;
+    imgData1 *= inputScale;
+
+    vxc_float4 maxData0 = imgData0 > 0 ? imgData0 : 0.0;
+    vxc_float4 maxData1 = imgData1 > 0 ? imgData1 : 0.0;
+    vxc_float4 minData0 = imgData0 < 0 ? imgData0 : 0.0;
+    vxc_float4 minData1 = imgData1 < 0 ? imgData1 : 0.0;
+    tmpOut0 = maxData0 + paraFp * minData0;
+    tmpOut1 = maxData1 + paraFp * minData1;
+
+    _viv_asm(CONV, tmpVal0, tmpOut0);
+    _viv_asm(CONV, tmpVal1, tmpOut1);
+    VXC_DP2x8(outval, tmpVal0, tmpVal1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),\
+        uniConvertInt32toUint8_2x8);
+    VXC_WriteImage2DArray(output, coord, outval, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+}
+
+__kernel void vxcParametricRelu_uint8_2d
+    (
+    __read_only image2d_t           input,
+    __read_only image2d_t           param,
+    __write_only image2d_array_t    output
+    )
+{
+    vxc_uchar16 src0, dst;
+    vxc_short8  vec0, vec1, vec2;
+    vxc_half8   param_h, src2, src3;
+    vxc_half16  src;
+    vxc_short8  const1 = (vxc_short8)(0x3c00, 0x3c00, 0x3c00, 0x3c00, 0x3c00, 0x3c00, 0x3c00, 0x3c00);
+
+    int2 coord = (int2)(get_global_id(0), get_global_id(1));
+    VXC_ReadImage(src0, input, coord, 0, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));
+    VXC_ReadImage(vec0, param, coord.yy, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));
+
+    vxc_uchar16 input_ZP;
+    _viv_asm(COPY, input_ZP, inputZP, 4);
+    VXC_DP2x8(src2, src0, input_ZP, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),\
+        uniU8SubZP_MulM_PStoF16Lo_2x8);
+    VXC_DP2x8(src3, src0, input_ZP, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),\
+        uniU8SubZP_MulM_PStoF16Hi_2x8);
+
+    vec0 = vec0.s00000000;
+    _viv_asm(COPY, vec1, src2, 16);
+    vec2 = vec1 >= 0 ? const1 : vec0;
+    _viv_asm(COPY, param_h, vec2, 16);
+    VXC_DP2x8(vec2, src2, param_h, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniF16MulF16_2x8);
+    _viv_asm(COPY, src0, outputZP, 16);
+    VXC_DP2x8(dst, vec2, src0, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniS16AddZP_2x8);
+
+    _viv_asm(COPY, vec1, src3, 16);
+    vec2 = vec1 >= 0 ? const1 : vec0;
+    _viv_asm(COPY, param_h, vec2, 16);
+    VXC_DP2x8(vec2, src3, param_h, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniF16MulF16_2x8);
+    VXC_DP2x8(dst, vec2, src0, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1), uniS16AddZP_2x8);
+
+    VXC_WriteImage(output, coord, dst, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));
+}
+
+
+__kernel void vxcParametricRelu_uint8tofp16_2d
+    (
+    __read_only image2d_t           input,
+    __read_only image2d_t           param,
+    __write_only image2d_array_t    output
+    )
+{
+    vxc_uchar16 src0, dst;
+    vxc_short8  vec0, vec1, vec2;
+    vxc_half8   param_h, src2, src3;
+    vxc_half16  src;
+    vxc_short8  const1 = (vxc_short8)(0x3c00, 0x3c00, 0x3c00, 0x3c00, 0x3c00, 0x3c00, 0x3c00, 0x3c00);
+
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(0), get_global_id(1));
+    VXC_ReadImage(src0, input, coord.xy, 0, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));
+    VXC_ReadImage(vec0, param, coord.yy, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));
+
+    coord.z += 8;
+
+    vxc_uchar16 input_ZP;
+    _viv_asm(COPY, input_ZP, inputZP, 4);
+    VXC_DP2x8(src2, src0, input_ZP, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),\
+        uniU8SubZP_MulM_PStoF16Lo_2x8);
+    VXC_DP2x8(src3, src0, input_ZP, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),\
+        uniU8SubZP_MulM_PStoF16Hi_2x8);
+
+    vec0 = vec0.s00000000;
+    _viv_asm(COPY, vec1, src2, 16);
+    vec2 = vec1 >= 0 ? const1 : vec0;
+    _viv_asm(COPY, param_h, vec2, 16);
+    VXC_DP2x8(src2, src2, param_h, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniF16MulF16_2x8);
+    _viv_asm(COPY, vec2, src2, 16);
+    VXC_WriteImage(output, coord.xy, vec2, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+
+    _viv_asm(COPY, vec1, src3, 16);
+    vec2 = vec1 >= 0 ? const1 : vec0;
+    _viv_asm(COPY, param_h, vec2, 16);
+    VXC_DP2x8(src3, src3, param_h, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniF16MulF16_2x8);
+    _viv_asm(COPY, vec2, src3, 16);
+
+    VXC_WriteImage(output, coord.zy, vec2, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+}
+
+_viv_uniform int outputFl_i8;
+_viv_uniform VXC_512Bits uniConvertDirFp16Fp32_4x4;
+_viv_uniform VXC_512Bits uniConvertEndFp16Fp32_4x4;
+_viv_uniform VXC_512Bits uniConvertInt32toInt8_2x8;
+__kernel void vxcParametricReluFp16_Int8
+    (
+    image2d_array_t input,
+    image2d_array_t para,
+    image2d_array_t output
+    )
+{
+    int gidx = get_global_id(0);
+    int gidy = get_global_id(1);
+    int gidz = get_global_id(2);
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);
+    int4 coord_para = (int4)(coord.z, 0, 0, 0);
+
+    vxc_short8 img_s16, para_s16;
+    vxc_half8 img_fp16;
+    half paraHlf;
+    float paraFp;
+    vxc_float4 p4;
+    vxc_char16 outval;
+    vxc_float4 imgData0, imgData1;
+    vxc_float4 tmpOut0, tmpOut1;
+    vxc_int4 tmpVal0, tmpVal1;
+
+    VXC_ReadImage2DArray(img_s16, input, coord, VXC_5BITOFFSET_XY(0,0),\
+        VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+    VXC_ReadImage(para_s16, para, coord_para.xy, VXC_5BITOFFSET_XY(0,0),\
+        VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));
+
+    _viv_asm(COPY, img_fp16, img_s16, 16);
+    VXC_DP4x4(imgData0, img_fp16, img_fp16, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\
+        uniConvertDirFp16Fp32_4x4);
+    VXC_DP4x4(imgData1, img_fp16, img_fp16, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\
+        uniConvertEndFp16Fp32_4x4);
+
+    _viv_asm(COPY, paraHlf, para_s16, 2);
+    _viv_asm(CONV, paraFp, paraHlf);
+
+    vxc_float4 maxData0 = imgData0 > 0 ? imgData0 : 0.0;
+    vxc_float4 maxData1 = imgData1 > 0 ? imgData1 : 0.0;
+    vxc_float4 minData0 = imgData0 < 0 ? imgData0 : 0.0;
+    vxc_float4 minData1 = imgData1 < 0 ? imgData1 : 0.0;
+    tmpOut0 = maxData0 + paraFp * minData0;
+    tmpOut1 = maxData1 + paraFp * minData1;
+    tmpOut0 *= outputFl_i8;
+    tmpOut1 *= outputFl_i8;
+
+    tmpVal0 = convert_int4_rte(tmpOut0);
+    tmpVal1 = convert_int4_rte(tmpOut1);
+
+    VXC_DP2x8(outval, tmpVal0, tmpVal1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1),\
+        uniConvertInt32toInt8_2x8);
+    VXC_WriteImage2DArray(output, coord, outval, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+}
