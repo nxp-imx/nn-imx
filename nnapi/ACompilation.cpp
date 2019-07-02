@@ -252,8 +252,8 @@ static vx_tensor creatVirtualTensorFromOperand(vx_graph graph, AnnOperand &opera
     vx_uint32 whcnDim[4] = {1,1,1,1};
     if(operand.dimensionCount == 2)
     {
-        whcnDim[2] = operand.dimensions[1];
-        whcnDim[3] = operand.dimensions[0];
+        whcnDim[0] = operand.dimensions[1];
+        whcnDim[1] = operand.dimensions[0];
     }
     else if(operand.dimensionCount == 3)
     {
@@ -274,7 +274,7 @@ static vx_tensor creatVirtualTensorFromOperand(vx_graph graph, AnnOperand &opera
     {
         if(2 < operand.type)
         {
-            tensor = createVirtualTenosrByParam(graph, 4, whcnDim, operand.type, operand.scale, operand.zeroPoint);
+            tensor = createVirtualTenosrByParam(graph, operand.dimensionCount, whcnDim, operand.type, operand.scale, operand.zeroPoint);
         }
         if (tensor == NULL)
         {
