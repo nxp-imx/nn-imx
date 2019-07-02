@@ -27,6 +27,19 @@
 #define F21_MANTISSA_SHIFT (23 - F21_EXPONENT_SHIFT)
 #define F21_MAX_EXPONENT (F16_EXPONENT_BITS << F21_EXPONENT_SHIFT)
 
+double getCurrentSystemTimeMs()
+{
+    double t = 0;
+#if defined(_MSC_VER)
+    t = omp_get_wtime() * 1000;
+#elif defined(__linux__)
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    t = tv.tv_sec * 1000 + tv.tv_usec / 1000;
+#endif
+    return t;
+}
+
 vx_float32 Fp16toFp32(const vx_int16 in)
 {
     vx_int32 t1;

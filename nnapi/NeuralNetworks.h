@@ -56,7 +56,7 @@
  */
 #if defined(_MSC_VER)
 #define EXPORT  __declspec(dllexport)
-#elif defined(__LINUX__)
+#elif defined(__linux__)
 #define EXPORT __attribute__((visibility("default")))
 #else
 #define EXPORT

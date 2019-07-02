@@ -49,6 +49,11 @@ public:
     int copyHost2Dev(); // copy data from cpu to tenser
     int copyDev2Host(); // copy data from tenser to cpu
 
+    double getStartTime()
+    {
+        return startTimePoint;
+    }
+
 private:
     vx_graph     m_graph;
     AModel *m_AModel;
@@ -66,6 +71,8 @@ private:
 
     std::vector<const void *> m_inputExternBufs;
     std::vector<void*> m_outputExternBufs;
+
+    double startTimePoint;
 };
 
 

@@ -144,7 +144,6 @@ private:
     void setFromIntList(std::vector<uint32_t>* vec, uint32_t count, const uint32_t* data);
 
 #ifdef DUMP_NEURALNETWORK
-    int getSystemTimeMs();
     int dumpOperand(const ANeuralNetworksOperandType& operand);
     int dumpOperandValue(uint32_t index, const void* buffer, size_t length);
     int dumpOpration(const AnnOperation opration, uint32_t inputCount, uint32_t outputCount);

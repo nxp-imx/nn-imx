@@ -14,10 +14,6 @@
 #include <fstream>
 #include "AModel.h"
 
-#ifdef __LINUX__
-#include <sys/time.h>
-#endif
-
 using namespace std;
 
 extern int enumConvertorANN2VX(int type);
@@ -63,27 +59,9 @@ std::string data2str(const unsigned int * buffer, int len)
     delete [] strBuf;
     return str;
 }
-#ifdef __LINUX__
-int AModel::getSystemTimeMs()
-{
-    int t = 0;
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    t = tv.tv_sec * 1000 + tv.tv_usec / 1000;
-    return t;
-}
-#endif
+
 int AModel::writeNeuralNetworkToFile()
 {
-    char operandJsonName[100]="dump_operand.json";
-    char oprationJsonName[100]="dump_opration.json";
-//    int time = getSystemTimeMs();
-
-    //sprintf(operandJsonName, "dump_operand_%d.json", time);
-    printf("dump operand data to: %s\n", operandJsonName);
-    //sprintf(oprationJsonName, "dump_opration_%d.json", time);
-    printf("dump opration data to: %s\n", oprationJsonName);
-
     m_jOperandRoot["name"] = "operand";
     m_jOprationRoot["name"] = "operation";
 

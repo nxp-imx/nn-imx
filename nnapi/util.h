@@ -16,7 +16,15 @@
 
 #include <VX/vx.h>
 #include "AModel.h"
+
+#if defined(_MSC_VER)
+#include <omp.h>
+#elif defined(__linux__)
+#include <sys/time.h>
+#endif
+
 #define CONVERT_TENSOR 1
+extern double getCurrentSystemTimeMs();
 
 extern vx_status convertDims(vx_uint32 * dims, vx_uint32 *org_dims, vx_uint32 count, bool SNforFC = false);
 

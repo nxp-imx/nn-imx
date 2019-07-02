@@ -34,6 +34,7 @@ using namespace std;
          m_AModel(compilation->getAModel()),
         m_runningFlag(false),m_exceptFlag(false)
 {
+    startTimePoint = 0.0;
 #ifdef NN_DEBUG
     cout << "new Execution" <<endl;
 #endif
@@ -143,6 +144,8 @@ void AExecution::clearExceptStatus()
 int AExecution::startCompute()
 {
     NN_ERR_CHECK( copyHost2Dev() );
+
+    startTimePoint = getCurrentSystemTimeMs();
 
 #ifdef DUMP_NEURALNETWORK
     m_AModel->writeNeuralNetworkToFile();

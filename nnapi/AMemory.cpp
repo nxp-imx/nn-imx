@@ -25,7 +25,7 @@
 #include <VX/vx_api.h>
 #include <VX/vx_khr_cnn.h>
 
-#ifdef __LINUX__
+#ifdef __linux__
 #include <sys/mman.h>
 #include <unistd.h>
 #endif
@@ -36,7 +36,7 @@
 
 AMemory::~AMemory()
 {
-#ifdef __LINUX__
+#ifdef __linux__
     close(m_dupFd);
     m_dataLen = 0;
     m_dataPtr = NULL;
@@ -54,7 +54,7 @@ int AMemory::readFromFd(size_t size, int prot, int fd, size_t offset)
         fprintf(stderr, "Invalid size\n");
         return ANEURALNETWORKS_BAD_DATA;
     }
-#ifdef __LINUX__
+#ifdef __linux__
     m_dupFd = dup(fd);
     if (m_dupFd == -1) {
         fprintf(stderr, "Failed to dup the fd\n");
