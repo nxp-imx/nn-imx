@@ -77,21 +77,25 @@ vsi_status VX_CALLBACK TensorCropInitializer
         {0, 0, 0},  // localWorkSize: local group size in threads
         {0, 0, 0}}; // globalWorkSize: image size in threads
 
-    //vx_tensor input             = (vx_tensor)paramObj[0];
+    vx_tensor input             = (vx_tensor)paramObj[0];
     vx_tensor output            = (vx_tensor)paramObj[1];
-    uint32_t output_size[4]    = {0, 0, 0, 0};
-    vsi_enum dataFormat;
+    uint32_t output_size[4]     = {0, 0, 0, 0};
+    vsi_enum dataFormat, dstFormat;
+    int8_t  input_fixPointPos   = 0;
     int32_t offset[3];
     size_t size[DIM_SIZE];
 
-    status = vxQueryTensor(output, VX_TENSOR_DIMS, output_size, sizeof(output_size));
-    status = vxQueryTensor(output, VX_TENSOR_DATA_TYPE, &dataFormat, sizeof(dataFormat));
+    status = vxQueryTensor(input, VX_TENSOR_DATA_TYPE, &dataFormat, sizeof(dataFormat));
+    status |= vxQueryTensor(input, VX_TENSOR_FIXED_POINT_POSITION, &input_fixPointPos, sizeof(input_fixPointPos));
+    status |= vxQueryTensor(output, VX_TENSOR_DIMS, output_size, sizeof(output_size));
+    status |= vxQueryTensor(output, VX_TENSOR_DATA_TYPE, &dstFormat, sizeof(dstFormat));
 
     vxCopyScalar((vx_scalar)paramObj[2], &offset[0], VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
     vxCopyScalar((vx_scalar)paramObj[3], &offset[1], VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
     vxCopyScalar((vx_scalar)paramObj[4], &offset[2], VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
 
-    switch(dataFormat)
+    memset(size, 0, sizeof(size_t) * DIM_SIZE);
+    switch(dstFormat)
     {
     case VX_TYPE_INT8:
     case VX_TYPE_UINT8:
@@ -118,6 +122,45 @@ vsi_status VX_CALLBACK TensorCropInitializer
         / shaderParam.globalWorkScale[1];
     shaderParam.globalWorkSize[2] = output_size[2];
 
+    if(dataFormat == VX_TYPE_INT16 && dstFormat == VX_TYPE_FLOAT16)
+    {
+        vx_uint32 uniConvertInt16toFp16_2x8[16] = {
+            0x11111111, // TCfg
+            0x00000000, // ASelt
+            0x03020100, 0x07060504, // ABin
+            0x22222222, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000600, // AccumType, ConstantType, and PostShift
+            0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
+        };
+
+#define cropMIN(x, y)            (((x) <= (y)) ?  (x) :  (y))
+#define CROP_MAX_POST_SHIFT_BITS     (31)
+#define CROP_MAX_MULTIPLIER_NUM      (65535)
+
+        if (input_fixPointPos > 0)
+        {
+            vx_uint8  postshift      = cropMIN(input_fixPointPos, CROP_MAX_POST_SHIFT_BITS);
+
+            uniConvertInt16toFp16_2x8[7] |= (postshift & 0x1F);
+        }
+        else
+        {
+            vx_uint32 multiplier = cropMIN(1 << (-input_fixPointPos), CROP_MAX_MULTIPLIER_NUM);
+            vx_uint32 i          = 0;
+
+            for (i = 0; i < 8; i++)
+            {
+                uniConvertInt16toFp16_2x8[i + 8] = multiplier;
+            }
+        }
+#undef cropMIN
+#undef CROP_MAX_POST_SHIFT_BITS
+#undef CROP_MAX_MULTIPLIER_NUM
+
+        status |= vxSetNodeUniform(nodObj, "uniConvertInt16toFp16_2x8", 1, uniConvertInt16toFp16_2x8);
+    }
+
     vxSetNodeAttribute(nodObj, VX_NODE_ATTRIBUTE_KERNEL_EXECUTION_PARAMETERS,
         &shaderParam, sizeof(vx_kernel_execution_parameters_t));
 
@@ -137,7 +180,7 @@ vx_param_description_t basekernel_tensorCrop_params[] = {
 };
 
 
-#ifdef __cpluplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 vx_kernel_description_t vxTensorCropKernelInt16Info =
@@ -168,13 +211,28 @@ vx_kernel_description_t vxTensorCropKernelInt8Info =
     vsi_nn_KernelDeinitializer
 };
 
+vx_kernel_description_t vxTensorCropKernelInt16Fp16Info =
+{
+    VX_KERNEL_ENUM_TENSORCROP_INT16_FP16,
+    VX_KERNEL_NAME_TENSORCROP_INT16_FP16,
+    NULL,
+    basekernel_tensorCrop_params,
+    (sizeof(basekernel_tensorCrop_params) / sizeof(basekernel_tensorCrop_params[0])),
+    vsi_nn_KernelValidator,
+    NULL,
+    NULL,
+    TensorCropInitializer,
+    vsi_nn_KernelDeinitializer
+};
+
 vx_kernel_description_t * vx_kernel_CROP_list[] =
 {
     NULL,
     &vxTensorCropKernelInt16Info,
     &vxTensorCropKernelInt8Info,
+    &vxTensorCropKernelInt16Fp16Info,
     NULL
 };
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif

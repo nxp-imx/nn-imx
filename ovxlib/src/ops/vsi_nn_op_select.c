@@ -302,13 +302,16 @@ static vsi_bool op_check
 
 static vsi_bool op_setup
     (
-    vsi_nn_node_t * node,
+    vsi_nn_node_t * self,
     vsi_nn_tensor_t ** inputs,
     vsi_nn_tensor_t ** outputs
     )
 {
-    /* TODO: Add code to comput outputs' shape. */
-    return TRUE;
+    vsi_bool ret = FALSE;
+
+    ret = vsi_nn_OpSetup( VSI_NN_OP_MULTIPLY, self, inputs, outputs );
+
+    return ret;
 } /* op_setup() */
 
 static vsi_status op_deinit
@@ -331,7 +334,7 @@ static vsi_status op_deinit
     return VSI_SUCCESS;
 } /* op_deinit() */
 
-#ifdef __cpluplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 /* Registrar */
@@ -346,6 +349,6 @@ DEF_OP_REG
     /* input_num  */ _INPUT_NUM,
     /* output_num */ _OUTPUT_NUM
     );
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif

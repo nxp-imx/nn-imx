@@ -128,6 +128,15 @@ static _node_template s_template[] =
     /* SPATIAL_TRANSFORMER */   NULL,
     /* LOGICAL_OPS */           NULL,
     /* SELECT */                NULL,
+    /* LSTMUNIT_ACTIVATION */   NULL,
+    /* LSTMUNIT_OVXLIB */       NULL,
+    /* TENSOR_ADD_MEAN_STDDEV_NORM */ NULL,
+    /* RELU1 */                 NULL,
+    /* STACK */                 NULL,
+    /* FLOOR */                 NULL,
+    /* SQUARE */                NULL,
+    /* NEG */                   NULL,
+    /* EXP */                   NULL,
 };
 _compiler_assert( _cnt_of_array(s_template) == VSI_NN_OP_NUM, vsi_nn_node_attr_template_c );
 

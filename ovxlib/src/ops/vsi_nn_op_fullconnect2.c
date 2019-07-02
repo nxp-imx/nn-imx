@@ -284,8 +284,11 @@ static vsi_status op_compute
     num_of_dims[1] = outputs[0]->attr.dim_num;
     memcpy(weights_size, inputs[1]->attr.size, sizeof(uint32_t) * VSI_NN_MAX_DIM_NUM);
     num_of_dims[2] = inputs[1]->attr.dim_num;
-    memcpy(bias_size, inputs[2]->attr.size, sizeof(uint32_t) * VSI_NN_MAX_DIM_NUM);
-    num_of_dims[3] = inputs[2]->attr.dim_num;
+    if( inputs[2] != NULL )
+    {
+        memcpy(bias_size, inputs[2]->attr.size, sizeof(uint32_t) * VSI_NN_MAX_DIM_NUM);
+        num_of_dims[3] = inputs[2]->attr.dim_num;
+    }
 
     ofm = weights_size[num_of_dims[2] - 1];
 
@@ -308,10 +311,13 @@ static vsi_status op_compute
     dims= 2;
     weight = vxReshapeTensor(inputs[1]->t, weights_size, dims);
 
-    bias_size[0] = ofm;
-    bias_size[1] = 1;
-    dims= 2;
-    bias = vxReshapeTensor(inputs[2]->t, bias_size, dims);
+    if( inputs[2] != NULL )
+    {
+        bias_size[0] = ofm;
+        bias_size[1] = 1;
+        dims= 2;
+        bias = vxReshapeTensor(inputs[2]->t, bias_size, dims);
+    }
 
     output_size[0] = ofm;
     output_size[1] = num_no_fc;
@@ -384,22 +390,22 @@ static vsi_bool op_setup
     )
 {
     vsi_nn_fcl_param * p;
-    uint32_t i;
+    uint32_t i, j;
 
     if( VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num )
     {
         p = (vsi_nn_fcl_param *)&(self->nn_param.fcl);
         outputs[0]->attr.dim_num = inputs[0]->attr.dim_num - p->axis;
-        for(i = p->axis + 1; i < outputs[0]->attr.dim_num; ++i)
+        for(i = p->axis + 1, j = 1; i < inputs[0]->attr.dim_num && j < outputs[0]->attr.dim_num; ++i, ++j)
         {
-            outputs[0]->attr.size[i] = inputs[0]->attr.size[i];
+            outputs[0]->attr.size[j] = inputs[0]->attr.size[i];
         }
         outputs[0]->attr.size[0] = p->weights;
     }
     return TRUE;
 } /* op_setup() */
 
-#ifdef __cpluplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 /* Registrar */
@@ -414,7 +420,7 @@ DEF_OP_REG
     /* input_num  */ _INPUT_NUM,
     /* output_num */ _OUTPUT_NUM
     );
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif
 

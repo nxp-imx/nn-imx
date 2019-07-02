@@ -86,7 +86,6 @@ vx_status VX_CALLBACK vxMinimumInitializer
     vx_int32     dstZP              = 0;
     vx_float32   dstScale           = 0;
     vx_bool      isDymFixPoint      = vx_false_e;
-    vx_bool      isAffineScale      = vx_false_e;
 
     vx_uint32 output_size[4] = {0, 0, 0, 0};
 
@@ -112,26 +111,17 @@ vx_status VX_CALLBACK vxMinimumInitializer
 
     isDymFixPoint = (vx_bool)(src0QuantType == src1QuantType && src0QuantType == VX_QUANT_DYNAMIC_FIXED_POINT
                            && dstQuantType == VX_QUANT_DYNAMIC_FIXED_POINT);
-    isAffineScale = (vx_bool)(src0QuantType == src1QuantType && src0QuantType == VX_QUANT_AFFINE_SCALE
-                           && dstQuantType == VX_QUANT_AFFINE_SCALE);
 
-    if ((src0Format == VX_TYPE_FLOAT16 && src1Format == VX_TYPE_FLOAT16 && dstFormat == VX_TYPE_FLOAT16)
-     || (src0Format == VX_TYPE_INT16 && src1Format == VX_TYPE_INT16 && dstFormat == VX_TYPE_INT16))
+    if (dstFormat == VX_TYPE_FLOAT16 || dstFormat == VX_TYPE_INT16)
     {
         shaderParam.globalWorkScale[0]  = 8;
-        shaderParam.globalWorkScale[1]  = 2;
+        shaderParam.globalWorkScale[1]  = 1;
         shaderParam.globalWorkScale[2]  = 1;
     }
-    else if (isDymFixPoint && src0Format == VX_TYPE_INT8 && src1Format == VX_TYPE_INT8 && dstFormat == VX_TYPE_INT8)
+    else
     {
         shaderParam.globalWorkScale[0]  = 16;
-        shaderParam.globalWorkScale[1]  = 2;
-        shaderParam.globalWorkScale[2]  = 1;
-    }
-    else if (isAffineScale && src0Format == VX_TYPE_UINT8 && src1Format == VX_TYPE_UINT8 && dstFormat == VX_TYPE_UINT8)
-    {
-        shaderParam.globalWorkScale[0]  = 16;
-        shaderParam.globalWorkScale[1]  = 2;
+        shaderParam.globalWorkScale[1]  = 1;
         shaderParam.globalWorkScale[2]  = 1;
     }
 
@@ -141,7 +131,8 @@ vx_status VX_CALLBACK vxMinimumInitializer
                                         / shaderParam.globalWorkScale[1];
     shaderParam.globalWorkSize[2]   = output_size[2];
 
-    if (isDymFixPoint && src0Format == VX_TYPE_INT8 && src1Format == VX_TYPE_INT8 && dstFormat == VX_TYPE_INT8)
+    if ((isDymFixPoint && src0Format == VX_TYPE_INT8 && src1Format == VX_TYPE_INT8 && dstFormat == VX_TYPE_INT8)
+        || (src0Format == VX_TYPE_INT8 && src1Format == VX_TYPE_FLOAT16 && dstFormat == VX_TYPE_INT8))
     {
         vx_uint32 uniConvertI8toI8_0_part0_2x8[16] = {
             0x11111111, // TCfg
@@ -206,27 +197,62 @@ vx_status VX_CALLBACK vxMinimumInitializer
         status |= vxSetNodeUniform(nodObj, "uniConvertI8toI8_0_part0_2x8", 1, uniConvertI8toI8_0_part0_2x8);
         status |= vxSetNodeUniform(nodObj, "uniConvertI8toI8_0_part1_2x8", 1, uniConvertI8toI8_0_part1_2x8);
 
-        if (src1FixPointPos > dstFixPointPos)
+        if(src1Format == VX_TYPE_FLOAT16)
         {
-            vx_uint8  postshift      = gcmMIN(src1FixPointPos - dstFixPointPos, MAX_POST_SHIFT_BITS);
+            vx_uint32 uinConvertFp16ToInt8_2x8[16] = {
+                0x11111111, // TCfg
+                0x00000000, // ASelt
+                0x03020100, 0x07060504, // ABin
+                0x22222222, // BSelt
+                0x00000000, 0x00000000, // BBin
+                0x00000600, // AccumType, ConstantType, and PostShift
+                0x00000001, 0x00000001, 0x00000001, 0x00000001,
+                0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
+            };
 
-            uniConvertI8toI8_1_part0_2x8[7] |= (postshift & 0x1F);
-            uniConvertI8toI8_1_part1_2x8[7] |= (postshift & 0x1F);
+            if (0 > dstFixPointPos)
+            {
+                vx_uint8  postshift      = gcmMIN(0 - dstFixPointPos, MAX_POST_SHIFT_BITS);
+
+                uinConvertFp16ToInt8_2x8[7] |= (postshift & 0x1F);
+            }
+            else
+            {
+                vx_uint32 multiplier = gcmMIN(1 << (dstFixPointPos - 0), MAX_MULTIPLIER_NUM);
+                vx_uint32 i          = 0;
+
+                for (i = 0; i < 8; i++)
+                {
+                    uinConvertFp16ToInt8_2x8[i + 8] = multiplier;
+                }
+            }
+
+            status |= vxSetNodeUniform(nodObj, "uinConvertFp16ToInt8_2x8", 1, uinConvertFp16ToInt8_2x8);
         }
         else
         {
-            vx_uint32 multiplier = gcmMIN(1 << (dstFixPointPos - src1FixPointPos), MAX_MULTIPLIER_NUM);
-            vx_uint32 i          = 0;
-
-            for (i = 0; i < 8; i++)
+            if (src1FixPointPos > dstFixPointPos)
             {
-                uniConvertI8toI8_1_part0_2x8[i + 8] = multiplier;
-                uniConvertI8toI8_1_part1_2x8[i + 8] = multiplier;
-            }
-        }
+                vx_uint8  postshift      = gcmMIN(src1FixPointPos - dstFixPointPos, MAX_POST_SHIFT_BITS);
 
-        status |= vxSetNodeUniform(nodObj, "uniConvertI8toI8_1_part0_2x8", 1, uniConvertI8toI8_1_part0_2x8);
-        status |= vxSetNodeUniform(nodObj, "uniConvertI8toI8_1_part1_2x8", 1, uniConvertI8toI8_1_part1_2x8);
+                uniConvertI8toI8_1_part0_2x8[7] |= (postshift & 0x1F);
+                uniConvertI8toI8_1_part1_2x8[7] |= (postshift & 0x1F);
+            }
+            else
+            {
+                vx_uint32 multiplier = gcmMIN(1 << (dstFixPointPos - src1FixPointPos), MAX_MULTIPLIER_NUM);
+                vx_uint32 i          = 0;
+
+                for (i = 0; i < 8; i++)
+                {
+                    uniConvertI8toI8_1_part0_2x8[i + 8] = multiplier;
+                    uniConvertI8toI8_1_part1_2x8[i + 8] = multiplier;
+                }
+            }
+
+            status |= vxSetNodeUniform(nodObj, "uniConvertI8toI8_1_part0_2x8", 1, uniConvertI8toI8_1_part0_2x8);
+            status |= vxSetNodeUniform(nodObj, "uniConvertI8toI8_1_part1_2x8", 1, uniConvertI8toI8_1_part1_2x8);
+        }
     }
     else if (isDymFixPoint && src0Format == VX_TYPE_INT16 && src1Format == VX_TYPE_INT16 && dstFormat == VX_TYPE_INT16)
     {
@@ -289,43 +315,112 @@ vx_status VX_CALLBACK vxMinimumInitializer
 
         status |= vxSetNodeUniform(nodObj, "uniConvertI16toI16_1_2x8", 1, uniConvertI16toI16_1_2x8);
     }
-    else if (isAffineScale && src0Format == VX_TYPE_UINT8 && src1Format == VX_TYPE_UINT8 && dstFormat == VX_TYPE_UINT8)
+    else if ((src0Format == VX_TYPE_UINT8 && src1Format == VX_TYPE_UINT8 && dstFormat == VX_TYPE_UINT8)
+            || (src0Format == VX_TYPE_UINT8 && src1Format == VX_TYPE_FLOAT16 && dstFormat == VX_TYPE_UINT8))
     {
-        vx_uint16  M0                   = 0;
-        vx_int8    postShift            = 0;
-        vx_uint32    multAndoutZP0[2]   = {0};
-        vx_uint32    multAndoutZP1[2]   = {0};
-        vx_uint32 uniU8MulAndPostShift_0_Hi_2x8[16] = {
-            0xdddddddd, // TCfg
-            0x44444444, // ASelt
-            0x1b1a1918, 0x1f1e1d1c, // ABin
-            0x11111111, // BSelt
-            0x00000000, 0x00000000, // BBin
-            0x00002600, // AccumType, ConstantType, and PostShift
-            0x00000000, 0x00000000, 0x00000000, 0x00000000,
-            0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
-        };
-        vx_uint32 uniU8MulAndPostShift_0_Lo_2x8[16] = {
+        vx_uint16   M0                      = 0;
+        vx_int8     postShift0              = 0;
+        vx_uint16   M1                      = 0;
+        vx_int8     postShift1              = 0;
+        vx_uint32  multAndoutZP0[2]         = {0};
+        vx_uint32  multAndoutZP1[2]         = {0};
+
+        vx_uint32 uniU8MulAndPostShift_Lo_2x8[16] = {
             0xdddddddd, // TCfg
             0x44444444, // ASelt
             0x13121110, 0x17161514, // ABin
             0x11111111, // BSelt
             0x00000000, 0x00000000, // BBin
             0x00002600, // AccumType, ConstantType, and PostShift
-            0x00000000, 0x00000000, 0x00000000, 0x00000000,
-            0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
         };
-        vx_uint32 uniU8MulAndPostShift_1_Hi_2x8[16] = {
+        vx_uint32 uniU8MulAndPostShift_Hi_2x8[16] = {
             0xdddddddd, // TCfg
             0x44444444, // ASelt
             0x1b1a1918, 0x1f1e1d1c, // ABin
             0x11111111, // BSelt
             0x00000000, 0x00000000, // BBin
             0x00002600, // AccumType, ConstantType, and PostShift
-            0x00000000, 0x00000000, 0x00000000, 0x00000000,
-            0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
         };
-        vx_uint32 uniU8MulAndPostShift_1_Lo_2x8[16] = {
+
+        vsi_nn_GetFP32MultiAndPostShift(src0Scale / dstScale, &M0, &postShift0);
+        vsi_nn_GetFP32MultiAndPostShift(src1Scale / dstScale, &M1, &postShift1);
+
+        multAndoutZP0[0] = (vx_uint32)(M0);
+        multAndoutZP0[1] = (vx_uint32)((dstZP << postShift0) - src0ZP * M0);
+        multAndoutZP1[0] = (vx_uint32)(M1);
+        multAndoutZP1[1] = (vx_uint32)((dstZP << postShift1) - src1ZP * M1);
+
+        uniU8MulAndPostShift_Lo_2x8[7] = 0x00002600 | (postShift0 & 0x1F);
+        uniU8MulAndPostShift_Hi_2x8[7] = 0x00002600 | (postShift0 & 0x1F);
+
+        status |= vxSetNodeUniform(nodObj, "uniU8MulAndPostShift0_Lo_2x8",  1, uniU8MulAndPostShift_Lo_2x8);
+        status |= vxSetNodeUniform(nodObj, "uniU8MulAndPostShift0_Hi_2x8",  1, uniU8MulAndPostShift_Hi_2x8);
+        status |= vxSetNodeUniform(nodObj, "multAndoutZP0",  1, multAndoutZP0);
+        status |= vxSetNodeUniform(nodObj, "multAndoutZP1",  1, multAndoutZP1);
+
+        if(src1Format == VX_TYPE_FLOAT16)
+        {
+            vx_uint32 uniConvertFp16toU8_2x8[16] = {
+                0xdddddddd, // TCfg
+                0x44444444, // ASelt
+                0x13121110, 0x17161514, // ABin
+                0x11111111, // BSelt
+                0x00000000, 0x00000000, // BBin
+                0x00002600, // AccumType, ConstantType, and PostShift
+                0x00000000, 0x00000000, 0x00000000, 0x00000000,
+                0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
+            };
+
+            uniConvertFp16toU8_2x8[7] = 0x00002600 | (postShift1 & 0x1F);
+            status |= vxSetNodeUniform(nodObj, "uniConvertFp16toU8_2x8",  1, uniConvertFp16toU8_2x8);
+        }
+        else
+        {
+            uniU8MulAndPostShift_Lo_2x8[7] = 0x00002600 | (postShift1 & 0x1F);
+            uniU8MulAndPostShift_Hi_2x8[7] = 0x00002600 | (postShift1 & 0x1F);
+            status |= vxSetNodeUniform(nodObj, "uniU8MulAndPostShift1_Lo_2x8",  1, uniU8MulAndPostShift_Lo_2x8);
+            status |= vxSetNodeUniform(nodObj, "uniU8MulAndPostShift1_Hi_2x8",  1, uniU8MulAndPostShift_Hi_2x8);
+        }
+    }
+    else if(src0Format == VX_TYPE_INT8 && src1Format == VX_TYPE_FLOAT16 && dstFormat == VX_TYPE_FLOAT16)
+    {
+        vx_uint32 uniConvertInt8toFp16_2x8[16] = {
+            0x11111111, // TCfg
+            0x00000000, // ASelt
+            0x03020100, 0x07060504, // ABin
+            0x22222222, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000600, // AccumType, ConstantType, and PostShift
+            0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
+        };
+
+        if (src0FixPointPos > 0)
+        {
+            vx_uint8  postshift = gcmMIN(src0FixPointPos, MAX_POST_SHIFT_BITS);
+
+            uniConvertInt8toFp16_2x8[7] |= (postshift & 0x1F);
+        }
+        else
+        {
+            vx_uint32 multiplier = gcmMIN(1 << (0 - src0FixPointPos), MAX_MULTIPLIER_NUM);
+            vx_uint32 i          = 0;
+
+            for (i = 0; i < 8; i++)
+            {
+                uniConvertInt8toFp16_2x8[i + 8] = multiplier;
+            }
+        }
+
+        status |= vxSetNodeUniform(nodObj, "uniConvertInt8toFp16_2x8", 1, uniConvertInt8toFp16_2x8);
+    }
+    else if(src0Format == VX_TYPE_UINT8 && src1Format == VX_TYPE_FLOAT16 && dstFormat == VX_TYPE_FLOAT16)
+    {
+        vx_uint16  M0                   = 0;
+        vx_int8    postShift            = 0;
+        vx_uint32    multAndoutZP0[2]   = {0};
+        vx_uint32 uniU8MulAndPostShift_0_Lo_2x8[16] = {
             0xdddddddd, // TCfg
             0x44444444, // ASelt
             0x13121110, 0x17161514, // ABin
@@ -341,20 +436,95 @@ vx_status VX_CALLBACK vxMinimumInitializer
         multAndoutZP0[1] = (vx_uint32)((dstZP << postShift) - src0ZP * M0);
 
         uniU8MulAndPostShift_0_Lo_2x8[7] |= (postShift & 0x1F);
-        uniU8MulAndPostShift_0_Hi_2x8[7] |= (postShift & 0x1F);
-        vxSetNodeUniform(nodObj, "uniU8MulAndPostShift_0_Hi_2x8", 1, uniU8MulAndPostShift_0_Hi_2x8);
-        vxSetNodeUniform(nodObj, "uniU8MulAndPostShift_0_Lo_2x8", 1, uniU8MulAndPostShift_0_Lo_2x8);
-        vxSetNodeUniform(nodObj, "multAndoutZP0", 1, multAndoutZP0);
+        status |= vxSetNodeUniform(nodObj, "uniU8MulAndPostShift_0_Lo_2x8", 1, uniU8MulAndPostShift_0_Lo_2x8);
+        status |= vxSetNodeUniform(nodObj, "multAndoutZP0", 1, multAndoutZP0);
+    }
+    else if(src0Format == VX_TYPE_INT16 && src1Format == VX_TYPE_FLOAT16 && dstFormat == VX_TYPE_INT16)
+    {
+        vx_uint32 uniConvertI16toI16_2x8[16] = {
+            0x11111111, // TCfg
+            0x00000000, // ASelt
+            0x03020100, 0x07060504, // ABin
+            0x22222222, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000600, // AccumType, ConstantType, and PostShift
+            0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
+        };
+        vx_uint32 uinConvertFp16ToInt16_2x8[16] = {
+            0x11111111, // TCfg
+            0x00000000, // ASelt
+            0x03020100, 0x07060504, // ABin
+            0x22222222, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000600, // AccumType, ConstantType, and PostShift
+            0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
+        };
 
-        vsi_nn_GetFP32MultiAndPostShift(src1Scale / dstScale, &M0, &postShift);
-        multAndoutZP1[0] = (vx_uint32)(M0);
-        multAndoutZP1[1] = (vx_uint32)((dstZP << postShift) - src1ZP * M0);
+        if (src0FixPointPos > dstFixPointPos)
+        {
+            vx_uint8  postshift = gcmMIN(src0FixPointPos - dstFixPointPos, MAX_POST_SHIFT_BITS);
 
-        uniU8MulAndPostShift_1_Lo_2x8[7] |= (postShift & 0x1F);
-        uniU8MulAndPostShift_1_Hi_2x8[7] |= (postShift & 0x1F);
-        vxSetNodeUniform(nodObj, "uniU8MulAndPostShift_1_Hi_2x8", 1, uniU8MulAndPostShift_1_Hi_2x8);
-        vxSetNodeUniform(nodObj, "uniU8MulAndPostShift_1_Lo_2x8", 1, uniU8MulAndPostShift_1_Lo_2x8);
-        vxSetNodeUniform(nodObj, "multAndoutZP1", 1, multAndoutZP1);
+            uniConvertI16toI16_2x8[7] |= (postshift & 0x1F);
+        }
+        else
+        {
+            vx_uint32 multiplier = gcmMIN(1 << (dstFixPointPos - src0FixPointPos), MAX_MULTIPLIER_NUM);
+            vx_uint32 i          = 0;
+
+            for (i = 0; i < 8; i++)
+            {
+                uniConvertI16toI16_2x8[i + 8] = multiplier;
+            }
+        }
+
+        if (0 > dstFixPointPos)
+        {
+            vx_uint8  postshift      = gcmMIN(0 - dstFixPointPos, MAX_POST_SHIFT_BITS);
+            uinConvertFp16ToInt16_2x8[7] |= (postshift & 0x1F);
+        }
+        else
+        {
+            vx_uint32 multiplier = gcmMIN(1 << (dstFixPointPos - 0), MAX_MULTIPLIER_NUM);
+            vx_uint32 i          = 0;
+
+            for (i = 0; i < 8; i++)
+            {
+                uinConvertFp16ToInt16_2x8[i + 8] = multiplier;
+            }
+        }
+
+        status |= vxSetNodeUniform(nodObj, "uniConvertI16toI16_2x8", 1, uniConvertI16toI16_2x8);
+        status |= vxSetNodeUniform(nodObj, "uinConvertFp16ToInt16_2x8", 1, uinConvertFp16ToInt16_2x8);
+    }
+    else if(src0Format == VX_TYPE_INT16 && src1Format == VX_TYPE_FLOAT16 && dstFormat == VX_TYPE_FLOAT16)
+    {
+        vx_uint32 uniConvertInt16toFp16_2x8[16] = {
+            0x11111111, // TCfg
+            0x00000000, // ASelt
+            0x03020100, 0x07060504, // ABin
+            0x22222222, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000600, // AccumType, ConstantType, and PostShift
+            0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
+        };
+
+        if (src0FixPointPos > 0)
+        {
+            vx_uint8  postshift = gcmMIN(src0FixPointPos, MAX_POST_SHIFT_BITS);
+            uniConvertInt16toFp16_2x8[7] |= (postshift & 0x1F);
+        }
+        else
+        {
+            vx_uint32 multiplier = gcmMIN(1 << (0 - src0FixPointPos), MAX_MULTIPLIER_NUM);
+            vx_uint32 i          = 0;
+
+            for (i = 0; i < 8; i++)
+            {
+                uniConvertInt16toFp16_2x8[i + 8] = multiplier;
+            }
+        }
+
+        status |= vxSetNodeUniform(nodObj, "uniConvertInt16toFp16_2x8", 1, uniConvertInt16toFp16_2x8);
     }
 
     status |= vxSetNodeAttribute(nodObj, VX_NODE_ATTRIBUTE_KERNEL_EXECUTION_PARAMETERS,
@@ -364,135 +534,94 @@ vx_status VX_CALLBACK vxMinimumInitializer
 }
 
 
-#ifdef __cpluplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-vx_kernel_description_t vxMinimum_F16toF16 =
-{
-    _VX_KERNEL_ID,
-    VX_KERNEL_NAME_MINIMUM_F16TOF16,
-    NULL,
-    vxMinimumKernelParam,
-    _cnt_of_array( vxMinimumKernelParam ),
-    vsi_nn_KernelValidator,
-    NULL,
-    NULL,
-    vxMinimumInitializer,
-    vsi_nn_KernelDeinitializer
+
+#define TENSOR_MIN_KERNELS(SRC0_TYPE, SRC1_TYPE, DST_TYPE) \
+    vx_kernel_description_t vxTensorMinimum_##SRC0_TYPE##SRC1_TYPE##to##DST_TYPE##_Kernel = \
+{ \
+    _VX_KERNEL_ID, \
+    VX_KERNEL_NAME_MINIMUM_##SRC0_TYPE##SRC1_TYPE##TO##DST_TYPE, \
+    NULL, \
+    vxMinimumKernelParam, \
+    (sizeof(vxMinimumKernelParam) / sizeof(vxMinimumKernelParam[0])), \
+    vsi_nn_KernelValidator, \
+    NULL, \
+    NULL, \
+    vxMinimumInitializer, \
+    vsi_nn_KernelDeinitializer \
 };
 
-vx_kernel_description_t vxMinimum_F16toF16_2D =
-{
-    _VX_KERNEL_ID,
-    VX_KERNEL_NAME_MINIMUM_F16TOF16_2D,
-    NULL,
-    vxMinimumKernelParam,
-    _cnt_of_array( vxMinimumKernelParam ),
-    vsi_nn_KernelValidator,
-    NULL,
-    NULL,
-    vxMinimumInitializer,
-    vsi_nn_KernelDeinitializer
+#define TENSOR_MIN_KERNELS_2D(SRC0_TYPE, SRC1_TYPE, DST_TYPE) \
+    vx_kernel_description_t vxTensorMinimum_##SRC0_TYPE##SRC1_TYPE##to##DST_TYPE##_2D_Kernel = \
+{ \
+    _VX_KERNEL_ID, \
+    VX_KERNEL_NAME_MINIMUM_##SRC0_TYPE##SRC1_TYPE##TO##DST_TYPE##_2D, \
+    NULL, \
+    vxMinimumKernelParam, \
+    (sizeof(vxMinimumKernelParam) / sizeof(vxMinimumKernelParam[0])), \
+    vsi_nn_KernelValidator, \
+    NULL, \
+    NULL, \
+    vxMinimumInitializer, \
+    vsi_nn_KernelDeinitializer \
 };
 
-vx_kernel_description_t vxMinimum_I8toI8 =
-{
-    _VX_KERNEL_ID,
-    VX_KERNEL_NAME_MINIMUM_I8TOI8,
-    NULL,
-    vxMinimumKernelParam,
-    _cnt_of_array( vxMinimumKernelParam ),
-    vsi_nn_KernelValidator,
-    NULL,
-    NULL,
-    vxMinimumInitializer,
-    vsi_nn_KernelDeinitializer
-};
 
-vx_kernel_description_t vxMinimum_I8toI8_2D =
-{
-    _VX_KERNEL_ID,
-    VX_KERNEL_NAME_MINIMUM_I8TOI8_2D,
-    NULL,
-    vxMinimumKernelParam,
-    _cnt_of_array( vxMinimumKernelParam ),
-    vsi_nn_KernelValidator,
-    NULL,
-    NULL,
-    vxMinimumInitializer,
-    vsi_nn_KernelDeinitializer
-};
+TENSOR_MIN_KERNELS(F16, F16, F16)
+TENSOR_MIN_KERNELS(I8,  F16, I8)
+TENSOR_MIN_KERNELS(I8,  F16, F16)
+TENSOR_MIN_KERNELS(U8,  F16, U8)
+TENSOR_MIN_KERNELS(U8,  F16, F16)
+TENSOR_MIN_KERNELS(I8,  I8, I8)
+TENSOR_MIN_KERNELS(U8,  U8, U8)
+TENSOR_MIN_KERNELS(I16, I16, I16)
+TENSOR_MIN_KERNELS(I16, F16, I16)
+TENSOR_MIN_KERNELS(I16, F16, F16)
 
-vx_kernel_description_t vxMinimum_U8toU8 =
-{
-    _VX_KERNEL_ID,
-    VX_KERNEL_NAME_MINIMUM_U8TOU8,
-    NULL,
-    vxMinimumKernelParam,
-    _cnt_of_array( vxMinimumKernelParam ),
-    vsi_nn_KernelValidator,
-    NULL,
-    NULL,
-    vxMinimumInitializer,
-    vsi_nn_KernelDeinitializer
-};
+TENSOR_MIN_KERNELS_2D(F16, F16, F16)
+TENSOR_MIN_KERNELS_2D(I8,  F16, I8)
+TENSOR_MIN_KERNELS_2D(I8,  F16, F16)
+TENSOR_MIN_KERNELS_2D(U8,  F16, U8)
+TENSOR_MIN_KERNELS_2D(U8,  F16, F16)
+TENSOR_MIN_KERNELS_2D(I8,  I8, I8)
+TENSOR_MIN_KERNELS_2D(U8,  U8, U8)
+TENSOR_MIN_KERNELS_2D(I16, I16, I16)
+TENSOR_MIN_KERNELS_2D(I16, F16, I16)
+TENSOR_MIN_KERNELS_2D(I16, F16, F16)
 
-vx_kernel_description_t vxMinimum_U8toU8_2D =
-{
-    _VX_KERNEL_ID,
-    VX_KERNEL_NAME_MINIMUM_U8TOU8_2D,
-    NULL,
-    vxMinimumKernelParam,
-    _cnt_of_array( vxMinimumKernelParam ),
-    vsi_nn_KernelValidator,
-    NULL,
-    NULL,
-    vxMinimumInitializer,
-    vsi_nn_KernelDeinitializer
-};
+#define TENSOR_MIN_KERENLS_NAME(SRC0_TYPE, SRC1_TYPE, DST_TYPE, INSTR) \
+    &vxTensorMinimum_##SRC0_TYPE##SRC1_TYPE##to##DST_TYPE##_##INSTR##Kernel,
 
-vx_kernel_description_t vxMinimum_I16toI16 =
-{
-    _VX_KERNEL_ID,
-    VX_KERNEL_NAME_MINIMUM_I16TOI16,
-    NULL,
-    vxMinimumKernelParam,
-    _cnt_of_array( vxMinimumKernelParam ),
-    vsi_nn_KernelValidator,
-    NULL,
-    NULL,
-    vxMinimumInitializer,
-    vsi_nn_KernelDeinitializer
-};
-
-vx_kernel_description_t vxMinimum_I16toI16_2D =
-{
-    _VX_KERNEL_ID,
-    VX_KERNEL_NAME_MINIMUM_I16TOI16_2D,
-    NULL,
-    vxMinimumKernelParam,
-    _cnt_of_array( vxMinimumKernelParam ),
-    vsi_nn_KernelValidator,
-    NULL,
-    NULL,
-    vxMinimumInitializer,
-    vsi_nn_KernelDeinitializer
-};
 
 vx_kernel_description_t * vx_kernel_MINIMUM_list[] =
 {
     NULL,
-    &vxMinimum_F16toF16,
-    &vxMinimum_F16toF16_2D,
-    &vxMinimum_I8toI8,
-    &vxMinimum_I8toI8_2D,
-    &vxMinimum_U8toU8,
-    &vxMinimum_U8toU8_2D,
-    &vxMinimum_I16toI16,
-    &vxMinimum_I16toI16_2D,
+    TENSOR_MIN_KERENLS_NAME(F16, F16, F16, )
+    TENSOR_MIN_KERENLS_NAME(I8,  F16, I8, )
+    TENSOR_MIN_KERENLS_NAME(I8,  F16, F16, )
+    TENSOR_MIN_KERENLS_NAME(U8,  F16, U8, )
+    TENSOR_MIN_KERENLS_NAME(U8,  F16, F16, )
+    TENSOR_MIN_KERENLS_NAME(I8,  I8, I8, )
+    TENSOR_MIN_KERENLS_NAME(U8,  U8, U8, )
+    TENSOR_MIN_KERENLS_NAME(I16, I16, I16, )
+    TENSOR_MIN_KERENLS_NAME(I16, F16, I16, )
+    TENSOR_MIN_KERENLS_NAME(I16, F16, F16, )
+
+    TENSOR_MIN_KERENLS_NAME(F16, F16, F16, 2D_)
+    TENSOR_MIN_KERENLS_NAME(I8,  F16, I8, 2D_)
+    TENSOR_MIN_KERENLS_NAME(I8,  F16, F16, 2D_)
+    TENSOR_MIN_KERENLS_NAME(U8,  F16, U8, 2D_)
+    TENSOR_MIN_KERENLS_NAME(U8,  F16, F16, 2D_)
+    TENSOR_MIN_KERENLS_NAME(I8,  I8, I8, 2D_)
+    TENSOR_MIN_KERENLS_NAME(U8,  U8, U8, 2D_)
+    TENSOR_MIN_KERENLS_NAME(I16, I16, I16, 2D_)
+    TENSOR_MIN_KERENLS_NAME(I16, F16, I16, 2D_)
+    TENSOR_MIN_KERENLS_NAME(I16, F16, F16, 2D_)
     NULL
 };
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif

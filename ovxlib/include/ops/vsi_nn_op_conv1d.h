@@ -26,6 +26,10 @@
 
 #include "vsi_nn_types.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct _vsi_nn_conv1d_lcl_data_t
 {
     vx_tensor input_tensor;
@@ -49,6 +53,10 @@ typedef struct _vsi_nn_conv1d_param
     uint32_t     dilation;
     int32_t      multiplier;
 } vsi_nn_conv1d_param;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

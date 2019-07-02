@@ -248,7 +248,7 @@ static vx_param_description_t vxTensorReverseKernelParam[] =
     {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED}
 };
 
-#ifdef __cpluplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 vx_kernel_description_t _VX_KERNEL_VAR =
@@ -285,6 +285,6 @@ vx_kernel_description_t * vx_kernel_REVERSE_list[] =
     &vxTensorReverseKernelInfo,
     NULL
 };
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif

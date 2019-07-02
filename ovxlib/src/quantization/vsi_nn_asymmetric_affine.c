@@ -25,7 +25,7 @@
 #include "quantization/vsi_nn_asymmetric_affine.h"
 #include "utils/vsi_nn_util.h"
 #include "utils/vsi_nn_math.h"
-#include "utils/vsi_nn_limits.h"
+#include "utils/vsi_nn_dtype_util_prv.h"
 
 vsi_status vsi_nn_QuantAffineCalParam
     (
@@ -51,9 +51,9 @@ vsi_status vsi_nn_QuantAffineCalParam
         VSILOGW("Not support type %#x", type);
         return VSI_FAILURE;
     }
-    vsi_nn_TypeGetRange( type, &max_range, &min_range );
+    type_get_range( type, &max_range, &min_range );
     *scale = ( max_data - min_data ) / (float)( max_range - min_range );
-    tmp = (int32_t)vsi_nn_Rint( (float)min_range - min_data / *scale );
+    tmp = (int32_t)vsi_rint( (float)min_range - min_data / *scale );
     *zero_point = (uint32_t)vsi_nn_min( (int32_t)max_range,
         vsi_nn_max( (int32_t)min_range, tmp ) );
     return VSI_SUCCESS;
@@ -68,7 +68,7 @@ vsi_bool vsi_nn_QuantAffineCheck
 {
     vsi_bool ret;
     vsi_nn_type_e dtype;
-    const float diff_scale = 1e-5;
+    const float diff_scale = (float)1e-5;
 
     ret = FALSE;
     dtype = input->attr.dtype.vx_type;
@@ -82,21 +82,28 @@ vsi_bool vsi_nn_QuantAffineCheck
 
     switch (dtype)
     {
-    case VSI_NN_TYPE_UINT8:
-    case VSI_NN_TYPE_UINT16:
-    case VSI_NN_TYPE_UINT32:
+        case VSI_NN_TYPE_UINT8:
+        case VSI_NN_TYPE_UINT16:
+        case VSI_NN_TYPE_UINT32:
         {
             float input_scale = input->attr.dtype.scale;
             float weight_scale = weight->attr.dtype.scale;
-            float bias_scale = bias->attr.dtype.scale;
-            float iw_scale = input_scale * weight_scale;
-            float diff = vsi_nn_abs(bias_scale - iw_scale);
+            if(bias && bias->attr.dtype.scale)
+            {
+                float bias_scale = bias->attr.dtype.scale;
+                float iw_scale = input_scale * weight_scale;
+                float diff = vsi_nn_abs(bias_scale - iw_scale);
 
-            if( diff <= diff_scale )
+                if( diff <= diff_scale )
+                {
+                    ret = TRUE;
+                }
+            }
+            else
             {
                 ret = TRUE;
             }
-        }
+      }
         break;
     default:
         VSILOGW("input dtype error %#x", dtype);

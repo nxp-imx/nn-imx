@@ -52,19 +52,23 @@ TENSORRELATION(Gte,   Int8,  vxc_char8, vxc_char8,  vxc_char8,  vxc_char8,  >=)
 TENSORRELATION(Ls,    Int8,  vxc_char8, vxc_char8,  vxc_char8,  vxc_char8,  <)
 TENSORRELATION(Lse,   Int8,  vxc_char8, vxc_char8,  vxc_char8,  vxc_char8,  <=)
 TENSORRELATION(Ne,    Int8,  vxc_char8, vxc_char8,  vxc_char8,  vxc_char8,  !=)
-#if 1
+TENSORRELATION(E,     Int8,  vxc_char8, vxc_char8,  vxc_char8,  vxc_char8,  ==)
+
 TENSORRELATION(Gt,    Uint8,  vxc_uchar8,  vxc_uchar8,  vxc_char8,  vxc_uchar8,  >)
 TENSORRELATION(Gte,   Uint8,  vxc_uchar8, vxc_uchar8,  vxc_char8,  vxc_uchar8,  >=)
 TENSORRELATION(Ls,    Uint8,  vxc_uchar8, vxc_uchar8,  vxc_char8,  vxc_uchar8,  <)
 TENSORRELATION(Lse,   Uint8,  vxc_uchar8, vxc_uchar8,  vxc_char8,  vxc_uchar8,  <=)
 TENSORRELATION(Ne,    Uint8,  vxc_uchar8, vxc_uchar8,  vxc_char8,  vxc_uchar8,  !=)
-#endif
+TENSORRELATION(E,     Uint8,  vxc_uchar8, vxc_uchar8,  vxc_char8,  vxc_uchar8,  ==)
+
 TENSORRELATION(Gt,    Int16,  vxc_short8, vxc_short8,  vxc_short8,  vxc_short8,  >)
 TENSORRELATION(Gte,   Int16,  vxc_short8, vxc_short8,  vxc_short8,  vxc_short8,  >=)
 TENSORRELATION(Ls,    Int16,  vxc_short8, vxc_short8,  vxc_short8,  vxc_short8,  <)
 TENSORRELATION(Lse,   Int16,  vxc_short8, vxc_short8,  vxc_short8,  vxc_short8,  <=)
 TENSORRELATION(Ne,    Int16,  vxc_short8, vxc_short8,  vxc_short8,  vxc_short8,  !=)
+TENSORRELATION(E,     Int16,  vxc_short8, vxc_short8,  vxc_short8,  vxc_short8,  ==)
 
+_viv_uniform VXC_512Bits uniMulShortMinus1toFp16_2x8;
 
 #define TENSORCMPHALF(name0, name1, cmp_op) \
     __kernel void vxcTensorRelation_##name0##_##name1( \
@@ -92,6 +96,9 @@ TENSORRELATION(Ne,    Int16,  vxc_short8, vxc_short8,  vxc_short8,  vxc_short8, 
     dst1 = (x1)cmp_op(y1); \
     vxc_short8 dst; \
     VXC_DP2x8(dst,dst0,dst1,VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),uniConvertInt32toUint8_2x8);\
+    vxc_half8 tmpOut; \
+    VXC_DP2x8(tmpOut,dst,dst,VXC_MODIFIER(0,7,0,VXC_RM_TowardZero, 0),uniMulShortMinus1toFp16_2x8); \
+    _viv_asm(COPY, dst, tmpOut, 16); \
     VXC_WriteImage2DArray(output, coord, dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \
 }
 
@@ -101,3 +108,4 @@ TENSORCMPHALF(Gte,   Fp16,  >=)
 TENSORCMPHALF(Ls,    Fp16,  <)
 TENSORCMPHALF(Lse,   Fp16,  <=)
 TENSORCMPHALF(Ne,    Fp16,  !=)
+TENSORCMPHALF(E,     Fp16,  ==)

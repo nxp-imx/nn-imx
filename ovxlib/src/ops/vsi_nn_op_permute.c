@@ -34,6 +34,83 @@
 #include "vsi_nn_tensor.h"
 #include "vsi_nn_tensor_util.h"
 #include "utils/vsi_nn_util.h"
+#include "utils/vsi_nn_dtype_util.h"
+
+static vsi_bool _is_same_memory_shape
+    (
+    vsi_nn_node_t   * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs
+    )
+{
+    uint32_t input_dims[VSI_NN_MAX_DIM_NUM];
+    uint32_t perm_dims[VSI_NN_MAX_DIM_NUM];
+    uint32_t i = 0;
+    uint32_t idx = 0;
+    uint32_t dim_num0 = inputs[0]->attr.dim_num;
+    uint32_t dim_num1 = self->nn_param.permute.dim_num;
+
+    if (dim_num0 != dim_num1)
+        return FALSE;
+
+    /********squeeze tensor shape*******/
+    for (i = 0; i < inputs[0]->attr.dim_num; i++)
+    {
+        if (inputs[0]->attr.size[i] == 1)
+        {
+            dim_num0 --;
+        }
+        else
+        {
+            input_dims[idx++] = i;
+        }
+    }
+
+    for (i = 0, idx = 0; i < self->nn_param.permute.dim_num; i++)
+    {
+        uint32_t d = self->nn_param.permute.perm[i];
+
+        if (inputs[0]->attr.size[d] == 1)
+        {
+            dim_num1 --;
+        }
+        else
+        {
+            perm_dims[idx++] = d;
+        }
+    }
+
+    if (dim_num0 != dim_num1)
+        return FALSE;
+
+    for (i = 0; i < dim_num0; i++)
+    {
+        if (input_dims[i] != perm_dims[i])
+            return FALSE;
+    }
+
+    return TRUE;
+} /* _is_same_memory_shape */
+
+static vsi_bool _is_same_quant
+    (
+    vsi_nn_node_t   * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs
+    )
+{
+    vsi_nn_dtype_t *dtype,*_dtype;
+
+    dtype = &inputs[0]->attr.dtype;
+    _dtype = &outputs[0]->attr.dtype;
+
+    if(vsi_nn_DtypeCompare(dtype, _dtype) == FALSE)
+    {
+        return FALSE;
+    }
+
+    return TRUE;
+} /* _is_same_quant */
 
 static vsi_status op_compute
     (
@@ -43,20 +120,24 @@ static vsi_status op_compute
     )
 {
     vsi_status status;
-    status = VSI_FAILURE;
+    status = VSI_SUCCESS;
 
-    self->n = vxTensorPermuteNode(
-        self->graph->g,
-        inputs[0]->t,
-        outputs[0]->t,
-        self->nn_param.permute.perm,
-        self->nn_param.permute.dim_num
-        );
-
-    if( NULL != self->n )
+    if (self->nn_param.permute.local.initialized == FALSE)
     {
-        status = VSI_SUCCESS;
+        self->n = vxTensorPermuteNode(
+            self->graph->g,
+            inputs[0]->t,
+            outputs[0]->t,
+            self->nn_param.permute.perm,
+            self->nn_param.permute.dim_num
+            );
+
+        if( NULL != self->n )
+        {
+            status = VSI_SUCCESS;
+        }
     }
+
     return status;
 } /* op_compute() */
 
@@ -110,7 +191,68 @@ static vsi_bool op_setup
     return ret;
 } /* op_setup() */
 
-#ifdef __cpluplus
+static vsi_status op_optimize
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs,
+    vsi_nn_opt_direction_e direction
+    )
+{
+    vsi_status     status;
+    uint32_t shape[VSI_NN_MAX_DIM_NUM];
+    uint32_t i = 0;
+
+    status = VSI_SUCCESS;
+
+    if (_is_same_memory_shape(self, inputs, outputs) == FALSE ||
+        _is_same_quant(self, inputs, outputs) == FALSE ||
+        (inputs[0]->t != NULL && outputs[0]->t != NULL))
+    {
+        return status;
+    }
+
+    VSILOGD("Optimize %s, uid %u", vsi_nn_OpGetName(self->op), self->uid);
+
+    for (i = 0; i < self->nn_param.permute.dim_num; i++)
+    {
+        shape[i] = inputs[0]->attr.size[self->nn_param.permute.perm[i]];
+    }
+
+    if( direction == VSI_NN_OPTIMIZE_BACKWARD )
+    {
+        if(NULL == inputs[0]->t && NULL != outputs[0]->t)
+        {
+            inputs[0]->t = vxReshapeTensor( outputs[0]->t,
+                (int32_t *)inputs[0]->attr.size, inputs[0]->attr.dim_num );
+            if( inputs[0]->t == NULL )
+            {
+                status = VSI_FAILURE;
+            }
+            self->nn_param.permute.local.initialized = TRUE;
+        }
+    }
+    else
+    {
+        if(NULL == outputs[0]->t)
+        {
+            vsi_bool ret;
+            ret = vsi_nn_ReshapeTensor( self->graph, inputs[0], outputs[0],
+                shape, self->nn_param.permute.dim_num );
+            if( ret == FALSE )
+            {
+                status = VSI_FAILURE;
+            }
+            self->nn_param.permute.local.initialized = TRUE;
+        }
+    }
+
+    //vsi_nn_ReshapeTensor(self->graph, inputs[0], outputs[0], shape, self->nn_param.permute.dim_num);
+
+    return status;
+} /* op_optimize() */
+
+#ifdef __cplusplus
 extern "C" {
 #endif
 /* Registrar */
@@ -121,11 +263,11 @@ DEF_OP_REG
     /* deinit     */ vsi_nn_op_common_deinit,
     /* check      */ op_check,
     /* setup      */ op_setup,
-    /* optimize   */ NULL,
+    /* optimize   */ op_optimize,
     /* input_num  */ 1,
     /* output_num */ 1
     );
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif
 

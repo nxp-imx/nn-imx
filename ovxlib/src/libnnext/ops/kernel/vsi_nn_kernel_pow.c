@@ -69,7 +69,7 @@ void myPowFunc
         {
             data0 = vsi_nn_Fp16toFp32(tmpIn[k]);
             data1 = vsi_nn_Fp16toFp32(tmpIn1[k]);
-            data2 = pow(data0, data1);
+            data2 = (float)pow(data0, data1);
             tmpOut[k] = vsi_nn_Fp32toFp16(data2);
         }
     }
@@ -84,7 +84,7 @@ void myPowFunc
         {
             data0 = tmpIn[k];
             data1 = tmpIn1[k];
-            data2 = pow(data0, data1);
+            data2 = (float)pow(data0, data1);
             tmpOut[k] = vsi_nn_Fp32ToDFP(data2, 0, VSI_NN_TYPE_INT16);
         }
     }
@@ -99,7 +99,7 @@ void myPowFunc
         {
             data0 = tmpIn[k];
             data1 = tmpIn1[k];
-            data2 = pow(data0, data1);
+            data2 = (float)pow(data0, data1);
             tmpOut[k] = vsi_nn_Fp32ToDFP(data2, 0, VSI_NN_TYPE_INT8);
         }
     }
@@ -114,7 +114,7 @@ void myPowFunc
         {
             data0 = tmpIn[k];
             data1 = tmpIn1[k];
-            data2 = pow(data0, data1);
+            data2 = (float)pow(data0, data1);
             tmpOut[k] = vsi_nn_Fp32ToAffine(data2, 1, 0, VSI_NN_TYPE_UINT8);
         }
     }
@@ -468,7 +468,7 @@ static vx_param_description_t vxPowKernelParam[] =
     {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED}
 };
-#ifdef __cpluplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 vx_kernel_description_t vxPowKernelInfo_fp16_fp16 =
@@ -550,6 +550,6 @@ vx_kernel_description_t * vx_kernel_POW_list[] =
     &vxPowKernelInfo_uint8_uint8,
     NULL
 };
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif

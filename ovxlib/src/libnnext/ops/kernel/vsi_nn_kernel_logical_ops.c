@@ -58,7 +58,7 @@ void myLogicalOpsFunc
     uint32_t k;
     uint32_t iter = batch * channel * height * width;
 
-    if(type == VSI_NN_TYPE_INT16)
+    if(type == VSI_NN_TYPE_INT16 || type == VSI_NN_TYPE_FLOAT16)
     {
         int16_t* tmpIn = (int16_t*)imgIn;
         int16_t* tmpIn1 = (int16_t*)imgIn1;
@@ -71,7 +71,7 @@ void myLogicalOpsFunc
             data1 = tmpIn1[k];
             if((data0 || data1) && lgc_op == 0)
                 data2 = 1;
-            else if((data0 == data1) && lgc_op == 1)
+            else if((data0 && data1) && lgc_op == 1)
                 data2 = 1;
             else if((data0 ^ data1) && lgc_op == 2)
                 data2 = 1;
@@ -92,7 +92,7 @@ void myLogicalOpsFunc
             data1 = tmpIn1[k];
             if((data0 || data1) && lgc_op == 0)
                 data2 = 1;
-            else if((data0 == data1) && lgc_op == 1)
+            else if((data0 && data1) && lgc_op == 1)
                 data2 = 1;
             else if((data0 ^ data1) && lgc_op == 2)
                 data2 = 1;
@@ -113,7 +113,7 @@ void myLogicalOpsFunc
             data1 = tmpIn1[k];
             if((data0 || data1) && lgc_op == 0)
                 data2 = 1;
-            else if((data0 == data1) && lgc_op == 1)
+            else if((data0 && data1) && lgc_op == 1)
                 data2 = 1;
             else if((data0 ^ data1) && lgc_op == 2)
                 data2 = 1;
@@ -374,6 +374,20 @@ vx_status VX_CALLBACK vxLogical_opsInitializer
     shaderParam.globalWorkSize[2]   = gcmALIGN((zAx + shaderParam.globalWorkScale[2] - 1)
         / shaderParam.globalWorkScale[2], shaderParam.localWorkSize[2]);
 
+    if(inputDataFormat == VSI_NN_TYPE_FLOAT16)
+    {
+        vx_uint32 uniMulShortMinus1toFp16_2x8[16] = {
+            0x22222222, // TCfg
+            0x00000000, // ASelt
+            0x03020100, 0x07060504, // ABin
+            0x22222222, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000100, // AccumType, ConstantType, and PostShift
+            0x00003c00, 0x00003c00, 0x00003c00, 0x00003c00, 0x00003c00, 0x00003c00, 0x00003c00, 0x00003c00 // Constant
+        };
+        status |= vxSetNodeUniform(nodObj, "uniMulShortMinus1toFp16_2x8", 1, uniMulShortMinus1toFp16_2x8);
+    }
+
     status |= vxSetNodeAttribute(nodObj, VX_NODE_ATTRIBUTE_KERNEL_EXECUTION_PARAMETERS,
         &shaderParam, sizeof(vx_kernel_execution_parameters_t));
 
@@ -385,7 +399,7 @@ vx_status VX_CALLBACK vxLogical_opsInitializer
 }
 
 
-#ifdef __cpluplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 vx_kernel_description_t vxLogical_ops_CPU =
@@ -444,14 +458,89 @@ vx_kernel_description_t vxLogical_or_uint8 =
     vsi_nn_KernelDeinitializer
 };
 
+vx_kernel_description_t vxLogical_or_fp16 =
+{
+    _VX_KERNEL_ID,
+    VX_KERNEL_NAME_LOGICAL_OR_FP16,
+    NULL,
+    vxLogical_opsKernelParam,
+    _cnt_of_array( vxLogical_opsKernelParam ),
+    vsi_nn_KernelValidator,
+    NULL,
+    NULL,
+    vxLogical_opsInitializer,
+    vsi_nn_KernelDeinitializer
+};
+
+vx_kernel_description_t vxLogical_and_int8 =
+{
+    _VX_KERNEL_ID,
+    VX_KERNEL_NAME_LOGICAL_AND_INT8,
+    NULL,
+    vxLogical_opsKernelParam,
+    _cnt_of_array( vxLogical_opsKernelParam ),
+    vsi_nn_KernelValidator,
+    NULL,
+    NULL,
+    vxLogical_opsInitializer,
+    vsi_nn_KernelDeinitializer
+};
+
+vx_kernel_description_t vxLogical_and_int16 =
+{
+    _VX_KERNEL_ID,
+    VX_KERNEL_NAME_LOGICAL_AND_INT16,
+    NULL,
+    vxLogical_opsKernelParam,
+    _cnt_of_array( vxLogical_opsKernelParam ),
+    vsi_nn_KernelValidator,
+    NULL,
+    NULL,
+    vxLogical_opsInitializer,
+    vsi_nn_KernelDeinitializer
+};
+
+vx_kernel_description_t vxLogical_and_uint8 =
+{
+    _VX_KERNEL_ID,
+    VX_KERNEL_NAME_LOGICAL_AND_UINT8,
+    NULL,
+    vxLogical_opsKernelParam,
+    _cnt_of_array( vxLogical_opsKernelParam ),
+    vsi_nn_KernelValidator,
+    NULL,
+    NULL,
+    vxLogical_opsInitializer,
+    vsi_nn_KernelDeinitializer
+};
+
+vx_kernel_description_t vxLogical_and_fp16 =
+{
+    _VX_KERNEL_ID,
+    VX_KERNEL_NAME_LOGICAL_AND_FP16,
+    NULL,
+    vxLogical_opsKernelParam,
+    _cnt_of_array( vxLogical_opsKernelParam ),
+    vsi_nn_KernelValidator,
+    NULL,
+    NULL,
+    vxLogical_opsInitializer,
+    vsi_nn_KernelDeinitializer
+};
+
 vx_kernel_description_t * vx_kernel_LOGICAL_OPS_list[] =
 {
     &vxLogical_ops_CPU,
     &vxLogical_or_int8,
     &vxLogical_or_int16,
     &vxLogical_or_uint8,
+    &vxLogical_or_fp16,
+    &vxLogical_and_int8,
+    &vxLogical_and_int16,
+    &vxLogical_and_uint8,
+    &vxLogical_and_fp16,
     NULL
 };
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif

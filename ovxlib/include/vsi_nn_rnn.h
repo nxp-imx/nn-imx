@@ -27,6 +27,10 @@
 #include "vsi_nn_types.h"
 #include "vsi_nn_tensor.h"
 
+#if defined(__cplusplus)
+extern "C"{
+#endif
+
 /**********************************************************
 * MACROS
 **********************************************************/
@@ -89,14 +93,18 @@ vsi_status vsi_nn_rnn_InitWksp
     void* user_data
     );
 
-vsi_status vsi_nn_rnn_ResetBuffers
+OVXLIB_API vsi_status vsi_nn_rnn_ResetBuffers
     (
     vsi_nn_graph_t* graph
     );
 
-vsi_status vsi_nn_rnn_RunGraph
+OVXLIB_API vsi_status vsi_nn_rnn_RunGraph
     (
     vsi_nn_graph_t* graph
     );
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif

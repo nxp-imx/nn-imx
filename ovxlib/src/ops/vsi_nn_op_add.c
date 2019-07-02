@@ -56,8 +56,7 @@ static vsi_bool op_check
     vsi_nn_tensor_t ** outputs
     )
 {
-    //TODO: Check tensor shapes.
-    return TRUE;
+    return vsi_nn_OpCheck( VSI_NN_OP_MULTIPLY, self, inputs, outputs );
 } /* op_check() */
 
 static vsi_bool op_setup
@@ -74,7 +73,7 @@ static vsi_bool op_setup
     return ret;
 } /* op_setup() */
 
-#ifdef __cpluplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 /* Registrar */
@@ -89,6 +88,6 @@ DEF_OP_REG
     /* input_num  */ 2,
     /* output_num */ 1
     );
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif

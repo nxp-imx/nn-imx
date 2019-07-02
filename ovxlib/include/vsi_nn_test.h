@@ -26,6 +26,10 @@
 
 #include "vsi_nn_log.h"
 
+#if defined(__cplusplus)
+extern "C"{
+#endif
+
 #define TEST_CHECK_TENSOR_ID( id, lbl )      do {\
     if( VSI_NN_TENSOR_ID_NA == id ) {\
         VSILOGE("CHECK TENSOR ID %d", __LINE__);\
@@ -47,6 +51,9 @@
     }\
 } while(0)
 
+#if defined(__cplusplus)
+}
+#endif
 
 #endif
 

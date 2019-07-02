@@ -1,0 +1,1180 @@
+/****************************************************************************
+*
+*    Copyright (c) 2019 Vivante Corporation
+*
+*    Permission is hereby granted, free of charge, to any person obtaining a
+*    copy of this software and associated documentation files (the "Software"),
+*    to deal in the Software without restriction, including without limitation
+*    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+*    and/or sell copies of the Software, and to permit persons to whom the
+*    Software is furnished to do so, subject to the following conditions:
+*
+*    The above copyright notice and this permission notice shall be included in
+*    all copies or substantial portions of the Software.
+*
+*    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+*    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+*    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+*    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+*    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+*    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+*    DEALINGS IN THE SOFTWARE.
+*
+*****************************************************************************/
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdint.h>
+#include <math.h>
+
+#include "vsi_nn_platform.h"
+
+#include "vsi_nn_prv.h"
+#include "vsi_nn_log.h"
+#include "vsi_nn_tensor_util.h"
+#include "utils/vsi_nn_util.h"
+#include "utils/vsi_nn_dtype_util.h"
+#include "utils/vsi_nn_math.h"
+#include "client/vsi_nn_vxkernel.h"
+#include "libnnext/vx_lib_nnext.h"
+
+#define _VX_KERNEL_ID           (VX_KERNEL_ENUM_LSTMUNIT_ACTIVATION)
+#define _VX_KERNEL_FUNC_KERNEL  (vxnneSWLSTMUnitActivationKernel)
+
+#define ARG_NUM           (1)
+#define TENSOR_NUM_INPUT  (11)
+#define TENSOR_NUM_OUTPUT (3)
+#define TENSOR_NUM (TENSOR_NUM_INPUT+TENSOR_NUM_OUTPUT)
+
+/* c -> cifg, l -> layer norm, p -> projection, h -> peephole, b -> hybrid bias fp32, s -> standard*/
+
+static float vsi_nn_DtypeToFloat32_Ex
+    (
+    uint8_t   * src,
+    uint32_t    index,
+    const vsi_nn_dtype_t * src_dtype
+    )
+{
+    float value = 0.0f;
+    vsi_status status;
+
+    src = src + index * vsi_nn_TypeGetBytes(src_dtype->vx_type);
+
+    status = vsi_nn_DtypeToFloat32(src, &value, src_dtype);
+    if(VSI_SUCCESS != status)
+    {
+        VSILOGE("Convert data to float32 fail!");
+        value = 0.0f;
+    }
+
+    return value;
+}
+
+static vsi_status vsi_nn_Float32ToDtype_Ext
+    (
+    float   src,
+    uint8_t   * dst,
+    uint32_t    index,
+    const vsi_nn_dtype_t * dst_dtype
+    )
+{
+    vsi_nn_dtype_t src_dtype;
+
+    dst = dst + index * vsi_nn_TypeGetBytes(dst_dtype->vx_type);
+
+    memset( &src_dtype, 0, sizeof( vsi_nn_dtype_t ) );
+    src_dtype.vx_type = VSI_NN_TYPE_FLOAT32;
+
+    return vsi_nn_DtypeConvert( (uint8_t *)&src, &src_dtype, dst, dst_dtype );
+} /* vsi_nn_Float32ToDtype_Ext */
+
+#define gcoMATH_Exp(X)        (float)(expf((X)))
+#define gcoMATH_TangentH(X)   (float)(tanhf((X)))
+static vsi_status VX_CALLBACK vxnneSWLSTMUnitActivationKernel
+    (
+    vx_node node,
+    const vx_reference* paramObj,
+    uint32_t paramNum
+    )
+{
+    vsi_status status = VX_SUCCESS;
+    vsi_nn_tensor_attr_t attr[TENSOR_NUM];
+    vx_tensor_addressing user_addr[TENSOR_NUM]  = {NULL};
+    vx_uint8    *buffer_ptr[TENSOR_NUM]            = {NULL};
+    vx_tensor   tensor[TENSOR_NUM];
+    uint32_t    stride_size[TENSOR_NUM][VSI_NN_MAX_DIM_NUM];
+
+    vx_uint32    i                              = 0;
+    vx_uint32    b                              = 0;
+    vx_uint32    n_batch                        = 0;
+    vx_uint32    n_cell                         = 0;
+    vx_tensor    lstmunit_param                 = (vx_tensor)paramObj[paramNum - 1];
+    vx_context   context                        = vxGetContext((vx_reference)node);
+    vsi_nn_tensor_attr_t lstmunit_param_attr;
+    vsi_nn_lstmunit_activation_param *p = NULL;
+
+    status = vsi_nn_vxGetTensorAttr(lstmunit_param, &lstmunit_param_attr);
+    p = (vsi_nn_lstmunit_activation_param*)vsi_nn_vxCopyTensorToData(context, lstmunit_param, &lstmunit_param_attr);
+
+
+    for( i = 0; i < TENSOR_NUM_INPUT; i ++ )
+    {
+        tensor[i] = (vx_tensor)paramObj[i];
+        buffer_ptr[i] = vsi_nn_ConvertRawTensorToData2(context, tensor[i],
+            &(attr[i]), stride_size[i], &(user_addr[i]), VX_READ_ONLY);
+    }
+
+    for( i = TENSOR_NUM_INPUT; i < TENSOR_NUM; i ++ )
+    {
+        tensor[i] = (vx_tensor)paramObj[i];
+        buffer_ptr[i] = vsi_nn_ConvertRawTensorToData2(context, tensor[i],
+            &(attr[i]), stride_size[i], &(user_addr[i]), VX_WRITE_ONLY);
+    }
+
+    n_cell  = attr[ACT_CSTATE_IN].size[0];
+    n_batch = attr[ACT_CSTATE_IN].size[1];
+
+    for (b = 0; b < n_batch; b ++)
+    {
+        for (i = 0; i < n_cell; i++)
+        {
+            uint32_t index = i + n_cell * b;
+            uint32_t idx   = 0;
+            float    data_i_t = 0;
+            float    data_f_t = 0;
+            float    data_g_t = 0;
+            float    data_o_t = 0;
+            float    data_c_t = 0;
+            float    data_h_t = 0;
+
+            data_i_t = p->is_cifg ? 0 : vsi_nn_DtypeToFloat32_Ex(buffer_ptr[ACT_INPUT_FC_I],
+                index, &attr[ACT_INPUT_FC_I].dtype);
+
+            data_f_t = vsi_nn_DtypeToFloat32_Ex(buffer_ptr[ACT_INPUT_FC_F],
+                index, &attr[ACT_INPUT_FC_F].dtype);
+
+            data_g_t = vsi_nn_DtypeToFloat32_Ex(buffer_ptr[ACT_INPUT_FC_C],
+                index, &attr[ACT_INPUT_FC_C].dtype);
+
+            data_o_t = vsi_nn_DtypeToFloat32_Ex(buffer_ptr[ACT_INPUT_FC_O],
+                index, &attr[ACT_INPUT_FC_O].dtype);
+
+            data_c_t = vsi_nn_DtypeToFloat32_Ex(buffer_ptr[ACT_CSTATE_IN],
+                index, &attr[ACT_CSTATE_IN].dtype);
+
+            if (!p->is_layer_norm)
+            {
+                data_i_t += p->is_cifg ? 0 : vsi_nn_DtypeToFloat32_Ex(buffer_ptr[ACT_HSTATE_FC_I],
+                    index, &attr[ACT_HSTATE_FC_I].dtype);
+
+                data_f_t += vsi_nn_DtypeToFloat32_Ex(buffer_ptr[ACT_HSTATE_FC_F],
+                    index, &attr[ACT_HSTATE_FC_F].dtype);
+
+                data_g_t += vsi_nn_DtypeToFloat32_Ex(buffer_ptr[ACT_HSTATE_FC_C],
+                    index, &attr[ACT_HSTATE_FC_C].dtype);
+
+                data_o_t += vsi_nn_DtypeToFloat32_Ex(buffer_ptr[ACT_HSTATE_FC_O],
+                    index, &attr[ACT_HSTATE_FC_O].dtype);
+            }
+
+            if (p->is_cifg)
+            {
+                idx   = (i >> 2) * 12 + i % 4;
+            }
+            else
+            {
+                idx   = (i >> 2) * 16 + i % 4;
+
+                if (p->is_layer_norm)
+                {
+                    data_i_t *= vsi_nn_DtypeToFloat32_Ex(buffer_ptr[ACT_LN_W],
+                        idx, &attr[ACT_LN_W].dtype);
+                    data_i_t += vsi_nn_DtypeToFloat32_Ex(buffer_ptr[ACT_DATA_B],
+                        idx, &attr[ACT_DATA_B].dtype);
+
+                    idx += 4;
+                }
+                else if (p->is_hybrid)
+                {
+                    data_i_t += vsi_nn_DtypeToFloat32_Ex(buffer_ptr[ACT_DATA_B],
+                        idx, &attr[ACT_DATA_B].dtype);
+
+                    idx += 4;
+                }
+            }
+
+            if (p->is_layer_norm)
+            {
+                data_f_t *= vsi_nn_DtypeToFloat32_Ex(buffer_ptr[ACT_LN_W],
+                    idx, &attr[ACT_LN_W].dtype);
+                data_f_t += vsi_nn_DtypeToFloat32_Ex(buffer_ptr[ACT_DATA_B],
+                    idx, &attr[ACT_DATA_B].dtype);
+
+                idx += 4;
+
+                data_g_t *= vsi_nn_DtypeToFloat32_Ex(buffer_ptr[ACT_LN_W],
+                    idx, &attr[ACT_LN_W].dtype);
+                data_g_t += vsi_nn_DtypeToFloat32_Ex(buffer_ptr[ACT_DATA_B],
+                    idx, &attr[ACT_DATA_B].dtype);
+
+                idx += 4;
+
+                data_o_t *= vsi_nn_DtypeToFloat32_Ex(buffer_ptr[ACT_LN_W],
+                    idx, &attr[ACT_LN_W].dtype);
+                data_o_t += vsi_nn_DtypeToFloat32_Ex(buffer_ptr[ACT_DATA_B],
+                    idx, &attr[ACT_DATA_B].dtype);
+            }
+            else if (p->is_hybrid)
+            {
+                data_f_t += vsi_nn_DtypeToFloat32_Ex(buffer_ptr[ACT_DATA_B],
+                    idx, &attr[ACT_DATA_B].dtype);
+
+                idx += 4;
+
+                data_g_t += vsi_nn_DtypeToFloat32_Ex(buffer_ptr[ACT_DATA_B],
+                    idx, &attr[ACT_DATA_B].dtype);
+
+                idx += 4;
+
+                data_o_t += vsi_nn_DtypeToFloat32_Ex(buffer_ptr[ACT_DATA_B],
+                    idx, &attr[ACT_DATA_B].dtype);
+            }
+
+            data_f_t += p->forget_bias;
+
+            data_f_t = 1.0f / (1 + gcoMATH_Exp(data_f_t * (-1)));
+            if (p->is_cifg)
+                data_i_t = 1 - data_f_t;
+            else
+                data_i_t = 1.0f / (1 + gcoMATH_Exp(data_i_t * (-1)));
+            data_g_t = gcoMATH_TangentH(data_g_t);
+            data_o_t = 1.0f / (1 + gcoMATH_Exp(data_o_t * (-1)));
+            data_c_t = data_f_t * data_c_t + data_i_t * data_g_t;
+            data_h_t = data_o_t * gcoMATH_TangentH(data_c_t);
+
+            vsi_nn_Float32ToDtype_Ext(data_c_t, buffer_ptr[ACT_CSTATE_OUT + ACT_INPUTS_COUNT],
+                index, &attr[ACT_CSTATE_OUT + ACT_INPUTS_COUNT].dtype);
+            vsi_nn_Float32ToDtype_Ext(data_h_t, buffer_ptr[ACT_OUTPUT + ACT_INPUTS_COUNT],
+                index, &attr[ACT_OUTPUT + ACT_INPUTS_COUNT].dtype);
+
+            if (!p->is_projection)
+            {
+                vsi_nn_Float32ToDtype_Ext(data_h_t, buffer_ptr[ACT_HSTATE_OUT + ACT_INPUTS_COUNT],
+                    index, &attr[ACT_HSTATE_OUT + ACT_INPUTS_COUNT].dtype);
+            }
+        }
+    }
+
+    //save data
+    for( i = TENSOR_NUM_INPUT; i < TENSOR_NUM; i ++ )
+    {
+        if (buffer_ptr[i])
+        {
+            status = vxCopyTensorPatch(
+                tensor[i],
+                NULL,
+                user_addr[i],
+                buffer_ptr[i],
+                VX_WRITE_ONLY,
+                0
+                );
+        }
+
+        if (user_addr[i]) vxReleaseTensorAddressing(&(user_addr[i]));
+    }
+
+    for( i = 0; i < TENSOR_NUM; i ++ )
+    {
+        if (buffer_ptr[i]) free(buffer_ptr[i]);
+
+        if (user_addr[i]) vxReleaseTensorAddressing(&(user_addr[i]));
+    }
+
+    if (p) free(p);
+
+    return status;
+}
+
+static vx_param_description_t sw_params[] =
+    {
+    { VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_OPTIONAL },  /*0  input_fc_i */
+    { VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED },  /*1  input_fc_f */
+    { VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED },  /*2  input_fc_c */
+    { VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED },  /*3  input_fc_o */
+    { VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED },  /*4  cs_in */
+    { VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_OPTIONAL },  /*5  hstate_fc_i */
+    { VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_OPTIONAL },  /*6  hstate_fc_f */
+    { VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_OPTIONAL },  /*7  hstate_fc_c */
+    { VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_OPTIONAL },  /*8  hstate_fc_o */
+    { VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_OPTIONAL },  /*9  biases*/
+    { VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_OPTIONAL },  /*10 ln_w*/
+
+    { VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED }, /*11 output*/
+    { VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED }, /*12 cs_out*/
+    { VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_OPTIONAL }, /*13 hs_out*/
+    { VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_OPTIONAL },  /*14 param*/
+    };
+
+typedef enum _lstmunit_cifg_ln_proj_e
+{
+    CLP_INPUT_FC_F,
+    CLP_INPUT_FC_C,
+    CLP_INPUT_FC_O,
+    CLP_CSTATE_IN,
+    CLP_BIASES,
+    CLP_LN_W,
+    CLP_OUTPUT,
+    CLP_CSTATE_OUT,
+    CLP_PARAM
+} lstmunit_cifg_ln_proj_e;
+
+static vx_param_description_t vxLSTMUNIT_CLP_Param[] =
+{
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+};
+
+typedef enum _lstmunit_cifg_ln_e
+{
+    CL_INPUT_FC_F,
+    CL_INPUT_FC_C,
+    CL_INPUT_FC_O,
+    CL_CSTATE_IN,
+    CL_BIASES,
+    CL_LN_W,
+    CL_OUTPUT,
+    CL_CSTATE_OUT,
+    CL_HSTATE_OUT,
+    CL_LSTMUNIT_PARAM,
+} lstmunit_cifg_ln_e;
+
+static vx_param_description_t vxLSTMUNIT_CL_Param[] =
+{
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+};
+
+typedef enum _lstmunit_ln_proj_e
+{
+    LP_INPUT_FC_I,
+    LP_INPUT_FC_F,
+    LP_INPUT_FC_C,
+    LP_INPUT_FC_O,
+    LP_CSTATE_IN,
+    LP_BIASES,
+    LP_LN_W,
+    LP_OUTPUT,
+    LP_CSTATE_OUT,
+    LP_PARAM
+} lstmunit_ln_proj_e;
+
+static vx_param_description_t vxLSTMUNIT_LP_Param[] =
+{
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+};
+
+typedef enum _lstmunit_ln_e
+{
+    L_INPUT_FC_I,
+    L_INPUT_FC_F,
+    L_INPUT_FC_C,
+    L_INPUT_FC_O,
+    L_CSTATE_IN,
+    L_BIASES,
+    L_LN_W,
+    L_OUTPUT,
+    L_CSTATE_OUT,
+    L_HSTATE_OUT,
+    L_LSTMUNIT_PARAM,
+} lstmunit_ln_e;
+
+static vx_param_description_t vxLSTMUNIT_L_Param[] =
+{
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+};
+
+typedef enum _lstmunit_hybrid_proj_e
+{
+    BP_INPUT_FC_I,
+    BP_INPUT_FC_F,
+    BP_INPUT_FC_C,
+    BP_INPUT_FC_O,
+    BP_CSTATE_IN,
+    BP_HSTATE_FC_I,
+    BP_HSTATE_FC_F,
+    BP_HSTATE_FC_C,
+    BP_HSTATE_FC_O,
+    BP_BIASES,
+    BP_OUTPUT,
+    BP_CSTATE_OUT,
+    BP_PARAM
+} lstmunit_hybrid_proj_e;
+
+static vx_param_description_t vxLSTMUNIT_BP_Param[] =
+{
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+};
+
+typedef enum _lstmunit_hybrid_e
+{
+    B_INPUT_FC_I,
+    B_INPUT_FC_F,
+    B_INPUT_FC_C,
+    B_INPUT_FC_O,
+    B_CSTATE_IN,
+    B_HSTATE_FC_I,
+    B_HSTATE_FC_F,
+    B_HSTATE_FC_C,
+    B_HSTATE_FC_O,
+    B_BIASES,
+    B_OUTPUT,
+    B_CSTATE_OUT,
+    B_HSTATE_OUT,
+    B_LSTMUNIT_PARAM,
+} lstmunit_hybrid_e;
+
+static vx_param_description_t vxLSTMUNIT_B_Param[] =
+{
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+};
+
+typedef enum _lstmunit_cifg_hybrid_proj_e
+{
+    CBP_INPUT_FC_F,
+    CBP_INPUT_FC_C,
+    CBP_INPUT_FC_O,
+    CBP_CSTATE_IN,
+    CBP_HSTATE_FC_F,
+    CBP_HSTATE_FC_C,
+    CBP_HSTATE_FC_O,
+    CBP_BIASES,
+    CBP_OUTPUT,
+    CBP_CSTATE_OUT,
+    CBP_PARAM
+} lstmunit_cifg_hybrid_proj_e;
+
+static vx_param_description_t vxLSTMUNIT_CBP_Param[] =
+{
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+};
+
+typedef enum _lstmunit_cifg_hybrid_e
+{
+    CB_INPUT_FC_F,
+    CB_INPUT_FC_C,
+    CB_INPUT_FC_O,
+    CB_CSTATE_IN,
+    CB_HSTATE_FC_F,
+    CB_HSTATE_FC_C,
+    CB_HSTATE_FC_O,
+    CB_BIASES,
+    CB_OUTPUT,
+    CB_CSTATE_OUT,
+    CB_HSTATE_OUT,
+    CB_LSTMUNIT_PARAM,
+} lstmunit_cifg_hybrid_e;
+
+static vx_param_description_t vxLSTMUNIT_CB_Param[] =
+{
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+};
+
+typedef enum _lstmunit_standard_proj_e
+{
+    SP_INPUT_FC_I,
+    SP_INPUT_FC_F,
+    SP_INPUT_FC_C,
+    SP_INPUT_FC_O,
+    SP_CSTATE_IN,
+    SP_HSTATE_FC_I,
+    SP_HSTATE_FC_F,
+    SP_HSTATE_FC_C,
+    SP_HSTATE_FC_O,
+    SP_OUTPUT,
+    SP_CSTATE_OUT,
+    SP_PARAM
+} lstmunit_standard_proj_e;
+
+static vx_param_description_t vxLSTMUNIT_SP_Param[] =
+{
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+};
+
+typedef enum _lstmunit_standard_e
+{
+    S_INPUT_FC_I,
+    S_INPUT_FC_F,
+    S_INPUT_FC_C,
+    S_INPUT_FC_O,
+    S_CSTATE_IN,
+    S_HSTATE_FC_I,
+    S_HSTATE_FC_F,
+    S_HSTATE_FC_C,
+    S_HSTATE_FC_O,
+    S_OUTPUT,
+    S_CSTATE_OUT,
+    S_HSTATE_OUT,
+    S_LSTMUNIT_PARAM,
+} lstmunit_standard_e;
+
+static vx_param_description_t vxLSTMUNIT_S_Param[] =
+{
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+};
+
+typedef enum _lstmunit_cifg_standard_proj_e
+{
+    CSP_INPUT_FC_F,
+    CSP_INPUT_FC_C,
+    CSP_INPUT_FC_O,
+    CSP_CSTATE_IN,
+    CSP_HSTATE_FC_F,
+    CSP_HSTATE_FC_C,
+    CSP_HSTATE_FC_O,
+    CSP_OUTPUT,
+    CSP_CSTATE_OUT,
+    CSP_PARAM
+} lstmunit_cifg_standard_proj_e;
+
+static vx_param_description_t vxLSTMUNIT_CSP_Param[] =
+{
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+};
+
+typedef enum _lstmunit_cifg_standard_e
+{
+    CS_INPUT_FC_F,
+    CS_INPUT_FC_C,
+    CS_INPUT_FC_O,
+    CS_CSTATE_IN,
+    CS_HSTATE_FC_F,
+    CS_HSTATE_FC_C,
+    CS_HSTATE_FC_O,
+    CS_OUTPUT,
+    CS_CSTATE_OUT,
+    CS_HSTATE_OUT,
+    CS_LSTMUNIT_PARAM,
+} lstmunit_cifg_standard_e;
+
+static vx_param_description_t vxLSTMUNIT_CS_Param[] =
+{
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+};
+
+vx_status VX_CALLBACK vxLSTMUnit_Activation_Initializer
+    (
+    vx_node node,
+    const vx_reference *paramObj,
+    vx_uint32 paraNum
+    )
+{
+#define gcmALIGN(n, align) ((n) + ((align) - 1)) & ~((align) - 1)
+    vx_kernel_execution_parameters_t shaderParam = {
+        2,          // workdim
+        {0, 0, 0},  // globalWorkOffset: control the start location be processed in the image
+        {0, 0, 0},  // globalWorkScale: how many pixels could be processed by a single thread
+        {0, 0, 0},  // localWorkSize: local group size in thread
+        {0, 0, 0}}; // globalWorkSize: image size in thread
+
+    vx_status    status                 = VX_SUCCESS;
+    vx_tensor    lstmunit_param         = (vx_tensor)paramObj[paraNum - 1];
+    vx_tensor    cell_state_in          = NULL;
+    vx_tensor    output                 = NULL;
+    vx_uint32    output_size[4]         = {0, 0, 0, 0};
+    vx_float32   cell_clip              = 0;
+    vx_float32   outputScale            = 1.0f;
+    vx_float32   outputZP               = 0;
+    vx_int32     dstZP                  = 0;
+    vx_float32   dstScale               = 0;
+    vx_enum      cellFormat             = VX_TYPE_FLOAT16;
+    vx_enum      dstFormat              = VX_TYPE_FLOAT16;
+    vx_enum      dstQuantType           = 0;
+    vx_int8      dstFixPointPos         = 0;
+    vx_float32   logE                   = (vx_float32)(log10(exp(1.0f)) / log10(2.0f));
+    vx_float32   twoLogE                = 2 * logE;
+    vx_uint32    uint_min               = 0xFBFFFFFF;
+    vx_uint32    uint_max               = 0x7BFFFFFF;
+    vx_float32   float_min              = *(vx_float32 *)&uint_min;
+    vx_float32   float_max              = *(vx_float32 *)&uint_max;
+    vx_float32   clip_Min_F[4]          = {0};
+    vx_float32   clip_Max_F[4]          = {0};
+    vx_uint32    i                      = 0;
+    vx_int32     input0Array_ZP[4]      = {0};
+    vx_int32     input1Array_ZP[4]      = {0};
+    vx_float32   input0Array_Scale[4]   = {1.0f};
+    vx_float32   input1Array_Scale[4]   = {1.0f};
+    vx_context   context                = vxGetContext((vx_reference)node);
+    vsi_nn_tensor_attr_t input_attr[9];
+    vsi_nn_tensor_attr_t lstmunit_param_attr;
+    vsi_nn_lstmunit_activation_param *p = NULL;
+
+    status = vsi_nn_vxGetTensorAttr(lstmunit_param, &lstmunit_param_attr);
+    p = (vsi_nn_lstmunit_activation_param*)vsi_nn_vxCopyTensorToData(context, lstmunit_param, &lstmunit_param_attr);
+
+    cell_clip = p->cell_clip;
+
+    if (p->is_cifg)
+    {
+        cell_state_in = (vx_tensor)paramObj[CL_CSTATE_IN];
+        if (p->is_layer_norm)
+            output = (vx_tensor)paramObj[CL_OUTPUT];
+        else if (p->is_hybrid)
+            output = (vx_tensor)paramObj[CB_OUTPUT];
+        else
+            output = (vx_tensor)paramObj[CS_OUTPUT];
+    }
+    else
+    {
+        cell_state_in = (vx_tensor)paramObj[L_CSTATE_IN];
+        if (p->is_layer_norm)
+            output = (vx_tensor)paramObj[L_OUTPUT];
+        else if (p->is_hybrid)
+            output = (vx_tensor)paramObj[B_OUTPUT];
+        else
+            output = (vx_tensor)paramObj[S_OUTPUT];
+    }
+
+    for (i = 0; i < 9; i++)
+    {
+        vsi_nn_vxGetTensorAttr((vx_tensor)paramObj[i], &input_attr[i]);
+    }
+
+    status  = vxQueryTensor(cell_state_in, VX_TENSOR_DATA_TYPE, &cellFormat, sizeof(cellFormat));
+    status |= vxQueryTensor(output, VX_TENSOR_DATA_TYPE, &dstFormat, sizeof(dstFormat));
+    status |= vxQueryTensor(output, VX_TENSOR_DIMS, output_size, sizeof(output_size));
+    status |= vxQueryTensor(output, VX_TENSOR_QUANT_FORMAT, &dstQuantType, sizeof(dstQuantType));
+    status |= vxQueryTensor(output, VX_TENSOR_FIXED_POINT_POSITION, &dstFixPointPos, sizeof(dstFixPointPos));
+    status |= vxQueryTensor(output, VX_TENSOR_ZERO_POINT, &dstZP, sizeof(dstZP));
+    status |= vxQueryTensor(output, VX_TENSOR_SCALE, &dstScale, sizeof(dstScale));
+
+    outputZP  = (vx_float32)dstZP;
+
+    shaderParam.globalWorkScale[0]  = 4;
+    shaderParam.globalWorkScale[1]  = 1;
+    shaderParam.globalWorkSize[0]   = gcmALIGN((output_size[0] + shaderParam.globalWorkScale[0] - 1)
+        / shaderParam.globalWorkScale[0], 4);
+    shaderParam.globalWorkSize[1]   = (output_size[1] + shaderParam.globalWorkScale[1] - 1)
+        / shaderParam.globalWorkScale[1];
+
+
+    if (cell_clip > 0)
+    {
+        float_max = cell_clip;
+        float_min = -cell_clip;
+    }
+
+    for (i = 0; i < 4; i++)
+    {
+        clip_Min_F[i] = float_min;
+        clip_Max_F[i] = float_max;
+    }
+
+    {
+        vx_uint32 uniFp16toFp32_4x4[16] = {
+            0x01010101, // TCfg
+            0x00000000, // ASelt
+            0x00010000, 0x00030002, // ABin
+            0x02020202, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000100, // AccumType, ConstantType, and PostShift
+            0x00003c00, 0x00000000, 0x00003c00, 0x00000000,
+            0x00003c00, 0x00000000, 0x00003c00, 0x00000000 // Constant
+        };
+        vx_uint32 uniExtractHalf4_4x4[16] = {
+            0x01010101, // TCfg
+            0x00000000, // ASelt
+            0x00020000, 0x00060004, // ABin
+            0x02020202, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000100, // AccumType, ConstantType, and PostShift
+            0x00003c00, 0x00000000, 0x00003c00, 0x00000000,
+            0x00003c00, 0x00000000, 0x00003c00, 0x00000000 // Constant
+        };
+        vx_uint32 uniExtractInteger_2x8[16] = {
+            0x33333333, // TCfg
+            0x11110000, // ASelt
+            0x03020100, 0x03020100, // ABin
+            0x00000000, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00002400, // AccumType, ConstantType, and PostShift
+            0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
+        };
+        vx_uint32 uniExtractHalf8_2x8[16] = {
+            0x11111111, // TCfg
+            0x11110000, // ASelt
+            0x06040200, 0x06040200, // ABin
+            0x22222222, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000100, // AccumType, ConstantType, and PostShift
+            0x00003c00, 0x00003c00, 0x00003c00, 0x00003c00,
+            0x00003c00, 0x00003c00, 0x00003c00, 0x00003c00 // Constant
+        };
+        vx_uint32 uniFp16AddFp16toFp32_4x4[16] = {
+            0x05050505, // TCfg
+            0x04040404, // ASelt
+            0x00110000, 0x00330022, // ABin
+            0x0a0a0a0a, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000100, // AccumType, ConstantType, and PostShift
+            0x3c003c00, 0x00000000, 0x3c003c00, 0x00000000,
+            0x3c003c00, 0x00000000, 0x3c003c00, 0x00000000 // Constant
+        };
+        vx_uint32 uniU8AddS32_4x4[16] = {
+            0x0d0d0d0d, // TCfg
+            0x04040404, // ASelt
+            0x00010000, 0x00030002, // ABin
+            0x02020202, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00002600, // AccumType, ConstantType, and PostShift
+            0x00000001, 0x00000000, 0x00000001, 0x00000000,
+            0x00000001, 0x00000000, 0x00000001, 0x00000000 // Constant
+        };
+
+        if (dstQuantType == VX_QUANT_DYNAMIC_FIXED_POINT)
+        {
+            if (dstFixPointPos >= 0)
+                outputScale *= (vx_float32)(1 << dstFixPointPos);
+            else if (dstFixPointPos < 0)
+                outputScale *= 1.0f / (vx_float32) (1 << -dstFixPointPos);
+
+            outputZP = 0;
+        }
+        else if (dstQuantType == VX_QUANT_AFFINE_SCALE)
+        {
+            outputScale = 1.0f / dstScale;
+        }
+
+        if (cellFormat == VX_TYPE_FLOAT16)
+            vxSetNodeUniform(node, "uniExtractHalf4_4x4", 1, uniExtractHalf4_4x4);
+
+        if (dstFormat == VX_TYPE_FLOAT16)
+            vxSetNodeUniform(node, "uniExtract8Data_2x8", 1, uniExtractHalf8_2x8);
+        else
+            vxSetNodeUniform(node, "uniExtract8Data_2x8", 1, uniExtractInteger_2x8);
+
+        vxSetNodeUniform(node, "uniFp16toFp32_4x4", 1, uniFp16toFp32_4x4);
+        vxSetNodeUniform(node, "logE", 1, &logE);
+        vxSetNodeUniform(node, "twoLogE", 1, &twoLogE);
+        vxSetNodeUniform(node, "outputScale", 1, &outputScale);
+        vxSetNodeUniform(node, "outputZP", 1, &outputZP);
+        vxSetNodeUniform(node, "forget_bias", 1, &p->forget_bias);
+        vxSetNodeUniform(node, "clip_Min_F", 1, clip_Min_F);
+        vxSetNodeUniform(node, "clip_Max_F", 1, clip_Max_F);
+
+        if (!p->is_layer_norm && input_attr[S_INPUT_FC_F].dtype.vx_type == VSI_NN_TYPE_FLOAT16)
+        {
+            vxSetNodeUniform(node, "uniFp16AddFp16toFp32_4x4", 1, uniFp16AddFp16toFp32_4x4);
+        }
+
+        if (input_attr[S_INPUT_FC_F].dtype.vx_type == VSI_NN_TYPE_UINT8 &&
+            input_attr[S_INPUT_FC_F].dtype.qnt_type == VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC)
+        {
+            if (p->is_cifg)
+            {
+                input0Array_ZP[1]    = 0 -  input_attr[CS_INPUT_FC_F].dtype.zero_point;
+                input0Array_ZP[2]    = 0 -  input_attr[CS_INPUT_FC_C].dtype.zero_point;
+                input0Array_ZP[3]    = 0 -  input_attr[CS_INPUT_FC_O].dtype.zero_point;
+
+                input0Array_Scale[1] = input_attr[CS_INPUT_FC_F].dtype.scale;
+                input0Array_Scale[2] = input_attr[CS_INPUT_FC_C].dtype.scale;
+                input0Array_Scale[3] = input_attr[CS_INPUT_FC_O].dtype.scale;
+
+                if (!p->is_layer_norm)
+                {
+                    input1Array_ZP[1]    = 0 -  input_attr[CS_HSTATE_FC_F].dtype.zero_point;
+                    input1Array_ZP[2]    = 0 -  input_attr[CS_HSTATE_FC_C].dtype.zero_point;
+                    input1Array_ZP[3]    = 0 -  input_attr[CS_HSTATE_FC_O].dtype.zero_point;
+
+                    input1Array_Scale[1] = input_attr[CS_HSTATE_FC_F].dtype.scale;
+                    input1Array_Scale[2] = input_attr[CS_HSTATE_FC_C].dtype.scale;
+                    input1Array_Scale[3] = input_attr[CS_HSTATE_FC_O].dtype.scale;
+                }
+            }
+            else
+            {
+                input0Array_ZP[0]    = 0 -  input_attr[S_INPUT_FC_I].dtype.zero_point;
+                input0Array_ZP[1]    = 0 -  input_attr[S_INPUT_FC_F].dtype.zero_point;
+                input0Array_ZP[2]    = 0 -  input_attr[S_INPUT_FC_C].dtype.zero_point;
+                input0Array_ZP[3]    = 0 -  input_attr[S_INPUT_FC_O].dtype.zero_point;
+
+                input0Array_Scale[0] = input_attr[S_INPUT_FC_I].dtype.scale;
+                input0Array_Scale[1] = input_attr[S_INPUT_FC_F].dtype.scale;
+                input0Array_Scale[2] = input_attr[S_INPUT_FC_C].dtype.scale;
+                input0Array_Scale[3] = input_attr[S_INPUT_FC_O].dtype.scale;
+
+                if (!p->is_layer_norm)
+                {
+                    input1Array_ZP[0]    = 0 -  input_attr[S_HSTATE_FC_I].dtype.zero_point;
+                    input1Array_ZP[1]    = 0 -  input_attr[S_HSTATE_FC_F].dtype.zero_point;
+                    input1Array_ZP[2]    = 0 -  input_attr[S_HSTATE_FC_C].dtype.zero_point;
+                    input1Array_ZP[3]    = 0 -  input_attr[S_HSTATE_FC_O].dtype.zero_point;
+
+                    input1Array_Scale[0] = input_attr[S_HSTATE_FC_I].dtype.scale;
+                    input1Array_Scale[1] = input_attr[S_HSTATE_FC_F].dtype.scale;
+                    input1Array_Scale[2] = input_attr[S_HSTATE_FC_C].dtype.scale;
+                    input1Array_Scale[3] = input_attr[S_HSTATE_FC_O].dtype.scale;
+                }
+            }
+
+            vxSetNodeUniform(node, "input0Array_ZP", 1, input0Array_ZP);
+            vxSetNodeUniform(node, "input0Array_Scale", 1, input0Array_Scale);
+            vxSetNodeUniform(node, "input1Array_ZP", 1, input1Array_ZP);
+            vxSetNodeUniform(node, "input1Array_Scale", 1, input1Array_Scale);
+            vxSetNodeUniform(node, "uniU8AddS32_4x4", 1, uniU8AddS32_4x4);
+        }
+    }
+
+    status |= vxSetNodeAttribute(node, VX_NODE_ATTRIBUTE_KERNEL_EXECUTION_PARAMETERS,
+        &shaderParam, sizeof(vx_kernel_execution_parameters_t));
+
+    if (p) free(p);
+
+    return status;
+}
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+vx_kernel_description_t vxLSTMUnit_SW_Kernel =
+{
+    _VX_KERNEL_ID,
+    VX_KERNEL_NAME_LSTMUNIT_ACTIVATION,
+    _VX_KERNEL_FUNC_KERNEL,
+    sw_params,
+    _cnt_of_array( sw_params ),
+    vsi_nn_KernelValidator,
+    NULL,
+    NULL,
+    vsi_nn_KernelInitializer,
+    vsi_nn_KernelDeinitializer
+};
+
+#define LSTMUINT_KERENLS(src_type, dst_type, cell_type, feature) \
+    vx_kernel_description_t vxLSTMUnit_##feature##_##src_type##to##dst_type##_##cell_type##_Kernel = \
+{ \
+    _VX_KERNEL_ID, \
+    VX_KERNEL_NAME_LSTMUNIT_##feature##_##src_type##to##dst_type##_CELL_##cell_type, \
+    NULL, \
+    vxLSTMUNIT_##feature##_Param, \
+    _cnt_of_array( vxLSTMUNIT_##feature##_Param ), \
+    vsi_nn_KernelValidator, \
+    NULL, \
+    NULL, \
+    vxLSTMUnit_Activation_Initializer, \
+    vsi_nn_KernelDeinitializer \
+};
+
+/* lstm unit activation: layer norm */
+LSTMUINT_KERENLS(F16, F16, F32, CLP)
+LSTMUINT_KERENLS(F16, F16, F16, CLP)
+LSTMUINT_KERENLS(F16, F16, F32, LP)
+LSTMUINT_KERENLS(F16, F16, F16, LP)
+LSTMUINT_KERENLS(F16, F16, F16, CL)
+LSTMUINT_KERENLS(F16, I16, F16, CL)
+LSTMUINT_KERENLS(F16, I8,  F16, CL)
+LSTMUINT_KERENLS(F16, U8,  F16, CL)
+LSTMUINT_KERENLS(F16, F16, F32, CL)
+LSTMUINT_KERENLS(F16, I16, F32, CL)
+LSTMUINT_KERENLS(F16, I8,  F32, CL)
+LSTMUINT_KERENLS(F16, U8,  F32, CL)
+LSTMUINT_KERENLS(F16, F16, F16, L)
+LSTMUINT_KERENLS(F16, I16, F16, L)
+LSTMUINT_KERENLS(F16, I8,  F16, L)
+LSTMUINT_KERENLS(F16, U8,  F16, L)
+LSTMUINT_KERENLS(F16, F16, F32, L)
+LSTMUINT_KERENLS(F16, I16, F32, L)
+LSTMUINT_KERENLS(F16, I8,  F32, L)
+LSTMUINT_KERENLS(F16, U8,  F32, L)
+/* lstm unit activation: hybrid fp16 */
+LSTMUINT_KERENLS(F16, F16, F32, BP)
+LSTMUINT_KERENLS(F16, F16, F16, BP)
+LSTMUINT_KERENLS(F16, F16, F16, B)
+LSTMUINT_KERENLS(F16, I16, F16, B)
+LSTMUINT_KERENLS(F16, I8,  F16, B)
+LSTMUINT_KERENLS(F16, U8,  F16, B)
+LSTMUINT_KERENLS(F16, F16, F32, B)
+LSTMUINT_KERENLS(F16, I16, F32, B)
+LSTMUINT_KERENLS(F16, I8,  F32, B)
+LSTMUINT_KERENLS(F16, U8,  F32, B)
+LSTMUINT_KERENLS(F16, F16, F32, CBP)
+LSTMUINT_KERENLS(F16, F16, F16, CBP)
+LSTMUINT_KERENLS(F16, F16, F16, CB)
+LSTMUINT_KERENLS(F16, I16, F16, CB)
+LSTMUINT_KERENLS(F16, I8,  F16, CB)
+LSTMUINT_KERENLS(F16, U8,  F16, CB)
+LSTMUINT_KERENLS(F16, F16, F32, CB)
+LSTMUINT_KERENLS(F16, I16, F32, CB)
+LSTMUINT_KERENLS(F16, I8,  F32, CB)
+LSTMUINT_KERENLS(F16, U8,  F32, CB)
+/* lstm unit activation: hybrid u8 */
+LSTMUINT_KERENLS(U8, F16, F32, BP)
+LSTMUINT_KERENLS(U8, F16, F16, BP)
+LSTMUINT_KERENLS(U8, F16, F16, B)
+LSTMUINT_KERENLS(U8, U8,  F16, B)
+LSTMUINT_KERENLS(U8, F16, F32, B)
+LSTMUINT_KERENLS(U8, U8,  F32, B)
+LSTMUINT_KERENLS(U8, F16, F32, CBP)
+LSTMUINT_KERENLS(U8, F16, F16, CBP)
+LSTMUINT_KERENLS(U8, F16, F16, CB)
+LSTMUINT_KERENLS(U8, U8,  F16, CB)
+LSTMUINT_KERENLS(U8, F16, F32, CB)
+LSTMUINT_KERENLS(U8, U8,  F32, CB)
+/* lstm unit activation: standard fp16 */
+LSTMUINT_KERENLS(F16, F16, F32, SP)
+LSTMUINT_KERENLS(F16, F16, F16, SP)
+LSTMUINT_KERENLS(F16, F16, F16, S)
+LSTMUINT_KERENLS(F16, I16, F16, S)
+LSTMUINT_KERENLS(F16, I8,  F16, S)
+LSTMUINT_KERENLS(F16, U8,  F16, S)
+LSTMUINT_KERENLS(F16, F16, F32, S)
+LSTMUINT_KERENLS(F16, I16, F32, S)
+LSTMUINT_KERENLS(F16, I8,  F32, S)
+LSTMUINT_KERENLS(F16, U8,  F32, S)
+LSTMUINT_KERENLS(F16, F16, F32, CSP)
+LSTMUINT_KERENLS(F16, F16, F16, CSP)
+LSTMUINT_KERENLS(F16, F16, F16, CS)
+LSTMUINT_KERENLS(F16, I16, F16, CS)
+LSTMUINT_KERENLS(F16, I8,  F16, CS)
+LSTMUINT_KERENLS(F16, U8,  F16, CS)
+LSTMUINT_KERENLS(F16, F16, F32, CS)
+LSTMUINT_KERENLS(F16, I16, F32, CS)
+LSTMUINT_KERENLS(F16, I8,  F32, CS)
+LSTMUINT_KERENLS(F16, U8,  F32, CS)
+/* lstm unit activation: standard u8 */
+LSTMUINT_KERENLS(U8, F16, F32, SP)
+LSTMUINT_KERENLS(U8, F16, F16, SP)
+LSTMUINT_KERENLS(U8, F16, F16, S)
+LSTMUINT_KERENLS(U8, U8,  F16, S)
+LSTMUINT_KERENLS(U8, F16, F32, S)
+LSTMUINT_KERENLS(U8, U8,  F32, S)
+LSTMUINT_KERENLS(U8, F16, F32, CSP)
+LSTMUINT_KERENLS(U8, F16, F16, CSP)
+LSTMUINT_KERENLS(U8, F16, F16, CS)
+LSTMUINT_KERENLS(U8, U8,  F16, CS)
+LSTMUINT_KERENLS(U8, F16, F32, CS)
+LSTMUINT_KERENLS(U8, U8,  F32, CS)
+
+#define LSTMUINT_KERENL_NAME(src_type,dst_type, cell_type, feature) \
+    &vxLSTMUnit_##feature##_##src_type##to##dst_type##_##cell_type##_Kernel,
+
+vx_kernel_description_t * vx_kernel_LSTMUNIT_ACTIVATION_list[] =
+{
+    &vxLSTMUnit_SW_Kernel,
+    /* layer norm */
+    LSTMUINT_KERENL_NAME(F16, F16, F32, CLP)
+    LSTMUINT_KERENL_NAME(F16, F16, F16, CLP)
+    LSTMUINT_KERENL_NAME(F16, F16, F32, LP)
+    LSTMUINT_KERENL_NAME(F16, F16, F16, LP)
+    LSTMUINT_KERENL_NAME(F16, F16, F16, CL)
+    LSTMUINT_KERENL_NAME(F16, I16, F16, CL)
+    LSTMUINT_KERENL_NAME(F16, I8,  F16, CL)
+    LSTMUINT_KERENL_NAME(F16, U8,  F16, CL)
+    LSTMUINT_KERENL_NAME(F16, F16, F32, CL)
+    LSTMUINT_KERENL_NAME(F16, I16, F32, CL)
+    LSTMUINT_KERENL_NAME(F16, I8,  F32, CL)
+    LSTMUINT_KERENL_NAME(F16, U8,  F32, L)
+    LSTMUINT_KERENL_NAME(F16, F16, F16, L)
+    LSTMUINT_KERENL_NAME(F16, I16, F16, L)
+    LSTMUINT_KERENL_NAME(F16, I8,  F16, L)
+    LSTMUINT_KERENL_NAME(F16, U8,  F16, L)
+    LSTMUINT_KERENL_NAME(F16, F16, F32, L)
+    LSTMUINT_KERENL_NAME(F16, I16, F32, L)
+    LSTMUINT_KERENL_NAME(F16, I8,  F32, L)
+    LSTMUINT_KERENL_NAME(F16, U8,  F32, L)
+    /* hybrid fp16*/
+    LSTMUINT_KERENL_NAME(F16, F16, F32, BP)
+    LSTMUINT_KERENL_NAME(F16, F16, F16, BP)
+    LSTMUINT_KERENL_NAME(F16, F16, F16, B)
+    LSTMUINT_KERENL_NAME(F16, I16, F16, B)
+    LSTMUINT_KERENL_NAME(F16, I8,  F16, B)
+    LSTMUINT_KERENL_NAME(F16, U8,  F16, B)
+    LSTMUINT_KERENL_NAME(F16, F16, F32, B)
+    LSTMUINT_KERENL_NAME(F16, I16, F32, B)
+    LSTMUINT_KERENL_NAME(F16, I8,  F32, B)
+    LSTMUINT_KERENL_NAME(F16, U8,  F32, B)
+    LSTMUINT_KERENL_NAME(F16, F16, F32, CBP)
+    LSTMUINT_KERENL_NAME(F16, F16, F16, CBP)
+    LSTMUINT_KERENL_NAME(F16, F16, F16, CB)
+    LSTMUINT_KERENL_NAME(F16, I16, F16, CB)
+    LSTMUINT_KERENL_NAME(F16, I8,  F16, CB)
+    LSTMUINT_KERENL_NAME(F16, U8,  F16, CB)
+    LSTMUINT_KERENL_NAME(F16, F16, F32, CB)
+    LSTMUINT_KERENL_NAME(F16, I16, F32, CB)
+    LSTMUINT_KERENL_NAME(F16, I8,  F32, CB)
+    LSTMUINT_KERENL_NAME(F16, U8,  F32, CB)
+    /* hybrid u8*/
+    LSTMUINT_KERENL_NAME(U8, F16, F32, BP)
+    LSTMUINT_KERENL_NAME(U8, F16, F16, BP)
+    LSTMUINT_KERENL_NAME(U8, F16, F16, B)
+    LSTMUINT_KERENL_NAME(U8, U8,  F16, B)
+    LSTMUINT_KERENL_NAME(U8, F16, F32, B)
+    LSTMUINT_KERENL_NAME(U8, U8,  F32, B)
+    LSTMUINT_KERENL_NAME(U8, F16, F32, CBP)
+    LSTMUINT_KERENL_NAME(U8, F16, F16, CBP)
+    LSTMUINT_KERENL_NAME(U8, F16, F16, CB)
+    LSTMUINT_KERENL_NAME(U8, U8,  F16, CB)
+    LSTMUINT_KERENL_NAME(U8, F16, F32, CB)
+    LSTMUINT_KERENL_NAME(U8, U8,  F32, CB)
+    /* standard input fp16*/
+    LSTMUINT_KERENL_NAME(F16, F16, F32, SP)
+    LSTMUINT_KERENL_NAME(F16, F16, F16, SP)
+    LSTMUINT_KERENL_NAME(F16, F16, F16, S)
+    LSTMUINT_KERENL_NAME(F16, I16, F16, S)
+    LSTMUINT_KERENL_NAME(F16, I8,  F16, S)
+    LSTMUINT_KERENL_NAME(F16, U8,  F16, S)
+    LSTMUINT_KERENL_NAME(F16, F16, F32, S)
+    LSTMUINT_KERENL_NAME(F16, I16, F32, S)
+    LSTMUINT_KERENL_NAME(F16, I8,  F32, S)
+    LSTMUINT_KERENL_NAME(F16, U8,  F32, S)
+    LSTMUINT_KERENL_NAME(F16, F16, F32, CSP)
+    LSTMUINT_KERENL_NAME(F16, F16, F16, CSP)
+    LSTMUINT_KERENL_NAME(F16, F16, F16, CS)
+    LSTMUINT_KERENL_NAME(F16, I16, F16, CS)
+    LSTMUINT_KERENL_NAME(F16, I8,  F16, CS)
+    LSTMUINT_KERENL_NAME(F16, U8,  F16, CS)
+    LSTMUINT_KERENL_NAME(F16, F16, F32, CS)
+    LSTMUINT_KERENL_NAME(F16, I16, F32, CS)
+    LSTMUINT_KERENL_NAME(F16, I8,  F32, CS)
+    LSTMUINT_KERENL_NAME(F16, U8,  F32, CS)
+    /* standard input U8*/
+    LSTMUINT_KERENL_NAME(U8, F16, F32, SP)
+    LSTMUINT_KERENL_NAME(U8, F16, F16, SP)
+    LSTMUINT_KERENL_NAME(U8, F16, F16, S)
+    LSTMUINT_KERENL_NAME(U8, U8,  F16, S)
+    LSTMUINT_KERENL_NAME(U8, F16, F32, S)
+    LSTMUINT_KERENL_NAME(U8, U8,  F32, S)
+    LSTMUINT_KERENL_NAME(U8, F16, F32, CSP)
+    LSTMUINT_KERENL_NAME(U8, F16, F16, CSP)
+    LSTMUINT_KERENL_NAME(U8, F16, F16, CS)
+    LSTMUINT_KERENL_NAME(U8, U8,  F16, CS)
+    LSTMUINT_KERENL_NAME(U8, F16, F32, CS)
+    LSTMUINT_KERENL_NAME(U8, U8,  F32, CS)
+    NULL
+};
+#ifdef __cplusplus
+}
+#endif

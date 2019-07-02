@@ -263,7 +263,7 @@ static vsi_bool op_setup
     }
     if( VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num )
     {
-        int i;
+        uint32_t i;
         char dim_map[VSI_NN_MAX_DIM_NUM] = {0};
 
         for (i = 0; i < self->nn_param.reduce.axis_num; i++)
@@ -318,7 +318,7 @@ static vsi_status op_deinit
     return VSI_SUCCESS;
 } /* op_deinit() */
 
-#ifdef __cpluplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 /* Registrar */
@@ -333,7 +333,7 @@ DEF_OP_REG
     /* input_num  */ _INPUT_NUM,
     /* output_num */ _OUTPUT_NUM
     );
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif
 

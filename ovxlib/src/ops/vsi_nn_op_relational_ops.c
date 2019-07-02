@@ -218,45 +218,53 @@ static vsi_status vx_op_pre_compute
             kernel_info->kernel_index = 4;
         else if(op == VSI_NN_RELATIONAL_OPS_NOT_EQUAL)
             kernel_info->kernel_index = 5;
+        else if(op == VSI_NN_RELATIONAL_OPS_EQUAL)
+            kernel_info->kernel_index = 6;
     }
     else if(inputDataFormat == VSI_NN_TYPE_INT16 && outputDataFormat == VSI_NN_TYPE_INT16)
     {
         if(op == VSI_NN_RELATIONAL_OPS_GREAT)
-            kernel_info->kernel_index = 6;
-        else if(op == VSI_NN_RELATIONAL_OPS_GREAT_EQUAL)
             kernel_info->kernel_index = 7;
-        else if(op == VSI_NN_RELATIONAL_OPS_LESS)
+        else if(op == VSI_NN_RELATIONAL_OPS_GREAT_EQUAL)
             kernel_info->kernel_index = 8;
-        else if(op == VSI_NN_RELATIONAL_OPS_LESS_EQUAL)
+        else if(op == VSI_NN_RELATIONAL_OPS_LESS)
             kernel_info->kernel_index = 9;
-        else if(op == VSI_NN_RELATIONAL_OPS_NOT_EQUAL)
+        else if(op == VSI_NN_RELATIONAL_OPS_LESS_EQUAL)
             kernel_info->kernel_index = 10;
+        else if(op == VSI_NN_RELATIONAL_OPS_NOT_EQUAL)
+            kernel_info->kernel_index = 11;
+        else if(op == VSI_NN_RELATIONAL_OPS_EQUAL)
+            kernel_info->kernel_index = 12;
     }
     else if ((inputDataFormat == VSI_NN_TYPE_INT8 && outputDataFormat == VSI_NN_TYPE_INT8))
     {
         if(op == VSI_NN_RELATIONAL_OPS_GREAT)
-            kernel_info->kernel_index = 11;
-        else if(op == VSI_NN_RELATIONAL_OPS_GREAT_EQUAL)
-            kernel_info->kernel_index = 12;
-        else if(op == VSI_NN_RELATIONAL_OPS_LESS)
             kernel_info->kernel_index = 13;
-        else if(op == VSI_NN_RELATIONAL_OPS_LESS_EQUAL)
+        else if(op == VSI_NN_RELATIONAL_OPS_GREAT_EQUAL)
             kernel_info->kernel_index = 14;
-        else if(op == VSI_NN_RELATIONAL_OPS_NOT_EQUAL)
+        else if(op == VSI_NN_RELATIONAL_OPS_LESS)
             kernel_info->kernel_index = 15;
+        else if(op == VSI_NN_RELATIONAL_OPS_LESS_EQUAL)
+            kernel_info->kernel_index = 16;
+        else if(op == VSI_NN_RELATIONAL_OPS_NOT_EQUAL)
+            kernel_info->kernel_index = 17;
+        else if(op == VSI_NN_RELATIONAL_OPS_EQUAL)
+            kernel_info->kernel_index = 18;
     }
     else if(inputDataFormat == VSI_NN_TYPE_UINT8 && outputDataFormat == VSI_NN_TYPE_UINT8)
     {
         if(op == VSI_NN_RELATIONAL_OPS_GREAT)
-            kernel_info->kernel_index = 16;
-        else if(op == VSI_NN_RELATIONAL_OPS_GREAT_EQUAL)
-            kernel_info->kernel_index = 17;
-        else if(op == VSI_NN_RELATIONAL_OPS_LESS)
-            kernel_info->kernel_index = 18;
-        else if(op == VSI_NN_RELATIONAL_OPS_LESS_EQUAL)
             kernel_info->kernel_index = 19;
-        else if(op == VSI_NN_RELATIONAL_OPS_NOT_EQUAL)
+        else if(op == VSI_NN_RELATIONAL_OPS_GREAT_EQUAL)
             kernel_info->kernel_index = 20;
+        else if(op == VSI_NN_RELATIONAL_OPS_LESS)
+            kernel_info->kernel_index = 21;
+        else if(op == VSI_NN_RELATIONAL_OPS_LESS_EQUAL)
+            kernel_info->kernel_index = 22;
+        else if(op == VSI_NN_RELATIONAL_OPS_NOT_EQUAL)
+            kernel_info->kernel_index = 23;
+        else if(op == VSI_NN_RELATIONAL_OPS_EQUAL)
+            kernel_info->kernel_index = 24;
     }
     else
     {
@@ -387,7 +395,7 @@ static vsi_status op_deinit
     return VSI_SUCCESS;
 } /* op_deinit() */
 
-#ifdef __cpluplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 /* Registrar */
@@ -402,7 +410,7 @@ DEF_OP_REG
     /* input_num  */ 2,
     /* output_num */ 1
     );
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif
 

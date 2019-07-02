@@ -120,7 +120,7 @@ static vx_param_description_t vxParametricDropoutKernelParam[] =
     {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
 };
 
-#ifdef __cpluplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 vx_kernel_description_t vxParametricDropoutKernelInfo =
@@ -143,6 +143,6 @@ vx_kernel_description_t * vx_kernel_DROPOUT_list[] =
     &vxParametricDropoutKernelInfo,
     NULL
 };
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif

@@ -31,6 +31,10 @@
 #include "vsi_nn_tensor.h"
 #include "vsi_nn_types.h"
 
+#if defined(__cplusplus)
+extern "C"{
+#endif
+
 /*------------------------------------
                 Types
   -----------------------------------*/
@@ -125,17 +129,17 @@ OVXLIB_API vsi_status vsi_nn_op_common_optimize
     vsi_nn_tensor_t ** outputs
     );
 
-OVXLIB_API vsi_bool vsi_nn_OpIsValid
+vsi_bool vsi_nn_OpIsValid
     (
     vsi_nn_op_t op
     );
 
-OVXLIB_API const vsi_nn_op_proc_t * vsi_nn_OpGetProc
+const vsi_nn_op_proc_t * vsi_nn_OpGetProc
     (
     vsi_nn_op_t op
     );
 
-OVXLIB_API vsi_status vsi_nn_OpCompute
+vsi_status vsi_nn_OpCompute
     (
     vsi_nn_op_t op,
     vsi_nn_node_t * node,
@@ -143,13 +147,13 @@ OVXLIB_API vsi_status vsi_nn_OpCompute
     vsi_nn_tensor_t ** outputs
     );
 
-OVXLIB_API vsi_status vsi_nn_OpDeinit
+vsi_status vsi_nn_OpDeinit
     (
     vsi_nn_op_t op,
     vsi_nn_node_t * node
     );
 
-OVXLIB_API vsi_status vsi_nn_OpOptimize
+vsi_status vsi_nn_OpOptimize
     (
     vsi_nn_op_t op,
     vsi_nn_node_t * node,
@@ -158,7 +162,7 @@ OVXLIB_API vsi_status vsi_nn_OpOptimize
     vsi_nn_opt_direction_e direction
     );
 
-OVXLIB_API vsi_bool vsi_nn_OpCheck
+vsi_bool vsi_nn_OpCheck
     (
     vsi_nn_op_t op,
     vsi_nn_node_t * node,
@@ -166,7 +170,7 @@ OVXLIB_API vsi_bool vsi_nn_OpCheck
     vsi_nn_tensor_t ** outputs
     );
 
-OVXLIB_API void vsi_nn_OpGetIoNum
+void vsi_nn_OpGetIoNum
     (
     vsi_nn_op_t op,
     vsi_nn_node_t * node,
@@ -174,14 +178,14 @@ OVXLIB_API void vsi_nn_OpGetIoNum
     uint32_t     * output_num
     );
 
-OVXLIB_API vsi_bool vsi_nn_OpGenerateTensor
+vsi_bool vsi_nn_OpGenerateTensor
     (
     vsi_nn_node_t * node,
     vsi_nn_tensor_t ** inputs,
     vsi_nn_tensor_t ** outputs
     );
 
-OVXLIB_API vsi_bool vsi_nn_OpSetup
+vsi_bool vsi_nn_OpSetup
     (
     vsi_nn_op_t op,
     vsi_nn_node_t * node,
@@ -189,7 +193,7 @@ OVXLIB_API vsi_bool vsi_nn_OpSetup
     vsi_nn_tensor_t ** outputs
     );
 
-OVXLIB_API vsi_bool vsi_nn_OpRegisterOvxInit
+vsi_bool vsi_nn_OpRegisterOvxInit
     (
     vsi_nn_op_t op,
     vsi_nn_op_compute_t compute
@@ -199,6 +203,10 @@ OVXLIB_API const char * vsi_nn_OpGetName
     (
     vsi_nn_op_t op
     );
+
+#if defined(__cplusplus)
+}
+#endif
 
 #define DEF_OP_REG(op,compute,deinit,check,setup,optimize,in,out) \
     vsi_nn_op_proc_t vsi_nn_op_##op =\
@@ -212,4 +220,3 @@ OVXLIB_API const char * vsi_nn_OpGetName
     /* output_num */ out,\
 };
 #endif
-

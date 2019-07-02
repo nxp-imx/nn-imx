@@ -33,6 +33,7 @@
 #include "vsi_nn_ops.h"
 #include "vsi_nn_tensor.h"
 #include "vsi_nn_tensor_util.h"
+#include "utils/vsi_nn_math.h"
 #include "utils/vsi_nn_util.h"
 #include "utils/vsi_nn_link_list.h"
 
@@ -82,6 +83,29 @@ static vsi_bool op_check
     vsi_nn_tensor_t ** outputs
     )
 {
+    uint32_t i,dim0,dim1,s0,s1;
+
+    dim0 = inputs[0]->attr.dim_num;
+    dim1 = inputs[1]->attr.dim_num;
+    for(i = 0; i < vsi_nn_max(dim0,dim1); i++)
+    {
+        if(i < dim0 && i < dim1)
+        {
+            s0 = inputs[0]->attr.size[i];
+            s1 = inputs[1]->attr.size[i];
+            if(s0 > s1 && s1 != 1)
+            {
+                VSILOGE("Invalid broadcast for inputs[1] size[%u]", s1);
+                return FALSE;
+            }
+            else if(s0 < s1 && s0 != 1)
+            {
+                VSILOGE("Invalid broadcast for inputs[0] size[%u]", s0);
+                return FALSE;
+            }
+        }
+    }
+
     return TRUE;
 } /* op_check() */
 
@@ -92,30 +116,39 @@ static vsi_bool op_setup
     vsi_nn_tensor_t ** outputs
     )
 {
-    uint32_t sz0,sz1;
+    uint32_t i,dim0,dim1;
 
     if(VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num)
     {
-        sz0 = vsi_nn_GetElementNum(inputs[0]);
-        sz1 = vsi_nn_GetElementNum(inputs[1]);
-        if(sz0 > sz1)
+        dim0 = inputs[0]->attr.dim_num;
+        dim1 = inputs[1]->attr.dim_num;
+        if(dim0 > dim1)
         {
-            outputs[0]->attr.dim_num = inputs[0]->attr.dim_num;
+            outputs[0]->attr.dim_num = dim0;
             memcpy( outputs[0]->attr.size, inputs[0]->attr.size,
                 VSI_NN_MAX_DIM_NUM * sizeof( uint32_t ) );
         }
-        else
+        else if(dim0 < dim1)
         {
-            outputs[0]->attr.dim_num = inputs[1]->attr.dim_num;
+            outputs[0]->attr.dim_num = dim1;
             memcpy( outputs[0]->attr.size, inputs[1]->attr.size,
                 VSI_NN_MAX_DIM_NUM * sizeof( uint32_t ) );
+        }
+        else /* dim0 == dim1 */
+        {
+            outputs[0]->attr.dim_num = dim0;
+            for(i = 0; i < dim0; i++)
+            {
+                outputs[0]->attr.size[i] = vsi_nn_max(
+                    inputs[0]->attr.size[i],inputs[1]->attr.size[i]);
+            }
         }
     }
 
     return TRUE;
 } /* op_setup() */
 
-#ifdef __cpluplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 /* Registrar */
@@ -130,6 +163,6 @@ DEF_OP_REG
     /* input_num  */ 2,
     /* output_num */ 1
     );
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif

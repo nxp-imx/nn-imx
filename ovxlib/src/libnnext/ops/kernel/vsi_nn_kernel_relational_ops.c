@@ -80,6 +80,8 @@ void myRelationalOpsFunc
                 data2 = 1;
             else if(data0 != data1 && cmp_op == 4)
                 data2 = 1;
+            else if(data0 == data1 && cmp_op == 5)
+                data2 = 1;
             tmpOut[k] = vsi_nn_Fp32toFp16(data2);
             data2 = 0;
         }
@@ -104,6 +106,8 @@ void myRelationalOpsFunc
             else if(data0 <= data1 && cmp_op == 3)
                 data2 = 1;
             else if(data0 != data1 && cmp_op == 4)
+                data2 = 1;
+            else if(data0 == data1 && cmp_op == 5)
                 data2 = 1;
             tmpOut[k] = data2;
             data2 = 0;
@@ -130,6 +134,8 @@ void myRelationalOpsFunc
                 data2 = 1;
             else if(data0 != data1 && cmp_op == 4)
                 data2 = 1;
+            else if(data0 == data1 && cmp_op == 5)
+                data2 = 1;
             tmpOut[k] = data2;
             data2 = 0;
         }
@@ -154,6 +160,8 @@ void myRelationalOpsFunc
             else if(data0 <= data1 && cmp_op == 3)
                 data2 = 1;
             else if(data0 != data1 && cmp_op == 4)
+                data2 = 1;
+            else if(data0 == data1 && cmp_op == 5)
                 data2 = 1;
             tmpOut[k] = data2;
             data2 = 0;
@@ -492,9 +500,19 @@ vsi_status VX_CALLBACK vxRelationalOpsInitializer
             0x00000000, 0x00000000, 0x00000000, 0x00000000,
             0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
         };
+        vx_uint32 uniMulShortMinus1toFp16_2x8[16] = {
+            0x22222222, // TCfg
+            0x00000000, // ASelt
+            0x03020100, 0x07060504, // ABin
+            0x22222222, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000100, // AccumType, ConstantType, and PostShift
+            0x00003c00, 0x00003c00, 0x00003c00, 0x00003c00, 0x00003c00, 0x00003c00, 0x00003c00, 0x00003c00 // Constant
+        };
         status |= vxSetNodeUniform(nodObj, "uniConvertFstFp16Fp32_4x4", 1, uniConvertFstFp16Fp32_4x4);
         status |= vxSetNodeUniform(nodObj, "uniConvertSecFp16Fp32_4x4", 1, uniConvertSecFp16Fp32_4x4);
         status |= vxSetNodeUniform(nodObj, "uniConvertInt32toUint8_2x8", 1, uniConvertInt32toUint8_2x8);
+        status |= vxSetNodeUniform(nodObj, "uniMulShortMinus1toFp16_2x8", 1, uniMulShortMinus1toFp16_2x8);
     }
     if(status < 0)
     {
@@ -515,7 +533,7 @@ static vx_param_description_t vxRelationalOpsCpuKernelParam[] =
     {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED}
 };
-#ifdef __cpluplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 vx_kernel_description_t vxRelationalKernelInfo_gt_fp16 =
@@ -578,6 +596,20 @@ vx_kernel_description_t vxRelationalKernelInfo_ne_fp16 =
 {
     VX_KERNEL_ENUM_RELATIONALOPS,
     VX_KERNEL_NAME_RELATIONAL_NOTEQUAL_FP16,
+    NULL,
+    vxRelationalOpsKernelParam,
+    (sizeof(vxRelationalOpsKernelParam) / sizeof(vxRelationalOpsKernelParam[0])),
+    vsi_nn_KernelValidator,
+    NULL,
+    NULL,
+    vxRelationalOpsInitializer,
+    vsi_nn_KernelDeinitializer
+};
+
+vx_kernel_description_t vxRelationalKernelInfo_e_fp16 =
+{
+    VX_KERNEL_ENUM_RELATIONALOPS,
+    VX_KERNEL_NAME_RELATIONAL_EQUAL_FP16,
     NULL,
     vxRelationalOpsKernelParam,
     (sizeof(vxRelationalOpsKernelParam) / sizeof(vxRelationalOpsKernelParam[0])),
@@ -658,6 +690,20 @@ vx_kernel_description_t vxRelationalKernelInfo_ne_int16 =
     vsi_nn_KernelDeinitializer
 };
 
+vx_kernel_description_t vxRelationalKernelInfo_e_int16 =
+{
+    VX_KERNEL_ENUM_RELATIONALOPS,
+    VX_KERNEL_NAME_RELATIONAL_EQUAL_INT16,
+    NULL,
+    vxRelationalOpsKernelParam,
+    (sizeof(vxRelationalOpsKernelParam) / sizeof(vxRelationalOpsKernelParam[0])),
+    vsi_nn_KernelValidator,
+    NULL,
+    NULL,
+    vxRelationalOpsInitializer,
+    vsi_nn_KernelDeinitializer
+};
+
 vx_kernel_description_t vxRelationalKernelInfo_gt_int8 =
 {
     VX_KERNEL_ENUM_RELATIONALOPS,
@@ -718,6 +764,20 @@ vx_kernel_description_t vxRelationalKernelInfo_ne_int8 =
 {
     VX_KERNEL_ENUM_RELATIONALOPS,
     VX_KERNEL_NAME_RELATIONAL_NOTEQUAL_INT8,
+    NULL,
+    vxRelationalOpsKernelParam,
+    (sizeof(vxRelationalOpsKernelParam) / sizeof(vxRelationalOpsKernelParam[0])),
+    vsi_nn_KernelValidator,
+    NULL,
+    NULL,
+    vxRelationalOpsInitializer,
+    vsi_nn_KernelDeinitializer
+};
+
+vx_kernel_description_t vxRelationalKernelInfo_e_int8 =
+{
+    VX_KERNEL_ENUM_RELATIONALOPS,
+    VX_KERNEL_NAME_RELATIONAL_EQUAL_INT8,
     NULL,
     vxRelationalOpsKernelParam,
     (sizeof(vxRelationalOpsKernelParam) / sizeof(vxRelationalOpsKernelParam[0])),
@@ -798,6 +858,20 @@ vx_kernel_description_t vxRelationalKernelInfo_ne_uint8 =
     vsi_nn_KernelDeinitializer
 };
 
+vx_kernel_description_t vxRelationalKernelInfo_e_uint8 =
+{
+    VX_KERNEL_ENUM_RELATIONALOPS,
+    VX_KERNEL_NAME_RELATIONAL_EQUAL_UINT8,
+    NULL,
+    vxRelationalOpsKernelParam,
+    (sizeof(vxRelationalOpsKernelParam) / sizeof(vxRelationalOpsKernelParam[0])),
+    vsi_nn_KernelValidator,
+    NULL,
+    NULL,
+    vxRelationalOpsInitializer,
+    vsi_nn_KernelDeinitializer
+};
+
 vx_kernel_description_t vxRelationalKernelInfo_CPU =
 {
     VX_KERNEL_ENUM_RELATIONALOPS,
@@ -820,23 +894,27 @@ vx_kernel_description_t * vx_kernel_RELATIONAL_OPS_list[] =
     &vxRelationalKernelInfo_ls_fp16,
     &vxRelationalKernelInfo_lse_fp16,
     &vxRelationalKernelInfo_ne_fp16,
+    &vxRelationalKernelInfo_e_fp16,
     &vxRelationalKernelInfo_gt_int16,
     &vxRelationalKernelInfo_gte_int16,
     &vxRelationalKernelInfo_ls_int16,
     &vxRelationalKernelInfo_lse_int16,
     &vxRelationalKernelInfo_ne_int16,
+    &vxRelationalKernelInfo_e_int16,
     &vxRelationalKernelInfo_gt_int8,
     &vxRelationalKernelInfo_gte_int8,
     &vxRelationalKernelInfo_ls_int8,
     &vxRelationalKernelInfo_lse_int8,
     &vxRelationalKernelInfo_ne_int8,
+    &vxRelationalKernelInfo_e_int8,
     &vxRelationalKernelInfo_gt_uint8,
     &vxRelationalKernelInfo_gte_uint8,
     &vxRelationalKernelInfo_ls_uint8,
     &vxRelationalKernelInfo_lse_uint8,
     &vxRelationalKernelInfo_ne_uint8,
+    &vxRelationalKernelInfo_e_uint8,
     NULL
 };
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif

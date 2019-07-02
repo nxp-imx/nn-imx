@@ -22,8 +22,7 @@
 *
 *****************************************************************************/
 #include "vsi_nn_types.h"
-#include "utils/vsi_nn_util.h"
-#include "utils/vsi_nn_dtype_util.h"
+#include "utils/vsi_nn_dtype_util_prv.h"
 
 void vsi_nn_TypeGetRange
     (
@@ -32,36 +31,5 @@ void vsi_nn_TypeGetRange
     double  * min_range
     )
 {
-    int32_t bits;
-    double from, to;
-
-    from = 0.0;
-    to = 0.0;
-    bits = vsi_nn_GetTypeBytes( type ) * 8;
-    if( vsi_nn_TypeIsInteger( type ) )
-    {
-        if( vsi_nn_TypeIsSigned( type ) )
-        {
-            from = (double)(-(1L << (bits - 1)));
-            to = (double)((1UL << (bits - 1)) - 1);
-        }
-        else
-        {
-            from = 0.0;
-            to = (double)((1UL << bits) - 1);
-        }
-    }
-    else
-    {
-        //  TODO: Add float
-    }
-    if( NULL != max_range )
-    {
-        *max_range = to;
-    }
-    if( NULL != min_range )
-    {
-        *min_range = from;
-    }
+    type_get_range(type, max_range, min_range);
 } /* vsi_nn_TypeGetRange() */
-

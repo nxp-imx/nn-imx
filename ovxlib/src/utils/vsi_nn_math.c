@@ -21,12 +21,11 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#include <math.h>
 #include <string.h>
 #include "vsi_nn_tensor.h"
 #include "vsi_nn_prv.h"
 #include "vsi_nn_log.h"
-#include "vsi_nn_types.h"
+#include "utils/vsi_nn_map.h"
 #include "utils/vsi_nn_math.h"
 #include "utils/vsi_nn_util.h"
 #include "utils/vsi_nn_dtype_util.h"
@@ -37,16 +36,6 @@ static void _compute_stride
     uint32_t   dim_num,
     uint32_t * stride
     );
-
-static double _vsi_copysign
-    (
-    double number,
-    double sign
-    )
-{
-    double value = vsi_nn_abs(number);
-    return (sign > 0) ? value : (-value);
-} /* _vsi_copysign() */
 
 static void _compute_stride
     (
@@ -64,14 +53,6 @@ static void _compute_stride
         s *= shape[i];
     }
 } /* _compute_stride() */
-
-float vsi_nn_SimpleRound
-    (
-    float x
-    )
-{
-    return (float) _vsi_copysign(floorf(fabsf(x) + 0.5f), x);
-} /* vsi_nn_SimplieRound() */
 
 void vsi_nn_Transpose
     (
@@ -217,22 +198,5 @@ double vsi_nn_Rint
     double x
     )
 {
-#define _EPSILON 1e-8
-
-    double decimal;
-    double inter;
-
-    decimal = modf((double)x, &inter);
-
-    if( vsi_nn_abs((vsi_nn_abs(decimal) - 0.5f)) < _EPSILON )
-    {
-        inter += (int32_t)(inter) % 2;
-    }
-    else
-    {
-        return vsi_nn_SimpleRound( (float)x );
-    }
-
-    return inter;
+    return vsi_rint(x);
 } /* vsi_nn_Rint() */
-

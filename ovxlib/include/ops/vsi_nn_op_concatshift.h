@@ -28,6 +28,10 @@
 #include "vsi_nn_types.h"
 #include "vsi_nn_op_concat.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct _vsi_nn_concatshift_lcl_data
 {
     /* used for optimze concat to tensor view */
@@ -44,6 +48,10 @@ typedef struct _vsi_nn_concatshift_param
     vsi_nn_concatshift_lcl_data * lcl_data;
     uint32_t keep_size;
 } vsi_nn_concatshift_param;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

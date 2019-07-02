@@ -28,6 +28,7 @@
 #include "vsi_nn_graph.h"
 #include "vsi_nn_node.h"
 #include "utils/vsi_nn_math.h"
+#include "utils/vsi_nn_dtype_util.h"
 #include "vsi_nn_ops.h"
 #include "vsi_nn_tensor.h"
 #include "vsi_nn_tensor_util.h"
@@ -228,6 +229,7 @@ static vsi_status op_compute
     vsi_nn_tensor_t * tensor;
     vsi_nn_tensor_attr_t attr;
     float const_one = 1.0;
+    int16_t const_data = vsi_nn_Fp32ToFp16(const_one);
     float scale;
     vsi_enum overflow_policy,rounding_policy;
     vx_scalar scale_s;
@@ -239,9 +241,9 @@ static vsi_status op_compute
     attr.size[3] = 1;
     attr.dim_num = inputs[0]->attr.dim_num;
     attr.is_const = TRUE;
-    attr.dtype.vx_type = VSI_NN_TYPE_FLOAT32;
+    attr.dtype.vx_type = VSI_NN_TYPE_FLOAT16;
     tensor = vsi_nn_CreateTensorFromData( self->graph,
-        (uint8_t *)&const_one, &attr );
+        (uint8_t *)&const_data, &attr );
 
     scale = self->nn_param.dropout.ratio;
     overflow_policy = VX_CONVERT_POLICY_SATURATE;
@@ -265,6 +267,9 @@ static vsi_status op_compute
     {
         status = VSI_SUCCESS;
     }
+
+    if (tensor) vsi_nn_ReleaseTensor(&tensor);
+    if (scale_s) vxReleaseScalar(&scale_s);
 #endif
     return status;
 } /* op_compute() */
@@ -280,7 +285,7 @@ static vsi_bool op_check
     return TRUE;
 } /* op_check() */
 
-#ifdef __cpluplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 /* Registrar */
@@ -295,7 +300,7 @@ DEF_OP_REG
     /* input_num  */ 1,
     /* output_num */ 1
     );
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif
 

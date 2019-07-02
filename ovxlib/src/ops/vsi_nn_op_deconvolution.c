@@ -43,21 +43,23 @@ static vsi_status op_compute
     )
 {
     vsi_status status;
-    vx_nn_deconvolution_params_ext_t param;
+    vx_nn_deconvolution_params_ext2_t param;
 
     status = VSI_FAILURE;
 
     // param.a_x = self->nn_param.deconv.dilation;
     // param.a_y = self->nn_param.deconv.dilation;
-    param.khr.a_x = 1;
-    param.khr.a_y = 1;
-    param.khr.padding_x = (size_t)self->nn_param.deconv.pad[0];
-    param.khr.padding_y = (size_t)self->nn_param.deconv.pad[2];
-    param.khr.overflow_policy = self->vx_param.overflow_policy;
-    param.khr.rounding_policy = self->vx_param.rounding_policy;
-    param.padding_x_right = (size_t)self->nn_param.deconv.pad[1];
-    param.padding_y_bottom = (size_t)self->nn_param.deconv.pad[3];
-    param.channel_group = self->nn_param.deconv.group;
+    param.ext.khr.a_x = 1;
+    param.ext.khr.a_y = 1;
+    param.ext.khr.padding_x = (size_t)self->nn_param.deconv.pad[0];
+    param.ext.khr.padding_y = (size_t)self->nn_param.deconv.pad[2];
+    param.ext.khr.overflow_policy = self->vx_param.overflow_policy;
+    param.ext.khr.rounding_policy = self->vx_param.rounding_policy;
+    param.ext.padding_x_right = (size_t)self->nn_param.deconv.pad[1];
+    param.ext.padding_y_bottom = (size_t)self->nn_param.deconv.pad[3];
+    param.ext.channel_group = self->nn_param.deconv.group;
+    param.stride_x = self->nn_param.deconv.stride[0];
+    param.stride_y = self->nn_param.deconv.stride[1];
     //param.border_mode;
     //param.border_const;
 
@@ -67,7 +69,7 @@ static vsi_status op_compute
         inputs[1]->t,
         (NULL == inputs[2]) ? NULL : inputs[2]->t,
         (vx_nn_deconvolution_params_t *)&param,
-        sizeof( vx_nn_deconvolution_params_ext_t ),
+        sizeof( vx_nn_deconvolution_params_ext2_t ),
         outputs[0]->t
         );
 
@@ -141,7 +143,7 @@ static vsi_bool op_setup
     return TRUE;
 } /* op_setup() */
 
-#ifdef __cpluplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 /* Registrar */
@@ -156,7 +158,7 @@ DEF_OP_REG
     /* input_num  */ 3,
     /* output_num */ 1
     );
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif
 

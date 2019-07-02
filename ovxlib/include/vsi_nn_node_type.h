@@ -83,9 +83,20 @@
 #include "ops/vsi_nn_op_relational_ops.h"
 #include "ops/vsi_nn_op_pow.h"
 #include "ops/vsi_nn_op_floordiv.h"
+#include "ops/vsi_nn_op_lstmunit_activation.h"
+#include "ops/vsi_nn_op_lstmunit_ovxlib.h"
+#include "ops/vsi_nn_op_tensor_add_mean_stddev_norm.h"
+#include "ops/vsi_nn_op_stack.h"
+#include "ops/vsi_nn_op_floor.h"
+#include "ops/vsi_nn_op_neg.h"
+#include "ops/vsi_nn_op_exp.h"
 
 /* custom node head define define */
 #include "custom/vsi_nn_custom_node_type.h"
+
+#if defined(__cplusplus)
+extern "C"{
+#endif
 
 typedef union _vsi_nn_nn_param
 {
@@ -149,6 +160,13 @@ typedef union _vsi_nn_nn_param
     vsi_nn_spatial_transformer_param spatial_transformer;
     vsi_nn_logical_ops_param        logical_ops;
     vsi_nn_select_param             select;
+    vsi_nn_lstmunit_activation_param lstmunit_activation;
+    vsi_nn_lstmunit_ovxlib_param    lstmunit_ovxlib;
+    vsi_nn_tensor_add_mean_stddev_norm_param tensor_add_mean_stddev_norm;
+    vsi_nn_stack_param              stack;
+    vsi_nn_floor_param              floor;
+    vsi_nn_neg_param                neg;
+    vsi_nn_exp_param                exp;
     uint8_t                         client_param[128];
 
     /* custom node data struct define */
@@ -166,5 +184,9 @@ typedef struct _vsi_nn_vx_param
     uint32_t accumulator_bits;
     vsi_nn_platform_e platform;
 } vsi_nn_vx_param_t;
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif

@@ -34,6 +34,7 @@
 #include "vsi_nn_tensor_util.h"
 #include "utils/vsi_nn_util.h"
 #include "utils/vsi_nn_link_list.h"
+#include "utils/vsi_nn_dtype_util.h"
 
 static int32_t _get_input_num
     (
@@ -55,6 +56,46 @@ static int32_t _get_input_num
     num++;
     return num;
 }
+
+static vsi_bool _is_same_quant
+    (
+    vsi_nn_node_t   * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs
+    )
+{
+    uint32_t i,num;
+    vsi_nn_dtype_t *dtype,*_dtype;
+
+    dtype = NULL;
+    /* check inputs dtype */
+    num = _get_input_num(self, inputs);
+    for(i = 0; i < num; i++)
+    {
+        if(NULL == dtype)
+        {
+            dtype = &inputs[i]->attr.dtype;
+            continue;
+        }
+
+        _dtype = &inputs[i]->attr.dtype;
+        if(vsi_nn_DtypeCompare(dtype, _dtype) == FALSE)
+        {
+            return FALSE;
+        }
+
+        dtype = _dtype;
+    }
+
+    /* check outputs dtype */
+    _dtype = &outputs[0]->attr.dtype;
+    if(vsi_nn_DtypeCompare(dtype, _dtype) == FALSE)
+    {
+        return FALSE;
+    }
+
+    return TRUE;
+} /* _is_same_quant */
 
 static vsi_bool _is_highest_dimension
     (
@@ -141,7 +182,7 @@ static vx_node _create_vx_concat
     }
 
     node = NULL;
-    for(i=0; i<num; i++)
+    for(i = 0; i < num; i++)
     {
         tensors[i] = inputs[i]->t;
         status = vxSetTensorAttribute(tensors[i], VX_TENSOR_RANK, &rank, sizeof(vx_enum));
@@ -199,7 +240,7 @@ static vsi_status op_compute
 
     status = VSI_SUCCESS;
     self->n = NULL;
-    if(_is_highest_dimension(self, outputs))
+    if(_is_highest_dimension(self, outputs) && _is_same_quant(self, inputs, outputs))
     {
         iter = self->nn_param.concat.lcl_data;
         while( NULL != iter )
@@ -353,7 +394,8 @@ static vsi_status op_optimize
 
     status = VSI_SUCCESS;
     /* we don't create tensor view if the axis is not the highest dimension */
-    if (_is_highest_dimension(self, outputs) == FALSE)
+    if (_is_highest_dimension(self, outputs) == FALSE ||
+        _is_same_quant(self, inputs, outputs) == FALSE)
     {
         return status;
     }
@@ -467,7 +509,7 @@ static vsi_status op_deinit
     return VSI_SUCCESS;
 }
 
-#ifdef __cpluplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 /* Registrar */
@@ -483,7 +525,7 @@ DEF_OP_REG
     /* input_num  */ 16,
     /* output_num */ 1
     );
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif
 

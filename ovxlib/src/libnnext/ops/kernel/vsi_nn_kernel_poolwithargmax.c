@@ -563,7 +563,7 @@ static vx_param_description_t vxpoolingWithArgmaxKernelParam[] =
     {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
 };
 
-#ifdef __cpluplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 vx_kernel_description_t vxPoolingWithArgmaxInfo =
@@ -781,6 +781,6 @@ vx_kernel_description_t * vx_kernel_POOLWITHARGMAX_list[] =
     &vxPoolingWithArgmaxInfoUint8_2D,
     NULL
 };
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif

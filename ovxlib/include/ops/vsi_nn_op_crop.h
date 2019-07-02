@@ -26,11 +26,19 @@
 
 #include "vsi_nn_types.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct _vsi_nn_crop_param
 {
     int32_t  axis;
     uint32_t dims;
     uint32_t offset[4];
 } vsi_nn_crop_param;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

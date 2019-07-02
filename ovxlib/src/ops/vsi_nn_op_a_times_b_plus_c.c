@@ -63,7 +63,10 @@ static vsi_status op_compute
         return VSI_FAILURE;
     }
 
-    memcpy(&attr, &(outputs[0]->attr), sizeof(attr));
+    memset(&attr, 0, sizeof(attr));
+    memcpy(attr.size, outputs[0]->attr.size,  VSI_NN_MAX_DIM_NUM * sizeof( uint32_t ));
+    attr.dim_num = outputs[0]->attr.dim_num;
+    attr.vtl = TRUE;
     attr.dtype.vx_type = VSI_NN_TYPE_FLOAT16;
     a_times_b = vsi_nn_CreateTensor(self->graph, &attr);
 
@@ -134,7 +137,7 @@ static vsi_bool op_setup
     return TRUE;
 } /* op_setup() */
 
-#ifdef __cpluplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 /* Registrar */
@@ -149,6 +152,6 @@ DEF_OP_REG
     /* input_num  */ 3,
     /* output_num */ 1
     );
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif

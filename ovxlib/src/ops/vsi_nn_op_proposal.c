@@ -346,7 +346,7 @@ static vsi_status op_deinit
     return VSI_SUCCESS;
 }
 
-#ifdef __cpluplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 /* Registrar */
@@ -361,6 +361,6 @@ DEF_OP_REG
     /* input_num  */ 4,
     /* output_num */ 2
     );
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif

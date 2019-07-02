@@ -178,7 +178,7 @@ static vx_param_description_t vxargMaxKernelParam[] =
     {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED}
 };
-#ifdef __cpluplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 vx_kernel_description_t vxargMaxKernelInfo =
@@ -306,6 +306,6 @@ vx_kernel_description_t * vx_kernel_ARGMAX_list[] =
     &vxargMaxKernelInfoI8_I16_WXHX256,
     NULL
 };
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif

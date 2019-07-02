@@ -16,22 +16,22 @@ __kernel void poolingWithArgmax
     )
 {
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);
-    vxc_short8 din0, din1;
+    vxc_short8 din0, din1, maxData, src0, src1;
     vxc_half8 din0Fp16, din1Fp16;
     vxc_half8 maxDataVer, maxDataVer1;
     int4 bitExtractCoeff;
-    vxc_half8 din0EqualTmp, din1EqualTmp;
+    vxc_short8 din0EqualTmp, din1EqualTmp;
     vxc_uchar8 din0Equal, din1Equal;
     vxc_uchar4 axisEncode;
     vxc_uchar4 axisOut;
 
-    VXC_ReadImage2DArray(din0, tensorIn, coord, VXC_5BITOFFSET_XY(0, 0),\
+    VXC_ReadImage2DArray(src0, tensorIn, coord, VXC_5BITOFFSET_XY(0, 0),\
         VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
-    VXC_ReadImage2DArray(din1, tensorIn, coord, VXC_5BITOFFSET_XY(0, 1),\
+    VXC_ReadImage2DArray(src1, tensorIn, coord, VXC_5BITOFFSET_XY(0, 1),\
         VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
     int4 coordOut = (int4)(coord.x >> 1, coord.y >> 1, coord.z, 0);
-    _viv_asm(COPY, din0Fp16, din0, 16);
-    _viv_asm(COPY, din1Fp16, din1, 16);
+    _viv_asm(COPY, din0Fp16, src0, 16);
+    _viv_asm(COPY, din1Fp16, src1, 16);
     VXC_VertMax3_Half(maxDataVer, din0Fp16, din1Fp16, din1Fp16, VXC_MODIFIER_BIN(0, 7, 0));
     _viv_asm(COPY, din0, maxDataVer, 16);
     din1 = din0.s10325476;
@@ -40,12 +40,12 @@ __kernel void poolingWithArgmax
     _viv_asm(COPY, din0, maxDataVer, 16);
     din1 = din0.s02460246;//output
     //get axis
-    VXC_Clamp_Half(din0EqualTmp, din0Fp16, maxDataVer, maxDataVer, VXC_MODIFIER_CLAMP(0, 7, 0, 1));
-    VXC_Clamp_Half(din1EqualTmp, din1Fp16, maxDataVer, maxDataVer, VXC_MODIFIER_CLAMP(0, 7, 0, 1));
-    bitExtractCoeff = (int4)(0x30201000, 0x70605040, 0x01010101, 0x01010101);
-    VXC_BitExtract(din0Equal, din0EqualTmp, din0EqualTmp, bitExtractCoeff, VXC_MODIFIER_BIN(0, 7, 0));
-    VXC_BitExtract(din1Equal, din1EqualTmp, din1EqualTmp, bitExtractCoeff, VXC_MODIFIER_BIN(0, 7, 0));
-    VXC_DP4x4(axisEncode, din0Equal, din1Equal, VXC_MODIFIER_BIN(0, 3, 0), poolingEncode);
+    _viv_asm(COPY, maxData, maxDataVer, 16);
+    vxc_short8 one = (vxc_short8)(1, 1, 1, 1, 1, 1, 1, 1);
+    vxc_short8 zero = (vxc_short8)(0, 0, 0, 0, 0, 0, 0, 0);
+    din0EqualTmp = src0 == maxData ? one : zero;
+    din1EqualTmp = src1 == maxData ? one : zero;
+    VXC_DP4x4(axisEncode, din0EqualTmp, din1EqualTmp, VXC_MODIFIER_BIN(0, 3, 0), poolingEncode);
     axisOut = clz(axisEncode);//output
     //write data out
     VXC_WriteImage2DArray(tensorOut, coordOut, din1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));

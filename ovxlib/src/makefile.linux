@@ -39,6 +39,7 @@ OBJECTS =     $(OBJ_DIR)/vsi_nn_context.o \
             $(OBJ_DIR)/vsi_nn_tensor.o \
             $(OBJ_DIR)/vsi_nn_version.o \
             $(OBJ_DIR)/vsi_nn_rnn.o \
+            $(OBJ_DIR)/vsi_nn_internal_node.o \
             $(OBJ_DIR)/vsi_nn_log.o
 
 vpath %.c client
@@ -47,12 +48,14 @@ OBJECTS +=      $(OBJ_DIR)/vsi_nn_vxkernel.o
 vpath %.c utils
 OBJECTS +=      $(OBJ_DIR)/vsi_nn_code_generator.o   \
              $(OBJ_DIR)/vsi_nn_binary_tree.o   \
+             $(OBJ_DIR)/vsi_nn_map.o   \
              $(OBJ_DIR)/vsi_nn_link_list.o   \
              $(OBJ_DIR)/vsi_nn_math.o   \
              $(OBJ_DIR)/vsi_nn_dtype_util.o   \
              $(OBJ_DIR)/vsi_nn_limits.o   \
              $(OBJ_DIR)/vsi_nn_vdata.o   \
-             $(OBJ_DIR)/vsi_nn_util.o
+             $(OBJ_DIR)/vsi_nn_util.o    \
+             $(OBJ_DIR)/vsi_nn_tensor_op.o
 
 vpath %.c quantization
 OBJECTS +=      $(OBJ_DIR)/vsi_nn_dynamic_fixed_point.o   \
@@ -95,6 +98,11 @@ OBJECTS += $(OBJ_DIR)/vsi_nn_kernel_argmax.o \
         $(OBJ_DIR)/vsi_nn_kernel_spatial_transformer.o \
         $(OBJ_DIR)/vsi_nn_kernel_logical_ops.o \
         $(OBJ_DIR)/vsi_nn_kernel_select.o \
+        $(OBJ_DIR)/vsi_nn_kernel_lstmunit_activation.o \
+        $(OBJ_DIR)/vsi_nn_kernel_tensor_add_mean_stddev_norm.o \
+        $(OBJ_DIR)/vsi_nn_kernel_stack.o \
+        $(OBJ_DIR)/vsi_nn_kernel_neg.o \
+        $(OBJ_DIR)/vsi_nn_kernel_exp.o \
         $(OBJ_DIR)/vsi_nn_kernel_tensorstackconcat.o \
         $(OBJ_DIR)/vsi_nn_kernel_pow.o \
         $(OBJ_DIR)/vsi_nn_kernel_floordiv.o \
@@ -150,6 +158,7 @@ OBJECTS +=      $(OBJ_DIR)/vsi_nn_op_add.o   \
              $(OBJ_DIR)/vsi_nn_op_eltwisemax.o \
              $(OBJ_DIR)/vsi_nn_op_subtract.o    \
              $(OBJ_DIR)/vsi_nn_op_relu6.o   \
+             $(OBJ_DIR)/vsi_nn_op_relu1.o   \
              $(OBJ_DIR)/vsi_nn_op_sigmoid.o \
              $(OBJ_DIR)/vsi_nn_op_tanh.o \
              $(OBJ_DIR)/vsi_nn_op_sqrt.o \
@@ -187,6 +196,14 @@ OBJECTS +=      $(OBJ_DIR)/vsi_nn_op_add.o   \
              $(OBJ_DIR)/vsi_nn_op_spatial_transformer.o \
              $(OBJ_DIR)/vsi_nn_op_logical_ops.o \
              $(OBJ_DIR)/vsi_nn_op_select.o \
+             $(OBJ_DIR)/vsi_nn_op_lstmunit_activation.o \
+             $(OBJ_DIR)/vsi_nn_op_lstmunit_ovxlib.o \
+             $(OBJ_DIR)/vsi_nn_op_tensor_add_mean_stddev_norm.o \
+             $(OBJ_DIR)/vsi_nn_op_stack.o \
+             $(OBJ_DIR)/vsi_nn_op_floor.o \
+             $(OBJ_DIR)/vsi_nn_op_square.o \
+             $(OBJ_DIR)/vsi_nn_op_neg.o \
+             $(OBJ_DIR)/vsi_nn_op_exp.o \
              $(OBJ_DIR)/vsi_nn_op_tensorstackconcat.o \
              $(OBJ_DIR)/vsi_nn_op_concatshift.o \
              $(OBJ_DIR)/vsi_nn_op_sync_host.o

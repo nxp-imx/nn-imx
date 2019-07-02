@@ -101,7 +101,7 @@ vx_status VX_CALLBACK vxSync_hostInitializer
 }
 
 
-#ifdef __cpluplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 vx_kernel_description_t _VX_KERNEL_VAR_CPU =
@@ -123,6 +123,6 @@ vx_kernel_description_t * vx_kernel_SYNC_HOST_list[] =
     &_VX_KERNEL_VAR_CPU,
     NULL
 };
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif

@@ -22,7 +22,40 @@
 *
 *****************************************************************************/
 #include <stdlib.h>
+#include "vsi_nn_types.h"
+#include "vsi_nn_test.h"
 #include "vsi_nn_context.h"
+#include "vsi_nn_platform.h"
+
+static vsi_status query_hardware_caps
+    (
+    vsi_nn_context_t context
+    )
+{
+    vsi_status status;
+    vx_hardware_caps_params_t param;
+
+    status = VSI_FAILURE;
+    memset(&param, 0, sizeof(vx_hardware_caps_params_t));
+    status = vxQueryHardwareCaps(context->c, &param, sizeof(vx_hardware_caps_params_t));
+    TEST_CHECK_STATUS(status, final);
+    if(param.evis1 == TRUE && param.evis2 == FALSE)
+    {
+        context->config.evis.ver = VSI_NN_HW_EVIS_1;
+    }
+    else if(param.evis1 == FALSE && param.evis2 == TRUE)
+    {
+        context->config.evis.ver = VSI_NN_HW_EVIS_2;
+    }
+    else
+    {
+        context->config.evis.ver = VSI_NN_HW_EVIS_NONE;
+        VSILOGW("Unsupported evis version");
+    }
+
+final:
+    return status;
+}
 
 vsi_nn_context_t vsi_nn_CreateContext
     ( void )
@@ -44,6 +77,12 @@ vsi_nn_context_t vsi_nn_CreateContext
 
     memset(context, 0, sizeof(struct _vsi_nn_context_t));
     context->c = c;
+    if(query_hardware_caps(context) != VSI_SUCCESS)
+    {
+        vsi_nn_ReleaseContext(&context);
+        return NULL;
+    }
+
     return context;
 } /* vsi_nn_CreateContext() */
 

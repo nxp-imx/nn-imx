@@ -78,7 +78,7 @@ void myFloorDivFunc
         {
             data0 = vsi_nn_Fp16toFp32(tmpIn[k]);
             data1 = vsi_nn_Fp16toFp32(tmpIn1[k]);
-            data2 = floor(data0/data1);
+            data2 = (float)floor(data0/data1);
             tmpOut[k] = vsi_nn_Fp32toFp16(data2);
         }
     }
@@ -93,7 +93,7 @@ void myFloorDivFunc
         {
             data0 = vsi_nn_DFPToFp32(tmpIn[k], inFl0, VSI_NN_TYPE_INT16);
             data1 = vsi_nn_DFPToFp32(tmpIn1[k], inFl1, VSI_NN_TYPE_INT16);
-            data2 = floor(data0/data1);
+            data2 = (float)floor(data0/data1);
             tmpOut[k] = vsi_nn_Fp32ToDFP(data2, outFl, VSI_NN_TYPE_INT16);
         }
     }
@@ -108,7 +108,7 @@ void myFloorDivFunc
         {
             data0 = vsi_nn_DFPToFp32(tmpIn[k], inFl0, VSI_NN_TYPE_INT8);
             data1 = vsi_nn_DFPToFp32(tmpIn1[k], inFl1, VSI_NN_TYPE_INT8);
-            data2 = floor(data0/data1);
+            data2 = (float)floor(data0/data1);
             tmpOut[k] = vsi_nn_Fp32ToDFP(data2, outFl, VSI_NN_TYPE_INT8);
         }
     }
@@ -123,7 +123,7 @@ void myFloorDivFunc
         {
             data0 = vsi_nn_AffineToFp32(tmpIn[k], inScale0, inZp0, VSI_NN_TYPE_UINT8);
             data1 = vsi_nn_AffineToFp32(tmpIn1[k], inScale1, inZp1, VSI_NN_TYPE_UINT8);
-            data2 = floor(data0/data1);
+            data2 = (float)floor(data0/data1);
             tmpOut[k] = vsi_nn_Fp32ToAffine(data2, outScale, outZp, VSI_NN_TYPE_UINT8);
         }
     }
@@ -599,7 +599,7 @@ static vx_param_description_t vxFloorDivKernelParam[] =
     {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED}
 };
-#ifdef __cpluplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 vx_kernel_description_t vxFloorDivKernelInfo_fp16_fp16 =
@@ -681,6 +681,6 @@ vx_kernel_description_t * vx_kernel_FLOORDIV_list[] =
     &vxFloorDivKernelInfo_uint8_uint8,
     NULL
 };
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif

@@ -173,15 +173,17 @@ static vsi_bool op_setup
             uint32_t front = self->nn_param.pad.front_size[i];
             uint32_t back  = self->nn_param.pad.back_size[i];
             outputs[0]->attr.size[i] = inputs[0]->attr.size[i] + front + back;
+            if(i >= 2 && (front != 0 || back != 0))
+            {
+                VSILOGW("Only support pad layer in size0 and size1");
+            }
         }
-        outputs[0]->attr.size[2] = inputs[0]->attr.size[2];
-        outputs[0]->attr.size[3] = inputs[0]->attr.size[3];
         outputs[0]->attr.dim_num = inputs[0]->attr.dim_num;
     }
     return TRUE;
 } /* op_setup() */
 
-#ifdef __cpluplus
+#ifdef __cplusplus
 extern "C" {
 #endif
     /* Registrar */
@@ -196,6 +198,6 @@ extern "C" {
         /* input_num  */ 1,
         /* output_num */ 1
         );
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif

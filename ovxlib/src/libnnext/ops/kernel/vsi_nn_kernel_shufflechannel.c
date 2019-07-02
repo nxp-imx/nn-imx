@@ -269,7 +269,7 @@ static vx_param_description_t vxShuffleChannelKernelParam[] =
     {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED}
 };
-#ifdef __cpluplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 vx_kernel_description_t vxShuffleChannelKernelInfo =
@@ -319,6 +319,6 @@ vx_kernel_description_t * vx_kernel_SHUFFLECHANNEL_list[] =
     &vxShuffleChannelKernelInfo8Bits,
     NULL
 };
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif

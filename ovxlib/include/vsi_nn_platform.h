@@ -35,12 +35,20 @@
 #include <VX/viv_nn_compatibility.h>
 #endif
 
+#if defined(__cplusplus)
+extern "C"{
+#endif
+
 #if defined(VSI_CFG_NNAPI_0_3)
 #define VSI_NNAPI_0_3
 #elif defined(VSI_CFG_NNAPI_0_4)
 #define VSI_NNAPI_0_4
 #else
 #define VSI_NNAPI_0_4
+#endif
+
+#if defined(__cplusplus)
+}
 #endif
 
 #endif

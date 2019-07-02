@@ -27,6 +27,10 @@
 #include "vsi_nn_types.h"
 #include "vsi_nn_platform.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define _VSI_NN_POW_LOCAL_TENSOR_NUM 3
 
 typedef struct _vsi_nn_pow_lcl_data
@@ -39,5 +43,9 @@ typedef struct _vsi_nn_pow_param
     /* local data must be the first. */
     vsi_nn_pow_lcl_data local;
 } vsi_nn_pow_param;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

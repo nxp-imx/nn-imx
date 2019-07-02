@@ -196,7 +196,7 @@ static vsi_status vx_op_pre_compute
         }
     }
 
-    if (enable_brdcst)
+    if (enable_brdcst == vx_false_e)
     {
         enable_image_2d = (vx_bool)(((width * height < hwLitimLen) && (depth * batch < hwLitimLen))
                                   || depth * batch == 1);
@@ -207,33 +207,87 @@ static vsi_status vx_op_pre_compute
         && dstFormat == src0Format)
     {
         if (enable_image_2d)
-            kernel_info->kernel_index = 2;
+            kernel_info->kernel_index = TENSOR_MIN_F16F16TOF16_2D_KERNEL;
         else
-            kernel_info->kernel_index = 1;
+            kernel_info->kernel_index = TENSOR_MIN_F16F16TOF16_KERNEL;
     }
     else if (src0Format == src1Format && src0Format == VSI_NN_TYPE_INT8
           && dstFormat == src0Format)
     {
         if(enable_image_2d)
-            kernel_info->kernel_index   = 4;
+            kernel_info->kernel_index   = TENSOR_MIN_I8I8TOI8_2D_KERNEL;
         else
-            kernel_info->kernel_index   = 3;
+            kernel_info->kernel_index   = TENSOR_MIN_I8I8TOI8_KERNEL;
     }
     else if (src0Format == src1Format && src0Format == VSI_NN_TYPE_UINT8
           && dstFormat == src0Format)
     {
         if(enable_image_2d)
-            kernel_info->kernel_index   = 6;
+            kernel_info->kernel_index   = TENSOR_MIN_U8TOU8_2D_KERNEL;
         else
-            kernel_info->kernel_index   = 5;
+            kernel_info->kernel_index   = TENSOR_MIN_U8TOU8_KERNEL;
     }
     else if (src0Format == src1Format && src0Format == VSI_NN_TYPE_INT16
           && dstFormat == src0Format)
     {
         if(enable_image_2d)
-            kernel_info->kernel_index   = 8;
+            kernel_info->kernel_index   = TENSOR_MIN_I16I16TOI16_2D_KERNEL;
         else
-            kernel_info->kernel_index   = 7;
+            kernel_info->kernel_index   = TENSOR_MIN_I16I16TOI16_KERNEL;
+    }
+    else if (src0Format == VSI_NN_TYPE_INT8 && src1Format == VSI_NN_TYPE_FLOAT16
+          && dstFormat == VSI_NN_TYPE_INT8)
+    {
+        kernel_info->resource_name[1] = "vsi_nn_kernel_minimum_fp16";
+        if(enable_image_2d)
+            kernel_info->kernel_index   = TENSOR_MIN_I8F16TOI8_2D_KERNEL;
+        else
+            kernel_info->kernel_index   = TENSOR_MIN_I8F16TOI8_KERNEL;
+    }
+    else if (src0Format == VSI_NN_TYPE_INT8 && src1Format == VSI_NN_TYPE_FLOAT16
+          && dstFormat == VSI_NN_TYPE_FLOAT16)
+    {
+        kernel_info->resource_name[1] = "vsi_nn_kernel_minimum_fp16";
+        if(enable_image_2d)
+            kernel_info->kernel_index   = TENSOR_MIN_I8F16TOF16_2D_KERNEL;
+        else
+            kernel_info->kernel_index   = TENSOR_MIN_I8F16TOF16_KERNEL;
+    }
+    else if (src0Format == VSI_NN_TYPE_UINT8 && src1Format == VSI_NN_TYPE_FLOAT16
+          && dstFormat == VSI_NN_TYPE_FLOAT16)
+    {
+        kernel_info->resource_name[1] = "vsi_nn_kernel_minimum_fp16";
+        if(enable_image_2d)
+            kernel_info->kernel_index   = TENSOR_MIN_U8F16TOF16_2D_KERNEL;
+        else
+            kernel_info->kernel_index   = TENSOR_MIN_U8F16TOF16_KERNEL;
+    }
+    else if (src0Format == VSI_NN_TYPE_UINT8 && src1Format == VSI_NN_TYPE_FLOAT16
+          && dstFormat == VSI_NN_TYPE_UINT8)
+    {
+        kernel_info->resource_name[1] = "vsi_nn_kernel_minimum_fp16";
+        if(enable_image_2d)
+            kernel_info->kernel_index   = TENSOR_MIN_U8F16TOU8_2D_KERNEL;
+        else
+            kernel_info->kernel_index   = TENSOR_MIN_U8F16TOU8_KERNEL;
+    }
+    else if (src0Format == VSI_NN_TYPE_INT16 && src1Format == VSI_NN_TYPE_FLOAT16
+          && dstFormat == VSI_NN_TYPE_INT16)
+    {
+        kernel_info->resource_name[1] = "vsi_nn_kernel_minimum_i16";
+        if(enable_image_2d)
+            kernel_info->kernel_index   = TENSOR_MIN_I16F16TOI16_2D_KERNEL;
+        else
+            kernel_info->kernel_index   = TENSOR_MIN_I16F16TOI16_KERNEL;
+    }
+    else if (src0Format == VSI_NN_TYPE_INT16 && src1Format == VSI_NN_TYPE_FLOAT16
+          && dstFormat == VSI_NN_TYPE_FLOAT16)
+    {
+        kernel_info->resource_name[1] = "vsi_nn_kernel_minimum_i16";
+        if(enable_image_2d)
+            kernel_info->kernel_index   = TENSOR_MIN_I16F16TOF16_2D_KERNEL;
+        else
+            kernel_info->kernel_index   = TENSOR_MIN_I16F16TOF16_KERNEL;
     }
     else
     {
@@ -309,6 +363,15 @@ static vsi_nn_op_compute_t op_compute_list[] =
     NULL
 };
 
+#define SWAP_INPUT_TENSOR(a, b) \
+do     \
+{      \
+    vsi_nn_tensor_t * tmp; \
+    tmp = (a);     \
+    (a) = (b);     \
+    (b) = tmp;     \
+} while (0)
+
 static vsi_status op_compute
     (
     vsi_nn_node_t * self,
@@ -318,6 +381,8 @@ static vsi_status op_compute
 {
     vsi_status status;
     vsi_nn_kernel_info_t kernel_info = {0};
+    vsi_nn_type_e input0_Format = inputs[0]->attr.dtype.vx_type;
+    vsi_nn_type_e input1_Format = inputs[1]->attr.dtype.vx_type;
 
     status = VSI_FAILURE;
     kernel_info.resource_num = 2;
@@ -327,6 +392,9 @@ static vsi_status op_compute
     kernel_info.type = vsi_nn_GetVXKernelTypeForShader();
     kernel_info.kernel = vx_kernel_MINIMUM_list;
     kernel_info.init_index = 1;
+
+    if (input0_Format != input1_Format && input0_Format == VSI_NN_TYPE_FLOAT16)
+        SWAP_INPUT_TENSOR(inputs[0], inputs[1]);
 
     if (vsi_nn_is_do_vx_op_pre_init(kernel_info.type))
     {
@@ -382,7 +450,21 @@ static vsi_status op_deinit
     return VSI_SUCCESS;
 } /* op_deinit() */
 
-#ifdef __cpluplus
+static vsi_bool op_setup
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs
+    )
+{
+    vsi_bool ret = FALSE;
+
+    ret = vsi_nn_OpSetup( VSI_NN_OP_MULTIPLY, self, inputs, outputs );
+
+    return ret;
+} /* op_setup() */
+
+#ifdef __cplusplus
 extern "C" {
 #endif
 /* Registrar */
@@ -392,11 +474,11 @@ DEF_OP_REG
     /* compute    */ op_compute,
     /* deinit     */ op_deinit,
     /* check      */ op_check,
-    /* setup      */ vsi_nn_op_common_setup,
+    /* setup      */ op_setup,
     /* optimize   */ NULL,
     /* input_num  */ _INPUT_NUM,
     /* output_num */ _OUTPUT_NUM
     );
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif

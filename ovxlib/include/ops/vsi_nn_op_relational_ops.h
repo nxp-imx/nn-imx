@@ -27,6 +27,10 @@
 #include "vsi_nn_types.h"
 #include "vsi_nn_platform.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define _VSI_NN_RELATIONAL_OPS_LOCAL_TENSOR_NUM 3
 
 typedef uint32_t vsi_nn_relational_ops_type_t; enum
@@ -36,6 +40,7 @@ typedef uint32_t vsi_nn_relational_ops_type_t; enum
     VSI_NN_RELATIONAL_OPS_LESS,
     VSI_NN_RELATIONAL_OPS_LESS_EQUAL,
     VSI_NN_RELATIONAL_OPS_NOT_EQUAL,
+    VSI_NN_RELATIONAL_OPS_EQUAL,
 };
 
 typedef struct _vsi_nn_relational_ops_lcl_data
@@ -49,5 +54,9 @@ typedef struct _vsi_nn_relational_ops_param
     vsi_nn_relational_ops_lcl_data local;
     vsi_nn_relational_ops_type_t op;
 } vsi_nn_relational_ops_param;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

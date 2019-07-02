@@ -47,6 +47,7 @@ uint8_t * vsi_nn_VdataCreate
     vsi_nn_tensor_t   * output_tensors[2];
 
     stream = NULL;
+    stream_size = 0;
 
     output_tensors[1] = NULL;
     vsi_nn_GetTensors( graph, node->input.tensors,

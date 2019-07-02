@@ -383,7 +383,7 @@ vx_status VX_CALLBACK vxSelectInitializer
 }
 
 
-#ifdef __cpluplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 vx_kernel_description_t vxSelect_CPU =
@@ -450,6 +450,6 @@ vx_kernel_description_t * vx_kernel_SELECT_list[] =
     &vxSelect_Uint8,
     NULL
 };
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif

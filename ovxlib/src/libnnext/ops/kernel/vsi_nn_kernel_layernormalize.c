@@ -582,7 +582,7 @@ static vx_param_description_t vxLayerNormKernelParam[] =
     {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED}
 };
-#ifdef __cpluplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 vx_kernel_description_t vxLayerNormKernelInfo =
@@ -649,6 +649,6 @@ vx_kernel_description_t * vx_kernel_LAYERNORM_list[] =
     &vxLayerNormKernelInfo_FP16toU8,
     NULL
 };
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif

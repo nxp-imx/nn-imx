@@ -26,6 +26,10 @@
 
 #include "vsi_nn_types.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define _VSI_NN_LOGICAL_OPS_LOCAL_TENSOR_NUM 3
 
 typedef uint32_t vsi_nn_logical_ops_type_t; enum
@@ -45,6 +49,10 @@ typedef struct _vsi_nn_logical_ops_param
     vsi_nn_logical_ops_lcl_data     local;
     vsi_nn_logical_ops_type_t       op;
 } vsi_nn_logical_ops_param;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

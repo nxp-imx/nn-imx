@@ -44,7 +44,13 @@
 #define _VX_KERNEL_FUNC_KERNEL  (vxSpatial_transformerKernel)
 
 #if 1
-static void transform_gemm_cpu(const void *src0_ptr, int M, int N, int K, const void *src1_ptr, const void *dst_ptr)
+static void transform_gemm_cpu
+    (
+    const void *src0_ptr,
+    int M, int N, int K,
+    const void *src1_ptr,
+    const void *dst_ptr
+    )
 {
     //vx_uint32  elementCount      = 1;
     vx_uint32  i                 = 0;
@@ -63,14 +69,14 @@ static void transform_gemm_cpu(const void *src0_ptr, int M, int N, int K, const 
     //vx_uint32  dst_height        = dst_params_t.sizes[1];
     //vx_uint32  dst_depth         = dst_params_t.sizes[2];
 
-    for (i = 0; i < N; i++)
+    for (i = 0; i < (uint32_t)N; i++)
     {
-        for (j = 0; j < M; j++)
+        for (j = 0; j < (uint32_t)M; j++)
         {
             //vx_uint32 idx = i * M + j;
             vx_float32 sum = 0;
 
-            for (k = 0; k < K; k++)
+            for (k = 0; k < (uint32_t)K; k++)
             {
                 vx_uint32 idx0 = j * K + k;
                 vx_uint32 idx1 = i * K + k;
@@ -86,7 +92,17 @@ static void transform_gemm_cpu(const void *src0_ptr, int M, int N, int K, const 
     }
 }
 
-static int st_process(float *data_in, float *pos, float *output, int in_w, int in_h, int out_w, int out_h,  int c)
+static int st_process
+    (
+    float *data_in,
+    float *pos,
+    float *output,
+    int in_w,
+    int in_h,
+    int out_w,
+    int out_h,
+    int c
+    )
 {
     int i = 0;
     int j = 0;
@@ -113,13 +129,14 @@ static int st_process(float *data_in, float *pos, float *output, int in_w, int i
                 py = (py + 1)/ 2 * in_w;
                 value = 0.0;
 
-                for(m = floor(px); m <= ceil(px); m++)
+                for(m = (int32_t)floor(px); m <= (int32_t)ceil(px); m++)
                 {
-                    for(n = floor(py); n <= ceil(py); n++)
+                    for(n = (int32_t)floor(py); n <= (int32_t)ceil(py); n++)
                     {
                         if(m >= 0 && m < in_h && n >= 0 && n < in_w)
                         {
-                            value += (1 - fabs(px-m)) * (1 - fabs(py-n)) * data_in[ i * (in_w * in_h) + m * in_w + n];
+                            value += (1 - (float)fabs(px-m)) * (1 - (float)fabs(py-n))
+                                * data_in[ i * (in_w * in_h) + m * in_w + n];
                         }
                     }
                 }
@@ -151,9 +168,9 @@ static vsi_status VX_CALLBACK vxSpatial_transformerKernel
 
     float *f32_in_buffer = NULL,*f32_out_buffer = NULL,*f32_thre_proto_buffer = NULL;
     uint8_t *in_buffer = NULL, *out_buffer = NULL, *thre_data_buffer;
-    int dim = 0;
-    int size = 0;
-    int i = 0;
+    uint32_t dim = 0;
+    uint32_t size = 0;
+    uint32_t i = 0;
     int flag;
     float thre_value[6];
     int thre_num = 0;
@@ -195,10 +212,10 @@ static vsi_status VX_CALLBACK vxSpatial_transformerKernel
     }
     for(i = 0; i < out_attr.size[0] * out_attr.size[1]; i++)
     {
-        tmp = ( i / out_attr.size[0] ) * 1.0 / out_attr.size[1] * 2 - 1;
+        tmp = ( i / out_attr.size[0] ) * (float)1.0 / out_attr.size[1] * 2 - 1;
         f32_grid[i * 3] = tmp;
-        tmp = i;
-        tmp = ( i % out_attr.size[0] ) * 1.0 / out_attr.size[0] * 2 - 1;
+        tmp = (float)i;
+        tmp = ( i % out_attr.size[0] ) * (float)1.0 / out_attr.size[0] * 2 - 1;
         f32_grid[i * 3 + 1] = tmp;
         f32_grid[i * 3 + 2] = 1;
     }
@@ -418,7 +435,8 @@ vx_status VX_CALLBACK vxTransform_GemmInitializer(vx_node nodObj, const vx_refer
             0x15151515, // BSelt
             0x05430210, 0x05430210, // BBin
             0x00000400, // AccumType, ConstantType, and PostShift
-            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
+            0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
         };
 
         vxSetNodeUniform(nodObj, "uniGemm3x3_4x4", 1, uniGemm3x3_4x4);
@@ -437,8 +455,12 @@ static vx_param_description_t vxTransform_setupThresKernelParam[] =
     {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED}
 };
 
-vx_status VX_CALLBACK vxTransform_setupThresInitializer(vx_node nodObj,
-                                                        const vx_reference *paramObj, vx_uint32 paraNum)
+vx_status VX_CALLBACK vxTransform_setupThresInitializer
+    (
+    vx_node nodObj,
+    const vx_reference *paramObj,
+    vx_uint32 paraNum
+    )
 {
 // Alignment with a power of two value.
 #define gcmALIGN(n, align) ((n) + ((align) - 1)) & ~((align) - 1)
@@ -523,7 +545,12 @@ static vx_param_description_t vxTransform_InterPKernelParam[] =
 };
 
 
-vx_status VX_CALLBACK vxTransform_InterPInitializer(vx_node nodObj, const vx_reference *paramObj, vx_uint32 paraNum)
+vx_status VX_CALLBACK vxTransform_InterPInitializer
+    (
+    vx_node nodObj,
+    const vx_reference *paramObj,
+    vx_uint32 paraNum
+    )
 {
 // Alignment with a power of two value.
 #define gcmALIGN(n, align) ((n) + ((align) - 1)) & ~((align) - 1)
@@ -594,7 +621,8 @@ vx_status VX_CALLBACK vxTransform_InterPInitializer(vx_node nodObj, const vx_ref
             0x09090909, // BSelt
             0x00010000, 0x00000001, // BBin
             0x00000101, // AccumType, ConstantType, and PostShift
-            0x3c000000, 0x00000000, 0x3c000000, 0x00000000, 0x3c000000, 0x00000000, 0x3c000000, 0x00000000 // Constant
+            0x3c000000, 0x00000000, 0x3c000000, 0x00000000,
+            0x3c000000, 0x00000000, 0x3c000000, 0x00000000 // Constant
         };
         vx_uint32 uniConvertF16toF32_4x4[16] = {
             0x01010101, // TCfg
@@ -603,7 +631,8 @@ vx_status VX_CALLBACK vxTransform_InterPInitializer(vx_node nodObj, const vx_ref
             0x02020202, // BSelt
             0x00000000, 0x00000000, // BBin
             0x00000100, // AccumType, ConstantType, and PostShift
-            0x00003c00, 0x00000000, 0x00003c00, 0x00000000, 0x00003c00, 0x00000000, 0x00003c00, 0x00000000 // Constant
+            0x00003c00, 0x00000000, 0x00003c00, 0x00000000,
+            0x00003c00, 0x00000000, 0x00003c00, 0x00000000 // Constant
         };
 
         vxSetNodeUniform(nodObj, "uniGetDXY_4x4", 1, uniGetDXY_4x4);
@@ -626,7 +655,7 @@ vx_status VX_CALLBACK vxTransform_InterPInitializer(vx_node nodObj, const vx_ref
     return VX_SUCCESS;
 }
 
-#ifdef __cpluplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 vx_kernel_description_t vxSpatial_transformer_CPU =
@@ -708,6 +737,6 @@ vx_kernel_description_t * vx_kernel_SPATIAL_TRANSFORMER_list[] =
     &vxTransform_InterPKernelInfo_F16toF16,
     NULL
 };
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif

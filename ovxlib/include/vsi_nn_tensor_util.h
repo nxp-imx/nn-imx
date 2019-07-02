@@ -67,7 +67,7 @@ OVXLIB_API vsi_nn_tensor_t * vsi_nn_CreateTensor
     vsi_nn_tensor_attr_t * attr
     );
 
-OVXLIB_API vsi_bool vsi_nn_TensorReinit
+vsi_bool vsi_nn_TensorReinit
     (
     vsi_nn_graph_t  * graph,
     vsi_nn_tensor_t * tensor
@@ -188,6 +188,12 @@ OVXLIB_API uint32_t vsi_nn_CopyTensorToBuffer
     uint8_t        * buffer
     );
 
+OVXLIB_API void vsi_nn_PrintNodeIO
+    (
+    vsi_nn_graph_t *graph,
+    vsi_nn_node_t *node
+    );
+
 OVXLIB_API void vsi_nn_PrintTensor
     (
     vsi_nn_tensor_t * tensor,
@@ -239,6 +245,11 @@ OVXLIB_API vsi_nn_tensor_t * vsi_nn_VariableToTensor
     vsi_nn_type_e type
     );
 
+OVXLIB_API void *vsi_nn_Malloc
+    (
+    size_t size
+    );
+
 OVXLIB_API void vsi_nn_Free
     (
     void * data
@@ -261,6 +272,52 @@ OVXLIB_API void vsi_nn_ReleaseTensorRelevance
 OVXLIB_API vsi_nn_tensor_rel_t *vsi_nn_CreateTensorRelevance
     (
     vsi_nn_graph_t *graph
+    );
+
+OVXLIB_API vsi_nn_tensor_t * vsi_nn_CreateTensorFromHandle
+    (
+    vsi_nn_graph_t       * graph,
+    uint8_t              * data,
+    vsi_nn_tensor_attr_t * attr
+    );
+
+OVXLIB_API vsi_status vsi_nn_SwapTensorHandle
+    (
+    vsi_nn_tensor_t * tensor0,
+    vsi_nn_tensor_t * tensor1
+    );
+
+OVXLIB_API vsi_nn_size_t vsi_nn_vxGetTensorElementNum
+    (
+    vsi_nn_tensor_attr_t *attr
+    );
+
+OVXLIB_API vsi_status vsi_nn_vxGetTensorAttr
+    (
+    vx_tensor tensor,
+    vsi_nn_tensor_attr_t *attr
+    );
+
+OVXLIB_API uint8_t *vsi_nn_vxCopyTensorToData
+    (
+    vx_context context,
+    vx_tensor tensor,
+    vsi_nn_tensor_attr_t *attr
+    );
+
+OVXLIB_API vsi_status vsi_nn_vxCopyDataToTensor
+    (
+    vx_context context,
+    vx_tensor tensor,
+    vsi_nn_tensor_attr_t *attr,
+    uint8_t *data
+    );
+
+OVXLIB_API vsi_nn_tensor_t * vsi_nn_CreateTensorWithDefault
+    (
+    vsi_nn_graph_t       * graph,
+    vsi_nn_tensor_attr_t * attr,
+    float                  defualt_value
     );
 
 #ifdef __cplusplus

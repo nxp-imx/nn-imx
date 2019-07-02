@@ -22,15 +22,32 @@
 *
 *****************************************************************************/
 #include <string.h>
+#include <stdlib.h>
 
-#include "vsi_nn_tensor.h"
-#include "vsi_nn_log.h"
+#include "vsi_nn_tensor_util.h"
+#include "vsi_nn_test.h"
 #include "utils/vsi_nn_math.h"
 #include "utils/vsi_nn_util.h"
 #include "utils/vsi_nn_dtype_util.h"
-#include "utils/vsi_nn_limits.h"
+#include "utils/vsi_nn_dtype_util_prv.h"
 #include "quantization/vsi_nn_asymmetric_affine.h"
 #include "quantization/vsi_nn_dynamic_fixed_point.h"
+
+vsi_bool vsi_nn_TypeIsInteger
+    (
+    const vsi_nn_type_e type
+    )
+{
+    return type_is_integer(type);
+} /* vsi_nn_TypeIsInteger() */
+
+vsi_bool vsi_nn_TypeIsSigned
+    (
+    const vsi_nn_type_e type
+    )
+{
+    return type_is_signed(type);
+} /* vsi_nn_TypeIsSigned() */
 
 uint32_t vsi_nn_TypeGetBitWidth
     (
@@ -39,7 +56,7 @@ uint32_t vsi_nn_TypeGetBitWidth
 {
     uint32_t bw;
     bw = 8 * vsi_nn_TypeGetBytes( type );
-    if( vsi_nn_TypeIsSigned( type ) )
+    if( type_is_signed( type ) )
     {
         bw --;
     }
@@ -53,23 +70,7 @@ int32_t vsi_nn_Fp32ToDFP
     const vsi_nn_type_e type
     )
 {
-    int32_t data;
-    double max_range;
-    double min_range;
-
-    vsi_nn_TypeGetRange( type, &max_range, &min_range );
-    if( fl > 0 )
-    {
-        data = (int32_t)vsi_nn_Rint( in * (float)( 1 << fl ) );
-    }
-    else
-    {
-        data = (int32_t)vsi_nn_Rint( in * ( 1.0f / (float)( 1 << -fl ) ) );
-    }
-    data = vsi_nn_min( data, (int32_t)max_range );
-    data = vsi_nn_max( data, (int32_t)min_range );
-
-    return data;
+    return fp32_to_dfp(in, fl, type);
 } /* vsi_nn_Fp32ToDPF() */
 
 float vsi_nn_DFPToFp32
@@ -79,18 +80,7 @@ float vsi_nn_DFPToFp32
     const vsi_nn_type_e type
     )
 {
-    float result;
-
-    if( fl > 0 )
-    {
-        result = (float)val * ( 1.0f / ( (float) ( 1 << fl ) ) );
-    }
-    else
-    {
-        result = (float)val * ( (float) ( 1 << -fl ) );
-    }
-
-    return result;
+    return dfp_to_fp32(val, fl, type);
 } /* vsi_nn_DFPToFp32() */
 
 int32_t vsi_nn_Fp32ToAffine
@@ -101,16 +91,7 @@ int32_t vsi_nn_Fp32ToAffine
     const vsi_nn_type_e type
     )
 {
-    int32_t data;
-    double max_range;
-    double min_range;
-
-    vsi_nn_TypeGetRange( type, &max_range, &min_range );
-
-    data = (int32_t)(vsi_nn_Rint( in / scale ) + zero_point );
-    data = vsi_nn_max( (int32_t)min_range, vsi_nn_min( (int32_t)max_range , data ) );
-
-    return data;
+    return fp32_to_affine(in, scale, zero_point, type);
 } /* vsi_nn_Fp32ToAffine() */
 
 float vsi_nn_AffineToFp32
@@ -121,11 +102,7 @@ float vsi_nn_AffineToFp32
     const vsi_nn_type_e type
     )
 {
-    float data;
-
-    data = ( (float)val - zero_point ) * scale;
-
-    return data;
+    return affine_to_fp32(val, scale, zero_point, type);
 } /* vsi_nn_AffineToFp32() */
 
 uint16_t vsi_nn_Fp32ToFp16
@@ -133,27 +110,7 @@ uint16_t vsi_nn_Fp32ToFp16
     float in
     )
 {
-    uint32_t fp32 = *((uint32_t *) &in);
-    uint32_t t1 = (fp32 & 0x80000000u) >> 16;  /* sign bit. */
-    uint32_t t2 = (fp32 & 0x7F800000u) >> 13;  /* Exponent bits */
-    uint32_t t3 = (fp32 & 0x007FE000u) >> 13;  /* Mantissa bits, no rounding */
-    uint32_t fp16 = 0u;
-
-    if( t2 >= 0x023c00u )
-    {
-        fp16 = t1 | 0x7BFF;     /* Don't round to infinity. */
-    }
-    else if( t2 <= 0x01c000u )
-    {
-        fp16 = t1;
-    }
-    else
-    {
-        t2 -= 0x01c000u;
-        fp16 = t1 | t2 | t3;
-    }
-
-    return (uint16_t) fp16;
+    return fp32_to_fp16(in);
 } /* vsi_nn_Fp32ToFp16() */
 
 float vsi_nn_Fp16ToFp32
@@ -161,27 +118,7 @@ float vsi_nn_Fp16ToFp32
     int16_t in
     )
 {
-    int32_t t1;
-    int32_t t2;
-    int32_t t3;
-    float out;
-
-    t1 = in & 0x7fff;         // Non-sign bits
-    t2 = in & 0x8000;         // Sign bit
-    t3 = in & 0x7c00;         // Exponent
-
-    t1 <<= 13;                // Align mantissa on MSB
-    t2 <<= 16;                // Shift sign bit into position
-
-    t1 += 0x38000000;         // Adjust bias
-
-    t1 = (t3 == 0 ? 0 : t1);  // Denormals-as-zero
-
-    t1 |= t2;                 // Re-insert sign bit
-
-    *((uint32_t*)&out) = t1;
-
-    return out;
+    return fp16_to_fp32(in);
 } /* vsi_nn_Fp16ToFp32() */
 
 vsi_status vsi_nn_IntegerConvert
@@ -192,31 +129,7 @@ vsi_status vsi_nn_IntegerConvert
     vsi_nn_type_e   dest_type
     )
 {
-    vsi_status status = VSI_SUCCESS;
-
-    if( vsi_nn_TypeIsInteger( src_type ) && vsi_nn_TypeIsInteger( dest_type ) )
-    {
-        uint8_t    all_zeros[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-        uint8_t    all_ones[] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
-        uint32_t   src_sz = vsi_nn_TypeGetBytes( src_type );
-        uint32_t   dest_sz = vsi_nn_TypeGetBytes( dest_type );
-        uint8_t*   buffer = all_zeros;
-
-        if( vsi_nn_TypeIsSigned( src_type ) && (((int8_t *)src)[src_sz - 1] & 0x80) )
-        {
-            buffer = all_ones;
-        }
-
-        memcpy( buffer, src, src_sz );
-        memcpy( dest, buffer, dest_sz );
-    }
-    else
-    {
-        VSILOGE( "src_type and dest_type must be Integer, but %#x %#x\n", src_type, dest_type );
-        status = VSI_FAILURE;
-    }
-
-    return status;
+    return integer_convert(src, src_type, dest, dest_type);
 } /* vsi_nn_IntegerConvert() */
 
 vsi_status vsi_nn_DtypeConvert
@@ -227,101 +140,23 @@ vsi_status vsi_nn_DtypeConvert
     const vsi_nn_dtype_t * dst_dtype
     )
 {
+    vsi_status status;
     float data;
-    int32_t type_bytes;
 
-    /* Convert src type to float32 */
     data = 0.0f;
-    switch( src_dtype->vx_type )
+    status = dtype_to_float32(src, &data, src_dtype);
+    if(status != VSI_SUCCESS)
     {
-    case VSI_NN_TYPE_FLOAT32:
-        {
-            data = *(float *)src;
-        }
-        break;
-    case VSI_NN_TYPE_FLOAT16:
-        {
-            data = vsi_nn_Fp16ToFp32( *(int16_t *)src );
-        }
-        break;
-    case VSI_NN_TYPE_INT8:
-    case VSI_NN_TYPE_UINT8:
-    case VSI_NN_TYPE_INT16:
-        {
-            int32_t src_value = 0;
-
-            vsi_nn_IntegerConvert(src, src_dtype->vx_type, &src_value, VSI_NN_TYPE_INT32 );
-            switch( src_dtype->qnt_type )
-            {
-            case VSI_NN_QNT_TYPE_DFP:
-                data = vsi_nn_DFPToFp32( src_value, src_dtype->fl, src_dtype->vx_type );
-                break;
-
-            case VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC:
-                data = vsi_nn_AffineToFp32( src_value,
-                    src_dtype->scale, src_dtype->zero_point, src_dtype->vx_type );
-                break;
-
-            case VSI_NN_QNT_TYPE_NONE:
-                data = (float)src_value;
-                break;
-
-            default:
-                break;
-            }
-        }
-        break;
-    default:
-        VSILOGE( "Unsupported format %#x\n", src_dtype->vx_type );
-        return VSI_FAILURE;
+        VSILOGE("dtype data convert to float32 fail");
+        return status;
     }
-
-    type_bytes = vsi_nn_TypeGetBytes( dst_dtype->vx_type );
-    memset( dst, 0, type_bytes );
-    /* Convert float32 to dst type */
-    switch( dst_dtype->vx_type )
+    status = float32_to_dtype(data, dst, dst_dtype);
+    if(status != VSI_SUCCESS)
     {
-    case VSI_NN_TYPE_FLOAT32:
-        *(float *)dst = data;
-        break;
-    case VSI_NN_TYPE_FLOAT16:
-        *(int16_t *)dst = vsi_nn_Fp32ToFp16( data );
-        break;
-    case VSI_NN_TYPE_INT8:
-    case VSI_NN_TYPE_UINT8:
-    case VSI_NN_TYPE_INT16:
-        {
-            int32_t dst_value = 0;
-
-            switch( dst_dtype->qnt_type )
-            {
-            case VSI_NN_QNT_TYPE_DFP:
-                dst_value = vsi_nn_Fp32ToDFP( data, dst_dtype->fl, dst_dtype->vx_type );
-                break;
-
-            case VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC:
-                dst_value = vsi_nn_Fp32ToAffine( data,
-                    dst_dtype->scale, dst_dtype->zero_point, dst_dtype->vx_type );
-                break;
-
-            case VSI_NN_QNT_TYPE_NONE:
-                dst_value = (int32_t)data;
-                break;
-
-            default:
-                break;
-            }
-
-            vsi_nn_IntegerConvert( &dst_value, VSI_NN_TYPE_INT32, dst, dst_dtype->vx_type );
-        }
-        break;
-
-    default:
-        VSILOGE("Unsupported dst format %d\n", dst_dtype->vx_type);
-        return VSI_FAILURE;
+        VSILOGE("float32 data convert to dtype fail");
+        return status;
     }
-
-    return VSI_SUCCESS;
+    return status;
 } /* vsi_nn_DtypeConvert */
 
 /*
@@ -371,12 +206,7 @@ vsi_status vsi_nn_DtypeToFloat32
     const vsi_nn_dtype_t * src_dtype
     )
 {
-    vsi_nn_dtype_t dst_dtype;
-
-    memset( &dst_dtype, 0, sizeof( vsi_nn_dtype_t ) );
-    dst_dtype.vx_type = VSI_NN_TYPE_FLOAT32;
-
-    return vsi_nn_DtypeConvert( src, src_dtype, (uint8_t *)dst, &dst_dtype );
+    return dtype_to_float32(src, dst, src_dtype);
 } /* vsi_nn_DtypeToFloat32() */
 
 vsi_status vsi_nn_Float32ToDtype
@@ -386,13 +216,8 @@ vsi_status vsi_nn_Float32ToDtype
     const vsi_nn_dtype_t * dst_dtype
     )
 {
-    vsi_nn_dtype_t src_dtype;
-
-    memset( &src_dtype, 0, sizeof( vsi_nn_dtype_t ) );
-    src_dtype.vx_type = VSI_NN_TYPE_FLOAT32;
-
-    return vsi_nn_DtypeConvert( (uint8_t *)&src, &src_dtype, dst, dst_dtype );
-} /* vsi_nn_Float32ToDtype */
+    return float32_to_dtype(src, dst, dst_dtype);
+} /* vsi_nn_Float32ToDtype() */
 
 int32_t vsi_nn_DtypeConvertRawData
     (
@@ -455,7 +280,7 @@ int32_t vsi_nn_DtypeConvertRawDataToFloat32
 {
     vsi_nn_dtype_t dst_dtype;
     memset( &dst_dtype, 0, sizeof( vsi_nn_dtype_t ) );
-    dst_dtype.vx_type = VX_TYPE_FLOAT32;
+    dst_dtype.vx_type = VSI_NN_TYPE_FLOAT32;
     return vsi_nn_DtypeConvertRawData(
         src, src_bytes, src_dtype,
         (uint8_t *)dst, dst_size * sizeof( float ), &dst_dtype );
@@ -472,87 +297,18 @@ int32_t vsi_nn_DtypeConvertFloat32ToRawData
 {
     vsi_nn_dtype_t src_dtype;
     memset( &src_dtype, 0, sizeof( vsi_nn_dtype_t ) );
-    src_dtype.vx_type = VX_TYPE_FLOAT32;
+    src_dtype.vx_type = VSI_NN_TYPE_FLOAT32;
     return vsi_nn_DtypeConvertRawData(
         (uint8_t *)src, src_size * sizeof( float ), &src_dtype,
         dst, dst_bytes, dst_dtype );
 } /*vsi_nn_DtypeConvertFloat32ToRawData()*/
-
-vsi_bool vsi_nn_TypeIsInteger
-    (
-    const vsi_nn_type_e type
-    )
-{
-    vsi_bool ret;
-    ret = FALSE;
-    switch( type )
-    {
-    case VSI_NN_TYPE_INT8:
-    case VSI_NN_TYPE_INT16:
-    case VSI_NN_TYPE_INT32:
-    case VSI_NN_TYPE_INT64:
-    case VSI_NN_TYPE_UINT8:
-    case VSI_NN_TYPE_UINT16:
-    case VSI_NN_TYPE_UINT32:
-    case VSI_NN_TYPE_UINT64:
-        ret = TRUE;
-        break;
-    default:
-        break;
-    }
-    return ret;
-} /* vsi_nn_TypeIsInteger() */
-
-vsi_bool vsi_nn_TypeIsSigned
-    (
-    const vsi_nn_type_e type
-    )
-{
-    vsi_bool ret;
-    ret = FALSE;
-    switch( type )
-    {
-    case VSI_NN_TYPE_INT8:
-    case VSI_NN_TYPE_INT16:
-    case VSI_NN_TYPE_INT32:
-    case VSI_NN_TYPE_INT64:
-    case VSI_NN_TYPE_FLOAT16:
-    case VSI_NN_TYPE_FLOAT32:
-    case VSI_NN_TYPE_FLOAT64:
-        ret = TRUE;
-        break;
-    default:
-        break;
-    }
-    return ret;
-} /* vsi_nn_TypeIsSigned() */
 
 uint32_t vsi_nn_TypeGetBytes
     (
     const vsi_nn_type_e type
     )
 {
-    switch( type )
-    {
-    case VSI_NN_TYPE_INT8:
-    case VSI_NN_TYPE_UINT8:
-        return 1;
-    case VSI_NN_TYPE_INT16:
-    case VSI_NN_TYPE_UINT16:
-    case VSI_NN_TYPE_FLOAT16:
-        return 2;
-    case VSI_NN_TYPE_INT32:
-    case VSI_NN_TYPE_UINT32:
-    case VSI_NN_TYPE_FLOAT32:
-        return 4;
-    case VSI_NN_TYPE_INT64:
-    case VSI_NN_TYPE_UINT64:
-    case VSI_NN_TYPE_FLOAT64:
-        return 8;
-    default:
-        VSILOGW( "Unkonwn type %d", type );
-        return 0;
-    }
+    return type_get_bytes( type );
 } /* vsi_nn_TypeGetBytes() */
 
 /*
@@ -563,7 +319,7 @@ uint32_t vsi_nn_GetTypeBytes
     const vsi_nn_type_e type
     )
 {
-    return vsi_nn_TypeGetBytes( type );
+    return type_get_bytes( type );
 } /* vsi_nn_GetTypeBytes() */
 
 vsi_bool vsi_nn_QuantCheck
@@ -583,7 +339,7 @@ vsi_bool vsi_nn_QuantCheck
     {
         return ret;
     }
-    if(vsi_nn_TypeIsInteger(dtype) == FALSE)
+    if(type_is_integer(dtype) == FALSE)
     {
         return ret;
     }
@@ -619,3 +375,157 @@ vsi_bool vsi_nn_QuantCheck
     return ret;
 } /* vsi_nn_QuantCheck() */
 
+vsi_bool vsi_nn_DtypeCompare
+    (
+    vsi_nn_dtype_t *dtype0,
+    vsi_nn_dtype_t *dtype1
+    )
+{
+    if(NULL == dtype0 || NULL == dtype1)
+    {
+        return FALSE;
+    }
+
+    if(dtype0->vx_type != dtype1->vx_type || dtype0->qnt_type != dtype1->qnt_type)
+    {
+        return FALSE;
+    }
+    if(dtype0->qnt_type == VSI_NN_QNT_TYPE_DFP)
+    {
+        if(dtype0->fl != dtype1->fl)
+        {
+            return FALSE;
+        }
+    }
+    else if(dtype0->qnt_type == VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC)
+    {
+        const float diff = (float)1e-5;
+        if(dtype0->zero_point != dtype1->zero_point)
+        {
+            return FALSE;
+        }
+        if(vsi_nn_float_compare(dtype0->scale, dtype1->scale, diff) == FALSE)
+        {
+            return FALSE;
+        }
+    }
+
+    return TRUE;
+} /* vsi_nn_DtypeCompare */
+
+vsi_status vsi_nn_vxConvertTensorToFloat32Data
+    (
+    vx_context context,
+    vx_tensor tensor,
+    vsi_nn_tensor_attr_t *attr,
+    float *f32_data,
+    uint32_t f32_data_sz
+    )
+{
+    vsi_status status;
+    uint8_t *data;
+    uint32_t elements,stride;
+    vsi_nn_tensor_attr_t tensor_attr, *_attr;
+
+    data = NULL;
+    if(NULL == context || NULL == tensor || NULL == f32_data)
+    {
+        return VSI_FAILURE;
+    }
+    if(NULL == attr)
+    {
+        memset(&tensor_attr, 0, sizeof(tensor_attr));
+        status = vsi_nn_vxGetTensorAttr(tensor, &tensor_attr);
+        TEST_CHECK_STATUS(status, final);
+        _attr = &tensor_attr;
+    }
+    else
+    {
+        _attr = attr;
+    }
+
+    status = VSI_FAILURE;
+    elements = vsi_nn_vxGetTensorElementNum(_attr);
+    stride = vsi_nn_TypeGetBytes(_attr->dtype.vx_type);
+    if(f32_data_sz != elements * sizeof(float))
+    {
+        VSILOGE("buffer sz %u != required sz %u", f32_data_sz, elements * sizeof(float));
+        return status;
+    }
+    data = vsi_nn_vxCopyTensorToData(context, tensor, _attr);
+    TEST_CHECK_PTR(data, final);
+
+    vsi_nn_DtypeConvertRawDataToFloat32(data,
+                                        elements * stride,
+                                        (const vsi_nn_dtype_t *)&_attr->dtype,
+                                        f32_data,
+                                        elements);
+
+    status = VSI_SUCCESS;
+final:
+    if(data)
+    {
+        free(data);
+        data = NULL;
+    }
+    return status;
+} /* vsi_nn_vxConvertTensorToFloat32Data() */
+
+vsi_status vsi_nn_vxConvertFloat32DataToTensor
+    (
+    vx_context context,
+    vx_tensor tensor,
+    vsi_nn_tensor_attr_t *attr,
+    float *f32_data,
+    uint32_t f32_data_sz
+    )
+{
+    vsi_status status;
+    uint8_t *data;
+    uint32_t elements,stride;
+    vsi_nn_tensor_attr_t tensor_attr, *_attr;
+
+    data = NULL;
+    if(NULL == context || NULL == tensor || NULL == f32_data)
+    {
+        return VSI_FAILURE;
+    }
+    if(NULL == attr)
+    {
+        memset(&tensor_attr, 0, sizeof(tensor_attr));
+        status = vsi_nn_vxGetTensorAttr(tensor, &tensor_attr);
+        TEST_CHECK_STATUS(status, final);
+        _attr = &tensor_attr;
+    }
+    else
+    {
+        _attr = attr;
+    }
+
+    status = VSI_FAILURE;
+    elements = vsi_nn_vxGetTensorElementNum(_attr);
+    stride = vsi_nn_GetTypeBytes(_attr->dtype.vx_type);
+    if(f32_data_sz != elements * sizeof(float))
+    {
+        VSILOGE("buffer sz %u != required sz %u", f32_data_sz, elements * sizeof(float));
+        return status;
+    }
+
+    data = (uint8_t *)malloc(elements * stride);
+    TEST_CHECK_PTR(data, final);
+    memset(data, 0, sizeof(elements * stride));
+    vsi_nn_DtypeConvertFloat32ToRawData(f32_data,
+                                        elements,
+                                        data,
+                                        elements * vsi_nn_TypeGetBytes(_attr->dtype.vx_type),
+                                        (const vsi_nn_dtype_t *)&_attr->dtype);
+
+    status = vsi_nn_vxCopyDataToTensor(context, tensor, _attr, data);
+final:
+    if(data)
+    {
+        free(data);
+        data = NULL;
+    }
+    return status;
+} /* vsi_nn_vxConvertFloat32DataToTensor() */

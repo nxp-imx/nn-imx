@@ -157,6 +157,7 @@ static vsi_status vsi_nn_RegisterCPUKernel
     if( NULL != obj )
     {
         status = vsi_nn_InitKernel(kernel,obj);
+        vxReleaseKernel( &obj );
     }
     else
     {
@@ -237,7 +238,7 @@ static vsi_status vsi_nn_RegisterVXKernel
         program_src[i] = vsi_nn_LoadVxResourceFromSrc(kernel_info->resource_name[i], &program_len[i]);
         if (program_src[i] == NULL)
         {
-            VSILOGE("Load Default VX Resource Error!\n");
+            VSILOGI("Try to Load VX Resource from file...\n");
 
             program_src[i] = vsi_nn_LoadVxResourceFromFile(kernel_info->resource_name[i], &program_len[i]);
         }
@@ -380,11 +381,17 @@ vsi_status vsi_nn_RegisterClientKernel
     switch (kernel_info->type)
     {
     case VX_KERNEL_TYPE_VX:
-        vsi_nn_RegisterVXKernel(graph, kernel_info); break;
+        status = vsi_nn_RegisterVXKernel(graph, kernel_info);
+        break;
+
     case VX_KERNEL_TYPE_CPU:
-        vsi_nn_RegisterCPUKernel(graph, kernel_info); break;
+        status = vsi_nn_RegisterCPUKernel(graph, kernel_info);
+        break;
+
     case VX_KERNEL_TYPE_BIN:
-        vsi_nn_RegisterBinKernel(graph, kernel_info); break;
+        status = vsi_nn_RegisterBinKernel(graph, kernel_info);
+        break;
+
     default:
         status = VSI_FAILURE;
     }
@@ -438,7 +445,7 @@ vx_node vsi_nn_RegisterClientKernelAndNewNode
 
     /* Create node */
     node = vxCreateGenericNode( graph->g, obj );
-    //vxReleaseKernel( &obj );
+    vxReleaseKernel( &obj );
     status = vxGetStatus( (vx_reference)node );
     if( VSI_SUCCESS != status )
     {

@@ -224,7 +224,7 @@ static vx_param_description_t vxTensorStackConcatKernelParam[] =
     {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED}
 };
-#ifdef __cpluplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 vx_kernel_description_t vxTensorStackConcatKernelInfo =
@@ -276,6 +276,6 @@ vx_kernel_description_t * vx_kernel_TENSORSTACKCONCAT_list[] =
     &vxTensorStackConcatKernelInfo8Bits,
     NULL
 };
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif

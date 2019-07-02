@@ -86,7 +86,7 @@ static vsi_status _create_params
     vsi_nn_tensor_t * thre_tensor;
     vsi_nn_tensor_attr_t attr;
 
-    float value_buf[6];
+    vx_uint16 value_buf[6];
 
     if( 0 == num )
     {
@@ -105,13 +105,6 @@ static vsi_status _create_params
 
     params[0] = (vx_reference)vxCreateScalar( ctx, VSI_NN_TYPE_INT32, &flag );
 
-    value_buf[0] = p->theta_1_1;
-    value_buf[1] = p->theta_1_2;
-    value_buf[2] = p->theta_1_3;
-    value_buf[3] = p->theta_2_1;
-    value_buf[4] = p->theta_2_2;
-    value_buf[5] = p->theta_2_3;
-
     memset( &attr, 0, sizeof( vsi_nn_tensor_attr_t ) );
     attr.size[0] = 6;
     attr.size[1] = 1;
@@ -119,7 +112,15 @@ static vsi_status _create_params
     attr.size[3] = 1;
     attr.dim_num = 4;
     attr.is_const = TRUE;
-    attr.dtype.vx_type = VSI_NN_TYPE_FLOAT32;
+    attr.dtype.vx_type = VSI_NN_TYPE_FLOAT16;
+
+    vsi_nn_Float32ToDtype(p->theta_1_1, (uint8_t*)(&value_buf[0]), &attr.dtype);
+    vsi_nn_Float32ToDtype(p->theta_1_2, (uint8_t*)(&value_buf[1]), &attr.dtype);
+    vsi_nn_Float32ToDtype(p->theta_1_3, (uint8_t*)(&value_buf[2]), &attr.dtype);
+    vsi_nn_Float32ToDtype(p->theta_2_1, (uint8_t*)(&value_buf[3]), &attr.dtype);
+    vsi_nn_Float32ToDtype(p->theta_2_2, (uint8_t*)(&value_buf[4]), &attr.dtype);
+    vsi_nn_Float32ToDtype(p->theta_2_3, (uint8_t*)(&value_buf[5]), &attr.dtype);
+
     thre_tensor = vsi_nn_CreateTensorFromData( node->graph,(uint8_t *)&value_buf, &attr );
 
     params[1] = (vx_reference)thre_tensor->t;
@@ -218,8 +219,8 @@ int setUPGridData(vx_uint32 output_W_, vx_uint32 output_H_, vx_float32 scale, vx
     {
         for (x = 0; x < output_W_; x++)
         {
-            float data0 = y * 1.0 / (float)output_H_ * 2 - 1;
-            float data1 = x * 1.0 / (float)output_W_ * 2 - 1;
+            float data0 = y * (float)1.0 / (float)output_H_ * 2 - 1;
+            float data1 = x * (float)1.0 / (float)output_W_ * 2 - 1;
             float data2 = 1;
 
             tmp_buf[idx++] = data0;
@@ -300,7 +301,7 @@ static vsi_status vx_op_compute_setupThre
     vx_tensor tmp_t, tmp_t1;
 
     //float flag_buf[6];
-    float value_buf[6];
+    vx_uint16 value_buf[6];
 
     memset( params, 0, sizeof( vx_reference * ) * 4 );
     p = (vsi_nn_spatial_transformer_param *)self->nn_param.client_param;
@@ -313,13 +314,6 @@ static vsi_status vx_op_compute_setupThre
             | ((p->has_theta_2_2 == 1) << 4)
             | ((p->has_theta_2_3 == 1) << 5));
 
-    value_buf[0] = p->theta_1_1;
-    value_buf[1] = p->theta_1_2;
-    value_buf[2] = p->theta_1_3;
-    value_buf[3] = p->theta_2_1;
-    value_buf[4] = p->theta_2_2;
-    value_buf[5] = p->theta_2_3;
-
     memset( &attr, 0, sizeof( vsi_nn_tensor_attr_t ) );
     attr.size[0] = 6;
     attr.size[1] = 1;
@@ -327,7 +321,15 @@ static vsi_status vx_op_compute_setupThre
     attr.size[3] = 1;
     attr.dim_num = 4;
     attr.is_const = TRUE;
-    attr.dtype.vx_type = VSI_NN_TYPE_FLOAT32;
+    attr.dtype.vx_type = VSI_NN_TYPE_FLOAT16;
+
+    vsi_nn_Float32ToDtype(p->theta_1_1, (uint8_t*)(&value_buf[0]), &attr.dtype);
+    vsi_nn_Float32ToDtype(p->theta_1_2, (uint8_t*)(&value_buf[1]), &attr.dtype);
+    vsi_nn_Float32ToDtype(p->theta_1_3, (uint8_t*)(&value_buf[2]), &attr.dtype);
+    vsi_nn_Float32ToDtype(p->theta_2_1, (uint8_t*)(&value_buf[3]), &attr.dtype);
+    vsi_nn_Float32ToDtype(p->theta_2_2, (uint8_t*)(&value_buf[4]), &attr.dtype);
+    vsi_nn_Float32ToDtype(p->theta_2_3, (uint8_t*)(&value_buf[5]), &attr.dtype);
+
     thre_tensor = vsi_nn_CreateTensorFromData( self->graph,(uint8_t *)&value_buf, &attr );
 
     if( NULL == self->n )
@@ -451,6 +453,7 @@ static vsi_status vx_op_compute_interp
 {
     vsi_status status = VSI_SUCCESS;
     vx_reference params[3];
+    vx_border_t border;
 
     memset( params, 0, sizeof( vx_reference * ) * 3 );
 
@@ -466,6 +469,11 @@ static vsi_status vx_op_compute_interp
     /* Pass parameters to node. */
     status = vsi_nn_ClientNodePassParameters( self->n, params, 3 );
 
+    border.mode = VX_BORDER_CONSTANT;
+    border.constant_value.S16 = 0;
+
+    status |= vxSetNodeAttribute(self->n, VX_NODE_BORDER,
+        &border, sizeof(border));
    // _release_params( args, 3 );
 
     return status;
@@ -639,7 +647,7 @@ static vsi_bool op_setup
     return TRUE;
 } /* op_setup() */
 
-#ifdef __cpluplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 /* Registrar */
@@ -654,6 +662,6 @@ DEF_OP_REG
     /* input_num  */ _INPUT_NUM,
     /* output_num */ _OUTPUT_NUM
     );
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif

@@ -894,8 +894,8 @@ static vsi_nn_con_candidate_t *_get_connection_candidate
                 startend[x][1] = linespace2[x];
                 //printf("x=%u [ %f %f ]\n", x, linespace1[x], linespace2[x]);
 
-                r0 = (int32_t)vsi_nn_Rint(startend[x][1]);
-                r1 = (int32_t)vsi_nn_Rint(startend[x][0]);
+                r0 = (int32_t)vsi_rint(startend[x][1]);
+                r1 = (int32_t)vsi_rint(startend[x][0]);
                 //printf("r0=%d, r1=%d\n", r0, r1);
 
                 vec_x[x] = score_mid[stride * r0 + score_mid_depth * r1 + 0];

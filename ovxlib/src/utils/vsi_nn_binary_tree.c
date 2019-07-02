@@ -210,7 +210,9 @@ void vsi_nn_BinaryTreeNewNode
     iter = _find_loc( iter, key, &val );
     if( NULL != iter && key == iter->key )
     {
-        VSILOGE( "Key %#x has been registered.", (unsigned int)key );
+        //VSILOGE( "Key %#x has been registered.", (unsigned int)key );
+        // Update node
+        iter->data_ptr = data;
         return;
     }
 

@@ -28,6 +28,10 @@
 #include "utils/vsi_nn_link_list.h"
 #include "vsi_nn_rnn.h"
 
+#if defined(__cplusplus)
+extern "C"{
+#endif
+
 typedef struct
 {
     vsi_nn_tensor_attr_t    attr;
@@ -47,5 +51,9 @@ typedef struct
     vsi_nn_rnn_connection_t* external_connection_list;
     void* user_data;
 } vsi_nn_rnn_wksp_t;
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif

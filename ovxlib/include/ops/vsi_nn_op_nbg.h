@@ -27,6 +27,10 @@
 #include "vsi_nn_types.h"
 #include "vsi_nn_platform.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef enum _vsi_nn_nbg_type
 {
     VSI_NN_NBG_FILE,
@@ -46,5 +50,9 @@ typedef struct _vsi_nn_nbg_param
     vsi_nn_nbg_type_e type;
     const char *url;
 } vsi_nn_nbg_param;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

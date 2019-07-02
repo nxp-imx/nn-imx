@@ -26,6 +26,10 @@
 
 #include "vsi_nn_types.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct _vsi_nn_spatial_transformer_param
 {
     int32_t       output_H;
@@ -43,6 +47,10 @@ typedef struct _vsi_nn_spatial_transformer_param
     float         theta_2_2;
     float         theta_2_3;
 } vsi_nn_spatial_transformer_param;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

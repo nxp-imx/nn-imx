@@ -41,8 +41,81 @@
 #define _OUTPUT_NUM         (1)
 #define _IO_NUM             (_INPUT_NUM + _OUTPUT_NUM)
 #define _PARAM_NUM          (_ARG_NUM + _IO_NUM)
+#define IMG_MAX_WIDTH 65536
 
 extern vx_kernel_description_t * vx_kernel_ELU_list[];
+
+#define SIZE_LESS_THAN_MAX_IMAGE_WIDTH(size) ( size < IMG_MAX_WIDTH)
+static vsi_bool _get_EltOP_tensor_reshape_size
+    (
+    vsi_nn_tensor_t ** inputs,
+    uint32_t sizes[VSI_NN_MAX_DIM_NUM]
+    )
+{
+    uint32_t dims_num = inputs[0]->attr.dim_num;
+    uint32_t *input_size = inputs[0]->attr.size;
+
+    if (dims_num < 2)
+    {
+        sizes[0] = input_size[0];
+        sizes[1] = 1;
+
+        return TRUE;
+    }
+    else if (dims_num < 3)
+    {
+        if (SIZE_LESS_THAN_MAX_IMAGE_WIDTH(input_size[0] * input_size[1]))
+        {
+            sizes[0] = input_size[0] * input_size[1];
+            sizes[1] = 1;
+        }
+        else
+        {
+             return FALSE;
+        }
+
+        return TRUE;
+    }
+    else
+    {
+        if (SIZE_LESS_THAN_MAX_IMAGE_WIDTH(input_size[0] * input_size[1]) &&
+            SIZE_LESS_THAN_MAX_IMAGE_WIDTH(input_size[2]))
+        {
+            sizes[0] = input_size[0] * input_size[1];
+            sizes[1] = input_size[2];
+            sizes[2] = dims_num > 3 ? input_size[3] : 1;
+            sizes[3] = 1;
+
+            return TRUE;
+        }
+        else if (SIZE_LESS_THAN_MAX_IMAGE_WIDTH(input_size[0] * input_size[2]))
+        {
+            sizes[0] = input_size[0] * input_size[2];
+            sizes[1] = input_size[1];
+            sizes[2] = dims_num > 3 ? input_size[3] : 1;
+            sizes[3] = 1;
+
+            return TRUE;
+        }
+        else if (SIZE_LESS_THAN_MAX_IMAGE_WIDTH(input_size[1] * input_size[2]))
+        {
+            sizes[0] = input_size[1] * input_size[2];
+            sizes[1] = input_size[0];
+            sizes[2] = dims_num > 3 ? input_size[3] : 1;
+            sizes[3] = 1;
+
+            return TRUE;
+        }
+        else
+        {
+             return FALSE;
+        }
+
+        return TRUE;
+    }
+
+    return TRUE;
+} /* _get_EltOP_tensor_reshape_size */
 
 static void _set_inputs_outputs
     (
@@ -101,25 +174,140 @@ static vsi_status vx_op_pre_compute
     vsi_nn_kernel_info_t * kernel_info
     )
 {
-    vsi_nn_type_e inputDataformat = inputs[0]->attr.dtype.vx_type;
-    vsi_nn_type_e outputDataformat = outputs[0]->attr.dtype.vx_type;
+    vsi_nn_type_e input_format = inputs[0]->attr.dtype.vx_type;
+    vsi_nn_type_e output_format = outputs[0]->attr.dtype.vx_type;
+    uint32_t depth = inputs[0]->attr.dim_num > 2 ? inputs[0]->attr.size[2] : 1;
+    vsi_bool useImage2D  =  FALSE;
+    uint32_t sizes[VSI_NN_MAX_DIM_NUM] = {1};
+    vsi_bool ret = FALSE;
 
-    vsi_bool useImage2D  =  (vsi_bool)(vsi_nn_GetElementNum(inputs[0]) <= 65536);
+    ret = _get_EltOP_tensor_reshape_size(inputs, sizes);
+    if (ret)
+        useImage2D  =  (vsi_bool)(sizes[2] == 1 || inputs[0]->attr.dim_num < 3);
+    else
+        useImage2D  =  (vsi_bool)(depth == 1);
 
-    if (!useImage2D)
+    if (useImage2D)
     {
-        VSILOGE("Input Tensor size > 65536!(PRELU)\n");
-        return VSI_FAILURE;
-    }
-    if ((inputDataformat == VSI_NN_TYPE_FLOAT16) && (outputDataformat == VSI_NN_TYPE_FLOAT16))
-    {
-        kernel_info->kernel_index = 1;
+        if (input_format == VSI_NN_TYPE_FLOAT16)
+        {
+            if (output_format == VSI_NN_TYPE_FLOAT16)
+                kernel_info->kernel_index = TENSOR_ELU_F16TOF16_2D_KERNEL;
+            else if (output_format == VSI_NN_TYPE_INT16)
+                kernel_info->kernel_index = TENSOR_ELU_F16TOI16_2D_KERNEL;
+            else if (output_format == VSI_NN_TYPE_INT8)
+                kernel_info->kernel_index = TENSOR_ELU_F16TOI8_2D_KERNEL;
+            else if (output_format == VSI_NN_TYPE_UINT8)
+                kernel_info->kernel_index = TENSOR_ELU_F16TOU8_2D_KERNEL;
+            else
+            {
+                VSILOGE("Not support input or output data format!(ELU)\n");
+                return VSI_FAILURE;
+            }
+        }
+        else if (input_format == VSI_NN_TYPE_INT16)
+        {
+            if (output_format == VSI_NN_TYPE_INT16)
+                kernel_info->kernel_index = TENSOR_ELU_I16TOI16_2D_KERNEL;
+            else if (output_format == VSI_NN_TYPE_FLOAT16)
+                kernel_info->kernel_index = TENSOR_ELU_I16TOF16_2D_KERNEL;
+            else
+            {
+                VSILOGE("Not support input or output data format!(ELU)\n");
+                return VSI_FAILURE;
+            }
+        }
+        else if (input_format == VSI_NN_TYPE_INT8)
+        {
+            if (output_format == VSI_NN_TYPE_INT8)
+                kernel_info->kernel_index = TENSOR_ELU_I8TOI8_2D_KERNEL;
+            else if (output_format == VSI_NN_TYPE_FLOAT16)
+                kernel_info->kernel_index = TENSOR_ELU_I8TOF16_2D_KERNEL;
+            else
+            {
+                VSILOGE("Not support input or output data format!(ELU)\n");
+                return VSI_FAILURE;
+            }
+        }
+        else if (input_format == VSI_NN_TYPE_UINT8)
+        {
+            if (output_format == VSI_NN_TYPE_UINT8)
+                kernel_info->kernel_index = TENSOR_ELU_U8TOU8_2D_KERNEL;
+            else if (output_format == VSI_NN_TYPE_FLOAT16)
+                kernel_info->kernel_index = TENSOR_ELU_U8TOF16_2D_KERNEL;
+            else
+            {
+                VSILOGE("Not support input or output data format!(ELU)\n");
+                return VSI_FAILURE;
+            }
+        }
+        else
+        {
+            VSILOGE("Not support input or output data format!(ELU)\n");
+            return VSI_FAILURE;
+        }
     }
     else
     {
-        VSILOGE("Not support input or output data format!(ELU)\n");
-        return VSI_FAILURE;
+        if (input_format == VSI_NN_TYPE_FLOAT16)
+        {
+            if (output_format == VSI_NN_TYPE_FLOAT16)
+                kernel_info->kernel_index = TENSOR_ELU_F16TOF16_KERNEL;
+            else if (output_format == VSI_NN_TYPE_INT16)
+                kernel_info->kernel_index = TENSOR_ELU_F16TOI16_KERNEL;
+            else if (output_format == VSI_NN_TYPE_INT8)
+                kernel_info->kernel_index = TENSOR_ELU_F16TOI8_KERNEL;
+            else if (output_format == VSI_NN_TYPE_UINT8)
+                kernel_info->kernel_index = TENSOR_ELU_F16TOU8_KERNEL;
+            else
+            {
+                VSILOGE("Not support input or output data format!(ELU)\n");
+                return VSI_FAILURE;
+            }
+        }
+        else if (input_format == VSI_NN_TYPE_INT16)
+        {
+            if (output_format == VSI_NN_TYPE_INT16)
+                kernel_info->kernel_index = TENSOR_ELU_I16TOI16_KERNEL;
+            else if (output_format == VSI_NN_TYPE_FLOAT16)
+                kernel_info->kernel_index = TENSOR_ELU_I16TOF16_KERNEL;
+            else
+            {
+                VSILOGE("Not support input or output data format!(ELU)\n");
+                return VSI_FAILURE;
+            }
+        }
+        else if (input_format == VSI_NN_TYPE_INT8)
+        {
+            if (output_format == VSI_NN_TYPE_INT8)
+                kernel_info->kernel_index = TENSOR_ELU_I8TOI8_KERNEL;
+            else if (output_format == VSI_NN_TYPE_FLOAT16)
+                kernel_info->kernel_index = TENSOR_ELU_I8TOF16_KERNEL;
+            else
+            {
+                VSILOGE("Not support input or output data format!(ELU)\n");
+                return VSI_FAILURE;
+            }
+        }
+        else if (input_format == VSI_NN_TYPE_UINT8)
+        {
+            if (output_format == VSI_NN_TYPE_UINT8)
+                kernel_info->kernel_index = TENSOR_ELU_U8TOU8_KERNEL;
+            else if (output_format == VSI_NN_TYPE_FLOAT16)
+                kernel_info->kernel_index = TENSOR_ELU_U8TOF16_KERNEL;
+            else
+            {
+                VSILOGE("Not support input or output data format!(ELU)\n");
+                return VSI_FAILURE;
+            }
+        }
+        else
+        {
+            VSILOGE("Not support input or output data format!(ELU)\n");
+            return VSI_FAILURE;
+        }
     }
+
     return VSI_SUCCESS;
 }
 
@@ -131,22 +319,17 @@ static void reshape_tensor_shape
     uint32_t index
     )
 {
-    uint32_t i;
-    int32_t size[4] = {0};
-    int32_t size0[4] = {1, 1, 1, 1};
-    uint32_t dims = 2;
+    uint32_t sizes[VSI_NN_MAX_DIM_NUM] = {1};
+    uint32_t dims = vsi_nn_max(input->attr.dim_num, 2);
+    vsi_bool ret = FALSE;
 
-    for( i = 0; i < input->attr.dim_num; i++ )
-    {
-        size0[i] = input->attr.size[i];
-    }
+    ret = _get_EltOP_tensor_reshape_size(&input, sizes);
 
-    size[0] = size0[0];
-    size[1] = size0[1] * size0[2] * size0[3];
+    if (ret)
+        self->nn_param.elu.local.local_tensor[index] =
+            vxReshapeTensor(input->t, (int32_t *)sizes, dims);
 
-    self->nn_param.elu.local.local_tensor[index] =
-        vxReshapeTensor(input->t, size, dims);
-    params[index] = (vx_reference)self->nn_param.elu.local.local_tensor[index];
+    params[index] = ret ? (vx_reference)self->nn_param.elu.local.local_tensor[index] : (vx_reference)input->t;
 }
 
 static vsi_status vx_op_compute
@@ -253,7 +436,7 @@ static vsi_status op_deinit
     return VSI_SUCCESS;
 } /* op_deinit() */
 
-#ifdef __cpluplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 /* Registrar */
@@ -268,7 +451,7 @@ DEF_OP_REG
     /* input_num  */ 1,
     /* output_num */ 1
     );
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif
 

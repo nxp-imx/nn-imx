@@ -194,7 +194,9 @@ vsi_status VX_CALLBACK vxeltwiseMaxInitializer
     }
 
     if ((src0Type == VX_TYPE_UINT8 && src1Type == VX_TYPE_UINT8 && dstType == VX_TYPE_UINT8)
-     || (src0Type == VX_TYPE_INT8 && src1Type == VX_TYPE_INT8 && dstType == VX_TYPE_INT8))
+     || (src0Type == VX_TYPE_INT8 && src1Type == VX_TYPE_INT8 && dstType == VX_TYPE_INT8)
+     || (src0Type == VX_TYPE_INT8 && src1Type == VX_TYPE_FLOAT16 && dstType == VX_TYPE_INT8)
+     || (src0Type == VX_TYPE_UINT8 && src1Type == VX_TYPE_FLOAT16 && dstType == VX_TYPE_UINT8))
     {
         shaderParam.globalWorkScale[0]  = 16;
         shaderParam.globalWorkScale[1]  = 1;
@@ -213,8 +215,9 @@ vsi_status VX_CALLBACK vxeltwiseMaxInitializer
         shaderParam.globalWorkScale[1];
     shaderParam.globalWorkSize[2]   = size[2];
 
-    if(src0Type == VX_TYPE_INT8 && src1Type == VX_TYPE_INT8 && dstType == VX_TYPE_INT8
+    if((src0Type == VX_TYPE_INT8 && src1Type == VX_TYPE_INT8 && dstType == VX_TYPE_INT8
         && (!(src0FixPointPos == dstFixPointPos && src1FixPointPos == dstFixPointPos)))
+        || (src0Type == VX_TYPE_INT8 && src1Type == VX_TYPE_FLOAT16 && dstType == VX_TYPE_INT8))
     {
         vx_uint32 idx = 0;
         vx_uint32 uniDFP8toDFP8Lo_2x8_0[16] = {
@@ -224,7 +227,8 @@ vsi_status VX_CALLBACK vxeltwiseMaxInitializer
             0x22222222, // BSelt
             0x00000000, 0x00000000, // BBin
             0x00000600, // AccumType, ConstantType, and PostShift
-            0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
+            0x00000001, 0x00000001, 0x00000001, 0x00000001,
+            0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
         };
         vx_uint32 uniDFP8toDFP8Hi_2x8_0[16] = {
             0x11111111, // TCfg
@@ -233,7 +237,8 @@ vsi_status VX_CALLBACK vxeltwiseMaxInitializer
             0x22222222, // BSelt
             0x00000000, 0x00000000, // BBin
             0x00000600, // AccumType, ConstantType, and PostShift
-            0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
+            0x00000001, 0x00000001, 0x00000001, 0x00000001,
+            0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
         };
         vx_uint32 uniDFP8toDFP8Lo_2x8_1[16] = {
             0x11111111, // TCfg
@@ -242,7 +247,8 @@ vsi_status VX_CALLBACK vxeltwiseMaxInitializer
             0x22222222, // BSelt
             0x00000000, 0x00000000, // BBin
             0x00000600, // AccumType, ConstantType, and PostShift
-            0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
+            0x00000001, 0x00000001, 0x00000001, 0x00000001,
+            0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
         };
         vx_uint32 uniDFP8toDFP8Hi_2x8_1[16] = {
             0x11111111, // TCfg
@@ -251,7 +257,8 @@ vsi_status VX_CALLBACK vxeltwiseMaxInitializer
             0x22222222, // BSelt
             0x00000000, 0x00000000, // BBin
             0x00000600, // AccumType, ConstantType, and PostShift
-            0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
+            0x00000001, 0x00000001, 0x00000001, 0x00000001,
+            0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
         };
 
         if (src0FixPointPos >= dstFixPointPos)
@@ -272,7 +279,7 @@ vsi_status VX_CALLBACK vxeltwiseMaxInitializer
 
         if (src1FixPointPos >= dstFixPointPos)
         {
-            vx_uint8 postshift = vsi_nn_min(src0FixPointPos - dstFixPointPos, MAX_POST_SHIFT_BITS);
+            vx_uint8 postshift = vsi_nn_min(src1FixPointPos - dstFixPointPos, MAX_POST_SHIFT_BITS);
 
             uniDFP8toDFP8Lo_2x8_1[7] |= (postshift & 0x1F);
             uniDFP8toDFP8Hi_2x8_1[7] |= (postshift & 0x1F);
@@ -288,10 +295,44 @@ vsi_status VX_CALLBACK vxeltwiseMaxInitializer
 
         status |= vxSetNodeUniform(nodObj, "uniDFP8toDFP8Lo_2x8_0", 1, uniDFP8toDFP8Lo_2x8_0);
         status |= vxSetNodeUniform(nodObj, "uniDFP8toDFP8Hi_2x8_0", 1, uniDFP8toDFP8Hi_2x8_0);
-        status |= vxSetNodeUniform(nodObj, "uniDFP8toDFP8Lo_2x8_1", 1, uniDFP8toDFP8Lo_2x8_1);
-        status |= vxSetNodeUniform(nodObj, "uniDFP8toDFP8Hi_2x8_1", 1, uniDFP8toDFP8Hi_2x8_1);
+
+        if(src1Type == VX_TYPE_FLOAT16)
+        {
+            vx_uint32 uinConvertFp16ToInt8_2x8[16] = {
+                0x11111111, // TCfg
+                0x00000000, // ASelt
+                0x03020100, 0x07060504, // ABin
+                0x22222222, // BSelt
+                0x00000000, 0x00000000, // BBin
+                0x00000300, // AccumType, ConstantType, and PostShift
+                0x00000001, 0x00000001, 0x00000001, 0x00000001,
+                0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
+            };
+
+            if (0 >= dstFixPointPos)
+            {
+                vx_uint8 postshift = vsi_nn_min(0 - dstFixPointPos, MAX_POST_SHIFT_BITS);
+
+                uinConvertFp16ToInt8_2x8[7] |= (postshift & 0x1F);
+            }
+            else
+            {
+                for (idx = 8; idx < 16; idx++)
+                {
+                    uinConvertFp16ToInt8_2x8[idx] = vsi_nn_min(1 << (dstFixPointPos - 0), MAX_MULTIPLIER_NUM);
+                }
+            }
+
+            status |= vxSetNodeUniform(nodObj, "uinConvertFp16ToInt8_2x8", 1, uinConvertFp16ToInt8_2x8);
+        }
+        else
+        {
+            status |= vxSetNodeUniform(nodObj, "uniDFP8toDFP8Lo_2x8_1", 1, uniDFP8toDFP8Lo_2x8_1);
+            status |= vxSetNodeUniform(nodObj, "uniDFP8toDFP8Hi_2x8_1", 1, uniDFP8toDFP8Hi_2x8_1);
+        }
     }
-    else if (src0Type == VX_TYPE_UINT8 && src1Type == VX_TYPE_UINT8 && dstType == VX_TYPE_UINT8)
+    else if ((src0Type == VX_TYPE_UINT8 && src1Type == VX_TYPE_UINT8 && dstType == VX_TYPE_UINT8)
+            || (src0Type == VX_TYPE_UINT8 && src1Type == VX_TYPE_FLOAT16 && dstType == VX_TYPE_UINT8))
     {
         vx_uint16   M0                      = 0;
         vx_int8     postShift0              = 0;
@@ -335,10 +376,29 @@ vsi_status VX_CALLBACK vxeltwiseMaxInitializer
         status |= vxSetNodeUniform(nodObj, "multAndoutZP0",  1, multAndoutZP0);
         status |= vxSetNodeUniform(nodObj, "multAndoutZP1",  1, multAndoutZP1);
 
-        uniU8MulAndPostShift_Lo_2x8[7] = 0x00002600 | (postShift1 & 0x1F);
-        uniU8MulAndPostShift_Hi_2x8[7] = 0x00002600 | (postShift1 & 0x1F);
-        status |= vxSetNodeUniform(nodObj, "uniU8MulAndPostShift1_Lo_2x8",  1, uniU8MulAndPostShift_Lo_2x8);
-        status |= vxSetNodeUniform(nodObj, "uniU8MulAndPostShift1_Hi_2x8",  1, uniU8MulAndPostShift_Hi_2x8);
+        if(src1Type == VX_TYPE_FLOAT16)
+        {
+            vx_uint32 uniConvertFp16toU8_2x8[16] = {
+                0xdddddddd, // TCfg
+                0x44444444, // ASelt
+                0x13121110, 0x17161514, // ABin
+                0x11111111, // BSelt
+                0x00000000, 0x00000000, // BBin
+                0x00002600, // AccumType, ConstantType, and PostShift
+                0x00000000, 0x00000000, 0x00000000, 0x00000000,
+                0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
+            };
+
+            uniConvertFp16toU8_2x8[7] = 0x00002600 | (postShift1 & 0x1F);
+            status |= vxSetNodeUniform(nodObj, "uniConvertFp16toU8_2x8",  1, uniConvertFp16toU8_2x8);
+        }
+        else
+        {
+            uniU8MulAndPostShift_Lo_2x8[7] = 0x00002600 | (postShift1 & 0x1F);
+            uniU8MulAndPostShift_Hi_2x8[7] = 0x00002600 | (postShift1 & 0x1F);
+            status |= vxSetNodeUniform(nodObj, "uniU8MulAndPostShift1_Lo_2x8",  1, uniU8MulAndPostShift_Lo_2x8);
+            status |= vxSetNodeUniform(nodObj, "uniU8MulAndPostShift1_Hi_2x8",  1, uniU8MulAndPostShift_Hi_2x8);
+        }
     }
     else if (src0Type == VX_TYPE_INT16 && src1Type == VX_TYPE_INT16 && dstType == VX_TYPE_INT16)
     {
@@ -391,6 +451,93 @@ vsi_status VX_CALLBACK vxeltwiseMaxInitializer
         status |= vxSetNodeUniform(nodObj, "uniDFP16toDFP16_2x8_0", 1, uniDFP16toDFP16_2x8_0);
         status |= vxSetNodeUniform(nodObj, "uniDFP16toDFP16_2x8_1", 1, uniDFP16toDFP16_2x8_1);
     }
+    else if(src0Type == VX_TYPE_INT16 && src1Type == VX_TYPE_FLOAT16 && dstType == VX_TYPE_INT16)
+    {
+        vx_uint32 uniConvertI16toI16_2x8[16] = {
+            0x11111111, // TCfg
+            0x00000000, // ASelt
+            0x03020100, 0x07060504, // ABin
+            0x22222222, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000600, // AccumType, ConstantType, and PostShift
+            0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
+        };
+        vx_uint32 uinConvertFp16ToInt16_2x8[16] = {
+            0x11111111, // TCfg
+            0x00000000, // ASelt
+            0x03020100, 0x07060504, // ABin
+            0x22222222, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000600, // AccumType, ConstantType, and PostShift
+            0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
+        };
+
+        if (src0FixPointPos > dstFixPointPos)
+        {
+            vx_uint8  postshift = vsi_nn_min(src0FixPointPos - dstFixPointPos, MAX_POST_SHIFT_BITS);
+
+            uniConvertI16toI16_2x8[7] |= (postshift & 0x1F);
+        }
+        else
+        {
+            vx_uint32 multiplier = vsi_nn_min(1 << (dstFixPointPos - src0FixPointPos), MAX_MULTIPLIER_NUM);
+            vx_uint32 i          = 0;
+
+            for (i = 0; i < 8; i++)
+            {
+                uniConvertI16toI16_2x8[i + 8] = multiplier;
+            }
+        }
+
+        if (0 > dstFixPointPos)
+        {
+            vx_uint8  postshift      = vsi_nn_min(0 - dstFixPointPos, MAX_POST_SHIFT_BITS);
+            uinConvertFp16ToInt16_2x8[7] |= (postshift & 0x1F);
+        }
+        else
+        {
+            vx_uint32 multiplier = vsi_nn_min(1 << (dstFixPointPos - 0), MAX_MULTIPLIER_NUM);
+            vx_uint32 i          = 0;
+
+            for (i = 0; i < 8; i++)
+            {
+                uinConvertFp16ToInt16_2x8[i + 8] = multiplier;
+            }
+        }
+
+        status |= vxSetNodeUniform(nodObj, "uniConvertI16toI16_2x8", 1, uniConvertI16toI16_2x8);
+        status |= vxSetNodeUniform(nodObj, "uinConvertFp16ToInt16_2x8", 1, uinConvertFp16ToInt16_2x8);
+    }
+    else if(src0Type == VX_TYPE_INT16 && src1Type == VX_TYPE_FLOAT16 && dstType == VX_TYPE_FLOAT16)
+    {
+        vx_uint32 uniConvertInt16toFp16_2x8[16] = {
+            0x11111111, // TCfg
+            0x00000000, // ASelt
+            0x03020100, 0x07060504, // ABin
+            0x22222222, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000600, // AccumType, ConstantType, and PostShift
+            0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
+        };
+
+        if (src0FixPointPos > 0)
+        {
+            vx_uint8  postshift = vsi_nn_min(src0FixPointPos, MAX_POST_SHIFT_BITS);
+            uniConvertInt16toFp16_2x8[7] |= (postshift & 0x1F);
+        }
+        else
+        {
+            vx_uint32 multiplier = vsi_nn_min(1 << (0 - src0FixPointPos), MAX_MULTIPLIER_NUM);
+            vx_uint32 i          = 0;
+
+            for (i = 0; i < 8; i++)
+            {
+                uniConvertInt16toFp16_2x8[i + 8] = multiplier;
+            }
+        }
+
+        status |= vxSetNodeUniform(nodObj, "uniConvertInt16toFp16_2x8", 1, uniConvertInt16toFp16_2x8);
+    }
 
     status |= vxSetNodeAttribute(nodObj, VX_NODE_ATTRIBUTE_KERNEL_EXECUTION_PARAMETERS,
         &shaderParam, sizeof(vx_kernel_execution_parameters_t));
@@ -408,7 +555,7 @@ static vx_param_description_t vxeltwiseMaxKernelParam[] =
     {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED}
 };
 
-#ifdef __cpluplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 vx_kernel_description_t vxeltwiseMaxKernelInfo =
@@ -481,6 +628,62 @@ vx_kernel_description_t vxeltwiseMaxKernelInfo_uint8 =
     vsi_nn_KernelDeinitializer
 };
 
+vx_kernel_description_t vxeltwiseMaxKernelInfo_i8fp16_i8 =
+{
+    VX_KERNEL_ENUM_ELTWISE_MAX,
+    VX_KERNEL_NAME_ELTWISE_MAX_INT8FP16_INT8,
+    NULL,
+    vxeltwiseMaxKernelParam,
+    (sizeof(vxeltwiseMaxKernelParam) / sizeof(vxeltwiseMaxKernelParam[0])),
+    vxeltwiseMaxValidator,
+    NULL,
+    NULL,
+    vxeltwiseMaxInitializer,
+    vsi_nn_KernelDeinitializer
+};
+
+vx_kernel_description_t vxeltwiseMaxKernelInfo_u8fp16_u8 =
+{
+    VX_KERNEL_ENUM_ELTWISE_MAX,
+    VX_KERNEL_NAME_ELTWISE_MAX_UINT8FP16_UINT8,
+    NULL,
+    vxeltwiseMaxKernelParam,
+    (sizeof(vxeltwiseMaxKernelParam) / sizeof(vxeltwiseMaxKernelParam[0])),
+    vxeltwiseMaxValidator,
+    NULL,
+    NULL,
+    vxeltwiseMaxInitializer,
+    vsi_nn_KernelDeinitializer
+};
+
+vx_kernel_description_t vxeltwiseMaxKernelInfo_i16fp16_i16 =
+{
+    VX_KERNEL_ENUM_ELTWISE_MAX,
+    VX_KERNEL_NAME_ELTWISE_MAX_INT16FP16_INT16,
+    NULL,
+    vxeltwiseMaxKernelParam,
+    (sizeof(vxeltwiseMaxKernelParam) / sizeof(vxeltwiseMaxKernelParam[0])),
+    vxeltwiseMaxValidator,
+    NULL,
+    NULL,
+    vxeltwiseMaxInitializer,
+    vsi_nn_KernelDeinitializer
+};
+
+vx_kernel_description_t vxeltwiseMaxKernelInfo_i16fp16_fp16 =
+{
+    VX_KERNEL_ENUM_ELTWISE_MAX,
+    VX_KERNEL_NAME_ELTWISE_MAX_INT16FP16_FP16,
+    NULL,
+    vxeltwiseMaxKernelParam,
+    (sizeof(vxeltwiseMaxKernelParam) / sizeof(vxeltwiseMaxKernelParam[0])),
+    vxeltwiseMaxValidator,
+    NULL,
+    NULL,
+    vxeltwiseMaxInitializer,
+    vsi_nn_KernelDeinitializer
+};
+
 vx_kernel_description_t * vx_kernel_ELTWISEMAX_list[] =
 {
     NULL,
@@ -489,8 +692,12 @@ vx_kernel_description_t * vx_kernel_ELTWISEMAX_list[] =
     &vxeltwiseMaxKernelInfo_int8_nofl,
     &vxeltwiseMaxKernelInfo_int16,
     &vxeltwiseMaxKernelInfo_uint8,
+    &vxeltwiseMaxKernelInfo_i8fp16_i8,
+    &vxeltwiseMaxKernelInfo_u8fp16_u8,
+    &vxeltwiseMaxKernelInfo_i16fp16_i16,
+    &vxeltwiseMaxKernelInfo_i16fp16_fp16,
     NULL
 };
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif

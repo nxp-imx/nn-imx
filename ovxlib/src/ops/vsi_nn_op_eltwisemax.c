@@ -113,6 +113,40 @@ static vsi_status op_pre_compute
     vsi_nn_type_e in1_dataType = inputs[1]->attr.dtype.vx_type;
     vsi_nn_type_e out_dataType = outputs[0]->attr.dtype.vx_type;
 
+    if (out_dataType == VSI_NN_TYPE_INT8
+        && in0_dataType == VSI_NN_TYPE_INT8
+        && in1_dataType == VSI_NN_TYPE_FLOAT16)
+    {
+        kernel_info->kernel_index = 6;
+        return VSI_SUCCESS;
+    }
+
+    if (out_dataType == VSI_NN_TYPE_UINT8
+        && in0_dataType == VSI_NN_TYPE_UINT8
+        && in1_dataType == VSI_NN_TYPE_FLOAT16)
+    {
+        kernel_info->kernel_index = 7;
+        return VSI_SUCCESS;
+    }
+
+    if (out_dataType == VSI_NN_TYPE_INT16
+        && in0_dataType == VSI_NN_TYPE_INT16
+        && in1_dataType == VSI_NN_TYPE_FLOAT16)
+    {
+        kernel_info->resource_name[1] = "vsi_nn_kernel_eltwisemax_i16";
+        kernel_info->kernel_index = 8;
+        return VSI_SUCCESS;
+    }
+
+    if (out_dataType == VSI_NN_TYPE_FLOAT16
+        && in0_dataType == VSI_NN_TYPE_INT16
+        && in1_dataType == VSI_NN_TYPE_FLOAT16)
+    {
+        kernel_info->resource_name[1] = "vsi_nn_kernel_eltwisemax_i16";
+        kernel_info->kernel_index = 9;
+        return VSI_SUCCESS;
+    }
+
     if(out_dataType != in0_dataType ||
         out_dataType != in1_dataType||
         in0_dataType != in1_dataType
@@ -204,6 +238,15 @@ static vsi_nn_op_compute_t op_compute_list[] =
     NULL
 };
 
+#define SWAP_INPUT_TENSOR(a, b) \
+do     \
+{      \
+    vsi_nn_tensor_t * tmp; \
+    tmp = (a);     \
+    (a) = (b);     \
+    (b) = tmp;     \
+} while (0)
+
 static vsi_status op_compute
     (
     vsi_nn_node_t * self,
@@ -213,6 +256,8 @@ static vsi_status op_compute
 {
     vsi_status status;
     vsi_nn_kernel_info_t kernel_info = {0};
+    vsi_nn_type_e input0_Format = inputs[0]->attr.dtype.vx_type;
+    vsi_nn_type_e input1_Format = inputs[1]->attr.dtype.vx_type;
 
     status = VSI_FAILURE;
     kernel_info.resource_num = 2;
@@ -222,6 +267,9 @@ static vsi_status op_compute
     kernel_info.type = vsi_nn_GetVXKernelTypeForShader();
     kernel_info.kernel = vx_kernel_ELTWISEMAX_list;
     kernel_info.init_index = 1;
+
+    if (input0_Format != input1_Format && input0_Format == VSI_NN_TYPE_FLOAT16)
+        SWAP_INPUT_TENSOR(inputs[0], inputs[1]);
 
     op_pre_compute(self, inputs, outputs, &kernel_info);
 
@@ -269,7 +317,21 @@ static vsi_status op_deinit
     return VSI_SUCCESS;
 } /* op_deinit() */
 
-#ifdef __cpluplus
+static vsi_bool op_setup
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs
+    )
+{
+    vsi_bool ret = FALSE;
+
+    ret = vsi_nn_OpSetup( VSI_NN_OP_MULTIPLY, self, inputs, outputs );
+
+    return ret;
+} /* op_setup() */
+
+#ifdef __cplusplus
 extern "C" {
 #endif
 /* Registrar */
@@ -279,12 +341,12 @@ DEF_OP_REG
     /* compute    */ op_compute,
     /* deinit     */ op_deinit,
     /* check      */ op_check,
-    /* setup      */ vsi_nn_op_common_setup,
+    /* setup      */ op_setup,
     /* optimize   */ NULL,
     /* input_num  */ 2,
     /* output_num */ 1
     );
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif
 

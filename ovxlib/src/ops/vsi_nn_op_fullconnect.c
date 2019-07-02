@@ -42,25 +42,65 @@ static vsi_status op_compute
     )
 {
     vsi_status status;
+    uint32_t axis;
+    uint32_t i = 0;
+    uint32_t num_fc = 1, num_no_fc = 1;
+    uint32_t num_of_intput_dims = 0;
+    int32_t input_size[VSI_NN_MAX_DIM_NUM] = {0};
+    uint32_t dims = 0;
+    vx_tensor input = NULL;
+    vx_tensor output = NULL;
+    vx_tensor weight = NULL;
+    vx_tensor bias = NULL;
+
     status = VSI_FAILURE;
+
+    memcpy(input_size, inputs[0]->attr.size, sizeof(uint32_t) * VSI_NN_MAX_DIM_NUM);
+    num_of_intput_dims = inputs[0]->attr.dim_num;
+    axis = inputs[0]->attr.dim_num - 2;
+
+    for(i = 0; i <= (uint32_t)axis; ++i)
+    {
+        num_fc *= input_size[i];
+    }
+    for(i = axis + 1; i < num_of_intput_dims; ++i)
+    {
+        num_no_fc *= input_size[i];
+    }
+
+    input_size[0] = num_fc;
+    input_size[1] = num_no_fc;
+    dims= 2;
+    input = vxReshapeTensor(inputs[0]->t, input_size, dims);
+
+    weight = inputs[1]->t;
+
+    if( inputs[2] != NULL )
+    {
+        bias = inputs[2]->t;
+    }
+
+    output = outputs[0]->t;
 
     self->n = vxFullyConnectedLayer(
         self->graph->g,
-        inputs[0]->t,
-        inputs[1]->t,
-        inputs[2]->t,
+        input,
+        weight,
+        bias,
         0,
         0,
         self->vx_param.overflow_policy,
         self->vx_param.rounding_policy,
         self->vx_param.down_scale_size_rounding,
-        outputs[0]->t
+        output
         );
-
     if( NULL != self->n )
     {
         status = VSI_SUCCESS;
     }
+
+    if (input)  vxReleaseTensor(&input);
+
     return status;
 } /* op_compute() */
 
@@ -89,6 +129,9 @@ static vsi_bool op_setup
     uint32_t dim_num;
     uint32_t perm[4] = { 0 };
     uint32_t as_shape[4] = { 0 };
+    uint32_t graph_version_major = 0;
+    uint32_t graph_version_minor = 0;
+    uint32_t graph_version_patch = 0;
 
     /* TODO: Driver should handle this,
     * Check transpose
@@ -125,29 +168,55 @@ static vsi_bool op_setup
     if( VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num )
     {
         uint32_t input_dim = inputs[0]->attr.dim_num;
-        switch (input_dim)
+        vsi_nn_GetGraphVersion( self->graph, &graph_version_major, &graph_version_minor, &graph_version_patch );
+        if ( graph_version_major >= 1 && graph_version_minor >= 1 && graph_version_patch >= 0 )
         {
-        // add a workaround to handle fc layer's output
-        case 1:
-        case 3:
-            outputs[0]->attr.dim_num = 1;
-            outputs[0]->attr.size[0] = self->nn_param.fcl.weights;
-            break;
-        case 2:
-        case 4:
-            outputs[0]->attr.dim_num = 2;
-            outputs[0]->attr.size[0] = self->nn_param.fcl.weights;
-            outputs[0]->attr.size[1] = inputs[0]->attr.size[input_dim-1];
-            break;
-        default:
-            VSILOGE("input dim[%u] error\n", inputs[0]->attr.dim_num);
-            return FALSE;
+            switch (input_dim)
+            {
+            // CAUTION: FC input shape need contain batch size.
+            // and graph version no smaller than 5.0.0
+            case 2:
+            case 3:
+            case 4:
+                outputs[0]->attr.dim_num = 2;
+                outputs[0]->attr.size[0] = self->nn_param.fcl.weights;
+                outputs[0]->attr.size[1] = inputs[0]->attr.size[input_dim-1];
+                break;
+            default:
+                VSILOGE("input dim[%u] error\n", inputs[0]->attr.dim_num);
+                return FALSE;
+            }
+        }
+        else
+        {
+            switch (input_dim)
+            {
+            // CAUTION: FC input shape with/without batch size.
+            // and graph version smaller than 5.0.0
+            case 1:
+            case 3:
+                // add a workaround to handle fc layer input without batch size
+                // But nput with 3 dimensions and with batch size will go into this path.
+                // FIX ME
+                outputs[0]->attr.dim_num = 1;
+                outputs[0]->attr.size[0] = self->nn_param.fcl.weights;
+                break;
+            case 2:
+            case 4:
+                outputs[0]->attr.dim_num = 2;
+                outputs[0]->attr.size[0] = self->nn_param.fcl.weights;
+                outputs[0]->attr.size[1] = inputs[0]->attr.size[input_dim-1];
+                break;
+            default:
+                VSILOGE("input dim[%u] error\n", inputs[0]->attr.dim_num);
+                return FALSE;
+            }
         }
     }
     return TRUE;
 } /* op_setup() */
 
-#ifdef __cpluplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 /* Registrar */
@@ -162,7 +231,7 @@ DEF_OP_REG
     /* input_num  */ 3,
     /* output_num */ 1
     );
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif
 

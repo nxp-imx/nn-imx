@@ -27,14 +27,13 @@
 #include <math.h>
 #include <fcntl.h>
 
-#ifdef __linux__
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#endif
 #ifdef _WIN32
 #include <io.h>
 #include <direct.h>
+#else
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #endif
 
 #include "vsi_nn_prv.h"
@@ -170,9 +169,10 @@ float vsi_nn_DataAsFloat32
     vsi_nn_type_e type
     )
 {
-    float val = 0xFFFFFFFF;
-    int16_t   fp16;
+    float val;
+    int16_t fp16;
 
+    val = 0xFFFFFFFF;
     switch( type )
     {
     case VSI_NN_TYPE_INT8:
@@ -598,4 +598,93 @@ void vsi_nn_GetFP32MultiAndPostShift
 
     *N = (vx_int8)(((postShiftBit6to5 << 5) | (postShift & 0x1F)));
     *N = (((vx_int32)*N << 25) >> 25);
+}/* vsi_nn_GetFP32MultiAndPostShift() */
+
+typedef struct
+{
+    uint8_t* raw_addr;
+} aligned_header;
+
+uint8_t * vsi_nn_MallocAlignedBuffer
+    (
+    uint32_t mem_size,
+    uint32_t align_start_size,
+    uint32_t align_block_size
+    )
+{
+    uint32_t sz;
+    long temp;
+    uint8_t* raw_addr;
+    uint8_t* p;
+    uint8_t* align_addr;
+    aligned_header* header;
+
+    sz = sizeof(aligned_header) + mem_size + align_start_size + align_block_size;
+    raw_addr = (uint8_t *)malloc( sz * sizeof( uint8_t ) );
+    memset(raw_addr, 0, sizeof( uint8_t ) * sz);
+    p = raw_addr + sizeof(aligned_header);
+
+    temp = (long)(p) % align_start_size;
+    if (temp == 0)
+    {
+        align_addr = p;
+    }
+    else
+    {
+        align_addr = p + align_start_size - temp;
+    }
+    header = (aligned_header*)(align_addr - sizeof(aligned_header));
+    header->raw_addr = raw_addr;
+    return align_addr;
+}/* vsi_nn_MallocAlignedBuffer() */
+
+void vsi_nn_FreeAlignedBuffer
+    (
+    uint8_t* handle
+    )
+{
+    aligned_header* header;
+    header = (aligned_header*)(handle - sizeof(aligned_header));
+    free(header->raw_addr);
 }
+
+vsi_bool vsi_nn_IsBufferAligned
+    (
+    uint8_t * buf,
+    uint32_t align_start_size
+    )
+{
+    long temp;
+
+    temp = (long)(buf) % align_start_size;
+    if (temp == 0)
+    {
+        return TRUE;
+    }
+    return FALSE;
+}/* vsi_nn_IsBufferAligned() */
+
+void vsi_nn_FormatToString
+    (
+    vsi_nn_tensor_t *tensor,
+    char *buf,
+    uint32_t buf_sz
+    )
+{
+    switch(tensor->attr.dtype.vx_type)
+    {
+    case VSI_NN_TYPE_INT8:strncpy(buf,  "i8 ",  buf_sz);break;
+    case VSI_NN_TYPE_INT16:strncpy(buf, "i16", buf_sz);break;
+    case VSI_NN_TYPE_INT32:strncpy(buf, "i32", buf_sz);break;
+    case VSI_NN_TYPE_INT64:strncpy(buf, "i64", buf_sz);break;
+    case VSI_NN_TYPE_UINT8:strncpy(buf,  "u8 ",  buf_sz);break;
+    case VSI_NN_TYPE_UINT16:strncpy(buf, "u16", buf_sz);break;
+    case VSI_NN_TYPE_UINT32:strncpy(buf, "u32", buf_sz);break;
+    case VSI_NN_TYPE_UINT64:strncpy(buf, "u64", buf_sz);break;
+    case VSI_NN_TYPE_FLOAT16:strncpy(buf, "f16", buf_sz);break;
+    case VSI_NN_TYPE_FLOAT32:strncpy(buf, "f32", buf_sz);break;
+    case VSI_NN_TYPE_FLOAT64:strncpy(buf, "f64", buf_sz);break;
+    default:
+        break;
+    }
+} /* vsi_nn_FormatToString() */

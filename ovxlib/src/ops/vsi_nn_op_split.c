@@ -347,7 +347,7 @@ static vsi_status op_optimize
     return status;
 }
 
-#ifdef __cpluplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 /* Registrar */
@@ -362,7 +362,7 @@ DEF_OP_REG
     /* input_num  */ 1,
     /* output_num */ 16
     );
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif
 

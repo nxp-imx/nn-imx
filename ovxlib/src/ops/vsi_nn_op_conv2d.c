@@ -40,6 +40,7 @@ static vsi_status op_compute
     vsi_nn_tensor_t ** outputs
     )
 {
+    vx_tensor bias;
     vsi_status status;
     vx_nn_convolution_params_ext_t *p_ext = NULL;
     vx_nn_convolution_params_ext2_t *p_ext2 = NULL;
@@ -73,16 +74,26 @@ static vsi_status op_compute
     p_ext2->stride_x = self->nn_param.conv2d.stride[0];
     p_ext2->stride_y = self->nn_param.conv2d.stride[1];
 
+    if( inputs[2] == NULL )
+    {
+        bias = NULL;
+    }
+    else
+    {
+        bias = inputs[2]->t;
+    }
+
     self->n = vxConvolutionLayer(
         self->graph->g,
         inputs[0]->t,
         inputs[1]->t,
-        inputs[2]->t,
+        bias,
         (vx_nn_convolution_params_t *)p_ext2,
         sizeof( vx_nn_convolution_params_ext2_t ),
         outputs[0]->t
         );
-    if( NULL != self->n )
+
+   if( NULL != self->n )
     {
         status = VSI_SUCCESS;
     }
@@ -163,7 +174,7 @@ static vsi_bool op_setup
     return TRUE;
 } /* op_setup() */
 
-#ifdef __cpluplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 /* Registrar */
@@ -178,7 +189,7 @@ DEF_OP_REG
     /* input_num  */ 3,
     /* output_num */ 1
     );
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif
 

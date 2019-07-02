@@ -171,6 +171,31 @@ OVXLIB_API void vsi_nn_GetFP32MultiAndPostShift
     vx_int8 *N
     );
 
+OVXLIB_API uint8_t * vsi_nn_MallocAlignedBuffer
+    (
+    uint32_t mem_size,
+    uint32_t align_start_size,
+    uint32_t align_block_size
+    );
+
+OVXLIB_API void vsi_nn_FreeAlignedBuffer
+    (
+    uint8_t* handle
+    );
+
+OVXLIB_API vsi_bool vsi_nn_IsBufferAligned
+    (
+    uint8_t * buf,
+    uint32_t align_start_size
+    );
+
+OVXLIB_API void vsi_nn_FormatToString
+    (
+    vsi_nn_tensor_t *tensor,
+    char *buf,
+    uint32_t buf_sz
+    );
+
 #ifdef __cplusplus
 }
 #endif

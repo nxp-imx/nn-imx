@@ -599,6 +599,252 @@ vx_status VX_CALLBACK vxScaletoTensorInitializer
     return VX_SUCCESS;
 }
 
+vx_status VX_CALLBACK vxGrayScaletoTensorInitializer(vx_node nodObj, const vx_reference *paramObj, vx_uint32 paraNum)
+{
+// Alignment with a power of two value.
+#define gcmALIGN(n, align) ((n) + ((align) - 1)) & ~((align) - 1)
+    vx_kernel_execution_parameters_t shaderParam = {
+        2,          // workdim
+        {0, 0, 0},  // globalWorkOffset: control the start location be processed in the image
+        {0, 0, 0},  // globalWorkScale: how many pixels could be processed by a single thread
+        {0, 0, 0},  // localWorkSize: local group size in thread
+        {0, 0, 0}}; // globalWorkSize: image size in thread
+
+    vx_status status            = VX_SUCCESS;
+    vx_image  inputImg          = (vx_image)paramObj[0];
+    vx_scalar xRatio_s          = (vx_scalar)paramObj[2];
+    vx_scalar yRatio_s          = (vx_scalar)paramObj[3];
+    vx_tensor output            = (vx_tensor)paramObj[1];
+    vx_uint32 width             = 0;
+    vx_uint32 height            = 0;
+    vx_int32   xRatio           = 0;
+    vx_int32   yRatio           = 0;
+    vx_uint32  output_size[4]   = {0, 0, 0, 0};
+    vx_int8    dstFixedPointPos = 0;
+    vx_enum    dstFormat;
+    vx_float32 outputScale      = 1.0;
+    vx_int32   output_ZP        = 0;
+
+    vxQueryImage(inputImg, VX_IMAGE_WIDTH, &width, sizeof(width));
+    vxQueryImage(inputImg, VX_IMAGE_HEIGHT, &height, sizeof(height));
+
+    vxCopyScalar(xRatio_s, (void*)&xRatio, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
+    vxCopyScalar(yRatio_s, (void*)&yRatio, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
+
+    status = vxQueryTensor(output, VX_TENSOR_DIMS, output_size, sizeof(output_size));
+    status |= vxQueryTensor(output, VX_TENSOR_DATA_TYPE, &dstFormat, sizeof(dstFormat));
+    status |= vxQueryTensor(output, VX_TENSOR_FIXED_POINT_POSITION, &dstFixedPointPos,
+        sizeof(dstFixedPointPos));
+    status |= vxQueryTensor(output, VX_TENSOR_SCALE, &outputScale, sizeof(outputScale));
+    status |= vxQueryTensor(output, VX_TENSOR_ZERO_POINT, &output_ZP, sizeof(output_ZP));
+    if(status < 0)
+        printf("error-%s,%d\n",__FILE__,__LINE__);
+
+    if (xRatio == (1 << 15) && yRatio == (1 << 15))
+    {
+        vx_uint32 uniDataMeanStddevLo_2x8[16] = {
+            0x99999999, // TCfg
+            0x44444444, // ASelt
+            0x03020100, 0x07060504, // ABin
+            0x99999999, // BSelt
+            0x06060606, 0x06060606, // BBin
+            0x00000100, // AccumType, ConstantType, and PostShift
+            0x3c000000, 0x3c000000, 0x3c000000, 0x3c000000,
+            0x3c000000, 0x3c000000, 0x3c000000, 0x3c000000 // Constant
+        };
+        vx_uint32 uniDataMeanStddevHi_2x8[16] = {
+            0x99999999, // TCfg
+            0x44444444, // ASelt
+            0x0b0a0908, 0x0f0e0d0c, // ABin
+            0x99999999, // BSelt
+            0x06060606, 0x06060606, // BBin
+            0x00000100, // AccumType, ConstantType, and PostShift
+            0x3c000000, 0x3c000000, 0x3c000000, 0x3c000000,
+            0x3c000000, 0x3c000000, 0x3c000000, 0x3c000000 // Constant
+        };
+
+        shaderParam.globalWorkOffset[0] = 0;
+        shaderParam.globalWorkOffset[1] = 0;
+        if (dstFormat == VX_TYPE_FLOAT16 || dstFormat == VX_TYPE_INT16)
+            shaderParam.globalWorkScale[0]  = 16;
+        else if (dstFormat == VX_TYPE_INT8 || dstFormat == VX_TYPE_UINT8)
+            shaderParam.globalWorkScale[0]  = 16;
+
+        shaderParam.globalWorkScale[1]  = 1;
+        shaderParam.localWorkSize[0]    = 8;
+        shaderParam.localWorkSize[1]    = 1;
+        shaderParam.globalWorkSize[0]   = gcmALIGN((output_size[0] +
+            shaderParam.globalWorkScale[0] - 1)
+            / shaderParam.globalWorkScale[0], shaderParam.localWorkSize[0]);
+        shaderParam.globalWorkSize[1]   = gcmALIGN((output_size[1] +
+            shaderParam.globalWorkScale[1] - 1)
+            / shaderParam.globalWorkScale[1], shaderParam.localWorkSize[1]);
+
+        if (dstFormat == VX_TYPE_INT8 || dstFormat == VX_TYPE_INT16)
+        {
+            if(dstFixedPointPos > 0)
+                outputScale = (vx_float32) (1 << dstFixedPointPos);
+            else
+            {
+                outputScale = 1.0f;
+                uniDataMeanStddevLo_2x8[7] |= ((-dstFixedPointPos) & 0x1F);
+                uniDataMeanStddevHi_2x8[7] |= ((-dstFixedPointPos) & 0x1F);
+            }
+        }
+        else if (dstFormat == VX_TYPE_UINT8)
+        {
+            vx_float32 outputZP = (vx_float32)output_ZP;
+
+            outputScale = 1.0f / outputScale;
+
+            vxSetNodeUniform(nodObj, "outputZP", 1, &outputZP);
+        }
+
+        vxSetNodeUniform(nodObj, "uniDataMeanStddevLo_2x8", 1, uniDataMeanStddevLo_2x8);
+        vxSetNodeUniform(nodObj, "uniDataMeanStddevHi_2x8", 1, uniDataMeanStddevHi_2x8);
+        status |= vxSetNodeUniform(nodObj, "outputScale", 1, &outputScale);
+    }
+    else
+    {
+        vx_uint32 uniVecShift10[16] = {
+            0x01010101, // TCfg
+            0x00000000, // ASelt
+            0x00020000, 0x00060004, // ABin
+            0x02020202, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000600, // AccumType, ConstantType, and PostShift
+            0x00000400, 0x00000000, 0x00000400, 0x00000000,
+            0x00000400, 0x00000000, 0x00000400, 0x00000000 // Constant
+        };
+        vx_uint32 uniAddRShift[16] = {
+            0x0f0f0f0f, // TCfg
+            0x04040404, // ASelt
+            0x00010000, 0x00030002, // ABin
+            0x00000000, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00002405, // AccumType, ConstantType, and PostShift
+            0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
+        };
+        vx_uint32 uniGetTempVal[16] = {
+            0x09090909, // TCfg
+            0x00000000, // ASelt
+            0x00230001, 0x00670045, // ABin
+            0x05050505, // BSelt
+            0x00110000, 0x00330022, // BBin
+            0x00000400, // AccumType, ConstantType, and PostShift
+            0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
+        };
+        vx_uint32 uniExtractBytes[16] = {
+            0x0f0f0f0f, // TCfg
+            0x04040404, // ASelt
+            0x00010000, 0x00030002, // ABin
+            0x00000000, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00002414, // AccumType, ConstantType, and PostShift
+            0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
+        };
+        vx_uint32 uniDataMulAlpha_4x4[16] = {
+            0x01010101, // TCfg
+            0x00000000, // ASelt
+            0x00010000, 0x00030002, // ABin
+            0x01010101, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000400, // AccumType, ConstantType, and PostShift
+            0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
+        };
+        vx_uint32 uniDataSubMean_4x4[16] = {
+            0x09090909, // TCfg
+            0x04040404, // ASelt
+            0x00010000, 0x00030002, // ABin
+            0x0a0a0a0a, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00007100, // AccumType, ConstantType, and PostShift
+            0x3c003c00, 0x00000000, 0x3c003c00, 0x00000000,
+            0x3c003c00, 0x00000000, 0x3c003c00, 0x00000000 // Constant
+        };
+        vx_uint32 uniConvertIntergetoF32_4x4[16] = {
+            0x01010101, // TCfg
+            0x00000000, // ASelt
+            0x00010000, 0x00030002, // ABin
+            0x02020202, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000400, // AccumType, ConstantType, and PostShift
+            0x00000001, 0x00000000, 0x00000001, 0x00000000,
+            0x00000001, 0x00000000, 0x00000001, 0x00000000 // Constant
+        };
+        vx_uint32 uniExtactInteger_2x8[16] = {
+            0x33333333, // TCfg
+            0x11110000, // ASelt
+            0x03020100, 0x03020100, // ABin
+            0x00000000, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00002300, // AccumType, ConstantType, and PostShift
+            0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
+        };
+
+        shaderParam.globalWorkOffset[0] = 0;
+        shaderParam.globalWorkOffset[1] = 0;
+        shaderParam.globalWorkScale[0]  = 4;
+        shaderParam.globalWorkScale[1]  = 1;
+        shaderParam.localWorkSize[0]    = 2;
+        shaderParam.localWorkSize[1]    = 4;
+        shaderParam.globalWorkSize[0]   = gcmALIGN((output_size[0] +
+            shaderParam.globalWorkScale[0] - 1)
+            / shaderParam.globalWorkScale[0], shaderParam.localWorkSize[0]);
+        shaderParam.globalWorkSize[1]   = gcmALIGN((output_size[1] +
+            shaderParam.globalWorkScale[1] - 1)
+            / shaderParam.globalWorkScale[1], shaderParam.localWorkSize[1]);
+
+        if (dstFormat == VX_TYPE_FLOAT16)
+        {
+            status |= vxSetNodeUniform(nodObj, "uniDataMulAlpha_4x4", 1, uniDataMulAlpha_4x4);
+            status |= vxSetNodeUniform(nodObj, "uniDataSubMean_4x4", 1, uniDataSubMean_4x4);
+        }
+
+        status |= vxSetNodeUniform(nodObj, "uniVecShift10", 1, uniVecShift10);
+        status |= vxSetNodeUniform(nodObj, "uniAddRShift", 1, uniAddRShift);
+        status |= vxSetNodeUniform(nodObj, "uniGetTempVal", 1, uniGetTempVal);
+        status |= vxSetNodeUniform(nodObj, "uniExtractBytes", 1, uniExtractBytes);
+
+        if (dstFormat == VX_TYPE_INT8 || dstFormat == VX_TYPE_INT16)
+        {
+            if(dstFixedPointPos > 0)
+                outputScale *= (vx_float32) (1 << dstFixedPointPos);
+            else
+                outputScale *= 1.0f / (vx_float32) (1 << -dstFixedPointPos);
+
+            status |= vxSetNodeUniform(nodObj, "uniConvertIntergetoF32_4x4",
+                1, uniConvertIntergetoF32_4x4);
+            status |= vxSetNodeUniform(nodObj, "outputScale", 1, &outputScale);
+            status |= vxSetNodeUniform(nodObj, "uniExtactInteger_2x8", 1,
+                uniExtactInteger_2x8);
+        }
+        else if (dstFormat == VX_TYPE_UINT8)
+        {
+            vx_float32 outputZP = (vx_float32)output_ZP;
+
+            outputScale = 1.0f / outputScale;
+
+            status |= vxSetNodeUniform(nodObj, "uniConvertIntergetoF32_4x4",
+                1, uniConvertIntergetoF32_4x4);
+            status |= vxSetNodeUniform(nodObj, "outputZP", 1, &outputZP);
+            status |= vxSetNodeUniform(nodObj, "outputScale", 1, &outputScale);
+            status |= vxSetNodeUniform(nodObj, "uniExtactInteger_2x8", 1,
+                uniExtactInteger_2x8);
+        }
+    }
+
+    status |= vxSetNodeAttribute(nodObj, VX_NODE_ATTRIBUTE_KERNEL_EXECUTION_PARAMETERS,
+        &shaderParam, sizeof(vx_kernel_execution_parameters_t));
+
+    return VX_SUCCESS;
+}
+
 static vx_param_description_t s_params[] =
 {
     { VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED },
@@ -633,7 +879,19 @@ static vx_param_description_t vxScaletoTensorKernelParam[] =
     {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
 };
 
-#ifdef __cpluplus
+static vx_param_description_t vxGrayScaletoTensorKernelParam[] =
+{
+    {VX_INPUT, VX_TYPE_IMAGE, VX_PARAMETER_STATE_REQUIRED},
+    {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
+};
+
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -763,6 +1021,118 @@ vx_kernel_description_t vxScaletoTensorKernelInfo_uint8_copy =
     vsi_nn_KernelDeinitializer
 };
 
+vx_kernel_description_t vxGrayScaletoTensorKernelInfo_fp16 =
+{
+    VX_KERNEL_ENUM_GRAYSCALETOTENSOR,
+    VX_KERNEL_NAME_GRAYSCALETOTENSOR_FP16,
+    NULL,
+    vxGrayScaletoTensorKernelParam,
+    (sizeof(vxGrayScaletoTensorKernelParam) / sizeof(vxGrayScaletoTensorKernelParam[0])),
+    vsi_nn_KernelValidator,
+    NULL,
+    NULL,
+    vxGrayScaletoTensorInitializer,
+    vsi_nn_KernelDeinitializer
+};
+
+vx_kernel_description_t vxGrayScaletoTensorKernelInfo_int8 =
+{
+    VX_KERNEL_ENUM_GRAYSCALETOTENSOR,
+    VX_KERNEL_NAME_GRAYSCALETOTENSOR_INT8,
+    NULL,
+    vxGrayScaletoTensorKernelParam,
+    (sizeof(vxGrayScaletoTensorKernelParam) / sizeof(vxGrayScaletoTensorKernelParam[0])),
+    vsi_nn_KernelValidator,
+    NULL,
+    NULL,
+    vxGrayScaletoTensorInitializer,
+    vsi_nn_KernelDeinitializer
+};
+
+vx_kernel_description_t vxGrayScaletoTensorKernelInfo_fp16_copy =
+{
+    VX_KERNEL_ENUM_GRAYSCALETOTENSOR,
+    VX_KERNEL_NAME_GRAYSCALETOTENSOR_FP16_COPY,
+    NULL,
+    vxGrayScaletoTensorKernelParam,
+    (sizeof(vxGrayScaletoTensorKernelParam) / sizeof(vxGrayScaletoTensorKernelParam[0])),
+    vsi_nn_KernelValidator,
+    NULL,
+    NULL,
+    vxGrayScaletoTensorInitializer,
+    vsi_nn_KernelDeinitializer
+};
+
+vx_kernel_description_t vxGrayScaletoTensorKernelInfo_int8_copy =
+{
+    VX_KERNEL_ENUM_GRAYSCALETOTENSOR,
+    VX_KERNEL_NAME_GRAYSCALETOTENSOR_INT8_COPY,
+    NULL,
+    vxGrayScaletoTensorKernelParam,
+    (sizeof(vxGrayScaletoTensorKernelParam) / sizeof(vxGrayScaletoTensorKernelParam[0])),
+    vsi_nn_KernelValidator,
+    NULL,
+    NULL,
+    vxGrayScaletoTensorInitializer,
+    vsi_nn_KernelDeinitializer
+};
+
+vx_kernel_description_t vxGrayScaletoTensorKernelInfo_int16 =
+{
+    VX_KERNEL_ENUM_GRAYSCALETOTENSOR,
+    VX_KERNEL_NAME_GRAYSCALETOTENSOR_INT16,
+    NULL,
+    vxGrayScaletoTensorKernelParam,
+    (sizeof(vxGrayScaletoTensorKernelParam) / sizeof(vxGrayScaletoTensorKernelParam[0])),
+    vsi_nn_KernelValidator,
+    NULL,
+    NULL,
+    vxGrayScaletoTensorInitializer,
+    vsi_nn_KernelDeinitializer
+};
+
+vx_kernel_description_t vxGrayScaletoTensorKernelInfo_int16_copy =
+{
+    VX_KERNEL_ENUM_GRAYSCALETOTENSOR,
+    VX_KERNEL_NAME_GRAYSCALETOTENSOR_INT16_COPY,
+    NULL,
+    vxGrayScaletoTensorKernelParam,
+    (sizeof(vxGrayScaletoTensorKernelParam) / sizeof(vxGrayScaletoTensorKernelParam[0])),
+    vsi_nn_KernelValidator,
+    NULL,
+    NULL,
+    vxGrayScaletoTensorInitializer,
+    vsi_nn_KernelDeinitializer
+};
+
+vx_kernel_description_t vxGrayScaletoTensorKernelInfo_uint8 =
+{
+    VX_KERNEL_ENUM_GRAYSCALETOTENSOR,
+    VX_KERNEL_NAME_GRAYSCALETOTENSOR_UINT8,
+    NULL,
+    vxGrayScaletoTensorKernelParam,
+    (sizeof(vxGrayScaletoTensorKernelParam) / sizeof(vxGrayScaletoTensorKernelParam[0])),
+    vsi_nn_KernelValidator,
+    NULL,
+    NULL,
+    vxGrayScaletoTensorInitializer,
+    vsi_nn_KernelDeinitializer
+};
+
+vx_kernel_description_t vxGrayScaletoTensorKernelInfo_uint8_copy =
+{
+    VX_KERNEL_ENUM_GRAYSCALETOTENSOR,
+    VX_KERNEL_NAME_GRAYSCALETOTENSOR_UINT8_COPY,
+    NULL,
+    vxGrayScaletoTensorKernelParam,
+    (sizeof(vxGrayScaletoTensorKernelParam) / sizeof(vxGrayScaletoTensorKernelParam[0])),
+    vsi_nn_KernelValidator,
+    NULL,
+    NULL,
+    vxGrayScaletoTensorInitializer,
+    vsi_nn_KernelDeinitializer
+};
+
 vx_kernel_description_t * vx_kernel_IMAGEPROCESS_list[] =
 {
     &_VX_KERNEL_VAR,
@@ -774,8 +1144,16 @@ vx_kernel_description_t * vx_kernel_IMAGEPROCESS_list[] =
     &vxScaletoTensorKernelInfo_int8_copy,
     &vxScaletoTensorKernelInfo_int16_copy,
     &vxScaletoTensorKernelInfo_uint8_copy,
+    &vxGrayScaletoTensorKernelInfo_fp16,
+    &vxGrayScaletoTensorKernelInfo_int8,
+    &vxGrayScaletoTensorKernelInfo_int16,
+    &vxGrayScaletoTensorKernelInfo_uint8,
+    &vxGrayScaletoTensorKernelInfo_fp16_copy,
+    &vxGrayScaletoTensorKernelInfo_int8_copy,
+    &vxGrayScaletoTensorKernelInfo_int16_copy,
+    &vxGrayScaletoTensorKernelInfo_uint8_copy,
     NULL
 };
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif

@@ -26,6 +26,10 @@
 
 #include "vsi_nn_types.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define _VSI_NN_SELECT_LOCAL_TENSOR_NUM 4
 
 typedef struct _vsi_nn_select_lcl_data
@@ -37,6 +41,10 @@ typedef struct _vsi_nn_select_param
 {
     vsi_nn_select_lcl_data     local;
 } vsi_nn_select_param;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

@@ -470,7 +470,7 @@ static vsi_status op_compute
     vsi_nn_tensor_t ** outputs
     )
 {
-    vsi_status status;
+    vsi_status status = VSI_FAILURE;
 #if (USE_OVX_API == TRUE)
     self->n = vxPReluLayer(
         self->graph->g,
@@ -548,7 +548,7 @@ static vsi_status op_deinit
     return VSI_SUCCESS;
 } /* op_deinit() */
 
-#ifdef __cpluplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 /* Registrar */
@@ -563,7 +563,7 @@ DEF_OP_REG
     /* input_num  */ 2,
     /* output_num */ 1
     );
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif
 

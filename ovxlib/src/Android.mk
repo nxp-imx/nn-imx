@@ -20,6 +20,7 @@ LOCAL_SRC_FILES :=     \
             vsi_nn_tensor.c \
             vsi_nn_version.c \
             vsi_nn_rnn.c \
+            vsi_nn_internal_node.c \
             vsi_nn_log.c
 
 
@@ -29,6 +30,7 @@ LOCAL_SRC_FILES +=     \
 LOCAL_SRC_FILES +=      \
              utils/vsi_nn_code_generator.c   \
              utils/vsi_nn_binary_tree.c   \
+             utils/vsi_nn_map.c   \
              utils/vsi_nn_link_list.c   \
              utils/vsi_nn_math.c   \
              utils/vsi_nn_dtype_util.c   \
@@ -84,6 +86,11 @@ LOCAL_SRC_FILES += libnnext/ops/kernel/vsi_nn_kernel_argmax.c \
         libnnext/ops/kernel/vsi_nn_kernel_spatial_transformer.c \
         libnnext/ops/kernel/vsi_nn_kernel_logical_ops.c \
         libnnext/ops/kernel/vsi_nn_kernel_select.c \
+        libnnext/ops/kernel/vsi_nn_kernel_lstmunit_activation.c \
+        libnnext/ops/kernel/vsi_nn_kernel_tensor_add_mean_stddev_norm.c \
+        libnnext/ops/kernel/vsi_nn_kernel_stack.c \
+        libnnext/ops/kernel/vsi_nn_kernel_neg.c \
+        libnnext/ops/kernel/vsi_nn_kernel_exp.c \
         libnnext/vsi_nn_libnnext_vx.c \
 
 LOCAL_SRC_FILES +=      ops/vsi_nn_op_add.c   \
@@ -111,6 +118,7 @@ LOCAL_SRC_FILES +=      ops/vsi_nn_op_add.c   \
              ops/vsi_nn_op_roi_pool.c   \
              ops/vsi_nn_op_softmax.c   \
              ops/vsi_nn_op_relu.c   \
+             ops/vsi_nn_op_relu1.c   \
              ops/vsi_nn_op_relun.c   \
              ops/vsi_nn_op_reorg.c   \
              ops/vsi_nn_op_lstm.c   \
@@ -165,7 +173,15 @@ LOCAL_SRC_FILES +=      ops/vsi_nn_op_add.c   \
              ops/vsi_nn_op_spatial_transformer.c \
              ops/vsi_nn_op_logical_ops.c \
              ops/vsi_nn_op_select.c \
-             ops/vsi_nn_op_lrn2.c
+             ops/vsi_nn_op_lstmunit_activation.c \
+             ops/vsi_nn_op_lstmunit_ovxlib.c \
+             ops/vsi_nn_op_tensor_add_mean_stddev_norm.c \
+             ops/vsi_nn_op_stack.c \
+             ops/vsi_nn_op_floor.c \
+             ops/vsi_nn_op_neg.c \
+             ops/vsi_nn_op_exp.c \
+             ops/vsi_nn_op_lrn2.c \
+             ops/vsi_nn_op_square.c
 
 
 LOCAL_SRC_FILES +=      platform/nnapi0.4/vsi_nn_pf_softmax.c   \
@@ -174,6 +190,9 @@ LOCAL_SRC_FILES +=      platform/nnapi0.4/vsi_nn_pf_softmax.c   \
 
 #LOCAL_SRC_FILES +=      platform/nnapi0.3/vsi_nn_pf_softmax.c   \
 
+LOCAL_SRC_FILES += custom/ops/vsi_nn_op_custom_softmax.c
+
+LOCAL_SRC_FILES += custom/ops/kernel/vsi_nn_kernel_custom_softmax.c
 
 LOCAL_SHARED_LIBRARIES := \
 	liblog \

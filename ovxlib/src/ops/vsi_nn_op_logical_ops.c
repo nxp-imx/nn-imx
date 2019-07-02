@@ -221,7 +221,12 @@ static vsi_status vx_op_pre_compute
         else if(inputDataFormat == VSI_NN_TYPE_UINT8 && outputDataFormat == VSI_NN_TYPE_UINT8)
         {
             kernel_info->kernel_index = 3;
-        }else
+        }
+        else if(inputDataFormat == VSI_NN_TYPE_FLOAT16 && outputDataFormat == VSI_NN_TYPE_FLOAT16)
+        {
+            kernel_info->kernel_index = 4;
+        }
+        else
         {
             VSILOGE("Not support input or output data format!(relational_ops) at [%s : %d]\n", __FILE__, __LINE__);
             return VSI_FAILURE;
@@ -231,16 +236,21 @@ static vsi_status vx_op_pre_compute
     {
         if(inputDataFormat == VSI_NN_TYPE_INT8 && outputDataFormat == VSI_NN_TYPE_INT8)
         {
-            kernel_info->kernel_index = 4;
+            kernel_info->kernel_index = 5;
         }
         else if(inputDataFormat == VSI_NN_TYPE_INT16 && outputDataFormat == VSI_NN_TYPE_INT16)
         {
-            kernel_info->kernel_index = 5;
+            kernel_info->kernel_index = 6;
         }
         else if(inputDataFormat == VSI_NN_TYPE_UINT8 && outputDataFormat == VSI_NN_TYPE_UINT8)
         {
-            kernel_info->kernel_index = 6;
-        }else
+            kernel_info->kernel_index = 7;
+        }
+        else if(inputDataFormat == VSI_NN_TYPE_FLOAT16 && outputDataFormat == VSI_NN_TYPE_FLOAT16)
+        {
+            kernel_info->kernel_index = 8;
+        }
+        else
         {
             VSILOGE("Not support input or output data format!(relational_ops) at [%s : %d]\n", __FILE__, __LINE__);
             return VSI_FAILURE;
@@ -250,16 +260,17 @@ static vsi_status vx_op_pre_compute
     {
         if(inputDataFormat == VSI_NN_TYPE_INT8 && outputDataFormat == VSI_NN_TYPE_INT8)
         {
-            kernel_info->kernel_index = 7;
+            kernel_info->kernel_index = 9;
         }
         else if(inputDataFormat == VSI_NN_TYPE_INT16 && outputDataFormat == VSI_NN_TYPE_INT16)
         {
-            kernel_info->kernel_index = 8;
+            kernel_info->kernel_index = 10;
         }
         else if(inputDataFormat == VSI_NN_TYPE_UINT8 && outputDataFormat == VSI_NN_TYPE_UINT8)
         {
-            kernel_info->kernel_index = 9;
-        }else
+            kernel_info->kernel_index = 11;
+        }
+        else
         {
             VSILOGE("Not support input or output data format!(relational_ops) at [%s : %d]\n", __FILE__, __LINE__);
             return VSI_FAILURE;
@@ -330,7 +341,7 @@ static vsi_status op_compute
     if(path)
         vsi_nn_VxResourceSetPath(path);
 
-    if(op == VSI_NN_LOGICAL_OR)
+    if(op == VSI_NN_LOGICAL_OR || op == VSI_NN_LOGICAL_AND)
     {
         kernel_info.kernel_index = 1;
         kernel_info.init_index = 1;
@@ -373,13 +384,16 @@ static vsi_bool op_check
 
 static vsi_bool op_setup
     (
-    vsi_nn_node_t * node,
+    vsi_nn_node_t * self,
     vsi_nn_tensor_t ** inputs,
     vsi_nn_tensor_t ** outputs
     )
 {
-    /* TODO: Add code to comput outputs' shape. */
-    return TRUE;
+    vsi_bool ret = FALSE;
+
+    ret = vsi_nn_OpSetup( VSI_NN_OP_MULTIPLY, self, inputs, outputs );
+
+    return ret;
 } /* op_setup() */
 
 static vsi_status op_deinit
@@ -402,7 +416,7 @@ static vsi_status op_deinit
     return VSI_SUCCESS;
 } /* op_deinit() */
 
-#ifdef __cpluplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 /* Registrar */
@@ -417,6 +431,6 @@ DEF_OP_REG
     /* input_num  */ _INPUT_NUM,
     /* output_num */ _OUTPUT_NUM
     );
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif

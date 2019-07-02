@@ -249,6 +249,51 @@ vsi_nn_link_list_t * vsi_nn_LinkListNewNode
     return node;
 } /* vsi_nn_LinkListNewNode() */
 
+void vsi_nn_LinkListRemoveNode
+    (
+    vsi_nn_link_list_t ** root,
+    vsi_nn_link_list_t  * node
+    )
+{
+    vsi_nn_link_list_t * iter;
+    iter = *root;
+    iter = _walk_to_start( iter );
+    while( NULL != iter )
+    {
+        if( iter == node )
+        {
+            break;
+        }
+        iter = _move_next( iter );
+    }
+    if( NULL != iter )
+    {
+        if( iter == *root )
+        {
+            if( NULL != iter->prev )
+            {
+                *root = iter->prev;
+            }
+            else if( NULL != iter->next )
+            {
+                *root = iter->next;
+            }
+            else
+            {
+                *root = NULL;
+            }
+        }
+        if( NULL != iter->prev )
+        {
+            iter->prev->next = iter->next;
+        }
+        if( NULL != iter->next )
+        {
+            iter->next->prev = iter->prev;
+        }
+    }
+} /* vsi_nn_LinkListRemoveNode() */
+
 void vsi_nn_LinkListDeinit
     (
     vsi_nn_link_list_t * root,

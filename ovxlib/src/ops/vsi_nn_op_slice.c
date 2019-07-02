@@ -42,6 +42,9 @@
 #define _IO_NUM             (_INPUT_NUM + _OUTPUT_NUM)
 #define _PARAM_NUM          (_ARG_NUM + _IO_NUM)
 
+#define USE_OVX_API TRUE
+
+#if (USE_OVX_API == FALSE)
 extern vx_kernel_description_t * vx_kernel_CROP_list[];//share the op with crop
 
 static void _set_inputs_outputs
@@ -215,6 +218,7 @@ static vsi_nn_op_compute_t op_compute_list[] =
     vx_op_compute,
     NULL
 };
+#endif
 
 static vsi_status op_compute
     (
@@ -223,7 +227,82 @@ static vsi_status op_compute
     vsi_nn_tensor_t ** outputs
     )
 {
-    vsi_status status;
+    vsi_status status = VSI_FAILURE;
+#if (USE_OVX_API == TRUE)
+    vx_nn_stride_slice_params_t param;
+    vsi_nn_tensor_t *begin_dims_tensor = NULL;
+    vsi_nn_tensor_t *end_dims_tensor = NULL;
+    vsi_nn_tensor_t *stride_dims_tensor = NULL;
+    vsi_nn_tensor_attr_t attr;
+    int32_t end[VSI_NN_MAX_DIM_NUM] = {0};
+    int32_t stride[VSI_NN_MAX_DIM_NUM] = {0};
+    uint32_t i;
+
+    memset(&param, 0, sizeof(vx_nn_stride_slice_params_t));
+
+    for (i = 0; i < self->nn_param.slice.dims; i++)
+    {
+        end[i] = self->nn_param.slice.start[i] + self->nn_param.slice.length[i];
+        stride[i] = 1;
+    }
+
+    memset(&attr, 0, sizeof(attr));
+    attr.size[0] = self->nn_param.slice.dims;
+    attr.dim_num = 1;
+    attr.is_const = TRUE;
+    attr.dtype.vx_type = VSI_NN_TYPE_INT32;
+    attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
+    begin_dims_tensor = vsi_nn_CreateTensorFromData(
+        self->graph,
+        (uint8_t *)self->nn_param.slice.start,
+        &attr);
+    if( NULL == begin_dims_tensor )
+    {
+        VSILOGE("Create begin_dims_tensor fail.(slice)");
+        return VSI_FAILURE;
+    }
+
+    end_dims_tensor = vsi_nn_CreateTensorFromData(
+        self->graph,
+        (uint8_t *)end,
+        &attr);
+    if( NULL == end_dims_tensor )
+    {
+        VSILOGE("Create end_dims_tensor fail.(slice)");
+        return VSI_FAILURE;
+    }
+
+    stride_dims_tensor = vsi_nn_CreateTensorFromData(
+        self->graph,
+        (uint8_t *)stride,
+        &attr);
+    if( NULL == stride_dims_tensor )
+    {
+        VSILOGE("Create stride_dims_tensor fail.(slice)");
+        return VSI_FAILURE;
+    }
+
+    param.begin_dims = REQUIRED_IO(begin_dims_tensor);
+    param.end_dims = REQUIRED_IO(end_dims_tensor);
+    param.stride_dims = REQUIRED_IO(stride_dims_tensor);
+
+    self->n = vxTensorStrideSliceNode(
+        self->graph->g,
+        inputs[0]->t,
+        &param,
+        sizeof(vx_nn_stride_slice_params_t),
+        outputs[0]->t
+        );
+
+    if( NULL != self->n )
+    {
+        status = VSI_SUCCESS;
+    }
+
+    if (begin_dims_tensor) vsi_nn_ReleaseTensor(&begin_dims_tensor);
+    if (end_dims_tensor) vsi_nn_ReleaseTensor(&end_dims_tensor);
+    if (stride_dims_tensor) vsi_nn_ReleaseTensor(&stride_dims_tensor);
+#else
     vsi_nn_kernel_info_t kernel_info = {0};
 
     status = VSI_FAILURE;
@@ -251,6 +330,7 @@ static vsi_status op_compute
     {
         status = op_compute_list[kernel_info.init_index](self, inputs, outputs);
     }
+#endif
     return status;
 } /* op_compute() */
 
@@ -286,7 +366,7 @@ static vsi_bool op_setup
     return TRUE;
 } /* op_setup() */
 
-#ifdef __cpluplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 /* Registrar */
@@ -301,7 +381,7 @@ DEF_OP_REG
     /* input_num  */ 1,
     /* output_num */ 1
     );
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif
 

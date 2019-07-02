@@ -180,6 +180,48 @@ static vsi_status prepare_params_scaletotensor
     return VSI_SUCCESS;
 }
 
+static vsi_status prepare_params_grayscaletotensor
+    (
+    vsi_nn_imageprocess_param *p,
+    scaletotensor_kernel_params_t *params,
+    vsi_nn_tensor_attr_t *attr_in,
+    vsi_nn_tensor_attr_t *attr_out
+    )
+{
+    if (p->crop.enable == vx_true_e)
+    {
+        params->offset[0] = p->crop.start[0];
+        params->offset[1] = p->crop.start[1];
+    }
+    else
+    {
+        params->offset[0] = 0;
+        params->offset[1] = 0;
+    }
+
+    if (p->crop.enable == vx_true_e)
+    {
+        params->ratio[0] = (p->crop.length[0] << 15) / attr_out->size[0];
+        params->ratio[1] = (p->crop.length[1] << 15) / attr_out->size[1];
+    }
+    else
+    {
+        params->ratio[0] = (attr_in->size[0] << 15) / attr_out->size[0];
+        params->ratio[1] = (attr_in->size[1] << 15) / attr_out->size[1];
+    }
+
+    if (p->mean.type == VSI_NN_IMAGEPROCESS_MEAN_NONE)
+    {
+        params->mean[0] = 0;
+    }
+    else
+    {
+        params->mean[0] = p->mean.mean_value[0];
+    }
+    params->scale = p->mean.scale;
+    return VSI_SUCCESS;
+}
+
 static vsi_status _create_params_vx_scaletotensor
     (
     vsi_nn_node_t * node,
@@ -223,7 +265,50 @@ static vsi_status _create_params_vx_scaletotensor
 set_param_error:
 
     return status;
-} /* _create_params */
+} /* _create_params_vx_scaletotensor */
+
+static vsi_status _create_params_vx_grayscaletotensor
+    (
+    vsi_nn_node_t * node,
+    vx_reference * params,
+    uint32_t num,
+    vsi_nn_tensor_attr_t *attr_in,
+    vsi_nn_tensor_attr_t *attr_out
+    )
+{
+    vsi_status status;
+    vx_context ctx;
+    vsi_nn_imageprocess_param * p;
+    if( 0 == num )
+    {
+        return VSI_SUCCESS;
+    }
+    memset( params, 0, sizeof( vx_reference * ) * num );
+    p = &(node->nn_param.imageprocess);
+    ctx = vxGetContext( (vx_reference)node->graph->g );
+    /* Init parameters */
+#define _SET_PARAM( i, type, arg ) do{ \
+    params[i] = (vx_reference)vxCreateScalar( ctx, type, &arg ); \
+    status = vxGetStatus( params[i] ); \
+    if( VSI_SUCCESS != status ) { \
+    goto set_param_error; \
+    } \
+    } while(0)
+    {
+        scaletotensor_kernel_params_t scaletotensor_kernel_params;
+        prepare_params_grayscaletotensor(p, &scaletotensor_kernel_params, attr_in, attr_out);
+        _SET_PARAM( 0, VX_TYPE_INT32, scaletotensor_kernel_params.ratio[0]);
+        _SET_PARAM( 1, VX_TYPE_INT32, scaletotensor_kernel_params.ratio[1]);
+        _SET_PARAM( 2, VX_TYPE_INT32, scaletotensor_kernel_params.offset[0]);
+        _SET_PARAM( 3, VX_TYPE_INT32, scaletotensor_kernel_params.offset[1]);
+        _SET_PARAM( 4, VX_TYPE_FLOAT32, scaletotensor_kernel_params.mean[0]);
+        _SET_PARAM( 5, VX_TYPE_FLOAT32, scaletotensor_kernel_params.scale);
+    }
+#undef _SET_PARAM
+set_param_error:
+
+    return status;
+} /* _create_params_vx_scaletotensor */
 
 static void _release_params
     (
@@ -339,6 +424,73 @@ static vsi_status select_kernel_index
     return VSI_SUCCESS;
 }
 
+static vsi_status select_kernel_index_gray
+    (
+    vsi_nn_kernel_info_t * kernel_info,
+    vsi_nn_type_e outDataType,
+    vx_bool is_copy
+    )
+{
+    if (!is_copy)
+    {
+        if (outDataType == VSI_NN_TYPE_FLOAT16)
+        {
+            kernel_info->resource_name[0] = "vsi_nn_kernel_imageprocess_4";
+            kernel_info->kernel_index = 9;
+        }
+        else if (outDataType == VSI_NN_TYPE_INT8)
+        {
+            kernel_info->resource_name[0] = "vsi_nn_kernel_imageprocess_4";
+            kernel_info->kernel_index = 10;
+        }
+        else if (outDataType == VSI_NN_TYPE_INT16)
+        {
+            kernel_info->resource_name[0] = "vsi_nn_kernel_imageprocess_5";
+            kernel_info->kernel_index = 11;
+        }
+        else if (outDataType == VSI_NN_TYPE_UINT8)
+        {
+            kernel_info->resource_name[0] = "vsi_nn_kernel_imageprocess_5";
+            kernel_info->kernel_index = 12;
+        }
+        else
+        {
+            VSILOGE("Unsupported data type(imageprocess).\n");
+            return VSI_FAILURE;
+        }
+    }
+    else
+    {
+        if (outDataType == VSI_NN_TYPE_FLOAT16)
+        {
+            kernel_info->resource_name[0] = "vsi_nn_kernel_imageprocess_5";
+            kernel_info->kernel_index = 13;
+        }
+        else if (outDataType == VSI_NN_TYPE_INT8)
+        {
+            kernel_info->resource_name[0] = "vsi_nn_kernel_imageprocess_5";
+            kernel_info->kernel_index = 14;
+        }
+        else if (outDataType == VSI_NN_TYPE_INT16)
+        {
+            kernel_info->resource_name[0] = "vsi_nn_kernel_imageprocess_5";
+            kernel_info->kernel_index = 15;
+        }
+        else if (outDataType == VSI_NN_TYPE_UINT8)
+        {
+            kernel_info->resource_name[0] = "vsi_nn_kernel_imageprocess_5";
+            kernel_info->kernel_index = 16;
+        }
+        else
+        {
+            VSILOGE("Unsupported data type(imageprocess).\n");
+            return VSI_FAILURE;
+        }
+    }
+
+    return VSI_SUCCESS;
+}
+
 static vsi_status vx_op_pre_compute
     (
     vsi_nn_node_t * self,
@@ -351,7 +503,16 @@ static vsi_status vx_op_pre_compute
     vx_bool is_copy = (vx_bool)((inputs[0]->attr.size[0] == outputs[0]->attr.size[0])
         && (inputs[0]->attr.size[1] == outputs[0]->attr.size[1]));
 
-    return select_kernel_index(kernel_info, outDataType, is_copy);
+    if (inputs[0]->attr.size[2] == 1)
+    {
+        kernel_info->init_index = 2;
+        return select_kernel_index_gray(kernel_info, outDataType, is_copy);
+    }
+    else
+    {
+        kernel_info->init_index = 1;
+        return select_kernel_index(kernel_info, outDataType, is_copy);
+    }
 }
 
 #define _ARG_NUM_SCALETOTENSOR            (8)
@@ -395,6 +556,47 @@ static vsi_status vx_op_compute
     return status;
 } /* vx_op_compute() */
 
+#define _ARG_NUM_GRAYSCALETOTENSOR            (6)
+#define _PARAM_NUM_GRAYSCALETOTENSOR          (_ARG_NUM_GRAYSCALETOTENSOR + _IO_NUM)
+
+static vsi_status vx_gray_op_compute
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs
+    )
+{
+    vsi_status status = VSI_SUCCESS;
+    vx_reference params[_PARAM_NUM_GRAYSCALETOTENSOR];
+    vx_border_t border;
+    vx_reference * args;
+
+    args = &params[_IO_NUM];
+
+    if( NULL == self->n )
+    {
+        return VSI_FAILURE;
+    }
+
+    /* Set inputs and outputs */
+    _set_inputs_outputs( params, inputs, outputs );
+
+    /* Init parameters. */
+    _create_params_vx_grayscaletotensor( self, args, _ARG_NUM_GRAYSCALETOTENSOR,
+        &(inputs[0]->attr), &(outputs[0]->attr));
+
+    /* Pass parameters to node. */
+    status = vsi_nn_ClientNodePassParameters( self->n, params, _PARAM_NUM_GRAYSCALETOTENSOR );
+
+    border.mode = VX_BORDER_REPLICATE;
+    border.constant_value.U32 = 0;
+    status |= vxSetNodeAttribute(self->n, VX_NODE_BORDER, &border, sizeof(border));
+
+    _release_params( args, _ARG_NUM_GRAYSCALETOTENSOR );
+
+    return status;
+} /* vx_gray_op_compute() */
+
 static vsi_bool op_check
     (
     vsi_nn_node_t * self,
@@ -409,6 +611,7 @@ static vsi_nn_op_compute_t op_compute_list[] =
 {
     cpu_op_compute,
     vx_op_compute,
+    vx_gray_op_compute,
     NULL
 };
 
@@ -428,7 +631,6 @@ static vsi_status op_compute
     kernel_info.resource_name[0] = "vsi_nn_kernel_imageprocess";
     kernel_info.type = vsi_nn_GetVXKernelTypeForShader();
     kernel_info.kernel = vx_kernel_IMAGEPROCESS_list;
-    kernel_info.init_index = 1;
 
     if (vsi_nn_is_do_vx_op_pre_init(kernel_info.type))
     {
@@ -533,23 +735,65 @@ vsi_status vsi_nn_op_imageprocess_single_node
         vsi_nn_tensor_t *tensor_temp = NULL;
         vsi_nn_tensor_t *output_scaletotensor = NULL;
         vsi_nn_tensor_t *output_reversetensor = NULL;
+        vx_nn_tensor_reverse_params_t para;
+        int32_t reverse1_axis[4] = {2};
+        uint32_t perm[] = {2, 0, 1, 3};
+        vsi_nn_tensor_t out0;
+        uint32_t arg_num;
+        vx_bool is_gray = vx_false_e;
 
-        if (p->reverse_channel == vx_true_e)
+        memset(&out0, 0, sizeof(vsi_nn_tensor_t));
+        para.axis = reverse1_axis;
+        para.numberOfAxis = 1;
+
+        if (p->platform_type == VSI_NN_PLATFORM_TENSORFLOW)
         {
             vsi_nn_tensor_attr_t attr0;
             memcpy(&attr0, &tensor_out->attr, sizeof(vsi_nn_tensor_attr_t));
             attr0.size[0] = tensor_out->attr.size[1];
             attr0.size[1] = tensor_out->attr.size[2];
             attr0.size[2] = tensor_out->attr.size[0];
-            output_scaletotensor = vsi_nn_CreateTensor(graph, &attr0);
-            output_reversetensor = vsi_nn_CreateTensor(graph, &attr0);
+
+            if (attr0.size[2] == 1)
+            {
+                is_gray= vx_true_e;
+                p->reverse_channel = vx_false_e;
+            }
             is_copy = (vx_bool)((attr->size[0] == attr0.size[0])
-                && (attr->size[1] == attr0.size[1]));
-            tensor_temp = output_scaletotensor;
+                    && (attr->size[1] == attr0.size[1]));
+            if (!is_gray)
+            {
+                output_scaletotensor = vsi_nn_CreateTensor(graph, &attr0);
+                if (p->reverse_channel == vx_true_e)
+                {
+                    output_reversetensor = vsi_nn_CreateTensor(graph, &attr0);
+                }
+                tensor_temp = output_scaletotensor;
+            }
+            else
+            {
+                out0.t = vxReshapeTensor(tensor_out->t, (int32_t *)attr0.size, attr0.dim_num);
+                memcpy(&out0.attr, &attr0, sizeof(vsi_nn_tensor_attr_t));
+                tensor_temp = &out0;
+            }
         }
-        else
+        else /* VSI_NN_PLATFORM_CAFFE */
         {
-            tensor_temp = tensor_out;
+            if (tensor_out->attr.size[2] == 1)
+            {
+                is_gray= vx_true_e;
+                p->reverse_channel = vx_false_e;
+            }
+
+            if (p->reverse_channel == vx_true_e)
+            {
+                output_scaletotensor = vsi_nn_CreateTensor(graph, &(tensor_out->attr));
+                tensor_temp = output_scaletotensor;
+            }
+            else
+            {
+                tensor_temp = tensor_out;
+            }
         }
 
         args = &params[_IO_NUM];
@@ -559,14 +803,23 @@ vsi_status vsi_nn_op_imageprocess_single_node
         kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));
         kernel_info.type = vsi_nn_GetVXKernelTypeForShader();
         kernel_info.kernel = vx_kernel_IMAGEPROCESS_list;
-        kernel_info.init_index = 1;
+        if (!is_gray)
+        {
+            kernel_info.init_index = 1;
+            status = select_kernel_index(&kernel_info, tensor_out->attr.dtype.vx_type, is_copy);
+        }
+        else
+        {
+            kernel_info.init_index = 2;
+            status = select_kernel_index_gray(&kernel_info, tensor_out->attr.dtype.vx_type, is_copy);
+        }
 
-        status = select_kernel_index(&kernel_info, tensor_out->attr.dtype.vx_type, is_copy);
         node = vsi_nn_RegisterClientKernelAndNewNode(
             graph, &kernel_info);
         if (kernel_info.resource_name) free(kernel_info.resource_name);
         if( NULL == node )
         {
+            VSILOGE("Create scaletotensor node fails");
             return VSI_FAILURE;
         }
         //imgInfo = {width * num_of_channels, height, 1, width * num_of_channels, VX_SCALE_UNITY, VX_SCALE_UNITY, 1, 1};
@@ -584,7 +837,6 @@ vsi_status vsi_nn_op_imageprocess_single_node
 #else
         image = vxCreateImage(ctx, imgInfo.dim_x, imgInfo.dim_y, VX_DF_IMAGE_U8);
         {
-            void* imgData = NULL;
             vx_rectangle_t rect = {0, 0, 0, 0};
             vx_map_id map_id = 0;
             void* imgBaseAddr = NULL;
@@ -611,53 +863,101 @@ vsi_status vsi_nn_op_imageprocess_single_node
     return VSI_FAILURE; \
     } \
         } while(0)
+        if (!is_gray)
         {
-            scaletotensor_kernel_params_t scaletotensor_kernel_params;
-            prepare_params_scaletotensor(p, &scaletotensor_kernel_params, attr, &(tensor_temp->attr));
-            _SET_PARAM( 0, VX_TYPE_INT32, scaletotensor_kernel_params.ratio[0]);
-            _SET_PARAM( 1, VX_TYPE_INT32, scaletotensor_kernel_params.ratio[1]);
-            _SET_PARAM( 2, VX_TYPE_INT32, scaletotensor_kernel_params.offset[0]);
-            _SET_PARAM( 3, VX_TYPE_INT32, scaletotensor_kernel_params.offset[1]);
-            _SET_PARAM( 4, VX_TYPE_FLOAT32, scaletotensor_kernel_params.mean[0]);
-            _SET_PARAM( 5, VX_TYPE_FLOAT32, scaletotensor_kernel_params.mean[1]);
-            _SET_PARAM( 6, VX_TYPE_FLOAT32, scaletotensor_kernel_params.mean[2]);
-            _SET_PARAM( 7, VX_TYPE_FLOAT32, scaletotensor_kernel_params.scale);
+            {
+                scaletotensor_kernel_params_t scaletotensor_kernel_params;
+                prepare_params_scaletotensor(p, &scaletotensor_kernel_params, attr, &(tensor_temp->attr));
+                _SET_PARAM( 0, VX_TYPE_INT32, scaletotensor_kernel_params.ratio[0]);
+                _SET_PARAM( 1, VX_TYPE_INT32, scaletotensor_kernel_params.ratio[1]);
+                _SET_PARAM( 2, VX_TYPE_INT32, scaletotensor_kernel_params.offset[0]);
+                _SET_PARAM( 3, VX_TYPE_INT32, scaletotensor_kernel_params.offset[1]);
+                _SET_PARAM( 4, VX_TYPE_FLOAT32, scaletotensor_kernel_params.mean[0]);
+                _SET_PARAM( 5, VX_TYPE_FLOAT32, scaletotensor_kernel_params.mean[1]);
+                _SET_PARAM( 6, VX_TYPE_FLOAT32, scaletotensor_kernel_params.mean[2]);
+                _SET_PARAM( 7, VX_TYPE_FLOAT32, scaletotensor_kernel_params.scale);
+            }
+            arg_num = _ARG_NUM_SCALETOTENSOR;
+        }
+        else
+        {
+            {
+                scaletotensor_kernel_params_t scaletotensor_kernel_params;
+                prepare_params_scaletotensor(p, &scaletotensor_kernel_params, attr, &(tensor_temp->attr));
+                _SET_PARAM( 0, VX_TYPE_INT32, scaletotensor_kernel_params.ratio[0]);
+                _SET_PARAM( 1, VX_TYPE_INT32, scaletotensor_kernel_params.ratio[1]);
+                _SET_PARAM( 2, VX_TYPE_INT32, scaletotensor_kernel_params.offset[0]);
+                _SET_PARAM( 3, VX_TYPE_INT32, scaletotensor_kernel_params.offset[1]);
+                _SET_PARAM( 4, VX_TYPE_FLOAT32, scaletotensor_kernel_params.mean[0]);
+                _SET_PARAM( 5, VX_TYPE_FLOAT32, scaletotensor_kernel_params.scale);
+            }
+            arg_num = _ARG_NUM_GRAYSCALETOTENSOR;
         }
 #undef _SET_PARAM
 
         /* Pass parameters to node. */
-        status = vsi_nn_ClientNodePassParameters( node, params, _PARAM_NUM_SCALETOTENSOR );
+        status = vsi_nn_ClientNodePassParameters(node, params, _IO_NUM + arg_num);
 
         border.mode = VX_BORDER_REPLICATE;
         border.constant_value.U32 = 0;
         status |= vxSetNodeAttribute(node, VX_NODE_BORDER, &border, sizeof(border));
 
-        _release_params( args, _ARG_NUM_SCALETOTENSOR );
+        _release_params( args, arg_num);
 
-        if (p->reverse_channel == vx_true_e)
+        if (p->platform_type == VSI_NN_PLATFORM_TENSORFLOW)
         {
-            vx_nn_tensor_reverse_params_t para;
-            int32_t reverse1_axis[4] = {2};
-            uint32_t perm[] = {2, 0, 1, 3};
-
-            para.axis = reverse1_axis;
-            para.numberOfAxis = 1;
-
-            node = vxTensorReverse( graph->g, output_scaletotensor->t, &para,
-                sizeof(vx_nn_tensor_reverse_params_t), output_reversetensor->t );
-            if( NULL != node )
+            if (p->reverse_channel == vx_true_e)
             {
-                status = VSI_SUCCESS;
-            }
+                node = vxTensorReverse( graph->g, output_scaletotensor->t, &para,
+                    sizeof(vx_nn_tensor_reverse_params_t), output_reversetensor->t );
+                if( NULL == node )
+                {
+                    VSILOGE("Create vxTensorReverse node fails");
+                    return VSI_FAILURE;
+                }
 
-            node = vxTensorPermuteNode( graph->g, output_reversetensor->t,
-                tensor_out->t, perm, 4);
-            if( NULL != node )
-            {
-                status = VSI_SUCCESS;
+                node = vxTensorPermuteNode( graph->g, output_reversetensor->t,
+                    tensor_out->t, perm, 4);
+                if( NULL == node )
+                {
+                    VSILOGE("Create vxTensorPermuteNode node fails");
+                    return VSI_FAILURE;
+                }
+                vsi_nn_ReleaseTensor(&output_scaletotensor);
+                vsi_nn_ReleaseTensor(&output_reversetensor);
             }
-            vsi_nn_ReleaseTensor(&output_scaletotensor);
-            vsi_nn_ReleaseTensor(&output_reversetensor);
+            else
+            {
+                if (!is_gray)
+                {
+                    node = vxTensorPermuteNode( graph->g, output_scaletotensor->t,
+                        tensor_out->t, perm, 4);
+                    if( NULL == node )
+                    {
+                        VSILOGE("Create vxTensorPermuteNode node fails");
+                        return VSI_FAILURE;
+                    }
+                    vsi_nn_ReleaseTensor(&output_scaletotensor);
+                }
+                else
+                {
+                    if (out0.t) vxReleaseTensor(&out0.t);
+                }
+            }
+        }
+        else /* VSI_NN_PLATFORM_CAFFE */
+        {
+            if (p->reverse_channel == vx_true_e)
+            {
+                node = vxTensorReverse( graph->g, output_scaletotensor->t, &para,
+                    sizeof(vx_nn_tensor_reverse_params_t), tensor_out->t );
+                if( NULL == node )
+                {
+                    VSILOGE("Create vxTensorReverse node fails");
+                    return VSI_FAILURE;
+                }
+                vsi_nn_ReleaseTensor(&output_scaletotensor);
+            }
         }
         return status;
     }
@@ -690,7 +990,7 @@ vsi_status vsi_nn_op_imageprocess_single_node
     }
 }
 
-#ifdef __cpluplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 /* Registrar */
@@ -705,6 +1005,6 @@ DEF_OP_REG
     /* input_num  */ _INPUT_NUM,
     /* output_num */ _OUTPUT_NUM
     );
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif

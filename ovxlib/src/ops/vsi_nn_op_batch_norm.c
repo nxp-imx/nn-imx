@@ -142,7 +142,7 @@ static vsi_bool op_setup
 } /* op_setup() */
 
 
-#ifdef __cpluplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 /* Registrar */
@@ -157,7 +157,7 @@ DEF_OP_REG
     /* input_num  */ 5,
     /* output_num */ 1
     );
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif
 

@@ -834,7 +834,7 @@ static vx_param_description_t vxParametricReluKernelParam[] =
     {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED}
 };
 
-#ifdef __cpluplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 vx_kernel_description_t vxParametricReluKernelInfo =
@@ -1082,6 +1082,6 @@ vx_kernel_description_t * vx_kernel_PRELU_list[] =
     &vxParametricReluKernelInfo_fp16_int8,
     NULL
 };
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif

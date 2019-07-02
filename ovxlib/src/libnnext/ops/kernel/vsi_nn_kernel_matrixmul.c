@@ -204,7 +204,7 @@ static vx_param_description_t vxgemmKernelParam[] =
     {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED}
 };
 
-#ifdef __cpluplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 vx_kernel_description_t vxgemmKernelInfo =
@@ -317,6 +317,6 @@ vx_kernel_description_t * vx_kernel_MATRIXMUL_list[] =
     &vxgemmKernelInfo_TransBU8U8toFp16,
     NULL
 };
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif

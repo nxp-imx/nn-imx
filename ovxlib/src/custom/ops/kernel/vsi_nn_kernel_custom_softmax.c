@@ -28,6 +28,7 @@
 #include "vsi_nn_graph.h"
 #include "vsi_nn_node.h"
 #include "vsi_nn_log.h"
+#include "vsi_nn_test.h"
 #include "vsi_nn_tensor_util.h"
 #include "utils/vsi_nn_util.h"
 #include "utils/vsi_nn_dtype_util.h"
@@ -47,17 +48,13 @@ static vsi_status VX_CALLBACK vxCustomSoftmaxKernel
     uint32_t paramNum
     )
 {
-    /* TODO: Add CPU kernel implement */
     vsi_status status = VX_SUCCESS;
     vx_tensor input = NULL,output = NULL;
-    uint8_t *in_buffer = NULL, *out_buffer = NULL;
     float *f32_in_buffer = NULL,*f32_out_buffer=NULL;
     vx_context context = NULL;
     vsi_nn_tensor_attr_t in_attr,out_attr;
-    uint32_t in_stride[8],out_stride[8],i,sz,dim;
-    vx_tensor_addressing in_addr,out_addr;
+    uint32_t i,in_elements,out_elements;
     int32_t sf_axis;
-    vx_uint32  size[6];
     float fMax = 0.0;
     float  fProbSum = 0.0f;
 
@@ -65,52 +62,48 @@ static vsi_status VX_CALLBACK vxCustomSoftmaxKernel
     input  = (vx_tensor)paramObj[0];
     output = (vx_tensor)paramObj[1];
     vxCopyScalar((vx_scalar)paramObj[2], &(sf_axis),VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
-    vxQueryTensor(input, VX_TENSOR_DIMS, size, sizeof(size));
 
-    // get input & output data buffer
-    in_buffer =
-        vsi_nn_ConvertRawTensorToData2(context,input,&in_attr,in_stride,&in_addr,VX_READ_ONLY);
-    out_buffer =
-        vsi_nn_ConvertRawTensorToData2(context,output,&out_attr,out_stride,&out_addr,VX_WRITE_ONLY);
+    /* Fill input & output attribute data struct */
+    status = vsi_nn_vxGetTensorAttr(input, &in_attr);
+    TEST_CHECK_STATUS(status, final);
+    status = vsi_nn_vxGetTensorAttr(output, &out_attr);
+    TEST_CHECK_STATUS(status, final);
 
-    // TODO: fill your code to compute output data
-    dim = out_attr.dim_num,sz = 1;
-    for(i=0; i<dim; i++)
-        sz *= out_attr.size[i];
+    in_elements = vsi_nn_vxGetTensorElementNum(&in_attr);
+    out_elements = vsi_nn_vxGetTensorElementNum(&out_attr);
 
-    f32_in_buffer = (float*)malloc(sz*sizeof(float));
-    f32_out_buffer= (float*)malloc(sz*sizeof(float));
+    /* alloc the float32 data buffer */
+    f32_in_buffer = (float *)malloc(in_elements * sizeof(float));
+    f32_out_buffer= (float *)malloc(out_elements * sizeof(float));
+    memset(f32_in_buffer, 0, in_elements * sizeof(float));
+    memset(f32_out_buffer, 0, out_elements * sizeof(float));
 
-    for(i=0; i<sz; i++)
-        vsi_nn_DtypeToFloat32(&in_buffer[in_stride[0] * i], &f32_in_buffer[i], &in_attr.dtype);
+    /* Copy tensor to buffer, and convert bufer to float32 format */
+    status = vsi_nn_vxConvertTensorToFloat32Data(
+        context, input, &in_attr, f32_in_buffer, in_elements * sizeof(float));
+    TEST_CHECK_STATUS(status, final);
 
-    //softmax implement
-    for ( i = 0; i < sz; i++)
+    /* Softmax implement */
+    for ( i = 0; i < out_elements; i++)
+    {
         fMax = f32_in_buffer[i] > fMax ? f32_in_buffer[i] : fMax;
+    }
 
-    for ( i = 0; i < sz; i++)
+    for ( i = 0; i < out_elements; i++)
     {
         f32_out_buffer[i] = (float)expf(f32_in_buffer[i] - fMax);
         fProbSum += f32_out_buffer[i];
     }
-    for ( i = 0; i < sz; i++)
+    for ( i = 0; i < out_elements; i++)
+    {
         f32_out_buffer[i] =  f32_out_buffer[i]/ fProbSum;
+    }
+    status = vsi_nn_vxConvertFloat32DataToTensor(
+        context, output, &out_attr, f32_out_buffer, out_elements * sizeof(float));
 
-    for(i=0; i<sz; i++)
-        vsi_nn_Float32ToDtype(f32_out_buffer[i], &out_buffer[out_stride[0] * i], &out_attr.dtype);
-
-    //copy out_buffer --> output tensor
-    status = vxCopyTensorPatch(output,NULL,out_addr,out_buffer,VX_WRITE_ONLY,0);
-    if (out_addr) vxReleaseTensorAddressing(&out_addr);
-
-    if(in_buffer)
-        free(in_buffer);
-    if(out_buffer)
-        free(out_buffer);
-    if(f32_in_buffer)
-        free(f32_in_buffer);
-    if(f32_out_buffer)
-        free(f32_out_buffer);
+final:
+    if(f32_in_buffer)free(f32_in_buffer);
+    if(f32_out_buffer)free(f32_out_buffer);
     return status;
 }
 
@@ -178,7 +171,7 @@ static vx_param_description_t s_params[] =
     { VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED },
 };
 
-#ifdef __cpluplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 vx_kernel_description_t _VX_KERNEL_VAR_CPU =
@@ -215,6 +208,6 @@ vx_kernel_description_t * vx_kernel_CUSTOM_SOFTMAX_list[] =
     &_VX_KERNEL_VAR_VX,
     NULL
 };
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif

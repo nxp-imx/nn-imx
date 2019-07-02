@@ -240,7 +240,7 @@ static vx_param_description_t s_params[] =
     { VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED },
 };
 
-#ifdef __cpluplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 vx_kernel_description_t _VX_KERNEL_VAR =
@@ -278,6 +278,6 @@ vx_kernel_description_t * vx_kernel_SPACE2DEPTH_list[] =
     &vxSpace2DepthKernelInfo_int16_int16,
     NULL
 };
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif

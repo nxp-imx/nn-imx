@@ -183,7 +183,7 @@ static vsi_status op_compute
     vsi_nn_tensor_t ** outputs
     )
 {
-    vsi_status status;
+    vsi_status status = VSI_FAILURE;
 #if (USE_OVX_API == TRUE)
     vx_nn_reorg_params_ext_t param;
     vsi_nn_tensor_t *block_size_tensor = NULL;
@@ -330,7 +330,7 @@ static vsi_status op_deinit
     return VSI_SUCCESS;
 } /* op_deinit() */
 
-#ifdef __cpluplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 /* Registrar */
@@ -345,7 +345,7 @@ DEF_OP_REG
     /* input_num  */ _INPUT_NUM,
     /* output_num */ _OUTPUT_NUM
     );
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif
 

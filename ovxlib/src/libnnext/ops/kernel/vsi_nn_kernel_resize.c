@@ -220,7 +220,7 @@ static vx_param_description_t vxTensorResizeKernelParam[] =
     {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED}
 };
 
-#ifdef __cpluplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 vx_kernel_description_t _VX_KERNEL_VAR =
@@ -272,6 +272,6 @@ vx_kernel_description_t * vx_kernel_RESIZE_list[] =
     &vxTensorResize8BitsDownSampleQuarterKernelInfo,
     NULL
 };
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif

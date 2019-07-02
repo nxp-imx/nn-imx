@@ -64,7 +64,7 @@ static vsi_bool op_check
     return TRUE;
 } /* op_check() */
 
-#ifdef __cpluplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 /* Registrar */
@@ -79,7 +79,7 @@ DEF_OP_REG
     /* input_num  */ 1,
     /* output_num */ 1
     );
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif
 

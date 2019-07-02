@@ -132,6 +132,11 @@ static vsi_status _init_lstmunit_param
     param->base.projection_weight        = OPTIONAL_IO(inputs[18]);
     param->base.projection_bias          = OPTIONAL_IO(inputs[19]);
 
+    param->layernorm2input_weight        = OPTIONAL_IO(inputs[20]);
+    param->layernorm2forget_weight       = OPTIONAL_IO(inputs[21]);
+    param->layernorm2cell_weight         = OPTIONAL_IO(inputs[22]);
+    param->layernorm2output_weight       = OPTIONAL_IO(inputs[23]);
+
     param->base.activation   = OPTIONAL_IO(self->nn_param.lstmunit.local.activation_tensor);
     param->base.cell_clip    = OPTIONAL_IO(self->nn_param.lstmunit.local.cell_clip_tensor);
     param->base.proj_clip    = OPTIONAL_IO(self->nn_param.lstmunit.local.proj_clip_tensor);
@@ -243,7 +248,7 @@ static vsi_bool op_setup
     self->nn_param.lstmunit.local.scratch_attr.is_const = FALSE;
     self->nn_param.lstmunit.local.scratch_attr.dtype.vx_type = VSI_NN_TYPE_FLOAT16;
     self->nn_param.lstmunit.local.scratch_attr.dim_num = inputs[0]->attr.dim_num;
-    self->nn_param.lstmunit.local.scratch_attr.size[0] = inputs[3]->attr.size[1] * 4; /* num_units * 4 */
+    self->nn_param.lstmunit.local.scratch_attr.size[0] = inputs[4]->attr.size[1] * 4; /* num_units * 4 */
     self->nn_param.lstmunit.local.scratch_attr.size[1] = inputs[0]->attr.size[1];     /* batch_size */
 
     /* output */
@@ -255,7 +260,7 @@ static vsi_bool op_setup
         }
         else /* disable projection_weight */
         {
-            outputs[0]->attr.size[0] = inputs[3]->attr.size[1];    /* num_units */
+            outputs[0]->attr.size[0] = inputs[4]->attr.size[1];    /* num_units */
         }
         outputs[0]->attr.size[1] = inputs[0]->attr.size[1];        /* batch_size */
         outputs[0]->attr.dim_num = inputs[0]->attr.dim_num;
@@ -273,7 +278,7 @@ static vsi_bool op_setup
     if(VSI_NN_DIM_AUTO == outputs[2]->attr.dim_num)
     {
         outputs[2]->attr.dim_num = outputs[1]->attr.dim_num;
-        outputs[2]->attr.size[0] = inputs[3]->attr.size[1]; /* num_units */
+        outputs[2]->attr.size[0] = inputs[4]->attr.size[1]; /* num_units */
         outputs[2]->attr.size[1] = inputs[0]->attr.size[1]; /* batch_size */
     }
 
@@ -313,7 +318,7 @@ static vsi_status op_deinit
     return VSI_SUCCESS;
 } /* op_deinit() */
 
-#ifdef __cpluplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 /* Registrar */
@@ -328,7 +333,7 @@ DEF_OP_REG
     /* input_num  */ 24,
     /* output_num */ 4
     );
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif
 

@@ -772,7 +772,7 @@ static vx_param_description_t vxL2NormScale_MulScaleKernelParam[] =
     {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED}
 };
 
-#ifdef __cpluplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 vx_kernel_description_t vxL2NormalizeScaleKernelInfo_CPU =
@@ -948,6 +948,6 @@ vx_kernel_description_t * vx_kernel_L2NORMALIZESCALE_list[] =
     &vxL2NormScale_MulScaleKernelInfoInt16toFp16,
     NULL
 };
-#ifdef __cpluplus
+#ifdef __cplusplus
 }
 #endif
