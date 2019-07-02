@@ -1314,7 +1314,8 @@ int ACompilation::addOperation_LSTM(vx_graph graph, AModel *model, std::vector<A
                                     std::vector<vx_node> &nodeContainer, std::vector<vx_tensor> *tmpTensors)
 {
 
-    NN_ERR_CHECK( checkIndex(inputs, outputs, operands->size(), 23, 4,"ANEURALNETWORKS_LSTM") );
+    //NN_ERR_CHECK( checkIndex(inputs, outputs, operands->size(), 23, 4,"ANEURALNETWORKS_LSTM") );
+    vx_bool enable_layernorm = (inputs.size() > 23) ? vx_true_e : vx_false_e;
 
     //store 1-D or 2-D tensor idxes of inputs for check parameter
     size_t inputidx_2d[12];
@@ -1360,52 +1361,60 @@ int ACompilation::addOperation_LSTM(vx_graph graph, AModel *model, std::vector<A
     convertScalar2Tensor(context, (*operands)[inputs[22]]);
 
 
-    vx_nn_lstm_params_t p;
+    vx_nn_lstm_params_ext_t p = {0};
     /* 1 ~ 4 */ //TODO: check tensor is null?
-    p.input2input_weight = (*operands)[inputs[1]].tensor;
-    p.input2forget_weight = (*operands)[inputs[2]].tensor;
-    p.input2cell_weight = (*operands)[inputs[3]].tensor;
-    p.input2output_weight = (*operands)[inputs[4]].tensor;
+    p.base.input2input_weight = (*operands)[inputs[1]].tensor;
+    p.base.input2forget_weight = (*operands)[inputs[2]].tensor;
+    p.base.input2cell_weight = (*operands)[inputs[3]].tensor;
+    p.base.input2output_weight = (*operands)[inputs[4]].tensor;
 
     /* 5 ~ 8 */
-    p.recurrent2input_weight = (*operands)[inputs[5]].tensor;
-    p.recurrent2forget_weight  = (*operands)[inputs[6]].tensor;
-    p.recurrent2cell_weight  = (*operands)[inputs[7]].tensor;
-    p.recurrent2output_weight = (*operands)[inputs[8]].tensor;
+    p.base.recurrent2input_weight = (*operands)[inputs[5]].tensor;
+    p.base.recurrent2forget_weight  = (*operands)[inputs[6]].tensor;
+    p.base.recurrent2cell_weight  = (*operands)[inputs[7]].tensor;
+    p.base.recurrent2output_weight = (*operands)[inputs[8]].tensor;
 
     /* 9 ~ 11 */
-    p.cell2input_weight  = (*operands)[inputs[9]].tensor;
-    p.cell2forget_weight = (*operands)[inputs[10]].tensor;
-    p.cell2output_weight = (*operands)[inputs[11]].tensor;
+    p.base.cell2input_weight  = (*operands)[inputs[9]].tensor;
+    p.base.cell2forget_weight = (*operands)[inputs[10]].tensor;
+    p.base.cell2output_weight = (*operands)[inputs[11]].tensor;
 
     /* 12 ~ 15 */
-    p.input_gate_bias = (*operands)[inputs[12]].tensor;
-    p.forget_gate_bias = (*operands)[inputs[13]].tensor;
-    p.cell_bias = (*operands)[inputs[14]].tensor;
-    p.output_gate_bias = (*operands)[inputs[15]].tensor;
+    p.base.input_gate_bias = (*operands)[inputs[12]].tensor;
+    p.base.forget_gate_bias = (*operands)[inputs[13]].tensor;
+    p.base.cell_bias = (*operands)[inputs[14]].tensor;
+    p.base.output_gate_bias = (*operands)[inputs[15]].tensor;
 
     /* 16 ~ 17 */
-    p.projection_weight = (*operands)[inputs[16]].tensor;
-    p.projection_bias = (*operands)[inputs[17]].tensor;
+    p.base.projection_weight = (*operands)[inputs[16]].tensor;
+    p.base.projection_bias = (*operands)[inputs[17]].tensor;
 
     /* 20 ~ 22 */
-    p.activation = (*operands)[inputs[20]].tensor;
-    p.cell_clip = (*operands)[inputs[21]].tensor;
-    p.proj_clip = p.projection_weight == NULL ? NULL:(*operands)[inputs[22]].tensor;
+    p.base.activation = (*operands)[inputs[20]].tensor;
+    p.base.cell_clip = (*operands)[inputs[21]].tensor;
+    p.base.proj_clip = p.base.projection_weight == NULL ? NULL:(*operands)[inputs[22]].tensor;
 
-    if (p.input2input_weight == NULL || (p.cell2input_weight == NULL && p.cell2output_weight != NULL))
+    if (enable_layernorm)
     {
-        p.input2input_weight = NULL;
-        p.recurrent2input_weight = NULL;
-        p.input_gate_bias = NULL;
+        p.layernorm2input_weight = (*operands)[inputs[23]].tensor;
+        p.layernorm2forget_weight = (*operands)[inputs[24]].tensor;
+        p.layernorm2cell_weight = (*operands)[inputs[25]].tensor;
+        p.layernorm2output_weight = (*operands)[inputs[26]].tensor;
+    }
+
+    if (p.base.input2input_weight == NULL || (p.base.cell2input_weight == NULL && p.base.cell2output_weight != NULL))
+    {
+        p.base.input2input_weight = NULL;
+        p.base.recurrent2input_weight = NULL;
+        p.base.input_gate_bias = NULL;
     }
 
     VX_NODE_CHECK( vxLstmUnitLayer(graph,
                                    (*operands)[inputs[0]].tensor,
                                    (*operands)[inputs[18]].tensor,
                                    (*operands)[inputs[19]].tensor,
-                                   &p,
-                                   sizeof(vx_nn_lstm_params_t),
+                                   (vx_nn_lstm_params_t*)&p,
+                                   (enable_layernorm ? sizeof(vx_nn_lstm_params_ext_t):sizeof(vx_nn_lstm_params_t)),
                                    (*operands)[outputs[0]].tensor,
                                    (*operands)[outputs[1]].tensor,
                                    (*operands)[outputs[2]].tensor,
