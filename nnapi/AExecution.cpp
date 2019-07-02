@@ -35,6 +35,13 @@ using namespace std;
         m_runningFlag(false),m_exceptFlag(false)
 {
     startTimePoint = 0.0;
+
+    char *env = getenv("GET_PROCESS_TIME");
+    if(env)
+        printProcessTime = atoi(env);
+    else
+        printProcessTime = 0;
+
 #ifdef NN_DEBUG
     cout << "new Execution" <<endl;
 #endif

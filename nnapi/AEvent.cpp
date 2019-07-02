@@ -27,8 +27,9 @@ void waitForGraph(AExecution *exe)
     VX_ERR_CHECK( vxWaitGraph(exe->getVXgraph()) );
     double finishTime = getCurrentSystemTimeMs();
     double startTime = exe->getStartTime();
+    if(exe->printTime())
+        fprintf(stderr, "it takes %lfms to process the graph\n", finishTime - startTime);
 
-    fprintf(stderr, "it takes %lfms to process the graph\n", finishTime - startTime);
     exe->clearRunningStatus();
     if(exe->getExecptFlag())
     {
@@ -60,8 +61,8 @@ int AEvent::AEvent_wait()
     VX_ERR_CHECK( vxWaitGraph(m_exe->getVXgraph()) );
     double finishTime = getCurrentSystemTimeMs();
     double startTime = m_exe->getStartTime();
-
-    fprintf(stderr, "it takes %lfms to process the graph\n", finishTime - startTime);
+    if(m_exe->printTime())
+        fprintf(stderr, "it takes %lfms to process the graph\n", finishTime - startTime);
 #endif
     m_exe->clearRunningStatus();
     m_exe->copyDev2Host();

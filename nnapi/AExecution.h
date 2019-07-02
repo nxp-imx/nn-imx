@@ -54,6 +54,7 @@ public:
         return startTimePoint;
     }
 
+    int printTime(){ return printProcessTime;}
 private:
     vx_graph     m_graph;
     AModel *m_AModel;
@@ -73,6 +74,8 @@ private:
     std::vector<void*> m_outputExternBufs;
 
     double startTimePoint;
+    int printProcessTime;
+
 };
 
 

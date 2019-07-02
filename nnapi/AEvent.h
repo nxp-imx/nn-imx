@@ -33,8 +33,6 @@ public:
 
 private:
     AExecution *m_exe;
-    //vx_graph m_graph;
-    //std::shared_ptr<bool> m_freeFlag;
 };
 
 #endif //NNAPI_AEVENT_H
