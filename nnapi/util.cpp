@@ -411,7 +411,7 @@ void convertRankAndFormat(vx_context context,AnnOperand &operand, bool convertSN
             vx_tensor_create_params_t param = { operand.dimensionCount, convert_tensor_size, dst_data_format, quant_format, {{0}}};
             if(quant_format == VX_QUANT_AFFINE_SCALE)
             {
-                param.quant_data.affine.scale     = operand.scale;
+                param.quant_data.affine.scale     = (operand.scale != 0)? operand.scale: 1.0f;
                 param.quant_data.affine.zeroPoint = operand.zeroPoint;
             }
             else
