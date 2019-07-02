@@ -93,6 +93,61 @@ ACompilation::ACompilation(AModel *model):
     cout << "new compilation" << endl;
 #endif
 }
+ResultCode createPreTensor(AnnOperand& operand, AnnOperand operand_s)
+{
+    if ((operand_s.tensor != nullptr) && !operand_s.isEmpty && (operand.tensor == nullptr))
+    {
+#ifdef NN_DEBUG
+        fprintf(stderr, "VXcreateTensor index:%d, %d dims, dim:(", index, operand.dimensionCount);
+        for (size_t i = 0; i < operand.dimensionCount; i++)
+            fprintf(stderr, " %d ", operand.dimensions[i]);
+        fprintf(stderr, ")\n");
+#endif
+
+        if (operand_s.isEmpty)
+            return ANEURALNETWORKS_BAD_DATA;
+
+        vx_tensor_create_params_t param;
+        INITIALIZE_STRUCT(param);
+
+        assert(operand.type == operand_s.type);
+
+        operand.dimensionCount = operand_s.dimensionCount;
+
+        memcpy(operand.dimensions, operand_s.dimensions, operand_s.dimensionCount * sizeof(uint32_t));
+
+        param.num_of_dims = operand.dimensionCount;
+        param.sizes = operand.dimensions;
+        param.data_format = enumConvertorANN2VX(operand.type);
+
+        if (ANEURALNETWORKS_TENSOR_QUANT8_ASYMM == operand.type || (ANEURALNETWORKS_TENSOR_INT32 == operand.type))
+        {
+            param.quant_format = VX_QUANT_AFFINE_SCALE;
+            param.quant_data.affine.scale = operand.scale == 0.f ? 1.0f : operand.scale;
+            param.quant_data.affine.zeroPoint = operand.zeroPoint;
+        }
+
+        operand.tensor = vxCreateTensor2(vxGetContext((vx_reference)operand_s.tensor), &param, sizeof(vx_tensor_create_params_t));
+
+        if (operand.tensor == NULL)
+        {
+            cout << "fail to creat tensor" << __LINE__ << endl;
+            assert(0);
+        }
+
+        vx_enum precison = VX_TENSOR_PRECISION_AUTO;
+        vx_enum rank = (2 == operand.dimensionCount ? VX_TENSOR_RANK_SN : VX_TENSOR_RANK_CWHN);
+        VX_ERR_CHECK(vxSetTensorAttribute(operand.tensor, VX_TENSOR_RANK, &rank, sizeof(vx_enum)));
+        VX_ERR_CHECK(vxSetTensorAttribute(operand.tensor, VX_TENSOR_PRECISION, &precison, sizeof(vx_enum)));
+
+        operand.tensorAttribute.rank = rank;
+        operand.tensorAttribute.precision = precison;
+        operand.tensorAttribute.dataType = enumConvertorANN2VX(operand.type);
+
+    }
+
+    return ANEURALNETWORKS_NO_ERROR;
+}
 
 ACompilation::~ACompilation()
 {
@@ -1710,6 +1765,7 @@ int ACompilation::addOperation_DIV(vx_graph graph, AModel *model, std::vector<An
     AnnOperand& operand1 = (*operands)[inputs[1]];
     AnnOperand& operand2 = (*operands)[inputs[2]];
     AnnOperand& output = (*operands)[outputs[0]];
+    createPreTensor(operand1, operand0);
 
     CHECK_PARAMETER(operand0.type >2 && operand0.dimensionCount <= 4, INPUT, 0);
     CHECK_PARAMETER(operand0.type == operand1.type && (operand1.dimensionCount <= 4), INPUT, 1);
@@ -1740,6 +1796,7 @@ int ACompilation::addOperation_SUB(vx_graph graph, AModel *model, std::vector<An
     AnnOperand& operand1 = (*operands)[inputs[1]];
     AnnOperand& operand2 = (*operands)[inputs[2]];
     AnnOperand& output = (*operands)[outputs[0]];
+    createPreTensor(operand1, operand0);
 
     CHECK_PARAMETER(operand0.type >2 && operand0.dimensionCount <= 4, INPUT, 0);
     CHECK_PARAMETER(operand0.type == operand1.type && (operand1.dimensionCount <= 4), INPUT, 1);
