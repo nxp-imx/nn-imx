@@ -1,3 +1,31 @@
+##############################################################################
+#
+#    Copyright 2012 - 2019 Vivante Corporation, Santa Clara, California.
+#    All Rights Reserved.
+#
+#    Permission is hereby granted, free of charge, to any person obtaining
+#    a copy of this software and associated documentation files (the
+#    'Software'), to deal in the Software without restriction, including
+#    without limitation the rights to use, copy, modify, merge, publish,
+#    distribute, sub license, and/or sell copies of the Software, and to
+#    permit persons to whom the Software is furnished to do so, subject
+#    to the following conditions:
+#
+#    The above copyright notice and this permission notice (including the
+#    next paragraph) shall be included in all copies or substantial
+#    portions of the Software.
+#
+#    THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+#    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+#    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
+#    IN NO EVENT SHALL VIVANTE AND/OR ITS SUPPLIERS BE LIABLE FOR ANY
+#    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+#    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+#    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+#
+##############################################################################
+
+
 include $(AQROOT)/makefile.linux.def
 
 INCLUDE += -I$(VIVANTE_SDK_INC) -I$(VIVANTE_SDK_INC)/HAL -I$(AQROOT)/sdk/inc
@@ -103,6 +131,11 @@ OBJECTS += $(OBJ_DIR)/vsi_nn_kernel_argmax.o \
         $(OBJ_DIR)/vsi_nn_kernel_stack.o \
         $(OBJ_DIR)/vsi_nn_kernel_neg.o \
         $(OBJ_DIR)/vsi_nn_kernel_exp.o \
+        $(OBJ_DIR)/vsi_nn_kernel_clip.o \
+        $(OBJ_DIR)/vsi_nn_kernel_pre_process_gray.o \
+        $(OBJ_DIR)/vsi_nn_kernel_unstack.o \
+        $(OBJ_DIR)/vsi_nn_kernel_pre_process_rgb.o \
+        $(OBJ_DIR)/vsi_nn_kernel_addn.o \
         $(OBJ_DIR)/vsi_nn_kernel_tensorstackconcat.o \
         $(OBJ_DIR)/vsi_nn_kernel_pow.o \
         $(OBJ_DIR)/vsi_nn_kernel_floordiv.o \
@@ -199,14 +232,28 @@ OBJECTS +=      $(OBJ_DIR)/vsi_nn_op_add.o   \
              $(OBJ_DIR)/vsi_nn_op_lstmunit_activation.o \
              $(OBJ_DIR)/vsi_nn_op_lstmunit_ovxlib.o \
              $(OBJ_DIR)/vsi_nn_op_tensor_add_mean_stddev_norm.o \
+             $(OBJ_DIR)/vsi_nn_op_lstm_ovxlib.o \
+             $(OBJ_DIR)/vsi_nn_op_hashtable_lookup.o \
+             $(OBJ_DIR)/vsi_nn_op_embedding_lookup.o \
+             $(OBJ_DIR)/vsi_nn_op_lsh_projection.o \
              $(OBJ_DIR)/vsi_nn_op_stack.o \
              $(OBJ_DIR)/vsi_nn_op_floor.o \
              $(OBJ_DIR)/vsi_nn_op_square.o \
              $(OBJ_DIR)/vsi_nn_op_neg.o \
              $(OBJ_DIR)/vsi_nn_op_exp.o \
+             $(OBJ_DIR)/vsi_nn_op_clip.o \
+             $(OBJ_DIR)/vsi_nn_op_pre_process_tensor.o \
+             $(OBJ_DIR)/vsi_nn_op_post_process.o \
+             $(OBJ_DIR)/vsi_nn_op_pre_process_gray.o \
+             $(OBJ_DIR)/vsi_nn_op_unstack.o \
+             $(OBJ_DIR)/vsi_nn_op_pre_process_rgb.o \
+             $(OBJ_DIR)/vsi_nn_op_pre_process.o \
+             $(OBJ_DIR)/vsi_nn_op_addn.o \
+             $(OBJ_DIR)/vsi_nn_op_softmax_internal.o \
              $(OBJ_DIR)/vsi_nn_op_tensorstackconcat.o \
              $(OBJ_DIR)/vsi_nn_op_concatshift.o \
-             $(OBJ_DIR)/vsi_nn_op_sync_host.o
+             $(OBJ_DIR)/vsi_nn_op_sync_host.o\
+             $(OBJ_DIR)/vsi_nn_op_rnn.o
 
 ifeq ("$(OVXLIB_CONFIG)", "VSI_CFG_NNAPI_0_3")
 vpath %.c platform/nnapi0.3

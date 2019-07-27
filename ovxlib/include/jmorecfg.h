@@ -1,3 +1,31 @@
+/****************************************************************************
+*
+*    Copyright 2012 - 2019 Vivante Corporation, Santa Clara, California.
+*    All Rights Reserved.
+*
+*    Permission is hereby granted, free of charge, to any person obtaining
+*    a copy of this software and associated documentation files (the
+*    'Software'), to deal in the Software without restriction, including
+*    without limitation the rights to use, copy, modify, merge, publish,
+*    distribute, sub license, and/or sell copies of the Software, and to
+*    permit persons to whom the Software is furnished to do so, subject
+*    to the following conditions:
+*
+*    The above copyright notice and this permission notice (including the
+*    next paragraph) shall be included in all copies or substantial
+*    portions of the Software.
+*
+*    THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+*    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+*    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
+*    IN NO EVENT SHALL VIVANTE AND/OR ITS SUPPLIERS BE LIABLE FOR ANY
+*    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+*    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+*    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*
+*****************************************************************************/
+
+
 /*
  * jmorecfg.h
  *
@@ -10,7 +38,6 @@
  * JPEG software for special applications or support machine-dependent
  * optimizations.  Most users will not need to touch this file.
  */
-
 
 /*
  * Define BITS_IN_JSAMPLE as either
@@ -203,16 +230,16 @@ typedef unsigned int UINT16;
 
 /* INT16 must hold at least the values -32768..32767. */
 
-#ifndef XMD_H            /* X11/xmd.h correctly defines INT16 */
+#ifndef XMD_H            
 typedef short INT16;
 #endif
 
 /* INT32 must hold at least signed 32-bit values. */
 
-#ifndef XMD_H            /* X11/xmd.h correctly defines INT32 */
-#ifndef _BASETSD_H_        /* Microsoft defines it in basetsd.h */
-#ifndef _BASETSD_H        /* MinGW is slightly different */
-#ifndef QGLOBAL_H        /* Qt defines it in qglobal.h */
+#ifndef XMD_H            
+#ifndef _BASETSD_H_        
+#ifndef _BASETSD_H        
+#ifndef QGLOBAL_H        
 typedef long INT32;
 #endif
 #endif
@@ -307,7 +334,7 @@ typedef void noreturn_t;
 #if defined FALSE || defined TRUE || defined QGLOBAL_H
 /* Qt3 defines FALSE and TRUE as "const" variables in qglobal.h */
 typedef int boolean;
-#ifndef FALSE            /* in case these macros already exist */
+#ifndef FALSE            
 #define FALSE    0        /* values of boolean */
 #endif
 #ifndef TRUE
@@ -317,7 +344,7 @@ typedef int boolean;
 typedef enum { FALSE = 0, TRUE = 1 } boolean;
 #endif
 #else
-#ifndef FALSE            /* in case these macros already exist */
+#ifndef FALSE            
 #define FALSE    0        /* values of boolean */
 #endif
 #ifndef TRUE
@@ -415,7 +442,7 @@ typedef enum { FALSE = 0, TRUE = 1 } boolean;
  */
 
 #ifndef INLINE
-#ifdef __GNUC__            /* for instance, GNU C knows about inline */
+#ifdef __GNUC__            
 #define INLINE __inline__
 #endif
 #ifndef INLINE

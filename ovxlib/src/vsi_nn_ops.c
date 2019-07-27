@@ -1,26 +1,31 @@
 /****************************************************************************
 *
-*    Copyright (c) 2018 Vivante Corporation
+*    Copyright 2012 - 2019 Vivante Corporation, Santa Clara, California.
+*    All Rights Reserved.
 *
-*    Permission is hereby granted, free of charge, to any person obtaining a
-*    copy of this software and associated documentation files (the "Software"),
-*    to deal in the Software without restriction, including without limitation
-*    the rights to use, copy, modify, merge, publish, distribute, sublicense,
-*    and/or sell copies of the Software, and to permit persons to whom the
-*    Software is furnished to do so, subject to the following conditions:
+*    Permission is hereby granted, free of charge, to any person obtaining
+*    a copy of this software and associated documentation files (the
+*    'Software'), to deal in the Software without restriction, including
+*    without limitation the rights to use, copy, modify, merge, publish,
+*    distribute, sub license, and/or sell copies of the Software, and to
+*    permit persons to whom the Software is furnished to do so, subject
+*    to the following conditions:
 *
-*    The above copyright notice and this permission notice shall be included in
-*    all copies or substantial portions of the Software.
+*    The above copyright notice and this permission notice (including the
+*    next paragraph) shall be included in all copies or substantial
+*    portions of the Software.
 *
-*    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-*    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-*    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-*    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-*    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-*    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-*    DEALINGS IN THE SOFTWARE.
+*    THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+*    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+*    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
+*    IN NO EVENT SHALL VIVANTE AND/OR ITS SUPPLIERS BE LIABLE FOR ANY
+*    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+*    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+*    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
+
+
 #include <string.h>
 #include "vsi_nn_ops.h"
 #include "vsi_nn_client_op.h"
@@ -49,6 +54,17 @@ const static vsi_nn_op_proc_t * vsi_nn_custom_ops_tab[VSI_NN_OP_CUSTOM_NUM] =
 };
 #undef DEF_OP
 
+/* Internal ops */
+#define DEF_OP(NAME, ...) extern vsi_nn_op_proc_t vsi_nn_op_##NAME;
+#include "internal/internal_ops.def"
+#undef DEF_OP
+#define DEF_OP(NAME, ...) &vsi_nn_op_##NAME,
+const static vsi_nn_op_proc_t * vsi_nn_internal_ops_tab[VSI_NN_OP_INTERNAL_NUM] =
+{
+#include "internal/internal_ops.def"
+};
+#undef DEF_OP
+
 // TODO: Add name item to op structure
 #define DEF_OP(NAME, ...) ""#NAME,
 const static char * vsi_nn_ops_name[] =
@@ -66,6 +82,15 @@ const static char * vsi_nn_custom_ops_name[] =
 };
 #undef DEF_OP
 
+// TODO: Add name item to internal op structure
+#define DEF_OP(NAME, ...) ""#NAME,
+const static char * vsi_nn_internal_ops_name[] =
+{
+#include "internal/internal_ops.def"
+    "UNKNOWN"
+};
+#undef DEF_OP
+
 vsi_bool _is_custom_ops
     (
     vsi_nn_op_t op
@@ -73,6 +98,19 @@ vsi_bool _is_custom_ops
 {
     vsi_bool ret = FALSE;
     if( op > VSI_NN_OP_CUSTOM_START && op < VSI_NN_OP_CUSTOM_END )
+    {
+        ret = TRUE;
+    }
+    return ret;
+}
+
+vsi_bool _is_internal_ops
+    (
+    vsi_nn_op_t op
+    )
+{
+    vsi_bool ret = FALSE;
+    if( op > VSI_NN_OP_INTERNAL_START && op < VSI_NN_OP_INTERNAL_END )
     {
         ret = TRUE;
     }
@@ -87,7 +125,11 @@ vsi_bool vsi_nn_OpIsValid
     vsi_bool valid;
     valid = TRUE;
 
-    if( VSI_NN_OP_NA == op || op >= VSI_NN_OP_NUM )
+    if( ( op >= 0 && op < VSI_NN_OP_NUM ) || _is_internal_ops(op) )
+    {
+        valid = TRUE;
+    }
+    else
     {
         if( _is_custom_ops(op) == FALSE )
         {
@@ -114,8 +156,33 @@ const vsi_nn_op_proc_t * vsi_nn_OpGetProc
     {
         proc = vsi_nn_custom_ops_tab[op - VSI_NN_OP_CUSTOM_START - 1];
     }
+    if( NULL == proc && _is_internal_ops(op) )
+    {
+        proc = vsi_nn_internal_ops_tab[op - VSI_NN_OP_INTERNAL_START - 1];
+    }
     return proc;
 } /* vsi_nn_OpGetProc() */
+
+vsi_status vsi_nn_OpInit
+    (
+    vsi_nn_op_t op,
+    vsi_nn_node_t * node
+    )
+{
+    const vsi_nn_op_proc_t * proc;
+    vsi_status status;
+
+    status = VSI_FAILURE;
+    proc = vsi_nn_OpGetProc( op );
+    if( NULL != proc )
+    {
+        if( NULL != proc->init )
+        {
+            status = proc->init( node );
+        }
+    }
+    return status;
+} /* vsi_nn_OpInit() */
 
 vsi_status vsi_nn_OpCompute
     (
@@ -298,6 +365,10 @@ const char * vsi_nn_OpGetName
     else if(_is_custom_ops(op))
     {
         name = vsi_nn_custom_ops_name[op - VSI_NN_OP_CUSTOM_START - 1];
+    }
+    else if(_is_internal_ops(op))
+    {
+        name = vsi_nn_internal_ops_name[op - VSI_NN_OP_INTERNAL_START - 1];
     }
     else
     {

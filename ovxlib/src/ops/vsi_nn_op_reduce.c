@@ -1,26 +1,31 @@
 /****************************************************************************
 *
-*    Copyright (c) 2018 Vivante Corporation
+*    Copyright 2012 - 2019 Vivante Corporation, Santa Clara, California.
+*    All Rights Reserved.
 *
-*    Permission is hereby granted, free of charge, to any person obtaining a
-*    copy of this software and associated documentation files (the "Software"),
-*    to deal in the Software without restriction, including without limitation
-*    the rights to use, copy, modify, merge, publish, distribute, sublicense,
-*    and/or sell copies of the Software, and to permit persons to whom the
-*    Software is furnished to do so, subject to the following conditions:
+*    Permission is hereby granted, free of charge, to any person obtaining
+*    a copy of this software and associated documentation files (the
+*    'Software'), to deal in the Software without restriction, including
+*    without limitation the rights to use, copy, modify, merge, publish,
+*    distribute, sub license, and/or sell copies of the Software, and to
+*    permit persons to whom the Software is furnished to do so, subject
+*    to the following conditions:
 *
-*    The above copyright notice and this permission notice shall be included in
-*    all copies or substantial portions of the Software.
+*    The above copyright notice and this permission notice (including the
+*    next paragraph) shall be included in all copies or substantial
+*    portions of the Software.
 *
-*    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-*    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-*    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-*    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-*    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-*    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-*    DEALINGS IN THE SOFTWARE.
+*    THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+*    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+*    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
+*    IN NO EVENT SHALL VIVANTE AND/OR ITS SUPPLIERS BE LIABLE FOR ANY
+*    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+*    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+*    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
+
+
 #include <string.h>
 #include <stdlib.h>
 #include "vsi_nn_platform.h"
@@ -254,7 +259,6 @@ static vsi_bool op_setup
     vsi_nn_tensor_t ** outputs
     )
 {
-    /* TODO: Add code to comput outputs' shape. */
     if (self->nn_param.reduce.type != VSI_NN_REDUCE_MEAN &&
         self->nn_param.reduce.type != VSI_NN_REDUCE_SUM)
     {
@@ -263,13 +267,17 @@ static vsi_bool op_setup
     }
     if( VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num )
     {
+        int valid_dim_num = inputs[0]->attr.dim_num;
         uint32_t i;
         char dim_map[VSI_NN_MAX_DIM_NUM] = {0};
 
         for (i = 0; i < self->nn_param.reduce.axis_num; i++)
         {
             int index = self->nn_param.reduce.axis[i];
-            dim_map[index] = 1;
+            if (dim_map[index] == 0) {
+                dim_map[index] = 1;
+                valid_dim_num --;
+            }
         }
 
         if (self->nn_param.reduce.keep_dim)
@@ -290,13 +298,21 @@ static vsi_bool op_setup
         else
         {
             int index = 0;
-            outputs[0]->attr.dim_num = inputs[0]->attr.dim_num - self->nn_param.reduce.axis_num;
-            for (i = 0; i < inputs[0]->attr.dim_num; i++)
+            if (valid_dim_num == 0)
             {
-                if (dim_map[i] == 0)
+                outputs[0]->attr.dim_num = 1;
+                outputs[0]->attr.size[0] = 1;
+            }
+            else
+            {
+                outputs[0]->attr.dim_num = valid_dim_num;
+                for (i = 0; i < inputs[0]->attr.dim_num; i++)
                 {
-                    outputs[0]->attr.size[index] = inputs[0]->attr.size[i];
-                    index++;
+                    if (dim_map[i] == 0)
+                    {
+                        outputs[0]->attr.size[index] = inputs[0]->attr.size[i];
+                        index++;
+                    }
                 }
             }
         }
@@ -325,6 +341,7 @@ extern "C" {
 DEF_OP_REG
     (
     /* op_name    */ REDUCE,
+    /* init       */ NULL,
     /* compute    */ op_compute,
     /* deinit     */ op_deinit,
     /* check      */ op_check,

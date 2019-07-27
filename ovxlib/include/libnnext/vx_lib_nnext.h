@@ -1,26 +1,31 @@
 /****************************************************************************
 *
-*    Copyright (c) 2018 Vivante Corporation
+*    Copyright 2012 - 2019 Vivante Corporation, Santa Clara, California.
+*    All Rights Reserved.
 *
-*    Permission is hereby granted, free of charge, to any person obtaining a
-*    copy of this software and associated documentation files (the "Software"),
-*    to deal in the Software without restriction, including without limitation
-*    the rights to use, copy, modify, merge, publish, distribute, sublicense,
-*    and/or sell copies of the Software, and to permit persons to whom the
-*    Software is furnished to do so, subject to the following conditions:
+*    Permission is hereby granted, free of charge, to any person obtaining
+*    a copy of this software and associated documentation files (the
+*    'Software'), to deal in the Software without restriction, including
+*    without limitation the rights to use, copy, modify, merge, publish,
+*    distribute, sub license, and/or sell copies of the Software, and to
+*    permit persons to whom the Software is furnished to do so, subject
+*    to the following conditions:
 *
-*    The above copyright notice and this permission notice shall be included in
-*    all copies or substantial portions of the Software.
+*    The above copyright notice and this permission notice (including the
+*    next paragraph) shall be included in all copies or substantial
+*    portions of the Software.
 *
-*    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-*    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-*    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-*    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-*    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-*    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-*    DEALINGS IN THE SOFTWARE.
+*    THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+*    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+*    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
+*    IN NO EVENT SHALL VIVANTE AND/OR ITS SUPPLIERS BE LIABLE FOR ANY
+*    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+*    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+*    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
+
+
 #pragma once
 #ifndef _OPENVX_EXT_LIBNNEXT_H_
 #define _OPENVX_EXT_LIBNNEXT_H_
@@ -96,6 +101,11 @@ enum vx_kernel_libnnext_offset_e
     KERNEL_ENUM_GRAYSCALETOTENSOR,
     KERNEL_ENUM_NEG,
     KERNEL_ENUM_EXP,
+    KERNEL_ENUM_CLIP,
+    KERNEL_ENUM_PRE_PROCESS_GRAY,
+    KERNEL_ENUM_UNSTACK,
+    KERNEL_ENUM_PRE_PROCESS_RGB,
+    KERNEL_ENUM_ADDN,
 };
 
 //! [KERNEL NAME]
@@ -187,15 +197,6 @@ enum vx_kernel_libnnext_offset_e
 #define VX_KERNEL_NAME_IMG2COL_DILATED                     "com.vivantecorp.extension.img2col_dilatedVXC"
 #define VX_KERNEL_NAME_IMG2COL_DILATED_INT8                "com.vivantecorp.extension.img2col_dilated_int8VXC"
 #define VX_KERNEL_NAME_ALEXNET_GEMM_INT8                   "com.vivantecorp.extension.alexNet_gemm_int8VXC"
-#define VX_KERNEL_NAME_ELTWISE_MAX                         "com.vivantecorp.extension.eltwiseMax"
-#define VX_KERNEL_NAME_ELTWISE_MAX_INT8                    "com.vivantecorp.extension.eltwiseMax_int8"
-#define VX_KERNEL_NAME_ELTWISE_MAX_INT8_NOFL               "com.vivantecorp.extension.eltwiseMax_int8_nofl"
-#define VX_KERNEL_NAME_ELTWISE_MAX_INT8FP16_INT8           "com.vivantecorp.extension.eltwiseMax_i8fp16_i8"
-#define VX_KERNEL_NAME_ELTWISE_MAX_UINT8FP16_UINT8         "com.vivantecorp.extension.eltwiseMax_u8fp16_u8"
-#define VX_KERNEL_NAME_ELTWISE_MAX_UINT8                   "com.vivantecorp.extension.eltwiseMax_uint8"
-#define VX_KERNEL_NAME_ELTWISE_MAX_INT16                   "com.vivantecorp.extension.eltwiseMax_int16"
-#define VX_KERNEL_NAME_ELTWISE_MAX_INT16FP16_INT16         "com.vivantecorp.extension.eltwiseMax_i16fp16_i16"
-#define VX_KERNEL_NAME_ELTWISE_MAX_INT16FP16_FP16          "com.vivantecorp.extension.eltwiseMax_i16fp16_fp16"
 #define VX_KERNEL_NAME_FULLYCONNECTED_AXIS2                "com.vivantecorp.extension.vxcFullyConnected_Axis2"
 #define VX_KERNEL_NAME_TENSORCROP_INT16                    "com.vivantecorp.extension.vxcTensorCrop_Int16"
 #define VX_KERNEL_NAME_TENSORCROP_INT8                     "com.vivantecorp.extension.vxcTensorCrop_Int8"
@@ -302,6 +303,9 @@ enum vx_kernel_libnnext_offset_e
 #define VX_KERNEL_NAME_POW_INT16                           "com.vivantecorp.extension.vxcTensorPow_Int16"
 #define VX_KERNEL_NAME_POW_INT8                            "com.vivantecorp.extension.vxcTensorPow_Int8"
 #define VX_KERNEL_NAME_POW_UINT8                           "com.vivantecorp.extension.vxcTensorPow_Uint8"
+#define VX_KERNEL_NAME_POW_UINT8_FP16FP16                  "com.vivantecorp.extension.vxcTensorPow_U8Fp16_Fp16"
+#define VX_KERNEL_NAME_POW_INT8_FP16FP16                   "com.vivantecorp.extension.vxcTensorPow_I8Fp16_Fp16"
+#define VX_KERNEL_NAME_POW_INT16_FP16FP16                  "com.vivantecorp.extension.vxcTensorPow_I16Fp16_Fp16"
 #define VX_KERNEL_NAME_FLOORDIV_FP16                       "com.vivantecorp.extension.vxcTensorFloorDiv_Fp16"
 #define VX_KERNEL_NAME_FLOORDIV_INT16                      "com.vivantecorp.extension.vxcTensorFloorDiv_Int16"
 #define VX_KERNEL_NAME_FLOORDIV_INT8                       "com.vivantecorp.extension.vxcTensorFloorDiv_Int8"
@@ -326,6 +330,30 @@ enum vx_kernel_libnnext_offset_e
 #define VX_KERNEL_NAME_MINIMUM_I16F16TOI16_2D              "com.vivantecorp.extension.vxcTensorMinimum_I16F16toI16_2D"
 #define VX_KERNEL_NAME_MINIMUM_I16F16TOF16                 "com.vivantecorp.extension.vxcTensorMinimum_I16F16toF16"
 #define VX_KERNEL_NAME_MINIMUM_I16F16TOF16_2D              "com.vivantecorp.extension.vxcTensorMinimum_I16F16toF16_2D"
+#define VX_KERNEL_NAME_MINIMUM_F16F16TOU8                  "com.vivantecorp.extension.vxcTensorMinimum_F16F16toU8"
+#define VX_KERNEL_NAME_MINIMUM_F16F16TOU8_2D               "com.vivantecorp.extension.vxcTensorMinimum_F16F16toU8_2D"
+#define VX_KERNEL_NAME_MAXIMUM_F16F16TOF16                 "com.vivantecorp.extension.vxcTensorMaximum_F16F16toF16"
+#define VX_KERNEL_NAME_MAXIMUM_F16F16TOF16_2D              "com.vivantecorp.extension.vxcTensorMaximum_F16F16toF16_2D"
+#define VX_KERNEL_NAME_MAXIMUM_I8I8TOI8                    "com.vivantecorp.extension.vxcTensorMaximum_I8I8toI8"
+#define VX_KERNEL_NAME_MAXIMUM_I8I8TOI8_2D                 "com.vivantecorp.extension.vxcTensorMaximum_I8I8toI8_2D"
+#define VX_KERNEL_NAME_MAXIMUM_I8F16TOI8                   "com.vivantecorp.extension.vxcTensorMaximum_I8F16toI8"
+#define VX_KERNEL_NAME_MAXIMUM_I8F16TOI8_2D                "com.vivantecorp.extension.vxcTensorMaximum_I8F16toI8_2D"
+#define VX_KERNEL_NAME_MAXIMUM_I8F16TOF16                  "com.vivantecorp.extension.vxcTensorMaximum_I8F16toF16"
+#define VX_KERNEL_NAME_MAXIMUM_I8F16TOF16_2D               "com.vivantecorp.extension.vxcTensorMaximum_I8F16toF16_2D"
+#define VX_KERNEL_NAME_MAXIMUM_U8F16TOF16                  "com.vivantecorp.extension.vxcTensorMaximum_U8F16toF16"
+#define VX_KERNEL_NAME_MAXIMUM_U8F16TOF16_2D               "com.vivantecorp.extension.vxcTensorMaximum_U8F16toF16_2D"
+#define VX_KERNEL_NAME_MAXIMUM_U8F16TOU8                   "com.vivantecorp.extension.vxcTensorMaximum_U8F16toU8"
+#define VX_KERNEL_NAME_MAXIMUM_U8F16TOU8_2D                "com.vivantecorp.extension.vxcTensorMaximum_U8F16toU8_2D"
+#define VX_KERNEL_NAME_MAXIMUM_U8U8TOU8                    "com.vivantecorp.extension.vxcTensorMaximum_U8U8toU8"
+#define VX_KERNEL_NAME_MAXIMUM_U8U8TOU8_2D                 "com.vivantecorp.extension.vxcTensorMaximum_U8U8toU8_2D"
+#define VX_KERNEL_NAME_MAXIMUM_F16F16TOU8                  "com.vivantecorp.extension.vxcTensorMaximum_F16F16toU8"
+#define VX_KERNEL_NAME_MAXIMUM_F16F16TOU8_2D               "com.vivantecorp.extension.vxcTensorMaximum_F16F16toU8_2D"
+#define VX_KERNEL_NAME_MAXIMUM_I16I16TOI16                 "com.vivantecorp.extension.vxcTensorMaximum_I16I16toI16"
+#define VX_KERNEL_NAME_MAXIMUM_I16I16TOI16_2D              "com.vivantecorp.extension.vxcTensorMaximum_I16I16toI16_2D"
+#define VX_KERNEL_NAME_MAXIMUM_I16F16TOI16                 "com.vivantecorp.extension.vxcTensorMaximum_I16F16toI16"
+#define VX_KERNEL_NAME_MAXIMUM_I16F16TOI16_2D              "com.vivantecorp.extension.vxcTensorMaximum_I16F16toI16_2D"
+#define VX_KERNEL_NAME_MAXIMUM_I16F16TOF16                 "com.vivantecorp.extension.vxcTensorMaximum_I16F16toF16"
+#define VX_KERNEL_NAME_MAXIMUM_I16F16TOF16_2D              "com.vivantecorp.extension.vxcTensorMaximum_I16F16toF16_2D"
 #define VX_KERNEL_NAME_SPATIAL_TRANSFORMER                 "com.vivantecorp.extension.vxcTransform_Gemm_F16toF16"
 #define VX_KERNEL_NAME_TRANSFORM_SETUP_THRES_F16TOF16      "com.vivantecorp.extension.vxcTransform_setupThres_F16toF16"
 #define VX_KERNEL_NAME_TRANSFORM_INTERP_F16TOF16_2D        "com.vivantecorp.extension.vxcTransform_InterP_F16toF16_2D"
@@ -342,97 +370,9 @@ enum vx_kernel_libnnext_offset_e
 #define VX_KERNEL_NAME_SELECT_UINT8                        "com.vivantecorp.extension.vxcTensorSelect_uint8"
 #define VX_KERNEL_NAME_SELECT_INT16                        "com.vivantecorp.extension.vxcTensorSelect_int16"
 #define VX_KERNEL_NAME_LSTMUNIT_ACTIVATION                 "com.vivantecorp.extension.vxcLSTMUnit_Activation_SW"
-/* lstm unit activation: layer norm */
-#define VX_KERNEL_NAME_LSTMUNIT_CLP_F16toF16_CELL_F32   "com.vivantecorp.extension.vxcLSTMUnit_CLP_F16toF16_CELL_F32"
-#define VX_KERNEL_NAME_LSTMUNIT_CLP_F16toF16_CELL_F16   "com.vivantecorp.extension.vxcLSTMUnit_CLP_F16toF16_CELL_F16"
-#define VX_KERNEL_NAME_LSTMUNIT_LP_F16toF16_CELL_F32    "com.vivantecorp.extension.vxcLSTMUnit_LP_F16toF16_CELL_F32"
-#define VX_KERNEL_NAME_LSTMUNIT_LP_F16toF16_CELL_F16    "com.vivantecorp.extension.vxcLSTMUnit_LP_F16toF16_CELL_F16"
-#define VX_KERNEL_NAME_LSTMUNIT_CL_F16toF16_CELL_F16    "com.vivantecorp.extension.vxcLSTMUnit_CL_F16toF16_CELL_F16"
-#define VX_KERNEL_NAME_LSTMUNIT_CL_F16toI16_CELL_F16    "com.vivantecorp.extension.vxcLSTMUnit_CL_F16toI16_CELL_F16"
-#define VX_KERNEL_NAME_LSTMUNIT_CL_F16toI8_CELL_F16     "com.vivantecorp.extension.vxcLSTMUnit_CL_F16toI8_CELL_F16"
-#define VX_KERNEL_NAME_LSTMUNIT_CL_F16toU8_CELL_F16     "com.vivantecorp.extension.vxcLSTMUnit_CL_F16toU8_CELL_F16"
-#define VX_KERNEL_NAME_LSTMUNIT_CL_F16toF16_CELL_F32    "com.vivantecorp.extension.vxcLSTMUnit_CL_F16toF16_CELL_F32"
-#define VX_KERNEL_NAME_LSTMUNIT_CL_F16toI16_CELL_F32    "com.vivantecorp.extension.vxcLSTMUnit_CL_F16toI16_CELL_F32"
-#define VX_KERNEL_NAME_LSTMUNIT_CL_F16toI8_CELL_F32     "com.vivantecorp.extension.vxcLSTMUnit_CL_F16toI8_CELL_F32"
-#define VX_KERNEL_NAME_LSTMUNIT_CL_F16toU8_CELL_F32     "com.vivantecorp.extension.vxcLSTMUnit_CL_F16toU8_CELL_F32"
-#define VX_KERNEL_NAME_LSTMUNIT_L_F16toF16_CELL_F16     "com.vivantecorp.extension.vxcLSTMUnit_L_F16toF16_CELL_F16"
-#define VX_KERNEL_NAME_LSTMUNIT_L_F16toI16_CELL_F16     "com.vivantecorp.extension.vxcLSTMUnit_L_F16toI16_CELL_F16"
-#define VX_KERNEL_NAME_LSTMUNIT_L_F16toI8_CELL_F16      "com.vivantecorp.extension.vxcLSTMUnit_L_F16toI8_CELL_F16"
-#define VX_KERNEL_NAME_LSTMUNIT_L_F16toU8_CELL_F16      "com.vivantecorp.extension.vxcLSTMUnit_L_F16toU8_CELL_F16"
-#define VX_KERNEL_NAME_LSTMUNIT_L_F16toF16_CELL_F32     "com.vivantecorp.extension.vxcLSTMUnit_L_F16toF16_CELL_F32"
-#define VX_KERNEL_NAME_LSTMUNIT_L_F16toI16_CELL_F32     "com.vivantecorp.extension.vxcLSTMUnit_L_F16toI16_CELL_F32"
-#define VX_KERNEL_NAME_LSTMUNIT_L_F16toI8_CELL_F32      "com.vivantecorp.extension.vxcLSTMUnit_L_F16toI8_CELL_F32"
-#define VX_KERNEL_NAME_LSTMUNIT_L_F16toU8_CELL_F32      "com.vivantecorp.extension.vxcLSTMUnit_L_F16toU8_CELL_F32"
-/* lstm unit activation: hybrid fp16  */
-#define VX_KERNEL_NAME_LSTMUNIT_BP_F16toF16_CELL_F32    "com.vivantecorp.extension.vxcLSTMUnit_BP_F16toF16_CELL_F32"
-#define VX_KERNEL_NAME_LSTMUNIT_BP_F16toF16_CELL_F16    "com.vivantecorp.extension.vxcLSTMUnit_BP_F16toF16_CELL_F16"
-#define VX_KERNEL_NAME_LSTMUNIT_B_F16toF16_CELL_F16     "com.vivantecorp.extension.vxcLSTMUnit_B_F16toF16_CELL_F16"
-#define VX_KERNEL_NAME_LSTMUNIT_B_F16toI16_CELL_F16     "com.vivantecorp.extension.vxcLSTMUnit_B_F16toI16_CELL_F16"
-#define VX_KERNEL_NAME_LSTMUNIT_B_F16toI8_CELL_F16      "com.vivantecorp.extension.vxcLSTMUnit_B_F16toI8_CELL_F16"
-#define VX_KERNEL_NAME_LSTMUNIT_B_F16toU8_CELL_F16      "com.vivantecorp.extension.vxcLSTMUnit_B_F16toU8_CELL_F16"
-#define VX_KERNEL_NAME_LSTMUNIT_B_F16toF16_CELL_F32     "com.vivantecorp.extension.vxcLSTMUnit_B_F16toF16_CELL_F32"
-#define VX_KERNEL_NAME_LSTMUNIT_B_F16toI16_CELL_F32     "com.vivantecorp.extension.vxcLSTMUnit_B_F16toI16_CELL_F32"
-#define VX_KERNEL_NAME_LSTMUNIT_B_F16toI8_CELL_F32      "com.vivantecorp.extension.vxcLSTMUnit_B_F16toI8_CELL_F32"
-#define VX_KERNEL_NAME_LSTMUNIT_B_F16toU8_CELL_F32      "com.vivantecorp.extension.vxcLSTMUnit_B_F16toU8_CELL_F32"
-#define VX_KERNEL_NAME_LSTMUNIT_CBP_F16toF16_CELL_F32   "com.vivantecorp.extension.vxcLSTMUnit_CBP_F16toF16_CELL_F32"
-#define VX_KERNEL_NAME_LSTMUNIT_CBP_F16toF16_CELL_F16   "com.vivantecorp.extension.vxcLSTMUnit_CBP_F16toF16_CELL_F16"
-#define VX_KERNEL_NAME_LSTMUNIT_CB_F16toF16_CELL_F16    "com.vivantecorp.extension.vxcLSTMUnit_CB_F16toF16_CELL_F16"
-#define VX_KERNEL_NAME_LSTMUNIT_CB_F16toI16_CELL_F16    "com.vivantecorp.extension.vxcLSTMUnit_CB_F16toI16_CELL_F16"
-#define VX_KERNEL_NAME_LSTMUNIT_CB_F16toI8_CELL_F16     "com.vivantecorp.extension.vxcLSTMUnit_CB_F16toI8_CELL_F16"
-#define VX_KERNEL_NAME_LSTMUNIT_CB_F16toU8_CELL_F16     "com.vivantecorp.extension.vxcLSTMUnit_CB_F16toU8_CELL_F16"
-#define VX_KERNEL_NAME_LSTMUNIT_CB_F16toF16_CELL_F32    "com.vivantecorp.extension.vxcLSTMUnit_CB_F16toF16_CELL_F32"
-#define VX_KERNEL_NAME_LSTMUNIT_CB_F16toI16_CELL_F32    "com.vivantecorp.extension.vxcLSTMUnit_CB_F16toI16_CELL_F32"
-#define VX_KERNEL_NAME_LSTMUNIT_CB_F16toI8_CELL_F32     "com.vivantecorp.extension.vxcLSTMUnit_CB_F16toI8_CELL_F32"
-#define VX_KERNEL_NAME_LSTMUNIT_CB_F16toU8_CELL_F32     "com.vivantecorp.extension.vxcLSTMUnit_CB_F16toU8_CELL_F32"
-/* lstm unit activation: hybrid u8  */
-#define VX_KERNEL_NAME_LSTMUNIT_BP_U8toF16_CELL_F32     "com.vivantecorp.extension.vxcLSTMUnit_BP_U8toF16_CELL_F32"
-#define VX_KERNEL_NAME_LSTMUNIT_BP_U8toF16_CELL_F16     "com.vivantecorp.extension.vxcLSTMUnit_BP_U8toF16_CELL_F16"
-#define VX_KERNEL_NAME_LSTMUNIT_B_U8toF16_CELL_F16      "com.vivantecorp.extension.vxcLSTMUnit_B_U8toF16_CELL_F16"
-#define VX_KERNEL_NAME_LSTMUNIT_B_U8toU8_CELL_F16       "com.vivantecorp.extension.vxcLSTMUnit_B_U8toU8_CELL_F16"
-#define VX_KERNEL_NAME_LSTMUNIT_B_U8toF16_CELL_F32      "com.vivantecorp.extension.vxcLSTMUnit_B_U8toF16_CELL_F32"
-#define VX_KERNEL_NAME_LSTMUNIT_B_U8toU8_CELL_F32       "com.vivantecorp.extension.vxcLSTMUnit_B_U8toU8_CELL_F32"
-#define VX_KERNEL_NAME_LSTMUNIT_CBP_U8toF16_CELL_F32    "com.vivantecorp.extension.vxcLSTMUnit_CBP_U8toF16_CELL_F32"
-#define VX_KERNEL_NAME_LSTMUNIT_CBP_U8toF16_CELL_F16    "com.vivantecorp.extension.vxcLSTMUnit_CBP_U8toF16_CELL_F16"
-#define VX_KERNEL_NAME_LSTMUNIT_CB_U8toF16_CELL_F16     "com.vivantecorp.extension.vxcLSTMUnit_CB_U8toF16_CELL_F16"
-#define VX_KERNEL_NAME_LSTMUNIT_CB_U8toU8_CELL_F16      "com.vivantecorp.extension.vxcLSTMUnit_CB_U8toU8_CELL_F16"
-#define VX_KERNEL_NAME_LSTMUNIT_CB_U8toF16_CELL_F32     "com.vivantecorp.extension.vxcLSTMUnit_CB_U8toF16_CELL_F32"
-#define VX_KERNEL_NAME_LSTMUNIT_CB_U8toU8_CELL_F32      "com.vivantecorp.extension.vxcLSTMUnit_CB_U8toU8_CELL_F32"
-/* lstm unit activation: standard_fp16 */
-#define VX_KERNEL_NAME_LSTMUNIT_SP_F16toF16_CELL_F32    "com.vivantecorp.extension.vxcLSTMUnit_SP_F16toF16_CELL_F32"
-#define VX_KERNEL_NAME_LSTMUNIT_SP_F16toF16_CELL_F16    "com.vivantecorp.extension.vxcLSTMUnit_SP_F16toF16_CELL_F16"
-#define VX_KERNEL_NAME_LSTMUNIT_S_F16toF16_CELL_F16     "com.vivantecorp.extension.vxcLSTMUnit_S_F16toF16_CELL_F16"
-#define VX_KERNEL_NAME_LSTMUNIT_S_F16toI16_CELL_F16     "com.vivantecorp.extension.vxcLSTMUnit_S_F16toI16_CELL_F16"
-#define VX_KERNEL_NAME_LSTMUNIT_S_F16toI8_CELL_F16      "com.vivantecorp.extension.vxcLSTMUnit_S_F16toI8_CELL_F16"
-#define VX_KERNEL_NAME_LSTMUNIT_S_F16toU8_CELL_F16      "com.vivantecorp.extension.vxcLSTMUnit_S_F16toU8_CELL_F16"
-#define VX_KERNEL_NAME_LSTMUNIT_S_F16toF16_CELL_F32     "com.vivantecorp.extension.vxcLSTMUnit_S_F16toF16_CELL_F32"
-#define VX_KERNEL_NAME_LSTMUNIT_S_F16toI16_CELL_F32     "com.vivantecorp.extension.vxcLSTMUnit_S_F16toI16_CELL_F32"
-#define VX_KERNEL_NAME_LSTMUNIT_S_F16toI8_CELL_F32      "com.vivantecorp.extension.vxcLSTMUnit_S_F16toI8_CELL_F32"
-#define VX_KERNEL_NAME_LSTMUNIT_S_F16toU8_CELL_F32      "com.vivantecorp.extension.vxcLSTMUnit_S_F16toU8_CELL_F32"
-#define VX_KERNEL_NAME_LSTMUNIT_CSP_F16toF16_CELL_F32   "com.vivantecorp.extension.vxcLSTMUnit_CSP_F16toF16_CELL_F32"
-#define VX_KERNEL_NAME_LSTMUNIT_CSP_F16toF16_CELL_F16   "com.vivantecorp.extension.vxcLSTMUnit_CSP_F16toF16_CELL_F16"
-#define VX_KERNEL_NAME_LSTMUNIT_CS_F16toF16_CELL_F16    "com.vivantecorp.extension.vxcLSTMUnit_CS_F16toF16_CELL_F16"
-#define VX_KERNEL_NAME_LSTMUNIT_CS_F16toI16_CELL_F16    "com.vivantecorp.extension.vxcLSTMUnit_CS_F16toI16_CELL_F16"
-#define VX_KERNEL_NAME_LSTMUNIT_CS_F16toI8_CELL_F16     "com.vivantecorp.extension.vxcLSTMUnit_CS_F16toI8_CELL_F16"
-#define VX_KERNEL_NAME_LSTMUNIT_CS_F16toU8_CELL_F16     "com.vivantecorp.extension.vxcLSTMUnit_CS_F16toU8_CELL_F16"
-#define VX_KERNEL_NAME_LSTMUNIT_CS_F16toF16_CELL_F32    "com.vivantecorp.extension.vxcLSTMUnit_CS_F16toF16_CELL_F32"
-#define VX_KERNEL_NAME_LSTMUNIT_CS_F16toI16_CELL_F32    "com.vivantecorp.extension.vxcLSTMUnit_CS_F16toI16_CELL_F32"
-#define VX_KERNEL_NAME_LSTMUNIT_CS_F16toI8_CELL_F32     "com.vivantecorp.extension.vxcLSTMUnit_CS_F16toI8_CELL_F32"
-#define VX_KERNEL_NAME_LSTMUNIT_CS_F16toU8_CELL_F32     "com.vivantecorp.extension.vxcLSTMUnit_CS_F16toU8_CELL_F32"
-/* lstm unit activation: standard_u8 */
-#define VX_KERNEL_NAME_LSTMUNIT_SP_U8toF16_CELL_F32     "com.vivantecorp.extension.vxcLSTMUnit_SP_U8toF16_CELL_F32"
-#define VX_KERNEL_NAME_LSTMUNIT_SP_U8toF16_CELL_F16     "com.vivantecorp.extension.vxcLSTMUnit_SP_U8toF16_CELL_F16"
-#define VX_KERNEL_NAME_LSTMUNIT_S_U8toF16_CELL_F16      "com.vivantecorp.extension.vxcLSTMUnit_S_U8toF16_CELL_F16"
-#define VX_KERNEL_NAME_LSTMUNIT_S_U8toU8_CELL_F16       "com.vivantecorp.extension.vxcLSTMUnit_S_U8toU8_CELL_F16"
-#define VX_KERNEL_NAME_LSTMUNIT_S_U8toF16_CELL_F32      "com.vivantecorp.extension.vxcLSTMUnit_S_U8toF16_CELL_F32"
-#define VX_KERNEL_NAME_LSTMUNIT_S_U8toU8_CELL_F32       "com.vivantecorp.extension.vxcLSTMUnit_S_U8toU8_CELL_F32"
-#define VX_KERNEL_NAME_LSTMUNIT_CSP_U8toF16_CELL_F32    "com.vivantecorp.extension.vxcLSTMUnit_CSP_U8toF16_CELL_F32"
-#define VX_KERNEL_NAME_LSTMUNIT_CSP_U8toF16_CELL_F16    "com.vivantecorp.extension.vxcLSTMUnit_CSP_U8toF16_CELL_F16"
-#define VX_KERNEL_NAME_LSTMUNIT_CS_U8toF16_CELL_F16     "com.vivantecorp.extension.vxcLSTMUnit_CS_U8toF16_CELL_F16"
-#define VX_KERNEL_NAME_LSTMUNIT_CS_U8toU8_CELL_F16      "com.vivantecorp.extension.vxcLSTMUnit_CS_U8toU8_CELL_F16"
-#define VX_KERNEL_NAME_LSTMUNIT_CS_U8toF16_CELL_F32     "com.vivantecorp.extension.vxcLSTMUnit_CS_U8toF16_CELL_F32"
-#define VX_KERNEL_NAME_LSTMUNIT_CS_U8toU8_CELL_F32      "com.vivantecorp.extension.vxcLSTMUnit_CS_U8toU8_CELL_F32"
 #define VX_KERNEL_NAME_TENSORADD_MEAN_STDDEV_NORM_FP16     "com.vivantecorp.extension.vxcTensorAddMeanStdNorm_fp16"
 #define VX_KERNEL_NAME_TENSORADD_MEAN_STDDEV_NORM_U8_FP16  "com.vivantecorp.extension.vxcTensorAddMeanStdNorm_u8_fp16"
+#define VX_KERNEL_NAME_TENSORADD_MEAN_STDDEV_NORM_I16_FP16 "com.vivantecorp.extension.vxcTensorAddMeanStdNorm_i16_fp16"
 #define VX_KERNEL_NAME_TENSORADD_MEAN_STDDEV_NORM_I16_FP16 "com.vivantecorp.extension.vxcTensorAddMeanStdNorm_i16_fp16"
 #define VX_KERNEL_NAME_STACK                               "com.vivantecorp.extension.vxcStack"
 //! negative kernel name define
@@ -476,6 +416,37 @@ enum vx_kernel_libnnext_offset_e
 #define VX_KERNEL_NAME_TENSOR_EXP_U8TOU8_2D                "com.vivantecorp.extension.vxTensorExp_U8toU8_2D"
 #define VX_KERNEL_NAME_TENSOR_EXP_U8TOF16                  "com.vivantecorp.extension.vxTensorExp_U8toF16"
 #define VX_KERNEL_NAME_TENSOR_EXP_U8TOF16_2D               "com.vivantecorp.extension.vxTensorExp_U8toF16_2D"
+#define VX_KERNEL_NAME_CLIP_FP16                           "com.vivantecorp.extension.vxcTensorClip_Fp16"
+#define VX_KERNEL_NAME_CLIP_INT16                          "com.vivantecorp.extension.vxcTensorClip_Int16"
+#define VX_KERNEL_NAME_CLIP_INT8                           "com.vivantecorp.extension.vxcTensorClip_Int8"
+#define VX_KERNEL_NAME_CLIP_UINT8                          "com.vivantecorp.extension.vxcTensorClip_Uint8"
+#define VX_KERNEL_NAME_PRE_PROCESS_GRAY_F16                "com.vivantecorp.extension.vxGrayScaletoTensor_F16"
+#define VX_KERNEL_NAME_PRE_PROCESS_GRAY_I16                "com.vivantecorp.extension.vxGrayScaletoTensor_I16"
+#define VX_KERNEL_NAME_PRE_PROCESS_GRAY_I8                 "com.vivantecorp.extension.vxGrayScaletoTensor_I8"
+#define VX_KERNEL_NAME_PRE_PROCESS_GRAY_U8                 "com.vivantecorp.extension.vxGrayScaletoTensor_U8"
+#define VX_KERNEL_NAME_PRE_PROCESS_GRAY_F16_COPY           "com.vivantecorp.extension.vxGrayScaletoTensor_F16_copy"
+#define VX_KERNEL_NAME_PRE_PROCESS_GRAY_I16_COPY           "com.vivantecorp.extension.vxGrayScaletoTensor_I16_copy"
+#define VX_KERNEL_NAME_PRE_PROCESS_GRAY_I8_COPY            "com.vivantecorp.extension.vxGrayScaletoTensor_I8_copy"
+#define VX_KERNEL_NAME_PRE_PROCESS_GRAY_U8_COPY            "com.vivantecorp.extension.vxGrayScaletoTensor_U8_copy"
+#define VX_KERNEL_NAME_UNSTACK                             "com.vivantecorp.extension.vxcUnstack"
+#define VX_KERNEL_NAME_PRE_PROCESS_RGB_F16                "com.vivantecorp.extension.vxRGBScaletoTensor_F16"
+#define VX_KERNEL_NAME_PRE_PROCESS_RGB_I16                "com.vivantecorp.extension.vxRGBScaletoTensor_I16"
+#define VX_KERNEL_NAME_PRE_PROCESS_RGB_I8                 "com.vivantecorp.extension.vxRGBScaletoTensor_I8"
+#define VX_KERNEL_NAME_PRE_PROCESS_RGB_U8                 "com.vivantecorp.extension.vxRGBScaletoTensor_U8"
+#define VX_KERNEL_NAME_PRE_PROCESS_RGB_F16_COPY           "com.vivantecorp.extension.vxRGBScaletoTensor_F16_copy"
+#define VX_KERNEL_NAME_PRE_PROCESS_RGB_I16_COPY           "com.vivantecorp.extension.vxRGBScaletoTensor_I16_copy"
+#define VX_KERNEL_NAME_PRE_PROCESS_RGB_I8_COPY            "com.vivantecorp.extension.vxRGBScaletoTensor_I8_copy"
+#define VX_KERNEL_NAME_PRE_PROCESS_RGB_U8_COPY            "com.vivantecorp.extension.vxRGBScaletoTensor_U8_copy"
+#define VX_KERNEL_NAME_PRE_PROCESS_RGB_F16_NHWC           "com.vivantecorp.extension.vxRGBScaletoTensor_F16_NHWC"
+#define VX_KERNEL_NAME_PRE_PROCESS_RGB_I16_NHWC           "com.vivantecorp.extension.vxRGBScaletoTensor_I16_NHWC"
+#define VX_KERNEL_NAME_PRE_PROCESS_RGB_I8_NHWC            "com.vivantecorp.extension.vxRGBScaletoTensor_I8_NHWC"
+#define VX_KERNEL_NAME_PRE_PROCESS_RGB_U8_NHWC            "com.vivantecorp.extension.vxRGBScaletoTensor_U8_NHWC"
+#define VX_KERNEL_NAME_PRE_PROCESS_RGB_F16_COPY_NHWC      "com.vivantecorp.extension.vxRGBScaletoTensor_F16_copy_NHWC"
+#define VX_KERNEL_NAME_PRE_PROCESS_RGB_I16_COPY_NHWC      "com.vivantecorp.extension.vxRGBScaletoTensor_I16_copy_NHWC"
+#define VX_KERNEL_NAME_PRE_PROCESS_RGB_I8_COPY_NHWC       "com.vivantecorp.extension.vxRGBScaletoTensor_I8_copy_NHWC"
+#define VX_KERNEL_NAME_PRE_PROCESS_RGB_U8_COPY_NHWC       "com.vivantecorp.extension.vxRGBScaletoTensor_U8_copy_NHWC"
+#define VX_KERNEL_NAME_ADDN                                "com.vivantecorp.extension.vxcAddn"
+#define VX_KERNEL_NAME_TENSOR_EXP_U8TOF16_2D              "com.vivantecorp.extension.vxTensorExp_U8toF16_2D"
 /*! \brief The Example Library Set
  * \ingroup group_example_ext
  */
@@ -524,7 +495,7 @@ enum vx_kernel_libnnext_ext_e
             VX_KERNEL_BASE(VX_ID_DEFAULT, VX_LIBRARY_LIBNNEXT) + KERNEL_ENUM_IMG2COL_DILATED_INT8_OFFSET,
     VX_KERNEL_ENUM_ALEXNET_GEMM_INT8    =
             VX_KERNEL_BASE(VX_ID_DEFAULT, VX_LIBRARY_LIBNNEXT) + KERNEL_ENUM_ALEXNET_GEMM_INT8_OFFSET,
-    VX_KERNEL_ENUM_ELTWISE_MAX          =
+    VX_KERNEL_ENUM_MAXIMUM          =
             VX_KERNEL_BASE(VX_ID_DEFAULT, VX_LIBRARY_LIBNNEXT) + KERNEL_ENUM_ELTWISE_MAX,
     VX_KERNEL_ENUM_FULLYCONNECTED_AXIS2 =
             VX_KERNEL_BASE(VX_ID_DEFAULT, VX_LIBRARY_LIBNNEXT) + KERNEL_ENUM_FULLYCONNECTED_AXIS2,
@@ -594,6 +565,13 @@ enum vx_kernel_libnnext_ext_e
     VX_KERNEL_ENUM_STACK                = VX_KERNEL_BASE(VX_ID_DEFAULT, VX_LIBRARY_LIBNNEXT) + KERNEL_ENUM_STACK,
     VX_KERNEL_ENUM_NEG                  = VX_KERNEL_BASE(VX_ID_DEFAULT, VX_LIBRARY_LIBNNEXT) + KERNEL_ENUM_NEG,
     VX_KERNEL_ENUM_TENSOR_EXP           = VX_KERNEL_BASE(VX_ID_DEFAULT, VX_LIBRARY_LIBNNEXT) + KERNEL_ENUM_EXP,
+    VX_KERNEL_ENUM_CLIP                 = VX_KERNEL_BASE(VX_ID_DEFAULT, VX_LIBRARY_LIBNNEXT) + KERNEL_ENUM_CLIP,
+    VX_KERNEL_ENUM_PRE_PROCESS_GRAY     =
+            VX_KERNEL_BASE(VX_ID_DEFAULT, VX_LIBRARY_LIBNNEXT) + KERNEL_ENUM_PRE_PROCESS_GRAY,
+    VX_KERNEL_ENUM_UNSTACK              = VX_KERNEL_BASE(VX_ID_DEFAULT, VX_LIBRARY_LIBNNEXT) + KERNEL_ENUM_UNSTACK,
+    VX_KERNEL_ENUM_PRE_PROCESS_RGB      =
+            VX_KERNEL_BASE(VX_ID_DEFAULT, VX_LIBRARY_LIBNNEXT) + KERNEL_ENUM_PRE_PROCESS_RGB,
+    VX_KERNEL_ENUM_ADDN                 = VX_KERNEL_BASE(VX_ID_DEFAULT, VX_LIBRARY_LIBNNEXT) + KERNEL_ENUM_ADDN,
     // up to 0xFFF kernel enums can be created.
 };
 

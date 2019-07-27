@@ -1,26 +1,31 @@
 /****************************************************************************
 *
-*    Copyright (c) 2018 Vivante Corporation
+*    Copyright 2012 - 2019 Vivante Corporation, Santa Clara, California.
+*    All Rights Reserved.
 *
-*    Permission is hereby granted, free of charge, to any person obtaining a
-*    copy of this software and associated documentation files (the "Software"),
-*    to deal in the Software without restriction, including without limitation
-*    the rights to use, copy, modify, merge, publish, distribute, sublicense,
-*    and/or sell copies of the Software, and to permit persons to whom the
-*    Software is furnished to do so, subject to the following conditions:
+*    Permission is hereby granted, free of charge, to any person obtaining
+*    a copy of this software and associated documentation files (the
+*    'Software'), to deal in the Software without restriction, including
+*    without limitation the rights to use, copy, modify, merge, publish,
+*    distribute, sub license, and/or sell copies of the Software, and to
+*    permit persons to whom the Software is furnished to do so, subject
+*    to the following conditions:
 *
-*    The above copyright notice and this permission notice shall be included in
-*    all copies or substantial portions of the Software.
+*    The above copyright notice and this permission notice (including the
+*    next paragraph) shall be included in all copies or substantial
+*    portions of the Software.
 *
-*    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-*    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-*    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-*    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-*    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-*    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-*    DEALINGS IN THE SOFTWARE.
+*    THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+*    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+*    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
+*    IN NO EVENT SHALL VIVANTE AND/OR ITS SUPPLIERS BE LIABLE FOR ANY
+*    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+*    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+*    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
+
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -96,6 +101,11 @@ static void print_tensor
     char ext_attr[_EXT_ATTR_BUF_SZ] = { 0 };
     char format[_ATTR_BUF_SZ] = {0};
 
+    if( !tensor )
+    {
+        VSILOGD("%s None", ext_str);
+        return;
+    }
     vsi_nn_ShapeToString( tensor->attr.size, tensor->attr.dim_num,
         shape, _SHAPE_BUF_SZ, TRUE );
     vsi_nn_FormatToString( tensor, format, _SHAPE_BUF_SZ );
@@ -445,20 +455,20 @@ vsi_nn_tensor_t * vsi_nn_CreateTensorWithDefault
     if( t )
     {
         uint32_t size = 0;
-        uint32_t stride = 0;
+        uint32_t stride[VSI_NN_MAX_DIM_NUM] = { 0 };
         uint8_t* data = NULL;
 
-        size = vsi_nn_GetStrideSize( &t->attr, &stride );
+        size = vsi_nn_GetStrideSize( &t->attr, stride );
         data = (uint8_t *)malloc( size );
         if( data )
         {
             uint32_t i = 0;
-            uint32_t elements = size / stride;
+            uint32_t elements = size / stride[0];
             vsi_status status = VSI_SUCCESS;
 
             for( i = 0; i < elements; i ++ )
             {
-                status = vsi_nn_Float32ToDtype( defualt_value, &data[stride * i], &t->attr.dtype );
+                status = vsi_nn_Float32ToDtype( defualt_value, &data[stride[0] * i], &t->attr.dtype );
                 if( VSI_FAILURE == status )
                 {
                     VSILOGE("Convert default_value to dtype fail");
@@ -1437,24 +1447,21 @@ void vsi_nn_PrintNodeIO
     uint32_t i;
     vsi_nn_tensor_id_t id;
     vsi_nn_tensor_t *tensor;
+    char index[32];
 
     for (i = 0; i < node->input.num; i++)
     {
         id = node->input.tensors[i];
         tensor = vsi_nn_GetTensor(graph, id);
-        if(tensor)
-        {
-            print_tensor(tensor, id, "in :");
-        }
+        snprintf(index, 32, "in(%d):", i);
+        print_tensor(tensor, id, index);
     }
     for (i = 0; i < node->output.num; i++)
     {
         id = node->output.tensors[i];
         tensor = vsi_nn_GetTensor(graph, id);
-        if(tensor)
-        {
-            print_tensor(tensor, id, "out:");
-        }
+        snprintf(index, 32, "out(%d):", i);
+        print_tensor(tensor, id, index);
     }
 } /* vsi_nn_PrintNodeIO() */
 

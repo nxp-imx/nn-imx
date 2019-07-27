@@ -1,3 +1,31 @@
+##############################################################################
+#
+#    Copyright 2012 - 2019 Vivante Corporation, Santa Clara, California.
+#    All Rights Reserved.
+#
+#    Permission is hereby granted, free of charge, to any person obtaining
+#    a copy of this software and associated documentation files (the
+#    'Software'), to deal in the Software without restriction, including
+#    without limitation the rights to use, copy, modify, merge, publish,
+#    distribute, sub license, and/or sell copies of the Software, and to
+#    permit persons to whom the Software is furnished to do so, subject
+#    to the following conditions:
+#
+#    The above copyright notice and this permission notice (including the
+#    next paragraph) shall be included in all copies or substantial
+#    portions of the Software.
+#
+#    THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+#    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+#    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
+#    IN NO EVENT SHALL VIVANTE AND/OR ITS SUPPLIERS BE LIABLE FOR ANY
+#    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+#    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+#    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+#
+##############################################################################
+
+
 #
 # Build Vivante chipinfo for android.
 #
@@ -36,6 +64,7 @@ LOCAL_SRC_FILES +=      \
              utils/vsi_nn_dtype_util.c   \
              utils/vsi_nn_limits.c   \
              utils/vsi_nn_vdata.c   \
+             utils/vsi_nn_tensor_op.c   \
              utils/vsi_nn_util.c
 
 
@@ -91,6 +120,11 @@ LOCAL_SRC_FILES += libnnext/ops/kernel/vsi_nn_kernel_argmax.c \
         libnnext/ops/kernel/vsi_nn_kernel_stack.c \
         libnnext/ops/kernel/vsi_nn_kernel_neg.c \
         libnnext/ops/kernel/vsi_nn_kernel_exp.c \
+        libnnext/ops/kernel/vsi_nn_kernel_clip.c \
+        libnnext/ops/kernel/vsi_nn_kernel_pre_process_gray.c \
+        libnnext/ops/kernel/vsi_nn_kernel_unstack.c \
+        libnnext/ops/kernel/vsi_nn_kernel_pre_process_rgb.c \
+        libnnext/ops/kernel/vsi_nn_kernel_addn.c \
         libnnext/vsi_nn_libnnext_vx.c \
 
 LOCAL_SRC_FILES +=      ops/vsi_nn_op_add.c   \
@@ -176,10 +210,24 @@ LOCAL_SRC_FILES +=      ops/vsi_nn_op_add.c   \
              ops/vsi_nn_op_lstmunit_activation.c \
              ops/vsi_nn_op_lstmunit_ovxlib.c \
              ops/vsi_nn_op_tensor_add_mean_stddev_norm.c \
+             ops/vsi_nn_op_lstm_ovxlib.c \
+             ops/vsi_nn_op_hashtable_lookup.c \
+             ops/vsi_nn_op_embedding_lookup.c \
+             ops/vsi_nn_op_lsh_projection.c \
+             ops/vsi_nn_op_rnn.c \
              ops/vsi_nn_op_stack.c \
              ops/vsi_nn_op_floor.c \
              ops/vsi_nn_op_neg.c \
              ops/vsi_nn_op_exp.c \
+             ops/vsi_nn_op_clip.c \
+             ops/vsi_nn_op_pre_process_tensor.c \
+             ops/vsi_nn_op_post_process.c \
+             ops/vsi_nn_op_pre_process_gray.c \
+             ops/vsi_nn_op_unstack.c \
+             ops/vsi_nn_op_pre_process_rgb.c \
+             ops/vsi_nn_op_pre_process.c \
+             ops/vsi_nn_op_addn.c \
+             ops/vsi_nn_op_softmax_internal.c \
              ops/vsi_nn_op_lrn2.c \
              ops/vsi_nn_op_square.c
 
@@ -203,8 +251,7 @@ LOCAL_SHARED_LIBRARIES := \
 	libdl
 
 LOCAL_C_INCLUDES += \
-	$(C_INCLUDES) \
-    $(ANDROID_BUILD_TOP)/external/libjpeg-turbo \
+    external/libjpeg-turbo \
     $(AQROOT)/sdk/inc/CL \
     $(AQROOT)/sdk/inc/VX \
     $(AQROOT)/sdk/inc/ \
@@ -227,6 +274,7 @@ LOCAL_CFLAGS :=  \
         -Wno-enum-conversion \
         -Wno-missing-field-initializers \
         -Wno-tautological-compare \
+	-Wno-missing-braces
 
 LOCAL_MODULE:= libovxlib
 LOCAL_MODULE_TAGS := optional

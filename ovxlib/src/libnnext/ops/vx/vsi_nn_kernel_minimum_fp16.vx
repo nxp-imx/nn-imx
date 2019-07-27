@@ -259,3 +259,59 @@ __kernel void vxcTensorMinimum_U8F16toU8_2D
 
     VXC_WriteImage(output, coord, dst0, VXC_MODIFIER(0, 15, 0,VXC_RM_TowardZero, 0));
 }
+
+__kernel void vxcTensorMinimum_F16F16toU8
+    (
+    __read_only  image2d_array_t    input0,
+    __read_only  image2d_array_t    input1,
+    __write_only image2d_array_t    output
+    )
+{
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);
+
+    vxc_ushort8 src0, src1;
+    vxc_half8 data0, data1;
+    vxc_uchar16 dst0, dst1;
+    VXC_ReadImage2DArray(src0, input0, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+    VXC_ReadImage2DArray(src1, input1, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+    _viv_asm(COPY, data0, src0, 16);
+    _viv_asm(COPY, data1, src1, 16);
+
+    vxc_ushort8 mp1;
+    _viv_asm(COPY, mp1, multAndoutZP1, 16);
+    VXC_DP2x8(dst0, data0, mp1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1),\
+        uniConvertFp16toU8_2x8);
+    VXC_DP2x8(dst1, data1, mp1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1),\
+        uniConvertFp16toU8_2x8);
+    dst0 = min(dst0, dst1);
+
+    VXC_WriteImage2DArray(output, coord, dst0, VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0));
+}
+
+__kernel void vxcTensorMinimum_F16F16toU8_2D
+    (
+    __read_only  image2d_array_t    input0,
+    __read_only  image2d_array_t    input1,
+    __write_only image2d_array_t    output
+    )
+{
+    int2 coord = (int2)(get_global_id(0), get_global_id(1));
+
+    vxc_ushort8 src0, src1;
+    vxc_half8 data0, data1;
+    vxc_uchar16 dst0, dst1;
+    VXC_ReadImage(src0, input0, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+    VXC_ReadImage(src1, input1, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+    _viv_asm(COPY, data0, src0, 16);
+    _viv_asm(COPY, data1, src1, 16);
+
+    vxc_ushort8 mp1;
+    _viv_asm(COPY, mp1, multAndoutZP1, 16);
+    VXC_DP2x8(dst0, data0, mp1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1),\
+        uniConvertFp16toU8_2x8);
+    VXC_DP2x8(dst1, data1, mp1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1),\
+        uniConvertFp16toU8_2x8);
+    dst0 = min(dst0, dst1);
+
+    VXC_WriteImage(output, coord, dst0, VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0));
+}

@@ -1,30 +1,36 @@
 /****************************************************************************
 *
-*    Copyright (c) 2018 Vivante Corporation
+*    Copyright 2012 - 2019 Vivante Corporation, Santa Clara, California.
+*    All Rights Reserved.
 *
-*    Permission is hereby granted, free of charge, to any person obtaining a
-*    copy of this software and associated documentation files (the "Software"),
-*    to deal in the Software without restriction, including without limitation
-*    the rights to use, copy, modify, merge, publish, distribute, sublicense,
-*    and/or sell copies of the Software, and to permit persons to whom the
-*    Software is furnished to do so, subject to the following conditions:
+*    Permission is hereby granted, free of charge, to any person obtaining
+*    a copy of this software and associated documentation files (the
+*    'Software'), to deal in the Software without restriction, including
+*    without limitation the rights to use, copy, modify, merge, publish,
+*    distribute, sub license, and/or sell copies of the Software, and to
+*    permit persons to whom the Software is furnished to do so, subject
+*    to the following conditions:
 *
-*    The above copyright notice and this permission notice shall be included in
-*    all copies or substantial portions of the Software.
+*    The above copyright notice and this permission notice (including the
+*    next paragraph) shall be included in all copies or substantial
+*    portions of the Software.
 *
-*    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-*    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-*    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-*    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-*    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-*    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-*    DEALINGS IN THE SOFTWARE.
+*    THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+*    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+*    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
+*    IN NO EVENT SHALL VIVANTE AND/OR ITS SUPPLIERS BE LIABLE FOR ANY
+*    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+*    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+*    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
+
+
 #ifndef _VSI_NN_NODE_TYPES_H_
 #define _VSI_NN_NODE_TYPES_H_
 
 #include "vsi_nn_types.h"
+#include "vsi_nn_assert.h"
 #include "ops/vsi_nn_op_activations.h"
 #include "ops/vsi_nn_op_batch_norm.h"
 #include "ops/vsi_nn_op_multiply.h"
@@ -86,10 +92,22 @@
 #include "ops/vsi_nn_op_lstmunit_activation.h"
 #include "ops/vsi_nn_op_lstmunit_ovxlib.h"
 #include "ops/vsi_nn_op_tensor_add_mean_stddev_norm.h"
+#include "ops/vsi_nn_op_lstm_ovxlib.h"
+#include "ops/vsi_nn_op_lsh_projection.h"
+#include "ops/vsi_nn_op_rnn.h"
 #include "ops/vsi_nn_op_stack.h"
 #include "ops/vsi_nn_op_floor.h"
 #include "ops/vsi_nn_op_neg.h"
 #include "ops/vsi_nn_op_exp.h"
+#include "ops/vsi_nn_op_clip.h"
+#include "ops/vsi_nn_op_pre_process_tensor.h"
+#include "ops/vsi_nn_op_post_process.h"
+#include "ops/vsi_nn_op_pre_process_gray.h"
+#include "ops/vsi_nn_op_unstack.h"
+#include "ops/vsi_nn_op_pre_process_rgb.h"
+#include "ops/vsi_nn_op_pre_process.h"
+#include "ops/vsi_nn_op_addn.h"
+#include "ops/vsi_nn_op_softmax_internal.h"
 
 /* custom node head define define */
 #include "custom/vsi_nn_custom_node_type.h"
@@ -163,10 +181,22 @@ typedef union _vsi_nn_nn_param
     vsi_nn_lstmunit_activation_param lstmunit_activation;
     vsi_nn_lstmunit_ovxlib_param    lstmunit_ovxlib;
     vsi_nn_tensor_add_mean_stddev_norm_param tensor_add_mean_stddev_norm;
+    vsi_nn_lstm_ovxlib_param        lstm_ovxlib;
+    vsi_nn_lsh_projection_param     lsh_projection;
+    vsi_nn_rnn_param                rnn;
     vsi_nn_stack_param              stack;
     vsi_nn_floor_param              floor;
     vsi_nn_neg_param                neg;
     vsi_nn_exp_param                exp;
+    vsi_nn_clip_param               clip;
+    vsi_nn_pre_process_tensor_param pre_process_tensor;
+    vsi_nn_post_process_param       post_process;
+    vsi_nn_pre_process_gray_param   pre_process_gray;
+    vsi_nn_unstack_param            unstack;
+    vsi_nn_pre_process_rgb_param    pre_process_rgb;
+    vsi_nn_pre_process_param        pre_process;
+    vsi_nn_addn_param               addn;
+    vsi_nn_softmax_internal_param   softmax_internal;
     uint8_t                         client_param[128];
 
     /* custom node data struct define */
@@ -174,6 +204,9 @@ typedef union _vsi_nn_nn_param
     #include "custom/custom_node_type.def"
 #undef DEF_NODE_TYPE
 } vsi_nn_nn_param_t;
+
+/* Number 576 is the size of `vsi_nn_nn_param_t` from V1.1.2 */
+_compiler_assert( sizeof(vsi_nn_nn_param_t) <= 576, vsi_nn_node_type_h_potential_abi_compatibility_issue );
 
 typedef struct _vsi_nn_vx_param
 {

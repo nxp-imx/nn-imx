@@ -1,26 +1,31 @@
 /****************************************************************************
 *
-*    Copyright (c) 2018 Vivante Corporation
+*    Copyright 2012 - 2019 Vivante Corporation, Santa Clara, California.
+*    All Rights Reserved.
 *
-*    Permission is hereby granted, free of charge, to any person obtaining a
-*    copy of this software and associated documentation files (the "Software"),
-*    to deal in the Software without restriction, including without limitation
-*    the rights to use, copy, modify, merge, publish, distribute, sublicense,
-*    and/or sell copies of the Software, and to permit persons to whom the
-*    Software is furnished to do so, subject to the following conditions:
+*    Permission is hereby granted, free of charge, to any person obtaining
+*    a copy of this software and associated documentation files (the
+*    'Software'), to deal in the Software without restriction, including
+*    without limitation the rights to use, copy, modify, merge, publish,
+*    distribute, sub license, and/or sell copies of the Software, and to
+*    permit persons to whom the Software is furnished to do so, subject
+*    to the following conditions:
 *
-*    The above copyright notice and this permission notice shall be included in
-*    all copies or substantial portions of the Software.
+*    The above copyright notice and this permission notice (including the
+*    next paragraph) shall be included in all copies or substantial
+*    portions of the Software.
 *
-*    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-*    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-*    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-*    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-*    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-*    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-*    DEALINGS IN THE SOFTWARE.
+*    THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+*    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+*    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
+*    IN NO EVENT SHALL VIVANTE AND/OR ITS SUPPLIERS BE LIABLE FOR ANY
+*    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+*    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+*    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
+
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -65,6 +70,22 @@ static uint32_t _compute_stride_rounding
     }
     return out;
 }
+
+static uint32_t _compute_padding
+    (
+    uint32_t in_size,
+    uint32_t ksize,
+    uint32_t stride,
+    uint32_t dilation_rate,
+    uint32_t out_size
+    )
+{
+    uint32_t effective_ksize;
+    int32_t padding;
+    effective_ksize = (ksize - 1) * dilation_rate + 1;
+    padding = (out_size - 1) * stride + effective_ksize - in_size;
+    return _GET_MAX(padding, 0);
+} /* _compute_padding() */
 
 uint8_t * vsi_nn_LoadBinaryData
     (
@@ -239,7 +260,7 @@ void vsi_nn_UpdateTensorDims
     }
     else if( attr->dim_num != num )
     {
-        VSILOGW( "Dim number and size mismatch: %d", attr->dim_num );
+        VSILOGW( "Dim number and size mismatch: %d vs calculated = %d ", attr->dim_num, num );
         attr->dim_num = VSI_NN_DIM_AUTO;
     }
 } /* vsi_nn_UpdateTensorDims() */
@@ -271,6 +292,71 @@ uint32_t vsi_nn_ComputeFilterSize
     return out;
 } /* vsi_nn_ComputeFilterSize() */
 
+uint32_t vsi_nn_compute_filter_shape
+    (
+    vsi_nn_pad_e padding_type,
+    uint32_t image_size,
+    uint32_t ksize,
+    uint32_t stride,
+    uint32_t dilation_rate
+    )
+{
+    uint32_t effective_ksize;
+    effective_ksize = (ksize - 1) * dilation_rate + 1;
+    switch (padding_type)
+    {
+    case VSI_NN_PAD_SAME:
+        return (image_size + stride - 1) / stride;
+    case VSI_NN_PAD_VALID:
+        return (image_size + stride - effective_ksize) / stride;
+    default:
+        return 0;
+    }
+} /* vsi_nn_compute_filter_shape() */
+
+void vsi_nn_compute_padding
+    (
+    uint32_t   * in_shape,
+    uint32_t   * ksize,
+    uint32_t   * stride,
+    uint32_t   * dilation,
+    vsi_nn_pad_e pad_type,
+    uint32_t   * out_pad
+    )
+{
+    uint32_t out_w, out_h;
+    uint32_t pad_w, pad_h;
+    uint32_t dilation_w, dilation_h;
+    if (NULL == in_shape || NULL == ksize
+        || NULL == stride || NULL == out_pad)
+    {
+        return;
+    }
+    if (pad_type == VSI_NN_PAD_AUTO)
+    {
+        return;
+    }
+    if (NULL == dilation || (dilation[0] == 0 && dilation[1] == 0))
+    {
+        dilation_w = 1;
+        dilation_h = 1;
+    }
+    else
+    {
+        dilation_w = dilation[0];
+        dilation_h = dilation[1];
+    }
+
+    out_w = vsi_nn_compute_filter_shape(pad_type, in_shape[0], ksize[0], stride[0], dilation_w);
+    out_h = vsi_nn_compute_filter_shape(pad_type, in_shape[1], ksize[1], stride[1], dilation_h);
+    pad_w = _compute_padding(in_shape[0], ksize[0], stride[0], dilation_w, out_w);
+    pad_h = _compute_padding(in_shape[1], ksize[1], stride[1], dilation_h, out_h);
+    out_pad[0] = pad_w / 2;
+    out_pad[1] = pad_w - out_pad[0];
+    out_pad[2] = pad_h / 2;
+    out_pad[3] = pad_h - out_pad[2];
+} /* vsi_nn_compute_padding() */
+
 void vsi_nn_ComputePadWithPadType
     (
     uint32_t   * in_shape,
@@ -282,37 +368,45 @@ void vsi_nn_ComputePadWithPadType
     uint32_t   * out_pad
     )
 {
-    int oh;
-    int ow;
-    int pad_w;
-    int pad_h;
-    if( NULL == in_shape || NULL == ksize
-        || NULL == stride || NULL == out_pad
-        || in_dim_num < 2
-        )
+    vsi_nn_compute_padding(in_shape, ksize, stride, NULL, pad_type, out_pad);
+} /* vsi_nn_ComputePadWithPadType() */
+
+void vsi_nn_compute_padding_conv1d
+(
+    uint32_t   * in_shape,
+    uint32_t   * ksize,
+    uint32_t   * stride,
+    uint32_t   * dilation,
+    vsi_nn_pad_e pad_type,
+    uint32_t   * out_pad
+)
+{
+    uint32_t out_h;
+    uint32_t pad_h;
+    uint32_t dilation_h;
+    if (NULL == in_shape || NULL == ksize
+        || NULL == stride || NULL == out_pad)
     {
         return;
     }
-
-    if( VSI_NN_PAD_SAME == pad_type )
+    if (pad_type == VSI_NN_PAD_AUTO)
     {
-        ow = _compute_stride_rounding( in_shape[0], stride[0], rounding );
-        oh = _compute_stride_rounding( in_shape[1], stride[1], rounding );
-
-        pad_w = ( ow - 1 ) * stride[0] + ksize[0] - in_shape[0];
-        pad_h = ( oh - 1 ) * stride[1] + ksize[1] - in_shape[1];
-        pad_w = _GET_MAX( pad_w, 0 );
-        pad_h = _GET_MAX( pad_h, 0 );
-        out_pad[0] = pad_w / 2;
-        out_pad[1] = pad_w - out_pad[0];
-        out_pad[2] = pad_h / 2;
-        out_pad[3] = pad_h - out_pad[2];
+        return;
     }
-    else if( VSI_NN_PAD_VALID == pad_type )
+    if (NULL == dilation || dilation[0] == 0)
     {
+        dilation_h = 1;
+    }
+    else
+    {
+        dilation_h = dilation[0];
     }
 
-} /* vsi_nn_ComputePadWithPadType() */
+    out_h = vsi_nn_compute_filter_shape(pad_type, in_shape[0], ksize[0], stride[0], dilation_h);
+    pad_h = _compute_padding(in_shape[0], ksize[0], stride[0], dilation_h, out_h);
+    out_pad[0] = pad_h / 2;
+    out_pad[1] = pad_h - out_pad[0];
+} /* vsi_nn_compute_padding_conv1d() */
 
 void vsi_nn_ComputePadWithPadTypeForConv1D
     (
@@ -325,29 +419,7 @@ void vsi_nn_ComputePadWithPadTypeForConv1D
     uint32_t   * out_pad
     )
 {
-    int oh;
-    int pad_h;
-    if( NULL == in_shape || NULL == ksize
-        || NULL == stride || NULL == out_pad
-        || in_dim_num != 3
-        )
-    {
-        return;
-    }
-
-    if( VSI_NN_PAD_SAME == pad_type )
-    {
-        oh = _compute_stride_rounding( in_shape[0], stride[0], rounding );
-
-        pad_h = ( oh - 1 ) * stride[0] + ksize[0] - in_shape[0];
-        pad_h = _GET_MAX( pad_h, 0 );
-        out_pad[0] = pad_h / 2;
-        out_pad[1] = pad_h - out_pad[0];
-    }
-    else if( VSI_NN_PAD_VALID == pad_type )
-    {
-    }
-
+    vsi_nn_compute_padding_conv1d(in_shape, ksize, stride, NULL, pad_type, out_pad);
 } /* vsi_nn_ComputePadWithPadTypeForConv1D() */
 
 void vsi_nn_InitTensorsId
@@ -375,7 +447,6 @@ void vsi_nn_GetPadForOvx
         return;
     }
 
-    /* Workaround for ovx api. */
     out_pad[0] = in_pad[0];
     out_pad[1] = in_pad[2];
     if( out_pad[0] != in_pad[1] )

@@ -1,26 +1,31 @@
 /****************************************************************************
 *
-*    Copyright (c) 2018 Vivante Corporation
+*    Copyright 2012 - 2019 Vivante Corporation, Santa Clara, California.
+*    All Rights Reserved.
 *
-*    Permission is hereby granted, free of charge, to any person obtaining a
-*    copy of this software and associated documentation files (the "Software"),
-*    to deal in the Software without restriction, including without limitation
-*    the rights to use, copy, modify, merge, publish, distribute, sublicense,
-*    and/or sell copies of the Software, and to permit persons to whom the
-*    Software is furnished to do so, subject to the following conditions:
+*    Permission is hereby granted, free of charge, to any person obtaining
+*    a copy of this software and associated documentation files (the
+*    'Software'), to deal in the Software without restriction, including
+*    without limitation the rights to use, copy, modify, merge, publish,
+*    distribute, sub license, and/or sell copies of the Software, and to
+*    permit persons to whom the Software is furnished to do so, subject
+*    to the following conditions:
 *
-*    The above copyright notice and this permission notice shall be included in
-*    all copies or substantial portions of the Software.
+*    The above copyright notice and this permission notice (including the
+*    next paragraph) shall be included in all copies or substantial
+*    portions of the Software.
 *
-*    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-*    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-*    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-*    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-*    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-*    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-*    DEALINGS IN THE SOFTWARE.
+*    THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+*    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+*    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
+*    IN NO EVENT SHALL VIVANTE AND/OR ITS SUPPLIERS BE LIABLE FOR ANY
+*    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+*    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+*    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
+
+
 #include <string.h>
 #include <stdlib.h>
 
@@ -96,16 +101,6 @@ static void check_tensor_shape
                 vxReshapeTensor(input->t, (int32_t*)(attr.size), attr.dim_num);
             params[index] =  (vx_reference)self->nn_param.pow.local.local_tensor[index];
         }
-        else if(input->attr.dim_num == 4)
-        {
-            memcpy(&attr, &(input->attr), sizeof(vsi_nn_tensor_attr_t));
-            attr.size[2] *= attr.size[3];
-            attr.size[3] = 1;
-            attr.dim_num = 3;
-            self->nn_param.pow.local.local_tensor[index] =
-                vxReshapeTensor(input->t, (int32_t*)(attr.size), attr.dim_num);
-            params[index] =  (vx_reference)self->nn_param.pow.local.local_tensor[index];
-        }
         else
              params[index] = (vx_reference)input->t;
     }
@@ -151,6 +146,7 @@ static vsi_status vx_op_pre_compute
     )
 {
     vsi_nn_type_e inputDataFormat     = inputs[0]->attr.dtype.vx_type;
+    vsi_nn_type_e inputDataFormat1    = inputs[1]->attr.dtype.vx_type;
     vsi_nn_type_e outputDataFormat    = outputs[0]->attr.dtype.vx_type;
 
     if(inputDataFormat == VSI_NN_TYPE_FLOAT16 && outputDataFormat == VSI_NN_TYPE_FLOAT16)
@@ -168,6 +164,23 @@ static vsi_status vx_op_pre_compute
     else if(inputDataFormat == VSI_NN_TYPE_UINT8 && outputDataFormat == VSI_NN_TYPE_UINT8)
     {
         kernel_info->kernel_index = 4;
+    }
+    else if(inputDataFormat == VSI_NN_TYPE_UINT8 && outputDataFormat == VSI_NN_TYPE_FLOAT16
+        && inputDataFormat1 == VSI_NN_TYPE_FLOAT16)
+    {
+        kernel_info->kernel_index = 5;
+    }
+    else if(inputDataFormat == VSI_NN_TYPE_INT8 && outputDataFormat == VSI_NN_TYPE_FLOAT16
+        && inputDataFormat1 == VSI_NN_TYPE_FLOAT16)
+    {
+        kernel_info->resource_name[0] = "vsi_nn_kernel_pow_i8_i16";
+        kernel_info->kernel_index = 6;
+    }
+    else if(inputDataFormat == VSI_NN_TYPE_INT16 && outputDataFormat == VSI_NN_TYPE_FLOAT16
+        && inputDataFormat1 == VSI_NN_TYPE_FLOAT16)
+    {
+        kernel_info->resource_name[0] = "vsi_nn_kernel_pow_i8_i16";
+        kernel_info->kernel_index = 7;
     }
     else
     {
@@ -219,9 +232,12 @@ static vsi_status op_compute
     vsi_status status = VSI_SUCCESS;
     vsi_nn_kernel_info_t kernel_info = {0};
     vsi_nn_type_e srcFormat    = inputs[0]->attr.dtype.vx_type;
+    vsi_nn_type_e srcFormat1   = inputs[1]->attr.dtype.vx_type;
     vsi_nn_type_e dstFormat    = outputs[0]->attr.dtype.vx_type;
 
-    if (srcFormat == dstFormat && srcFormat != VSI_NN_TYPE_FLOAT32)
+    if ((srcFormat == dstFormat && srcFormat != VSI_NN_TYPE_FLOAT32)
+        || ((srcFormat == VSI_NN_TYPE_UINT8 || srcFormat == VSI_NN_TYPE_INT8 || srcFormat == VSI_NN_TYPE_INT16)
+            && dstFormat == VSI_NN_TYPE_FLOAT16 && srcFormat1 == VSI_NN_TYPE_FLOAT16))
     {
         kernel_info.resource_num = 1;
         kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));
@@ -320,6 +336,7 @@ extern "C" {
 DEF_OP_REG
     (
     /* op_name    */ POW,
+    /* init       */ NULL,
     /* compute    */ op_compute,
     /* deinit     */ op_deinit,
     /* check      */ op_check,

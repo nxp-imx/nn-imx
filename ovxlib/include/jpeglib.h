@@ -1,3 +1,31 @@
+/****************************************************************************
+*
+*    Copyright 2012 - 2019 Vivante Corporation, Santa Clara, California.
+*    All Rights Reserved.
+*
+*    Permission is hereby granted, free of charge, to any person obtaining
+*    a copy of this software and associated documentation files (the
+*    'Software'), to deal in the Software without restriction, including
+*    without limitation the rights to use, copy, modify, merge, publish,
+*    distribute, sub license, and/or sell copies of the Software, and to
+*    permit persons to whom the Software is furnished to do so, subject
+*    to the following conditions:
+*
+*    The above copyright notice and this permission notice (including the
+*    next paragraph) shall be included in all copies or substantial
+*    portions of the Software.
+*
+*    THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+*    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+*    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
+*    IN NO EVENT SHALL VIVANTE AND/OR ITS SUPPLIERS BE LIABLE FOR ANY
+*    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+*    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+*    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*
+*****************************************************************************/
+
+
 /*
  * jpeglib.h
  *
@@ -21,7 +49,7 @@
  * manual configuration options that most people need not worry about.
  */
 
-#ifndef JCONFIG_INCLUDED    /* in case jinclude.h already did */
+#ifndef JCONFIG_INCLUDED    
 #include "jconfig.h"        /* widely used configuration options */
 #endif
 #include "jmorecfg.h"        /* seldom changed options */
@@ -243,10 +271,10 @@ typedef enum {
     JDCT_FLOAT        /* floating-point: accurate, fast on fast HW */
 } J_DCT_METHOD;
 
-#ifndef JDCT_DEFAULT        /* may be overridden in jconfig.h */
+#ifndef JDCT_DEFAULT        
 #define JDCT_DEFAULT  JDCT_ISLOW
 #endif
-#ifndef JDCT_FASTEST        /* may be overridden in jconfig.h */
+#ifndef JDCT_FASTEST        
 #define JDCT_FASTEST  JDCT_IFAST
 #endif
 
@@ -696,7 +724,6 @@ struct jpeg_decompress_struct {
  * private fields may exist after the public ones.
  */
 
-
 /* Error handler object */
 
 struct jpeg_error_mgr {
@@ -1132,7 +1159,7 @@ EXTERN(boolean) jpeg_resync_to_restart JPP((j_decompress_ptr cinfo,
  */
 
 #ifdef INCOMPLETE_TYPES_BROKEN
-#ifndef JPEG_INTERNALS        /* will be defined in jpegint.h */
+#ifndef JPEG_INTERNALS        
 struct jvirt_sarray_control { long dummy; };
 struct jvirt_barray_control { long dummy; };
 struct jpeg_comp_master { long dummy; };

@@ -1,26 +1,31 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright 2012 - 2019 Vivante Corporation, Santa Clara, California.
+*    All Rights Reserved.
 *
-*    Permission is hereby granted, free of charge, to any person obtaining a
-*    copy of this software and associated documentation files (the "Software"),
-*    to deal in the Software without restriction, including without limitation
-*    the rights to use, copy, modify, merge, publish, distribute, sublicense,
-*    and/or sell copies of the Software, and to permit persons to whom the
-*    Software is furnished to do so, subject to the following conditions:
+*    Permission is hereby granted, free of charge, to any person obtaining
+*    a copy of this software and associated documentation files (the
+*    'Software'), to deal in the Software without restriction, including
+*    without limitation the rights to use, copy, modify, merge, publish,
+*    distribute, sub license, and/or sell copies of the Software, and to
+*    permit persons to whom the Software is furnished to do so, subject
+*    to the following conditions:
 *
-*    The above copyright notice and this permission notice shall be included in
-*    all copies or substantial portions of the Software.
+*    The above copyright notice and this permission notice (including the
+*    next paragraph) shall be included in all copies or substantial
+*    portions of the Software.
 *
-*    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-*    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-*    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-*    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-*    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-*    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-*    DEALINGS IN THE SOFTWARE.
+*    THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+*    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+*    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
+*    IN NO EVENT SHALL VIVANTE AND/OR ITS SUPPLIERS BE LIABLE FOR ANY
+*    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+*    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+*    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
+
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -42,7 +47,7 @@ static void _compute_stride
     uint32_t * stride
     )
 {
-    int i;
+    uint32_t i;
     uint32_t s;
     s = 1;
     for( i = 0; i < dim_num; i ++ )
@@ -60,7 +65,8 @@ vsi_nn_tensor_t* vsi_nn_Concat
     uint32_t axis
     )
 {
-    int32_t i, j, k;
+    uint32_t i, j;
+    int32_t k;
     uint8_t* buffer = NULL;
     uint8_t* tmp = NULL;
     size_t total_bytes = 0;
@@ -169,3 +175,67 @@ concat_error:
     return tensor_out;
 }
 
+vsi_nn_tensor_t* vsi_nn_ConvertTensorDtype
+    (
+    vsi_nn_graph_t* graph,
+    vsi_nn_tensor_t* tensor,
+    const vsi_nn_dtype_t* dst_dtype
+    )
+{
+    vsi_status status = VSI_SUCCESS;
+    uint32_t i = 0, src_stride = 0, dst_stride = 0;
+    vsi_nn_size_t sz = 0;
+    uint8_t* src_buf = NULL;
+    uint32_t dst_buf_sz = 0;
+    uint8_t* dst_buf = NULL;
+    vsi_nn_tensor_attr_t dst_attr;
+    vsi_nn_tensor_t* dst_tensor = NULL;
+
+    if( NULL == graph || NULL == tensor || NULL == dst_dtype )
+    {
+        return NULL;
+    }
+
+    sz = vsi_nn_GetElementNum( tensor );
+    src_stride = vsi_nn_TypeGetBytes( tensor->attr.dtype.vx_type );
+    dst_stride = vsi_nn_TypeGetBytes( dst_dtype->vx_type );
+    dst_buf_sz = sz * dst_stride;
+
+    dst_buf = (uint8_t *)malloc( dst_buf_sz );
+    if( NULL != dst_buf )
+    {
+        src_buf = vsi_nn_ConvertTensorToData( graph, tensor );
+        if( NULL != src_buf )
+        {
+            for( i = 0; i < sz; i++ )
+            {
+                status = vsi_nn_DtypeConvert( &src_buf[src_stride * i],
+                    &tensor->attr.dtype, &dst_buf[dst_stride * i], dst_dtype );
+                if(status != VSI_SUCCESS)
+                {
+                    break;
+                }
+            }
+
+            if( VSI_SUCCESS == status )
+            {
+                memcpy( &dst_attr, &tensor->attr, sizeof( dst_attr ) );
+                memcpy( &dst_attr.dtype, dst_dtype, sizeof( dst_attr.dtype ) );
+                dst_tensor = vsi_nn_CreateTensorFromData( graph, dst_buf, &dst_attr );
+            }
+        }
+    }
+
+    if( src_buf )
+    {
+        free( src_buf );
+        src_buf = NULL;
+    }
+    if( dst_buf )
+    {
+        free( dst_buf );
+        dst_buf = NULL;
+    }
+
+    return dst_tensor;
+} /* vsi_nn_ConvertTensorDtype() */

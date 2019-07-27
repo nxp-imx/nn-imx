@@ -1,26 +1,31 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright 2012 - 2019 Vivante Corporation, Santa Clara, California.
+*    All Rights Reserved.
 *
-*    Permission is hereby granted, free of charge, to any person obtaining a
-*    copy of this software and associated documentation files (the "Software"),
-*    to deal in the Software without restriction, including without limitation
-*    the rights to use, copy, modify, merge, publish, distribute, sublicense,
-*    and/or sell copies of the Software, and to permit persons to whom the
-*    Software is furnished to do so, subject to the following conditions:
+*    Permission is hereby granted, free of charge, to any person obtaining
+*    a copy of this software and associated documentation files (the
+*    'Software'), to deal in the Software without restriction, including
+*    without limitation the rights to use, copy, modify, merge, publish,
+*    distribute, sub license, and/or sell copies of the Software, and to
+*    permit persons to whom the Software is furnished to do so, subject
+*    to the following conditions:
 *
-*    The above copyright notice and this permission notice shall be included in
-*    all copies or substantial portions of the Software.
+*    The above copyright notice and this permission notice (including the
+*    next paragraph) shall be included in all copies or substantial
+*    portions of the Software.
 *
-*    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-*    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-*    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-*    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-*    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-*    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-*    DEALINGS IN THE SOFTWARE.
+*    THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+*    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+*    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
+*    IN NO EVENT SHALL VIVANTE AND/OR ITS SUPPLIERS BE LIABLE FOR ANY
+*    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+*    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+*    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
+
+
 #include <string.h>
 #include <stdlib.h>
 
@@ -31,18 +36,414 @@
 #include "vsi_nn_node.h"
 #include "vsi_nn_prv.h"
 #include "utils/vsi_nn_math.h"
+#include "utils/vsi_nn_tensor_op.h"
 #include "vsi_nn_ops.h"
 #include "vsi_nn_tensor.h"
 #include "vsi_nn_tensor_util.h"
 #include "client/vsi_nn_vxkernel.h"
 
 #define _ARG_NUM            (1)
-#define _INPUT_NUM          (ACT_INPUTS_COUNT)
-#define _OUTPUT_NUM         (ACT_OUTUTS_COUNT)
+#define _INPUT_NUM          (LSTMUNIT_ACT_INPUTS_COUNT)
+#define _OUTPUT_NUM         (LSTMUNIT_ACT_OUTUTS_COUNT)
 #define _IO_NUM             (_INPUT_NUM + _OUTPUT_NUM)
 #define _PARAM_NUM          (_ARG_NUM + _IO_NUM)
 
 extern vx_kernel_description_t * vx_kernel_LSTMUNIT_ACTIVATION_list[];
+
+typedef enum _LSTMUNIT_nn_activation_type_e
+{
+    SIGMOID = VSI_NN_LSTMUNIT_ACT_SIGMOID,
+    HARD_SIGMOID = VSI_NN_LSTMUNIT_ACT_HARD_SIGMOID,
+}LSTMUNIT_nn_activation_type_e;
+
+/* Type enum */
+typedef enum _LSTMUNIT_nn_type_e
+{
+    I8 = 0,
+    I16,
+    I32,
+    I64,
+    U8,
+    U16,
+    U32,
+    U64,
+    F16,
+    F32,
+}LSTMUNIT_nn_type_e;
+
+#define GEN_LSTMUNIT_KEY(_is_ln, _is_cifg, _is_proj, _is_hybrid, _is_peephole, \
+_input_type, _output_type, _cell_type, _rec_act) \
+((_is_ln << 31) | (_is_cifg << 30) | (_is_proj << 29) | (_is_hybrid << 28) | (_is_peephole << 27) \
+| (_input_type << 23) | (_output_type << 19) | (_cell_type << 15) | (_rec_act << 10))
+
+#define GEN_LSTMUNIT_KERNEL_SOURCE_NAME(_ln_cifg_proj_hybrid_, _input_type) \
+    "vsi_nn_kernel_lstmunit_activation_"#_ln_cifg_proj_hybrid_"_"#_input_type
+
+#define GEN_LSTMUNIT_STRUCT_ITEMS(_is_ln, _is_cifg, _is_proj, _is_hybrid, _is_peephole, _input_type, _output_type, \
+_cell_type, _rec_act, _ln_cifg_proj_hybrid_) \
+    GEN_LSTMUNIT_KEY(_is_ln, _is_cifg, _is_proj, _is_hybrid, _is_peephole, \
+        _input_type, _output_type, _cell_type, _rec_act), \
+    LSTMUNIT_SH_KERNEL_IDX(_ln_cifg_proj_hybrid_, _input_type, _output_type, _cell_type, _rec_act) \
+    GEN_LSTMUNIT_KERNEL_SOURCE_NAME(_ln_cifg_proj_hybrid_, _input_type)
+
+static struct {
+        uint32_t key;
+        uint32_t kernel_index;
+        char *resource_name;
+    } map[] =
+    {
+        /* layer norm + cifg + projection */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 1, 1, 0, 0, F16, F16, F32, SIGMOID, CLP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 1, 1, 0, 0, F16, F16, F16, SIGMOID, CLP)},
+        /* layer norm + projection */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 0, 1, 0, 0, F16, F16, F32, SIGMOID, LP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 0, 1, 0, 0, F16, F16, F16, SIGMOID, LP)},
+        /* layer norm + cifg */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 1, 0, 0, 0, F16, F16, F16, SIGMOID, CL)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 1, 0, 0, 0, F16, I16, F16, SIGMOID, CL)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 1, 0, 0, 0, F16, U8,  F16, SIGMOID, CL)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 1, 0, 0, 0, F16, I8,  F16, SIGMOID, CL)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 1, 0, 0, 0, F16, F16, F32, SIGMOID, CL)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 1, 0, 0, 0, F16, I16, F32, SIGMOID, CL)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 1, 0, 0, 0, F16, U8,  F32, SIGMOID, CL)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 1, 0, 0, 0, F16, I8,  F32, SIGMOID, CL)},
+        /* layer norm */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 0, 0, 0, 0, F16, F16, F16, SIGMOID, L)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 0, 0, 0, 0, F16, I16, F16, SIGMOID, L)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 0, 0, 0, 0, F16, U8,  F16, SIGMOID, L)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 0, 0, 0, 0, F16, I8,  F16, SIGMOID, L)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 0, 0, 0, 0, F16, F16, F32, SIGMOID, L)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 0, 0, 0, 0, F16, I16, F32, SIGMOID, L)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 0, 0, 0, 0, F16, U8,  F32, SIGMOID, L)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 0, 0, 0, 0, F16, I8,  F32, SIGMOID, L)},
+        /* layer norm + cifg + projection */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 1, 1, 0, 0, F16, I16, F32, SIGMOID, CLP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 1, 1, 0, 0, F16, I8,  F32, SIGMOID, CLP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 1, 1, 0, 0, F16, U8,  F32, SIGMOID, CLP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 1, 1, 0, 0, F16, I16, F16, SIGMOID, CLP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 1, 1, 0, 0, F16, I8,  F16, SIGMOID, CLP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 1, 1, 0, 0, F16, U8,  F16, SIGMOID, CLP)},
+        /* layer norm + projection */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 0, 1, 0, 0, F16, I16, F32, SIGMOID, LP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 0, 1, 0, 0, F16, I8,  F32, SIGMOID, LP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 0, 1, 0, 0, F16, U8,  F32, SIGMOID, LP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 0, 1, 0, 0, F16, I16, F16, SIGMOID, LP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 0, 1, 0, 0, F16, I8,  F16, SIGMOID, LP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 0, 1, 0, 0, F16, U8,  F16, SIGMOID, LP)},
+        /* hybrid + projection */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 1, 0, F16, F16, F32, SIGMOID, BP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 1, 0, F16, F16, F16, SIGMOID, BP)},
+        /* hybrid */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 0, 1, 0, F16, F16, F16, SIGMOID, B)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 0, 1, 0, F16, I16, F16, SIGMOID, B)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 0, 1, 0, F16, U8,  F16, SIGMOID, B)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 0, 1, 0, F16, I8,  F16, SIGMOID, B)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 0, 1, 0, F16, F16, F32, SIGMOID, B)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 0, 1, 0, F16, I16, F32, SIGMOID, B)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 0, 1, 0, F16, U8,  F32, SIGMOID, B)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 0, 1, 0, F16, I8,  F32, SIGMOID, B)},
+        /* cifg + hybrid + projection */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 1, 0, F16, F16, F32, SIGMOID, CBP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 1, 0, F16, F16, F16, SIGMOID, CBP)},
+        /* cifg + hybrid */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 0, 1, 0, F16, F16, F16, SIGMOID, CB)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 0, 1, 0, F16, I16, F16, SIGMOID, CB)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 0, 1, 0, F16, U8,  F16, SIGMOID, CB)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 0, 1, 0, F16, I8,  F16, SIGMOID, CB)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 0, 1, 0, F16, F16, F32, SIGMOID, CB)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 0, 1, 0, F16, I16, F32, SIGMOID, CB)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 0, 1, 0, F16, U8,  F32, SIGMOID, CB)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 0, 1, 0, F16, I8,  F32, SIGMOID, CB)},
+        /* cifg + hybrid + projection */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 1, 0, F16, I16, F32, SIGMOID, CBP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 1, 0, F16, I8,  F32, SIGMOID, CBP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 1, 0, F16, U8,  F32, SIGMOID, CBP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 1, 0, F16, I16, F16, SIGMOID, CBP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 1, 0, F16, I8,  F16, SIGMOID, CBP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 1, 0, F16, U8,  F16, SIGMOID, CBP)},
+        /* hybrid + projection */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 1, 0, F16, I16, F32, SIGMOID, BP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 1, 0, F16, I8,  F32, SIGMOID, BP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 1, 0, F16, U8,  F32, SIGMOID, BP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 1, 0, F16, I16, F16, SIGMOID, BP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 1, 0, F16, I8,  F16, SIGMOID, BP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 1, 0, F16, U8,  F16, SIGMOID, BP)},
+        /* hybrid + projection */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 1, 0, U8,  F16, F32, SIGMOID, BP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 1, 0, U8,  F16, F16, SIGMOID, BP)},
+        /* hybrid */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 0, 1, 0, U8,  F16, F16, SIGMOID, B)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 0, 1, 0, U8,  U8,  F16, SIGMOID, B)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 0, 1, 0, U8,  F16, F32, SIGMOID, B)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 0, 1, 0, U8,  U8,  F32, SIGMOID, B)},
+        /* cifg + hybrid + projection */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 1, 0, U8,  F16, F32, SIGMOID, CBP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 1, 0, U8,  F16, F16, SIGMOID, CBP)},
+        /* cifg + hybrid */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 0, 1, 0, U8,  F16, F16, SIGMOID, CB)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 0, 1, 0, U8,  U8,  F16, SIGMOID, CB)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 0, 1, 0, U8,  F16, F32, SIGMOID, CB)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 0, 1, 0, U8,  U8,  F32, SIGMOID, CB)},
+        /* cifg + hybrid + projection */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 1, 0, U8,  I16, F32, SIGMOID, CBP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 1, 0, U8,  I8,  F32, SIGMOID, CBP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 1, 0, U8,  U8,  F32, SIGMOID, CBP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 1, 0, U8,  I16, F16, SIGMOID, CBP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 1, 0, U8,  I8,  F16, SIGMOID, CBP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 1, 0, U8,  U8,  F16, SIGMOID, CBP)},
+        /* hybrid + projection */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 1, 0, U8,  I16, F32, SIGMOID, BP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 1, 0, U8,  I8,  F32, SIGMOID, BP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 1, 0, U8,  U8,  F32, SIGMOID, BP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 1, 0, U8,  I16, F16, SIGMOID, BP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 1, 0, U8,  I8,  F16, SIGMOID, BP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 1, 0, U8,  U8,  F16, SIGMOID, BP)},
+
+        /* standard + projection */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 0, 0, F16, F16, F32, SIGMOID, SP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 0, 0, F16, F16, F16, SIGMOID, SP)},
+        /* standard */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 0, 0, 0, F16, F16, F16, SIGMOID, S)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 0, 0, 0, F16, I16, F16, SIGMOID, S)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 0, 0, 0, F16, U8,  F16, SIGMOID, S)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 0, 0, 0, F16, I8,  F16, SIGMOID, S)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 0, 0, 0, F16, F16, F32, SIGMOID, S)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 0, 0, 0, F16, I16, F32, SIGMOID, S)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 0, 0, 0, F16, U8,  F32, SIGMOID, S)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 0, 0, 0, F16, I8,  F32, SIGMOID, S)},
+        /* cifg + standard + projection */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 0, 0, F16, F16, F32, SIGMOID, CSP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 0, 0, F16, F16, F16, SIGMOID, CSP)},
+        /* cifg + standard */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 0, 0, 0, F16, F16, F16, SIGMOID, CS)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 0, 0, 0, F16, I16, F16, SIGMOID, CS)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 0, 0, 0, F16, U8,  F16, SIGMOID, CS)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 0, 0, 0, F16, I8,  F16, SIGMOID, CS)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 0, 0, 0, F16, F16, F32, SIGMOID, CS)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 0, 0, 0, F16, I16, F32, SIGMOID, CS)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 0, 0, 0, F16, U8,  F32, SIGMOID, CS)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 0, 0, 0, F16, I8,  F32, SIGMOID, CS)},
+        /* cifg + standard + projection */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 0, 0, F16, I16, F32, SIGMOID, CSP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 0, 0, F16, I8,  F32, SIGMOID, CSP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 0, 0, F16, U8,  F32, SIGMOID, CSP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 0, 0, F16, I16, F16, SIGMOID, CSP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 0, 0, F16, I8,  F16, SIGMOID, CSP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 0, 0, F16, U8,  F16, SIGMOID, CSP)},
+        /* standard + projection */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 0, 0, F16, I16, F32, SIGMOID, SP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 0, 0, F16, I8,  F32, SIGMOID, SP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 0, 0, F16, U8,  F32, SIGMOID, SP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 0, 0, F16, I16, F16, SIGMOID, SP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 0, 0, F16, I8,  F16, SIGMOID, SP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 0, 0, F16, U8,  F16, SIGMOID, SP)},
+        /* standard + projection */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 0, 0, U8,  F16, F32, SIGMOID, SP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 0, 0, U8,  F16, F16, SIGMOID, SP)},
+        /* standard */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 0, 0, 0, U8,  F16, F16, SIGMOID, S)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 0, 0, 0, U8,  U8,  F16, SIGMOID, S)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 0, 0, 0, U8,  F16, F32, SIGMOID, S)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 0, 0, 0, U8,  U8,  F32, SIGMOID, S)},
+        /* cifg + standard + projection */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 0, 0, U8,  F16, F32, SIGMOID, CSP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 0, 0, U8,  F16, F16, SIGMOID, CSP)},
+        /* cifg + standard */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 0, 0, 0, U8,  F16, F16, SIGMOID, CS)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 0, 0, 0, U8,  U8,  F16, SIGMOID, CS)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 0, 0, 0, U8,  F16, F32, SIGMOID, CS)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 0, 0, 0, U8,  U8,  F32, SIGMOID, CS)},
+        /* cifg + standard + projection */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 0, 0, U8,  I16, F32, SIGMOID, CSP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 0, 0, U8,  I8,  F32, SIGMOID, CSP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 0, 0, U8,  U8,  F32, SIGMOID, CSP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 0, 0, U8,  I16, F16, SIGMOID, CSP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 0, 0, U8,  I8,  F16, SIGMOID, CSP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 0, 0, U8,  U8,  F16, SIGMOID, CSP)},
+        /* standard + projection */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 0, 0, U8,  I16, F32, SIGMOID, SP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 0, 0, U8,  I8,  F32, SIGMOID, SP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 0, 0, U8,  U8,  F32, SIGMOID, SP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 0, 0, U8,  I16, F16, SIGMOID, SP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 0, 0, U8,  I8,  F16, SIGMOID, SP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 0, 0, U8,  U8,  F16, SIGMOID, SP)},
+        /* layer norm + cifg + projection + hard_sigmoid */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 1, 1, 0, 0, F16, F16, F32, HARD_SIGMOID, CLP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 1, 1, 0, 0, F16, F16, F16, HARD_SIGMOID, CLP)},
+        /* layer norm + projection + hard_sigmoid */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 0, 1, 0, 0, F16, F16, F32, HARD_SIGMOID, LP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 0, 1, 0, 0, F16, F16, F16, HARD_SIGMOID, LP)},
+        /* layer norm + cifg + hard_sigmoid */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 1, 0, 0, 0, F16, F16, F16, HARD_SIGMOID, CL)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 1, 0, 0, 0, F16, I16, F16, HARD_SIGMOID, CL)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 1, 0, 0, 0, F16, U8,  F16, HARD_SIGMOID, CL)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 1, 0, 0, 0, F16, I8,  F16, HARD_SIGMOID, CL)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 1, 0, 0, 0, F16, F16, F32, HARD_SIGMOID, CL)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 1, 0, 0, 0, F16, I16, F32, HARD_SIGMOID, CL)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 1, 0, 0, 0, F16, U8,  F32, HARD_SIGMOID, CL)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 1, 0, 0, 0, F16, I8,  F32, HARD_SIGMOID, CL)},
+        /* layer norm + hard_sigmoid */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 0, 0, 0, 0, F16, F16, F16, HARD_SIGMOID, L)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 0, 0, 0, 0, F16, I16, F16, HARD_SIGMOID, L)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 0, 0, 0, 0, F16, U8,  F16, HARD_SIGMOID, L)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 0, 0, 0, 0, F16, I8,  F16, HARD_SIGMOID, L)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 0, 0, 0, 0, F16, F16, F32, HARD_SIGMOID, L)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 0, 0, 0, 0, F16, I16, F32, HARD_SIGMOID, L)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 0, 0, 0, 0, F16, U8,  F32, HARD_SIGMOID, L)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 0, 0, 0, 0, F16, I8,  F32, HARD_SIGMOID, L)},
+        /* layer norm + cifg + projection + hard_sigmoid */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 1, 1, 0, 0, F16, I16, F32, HARD_SIGMOID, CLP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 1, 1, 0, 0, F16, I8,  F32, HARD_SIGMOID, CLP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 1, 1, 0, 0, F16, U8,  F32, HARD_SIGMOID, CLP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 1, 1, 0, 0, F16, I16, F16, HARD_SIGMOID, CLP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 1, 1, 0, 0, F16, I8,  F16, HARD_SIGMOID, CLP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 1, 1, 0, 0, F16, U8,  F16, HARD_SIGMOID, CLP)},
+        /* layer norm + projection + hard_sigmoid */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 0, 1, 0, 0, F16, I16, F32, HARD_SIGMOID, LP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 0, 1, 0, 0, F16, I8,  F32, HARD_SIGMOID, LP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 0, 1, 0, 0, F16, U8,  F32, HARD_SIGMOID, LP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 0, 1, 0, 0, F16, I16, F16, HARD_SIGMOID, LP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 0, 1, 0, 0, F16, I8,  F16, HARD_SIGMOID, LP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(1, 0, 1, 0, 0, F16, U8,  F16, HARD_SIGMOID, LP)},
+        /* hybrid + projection + hard_sigmoid */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 1, 0, F16, F16, F32, HARD_SIGMOID, BP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 1, 0, F16, F16, F16, HARD_SIGMOID, BP)},
+        /* hybrid + hard_sigmoid */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 0, 1, 0, F16, F16, F16, HARD_SIGMOID, B)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 0, 1, 0, F16, I16, F16, HARD_SIGMOID, B)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 0, 1, 0, F16, U8,  F16, HARD_SIGMOID, B)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 0, 1, 0, F16, I8,  F16, HARD_SIGMOID, B)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 0, 1, 0, F16, F16, F32, HARD_SIGMOID, B)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 0, 1, 0, F16, I16, F32, HARD_SIGMOID, B)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 0, 1, 0, F16, U8,  F32, HARD_SIGMOID, B)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 0, 1, 0, F16, I8,  F32, HARD_SIGMOID, B)},
+        /* cifg + hybrid + projection + hard_sigmoid */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 1, 0, F16, F16, F32, HARD_SIGMOID, CBP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 1, 0, F16, F16, F16, HARD_SIGMOID, CBP)},
+        /* cifg + hybrid + hard_sigmoid */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 0, 1, 0, F16, F16, F16, HARD_SIGMOID, CB)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 0, 1, 0, F16, I16, F16, HARD_SIGMOID, CB)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 0, 1, 0, F16, U8,  F16, HARD_SIGMOID, CB)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 0, 1, 0, F16, I8,  F16, HARD_SIGMOID, CB)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 0, 1, 0, F16, F16, F32, HARD_SIGMOID, CB)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 0, 1, 0, F16, I16, F32, HARD_SIGMOID, CB)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 0, 1, 0, F16, U8,  F32, HARD_SIGMOID, CB)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 0, 1, 0, F16, I8,  F32, HARD_SIGMOID, CB)},
+        /* cifg + hybrid + projection + hard_sigmoid */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 1, 0, F16, I16, F32, HARD_SIGMOID, CBP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 1, 0, F16, I8,  F32, HARD_SIGMOID, CBP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 1, 0, F16, U8,  F32, HARD_SIGMOID, CBP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 1, 0, F16, I16, F16, HARD_SIGMOID, CBP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 1, 0, F16, I8,  F16, HARD_SIGMOID, CBP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 1, 0, F16, U8,  F16, HARD_SIGMOID, CBP)},
+        /* hybrid + projection + hard_sigmoid */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 1, 0, F16, I16, F32, HARD_SIGMOID, BP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 1, 0, F16, I8,  F32, HARD_SIGMOID, BP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 1, 0, F16, U8,  F32, HARD_SIGMOID, BP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 1, 0, F16, I16, F16, HARD_SIGMOID, BP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 1, 0, F16, I8,  F16, HARD_SIGMOID, BP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 1, 0, F16, U8,  F16, HARD_SIGMOID, BP)},
+        /* hybrid + projection + hard_sigmoid */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 1, 0, U8,  F16, F32, HARD_SIGMOID, BP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 1, 0, U8,  F16, F16, HARD_SIGMOID, BP)},
+        /* hybrid + hard_sigmoid */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 0, 1, 0, U8,  F16, F16, HARD_SIGMOID, B)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 0, 1, 0, U8,  U8,  F16, HARD_SIGMOID, B)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 0, 1, 0, U8,  F16, F32, HARD_SIGMOID, B)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 0, 1, 0, U8,  U8,  F32, HARD_SIGMOID, B)},
+        /* cifg + hybrid + projection + hard_sigmoid */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 1, 0, U8,  F16, F32, HARD_SIGMOID, CBP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 1, 0, U8,  F16, F16, HARD_SIGMOID, CBP)},
+        /* cifg + hybrid + hard_sigmoid */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 0, 1, 0, U8,  F16, F16, HARD_SIGMOID, CB)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 0, 1, 0, U8,  U8,  F16, HARD_SIGMOID, CB)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 0, 1, 0, U8,  F16, F32, HARD_SIGMOID, CB)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 0, 1, 0, U8,  U8,  F32, HARD_SIGMOID, CB)},
+        /* cifg + hybrid + projection + hard_sigmoid */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 1, 0, U8,  I16, F32, HARD_SIGMOID, CBP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 1, 0, U8,  I8,  F32, HARD_SIGMOID, CBP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 1, 0, U8,  U8,  F32, HARD_SIGMOID, CBP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 1, 0, U8,  I16, F16, HARD_SIGMOID, CBP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 1, 0, U8,  I8,  F16, HARD_SIGMOID, CBP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 1, 0, U8,  U8,  F16, HARD_SIGMOID, CBP)},
+        /* hybrid + projection + hard_sigmoid */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 1, 0, U8,  I16, F32, HARD_SIGMOID, BP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 1, 0, U8,  I8,  F32, HARD_SIGMOID, BP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 1, 0, U8,  U8,  F32, HARD_SIGMOID, BP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 1, 0, U8,  I16, F16, HARD_SIGMOID, BP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 1, 0, U8,  I8,  F16, HARD_SIGMOID, BP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 1, 0, U8,  U8,  F16, HARD_SIGMOID, BP)},
+
+        /* standard + projection + hard_sigmoid */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 0, 0, F16, F16, F32, HARD_SIGMOID, SP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 0, 0, F16, F16, F16, HARD_SIGMOID, SP)},
+        /* standard + hard_sigmoid */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 0, 0, 0, F16, F16, F16, HARD_SIGMOID, S)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 0, 0, 0, F16, I16, F16, HARD_SIGMOID, S)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 0, 0, 0, F16, U8,  F16, HARD_SIGMOID, S)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 0, 0, 0, F16, I8,  F16, HARD_SIGMOID, S)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 0, 0, 0, F16, F16, F32, HARD_SIGMOID, S)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 0, 0, 0, F16, I16, F32, HARD_SIGMOID, S)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 0, 0, 0, F16, U8,  F32, HARD_SIGMOID, S)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 0, 0, 0, F16, I8,  F32, HARD_SIGMOID, S)},
+        /* cifg + standard + projection + hard_sigmoid */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 0, 0, F16, F16, F32, HARD_SIGMOID, CSP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 0, 0, F16, F16, F16, HARD_SIGMOID, CSP)},
+        /* cifg + standard + hard_sigmoid */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 0, 0, 0, F16, F16, F16, HARD_SIGMOID, CS)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 0, 0, 0, F16, I16, F16, HARD_SIGMOID, CS)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 0, 0, 0, F16, U8,  F16, HARD_SIGMOID, CS)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 0, 0, 0, F16, I8,  F16, HARD_SIGMOID, CS)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 0, 0, 0, F16, F16, F32, HARD_SIGMOID, CS)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 0, 0, 0, F16, I16, F32, HARD_SIGMOID, CS)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 0, 0, 0, F16, U8,  F32, HARD_SIGMOID, CS)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 0, 0, 0, F16, I8,  F32, HARD_SIGMOID, CS)},
+        /* cifg + standard + projection + hard_sigmoid */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 0, 0, F16, I16, F32, HARD_SIGMOID, CSP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 0, 0, F16, I8,  F32, HARD_SIGMOID, CSP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 0, 0, F16, U8,  F32, HARD_SIGMOID, CSP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 0, 0, F16, I16, F16, HARD_SIGMOID, CSP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 0, 0, F16, I8,  F16, HARD_SIGMOID, CSP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 0, 0, F16, U8,  F16, HARD_SIGMOID, CSP)},
+        /* standard + projection + hard_sigmoid */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 0, 0, F16, I16, F32, HARD_SIGMOID, SP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 0, 0, F16, I8,  F32, HARD_SIGMOID, SP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 0, 0, F16, U8,  F32, HARD_SIGMOID, SP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 0, 0, F16, I16, F16, HARD_SIGMOID, SP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 0, 0, F16, I8,  F16, HARD_SIGMOID, SP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 0, 0, F16, U8,  F16, HARD_SIGMOID, SP)},
+        /* standard + projection + hard_sigmoid */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 0, 0, U8,  F16, F32, HARD_SIGMOID, SP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 0, 0, U8,  F16, F16, HARD_SIGMOID, SP)},
+        /* standard + hard_sigmoid */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 0, 0, 0, U8,  F16, F16, HARD_SIGMOID, S)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 0, 0, 0, U8,  U8,  F16, HARD_SIGMOID, S)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 0, 0, 0, U8,  F16, F32, HARD_SIGMOID, S)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 0, 0, 0, U8,  U8,  F32, HARD_SIGMOID, S)},
+        /* cifg + standard + projection + hard_sigmoid */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 0, 0, U8,  F16, F32, HARD_SIGMOID, CSP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 0, 0, U8,  F16, F16, HARD_SIGMOID, CSP)},
+        /* cifg + standard + hard_sigmoid */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 0, 0, 0, U8,  F16, F16, HARD_SIGMOID, CS)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 0, 0, 0, U8,  U8,  F16, HARD_SIGMOID, CS)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 0, 0, 0, U8,  F16, F32, HARD_SIGMOID, CS)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 0, 0, 0, U8,  U8,  F32, HARD_SIGMOID, CS)},
+        /* cifg + standard + projection + hard_sigmoid */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 0, 0, U8,  I16, F32, HARD_SIGMOID, CSP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 0, 0, U8,  I8,  F32, HARD_SIGMOID, CSP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 0, 0, U8,  U8,  F32, HARD_SIGMOID, CSP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 0, 0, U8,  I16, F16, HARD_SIGMOID, CSP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 0, 0, U8,  I8,  F16, HARD_SIGMOID, CSP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 1, 1, 0, 0, U8,  U8,  F16, HARD_SIGMOID, CSP)},
+        /* standard + projection + hard_sigmoid */
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 0, 0, U8,  I16, F32, HARD_SIGMOID, SP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 0, 0, U8,  I8,  F32, HARD_SIGMOID, SP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 0, 0, U8,  U8,  F32, HARD_SIGMOID, SP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 0, 0, U8,  I16, F16, HARD_SIGMOID, SP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 0, 0, U8,  I8,  F16, HARD_SIGMOID, SP)},
+        {GEN_LSTMUNIT_STRUCT_ITEMS(0, 0, 1, 0, 0, U8,  U8,  F16, HARD_SIGMOID, SP)},
+    };
+
 
 uint32_t _set_inputs_outputs
     (
@@ -224,631 +625,89 @@ static vsi_status cpu_op_compute
     return status;
 }
 
-static vsi_status vx_op_pre_compute_layer_norm
+static LSTMUNIT_nn_type_e get_lstm_unit_intra_type(vsi_nn_type_e type)
+{
+    switch (type)
+    {
+    case VSI_NN_TYPE_INT8:
+        return I8;
+    case VSI_NN_TYPE_INT16:
+        return I16;
+    case VSI_NN_TYPE_INT32:
+        return I32;
+    case VSI_NN_TYPE_INT64:
+        return I64;
+    case VSI_NN_TYPE_UINT8:
+        return U8;
+    case VSI_NN_TYPE_UINT16:
+        return U16;
+    case VSI_NN_TYPE_UINT32:
+        return U32;
+    case VSI_NN_TYPE_FLOAT16:
+        return F16;
+    case VSI_NN_TYPE_FLOAT32:
+        return F32;
+    default:
+        VSILOGE("error data type %d", type);
+        break;
+    }
+
+    return I8;
+}
+
+static void _get_lstmunit_hashtable_idx
     (
     vsi_nn_node_t * self,
     vsi_nn_tensor_t ** inputs,
-    vsi_nn_tensor_t ** outputs,
-    vsi_nn_kernel_info_t * kernel_info
+    vsi_nn_tensor_t ** outputs
     )
 {
-    vsi_nn_type_e inputFormat;
-    vsi_nn_type_e cellFormat;
+    vsi_nn_type_e inputFormat = inputs[LSTMUNIT_ACT_INPUT_FC_F]->attr.dtype.vx_type;
+    vsi_nn_type_e cellFormat = inputs[LSTMUNIT_ACT_CSTATE_IN]->attr.dtype.vx_type;
     vsi_nn_type_e outputFormat  = outputs[0]->attr.dtype.vx_type;
+    LSTMUNIT_nn_type_e _input_type;
+    LSTMUNIT_nn_type_e _output_type;
+    LSTMUNIT_nn_type_e _cell_type;
+    uint32_t key;
+    uint32_t _is_ln= 0;
+    uint32_t _is_cifg= 0;
+    uint32_t _is_proj= 0;
+    uint32_t _is_hybrid= 0;
+    uint32_t _is_peephole= 0;
+    uint32_t i = 0;
 
     vsi_nn_lstmunit_activation_param * p;
 
     p = &(self->nn_param.lstmunit_activation);
 
-    if (p->is_layer_norm)
+    _is_ln = p->is_layer_norm ? 1 : 0;
+    _is_cifg = p->is_cifg ? 1 : 0;
+    _is_proj = p->is_projection ? 1 : 0;
+    _is_hybrid = p->is_hybrid ? 1 : 0;
+    _is_peephole = p->is_peephole ? 1 : 0;
+
+    _input_type = get_lstm_unit_intra_type(inputFormat);
+    _output_type = get_lstm_unit_intra_type(outputFormat);
+    _cell_type = get_lstm_unit_intra_type(cellFormat);
+
+    key = GEN_LSTMUNIT_KEY(_is_ln, _is_cifg, _is_proj, _is_hybrid, _is_peephole,
+        _input_type, _output_type, _cell_type, p->recurrent_activation);
+
+    for (i = 0; i < sizeof(map) / sizeof(map[0]); i++)
     {
-        inputFormat   = inputs[ACT_INPUT_FC_F]->attr.dtype.vx_type;
-        cellFormat    = inputs[ACT_CSTATE_IN]->attr.dtype.vx_type;
-
-        if (inputFormat != VSI_NN_TYPE_FLOAT16)
+        if (key == map[i].key)
         {
-            VSILOGE("Not support input data format!(lstm unit activation layernorm)\n");
-            return VSI_FAILURE;
-        }
-
-        if (p->is_cifg)
-        {
-            if (p->is_projection)
-            {
-                if (outputFormat == VSI_NN_TYPE_FLOAT16)
-                {
-                    if (cellFormat == VSI_NN_TYPE_FLOAT32)
-                        kernel_info->kernel_index = 1;
-                    else
-                        kernel_info->kernel_index = 2;
-                }
-
-                kernel_info->resource_name[0] = "vsi_nn_kernel_lstmunit_activation_clp";
-            }
-            else
-            {
-                if (cellFormat == VSI_NN_TYPE_FLOAT16)
-                {
-                    if (outputFormat == VSI_NN_TYPE_FLOAT16)
-                        kernel_info->kernel_index = 5;
-                    else if (outputFormat == VSI_NN_TYPE_INT16)
-                        kernel_info->kernel_index = 6;
-                    else if (outputFormat == VSI_NN_TYPE_INT8)
-                        kernel_info->kernel_index = 7;
-                    else if (outputFormat == VSI_NN_TYPE_UINT8)
-                        kernel_info->kernel_index = 8;
-                }
-                else if (cellFormat == VSI_NN_TYPE_FLOAT32)
-                {
-                    if (outputFormat == VSI_NN_TYPE_FLOAT16)
-                        kernel_info->kernel_index = 9;
-                    else if (outputFormat == VSI_NN_TYPE_INT16)
-                        kernel_info->kernel_index = 10;
-                    else if (outputFormat == VSI_NN_TYPE_INT8)
-                        kernel_info->kernel_index = 11;
-                    else if (outputFormat == VSI_NN_TYPE_UINT8)
-                        kernel_info->kernel_index = 12;
-                }
-
-                kernel_info->resource_name[0] = "vsi_nn_kernel_lstmunit_activation_cl";
-            }
-        }
-        else
-        {
-            if (p->is_projection)
-            {
-                if (outputFormat == VSI_NN_TYPE_FLOAT16)
-                {
-                    if (cellFormat == VSI_NN_TYPE_FLOAT32)
-                        kernel_info->kernel_index = 3;
-                    else
-                        kernel_info->kernel_index = 4;
-                }
-
-                kernel_info->resource_name[0] = "vsi_nn_kernel_lstmunit_activation_lp";
-            }
-            else
-            {
-                if (cellFormat == VSI_NN_TYPE_FLOAT16)
-                {
-                    if (outputFormat == VSI_NN_TYPE_FLOAT16)
-                        kernel_info->kernel_index = 13;
-                    else if (outputFormat == VSI_NN_TYPE_INT16)
-                        kernel_info->kernel_index = 14;
-                    else if (outputFormat == VSI_NN_TYPE_INT8)
-                        kernel_info->kernel_index = 15;
-                    else if (outputFormat == VSI_NN_TYPE_UINT8)
-                        kernel_info->kernel_index = 16;
-                }
-                else if (cellFormat == VSI_NN_TYPE_FLOAT32)
-                {
-                    if (outputFormat == VSI_NN_TYPE_FLOAT16)
-                        kernel_info->kernel_index = 17;
-                    else if (outputFormat == VSI_NN_TYPE_INT16)
-                        kernel_info->kernel_index = 18;
-                    else if (outputFormat == VSI_NN_TYPE_INT8)
-                        kernel_info->kernel_index = 19;
-                    else if (outputFormat == VSI_NN_TYPE_UINT8)
-                        kernel_info->kernel_index = 20;
-                }
-
-                kernel_info->resource_name[0] = "vsi_nn_kernel_lstmunit_activation_l";
-            }
+            p->local.hash_idx = i;
+            p->local.execute_on_sw = FALSE;
+            return;
         }
     }
-    else
-    {
-        goto OnError;
-    }
 
-    return VSI_SUCCESS;
-OnError:
-        VSILOGE("Not support input or output data format!(lstm unit activation)\n");
-        return VSI_FAILURE;
+    p->local.execute_on_sw = TRUE;
+    VSILOGE("Not support data format or feature![LSTMUNIT_ACTIVATION]\n");
 }
 
-static vsi_status vx_op_pre_compute_hybrid_fp16
-    (
-    vsi_nn_node_t * self,
-    vsi_nn_tensor_t ** inputs,
-    vsi_nn_tensor_t ** outputs,
-    vsi_nn_kernel_info_t * kernel_info
-    )
-{
-#define LSTMUNIT_HYBRID_FP16_START   (LSTMUNIT_ACT_LN_KERNEL_COUNTS)
-    vsi_nn_type_e cellFormat;
-    vsi_nn_type_e outputFormat  = outputs[0]->attr.dtype.vx_type;
-
-    vsi_nn_lstmunit_activation_param * p;
-
-    p = &(self->nn_param.lstmunit_activation);
-
-    cellFormat    = inputs[ACT_CSTATE_IN]->attr.dtype.vx_type;
-
-    if (!p->is_cifg)
-    {
-        if (p->is_projection)
-        {
-            if (outputFormat == VSI_NN_TYPE_FLOAT16)
-            {
-                if (cellFormat == VSI_NN_TYPE_FLOAT32)
-                    kernel_info->kernel_index = LSTMUNIT_HYBRID_FP16_START;
-                else
-                    kernel_info->kernel_index = LSTMUNIT_HYBRID_FP16_START + 1;
-
-                kernel_info->resource_name[0] = "vsi_nn_kernel_lstmunit_activation_bp_fp16";
-            }
-            else
-                goto OnError;
-        }
-        else
-        {
-            if (cellFormat == VSI_NN_TYPE_FLOAT16)
-            {
-                if (outputFormat == VSI_NN_TYPE_FLOAT16)
-                    kernel_info->kernel_index = LSTMUNIT_HYBRID_FP16_START + 2;
-                else if (outputFormat == VSI_NN_TYPE_INT16)
-                    kernel_info->kernel_index = LSTMUNIT_HYBRID_FP16_START + 3;
-                else if (outputFormat == VSI_NN_TYPE_INT8)
-                    kernel_info->kernel_index = LSTMUNIT_HYBRID_FP16_START + 4;
-                else if (outputFormat == VSI_NN_TYPE_UINT8)
-                    kernel_info->kernel_index = LSTMUNIT_HYBRID_FP16_START + 5;
-            }
-            else if (cellFormat == VSI_NN_TYPE_FLOAT32)
-            {
-                if (outputFormat == VSI_NN_TYPE_FLOAT16)
-                    kernel_info->kernel_index = LSTMUNIT_HYBRID_FP16_START + 6;
-                else if (outputFormat == VSI_NN_TYPE_INT16)
-                    kernel_info->kernel_index = LSTMUNIT_HYBRID_FP16_START + 7;
-                else if (outputFormat == VSI_NN_TYPE_INT8)
-                    kernel_info->kernel_index = LSTMUNIT_HYBRID_FP16_START + 8;
-                else if (outputFormat == VSI_NN_TYPE_UINT8)
-                    kernel_info->kernel_index = LSTMUNIT_HYBRID_FP16_START + 9;
-            }
-
-            kernel_info->resource_name[0] = "vsi_nn_kernel_lstmunit_activation_b_fp16";
-        }
-    }
-    else if (p->is_cifg)
-    {
-        if (p->is_projection)
-        {
-            if (outputFormat == VSI_NN_TYPE_FLOAT16)
-            {
-                if (cellFormat == VSI_NN_TYPE_FLOAT32)
-                    kernel_info->kernel_index = LSTMUNIT_HYBRID_FP16_START + 10;
-                else
-                    kernel_info->kernel_index = LSTMUNIT_HYBRID_FP16_START + 11;
-
-                kernel_info->resource_name[0] = "vsi_nn_kernel_lstmunit_activation_cbp_fp16";
-            }
-            else
-                goto OnError;
-        }
-        else
-        {
-            if (cellFormat == VSI_NN_TYPE_FLOAT16)
-            {
-                if (outputFormat == VSI_NN_TYPE_FLOAT16)
-                    kernel_info->kernel_index = LSTMUNIT_HYBRID_FP16_START + 12;
-                else if (outputFormat == VSI_NN_TYPE_INT16)
-                    kernel_info->kernel_index = LSTMUNIT_HYBRID_FP16_START + 13;
-                else if (outputFormat == VSI_NN_TYPE_INT8)
-                    kernel_info->kernel_index = LSTMUNIT_HYBRID_FP16_START + 14;
-                else if (outputFormat == VSI_NN_TYPE_UINT8)
-                    kernel_info->kernel_index = LSTMUNIT_HYBRID_FP16_START + 15;
-            }
-            else if (cellFormat == VSI_NN_TYPE_FLOAT32)
-            {
-                if (outputFormat == VSI_NN_TYPE_FLOAT16)
-                    kernel_info->kernel_index = LSTMUNIT_HYBRID_FP16_START + 16;
-                else if (outputFormat == VSI_NN_TYPE_INT16)
-                    kernel_info->kernel_index = LSTMUNIT_HYBRID_FP16_START + 17;
-                else if (outputFormat == VSI_NN_TYPE_INT8)
-                    kernel_info->kernel_index = LSTMUNIT_HYBRID_FP16_START + 18;
-                else if (outputFormat == VSI_NN_TYPE_UINT8)
-                    kernel_info->kernel_index = LSTMUNIT_HYBRID_FP16_START + 19;
-            }
-
-            kernel_info->resource_name[0] = "vsi_nn_kernel_lstmunit_activation_cb_fp16";
-        }
-    }
-    else
-    {
-        goto OnError;
-    }
-
-    return VSI_SUCCESS;
-OnError:
-        VSILOGE("Not support input or output data format!(lstm unit activation)\n");
-        return VSI_FAILURE;
-}
-
-static vsi_status vx_op_pre_compute_hybrid_u8
-    (
-    vsi_nn_node_t * self,
-    vsi_nn_tensor_t ** inputs,
-    vsi_nn_tensor_t ** outputs,
-    vsi_nn_kernel_info_t * kernel_info
-    )
-{
-#define LSTMUNIT_HYBRID_U8_START  (LSTMUNIT_HYBRID_FP16_START + LSTMUNIT_ACT_HYBRID_KERNEL_FP16_COUNTS)
-    vsi_nn_type_e cellFormat;
-    vsi_nn_type_e outputFormat  = outputs[0]->attr.dtype.vx_type;
-
-    vsi_nn_lstmunit_activation_param * p;
-
-    p = &(self->nn_param.lstmunit_activation);
-
-    cellFormat    = inputs[ACT_CSTATE_IN]->attr.dtype.vx_type;
-
-    if (!p->is_cifg)
-    {
-        if (p->is_projection)
-        {
-            if (outputFormat == VSI_NN_TYPE_FLOAT16)
-            {
-                if (cellFormat == VSI_NN_TYPE_FLOAT32)
-                    kernel_info->kernel_index = LSTMUNIT_HYBRID_U8_START;
-                else
-                    kernel_info->kernel_index = LSTMUNIT_HYBRID_U8_START + 1;
-
-                kernel_info->resource_name[0] = "vsi_nn_kernel_lstmunit_activation_bp_u8";
-            }
-            else
-                goto OnError;
-        }
-        else
-        {
-            if (cellFormat == VSI_NN_TYPE_FLOAT16)
-            {
-                if (outputFormat == VSI_NN_TYPE_FLOAT16)
-                    kernel_info->kernel_index = LSTMUNIT_HYBRID_U8_START + 2;
-                else if (outputFormat == VSI_NN_TYPE_UINT8)
-                    kernel_info->kernel_index = LSTMUNIT_HYBRID_U8_START + 3;
-            }
-            else if (cellFormat == VSI_NN_TYPE_FLOAT32)
-            {
-                if (outputFormat == VSI_NN_TYPE_FLOAT16)
-                    kernel_info->kernel_index = LSTMUNIT_HYBRID_U8_START + 4;
-                else if (outputFormat == VSI_NN_TYPE_UINT8)
-                    kernel_info->kernel_index = LSTMUNIT_HYBRID_U8_START + 5;
-            }
-
-            kernel_info->resource_name[0] = "vsi_nn_kernel_lstmunit_activation_b_u8";
-        }
-    }
-    else if (p->is_cifg)
-    {
-        if (p->is_projection)
-        {
-            if (outputFormat == VSI_NN_TYPE_FLOAT16)
-            {
-                if (cellFormat == VSI_NN_TYPE_FLOAT32)
-                    kernel_info->kernel_index = LSTMUNIT_HYBRID_U8_START + 6;
-                else
-                    kernel_info->kernel_index = LSTMUNIT_HYBRID_U8_START + 7;
-
-                kernel_info->resource_name[0] = "vsi_nn_kernel_lstmunit_activation_cbp_u8";
-            }
-            else
-                goto OnError;
-        }
-        else
-        {
-            if (cellFormat == VSI_NN_TYPE_FLOAT16)
-            {
-                if (outputFormat == VSI_NN_TYPE_FLOAT16)
-                    kernel_info->kernel_index = LSTMUNIT_HYBRID_U8_START + 8;
-                else if (outputFormat == VSI_NN_TYPE_UINT8)
-                    kernel_info->kernel_index = LSTMUNIT_HYBRID_U8_START + 9;
-            }
-            else if (cellFormat == VSI_NN_TYPE_FLOAT32)
-            {
-                if (outputFormat == VSI_NN_TYPE_FLOAT16)
-                    kernel_info->kernel_index = LSTMUNIT_HYBRID_U8_START + 10;
-                else if (outputFormat == VSI_NN_TYPE_UINT8)
-                    kernel_info->kernel_index = LSTMUNIT_HYBRID_U8_START + 11;
-            }
-
-            kernel_info->resource_name[0] = "vsi_nn_kernel_lstmunit_activation_cb_u8";
-        }
-    }
-    else
-    {
-        goto OnError;
-    }
-
-    return VSI_SUCCESS;
-OnError:
-        VSILOGE("Not support input or output data format!(lstm unit activation)\n");
-        return VSI_FAILURE;
-}
-
-
-static vsi_status vx_op_pre_compute_hybrid
-    (
-    vsi_nn_node_t * self,
-    vsi_nn_tensor_t ** inputs,
-    vsi_nn_tensor_t ** outputs,
-    vsi_nn_kernel_info_t * kernel_info
-    )
-{
-
-    vsi_nn_type_e inputFormat;
-
-    inputFormat   = inputs[ACT_INPUT_FC_F]->attr.dtype.vx_type;
-
-    if (inputFormat == VSI_NN_TYPE_FLOAT16)
-    {
-        return vx_op_pre_compute_hybrid_fp16(self, inputs, outputs, kernel_info);
-    }
-    else if (inputFormat == VSI_NN_TYPE_UINT8)
-    {
-        return vx_op_pre_compute_hybrid_u8(self, inputs, outputs, kernel_info);
-    }
-    else
-    {
-        goto OnError;
-    }
-
-    return VSI_SUCCESS;
-OnError:
-        VSILOGE("Not support input or output data format!(lstm unit activation)\n");
-        return VSI_FAILURE;
-}
-
-static vsi_status vx_op_pre_compute_standard_fp16
-    (
-    vsi_nn_node_t * self,
-    vsi_nn_tensor_t ** inputs,
-    vsi_nn_tensor_t ** outputs,
-    vsi_nn_kernel_info_t * kernel_info
-    )
-{
-#define LSTMUNIT_ST_FP16_START   (LSTMUNIT_ACT_LN_KERNEL_COUNTS + LSTMUNIT_ACT_HYBRID_KERNEL_COUNTS)
-    vsi_nn_type_e cellFormat;
-    vsi_nn_type_e outputFormat  = outputs[0]->attr.dtype.vx_type;
-
-    vsi_nn_lstmunit_activation_param * p;
-
-    p = &(self->nn_param.lstmunit_activation);
-
-    cellFormat    = inputs[ACT_CSTATE_IN]->attr.dtype.vx_type;
-
-    if (!p->is_cifg)
-    {
-        if (p->is_projection)
-        {
-            if (outputFormat == VSI_NN_TYPE_FLOAT16)
-            {
-                if (cellFormat == VSI_NN_TYPE_FLOAT32)
-                    kernel_info->kernel_index = LSTMUNIT_ST_FP16_START;
-                else
-                    kernel_info->kernel_index = LSTMUNIT_ST_FP16_START + 1;
-
-                kernel_info->resource_name[0] = "vsi_nn_kernel_lstmunit_activation_sp_fp16";
-            }
-            else
-                goto OnError;
-        }
-        else
-        {
-            if (cellFormat == VSI_NN_TYPE_FLOAT16)
-            {
-                if (outputFormat == VSI_NN_TYPE_FLOAT16)
-                    kernel_info->kernel_index = LSTMUNIT_ST_FP16_START + 2;
-                else if (outputFormat == VSI_NN_TYPE_INT16)
-                    kernel_info->kernel_index = LSTMUNIT_ST_FP16_START + 3;
-                else if (outputFormat == VSI_NN_TYPE_INT8)
-                    kernel_info->kernel_index = LSTMUNIT_ST_FP16_START + 4;
-                else if (outputFormat == VSI_NN_TYPE_UINT8)
-                    kernel_info->kernel_index = LSTMUNIT_ST_FP16_START + 5;
-            }
-            else if (cellFormat == VSI_NN_TYPE_FLOAT32)
-            {
-                if (outputFormat == VSI_NN_TYPE_FLOAT16)
-                    kernel_info->kernel_index = LSTMUNIT_ST_FP16_START + 6;
-                else if (outputFormat == VSI_NN_TYPE_INT16)
-                    kernel_info->kernel_index = LSTMUNIT_ST_FP16_START + 7;
-                else if (outputFormat == VSI_NN_TYPE_INT8)
-                    kernel_info->kernel_index = LSTMUNIT_ST_FP16_START + 8;
-                else if (outputFormat == VSI_NN_TYPE_UINT8)
-                    kernel_info->kernel_index = LSTMUNIT_ST_FP16_START + 9;
-            }
-
-            kernel_info->resource_name[0] = "vsi_nn_kernel_lstmunit_activation_s_fp16";
-        }
-    }
-    else if (p->is_cifg)
-    {
-        if (p->is_projection)
-        {
-            if (outputFormat == VSI_NN_TYPE_FLOAT16)
-            {
-                if (cellFormat == VSI_NN_TYPE_FLOAT32)
-                    kernel_info->kernel_index = LSTMUNIT_ST_FP16_START + 10;
-                else
-                    kernel_info->kernel_index = LSTMUNIT_ST_FP16_START + 11;
-
-                kernel_info->resource_name[0] = "vsi_nn_kernel_lstmunit_activation_csp_fp16";
-            }
-            else
-                goto OnError;
-        }
-        else
-        {
-            if (cellFormat == VSI_NN_TYPE_FLOAT16)
-            {
-                if (outputFormat == VSI_NN_TYPE_FLOAT16)
-                    kernel_info->kernel_index = LSTMUNIT_ST_FP16_START + 12;
-                else if (outputFormat == VSI_NN_TYPE_INT16)
-                    kernel_info->kernel_index = LSTMUNIT_ST_FP16_START + 13;
-                else if (outputFormat == VSI_NN_TYPE_INT8)
-                    kernel_info->kernel_index = LSTMUNIT_ST_FP16_START + 14;
-                else if (outputFormat == VSI_NN_TYPE_UINT8)
-                    kernel_info->kernel_index = LSTMUNIT_ST_FP16_START + 15;
-            }
-            else if (cellFormat == VSI_NN_TYPE_FLOAT32)
-            {
-                if (outputFormat == VSI_NN_TYPE_FLOAT16)
-                    kernel_info->kernel_index = LSTMUNIT_ST_FP16_START + 16;
-                else if (outputFormat == VSI_NN_TYPE_INT16)
-                    kernel_info->kernel_index = LSTMUNIT_ST_FP16_START + 17;
-                else if (outputFormat == VSI_NN_TYPE_INT8)
-                    kernel_info->kernel_index = LSTMUNIT_ST_FP16_START + 18;
-                else if (outputFormat == VSI_NN_TYPE_UINT8)
-                    kernel_info->kernel_index = LSTMUNIT_ST_FP16_START + 19;
-            }
-
-            kernel_info->resource_name[0] = "vsi_nn_kernel_lstmunit_activation_cs_fp16";
-        }
-    }
-    else
-    {
-        goto OnError;
-    }
-
-    return VSI_SUCCESS;
-OnError:
-        VSILOGE("Not support input or output data format!(lstm unit activation)\n");
-        return VSI_FAILURE;
-}
-
-static vsi_status vx_op_pre_compute_standard_u8
-    (
-    vsi_nn_node_t * self,
-    vsi_nn_tensor_t ** inputs,
-    vsi_nn_tensor_t ** outputs,
-    vsi_nn_kernel_info_t * kernel_info
-    )
-{
-#define LSTMUNIT_ST_U8_START     (LSTMUNIT_ST_FP16_START + LSTMUNIT_ACT_ST_KERNEL_FP16_COUNTS)
-    vsi_nn_type_e cellFormat;
-    vsi_nn_type_e outputFormat  = outputs[0]->attr.dtype.vx_type;
-
-    vsi_nn_lstmunit_activation_param * p;
-
-    p = &(self->nn_param.lstmunit_activation);
-
-    cellFormat    = inputs[ACT_CSTATE_IN]->attr.dtype.vx_type;
-
-    if (!p->is_cifg)
-    {
-        if (p->is_projection)
-        {
-            if (outputFormat == VSI_NN_TYPE_FLOAT16)
-            {
-                if (cellFormat == VSI_NN_TYPE_FLOAT32)
-                    kernel_info->kernel_index = LSTMUNIT_ST_U8_START;
-                else
-                    kernel_info->kernel_index = LSTMUNIT_ST_U8_START + 1;
-
-                kernel_info->resource_name[0] = "vsi_nn_kernel_lstmunit_activation_sp_u8";
-            }
-            else
-                goto OnError;
-        }
-        else
-        {
-            if (cellFormat == VSI_NN_TYPE_FLOAT16)
-            {
-                if (outputFormat == VSI_NN_TYPE_FLOAT16)
-                    kernel_info->kernel_index = LSTMUNIT_ST_U8_START + 2;
-                else if (outputFormat == VSI_NN_TYPE_UINT8)
-                    kernel_info->kernel_index = LSTMUNIT_ST_U8_START + 3;
-            }
-            else if (cellFormat == VSI_NN_TYPE_FLOAT32)
-            {
-                if (outputFormat == VSI_NN_TYPE_FLOAT16)
-                    kernel_info->kernel_index = LSTMUNIT_ST_U8_START + 4;
-                else if (outputFormat == VSI_NN_TYPE_UINT8)
-                    kernel_info->kernel_index = LSTMUNIT_ST_U8_START + 5;
-            }
-
-            kernel_info->resource_name[0] = "vsi_nn_kernel_lstmunit_activation_s_u8";
-        }
-    }
-    else if (p->is_cifg)
-    {
-        if (p->is_projection)
-        {
-            if (outputFormat == VSI_NN_TYPE_FLOAT16)
-            {
-                if (cellFormat == VSI_NN_TYPE_FLOAT32)
-                    kernel_info->kernel_index = LSTMUNIT_ST_U8_START + 6;
-                else
-                    kernel_info->kernel_index = LSTMUNIT_ST_U8_START + 7;
-
-                kernel_info->resource_name[0] = "vsi_nn_kernel_lstmunit_activation_csp_u8";
-            }
-            else
-                goto OnError;
-        }
-        else
-        {
-            if (cellFormat == VSI_NN_TYPE_FLOAT16)
-            {
-                if (outputFormat == VSI_NN_TYPE_FLOAT16)
-                    kernel_info->kernel_index = LSTMUNIT_ST_U8_START + 8;
-                else if (outputFormat == VSI_NN_TYPE_UINT8)
-                    kernel_info->kernel_index = LSTMUNIT_ST_U8_START + 9;
-            }
-            else if (cellFormat == VSI_NN_TYPE_FLOAT32)
-            {
-                if (outputFormat == VSI_NN_TYPE_FLOAT16)
-                    kernel_info->kernel_index = LSTMUNIT_ST_U8_START + 10;
-                else if (outputFormat == VSI_NN_TYPE_UINT8)
-                    kernel_info->kernel_index = LSTMUNIT_ST_U8_START + 11;
-            }
-
-            kernel_info->resource_name[0] = "vsi_nn_kernel_lstmunit_activation_cs_u8";
-        }
-    }
-    else
-    {
-        goto OnError;
-    }
-
-    return VSI_SUCCESS;
-OnError:
-        VSILOGE("Not support input or output data format!(lstm unit activation)\n");
-        return VSI_FAILURE;
-}
-
-
-static vsi_status vx_op_pre_compute_standard
-    (
-    vsi_nn_node_t * self,
-    vsi_nn_tensor_t ** inputs,
-    vsi_nn_tensor_t ** outputs,
-    vsi_nn_kernel_info_t * kernel_info
-    )
-{
-    vsi_nn_type_e inputFormat;
-
-    inputFormat   = inputs[ACT_INPUT_FC_F]->attr.dtype.vx_type;
-
-    if (inputFormat == VSI_NN_TYPE_FLOAT16)
-    {
-        return vx_op_pre_compute_standard_fp16(self, inputs, outputs, kernel_info);
-    }
-    else if (inputFormat == VSI_NN_TYPE_UINT8)
-    {
-        return vx_op_pre_compute_standard_u8(self, inputs, outputs, kernel_info);
-    }
-    else
-    {
-        goto OnError;
-    }
-
-    return VSI_SUCCESS;
-OnError:
-        VSILOGE("Not support input or output data format!(lstm unit activation)\n");
-        return VSI_FAILURE;
-}
-
-static vsi_status vx_op_pre_compute
+static vsi_bool vx_op_pre_compute
     (
     vsi_nn_node_t * self,
     vsi_nn_tensor_t ** inputs,
@@ -860,25 +719,10 @@ static vsi_status vx_op_pre_compute
 
     p = &(self->nn_param.lstmunit_activation);
 
-    if (p->is_layer_norm)
-    {
-        return vx_op_pre_compute_layer_norm(self, inputs, outputs, kernel_info);
-    }
-    else if (p->is_hybrid)
-    {
-        return vx_op_pre_compute_hybrid(self, inputs, outputs, kernel_info);
-    }
-    else if (!p->is_layer_norm && !p->is_hybrid && !p->is_peephole)
-    {
-        vx_op_pre_compute_standard(self, inputs, outputs, kernel_info);
-    }
-    else
-        goto OnError;
+    kernel_info->kernel_index = map[p->local.hash_idx].kernel_index;
+    kernel_info->resource_name[0] = map[p->local.hash_idx].resource_name;
 
-    return VSI_SUCCESS;
-OnError:
-        VSILOGE("Not support this feature or format!(lstm unit activation)\n");
-        return VSI_FAILURE;
+    return TRUE;
 }
 
 static vsi_status vx_op_compute
@@ -950,7 +794,6 @@ static vsi_status op_compute
 {
     vsi_status status;
     vsi_nn_kernel_info_t kernel_info = {0};
-    vsi_nn_type_e srcFormat    = inputs[1]->attr.dtype.vx_type;
     vsi_nn_lstmunit_activation_param * p;
 
     status = VSI_FAILURE;
@@ -961,7 +804,9 @@ static vsi_status op_compute
 
     p = &(self->nn_param.lstmunit_activation);
 
-    if (srcFormat != VSI_NN_TYPE_FLOAT16 && p->is_layer_norm)
+   _get_lstmunit_hashtable_idx(self, inputs, outputs);
+
+   if (p->local.execute_on_sw)
     {
         kernel_info.resource_num = 1;
         kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));
@@ -1026,57 +871,163 @@ static vsi_bool op_check
 
 static vsi_bool op_setup
     (
-    vsi_nn_node_t * node,
+    vsi_nn_node_t * self,
     vsi_nn_tensor_t ** inputs,
     vsi_nn_tensor_t ** outputs
     )
 {
-    /* TODO: Add code to comput outputs' shape. */
-    if( VSI_NN_DIM_AUTO == outputs[ACT_OUTPUT]->attr.dim_num )
+    vsi_nn_lstmunit_activation_param * p;
+    vsi_nn_dtype_t dst_dtype;
+    int32_t ifco_start_index = 0;
+    vsi_nn_tensor_attr_t attr;
+    int32_t i = 0;
+
+    if( NULL == self )
     {
-        outputs[ACT_OUTPUT]->attr.dim_num = inputs[ACT_INPUT_FC_F]->attr.dim_num;
-        outputs[ACT_OUTPUT]->attr.size[0] = inputs[ACT_INPUT_FC_F]->attr.size[0];
-        outputs[ACT_OUTPUT]->attr.size[1] = inputs[ACT_INPUT_FC_F]->attr.size[1];
-        outputs[ACT_OUTPUT]->attr.size[2] = inputs[ACT_INPUT_FC_F]->attr.size[2];
-        outputs[ACT_OUTPUT]->attr.size[3] = inputs[ACT_INPUT_FC_F]->attr.size[3];
+        return FALSE;
     }
 
-    if( VSI_NN_DIM_AUTO == outputs[ACT_CSTATE_OUT]->attr.dim_num )
+    p = &(self->nn_param.lstmunit_activation);
+
+    p->is_cifg = inputs[LSTMUNIT_ACT_INPUT_FC_I] == NULL;
+    p->is_projection = outputs[LSTMUNIT_ACT_HSTATE_OUT] == NULL;
+    p->is_layer_norm = inputs[LSTMUNIT_ACT_LN_WF] != NULL;
+    p->is_hybrid = p->is_layer_norm ? 0 : inputs[LSTMUNIT_ACT_DATA_BF] != NULL;
+    p->recurrent_activation = p->recurrent_activation == VSI_NN_LSTMUNIT_ACT_NONE ?
+        VSI_NN_LSTMUNIT_ACT_SIGMOID : p->recurrent_activation;
+
+    for( i = ifco_start_index; i < 4; i++ )
     {
-        outputs[ACT_CSTATE_OUT]->attr.dim_num = inputs[ACT_CSTATE_IN]->attr.dim_num;
-        outputs[ACT_CSTATE_OUT]->attr.size[0] = inputs[ACT_CSTATE_IN]->attr.size[0];
-        outputs[ACT_CSTATE_OUT]->attr.size[1] = inputs[ACT_CSTATE_IN]->attr.size[1];
-        outputs[ACT_CSTATE_OUT]->attr.size[2] = inputs[ACT_CSTATE_IN]->attr.size[2];
-        outputs[ACT_CSTATE_OUT]->attr.size[3] = inputs[ACT_CSTATE_IN]->attr.size[3];
+        vsi_nn_tensor_t* t0 = NULL;
+        vsi_nn_tensor_t* t1 = NULL;
+        dst_dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
+        dst_dtype.vx_type = VSI_NN_TYPE_FLOAT32;
+
+        if (inputs[LSTMUNIT_ACT_DATA_BI + i] && inputs[LSTMUNIT_ACT_DATA_BI + i]->attr.dim_num == 1)
+        {
+            memcpy(&attr, &(inputs[LSTMUNIT_ACT_DATA_BI + i]->attr), sizeof(vsi_nn_tensor_attr_t));
+            attr.size[1] = 1;
+            attr.dim_num = 2;
+            t0 = vsi_nn_CreateTensor( self->graph, &attr );
+            vsi_nn_ReshapeTensor(self->graph, inputs[LSTMUNIT_ACT_DATA_BI + i], t0, attr.size, attr.dim_num);
+
+            if( dst_dtype.vx_type != t0->attr.dtype.vx_type
+                && dst_dtype.qnt_type != t0->attr.dtype.qnt_type )
+            {
+                p->local.tensors[LSTMUNIT_ACT_TENSOR_BI + i] =
+                    vsi_nn_ConvertTensorDtype( self->graph, t0, &dst_dtype );
+                vsi_nn_ReleaseTensor( &t0 );
+            }
+            else
+            {
+                p->local.tensors[LSTMUNIT_ACT_TENSOR_BI + i] = t0;
+            }
+
+            inputs[LSTMUNIT_ACT_DATA_BI + i] = p->local.tensors[LSTMUNIT_ACT_TENSOR_BI + i];
+        }
+
+        if (inputs[LSTMUNIT_ACT_LN_WI + i] && inputs[LSTMUNIT_ACT_LN_WI + i]->attr.dim_num == 1)
+        {
+            memcpy(&attr, &(inputs[LSTMUNIT_ACT_LN_WI + i]->attr), sizeof(vsi_nn_tensor_attr_t));
+            attr.size[1] = 1;
+            attr.dim_num = 2;
+            t1 = vsi_nn_CreateTensor( self->graph, &attr );
+            vsi_nn_ReshapeTensor(self->graph, inputs[LSTMUNIT_ACT_LN_WI + i], t1, attr.size, attr.dim_num);
+
+            if( dst_dtype.vx_type != t1->attr.dtype.vx_type
+                && dst_dtype.qnt_type != t1->attr.dtype.qnt_type )
+            {
+                p->local.tensors[LSTMUNIT_ACT_TENSOR_LN_WI + i] =
+                    vsi_nn_ConvertTensorDtype( self->graph, t1, &dst_dtype );
+                vsi_nn_ReleaseTensor( &t1 );
+            }
+            else
+            {
+                p->local.tensors[LSTMUNIT_ACT_TENSOR_LN_WI + i] = t1;
+            }
+
+            inputs[LSTMUNIT_ACT_LN_WI + i] = p->local.tensors[LSTMUNIT_ACT_TENSOR_LN_WI + i];
+        }
     }
 
-    if (outputs[ACT_HSTATE_OUT] && VSI_NN_DIM_AUTO == outputs[ACT_HSTATE_OUT]->attr.dim_num )
+    if( VSI_NN_DIM_AUTO == outputs[LSTMUNIT_ACT_OUTPUT]->attr.dim_num )
     {
-        outputs[ACT_HSTATE_OUT]->attr.dim_num = outputs[ACT_OUTPUT]->attr.dim_num;
-        outputs[ACT_HSTATE_OUT]->attr.size[0] = outputs[ACT_OUTPUT]->attr.size[0];
-        outputs[ACT_HSTATE_OUT]->attr.size[1] = outputs[ACT_OUTPUT]->attr.size[1];
-        outputs[ACT_HSTATE_OUT]->attr.size[2] = outputs[ACT_OUTPUT]->attr.size[2];
-        outputs[ACT_HSTATE_OUT]->attr.size[3] = outputs[ACT_OUTPUT]->attr.size[3];
+        outputs[LSTMUNIT_ACT_OUTPUT]->attr.dim_num = inputs[LSTMUNIT_ACT_INPUT_FC_F]->attr.dim_num;
+        outputs[LSTMUNIT_ACT_OUTPUT]->attr.size[0] = inputs[LSTMUNIT_ACT_INPUT_FC_F]->attr.size[0];
+        outputs[LSTMUNIT_ACT_OUTPUT]->attr.size[1] = inputs[LSTMUNIT_ACT_INPUT_FC_F]->attr.size[1];
+        outputs[LSTMUNIT_ACT_OUTPUT]->attr.size[2] = inputs[LSTMUNIT_ACT_INPUT_FC_F]->attr.size[2];
+        outputs[LSTMUNIT_ACT_OUTPUT]->attr.size[3] = inputs[LSTMUNIT_ACT_INPUT_FC_F]->attr.size[3];
+    }
+
+    if( VSI_NN_DIM_AUTO == outputs[LSTMUNIT_ACT_CSTATE_OUT]->attr.dim_num )
+    {
+        outputs[LSTMUNIT_ACT_CSTATE_OUT]->attr.dim_num = inputs[LSTMUNIT_ACT_CSTATE_IN]->attr.dim_num;
+        outputs[LSTMUNIT_ACT_CSTATE_OUT]->attr.size[0] = inputs[LSTMUNIT_ACT_CSTATE_IN]->attr.size[0];
+        outputs[LSTMUNIT_ACT_CSTATE_OUT]->attr.size[1] = inputs[LSTMUNIT_ACT_CSTATE_IN]->attr.size[1];
+        outputs[LSTMUNIT_ACT_CSTATE_OUT]->attr.size[2] = inputs[LSTMUNIT_ACT_CSTATE_IN]->attr.size[2];
+        outputs[LSTMUNIT_ACT_CSTATE_OUT]->attr.size[3] = inputs[LSTMUNIT_ACT_CSTATE_IN]->attr.size[3];
+    }
+
+    if (outputs[LSTMUNIT_ACT_HSTATE_OUT] && VSI_NN_DIM_AUTO == outputs[LSTMUNIT_ACT_HSTATE_OUT]->attr.dim_num )
+    {
+        outputs[LSTMUNIT_ACT_HSTATE_OUT]->attr.dim_num = outputs[LSTMUNIT_ACT_OUTPUT]->attr.dim_num;
+        outputs[LSTMUNIT_ACT_HSTATE_OUT]->attr.size[0] = outputs[LSTMUNIT_ACT_OUTPUT]->attr.size[0];
+        outputs[LSTMUNIT_ACT_HSTATE_OUT]->attr.size[1] = outputs[LSTMUNIT_ACT_OUTPUT]->attr.size[1];
+        outputs[LSTMUNIT_ACT_HSTATE_OUT]->attr.size[2] = outputs[LSTMUNIT_ACT_OUTPUT]->attr.size[2];
+        outputs[LSTMUNIT_ACT_HSTATE_OUT]->attr.size[3] = outputs[LSTMUNIT_ACT_OUTPUT]->attr.size[3];
     }
 
     return TRUE;
 } /* op_setup() */
 
-#ifdef __cplusplus
+static vsi_status op_deinit
+    (
+    vsi_nn_node_t * self
+    )
+{
+    vsi_status status = VSI_SUCCESS;
+    int32_t i = 0;
+
+    for (i = 0; i < LSTMUNIT_ACT_TENSOR_CNT; i++)
+    {
+        if (self->nn_param.lstmunit_activation.local.tensors[i] != NULL)
+        {
+            vsi_nn_ReleaseTensor(&self->nn_param.lstmunit_activation.local.tensors[i]);
+            self->nn_param.lstmunit_activation.local.tensors[i] = NULL;
+        }
+    }
+
+    return status;
+} /* op_deinit() */
+
+static vsi_status op_init
+    (
+    vsi_nn_node_t * self
+    )
+{
+    vsi_status status = VSI_SUCCESS;
+
+    self->nn_param.lstmunit_activation.recurrent_activation = VSI_NN_LSTMUNIT_ACT_SIGMOID;
+
+    return status;
+} /* op_init() */
+
+#ifdef __cpluplus
 extern "C" {
 #endif
 /* Registrar */
 DEF_OP_REG
     (
     /* op_name    */ LSTMUNIT_ACTIVATION,
+    /* init       */ op_init,
     /* compute    */ op_compute,
-    /* deinit     */ vsi_nn_op_common_deinit,
+    /* deinit     */ op_deinit,
     /* check      */ op_check,
     /* setup      */ op_setup,
     /* optimize   */ NULL,
     /* input_num  */ _INPUT_NUM,
     /* output_num */ _OUTPUT_NUM
     );
-#ifdef __cplusplus
+#ifdef __cpluplus
 }
 #endif

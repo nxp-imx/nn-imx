@@ -1,26 +1,31 @@
 /****************************************************************************
 *
-*    Copyright (c) 2018 Vivante Corporation
+*    Copyright 2012 - 2019 Vivante Corporation, Santa Clara, California.
+*    All Rights Reserved.
 *
-*    Permission is hereby granted, free of charge, to any person obtaining a
-*    copy of this software and associated documentation files (the "Software"),
-*    to deal in the Software without restriction, including without limitation
-*    the rights to use, copy, modify, merge, publish, distribute, sublicense,
-*    and/or sell copies of the Software, and to permit persons to whom the
-*    Software is furnished to do so, subject to the following conditions:
+*    Permission is hereby granted, free of charge, to any person obtaining
+*    a copy of this software and associated documentation files (the
+*    'Software'), to deal in the Software without restriction, including
+*    without limitation the rights to use, copy, modify, merge, publish,
+*    distribute, sub license, and/or sell copies of the Software, and to
+*    permit persons to whom the Software is furnished to do so, subject
+*    to the following conditions:
 *
-*    The above copyright notice and this permission notice shall be included in
-*    all copies or substantial portions of the Software.
+*    The above copyright notice and this permission notice (including the
+*    next paragraph) shall be included in all copies or substantial
+*    portions of the Software.
 *
-*    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-*    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-*    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-*    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-*    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-*    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-*    DEALINGS IN THE SOFTWARE.
+*    THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+*    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+*    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
+*    IN NO EVENT SHALL VIVANTE AND/OR ITS SUPPLIERS BE LIABLE FOR ANY
+*    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+*    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+*    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
+
+
 #ifndef _VSI_NN_OPS_H
 #define _VSI_NN_OPS_H
 
@@ -53,8 +58,18 @@ typedef uint32_t vsi_nn_op_t; enum
     #include "custom/custom_ops.def"
 #undef DEF_OP
     VSI_NN_OP_CUSTOM_END,
-    VSI_NN_OP_CUSTOM_NUM = VSI_NN_OP_CUSTOM_END - VSI_NN_OP_CUSTOM_START - 1
+    VSI_NN_OP_CUSTOM_NUM = VSI_NN_OP_CUSTOM_END - VSI_NN_OP_CUSTOM_START - 1,
+
+    VSI_NN_OP_INTERNAL_START = 0x10000000,
+#define DEF_OP( NAME, ... ) VSI_NN_OP_##NAME,
+    #include "internal/internal_ops.def"
+#undef DEF_OP
+    VSI_NN_OP_INTERNAL_END,
+    VSI_NN_OP_INTERNAL_NUM = VSI_NN_OP_INTERNAL_END - VSI_NN_OP_INTERNAL_START - 1
 };
+
+typedef vsi_status ( * vsi_nn_op_init_t )
+    ( vsi_nn_node_t * );
 
 typedef vsi_status ( * vsi_nn_op_compute_t )
     (
@@ -90,6 +105,7 @@ typedef vsi_status ( * vsi_nn_op_optimize_t )
 
 typedef struct _vsi_nn_op_proc
 {
+    vsi_nn_op_init_t     init;
     vsi_nn_op_compute_t  compute;
     vsi_nn_op_deinit_t   deinit;
     vsi_nn_op_check_t    check;
@@ -137,6 +153,12 @@ vsi_bool vsi_nn_OpIsValid
 const vsi_nn_op_proc_t * vsi_nn_OpGetProc
     (
     vsi_nn_op_t op
+    );
+
+vsi_status vsi_nn_OpInit
+    (
+    vsi_nn_op_t op,
+    vsi_nn_node_t * node
     );
 
 vsi_status vsi_nn_OpCompute
@@ -208,9 +230,10 @@ OVXLIB_API const char * vsi_nn_OpGetName
 }
 #endif
 
-#define DEF_OP_REG(op,compute,deinit,check,setup,optimize,in,out) \
+#define DEF_OP_REG(op,init,compute,deinit,check,setup,optimize,in,out) \
     vsi_nn_op_proc_t vsi_nn_op_##op =\
 {\
+    /* init       */ init,\
     /* compute    */ compute,\
     /* deinit     */ deinit,\
     /* check      */ check,\

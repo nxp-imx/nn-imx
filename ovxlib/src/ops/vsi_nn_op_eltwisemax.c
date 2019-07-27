@@ -1,39 +1,44 @@
 /****************************************************************************
 *
-*    Copyright (c) 2018 Vivante Corporation
+*    Copyright 2012 - 2019 Vivante Corporation, Santa Clara, California.
+*    All Rights Reserved.
 *
-*    Permission is hereby granted, free of charge, to any person obtaining a
-*    copy of this software and associated documentation files (the "Software"),
-*    to deal in the Software without restriction, including without limitation
-*    the rights to use, copy, modify, merge, publish, distribute, sublicense,
-*    and/or sell copies of the Software, and to permit persons to whom the
-*    Software is furnished to do so, subject to the following conditions:
+*    Permission is hereby granted, free of charge, to any person obtaining
+*    a copy of this software and associated documentation files (the
+*    'Software'), to deal in the Software without restriction, including
+*    without limitation the rights to use, copy, modify, merge, publish,
+*    distribute, sub license, and/or sell copies of the Software, and to
+*    permit persons to whom the Software is furnished to do so, subject
+*    to the following conditions:
 *
-*    The above copyright notice and this permission notice shall be included in
-*    all copies or substantial portions of the Software.
+*    The above copyright notice and this permission notice (including the
+*    next paragraph) shall be included in all copies or substantial
+*    portions of the Software.
 *
-*    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-*    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-*    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-*    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-*    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-*    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-*    DEALINGS IN THE SOFTWARE.
+*    THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+*    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+*    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
+*    IN NO EVENT SHALL VIVANTE AND/OR ITS SUPPLIERS BE LIABLE FOR ANY
+*    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+*    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+*    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
+
+
 #include <string.h>
 #include <stdlib.h>
 
 #include "vsi_nn_types.h"
 #include "vsi_nn_platform.h"
+#include "vsi_nn_log.h"
 #include "vsi_nn_graph.h"
 #include "vsi_nn_node.h"
+#include "vsi_nn_prv.h"
+#include "utils/vsi_nn_math.h"
 #include "vsi_nn_ops.h"
 #include "vsi_nn_tensor.h"
 #include "vsi_nn_tensor_util.h"
-#include "utils/vsi_nn_util.h"
-#include "vsi_nn_prv.h"
-#include "vsi_nn_log.h"
 #include "client/vsi_nn_vxkernel.h"
 
 #define _ARG_NUM            (0)
@@ -50,7 +55,7 @@ static void check_tensor_shape
     vsi_nn_tensor_t * input,
     vx_reference * params,
     uint32_t index,
-    vsi_bool    enable_image_2d
+    vx_bool enable_image_2d
     )
 {
     vsi_nn_tensor_attr_t attr;
@@ -70,9 +75,9 @@ static void check_tensor_shape
         attr.size[1] = 1;
         attr.size[2] = 1;
         attr.dim_num = 3;
-        self->nn_param.prelu.local.local_tensor[index] =
+        self->nn_param.eltwisemax.local.local_tensor[index] =
             vxReshapeTensor(input->t, (int32_t*)(attr.size), attr.dim_num);
-        params[index] =  (vx_reference)self->nn_param.prelu.local.local_tensor[index];
+        params[index] =  (vx_reference)self->nn_param.eltwisemax.local.local_tensor[index];
     }
     else if(input->attr.dim_num == 3 && enable_image_2d)
     {
@@ -80,9 +85,9 @@ static void check_tensor_shape
         attr.size[0] *= attr.size[1];
         attr.size[1] = attr.size[2];
         attr.size[2] = 1;
-        self->nn_param.prelu.local.local_tensor[index] =
+        self->nn_param.eltwisemax.local.local_tensor[index] =
             vxReshapeTensor(input->t, (int32_t*)(attr.size), attr.dim_num);
-        params[index] =  (vx_reference)self->nn_param.prelu.local.local_tensor[index];
+        params[index] =  (vx_reference)self->nn_param.eltwisemax.local.local_tensor[index];
     }
     else if(input->attr.dim_num == 4 && enable_image_2d)
     {
@@ -91,9 +96,9 @@ static void check_tensor_shape
         attr.size[1] = attr.size[2];
         attr.size[2] = 1;
         attr.size[3] = attr.size[3];
-        self->nn_param.prelu.local.local_tensor[index] =
+        self->nn_param.eltwisemax.local.local_tensor[index] =
             vxReshapeTensor(input->t, (int32_t*)(attr.size), attr.dim_num);
-        params[index] =  (vx_reference)self->nn_param.prelu.local.local_tensor[index];
+        params[index] =  (vx_reference)self->nn_param.eltwisemax.local.local_tensor[index];
     }
     else
     {
@@ -109,80 +114,136 @@ static vsi_status op_pre_compute
     vsi_nn_kernel_info_t * kernel_info
     )
 {
-    vsi_nn_type_e in0_dataType = inputs[0]->attr.dtype.vx_type;
-    vsi_nn_type_e in1_dataType = inputs[1]->attr.dtype.vx_type;
-    vsi_nn_type_e out_dataType = outputs[0]->attr.dtype.vx_type;
+    vsi_nn_type_e src0Format    = inputs[0]->attr.dtype.vx_type;
+    vsi_nn_type_e src1Format    = inputs[1]->attr.dtype.vx_type;
+    vsi_nn_type_e dstFormat     = outputs[0]->attr.dtype.vx_type;
+    uint32_t   dims             = outputs[0]->attr.dim_num;
+    uint32_t   width            = outputs[0]->attr.size[0];
+    uint32_t   height           = dims > 1 ? outputs[0]->attr.size[1] : 1;
+    uint32_t   depth            = dims > 2 ? outputs[0]->attr.size[2] : 1;
+    uint32_t   batch            = dims > 3 ? outputs[0]->attr.size[3] : 1;
+    vsi_bool   enable_image_2d  = FALSE;
+    vsi_bool   enable_brdcst    = FALSE;
+    uint32_t   i                = 0;
+    uint32_t   hwLitimLen       = 65536;
 
-    if (out_dataType == VSI_NN_TYPE_INT8
-        && in0_dataType == VSI_NN_TYPE_INT8
-        && in1_dataType == VSI_NN_TYPE_FLOAT16)
+    for (i = 0; i < outputs[0]->attr.dim_num; i++)
     {
-        kernel_info->kernel_index = 6;
-        return VSI_SUCCESS;
-    }
+        vx_uint32 size0 = inputs[0]->attr.dim_num > i ? inputs[0]->attr.size[i] : 1;
+        vx_uint32 size1 = inputs[1]->attr.dim_num > i ? inputs[1]->attr.size[i] : 1;
 
-    if (out_dataType == VSI_NN_TYPE_UINT8
-        && in0_dataType == VSI_NN_TYPE_UINT8
-        && in1_dataType == VSI_NN_TYPE_FLOAT16)
-    {
-        kernel_info->kernel_index = 7;
-        return VSI_SUCCESS;
-    }
-
-    if (out_dataType == VSI_NN_TYPE_INT16
-        && in0_dataType == VSI_NN_TYPE_INT16
-        && in1_dataType == VSI_NN_TYPE_FLOAT16)
-    {
-        kernel_info->resource_name[1] = "vsi_nn_kernel_eltwisemax_i16";
-        kernel_info->kernel_index = 8;
-        return VSI_SUCCESS;
-    }
-
-    if (out_dataType == VSI_NN_TYPE_FLOAT16
-        && in0_dataType == VSI_NN_TYPE_INT16
-        && in1_dataType == VSI_NN_TYPE_FLOAT16)
-    {
-        kernel_info->resource_name[1] = "vsi_nn_kernel_eltwisemax_i16";
-        kernel_info->kernel_index = 9;
-        return VSI_SUCCESS;
-    }
-
-    if(out_dataType != in0_dataType ||
-        out_dataType != in1_dataType||
-        in0_dataType != in1_dataType
-        )
-    {
-        VSILOGE("Not support input or output data format!\n");
-        return VSI_FAILURE;
-    }
-
-    if (out_dataType == VSI_NN_TYPE_FLOAT16)
-    {
-        kernel_info->kernel_index = 1;
-    }
-    else if (out_dataType == VSI_NN_TYPE_INT8)
-    {
-        if (inputs[0]->attr.dtype.fl == inputs[1]->attr.dtype.fl
-            && inputs[0]->attr.dtype.fl == outputs[0]->attr.dtype.fl)
+        if (size0 != size1)
         {
-            kernel_info->kernel_index = 3;
+            enable_brdcst = vx_true_e;
+            break;
         }
+    }
+
+    if (enable_brdcst == vx_false_e)
+    {
+        enable_image_2d = (vx_bool)(((width * height < hwLitimLen) && (depth * batch < hwLitimLen))
+                                  || depth * batch == 1);
+    }
+
+
+    if (src0Format == src1Format && src0Format == VSI_NN_TYPE_FLOAT16
+        && dstFormat == src0Format)
+    {
+        if (enable_image_2d)
+            kernel_info->kernel_index = TENSOR_MAX_F16F16TOF16_2D_KERNEL;
         else
-        {
-            kernel_info->kernel_index = 2;
-        }
+            kernel_info->kernel_index = TENSOR_MAX_F16F16TOF16_KERNEL;
     }
-    else if (out_dataType == VSI_NN_TYPE_INT16)
+    else if (src0Format == src1Format && src0Format == VSI_NN_TYPE_INT8
+          && dstFormat == src0Format)
     {
-        kernel_info->kernel_index = 4;
+        if(enable_image_2d)
+            kernel_info->kernel_index   = TENSOR_MAX_I8I8TOI8_2D_KERNEL;
+        else
+            kernel_info->kernel_index   = TENSOR_MAX_I8I8TOI8_KERNEL;
     }
-    else if (out_dataType == VSI_NN_TYPE_UINT8)
+    else if (src0Format == src1Format && src0Format == VSI_NN_TYPE_UINT8
+          && dstFormat == src0Format)
     {
-        kernel_info->kernel_index = 5;
+        if(enable_image_2d)
+            kernel_info->kernel_index   = TENSOR_MAX_U8TOU8_2D_KERNEL;
+        else
+            kernel_info->kernel_index   = TENSOR_MAX_U8TOU8_KERNEL;
+    }
+    else if (src0Format == src1Format && src0Format == VSI_NN_TYPE_INT16
+          && dstFormat == src0Format)
+    {
+        if(enable_image_2d)
+            kernel_info->kernel_index   = TENSOR_MAX_I16I16TOI16_2D_KERNEL;
+        else
+            kernel_info->kernel_index   = TENSOR_MAX_I16I16TOI16_KERNEL;
+    }
+    else if (src0Format == VSI_NN_TYPE_INT8 && src1Format == VSI_NN_TYPE_FLOAT16
+          && dstFormat == VSI_NN_TYPE_INT8)
+    {
+        kernel_info->resource_name[1] = "vsi_nn_kernel_maximum_fp16";
+        if(enable_image_2d)
+            kernel_info->kernel_index   = TENSOR_MAX_I8F16TOI8_2D_KERNEL;
+        else
+            kernel_info->kernel_index   = TENSOR_MAX_I8F16TOI8_KERNEL;
+    }
+    else if (src0Format == VSI_NN_TYPE_INT8 && src1Format == VSI_NN_TYPE_FLOAT16
+          && dstFormat == VSI_NN_TYPE_FLOAT16)
+    {
+        kernel_info->resource_name[1] = "vsi_nn_kernel_maximum_fp16";
+        if(enable_image_2d)
+            kernel_info->kernel_index   = TENSOR_MAX_I8F16TOF16_2D_KERNEL;
+        else
+            kernel_info->kernel_index   = TENSOR_MAX_I8F16TOF16_KERNEL;
+    }
+    else if (src0Format == VSI_NN_TYPE_UINT8 && src1Format == VSI_NN_TYPE_FLOAT16
+          && dstFormat == VSI_NN_TYPE_FLOAT16)
+    {
+        kernel_info->resource_name[1] = "vsi_nn_kernel_maximum_fp16";
+        if(enable_image_2d)
+            kernel_info->kernel_index   = TENSOR_MAX_U8F16TOF16_2D_KERNEL;
+        else
+            kernel_info->kernel_index   = TENSOR_MAX_U8F16TOF16_KERNEL;
+    }
+    else if (src0Format == VSI_NN_TYPE_UINT8 && src1Format == VSI_NN_TYPE_FLOAT16
+          && dstFormat == VSI_NN_TYPE_UINT8)
+    {
+        kernel_info->resource_name[1] = "vsi_nn_kernel_maximum_fp16";
+        if(enable_image_2d)
+            kernel_info->kernel_index   = TENSOR_MAX_U8F16TOU8_2D_KERNEL;
+        else
+            kernel_info->kernel_index   = TENSOR_MAX_U8F16TOU8_KERNEL;
+    }
+    else if (src0Format == VSI_NN_TYPE_FLOAT16 && src1Format == VSI_NN_TYPE_FLOAT16
+          && dstFormat == VSI_NN_TYPE_UINT8)
+    {
+        kernel_info->resource_name[1] = "vsi_nn_kernel_maximum_fp16";
+        if(enable_image_2d)
+            kernel_info->kernel_index   = TENSOR_MAX_F16F16TOU8_2D_KERNEL;
+        else
+            kernel_info->kernel_index   = TENSOR_MAX_F16F16TOU8_KERNEL;
+    }
+    else if (src0Format == VSI_NN_TYPE_INT16 && src1Format == VSI_NN_TYPE_FLOAT16
+          && dstFormat == VSI_NN_TYPE_INT16)
+    {
+        kernel_info->resource_name[1] = "vsi_nn_kernel_maximum_i16";
+        if(enable_image_2d)
+            kernel_info->kernel_index   = TENSOR_MAX_I16F16TOI16_2D_KERNEL;
+        else
+            kernel_info->kernel_index   = TENSOR_MAX_I16F16TOI16_KERNEL;
+    }
+    else if (src0Format == VSI_NN_TYPE_INT16 && src1Format == VSI_NN_TYPE_FLOAT16
+          && dstFormat == VSI_NN_TYPE_FLOAT16)
+    {
+        kernel_info->resource_name[1] = "vsi_nn_kernel_maximum_i16";
+        if(enable_image_2d)
+            kernel_info->kernel_index   = TENSOR_MAX_I16F16TOF16_2D_KERNEL;
+        else
+            kernel_info->kernel_index   = TENSOR_MAX_I16F16TOF16_KERNEL;
     }
     else
     {
-        VSILOGE("Not support input or output data format!\n");
+        VSILOGE("Not support input or output data format!(maximum)\n");
         return VSI_FAILURE;
     }
 
@@ -199,22 +260,37 @@ static vsi_status vx_op_compute
     vsi_status status = VSI_SUCCESS;
     vx_reference params[_PARAM_NUM];
     vx_border_t border;
-    vx_uint32   width               = inputs[0]->attr.size[0];
-    vx_uint32   height              = inputs[0]->attr.size[1];
-    vx_uint32   depth               = inputs[0]->attr.size[2];
-    vsi_bool    enable_image_2d     = vx_false_e;
-    vx_uint32   hwLitimLen          = 65536;
-
-    enable_image_2d = (vx_bool)(width * height < hwLitimLen && depth < hwLitimLen);
+    uint32_t    dims             = outputs[0]->attr.dim_num;
+    uint32_t    width            = outputs[0]->attr.size[0];
+    uint32_t    height           = dims > 1 ? outputs[0]->attr.size[1] : 1;
+    uint32_t    depth            = dims > 2 ? outputs[0]->attr.size[2] : 1;
+    uint32_t    batch            = dims > 3 ? outputs[0]->attr.size[3] : 1;
+    vsi_bool    enable_image_2d  = FALSE;
+    vsi_bool    enable_brdcst    = FALSE;
+    uint32_t    hwLitimLen       = 65536;
+    uint32_t    i                = 0;
 
     if( NULL == self->n )
     {
         return VSI_FAILURE;
     }
 
-    if( NULL == self->n )
+    for (i = 0; i < outputs[0]->attr.dim_num; i++)
     {
-        return VSI_FAILURE;
+        vx_uint32 size0 = inputs[0]->attr.dim_num > i ? inputs[0]->attr.size[i] : 1;
+        vx_uint32 size1 = inputs[1]->attr.dim_num > i ? inputs[1]->attr.size[i] : 1;
+
+        if (size0 != size1)
+        {
+            enable_brdcst = vx_true_e;
+            break;
+        }
+    }
+
+    if (enable_brdcst == vx_false_e)
+    {
+        enable_image_2d = (vx_bool)((width * height < hwLitimLen)
+                                 && (depth * batch < hwLitimLen));
     }
 
     check_tensor_shape(self, inputs[0], params, 0,  enable_image_2d);
@@ -263,7 +339,7 @@ static vsi_status op_compute
     kernel_info.resource_num = 2;
     kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));
     kernel_info.resource_name[0] = "vsi_nn_kernel_header";
-    kernel_info.resource_name[1] = "vsi_nn_kernel_eltwisemax";
+    kernel_info.resource_name[1] = "vsi_nn_kernel_maximum";
     kernel_info.type = vsi_nn_GetVXKernelTypeForShader();
     kernel_info.kernel = vx_kernel_ELTWISEMAX_list;
     kernel_info.init_index = 1;
@@ -338,6 +414,7 @@ extern "C" {
 DEF_OP_REG
     (
     /* op_name    */ ELTWISEMAX,
+    /* init       */ NULL,
     /* compute    */ op_compute,
     /* deinit     */ op_deinit,
     /* check      */ op_check,

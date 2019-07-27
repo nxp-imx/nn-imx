@@ -3,7 +3,6 @@
 //----------------------------------argmax----------------------------
 _viv_uniform int depth;
 _viv_uniform VXC_512Bits intToShort8;
-_viv_uniform VXC_512Bits uniExtractHalfMax_2x8;
 
 __kernel void argMaxVXC
     (
@@ -16,15 +15,18 @@ __kernel void argMaxVXC
     vxc_short8 din0, axis;
     vxc_half8 dinHalf0, maxHalf;
     vxc_short8 max;
-    float4 fltMax = {FLT_MIN, FLT_MIN, FLT_MIN, FLT_MIN};
-    half4 hfMax;
-    _viv_asm(CONV, hfMax, fltMax);
     vxc_half8 maxTmp;
-    VXC_DP2x8(maxTmp, hfMax, hfMax, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniExtractHalfMax_2x8);
 
     int4 coord = (int4)(get_global_id(0), get_global_id(1), depth-1, 0);
     int4 coordOut = (int4)(get_global_id(0), get_global_id(1), 0, 0);
     VXC_DP2x8(z, depth-1, depth, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), intToShort8);
+    VXC_ReadImage2DArray(din0, input, coord, VXC_5BITOFFSET_XY(0, 0),\
+            VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+    _viv_asm(COPY, maxTmp, din0, 16);
+    axis = z;
+
+    coord.z -= 1;
+    z += zz;
 
     while(coord.z >= 0)
     {

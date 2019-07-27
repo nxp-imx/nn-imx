@@ -1,26 +1,31 @@
 /****************************************************************************
 *
-*    Copyright (c) 2018 Vivante Corporation
+*    Copyright 2012 - 2019 Vivante Corporation, Santa Clara, California.
+*    All Rights Reserved.
 *
-*    Permission is hereby granted, free of charge, to any person obtaining a
-*    copy of this software and associated documentation files (the "Software"),
-*    to deal in the Software without restriction, including without limitation
-*    the rights to use, copy, modify, merge, publish, distribute, sublicense,
-*    and/or sell copies of the Software, and to permit persons to whom the
-*    Software is furnished to do so, subject to the following conditions:
+*    Permission is hereby granted, free of charge, to any person obtaining
+*    a copy of this software and associated documentation files (the
+*    'Software'), to deal in the Software without restriction, including
+*    without limitation the rights to use, copy, modify, merge, publish,
+*    distribute, sub license, and/or sell copies of the Software, and to
+*    permit persons to whom the Software is furnished to do so, subject
+*    to the following conditions:
 *
-*    The above copyright notice and this permission notice shall be included in
-*    all copies or substantial portions of the Software.
+*    The above copyright notice and this permission notice (including the
+*    next paragraph) shall be included in all copies or substantial
+*    portions of the Software.
 *
-*    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-*    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-*    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-*    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-*    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-*    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-*    DEALINGS IN THE SOFTWARE.
+*    THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+*    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+*    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
+*    IN NO EVENT SHALL VIVANTE AND/OR ITS SUPPLIERS BE LIABLE FOR ANY
+*    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+*    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+*    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
+
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -415,8 +420,8 @@ vsi_nn_graph_t * vsi_nn_CreateGraph
         graph->g = vxCreateGraph( ctx->c );
         if( NULL != graph->g )
         {
-            graph->max_tensor_num = max_tensor_num;
-            graph->max_node_num = max_node_num;
+            //graph->max_tensor_num = max_tensor_num;
+            //graph->max_node_num = max_node_num;
             graph->tensor_num = 0;
             graph->node_num = 0;
             graph->ctx = ctx;
@@ -502,6 +507,7 @@ vsi_status vsi_nn_SetupGraph
     vx_reference *graph_inputs = NULL;
     uint32_t num_of_graph_outputs;
     vx_reference *graph_outputs = NULL;
+    vsi_nn_tensor_t *tensor;
 
     status = VSI_FAILURE;
     sorted_nodes = NULL;
@@ -516,13 +522,29 @@ vsi_status vsi_nn_SetupGraph
     graph_inputs = (vx_reference *)malloc( num_of_graph_inputs * sizeof( vx_reference ) );
     for( i = 0; i < num_of_graph_inputs; i++ )
     {
-        graph_inputs[i] = (vx_reference)( ( vsi_nn_GetTensor( graph, graph->input.tensors[i] ) )->t );
+        tensor = vsi_nn_GetTensor( graph, graph->input.tensors[i] );
+        if (tensor)
+        {
+            graph_inputs[i] = (vx_reference)( tensor->t );
+        }
+        else
+        {
+            graph_inputs[i] = NULL;
+        }
     }
     num_of_graph_outputs = graph->output.num;
     graph_outputs = (vx_reference *)malloc( num_of_graph_outputs * sizeof( vx_reference ) );
     for( i = 0; i < num_of_graph_outputs; i++ )
     {
-        graph_outputs[i] = (vx_reference)( ( vsi_nn_GetTensor( graph, graph->output.tensors[i] ) )->t );
+        tensor = vsi_nn_GetTensor( graph, graph->output.tensors[i] );
+        if (tensor)
+        {
+            graph_outputs[i] = (vx_reference)( tensor->t );
+        }
+        else
+        {
+            graph_outputs[i] = NULL;
+        }
     }
     status = vxIdentifyGraphInputsAndOutputs( graph->g,
         num_of_graph_inputs,
@@ -552,6 +574,11 @@ vsi_status vsi_nn_SetupGraph
     {
         VSILOGD( "Sort graph nodes.");
         sorted_nodes = vsi_nn_SortGraphNode( graph );
+        if (NULL == sorted_nodes)
+        {
+            VSILOGW("Sort graph nodes failure.");
+            return status;
+        }
         memcpy(nodes_list, sorted_nodes,
             graph->node_num * sizeof( vsi_nn_node_id_t ));
     }
@@ -705,36 +732,35 @@ static vsi_nn_tensor_id_t _add_tensor
         id = graph->cur_tid;
         graph->tensor_num = graph->cur_tid;
     }
-    if( id < graph->max_tensor_num )
+
+    if (TRUE == attr->is_created_from_handle)
     {
-        if (TRUE == attr->is_created_from_handle)
+        tensor = vsi_nn_CreateTensorFromHandle( graph, data, attr );
+    }
+    else if( VSI_NN_TYPE_VDATA == attr->dtype.vx_type )
+    {
+        if( NULL == data )
         {
-            tensor = vsi_nn_CreateTensorFromHandle( graph, data, attr );
-        }
-        else if( VSI_NN_TYPE_VDATA == attr->dtype.vx_type )
-        {
-            if( NULL == data )
-            {
-                id = VSI_NN_TENSOR_ID_NA;
-            }
-            else
-            {
-                tensor = vsi_nn_CreateVDataTensor( graph, data, attr );
-            }
-        }
-        else if( NULL != data )
-        {
-            tensor = vsi_nn_CreateTensorFromData( graph, data, attr );
+            id = VSI_NN_TENSOR_ID_NA;
         }
         else
         {
-            tensor = vsi_nn_CreateTensor( graph, attr );
+            tensor = vsi_nn_CreateVDataTensor( graph, data, attr );
         }
+    }
+    else if( NULL != data )
+    {
+        tensor = vsi_nn_CreateTensorFromData( graph, data, attr );
+    }
+    else
+    {
+        tensor = vsi_nn_CreateTensor( graph, attr );
+    }
+
+    if( NULL != tensor )
+    {
         vsi_nn_MapAdd( graph->tensor_table, (vsi_nn_map_key_t)id, (void *)tensor );
-        if( NULL != tensor )
-        {
-            graph->cur_tid ++;
-        }
+        graph->cur_tid ++;
     }
     else
     {
@@ -783,15 +809,8 @@ vsi_nn_tensor_id_t vsi_nn_AttachTensorToGraph
         id = graph->cur_tid;
         graph->tensor_num = graph->cur_tid;
     }
-    if( id < graph->max_tensor_num )
-    {
-        graph->cur_tid ++;
-        vsi_nn_MapAdd( graph->tensor_table, (vsi_nn_map_key_t)id, (void *)tensor );
-    }
-    else
-    {
-        id = VSI_NN_TENSOR_ID_NA;
-    }
+    graph->cur_tid ++;
+    vsi_nn_MapAdd( graph->tensor_table, (vsi_nn_map_key_t)id, (void *)tensor );
     return id;
 } /* vsi_nn_AttachTensorToGraph() */
 
@@ -1090,7 +1109,10 @@ vsi_nn_node_id_t * vsi_nn_SortGraphNode
     for( i = 0; i < graph->input.num; i++ )
     {
         tensor_id = graph->input.tensors[i];
-        tensors[tensor_id] = TRUE;
+        if( tensor_id != VSI_NN_TENSOR_ID_NA )
+        {
+            tensors[tensor_id] = TRUE;
+        }
     }
 
     for( i = 0; i < graph->node_num; i++ )
@@ -1111,7 +1133,7 @@ vsi_nn_node_id_t * vsi_nn_SortGraphNode
                 tensor_id = node->input.tensors[j];
                 if( VSI_NN_TENSOR_ID_NA == tensor_id )
                 {
-                    break;
+                    continue;
                 }
                 if( FALSE == tensors[tensor_id] )
                 {
@@ -1131,7 +1153,7 @@ vsi_nn_node_id_t * vsi_nn_SortGraphNode
                     tensor_id = node->output.tensors[j];
                     if( VSI_NN_TENSOR_ID_NA == tensor_id )
                     {
-                        break;
+                        continue;
                     }
                     tensors[tensor_id] = TRUE;
                 }
@@ -1139,6 +1161,11 @@ vsi_nn_node_id_t * vsi_nn_SortGraphNode
         }
         if( FALSE == dirty )
         {
+            if( FALSE == all_tensor_processed )
+            {
+                // TODO: Log all unprocessed tensors
+                VSILOGW("Unprocessed node %u", node_id);
+            }
             break;
         }
     } while( count > 0 );
@@ -1280,35 +1307,37 @@ void vsi_nn_DumpGraphNodeOutputsEx
     for( i = 0; i < node_num; i++ )
     {
         node = vsi_nn_GetNode( graph, (vsi_nn_node_id_t)i );
-        if( node->op == VSI_NN_OP_LSTMUNIT_OVXLIB )
-        {
-            vsi_nn_internal_node_t* internal_node;
-            uint32_t internal_node_count = _cnt_of_array( node->nn_param.lstmunit_ovxlib.local.nodes );
-            uint32_t j = 0;
 
-            for( j = 0; j < internal_node_count; j++ )
+        if( node->internal_node_wksp ) /* dump internal nodes if any */
+        {
+            vsi_nn_internal_node_t* curr = NULL;
+            vsi_nn_internal_node_t* head = NULL;
+
+            head = ((vsi_nn_internal_node_wksp_t *)node->internal_node_wksp)->nodes;
+            while( NULL != head )
             {
-                internal_node = node->nn_param.lstmunit_ovxlib.local.nodes[j];
-                if( internal_node )
+                curr = (vsi_nn_internal_node_t *)vsi_nn_LinkListPopStart(
+                    (vsi_nn_link_list_t **)&head );
+                if( curr )
                 {
-                    for( o = 0; o < internal_node->node->output.num; o++ )
+                    for( o = 0; o < curr->node->output.num; o++ )
                     {
-                        tensor = internal_node->outputs[o];
+                        tensor = curr->outputs[o];
                         if( tensor )
                         {
                             if( TRUE == tensor->attr.vtl )
                             {
                                 VSILOGW("Uid %u node's tensor %d is virtual",
-                                    internal_node->node->uid, o);
+                                    curr->node->uid, o);
                                 continue;
                             }
                             // TODO: Support different tensor format
                             vsi_nn_ShapeToString( tensor->attr.size, tensor->attr.dim_num,
                                 shape, _SHAPE_BUF_SZ, FALSE );
-                            op_name = vsi_nn_OpGetName( internal_node->node->op );
+                            op_name = vsi_nn_OpGetName( curr->node->op );
                             snprintf( filename, _MAX_TENSOR_NAME_SZ,
                                 "%s/%s%s_uid_%u_sub_%u_t_%u_s_%s.txt", path, filename_prefix,
-                                op_name, node->uid, internal_node->node->uid, o, shape);
+                                op_name, node->uid, curr->node->uid, o, shape);
                             if( FALSE == force_fp32 )
                             {
                                 vsi_nn_SaveTensorToText( graph, tensor, filename, NULL );

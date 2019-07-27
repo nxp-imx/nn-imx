@@ -1,26 +1,31 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright 2012 - 2019 Vivante Corporation, Santa Clara, California.
+*    All Rights Reserved.
 *
-*    Permission is hereby granted, free of charge, to any person obtaining a
-*    copy of this software and associated documentation files (the "Software"),
-*    to deal in the Software without restriction, including without limitation
-*    the rights to use, copy, modify, merge, publish, distribute, sublicense,
-*    and/or sell copies of the Software, and to permit persons to whom the
-*    Software is furnished to do so, subject to the following conditions:
+*    Permission is hereby granted, free of charge, to any person obtaining
+*    a copy of this software and associated documentation files (the
+*    'Software'), to deal in the Software without restriction, including
+*    without limitation the rights to use, copy, modify, merge, publish,
+*    distribute, sub license, and/or sell copies of the Software, and to
+*    permit persons to whom the Software is furnished to do so, subject
+*    to the following conditions:
 *
-*    The above copyright notice and this permission notice shall be included in
-*    all copies or substantial portions of the Software.
+*    The above copyright notice and this permission notice (including the
+*    next paragraph) shall be included in all copies or substantial
+*    portions of the Software.
 *
-*    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-*    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-*    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-*    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-*    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-*    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-*    DEALINGS IN THE SOFTWARE.
+*    THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+*    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+*    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
+*    IN NO EVENT SHALL VIVANTE AND/OR ITS SUPPLIERS BE LIABLE FOR ANY
+*    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+*    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+*    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -42,8 +47,8 @@
 #define _VX_KERNEL_FUNC_KERNEL  (vxnneSWLSTMUnitActivationKernel)
 
 #define ARG_NUM           (1)
-#define TENSOR_NUM_INPUT  (11)
-#define TENSOR_NUM_OUTPUT (3)
+#define TENSOR_NUM_INPUT  (LSTMUNIT_ACT_INPUTS_COUNT)
+#define TENSOR_NUM_OUTPUT (LSTMUNIT_ACT_OUTUTS_COUNT)
 #define TENSOR_NUM (TENSOR_NUM_INPUT+TENSOR_NUM_OUTPUT)
 
 /* c -> cifg, l -> layer norm, p -> projection, h -> peephole, b -> hybrid bias fp32, s -> standard*/
@@ -88,6 +93,31 @@ static vsi_status vsi_nn_Float32ToDtype_Ext
     return vsi_nn_DtypeConvert( (uint8_t *)&src, &src_dtype, dst, dst_dtype );
 } /* vsi_nn_Float32ToDtype_Ext */
 
+float activationFunctor(float a, vsi_nn_lstmunit_activation_e act_)
+{
+    switch (act_)
+    {
+      case VSI_NN_LSTMUNIT_ACT_NONE:
+        return a;
+      case VSI_NN_LSTMUNIT_ACT_RELU:
+        return a < 0.f ? 0.f : a;
+      case VSI_NN_LSTMUNIT_ACT_RELU6:
+        return vsi_nn_max(0.f, vsi_nn_min(a, 6.f));
+      case VSI_NN_LSTMUNIT_ACT_TANH:
+        return (float)tanh(a);
+      case VSI_NN_LSTMUNIT_ACT_SIGMOID:
+        return (float)(1.0f / (1.0f + exp(-a)));
+      case VSI_NN_LSTMUNIT_ACT_HARD_SIGMOID:
+          a = a * 0.2f + 0.5f;
+        return vsi_nn_max(0.f, vsi_nn_min(a, 1.f));
+      default:
+        // TODO(aselle): More informative fatal error!
+        exit(1);
+    }
+
+    return a;
+  }
+
 #define gcoMATH_Exp(X)        (float)(expf((X)))
 #define gcoMATH_TangentH(X)   (float)(tanhf((X)))
 static vsi_status VX_CALLBACK vxnneSWLSTMUnitActivationKernel
@@ -131,15 +161,14 @@ static vsi_status VX_CALLBACK vxnneSWLSTMUnitActivationKernel
             &(attr[i]), stride_size[i], &(user_addr[i]), VX_WRITE_ONLY);
     }
 
-    n_cell  = attr[ACT_CSTATE_IN].size[0];
-    n_batch = attr[ACT_CSTATE_IN].size[1];
+    n_cell  = attr[LSTMUNIT_ACT_CSTATE_IN].size[0];
+    n_batch = attr[LSTMUNIT_ACT_CSTATE_IN].size[1];
 
     for (b = 0; b < n_batch; b ++)
     {
         for (i = 0; i < n_cell; i++)
         {
             uint32_t index = i + n_cell * b;
-            uint32_t idx   = 0;
             float    data_i_t = 0;
             float    data_f_t = 0;
             float    data_g_t = 0;
@@ -147,120 +176,102 @@ static vsi_status VX_CALLBACK vxnneSWLSTMUnitActivationKernel
             float    data_c_t = 0;
             float    data_h_t = 0;
 
-            data_i_t = p->is_cifg ? 0 : vsi_nn_DtypeToFloat32_Ex(buffer_ptr[ACT_INPUT_FC_I],
-                index, &attr[ACT_INPUT_FC_I].dtype);
+            data_i_t = p->is_cifg ? 0 : vsi_nn_DtypeToFloat32_Ex(buffer_ptr[LSTMUNIT_ACT_INPUT_FC_I],
+                index, &attr[LSTMUNIT_ACT_INPUT_FC_I].dtype);
 
-            data_f_t = vsi_nn_DtypeToFloat32_Ex(buffer_ptr[ACT_INPUT_FC_F],
-                index, &attr[ACT_INPUT_FC_F].dtype);
+            data_f_t = vsi_nn_DtypeToFloat32_Ex(buffer_ptr[LSTMUNIT_ACT_INPUT_FC_F],
+                index, &attr[LSTMUNIT_ACT_INPUT_FC_F].dtype);
 
-            data_g_t = vsi_nn_DtypeToFloat32_Ex(buffer_ptr[ACT_INPUT_FC_C],
-                index, &attr[ACT_INPUT_FC_C].dtype);
+            data_g_t = vsi_nn_DtypeToFloat32_Ex(buffer_ptr[LSTMUNIT_ACT_INPUT_FC_C],
+                index, &attr[LSTMUNIT_ACT_INPUT_FC_C].dtype);
 
-            data_o_t = vsi_nn_DtypeToFloat32_Ex(buffer_ptr[ACT_INPUT_FC_O],
-                index, &attr[ACT_INPUT_FC_O].dtype);
+            data_o_t = vsi_nn_DtypeToFloat32_Ex(buffer_ptr[LSTMUNIT_ACT_INPUT_FC_O],
+                index, &attr[LSTMUNIT_ACT_INPUT_FC_O].dtype);
 
-            data_c_t = vsi_nn_DtypeToFloat32_Ex(buffer_ptr[ACT_CSTATE_IN],
-                index, &attr[ACT_CSTATE_IN].dtype);
+            data_c_t = vsi_nn_DtypeToFloat32_Ex(buffer_ptr[LSTMUNIT_ACT_CSTATE_IN],
+                index, &attr[LSTMUNIT_ACT_CSTATE_IN].dtype);
 
             if (!p->is_layer_norm)
             {
-                data_i_t += p->is_cifg ? 0 : vsi_nn_DtypeToFloat32_Ex(buffer_ptr[ACT_HSTATE_FC_I],
-                    index, &attr[ACT_HSTATE_FC_I].dtype);
+                data_i_t += p->is_cifg ? 0 : vsi_nn_DtypeToFloat32_Ex(buffer_ptr[LSTMUNIT_ACT_HSTATE_FC_I],
+                    index, &attr[LSTMUNIT_ACT_HSTATE_FC_I].dtype);
 
-                data_f_t += vsi_nn_DtypeToFloat32_Ex(buffer_ptr[ACT_HSTATE_FC_F],
-                    index, &attr[ACT_HSTATE_FC_F].dtype);
+                data_f_t += vsi_nn_DtypeToFloat32_Ex(buffer_ptr[LSTMUNIT_ACT_HSTATE_FC_F],
+                    index, &attr[LSTMUNIT_ACT_HSTATE_FC_F].dtype);
 
-                data_g_t += vsi_nn_DtypeToFloat32_Ex(buffer_ptr[ACT_HSTATE_FC_C],
-                    index, &attr[ACT_HSTATE_FC_C].dtype);
+                data_g_t += vsi_nn_DtypeToFloat32_Ex(buffer_ptr[LSTMUNIT_ACT_HSTATE_FC_C],
+                    index, &attr[LSTMUNIT_ACT_HSTATE_FC_C].dtype);
 
-                data_o_t += vsi_nn_DtypeToFloat32_Ex(buffer_ptr[ACT_HSTATE_FC_O],
-                    index, &attr[ACT_HSTATE_FC_O].dtype);
+                data_o_t += vsi_nn_DtypeToFloat32_Ex(buffer_ptr[LSTMUNIT_ACT_HSTATE_FC_O],
+                    index, &attr[LSTMUNIT_ACT_HSTATE_FC_O].dtype);
             }
 
-            if (p->is_cifg)
+            if (!p->is_cifg)
             {
-                idx   = (i >> 2) * 12 + i % 4;
-            }
-            else
-            {
-                idx   = (i >> 2) * 16 + i % 4;
-
                 if (p->is_layer_norm)
                 {
-                    data_i_t *= vsi_nn_DtypeToFloat32_Ex(buffer_ptr[ACT_LN_W],
-                        idx, &attr[ACT_LN_W].dtype);
-                    data_i_t += vsi_nn_DtypeToFloat32_Ex(buffer_ptr[ACT_DATA_B],
-                        idx, &attr[ACT_DATA_B].dtype);
-
-                    idx += 4;
+                    data_i_t *= vsi_nn_DtypeToFloat32_Ex(buffer_ptr[LSTMUNIT_ACT_LN_WI],
+                        i, &attr[LSTMUNIT_ACT_LN_WI].dtype);
+                    data_i_t += vsi_nn_DtypeToFloat32_Ex(buffer_ptr[LSTMUNIT_ACT_DATA_BI],
+                        i, &attr[LSTMUNIT_ACT_DATA_BI].dtype);
                 }
                 else if (p->is_hybrid)
                 {
-                    data_i_t += vsi_nn_DtypeToFloat32_Ex(buffer_ptr[ACT_DATA_B],
-                        idx, &attr[ACT_DATA_B].dtype);
-
-                    idx += 4;
+                    data_i_t += vsi_nn_DtypeToFloat32_Ex(buffer_ptr[LSTMUNIT_ACT_DATA_BI],
+                        i, &attr[LSTMUNIT_ACT_DATA_BI].dtype);
                 }
             }
 
             if (p->is_layer_norm)
             {
-                data_f_t *= vsi_nn_DtypeToFloat32_Ex(buffer_ptr[ACT_LN_W],
-                    idx, &attr[ACT_LN_W].dtype);
-                data_f_t += vsi_nn_DtypeToFloat32_Ex(buffer_ptr[ACT_DATA_B],
-                    idx, &attr[ACT_DATA_B].dtype);
+                data_f_t *= vsi_nn_DtypeToFloat32_Ex(buffer_ptr[LSTMUNIT_ACT_LN_WF],
+                    i, &attr[LSTMUNIT_ACT_LN_WF].dtype);
+                data_f_t += vsi_nn_DtypeToFloat32_Ex(buffer_ptr[LSTMUNIT_ACT_DATA_BF],
+                    i, &attr[LSTMUNIT_ACT_DATA_BF].dtype);
 
-                idx += 4;
+                data_g_t *= vsi_nn_DtypeToFloat32_Ex(buffer_ptr[LSTMUNIT_ACT_LN_WC],
+                    i, &attr[LSTMUNIT_ACT_LN_WC].dtype);
+                data_g_t += vsi_nn_DtypeToFloat32_Ex(buffer_ptr[LSTMUNIT_ACT_DATA_BC],
+                    i, &attr[LSTMUNIT_ACT_DATA_BC].dtype);
 
-                data_g_t *= vsi_nn_DtypeToFloat32_Ex(buffer_ptr[ACT_LN_W],
-                    idx, &attr[ACT_LN_W].dtype);
-                data_g_t += vsi_nn_DtypeToFloat32_Ex(buffer_ptr[ACT_DATA_B],
-                    idx, &attr[ACT_DATA_B].dtype);
-
-                idx += 4;
-
-                data_o_t *= vsi_nn_DtypeToFloat32_Ex(buffer_ptr[ACT_LN_W],
-                    idx, &attr[ACT_LN_W].dtype);
-                data_o_t += vsi_nn_DtypeToFloat32_Ex(buffer_ptr[ACT_DATA_B],
-                    idx, &attr[ACT_DATA_B].dtype);
+                data_o_t *= vsi_nn_DtypeToFloat32_Ex(buffer_ptr[LSTMUNIT_ACT_LN_WO],
+                    i, &attr[LSTMUNIT_ACT_LN_WO].dtype);
+                data_o_t += vsi_nn_DtypeToFloat32_Ex(buffer_ptr[LSTMUNIT_ACT_DATA_BO],
+                    i, &attr[LSTMUNIT_ACT_DATA_BO].dtype);
             }
             else if (p->is_hybrid)
             {
-                data_f_t += vsi_nn_DtypeToFloat32_Ex(buffer_ptr[ACT_DATA_B],
-                    idx, &attr[ACT_DATA_B].dtype);
+                data_f_t += vsi_nn_DtypeToFloat32_Ex(buffer_ptr[LSTMUNIT_ACT_DATA_BF],
+                    i, &attr[LSTMUNIT_ACT_DATA_BF].dtype);
 
-                idx += 4;
+                data_g_t += vsi_nn_DtypeToFloat32_Ex(buffer_ptr[LSTMUNIT_ACT_DATA_BC],
+                    i, &attr[LSTMUNIT_ACT_DATA_BC].dtype);
 
-                data_g_t += vsi_nn_DtypeToFloat32_Ex(buffer_ptr[ACT_DATA_B],
-                    idx, &attr[ACT_DATA_B].dtype);
-
-                idx += 4;
-
-                data_o_t += vsi_nn_DtypeToFloat32_Ex(buffer_ptr[ACT_DATA_B],
-                    idx, &attr[ACT_DATA_B].dtype);
+                data_o_t += vsi_nn_DtypeToFloat32_Ex(buffer_ptr[LSTMUNIT_ACT_DATA_BO],
+                    i, &attr[LSTMUNIT_ACT_DATA_BO].dtype);
             }
 
             data_f_t += p->forget_bias;
 
-            data_f_t = 1.0f / (1 + gcoMATH_Exp(data_f_t * (-1)));
+            data_f_t = activationFunctor(data_f_t, p->recurrent_activation);
             if (p->is_cifg)
                 data_i_t = 1 - data_f_t;
             else
-                data_i_t = 1.0f / (1 + gcoMATH_Exp(data_i_t * (-1)));
+                data_i_t = activationFunctor(data_i_t, p->recurrent_activation);
             data_g_t = gcoMATH_TangentH(data_g_t);
-            data_o_t = 1.0f / (1 + gcoMATH_Exp(data_o_t * (-1)));
+            data_o_t = activationFunctor(data_o_t, p->recurrent_activation);
             data_c_t = data_f_t * data_c_t + data_i_t * data_g_t;
             data_h_t = data_o_t * gcoMATH_TangentH(data_c_t);
 
-            vsi_nn_Float32ToDtype_Ext(data_c_t, buffer_ptr[ACT_CSTATE_OUT + ACT_INPUTS_COUNT],
-                index, &attr[ACT_CSTATE_OUT + ACT_INPUTS_COUNT].dtype);
-            vsi_nn_Float32ToDtype_Ext(data_h_t, buffer_ptr[ACT_OUTPUT + ACT_INPUTS_COUNT],
-                index, &attr[ACT_OUTPUT + ACT_INPUTS_COUNT].dtype);
+            vsi_nn_Float32ToDtype_Ext(data_c_t, buffer_ptr[LSTMUNIT_ACT_CSTATE_OUT + LSTMUNIT_ACT_INPUTS_COUNT],
+                index, &attr[LSTMUNIT_ACT_CSTATE_OUT + LSTMUNIT_ACT_INPUTS_COUNT].dtype);
+            vsi_nn_Float32ToDtype_Ext(data_h_t, buffer_ptr[LSTMUNIT_ACT_OUTPUT + LSTMUNIT_ACT_INPUTS_COUNT],
+                index, &attr[LSTMUNIT_ACT_OUTPUT + LSTMUNIT_ACT_INPUTS_COUNT].dtype);
 
             if (!p->is_projection)
             {
-                vsi_nn_Float32ToDtype_Ext(data_h_t, buffer_ptr[ACT_HSTATE_OUT + ACT_INPUTS_COUNT],
-                    index, &attr[ACT_HSTATE_OUT + ACT_INPUTS_COUNT].dtype);
+                vsi_nn_Float32ToDtype_Ext(data_h_t, buffer_ptr[LSTMUNIT_ACT_HSTATE_OUT + LSTMUNIT_ACT_INPUTS_COUNT],
+                    index, &attr[LSTMUNIT_ACT_HSTATE_OUT + LSTMUNIT_ACT_INPUTS_COUNT].dtype);
             }
         }
     }
@@ -306,8 +317,14 @@ static vx_param_description_t sw_params[] =
     { VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_OPTIONAL },  /*6  hstate_fc_f */
     { VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_OPTIONAL },  /*7  hstate_fc_c */
     { VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_OPTIONAL },  /*8  hstate_fc_o */
-    { VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_OPTIONAL },  /*9  biases*/
-    { VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_OPTIONAL },  /*10 ln_w*/
+    { VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_OPTIONAL },  /*9  biases_i*/
+    { VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_OPTIONAL },  /*10 biases_f*/
+    { VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_OPTIONAL },  /*11 biases_c*/
+    { VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_OPTIONAL },  /*12 biases_o*/
+    { VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_OPTIONAL },  /*13 ln_w_i*/
+    { VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_OPTIONAL },  /*14 ln_w_f*/
+    { VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_OPTIONAL },  /*15 ln_w_c*/
+    { VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_OPTIONAL },  /*16 ln_w_o*/
 
     { VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED }, /*11 output*/
     { VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED }, /*12 cs_out*/
@@ -321,8 +338,12 @@ typedef enum _lstmunit_cifg_ln_proj_e
     CLP_INPUT_FC_C,
     CLP_INPUT_FC_O,
     CLP_CSTATE_IN,
-    CLP_BIASES,
-    CLP_LN_W,
+    CLP_BIASES_F,
+    CLP_BIASES_C,
+    CLP_BIASES_O,
+    CLP_LN_WF,
+    CLP_LN_WC,
+    CLP_LN_WO,
     CLP_OUTPUT,
     CLP_CSTATE_OUT,
     CLP_PARAM
@@ -330,6 +351,10 @@ typedef enum _lstmunit_cifg_ln_proj_e
 
 static vx_param_description_t vxLSTMUNIT_CLP_Param[] =
 {
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
@@ -347,8 +372,12 @@ typedef enum _lstmunit_cifg_ln_e
     CL_INPUT_FC_C,
     CL_INPUT_FC_O,
     CL_CSTATE_IN,
-    CL_BIASES,
-    CL_LN_W,
+    CL_BIASES_F,
+    CL_BIASES_C,
+    CL_BIASES_O,
+    CL_LN_WF,
+    CL_LN_WC,
+    CL_LN_WO,
     CL_OUTPUT,
     CL_CSTATE_OUT,
     CL_HSTATE_OUT,
@@ -357,6 +386,10 @@ typedef enum _lstmunit_cifg_ln_e
 
 static vx_param_description_t vxLSTMUNIT_CL_Param[] =
 {
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
@@ -376,8 +409,14 @@ typedef enum _lstmunit_ln_proj_e
     LP_INPUT_FC_C,
     LP_INPUT_FC_O,
     LP_CSTATE_IN,
-    LP_BIASES,
-    LP_LN_W,
+    LP_BIASES_I,
+    LP_BIASES_F,
+    LP_BIASES_C,
+    LP_BIASES_O,
+    LP_LN_WI,
+    LP_LN_WF,
+    LP_LN_WC,
+    LP_LN_WO,
     LP_OUTPUT,
     LP_CSTATE_OUT,
     LP_PARAM
@@ -385,6 +424,12 @@ typedef enum _lstmunit_ln_proj_e
 
 static vx_param_description_t vxLSTMUNIT_LP_Param[] =
 {
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
@@ -404,8 +449,14 @@ typedef enum _lstmunit_ln_e
     L_INPUT_FC_C,
     L_INPUT_FC_O,
     L_CSTATE_IN,
-    L_BIASES,
-    L_LN_W,
+    L_BIASES_I,
+    L_BIASES_F,
+    L_BIASES_C,
+    L_BIASES_O,
+    L_LN_WI,
+    L_LN_WF,
+    L_LN_WC,
+    L_LN_WO,
     L_OUTPUT,
     L_CSTATE_OUT,
     L_HSTATE_OUT,
@@ -414,6 +465,12 @@ typedef enum _lstmunit_ln_e
 
 static vx_param_description_t vxLSTMUNIT_L_Param[] =
 {
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
@@ -438,7 +495,10 @@ typedef enum _lstmunit_hybrid_proj_e
     BP_HSTATE_FC_F,
     BP_HSTATE_FC_C,
     BP_HSTATE_FC_O,
-    BP_BIASES,
+    BP_BIASES_I,
+    BP_BIASES_F,
+    BP_BIASES_C,
+    BP_BIASES_O,
     BP_OUTPUT,
     BP_CSTATE_OUT,
     BP_PARAM
@@ -446,6 +506,9 @@ typedef enum _lstmunit_hybrid_proj_e
 
 static vx_param_description_t vxLSTMUNIT_BP_Param[] =
 {
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
@@ -472,7 +535,10 @@ typedef enum _lstmunit_hybrid_e
     B_HSTATE_FC_F,
     B_HSTATE_FC_C,
     B_HSTATE_FC_O,
-    B_BIASES,
+    B_BIASES_I,
+    B_BIASES_F,
+    B_BIASES_C,
+    B_BIASES_O,
     B_OUTPUT,
     B_CSTATE_OUT,
     B_HSTATE_OUT,
@@ -481,6 +547,9 @@ typedef enum _lstmunit_hybrid_e
 
 static vx_param_description_t vxLSTMUNIT_B_Param[] =
 {
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
@@ -506,7 +575,9 @@ typedef enum _lstmunit_cifg_hybrid_proj_e
     CBP_HSTATE_FC_F,
     CBP_HSTATE_FC_C,
     CBP_HSTATE_FC_O,
-    CBP_BIASES,
+    CBP_BIASES_F,
+    CBP_BIASES_C,
+    CBP_BIASES_O,
     CBP_OUTPUT,
     CBP_CSTATE_OUT,
     CBP_PARAM
@@ -514,6 +585,8 @@ typedef enum _lstmunit_cifg_hybrid_proj_e
 
 static vx_param_description_t vxLSTMUNIT_CBP_Param[] =
 {
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
@@ -536,7 +609,9 @@ typedef enum _lstmunit_cifg_hybrid_e
     CB_HSTATE_FC_F,
     CB_HSTATE_FC_C,
     CB_HSTATE_FC_O,
-    CB_BIASES,
+    CB_BIASES_F,
+    CB_BIASES_C,
+    CB_BIASES_O,
     CB_OUTPUT,
     CB_CSTATE_OUT,
     CB_HSTATE_OUT,
@@ -545,6 +620,8 @@ typedef enum _lstmunit_cifg_hybrid_e
 
 static vx_param_description_t vxLSTMUNIT_CB_Param[] =
 {
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
@@ -959,6 +1036,9 @@ vx_status VX_CALLBACK vxLSTMUnit_Activation_Initializer
 extern "C" {
 #endif
 
+#define GEN_SH_KERNEL_NAME(_C_L_P_H, _INPUT_TYPE, _OUTPUT_TYPE, _CELL_TYPE, _ACTIVATION) \
+    "com.vivantecorp.extension.vxLSTMUnit_"#_C_L_P_H"_"#_INPUT_TYPE"to"#_OUTPUT_TYPE"_"#_CELL_TYPE#_ACTIVATION
+
 vx_kernel_description_t vxLSTMUnit_SW_Kernel =
 {
     _VX_KERNEL_ID,
@@ -973,14 +1053,15 @@ vx_kernel_description_t vxLSTMUnit_SW_Kernel =
     vsi_nn_KernelDeinitializer
 };
 
-#define LSTMUINT_KERENLS(src_type, dst_type, cell_type, feature) \
-    vx_kernel_description_t vxLSTMUnit_##feature##_##src_type##to##dst_type##_##cell_type##_Kernel = \
+#define LSTMUINT_KERENLS(_C_L_P_H, _INPUT_TYPE, _OUTPUT_TYPE, _CELL_TYPE, _ACTIVATION) \
+    vx_kernel_description_t vxLSTMUnit_##_C_L_P_H##_##_INPUT_TYPE##to##_OUTPUT_TYPE## \
+_##_CELL_TYPE##_ACTIVATION##_Kernel = \
 { \
     _VX_KERNEL_ID, \
-    VX_KERNEL_NAME_LSTMUNIT_##feature##_##src_type##to##dst_type##_CELL_##cell_type, \
+    GEN_SH_KERNEL_NAME(_C_L_P_H, _INPUT_TYPE, _OUTPUT_TYPE, _CELL_TYPE, _ACTIVATION), \
     NULL, \
-    vxLSTMUNIT_##feature##_Param, \
-    _cnt_of_array( vxLSTMUNIT_##feature##_Param ), \
+    vxLSTMUNIT_##_C_L_P_H##_Param, \
+    _cnt_of_array( vxLSTMUNIT_##_C_L_P_H##_Param ), \
     vsi_nn_KernelValidator, \
     NULL, \
     NULL, \
@@ -988,191 +1069,724 @@ vx_kernel_description_t vxLSTMUnit_SW_Kernel =
     vsi_nn_KernelDeinitializer \
 };
 
-/* lstm unit activation: layer norm */
-LSTMUINT_KERENLS(F16, F16, F32, CLP)
-LSTMUINT_KERENLS(F16, F16, F16, CLP)
-LSTMUINT_KERENLS(F16, F16, F32, LP)
-LSTMUINT_KERENLS(F16, F16, F16, LP)
-LSTMUINT_KERENLS(F16, F16, F16, CL)
-LSTMUINT_KERENLS(F16, I16, F16, CL)
-LSTMUINT_KERENLS(F16, I8,  F16, CL)
-LSTMUINT_KERENLS(F16, U8,  F16, CL)
-LSTMUINT_KERENLS(F16, F16, F32, CL)
-LSTMUINT_KERENLS(F16, I16, F32, CL)
-LSTMUINT_KERENLS(F16, I8,  F32, CL)
-LSTMUINT_KERENLS(F16, U8,  F32, CL)
-LSTMUINT_KERENLS(F16, F16, F16, L)
-LSTMUINT_KERENLS(F16, I16, F16, L)
-LSTMUINT_KERENLS(F16, I8,  F16, L)
-LSTMUINT_KERENLS(F16, U8,  F16, L)
-LSTMUINT_KERENLS(F16, F16, F32, L)
-LSTMUINT_KERENLS(F16, I16, F32, L)
-LSTMUINT_KERENLS(F16, I8,  F32, L)
-LSTMUINT_KERENLS(F16, U8,  F32, L)
-/* lstm unit activation: hybrid fp16 */
-LSTMUINT_KERENLS(F16, F16, F32, BP)
-LSTMUINT_KERENLS(F16, F16, F16, BP)
-LSTMUINT_KERENLS(F16, F16, F16, B)
-LSTMUINT_KERENLS(F16, I16, F16, B)
-LSTMUINT_KERENLS(F16, I8,  F16, B)
-LSTMUINT_KERENLS(F16, U8,  F16, B)
-LSTMUINT_KERENLS(F16, F16, F32, B)
-LSTMUINT_KERENLS(F16, I16, F32, B)
-LSTMUINT_KERENLS(F16, I8,  F32, B)
-LSTMUINT_KERENLS(F16, U8,  F32, B)
-LSTMUINT_KERENLS(F16, F16, F32, CBP)
-LSTMUINT_KERENLS(F16, F16, F16, CBP)
-LSTMUINT_KERENLS(F16, F16, F16, CB)
-LSTMUINT_KERENLS(F16, I16, F16, CB)
-LSTMUINT_KERENLS(F16, I8,  F16, CB)
-LSTMUINT_KERENLS(F16, U8,  F16, CB)
-LSTMUINT_KERENLS(F16, F16, F32, CB)
-LSTMUINT_KERENLS(F16, I16, F32, CB)
-LSTMUINT_KERENLS(F16, I8,  F32, CB)
-LSTMUINT_KERENLS(F16, U8,  F32, CB)
-/* lstm unit activation: hybrid u8 */
-LSTMUINT_KERENLS(U8, F16, F32, BP)
-LSTMUINT_KERENLS(U8, F16, F16, BP)
-LSTMUINT_KERENLS(U8, F16, F16, B)
-LSTMUINT_KERENLS(U8, U8,  F16, B)
-LSTMUINT_KERENLS(U8, F16, F32, B)
-LSTMUINT_KERENLS(U8, U8,  F32, B)
-LSTMUINT_KERENLS(U8, F16, F32, CBP)
-LSTMUINT_KERENLS(U8, F16, F16, CBP)
-LSTMUINT_KERENLS(U8, F16, F16, CB)
-LSTMUINT_KERENLS(U8, U8,  F16, CB)
-LSTMUINT_KERENLS(U8, F16, F32, CB)
-LSTMUINT_KERENLS(U8, U8,  F32, CB)
-/* lstm unit activation: standard fp16 */
-LSTMUINT_KERENLS(F16, F16, F32, SP)
-LSTMUINT_KERENLS(F16, F16, F16, SP)
-LSTMUINT_KERENLS(F16, F16, F16, S)
-LSTMUINT_KERENLS(F16, I16, F16, S)
-LSTMUINT_KERENLS(F16, I8,  F16, S)
-LSTMUINT_KERENLS(F16, U8,  F16, S)
-LSTMUINT_KERENLS(F16, F16, F32, S)
-LSTMUINT_KERENLS(F16, I16, F32, S)
-LSTMUINT_KERENLS(F16, I8,  F32, S)
-LSTMUINT_KERENLS(F16, U8,  F32, S)
-LSTMUINT_KERENLS(F16, F16, F32, CSP)
-LSTMUINT_KERENLS(F16, F16, F16, CSP)
-LSTMUINT_KERENLS(F16, F16, F16, CS)
-LSTMUINT_KERENLS(F16, I16, F16, CS)
-LSTMUINT_KERENLS(F16, I8,  F16, CS)
-LSTMUINT_KERENLS(F16, U8,  F16, CS)
-LSTMUINT_KERENLS(F16, F16, F32, CS)
-LSTMUINT_KERENLS(F16, I16, F32, CS)
-LSTMUINT_KERENLS(F16, I8,  F32, CS)
-LSTMUINT_KERENLS(F16, U8,  F32, CS)
-/* lstm unit activation: standard u8 */
-LSTMUINT_KERENLS(U8, F16, F32, SP)
-LSTMUINT_KERENLS(U8, F16, F16, SP)
-LSTMUINT_KERENLS(U8, F16, F16, S)
-LSTMUINT_KERENLS(U8, U8,  F16, S)
-LSTMUINT_KERENLS(U8, F16, F32, S)
-LSTMUINT_KERENLS(U8, U8,  F32, S)
-LSTMUINT_KERENLS(U8, F16, F32, CSP)
-LSTMUINT_KERENLS(U8, F16, F16, CSP)
-LSTMUINT_KERENLS(U8, F16, F16, CS)
-LSTMUINT_KERENLS(U8, U8,  F16, CS)
-LSTMUINT_KERENLS(U8, F16, F32, CS)
-LSTMUINT_KERENLS(U8, U8,  F32, CS)
+    /* layer norm + cifg + projection */
+    LSTMUINT_KERENLS(CLP, F16, F16, F32, )
+    LSTMUINT_KERENLS(CLP, F16, F16, F16, )
+    /* layer norm + projection */
+    LSTMUINT_KERENLS(LP,  F16, F16, F32, )
+    LSTMUINT_KERENLS(LP,  F16, F16, F16, )
+    /* layer norm + cifg */
+    LSTMUINT_KERENLS(CL,  F16, F16, F16, )
+    LSTMUINT_KERENLS(CL,  F16, I16, F16, )
+    LSTMUINT_KERENLS(CL,  F16, I8,  F16, )
+    LSTMUINT_KERENLS(CL,  F16, U8,  F16, )
+    LSTMUINT_KERENLS(CL,  F16, F16, F32, )
+    LSTMUINT_KERENLS(CL,  F16, I16, F32, )
+    LSTMUINT_KERENLS(CL,  F16, I8,  F32, )
+    LSTMUINT_KERENLS(CL,  F16, U8,  F32, )
+    /* layer norm */
+    LSTMUINT_KERENLS(L,   F16, F16, F16, )
+    LSTMUINT_KERENLS(L,   F16, I16, F16, )
+    LSTMUINT_KERENLS(L,   F16, I8,  F16, )
+    LSTMUINT_KERENLS(L,   F16, U8,  F16, )
+    LSTMUINT_KERENLS(L,   F16, F16, F32, )
+    LSTMUINT_KERENLS(L,   F16, I16, F32, )
+    LSTMUINT_KERENLS(L,   F16, I8,  F32, )
+    LSTMUINT_KERENLS(L,   F16, U8,  F32, )
 
-#define LSTMUINT_KERENL_NAME(src_type,dst_type, cell_type, feature) \
-    &vxLSTMUnit_##feature##_##src_type##to##dst_type##_##cell_type##_Kernel,
+    /* layer norm + cifg + projection */
+    LSTMUINT_KERENLS(CLP, F16, I16, F32, )
+    LSTMUINT_KERENLS(CLP, F16, I8,  F32, )
+    LSTMUINT_KERENLS(CLP, F16, U8,  F32, )
+    LSTMUINT_KERENLS(CLP, F16, I16, F16, )
+    LSTMUINT_KERENLS(CLP, F16, I8,  F16, )
+    LSTMUINT_KERENLS(CLP, F16, U8,  F16, )
+    /* layer norm + projection */
+    LSTMUINT_KERENLS(LP,  F16, I16, F32, )
+    LSTMUINT_KERENLS(LP,  F16, I8,  F32, )
+    LSTMUINT_KERENLS(LP,  F16, U8,  F32, )
+    LSTMUINT_KERENLS(LP,  F16, I16, F16, )
+    LSTMUINT_KERENLS(LP,  F16, I8,  F16, )
+    LSTMUINT_KERENLS(LP,  F16, U8,  F16, )
+
+    /* hybrid + projection */
+    LSTMUINT_KERENLS(BP,  F16, F16, F32, )
+    LSTMUINT_KERENLS(BP,  F16, F16, F16, )
+    /* hybrid */
+    LSTMUINT_KERENLS(B,   F16, F16, F16, )
+    LSTMUINT_KERENLS(B,   F16, I16, F16, )
+    LSTMUINT_KERENLS(B,   F16, I8,  F16, )
+    LSTMUINT_KERENLS(B,   F16, U8,  F16, )
+    LSTMUINT_KERENLS(B,   F16, F16, F32, )
+    LSTMUINT_KERENLS(B,   F16, I16, F32, )
+    LSTMUINT_KERENLS(B,   F16, I8,  F32, )
+    LSTMUINT_KERENLS(B,   F16, U8,  F32, )
+    /* cifg + hybrid + projection */
+    LSTMUINT_KERENLS(CBP, F16, F16, F32, )
+    LSTMUINT_KERENLS(CBP, F16, F16, F16, )
+    /* cifg + hybrid */
+    LSTMUINT_KERENLS(CB,  F16, F16, F16, )
+    LSTMUINT_KERENLS(CB,  F16, I16, F16, )
+    LSTMUINT_KERENLS(CB,  F16, I8,  F16, )
+    LSTMUINT_KERENLS(CB,  F16, U8,  F16, )
+    LSTMUINT_KERENLS(CB,  F16, F16, F32, )
+    LSTMUINT_KERENLS(CB,  F16, I16, F32, )
+    LSTMUINT_KERENLS(CB,  F16, I8,  F32, )
+    LSTMUINT_KERENLS(CB,  F16, U8,  F32, )
+    /* cifg + hybrid + projection */
+    LSTMUINT_KERENLS(CBP, F16, I16, F32, )
+    LSTMUINT_KERENLS(CBP, F16, I8,  F32, )
+    LSTMUINT_KERENLS(CBP, F16, U8,  F32, )
+    LSTMUINT_KERENLS(CBP, F16, I16, F16, )
+    LSTMUINT_KERENLS(CBP, F16, I8,  F16, )
+    LSTMUINT_KERENLS(CBP, F16, U8,  F16, )
+    /* hybrid + projection */
+    LSTMUINT_KERENLS(BP,  F16, I16, F32, )
+    LSTMUINT_KERENLS(BP,  F16, I8,  F32, )
+    LSTMUINT_KERENLS(BP,  F16, U8,  F32, )
+    LSTMUINT_KERENLS(BP,  F16, I16, F16, )
+    LSTMUINT_KERENLS(BP,  F16, I8,  F16, )
+    LSTMUINT_KERENLS(BP,  F16, U8,  F16, )
+    /* hybrid + projection */
+    LSTMUINT_KERENLS(BP,  U8,  F16, F32, )
+    LSTMUINT_KERENLS(BP,  U8,  F16, F16, )
+    /* hybrid */
+    LSTMUINT_KERENLS(B,   U8,  F16, F16, )
+    LSTMUINT_KERENLS(B,   U8,  U8,  F16, )
+    LSTMUINT_KERENLS(B,   U8,  F16, F32, )
+    LSTMUINT_KERENLS(B,   U8,  U8,  F32, )
+    /* cifg + hybrid + projection */
+    LSTMUINT_KERENLS(CBP, U8,  F16, F32, )
+    LSTMUINT_KERENLS(CBP, U8,  F16, F16, )
+    /* cifg + hybrid */
+    LSTMUINT_KERENLS(CB,  U8,  F16, F16, )
+    LSTMUINT_KERENLS(CB,  U8,  U8,  F16, )
+    LSTMUINT_KERENLS(CB,  U8,  F16, F32, )
+    LSTMUINT_KERENLS(CB,  U8,  U8,  F32, )
+    /* cifg + hybrid + projection */
+    LSTMUINT_KERENLS(CBP, U8,  I16, F32, )
+    LSTMUINT_KERENLS(CBP, U8,  I8,  F32, )
+    LSTMUINT_KERENLS(CBP, U8,  U8,  F32, )
+    LSTMUINT_KERENLS(CBP, U8,  I16, F16, )
+    LSTMUINT_KERENLS(CBP, U8,  I8,  F16, )
+    LSTMUINT_KERENLS(CBP, U8,  U8,  F16, )
+    /* hybrid + projection */
+    LSTMUINT_KERENLS(BP,  U8,  I16, F32, )
+    LSTMUINT_KERENLS(BP,  U8,  I8,  F32, )
+    LSTMUINT_KERENLS(BP,  U8,  U8,  F32, )
+    LSTMUINT_KERENLS(BP,  U8,  I16, F16, )
+    LSTMUINT_KERENLS(BP,  U8,  I8,  F16, )
+    LSTMUINT_KERENLS(BP,  U8,  U8,  F16, )
+
+    /* standard + projection */
+    LSTMUINT_KERENLS(SP,  F16, F16, F32, )
+    LSTMUINT_KERENLS(SP,  F16, F16, F16, )
+    /* standard */
+    LSTMUINT_KERENLS(S,   F16, F16, F16, )
+    LSTMUINT_KERENLS(S,   F16, I16, F16, )
+    LSTMUINT_KERENLS(S,   F16, I8,  F16, )
+    LSTMUINT_KERENLS(S,   F16, U8,  F16, )
+    LSTMUINT_KERENLS(S,   F16, F16, F32, )
+    LSTMUINT_KERENLS(S,   F16, I16, F32, )
+    LSTMUINT_KERENLS(S,   F16, I8,  F32, )
+    LSTMUINT_KERENLS(S,   F16, U8,  F32, )
+    /* cifg + standard + projection */
+    LSTMUINT_KERENLS(CSP, F16, F16, F32, )
+    LSTMUINT_KERENLS(CSP, F16, F16, F16, )
+    /* cifg + standard */
+    LSTMUINT_KERENLS(CS,  F16, F16, F16, )
+    LSTMUINT_KERENLS(CS,  F16, I16, F16, )
+    LSTMUINT_KERENLS(CS,  F16, I8,  F16, )
+    LSTMUINT_KERENLS(CS,  F16, U8,  F16, )
+    LSTMUINT_KERENLS(CS,  F16, F16, F32, )
+    LSTMUINT_KERENLS(CS,  F16, I16, F32, )
+    LSTMUINT_KERENLS(CS,  F16, I8,  F32, )
+    LSTMUINT_KERENLS(CS,  F16, U8,  F32, )
+    /* cifg + standard + projection */
+    LSTMUINT_KERENLS(CSP, F16, I16, F32, )
+    LSTMUINT_KERENLS(CSP, F16, I8,  F32, )
+    LSTMUINT_KERENLS(CSP, F16, U8,  F32, )
+    LSTMUINT_KERENLS(CSP, F16, I16, F16, )
+    LSTMUINT_KERENLS(CSP, F16, I8,  F16, )
+    LSTMUINT_KERENLS(CSP, F16, U8,  F16, )
+    /* standard + projection */
+    LSTMUINT_KERENLS(SP,  F16, I16, F32, )
+    LSTMUINT_KERENLS(SP,  F16, I8,  F32, )
+    LSTMUINT_KERENLS(SP,  F16, U8,  F32, )
+    LSTMUINT_KERENLS(SP,  F16, I16, F16, )
+    LSTMUINT_KERENLS(SP,  F16, I8,  F16, )
+    LSTMUINT_KERENLS(SP,  F16, U8,  F16, )
+    /* standard + projection */
+    LSTMUINT_KERENLS(SP,  U8,  F16, F32, )
+    LSTMUINT_KERENLS(SP,  U8,  F16, F16, )
+    /* standard */
+    LSTMUINT_KERENLS(S,   U8,  F16, F16, )
+    LSTMUINT_KERENLS(S,   U8,  U8,  F16, )
+    LSTMUINT_KERENLS(S,   U8,  F16, F32, )
+    LSTMUINT_KERENLS(S,   U8,  U8,  F32, )
+    /* cifg + standard + projection */
+    LSTMUINT_KERENLS(CSP, U8,  F16, F32, )
+    LSTMUINT_KERENLS(CSP, U8,  F16, F16, )
+    /* cifg + standard */
+    LSTMUINT_KERENLS(CS,  U8,  F16, F16, )
+    LSTMUINT_KERENLS(CS,  U8,  U8,  F16, )
+    LSTMUINT_KERENLS(CS,  U8,  F16, F32, )
+    LSTMUINT_KERENLS(CS,  U8,  U8,  F32, )
+    /* cifg + standard + projection */
+    LSTMUINT_KERENLS(CSP, U8, I16, F32, )
+    LSTMUINT_KERENLS(CSP, U8, I8,  F32, )
+    LSTMUINT_KERENLS(CSP, U8, U8,  F32, )
+    LSTMUINT_KERENLS(CSP, U8, I16, F16, )
+    LSTMUINT_KERENLS(CSP, U8, I8,  F16, )
+    LSTMUINT_KERENLS(CSP, U8, U8,  F16, )
+    /* standard + projection */
+    LSTMUINT_KERENLS(SP,  U8, I16, F32, )
+    LSTMUINT_KERENLS(SP,  U8, I8,  F32, )
+    LSTMUINT_KERENLS(SP,  U8, U8,  F32, )
+    LSTMUINT_KERENLS(SP,  U8, I16, F16, )
+    LSTMUINT_KERENLS(SP,  U8, I8,  F16, )
+    LSTMUINT_KERENLS(SP,  U8, U8,  F16, )
+
+    /* layer norm + cifg + projection */
+    LSTMUINT_KERENLS(CLP, F16, F16, F32, _HARD)
+    LSTMUINT_KERENLS(CLP, F16, F16, F16, _HARD)
+    /* layer norm + projection + hard_sigmoid */
+    LSTMUINT_KERENLS(LP,  F16, F16, F32, _HARD)
+    LSTMUINT_KERENLS(LP,  F16, F16, F16, _HARD)
+    /* layer norm + cifg + hard_sigmoid */
+    LSTMUINT_KERENLS(CL,  F16, F16, F16, _HARD)
+    LSTMUINT_KERENLS(CL,  F16, I16, F16, _HARD)
+    LSTMUINT_KERENLS(CL,  F16, I8,  F16, _HARD)
+    LSTMUINT_KERENLS(CL,  F16, U8,  F16, _HARD)
+    LSTMUINT_KERENLS(CL,  F16, F16, F32, _HARD)
+    LSTMUINT_KERENLS(CL,  F16, I16, F32, _HARD)
+    LSTMUINT_KERENLS(CL,  F16, I8,  F32, _HARD)
+    LSTMUINT_KERENLS(CL,  F16, U8,  F32, _HARD)
+    /* layer norm + hard_sigmoid */
+    LSTMUINT_KERENLS(L,   F16, F16, F16, _HARD)
+    LSTMUINT_KERENLS(L,   F16, I16, F16, _HARD)
+    LSTMUINT_KERENLS(L,   F16, I8,  F16, _HARD)
+    LSTMUINT_KERENLS(L,   F16, U8,  F16, _HARD)
+    LSTMUINT_KERENLS(L,   F16, F16, F32, _HARD)
+    LSTMUINT_KERENLS(L,   F16, I16, F32, _HARD)
+    LSTMUINT_KERENLS(L,   F16, I8,  F32, _HARD)
+    LSTMUINT_KERENLS(L,   F16, U8,  F32, _HARD)
+
+    /* layer norm + cifg + projection + hard_sigmoid */
+    LSTMUINT_KERENLS(CLP, F16, I16, F32, _HARD)
+    LSTMUINT_KERENLS(CLP, F16, I8,  F32, _HARD)
+    LSTMUINT_KERENLS(CLP, F16, U8,  F32, _HARD)
+    LSTMUINT_KERENLS(CLP, F16, I16, F16, _HARD)
+    LSTMUINT_KERENLS(CLP, F16, I8,  F16, _HARD)
+    LSTMUINT_KERENLS(CLP, F16, U8,  F16, _HARD)
+    /* layer norm + projection + hard_sigmoid */
+    LSTMUINT_KERENLS(LP,  F16, I16, F32, _HARD)
+    LSTMUINT_KERENLS(LP,  F16, I8,  F32, _HARD)
+    LSTMUINT_KERENLS(LP,  F16, U8,  F32, _HARD)
+    LSTMUINT_KERENLS(LP,  F16, I16, F16, _HARD)
+    LSTMUINT_KERENLS(LP,  F16, I8,  F16, _HARD)
+    LSTMUINT_KERENLS(LP,  F16, U8,  F16, _HARD)
+
+    /* hybrid + projection + hard_sigmoid */
+    LSTMUINT_KERENLS(BP,  F16, F16, F32, _HARD)
+    LSTMUINT_KERENLS(BP,  F16, F16, F16, _HARD)
+    /* hybrid + hard_sigmoid */
+    LSTMUINT_KERENLS(B,   F16, F16, F16, _HARD)
+    LSTMUINT_KERENLS(B,   F16, I16, F16, _HARD)
+    LSTMUINT_KERENLS(B,   F16, I8,  F16, _HARD)
+    LSTMUINT_KERENLS(B,   F16, U8,  F16, _HARD)
+    LSTMUINT_KERENLS(B,   F16, F16, F32, _HARD)
+    LSTMUINT_KERENLS(B,   F16, I16, F32, _HARD)
+    LSTMUINT_KERENLS(B,   F16, I8,  F32, _HARD)
+    LSTMUINT_KERENLS(B,   F16, U8,  F32, _HARD)
+    /* cifg + hybrid + projection + hard_sigmoid */
+    LSTMUINT_KERENLS(CBP, F16, F16, F32, _HARD)
+    LSTMUINT_KERENLS(CBP, F16, F16, F16, _HARD)
+    /* cifg + hybrid + hard_sigmoid */
+    LSTMUINT_KERENLS(CB,  F16, F16, F16, _HARD)
+    LSTMUINT_KERENLS(CB,  F16, I16, F16, _HARD)
+    LSTMUINT_KERENLS(CB,  F16, I8,  F16, _HARD)
+    LSTMUINT_KERENLS(CB,  F16, U8,  F16, _HARD)
+    LSTMUINT_KERENLS(CB,  F16, F16, F32, _HARD)
+    LSTMUINT_KERENLS(CB,  F16, I16, F32, _HARD)
+    LSTMUINT_KERENLS(CB,  F16, I8,  F32, _HARD)
+    LSTMUINT_KERENLS(CB,  F16, U8,  F32, _HARD)
+    /* cifg + hybrid + projection + hard_sigmoid */
+    LSTMUINT_KERENLS(CBP, F16, I16, F32, _HARD)
+    LSTMUINT_KERENLS(CBP, F16, I8,  F32, _HARD)
+    LSTMUINT_KERENLS(CBP, F16, U8,  F32, _HARD)
+    LSTMUINT_KERENLS(CBP, F16, I16, F16, _HARD)
+    LSTMUINT_KERENLS(CBP, F16, I8,  F16, _HARD)
+    LSTMUINT_KERENLS(CBP, F16, U8,  F16, _HARD)
+    /* hybrid + projection + hard_sigmoid */
+    LSTMUINT_KERENLS(BP,  F16, I16, F32, _HARD)
+    LSTMUINT_KERENLS(BP,  F16, I8,  F32, _HARD)
+    LSTMUINT_KERENLS(BP,  F16, U8,  F32, _HARD)
+    LSTMUINT_KERENLS(BP,  F16, I16, F16, _HARD)
+    LSTMUINT_KERENLS(BP,  F16, I8,  F16, _HARD)
+    LSTMUINT_KERENLS(BP,  F16, U8,  F16, _HARD)
+    /* hybrid + projection + hard_sigmoid */
+    LSTMUINT_KERENLS(BP,  U8,  F16, F32, _HARD)
+    LSTMUINT_KERENLS(BP,  U8,  F16, F16, _HARD)
+    /* hybrid + hard_sigmoid */
+    LSTMUINT_KERENLS(B,   U8,  F16, F16, _HARD)
+    LSTMUINT_KERENLS(B,   U8,  U8,  F16, _HARD)
+    LSTMUINT_KERENLS(B,   U8,  F16, F32, _HARD)
+    LSTMUINT_KERENLS(B,   U8,  U8,  F32, _HARD)
+    /* cifg + hybrid + projection + hard_sigmoid */
+    LSTMUINT_KERENLS(CBP, U8,  F16, F32, _HARD)
+    LSTMUINT_KERENLS(CBP, U8,  F16, F16, _HARD)
+    /* cifg + hybrid + hard_sigmoid */
+    LSTMUINT_KERENLS(CB,  U8,  F16, F16, _HARD)
+    LSTMUINT_KERENLS(CB,  U8,  U8,  F16, _HARD)
+    LSTMUINT_KERENLS(CB,  U8,  F16, F32, _HARD)
+    LSTMUINT_KERENLS(CB,  U8,  U8,  F32, _HARD)
+    /* cifg + hybrid + projection + hard_sigmoid */
+    LSTMUINT_KERENLS(CBP, U8,  I16, F32, _HARD)
+    LSTMUINT_KERENLS(CBP, U8,  I8,  F32, _HARD)
+    LSTMUINT_KERENLS(CBP, U8,  U8,  F32, _HARD)
+    LSTMUINT_KERENLS(CBP, U8,  I16, F16, _HARD)
+    LSTMUINT_KERENLS(CBP, U8,  I8,  F16, _HARD)
+    LSTMUINT_KERENLS(CBP, U8,  U8,  F16, _HARD)
+    /* hybrid + projection + hard_sigmoid */
+    LSTMUINT_KERENLS(BP,  U8,  I16, F32, _HARD)
+    LSTMUINT_KERENLS(BP,  U8,  I8,  F32, _HARD)
+    LSTMUINT_KERENLS(BP,  U8,  U8,  F32, _HARD)
+    LSTMUINT_KERENLS(BP,  U8,  I16, F16, _HARD)
+    LSTMUINT_KERENLS(BP,  U8,  I8,  F16, _HARD)
+    LSTMUINT_KERENLS(BP,  U8,  U8,  F16, _HARD)
+
+    /* standard + projection + hard_sigmoid */
+    LSTMUINT_KERENLS(SP,  F16, F16, F32, _HARD)
+    LSTMUINT_KERENLS(SP,  F16, F16, F16, _HARD)
+    /* standard + hard_sigmoid */
+    LSTMUINT_KERENLS(S,   F16, F16, F16, _HARD)
+    LSTMUINT_KERENLS(S,   F16, I16, F16, _HARD)
+    LSTMUINT_KERENLS(S,   F16, I8,  F16, _HARD)
+    LSTMUINT_KERENLS(S,   F16, U8,  F16, _HARD)
+    LSTMUINT_KERENLS(S,   F16, F16, F32, _HARD)
+    LSTMUINT_KERENLS(S,   F16, I16, F32, _HARD)
+    LSTMUINT_KERENLS(S,   F16, I8,  F32, _HARD)
+    LSTMUINT_KERENLS(S,   F16, U8,  F32, _HARD)
+    /* cifg + standard + projection + hard_sigmoid */
+    LSTMUINT_KERENLS(CSP, F16, F16, F32, _HARD)
+    LSTMUINT_KERENLS(CSP, F16, F16, F16, _HARD)
+    /* cifg + standard + hard_sigmoid */
+    LSTMUINT_KERENLS(CS,  F16, F16, F16, _HARD)
+    LSTMUINT_KERENLS(CS,  F16, I16, F16, _HARD)
+    LSTMUINT_KERENLS(CS,  F16, I8,  F16, _HARD)
+    LSTMUINT_KERENLS(CS,  F16, U8,  F16, _HARD)
+    LSTMUINT_KERENLS(CS,  F16, F16, F32, _HARD)
+    LSTMUINT_KERENLS(CS,  F16, I16, F32, _HARD)
+    LSTMUINT_KERENLS(CS,  F16, I8,  F32, _HARD)
+    LSTMUINT_KERENLS(CS,  F16, U8,  F32, _HARD)
+    /* cifg + standard + projection + hard_sigmoid */
+    LSTMUINT_KERENLS(CSP, F16, I16, F32, _HARD)
+    LSTMUINT_KERENLS(CSP, F16, I8,  F32, _HARD)
+    LSTMUINT_KERENLS(CSP, F16, U8,  F32, _HARD)
+    LSTMUINT_KERENLS(CSP, F16, I16, F16, _HARD)
+    LSTMUINT_KERENLS(CSP, F16, I8,  F16, _HARD)
+    LSTMUINT_KERENLS(CSP, F16, U8,  F16, _HARD)
+    /* standard + projection + hard_sigmoid */
+    LSTMUINT_KERENLS(SP,  F16, I16, F32, _HARD)
+    LSTMUINT_KERENLS(SP,  F16, I8,  F32, _HARD)
+    LSTMUINT_KERENLS(SP,  F16, U8,  F32, _HARD)
+    LSTMUINT_KERENLS(SP,  F16, I16, F16, _HARD)
+    LSTMUINT_KERENLS(SP,  F16, I8,  F16, _HARD)
+    LSTMUINT_KERENLS(SP,  F16, U8,  F16, _HARD)
+    /* standard + projection + hard_sigmoid */
+    LSTMUINT_KERENLS(SP,  U8,  F16, F32, _HARD)
+    LSTMUINT_KERENLS(SP,  U8,  F16, F16, _HARD)
+    /* standard + hard_sigmoid */
+    LSTMUINT_KERENLS(S,   U8,  F16, F16, _HARD)
+    LSTMUINT_KERENLS(S,   U8,  U8,  F16, _HARD)
+    LSTMUINT_KERENLS(S,   U8,  F16, F32, _HARD)
+    LSTMUINT_KERENLS(S,   U8,  U8,  F32, _HARD)
+    /* cifg + standard + projection + hard_sigmoid */
+    LSTMUINT_KERENLS(CSP, U8,  F16, F32, _HARD)
+    LSTMUINT_KERENLS(CSP, U8,  F16, F16, _HARD)
+    /* cifg + standard + hard_sigmoid */
+    LSTMUINT_KERENLS(CS,  U8,  F16, F16, _HARD)
+    LSTMUINT_KERENLS(CS,  U8,  U8,  F16, _HARD)
+    LSTMUINT_KERENLS(CS,  U8,  F16, F32, _HARD)
+    LSTMUINT_KERENLS(CS,  U8,  U8,  F32, _HARD)
+    /* cifg + standard + projection + hard_sigmoid */
+    LSTMUINT_KERENLS(CSP, U8,  I16, F32, _HARD)
+    LSTMUINT_KERENLS(CSP, U8,  I8,  F32, _HARD)
+    LSTMUINT_KERENLS(CSP, U8,  U8,  F32, _HARD)
+    LSTMUINT_KERENLS(CSP, U8,  I16, F16, _HARD)
+    LSTMUINT_KERENLS(CSP, U8,  I8,  F16, _HARD)
+    LSTMUINT_KERENLS(CSP, U8,  U8,  F16, _HARD)
+    /* standard + projection + hard_sigmoid */
+    LSTMUINT_KERENLS(SP,  U8,  I16, F32, _HARD)
+    LSTMUINT_KERENLS(SP,  U8,  I8,  F32, _HARD)
+    LSTMUINT_KERENLS(SP,  U8,  U8,  F32, _HARD)
+    LSTMUINT_KERENLS(SP,  U8,  I16, F16, _HARD)
+    LSTMUINT_KERENLS(SP,  U8,  I8,  F16, _HARD)
+    LSTMUINT_KERENLS(SP,  U8,  U8,  F16, _HARD)
+
+#define LSTMUINT_KERENL_NAME(_C_L_P_H, _INPUT_TYPE, _OUTPUT_TYPE, _CELL_TYPE, _ACTIVATION) \
+    &vxLSTMUnit_##_C_L_P_H##_##_INPUT_TYPE##to##_OUTPUT_TYPE##_##_CELL_TYPE##_ACTIVATION##_Kernel,
 
 vx_kernel_description_t * vx_kernel_LSTMUNIT_ACTIVATION_list[] =
 {
     &vxLSTMUnit_SW_Kernel,
+    /* layer norm + cifg + projection */
+    LSTMUINT_KERENL_NAME(CLP, F16, F16, F32, )
+    LSTMUINT_KERENL_NAME(CLP, F16, F16, F16, )
+    /* layer norm + projection */
+    LSTMUINT_KERENL_NAME(LP,  F16, F16, F32, )
+    LSTMUINT_KERENL_NAME(LP,  F16, F16, F16, )
+    /* layer norm + cifg */
+    LSTMUINT_KERENL_NAME(CL,  F16, F16, F16, )
+    LSTMUINT_KERENL_NAME(CL,  F16, I16, F16, )
+    LSTMUINT_KERENL_NAME(CL,  F16, I8,  F16, )
+    LSTMUINT_KERENL_NAME(CL,  F16, U8,  F16, )
+    LSTMUINT_KERENL_NAME(CL,  F16, F16, F32, )
+    LSTMUINT_KERENL_NAME(CL,  F16, I16, F32, )
+    LSTMUINT_KERENL_NAME(CL,  F16, I8,  F32, )
+    LSTMUINT_KERENL_NAME(CL,  F16, U8,  F32, )
     /* layer norm */
-    LSTMUINT_KERENL_NAME(F16, F16, F32, CLP)
-    LSTMUINT_KERENL_NAME(F16, F16, F16, CLP)
-    LSTMUINT_KERENL_NAME(F16, F16, F32, LP)
-    LSTMUINT_KERENL_NAME(F16, F16, F16, LP)
-    LSTMUINT_KERENL_NAME(F16, F16, F16, CL)
-    LSTMUINT_KERENL_NAME(F16, I16, F16, CL)
-    LSTMUINT_KERENL_NAME(F16, I8,  F16, CL)
-    LSTMUINT_KERENL_NAME(F16, U8,  F16, CL)
-    LSTMUINT_KERENL_NAME(F16, F16, F32, CL)
-    LSTMUINT_KERENL_NAME(F16, I16, F32, CL)
-    LSTMUINT_KERENL_NAME(F16, I8,  F32, CL)
-    LSTMUINT_KERENL_NAME(F16, U8,  F32, L)
-    LSTMUINT_KERENL_NAME(F16, F16, F16, L)
-    LSTMUINT_KERENL_NAME(F16, I16, F16, L)
-    LSTMUINT_KERENL_NAME(F16, I8,  F16, L)
-    LSTMUINT_KERENL_NAME(F16, U8,  F16, L)
-    LSTMUINT_KERENL_NAME(F16, F16, F32, L)
-    LSTMUINT_KERENL_NAME(F16, I16, F32, L)
-    LSTMUINT_KERENL_NAME(F16, I8,  F32, L)
-    LSTMUINT_KERENL_NAME(F16, U8,  F32, L)
-    /* hybrid fp16*/
-    LSTMUINT_KERENL_NAME(F16, F16, F32, BP)
-    LSTMUINT_KERENL_NAME(F16, F16, F16, BP)
-    LSTMUINT_KERENL_NAME(F16, F16, F16, B)
-    LSTMUINT_KERENL_NAME(F16, I16, F16, B)
-    LSTMUINT_KERENL_NAME(F16, I8,  F16, B)
-    LSTMUINT_KERENL_NAME(F16, U8,  F16, B)
-    LSTMUINT_KERENL_NAME(F16, F16, F32, B)
-    LSTMUINT_KERENL_NAME(F16, I16, F32, B)
-    LSTMUINT_KERENL_NAME(F16, I8,  F32, B)
-    LSTMUINT_KERENL_NAME(F16, U8,  F32, B)
-    LSTMUINT_KERENL_NAME(F16, F16, F32, CBP)
-    LSTMUINT_KERENL_NAME(F16, F16, F16, CBP)
-    LSTMUINT_KERENL_NAME(F16, F16, F16, CB)
-    LSTMUINT_KERENL_NAME(F16, I16, F16, CB)
-    LSTMUINT_KERENL_NAME(F16, I8,  F16, CB)
-    LSTMUINT_KERENL_NAME(F16, U8,  F16, CB)
-    LSTMUINT_KERENL_NAME(F16, F16, F32, CB)
-    LSTMUINT_KERENL_NAME(F16, I16, F32, CB)
-    LSTMUINT_KERENL_NAME(F16, I8,  F32, CB)
-    LSTMUINT_KERENL_NAME(F16, U8,  F32, CB)
-    /* hybrid u8*/
-    LSTMUINT_KERENL_NAME(U8, F16, F32, BP)
-    LSTMUINT_KERENL_NAME(U8, F16, F16, BP)
-    LSTMUINT_KERENL_NAME(U8, F16, F16, B)
-    LSTMUINT_KERENL_NAME(U8, U8,  F16, B)
-    LSTMUINT_KERENL_NAME(U8, F16, F32, B)
-    LSTMUINT_KERENL_NAME(U8, U8,  F32, B)
-    LSTMUINT_KERENL_NAME(U8, F16, F32, CBP)
-    LSTMUINT_KERENL_NAME(U8, F16, F16, CBP)
-    LSTMUINT_KERENL_NAME(U8, F16, F16, CB)
-    LSTMUINT_KERENL_NAME(U8, U8,  F16, CB)
-    LSTMUINT_KERENL_NAME(U8, F16, F32, CB)
-    LSTMUINT_KERENL_NAME(U8, U8,  F32, CB)
-    /* standard input fp16*/
-    LSTMUINT_KERENL_NAME(F16, F16, F32, SP)
-    LSTMUINT_KERENL_NAME(F16, F16, F16, SP)
-    LSTMUINT_KERENL_NAME(F16, F16, F16, S)
-    LSTMUINT_KERENL_NAME(F16, I16, F16, S)
-    LSTMUINT_KERENL_NAME(F16, I8,  F16, S)
-    LSTMUINT_KERENL_NAME(F16, U8,  F16, S)
-    LSTMUINT_KERENL_NAME(F16, F16, F32, S)
-    LSTMUINT_KERENL_NAME(F16, I16, F32, S)
-    LSTMUINT_KERENL_NAME(F16, I8,  F32, S)
-    LSTMUINT_KERENL_NAME(F16, U8,  F32, S)
-    LSTMUINT_KERENL_NAME(F16, F16, F32, CSP)
-    LSTMUINT_KERENL_NAME(F16, F16, F16, CSP)
-    LSTMUINT_KERENL_NAME(F16, F16, F16, CS)
-    LSTMUINT_KERENL_NAME(F16, I16, F16, CS)
-    LSTMUINT_KERENL_NAME(F16, I8,  F16, CS)
-    LSTMUINT_KERENL_NAME(F16, U8,  F16, CS)
-    LSTMUINT_KERENL_NAME(F16, F16, F32, CS)
-    LSTMUINT_KERENL_NAME(F16, I16, F32, CS)
-    LSTMUINT_KERENL_NAME(F16, I8,  F32, CS)
-    LSTMUINT_KERENL_NAME(F16, U8,  F32, CS)
-    /* standard input U8*/
-    LSTMUINT_KERENL_NAME(U8, F16, F32, SP)
-    LSTMUINT_KERENL_NAME(U8, F16, F16, SP)
-    LSTMUINT_KERENL_NAME(U8, F16, F16, S)
-    LSTMUINT_KERENL_NAME(U8, U8,  F16, S)
-    LSTMUINT_KERENL_NAME(U8, F16, F32, S)
-    LSTMUINT_KERENL_NAME(U8, U8,  F32, S)
-    LSTMUINT_KERENL_NAME(U8, F16, F32, CSP)
-    LSTMUINT_KERENL_NAME(U8, F16, F16, CSP)
-    LSTMUINT_KERENL_NAME(U8, F16, F16, CS)
-    LSTMUINT_KERENL_NAME(U8, U8,  F16, CS)
-    LSTMUINT_KERENL_NAME(U8, F16, F32, CS)
-    LSTMUINT_KERENL_NAME(U8, U8,  F32, CS)
+    LSTMUINT_KERENL_NAME(L,   F16, F16, F16, )
+    LSTMUINT_KERENL_NAME(L,   F16, I16, F16, )
+    LSTMUINT_KERENL_NAME(L,   F16, I8,  F16, )
+    LSTMUINT_KERENL_NAME(L,   F16, U8,  F16, )
+    LSTMUINT_KERENL_NAME(L,   F16, F16, F32, )
+    LSTMUINT_KERENL_NAME(L,   F16, I16, F32, )
+    LSTMUINT_KERENL_NAME(L,   F16, I8,  F32, )
+    LSTMUINT_KERENL_NAME(L,   F16, U8,  F32, )
+
+    /* layer norm + cifg + projection */
+    LSTMUINT_KERENL_NAME(CLP, F16, I16, F32, )
+    LSTMUINT_KERENL_NAME(CLP, F16, I8,  F32, )
+    LSTMUINT_KERENL_NAME(CLP, F16, U8,  F32, )
+    LSTMUINT_KERENL_NAME(CLP, F16, I16, F16, )
+    LSTMUINT_KERENL_NAME(CLP, F16, I8,  F16, )
+    LSTMUINT_KERENL_NAME(CLP, F16, U8,  F16, )
+    /* layer norm + projection */
+    LSTMUINT_KERENL_NAME(LP,  F16, I16, F32, )
+    LSTMUINT_KERENL_NAME(LP,  F16, I8,  F32, )
+    LSTMUINT_KERENL_NAME(LP,  F16, U8,  F32, )
+    LSTMUINT_KERENL_NAME(LP,  F16, I16, F16, )
+    LSTMUINT_KERENL_NAME(LP,  F16, I8,  F16, )
+    LSTMUINT_KERENL_NAME(LP,  F16, U8,  F16, )
+
+    /* hybrid + projection */
+    LSTMUINT_KERENL_NAME(BP,  F16, F16, F32, )
+    LSTMUINT_KERENL_NAME(BP,  F16, F16, F16, )
+    /* hybrid */
+    LSTMUINT_KERENL_NAME(B,   F16, F16, F16, )
+    LSTMUINT_KERENL_NAME(B,   F16, I16, F16, )
+    LSTMUINT_KERENL_NAME(B,   F16, I8,  F16, )
+    LSTMUINT_KERENL_NAME(B,   F16, U8,  F16, )
+    LSTMUINT_KERENL_NAME(B,   F16, F16, F32, )
+    LSTMUINT_KERENL_NAME(B,   F16, I16, F32, )
+    LSTMUINT_KERENL_NAME(B,   F16, I8,  F32, )
+    LSTMUINT_KERENL_NAME(B,   F16, U8,  F32, )
+    /* cifg + hybrid + projection */
+    LSTMUINT_KERENL_NAME(CBP, F16, F16, F32, )
+    LSTMUINT_KERENL_NAME(CBP, F16, F16, F16, )
+    /* cifg + hybrid */
+    LSTMUINT_KERENL_NAME(CB,  F16, F16, F16, )
+    LSTMUINT_KERENL_NAME(CB,  F16, I16, F16, )
+    LSTMUINT_KERENL_NAME(CB,  F16, I8,  F16, )
+    LSTMUINT_KERENL_NAME(CB,  F16, U8,  F16, )
+    LSTMUINT_KERENL_NAME(CB,  F16, F16, F32, )
+    LSTMUINT_KERENL_NAME(CB,  F16, I16, F32, )
+    LSTMUINT_KERENL_NAME(CB,  F16, I8,  F32, )
+    LSTMUINT_KERENL_NAME(CB,  F16, U8,  F32, )
+    /* cifg + hybrid + projection */
+    LSTMUINT_KERENL_NAME(CBP, F16, I16, F32, )
+    LSTMUINT_KERENL_NAME(CBP, F16, I8,  F32, )
+    LSTMUINT_KERENL_NAME(CBP, F16, U8,  F32, )
+    LSTMUINT_KERENL_NAME(CBP, F16, I16, F16, )
+    LSTMUINT_KERENL_NAME(CBP, F16, I8,  F16, )
+    LSTMUINT_KERENL_NAME(CBP, F16, U8,  F16, )
+    /* hybrid + projection */
+    LSTMUINT_KERENL_NAME(BP,  F16, I16, F32, )
+    LSTMUINT_KERENL_NAME(BP,  F16, I8,  F32, )
+    LSTMUINT_KERENL_NAME(BP,  F16, U8,  F32, )
+    LSTMUINT_KERENL_NAME(BP,  F16, I16, F16, )
+    LSTMUINT_KERENL_NAME(BP,  F16, I8,  F16, )
+    LSTMUINT_KERENL_NAME(BP,  F16, U8,  F16, )
+    /* hybrid + projection */
+    LSTMUINT_KERENL_NAME(BP,  U8,  F16, F32, )
+    LSTMUINT_KERENL_NAME(BP,  U8,  F16, F16, )
+    /* hybrid */
+    LSTMUINT_KERENL_NAME(B,   U8,  F16, F16, )
+    LSTMUINT_KERENL_NAME(B,   U8,  U8,  F16, )
+    LSTMUINT_KERENL_NAME(B,   U8,  F16, F32, )
+    LSTMUINT_KERENL_NAME(B,   U8,  U8,  F32, )
+    /* cifg + hybrid + projection */
+    LSTMUINT_KERENL_NAME(CBP, U8,  F16, F32, )
+    LSTMUINT_KERENL_NAME(CBP, U8,  F16, F16, )
+    /* cifg + hybrid */
+    LSTMUINT_KERENL_NAME(CB,  U8,  F16, F16, )
+    LSTMUINT_KERENL_NAME(CB,  U8,  U8,  F16, )
+    LSTMUINT_KERENL_NAME(CB,  U8,  F16, F32, )
+    LSTMUINT_KERENL_NAME(CB,  U8,  U8,  F32, )
+    /* cifg + hybrid + projection */
+    LSTMUINT_KERENL_NAME(CBP, U8,  I16, F32, )
+    LSTMUINT_KERENL_NAME(CBP, U8,  I8,  F32, )
+    LSTMUINT_KERENL_NAME(CBP, U8,  U8,  F32, )
+    LSTMUINT_KERENL_NAME(CBP, U8,  I16, F16, )
+    LSTMUINT_KERENL_NAME(CBP, U8,  I8,  F16, )
+    LSTMUINT_KERENL_NAME(CBP, U8,  U8,  F16, )
+    /* hybrid + projection */
+    LSTMUINT_KERENL_NAME(BP,  U8,  I16, F32, )
+    LSTMUINT_KERENL_NAME(BP,  U8,  I8,  F32, )
+    LSTMUINT_KERENL_NAME(BP,  U8,  U8,  F32, )
+    LSTMUINT_KERENL_NAME(BP,  U8,  I16, F16, )
+    LSTMUINT_KERENL_NAME(BP,  U8,  I8,  F16, )
+    LSTMUINT_KERENL_NAME(BP,  U8,  U8,  F16, )
+
+    /* standard + projection */
+    LSTMUINT_KERENL_NAME(SP,  F16, F16, F32, )
+    LSTMUINT_KERENL_NAME(SP,  F16, F16, F16, )
+    /* standard */
+    LSTMUINT_KERENL_NAME(S,   F16, F16, F16, )
+    LSTMUINT_KERENL_NAME(S,   F16, I16, F16, )
+    LSTMUINT_KERENL_NAME(S,   F16, I8,  F16, )
+    LSTMUINT_KERENL_NAME(S,   F16, U8,  F16, )
+    LSTMUINT_KERENL_NAME(S,   F16, F16, F32, )
+    LSTMUINT_KERENL_NAME(S,   F16, I16, F32, )
+    LSTMUINT_KERENL_NAME(S,   F16, I8,  F32, )
+    LSTMUINT_KERENL_NAME(S,   F16, U8,  F32, )
+    /* cifg + standard + projection */
+    LSTMUINT_KERENL_NAME(CSP, F16, F16, F32, )
+    LSTMUINT_KERENL_NAME(CSP, F16, F16, F16, )
+    /* cifg + standard */
+    LSTMUINT_KERENL_NAME(CS,  F16, F16, F16, )
+    LSTMUINT_KERENL_NAME(CS,  F16, I16, F16, )
+    LSTMUINT_KERENL_NAME(CS,  F16, I8,  F16, )
+    LSTMUINT_KERENL_NAME(CS,  F16, U8,  F16, )
+    LSTMUINT_KERENL_NAME(CS,  F16, F16, F32, )
+    LSTMUINT_KERENL_NAME(CS,  F16, I16, F32, )
+    LSTMUINT_KERENL_NAME(CS,  F16, I8,  F32, )
+    LSTMUINT_KERENL_NAME(CS,  F16, U8,  F32, )
+    /* cifg + standard + projection */
+    LSTMUINT_KERENL_NAME(CSP, F16, I16, F32, )
+    LSTMUINT_KERENL_NAME(CSP, F16, I8,  F32, )
+    LSTMUINT_KERENL_NAME(CSP, F16, U8,  F32, )
+    LSTMUINT_KERENL_NAME(CSP, F16, I16, F16, )
+    LSTMUINT_KERENL_NAME(CSP, F16, I8,  F16, )
+    LSTMUINT_KERENL_NAME(CSP, F16, U8,  F16, )
+    /* standard + projection */
+    LSTMUINT_KERENL_NAME(SP,  F16, I16, F32, )
+    LSTMUINT_KERENL_NAME(SP,  F16, I8,  F32, )
+    LSTMUINT_KERENL_NAME(SP,  F16, U8,  F32, )
+    LSTMUINT_KERENL_NAME(SP,  F16, I16, F16, )
+    LSTMUINT_KERENL_NAME(SP,  F16, I8,  F16, )
+    LSTMUINT_KERENL_NAME(SP,  F16, U8,  F16, )
+    /* standard + projection */
+    LSTMUINT_KERENL_NAME(SP,  U8,  F16, F32, )
+    LSTMUINT_KERENL_NAME(SP,  U8,  F16, F16, )
+    /* standard */
+    LSTMUINT_KERENL_NAME(S,   U8,  F16, F16, )
+    LSTMUINT_KERENL_NAME(S,   U8,  U8,  F16, )
+    LSTMUINT_KERENL_NAME(S,   U8,  F16, F32, )
+    LSTMUINT_KERENL_NAME(S,   U8,  U8,  F32, )
+    /* cifg + standard + projection */
+    LSTMUINT_KERENL_NAME(CSP, U8,  F16, F32, )
+    LSTMUINT_KERENL_NAME(CSP, U8,  F16, F16, )
+    /* cifg + standard */
+    LSTMUINT_KERENL_NAME(CS,  U8,  F16, F16, )
+    LSTMUINT_KERENL_NAME(CS,  U8,  U8,  F16, )
+    LSTMUINT_KERENL_NAME(CS,  U8,  F16, F32, )
+    LSTMUINT_KERENL_NAME(CS,  U8,  U8,  F32, )
+    /* cifg + standard + projection */
+    LSTMUINT_KERENL_NAME(CSP, U8, I16, F32, )
+    LSTMUINT_KERENL_NAME(CSP, U8, I8,  F32, )
+    LSTMUINT_KERENL_NAME(CSP, U8, U8,  F32, )
+    LSTMUINT_KERENL_NAME(CSP, U8, I16, F16, )
+    LSTMUINT_KERENL_NAME(CSP, U8, I8,  F16, )
+    LSTMUINT_KERENL_NAME(CSP, U8, U8,  F16, )
+    /* standard + projection */
+    LSTMUINT_KERENL_NAME(SP,  U8, I16, F32, )
+    LSTMUINT_KERENL_NAME(SP,  U8, I8,  F32, )
+    LSTMUINT_KERENL_NAME(SP,  U8, U8,  F32, )
+    LSTMUINT_KERENL_NAME(SP,  U8, I16, F16, )
+    LSTMUINT_KERENL_NAME(SP,  U8, I8,  F16, )
+    LSTMUINT_KERENL_NAME(SP,  U8, U8,  F16, )
+
+    /* layer norm + cifg + projection */
+    LSTMUINT_KERENL_NAME(CLP, F16, F16, F32, _HARD)
+    LSTMUINT_KERENL_NAME(CLP, F16, F16, F16, _HARD)
+    /* layer norm + projection + hard_sigmoid */
+    LSTMUINT_KERENL_NAME(LP,  F16, F16, F32, _HARD)
+    LSTMUINT_KERENL_NAME(LP,  F16, F16, F16, _HARD)
+    /* layer norm + cifg + hard_sigmoid */
+    LSTMUINT_KERENL_NAME(CL,  F16, F16, F16, _HARD)
+    LSTMUINT_KERENL_NAME(CL,  F16, I16, F16, _HARD)
+    LSTMUINT_KERENL_NAME(CL,  F16, I8,  F16, _HARD)
+    LSTMUINT_KERENL_NAME(CL,  F16, U8,  F16, _HARD)
+    LSTMUINT_KERENL_NAME(CL,  F16, F16, F32, _HARD)
+    LSTMUINT_KERENL_NAME(CL,  F16, I16, F32, _HARD)
+    LSTMUINT_KERENL_NAME(CL,  F16, I8,  F32, _HARD)
+    LSTMUINT_KERENL_NAME(CL,  F16, U8,  F32, _HARD)
+    /* layer norm + hard_sigmoid */
+    LSTMUINT_KERENL_NAME(L,   F16, F16, F16, _HARD)
+    LSTMUINT_KERENL_NAME(L,   F16, I16, F16, _HARD)
+    LSTMUINT_KERENL_NAME(L,   F16, I8,  F16, _HARD)
+    LSTMUINT_KERENL_NAME(L,   F16, U8,  F16, _HARD)
+    LSTMUINT_KERENL_NAME(L,   F16, F16, F32, _HARD)
+    LSTMUINT_KERENL_NAME(L,   F16, I16, F32, _HARD)
+    LSTMUINT_KERENL_NAME(L,   F16, I8,  F32, _HARD)
+    LSTMUINT_KERENL_NAME(L,   F16, U8,  F32, _HARD)
+
+    /* layer norm + cifg + projection + hard_sigmoid */
+    LSTMUINT_KERENL_NAME(CLP, F16, I16, F32, _HARD)
+    LSTMUINT_KERENL_NAME(CLP, F16, I8,  F32, _HARD)
+    LSTMUINT_KERENL_NAME(CLP, F16, U8,  F32, _HARD)
+    LSTMUINT_KERENL_NAME(CLP, F16, I16, F16, _HARD)
+    LSTMUINT_KERENL_NAME(CLP, F16, I8,  F16, _HARD)
+    LSTMUINT_KERENL_NAME(CLP, F16, U8,  F16, _HARD)
+    /* layer norm + projection + hard_sigmoid */
+    LSTMUINT_KERENL_NAME(LP,  F16, I16, F32, _HARD)
+    LSTMUINT_KERENL_NAME(LP,  F16, I8,  F32, _HARD)
+    LSTMUINT_KERENL_NAME(LP,  F16, U8,  F32, _HARD)
+    LSTMUINT_KERENL_NAME(LP,  F16, I16, F16, _HARD)
+    LSTMUINT_KERENL_NAME(LP,  F16, I8,  F16, _HARD)
+    LSTMUINT_KERENL_NAME(LP,  F16, U8,  F16, _HARD)
+
+    /* hybrid + projection + hard_sigmoid */
+    LSTMUINT_KERENL_NAME(BP,  F16, F16, F32, _HARD)
+    LSTMUINT_KERENL_NAME(BP,  F16, F16, F16, _HARD)
+    /* hybrid + hard_sigmoid */
+    LSTMUINT_KERENL_NAME(B,   F16, F16, F16, _HARD)
+    LSTMUINT_KERENL_NAME(B,   F16, I16, F16, _HARD)
+    LSTMUINT_KERENL_NAME(B,   F16, I8,  F16, _HARD)
+    LSTMUINT_KERENL_NAME(B,   F16, U8,  F16, _HARD)
+    LSTMUINT_KERENL_NAME(B,   F16, F16, F32, _HARD)
+    LSTMUINT_KERENL_NAME(B,   F16, I16, F32, _HARD)
+    LSTMUINT_KERENL_NAME(B,   F16, I8,  F32, _HARD)
+    LSTMUINT_KERENL_NAME(B,   F16, U8,  F32, _HARD)
+    /* cifg + hybrid + projection + hard_sigmoid */
+    LSTMUINT_KERENL_NAME(CBP, F16, F16, F32, _HARD)
+    LSTMUINT_KERENL_NAME(CBP, F16, F16, F16, _HARD)
+    /* cifg + hybrid + hard_sigmoid */
+    LSTMUINT_KERENL_NAME(CB,  F16, F16, F16, _HARD)
+    LSTMUINT_KERENL_NAME(CB,  F16, I16, F16, _HARD)
+    LSTMUINT_KERENL_NAME(CB,  F16, I8,  F16, _HARD)
+    LSTMUINT_KERENL_NAME(CB,  F16, U8,  F16, _HARD)
+    LSTMUINT_KERENL_NAME(CB,  F16, F16, F32, _HARD)
+    LSTMUINT_KERENL_NAME(CB,  F16, I16, F32, _HARD)
+    LSTMUINT_KERENL_NAME(CB,  F16, I8,  F32, _HARD)
+    LSTMUINT_KERENL_NAME(CB,  F16, U8,  F32, _HARD)
+    /* cifg + hybrid + projection + hard_sigmoid */
+    LSTMUINT_KERENL_NAME(CBP, F16, I16, F32, _HARD)
+    LSTMUINT_KERENL_NAME(CBP, F16, I8,  F32, _HARD)
+    LSTMUINT_KERENL_NAME(CBP, F16, U8,  F32, _HARD)
+    LSTMUINT_KERENL_NAME(CBP, F16, I16, F16, _HARD)
+    LSTMUINT_KERENL_NAME(CBP, F16, I8,  F16, _HARD)
+    LSTMUINT_KERENL_NAME(CBP, F16, U8,  F16, _HARD)
+    /* hybrid + projection + hard_sigmoid */
+    LSTMUINT_KERENL_NAME(BP,  F16, I16, F32, _HARD)
+    LSTMUINT_KERENL_NAME(BP,  F16, I8,  F32, _HARD)
+    LSTMUINT_KERENL_NAME(BP,  F16, U8,  F32, _HARD)
+    LSTMUINT_KERENL_NAME(BP,  F16, I16, F16, _HARD)
+    LSTMUINT_KERENL_NAME(BP,  F16, I8,  F16, _HARD)
+    LSTMUINT_KERENL_NAME(BP,  F16, U8,  F16, _HARD)
+    /* hybrid + projection + hard_sigmoid */
+    LSTMUINT_KERENL_NAME(BP,  U8,  F16, F32, _HARD)
+    LSTMUINT_KERENL_NAME(BP,  U8,  F16, F16, _HARD)
+    /* hybrid + hard_sigmoid */
+    LSTMUINT_KERENL_NAME(B,   U8,  F16, F16, _HARD)
+    LSTMUINT_KERENL_NAME(B,   U8,  U8,  F16, _HARD)
+    LSTMUINT_KERENL_NAME(B,   U8,  F16, F32, _HARD)
+    LSTMUINT_KERENL_NAME(B,   U8,  U8,  F32, _HARD)
+    /* cifg + hybrid + projection + hard_sigmoid */
+    LSTMUINT_KERENL_NAME(CBP, U8,  F16, F32, _HARD)
+    LSTMUINT_KERENL_NAME(CBP, U8,  F16, F16, _HARD)
+    /* cifg + hybrid + hard_sigmoid */
+    LSTMUINT_KERENL_NAME(CB,  U8,  F16, F16, _HARD)
+    LSTMUINT_KERENL_NAME(CB,  U8,  U8,  F16, _HARD)
+    LSTMUINT_KERENL_NAME(CB,  U8,  F16, F32, _HARD)
+    LSTMUINT_KERENL_NAME(CB,  U8,  U8,  F32, _HARD)
+    /* cifg + hybrid + projection + hard_sigmoid */
+    LSTMUINT_KERENL_NAME(CBP, U8,  I16, F32, _HARD)
+    LSTMUINT_KERENL_NAME(CBP, U8,  I8,  F32, _HARD)
+    LSTMUINT_KERENL_NAME(CBP, U8,  U8,  F32, _HARD)
+    LSTMUINT_KERENL_NAME(CBP, U8,  I16, F16, _HARD)
+    LSTMUINT_KERENL_NAME(CBP, U8,  I8,  F16, _HARD)
+    LSTMUINT_KERENL_NAME(CBP, U8,  U8,  F16, _HARD)
+    /* hybrid + projection + hard_sigmoid */
+    LSTMUINT_KERENL_NAME(BP,  U8,  I16, F32, _HARD)
+    LSTMUINT_KERENL_NAME(BP,  U8,  I8,  F32, _HARD)
+    LSTMUINT_KERENL_NAME(BP,  U8,  U8,  F32, _HARD)
+    LSTMUINT_KERENL_NAME(BP,  U8,  I16, F16, _HARD)
+    LSTMUINT_KERENL_NAME(BP,  U8,  I8,  F16, _HARD)
+    LSTMUINT_KERENL_NAME(BP,  U8,  U8,  F16, _HARD)
+
+    /* standard + projection + hard_sigmoid */
+    LSTMUINT_KERENL_NAME(SP,  F16, F16, F32, _HARD)
+    LSTMUINT_KERENL_NAME(SP,  F16, F16, F16, _HARD)
+    /* standard + hard_sigmoid */
+    LSTMUINT_KERENL_NAME(S,   F16, F16, F16, _HARD)
+    LSTMUINT_KERENL_NAME(S,   F16, I16, F16, _HARD)
+    LSTMUINT_KERENL_NAME(S,   F16, I8,  F16, _HARD)
+    LSTMUINT_KERENL_NAME(S,   F16, U8,  F16, _HARD)
+    LSTMUINT_KERENL_NAME(S,   F16, F16, F32, _HARD)
+    LSTMUINT_KERENL_NAME(S,   F16, I16, F32, _HARD)
+    LSTMUINT_KERENL_NAME(S,   F16, I8,  F32, _HARD)
+    LSTMUINT_KERENL_NAME(S,   F16, U8,  F32, _HARD)
+    /* cifg + standard + projection + hard_sigmoid */
+    LSTMUINT_KERENL_NAME(CSP, F16, F16, F32, _HARD)
+    LSTMUINT_KERENL_NAME(CSP, F16, F16, F16, _HARD)
+    /* cifg + standard + hard_sigmoid */
+    LSTMUINT_KERENL_NAME(CS,  F16, F16, F16, _HARD)
+    LSTMUINT_KERENL_NAME(CS,  F16, I16, F16, _HARD)
+    LSTMUINT_KERENL_NAME(CS,  F16, I8,  F16, _HARD)
+    LSTMUINT_KERENL_NAME(CS,  F16, U8,  F16, _HARD)
+    LSTMUINT_KERENL_NAME(CS,  F16, F16, F32, _HARD)
+    LSTMUINT_KERENL_NAME(CS,  F16, I16, F32, _HARD)
+    LSTMUINT_KERENL_NAME(CS,  F16, I8,  F32, _HARD)
+    LSTMUINT_KERENL_NAME(CS,  F16, U8,  F32, _HARD)
+    /* cifg + standard + projection + hard_sigmoid */
+    LSTMUINT_KERENL_NAME(CSP, F16, I16, F32, _HARD)
+    LSTMUINT_KERENL_NAME(CSP, F16, I8,  F32, _HARD)
+    LSTMUINT_KERENL_NAME(CSP, F16, U8,  F32, _HARD)
+    LSTMUINT_KERENL_NAME(CSP, F16, I16, F16, _HARD)
+    LSTMUINT_KERENL_NAME(CSP, F16, I8,  F16, _HARD)
+    LSTMUINT_KERENL_NAME(CSP, F16, U8,  F16, _HARD)
+    /* standard + projection + hard_sigmoid */
+    LSTMUINT_KERENL_NAME(SP,  F16, I16, F32, _HARD)
+    LSTMUINT_KERENL_NAME(SP,  F16, I8,  F32, _HARD)
+    LSTMUINT_KERENL_NAME(SP,  F16, U8,  F32, _HARD)
+    LSTMUINT_KERENL_NAME(SP,  F16, I16, F16, _HARD)
+    LSTMUINT_KERENL_NAME(SP,  F16, I8,  F16, _HARD)
+    LSTMUINT_KERENL_NAME(SP,  F16, U8,  F16, _HARD)
+    /* standard + projection + hard_sigmoid */
+    LSTMUINT_KERENL_NAME(SP,  U8,  F16, F32, _HARD)
+    LSTMUINT_KERENL_NAME(SP,  U8,  F16, F16, _HARD)
+    /* standard + hard_sigmoid */
+    LSTMUINT_KERENL_NAME(S,   U8,  F16, F16, _HARD)
+    LSTMUINT_KERENL_NAME(S,   U8,  U8,  F16, _HARD)
+    LSTMUINT_KERENL_NAME(S,   U8,  F16, F32, _HARD)
+    LSTMUINT_KERENL_NAME(S,   U8,  U8,  F32, _HARD)
+    /* cifg + standard + projection + hard_sigmoid */
+    LSTMUINT_KERENL_NAME(CSP, U8,  F16, F32, _HARD)
+    LSTMUINT_KERENL_NAME(CSP, U8,  F16, F16, _HARD)
+    /* cifg + standard + hard_sigmoid */
+    LSTMUINT_KERENL_NAME(CS,  U8,  F16, F16, _HARD)
+    LSTMUINT_KERENL_NAME(CS,  U8,  U8,  F16, _HARD)
+    LSTMUINT_KERENL_NAME(CS,  U8,  F16, F32, _HARD)
+    LSTMUINT_KERENL_NAME(CS,  U8,  U8,  F32, _HARD)
+    /* cifg + standard + projection + hard_sigmoid */
+    LSTMUINT_KERENL_NAME(CSP, U8, I16,  F32, _HARD)
+    LSTMUINT_KERENL_NAME(CSP, U8, I8,   F32, _HARD)
+    LSTMUINT_KERENL_NAME(CSP, U8, U8,   F32, _HARD)
+    LSTMUINT_KERENL_NAME(CSP, U8, I16,  F16, _HARD)
+    LSTMUINT_KERENL_NAME(CSP, U8, I8,   F16, _HARD)
+    LSTMUINT_KERENL_NAME(CSP, U8, U8,   F16, _HARD)
+    /* standard + projection + hard_sigmoid */
+    LSTMUINT_KERENL_NAME(SP,  U8, I16,  F32, _HARD)
+    LSTMUINT_KERENL_NAME(SP,  U8, I8,   F32, _HARD)
+    LSTMUINT_KERENL_NAME(SP,  U8, U8,   F32, _HARD)
+    LSTMUINT_KERENL_NAME(SP,  U8, I16,  F16, _HARD)
+    LSTMUINT_KERENL_NAME(SP,  U8, I8,   F16, _HARD)
+    LSTMUINT_KERENL_NAME(SP,  U8, U8,   F16, _HARD)
+
     NULL
 };
 #ifdef __cplusplus
