@@ -1,31 +1,26 @@
 /****************************************************************************
 *
-*    Copyright 2012 - 2019 Vivante Corporation, Santa Clara, California.
-*    All Rights Reserved.
+*    Copyright (c) 2018 Vivante Corporation
 *
-*    Permission is hereby granted, free of charge, to any person obtaining
-*    a copy of this software and associated documentation files (the
-*    'Software'), to deal in the Software without restriction, including
-*    without limitation the rights to use, copy, modify, merge, publish,
-*    distribute, sub license, and/or sell copies of the Software, and to
-*    permit persons to whom the Software is furnished to do so, subject
-*    to the following conditions:
+*    Permission is hereby granted, free of charge, to any person obtaining a
+*    copy of this software and associated documentation files (the "Software"),
+*    to deal in the Software without restriction, including without limitation
+*    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+*    and/or sell copies of the Software, and to permit persons to whom the
+*    Software is furnished to do so, subject to the following conditions:
 *
-*    The above copyright notice and this permission notice (including the
-*    next paragraph) shall be included in all copies or substantial
-*    portions of the Software.
+*    The above copyright notice and this permission notice shall be included in
+*    all copies or substantial portions of the Software.
 *
-*    THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
-*    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-*    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
-*    IN NO EVENT SHALL VIVANTE AND/OR ITS SUPPLIERS BE LIABLE FOR ANY
-*    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-*    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-*    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+*    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+*    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+*    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+*    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+*    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+*    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-
-
 #include <string.h>
 
 #include "vsi_nn_types.h"
@@ -105,7 +100,7 @@ static vsi_status op_compute
     return status;
 } /* op_compute() */
 
-static vsi_bool op_check
+vsi_bool conv2d_op_check
     (
     vsi_nn_node_t * self,
     vsi_nn_tensor_t ** inputs,
@@ -118,9 +113,9 @@ static vsi_bool op_check
     ret = vsi_nn_QuantCheck(inputs[0], inputs[1], inputs[2]);
 
     return ret;
-} /* op_check() */
+} /* conv2d_op_check() */
 
-static vsi_bool op_setup
+vsi_bool conv2d_op_setup
     (
     vsi_nn_node_t * self,
     vsi_nn_tensor_t ** inputs,
@@ -175,7 +170,7 @@ static vsi_bool op_setup
         outputs[0]->attr.dim_num = inputs[0]->attr.dim_num;
     }
     return TRUE;
-} /* op_setup() */
+} /* conv2d_op_setup() */
 
 #ifdef __cplusplus
 extern "C" {
@@ -187,8 +182,8 @@ DEF_OP_REG
     /* init       */ NULL,
     /* compute    */ op_compute,
     /* deinit     */ vsi_nn_op_common_deinit,
-    /* check      */ op_check,
-    /* setup      */ op_setup,
+    /* check      */ conv2d_op_check,
+    /* setup      */ conv2d_op_setup,
     /* optimize   */ NULL,
     /* input_num  */ 3,
     /* output_num */ 1

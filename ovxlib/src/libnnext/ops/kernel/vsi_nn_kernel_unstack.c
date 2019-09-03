@@ -1,31 +1,26 @@
 /****************************************************************************
 *
-*    Copyright 2012 - 2019 Vivante Corporation, Santa Clara, California.
-*    All Rights Reserved.
+*    Copyright (c) 2019 Vivante Corporation
 *
-*    Permission is hereby granted, free of charge, to any person obtaining
-*    a copy of this software and associated documentation files (the
-*    'Software'), to deal in the Software without restriction, including
-*    without limitation the rights to use, copy, modify, merge, publish,
-*    distribute, sub license, and/or sell copies of the Software, and to
-*    permit persons to whom the Software is furnished to do so, subject
-*    to the following conditions:
+*    Permission is hereby granted, free of charge, to any person obtaining a
+*    copy of this software and associated documentation files (the "Software"),
+*    to deal in the Software without restriction, including without limitation
+*    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+*    and/or sell copies of the Software, and to permit persons to whom the
+*    Software is furnished to do so, subject to the following conditions:
 *
-*    The above copyright notice and this permission notice (including the
-*    next paragraph) shall be included in all copies or substantial
-*    portions of the Software.
+*    The above copyright notice and this permission notice shall be included in
+*    all copies or substantial portions of the Software.
 *
-*    THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
-*    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-*    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
-*    IN NO EVENT SHALL VIVANTE AND/OR ITS SUPPLIERS BE LIABLE FOR ANY
-*    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-*    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-*    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+*    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+*    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+*    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+*    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+*    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+*    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -60,12 +55,12 @@ static vsi_status VX_CALLBACK vxUnstackKernel
     vx_object_array output_array = (vx_object_array)paramObj[1];
     vx_tensor output[VSI_NN_UNSTACK_MAX_OUTPUTS] = {0};
     vx_tensor input = NULL;
-    float *f32_out_buffer[VSI_NN_UNSTACK_MAX_OUTPUTS] = {0};
-    float *f32_in_buffer = NULL;
+    uint8_t *out_buffer[VSI_NN_UNSTACK_MAX_OUTPUTS] = {0};
+    uint8_t *in_buffer = NULL;
     vsi_nn_tensor_attr_t out_attr[VSI_NN_UNSTACK_MAX_OUTPUTS];
     vsi_nn_tensor_attr_t in_attr;
     uint32_t out_elements[VSI_NN_UNSTACK_MAX_OUTPUTS];
-    uint32_t in_elements;
+    //uint32_t in_elements;
     uint32_t i, j;
     vx_size itemCount;
     uint32_t axis;
@@ -84,25 +79,24 @@ static vsi_status VX_CALLBACK vxUnstackKernel
 
     for (i = 0; i < (uint32_t)itemCount; i++)
     {
+        uint32_t stride;
         status = vsi_nn_vxGetTensorAttr(output[i], &out_attr[i]);
         TEST_CHECK_STATUS(status, final);
+        stride = vsi_nn_TypeGetBytes(out_attr[i].dtype.vx_type);
         out_elements[i] = vsi_nn_vxGetTensorElementNum(&out_attr[i]);
-        f32_out_buffer[i] = (float *)malloc(out_elements[i] * sizeof(float));
-        status = vsi_nn_vxConvertTensorToFloat32Data(
-            context, output[i], &out_attr[i], f32_out_buffer[i], out_elements[i] * sizeof(float));
-        TEST_CHECK_STATUS(status, final);
+        out_buffer[i] = (uint8_t *)malloc(out_elements[i] * stride);
     }
 
     status = vsi_nn_vxGetTensorAttr(input, &in_attr);
     TEST_CHECK_STATUS(status, final);
-    in_elements = vsi_nn_vxGetTensorElementNum(&in_attr);
-    f32_in_buffer= (float *)malloc(in_elements * sizeof(float));
-    memset(f32_out_buffer, 0, in_elements * sizeof(float));
+    //in_elements = vsi_nn_vxGetTensorElementNum(&in_attr);
+    in_buffer= vsi_nn_vxCopyTensorToData(context, input, &in_attr);
 
     /* TODO: Add CPU kernel implement */
     {
         uint32_t block_size = 1;
         uint32_t block_num = 1;
+        uint32_t stride = vsi_nn_TypeGetBytes(in_attr.dtype.vx_type);
         for (i = 0; i < axis; i++)
         {
             block_size *= in_attr.size[i];
@@ -118,8 +112,8 @@ static vsi_status VX_CALLBACK vxUnstackKernel
             {
                 uint32_t out_index = i * block_size;
                 uint32_t in_index = (i * itemCount + j) * block_size;
-                memcpy(&(f32_out_buffer[j][out_index]), &(f32_in_buffer[in_index]),
-                    block_size * sizeof(float));
+                memcpy(&(out_buffer[j][out_index * stride]), &(in_buffer[in_index * stride]),
+                    block_size * stride);
             }
         }
     }
@@ -127,15 +121,14 @@ static vsi_status VX_CALLBACK vxUnstackKernel
     /* save output data*/
     for (i = 0; i < (uint32_t)itemCount; i++)
     {
-        status = vsi_nn_vxConvertFloat32DataToTensor(
-            context, output[i], &out_attr[i], f32_out_buffer[i], out_elements[i] * sizeof(float));
+        status = vsi_nn_vxCopyDataToTensor(context, output[i], &out_attr[i], out_buffer[i]);
     }
 final:
     for (i = 0; i < VSI_NN_UNSTACK_MAX_OUTPUTS; i++)
     {
-        if (f32_out_buffer[i]) free(f32_out_buffer[i]);
+        if (out_buffer[i]) free(out_buffer[i]);
     }
-    if (f32_in_buffer) free(f32_in_buffer);
+    if (in_buffer) free(in_buffer);
     return status;
 } /* _VX_KERNEL_FUNC_KERNEL() */
 

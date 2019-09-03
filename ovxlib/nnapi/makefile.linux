@@ -1,0 +1,59 @@
+include $(AQROOT)/makefile.linux.def
+
+INCLUDE += -I$(VIVANTE_SDK_INC) -I$(VIVANTE_SDK_INC)/HAL -I$(AQROOT)/sdk/inc
+INCLUDE += -I../include/ops -I../include/utils -I../include/inference
+INCLUDE += -I../include/client -I../include -I../include/libnnext
+INCLUDE += -I../include/platform
+INCLUDE += -I./ -I./graph_transformations
+
+CFLAGS += $(INCLUDE) -std=c++11
+CFLAGS += -fpermissive -fvisibility=hidden -D'OVXLIB_API=__attribute__((visibility("default")))'
+CC    =$(CROSS_COMPILE)g++ -pthread
+################################################################################
+# Supply necessary libraries.
+
+LIBS += -L$(VIVANTE_SDK_LIB) -l ovxlib
+#LIBS += -lm
+
+#############################################################################
+# Macros.
+ifeq ($(gcdSTATIC_LINK), 1)
+STATIC=1
+TARGET_NAME  = libneuralnetworks.a
+else
+CFLAGS += -fPIC
+DYNAMIC      := 1
+TARGET_NAME  = libneuralnetworks.so
+endif
+
+#############################################################################
+# Objects.
+vpath %.cc ./
+OBJECTS = $(OBJ_DIR)/file_map_memory.o \
+        $(OBJ_DIR)/memory_pool.o \
+        $(OBJ_DIR)/operation.o \
+        $(OBJ_DIR)/operand.o \
+        $(OBJ_DIR)/model.o \
+        $(OBJ_DIR)/compilation.o \
+        $(OBJ_DIR)/event.o \
+        $(OBJ_DIR)/utils.o \
+        $(OBJ_DIR)/execution.o \
+        $(OBJ_DIR)/prepared_model.o \
+        $(OBJ_DIR)/ovxlib_delegate.o \
+        $(OBJ_DIR)/NeuralNetworks.o
+
+vpath %.cc graph_transformations
+OBJECTS += $(OBJ_DIR)/t2c.o \
+        $(OBJ_DIR)/align_broadcast_op.o \
+        $(OBJ_DIR)/transformations.o \
+        $(OBJ_DIR)/optimize_permute.o \
+        $(OBJ_DIR)/fp32tofp16.o \
+        $(OBJ_DIR)/validate_quantized_graph.o \
+        $(OBJ_DIR)/nnapi_interpreter.o
+# installation directory
+INSTALL_DIR := $(VIVANTE_SDK_LIB)
+
+################################################################################
+# Include the common makefile.
+
+include $(AQROOT)/common.target

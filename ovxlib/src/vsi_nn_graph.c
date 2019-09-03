@@ -1,31 +1,26 @@
 /****************************************************************************
 *
-*    Copyright 2012 - 2019 Vivante Corporation, Santa Clara, California.
-*    All Rights Reserved.
+*    Copyright (c) 2018 Vivante Corporation
 *
-*    Permission is hereby granted, free of charge, to any person obtaining
-*    a copy of this software and associated documentation files (the
-*    'Software'), to deal in the Software without restriction, including
-*    without limitation the rights to use, copy, modify, merge, publish,
-*    distribute, sub license, and/or sell copies of the Software, and to
-*    permit persons to whom the Software is furnished to do so, subject
-*    to the following conditions:
+*    Permission is hereby granted, free of charge, to any person obtaining a
+*    copy of this software and associated documentation files (the "Software"),
+*    to deal in the Software without restriction, including without limitation
+*    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+*    and/or sell copies of the Software, and to permit persons to whom the
+*    Software is furnished to do so, subject to the following conditions:
 *
-*    The above copyright notice and this permission notice (including the
-*    next paragraph) shall be included in all copies or substantial
-*    portions of the Software.
+*    The above copyright notice and this permission notice shall be included in
+*    all copies or substantial portions of the Software.
 *
-*    THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
-*    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-*    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
-*    IN NO EVENT SHALL VIVANTE AND/OR ITS SUPPLIERS BE LIABLE FOR ANY
-*    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-*    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-*    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+*    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+*    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+*    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+*    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+*    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+*    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-
-
 #include <stdlib.h>
 #include <string.h>
 
@@ -43,6 +38,7 @@
 #include "utils/vsi_nn_util.h"
 #include "utils/vsi_nn_vdata.h"
 #include "utils/vsi_nn_map.h"
+#include "cpu_backend/vsi_nn_cpu_backend.h"
 
 static vsi_status _set_reference_name
     (
@@ -372,6 +368,7 @@ static vsi_status setup_node
             node_id, node->uid, vsi_nn_OpGetName(node->op));
         if( vsi_nn_OpCheck( node->op, node, inputs, outputs ) )
         {
+            vsi_nn_print_node_io(graph, node, 0x01);
             ret = vsi_nn_OpGenerateTensor( node, inputs, outputs );
             if(ret != TRUE)
             {
@@ -379,7 +376,7 @@ static vsi_status setup_node
                 status = VSI_FAILURE;
                 break;
             }
-            vsi_nn_PrintNodeIO(graph, node);
+            vsi_nn_print_node_io(graph, node, 0x02);
         }
         else
         {
@@ -387,10 +384,6 @@ static vsi_status setup_node
             status = VSI_FAILURE;
             break;
         }
-    }
-    if(status == VSI_FAILURE)
-    {
-        vsi_nn_PrintNodeIO(graph, node);
     }
 
 final:
@@ -420,8 +413,12 @@ vsi_nn_graph_t * vsi_nn_CreateGraph
         graph->g = vxCreateGraph( ctx->c );
         if( NULL != graph->g )
         {
-            //graph->max_tensor_num = max_tensor_num;
-            //graph->max_node_num = max_node_num;
+            /* Configure driver mem aligned size,
+             * driver requests address and tensor size are aligend to 64 bytes. */
+            const uint32_t ADDRESS_ALIGN_BYTES = 64;
+            const uint32_t MEMORY_BLOCK_ALIGN_BYTES = 64;
+            graph->handle_manager.align_start_size = ADDRESS_ALIGN_BYTES;
+            graph->handle_manager.align_block_size = MEMORY_BLOCK_ALIGN_BYTES;
             graph->tensor_num = 0;
             graph->node_num = 0;
             graph->ctx = ctx;
@@ -439,6 +436,11 @@ vsi_nn_graph_t * vsi_nn_CreateGraph
         }
     }
 
+    if( vsi_nn_CpuBackendEnabled() )
+    {
+        VSILOGD("Use CPU backend.");
+        vsi_nn_RegisterCpuBackendPos( graph );
+    }
     return graph;
 } /* vsi_nn_CreateGraph() */
 
@@ -460,6 +462,11 @@ void vsi_nn_ReleaseGraph
                 vsi_nn_RemoveTensor( *graph, (vsi_nn_tensor_id_t)i );
             }
             free( (*graph)->tensor_table );
+        }
+        if( ptr->complete_signal.exists
+            && NULL != ptr->complete_signal.tensor )
+        {
+            vsi_nn_ReleaseTensor( &ptr->complete_signal.tensor );
         }
         if( NULL != ptr->nodes )
         {
@@ -515,45 +522,6 @@ vsi_status vsi_nn_SetupGraph
     if( NULL == graph )
     {
         return status;
-    }
-
-    /* Explicitly set graph inputs and outputs */
-    num_of_graph_inputs = graph->input.num;
-    graph_inputs = (vx_reference *)malloc( num_of_graph_inputs * sizeof( vx_reference ) );
-    for( i = 0; i < num_of_graph_inputs; i++ )
-    {
-        tensor = vsi_nn_GetTensor( graph, graph->input.tensors[i] );
-        if (tensor)
-        {
-            graph_inputs[i] = (vx_reference)( tensor->t );
-        }
-        else
-        {
-            graph_inputs[i] = NULL;
-        }
-    }
-    num_of_graph_outputs = graph->output.num;
-    graph_outputs = (vx_reference *)malloc( num_of_graph_outputs * sizeof( vx_reference ) );
-    for( i = 0; i < num_of_graph_outputs; i++ )
-    {
-        tensor = vsi_nn_GetTensor( graph, graph->output.tensors[i] );
-        if (tensor)
-        {
-            graph_outputs[i] = (vx_reference)( tensor->t );
-        }
-        else
-        {
-            graph_outputs[i] = NULL;
-        }
-    }
-    status = vxIdentifyGraphInputsAndOutputs( graph->g,
-        num_of_graph_inputs,
-        graph_inputs,
-        num_of_graph_outputs,
-        graph_outputs );
-    if( VSI_SUCCESS != status )
-    {
-        goto final;
     }
 
 #define MAX_NODES_IN_SDK 1024
@@ -613,6 +581,59 @@ vsi_status vsi_nn_SetupGraph
     /* Create vx node and vx virtual tensor */
     status = compute_node( graph, nodes_list );
     if(VSI_SUCCESS != status)
+    {
+        goto final;
+    }
+
+    /* Try setup graph complete signal node. */
+    status = vsi_nn_TrySetupCompleteSignalNode( graph );
+    TEST_CHECK_STATUS( status, final );
+
+    /* Explicitly set graph inputs and outputs */
+    num_of_graph_inputs = graph->input.num;
+    graph_inputs = (vx_reference *)malloc( num_of_graph_inputs * sizeof( vx_reference ) );
+    for( i = 0; i < num_of_graph_inputs; i++ )
+    {
+        tensor = vsi_nn_GetTensor( graph, graph->input.tensors[i] );
+        if (tensor)
+        {
+            graph_inputs[i] = (vx_reference)( tensor->t );
+        }
+        else
+        {
+            graph_inputs[i] = NULL;
+        }
+    }
+    num_of_graph_outputs = graph->output.num;
+    if( graph->complete_signal.exists )
+    {
+        num_of_graph_outputs += 1;
+    }
+    graph_outputs = (vx_reference *)malloc( num_of_graph_outputs * sizeof( vx_reference ) );
+    for( i = 0; i < num_of_graph_outputs; i++ )
+    {
+        tensor = vsi_nn_GetTensor( graph, graph->output.tensors[i] );
+        if (tensor)
+        {
+            graph_outputs[i] = (vx_reference)( tensor->t );
+        }
+        else
+        {
+            graph_outputs[i] = NULL;
+        }
+    }
+    if( graph->complete_signal.exists )
+    {
+        graph_outputs[num_of_graph_outputs - 1] = \
+                (vx_reference)graph->complete_signal.tensor->t;
+    }
+    status = vxIdentifyGraphInputsAndOutputs( graph->g,
+        num_of_graph_inputs,
+        graph_inputs,
+        num_of_graph_outputs,
+        graph_outputs );
+
+    if( VSI_SUCCESS != status )
     {
         goto final;
     }
@@ -1563,6 +1584,72 @@ void vsi_nn_DumpGraphToJson
     vsi_nn_ReleaseTensorRelevance(graph, tensor_ref);
     fclose(fp);
 } /* vsi_nn_DumpGraphToJson() */
+
+/*
+ * Documented in vsi_nn_graph.h
+ */
+vsi_status vsi_nn_TrySetupCompleteSignalNode
+    (
+    vsi_nn_graph_t* graph
+    )
+{
+    vsi_nn_tensor_t* tensor = NULL;
+    vsi_nn_tensor_t* signal_tensor = NULL;
+    vsi_nn_node_t* signal_node = NULL;
+    vsi_nn_tensor_attr_t signal_tensor_attr;
+    vsi_status status = VSI_FAILURE;
+    if( graph->complete_signal.exists )
+    {
+        if( !graph->complete_signal.write_address )
+        {
+            VSILOGW("COMPLETE signal is set with null write addres.");
+            return VSI_FAILURE;
+        }
+        VSILOGD("Setup COMPLETE signal, value \"%d\", write address \"%p\"",
+                graph->complete_signal.value, graph->complete_signal.write_address);
+        /* Setup signal tensor attr */
+        memset( &signal_tensor_attr, 0, sizeof(vsi_nn_tensor_attr_t) );
+        signal_tensor_attr.size[0] = 8;
+        signal_tensor_attr.size[1] = 1;
+        signal_tensor_attr.dim_num = 2;
+        signal_tensor_attr.dtype.vx_type = VSI_NN_TYPE_UINT8;
+        signal_tensor_attr.vtl = FALSE;
+        /* Setup signal node */
+        signal_node = vsi_nn_CreateNode( graph, VSI_NN_OP_EXTRA_ENDING );
+        TEST_CHECK_PTR( signal_node, final );
+
+        signal_node->nn_param.extra_ending.length = sizeof(int64_t);
+        memcpy( &signal_node->nn_param.extra_ending.value,
+                &graph->complete_signal.value, sizeof(int64_t));
+
+        if( graph->output.num > 1 )
+        {
+            VSILOGE("Not support COMPLETE signal with multi graph outputs.");
+        }
+        else
+        {
+            tensor = vsi_nn_GetTensor( graph, graph->output.tensors[0] );
+            signal_tensor = vsi_nn_CreateTensorFromHandle( graph,
+                    (uint8_t*)graph->complete_signal.write_address,
+                    &signal_tensor_attr);
+            status = vsi_nn_OpCompute( signal_node->op, signal_node,
+                    &tensor, &signal_tensor );
+            TEST_CHECK_STATUS( status, final );
+        }
+        graph->complete_signal.tensor = signal_tensor;
+        status = VSI_SUCCESS;
+    }
+    else
+    {
+        status = VSI_SUCCESS;
+    }
+final:
+    if( signal_node )
+    {
+        vsi_nn_ReleaseNode( &signal_node );
+    }
+    return status;
+} /* vsi_nn_TrySetupCompleteSignalNode() */
 
 vsi_status vsi_nn_SetupRNNConnections
     (

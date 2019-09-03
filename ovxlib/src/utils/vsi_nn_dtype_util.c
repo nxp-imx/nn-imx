@@ -1,31 +1,26 @@
 /****************************************************************************
 *
-*    Copyright 2012 - 2019 Vivante Corporation, Santa Clara, California.
-*    All Rights Reserved.
+*    Copyright (c) 2018 Vivante Corporation
 *
-*    Permission is hereby granted, free of charge, to any person obtaining
-*    a copy of this software and associated documentation files (the
-*    'Software'), to deal in the Software without restriction, including
-*    without limitation the rights to use, copy, modify, merge, publish,
-*    distribute, sub license, and/or sell copies of the Software, and to
-*    permit persons to whom the Software is furnished to do so, subject
-*    to the following conditions:
+*    Permission is hereby granted, free of charge, to any person obtaining a
+*    copy of this software and associated documentation files (the "Software"),
+*    to deal in the Software without restriction, including without limitation
+*    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+*    and/or sell copies of the Software, and to permit persons to whom the
+*    Software is furnished to do so, subject to the following conditions:
 *
-*    The above copyright notice and this permission notice (including the
-*    next paragraph) shall be included in all copies or substantial
-*    portions of the Software.
+*    The above copyright notice and this permission notice shall be included in
+*    all copies or substantial portions of the Software.
 *
-*    THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
-*    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-*    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
-*    IN NO EVENT SHALL VIVANTE AND/OR ITS SUPPLIERS BE LIABLE FOR ANY
-*    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-*    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-*    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+*    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+*    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+*    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+*    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+*    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+*    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-
-
 #include <string.h>
 #include <stdlib.h>
 
@@ -37,6 +32,7 @@
 #include "utils/vsi_nn_dtype_util_prv.h"
 #include "quantization/vsi_nn_asymmetric_affine.h"
 #include "quantization/vsi_nn_dynamic_fixed_point.h"
+#include "quantization/vsi_nn_perchannel_symmetric_affine.h"
 
 vsi_bool vsi_nn_TypeIsInteger
     (
@@ -124,6 +120,14 @@ float vsi_nn_Fp16ToFp32
     )
 {
     return fp16_to_fp32(in);
+} /* vsi_nn_Fp16ToFp32() */
+
+float vsi_nn_BFp16ToFp32
+    (
+    int16_t in
+    )
+{
+    return bfp16_to_fp32(in);
 } /* vsi_nn_Fp16ToFp32() */
 
 vsi_status vsi_nn_IntegerConvert
@@ -363,14 +367,25 @@ vsi_bool vsi_nn_QuantCheck
         }
         break;
     case VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC:
-        ret = vsi_nn_QuantAffineCheck(input, weight, bias);
-        if(ret == FALSE)
-        {
-            VSILOGE("abs(input_scale[%f] * weight_scale[%f] - bias_scale[%f]) > 1e-5",
-                input->attr.dtype.scale,
-                weight->attr.dtype.scale,
-                bias->attr.dtype.scale);
-        }
+    if (weight->attr.dtype.qnt_type == VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC)
+    {
+      ret = vsi_nn_QuantAffinePerchannelCheck(input, weight, bias);
+      if(ret == FALSE)
+      {
+        VSILOGE("abs(input_scale * weight_scale - bias_scale) > 1e-5");
+      }
+    }
+    else
+    {
+      ret = vsi_nn_QuantAffineCheck(input, weight, bias);
+      if(ret == FALSE)
+      {
+        VSILOGE("abs(input_scale[%f] * weight_scale[%f] - bias_scale[%f]) > 1e-5",
+          input->attr.dtype.scale,
+          weight->attr.dtype.scale,
+          bias->attr.dtype.scale);
+      }
+    }
         break;
     default:
         ret = FALSE;

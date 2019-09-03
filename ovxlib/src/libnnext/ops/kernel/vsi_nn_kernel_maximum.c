@@ -1,30 +1,26 @@
 /****************************************************************************
 *
-*    Copyright 2012 - 2019 Vivante Corporation, Santa Clara, California.
-*    All Rights Reserved.
+*    Copyright (c) 2018 Vivante Corporation
 *
-*    Permission is hereby granted, free of charge, to any person obtaining
-*    a copy of this software and associated documentation files (the
-*    'Software'), to deal in the Software without restriction, including
-*    without limitation the rights to use, copy, modify, merge, publish,
-*    distribute, sub license, and/or sell copies of the Software, and to
-*    permit persons to whom the Software is furnished to do so, subject
-*    to the following conditions:
+*    Permission is hereby granted, free of charge, to any person obtaining a
+*    copy of this software and associated documentation files (the "Software"),
+*    to deal in the Software without restriction, including without limitation
+*    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+*    and/or sell copies of the Software, and to permit persons to whom the
+*    Software is furnished to do so, subject to the following conditions:
 *
-*    The above copyright notice and this permission notice (including the
-*    next paragraph) shall be included in all copies or substantial
-*    portions of the Software.
+*    The above copyright notice and this permission notice shall be included in
+*    all copies or substantial portions of the Software.
 *
-*    THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
-*    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-*    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
-*    IN NO EVENT SHALL VIVANTE AND/OR ITS SUPPLIERS BE LIABLE FOR ANY
-*    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-*    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-*    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+*    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+*    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+*    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+*    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+*    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+*    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -45,7 +41,7 @@
 #define MAX_MULTIPLIER_NUM      (65535)
 #define MAX_POST_SHIFT_BITS     (31)
 
-vsi_status VX_CALLBACK vxeltwiseMaxInitializer
+vsi_status VX_CALLBACK vxMaximumInitializer
     (
     vx_node nodObj,
     const vx_reference *paramObj,
@@ -559,7 +555,7 @@ extern "C" {
     vsi_nn_KernelValidator, \
     NULL, \
     NULL, \
-    vxeltwiseMaxInitializer, \
+    vxMaximumInitializer, \
     vsi_nn_KernelDeinitializer \
 };
 
@@ -574,7 +570,7 @@ extern "C" {
     vsi_nn_KernelValidator, \
     NULL, \
     NULL, \
-    vxeltwiseMaxInitializer, \
+    vxMaximumInitializer, \
     vsi_nn_KernelDeinitializer \
 };
 
@@ -608,7 +604,7 @@ TENSOR_MAX_KERNELS_2D(F16,  F16, U8)
     &vxTensorMaximum_##SRC0_TYPE##SRC1_TYPE##to##DST_TYPE##_##INSTR##Kernel,
 
 
-vx_kernel_description_t * vx_kernel_ELTWISEMAX_list[] =
+vx_kernel_description_t * vx_kernel_MAXIMUM_list[] =
 {
     NULL,
     TENSOR_MAX_KERENLS_NAME(F16, F16, F16, )

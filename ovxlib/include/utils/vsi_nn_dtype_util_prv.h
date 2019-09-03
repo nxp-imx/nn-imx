@@ -1,31 +1,26 @@
 /****************************************************************************
 *
-*    Copyright 2012 - 2019 Vivante Corporation, Santa Clara, California.
-*    All Rights Reserved.
+*    Copyright (c) 2018 Vivante Corporation
 *
-*    Permission is hereby granted, free of charge, to any person obtaining
-*    a copy of this software and associated documentation files (the
-*    'Software'), to deal in the Software without restriction, including
-*    without limitation the rights to use, copy, modify, merge, publish,
-*    distribute, sub license, and/or sell copies of the Software, and to
-*    permit persons to whom the Software is furnished to do so, subject
-*    to the following conditions:
+*    Permission is hereby granted, free of charge, to any person obtaining a
+*    copy of this software and associated documentation files (the "Software"),
+*    to deal in the Software without restriction, including without limitation
+*    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+*    and/or sell copies of the Software, and to permit persons to whom the
+*    Software is furnished to do so, subject to the following conditions:
 *
-*    The above copyright notice and this permission notice (including the
-*    next paragraph) shall be included in all copies or substantial
-*    portions of the Software.
+*    The above copyright notice and this permission notice shall be included in
+*    all copies or substantial portions of the Software.
 *
-*    THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
-*    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-*    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
-*    IN NO EVENT SHALL VIVANTE AND/OR ITS SUPPLIERS BE LIABLE FOR ANY
-*    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-*    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-*    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+*    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+*    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+*    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+*    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+*    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+*    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-
-
 #ifndef _VSI_NN_DTYPE_UTIL_PRV_H
 #define _VSI_NN_DTYPE_UTIL_PRV_H
 
@@ -78,6 +73,7 @@ static inline vsi_bool type_is_signed
     case VSI_NN_TYPE_FLOAT16:
     case VSI_NN_TYPE_FLOAT32:
     case VSI_NN_TYPE_FLOAT64:
+    case VSI_NN_TYPE_BFLOAT16:
         ret = TRUE;
         break;
     default:
@@ -99,6 +95,7 @@ static inline uint32_t type_get_bytes
     case VSI_NN_TYPE_INT16:
     case VSI_NN_TYPE_UINT16:
     case VSI_NN_TYPE_FLOAT16:
+    case VSI_NN_TYPE_BFLOAT16:
         return 2;
     case VSI_NN_TYPE_INT32:
     case VSI_NN_TYPE_UINT32:
@@ -275,6 +272,27 @@ static inline float fp16_to_fp32
     return out;
 } /* fp16_to_fp32() */
 
+static inline float bfp16_to_fp32
+    (
+    int16_t in
+    )
+{
+    int32_t t1, t2, t3;
+    float out;
+
+    t1 = in & 0x00FF;                       // Mantissa
+    t2 = in & 0xFF00;                       // Sign bit + Exponent
+    t3 = in & 0x7F00;                       // Exponent
+
+    t1 <<= 16;
+    t2 <<= 16;                              // Shift (sign + Exponent) bit into position
+    t1 |= t2;                               // Re-insert (sign + Exponent) bit
+
+    *((uint32_t*)&out) = t1;
+
+    return t3 == 0 ? 0 : out;
+} /* bfp16_to_fp32() */
+
 static inline uint16_t fp32_to_fp16
     (
     float in
@@ -301,6 +319,17 @@ static inline uint16_t fp32_to_fp16
     return (uint16_t) fp16;
 } /* fp32_to_fp16() */
 
+static inline uint16_t fp32_to_bfp16
+    (
+    float in
+    )
+{
+    uint32_t fp32 = *((unsigned int *) &in);
+    uint32_t t1 = fp32 >> 16;
+
+    return (uint16_t) t1;
+} /* fp32_to_bfp16() */
+
 static inline vsi_status dtype_to_float32
     (
     uint8_t *src,
@@ -315,6 +344,9 @@ static inline vsi_status dtype_to_float32
         break;
     case VSI_NN_TYPE_FLOAT16:
         *dst = fp16_to_fp32( *(int16_t *)src );
+        break;
+    case VSI_NN_TYPE_BFLOAT16:
+        *dst = bfp16_to_fp32( *(int16_t *)src );
         break;
     case VSI_NN_TYPE_INT8:
     case VSI_NN_TYPE_UINT8:
@@ -359,6 +391,9 @@ static inline vsi_status float32_to_dtype
         break;
     case VSI_NN_TYPE_FLOAT16:
         *(int16_t *)dst = fp32_to_fp16( src );
+        break;
+    case VSI_NN_TYPE_BFLOAT16:
+        *(int16_t *)dst = fp32_to_bfp16( src );
         break;
     case VSI_NN_TYPE_INT8:
     case VSI_NN_TYPE_UINT8:

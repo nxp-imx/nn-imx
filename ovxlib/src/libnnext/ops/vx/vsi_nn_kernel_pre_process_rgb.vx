@@ -60,7 +60,7 @@ __write_only image2d_array_t output, \
     vxc_uchar16 line0RGB1, line0RGB2; \
     vxc_uchar16 line1RGB3, line1RGB4; \
     int4 coord; \
-    sx = sx * 3 + *xOffset; \
+    sx = (sx + (*xOffset)) * 3; \
     coord.xyz    = sx.xyz; \
     coord.w        = sy + *yOffset; \
     int2 coord1 = (int2)(sx.w, coord.w); \

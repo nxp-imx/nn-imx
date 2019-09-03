@@ -1,6 +1,6 @@
 ##############################################################################
 #
-#    Copyright 2012 - 2019 Vivante Corporation, Santa Clara, California.
+#    Copyright 2012 - 2015 Vivante Corporation, Santa Clara, California.
 #    All Rights Reserved.
 #
 #    Permission is hereby granted, free of charge, to any person obtaining
@@ -34,15 +34,14 @@ include $(AQROOT)/makefile.linux.def
 ######################################################
 # Components of the project.
 
-LIBS	:= third-party/jpeg-9b \
+LIBS    := third-party/jpeg-9b \
            src
-
 
 ######################################################
 # Define the macros used in the common file.
 
-MODULES		:= $(LIBS)
-MAIN_MODULE	:= $(LIBS)
+MODULES        := $(LIBS)
+MAIN_MODULE    := $(LIBS)
 
 ######################################################
 # Include the common makefile.

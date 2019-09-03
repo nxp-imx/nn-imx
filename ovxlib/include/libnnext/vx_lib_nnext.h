@@ -1,31 +1,26 @@
 /****************************************************************************
 *
-*    Copyright 2012 - 2019 Vivante Corporation, Santa Clara, California.
-*    All Rights Reserved.
+*    Copyright (c) 2018 Vivante Corporation
 *
-*    Permission is hereby granted, free of charge, to any person obtaining
-*    a copy of this software and associated documentation files (the
-*    'Software'), to deal in the Software without restriction, including
-*    without limitation the rights to use, copy, modify, merge, publish,
-*    distribute, sub license, and/or sell copies of the Software, and to
-*    permit persons to whom the Software is furnished to do so, subject
-*    to the following conditions:
+*    Permission is hereby granted, free of charge, to any person obtaining a
+*    copy of this software and associated documentation files (the "Software"),
+*    to deal in the Software without restriction, including without limitation
+*    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+*    and/or sell copies of the Software, and to permit persons to whom the
+*    Software is furnished to do so, subject to the following conditions:
 *
-*    The above copyright notice and this permission notice (including the
-*    next paragraph) shall be included in all copies or substantial
-*    portions of the Software.
+*    The above copyright notice and this permission notice shall be included in
+*    all copies or substantial portions of the Software.
 *
-*    THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
-*    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-*    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
-*    IN NO EVENT SHALL VIVANTE AND/OR ITS SUPPLIERS BE LIABLE FOR ANY
-*    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-*    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-*    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+*    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+*    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+*    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+*    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+*    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+*    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-
-
 #pragma once
 #ifndef _OPENVX_EXT_LIBNNEXT_H_
 #define _OPENVX_EXT_LIBNNEXT_H_
@@ -106,6 +101,16 @@ enum vx_kernel_libnnext_offset_e
     KERNEL_ENUM_UNSTACK,
     KERNEL_ENUM_PRE_PROCESS_RGB,
     KERNEL_ENUM_ADDN,
+    KERNEL_ENUM_PRE_PROCESS_YUV420,
+    KERNEL_ENUM_CONV2D,
+    KERNEL_ENUM_EXTRA_ENDING,
+    KERNEL_ENUM_GATHER,
+    KERNEL_ENUM_TILE,
+    KERNEL_ENUM_TOPK,
+    KERNEL_ENUM_PRE_PROCESS_BGRA,
+    KERNEL_ENUM_LOGICAL_NOT,
+    KERNEL_ENUM_SIN,
+    KERNEL_ENUM_LOG,
 };
 
 //! [KERNEL NAME]
@@ -445,7 +450,22 @@ enum vx_kernel_libnnext_offset_e
 #define VX_KERNEL_NAME_PRE_PROCESS_RGB_I16_COPY_NHWC      "com.vivantecorp.extension.vxRGBScaletoTensor_I16_copy_NHWC"
 #define VX_KERNEL_NAME_PRE_PROCESS_RGB_I8_COPY_NHWC       "com.vivantecorp.extension.vxRGBScaletoTensor_I8_copy_NHWC"
 #define VX_KERNEL_NAME_PRE_PROCESS_RGB_U8_COPY_NHWC       "com.vivantecorp.extension.vxRGBScaletoTensor_U8_copy_NHWC"
-#define VX_KERNEL_NAME_ADDN                                "com.vivantecorp.extension.vxcAddn"
+#define VX_KERNEL_NAME_ADDN                               "com.vivantecorp.extension.vxcAddn"
+#define VX_KERNEL_NAME_PRE_PROCESS_YUV2RBG_U8             "com.vivantecorp.extension.vxcYuv2rbg_u8"
+#define VX_KERNEL_NAME_PRE_PROCESS_YUV2RBG_TRANS_U8       "com.vivantecorp.extension.vxcYuv2rbg_trans_u8"
+#define VX_KERNEL_NAME_PRE_PROCESS_YUV2RBG_RESIZE_NORM_U8 "com.vivantecorp.extension.vxcYuv2rbg_resize_norm_u8"
+#define VX_KERNEL_NAME_EXTRA_ENDING_I16                   "com.vivantecorp.extension.vxcExtra_ending_i16"
+#define VX_KERNEL_NAME_EXTRA_ENDING_I8                    "com.vivantecorp.extension.vxcExtra_ending_i8"
+#define VX_KERNEL_NAME_EXTRA_ENDING_U8                    "com.vivantecorp.extension.vxcExtra_ending_u8"
+#define VX_KERNEL_NAME_GATHER                             "com.vivantecorp.extension.vxcGather"
+#define VX_KERNEL_NAME_TILE                               "com.vivantecorp.extension.vxcTile"
+#define VX_KERNEL_NAME_TOPK                               "com.vivantecorp.extension.vxcTopk"
+#define VX_KERNEL_NAME_PRE_PROCESS_BGRA                   "com.vivantecorp.extension.vxcPre_process_bgra"
+#define VX_KERNEL_NAME_PRE_PROCESS_BGRA_TRANS             "com.vivantecorp.extension.vxcPre_process_bgra_trans"
+#define VX_KERNEL_NAME_PRE_PROCESS_BGRA_COPY              "com.vivantecorp.extension.vxcPre_process_bgra_copy"
+#define VX_KERNEL_NAME_LOGICAL_NOT_INT8                   "com.vivantecorp.extension.vxcLogical_not_i8"
+#define VX_KERNEL_NAME_LOGICAL_NOT_INT16                  "com.vivantecorp.extension.vxcLogical_not_i16"
+#define VX_KERNEL_NAME_LOGICAL_NOT_UINT8                  "com.vivantecorp.extension.vxcLogical_not_u8"
 #define VX_KERNEL_NAME_TENSOR_EXP_U8TOF16_2D              "com.vivantecorp.extension.vxTensorExp_U8toF16_2D"
 /*! \brief The Example Library Set
  * \ingroup group_example_ext
@@ -572,6 +592,20 @@ enum vx_kernel_libnnext_ext_e
     VX_KERNEL_ENUM_PRE_PROCESS_RGB      =
             VX_KERNEL_BASE(VX_ID_DEFAULT, VX_LIBRARY_LIBNNEXT) + KERNEL_ENUM_PRE_PROCESS_RGB,
     VX_KERNEL_ENUM_ADDN                 = VX_KERNEL_BASE(VX_ID_DEFAULT, VX_LIBRARY_LIBNNEXT) + KERNEL_ENUM_ADDN,
+    VX_KERNEL_ENUM_PRE_PROCESS_YUV420   =
+            VX_KERNEL_BASE(VX_ID_DEFAULT, VX_LIBRARY_LIBNNEXT) + KERNEL_ENUM_PRE_PROCESS_YUV420,
+    VX_KERNEL_ENUM_CONV2D               = VX_KERNEL_BASE(VX_ID_DEFAULT, VX_LIBRARY_LIBNNEXT) + KERNEL_ENUM_CONV2D,
+    VX_KERNEL_ENUM_EXTRA_ENDING         =
+            VX_KERNEL_BASE(VX_ID_DEFAULT, VX_LIBRARY_LIBNNEXT) + KERNEL_ENUM_EXTRA_ENDING,
+    VX_KERNEL_ENUM_GATHER               = VX_KERNEL_BASE(VX_ID_DEFAULT, VX_LIBRARY_LIBNNEXT) + KERNEL_ENUM_GATHER,
+    VX_KERNEL_ENUM_TILE                 = VX_KERNEL_BASE(VX_ID_DEFAULT, VX_LIBRARY_LIBNNEXT) + KERNEL_ENUM_TILE,
+    VX_KERNEL_ENUM_TOPK                 = VX_KERNEL_BASE(VX_ID_DEFAULT, VX_LIBRARY_LIBNNEXT) + KERNEL_ENUM_TOPK,
+    VX_KERNEL_ENUM_PRE_PROCESS_BGRA     =
+            VX_KERNEL_BASE(VX_ID_DEFAULT, VX_LIBRARY_LIBNNEXT) + KERNEL_ENUM_PRE_PROCESS_BGRA,
+    VX_KERNEL_ENUM_LOGICAL_NOT          =
+            VX_KERNEL_BASE(VX_ID_DEFAULT, VX_LIBRARY_LIBNNEXT) + KERNEL_ENUM_LOGICAL_NOT,
+    VX_KERNEL_ENUM_TENSOR_SIN           = VX_KERNEL_BASE(VX_ID_DEFAULT, VX_LIBRARY_LIBNNEXT) + KERNEL_ENUM_SIN,
+    VX_KERNEL_ENUM_TENSOR_LOG           = VX_KERNEL_BASE(VX_ID_DEFAULT, VX_LIBRARY_LIBNNEXT) + KERNEL_ENUM_LOG,
     // up to 0xFFF kernel enums can be created.
 };
 

@@ -1,31 +1,26 @@
 /****************************************************************************
 *
-*    Copyright 2012 - 2019 Vivante Corporation, Santa Clara, California.
-*    All Rights Reserved.
+*    Copyright (c) 2019 Vivante Corporation
 *
-*    Permission is hereby granted, free of charge, to any person obtaining
-*    a copy of this software and associated documentation files (the
-*    'Software'), to deal in the Software without restriction, including
-*    without limitation the rights to use, copy, modify, merge, publish,
-*    distribute, sub license, and/or sell copies of the Software, and to
-*    permit persons to whom the Software is furnished to do so, subject
-*    to the following conditions:
+*    Permission is hereby granted, free of charge, to any person obtaining a
+*    copy of this software and associated documentation files (the "Software"),
+*    to deal in the Software without restriction, including without limitation
+*    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+*    and/or sell copies of the Software, and to permit persons to whom the
+*    Software is furnished to do so, subject to the following conditions:
 *
-*    The above copyright notice and this permission notice (including the
-*    next paragraph) shall be included in all copies or substantial
-*    portions of the Software.
+*    The above copyright notice and this permission notice shall be included in
+*    all copies or substantial portions of the Software.
 *
-*    THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
-*    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-*    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
-*    IN NO EVENT SHALL VIVANTE AND/OR ITS SUPPLIERS BE LIABLE FOR ANY
-*    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-*    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-*    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+*    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+*    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+*    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+*    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+*    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+*    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-
-
 #include <string.h>
 #include <stdlib.h>
 
@@ -146,6 +141,74 @@ static vsi_bool op_setup
         curr->node->nn_param.pre_process_rgb.output_attr.dim_num = p->output_attr.dim_num;
         curr->node->nn_param.pre_process_rgb.perm = p->perm;
         curr->node->nn_param.pre_process_rgb.dim_num = p->dim_num;
+
+        curr->inputs[0] = inputs[PRE_PROCESS_INPUT0];
+        curr->outputs[0] = outputs[PRE_PROCESS_OUTPUT];
+
+        vsi_nn_setup_internal_node_op(self, curr);
+    }
+    else if (p->type == VSI_NN_PRE_PROCESS_YUV420)
+    {
+        curr = vsi_nn_new_internal_node( self, VSI_NN_OP_PRE_PROCESS_YUV420, 0, 0 );
+
+        if (p->reverse_channel)
+        {
+            curr->node->nn_param.pre_process_rgb.r_mean = p->norm.mean[2];
+            curr->node->nn_param.pre_process_rgb.g_mean = p->norm.mean[1];
+            curr->node->nn_param.pre_process_rgb.b_mean = p->norm.mean[0];
+        }
+        else
+        {
+            curr->node->nn_param.pre_process_rgb.r_mean = p->norm.mean[0];
+            curr->node->nn_param.pre_process_rgb.g_mean = p->norm.mean[1];
+            curr->node->nn_param.pre_process_rgb.b_mean = p->norm.mean[2];
+        }
+
+        curr->node->nn_param.pre_process_rgb.rgb_scale = p->norm.scale;
+        curr->node->nn_param.pre_process_rgb.reverse_channel = p->reverse_channel;
+        curr->node->nn_param.pre_process_rgb.rect.left = p->rect.left;
+        curr->node->nn_param.pre_process_rgb.rect.top = p->rect.top;
+        curr->node->nn_param.pre_process_rgb.rect.width = p->rect.width;
+        curr->node->nn_param.pre_process_rgb.rect.height = p->rect.height;
+        curr->node->nn_param.pre_process_rgb.output_attr.size = p->output_attr.size;
+        curr->node->nn_param.pre_process_rgb.output_attr.dim_num = p->output_attr.dim_num;
+        curr->node->nn_param.pre_process_rgb.perm = p->perm;
+        curr->node->nn_param.pre_process_rgb.dim_num = p->dim_num;
+
+        curr->inputs[0] = inputs[PRE_PROCESS_INPUT0];
+        curr->inputs[1] = inputs[PRE_PROCESS_INPUT1];
+        curr->inputs[2] = inputs[PRE_PROCESS_INPUT2];
+        curr->outputs[0] = outputs[PRE_PROCESS_OUTPUT];
+
+        vsi_nn_setup_internal_node_op(self, curr);
+    }
+    else if (p->type == VSI_NN_PRE_PROCESS_BGRA)
+    {
+        curr = vsi_nn_new_internal_node( self, VSI_NN_OP_PRE_PROCESS_BGRA, 0, 0 );
+
+        if (p->reverse_channel)
+        {
+            curr->node->nn_param.pre_process_bgra.r_mean = p->norm.mean[2];
+            curr->node->nn_param.pre_process_bgra.g_mean = p->norm.mean[1];
+            curr->node->nn_param.pre_process_bgra.b_mean = p->norm.mean[0];
+        }
+        else
+        {
+            curr->node->nn_param.pre_process_bgra.r_mean = p->norm.mean[0];
+            curr->node->nn_param.pre_process_bgra.g_mean = p->norm.mean[1];
+            curr->node->nn_param.pre_process_bgra.b_mean = p->norm.mean[2];
+        }
+
+        curr->node->nn_param.pre_process_bgra.rgb_scale = p->norm.scale;
+        curr->node->nn_param.pre_process_bgra.reverse_channel = p->reverse_channel;
+        curr->node->nn_param.pre_process_bgra.rect.left = p->rect.left;
+        curr->node->nn_param.pre_process_bgra.rect.top = p->rect.top;
+        curr->node->nn_param.pre_process_bgra.rect.width = p->rect.width;
+        curr->node->nn_param.pre_process_bgra.rect.height = p->rect.height;
+        curr->node->nn_param.pre_process_bgra.output_attr.size = p->output_attr.size;
+        curr->node->nn_param.pre_process_bgra.output_attr.dim_num = p->output_attr.dim_num;
+        curr->node->nn_param.pre_process_bgra.perm = p->perm;
+        curr->node->nn_param.pre_process_bgra.dim_num = p->dim_num;
 
         curr->inputs[0] = inputs[PRE_PROCESS_INPUT0];
         curr->outputs[0] = outputs[PRE_PROCESS_OUTPUT];

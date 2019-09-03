@@ -1,31 +1,26 @@
 /****************************************************************************
 *
-*    Copyright 2012 - 2019 Vivante Corporation, Santa Clara, California.
-*    All Rights Reserved.
+*    Copyright (c) 2018 Vivante Corporation
 *
-*    Permission is hereby granted, free of charge, to any person obtaining
-*    a copy of this software and associated documentation files (the
-*    'Software'), to deal in the Software without restriction, including
-*    without limitation the rights to use, copy, modify, merge, publish,
-*    distribute, sub license, and/or sell copies of the Software, and to
-*    permit persons to whom the Software is furnished to do so, subject
-*    to the following conditions:
+*    Permission is hereby granted, free of charge, to any person obtaining a
+*    copy of this software and associated documentation files (the "Software"),
+*    to deal in the Software without restriction, including without limitation
+*    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+*    and/or sell copies of the Software, and to permit persons to whom the
+*    Software is furnished to do so, subject to the following conditions:
 *
-*    The above copyright notice and this permission notice (including the
-*    next paragraph) shall be included in all copies or substantial
-*    portions of the Software.
+*    The above copyright notice and this permission notice shall be included in
+*    all copies or substantial portions of the Software.
 *
-*    THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
-*    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-*    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
-*    IN NO EVENT SHALL VIVANTE AND/OR ITS SUPPLIERS BE LIABLE FOR ANY
-*    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-*    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-*    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+*    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+*    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+*    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+*    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+*    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+*    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-
-
 #include <stdlib.h>
 #include <string.h>
 
@@ -131,17 +126,21 @@ static void print_tensor
 
     if(ext_str)
     {
-        VSILOGD("%s id[%4u] shape[%-18s] fmt[%s] qnt[%s]",
+        VSILOGD("%s id[%4u] vtl[%d] const[%d] shape[%-18s] fmt[%s] qnt[%s]",
             ext_str,
             id,
+            tensor->attr.vtl,
+            tensor->attr.is_const,
             shape,
             format,
             ext_attr);
     }
     else
     {
-        VSILOGD("id[%4u] shape[%-18s] fmt[%s] qnt[%s]",
+        VSILOGD("id[%4u] vtl[%d] const[%d] shape[%-18s] fmt[%s] qnt[%s]",
             id,
+            tensor->attr.vtl,
+            tensor->attr.is_const,
             shape,
             format,
             ext_attr);
@@ -295,6 +294,15 @@ static vsi_bool _init_tensor
         params.quant_data.affine.scale = tensor->attr.dtype.scale;
         params.quant_data.affine.zeroPoint = (int32_t)tensor->attr.dtype.zero_point;
         break;
+    case VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC:
+#ifdef VSI_PERCHANNEL_QUANTIZATION_SUPPORT
+        params.quant_data.affinePerChannel.channelDim = tensor->attr.dtype.channel_dim;
+        params.quant_data.affinePerChannel.scaleCount = tensor->attr.dtype.scale_dim;
+        params.quant_data.affinePerChannel.scales = tensor->attr.dtype.scales;
+        break;
+#else
+    VSILOGE( "can't support qnt_type VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC." );
+#endif
     default:
         break;
     }
@@ -342,7 +350,7 @@ static vsi_bool _init_tensor
                 tensor->t = vxCreateTensorFromHandle(graph->ctx->c,
                     &params, sizeof(vx_tensor_create_params_t),
                     addr, data, VX_MEMORY_TYPE_HOST);
-                memset(data, 0x5A, buf_sz);
+                //memset(data, 0x5A, buf_sz);
                 vxReleaseTensorAddressing( &addr );
             }
         }
@@ -1222,8 +1230,8 @@ vsi_bool vsi_nn_CalcReshapeTensor
     (
     vsi_nn_tensor_t * input,
     vsi_nn_tensor_t * output,
-    uint32_t       * shape,
-    uint32_t         dim_num
+    uint32_t        * shape,
+    uint32_t          dim_num
     )
 {
     vsi_bool ret;
@@ -1269,6 +1277,45 @@ vsi_bool vsi_nn_CalcReshapeTensor
     return ret;
 } /* vsi_nn_CalcReshapeTensor() */
 
+/*
+    This function will create a new tensor,
+    and reshape input to output.
+*/
+vsi_nn_tensor_t *vsi_nn_reshape_tensor
+    (
+    vsi_nn_graph_t  * graph,
+    vsi_nn_tensor_t * input,
+    uint32_t        * shape,
+    uint32_t          dim_num
+    )
+{
+    vsi_bool ret;
+    vsi_nn_tensor_t *output = NULL;
+    vsi_nn_tensor_attr_t attr;
+    if (NULL == graph || NULL == input || NULL == shape)
+    {
+        return NULL;
+    }
+    /* New a ovxlib tensor struct */
+    memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
+    memcpy(&attr, &input->attr, sizeof(vsi_nn_tensor_attr_t));
+    attr.dim_num = VSI_NN_DIM_AUTO;
+    output = vsi_nn_CreateTensor(graph, &attr);
+    if (NULL == output)
+    {
+        return NULL;
+    }
+
+    ret = vsi_nn_ReshapeTensor(graph, input, output, shape, dim_num);
+    if (FALSE == ret)
+    {
+        vsi_nn_ReleaseTensor(&output);
+        output = NULL;
+    }
+
+    return output;
+} /* vsi_nn_reshape_tensor() */
+
 vsi_bool vsi_nn_ReshapeTensor
     (
     vsi_nn_graph_t  * graph,
@@ -1287,11 +1334,13 @@ vsi_bool vsi_nn_ReshapeTensor
         return FALSE;
     }
 
+    /* Create a openvx tensor if it is not exist */
     if( NULL == input->t )
     {
         ret = vsi_nn_TensorReinit( graph, input );
     }
 
+    /* We can not reshape input to output if output->t is already exist */
     if( NULL != output->t )
     {
         VSILOGW( "Free tensor." );
@@ -1438,31 +1487,59 @@ vsi_nn_tensor_t * vsi_nn_VariableToTensor
     return tensor;
 } /* vsi_nn_VariableToTensor() */
 
-void vsi_nn_PrintNodeIO
+/*
+    type 0x01: input
+    type 0x02: output
+    type 0x03: all
+*/
+void vsi_nn_print_node_io
     (
     vsi_nn_graph_t *graph,
-    vsi_nn_node_t *node
+    vsi_nn_node_t *node,
+    int32_t type
     )
 {
     uint32_t i;
     vsi_nn_tensor_id_t id;
     vsi_nn_tensor_t *tensor;
     char index[32];
+#define _TYPE_INPUT 0x01
+#define _TYPE_OUTPUT 0x02
+    if (!(type & _TYPE_INPUT) && !(type & _TYPE_OUTPUT))
+    {
+        VSILOGW("Can't handle this node io type %d", type);
+        return;
+    }
 
-    for (i = 0; i < node->input.num; i++)
+    if (type & _TYPE_INPUT)
     {
-        id = node->input.tensors[i];
-        tensor = vsi_nn_GetTensor(graph, id);
-        snprintf(index, 32, "in(%d):", i);
-        print_tensor(tensor, id, index);
+        for (i = 0; i < node->input.num; i++)
+        {
+            id = node->input.tensors[i];
+            tensor = vsi_nn_GetTensor(graph, id);
+            snprintf(index, 32, "in(%d) :", i);
+            print_tensor(tensor, id, index);
+        }
     }
-    for (i = 0; i < node->output.num; i++)
+    if (type & _TYPE_OUTPUT)
     {
-        id = node->output.tensors[i];
-        tensor = vsi_nn_GetTensor(graph, id);
-        snprintf(index, 32, "out(%d):", i);
-        print_tensor(tensor, id, index);
+        for (i = 0; i < node->output.num; i++)
+        {
+            id = node->output.tensors[i];
+            tensor = vsi_nn_GetTensor(graph, id);
+            snprintf(index, 32, "out(%d):", i);
+            print_tensor(tensor, id, index);
+        }
     }
+}
+
+void vsi_nn_PrintNodeIO
+    (
+    vsi_nn_graph_t *graph,
+    vsi_nn_node_t *node
+    )
+{
+    vsi_nn_print_node_io(graph, node, 0x03);
 } /* vsi_nn_PrintNodeIO() */
 
 void vsi_nn_PrintTensor

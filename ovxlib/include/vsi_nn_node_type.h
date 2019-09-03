@@ -1,31 +1,26 @@
 /****************************************************************************
 *
-*    Copyright 2012 - 2019 Vivante Corporation, Santa Clara, California.
-*    All Rights Reserved.
+*    Copyright (c) 2018 Vivante Corporation
 *
-*    Permission is hereby granted, free of charge, to any person obtaining
-*    a copy of this software and associated documentation files (the
-*    'Software'), to deal in the Software without restriction, including
-*    without limitation the rights to use, copy, modify, merge, publish,
-*    distribute, sub license, and/or sell copies of the Software, and to
-*    permit persons to whom the Software is furnished to do so, subject
-*    to the following conditions:
+*    Permission is hereby granted, free of charge, to any person obtaining a
+*    copy of this software and associated documentation files (the "Software"),
+*    to deal in the Software without restriction, including without limitation
+*    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+*    and/or sell copies of the Software, and to permit persons to whom the
+*    Software is furnished to do so, subject to the following conditions:
 *
-*    The above copyright notice and this permission notice (including the
-*    next paragraph) shall be included in all copies or substantial
-*    portions of the Software.
+*    The above copyright notice and this permission notice shall be included in
+*    all copies or substantial portions of the Software.
 *
-*    THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
-*    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-*    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
-*    IN NO EVENT SHALL VIVANTE AND/OR ITS SUPPLIERS BE LIABLE FOR ANY
-*    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-*    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-*    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+*    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+*    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+*    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+*    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+*    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+*    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-
-
 #ifndef _VSI_NN_NODE_TYPES_H_
 #define _VSI_NN_NODE_TYPES_H_
 
@@ -61,7 +56,7 @@
 #include "ops/vsi_nn_op_reverse.h"
 #include "ops/vsi_nn_op_space2depth.h"
 #include "ops/vsi_nn_op_depth2space.h"
-#include "ops/vsi_nn_op_eltwisemax.h"
+#include "ops/vsi_nn_op_maximum.h"
 #include "ops/vsi_nn_op_scale.h"
 #include "ops/vsi_nn_op_slice.h"
 #include "ops/vsi_nn_op_space2batch.h"
@@ -108,6 +103,16 @@
 #include "ops/vsi_nn_op_pre_process.h"
 #include "ops/vsi_nn_op_addn.h"
 #include "ops/vsi_nn_op_softmax_internal.h"
+#include "ops/vsi_nn_op_pre_process_yuv420.h"
+#include "ops/vsi_nn_op_extra_ending.h"
+#include "ops/vsi_nn_op_gather.h"
+#include "ops/vsi_nn_op_tile.h"
+#include "ops/vsi_nn_op_grouped_conv2d.h"
+#include "ops/vsi_nn_op_topk.h"
+#include "ops/vsi_nn_op_pre_process_bgra.h"
+#include "ops/vsi_nn_op_logical_not.h"
+#include "ops/vsi_nn_op_sin.h"
+#include "ops/vsi_nn_op_log.h"
 
 /* custom node head define define */
 #include "custom/vsi_nn_custom_node_type.h"
@@ -151,7 +156,7 @@ typedef union _vsi_nn_nn_param
     vsi_nn_reverse_param            reverse;
     vsi_nn_space2depth_param        space2depth;
     vsi_nn_depth2space_param        depth2space;
-    vsi_nn_eltwisemax_param         eltwisemax;
+    vsi_nn_maximum_param            maximum;
     vsi_nn_scale_param              scale;
     vsi_nn_slice_param              slice;
     vsi_nn_space2batch_param        space2batch;
@@ -197,6 +202,16 @@ typedef union _vsi_nn_nn_param
     vsi_nn_pre_process_param        pre_process;
     vsi_nn_addn_param               addn;
     vsi_nn_softmax_internal_param   softmax_internal;
+    vsi_nn_pre_process_yuv420_param pre_process_yuv420;
+    vsi_nn_extra_ending_param       extra_ending;
+    vsi_nn_gather_param             gather;
+    vsi_nn_tile_param               tile;
+    vsi_nn_grouped_conv2d_param     grouped_conv2d;
+    vsi_nn_topk_param               topk;
+    vsi_nn_pre_process_bgra_param   pre_process_bgra;
+    vsi_nn_logical_not_param        logical_not;
+    vsi_nn_sin_param                sin;
+    vsi_nn_log_param                log;
     uint8_t                         client_param[128];
 
     /* custom node data struct define */

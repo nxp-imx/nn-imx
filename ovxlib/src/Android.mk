@@ -1,31 +1,3 @@
-##############################################################################
-#
-#    Copyright 2012 - 2019 Vivante Corporation, Santa Clara, California.
-#    All Rights Reserved.
-#
-#    Permission is hereby granted, free of charge, to any person obtaining
-#    a copy of this software and associated documentation files (the
-#    'Software'), to deal in the Software without restriction, including
-#    without limitation the rights to use, copy, modify, merge, publish,
-#    distribute, sub license, and/or sell copies of the Software, and to
-#    permit persons to whom the Software is furnished to do so, subject
-#    to the following conditions:
-#
-#    The above copyright notice and this permission notice (including the
-#    next paragraph) shall be included in all copies or substantial
-#    portions of the Software.
-#
-#    THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
-#    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-#    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
-#    IN NO EVENT SHALL VIVANTE AND/OR ITS SUPPLIERS BE LIABLE FOR ANY
-#    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-#    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-#    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-#
-##############################################################################
-
-
 #
 # Build Vivante chipinfo for android.
 #
@@ -36,7 +8,11 @@ ifeq ($(AQROOT),)
 $(error Please set AQROOT env first)
 endif
 
+include $(AQROOT)/Android.mk.def
 
+ifeq ($(PLATFORM_VENDOR),1)
+LOCAL_VENDOR_MODULE  := true
+endif
 
 LOCAL_SRC_FILES :=     \
             vsi_nn_context.c \
@@ -71,6 +47,7 @@ LOCAL_SRC_FILES +=      \
 LOCAL_SRC_FILES +=      \
              quantization/vsi_nn_dynamic_fixed_point.c   \
              quantization/vsi_nn_asymmetric_affine.c   \
+             quantization/vsi_nn_perchannel_symmetric_affine.c   \
 
 
 LOCAL_SRC_FILES +=      \
@@ -81,11 +58,15 @@ LOCAL_SRC_FILES +=      \
             post/vsi_nn_post_fasterrcnn.c   \
             post/vsi_nn_post_cmupose.c
 
+LOCAL_SRC_FILES +=      \
+            cpu_backend/vsi_nn_cpu_backend.c   \
+            cpu_backend/vsi_nn_cpu_backend_conv2d.c   \
+            cpu_backend/cbee_interface.c
 
-           
+
 LOCAL_SRC_FILES += libnnext/ops/kernel/vsi_nn_kernel_argmax.c \
         libnnext/ops/kernel/vsi_nn_kernel_crop.c \
-        libnnext/ops/kernel/vsi_nn_kernel_eltwisemax.c \
+        libnnext/ops/kernel/vsi_nn_kernel_maximum.c \
         libnnext/ops/kernel/vsi_nn_kernel_fullconnect2.c \
         libnnext/ops/kernel/vsi_nn_kernel_l2normalizescale.c \
         libnnext/ops/kernel/vsi_nn_kernel_poolwithargmax.c \
@@ -125,6 +106,16 @@ LOCAL_SRC_FILES += libnnext/ops/kernel/vsi_nn_kernel_argmax.c \
         libnnext/ops/kernel/vsi_nn_kernel_unstack.c \
         libnnext/ops/kernel/vsi_nn_kernel_pre_process_rgb.c \
         libnnext/ops/kernel/vsi_nn_kernel_addn.c \
+        libnnext/ops/kernel/vsi_nn_kernel_pre_process_yuv420.c \
+        libnnext/ops/kernel/vsi_nn_kernel_conv2d.c \
+        libnnext/ops/kernel/vsi_nn_kernel_extra_ending.c \
+        libnnext/ops/kernel/vsi_nn_kernel_gather.c \
+        libnnext/ops/kernel/vsi_nn_kernel_tile.c \
+        libnnext/ops/kernel/vsi_nn_kernel_topk.c \
+        libnnext/ops/kernel/vsi_nn_kernel_pre_process_bgra.c \
+        libnnext/ops/kernel/vsi_nn_kernel_logical_not.c \
+        libnnext/ops/kernel/vsi_nn_kernel_sin.c \
+        libnnext/ops/kernel/vsi_nn_kernel_log.c \
         libnnext/vsi_nn_libnnext_vx.c \
 
 LOCAL_SRC_FILES +=      ops/vsi_nn_op_add.c   \
@@ -164,7 +155,7 @@ LOCAL_SRC_FILES +=      ops/vsi_nn_op_add.c   \
              ops/vsi_nn_op_argmax.c   \
              ops/vsi_nn_op_crop.c   \
              ops/vsi_nn_op_l2normalizescale.c   \
-             ops/vsi_nn_op_eltwisemax.c \
+             ops/vsi_nn_op_maximum.c \
              ops/vsi_nn_op_subtract.c    \
              ops/vsi_nn_op_relu6.c   \
              ops/vsi_nn_op_sigmoid.c \
@@ -228,6 +219,16 @@ LOCAL_SRC_FILES +=      ops/vsi_nn_op_add.c   \
              ops/vsi_nn_op_pre_process.c \
              ops/vsi_nn_op_addn.c \
              ops/vsi_nn_op_softmax_internal.c \
+             ops/vsi_nn_op_pre_process_yuv420.c \
+             ops/vsi_nn_op_extra_ending.c \
+             ops/vsi_nn_op_gather.c \
+             ops/vsi_nn_op_tile.c \
+             ops/vsi_nn_op_grouped_conv2d.c \
+             ops/vsi_nn_op_topk.c \
+             ops/vsi_nn_op_pre_process_bgra.c \
+             ops/vsi_nn_op_logical_not.c \
+             ops/vsi_nn_op_sin.c \
+             ops/vsi_nn_op_log.c \
              ops/vsi_nn_op_lrn2.c \
              ops/vsi_nn_op_square.c
 
@@ -262,6 +263,7 @@ LOCAL_C_INCLUDES += \
     $(LOCAL_PATH)/../include/infernce \
     $(LOCAL_PATH)/../include/platform \
     $(LOCAL_PATH)/../include/client \
+    $(LOCAL_PATH)/../include/cpu_backend \
     $(LOCAL_PATH)/../include/libnnext \
 
 LOCAL_CFLAGS :=  \

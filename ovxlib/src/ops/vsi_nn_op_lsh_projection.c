@@ -1,31 +1,26 @@
 /****************************************************************************
 *
-*    Copyright 2012 - 2019 Vivante Corporation, Santa Clara, California.
-*    All Rights Reserved.
+*    Copyright (c) 2019 Vivante Corporation
 *
-*    Permission is hereby granted, free of charge, to any person obtaining
-*    a copy of this software and associated documentation files (the
-*    'Software'), to deal in the Software without restriction, including
-*    without limitation the rights to use, copy, modify, merge, publish,
-*    distribute, sub license, and/or sell copies of the Software, and to
-*    permit persons to whom the Software is furnished to do so, subject
-*    to the following conditions:
+*    Permission is hereby granted, free of charge, to any person obtaining a
+*    copy of this software and associated documentation files (the "Software"),
+*    to deal in the Software without restriction, including without limitation
+*    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+*    and/or sell copies of the Software, and to permit persons to whom the
+*    Software is furnished to do so, subject to the following conditions:
 *
-*    The above copyright notice and this permission notice (including the
-*    next paragraph) shall be included in all copies or substantial
-*    portions of the Software.
+*    The above copyright notice and this permission notice shall be included in
+*    all copies or substantial portions of the Software.
 *
-*    THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
-*    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-*    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
-*    IN NO EVENT SHALL VIVANTE AND/OR ITS SUPPLIERS BE LIABLE FOR ANY
-*    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-*    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-*    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+*    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+*    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+*    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+*    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+*    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+*    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-
-
 #include <string.h>
 #include <stdlib.h>
 
@@ -34,6 +29,7 @@
 #include "vsi_nn_log.h"
 #include "vsi_nn_graph.h"
 #include "vsi_nn_node.h"
+#include "utils/vsi_nn_dtype_util.h"
 #include "vsi_nn_prv.h"
 #include "vsi_nn_ops.h"
 #include "vsi_nn_tensor.h"
@@ -49,15 +45,45 @@ static vsi_status op_compute
     vsi_status status = VSI_SUCCESS;
     vsi_nn_tensor_t * type_tensor = NULL;
     vx_nn_lshproj_params_t p;
+    vx_bool valued = vx_true_e;
+    vsi_nn_tensor_t * weight_tensor = NULL;
 
     type_tensor = vsi_nn_VariableToTensor(self,
         (uint8_t *)&self->nn_param.lsh_projection.type,
         VSI_NN_TYPE_INT32);
 
-    memset( &p, 0, sizeof(p) );
-    p.hash_func = inputs[0]->t;
-    p.weights = inputs[2]->t;
+    memset(&p, 0, sizeof(p));
+    p.hash_func = REQUIRED_IO(inputs[0]);
+    p.weights = OPTIONAL_IO(inputs[2]);
+    //p.weights = inputs[2]->t;
     p.type = type_tensor->t;
+    //This is a hack
+    // Need driver fix this
+    if (p.weights == NULL)
+    {
+        vsi_nn_tensor_attr_t attr;
+        float const_one = 1.0;
+        int32_t i;
+        int32_t count = inputs[1]->attr.size[1];
+        float* const_data = malloc(count * sizeof(float));
+
+        for (i = 0; i < count; i++)
+        {
+            const_data[i] = const_one;
+        }
+        memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
+        attr.size[0] = count;
+        attr.dim_num = 1;
+        attr.is_const = TRUE;
+        attr.dtype.vx_type = VSI_NN_TYPE_FLOAT32;
+        weight_tensor = vsi_nn_CreateTensorFromData(self->graph,
+            (uint8_t *)const_data, &attr);
+        p.weights = weight_tensor->t;
+        free(const_data);
+        //valued = vx_false_e;
+    }
+    vxSetTensorAttribute(p.weights, VX_TENSOR_VALUE, &valued, sizeof(vx_bool));
+
     self->n = vxLSHProjectionLayer( self->graph->g,
             inputs[1]->t, &p, sizeof(p), outputs[0]->t);
     if( !self->n )
@@ -65,6 +91,7 @@ static vsi_status op_compute
         status = VSI_FAILURE;
     }
     vsi_nn_ReleaseTensor( &type_tensor );
+    if (weight_tensor != NULL) vsi_nn_ReleaseTensor(&weight_tensor);
     return status;
 } /* op_compute() */
 

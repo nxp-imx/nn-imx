@@ -1,31 +1,26 @@
 /****************************************************************************
 *
-*    Copyright 2012 - 2019 Vivante Corporation, Santa Clara, California.
-*    All Rights Reserved.
+*    Copyright (c) 2018 Vivante Corporation
 *
-*    Permission is hereby granted, free of charge, to any person obtaining
-*    a copy of this software and associated documentation files (the
-*    'Software'), to deal in the Software without restriction, including
-*    without limitation the rights to use, copy, modify, merge, publish,
-*    distribute, sub license, and/or sell copies of the Software, and to
-*    permit persons to whom the Software is furnished to do so, subject
-*    to the following conditions:
+*    Permission is hereby granted, free of charge, to any person obtaining a
+*    copy of this software and associated documentation files (the "Software"),
+*    to deal in the Software without restriction, including without limitation
+*    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+*    and/or sell copies of the Software, and to permit persons to whom the
+*    Software is furnished to do so, subject to the following conditions:
 *
-*    The above copyright notice and this permission notice (including the
-*    next paragraph) shall be included in all copies or substantial
-*    portions of the Software.
+*    The above copyright notice and this permission notice shall be included in
+*    all copies or substantial portions of the Software.
 *
-*    THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
-*    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-*    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
-*    IN NO EVENT SHALL VIVANTE AND/OR ITS SUPPLIERS BE LIABLE FOR ANY
-*    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-*    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-*    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+*    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+*    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+*    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+*    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+*    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+*    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-
-
 #include <string.h>
 #include <stdlib.h>
 
@@ -47,7 +42,7 @@
 #define _IO_NUM             (_INPUT_NUM + _OUTPUT_NUM)
 #define _PARAM_NUM          (_ARG_NUM + _IO_NUM)
 
-extern vx_kernel_description_t * vx_kernel_ELTWISEMAX_list[];
+extern vx_kernel_description_t * vx_kernel_MAXIMUM_list[];
 
 static void check_tensor_shape
     (
@@ -64,9 +59,9 @@ static void check_tensor_shape
         memcpy(&attr, &(input->attr), sizeof(vsi_nn_tensor_attr_t));
         attr.size[1] = 1;
         attr.dim_num = 2;
-        self->nn_param.eltwisemax.local.local_tensor[index] =
+        self->nn_param.maximum.local.local_tensor[index] =
             vxReshapeTensor(input->t, (int32_t*)(attr.size), attr.dim_num);
-        params[index] = (vx_reference)self->nn_param.eltwisemax.local.local_tensor[index];
+        params[index] = (vx_reference)self->nn_param.maximum.local.local_tensor[index];
     }
     else if(input->attr.dim_num == 2 && enable_image_2d)
     {
@@ -75,9 +70,9 @@ static void check_tensor_shape
         attr.size[1] = 1;
         attr.size[2] = 1;
         attr.dim_num = 3;
-        self->nn_param.eltwisemax.local.local_tensor[index] =
+        self->nn_param.maximum.local.local_tensor[index] =
             vxReshapeTensor(input->t, (int32_t*)(attr.size), attr.dim_num);
-        params[index] =  (vx_reference)self->nn_param.eltwisemax.local.local_tensor[index];
+        params[index] =  (vx_reference)self->nn_param.maximum.local.local_tensor[index];
     }
     else if(input->attr.dim_num == 3 && enable_image_2d)
     {
@@ -85,9 +80,9 @@ static void check_tensor_shape
         attr.size[0] *= attr.size[1];
         attr.size[1] = attr.size[2];
         attr.size[2] = 1;
-        self->nn_param.eltwisemax.local.local_tensor[index] =
+        self->nn_param.maximum.local.local_tensor[index] =
             vxReshapeTensor(input->t, (int32_t*)(attr.size), attr.dim_num);
-        params[index] =  (vx_reference)self->nn_param.eltwisemax.local.local_tensor[index];
+        params[index] =  (vx_reference)self->nn_param.maximum.local.local_tensor[index];
     }
     else if(input->attr.dim_num == 4 && enable_image_2d)
     {
@@ -96,9 +91,9 @@ static void check_tensor_shape
         attr.size[1] = attr.size[2];
         attr.size[2] = 1;
         attr.size[3] = attr.size[3];
-        self->nn_param.eltwisemax.local.local_tensor[index] =
+        self->nn_param.maximum.local.local_tensor[index] =
             vxReshapeTensor(input->t, (int32_t*)(attr.size), attr.dim_num);
-        params[index] =  (vx_reference)self->nn_param.eltwisemax.local.local_tensor[index];
+        params[index] =  (vx_reference)self->nn_param.maximum.local.local_tensor[index];
     }
     else
     {
@@ -341,7 +336,7 @@ static vsi_status op_compute
     kernel_info.resource_name[0] = "vsi_nn_kernel_header";
     kernel_info.resource_name[1] = "vsi_nn_kernel_maximum";
     kernel_info.type = vsi_nn_GetVXKernelTypeForShader();
-    kernel_info.kernel = vx_kernel_ELTWISEMAX_list;
+    kernel_info.kernel = vx_kernel_MAXIMUM_list;
     kernel_info.init_index = 1;
 
     if (input0_Format != input1_Format && input0_Format == VSI_NN_TYPE_FLOAT16)
@@ -380,12 +375,12 @@ static vsi_status op_deinit
     )
 {
     uint32_t i;
-    for (i = 0; i < _VSI_NN_ELTWISEMAX_LOCAL_TENSOR_NUM; i++)
+    for (i = 0; i < _VSI_NN_MAXIMUM_LOCAL_TENSOR_NUM; i++)
     {
-        if (self->nn_param.eltwisemax.local.local_tensor[i] != NULL)
+        if (self->nn_param.maximum.local.local_tensor[i] != NULL)
         {
-            vxReleaseTensor(&(self->nn_param.eltwisemax.local.local_tensor[i]));
-            self->nn_param.eltwisemax.local.local_tensor[i] = NULL;
+            vxReleaseTensor(&(self->nn_param.maximum.local.local_tensor[i]));
+            self->nn_param.maximum.local.local_tensor[i] = NULL;
         }
     }
     vsi_nn_op_common_deinit(self);
@@ -413,7 +408,7 @@ extern "C" {
 /* Registrar */
 DEF_OP_REG
     (
-    /* op_name    */ ELTWISEMAX,
+    /* op_name    */ MAXIMUM,
     /* init       */ NULL,
     /* compute    */ op_compute,
     /* deinit     */ op_deinit,

@@ -1,31 +1,26 @@
 /****************************************************************************
 *
-*    Copyright 2012 - 2019 Vivante Corporation, Santa Clara, California.
-*    All Rights Reserved.
+*    Copyright (c) 2018 Vivante Corporation
 *
-*    Permission is hereby granted, free of charge, to any person obtaining
-*    a copy of this software and associated documentation files (the
-*    'Software'), to deal in the Software without restriction, including
-*    without limitation the rights to use, copy, modify, merge, publish,
-*    distribute, sub license, and/or sell copies of the Software, and to
-*    permit persons to whom the Software is furnished to do so, subject
-*    to the following conditions:
+*    Permission is hereby granted, free of charge, to any person obtaining a
+*    copy of this software and associated documentation files (the "Software"),
+*    to deal in the Software without restriction, including without limitation
+*    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+*    and/or sell copies of the Software, and to permit persons to whom the
+*    Software is furnished to do so, subject to the following conditions:
 *
-*    The above copyright notice and this permission notice (including the
-*    next paragraph) shall be included in all copies or substantial
-*    portions of the Software.
+*    The above copyright notice and this permission notice shall be included in
+*    all copies or substantial portions of the Software.
 *
-*    THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
-*    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-*    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
-*    IN NO EVENT SHALL VIVANTE AND/OR ITS SUPPLIERS BE LIABLE FOR ANY
-*    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-*    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-*    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+*    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+*    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+*    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+*    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+*    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+*    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-
-
 #ifndef _VSI_NN_GRAPH_H
 #define _VSI_NN_GRAPH_H
 
@@ -102,6 +97,27 @@ struct _vsi_nn_graph
         uint32_t minor;
         uint32_t patch;
     } version;
+
+    /* Complete signal */
+    struct
+    {
+        /* Flag to indicate if the need to append complete singal. */
+        vsi_bool exists;
+        union
+        {
+        int64_t value;
+        /* Reserve some more btyes for future features. */
+        uint8_t _bytes[64];
+        };
+        /* Length is not used yet, currently it will be always 8 bytes. */
+        int32_t length;
+        /* COMPLETE signal write address. */
+        void* write_address;
+        /* Pointer that store complete signal tensor,
+         * this will automatic created after graph setup,
+         * so please keep it NULL.*/
+        vsi_nn_tensor_t* tensor;
+    } complete_signal;
 };
 
 OVXLIB_API vsi_nn_graph_t * vsi_nn_CreateGraph
@@ -310,6 +326,11 @@ OVXLIB_API void vsi_nn_RemoveTensor
     (
     vsi_nn_graph_t       * graph,
     vsi_nn_tensor_id_t     id
+    );
+
+OVXLIB_API vsi_status vsi_nn_TrySetupCompleteSignalNode
+    (
+    vsi_nn_graph_t* graph
     );
 
 #ifdef __cplusplus

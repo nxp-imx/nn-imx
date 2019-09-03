@@ -1,31 +1,26 @@
 /****************************************************************************
 *
-*    Copyright 2012 - 2019 Vivante Corporation, Santa Clara, California.
-*    All Rights Reserved.
+*    Copyright (c) 2018 Vivante Corporation
 *
-*    Permission is hereby granted, free of charge, to any person obtaining
-*    a copy of this software and associated documentation files (the
-*    'Software'), to deal in the Software without restriction, including
-*    without limitation the rights to use, copy, modify, merge, publish,
-*    distribute, sub license, and/or sell copies of the Software, and to
-*    permit persons to whom the Software is furnished to do so, subject
-*    to the following conditions:
+*    Permission is hereby granted, free of charge, to any person obtaining a
+*    copy of this software and associated documentation files (the "Software"),
+*    to deal in the Software without restriction, including without limitation
+*    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+*    and/or sell copies of the Software, and to permit persons to whom the
+*    Software is furnished to do so, subject to the following conditions:
 *
-*    The above copyright notice and this permission notice (including the
-*    next paragraph) shall be included in all copies or substantial
-*    portions of the Software.
+*    The above copyright notice and this permission notice shall be included in
+*    all copies or substantial portions of the Software.
 *
-*    THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
-*    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-*    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
-*    IN NO EVENT SHALL VIVANTE AND/OR ITS SUPPLIERS BE LIABLE FOR ANY
-*    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-*    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-*    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+*    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+*    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+*    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+*    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+*    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+*    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-
-
 #include "vsi_nn_types.h"
 #include "vsi_nn_platform.h"
 #include "vsi_nn_graph.h"
@@ -89,7 +84,7 @@ static vsi_status _init_svdf_param
     param->state_in        = REQUIRED_IO(inputs[1]);
     param->weights_feature = REQUIRED_IO(inputs[2]);
     param->recurrent_time  = REQUIRED_IO(inputs[3]);
-    param->bias            = REQUIRED_IO(inputs[4]);
+    param->bias            = OPTIONAL_IO(inputs[4]);
     param->activation      = REQUIRED_IO(p->local.act_tensor);
     param->rank            = REQUIRED_IO(p->local.rank_tensor);
 
@@ -105,6 +100,7 @@ static vsi_status op_compute
 {
     vsi_status status;
     vx_nn_svdf_params_t param;
+    vsi_nn_tensor_t * bias_tensor = NULL;
 
     status = VSI_FAILURE;
     memset(&param, 0, sizeof(param));
@@ -121,6 +117,20 @@ static vsi_status op_compute
         return status;
     }
 
+    if (param.bias == NULL)
+    {
+        vsi_nn_tensor_attr_t attr;
+        int32_t count = inputs[2]->attr.size[1];
+
+        memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
+        attr.size[0] = count;
+        attr.dim_num = 1;
+        attr.is_const = TRUE;
+        attr.dtype.vx_type = VSI_NN_TYPE_FLOAT32;
+        bias_tensor = vsi_nn_CreateTensor(self->graph, &attr);
+        param.bias = bias_tensor->t;
+    }
+
     self->n = vxSVDFLayer(
         self->graph->g,
         REQUIRED_IO(inputs[0]),
@@ -134,6 +144,7 @@ static vsi_status op_compute
         status = VSI_SUCCESS;
     }
 
+    if (bias_tensor != NULL) vsi_nn_ReleaseTensor(&bias_tensor);
     return status;
 } /* op_compute() */
 

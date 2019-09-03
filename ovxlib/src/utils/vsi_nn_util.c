@@ -1,31 +1,26 @@
 /****************************************************************************
 *
-*    Copyright 2012 - 2019 Vivante Corporation, Santa Clara, California.
-*    All Rights Reserved.
+*    Copyright (c) 2018 Vivante Corporation
 *
-*    Permission is hereby granted, free of charge, to any person obtaining
-*    a copy of this software and associated documentation files (the
-*    'Software'), to deal in the Software without restriction, including
-*    without limitation the rights to use, copy, modify, merge, publish,
-*    distribute, sub license, and/or sell copies of the Software, and to
-*    permit persons to whom the Software is furnished to do so, subject
-*    to the following conditions:
+*    Permission is hereby granted, free of charge, to any person obtaining a
+*    copy of this software and associated documentation files (the "Software"),
+*    to deal in the Software without restriction, including without limitation
+*    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+*    and/or sell copies of the Software, and to permit persons to whom the
+*    Software is furnished to do so, subject to the following conditions:
 *
-*    The above copyright notice and this permission notice (including the
-*    next paragraph) shall be included in all copies or substantial
-*    portions of the Software.
+*    The above copyright notice and this permission notice shall be included in
+*    all copies or substantial portions of the Software.
 *
-*    THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
-*    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-*    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
-*    IN NO EVENT SHALL VIVANTE AND/OR ITS SUPPLIERS BE LIABLE FOR ANY
-*    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-*    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-*    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+*    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+*    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+*    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+*    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+*    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+*    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -52,6 +47,63 @@
 #include "utils/vsi_nn_dtype_util.h"
 
 #define _GET_MAX(a, b)     ( (a) > (b) ? (a) : (b) )
+
+typedef struct _vx_status_desc_t
+{
+    vx_status status;
+    const char* desc;
+} vx_status_desc_t;
+
+static vx_status_desc_t const vx_status_desc[] =
+{
+    { VX_STATUS_MIN               /* (-25) */, "The lower bound of status codes in VX. Used for bounds checks only." },
+    { VX_ERROR_REFERENCE_NONZERO  /* (-24) */, "An operation did not complete due to a"
+                                                " reference count being non-zero." },
+    { VX_ERROR_MULTIPLE_WRITERS   /* (-23) */, "The graph has more than one node outputting"
+                                                " to the same data object. This is an invalid graph structure." },
+    { VX_ERROR_GRAPH_ABANDONED    /* (-22) */, "The graph is stopped due to an error or a callback that abandoned"
+                                                " execution." },
+    { VX_ERROR_GRAPH_SCHEDULED    /* (-21) */, "The supplied graph already has been scheduled and may be currently"
+                                                " executing." },
+    { VX_ERROR_INVALID_SCOPE      /* (-20) */, "The supplied parameter is from another scope and cannot be used"
+                                                " in the current scope." },
+    { VX_ERROR_INVALID_NODE       /* (-19) */, "The supplied node could not be created." },
+    { VX_ERROR_INVALID_GRAPH      /* (-18) */, "The supplied graph has invalid connections (cycles)." },
+    { VX_ERROR_INVALID_TYPE       /* (-17) */, "The supplied type parameter is incorrect." },
+    { VX_ERROR_INVALID_VALUE      /* (-16) */, "The supplied parameter has an incorrect value." },
+    { VX_ERROR_INVALID_DIMENSION  /* (-15) */, "The supplied parameter is too big or too small in dimension." },
+    { VX_ERROR_INVALID_FORMAT     /* (-14) */, "The supplied parameter is in an invalid format." },
+    { VX_ERROR_INVALID_LINK       /* (-13) */, "The link is not possible as specified. The parameters are"
+                                                " incompatible." },
+    { VX_ERROR_INVALID_REFERENCE  /* (-12) */, "The reference provided is not valid." },
+    { VX_ERROR_INVALID_MODULE     /* (-11) */, "The module does not contain the entry point." },
+    { VX_ERROR_INVALID_PARAMETERS /* (-10) */, "The supplied parameter information does not match the"
+                                                " kernel contract." },
+    { VX_ERROR_OPTIMIZED_AWAY     /* (-9)  */, "The object refered to has been optimized out of existence." },
+    { VX_ERROR_NO_MEMORY          /* (-8)  */, "An internal or implicit allocation failed. Typically catastrophic."
+                                                " After detection, deconstruct the context." },
+    { VX_ERROR_NO_RESOURCES       /* (-7)  */, "An internal or implicit resource can not be acquired (not memory)."
+                                                " This is typically catastrophic. After detection, deconstruct"
+                                                " the context." },
+    { VX_ERROR_NOT_COMPATIBLE     /* (-6)  */, "The attempt to link two parameters together failed due"
+                                                " to type incompatibilty." },
+    { VX_ERROR_NOT_ALLOCATED      /* (-5)  */, "The parameter must be allocated by the system. " },
+    { VX_ERROR_NOT_SUFFICIENT     /* (-4)  */, "The given graph has failed verification due to an insufficient"
+                                                " number of required parameters, which cannot be automatically"
+                                                " created. Typically this indicates required atomic parameters." },
+    { VX_ERROR_NOT_SUPPORTED      /* (-3)  */, "The requested set of parameters produce a configuration that cannot"
+                                                " be supported. " },
+    { VX_ERROR_NOT_IMPLEMENTED    /* (-2)  */, "The requested kernel is missing. " },
+    { VX_FAILURE                  /* (-1)  */, "A generic error code, used when no other describes the error." },
+    { VX_SUCCESS                  /* (0)   */, "Success" },
+};
+/* Check whether enum value changed */
+_compiler_assert(VX_ERROR_NOT_IMPLEMENTED == -2, VX_STATUS_VALUE_CHANGED);
+_compiler_assert(VX_ERROR_INVALID_PARAMETERS == -10, VX_STATUS_VALUE_CHANGED);
+_compiler_assert(VX_ERROR_INVALID_GRAPH == -18, VX_STATUS_VALUE_CHANGED);
+_compiler_assert(VX_STATUS_MIN == -25, VX_STATUS_VALUE_CHANGED);
+
+static const int16_t vx_status_desc_cnt = _cnt_of_array( vx_status_desc );
 
 static uint32_t _compute_stride_rounding
     (
@@ -211,6 +263,10 @@ float vsi_nn_DataAsFloat32
     case VSI_NN_TYPE_FLOAT16:
         fp16 = ( (int16_t *)data )[0];
         val = vsi_nn_Fp16ToFp32( fp16 );
+        break;
+    case VSI_NN_TYPE_BFLOAT16:
+        fp16 = ( (int16_t *)data )[0];
+        val = vsi_nn_BFp16ToFp32( fp16 );
         break;
     case VSI_NN_TYPE_INT32:
         val = (float)( (int32_t *)data )[0];
@@ -447,6 +503,7 @@ void vsi_nn_GetPadForOvx
         return;
     }
 
+    /* Workaround for ovx api. */
     out_pad[0] = in_pad[0];
     out_pad[1] = in_pad[2];
     if( out_pad[0] != in_pad[1] )
@@ -755,7 +812,355 @@ void vsi_nn_FormatToString
     case VSI_NN_TYPE_FLOAT16:strncpy(buf, "f16", buf_sz);break;
     case VSI_NN_TYPE_FLOAT32:strncpy(buf, "f32", buf_sz);break;
     case VSI_NN_TYPE_FLOAT64:strncpy(buf, "f64", buf_sz);break;
+    case VSI_NN_TYPE_BFLOAT16:strncpy(buf, "bf16", buf_sz);break;
     default:
         break;
     }
 } /* vsi_nn_FormatToString() */
+
+const char* vsi_nn_DescribeStatus
+    (
+    vsi_status status
+    )
+{
+    static const char* unknown = "unknown";
+    int16_t i = 0;
+
+    for( i = 0; i < vx_status_desc_cnt; i++ )
+    {
+        if(vx_status_desc[i].status == status )
+        {
+            return vx_status_desc[i].desc;
+        }
+    }
+    return unknown;
+} /* vsi_nn_DescribeStatus() */
+
+#if defined(_WIN32)
+#include <windows.h>
+#include <intrin.h>
+typedef struct local_object {
+    HMODULE hModule;
+    struct local_object *previous;
+    struct local_object *next;
+} local_object;
+
+static local_object first_object;
+
+/* These functions implement a double linked list for the local objects. */
+static local_object *local_search( HMODULE hModule )
+{
+    local_object *pobject;
+
+    if( hModule == NULL )
+        return NULL;
+
+    for( pobject = &first_object; pobject; pobject = pobject->next )
+        if( pobject->hModule == hModule )
+            return pobject;
+
+    return NULL;
+}
+
+static BOOL local_add( HMODULE hModule )
+{
+    local_object *pobject;
+    local_object *nobject;
+
+    if( hModule == NULL )
+        return TRUE;
+
+    pobject = local_search( hModule );
+
+    /* Do not add object again if it's already on the list */
+    if( pobject )
+        return TRUE;
+
+    for( pobject = &first_object; pobject->next; pobject = pobject->next );
+
+    nobject = (local_object*) malloc( sizeof( local_object ) );
+
+    if( !nobject )
+    {
+        SetLastError( ERROR_NOT_ENOUGH_MEMORY );
+        return FALSE;
+    }
+
+    pobject->next = nobject;
+    nobject->next = NULL;
+    nobject->previous = pobject;
+    nobject->hModule = hModule;
+
+    return TRUE;
+}
+
+static void local_rem( HMODULE hModule )
+{
+    local_object *pobject;
+
+    if( hModule == NULL )
+        return;
+
+    pobject = local_search( hModule );
+
+    if( !pobject )
+        return;
+
+    if( pobject->next )
+        pobject->next->previous = pobject->previous;
+    if( pobject->previous )
+        pobject->previous->next = pobject->next;
+
+    free( pobject );
+}
+
+static char error_buffer[65535];
+static char *current_error;
+static char dlerror_buffer[65536];
+
+/* Load Psapi.dll at runtime, this avoids linking caveat */
+static BOOL MyEnumProcessModules
+    (
+    HANDLE hProcess,
+    HMODULE *lphModule,
+    DWORD cb,
+    LPDWORD lpcbNeeded
+    )
+{
+    static BOOL (WINAPI *EnumProcessModulesPtr)(HANDLE, HMODULE *, DWORD, LPDWORD);
+    HMODULE psapi;
+
+    if( !EnumProcessModulesPtr )
+    {
+        psapi = LoadLibraryA( "Psapi.dll" );
+        if( psapi )
+            EnumProcessModulesPtr = (BOOL (WINAPI *)(HANDLE, HMODULE *, DWORD, LPDWORD))
+            GetProcAddress( psapi, "EnumProcessModules" );
+        if( !EnumProcessModulesPtr )
+            return 0;
+    }
+
+    return EnumProcessModulesPtr( hProcess, lphModule, cb, lpcbNeeded );
+}
+
+void * vsi_nn_dlopen_win32( const char *file, int mode )
+{
+    HMODULE hModule;
+    UINT uMode;
+
+    current_error = NULL;
+
+    /* Do not let Windows display the critical-error-handler message box */
+    uMode = SetErrorMode( SEM_FAILCRITICALERRORS );
+
+    if( file == 0 )
+    {
+        hModule = GetModuleHandle( NULL );
+
+        if( !hModule )
+            VSILOGE("GetModuleHandle Fail.");
+    }
+    else
+    {
+        HANDLE hCurrentProc;
+        DWORD dwProcModsBefore, dwProcModsAfter;
+        char lpFileName[MAX_PATH];
+        size_t i, len;
+
+        len = strlen( file );
+
+        if( len >= sizeof( lpFileName ) )
+        {
+            SetLastError( ERROR_FILENAME_EXCED_RANGE );
+            VSILOGE("File name error.");
+            hModule = NULL;
+        }
+        else
+        {
+            for( i = 0; i < len; i++ )
+            {
+                if( file[i] == '/' )
+                    lpFileName[i] = '\\';
+                else
+                    lpFileName[i] = file[i];
+            }
+            lpFileName[len] = '\0';
+
+            hCurrentProc = GetCurrentProcess( );
+
+            if( MyEnumProcessModules( hCurrentProc, NULL, 0, &dwProcModsBefore ) == 0 )
+                dwProcModsBefore = 0;
+
+            hModule = LoadLibraryExA( lpFileName, NULL, LOAD_WITH_ALTERED_SEARCH_PATH );
+
+            if( !hModule )
+            {
+                VSILOGE("LoadLibraryExA Fail.");
+            }
+            else
+            {
+                if( MyEnumProcessModules( hCurrentProc, NULL, 0, &dwProcModsAfter ) == 0 )
+                    dwProcModsAfter = 0;
+
+                if( (mode & RTLD_LOCAL) && dwProcModsBefore != dwProcModsAfter )
+                {
+                    if( !local_add( hModule ) )
+                    {
+                        VSILOGE("local_add fail");
+                        FreeLibrary( hModule );
+                        hModule = NULL;
+                    }
+                }
+                else if( !(mode & RTLD_LOCAL) && dwProcModsBefore == dwProcModsAfter )
+                {
+                    local_rem( hModule );
+                }
+            }
+        }
+    }
+
+    /* Return to previous state of the error-mode bit flags. */
+    SetErrorMode( uMode );
+
+    return (void *) hModule;
+}
+
+int vsi_nn_dlclose_win32( void *handle )
+{
+    HMODULE hModule = (HMODULE) handle;
+    BOOL ret;
+
+    current_error = NULL;
+
+    ret = FreeLibrary( hModule );
+
+    /* If the object was loaded with RTLD_LOCAL, remove it from list of local
+     * objects.
+     */
+    if( ret )
+        local_rem( hModule );
+    else
+        VSILOGE("FreeLibrary fail");
+
+    /* dlclose's return value in inverted in relation to FreeLibrary's. */
+    ret = !ret;
+
+    return (int) ret;
+}
+
+__declspec(noinline) /* Needed for _ReturnAddress() */
+void * vsi_nn_dlsym_win32( void *handle, const char *name )
+{
+    FARPROC symbol;
+    HMODULE hCaller;
+    HMODULE hModule;
+    HANDLE hCurrentProc;
+
+    current_error = NULL;
+    symbol = NULL;
+    hCaller = NULL;
+    hModule = GetModuleHandle( NULL );
+    hCurrentProc = GetCurrentProcess( );
+
+    if( handle == RTLD_DEFAULT )
+    {
+
+        handle = hModule;
+    }
+    else if( handle == RTLD_NEXT )
+    {
+        MEMORY_BASIC_INFORMATION info;
+        size_t sLen;
+        sLen = VirtualQueryEx( hCurrentProc, _ReturnAddress(), &info, sizeof( info ) );
+        if( sLen != sizeof( info ) )
+        {
+            if( sLen != 0 )
+                SetLastError( ERROR_INVALID_PARAMETER );
+            goto end;
+        }
+        hCaller = (HMODULE) info.AllocationBase;
+        if( !hCaller )
+        {
+            SetLastError( ERROR_INVALID_PARAMETER );
+            goto end;
+        }
+    }
+
+    if( handle != RTLD_NEXT )
+    {
+        symbol = GetProcAddress( (HMODULE) handle, name );
+
+        if( symbol != NULL )
+            goto end;
+    }
+
+    if( hModule == handle || handle == RTLD_NEXT )
+    {
+        HMODULE *modules;
+        DWORD cbNeeded;
+        DWORD dwSize;
+        size_t i;
+
+        if( MyEnumProcessModules( hCurrentProc, NULL, 0, &dwSize ) != 0 )
+        {
+            modules = malloc( dwSize );
+            if( modules )
+            {
+                if( MyEnumProcessModules( hCurrentProc, modules, dwSize, &cbNeeded )
+                    != 0 && dwSize == cbNeeded )
+                {
+                    for( i = 0; i < dwSize / sizeof( HMODULE ); i++ )
+                    {
+                        if( handle == RTLD_NEXT && hCaller )
+                        {
+                            /* Next modules can be used for RTLD_NEXT */
+                            if( hCaller == modules[i] )
+                                hCaller = NULL;
+                            continue;
+                        }
+                        if( local_search( modules[i] ) )
+                            continue;
+                        symbol = GetProcAddress( modules[i], name );
+                        if( symbol != NULL )
+                            goto end;
+                    }
+
+                }
+                free( modules );
+            }
+            else
+            {
+                SetLastError( ERROR_NOT_ENOUGH_MEMORY );
+                goto end;
+            }
+        }
+    }
+
+end:
+    if( symbol == NULL )
+    {
+        if( GetLastError() == 0 )
+            SetLastError( ERROR_PROC_NOT_FOUND );
+        VSILOGE("vsi_nn_dlsym fail");
+    }
+
+    return (void*) symbol;
+}
+
+char *vsi_nn_dlerror_win32( void )
+{
+    char *error_pointer = dlerror_buffer;
+
+    /* If this is the second consecutive call to dlerror, return NULL */
+    if (current_error == NULL)
+    {
+        return NULL;
+    }
+
+    memcpy(error_pointer, current_error, strlen(current_error) + 1);
+
+    current_error = NULL;
+
+    return error_pointer;
+}
+#endif

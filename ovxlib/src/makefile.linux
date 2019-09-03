@@ -1,37 +1,9 @@
-##############################################################################
-#
-#    Copyright 2012 - 2019 Vivante Corporation, Santa Clara, California.
-#    All Rights Reserved.
-#
-#    Permission is hereby granted, free of charge, to any person obtaining
-#    a copy of this software and associated documentation files (the
-#    'Software'), to deal in the Software without restriction, including
-#    without limitation the rights to use, copy, modify, merge, publish,
-#    distribute, sub license, and/or sell copies of the Software, and to
-#    permit persons to whom the Software is furnished to do so, subject
-#    to the following conditions:
-#
-#    The above copyright notice and this permission notice (including the
-#    next paragraph) shall be included in all copies or substantial
-#    portions of the Software.
-#
-#    THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
-#    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-#    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
-#    IN NO EVENT SHALL VIVANTE AND/OR ITS SUPPLIERS BE LIABLE FOR ANY
-#    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-#    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-#    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-#
-##############################################################################
-
-
 include $(AQROOT)/makefile.linux.def
 
 INCLUDE += -I$(VIVANTE_SDK_INC) -I$(VIVANTE_SDK_INC)/HAL -I$(AQROOT)/sdk/inc
 INCLUDE += -I../include/ops -I../include/utils -I../include/inference
 INCLUDE += -I../include/client -I../include -I../include/libnnext
-INCLUDE += -I../include/platform
+INCLUDE += -I../include/platform -I../include/cpu_backend
 
 CFLAGS += $(INCLUDE)
 CFLAGS += -fvisibility=hidden -D'OVXLIB_API=__attribute__((visibility("default")))'
@@ -40,7 +12,7 @@ CFLAGS += -fvisibility=hidden -D'OVXLIB_API=__attribute__((visibility("default")
 # Supply necessary libraries.
 
 LIBS += -L$(VIVANTE_SDK_LIB) -l OpenVX -l OpenVXU -l CLC -l VSC
-LIBS += -lm
+LIBS += -lm -ldl
 
 #############################################################################
 # Macros.
@@ -87,7 +59,8 @@ OBJECTS +=      $(OBJ_DIR)/vsi_nn_code_generator.o   \
 
 vpath %.c quantization
 OBJECTS +=      $(OBJ_DIR)/vsi_nn_dynamic_fixed_point.o   \
-             $(OBJ_DIR)/vsi_nn_asymmetric_affine.o
+             $(OBJ_DIR)/vsi_nn_asymmetric_affine.o   \
+             $(OBJ_DIR)/vsi_nn_perchannel_symmetric_affine.o
 
 vpath %.c pycc
 OBJECTS +=      $(OBJ_DIR)/vsi_pycc_interface.o
@@ -96,11 +69,15 @@ vpath %.c post
 OBJECTS +=      $(OBJ_DIR)/vsi_nn_post_fasterrcnn.o \
                 $(OBJ_DIR)/vsi_nn_post_cmupose.o
 
+vpath %.c cpu_backend
+OBJECTS +=      $(OBJ_DIR)/cbee_interface.o \
+                $(OBJ_DIR)/vsi_nn_cpu_backend_conv2d.o \
+                $(OBJ_DIR)/vsi_nn_cpu_backend.o
 
 vpath %.c libnnext/ops/kernel
 OBJECTS += $(OBJ_DIR)/vsi_nn_kernel_argmax.o \
         $(OBJ_DIR)/vsi_nn_kernel_crop.o \
-        $(OBJ_DIR)/vsi_nn_kernel_eltwisemax.o \
+        $(OBJ_DIR)/vsi_nn_kernel_maximum.o \
         $(OBJ_DIR)/vsi_nn_kernel_fullconnect2.o \
         $(OBJ_DIR)/vsi_nn_kernel_l2normalizescale.o \
         $(OBJ_DIR)/vsi_nn_kernel_poolwithargmax.o \
@@ -136,9 +113,19 @@ OBJECTS += $(OBJ_DIR)/vsi_nn_kernel_argmax.o \
         $(OBJ_DIR)/vsi_nn_kernel_unstack.o \
         $(OBJ_DIR)/vsi_nn_kernel_pre_process_rgb.o \
         $(OBJ_DIR)/vsi_nn_kernel_addn.o \
+        $(OBJ_DIR)/vsi_nn_kernel_pre_process_yuv420.o \
+        $(OBJ_DIR)/vsi_nn_kernel_extra_ending.o \
+        $(OBJ_DIR)/vsi_nn_kernel_gather.o \
+        $(OBJ_DIR)/vsi_nn_kernel_tile.o \
+        $(OBJ_DIR)/vsi_nn_kernel_topk.o \
+        $(OBJ_DIR)/vsi_nn_kernel_pre_process_bgra.o \
+        $(OBJ_DIR)/vsi_nn_kernel_logical_not.o \
+        $(OBJ_DIR)/vsi_nn_kernel_sin.o \
+        $(OBJ_DIR)/vsi_nn_kernel_log.o \
         $(OBJ_DIR)/vsi_nn_kernel_tensorstackconcat.o \
         $(OBJ_DIR)/vsi_nn_kernel_pow.o \
         $(OBJ_DIR)/vsi_nn_kernel_floordiv.o \
+        $(OBJ_DIR)/vsi_nn_kernel_conv2d.o \
         $(OBJ_DIR)/vsi_nn_kernel_sync_host.o
 
 vpath %.c libnnext
@@ -188,7 +175,7 @@ OBJECTS +=      $(OBJ_DIR)/vsi_nn_op_add.o   \
              $(OBJ_DIR)/vsi_nn_op_argmax.o   \
              $(OBJ_DIR)/vsi_nn_op_crop.o   \
              $(OBJ_DIR)/vsi_nn_op_l2normalizescale.o   \
-             $(OBJ_DIR)/vsi_nn_op_eltwisemax.o \
+             $(OBJ_DIR)/vsi_nn_op_maximum.o \
              $(OBJ_DIR)/vsi_nn_op_subtract.o    \
              $(OBJ_DIR)/vsi_nn_op_relu6.o   \
              $(OBJ_DIR)/vsi_nn_op_relu1.o   \
@@ -250,6 +237,16 @@ OBJECTS +=      $(OBJ_DIR)/vsi_nn_op_add.o   \
              $(OBJ_DIR)/vsi_nn_op_pre_process.o \
              $(OBJ_DIR)/vsi_nn_op_addn.o \
              $(OBJ_DIR)/vsi_nn_op_softmax_internal.o \
+             $(OBJ_DIR)/vsi_nn_op_pre_process_yuv420.o \
+             $(OBJ_DIR)/vsi_nn_op_extra_ending.o \
+             $(OBJ_DIR)/vsi_nn_op_gather.o \
+             $(OBJ_DIR)/vsi_nn_op_tile.o \
+             $(OBJ_DIR)/vsi_nn_op_grouped_conv2d.o \
+             $(OBJ_DIR)/vsi_nn_op_topk.o \
+             $(OBJ_DIR)/vsi_nn_op_pre_process_bgra.o \
+             $(OBJ_DIR)/vsi_nn_op_logical_not.o \
+             $(OBJ_DIR)/vsi_nn_op_sin.o \
+             $(OBJ_DIR)/vsi_nn_op_log.o \
              $(OBJ_DIR)/vsi_nn_op_tensorstackconcat.o \
              $(OBJ_DIR)/vsi_nn_op_concatshift.o \
              $(OBJ_DIR)/vsi_nn_op_sync_host.o\
@@ -265,7 +262,7 @@ OBJECTS += $(OBJ_DIR)/vsi_nn_pf_depth2space.o
 endif
 
 # installation directory
-INSTALL_DIR := ../lib/
+INSTALL_DIR := $(VIVANTE_SDK_LIB)
 
 ################################################################################
 # Include the common makefile.
