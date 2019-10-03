@@ -682,7 +682,7 @@ static vsi_bool op_setup
         if( p->local.multi_batch )
         {
             /* projection FC on NN requires quantized input */
-            attr.dtype.scale = 0.007866097716834601;
+            attr.dtype.scale = (float)0.007866097716834601;
             attr.dtype.zero_point = 128;
             attr.dtype.qnt_type = VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC;
             attr.dtype.vx_type = VSI_NN_TYPE_UINT8;

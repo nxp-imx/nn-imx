@@ -34,6 +34,9 @@
 #include "vsi_nn_ops.h"
 #include "vsi_nn_tensor.h"
 #include "vsi_nn_tensor_util.h"
+#include "utils/vsi_nn_util.h"
+#include "utils/vsi_nn_link_list.h"
+#include "utils/vsi_nn_dtype_util.h"
 #include "client/vsi_nn_vxkernel.h"
 
 #define _ARG_NUM            (1)
@@ -43,6 +46,99 @@
 #define _PARAM_NUM          (_ARG_NUM + _IO_NUM)
 
 extern vx_kernel_description_t * vx_kernel_STACK_list[];
+
+
+static int32_t _get_input_num
+    (
+    vsi_nn_node_t   * self,
+    vsi_nn_tensor_t ** inputs
+    )
+{
+    int32_t num;
+    num = (int32_t)(self->input.num - 1);
+    while( num >= 0 && NULL == inputs[num] )
+    {
+        num --;
+    }
+    if( 0 > num )
+    {
+        return -1;
+    }
+
+    num++;
+    return num;
+}
+
+static vsi_bool _is_same_quant
+    (
+    vsi_nn_node_t   * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs
+    )
+{
+    uint32_t i,num;
+    vsi_nn_dtype_t *dtype,*_dtype;
+
+    dtype = NULL;
+    /* check inputs dtype */
+    num = _get_input_num(self, inputs);
+    for(i = 0; i < num; i++)
+    {
+        if(NULL == dtype)
+        {
+            dtype = &inputs[i]->attr.dtype;
+            continue;
+        }
+
+        _dtype = &inputs[i]->attr.dtype;
+        if(vsi_nn_DtypeCompare(dtype, _dtype) == FALSE)
+        {
+            return FALSE;
+        }
+
+        dtype = _dtype;
+    }
+
+    /* check outputs dtype */
+    _dtype = &outputs[0]->attr.dtype;
+    if(vsi_nn_DtypeCompare(dtype, _dtype) == FALSE)
+    {
+        return FALSE;
+    }
+
+    return TRUE;
+} /* _is_same_quant */
+
+static vsi_status copy_tensor_to_view
+    (
+    vsi_nn_node_t   * self,
+    vsi_nn_tensor_t * src_in,
+    uint32_t         axis,
+    vx_tensor         dst_tensor
+    )
+{
+    vsi_status ret;
+    vsi_nn_stack_lcl_data * data;
+
+    ret = VSI_SUCCESS;
+    /* Malloc ptr */
+    data = (vsi_nn_stack_lcl_data *)malloc( sizeof(vsi_nn_stack_lcl_data) );
+    if( NULL == data )
+    {
+        VSILOGE( "Create stack local data fail." );
+        return VSI_FAILURE;
+    }
+    memset( data, 0, sizeof(vsi_nn_stack_lcl_data) );
+    data->src_tensor = src_in->t;
+    data->dst_tensor = dst_tensor;
+    data->src_in     = src_in;
+    /* Store node, ptr */
+    vsi_nn_LinkListPushStart(
+        (vsi_nn_link_list_t **)&self->nn_param.stack.lcl_data,
+        (vsi_nn_link_list_t *)data );
+
+    return ret;
+} /* copy_tensor_to_view() */
 
 static void _set_inputs_outputs
     (
@@ -208,9 +304,8 @@ static vsi_status op_compute
     )
 {
 #define NN_MAX_INPUT_SIZE (65536)
-    vsi_status status  = VSI_FAILURE;
+    vsi_status status  = VSI_SUCCESS;
 
-    uint32_t axis;
     uint32_t i = 0;
     uint32_t tensor_num = self->input.num;
     vsi_nn_stack_param * p;
@@ -225,24 +320,33 @@ static vsi_status op_compute
     uint32_t block_size = 1;
     uint32_t block_num = 1;
     uint32_t dims = 2;
+    vsi_nn_stack_lcl_data * iter;
 
-    p = (vsi_nn_stack_param *)&(self->nn_param.fcl);
-    axis = p->axis;
+    p = (vsi_nn_stack_param *)&(self->nn_param.stack);
 
-    for (i = 0; i < axis; i++)
-    {
-        block_size *= inputs[0]->attr.size[i];
-    }
-
-    for (i = axis; i < inputs[0]->attr.dim_num; i++)
-    {
-        block_num *= inputs[0]->attr.size[i];
-    }
+    block_size = p->local.block_size;
+    block_num  = p->local.block_num;
 
     sizes[0] = block_size * tensor_num;
     sizes[1] = block_num;
 
-    if (block_size * tensor_num < NN_MAX_INPUT_SIZE && block_num < NN_MAX_INPUT_SIZE)
+    if(block_num == 1 && _is_same_quant(self, inputs, outputs))
+    {
+        iter = self->nn_param.stack.lcl_data;
+        while( NULL != iter )
+        {
+            iter->cp_node = vxTensorCopyNode(self->graph->g,
+                iter->src_tensor, iter->dst_tensor );
+            if( NULL == iter->cp_node )
+            {
+                VSILOGE( "Create vxTensorCopyNode fail." );
+                status = VSI_FAILURE;
+                break;
+            }
+            iter = (vsi_nn_stack_lcl_data *)vsi_nn_LinkListNext( (vsi_nn_link_list_t *)iter );
+        }
+    }
+    else if (TRUE/*block_size * tensor_num < NN_MAX_INPUT_SIZE && block_num < NN_MAX_INPUT_SIZE*/)
     {
         output_rs = vxReshapeTensor(outputs[0]->t, (int32_t*)sizes, dims);
 
@@ -400,10 +504,28 @@ static vsi_bool op_setup
 {
     vsi_nn_stack_param * p;
     uint32_t i, j;
+    uint32_t block_size = 1;
+    uint32_t block_num = 1;
+    uint32_t axis;
+
+    p = (vsi_nn_stack_param *)&(node->nn_param.stack);
+    axis = p->axis;
+
+    for (i = 0; i < axis; i++)
+    {
+        block_size *= inputs[0]->attr.size[i];
+    }
+
+    for (i = axis; i < inputs[0]->attr.dim_num; i++)
+    {
+        block_num *= inputs[0]->attr.size[i];
+    }
+
+    p->local.block_size = block_size;
+    p->local.block_num = block_num;
 
     if( VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num )
     {
-        p = (vsi_nn_stack_param *)&(node->nn_param.stack);
         for(i = 0, j = 0; i < inputs[0]->attr.dim_num; i++)
         {
             if (i == p->axis)
@@ -419,12 +541,124 @@ static vsi_bool op_setup
     return TRUE;
 } /* op_setup() */
 
+
+static vsi_status op_optimize
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs,
+    vsi_nn_opt_direction_e direction
+    )
+{
+    vsi_status     status;
+    int32_t        num,i;
+    uint32_t       axis;
+    vx_tensor_view view;
+    vx_tensor      in_view_tensor;
+    uint32_t       sizes[2] = {1};
+    uint32_t       block_size = 1;
+    uint32_t       block_num = 1;
+    uint32_t       dims = 2;
+    vsi_nn_tensor_t *output = NULL;
+    vsi_nn_tensor_t *input = NULL;
+    uint32_t       start[VSI_NN_MAX_DIM_NUM] = { 0 };
+    uint32_t       end[VSI_NN_MAX_DIM_NUM] = { 0 };
+
+    status = VSI_SUCCESS;
+    /* we don't create tensor view if the axis is not the highest dimension */
+    if (self->nn_param.stack.local.block_num != 1 ||
+        _is_same_quant(self, inputs, outputs) == FALSE)
+    {
+        return status;
+    }
+    /* Only backward run stack's optimize */
+    if( direction == VSI_NN_OPTIMIZE_FORWARD )
+    {
+        return status;
+    }
+
+    num = _get_input_num(self, inputs);
+    if(num < 0)
+    {
+        return VSI_FAILURE;
+    }
+
+    VSILOGD("Optimize %s, uid %u", vsi_nn_OpGetName(self->op), self->uid);
+    axis = self->nn_param.stack.axis;
+
+    if( NULL == outputs[0]->t )
+    {
+        vsi_nn_TensorReinit( self->graph, outputs[0] );
+    }
+
+    block_size = self->nn_param.stack.local.block_size;
+    block_num  = self->nn_param.stack.local.block_num;
+    sizes[0] = block_size;
+    sizes[1] = block_num * num;
+    output = vsi_nn_reshape_tensor(self->graph, outputs[0], sizes, dims);
+    axis = 1;
+    /* Create tensor from view */
+    memset( start, 0, sizeof( uint32_t ) * VSI_NN_MAX_DIM_NUM );
+    memset( end, 0, sizeof( uint32_t ) * VSI_NN_MAX_DIM_NUM );
+    end[0] = block_size;
+    end[axis] = 0;
+    for( i = 0; i < num; i++ )
+    {
+        start[axis] = end[axis];
+        end[axis] += 1;
+        view = vxCreateTensorView( self->graph->ctx->c,
+            start, end, output->attr.dim_num );
+        if( NULL == view )
+        {
+            VSILOGE( "Create tensor %d view fail.", i );
+            status = VSI_FAILURE;
+            break;
+        }
+        in_view_tensor = vxCreateTensorFromView( output->t, view );
+        vxReleaseTensorView( &view );
+        if( NULL == in_view_tensor )
+        {
+            VSILOGE( "Create tensor %d from view fail.", i );
+            status = VSI_FAILURE;
+            break;
+        }
+
+        if( NULL != inputs[i]->t )
+        {
+            VSILOGW( "stack copy %d tensor.", i );
+            sizes[0] = block_size;
+            sizes[1] = block_num;
+            input = vsi_nn_reshape_tensor(self->graph, inputs[0], sizes, dims);
+            // Copy old tensor values to the new address.
+            status = copy_tensor_to_view( self, input, axis, in_view_tensor );
+            if( VSI_FAILURE == status )
+            {
+                break;
+            }
+        }
+        else
+        {
+            vx_tensor t = NULL;
+            t = vxReshapeTensor(in_view_tensor, (int32_t*)inputs[i]->attr.size, inputs[i]->attr.dim_num);
+            inputs[i]->t = t;
+            self->nn_param.stack.local.local_tensor[i] = in_view_tensor;
+        }
+    }
+
+    if (output) vsi_nn_ReleaseTensor(&output);
+    output = NULL;
+
+    return status;
+} /* op_optimize() */
+
 static vsi_status op_deinit
     (
     vsi_nn_node_t * self
     )
 {
     vsi_nn_stack_lcl_data * data;
+    vsi_nn_stack_lcl_data * tmp;
+    uint32_t i = 0;
 
     if(NULL == self)
     {
@@ -432,12 +666,44 @@ static vsi_status op_deinit
     }
 
     data = self->nn_param.stack.lcl_data;
-    if(data && data->array)
+
+    for (i = 0; i < VSI_NN_STACK_MAX_INPUTS; i++)
     {
-        vxReleaseObjectArray(&data->array);
-        free(data);
-        data = NULL;
+        if (self->nn_param.stack.local.local_tensor[i] != NULL)
+        {
+            vxReleaseTensor(&(self->nn_param.stack.local.local_tensor[i]));
+            self->nn_param.stack.local.local_tensor[i] = NULL;
+        }
     }
+
+    if(self->n)
+    {
+        if( NULL != self && NULL != self->n )
+        {
+            if(data && data->array)
+            {
+                vxReleaseObjectArray(&data->array);
+                free(data);
+                data = NULL;
+            }
+            vxReleaseNode( &self->n );
+            self->n = NULL;
+        }
+    }
+    else
+    {
+        while( NULL != data )
+        {
+            tmp = (vsi_nn_stack_lcl_data *)vsi_nn_LinkListPopStart(
+                (vsi_nn_link_list_t **)&data );
+            vxReleaseNode( &tmp->cp_node );
+            vxReleaseTensor( &tmp->dst_tensor );
+            vsi_nn_ReleaseTensor(&tmp->src_in);
+            free( tmp );
+        }
+    }
+
+
     vsi_nn_op_common_deinit(self);
 
     return VSI_SUCCESS;
@@ -454,7 +720,7 @@ DEF_OP_REG
     /* deinit     */ op_deinit,
     /* check      */ op_check,
     /* setup      */ op_setup,
-    /* optimize   */ NULL,
+    /* optimize   */ op_optimize,
     /* input_num  */ _INPUT_NUM,
     /* output_num */ _OUTPUT_NUM
     );

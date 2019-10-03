@@ -291,6 +291,7 @@ static vsi_status op_compute
             {
                 VSILOGE( "Create tensor %d view fail.", i );
                 status = VSI_FAILURE;
+                vsi_nn_ReleaseTensor( &perm_tensor );
                 break;
             }
 
@@ -300,6 +301,7 @@ static vsi_status op_compute
             {
                 VSILOGE( "Create tensor %d from view fail.", i );
                 status = VSI_FAILURE;
+                vsi_nn_ReleaseTensor( &perm_tensor );
                 break;
             }
 
@@ -387,12 +389,13 @@ static vsi_bool op_setup
         p = (vsi_nn_unstack_param *)&(node->nn_param.unstack);
         if(p->axis == 0)
         {
-            for(i = 0; i < inputs[0]->attr.dim_num-1; i++)
+            for(i = 0; i < inputs[0]->attr.dim_num - 1; i++)
             {
                 for(j = 0; j < node->output.num; j++)
                 {
                     outputs[j]->attr.size[i] = inputs[0]->attr.size[i + 1];
                 }
+                outputs[j]->attr.dim_num = inputs[0]->attr.dim_num - 1;
             }
         }
         else if(p->axis == 1)
@@ -405,6 +408,7 @@ static vsi_bool op_setup
                 {
                     outputs[j]->attr.size[i] = inputs[0]->attr.size[i + 1];
                 }
+                outputs[j]->attr.dim_num = inputs[0]->attr.dim_num - 1;
             }
         }
         else if(p->axis == 2)
@@ -414,10 +418,11 @@ static vsi_bool op_setup
                 outputs[j]->attr.size[0] = inputs[0]->attr.size[0];
                 outputs[j]->attr.size[1] = inputs[0]->attr.size[1];
 
-                for(i = 2; i < inputs[0]->attr.dim_num-1; i++)
+                for(i = 2; i < inputs[0]->attr.dim_num - 1; i++)
                 {
                     outputs[j]->attr.size[i] = inputs[0]->attr.size[i + 1];
                 }
+                outputs[j]->attr.dim_num = inputs[0]->attr.dim_num - 1;
             }
         }
         else if(p->axis == 3)
@@ -427,6 +432,7 @@ static vsi_bool op_setup
                 outputs[j]->attr.size[0] = inputs[0]->attr.size[0];
                 outputs[j]->attr.size[1] = inputs[0]->attr.size[1];
                 outputs[j]->attr.size[2] = inputs[0]->attr.size[2];
+                outputs[j]->attr.dim_num = inputs[0]->attr.dim_num - 1;
             }
         }
     }

@@ -380,7 +380,7 @@ vsi_bool vsi_nn_QuantCheck
       ret = vsi_nn_QuantAffineCheck(input, weight, bias);
       if(ret == FALSE)
       {
-        VSILOGE("abs(input_scale[%f] * weight_scale[%f] - bias_scale[%f]) > 1e-5",
+        VSILOGE("input_scale[%f] * weight_scale[%f] != bias_scale[%f]",
           input->attr.dtype.scale,
           weight->attr.dtype.scale,
           bias->attr.dtype.scale);

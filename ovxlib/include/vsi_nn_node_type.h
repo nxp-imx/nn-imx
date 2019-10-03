@@ -21,6 +21,7 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
+/** @file */
 #ifndef _VSI_NN_NODE_TYPES_H_
 #define _VSI_NN_NODE_TYPES_H_
 
@@ -113,6 +114,26 @@
 #include "ops/vsi_nn_op_logical_not.h"
 #include "ops/vsi_nn_op_sin.h"
 #include "ops/vsi_nn_op_log.h"
+#include "ops/vsi_nn_op_argmin.h"
+#include "ops/vsi_nn_op_roi_align.h"
+#include "ops/vsi_nn_op_heatmap_max_keypoint.h"
+#include "ops/vsi_nn_op_axis_aligned_bbox_transform.h"
+#include "ops/vsi_nn_op_box_with_nms_limit.h"
+#include "ops/vsi_nn_op_generate_proposals.h"
+#include "ops/vsi_nn_op_detection_postprocess.h"
+#include "ops/vsi_nn_op_random_multinomial.h"
+#include "ops/vsi_nn_op_log_softmax.h"
+#include "ops/vsi_nn_op_relu_keras.h"
+#include "ops/vsi_nn_op_relu_keras_internal.h"
+#include "ops/vsi_nn_op_reducesum_internal.h"
+#include "ops/vsi_nn_op_reducemax_internal.h"
+#include "ops/vsi_nn_op_reducemin_internal.h"
+#include "ops/vsi_nn_op_gru_ovxlib.h"
+#include "ops/vsi_nn_op_grucell_ovxlib.h"
+#include "ops/vsi_nn_op_embedding_lookup.h"
+#include "ops/vsi_nn_op_reduceprod_internal.h"
+#include "ops/vsi_nn_op_reduceall_internal.h"
+#include "ops/vsi_nn_op_reduceany_internal.h"
 
 /* custom node head define define */
 #include "custom/vsi_nn_custom_node_type.h"
@@ -121,6 +142,7 @@
 extern "C"{
 #endif
 
+/** Operation attributes */
 typedef union _vsi_nn_nn_param
 {
     struct
@@ -210,8 +232,29 @@ typedef union _vsi_nn_nn_param
     vsi_nn_topk_param               topk;
     vsi_nn_pre_process_bgra_param   pre_process_bgra;
     vsi_nn_logical_not_param        logical_not;
+    vsi_nn_argmax_param             argmax;
     vsi_nn_sin_param                sin;
     vsi_nn_log_param                log;
+    vsi_nn_argmin_param             argmin;
+    vsi_nn_roi_align_param          roi_align;
+    vsi_nn_heatmap_max_keypoint_param heatmap_max_keypoint;
+    vsi_nn_axis_aligned_bbox_transform_param axis_aligned_bbox_transform;
+    vsi_nn_box_with_nms_limit_param box_with_nms_limit;
+    vsi_nn_generate_proposals_param generate_proposals;
+    vsi_nn_detection_postprocess_param detection_postprocess;
+    vsi_nn_random_multinomial_param random_multinomial;
+    vsi_nn_log_softmax_param        log_softmax;
+    vsi_nn_relu_keras_param         relu_keras;
+    vsi_nn_relu_keras_internal_param relu_keras_internal;
+    vsi_nn_reducesum_internal_param reducesum_internal;
+    vsi_nn_reducemax_internal_param reducemax_internal;
+    vsi_nn_reducemin_internal_param reducemin_internal;
+    vsi_nn_gru_ovxlib_param         gru_ovxlib;
+    vsi_nn_grucell_ovxlib_param     grucell_ovxlib;
+    vsi_nn_embedding_lookup_param   embedding_lookup;
+    vsi_nn_reduceprod_internal_param reduceprod_internal;
+    vsi_nn_reduceall_internal_param reduceall_internal;
+    vsi_nn_reduceany_internal_param reduceany_internal;
     uint8_t                         client_param[128];
 
     /* custom node data struct define */
@@ -220,9 +263,13 @@ typedef union _vsi_nn_nn_param
 #undef DEF_NODE_TYPE
 } vsi_nn_nn_param_t;
 
-/* Number 576 is the size of `vsi_nn_nn_param_t` from V1.1.2 */
+/**
+ * Number 576 is the size of `vsi_nn_nn_param_t` from V1.1.2
+ * We this check to avoid application binary interface(ABI) compatibility issue.
+ */
 _compiler_assert( sizeof(vsi_nn_nn_param_t) <= 576, vsi_nn_node_type_h_potential_abi_compatibility_issue );
 
+/** Node params for openvx attributes */
 typedef struct _vsi_nn_vx_param
 {
     vsi_enum   overflow_policy;

@@ -94,6 +94,54 @@ static ovxlib::OperandType operand_mapping(OperandType code) {
     return ovxlib::OperandType::NONE;
 }
 
+void VsiPreparedModel::release_rtinfo(std::vector<VsiRTInfo>& rtInfos){
+    while(!rtInfos.empty()){
+        auto &rt = rtInfos.back();
+        if("mmap_fd" == rt.mem_type)
+            rt.vsi_mem.reset();
+        rtInfos.pop_back();
+    }
+}
+
+int VsiPreparedModel::map_rtinfo_from_hidl_memory(const hidl_vec<hidl_memory>& pools,
+            std::vector<VsiRTInfo>& rtInfos){
+        rtInfos.clear();
+        rtInfos.resize(pools.size());
+
+    for(size_t i = 0; i < pools.size(); i++){
+        auto & hidl_memory = pools[i];
+        auto & rt = rtInfos[i];
+
+        std::shared_ptr<ovxlib::Memory>  vsi_mem = nullptr;
+        sp<IMemory> shared_mem = nullptr;
+        uint8_t *buffer = nullptr;
+
+        if ("ashmem" == hidl_memory.name()) {
+                shared_mem = mapMemory(hidl_memory);
+                assert(shared_mem);
+                shared_mem->read();
+                buffer =
+                    reinterpret_cast<uint8_t*>(static_cast<void*>(shared_mem->getPointer()));
+        }else if ("mmap_fd" == hidl_memory.name()) {
+                size_t size = hidl_memory.size();
+                int fd = hidl_memory.handle()->data[0];
+                int mode = hidl_memory.handle()->data[1];
+                size_t offset = getSizeFromInts(hidl_memory.handle()->data[2], hidl_memory.handle()->data[3]);
+
+                vsi_mem = std::make_shared<ovxlib::Memory>();
+                vsi_mem ->readFromFd(size, mode, fd, offset);
+        }else{
+                LOG(ERROR) << "invalid hidl_memory";
+                return ANEURALNETWORKS_BAD_DATA;
+        }
+
+        rt.shared_mem = shared_mem;
+        rt.mem_type = std::string(hidl_memory.name());
+        rt.ptr = buffer;
+        rt.vsi_mem = vsi_mem;
+    }
+    return ANEURALNETWORKS_NO_ERROR;
+}
 
 void VsiPreparedModel::fill_operand_value(ovxlib::Operand* ovx_operand, const Operand& hal_operand) {
     switch (hal_operand.lifetime) {
@@ -112,33 +160,15 @@ void VsiPreparedModel::fill_operand_value(ovxlib::Operand* ovx_operand, const Op
             break;
         } break;
         case OperandLifeTime::CONSTANT_REFERENCE: {
+
             const auto& location = hal_operand.location;
-            auto hidl_memory = model_.pools[location.poolIndex];
-
-            if ("ashmem" == hidl_memory.name()) {
-                sp<IMemory> shared_mem = mapMemory(hidl_memory);
-                assert(shared_mem);
-
-                shared_mem->read();
-                if (location.offset + location.length > shared_mem->getSize()) {
-                    LOG(ERROR) << "Fatal Error: out of shared memory boundary ";
-                }
-                const uint8_t* buffer =
-                    reinterpret_cast<uint8_t*>(static_cast<void*>(shared_mem->getPointer()));
+            auto &rt_info = const_buffer_[location.poolIndex];
+            if("ashmem" == rt_info.mem_type){
+                const uint8_t* buffer = rt_info.ptr;
                 native_model_->setOperandValue(ovx_operand, buffer + location.offset, location.length);
-                shared_memory_.push_back(shared_mem);
-            } else if ("mmap_fd" == hidl_memory.name()) {
-                size_t size = hidl_memory.size();
-                int fd = hidl_memory.handle()->data[0];
-                int mode = hidl_memory.handle()->data[1];
-                size_t offset = getSizeFromInts(hidl_memory.handle()->data[2], hidl_memory.handle()->data[3]);
-
-                // do not release util thread quits
-                std::shared_ptr<ovxlib::Memory> native_mem = std::make_shared<ovxlib::Memory>();
-                native_mem->readFromFd(size, mode, fd, offset);
+            }else if ("mmap_fd" == rt_info.mem_type) {
                 native_model_->setOperandValueFromMemory(
-                    ovx_operand, native_mem.get(), location.offset, location.length);
-                ovx_memory_.push_back(native_mem);
+                    ovx_operand, rt_info.vsi_mem.get(), location.offset, location.length);
             }
         } break;
     }
@@ -181,6 +211,8 @@ Return<ErrorStatus> VsiPreparedModel::Create(const Model& model) {
     // [1.0] convert HAL model to ovxlib::Model
     LOG(INFO) << __FUNCTION__;
 
+    map_rtinfo_from_hidl_memory(model.pools, const_buffer_);
+
     // add operand and set its value
     for (const auto& hal_operand : model.operands) {
         int registered_idx = 0;
@@ -201,8 +233,6 @@ Return<ErrorStatus> VsiPreparedModel::Create(const Model& model) {
         ovx_op->setOperandLayout(ovxlib::OperandLayout::NHWC);
     }
 
-
-
     native_model_->finish();
     std::vector<uint32_t> inputs = model.inputIndexes;
     std::vector<uint32_t> outputs = model.outputIndexes;
@@ -215,6 +245,8 @@ Return<ErrorStatus> VsiPreparedModel::Create(const Model& model) {
 Return<ErrorStatus> VsiPreparedModel::execute(const Request& request,
                                               const sp<IExecutionCallback>& callback) {
     LOG(INFO) << __FUNCTION__;
+
+    map_rtinfo_from_hidl_memory(request.pools, io_buffer_);
 
     if (!native_exec_) native_exec_ = std::make_shared<ovxlib::Execution>(native_compile_.get());
 
@@ -262,47 +294,23 @@ Return<ErrorStatus> VsiPreparedModel::execute(const Request& request,
                 auto poolIndex = location.poolIndex;
                 nnAssert(poolIndex < request.pools.size());
 
-                auto& hidl_memory = request.pools[poolIndex];
-                if ("ashmem" == hidl_memory.name()) {
-                    sp<IMemory> shared_mem = mapMemory(hidl_memory);
-                    assert(shared_mem);
-                    shared_mem->read();
-                    uint8_t* buffer =
-                        reinterpret_cast<uint8_t*>(static_cast<void*>(shared_mem->getPointer()));
-
-                    if (location.offset + location.length > shared_mem->getSize()) {
-                        LOG(ERROR) << "Fatal Error: out of shared memory boundary ";
-                    }
-
+                auto &rt_info = io_buffer_[poolIndex];
+                if("ashmem" == rt_info.mem_type){
+                    uint8_t* buffer = rt_info.ptr;
                     if (flag == IO::INPUT)
                         native_exec_->setInput(i, ovx_operand, buffer + location.offset, location.length);
                     else
                         native_exec_->setOutput(i, ovx_operand, buffer + location.offset, location.length);
-
-                    // TODO: move it to out of lambda
-                    shared_memory_.push_back(shared_mem);
-                } else if ("mmap_fd" == hidl_memory.name()) {
-                    size_t size = hidl_memory.size();
-                    int fd = hidl_memory.handle()->data[0];
-                    int mode = hidl_memory.handle()->data[1];
-                    size_t offset =
-                        getSizeFromInts(hidl_memory.handle()->data[2], hidl_memory.handle()->data[3]);
-
-                    // do not release util thread quits
-                    std::shared_ptr<ovxlib::Memory> native_mem = std::make_shared<ovxlib::Memory>();
-                    native_mem->readFromFd(size, mode, fd, offset);
-
+                }else if ("mmap_fd" == rt_info.mem_type) {
+                    auto &vsi_mem = rt_info.vsi_mem;
                     if (flag == IO::INPUT)
                         native_exec_->setInputFromMemory(
-                            i, ovx_operand, native_mem.get(), location.offset, location.length);
+                            i, ovx_operand, vsi_mem.get(), location.offset, location.length);
                     else
                         native_exec_->setOutputFromMemory(
-                            i, ovx_operand, native_mem.get(), location.offset, location.length);
-
-                    // TODO: move it to out of lambda
-                    ovx_memory_.push_back(native_mem);
+                            i, ovx_operand, vsi_mem.get(), location.offset, location.length);
                 }
-            }
+             }
         }
     };
 
@@ -315,18 +323,14 @@ Return<ErrorStatus> VsiPreparedModel::execute(const Request& request,
     updateForArguments(model_.inputIndexes, input_args, IO::INPUT);
     updateForArguments(model_.outputIndexes, output_args, IO::OUTPUT);
 
-    ovxlib::Event* clbk = new ovxlib::Event();
-    int error = native_exec_->startCompute(clbk);
-    if(error != ANEURALNETWORKS_NO_ERROR){
-        callback->notify(ErrorStatus::INVALID_ARGUMENT);
-        return ErrorStatus::INVALID_ARGUMENT;
-    }
-    error = clbk->wait();
-    if(error != ANEURALNETWORKS_NO_ERROR){
-        callback->notify(ErrorStatus::INVALID_ARGUMENT);
-        return ErrorStatus::INVALID_ARGUMENT;
-    }
+    int error = native_exec_->compute();
+    native_exec_.reset();
+    release_rtinfo(io_buffer_);
 
+    if(error != ANEURALNETWORKS_NO_ERROR){
+        callback->notify(ErrorStatus::INVALID_ARGUMENT);
+        return ErrorStatus::INVALID_ARGUMENT;
+    }
 
     callback->notify(ErrorStatus::NONE);
     return ErrorStatus::NONE;

@@ -609,6 +609,7 @@ static vsi_status cpu_op_compute
     attr.dtype.vx_type = VSI_NN_TYPE_UINT8;
 
     lstmunit_param = vsi_nn_CreateTensor(self->graph, &attr);
+    p->local.lstmunit_param = lstmunit_param;
 
     vsi_nn_CopyDataToTensor(self->graph, lstmunit_param, (uint8_t*)p);
     /* Init parameters. */
@@ -990,6 +991,12 @@ static vsi_status op_deinit
             vsi_nn_ReleaseTensor(&self->nn_param.lstmunit_activation.local.tensors[i]);
             self->nn_param.lstmunit_activation.local.tensors[i] = NULL;
         }
+    }
+
+    if(self->nn_param.lstmunit_activation.local.lstmunit_param != NULL)
+    {
+        vsi_nn_ReleaseTensor(&self->nn_param.lstmunit_activation.local.lstmunit_param);
+        self->nn_param.lstmunit_activation.local.lstmunit_param = NULL;
     }
 
     return status;

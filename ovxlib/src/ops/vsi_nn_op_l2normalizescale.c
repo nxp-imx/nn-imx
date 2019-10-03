@@ -137,7 +137,7 @@ static vsi_status cpu_op_compute
     }
 
     /* Set inputs and outputs */
-    _set_inputs_outputs( params, inputs, outputs, _INPUT_NUM, _IO_NUM);
+    _set_inputs_outputs( params, inputs, outputs, _INPUT_NUM, _OUTPUT_NUM);
 
     /* Init parameters. */
     _create_params( self, args, _ARG_NUM );
@@ -426,8 +426,8 @@ static vsi_status op_compute
         self->graph, &kernel_info);
     if( NULL == self->n )
     {
-        if (kernel_info.resource_name) free(kernel_info.resource_name);
-        return VSI_FAILURE;
+        status = VSI_FAILURE;
+        goto final;
     }
 
     if (NULL != op_compute_list[kernel_info.init_index])
@@ -451,16 +451,25 @@ static vsi_status op_compute
 
     self->n = vsi_nn_RegisterClientKernelAndNewNode(
         self->graph, &kernel_info);
-    if (kernel_info.resource_name) free(kernel_info.resource_name);
+
     if( NULL == self->n )
     {
-        return VSI_FAILURE;
+        status = VSI_FAILURE;
+        goto final;
     }
 
     if (NULL != op_compute_list[kernel_info.init_index])
     {
         status = op_compute_list[kernel_info.init_index](self, inputs_mul_scale, outputs);
     }
+
+final:
+    if (kernel_info.resource_name)
+    {
+        free(kernel_info.resource_name);
+        kernel_info.resource_name = NULL;
+    }
+
     return status;
 } /* op_compute() */
 

@@ -32,6 +32,7 @@
 #include "vsi_nn_tensor.h"
 #include "vsi_nn_tensor_util.h"
 #include "utils/vsi_nn_util.h"
+#include "vsi_nn_log.h"
 
 #define COMPUTE_DECONV_SZ( in, ksize, pad_1, pad_2, stride )\
     (( in - 1 ) * stride + ksize - pad_1 - pad_2)

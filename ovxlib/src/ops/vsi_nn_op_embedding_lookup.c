@@ -33,6 +33,26 @@
 #include "vsi_nn_ops.h"
 #include "vsi_nn_tensor.h"
 
+static void _reshape_tensor
+    (
+    vsi_nn_tensor_t * input,
+    vx_tensor * output
+    )
+{
+    vsi_nn_tensor_attr_t attr;
+    memcpy(&attr, &(input->attr), sizeof(vsi_nn_tensor_attr_t));
+    *output = input->t;
+
+    if (input->attr.dim_num == 2)
+    {
+        attr.size[0] = input->attr.size[0];
+        attr.size[1] = 1;
+        attr.size[2] = input->attr.size[1];
+        attr.dim_num = 3;
+        *output = vxReshapeTensor( input->t, (int32_t *)attr.size, attr.dim_num );
+    }
+}
+
 static vsi_status op_compute
     (
     vsi_nn_node_t * self,
@@ -41,9 +61,13 @@ static vsi_status op_compute
     )
 {
     vsi_status status = VSI_SUCCESS;
+    vsi_nn_embedding_lookup_param* p = &self->nn_param.embedding_lookup;
+
+    _reshape_tensor(inputs[1], &(p->local.lut_tensor));
+    _reshape_tensor(outputs[0], &(p->local.output_tensor));
 
     self->n = vxTensorTableLookupNode2( self->graph->g,
-            inputs[0]->t, inputs[1]->t, outputs[0]->t);
+        inputs[0]->t, p->local.lut_tensor, p->local.output_tensor);
     if( !self->n )
     {
         status = VSI_FAILURE;
@@ -79,6 +103,30 @@ static vsi_bool op_setup
     return TRUE;
 } /* op_setup() */
 
+static vsi_status op_deinit
+    (
+    vsi_nn_node_t * self
+    )
+{
+    if (self->nn_param.embedding_lookup.local.input_tensor != NULL)
+    {
+        vxReleaseTensor(&self->nn_param.embedding_lookup.local.input_tensor);
+        self->nn_param.embedding_lookup.local.input_tensor = NULL;
+    }
+    if (self->nn_param.embedding_lookup.local.lut_tensor != NULL)
+    {
+        vxReleaseTensor(&self->nn_param.embedding_lookup.local.lut_tensor);
+        self->nn_param.embedding_lookup.local.lut_tensor = NULL;
+    }
+    if (self->nn_param.embedding_lookup.local.output_tensor != NULL)
+    {
+        vxReleaseTensor(&self->nn_param.embedding_lookup.local.output_tensor);
+        self->nn_param.embedding_lookup.local.output_tensor = NULL;
+    }
+    vsi_nn_op_common_deinit(self);
+    return VSI_SUCCESS;
+} /* op_deinit() */
+
 #ifdef __cpluplus
 extern "C" {
 #endif
@@ -88,7 +136,7 @@ DEF_OP_REG
     /* op_name    */ EMBEDDING_LOOKUP,
     /* init       */ NULL,
     /* compute    */ op_compute,
-    /* deinit     */ vsi_nn_op_common_deinit,
+    /* deinit     */ op_deinit,
     /* check      */ op_check,
     /* setup      */ op_setup,
     /* optimize   */ NULL,

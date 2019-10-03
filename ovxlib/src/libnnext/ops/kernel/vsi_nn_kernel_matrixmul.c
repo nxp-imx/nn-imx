@@ -145,7 +145,7 @@ vx_status VX_CALLBACK vxgemmInitializer
         if (transB == TRUE &&
            (inDataType == VX_TYPE_UINT8 && inDataType2 == VX_TYPE_UINT8 && outDataType == VX_TYPE_FLOAT16))
         {
-            status  = vxSetNodeUniform(nodObj, "input1_ZP", 1, &input1_ZP);
+            status |= vxSetNodeUniform(nodObj, "input1_ZP", 1, &input1_ZP);
             status |= vxSetNodeUniform(nodObj, "input2_ZP", 1, &input2_ZP);
             status |= vxSetNodeUniform(nodObj, "inScaleMul", 1, &inScaleMul);
             status |= vxSetNodeUniform(nodObj, "uniU8SubZptoFp16_dp2x8", 1, uniU8SubZptoFp16_dp2x8);
@@ -154,7 +154,7 @@ vx_status VX_CALLBACK vxgemmInitializer
         else if (transB == TRUE &&
            (inDataType == VX_TYPE_UINT8 || inDataType2 == VX_TYPE_UINT8 || outDataType == VX_TYPE_UINT8))
         {
-            status  = vxSetNodeUniform(nodObj, "input2_ZP", 1, &input2_ZP);
+            status |= vxSetNodeUniform(nodObj, "input2_ZP", 1, &input2_ZP);
             status |= vxSetNodeUniform(nodObj, "input2Scale", 1, &scaleIn2);
             status |= vxSetNodeUniform(nodObj, "uniU8SubZptoFp16_dp2x8", 1, uniU8SubZptoFp16_dp2x8);
             status |= vxSetNodeUniform(nodObj, "uniFp16MulFp16AddtoFp32_dp8x2", 1, uniFp16MulFp16AddtoFp32_dp8x2);
@@ -162,9 +162,16 @@ vx_status VX_CALLBACK vxgemmInitializer
             status |= vxSetNodeUniform(nodObj, "uniConvertInt32toUint8_2x8", 1, uniConvertInt32toUint8_2x8);
             status |= vxSetNodeUniform(nodObj, "output_ZP", 1, &output_ZP);
         }
+        else if(transA == FALSE && transB == FALSE &&
+            inDataType == VX_TYPE_FLOAT16 && inDataType2 == VX_TYPE_FLOAT16 && outDataType == VX_TYPE_UINT8)
+        {
+            status |= vxSetNodeUniform(nodObj, "uniConvertInt32toUint8_2x8", 1, uniConvertInt32toUint8_2x8);
+            status |= vxSetNodeUniform(nodObj, "outputScale", 1, &reScaleOut);
+            status |= vxSetNodeUniform(nodObj, "output_ZP", 1, &output_ZP);
+        }
         else if(inDataType == VX_TYPE_UINT8 || inDataType2 == VX_TYPE_UINT8 || outDataType == VX_TYPE_UINT8)
         {
-            status = vxSetNodeUniform(nodObj, "uniConvertUint8SubZpToFp32_4x4", 1, uniConvertUint8SubZpToFp32_4x4);
+            status |= vxSetNodeUniform(nodObj, "uniConvertUint8SubZpToFp32_4x4", 1, uniConvertUint8SubZpToFp32_4x4);
             status |= vxSetNodeUniform(nodObj, "uniConvertInt32toUint8_2x8", 1, uniConvertInt32toUint8_2x8);
             status |= vxSetNodeUniform(nodObj, "input1Scale", 1, &scaleIn1);
             status |= vxSetNodeUniform(nodObj, "input1_ZP", 1, &input1_ZP);
@@ -172,6 +179,11 @@ vx_status VX_CALLBACK vxgemmInitializer
             status |= vxSetNodeUniform(nodObj, "input2_ZP", 1, &input2_ZP);
             status |= vxSetNodeUniform(nodObj, "outputScale", 1, &reScaleOut);
             status |= vxSetNodeUniform(nodObj, "output_ZP", 1, &output_ZP);
+        }
+        else if (transA == FALSE && transB == FALSE &&
+            inDataType == VX_TYPE_FLOAT16 && inDataType2 == VX_TYPE_FLOAT16 && outDataType == VX_TYPE_FLOAT16)
+        {
+            status |= VX_SUCCESS;
         }
         else
         {
@@ -305,6 +317,20 @@ vx_kernel_description_t vxgemmKernelInfo_TransBU8U8toFp16 =
     vsi_nn_KernelDeinitializer
 };
 
+vx_kernel_description_t vxgemmKernelInfo_Fp16Fp16_U8 =
+{
+    VX_KERNEL_ENUM_GEMM,
+    VX_KERNEL_NAME_GEMM_FP16FP16_U8,
+    NULL,
+    vxgemmKernelParam,
+    (sizeof(vxgemmKernelParam) / sizeof(vxgemmKernelParam[0])),
+    vsi_nn_KernelValidator,
+    NULL,
+    NULL,
+    vxgemmInitializer,
+    vsi_nn_KernelDeinitializer
+};
+
 vx_kernel_description_t * vx_kernel_MATRIXMUL_list[] =
 {
     NULL,
@@ -315,6 +341,7 @@ vx_kernel_description_t * vx_kernel_MATRIXMUL_list[] =
     &vxgemmKernelInfo_TransBFp16U8toFp16,
     &vxgemmKernelInfo_TransBFp16U8toU8,
     &vxgemmKernelInfo_TransBU8U8toFp16,
+    &vxgemmKernelInfo_Fp16Fp16_U8,
     NULL
 };
 #ifdef __cplusplus

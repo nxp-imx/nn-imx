@@ -215,8 +215,6 @@ static vsi_status VX_CALLBACK vxTensor_add_mean_stddev_normKernel
         vx_scalar scalar[1] = { NULL };
         float eps = .0f;
 
-        status = VX_SUCCESS;
-
         imgObj[0] = (vx_tensor)paramObj[0];
         imgObj[1] = (vx_tensor)paramObj[1];
         imgObj[2] = (vx_tensor)paramObj[2];
@@ -225,7 +223,7 @@ static vsi_status VX_CALLBACK vxTensor_add_mean_stddev_normKernel
         if (context == NULL)
         {
             VSILOGE("vxGetContext failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
         //input
         status = vxQueryTensor(imgObj[0], VX_TENSOR_NUM_OF_DIMS, &input_dims, sizeof(input_dims));
@@ -237,7 +235,7 @@ static vsi_status VX_CALLBACK vxTensor_add_mean_stddev_normKernel
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxQueryTensor input failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
 
         //input1
@@ -247,7 +245,7 @@ static vsi_status VX_CALLBACK vxTensor_add_mean_stddev_normKernel
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxQueryTensor input1 failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
 
         //output
@@ -260,7 +258,7 @@ static vsi_status VX_CALLBACK vxTensor_add_mean_stddev_normKernel
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxQueryTensor output failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
 
         input_size[2] = (input_dims <= 2)?1:input_size[2];
@@ -305,7 +303,7 @@ static vsi_status VX_CALLBACK vxTensor_add_mean_stddev_normKernel
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxCopyScalar failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
 
         // Call C Prototype
@@ -324,7 +322,7 @@ static vsi_status VX_CALLBACK vxTensor_add_mean_stddev_normKernel
         else
         {
             VSILOGE("Unsupport data type! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
 
         //output tensor
@@ -332,6 +330,7 @@ static vsi_status VX_CALLBACK vxTensor_add_mean_stddev_normKernel
             output_stride_size, output_dims);
         vxCopyTensorPatch(imgObj[2], NULL, output_user_addr, output, VX_WRITE_ONLY, 0);
 
+OnError:
         if(input) free(input);
         if(input1) free(input1);
         if(output) free(output);

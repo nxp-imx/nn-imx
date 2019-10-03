@@ -442,6 +442,7 @@ typedef struct _vsi_nn_lstmunit_activation_lcl_data_t
     vsi_nn_tensor_t* tensors[LSTMUNIT_ACT_TENSOR_CNT];
     uint32_t hash_idx;
     vsi_bool execute_on_sw;
+    vsi_nn_tensor_t *lstmunit_param;
 } vsi_nn_lstmunit_activation_lcl_data_t;
 
 typedef struct _vsi_nn_lstmunit_activation_param

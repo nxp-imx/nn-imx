@@ -124,6 +124,8 @@ static vsi_status _create_params
     thre_tensor = vsi_nn_CreateTensorFromData( node->graph,(uint8_t *)&value_buf, &attr );
 
     params[1] = (vx_reference)thre_tensor->t;
+    p->lcl.local_tensor = thre_tensor;
+    p->lcl.scl = (vx_scalar)params[0];
 #if 0
     /* Init parameters */
     #define _SET_PARAM( i, type, arg ) do{ \
@@ -158,17 +160,17 @@ static vsi_status _create_params
 
 static void _release_params
     (
+    vsi_nn_node_t * node,
     vx_reference * params,
     uint32_t num
     )
 {
-    uint32_t i;
-    vx_tensor tensor;
-    for( i = 0; i < num; i ++ )
-    {
-        tensor = (vx_tensor)params[i];
-        vxReleaseTensor( &tensor );
-    }
+    vsi_nn_spatial_transformer_param * p;
+
+    p = (vsi_nn_spatial_transformer_param *)node->nn_param.client_param;
+
+    if (p->lcl.local_tensor) vsi_nn_ReleaseTensor(&p->lcl.local_tensor);
+    if (p->lcl.scl) vxReleaseScalar(&p->lcl.scl);
 } /* _release_params() */
 
 static vsi_status cpu_op_compute
@@ -198,7 +200,7 @@ static vsi_status cpu_op_compute
     /* Pass parameters to node. */
     status = vsi_nn_ClientNodePassParameters( self->n, params, _PARAM_NUM );
 
-    _release_params( args, _ARG_NUM );
+    _release_params( self, args, _ARG_NUM );
 
     return status;
 }
@@ -334,7 +336,8 @@ static vsi_status vx_op_compute_setupThre
 
     if( NULL == self->n )
     {
-        return VSI_FAILURE;
+        status = VSI_FAILURE;
+        goto OnError;
     }
 
     flag_s = vxCreateScalar( ctx, VSI_NN_TYPE_INT32, &flag );
@@ -367,10 +370,11 @@ static vsi_status vx_op_compute_setupThre
 
     //_release_params( args, 4 );
 
-    vxReleaseTensor( &thre_tensor->t );
-    vxReleaseTensor( &tmp_t );
-    vxReleaseTensor( &tmp_t1 );
-    vxReleaseScalar( &flag_s );
+OnError:
+    if (thre_tensor) vsi_nn_ReleaseTensor( &thre_tensor);
+    if (tmp_t) vxReleaseTensor( &tmp_t );
+    if (tmp_t1) vxReleaseTensor( &tmp_t1 );
+    if (flag_s) vxReleaseScalar( &flag_s );
 
     return status;
 }
@@ -390,7 +394,7 @@ static vsi_status vx_op_compute_gemm
 
     vx_context ctx;
     int     size[4]    = {1};
-    vx_tensor_addressing out_addr;
+    vx_tensor_addressing out_addr = NULL;
     vsi_nn_tensor_attr_t out_attr;
     uint32_t out_stride[6];
     uint8_t *out_buffer = NULL;
@@ -427,7 +431,8 @@ static vsi_status vx_op_compute_gemm
 
     if( NULL == self->n )
     {
-        return VSI_FAILURE;
+        status = VSI_FAILURE;
+        goto OnError;
     }
 
     params[0] = (vx_reference)paraTensor0;
@@ -436,9 +441,10 @@ static vsi_status vx_op_compute_gemm
     /* Pass parameters to node. */
     status = vsi_nn_ClientNodePassParameters( self->n, params, 3 );
 
-    vxReleaseTensor(&paraTensor0);
-    vxReleaseTensor(&paraTensor1);
-    vxReleaseTensor(&paraTensor2);
+OnError:
+    if (paraTensor0) vxReleaseTensor(&paraTensor0);
+    if (paraTensor1) vxReleaseTensor(&paraTensor1);
+    if (paraTensor2) vxReleaseTensor(&paraTensor2);
 
     return status;
 }

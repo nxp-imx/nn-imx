@@ -34,7 +34,7 @@
 #include "utils/vsi_nn_util.h"
 #include "client/vsi_nn_vxkernel.h"
 #include "libnnext/vx_lib_nnext.h"
-#include "cpu_backend/cbee_interface.h"
+#include "cpu_backend/npuref_interface.h"
 
 #define _VX_KERNEL_ID           (VX_KERNEL_ENUM_CONV2D)
 #define _VX_KERNEL_VAR_CPU      (vx_client_kernel_CONV2D_CPU)
@@ -68,13 +68,6 @@ static vsi_status VX_CALLBACK vxConv2DKernel
     uint8_t* weight_buffer = NULL;
     int32_t* bias_buffer = NULL;
     uint8_t* output_buffer = NULL;
-    //uint8_t* col_buffer = NULL;
-    //float float_multiplier;
-    //int32_t quantized_multiplier = 0;
-    //int32_t shift = 0;
-    //int32_t col_h = 0;
-    //int32_t col_w = 0;
-    //int32_t batch;
     status = VX_SUCCESS;
     input  = (vx_tensor)params[0];
     weight  = (vx_tensor)params[1];
@@ -103,7 +96,6 @@ static vsi_status VX_CALLBACK vxConv2DKernel
     output_size = vsi_nn_vxGetTensorElementNum( &output_attr );
     output_buffer= (uint8_t*)malloc( output_size );
     memset( output_buffer, 0, output_size );
-    //batch = output_attr.size[3];
     if( bias )
     {
         status = vsi_nn_vxGetTensorAttr( bias, &bias_attr );
@@ -112,30 +104,10 @@ static vsi_status VX_CALLBACK vxConv2DKernel
         TEST_CHECK_PTR( bias_buffer, final );
     }
     // Compute
-    cbee_interface_quant_conv2d(input_buffer, &input_attr,
+    npuref_interface_quant_conv2d(input_buffer, &input_attr,
             weight_buffer, &weight_attr, bias_buffer,
             pad, strides, dilation, &output_attr, output_buffer);
 
-#if 0
-    col_h = weight_attr.size[1] * weight_attr.size[0] * input_attr.size[2];
-    col_w = output_attr.size[1] * output_attr.size[0];
-    col_buffer = (uint8_t*)malloc( col_h * col_w);
-    //VSILOGD("col: %d, %d",col_w,col_h);
-    memset( col_buffer, 0, col_h * col_w );
-
-
-    cbee_im2col( input_buffer, vsi_nn_GetTypeBytes(input_attr.dtype.vx_type),
-            input_attr.size[2], &input_attr.size[0],
-            &weight_attr.size[0], pad, strides, dilation, col_buffer );
-    float_multiplier = (input_attr.dtype.scale * weight_attr.dtype.scale) / output_attr.dtype.scale;
-    _compute_quantized_multiplier_and_shift( float_multiplier, &quantized_multiplier, &shift );
-    //VSILOGD("multiplier: %f, %d, %d", float_multiplier, quantized_multiplier, shift);
-    cbee_gemm_asymmetric_uint8( col_buffer, col_h, col_w,
-            weight_buffer, (int32_t)weight_attr.size[3], col_h,
-            bias_buffer, input_attr.dtype.zero_point,
-            weight_attr.dtype.zero_point, output_attr.dtype.zero_point,
-            quantized_multiplier, shift, output_buffer );
-#endif
     vsi_nn_vxCopyDataToTensor( ctx, output, &output_attr, output_buffer );
 
 final:
@@ -155,10 +127,6 @@ final:
     {
         free( output_buffer );
     }
-    //if( col_buffer )
-    //{
-    //    free( col_buffer );
-    //}
     return status;
 } /* _VX_KERNEL_FUNC_KERNEL() */
 
@@ -166,7 +134,7 @@ static vx_param_description_t s_params[] =
     {
     { VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED },
     { VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED },
-    { VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED },
+    { VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_OPTIONAL },
     { VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED },
     { VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED },
     { VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED },

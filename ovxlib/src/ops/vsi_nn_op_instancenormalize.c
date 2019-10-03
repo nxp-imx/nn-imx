@@ -739,7 +739,8 @@ static vsi_status op_compute
         if (kernel_info.resource_name) free(kernel_info.resource_name);
         if( NULL == self->n )
         {
-            return VSI_FAILURE;
+            status = VSI_FAILURE;
+            goto OnError;
         }
         status |= vx_sum_op_compute(self, inputs, outputs, array_list);
     }
@@ -763,7 +764,8 @@ static vsi_status op_compute
         if (kernel_info.resource_name) free(kernel_info.resource_name);
         if( NULL == self->n )
         {
-            return VSI_FAILURE;
+            status = VSI_FAILURE;
+            goto OnError;
         }
         status |= vx_sqr_op_compute(self, inputs, outputs, array_list);
     }
@@ -786,7 +788,8 @@ static vsi_status op_compute
         if (kernel_info.resource_name) free(kernel_info.resource_name);
         if( NULL == self->n )
         {
-            return VSI_FAILURE;
+            status = VSI_FAILURE;
+            goto OnError;
         }
         status |= vx_mean_vari_op_compute(self, inputs, tmpMeanVari);
     }
@@ -808,11 +811,13 @@ static vsi_status op_compute
     if (kernel_info.resource_name) free(kernel_info.resource_name);
     if( NULL == self->n )
     {
-        return VSI_FAILURE;
+        status = VSI_FAILURE;
+        goto OnError;
     }
 
     status |= vx_op_compute(self, inputs, outputs, tmpMeanVari);
 
+OnError:
     if(arraySum)vxReleaseArray(&arraySum);
     if(arraySqr)vxReleaseArray(&arraySqr);
     if(resultSum)vxReleaseArray(&resultSum);

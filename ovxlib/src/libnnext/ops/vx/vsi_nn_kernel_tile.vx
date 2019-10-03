@@ -1,8 +1,104 @@
 #include "cl_viv_vx_ext.h"
 
-__kernel void vxcTile(
-    __read_only image2d_array_t   input,
-    __write_only image2d_array_t  output)
-{
+_viv_uniform int depth;
+_viv_uniform int width;
+_viv_uniform int last_idx;
 
+#define TENSORTILE(name0, name1, res_cnt, data_type) \
+__kernel void vxcTile_##name0##_##name1( \
+    __read_only image2d_array_t   input, \
+    __write_only image2d_array_t  output, \
+    __read_only image2d_array_t   multiples) \
+{ \
+    int gidx = get_global_id(0); \
+    int gidy = get_global_id(1); \
+    int gidz = get_global_id(2); \
+    int4 coord = (int4)(gidx, gidy, gidz, 0); \
+    int4 multi = read_imagei(multiples, coord.wwww); \
+    data_type data; \
+    VXC_ReadImage2DArray(data, input, coord, VXC_5BITOFFSET_XY(0, 0), \
+                VXC_MODIFIER(0, res_cnt, 0, VXC_RM_TowardZero, 0)); \
+    int4 coord_out = (int4)(gidx, gidy, gidz, 0); \
+    int offset = depth * multi.z; \
+    for(int b = 0; b < multi.w; b++) \
+    { \
+        int batch = offset * b; \
+        for(int c = 0; c < multi.z; c++) \
+        { \
+            coord_out.z = gidz * multi.z + c + batch; \
+            for(int h = 0; h < multi.y; h++) \
+            { \
+                coord_out.y = gidy * multi.y + h; \
+                for(int w = 0; w < multi.x; w++) \
+                { \
+                    coord_out.x = gidx + w * width; \
+                    VXC_WriteImage2DArray(output, coord_out, data, \
+                             VXC_MODIFIER(0, res_cnt, 0, VXC_RM_TowardZero, 0)); \
+                } \
+            } \
+        } \
+    } \
 }
+
+TENSORTILE(u8,   blk8, 7,  vxc_uchar8)
+TENSORTILE(u8,   blk4, 3,  vxc_uchar8)
+TENSORTILE(i16,  blk8, 7,  vxc_short8)
+TENSORTILE(i16,  blk4, 3,  vxc_short8)
+
+#define TENSORTILE_RES(name0, name1, res_cnt, data_type) \
+__kernel void vxcTile_##name0##_##name1( \
+    __read_only image2d_array_t   input, \
+    __write_only image2d_array_t  output, \
+    __read_only image2d_array_t   multiples) \
+{ \
+    int gidx = get_global_id(0); \
+    int gidy = get_global_id(1); \
+    int gidz = get_global_id(2); \
+    int4 coord = (int4)(gidx, gidy, gidz, 0); \
+    int4 multi = read_imagei(multiples, coord.wwww); \
+    data_type data; \
+    VXC_ReadImage2DArray(data, input, coord, VXC_5BITOFFSET_XY(0, 0), \
+                VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \
+    int4 coord_out = (int4)(gidx, gidy, gidz, 0); \
+    int offset = depth * multi.z; \
+    for(int b = 0; b < multi.w; b++) \
+    { \
+        int batch = offset * b; \
+        for(int c = 0; c < multi.z; c++) \
+        { \
+            coord_out.z = gidz * multi.z + c + batch; \
+            for(int h = 0; h < multi.y; h++) \
+            { \
+                coord_out.y = gidy * multi.y + h; \
+                for(int w = 0; w < multi.x; w++) \
+                { \
+                    coord_out.x = gidx + w * width; \
+                    if(gidx != last_idx) \
+                    { \
+                        VXC_WriteImage2DArray(output, coord_out, data, \
+                             VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \
+                    } \
+                    else \
+                    { \
+                        VXC_WriteImage2DArray(output, coord_out, data, \
+                             VXC_MODIFIER(0, res_cnt, 0, VXC_RM_TowardZero, 0)); \
+                    } \
+                } \
+            } \
+        } \
+    } \
+}
+
+TENSORTILE_RES(u8,  res1, 0,  vxc_uchar8)
+TENSORTILE_RES(u8,  res2, 1,  vxc_uchar8)
+TENSORTILE_RES(u8,  res3, 2,  vxc_uchar8)
+TENSORTILE_RES(u8,  res5, 4,  vxc_uchar8)
+TENSORTILE_RES(u8,  res6, 5,  vxc_uchar8)
+TENSORTILE_RES(u8,  res7, 6,  vxc_uchar8)
+
+TENSORTILE_RES(i16,  res1, 0,  vxc_short8)
+TENSORTILE_RES(i16,  res2, 1,  vxc_short8)
+TENSORTILE_RES(i16,  res3, 2,  vxc_short8)
+TENSORTILE_RES(i16,  res5, 4,  vxc_short8)
+TENSORTILE_RES(i16,  res6, 5,  vxc_short8)
+TENSORTILE_RES(i16,  res7, 6,  vxc_short8)

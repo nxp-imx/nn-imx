@@ -236,9 +236,9 @@ static vsi_status VX_CALLBACK vxPre_process_bgraKernel
         vx_int32 dst_width = dst_size[0];
         vx_int32 dst_height = dst_size[1];
         vx_int32 stride = dst_width * dst_height;
-        vx_int32 bOffset = 0;
+        vx_int32 rOffset = 0;
         vx_int32 gOffset = 1 * stride;
-        vx_int32 rOffset = 2 * stride;
+        vx_int32 bOffset = 2 * stride;
         vx_uint8 R, G, B;
         vx_uint8 *bSrc = u8_in_buffer[0];
         vx_uint8 *gSrc = u8_in_buffer[0] + 1;
@@ -248,8 +248,8 @@ static vsi_status VX_CALLBACK vxPre_process_bgraKernel
 
         if(order)
         {
-            bOffset = 2 * stride;
-            rOffset = 0;
+            rOffset = 2 * stride;
+            bOffset = 0;
         }
 
         if(trans)
@@ -261,14 +261,14 @@ static vsi_status VX_CALLBACK vxPre_process_bgraKernel
 
             if(order)
             {
-                bOffset = 2;
-                rOffset = 0;
+                rOffset = 2;
+                bOffset = 0;
             }
 
             dst_width = dst_size[0] / 3;
             for ( dz = 0; dz < 1; dz ++)
             {
-                for ( dy = 0; dy < dst_size[1]; dy ++)
+                for ( dy = 0; dy < (vx_int32)dst_size[1]; dy ++)
                 {
                     for ( dx = 0; dx < dst_width; dx ++)
                     {
@@ -376,9 +376,9 @@ static vsi_status VX_CALLBACK vxPre_process_bgraKernel
         {
             for ( dz = 0; dz < 1; dz ++)
             {
-                for ( dy = 0; dy < dst_size[1]; dy ++)
+                for ( dy = 0; dy < (vx_int32)dst_size[1]; dy ++)
                 {
-                    for ( dx = 0; dx < dst_size[0]; dx ++)
+                    for ( dx = 0; dx < (vx_int32)dst_size[0]; dx ++)
                     {
                         //flag = 0
                         // for x
@@ -626,8 +626,8 @@ vx_status VX_CALLBACK vxPre_process_bgra_copyInitializer
         status |= vxSetNodeUniform(nodObj, "zp", 1, &output_ZP);
         status |= vxSetNodeUniform(nodObj, "outputScale", 1, &outputScale);
 
-        status |= vxSetNodeUniform(nodObj, "bOrder", 1, &reorder);
-        status |= vxSetNodeUniform(nodObj, "rOrder", 1, &order1);
+        status |= vxSetNodeUniform(nodObj, "rOrder", 1, &reorder);
+        status |= vxSetNodeUniform(nodObj, "bOrder", 1, &order1);
 
         if(status < 0)
             printf("error-%s,%d\n",__FILE__,__LINE__);
@@ -844,8 +844,8 @@ vx_status VX_CALLBACK vxPre_process_bgraInitializer
         status |= vxSetNodeUniform(nodObj, "zp", 1, &output_ZP);
         status |= vxSetNodeUniform(nodObj, "outputScale", 1, &outputScale);
 
-        status |= vxSetNodeUniform(nodObj, "bOrder", 1, &reorder);
-        status |= vxSetNodeUniform(nodObj, "rOrder", 1, &order1);
+        status |= vxSetNodeUniform(nodObj, "rOrder", 1, &reorder);
+        status |= vxSetNodeUniform(nodObj, "bOrder", 1, &order1);
 
         if(status < 0)
             printf("error-%s,%d\n",__FILE__,__LINE__);

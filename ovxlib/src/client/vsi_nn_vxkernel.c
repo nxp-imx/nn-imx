@@ -210,23 +210,22 @@ static vsi_status vsi_nn_RegisterVXKernel
     vsi_nn_kernel_info_t * kernel_info
     )
 {
-    vsi_status status;
-    vx_kernel obj;
+    vsi_status status = VSI_FAILURE;
+    vx_kernel obj = NULL;
     vx_program program = NULL;
     vx_size * program_len = NULL;
     const char **program_src = NULL;
-    vx_context ctx;
-    vsi_nn_context_t context;
+    vx_context ctx = NULL;
+    vsi_nn_context_t context = NULL;
     vx_kernel_description_t * kernel = kernel_info->kernel[kernel_info->kernel_index];
-    uint8_t i;
+    uint8_t i = 0;
 
 #define MAX_BUILDPROGRAM_LEN 128
-    char cmd[MAX_BUILDPROGRAM_LEN];
-    int32_t evis;
+    char cmd[MAX_BUILDPROGRAM_LEN] = {0};
+    int32_t evis = 0;
 
     memset(cmd, 0, sizeof(char) * MAX_BUILDPROGRAM_LEN);
     status = VSI_FAILURE;
-
     ctx = vxGetContext( (vx_reference)graph->g );
     context = graph->ctx;
     evis = context->config.evis.ver;
@@ -249,10 +248,10 @@ static vsi_status vsi_nn_RegisterVXKernel
     if(VSI_SUCCESS != status)
     {
         VSILOGE("[%s : %d] vxCreateProgramWithSource() Error!\n", __FILE__, __LINE__);
-        return status;
+        status = VSI_FAILURE;
+        goto OnError;
     }
-    if(program_src) free((char**)program_src);
-    if(program_len) free(program_len);
+
     if(evis == VSI_NN_HW_EVIS_NONE)
     {
         // set default evis version is 2
@@ -267,7 +266,6 @@ static vsi_status vsi_nn_RegisterVXKernel
     if(VSI_SUCCESS != status)
     {
         VSILOGE("[%s : %d] vxBuildProgram() Error!\n", __FILE__, __LINE__);
-        return status;
     }
 
     obj = vxAddKernelInProgram(program,
@@ -288,7 +286,9 @@ static vsi_status vsi_nn_RegisterVXKernel
     {
         VSILOGE( "Add kernel %s fail.", kernel->name );
     }
-
+OnError:
+    if(program_src) free((char**)program_src);
+    if(program_len) free(program_len);
     return status;
 }
 

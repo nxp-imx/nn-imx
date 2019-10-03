@@ -26,10 +26,26 @@
 
 #include "vsi_nn_types.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#define _VSI_NN_GATHER_LOCAL_TENSOR_NUM 3
+
+typedef struct _vsi_nn_gather_lcl_data
+{
+    vx_tensor   local_tensor[_VSI_NN_GATHER_LOCAL_TENSOR_NUM];
+} vsi_nn_gather_lcl_data;
+
 typedef struct _vsi_nn_gather_param
 {
+    vsi_nn_gather_lcl_data local;
     int32_t     axis;
 } vsi_nn_gather_param;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

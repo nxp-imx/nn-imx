@@ -1,0 +1,181 @@
+#include "cl_viv_vx_ext.h"
+
+_viv_uniform VXC_512Bits uniConvFP16toFP32_Lo_4x4;
+_viv_uniform VXC_512Bits uniConvFP16toFP32_Hi_4x4;
+_viv_uniform VXC_512Bits uniExtractHalf8_2x8;
+_viv_uniform VXC_512Bits uniExtractInteger_2x8;
+_viv_uniform VXC_512Bits uniConvBF16toF32_Part0_2x8;
+_viv_uniform VXC_512Bits uniConvBF16toF32_Part1_2x8;
+_viv_uniform VXC_512Bits uniPackedBF16_2x8;
+_viv_uniform VXC_512Bits uniConvIntegertoFP32_Lo_4x4;
+_viv_uniform VXC_512Bits uniConvIntegertoFP32_Hi_4x4;
+_viv_uniform float offset;
+_viv_uniform float input_scale;
+_viv_uniform float inputTail;
+_viv_uniform float output_scale;
+_viv_uniform float outputZP;
+
+float4 I8toF32_Lo(vxc_char8 src)
+{
+    float4 dst;
+
+    VXC_DP4x4(dst, src, src, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvIntegertoFP32_Lo_4x4);
+    dst *= input_scale;
+    return dst;
+}
+
+float4 I8toF32_Hi(vxc_char8 src)
+{
+    float4 dst;
+
+    VXC_DP4x4(dst, src, src, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvIntegertoFP32_Hi_4x4);
+    dst *= input_scale;
+    return dst;
+}
+
+float4 U8toF32_Lo(vxc_uchar8 src)
+{
+    float4 dst;
+
+    VXC_DP4x4(dst, src, src, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvIntegertoFP32_Lo_4x4);
+    dst = dst * input_scale + inputTail;
+    return dst;
+}
+
+float4 U8toF32_Hi(vxc_uchar8 src)
+{
+    float4 dst;
+
+    VXC_DP4x4(dst, src, src, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvIntegertoFP32_Hi_4x4);
+    dst = dst * input_scale + inputTail;
+    return dst;
+}
+
+float4 I16toF32_Lo(vxc_short8 src)
+{
+    float4 dst;
+
+    VXC_DP4x4(dst, src, src, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvIntegertoFP32_Lo_4x4);
+    dst *= input_scale;
+    return dst;
+}
+
+float4 I16toF32_Hi(vxc_short8 src)
+{
+    float4 dst;
+
+    VXC_DP4x4(dst, src, src, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvIntegertoFP32_Hi_4x4);
+    dst *= input_scale;
+    return dst;
+}
+
+float4 F16toF32_Lo(vxc_ushort8 src)
+{
+    vxc_half8 srcHalf;
+    float4 dst;
+
+    _viv_asm(COPY, srcHalf, src, 16);
+    VXC_DP4x4(dst, srcHalf, srcHalf, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvFP16toFP32_Lo_4x4);
+    return dst;
+}
+
+float4 F16toF32_Hi(vxc_ushort8 src)
+{
+    vxc_half8 srcHalf;
+    float4 dst;
+
+    _viv_asm(COPY, srcHalf, src, 16);
+    VXC_DP4x4(dst, srcHalf, srcHalf, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvFP16toFP32_Hi_4x4);
+    return dst;
+}
+
+float4 BF16toF32_Lo(vxc_ushort8 src)
+{
+    vxc_ushort8 srcA;
+    float4 dst;
+
+    vxc_short8 zero = (vxc_short8)(0, 0, 0, 0, 0, 0, 0, 0);
+    VXC_DP2x8(srcA, src, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvBF16toF32_Part0_2x8);
+    _viv_asm(COPY, dst, srcA, 16);
+
+    return dst;
+}
+
+float4 BF16toF32_Hi(vxc_ushort8 src)
+{
+    vxc_ushort8 srcA;
+    float4 dst;
+
+    vxc_short8 zero = (vxc_short8)(0, 0, 0, 0, 0, 0, 0, 0);
+    VXC_DP2x8(srcA, src, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvBF16toF32_Part1_2x8);
+    _viv_asm(COPY, dst, srcA, 16);
+
+    return dst;
+}
+
+vxc_ushort8 F32toF16(float4 src0, float4 src1)
+{
+    half4 srcHalf0, srcHalf1;
+    vxc_half8 dst0;
+    vxc_ushort8 dst;
+
+    _viv_asm(CONV, srcHalf0, src0);
+    _viv_asm(CONV, srcHalf1, src1);
+
+    VXC_DP2x8(dst0, srcHalf0, srcHalf1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniExtractHalf8_2x8);
+    _viv_asm(COPY, dst, dst0, 16);
+    return dst;
+}
+
+vxc_ushort8 F32toBF16(float4 src0, float4 src1)
+{
+    vxc_ushort8 srcA, srcB;
+    vxc_ushort8 dst;
+
+    _viv_asm(COPY, srcA, src0, 16);
+    _viv_asm(COPY, srcB, src1, 16);
+    VXC_DP2x8(dst, srcA, srcB, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniPackedBF16_2x8);
+    return dst;
+}
+
+vxc_char8 F32toI8(float4 src0, float4 src1)
+{
+    int4 srcInt0, srcInt1;
+    vxc_char8 dst;
+
+    src0 *= output_scale;
+    src1 *= output_scale;
+    _viv_asm(CONV_RTE, srcInt0, src0);
+    _viv_asm(CONV_RTE, srcInt1, src1);
+
+    VXC_DP2x8(dst, srcInt0, srcInt1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtractInteger_2x8);
+    return dst;
+}
+
+vxc_short8 F32toI16(float4 src0, float4 src1)
+{
+    int4 srcInt0, srcInt1;
+    vxc_short8 dst;
+
+    src0 *= output_scale;
+    src1 *= output_scale;
+    _viv_asm(CONV_RTE, srcInt0, src0);
+    _viv_asm(CONV_RTE, srcInt1, src1);
+
+    VXC_DP2x8(dst, srcInt0, srcInt1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtractInteger_2x8);
+    return dst;
+}
+
+vxc_uchar8 F32toU8(float4 src0, float4 src1)
+{
+    int4 srcInt0, srcInt1;
+    vxc_uchar8 dst;
+
+    src0 = src0 * output_scale + outputZP;
+    src1 = src1 * output_scale + outputZP;
+    _viv_asm(CONV_RTE, srcInt0, src0);
+    _viv_asm(CONV_RTE, srcInt1, src1);
+
+    VXC_DP2x8(dst, srcInt0, srcInt1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtractInteger_2x8);
+    return dst;
+}

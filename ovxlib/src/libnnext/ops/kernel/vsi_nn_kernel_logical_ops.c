@@ -275,7 +275,7 @@ vsi_status VX_CALLBACK vxLogicalOpsKernel
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxCopyScalar failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
 
         // Call C Prototype
@@ -287,6 +287,7 @@ vsi_status VX_CALLBACK vxLogicalOpsKernel
             output_stride_size, output_dims);
         vxCopyTensorPatch(imgObj[2], NULL, output_user_addr, output, VX_WRITE_ONLY, 0);
 
+OnError:
         if(input) free(input);
         if(input1) free(input1);
         if(output) free(output);

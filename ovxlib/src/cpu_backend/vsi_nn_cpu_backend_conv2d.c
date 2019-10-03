@@ -37,11 +37,8 @@
 
 extern vx_kernel_description_t * vx_kernel_CONV2D_list[];
 
-extern vsi_bool conv2d_op_check(vsi_nn_node_t * self,
-        vsi_nn_tensor_t ** inputs, vsi_nn_tensor_t ** outputs);
-
-extern vsi_bool conv2d_op_setup(vsi_nn_node_t * self,
-    vsi_nn_tensor_t ** inputs, vsi_nn_tensor_t ** outputs);
+extern vsi_nn_op_proc_t vsi_nn_op_CONV2D;
+#define InternalConv2D vsi_nn_op_CONV2D
 
 static void _set_inputs_outputs
     (
@@ -57,7 +54,7 @@ static void _set_inputs_outputs
     cnt = 0;
     for( i = 0; i < _INPUT_NUM; i ++, cnt ++ )
     {
-        params[cnt] = (vx_reference)inputs[i]->t;
+        params[cnt] = inputs[i] ? (vx_reference)inputs[i]->t : NULL;
     }
 
     /* Set outputs */
@@ -208,7 +205,7 @@ static vsi_status op_compute
     }
     else
     {
-        status = vsi_nn_OpCompute( VSI_NN_OP_CONV2D, self, inputs, outputs );
+        status = InternalConv2D.compute( self, inputs, outputs );
     }
     return status;
 } /* op_compute() */
@@ -220,7 +217,7 @@ static vsi_bool op_check
     vsi_nn_tensor_t ** outputs
     )
 {
-    return conv2d_op_check( self, inputs, outputs );
+    return InternalConv2D.check( self, inputs, outputs );
 } /* op_check() */
 
 static vsi_bool op_setup
@@ -230,7 +227,7 @@ static vsi_bool op_setup
     vsi_nn_tensor_t ** outputs
     )
 {
-    return conv2d_op_setup( node, inputs, outputs );
+    return InternalConv2D.setup( node, inputs, outputs );
 } /* op_setup() */
 
 #ifdef __cplusplus

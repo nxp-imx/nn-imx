@@ -238,9 +238,9 @@ static vsi_status VX_CALLBACK vxYuv2rbgKernel
         vx_int32 dst_width = dst_size[0];
         vx_int32 dst_height = dst_size[1];
         vx_int32 stride = dst_width * dst_height;
-        vx_int32 bOffset = 0;
+        vx_int32 rOffset = 0;
         vx_int32 gOffset = 1 * stride;
-        vx_int32 rOffset = 2 * stride;
+        vx_int32 bOffset = 2 * stride;
         vx_int32 subIdx = 0;
         vx_int32 C, D, E;
         vx_uint8 R, G, B;
@@ -251,8 +251,8 @@ static vsi_status VX_CALLBACK vxYuv2rbgKernel
 
         if(order)
         {
-            bOffset = 2 * stride;
-            rOffset = 0;
+            rOffset = 2 * stride;
+            bOffset = 0;
         }
 
         for ( dz = 0; dz < 1; dz ++)
@@ -781,6 +781,61 @@ vx_status VX_CALLBACK vxYuv2rbgInitializer
             0x0204012a, 0x00000000, 0x0204012a, 0x00000000, 0x0204012a, 0x00000000, 0x0204012a, 0x00000000 // Constant
         };
 
+        vx_uint32 uniQuantU8toU8LoB_2x8[16] = {
+            0x99999999, // TCfg
+            0x44444444, // ASelt
+            0x03020100, 0x07060504, // ABin
+            0x99999999, // BSelt
+            0x06060606, 0x06060606, // BBin
+            0x00000100, // AccumType, ConstantType, and PostShift
+            0x3c000000, 0x3c000000, 0x3c000000, 0x3c000000, 0x3c000000, 0x3c000000, 0x3c000000, 0x3c000000 // Constant
+        };
+        vx_uint32 uniQuantU8toU8HiB_2x8[16] = {
+            0x99999999, // TCfg
+            0x44444444, // ASelt
+            0x0b0a0908, 0x0f0e0d0c, // ABin
+            0x99999999, // BSelt
+            0x06060606, 0x06060606, // BBin
+            0x00000100, // AccumType, ConstantType, and PostShift
+            0x3c000000, 0x3c000000, 0x3c000000, 0x3c000000, 0x3c000000, 0x3c000000, 0x3c000000, 0x3c000000 // Constant
+        };
+        vx_uint32 uniQuantU8toU8LoG_2x8[16] = {
+            0x99999999, // TCfg
+            0x44444444, // ASelt
+            0x23222120, 0x27262524, // ABin
+            0x99999999, // BSelt
+            0x06060606, 0x06060606, // BBin
+            0x00000100, // AccumType, ConstantType, and PostShift
+            0x3c000000, 0x3c000000, 0x3c000000, 0x3c000000, 0x3c000000, 0x3c000000, 0x3c000000, 0x3c000000 // Constant
+        };
+        vx_uint32 uniQuantU8toU8HiG_2x8[16] = {
+            0x99999999, // TCfg
+            0x44444444, // ASelt
+            0x2b2a2928, 0x2f2e2d2c, // ABin
+            0x99999999, // BSelt
+            0x06060606, 0x06060606, // BBin
+            0x00000100, // AccumType, ConstantType, and PostShift
+            0x3c000000, 0x3c000000, 0x3c000000, 0x3c000000, 0x3c000000, 0x3c000000, 0x3c000000, 0x3c000000 // Constant
+        };
+        vx_uint32 uniQuantU8toU8LoR_2x8[16] = {
+            0x99999999, // TCfg
+            0x44444444, // ASelt
+            0x43424140, 0x47464544, // ABin
+            0x99999999, // BSelt
+            0x06060606, 0x06060606, // BBin
+            0x00000100, // AccumType, ConstantType, and PostShift
+            0x3c000000, 0x3c000000, 0x3c000000, 0x3c000000, 0x3c000000, 0x3c000000, 0x3c000000, 0x3c000000 // Constant
+        };
+        vx_uint32 uniQuantU8toU8HiR_2x8[16] = {
+            0x99999999, // TCfg
+            0x44444444, // ASelt
+            0x4b4a4948, 0x4f4e4d4c, // ABin
+            0x99999999, // BSelt
+            0x06060606, 0x06060606, // BBin
+            0x00000100, // AccumType, ConstantType, and PostShift
+            0x3c000000, 0x3c000000, 0x3c000000, 0x3c000000, 0x3c000000, 0x3c000000, 0x3c000000, 0x3c000000 // Constant
+        };
+
         // R
         status |= vxSetNodeUniform(nodObj, "uniCalculateTmpR1st_4x4", 1, uniCalculateTmpR1st_4x4);
         status |= vxSetNodeUniform(nodObj, "uniCalculateTmpR2nd_4x4", 1, uniCalculateTmpR2nd_4x4);
@@ -819,15 +874,19 @@ vx_status VX_CALLBACK vxYuv2rbgInitializer
         status |= vxSetNodeUniform(nodObj, "uniPackGR2_2x8", 1, uniPackGR2_2x8);
         status |= vxSetNodeUniform(nodObj, "uniPackTmp2AndB_2x8", 1, uniPackTmp2AndB_2x8);
 
-        if(0)
-        {
-            status |= vxSetNodeUniform(nodObj, "zp", 1, &output_ZP);
-            status |= vxSetNodeUniform(nodObj, "outputScale", 1, &outputScale);
-        }
+        status |= vxSetNodeUniform(nodObj, "uniQuantU8toU8LoB_2x8", 1, uniQuantU8toU8LoB_2x8);
+        status |= vxSetNodeUniform(nodObj, "uniQuantU8toU8HiB_2x8", 1, uniQuantU8toU8HiB_2x8);
+        status |= vxSetNodeUniform(nodObj, "uniQuantU8toU8LoG_2x8", 1, uniQuantU8toU8LoG_2x8);
+        status |= vxSetNodeUniform(nodObj, "uniQuantU8toU8HiG_2x8", 1, uniQuantU8toU8HiG_2x8);
+        status |= vxSetNodeUniform(nodObj, "uniQuantU8toU8LoR_2x8", 1, uniQuantU8toU8LoR_2x8);
+        status |= vxSetNodeUniform(nodObj, "uniQuantU8toU8HiR_2x8", 1, uniQuantU8toU8HiR_2x8);
+
+        status |= vxSetNodeUniform(nodObj, "zp", 1, &output_ZP);
+        status |= vxSetNodeUniform(nodObj, "outputScale", 1, &outputScale);
     }
 
-    status |= vxSetNodeUniform(nodObj, "bOrder", 1, &reorder);
-    status |= vxSetNodeUniform(nodObj, "rOrder", 1, &order1);
+    status |= vxSetNodeUniform(nodObj, "rOrder", 1, &reorder);
+    status |= vxSetNodeUniform(nodObj, "bOrder", 1, &order1);
 
     status |= vxSetNodeAttribute(nodObj, VX_NODE_ATTRIBUTE_KERNEL_EXECUTION_PARAMETERS,
                                     &shaderParam, sizeof(vx_kernel_execution_parameters_t));
@@ -1152,8 +1211,8 @@ vx_status VX_CALLBACK vxYuvScaleRbgInitializer
         status |= vxSetNodeUniform(nodObj, "outputScale", 1, &outputScale);
 
         status |= vxSetNodeUniform(nodObj, "uniConvertInt32toUint8_2x8", 1, uniConvertInt32toUint8_2x8);
-        status |= vxSetNodeUniform(nodObj, "bOrder", 1, &reorder);
-        status |= vxSetNodeUniform(nodObj, "rOrder", 1, &order1);
+        status |= vxSetNodeUniform(nodObj, "rOrder", 1, &reorder);
+        status |= vxSetNodeUniform(nodObj, "bOrder", 1, &order1);
 
         if(status < 0)
             printf("error-%s,%d\n",__FILE__,__LINE__);

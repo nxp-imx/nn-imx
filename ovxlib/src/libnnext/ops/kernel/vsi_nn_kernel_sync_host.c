@@ -51,8 +51,8 @@ static vsi_status VX_CALLBACK vxSync_hostKernel
     uint8_t   * in_buffer;
     uint32_t    in_stride[8] = { 0 };
     uint32_t    out_stride[8] = { 0 };
-    vx_tensor_addressing in_addr;
-    vx_tensor_addressing out_addr;
+    vx_tensor_addressing in_addr = NULL;
+    vx_tensor_addressing out_addr = NULL;
     vsi_nn_tensor_attr_t in_attr;
 
     status = VX_SUCCESS;

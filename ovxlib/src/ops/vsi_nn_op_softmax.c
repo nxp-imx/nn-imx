@@ -78,6 +78,7 @@ static vsi_bool op_check
     return TRUE;
 } /* op_check() */
 
+#define VSI_NN_SOFTMAX_DEFAULT_AXIS     (10000)
 static vsi_status op_optimize
     (
     vsi_nn_node_t * self,
@@ -89,7 +90,7 @@ static vsi_status op_optimize
     vsi_nn_internal_node_t* curr = NULL;
     vsi_nn_softmax_param * p;
     uint32_t dim_num;
-    uint32_t sizes[VSI_NN_MAX_DIM_NUM];
+    uint32_t sizes[VSI_NN_MAX_DIM_NUM] = {1};
     uint32_t i = 0;
     int32_t axis = -1;
     vsi_nn_tensor_t* new_input = NULL;
@@ -102,12 +103,14 @@ static vsi_status op_optimize
 
     p = &(self->nn_param.softmax);
     axis = p->axis;
-    if (axis != -1)
+    if (axis != VSI_NN_SOFTMAX_DEFAULT_AXIS)
     {
+        uint32_t innerSize = 1;
         uint32_t outerSize = 1;
         for (i = 0; i < (uint32_t)axis; i++)
         {
             sizes[i] = inputs[0]->attr.size[i];
+            innerSize *= inputs[0]->attr.size[i];
         }
 
         for (i = (uint32_t)(axis + 1); i < inputs[0]->attr.dim_num; i++)
@@ -117,11 +120,30 @@ static vsi_status op_optimize
 
         if (axis == 1)
         {
-            sizes[axis] = 1;
-            sizes[axis + 1] = inputs[0]->attr.size[axis];
-            sizes[axis + 2] = outerSize;
+            if (sizes[0] == 1)
+            {
+                sizes[0] = inputs[0]->attr.size[axis];
+                sizes[1] = outerSize;
 
-            dim_num = vsi_nn_min((uint32_t)(axis + 3), inputs[0]->attr.dim_num);
+                dim_num = 2;
+            }
+            else
+            {
+                sizes[axis] = 1;
+                sizes[axis + 1] = inputs[0]->attr.size[axis];
+                sizes[axis + 2] = outerSize;
+
+                dim_num = 4;
+            }
+        }
+        else if (axis >= 3)
+        {
+            sizes[0] = innerSize;
+            sizes[1] = 1;
+            sizes[2] = inputs[0]->attr.size[axis];
+            sizes[3] = outerSize;
+
+            dim_num = vsi_nn_min(4, inputs[0]->attr.dim_num);
         }
         else
         {
@@ -132,7 +154,7 @@ static vsi_status op_optimize
         }
     }
 
-    if (axis != -1 && _is_same_shape(inputs[0], sizes, dim_num) == FALSE)
+    if (axis != VSI_NN_SOFTMAX_DEFAULT_AXIS && _is_same_shape(inputs[0], sizes, dim_num) == FALSE)
     {
         new_input = vsi_nn_reshape_tensor(self->graph, inputs[0], sizes, dim_num);
         new_output = vsi_nn_reshape_tensor(self->graph, outputs[0], sizes, dim_num);
@@ -181,7 +203,7 @@ static vsi_status op_init
         &graph_version_minor, &graph_version_patch );
     if (!( graph_version_major >= 1 && graph_version_minor >= 1 && graph_version_patch >= 7 ))
     {
-        self->nn_param.softmax.axis = -1;
+        self->nn_param.softmax.axis = VSI_NN_SOFTMAX_DEFAULT_AXIS;
     }
     if (self->nn_param.softmax.beta == 0.f)
     {
@@ -203,6 +225,16 @@ static vsi_bool op_setup
     {
         return FALSE;
     }
+
+    if (self->nn_param.softmax.axis < 0)
+        self->nn_param.softmax.axis += (int32_t)inputs[0]->attr.dim_num;
+
+    if (self->nn_param.softmax.axis < 0)
+    {
+        VSILOGD("SoftMax Invalid Axis: %d", self->nn_param.softmax.axis);
+        return FALSE;
+    }
+
     vsi_nn_init_internal_node_wksp(self);
     curr = vsi_nn_new_internal_node(self, VSI_NN_OP_SOFTMAX_INTERNAL, 0, 0);
     curr->inputs[0] = inputs[0];

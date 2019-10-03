@@ -94,8 +94,11 @@ vx_status VX_CALLBACK vxPre_process_rgbInitializer
     height = attr.size[1];
     dstFormat = attr.dtype.vx_type;
     dstFixedPointPos = attr.dtype.fl;
-    output_ZP = attr.dtype.zero_point;
-    outputScale = attr.dtype.scale;
+    if (attr.dtype.qnt_type == VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC)
+    {
+        output_ZP = attr.dtype.zero_point;
+        outputScale = attr.dtype.scale;
+    }
 
     if(status < 0)
         printf("error-%s,%d\n",__FILE__,__LINE__);

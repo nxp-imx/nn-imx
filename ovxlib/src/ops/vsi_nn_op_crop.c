@@ -276,7 +276,8 @@ static vsi_status op_compute
     if( NULL == end_dims_tensor )
     {
         VSILOGE("Create end_dims_tensor fail.(crop)");
-        return VSI_FAILURE;
+        status = VSI_FAILURE;
+        goto OnError;
     }
 
     stride_dims_tensor = vsi_nn_CreateTensorFromData(
@@ -286,7 +287,8 @@ static vsi_status op_compute
     if( NULL == stride_dims_tensor )
     {
         VSILOGE("Create stride_dims_tensor fail.(crop)");
-        return VSI_FAILURE;
+        status = VSI_FAILURE;
+        goto OnError;
     }
 
     param.begin_dims = REQUIRED_IO(begin_dims_tensor);
@@ -305,10 +307,6 @@ static vsi_status op_compute
     {
         status = VSI_SUCCESS;
     }
-
-    if (begin_dims_tensor) vsi_nn_ReleaseTensor(&begin_dims_tensor);
-    if (end_dims_tensor) vsi_nn_ReleaseTensor(&end_dims_tensor);
-    if (stride_dims_tensor) vsi_nn_ReleaseTensor(&stride_dims_tensor);
 #else
     vsi_nn_kernel_info_t kernel_info = {0};
 
@@ -338,6 +336,10 @@ static vsi_status op_compute
         status = op_compute_list[kernel_info.init_index](self, inputs, outputs);
     }
 #endif
+OnError:
+    if (begin_dims_tensor) vsi_nn_ReleaseTensor(&begin_dims_tensor);
+    if (end_dims_tensor) vsi_nn_ReleaseTensor(&end_dims_tensor);
+    if (stride_dims_tensor) vsi_nn_ReleaseTensor(&stride_dims_tensor);
     return status;
 } /* op_compute() */
 

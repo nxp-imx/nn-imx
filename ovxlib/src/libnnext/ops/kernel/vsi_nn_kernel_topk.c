@@ -181,7 +181,6 @@ static vsi_status VX_CALLBACK vxTopkKernel
         VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
 
     /* TODO: Add CPU kernel implement */
-    /* example code : copy data form input tensor to output tensor*/
     {
         uint32_t block_num = 1;
         uint32_t block_size = in_attr[0].size[0];
@@ -199,31 +198,6 @@ static vsi_status VX_CALLBACK vxTopkKernel
         }
         if (indices) free(indices);
     }
-/*
-    {
-        uint32_t n, c, h, w;
-        uint32_t batch = in_attr[0].size[3];
-        uint32_t channel = in_attr[0].size[2];
-        uint32_t height = in_attr[0].size[1];
-        uint32_t width = in_attr[0].size[0];
-        for(n = 0; n < batch; ++n)
-        {
-            for(c = 0; c < channel; ++c)
-            {
-                for(h = 0; h < height; ++h)
-                {
-                    for(w = 0; w < width; ++w)
-                    {
-                        float val;
-                        uint32_t index = w + h * width + c * width * height
-                            + n * width * height * channel;
-                        f32_out_buffer[0][index] = f32_in_buffer[0][index];
-                    }
-                }
-            }
-        }
-    }
-*/
 
     /* save data */
     status = vsi_nn_vxConvertFloat32DataToTensor(

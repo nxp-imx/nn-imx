@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright (c) 2018 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -21,20 +21,31 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#ifndef _CBEE_INTERFACE_H
-#define _CBEE_INTERFACE_H
-/*
- * pad      [pad top, pad bottom, pad left, pad right]
- * strides  [stride height, stride width]
- * dilation [dilation height, dilation width]
- */
-void cbee_interface_quant_conv2d(
-    const void* input_buffer, const vsi_nn_tensor_attr_t* input_attr,
-    const void* kernel_buffer, const vsi_nn_tensor_attr_t* kernel_attr,
-    const void* bias_buffer,
-    const int* pad, const int* strides, const int* dilation,
-    const vsi_nn_tensor_attr_t* output_attr, void* output_buffer);
+#ifndef _VSI_NN_OP_EMBEDDING_LOOKUP_H
+#define _VSI_NN_OP_EMBEDDING_LOOKUP_H
 
-vsi_bool cbee_exists();
+#include "vsi_nn_types.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef struct _vsi_nn_embedding_lookup_lcl_data_t
+{
+    vx_tensor input_tensor;
+    vx_tensor lut_tensor;
+    vx_tensor output_tensor;
+} vsi_nn_embedding_lookup_lcl_data_t;
+
+typedef struct _vsi_nn_embedding_lookup_param
+{
+    /* local data must be the first. */
+    vsi_nn_embedding_lookup_lcl_data_t local;
+} vsi_nn_embedding_lookup_param;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
+

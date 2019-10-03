@@ -61,7 +61,8 @@ LOCAL_SRC_FILES +=      \
 LOCAL_SRC_FILES +=      \
             cpu_backend/vsi_nn_cpu_backend.c   \
             cpu_backend/vsi_nn_cpu_backend_conv2d.c   \
-            cpu_backend/cbee_interface.c
+            cpu_backend/vsi_nn_cpu_backend_deconv2d.c   \
+            cpu_backend/npuref_interface.c
 
 
 LOCAL_SRC_FILES += libnnext/ops/kernel/vsi_nn_kernel_argmax.c \
@@ -108,6 +109,7 @@ LOCAL_SRC_FILES += libnnext/ops/kernel/vsi_nn_kernel_argmax.c \
         libnnext/ops/kernel/vsi_nn_kernel_addn.c \
         libnnext/ops/kernel/vsi_nn_kernel_pre_process_yuv420.c \
         libnnext/ops/kernel/vsi_nn_kernel_conv2d.c \
+        libnnext/ops/kernel/vsi_nn_kernel_deconv2d.c \
         libnnext/ops/kernel/vsi_nn_kernel_extra_ending.c \
         libnnext/ops/kernel/vsi_nn_kernel_gather.c \
         libnnext/ops/kernel/vsi_nn_kernel_tile.c \
@@ -116,6 +118,21 @@ LOCAL_SRC_FILES += libnnext/ops/kernel/vsi_nn_kernel_argmax.c \
         libnnext/ops/kernel/vsi_nn_kernel_logical_not.c \
         libnnext/ops/kernel/vsi_nn_kernel_sin.c \
         libnnext/ops/kernel/vsi_nn_kernel_log.c \
+        libnnext/ops/kernel/vsi_nn_kernel_argmin.c \
+        libnnext/ops/kernel/vsi_nn_kernel_roi_align.c \
+        libnnext/ops/kernel/vsi_nn_kernel_heatmap_max_keypoint.c \
+        libnnext/ops/kernel/vsi_nn_kernel_axis_aligned_bbox_transform.c \
+        libnnext/ops/kernel/vsi_nn_kernel_box_with_nms_limit.c \
+        libnnext/ops/kernel/vsi_nn_kernel_generate_proposals.c \
+        libnnext/ops/kernel/vsi_nn_kernel_detection_postprocess.c \
+        libnnext/ops/kernel/vsi_nn_kernel_random_multinomial.c \
+        libnnext/ops/kernel/vsi_nn_kernel_log_softmax.c \
+        libnnext/ops/kernel/vsi_nn_kernel_relu_keras_internal.c \
+        libnnext/ops/kernel/vsi_nn_kernel_reducemax_internal.c \
+        libnnext/ops/kernel/vsi_nn_kernel_reducemin_internal.c \
+        libnnext/ops/kernel/vsi_nn_kernel_reduceprod_internal.c \
+        libnnext/ops/kernel/vsi_nn_kernel_reduceall_internal.c \
+        libnnext/ops/kernel/vsi_nn_kernel_reduceany_internal.c \
         libnnext/vsi_nn_libnnext_vx.c \
 
 LOCAL_SRC_FILES +=      ops/vsi_nn_op_add.c   \
@@ -229,6 +246,25 @@ LOCAL_SRC_FILES +=      ops/vsi_nn_op_add.c   \
              ops/vsi_nn_op_logical_not.c \
              ops/vsi_nn_op_sin.c \
              ops/vsi_nn_op_log.c \
+             ops/vsi_nn_op_argmin.c \
+             ops/vsi_nn_op_roi_align.c \
+             ops/vsi_nn_op_heatmap_max_keypoint.c \
+             ops/vsi_nn_op_axis_aligned_bbox_transform.c \
+             ops/vsi_nn_op_box_with_nms_limit.c \
+             ops/vsi_nn_op_generate_proposals.c \
+             ops/vsi_nn_op_detection_postprocess.c \
+             ops/vsi_nn_op_random_multinomial.c \
+             ops/vsi_nn_op_log_softmax.c \
+             ops/vsi_nn_op_relu_keras.c \
+             ops/vsi_nn_op_relu_keras_internal.c \
+             ops/vsi_nn_op_reducesum_internal.c \
+             ops/vsi_nn_op_reducemax_internal.c \
+             ops/vsi_nn_op_reducemin_internal.c \
+             ops/vsi_nn_op_gru_ovxlib.c \
+             ops/vsi_nn_op_grucell_ovxlib.c \
+             ops/vsi_nn_op_reduceprod_internal.c \
+             ops/vsi_nn_op_reduceall_internal.c \
+             ops/vsi_nn_op_reduceany_internal.c \
              ops/vsi_nn_op_lrn2.c \
              ops/vsi_nn_op_square.c
 

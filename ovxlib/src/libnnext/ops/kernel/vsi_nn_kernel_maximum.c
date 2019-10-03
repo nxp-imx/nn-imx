@@ -629,6 +629,7 @@ vx_kernel_description_t * vx_kernel_MAXIMUM_list[] =
     TENSOR_MAX_KERENLS_NAME(I16, I16, I16, 2D_)
     TENSOR_MAX_KERENLS_NAME(I16, F16, I16, 2D_)
     TENSOR_MAX_KERENLS_NAME(I16, F16, F16, 2D_)
+    TENSOR_MAX_KERENLS_NAME(F16, F16, U8, 2D_)
     NULL
 };
 #ifdef __cplusplus

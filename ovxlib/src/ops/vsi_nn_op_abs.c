@@ -41,19 +41,42 @@ static vsi_status op_compute
     )
 {
     vsi_status status;
+    int32_t input_size[VSI_NN_MAX_DIM_NUM] = {0};
+    uint32_t dims = 0;
+    vx_tensor input = NULL, input0 = NULL;
+    vx_tensor output = NULL, output0 = NULL;
     status = VSI_FAILURE;
+
+    if (inputs[0]->attr.dim_num > 4)
+    {
+        input_size[0] = vsi_nn_GetElementNum(inputs[0]) /
+            inputs[0]->attr.size[inputs[0]->attr.dim_num - 1];
+        input_size[1] = inputs[0]->attr.size[inputs[0]->attr.dim_num - 1];
+        dims= 2;
+        input = vxReshapeTensor(inputs[0]->t, input_size, dims);
+        output = vxReshapeTensor(outputs[0]->t, input_size, dims);
+        input0 = input;
+        output0 = output;
+    }
+    else
+    {
+        input0 = inputs[0]->t;
+        output0 = outputs[0]->t;
+    }
 
     self->n = vxLeakyReluLayer(
         self->graph->g,
-        inputs[0]->t,
+        input0,
         -1,
-        outputs[0]->t
+        output0
         );
 
     if( NULL != self->n )
     {
         status = VSI_SUCCESS;
     }
+    if (input)  vxReleaseTensor(&input);
+    if (output) vxReleaseTensor(&output);
     return status;
 } /* op_compute() */
 

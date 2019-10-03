@@ -100,7 +100,7 @@ static vsi_status op_compute
     return status;
 } /* op_compute() */
 
-vsi_bool conv2d_op_check
+static vsi_bool op_check
     (
     vsi_nn_node_t * self,
     vsi_nn_tensor_t ** inputs,
@@ -113,9 +113,9 @@ vsi_bool conv2d_op_check
     ret = vsi_nn_QuantCheck(inputs[0], inputs[1], inputs[2]);
 
     return ret;
-} /* conv2d_op_check() */
+} /* op_check() */
 
-vsi_bool conv2d_op_setup
+static vsi_bool op_setup
     (
     vsi_nn_node_t * self,
     vsi_nn_tensor_t ** inputs,
@@ -170,7 +170,7 @@ vsi_bool conv2d_op_setup
         outputs[0]->attr.dim_num = inputs[0]->attr.dim_num;
     }
     return TRUE;
-} /* conv2d_op_setup() */
+} /* op_setup() */
 
 #ifdef __cplusplus
 extern "C" {
@@ -182,8 +182,8 @@ DEF_OP_REG
     /* init       */ NULL,
     /* compute    */ op_compute,
     /* deinit     */ vsi_nn_op_common_deinit,
-    /* check      */ conv2d_op_check,
-    /* setup      */ conv2d_op_setup,
+    /* check      */ op_check,
+    /* setup      */ op_setup,
     /* optimize   */ NULL,
     /* input_num  */ 3,
     /* output_num */ 1

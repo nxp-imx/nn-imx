@@ -12,7 +12,6 @@
 
 namespace ovxlib
 {
-using shared_context = std::shared_ptr< std::pointer_traits<vsi_nn_context_t>::element_type >;
 struct ExecutionIO;
 
 class Execution
@@ -41,26 +40,26 @@ class Execution
         int setOutputFromMemory(uint32_t index, const Operand* operand_type,
                 const Memory* memory, size_t offset, size_t length);
 
-        PreparedModel* getPreparedModel();
+        PreparedModelPtr getPreparedModel();
 
         void complete(int status, bool notify_event = false);
 
-        int fillInput(PreparedModel* prepared_model);
+        int fillInput(PreparedModelPtr prepared_model);
 
-        int fillOutput(PreparedModel* prepared_model);
+        int fillOutput(PreparedModelPtr prepared_model);
+
+        Compilation* getCompilation() { return compilation_; }
 
     private:
         void notify(int code);
 
-        PreparedModel* prepared_model_;
         std::vector<ExecutionIO*> inputs_;
         std::vector<ExecutionIO*> outputs_;
         Compilation* compilation_;
         bool running_;
         bool ask_for_quit_;
         std::mutex mutex_;
-        std::vector<Event*> events_;
-        shared_context local_context;
+        Event* event_{nullptr};
 };
 }
 #endif

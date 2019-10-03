@@ -54,11 +54,10 @@ vsi_status VX_CALLBACK vxpoolingWithArgmaxInitializer
 
     vsi_status status = VX_SUCCESS;
     vx_tensor tensorIn = (vx_tensor)paramObj[0];
-    uint32_t size[DIM_SIZE] = {0};
-    vx_enum dataType, outDataType, axsFormat;
+    vsi_nn_type_e inDataType, outDataType, axsFormat;
 
     vx_tensor  tensorOut        = (vx_tensor)paramObj[1];
-    vx_tensor  axis        = (vx_tensor)paramObj[2];
+    vx_tensor  tensorAxis       = (vx_tensor)paramObj[2];
     int8_t     infixpoint       = 0;
     int8_t     outfixpoint      = 0;
     vx_float32 scaleSF          = 0.0f;
@@ -67,35 +66,56 @@ vsi_status VX_CALLBACK vxpoolingWithArgmaxInitializer
 
     vx_float32 scaleIn          = 0;
     vx_float32 scaleOut         = 0;
-    int32_t    output_ZP        = 0;
-    int32_t    input_ZP         = 0;
+    uint32_t   output_ZP        = 0;
+    uint32_t   input_ZP         = 0;
     vx_uint16  M0               = 0;
     vx_int8    postShift        = 0;
     vsi_bool   enable_image_2d  = FALSE;
+    vsi_nn_tensor_attr_t attr[3];
 
-    status = vxQueryTensor(tensorIn, VX_TENSOR_DIMS, size, sizeof(size));
-    status = vxQueryTensor(tensorIn, VX_TENSOR_DATA_TYPE, &dataType, sizeof(dataType));
-    status = vxQueryTensor(tensorIn, VX_TENSOR_FIXED_POINT_POS, &infixpoint, sizeof(infixpoint));
-    status = vxQueryTensor(tensorIn, VX_TENSOR_ZERO_POINT, &input_ZP, sizeof(input_ZP));
-    status = vxQueryTensor(tensorIn, VX_TENSOR_SCALE, &scaleIn, sizeof(scaleIn));
+    memset(&attr[0], 0, sizeof(vsi_nn_tensor_attr_t));
+    memset(&attr[1], 0, sizeof(vsi_nn_tensor_attr_t));
+    memset(&attr[2], 0, sizeof(vsi_nn_tensor_attr_t));
 
-    status = vxQueryTensor(tensorOut, VX_TENSOR_FIXED_POINT_POS, &outfixpoint, sizeof(outfixpoint));
-    status = vxQueryTensor(tensorOut, VX_TENSOR_ZERO_POINT, &output_ZP, sizeof(output_ZP));
-    status = vxQueryTensor(tensorOut, VX_TENSOR_SCALE, &scaleOut, sizeof(scaleOut));
-    status = vxQueryTensor(tensorOut, VX_TENSOR_DATA_TYPE, &outDataType, sizeof(outDataType));
-
-    status = vxQueryTensor(axis, VX_TENSOR_DATA_TYPE, &axsFormat, sizeof(axsFormat));
+    status  = vsi_nn_vxGetTensorAttr(tensorIn, &attr[0]);
+    status |= vsi_nn_vxGetTensorAttr(tensorAxis, &attr[1]);
+    status |= vsi_nn_vxGetTensorAttr(tensorOut, &attr[2]);
 
     if(VX_SUCCESS != status)
         return status;
 
-    if ( dataType == VX_TYPE_UINT8 && axsFormat == VX_TYPE_UINT8
-        && (outDataType == VX_TYPE_UINT8/* || outDataType == VX_TYPE_FLOAT16*/))
+    inDataType = attr[0].dtype.vx_type;
+    infixpoint = attr[0].dtype.fl;
+    if (attr[0].dtype.qnt_type == VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC)
+    {
+        input_ZP = attr[0].dtype.zero_point;
+        scaleIn = attr[0].dtype.scale;
+    }
+
+    outDataType = attr[2].dtype.vx_type;
+    outfixpoint = attr[2].dtype.fl;
+    if (attr[2].dtype.qnt_type == VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC)
+    {
+        output_ZP = attr[2].dtype.zero_point;
+        scaleOut = attr[2].dtype.scale;
+    }
+
+    axsFormat = attr[1].dtype.vx_type;
+
+    if (inDataType == VSI_NN_TYPE_BFLOAT16 && outDataType == VSI_NN_TYPE_BFLOAT16)
+    {
+        inDataType = VSI_NN_TYPE_FLOAT16;
+        outDataType = VSI_NN_TYPE_FLOAT16;
+    }
+
+    if ( inDataType == VSI_NN_TYPE_UINT8 && axsFormat == VSI_NN_TYPE_UINT8
+        && (outDataType == VSI_NN_TYPE_UINT8/* || outDataType == VSI_NN_TYPE_FLOAT16*/))
     {
         vsi_nn_GetFP32MultiAndPostShift(scaleIn / scaleOut, &M0, &postShift);
 
-        if (size[2] == 1)
+        if (attr[0].size[2] == 1  || attr[0].dim_num < 3)
         {
+            attr[0].size[2] = 1;
             enable_image_2d = TRUE;
         }
     }
@@ -120,7 +140,7 @@ vsi_status VX_CALLBACK vxpoolingWithArgmaxInitializer
 
     scaleSF = factorIn * factorOut;
 
-    if(dataType == VX_TYPE_INT8 || dataType == VX_TYPE_UINT8)
+    if(inDataType == VSI_NN_TYPE_INT8 || inDataType == VSI_NN_TYPE_UINT8)
     {
         if (enable_image_2d)
         {
@@ -129,9 +149,9 @@ vsi_status VX_CALLBACK vxpoolingWithArgmaxInitializer
             shaderParam.globalWorkOffset[1] = 0;
             shaderParam.globalWorkScale[0]  = 16;
             shaderParam.globalWorkScale[1]  = 2;
-            shaderParam.globalWorkSize[0]   = gcmALIGN((size[0] + shaderParam.globalWorkScale[0] - 1)
+            shaderParam.globalWorkSize[0]   = gcmALIGN((attr[0].size[0] + shaderParam.globalWorkScale[0] - 1)
                 / shaderParam.globalWorkScale[0], 4);
-            shaderParam.globalWorkSize[1]   = (size[1] + shaderParam.globalWorkScale[1] - 1)
+            shaderParam.globalWorkSize[1]   = (attr[0].size[1] + shaderParam.globalWorkScale[1] - 1)
                 / shaderParam.globalWorkScale[1];
         }
         else
@@ -142,15 +162,15 @@ vsi_status VX_CALLBACK vxpoolingWithArgmaxInitializer
             shaderParam.globalWorkScale[0]  = 16;
             shaderParam.globalWorkScale[1]  = 2;
             shaderParam.globalWorkScale[2]  = 1;
-            shaderParam.globalWorkSize[0]   = gcmALIGN((size[0] + shaderParam.globalWorkScale[0] - 1)
+            shaderParam.globalWorkSize[0]   = gcmALIGN((attr[0].size[0] + shaderParam.globalWorkScale[0] - 1)
                 / shaderParam.globalWorkScale[0], 4);
-            shaderParam.globalWorkSize[1]   = (size[1] + shaderParam.globalWorkScale[1] - 1)
+            shaderParam.globalWorkSize[1]   = (attr[0].size[1] + shaderParam.globalWorkScale[1] - 1)
                 / shaderParam.globalWorkScale[1];
-            shaderParam.globalWorkSize[2]   = size[2];
+            shaderParam.globalWorkSize[2]   = attr[0].size[2];
         }
 
-        if(dataType == VX_TYPE_INT8 &&
-            (outDataType == VX_TYPE_INT8 || outDataType == VX_TYPE_FLOAT16))
+        if(inDataType == VSI_NN_TYPE_INT8 &&
+            (outDataType == VSI_NN_TYPE_INT8 || outDataType == VSI_NN_TYPE_FLOAT16))
         {
             vx_uint32 poolingEncodeInt8_0[16] = {
                 0x55555555, // TCfg
@@ -159,7 +179,8 @@ vsi_status VX_CALLBACK vxpoolingWithArgmaxInitializer
                 0xaaaaaaaa, // BSelt
                 0x00000000, 0x00000000, // BBin
                 0x00000700, // AccumType, ConstantType, and PostShift
-                0x00400080, 0x00100020, 0x00400080, 0x00100020, 0x00400080, 0x00100020, 0x00400080, 0x00100020 // Constant
+                0x00400080, 0x00100020, 0x00400080, 0x00100020,
+                0x00400080, 0x00100020, 0x00400080, 0x00100020 // Constant
             };
             vx_uint32 poolingEncodeInt8_1[16] = {
                 0x55555555, // TCfg
@@ -168,7 +189,8 @@ vsi_status VX_CALLBACK vxpoolingWithArgmaxInitializer
                 0xaaaaaaaa, // BSelt
                 0x00000000, 0x00000000, // BBin
                 0x00000700, // AccumType, ConstantType, and PostShift
-                0x00400080, 0x00100020, 0x00400080, 0x00100020, 0x00400080, 0x00100020, 0x00400080, 0x00100020 // Constant
+                0x00400080, 0x00100020, 0x00400080, 0x00100020,
+                0x00400080, 0x00100020, 0x00400080, 0x00100020 // Constant
             };
             vx_uint32 uniConvertInt8FstFp32_4x4[16] = {
                 0x01010101, // TCfg
@@ -177,7 +199,8 @@ vsi_status VX_CALLBACK vxpoolingWithArgmaxInitializer
                 0x02020202, // BSelt
                 0x00000000, 0x00000000, // BBin
                 0x00000400, // AccumType, ConstantType, and PostShift
-                0x00000001, 0x00000000, 0x00000001, 0x00000000, 0x00000001, 0x00000000, 0x00000001, 0x00000000 // Constant
+                0x00000001, 0x00000000, 0x00000001, 0x00000000,
+                0x00000001, 0x00000000, 0x00000001, 0x00000000 // Constant
             };
             vx_uint32 uniConvertInt8SecFp32_4x4[16] = {
                 0x01010101, // TCfg
@@ -186,7 +209,8 @@ vsi_status VX_CALLBACK vxpoolingWithArgmaxInitializer
                 0x02020202, // BSelt
                 0x00000000, 0x00000000, // BBin
                 0x00000400, // AccumType, ConstantType, and PostShift
-                0x00000001, 0x00000000, 0x00000001, 0x00000000, 0x00000001, 0x00000000, 0x00000001, 0x00000000 // Constant
+                0x00000001, 0x00000000, 0x00000001, 0x00000000,
+                0x00000001, 0x00000000, 0x00000001, 0x00000000 // Constant
             };
             vx_uint32 uniConvertInt32toInt8_2x8[16] = {
                 0x33333333, // TCfg
@@ -195,7 +219,8 @@ vsi_status VX_CALLBACK vxpoolingWithArgmaxInitializer
                 0x00000000, // BSelt
                 0x00000000, 0x00000000, // BBin
                 0x00002400, // AccumType, ConstantType, and PostShift
-                0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
+                0x00000000, 0x00000000, 0x00000000, 0x00000000,
+                0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
             };
             vx_uint32 uniPoolQuantInt8_2x8[16] = {
                 0x11111111, // TCfg
@@ -204,7 +229,8 @@ vsi_status VX_CALLBACK vxpoolingWithArgmaxInitializer
                 0x11111111, // BSelt
                 0x00000000, 0x00000000, // BBin
                 0x00000400, // AccumType, ConstantType, and PostShift
-                0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
+                0x00000000, 0x00000000, 0x00000000, 0x00000000,
+                0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
             };
             vx_uint32 uniQuantInOutInt8Even_2x8[16] = {
                 0x11111111, // TCfg
@@ -213,10 +239,11 @@ vsi_status VX_CALLBACK vxpoolingWithArgmaxInitializer
                 0x22222222, // BSelt
                 0x00000000, 0x00000000, // BBin
                 0x00000300, // AccumType, ConstantType, and PostShift
-                0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
+                0x00000001, 0x00000001, 0x00000001, 0x00000001,
+                0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
             };
 
-            if(outDataType == VX_TYPE_INT8 && infixpoint != outfixpoint)
+            if(outDataType == VSI_NN_TYPE_INT8 && infixpoint != outfixpoint)
             {
                 if(infixpoint > outfixpoint)
                 {
@@ -243,11 +270,11 @@ vsi_status VX_CALLBACK vxpoolingWithArgmaxInitializer
                 status |= vxSetNodeUniform(nodObj, "uniConvertInt32toInt8_2x8", 1, uniConvertInt32toInt8_2x8);
                 status |= vxSetNodeUniform(nodObj, "poolingEncodeInt8_0", 1, poolingEncodeInt8_0);
                 status |= vxSetNodeUniform(nodObj, "poolingEncodeInt8_1", 1, poolingEncodeInt8_1);
-                if(outDataType == VX_TYPE_INT8)
+                if(outDataType == VSI_NN_TYPE_INT8)
                 {
                     status |= vxSetNodeUniform(nodObj, "scaleSF_i8", 1, &scaleSF);
                 }
-                else if(outDataType == VX_TYPE_FLOAT16)
+                else if(outDataType == VSI_NN_TYPE_FLOAT16)
                 {
                     status |= vxSetNodeUniform(nodObj, "uniPoolQuantInt8_2x8", 1,
                         uniPoolQuantInt8_2x8);
@@ -285,13 +312,15 @@ vsi_status VX_CALLBACK vxpoolingWithArgmaxInitializer
                 0xaaaaaaaa, // BSelt
                 0x00000000, 0x00000000, // BBin
                 0x00000600, // AccumType, ConstantType, and PostShift
-                0x00020001, 0x00020001, 0x00020001, 0x00020001, 0x00020001, 0x00020001, 0x00020001, 0x00020001 // Constant
+                0x00020001, 0x00020001, 0x00020001, 0x00020001,
+                0x00020001, 0x00020001, 0x00020001, 0x00020001 // Constant
             };
             vx_uint32 uniEncodeUint8_4x8[16] = {
                 0x55555555, 0x55555555, // TCfg
                 0x8628c020, 0x6ad0a49c, 0xe128bd8e, 0xacde96ac, 0xff9eeef1, // BinSelect
                 0x00000700, // AccumType, ConstantType, and PostShift
-                0x10204080, 0x10204080, 0x10204080, 0x10204080, 0x10204080, 0x10204080, 0x10204080, 0x10204080 // Constant
+                0x10204080, 0x10204080, 0x10204080, 0x10204080,
+                0x10204080, 0x10204080, 0x10204080, 0x10204080 // Constant
             };
             vx_uint32 uniS16AddOutZP_2x8[16] = {
                 0x55555555, // TCfg
@@ -300,11 +329,12 @@ vsi_status VX_CALLBACK vxpoolingWithArgmaxInitializer
                 0xaaaaaaaa, // BSelt
                 0x00000000, 0x00000000, // BBin
                 0x00000400, // AccumType, ConstantType, and PostShift
-                0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001 // Constant
+                0x00010001, 0x00010001, 0x00010001, 0x00010001,
+                0x00010001, 0x00010001, 0x00010001, 0x00010001 // Constant
             };
 
-            if(dataType == VX_TYPE_UINT8 && outDataType == VX_TYPE_UINT8
-                && axsFormat == VX_TYPE_UINT8)
+            if(inDataType == VSI_NN_TYPE_UINT8 && outDataType == VSI_NN_TYPE_UINT8
+                && axsFormat == VSI_NN_TYPE_UINT8)
             {
                 vx_uint32 idx                   = 0;
                 vx_uint32 packed_outputZP[4]    = {0};
@@ -331,7 +361,7 @@ vsi_status VX_CALLBACK vxpoolingWithArgmaxInitializer
                 status |= vxSetNodeUniform(nodObj, "packed_outputZP", 1, packed_outputZP);
                 status |= vxSetNodeUniform(nodObj, "input_ZP", 1, &input_ZP);
             }
-            else if(dataType == VX_TYPE_UINT8 && !enable_image_2d)
+            else if(inDataType == VSI_NN_TYPE_UINT8 && !enable_image_2d)
             {
                 status |= vxSetNodeUniform(nodObj, "uniEncodeUint8_4x8",
                     1, uniEncodeUint8_4x8);
@@ -344,7 +374,7 @@ vsi_status VX_CALLBACK vxpoolingWithArgmaxInitializer
                     1, poolingEncodeInt8_1);
             }
 
-            if(outDataType == VX_TYPE_FLOAT16)
+            if(outDataType == VSI_NN_TYPE_FLOAT16)
             {
                 uint32_t uniConvertUint8ToFp32_4x4[16] = {
                     0x09090909, // TCfg
@@ -383,7 +413,8 @@ vsi_status VX_CALLBACK vxpoolingWithArgmaxInitializer
                     0x0a0a0a0a, // BSelt
                     0x00000000, 0x00000000, // BBin
                     0x00000400, // AccumType, ConstantType, and PostShift
-                    0xffff0001, 0x00000000, 0x00010001, 0x00000000, 0x00010001, 0x00000000, 0x00010001, 0x00000000 // Constant
+                    0xffff0001, 0x00000000, 0x00010001, 0x00000000,
+                    0x00010001, 0x00000000, 0x00010001, 0x00000000 // Constant
                 };
                 vx_uint32 uniConvertEvenU8SubZpToFp32_4x4[16] = {
                     0x09090909, // TCfg
@@ -392,7 +423,8 @@ vsi_status VX_CALLBACK vxpoolingWithArgmaxInitializer
                     0x0a0a0a0a, // BSelt
                     0x00000000, 0x00000000, // BBin
                     0x00000400, // AccumType, ConstantType, and PostShift
-                    0x00010001, 0x00000000, 0x00010001, 0x00000000, 0x00010001, 0x00000000, 0x00010001, 0x00000000 // Constant
+                    0x00010001, 0x00000000, 0x00010001, 0x00000000,
+                    0x00010001, 0x00000000, 0x00010001, 0x00000000 // Constant
                 };
 
                 status |= vxSetNodeUniform(nodObj, "uniPackHalf8_2x8",
@@ -420,11 +452,11 @@ vsi_status VX_CALLBACK vxpoolingWithArgmaxInitializer
         shaderParam.globalWorkScale[0]  = 8;
         shaderParam.globalWorkScale[1]  = 2;
         shaderParam.globalWorkScale[2]  = 1;
-        shaderParam.globalWorkSize[0]   = gcmALIGN((size[0] + shaderParam.globalWorkScale[0] - 1)
+        shaderParam.globalWorkSize[0]   = gcmALIGN((attr[0].size[0] + shaderParam.globalWorkScale[0] - 1)
             / shaderParam.globalWorkScale[0], 4);
-        shaderParam.globalWorkSize[1]   = (size[1] + shaderParam.globalWorkScale[1] - 1)
+        shaderParam.globalWorkSize[1]   = (attr[0].size[1] + shaderParam.globalWorkScale[1] - 1)
             / shaderParam.globalWorkScale[1];
-        shaderParam.globalWorkSize[2]   = size[2];
+        shaderParam.globalWorkSize[2]   = attr[0].size[2];
         {
             // uniforms
             uint32_t poolingEncode[16] = {
@@ -485,16 +517,18 @@ vsi_status VX_CALLBACK vxpoolingWithArgmaxInitializer
                 0x02020202, // BSelt
                 0x00000000, 0x00000000, // BBin
                 0x00000300, // AccumType, ConstantType, and PostShift
-                0x00000001, 0x00000000, 0x00000001, 0x00000000, 0x00000001, 0x00000000, 0x00000001, 0x00000000 // Constant
+                0x00000001, 0x00000000, 0x00000001, 0x00000000,
+                0x00000001, 0x00000000, 0x00000001, 0x00000000 // Constant
             };
 
-            if(dataType == VX_TYPE_FLOAT16)
+            if(inDataType == VSI_NN_TYPE_FLOAT16)
             {
                 status |= vxSetNodeUniform(nodObj, "poolingEncode", 1, poolingEncode);
             }
             else
             {
-                if(dataType == VX_TYPE_INT16 && outDataType == VX_TYPE_INT16 && infixpoint != outfixpoint)
+                if(inDataType == VSI_NN_TYPE_FLOAT16 && outDataType == VSI_NN_TYPE_FLOAT16
+                    && infixpoint != outfixpoint)
                 {
                     if(infixpoint > outfixpoint)
                     {
@@ -516,7 +550,7 @@ vsi_status VX_CALLBACK vxpoolingWithArgmaxInitializer
                 }
                 else
                 {
-                    if(outDataType == VX_TYPE_FLOAT16)
+                    if(outDataType == VSI_NN_TYPE_FLOAT16)
                     {
                         status |= vxSetNodeUniform(nodObj, "uniPackHalf8_2x8_2",
                             1, uniPackHalf8_2x8);

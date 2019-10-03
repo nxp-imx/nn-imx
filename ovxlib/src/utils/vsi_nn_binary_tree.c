@@ -243,6 +243,15 @@ void vsi_nn_BinaryTreeNewNode
         {
             iter->left = node;
         }
+        else
+        {
+            VSILOGE( "Hash collision!" );
+            if( node )
+            {
+                free( node );
+                node = NULL;
+            }
+        }
     }
 } /* vsi_nn_BinaryTreeNewNode() */
 
@@ -250,7 +259,7 @@ void * vsi_nn_BinaryTreeGetNode
     (
     vsi_nn_binary_tree_t ** root,
     vsi_nn_binary_tree_key_t key
-    ) 
+    )
 {
     void * data;
     vsi_nn_binary_tree_t * iter;

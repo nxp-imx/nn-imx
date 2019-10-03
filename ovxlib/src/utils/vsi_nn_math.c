@@ -22,6 +22,7 @@
 *
 *****************************************************************************/
 #include <string.h>
+#include <math.h>
 #include "vsi_nn_tensor.h"
 #include "vsi_nn_prv.h"
 #include "vsi_nn_log.h"
@@ -200,3 +201,130 @@ double vsi_nn_Rint
 {
     return vsi_rint(x);
 } /* vsi_nn_Rint() */
+
+// Implement the Philox algorithm to generate random numbers in parallel.
+// Salmon et al. SC 2011. Parallel random numbers: as easy as 1, 2, 3.
+//   http://www.thesalmons.org/john/random123/papers/random123sc11.pdf
+
+// This source code only implement philox_4x32_10 algorithm.
+// ---------------------philox_4x32_10 algorithm beginning-------------
+#ifndef PHILOX_W32_0
+#define PHILOX_W32_0 ((uint32_t)0x9E3779B9)
+#endif
+#ifndef PHILOX_W32_1
+#define PHILOX_W32_1 ((uint32_t)0xBB67AE85)
+#endif
+
+#ifndef PHILOX_M4x32_0
+#define PHILOX_M4x32_0 ((uint32_t)0xD2511F53)
+#endif
+#ifndef PHILOX_M4x32_1
+#define PHILOX_M4x32_1 ((uint32_t)0xCD9E8D57)
+#endif
+
+struct r123array4x32{
+    uint32_t v[4];
+};
+
+struct r123array2x32 {
+    uint32_t v[2];
+};
+
+typedef struct r123array4x32 philox4x32_ctr_t;
+typedef struct r123array2x32 philox4x32_key_t;
+typedef struct r123array2x32 philox4x32_ukey_t;
+
+uint32_t mulhilo32(uint32_t a, uint32_t b, uint32_t* hip)
+{
+    uint64_t product = ((uint64_t)a)*((uint64_t)b);
+    *hip = product>>32;
+    return (uint32_t)product;
+}
+
+philox4x32_key_t philox4x32keyinit(philox4x32_ukey_t uk)
+{
+    return uk;
+}
+
+struct r123array2x32 _philox4x32bumpkey(struct r123array2x32 key)
+{
+    key.v[0] += PHILOX_W32_0;
+    key.v[1] += PHILOX_W32_1;
+    return key;
+}
+
+struct r123array4x32 _philox4x32round(struct r123array4x32 ctr, struct r123array2x32 key)
+{
+    uint32_t hi0;
+    uint32_t hi1;
+    uint32_t lo0 = mulhilo32(PHILOX_M4x32_0, ctr.v[0], &hi0);
+    uint32_t lo1 = mulhilo32(PHILOX_M4x32_1, ctr.v[2], &hi1);
+    struct r123array4x32 out = {{hi1^ctr.v[1]^key.v[0], lo1,
+                              hi0^ctr.v[3]^key.v[1], lo0}};
+    return out;
+}
+
+philox4x32_ctr_t philox4x32_R(uint32_t R, philox4x32_ctr_t ctr, philox4x32_key_t key)
+{
+    uint32_t i;
+    for (i = 0; i < R; i++)
+    {
+        if (i != 0)
+        {
+            key = _philox4x32bumpkey(key);
+        }
+        ctr = _philox4x32round(ctr, key);
+    }
+    return ctr;
+}
+
+philox4x32_ctr_t g_ctr;
+philox4x32_key_t g_key;
+
+void vsi_nn_random_init_for_philox_4x32_10
+    (
+    uint32_t low,
+    uint32_t high
+    )
+{
+    philox4x32_ukey_t uk;
+    uk.v[0] = low;
+    uk.v[1] = high;
+    g_key = philox4x32keyinit(uk);
+}
+
+void vsi_nn_random_generate_by_philox_4x32_10
+    (
+    uint32_t *random_buf,
+    uint32_t len
+    )
+{
+    uint32_t i;
+    for (i = 0; i < len / 4; i++)
+    {
+        g_ctr = philox4x32_R(10, g_ctr, g_key);
+        memcpy(&(random_buf[i * 4]), &g_ctr, 4 * sizeof(uint32_t));
+    }
+    i = len % 4;
+    if (i)
+    {
+        g_ctr = philox4x32_R(10, g_ctr, g_key);
+        memcpy(&(random_buf[(len / 4) * 4]), &g_ctr, i * sizeof(uint32_t));
+    }
+}
+// ---------------------philox_4x32_10 algorithm end-------------------
+
+void vsi_nn_random_uniform_transform
+    (
+    uint32_t *random_buf,
+    float *uniform_buf,
+    uint32_t len
+    )
+{
+    float rand_max = (float)(pow(2.0,32));
+    uint32_t i;
+    for (i = 0; i < len; i++)
+    {
+        uniform_buf[i] = random_buf[i] / rand_max;
+    }
+}

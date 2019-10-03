@@ -853,7 +853,9 @@ int OvxlibDelegate::addNode_SOFTMAX(Model* model,
     err = addNode(VSI_NN_OP_SOFTMAX, softmax->inputs(), softmax->outputs(),
             softmax->fusedType(), &nodes, operation_index);
     nodes[0]->nn_param.softmax.beta = softmax->beta;
-    nodes[0]->nn_param.softmax.axis = -1; // set a default value to sdk
+    std::vector<Operand*> outputs = model->getOperands(operation->outputs());
+    int32_t dim = static_cast<int32_t>(outputs[0]->dimensions.size());
+    nodes[0]->nn_param.softmax.axis = static_cast<uint32_t>(convertAxis(-1, dim));
     return err;
 }
 

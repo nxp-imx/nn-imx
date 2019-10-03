@@ -117,6 +117,8 @@ static void _try_pack_tensor_data
             {
                 *p_sz = (uint64_t)bytes;
             }
+            free( data );
+            data = NULL;
         }
     }
 } /* _pack_tensor_data() */
@@ -383,6 +385,18 @@ static _op_param_gen_t s_op_gen[] =
     /* LOGICAL_NOT */           NULL,
     /* SIN */                   NULL,
     /* LOG */                   NULL,
+    /* ARGMIN */                NULL,
+    /* ROI_ALIGN */             NULL,
+    /* HEATMAP_MAX_KEYPOINT */  NULL,
+    /* AXIS_ALIGNED_BBOX_TRANSFORM */ NULL,
+    /* BOX_WITH_NMS_LIMIT */    NULL,
+    /* GENERATE_PROPOSALS */    NULL,
+    /* DETECTION_POSTPROCESS */ NULL,
+    /* RANDOM_MULTINOMIAL */    NULL,
+    /* LOG_SOFTMAX */           NULL,
+    /* RELU_KERAS */            NULL,
+    /* GRU_OVXLIB */            NULL,
+    /* GRUCELL_OVXLIB */        NULL,
 };
 _compiler_assert( _cnt_of_array(s_op_gen) == VSI_NN_OP_NUM, vsi_nn_code_generator_c );
 

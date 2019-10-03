@@ -82,10 +82,17 @@ vsi_bool vsi_nn_QuantDFPCheck
     case VSI_NN_TYPE_INT16:
     case VSI_NN_TYPE_INT32:
         {
-            int8_t input_fl = input->attr.dtype.fl;
-            int8_t weight_fl = weight->attr.dtype.fl;
-            int8_t bias_fl = bias->attr.dtype.fl;
-            if(bias_fl == (input_fl + weight_fl))
+            if(bias)
+            {
+                int8_t input_fl = input->attr.dtype.fl;
+                int8_t weight_fl = weight->attr.dtype.fl;
+                int8_t bias_fl = bias->attr.dtype.fl;
+                if(bias_fl == (input_fl + weight_fl))
+                {
+                    ret = TRUE;
+                }
+            }
+            else
             {
                 ret = TRUE;
             }

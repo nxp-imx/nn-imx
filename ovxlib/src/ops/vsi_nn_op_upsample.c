@@ -172,7 +172,7 @@ static vsi_status vx_op_pre_init
     vsi_nn_kernel_info_t * kernel_info
     )
 {
-    vsi_nn_type_e dataType          = inputs[0]->attr.dtype.vx_type;
+    vsi_nn_type_e inDataType          = inputs[0]->attr.dtype.vx_type;
     vsi_nn_type_e axDataType        = inputs[1]->attr.dtype.vx_type;
     vsi_nn_type_e outDataType       = outputs[0]->attr.dtype.vx_type;
     vx_uint32     height            = outputs[0]->attr.size[1];
@@ -183,14 +183,20 @@ static vsi_status vx_op_pre_init
      enable_image_2d = (vsi_bool)(height * depth < hwLitimLen
          && ((height % 2 == 0) || depth == 1));
 
-    if((dataType == VSI_NN_TYPE_FLOAT16) &&
+    if (inDataType == VSI_NN_TYPE_BFLOAT16 && outDataType == VSI_NN_TYPE_BFLOAT16)
+    {
+        inDataType = VSI_NN_TYPE_FLOAT16;
+        outDataType = VSI_NN_TYPE_FLOAT16;
+    }
+
+    if((inDataType == VSI_NN_TYPE_FLOAT16) &&
         (axDataType == VSI_NN_TYPE_UINT8 || axDataType == VSI_NN_TYPE_INT8) &&
         (outDataType == VSI_NN_TYPE_FLOAT16))
     {
         kernel_info->resource_name[0] = "vsi_nn_kernel_upsample";
         kernel_info->kernel_index = 1;
     }
-    else if(dataType == VSI_NN_TYPE_INT8 && (axDataType == VSI_NN_TYPE_UINT8
+    else if(inDataType == VSI_NN_TYPE_INT8 && (axDataType == VSI_NN_TYPE_UINT8
         || axDataType == VSI_NN_TYPE_INT8) && outDataType == VSI_NN_TYPE_INT8)
     {
         kernel_info->resource_name[0] = "vsi_nn_kernel_upsample_i8";
@@ -204,7 +210,7 @@ static vsi_status vx_op_pre_init
             kernel_info->kernel_index = 14;
         }
     }
-    else if(dataType == VSI_NN_TYPE_UINT8 && (axDataType == VSI_NN_TYPE_UINT8
+    else if(inDataType == VSI_NN_TYPE_UINT8 && (axDataType == VSI_NN_TYPE_UINT8
         || axDataType == VSI_NN_TYPE_INT8) && outDataType == VSI_NN_TYPE_UINT8)
     {
         if (enable_image_2d && axDataType == VSI_NN_TYPE_UINT8)
@@ -218,7 +224,7 @@ static vsi_status vx_op_pre_init
             kernel_info->kernel_index = 3;
         }
     }
-    else if(dataType == VSI_NN_TYPE_INT16
+    else if(inDataType == VSI_NN_TYPE_INT16
         && (axDataType == VSI_NN_TYPE_UINT8 || axDataType == VSI_NN_TYPE_INT8)
         && outDataType == VSI_NN_TYPE_INT16)
     {
@@ -235,17 +241,17 @@ static vsi_status vx_op_pre_init
             kernel_info->kernel_index = 1;
         }
     }
-    else if(dataType == VSI_NN_TYPE_INT16 && axDataType == VSI_NN_TYPE_INT16
+    else if(inDataType == VSI_NN_TYPE_INT16 && axDataType == VSI_NN_TYPE_INT16
         && outDataType == VSI_NN_TYPE_FLOAT16)
     {
         kernel_info->resource_name[0] = "vsi_nn_kernel_upsample";
         kernel_info->kernel_index = 5;
     }
-    else if((dataType == VSI_NN_TYPE_FLOAT16 || dataType == VSI_NN_TYPE_INT16) &&
+    else if((inDataType == VSI_NN_TYPE_FLOAT16 || inDataType == VSI_NN_TYPE_INT16) &&
         (axDataType == VSI_NN_TYPE_UINT8 || axDataType == VSI_NN_TYPE_INT8) &&
         (outDataType == VSI_NN_TYPE_UINT8))
     {
-        if (enable_image_2d && axDataType == VSI_NN_TYPE_UINT8 && dataType == VSI_NN_TYPE_FLOAT16)
+        if (enable_image_2d && axDataType == VSI_NN_TYPE_UINT8 && inDataType == VSI_NN_TYPE_FLOAT16)
         {
             kernel_info->resource_name[0] = "vsi_nn_kernel_upsample_u8";
             kernel_info->kernel_index = 18;
@@ -256,47 +262,47 @@ static vsi_status vx_op_pre_init
             kernel_info->kernel_index = 6;
         }
     }
-    else if(dataType == VSI_NN_TYPE_UINT8
+    else if(inDataType == VSI_NN_TYPE_UINT8
         && (axDataType == VSI_NN_TYPE_UINT8 || axDataType == VSI_NN_TYPE_INT8)
         && outDataType == VSI_NN_TYPE_FLOAT16)
     {
         kernel_info->resource_name[0] = "vsi_nn_kernel_upsample_u8";
         kernel_info->kernel_index = 7;
     }
-    else if(dataType == VSI_NN_TYPE_FLOAT16 && axDataType == VSI_NN_TYPE_FLOAT16
+    else if(inDataType == VSI_NN_TYPE_FLOAT16 && axDataType == VSI_NN_TYPE_FLOAT16
         && outDataType == VSI_NN_TYPE_UINT8)
     {
         kernel_info->resource_name[0] = "vsi_nn_kernel_upsample_2";
         kernel_info->kernel_index = 8;
     }
-    else if(dataType == VSI_NN_TYPE_FLOAT16
+    else if(inDataType == VSI_NN_TYPE_FLOAT16
         && (axDataType == VSI_NN_TYPE_UINT8 || axDataType == VSI_NN_TYPE_INT8)
         && outDataType == VSI_NN_TYPE_INT8)
     {
         kernel_info->resource_name[0] = "vsi_nn_kernel_upsample_2";
         kernel_info->kernel_index = 10;
     }
-    else if(dataType == VSI_NN_TYPE_FLOAT16
+    else if(inDataType == VSI_NN_TYPE_FLOAT16
         && (axDataType == VSI_NN_TYPE_UINT8 || axDataType == VSI_NN_TYPE_INT8)
         && outDataType == VSI_NN_TYPE_INT16)
     {
         kernel_info->resource_name[0] = "vsi_nn_kernel_upsample_2";
         kernel_info->kernel_index = 11;
     }
-    else if(dataType == VSI_NN_TYPE_INT16 && axDataType == VSI_NN_TYPE_INT16
+    else if(inDataType == VSI_NN_TYPE_INT16 && axDataType == VSI_NN_TYPE_INT16
         && outDataType == VSI_NN_TYPE_INT16)
     {
         kernel_info->resource_name[0] = "vsi_nn_kernel_upsample";
         kernel_info->kernel_index = 12;
     }
-    else if(dataType == VSI_NN_TYPE_INT8
+    else if(inDataType == VSI_NN_TYPE_INT8
         && (axDataType == VSI_NN_TYPE_UINT8 || axDataType == VSI_NN_TYPE_INT8)
         && outDataType == VSI_NN_TYPE_FLOAT16)
     {
         kernel_info->resource_name[0] = "vsi_nn_kernel_upsample_i8";
         kernel_info->kernel_index = 15;
     }
-    else if(dataType == VSI_NN_TYPE_INT16
+    else if(inDataType == VSI_NN_TYPE_INT16
         && (axDataType == VSI_NN_TYPE_UINT8 || axDataType == VSI_NN_TYPE_INT8)
         && outDataType == VSI_NN_TYPE_FLOAT16)
     {

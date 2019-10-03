@@ -26,9 +26,12 @@
 
 #include "vsi_nn_types.h"
 
+#define _VSI_NN_TILE_LOCAL_TENSOR_NUM 2
+
 typedef struct _vsi_nn_tile_lcl_data_t
 {
     vsi_nn_tensor_t *multiples_tensor;
+    vx_tensor   local_tensor[_VSI_NN_TILE_LOCAL_TENSOR_NUM];
 } vsi_nn_tile_lcl_data_t;
 
 typedef struct _vsi_nn_tile_param

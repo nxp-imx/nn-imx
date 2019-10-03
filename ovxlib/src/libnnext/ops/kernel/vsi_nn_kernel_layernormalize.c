@@ -210,8 +210,6 @@ vsi_status VX_CALLBACK vxLayerNormKernel
         vx_scalar scalar[1] = { NULL };
         float eps = .0f;
 
-        status = VX_SUCCESS;
-
         imgObj[0] = (vx_tensor)paramObj[0];
         imgObj[1] = (vx_tensor)paramObj[1];
         imgObj[2] = (vx_tensor)paramObj[2];
@@ -221,38 +219,38 @@ vsi_status VX_CALLBACK vxLayerNormKernel
         if (context == NULL)
         {
             VSILOGE("vxGetContext failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
         //input
         status = vxQueryTensor(imgObj[0], VX_TENSOR_NUM_OF_DIMS, &input_dims, sizeof(input_dims));
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxQueryTensor input_dims failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
         status = vxQueryTensor(imgObj[0], VX_TENSOR_DATA_TYPE, &inputFormat, sizeof(inputFormat));
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxQueryTensor inputFormat failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
         status = vxQueryTensor(imgObj[0], VX_TENSOR_DIMS, input_size, sizeof(input_size));
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxQueryTensor input_size failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
         status = vxQueryTensor(imgObj[0], VX_TENSOR_ZERO_POINT, &in_zp, sizeof(in_zp));
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxQueryTensor input_size failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
         status = vxQueryTensor(imgObj[0], VX_TENSOR_SCALE, &in_scale, sizeof(in_scale));
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxQueryTensor input_size failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
         //bias
         status  = vxQueryTensor(imgObj[1], VX_TENSOR_NUM_OF_DIMS, &bias_dims, sizeof(bias_dims));
@@ -261,7 +259,7 @@ vsi_status VX_CALLBACK vxLayerNormKernel
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxQueryTensor bias failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
         //scale
         status  = vxQueryTensor(imgObj[2], VX_TENSOR_NUM_OF_DIMS, &scale_dims, sizeof(scale_dims));
@@ -270,7 +268,7 @@ vsi_status VX_CALLBACK vxLayerNormKernel
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxQueryTensor scale failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
         //output
         status  = vxQueryTensor(imgObj[3], VX_TENSOR_DATA_TYPE, &outputFormat, sizeof(outputFormat));
@@ -278,25 +276,25 @@ vsi_status VX_CALLBACK vxLayerNormKernel
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxQueryTensor outputFormat failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
         status = vxQueryTensor(imgObj[3], VX_TENSOR_DIMS, output_size, sizeof(output_size));
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxQueryTensor output_size failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
         status = vxQueryTensor(imgObj[3], VX_TENSOR_ZERO_POINT, &out_zp, sizeof(out_zp));
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxQueryTensor input_size failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
         status = vxQueryTensor(imgObj[3], VX_TENSOR_SCALE, &out_scale, sizeof(out_scale));
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxQueryTensor input_size failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
 
         input_size[2] = (input_dims <= 2)?1:input_size[2];
@@ -333,7 +331,7 @@ vsi_status VX_CALLBACK vxLayerNormKernel
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxCopyScalar failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
         // Call C Prototype
         if(inputFormat == VSI_NN_TYPE_FLOAT16)
@@ -352,6 +350,7 @@ vsi_status VX_CALLBACK vxLayerNormKernel
             output_stride_size, output_dims);
         vxCopyTensorPatch(imgObj[3], NULL, output_user_addr, output, VX_WRITE_ONLY, 0);
 
+OnError:
         if(input) free(input);
         if(scale) free(scale);
         if(bias) free(bias);

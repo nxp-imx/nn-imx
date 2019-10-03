@@ -172,15 +172,34 @@ static vsi_nn_tensor_rel_t *_init_tensor_rel_buffer
             max_io * sizeof(vsi_nn_tensor_rel_table_t));
         tensor_ref[i].output.table = (vsi_nn_tensor_rel_table_t *)malloc(
             max_io * sizeof(vsi_nn_tensor_rel_table_t));
-        if(NULL == tensor_ref->input.table || NULL == tensor_ref->output.table)
+        if(NULL == tensor_ref[i].input.table || NULL == tensor_ref[i].output.table)
         {
-            return NULL;
+            goto error;
         }
         memset(tensor_ref[i].input.table,  0, max_io * sizeof(vsi_nn_tensor_rel_table_t));
         memset(tensor_ref[i].output.table, 0, max_io * sizeof(vsi_nn_tensor_rel_table_t));
     }
 
     return tensor_ref;
+error:
+    if(tensor_ref)
+    {
+        for(i = 0; i < tensor_num; i++)
+        {
+            if(tensor_ref[i].input.table)
+            {
+                free(tensor_ref[i].input.table);
+                tensor_ref[i].input.table = NULL;
+            }
+            if(tensor_ref[i].output.table)
+            {
+                free(tensor_ref[i].output.table);
+                tensor_ref[i].output.table = NULL;
+            }
+            tensor_ref = NULL;
+        }
+    }
+    return NULL;
 } /* _init_tensor_rel_buffer() */
 
 static vsi_bool _try_set_const_tensor
@@ -681,6 +700,11 @@ float * vsi_nn_ConvertTensorToFloat32Data
         if ( tensor_data == NULL )
         {
             VSILOGE("vxSwapTensorHandle fail.");
+            if( data )
+            {
+                free( data );
+                data = NULL;
+            }
             return NULL;
         }
     }
@@ -739,6 +763,11 @@ uint8_t * vsi_nn_ConvertTensorToData
         if ( tensor_data == NULL )
         {
             VSILOGE("vxSwapTensorHandle fail.");
+            if( data )
+            {
+                free( data );
+                data = NULL;
+            }
             return NULL;
         }
         memcpy( data, tensor_data, buf_sz);
@@ -1891,3 +1920,18 @@ vsi_status vsi_nn_vxCopyDataToTensor
     }
     return status;
 } /* vsi_nn_vxCopyDataToTensor() */
+
+uint32_t vsi_nn_GetOffsetByCoords
+    (
+    vsi_nn_tensor_attr_t *attr,
+    uint32_t *coords
+    )
+{
+    uint32_t i, res = 0, strides = 1;
+    for (i = 0; i < attr->dim_num; i++)
+    {
+        res += coords[i] * strides;
+        strides *= attr->size[i];
+    }
+    return res;
+}

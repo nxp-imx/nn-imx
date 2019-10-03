@@ -450,8 +450,6 @@ vsi_status VX_CALLBACK vxSignalFrameKernel
         vx_scalar scalar[5] = { NULL };
         uint32_t frame_length = 0, step = 0, pad_end = 0, pad = 0, axis = 0, axis0 = 0;
 
-        status = VX_SUCCESS;
-
         imgObj[0] = (vx_tensor)paramObj[0];
         imgObj[1] = (vx_tensor)paramObj[1];  //output
         scalar[0] = (vx_scalar)paramObj[2];
@@ -463,38 +461,38 @@ vsi_status VX_CALLBACK vxSignalFrameKernel
         if (context == NULL)
         {
             VSILOGE("vxGetContext failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
         //input
         status = vxQueryTensor(imgObj[0], VX_TENSOR_NUM_OF_DIMS, &input_dims, sizeof(input_dims));
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxQueryTensor input_dims failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
         status = vxQueryTensor(imgObj[0], VX_TENSOR_DATA_TYPE, &inputFormat, sizeof(inputFormat));
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxQueryTensor inputFormat failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
         status = vxQueryTensor(imgObj[0], VX_TENSOR_DIMS, input_size, sizeof(input_size));
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxQueryTensor input_size failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
         status = vxQueryTensor(imgObj[0], VX_TENSOR_ZERO_POINT, &in_zp, sizeof(in_zp));
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxQueryTensor input_size failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
         status = vxQueryTensor(imgObj[0], VX_TENSOR_SCALE, &in_scale, sizeof(in_scale));
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxQueryTensor input_size failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
         //output
         status  = vxQueryTensor(imgObj[1], VX_TENSOR_DATA_TYPE, &outputFormat, sizeof(outputFormat));
@@ -502,25 +500,25 @@ vsi_status VX_CALLBACK vxSignalFrameKernel
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxQueryTensor outputFormat failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
         status = vxQueryTensor(imgObj[1], VX_TENSOR_DIMS, output_size, sizeof(output_size));
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxQueryTensor output_size failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
         status = vxQueryTensor(imgObj[1], VX_TENSOR_ZERO_POINT, &out_zp, sizeof(out_zp));
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxQueryTensor input_size failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
         status = vxQueryTensor(imgObj[1], VX_TENSOR_SCALE, &out_scale, sizeof(out_scale));
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxQueryTensor input_size failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
 
 #if 0
@@ -600,7 +598,7 @@ vsi_status VX_CALLBACK vxSignalFrameKernel
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxCopyScalar failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
 
         // Call C Prototype
@@ -621,6 +619,7 @@ vsi_status VX_CALLBACK vxSignalFrameKernel
             output_stride_size, output_dims);
         vxCopyTensorPatch(imgObj[1], NULL, output_user_addr, output, VX_WRITE_ONLY, 0);
 
+OnError:
         if(input) free(input);
         if(output) free(output);
 #if 0

@@ -68,7 +68,7 @@ vsi_bool vsi_nn_QuantAffineCheck
 {
     vsi_bool ret;
     vsi_nn_type_e dtype;
-    const float diff_scale = (float)1e-5;
+    const double diff_scale = (double)1e-5;
 
     ret = FALSE;
     dtype = input->attr.dtype.vx_type;
@@ -86,15 +86,16 @@ vsi_bool vsi_nn_QuantAffineCheck
         case VSI_NN_TYPE_UINT16:
         case VSI_NN_TYPE_UINT32:
         {
-            float input_scale = input->attr.dtype.scale;
-            float weight_scale = weight->attr.dtype.scale;
+            double product_scale = (double)input->attr.dtype.scale * (double)weight->attr.dtype.scale;
+            const double acuity_round_decimals = 1e-8;
             if(bias && bias->attr.dtype.scale)
             {
-                float bias_scale = bias->attr.dtype.scale;
-                float iw_scale = input_scale * weight_scale;
-                float diff = vsi_nn_abs(bias_scale - iw_scale);
-
-                if( diff <= diff_scale )
+                double tmp0,tmp1;
+                double bias_scale = bias->attr.dtype.scale;
+                tmp0 = vsi_nn_abs(product_scale - bias_scale);
+                tmp1 = vsi_nn_min(product_scale, bias_scale) * diff_scale;
+                tmp1 = vsi_nn_max(tmp1, acuity_round_decimals);
+                if(tmp0 <= tmp1)
                 {
                     ret = TRUE;
                 }
@@ -103,7 +104,7 @@ vsi_bool vsi_nn_QuantAffineCheck
             {
                 ret = TRUE;
             }
-      }
+        }
         break;
     default:
         VSILOGW("input dtype error %#x", dtype);

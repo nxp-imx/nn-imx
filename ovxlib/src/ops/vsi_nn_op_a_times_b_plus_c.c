@@ -47,7 +47,7 @@ static vsi_status op_compute
     vsi_status status;
     float scale;
     vsi_enum overflow_policy,rounding_policy;
-    vx_scalar scale_s;
+    vx_scalar scale_s = NULL;
     vsi_nn_tensor_t * a_times_b = NULL;
     vsi_nn_tensor_attr_t attr;
 
@@ -60,7 +60,8 @@ static vsi_status op_compute
     if(!scale_s)
     {
         VSILOGE("CreateScalar fail\n");
-        return VSI_FAILURE;
+        status = VSI_FAILURE;
+        goto OnError;
     }
 
     memset(&attr, 0, sizeof(attr));
@@ -79,7 +80,8 @@ static vsi_status op_compute
     if( NULL == self->n )
     {
         VSILOGE("Call vxTensorMultiplyNode fail.(a_times_b_plus_c)");
-        return VSI_FAILURE;
+        status = VSI_FAILURE;
+        goto OnError;
     }
 
     self->n = vxTensorAddNode( self->graph->g, a_times_b->t, inputs[2]->t,
@@ -88,9 +90,11 @@ static vsi_status op_compute
     {
         VSILOGE("Call vxTensorAddNode fail.(a_times_b_plus_c)");
         status = VSI_FAILURE;
+        goto OnError;
     }
 
-    vxReleaseScalar(&scale_s);
+OnError:
+    if (scale_s) vxReleaseScalar(&scale_s);
     if (a_times_b) vsi_nn_ReleaseTensor(&a_times_b);
 
     return status;

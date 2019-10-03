@@ -1,0 +1,214 @@
+#include "cl_viv_vx_ext.h"
+
+_viv_uniform int iter;
+_viv_uniform int stride;
+_viv_uniform int class_max_iter;
+_viv_uniform int class_max_stride;
+_viv_uniform float re_rand_max;
+
+_viv_uniform VXC_512Bits uniHorzSubMaxFp16_2x8;
+_viv_uniform VXC_512Bits uniConvertFstFp16Fp32_4x4;
+_viv_uniform VXC_512Bits uniConvertSecFp16Fp32_4x4;
+
+uint4 _philox4x32bumpkey(uint4 key)
+{
+    uint4 mask = (uint4)((uint)0x9E3779B9, (uint)0xBB67AE85, 0, 0);
+    //key.x += ((uint)0x9E3779B9);
+    //key.y += ((uint)0xBB67AE85);
+    key += mask;
+    return key;
+}
+
+uint mulhilo32(uint a, uint b, uint* hip)
+{
+    uint product = (uint)(a * b);
+    *hip = mul_hi(a, b);
+    return product;
+}
+
+uint4 _philox4x32round(uint4 ctr, uint4 key)
+{
+    uint hi0;
+    uint hi1;
+    uint PHILOX_M4x32_0 = ((uint)0xD2511F53);
+    uint PHILOX_M4x32_1 = ((uint)0xCD9E8D57);
+    uint lo0 = mulhilo32(PHILOX_M4x32_0, ctr.x, &hi0);
+    uint lo1 = mulhilo32(PHILOX_M4x32_1, ctr.z, &hi1);
+    uint4 out = (uint4)(hi1^ctr.y^key.x, lo1, hi0^ctr.w^key.y, lo0);
+    return out;
+}
+
+uint4 philox4x32_R_10(uint4 ctr, uint4 key)
+{
+    uint i;
+    ctr = _philox4x32round(ctr, key);
+    for (i = 1; i < 10; i++)
+    {
+        key = _philox4x32bumpkey(key);
+        ctr = _philox4x32round(ctr, key);
+    }
+    return ctr;
+}
+
+__kernel void vxcRandom_generate(
+    __read_only image2d_array_t   seeds,
+    __write_only image2d_array_t  output)
+{
+    int gidx = get_global_id(0);
+    int gidy = get_global_id(1);
+    int4 coord = (int4)(gidx << 1, gidy, 0, 0);
+    uint4 key = read_imageui(seeds, coord);
+
+    uint4 ctr = (uint4)(0);
+    float4 result = 0;
+
+    coord.x = gidx * stride;
+    for(int i = 0; i < iter; i++)
+    {
+        ctr = philox4x32_R_10(ctr, key);
+        result = convert_float4(ctr) * re_rand_max;
+        write_imagef(output, coord, result);
+        coord.x += 4;
+    }
+}
+
+// N times of 8
+// x dim = 1
+__kernel void vxcRandom_sum_fp16(
+    __read_only image2d_array_t   input,
+    vx_array_float  output)
+{
+    int gidx = get_global_id(0);
+    int gidy = get_global_id(1);
+    int4 coord = (int4)(gidx, gidy, 0, 0);
+
+    vxc_half8 maxData, data;
+    vxc_short8 src0 = (vxc_short8)(0xFC00, 0xFC00, 0xFC00, 0xFC00, 0xFC00, 0xFC00, 0xFC00, 0xFC00);
+    uint4 ctr = (uint4)(0);
+    float4 dst0, dst1;
+    float4 one = (float4)(1, 1, 1, 1);
+    _viv_asm(COPY, maxData, src0, 16);
+    float tmp = 0;
+    int offset = gidy * class_max_stride;
+    __global float* cdfPtr = (__global float*)output.item + offset;
+
+    for(int i = 0; i < class_max_iter; i++)
+    {
+        VXC_ReadImage(src0, input, coord, VXC_5BITOFFSET_XY(0, 0),\
+                VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+        coord.x += 8;
+        _viv_asm(COPY, data, src0, 16);
+        //VXC_DP2x8(sum, data, data, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),
+        //        uniHorzSumFp16_8x2);
+        VXC_HorzMax3(data, data, VXC_MODIFIER(0, 5, 0,VXC_RM_TowardZero, 0));
+        VXC_HorzMax3(data, data, VXC_MODIFIER(0, 3, 0,VXC_RM_TowardZero, 0));
+        VXC_HorzMax3(data, data, VXC_MODIFIER(0, 1, 0,VXC_RM_TowardZero, 0));
+        VXC_HorzMax3(data, data, VXC_MODIFIER(0, 0, 0,VXC_RM_TowardZero, 0));
+        VXC_VertMax3(maxData, maxData, maxData, data, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));
+    }
+    coord.x = 0;
+    for(int i = 0; i < class_max_iter; i++)
+    {
+        float4 val0, val1;
+        VXC_ReadImage(src0, input, coord, VXC_5BITOFFSET_XY(0, 0),\
+                VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+        coord.x += 8;
+        _viv_asm(COPY, data, src0, 16);
+        VXC_DP2x8(data, data, maxData, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),
+                uniHorzSubMaxFp16_2x8);
+        VXC_DP4x4(val0, data, data, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertFstFp16Fp32_4x4);
+        VXC_DP4x4(val1, data, data, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecFp16Fp32_4x4);
+        val0 = exp(val0);
+        val1 = exp(val1);
+        tmp = dot(val0, one);
+        dst0 = (float4)(val0.x, (val0.x + val0.y), (val0.x + val0.y + val0.z), tmp);
+        dst1 = (float4)((tmp + val1.x), (tmp + val1.x + val1.y),
+                 (tmp + val1.x + val1.y + val1.z), tmp + dot(val1, one));
+        vstore4(dst0, 0, cdfPtr);
+        vstore4(dst1, 1, cdfPtr);
+        cdfPtr += 8;
+    }
+}
+
+uint upper_bound(float* a, int n, float x) {
+    uint l = 0;
+    uint h = n;
+    while (l < h) {
+        int mid = (l + h) / 2;
+        if (x >= a[mid]) {
+            l = mid + 1;
+        } else {
+            h = mid;
+        }
+    }
+    return l;
+}
+
+// one thread calculate 4
+__kernel void vxcRandom_multinomial(
+    __read_only image2d_array_t   randoms,
+                 vx_array_float   cdfs,
+   __write_only image2d_array_t   output,
+                 int class_size, int max_stride)
+{
+    int gidx = get_global_id(0);
+    int gidy = get_global_id(1);
+    int4 coord = (int4)(gidx, gidy, 0, 0);
+
+    int offset = gidy * max_stride;
+    __global float* cdfPtr = (__global float*)cdfs.item + offset;
+
+    float4 ran = read_imagef(randoms, coord);
+    float total = cdfPtr[class_size - 1];
+    float4 target = ran * total;
+
+    uint4 out_class = (uint4)(0);
+    out_class.x = upper_bound(cdfPtr, class_size, target.x);
+    out_class.y = upper_bound(cdfPtr, class_size, target.y);
+    out_class.z = upper_bound(cdfPtr, class_size, target.z);
+    out_class.w = upper_bound(cdfPtr, class_size, target.w);
+
+    write_imageui(output, coord, out_class);
+}
+
+__kernel void vxcRandom_sum_fp32(
+    __read_only image2d_array_t   input,
+    vx_array_float  output)
+{
+    int gidx = get_global_id(0);
+    int gidy = get_global_id(1);
+    int4 coord = (int4)(gidx, gidy, 0, 0);
+
+    vxc_float4 src0, data;
+    float maxData0 = FLT_MIN, maxData1 = FLT_MIN;
+    uint4 ctr = (uint4)(0);
+    float4 dst;
+    float4 one = (float4)(1, 1, 1, 1);
+
+    float tmp = 0;
+    int offset = gidy * class_max_stride;
+    __global float* cdfPtr = (__global float*)output.item + offset;
+
+    for(int i = 0; i < class_max_iter; i++)
+    {
+        src0 = read_imagef(input, coord);
+        coord.x += 4;
+        maxData0 = max(src0.x, src0.y);
+        maxData1 = max(src0.z, src0.w);
+        maxData0 = max(maxData0, maxData1);
+    }
+    coord.x = 0;
+    float4 maxData = (float4)(maxData0, maxData0, maxData0, maxData0);
+    for(int i = 0; i < class_max_iter; i++)
+    {
+        float4 val;
+        src0 = read_imagef(input, coord);
+        coord.x += 4;
+        data = src0 - maxData;
+        val = exp(data);
+        tmp = dot(val, one);
+        dst = (float4)(val.x, (val.x + val.y), (val.x + val.y + val.z), tmp);
+        vstore4(dst, 0, cdfPtr);
+        cdfPtr += 4;
+    }
+}

@@ -21,6 +21,7 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
+/** @file */
 #ifndef _VSI_NN_UTIL_H
 #define _VSI_NN_UTIL_H
 
@@ -47,6 +48,17 @@ extern "C" {
                   Functions
 -------------------------------------------*/
 
+/**
+ * Load binary data from file
+ * Load binary data from file, it will malloc the buffer to store
+ * the data, user need to free it with vsi_nn_Free().
+ * @see vsi_nn_Free
+ *
+ * @param[in] filename Binary data file path.
+ * @param[out] sz Size(bytes) of data.
+ *
+ * @return Data buffer on success, or NULL otherwise.
+ */
 OVXLIB_API uint8_t * vsi_nn_LoadBinaryData
     (
     const char * filename,
@@ -74,6 +86,15 @@ OVXLIB_API uint32_t vsi_nn_GetTotalBytesBySize
     vsi_nn_type_e type
     );
 
+/**
+ * Convert data to float32
+ * Convert data from any type to float32.
+ *
+ * @param[in] data The scalar data address.
+ * @param[in] type Data type.
+ *
+ * @return Converted float32 data.
+ */
 OVXLIB_API float vsi_nn_DataAsFloat32
     (
     uint8_t    * data,
@@ -171,6 +192,16 @@ OVXLIB_API void vsi_nn_GetFP32MultiAndPostShift
     vx_int8 *N
     );
 
+/**
+ * Malloc aligned buffer
+ * Malloc address and size aligned buffer.
+ *
+ * @param[in] mem_size Buffer size to malloc.
+ * @param[in] align_start_size Address aligned bytes.
+ * @param[in] align_block_size Buffer size aligned bytes.
+ *
+ * @return The aligned buffer address on success, or NULL otherwise.
+ */
 OVXLIB_API uint8_t * vsi_nn_MallocAlignedBuffer
     (
     uint32_t mem_size,
@@ -178,6 +209,13 @@ OVXLIB_API uint8_t * vsi_nn_MallocAlignedBuffer
     uint32_t align_block_size
     );
 
+/**
+ * Free aligned buffer
+ * Free aligend buffer malloc with vsi_nn_MallocAlignedBuffer().
+ *
+ * @param[in] handle Buffer handle to free.
+ * @see vsi_nn_MallocAlignedBuffer
+ */
 OVXLIB_API void vsi_nn_FreeAlignedBuffer
     (
     uint8_t* handle

@@ -545,6 +545,8 @@ vsi_status vsi_nn_SetupGraph
         if (NULL == sorted_nodes)
         {
             VSILOGW("Sort graph nodes failure.");
+            free(nodes_list);
+            nodes_list = NULL;
             return status;
         }
         memcpy(nodes_list, sorted_nodes,
@@ -1279,7 +1281,7 @@ void vsi_nn_DumpGraphNodeOutputsEx
 #define _SHAPE_BUF_SZ   (64)
     char shape[_SHAPE_BUF_SZ] = { 0 };
     char filename[_MAX_TENSOR_NAME_SZ] = { 0 };
-    char filename_prefix[_MAX_TENSOR_NAME_SZ] = { 0 };
+    char filename_prefix[_SHAPE_BUF_SZ] = { 0 };
     const char * op_name;
     uint32_t i;
     uint32_t o;
@@ -1317,11 +1319,11 @@ void vsi_nn_DumpGraphNodeOutputsEx
 
     if( NULL != prefix )
     {
-        strncpy(filename_prefix, prefix, _MAX_TENSOR_NAME_SZ);
-        filename_prefix[_MAX_TENSOR_NAME_SZ - 1] = '\0';
+        strncpy(filename_prefix, prefix, _SHAPE_BUF_SZ);
+        filename_prefix[_SHAPE_BUF_SZ - 1] = '\0';
 
-        strncat(filename_prefix, "_", _MAX_TENSOR_NAME_SZ);
-        filename_prefix[_MAX_TENSOR_NAME_SZ - 1] = '\0';
+        strncat(filename_prefix, "_", _SHAPE_BUF_SZ - 1);
+        filename_prefix[_SHAPE_BUF_SZ - 1] = '\0';
     }
 
     VSILOGD("Dump %u nodes.", node_num);
@@ -1470,6 +1472,8 @@ void vsi_nn_DumpGraphToJson
     if(NULL == tensor_ref)
     {
         VSILOGE("build tensor io fail");
+        free(fp);
+        fp = NULL;
         return ;
     }
 

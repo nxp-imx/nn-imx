@@ -81,18 +81,18 @@ vsi_status VX_CALLBACK vxShuffleChannelKernel
     )
 {
     vsi_status status = VX_ERROR_INVALID_PARAMETERS;
+    int16_t *input = NULL, *output = NULL;
+    vx_tensor_addressing input_user_addr = NULL;
+    vx_tensor_addressing output_user_addr = NULL;
 
     if(paramNum == 3)
     {
         vx_context context = NULL;
         // tensor
         vx_tensor imgObj[2] = { NULL };
-        int16_t *input = NULL, *output = NULL;
         uint32_t input_size[4] = {0}, output_size[4] = {0};
         uint32_t input_stride_size[4]  = {0};
         uint32_t output_stride_size[4] = {0};
-        vx_tensor_addressing input_user_addr = NULL;
-        vx_tensor_addressing output_user_addr = NULL;
         vsi_enum inputFormat = VX_TYPE_FLOAT16, outputFormat = VX_TYPE_FLOAT16;
         uint32_t input_dims = 0, output_dims = 0;
         uint32_t i;
@@ -170,12 +170,13 @@ vsi_status VX_CALLBACK vxShuffleChannelKernel
         if (status != VX_SUCCESS)
         {
             printf("vxCopyScalar failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
         if (input_size[2] % group_number)
         {
             printf("input channel can't be exact divided by group number! at line %d\n", __LINE__);
-            return VX_FAILURE;
+            status =VX_ERROR_INVALID_PARAMETERS;
+            goto OnError;
         }
         // Call C Prototype
         myShuffleChannelFunc(input, group_number, output, input_size[0],
@@ -186,11 +187,14 @@ vsi_status VX_CALLBACK vxShuffleChannelKernel
             output_stride_size, output_dims);
         vxCopyTensorPatch(imgObj[1], NULL, output_user_addr, output, VX_WRITE_ONLY, 0);
 
-        if(input) free(input);
-        if(output) free(output);
-        if(input_user_addr) vxReleaseTensorAddressing(&input_user_addr);
-        if(output_user_addr) vxReleaseTensorAddressing(&output_user_addr);
+        goto OnError;
     }
+
+OnError:
+    if(input) free(input);
+    if(output) free(output);
+    if(input_user_addr) vxReleaseTensorAddressing(&input_user_addr);
+    if(output_user_addr) vxReleaseTensorAddressing(&output_user_addr);
 
     return status;
 }

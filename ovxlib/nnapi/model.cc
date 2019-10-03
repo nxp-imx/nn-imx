@@ -1,3 +1,6 @@
+#include <iostream>
+#include <sstream>
+#include <iterator>
 #include <vector>
 #include "vsi_nn_pub.h"
 #include "model.h"
@@ -468,6 +471,26 @@ void Model::echo() {
         it.second->echo(it.first);
     }
     VSILOGD("================================================");
+}
+
+void Model::freezeCompile()
+{
+    signature_ = generateSignature();
+    compiled_ = true;
+}
+
+std::string Model::generateSignature()
+{
+    /**
+     * @todo Add more info to signature
+     */
+    std::ostringstream result;
+    for (uint32_t i : inputIndexes()) {
+        Operand* operand = this->operand(i);
+        std::copy(operand->dimensions.begin(), operand->dimensions.end(),
+                std::ostream_iterator<uint32_t>(result, ","));
+    }
+    return result.str();
 }
 
 }

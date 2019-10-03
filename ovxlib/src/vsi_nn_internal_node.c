@@ -96,6 +96,12 @@ static vsi_nn_internal_node_t* vsi_nn_create_internal_node
     }
     else
     {
+        if(n)
+        {
+            vsi_nn_OpDeinit(n->op, n );
+        }
+        if(inputs) free(inputs);
+        if(outputs) free(outputs);
         vsi_nn_release_internal_node( &node );
         return NULL;
     }
@@ -442,7 +448,14 @@ vsi_nn_internal_tensor_t* vsi_nn_create_zero_bias_tensor
     attr.dim_num = 1;
     attr.vtl = FALSE;
     attr.is_const = TRUE;
-    attr.dtype.vx_type = VSI_NN_TYPE_INT32;
+    if (input_attr->dtype.qnt_type == VSI_NN_QNT_TYPE_NONE)
+    {
+        attr.dtype.vx_type = VSI_NN_TYPE_FLOAT32;
+    }
+    else
+    {
+        attr.dtype.vx_type = VSI_NN_TYPE_INT32;
+    }
 
     switch(input_attr->dtype.qnt_type)
     {

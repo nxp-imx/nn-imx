@@ -41,8 +41,66 @@
 #define _OUTPUT_NUM         (1)
 #define _IO_NUM             (_INPUT_NUM + _OUTPUT_NUM + 1)
 #define _PARAM_NUM          (_ARG_NUM + _IO_NUM)
+#define TILE_MULTIPLE_VX_SIZE (4)
 
 extern vx_kernel_description_t * vx_kernel_TILE_list[];
+
+static void check_tensor_shape
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t * input,
+    vx_reference * params,
+    uint32_t index
+    )
+{
+    vsi_nn_tensor_attr_t attr;
+    vsi_nn_tile_param * p;
+
+    p = (vsi_nn_tile_param *)&(self->nn_param.tile);
+
+    if (index == 0)
+    {
+        if( input->attr.dim_num == 1)
+        {
+            memcpy(&attr, &(input->attr), sizeof(vsi_nn_tensor_attr_t));
+            attr.size[1] = 1;
+            attr.dim_num = 2;
+            p->local.local_tensor[index] =
+                vxReshapeTensor(input->t, (int32_t*)(attr.size), attr.dim_num);
+            params[index] =  (vx_reference)p->local.local_tensor[index];
+        }
+        else
+            params[index] = (vx_reference)input->t;
+    }
+    else if (index == 1)
+    {
+        if( input->attr.dim_num == 1)
+        {
+            memcpy(&attr, &(input->attr), sizeof(vsi_nn_tensor_attr_t));
+            attr.size[1] = 1;
+            attr.dim_num = 2;
+            p->local.local_tensor[index] =
+                vxReshapeTensor(input->t, (int32_t*)(attr.size), attr.dim_num);
+            params[index] =  (vx_reference)p->local.local_tensor[index];
+        }
+        else if( input->attr.dim_num == 4)
+        {
+            memcpy(&attr, &(input->attr), sizeof(vsi_nn_tensor_attr_t));
+            attr.size[2] *= attr.size[3];
+            attr.size[3] = 1;
+            attr.dim_num = 3;
+            p->local.local_tensor[index] =
+                vxReshapeTensor(input->t, (int32_t*)(attr.size), attr.dim_num);
+            params[index] =  (vx_reference)p->local.local_tensor[index];
+        }
+        else
+            params[index] = (vx_reference)input->t;
+    }
+    else
+    {
+        VSILOGE("No more local tensor!(tile) at [%s : %d]\n", __FILE__, __LINE__);
+    }
+}
 
 static void _set_inputs_outputs
     (
@@ -77,18 +135,30 @@ static void prepare_multiples
     vsi_nn_tile_param * p;
     vsi_nn_tensor_attr_t attr;
     vsi_nn_tensor_t *multiples_tensor = NULL;
+    uint32_t i = 0;
+    int32_t multiples[TILE_MULTIPLE_VX_SIZE] = {1, 1, 1, 1};
 
     p = &(self->nn_param.tile);
 
     memset(&attr, 0, sizeof(attr));
-    attr.size[0] = p->multiples_num;
-    attr.dim_num = 1;
+    attr.size[0] = TILE_MULTIPLE_VX_SIZE;
+    attr.size[1] = 1;
+    attr.dim_num = 2;
     attr.is_const = TRUE;
     attr.dtype.vx_type = VSI_NN_TYPE_INT32;
     attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
+
+    // check multiples
+    {
+        for(i = 0; i < p->multiples_num; i++)
+        {
+            multiples[i] = p->multiples[i] == 0 ? 1 : p->multiples[i];
+        }
+    }
+
     multiples_tensor = vsi_nn_CreateTensorFromData(
         self->graph,
-        (uint8_t *)p->multiples,
+        (uint8_t *)multiples,
         &attr);
     if( NULL == multiples_tensor )
     {
@@ -141,7 +211,8 @@ static vsi_status vx_op_compute
     }
 
     /* Set inputs and outputs */
-    _set_inputs_outputs( params, inputs, outputs );
+    check_tensor_shape(self, inputs[0], params, 0);
+    check_tensor_shape(self, outputs[0], params, 1);
     prepare_multiples(self, params);
 
     /* Pass parameters to node. */
@@ -157,6 +228,64 @@ static vsi_nn_op_compute_t op_compute_list[] =
     NULL
 };
 
+static vsi_status vx_op_pre_compute
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs,
+    vsi_nn_kernel_info_t * kernel_info
+    )
+{
+    vsi_nn_type_e inputDataFormat     = inputs[0]->attr.dtype.vx_type;
+    uint32_t width = inputs[0]->attr.size[0];
+
+    if (inputDataFormat == VSI_NN_TYPE_UINT8 || inputDataFormat == VSI_NN_TYPE_INT8)
+    {
+        if(width % 8 == 0)
+            kernel_info->kernel_index = 1;
+        else if(width % 4 == 0)
+            kernel_info->kernel_index = 2;
+        else if(width % 8 == 1)
+            kernel_info->kernel_index = 3;
+        else if(width % 8 == 2)
+            kernel_info->kernel_index = 4;
+        else if(width % 8 == 3)
+            kernel_info->kernel_index = 5;
+        else if(width % 8 == 5)
+            kernel_info->kernel_index = 6;
+        else if(width % 8 == 6)
+            kernel_info->kernel_index = 7;
+        else if(width % 8 == 7)
+            kernel_info->kernel_index = 8;
+    }
+    else if(inputDataFormat == VSI_NN_TYPE_INT16 || inputDataFormat == VSI_NN_TYPE_FLOAT16)
+    {
+        if(width % 8 == 0)
+            kernel_info->kernel_index = 9;
+        else if(width % 4 == 0)
+            kernel_info->kernel_index = 10;
+        else if(width % 8 == 1)
+            kernel_info->kernel_index = 11;
+        else if(width % 8 == 2)
+            kernel_info->kernel_index = 12;
+        else if(width % 8 == 3)
+            kernel_info->kernel_index = 13;
+        else if(width % 8 == 5)
+            kernel_info->kernel_index = 14;
+        else if(width % 8 == 6)
+            kernel_info->kernel_index = 15;
+        else if(width % 8 == 7)
+            kernel_info->kernel_index = 16;
+    }
+    else
+    {
+        VSILOGE("Not support input or output data format!(tile) at [%s : %d]\n", __FILE__, __LINE__);
+        return VSI_FAILURE;
+    }
+
+    return VSI_SUCCESS;
+}
+
 static vsi_status op_compute
     (
     vsi_nn_node_t * self,
@@ -166,7 +295,6 @@ static vsi_status op_compute
 {
     vsi_status status;
     vsi_nn_kernel_info_t kernel_info = {0};
-    char *path = NULL;
 
     status = VSI_FAILURE;
     kernel_info.type = VX_KERNEL_TYPE_CPU;
@@ -174,14 +302,24 @@ static vsi_status op_compute
     kernel_info.resource_num = 1;
     kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));
     kernel_info.resource_name[0] = "vsi_nn_kernel_tile";
-    path = getenv("USER_VX_SOURCE_PATH");
-    if(path)
-        vsi_nn_VxResourceSetPath(path);
+
+    {
+        vsi_nn_type_e inputDataFormat   = inputs[0]->attr.dtype.vx_type;
+
+        if(inputs[0]->attr.size[3] < 2
+            && inputs[0]->attr.dim_num <=4
+            && (inputDataFormat == VSI_NN_TYPE_UINT8
+                || inputDataFormat == VSI_NN_TYPE_INT8
+                || inputDataFormat == VSI_NN_TYPE_INT16
+                || inputDataFormat == VSI_NN_TYPE_FLOAT16))
+            kernel_info.type = VX_KERNEL_TYPE_VX;
+    }
 
     if( kernel_info.type == VX_KERNEL_TYPE_VX)
     {
         kernel_info.kernel_index = 1;
         kernel_info.init_index = 1;
+        vx_op_pre_compute(self, inputs, outputs, &kernel_info);
     }
     else /*kernel_info.type = VX_KERNEL_TYPE_CPU;*/
     {
@@ -251,10 +389,22 @@ static vsi_status op_deinit
     vsi_nn_node_t * self
     )
 {
+    uint32_t i;
+
     if (self->nn_param.tile.local.multiples_tensor != NULL)
     {
         vsi_nn_ReleaseTensor(&(self->nn_param.tile.local.multiples_tensor));
     }
+
+    for (i = 0; i < _VSI_NN_TILE_LOCAL_TENSOR_NUM; i++)
+    {
+        if (self->nn_param.tile.local.local_tensor[i] != NULL)
+        {
+            vxReleaseTensor(&(self->nn_param.tile.local.local_tensor[i]));
+            self->nn_param.tile.local.local_tensor[i] = NULL;
+        }
+    }
+
     vsi_nn_op_common_deinit(self);
 
     return VSI_SUCCESS;

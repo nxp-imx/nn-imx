@@ -7,6 +7,10 @@
 
 namespace ovxlib
 {
+class PreparedModel;
+
+using PreparedModelPtr = std::shared_ptr<PreparedModel>;
+
 class PreparedModel
 {
     public:
@@ -27,6 +31,7 @@ class PreparedModel
 
         int updateInputOperand(uint32_t index, const Operand* operand_type);
 
+        std::string signature() { return model_->signature(); }
     private:
         vsi_nn_graph_t* graph_{nullptr};
         Model* model_{nullptr};

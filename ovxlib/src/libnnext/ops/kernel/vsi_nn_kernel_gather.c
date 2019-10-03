@@ -38,8 +38,6 @@
 #include "client/vsi_nn_vxkernel.h"
 #include "libnnext/vx_lib_nnext.h"
 
-#define _VX_KERNEL_VAR          (vx_kernel_GATHER)
-#define _VX_KERNEL_ID           (VX_KERNEL_ENUM_GATHER)
 #define _VX_KERNEL_NAME         (VX_KERNEL_NAME_GATHER)
 #define _VX_KERNEL_FUNC_KERNEL  (vxGatherKernel)
 
@@ -123,12 +121,12 @@ static vsi_status VX_CALLBACK vxGatherKernel
                 uint32_t indice = *((uint32_t *)&(in_buffer[1][j * sizeof(uint32_t)]));
                 uint32_t in_index = (i * axis_num + indice) * block_size;
                 uint32_t out_index = (i * indices_num + j) * block_size;
+
                 memcpy(&(out_buffer[0][out_index * stride]), &(in_buffer[0][in_index * stride]),
                     block_size * stride);
             }
         }
     }
-
     /* save data */
     for(i = 0; i < TENSOR_NUM_OUTPUT; i++)
     {
@@ -153,6 +151,16 @@ static vx_param_description_t vxGatherKernelParam[] =
     {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
+};
+
+static vx_param_description_t vxGatherCpuParam[] =
+{
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
 };
 
 vx_status VX_CALLBACK vxGatherInitializer
@@ -162,8 +170,76 @@ vx_status VX_CALLBACK vxGatherInitializer
     vx_uint32 paraNum
     )
 {
-    vx_status status = VX_SUCCESS;
-    /*TODO: Add initial code for VX program*/
+    vsi_status status = VX_SUCCESS;
+    // Alignment with a power of two value.
+#define gcmALIGN(n, align) ((n) + ((align) - 1)) & ~((align) - 1)
+    vx_kernel_execution_parameters_t shaderParam = {
+        3,          // workdim
+        {0, 0, 0},  // globalWorkOffset: control the start location be processed in the image
+        {0, 0, 0},  // globalWorkScale: how many pixels could be processed by a single thread
+        {0, 0, 0},  // localWorkSize: local group size in thread
+        {0, 0, 0}}; // globalWorkSize: image size in thread
+
+    vx_scalar     scalar[2];
+    vx_tensor     input0          = (vx_tensor)paramObj[0];
+    vx_tensor     input1          = (vx_tensor)paramObj[1];
+
+    uint32_t      input1_size[DIM_SIZE]   = {0};
+    int32_t       block_size = 0;
+    int32_t       block_num = 0;
+    int32_t       indices_num = 0;
+    uint32_t      input_dims1      = 0;
+    vsi_nn_type_e inputDataFormat = VSI_NN_TYPE_FLOAT16;
+
+    scalar[0]            = (vx_scalar)paramObj[3];
+    scalar[1]            = (vx_scalar)paramObj[4];
+
+    status  = vxQueryTensor(input0, VX_TENSOR_DATA_TYPE, &inputDataFormat, sizeof(inputDataFormat));
+    status |= vxQueryTensor(input1, VX_TENSOR_DIMS, input1_size, sizeof(input1_size));
+    status |= vxQueryTensor(input1, VX_TENSOR_NUM_OF_DIMS, &input_dims1, sizeof(input_dims1));
+    if(VX_SUCCESS != status)
+    {
+        VSILOGE("[%s : %d]Initializer  failure! \n",__FILE__, __LINE__);
+        return status;
+    }
+
+    indices_num = input1_size[0] * input1_size[1];
+    if(input_dims1 == 3)
+        indices_num *= input1_size[2];
+
+    status = vxCopyScalar(scalar[0], &block_size, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
+    status |= vxCopyScalar(scalar[1], &block_num, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
+    if(VX_SUCCESS != status)
+    {
+        VSILOGE("[%s : %d]Initializer  failure! \n",__FILE__, __LINE__);
+        return status;
+    }
+
+    shaderParam.globalWorkOffset[0] = 0;
+    shaderParam.globalWorkOffset[1] = 0;
+    shaderParam.globalWorkOffset[2] = 0;
+    shaderParam.globalWorkScale[0]  = 16;
+    if(inputDataFormat == VSI_NN_TYPE_FLOAT16 || inputDataFormat == VSI_NN_TYPE_INT16)
+        shaderParam.globalWorkScale[0]  = 8;
+    shaderParam.globalWorkScale[1]  = 1;
+    shaderParam.globalWorkScale[2]  = 1;
+    shaderParam.globalWorkSize[0]   = gcmALIGN((block_size + shaderParam.globalWorkScale[0] - 1)
+        / shaderParam.globalWorkScale[0], 4);
+    shaderParam.globalWorkSize[1]   = indices_num;
+    shaderParam.globalWorkSize[2]   = block_num;
+
+    status |= vxSetNodeAttribute(nodObj, VX_NODE_ATTRIBUTE_KERNEL_EXECUTION_PARAMETERS,
+        &shaderParam, sizeof(vx_kernel_execution_parameters_t));
+    if(status < 0)
+    {
+        VSILOGE("[%s : %d]Initializer  failure! \n",__FILE__, __LINE__);
+    }
+
+    status = vxSetNodeUniform(nodObj, "indices_num", 1, &indices_num);
+    if(status < 0)
+    {
+        VSILOGE("[%s : %d]Initializer  failure! \n",__FILE__, __LINE__);
+    }
 
     return status;
 }
@@ -174,11 +250,11 @@ extern "C" {
 #endif
 vx_kernel_description_t vxGather_CPU =
 {
-    _VX_KERNEL_ID,
+    VX_KERNEL_ENUM_GATHER,
     _VX_KERNEL_NAME,
     _VX_KERNEL_FUNC_KERNEL,
-    vxGatherKernelParam,
-    _cnt_of_array( vxGatherKernelParam ),
+    vxGatherCpuParam,
+    _cnt_of_array( vxGatherCpuParam ),
     vsi_nn_KernelValidator,
     NULL,
     NULL,
@@ -186,10 +262,24 @@ vx_kernel_description_t vxGather_CPU =
     vsi_nn_KernelDeinitializer
 };
 
-vx_kernel_description_t vxGather_VX =
+vx_kernel_description_t vxGather_int8 =
 {
-    _VX_KERNEL_ID,
-    _VX_KERNEL_NAME,
+    VX_KERNEL_ENUM_GATHER,
+    VX_KERNEL_NAME_GATHER_INT8,
+    NULL,
+    vxGatherKernelParam,
+    _cnt_of_array( vxGatherKernelParam ),
+    vsi_nn_KernelValidator,
+    NULL,
+    NULL,
+    vxGatherInitializer,
+    vsi_nn_KernelDeinitializer
+};
+
+vx_kernel_description_t vxGather_int16 =
+{
+    VX_KERNEL_ENUM_GATHER,
+    VX_KERNEL_NAME_GATHER_INT16,
     NULL,
     vxGatherKernelParam,
     _cnt_of_array( vxGatherKernelParam ),
@@ -203,7 +293,8 @@ vx_kernel_description_t vxGather_VX =
 vx_kernel_description_t * vx_kernel_GATHER_list[] =
 {
     &vxGather_CPU,
-    &vxGather_VX,
+    &vxGather_int8,
+    &vxGather_int16,
     NULL
 };
 #ifdef __cplusplus

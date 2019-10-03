@@ -243,9 +243,10 @@ float vsi_nn_DataAsFloat32
     )
 {
     float val;
+    uint32_t *p = (uint32_t*)(&val);
     int16_t fp16;
 
-    val = 0xFFFFFFFF;
+    *p = 0xFFFFFFFF;
     switch( type )
     {
     case VSI_NN_TYPE_INT8:
@@ -813,6 +814,7 @@ void vsi_nn_FormatToString
     case VSI_NN_TYPE_FLOAT32:strncpy(buf, "f32", buf_sz);break;
     case VSI_NN_TYPE_FLOAT64:strncpy(buf, "f64", buf_sz);break;
     case VSI_NN_TYPE_BFLOAT16:strncpy(buf, "bf16", buf_sz);break;
+    case VSI_NN_TYPE_BOOL8:strncpy(buf, "bool8", buf_sz);break;
     default:
         break;
     }

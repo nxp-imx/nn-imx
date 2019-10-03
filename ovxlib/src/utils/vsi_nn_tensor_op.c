@@ -155,15 +155,15 @@ vsi_nn_tensor_t* vsi_nn_Concat
     tensor_out = vsi_nn_CreateTensorFromData( graph, buffer, &output_attr );
 
 concat_error:
-    if( !buffer )
+    if( buffer )
     {
         free(buffer);
     }
-    if( !strides )
+    if( strides )
     {
         free(strides);
     }
-    if( !dst_strides )
+    if( dst_strides )
     {
         free(dst_strides);
     }

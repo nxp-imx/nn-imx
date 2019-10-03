@@ -155,6 +155,7 @@ static vsi_bool op_check
     vsi_nn_tensor_t ** outputs
     )
 {
+
     return TRUE;
 } /* op_check() */
 
@@ -173,12 +174,23 @@ static vsi_bool op_setup
             uint32_t front = self->nn_param.pad.front_size[i];
             uint32_t back  = self->nn_param.pad.back_size[i];
             outputs[0]->attr.size[i] = inputs[0]->attr.size[i] + front + back;
-            if(i >= 2 && (front != 0 || back != 0))
-            {
-                VSILOGW("Only support pad layer in size0 and size1");
-            }
         }
         outputs[0]->attr.dim_num = inputs[0]->attr.dim_num;
+    }
+    else
+    {
+        for(i=0; i<self->nn_param.pad.dim_num; i++)
+        {
+            uint32_t front = self->nn_param.pad.front_size[i];
+            uint32_t back  = self->nn_param.pad.back_size[i];
+
+            if (front + back + inputs[0]->attr.size[i] != outputs[0]->attr.size[i])
+            {
+                VSILOGE("Error:output shape[%u] not equal front padding[%u] + input shape[%u] + back padding[%u]",
+                    outputs[0]->attr.size[i], front, back);
+                return FALSE;
+            }
+        }
     }
     return TRUE;
 } /* op_setup() */

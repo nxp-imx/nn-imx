@@ -32,14 +32,170 @@
 #include "vsi_nn_prv.h"
 #include "vsi_nn_tensor_util.h"
 #include "utils/vsi_nn_util.h"
+#include "utils/vsi_nn_dtype_util.h"
 #include "utils/vsi_nn_math.h"
 #include "vsi_nn_log.h"
 #include "client/vsi_nn_vxkernel.h"
 #include "libnnext/vx_lib_nnext.h"
 
-vsi_status VX_CALLBACK vxargMaxInitializer
+#define TENSOR_NUM_INPUT  (ARGMAX_INPUTS_COUNT)
+#define TENSOR_NUM_OUTPUT (ARGMAX_OUTPUTS_COUNT)
+#define TENSOR_NUM (TENSOR_NUM_INPUT+TENSOR_NUM_OUTPUT)
+
+
+static float vsi_nn_DtypeToFloat32_Ex
     (
-    vx_node nodObj,
+    uint8_t   * src,
+    uint32_t    index,
+    const vsi_nn_dtype_t * src_dtype
+    )
+{
+    float value = 0.0f;
+    vsi_status status;
+
+    src = src + index * vsi_nn_TypeGetBytes(src_dtype->vx_type);
+
+    status = vsi_nn_DtypeToFloat32(src, &value, src_dtype);
+    if(VSI_SUCCESS != status)
+    {
+        VSILOGE("Convert data to float32 fail!");
+        value = 0.0f;
+    }
+
+    return value;
+}
+
+static vsi_status vsi_nn_Float32ToDtype_Ext
+    (
+    float   src,
+    uint8_t   * dst,
+    uint32_t    index,
+    const vsi_nn_dtype_t * dst_dtype
+    )
+{
+    vsi_nn_dtype_t src_dtype;
+
+    dst = dst + index * vsi_nn_TypeGetBytes(dst_dtype->vx_type);
+
+    memset( &src_dtype, 0, sizeof( vsi_nn_dtype_t ) );
+    src_dtype.vx_type = VSI_NN_TYPE_FLOAT32;
+
+    return vsi_nn_DtypeConvert( (uint8_t *)&src, &src_dtype, dst, dst_dtype );
+} /* vsi_nn_Float32ToDtype_Ext */
+
+vsi_status VX_CALLBACK vxArgMaxKernel
+    (
+    vx_node node,
+    const vx_reference* paramObj,
+    uint32_t paramNum
+    )
+{
+    vsi_status status = VX_SUCCESS;
+    vsi_nn_tensor_attr_t attr[TENSOR_NUM];
+    vx_tensor_addressing user_addr[TENSOR_NUM]  = {NULL};
+    vx_uint8    *buffer_ptr[TENSOR_NUM]            = {NULL};
+    vx_tensor   tensor[TENSOR_NUM];
+    uint32_t    stride_size[TENSOR_NUM][VSI_NN_MAX_DIM_NUM];
+
+    vx_context   context                        = vxGetContext((vx_reference)node);
+    vx_uint32    i                              = 0;
+    int32_t      axis                           = 0;
+    vx_uint32    inner                          = 0;
+    vx_uint32    outer                          = 0;
+    vx_uint32    innerSize                      = 1;
+    vx_uint32    outerSize                      = 1;
+    vx_uint32    axisSize                       = 1;
+
+
+    for( i = 0; i < TENSOR_NUM_INPUT; i ++ )
+    {
+        tensor[i] = (vx_tensor)paramObj[i];
+        buffer_ptr[i] = vsi_nn_ConvertRawTensorToData2(context, tensor[i],
+            &(attr[i]), stride_size[i], &(user_addr[i]), VX_READ_ONLY);
+    }
+
+    for( i = TENSOR_NUM_INPUT; i < TENSOR_NUM; i ++ )
+    {
+        tensor[i] = (vx_tensor)paramObj[i];
+        buffer_ptr[i] = vsi_nn_ConvertRawTensorToData2(context, tensor[i],
+            &(attr[i]), stride_size[i], &(user_addr[i]), VX_WRITE_ONLY);
+    }
+
+    vxCopyScalar((vx_scalar)paramObj[TENSOR_NUM], &(axis), VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
+
+    axisSize = attr[ARGMAX_INPUT].size[axis];
+
+    for (i = 0; i < (uint32_t)axis; i++)
+    {
+        innerSize *= attr[ARGMAX_INPUT].size[i];
+    }
+
+    for (i = axis + 1; i < attr[ARGMAX_INPUT].dim_num; i++)
+    {
+        outerSize *= attr[ARGMAX_INPUT].size[i];
+    }
+
+   for (outer = 0; outer < outerSize; outer++)
+    {
+        for (inner = 0; inner < innerSize; inner++)
+        {
+            vx_uint32 index = outer * axisSize * innerSize + inner;
+            vx_float32 maxminVal = 0;
+            vx_float32 val = 0;
+            vx_int32 maxminIndex = 0;
+
+            maxminVal = vsi_nn_DtypeToFloat32_Ex(buffer_ptr[ARGMAX_INPUT], index, &attr[ARGMAX_INPUT].dtype);
+
+            for (i = 1; i < axisSize; i++)
+            {
+                index = (outer * axisSize + i) * innerSize + inner;
+
+                val = vsi_nn_DtypeToFloat32_Ex(buffer_ptr[ARGMAX_INPUT], index, &attr[ARGMAX_INPUT].dtype);
+
+                if (val > maxminVal)
+                {
+                    maxminVal = val;
+                    maxminIndex = i;
+                }
+            }
+
+            index = outer * innerSize + inner;
+            vsi_nn_Float32ToDtype_Ext((float)maxminIndex, buffer_ptr[ARGMAX_INPUTS_COUNT + ARGMAX_OUTPUT],
+                index, &attr[ARGMAX_INPUTS_COUNT + ARGMAX_OUTPUT].dtype);
+        }
+    }
+
+    //save data
+    for( i = TENSOR_NUM_INPUT; i < TENSOR_NUM; i ++ )
+    {
+        if (buffer_ptr[i])
+        {
+            status = vxCopyTensorPatch(
+                tensor[i],
+                NULL,
+                user_addr[i],
+                buffer_ptr[i],
+                VX_WRITE_ONLY,
+                0
+                );
+        }
+
+        if (user_addr[i]) vxReleaseTensorAddressing(&(user_addr[i]));
+    }
+
+    for( i = 0; i < TENSOR_NUM; i ++ )
+    {
+        if (buffer_ptr[i]) free(buffer_ptr[i]);
+
+        if (user_addr[i]) vxReleaseTensorAddressing(&(user_addr[i]));
+    }
+
+    return status;
+}
+
+vsi_status VX_CALLBACK vxArgMaxInitializer
+    (
+    vx_node node,
     const vx_reference *paramObj,
     uint32_t paraNum
     )
@@ -47,249 +203,339 @@ vsi_status VX_CALLBACK vxargMaxInitializer
 // Alignment with a power of two value.
 #define gcmALIGN(n, align) ((n) + ((align) - 1)) & ~((align) - 1)
     vx_kernel_execution_parameters_t shaderParam = {
-        2,          // workdim
+        3,          // workdim
         {0, 0, 0},  // globalWorkOffset: control the start location be processed in the image
-        {0, 0, 0},  // globalWorkScale: how many pixels could be processed by a single thread
+        {1, 1, 1},  // globalWorkScale: how many pixels could be processed by a single thread
         {0, 0, 0},  // localWorkSize: local group size in thread
         {0, 0, 0}}; // globalWorkSize: image size in thread
 
     vx_status status = VX_SUCCESS;
 
-    vx_tensor tensor = (vx_tensor)paramObj[0];
-    vx_tensor outTensor = (vx_tensor)paramObj[1];
-    vx_uint32 dims = 0;
-    vx_uint32 size[DIM_SIZE] = {0};
-    vx_enum dataType, outDataType;
+    vx_tensor    input              = (vx_tensor)paramObj[0];
+    vx_tensor    output             = (vx_tensor)paramObj[1];
+    vx_enum      srcFormat          = VSI_NN_TYPE_FLOAT16;
+    vx_enum      dstFormat          = VSI_NN_TYPE_FLOAT16;
+    int32_t      axis               = 0;
+    vx_uint32    argLenSub1         = 0;
+    vx_uint32    packedArgIdx[4]    = {0};
+    vsi_nn_tensor_attr_t attr[2];
 
-    status = vxQueryTensor(tensor, VX_TENSOR_NUM_OF_DIMS, &dims, sizeof(vx_uint32));
-    status |= vxQueryTensor(tensor, VX_TENSOR_DIMS, size, sizeof(vx_uint32) * dims);
-    status |= vxQueryTensor(tensor, VX_TENSOR_DATA_TYPE, &dataType, sizeof(dataType));
-    status |= vxQueryTensor(outTensor, VX_TENSOR_DATA_TYPE, &outDataType, sizeof(outDataType));
+    memset(&attr[0], 0, sizeof(vsi_nn_tensor_attr_t));
+    memset(&attr[1], 0, sizeof(vsi_nn_tensor_attr_t));
 
-    if(VX_SUCCESS != status)
-        return status;
+    status  = vsi_nn_vxGetTensorAttr(input, &attr[0]);
+    status |= vsi_nn_vxGetTensorAttr(output, &attr[1]);
 
-    if((dataType == VX_TYPE_INT8 && outDataType == VX_TYPE_INT8)
-        || (dataType == VX_TYPE_UINT8 && outDataType == VX_TYPE_INT16 && size[2] <= 256)
-        || (dataType == VX_TYPE_INT8 && outDataType == VX_TYPE_INT16 && size[2] <= 256)
-        || (dataType == VX_TYPE_UINT8 && outDataType == VX_TYPE_UINT8))
+    srcFormat = attr[0].dtype.vx_type;
+    dstFormat = attr[1].dtype.vx_type;
+
+    srcFormat = srcFormat == VSI_NN_TYPE_BFLOAT16 ? VSI_NN_TYPE_FLOAT16 : srcFormat;
+    dstFormat = dstFormat == VSI_NN_TYPE_BFLOAT16 ? VSI_NN_TYPE_FLOAT16 : dstFormat;
+
+    vxCopyScalar((vx_scalar)paramObj[TENSOR_NUM], &(axis), VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
+
+    if (axis == 2 && attr[0].size[2] == 1)
     {
-        shaderParam.globalWorkOffset[0] = 0;
-        shaderParam.globalWorkOffset[1] = 0;
-        shaderParam.globalWorkScale[0]  = 16;
-        shaderParam.globalWorkScale[1]  = 1;
-        shaderParam.globalWorkSize[0]   = gcmALIGN((size[0] + shaderParam.globalWorkScale[0] - 1)
-            / shaderParam.globalWorkScale[0], 4);
-        shaderParam.globalWorkSize[1]   = (size[1] + shaderParam.globalWorkScale[1] - 1)
-            / shaderParam.globalWorkScale[1];
+        argLenSub1 = attr[0].size[1] - 1;
     }
     else
     {
-        shaderParam.globalWorkOffset[0] = 0;
-        shaderParam.globalWorkOffset[1] = 0;
-        shaderParam.globalWorkScale[0]  = 8;
-        shaderParam.globalWorkScale[1]  = 1;
-        shaderParam.globalWorkSize[0]   = gcmALIGN((size[0] + shaderParam.globalWorkScale[0] - 1)
-            / shaderParam.globalWorkScale[0], 4);
-        shaderParam.globalWorkSize[1]   = (size[1] + shaderParam.globalWorkScale[1] - 1)
-            / shaderParam.globalWorkScale[1];
+        if (axis == 2)
+            argLenSub1 = attr[0].size[2] - 1;
+        else if (axis == 1)
+            argLenSub1 = attr[0].size[1] - 1;
     }
 
-    if ((dataType == VX_TYPE_UINT8 && outDataType == VX_TYPE_INT16 && size[2] <= 256)
-      ||(dataType == VX_TYPE_INT8 && outDataType == VX_TYPE_INT16 && size[2] <= 256))
+    if (axis == 0)
     {
-        vx_uint32 uniPacekedU8toI16Lo_2x8[16] = {
+        shaderParam.globalWorkScale[0]  = 1;
+        shaderParam.globalWorkScale[1]  = 1;
+        shaderParam.globalWorkScale[2]  = 1;
+
+        if (srcFormat == VSI_NN_TYPE_FLOAT16)
+        {
+            packedArgIdx[0] = 0x00000000;
+            packedArgIdx[1] = 0x00000001;
+            packedArgIdx[2] = 0x00000002;
+            packedArgIdx[3] = 0x00000003;
+        }
+        else if (dstFormat == VSI_NN_TYPE_INT8 || dstFormat == VSI_NN_TYPE_UINT8)
+        {
+            packedArgIdx[0] = 0x03020100;
+            packedArgIdx[1] = 0x07060504;
+            packedArgIdx[2] = 0x0b0a0908;
+            packedArgIdx[3] = 0x0f0e0d0c;
+        }
+        else
+        {
+            packedArgIdx[0] = 0x00010000;
+            packedArgIdx[1] = 0x00030002;
+            packedArgIdx[2] = 0x00050004;
+            packedArgIdx[3] = 0x00070006;
+        }
+    }
+    else
+    {
+        shaderParam.globalWorkScale[0]  = 8;
+        shaderParam.globalWorkScale[1]  = 1;
+        shaderParam.globalWorkScale[2]  = 1;
+        packedArgIdx[0] = packedArgIdx[1] = (argLenSub1 << 16) | (argLenSub1 & 0xFFFF);
+        packedArgIdx[2] = packedArgIdx[3] = (argLenSub1 << 16) | (argLenSub1 & 0xFFFF);
+
+        if (srcFormat == VSI_NN_TYPE_INT8 ||
+            srcFormat == VSI_NN_TYPE_UINT8)
+        {
+            if ( dstFormat == VSI_NN_TYPE_INT8 ||
+                 dstFormat == VSI_NN_TYPE_UINT8)
+            {
+                vx_uint32 pack = ((argLenSub1 & 0xFF) << 24) | ((argLenSub1 & 0xFF) << 16)
+                                 | ((argLenSub1 & 0xFF) << 8) | (argLenSub1 & 0xFF);
+                packedArgIdx[0] = packedArgIdx[1] = pack;
+                packedArgIdx[2] = packedArgIdx[3] = pack;
+            }
+        }
+    }
+
+    shaderParam.globalWorkSize[0]   = gcmALIGN((attr[1].size[0] + shaderParam.globalWorkScale[0] - 1)
+                                        / shaderParam.globalWorkScale[0], 4);
+    shaderParam.globalWorkSize[1]   = (attr[1].size[1] + shaderParam.globalWorkScale[1] - 1)
+                                        / shaderParam.globalWorkScale[1];
+    shaderParam.globalWorkSize[2]   = attr[1].dim_num > 2 ? attr[1].size[2] : 1;
+
+    if (axis == 0)
+    {
+        vx_uint32 uniPackedIdxAddSat_2x8[16] = {
+            0x55555555, // TCfg
+            0x44444444, // ASelt
+            0x33221100, 0x77665544, // ABin
+            0xaaaaaaaa, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000600, // AccumType, ConstantType, and PostShift
+            0xffff0001, 0xffff0001, 0xffff0001, 0xffff0001,
+            0xffff0001, 0xffff0001, 0xffff0001, 0xffff0001 // Constant
+        };
+        vx_uint32 uniSrcT2DstT_2x8[16] = {
             0x11111111, // TCfg
             0x00000000, // ASelt
             0x03020100, 0x07060504, // ABin
             0x22222222, // BSelt
             0x00000000, 0x00000000, // BBin
-            0x00000400, // AccumType, ConstantType, and PostShift
-            0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
+            0x00000600, // AccumType, ConstantType, and PostShift
+            0x0000ffff, 0x0000ffff, 0x0000ffff, 0x0000ffff,
+            0x0000ffff, 0x0000ffff, 0x0000ffff, 0x0000ffff // Constant
         };
-        vx_uint32 uniPacekedU8toI16Hi_2x8[16] = {
-            0x11111111, // TCfg
+        vx_uint32 uniConvertHalf2Float32_4x4[16] = {
+            0x01010101, // TCfg
             0x00000000, // ASelt
-            0x0b0a0908, 0x0f0e0d0c, // ABin
-            0x22222222, // BSelt
+            0x00010000, 0x00030002, // ABin
+            0x02020202, // BSelt
             0x00000000, 0x00000000, // BBin
-            0x00000400, // AccumType, ConstantType, and PostShift
-            0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
+            0x00000100, // AccumType, ConstantType, and PostShift
+            0x00003c00, 0x00000000, 0x00003c00, 0x00000000,
+            0x00003c00, 0x00000000, 0x00003c00, 0x00000000 // Constant
         };
-        vx_uint32 depthsub1 = size[2] - 1;
-        vx_uint32 packedD = (size[2] << 24) | (size[2] << 16) | (size[2] << 8) | size[2];
-        vx_uint32 packedDepth[4] = {packedD, packedD, packedD, packedD};
 
-        status |= vxSetNodeUniform(nodObj, "uniPacekedU8toI16Lo_2x8", 1, uniPacekedU8toI16Lo_2x8);
-        status |= vxSetNodeUniform(nodObj, "uniPacekedU8toI16Hi_2x8", 1, uniPacekedU8toI16Hi_2x8);
-        status |= vxSetNodeUniform(nodObj, "packedDepth", 1, packedDepth);
-        status |= vxSetNodeUniform(nodObj, "depthsub1", 1, &depthsub1);
+        if (srcFormat == VSI_NN_TYPE_FLOAT16)
+            vxSetNodeUniform(node, "uniConvertHalf2Float32_4x4", 1, uniConvertHalf2Float32_4x4);
+        else
+        {
+            vxSetNodeUniform(node, "uniPackedIdxAddSat_2x8", 1, uniPackedIdxAddSat_2x8);
+            vxSetNodeUniform(node, "uniSrcT2DstT_2x8", 1, uniSrcT2DstT_2x8);
+        }
+        vxSetNodeUniform(node, "inputWidth", 1, &attr[0].size[0]);
     }
     else
     {
-        // uniforms
-        vx_uint32 intToShort8[16] = {
-            0x33333333, // TCfg
+        vx_uint32 uniExtractData_2x8[16] = {
+            0x11111111, // TCfg
             0x00000000, // ASelt
-            0x00000000, 0x00000000, // ABin
-            0x00000000, // BSelt
+            0x03020100, 0x07060504, // ABin
+            0x22222222, // BSelt
             0x00000000, 0x00000000, // BBin
-            0x00002400, // AccumType, ConstantType, and PostShift
-            0x00000000, 0x00000000, 0x00000000, 0x00000000,
-            0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
+            0x00000600, // AccumType, ConstantType, and PostShift
+            0x00000001, 0x00000001, 0x00000001, 0x00000001,
+            0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
         };
-        if(dataType == VX_TYPE_UINT8 || dataType == VX_TYPE_INT16)
-            status |= vxSetNodeUniform(nodObj, "intToShort8_2", 1, intToShort8);
-        else
-            status |= vxSetNodeUniform(nodObj, "intToShort8", 1, intToShort8);
 
-        if(dataType == VX_TYPE_UINT8 || dataType == VX_TYPE_INT16)
-            status |= vxSetNodeUniform(nodObj, "depth2", 1, &size[2]);
-        else
-            status |= vxSetNodeUniform(nodObj, "depth", 1, &size[2]);
+        status |= vxSetNodeUniform(node, "uniExtractData_2x8", 1, uniExtractData_2x8);
+
+        status |= vxSetNodeUniform(node, "argLenSub1", 1, &argLenSub1);
     }
 
-    status |= vxSetNodeAttribute(nodObj, VX_NODE_ATTRIBUTE_KERNEL_EXECUTION_PARAMETERS,
+    status |= vxSetNodeUniform(node, "packedArgIdx", 1, packedArgIdx);
+    status |= vxSetNodeAttribute(node, VX_NODE_ATTRIBUTE_KERNEL_EXECUTION_PARAMETERS,
         &shaderParam, sizeof(vx_kernel_execution_parameters_t));
 
-    if(status < 0)
-    {
-        VSILOGE("Initializer failure!(argMax)\n");
-    }
     return status;
 }
 
-static vx_param_description_t vxargMaxKernelParam[] =
+static vx_param_description_t vxArgMaxKernelParam[] =
 {
     {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
-    {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED}
+    {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED}
 };
 #ifdef __cplusplus
 extern "C" {
 #endif
-vx_kernel_description_t vxargMaxKernelInfo =
+
+vx_kernel_description_t vxArgMaxKernelInfo_CPU =
 {
     VX_KERNEL_ENUM_ARGMAX,
-    VX_KERNEL_NAME_ARGMAX,
-    NULL,
-    vxargMaxKernelParam,
-    (sizeof(vxargMaxKernelParam) / sizeof(vxargMaxKernelParam[0])),
+    "com.vivantecorp.extension.argmax_sw",
+    vxArgMaxKernel,
+    vxArgMaxKernelParam,
+    (sizeof(vxArgMaxKernelParam) / sizeof(vxArgMaxKernelParam[0])),
     vsi_nn_KernelValidator,
     NULL,
     NULL,
-    vxargMaxInitializer,
+    vsi_nn_KernelInitializer,
     vsi_nn_KernelDeinitializer
 };
 
-vx_kernel_description_t vxargMaxKernelInfoInt8 =
-{
-    VX_KERNEL_ENUM_ARGMAX,
-    VX_KERNEL_NAME_ARGMAX_INT8,
-    NULL,
-    vxargMaxKernelParam,
-    (sizeof(vxargMaxKernelParam) / sizeof(vxargMaxKernelParam[0])),
-    vsi_nn_KernelValidator,
-    NULL,
-    NULL,
-    vxargMaxInitializer,
-    vsi_nn_KernelDeinitializer
+#define GEN_ARGMAX_SH_KERNEL_NAME(AXIS, SRC_TYPE, DST_TYPE) \
+    "com.vivantecorp.extension.vxArgmax_Axis"#AXIS"_"#SRC_TYPE"to"#DST_TYPE
+
+#define GEN_ARGMAX_SH_KERNEL_NAME_2D(AXIS, SRC_TYPE, DST_TYPE) \
+    "com.vivantecorp.extension.vxArgmax_Axis"#AXIS"_"#SRC_TYPE"to"#DST_TYPE"_2D"
+
+
+#define TENSOR_ARGMAX_KERNELS(AXIS, SRC_TYPE, DST_TYPE) \
+    vx_kernel_description_t vxArgmax_Axis##AXIS##_##SRC_TYPE##to##DST_TYPE##_Kernel = \
+{ \
+    VX_KERNEL_ENUM_ARGMAX, \
+    GEN_ARGMAX_SH_KERNEL_NAME(AXIS, SRC_TYPE, DST_TYPE), \
+    NULL, \
+    vxArgMaxKernelParam, \
+    (sizeof(vxArgMaxKernelParam) / sizeof(vxArgMaxKernelParam[0])), \
+    vsi_nn_KernelValidator, \
+    NULL, \
+    NULL, \
+    vxArgMaxInitializer, \
+    vsi_nn_KernelDeinitializer \
 };
 
-vx_kernel_description_t vxargMaxKernelInfoUint8 =
-{
-    VX_KERNEL_ENUM_ARGMAX,
-    VX_KERNEL_NAME_ARGMAX_UINT8,
-    NULL,
-    vxargMaxKernelParam,
-    (sizeof(vxargMaxKernelParam) / sizeof(vxargMaxKernelParam[0])),
-    vsi_nn_KernelValidator,
-    NULL,
-    NULL,
-    vxargMaxInitializer,
-    vsi_nn_KernelDeinitializer
+#define TENSOR_ARGMAX_KERNELS_2D(AXIS, SRC_TYPE, DST_TYPE) \
+    vx_kernel_description_t vxArgmax_Axis##AXIS##_##SRC_TYPE##to##DST_TYPE##_2D_Kernel = \
+{ \
+    VX_KERNEL_ENUM_ARGMAX, \
+    GEN_ARGMAX_SH_KERNEL_NAME_2D(AXIS, SRC_TYPE, DST_TYPE), \
+    NULL, \
+    vxArgMaxKernelParam, \
+    (sizeof(vxArgMaxKernelParam) / sizeof(vxArgMaxKernelParam[0])), \
+    vsi_nn_KernelValidator, \
+    NULL, \
+    NULL, \
+    vxArgMaxInitializer, \
+    vsi_nn_KernelDeinitializer \
 };
 
-vx_kernel_description_t vxargMaxKernelInfoInt16 =
-{
-    VX_KERNEL_ENUM_ARGMAX,
-    VX_KERNEL_NAME_ARGMAX_INT16,
-    NULL,
-    vxargMaxKernelParam,
-    (sizeof(vxargMaxKernelParam) / sizeof(vxargMaxKernelParam[0])),
-    vsi_nn_KernelValidator,
-    NULL,
-    NULL,
-    vxargMaxInitializer,
-    vsi_nn_KernelDeinitializer
-};
+/* axis 0 */
+TENSOR_ARGMAX_KERNELS(0, I8,  U8)
+TENSOR_ARGMAX_KERNELS(0, I8,  I16)
+TENSOR_ARGMAX_KERNELS(0, U8,  U8)
+TENSOR_ARGMAX_KERNELS(0, U8,  I16)
+TENSOR_ARGMAX_KERNELS(0, I16, U8)
+TENSOR_ARGMAX_KERNELS(0, I16, I16)
+TENSOR_ARGMAX_KERNELS(0, F16, U8)
+TENSOR_ARGMAX_KERNELS(0, F16, I16)
 
-vx_kernel_description_t vxargMaxKernelInfoUint8_Int16 =
-{
-    VX_KERNEL_ENUM_ARGMAX,
-    VX_KERNEL_NAME_ARGMAX_UINT8_INT16,
-    NULL,
-    vxargMaxKernelParam,
-    (sizeof(vxargMaxKernelParam) / sizeof(vxargMaxKernelParam[0])),
-    vsi_nn_KernelValidator,
-    NULL,
-    NULL,
-    vxargMaxInitializer,
-    vsi_nn_KernelDeinitializer
-};
+TENSOR_ARGMAX_KERNELS_2D(0, I8,  U8)
+TENSOR_ARGMAX_KERNELS_2D(0, I8,  I16)
+TENSOR_ARGMAX_KERNELS_2D(0, U8,  U8)
+TENSOR_ARGMAX_KERNELS_2D(0, U8,  I16)
+TENSOR_ARGMAX_KERNELS_2D(0, I16, U8)
+TENSOR_ARGMAX_KERNELS_2D(0, I16, I16)
+TENSOR_ARGMAX_KERNELS_2D(0, F16, U8)
+TENSOR_ARGMAX_KERNELS_2D(0, F16, I16)
 
-vx_kernel_description_t vxargMaxKernelInfoU8_Int16_WXHX256 =
-{
-    VX_KERNEL_ENUM_ARGMAX,
-    VX_KERNEL_NAME_ARGMAX_U8_I16_WXHX256,
-    NULL,
-    vxargMaxKernelParam,
-    (sizeof(vxargMaxKernelParam) / sizeof(vxargMaxKernelParam[0])),
-    vsi_nn_KernelValidator,
-    NULL,
-    NULL,
-    vxargMaxInitializer,
-    vsi_nn_KernelDeinitializer
-};
+/* axis 1 */
+TENSOR_ARGMAX_KERNELS(1, I8,  U8)
+TENSOR_ARGMAX_KERNELS(1, I8,  I16)
+TENSOR_ARGMAX_KERNELS(1, U8,  U8)
+TENSOR_ARGMAX_KERNELS(1, U8,  I16)
+TENSOR_ARGMAX_KERNELS(1, I16, U8)
+TENSOR_ARGMAX_KERNELS(1, I16, I16)
+TENSOR_ARGMAX_KERNELS(1, F16, U8)
+TENSOR_ARGMAX_KERNELS(1, F16, I16)
 
-vx_kernel_description_t vxargMaxKernelInfoI8_I16_WXHX256 =
-{
-    VX_KERNEL_ENUM_ARGMAX,
-    VX_KERNEL_NAME_ARGMAX_I8_I16_WXHX256,
-    NULL,
-    vxargMaxKernelParam,
-    (sizeof(vxargMaxKernelParam) / sizeof(vxargMaxKernelParam[0])),
-    vsi_nn_KernelValidator,
-    NULL,
-    NULL,
-    vxargMaxInitializer,
-    vsi_nn_KernelDeinitializer
-};
+/* axis 2 */
+TENSOR_ARGMAX_KERNELS(2, I8,  U8)
+TENSOR_ARGMAX_KERNELS(2, I8,  I16)
+TENSOR_ARGMAX_KERNELS(2, U8,  U8)
+TENSOR_ARGMAX_KERNELS(2, U8,  I16)
+TENSOR_ARGMAX_KERNELS(2, I16, U8)
+TENSOR_ARGMAX_KERNELS(2, I16, I16)
+TENSOR_ARGMAX_KERNELS(2, F16, U8)
+TENSOR_ARGMAX_KERNELS(2, F16, I16)
 
-vx_kernel_description_t vxargMaxKernelInfoInt8_Int16 =
-{
-    VX_KERNEL_ENUM_ARGMAX,
-    VX_KERNEL_NAME_ARGMAX_INT8_INT16,
-    NULL,
-    vxargMaxKernelParam,
-    (sizeof(vxargMaxKernelParam) / sizeof(vxargMaxKernelParam[0])),
-    vsi_nn_KernelValidator,
-    NULL,
-    NULL,
-    vxargMaxInitializer,
-    vsi_nn_KernelDeinitializer
-};
+TENSOR_ARGMAX_KERNELS_2D(2, I8,  U8)
+TENSOR_ARGMAX_KERNELS_2D(2, I8,  I16)
+TENSOR_ARGMAX_KERNELS_2D(2, U8,  U8)
+TENSOR_ARGMAX_KERNELS_2D(2, U8,  I16)
+TENSOR_ARGMAX_KERNELS_2D(2, I16, U8)
+TENSOR_ARGMAX_KERNELS_2D(2, I16, I16)
+TENSOR_ARGMAX_KERNELS_2D(2, F16, U8)
+TENSOR_ARGMAX_KERNELS_2D(2, F16, I16)
+
+#define TENSOR_ARGMAX_KERENLS_NAME(AXIS, SRC_TYPE, DST_TYPE) \
+    &vxArgmax_Axis##AXIS##_##SRC_TYPE##to##DST_TYPE##_Kernel,
+
+#define TENSOR_ARGMAX_KERENLS_NAME_2D(AXIS, SRC_TYPE, DST_TYPE) \
+    &vxArgmax_Axis##AXIS##_##SRC_TYPE##to##DST_TYPE##_2D_Kernel,
 
 vx_kernel_description_t * vx_kernel_ARGMAX_list[] =
 {
-    NULL,
-    &vxargMaxKernelInfo,
-    &vxargMaxKernelInfoInt8,
-    &vxargMaxKernelInfoUint8,
-    &vxargMaxKernelInfoInt16,
-    &vxargMaxKernelInfoUint8_Int16,
-    &vxargMaxKernelInfoInt8_Int16,
-    &vxargMaxKernelInfoU8_Int16_WXHX256,
-    &vxargMaxKernelInfoI8_I16_WXHX256,
+    &vxArgMaxKernelInfo_CPU,
+
+    /* axis 0 */
+    TENSOR_ARGMAX_KERENLS_NAME(0, I8,  U8)
+    TENSOR_ARGMAX_KERENLS_NAME(0, I8,  I16)
+    TENSOR_ARGMAX_KERENLS_NAME(0, U8,  U8)
+    TENSOR_ARGMAX_KERENLS_NAME(0, U8,  I16)
+    TENSOR_ARGMAX_KERENLS_NAME(0, I16, U8)
+    TENSOR_ARGMAX_KERENLS_NAME(0, I16, I16)
+    TENSOR_ARGMAX_KERENLS_NAME(0, F16, U8)
+    TENSOR_ARGMAX_KERENLS_NAME(0, F16, I16)
+
+    TENSOR_ARGMAX_KERENLS_NAME_2D(0, I8,  U8)
+    TENSOR_ARGMAX_KERENLS_NAME_2D(0, I8,  I16)
+    TENSOR_ARGMAX_KERENLS_NAME_2D(0, U8,  U8)
+    TENSOR_ARGMAX_KERENLS_NAME_2D(0, U8,  I16)
+    TENSOR_ARGMAX_KERENLS_NAME_2D(0, I16, U8)
+    TENSOR_ARGMAX_KERENLS_NAME_2D(0, I16, I16)
+    TENSOR_ARGMAX_KERENLS_NAME_2D(0, F16, U8)
+    TENSOR_ARGMAX_KERENLS_NAME_2D(0, F16, I16)
+
+    /* axis 1 */
+    TENSOR_ARGMAX_KERENLS_NAME(1, I8,  U8)
+    TENSOR_ARGMAX_KERENLS_NAME(1, I8,  I16)
+    TENSOR_ARGMAX_KERENLS_NAME(1, U8,  U8)
+    TENSOR_ARGMAX_KERENLS_NAME(1, U8,  I16)
+    TENSOR_ARGMAX_KERENLS_NAME(1, I16, U8)
+    TENSOR_ARGMAX_KERENLS_NAME(1, I16, I16)
+    TENSOR_ARGMAX_KERENLS_NAME(1, F16, U8)
+    TENSOR_ARGMAX_KERENLS_NAME(1, F16, I16)
+
+    /* axis 2 */
+    TENSOR_ARGMAX_KERENLS_NAME(2, I8,  U8)
+    TENSOR_ARGMAX_KERENLS_NAME(2, I8,  I16)
+    TENSOR_ARGMAX_KERENLS_NAME(2, U8,  U8)
+    TENSOR_ARGMAX_KERENLS_NAME(2, U8,  I16)
+    TENSOR_ARGMAX_KERENLS_NAME(2, I16, U8)
+    TENSOR_ARGMAX_KERENLS_NAME(2, I16, I16)
+    TENSOR_ARGMAX_KERENLS_NAME(2, F16, U8)
+    TENSOR_ARGMAX_KERENLS_NAME(2, F16, I16)
+
+    TENSOR_ARGMAX_KERENLS_NAME_2D(2, I8,  U8)
+    TENSOR_ARGMAX_KERENLS_NAME_2D(2, I8,  I16)
+    TENSOR_ARGMAX_KERENLS_NAME_2D(2, U8,  U8)
+    TENSOR_ARGMAX_KERENLS_NAME_2D(2, U8,  I16)
+    TENSOR_ARGMAX_KERENLS_NAME_2D(2, I16, U8)
+    TENSOR_ARGMAX_KERENLS_NAME_2D(2, I16, I16)
+    TENSOR_ARGMAX_KERENLS_NAME_2D(2, F16, U8)
+    TENSOR_ARGMAX_KERENLS_NAME_2D(2, F16, I16)
+
     NULL
 };
 #ifdef __cplusplus

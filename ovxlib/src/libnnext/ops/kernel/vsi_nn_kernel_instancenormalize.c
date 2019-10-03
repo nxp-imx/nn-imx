@@ -396,7 +396,7 @@ vsi_status VX_CALLBACK vxInstanceNormKernel
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxCopyScalar failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
         // Call C Prototype
         myInstanceNormFunc(input, scale, bias, eps, output, input_dims, input_size[0],
@@ -406,7 +406,7 @@ vsi_status VX_CALLBACK vxInstanceNormKernel
         output_user_addr = vxCreateTensorAddressing(context, output_size,
             output_stride_size, output_dims);
         vxCopyTensorPatch(imgObj[3], NULL, output_user_addr, output, VX_WRITE_ONLY, 0);
-
+OnError:
         if(input) free(input);
         if(scale) free(scale);
         if(bias) free(bias);
@@ -416,7 +416,6 @@ vsi_status VX_CALLBACK vxInstanceNormKernel
         if(bias_user_addr) vxReleaseTensorAddressing(&bias_user_addr);
         if(output_user_addr) vxReleaseTensorAddressing(&output_user_addr);
     }
-
     return status;
 }
 

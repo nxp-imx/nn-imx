@@ -11,15 +11,6 @@
 
 namespace ovxlib
 {
-    thread_local shared_context thread_local_context;
-
-    struct deleter {
-        void operator()(vsi_nn_context_t ctx)
-        {
-            vsi_nn_ReleaseContext(&ctx);
-        }
-    };
-
 struct ExecutionIO {
     enum {
         UNSPECIFIED,
@@ -47,10 +38,10 @@ struct ExecutionIO {
 };
 
 static void asyncCompute(Execution* execution,
-    Event* event, shared_context thread_local_context)
+    Event* event)
 {
     int status = AERROR_CODE(OP_FAILED);
-    PreparedModel* prepared_model = execution->getPreparedModel();
+    PreparedModelPtr prepared_model = execution->getPreparedModel();
     if (prepared_model) {
         if (execution->fillInput(prepared_model) == AERROR_CODE(NO_ERROR)) {
             status = prepared_model->execute();
@@ -58,6 +49,7 @@ static void asyncCompute(Execution* execution,
                 status = execution->fillOutput(prepared_model);
             }
         }
+        execution->getCompilation()->detachPreparedModel(prepared_model);
     }
     execution->complete(status, true);
 }
@@ -78,12 +70,6 @@ Execution::Execution(Compilation* compilation)
         ExecutionIO * io = new ExecutionIO(operand);
         outputs_.push_back(io);
     }
-    if (!thread_local_context)
-    {
-        thread_local_context.reset(vsi_nn_CreateContext(), deleter());
-    }
-    local_context = thread_local_context;
-    prepared_model_ = new PreparedModel(compilation->getModel());
 }
 
 Execution::~Execution(){
@@ -93,12 +79,11 @@ Execution::~Execution(){
     for (size_t i = 0; i < outputs_.size(); ++ i) {
         delete outputs_[i];
     }
-    delete prepared_model_;
-    local_context.reset();
-    if (thread_local_context.use_count() == 1) thread_local_context.reset();
+    //delete prepared_model_;
+    //if (thread_local_context.use_count() == 1) thread_local_context.reset();
 }
 
-int Execution::fillInput(PreparedModel* prepared_model)
+int Execution::fillInput(PreparedModelPtr prepared_model)
 {
     int status = AERROR_CODE(NO_ERROR);
     for (size_t i = 0; i < inputs_.size(); ++ i) {
@@ -125,7 +110,7 @@ int Execution::fillInput(PreparedModel* prepared_model)
     return status;
 }
 
-int Execution::fillOutput(PreparedModel* prepared_model)
+int Execution::fillOutput(PreparedModelPtr prepared_model)
 {
     int status = AERROR_CODE(NO_ERROR);
     for (size_t i = 0; i < outputs_.size(); ++ i) {
@@ -171,12 +156,17 @@ int Execution::startCompute(Event* event)
         VSILOGW("Execution is already running.");
         return AERROR_CODE(INCOMPLETE);
     }
-    int err = prepared_model_->prepare(local_context.get());
+    if (event_) {
+        VSILOGE("Event is not clean.");
+        return AERROR_CODE(OP_FAILED);
+    }
+    int err = compilation_->prepareModel();
     if (err == AERROR_CODE(NO_ERROR)) {
         running_ = true;
-        event->notify(Event::IN_PROCESS);
-        events_.push_back(event);
-        std::thread(asyncCompute, this, event, local_context).detach();
+        event_ = event;
+        event_->notify(Event::IN_PROCESS);
+        std::thread(asyncCompute, this, event).detach();
+        //asyncCompute( this, event);
     }
     return err;
 }
@@ -186,12 +176,26 @@ int Execution::compute()
     if (!compilation_) {
         return AERROR_CODE(UNEXPECTED_NULL);
     }
-    std::unique_lock<std::mutex> lk(mutex_);
     if (isRunning()) {
         VSILOGW("Execution is already running.");
         return AERROR_CODE(INCOMPLETE);
     }
-    running_ = true;
+    int err = compilation_->prepareModel();
+    if (err == AERROR_CODE(NO_ERROR)) {
+        running_ = true;
+        int status = AERROR_CODE(OP_FAILED);
+        PreparedModelPtr prepared_model = getPreparedModel();
+        if (prepared_model) {
+            if (fillInput(prepared_model) == AERROR_CODE(NO_ERROR)) {
+                status = prepared_model->execute();
+                if (status == AERROR_CODE(NO_ERROR)) {
+                    status = fillOutput(prepared_model);
+                }
+            }
+            getCompilation()->detachPreparedModel(prepared_model);
+        }
+        complete(status, false);
+    }
     // TODO:
     running_ = false;
     return AERROR_CODE(NO_ERROR);
@@ -219,10 +223,10 @@ int Execution::setInput(uint32_t index, const Operand* operand_type,
         model->operand(operand_index)->setNull();
         inputs_[index]->setNoValue();
     } else {
-        if (operand_type) {
-            prepared_model_->updateInputOperand(index, operand_type);
-        }
         model->operand(operand_index)->clearNull();
+        if (operand_type) {
+            model->updateOperand(operand_index, operand_type);
+        }
         inputs_[index]->state = ExecutionIO::BUFFER;
         inputs_[index]->mem_ref = mem_pool::global_memory_pool().add_reference(buffer, length);
     }
@@ -272,10 +276,13 @@ int Execution::setOutput(uint32_t index, const Operand* operand_type,
     if (!buffer) {
         outputs_[index]->setNoValue();
     } else {
-        if (operand_type) {
-            prepared_model_->updateOutputOperand(index, operand_type);
-        }
         outputs_[index]->state = ExecutionIO::BUFFER;
+        Model* model = compilation_->getModel();
+        uint32_t operand_index = model->outputIndex(index);
+        model->operand(operand_index)->clearNull();
+        if (operand_type) {
+            model->updateOperand(operand_index, operand_type);
+        }
         // !!! NEVER allocate inner buffer for output buffer
         outputs_[index]->mem_ref = mem_pool::global_memory_pool().add_reference(buffer, length, true);
     }
@@ -305,36 +312,35 @@ int Execution::setOutputFromMemory(uint32_t index, const Operand* operand_type,
     return AERROR_CODE(NO_ERROR);
 }
 
-PreparedModel* Execution::getPreparedModel()
+PreparedModelPtr Execution::getPreparedModel()
 {
     if (!compilation_) {
         return nullptr;
     }
-    return prepared_model_;
+    return compilation_->attachPreparedModel();
 }
 
 void Execution::complete(int status, bool notify_event)
 {
     int code = Event::ERROR_OCCURED;
-    running_ = false;
     if (AERROR_CODE(NO_ERROR) == status) {
         code = Event::COMPLETED;
     }
-    if (notify_event) {
-        notify(code);
-    }
     if (ask_for_quit_) {
         delete this;
+    } else {
+        running_ = false;
+        if (notify_event) {
+            notify(code);
+        }
     }
 }
 
 void Execution::notify(int code) {
     std::unique_lock<std::mutex> lk(mutex_);
-    while (!events_.empty()) {
-        Event * event = events_.back();
-        event->notify(code);
-        events_.pop_back();
-    }
+    Event* event = event_;
+    event_ = nullptr;
+    event->notify(code);
 }
 
 }

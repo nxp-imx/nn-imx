@@ -155,24 +155,24 @@ static vsi_status VX_CALLBACK vxSpatial_transformerKernel
     uint32_t paramNum
     )
 {
-    vx_tensor input_data_t;
-    vx_tensor thre_data_t;
-    vx_scalar flag_s;
-    vx_tensor thre_proto_t;
-    vx_tensor output_t;
-    vx_context context;
-    vx_tensor_addressing in_addr,out_addr, thre_data_addr,thre_proto_addr;
+    vx_tensor input_data_t = NULL;
+    vx_tensor thre_data_t = NULL;
+    vx_scalar flag_s = NULL;
+    vx_tensor thre_proto_t = NULL;
+    vx_tensor output_t = NULL;
+    vx_context context = NULL;
+    vx_tensor_addressing in_addr = NULL, out_addr = NULL, thre_data_addr = NULL, thre_proto_addr = NULL;
     vsi_nn_tensor_attr_t in_attr,out_attr, thre_data_attr,thre_proto_attr;
-    uint32_t in_stride[6],out_stride[6], thre_data_stride[6],thre_proto_stride[6];
+    uint32_t in_stride[6] = {0}, out_stride[6] = {0}, thre_data_stride[6] = {0}, thre_proto_stride[6] = {0};
     vsi_status status = VX_SUCCESS;
 
     float *f32_in_buffer = NULL,*f32_out_buffer = NULL,*f32_thre_proto_buffer = NULL;
-    uint8_t *in_buffer = NULL, *out_buffer = NULL, *thre_data_buffer;
+    uint8_t *in_buffer = NULL, *out_buffer = NULL, *thre_data_buffer = NULL;
     uint32_t dim = 0;
     uint32_t size = 0;
     uint32_t i = 0;
-    int flag;
-    float thre_value[6];
+    int flag = 0;
+    float thre_value[6] = {0.0f};
     int thre_num = 0;
     float *f32_grid = NULL;
     float *f32_out_grid = NULL;
@@ -183,7 +183,8 @@ static vsi_status VX_CALLBACK vxSpatial_transformerKernel
     /* TODO: Add CPU kernel implement */
     if(paramNum != 5)
     {
-        return VSI_FAILURE;
+        status = VSI_FAILURE;
+        goto OnError;
     }
 
     input_data_t = (vx_tensor)paramObj[0];
@@ -208,7 +209,8 @@ static vsi_status VX_CALLBACK vxSpatial_transformerKernel
     if(f32_out_grid == NULL || f32_out_grid== NULL)
     {
         printf("Malloc space for grid failed \n");
-        return VSI_FAILURE;
+        status = VSI_FAILURE;
+        goto OnError;
     }
     for(i = 0; i < out_attr.size[0] * out_attr.size[1]; i++)
     {
@@ -229,7 +231,8 @@ static vsi_status VX_CALLBACK vxSpatial_transformerKernel
     if(f32_in_buffer == NULL)
     {
         printf("Malloc space for input failed \n");
-        return VSI_FAILURE;
+        status = VSI_FAILURE;
+        goto OnError;
     }
 
     for(i=0; i<size; i++)
@@ -249,7 +252,8 @@ static vsi_status VX_CALLBACK vxSpatial_transformerKernel
     if(size + thre_num > 6)
     {
         printf("The dim of thre must 6\n");
-        return VSI_FAILURE;
+        status = VSI_FAILURE;
+        goto OnError;
     }
     thre_num = 0;
     for(i = 0; i < size; i++)
@@ -279,7 +283,8 @@ static vsi_status VX_CALLBACK vxSpatial_transformerKernel
     if(f32_out_buffer == NULL)
     {
         printf("Malloc space for output failed \n");
-        return VSI_FAILURE;
+        status = VSI_FAILURE;
+        goto OnError;
     }
     transform_gemm_cpu(f32_grid,out_attr.size[0] * out_attr.size[1],2,3,thre_value,f32_out_grid);
 
@@ -289,35 +294,59 @@ static vsi_status VX_CALLBACK vxSpatial_transformerKernel
     for(i=0; i<size; i++)
         vsi_nn_Float32ToDtype(f32_out_buffer[i], (uint8_t*)&out_buffer[out_stride[0] * i], &out_attr.dtype);
     status = vxCopyTensorPatch(output_t,NULL,out_addr,out_buffer,VX_WRITE_ONLY,0);
-
-    if (out_addr)
+OnError:
+    if(out_addr)
     {
         vxReleaseTensorAddressing(&out_addr);
     }
 
-    free(f32_in_buffer);
-    f32_in_buffer = NULL;
+    if(f32_in_buffer)
+    {
+        free(f32_in_buffer);
+        f32_in_buffer = NULL;
+    }
 
-    free(f32_grid);
-    f32_grid = NULL;
+    if(f32_grid)
+    {
+        free(f32_grid);
+        f32_grid = NULL;
+    }
 
-    free(f32_out_grid);
-    f32_out_grid = NULL;
+    if(f32_out_grid)
+    {
+        free(f32_out_grid);
+        f32_out_grid = NULL;
+    }
 
-    free(f32_out_buffer);
-    f32_out_buffer = NULL;
+    if(f32_out_buffer)
+    {
+        free(f32_out_buffer);
+        f32_out_buffer = NULL;
+    }
 
-    free(in_buffer);
-    in_buffer = NULL;
+    if(in_buffer)
+    {
+        free(in_buffer);
+        in_buffer = NULL;
+    }
 
-    free(out_buffer);
-    out_buffer = NULL;
+    if(out_buffer)
+    {
+        free(out_buffer);
+        out_buffer = NULL;
+    }
 
-    free(thre_data_buffer);
-    thre_data_buffer = NULL;
+    if(thre_data_buffer)
+    {
+        free(thre_data_buffer);
+        thre_data_buffer = NULL;
+    }
 
-    free(f32_thre_proto_buffer);
-    f32_thre_proto_buffer = NULL;
+    if(f32_thre_proto_buffer)
+    {
+        free(f32_thre_proto_buffer);
+        f32_thre_proto_buffer = NULL;
+    }
 
     return status;
 } /* _VX_KERNEL_FUNC_KERNEL() */

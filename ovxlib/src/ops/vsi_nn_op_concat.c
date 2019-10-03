@@ -209,6 +209,8 @@ static vx_node _create_vx_concat
                                             &tensors[0]);
     if(NULL == data->array)
     {
+        free(data);
+        data = NULL;
         goto final;
     }
     param.axis = self->nn_param.concat.axis;

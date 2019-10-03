@@ -21,6 +21,7 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
+/** @file */
 #ifndef _VSI_NN_OPS_H
 #define _VSI_NN_OPS_H
 
@@ -39,6 +40,14 @@ extern "C"{
                 Types
   -----------------------------------*/
 
+/**
+ * Ovxlib operation type index.
+ * Custom ID is start from VSI_NN_OP_CUSTOM_START.
+ * Ovxlib internal id is start from VSI_NN_OP_INTERNAL_START.
+ * @see include/interface/ops.def
+ * @see include/custom/custom_ops.def
+ * @see include/internal/internal_ops.def
+ */
 typedef uint32_t vsi_nn_op_t; enum
 {
 #define DEF_OP( NAME, ... ) VSI_NN_OP_##NAME,
@@ -65,9 +74,11 @@ typedef uint32_t vsi_nn_op_t; enum
     VSI_NN_OP_INTERNAL_NUM = VSI_NN_OP_INTERNAL_END - VSI_NN_OP_INTERNAL_START - 1
 };
 
+/** Operation initialization function handler */
 typedef vsi_status ( * vsi_nn_op_init_t )
     ( vsi_nn_node_t * );
 
+/** Operation computation function handler */
 typedef vsi_status ( * vsi_nn_op_compute_t )
     (
     vsi_nn_node_t *,
@@ -75,9 +86,11 @@ typedef vsi_status ( * vsi_nn_op_compute_t )
     vsi_nn_tensor_t **
     );
 
+/** Operation deinitialization function handler */
 typedef vsi_status ( * vsi_nn_op_deinit_t )
     ( vsi_nn_node_t * );
 
+/** Operation validation function handler */
 typedef vsi_bool ( * vsi_nn_op_check_t )
     (
     vsi_nn_node_t *,
@@ -85,6 +98,7 @@ typedef vsi_bool ( * vsi_nn_op_check_t )
     vsi_nn_tensor_t **
     );
 
+/** Operation setup function handler */
 typedef vsi_bool ( * vsi_nn_op_setup_t )
     (
     vsi_nn_node_t *,
@@ -92,6 +106,7 @@ typedef vsi_bool ( * vsi_nn_op_setup_t )
     vsi_nn_tensor_t **
     );
 
+/** Operation optimization function handler */
 typedef vsi_status ( * vsi_nn_op_optimize_t )
     (
     vsi_nn_node_t *,
@@ -100,6 +115,7 @@ typedef vsi_status ( * vsi_nn_op_optimize_t )
     vsi_nn_opt_direction_e
     );
 
+/** Operation runtime interface. */
 typedef struct _vsi_nn_op_proc
 {
     vsi_nn_op_init_t     init;
@@ -152,12 +168,32 @@ const vsi_nn_op_proc_t * vsi_nn_OpGetProc
     vsi_nn_op_t op
     );
 
+/**
+ * Init operation
+ * Call operation init process.
+ *
+ * @param[in] op Operation id.
+ * @param[in] node Node handle.
+ *
+ * @return VSI_SUCCESS on success, or error code otherwise.
+ */
 vsi_status vsi_nn_OpInit
     (
     vsi_nn_op_t op,
     vsi_nn_node_t * node
     );
 
+/**
+ * Build operation with vx backend
+ * Call operation compute process, it will build the node with vx backend.
+ *
+ * @param[in] op Operation id.
+ * @param[in] node Node handle.
+ * @param[in] inputs Input tensors' handle..
+ * @param[in] outputs Output tensors' handle.
+ *
+ * @return VSI_SUCCESS on success, or error code otherwise.
+ */
 vsi_status vsi_nn_OpCompute
     (
     vsi_nn_op_t op,
@@ -166,12 +202,35 @@ vsi_status vsi_nn_OpCompute
     vsi_nn_tensor_t ** outputs
     );
 
+/**
+ * Deinit operation
+ * Call operation deinit process, free some resource.
+ *
+ * @param[in] op Operation id.
+ * @param[in] node Node handle.
+ *
+ * @return VSI_SUCCESS on success, or error code otherwise.
+ */
 vsi_status vsi_nn_OpDeinit
     (
     vsi_nn_op_t op,
     vsi_nn_node_t * node
     );
 
+/**
+ * Optimize operation
+ * Call operation optimize process.
+ * @see vsi_nn_opt_direction_e
+ *
+ * @param[in] op Operation id.
+ * @param[in] node Node handle.
+ * @param[in] inputs Input tensors' handle.
+ * @param[in] outputs Output tensors' handle.
+ * @param[in] driection Current loop direction, use this param to implement
+ *                      different optimizations.
+ *
+ * @return VSI_SUCCESS on success, or error code otherwise.
+ */
 vsi_status vsi_nn_OpOptimize
     (
     vsi_nn_op_t op,
@@ -181,6 +240,17 @@ vsi_status vsi_nn_OpOptimize
     vsi_nn_opt_direction_e direction
     );
 
+/**
+ * Validate operation
+ * Call operation check process.
+ *
+ * @param[in] op Operation id.
+ * @param[in] node Node handle.
+ * @param[in] inputs Input tensors' handle.
+ * @param[in] outputs Output tensors' handle.
+ *
+ * @return VSI_SUCCESS on success, or error code otherwise.
+ */
 vsi_bool vsi_nn_OpCheck
     (
     vsi_nn_op_t op,
@@ -204,6 +274,18 @@ vsi_bool vsi_nn_OpGenerateTensor
     vsi_nn_tensor_t ** outputs
     );
 
+/**
+ * Setup operation
+ * Call operation setup process, it runs before computation,
+ * Ovxlib usually computes output shapes in this process.
+ *
+ * @param[in] op Operation id.
+ * @param[in] node Node handle.
+ * @param[in] inputs Input tensors' handle.
+ * @param[in] outputs Output tensors' handle.
+ *
+ * @return VSI_SUCCESS on success, or error code otherwise.
+ */
 vsi_bool vsi_nn_OpSetup
     (
     vsi_nn_op_t op,
@@ -218,6 +300,14 @@ vsi_bool vsi_nn_OpRegisterOvxInit
     vsi_nn_op_compute_t compute
     );
 
+/**
+ * Get operation name
+ * Get operation name string by operation id.
+ *
+ * @param[in] op Operation id.
+ *
+ * @return Operation name on success, or NULL otherwise.
+ */
 OVXLIB_API const char * vsi_nn_OpGetName
     (
     vsi_nn_op_t op
@@ -227,6 +317,9 @@ OVXLIB_API const char * vsi_nn_OpGetName
 }
 #endif
 
+/**
+ * Declare an operation with process functions.
+ */
 #define DEF_OP_REG(op,init,compute,deinit,check,setup,optimize,in,out) \
     vsi_nn_op_proc_t vsi_nn_op_##op =\
 {\

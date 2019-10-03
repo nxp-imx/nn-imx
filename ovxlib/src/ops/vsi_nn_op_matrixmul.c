@@ -158,6 +158,12 @@ static vsi_status vx_op_pre_compute
         {
             kernel_info->kernel_index = 4;
         }
+        else if ((inputADataformat == VSI_NN_TYPE_FLOAT16) && (inputBDataformat == VSI_NN_TYPE_FLOAT16)
+            && (outputDataformat == VSI_NN_TYPE_UINT8))
+        {
+            kernel_info->resource_name[0] = "vsi_nn_kernel_matrixmul_fp16";
+            kernel_info->kernel_index = 8;
+        }
         else
         {
             VSILOGE("Not support input or output data format!(MATRIXMUL)\n");

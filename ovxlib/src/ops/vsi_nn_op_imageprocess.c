@@ -913,7 +913,8 @@ vsi_status vsi_nn_op_imageprocess_single_node
                 if( NULL == node )
                 {
                     VSILOGE("Create vxTensorReverse node fails");
-                    return VSI_FAILURE;
+                    status = VSI_FAILURE;
+                    goto OnError;
                 }
 
                 node = vxTensorPermuteNode( graph->g, output_reversetensor->t,
@@ -921,10 +922,9 @@ vsi_status vsi_nn_op_imageprocess_single_node
                 if( NULL == node )
                 {
                     VSILOGE("Create vxTensorPermuteNode node fails");
-                    return VSI_FAILURE;
+                    status = VSI_FAILURE;
+                    goto OnError;
                 }
-                vsi_nn_ReleaseTensor(&output_scaletotensor);
-                vsi_nn_ReleaseTensor(&output_reversetensor);
             }
             else
             {
@@ -935,9 +935,9 @@ vsi_status vsi_nn_op_imageprocess_single_node
                     if( NULL == node )
                     {
                         VSILOGE("Create vxTensorPermuteNode node fails");
-                        return VSI_FAILURE;
+                        status = VSI_FAILURE;
+                        goto OnError;
                     }
-                    vsi_nn_ReleaseTensor(&output_scaletotensor);
                 }
                 else
                 {
@@ -954,11 +954,12 @@ vsi_status vsi_nn_op_imageprocess_single_node
                 if( NULL == node )
                 {
                     VSILOGE("Create vxTensorReverse node fails");
-                    return VSI_FAILURE;
+                    status = VSI_FAILURE;
+                    goto OnError;
                 }
-                vsi_nn_ReleaseTensor(&output_scaletotensor);
             }
         }
+
     //set graph inputs outputs again, because pre_process changed graph inputs
     {
         uint32_t num_of_graph_inputs;
@@ -994,7 +995,9 @@ vsi_status vsi_nn_op_imageprocess_single_node
             free( graph_outputs );
         }
     }
-
+OnError:
+        if(output_scaletotensor) vsi_nn_ReleaseTensor(&output_scaletotensor);
+        if(output_reversetensor) vsi_nn_ReleaseTensor(&output_reversetensor);
         return status;
     }
     else

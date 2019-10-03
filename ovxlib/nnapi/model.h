@@ -127,13 +127,9 @@ class Model
             relaxed_ = fast_model;
         }
 
-        void finish() {
-            finalized_ = true;
-        }
+        void finish() { finalized_ = true; }
 
-        void freezeCompile() {
-            compiled_ = true;
-        }
+        void freezeCompile();
 
         bool isRelaxed() {
             return relaxed_;
@@ -165,6 +161,16 @@ class Model
 
         void echo();
 
+        std::string signature() {
+            if (!isCompiled()) {
+                VSILOGW("Uncompiled model doesn't have the signature.");
+                return "Not Finished";
+            }
+            return signature_;
+        }
+
+        std::string generateSignature();
+
     private:
         uint32_t operand_unique_id_ = 0;
         uint32_t operation_unique_id_ = 0;
@@ -172,6 +178,7 @@ class Model
         bool finalized_{false};
         bool compiled_{false};
         bool valid_{false};
+        std::string signature_;
         std::map<uint32_t, Operation*> operations_;
         std::map<uint32_t, Operand*> operands_;
         std::vector<uint32_t> input_indexes_;

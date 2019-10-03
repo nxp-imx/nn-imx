@@ -831,9 +831,9 @@ static void _sort_con_candidate
         {
             if(q->data.score > p->data.score)
             {
-                memcpy(&temp, &q->data, sizeof(vsi_nn_con_candidate_data_t));
-                memcpy(&q->data, &p->data, sizeof(vsi_nn_con_candidate_data_t));
-                memcpy(&p->data, &temp, sizeof(vsi_nn_con_candidate_data_t));
+                memmove(&temp, &q->data, sizeof(vsi_nn_con_candidate_data_t));
+                memmove(&q->data, &p->data, sizeof(vsi_nn_con_candidate_data_t));
+                memmove(&p->data, &temp, sizeof(vsi_nn_con_candidate_data_t));
             }
             q = (vsi_nn_con_candidate_t *)q->link_list.next;
         }
@@ -1852,6 +1852,7 @@ static float *_get_net_out_data
     vsi_bool ret = FALSE;
 
     net_out = config->inputs.net_out;
+    memset(&tensor, 0, sizeof(vsi_nn_tensor_t));
     tensor.attr.dim_num = net_out->attr.dim_num;
     tensor.attr.size[0] = net_out->attr.size[2];
     tensor.attr.size[1] = net_out->attr.size[1];

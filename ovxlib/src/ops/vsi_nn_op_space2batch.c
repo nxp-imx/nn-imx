@@ -79,6 +79,8 @@ static vsi_status op_compute
     if( NULL == pad_tensor )
     {
         VSILOGE("Create pad_tensor fail.(space2batch)");
+        vsi_nn_ReleaseTensor(&block_size_tensor);
+        block_size_tensor = NULL;
         return VSI_FAILURE;
     }
 

@@ -182,7 +182,7 @@ static vsi_status vx_op_pre_compute
     vsi_nn_kernel_info_t * kernel_info
     )
 {
-    vsi_nn_type_e dataType      = inputs[0]->attr.dtype.vx_type;
+    vsi_nn_type_e inDataType      = inputs[0]->attr.dtype.vx_type;
     vsi_nn_type_e outDataType   = outputs[0]->attr.dtype.vx_type;
     vsi_nn_type_e axDataType    = outputs[1]->attr.dtype.vx_type;
 
@@ -194,13 +194,19 @@ static vsi_status vx_op_pre_compute
     enable_image_2d = (vsi_bool)(height * depth < hwLitimLen
         && ((height % 2 == 0) || depth == 1));
 
-    if(dataType == VSI_NN_TYPE_FLOAT16
+    if (inDataType == VSI_NN_TYPE_BFLOAT16 && outDataType == VSI_NN_TYPE_BFLOAT16)
+    {
+        inDataType = VSI_NN_TYPE_FLOAT16;
+        outDataType = VSI_NN_TYPE_FLOAT16;
+    }
+
+    if(inDataType == VSI_NN_TYPE_FLOAT16
         && (outDataType == VSI_NN_TYPE_FLOAT16 || outDataType == VSI_NN_TYPE_INT16)
         && (axDataType == VSI_NN_TYPE_INT8 || axDataType == VSI_NN_TYPE_UINT8))
     {
         kernel_info->kernel_index = 1;
     }
-    else if(dataType == VSI_NN_TYPE_INT8 && outDataType == VSI_NN_TYPE_INT8
+    else if(inDataType == VSI_NN_TYPE_INT8 && outDataType == VSI_NN_TYPE_INT8
         && (axDataType == VSI_NN_TYPE_INT8 || axDataType == VSI_NN_TYPE_UINT8))
     {
         kernel_info->resource_name[1] = "vsi_nn_kernel_poolwithargmax_i8";
@@ -214,7 +220,7 @@ static vsi_status vx_op_pre_compute
             kernel_info->kernel_index = 13;
         }
     }
-    else if(dataType == VSI_NN_TYPE_UINT8 && outDataType == VSI_NN_TYPE_UINT8
+    else if(inDataType == VSI_NN_TYPE_UINT8 && outDataType == VSI_NN_TYPE_UINT8
         && (axDataType == VSI_NN_TYPE_UINT8))
     {
         if (enable_image_2d)
@@ -227,12 +233,12 @@ static vsi_status vx_op_pre_compute
             kernel_info->kernel_index = 3;
         }
     }
-    else if(dataType == VSI_NN_TYPE_UINT8 && outDataType == VSI_NN_TYPE_FLOAT16
+    else if(inDataType == VSI_NN_TYPE_UINT8 && outDataType == VSI_NN_TYPE_FLOAT16
         && (axDataType == VSI_NN_TYPE_UINT8 || axDataType == VSI_NN_TYPE_INT8))
     {
         kernel_info->kernel_index = 4;
     }
-    else if(dataType == VSI_NN_TYPE_INT16 && outDataType == VSI_NN_TYPE_INT16
+    else if(inDataType == VSI_NN_TYPE_INT16 && outDataType == VSI_NN_TYPE_INT16
         && (axDataType == VSI_NN_TYPE_UINT8))
     {
         kernel_info->resource_name[1] = "vsi_nn_kernel_poolwithargmax_i16";
@@ -246,24 +252,24 @@ static vsi_status vx_op_pre_compute
             kernel_info->kernel_index = 12;
         }
     }
-    else if(dataType == VSI_NN_TYPE_UINT8 && outDataType == VSI_NN_TYPE_FLOAT16
+    else if(inDataType == VSI_NN_TYPE_UINT8 && outDataType == VSI_NN_TYPE_FLOAT16
         && (axDataType == VSI_NN_TYPE_FLOAT16))
     {
         kernel_info->kernel_index = 6;
     }
-    else if(dataType == VSI_NN_TYPE_INT8 && outDataType == VSI_NN_TYPE_FLOAT16
+    else if(inDataType == VSI_NN_TYPE_INT8 && outDataType == VSI_NN_TYPE_FLOAT16
         && (axDataType == VSI_NN_TYPE_INT8 || axDataType == VSI_NN_TYPE_UINT8))
     {
         kernel_info->resource_name[1] = "vsi_nn_kernel_poolwithargmax_i8";
         kernel_info->kernel_index = 8;
     }
-    else if(dataType == VSI_NN_TYPE_INT16 && outDataType == VSI_NN_TYPE_INT16
+    else if(inDataType == VSI_NN_TYPE_INT16 && outDataType == VSI_NN_TYPE_INT16
         && (axDataType == VSI_NN_TYPE_INT16))
     {
         kernel_info->resource_name[1] = "vsi_nn_kernel_poolwithargmax_i16";
         kernel_info->kernel_index = 9;
     }
-    else if(dataType == VSI_NN_TYPE_INT16 && outDataType == VSI_NN_TYPE_FLOAT16
+    else if(inDataType == VSI_NN_TYPE_INT16 && outDataType == VSI_NN_TYPE_FLOAT16
         && (axDataType == VSI_NN_TYPE_UINT8))
     {
         kernel_info->resource_name[1] = "vsi_nn_kernel_poolwithargmax_i16";

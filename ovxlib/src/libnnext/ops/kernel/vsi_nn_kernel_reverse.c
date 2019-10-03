@@ -65,8 +65,8 @@ static vsi_status VX_CALLBACK vxReverseKernel
         uint32_t   output_dims = 0;
         vsi_enum     inputFormat = VX_TYPE_FLOAT16;
         vsi_enum     outputFormat = VX_TYPE_FLOAT16;
-        uint32_t   input_size[4] = { 0 };
-        uint32_t   output_size[4] = { 0 };
+        uint32_t   input_size[VSI_NN_MAX_DIM_NUM] = { 0 };
+        uint32_t   output_size[VSI_NN_MAX_DIM_NUM] = { 0 };
         uint32_t   input_stride_size[VSI_NN_MAX_DIM_NUM] = { 0 };
         uint32_t   output_stride_size[VSI_NN_MAX_DIM_NUM] = { 0 };
         vx_tensor_addressing input_user_addr = NULL;
@@ -83,6 +83,7 @@ static vsi_status VX_CALLBACK vxReverseKernel
         {
             VSILOGE("vxGetContext failure!\n");
             status = VX_FAILURE;
+            goto OnError;
         }
 
         input_buffer = vsi_nn_ConvertRawTensorToData(context, input_tensor,
@@ -92,6 +93,7 @@ static vsi_status VX_CALLBACK vxReverseKernel
         {
             VSILOGE("vsi_nn_ConvertRawTensorToData failure!\n");
             status = VX_ERROR_NO_MEMORY;
+            goto OnError;
         }
 
         output_buffer = vsi_nn_ConvertRawTensorToData(context, output_tensor,
@@ -101,12 +103,14 @@ static vsi_status VX_CALLBACK vxReverseKernel
         {
             VSILOGE("vsi_nn_ConvertRawTensorToData failure!\n");
             status = VX_ERROR_NO_MEMORY;
+            goto OnError;
         }
 
         status = vxCopyScalar(axis_scalar, &axis, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
         if( VX_SUCCESS != status)
         {
             VSILOGE("vxCopyScalar axis failure! status:%d\n", status);
+            goto OnError;
         }
 
         if( input_dims != output_dims || axis >= input_dims )
@@ -115,6 +119,7 @@ static vsi_status VX_CALLBACK vxReverseKernel
                     must match 'input_dims == output_dims and axis < input_dims'\n",
                     input_dims, output_dims, axis);
             status = VX_ERROR_INVALID_PARAMETERS;
+            goto OnError;
         }
 
         {
@@ -167,7 +172,13 @@ static vsi_status VX_CALLBACK vxReverseKernel
         }
         status = vxCopyTensorPatch( output_tensor, NULL, output_user_addr,
             output_buffer, VX_WRITE_ONLY, 0 );
+        if( VX_SUCCESS != status)
+        {
+            VSILOGE("vxCopyTensorPatch failure! status:%d\n", status);
+            goto OnError;
+        }
 
+OnError:
         if( NULL != input_buffer )
         {
             free( input_buffer );
@@ -187,7 +198,6 @@ static vsi_status VX_CALLBACK vxReverseKernel
         {
             vxReleaseTensorAddressing(&output_user_addr);
         }
-
     }
 
     return status;

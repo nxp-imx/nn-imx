@@ -28,17 +28,19 @@
 #include "vsi_nn_client_op.h"
 #include "utils/vsi_nn_util.h"
 #include "cpu_backend/vsi_nn_cpu_backend.h"
-#include "cpu_backend/cbee_interface.h"
+#include "cpu_backend/npuref_interface.h"
 
 
 #define DEF_OP( name )    extern vsi_nn_op_proc_t vsi_nn_op_CPU_BACKEND_##name;
 DEF_OP( CONV2D )
+DEF_OP( DECONV2D )
 #undef DEF_OP
 
 static vsi_nn_op_proc_t * s_client_ops[] =
     {
     #define DEF_OP( name )     &vsi_nn_op_CPU_BACKEND_##name,
     DEF_OP( CONV2D )
+    DEF_OP( DECONV2D )
     #undef DEF_OP
     };
 
@@ -46,6 +48,7 @@ static vsi_nn_op_t s_client_ops_id[] =
     {
     #define DEF_OP( name )     VSI_NN_OP_##name,
     DEF_OP( CONV2D )
+    DEF_OP( DECONVOLUTION ) // Use DECONVOLUTION because we need to replace it.
     #undef DEF_OP
     };
 
@@ -95,7 +98,7 @@ vsi_bool vsi_nn_CpuBackendEnabled()
     }
     if( ret )
     {
-        ret = cbee_exists();
+        ret = npuref_exists();
     }
     return ret;
 } /* vsi_nn_CpuBackendEnabled() */
