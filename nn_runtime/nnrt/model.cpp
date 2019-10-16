@@ -131,6 +131,7 @@ int8_t getProcessName(char * process) {
     FILE *fp = fopen(file_name, "r");
     if (fp) {
         fread(string, 1, 255, fp);
+        string[255] = '\0';
     }
     else {
         return -1;
