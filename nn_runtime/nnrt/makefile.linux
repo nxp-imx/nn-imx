@@ -89,5 +89,5 @@ install: extra_install
 
 .PHONY: extra_install
 extra_install:
-	@mkdir -p $(SDK_DIR)/include/NNRT
-	@-cp -rf $(AQROOT)/sdk/inc/NNRT/* $(SDK_DIR)/include/NNRT
+	@mkdir -p $(SDK_DIR)/include/nnrt
+	@-cp -rf $(AQROOT)/sdk/inc/nnrt/* $(SDK_DIR)/include/nnrt
