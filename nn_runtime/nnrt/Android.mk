@@ -10,6 +10,7 @@ ifeq ($(AQROOT),)
 $(error Please set AQROOT env first)
 endif
 
+OVXLIB_DIR = $(AQROOT)/driver/nn/ovxlib
 ifeq ($(OVXLIB_DIR),)
 $(error Please set OVXLIB_DIR env first)
 endif

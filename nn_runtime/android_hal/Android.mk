@@ -1,10 +1,12 @@
 LOCAL_PATH:= $(call my-dir)
 include $(CLEAR_VARS)
 
+OVXLIB_DIR = $(AQROOT)/driver/nn/ovxlib
 ifeq ($(OVXLIB_DIR),)
 $(error Please set OVXLIB_DIR env first)
 endif
 
+NNRT_ROOT = $(AQROOT)/driver/nn/nn_runtime
 ifeq ($(NNRT_ROOT),)
 $(error Please set NNRT_ROOT env first)
 endif
