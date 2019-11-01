@@ -1,0 +1,79 @@
+package(
+    default_visibility = ["//visibility:public"],
+    features = ["-parse_headers"],
+)
+
+cc_library(
+    name = "nnrt",
+    copts = ["-std=c++11", "-Werror", "-fvisibility=default"]
+        + ['-DOVXLIB_API=__attribute__((visibility(\\"default\\")))'],
+    includes = [
+        ".",
+        "boost/libs/preprocessor/include",
+        "api_requirement",
+    ],
+    hdrs = glob(["op/*.hpp"]) + [
+        "model.hpp",
+        "permute_vector.hpp",
+        "file_map_memory.hpp",
+        "types.hpp",
+        "event.hpp",
+        "error.hpp",
+        "utils.hpp",
+        "interpreter.hpp",
+        "execution.hpp",
+        "compilation.hpp",
+        "prepared_model.hpp",
+        "ovxlib_delegate.hpp",
+        "model_transform/transformations.hpp",
+        "model_transform/nnapi_interpreter.hpp",
+        "memory_pool.hpp",
+        "shared_context.hpp",
+        "execution_task.hpp",
+        "version.hpp",
+        "api_requirement/spec.hpp",
+        "api_requirement/spec_macros.hpp",
+        "api_requirement/nnapi_requirement.hpp",
+        "dump_model/dump_json_model.hpp",
+        "dump_model/json.h",
+    ]
+    + glob(["api_requirement/nnapi_spec/*.hpp"])
+    + glob(["boost/libs/preprocessor/include/**/*.hpp"]),
+    srcs = glob(["op/*.cpp"]) + [
+        "model.cpp",
+        "file_map_memory.cpp",
+        "compilation.cpp",
+        "event.cpp",
+        "utils.cpp",
+        "execution.cpp",
+        "prepared_model.cpp",
+        "ovxlib_delegate.cpp",
+        "model_transform/layout_inference.cpp",
+        "model_transform/align_broadcast_op.cpp",
+        "model_transform/transformations.cpp",
+        "model_transform/optimize_permute.cpp",
+        "model_transform/fp32tofp16.cpp",
+        "model_transform/nnapi_interpreter.cpp",
+        "model_transform/validate_quantized_graph.cpp",
+        "memory_pool.cpp",
+        "execution_task.cpp",
+        "api_requirement/spec.cpp",
+        "api_requirement/nnapi_requirement.cpp",
+        "dump_model/dump_json_model.cpp",
+        "dump_model/jsoncpp.cpp",
+    ],
+    deps = ["@OVXLIB//:ovxlib"],
+    linkstatic = True,
+)
+
+cc_binary(
+    name = "t2c_test",
+    copts = ["-Werror", "-fvisibility=hidden", '-DOVXLIB_API=__attribute__((visibility(\\"default\\")))'],
+    includes = [
+        ".",
+    ],
+    srcs = [
+        "graph_transformations/t2c_test.cpp",
+    ],
+    deps = ["nnrt"]
+)
