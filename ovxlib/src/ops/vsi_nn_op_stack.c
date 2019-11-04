@@ -316,7 +316,6 @@ static vsi_status op_compute
     uint32_t perm[VSI_NN_MAX_DIM_NUM] = {0};
     uint32_t start[VSI_NN_MAX_DIM_NUM] = { 0 };
     uint32_t end[VSI_NN_MAX_DIM_NUM] = { 0 };
-    vx_tensor_view view;
     uint32_t block_size = 1;
     uint32_t block_num = 1;
     uint32_t dims = 2;
@@ -377,18 +376,7 @@ static vsi_status op_compute
 
             start[1] = end[1];
             end[1] += block_size;
-
-            view = vxCreateTensorView( self->graph->ctx->c,
-                start, end, dims );
-            if( NULL == view )
-            {
-                VSILOGE( "Create tensor %d view fail.", i );
-                status = VSI_FAILURE;
-                break;
-            }
-
-            in_view_tensor = vxCreateTensorFromView( perm_tensor->t, view );
-            vxReleaseTensorView( &view );
+            in_view_tensor = vsi_nn_CreateViewTensor(self->graph, start, end, perm_tensor);
             if( NULL == in_view_tensor )
             {
                 VSILOGE( "Create tensor %d from view fail.", i );
@@ -436,15 +424,16 @@ static vsi_status op_compute
             }
 
             if (output_rs) vxReleaseTensor(&output_rs);
-            if (perm_tensor) vsi_nn_ReleaseTensor(&perm_tensor);
             if (self->n) vxReleaseNode(&self->n);
         }
+        if (perm_tensor) vsi_nn_ReleaseTensor(&perm_tensor);
     }
     else
     {
-        vsi_nn_kernel_info_t kernel_info = {0};
+        vsi_nn_kernel_info_t kernel_info;
         char *path = NULL;
 
+        memset(&kernel_info, 0x0, sizeof(vsi_nn_kernel_info_t));
         kernel_info.type = VX_KERNEL_TYPE_CPU;
         kernel_info.kernel = vx_kernel_STACK_list;
         kernel_info.resource_num = 1;
@@ -553,7 +542,6 @@ static vsi_status op_optimize
     vsi_status     status;
     int32_t        num,i;
     uint32_t       axis;
-    vx_tensor_view view;
     vx_tensor      in_view_tensor;
     uint32_t       sizes[2] = {1};
     uint32_t       block_size = 1;
@@ -606,16 +594,7 @@ static vsi_status op_optimize
     {
         start[axis] = end[axis];
         end[axis] += 1;
-        view = vxCreateTensorView( self->graph->ctx->c,
-            start, end, output->attr.dim_num );
-        if( NULL == view )
-        {
-            VSILOGE( "Create tensor %d view fail.", i );
-            status = VSI_FAILURE;
-            break;
-        }
-        in_view_tensor = vxCreateTensorFromView( output->t, view );
-        vxReleaseTensorView( &view );
+        in_view_tensor = vsi_nn_CreateViewTensor(self->graph, start, end, output);
         if( NULL == in_view_tensor )
         {
             VSILOGE( "Create tensor %d from view fail.", i );

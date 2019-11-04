@@ -31,6 +31,7 @@
 
 #include "vsi_nn_prv.h"
 #include "vsi_nn_log.h"
+#include "vsi_nn_test.h"
 #include "vsi_nn_tensor_util.h"
 #include "utils/vsi_nn_util.h"
 #include "utils/vsi_nn_dtype_util.h"
@@ -71,8 +72,11 @@ static vsi_status VX_CALLBACK vxReverseKernel
         uint32_t   output_stride_size[VSI_NN_MAX_DIM_NUM] = { 0 };
         vx_tensor_addressing input_user_addr = NULL;
         vx_tensor_addressing output_user_addr = NULL;
+        vsi_nn_tensor_attr_t out_attr;
 
         status = VX_SUCCESS;
+
+        memset(&out_attr, 0x0, sizeof(vsi_nn_tensor_attr_t));
 
         input_tensor = (vx_tensor)paramObj[0];
         output_tensor = (vx_tensor)paramObj[1];
@@ -103,6 +107,13 @@ static vsi_status VX_CALLBACK vxReverseKernel
         {
             VSILOGE("vsi_nn_ConvertRawTensorToData failure!\n");
             status = VX_ERROR_NO_MEMORY;
+            goto OnError;
+        }
+
+        status |= vsi_nn_vxGetTensorAttr(output_tensor, &out_attr);
+        if (status != VX_SUCCESS)
+        {
+            VSILOGE("vsi_nn_vxGetTensorAttr failure! at line %d\n", __LINE__);
             goto OnError;
         }
 
@@ -170,13 +181,8 @@ static vsi_status VX_CALLBACK vxReverseKernel
             }
 #endif
         }
-        status = vxCopyTensorPatch( output_tensor, NULL, output_user_addr,
-            output_buffer, VX_WRITE_ONLY, 0 );
-        if( VX_SUCCESS != status)
-        {
-            VSILOGE("vxCopyTensorPatch failure! status:%d\n", status);
-            goto OnError;
-        }
+        status = vsi_nn_vxCopyDataToTensor(context, output_tensor, &out_attr, output_buffer);
+        TEST_CHECK_STATUS(status, OnError);
 
 OnError:
         if( NULL != input_buffer )

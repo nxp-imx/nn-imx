@@ -50,21 +50,33 @@
 #undef MIN
 #define MIN(a,b)    ((a) < (b) ? (a) : (b))
 
-typedef struct {
+typedef struct
+{
     float x1, y1, x2, y2;
-} BoxEncodingCorner;
-typedef struct {
+}BoxEncodingCorner;
+typedef struct
+{
     float w, h, x, y;
 }BoxEncodingCenter;
 
-static void toBoxEncodingCorner(BoxEncodingCenter* ctr, BoxEncodingCorner* cnr) {
+void toBoxEncodingCorner
+    (
+    BoxEncodingCenter* ctr,
+    BoxEncodingCorner* cnr
+    )
+{
     cnr->x1 = ctr->x - ctr->w / 2;
     cnr->y1 = ctr->y - ctr->h / 2;
     cnr->x2 = ctr->x + ctr->w / 2;
     cnr->y2 = ctr->y + ctr->h / 2;
 }
 
-static void toBoxEncodingCenter(BoxEncodingCorner* cnr, BoxEncodingCenter* ctr) {
+void toBoxEncodingCenter
+    (
+    BoxEncodingCorner* cnr,
+    BoxEncodingCenter* ctr
+    )
+{
     ctr->w = cnr->x2 - cnr->x1;
     ctr->h = cnr->y2 - cnr->y1;
     ctr->x = (cnr->x1 + cnr->x2) / 2;
@@ -90,13 +102,20 @@ static vsi_status VX_CALLBACK vxAxis_aligned_bbox_transformKernel
     float *f32_in_buffer[TENSOR_NUM_INPUT] = {0};
     int32_t* int32_in_buffer[TENSOR_NUM_INPUT] = {0};
     float *f32_out_buffer[TENSOR_NUM_OUTPUT] = {0};
-    vsi_nn_tensor_attr_t in_attr[TENSOR_NUM_INPUT] = {0};
-    vsi_nn_tensor_attr_t out_attr[TENSOR_NUM_OUTPUT] = {0};
+    vsi_nn_tensor_attr_t in_attr[TENSOR_NUM_INPUT];
+    vsi_nn_tensor_attr_t out_attr[TENSOR_NUM_OUTPUT];
     uint32_t in_elements[TENSOR_NUM_INPUT] = {0};
     uint32_t out_elements[TENSOR_NUM_OUTPUT]= {0};
 
     int32_t i;
-
+    for(i = 0; i < TENSOR_NUM_INPUT; i++)
+    {
+        memset(&in_attr[i], 0x0, sizeof(vsi_nn_tensor_attr_t));
+    }
+    for(i = 0; i < TENSOR_NUM_OUTPUT; i++)
+    {
+        memset(&out_attr[i], 0x0, sizeof(vsi_nn_tensor_attr_t));
+    }
     /* prepare data */
     context = vxGetContext((vx_reference)node);
 

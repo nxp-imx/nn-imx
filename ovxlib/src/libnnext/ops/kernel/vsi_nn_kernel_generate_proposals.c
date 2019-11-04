@@ -25,6 +25,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <float.h>
+#include <math.h>
 
 #include "vsi_nn_platform.h"
 
@@ -43,6 +45,103 @@
 #define _VX_KERNEL_NAME         (VX_KERNEL_NAME_GENERATE_PROPOSALS)
 #define _VX_KERNEL_FUNC_KERNEL  (vxGenerate_proposalsKernel)
 
+#undef MAX
+#define MAX(a,b)    ((a) > (b) ? (a) : (b))
+#undef MIN
+#define MIN(a,b)    ((a) < (b) ? (a) : (b))
+
+typedef struct
+{
+    float x1, y1, x2, y2;
+}BoxEncodingCorner;
+typedef struct
+{
+    float w, h, x, y;
+}BoxEncodingCenter;
+
+// toBoxEncodingCorner is implemented in vsi_nn_kernel_box_with_nms_limit.c
+void toBoxEncodingCorner
+    (
+    BoxEncodingCenter* ctr,
+    BoxEncodingCorner* cnr
+    );
+
+// toBoxEncodingCenter is implemented in vsi_nn_kernel_box_with_nms_limit.c
+void toBoxEncodingCenter
+    (
+    BoxEncodingCorner* cnr,
+    BoxEncodingCenter* ctr
+    );
+
+// iota is implemented in vsi_nn_kernel_detection_postprocess.c
+void iota
+    (
+    int32_t * data,
+    uint32_t len,
+    int32_t value
+    );
+
+// swap_element is implemented in vsi_nn_kernel_box_with_nms_limit.c
+void swap_element
+    (
+    uint32_t* list,
+    uint32_t first,
+    uint32_t second
+    );
+
+// max_element is implemented in vsi_nn_kernel_box_with_nms_limit.c
+uint32_t max_element
+    (
+    float* data,
+    uint32_t* index_list,
+    uint32_t len
+    );
+
+// getIoUAxisAligned is implemented in vsi_nn_kernel_box_with_nms_limit.c
+float getIoUAxisAligned
+    (
+    const float* roi1,
+    const float* roi2
+    );
+
+// sort_element_by_score is implemented in vsi_nn_kernel_box_with_nms_limit.c
+void sort_element_by_score
+    (
+    float* data,
+    uint32_t* index_list,
+    uint32_t len
+    );
+
+void filterBoxes
+    (
+    const float* roiBase,
+    const float* imageInfoBase,
+    float minSize,
+    uint32_t* select,
+    uint32_t* len
+    )
+{
+    const uint32_t kRoiDim = 4;
+    uint32_t i = 0;
+    uint32_t j;
+    for(j = 0; j < *len; j++)
+    {
+        const float* roiInfo = roiBase + select[j] * kRoiDim;
+        float roiWidth, roiHeight, xRoiCenter, yRoiCenter;
+        roiWidth = roiInfo[2] - roiInfo[0];
+        roiHeight = roiInfo[3] - roiInfo[1];
+        xRoiCenter = roiInfo[0] + roiWidth / 2.0f;
+        yRoiCenter = roiInfo[1] + roiHeight / 2.0f;
+        if(roiWidth > minSize && roiHeight > minSize && xRoiCenter < imageInfoBase[1]
+            && yRoiCenter < imageInfoBase[0])
+        {
+            select[i] = select[j];
+            i++;
+        }
+    }
+    *len = i;
+}
+
 static vsi_status VX_CALLBACK vxGenerate_proposalsKernel
     (
     vx_node node,
@@ -50,9 +149,9 @@ static vsi_status VX_CALLBACK vxGenerate_proposalsKernel
     uint32_t paramNum
     )
 {
-#define ARG_NUM            (1)
-#define TENSOR_NUM_INPUT (1)
-#define TENSOR_NUM_OUTPUT (1)
+#define ARG_NUM            (6)
+#define TENSOR_NUM_INPUT (4)
+#define TENSOR_NUM_OUTPUT (3)
 #define TENSOR_NUM (TENSOR_NUM_INPUT+TENSOR_NUM_OUTPUT)
 
     vsi_status status = VSI_FAILURE;
@@ -61,15 +160,28 @@ static vsi_status VX_CALLBACK vxGenerate_proposalsKernel
     vx_tensor output[TENSOR_NUM_OUTPUT] = {0};
     float *f32_in_buffer[TENSOR_NUM_INPUT] = {0};
     float *f32_out_buffer[TENSOR_NUM_OUTPUT] = {0};
-    vsi_nn_tensor_attr_t in_attr[TENSOR_NUM_INPUT] = {0};
-    vsi_nn_tensor_attr_t out_attr[TENSOR_NUM_OUTPUT] = {0};
+    int32_t* int32_out_buffer[TENSOR_NUM_OUTPUT] = {0};
+    vsi_nn_tensor_attr_t in_attr[TENSOR_NUM_INPUT];
+    vsi_nn_tensor_attr_t out_attr[TENSOR_NUM_OUTPUT];
     uint32_t in_elements[TENSOR_NUM_INPUT] = {0};
     uint32_t out_elements[TENSOR_NUM_OUTPUT]= {0};
 
-    int32_t type;
+    float heightStride;
+    float widthStride;
+    int32_t preNmsTopN;
+    int32_t postNmsTopN;
+    float iouThreshold;
+    float minSize;
 
     int32_t i;
-
+    for(i = 0; i < TENSOR_NUM_INPUT; i++)
+    {
+        memset(&in_attr[i], 0x0, sizeof(vsi_nn_tensor_attr_t));
+    }
+    for(i = 0; i < TENSOR_NUM_OUTPUT; i++)
+    {
+        memset(&out_attr[i], 0x0, sizeof(vsi_nn_tensor_attr_t));
+    }
     /* prepare data */
     context = vxGetContext((vx_reference)node);
 
@@ -91,57 +203,203 @@ static vsi_status VX_CALLBACK vxGenerate_proposalsKernel
         status = vsi_nn_vxGetTensorAttr(output[i], &out_attr[i]);
         TEST_CHECK_STATUS(status, final);
         out_elements[i] = vsi_nn_vxGetTensorElementNum(&out_attr[i]);
-        f32_out_buffer[i]= (float *)malloc(out_elements[i] * sizeof(float));
-        memset(f32_out_buffer[i], 0, out_elements[i] * sizeof(float));
+        if(i < 2)
+        {
+            f32_out_buffer[i] = (float *)malloc(out_elements[i] * sizeof(float));
+            memset(f32_out_buffer[i], 0, out_elements[i] * sizeof(float));
+        }
+        else
+        {
+            int32_out_buffer[i] = (int32_t *)malloc(out_elements[i] * sizeof(int32_t));
+            memset(int32_out_buffer[i], 0, out_elements[i] * sizeof(int32_t));
+        }
     }
-    vxCopyScalar((vx_scalar)paramObj[TENSOR_NUM], &(type),
+    vxCopyScalar((vx_scalar)paramObj[TENSOR_NUM], &(heightStride),
+        VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
+    vxCopyScalar((vx_scalar)paramObj[TENSOR_NUM + 1], &(widthStride),
+        VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
+    vxCopyScalar((vx_scalar)paramObj[TENSOR_NUM + 2], &(preNmsTopN),
+        VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
+    vxCopyScalar((vx_scalar)paramObj[TENSOR_NUM + 3], &(postNmsTopN),
+        VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
+    vxCopyScalar((vx_scalar)paramObj[TENSOR_NUM + 4], &(iouThreshold),
+        VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
+    vxCopyScalar((vx_scalar)paramObj[TENSOR_NUM + 5], &(minSize),
         VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
 
     /* TODO: Add CPU kernel implement */
-    /* example code : copy data form input tensor to output tensor*/
-/*
     {
-        uint32_t n, c, h, w;
-        uint32_t batch = in_attr[0].size[3];
-        uint32_t channel = in_attr[0].size[2];
-        uint32_t height = in_attr[0].size[1];
-        uint32_t width = in_attr[0].size[0];
-        for(n = 0; n < batch; ++n)
+        uint32_t h, w, a, b, j;
+        const uint32_t kRoiDim = 4;
+        uint32_t numBatches = in_attr[0].size[3];
+        uint32_t height = in_attr[0].size[2];
+        uint32_t width = in_attr[0].size[1];
+        uint32_t numAnchors = in_attr[0].size[0];
+        uint32_t imageInfoLength = in_attr[0].size[0];
+
+        uint32_t batchSize = height * width * numAnchors;
+        uint32_t roiBufferSize = batchSize * kRoiDim;
+
+        float * roiBuffer = (float*)malloc(roiBufferSize * sizeof(float));
+        float * roiTransformedBuffer = (float*)malloc(roiBufferSize * sizeof(float));
+        uint32_t* select = (uint32_t*)malloc(batchSize * sizeof(uint32_t));
+        uint32_t index = 0;
+        uint32_t scores_index = 0;
+        uint32_t bboxDeltas_index = 0;
+        uint32_t imageInfo_index = 0;
+        uint32_t scores_out_index = 0;
+        uint32_t roi_out_index = 0;
+
+        // Compute the roi region for each anchor.
+        for(h = 0; h < height; h++)
         {
-            for(c = 0; c < channel; ++c)
+            float hShift = h * heightStride;
+            for(w = 0; w < width; w++)
             {
-                for(h = 0; h < height; ++h)
+                float wShift = w * widthStride;
+                for(a = 0; a < numAnchors; a++)
                 {
-                    for(w = 0; w < width; ++w)
-                    {
-                        float val;
-                        uint32_t index = w + h * width + c * width * height
-                            + n * width * height * channel;
-                        f32_out_buffer[0][index] = f32_in_buffer[0][index];
-                    }
+                    index += kRoiDim;
+                    roiBuffer[index] = f32_in_buffer[2][index] + wShift;
+                    roiBuffer[index + 1] = f32_in_buffer[2][index + 1] + hShift;
+                    roiBuffer[index + 2] = f32_in_buffer[2][index + 2] + wShift;
+                    roiBuffer[index + 3] = f32_in_buffer[2][index + 3] + hShift;
                 }
             }
         }
+
+        for(b = 0; b < numBatches; b++)
+        {
+            const uint32_t roiLength = 4;
+
+            uint32_t numRois = batchSize;
+            uint32_t i;
+            uint32_t roiIndex;
+            uint32_t select_len;
+            uint32_t numDetections = 0;
+            for(roiIndex = 0; roiIndex < numRois; roiIndex++)
+            {
+                float imageHeight = f32_in_buffer[3][imageInfo_index];
+                float imageWidth = f32_in_buffer[3][imageInfo_index + 1];
+                BoxEncodingCorner roi_cnr;
+                BoxEncodingCenter roiBefore;
+                roi_cnr.x1 = roiBuffer[roiIndex * roiLength];
+                roi_cnr.y1 = roiBuffer[roiIndex * roiLength + 1];
+                roi_cnr.x2 = roiBuffer[roiIndex * roiLength + 2];
+                roi_cnr.y2 = roiBuffer[roiIndex * roiLength + 3];
+                toBoxEncodingCenter(&roi_cnr, &roiBefore);
+                {
+                    BoxEncodingCenter roi_ctr;
+                    BoxEncodingCorner roiAfter;
+                    BoxEncodingCorner cliped;
+                    uint32_t index = bboxDeltas_index + roiIndex * roiLength;
+                    roi_ctr.w = (float)(exp(f32_in_buffer[1][index + 2]) * roiBefore.w);
+                    roi_ctr.h = (float)(exp(f32_in_buffer[1][index + 3]) * roiBefore.h);
+                    roi_ctr.x = roiBefore.x + f32_in_buffer[1][index] * roiBefore.w;
+                    roi_ctr.y = roiBefore.y + f32_in_buffer[1][index + 1] * roiBefore.h;
+                    toBoxEncodingCorner(&roi_ctr, &roiAfter);
+                    cliped.x1 = MIN(MAX(roiAfter.x1, 0.0f), imageWidth);
+                    cliped.y1 = MIN(MAX(roiAfter.y1, 0.0f), imageHeight);
+                    cliped.x2 = MIN(MAX(roiAfter.x2, 0.0f), imageWidth);
+                    cliped.y2 = MIN(MAX(roiAfter.y2, 0.0f), imageHeight);
+                    roiTransformedBuffer[index] = cliped.x1;
+                    roiTransformedBuffer[index + 1] = cliped.y1;
+                    roiTransformedBuffer[index + 2] = cliped.x2;
+                    roiTransformedBuffer[index + 3] = cliped.y2;
+                }
+            }
+
+            // Find the top preNmsTopN scores.
+            iota((int32_t*)select, batchSize, 0);
+            select_len = batchSize;
+            if(preNmsTopN > 0 && preNmsTopN < (int32_t)batchSize)
+            {
+                sort_element_by_score(&(f32_in_buffer[0][scores_index]),
+                    select, batchSize);
+                select_len = preNmsTopN;
+            }
+
+            // Filter boxes, disgard regions with height or width < minSize.
+            filterBoxes(roiTransformedBuffer, &(f32_in_buffer[3][imageInfo_index]),
+                minSize, select, &select_len);
+
+            // Apply hard NMS.
+            if(postNmsTopN < 0)
+            {
+                postNmsTopN = select_len;
+            }
+
+            for(j = 0; (j < select_len && numDetections < (uint32_t)postNmsTopN); j++)
+            {
+                // find max score and swap to the front.
+                int32_t max_index = max_element(&(f32_in_buffer[0][scores_index]),
+                    select, select_len);
+                swap_element(select, max_index, j);
+
+                // Calculate IoU of the rest, swap to the end (disgard) ifneeded.
+                for(i = j + 1; i < select_len; i++)
+                {
+                    int32_t roiBase0 = select[i] * kRoiDim;
+                    int32_t roiBase1 = select[j] * kRoiDim;
+                    float iou = getIoUAxisAligned(&(roiBuffer[roiBase0]),
+                        &(roiBuffer[roiBase1]));
+                    if(iou >= iouThreshold)
+                    {
+                        swap_element(select, i, select_len - 1);
+                        i--;
+                        select_len--;
+                    }
+                    numDetections++;
+                }
+            }
+
+            for(i = 0; i < select_len; i++)
+            {
+                memcpy(&(f32_out_buffer[1][roi_out_index]),
+                    &(roiTransformedBuffer[select[i] * kRoiDim]), kRoiDim * sizeof(float));
+                f32_out_buffer[0][scores_out_index] =
+                    f32_in_buffer[0][scores_index + select[i]];
+                int32_out_buffer[2][scores_out_index] = b;
+                scores_out_index++;
+                roi_out_index += kRoiDim;
+            }
+
+            scores_index += batchSize;
+            bboxDeltas_index += roiBufferSize;
+            imageInfo_index += imageInfoLength;
+        }
+
+        if(roiBuffer) free(roiBuffer);
+        if(roiTransformedBuffer) free(roiTransformedBuffer);
+        if(select) free(select);
     }
-*/
 
     /* save data */
     for(i = 0; i < TENSOR_NUM_OUTPUT; i++)
     {
-        status = vsi_nn_vxConvertFloat32DataToTensor(
-            context, output[i], &out_attr[i], f32_out_buffer[i],
-            out_elements[i] * sizeof(float));
-        TEST_CHECK_STATUS(status, final);
+        if(i < 2)
+        {
+            status = vsi_nn_vxConvertFloat32DataToTensor(
+                context, output[i], &out_attr[i], f32_out_buffer[i],
+                out_elements[i] * sizeof(float));
+            TEST_CHECK_STATUS(status, final);
+        }
+        else
+        {
+            vsi_nn_vxCopyDataToTensor(context, output[i], &out_attr[i],
+                (uint8_t *)int32_out_buffer[i]);
+        }
     }
 
 final:
-    for (i = 0; i < TENSOR_NUM_INPUT; i++)
+    for(i = 0; i < TENSOR_NUM_INPUT; i++)
     {
-        if (f32_in_buffer[i]) free(f32_in_buffer[i]);
+        if(f32_in_buffer[i]) free(f32_in_buffer[i]);
     }
     for(i = 0; i < TENSOR_NUM_OUTPUT; i++)
     {
-        if (f32_out_buffer[i]) free(f32_out_buffer[i]);
+        if(f32_out_buffer[i]) free(f32_out_buffer[i]);
+        if(int32_out_buffer[i]) free(int32_out_buffer[i]);
     }
     return status;
 } /* _VX_KERNEL_FUNC_KERNEL() */
@@ -149,7 +407,17 @@ final:
 static vx_param_description_t vxGenerate_proposalsKernelParam[] =
 {
     {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
 };
 

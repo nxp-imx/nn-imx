@@ -1095,6 +1095,7 @@ vsi_nn_node_id_t * vsi_nn_SortGraphNode
     sorted_nodes = NULL;
     nodes        = NULL;
     node         = NULL;
+    node_id      = VSI_NN_NODE_ID_NA;
 
     /* Init variables. */
     tensors = (vsi_bool *)malloc(
@@ -1146,6 +1147,7 @@ vsi_nn_node_id_t * vsi_nn_SortGraphNode
     do
     {
         dirty = FALSE;
+        all_tensor_processed = FALSE;
         for( i = 0; i < count; i ++ )
         {
             node_id = nodes[i];
@@ -1472,8 +1474,7 @@ void vsi_nn_DumpGraphToJson
     if(NULL == tensor_ref)
     {
         VSILOGE("build tensor io fail");
-        free(fp);
-        fp = NULL;
+        fclose(fp);
         return ;
     }
 

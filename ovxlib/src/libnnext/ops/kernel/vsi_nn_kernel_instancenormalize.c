@@ -375,7 +375,7 @@ vsi_status VX_CALLBACK vxInstanceNormKernel
         output = (uint8_t*)malloc(output_size[0]*output_size[1]*output_size[2]*sizeof(uint8_t));
 #endif
         input_user_addr = vxCreateTensorAddressing(context, input_size, input_stride_size, input_dims);
-        vxCopyTensorPatch(imgObj[0], NULL, input_user_addr, input, VX_READ_ONLY, 0);
+        vxCopyTensorPatch_11(imgObj[0], NULL, input_user_addr, input, VX_READ_ONLY, 0);
         //scale and bias
         scale_stride_size[0]  = vsi_nn_GetTypeBytes(scaleFormat);
         bias_stride_size[0] = vsi_nn_GetTypeBytes(biasFormat);
@@ -387,9 +387,9 @@ vsi_status VX_CALLBACK vxInstanceNormKernel
         scale  = (int16_t*)malloc(scale_size[0]*sizeof(int16_t));
         bias = (float*)malloc(bias_size[0]*sizeof(float));
         bias_user_addr = vxCreateTensorAddressing(context, bias_size, bias_stride_size, bias_dims);
-        vxCopyTensorPatch(imgObj[1], NULL, bias_user_addr, bias, VX_READ_ONLY, 0);
+        vxCopyTensorPatch_11(imgObj[1], NULL, bias_user_addr, bias, VX_READ_ONLY, 0);
         scale_user_addr = vxCreateTensorAddressing(context, scale_size, scale_stride_size, scale_dims);
-        vxCopyTensorPatch(imgObj[2], NULL, scale_user_addr, scale, VX_READ_ONLY, 0);
+        vxCopyTensorPatch_11(imgObj[2], NULL, scale_user_addr, scale, VX_READ_ONLY, 0);
 
         // scalar
         status = vxCopyScalar(scalar[0], &eps, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
@@ -405,7 +405,7 @@ vsi_status VX_CALLBACK vxInstanceNormKernel
         //output tensor
         output_user_addr = vxCreateTensorAddressing(context, output_size,
             output_stride_size, output_dims);
-        vxCopyTensorPatch(imgObj[3], NULL, output_user_addr, output, VX_WRITE_ONLY, 0);
+        vxCopyTensorPatch_11(imgObj[3], NULL, output_user_addr, output, VX_WRITE_ONLY, 0);
 OnError:
         if(input) free(input);
         if(scale) free(scale);

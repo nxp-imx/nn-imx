@@ -43,44 +43,17 @@
 #define _VX_KERNEL_NAME         (VX_KERNEL_NAME_TOPK)
 #define _VX_KERNEL_FUNC_KERNEL  (vxTopkKernel)
 
-static int32_t partition
-(
-    float* input,
-    int32_t left,
-    int32_t right,
-    vsi_bool is_recursion,
-    uint32_t* indices
-)
+static uint32_t max_comp_func(void* data, int32_t left, int32_t right)
 {
-    float key;
-    int32_t key_index;
-    int32_t low = left;
-    int32_t high = right;
-    if (left < right)
+    float* fdata = (float*)data;
+    if (fdata[left] >= fdata[right])
     {
-        key_index = indices[left];
-        key = input[key_index];
-        while (low < high)
-        {
-            while (low < high && input[indices[high]] <= key)
-            {
-                high--;
-            }
-            indices[low] = indices[high];
-            while (low < high && input[indices[low]] >= key)
-            {
-                low++;
-            }
-            indices[high] = indices[low];
-        }
-        indices[low] = key_index;
-        if (is_recursion)
-        {
-            partition(input, left, low - 1, TRUE, indices);
-            partition(input, low + 1, right, TRUE, indices);
-        }
+        return TRUE;
     }
-    return low;
+    else
+    {
+        return FALSE;
+    }
 }
 
 static void find_top_k_1d
@@ -101,7 +74,7 @@ static void find_top_k_1d
         indices[j] = j;
     }
 
-    j = partition(input, low, high, FALSE, indices);
+    j = vsi_nn_partition(input, low, high, max_comp_func, FALSE, indices);
 
     //part_sort
     while (j != k)
@@ -114,10 +87,10 @@ static void find_top_k_1d
         {
             high = j;
         }
-        j = partition(input, low, high, FALSE, indices);
+        j = vsi_nn_partition(input, low, high, max_comp_func, FALSE, indices);
     }
     //all_sort
-    partition(input, 0, k - 1, TRUE, indices);
+    vsi_nn_partition(input, 0, k - 1, max_comp_func, TRUE, indices);
 
     for (j = 0; j < (int32_t)k; j++)
     {
@@ -144,15 +117,22 @@ static vsi_status VX_CALLBACK vxTopkKernel
     float *f32_in_buffer[TENSOR_NUM_INPUT] = {0};
     float *f32_out_buffer = NULL;
     uint32_t *u32_out_buffer = NULL;
-    vsi_nn_tensor_attr_t in_attr[TENSOR_NUM_INPUT] = {0};
-    vsi_nn_tensor_attr_t out_attr[TENSOR_NUM_OUTPUT] = {0};
+    vsi_nn_tensor_attr_t in_attr[TENSOR_NUM_INPUT];
+    vsi_nn_tensor_attr_t out_attr[TENSOR_NUM_OUTPUT];
     uint32_t in_elements[TENSOR_NUM_INPUT] = {0};
     uint32_t out_elements[TENSOR_NUM_OUTPUT]= {0};
 
     int32_t top_k;
 
     int32_t i;
-
+    for(i = 0; i < TENSOR_NUM_INPUT; i++)
+    {
+        memset(&in_attr[i], 0x0, sizeof(vsi_nn_tensor_attr_t));
+    }
+    for(i = 0; i < TENSOR_NUM_OUTPUT; i++)
+    {
+        memset(&out_attr[i], 0x0, sizeof(vsi_nn_tensor_attr_t));
+    }
     /* prepare data */
     context = vxGetContext((vx_reference)node);
 

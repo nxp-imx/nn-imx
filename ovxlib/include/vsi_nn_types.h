@@ -113,6 +113,36 @@ typedef enum
     VSI_NN_TYPE_VDATA = VX_TYPE_USER_STRUCT_START + 0x1,
 }vsi_nn_type_e;
 
+typedef int32_t vsi_nn_activation_e; enum
+{
+    VSI_NN_ACT_NONE    = 0,
+    VSI_NN_ACT_RELU    = 1,
+    VSI_NN_ACT_RELU1   = 2,
+    VSI_NN_ACT_RELU6   = 3,
+    VSI_NN_ACT_TANH    = 4,
+    VSI_NN_ACT_SIGMOID = 6,
+
+    VSI_NN_ACT_HARD_SIGMOID = 31, /* temporary use 31*/
+
+    //Deprecated enum, reversed only for old code
+    VSI_NN_LSTMUNIT_ACT_NONE    = 0,
+    VSI_NN_LSTMUNIT_ACT_RELU    = 1,
+    VSI_NN_LSTMUNIT_ACT_RELU6   = 3,
+    VSI_NN_LSTMUNIT_ACT_TANH    = 4,
+    VSI_NN_LSTMUNIT_ACT_SIGMOID = 6,
+
+    VSI_NN_LSTMUNIT_ACT_HARD_SIGMOID = 31,
+
+    VSI_NN_GRU_ACT_NONE    = 0,
+    VSI_NN_GRU_ACT_RELU    = 1,
+    VSI_NN_GRU_ACT_RELU6   = 3,
+    VSI_NN_GRU_ACT_TANH    = 4,
+    VSI_NN_GRU_ACT_SIGMOID = 6,
+
+    VSI_NN_GRU_ACT_HARD_SIGMOID = 31
+};
+
+
 typedef uint32_t vsi_nn_size_t;
 
 /** Tensor id type */

@@ -63,8 +63,8 @@ void mySelectFunc
         int16_t* tmpIn1 = (int16_t*)imgIn1;
         int16_t* tmpOut = (int16_t*)imgOut;
         int16_t data0, data1;
-        int16_t* tmpCond = (int16_t*)imgCond;
-        int16_t cond = 0;
+        uint8_t* tmpCond = (uint8_t*)imgCond;
+        uint8_t cond = 0;
 
         for(k = 0; k < iter; k++)
         {
@@ -80,8 +80,8 @@ void mySelectFunc
         int8_t* tmpIn1 = (int8_t*)imgIn1;
         int8_t* tmpOut = (int8_t*)imgOut;
         int8_t data0, data1;
-        int8_t* tmpCond = (int8_t*)imgCond;
-        int8_t cond = 0;
+        uint8_t* tmpCond = (uint8_t*)imgCond;
+        uint8_t cond = 0;
 
         for(k = 0; k < iter; k++)
         {
@@ -140,21 +140,19 @@ static vsi_status VX_CALLBACK vxSelectKernel
 #endif
 
         uint32_t input_size[DIM_SIZE] = {0}, output_size[DIM_SIZE] = {0};
-        uint32_t cond_stride_size[4]  = {0};
-        uint32_t input_stride_size[4]  = {0};
-        uint32_t output_stride_size[4] = {0};
-
-        vx_tensor_addressing condition_user_addr = NULL;
-        vx_tensor_addressing input_user_addr = NULL;
-        vx_tensor_addressing input1_user_addr = NULL;
-        vx_tensor_addressing output_user_addr = NULL;
+        vsi_nn_tensor_attr_t in_attr, in_attr1, con_attr, out_attr;
 
         vsi_nn_type_e inputFormat = VSI_NN_TYPE_FLOAT16, outputFormat = VSI_NN_TYPE_FLOAT16;
         vsi_nn_type_e condFormat = VSI_NN_TYPE_INT8;
         uint32_t input_dims = 0, output_dims = 0, tmpDim = 0;
-        uint32_t i;
-        int32_t in_zp, out_zp;
-        float in_scale, out_scale;
+
+        int32_t in_zp = 0, out_zp = 0;
+        float in_scale = 1, out_scale = 1;
+
+        memset(&in_attr, 0x0, sizeof(vsi_nn_tensor_attr_t));
+        memset(&in_attr1, 0x0, sizeof(vsi_nn_tensor_attr_t));
+        memset(&con_attr, 0x0, sizeof(vsi_nn_tensor_attr_t));
+        memset(&out_attr, 0x0, sizeof(vsi_nn_tensor_attr_t));
 
         imgObj[0] = (vx_tensor)paramObj[0];
         imgObj[1] = (vx_tensor)paramObj[1];  //output
@@ -164,7 +162,7 @@ static vsi_status VX_CALLBACK vxSelectKernel
         if (context == NULL)
         {
             VSILOGE("vxGetContext failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
 
         //condition
@@ -172,7 +170,13 @@ static vsi_status VX_CALLBACK vxSelectKernel
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxQueryTensor condFormat failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
+        }
+
+        if(condFormat != VSI_NN_TYPE_BOOL8)
+        {
+            VSILOGE("Condition format failure! at line %d\n", __LINE__);
+            goto OnError;
         }
 
         //input
@@ -180,31 +184,31 @@ static vsi_status VX_CALLBACK vxSelectKernel
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxQueryTensor input_dims failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
         status = vxQueryTensor(imgObj[1], VX_TENSOR_DATA_TYPE, &inputFormat, sizeof(inputFormat));
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxQueryTensor inputFormat failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
         status = vxQueryTensor(imgObj[1], VX_TENSOR_DIMS, input_size, sizeof(input_size));
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxQueryTensor input_size failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
         status = vxQueryTensor(imgObj[1], VX_TENSOR_ZERO_POINT, &in_zp, sizeof(in_zp));
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxQueryTensor input_size failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
         status = vxQueryTensor(imgObj[1], VX_TENSOR_SCALE, &in_scale, sizeof(in_scale));
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxQueryTensor input_size failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
         //output
         status  = vxQueryTensor(imgObj[3], VX_TENSOR_DATA_TYPE, &outputFormat, sizeof(outputFormat));
@@ -212,87 +216,72 @@ static vsi_status VX_CALLBACK vxSelectKernel
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxQueryTensor outputFormat failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
         status = vxQueryTensor(imgObj[3], VX_TENSOR_DIMS, output_size, sizeof(output_size));
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxQueryTensor output_size failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
         status = vxQueryTensor(imgObj[3], VX_TENSOR_ZERO_POINT, &out_zp, sizeof(out_zp));
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxQueryTensor input_size failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
         status = vxQueryTensor(imgObj[3], VX_TENSOR_SCALE, &out_scale, sizeof(out_scale));
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxQueryTensor input_size failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
 
         input_size[2] = (input_dims <= 2)?1:input_size[2];
         input_size[3] = (input_dims <= 3)?1:input_size[3];
 
-        cond_stride_size[0] = vsi_nn_GetTypeBytes(condFormat);
-        input_stride_size[0]  = vsi_nn_GetTypeBytes(inputFormat);
-        output_stride_size[0] = vsi_nn_GetTypeBytes(outputFormat);
-        //length_stride_size[0] = vsi_nn_GetTypeBytes(paraFormat);
-        for (i=1; i< input_dims; i++)
-        {
-            cond_stride_size[i]  = cond_stride_size[i-1] * input_size[i-1];
-        }
-        for (i=1; i< input_dims; i++)
-        {
-            input_stride_size[i]  = input_stride_size[i-1] * input_size[i-1];
-        }
-        for (i=1; i< output_dims; i++)
-        {
-            output_stride_size[i] = output_stride_size[i-1] * output_size[i-1];
-        }
 
 #if INPUT_FP16
         input  = (int16_t*)malloc(input_size[0]*input_size[1]*input_size[2]*sizeof(int16_t));
 #else
-        condition = (uint8_t*)malloc(input_size[0]*input_size[1]*input_size[2]*vsi_nn_GetTypeBytes(condFormat));
-        input  = (uint8_t*)malloc(input_size[0]*input_size[1]*input_size[2]*vsi_nn_GetTypeBytes(inputFormat));
-        input1  = (uint8_t*)malloc(input_size[0]*input_size[1]*input_size[2]*vsi_nn_GetTypeBytes(inputFormat));
+        //condition = (uint8_t*)malloc(input_size[0]*input_size[1]*input_size[2]*vsi_nn_GetTypeBytes(condFormat));
+        //input  = (uint8_t*)malloc(input_size[0]*input_size[1]*input_size[2]*vsi_nn_GetTypeBytes(inputFormat));
+        //input1  = (uint8_t*)malloc(input_size[0]*input_size[1]*input_size[2]*vsi_nn_GetTypeBytes(inputFormat));
 #endif
 #if OUTPUT_FP16
         output = (int16_t*)malloc(output_size[0]*output_size[1]*output_size[2]*sizeof(int16_t));
 #else
         output = (uint8_t*)malloc(output_size[0]*output_size[1]*output_size[2]*vsi_nn_GetTypeBytes(outputFormat));
 #endif
-
-        condition_user_addr = vxCreateTensorAddressing(context, input_size, cond_stride_size, input_dims);
-        vxCopyTensorPatch(imgObj[0], NULL, condition_user_addr, condition, VX_READ_ONLY, 0);
-
-        input_user_addr = vxCreateTensorAddressing(context, input_size, input_stride_size, input_dims);
-        vxCopyTensorPatch(imgObj[1], NULL, input_user_addr, input, VX_READ_ONLY, 0);
-
-        input1_user_addr = vxCreateTensorAddressing(context, input_size, input_stride_size, input_dims);
-        vxCopyTensorPatch(imgObj[2], NULL, input1_user_addr, input1, VX_READ_ONLY, 0);
+        status = vsi_nn_vxGetTensorAttr(imgObj[0], &con_attr);
+        status |= vsi_nn_vxGetTensorAttr(imgObj[1], &in_attr);
+        status |= vsi_nn_vxGetTensorAttr(imgObj[2], &in_attr1);
+        status |= vsi_nn_vxGetTensorAttr(imgObj[3], &out_attr);
+        if (status != VX_SUCCESS)
+        {
+            VSILOGE("vsi_nn_vxGetTensorAttr failure! at line %d\n", __LINE__);
+            goto OnError;
+        }
+        condition = vsi_nn_vxCopyTensorToData(context, imgObj[0], &in_attr);
+        input = vsi_nn_vxCopyTensorToData(context, imgObj[1], &in_attr);
+        input1 = vsi_nn_vxCopyTensorToData(context, imgObj[2], &in_attr1);
 
         // Call C Prototype
         mySelectFunc(condition, input, input1, output, tmpDim, input_size[0],
             input_size[1], input_size[2], input_size[3], inputFormat);
 
         //output tensor
-        output_user_addr = vxCreateTensorAddressing(context, output_size,
-            output_stride_size, output_dims);
-        vxCopyTensorPatch(imgObj[3], NULL, output_user_addr, output, VX_WRITE_ONLY, 0);
-
+        status = vsi_nn_vxCopyDataToTensor(context, imgObj[3], &out_attr, output);
+        if (status != VX_SUCCESS)
+        {
+            VSILOGE("vsi_nn_vxCopyDataToTensor failure! at line %d\n", __LINE__);
+            goto OnError;
+        }
+OnError:
         if(condition) free(condition);
         if(input) free(input);
         if(input1) free(input1);
         if(output) free(output);
-
-        if(condition_user_addr) vxReleaseTensorAddressing(&condition_user_addr);
-        if(input_user_addr) vxReleaseTensorAddressing(&input_user_addr);
-        if(input1_user_addr) vxReleaseTensorAddressing(&input1_user_addr);
-        if(output_user_addr) vxReleaseTensorAddressing(&output_user_addr);
     }
 
     return status;
@@ -389,7 +378,7 @@ extern "C" {
 vx_kernel_description_t vxSelect_CPU =
 {
     _VX_KERNEL_ID,
-    VX_KERNEL_NAME_SELECT_INT8,
+    VX_KERNEL_NAME_SELECT_UINT8,
     _VX_KERNEL_FUNC_KERNEL,
     vxSelectKernelParam,
     _cnt_of_array( vxSelectKernelParam ),
@@ -397,34 +386,6 @@ vx_kernel_description_t vxSelect_CPU =
     NULL,
     NULL,
     vsi_nn_KernelInitializer,
-    vsi_nn_KernelDeinitializer
-};
-
-vx_kernel_description_t vxSelect_Int8 =
-{
-    _VX_KERNEL_ID,
-    VX_KERNEL_NAME_SELECT_INT8,
-    NULL,
-    vxSelectKernelParam,
-    _cnt_of_array( vxSelectKernelParam ),
-    vsi_nn_KernelValidator,
-    NULL,
-    NULL,
-    vxSelectInitializer,
-    vsi_nn_KernelDeinitializer
-};
-
-vx_kernel_description_t vxSelect_Int16 =
-{
-    _VX_KERNEL_ID,
-    VX_KERNEL_NAME_SELECT_INT16,
-    NULL,
-    vxSelectKernelParam,
-    _cnt_of_array( vxSelectKernelParam ),
-    vsi_nn_KernelValidator,
-    NULL,
-    NULL,
-    vxSelectInitializer,
     vsi_nn_KernelDeinitializer
 };
 
@@ -442,12 +403,40 @@ vx_kernel_description_t vxSelect_Uint8 =
     vsi_nn_KernelDeinitializer
 };
 
+vx_kernel_description_t vxSelect_Bool_Int8 =
+{
+    _VX_KERNEL_ID,
+    VX_KERNEL_NAME_SELECT_BOOL_INT8,
+    NULL,
+    vxSelectKernelParam,
+    _cnt_of_array( vxSelectKernelParam ),
+    vsi_nn_KernelValidator,
+    NULL,
+    NULL,
+    vxSelectInitializer,
+    vsi_nn_KernelDeinitializer
+};
+
+vx_kernel_description_t vxSelect_Bool_Int16 =
+{
+    _VX_KERNEL_ID,
+    VX_KERNEL_NAME_SELECT_BOOL_INT16,
+    NULL,
+    vxSelectKernelParam,
+    _cnt_of_array( vxSelectKernelParam ),
+    vsi_nn_KernelValidator,
+    NULL,
+    NULL,
+    vxSelectInitializer,
+    vsi_nn_KernelDeinitializer
+};
+
 vx_kernel_description_t * vx_kernel_SELECT_list[] =
 {
     &vxSelect_CPU,
-    &vxSelect_Int8,
-    &vxSelect_Int16,
     &vxSelect_Uint8,
+    &vxSelect_Bool_Int8,
+    &vxSelect_Bool_Int16,
     NULL
 };
 #ifdef __cplusplus

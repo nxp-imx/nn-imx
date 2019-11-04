@@ -332,7 +332,7 @@ static vsi_status op_init
 {
     vsi_status status = VSI_SUCCESS;
 
-    self->nn_param.lstmunit.activation = VSI_NN_LSTMUNIT_ACT_TANH;
+    self->nn_param.lstmunit.activation = VSI_NN_ACT_TANH;
 
     return status;
 } /* op_init() */

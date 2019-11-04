@@ -51,21 +51,6 @@ typedef enum _reduceany_nn_image_dims_e
     IMAGE     = FALSE,
 }reduceany_nn_activation_type_e;
 
-typedef enum _reduceany_nn_type_e
-{
-    I8 = 0,
-    I16,
-    I32,
-    I64,
-    U8,
-    U16,
-    U32,
-    U64,
-    F16,
-    F32,
-    BF16,
-}reduceany_nn_type_e;
-
 #define VSI_NN_GEN_REDUCEANY_KEY(_axis, _input_type, _output_type, _image_2d) \
     ((_axis << 20) | (_input_type << 12) | (_output_type << 4) | (_image_2d))
 
@@ -156,7 +141,7 @@ static vsi_status _create_params
 {
     vsi_status status;
     vx_context ctx;
-    vsi_nn_reduceany_internal_param * p;
+    vsi_nn_reduceany_internal_param * p = NULL;
     if( 0 == num )
     {
         return VSI_SUCCESS;
@@ -203,7 +188,7 @@ static vsi_status cpu_op_compute
 {
     vsi_status status = VSI_SUCCESS;
     vx_reference params[_PARAM_NUM];
-    vx_reference * args;
+    vx_reference * args = NULL;
 
     args = &params[_IO_NUM];
 
@@ -226,7 +211,7 @@ static vsi_status cpu_op_compute
     return status;
 }
 
-static reduceany_nn_type_e get_reduceany_intra_type(vsi_nn_type_e type)
+static vsi_nn_shader_kernel_type_e get_reduceany_intra_type(vsi_nn_type_e type)
 {
     switch (type)
     {
@@ -271,8 +256,20 @@ static int32_t reshape_tensor_set_input_output
     uint32_t dst_sizes[VSI_NN_MAX_DIM_NUM] = {1};
     uint32_t dims = vsi_nn_max(input->attr.dim_num, 2);
     int32_t axis = 0;
-    vsi_nn_reduceany_internal_param * p;
+    vsi_nn_reduceany_internal_param * p = NULL;
     vsi_bool is_2d_image = FALSE;
+    uint32_t input_size[VSI_NN_MAX_DIM_NUM] = {1};
+    int32_t i;
+
+    for (i = 0; i < input->attr.dim_num; i++)
+    {
+        input_size[i] = input->attr.size[i];
+    }
+
+    for(; i < VSI_NN_MAX_DIM_NUM; i++)
+    {
+        input_size[i] = 1;
+    }
 
     p = &(self->nn_param.reduceany_internal);
     axis = p->axis[0];
@@ -281,39 +278,39 @@ static int32_t reshape_tensor_set_input_output
 
     if (axis == 0)
     {
-        sizes[0] = input->attr.size[0];
+        sizes[0] = input_size[0];
 
         if (is_2d_image)
         {
-            sizes[1] = input->attr.size[1] * input->attr.size[2];
+            sizes[1] = input_size[1] * input_size[2];
             sizes[2] = 1;
-            sizes[3] = dims > 3 ? input->attr.size[3] : 1;
+            sizes[3] = dims > 3 ? input_size[3] : 1;
 
             dst_sizes[0] = 1;
-            dst_sizes[1] = input->attr.size[1] * input->attr.size[2];
+            dst_sizes[1] = input_size[1] * input_size[2];
             dst_sizes[2] = 1;
-            dst_sizes[3] = dims > 3 ? input->attr.size[3] : 1;
+            dst_sizes[3] = dims > 3 ? input_size[3] : 1;
         }
         else
         {
-            sizes[1] = input->attr.size[1];
-            sizes[2] = dims > 2 ? input->attr.size[2] : 1;
-            sizes[3] = dims > 3 ? input->attr.size[3] : 1;
+            sizes[1] = input_size[1];
+            sizes[2] = dims > 2 ? input_size[2] : 1;
+            sizes[3] = dims > 3 ? input_size[3] : 1;
 
             dst_sizes[0] = 1;
-            dst_sizes[1] = input->attr.size[1];
-            dst_sizes[2] = dims > 2 ? input->attr.size[2] : 1;
-            dst_sizes[3] = dims > 3 ? input->attr.size[3] : 1;
+            dst_sizes[1] = input_size[1];
+            dst_sizes[2] = dims > 2 ? input_size[2] : 1;
+            dst_sizes[3] = dims > 3 ? input_size[3] : 1;
         }
     }
     else if (axis == 1)
     {
-        if (1 == input->attr.size[0])
+        if (1 == input_size[0])
         {
-            sizes[0] = input->attr.size[1];
-            sizes[1] = dims > 2 ? input->attr.size[2] : 1;
+            sizes[0] = input_size[1];
+            sizes[1] = dims > 2 ? input_size[2] : 1;
             sizes[2] = 1;
-            sizes[3] = dims > 3 ? input->attr.size[3] : 1;
+            sizes[3] = dims > 3 ? input_size[3] : 1;
             dst_sizes[0] = 1;
             dst_sizes[1] = sizes[1];
             dst_sizes[2] = sizes[2];
@@ -322,55 +319,55 @@ static int32_t reshape_tensor_set_input_output
         }
         else
         {
-            sizes[0] = input->attr.size[0];
-            sizes[1] = input->attr.size[1];
-            sizes[2] = dims > 2 ? input->attr.size[2] : 1;
-            sizes[3] = dims > 3 ? input->attr.size[3] : 1;
-            dst_sizes[0] = input->attr.size[0];
+            sizes[0] = input_size[0];
+            sizes[1] = input_size[1];
+            sizes[2] = dims > 2 ? input_size[2] : 1;
+            sizes[3] = dims > 3 ? input_size[3] : 1;
+            dst_sizes[0] = input_size[0];
             dst_sizes[1] = 1;
-            dst_sizes[2] = dims > 2 ? input->attr.size[2] : 1;
-            dst_sizes[3] = dims > 3 ? input->attr.size[3] : 1;
+            dst_sizes[2] = dims > 2 ? input_size[2] : 1;
+            dst_sizes[3] = dims > 3 ? input_size[3] : 1;
         }
     }
     else if (axis == 2)
     {
-        if(1 == input->attr.size[0] && 1 == input->attr.size[1])
+        if(1 == input_size[0] && 1 == input_size[1])
         {
-            sizes[0] = input->attr.size[2];
+            sizes[0] = input_size[2];
             sizes[1] = 1;
             sizes[2] = 1;
-            sizes[3] = dims > 3 ? input->attr.size[3] : 1;
+            sizes[3] = dims > 3 ? input_size[3] : 1;
 
             dst_sizes[0] = 1;
             dst_sizes[1] = 1;
             dst_sizes[2] = 1;
-            dst_sizes[3] = dims > 3 ? input->attr.size[3] : 1;
+            dst_sizes[3] = dims > 3 ? input_size[3] : 1;
             axis = 0;
         }
         else if (is_2d_image)
         {
-            sizes[0] = input->attr.size[0] * input->attr.size[1];
-            sizes[1] = input->attr.size[2];
+            sizes[0] = input_size[0] * input_size[1];
+            sizes[1] = input_size[2];
             sizes[2] = 1;
-            sizes[3] = dims > 3 ? input->attr.size[3] : 1;
+            sizes[3] = dims > 3 ? input_size[3] : 1;
 
-            dst_sizes[0] = input->attr.size[0] * input->attr.size[1];
+            dst_sizes[0] = input_size[0] * input_size[1];
             dst_sizes[1] = 1;
             dst_sizes[2] = 1;
-            dst_sizes[3] = dims > 3 ? input->attr.size[3] : 1;
+            dst_sizes[3] = dims > 3 ? input_size[3] : 1;
             axis = 1;
         }
         else
         {
-            sizes[0] = input->attr.size[0];
-            sizes[1] = input->attr.size[1];
-            sizes[2] = dims > 2 ? input->attr.size[2] : 1;
-            sizes[3] = dims > 3 ? input->attr.size[3] : 1;
+            sizes[0] = input_size[0];
+            sizes[1] = input_size[1];
+            sizes[2] = dims > 2 ? input_size[2] : 1;
+            sizes[3] = dims > 3 ? input_size[3] : 1;
 
-            dst_sizes[0] = input->attr.size[0];
-            dst_sizes[1] = input->attr.size[1];
+            dst_sizes[0] = input_size[0];
+            dst_sizes[1] = input_size[1];
             dst_sizes[2] = 1;
-            dst_sizes[3] = dims > 3 ? input->attr.size[3] : 1;
+            dst_sizes[3] = dims > 3 ? input_size[3] : 1;
         }
     }
 
@@ -398,10 +395,10 @@ static vsi_status vx_op_compute
 {
     vsi_status status = VSI_SUCCESS;
     vx_reference params[_PARAM_NUM];
-    vx_reference * args;
+    vx_reference * args = NULL;
     uint32_t dims = vsi_nn_max(inputs[0]->attr.dim_num, 2);
     int32_t axis = 0;
-    vsi_nn_reduceany_internal_param * p;
+    vsi_nn_reduceany_internal_param * p = NULL;
     vx_border_t border;
 
     p = &(self->nn_param.reduceany_internal);
@@ -449,14 +446,14 @@ static void _get_reduceany_hashtable_idx
 {
     vsi_nn_type_e inputFormat = inputs[0]->attr.dtype.vx_type;
     vsi_nn_type_e outputFormat  = outputs[0]->attr.dtype.vx_type;
-    reduceany_nn_type_e _input_type;
-    reduceany_nn_type_e _output_type;
+    vsi_nn_shader_kernel_type_e _input_type;
+    vsi_nn_shader_kernel_type_e _output_type;
     int32_t axis = 0;
     uint32_t key;
     vsi_bool is_2d_image = FALSE;
     uint32_t i = 0;
     uint32_t dims = vsi_nn_max(inputs[0]->attr.dim_num, 2);
-    vsi_nn_reduceany_internal_param * p;
+    vsi_nn_reduceany_internal_param * p = NULL;
 
     p = &(self->nn_param.reduceany_internal);
     axis = p->axis[0];
@@ -498,7 +495,7 @@ static vsi_bool vx_op_pre_compute
     vsi_nn_kernel_info_t * kernel_info
     )
 {
-    vsi_nn_reduceany_internal_param * p;
+    vsi_nn_reduceany_internal_param * p = NULL;
 
     p = &(self->nn_param.reduceany_internal);
 
@@ -524,9 +521,10 @@ static vsi_status op_compute
     )
 {
     vsi_status status;
-    vsi_nn_kernel_info_t kernel_info = {0};
-    vsi_nn_reduceany_internal_param * p;
+    vsi_nn_kernel_info_t kernel_info;
+    vsi_nn_reduceany_internal_param * p = NULL;
 
+    memset(&kernel_info, 0x0, sizeof(vsi_nn_kernel_info_t));
     status = VSI_FAILURE;
     if( NULL == self )
     {

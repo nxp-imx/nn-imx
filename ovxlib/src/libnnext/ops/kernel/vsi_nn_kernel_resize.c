@@ -141,14 +141,7 @@ static vsi_status VX_CALLBACK vxResizeKernel
     //save data
     for( i = TENSOR_NUM_INPUT; i < TENSOR_NUM; i ++ )
     {
-        status = vxCopyTensorPatch(
-            tensor[i],
-            NULL,
-            user_addr[i],
-            buffer_ptr[i],
-            VX_WRITE_ONLY,
-            0
-            );
+        status = vsi_nn_copy_tensor_patch(tensor[i], &attr[i], buffer_ptr[i], VX_WRITE_ONLY);
         if (user_addr[i]) vxReleaseTensorAddressing(&(user_addr[i]));
     }
     for( i = 0; i < TENSOR_NUM; i ++ )
@@ -194,8 +187,21 @@ vsi_status VX_CALLBACK vxTensorResizeInitializer
 
     vx_tensor input = (vx_tensor)paramObj[0];
     uint32_t input_size[DIM_SIZE];
+    vsi_nn_tensor_attr_t attr;
+    uint32_t i, input_dim;
 
-    status = vxQueryTensor(input, VX_TENSOR_DIMS, input_size, sizeof(input_size));
+    memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
+    status  = vsi_nn_vxGetTensorAttr(input, &attr);
+    if (status != VX_SUCCESS)
+    {
+        VSILOGE("vsi_nn_vxGetTensorAttr failure! at line %d\n", __LINE__);
+        return status;
+    }
+    input_dim  = attr.dim_num;
+    for (i = 0; i < input_dim; i++)
+    {
+        input_size[i] = attr.size[i];
+    }
 
     shaderParam.globalWorkOffset[0] = 0;
     shaderParam.globalWorkOffset[1] = 0;

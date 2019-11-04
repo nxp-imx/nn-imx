@@ -623,8 +623,9 @@ static vsi_status op_compute
     )
 {
     vsi_status status;
-    vsi_nn_kernel_info_t kernel_info = {0};
+    vsi_nn_kernel_info_t kernel_info;
 
+    memset(&kernel_info, 0x0, sizeof(vsi_nn_kernel_info_t));
     status = VSI_FAILURE;
     kernel_info.resource_num = 1;
     kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));
@@ -722,7 +723,7 @@ vsi_status vsi_nn_op_imageprocess_single_node
     if (image_global == NULL)
     {
         vsi_status status;
-        vsi_nn_kernel_info_t kernel_info = {0};
+        vsi_nn_kernel_info_t kernel_info;
         vx_node node = NULL;
         vx_reference params[_PARAM_NUM_SCALETOTENSOR];
         vx_border_t border;
@@ -742,6 +743,7 @@ vsi_status vsi_nn_op_imageprocess_single_node
         uint32_t arg_num;
         vx_bool is_gray = vx_false_e;
 
+        memset(&kernel_info, 0x0, sizeof(vsi_nn_kernel_info_t));
         memset(&out0, 0, sizeof(vsi_nn_tensor_t));
         para.axis = reverse1_axis;
         para.numberOfAxis = 1;
@@ -820,7 +822,8 @@ vsi_status vsi_nn_op_imageprocess_single_node
         if( NULL == node )
         {
             VSILOGE("Create scaletotensor node fails");
-            return VSI_FAILURE;
+            status = VSI_FAILURE;
+            goto OnError;
         }
         //imgInfo = {width * num_of_channels, height, 1, width * num_of_channels, VX_SCALE_UNITY, VX_SCALE_UNITY, 1, 1};
         imgInfo.dim_x = attr->size[0] * attr->size[2];
@@ -860,7 +863,8 @@ vsi_status vsi_nn_op_imageprocess_single_node
     params[i + _IO_NUM] = (vx_reference)vxCreateScalar( ctx, type, &arg ); \
     status = vxGetStatus( params[i + _IO_NUM] ); \
     if( VSI_SUCCESS != status ) { \
-    return VSI_FAILURE; \
+    status = VSI_FAILURE;\
+    goto OnError;\
     } \
         } while(0)
         if (!is_gray)
@@ -996,6 +1000,7 @@ vsi_status vsi_nn_op_imageprocess_single_node
         }
     }
 OnError:
+        if(tensor_temp) vsi_nn_ReleaseTensor(&tensor_temp);
         if(output_scaletotensor) vsi_nn_ReleaseTensor(&output_scaletotensor);
         if(output_reversetensor) vsi_nn_ReleaseTensor(&output_reversetensor);
         return status;

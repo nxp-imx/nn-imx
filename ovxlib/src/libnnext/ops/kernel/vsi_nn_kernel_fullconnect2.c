@@ -144,14 +144,7 @@ static vsi_status VX_CALLBACK vxFullconnect2Kernel
     //save data
     for( i = TENSOR_NUM_INPUT; i < TENSOR_NUM; i ++ )
     {
-        status = vxCopyTensorPatch(
-            tensor[i],
-            NULL,
-            user_addr[i],
-            buffer_ptr[i],
-            VX_WRITE_ONLY,
-            0
-            );
+        status = vsi_nn_copy_tensor_patch(tensor[i], &attr[i], buffer_ptr[i], VX_WRITE_ONLY);
         if (user_addr[i]) vxReleaseTensorAddressing(&(user_addr[i]));
     }
     for( i = 0; i < TENSOR_NUM; i ++ )
@@ -231,9 +224,31 @@ vsi_status VX_CALLBACK vxFullyConnected_Axis2Initializer
         0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
     };
     uint32_t loopNum = 0;
+    vsi_nn_tensor_attr_t attr[2];
+    uint32_t i;
+    uint32_t input_dims      = 0;
+    uint32_t output_dims     = 0;
 
-    vxQueryTensor((vx_tensor)paramObj[1], VX_TENSOR_DIMS, input_size, sizeof(input_size));
-    vxQueryTensor((vx_tensor)paramObj[3], VX_TENSOR_DIMS, output_size, sizeof(output_size));
+    memset(&attr[0], 0, sizeof(vsi_nn_tensor_attr_t));
+    memset(&attr[1], 0, sizeof(vsi_nn_tensor_attr_t));
+
+    status  = vsi_nn_vxGetTensorAttr((vx_tensor)paramObj[1], &attr[0]);
+    status |= vsi_nn_vxGetTensorAttr((vx_tensor)paramObj[3], &attr[1]);
+    if (status != VX_SUCCESS)
+    {
+        VSILOGE("vsi_nn_vxGetTensorAttr failure! at line %d\n", __LINE__);
+        return status;
+    }
+    input_dims  = attr[0].dim_num;
+    for (i = 0; i < input_dims; i++)
+    {
+        input_size[i] = attr[0].size[i];
+    }
+    output_dims  = attr[1].dim_num;
+    for (i = 0; i < output_dims; i++)
+    {
+        output_size[i] = attr[1].size[i];
+    }
 
     shaderParam.globalWorkOffset[0] = 0;
     shaderParam.globalWorkOffset[1] = 0;

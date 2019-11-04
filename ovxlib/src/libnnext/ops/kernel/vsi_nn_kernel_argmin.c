@@ -168,14 +168,7 @@ vsi_status VX_CALLBACK vxArgMinKernel
     {
         if (buffer_ptr[i])
         {
-            status = vxCopyTensorPatch(
-                tensor[i],
-                NULL,
-                user_addr[i],
-                buffer_ptr[i],
-                VX_WRITE_ONLY,
-                0
-                );
+            status = vsi_nn_copy_tensor_patch(tensor[i], &attr[i], buffer_ptr[i], VX_WRITE_ONLY);
         }
 
         if (user_addr[i]) vxReleaseTensorAddressing(&(user_addr[i]));

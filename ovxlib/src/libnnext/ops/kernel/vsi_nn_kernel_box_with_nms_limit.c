@@ -51,29 +51,51 @@
 #undef MIN
 #define MIN(a,b)    ((a) < (b) ? (a) : (b))
 
-static float hard_nms_kernel(float iou, float iouThreshold)
+static float hard_nms_kernel
+    (
+    float iou,
+    float iouThreshold
+    )
 {
     return iou < iouThreshold ? 1.0f : 0.0f;
 }
 
-static float linear_nms_kernel(float iou, float iouThreshold)
+static float linear_nms_kernel
+    (
+    float iou,
+    float iouThreshold
+    )
 {
     return iou < iouThreshold ? 1.0f : 1.0f - iou;
 }
 
-static float gaussian_nms_kernel(float iou, float sigma)
+static float gaussian_nms_kernel
+    (
+    float iou,
+    float sigma
+    )
 {
     return (float)(exp(-1.0f * iou * iou / sigma));
 }
 
-static void swap_element(uint32_t* list, uint32_t first, uint32_t second)
+void swap_element
+    (
+    uint32_t* list,
+    uint32_t first,
+    uint32_t second
+    )
 {
     uint32_t temp = list[first];
     list[first] = list[second];
     list[second] = temp;
 }
 
-static uint32_t max_element(float* data, uint32_t* index_list, uint32_t len)
+uint32_t max_element
+    (
+    float* data,
+    uint32_t* index_list,
+    uint32_t len
+    )
 {
     uint32_t i;
     uint32_t max_index = 0;
@@ -90,53 +112,69 @@ static uint32_t max_element(float* data, uint32_t* index_list, uint32_t len)
     return max_index;
 }
 
-static int32_t partition
-(
-    float* input,
+static uint32_t max_comp_func
+    (
+    void* data,
     int32_t left,
-    int32_t right,
-    vsi_bool is_recursion,
-    uint32_t* indices
-)
+    int32_t right
+    )
 {
-    float key;
-    int32_t key_index;
-    int32_t low = left;
-    int32_t high = right;
-    if (left < right)
-    {
-        key_index = indices[left];
-        key = input[key_index];
-        while (low < high)
-        {
-            while (low < high && input[indices[high]] <= key)
-            {
-                high--;
-            }
-            indices[low] = indices[high];
-            while (low < high && input[indices[low]] >= key)
-            {
-                low++;
-            }
-            indices[high] = indices[low];
-        }
-        indices[low] = key_index;
-        if (is_recursion)
-        {
-            partition(input, left, low - 1, TRUE, indices);
-            partition(input, low + 1, right, TRUE, indices);
-        }
-    }
-    return low;
+    float* fdata = (float*)data;
+    return fdata[left] > fdata[right];
 }
 
-static void sort_element(float* data, uint32_t* index_list, uint32_t len)
+void sort_element_by_score
+    (
+    float* data,
+    uint32_t* index_list,
+    uint32_t len
+    )
 {
-    partition(data, 0, len - 1, TRUE, index_list);
+    vsi_nn_partition(data, 0, len - 1, max_comp_func, TRUE, index_list);
+}
+
+typedef struct
+{
+    float* fdata;
+    uint32_t numClasses;
+} class_comp_param;
+
+static uint32_t class_comp_func
+    (
+    void* data,
+    int32_t left,
+    int32_t right
+    )
+{
+    class_comp_param *p = (class_comp_param*)data;
+    float* fdata = p->fdata;
+    uint32_t numClasses = p->numClasses;
+    uint32_t lhsClass = left % numClasses, rhsClass = right % numClasses;
+    return lhsClass == rhsClass ? fdata[left] > fdata[right]
+                : lhsClass < rhsClass;
+}
+
+static void sort_element_by_class
+    (
+    float* data,
+    uint32_t* index_list,
+    uint32_t len,
+    uint32_t numClasses
+    )
+{
+    class_comp_param class_comp;
+    class_comp.fdata = data;
+    class_comp.numClasses = numClasses;
+    vsi_nn_partition(&class_comp, 0, len - 1, class_comp_func, TRUE, index_list);
 }
 
 // Taking two indices of bounding boxes, return the intersection-of-union.
-float getIoUAxisAligned(const float* roi1, const float* roi2) {
+float getIoUAxisAligned
+    (
+    const float* roi1,
+    const float* roi2
+    )
+{
     const float area1 = (roi1[2] - roi1[0]) * (roi1[3] - roi1[1]);
     const float area2 = (roi2[2] - roi2[0]) * (roi2[3] - roi2[1]);
     const float x1 = MAX(roi1[0], roi2[0]);
@@ -169,9 +207,9 @@ static vsi_status VX_CALLBACK vxBox_with_nms_limitKernel
     float *f32_in_buffer[TENSOR_NUM_INPUT] = {0};
     int32_t* int32_in_buffer[TENSOR_NUM_INPUT] = {0};
     float *f32_out_buffer[TENSOR_NUM_OUTPUT] = {0};
-    int32_t* int32_out_buffer[TENSOR_NUM_INPUT] = {0};
-    vsi_nn_tensor_attr_t in_attr[TENSOR_NUM_INPUT] = {0};
-    vsi_nn_tensor_attr_t out_attr[TENSOR_NUM_OUTPUT] = {0};
+    int32_t* int32_out_buffer[TENSOR_NUM_OUTPUT] = {0};
+    vsi_nn_tensor_attr_t in_attr[TENSOR_NUM_INPUT];
+    vsi_nn_tensor_attr_t out_attr[TENSOR_NUM_OUTPUT];
     uint32_t in_elements[TENSOR_NUM_INPUT] = {0};
     uint32_t out_elements[TENSOR_NUM_OUTPUT]= {0};
 
@@ -183,7 +221,14 @@ static vsi_status VX_CALLBACK vxBox_with_nms_limitKernel
     float nms_score_threshold;
 
     int32_t i;
-
+    for(i = 0; i < TENSOR_NUM_INPUT; i++)
+    {
+        memset(&in_attr[i], 0x0, sizeof(vsi_nn_tensor_attr_t));
+    }
+    for(i = 0; i < TENSOR_NUM_OUTPUT; i++)
+    {
+        memset(&out_attr[i], 0x0, sizeof(vsi_nn_tensor_attr_t));
+    }
     /* prepare data */
     context = vxGetContext((vx_reference)node);
 
@@ -247,7 +292,8 @@ static vsi_status VX_CALLBACK vxBox_with_nms_limitKernel
 
         uint32_t * batch_data = (uint32_t*)malloc(numRois * sizeof(uint32_t));
         int32_t numBatch = -1;
-        uint32_t * select = (uint32_t*)malloc(numRois * numClasses * sizeof(uint32_t));
+        uint32_t * select = (uint32_t*)malloc(numBatch * numRois
+            * numClasses * sizeof(uint32_t));
         uint32_t select_size = 0;
         uint32_t scores_index = 0;
         uint32_t roi_index = 0;
@@ -301,8 +347,8 @@ static vsi_status VX_CALLBACK vxBox_with_nms_limitKernel
                 // Calculate IoU of the rest, swap to the end (disgard) if needed.
                 for (i = j + 1; i < select_len; i++)
                 {
-                    int32_t roiBase0 = roi_index + select[j] * kRoiDim;
-                    int32_t roiBase1 = roi_index + select[i] * kRoiDim;
+                    int32_t roiBase0 = roi_index + select[i] * kRoiDim;
+                    int32_t roiBase1 = roi_index + select[j] * kRoiDim;
                     float iou = getIoUAxisAligned(&(f32_in_buffer[1][roiBase0]),
                         &(f32_in_buffer[1][roiBase1]));
                     float kernel_iou;
@@ -325,19 +371,26 @@ static vsi_status VX_CALLBACK vxBox_with_nms_limitKernel
                         i--;
                         select_len--;
                     }
+                    numDetections++;
                 }
             }
             select_size = select_start + select_len;
-            sort_element(&(f32_in_buffer[0][scores_index]), &(select[select_start]),
+            // Take top maxNumDetections.
+            sort_element_by_score(&(f32_in_buffer[0][scores_index]), &(select[select_start]),
                 select_len);
+            // Sort again by class.
+            sort_element_by_class(&(f32_in_buffer[0][scores_index]), &(select[select_start]),
+                select_len, numClasses);
 
             for (i = 0; i < select_len; i++)
             {
                 int32_t in_index0 = scores_index + select[select_start + i];
                 int32_t in_index1 = roi_index + select[select_start + i] * kRoiDim;
                 f32_out_buffer[0][roi_out_index] = f32_in_buffer[0][in_index0];
-                memcpy(&(f32_out_buffer[0][roi_out_index * kRoiDim]),
-                    &f32_in_buffer[0][in_index1], kRoiDim * sizeof(float));
+                memcpy(&(f32_out_buffer[1][roi_out_index * kRoiDim]),
+                    &f32_in_buffer[1][in_index1], kRoiDim * sizeof(float));
+                int32_out_buffer[2][roi_out_index] = select[select_start + i] % numClasses;
+                int32_out_buffer[3][roi_out_index] = n;
                 roi_out_index++;
             }
 

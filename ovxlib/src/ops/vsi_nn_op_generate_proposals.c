@@ -36,9 +36,9 @@
 #include "vsi_nn_tensor_util.h"
 #include "client/vsi_nn_vxkernel.h"
 
-#define _ARG_NUM            (1)
-#define _INPUT_NUM          (1)
-#define _OUTPUT_NUM         (1)
+#define _ARG_NUM            (6)
+#define _INPUT_NUM          (4)
+#define _OUTPUT_NUM         (3)
 #define _IO_NUM             (_INPUT_NUM + _OUTPUT_NUM)
 #define _PARAM_NUM          (_ARG_NUM + _IO_NUM)
 
@@ -93,7 +93,12 @@ static vsi_status _create_params
             goto set_param_error; \
             } \
         } while(0)
-    _SET_PARAM( 0, VX_TYPE_INT32, type );
+    _SET_PARAM( 0, VX_TYPE_FLOAT32, height_stride );
+    _SET_PARAM( 1, VX_TYPE_FLOAT32, width_stride );
+    _SET_PARAM( 2, VX_TYPE_INT32, pre_nms_top_n );
+    _SET_PARAM( 3, VX_TYPE_INT32, post_nms_top_n );
+    _SET_PARAM( 4, VX_TYPE_FLOAT32, iou_threshold );
+    _SET_PARAM( 5, VX_TYPE_FLOAT32, min_size );
     #undef _SET_PARAM
 set_param_error:
 
@@ -195,9 +200,10 @@ static vsi_status op_compute
     )
 {
     vsi_status status;
-    vsi_nn_kernel_info_t kernel_info = {0};
+    vsi_nn_kernel_info_t kernel_info;
     char *path = NULL;
 
+    memset(&kernel_info, 0x0, sizeof(vsi_nn_kernel_info_t));
     status = VSI_FAILURE;
     kernel_info.type = VX_KERNEL_TYPE_CPU;
     kernel_info.kernel = vx_kernel_GENERATE_PROPOSALS_list;
@@ -254,7 +260,26 @@ static vsi_bool op_setup
     vsi_nn_tensor_t ** outputs
     )
 {
-    /* TODO: Add code to comput outputs' shape. */
+    if( VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num )
+    {
+        vsi_nn_generate_proposals_param * p;
+        p = &(self->nn_param.generate_proposals);
+        if(p->pre_nms_top_n <=0 || p->post_nms_top_n <= 0)
+        {
+            VSILOGE("pre_nms_top_n & post_nms_top_n MUST >0\n");
+            return FALSE;
+        }
+
+        outputs[0]->attr.dim_num = 1;
+        outputs[0]->attr.size[0] = p->post_nms_top_n;
+
+        outputs[1]->attr.dim_num = 2;
+        outputs[1]->attr.size[0] = 4;
+        outputs[1]->attr.size[1] = p->post_nms_top_n;
+
+        outputs[2]->attr.dim_num = 1;
+        outputs[2]->attr.size[0] = p->post_nms_top_n;
+    }
     return TRUE;
 } /* op_setup() */
 

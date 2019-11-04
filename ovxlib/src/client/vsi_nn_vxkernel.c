@@ -465,9 +465,10 @@ vx_node vsi_nn_RegisterClientKernelAndCreateNode
     /*
     * Deprecated: use vsi_nn_RegisterClientKernelAndNewNode() insteatd.
     */
-    vsi_nn_kernel_info_t kernel_info = {0};
-    char *resource_name[1];
+    vsi_nn_kernel_info_t kernel_info;
+    char *resource_name[1] = {NULL};
 
+    memset(&kernel_info, 0x0, sizeof(vsi_nn_kernel_info_t));
     kernel_info.resource_name = resource_name;
     kernel_info.resource_name[0] = "old_client_interface";
     kernel_info.type = VX_KERNEL_TYPE_CPU;

@@ -116,17 +116,15 @@ static vsi_status VX_CALLBACK vxLogical_notKernel
 #endif
 
         uint32_t input_size[DIM_SIZE] = {0}, output_size[DIM_SIZE] = {0};
-        uint32_t input_stride_size[4]  = {0};
-        uint32_t output_stride_size[4] = {0};
-
-        vx_tensor_addressing input_user_addr = NULL;
-        vx_tensor_addressing output_user_addr = NULL;
+        vsi_nn_tensor_attr_t in_attr, out_attr;
 
         vsi_nn_type_e inputFormat = VSI_NN_TYPE_FLOAT16, outputFormat = VSI_NN_TYPE_FLOAT16;
         uint32_t input_dims = 0, output_dims = 0;
-        uint32_t i;
 
         status = VX_SUCCESS;
+
+        memset(&in_attr, 0x0, sizeof(vsi_nn_tensor_attr_t));
+        memset(&out_attr, 0x0, sizeof(vsi_nn_tensor_attr_t));
 
         imgObj[0] = (vx_tensor)paramObj[0];
         imgObj[1] = (vx_tensor)paramObj[1];  //output
@@ -134,26 +132,26 @@ static vsi_status VX_CALLBACK vxLogical_notKernel
         if (context == NULL)
         {
             VSILOGE("vxGetContext failure! at line %d\n", __LINE__);
-            return status;
+            goto final;
         }
         //input
         status = vxQueryTensor(imgObj[0], VX_TENSOR_NUM_OF_DIMS, &input_dims, sizeof(input_dims));
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxQueryTensor input_dims failure! at line %d\n", __LINE__);
-            return status;
+            goto final;
         }
         status = vxQueryTensor(imgObj[0], VX_TENSOR_DATA_TYPE, &inputFormat, sizeof(inputFormat));
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxQueryTensor inputFormat failure! at line %d\n", __LINE__);
-            return status;
+            goto final;
         }
         status = vxQueryTensor(imgObj[0], VX_TENSOR_DIMS, input_size, sizeof(input_size));
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxQueryTensor input_size failure! at line %d\n", __LINE__);
-            return status;
+            goto final;
         }
 
         //output
@@ -162,58 +160,52 @@ static vsi_status VX_CALLBACK vxLogical_notKernel
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxQueryTensor outputFormat failure! at line %d\n", __LINE__);
-            return status;
+            goto final;
         }
         status = vxQueryTensor(imgObj[1], VX_TENSOR_DIMS, output_size, sizeof(output_size));
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxQueryTensor output_size failure! at line %d\n", __LINE__);
-            return status;
+            goto final;
         }
 
         input_size[2] = (input_dims <= 2)?1:input_size[2];
         input_size[3] = (input_dims <= 3)?1:input_size[3];
 
-        input_stride_size[0]  = vsi_nn_GetTypeBytes(inputFormat);
-        output_stride_size[0] = vsi_nn_GetTypeBytes(outputFormat);
-        //length_stride_size[0] = vsi_nn_GetTypeBytes(paraFormat);
-        for (i=1; i< input_dims; i++)
-        {
-            input_stride_size[i]  = input_stride_size[i-1] * input_size[i-1];
-        }
-        for (i=1; i< output_dims; i++)
-        {
-            output_stride_size[i] = output_stride_size[i-1] * output_size[i-1];
-        }
-
 #if INPUT_FP16
         input  = (int16_t*)malloc(input_size[0]*input_size[1]*input_size[2]*sizeof(int16_t));
 #else
-        input  = (uint8_t*)malloc(input_size[0]*input_size[1]*input_size[2]*vsi_nn_GetTypeBytes(inputFormat));
+        //input  = (uint8_t*)malloc(input_size[0]*input_size[1]*input_size[2]*vsi_nn_GetTypeBytes(inputFormat));
 #endif
 #if OUTPUT_FP16
         output = (int16_t*)malloc(output_size[0]*output_size[1]*output_size[2]*sizeof(int16_t));
 #else
         output = (uint8_t*)malloc(output_size[0]*output_size[1]*output_size[2]*vsi_nn_GetTypeBytes(outputFormat));
 #endif
-
-        input_user_addr = vxCreateTensorAddressing(context, input_size, input_stride_size, input_dims);
-        vxCopyTensorPatch(imgObj[0], NULL, input_user_addr, input, VX_READ_ONLY, 0);
+        status = vsi_nn_vxGetTensorAttr(imgObj[0], &in_attr);
+        status |= vsi_nn_vxGetTensorAttr(imgObj[1], &out_attr);
+        if (status != VX_SUCCESS)
+        {
+            VSILOGE("vsi_nn_vxGetTensorAttr failure! at line %d\n", __LINE__);
+            goto final;
+        }
+        input = vsi_nn_vxCopyTensorToData(context, imgObj[0], &in_attr);
 
         // Call C Prototype
         myLogicalNotFunc(input, output, input_size[0],
             input_size[1], input_size[2], input_size[3], inputFormat);
 
         //output tensor
-        output_user_addr = vxCreateTensorAddressing(context, output_size,
-            output_stride_size, output_dims);
-        vxCopyTensorPatch(imgObj[1], NULL, output_user_addr, output, VX_WRITE_ONLY, 0);
+        status = vsi_nn_vxCopyDataToTensor(context, imgObj[1], &out_attr, output);
+        if (status != VX_SUCCESS)
+        {
+            VSILOGE("vsi_nn_vxCopyDataToTensor failure! at line %d\n", __LINE__);
+            goto final;
+        }
 
+final:
         if(input) free(input);
         if(output) free(output);
-
-        if(input_user_addr) vxReleaseTensorAddressing(&input_user_addr);
-        if(output_user_addr) vxReleaseTensorAddressing(&output_user_addr);
     }
 
     return status;

@@ -41,7 +41,8 @@ LOCAL_SRC_FILES +=      \
              utils/vsi_nn_limits.c   \
              utils/vsi_nn_vdata.c   \
              utils/vsi_nn_tensor_op.c   \
-             utils/vsi_nn_util.c
+             utils/vsi_nn_util.c \
+             utils/vsi_nn_dlfcn.c
 
 
 LOCAL_SRC_FILES +=      \
@@ -133,6 +134,8 @@ LOCAL_SRC_FILES += libnnext/ops/kernel/vsi_nn_kernel_argmax.c \
         libnnext/ops/kernel/vsi_nn_kernel_reduceprod_internal.c \
         libnnext/ops/kernel/vsi_nn_kernel_reduceall_internal.c \
         libnnext/ops/kernel/vsi_nn_kernel_reduceany_internal.c \
+        libnnext/ops/kernel/vsi_nn_kernel_resize_internal.c \
+        libnnext/ops/kernel/vsi_nn_kernel_resize_nearest_internal.c \
         libnnext/vsi_nn_libnnext_vx.c \
 
 LOCAL_SRC_FILES +=      ops/vsi_nn_op_add.c   \
@@ -265,6 +268,13 @@ LOCAL_SRC_FILES +=      ops/vsi_nn_op_add.c   \
              ops/vsi_nn_op_reduceprod_internal.c \
              ops/vsi_nn_op_reduceall_internal.c \
              ops/vsi_nn_op_reduceany_internal.c \
+             ops/vsi_nn_op_unidirectional_sequence_rnn.c \
+             ops/vsi_nn_op_quantized_16bit_lstm.c \
+             ops/vsi_nn_op_bidirectional_sequence_rnn.c \
+             ops/vsi_nn_op_bidirectional_sequence_lstm.c \
+             ops/vsi_nn_op_resize_internal.c \
+             ops/vsi_nn_op_resize_nearest_internal.c \
+             ops/vsi_nn_op_rnncell_ovxlib.c \
              ops/vsi_nn_op_lrn2.c \
              ops/vsi_nn_op_square.c
 

@@ -267,7 +267,8 @@ static vsi_status op_compute
     }
     else
     {
-        vsi_nn_kernel_info_t kernel_info = {0};
+        vsi_nn_kernel_info_t kernel_info;
+        memset(&kernel_info, 0x0, sizeof(vsi_nn_kernel_info_t));
         kernel_info.resource_num = 1;
         kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));
         kernel_info.resource_name[0] = "vsi_nn_kernel_space2depth";

@@ -239,36 +239,6 @@ OVXLIB_API const char* vsi_nn_DescribeStatus
     vsi_status status
     );
 
-#if defined(_WIN32)
-#define RTLD_LAZY   0
-#define RTLD_NOW    0
-
-#define RTLD_GLOBAL (1 << 1)
-#define RTLD_LOCAL  (1 << 2)
-
-#define RTLD_DEFAULT    ((void *)0)
-#define RTLD_NEXT       ((void *)-1)
-
-OVXLIB_API void * vsi_nn_dlopen_win32
-    (
-    const char *file,
-    int mode
-    );
-
-OVXLIB_API int vsi_nn_dlclose_win32
-    (
-    void *handle
-    );
-
-OVXLIB_API void * vsi_nn_dlsym_win32
-    (
-    void *handle,
-    const char *name
-    );
-
-OVXLIB_API char * vsi_nn_dlerror_win32(void);
-#endif
-
 uint32_t vsi_nn_compute_filter_shape
     (
     vsi_nn_pad_e padding_type,
@@ -296,6 +266,49 @@ void vsi_nn_compute_padding_conv1d
     uint32_t   * dilation,
     vsi_nn_pad_e pad_type,
     uint32_t   * out_pad
+    );
+
+void vsi_nn_OptimizedEltOPShape
+    (
+       vsi_nn_tensor_t * input,
+       uint32_t          sizes[VSI_NN_MAX_DIM_NUM],
+       uint32_t        * num_of_dims
+    );
+
+vsi_bool vsi_nn_OptimizedEltWiseOPShape
+    (
+    vsi_nn_tensor_t * input0,
+    vsi_nn_tensor_t * input1,
+    vsi_nn_tensor_t * output,
+    uint32_t          sizes0[VSI_NN_MAX_DIM_NUM],
+    uint32_t          sizes1[VSI_NN_MAX_DIM_NUM],
+    uint32_t          sizes2[VSI_NN_MAX_DIM_NUM],
+    uint32_t        * dim_num
+    );
+
+typedef uint32_t(*comp_func)(void* data, int32_t left, int32_t right);
+
+/**
+ * the meta function for sort/partial sort
+ * This function is the key meta function of qsort, which can be used in sort/partial sort.
+ * But you can NOT use this function directly to sort/partial sort.
+ * This function do NOT sort data itself, but sort its index.
+ *
+ * @param[in] buffer of data which will be sorted.
+ * @param[in] the left(start) index of data.
+ * @param[in] the right(end) index of data.
+ * @param[in] compare function. the meaning of return value is as same as std::sort.
+ * @param[in] recursively execute vsi_nn_partition.
+ * @param[out] the sorted index of data.
+ */
+OVXLIB_API int32_t vsi_nn_partition
+    (
+        void* data,
+        int32_t left,
+        int32_t right,
+        comp_func func,
+        vsi_bool is_recursion,
+        uint32_t* indices
     );
 
 #ifdef __cplusplus

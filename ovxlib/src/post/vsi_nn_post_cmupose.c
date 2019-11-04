@@ -859,7 +859,7 @@ static vsi_nn_con_candidate_t *_get_connection_candidate
     int32_t veci[2],r0,r1;
     uint32_t mid_num;
     uint32_t height,width,score_mid_depth,stride;
-    vsi_bool criterion1,criterion2;
+    vsi_bool criterion1 = FALSE, criterion2 = FALSE;
     float linespace1[10],linespace2[10],startend[10][2];
     vsi_nn_con_candidate_t *con_candidate,*con_candidate_list;
 

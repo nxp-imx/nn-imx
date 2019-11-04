@@ -281,9 +281,9 @@ static vsi_status op_compute
     )
 {
     vsi_status status;
-    vsi_nn_kernel_info_t kernel_info = {0};
-    uint32_t i;
-    uint32_t block_size = 1, block_num = 1, axis_num;
+    vsi_nn_kernel_info_t kernel_info;
+    uint32_t i = 0;
+    uint32_t block_size = 1, block_num = 1, axis_num = 0;
     int32_t axis = self->nn_param.gather.axis;
     uint32_t *input_size = inputs[0]->attr.size;
     uint32_t dims_num = inputs[0]->attr.dim_num;
@@ -291,6 +291,8 @@ static vsi_status op_compute
     vx_bool_e dataTypeFlg = vx_false_e, sizeFlg = vx_false_e;
     uint32_t max_img_width = 65536;
     status = VSI_FAILURE;
+
+    memset(&kernel_info, 0x0, sizeof(vsi_nn_kernel_info_t));
     kernel_info.type = VX_KERNEL_TYPE_CPU;
 
     for(i = 0; i < (uint32_t)axis; ++i)
@@ -342,7 +344,7 @@ static vsi_status op_compute
         status = vx_op_pre_compute(self, inputs, outputs, &kernel_info);
         if (status != VX_SUCCESS)
         {
-            return status;
+            goto final;
         }
     }
     else /*kernel_info.type = VX_KERNEL_TYPE_CPU;*/
@@ -354,13 +356,10 @@ static vsi_status op_compute
 
     self->n = vsi_nn_RegisterClientKernelAndNewNode(
             self->graph, &kernel_info);
-    if (kernel_info.resource_name)
-    {
-        free(kernel_info.resource_name);
-    }
     if( NULL == self->n )
     {
-        return VSI_FAILURE;
+        status = VSI_FAILURE;
+        goto final;
     }
 
     if( kernel_info.type == VX_KERNEL_TYPE_VX)
@@ -376,7 +375,11 @@ static vsi_status op_compute
     {
         status = cpu_op_compute(self, inputs, outputs);
     }
-
+final:
+    if(kernel_info.resource_name)
+    {
+        free(kernel_info.resource_name);
+    }
     return status;
 } /* op_compute() */
 

@@ -329,11 +329,8 @@ static vsi_status op_compute
         input,
         weight,
         bias,
-        0,
-        0,
         self->vx_param.overflow_policy,
         self->vx_param.rounding_policy,
-        self->vx_param.down_scale_size_rounding,
         output
         );
     if( NULL != self->n )
@@ -348,6 +345,7 @@ static vsi_status op_compute
 #else
     vsi_nn_kernel_info_t kernel_info = {0};
 
+    memset(&kernel_info, 0x0, sizeof(vsi_nn_kernel_info_t));
     status = VSI_FAILURE;
     kernel_info.resource_num = 1;
     kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));

@@ -59,18 +59,23 @@ static vsi_status VX_CALLBACK vxBatch2SpaceKernel
 #define TENSOR_NUM (TENSOR_NUM_INPUT+TENSOR_NUM_OUTPUT)
 
     vsi_status status = VX_SUCCESS;
-    uint32_t  i;
+    uint32_t  i = 0;
     vx_context context = NULL;
     vsi_nn_tensor_attr_t attr[TENSOR_NUM];
     uint32_t stride_size[TENSOR_NUM][VSI_NN_MAX_DIM_NUM];
     vx_tensor_addressing user_addr[TENSOR_NUM] = {NULL};
     uint8_t *buffer_ptr[TENSOR_NUM] = {NULL};
-    vx_tensor tensor[TENSOR_NUM];
+    vx_tensor tensor[TENSOR_NUM] = {NULL};
 
-    int32_t block_size, pad_t, pad_b, pad_l, pad_r;
-    int32_t output_batch, output_depth, output_height, output_width;
-    int32_t input_batch, input_depth, input_height, input_width;
-    int32_t in_b;
+    int32_t block_size = 0, pad_t = 0, pad_b = 0, pad_l = 0, pad_r = 0;
+    int32_t output_batch = 0, output_depth = 0, output_height = 0, output_width = 0;
+    int32_t input_batch = 0, input_depth = 0, input_height = 0, input_width = 0;
+    int32_t in_b = 0;
+
+    for(i = 0; i < TENSOR_NUM; i++)
+    {
+        memset(&attr[i], 0x0, sizeof(vsi_nn_tensor_attr_t));
+    }
 
     //prepare data
     context = vxGetContext((vx_reference)node);
@@ -80,12 +85,15 @@ static vsi_status VX_CALLBACK vxBatch2SpaceKernel
         tensor[i] = (vx_tensor)paramObj[i];
         buffer_ptr[i] = vsi_nn_ConvertRawTensorToData2(context, tensor[i],
             &(attr[i]), stride_size[i], &(user_addr[i]), VX_READ_ONLY);
+
+        vsi_nn_vxGetTensorAttr(tensor[i], &attr[i]);
     }
     for( i = TENSOR_NUM_INPUT; i < TENSOR_NUM; i ++ )
     {
         tensor[i] = (vx_tensor)paramObj[i];
         buffer_ptr[i] = vsi_nn_ConvertRawTensorToData2(context, tensor[i],
             &(attr[i]), stride_size[i], &(user_addr[i]), VX_WRITE_ONLY);
+        vsi_nn_vxGetTensorAttr(tensor[i], &attr[i]);
     }
 
     vxCopyScalar((vx_scalar)paramObj[TENSOR_NUM], &(block_size),
@@ -111,14 +119,14 @@ static vsi_status VX_CALLBACK vxBatch2SpaceKernel
     input_width = attr[0].size[0];
 
     for (in_b = 0; in_b < input_batch; ++in_b) {
-        int32_t d;
+        int32_t d = 0;
         int32_t out_b = in_b % output_batch;
         int32_t offset_w = (in_b / output_batch) % block_size;
         int32_t offset_h = (in_b / output_batch) / block_size;
         for (d = 0; d < input_depth; ++d) {
-            int32_t in_h;
+            int32_t in_h = 0;
             for (in_h = 0; in_h < input_height; ++in_h) {
-                int32_t in_w;
+                int32_t in_w = 0;
                 int32_t out_h = in_h * block_size + offset_h - pad_t;
                 for (in_w = 0; in_w < input_width; ++in_w) {
                     int32_t out_w = in_w * block_size + offset_w - pad_l;
@@ -145,18 +153,11 @@ static vsi_status VX_CALLBACK vxBatch2SpaceKernel
     //save data
     for( i = TENSOR_NUM_INPUT; i < TENSOR_NUM; i ++ )
     {
-        status = vxCopyTensorPatch(
-            tensor[i],
-            NULL,
-            user_addr[i],
-            buffer_ptr[i],
-            VX_WRITE_ONLY,
-            0
-            );
-        if (user_addr[i]) vxReleaseTensorAddressing(&(user_addr[i]));
+        vsi_nn_copy_tensor_patch(tensor[i], &attr[i], buffer_ptr[i], VX_WRITE_ONLY);
     }
     for( i = 0; i < TENSOR_NUM; i ++ )
     {
+        if (user_addr[i]) vxReleaseTensorAddressing(&(user_addr[i]));
         if (buffer_ptr[i]) free(buffer_ptr[i]);
     }
 

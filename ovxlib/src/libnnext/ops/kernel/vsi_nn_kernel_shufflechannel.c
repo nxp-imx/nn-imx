@@ -31,6 +31,7 @@
 
 #include "vsi_nn_prv.h"
 #include "vsi_nn_log.h"
+#include "vsi_nn_test.h"
 #include "vsi_nn_tensor_util.h"
 #include "utils/vsi_nn_util.h"
 #include "utils/vsi_nn_dtype_util.h"
@@ -38,40 +39,78 @@
 #include "client/vsi_nn_vxkernel.h"
 #include "libnnext/vx_lib_nnext.h"
 
-void myShuffleChannelFunc
+vsi_status vxShuffleChannelFunc
     (
-    int16_t* imgIn,
+    vx_context context,
+    vx_tensor input,
+    vx_tensor output,
     int32_t group_number,
-    int16_t* imgOut,
-    uint32_t width,
-    uint32_t height,
-    uint32_t channel,
-    uint32_t batch
+    int32_t axis
     )
 {
+    vsi_status status = VX_SUCCESS;
+    vsi_nn_tensor_attr_t input_attr;
+    vsi_nn_tensor_attr_t output_attr;
+    uint8_t *in_data = NULL;
+    uint8_t *out_data = NULL;
+    uint32_t stride_size[VSI_NN_MAX_DIM_NUM] = {0};
+    uint32_t buf_sz = 0;
     uint32_t group_row = group_number;
-    uint32_t group_column = channel / group_number;
-    uint32_t feature_map_size = width * height * channel;
-    uint32_t len = width * height;
-    uint32_t num = (batch <= 0 ? 1 : batch);
+    uint32_t chs = 0, group_col = 0;
+    uint32_t len = 1, num = 1, feature_map_size = 1;
     uint32_t n = 0, i = 0, j = 0;
+    uint32_t type_bytes = 0, len_bytes = 0, fms_bytes = 0;
 
-    printf("Hello myShuffleChannelFunc!\n");
+    status  = vsi_nn_vxGetTensorAttr(input, &input_attr);
+    status |= vsi_nn_vxGetTensorAttr(output, &output_attr);
+    TEST_CHECK_STATUS(status, final);
+    in_data = vsi_nn_vxCopyTensorToData(context, input, &input_attr);
+    TEST_CHECK_PTR(in_data, final);
+    buf_sz = vsi_nn_GetStrideSize(&output_attr, stride_size);
+    out_data = (uint8_t *)malloc( buf_sz );
+    TEST_CHECK_PTR(out_data, final);
 
-    for (n = 0; n < num; n++)
+    chs = input_attr.size[axis];
+    group_col = chs / group_row;
+    type_bytes = vsi_nn_TypeGetBytes( input_attr.dtype.vx_type );
+
+    for ( i = 0; i < (uint32_t)axis; i++)
     {
-        for (i = 0; i < group_row; i++)
+        len *= input_attr.size[i];
+    }
+    for ( i = axis + 1; i < input_attr.dim_num; i++)
+    {
+        num *= input_attr.size[i];
+    }
+    for ( i = 0; i <= (uint32_t)axis; i++)
+    {
+        feature_map_size *= input_attr.size[i];
+    }
+
+    /* Shuffle Channel CPU Implement, the shape and dtype of output must same as input */
+    len_bytes = len * type_bytes;
+    fms_bytes = feature_map_size * type_bytes;
+    for ( n = 0; n < num; n++)
+    {
+        for ( i = 0; i < group_row; i++)
         {
-            for (j = 0; j < group_column; j++)
+            for ( j = 0; j < group_col; j++)
             {
-                int16_t *input_ptr  = imgIn + n * feature_map_size + (i * group_column + j) * len;
-                int16_t *output_ptr = imgOut + n * feature_map_size + (j * group_row + i) * len;
-                memcpy(output_ptr, input_ptr, len * sizeof(int16_t));
+                uint8_t *in_ptr = in_data + n * fms_bytes + (i * group_col + j) * len_bytes;
+                uint8_t *out_ptr = out_data + n * fms_bytes + (j * group_row + i) * len_bytes;
+
+                memcpy(out_ptr, in_ptr, len_bytes);
             }
         }
     }
 
-    return;
+    /* Copy data to output tensor */
+    status = vsi_nn_vxCopyDataToTensor(context, output, &output_attr, out_data);
+    TEST_CHECK_STATUS(status, final);
+final:
+    if (in_data) free(in_data);
+    if (out_data) free(out_data);
+    return status;
 }
 vsi_status VX_CALLBACK vxShuffleChannelKernel
     (
@@ -81,121 +120,35 @@ vsi_status VX_CALLBACK vxShuffleChannelKernel
     )
 {
     vsi_status status = VX_ERROR_INVALID_PARAMETERS;
-    int16_t *input = NULL, *output = NULL;
-    vx_tensor_addressing input_user_addr = NULL;
-    vx_tensor_addressing output_user_addr = NULL;
 
-    if(paramNum == 3)
+    if(paramNum == 4)
     {
         vx_context context = NULL;
         // tensor
         vx_tensor imgObj[2] = { NULL };
-        uint32_t input_size[4] = {0}, output_size[4] = {0};
-        uint32_t input_stride_size[4]  = {0};
-        uint32_t output_stride_size[4] = {0};
-        vsi_enum inputFormat = VX_TYPE_FLOAT16, outputFormat = VX_TYPE_FLOAT16;
-        uint32_t input_dims = 0, output_dims = 0;
-        uint32_t i;
         // scalar
-        vx_scalar scalar[1] = { NULL };
+        vx_scalar scalar[2] = { NULL };
         int32_t group_number = 0;
-
-        status = VX_SUCCESS;
+        int32_t axis = 0;
 
         imgObj[0] = (vx_tensor)paramObj[0];
         imgObj[1] = (vx_tensor)paramObj[1];
         scalar[0] = (vx_scalar)paramObj[2];
+        scalar[1] = (vx_scalar)paramObj[3];
 
         context = vxGetContext((vx_reference)node);
-        if (context == NULL)
-        {
-            printf("vxGetContext failure! at line %d\n", __LINE__);
-            return status;
-        }
-        status = vxQueryTensor(imgObj[0], VX_TENSOR_NUM_OF_DIMS, &input_dims, sizeof(input_dims));
-        if (status != VX_SUCCESS)
-        {
-            printf("vxQueryTensor input_dims failure! at line %d\n", __LINE__);
-            return status;
-        }
-        status = vxQueryTensor(imgObj[0], VX_TENSOR_DATA_TYPE, &inputFormat, sizeof(inputFormat));
-        if (status != VX_SUCCESS)
-        {
-            printf("vxQueryTensor inputFormat failure! at line %d\n", __LINE__);
-            return status;
-        }
-        status = vxQueryTensor(imgObj[0], VX_TENSOR_DIMS, input_size, sizeof(input_size));
-        if (status != VX_SUCCESS)
-        {
-            printf("vxQueryTensor input_size failure! at line %d\n", __LINE__);
-            return status;
-        }
-        status = vxQueryTensor(imgObj[1], VX_TENSOR_NUM_OF_DIMS,
-            &output_dims, sizeof(output_dims));
-        if (status != VX_SUCCESS)
-        {
-            printf("vxQueryTensor output_dims failure! at line %d\n", __LINE__);
-            return status;
-        }
-        status = vxQueryTensor(imgObj[1], VX_TENSOR_DATA_TYPE,
-            &outputFormat, sizeof(outputFormat));
-        if (status != VX_SUCCESS)
-        {
-            printf("vxQueryTensor outputFormat failure! at line %d\n", __LINE__);
-            return status;
-        }
-        status = vxQueryTensor(imgObj[1], VX_TENSOR_DIMS, output_size, sizeof(output_size));
-        if (status != VX_SUCCESS)
-        {
-            printf("vxQueryTensor output_size failure! at line %d\n", __LINE__);
-            return status;
-        }
-
-        input_stride_size[0]  = vsi_nn_GetTypeBytes(inputFormat);
-        output_stride_size[0] = vsi_nn_GetTypeBytes(outputFormat);
-        for (i=1; i< input_dims; i++)
-        {
-            input_stride_size[i]  = input_stride_size[i-1] * input_size[i-1];
-            output_stride_size[i] = output_stride_size[i-1] * output_size[i-1];
-        }
-        input  = (int16_t*)malloc(input_size[0]*input_size[1]*input_size[2]*sizeof(int16_t));
-        output = (int16_t*)malloc(output_size[0]*output_size[1]*output_size[2]*sizeof(int16_t));
-
-        input_user_addr = vxCreateTensorAddressing(context, input_size,
-            input_stride_size, input_dims);
-        vxCopyTensorPatch(imgObj[0], NULL, input_user_addr, input, VX_READ_ONLY, 0);
-
+        TEST_CHECK_PTR(context,final);
         // scalar
         status = vxCopyScalar(scalar[0], &group_number, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
-        if (status != VX_SUCCESS)
-        {
-            printf("vxCopyScalar failure! at line %d\n", __LINE__);
-            goto OnError;
-        }
-        if (input_size[2] % group_number)
-        {
-            printf("input channel can't be exact divided by group number! at line %d\n", __LINE__);
-            status =VX_ERROR_INVALID_PARAMETERS;
-            goto OnError;
-        }
+        TEST_CHECK_STATUS(status, final);
+        status = vxCopyScalar(scalar[1], &axis, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
+        TEST_CHECK_STATUS(status, final);
+
         // Call C Prototype
-        myShuffleChannelFunc(input, group_number, output, input_size[0],
-            input_size[1], input_size[2], input_size[3]);
-
-        //output tensor
-        output_user_addr = vxCreateTensorAddressing(context, output_size,
-            output_stride_size, output_dims);
-        vxCopyTensorPatch(imgObj[1], NULL, output_user_addr, output, VX_WRITE_ONLY, 0);
-
-        goto OnError;
+        status = vxShuffleChannelFunc(context, imgObj[0], imgObj[1], group_number, axis);
+        TEST_CHECK_STATUS(status, final);
     }
-
-OnError:
-    if(input) free(input);
-    if(output) free(output);
-    if(input_user_addr) vxReleaseTensorAddressing(&input_user_addr);
-    if(output_user_addr) vxReleaseTensorAddressing(&output_user_addr);
-
+final:
     return status;
 }
 vsi_status VX_CALLBACK vxShuffleChannelInitializer
@@ -217,21 +170,26 @@ vsi_status VX_CALLBACK vxShuffleChannelInitializer
 
     vx_tensor     input           = (vx_tensor)paramObj[0];
     vx_scalar     group_numbers   = (vx_scalar)paramObj[2];
+    vx_scalar     axis_s          = (vx_scalar)paramObj[3];
     uint32_t      input_size[4]   = {0};
     vsi_nn_type_e inputDataFormat = VSI_NN_TYPE_FLOAT16;
     int32_t       group_number    = 0;
+    int32_t       axis            = 0;
     int32_t       group_column    = 0;
     float         rgroup_column   = 0.0f;
+    uint32_t      chs             = 0;
 
     status  = vxQueryTensor(input, VX_TENSOR_DIMS, input_size, sizeof(input_size));
     status |= vxQueryTensor(input, VX_TENSOR_DATA_TYPE, &inputDataFormat, sizeof(inputDataFormat));
     status |= vxCopyScalar(group_numbers, &group_number, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
+    status |= vxCopyScalar(axis_s, &axis, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
     if(VX_SUCCESS != status)
     {
-        printf("[%s : %d]Initializer  failure! \n",__FILE__, __LINE__);
+        printf("[%s : %d]Initializer failure! \n",__FILE__, __LINE__);
         return status;
     }
-    if (input_size[2] % group_number)
+    chs = input_size[axis];
+    if (chs % group_number)
     {
         printf("input channel can't be exact divided by group number! at line %d\n", __LINE__);
         return VX_FAILURE;
@@ -240,20 +198,38 @@ vsi_status VX_CALLBACK vxShuffleChannelInitializer
     shaderParam.globalWorkOffset[0] = 0;
     shaderParam.globalWorkOffset[1] = 0;
     shaderParam.globalWorkOffset[2] = 0;
-    if (inputDataFormat == VSI_NN_TYPE_FLOAT16 || inputDataFormat == VSI_NN_TYPE_INT16)
-        shaderParam.globalWorkScale[0]  = 8;
+    if (axis == 2)
+    {
+        if (inputDataFormat == VSI_NN_TYPE_FLOAT16 || inputDataFormat == VSI_NN_TYPE_INT16)
+            shaderParam.globalWorkScale[0]  = 8;
+        else
+            shaderParam.globalWorkScale[0]  = 16;
+        shaderParam.globalWorkScale[1]  = 4;
+        shaderParam.globalWorkScale[2]  = 1;
+
+        shaderParam.globalWorkSize[0]   = gcmALIGN((input_size[0] + shaderParam.globalWorkScale[0] - 1)
+            / shaderParam.globalWorkScale[0], 4);
+        shaderParam.globalWorkSize[1]   = (input_size[1] + shaderParam.globalWorkScale[1] - 1)
+            / shaderParam.globalWorkScale[1];
+        shaderParam.globalWorkSize[2]   = input_size[2];
+    }
+    else if (axis == 1)
+    {
+        shaderParam.globalWorkScale[0]  = 32;
+        shaderParam.globalWorkScale[1]  = 1;
+        shaderParam.globalWorkScale[2]  = 1;
+
+        shaderParam.globalWorkSize[0]   = gcmALIGN((input_size[0] + shaderParam.globalWorkScale[0] - 1)
+            / shaderParam.globalWorkScale[0], 4);
+        shaderParam.globalWorkSize[1]   = input_size[1];
+        shaderParam.globalWorkSize[2]   = input_size[2];
+    }
     else
-        shaderParam.globalWorkScale[0]  = 16;
-    shaderParam.globalWorkScale[1]  = 4;
-    shaderParam.globalWorkScale[2]  = 1;
-
-    shaderParam.globalWorkSize[0]   = gcmALIGN((input_size[0] + shaderParam.globalWorkScale[0] - 1)
-        / shaderParam.globalWorkScale[0], 4);
-    shaderParam.globalWorkSize[1]   = (input_size[1] + shaderParam.globalWorkScale[1] - 1)
-        / shaderParam.globalWorkScale[1];
-    shaderParam.globalWorkSize[2]   = input_size[2];
-
-    group_column = input_size[2] / group_number;
+    {
+        printf("[%s : %d]Initializer failure, not support axis: %d! \n",__FILE__, __LINE__, axis);
+        return VX_FAILURE;
+    }
+    group_column = chs / group_number;
     rgroup_column = 1.0f / group_column;
 
     status |= vxSetNodeUniform(nodObj, "group_column", 1, &group_column);
@@ -263,7 +239,7 @@ vsi_status VX_CALLBACK vxShuffleChannelInitializer
 
     if(status < 0)
     {
-        printf("[%s : %d]Initializer  failure! \n",__FILE__, __LINE__);
+        printf("[%s : %d]Initializer failure! \n",__FILE__, __LINE__);
     }
     return status;
 }
@@ -315,12 +291,39 @@ vx_kernel_description_t vxShuffleChannelKernelInfo_CPU =
     vsi_nn_KernelInitializer,
     vsi_nn_KernelDeinitializer
 };
-
+vx_kernel_description_t vxShuffleChannelKernelInfo_16BitsAxis1 =
+{
+    VX_KERNEL_ENUM_SHUFFLECHANNEL,
+    VX_KERNEL_NAME_SHUFFLECHANNEL16BITS_AXIS1,
+    NULL,
+    vxShuffleChannelKernelParam,
+    (sizeof(vxShuffleChannelKernelParam) / sizeof(vxShuffleChannelKernelParam[0])),
+    vsi_nn_KernelValidator,
+    NULL,
+    NULL,
+    vxShuffleChannelInitializer,
+    vsi_nn_KernelDeinitializer
+};
+vx_kernel_description_t vxShuffleChannelKernelInfo_8BitsAxis1 =
+{
+    VX_KERNEL_ENUM_SHUFFLECHANNEL,
+    VX_KERNEL_NAME_SHUFFLECHANNEL8BITS_AXIS1,
+    NULL,
+    vxShuffleChannelKernelParam,
+    (sizeof(vxShuffleChannelKernelParam) / sizeof(vxShuffleChannelKernelParam[0])),
+    vsi_nn_KernelValidator,
+    NULL,
+    NULL,
+    vxShuffleChannelInitializer,
+    vsi_nn_KernelDeinitializer
+};
 vx_kernel_description_t * vx_kernel_SHUFFLECHANNEL_list[] =
 {
     &vxShuffleChannelKernelInfo_CPU,
     &vxShuffleChannelKernelInfo,
     &vxShuffleChannelKernelInfo8Bits,
+    &vxShuffleChannelKernelInfo_16BitsAxis1,
+    &vxShuffleChannelKernelInfo_8BitsAxis1,
     NULL
 };
 #ifdef __cplusplus

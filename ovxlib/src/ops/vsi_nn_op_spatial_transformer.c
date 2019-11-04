@@ -292,15 +292,15 @@ static vsi_status vx_op_compute_setupThre
     )
 {
     vsi_status status = VSI_SUCCESS;
-    vx_reference params[4];
+    vx_reference params[4] = {NULL};
     //vx_reference * args;
-    vsi_nn_spatial_transformer_param * p;
-    int  flag;
-    vsi_nn_tensor_t * thre_tensor;
+    vsi_nn_spatial_transformer_param * p = NULL;
+    int flag = 0;
+    vsi_nn_tensor_t * thre_tensor = NULL;
     vsi_nn_tensor_attr_t attr;
-    vx_context ctx;
-    vx_scalar flag_s;
-    vx_tensor tmp_t, tmp_t1;
+    vx_context ctx = NULL;
+    vx_scalar flag_s = NULL;
+    vx_tensor tmp_t = NULL, tmp_t1 = NULL;
 
     //float flag_buf[6];
     vx_uint16 value_buf[6];
@@ -337,7 +337,8 @@ static vsi_status vx_op_compute_setupThre
     if( NULL == self->n )
     {
         status = VSI_FAILURE;
-        goto OnError;
+        if (thre_tensor) vsi_nn_ReleaseTensor( &thre_tensor);
+        return status;
     }
 
     flag_s = vxCreateScalar( ctx, VSI_NN_TYPE_INT32, &flag );
@@ -369,8 +370,6 @@ static vsi_status vx_op_compute_setupThre
     status = vsi_nn_ClientNodePassParameters( self->n, params, 4 );
 
     //_release_params( args, 4 );
-
-OnError:
     if (thre_tensor) vsi_nn_ReleaseTensor( &thre_tensor);
     if (tmp_t) vxReleaseTensor( &tmp_t );
     if (tmp_t1) vxReleaseTensor( &tmp_t1 );
@@ -407,8 +406,7 @@ static vsi_status vx_op_compute_gemm
 
     setUPGridData(p->output_W, p->output_H, out_attr.dtype.scale, out_attr.dtype.zero_point,
         out_attr.dtype, out_attr.dtype.qnt_type ,out_attr.dtype.fl, out_buffer);
-
-    status = vxCopyTensorPatch(inputs[1]->t,NULL,out_addr,out_buffer,VX_WRITE_ONLY,0);
+    status = vsi_nn_copy_tensor_patch(inputs[1]->t, &inputs[1]->attr, out_buffer, VX_WRITE_ONLY);
 
     memset( params, 0, sizeof( vx_reference * ) * 3 );
 
@@ -502,12 +500,13 @@ static vsi_status op_compute
     )
 {
     vsi_status status;
-    vsi_nn_kernel_info_t kernel_info = {0};
+    vsi_nn_kernel_info_t kernel_info;
     char *path = NULL;
     vsi_nn_tensor_attr_t attr;
     vsi_nn_tensor_t *tmp_output_tensor[5] = {0};
     vsi_nn_spatial_transformer_param * p;
 
+    memset(&kernel_info, 0x0, sizeof(vsi_nn_kernel_info_t));
     p = (vsi_nn_spatial_transformer_param *)self->nn_param.client_param;
 
     // Tensor for thre_output
@@ -578,7 +577,8 @@ static vsi_status op_compute
 
      if( NULL == self->n )
     {
-        return VSI_FAILURE;
+        status = VSI_FAILURE;
+        goto final;
     }
 
     // add gemm
@@ -604,11 +604,6 @@ static vsi_status op_compute
     kernel_info.resource_name[0] = "vsi_nn_kernel_transform_interp";
     self->n = vsi_nn_RegisterClientKernelAndNewNode(
             self->graph, &kernel_info);
-    if (kernel_info.resource_name)
-    {
-        free(kernel_info.resource_name);
-    }
-
     tmp_output_tensor[3] = inputs[0];
 
     if (NULL != op_compute_list[kernel_info.init_index])
@@ -619,7 +614,11 @@ static vsi_status op_compute
     vsi_nn_ReleaseTensor(&tmp_output_tensor[0]);
     vsi_nn_ReleaseTensor(&tmp_output_tensor[1]);
     vsi_nn_ReleaseTensor(&tmp_output_tensor[2]);
-
+final:
+    if(kernel_info.resource_name)
+    {
+        free(kernel_info.resource_name);
+    }
     return status;
 } /* op_compute() */
 

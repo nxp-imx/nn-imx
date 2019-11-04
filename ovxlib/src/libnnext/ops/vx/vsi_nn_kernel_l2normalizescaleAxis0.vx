@@ -1,0 +1,314 @@
+#include "cl_viv_vx_ext.h"
+
+inline uchar* get_image2D_array_ptr(image2d_array_t  input)
+{
+    int8 desc;
+    _viv_asm(COPY, desc, input, sizeof(desc));
+    uchar *src_ptr = (uchar*)desc.s0;
+    return src_ptr;
+}
+
+#define L2NORMSCALE_SWITCH_PROCESS(case_value, vec_val, ZpValue) \
+                switch (case_value) \
+                { \
+                    case 1: \
+                        vec_val.s123  = ZpValue; \
+                        vec_val.s4567 = ZpValue; \
+                    break; \
+                    case 2: \
+                        vec_val.s23  = ZpValue; \
+                        vec_val.s4567 = ZpValue; \
+                    break; \
+                    case 3: \
+                        vec_val.s3  = ZpValue; \
+                        vec_val.s4567 = ZpValue; \
+                    break; \
+                    case 4: \
+                        vec_val.s4567 = ZpValue; \
+                    break; \
+                    case 5: \
+                        vec_val.s567 = ZpValue; \
+                    break; \
+                    case 6: \
+                        vec_val.s67 = ZpValue; \
+                    break; \
+                    case 7: \
+                        vec_val.s7 = ZpValue; \
+                    break; \
+                    default: \
+                    break; \
+                }
+
+#define L2NORMSCALE_REM_PROCESS(ZpValue) \
+            src0 = vload8(0,  src_ptr); \
+            src1 = vload8(1, src_ptr); \
+            if (inputRemain <= 8) \
+            { \
+                L2NORMSCALE_SWITCH_PROCESS(inputRemain, src0, ZpValue) \
+                src1 = 0; \
+            } \
+            else if (inputRemain < 16) \
+            { \
+                int inputRemain8 = inputRemain - 8; \
+                L2NORMSCALE_SWITCH_PROCESS(inputRemain8, src1, ZpValue) \
+            }
+
+
+_viv_uniform int inputWidth;
+_viv_uniform int inputWidthRemain256;
+_viv_uniform int inputWidthCount;
+_viv_uniform VXC_512Bits uniSumSqrt_16x1;
+//int8 version
+_viv_uniform float r_inputScale;
+
+#define L2NORMSCALE_SUMSQRT_AXIS0_2D(name, read_type, read_type2, src_type, INPUTSCALE) \
+__kernel void vxcL2NormScale_SumRsqrt_axis0_##name##_2D \
+    ( \
+    image2d_array_t input, \
+    image2d_array_t output, \
+    int dim \
+    ) \
+{ \
+    int lidx = get_local_id(0); \
+    int4 coord = (int4)(0, get_global_id(1), 0, 0); \
+    int offset  = get_global_id(0); \
+    read_type *src_ptr = (read_type *)get_image2D_array_ptr(input); \
+    read_type2 src0, src1, dst; \
+    src_type   val0, val1; \
+    int   inputRemain; \
+    vxc_float4 sum = {0.0f}; \
+    __local float lcl_sum[16]; \
+    src_ptr += (get_global_id(0) + get_global_id(1) * inputWidth); \
+    for (int i = 0; i < inputWidthCount; i++) \
+    { \
+        src0 = vload8(0, src_ptr); \
+        src1 = vload8(1, src_ptr); \
+        _viv_asm(COPY, val0, src0, 16); \
+        _viv_asm(COPY, val1, src1, 16); \
+        VXC_DP16x1(sum, val0, val1, VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 1),\
+            uniSumSqrt_16x1); \
+        sum.x += sum.y;  \
+        src_ptr += 256; \
+    } \
+    if (inputWidthRemain256) \
+    { \
+        offset  = get_global_id(0) + inputWidthCount * 256;\
+        inputRemain = inputWidth - offset; \
+        if (inputRemain > 0) \
+        { \
+            L2NORMSCALE_REM_PROCESS(0) \
+            _viv_asm(COPY, val0, src0, 16); \
+            _viv_asm(COPY, val1, src1, 16); \
+            VXC_DP16x1(sum, val0, val1, VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 1),\
+                uniSumSqrt_16x1); \
+            sum.x += sum.y; \
+        } \
+    } \
+    lcl_sum[lidx] = sum.x; \
+    barrier(CLK_LOCAL_MEM_FENCE); \
+    float4 *pLocalPtr = (float4 *)&lcl_sum[0]; \
+    float4 one = (float4)(1, 1, 1, 1); \
+    float4 data0; \
+    data0 = pLocalPtr[0] + pLocalPtr[1] + pLocalPtr[2] + pLocalPtr[3]; \
+    sum.x = dot(data0, one); \
+    sum.x = rsqrt(sum.x) * INPUTSCALE; \
+    write_imagef(output, coord, sum.xxxx); \
+}
+
+L2NORMSCALE_SUMSQRT_AXIS0_2D(F16, ushort, vxc_ushort8, vxc_half8, 1);
+L2NORMSCALE_SUMSQRT_AXIS0_2D(I16, ushort, vxc_ushort8, vxc_short8, r_inputScale);
+L2NORMSCALE_SUMSQRT_AXIS0_2D(I8,  uchar, vxc_uchar8, vxc_char8, r_inputScale);
+
+_viv_uniform float zP2x;
+_viv_uniform float zpSqrt16x;
+_viv_uniform VXC_512Bits uniSumAll_16x1;
+_viv_uniform int inputZP;
+__kernel void vxcL2NormScale_SumRsqrt_axis0_U8_2D
+    (
+    image2d_array_t input,
+    image2d_array_t output,
+    int dim
+    )
+{
+    int lidx = get_local_id(0);
+    int4 coord = (int4)(0, get_global_id(1), 0, 0);
+    int offset  = get_global_id(0);
+    uchar *src_ptr = (uchar *)get_image2D_array_ptr(input);
+    vxc_uchar8 src0, src1, dst;
+    vxc_uchar8   val0, val1;
+    int   inputRemain;
+    vxc_float4 sum = {0.0f};
+    __local float lcl_sum[16];
+    src_ptr += (get_global_id(0) + get_global_id(1) * inputWidth);
+    for (int i = 0; i < inputWidthCount; i++)
+    {
+        src0 = vload8(0, src_ptr);
+        src1 = vload8(1, src_ptr);
+        _viv_asm(COPY, val0, src0, 16);
+        _viv_asm(COPY, val1, src1, 16);
+        VXC_DP16x1(sum, val0, val1, VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 1),\
+            uniSumSqrt_16x1);
+        VXC_DP16x1(sum, val0, val1, VXC_MODIFIER(2, 2, 0, VXC_RM_TowardZero, 1),\
+            uniSumAll_16x1);
+        sum.w  = sum.y - zP2x * sum.z + zpSqrt16x;
+        sum.x += sum.w;
+        src_ptr += 256;
+    }
+    if (inputWidthRemain256)
+    {
+        offset  = get_global_id(0) + inputWidthCount * 256;
+        inputRemain = inputWidth - offset;
+        if (inputRemain > 0)
+        {
+            L2NORMSCALE_REM_PROCESS((uchar)inputZP)
+            _viv_asm(COPY, val0, src0, 16);
+            _viv_asm(COPY, val1, src1, 16);
+            VXC_DP16x1(sum, val0, val1, VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 1),\
+                uniSumSqrt_16x1);
+            VXC_DP16x1(sum, val0, val1, VXC_MODIFIER(2, 2, 0, VXC_RM_TowardZero, 1),\
+                uniSumAll_16x1);
+            sum.w  = sum.y - zP2x * sum.z + zpSqrt16x;
+            sum.x += sum.w;
+        }
+    }
+    lcl_sum[lidx] = sum.x;
+    barrier(CLK_LOCAL_MEM_FENCE);
+    float4 *pLocalPtr = (float4 *)&lcl_sum[0];
+    float4 one = (float4)(1, 1, 1, 1);
+    float4 data0;
+    data0 = pLocalPtr[0] + pLocalPtr[1] + pLocalPtr[2] + pLocalPtr[3];
+    sum.x = dot(data0, one);
+    sum.x = rsqrt(sum.x) * r_inputScale;
+    write_imagef(output, coord, sum.xxxx);
+}
+
+_viv_uniform VXC_512Bits uniDataSubZPtoFp32Part0_4x4;
+_viv_uniform VXC_512Bits uniDataSubZPtoFp32Part1_4x4;
+_viv_uniform VXC_512Bits uniExtact8Bin_2x8;
+_viv_uniform VXC_512Bits uniFp16toFp32_4x4;
+_viv_uniform VXC_512Bits uniFp16toFp32Hi_4x4;
+_viv_uniform float IntergerScale;
+_viv_uniform float output_ZP;
+_viv_uniform int inputWidthRemain128;
+
+#define L2NORMSCALE_MUL_PROCESS() \
+        vect0 = vload8(0, src_ptr); \
+        _viv_asm(COPY, src0, vect0, 16); \
+        scale_s16 = vload8(0,  scale_ptr); \
+        _viv_asm(COPY, scale_f16, scale_s16, 16); \
+        _viv_asm(COPY, input_ZP, inputZP, 4); \
+        VXC_DP4x4(vec0, src0, input_ZP, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardInf, 0),\
+            uniDataSubZPtoFp32Part0_4x4);\
+        VXC_DP4x4(vec1, src0, input_ZP, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardInf, 0),\
+            uniDataSubZPtoFp32Part1_4x4);\
+        VXC_DP4x4(scale_f32, scale_f16, scale_f16, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardInf, 0),\
+            uniFp16toFp32_4x4);\
+        VXC_DP4x4(scale1_f32, scale_f16, scale_f16, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardInf, 0),\
+            uniFp16toFp32Hi_4x4);\
+        vec0 = vec0 * rsqrt0.xxxx + output_ZP;\
+        vec1 = vec1 * rsqrt0.xxxx + output_ZP;\
+        vec0 *= scale_f32;\
+        vec1 *= scale1_f32;\
+        _viv_asm(CONV_RTE, dst0, vec0);\
+        _viv_asm(CONV_RTE, dst1, vec1);\
+        VXC_DP2x8(dst2, dst0, dst1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtact8Bin_2x8);\
+        _viv_asm(COPY, dst, dst2, 16);
+
+
+#define L2NORMSCALE_MIXED_AXIS0_MODE_2D(name0, name1, input_type, incopy_type,\
+    output_type, convert_type, copy_type, input_type1, dst_type) \
+    __kernel void vxcL2NormScale_axis0_##name0##to##name1##_2D\
+    (\
+    __read_only  image2d_array_t input1,\
+    __read_only  image2d_array_t input2,\
+    __read_only  image2d_array_t scale,\
+    __write_only image2d_array_t output,\
+    int dim\
+    )\
+{\
+    int4 coord = (int4)(get_global_id(1), 0, 0, 0);\
+    input_type  vect0;\
+    incopy_type src0, src1;\
+    vxc_float4 rsqrt0, rsqrt1;\
+    input_type1 *src_ptr = (input_type1 *)get_image2D_array_ptr(input1); \
+    dst_type    *dst_ptr = (dst_type    *)get_image2D_array_ptr(output); \
+    short *scale_ptr = (short *)get_image2D_array_ptr(scale); \
+    int offset  = (get_global_id(0) + get_global_id(1) * inputWidth); \
+    vxc_float4 vec0, vec1;\
+    input_type input_ZP ;\
+    convert_type dst0, dst1;\
+    vxc_short8 scale_s16;\
+    vxc_half8  scale_f16;\
+    vxc_float4 scale_f32, scale1_f32;\
+    output_type dst2;\
+    copy_type dst;\
+    int   inputRemain; \
+    rsqrt0 = read_imagef(input2, coord);\
+    rsqrt0 = rsqrt0.xxxx * IntergerScale;\
+    src_ptr   += (get_global_id(0) + get_global_id(1) * inputWidth);\
+    dst_ptr   += (get_global_id(0) + get_global_id(1) * inputWidth);\
+    scale_ptr += get_global_id(0);\
+    for(int i = 0; i < inputWidthCount; i++)\
+    {\
+        L2NORMSCALE_MUL_PROCESS() \
+        VXC_Vstore8(dst_ptr, 0, dst); \
+        src_ptr   += 128; \
+        dst_ptr   += 128; \
+        scale_ptr += 128; \
+    }\
+    if (inputWidthRemain128) \
+    { \
+        offset  = get_global_id(0) + inputWidthCount * 128; \
+        inputRemain = inputWidth - offset; \
+        if (inputRemain > 0) \
+        { \
+            L2NORMSCALE_MUL_PROCESS() \
+            switch (inputRemain) \
+            { \
+                case 1: \
+                    dst_ptr[0] = dst.s0; \
+                break; \
+                case 2: \
+                    VXC_Vstore2(dst_ptr, 0, dst); \
+                break; \
+                case 3: \
+                    VXC_Vstore2(dst_ptr, 0, dst); \
+                    dst_ptr[2] = dst.s2; \
+                break; \
+                case 4: \
+                    VXC_Vstore4(dst_ptr, 0, dst); \
+                break; \
+                case 5: \
+                    VXC_Vstore4(dst_ptr, 0, dst); \
+                    dst_ptr[4] = dst.s4; \
+                break; \
+                case 6: \
+                    VXC_Vstore4(dst_ptr, 0, dst); \
+                    dst_ptr[4] = dst.s4; \
+                    dst_ptr[5] = dst.s5; \
+                break; \
+                case 7: \
+                    VXC_Vstore4(dst_ptr, 0, dst); \
+                    dst_ptr[4] = dst.s4; \
+                    dst_ptr[5] = dst.s5; \
+                    dst_ptr[6] = dst.s6; \
+                break; \
+                default: \
+                    VXC_Vstore8(dst_ptr, 0, dst); \
+                break; \
+            } \
+        } \
+    } \
+}
+
+// name0, name1, input_type,  incopy_type, output_type, convert_type, copy_type, input_type1, dst_type
+L2NORMSCALE_MIXED_AXIS0_MODE_2D(F16,  F16, vxc_short8, vxc_half8,  vxc_half8,  half4,  vxc_short8, short, short)
+L2NORMSCALE_MIXED_AXIS0_MODE_2D(I8,   I8,  vxc_char8,  vxc_char8,  vxc_char8,  int4,   vxc_char8,  char,  char)
+L2NORMSCALE_MIXED_AXIS0_MODE_2D(I8,   F16, vxc_char8,  vxc_char8,  vxc_half8,  half4,  vxc_short8, char,  short)
+L2NORMSCALE_MIXED_AXIS0_MODE_2D(U8,   F16, vxc_uchar8, vxc_uchar8, vxc_half8,  half4,  vxc_short8, uchar, short)
+L2NORMSCALE_MIXED_AXIS0_MODE_2D(U8,   U8,  vxc_uchar8, vxc_uchar8, vxc_uchar8, int4,   vxc_uchar8, uchar, uchar)
+L2NORMSCALE_MIXED_AXIS0_MODE_2D(I16,  I16, vxc_short8, vxc_short8, vxc_short8, int4,   vxc_short8, short, short)
+L2NORMSCALE_MIXED_AXIS0_MODE_2D(I16,  F16, vxc_short8, vxc_short8, vxc_half8,  half4,  vxc_short8, short, short)
+//L2NORMSCALE_MIXED_AXIS0_MODE_2D(F16, I8,  vxc_short8,  vxc_half8, vxc_char16,  int4,  vxc_char16, short, char)
+//L2NORMSCALE_MIXED_AXIS0_MODE_2D(F16, U8,  vxc_short8,  vxc_half8, vxc_uchar16, int4,  vxc_uchar16, short, uchar)
+//L2NORMSCALE_MIXED_AXIS0_MODE_2D(F16, I16, vxc_short8,  vxc_half8, vxc_short8,  int4,  vxc_short8,  short, short)

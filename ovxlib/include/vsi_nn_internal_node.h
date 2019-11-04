@@ -153,4 +153,19 @@ vsi_nn_internal_tensor_t* vsi_nn_create_zero_bias_tensor
     vsi_nn_tensor_attr_t* weight_attr
     );
 
+/**
+* Init the attr
+* Init the attr for internal node.
+*
+* @param[out] dst attr.
+* @param[in] src dtype.
+* @param[in] use virtual tensor.
+*/
+void vsi_nn_internal_node_init_attr
+    (
+    vsi_nn_tensor_attr_t* attr,
+    const vsi_nn_dtype_t* dtype,
+    vsi_bool use_virtual_tensor
+    );
+
 #endif /* _VSI_NN_INTRNAL_NODE_H */

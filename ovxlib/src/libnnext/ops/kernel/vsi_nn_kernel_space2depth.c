@@ -57,18 +57,23 @@ static vsi_status VX_CALLBACK vxSpace2DepthKernel
 #define TENSOR_NUM (TENSOR_NUM_INPUT+TENSOR_NUM_OUTPUT)
 
     vsi_status status = VX_SUCCESS;
-    uint32_t  i;
+    uint32_t  i = 0;
     vx_context context = NULL;
     vsi_nn_tensor_attr_t attr[TENSOR_NUM];
     uint32_t stride_size[TENSOR_NUM][VSI_NN_MAX_DIM_NUM];
     vx_tensor_addressing user_addr[TENSOR_NUM] = {NULL};
     uint8_t *buffer_ptr[TENSOR_NUM] = {NULL};
-    vx_tensor tensor[TENSOR_NUM];
+    vx_tensor tensor[TENSOR_NUM] = {NULL};
 
-    int32_t block_size_x, block_size_y;
-    int32_t output_depth, output_height, output_width;
-    int32_t input_batch, input_depth, input_height, input_width;
-    int32_t batch, dim;
+    int32_t block_size_x = 0, block_size_y = 0;
+    int32_t output_depth = 0, output_height = 0, output_width = 0;
+    int32_t input_batch = 0, input_depth = 0, input_height = 0, input_width = 0;
+    int32_t batch = 0, dim = 0;
+
+    for(i = 0; i < TENSOR_NUM; i++)
+    {
+        memset(&attr[i], 0x0, sizeof(vsi_nn_tensor_attr_t));
+    }
 
     //prepare data
     context = vxGetContext((vx_reference)node);
@@ -141,18 +146,11 @@ static vsi_status VX_CALLBACK vxSpace2DepthKernel
     //save data
     for( i = TENSOR_NUM_INPUT; i < TENSOR_NUM; i ++ )
     {
-        status = vxCopyTensorPatch(
-            tensor[i],
-            NULL,
-            user_addr[i],
-            buffer_ptr[i],
-            VX_WRITE_ONLY,
-            0
-            );
-        if (user_addr[i]) vxReleaseTensorAddressing(&(user_addr[i]));
+        vsi_nn_copy_tensor_patch(tensor[i], &attr[i], buffer_ptr[i], VX_WRITE_ONLY);
     }
     for( i = 0; i < TENSOR_NUM; i ++ )
     {
+        if (user_addr[i]) vxReleaseTensorAddressing(&(user_addr[i]));
         if (buffer_ptr[i]) free(buffer_ptr[i]);
     }
 

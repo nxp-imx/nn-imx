@@ -351,6 +351,7 @@ static inline vsi_status dtype_to_float32
     case VSI_NN_TYPE_INT8:
     case VSI_NN_TYPE_UINT8:
     case VSI_NN_TYPE_INT16:
+    case VSI_NN_TYPE_INT32:
         {
             int32_t src_value = 0;
             integer_convert(src, src_dtype->vx_type, &src_value, VSI_NN_TYPE_INT32 );

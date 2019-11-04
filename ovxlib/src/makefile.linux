@@ -6,7 +6,7 @@ INCLUDE += -I../include/client -I../include -I../include/libnnext
 INCLUDE += -I../include/platform -I../include/cpu_backend
 
 CFLAGS += $(INCLUDE)
-CFLAGS += -fvisibility=hidden -D'OVXLIB_API=__attribute__((visibility("default")))'
+CFLAGS += -Werror -fvisibility=hidden -D'OVXLIB_API=__attribute__((visibility("default")))'
 
 ################################################################################
 # Supply necessary libraries.
@@ -55,6 +55,7 @@ OBJECTS +=      $(OBJ_DIR)/vsi_nn_code_generator.o   \
              $(OBJ_DIR)/vsi_nn_limits.o   \
              $(OBJ_DIR)/vsi_nn_vdata.o   \
              $(OBJ_DIR)/vsi_nn_util.o    \
+             $(OBJ_DIR)/vsi_nn_dlfcn.o    \
              $(OBJ_DIR)/vsi_nn_tensor_op.o
 
 vpath %.c quantization
@@ -138,6 +139,8 @@ OBJECTS += $(OBJ_DIR)/vsi_nn_kernel_argmax.o \
         $(OBJ_DIR)/vsi_nn_kernel_reduceprod_internal.o \
         $(OBJ_DIR)/vsi_nn_kernel_reduceall_internal.o \
         $(OBJ_DIR)/vsi_nn_kernel_reduceany_internal.o \
+        $(OBJ_DIR)/vsi_nn_kernel_resize_internal.o \
+        $(OBJ_DIR)/vsi_nn_kernel_resize_nearest_internal.o \
         $(OBJ_DIR)/vsi_nn_kernel_tensorstackconcat.o \
         $(OBJ_DIR)/vsi_nn_kernel_pow.o \
         $(OBJ_DIR)/vsi_nn_kernel_floordiv.o \
@@ -283,6 +286,13 @@ OBJECTS +=      $(OBJ_DIR)/vsi_nn_op_add.o   \
              $(OBJ_DIR)/vsi_nn_op_reduceprod_internal.o \
              $(OBJ_DIR)/vsi_nn_op_reduceall_internal.o \
              $(OBJ_DIR)/vsi_nn_op_reduceany_internal.o \
+             $(OBJ_DIR)/vsi_nn_op_unidirectional_sequence_rnn.o \
+             $(OBJ_DIR)/vsi_nn_op_quantized_16bit_lstm.o \
+             $(OBJ_DIR)/vsi_nn_op_bidirectional_sequence_rnn.o \
+             $(OBJ_DIR)/vsi_nn_op_bidirectional_sequence_lstm.o \
+             $(OBJ_DIR)/vsi_nn_op_resize_internal.o \
+             $(OBJ_DIR)/vsi_nn_op_resize_nearest_internal.o \
+             $(OBJ_DIR)/vsi_nn_op_rnncell_ovxlib.o \
              $(OBJ_DIR)/vsi_nn_op_tensorstackconcat.o \
              $(OBJ_DIR)/vsi_nn_op_concatshift.o \
              $(OBJ_DIR)/vsi_nn_op_sync_host.o\

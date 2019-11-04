@@ -82,24 +82,32 @@ vsi_bool vsi_nn_QuantAffinePerchannelCheck
     case VSI_NN_TYPE_UINT32:
         {
             float input_scale = input->attr.dtype.scale;
-            float *w,*b;
-            int i;
+            float *w = NULL;
+            float *b = NULL;
+            int i = 0;
             w = weight->attr.dtype.scales;
-            b = bias->attr.dtype.scales;
-            for (i=0; i < weight->attr.dtype.scale_dim; i++)
+            if(bias && bias->attr.dtype.scales)
             {
-                float weight_scale = *(w+i);
-                float bias_scale = *(b+i);
-                float iw_scale = input_scale * weight_scale;
-                float diff = vsi_nn_abs(bias_scale - iw_scale);
-                if(diff <= diff_scale)
+                b = bias->attr.dtype.scales;
+                for (i=0; i < weight->attr.dtype.scale_dim; i++)
                 {
-                    ret = TRUE;
+                    float weight_scale = *(w+i);
+                    float bias_scale = *(b+i);
+                    float iw_scale = input_scale * weight_scale;
+                    float diff = vsi_nn_abs(bias_scale - iw_scale);
+                    if(diff <= diff_scale)
+                    {
+                        ret = TRUE;
+                    }
+                    else
+                    {
+                        break;
+                    }
                 }
-                else
-                {
-                    break;
-                }
+            }
+            else
+            {
+                ret = TRUE;
             }
         }
         break;

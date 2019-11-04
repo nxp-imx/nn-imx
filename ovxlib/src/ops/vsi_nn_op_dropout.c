@@ -204,7 +204,8 @@ static vsi_status op_compute
 {
     vsi_status status = VSI_FAILURE;
 #if (USE_DRIVER_API == 0)
-    vsi_nn_kernel_info_t kernel_info = {0};
+    vsi_nn_kernel_info_t kernel_info;
+    memset(&kernel_info, 0x0, sizeof(vsi_nn_kernel_info_t));
     kernel_info.resource_num = 1;
     kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));
     kernel_info.resource_name[0] = "vsi_nn_kernel_dropout";
@@ -253,7 +254,8 @@ static vsi_status op_compute
     if(!scale_s)
     {
         VSILOGE("CreateScalar fail\n");
-        return VSI_FAILURE;
+        status = VSI_FAILURE;
+        goto final;
     }
 
     self->n = vxTensorMultiplyNode( self->graph->g,
@@ -267,9 +269,9 @@ static vsi_status op_compute
     {
         status = VSI_SUCCESS;
     }
-
-    if (tensor) vsi_nn_ReleaseTensor(&tensor);
-    if (scale_s) vxReleaseScalar(&scale_s);
+    final:
+        if (tensor) vsi_nn_ReleaseTensor(&tensor);
+        if (scale_s) vxReleaseScalar(&scale_s);
 #endif
     return status;
 } /* op_compute() */

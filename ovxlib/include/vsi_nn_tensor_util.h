@@ -540,11 +540,37 @@ OVXLIB_API uint32_t vsi_nn_GetOffsetByCoords
     uint32_t *coords
     );
 
+/**
+ * Create a tensor with attr and default value
+ * the tensor content will be initialized with default value
+ *
+ * @param[in] graph Graph handle.
+ * @param[in] tensor attr.
+ * @param[in] default value to be assigned to tensor content.
+ *
+ * @return new tensor on success, or NULL otherwise.
+ */
 OVXLIB_API vsi_nn_tensor_t * vsi_nn_CreateTensorWithDefault
     (
     vsi_nn_graph_t       * graph,
     vsi_nn_tensor_attr_t * attr,
     float                  defualt_value
+    );
+
+/**
+ * Fill tensor with specified value
+ *
+ * @param[in] graph Graph handle.
+ * @param[in] target tensor.
+ * @param[in] value to be assigned to tensor content.
+ *
+ * @return VSI_SUCCESS on success, or error core otherwise.
+ */
+vsi_status vsi_nn_FillTensorWithValue
+    (
+    vsi_nn_graph_t       * graph,
+    vsi_nn_tensor_t      * tensor,
+    float                  value
     );
 
 void vsi_nn_print_node_io
@@ -560,6 +586,54 @@ vsi_nn_tensor_t *vsi_nn_reshape_tensor
     vsi_nn_tensor_t * input,
     uint32_t        * shape,
     uint32_t          dim_num
+    );
+
+/**
+ * OVXLIB internal tensor util api
+ * A wrapper api for OpenVX vxCopyTensorPatch
+ * Allows the application to copy a view patch from/into an tensor object .
+ *
+ * @param[in] tensor OpenVX Tensor handle.
+ * @param[in] attr OVXLIB Tensor attr.
+ * @param[in] user_ptr The address of the memory location where to store the requested data.
+ * @param[in] start View start region.
+ * @param[in] end View end region.
+ * @param[in] stride Array of user memory strides in each dimension.
+ * @param[in] usage This declares the effect of the copy with regard to the tensor object
+ *            support VX_READ_ONLY or VX_WRITE_ONLY
+ * @param[in] user_memory_type A, refer vx_memory_type_e
+ * @return VSI_SUCCESS on success, or error core otherwise.
+ */
+vsi_status vsi_nn_copy_tensor_veiw_patch
+    (
+    vx_tensor tensor,
+    vsi_nn_tensor_attr_t *attr,
+    void *user_ptr,
+    uint32_t *start,
+    uint32_t *end,
+    uint32_t *stride,
+    vsi_enum usage,
+    vsi_enum user_memory_type
+    );
+
+/**
+ * OVXLIB internal tensor util api
+ * A wrapper api for OpenVX vxCopyTensorPatch
+ * Allows the application to copy whole tensor patch from/into an tensor object.
+ *
+ * @param[in] tensor OpenVX Tensor handle.
+ * @param[in] attr OVXLIB Tensor attr.
+ * @param[in] user_ptr The address of the memory location where to store the requested data.
+ * @param[in] usage This declares the effect of the copy with regard to the tensor object
+ *            support VX_READ_ONLY or VX_WRITE_ONLY
+ * @return VSI_SUCCESS on success, or error core otherwise.
+ */
+vsi_status vsi_nn_copy_tensor_patch
+    (
+    vx_tensor tensor,
+    vsi_nn_tensor_attr_t *attr,
+    void * user_ptr,
+    vsi_enum usage
     );
 
 #ifdef __cplusplus

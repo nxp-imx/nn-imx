@@ -456,7 +456,7 @@ typedef struct _vsi_nn_lstmunit_activation_param
     uint8_t is_layer_norm;
     uint8_t is_peephole; /* not supported now*/
     uint8_t is_hybrid; /*hybrid mode and bias format is fp32 */
-    vsi_nn_lstmunit_activation_e recurrent_activation;
+    vsi_nn_activation_e recurrent_activation;
 } vsi_nn_lstmunit_activation_param;
 
 #endif

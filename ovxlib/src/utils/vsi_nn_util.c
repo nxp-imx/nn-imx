@@ -531,7 +531,6 @@ vsi_bool vsi_nn_CreateTensorGroup
     uint32_t i;
     uint32_t start[VSI_NN_MAX_DIM_NUM];
     uint32_t end[VSI_NN_MAX_DIM_NUM];
-    vx_tensor_view       view;
     vsi_nn_tensor_attr_t attr;
 
     if( NULL == graph || NULL == in_tensor
@@ -569,14 +568,6 @@ vsi_bool vsi_nn_CreateTensorGroup
     {
         start[axis] = end[axis];
         end[axis] += sz;
-        view = vxCreateTensorView( graph->ctx->c,
-            start, end, in_tensor->attr.dim_num  );
-        if( NULL == view )
-        {
-            VSILOGE( "Create tensor %d view fail.", i );
-            ret = FALSE;
-            break;
-        }
         out_tensors[i] = vsi_nn_CreateTensor( graph, &attr );
         if( NULL == out_tensors[i] )
         {
@@ -584,7 +575,7 @@ vsi_bool vsi_nn_CreateTensorGroup
             ret = FALSE;
             break;
         }
-        out_tensors[i]->t = vxCreateTensorFromView( in_tensor->t, view );
+        out_tensors[i]->t = vsi_nn_CreateViewTensor(graph, start, end, in_tensor);
         if( NULL == out_tensors[i]->t )
         {
             VSILOGE( "Create tensor %d from view fail.", i );
@@ -838,331 +829,271 @@ const char* vsi_nn_DescribeStatus
     return unknown;
 } /* vsi_nn_DescribeStatus() */
 
-#if defined(_WIN32)
-#include <windows.h>
-#include <intrin.h>
-typedef struct local_object {
-    HMODULE hModule;
-    struct local_object *previous;
-    struct local_object *next;
-} local_object;
-
-static local_object first_object;
-
-/* These functions implement a double linked list for the local objects. */
-static local_object *local_search( HMODULE hModule )
+int32_t vsi_nn_partition
+(
+    void* data,
+    int32_t left,
+    int32_t right,
+    comp_func func,
+    vsi_bool is_recursion,
+    uint32_t* indices
+)
 {
-    local_object *pobject;
-
-    if( hModule == NULL )
-        return NULL;
-
-    for( pobject = &first_object; pobject; pobject = pobject->next )
-        if( pobject->hModule == hModule )
-            return pobject;
-
-    return NULL;
-}
-
-static BOOL local_add( HMODULE hModule )
-{
-    local_object *pobject;
-    local_object *nobject;
-
-    if( hModule == NULL )
-        return TRUE;
-
-    pobject = local_search( hModule );
-
-    /* Do not add object again if it's already on the list */
-    if( pobject )
-        return TRUE;
-
-    for( pobject = &first_object; pobject->next; pobject = pobject->next );
-
-    nobject = (local_object*) malloc( sizeof( local_object ) );
-
-    if( !nobject )
+    int32_t key_index;
+    int32_t low = left;
+    int32_t high = right;
+    if (left < right)
     {
-        SetLastError( ERROR_NOT_ENOUGH_MEMORY );
-        return FALSE;
+        key_index = indices[left];
+        while (low < high)
+        {
+            while (low < high && func(data, key_index, indices[high]))
+            {
+                high--;
+            }
+            indices[low] = indices[high];
+            while (low < high && func(data, indices[low], key_index))
+            {
+                low++;
+            }
+            indices[high] = indices[low];
+        }
+        indices[low] = key_index;
+        if (is_recursion)
+        {
+            vsi_nn_partition(data, left, low - 1, func, TRUE, indices);
+            vsi_nn_partition(data, low + 1, right, func, TRUE, indices);
+        }
     }
-
-    pobject->next = nobject;
-    nobject->next = NULL;
-    nobject->previous = pobject;
-    nobject->hModule = hModule;
-
-    return TRUE;
+    return low;
 }
 
-static void local_rem( HMODULE hModule )
-{
-    local_object *pobject;
 
-    if( hModule == NULL )
-        return;
-
-    pobject = local_search( hModule );
-
-    if( !pobject )
-        return;
-
-    if( pobject->next )
-        pobject->next->previous = pobject->previous;
-    if( pobject->previous )
-        pobject->previous->next = pobject->next;
-
-    free( pobject );
-}
-
-static char error_buffer[65535];
-static char *current_error;
-static char dlerror_buffer[65536];
-
-/* Load Psapi.dll at runtime, this avoids linking caveat */
-static BOOL MyEnumProcessModules
+/* Greatest Common Divisor*/
+static vsi_bool vsi_nn_GetDataDivisors
     (
-    HANDLE hProcess,
-    HMODULE *lphModule,
-    DWORD cb,
-    LPDWORD lpcbNeeded
+    vx_uint32 input_value,
+    vx_uint32 *divisors,
+    vx_uint32 gcd
     )
 {
-    static BOOL (WINAPI *EnumProcessModulesPtr)(HANDLE, HMODULE *, DWORD, LPDWORD);
-    HMODULE psapi;
-
-    if( !EnumProcessModulesPtr )
+    vx_uint32 i                 = 0;
+#define VSI_NN_MAX_IMAGE_WIDTH  (65536)
+    for (i = vsi_nn_min(input_value, VSI_NN_MAX_IMAGE_WIDTH - 1); i > 0; i --)
     {
-        psapi = LoadLibraryA( "Psapi.dll" );
-        if( psapi )
-            EnumProcessModulesPtr = (BOOL (WINAPI *)(HANDLE, HMODULE *, DWORD, LPDWORD))
-            GetProcAddress( psapi, "EnumProcessModules" );
-        if( !EnumProcessModulesPtr )
-            return 0;
-    }
+        if ((i % gcd == 0) && (input_value % i == 0))
+        {
+            *divisors = i;
 
-    return EnumProcessModulesPtr( hProcess, lphModule, cb, lpcbNeeded );
+            return TRUE;
+        }
+    }
+#undef VSI_NN_MAX_IMAGE_WIDTH
+    return FALSE;
 }
 
-void * vsi_nn_dlopen_win32( const char *file, int mode )
+void vsi_nn_OptimizedEltOPShape
+    (
+       vsi_nn_tensor_t * input,
+       uint32_t          sizes[VSI_NN_MAX_DIM_NUM],
+       uint32_t        * num_of_dims
+    )
 {
-    HMODULE hModule;
-    UINT uMode;
+    uint32_t element_count     = 0;
+    uint32_t i                 = 0;
 
-    current_error = NULL;
+    element_count = vsi_nn_GetElementNum(input);
 
-    /* Do not let Windows display the critical-error-handler message box */
-    uMode = SetErrorMode( SEM_FAILCRITICALERRORS );
 
-    if( file == 0 )
+    for (i = 0; i < VSI_NN_MAX_DIM_NUM; i++)
     {
-        hModule = GetModuleHandle( NULL );
+        sizes[i] = 1;
+    }
 
-        if( !hModule )
-            VSILOGE("GetModuleHandle Fail.");
+    if (element_count < VSI_NN_MAX_DIM_NUM)
+    {
+        sizes[0] = element_count;
+
+        *num_of_dims = 2;
     }
     else
     {
-        HANDLE hCurrentProc;
-        DWORD dwProcModsBefore, dwProcModsAfter;
-        char lpFileName[MAX_PATH];
-        size_t i, len;
-
-        len = strlen( file );
-
-        if( len >= sizeof( lpFileName ) )
+        vx_uint32 divisors = 1;
+        for (i = 0; i < 2; i++)
         {
-            SetLastError( ERROR_FILENAME_EXCED_RANGE );
-            VSILOGE("File name error.");
-            hModule = NULL;
+            divisors = 1;
+            vsi_nn_GetDataDivisors(element_count, &divisors, 1);
+
+            sizes[i] = divisors;
+            element_count = element_count / divisors;
+        }
+
+        sizes[2] = element_count;
+        *num_of_dims = 3;
+    }
+
+}
+
+vsi_bool vsi_nn_OptimizedEltWiseOPShape
+    (
+    vsi_nn_tensor_t * input0,
+    vsi_nn_tensor_t * input1,
+    vsi_nn_tensor_t * output,
+    uint32_t          sizes0[VSI_NN_MAX_DIM_NUM],
+    uint32_t          sizes1[VSI_NN_MAX_DIM_NUM],
+    uint32_t          sizes2[VSI_NN_MAX_DIM_NUM],
+    uint32_t        * dim_num
+    )
+{
+    vsi_bool  status            = TRUE;
+    uint32_t  i                 = 0;
+    uint32_t  cnt               = 0;
+    uint32_t  dims              = 0;
+    uint32_t  element_count0    = 0;
+    uint32_t  element_count1    = 0;
+    vsi_bool  enable_broadcast  = vx_false_e;
+    vsi_bool  enable_broadcast1 = vx_false_e;
+    uint32_t  broadcast_Bits    = 0;
+
+    element_count0 = vsi_nn_GetElementNum(input0);
+    element_count1 = vsi_nn_GetElementNum(input1);
+
+    if (element_count0 == 1 || element_count1 == 1)
+    {
+        enable_broadcast1 = vx_true_e;
+    }
+
+    /*************step 1:init tensor shape*****************/
+    for (i = 0; i < VSI_NN_MAX_DIM_NUM; i++)
+    {
+        sizes0[i] = 1;
+        sizes1[i] = 1;
+        sizes2[i] = 1;
+    }
+
+    /*************step 2:squeeze tensor shape*****************/
+    for (i = 0; i < output->attr.dim_num; i++)
+    {
+        uint32_t sz0 = input0->attr.dim_num > i ? input0->attr.size[i] : 1;
+        uint32_t sz1 = input1->attr.dim_num > i ? input1->attr.size[i] : 1;
+        uint32_t sz2 = output->attr.dim_num > i ? output->attr.size[i] : 1;
+
+        if (sz0 == sz1 && sz0 == 1)
+        {
+            continue;
         }
         else
         {
-            for( i = 0; i < len; i++ )
-            {
-                if( file[i] == '/' )
-                    lpFileName[i] = '\\';
-                else
-                    lpFileName[i] = file[i];
-            }
-            lpFileName[len] = '\0';
+            sizes0[cnt] = sz0;
+            sizes1[cnt] = sz1;
+            sizes2[cnt] = sz2;
 
-            hCurrentProc = GetCurrentProcess( );
-
-            if( MyEnumProcessModules( hCurrentProc, NULL, 0, &dwProcModsBefore ) == 0 )
-                dwProcModsBefore = 0;
-
-            hModule = LoadLibraryExA( lpFileName, NULL, LOAD_WITH_ALTERED_SEARCH_PATH );
-
-            if( !hModule )
-            {
-                VSILOGE("LoadLibraryExA Fail.");
-            }
-            else
-            {
-                if( MyEnumProcessModules( hCurrentProc, NULL, 0, &dwProcModsAfter ) == 0 )
-                    dwProcModsAfter = 0;
-
-                if( (mode & RTLD_LOCAL) && dwProcModsBefore != dwProcModsAfter )
-                {
-                    if( !local_add( hModule ) )
-                    {
-                        VSILOGE("local_add fail");
-                        FreeLibrary( hModule );
-                        hModule = NULL;
-                    }
-                }
-                else if( !(mode & RTLD_LOCAL) && dwProcModsBefore == dwProcModsAfter )
-                {
-                    local_rem( hModule );
-                }
-            }
+            cnt ++;
+            dims ++;
         }
     }
 
-    /* Return to previous state of the error-mode bit flags. */
-    SetErrorMode( uMode );
+    for (i = 0; i < dims; i++)
+    {
+        uint32_t sz0 = sizes0[i];
+        uint32_t sz1 = sizes1[i];
 
-    return (void *) hModule;
-}
+        if (sz0 != sz1)
+        {
+            enable_broadcast = vx_true_e;
+            broadcast_Bits |= (1 << i);
+        }
+    }
 
-int vsi_nn_dlclose_win32( void *handle )
-{
-    HMODULE hModule = (HMODULE) handle;
-    BOOL ret;
-
-    current_error = NULL;
-
-    ret = FreeLibrary( hModule );
-
-    /* If the object was loaded with RTLD_LOCAL, remove it from list of local
-     * objects.
-     */
-    if( ret )
-        local_rem( hModule );
+    /*************step 3:reshape tensor shape*****************/
+    if (enable_broadcast == vx_false_e || enable_broadcast1)
+    {
+        vsi_nn_OptimizedEltOPShape(input0, sizes0, &dims);
+        vsi_nn_OptimizedEltOPShape(input1, sizes1, &dims);
+        vsi_nn_OptimizedEltOPShape(output, sizes2, &dims);
+    }
     else
-        VSILOGE("FreeLibrary fail");
-
-    /* dlclose's return value in inverted in relation to FreeLibrary's. */
-    ret = !ret;
-
-    return (int) ret;
-}
-
-__declspec(noinline) /* Needed for _ReturnAddress() */
-void * vsi_nn_dlsym_win32( void *handle, const char *name )
-{
-    FARPROC symbol;
-    HMODULE hCaller;
-    HMODULE hModule;
-    HANDLE hCurrentProc;
-
-    current_error = NULL;
-    symbol = NULL;
-    hCaller = NULL;
-    hModule = GetModuleHandle( NULL );
-    hCurrentProc = GetCurrentProcess( );
-
-    if( handle == RTLD_DEFAULT )
     {
-
-        handle = hModule;
-    }
-    else if( handle == RTLD_NEXT )
-    {
-        MEMORY_BASIC_INFORMATION info;
-        size_t sLen;
-        sLen = VirtualQueryEx( hCurrentProc, _ReturnAddress(), &info, sizeof( info ) );
-        if( sLen != sizeof( info ) )
+#define VSI_NN_MAX_IMAGE_WIDTH  (65536)
+        switch (broadcast_Bits)
         {
-            if( sLen != 0 )
-                SetLastError( ERROR_INVALID_PARAMETER );
-            goto end;
-        }
-        hCaller = (HMODULE) info.AllocationBase;
-        if( !hCaller )
-        {
-            SetLastError( ERROR_INVALID_PARAMETER );
-            goto end;
-        }
-    }
-
-    if( handle != RTLD_NEXT )
-    {
-        symbol = GetProcAddress( (HMODULE) handle, name );
-
-        if( symbol != NULL )
-            goto end;
-    }
-
-    if( hModule == handle || handle == RTLD_NEXT )
-    {
-        HMODULE *modules;
-        DWORD cbNeeded;
-        DWORD dwSize;
-        size_t i;
-
-        if( MyEnumProcessModules( hCurrentProc, NULL, 0, &dwSize ) != 0 )
-        {
-            modules = malloc( dwSize );
-            if( modules )
+        case VSI_NN_BROAD_CAST_BITS_0:
             {
-                if( MyEnumProcessModules( hCurrentProc, modules, dwSize, &cbNeeded )
-                    != 0 && dwSize == cbNeeded )
+                vx_uint32 element_count = 1;
+                vx_uint32 divisors = 1;
+
+                for (i = 1; i < dims; i++)
                 {
-                    for( i = 0; i < dwSize / sizeof( HMODULE ); i++ )
-                    {
-                        if( handle == RTLD_NEXT && hCaller )
-                        {
-                            /* Next modules can be used for RTLD_NEXT */
-                            if( hCaller == modules[i] )
-                                hCaller = NULL;
-                            continue;
-                        }
-                        if( local_search( modules[i] ) )
-                            continue;
-                        symbol = GetProcAddress( modules[i], name );
-                        if( symbol != NULL )
-                            goto end;
-                    }
-
+                    element_count *= sizes0[i];
                 }
-                free( modules );
+
+                divisors = 1;
+                vsi_nn_GetDataDivisors(element_count, &divisors, 1);
+
+                sizes0[1] = divisors;
+                sizes1[1] = divisors;
+                sizes2[1] = divisors;
+                sizes0[2] = element_count / divisors;
+                sizes1[2] = element_count / divisors;
+                sizes2[2] = element_count / divisors;
+                dims = 3;
+
+                break;
             }
-            else
+        case VSI_NN_BROAD_CAST_BITS_0 | VSI_NN_BROAD_CAST_BITS_1:
+        case VSI_NN_BROAD_CAST_BITS_0 | VSI_NN_BROAD_CAST_BITS_1 | VSI_NN_BROAD_CAST_BITS_2:
             {
-                SetLastError( ERROR_NOT_ENOUGH_MEMORY );
-                goto end;
+                vx_uint32 w0 = sizes0[0] * sizes0[1];
+                vx_uint32 w1 = sizes1[0] * sizes1[1];
+                vx_uint32 w  = sizes2[0] * sizes2[1];
+                vx_uint32 h = sizes0[2];
+
+                if (h < VSI_NN_MAX_IMAGE_WIDTH && (w0 == 1 || w1 == 1)
+                    && w < VSI_NN_MAX_IMAGE_WIDTH)
+                {
+                    sizes0[0] = w0;
+                    sizes1[0] = w1;
+                    sizes2[0] = w;
+                    sizes0[1] = sizes0[2];
+                    sizes1[1] = sizes1[2];
+                    sizes2[1] = sizes2[2];
+                    sizes0[2] = 1;
+                    sizes1[2] = 1;
+                    sizes2[2] = 1;
+                }
+
+                break;
             }
+        case VSI_NN_BROAD_CAST_BITS_2:
+            {
+                vx_uint32 w = sizes0[0] * sizes0[1];
+
+                if (w < VSI_NN_MAX_IMAGE_WIDTH)
+                {
+                    sizes0[0] = w;
+                    sizes1[0] = w;
+                    sizes2[0] = w;
+                    sizes0[1] = sizes0[2];
+                    sizes1[1] = sizes1[2];
+                    sizes2[1] = sizes2[2];
+                    sizes0[2] = 1;
+                    sizes1[2] = 1;
+                    sizes2[2] = 1;
+                }
+
+                break;
+            }
+        default:
+            if (dims == output->attr.dim_num)
+                status = FALSE;
+            break;
         }
     }
 
-end:
-    if( symbol == NULL )
-    {
-        if( GetLastError() == 0 )
-            SetLastError( ERROR_PROC_NOT_FOUND );
-        VSILOGE("vsi_nn_dlsym fail");
-    }
+#undef VSI_NN_MAX_IMAGE_WIDTH
 
-    return (void*) symbol;
+    if (status == TRUE)
+        *dim_num = vsi_nn_max(dims, 2);
+
+    return status;
 }
-
-char *vsi_nn_dlerror_win32( void )
-{
-    char *error_pointer = dlerror_buffer;
-
-    /* If this is the second consecutive call to dlerror, return NULL */
-    if (current_error == NULL)
-    {
-        return NULL;
-    }
-
-    memcpy(error_pointer, current_error, strlen(current_error) + 1);
-
-    current_error = NULL;
-
-    return error_pointer;
-}
-#endif

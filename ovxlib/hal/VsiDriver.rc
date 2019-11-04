@@ -1,4 +1,0 @@
-service neuralnetworks_hal_vsi_npu_server /vendor/bin/hw/android.hardware.neuralnetworks@1.0-service-vsi-npu-server
-    class hal
-    user system
-    group system

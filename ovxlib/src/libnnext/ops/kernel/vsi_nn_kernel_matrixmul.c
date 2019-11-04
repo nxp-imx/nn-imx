@@ -72,17 +72,36 @@ vx_status VX_CALLBACK vxgemmInitializer
     int32_t input2_ZP = 0;
     vx_bool transA = FALSE;
     vx_bool transB = FALSE;
+    vsi_nn_tensor_attr_t attr[3];
+    uint32_t i, output_dim;
 
-    status = vxQueryTensor(output, VX_TENSOR_DIMS, output_size, sizeof(output_size));
-    status |= vxQueryTensor(input, VX_TENSOR_DATA_TYPE, &inDataType, sizeof(inDataType));
-    status |= vxQueryTensor(input2, VX_TENSOR_DATA_TYPE, &inDataType2, sizeof(inDataType2));
-    status |= vxQueryTensor(output, VX_TENSOR_DATA_TYPE, &outDataType, sizeof(outDataType));
-    status |= vxQueryTensor(input, VX_TENSOR_ZERO_POINT, &input1_ZP, sizeof(input1_ZP));
-    status |= vxQueryTensor(input, VX_TENSOR_SCALE, &scaleIn1, sizeof(scaleIn1));
-    status |= vxQueryTensor(input2, VX_TENSOR_ZERO_POINT, &input2_ZP, sizeof(input2_ZP));
-    status |= vxQueryTensor(input2, VX_TENSOR_SCALE, &scaleIn2, sizeof(scaleIn2));
-    status |= vxQueryTensor(output, VX_TENSOR_ZERO_POINT, &output_ZP, sizeof(output_ZP));
-    status |= vxQueryTensor(output, VX_TENSOR_SCALE, &scaleOut, sizeof(scaleOut));
+    memset(&attr[0], 0, sizeof(vsi_nn_tensor_attr_t));
+    memset(&attr[1], 0, sizeof(vsi_nn_tensor_attr_t));
+    memset(&attr[2], 0, sizeof(vsi_nn_tensor_attr_t));
+    status  = vsi_nn_vxGetTensorAttr(input, &attr[0]);
+    status |= vsi_nn_vxGetTensorAttr(input2, &attr[1]);
+    status |= vsi_nn_vxGetTensorAttr(output, &attr[2]);
+    if (status != VX_SUCCESS)
+    {
+        VSILOGE("vsi_nn_vxGetTensorAttr failure! at line %d\n", __LINE__);
+        return status;
+    }
+
+    output_dim  = attr[2].dim_num;
+    for (i = 0; i < output_dim; i++)
+    {
+        output_size[i] = attr[2].size[i];
+    }
+    inDataType  = attr[0].dtype.vx_type;
+    inDataType2 = attr[1].dtype.vx_type;
+    outDataType = attr[2].dtype.vx_type;
+    input1_ZP   = attr[0].dtype.zero_point;
+    scaleIn1    = attr[0].dtype.scale;
+    input2_ZP   = attr[1].dtype.zero_point;
+    scaleIn2    = attr[1].dtype.scale;
+    output_ZP   = attr[2].dtype.zero_point;
+    scaleOut    = attr[2].dtype.scale;
+
     status |= vxCopyScalar(transAs, &transA, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
     status |= vxCopyScalar(transBs, &transB, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
 

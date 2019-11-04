@@ -103,6 +103,11 @@ vsi_status VX_CALLBACK vxRelu_Keras_InternalKernel
     float        max_value                      = 0;
     float        threshold                      = 0;
 
+    for(i = 0; i < TENSOR_NUM; i++)
+    {
+        memset(&attr[i], 0x0, sizeof(vsi_nn_tensor_attr_t));
+    }
+    memset(stride_size, 0x0, TENSOR_NUM * VSI_NN_MAX_DIM_NUM * sizeof(uint32_t));
     for( i = 0; i < TENSOR_NUM_INPUT; i ++ )
     {
         tensor[i] = (vx_tensor)paramObj[i];
@@ -142,19 +147,12 @@ vsi_status VX_CALLBACK vxRelu_Keras_InternalKernel
     {
         if (buffer_ptr[i])
         {
-            status = vxCopyTensorPatch(
-                tensor[i],
-                NULL,
-                user_addr[i],
-                buffer_ptr[i],
-                VX_WRITE_ONLY,
-                0
-                );
+            status = vsi_nn_vxCopyDataToTensor(context, tensor[i], &attr[i], buffer_ptr[i]);
+            TEST_CHECK_STATUS(status, final);
         }
-
-        if (user_addr[i]) vxReleaseTensorAddressing(&(user_addr[i]));
     }
 
+final:
     for( i = 0; i < TENSOR_NUM; i ++ )
     {
         if (buffer_ptr[i]) free(buffer_ptr[i]);

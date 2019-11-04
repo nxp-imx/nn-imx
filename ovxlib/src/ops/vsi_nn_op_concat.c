@@ -389,7 +389,6 @@ static vsi_status op_optimize
     vsi_status     status;
     int32_t        num,i;
     uint32_t       axis;
-    vx_tensor_view view;
     vx_tensor      in_view_tensor;
     uint32_t       start[VSI_NN_MAX_DIM_NUM] = { 0 };
     uint32_t       end[VSI_NN_MAX_DIM_NUM] = { 0 };
@@ -432,19 +431,10 @@ static vsi_status op_optimize
     {
         start[axis] = end[axis];
         end[axis] += inputs[i]->attr.size[axis];
-        view = vxCreateTensorView( self->graph->ctx->c,
-            start, end, outputs[0]->attr.dim_num );
-        if( NULL == view )
-        {
-            VSILOGE( "Create tensor %d view fail.", i );
-            status = VSI_FAILURE;
-            break;
-        }
-        in_view_tensor = vxCreateTensorFromView( outputs[0]->t, view );
-        vxReleaseTensorView( &view );
+        in_view_tensor = vsi_nn_CreateViewTensor(self->graph, start, end, outputs[0]);
         if( NULL == in_view_tensor )
         {
-            VSILOGE( "Create tensor %d from view fail.", i );
+            VSILOGE( "Create a tensor view fail.");
             status = VSI_FAILURE;
             break;
         }

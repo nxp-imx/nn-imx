@@ -220,7 +220,6 @@ static vsi_status op_compute
     uint32_t perm[VSI_NN_MAX_DIM_NUM] = {0};
     uint32_t start[VSI_NN_MAX_DIM_NUM] = { 0 };
     uint32_t end[VSI_NN_MAX_DIM_NUM] = { 0 };
-    vx_tensor_view view;
     uint32_t block_size = 1;
     uint32_t block_num = 1;
     uint32_t dims = 2;
@@ -284,19 +283,7 @@ static vsi_status op_compute
 
             start[1] = end[1];
             end[1] += block_size;
-
-            view = vxCreateTensorView( self->graph->ctx->c,
-                start, end, dims );
-            if( NULL == view )
-            {
-                VSILOGE( "Create tensor %d view fail.", i );
-                status = VSI_FAILURE;
-                vsi_nn_ReleaseTensor( &perm_tensor );
-                break;
-            }
-
-            in_view_tensor = vxCreateTensorFromView( perm_tensor->t, view );
-            vxReleaseTensorView( &view );
+            in_view_tensor = vsi_nn_CreateViewTensor(self->graph, start, end, perm_tensor);
             if( NULL == in_view_tensor )
             {
                 VSILOGE( "Create tensor %d from view fail.", i );
@@ -321,6 +308,7 @@ static vsi_status op_compute
             if (output_rs) vxReleaseTensor(&output_rs);
             if (self->n) vxReleaseNode(&self->n);
         }
+        if (perm_tensor) vsi_nn_ReleaseTensor(&perm_tensor);
     }
     else
     {

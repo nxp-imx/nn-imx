@@ -134,6 +134,15 @@
 #include "ops/vsi_nn_op_reduceprod_internal.h"
 #include "ops/vsi_nn_op_reduceall_internal.h"
 #include "ops/vsi_nn_op_reduceany_internal.h"
+#include "ops/vsi_nn_op_unidirectional_sequence_rnn.h"
+#include "ops/vsi_nn_op_quantized_16bit_lstm.h"
+#include "ops/vsi_nn_op_bidirectional_sequence_rnn.h"
+#include "ops/vsi_nn_op_bidirectional_sequence_lstm.h"
+#include "ops/vsi_nn_op_resize_internal.h"
+#include "ops/vsi_nn_op_resize_nearest_internal.h"
+#include "ops/vsi_nn_op_variable.h"
+#include "ops/vsi_nn_op_rnncell_ovxlib.h"
+#include "ops/vsi_nn_op_l2_normalize.h"
 
 /* custom node head define define */
 #include "custom/vsi_nn_custom_node_type.h"
@@ -255,6 +264,15 @@ typedef union _vsi_nn_nn_param
     vsi_nn_reduceprod_internal_param reduceprod_internal;
     vsi_nn_reduceall_internal_param reduceall_internal;
     vsi_nn_reduceany_internal_param reduceany_internal;
+    vsi_nn_unidirectional_sequence_rnn_param unidirectional_sequence_rnn;
+    vsi_nn_quantized_16bit_lstm_param quantized_16bit_lstm;
+    vsi_nn_bidirectional_sequence_rnn_param bidirectional_sequence_rnn;
+    vsi_nn_bidirectional_sequence_lstm_param bidirectional_sequence_lstm;
+    vsi_nn_resize_internal_param    resize_internal;
+    vsi_nn_resize_nearest_internal_param resize_nearest_internal;
+    vsi_nn_variable_param variable;
+    vsi_nn_rnncell_ovxlib_param     rnncell_ovxlib;
+    vsi_nn_l2_normalize_param       l2_normalize;
     uint8_t                         client_param[128];
 
     /* custom node data struct define */

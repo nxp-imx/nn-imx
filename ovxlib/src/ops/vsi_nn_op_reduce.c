@@ -216,8 +216,9 @@ static vsi_status op_compute
     }
 
 #else
-    vsi_nn_kernel_info_t kernel_info = {0};
+    vsi_nn_kernel_info_t kernel_info;
 
+    memset(&kernel_info, 0x0, sizeof(vsi_nn_kernel_info_t));
     kernel_info.resource_num = 1;
     kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));
     kernel_info.resource_name[0] = "vsi_nn_kernel_reduce";
@@ -361,7 +362,7 @@ static vsi_bool op_set_reduce_internal
             resolved_dim[resolved_dim_count++] = current_axis;
     }
 
-    for (i = 0; i < resolved_dim_count; i++)
+    for (i = 0; i < (uint32_t)resolved_dim_count; i++)
     {
         self->nn_param.reduce.axis[i] = resolved_dim[i];
     }
@@ -438,7 +439,7 @@ static vsi_bool op_set_reduce_internal
         curr = vsi_nn_new_internal_node( self, type_name, 0, 0 );
         op_set_reduce_param_value(&(curr->node->nn_param), type_name,
         &(self->nn_param.reduce.axis[1]), 1, vx_true_e);
-        curr->inputs[0]  = tmp_output_tensor[0]->t;;
+        curr->inputs[0]  = tmp_output_tensor[0]->t;
         curr->outputs[0] = tmp_output_tensor[1]->t;
         vsi_nn_setup_internal_node_op( self, curr );
 
@@ -515,8 +516,9 @@ static vsi_bool op_setup
             int index = 0;
             if (valid_dim_num == 0)
             {
-                outputs[0]->attr.dim_num = 1;
+                outputs[0]->attr.dim_num = 2;
                 outputs[0]->attr.size[0] = 1;
+                outputs[0]->attr.size[1] = 1;
             }
             else
             {
@@ -528,6 +530,11 @@ static vsi_bool op_setup
                         outputs[0]->attr.size[index] = inputs[0]->attr.size[i];
                         index++;
                     }
+                }
+                if (1 == outputs[0]->attr.dim_num)
+                {
+                    outputs[0]->attr.dim_num = 2;
+                    outputs[0]->attr.size[1] = 1;
                 }
             }
         }

@@ -31,6 +31,7 @@
 #include "vsi_nn_node.h"
 #include "vsi_nn_prv.h"
 #include "utils/vsi_nn_math.h"
+#include "utils/vsi_nn_util.h"
 #include "vsi_nn_ops.h"
 #include "vsi_nn_tensor.h"
 #include "vsi_nn_tensor_util.h"
@@ -44,205 +45,170 @@
 
 extern vx_kernel_description_t * vx_kernel_MAXIMUM_list[];
 
+/* Type enum */
+typedef enum _maximum_nn_image_dims_e
+{
+    IMAGE_2D = TRUE,
+    IMAGE_3D = FALSE,
+}maximum_nn_image_dims_e;
+
+#define VSI_NN_GEN_MAXIMUM_KEY(_input0_type, _input1_type, _output_type, _image_2d) \
+    ((_input0_type << 24) | (_input1_type << 16) | (_output_type << 8) | (_image_2d))
+
+#define VSI_NN_GEN_MAXIMUM_STRUCT_ITEMS(_input0_type, _input1_type, _output_type, _image_2d) \
+    VSI_NN_GEN_MAXIMUM_KEY(_input0_type, _input1_type, _output_type, _image_2d), \
+    VSI_NN_MAXIMUM_SH_KERNEL_IDX(_input0_type, _input1_type, _output_type, _image_2d)
+
+static struct {
+        uint32_t key;
+        uint32_t kernel_index;
+        char *resource_name;
+    } maximum_map[] =
+    {
+        {VSI_NN_GEN_MAXIMUM_STRUCT_ITEMS(F16, F16, F16, IMAGE_3D)  "vsi_nn_kernel_maximum"},
+        {VSI_NN_GEN_MAXIMUM_STRUCT_ITEMS(I8,  F16, I8,  IMAGE_3D)  "vsi_nn_kernel_maximum_fp16"},
+        {VSI_NN_GEN_MAXIMUM_STRUCT_ITEMS(I8,  F16, F16, IMAGE_3D)  "vsi_nn_kernel_maximum_fp16"},
+        {VSI_NN_GEN_MAXIMUM_STRUCT_ITEMS(U8,  F16, U8,  IMAGE_3D)  "vsi_nn_kernel_maximum_fp16"},
+        {VSI_NN_GEN_MAXIMUM_STRUCT_ITEMS(U8,  F16, F16, IMAGE_3D)  "vsi_nn_kernel_maximum_fp16"},
+        {VSI_NN_GEN_MAXIMUM_STRUCT_ITEMS(I8,  I8,  I8,  IMAGE_3D)  "vsi_nn_kernel_maximum"},
+        {VSI_NN_GEN_MAXIMUM_STRUCT_ITEMS(U8,  U8,  U8,  IMAGE_3D)  "vsi_nn_kernel_maximum"},
+        {VSI_NN_GEN_MAXIMUM_STRUCT_ITEMS(I16, I16, I16, IMAGE_3D)  "vsi_nn_kernel_maximum"},
+        {VSI_NN_GEN_MAXIMUM_STRUCT_ITEMS(I16, F16, I16, IMAGE_3D)  "vsi_nn_kernel_maximum_i16"},
+        {VSI_NN_GEN_MAXIMUM_STRUCT_ITEMS(I16, F16, F16, IMAGE_3D)  "vsi_nn_kernel_maximum_i16"},
+        {VSI_NN_GEN_MAXIMUM_STRUCT_ITEMS(F16, F16, U8,  IMAGE_3D)  "vsi_nn_kernel_maximum"},
+        {VSI_NN_GEN_MAXIMUM_STRUCT_ITEMS(F16, F16, I8,  IMAGE_3D)  "vsi_nn_kernel_maximum"},
+
+        {VSI_NN_GEN_MAXIMUM_STRUCT_ITEMS(F16, F16, F16, IMAGE_2D)  "vsi_nn_kernel_maximum"},
+        {VSI_NN_GEN_MAXIMUM_STRUCT_ITEMS(I8,  F16, I8,  IMAGE_2D)  "vsi_nn_kernel_maximum_fp16"},
+        {VSI_NN_GEN_MAXIMUM_STRUCT_ITEMS(I8,  F16, F16, IMAGE_2D)  "vsi_nn_kernel_maximum_fp16"},
+        {VSI_NN_GEN_MAXIMUM_STRUCT_ITEMS(U8,  F16, U8,  IMAGE_2D)  "vsi_nn_kernel_maximum_fp16"},
+        {VSI_NN_GEN_MAXIMUM_STRUCT_ITEMS(U8,  F16, F16, IMAGE_2D)  "vsi_nn_kernel_maximum_fp16"},
+        {VSI_NN_GEN_MAXIMUM_STRUCT_ITEMS(I8,  I8,  I8,  IMAGE_2D)  "vsi_nn_kernel_maximum"},
+        {VSI_NN_GEN_MAXIMUM_STRUCT_ITEMS(U8,  U8,  U8,  IMAGE_2D)  "vsi_nn_kernel_maximum"},
+        {VSI_NN_GEN_MAXIMUM_STRUCT_ITEMS(I16, I16, I16, IMAGE_2D)  "vsi_nn_kernel_maximum"},
+        {VSI_NN_GEN_MAXIMUM_STRUCT_ITEMS(I16, F16, I16, IMAGE_2D)  "vsi_nn_kernel_maximum_i16"},
+        {VSI_NN_GEN_MAXIMUM_STRUCT_ITEMS(I16, F16, F16, IMAGE_2D)  "vsi_nn_kernel_maximum_i16"},
+        {VSI_NN_GEN_MAXIMUM_STRUCT_ITEMS(F16, F16, U8,  IMAGE_2D)  "vsi_nn_kernel_maximum"},
+        {VSI_NN_GEN_MAXIMUM_STRUCT_ITEMS(F16, F16, I8,  IMAGE_2D)  "vsi_nn_kernel_maximum"},
+    };
+
 static void check_tensor_shape
     (
     vsi_nn_node_t * self,
     vsi_nn_tensor_t * input,
     vx_reference * params,
     uint32_t index,
-    vx_bool enable_image_2d
+    vsi_bool rsFlg,
+    uint32_t *sizes,
+    uint32_t dims
     )
 {
     vsi_nn_tensor_attr_t attr;
-    if (input->attr.dim_num == 1)
+
+    memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
+
+    if (rsFlg)
     {
-        memcpy(&attr, &(input->attr), sizeof(vsi_nn_tensor_attr_t));
-        attr.size[1] = 1;
-        attr.dim_num = 2;
-        self->nn_param.maximum.local.local_tensor[index] =
-            vxReshapeTensor(input->t, (int32_t*)(attr.size), attr.dim_num);
-        params[index] = (vx_reference)self->nn_param.maximum.local.local_tensor[index];
-    }
-    else if(input->attr.dim_num == 2 && enable_image_2d)
-    {
-        memcpy(&attr, &(input->attr), sizeof(vsi_nn_tensor_attr_t));
-        attr.size[0] *= attr.size[1];
-        attr.size[1] = 1;
-        attr.size[2] = 1;
-        attr.dim_num = 3;
-        self->nn_param.maximum.local.local_tensor[index] =
-            vxReshapeTensor(input->t, (int32_t*)(attr.size), attr.dim_num);
-        params[index] =  (vx_reference)self->nn_param.maximum.local.local_tensor[index];
-    }
-    else if(input->attr.dim_num == 3 && enable_image_2d)
-    {
-        memcpy(&attr, &(input->attr), sizeof(vsi_nn_tensor_attr_t));
-        attr.size[0] *= attr.size[1];
-        attr.size[1] = attr.size[2];
-        attr.size[2] = 1;
-        self->nn_param.maximum.local.local_tensor[index] =
-            vxReshapeTensor(input->t, (int32_t*)(attr.size), attr.dim_num);
-        params[index] =  (vx_reference)self->nn_param.maximum.local.local_tensor[index];
-    }
-    else if(input->attr.dim_num == 4 && enable_image_2d)
-    {
-        memcpy(&attr, &(input->attr), sizeof(vsi_nn_tensor_attr_t));
-        attr.size[0] *= attr.size[1];
-        attr.size[1] = attr.size[2];
-        attr.size[2] = 1;
-        attr.size[3] = attr.size[3];
-        self->nn_param.maximum.local.local_tensor[index] =
-            vxReshapeTensor(input->t, (int32_t*)(attr.size), attr.dim_num);
-        params[index] =  (vx_reference)self->nn_param.maximum.local.local_tensor[index];
+        self->nn_param.maximum.local->local_tensor[index] =
+            vxReshapeTensor(input->t, (int32_t*)(sizes), dims);
+        params[index] =  (vx_reference)self->nn_param.maximum.local->local_tensor[index];
     }
     else
     {
-        params[index] = (vx_reference)input->t;
+        if( input->attr.dim_num == 1)
+        {
+            memcpy(&attr, &(input->attr), sizeof(vsi_nn_tensor_attr_t));
+            attr.size[1] = 1;
+            attr.dim_num = 2;
+            self->nn_param.maximum.local->local_tensor[index] =
+                vxReshapeTensor(input->t, (int32_t*)(attr.size), attr.dim_num);
+            params[index] =  (vx_reference)self->nn_param.maximum.local->local_tensor[index];
+        }
+        else
+        {
+            params[index] = (vx_reference)input->t;
+            self->nn_param.maximum.local->local_tensor[index] = NULL;
+        }
     }
 }
 
-static vsi_status op_pre_compute
+static void _set_inputs_outputs
+    (
+    vx_reference * params,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs
+    )
+{
+    uint32_t i;
+    uint32_t cnt;
+
+    /* Set inputs */
+    cnt = 0;
+    for( i = 0; i < _INPUT_NUM; i ++, cnt ++ )
+    {
+        params[cnt] = (vx_reference)inputs[i]->t;
+    }
+
+    /* Set outputs */
+    for( i = 0; i < _OUTPUT_NUM; i ++, cnt ++ )
+    {
+        params[cnt] = (vx_reference)outputs[i]->t;
+    }
+} /* _set_inputs_outputs() */
+
+static vsi_status cpu_op_compute
     (
     vsi_nn_node_t * self,
     vsi_nn_tensor_t ** inputs,
-    vsi_nn_tensor_t ** outputs,
-    vsi_nn_kernel_info_t * kernel_info
+    vsi_nn_tensor_t ** outputs
     )
 {
-    vsi_nn_type_e src0Format    = inputs[0]->attr.dtype.vx_type;
-    vsi_nn_type_e src1Format    = inputs[1]->attr.dtype.vx_type;
-    vsi_nn_type_e dstFormat     = outputs[0]->attr.dtype.vx_type;
-    uint32_t   dims             = outputs[0]->attr.dim_num;
-    uint32_t   width            = outputs[0]->attr.size[0];
-    uint32_t   height           = dims > 1 ? outputs[0]->attr.size[1] : 1;
-    uint32_t   depth            = dims > 2 ? outputs[0]->attr.size[2] : 1;
-    uint32_t   batch            = dims > 3 ? outputs[0]->attr.size[3] : 1;
-    vsi_bool   enable_image_2d  = FALSE;
-    vsi_bool   enable_brdcst    = FALSE;
-    uint32_t   i                = 0;
-    uint32_t   hwLitimLen       = 65536;
+    vsi_status status = VSI_SUCCESS;
+    vx_reference params[_PARAM_NUM];
 
-    for (i = 0; i < outputs[0]->attr.dim_num; i++)
+    if( NULL == self->n )
     {
-        vx_uint32 size0 = inputs[0]->attr.dim_num > i ? inputs[0]->attr.size[i] : 1;
-        vx_uint32 size1 = inputs[1]->attr.dim_num > i ? inputs[1]->attr.size[i] : 1;
-
-        if (size0 != size1)
-        {
-            enable_brdcst = vx_true_e;
-            break;
-        }
-    }
-
-    if (enable_brdcst == vx_false_e)
-    {
-        enable_image_2d = (vx_bool)(((width * height < hwLitimLen) && (depth * batch < hwLitimLen))
-                                  || depth * batch == 1);
-    }
-
-
-    if (src0Format == src1Format && src0Format == VSI_NN_TYPE_FLOAT16
-        && dstFormat == src0Format)
-    {
-        if (enable_image_2d)
-            kernel_info->kernel_index = TENSOR_MAX_F16F16TOF16_2D_KERNEL;
-        else
-            kernel_info->kernel_index = TENSOR_MAX_F16F16TOF16_KERNEL;
-    }
-    else if (src0Format == src1Format && src0Format == VSI_NN_TYPE_INT8
-          && dstFormat == src0Format)
-    {
-        if(enable_image_2d)
-            kernel_info->kernel_index   = TENSOR_MAX_I8I8TOI8_2D_KERNEL;
-        else
-            kernel_info->kernel_index   = TENSOR_MAX_I8I8TOI8_KERNEL;
-    }
-    else if (src0Format == src1Format && src0Format == VSI_NN_TYPE_UINT8
-          && dstFormat == src0Format)
-    {
-        if(enable_image_2d)
-            kernel_info->kernel_index   = TENSOR_MAX_U8TOU8_2D_KERNEL;
-        else
-            kernel_info->kernel_index   = TENSOR_MAX_U8TOU8_KERNEL;
-    }
-    else if (src0Format == src1Format && src0Format == VSI_NN_TYPE_INT16
-          && dstFormat == src0Format)
-    {
-        if(enable_image_2d)
-            kernel_info->kernel_index   = TENSOR_MAX_I16I16TOI16_2D_KERNEL;
-        else
-            kernel_info->kernel_index   = TENSOR_MAX_I16I16TOI16_KERNEL;
-    }
-    else if (src0Format == VSI_NN_TYPE_INT8 && src1Format == VSI_NN_TYPE_FLOAT16
-          && dstFormat == VSI_NN_TYPE_INT8)
-    {
-        kernel_info->resource_name[1] = "vsi_nn_kernel_maximum_fp16";
-        if(enable_image_2d)
-            kernel_info->kernel_index   = TENSOR_MAX_I8F16TOI8_2D_KERNEL;
-        else
-            kernel_info->kernel_index   = TENSOR_MAX_I8F16TOI8_KERNEL;
-    }
-    else if (src0Format == VSI_NN_TYPE_INT8 && src1Format == VSI_NN_TYPE_FLOAT16
-          && dstFormat == VSI_NN_TYPE_FLOAT16)
-    {
-        kernel_info->resource_name[1] = "vsi_nn_kernel_maximum_fp16";
-        if(enable_image_2d)
-            kernel_info->kernel_index   = TENSOR_MAX_I8F16TOF16_2D_KERNEL;
-        else
-            kernel_info->kernel_index   = TENSOR_MAX_I8F16TOF16_KERNEL;
-    }
-    else if (src0Format == VSI_NN_TYPE_UINT8 && src1Format == VSI_NN_TYPE_FLOAT16
-          && dstFormat == VSI_NN_TYPE_FLOAT16)
-    {
-        kernel_info->resource_name[1] = "vsi_nn_kernel_maximum_fp16";
-        if(enable_image_2d)
-            kernel_info->kernel_index   = TENSOR_MAX_U8F16TOF16_2D_KERNEL;
-        else
-            kernel_info->kernel_index   = TENSOR_MAX_U8F16TOF16_KERNEL;
-    }
-    else if (src0Format == VSI_NN_TYPE_UINT8 && src1Format == VSI_NN_TYPE_FLOAT16
-          && dstFormat == VSI_NN_TYPE_UINT8)
-    {
-        kernel_info->resource_name[1] = "vsi_nn_kernel_maximum_fp16";
-        if(enable_image_2d)
-            kernel_info->kernel_index   = TENSOR_MAX_U8F16TOU8_2D_KERNEL;
-        else
-            kernel_info->kernel_index   = TENSOR_MAX_U8F16TOU8_KERNEL;
-    }
-    else if (src0Format == VSI_NN_TYPE_FLOAT16 && src1Format == VSI_NN_TYPE_FLOAT16
-          && dstFormat == VSI_NN_TYPE_UINT8)
-    {
-        kernel_info->resource_name[1] = "vsi_nn_kernel_maximum_fp16";
-        if(enable_image_2d)
-            kernel_info->kernel_index   = TENSOR_MAX_F16F16TOU8_2D_KERNEL;
-        else
-            kernel_info->kernel_index   = TENSOR_MAX_F16F16TOU8_KERNEL;
-    }
-    else if (src0Format == VSI_NN_TYPE_INT16 && src1Format == VSI_NN_TYPE_FLOAT16
-          && dstFormat == VSI_NN_TYPE_INT16)
-    {
-        kernel_info->resource_name[1] = "vsi_nn_kernel_maximum_i16";
-        if(enable_image_2d)
-            kernel_info->kernel_index   = TENSOR_MAX_I16F16TOI16_2D_KERNEL;
-        else
-            kernel_info->kernel_index   = TENSOR_MAX_I16F16TOI16_KERNEL;
-    }
-    else if (src0Format == VSI_NN_TYPE_INT16 && src1Format == VSI_NN_TYPE_FLOAT16
-          && dstFormat == VSI_NN_TYPE_FLOAT16)
-    {
-        kernel_info->resource_name[1] = "vsi_nn_kernel_maximum_i16";
-        if(enable_image_2d)
-            kernel_info->kernel_index   = TENSOR_MAX_I16F16TOF16_2D_KERNEL;
-        else
-            kernel_info->kernel_index   = TENSOR_MAX_I16F16TOF16_KERNEL;
-    }
-    else
-    {
-        VSILOGE("Not support input or output data format!(maximum)\n");
         return VSI_FAILURE;
     }
 
-    return VSI_SUCCESS;
+    /* Set inputs and outputs */
+    _set_inputs_outputs( params, inputs, outputs );
+
+    /* Pass parameters to node. */
+    status = vsi_nn_ClientNodePassParameters( self->n, params, _PARAM_NUM );
+
+    return status;
+}
+
+static vsi_nn_shader_kernel_type_e get_maximum_intra_type(vsi_nn_type_e type)
+{
+    switch (type)
+    {
+    case VSI_NN_TYPE_INT8:
+        return I8;
+    case VSI_NN_TYPE_INT16:
+        return I16;
+    case VSI_NN_TYPE_INT32:
+        return I32;
+    case VSI_NN_TYPE_INT64:
+        return I64;
+    case VSI_NN_TYPE_UINT8:
+        return U8;
+    case VSI_NN_TYPE_UINT16:
+        return U16;
+    case VSI_NN_TYPE_UINT32:
+        return U32;
+    case VSI_NN_TYPE_FLOAT16:
+    case VSI_NN_TYPE_BFLOAT16:
+        return F16;
+    case VSI_NN_TYPE_FLOAT32:
+        return F32;
+    default:
+        VSILOGE("error data type %d", type);
+        break;
+    }
+
+    return I8;
 }
 
 static vsi_status vx_op_compute
@@ -252,59 +218,104 @@ static vsi_status vx_op_compute
     vsi_nn_tensor_t ** outputs
     )
 {
+#define VSI_NN_TENSOR_WIDTH_MAX (65536)
     vsi_status status = VSI_SUCCESS;
     vx_reference params[_PARAM_NUM];
     vx_border_t border;
-    uint32_t    dims             = outputs[0]->attr.dim_num;
-    uint32_t    width            = outputs[0]->attr.size[0];
-    uint32_t    height           = dims > 1 ? outputs[0]->attr.size[1] : 1;
-    uint32_t    depth            = dims > 2 ? outputs[0]->attr.size[2] : 1;
-    uint32_t    batch            = dims > 3 ? outputs[0]->attr.size[3] : 1;
     vsi_bool    enable_image_2d  = FALSE;
-    vsi_bool    enable_brdcst    = FALSE;
-    uint32_t    hwLitimLen       = 65536;
-    uint32_t    i                = 0;
+    vsi_nn_maximum_param * p     = NULL;
+
+    border.mode = VX_BORDER_REPLICATE;
+    border.constant_value.U32 = 0;
 
     if( NULL == self->n )
     {
         return VSI_FAILURE;
     }
 
-    for (i = 0; i < outputs[0]->attr.dim_num; i++)
-    {
-        vx_uint32 size0 = inputs[0]->attr.dim_num > i ? inputs[0]->attr.size[i] : 1;
-        vx_uint32 size1 = inputs[1]->attr.dim_num > i ? inputs[1]->attr.size[i] : 1;
+    p = &(self->nn_param.maximum);
+    enable_image_2d = p->local->enable_image_2d;
 
-        if (size0 != size1)
+    //_set_inputs_outputs( params, inputs, outputs );
+    check_tensor_shape(self, inputs[0],  params, 0, enable_image_2d, p->local->sizes0, p->local->dim_num);
+    check_tensor_shape(self, inputs[1],  params, 1, enable_image_2d, p->local->sizes1, p->local->dim_num);
+    check_tensor_shape(self, outputs[0], params, 2, enable_image_2d, p->local->sizes2, p->local->dim_num);
+
+    /* Pass parameters to node. */
+    status  = vsi_nn_ClientNodePassParameters( self->n, params, _PARAM_NUM );
+    status |= vxSetNodeAttribute(self->n, VX_NODE_BORDER, &border, sizeof(border));
+
+#undef VSI_NN_TENSOR_WIDTH_MAX
+    return status;
+}
+
+static void _get_maximum_hashtable_idx
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs
+    )
+{
+#define VSI_NN_TENSOR_WIDTH_MAX (65536)
+    vsi_nn_type_e input0Format = inputs[0]->attr.dtype.vx_type;
+    vsi_nn_type_e input1Format = inputs[1]->attr.dtype.vx_type;
+    vsi_nn_type_e outputFormat = outputs[0]->attr.dtype.vx_type;
+    vsi_nn_shader_kernel_type_e _input0_type;
+    vsi_nn_shader_kernel_type_e _input1_type;
+    vsi_nn_shader_kernel_type_e _output_type;
+    vsi_bool    enable_image_2d  = FALSE;
+    uint32_t key = 0;
+    uint32_t i   = 0;
+    vsi_nn_maximum_param * p     = NULL;
+
+    p = &(self->nn_param.maximum);
+
+    enable_image_2d = p->local->enable_image_2d;
+#undef VSI_NN_TENSOR_WIDTH_MAX
+
+    _input0_type = get_maximum_intra_type(input0Format);
+    _input1_type = get_maximum_intra_type(input1Format);
+    _output_type = get_maximum_intra_type(outputFormat);
+
+    key = VSI_NN_GEN_MAXIMUM_KEY(_input0_type, _input1_type, _output_type, enable_image_2d);
+
+    for (i = 0; i < sizeof(maximum_map) / sizeof(maximum_map[0]); i++)
+    {
+        if (key == maximum_map[i].key)
         {
-            enable_brdcst = vx_true_e;
-            break;
+            p->local->hash_idx = i;
+            p->local->execute_on_sw = FALSE;
+            return;
         }
     }
 
-    if (enable_brdcst == vx_false_e)
-    {
-        enable_image_2d = (vx_bool)((width * height < hwLitimLen)
-                                 && (depth * batch < hwLitimLen));
-    }
+    p->local->execute_on_sw = TRUE;
+    VSILOGE("Shader unsupport data format! execute on the SW [maximum]\n");
+}
 
-    check_tensor_shape(self, inputs[0], params, 0,  enable_image_2d);
-    check_tensor_shape(self, inputs[1], params, 1,  enable_image_2d);
-    check_tensor_shape(self, outputs[0], params, 2, enable_image_2d);
+static vsi_bool vx_op_pre_compute
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs,
+    vsi_nn_kernel_info_t * kernel_info
+    )
+{
+    vsi_nn_maximum_param * p = NULL;
 
-    /* Pass parameters to node. */
-    status = vsi_nn_ClientNodePassParameters( self->n, params, _PARAM_NUM );
+    p = &(self->nn_param.maximum);
 
-    border.mode = VX_BORDER_REPLICATE;
-    border.constant_value.U32 = 0;
-    status |= vxSetNodeAttribute(self->n, VX_NODE_BORDER, &border, sizeof(border));
+    kernel_info->kernel_index = maximum_map[p->local->hash_idx].kernel_index;
+    kernel_info->resource_num = 2;
+    kernel_info->resource_name[0] = "vsi_nn_kernel_header";
+    kernel_info->resource_name[1] = maximum_map[p->local->hash_idx].resource_name;
 
-    return status;
+    return TRUE;
 }
 
 static vsi_nn_op_compute_t op_compute_list[] =
 {
-    NULL,
+    cpu_op_compute,
     vx_op_compute,
     NULL
 };
@@ -326,35 +337,76 @@ static vsi_status op_compute
     )
 {
     vsi_status status;
-    vsi_nn_kernel_info_t kernel_info = {0};
+    vsi_nn_kernel_info_t kernel_info;
     vsi_nn_type_e input0_Format = inputs[0]->attr.dtype.vx_type;
     vsi_nn_type_e input1_Format = inputs[1]->attr.dtype.vx_type;
+    vsi_nn_maximum_param * p    = NULL;
 
+    memset(&kernel_info, 0x0, sizeof(vsi_nn_kernel_info_t));
     status = VSI_FAILURE;
-    kernel_info.resource_num = 2;
-    kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));
-    kernel_info.resource_name[0] = "vsi_nn_kernel_header";
-    kernel_info.resource_name[1] = "vsi_nn_kernel_maximum";
-    kernel_info.type = vsi_nn_GetVXKernelTypeForShader();
-    kernel_info.kernel = vx_kernel_MAXIMUM_list;
-    kernel_info.init_index = 1;
+    if( NULL == self )
+    {
+        return VSI_FAILURE;
+    }
+    p = &(self->nn_param.maximum);
 
     if (input0_Format != input1_Format && input0_Format == VSI_NN_TYPE_FLOAT16)
         SWAP_INPUT_TENSOR(inputs[0], inputs[1]);
 
-    op_pre_compute(self, inputs, outputs, &kernel_info);
+    p->local->enable_image_2d = vsi_nn_OptimizedEltWiseOPShape(inputs[0], inputs[1], outputs[0],
+            p->local->sizes0, p->local->sizes1, p->local->sizes2, &p->local->dim_num);
+    _get_maximum_hashtable_idx(self, inputs, outputs);
 
-    self->n = vsi_nn_RegisterClientKernelAndNewNode(
-        self->graph, &kernel_info);
-    if (kernel_info.resource_name) free(kernel_info.resource_name);
-    if( NULL == self->n )
+    if (p->local->execute_on_sw)
     {
-        return VSI_FAILURE;
+        kernel_info.resource_num = 1;
+        kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));
+        kernel_info.resource_name[0] = "vsi_nn_kernel_maximum";
+        kernel_info.type = VX_KERNEL_TYPE_CPU;
+        kernel_info.kernel = vx_kernel_MAXIMUM_list;
+        kernel_info.init_index = 0;
+
+        self->n = vsi_nn_RegisterClientKernelAndNewNode(
+            self->graph, &kernel_info);
+        if (kernel_info.resource_name) free(kernel_info.resource_name);
+        if( NULL == self->n )
+        {
+            return VSI_FAILURE;
+        }
+
+        status = cpu_op_compute(self, inputs, outputs);
     }
-    if (NULL != op_compute_list[kernel_info.init_index])
+    else
     {
-        status = op_compute_list[kernel_info.init_index](self, inputs, outputs);
+        kernel_info.type = vsi_nn_GetVXKernelTypeForShader();
+        kernel_info.kernel = vx_kernel_MAXIMUM_list;
+        kernel_info.resource_num = 2;
+        kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));
+        kernel_info.init_index = 1;
+        kernel_info.resource_name[0] = "vsi_nn_kernel_header";
+        kernel_info.resource_name[1] = "vsi_nn_kernel_maximum";
+
+        if (vsi_nn_is_do_vx_op_pre_init(kernel_info.type))
+        {
+            vx_op_pre_compute(self, inputs, outputs, &kernel_info);
+        }
+
+        self->n = vsi_nn_RegisterClientKernelAndNewNode(
+            self->graph, &kernel_info);
+        if (kernel_info.resource_name)
+        {
+            free(kernel_info.resource_name);
+        }
+        if( NULL == self->n )
+        {
+            return VSI_FAILURE;
+        }
+        if (NULL != op_compute_list[kernel_info.init_index])
+        {
+            status = op_compute_list[kernel_info.init_index](self, inputs, outputs);
+        }
     }
+
     return status;
 } /* op_compute() */
 
@@ -375,13 +427,18 @@ static vsi_status op_deinit
     )
 {
     uint32_t i;
-    for (i = 0; i < _VSI_NN_MAXIMUM_LOCAL_TENSOR_NUM; i++)
+    if (self->nn_param.maximum.local)
     {
-        if (self->nn_param.maximum.local.local_tensor[i] != NULL)
+        for (i = 0; i < _VSI_NN_MAXIMUM_LOCAL_TENSOR_NUM; i++)
         {
-            vxReleaseTensor(&(self->nn_param.maximum.local.local_tensor[i]));
-            self->nn_param.maximum.local.local_tensor[i] = NULL;
+            if (self->nn_param.maximum.local->local_tensor[i] != NULL)
+            {
+                vxReleaseTensor(&(self->nn_param.maximum.local->local_tensor[i]));
+                self->nn_param.maximum.local->local_tensor[i] = NULL;
+            }
         }
+        free(self->nn_param.maximum.local);
+        self->nn_param.maximum.local = NULL;
     }
     vsi_nn_op_common_deinit(self);
 
@@ -402,6 +459,23 @@ static vsi_bool op_setup
     return ret;
 } /* op_setup() */
 
+static vsi_status op_init
+    (
+    vsi_nn_node_t * self
+    )
+{
+    vsi_status status = VSI_SUCCESS;
+
+    self->nn_param.maximum.local   =
+    (vsi_nn_maximum_lcl_data *)malloc(sizeof(vsi_nn_maximum_lcl_data));
+    if (NULL == self->nn_param.maximum.local)
+    {
+        return  VX_ERROR_NO_MEMORY;
+    }
+
+    return status;
+} /* op_init() */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -409,7 +483,7 @@ extern "C" {
 DEF_OP_REG
     (
     /* op_name    */ MAXIMUM,
-    /* init       */ NULL,
+    /* init       */ op_init,
     /* compute    */ op_compute,
     /* deinit     */ op_deinit,
     /* check      */ op_check,

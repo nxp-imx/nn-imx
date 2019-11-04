@@ -51,21 +51,6 @@ typedef enum _keras_relu_nn_image_dims_e
     IMAGE_ARRAY = FALSE,
 }keras_relu_nn_activation_type_e;
 
-typedef enum _keras_relu_nn_type_e
-{
-    I8 = 0,
-    I16,
-    I32,
-    I64,
-    U8,
-    U16,
-    U32,
-    U64,
-    F16,
-    F32,
-    BF16,
-}keras_relu_nn_type_e;
-
 #define VSI_NN_GEN_KERAS_RELU_KEY(_input_type, _output_type, _image_2d) \
     ((_input_type << 20) | (_output_type << 10) | (_image_2d))
 
@@ -286,7 +271,7 @@ static vsi_status cpu_op_compute
 }
 
 
-static keras_relu_nn_type_e get_keras_relu_intra_type(vsi_nn_type_e type)
+static vsi_nn_shader_kernel_type_e get_keras_relu_intra_type(vsi_nn_type_e type)
 {
     switch (type)
     {
@@ -383,8 +368,8 @@ static void _get_keras_relu_hashtable_idx
 {
     vsi_nn_type_e inputFormat = inputs[0]->attr.dtype.vx_type;
     vsi_nn_type_e outputFormat  = outputs[0]->attr.dtype.vx_type;
-    keras_relu_nn_type_e _input_type;
-    keras_relu_nn_type_e _output_type;
+    vsi_nn_shader_kernel_type_e _input_type;
+    vsi_nn_shader_kernel_type_e _output_type;
     uint32_t key;
     vsi_bool is_2d_image = FALSE;
     uint32_t i = 0;
@@ -448,9 +433,10 @@ static vsi_status op_compute
     )
 {
     vsi_status status;
-    vsi_nn_kernel_info_t kernel_info = {0};
-    vsi_nn_relu_keras_internal_param * p;
+    vsi_nn_kernel_info_t kernel_info;
+    vsi_nn_relu_keras_internal_param * p = NULL;
 
+    memset(&kernel_info, 0x0, sizeof(vsi_nn_kernel_info_t));
     status = VSI_FAILURE;
     if( NULL == self )
     {

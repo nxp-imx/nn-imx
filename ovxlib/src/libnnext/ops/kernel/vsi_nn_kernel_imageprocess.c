@@ -299,14 +299,7 @@ static vsi_status VX_CALLBACK vximageprocessKernel
     //save data
     for( i = TENSOR_NUM_INPUT; i < TENSOR_NUM; i ++ )
     {
-        status = vxCopyTensorPatch(
-            tensor[i],
-            NULL,
-            user_addr[i],
-            buffer_ptr[i],
-            VX_WRITE_ONLY,
-            0
-            );
+        status = vsi_nn_copy_tensor_patch(tensor[i], &attr[i], buffer_ptr[i], VX_WRITE_ONLY);
         if (user_addr[i]) vxReleaseTensorAddressing(&(user_addr[i]));
     }
     for( i = 0; i < TENSOR_NUM; i ++ )
@@ -349,20 +342,33 @@ vx_status VX_CALLBACK vxScaletoTensorInitializer
     vx_enum    dstFormat;
     vx_float32 outputScale      = 1.0;
     vx_int32   output_ZP        = 0;
+    uint32_t   output_dims      = 0;
+    vsi_nn_tensor_attr_t attr;
+    uint32_t i;
 
+    memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
     vxQueryImage(bgrImg, VX_IMAGE_WIDTH, &width, sizeof(width));
     vxQueryImage(bgrImg, VX_IMAGE_HEIGHT, &height, sizeof(height));
 
     vxCopyScalar(xRatio_s, (void*)&xRatio, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
     vxCopyScalar(yRatio_s, (void*)&yRatio, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
 
-    status = vxQueryTensor(output, VX_TENSOR_DIMS, output_size, sizeof(output_size));
-    status |= vxQueryTensor(output, VX_TENSOR_DATA_TYPE, &dstFormat, sizeof(dstFormat));
-    status |= vxQueryTensor(output, VX_TENSOR_FIXED_POINT_POS, &dstFixedPointPos, sizeof(dstFixedPointPos));
-    status |= vxQueryTensor(output, VX_TENSOR_SCALE, &outputScale, sizeof(outputScale));
-    status |= vxQueryTensor(output, VX_TENSOR_ZERO_POINT, &output_ZP, sizeof(output_ZP));
-    if(status < 0)
-        printf("error-%s,%d\n",__FILE__,__LINE__);
+    status = vsi_nn_vxGetTensorAttr(output, &attr);
+    if (status != VX_SUCCESS)
+    {
+        VSILOGE("vsi_nn_vxGetTensorAttr failure! at line %d\n", __LINE__);
+        return status;
+    }
+
+    output_dims  = attr.dim_num;
+    dstFormat    = attr.dtype.vx_type;
+    for (i = 0; i < output_dims; i++)
+    {
+        output_size[i] = attr.size[i];
+    }
+    dstFixedPointPos = attr.dtype.fl;
+    output_ZP        = attr.dtype.zero_point;
+    outputScale      = attr.dtype.scale;
 
     if (xRatio == (1 << 15) && yRatio == (1 << 15))
     {
@@ -624,21 +630,33 @@ vx_status VX_CALLBACK vxGrayScaletoTensorInitializer(vx_node nodObj, const vx_re
     vx_enum    dstFormat;
     vx_float32 outputScale      = 1.0;
     vx_int32   output_ZP        = 0;
+    uint32_t   output_dims      = 0;
+    vsi_nn_tensor_attr_t attr;
+    uint32_t i;
 
+    memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
     vxQueryImage(inputImg, VX_IMAGE_WIDTH, &width, sizeof(width));
     vxQueryImage(inputImg, VX_IMAGE_HEIGHT, &height, sizeof(height));
 
     vxCopyScalar(xRatio_s, (void*)&xRatio, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
     vxCopyScalar(yRatio_s, (void*)&yRatio, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
 
-    status = vxQueryTensor(output, VX_TENSOR_DIMS, output_size, sizeof(output_size));
-    status |= vxQueryTensor(output, VX_TENSOR_DATA_TYPE, &dstFormat, sizeof(dstFormat));
-    status |= vxQueryTensor(output, VX_TENSOR_FIXED_POINT_POSITION, &dstFixedPointPos,
-        sizeof(dstFixedPointPos));
-    status |= vxQueryTensor(output, VX_TENSOR_SCALE, &outputScale, sizeof(outputScale));
-    status |= vxQueryTensor(output, VX_TENSOR_ZERO_POINT, &output_ZP, sizeof(output_ZP));
-    if(status < 0)
-        printf("error-%s,%d\n",__FILE__,__LINE__);
+    status = vsi_nn_vxGetTensorAttr(output, &attr);
+    if (status != VX_SUCCESS)
+    {
+        VSILOGE("vsi_nn_vxGetTensorAttr failure! at line %d\n", __LINE__);
+        return status;
+    }
+
+    output_dims  = attr.dim_num;
+    dstFormat    = attr.dtype.vx_type;
+    for (i = 0; i < output_dims; i++)
+    {
+        output_size[i] = attr.size[i];
+    }
+    dstFixedPointPos = attr.dtype.fl;
+    output_ZP        = attr.dtype.zero_point;
+    outputScale      = attr.dtype.scale;
 
     if (xRatio == (1 << 15) && yRatio == (1 << 15))
     {

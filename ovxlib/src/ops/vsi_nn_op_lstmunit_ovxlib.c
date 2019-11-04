@@ -38,74 +38,6 @@
 #include "ops/vsi_nn_op_lstmunit_ovxlib.h"
 #include "vsi_nn_internal_node.h"
 
-static vsi_bool find_best_kernel_size
-    (
-    vsi_nn_node_t * self,
-    uint32_t input_size,
-    uint32_t* p_kernel_h,
-    uint32_t* p_kernel_w
-    )
-{
-    vsi_nn_lstmunit_ovxlib_param* p = &self->nn_param.lstmunit_ovxlib;
-    uint32_t kernel_h = 1;
-    uint32_t kernel_w = 1;
-
-    if( p->local.multi_batch)
-    {
-        /* batch FC only be converted to 1x1 or 1xN conv */
-        /* try 1xN */
-        kernel_h = 7;
-        while( input_size % kernel_h != 0 )
-        {
-            kernel_h--;
-        }
-    }
-    else
-    {
-        /* try NxN */
-        if( !p->local.multi_batch )
-        {
-            #if( !defined( _WIN32 ) )
-            /* try NxN conv */
-            kernel_h = 8;
-            while( input_size % (kernel_h * kernel_h) != 0 )
-            {
-                kernel_h--;
-            }
-            #endif
-        }
-
-        if( kernel_h > 1 )
-        {
-            kernel_w = kernel_h;
-        }
-        else
-        {
-            /* Only 1x1 found, try 1xN */
-            kernel_h = 7;
-            while( input_size % kernel_h != 0 )
-            {
-                kernel_h--;
-            }
-            kernel_w = 1;
-        }
-
-    }
-
-    VSILOGD("Use kernel_h: %d, kernel_w: %d to convert FC", kernel_h, kernel_w);
-    if( p_kernel_h )
-    {
-        *p_kernel_h = kernel_h;
-    }
-
-    if( p_kernel_w )
-    {
-        *p_kernel_w = kernel_w;
-    }
-
-    return TRUE;
-}
-
 static vsi_nn_internal_tensor_t* create_tp_fc
     (
     vsi_nn_node_t * self,
@@ -123,8 +55,7 @@ static vsi_nn_internal_tensor_t* create_tp_fc
     vsi_nn_internal_tensor_t* tensor2 = NULL;
     vsi_nn_internal_node_t* tmp_inode = NULL;
 
-    memset( &attr, 0x00, sizeof(attr));
-
+    memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
     tensor = bias;
     if( !bias || p->local.use_layer_norm || p->local.use_hybrid )
     {
@@ -133,20 +64,7 @@ static vsi_nn_internal_tensor_t* create_tp_fc
         tensor = tensor1->t;
     }
 
-    memset( attr.size, 0, VSI_NN_MAX_DIM_NUM * sizeof(uint32_t));
-    attr.dim_num = VSI_NN_DIM_AUTO;
-    attr.vtl = use_virtual_tensor;
-    attr.is_const = FALSE;
-
-    if( output_dtype->qnt_type == VSI_NN_QNT_TYPE_NONE )
-    {
-        attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
-        attr.dtype.vx_type = VSI_NN_TYPE_FLOAT16;
-    }
-    else
-    {
-        memcpy( &attr.dtype, output_dtype, sizeof( attr.dtype ) );
-    }
+    vsi_nn_internal_node_init_attr(&attr, output_dtype, use_virtual_tensor);
     tensor2 = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
 
     tmp_inode = vsi_nn_new_internal_node(self, VSI_NN_OP_FCL, 0, 0 );
@@ -186,8 +104,7 @@ static vsi_nn_internal_tensor_t* create_nn_fc
     uint32_t reshaped_weight_shape[VSI_NN_MAX_DIM_NUM] = { 0 };
     vsi_nn_internal_node_t* tmp_inode = NULL;
 
-    memset( &attr, 0x00, sizeof(attr));
-
+    memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
     tensor = bias;
     if( !bias || p->local.use_layer_norm || p->local.use_hybrid )
     {
@@ -196,20 +113,7 @@ static vsi_nn_internal_tensor_t* create_nn_fc
         tensor = tensor1->t;
     }
 
-    memset( attr.size, 0, VSI_NN_MAX_DIM_NUM * sizeof(uint32_t));
-    attr.dim_num = VSI_NN_DIM_AUTO;
-    attr.vtl = use_virtual_tensor;
-    attr.is_const = FALSE;
-
-    if( output_dtype->qnt_type == VSI_NN_QNT_TYPE_NONE )
-    {
-        attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
-        attr.dtype.vx_type = VSI_NN_TYPE_FLOAT16;
-    }
-    else
-    {
-        memcpy( &attr.dtype, output_dtype, sizeof( attr.dtype ) );
-    }
+    vsi_nn_internal_node_init_attr(&attr, output_dtype, use_virtual_tensor);
     tensor2 = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
 
     reshaped_weight_shape[3] = weight->attr.size[1];
@@ -247,127 +151,6 @@ static vsi_nn_internal_tensor_t* create_nn_fc
     tmp_inode->inputs[0] = input;
     tmp_inode->inputs[1] = reshaped_weight_tensor->t;
     tmp_inode->inputs[2] = tensor;
-    tmp_inode->outputs[0] = tensor2->t;
-    vsi_nn_setup_internal_node_op(self, tmp_inode);
-
-    return tensor2;
-}
-
-static vsi_nn_internal_tensor_t* process_input_for_nn_fc
-    (
-    vsi_nn_node_t * self,
-    vsi_nn_tensor_t * input,
-    uint32_t kernel_h,
-    uint32_t kernel_w,
-    int32_t use_virtual_tensor
-    )
-{
-    vsi_nn_tensor_attr_t attr;
-    vsi_nn_internal_tensor_t* tensor1 = NULL;
-    vsi_nn_internal_tensor_t* tensor2 = NULL;
-    uint32_t* reshape_in_size = NULL;
-    uint32_t* permute_in_perm = NULL;
-    vsi_nn_internal_node_t* tmp_inode = NULL;
-
-    memset( &attr, 0x00, sizeof(attr));
-
-    memcpy( &attr.dtype, &input->attr.dtype, sizeof( attr.dtype ) );
-    attr.dim_num = VSI_NN_DIM_AUTO;
-    attr.vtl = use_virtual_tensor;
-    attr.is_const = FALSE;
-    tensor1 = vsi_nn_new_internal_tensor(self, &attr, 0.0f);
-
-    tmp_inode = vsi_nn_new_internal_node(self, VSI_NN_OP_RESHAPE, 0, 0 );
-    reshape_in_size = (uint32_t *)vsi_nn_new_internal_node_param(tmp_inode, 4 * sizeof(uint32_t));
-
-    reshape_in_size[3] = input->attr.size[1];
-    reshape_in_size[2] = input->attr.size[0] / (kernel_h * kernel_w);
-    reshape_in_size[1] = kernel_h;
-    reshape_in_size[0] = kernel_w;
-
-    tmp_inode->node->nn_param.reshape.size = reshape_in_size;
-    tmp_inode->node->nn_param.reshape.dim_num = 4;
-    tmp_inode->inputs[0] = input;
-    tmp_inode->outputs[0] = tensor1->t;
-    vsi_nn_setup_internal_node_op(self, tmp_inode);
-
-    if( kernel_h != kernel_w )
-    {
-        tensor2 = vsi_nn_new_internal_tensor(self, &attr, 0.0f);
-        tmp_inode = vsi_nn_new_internal_node(self, VSI_NN_OP_PERMUTE, 0, 0 );
-        permute_in_perm = (uint32_t *)vsi_nn_new_internal_node_param(tmp_inode, 4 * sizeof(uint32_t));
-
-        permute_in_perm[0] = 3;
-        permute_in_perm[1] = 1;
-        permute_in_perm[2] = 2;
-        permute_in_perm[3] = 0;
-
-        tmp_inode->node->nn_param.permute.perm = permute_in_perm;
-        tmp_inode->node->nn_param.permute.dim_num = 4;
-        tmp_inode->inputs[0] = tensor1->t;
-        tmp_inode->outputs[0] = tensor2->t;
-        vsi_nn_setup_internal_node_op(self, tmp_inode);
-
-        tensor1 = tensor2;
-    }
-
-    return tensor1;
-}
-
-static vsi_nn_internal_tensor_t* process_output_for_nn_fc
-    (
-    vsi_nn_node_t * self,
-    vsi_nn_tensor_t * input,
-    uint32_t kernel_h,
-    uint32_t kernel_w,
-    int32_t use_virtual_tensor
-    )
-{
-    vsi_nn_tensor_attr_t attr;
-    vsi_nn_internal_tensor_t* tensor1 = NULL;
-    vsi_nn_internal_tensor_t* tensor2 = NULL;
-    uint32_t* reshape_in_size = NULL;
-    uint32_t* permute_in_perm = NULL;
-    vsi_nn_internal_node_t* tmp_inode = NULL;
-    vsi_nn_tensor_t* tensor = input;
-
-    memset( &attr, 0x00, sizeof(attr));
-
-    memcpy( &attr.dtype, &input->attr.dtype, sizeof( attr.dtype ) );
-    attr.dim_num = VSI_NN_DIM_AUTO;
-    attr.vtl = use_virtual_tensor;
-    attr.is_const = FALSE;
-
-    if( kernel_h != kernel_w )
-    {
-        tensor1 = vsi_nn_new_internal_tensor(self, &attr, 0.0f);
-        tmp_inode = vsi_nn_new_internal_node(self, VSI_NN_OP_PERMUTE, 0, 0 );
-        permute_in_perm = (uint32_t *)vsi_nn_new_internal_node_param(tmp_inode, 4 * sizeof(uint32_t));
-
-        permute_in_perm[0] = 3;
-        permute_in_perm[1] = 1;
-        permute_in_perm[2] = 2;
-        permute_in_perm[3] = 0;
-
-        tmp_inode->node->nn_param.permute.perm = permute_in_perm;
-        tmp_inode->node->nn_param.permute.dim_num = 4;
-        tmp_inode->inputs[0] = tensor;
-        tmp_inode->outputs[0] = tensor1->t;
-        vsi_nn_setup_internal_node_op(self, tmp_inode);
-
-        tensor = tensor1->t;
-    }
-
-    tensor2 = vsi_nn_new_internal_tensor(self, &attr, 0.0f);
-    tmp_inode = vsi_nn_new_internal_node(self, VSI_NN_OP_RESHAPE, 0, 0 );
-    reshape_in_size = (uint32_t *)vsi_nn_new_internal_node_param(tmp_inode, 4 * sizeof(uint32_t));
-
-    reshape_in_size[1] = tensor->attr.size[3];
-    reshape_in_size[0] = tensor->attr.size[2];
-
-    tmp_inode->node->nn_param.reshape.size = reshape_in_size;
-    tmp_inode->node->nn_param.reshape.dim_num = 2;
-    tmp_inode->inputs[0] = tensor;
     tmp_inode->outputs[0] = tensor2->t;
     vsi_nn_setup_internal_node_op(self, tmp_inode);
 
@@ -479,6 +262,7 @@ static vsi_bool op_setup
     int32_t i = 0;
     vsi_bool use_virtual_tensor = FALSE;
 
+    memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
     vsi_nn_init_internal_node_wksp( self );
 
     memset( &p->local, 0x00, sizeof( p->local ) );
@@ -556,8 +340,9 @@ static vsi_bool op_setup
     else
     {
         /* reshape and transpose input */
-        find_best_kernel_size(self, inputs[LSTMUNIT_INPUT_INPUT]->attr.size[0], &kernel_h, &kernel_w);
-        input_tensor = process_input_for_nn_fc(self, inputs[LSTMUNIT_INPUT_INPUT],
+        vsi_nn_rnn_find_best_kernel_size(p->local.multi_batch,
+            inputs[LSTMUNIT_INPUT_INPUT]->attr.size[0], &kernel_h, &kernel_w);
+        input_tensor = vsi_nn_rnn_process_input_for_nn_fc(self, inputs[LSTMUNIT_INPUT_INPUT],
                                                 kernel_h, kernel_w, use_virtual_tensor);
 
         for( i = ifco_start_index; i < LSTMUNIT_IFCO_GATE_COUNT; i++)
@@ -570,7 +355,8 @@ static vsi_bool op_setup
                                                 &p->internal_dtype[LSTMUNIT_QUANTIZE_PARAM_I2I + i],
                                                 use_virtual_tensor);
             /* transpose and reshape output */
-            input_fc_outputs[i] = process_output_for_nn_fc(self, tmp->t, kernel_h, kernel_w, use_virtual_tensor);
+            input_fc_outputs[i] = vsi_nn_rnn_process_output_for_nn_fc(self,
+                tmp->t, kernel_h, kernel_w, use_virtual_tensor);
         }
     }
 
@@ -590,9 +376,10 @@ static vsi_bool op_setup
     else
     {
         /* reshape and transpose input */
-        find_best_kernel_size(self, inputs[LSTMUNIT_INPUT_H_STATE]->attr.size[0], &kernel_h, &kernel_w);
-        recurrent_input_tensor = process_input_for_nn_fc(self, inputs[LSTMUNIT_INPUT_H_STATE],
-                                                kernel_h, kernel_w, use_virtual_tensor);
+        vsi_nn_rnn_find_best_kernel_size(p->local.multi_batch,
+            inputs[LSTMUNIT_INPUT_H_STATE]->attr.size[0], &kernel_h, &kernel_w);
+        recurrent_input_tensor = vsi_nn_rnn_process_input_for_nn_fc(self,
+            inputs[LSTMUNIT_INPUT_H_STATE], kernel_h, kernel_w, use_virtual_tensor);
 
         for( i = ifco_start_index; i < LSTMUNIT_IFCO_GATE_COUNT; i++)
         {
@@ -604,7 +391,8 @@ static vsi_bool op_setup
                                                 &p->internal_dtype[LSTMUNIT_QUANTIZE_PARAM_R2I + i],
                                                 use_virtual_tensor);
             /* transpose and reshape output */
-            recurrent_fc_outputs[i] = process_output_for_nn_fc(self, tmp->t, kernel_h, kernel_w, use_virtual_tensor);
+            recurrent_fc_outputs[i] = vsi_nn_rnn_process_output_for_nn_fc(self,
+                tmp->t, kernel_h, kernel_w, use_virtual_tensor);
         }
     }
 
@@ -646,7 +434,8 @@ static vsi_bool op_setup
     curr->node->nn_param.lstmunit_activation.recurrent_activation = p->recurrent_activation;
     curr->node->vx_param.overflow_policy = VX_CONVERT_POLICY_WRAP;
     curr->node->vx_param.rounding_policy = VX_ROUND_POLICY_TO_ZERO;
-    curr->node->vx_param.down_scale_size_rounding = VX_CONVOLUTIONAL_NETWORK_DS_SIZE_ROUNDING_FLOOR;
+    curr->node->vx_param.down_scale_size_rounding =
+        VX_CONVOLUTIONAL_NETWORK_DS_SIZE_ROUNDING_FLOOR;
 
     curr->inputs[LSTMUNIT_ACT_CSTATE_IN] = inputs[LSTMUNIT_INPUT_C_STATE];
     for( i = ifco_start_index; i < LSTMUNIT_IFCO_GATE_COUNT; i++ )
@@ -725,7 +514,8 @@ static vsi_bool op_setup
         curr->node->nn_param.fcl.weights = inputs[LSTMUNIT_INPUT_WEIGHT_PROJ]->attr.size[1];
         curr->node->vx_param.overflow_policy = VX_CONVERT_POLICY_WRAP;
         curr->node->vx_param.rounding_policy = VX_ROUND_POLICY_TO_ZERO;
-        curr->node->vx_param.down_scale_size_rounding = VX_CONVOLUTIONAL_NETWORK_DS_SIZE_ROUNDING_FLOOR;
+        curr->node->vx_param.down_scale_size_rounding =
+            VX_CONVOLUTIONAL_NETWORK_DS_SIZE_ROUNDING_FLOOR;
 
         curr->inputs[0] = output_tensor->t;
         curr->inputs[1] = inputs[LSTMUNIT_INPUT_WEIGHT_PROJ];
@@ -736,12 +526,8 @@ static vsi_bool op_setup
         /* Save output to h_state first and copy to output */
         if( p->local.use_hybrid && p->local.use_projection_bias )
         {
-            memset( attr.size, 0, VSI_NN_MAX_DIM_NUM * sizeof(uint32_t));
-            attr.dim_num = VSI_NN_DIM_AUTO;
-            attr.vtl = use_virtual_tensor;
-            attr.is_const = FALSE;
-            memcpy( &attr.dtype, &outputs[LSTMUNIT_OUTPUT_H_STATE]->attr.dtype, sizeof(attr.dtype) );
-
+            vsi_nn_internal_node_init_attr(&attr,
+                &outputs[LSTMUNIT_OUTPUT_H_STATE]->attr.dtype, use_virtual_tensor);
             output_tensor = vsi_nn_new_internal_tensor(self, &attr, 0.0f);
             curr->outputs[0] = output_tensor->t;
         }
@@ -790,8 +576,8 @@ static vsi_status op_init
 {
     vsi_status status = VSI_SUCCESS;
 
-    self->nn_param.lstmunit_ovxlib.activation = VSI_NN_LSTMUNIT_ACT_TANH;
-    self->nn_param.lstmunit_ovxlib.recurrent_activation = VSI_NN_LSTMUNIT_ACT_SIGMOID;
+    self->nn_param.lstmunit_ovxlib.activation = VSI_NN_ACT_TANH;
+    self->nn_param.lstmunit_ovxlib.recurrent_activation = VSI_NN_ACT_SIGMOID;
 
     return status;
 } /* op_init() */

@@ -52,20 +52,6 @@ typedef enum _argmax_nn_image_dims_e
     IMAGE_ARRAY = FALSE,
 }argmax_nn_activation_type_e;
 
-typedef enum _argmax_nn_type_e
-{
-    I8 = 0,
-    I16,
-    I32,
-    I64,
-    U8,
-    U16,
-    U32,
-    U64,
-    F16,
-    F32,
-}argmax_nn_type_e;
-
 #define VSI_NN_GEN_ARGMAX_KEY(_axis, _input_type, _output_type, _image_2d) \
     ((_axis << 20) | (_input_type << 12) | (_output_type << 4) | (_image_2d))
 
@@ -264,7 +250,7 @@ static vsi_status cpu_op_compute
     return status;
 }
 
-static argmax_nn_type_e get_argmax_intra_type(vsi_nn_type_e type)
+static vsi_nn_shader_kernel_type_e get_argmax_intra_type(vsi_nn_type_e type)
 {
     switch (type)
     {
@@ -309,6 +295,18 @@ static void reshape_tensor_set_input_output
     int32_t axis = 0;
     vsi_nn_argmax_param * p;
     vsi_bool is_2d_image = FALSE;
+    uint32_t input_size[VSI_NN_MAX_DIM_NUM] = {1};
+    int32_t i;
+
+    for (i = 0; i < input->attr.dim_num; i++)
+    {
+        input_size[i] = input->attr.size[i];
+    }
+
+    for(; i < VSI_NN_MAX_DIM_NUM; i++)
+    {
+        input_size[i] = 1;
+    }
 
     p = &(self->nn_param.argmax);
     axis = p->axis;
@@ -316,68 +314,68 @@ static void reshape_tensor_set_input_output
 
     if (axis == 0)
     {
-        sizes[0] = input->attr.size[0];
+        sizes[0] = input_size[0];
 
         if (is_2d_image)
         {
-            sizes[1] = input->attr.size[1] * input->attr.size[2];
+            sizes[1] = input_size[1] * input_size[2];
             sizes[2] = 1;
-            sizes[3] = input->attr.size[3];
+            sizes[3] = input_size[3];
 
-            dst_sizes[0] = input->attr.size[1] * input->attr.size[2];
+            dst_sizes[0] = input_size[1] * input_size[2];
             dst_sizes[1] = 1;
             dst_sizes[2] = 1;
-            dst_sizes[3] = input->attr.size[3];
+            dst_sizes[3] = input_size[3];
         }
         else
         {
-            sizes[1] = input->attr.size[1];
-            sizes[2] = input->attr.size[2];
-            sizes[3] = input->attr.size[3];
+            sizes[1] = input_size[1];
+            sizes[2] = input_size[2];
+            sizes[3] = input_size[3];
 
-            dst_sizes[0] = input->attr.size[1];
-            dst_sizes[1] = input->attr.size[2];
+            dst_sizes[0] = input_size[1];
+            dst_sizes[1] = input_size[2];
             dst_sizes[2] = 1;
-            dst_sizes[3] = input->attr.size[3];
+            dst_sizes[3] = input_size[3];
         }
     }
     else if (axis == 1)
     {
-        sizes[0] = input->attr.size[0];
-        sizes[1] = input->attr.size[1];
-        sizes[2] = input->attr.size[2];
-        sizes[3] = input->attr.size[3];
+        sizes[0] = input_size[0];
+        sizes[1] = input_size[1];
+        sizes[2] = input_size[2];
+        sizes[3] = input_size[3];
 
-        dst_sizes[0] = input->attr.size[0];
-        dst_sizes[1] = input->attr.size[2];
+        dst_sizes[0] = input_size[0];
+        dst_sizes[1] = input_size[2];
         dst_sizes[2] = 1;
-        dst_sizes[3] = input->attr.size[3];
+        dst_sizes[3] = input_size[3];
     }
     else if (axis == 2)
     {
         if (is_2d_image)
         {
-            sizes[0] = input->attr.size[0] * input->attr.size[1];
-            sizes[1] = input->attr.size[2];
+            sizes[0] = input_size[0] * input_size[1];
+            sizes[1] = input_size[2];
             sizes[2] = 1;
-            sizes[3] = input->attr.size[3];
+            sizes[3] = input_size[3];
 
-            dst_sizes[0] = input->attr.size[0] * input->attr.size[1];
+            dst_sizes[0] = input_size[0] * input_size[1];
             dst_sizes[1] = 1;
             dst_sizes[2] = 1;
-            dst_sizes[3] = input->attr.size[3];
+            dst_sizes[3] = input_size[3];
         }
         else
         {
-            sizes[0] = input->attr.size[0];
-            sizes[1] = input->attr.size[1];
-            sizes[2] = input->attr.size[2];
-            sizes[3] = input->attr.size[3];
+            sizes[0] = input_size[0];
+            sizes[1] = input_size[1];
+            sizes[2] = input_size[2];
+            sizes[3] = input_size[3];
 
-            dst_sizes[0] = input->attr.size[0];
-            dst_sizes[1] = input->attr.size[1];
+            dst_sizes[0] = input_size[0];
+            dst_sizes[1] = input_size[1];
             dst_sizes[2] = 1;
-            dst_sizes[3] = input->attr.size[3];
+            dst_sizes[3] = input_size[3];
         }
     }
 
@@ -438,8 +436,8 @@ static void _get_argmax_hashtable_idx
 {
     vsi_nn_type_e inputFormat = inputs[0]->attr.dtype.vx_type;
     vsi_nn_type_e outputFormat  = outputs[0]->attr.dtype.vx_type;
-    argmax_nn_type_e _input_type;
-    argmax_nn_type_e _output_type;
+    vsi_nn_shader_kernel_type_e _input_type;
+    vsi_nn_shader_kernel_type_e _output_type;
     int32_t axis = 0;
     uint32_t key;
     vsi_bool is_2d_image = FALSE;
@@ -505,9 +503,10 @@ static vsi_status op_compute
     )
 {
     vsi_status status;
-    vsi_nn_kernel_info_t kernel_info = {0};
-    vsi_nn_argmax_param * p;
+    vsi_nn_kernel_info_t kernel_info;
+    vsi_nn_argmax_param * p = NULL;
 
+    memset(&kernel_info, 0x0, sizeof(vsi_nn_kernel_info_t));
     status = VSI_FAILURE;
     if( NULL == self )
     {

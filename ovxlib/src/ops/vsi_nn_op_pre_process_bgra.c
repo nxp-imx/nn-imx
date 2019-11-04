@@ -264,8 +264,9 @@ static vsi_status op_compute
     )
 {
     vsi_status status;
-    vsi_nn_kernel_info_t kernel_info = {0};
+    vsi_nn_kernel_info_t kernel_info;
 
+    memset(&kernel_info, 0x0, sizeof(vsi_nn_kernel_info_t));
     status = VSI_FAILURE;
     kernel_info.type = vsi_nn_GetVXKernelTypeForShader();
     kernel_info.kernel = vx_kernel_PRE_PROCESS_BGRA_list;

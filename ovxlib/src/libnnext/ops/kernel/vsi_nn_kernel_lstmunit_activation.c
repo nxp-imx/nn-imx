@@ -88,21 +88,21 @@ static vsi_status vsi_nn_Float32ToDtype_Ext
     return vsi_nn_DtypeConvert( (uint8_t *)&src, &src_dtype, dst, dst_dtype );
 } /* vsi_nn_Float32ToDtype_Ext */
 
-float activationFunctor(float a, vsi_nn_lstmunit_activation_e act_)
+float activationFunctor(float a, vsi_nn_activation_e act_)
 {
     switch (act_)
     {
-      case VSI_NN_LSTMUNIT_ACT_NONE:
+      case VSI_NN_ACT_NONE:
         return a;
-      case VSI_NN_LSTMUNIT_ACT_RELU:
+      case VSI_NN_ACT_RELU:
         return a < 0.f ? 0.f : a;
-      case VSI_NN_LSTMUNIT_ACT_RELU6:
+      case VSI_NN_ACT_RELU6:
         return vsi_nn_max(0.f, vsi_nn_min(a, 6.f));
-      case VSI_NN_LSTMUNIT_ACT_TANH:
+      case VSI_NN_ACT_TANH:
         return (float)tanh(a);
-      case VSI_NN_LSTMUNIT_ACT_SIGMOID:
+      case VSI_NN_ACT_SIGMOID:
         return (float)(1.0f / (1.0f + exp(-a)));
-      case VSI_NN_LSTMUNIT_ACT_HARD_SIGMOID:
+      case VSI_NN_ACT_HARD_SIGMOID:
           a = a * 0.2f + 0.5f;
         return vsi_nn_max(0.f, vsi_nn_min(a, 1.f));
       default:
@@ -276,14 +276,7 @@ static vsi_status VX_CALLBACK vxnneSWLSTMUnitActivationKernel
     {
         if (buffer_ptr[i])
         {
-            status = vxCopyTensorPatch(
-                tensor[i],
-                NULL,
-                user_addr[i],
-                buffer_ptr[i],
-                VX_WRITE_ONLY,
-                0
-                );
+            status = vsi_nn_copy_tensor_patch(tensor[i], &attr[i], buffer_ptr[i], VX_WRITE_ONLY);
         }
 
         if (user_addr[i]) vxReleaseTensorAddressing(&(user_addr[i]));
@@ -801,6 +794,8 @@ vx_status VX_CALLBACK vxLSTMUnit_Activation_Initializer
     vsi_nn_tensor_attr_t input_attr[9];
     vsi_nn_tensor_attr_t lstmunit_param_attr;
     vsi_nn_lstmunit_activation_param *p = NULL;
+    vsi_nn_tensor_attr_t attr[2];
+    uint32_t output_dims = 0;
 
     status = vsi_nn_vxGetTensorAttr(lstmunit_param, &lstmunit_param_attr);
     p = (vsi_nn_lstmunit_activation_param*)vsi_nn_vxCopyTensorToData(context, lstmunit_param, &lstmunit_param_attr);
@@ -832,14 +827,27 @@ vx_status VX_CALLBACK vxLSTMUnit_Activation_Initializer
     {
         vsi_nn_vxGetTensorAttr((vx_tensor)paramObj[i], &input_attr[i]);
     }
+    memset(&attr[0], 0, sizeof(vsi_nn_tensor_attr_t));
+    memset(&attr[1], 0, sizeof(vsi_nn_tensor_attr_t));
+    status  = vsi_nn_vxGetTensorAttr(cell_state_in, &attr[0]);
+    status |= vsi_nn_vxGetTensorAttr(output, &attr[1]);
+    if (status != VX_SUCCESS)
+    {
+        VSILOGE("vsi_nn_vxGetTensorAttr failure! at line %d\n", __LINE__);
+        goto final;
+    }
 
-    status  = vxQueryTensor(cell_state_in, VX_TENSOR_DATA_TYPE, &cellFormat, sizeof(cellFormat));
-    status |= vxQueryTensor(output, VX_TENSOR_DATA_TYPE, &dstFormat, sizeof(dstFormat));
-    status |= vxQueryTensor(output, VX_TENSOR_DIMS, output_size, sizeof(output_size));
-    status |= vxQueryTensor(output, VX_TENSOR_QUANT_FORMAT, &dstQuantType, sizeof(dstQuantType));
-    status |= vxQueryTensor(output, VX_TENSOR_FIXED_POINT_POSITION, &dstFixPointPos, sizeof(dstFixPointPos));
-    status |= vxQueryTensor(output, VX_TENSOR_ZERO_POINT, &dstZP, sizeof(dstZP));
-    status |= vxQueryTensor(output, VX_TENSOR_SCALE, &dstScale, sizeof(dstScale));
+    cellFormat = attr[0].dtype.vx_type;
+    output_dims = attr[1].dim_num;
+    dstFormat   = attr[1].dtype.vx_type;
+    for (i = 0; i < output_dims; i++)
+    {
+        output_size[i] = attr[1].size[i];
+    }
+    dstQuantType = attr[1].dtype.qnt_type;
+    dstFixPointPos = attr[1].dtype.fl;
+    dstZP = attr[1].dtype.zero_point;
+    dstScale = attr[1].dtype.scale;
 
     outputZP  = (vx_float32)dstZP;
 
@@ -1021,7 +1029,7 @@ vx_status VX_CALLBACK vxLSTMUnit_Activation_Initializer
 
     status |= vxSetNodeAttribute(node, VX_NODE_ATTRIBUTE_KERNEL_EXECUTION_PARAMETERS,
         &shaderParam, sizeof(vx_kernel_execution_parameters_t));
-
+final:
     if (p) free(p);
 
     return status;

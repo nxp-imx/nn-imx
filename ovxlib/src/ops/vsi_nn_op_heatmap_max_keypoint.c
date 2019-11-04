@@ -195,9 +195,10 @@ static vsi_status op_compute
     )
 {
     vsi_status status;
-    vsi_nn_kernel_info_t kernel_info = {0};
+    vsi_nn_kernel_info_t kernel_info;
     char *path = NULL;
 
+    memset(&kernel_info, 0x0, sizeof(vsi_nn_kernel_info_t));
     status = VSI_FAILURE;
     kernel_info.type = VX_KERNEL_TYPE_CPU;
     kernel_info.kernel = vx_kernel_HEATMAP_MAX_KEYPOINT_list;

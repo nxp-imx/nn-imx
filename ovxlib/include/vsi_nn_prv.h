@@ -36,6 +36,30 @@ extern "C"{
 #define VSI_NN_STD_CALL __stdcall
 #endif
 
+typedef enum _vsi_nn_shader_kernel_type_e
+{
+    I8 = 0,
+    I16,
+    I32,
+    I64,
+    U8,
+    U16,
+    U32,
+    U64,
+    F16,
+    F32,
+    BF16,
+    BOOL8
+}vsi_nn_shader_kernel_type_e;
+
+typedef enum _vsi_nn_broad_cast_bits_e
+{
+    VSI_NN_BROAD_CAST_BITS_0 = 0x01,
+    VSI_NN_BROAD_CAST_BITS_1 = 0x02,
+    VSI_NN_BROAD_CAST_BITS_2 = 0x04,
+    VSI_NN_BROAD_CAST_BITS_4 = 0x08,
+} vsi_nn_broad_cast_bits_e;
+
 #define REQUIRED_IO( _IOPORT ) ( (_IOPORT) != NULL ? (_IOPORT)->t : \
     ( VSILOGE("Required IO port: %s", #_IOPORT), (_IOPORT)->t ) )
 #define OPTIONAL_IO( _IOPORT ) ( (_IOPORT) != NULL ? (_IOPORT)->t : NULL)

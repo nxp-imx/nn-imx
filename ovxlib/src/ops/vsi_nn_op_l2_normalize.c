@@ -28,6 +28,8 @@
 #include "vsi_nn_node.h"
 #include "vsi_nn_ops.h"
 #include "vsi_nn_tensor.h"
+#include "utils/vsi_nn_dtype_util.h"
+#include "utils/vsi_nn_math.h"
 
 static vsi_status op_compute
     (
@@ -37,20 +39,85 @@ static vsi_status op_compute
     )
 {
     vsi_status status;
+    vsi_nn_l2_normalize_param * p;
+    int32_t axis = -1;
+    uint32_t i = 0;
+    uint32_t sizes[VSI_NN_MAX_DIM_NUM] = {1};
+    uint32_t innerSize = 1;
+    uint32_t outerSize = 1;
+    uint32_t axisSize  = 1;
+    vx_tensor vx_input = NULL;
+    vx_tensor vx_output = NULL;
+    vx_tensor input = inputs[0]->t;
+    vx_tensor output = outputs[0]->t;
+
     status = VSI_FAILURE;
+
+    p = &(self->nn_param.l2_normalize);
+    axis = p->axis;
+
+    if (axis != 2)
+    {
+        axisSize  = inputs[0]->attr.size[axis];
+
+        for (i = 0; i < (uint32_t)axis; i++)
+        {
+            innerSize *= inputs[0]->attr.size[i];
+        }
+
+        for (i = (uint32_t)(axis + 1); i < inputs[0]->attr.dim_num; i++)
+        {
+            outerSize *= inputs[0]->attr.size[i];
+        }
+
+        sizes[0] = innerSize;
+        sizes[1] = 1;
+        sizes[2] = axisSize;
+        sizes[3] = outerSize;
+
+        vx_input = vxReshapeTensor(inputs[0]->t, (int32_t *)sizes, vsi_nn_max(inputs[0]->attr.dim_num, 4));
+        vx_output = vxReshapeTensor(outputs[0]->t, (int32_t *)sizes, vsi_nn_max(inputs[0]->attr.dim_num, 4));
+
+        input = vx_input;
+        output = vx_output;
+    }
 
     self->n = vxL2NormalizeLayer(
         self->graph->g,
-        inputs[0]->t,
-        outputs[0]->t
+        input,
+        output
         );
 
     if( NULL != self->n )
     {
         status = VSI_SUCCESS;
     }
+
+    if (vx_input) vxReleaseTensor(&vx_input);
+    if (vx_output) vxReleaseTensor(&vx_output);
+
     return status;
 } /* op_compute() */
+
+static vsi_status op_init
+    (
+    vsi_nn_node_t * self
+    )
+{
+    vsi_status status = VSI_SUCCESS;
+    uint32_t graph_version_major = 0;
+    uint32_t graph_version_minor = 0;
+    uint32_t graph_version_patch = 0;
+
+    vsi_nn_GetGraphVersion( self->graph, &graph_version_major,
+        &graph_version_minor, &graph_version_patch );
+    if (!( graph_version_major >= 1 && graph_version_minor >= 1 && graph_version_patch >= 15 ))
+    {
+        self->nn_param.l2_normalize.axis = 2;
+    }
+
+    return status;
+} /* op_init() */
 
 static vsi_bool op_check
     (
@@ -70,7 +137,7 @@ extern "C" {
 DEF_OP_REG
     (
     /* op_name    */ L2_NORMALIZE,
-    /* init       */ NULL,
+    /* init       */ op_init,
     /* compute    */ op_compute,
     /* deinit     */ vsi_nn_op_common_deinit,
     /* check      */ op_check,

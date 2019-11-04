@@ -273,7 +273,6 @@ static vsi_status op_optimize
 {
     vsi_status status;
     uint32_t i,num;
-    vx_tensor_view view;
     vx_tensor in_view_tensor;
     uint32_t start[VSI_NN_MAX_DIM_NUM] = { 0 };
     uint32_t end[VSI_NN_MAX_DIM_NUM] = { 0 };
@@ -282,7 +281,9 @@ static vsi_status op_optimize
     status = VSI_SUCCESS;
     /* Only forward run split's optimize */
     if( direction == VSI_NN_OPTIMIZE_BACKWARD )
+    {
         return VSI_SUCCESS;
+    }
 
     VSILOGD("Optimize %s, uid %u", vsi_nn_OpGetName(self->op), self->uid);
     num = (uint32_t)(self->output.num - 1);
@@ -311,22 +312,13 @@ static vsi_status op_optimize
         start[axis] = end[axis];
         end[axis] += outputs[i]->attr.size[axis];
 
-        view = vxCreateTensorView( self->graph->ctx->c,
-            start, end, inputs[0]->attr.dim_num );
-        if( NULL == view )
-        {
-            VSILOGE( "Create tensor %d view fail.", i );
-            status = VSI_FAILURE;
-            break;
-        }
-        in_view_tensor = vxCreateTensorFromView( inputs[0]->t, view );
+        in_view_tensor = vsi_nn_CreateViewTensor(self->graph, start, end, inputs[0] );
         if( NULL == in_view_tensor )
         {
             VSILOGE( "Create tensor %d from view fail.", i );
             status = VSI_FAILURE;
             break;
         }
-        vxReleaseTensorView( &view );
 
         if( NULL != outputs[i]->t )
         {

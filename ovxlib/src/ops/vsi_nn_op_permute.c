@@ -43,8 +43,8 @@ static vsi_bool _is_same_memory_shape
     vsi_nn_tensor_t ** outputs
     )
 {
-    uint32_t input_dims[VSI_NN_MAX_DIM_NUM];
-    uint32_t perm_dims[VSI_NN_MAX_DIM_NUM];
+    uint32_t input_dims[VSI_NN_MAX_DIM_NUM] = {0};
+    uint32_t perm_dims[VSI_NN_MAX_DIM_NUM] = {0};
     uint32_t i = 0;
     uint32_t idx = 0;
     uint32_t dim_num0 = inputs[0]->attr.dim_num;

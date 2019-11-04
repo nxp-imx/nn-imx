@@ -44,40 +44,36 @@ static vsi_status VX_CALLBACK vxSync_hostKernel
     uint32_t paramNum
     )
 {
-    vsi_status  status;
-    vx_context  context;
-    vx_tensor   input;
-    vx_tensor   output;
-    uint8_t   * in_buffer;
+    vsi_status  status = 0;
+    vx_context  context = NULL;
+    vx_tensor   input = NULL;
+    vx_tensor   output = NULL;
+    uint8_t   * in_buffer = NULL;
     uint32_t    in_stride[8] = { 0 };
-    uint32_t    out_stride[8] = { 0 };
     vx_tensor_addressing in_addr = NULL;
-    vx_tensor_addressing out_addr = NULL;
     vsi_nn_tensor_attr_t in_attr;
 
     status = VX_SUCCESS;
     context = vxGetContext( (vx_reference)node );
     input  = (vx_tensor)paramObj[0];
     output = (vx_tensor)paramObj[1];
+    memset(&in_attr, 0x0, sizeof(vsi_nn_tensor_attr_t));
 
     in_buffer = vsi_nn_ConvertRawTensorToData2( context, input,
                 &in_attr, in_stride, &in_addr, VX_READ_ONLY );
 
-    vsi_nn_GetStrideSize( &in_attr, out_stride );
+    status = vsi_nn_vxCopyDataToTensor(context, output, &in_attr, in_buffer);
+    if (status != VX_SUCCESS)
+    {
+        VSILOGE("vsi_nn_vxCopyDataToTensor failure! at line %d\n", __LINE__);
+        goto OnError;
+    }
 
-    out_addr = vxCreateTensorAddressing(context, in_attr.size,
-        out_stride, in_attr.dim_num );
-
-    if( out_addr )
-        {
-        status = vxCopyTensorPatch( output, NULL, out_addr, in_buffer, VX_WRITE_ONLY, 0 );
-        vxReleaseTensorAddressing( &out_addr );
-        }
-
+OnError:
     if( NULL != in_buffer )
-        {
+    {
         free( in_buffer );
-        }
+    }
     return status;
 } /* _VX_KERNEL_FUNC_KERNEL() */
 

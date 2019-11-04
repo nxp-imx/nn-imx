@@ -87,11 +87,8 @@ static vsi_status op_compute
         input,
         weight,
         bias,
-        0,
-        0,
         self->vx_param.overflow_policy,
         self->vx_param.rounding_policy,
-        self->vx_param.down_scale_size_rounding,
         output
         );
     if( NULL != self->n )

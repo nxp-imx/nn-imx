@@ -32,6 +32,7 @@
 
 #include "vsi_nn_prv.h"
 #include "vsi_nn_log.h"
+#include "vsi_nn_test.h"
 #include "vsi_nn_tensor_util.h"
 #include "utils/vsi_nn_util.h"
 #include "utils/vsi_nn_dtype_util.h"
@@ -113,13 +114,17 @@ vsi_status VX_CALLBACK vxPowKernel
     vsi_nn_tensor_attr_t attr[TENSOR_NUM];
     vx_tensor_addressing user_addr[TENSOR_NUM]  = {NULL};
     vx_uint8    *buffer_ptr[TENSOR_NUM]            = {NULL};
-    vx_tensor   tensor[TENSOR_NUM];
+    vx_tensor   tensor[TENSOR_NUM] = {NULL};
     uint32_t    stride_size[TENSOR_NUM][VSI_NN_MAX_DIM_NUM];
 
     vx_context   context                        = vxGetContext((vx_reference)node);
     vx_uint32    i                              = 0;
     vx_uint32    elementCount                   = 1;
-
+    for(i = 0; i < TENSOR_NUM; i++)
+    {
+        memset(&attr[i], 0x0, sizeof(vsi_nn_tensor_attr_t));
+    }
+    memset(stride_size, 0x0, TENSOR_NUM * VSI_NN_MAX_DIM_NUM * sizeof(uint32_t));
     for( i = 0; i < TENSOR_NUM_INPUT; i ++ )
     {
         tensor[i] = (vx_tensor)paramObj[i];
@@ -141,7 +146,7 @@ vsi_status VX_CALLBACK vxPowKernel
 
     for (i = 0; i < elementCount; i++)
     {
-        vx_uint32 in0offset, in1offset;
+        vx_uint32 in0offset = 0, in1offset = 0;
         vx_float32 value0 = 0;
         vx_float32 value1 = 0;
         vx_float32 dst = 0;
@@ -170,19 +175,11 @@ vsi_status VX_CALLBACK vxPowKernel
     {
         if (buffer_ptr[i])
         {
-            status = vxCopyTensorPatch(
-                tensor[i],
-                NULL,
-                user_addr[i],
-                buffer_ptr[i],
-                VX_WRITE_ONLY,
-                0
-                );
+            status = vsi_nn_vxCopyDataToTensor(context, tensor[i], &attr[i], buffer_ptr[i]);
+            TEST_CHECK_STATUS(status, final);
         }
-
-        if (user_addr[i]) vxReleaseTensorAddressing(&(user_addr[i]));
     }
-
+final:
     for( i = 0; i < TENSOR_NUM; i ++ )
     {
         if (buffer_ptr[i]) free(buffer_ptr[i]);
@@ -227,6 +224,8 @@ vsi_status VX_CALLBACK vxPowInitializer
     vsi_nn_type_e outputDataFormat = VSI_NN_TYPE_FLOAT16;
     vx_float32  scaleIn                 = 0;
     int32_t     input_ZP                = 0;
+    vx_float32  scaleIn1                = 0;
+    int32_t     input_ZP1               = 0;
     vx_int8      src0FixPointPos    = 0;
     //vx_uint32 factor = 1;
     //vx_uint32 maxWorkGroupSize = 8;
@@ -238,6 +237,8 @@ vsi_status VX_CALLBACK vxPowInitializer
     status |= vxQueryTensor(input0, VX_TENSOR_SCALE, &scaleIn, sizeof(scaleIn));
     status |= vxQueryTensor(input0, VX_TENSOR_FIXED_POINT_POSITION, &src0FixPointPos, sizeof(src0FixPointPos));
     status |= vxQueryTensor(input1, VX_TENSOR_DATA_TYPE, &inputDataFormat1, sizeof(inputDataFormat1));
+    status |= vxQueryTensor(input1, VX_TENSOR_ZERO_POINT, &input_ZP1, sizeof(input_ZP1));
+    status |= vxQueryTensor(input1, VX_TENSOR_SCALE, &scaleIn1, sizeof(scaleIn1));
     status |= vxQueryTensor(output, VX_TENSOR_NUM_OF_DIMS, &output_dims, sizeof(output_dims));
     status |= vxQueryTensor(output, VX_TENSOR_DATA_TYPE, &outputDataFormat, sizeof(outputDataFormat));
     if(VX_SUCCESS != status)
@@ -392,6 +393,49 @@ vsi_status VX_CALLBACK vxPowInitializer
                             uniConvertSecUint8SubZpToFp32_4x4);
             status |= vxSetNodeUniform(nodObj, "input_ZP0", 1, &input_ZP);
             status |= vxSetNodeUniform(nodObj, "inputScale0", 1, &scaleIn);
+        }
+        else if(inputDataFormat == VSI_NN_TYPE_FLOAT16 && inputDataFormat1 == VSI_NN_TYPE_UINT8
+            && outputDataFormat == VSI_NN_TYPE_FLOAT16)
+        {
+            vx_uint32 uniConvertUint8SubZpToFp32_4x4[16] = {
+                0x05050505, // TCfg
+                0x04040404, // ASelt
+                0x00010000, 0x00030002, // ABin
+                0x0a0a0a0a, // BSelt
+                0x00000000, 0x00000000, // BBin
+                0x00002100, // AccumType, ConstantType, and PostShift
+                0xbc003c00, 0x00000000, 0xbc003c00, 0x00000000,
+                    0xbc003c00, 0x00000000, 0xbc003c00, 0x00000000 // Constant
+            };
+
+            vx_uint32 uniConvertSecUint8SubZpToFp32_4x4[16] = {
+                0x05050505, // TCfg
+                0x04040404, // ASelt
+                0x00050004, 0x00070006, // ABin
+                0x0a0a0a0a, // BSelt
+                0x00000000, 0x00000000, // BBin
+                0x00000100, // AccumType, ConstantType, and PostShift
+                0xbc003c00, 0x00000000, 0xbc003c00, 0x00000000,
+                    0xbc003c00, 0x00000000, 0xbc003c00, 0x00000000 // Constant
+            };
+
+            vx_uint32 uniConvertHalfToFp16_2x8[16] = {
+                0x11111111, // TCfg
+                0x11110000, // ASelt
+                0x06040200, 0x06040200, // ABin
+                0x22222222, // BSelt
+                0x00000000, 0x00000000, // BBin
+                0x00000100, // AccumType, ConstantType, and PostShift
+                0x00003c00, 0x00003c00, 0x00003c00, 0x00003c00, 0x00003c00, 0x00003c00, 0x00003c00, 0x00003c00 // Constant
+            };
+            status |= vxSetNodeUniform(nodObj, "uniConvertUint8SubZpToFp32_4x4", 1,
+                            uniConvertUint8SubZpToFp32_4x4);
+            status |= vxSetNodeUniform(nodObj, "uniConvertSecUint8SubZpToFp32_4x4", 1,
+                            uniConvertSecUint8SubZpToFp32_4x4);
+            status |= vxSetNodeUniform(nodObj, "uniConvertHalfToFp16_2x8", 1,
+                            uniConvertHalfToFp16_2x8);
+            status |= vxSetNodeUniform(nodObj, "input_ZP1", 1, &input_ZP1);
+            status |= vxSetNodeUniform(nodObj, "inputScale1", 1, &scaleIn1);
         }
         else if(inputDataFormat == VSI_NN_TYPE_INT8 && inputDataFormat1 == VSI_NN_TYPE_FLOAT16
             && outputDataFormat == VSI_NN_TYPE_FLOAT16)
@@ -576,6 +620,20 @@ vx_kernel_description_t vxPowKernelInfoI16_Fp16Fp16 =
     vsi_nn_KernelDeinitializer
 };
 
+vx_kernel_description_t vxPowKernelInfoFp16_U8Fp16 =
+{
+    VX_KERNEL_ENUM_POW,
+    VX_KERNEL_NAME_POW_FP16_UINT8FP16,
+    NULL,
+    vxPowKernelParam,
+    (sizeof(vxPowKernelParam) / sizeof(vxPowKernelParam[0])),
+    vsi_nn_KernelValidator,
+    NULL,
+    NULL,
+    vxPowInitializer,
+    vsi_nn_KernelDeinitializer
+};
+
 vx_kernel_description_t vxPowKernelInfo_CPU =
 {
     VX_KERNEL_ENUM_POW,
@@ -600,6 +658,7 @@ vx_kernel_description_t * vx_kernel_POW_list[] =
     &vxPowKernelInfoU8_Fp16Fp16,
     &vxPowKernelInfoI8_Fp16Fp16,
     &vxPowKernelInfoI16_Fp16Fp16,
+    &vxPowKernelInfoFp16_U8Fp16,
     NULL
 };
 #ifdef __cplusplus

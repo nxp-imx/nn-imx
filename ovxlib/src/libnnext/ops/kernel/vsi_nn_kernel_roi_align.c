@@ -68,8 +68,8 @@ static vsi_status VX_CALLBACK vxRoi_alignKernel
     float *f32_in_buffer[TENSOR_NUM_INPUT] = {0};
     int32_t* int32_in_buffer[TENSOR_NUM_INPUT] = {0};
     float *f32_out_buffer[TENSOR_NUM_OUTPUT] = {0};
-    vsi_nn_tensor_attr_t in_attr[TENSOR_NUM_INPUT] = {0};
-    vsi_nn_tensor_attr_t out_attr[TENSOR_NUM_OUTPUT] = {0};
+    vsi_nn_tensor_attr_t in_attr[TENSOR_NUM_INPUT];
+    vsi_nn_tensor_attr_t out_attr[TENSOR_NUM_OUTPUT];
     uint32_t in_elements[TENSOR_NUM_INPUT] = {0};
     uint32_t out_elements[TENSOR_NUM_OUTPUT]= {0};
 
@@ -81,7 +81,14 @@ static vsi_status VX_CALLBACK vxRoi_alignKernel
     int32_t width_sample_num;
 
     int32_t i;
-
+    for(i = 0; i < TENSOR_NUM_INPUT; i++)
+    {
+        memset(&in_attr[i], 0x0, sizeof(vsi_nn_tensor_attr_t));
+    }
+    for(i = 0; i < TENSOR_NUM_OUTPUT; i++)
+    {
+        memset(&out_attr[i], 0x0, sizeof(vsi_nn_tensor_attr_t));
+    }
     /* prepare data */
     context = vxGetContext((vx_reference)node);
 

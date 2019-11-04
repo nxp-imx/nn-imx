@@ -68,8 +68,8 @@ vx_status VX_CALLBACK vxPre_process_rgbInitializer
     vx_float32 outputScale      = 1.0;
     vx_int32   output_ZP        = 0;
     vx_float32 outputZP         = 0;
-    vx_int32   r_order          = 2;
-    vx_int32   b_order          = 0;
+    vx_int32   r_order          = 0;
+    vx_int32   b_order          = 2;
     vx_uint32  width            = 0;
     vx_uint32  height           = 0;
     vx_bool    enable_copy      = vx_false_e;
@@ -198,35 +198,85 @@ vx_status VX_CALLBACK vxPre_process_rgbInitializer
     }
     else if (enable_copy)
     {
-        vx_uint32 uniExtractR_2x8[16] = {
-            0x00099999, // TCfg
-            0x00044444, // ASelt
-            0x09060300, 0x0000000c, // ABin
-            0x00099999, // BSelt
-            0x06060606, 0x00000006, // BBin
-            0x00000100, // AccumType, ConstantType, and PostShift
-            0x3c000000, 0x3c000000, 0x3c000000, 0x3c000000,
-            0x3c000000, 0x00000000, 0x00000000, 0x00000000 // Constant
+        vx_uint32 uniExtractRtoF32_part0_4x4[16] = {
+            0x01010101, // TCfg
+            0x00000000, // ASelt
+            0x00030000, 0x00090006, // ABin
+            0x02020202, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000600, // AccumType, ConstantType, and PostShift
+            0x00000001, 0x00000000, 0x00000001, 0x00000000,
+            0x00000001, 0x00000000, 0x00000001, 0x00000000 // Constant
         };
-        vx_uint32 uniExtractG_2x8[16] = {
-            0x00099999, // TCfg
-            0x00044444, // ASelt
-            0x2a272421, 0x0000002d, // ABin
-            0x00099999, // BSelt
-            0x06060606, 0x00000006, // BBin
-            0x00000100, // AccumType, ConstantType, and PostShift
-            0x3c000000, 0x3c000000, 0x3c000000, 0x3c000000,
-            0x3c000000, 0x00000000, 0x00000000, 0x00000000 // Constant
+        vx_uint32 uniExtractRtoF32_part1_4x4[16] = {
+            0x01010101, // TCfg
+            0x01010100, // ASelt
+            0x0000000c, 0x00060003, // ABin
+            0x02020202, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000600, // AccumType, ConstantType, and PostShift
+            0x00000001, 0x00000000, 0x00000001, 0x00000000,
+            0x00000001, 0x00000000, 0x00000001, 0x00000000 // Constant
         };
-        vx_uint32 uniExtractB_2x8[16] = {
-            0x00099999, // TCfg
-            0x00044444, // ASelt
-            0x4b484542, 0x0000004e, // ABin
-            0x00099999, // BSelt
-            0x06060606, 0x00000006, // BBin
+        vx_uint32 uniExtractGtoF32_part0_4x4[16] = {
+            0x01010101, // TCfg
+            0x00000000, // ASelt
+            0x00040001, 0x000a0007, // ABin
+            0x02020202, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000600, // AccumType, ConstantType, and PostShift
+            0x00000001, 0x00000000, 0x00000001, 0x00000000,
+            0x00000001, 0x00000000, 0x00000001, 0x00000000 // Constant
+        };
+        vx_uint32 uniExtractGtoF32_part1_4x4[16] = {
+            0x01010101, // TCfg
+            0x01010100, // ASelt
+            0x0001000d, 0x00070004, // ABin
+            0x02020202, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000600, // AccumType, ConstantType, and PostShift
+            0x00000001, 0x00000000, 0x00000001, 0x00000000,
+            0x00000001, 0x00000000, 0x00000001, 0x00000000 // Constant
+        };
+        vx_uint32 uniExtractBtoF32_part0_4x4[16] = {
+            0x01010101, // TCfg
+            0x00000000, // ASelt
+            0x00050002, 0x000b0008, // ABin
+            0x02020202, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000600, // AccumType, ConstantType, and PostShift
+            0x00000001, 0x00000000, 0x00000001, 0x00000000,
+            0x00000001, 0x00000000, 0x00000001, 0x00000000 // Constant
+        };
+        vx_uint32 uniExtractBtoF32_part1_4x4[16] = {
+            0x01010101, // TCfg
+            0x01010100, // ASelt
+            0x0002000e, 0x00080005, // ABin
+            0x02020202, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000600, // AccumType, ConstantType, and PostShift
+            0x00000001, 0x00000000, 0x00000001, 0x00000000,
+            0x00000001, 0x00000000, 0x00000001, 0x00000000 // Constant
+        };
+        vx_uint32 uniExtractHalf8_2x8[16] = {
+            0x11111111, // TCfg
+            0x11110000, // ASelt
+            0x06040200, 0x06040200, // ABin
+            0x22222222, // BSelt
+            0x00000000, 0x00000000, // BBin
             0x00000100, // AccumType, ConstantType, and PostShift
-            0x3c000000, 0x3c000000, 0x3c000000, 0x3c000000,
-            0x3c000000, 0x00000000, 0x00000000, 0x00000000 // Constant
+            0x00003c00, 0x00003c00, 0x00003c00, 0x00003c00,
+            0x00003c00, 0x00003c00, 0x00003c00, 0x00003c00 // Constant
+        };
+        vx_uint32 uniExtractInteger_2x8[16] = {
+            0x33333333, // TCfg
+            0x11110000, // ASelt
+            0x03020100, 0x03020100, // ABin
+            0x00000000, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00002400, // AccumType, ConstantType, and PostShift
+            0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
         };
 
         shaderParam.globalWorkOffset[0] = 0;
@@ -234,7 +284,7 @@ vx_status VX_CALLBACK vxPre_process_rgbInitializer
         if (dstFormat == VSI_NN_TYPE_FLOAT16 || dstFormat == VSI_NN_TYPE_INT16)
             shaderParam.globalWorkScale[0]  = 8;
         else if (dstFormat == VSI_NN_TYPE_INT8 || dstFormat == VSI_NN_TYPE_UINT8)
-            shaderParam.globalWorkScale[0]  = 10;
+            shaderParam.globalWorkScale[0]  = 8;
 
         shaderParam.globalWorkScale[1]  = 1;
         shaderParam.globalWorkSize[0]   = gcmALIGN((width + shaderParam.globalWorkScale[0] - 1)
@@ -243,15 +293,10 @@ vx_status VX_CALLBACK vxPre_process_rgbInitializer
 
         if (dstFormat == VSI_NN_TYPE_INT8 || dstFormat == VSI_NN_TYPE_INT16)
         {
-            if(dstFixedPointPos > 0)
+            if(dstFixedPointPos >= 0)
                 outputScale = (vx_float32) (1 << dstFixedPointPos);
             else
-            {
-                outputScale = 1.0f;
-                uniExtractR_2x8[7] |= ((-dstFixedPointPos) & 0x1F);
-                uniExtractG_2x8[7] |= ((-dstFixedPointPos) & 0x1F);
-                uniExtractB_2x8[7] |= ((-dstFixedPointPos) & 0x1F);
-            }
+                outputScale = (vx_float32) (1.0f / (1 << -dstFixedPointPos));
 
             status |= vxSetNodeUniform(node, "outputZP", 1, &outputZP);
         }
@@ -268,9 +313,17 @@ vx_status VX_CALLBACK vxPre_process_rgbInitializer
             outputScale = 1.0f;
         }
 
-        status |= vxSetNodeUniform(node, "uniExtractR_2x8", 1, uniExtractR_2x8);
-        status |= vxSetNodeUniform(node, "uniExtractG_2x8", 1, uniExtractG_2x8);
-        status |= vxSetNodeUniform(node, "uniExtractB_2x8", 1, uniExtractB_2x8);
+
+        if (dstFormat == VSI_NN_TYPE_FLOAT16)
+            status |= vxSetNodeUniform(node, "uniExtract8Data_2x8", 1, uniExtractHalf8_2x8);
+        else
+            status |= vxSetNodeUniform(node, "uniExtract8Data_2x8", 1, uniExtractInteger_2x8);
+        status |= vxSetNodeUniform(node, "uniExtractRtoF32_part0_4x4", 1, uniExtractRtoF32_part0_4x4);
+        status |= vxSetNodeUniform(node, "uniExtractRtoF32_part1_4x4", 1, uniExtractRtoF32_part1_4x4);
+        status |= vxSetNodeUniform(node, "uniExtractGtoF32_part0_4x4", 1, uniExtractGtoF32_part0_4x4);
+        status |= vxSetNodeUniform(node, "uniExtractGtoF32_part1_4x4", 1, uniExtractGtoF32_part1_4x4);
+        status |= vxSetNodeUniform(node, "uniExtractBtoF32_part0_4x4", 1, uniExtractBtoF32_part0_4x4);
+        status |= vxSetNodeUniform(node, "uniExtractBtoF32_part1_4x4", 1, uniExtractBtoF32_part1_4x4);
         status |= vxSetNodeUniform(node, "outputScale", 1, &outputScale);
     }
     else

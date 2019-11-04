@@ -47,24 +47,9 @@ extern vx_kernel_description_t * vx_kernel_LSTMUNIT_ACTIVATION_list[];
 
 typedef enum _LSTMUNIT_nn_activation_type_e
 {
-    SIGMOID = VSI_NN_LSTMUNIT_ACT_SIGMOID,
-    HARD_SIGMOID = VSI_NN_LSTMUNIT_ACT_HARD_SIGMOID,
+    SIGMOID = VSI_NN_ACT_SIGMOID,
+    HARD_SIGMOID = VSI_NN_ACT_HARD_SIGMOID,
 }LSTMUNIT_nn_activation_type_e;
-
-/* Type enum */
-typedef enum _LSTMUNIT_nn_type_e
-{
-    I8 = 0,
-    I16,
-    I32,
-    I64,
-    U8,
-    U16,
-    U32,
-    U64,
-    F16,
-    F32,
-}LSTMUNIT_nn_type_e;
 
 #define GEN_LSTMUNIT_KEY(_is_ln, _is_cifg, _is_proj, _is_hybrid, _is_peephole, \
 _input_type, _output_type, _cell_type, _rec_act) \
@@ -591,6 +576,7 @@ static vsi_status cpu_op_compute
     vsi_nn_tensor_attr_t attr;
     vsi_nn_lstmunit_activation_param * p;
 
+    memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
     if( NULL == self->n )
     {
         return VSI_FAILURE;
@@ -621,7 +607,7 @@ static vsi_status cpu_op_compute
     return status;
 }
 
-static LSTMUNIT_nn_type_e get_lstm_unit_intra_type(vsi_nn_type_e type)
+static vsi_nn_shader_kernel_type_e get_lstm_unit_intra_type(vsi_nn_type_e type)
 {
     switch (type)
     {
@@ -661,9 +647,9 @@ static void _get_lstmunit_hashtable_idx
     vsi_nn_type_e inputFormat = inputs[LSTMUNIT_ACT_INPUT_FC_F]->attr.dtype.vx_type;
     vsi_nn_type_e cellFormat = inputs[LSTMUNIT_ACT_CSTATE_IN]->attr.dtype.vx_type;
     vsi_nn_type_e outputFormat  = outputs[0]->attr.dtype.vx_type;
-    LSTMUNIT_nn_type_e _input_type;
-    LSTMUNIT_nn_type_e _output_type;
-    LSTMUNIT_nn_type_e _cell_type;
+    vsi_nn_shader_kernel_type_e _input_type;
+    vsi_nn_shader_kernel_type_e _output_type;
+    vsi_nn_shader_kernel_type_e _cell_type;
     uint32_t key;
     uint32_t _is_ln= 0;
     uint32_t _is_cifg= 0;
@@ -736,6 +722,7 @@ static vsi_status vx_op_compute
     uint32_t param_num = 0;
     vsi_nn_lstmunit_activation_param * p;
 
+    memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
     if( NULL == self->n )
     {
         return VSI_FAILURE;
@@ -789,9 +776,10 @@ static vsi_status op_compute
     )
 {
     vsi_status status;
-    vsi_nn_kernel_info_t kernel_info = {0};
-    vsi_nn_lstmunit_activation_param * p;
+    vsi_nn_kernel_info_t kernel_info;
+    vsi_nn_lstmunit_activation_param * p = NULL;
 
+    memset(&kernel_info, 0x0, sizeof(vsi_nn_kernel_info_t));
     status = VSI_FAILURE;
     if( NULL == self )
     {
@@ -878,6 +866,7 @@ static vsi_bool op_setup
     vsi_nn_tensor_attr_t attr;
     int32_t i = 0;
 
+    memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
     if( NULL == self )
     {
         return FALSE;
@@ -889,8 +878,8 @@ static vsi_bool op_setup
     p->is_projection = outputs[LSTMUNIT_ACT_HSTATE_OUT] == NULL;
     p->is_layer_norm = inputs[LSTMUNIT_ACT_LN_WF] != NULL;
     p->is_hybrid = p->is_layer_norm ? 0 : inputs[LSTMUNIT_ACT_DATA_BF] != NULL;
-    p->recurrent_activation = p->recurrent_activation == VSI_NN_LSTMUNIT_ACT_NONE ?
-        VSI_NN_LSTMUNIT_ACT_SIGMOID : p->recurrent_activation;
+    p->recurrent_activation = p->recurrent_activation == VSI_NN_ACT_NONE ?
+        VSI_NN_ACT_SIGMOID : p->recurrent_activation;
 
     for( i = ifco_start_index; i < 4; i++ )
     {
@@ -1009,7 +998,7 @@ static vsi_status op_init
 {
     vsi_status status = VSI_SUCCESS;
 
-    self->nn_param.lstmunit_activation.recurrent_activation = VSI_NN_LSTMUNIT_ACT_SIGMOID;
+    self->nn_param.lstmunit_activation.recurrent_activation = VSI_NN_ACT_SIGMOID;
 
     return status;
 } /* op_init() */

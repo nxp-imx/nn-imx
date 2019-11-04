@@ -49,8 +49,9 @@ static void _reshape_tensor
         attr.size[1] = 1;
         attr.size[2] = input->attr.size[1];
         attr.dim_num = 3;
-        *output = vxReshapeTensor( input->t, (int32_t *)attr.size, attr.dim_num );
     }
+
+    *output = vxReshapeTensor( input->t, (int32_t *)attr.size, attr.dim_num );
 }
 
 static vsi_status op_compute

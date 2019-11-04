@@ -98,10 +98,19 @@ static vsi_nn_internal_node_t* vsi_nn_create_internal_node
     {
         if(n)
         {
-            vsi_nn_OpDeinit(n->op, n );
+            vsi_nn_ReleaseNode(&n);
+            n = NULL;
         }
-        if(inputs) free(inputs);
-        if(outputs) free(outputs);
+        if(inputs)
+        {
+            free(inputs);
+            inputs = NULL;
+        }
+        if(outputs)
+        {
+            free(outputs);
+            outputs = NULL;
+        }
         vsi_nn_release_internal_node( &node );
         return NULL;
     }
@@ -439,9 +448,11 @@ vsi_nn_internal_tensor_t* vsi_nn_create_zero_bias_tensor
     vsi_nn_tensor_attr_t* weight_attr
     )
 {
-    vsi_nn_tensor_attr_t attr = { 0 };
+    vsi_nn_tensor_attr_t attr;
     float scale = 1.0f;
     int8_t fl = 0;
+
+    memset(&attr, 0x0, sizeof(vsi_nn_tensor_attr_t));
 
     /* create zero bias for NN/TP */
     attr.size[0] = weight_attr->size[1];
@@ -499,4 +510,29 @@ vsi_nn_internal_tensor_t* vsi_nn_create_zero_bias_tensor
     }
 
     return vsi_nn_new_internal_tensor(node, &attr, 0.0f);
+}
+
+void vsi_nn_internal_node_init_attr
+    (
+    vsi_nn_tensor_attr_t* attr,
+    const vsi_nn_dtype_t* dtype,
+    vsi_bool use_virtual_tensor
+    )
+{
+    memset(attr, 0x00, sizeof(vsi_nn_tensor_attr_t));
+
+    //memset(attr->size, 0, VSI_NN_MAX_DIM_NUM * sizeof(uint32_t));
+    attr->dim_num = VSI_NN_DIM_AUTO;
+    attr->vtl = use_virtual_tensor;
+    attr->is_const = FALSE;
+
+    if( dtype->qnt_type == VSI_NN_QNT_TYPE_NONE )
+    {
+        attr->dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
+        attr->dtype.vx_type = VSI_NN_TYPE_FLOAT16;
+    }
+    else
+    {
+        memcpy(&attr->dtype, dtype, sizeof(vsi_nn_dtype_t));
+    }
 }

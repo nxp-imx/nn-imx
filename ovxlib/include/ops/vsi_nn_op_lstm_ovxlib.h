@@ -85,11 +85,11 @@ typedef struct _vsi_nn_lstm_ovxlib_param
 
     float cell_clip;
     float proj_clip;
-    vsi_nn_lstmunit_activation_e activation;
+    vsi_nn_activation_e activation;
     float forget_bias;
     vsi_bool time_major;
     vsi_nn_dtype_t internal_dtype[LSTMUNIT_QUANTIZE_PARAM_COUNT];
-    vsi_nn_lstmunit_activation_e recurrent_activation;
+    vsi_nn_activation_e recurrent_activation;
     vsi_bool return_sequences;
     uint32_t weights; /* compatible with LSTM, NOT used */
 } vsi_nn_lstm_ovxlib_param;

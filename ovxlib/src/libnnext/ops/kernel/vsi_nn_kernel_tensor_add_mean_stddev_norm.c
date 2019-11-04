@@ -198,22 +198,21 @@ static vsi_status VX_CALLBACK vxTensor_add_mean_stddev_normKernel
         uint8_t *output = NULL;
 
         uint32_t input_size[DIM_SIZE] = {0}, output_size[DIM_SIZE] = {0};
-        uint32_t input_stride_size[4]  = {0};
-        uint32_t output_stride_size[4] = {0};
-
-        vx_tensor_addressing input_user_addr = NULL;
-        vx_tensor_addressing input_user_addr1 = NULL;
-        vx_tensor_addressing output_user_addr = NULL;
+        vsi_nn_tensor_attr_t in_attr, in_attr1, out_attr;
 
         vsi_nn_type_e inputFormat = VSI_NN_TYPE_FLOAT16, outputFormat = VSI_NN_TYPE_FLOAT16;
         uint32_t input_dims = 0, output_dims = 0;
-        uint32_t i;
-        int32_t in_zp, in_zp1, out_zp;
-        float in_scale, in_scale1, out_scale;
-        int8_t in_fixpoint = 0, in_fixpoint1, out_fixpoint = 0;
+
+        int32_t in_zp = 0, in_zp1 = 0, out_zp = 0;
+        float in_scale = 1, in_scale1 = 1, out_scale = 1;
+        int8_t in_fixpoint = 0, in_fixpoint1 = 0, out_fixpoint = 0;
         // scalar
         vx_scalar scalar[1] = { NULL };
         float eps = .0f;
+
+        memset(&in_attr, 0x0, sizeof(vsi_nn_tensor_attr_t));
+        memset(&in_attr1, 0x0, sizeof(vsi_nn_tensor_attr_t));
+        memset(&out_attr, 0x0, sizeof(vsi_nn_tensor_attr_t));
 
         imgObj[0] = (vx_tensor)paramObj[0];
         imgObj[1] = (vx_tensor)paramObj[1];
@@ -264,25 +263,6 @@ static vsi_status VX_CALLBACK vxTensor_add_mean_stddev_normKernel
         input_size[2] = (input_dims <= 2)?1:input_size[2];
         input_size[3] = (input_dims <= 3)?1:input_size[3];
 
-        input_stride_size[0]  = vsi_nn_GetTypeBytes(inputFormat);
-        output_stride_size[0] = vsi_nn_GetTypeBytes(outputFormat);
-        for (i=1; i< input_dims; i++)
-        {
-            input_stride_size[i]  = input_stride_size[i-1] * input_size[i-1];
-            output_stride_size[i] = output_stride_size[i-1] * output_size[i-1];
-        }
-
-        if(inputFormat == VSI_NN_TYPE_FLOAT16 || inputFormat == VSI_NN_TYPE_INT16)
-        {
-            input  = (uint8_t*)malloc(input_size[0]*input_size[1]*input_size[2]*sizeof(int16_t));
-            input1  = (uint8_t*)malloc(input_size[0]*input_size[1]*input_size[2]*sizeof(int16_t));
-        }
-        else if(inputFormat == VSI_NN_TYPE_UINT8)
-        {
-            input  = (uint8_t*)malloc(input_size[0]*input_size[1]*input_size[2]*sizeof(uint8_t));
-            input1  = (uint8_t*)malloc(input_size[0]*input_size[1]*input_size[2]*sizeof(uint8_t));
-        }
-
         if(outputFormat == VSI_NN_TYPE_FLOAT16)
         {
             output = (uint8_t*)malloc(output_size[0]*output_size[1]*output_size[2]*sizeof(int16_t));
@@ -292,11 +272,16 @@ static vsi_status VX_CALLBACK vxTensor_add_mean_stddev_normKernel
             output = (uint8_t*)malloc(output_size[0]*output_size[1]*output_size[2]*sizeof(uint8_t));
         }
 
-        input_user_addr = vxCreateTensorAddressing(context, input_size, input_stride_size, input_dims);
-        vxCopyTensorPatch(imgObj[0], NULL, input_user_addr, input, VX_READ_ONLY, 0);
-
-        input_user_addr1 = vxCreateTensorAddressing(context, input_size, input_stride_size, input_dims);
-        vxCopyTensorPatch(imgObj[1], NULL, input_user_addr1, input1, VX_READ_ONLY, 0);
+        status = vsi_nn_vxGetTensorAttr(imgObj[0], &in_attr);
+        status |= vsi_nn_vxGetTensorAttr(imgObj[1], &in_attr1);
+        status |= vsi_nn_vxGetTensorAttr(imgObj[2], &out_attr);
+        if (status != VX_SUCCESS)
+        {
+            VSILOGE("vsi_nn_vxGetTensorAttr failure! at line %d\n", __LINE__);
+            goto OnError;
+        }
+        input = vsi_nn_vxCopyTensorToData(context, imgObj[0], &in_attr);
+        input1 = vsi_nn_vxCopyTensorToData(context, imgObj[1], &in_attr1);
 
         // scalar
         status = vxCopyScalar(scalar[0], &eps, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
@@ -326,17 +311,17 @@ static vsi_status VX_CALLBACK vxTensor_add_mean_stddev_normKernel
         }
 
         //output tensor
-        output_user_addr = vxCreateTensorAddressing(context, output_size,
-            output_stride_size, output_dims);
-        vxCopyTensorPatch(imgObj[2], NULL, output_user_addr, output, VX_WRITE_ONLY, 0);
+        status = vsi_nn_vxCopyDataToTensor(context, imgObj[2], &out_attr, output);
+        if (status != VX_SUCCESS)
+        {
+            VSILOGE("vsi_nn_vxCopyDataToTensor failure! at line %d\n", __LINE__);
+            goto OnError;
+        }
 
 OnError:
         if(input) free(input);
         if(input1) free(input1);
         if(output) free(output);
-        if(input_user_addr) vxReleaseTensorAddressing(&input_user_addr);
-        if(input_user_addr1) vxReleaseTensorAddressing(&input_user_addr1);
-        if(output_user_addr) vxReleaseTensorAddressing(&output_user_addr);
     }
 
     return status;

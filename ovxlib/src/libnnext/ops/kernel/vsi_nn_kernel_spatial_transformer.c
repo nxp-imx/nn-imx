@@ -162,7 +162,7 @@ static vsi_status VX_CALLBACK vxSpatial_transformerKernel
     vx_tensor output_t = NULL;
     vx_context context = NULL;
     vx_tensor_addressing in_addr = NULL, out_addr = NULL, thre_data_addr = NULL, thre_proto_addr = NULL;
-    vsi_nn_tensor_attr_t in_attr,out_attr, thre_data_attr,thre_proto_attr;
+    vsi_nn_tensor_attr_t in_attr, out_attr, thre_data_attr, thre_proto_attr;
     uint32_t in_stride[6] = {0}, out_stride[6] = {0}, thre_data_stride[6] = {0}, thre_proto_stride[6] = {0};
     vsi_status status = VX_SUCCESS;
 
@@ -178,6 +178,10 @@ static vsi_status VX_CALLBACK vxSpatial_transformerKernel
     float *f32_out_grid = NULL;
     float tmp = 0;
 
+    memset(&in_attr, 0x0, sizeof(vsi_nn_tensor_attr_t));
+    memset(&out_attr, 0x0, sizeof(vsi_nn_tensor_attr_t));
+    memset(&thre_data_attr, 0x0, sizeof(vsi_nn_tensor_attr_t));
+    memset(&thre_proto_attr, 0x0, sizeof(vsi_nn_tensor_attr_t));
     //VX_TYPE_FLOAT16 *in_buffer = NULL, *out_buffer = NULL;
 
     /* TODO: Add CPU kernel implement */
@@ -293,7 +297,13 @@ static vsi_status VX_CALLBACK vxSpatial_transformerKernel
 
     for(i=0; i<size; i++)
         vsi_nn_Float32ToDtype(f32_out_buffer[i], (uint8_t*)&out_buffer[out_stride[0] * i], &out_attr.dtype);
-    status = vxCopyTensorPatch(output_t,NULL,out_addr,out_buffer,VX_WRITE_ONLY,0);
+    status = vsi_nn_vxCopyDataToTensor(context, output_t, &out_attr, out_buffer);
+    if (status != VX_SUCCESS)
+    {
+        VSILOGE("vsi_nn_vxCopyDataToTensor failure! at line %d\n", __LINE__);
+        goto OnError;
+    }
+
 OnError:
     if(out_addr)
     {

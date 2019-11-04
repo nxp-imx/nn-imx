@@ -99,7 +99,13 @@ __kernel void vxLSTMUnit_SP_U8to##out_type_name##_F32##act_name( \
     VXC_WriteImage(output, coord_in.zy, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \
 }
 LSTMUNIT_SP_U8_FP32(F16, , half4, vxc_half4,  vxc_short4, sigmoid)
+LSTMUNIT_SP_U8_FP32(I8,  , int4,  vxc_char4,  vxc_char4,  sigmoid)
+LSTMUNIT_SP_U8_FP32(U8, , int4, vxc_uchar4,  vxc_uchar4, sigmoid)
+LSTMUNIT_SP_U8_FP32(I16, , int4,  vxc_short4, vxc_short4, sigmoid)
 LSTMUNIT_SP_U8_FP32(F16, _HARD, half4, vxc_half4,  vxc_short4, hard_sigmoid)
+LSTMUNIT_SP_U8_FP32(I8,  _HARD, int4,  vxc_char4,  vxc_char4,  hard_sigmoid)
+LSTMUNIT_SP_U8_FP32(U8,  _HARD, int4,  vxc_uchar4, vxc_uchar4, hard_sigmoid)
+LSTMUNIT_SP_U8_FP32(I16, _HARD, int4,  vxc_short4, vxc_short4, hard_sigmoid)
 
 #define LSTMUNIT_SP_U8_FP16(out_type_name, act_name, convert_type, dst_type, copy_type, act_func) \
 __kernel void vxLSTMUnit_SP_U8to##out_type_name##_F16##act_name( \
@@ -173,4 +179,10 @@ __kernel void vxLSTMUnit_SP_U8to##out_type_name##_F16##act_name( \
     VXC_WriteImage(output, coord_in.zy, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \
 }
 LSTMUNIT_SP_U8_FP16(F16, , half4, vxc_half4,  vxc_short4, sigmoid)
+LSTMUNIT_SP_U8_FP16(I8,  , int4,  vxc_char4,  vxc_char4,  sigmoid)
+LSTMUNIT_SP_U8_FP16(U8, , int4, vxc_uchar4,  vxc_uchar4, sigmoid)
+LSTMUNIT_SP_U8_FP16(I16, , int4,  vxc_short4, vxc_short4, sigmoid)
 LSTMUNIT_SP_U8_FP16(F16, _HARD, half4, vxc_half4,  vxc_short4, hard_sigmoid)
+LSTMUNIT_SP_U8_FP16(I8,  _HARD, int4,  vxc_char4,  vxc_char4,  hard_sigmoid)
+LSTMUNIT_SP_U8_FP16(U8,  _HARD, int4,  vxc_uchar4, vxc_uchar4, hard_sigmoid)
+LSTMUNIT_SP_U8_FP16(I16, _HARD, int4,  vxc_short4, vxc_short4, hard_sigmoid)

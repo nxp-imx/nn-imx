@@ -172,6 +172,11 @@ static _node_template s_template[] =
     /* RELU_KERAS */            NULL,
     /* GRU_OVXLIB */            NULL,
     /* GRUCELL_OVXLIB */        NULL,
+    /* UNIDIRECTIONAL_SEQUENCE_RNN */ NULL,
+    /* QUANTIZED_16BIT_LSTM */  NULL,
+    /* BIDIRECTIONAL_SEQUENCE_RNN */ NULL,
+    /* BIDIRECTIONAL_SEQUENCE_LSTM */ NULL,
+    /* RNNCELL_OVXLIB */        NULL,
 };
 _compiler_assert( _cnt_of_array(s_template) == VSI_NN_OP_NUM, vsi_nn_node_attr_template_c );
 

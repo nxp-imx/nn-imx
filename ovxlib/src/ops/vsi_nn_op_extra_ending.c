@@ -189,9 +189,10 @@ static vsi_status op_compute
     )
 {
     vsi_status status;
-    vsi_nn_kernel_info_t kernel_info = {0};
+    vsi_nn_kernel_info_t kernel_info;
     vsi_nn_tensor_t* tmpRealInput = NULL;
 
+    memset(&kernel_info, 0x0, sizeof(vsi_nn_kernel_info_t));
     status = VSI_FAILURE;
     kernel_info.type = vsi_nn_GetVXKernelTypeForShader();
     kernel_info.kernel = vx_kernel_EXTRA_ENDING_list;
@@ -235,7 +236,8 @@ static vsi_status op_compute
     }
     if( NULL == self->n )
     {
-        return VSI_FAILURE;
+        status = VSI_FAILURE;
+        goto final;
     }
 
     if(kernel_info.type == VX_KERNEL_TYPE_VX)
@@ -247,8 +249,8 @@ static vsi_status op_compute
         status = cpu_op_compute(self, inputs, outputs, tmpRealInput);
     }
 
+final:
     if(tmpRealInput) vsi_nn_ReleaseTensor(&tmpRealInput);
-
     return status;
 } /* op_compute() */
 

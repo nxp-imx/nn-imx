@@ -95,7 +95,7 @@ vsi_status VX_CALLBACK vxLogSoftmaxKernel
     vsi_nn_tensor_attr_t attr[TENSOR_NUM];
     vx_tensor_addressing user_addr[TENSOR_NUM]  = {NULL};
     vx_uint8    *buffer_ptr[TENSOR_NUM]            = {NULL};
-    vx_tensor   tensor[TENSOR_NUM];
+    vx_tensor   tensor[TENSOR_NUM] = {NULL};
     uint32_t    stride_size[TENSOR_NUM][VSI_NN_MAX_DIM_NUM];
     vx_context   context                        = vxGetContext((vx_reference)node);
     vx_uint32  size[4];
@@ -147,7 +147,8 @@ vsi_status VX_CALLBACK vxLogSoftmaxKernel
             break;
         default:
         VSILOGE("Input tensor error dimension[%u]\n", dims);
-        return VX_ERROR_INVALID_DIMENSION;
+        status = VX_ERROR_INVALID_DIMENSION;
+        goto final;
     }
 
     for (outer = 0; outer < outerSize; ++outer) {
@@ -187,19 +188,12 @@ vsi_status VX_CALLBACK vxLogSoftmaxKernel
     {
         if (buffer_ptr[i])
         {
-            status = vxCopyTensorPatch(
-                tensor[i],
-                NULL,
-                user_addr[i],
-                buffer_ptr[i],
-                VX_WRITE_ONLY,
-                0
-                );
+            status = vsi_nn_copy_tensor_patch(tensor[i], &attr[i], buffer_ptr[i], VX_WRITE_ONLY);
         }
 
         if (user_addr[i]) vxReleaseTensorAddressing(&(user_addr[i]));
     }
-
+final:
     for( i = 0; i < TENSOR_NUM; i ++ )
     {
         if (buffer_ptr[i]) free(buffer_ptr[i]);

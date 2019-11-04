@@ -313,12 +313,13 @@ static vsi_status op_compute
     )
 {
     vsi_status status;
-    vsi_nn_kernel_info_t kernel_info = {0};
+    vsi_nn_kernel_info_t kernel_info;
     vx_array arrayCdf = NULL;
     vsi_nn_tensor_t* random_keys = NULL;
     uint32_t input_size[4] = {0};
     vsi_nn_type_e inputDataFormat     = inputs[0]->attr.dtype.vx_type;
 
+    memset(&kernel_info, 0x0, sizeof(vsi_nn_kernel_info_t));
     status = VSI_FAILURE;
     kernel_info.type = vsi_nn_GetVXKernelTypeForShader();;
     kernel_info.kernel = vx_kernel_RANDOM_MULTINOMIAL_list;
@@ -342,7 +343,7 @@ static vsi_status op_compute
 
         status = vxQueryTensor(inputs[0]->t, VX_TENSOR_DIMS, input_size, sizeof(input_size));
         if(status != VSI_SUCCESS)
-            return status;
+            goto final;
 
         class_size = input_size[0];
         if(inputDataFormat == VSI_NN_TYPE_FLOAT32)
@@ -355,36 +356,38 @@ static vsi_status op_compute
         {
             status = vx_op_gen_keys_pre_compute(self, inputs, &random_keys, &kernel_info);
             if(status != VSI_SUCCESS)
-                return status;
+                goto final;
 
             self->n = vsi_nn_RegisterClientKernelAndNewNode(
                 self->graph, &kernel_info);
             //if (kernel_info.resource_name) free(kernel_info.resource_name);
             if( NULL == self->n )
             {
-                return VSI_FAILURE;
+                status = VSI_FAILURE;
+                goto final;
             }
             status |= vx_op_gen_keys_compute(self, inputs, &random_keys);
             if(status != VSI_SUCCESS)
-                return status;
+                goto final;
         }
 
         // calculate cdf
         {
             status = vx_op_cdf_pre_compute(self, inputs, outputs, &kernel_info);
             if(status != VSI_SUCCESS)
-                return status;
+                goto final;
 
             self->n = vsi_nn_RegisterClientKernelAndNewNode(
                 self->graph, &kernel_info);
             //if (kernel_info.resource_name) free(kernel_info.resource_name);
             if( NULL == self->n )
             {
-                return VSI_FAILURE;
+                status = VSI_FAILURE;
+                goto final;
             }
             status |= vx_op_calculate_cdf_compute(self, inputs, &arrayCdf);
             if(status != VSI_SUCCESS)
-                return status;
+                goto final;
         }
 
         // random multinomial
@@ -396,14 +399,13 @@ static vsi_status op_compute
             if (kernel_info.resource_name) free(kernel_info.resource_name);
             if( NULL == self->n )
             {
-                return VSI_FAILURE;
+                status = VSI_FAILURE;
+                goto final;
             }
             status |= vx_op_compute(self, &random_keys, outputs, &arrayCdf, class_size, class_max_stride);
             if(status != VSI_SUCCESS)
-                return status;
+                goto final;
         }
-
-        return status;
     }
     else /*kernel_info.type = VX_KERNEL_TYPE_CPU;*/
     {
@@ -419,13 +421,26 @@ static vsi_status op_compute
         }
         if( NULL == self->n )
         {
-            return VSI_FAILURE;
+            status = VSI_FAILURE;
+            goto final;
         }
 
         status = cpu_op_compute(self, inputs, outputs);
 
-        return status;
+        goto final;
     }
+final:
+   if(random_keys)
+   {
+    vsi_nn_ReleaseTensor(&random_keys);
+    random_keys = NULL;
+   }
+   if(kernel_info.resource_name)
+   {
+       free(kernel_info.resource_name);
+   }
+   return status;
+
 } /* op_compute() */
 
 static vsi_bool op_check

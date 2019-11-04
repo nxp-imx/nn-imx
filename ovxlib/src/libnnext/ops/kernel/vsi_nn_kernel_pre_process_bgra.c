@@ -47,90 +47,6 @@
 
 #define DESCALE(x) (((x) + (1<<19)) >> 20)
 
-static vx_uint32 vxcGetTypeSize_bgra(vx_enum format)
-{
-    switch(format)
-    {
-    case VX_TYPE_INT8:
-    case VX_TYPE_UINT8:
-        return 1;
-    case VX_TYPE_INT16:
-    case VX_TYPE_UINT16:
-        return 2;
-    case VX_TYPE_INT32:
-    case VX_TYPE_UINT32:
-        return 4;
-    case VX_TYPE_INT64:
-    case VX_TYPE_UINT64:
-        return 8;
-    case VX_TYPE_FLOAT32:
-        return 4;
-    case VX_TYPE_FLOAT64:
-        return 8;
-    case VX_TYPE_ENUM:
-        return 4;
-    case VX_TYPE_FLOAT16:
-        return 2;
-    }
-
-    return 4;
-}
-
-vx_status tensorRead_bgra(vx_context context, vx_tensor ts, void *buf)
-{
-    vx_uint32  ts_size[4];
-    vx_uint32 input_stride_size[4];
-    vx_uint32 output_num,num_of_dim;
-    vx_tensor_addressing input_user_addr = NULL;
-    vx_status status = VX_FAILURE;
-    vx_uint32 i = 0;
-    void *dataBuf = (vx_uint16 *)buf;
-    vx_uint32 dataFormat;
-
-    status = vxQueryTensor(ts, VX_TENSOR_NUM_OF_DIMS, &num_of_dim, sizeof(num_of_dim));
-    status |= vxQueryTensor(ts, VX_TENSOR_DIMS, ts_size, sizeof(ts_size));
-    status |= vxQueryTensor(ts, VX_TENSOR_DATA_TYPE, &dataFormat, sizeof(dataFormat));
-
-    input_stride_size[0] = vxcGetTypeSize_bgra(dataFormat);
-    output_num = ts_size[0];
-    for (i=1; i< num_of_dim; i++)
-    {
-        input_stride_size[i] = input_stride_size[i - 1] * ts_size[i - 1];
-        output_num *= ts_size[i];
-    }
-
-    if(dataBuf == NULL)
-    {
-        printf("TensorRead fail! input empty \n");
-        return VX_FAILURE;
-    }
-
-    input_user_addr = vxCreateTensorAddressing(
-        context,
-        ts_size,
-        input_stride_size,
-        num_of_dim
-        );
-    status = vxCopyTensorPatch(
-        ts,
-        NULL,
-        input_user_addr,
-        dataBuf,
-        VX_READ_ONLY,
-        0
-        );
-    vxReleaseTensorAddressing(&input_user_addr);
-    if(status < 0)
-    {
-        free(dataBuf);
-        dataBuf = NULL;
-        printf("TensorRead fail! status = %d\n",status);
-        return status;
-    }
-
-    return VX_SUCCESS;
-}
-
 static vsi_status VX_CALLBACK vxPre_process_bgraKernel
     (
     vx_node node,
@@ -149,25 +65,28 @@ static vsi_status VX_CALLBACK vxPre_process_bgraKernel
     vx_tensor output[TENSOR_NUM_OUTPUT] = {0};
     uint8_t *u8_in_buffer[TENSOR_NUM_INPUT] = {0};
     uint8_t *u8_out_buffer[TENSOR_NUM_OUTPUT] = {0};
-    vsi_nn_tensor_attr_t in_attr[TENSOR_NUM_INPUT] = {0};
-    vsi_nn_tensor_attr_t out_attr[TENSOR_NUM_OUTPUT] = {0};
-    uint32_t in_elements[TENSOR_NUM_INPUT] = {0};
+    vsi_nn_tensor_attr_t in_attr[TENSOR_NUM_INPUT];
+    vsi_nn_tensor_attr_t out_attr[TENSOR_NUM_OUTPUT];
     uint32_t out_elements[TENSOR_NUM_OUTPUT]= {0};
     vx_uint32  dst_size[4]   = {0, 0, 0, 0};
     vx_uint32  src_size[4]   = {0, 0, 0, 0};
     vx_float32 outputScale      = 1.0;
     vx_int32   output_ZP        = 0;
-    vx_tensor_addressing output_user_addr = NULL;
-    uint32_t output_stride_size[4] = {0};
-    int32_t output_dims = 0;
-    vsi_nn_type_e outputFormat;
+    vsi_nn_type_e outputFormat = VSI_NN_TYPE_FLOAT16;
 
-    int32_t xRatio, yRatio, xOffset, yOffset;
-    float rMean, gMean, bMean, var;
-    int32_t order, trans;
+    int32_t xRatio = 0, yRatio = 0, xOffset = 0, yOffset = 0;
+    float rMean = 0, gMean = 0, bMean = 0, var = 0;
+    int32_t order = 0, trans = 0;
 
-    int32_t i;
-
+    int32_t i = 0;
+    for(i = 0; i < TENSOR_NUM_INPUT; i++)
+    {
+        memset(&in_attr[i], 0x0, sizeof(vsi_nn_tensor_attr_t));
+    }
+    for(i = 0; i < TENSOR_NUM_OUTPUT; i++)
+    {
+        memset(&out_attr[i], 0x0, sizeof(vsi_nn_tensor_attr_t));
+    }
     /* prepare data */
     context = vxGetContext((vx_reference)node);
 
@@ -176,9 +95,7 @@ static vsi_status VX_CALLBACK vxPre_process_bgraKernel
         input[i] = (vx_tensor)paramObj[i];
         status = vsi_nn_vxGetTensorAttr(input[i], &in_attr[i]);
         TEST_CHECK_STATUS(status, final);
-        in_elements[i] = vsi_nn_vxGetTensorElementNum(&in_attr[i]);
-        u8_in_buffer[i] = (uint8_t *)malloc(in_elements[i] * sizeof(uint8_t));
-        status = tensorRead_bgra(context, input[i], u8_in_buffer[i]);
+        u8_in_buffer[i] = vsi_nn_vxCopyTensorToData(context, input[i], &in_attr[i]);
         TEST_CHECK_STATUS(status, final);
         if(i == 0)
             status |= vxQueryTensor(input[i], VX_TENSOR_DIMS, src_size, sizeof(src_size));
@@ -192,16 +109,10 @@ static vsi_status VX_CALLBACK vxPre_process_bgraKernel
         u8_out_buffer[i]= (uint8_t *)malloc(out_elements[i] * sizeof(uint8_t));
         memset(u8_out_buffer[i], 0, out_elements[i] * sizeof(uint8_t));
 
-        status |= vxQueryTensor(output[i], VX_TENSOR_NUMBER_OF_DIMS, &output_dims, sizeof(output_dims));
         status |= vxQueryTensor(output[i], VX_TENSOR_DIMS, dst_size, sizeof(dst_size));
         status |= vxQueryTensor(output[i], VX_TENSOR_SCALE, &outputScale, sizeof(outputScale));
         status |= vxQueryTensor(output[i], VX_TENSOR_ZERO_POINT, &output_ZP, sizeof(output_ZP));
         status |= vxQueryTensor(output[i], VX_TENSOR_DATA_TYPE, &outputFormat, sizeof(outputFormat));
-    }
-    output_stride_size[0] = vsi_nn_GetTypeBytes(outputFormat);
-    for (i=1; i< output_dims; i++)
-    {
-        output_stride_size[i] = output_stride_size[i-1] * dst_size[i-1];
     }
     status |= vxCopyScalar((vx_scalar)paramObj[TENSOR_NUM], &(xRatio),
         VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
@@ -230,7 +141,7 @@ static vsi_status VX_CALLBACK vxPre_process_bgraKernel
         vx_uint8 rline1[2], rline2[2];
         vx_uint8 gline1[2], gline2[2];
         vx_uint8 bline1[2], bline2[2];
-        vx_int32 dx, dy, dz;
+        vx_int32 dx = 0, dy = 0, dz = 0;
         vx_int32 src_width = src_size[0];
         vx_int32 src_height = src_size[1];
         vx_int32 dst_width = dst_size[0];
@@ -470,11 +381,11 @@ static vsi_status VX_CALLBACK vxPre_process_bgraKernel
                             R = rSrc[source_index ];
 
                             final = (B - bMean) * var;
-                            dst[dstB_idx] = vsi_nn_Fp32ToAffine(final, outputScale, output_ZP, VSI_NN_TYPE_UINT8);
+                            dst[dstB_idx] = vsi_nn_Fp32ToAffine(final, outputScale, output_ZP, outputFormat);
                             final = (G - gMean) * var;
-                            dst[dstG_idx] = vsi_nn_Fp32ToAffine(final, outputScale, output_ZP, VSI_NN_TYPE_UINT8);
+                            dst[dstG_idx] = vsi_nn_Fp32ToAffine(final, outputScale, output_ZP, outputFormat);
                             final = (R - rMean) * var;
-                            dst[dstR_idx] = vsi_nn_Fp32ToAffine(final, outputScale, output_ZP, VSI_NN_TYPE_UINT8);
+                            dst[dstR_idx] = vsi_nn_Fp32ToAffine(final, outputScale, output_ZP, outputFormat);
                         }
                     }
                 }
@@ -483,9 +394,8 @@ static vsi_status VX_CALLBACK vxPre_process_bgraKernel
     }
 
     /* save data */
-    output_user_addr = vxCreateTensorAddressing(context, dst_size,
-        output_stride_size, output_dims);
-    vxCopyTensorPatch(output[0], NULL, output_user_addr, u8_out_buffer[0], VX_WRITE_ONLY, 0);
+    status = vsi_nn_vxCopyDataToTensor(context, output[0], &out_attr[0], u8_out_buffer[0]);
+    TEST_CHECK_STATUS(status, final);
 
 final:
     for (i = 0; i < TENSOR_NUM_INPUT; i++)
@@ -496,7 +406,6 @@ final:
     {
         if (u8_out_buffer[i]) free(u8_out_buffer[i]);
     }
-    if(output_user_addr) vxReleaseTensorAddressing(&output_user_addr);
     return status;
 } /* _VX_KERNEL_FUNC_KERNEL() */
 

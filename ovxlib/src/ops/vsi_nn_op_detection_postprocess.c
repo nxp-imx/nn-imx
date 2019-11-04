@@ -36,9 +36,9 @@
 #include "vsi_nn_tensor_util.h"
 #include "client/vsi_nn_vxkernel.h"
 
-#define _ARG_NUM            (1)
-#define _INPUT_NUM          (1)
-#define _OUTPUT_NUM         (1)
+#define _ARG_NUM            (11)
+#define _INPUT_NUM          (3)
+#define _OUTPUT_NUM         (4)
 #define _IO_NUM             (_INPUT_NUM + _OUTPUT_NUM)
 #define _PARAM_NUM          (_ARG_NUM + _IO_NUM)
 
@@ -93,7 +93,17 @@ static vsi_status _create_params
             goto set_param_error; \
             } \
         } while(0)
-    _SET_PARAM( 0, VX_TYPE_INT32, type );
+    _SET_PARAM( 0, VX_TYPE_FLOAT32, dy );
+    _SET_PARAM( 1, VX_TYPE_FLOAT32, dx );
+    _SET_PARAM( 2, VX_TYPE_FLOAT32, dh );
+    _SET_PARAM( 3, VX_TYPE_FLOAT32, dw );
+    _SET_PARAM( 4, VX_TYPE_INT32, nms_type );
+    _SET_PARAM( 5, VX_TYPE_INT32, max_num_detections );
+    _SET_PARAM( 6, VX_TYPE_INT32, maximum_class_per_detection );
+    _SET_PARAM( 7, VX_TYPE_INT32, maximum_detection_per_class );
+    _SET_PARAM( 8, VX_TYPE_FLOAT32, score_threshold );
+    _SET_PARAM( 9, VX_TYPE_FLOAT32, iou_threshold );
+    _SET_PARAM( 10, VX_TYPE_INT32, is_bg_in_label );
     #undef _SET_PARAM
 set_param_error:
 
@@ -195,9 +205,10 @@ static vsi_status op_compute
     )
 {
     vsi_status status;
-    vsi_nn_kernel_info_t kernel_info = {0};
+    vsi_nn_kernel_info_t kernel_info;
     char *path = NULL;
 
+    memset(&kernel_info, 0x0, sizeof(vsi_nn_kernel_info_t));
     status = VSI_FAILURE;
     kernel_info.type = VX_KERNEL_TYPE_CPU;
     kernel_info.kernel = vx_kernel_DETECTION_POSTPROCESS_list;
@@ -254,7 +265,27 @@ static vsi_bool op_setup
     vsi_nn_tensor_t ** outputs
     )
 {
-    /* TODO: Add code to comput outputs' shape. */
+    if( VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num )
+    {
+        vsi_nn_detection_postprocess_param * p;
+        p = &(self->nn_param.detection_postprocess);
+
+        outputs[0]->attr.dim_num = 2;
+        outputs[0]->attr.size[0] = p->max_num_detections;
+        outputs[0]->attr.size[1] = inputs[0]->attr.size[2];
+
+        outputs[1]->attr.dim_num = 3;
+        outputs[1]->attr.size[0] = 4;
+        outputs[1]->attr.size[1] = p->max_num_detections;
+        outputs[1]->attr.size[2] = inputs[0]->attr.size[2];
+
+        outputs[2]->attr.dim_num = 2;
+        outputs[2]->attr.size[0] = p->max_num_detections;
+        outputs[2]->attr.size[1] = inputs[0]->attr.size[2];
+
+        outputs[3]->attr.dim_num = 1;
+        outputs[3]->attr.size[0] = inputs[0]->attr.size[2];
+    }
     return TRUE;
 } /* op_setup() */
 

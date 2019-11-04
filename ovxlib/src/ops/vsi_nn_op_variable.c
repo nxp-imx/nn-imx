@@ -23,6 +23,8 @@
 *
 *****************************************************************************/
 #include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "vsi_nn_types.h"
 #include "vsi_nn_platform.h"
@@ -32,6 +34,7 @@
 #include "vsi_nn_ops.h"
 #include "vsi_nn_tensor.h"
 #include "vsi_nn_tensor_util.h"
+#include "vsi_nn_log.h"
 #include "utils/vsi_nn_util.h"
 
 static vsi_status op_compute
@@ -41,10 +44,21 @@ static vsi_status op_compute
     vsi_nn_tensor_t ** outputs
     )
 {
-    // TODO: Here must use tensor copy, and it
-    // has memory leaky issue, need to remvoe this layer.
-    self->n = vxTensorCopyNode(self->graph->g,
-        inputs[0]->t, outputs[0]->t );
+    /*
+        Need copy input data to output if don't reshape input to output
+    */
+    if(inputs[0]->t != NULL && outputs[0]->t != NULL &&
+        self->nn_param.variable.local->initialized == FALSE)
+    {
+        self->n = vxTensorCopyNode(self->graph->g,
+            inputs[0]->t, outputs[0]->t);
+        if(NULL == self->n)
+        {
+            VSILOGE( "Create vxTensorCopyNode fail." );
+            return VSI_FAILURE;
+        }
+        VSILOGD("Create a copy node for variable");
+    }
     return VSI_SUCCESS;
 } /* op_compute() */
 
@@ -55,27 +69,64 @@ static vsi_bool op_check
     vsi_nn_tensor_t ** outputs
     )
 {
-    //TODO: Check tensor shapes.
     return TRUE;
 } /* op_check() */
 
-static vsi_bool op_setup
+static vsi_status op_optimize
     (
     vsi_nn_node_t * self,
     vsi_nn_tensor_t ** inputs,
-    vsi_nn_tensor_t ** outputs
+    vsi_nn_tensor_t ** outputs,
+    vsi_nn_opt_direction_e direction
     )
 {
-    if( VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num )
+    vsi_nn_variable_lcl_data *local = NULL;
+    if( direction == VSI_NN_OPTIMIZE_BACKWARD )
     {
-        outputs[0]->attr.dim_num = inputs[0]->attr.dim_num;
-        outputs[0]->attr.size[0] = inputs[0]->attr.size[0];
-        outputs[0]->attr.size[1] = inputs[0]->attr.size[1];
-        outputs[0]->attr.size[2] = inputs[0]->attr.size[2];
-        outputs[0]->attr.size[3] = inputs[0]->attr.size[3];
+        return VSI_SUCCESS;
     }
-    return TRUE;
-} /* op_setup() */
+    local = (vsi_nn_variable_lcl_data *)malloc(sizeof(vsi_nn_variable_lcl_data));
+    if( NULL == local )
+    {
+        VSILOGE("malloc memory fail");
+        return VSI_FAILURE;
+    }
+    memset(local, 0, sizeof(vsi_nn_variable_lcl_data));
+    if( NULL != inputs[0]->t && NULL == outputs[0]->t )
+    {
+        VSILOGD("Optimize %s, uid %u", vsi_nn_OpGetName(self->op), self->uid);
+        outputs[0]->t = vxReshapeTensor(inputs[0]->t, (int32_t *)outputs[0]->attr.size, outputs[0]->attr.dim_num);
+        if( NULL == outputs[0]->t )
+        {
+            VSILOGE("Call vxReshapeTensor fail");
+            free(local);
+            local = NULL;
+            return VSI_FAILURE;
+        }
+        local->initialized = TRUE;
+    }
+    else
+    {
+        local->initialized = FALSE;
+    }
+    self->nn_param.variable.local = local;
+    return VSI_SUCCESS;
+} /* op_optimize() */
+
+static vsi_status op_deinit
+    (
+    vsi_nn_node_t * self
+    )
+{
+    vsi_nn_variable_lcl_data *local = self->nn_param.variable.local;
+    if(local)
+    {
+        free(local);
+        local = NULL;
+    }
+    vsi_nn_op_common_deinit(self);
+    return VSI_SUCCESS;
+} /* op_deinit() */
 
 #ifdef __cplusplus
 extern "C" {
@@ -86,10 +137,10 @@ DEF_OP_REG
     /* op_name    */ VARIABLE,
     /* init       */ NULL,
     /* compute    */ op_compute,
-    /* deinit     */ vsi_nn_op_common_deinit,
+    /* deinit     */ op_deinit,
     /* check      */ op_check,
-    /* setup      */ op_setup,
-    /* optimize   */ NULL,
+    /* setup      */ vsi_nn_op_common_setup,
+    /* optimize   */ op_optimize,
     /* input_num  */ 1,
     /* output_num */ 1
     );

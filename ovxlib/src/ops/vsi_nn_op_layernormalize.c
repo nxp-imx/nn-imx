@@ -288,6 +288,7 @@ static vsi_status vx_op_compute
     vx_bool rsFlg = vx_false_e;
     int32_t in_zp;
     vsi_nn_type_e inputDataFormat = inputs[0]->attr.dtype.vx_type;
+    vsi_nn_tensor_attr_t attr;
 
     args = &params[_IO_NUM];
 
@@ -302,7 +303,9 @@ static vsi_status vx_op_compute
     check_tensor_shape(self, inputs[1], params, 1, rsFlg);
     check_tensor_shape(self, inputs[2], params, 2, rsFlg);
     check_tensor_shape(self, outputs[0], params, 3, rsFlg);
-    status = vxQueryTensor(inputs[0]->t, VX_TENSOR_ZERO_POINT, &in_zp, sizeof(in_zp));
+    memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
+    status  = vsi_nn_vxGetTensorAttr(inputs[0]->t,  &attr);
+    in_zp = attr.dtype.zero_point;
     /* Init parameters. */
     _create_params( self, args, _ARG_NUM );
 
@@ -341,8 +344,9 @@ static vsi_status op_compute
     )
 {
     vsi_status status;
-    vsi_nn_kernel_info_t kernel_info = {0};
+    vsi_nn_kernel_info_t kernel_info;
 
+    memset(&kernel_info, 0x0, sizeof(vsi_nn_kernel_info_t));
     status = VSI_FAILURE;
     kernel_info.resource_num = 1;
     kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));

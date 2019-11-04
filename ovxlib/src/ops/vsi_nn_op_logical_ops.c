@@ -328,10 +328,11 @@ static vsi_status op_compute
     )
 {
     vsi_status status = VSI_FAILURE;
-    vsi_nn_kernel_info_t kernel_info = {0};
+    vsi_nn_kernel_info_t kernel_info;
     char *path = NULL;
     uint32_t op = self->nn_param.logical_ops.op;
 
+    memset(&kernel_info, 0x0, sizeof(vsi_nn_kernel_info_t));
     kernel_info.type = VX_KERNEL_TYPE_VX;
     kernel_info.kernel = vx_kernel_LOGICAL_OPS_list;
     kernel_info.resource_num = 1;

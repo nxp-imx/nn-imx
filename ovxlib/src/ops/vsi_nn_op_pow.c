@@ -46,6 +46,97 @@
 
 extern vx_kernel_description_t * vx_kernel_POW_list[];
 
+#define VSI_NN_GEN_POW_KEY(_input0_type, _input1_type, _output_type) \
+    ((_input0_type << 24) | (_input1_type << 16) | (_output_type << 8))
+
+#define VSI_NN_GEN_POW_STRUCT_ITEMS(_input0_type, _input1_type, _output_type) \
+    VSI_NN_GEN_POW_KEY(_input0_type, _input1_type, _output_type), \
+    VSI_NN_POW_SH_KERNEL_IDX(_input0_type, _input1_type, _output_type)
+
+static struct {
+        uint32_t key;
+        uint32_t kernel_index;
+        char *resource_name;
+    } pow_map[] =
+    {
+        {VSI_NN_GEN_POW_STRUCT_ITEMS(F16, F16, F16)  "vsi_nn_kernel_pow"},
+        {VSI_NN_GEN_POW_STRUCT_ITEMS(I16, I16, I16)  "vsi_nn_kernel_pow"},
+        {VSI_NN_GEN_POW_STRUCT_ITEMS(I8,  I8,  I8)  "vsi_nn_kernel_pow"},
+        {VSI_NN_GEN_POW_STRUCT_ITEMS(U8,  U8,  U8)  "vsi_nn_kernel_pow"},
+        {VSI_NN_GEN_POW_STRUCT_ITEMS(U8,  F16, F16)  "vsi_nn_kernel_pow"},
+        {VSI_NN_GEN_POW_STRUCT_ITEMS(I8,  F16, F16)  "vsi_nn_kernel_pow_i8_i16"},
+        {VSI_NN_GEN_POW_STRUCT_ITEMS(I16, F16, F16)  "vsi_nn_kernel_pow_i8_i16"},
+        {VSI_NN_GEN_POW_STRUCT_ITEMS(F16, U8,  F16)  "vsi_nn_kernel_pow_i8_i16"},
+    };
+
+static vsi_nn_shader_kernel_type_e get_pow_intra_type(vsi_nn_type_e type)
+{
+    switch (type)
+    {
+    case VSI_NN_TYPE_INT8:
+        return I8;
+    case VSI_NN_TYPE_INT16:
+        return I16;
+    case VSI_NN_TYPE_INT32:
+        return I32;
+    case VSI_NN_TYPE_INT64:
+        return I64;
+    case VSI_NN_TYPE_UINT8:
+        return U8;
+    case VSI_NN_TYPE_UINT16:
+        return U16;
+    case VSI_NN_TYPE_UINT32:
+        return U32;
+    case VSI_NN_TYPE_FLOAT16:
+        return F16;
+    case VSI_NN_TYPE_FLOAT32:
+        return F32;
+    default:
+        VSILOGE("error data type %d", type);
+        break;
+    }
+
+    return I8;
+}
+
+static void _get_pow_hashtable_idx
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs
+    )
+{
+    vsi_nn_type_e input0Format = inputs[0]->attr.dtype.vx_type;
+    vsi_nn_type_e input1Format = inputs[1]->attr.dtype.vx_type;
+    vsi_nn_type_e outputFormat  = outputs[0]->attr.dtype.vx_type;
+    vsi_nn_shader_kernel_type_e _input0_type;
+    vsi_nn_shader_kernel_type_e _input1_type;
+    vsi_nn_shader_kernel_type_e _output_type;
+    uint32_t key;
+    uint32_t i = 0;
+
+    vsi_nn_pow_param * p = &(self->nn_param.pow);
+
+    _input0_type = get_pow_intra_type(input0Format);
+    _input1_type = get_pow_intra_type(input1Format);
+    _output_type = get_pow_intra_type(outputFormat);
+
+    key = VSI_NN_GEN_POW_KEY(_input0_type, _input1_type, _output_type);
+
+    for (i = 0; i < sizeof(pow_map) / sizeof(pow_map[0]); i++)
+    {
+        if (key == pow_map[i].key)
+        {
+            p->local.hash_idx = i;
+            p->local.execute_on_sw = FALSE;
+            return;
+        }
+    }
+
+    p->local.execute_on_sw = TRUE;
+    VSILOGE("Shader unsupport data format! execute on the SW [pow]\n");
+}
+
 static void check_tensor_shape
     (
     vsi_nn_node_t * self,
@@ -140,48 +231,12 @@ static vsi_status vx_op_pre_compute
     vsi_nn_kernel_info_t * kernel_info
     )
 {
-    vsi_nn_type_e inputDataFormat     = inputs[0]->attr.dtype.vx_type;
-    vsi_nn_type_e inputDataFormat1    = inputs[1]->attr.dtype.vx_type;
-    vsi_nn_type_e outputDataFormat    = outputs[0]->attr.dtype.vx_type;
+    vsi_nn_pow_param * p = &(self->nn_param.pow);
 
-    if(inputDataFormat == VSI_NN_TYPE_FLOAT16 && outputDataFormat == VSI_NN_TYPE_FLOAT16)
-    {
-        kernel_info->kernel_index = 1;
-    }
-    else if(inputDataFormat == VSI_NN_TYPE_INT16 && outputDataFormat == VSI_NN_TYPE_INT16)
-    {
-        kernel_info->kernel_index = 2;
-    }
-    else if ((inputDataFormat == VSI_NN_TYPE_INT8 && outputDataFormat == VSI_NN_TYPE_INT8))
-    {
-        kernel_info->kernel_index = 3;
-    }
-    else if(inputDataFormat == VSI_NN_TYPE_UINT8 && outputDataFormat == VSI_NN_TYPE_UINT8)
-    {
-        kernel_info->kernel_index = 4;
-    }
-    else if(inputDataFormat == VSI_NN_TYPE_UINT8 && outputDataFormat == VSI_NN_TYPE_FLOAT16
-        && inputDataFormat1 == VSI_NN_TYPE_FLOAT16)
-    {
-        kernel_info->kernel_index = 5;
-    }
-    else if(inputDataFormat == VSI_NN_TYPE_INT8 && outputDataFormat == VSI_NN_TYPE_FLOAT16
-        && inputDataFormat1 == VSI_NN_TYPE_FLOAT16)
-    {
-        kernel_info->resource_name[0] = "vsi_nn_kernel_pow_i8_i16";
-        kernel_info->kernel_index = 6;
-    }
-    else if(inputDataFormat == VSI_NN_TYPE_INT16 && outputDataFormat == VSI_NN_TYPE_FLOAT16
-        && inputDataFormat1 == VSI_NN_TYPE_FLOAT16)
-    {
-        kernel_info->resource_name[0] = "vsi_nn_kernel_pow_i8_i16";
-        kernel_info->kernel_index = 7;
-    }
-    else
-    {
-        VSILOGE("Not support input or output data format!(POW) at [%s : %d]\n", __FILE__, __LINE__);
-        return VSI_FAILURE;
-    }
+    kernel_info->kernel_index = pow_map[p->local.hash_idx].kernel_index;
+    kernel_info->resource_num = 1;
+    kernel_info->resource_name[0] = pow_map[p->local.hash_idx].resource_name;
+
     return VSI_SUCCESS;
 }
 
@@ -225,14 +280,31 @@ static vsi_status op_compute
     )
 {
     vsi_status status = VSI_SUCCESS;
-    vsi_nn_kernel_info_t kernel_info = {0};
-    vsi_nn_type_e srcFormat    = inputs[0]->attr.dtype.vx_type;
-    vsi_nn_type_e srcFormat1   = inputs[1]->attr.dtype.vx_type;
-    vsi_nn_type_e dstFormat    = outputs[0]->attr.dtype.vx_type;
+    vsi_nn_kernel_info_t kernel_info;
+    vsi_nn_pow_param* p = &(self->nn_param.pow);
 
-    if ((srcFormat == dstFormat && srcFormat != VSI_NN_TYPE_FLOAT32)
-        || ((srcFormat == VSI_NN_TYPE_UINT8 || srcFormat == VSI_NN_TYPE_INT8 || srcFormat == VSI_NN_TYPE_INT16)
-            && dstFormat == VSI_NN_TYPE_FLOAT16 && srcFormat1 == VSI_NN_TYPE_FLOAT16))
+    memset(&kernel_info, 0x0, sizeof(vsi_nn_kernel_info_t));
+    _get_pow_hashtable_idx(self, inputs, outputs);
+    if (p->local.execute_on_sw)
+    {
+        kernel_info.resource_num = 1;
+        kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));
+        kernel_info.resource_name[0] = "vsi_nn_kernel_pow";
+        kernel_info.type = VX_KERNEL_TYPE_CPU;
+        kernel_info.kernel = vx_kernel_POW_list;
+        kernel_info.init_index = 0;
+
+        self->n = vsi_nn_RegisterClientKernelAndNewNode(
+            self->graph, &kernel_info);
+        if (kernel_info.resource_name) free(kernel_info.resource_name);
+        if( NULL == self->n )
+        {
+            return VSI_FAILURE;
+        }
+
+        status = cpu_op_compute(self, inputs, outputs);
+    }
+    else
     {
         kernel_info.resource_num = 1;
         kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));
@@ -254,26 +326,7 @@ static vsi_status op_compute
             return VSI_FAILURE;
         }
 
-        status |= vx_op_compute(self, inputs, outputs);
-    }
-    else
-    {
-        kernel_info.resource_num = 1;
-        kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));
-        kernel_info.resource_name[0] = "vsi_nn_kernel_pow";
-        kernel_info.type = VX_KERNEL_TYPE_CPU;
-        kernel_info.kernel = vx_kernel_POW_list;
-        kernel_info.init_index = 0;
-
-        self->n = vsi_nn_RegisterClientKernelAndNewNode(
-            self->graph, &kernel_info);
-        if (kernel_info.resource_name) free(kernel_info.resource_name);
-        if( NULL == self->n )
-        {
-            return VSI_FAILURE;
-        }
-
-        status = cpu_op_compute(self, inputs, outputs);
+        status = vx_op_compute(self, inputs, outputs);
     }
 
     return status;

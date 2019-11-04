@@ -31,6 +31,7 @@
 
 #include "vsi_nn_prv.h"
 #include "vsi_nn_log.h"
+#include "vsi_nn_test.h"
 #include "vsi_nn_tensor_util.h"
 #include "utils/vsi_nn_util.h"
 #include "utils/vsi_nn_dtype_util.h"
@@ -85,8 +86,11 @@ static vsi_status VX_CALLBACK vxScaleKernel
         vx_tensor_addressing scale_user_addr = NULL;
         vx_tensor_addressing bias_user_addr = NULL;
         vx_tensor_addressing output_user_addr = NULL;
+        vsi_nn_tensor_attr_t out_attr;
 
         status = VX_SUCCESS;
+
+        memset(&out_attr, 0x0, sizeof(vsi_nn_tensor_attr_t));
 
         input_tensor = (vx_tensor)paramObj[0];
         scale_tensor = (vx_tensor)paramObj[1];
@@ -100,6 +104,7 @@ static vsi_status VX_CALLBACK vxScaleKernel
         {
             VSILOGE("vxGetContext failure!\n");
             status = VX_FAILURE;
+            goto OnError;
         }
 
         input_buffer = vsi_nn_ConvertRawTensorToData(context, input_tensor,
@@ -109,6 +114,7 @@ static vsi_status VX_CALLBACK vxScaleKernel
         {
             VSILOGE("vsi_nn_ConvertRawTensorToData failure!\n");
             status = VX_ERROR_NO_MEMORY;
+            goto OnError;
         }
 
         scale_buffer = vsi_nn_ConvertRawTensorToData(context, scale_tensor,
@@ -118,6 +124,7 @@ static vsi_status VX_CALLBACK vxScaleKernel
         {
             VSILOGE("vsi_nn_ConvertRawTensorToData failure!\n");
             status = VX_ERROR_NO_MEMORY;
+            goto OnError;
         }
 
         bias_buffer = vsi_nn_ConvertRawTensorToData(context, bias_tensor,
@@ -127,6 +134,7 @@ static vsi_status VX_CALLBACK vxScaleKernel
         {
             VSILOGE("vsi_nn_ConvertRawTensorToData failure!\n");
             status = VX_ERROR_NO_MEMORY;
+            goto OnError;
         }
 
         output_buffer = vsi_nn_ConvertRawTensorToData(context, output_tensor,
@@ -136,17 +144,27 @@ static vsi_status VX_CALLBACK vxScaleKernel
         {
             VSILOGE("vsi_nn_ConvertRawTensorToData failure!\n");
             status = VX_ERROR_NO_MEMORY;
+            goto OnError;
+        }
+
+        status |= vsi_nn_vxGetTensorAttr(output_tensor, &out_attr);
+        if (status != VX_SUCCESS)
+        {
+            VSILOGE("vsi_nn_vxGetTensorAttr failure! at line %d\n", __LINE__);
+            goto OnError;
         }
 
         status = vxCopyScalar(axis_scalar, &axis, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
         if( VX_SUCCESS != status)
         {
             VSILOGE("vxCopyScalar axis failure! status:%d\n", status);
+            goto OnError;
         }
         status = vxCopyScalar(has_bias_scalar, &has_bias, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
         if( VX_SUCCESS != status )
         {
             VSILOGE("vxCopyScalar axis failure! has_bias:%f\n", has_bias);
+            goto OnError;
         }
 
         if( input_dims != output_dims )
@@ -154,12 +172,14 @@ static vsi_status VX_CALLBACK vxScaleKernel
             VSILOGE("Invalid parameters, input_dims output_dims mismatch %d:%d\n",
                 input_dims, output_dims);
             status = VX_ERROR_INVALID_PARAMETERS;
+            goto OnError;
         }
         if( input_size[0] != scale_size[0] || input_size[0] != bias_size[0] )
         {
             VSILOGE("Invalid parameters, input size mismatch %d:%d:%d\n",
                 input_size[0], scale_size[0], bias_size[0]);
             status = VX_ERROR_INVALID_PARAMETERS;
+            goto OnError;
         }
         {
             uint32_t i = 0;
@@ -199,8 +219,9 @@ static vsi_status VX_CALLBACK vxScaleKernel
             }
 #endif
         }
-        status = vxCopyTensorPatch( output_tensor, NULL, output_user_addr, output_buffer, VX_WRITE_ONLY, 0 );
-
+        status = vsi_nn_vxCopyDataToTensor(context, output_tensor, &out_attr, output_buffer);
+        TEST_CHECK_STATUS(status, OnError);
+OnError:
         if( NULL != input_buffer )
         {
             free( input_buffer );

@@ -174,21 +174,22 @@ static vsi_status vx_op_pre_compute
     )
 {
     vsi_nn_type_e inputDataFormat     = inputs[1]->attr.dtype.vx_type;
-    vsi_nn_type_e outputDataFormat    = outputs[0]->attr.dtype.vx_type;
+    vsi_nn_type_e inputDataFormat1    = inputs[2]->attr.dtype.vx_type;
 
-    if(inputDataFormat == VSI_NN_TYPE_INT8 && outputDataFormat == VSI_NN_TYPE_INT8)
-    {
-        kernel_info->kernel_index = 1;
-    }
-    else if((inputDataFormat == VSI_NN_TYPE_INT16 && outputDataFormat == VSI_NN_TYPE_INT16)
-            || (inputDataFormat == VSI_NN_TYPE_FLOAT16 && outputDataFormat == VSI_NN_TYPE_FLOAT16))
+    if(inputDataFormat == VSI_NN_TYPE_INT8 && inputDataFormat1 == VSI_NN_TYPE_INT8)
     {
         kernel_info->kernel_index = 2;
     }
-    else if(inputDataFormat == VSI_NN_TYPE_UINT8 && outputDataFormat == VSI_NN_TYPE_UINT8)
+    else if((inputDataFormat == VSI_NN_TYPE_INT16 && inputDataFormat1 == VSI_NN_TYPE_INT16)
+        || (inputDataFormat == VSI_NN_TYPE_FLOAT16 && inputDataFormat1 == VSI_NN_TYPE_FLOAT16))
     {
         kernel_info->kernel_index = 3;
-    }else
+    }
+    else if(inputDataFormat == VSI_NN_TYPE_UINT8 && inputDataFormat1 == VSI_NN_TYPE_UINT8)
+    {
+        kernel_info->kernel_index = 1;
+    }
+    else
     {
         VSILOGE("Not support input or output data format!(select) at [%s : %d]\n", __FILE__, __LINE__);
         return VSI_FAILURE;
@@ -241,19 +242,22 @@ static vsi_status op_compute
     )
 {
     vsi_status status = VSI_FAILURE;
-    vsi_nn_kernel_info_t kernel_info = {0};
-    char *path = NULL;
+    vsi_nn_kernel_info_t kernel_info;
     vsi_nn_type_e inputDataFormat     = inputs[1]->attr.dtype.vx_type;
     vsi_nn_type_e outputDataFormat    = outputs[0]->attr.dtype.vx_type;
 
+    memset(&kernel_info, 0x0, sizeof(vsi_nn_kernel_info_t));
     kernel_info.type = VX_KERNEL_TYPE_VX;
     kernel_info.kernel = vx_kernel_SELECT_list;
     kernel_info.resource_num = 1;
     kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));
     kernel_info.resource_name[0] = "vsi_nn_kernel_select";
-    path = getenv("USER_VX_SOURCE_PATH");
-    if(path)
-        vsi_nn_VxResourceSetPath(path);
+
+    if(inputs[0]->attr.dtype.vx_type != VSI_NN_TYPE_BOOL8)
+    {
+        VSILOGE("Data format is not VSI_NN_TYPE_BOOL8!(select) at [%s : %d]\n", __FILE__, __LINE__);
+        goto OnError;
+    }
 
     if( (inputDataFormat == outputDataFormat)
         && (inputDataFormat == VSI_NN_TYPE_INT8
@@ -274,17 +278,26 @@ static vsi_status op_compute
 
     self->n = vsi_nn_RegisterClientKernelAndNewNode(
             self->graph, &kernel_info);
-    if (kernel_info.resource_name)
-    {
-        free(kernel_info.resource_name);
-    }
     if( NULL == self->n )
     {
-        return VSI_FAILURE;
+        VSILOGE("vsi_nn_RegisterClientKernelAndNewNode failed!(select) at [%s : %d]\n", __FILE__, __LINE__);
+        goto OnError;
     }
+
     if (NULL != op_compute_list[kernel_info.init_index])
     {
         status = op_compute_list[kernel_info.init_index](self, inputs, outputs);
+        if(status != VSI_SUCCESS)
+        {
+            VSILOGE("op_compute_list failed!(select) at [%s : %d]\n", __FILE__, __LINE__);
+            goto OnError;
+        }
+    }
+
+OnError:
+    if (kernel_info.resource_name)
+    {
+        free(kernel_info.resource_name);
     }
     return status;
 } /* op_compute() */

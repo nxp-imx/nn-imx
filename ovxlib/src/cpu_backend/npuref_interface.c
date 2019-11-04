@@ -26,9 +26,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-#if !defined(_WIN32)
-#include <dlfcn.h>
-#endif
 #include "vsi_nn_prv.h"
 #include "vsi_nn_test.h"
 #include "vsi_nn_log.h"
@@ -36,6 +33,7 @@
 #include "vsi_nn_tensor_util.h"
 #include "utils/vsi_nn_util.h"
 #include "utils/vsi_nn_dtype_util.h"
+#include "utils/vsi_nn_dlfcn.h"
 
 typedef struct {
     vsi_bool exists;
@@ -73,13 +71,8 @@ static void* _load_function( void* handle, const char* name, vsi_bool optional )
     {
         return NULL;
     }
-#if defined(_WIN32)
-    fn = vsi_nn_dlsym_win32( handle, name );
-    dl_error = vsi_nn_dlerror_win32();
-#else
-    fn = dlsym( handle, name );
-    dl_error = dlerror();
-#endif
+    fn = vsi_nn_dlsym( handle, name );
+    dl_error = vsi_nn_dlerror();
     if( NULL == fn && !optional )
     {
         VSILOGW("Load symbol %s fail, reason: \"%s\"", name, dl_error);
@@ -94,14 +87,14 @@ static npuref_impl_t* npuref_load()
 {
     static npuref_impl_t npuref;
     void* libnpuref = NULL;
-    char * dl_error;
+    char* dl_error;
 #if defined(_WIN32)
-    libnpuref = vsi_nn_dlopen_win32("libnpureference.dll", RTLD_LAZY | RTLD_LOCAL);
-    dl_error = vsi_nn_dlerror_win32();
+    const char* libname = "libnpureference.dll";
 #else
-    libnpuref = dlopen("libnpureference.so", RTLD_LAZY | RTLD_LOCAL);
-    dl_error = dlerror();
+    const char* libname = "libnpureference.so";
 #endif
+    libnpuref = vsi_nn_dlopen(libname, RTLD_LAZY | RTLD_LOCAL);
+    dl_error = vsi_nn_dlerror();
     if (NULL == libnpuref)
     {
         VSILOGD("Skip npuref lib, reason: \"%s\"", dl_error);

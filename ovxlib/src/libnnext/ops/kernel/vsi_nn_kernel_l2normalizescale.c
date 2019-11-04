@@ -51,9 +51,7 @@ vsi_status VX_CALLBACK vxL2NormalizeScaleValidator
     vsi_status status = VX_SUCCESS;
     vx_parameter param = NULL;
     uint32_t index = 0;
-#ifndef UINT16_MAX
-#define UINT16_MAX ((unsigned short)0xffff)
-#endif
+
     for(index = 0; index < num; index++)
     {
         // Validator
@@ -63,40 +61,21 @@ vsi_status VX_CALLBACK vxL2NormalizeScaleValidator
             param = vxGetParameterByIndex(node, index);
             if(param != NULL)
             {
-                uint32_t     num_of_dim;
-                uint32_t     input_size[6];
-                vsi_enum       data_format;
+                vsi_nn_tensor_attr_t attr;
 
                 status |= vxQueryParameter(param, VX_PARAMETER_REF, &input_tensor,
                     sizeof(input_tensor));
                 if (status != VX_SUCCESS)
                 {
-                    VSILOGE("vxQueryTensor failure! at line %d\n", __LINE__);
+                    VSILOGE("vxQueryParameter failure! at line %d\n", __LINE__);
                 }
-                // num_of_dim
-                status |= vxQueryTensor(input_tensor, VX_TENSOR_NUM_OF_DIMS, &num_of_dim,
-                    sizeof(num_of_dim));
-                if (status != VX_SUCCESS)
-                {
-                    VSILOGE("vxQueryTensor num_of_dim failure! at line %d\n", __LINE__);
-                }
-                // input_size
-                status |= vxQueryTensor(input_tensor, VX_TENSOR_DIMS, input_size,
-                    sizeof(input_size));
-                if (status != VX_SUCCESS)
-                {
-                    VSILOGE("vxQueryTensor input_size failure! at line %d\n", __LINE__);
-                }
-                // data_format
-                status |= vxQueryTensor(input_tensor, VX_TENSOR_DATA_TYPE, &data_format,
-                    sizeof(data_format));
-                if (status != VX_SUCCESS)
-                {
-                    VSILOGE("vxQueryTensor data_format failure! at line %d\n", __LINE__);
-                }
-                if (data_format != VX_TYPE_FLOAT16)
-                    status |= VX_ERROR_INVALID_TYPE;
 
+                memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
+                status  = vsi_nn_vxGetTensorAttr(input_tensor, &attr);
+                if (status != VX_SUCCESS)
+                {
+                    VSILOGE("vsi_nn_vxGetTensorAttr  failure! at line %d\n", __LINE__);
+                }
                 status |= vxReleaseTensor(&input_tensor);
 
                 status |= vxReleaseParameter(&param);
@@ -113,37 +92,22 @@ vsi_status VX_CALLBACK vxL2NormalizeScaleValidator
             param = vxGetParameterByIndex(node, index);
             if(param != NULL)
             {
-                uint32_t     num_of_dim;
-                uint32_t     input_size[6];
-                vsi_enum       data_format;
+                vsi_enum     data_format;
+                vsi_nn_tensor_attr_t attr;
 
                 status |= vxQueryParameter(param, VX_PARAMETER_REF, &input_tensor,
                     sizeof(input_tensor));
                 if (status != VX_SUCCESS)
                 {
-                    VSILOGE("vxQueryTensor failure! at line %d\n", __LINE__);
+                    VSILOGE("vxQueryParameter failure! at line %d\n", __LINE__);
                 }
-                // num_of_dim
-                status |= vxQueryTensor(input_tensor, VX_TENSOR_NUM_OF_DIMS,
-                    &num_of_dim, sizeof(num_of_dim));
+                memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
+                status  = vsi_nn_vxGetTensorAttr(input_tensor, &attr);
                 if (status != VX_SUCCESS)
                 {
-                    VSILOGE("vxQueryTensor num_of_dim failure! at line %d\n", __LINE__);
+                    VSILOGE("vsi_nn_vxGetTensorAttr  failure! at line %d\n", __LINE__);
                 }
-                // input_size
-                status |= vxQueryTensor(input_tensor, VX_TENSOR_DIMS,
-                    input_size, sizeof(input_size));
-                if (status != VX_SUCCESS)
-                {
-                    VSILOGE("vxQueryTensor input_size failure! at line %d\n", __LINE__);
-                }
-                // data_format
-                status |= vxQueryTensor(input_tensor, VX_TENSOR_DATA_TYPE,
-                    &data_format, sizeof(data_format));
-                if (status != VX_SUCCESS)
-                {
-                    VSILOGE("vxQueryTensor data_format failure! at line %d\n", __LINE__);
-                }
+                data_format = attr.dtype.vx_type;
                 if (data_format != VX_TYPE_FLOAT16)
                     status |= VX_ERROR_INVALID_TYPE;
 
@@ -201,233 +165,167 @@ vsi_status VX_CALLBACK vxL2NormalizeScaleValidator
     }
     return status;
 }
-void myL2NormalizeScaleFunc
+
+#define TENSOR_NUM_INPUT  (L2NORMSACLE_INPUTS_COUNT)
+#define TENSOR_NUM_OUTPUT (L2NORMSACLE_OUTPUTS_COUNT)
+#define TENSOR_NUM (TENSOR_NUM_INPUT+TENSOR_NUM_OUTPUT)
+
+static float vsi_nn_DtypeToFloat32_Ex
     (
-    int16_t* imgIn,
-    int16_t* scale,
-    int16_t* imgOut,
-    uint32_t dim,
-    uint32_t width,
-    uint32_t height,
-    uint32_t depth
+    uint8_t   * src,
+    uint32_t    index,
+    const vsi_nn_dtype_t * src_dtype
     )
 {
-    uint32_t  w, h, c, n;
-    float scale_val = 0.0f;
-    float sum = 0.0f;
-    float epsilon = (float)10e-12;
-    float rsqrt = 0.0f;
-    int32_t   inputStridec = width * height;
-    VSILOGE("Hello myL2NormalizeScaleFunc!\n");
-    if (dim == 3)
-    {
-        for (c = 0; c < depth; c++)
-        {
-            scale_val = vsi_nn_Fp16toFp32(scale[c]);
+    float value = 0.0f;
+    vsi_status status;
 
-            for (h = 0; h < height; h++)
-            {
-                for (w = 0; w < width; w++)
-                {
-                    float data = 0.0f;
-                    uint32_t index = 0;
-                    sum = 0.0f;
-                    for (n = 0; n < depth; n++)
-                    {
-                        index = n * inputStridec + width * h + w;
-                        data = vsi_nn_Fp16toFp32(imgIn[index]);
-                        sum += data * data;
-                    }
-                    rsqrt = 1.0f / sqrtf(gcoMATH_MAX(sum, epsilon));
-                    index = c * inputStridec + width * h + w;
-                    data = vsi_nn_Fp16toFp32(imgIn[index]);
-                    data = data * rsqrt * scale_val;
-                    imgOut[index] = vsi_nn_Fp32ToFp16(data);
-                }
-            }
-        }
-    }
-    else if (dim == 0)
-    {
-        for (c = 0; c < depth; c++)
-        {
-            for (h = 0; h < height; h++)
-            {
-                for (w = 0; w < width; w++)
-                {
-                    uint32_t index = w + width * (h + c * height);
-                    float data = 0.0f;
+    src = src + index * vsi_nn_TypeGetBytes(src_dtype->vx_type);
 
-                    data = vsi_nn_Fp16toFp32(imgIn[index]);
-                    sum += data * data;
-                }
-            }
-        }
-        rsqrt = 1.0f / sqrtf(gcoMATH_MAX(sum, epsilon));
-        scale_val = vsi_nn_Fp16toFp32(scale[0]);
-        for (c = 0; c < depth; c++)
-        {
-            for (h = 0; h < height; h++)
-            {
-                for (w = 0; w < width; w++)
-                {
-                    uint32_t index = w + width * (h + c * height);
-                    float data = 0.0f;
-
-                    data = vsi_nn_Fp16toFp32(imgIn[index]);
-                    data = data * rsqrt * scale_val;
-                    imgOut[index] = vsi_nn_Fp32ToFp16(data);
-                }
-            }
-        }
-    }
-    else
+    status = vsi_nn_DtypeToFloat32(src, &value, src_dtype);
+    if(VSI_SUCCESS != status)
     {
-        VSILOGE("Not support the dim number dim = %d, at line %d\n", dim, __LINE__);
+        VSILOGE("Convert data to float32 fail!");
+        value = 0.0f;
     }
+
+    return value;
 }
-vsi_status VX_CALLBACK vxL2NormalizeScaleKernel
+
+static vsi_status vsi_nn_Float32ToDtype_Ext
+    (
+    float   src,
+    uint8_t   * dst,
+    uint32_t    index,
+    const vsi_nn_dtype_t * dst_dtype
+    )
+{
+    vsi_nn_dtype_t src_dtype;
+
+    dst = dst + index * vsi_nn_TypeGetBytes(dst_dtype->vx_type);
+
+    memset( &src_dtype, 0, sizeof( vsi_nn_dtype_t ) );
+    src_dtype.vx_type = VSI_NN_TYPE_FLOAT32;
+
+    return vsi_nn_DtypeConvert( (uint8_t *)&src, &src_dtype, dst, dst_dtype );
+} /* vsi_nn_Float32ToDtype_Ext */
+
+static vsi_status VX_CALLBACK vxL2NormalizeScaleKernel
     (
     vx_node node,
     const vx_reference* paramObj,
     uint32_t paramNum
     )
 {
-    vsi_status status = VX_ERROR_INVALID_PARAMETERS;
+    vsi_status status = VX_SUCCESS;
+    vsi_nn_tensor_attr_t attr[TENSOR_NUM];
+    vx_tensor_addressing user_addr[TENSOR_NUM]  = {NULL};
+    vx_uint8    *buffer_ptr[TENSOR_NUM]            = {NULL};
+    vx_tensor   tensor[TENSOR_NUM] = {NULL};
+    uint32_t    stride_size[TENSOR_NUM][VSI_NN_MAX_DIM_NUM];
+    vx_context   context                        = vxGetContext((vx_reference)node);
+    vx_uint32  size[4];
+    vx_uint32  dims, innerSize, outerSize, axisSize;
+    vx_uint32  outer, inner, i, index;
+    vx_float32 l2Value, tmpValue;
+    int32_t axis;
+    vx_float32 rsqrt = 0.0f, scaleValue = 0.0f;
+    vx_float32 epsilon = (float)10e-12;
 
-    if(paramNum == 4)
+    for( i = 0; i < TENSOR_NUM_INPUT; i ++ )
     {
-        vx_scalar scalar[1] = { NULL };
-        vx_context context = NULL;
-        uint32_t dim = 0;
-        vx_tensor imgObj[3] = { NULL };
-        int16_t *input, *scale, *output;
-        uint32_t input_size[DIM_SIZE], scale_size[DIM_SIZE], output_size[DIM_SIZE];
-        uint32_t input_stride_size[4];
-        uint32_t scale_stride_size[4];
-        uint32_t output_stride_size[4];
-        vx_tensor_addressing input_user_addr = NULL;
-        vx_tensor_addressing scale_user_addr = NULL;
-        vx_tensor_addressing output_user_addr = NULL;
-        vsi_enum inputFormat = VX_TYPE_FLOAT16, scaleFormat = VX_TYPE_FLOAT16;
-        vsi_enum outputFormat = VX_TYPE_FLOAT16;
-        uint32_t input_dims = 0, scale_dims = 0;
-        uint32_t i;
-
-        status = VX_SUCCESS;
-
-        // tensor
-        imgObj[0] = (vx_tensor)paramObj[0];
-        imgObj[1] = (vx_tensor)paramObj[1];
-        imgObj[2] = (vx_tensor)paramObj[2];
-
-        // scalar
-        scalar[0] = (vx_scalar)paramObj[3];
-        status = vxCopyScalar(scalar[0], &dim, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
-        if (status != VX_SUCCESS)
-        {
-            VSILOGE("vxQueryTensor output_size failure! at line %d\n", __LINE__);
-            return status;
-        }
-
-        context = vxGetContext((vx_reference)node);
-        if (context == NULL)
-        {
-            VSILOGE("vxGetContext failure! at line %d\n", __LINE__);
-            return status;
-        }
-        status = vxQueryTensor(imgObj[0], VX_TENSOR_NUM_OF_DIMS, &input_dims, sizeof(input_dims));
-        if (status != VX_SUCCESS)
-        {
-            VSILOGE("vxQueryTensor output_size failure! at line %d\n", __LINE__);
-            return status;
-        }
-        status = vxQueryTensor(imgObj[0], VX_TENSOR_DATA_TYPE, &inputFormat, sizeof(inputFormat));
-        if (status != VX_SUCCESS)
-        {
-            VSILOGE("vxQueryTensor output_size failure! at line %d\n", __LINE__);
-            return status;
-        }
-        status = vxQueryTensor(imgObj[0], VX_TENSOR_DIMS, input_size, sizeof(input_size));
-        if (status != VX_SUCCESS)
-        {
-            VSILOGE("vxQueryTensor output_size failure! at line %d\n", __LINE__);
-            return status;
-        }
-        status = vxQueryTensor(imgObj[1], VX_TENSOR_NUM_OF_DIMS, &scale_dims, sizeof(scale_dims));
-        if (status != VX_SUCCESS)
-        {
-            VSILOGE("vxQueryTensor output_size failure! at line %d\n", __LINE__);
-            return status;
-        }
-        status = vxQueryTensor(imgObj[1], VX_TENSOR_DATA_TYPE, &scaleFormat, sizeof(scaleFormat));
-        if (status != VX_SUCCESS)
-        {
-            VSILOGE("vxQueryTensor output_size failure! at line %d\n", __LINE__);
-            return status;
-        }
-        status = vxQueryTensor(imgObj[1], VX_TENSOR_DIMS, scale_size, sizeof(scale_size));
-        if (status != VX_SUCCESS)
-        {
-            VSILOGE("vxQueryTensor output_size failure! at line %d\n", __LINE__);
-            return status;
-        }
-        status = vxQueryTensor(imgObj[2], VX_TENSOR_DATA_TYPE,
-            &outputFormat, sizeof(outputFormat));
-        if (status != VX_SUCCESS)
-        {
-            VSILOGE("vxQueryTensor output_size failure! at line %d\n", __LINE__);
-            return status;
-        }
-        status = vxQueryTensor(imgObj[2], VX_TENSOR_DIMS, output_size, sizeof(output_size));
-        if (status != VX_SUCCESS)
-        {
-            VSILOGE("vxQueryTensor output_size failure! at line %d\n", __LINE__);
-            return status;
-        }
-
-        input_stride_size[0] = vsi_nn_GetTypeBytes(inputFormat);
-        scale_stride_size[0] = vsi_nn_GetTypeBytes(scaleFormat);
-        output_stride_size[0] = vsi_nn_GetTypeBytes(outputFormat);
-        for (i=1; i<4; i++)
-        {
-            input_stride_size[i] = input_stride_size[i-1] * input_size[i-1];
-            scale_stride_size[i] = scale_stride_size[i-1] * scale_size[i-1];
-            output_stride_size[i] = output_stride_size[i-1] * output_size[i-1];
-        }
-        input = (int16_t*)malloc(input_size[0] * input_size[1] * input_size[2] *
-            sizeof(int16_t));
-        scale = (int16_t*)malloc(scale_size[0] * sizeof(int16_t));
-        output = (int16_t*)malloc(output_size[0] * output_size[1] * output_size[2] *
-            sizeof(int16_t));
-
-        input_user_addr = vxCreateTensorAddressing(context, input_size,
-            input_stride_size, input_dims);
-        vxCopyTensorPatch(imgObj[0], NULL, input_user_addr, input, VX_READ_ONLY, 0);
-
-        scale_user_addr = vxCreateTensorAddressing(context, scale_size,
-            scale_stride_size, scale_dims);
-        vxCopyTensorPatch(imgObj[1], NULL, scale_user_addr, scale, VX_READ_ONLY, 0);
-
-        // Call C Prototype
-        myL2NormalizeScaleFunc(input, scale, output, dim,
-            input_size[0], input_size[1], input_size[2]);
-
-        //output tensor
-        output_user_addr = vxCreateTensorAddressing(context, output_size,
-            output_stride_size, input_dims);
-        vxCopyTensorPatch(imgObj[2], NULL, output_user_addr, output, VX_WRITE_ONLY, 0);
-
-        free(input);
-        free(scale);
-        free(output);
-        vxReleaseTensorAddressing(&input_user_addr);
-        vxReleaseTensorAddressing(&scale_user_addr);
-        vxReleaseTensorAddressing(&output_user_addr);
+        tensor[i] = (vx_tensor)paramObj[i];
+        buffer_ptr[i] = vsi_nn_ConvertRawTensorToData2(context, tensor[i],
+            &(attr[i]), stride_size[i], &(user_addr[i]), VX_READ_ONLY);
     }
 
+    for( i = TENSOR_NUM_INPUT; i < TENSOR_NUM; i ++ )
+    {
+        tensor[i] = (vx_tensor)paramObj[i];
+        buffer_ptr[i] = vsi_nn_ConvertRawTensorToData2(context, tensor[i],
+            &(attr[i]), stride_size[i], &(user_addr[i]), VX_WRITE_ONLY);
+    }
+    vxCopyScalar((vx_scalar)paramObj[TENSOR_NUM], &(axis), VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
+
+    if(paramNum != 4)
+    {
+        VSILOGE("Error ParamNum input %d \n", paramNum);
+        status = VX_ERROR_INVALID_PARAMETERS;
+        goto final;
+    }
+
+    dims = attr[L2NORMSACLE_INPUT].dim_num;
+    size[0] = attr[L2NORMSACLE_INPUT].size[0];
+    size[1] = dims > 1 ? attr[L2NORMSACLE_INPUT].size[1] : 1;
+    size[2] = dims > 2 ? attr[L2NORMSACLE_INPUT].size[2] : 1;
+    size[3] = dims > 3 ? attr[L2NORMSACLE_INPUT].size[3] : 1;
+    axisSize =  attr[L2NORMSACLE_INPUT].size[axis];
+
+    switch(axis)
+    {
+        case 0:
+            innerSize = 1;
+            outerSize = size[1] * size[2] * size[3];
+            break;
+        case 1:
+            innerSize = size[0];
+            outerSize = size[2] * size[3];
+            break;
+        case 2:
+            innerSize = size[0] * size[1];
+            outerSize = size[3];
+            break;
+        case 3:
+            innerSize = size[0] * size[1] * size[2];
+            outerSize = 1;
+            break;
+        default:
+        VSILOGE("Input tensor error dimension[%u]\n", dims);
+        status = VX_ERROR_INVALID_DIMENSION;
+        goto final;
+    }
+
+    for (outer = 0; outer < outerSize; ++outer) {
+        for (inner = 0; inner < innerSize; ++inner) {
+            vx_float32 sum = 0.0f;
+            for (i = 0; i < axisSize; ++i) {
+                index    = (outer * axisSize + i) * innerSize + inner;
+                tmpValue = vsi_nn_DtypeToFloat32_Ex(buffer_ptr[L2NORMSACLE_INPUT],
+                                                   index, &attr[L2NORMSACLE_INPUT].dtype);
+                sum += tmpValue * tmpValue;
+            }
+            rsqrt = 1.0f / sqrtf(gcoMATH_MAX(sum, epsilon));
+            for (i = 0; i < axisSize; ++i) {
+                index    = (outer * axisSize + i) * innerSize + inner;
+                tmpValue = vsi_nn_DtypeToFloat32_Ex(buffer_ptr[L2NORMSACLE_INPUT],
+                                                   index, &attr[L2NORMSACLE_INPUT].dtype);
+                scaleValue = vsi_nn_DtypeToFloat32_Ex(buffer_ptr[L2NORMSACLE_INPUT1],
+                                                   i, &attr[L2NORMSACLE_INPUT1].dtype);
+                l2Value = tmpValue * rsqrt * scaleValue;
+                vsi_nn_Float32ToDtype_Ext(l2Value, buffer_ptr[L2NORMSACLE_INPUTS_COUNT + L2NORMSACLE_OUTPUT],
+                            index, &attr[L2NORMSACLE_INPUTS_COUNT + L2NORMSACLE_OUTPUT].dtype);
+            }
+        }
+    }
+
+    for( i = TENSOR_NUM_INPUT; i < TENSOR_NUM; i ++ )
+    {
+        if (buffer_ptr[i])
+        {
+            status = vsi_nn_copy_tensor_patch(tensor[i], &attr[i], buffer_ptr[i], VX_WRITE_ONLY);
+        }
+
+        if (user_addr[i]) vxReleaseTensorAddressing(&(user_addr[i]));
+    }
+final:
+    for( i = 0; i < TENSOR_NUM; i ++ )
+    {
+        if (buffer_ptr[i]) free(buffer_ptr[i]);
+
+        if (user_addr[i]) vxReleaseTensorAddressing(&(user_addr[i]));
+    }
     return status;
-}
+} /* _VX_KERNEL_FUNC_KERNEL() */
 
 static vx_param_description_t vxL2NormalizeScaleKernelParam[] =
 {
@@ -533,6 +431,25 @@ vsi_status VX_CALLBACK vxL2NormScale_SumRsqrtInitializer
         0x00000000, 0x00000000, 0x00000000, 0x00000000,
         0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
     };
+    vx_uint32 uniSumSqrt_16x1[16] = {
+        0x55555555, // TCfg
+        0x55550000, // ASelt
+        0x76543210, 0x76543210, // ABin
+        0x55550000, // BSelt
+        0x76543210, 0x76543210, // BBin
+        0x00000400, // AccumType, ConstantType, and PostShift
+        0x00000000, 0x00000000, 0x00000000, 0x00000000,
+        0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
+    };
+    vx_uint32 uniSumAll_16x1[16] = {
+        0x55555555, // TCfg
+        0x55550000, // ASelt
+        0x76543210, 0x76543210, // ABin
+        0xaaaaaaaa, // BSelt
+        0x00000000, 0x00000000, // BBin
+        0x00000400, // AccumType, ConstantType, and PostShift
+        0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001 // Constant
+    };
 
     vsi_status status = VX_SUCCESS;
 
@@ -543,14 +460,29 @@ vsi_status VX_CALLBACK vxL2NormScale_SumRsqrtInitializer
     int32_t   inputZP       = 0;
     float     inputScale    = 1.0f;
     float     r_inputScale  = 1.0f;
+    int32_t   axis          = 1;
+    vsi_nn_tensor_attr_t attr;
+    uint32_t i;
+    uint32_t input_dims;
 
-    status = vxQueryTensor(input, VX_TENSOR_DIMS, input_size, sizeof(input_size));
-    status |= vxQueryTensor(input, VX_TENSOR_DATA_TYPE, &dataFormat, sizeof(dataFormat));
-    status |= vxQueryTensor(input, VX_TENSOR_FIXED_POINT_POS, &fixPointPos, sizeof(fixPointPos));
-    status |= vxQueryTensor(input, VX_TENSOR_SCALE, &inputScale, sizeof(inputScale));
-    status |= vxQueryTensor(input, VX_TENSOR_ZERO_POINT, &inputZP, sizeof(inputZP));
-    if(VX_SUCCESS != status)
+    memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
+    status  = vsi_nn_vxGetTensorAttr(input, &attr);
+    if (status != VX_SUCCESS)
+    {
+        VSILOGE("vsi_nn_vxGetTensorAttr  failure! at line %d\n", __LINE__);
         return status;
+    }
+    input_dims  = attr.dim_num;
+    dataFormat = attr.dtype.vx_type;
+    for (i = 0; i < input_dims; i++)
+    {
+        input_size[i] = attr.size[i];
+    }
+    fixPointPos = attr.dtype.fl;
+    inputZP     = attr.dtype.zero_point;
+    inputScale  = attr.dtype.scale;
+
+    vxCopyScalar((vx_scalar)paramObj[2], &(axis), VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
 
     if(dataFormat == VX_TYPE_INT8 || dataFormat == VX_TYPE_INT16)
     {
@@ -562,40 +494,86 @@ vsi_status VX_CALLBACK vxL2NormScale_SumRsqrtInitializer
 
     r_inputScale = 1.0f / inputScale;
 
-    shaderParam.globalWorkOffset[0] = 0;
-    shaderParam.globalWorkOffset[1] = 0;
-    shaderParam.globalWorkScale[0] = 8;
-    shaderParam.globalWorkScale[1] = 1;
-    shaderParam.globalWorkScale[2] = 1;
-    shaderParam.globalWorkSize[0] = gcmALIGN((input_size[0] + shaderParam.globalWorkScale[0] - 1)
-        / shaderParam.globalWorkScale[0], 4);
-    shaderParam.globalWorkSize[1] = 1;
+    if (1 == axis)
+    {
+        shaderParam.globalWorkOffset[0] = 0;
+        shaderParam.globalWorkOffset[1] = 0;
+        shaderParam.globalWorkScale[0]  = 8;
+        shaderParam.globalWorkScale[1]  = 1;
+        shaderParam.globalWorkScale[2]  = 1;
+        shaderParam.globalWorkSize[0]   = gcmALIGN((input_size[0] + shaderParam.globalWorkScale[0] - 1)
+            / shaderParam.globalWorkScale[0], 4);
+        shaderParam.globalWorkSize[1] = 1;
+    }
+    else if (0 == axis)
+    {
+        shaderParam.globalWorkOffset[0] = 0;
+        shaderParam.globalWorkOffset[1] = 0;
+        shaderParam.globalWorkScale[0]  = 16;
+        shaderParam.globalWorkScale[1]  = 1;
+        shaderParam.localWorkSize[0]    = 16;
+        shaderParam.localWorkSize[1]    = 1;
+        shaderParam.globalWorkSize[0]   = 16;
+        shaderParam.globalWorkSize[1]   = input_size[1];
+    }
+    else
+    {
+        VSILOGE("Input tensor error dimension[%u]\n", axis);
+        return VX_ERROR_INVALID_DIMENSION;
+    }
 
-
-    vxSetNodeUniform(nodObj, "L2NorS_depth", 1, &input_size[1]);
-    if(dataFormat == VX_TYPE_FLOAT16)
+    if (1 == axis)
     {
-        vxSetNodeUniform(nodObj, "UniFp16MulLo_dp4x4", 1, UniFp16MulLo_dp4x4);
-        vxSetNodeUniform(nodObj, "UniFp16MulHi_dp4x4", 1, UniFp16MulHi_dp4x4);
+        vxSetNodeUniform(nodObj, "L2NorS_depth", 1, &input_size[1]);
+        if(dataFormat == VX_TYPE_FLOAT16)
+        {
+            vxSetNodeUniform(nodObj, "UniFp16MulLo_dp4x4", 1, UniFp16MulLo_dp4x4);
+            vxSetNodeUniform(nodObj, "UniFp16MulHi_dp4x4", 1, UniFp16MulHi_dp4x4);
+        }
+        else if(dataFormat == VX_TYPE_INT8)
+        {
+            vxSetNodeUniform(nodObj, "r_inputScale", 1, &r_inputScale);
+            vxSetNodeUniform(nodObj, "uniDataSquareAddU32Lo_4x4", 1, uniDataSquareAddU32Lo_4x4);
+            vxSetNodeUniform(nodObj, "uniDataSquareAddU32Hi_4x4", 1, uniDataSquareAddU32Hi_4x4);
+        }
+        else if(dataFormat == VX_TYPE_INT16)
+        {
+            vxSetNodeUniform(nodObj, "r_inputScale", 1, &r_inputScale);
+            vxSetNodeUniform(nodObj, "uniIntegerSquareLo_4x4", 1, uniIntegerSquareLo_4x4);
+            vxSetNodeUniform(nodObj, "uniIntegerSquareHi_4x4", 1, uniIntegerSquareHi_4x4);
+        }
+        else if(dataFormat == VX_TYPE_UINT8)
+        {
+            vxSetNodeUniform(nodObj, "r_inputScale", 1, &r_inputScale);
+            vxSetNodeUniform(nodObj, "inputZP", 1, &inputZP);
+            vxSetNodeUniform(nodObj, "uniUInt8SquareLo_4x4", 1, uniUInt8SquareLo_4x4);
+            vxSetNodeUniform(nodObj, "uniUInt8SquareHi_4x4", 1, uniUInt8SquareHi_4x4);
+        }
     }
-    else if(dataFormat == VX_TYPE_INT8)
+    else if (0 == axis)
     {
-        vxSetNodeUniform(nodObj, "r_inputScale", 1, &r_inputScale);
-        vxSetNodeUniform(nodObj, "uniDataSquareAddU32Lo_4x4", 1, uniDataSquareAddU32Lo_4x4);
-        vxSetNodeUniform(nodObj, "uniDataSquareAddU32Hi_4x4", 1, uniDataSquareAddU32Hi_4x4);
-    }
-    else if(dataFormat == VX_TYPE_INT16)
-    {
-        vxSetNodeUniform(nodObj, "r_inputScale", 1, &r_inputScale);
-        vxSetNodeUniform(nodObj, "uniIntegerSquareLo_4x4", 1, uniIntegerSquareLo_4x4);
-        vxSetNodeUniform(nodObj, "uniIntegerSquareHi_4x4", 1, uniIntegerSquareHi_4x4);
-    }
-    else if(dataFormat == VX_TYPE_UINT8)
-    {
-        vxSetNodeUniform(nodObj, "r_inputScale", 1, &r_inputScale);
-        vxSetNodeUniform(nodObj, "inputZP", 1, &inputZP);
-        vxSetNodeUniform(nodObj, "uniUInt8SquareLo_4x4", 1, uniUInt8SquareLo_4x4);
-        vxSetNodeUniform(nodObj, "uniUInt8SquareHi_4x4", 1, uniUInt8SquareHi_4x4);
+        int32_t inputWidth, inputWidthCount, inputWidthRemain256;
+        inputWidth          = input_size[0];
+        inputWidthRemain256 = input_size[0] % 256;
+        inputWidthCount     = input_size[0] / 256;
+        vxSetNodeUniform(nodObj, "inputWidth", 1, &inputWidth);
+        vxSetNodeUniform(nodObj, "inputWidthRemain256", 1, &inputWidthRemain256);
+        vxSetNodeUniform(nodObj, "inputWidthCount", 1, &inputWidthCount);
+        vxSetNodeUniform(nodObj, "uniSumSqrt_16x1", 1, uniSumSqrt_16x1);
+        if (dataFormat == VX_TYPE_INT16 || dataFormat == VX_TYPE_INT8)
+        {
+            vxSetNodeUniform(nodObj, "r_inputScale", 1, &r_inputScale);
+        }
+        else if(dataFormat == VX_TYPE_UINT8)
+        {
+            float zP2x = 2 * (float)inputZP;
+            float zpSqrt16x =  16 * (float)inputZP * (float)inputZP;
+            vxSetNodeUniform(nodObj, "r_inputScale", 1, &r_inputScale);
+            vxSetNodeUniform(nodObj, "zP2x", 1, &zP2x);
+            vxSetNodeUniform(nodObj, "zpSqrt16x", 1, &zpSqrt16x);
+            vxSetNodeUniform(nodObj, "uniSumAll_16x1", 1, uniSumAll_16x1);
+            vxSetNodeUniform(nodObj, "inputZP", 1, &inputZP);
+        }
     }
 
     status |= vxSetNodeAttribute(nodObj, VX_NODE_ATTRIBUTE_KERNEL_EXECUTION_PARAMETERS,
@@ -639,18 +617,37 @@ vsi_status VX_CALLBACK vxL2NormScale_MulScaleInitializer
     int32_t     outputZP        = 0;
     float       inputScale      = 1.0f;
     float       outputScale     = 1.0f;
+    int32_t     axis            = 1;
+    vsi_nn_tensor_attr_t attr[2];
+    uint32_t i;
+    uint32_t input_dims;
 
-    status = vxQueryTensor(input, VX_TENSOR_DIMS, input_size, sizeof(input_size));
-    status |= vxQueryTensor(input, VX_TENSOR_DATA_TYPE, &inputFormat, sizeof(inputFormat));
-    status |= vxQueryTensor(input, VX_TENSOR_FIXED_POINT_POS, &srcFixPointPos, sizeof(srcFixPointPos));
-    status |= vxQueryTensor(input, VX_TENSOR_SCALE, &inputScale, sizeof(inputScale));
-    status |= vxQueryTensor(input, VX_TENSOR_ZERO_POINT, &inputZP, sizeof(inputZP));
-    status |= vxQueryTensor(output, VX_TENSOR_DATA_TYPE, &outputFormat, sizeof(outputFormat));
-    status |= vxQueryTensor(output, VX_TENSOR_FIXED_POINT_POS,&dstFixPointPos, sizeof(dstFixPointPos));
-    status |= vxQueryTensor(output, VX_TENSOR_SCALE, &outputScale, sizeof(outputScale));
-    status |= vxQueryTensor(output, VX_TENSOR_ZERO_POINT, &outputZP, sizeof(outputZP));
-    if(VX_SUCCESS != status)
+    memset(&attr[0], 0, sizeof(vsi_nn_tensor_attr_t));
+    memset(&attr[1], 0, sizeof(vsi_nn_tensor_attr_t));
+    status  = vsi_nn_vxGetTensorAttr(input, &attr[0]);
+    status |= vsi_nn_vxGetTensorAttr(output, &attr[1]);
+    if (status != VX_SUCCESS)
+    {
+        VSILOGE("vsi_nn_vxGetTensorAttr failure! at line %d\n", __LINE__);
         return status;
+    }
+
+    input_dims  = attr[0].dim_num;
+    inputFormat = attr[0].dtype.vx_type;
+    for (i = 0; i < input_dims; i++)
+    {
+        input_size[i] = attr[0].size[i];
+    }
+    srcFixPointPos = attr[0].dtype.fl;
+    inputZP        = attr[0].dtype.zero_point;
+    inputScale     = attr[0].dtype.scale;
+    outputFormat   = attr[1].dtype.vx_type;
+    outputZP       = attr[1].dtype.zero_point;
+    outputScale    = attr[1].dtype.scale;
+    dstFixPointPos = attr[1].dtype.fl;
+
+    vxCopyScalar((vx_scalar)paramObj[4], &(axis), VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
+
     if(inputFormat == VX_TYPE_INT8 || inputFormat == VX_TYPE_INT16)
     {
         if (srcFixPointPos >= 0)
@@ -681,14 +678,32 @@ vsi_status VX_CALLBACK vxL2NormScale_MulScaleInitializer
         outputZP       = 0;
     }
 
-    shaderParam.globalWorkOffset[0] = 0;
-    shaderParam.globalWorkOffset[1] = 0;
-    shaderParam.globalWorkScale[0]  = 8;
-    shaderParam.globalWorkScale[1]  = 1;
-    shaderParam.globalWorkSize[0]   = gcmALIGN((input_size[0] + shaderParam.globalWorkScale[0] - 1)
-        / shaderParam.globalWorkScale[0], 4);
-    shaderParam.globalWorkSize[1]   = 1;
-
+    if (1 == axis)
+    {
+        shaderParam.globalWorkOffset[0] = 0;
+        shaderParam.globalWorkOffset[1] = 0;
+        shaderParam.globalWorkScale[0]  = 8;
+        shaderParam.globalWorkScale[1]  = 1;
+        shaderParam.globalWorkSize[0]   = gcmALIGN((input_size[0] + shaderParam.globalWorkScale[0] - 1)
+            / shaderParam.globalWorkScale[0], 4);
+        shaderParam.globalWorkSize[1]   = 1;
+    }
+    else if (0 == axis)
+    {
+        shaderParam.globalWorkOffset[0] = 0;
+        shaderParam.globalWorkOffset[1] = 0;
+        shaderParam.globalWorkScale[0]  = 8;
+        shaderParam.globalWorkScale[1]  = 1;
+        shaderParam.localWorkSize[0]    = 16;
+        shaderParam.localWorkSize[1]    = 1;
+        shaderParam.globalWorkSize[0]   = 16;
+        shaderParam.globalWorkSize[1]   = input_size[1];
+    }
+    else
+    {
+        VSILOGE("Input tensor error dimension[%u]\n", axis);
+        return VX_ERROR_INVALID_DIMENSION;
+    }
 
     {
         vx_float32 IntergerScale = inputScale;
@@ -738,6 +753,16 @@ vsi_status VX_CALLBACK vxL2NormScale_MulScaleInitializer
             0x00000100, // AccumType, ConstantType, and PostShift
             0x00003c00, 0x00000000, 0x00003c00, 0x00000000, 0x00003c00, 0x00000000, 0x00003c00, 0x00000000 // Constant
         };
+        vx_uint32 uniFp16toFp32Hi_4x4[16] = {
+            0x01010101, // TCfg
+            0x00000000, // ASelt
+            0x00050004, 0x00070006, // ABin
+            0x02020202, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000100, // AccumType, ConstantType, and PostShift
+            0x00003c00, 0x00000000, 0x00003c00, 0x00000000, 0x00003c00, 0x00000000, 0x00003c00, 0x00000000 // Constant
+        };
+
 
         if (outputFormat == VX_TYPE_UINT8)
             IntergerScale = IntergerScale / outputScale;
@@ -751,11 +776,24 @@ vsi_status VX_CALLBACK vxL2NormScale_MulScaleInitializer
         vxSetNodeUniform(nodObj, "uniDataSubZPtoFp32Part0_4x4", 1, uniDataSubZPtoFp32Part0_4x4);
         vxSetNodeUniform(nodObj, "uniDataSubZPtoFp32Part1_4x4", 1, uniDataSubZPtoFp32Part1_4x4);
         vxSetNodeUniform(nodObj, "uniFp16toFp32_4x4", 1, uniFp16toFp32_4x4);
+        vxSetNodeUniform(nodObj, "uniFp16toFp32Hi_4x4", 1, uniFp16toFp32Hi_4x4);
 
         if(outputFormat == VX_TYPE_FLOAT16)
             vxSetNodeUniform(nodObj, "uniExtact8Bin_2x8", 1, uniExtractHalf8_2x8);
         else
             vxSetNodeUniform(nodObj, "uniExtact8Bin_2x8", 1, uniExtact8Bin_2x8);
+
+        if (0 == axis)
+        {
+            int32_t inputWidth, inputWidthCount, inputWidthRemain128;
+            inputWidth          = input_size[0];
+            inputWidthRemain128 = input_size[0] % 128;
+            inputWidthCount     = input_size[0] / 128;
+            vxSetNodeUniform(nodObj, "inputWidth", 1, &inputWidth);
+            vxSetNodeUniform(nodObj, "inputWidthRemain128", 1, &inputWidthRemain128);
+            vxSetNodeUniform(nodObj, "inputWidthCount", 1, &inputWidthCount);
+        }
+
     }
 
     status |= vxSetNodeAttribute(nodObj, VX_NODE_ATTRIBUTE_KERNEL_EXECUTION_PARAMETERS,
@@ -788,164 +826,95 @@ vx_kernel_description_t vxL2NormalizeScaleKernelInfo_CPU =
     vsi_nn_KernelInitializer,
     vsi_nn_KernelDeinitializer
 };
-vx_kernel_description_t vxL2NormScale_SumRsqrtKernelInfo =
-{
-    VX_KERNEL_ENUM_L2NORMSCALE_SUMRSQRT,
-    VX_KERNEL_NAME_L2NORMSCALE_SUMRSQRT,
-    NULL,
-    vxL2NormScale_SumRsqrtKernelParam,
-    (sizeof(vxL2NormScale_SumRsqrtKernelParam) / sizeof(vxL2NormScale_SumRsqrtKernelParam[0])),
-    vsi_nn_KernelValidator,
-    NULL,
-    NULL,
-    vxL2NormScale_SumRsqrtInitializer,
-    vsi_nn_KernelDeinitializer
+
+#define L2NORMSACLE_SQRTSUM_KERNELS_2D(AXI_INDEX, SRC_TYPE) \
+    vx_kernel_description_t vxL2NormScale_SumRsqrt_##AXI_INDEX##_##SRC_TYPE##_2D_Kernel = \
+{ \
+    VX_KERNEL_ENUM_L2NORMSCALE_SUMRSQRT, \
+    VX_KERNEL_NAME_L2NORMSCALE_SUMRSQRT_##AXI_INDEX##_##SRC_TYPE##_2D, \
+    NULL, \
+    vxL2NormScale_SumRsqrtKernelParam, \
+    (sizeof(vxL2NormScale_SumRsqrtKernelParam) / sizeof(vxL2NormScale_SumRsqrtKernelParam[0])), \
+    vsi_nn_KernelValidator, \
+    NULL, \
+    NULL, \
+    vxL2NormScale_SumRsqrtInitializer, \
+    vsi_nn_KernelDeinitializer \
 };
-vx_kernel_description_t vxL2NormScale_SumRsqrtKernelInfoInt8 =
-{
-    VX_KERNEL_ENUM_L2NORMSCALE_SUMRSQRT,
-    VX_KERNEL_NAME_L2NORMSCALE_SUMRSQRT_INT8,
-    NULL,
-    vxL2NormScale_SumRsqrtKernelParam,
-    (sizeof(vxL2NormScale_SumRsqrtKernelParam) / sizeof(vxL2NormScale_SumRsqrtKernelParam[0])),
-    vsi_nn_KernelValidator,
-    NULL,
-    NULL,
-    vxL2NormScale_SumRsqrtInitializer,
-    vsi_nn_KernelDeinitializer
+
+L2NORMSACLE_SQRTSUM_KERNELS_2D(AXI1, F16)
+L2NORMSACLE_SQRTSUM_KERNELS_2D(AXI1, I8)
+L2NORMSACLE_SQRTSUM_KERNELS_2D(AXI1, U8)
+L2NORMSACLE_SQRTSUM_KERNELS_2D(AXI1, I16)
+L2NORMSACLE_SQRTSUM_KERNELS_2D(AXI0, F16)
+L2NORMSACLE_SQRTSUM_KERNELS_2D(AXI0, I8)
+L2NORMSACLE_SQRTSUM_KERNELS_2D(AXI0, U8)
+L2NORMSACLE_SQRTSUM_KERNELS_2D(AXI0, I16)
+
+
+#define L2NORMSACLE_MULSCALE_KERNELS_2D(AXI_INDEX, SRC_TYPE, DST_TYPE) \
+    vx_kernel_description_t vxL2NormScale_MulScale_##AXI_INDEX##_##SRC_TYPE##to##DST_TYPE##_2D_Kernel = \
+{ \
+    VX_KERNEL_ENUM_L2NORMSCALE_MULSCALE, \
+    VX_KERNEL_NAME_L2NORMSCALE_##AXI_INDEX##_##SRC_TYPE##TO##DST_TYPE##_2D, \
+    NULL, \
+    vxL2NormScale_MulScaleKernelParam, \
+    (sizeof(vxL2NormScale_MulScaleKernelParam) / sizeof(vxL2NormScale_MulScaleKernelParam[0])), \
+    vsi_nn_KernelValidator, \
+    NULL, \
+    NULL, \
+    vxL2NormScale_MulScaleInitializer, \
+    vsi_nn_KernelDeinitializer \
 };
-vx_kernel_description_t vxL2NormScale_SumRsqrtKernelInfoUInt8 =
-{
-    VX_KERNEL_ENUM_L2NORMSCALE_SUMRSQRT,
-    VX_KERNEL_NAME_L2NORMSCALE_SUMRSQRT_UINT8,
-    NULL,
-    vxL2NormScale_SumRsqrtKernelParam,
-    (sizeof(vxL2NormScale_SumRsqrtKernelParam) / sizeof(vxL2NormScale_SumRsqrtKernelParam[0])),
-    vsi_nn_KernelValidator,
-    NULL,
-    NULL,
-    vxL2NormScale_SumRsqrtInitializer,
-    vsi_nn_KernelDeinitializer
-};
-vx_kernel_description_t vxL2NormScale_SumRsqrtKernelInfoInt16 =
-{
-    VX_KERNEL_ENUM_L2NORMSCALE_SUMRSQRT,
-    VX_KERNEL_NAME_L2NORMSCALE_SUMRSQRT_INT16,
-    NULL,
-    vxL2NormScale_SumRsqrtKernelParam,
-    (sizeof(vxL2NormScale_SumRsqrtKernelParam) / sizeof(vxL2NormScale_SumRsqrtKernelParam[0])),
-    vsi_nn_KernelValidator,
-    NULL,
-    NULL,
-    vxL2NormScale_SumRsqrtInitializer,
-    vsi_nn_KernelDeinitializer
-};
-vx_kernel_description_t vxL2NormScale_MulScaleKernelInfo_Fp16toFp16 =
-{
-    VX_KERNEL_ENUM_L2NORMSCALE_MULSCALE,
-    VX_KERNEL_NAME_L2NORMSCALE_FP16TOFP16,
-    NULL,
-    vxL2NormScale_MulScaleKernelParam,
-    (sizeof(vxL2NormScale_MulScaleKernelParam) / sizeof(vxL2NormScale_MulScaleKernelParam[0])),
-    vsi_nn_KernelValidator,
-    NULL,
-    NULL,
-    vxL2NormScale_MulScaleInitializer,
-    vsi_nn_KernelDeinitializer
-};
-vx_kernel_description_t vxL2NormScale_MulScaleKernelInfoInt8toInt8 =
-{
-    VX_KERNEL_ENUM_L2NORMSCALE_MULSCALE,
-    VX_KERNEL_NAME_L2NORMSCALE_INT8TOINT8,
-    NULL,
-    vxL2NormScale_MulScaleKernelParam,
-    (sizeof(vxL2NormScale_MulScaleKernelParam) / sizeof(vxL2NormScale_MulScaleKernelParam[0])),
-    vsi_nn_KernelValidator,
-    NULL,
-    NULL,
-    vxL2NormScale_MulScaleInitializer,
-    vsi_nn_KernelDeinitializer
-};
-vx_kernel_description_t vxL2NormScale_MulScaleKernelInfoInt8toFp16 =
-{
-    VX_KERNEL_ENUM_L2NORMSCALE_MULSCALE,
-    VX_KERNEL_NAME_L2NORMSCALE_INT8TOFP16,
-    NULL,
-    vxL2NormScale_MulScaleKernelParam,
-    (sizeof(vxL2NormScale_MulScaleKernelParam) / sizeof(vxL2NormScale_MulScaleKernelParam[0])),
-    vsi_nn_KernelValidator,
-    NULL,
-    NULL,
-    vxL2NormScale_MulScaleInitializer,
-    vsi_nn_KernelDeinitializer
-};
-vx_kernel_description_t vxL2NormScale_MulScaleKernelInfoUInt8toUInt8 =
-{
-    VX_KERNEL_ENUM_L2NORMSCALE_MULSCALE,
-    VX_KERNEL_NAME_L2NORMSCALE_UINT8TOUINT8,
-    NULL,
-    vxL2NormScale_MulScaleKernelParam,
-    (sizeof(vxL2NormScale_MulScaleKernelParam) / sizeof(vxL2NormScale_MulScaleKernelParam[0])),
-    vsi_nn_KernelValidator,
-    NULL,
-    NULL,
-    vxL2NormScale_MulScaleInitializer,
-    vsi_nn_KernelDeinitializer
-};
-vx_kernel_description_t vxL2NormScale_MulScaleKernelInfoUInt8toFp16 =
-{
-    VX_KERNEL_ENUM_L2NORMSCALE_MULSCALE,
-    VX_KERNEL_NAME_L2NORMSCALE_UINT8TOFP16,
-    NULL,
-    vxL2NormScale_MulScaleKernelParam,
-    (sizeof(vxL2NormScale_MulScaleKernelParam) / sizeof(vxL2NormScale_MulScaleKernelParam[0])),
-    vsi_nn_KernelValidator,
-    NULL,
-    NULL,
-    vxL2NormScale_MulScaleInitializer,
-    vsi_nn_KernelDeinitializer
-};
-vx_kernel_description_t vxL2NormScale_MulScaleKernelInfoInt16toInt16 =
-{
-    VX_KERNEL_ENUM_L2NORMSCALE_MULSCALE,
-    VX_KERNEL_NAME_L2NORMSCALE_INT16TOINT16,
-    NULL,
-    vxL2NormScale_MulScaleKernelParam,
-    (sizeof(vxL2NormScale_MulScaleKernelParam) / sizeof(vxL2NormScale_MulScaleKernelParam[0])),
-    vsi_nn_KernelValidator,
-    NULL,
-    NULL,
-    vxL2NormScale_MulScaleInitializer,
-    vsi_nn_KernelDeinitializer
-};
-vx_kernel_description_t vxL2NormScale_MulScaleKernelInfoInt16toFp16 =
-{
-    VX_KERNEL_ENUM_L2NORMSCALE_MULSCALE,
-    VX_KERNEL_NAME_L2NORMSCALE_INT16TOFP16,
-    NULL,
-    vxL2NormScale_MulScaleKernelParam,
-    (sizeof(vxL2NormScale_MulScaleKernelParam) / sizeof(vxL2NormScale_MulScaleKernelParam[0])),
-    vsi_nn_KernelValidator,
-    NULL,
-    NULL,
-    vxL2NormScale_MulScaleInitializer,
-    vsi_nn_KernelDeinitializer
-};
+
+L2NORMSACLE_MULSCALE_KERNELS_2D(AXI1, F16, F16)
+L2NORMSACLE_MULSCALE_KERNELS_2D(AXI1, I8, I8)
+L2NORMSACLE_MULSCALE_KERNELS_2D(AXI1, I8, F16)
+L2NORMSACLE_MULSCALE_KERNELS_2D(AXI1, U8, U8)
+L2NORMSACLE_MULSCALE_KERNELS_2D(AXI1, U8, F16)
+L2NORMSACLE_MULSCALE_KERNELS_2D(AXI1, I16, I16)
+L2NORMSACLE_MULSCALE_KERNELS_2D(AXI1, I16, F16)
+L2NORMSACLE_MULSCALE_KERNELS_2D(AXI0, F16, F16)
+L2NORMSACLE_MULSCALE_KERNELS_2D(AXI0, I8, I8)
+L2NORMSACLE_MULSCALE_KERNELS_2D(AXI0, I8, F16)
+L2NORMSACLE_MULSCALE_KERNELS_2D(AXI0, U8, U8)
+L2NORMSACLE_MULSCALE_KERNELS_2D(AXI0, U8, F16)
+L2NORMSACLE_MULSCALE_KERNELS_2D(AXI0, I16, I16)
+L2NORMSACLE_MULSCALE_KERNELS_2D(AXI0, I16, F16)
+
+
+#define L2NORMSACLE_SQRTSUM_KERENLS_NAME(AXI_INDEX, SRC_TYPE, INSTR) \
+    &vxL2NormScale_SumRsqrt_##AXI_INDEX##_##SRC_TYPE##_##INSTR##Kernel,
+
+#define L2NORMSACLE_MULSCALE_KERENLS_NAME(AXI_INDEX, SRC_TYPE, DST_TYPE, INSTR) \
+    &vxL2NormScale_MulScale_##AXI_INDEX##_##SRC_TYPE##to##DST_TYPE##_##INSTR##Kernel,
+
 
 vx_kernel_description_t * vx_kernel_L2NORMALIZESCALE_list[] =
 {
     &vxL2NormalizeScaleKernelInfo_CPU,
-    &vxL2NormScale_SumRsqrtKernelInfo,
-    &vxL2NormScale_SumRsqrtKernelInfoInt8,
-    &vxL2NormScale_SumRsqrtKernelInfoUInt8,
-    &vxL2NormScale_SumRsqrtKernelInfoInt16,
-    &vxL2NormScale_MulScaleKernelInfo_Fp16toFp16,
-    &vxL2NormScale_MulScaleKernelInfoInt8toInt8,
-    &vxL2NormScale_MulScaleKernelInfoInt8toFp16,
-    &vxL2NormScale_MulScaleKernelInfoUInt8toUInt8,
-    &vxL2NormScale_MulScaleKernelInfoUInt8toFp16,
-    &vxL2NormScale_MulScaleKernelInfoInt16toInt16,
-    &vxL2NormScale_MulScaleKernelInfoInt16toFp16,
+    L2NORMSACLE_SQRTSUM_KERENLS_NAME(AXI1, F16, 2D_)
+    L2NORMSACLE_SQRTSUM_KERENLS_NAME(AXI1, I8, 2D_)
+    L2NORMSACLE_SQRTSUM_KERENLS_NAME(AXI1, U8, 2D_)
+    L2NORMSACLE_SQRTSUM_KERENLS_NAME(AXI1, I16, 2D_)
+    L2NORMSACLE_MULSCALE_KERENLS_NAME(AXI1, F16, F16, 2D_)
+    L2NORMSACLE_MULSCALE_KERENLS_NAME(AXI1, I8, I8, 2D_)
+    L2NORMSACLE_MULSCALE_KERENLS_NAME(AXI1, I8, F16, 2D_)
+    L2NORMSACLE_MULSCALE_KERENLS_NAME(AXI1, U8, U8, 2D_)
+    L2NORMSACLE_MULSCALE_KERENLS_NAME(AXI1, U8, F16, 2D_)
+    L2NORMSACLE_MULSCALE_KERENLS_NAME(AXI1, I16, I16, 2D_)
+    L2NORMSACLE_MULSCALE_KERENLS_NAME(AXI1, I16, F16, 2D_)
+    L2NORMSACLE_SQRTSUM_KERENLS_NAME(AXI0, F16, 2D_)
+    L2NORMSACLE_SQRTSUM_KERENLS_NAME(AXI0, I8, 2D_)
+    L2NORMSACLE_SQRTSUM_KERENLS_NAME(AXI0, U8, 2D_)
+    L2NORMSACLE_SQRTSUM_KERENLS_NAME(AXI0, I16, 2D_)
+    L2NORMSACLE_MULSCALE_KERENLS_NAME(AXI0, F16, F16, 2D_)
+    L2NORMSACLE_MULSCALE_KERENLS_NAME(AXI0, I8, I8, 2D_)
+    L2NORMSACLE_MULSCALE_KERENLS_NAME(AXI0, I8, F16, 2D_)
+    L2NORMSACLE_MULSCALE_KERENLS_NAME(AXI0, U8, U8, 2D_)
+    L2NORMSACLE_MULSCALE_KERENLS_NAME(AXI0, U8, F16, 2D_)
+    L2NORMSACLE_MULSCALE_KERENLS_NAME(AXI0, I16, I16, 2D_)
+    L2NORMSACLE_MULSCALE_KERENLS_NAME(AXI0, I16, F16, 2D_)
     NULL
 };
 #ifdef __cplusplus

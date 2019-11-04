@@ -84,7 +84,7 @@ static vsi_status op_compute
         self->graph->g,
         nn_param->local.input_tensor,
         nn_param->local.weight_tensor,
-        inputs[2]->t,
+        (NULL == inputs[2]) ? NULL : inputs[2]->t,
         (vx_nn_convolution_params_t *)&p,
         sizeof( vx_nn_convolution_params_ext_t ),
         nn_param->local.output_tensor

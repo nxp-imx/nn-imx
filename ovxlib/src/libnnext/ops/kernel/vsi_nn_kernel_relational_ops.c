@@ -196,48 +196,22 @@ vsi_status VX_CALLBACK vxRelationalOpsKernel
 #else
         uint8_t *output = NULL;
 #endif
-#if 0
-        uint32_t *length = NULL;
-        uint32_t *step = NULL;
-        uint32_t *padFlg = NULL;
-        uint32_t *pad = NULL;
-        uint32_t *axis = NULL;
-#endif
+
         uint32_t input_size[DIM_SIZE] = {0}, output_size[DIM_SIZE] = {0};
-#if 0
-        uint32_t length_size[DIM_SIZE] = {0}, step_size[DIM_SIZE] = {0};
-        uint32_t padFlg_size[DIM_SIZE] = {0}, pad_size[DIM_SIZE] = {0};
-        uint32_t axis_size[DIM_SIZE] = {0}, dst_size[DIM_SIZE] = {0};
-#endif
-        uint32_t input_stride_size[4]  = {0};
-        uint32_t output_stride_size[4] = {0};
-#if 0
-        uint32_t length_stride_size[4] = {0};
-        uint32_t step_stride_size[4] = {0};
-        uint32_t padFlg_stride_size[4] = {0};
-        uint32_t pad_stride_size[4] = {0};
-        uint32_t axis_stride_size[4] = {0};
-#endif
-        vx_tensor_addressing input_user_addr = NULL;
-        vx_tensor_addressing input1_user_addr = NULL;
-        vx_tensor_addressing output_user_addr = NULL;
-#if 0
-        vx_tensor_addressing window_user_addr = NULL;
-        vx_tensor_addressing step_user_addr = NULL;
-        vx_tensor_addressing padEnd_user_addr = NULL;
-        vx_tensor_addressing padVal_user_addr = NULL;
-        vx_tensor_addressing axis_user_addr = NULL;
-#endif
+        vsi_nn_tensor_attr_t in_attr, in_attr1, out_attr;
 
         vsi_nn_type_e inputFormat = VSI_NN_TYPE_FLOAT16, outputFormat = VSI_NN_TYPE_FLOAT16;
         uint32_t input_dims = 0, output_dims = 0, tmpDim = 0;
-        uint32_t i;
-        int32_t in_zp, out_zp;
-        float in_scale, out_scale;
+        int32_t in_zp = 0, out_zp = 0;
+        float in_scale = 1, out_scale = 1;
         uint32_t cmp_op = 0;
         vx_scalar scalar[1] = { NULL };
 
         status = VX_SUCCESS;
+
+        memset(&in_attr, 0x0, sizeof(vsi_nn_tensor_attr_t));
+        memset(&in_attr1, 0x0, sizeof(vsi_nn_tensor_attr_t));
+        memset(&out_attr, 0x0, sizeof(vsi_nn_tensor_attr_t));
 
         imgObj[0] = (vx_tensor)paramObj[0];
         imgObj[1] = (vx_tensor)paramObj[1];  //output
@@ -247,38 +221,38 @@ vsi_status VX_CALLBACK vxRelationalOpsKernel
         if (context == NULL)
         {
             VSILOGE("vxGetContext failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
         //input
         status = vxQueryTensor(imgObj[0], VX_TENSOR_NUM_OF_DIMS, &input_dims, sizeof(input_dims));
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxQueryTensor input_dims failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
         status = vxQueryTensor(imgObj[0], VX_TENSOR_DATA_TYPE, &inputFormat, sizeof(inputFormat));
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxQueryTensor inputFormat failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
         status = vxQueryTensor(imgObj[0], VX_TENSOR_DIMS, input_size, sizeof(input_size));
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxQueryTensor input_size failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
         status = vxQueryTensor(imgObj[0], VX_TENSOR_ZERO_POINT, &in_zp, sizeof(in_zp));
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxQueryTensor input_size failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
         status = vxQueryTensor(imgObj[0], VX_TENSOR_SCALE, &in_scale, sizeof(in_scale));
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxQueryTensor input_size failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
         //output
         status  = vxQueryTensor(imgObj[2], VX_TENSOR_DATA_TYPE, &outputFormat, sizeof(outputFormat));
@@ -286,41 +260,30 @@ vsi_status VX_CALLBACK vxRelationalOpsKernel
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxQueryTensor outputFormat failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
         status = vxQueryTensor(imgObj[2], VX_TENSOR_DIMS, output_size, sizeof(output_size));
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxQueryTensor output_size failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
         status = vxQueryTensor(imgObj[2], VX_TENSOR_ZERO_POINT, &out_zp, sizeof(out_zp));
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxQueryTensor input_size failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
         status = vxQueryTensor(imgObj[2], VX_TENSOR_SCALE, &out_scale, sizeof(out_scale));
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxQueryTensor input_size failure! at line %d\n", __LINE__);
-            return status;
+            goto OnError;
         }
 
         input_size[2] = (input_dims <= 2)?1:input_size[2];
         input_size[3] = (input_dims <= 3)?1:input_size[3];
 
-        input_stride_size[0]  = vsi_nn_GetTypeBytes(inputFormat);
-        output_stride_size[0] = vsi_nn_GetTypeBytes(outputFormat);
-        //length_stride_size[0] = vsi_nn_GetTypeBytes(paraFormat);
-        for (i=1; i< input_dims; i++)
-        {
-            input_stride_size[i]  = input_stride_size[i-1] * input_size[i-1];
-        }
-        for (i=1; i< output_dims; i++)
-        {
-            output_stride_size[i] = output_stride_size[i-1] * output_size[i-1];
-        }
 #if 0
         for (i=1; i< length_dims; i++)
         {
@@ -331,40 +294,25 @@ vsi_status VX_CALLBACK vxRelationalOpsKernel
 #if INPUT_FP16
         input  = (int16_t*)malloc(input_size[0]*input_size[1]*input_size[2]*sizeof(int16_t));
 #else
-        input  = (uint8_t*)malloc(input_size[0]*input_size[1]*input_size[2]*vsi_nn_GetTypeBytes(inputFormat));
-        input1  = (uint8_t*)malloc(input_size[0]*input_size[1]*input_size[2]*vsi_nn_GetTypeBytes(inputFormat));
+        //input  = (uint8_t*)malloc(input_size[0]*input_size[1]*input_size[2]*vsi_nn_GetTypeBytes(inputFormat));
+        //input1  = (uint8_t*)malloc(input_size[0]*input_size[1]*input_size[2]*vsi_nn_GetTypeBytes(inputFormat));
 #endif
 #if OUTPUT_FP16
         output = (int16_t*)malloc(output_size[0]*output_size[1]*output_size[2]*sizeof(int16_t));
 #else
         output = (uint8_t*)malloc(output_size[0]*output_size[1]*output_size[2]*vsi_nn_GetTypeBytes(outputFormat));
 #endif
+        status = vsi_nn_vxGetTensorAttr(imgObj[0], &in_attr);
+        status |= vsi_nn_vxGetTensorAttr(imgObj[1], &in_attr1);
+        status |= vsi_nn_vxGetTensorAttr(imgObj[2], &out_attr);
+        if (status != VX_SUCCESS)
+        {
+            VSILOGE("vsi_nn_vxGetTensorAttr failure! at line %d\n", __LINE__);
+            goto OnError;
+        }
+        input = vsi_nn_vxCopyTensorToData(context, imgObj[0], &in_attr);
+        input1 = vsi_nn_vxCopyTensorToData(context, imgObj[1], &in_attr1);
 
-#if 0
-        length = (uint32_t*)malloc(1*sizeof(uint32_t));
-        step = (uint32_t*)malloc(1*sizeof(uint32_t));
-        padFlg = (uint32_t*)malloc(1*sizeof(uint32_t));
-        pad = (uint32_t*)malloc(1*sizeof(uint32_t));
-        axis = (uint32_t*)malloc(1*sizeof(uint32_t));
-#endif
-
-        input_user_addr = vxCreateTensorAddressing(context, input_size, input_stride_size, input_dims);
-        vxCopyTensorPatch(imgObj[0], NULL, input_user_addr, input, VX_READ_ONLY, 0);
-
-        input1_user_addr = vxCreateTensorAddressing(context, input_size, input_stride_size, input_dims);
-        vxCopyTensorPatch(imgObj[1], NULL, input1_user_addr, input1, VX_READ_ONLY, 0);
-#if 0
-        window_user_addr = vxCreateTensorAddressing(context, length_size, length_stride_size, length_dims);
-        vxCopyTensorPatch(imgObj[2], NULL, window_user_addr, length, VX_READ_ONLY, 0);
-        step_user_addr = vxCreateTensorAddressing(context, length_size, length_stride_size, length_dims);
-        vxCopyTensorPatch(imgObj[3], NULL, step_user_addr, step, VX_READ_ONLY, 0);
-        padEnd_user_addr = vxCreateTensorAddressing(context, length_size, length_stride_size, length_dims);
-        vxCopyTensorPatch(imgObj[4], NULL, padEnd_user_addr, padFlg, VX_READ_ONLY, 0);
-        padVal_user_addr = vxCreateTensorAddressing(context, length_size, length_stride_size, length_dims);
-        vxCopyTensorPatch(imgObj[5], NULL, padVal_user_addr, pad, VX_READ_ONLY, 0);
-        axis_user_addr = vxCreateTensorAddressing(context, length_size, length_stride_size, length_dims);
-        vxCopyTensorPatch(imgObj[6], NULL, axis_user_addr, axis, VX_READ_ONLY, 0);
-#endif
         // scalar
         status = vxCopyScalar(scalar[0], &cmp_op, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
         if (status != VX_SUCCESS)
@@ -378,30 +326,16 @@ vsi_status VX_CALLBACK vxRelationalOpsKernel
             input_size[1], input_size[2], input_size[3], cmp_op, inputFormat);
 
         //output tensor
-        output_user_addr = vxCreateTensorAddressing(context, output_size,
-            output_stride_size, output_dims);
-        vxCopyTensorPatch(imgObj[2], NULL, output_user_addr, output, VX_WRITE_ONLY, 0);
+        status = vsi_nn_vxCopyDataToTensor(context, imgObj[2], &out_attr, output);
+        if (status != VX_SUCCESS)
+        {
+            VSILOGE("vsi_nn_vxCopyDataToTensor failure! at line %d\n", __LINE__);
+            goto OnError;
+        }
 OnError:
         if(input) free(input);
         if(input1) free(input1);
         if(output) free(output);
-#if 0
-        if(length) free(length);
-        if(step) free(step);
-        if(padFlg) free(padFlg);
-        if(pad) free(pad);
-        if(axis) free(axis);
-#endif
-        if(input_user_addr) vxReleaseTensorAddressing(&input_user_addr);
-        if(input1_user_addr) vxReleaseTensorAddressing(&input1_user_addr);
-        if(output_user_addr) vxReleaseTensorAddressing(&output_user_addr);
-#if 0
-        if(window_user_addr) vxReleaseTensorAddressing(&window_user_addr);
-        if(step_user_addr) vxReleaseTensorAddressing(&step_user_addr);
-        if(padEnd_user_addr) vxReleaseTensorAddressing(&padEnd_user_addr);
-        if(padVal_user_addr) vxReleaseTensorAddressing(&padVal_user_addr);
-        if(axis_user_addr) vxReleaseTensorAddressing(&axis_user_addr);
-#endif
     }
 
     return status;

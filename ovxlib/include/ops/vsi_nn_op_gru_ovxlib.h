@@ -58,7 +58,7 @@ typedef struct _vsi_nn_gru_ovxlib_param
 {
     uint32_t weights;
     vsi_bool time_major;
-    vsi_nn_grucell_activation_e activation;
+    vsi_nn_activation_e activation;
     vsi_nn_dtype_t internal_dtype[GRUCELL_QUANTIZE_PARAM_COUNT];
 } vsi_nn_gru_ovxlib_param;
 

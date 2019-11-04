@@ -39,97 +39,63 @@
 #include "client/vsi_nn_vxkernel.h"
 #include "libnnext/vx_lib_nnext.h"
 
-#define INPUT_FP16 0
-#define OUTPUT_FP16 0
-
-void myFloorDivFunc
+static float vsi_nn_DtypeToFloat32_Ex
     (
-    void* imgIn,
-    void* imgIn1,
-    void* imgOut,
-    uint32_t input_dim,
-    uint32_t width,
-    uint32_t height,
-    uint32_t channel,
-    uint32_t batch,
-    float inScale0,
-    float inScale1,
-    float outScale,
-    int inZp0,
-    int inZp1,
-    int outZp,
-    int8_t inFl0,
-    int8_t inFl1,
-    int8_t outFl,
-    vsi_nn_type_e type
+    uint8_t   * src,
+    uint32_t    index,
+    const vsi_nn_dtype_t * src_dtype
     )
 {
-    uint32_t k;
-    uint32_t iter = batch * channel * height * width;
+    float value = 0.0f;
+    vsi_status status;
 
-    if(type == VSI_NN_TYPE_FLOAT16)
+    src = src + index * vsi_nn_TypeGetBytes(src_dtype->vx_type);
+
+    status = vsi_nn_DtypeToFloat32(src, &value, src_dtype);
+    if(VSI_SUCCESS != status)
     {
-        uint16_t* tmpIn = (uint16_t*)imgIn;
-        uint16_t* tmpIn1 = (uint16_t*)imgIn1;
-        uint16_t* tmpOut = (uint16_t*)imgOut;
-        float data0, data1, data2 = 0;
-
-        for(k = 0; k < iter; k++)
-        {
-            data0 = vsi_nn_Fp16toFp32(tmpIn[k]);
-            data1 = vsi_nn_Fp16toFp32(tmpIn1[k]);
-            data2 = (float)floor(data0/data1);
-            tmpOut[k] = vsi_nn_Fp32toFp16(data2);
-        }
-    }
-    else if(type == VSI_NN_TYPE_INT16)
-    {
-        int16_t* tmpIn = (int16_t*)imgIn;
-        int16_t* tmpIn1 = (int16_t*)imgIn1;
-        int16_t* tmpOut = (int16_t*)imgOut;
-        float data0, data1, data2 = 0;
-
-        for(k = 0; k < iter; k++)
-        {
-            data0 = vsi_nn_DFPToFp32(tmpIn[k], inFl0, VSI_NN_TYPE_INT16);
-            data1 = vsi_nn_DFPToFp32(tmpIn1[k], inFl1, VSI_NN_TYPE_INT16);
-            data2 = (float)floor(data0/data1);
-            tmpOut[k] = vsi_nn_Fp32ToDFP(data2, outFl, VSI_NN_TYPE_INT16);
-        }
-    }
-    else if(type == VSI_NN_TYPE_INT8)
-    {
-        int8_t* tmpIn = (int8_t*)imgIn;
-        int8_t* tmpIn1 = (int8_t*)imgIn1;
-        int8_t* tmpOut = (int8_t*)imgOut;
-        float data0, data1, data2 = 0;
-
-        for(k = 0; k < iter; k++)
-        {
-            data0 = vsi_nn_DFPToFp32(tmpIn[k], inFl0, VSI_NN_TYPE_INT8);
-            data1 = vsi_nn_DFPToFp32(tmpIn1[k], inFl1, VSI_NN_TYPE_INT8);
-            data2 = (float)floor(data0/data1);
-            tmpOut[k] = vsi_nn_Fp32ToDFP(data2, outFl, VSI_NN_TYPE_INT8);
-        }
-    }
-    else if(type == VSI_NN_TYPE_UINT8)
-    {
-        uint8_t* tmpIn = (uint8_t*)imgIn;
-        uint8_t* tmpIn1 = (uint8_t*)imgIn1;
-        uint8_t* tmpOut = (uint8_t*)imgOut;
-        float data0, data1, data2 = 0;
-
-        for(k = 0; k < iter; k++)
-        {
-            data0 = vsi_nn_AffineToFp32(tmpIn[k], inScale0, inZp0, VSI_NN_TYPE_UINT8);
-            data1 = vsi_nn_AffineToFp32(tmpIn1[k], inScale1, inZp1, VSI_NN_TYPE_UINT8);
-            data2 = (float)floor(data0/data1);
-            tmpOut[k] = vsi_nn_Fp32ToAffine(data2, outScale, outZp, VSI_NN_TYPE_UINT8);
-        }
+        VSILOGE("Convert data to float32 fail!");
+        value = 0.0f;
     }
 
-    return;
+    return value;
 }
+
+static vsi_status vsi_nn_Float32ToDtype_Ext
+    (
+    float   src,
+    uint8_t   * dst,
+    uint32_t    index,
+    const vsi_nn_dtype_t * dst_dtype
+    )
+{
+    vsi_nn_dtype_t src_dtype;
+
+    dst = dst + index * vsi_nn_TypeGetBytes(dst_dtype->vx_type);
+
+    memset( &src_dtype, 0, sizeof( vsi_nn_dtype_t ) );
+    src_dtype.vx_type = VSI_NN_TYPE_FLOAT32;
+
+    return vsi_nn_DtypeConvert( (uint8_t *)&src, &src_dtype, dst, dst_dtype );
+} /* vsi_nn_Float32ToDtype_Ext */
+
+static uint32_t getExpandTensorOffset(uint32_t index, uint32_t num_of_dims, uint32_t * in_dims,
+                                       uint32_t *strides, uint32_t * out_dims)
+{
+    uint32_t offset = 0;
+    uint32_t i;
+
+    for(i = 0; i < num_of_dims; i++)
+    {
+        if(in_dims[i] == out_dims[i])
+            offset += strides[i] * (index % out_dims[i]);
+
+        index /= out_dims[i];
+    }
+
+    return offset;
+}
+
 
 vsi_status VX_CALLBACK vxFloorDivKernel
     (
@@ -145,36 +111,22 @@ vsi_status VX_CALLBACK vxFloorDivKernel
         vx_context context = NULL;
         // tensor
         vx_tensor imgObj[3] = { NULL };
-#if INPUT_FP16
-        int16_t *input = NULL;
-#else
         uint8_t *input = NULL;
         uint8_t *input1 = NULL;
-#endif
-#if OUTPUT_FP16
-        int16_t *output = NULL;
-#else
         uint8_t *output = NULL;
-#endif
 
-        uint32_t input_size[DIM_SIZE] = {0}, output_size[DIM_SIZE] = {0};
+        vsi_nn_tensor_attr_t in_attr, in_attr1, out_attr;
+        uint32_t    stride_size[3][VSI_NN_MAX_DIM_NUM];
+        vx_tensor_addressing user_addr[3]  = {NULL};
 
-        uint32_t input_stride_size[4]  = {0};
-        uint32_t output_stride_size[4] = {0};
-
-        vx_tensor_addressing input_user_addr = NULL;
-        vx_tensor_addressing input1_user_addr = NULL;
-        vx_tensor_addressing output_user_addr = NULL;
-
-        vsi_nn_type_e inputFormat = VSI_NN_TYPE_FLOAT16,
-            inputFormat1 = VSI_NN_TYPE_FLOAT16, outputFormat = VSI_NN_TYPE_FLOAT16;
-        uint32_t input_dims = 0, output_dims = 0, tmpDim = 0;
-        uint32_t i;
-        vx_int8 infp0 = 0, infp1 = 0, outfp = 0;
-        int32_t in_zp, in_zp1, out_zp;
-        float in_scale, in_scale1, out_scale;
+        int32_t elementCount = 0;
+        int32_t i = 0;
 
         status = VX_SUCCESS;
+
+        memset(&in_attr, 0x0, sizeof(vsi_nn_tensor_attr_t));
+        memset(&in_attr1, 0x0, sizeof(vsi_nn_tensor_attr_t));
+        memset(&out_attr, 0x0, sizeof(vsi_nn_tensor_attr_t));
 
         imgObj[0] = (vx_tensor)paramObj[0];
         imgObj[1] = (vx_tensor)paramObj[1];
@@ -183,155 +135,65 @@ vsi_status VX_CALLBACK vxFloorDivKernel
         if (context == NULL)
         {
             VSILOGE("vxGetContext failure! at line %d\n", __LINE__);
-            return status;
-        }
-        //input
-        status = vxQueryTensor(imgObj[0], VX_TENSOR_NUM_OF_DIMS, &input_dims, sizeof(input_dims));
-        if (status != VX_SUCCESS)
-        {
-            VSILOGE("vxQueryTensor input_dims failure! at line %d\n", __LINE__);
-            return status;
-        }
-        status = vxQueryTensor(imgObj[0], VX_TENSOR_DATA_TYPE, &inputFormat, sizeof(inputFormat));
-        if (status != VX_SUCCESS)
-        {
-            VSILOGE("vxQueryTensor inputFormat failure! at line %d\n", __LINE__);
-            return status;
-        }
-        status = vxQueryTensor(imgObj[0], VX_TENSOR_DIMS, input_size, sizeof(input_size));
-        if (status != VX_SUCCESS)
-        {
-            VSILOGE("vxQueryTensor input_size failure! at line %d\n", __LINE__);
-            return status;
-        }
-        status = vxQueryTensor(imgObj[0], VX_TENSOR_ZERO_POINT, &in_zp, sizeof(in_zp));
-        if (status != VX_SUCCESS)
-        {
-            VSILOGE("vxQueryTensor input_size failure! at line %d\n", __LINE__);
-            return status;
-        }
-        status = vxQueryTensor(imgObj[0], VX_TENSOR_SCALE, &in_scale, sizeof(in_scale));
-        if (status != VX_SUCCESS)
-        {
-            VSILOGE("vxQueryTensor input_size failure! at line %d\n", __LINE__);
-            return status;
-        }
-        status = vxQueryTensor(imgObj[0], VX_TENSOR_FIXED_POINT_POSITION, &infp0, sizeof(infp0));
-        if (status != VX_SUCCESS)
-        {
-            VSILOGE("vxQueryTensor input_size failure! at line %d\n", __LINE__);
-            return status;
+            goto final;
         }
 
-        // input1
-        status = vxQueryTensor(imgObj[1], VX_TENSOR_DATA_TYPE, &inputFormat1, sizeof(inputFormat1));
+        status = vsi_nn_vxGetTensorAttr(imgObj[0], &in_attr);
+        status |= vsi_nn_vxGetTensorAttr(imgObj[1], &in_attr1);
+        status |= vsi_nn_vxGetTensorAttr(imgObj[2], &out_attr);
         if (status != VX_SUCCESS)
         {
-            VSILOGE("vxQueryTensor inputFormat failure! at line %d\n", __LINE__);
-            return status;
-        }
-        status = vxQueryTensor(imgObj[1], VX_TENSOR_ZERO_POINT, &in_zp1, sizeof(in_zp1));
-        if (status != VX_SUCCESS)
-        {
-            VSILOGE("vxQueryTensor input_size failure! at line %d\n", __LINE__);
-            return status;
-        }
-        status = vxQueryTensor(imgObj[1], VX_TENSOR_SCALE, &in_scale1, sizeof(in_scale1));
-        if (status != VX_SUCCESS)
-        {
-            VSILOGE("vxQueryTensor input_size failure! at line %d\n", __LINE__);
-            return status;
-        }
-        status = vxQueryTensor(imgObj[1], VX_TENSOR_FIXED_POINT_POSITION, &infp1, sizeof(infp1));
-        if (status != VX_SUCCESS)
-        {
-            VSILOGE("vxQueryTensor input_size failure! at line %d\n", __LINE__);
-            return status;
+            VSILOGE("vsi_nn_vxGetTensorAttr failure! at line %d\n", __LINE__);
+            goto final;
         }
 
-        //output
-        status  = vxQueryTensor(imgObj[2], VX_TENSOR_DATA_TYPE, &outputFormat, sizeof(outputFormat));
-        status |= vxQueryTensor(imgObj[2], VX_TENSOR_NUM_OF_DIMS, &output_dims, sizeof(output_dims));
-        if (status != VX_SUCCESS)
-        {
-            VSILOGE("vxQueryTensor outputFormat failure! at line %d\n", __LINE__);
-            return status;
-        }
-        status = vxQueryTensor(imgObj[2], VX_TENSOR_DIMS, output_size, sizeof(output_size));
-        if (status != VX_SUCCESS)
-        {
-            VSILOGE("vxQueryTensor output_size failure! at line %d\n", __LINE__);
-            return status;
-        }
-        status = vxQueryTensor(imgObj[2], VX_TENSOR_ZERO_POINT, &out_zp, sizeof(out_zp));
-        if (status != VX_SUCCESS)
-        {
-            VSILOGE("vxQueryTensor input_size failure! at line %d\n", __LINE__);
-            return status;
-        }
-        status = vxQueryTensor(imgObj[2], VX_TENSOR_SCALE, &out_scale, sizeof(out_scale));
-        if (status != VX_SUCCESS)
-        {
-            VSILOGE("vxQueryTensor input_size failure! at line %d\n", __LINE__);
-            return status;
-        }
-        status = vxQueryTensor(imgObj[2], VX_TENSOR_FIXED_POINT_POSITION, &outfp, sizeof(outfp));
-        if (status != VX_SUCCESS)
-        {
-            VSILOGE("vxQueryTensor input_size failure! at line %d\n", __LINE__);
-            return status;
-        }
+        output = (uint8_t*)malloc(vsi_nn_vxGetTensorElementNum(&out_attr)*vsi_nn_GetTypeBytes(out_attr.dtype.vx_type));
 
-        input_size[2] = (input_dims <= 2)?1:input_size[2];
-        input_size[3] = (input_dims <= 3)?1:input_size[3];
+        input = vsi_nn_ConvertRawTensorToData2(context, imgObj[0],
+            &(in_attr), stride_size[0], &(user_addr[0]), VX_READ_ONLY);
+        input1 = vsi_nn_ConvertRawTensorToData2(context, imgObj[1],
+            &(in_attr1), stride_size[1], &(user_addr[1]), VX_READ_ONLY);
 
-        input_stride_size[0]  = vsi_nn_GetTypeBytes(inputFormat);
-        output_stride_size[0] = vsi_nn_GetTypeBytes(outputFormat);
-        //length_stride_size[0] = vsi_nn_GetTypeBytes(paraFormat);
-        for (i=1; i< input_dims; i++)
+        elementCount = vsi_nn_vxGetTensorElementNum(&in_attr);
+
+        for (i = 0; i < elementCount; i++)
         {
-            input_stride_size[i]  = input_stride_size[i-1] * input_size[i-1];
+            uint32_t  in0offset = 0;
+            uint32_t  in1offset = 0;
+            vx_uint8   *in0_ptr  = NULL;
+            vx_uint8   *in1_ptr  = NULL;
+            vx_float32 in0Data   = 0;
+            vx_float32 in1Data   = 0;
+            vx_float32 outData   = 0;
+
+            in0offset = getExpandTensorOffset(i, in_attr.dim_num, in_attr.size, stride_size[0], out_attr.size);
+            in1offset = getExpandTensorOffset(i, in_attr1.dim_num, in_attr.size, stride_size[1], out_attr.size);
+
+            in0_ptr = (vx_uint8 *)input + in0offset;
+            in1_ptr = (vx_uint8 *)input1 + in1offset;
+
+            in0Data = vsi_nn_DtypeToFloat32_Ex(in0_ptr, 0, &in_attr.dtype);
+            in1Data = vsi_nn_DtypeToFloat32_Ex(in1_ptr, 0, &in_attr1.dtype);
+
+            outData = (float)floor(in0Data/in1Data);
+
+            vsi_nn_Float32ToDtype_Ext(outData, output, i, &out_attr.dtype);
         }
-        for (i=1; i< output_dims; i++)
-        {
-            output_stride_size[i] = output_stride_size[i-1] * output_size[i-1];
-        }
-
-#if INPUT_FP16
-        input  = (int16_t*)malloc(input_size[0]*input_size[1]*input_size[2]*sizeof(int16_t));
-#else
-        input  = (uint8_t*)malloc(input_size[0]*input_size[1]*input_size[2]*vsi_nn_GetTypeBytes(inputFormat));
-        input1  = (uint8_t*)malloc(input_size[0]*input_size[1]*input_size[2]*vsi_nn_GetTypeBytes(inputFormat));
-#endif
-#if OUTPUT_FP16
-        output = (int16_t*)malloc(output_size[0]*output_size[1]*output_size[2]*sizeof(int16_t));
-#else
-        output = (uint8_t*)malloc(output_size[0]*output_size[1]*output_size[2]*vsi_nn_GetTypeBytes(outputFormat));
-#endif
-
-        input_user_addr = vxCreateTensorAddressing(context, input_size, input_stride_size, input_dims);
-        vxCopyTensorPatch(imgObj[0], NULL, input_user_addr, input, VX_READ_ONLY, 0);
-
-        input1_user_addr = vxCreateTensorAddressing(context, input_size, input_stride_size, input_dims);
-        vxCopyTensorPatch(imgObj[1], NULL, input1_user_addr, input1, VX_READ_ONLY, 0);
-
-        // Call C Prototype
-        myFloorDivFunc(input, input1, output, tmpDim, input_size[0],
-            input_size[1], input_size[2], input_size[3],
-            in_scale, in_scale1, out_scale, in_zp, in_zp1, out_zp, infp0, infp1, outfp, inputFormat);
 
         //output tensor
-        output_user_addr = vxCreateTensorAddressing(context, output_size,
-            output_stride_size, output_dims);
-        vxCopyTensorPatch(imgObj[2], NULL, output_user_addr, output, VX_WRITE_ONLY, 0);
-
+        status = vsi_nn_vxCopyDataToTensor(context, imgObj[2], &out_attr, output);
+        if (status != VX_SUCCESS)
+        {
+            VSILOGE("vsi_nn_vxCopyDataToTensor failure! at line %d\n", __LINE__);
+            goto final;
+        }
+final:
         if(input) free(input);
         if(input1) free(input1);
         if(output) free(output);
+        for(i = 0; i < 3; i++)
+            if (user_addr[i]) vxReleaseTensorAddressing(&(user_addr[i]));
 
-        if(input_user_addr) vxReleaseTensorAddressing(&input_user_addr);
-        if(input1_user_addr) vxReleaseTensorAddressing(&input1_user_addr);
-        if(output_user_addr) vxReleaseTensorAddressing(&output_user_addr);
     }
 
     return status;

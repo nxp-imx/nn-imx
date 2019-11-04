@@ -26,15 +26,13 @@
 #include <stdio.h>
 #include "vsi_nn_version.h"
 
+#define MACRO_TO_STRING(M) #M
+#define VERSION_PREFIX "OVXLIB_VERSION=="
+#define DEF_VERSION(a,b,c) VERSION_PREFIX MACRO_TO_STRING(a)"." MACRO_TO_STRING(b)"." MACRO_TO_STRING(c)
+#define DEF_VERSION_STR DEF_VERSION(VSI_NN_VERSION_MAJOR,VSI_NN_VERSION_MINOR,VSI_NN_VERSION_PATCH)
+
 const char *vsi_nn_GetVersion(void)
 {
-    static char version[32] = {0};
-
-    sprintf(version,
-            "%d.%d.%d",
-            VSI_NN_VERSION_MAJOR,
-            VSI_NN_VERSION_MINOR,
-            VSI_NN_VERSION_PATCH
-           );
+    static const char *version = DEF_VERSION_STR;
     return version;
 }

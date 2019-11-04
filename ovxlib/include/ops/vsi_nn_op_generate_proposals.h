@@ -28,7 +28,13 @@
 
 typedef struct _vsi_nn_generate_proposals_param
 {
-    vsi_enum     type;
+    float height_stride;
+    float width_stride;
+    int32_t pre_nms_top_n;
+    int32_t post_nms_top_n;
+    float iou_threshold;
+    float min_size;
+    int32_t type;
 } vsi_nn_generate_proposals_param;
 
 #endif

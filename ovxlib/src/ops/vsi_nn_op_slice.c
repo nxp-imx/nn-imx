@@ -259,7 +259,8 @@ static vsi_status op_compute
     if( NULL == begin_dims_tensor )
     {
         VSILOGE("Create begin_dims_tensor fail.(slice)");
-        return VSI_FAILURE;
+        status = VSI_FAILURE;
+        goto final;
     }
 
     end_dims_tensor = vsi_nn_CreateTensorFromData(
@@ -269,7 +270,8 @@ static vsi_status op_compute
     if( NULL == end_dims_tensor )
     {
         VSILOGE("Create end_dims_tensor fail.(slice)");
-        return VSI_FAILURE;
+        status = VSI_FAILURE;
+        goto final;
     }
 
     stride_dims_tensor = vsi_nn_CreateTensorFromData(
@@ -279,7 +281,8 @@ static vsi_status op_compute
     if( NULL == stride_dims_tensor )
     {
         VSILOGE("Create stride_dims_tensor fail.(slice)");
-        return VSI_FAILURE;
+        status = VSI_FAILURE;
+        goto final;
     }
 
     param.begin_dims = REQUIRED_IO(begin_dims_tensor);
@@ -299,12 +302,14 @@ static vsi_status op_compute
         status = VSI_SUCCESS;
     }
 
+final:
     if (begin_dims_tensor) vsi_nn_ReleaseTensor(&begin_dims_tensor);
     if (end_dims_tensor) vsi_nn_ReleaseTensor(&end_dims_tensor);
     if (stride_dims_tensor) vsi_nn_ReleaseTensor(&stride_dims_tensor);
 #else
-    vsi_nn_kernel_info_t kernel_info = {0};
+    vsi_nn_kernel_info_t kernel_info;
 
+    memset(&kernel_info, 0x0, sizeof(vsi_nn_kernel_info_t));
     status = VSI_FAILURE;
     kernel_info.resource_num = 1;
     kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));

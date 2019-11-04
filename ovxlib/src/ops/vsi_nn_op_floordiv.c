@@ -217,10 +217,12 @@ static vsi_status op_compute
     )
 {
     vsi_status status = VSI_SUCCESS;
-    vsi_nn_kernel_info_t kernel_info = {0};
+    vsi_nn_kernel_info_t kernel_info;
 
     vsi_nn_type_e inputDataFormat     = inputs[0]->attr.dtype.vx_type;
     vsi_nn_type_e outputDataFormat    = outputs[0]->attr.dtype.vx_type;
+
+    memset(&kernel_info, 0x0, sizeof(vsi_nn_kernel_info_t));
 
     if(inputDataFormat == outputDataFormat && inputDataFormat != VSI_NN_TYPE_FLOAT32)
     {
