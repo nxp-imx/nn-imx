@@ -1,5 +1,6 @@
 include $(AQROOT)/makefile.linux.def
 
+OVXLIB_DIR = $(AQROOT)/driver/nn/ovxlib
 ifeq ($(OVXLIB_DIR),)
 $(error Please set OVXLIB_DIR env first)
 endif
@@ -12,7 +13,7 @@ INCLUDE += -I./ -I./boost/libs/preprocessor/include/
 
 CFLAGS += $(INCLUDE) -std=c++11
 CFLAGS += -D'OVXLIB_API=__attribute__((visibility("default")))'
-CC      = $(CROSS_COMPILE)g++ -pthread
+CC      = $(CXX) -pthread
 ################################################################################
 # Supply necessary libraries.
 

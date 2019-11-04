@@ -308,7 +308,7 @@ OBJECTS += $(OBJ_DIR)/vsi_nn_pf_depth2space.o
 endif
 
 # installation directory
-INSTALL_DIR := $(VIVANTE_SDK_LIB)
+INSTALL_DIR := $(SDK_DIR)/drivers
 
 ################################################################################
 # Include the common makefile.
