@@ -32,6 +32,7 @@
 #include "op/ILayoutInference.hpp"
 #include "op/operand.hpp"
 #include "permute_vector.hpp"
+#include "logging.hpp"
 
 namespace nnrt {
 class Model;
@@ -219,7 +220,7 @@ inline uint32_t axisMapTo(const nnrt::layout_inference::IPermuteVectorPtr perm, 
             return i;
         }
     }
-    VSILOGE("Cannot find the axis val");
+    NNRT_LOGE_PRINT("Cannot find the axis val");
     assert(false);
     return perm->rank() - 1;
 }
@@ -465,8 +466,8 @@ struct ROIAlignOperation : Operation {
     int sampling_points_width;
 };
 
-struct ROIPoolOperation : Operation {
-    ROIPoolOperation() : Operation(OperationType::ROI_POOL) {}
+struct ROIPoolingOperation : Operation {
+    ROIPoolingOperation() : Operation(OperationType::ROI_POOL) {}
     int height;
     int width;
     float height_ratio;
@@ -483,6 +484,37 @@ struct GenerateProposalsOperation : Operation {
     int post_nms_topn;
     float iou_threshold;
     float min_size;
+};
+
+struct RandomMultinomialOperation : Operation {
+    RandomMultinomialOperation() : Operation(OperationType::RANDOM_MULTINOMIAL) {}
+    int sample_num;
+};
+
+struct TopkOperation : Operation {
+    TopkOperation() : Operation(OperationType::TOPK) {}
+    int k{1};
+};
+
+struct TileOperation : Operation {
+    TileOperation() : Operation(OperationType::TILE) {}
+    std::vector<int32_t> multiples;
+};
+
+struct BoxWithNmsLimitOperation : Operation {
+    BoxWithNmsLimitOperation() : Operation(OperationType::BOX_WITH_NMS_LIMIT) {}
+    float score_threshold;
+    int32_t max_boxes;
+    NmsKernelMethod nms_kernel_method;
+    float iou_threshold;
+    float nms_sigma;
+    float nms_score_threshold;
+};
+
+struct LogSoftmaxOperation : Operation {
+    LogSoftmaxOperation() : Operation(OperationType::LOG_SOFTMAX) {}
+    float beta{1.0};
+    int32_t axis{-1};
 };
 
 #define DECLARE_OPERATION(name, type)                         \
@@ -507,6 +539,7 @@ DECLARE_OPERATION(Greater, GREATER);
 DECLARE_OPERATION(GreaterEqual, GREATER_EQUAL);
 DECLARE_OPERATION(Less, LESS);
 DECLARE_OPERATION(LessEqual, LESS_EQUAL);
+DECLARE_OPERATION(Log, LOG);
 DECLARE_OPERATION(LogicalAnd, LOGICAL_AND);
 DECLARE_OPERATION(LogicalOr, LOGICAL_OR);
 DECLARE_OPERATION(Neg, NEG);
@@ -515,6 +548,7 @@ DECLARE_OPERATION(Select, SELECT);
 DECLARE_OPERATION(PRelu, PRELU);
 DECLARE_OPERATION(Sin, SIN);
 DECLARE_OPERATION(AxisAlignedBBoxTransform, AXIS_ALIGNED_BBOX_TRANSFORM);
+DECLARE_OPERATION(HeatmapMaxKeypoint, HEATMAP_MAX_KEYPOINT);
 
 #undef DECLARE_OPERATION
 }

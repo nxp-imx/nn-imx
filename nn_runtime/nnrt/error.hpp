@@ -72,4 +72,13 @@ typedef enum {
 } NNAdapterResultCode;
 
 #define NNA_ERROR_CODE(code)   (NNA_##code)
+
+#define CHECK_NULL_PTR(ptr) {\
+    if (!ptr) {\
+        NNRT_LOGE_PRINT("Invalid pointer: %s", #ptr);\
+        assert(0);\
+        return;\
+    }\
+}
+
 #endif

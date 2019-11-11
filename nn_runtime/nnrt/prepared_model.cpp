@@ -46,7 +46,7 @@ int PreparedModel::prepare()
     if (graph_) {
         return NNA_ERROR_CODE(NO_ERROR);
     }
-    VSILOGD("Prepare model ...");
+    NNRT_LOGD_PRINT("Prepare model ...");
     // Compile
     int err = NNA_ERROR_CODE(NO_ERROR);
     if (!model_->isCompiled()) {
@@ -80,7 +80,7 @@ int PreparedModel::prepare()
     tensor_mapping_ = delegate.getTensorMapping();
     graph_ = delegate.throwGraph();
     if (err != NNA_ERROR_CODE(NO_ERROR)) {
-        VSILOGE("Prepare graph fail.");
+        NNRT_LOGE_PRINT("Prepare graph fail.");
         vsi_nn_ReleaseGraph(&graph_);
     }
     return err;
@@ -97,7 +97,7 @@ int PreparedModel::execute()
             error = NNA_ERROR_CODE(NO_ERROR);
             //vsi_nn_DumpGraphNodeOutputs(graph_, "nodes", nullptr, 0, false, VSI_NN_DIM_FMT_NCHW);
         } else {
-            VSILOGE("Process complete state: %d.", run_state);
+            NNRT_LOGE_PRINT("Process complete state: %d.", run_state);
         }
     }
     return error;
@@ -108,7 +108,7 @@ int PreparedModel::setInput(uint32_t index, const void* data, size_t length)
     //bool input_mapped_as_vx_tensor = tensor_mapping_.find(index) != tensor_mapping_.end();
 
     //if (!input_mapped_as_vx_tensor) {
-    //    VSILOGD("Should not set input for no-value optional parameter");
+    //    NNRT_LOGD_PRINT("Should not set input for no-value optional parameter");
     //    return NNA_ERROR_CODE(OP_FAILED);
     //}
 
@@ -127,7 +127,7 @@ int PreparedModel::setInput(uint32_t index, const void* data, size_t length)
         uint32_t tensor_size = vsi_nn_GetTensorSize(tensor->attr.size, tensor->attr.dim_num,
                 tensor->attr.dtype.vx_type);
         if (length != tensor_size) {
-            VSILOGE("Tensor size mismatch %u vs %u.", tensor_size, length);
+            NNRT_LOGE_PRINT("Tensor size mismatch %u vs %u.", tensor_size, length);
             return NNA_ERROR_CODE(OP_FAILED);
         }
         vsi_nn_CopyDataToTensor(graph_, tensor, (uint8_t*)data);
@@ -147,7 +147,7 @@ int PreparedModel::getOutput(uint32_t index, void* data, size_t length)
         uint32_t tensor_size = vsi_nn_GetTensorSize(tensor->attr.size, tensor->attr.dim_num,
                 tensor->attr.dtype.vx_type);
         if (length != tensor_size) {
-            VSILOGW("Tensor size mismatch %u vs %u.", tensor_size, length);
+            NNRT_LOGW_PRINT("Tensor size mismatch %u vs %u.", tensor_size, length);
             return NNA_ERROR_CODE(OP_FAILED);
         }
         if (length != vsi_nn_CopyTensorToBuffer(graph_, tensor, (uint8_t*)data)) {

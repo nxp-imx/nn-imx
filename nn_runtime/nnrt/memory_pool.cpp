@@ -28,7 +28,7 @@
 #include "file_map_memory.hpp"
 #include "model.hpp"
 
-#include "vsi_nn_pub.h"
+#include "logging.hpp"
 
 namespace mem_pool{
 
@@ -104,13 +104,13 @@ struct mem_type_of<alloc::Sml_block_infor> {
 };
 
 bool Mmp_block_list::add_reference(const alloc::Mmp_block_infor& infor, Ref& mem_ref) {
-    VSILOGD("[mem_pool]Add memory mapped block");
+    NNRT_LOGD_PRINT("[mem_pool]Add memory mapped block");
 
     auto found_at = std::find_if(mem_list_.begin(),
                             mem_list_.end(),
                             [&infor](const mem_list_type::value_type& kv){
                                 if (kv.first == infor.address_) {
-                                    VSILOGD("[mem_pool] shared memory map address");
+                                    NNRT_LOGD_PRINT("[mem_pool] shared memory map address");
                                     return true;
                                 }
                                 return false;
@@ -122,7 +122,7 @@ bool Mmp_block_list::add_reference(const alloc::Mmp_block_infor& infor, Ref& mem
             found_at = insert.first;
         }
         else {
-            VSILOGE("[mem_pool] insert operation failed");
+            NNRT_LOGE_PRINT("[mem_pool] insert operation failed");
             mem_ref = INVALID_REF;
             return false;
         }
@@ -133,7 +133,7 @@ bool Mmp_block_list::add_reference(const alloc::Mmp_block_infor& infor, Ref& mem
     mem_ref.index_ = 0; //not used
     auto mem_end = (found_at->first)->length();
     if (infor.offset_ >= mem_end) {
-        VSILOGE("[mem_pool]requested memory exceed current space");
+        NNRT_LOGE_PRINT("[mem_pool]requested memory exceed current space");
 
         mem_ref = INVALID_REF;
         mem_list_.erase(found_at->first);
@@ -156,7 +156,7 @@ bool Mmp_block_list::add_reference(const alloc::Mmp_block_infor& infor, Ref& mem
 }
 
 void Mmp_block_list::del_reference(const Ref& mem_ref) {
-    VSILOGD("[mem_pool]Remove memory reference from MMP Block list");
+    NNRT_LOGD_PRINT("[mem_pool]Remove memory reference from MMP Block list");
 
     // auto idx = std::find(mem_list_.begin(), mem_list_.end(), mem_ref.address_);
     auto found_at = std::find_if(   mem_list_.begin(),
@@ -172,10 +172,10 @@ void Mmp_block_list::del_reference(const Ref& mem_ref) {
         }
     }
     else {
-        VSILOGE("[mem_pool]Can not find given Memory Reference in Memory mapped pools");
+        NNRT_LOGE_PRINT("[mem_pool]Can not find given Memory Reference in Memory mapped pools");
     }
 
-    VSILOGD("[mem_pool]$%d Memory mapped blocks tracked by system", mem_list_.size());
+    NNRT_LOGD_PRINT("[mem_pool]$%d Memory mapped blocks tracked by system", mem_list_.size());
 }
 
 bool operator<(const Nml_block_list::Ro_segment& l, const Nml_block_list::Ro_segment& r) {
@@ -183,7 +183,7 @@ bool operator<(const Nml_block_list::Ro_segment& l, const Nml_block_list::Ro_seg
 }
 
 bool Nml_block_list::add_reference(const alloc::Nml_block_infor& infor, Ref& mem_ref) {
-    VSILOGD("[mem_pool]Add normal memory block(size > 128)");
+    NNRT_LOGD_PRINT("[mem_pool]Add normal memory block(size > 128)");
 
     auto found_at = std::find_if( mem_list_.begin(),
                                   mem_list_.end(),
@@ -214,7 +214,7 @@ bool Nml_block_list::add_reference(const alloc::Nml_block_infor& infor, Ref& mem
 }
 
 void Nml_block_list::del_reference(const Ref& mem_ref) {
-    VSILOGD("[mem_pool]Delete normal memory reference");
+    NNRT_LOGD_PRINT("[mem_pool]Delete normal memory reference");
     auto found_at = std::find_if(   mem_list_.begin(),
                                     mem_list_.end(),
                                     [&mem_ref](const mem_list_type::value_type& kv){
@@ -228,17 +228,17 @@ void Nml_block_list::del_reference(const Ref& mem_ref) {
         }
     }
     else {
-        VSILOGE("[mem_pool]Can not find given Memory Refence in Normal RO memory block");
+        NNRT_LOGE_PRINT("[mem_pool]Can not find given Memory Refence in Normal RO memory block");
     }
 
     // trace usage information
-    VSILOGD("[mem_pool]#%d normal memory blocks tracked by system", mem_list_.size());
+    NNRT_LOGD_PRINT("[mem_pool]#%d normal memory blocks tracked by system", mem_list_.size());
 }
 
 Sml_block_list::Sml_block_list() {}
 
 bool Sml_block_list::add_reference(const alloc::Sml_block_infor& infor, Ref& mem_ref) {
-    VSILOGD("[mem_pool]Add small memory block to system");
+    NNRT_LOGD_PRINT("[mem_pool]Add small memory block to system");
 
     { // Increase reference count if source address already copied to internal memory
         auto found_at = std::find_if(ref_count_.begin(),
@@ -247,7 +247,7 @@ bool Sml_block_list::add_reference(const alloc::Sml_block_infor& infor, Ref& mem
                                     if (item.first.src_ == infor.address_) {
                                         mem_ref = item.first;
                                         ++ item.second;
-                                        VSILOGD("[mem_pool] Buffer@%p already"
+                                        NNRT_LOGD_PRINT("[mem_pool] Buffer@%p already"
                                                 " copied to internal memory", infor.address_);
                                         return true;
                                     }
@@ -271,23 +271,23 @@ bool Sml_block_list::add_reference(const alloc::Sml_block_infor& infor, Ref& mem
 
     auto found_at = ref_count_.find(mem_ref);
     if (ref_count_.end() == found_at) {
-        VSILOGD("[mem_pool] Add new ref_count");
+        NNRT_LOGD_PRINT("[mem_pool] Add new ref_count");
         ref_count_.insert(std::make_pair(mem_ref, 0));
     }
     ++ ref_count_[mem_ref];
 
-    VSILOGD("[mem_pool]Add %d(Bytes) small memory, ref_count_.size()=%d",
+    NNRT_LOGD_PRINT("[mem_pool]Add %d(Bytes) small memory, ref_count_.size()=%d",
                 mem_ref.len_, ref_count_.size());
 
     return true;
 }
 
 void Sml_block_list::del_reference(const Ref& mem_ref) {
-    VSILOGD("[mem_pool]delete small block reference");
+    NNRT_LOGD_PRINT("[mem_pool]delete small block reference");
     int ref_cnt = --ref_count_[mem_ref];
 
     if (0 == ref_cnt) {
-        VSILOGD("[mem_pool]release %dByte memory for sml_block", mem_ref.len_);;
+        NNRT_LOGD_PRINT("[mem_pool]release %dByte memory for sml_block", mem_ref.len_);;
         auto pos =
             std::find_if(mem_list_.begin(), mem_list_.end(), [&mem_ref](const std::vector<uint8_t>& item) {
                 return item.data() == mem_ref.address_;
@@ -297,12 +297,12 @@ void Sml_block_list::del_reference(const Ref& mem_ref) {
             mem_list_.shrink_to_fit();
             ref_count_.erase(mem_ref);
         } else {
-            VSILOGE("[mem_pool] fatal error: try to delete none exist item");
+            NNRT_LOGE_PRINT("[mem_pool] fatal error: try to delete none exist item");
         }
     }
 
     // usage information
-    VSILOGD("[mem_pool]#%d small memory blocks shared total %dByte memory tracked by system",
+    NNRT_LOGD_PRINT("[mem_pool]#%d small memory blocks shared total %dByte memory tracked by system",
             ref_count_.size(), mem_list_.size());
 }
 
@@ -316,7 +316,7 @@ shared_ref Manager::add_reference(const BlockAllocInfor& infor) {
     auto& block = std::get<mem_type_of<BlockAllocInfor>::value>(space_);
 
     if (!block.add_reference(infor, *ref_ptr)) {
-        VSILOGW("Failed at add reference");
+        NNRT_LOGW_PRINT("Failed at add reference");
         ref_ptr.reset();
     }
 
@@ -362,7 +362,7 @@ void Manager::del_reference(const Ref& mem_ref) {
         break;
 
         default:
-            VSILOGE("[mem_pool]Should Never be here!!!");
+            NNRT_LOGE_PRINT("[mem_pool]Should Never be here!!!");
     }
 }
 

@@ -24,7 +24,7 @@
 #include <vector>
 
 #include "utils.hpp"
-#include "vsi_nn_pub.h"
+#include "logging.hpp"
 
 #include "op/operand.hpp"
 
@@ -102,7 +102,7 @@ void Operand::echo(uint32_t index) const {
         sz += snprintf(&buf[sz], 256 - sz, "%-5d", dimensions[i]);
     }
     sz += snprintf(&buf[sz], 256 - sz, " ]");
-    VSILOGD("%s", buf);
+    NNRT_LOGD_PRINT("%s", buf);
 }
 }
 }

@@ -178,6 +178,7 @@ enum class OperationType: uint32_t {
     LOGICAL_NOT,
     NOT_EQUAL,
     SELECT,
+    LOG,
 
     AXIS_ALIGNED_BBOX_TRANSFORM,
     BOX_WITH_NMS_LIMIT,
@@ -186,6 +187,7 @@ enum class OperationType: uint32_t {
     HEATMAP_MAX_KEYPOINT,
 
     RANDOM_MULTINOMIAL,
+    LOG_SOFTMAX,
 };
 
 enum class OperandType: uint8_t {
@@ -297,5 +299,12 @@ enum class NormalizationAlgorithmMethod {
     /// Jarret 2009: Local Contrast Normalization
     LocalContrast = 1
 };
+
+enum class NmsKernelMethod {
+    Hard = 0,
+    Linear = 1,
+    Gaussian = 2,
+};
+
 }
 #endif

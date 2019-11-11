@@ -35,6 +35,7 @@
     <ClCompile Include="model_transform\transformations.cpp" />
     <ClCompile Include="model_transform\validate_quantized_graph.cpp" />
     <ClCompile Include="utils.cpp" />
+    <ClCompile Include="logging.cpp" />
     <ClCompile Include="execution.cpp" />
     <ClCompile Include="execution_task.cpp" />
     <ClCompile Include="prepared_model.cpp" />

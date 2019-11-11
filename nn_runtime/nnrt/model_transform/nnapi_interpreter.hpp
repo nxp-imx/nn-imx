@@ -147,6 +147,7 @@ class NnApiInterpreter : public Interpreter
         REGISTER_OP(INSTANCE_NORMALIZATION);
         REGISTER_OP(LESS);
         REGISTER_OP(LESS_EQUAL);
+        REGISTER_OP(LOG);
         REGISTER_OP(LOGICAL_AND);
         REGISTER_OP(LOGICAL_OR);
         REGISTER_OP(MAXIMUM);
@@ -156,7 +157,7 @@ class NnApiInterpreter : public Interpreter
         REGISTER_OP(POW);
         REGISTER_OP(PRELU);
         //REGISTER_OP(ROI_ALIGN);
-        //REGISTER_OP(ROI_POOL);
+        REGISTER_OP(ROI_POOL);
         REGISTER_OP(RSQRT);
         REGISTER_OP(SELECT);
         //REGISTER_OP(SLICE);
@@ -171,7 +172,12 @@ class NnApiInterpreter : public Interpreter
         REGISTER_OP(REDUCE_PROD);
         REGISTER_OP(AXIS_ALIGNED_BBOX_TRANSFORM);
         REGISTER_OP(GENERATE_PROPOSALS);
-        //REGISTER_OP(RANDOM_MULTINOMIAL);
+        REGISTER_OP(RANDOM_MULTINOMIAL);
+        REGISTER_OP(HEATMAP_MAX_KEYPOINT);
+        //REGISTER_OP(LOG_SOFTMAX);
+        REGISTER_OP(BOX_WITH_NMS_LIMIT);
+        //REGISTER_OP(TILE);
+        REGISTER_OP(TOPK);
 #undef  REGISTER_OP
     private:
         inline DataLayout getDataLayout(bool isNCHW) {

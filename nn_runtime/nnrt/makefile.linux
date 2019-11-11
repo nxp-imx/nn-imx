@@ -40,6 +40,7 @@ OBJECTS = $(OBJ_DIR)/file_map_memory.o \
         $(OBJ_DIR)/compilation.o \
         $(OBJ_DIR)/event.o \
         $(OBJ_DIR)/utils.o \
+        $(OBJ_DIR)/logging.o \
         $(OBJ_DIR)/execution.o \
         $(OBJ_DIR)/execution_task.o \
         $(OBJ_DIR)/prepared_model.o \

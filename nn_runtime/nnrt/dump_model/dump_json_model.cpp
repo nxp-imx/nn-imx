@@ -43,7 +43,7 @@ namespace nnrt {
         case OperandType::FLOAT64:
             return 8;
         default:
-            VSILOGW("the operand is not scalar, cannot get size info");
+            NNRT_LOGW_PRINT("the operand is not scalar, cannot get size info");
             break;
         }
         return 0;
@@ -111,7 +111,7 @@ namespace nnrt {
             fwrite(&modelData_[0], 1, modelData_.size(), fid);
             fclose(fid);
         }else{
-            VSILOGE("Fail to create the file");
+            NNRT_LOGE_PRINT("Fail to create the file");
         }
     }
 

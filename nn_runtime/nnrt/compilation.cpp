@@ -40,7 +40,7 @@ thread_local SharedContextPtr thread_local_context;
 
 struct ContextDeleter {
     void operator()(vsi_nn_context_t ctx) {
-        VSILOGD("Release context");
+        NNRT_LOGD_PRINT("Release context");
         vsi_nn_ReleaseContext(&ctx);
     }
 };

@@ -29,30 +29,31 @@
 #include "api_requirement/spec_macros.hpp"
 
 /**
- * Reduces a tensor by computing the "logical and" of elements along given
- * dimensions.
- *
- * If keep_dims is true, the reduced dimensions are
- * retained with length 1. Otherwise, the rank of the tensor is reduced by
- * 1 for each entry in dimensions.
- *
- * Supported tensor {@link OperandCode}:
- * * {@link ANEURALNETWORKS_TENSOR_BOOL8}
- *
- * Supported tensor rank: up to 4
- *
- * Inputs:
- * * 0: An n-D tensor.
- * * 1: A 1-D tensor of {@link ANEURALNETWORKS_TENSOR_INT32}. The dimensions
- *      to reduce. Dimension values must be in the range [-n, n).
- * * 2: An {@link ANEURALNETWORKS_BOOL} scalar, keep_dims. If true,
- *      retains reduced dimensions with length 1.
- *
- * Outputs:
- * * 0: A tensor of the same {@link OperandCode} as input0.
- *
- * Available since API level 29.
- */
+* Reduces a tensor by computing the "logical and" of elements along given
+* dimensions.
+*
+* If keep_dims is true, the reduced dimensions are
+* retained with length 1. Otherwise, the rank of the tensor is reduced by
+* 1 for each entry in dimensions.
+*
+* Supported tensor {@link OperandCode}:
+* * {@link ANEURALNETWORKS_TENSOR_BOOL8}
+*
+* Supported tensor rank: up to 4
+*
+* Inputs:
+* * 0: An n-D tensor.
+* * 1: A 1-D tensor of {@link ANEURALNETWORKS_TENSOR_INT32}. The dimensions
+*      to reduce. Dimension values must be in the range [-n, n).
+* * 2: An {@link ANEURALNETWORKS_BOOL} scalar, keep_dims. If true,
+*      retains reduced dimensions with length 1.
+*
+* Outputs:
+* * 0: A tensor of the same {@link OperandCode} as input0.
+*
+* Available since API level 29.
+*/
+
 #define OP_SPEC_NAME ReduceAll
 OP_SPEC_BEGIN()
 #define ARG_NAMES         \

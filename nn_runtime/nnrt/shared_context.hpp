@@ -26,8 +26,6 @@
 
 #include <memory>
 
-#include "vsi_nn_pub.h"
-
 using SharedContextPtr = std::shared_ptr<std::pointer_traits<vsi_nn_context_t>::element_type>;
 
 #endif

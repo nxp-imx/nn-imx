@@ -22,52 +22,44 @@
 *
 *****************************************************************************/
 
-/**
-* Applies L2 normalization along the depth dimension.
-*
-* The values in the output tensor are computed as:
-*
-*     output[batch, row, col, channel] =
-*         input[batch, row, col, channel] /
-*         sqrt(sum_{c} pow(input[batch, row, col, c], 2))
-*
-* For input tensor with rank less than 4, independently normalizes each
-* 1-D slice along dimension dim.
-*
-* Supported tensor {@link OperandCode}:
-* * {@link ANEURALNETWORKS_TENSOR_FLOAT16} (since API level 29)
-* * {@link ANEURALNETWORKS_TENSOR_FLOAT32}
-* * {@link ANEURALNETWORKS_TENSOR_QUANT8_ASYMM} (since API level 29)
-*
-* Supported tensor rank: up to 4
-* Tensors with rank less than 4 are only supported since API level 29.
-*
-* Inputs:
-* * 0: An n-D tensor, specifying the tensor to be normalized.
-* * 1: An optional {@link ANEURALNETWORKS_INT32} scalar, default to -1,
-*      specifying the dimension normalization would be performed on.
-*      Negative index is used to specify axis from the end (e.g. -1 for
-*      the last axis). Must be in the range [-n, n).
-*      Available since API level 29.
-*
-* Outputs:
-* * 0: A tensor of the same {@link OperandCode} and same shape as input0.
-*      For {@link ANEURALNETWORKS_TENSOR_QUANT8_ASYMM},
-*      the scale must be 1.f / 128 and the zeroPoint must be 128.
-*
-* Available since API level 27.
-*/
-
-#ifndef __ANEURALNETWORKS_L2_NORMALIZATION_HPP__
-#define __ANEURALNETWORKS_L2_NORMALIZATION_HPP__
+#ifndef __ANEURALNETWORKS_TOPK_V2_HPP__
+#define __ANEURALNETWORKS_TOPK_V2_HPP__
 
 #include "api_requirement/spec_macros.hpp"
 
-#define OP_SPEC_NAME L2NormOperation
+/**
+ * Finds values and indices of the k largest entries for the last dimension.
+ *
+ * Resulting values in each dimensions are sorted in descending order. If
+ * two values are equal, the one with larger index appears first.
+ *
+ * Supported tensor {@link OperandCode}:
+ * * {@link ANEURALNETWORKS_TENSOR_FLOAT16}
+ * * {@link ANEURALNETWORKS_TENSOR_FLOAT32}
+ * * {@link ANEURALNETWORKS_TENSOR_INT32}
+ * * {@link ANEURALNETWORKS_TENSOR_QUANT8_ASYMM}
+ *
+ * Supported tensor rank: from 1
+ *
+ * Inputs:
+ * * 0: input, an n-D tensor specifying the input.
+ * * 1: k, an {@link ANEURALNETWORKS_INT32} scalar, specifying the number of
+ *      top elements to look for along the last dimension.
+ *
+ * Outputs:
+ * * 0: An n-D tensor of the same type as the input, containing the k
+ *      largest elements along each last dimensional slice.
+ * * 1: An n-D tensor of type {@link ANEURALNETWORKS_TENSOR_INT32}
+ *      containing the indices of values within the last dimension of input.
+ *
+ * Available since API level 29.
+ */
+
+#define OP_SPEC_NAME TopkV2Operation
 OP_SPEC_BEGIN()
 #define ARG_NAMES         \
-    (input,               \
-     axis)
+    (input,                 \
+     k)
 #define ARGC BOOST_PP_TUPLE_SIZE(ARG_NAMES)
 
 #define BOOST_PP_LOCAL_MACRO(n) OP_SPEC_ARG(BOOST_PP_TUPLE_ELEM(ARGC, n, ARG_NAMES))
@@ -76,14 +68,17 @@ OP_SPEC_BEGIN()
 OP_SPEC_END()
 
 // order of argument is important
-MAKE_SPEC(l2_norm)
+MAKE_SPEC(topk_v2)
     .input_(nnrt::OperandType::TENSOR_FLOAT32)
-    .axis_(nnrt::OperandType::INT32, OPTIONAL));
+    .k_(nnrt::OperandType::INT32));
 
-    OVERRIDE_SPEC(l2_norm, 0)
+    OVERRIDE_SPEC(topk_v2, float16)
     .input_(nnrt::OperandType::TENSOR_FLOAT16));
 
-    OVERRIDE_SPEC(l2_norm, 1)
+    OVERRIDE_SPEC(topk_v2, int32)
+    .input_(nnrt::OperandType::TENSOR_INT32));
+
+    OVERRIDE_SPEC(topk_v2, quant8_asymm)
     .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM));
 
 #undef ARG_NAMES

@@ -24,6 +24,7 @@
 #include <cassert>
 #include <vector>
 #include <algorithm>
+#include <string.h>
 
 #include "utils.hpp"
 #include "model.hpp"

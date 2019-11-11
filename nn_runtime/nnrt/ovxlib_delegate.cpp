@@ -49,11 +49,11 @@ void removeOperationWithNullInput(nnrt::Model* model)
         }
 
         for (size_t i = 0; all_input_empty && i < operation->outputNum(); ++i){
-            VSILOGD("Mark operand(%d) as NUll",  operation->output(i));
+            NNRT_LOGD_PRINT("Mark operand(%d) as NUll",  operation->output(i));
             operands[operation->output(i)]->setNull();
         }
         if (all_input_empty){
-            VSILOGD("Operation[%d] planned to remove", op_itor->first);
+            NNRT_LOGD_PRINT("Operation[%d] planned to remove", op_itor->first);
             operation_reduce_list.push_back(op_itor->first);
         }
     }
@@ -71,7 +71,7 @@ vsi_nn_activation_e mapLstmUnitActivation(const FusedType& ftype)
 
     switch (ftype){
     case FusedType::RELU1:
-        VSILOGE("RELU1 Not supported, use RELU in case crash");
+        NNRT_LOGE_PRINT("RELU1 Not supported, use RELU in case crash");
         rValue = VSI_NN_ACT_RELU;
         break;
     case FusedType::RELU:
@@ -87,7 +87,7 @@ vsi_nn_activation_e mapLstmUnitActivation(const FusedType& ftype)
         rValue = VSI_NN_ACT_SIGMOID;
         break;
     default:
-        VSILOGE("Not supported activation type %d for LSTM_Unit", ftype);
+        NNRT_LOGE_PRINT("Not supported activation type %d for LSTM_Unit", ftype);
         assert(false);
         }
 
@@ -170,8 +170,9 @@ OvxlibDelegate::OvxlibDelegate()
     REGISTER_OP(NEG);
     REGISTER_OP(NOT_EQUAL);
     REGISTER_OP(POW);
+    REGISTER_OP(LOG);
     //REGISTER_OP(ROI_ALIGN);
-    //REGISTER_OP(ROI_POOL);
+    REGISTER_OP(ROI_POOL);
     REGISTER_OP(SELECT);
     REGISTER_OP(SLICE);
     REGISTER_OP(SPLIT);
@@ -185,7 +186,12 @@ OvxlibDelegate::OvxlibDelegate()
     REGISTER_OP(REDUCE_SUM);
     REGISTER_OP(AXIS_ALIGNED_BBOX_TRANSFORM);
     REGISTER_OP(GENERATE_PROPOSALS);
-    //REGISTER_OP(RANDOM_MULTINOMIAL);
+    REGISTER_OP(RANDOM_MULTINOMIAL);
+    REGISTER_OP(HEATMAP_MAX_KEYPOINT);
+    //REGISTER_OP(LOG_SOFTMAX);
+    REGISTER_OP(BOX_WITH_NMS_LIMIT);
+    //REGISTER_OP(TILE);
+    REGISTER_OP(TOPK);
 #undef REGISTER_OP
 }
 
@@ -197,7 +203,7 @@ OvxlibDelegate::~OvxlibDelegate()
 int OvxlibDelegate::process(nnrt::Model* model, vsi_nn_context_t ctx)
 {
     if (!model) {
-        VSILOGW("Model is null.");
+        NNRT_LOGW_PRINT("Model is null.");
         return NNA_ERROR_CODE(UNEXPECTED_NULL);
     }
     int err = NNA_ERROR_CODE(NO_ERROR);
@@ -205,7 +211,7 @@ int OvxlibDelegate::process(nnrt::Model* model, vsi_nn_context_t ctx)
     {
         ctx = vsi_nn_CreateContext();
         if (!ctx) {
-            VSILOGW("Create context fail.");
+            NNRT_LOGW_PRINT("Create context fail.");
             return NNA_ERROR_CODE(OUT_OF_MEMORY);
         }
     }
@@ -226,7 +232,7 @@ int OvxlibDelegate::process(nnrt::Model* model, vsi_nn_context_t ctx)
         OperandPtr operand = it->second;
         if(!operand->isTensor() || operand->isNull())
         {
-            VSILOGD("Skip Operand[%d]", idx);
+            NNRT_LOGD_PRINT("Skip Operand[%d]", idx);
             // If current operand is the graphic input, we should remove it from input
             //auto& model_inputs_idx = model->inputIndexes();
             //auto is_input = std::find(model_inputs_idx.begin(), model_inputs_idx.end(), idx);
@@ -237,7 +243,7 @@ int OvxlibDelegate::process(nnrt::Model* model, vsi_nn_context_t ctx)
 
             continue;
         }
-        //VSILOGD("Add tensor (%u)", idx);
+        //NNRT_LOGD_PRINT("Add tensor (%u)", idx);
 
         if (operand->isConst())
         {
@@ -246,7 +252,7 @@ int OvxlibDelegate::process(nnrt::Model* model, vsi_nn_context_t ctx)
                     (operand->bytes() * 2) == operand->weak_mem_ref.lock()->len_ ) {
                 void* fp16_ptr = malloc(operand->bytes());
                 if (nullptr == fp16_ptr) {
-                    VSILOGE("Out of memory.");
+                    NNRT_LOGE_PRINT("Out of memory.");
                     return NNA_ERROR_CODE(OUT_OF_MEMORY);
                 }
                 vsi_nn_dtype_t fmt16;
@@ -282,7 +288,7 @@ int OvxlibDelegate::process(nnrt::Model* model, vsi_nn_context_t ctx)
     {
         OperandPtr operand = model->operand(it->first);
         if (!operand) {
-            VSILOGW("Not operand found: %u, %u", it->first, it->second);
+            NNRT_LOGW_PRINT("Not operand found: %u, %u", it->first, it->second);
         }
         if (operand->isConst() && operand->perm().size() > 0)
         {
@@ -321,7 +327,7 @@ int OvxlibDelegate::process(nnrt::Model* model, vsi_nn_context_t ctx)
         OperationPtr op = it->second;
         if (op_container_.find(op->type()) == op_container_.end())
         {
-            VSILOGW("Not support operation %d", op->type());
+            NNRT_LOGW_PRINT("Not support operation %d", op->type());
             return NNA_ERROR_CODE(BAD_DATA);
         }
     }
@@ -329,29 +335,29 @@ int OvxlibDelegate::process(nnrt::Model* model, vsi_nn_context_t ctx)
     {
         uint32_t idx = it->first;
         OperationPtr op = it->second;
-        VSILOGD("Add node %u(%d)", idx, op->type());
+        NNRT_LOGD_PRINT("Add node %u(%d)", idx, op->type());
         int err = (this->*op_container_[op->type()])(model, op, idx);
         if (NNA_ERROR_CODE(NO_ERROR) != err)
         {
-            VSILOGW("Build operation: %d, index: %d ", op->type(), idx);
+            NNRT_LOGW_PRINT("Build operation: %d, index: %d ", op->type(), idx);
             return err;
         }
     }
     vsi_nn_PrintGraph(graph_);
     if (VSI_FAILURE == vsi_nn_SetupGraph(graph_, true))
     {
-        VSILOGW("Setup graph failure.");
+        NNRT_LOGW_PRINT("Setup graph failure.");
         return NNA_ERROR_CODE(BAD_DATA);
     }
-    VSILOGD("Verify graph ...");
+    NNRT_LOGD_PRINT("Verify graph ...");
     vsi_status status = vsi_nn_VerifyGraph(graph_);
 
     if (status != VSI_SUCCESS)
     {
-        VSILOGW("Verify graph error: %d", status);
+        NNRT_LOGW_PRINT("Verify graph error: %d", status);
         return NNA_ERROR_CODE(BAD_DATA);
     }
-    VSILOGD("Compile graph completed.");
+    NNRT_LOGD_PRINT("Compile graph completed.");
 
     return err;
 }
@@ -373,7 +379,7 @@ vsi_nn_pad_e OvxlibDelegate::getPaddingType(PadType type)
         case PadType::AUTO:
             return VSI_NN_PAD_AUTO;
         default:
-            VSILOGE("Invalid padding type(%d)", type);
+            NNRT_LOGE_PRINT("Invalid padding type(%d)", type);
             assert(false);
             return VSI_NN_PAD_AUTO;
     }
@@ -388,7 +394,7 @@ vsi_nn_round_type_e OvxlibDelegate::getRoundType(Rounding type)
         case Rounding::FLOOR:
             return VSI_NN_ROUND_FLOOR;
         default:
-            VSILOGE("Invalid padding type(%d)", type);
+            NNRT_LOGE_PRINT("Invalid padding type(%d)", type);
             assert(false);
             return VSI_NN_ROUND_FLOOR;
     }
@@ -536,7 +542,7 @@ int OvxlibDelegate::addNode(vsi_nn_op_t op,
         vsi_nn_tensor_t* tensor = vsi_nn_GetTensor(graph_, output_tensors[0]);
         if (nullptr == tensor)
         {
-            VSILOGE("Tensor(%d) is missing.", output_tensors[0]);
+            NNRT_LOGE_PRINT("Tensor(%d) is missing.", output_tensors[0]);
             assert(false);
         }
         vsi_nn_tensor_attr_t attr;
@@ -659,7 +665,7 @@ void OvxlibDelegate::mapTensorId(uint32_t operand_id,
 {
     if (tensor_map_.find(operand_id) != tensor_map_.end())
     {
-        VSILOGW("Operand id(%u) has been registered.", operand_id);
+        NNRT_LOGW_PRINT("Operand id(%u) has been registered.", operand_id);
         assert(false);
     }
     tensor_map_[operand_id] = tensor_id;
@@ -731,7 +737,7 @@ int OvxlibDelegate::addTensor
     if (VSI_NN_TENSOR_ID_NA == tid)
     {
         err = NNA_ERROR_CODE(BAD_DATA);
-        VSILOGW("Add operand(%u) tensor fail.", idx);
+        NNRT_LOGW_PRINT("Add operand(%u) tensor fail.", idx);
         assert(false);
     }
     else
@@ -749,7 +755,7 @@ std::vector<uint32_t> OvxlibDelegate::reorderOperands(
     new_operands = operands;
     for (uint32_t i = 0; i < order.size(); ++ i) {
         if (order[i] >= (int)order.size()) {
-            VSILOGW("Got incorrect index %d, max size is %lu", order[i], order.size());
+            NNRT_LOGW_PRINT("Got incorrect index %d, max size is %lu", order[i], order.size());
             assert(false);
         }
         new_operands[i] = operands[order[i]];
@@ -1458,6 +1464,18 @@ int OvxlibDelegate::addNode_DECONV_2D(Model* model,
     return err;
 }
 
+int OvxlibDelegate::addNode_TOPK(Model* model,
+        OperationPtr operation, uint32_t operation_index)
+{
+    (void)model;
+    int err = NNA_ERROR_CODE(NO_ERROR);
+    TopkOperation* op = reinterpret_cast<TopkOperation*>(operation.get());
+    std::vector<vsi_nn_node_t*> nodes;
+    addNode(VSI_NN_OP_TOPK, operation, &nodes, operation_index);
+    nodes[0]->nn_param.topk.k = op->k;
+    return err;
+}
+
 int OvxlibDelegate::addNode_ARGMAX(Model* model,
         OperationPtr operation, uint32_t operation_index)
 {
@@ -1588,6 +1606,51 @@ int OvxlibDelegate::addNode_GENERATE_PROPOSALS(Model* model,
     return err;
 }
 
+int OvxlibDelegate::addNode_RANDOM_MULTINOMIAL(Model* model,
+        OperationPtr operation, uint32_t operation_index)
+{
+    (void)model;
+    int err = NNA_ERROR_CODE(NO_ERROR);
+    RandomMultinomialOperation* op =  reinterpret_cast<RandomMultinomialOperation*>(operation.get());
+    std::vector<vsi_nn_node_t*> nodes;
+    err = addNode(VSI_NN_OP_RANDOM_MULTINOMIAL, operation, &nodes, operation_index);
+    nodes[0]->nn_param.random_multinomial.sample_num = op->sample_num;
+    return err;
+}
+
+int OvxlibDelegate::addNode_ROI_POOL(Model* model,
+        OperationPtr operation, uint32_t operation_index)
+{
+    (void)model;
+    int err = NNA_ERROR_CODE(NO_ERROR);
+    ROIPoolingOperation* op = reinterpret_cast<ROIPoolingOperation*>(operation.get());
+    std::vector<vsi_nn_node_t*> nodes;
+    err = addNode(VSI_NN_OP_ROI_POOL, operation, &nodes, operation_index);
+    nodes[0]->nn_param.roi_pool.type = VX_NN_POOLING_MAX;
+    nodes[0]->nn_param.roi_pool.size[0] = op->width;
+    nodes[0]->nn_param.roi_pool.size[1] = op->height;
+    nodes[0]->nn_param.roi_pool.scale = op->height_ratio;
+    return err;
+}
+
+int OvxlibDelegate::addNode_BOX_WITH_NMS_LIMIT(Model* model,
+        OperationPtr operation, uint32_t operation_index)
+{
+    (void)model;
+    int err = NNA_ERROR_CODE(NO_ERROR);
+    BoxWithNmsLimitOperation* op = reinterpret_cast<BoxWithNmsLimitOperation*>(operation.get());
+    std::vector<vsi_nn_node_t*> nodes;
+    err = addNode(VSI_NN_OP_BOX_WITH_NMS_LIMIT, operation, &nodes, operation_index);
+    nodes[0]->nn_param.box_with_nms_limit.score_threshold = op->score_threshold;
+    nodes[0]->nn_param.box_with_nms_limit.max_num_bbox = op->max_boxes;
+    nodes[0]->nn_param.box_with_nms_limit.nms_kernel_method = static_cast<int32_t>(
+            op->nms_kernel_method);
+    nodes[0]->nn_param.box_with_nms_limit.iou_threshold = op->iou_threshold;
+    nodes[0]->nn_param.box_with_nms_limit.sigma = op->nms_sigma;
+    nodes[0]->nn_param.box_with_nms_limit.nms_score_threshold = op->nms_score_threshold;
+    return err;
+}
+
 DECLARE_SAMPLE_OP(RELU1, RELU1)
 DECLARE_SAMPLE_OP(RELU6, RELU6)
 DECLARE_SAMPLE_OP(SIGMOID, SIGMOID)
@@ -1608,9 +1671,11 @@ DECLARE_SAMPLE_OP(ABS, ABS)
 DECLARE_SAMPLE_OP(EXP, EXP)
 DECLARE_SAMPLE_OP(NEG, NEG)
 DECLARE_SAMPLE_OP(POW, POW)
+DECLARE_SAMPLE_OP(LOG, LOG)
 DECLARE_SAMPLE_OP(SELECT, SELECT)
 DECLARE_SAMPLE_OP(SIN, SIN)
 DECLARE_SAMPLE_OP(AXIS_ALIGNED_BBOX_TRANSFORM, AXIS_ALIGNED_BBOX_TRANSFORM)
+DECLARE_SAMPLE_OP(HEATMAP_MAX_KEYPOINT, HEATMAP_MAX_KEYPOINT)
 #undef DECLARE_SAMPLE_OP
 
 #define DECLARE_RELATIONAL_OP(NAME, RELATIONAL_OP)              \

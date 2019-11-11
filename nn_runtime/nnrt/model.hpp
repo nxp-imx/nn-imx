@@ -30,7 +30,7 @@
 
 #include "memory_pool.hpp"
 #include "types.hpp"
-#include "vsi_nn_pub.h"
+#include "logging.hpp"
 
 namespace nnrt {
 namespace op {
@@ -110,9 +110,9 @@ class Model {
         void* data = nullptr;
         if (ref) {
             data = const_cast<void*>(ref->address_);
-            VSILOGI("Read from shared reference");
+            NNRT_LOGI_PRINT("Read from shared reference");
         } else {
-            VSILOGE("Error while getBuffer");
+            NNRT_LOGE_PRINT("Error while getBuffer");
         }
         return static_cast<T*>(data);
     }
@@ -176,7 +176,7 @@ class Model {
 
     std::string signature() {
         if (!isCompiled()) {
-            VSILOGW("Uncompiled model doesn't have the signature.");
+            NNRT_LOGW_PRINT("Uncompiled model doesn't have the signature.");
             return "Not Finished";
         }
         return signature_;

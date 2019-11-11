@@ -26,11 +26,11 @@
 
 #include "model.hpp"
 #include "types.hpp"
-#include "vsi_nn_pub.h"
+#include "logging.hpp"
+#include "error.hpp"
 
 #include "op/operand.hpp"
 #include "op/operation.hpp"
-#include "vsi_nn_pub.h"
 
 namespace nnrt {
 namespace op {
@@ -262,7 +262,7 @@ void Operation::echo(uint32_t index) {
         subsz += snprintf(&subbuf[subsz], 128 - subsz, "% d,", outputs_[i]);
     }
     sz += snprintf(&buf[sz], 256 - sz, " o[%-20s]", subbuf);
-    VSILOGD("%s", buf);
+    NNRT_LOGD_PRINT("%s", buf);
 }
 
 bool Operation::InputTensorPermuteVectorCache::isAllInputTensorSetupWithPermute(Model& model) const {
@@ -306,6 +306,7 @@ void Operation::handleLayoutInferenceOnInputs(
             continue;
 
         nnrt::layout_inference::IPermuteVectorPtr permuteVector = input_permute_cache_.cached_permutes_[inId];
+        CHECK_NULL_PTR(permuteVector);
 
         auto permuteOp = nnrt::op::utils::asOp(permuteVector->reverse());
         if (permuteOp) {
@@ -319,6 +320,7 @@ void Operation::handleLayoutInferenceOnInputs(
         auto outOperandPtr = model.operand(outId);
         nnrt::layout_inference::IPermuteVectorPtr permuteVector =
             nnrt::layout_inference::make_shared(outOperandPtr->ndim());
+        CHECK_NULL_PTR(permuteVector);
         next_permute_vectors.insert(std::make_pair(outId, permuteVector));
     }
 }
@@ -411,7 +413,7 @@ void Operation::permuteConstOperands(Model& model,
                 operandPtr->setPerm(permVal);
                 operandPtr->dimensions = dimensionTrans(operandPtr->dimensions, permVal);
             } else {
-                VSILOGW("Can not convert const operand, ndim != permVal.size()");
+                NNRT_LOGW_PRINT("Can not convert const operand, ndim != permVal.size()");
                 assert(false);
             }
         }
@@ -426,11 +428,7 @@ void SoftmaxOperation::handleLayoutInferenceOnInputs(
     nnrt::layout_inference::IPermuteVectorPtr permuteVector =
         input_permute_cache_.cached_permutes_[inputs()[0]];
 
-    if (!permuteVector) {
-        VSILOGE("Invalid permuteVector pointer");
-        assert(0);
-        return;
-    }
+    CHECK_NULL_PTR(permuteVector);
 
     // convert axis to positive number
     if (axis < 0) {
@@ -448,6 +446,7 @@ void SplitOperation::handleLayoutInferenceOnInputs(
     assert(input_permute_cache_.cached_permutes_.size() == 1);
     nnrt::layout_inference::IPermuteVectorPtr permuteVector =
         input_permute_cache_.cached_permutes_[inputs()[0]];
+    CHECK_NULL_PTR(permuteVector);
     // convert axis to positive number
     if (axis < 0) {
         axis = permuteVector->rank() + axis;
@@ -468,6 +467,7 @@ void ArgmaxOperation::handleLayoutInferenceOnInputs(
     assert(input_permute_cache_.cached_permutes_.size() == 1);
     nnrt::layout_inference::IPermuteVectorPtr permuteVector =
         input_permute_cache_.cached_permutes_[inputs()[0]];
+    CHECK_NULL_PTR(permuteVector);
     if (axis < 0) {
         axis = permuteVector->rank() + axis;
     }
@@ -483,6 +483,7 @@ void ArgminOperation::handleLayoutInferenceOnInputs(
     assert(input_permute_cache_.cached_permutes_.size() == 1);
     nnrt::layout_inference::IPermuteVectorPtr permuteVector =
         input_permute_cache_.cached_permutes_[inputs()[0]];
+    CHECK_NULL_PTR(permuteVector);
     if (axis < 0) {
         axis = permuteVector->rank() + axis;
     }
@@ -498,6 +499,7 @@ void ChannelShuffleOperation::handleLayoutInferenceOnInputs(
     assert(input_permute_cache_.cached_permutes_.size() == 1);
     nnrt::layout_inference::IPermuteVectorPtr permuteVector =
         input_permute_cache_.cached_permutes_[inputs()[0]];
+    CHECK_NULL_PTR(permuteVector);
     if (axis < 0) {
         axis = permuteVector->rank() + axis;
     }
@@ -548,6 +550,8 @@ void SpaceToBatchNDOperation::handleLayoutInferenceOnInputs(
     nnrt::layout_inference::IPermuteVectorPtr permuteVector =
         input_permute_cache_.cached_permutes_[inputs()[0]];
 
+    CHECK_NULL_PTR(permuteVector);
+
     if (inputOperand->ndim() != 4) {
         Operation::handleLayoutInferenceOnInputs(model, next_permute_vectors);
         auto reversePermVec = permuteVector->reverse();
@@ -581,6 +585,7 @@ void BatchToSpaceNDOperation::handleLayoutInferenceOnInputs(
     nnrt::layout_inference::IPermuteVectorPtr permuteVector =
         input_permute_cache_.cached_permutes_[inputs()[0]];
 
+    CHECK_NULL_PTR(permuteVector);
     if (inputOperand->ndim() != 4) {
         Operation::handleLayoutInferenceOnInputs(model, next_permute_vectors);
         auto reversePermVec = permuteVector->reverse();
@@ -613,6 +618,7 @@ void SpaceToDepthOperation::handleLayoutInferenceOnInputs(
 
     nnrt::layout_inference::IPermuteVectorPtr permuteVector =
         input_permute_cache_.cached_permutes_[inputs()[0]];
+    CHECK_NULL_PTR(permuteVector);
 
     if (inputOperand->ndim() != 4) {
         Operation::handleLayoutInferenceOnInputs(model, next_permute_vectors);
@@ -646,6 +652,7 @@ void DepthToSpaceOperation::handleLayoutInferenceOnInputs(
 
     nnrt::layout_inference::IPermuteVectorPtr permuteVector =
         input_permute_cache_.cached_permutes_[inputs()[0]];
+    CHECK_NULL_PTR(permuteVector);
 
     if (inputOperand->ndim() != 4) {
         Operation::handleLayoutInferenceOnInputs(model, next_permute_vectors);
@@ -679,6 +686,7 @@ void StridedSliceOperation::handleLayoutInferenceOnInputs(
 
     nnrt::layout_inference::IPermuteVectorPtr permuteVector =
         input_permute_cache_.cached_permutes_[inputs()[0]];
+    CHECK_NULL_PTR(permuteVector);
 
     if (inputOperand->ndim() != 4) {
         Operation::handleLayoutInferenceOnInputs(model, next_permute_vectors);
@@ -716,6 +724,7 @@ void ResizeBilinearOperation::handleLayoutInferenceOnInputs(
 
     nnrt::layout_inference::IPermuteVectorPtr permuteVector =
         input_permute_cache_.cached_permutes_[inputs()[0]];
+    CHECK_NULL_PTR(permuteVector);
 
     if (inputOperand->ndim() != 4) {
         Operation::handleLayoutInferenceOnInputs(model, next_permute_vectors);
@@ -749,6 +758,7 @@ void ResizeNearestNeighborOperation::handleLayoutInferenceOnInputs(
 
     nnrt::layout_inference::IPermuteVectorPtr permuteVector =
         input_permute_cache_.cached_permutes_[inputs()[0]];
+    CHECK_NULL_PTR(permuteVector);
 
     if (inputOperand->ndim() != 4) {
         auto reversePermVec = permuteVector->reverse();
@@ -788,6 +798,7 @@ void PadOperation::handleLayoutInferenceOnInputs(
 
     nnrt::layout_inference::IPermuteVectorPtr permuteVector =
         input_permute_cache_.cached_permutes_[inputs()[0]];
+    CHECK_NULL_PTR(permuteVector);
 
     if (inputOperand->ndim() != 4) {
         Operation::handleLayoutInferenceOnInputs(model, next_permute_vectors);

@@ -89,7 +89,7 @@ int GraphTask::fillInput()
         auto port = inputs_[i];
 
         if (ExecutionIO::HAS_NO_VALUE == port->state) {
-            VSILOGD("skip No_Value ExecutionIO[%d]", i);
+            NNRT_LOGD_PRINT("skip No_Value ExecutionIO[%d]", i);
             continue;
         }
 
@@ -105,7 +105,7 @@ int GraphTask::fillInput()
         }
 
         if (NNA_ERROR_CODE(NO_ERROR) != status) {
-            VSILOGE("Fill input error %d", status);
+            NNRT_LOGE_PRINT("Fill input error %d", status);
             break;
         }
     }
@@ -121,7 +121,7 @@ int GraphTask::fillOutput()
     for (size_t i = 0; i < outputs_.size(); ++ i) {
         auto port = outputs_[i];
         if (ExecutionIO::UNSPECIFIED == port->state) {
-            VSILOGW("Output %u is unspecified.");
+            NNRT_LOGW_PRINT("Output %u is unspecified.");
             status = NNA_ERROR_CODE(OP_FAILED);
             break;
         } else if (ExecutionIO::HAS_NO_VALUE == port->state) {
@@ -135,13 +135,13 @@ int GraphTask::fillOutput()
                     const_cast<void*>(ref_ptr->address_), ref_ptr->len_);
         }
         else {
-            VSILOGE("Error at getOutput");
+            NNRT_LOGE_PRINT("Error at getOutput");
             status = NNA_ERROR_CODE(OP_FAILED);
             break;
         }
 
         if (NNA_ERROR_CODE(NO_ERROR) != status) {
-            VSILOGD("Fill output error %d", status);
+            NNRT_LOGD_PRINT("Fill output error %d", status);
             break;
         }
     }

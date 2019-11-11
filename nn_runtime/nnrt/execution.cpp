@@ -25,7 +25,7 @@
 #include <cstring>
 #include <cassert>
 
-#include "vsi_nn_pub.h"
+#include "logging.hpp"
 #include "execution.hpp"
 #include "compilation.hpp"
 #include "prepared_model.hpp"
@@ -66,7 +66,7 @@ int Execution::startCompute(EventPtr event)
 
     std::unique_lock<std::mutex> lk(mutex_);
     if (isRunning()) {
-        VSILOGW("Execution is already running.");
+        NNRT_LOGW_PRINT("Execution is already running.");
         return NNA_ERROR_CODE(OP_FAILED);
     }
 
@@ -98,7 +98,7 @@ int Execution::compute()
     }
     std::unique_lock<std::mutex> lk(mutex_);
     if (isRunning()) {
-        VSILOGW("Execution is already running.");
+        NNRT_LOGW_PRINT("Execution is already running.");
         return NNA_ERROR_CODE(INCOMPLETE);
     }
 
@@ -126,11 +126,11 @@ int Execution::setInput(uint32_t index, const op::OperandPtr operand_type,
 {
     std::unique_lock<std::mutex> lk(mutex_);
     if (isRunning()) {
-        VSILOGW("Fail to modify the execution in running.");
+        NNRT_LOGW_PRINT("Fail to modify the execution in running.");
         return NNA_ERROR_CODE(INCOMPLETE);
     }
     if (index >= inputs_.size()) {
-        VSILOGW("Invalid input index(%u), max input size is %u.",
+        NNRT_LOGW_PRINT("Invalid input index(%u), max input size is %u.",
                 index, inputs_.size());
         return NNA_ERROR_CODE(BAD_DATA);
     }
@@ -138,7 +138,7 @@ int Execution::setInput(uint32_t index, const op::OperandPtr operand_type,
     uint32_t operand_index = model->inputIndex(index);
     assert(operand_index >= 0);
     if (!buffer || 0 == length) {
-        VSILOGD("Set idx=%d as novalue", index);
+        NNRT_LOGD_PRINT("Set idx=%d as novalue", index);
 
         model->operand(operand_index)->setNull();
         inputs_[index]->setNoValue();
@@ -157,16 +157,16 @@ int Execution::setInputFromMemory(uint32_t index, const op::OperandPtr operand_t
         const Memory* memory, size_t offset, size_t length)
 {
     if (!memory) {
-        VSILOGW("Pass nullptr to memory.");
+        NNRT_LOGW_PRINT("Pass nullptr to memory.");
         return NNA_ERROR_CODE(UNEXPECTED_NULL);
     }
     std::unique_lock<std::mutex> lk(mutex_);
     if (isRunning()) {
-        VSILOGW("Fail to modify the execution in running.");
+        NNRT_LOGW_PRINT("Fail to modify the execution in running.");
         return NNA_ERROR_CODE(INCOMPLETE);
     }
     if (index >= inputs_.size()) {
-        VSILOGW("Invalid input index(%u), max input size is %u.",
+        NNRT_LOGW_PRINT("Invalid input index(%u), max input size is %u.",
                 index, inputs_.size());
         return NNA_ERROR_CODE(BAD_DATA);
     }
@@ -186,16 +186,16 @@ int Execution::setOutput(uint32_t index, const op::OperandPtr operand_type,
         void* buffer, size_t length)
 {
     if (!buffer) {
-        VSILOGW("Pass nullptr to buffer.");
+        NNRT_LOGW_PRINT("Pass nullptr to buffer.");
         return NNA_ERROR_CODE(UNEXPECTED_NULL);
     }
     std::unique_lock<std::mutex> lk(mutex_);
     if (isRunning()) {
-        VSILOGW("Fail to modify the execution in running.");
+        NNRT_LOGW_PRINT("Fail to modify the execution in running.");
         return NNA_ERROR_CODE(INCOMPLETE);
     }
     if (index >= outputs_.size()) {
-        VSILOGW("Invalid output index(%u), max output size is %u.",
+        NNRT_LOGW_PRINT("Invalid output index(%u), max output size is %u.",
                 index, outputs_.size());
         return NNA_ERROR_CODE(BAD_DATA);
     }
@@ -219,16 +219,16 @@ int Execution::setOutputFromMemory(uint32_t index, const op::OperandPtr operand_
         const Memory* memory, size_t offset, size_t length)
 {
     if (!memory) {
-        VSILOGW("Pass nullptr to memory.");
+        NNRT_LOGW_PRINT("Pass nullptr to memory.");
         return NNA_ERROR_CODE(UNEXPECTED_NULL);
     }
     std::unique_lock<std::mutex> lk(mutex_);
     if (isRunning()) {
-        VSILOGW("Fail to modify the execution in running.");
+        NNRT_LOGW_PRINT("Fail to modify the execution in running.");
         return NNA_ERROR_CODE(INCOMPLETE);
     }
     if (index >= outputs_.size()) {
-        VSILOGW("Invalid output index(%u), max output size is %u.",
+        NNRT_LOGW_PRINT("Invalid output index(%u), max output size is %u.",
                 index, outputs_.size());
         return NNA_ERROR_CODE(BAD_DATA);
     }

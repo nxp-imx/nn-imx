@@ -23,60 +23,60 @@
 *****************************************************************************/
 
 /**
-     * Resizes images to given size using the bilinear interpretation.
-     *
-     * Resized images must be distorted if their output aspect ratio is not the
-     * same as input aspect ratio. The corner pixels of output may not be the
-     * same as corner pixels of input.
-     *
-     * Supported tensor {@link OperandCode}:
-     * * {@link ANEURALNETWORKS_TENSOR_FLOAT16} (since API level 29)
-     * * {@link ANEURALNETWORKS_TENSOR_FLOAT32}
-     * * {@link ANEURALNETWORKS_TENSOR_QUANT8_ASYMM} (since API level 29)
-     *
-     * Supported tensor rank: 4, with "NHWC" or "NCHW" data layout.
-     * With the default data layout NHWC, the data is stored in the order of:
-     * [batch, height, width, channels]. Alternatively, the data layout could
-     * be NCHW, the data storage order of: [batch, channels, height, width].
-     *
-     * Both resizing by shape and resizing by scale are supported.
-     *
-     * Inputs (resizing by shape):
-     * * 0: A 4-D tensor, of shape [batches, height, width, depth], specifying
-     *      the input. Since API level 29, zero batches is supported for this
-     *      tensor.
-     * * 1: An {@link ANEURALNETWORKS_INT32} scalar, specifying the output
-     *      height of the output tensor.
-     * * 2: An {@link ANEURALNETWORKS_INT32} scalar, specifying the output
-     *      width of the output tensor.
-     * * 3: An optional {@link ANEURALNETWORKS_BOOL} scalar, default to false.
-     *      Set to true to specify NCHW data layout for input0 and output0.
-     *      Available since API level 29.
-     *
-     * Inputs (resizing by scale, since API level 29):
-     * * 0: A 4-D tensor, of shape [batches, height, width, depth], specifying
-     *      the input. Zero batches is supported for this tensor.
-     * * 1: A scalar, specifying height_scale, the scaling factor of the height
-     *      dimension from the input tensor to the output tensor. The output
-     *      height is calculated as new_height = floor(height * height_scale).
-     *      The scalar must be of {@link ANEURALNETWORKS_FLOAT16} if input0 is
-     *      of {@link ANEURALNETWORKS_TENSOR_FLOAT16} and of
-     *      {@link ANEURALNETWORKS_FLOAT32} otherwise.
-     * * 2: A scalar, specifying width_scale, the scaling factor of the width
-     *      dimension from the input tensor to the output tensor. The output
-     *      width is calculated as new_width = floor(width * width_scale).
-     *      The scalar must be of {@link ANEURALNETWORKS_FLOAT16} if input0 is
-     *      of {@link ANEURALNETWORKS_TENSOR_FLOAT16} and of
-     *      {@link ANEURALNETWORKS_FLOAT32} otherwise.
-     * * 3: An optional {@link ANEURALNETWORKS_BOOL} scalar, default to false.
-     *      Set to true to specify NCHW data layout for input0 and output0.
-     *
-     * Outputs:
-     * * 0: The output 4-D tensor, of shape
-     *      [batches, new_height, new_width, depth].
-     *
-     * Available since API level 27.
-     */
+* Resizes images to given size using the bilinear interpretation.
+*
+* Resized images must be distorted if their output aspect ratio is not the
+* same as input aspect ratio. The corner pixels of output may not be the
+* same as corner pixels of input.
+*
+* Supported tensor {@link OperandCode}:
+* * {@link ANEURALNETWORKS_TENSOR_FLOAT16} (since API level 29)
+* * {@link ANEURALNETWORKS_TENSOR_FLOAT32}
+* * {@link ANEURALNETWORKS_TENSOR_QUANT8_ASYMM} (since API level 29)
+*
+* Supported tensor rank: 4, with "NHWC" or "NCHW" data layout.
+* With the default data layout NHWC, the data is stored in the order of:
+* [batch, height, width, channels]. Alternatively, the data layout could
+* be NCHW, the data storage order of: [batch, channels, height, width].
+*
+* Both resizing by shape and resizing by scale are supported.
+*
+* Inputs (resizing by shape):
+* * 0: A 4-D tensor, of shape [batches, height, width, depth], specifying
+*      the input. Since API level 29, zero batches is supported for this
+*      tensor.
+* * 1: An {@link ANEURALNETWORKS_INT32} scalar, specifying the output
+*      height of the output tensor.
+* * 2: An {@link ANEURALNETWORKS_INT32} scalar, specifying the output
+*      width of the output tensor.
+* * 3: An optional {@link ANEURALNETWORKS_BOOL} scalar, default to false.
+*      Set to true to specify NCHW data layout for input0 and output0.
+*      Available since API level 29.
+*
+* Inputs (resizing by scale, since API level 29):
+* * 0: A 4-D tensor, of shape [batches, height, width, depth], specifying
+*      the input. Zero batches is supported for this tensor.
+* * 1: A scalar, specifying height_scale, the scaling factor of the height
+*      dimension from the input tensor to the output tensor. The output
+*      height is calculated as new_height = floor(height * height_scale).
+*      The scalar must be of {@link ANEURALNETWORKS_FLOAT16} if input0 is
+*      of {@link ANEURALNETWORKS_TENSOR_FLOAT16} and of
+*      {@link ANEURALNETWORKS_FLOAT32} otherwise.
+* * 2: A scalar, specifying width_scale, the scaling factor of the width
+*      dimension from the input tensor to the output tensor. The output
+*      width is calculated as new_width = floor(width * width_scale).
+*      The scalar must be of {@link ANEURALNETWORKS_FLOAT16} if input0 is
+*      of {@link ANEURALNETWORKS_TENSOR_FLOAT16} and of
+*      {@link ANEURALNETWORKS_FLOAT32} otherwise.
+* * 3: An optional {@link ANEURALNETWORKS_BOOL} scalar, default to false.
+*      Set to true to specify NCHW data layout for input0 and output0.
+*
+* Outputs:
+* * 0: The output 4-D tensor, of shape
+*      [batches, new_height, new_width, depth].
+*
+* Available since API level 27.
+*/
 
 #ifndef __ANEURALNETWORKS_RESIZE_BILINEAR_HPP__
 #define __ANEURALNETWORKS_RESIZE_BILINEAR_HPP__

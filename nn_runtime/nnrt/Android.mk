@@ -28,6 +28,7 @@ LOCAL_SRC_FILES :=\
         compilation.cpp \
         event.cpp \
         utils.cpp \
+        logging.cpp \
         execution.cpp \
         execution_task.cpp \
         prepared_model.cpp \
@@ -75,6 +76,7 @@ LOCAL_CFLAGS :=  \
     -Wno-unused-parameter\
     -Wno-implicit-fallthrough
 
+LOCAL_LDLIBS := -llog
 LOCAL_MODULE:= libnnrt
 LOCAL_MODULE_TAGS := optional
 LOCAL_PRELINK_MODULE := false

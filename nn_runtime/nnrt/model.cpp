@@ -26,8 +26,10 @@
 #include <iterator>
 #include <vector>
 #include <string>
+/* Include string.h for strlen() */
+#include <string.h>
 
-#include "vsi_nn_pub.h"
+#include "logging.hpp"
 #include "model.hpp"
 #include "error.hpp"
 #include "version.hpp"
@@ -89,8 +91,8 @@ int8_t getProcessName(char * process) {
     FILE* fp = fopen("/sys/kernel/debug/binder/transactions", "r");
     if (NULL == fp)
         return -1;
-    vx_int32 _from_pid_out = 0, _from_tid_out = 0, _to_pid_out = 0, _to_tid_out = 0, time = 0, s = 0;
-    vx_int32 _from_pid_in = 0, _from_tid_in = 0, _to_pid_in = 0, _to_tid_in = 0;
+    int32_t _from_pid_out = 0, _from_tid_out = 0, _to_pid_out = 0, _to_tid_out = 0, time = 0, s = 0;
+    int32_t _from_pid_in = 0, _from_tid_in = 0, _to_pid_in = 0, _to_tid_in = 0;
     sprintf(line, "%d", pid);
     while (fgets(last, 256, fp)) {
         if (strstr(last, line) != NULL && strstr(last, "transaction") != NULL) {
@@ -116,7 +118,7 @@ int8_t getProcessName(char * process) {
         sprintf(line, "/proc/%d/cmdline", _from_pid_out);
         fp = fopen(line, "r");
         fgets(last, 256, fp);
-        VSILOGD(" PROCESSNAME: %s",last);
+        NNRT_LOGD_PRINT(" PROCESSNAME: %s",last);
         fclose(fp);
 
         if (strlen(last) > 0 && process)
@@ -136,7 +138,7 @@ int8_t getProcessName(char * process) {
     else {
         return -1;
     }
-    VSILOGD("proc name: %s",string );
+    NNRT_LOGD_PRINT("proc name: %s",string );
     fclose(fp);
     if (strlen(string) > 0 && process)
         memcpy(process, string, strlen(string));
@@ -161,7 +163,7 @@ void Model::checkProcess() {
     // for the CTS process, run with the hack
     std::string fp32_process_name = "NeuralNetworksTest_";
     if (strstr(processName, fp32_process_name.c_str()) != NULL) {
-        VSILOGD("set env variable VIV_VX_DISABLE_TP_NN_EVIS = 1");
+        NNRT_LOGD_PRINT("set env variable VIV_VX_DISABLE_TP_NN_EVIS = 1");
         setEnv("VIV_VX_DISABLE_TP_NN_EVIS", "1");
 
         relaxed_ = false;
@@ -170,7 +172,7 @@ void Model::checkProcess() {
         int val = -1;
         if (getEnv("VIV_VX_DISABLE_TP_NN_EVIS", val)) {
             // for non-CTS process, run without hack
-            VSILOGD("reset VIV_VX_DISABLE_TP_NN_EVIS to 0");
+            NNRT_LOGD_PRINT("reset VIV_VX_DISABLE_TP_NN_EVIS to 0");
             setEnv("VIV_VX_DISABLE_TP_NN_EVIS", "0");
         }
 
@@ -316,7 +318,7 @@ op::OperandPtr Model::addOperand(op::OperandPtr new_operand,
         }
         operand_unique_id_++;
     } else {
-        VSILOGE("OOM: create new operand failed");
+        NNRT_LOGE_PRINT("OOM: create new operand failed");
     }
 
     return new_operand;
@@ -355,7 +357,7 @@ T* Model::getBuffer(uint32_t index, size_t offset)
 int Model::setOperandValue(uint32_t operand_index, const void* buffer, size_t length)
 {
     if (operands_.find(operand_index) == operands_.end()) {
-        VSILOGW("Operand index(%u) is not found.", operand_index);
+        NNRT_LOGW_PRINT("Operand index(%u) is not found.", operand_index);
         return NNA_ERROR_CODE(BAD_DATA);
     }
     op::OperandPtr operand = operands_[operand_index];
@@ -392,7 +394,7 @@ int Model::setOperandValueFromMemory(uint32_t operand_index,
 {
     if (operands_.find(operand_index) == operands_.end())
     {
-        VSILOGW("Operand index(%u) is not found.", operand_index);
+        NNRT_LOGW_PRINT("Operand index(%u) is not found.", operand_index);
         return NNA_ERROR_CODE(BAD_DATA);
     }
     op::OperandPtr operand = operands_[operand_index];
@@ -477,7 +479,7 @@ int Model::updateOperand(uint32_t operand_index, const op::OperandPtr operand_ty
 {
     op::OperandPtr operand = operands_[operand_index];
     if (!operand) {
-        VSILOGW("Invliad operand index %d", operand_index);
+        NNRT_LOGW_PRINT("Invliad operand index %d", operand_index);
         return NNA_ERROR_CODE(BAD_DATA);
     }
     // TODO: Update other attrs
@@ -502,7 +504,7 @@ void Model::relax(bool fast_model) {
     getEnv(FAST_MODE, fastVal);
     if (1 == fastVal) {
         if (!fast_model) {
-            VSILOGW("VIV_FAST_MODE has been setted, fast mode can't be setted false.");
+            NNRT_LOGW_PRINT("VIV_FAST_MODE has been setted, fast mode can't be setted false.");
         }
         relaxed_ = true;
     } else {
@@ -511,17 +513,17 @@ void Model::relax(bool fast_model) {
 }
 
 void Model::echo() {
-    VSILOGD("Software Version: %s", VERSION::as_str());
-    VSILOGD("================== model info ==================");
-    VSILOGD("================== operands ==================");
+    NNRT_LOGD_PRINT("Software Version: %s", VERSION::as_str());
+    NNRT_LOGD_PRINT("================== model info ==================");
+    NNRT_LOGD_PRINT("================== operands ==================");
     for (auto it : operands_) {
         it.second->echo(it.first);
     }
-    VSILOGD("================== operations ==================");
+    NNRT_LOGD_PRINT("================== operations ==================");
     for (auto it : operations_) {
         it.second->echo(it.first);
     }
-    VSILOGD("================================================");
+    NNRT_LOGD_PRINT("================================================");
 }
 
 void Model::freezeCompile()

@@ -28,10 +28,10 @@ int TransformationSet::once(Model* model)
     int err = NNA_ERROR_CODE(NO_ERROR);
     bool modified = false;
     for (auto trans : transformations_) {
-        VSILOGD("Run %s", trans->name());
+        NNRT_LOGD_PRINT("Run %s", trans->name());
         err = trans->run(model, &modified);
         if (NNA_ERROR_CODE(NO_ERROR) != err) {
-            VSILOGW("Run %s fail.", trans->name());
+            NNRT_LOGW_PRINT("Run %s fail.", trans->name());
             return err;
         }
     }

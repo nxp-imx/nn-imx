@@ -51,6 +51,9 @@
     <ClCompile Include="utils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="logging.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="execution_task.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

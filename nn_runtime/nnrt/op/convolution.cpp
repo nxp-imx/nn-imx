@@ -23,6 +23,7 @@
 *****************************************************************************/
 #include "op/convolution.hpp"
 
+#include "error.hpp"
 #include "model.hpp"
 
 namespace nnrt {
@@ -37,11 +38,7 @@ void Conv2DOperation::handleLayoutInferenceOnInputs(
     nnrt::layout_inference::IPermuteVectorPtr permuteVector =
         input_permute_cache_.cached_permutes_[inputs()[0]];
 
-    if (!permuteVector) {
-        VSILOGE("Invalid permuteVector pointer");
-        assert(0);
-        return;
-    }
+    CHECK_NULL_PTR(permuteVector);
 
     if (inputOperand->ndim() != 4) {
         auto reversePermVec = permuteVector->reverse();
@@ -89,6 +86,8 @@ void GroupedConv2DOperation::handleLayoutInferenceOnInputs(
     nnrt::layout_inference::IPermuteVectorPtr permuteVector =
         input_permute_cache_.cached_permutes_[inputs()[0]];
 
+    CHECK_NULL_PTR(permuteVector);
+
     if (inputOperand->ndim() != 4) {
         auto reversePermVec = permuteVector->reverse();
 
@@ -134,6 +133,8 @@ void DepthwiseConv2DOperation::handleLayoutInferenceOnInputs(
 
     nnrt::layout_inference::IPermuteVectorPtr permuteVector =
         input_permute_cache_.cached_permutes_[inputs()[0]];
+
+    CHECK_NULL_PTR(permuteVector);
 
     if (inputOperand->ndim() != 4) {
         auto permutevector = permuteVector->reverse();
@@ -183,6 +184,7 @@ void Deconv2DOperation::handleLayoutInferenceOnInputs(
     nnrt::layout_inference::IPermuteVectorPtr permuteVector =
         input_permute_cache_.cached_permutes_[inputs()[0]];
 
+    CHECK_NULL_PTR(permuteVector);
     if (inputOperand->ndim() != 4) {
         Operation::handleLayoutInferenceOnInputs(model, next_permute_vectors);
         return;

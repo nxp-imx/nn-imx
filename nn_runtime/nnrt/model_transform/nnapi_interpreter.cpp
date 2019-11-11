@@ -24,7 +24,7 @@
 #include <cassert>
 #include <algorithm>
 
-#include "vsi_nn_pub.h"
+#include "logging.hpp"
 #include "types.hpp"
 #include "model.hpp"
 #include "error.hpp"
@@ -94,7 +94,7 @@ namespace nnrt
     do {                                                \
         if ((in_num > 0 && op->inputs().size() != (size_t)in_num)       \
          || (out_num > 0 && op->outputs().size() != (size_t)out_num)) {           \
-            VSILOGW("Operation IO number mismatch. %d(%d), %d(%d)",     \
+            NNRT_LOGW_PRINT("Operation IO number mismatch. %d(%d), %d(%d)",     \
                     op->inputs().size(), in_num,        \
                     op->outputs().size(), out_num);     \
             return nullptr;                             \
@@ -180,6 +180,7 @@ NnApiInterpreter::NnApiInterpreter()
     REGISTER_OP(INSTANCE_NORMALIZATION);
     REGISTER_OP(LESS);
     REGISTER_OP(LESS_EQUAL);
+    REGISTER_OP(LOG);
     REGISTER_OP(LOGICAL_AND);
     REGISTER_OP(LOGICAL_OR);
     REGISTER_OP(MAXIMUM);
@@ -189,7 +190,7 @@ NnApiInterpreter::NnApiInterpreter()
     REGISTER_OP(POW);
     REGISTER_OP(PRELU);
     //REGISTER_OP(ROI_ALIGN);
-    //REGISTER_OP(ROI_POOL);
+    REGISTER_OP(ROI_POOL);
     REGISTER_OP(RSQRT);
     REGISTER_OP(SELECT);
     //REGISTER_OP(SLICE);
@@ -204,7 +205,12 @@ NnApiInterpreter::NnApiInterpreter()
     REGISTER_OP(REDUCE_PROD);
     REGISTER_OP(AXIS_ALIGNED_BBOX_TRANSFORM);
     REGISTER_OP(GENERATE_PROPOSALS);
-    //REGISTER_OP(RANDOM_MULTINOMIAL);
+    REGISTER_OP(RANDOM_MULTINOMIAL);
+    REGISTER_OP(HEATMAP_MAX_KEYPOINT);
+    //REGISTER_OP(LOG_SOFTMAX);
+    REGISTER_OP(BOX_WITH_NMS_LIMIT);
+    //REGISTER_OP(TILE);
+    REGISTER_OP(TOPK);
 
     /*customer Op*/
 #undef REGISTER_OP
@@ -225,7 +231,7 @@ int NnApiInterpreter::run(Model* model, bool* modified)
         OperationPtr op = it->second;
         if (op_container_.find(op->type()) == op_container_.end())
         {
-            VSILOGW("Not support operation %d", op->type());
+            NNRT_LOGW_PRINT("Not support operation %d", op->type());
             return NNA_ERROR_CODE(BAD_DATA);
         }
     }
@@ -234,21 +240,21 @@ int NnApiInterpreter::run(Model* model, bool* modified)
     {
         uint32_t idx = it->first;
         OperationPtr op = it->second;
-        VSILOGD("Convert node %u(%d)", idx, op->type());
+        NNRT_LOGD_PRINT("Convert node %u(%d)", idx, op->type());
         OperationPtr new_operation = (this->*op_container_[op->type()])(model, op, idx);
         if (!new_operation) {
-            VSILOGW("Build operation: %d, index: %d fail", op->type(), idx);
+            NNRT_LOGW_PRINT("Build operation: %d, index: %d fail", op->type(), idx);
             return NNA_ERROR_CODE(OUT_OF_MEMORY);
         }
         replaceOperation(model, idx, new_operation);
     }
 
-    VSILOGD("Convert operation completed.");
+    NNRT_LOGD_PRINT("Convert operation completed.");
     // Unique vector
     for (uint32_t index : operands_to_remove_) {
-        //VSILOGD("Remove %d", index);
+        //NNRT_LOGD_PRINT("Remove %d", index);
         if (model->isInput(index) || model->isOutput(index)) {
-            VSILOGW("Try remove operand(%u) from model input or output, \
+            NNRT_LOGW_PRINT("Try remove operand(%u) from model input or output, \
 some operations may not support dynamic configure.", index);
         } else {
             model->removeOperand(index);
@@ -298,7 +304,7 @@ PadType NnApiInterpreter::mapPadType(int code)
             type = PadType::VALID;
             break;
         default:
-            VSILOGE("Invalid padding type(%d)", type);
+            NNRT_LOGE_PRINT("Invalid padding type(%d)", type);
             assert(false);
             break;
     }
@@ -316,7 +322,7 @@ LshProjectionType NnApiInterpreter::mapLshProjectionType(int value)
             type = LshProjectionType::DENSE;
             break;
         default:
-            VSILOGW("Unknow lsh projection type: %d", value);
+            NNRT_LOGW_PRINT("Unknow lsh projection type: %d", value);
             break;
     }
     return type;
@@ -342,7 +348,7 @@ FusedType NnApiInterpreter::mapLstmActivationType(int value)
             type = FusedType::SIGMOID;
             break;
         default:
-            VSILOGW("Unknown lstm activation: %d.", value);
+            NNRT_LOGW_PRINT("Unknown lstm activation: %d.", value);
             break;
 
     }
@@ -478,7 +484,7 @@ OperationPtr NnApiInterpreter::map_CONV_2D(Model* model,
         conv2d->strides[0] = inputs[argList->ArgPos("stride_w")]->scalar.int32;
         conv2d->strides[1] = inputs[argList->ArgPos("stride_h")]->scalar.int32;
     } else {
-        VSILOGE("convolution 2d argument list not support");
+        NNRT_LOGE_PRINT("convolution 2d argument list not support");
     }
 
     /* set default dilation value */
@@ -810,7 +816,7 @@ OperationPtr NnApiInterpreter::map_SPACE_TO_BATCH_ND(Model* model,
         convert2DPadding(buffer, inputs[2]->size(),
                 sp_to_bp->padFront.data(), sp_to_bp->padBack.data());
     } else {
-        VSILOGW("Not support dynamic SPACE_TO_BATCH_ND.");
+        NNRT_LOGW_PRINT("Not support dynamic SPACE_TO_BATCH_ND.");
         assert(false);
     }
     truncateOperationIOs(model, operation, 1, 1);
@@ -891,17 +897,17 @@ OperationPtr NnApiInterpreter::map_RESIZE_BILINEAR(Model* model,
                 } else {
                     // scale is float16
                     // TODO: support float16
-                    VSILOGE("Float16 scale not support");
+                    NNRT_LOGE_PRINT("Float16 scale not support");
                     assert(false);
                 }
             }
         } else {
             // TODO: support dynamic input tensor shape
-            VSILOGE("Dynamic shape not support");
+            NNRT_LOGE_PRINT("Dynamic shape not support");
             assert(false);
         }
     } else {
-        VSILOGE("Resize bilinear argument list not support");
+        NNRT_LOGE_PRINT("Resize bilinear argument list not support");
     }
     truncateOperationIOs(model, operation, 1, 1);
     return resize;
@@ -953,17 +959,17 @@ OperationPtr NnApiInterpreter::map_RESIZE_NEAREST(Model* model,
                 } else {
                     // scale is float16
                     // TODO: support float16
-                    VSILOGE("Float16 scale not support");
+                    NNRT_LOGE_PRINT("Float16 scale not support");
                     assert(false);
                 }
             }
         } else {
             // TODO: support dynamic input tensor shape
-            VSILOGE("Dynamic shape not support");
+            NNRT_LOGE_PRINT("Dynamic shape not support");
             assert(false);
         }
     } else {
-        VSILOGE("Resize nearest neighbor argument list not support");
+        NNRT_LOGE_PRINT("Resize nearest neighbor argument list not support");
     }
     truncateOperationIOs(model, operation, 1, 1);
     return resize;
@@ -1002,12 +1008,12 @@ OperationPtr NnApiInterpreter::map_LOCAL_RESPONSE_NORMALIZATION(Model* model,
             }
         } else {
             // TODO: support dynamic input tensor shape
-            VSILOGE("Dynamic shape not support");
+            NNRT_LOGE_PRINT("Dynamic shape not support");
             assert(false);
         }
 
     } else {
-        VSILOGE("Local response normalization argument list not support");
+        NNRT_LOGE_PRINT("Local response normalization argument list not support");
     }
     truncateOperationIOs(model, operation, 1, 1);
     return lrn;
@@ -1041,12 +1047,12 @@ OperationPtr NnApiInterpreter::map_L2_NORMALIZATION(Model* model,
             }
         } else {
             // TODO: support dynamic input tensor shape
-            VSILOGE("Dynamic shape not support");
+            NNRT_LOGE_PRINT("Dynamic shape not support");
             assert(false);
         }
 
     } else {
-        VSILOGE("L2 response argument list not support");
+        NNRT_LOGE_PRINT("L2 response argument list not support");
     }
     truncateOperationIOs(model, operation, 1, 1);
     return l2norm;
@@ -1083,7 +1089,7 @@ OperationPtr NnApiInterpreter::map_LSTM(Model* model,
 
     while (input_num < LstmUnitOperation::INPUT_COUNT) {
         operation->inputs().emplace_back(-1);
-        VSILOGD("Append Inputs at [%d]", input_num);
+        NNRT_LOGD_PRINT("Append Inputs at [%d]", input_num);
         ++input_num;
     }
 
@@ -1156,7 +1162,7 @@ OperationPtr NnApiInterpreter::map_L2_POOL_2D(Model* model,
         }
     }
     else{
-        VSILOGE("Number of input parameter not valid");
+        NNRT_LOGE_PRINT("Number of input parameter not valid");
         assert(false);
     }
     pool->setVxParam(OverflowPolicy::WRAP, RoundingPolicy::TO_ZERO, Rounding::FLOOR);
@@ -1210,6 +1216,24 @@ OperationPtr NnApiInterpreter::map_DECONV_2D(Model* model,
     deconv2d->setVxParam(OverflowPolicy::WRAP, RoundingPolicy::TO_ZERO, Rounding::FLOOR);
     truncateOperationIOs(model, operation, 3, 1);
     return deconv2d;
+}
+
+OperationPtr NnApiInterpreter::map_TOPK(Model* model,
+        OperationPtr operation, uint32_t operation_index)
+{
+    NNAPI_CHECK_IO_NUM(operation, 2, 2);
+    std::shared_ptr<TopkOperation> op = std::make_shared<TopkOperation>();
+    NNAPI_CHECK_PTR(op);
+    std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
+    auto argList = matchArgList(inputs, "TopkV2Operation");
+    if (argList) {
+        op->k = inputs[argList->ArgPos("k")]->scalar.int32;
+    } else {
+        NNRT_LOGE_PRINT("Topk argument list not support");
+        assert(false);
+    }
+    truncateOperationIOs(model, operation, 1, 2);
+    return op;
 }
 
 OperationPtr NnApiInterpreter::map_ARGMAX(Model* model,
@@ -1275,12 +1299,12 @@ OperationPtr NnApiInterpreter::map_CHANNEL_SHUFFLE(Model* model,
             channel_shuffle->axis = inputs[argList->ArgPos("axis")]->scalar.int32;
         } else {
             // TODO: support dynamic input tensor shape
-            VSILOGE("Dynamic shape not support");
+            NNRT_LOGE_PRINT("Dynamic shape not support");
             assert(false);
         }
 
     } else {
-        VSILOGE("Channel shuffle argument list not support");
+        NNRT_LOGE_PRINT("Channel shuffle argument list not support");
     }
     truncateOperationIOs(model, operation, 1, 1);
     return channel_shuffle;
@@ -1331,12 +1355,114 @@ OperationPtr NnApiInterpreter::map_GENERATE_PROPOSALS(Model* model,
         op->min_size = inputs[argList->ArgPos("min_size")]->scalar.float32;
         op->setDataLayout(getDataLayout(inputs[argList->ArgPos("layout")]->scalar.boolean));
     } else {
-        VSILOGE("GenerateProposals argument list not support");
+        NNRT_LOGE_PRINT("GenerateProposals argument list not support");
         assert(false);
     }
     truncateOperationIOs(model, operation, 4, 3);
     return op;
 }
+
+OperationPtr NnApiInterpreter::map_RANDOM_MULTINOMIAL(Model* model,
+        OperationPtr operation, uint32_t operation_index)
+{
+    NNAPI_CHECK_IO_NUM(operation, 3, 1);
+    std::shared_ptr<RandomMultinomialOperation> op = std::make_shared<RandomMultinomialOperation>();
+    NNAPI_CHECK_PTR(op);
+    std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
+    auto argList = matchArgList(inputs, "RandomMultinomialOperation");
+    if (argList) {
+        op->sample_num = inputs[argList->ArgPos("sample_num")]->scalar.int32;
+        int32_t input_index = operation->input(argList->ArgPos("input"));
+        int32_t seed_index = operation->input(argList->ArgPos("seeds"));
+        operation->inputs().clear();
+        operation->inputs().emplace_back(input_index);
+        operation->inputs().emplace_back(seed_index);
+    } else {
+        NNRT_LOGE_PRINT("RandomMultinomial argument list not support");
+        assert(false);
+    }
+    return op;
+}
+
+OperationPtr NnApiInterpreter::map_ROI_POOL(Model* model,
+        OperationPtr operation, uint32_t operation_index)
+{
+    NNAPI_CHECK_IO_NUM(operation, 10, 1);
+    std::shared_ptr<ROIPoolingOperation> op = std::make_shared<ROIPoolingOperation>();
+    NNAPI_CHECK_PTR(op);
+    std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
+    auto argList = matchArgList(inputs, "ROIPoolingOperation");
+    if (argList) {
+        op->height = inputs[argList->ArgPos("height")]->scalar.int32;
+        op->width = inputs[argList->ArgPos("width")]->scalar.int32;
+        op->height_ratio = inputs[argList->ArgPos("height_ratio")]->scalar.float32;
+        op->width_ratio = inputs[argList->ArgPos("width_ratio")]->scalar.float32;
+        op->sampling_points_height = inputs[argList->ArgPos("width_ratio")]->scalar.int32;
+        op->sampling_points_width = inputs[argList->ArgPos("width_ratio")]->scalar.int32;
+        op->setDataLayout(getDataLayout(inputs[argList->ArgPos("layout")]->scalar.boolean));
+    } else {
+        NNRT_LOGE_PRINT("ROIPooling argument list not support");
+        assert(false);
+    }
+    truncateOperationIOs(model, operation, 3, 1);
+    return op;
+}
+
+OperationPtr NnApiInterpreter::map_HEATMAP_MAX_KEYPOINT(Model* model,
+        OperationPtr operation, uint32_t operation_index)
+{
+    NNAPI_CHECK_IO_NUM(operation, 3, 2);
+    std::shared_ptr<HeatmapMaxKeypointOperation> op = std::make_shared<HeatmapMaxKeypointOperation>();
+    NNAPI_CHECK_PTR(op);
+    std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
+    auto argList = matchArgList(inputs, "HeatmapMaxKeypointOperation");
+    if (argList) {
+        op->setDataLayout(getDataLayout(inputs[argList->ArgPos("layout")]->scalar.boolean));
+    } else {
+        NNRT_LOGE_PRINT("HeatmapMaxPoint argument list not support");
+        assert(false);
+    }
+    truncateOperationIOs(model, operation, 2, 2);
+    return op;
+}
+
+OperationPtr NnApiInterpreter::map_BOX_WITH_NMS_LIMIT(Model* model,
+        OperationPtr operation, uint32_t operation_index)
+{
+    std::shared_ptr<BoxWithNmsLimitOperation> op = std::make_shared<BoxWithNmsLimitOperation>();
+    NNAPI_CHECK_PTR(op);
+    std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
+    auto argList = matchArgList(inputs, "BoxWithNmsLimitOperation");
+    auto choose_nms_kernel_method = [](int32_t value) -> NmsKernelMethod {
+        switch (value) {
+            case 1:
+                return NmsKernelMethod::Hard;
+            case 2:
+                return NmsKernelMethod::Linear;
+            case 3:
+                return NmsKernelMethod::Gaussian;
+            default:
+                NNRT_LOGE_PRINT("Unsupport nms kernel method %d", value);
+                break;
+        }
+        return NmsKernelMethod::Hard;
+    };
+    if (argList) {
+        op->score_threshold = inputs[argList->ArgPos("score_threshold")]->scalar.float32;
+        op->max_boxes = inputs[argList->ArgPos("max_boxes")]->scalar.int32;
+        op->nms_kernel_method = choose_nms_kernel_method(
+                inputs[argList->ArgPos("nms_kernel_method")]->scalar.int32);
+        op->iou_threshold = inputs[argList->ArgPos("iou_threshold")]->scalar.float32;
+        op->nms_sigma = inputs[argList->ArgPos("nms_sigma")]->scalar.float32;
+        op->nms_score_threshold = inputs[argList->ArgPos("nms_score_threshold")]->scalar.float32;
+    } else {
+        NNRT_LOGE_PRINT("BoxWithNmsLimit argument list not support");
+        assert(false);
+    }
+    truncateOperationIOs(model, operation, 3, 4);
+    return op;
+}
+
 
 #define DECLARE_SAMPLE_OP(NAME, INPUT_NUM, OUTPUT_NUM, OPERATION_TYPE)  \
     OperationPtr NnApiInterpreter::map_##NAME(Model* model,             \
@@ -1347,7 +1473,7 @@ OperationPtr NnApiInterpreter::map_GENERATE_PROPOSALS(Model* model,
         if(op)                                                          \
             op->setDataLayout(DataLayout::NHWC);                        \
         else                                                            \
-            VSILOGE("Invalid operaton pointer");                        \
+            NNRT_LOGE_PRINT("Invalid operaton pointer");                        \
         return op;                                                      \
     }
 
@@ -1373,6 +1499,7 @@ DECLARE_SAMPLE_OP(LESS, 2, 1, LessOperation)
 DECLARE_SAMPLE_OP(LESS_EQUAL, 2, 1, LessEqualOperation)
 DECLARE_SAMPLE_OP(GREATER, 2, 1, GreaterOperation)
 DECLARE_SAMPLE_OP(GREATER_EQUAL, 2, 1, GreaterEqualOperation)
+DECLARE_SAMPLE_OP(LOG, 1, 1, LogOperation)
 DECLARE_SAMPLE_OP(LOGICAL_AND, 2, 1, LogicalAndOperation)
 DECLARE_SAMPLE_OP(LOGICAL_OR, 2, 1, LogicalOrOperation)
 DECLARE_SAMPLE_OP(PRELU, 2, 1, PReluOperation)
@@ -1399,7 +1526,7 @@ DECLARE_SAMPLE_OP(AXIS_ALIGNED_BBOX_TRANSFORM, 4, 1, AxisAlignedBBoxTransformOpe
             op->keepDim = static_cast<bool>(inputs[argList->ArgPos("keep_dim")]->scalar.int32); \
             truncateOperationIOs(model, operation, 1, 1);   \
         } else {    \
-            VSILOGE("Number of input parameter is not valid"); \
+            NNRT_LOGE_PRINT("Number of input parameter is not valid"); \
         }   \
         return op;    \
     }

@@ -21,7 +21,7 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#include "vsi_nn_pub.h"
+#include "logging.hpp"
 #include "event.hpp"
 #include "execution.hpp"
 #include "error.hpp"
@@ -50,7 +50,7 @@ int Event::wait()
         case IDLE:
             break;
         case IN_PROCESS:
-            VSILOGW("Some errors occured?");
+            NNRT_LOGW_PRINT("Some errors occured?");
             break;
         case ERROR_OCCURED:
             error = NNA_ERROR_CODE(BAD_DATA);
@@ -61,7 +61,7 @@ int Event::wait()
         case COMPLETED:
             break;
         default:
-            VSILOGW("Got error state: %d", state_);
+            NNRT_LOGW_PRINT("Got error state: %d", state_);
             break;
 
     }
