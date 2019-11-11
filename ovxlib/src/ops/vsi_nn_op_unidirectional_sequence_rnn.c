@@ -31,15 +31,13 @@
 #include "vsi_nn_node.h"
 #include "vsi_nn_prv.h"
 #include "utils/vsi_nn_math.h"
+#include "utils/vsi_nn_util.h"
 #include "vsi_nn_ops.h"
 #include "vsi_nn_tensor.h"
 #include "vsi_nn_tensor_util.h"
 #include "client/vsi_nn_vxkernel.h"
 #include "vsi_nn_internal_node.h"
 #include "vsi_nn_rnn.h"
-
-#define SAFE_FREE( _PTR ) if( _PTR ){ \
-    free( _PTR ); _PTR = NULL; }
 
 static vsi_bool setup_op_shapes
     (
@@ -71,7 +69,7 @@ static vsi_bool setup_op_shapes
     output_size = num_units;
 
     /* create h_state if app doesn't provide them */
-    if( !inputs[RNN_INPUT_HIDDEN_STATE] )
+    if( !inputs[RNN_INPUT_H_STATE] )
     {
         attr.dim_num = 2;
         attr.size[1] = batch_size;
@@ -81,7 +79,7 @@ static vsi_bool setup_op_shapes
         attr.is_const = TRUE;
 
         output_tensor = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
-        inputs[RNN_INPUT_HIDDEN_STATE] = output_tensor->t;
+        inputs[RNN_INPUT_H_STATE] = output_tensor->t;
     }
 
     /* output */
@@ -189,7 +187,7 @@ static vsi_bool op_setup
 
     vsi_nn_rnn_data_check_aligned(self, split_output_tensors, time_step, use_virtual_tensor);
 
-    last_step_h_state = inputs[RNN_INPUT_HIDDEN_STATE];
+    last_step_h_state = inputs[RNN_INPUT_H_STATE];
     for( i = 0; i < time_step; i++ )
     {
         vsi_nn_tensor_t* reshape_output = NULL;
@@ -265,8 +263,8 @@ static vsi_bool op_setup
             tensor, outputs[RNN_OUTPUT_OUTPUT], use_virtual_tensor);
     }
 
-    SAFE_FREE( split_output_tensors );
-    SAFE_FREE( rnncell_reshape_output_tensors );
+    vsi_nn_safe_free( split_output_tensors );
+    vsi_nn_safe_free( rnncell_reshape_output_tensors );
 
     return TRUE;
 } /* op_setup() */

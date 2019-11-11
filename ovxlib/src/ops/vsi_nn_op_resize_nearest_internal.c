@@ -357,7 +357,7 @@ static vsi_status op_compute
     )
 {
     vsi_status status;
-    vsi_nn_kernel_info_t kernel_info = {0};
+    vsi_nn_kernel_info_t kernel_info;
     vsi_nn_resize_nearest_internal_param *p = NULL;
 
     memset(&kernel_info, 0x0, sizeof(vsi_nn_kernel_info_t));

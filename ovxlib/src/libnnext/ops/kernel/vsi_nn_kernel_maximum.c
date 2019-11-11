@@ -156,7 +156,7 @@ vsi_status VX_CALLBACK vxMaximumKernel
         vx_float32 outData   = 0;
 
         in0offset = getExpandTensorOffset(i, attr[0].dim_num, attr[0].size, stride_size[0], attr[2].size);
-        in1offset = getExpandTensorOffset(i, attr[1].dim_num, attr[0].size, stride_size[1], attr[2].size);
+        in1offset = getExpandTensorOffset(i, attr[1].dim_num, attr[1].size, stride_size[1], attr[2].size);
 
         in0_ptr = (vx_uint8 *)buffer_ptr[0] + in0offset;
         in1_ptr = (vx_uint8 *)buffer_ptr[1] + in1offset;
@@ -234,10 +234,11 @@ vsi_status VX_CALLBACK vxMaximumInitializer
 
     memset(&attr[0], 0, sizeof(vsi_nn_tensor_attr_t));
     memset(&attr[1], 0, sizeof(vsi_nn_tensor_attr_t));
+    memset(&attr[2], 0, sizeof(vsi_nn_tensor_attr_t));
 
     status  = vsi_nn_vxGetTensorAttr(input0, &attr[0]);
     status |= vsi_nn_vxGetTensorAttr(input1, &attr[1]);
-    status |= vsi_nn_vxGetTensorAttr(output, &attr[1]);
+    status |= vsi_nn_vxGetTensorAttr(output, &attr[2]);
 
     if(status < 0)
         printf("error-%s,%d\n",__FILE__,__LINE__);
@@ -764,10 +765,10 @@ vx_kernel_description_t vxMaximumKernelInfo_CPU =
 };
 
 #define GEN_MAXIMUM_SH_KERNEL_NAME(SRC0_TYPE, SRC1_TYPE, DST_TYPE) \
-    "com.vivantecorp.extension.vxcTensorMaximum"#SRC0_TYPE#SRC1_TYPE"to"#DST_TYPE
+    "com.vivantecorp.extension.vxcTensorMaximum_"#SRC0_TYPE#SRC1_TYPE"to"#DST_TYPE
 
 #define GEN_MAXIMUM_SH_KERNEL_NAME_2D(SRC0_TYPE, SRC1_TYPE, DST_TYPE) \
-    "com.vivantecorp.extension.vxcTensorMaximum"#SRC0_TYPE#SRC1_TYPE"to"#DST_TYPE"_2D"
+    "com.vivantecorp.extension.vxcTensorMaximum_"#SRC0_TYPE#SRC1_TYPE"to"#DST_TYPE"_2D"
 
 #define TENSOR_MAX_KERNELS(SRC0_TYPE, SRC1_TYPE, DST_TYPE) \
     vx_kernel_description_t vxTensorMaximum_##SRC0_TYPE##SRC1_TYPE##to##DST_TYPE##_Kernel = \

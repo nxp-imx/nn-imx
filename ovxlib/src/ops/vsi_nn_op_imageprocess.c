@@ -1000,7 +1000,7 @@ vsi_status vsi_nn_op_imageprocess_single_node
         }
     }
 OnError:
-        if(tensor_temp) vsi_nn_ReleaseTensor(&tensor_temp);
+        //if(tensor_temp) vsi_nn_ReleaseTensor(&tensor_temp);
         if(output_scaletotensor) vsi_nn_ReleaseTensor(&output_scaletotensor);
         if(output_reversetensor) vsi_nn_ReleaseTensor(&output_reversetensor);
         return status;

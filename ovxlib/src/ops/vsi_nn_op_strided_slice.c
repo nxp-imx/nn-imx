@@ -34,7 +34,6 @@
 #include "vsi_nn_tensor.h"
 #include "vsi_nn_tensor_util.h"
 #include "utils/vsi_nn_util.h"
-#include "utils/vsi_nn_link_list.h"
 #include "utils/vsi_nn_dtype_util.h"
 
 
@@ -81,6 +80,24 @@ static vx_int32 get_slice_clamp_stop(vx_int32 stride, vx_int32 stop, vx_uint32 d
     }
     return stop_vlaue;
 }
+
+static vsi_bool _check_neg_start_end_dims
+    (
+    int32_t *start,
+    int32_t *stop,
+    uint32_t dims
+    )
+{
+    uint32_t i = 0;
+
+    for (i = 0; i < dims; i++)
+    {
+        if (start[i] < 0 || stop[i] < 0)
+            return TRUE;
+    }
+
+    return FALSE;
+} /* _is_same_quant */
 
 static vsi_bool _get_stride_slice_start_stop_stride(
     vsi_nn_node_t * self,
@@ -144,6 +161,25 @@ static vsi_bool _get_stride_slice_start_stop_stride(
         stop[i] = get_slice_clamp_stop(stride[i], stop[i], inputs[0]->attr.size[i]);
     }
 
+    if (_check_neg_start_end_dims(start, stop, inputs[0]->attr.dim_num))
+    {
+        memcpy(p->lcl2_data->begin_dims, p->begin_dims, sizeof(int32_t) * p->begin_dims_num);
+        memcpy(p->lcl2_data->end_dims, p->end_dims, sizeof(int32_t) * p->end_dims_num);
+        memcpy(p->lcl2_data->stride_dims, p->stride_dims, sizeof(int32_t) * p->stride_dims_num);
+        p->lcl2_data->begin_mask = p->begin_mask;
+        p->lcl2_data->end_mask = p->end_mask;
+        p->lcl2_data->shrink_axis_mask = p->shrink_axis_mask;
+    }
+    else
+    {
+        memcpy(p->lcl2_data->begin_dims, start, sizeof(int32_t) * p->begin_dims_num);
+        memcpy(p->lcl2_data->end_dims, stop, sizeof(int32_t) * p->end_dims_num);
+        memcpy(p->lcl2_data->stride_dims, stride, sizeof(int32_t) * p->stride_dims_num);
+        p->lcl2_data->begin_mask = 0;
+        p->lcl2_data->end_mask = 0;
+        p->lcl2_data->shrink_axis_mask = 0;
+    }
+
     return TRUE;
 }
 
@@ -199,7 +235,6 @@ static vsi_bool _is_same_quant
     return TRUE;
 } /* _is_same_quant */
 
-
 static vsi_status copy_tensor_to_view
     (
     vsi_nn_node_t   * self,
@@ -212,21 +247,11 @@ static vsi_status copy_tensor_to_view
 
     ret = VSI_SUCCESS;
     /* Malloc ptr */
-    data = (vsi_nn_strided_slice_lcl_data2 *)malloc( sizeof(vsi_nn_strided_slice_lcl_data2) );
-    if( NULL == data )
-    {
-        VSILOGE( "Create stride slice local data fail." );
-        return VSI_FAILURE;
-    }
-    memset( data, 0, sizeof(vsi_nn_concat_lcl_data) );
+    data = self->nn_param.strided_slice.lcl2_data;
     data->src_tensor = src_tensor;
     if (dst_in->t)
         data->dst_tensor = vxReshapeTensor(dst_in->t, (int32_t*)dst_in->attr.size, dst_in->attr.dim_num);
-
-    /* Store node, ptr */
-    vsi_nn_LinkListPushStart(
-        (vsi_nn_link_list_t **)&self->nn_param.strided_slice.lcl2_data,
-        (vsi_nn_link_list_t *)data );
+    data->is_dataconvert_op = TRUE;
 
     return ret;
 } /* copy_tensor_to_view() */
@@ -244,28 +269,29 @@ static vsi_status op_compute
     vsi_nn_tensor_t *end_dims_tensor = NULL;
     vsi_nn_tensor_t *stride_dims_tensor = NULL;
     vsi_nn_tensor_attr_t attr;
-    int32_t        start_dims[VSI_NN_MAX_DIM_NUM] = { 0 };
-    int32_t        stop_dims[VSI_NN_MAX_DIM_NUM] = { 0 };
-    int32_t        stride_dims[VSI_NN_MAX_DIM_NUM] = { 0 };
-    vsi_nn_strided_slice_lcl_data2 * iter = NULL;
+    int32_t   *start_dims = NULL;
+    int32_t   *stop_dims = NULL;
+    int32_t   *stride_dims = NULL;
+    vsi_nn_strided_slice_lcl_data2 * p = self->nn_param.strided_slice.lcl2_data;
 
-    _get_stride_slice_start_stop_stride(self, inputs, start_dims, stop_dims, stride_dims);
+    start_dims = p->begin_dims;
+    stop_dims = p->end_dims;
+    stride_dims = p->stride_dims;
 
-    if (_check_is_same_shape(inputs, start_dims, stop_dims, stride_dims) == vx_true_e)
+    if (TRUE == p->is_optimized)
     {
-        iter = self->nn_param.strided_slice.lcl2_data;
-        while( NULL != iter )
+        vx_tensor dst_tensor = NULL;
+
+        if (p->is_dataconvert_op)
         {
-            vx_tensor dst_tensor = iter->dst_tensor ? iter->dst_tensor : outputs[0]->t;
-            iter->cp_node = vxTensorCopyNode(self->graph->g,
-                iter->src_tensor, dst_tensor );
-            if( NULL == iter->cp_node )
+            dst_tensor = p->dst_tensor ? p->dst_tensor : outputs[0]->t;
+            p->cp_node = vxTensorCopyNode(self->graph->g,
+                    p->src_tensor, dst_tensor );
+            if( NULL == p->cp_node )
             {
                 VSILOGE( "Create vxTensorCopyNode fail." );
                 status = VSI_FAILURE;
-                break;
             }
-            iter = (vsi_nn_strided_slice_lcl_data2 *)vsi_nn_LinkListNext( (vsi_nn_link_list_t *)iter );
         }
     }
     else
@@ -329,9 +355,9 @@ static vsi_status op_compute
         self->nn_param.strided_slice.local.stride_dims_tensor = stride_dims_tensor;
         param.stride_dims = REQUIRED_IO(stride_dims_tensor);
 
-        param.begin_mask = 0;
-        param.end_mask = 0;
-        param.shrink_axis_mask = 0;
+        param.begin_mask = p->begin_mask;
+        param.end_mask = p->end_mask;
+        param.shrink_axis_mask = p->shrink_axis_mask;
 
         self->n = vxTensorStrideSliceNode(
             self->graph->g,
@@ -462,6 +488,8 @@ static vsi_status op_optimize
         goto OnError;
     }
 
+    self->nn_param.strided_slice.lcl2_data->is_optimized = TRUE;
+
     is_same_quant_type = _is_same_quant(inputs, outputs);
     if( NULL != outputs[0]->t || is_same_quant_type == FALSE)
     {
@@ -487,38 +515,51 @@ static vsi_status op_deinit
     vsi_nn_node_t * self
     )
 {
-    vsi_nn_strided_slice_lcl_data2 * data;
-    vsi_nn_strided_slice_lcl_data2 * tmp;
+    vsi_nn_strided_slice_lcl_data2 * lcl2_data;
 
     if(NULL == self)
     {
         return VSI_FAILURE;
     }
 
-    data = self->nn_param.strided_slice.lcl2_data;
+    lcl2_data = self->nn_param.strided_slice.lcl2_data;
     if(self->n)
     {
         if( NULL != self && NULL != self->n )
         {
-            if(data)
-            {
-                free(data);
-                data = NULL;
-            }
             vxReleaseNode( &self->n );
             self->n = NULL;
         }
     }
-    else
+
+    if (lcl2_data->cp_node)
     {
-        while( NULL != data )
-        {
-            tmp = (vsi_nn_strided_slice_lcl_data2 *)vsi_nn_LinkListPopStart(
-                (vsi_nn_link_list_t **)&data );
-            vxReleaseNode( &tmp->cp_node );
-            vxReleaseTensor( &tmp->dst_tensor );
-            free( tmp );
-        }
+        vxReleaseNode( &lcl2_data->cp_node );
+    }
+
+    if (lcl2_data->dst_tensor)
+    {
+        vxReleaseTensor( &lcl2_data->dst_tensor );
+    }
+
+    if (lcl2_data->begin_dims)
+    {
+        free(lcl2_data->begin_dims);
+    }
+
+    if (lcl2_data->end_dims)
+    {
+        free(lcl2_data->end_dims);
+    }
+
+    if (lcl2_data->stride_dims)
+    {
+        free(lcl2_data->stride_dims);
+    }
+
+    if (lcl2_data)
+    {
+        free( lcl2_data );
     }
 
     if (self->nn_param.strided_slice.local.begin_dims_tensor != NULL)
@@ -538,6 +579,46 @@ static vsi_status op_deinit
     return VSI_SUCCESS;
 } /* op_deinit() */
 
+static vsi_status op_init
+    (
+    vsi_nn_node_t * self
+    )
+{
+    vsi_status status = VSI_SUCCESS;
+
+    self->nn_param.strided_slice.lcl2_data =
+    (vsi_nn_strided_slice_lcl_data2 *)malloc(sizeof(vsi_nn_strided_slice_lcl_data2));
+    if (NULL == self->nn_param.strided_slice.lcl2_data)
+    {
+        return  VX_ERROR_NO_MEMORY;
+    }
+
+    memset( self->nn_param.strided_slice.lcl2_data, 0, sizeof(vsi_nn_strided_slice_lcl_data2) );
+
+    self->nn_param.strided_slice.lcl2_data->begin_dims =
+        (int32_t *)malloc(sizeof(int32_t) * VSI_NN_MAX_DIM_NUM);
+    if (NULL == self->nn_param.strided_slice.lcl2_data->begin_dims)
+    {
+        return  VX_ERROR_NO_MEMORY;
+    }
+
+    self->nn_param.strided_slice.lcl2_data->end_dims =
+        (int32_t *)malloc(sizeof(int32_t) * VSI_NN_MAX_DIM_NUM);
+    if (NULL == self->nn_param.strided_slice.lcl2_data->end_dims)
+    {
+        return  VX_ERROR_NO_MEMORY;
+    }
+
+    self->nn_param.strided_slice.lcl2_data->stride_dims =
+        (int32_t *)malloc(sizeof(int32_t) * VSI_NN_MAX_DIM_NUM);
+    if (NULL == self->nn_param.strided_slice.lcl2_data->stride_dims)
+    {
+        return  VX_ERROR_NO_MEMORY;
+    }
+
+    return status;
+} /* op_init() */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -545,7 +626,7 @@ extern "C" {
 DEF_OP_REG
     (
     /* op_name    */ STRIDED_SLICE,
-    /* init       */ NULL,
+    /* init       */ op_init,
     /* compute    */ op_compute,
     /* deinit     */ op_deinit,
     /* check      */ op_check,

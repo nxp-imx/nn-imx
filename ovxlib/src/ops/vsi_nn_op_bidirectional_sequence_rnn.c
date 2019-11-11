@@ -31,14 +31,12 @@
 #include "vsi_nn_node.h"
 #include "vsi_nn_prv.h"
 #include "utils/vsi_nn_math.h"
+#include "utils/vsi_nn_util.h"
 #include "vsi_nn_ops.h"
 #include "vsi_nn_tensor.h"
 #include "vsi_nn_tensor_util.h"
 #include "client/vsi_nn_vxkernel.h"
 #include "vsi_nn_internal_node.h"
-
-#define SAFE_FREE( _PTR ) if( _PTR ){ \
-    free( _PTR ); _PTR = NULL; }
 
 static vsi_bool setup_op_shapes
     (
@@ -69,7 +67,7 @@ static vsi_bool setup_op_shapes
     output_size = num_units;
 
     /* create h_state if app doesn't provide them */
-    if( !inputs[BI_RNN_FW_INPUT_HIDDEN_STATE] )
+    if( !inputs[BI_RNN_FW_INPUT_H_STATE] )
     {
         attr.dim_num = 2;
         attr.size[1] = batch_size;
@@ -79,10 +77,10 @@ static vsi_bool setup_op_shapes
         attr.is_const = TRUE;
 
         output_tensor = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
-        inputs[BI_RNN_FW_INPUT_HIDDEN_STATE] = output_tensor->t;
+        inputs[BI_RNN_FW_INPUT_H_STATE] = output_tensor->t;
     }
 
-    if( !inputs[BI_RNN_BW_INPUT_HIDDEN_STATE] )
+    if( !inputs[BI_RNN_BW_INPUT_H_STATE] )
     {
         attr.dim_num = 2;
         attr.size[1] = batch_size;
@@ -92,7 +90,7 @@ static vsi_bool setup_op_shapes
         attr.is_const = TRUE;
 
         output_tensor = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
-        inputs[BI_RNN_BW_INPUT_HIDDEN_STATE] = output_tensor->t;
+        inputs[BI_RNN_BW_INPUT_H_STATE] = output_tensor->t;
     }
 
     /* output */
@@ -273,7 +271,7 @@ static vsi_bool op_setup
     }
 
     /* forward rnn op */
-    last_step_h_state_fw = inputs[BI_RNN_FW_INPUT_HIDDEN_STATE];
+    last_step_h_state_fw = inputs[BI_RNN_FW_INPUT_H_STATE];
     for( i = 0; i < time_step; i++ )
     {
         vsi_nn_tensor_t* rnncell_out0 = NULL;
@@ -328,7 +326,7 @@ static vsi_bool op_setup
     }
 
     /* backward rnn op */
-    last_step_h_state_bw = inputs[BI_RNN_BW_INPUT_HIDDEN_STATE];
+    last_step_h_state_bw = inputs[BI_RNN_BW_INPUT_H_STATE];
     for( i = 0; i < time_step; i++ )
     {
         vsi_nn_tensor_t* rnncell_out0 = NULL;
@@ -431,7 +429,7 @@ static vsi_bool op_setup
             vsi_nn_rnn_transpose_time_major(self,
                 tensor, outputs[BI_RNN_FW_OUTPUT_OUTPUT], use_virtual_tensor);
         }
-        SAFE_FREE( merge_tensors );
+        vsi_nn_safe_free( merge_tensors );
     }
     else
     {
@@ -492,12 +490,12 @@ static vsi_bool op_setup
         }
     }
 
-    SAFE_FREE( split_output_tensors );
-    SAFE_FREE( aux_split_output_tensors )
-    SAFE_FREE( reshape_output_tensors );
-    SAFE_FREE( aux_reshape_output_tensors );
-    SAFE_FREE( rnncell_reshape_output_tensors_fw );
-    SAFE_FREE( rnncell_reshape_output_tensors_bw );
+    vsi_nn_safe_free( split_output_tensors );
+    vsi_nn_safe_free( aux_split_output_tensors )
+    vsi_nn_safe_free( reshape_output_tensors );
+    vsi_nn_safe_free( aux_reshape_output_tensors );
+    vsi_nn_safe_free( rnncell_reshape_output_tensors_fw );
+    vsi_nn_safe_free( rnncell_reshape_output_tensors_bw );
 
     return TRUE;
 } /* op_setup() */

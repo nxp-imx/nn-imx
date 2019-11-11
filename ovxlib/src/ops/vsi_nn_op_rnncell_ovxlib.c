@@ -31,15 +31,13 @@
 #include "vsi_nn_node.h"
 #include "vsi_nn_prv.h"
 #include "utils/vsi_nn_math.h"
+#include "utils/vsi_nn_util.h"
 #include "vsi_nn_ops.h"
 #include "vsi_nn_tensor.h"
 #include "vsi_nn_tensor_util.h"
 #include "client/vsi_nn_vxkernel.h"
 #include "vsi_nn_internal_node.h"
 #include "vsi_nn_rnn.h"
-
-#define SAFE_FREE( _PTR ) if( _PTR ){ \
-    free( _PTR ); _PTR = NULL; }
 
 static vsi_status op_compute
     (
@@ -339,7 +337,7 @@ static vsi_status op_deinit
     )
 {
     vsi_nn_rnncell_ovxlib_param* p = &self->nn_param.rnncell_ovxlib;
-    SAFE_FREE(p->local);
+    vsi_nn_safe_free(p->local);
     vsi_nn_deinit_internal_node_wksp( self );
 
     return VSI_SUCCESS;

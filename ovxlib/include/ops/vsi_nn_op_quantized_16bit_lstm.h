@@ -26,9 +26,38 @@
 
 #include "vsi_nn_types.h"
 
+enum
+{
+    Q16_LSTM_INPUT_INPUT        = 0,
+
+    Q16_LSTM_INPUT_WEIGHT_I2I   = 1,
+    Q16_LSTM_INPUT_WEIGHT_I2F   = 2,
+    Q16_LSTM_INPUT_WEIGHT_I2C   = 3,
+    Q16_LSTM_INPUT_WEIGHT_I2O   = 4,
+
+    Q16_LSTM_INPUT_WEIGHT_R2I   = 5,
+    Q16_LSTM_INPUT_WEIGHT_R2F   = 6,
+    Q16_LSTM_INPUT_WEIGHT_R2C   = 7,
+    Q16_LSTM_INPUT_WEIGHT_R2O   = 8,
+
+    Q16_LSTM_INPUT_BIAS_I       = 9,
+    Q16_LSTM_INPUT_BIAS_F       = 10,
+    Q16_LSTM_INPUT_BIAS_C       = 11,
+    Q16_LSTM_INPUT_BIAS_O       = 12,
+
+    Q16_LSTM_INPUT_C_STATE      = 13,
+    Q16_LSTM_INPUT_H_STATE      = 14,
+
+    Q16_LSTM_INPUT_CNT,
+
+    Q16_LSTM_OUTPUT_C_STATE     = 0,
+    Q16_LSTM_OUTPUT_OUTPUT      = 1,
+    Q16_LSTM_OUTPUT_CNT
+};
+
 typedef struct _vsi_nn_quantized_16bit_lstm_param
 {
-    vsi_enum     type;
+    void* local;
 } vsi_nn_quantized_16bit_lstm_param;
 
 #endif

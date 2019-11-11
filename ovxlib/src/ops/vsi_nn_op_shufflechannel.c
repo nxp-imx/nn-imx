@@ -45,7 +45,7 @@
 
 extern vx_kernel_description_t * vx_kernel_SHUFFLECHANNEL_list[];
 
-static vsi_bool _setup_op_shapes
+static vsi_bool _reshape_tensor
     (
     vsi_nn_node_t * self,
     vsi_nn_tensor_t ** inputs,
@@ -63,13 +63,6 @@ static vsi_bool _setup_op_shapes
 
     p = &(self->nn_param.shufflechannel);
     axis = p->axis;
-
-    if( VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num )
-    {
-        outputs[0]->attr.dim_num = inputs[0]->attr.dim_num;
-        memcpy( outputs[0]->attr.size, inputs[0]->attr.size,
-                sizeof(int) * inputs[0]->attr.dim_num );
-    }
 
     for ( i = 0; i < (uint32_t)axis; i++)
     {
@@ -239,10 +232,12 @@ static vsi_status vx_op_pre_compute
         }
         else if ( is16Bits && axis == 1)
         {
+            kernel_info->resource_name[0] = "vsi_nn_kernel_shufflechannel_axis1";
             kernel_info->kernel_index = 3;
         }
         else if ( is8Bits && axis == 1)
         {
+            kernel_info->resource_name[0] = "vsi_nn_kernel_shufflechannel_axis1";
             kernel_info->kernel_index = 4;
         }
     }
@@ -306,6 +301,10 @@ static vsi_status op_compute
     vsi_nn_kernel_info_t kernel_info;
 
     memset(&kernel_info, 0x0, sizeof(vsi_nn_kernel_info_t));
+
+    /* setup input/output shape */
+    _reshape_tensor( self, inputs, outputs);
+
     kernel_info.resource_num = 1;
     kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));
     kernel_info.resource_name[0] = "vsi_nn_kernel_shufflechannel";
@@ -365,7 +364,12 @@ static vsi_bool op_setup
         p->axis = axis;
     }
 
-    _setup_op_shapes( self, inputs, outputs);
+    if( VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num )
+    {
+        outputs[0]->attr.dim_num = inputs[0]->attr.dim_num;
+        memcpy( outputs[0]->attr.size, inputs[0]->attr.size,
+            sizeof(uint32_t) * inputs[0]->attr.dim_num );
+    }
 
     return TRUE;
 } /* op_setup() */

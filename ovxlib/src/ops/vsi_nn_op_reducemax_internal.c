@@ -303,7 +303,7 @@ static int32_t reshape_tensor_set_input_output
     vsi_nn_reducemax_internal_param * p = NULL;
     vsi_bool is_2d_image = FALSE;
     uint32_t input_size[VSI_NN_MAX_DIM_NUM] = {1};
-    int32_t i;
+    uint32_t i;
 
     for (i = 0; i < input->attr.dim_num; i++)
     {

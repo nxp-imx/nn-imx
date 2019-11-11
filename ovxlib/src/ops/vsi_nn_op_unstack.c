@@ -312,7 +312,8 @@ static vsi_status op_compute
     }
     else
     {
-        vsi_nn_kernel_info_t kernel_info = {0};
+        vsi_nn_kernel_info_t kernel_info;
+        memset(&kernel_info, 0x0, sizeof(vsi_nn_kernel_info_t));
 
         status = VSI_FAILURE;
         kernel_info.type = VX_KERNEL_TYPE_CPU;

@@ -183,26 +183,96 @@ enum vx_kernel_libnnext_offset_e
                                     "com.vivantecorp.extension.vxcL2NormScale_axis0_I16toI16_2D"
 #define VX_KERNEL_NAME_L2NORMSCALE_AXI0_I16TOF16_2D        \
                                     "com.vivantecorp.extension.vxcL2NormScale_axis0_I16toF16_2D"
+//! Prelu Kernel
+#define VX_KERNEL_NAME_PARAMETRICRELU_AXI0_I8TOI8 \
+                                    "com.vivantecorp.extension.vxcParametricRelu_axis0_I8toI8"
+#define VX_KERNEL_NAME_PARAMETRICRELU_AXI0_I8TOF16 \
+                                    "com.vivantecorp.extension.vxcParametricRelu_axis0_I8toF16"
+#define VX_KERNEL_NAME_PARAMETRICRELU_AXI0_I16TOI16 \
+                                    "com.vivantecorp.extension.vxcParametricRelu_axis0_I16toI16"
+#define VX_KERNEL_NAME_PARAMETRICRELU_AXI0_I16TOF16 \
+                                    "com.vivantecorp.extension.vxcParametricRelu_axis0_I16toF16"
+#define VX_KERNEL_NAME_PARAMETRICRELU_AXI0_U8TOU8 \
+                                    "com.vivantecorp.extension.vxcParametricRelu_axis0_U8toU8"
+#define VX_KERNEL_NAME_PARAMETRICRELU_AXI0_U8TOF16 \
+                                    "com.vivantecorp.extension.vxcParametricRelu_axis0_U8toF16"
+#define VX_KERNEL_NAME_PARAMETRICRELU_AXI0_F16TOF16 \
+                                    "com.vivantecorp.extension.vxcParametricRelu_axis0_F16toF16"
+#define VX_KERNEL_NAME_PARAMETRICRELU_AXI0_F16TOU8 \
+                                    "com.vivantecorp.extension.vxcParametricRelu_axis0_F16toU8"
+#define VX_KERNEL_NAME_PARAMETRICRELU_AXI0_F16TOI8 \
+                                    "com.vivantecorp.extension.vxcParametricRelu_axis0_F16toI8"
+#define VX_KERNEL_NAME_PARAMETRICRELU_AXI0_F16TOI16 \
+                                    "com.vivantecorp.extension.vxcParametricRelu_axis0_F16toI16"
+#define VX_KERNEL_NAME_PARAMETRICRELU_AXI0_BF16TOBF16 \
+                                    "com.vivantecorp.extension.vxcParametricRelu_axis0_BF16toBF16"
+#define VX_KERNEL_NAME_PARAMETRICRELU_AXI0_I8TOI8_2D \
+                                    "com.vivantecorp.extension.vxcParametricRelu_axis0_I8toI8_2D"
+#define VX_KERNEL_NAME_PARAMETRICRELU_AXI0_I8TOF16_2D \
+                                    "com.vivantecorp.extension.vxcParametricRelu_axis0_I8toF16_2D"
+#define VX_KERNEL_NAME_PARAMETRICRELU_AXI0_I16TOI16_2D \
+                                    "com.vivantecorp.extension.vxcParametricRelu_axis0_I16toI16_2D"
+#define VX_KERNEL_NAME_PARAMETRICRELU_AXI0_I16TOF16_2D \
+                                    "com.vivantecorp.extension.vxcParametricRelu_axis0_I16toF16_2D"
+#define VX_KERNEL_NAME_PARAMETRICRELU_AXI0_U8TOU8_2D \
+                                    "com.vivantecorp.extension.vxcParametricRelu_axis0_U8toU8_2D"
+#define VX_KERNEL_NAME_PARAMETRICRELU_AXI0_U8TOF16_2D \
+                                    "com.vivantecorp.extension.vxcParametricRelu_axis0_U8toF16_2D"
+#define VX_KERNEL_NAME_PARAMETRICRELU_AXI0_F16TOF16_2D \
+                                    "com.vivantecorp.extension.vxcParametricRelu_axis0_F16toF16_2D"
+#define VX_KERNEL_NAME_PARAMETRICRELU_AXI0_F16TOU8_2D \
+                                    "com.vivantecorp.extension.vxcParametricRelu_axis0_F16toU8_2D"
+#define VX_KERNEL_NAME_PARAMETRICRELU_AXI0_F16TOI8_2D \
+                                    "com.vivantecorp.extension.vxcParametricRelu_axis0_F16toI8_2D"
+#define VX_KERNEL_NAME_PARAMETRICRELU_AXI0_F16TOI16_2D \
+                                    "com.vivantecorp.extension.vxcParametricRelu_axis0_F16toI16_2D"
+#define VX_KERNEL_NAME_PARAMETRICRELU_AXI0_BF16TOBF16_2D \
+                                    "com.vivantecorp.extension.vxcParametricRelu_axis0_BF16toBF16_2D"
+#define VX_KERNEL_NAME_PARAMETRICRELU_AXI1_I8TOI8 \
+                                    "com.vivantecorp.extension.vxcParametricRelu_axis1_I8toI8"
+#define VX_KERNEL_NAME_PARAMETRICRELU_AXI1_I8TOF16 \
+                                    "com.vivantecorp.extension.vxcParametricRelu_axis1_I8toF16"
+#define VX_KERNEL_NAME_PARAMETRICRELU_AXI1_I16TOI16 \
+                                    "com.vivantecorp.extension.vxcParametricRelu_axis1_I16toI16"
+#define VX_KERNEL_NAME_PARAMETRICRELU_AXI1_I16TOF16 \
+                                    "com.vivantecorp.extension.vxcParametricRelu_axis1_I16toF16"
+#define VX_KERNEL_NAME_PARAMETRICRELU_AXI1_U8TOU8 \
+                                    "com.vivantecorp.extension.vxcParametricRelu_axis1_U8toU8"
+#define VX_KERNEL_NAME_PARAMETRICRELU_AXI1_U8TOF16 \
+                                    "com.vivantecorp.extension.vxcParametricRelu_axis1_U8toF16"
+#define VX_KERNEL_NAME_PARAMETRICRELU_AXI1_F16TOF16 \
+                                    "com.vivantecorp.extension.vxcParametricRelu_axis1_F16toF16"
+#define VX_KERNEL_NAME_PARAMETRICRELU_AXI1_F16TOU8 \
+                                    "com.vivantecorp.extension.vxcParametricRelu_axis1_F16toU8"
+#define VX_KERNEL_NAME_PARAMETRICRELU_AXI1_F16TOI8 \
+                                    "com.vivantecorp.extension.vxcParametricRelu_axis1_F16toI8"
+#define VX_KERNEL_NAME_PARAMETRICRELU_AXI1_F16TOI16 \
+                                    "com.vivantecorp.extension.vxcParametricRelu_axis1_F16toI16"
+#define VX_KERNEL_NAME_PARAMETRICRELU_AXI1_BF16TOBF16 \
+                                    "com.vivantecorp.extension.vxcParametricRelu_axis1_BF16toBF16"
+#define VX_KERNEL_NAME_PARAMETRICRELU_AXI1_I8TOI8_2D \
+                                    "com.vivantecorp.extension.vxcParametricRelu_axis1_I8toI8_2D"
+#define VX_KERNEL_NAME_PARAMETRICRELU_AXI1_I8TOF16_2D \
+                                    "com.vivantecorp.extension.vxcParametricRelu_axis1_I8toF16_2D"
+#define VX_KERNEL_NAME_PARAMETRICRELU_AXI1_I16TOI16_2D \
+                                    "com.vivantecorp.extension.vxcParametricRelu_axis1_I16toI16_2D"
+#define VX_KERNEL_NAME_PARAMETRICRELU_AXI1_I16TOF16_2D \
+                                    "com.vivantecorp.extension.vxcParametricRelu_axis1_I16toF16_2D"
+#define VX_KERNEL_NAME_PARAMETRICRELU_AXI1_U8TOU8_2D \
+                                    "com.vivantecorp.extension.vxcParametricRelu_axis1_U8toU8_2D"
+#define VX_KERNEL_NAME_PARAMETRICRELU_AXI1_U8TOF16_2D \
+                                    "com.vivantecorp.extension.vxcParametricRelu_axis1_U8toF16_2D"
+#define VX_KERNEL_NAME_PARAMETRICRELU_AXI1_F16TOF16_2D \
+                                    "com.vivantecorp.extension.vxcParametricRelu_axis1_F16toF16_2D"
+#define VX_KERNEL_NAME_PARAMETRICRELU_AXI1_F16TOU8_2D \
+                                    "com.vivantecorp.extension.vxcParametricRelu_axis1_F16toU8_2D"
+#define VX_KERNEL_NAME_PARAMETRICRELU_AXI1_F16TOI8_2D \
+                                    "com.vivantecorp.extension.vxcParametricRelu_axis1_F16toI8_2D"
+#define VX_KERNEL_NAME_PARAMETRICRELU_AXI1_F16TOI16_2D \
+                                    "com.vivantecorp.extension.vxcParametricRelu_axis1_F16toI16_2D"
+#define VX_KERNEL_NAME_PARAMETRICRELU_AXI1_BF16TOBF16_2D \
+                                    "com.vivantecorp.extension.vxcParametricRelu_axis1_BF16toBF16_2D"
 
-#define VX_KERNEL_NAME_PARAMETRICRELU                      "com.vivantecorp.extension.vxcParametricRelu"
-#define VX_KERNEL_NAME_PARAMETRICRELU_INT8                 "com.vivantecorp.extension.vxcParametricRelu_int8"
-#define VX_KERNEL_NAME_PARAMETRICRELU_INT8_OPT             "com.vivantecorp.extension.vxcParametricRelu_int8_opt"
-#define VX_KERNEL_NAME_PARAMETRICRELU_INT8_OPT1            "com.vivantecorp.extension.vxcParametricRelu_int8_opt1"
-#define VX_KERNEL_NAME_PARAMETRICRELU_INT8_FP16            "com.vivantecorp.extension.vxcParametricRelu_int8_fp16"
-#define VX_KERNEL_NAME_PARAMETRICRELU_INT16_INT16          "com.vivantecorp.extension.vxcParametricReluInt16_Int16"
-#define VX_KERNEL_NAME_PARAMETRICRELU_INT16_INT16_OPT      \
-                                "com.vivantecorp.extension.vxcParametricReluInt16_Int16_opt"
-#define VX_KERNEL_NAME_PARAMETRICRELU_INT16_INT16_OPT1     \
-                                "com.vivantecorp.extension.vxcParametricReluInt16_Int16_opt1"
-#define VX_KERNEL_NAME_PARAMETRICRELU_UINT8_UINT8          "com.vivantecorp.extension.vxcParametricReluUint8_Uint8"
-#define VX_KERNEL_NAME_PARAMETRICRELU_UINT8_2D             "com.vivantecorp.extension.vxcParametricRelu_uint8_2d"
-#define VX_KERNEL_NAME_PARAMETRICRELU_FP16_UINT8           "com.vivantecorp.extension.vxcParametricReluFp16_Uint8"
-#define VX_KERNEL_NAME_PARAMETRICRELU_FP16_INT16           "com.vivantecorp.extension.vxcParametricReluFp16_Int16"
-#define VX_KERNEL_NAME_PARAMETRICRELU_INT16_FP16           "com.vivantecorp.extension.vxcParametricReluInt16_Fp16"
-#define VX_KERNEL_NAME_PARAMETRICRELU_UINT8_FP16           "com.vivantecorp.extension.vxcParametricReluUint8_Fp16"
-#define VX_KERNEL_NAME_PARAMETRICRELU_UINT8_FP16_2D        \
-                                "com.vivantecorp.extension.vxcParametricRelu_uint8tofp16_2d"
-#define VX_KERNEL_NAME_PARAMETRICRELU_FP16_INT8            "com.vivantecorp.extension.vxcParametricReluFp16_Int8"
 #define VX_KERNEL_NAME_PREBBOX                             "com.vivantecorp.extension.preBBoxVXC"
 #define VX_KERNEL_NAME_ADD_RELU_KERNEL                     "com.vivantecorp.extension.addRelu"
 #define VX_KERNEL_NAME_POOLING_WITH_ARGMAX                 "com.vivantecorp.extension.poolingWithArgmax"

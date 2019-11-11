@@ -7,7 +7,8 @@ _viv_uniform float rgroup_column;
 __kernel void shuffleChannelVXC(
     image2d_array_t input,
     image2d_array_t output,
-    int group_number)
+    int group_number,
+    int axis)
 {
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);
     vxc_short8 src0, src1, src2, src3;
@@ -38,7 +39,8 @@ __kernel void shuffleChannelVXC(
 __kernel void shuffleChannel8BitsVXC(
     image2d_array_t input,
     image2d_array_t output,
-    int group_number)
+    int group_number,
+    int axis)
 {
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);
     vxc_char16 src0, src1, src2, src3;

@@ -36,133 +36,132 @@
 #include "vsi_nn_log.h"
 #include "client/vsi_nn_vxkernel.h"
 
-#define _ARG_NUM            (0)
+#define VSI_NN_PRELU_DEFAULT_AXIS 2
+
+/* Type enum */
+typedef enum _prelu_nn_image_dims_e
+{
+    IMAGE_2D  = TRUE,
+    IMAGE     = FALSE,
+}prelu_nn_activation_type_e;
+
+#define VSI_NN_GEN_PRELU_KEY(_axis, _input_type, _output_type, _image_2d) \
+    ((_axis << 20) | (_input_type << 12) | (_output_type << 4) | (_image_2d))
+
+#define VSI_NN_GEN_PRELU_KERNEL_SOURCE_NAME(_suffix) \
+    "vsi_nn_kernel_prelu_"#_suffix
+
+#define VSI_NN_GEN_PRELU_STRUCT_ITEMS(_axis, _input_type, _output_type, _image_2d) \
+    VSI_NN_GEN_PRELU_KEY(_axis, _input_type, _output_type, _image_2d), \
+    VSI_NN_PRELU_SH_KERNEL_IDX(_axis, _input_type, _output_type, _image_2d) \
+    VSI_NN_GEN_PRELU_KERNEL_SOURCE_NAME(_input_type)
+
+static struct {
+        uint32_t key;
+        uint32_t kernel_index;
+        char *resource_name;
+    } prelu_map[] =
+    {
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, BF16, BF16, IMAGE)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, F16,  F16,  IMAGE)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, F16,  I16,  IMAGE)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, F16,  I8,   IMAGE)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, F16,  U8,   IMAGE)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, I16,  I16,  IMAGE)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, I8,   I8,   IMAGE)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, U8,   U8,   IMAGE)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, I16,  F16,  IMAGE)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, I8,   F16,  IMAGE)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, U8,   F16,  IMAGE)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, BF16, BF16, IMAGE_2D)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, F16,  F16,  IMAGE_2D)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, F16,  I16,  IMAGE_2D)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, F16,  I8,   IMAGE_2D)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, F16,  U8,   IMAGE_2D)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, I16,  I16,  IMAGE_2D)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, I8,   I8,   IMAGE_2D)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, U8,   U8,   IMAGE_2D)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, I16,  F16,  IMAGE_2D)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, I8,   F16,  IMAGE_2D)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, U8,   F16,  IMAGE_2D)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, BF16, BF16, IMAGE)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, F16,  F16,  IMAGE)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, F16,  I16,  IMAGE)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, F16,  I8,   IMAGE)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, F16,  U8,   IMAGE)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, I16,  I16,  IMAGE)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, I8,   I8,   IMAGE)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, U8,   U8,   IMAGE)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, I16,  F16,  IMAGE)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, I8,   F16,  IMAGE)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, U8,   F16,  IMAGE)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, BF16, BF16, IMAGE_2D)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, F16,  F16,  IMAGE_2D)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, F16,  I16,  IMAGE_2D)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, F16,  I8,   IMAGE_2D)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, F16,  U8,   IMAGE_2D)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, I16,  I16,  IMAGE_2D)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, I8,   I8,   IMAGE_2D)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, U8,   U8,   IMAGE_2D)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, I16,  F16,  IMAGE_2D)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, I8,   F16,  IMAGE_2D)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, U8,   F16,  IMAGE_2D)},
+    };
+
+static vsi_bool _check_tensor_shape
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs
+    )
+{
+    vsi_bool ret = FALSE;
+    uint32_t dims = inputs[0]->attr.dim_num;
+    int32_t  axis = self->nn_param.prelu.axis;
+    uint32_t input_size[VSI_NN_MAX_DIM_NUM] = {1, 1, 1, 1};
+    int32_t i;
+
+    for (i = 0; i < inputs[0]->attr.dim_num; i++)
+    {
+        input_size[i] = inputs[0]->attr.size[i];
+    }
+
+    for(; i < VSI_NN_MAX_DIM_NUM; i++)
+    {
+        input_size[i] = 1;
+    }
+#define VSI_NN_TENSOR_WIDTH_MAX (65536)
+
+    if (axis == 0)
+    {
+        if (dims < 3 || (input_size[1] * input_size[2] < VSI_NN_TENSOR_WIDTH_MAX))
+            ret = TRUE;
+    }
+    else if (axis == 2)
+    {
+        if (dims < 3 || (input_size[0] * input_size[1] < VSI_NN_TENSOR_WIDTH_MAX))
+            ret = TRUE;
+    }
+    else if (axis == 1)
+    {
+        if (dims < 3 || (input_size[0] == 1) || (input_size[2] == 1))
+            ret = TRUE;
+    }
+
+#undef VSI_NN_TENSOR_WIDTH_MAX
+
+    return ret;
+}
+
+
+#define _ARG_NUM            (1)
 #define _INPUT_NUM          (2)
 #define _OUTPUT_NUM         (1)
 #define _IO_NUM             (_INPUT_NUM + _OUTPUT_NUM)
 #define _PARAM_NUM          (_ARG_NUM + _IO_NUM)
 
-#define USE_OVX_API TRUE
-
-#if (USE_OVX_API == FALSE)
 extern vx_kernel_description_t * vx_kernel_PRELU_list[];
 
-static void check_tensor_shape
-    (
-    vsi_nn_node_t * self,
-    vsi_nn_tensor_t * input,
-    vx_reference * params,
-    uint32_t index,
-    vx_bool rsFlg
-    )
-{
-    vsi_nn_tensor_attr_t attr;
-
-    if (index == 0 )
-    {
-        if( input->attr.dim_num == 1 )
-        {
-            memcpy(&attr, &(input->attr), sizeof(vsi_nn_tensor_attr_t));
-            attr.size[1] = 1;
-            attr.size[2] = 1;
-            attr.dim_num = 2;
-            self->nn_param.prelu.local.local_tensor[index] =
-                vxReshapeTensor(input->t, (int32_t*)(attr.size), attr.dim_num);
-            params[index] =  (vx_reference)self->nn_param.prelu.local.local_tensor[index];
-        }
-        else if(input->attr.dim_num == 2 && rsFlg)
-        {
-            memcpy(&attr, &(input->attr), sizeof(vsi_nn_tensor_attr_t));
-            attr.size[0] *= attr.size[1];
-            attr.size[1] = 1;
-            self->nn_param.prelu.local.local_tensor[index] =
-                vxReshapeTensor(input->t, (int32_t*)(attr.size), attr.dim_num);
-            params[index] =  (vx_reference)self->nn_param.prelu.local.local_tensor[index];
-        }
-        else if(input->attr.dim_num == 3 && rsFlg)
-        {
-            memcpy(&attr, &(input->attr), sizeof(vsi_nn_tensor_attr_t));
-            attr.size[0] *= attr.size[1];
-            attr.size[1] = attr.size[2];
-            attr.size[2] = 1;
-            self->nn_param.prelu.local.local_tensor[index] =
-                vxReshapeTensor(input->t, (int32_t*)(attr.size), attr.dim_num);
-            params[index] =  (vx_reference)self->nn_param.prelu.local.local_tensor[index];
-        }
-        else if(input->attr.dim_num == 4 && rsFlg)
-        {
-            memcpy(&attr, &(input->attr), sizeof(vsi_nn_tensor_attr_t));
-            attr.size[0] *= attr.size[1];
-            attr.size[1] = attr.size[2];
-            attr.size[2] = 1;
-            attr.size[3] = attr.size[3];
-            self->nn_param.prelu.local.local_tensor[index] =
-                vxReshapeTensor(input->t, (int32_t*)(attr.size), attr.dim_num);
-            params[index] =  (vx_reference)self->nn_param.prelu.local.local_tensor[index];
-        }
-        else
-            params[index] = (vx_reference)input->t;
-    }
-    else if(index == 1 )
-    {
-        if(input->attr.dim_num == 1)
-        {
-            memcpy(&attr, &(input->attr), sizeof(vsi_nn_tensor_attr_t));
-            attr.size[1] = 1;
-            attr.dim_num = 2;
-            self->nn_param.prelu.local.local_tensor[index] =
-                vxReshapeTensor(input->t, (int32_t*)(attr.size), attr.dim_num);
-            params[index] =  (vx_reference)self->nn_param.prelu.local.local_tensor[index];
-        }
-        else
-             params[index] = (vx_reference)input->t;
-
-    }
-    else if(index == 2 )
-    {
-        if(input->attr.dim_num == 1)
-        {
-            memcpy(&attr, &(input->attr), sizeof(vsi_nn_tensor_attr_t));
-            attr.size[1] = 1;
-            attr.dim_num = 2;
-            self->nn_param.prelu.local.local_tensor[index] =
-                vxReshapeTensor(input->t, (int32_t*)(attr.size), attr.dim_num);
-            params[index] =  (vx_reference)self->nn_param.prelu.local.local_tensor[index];
-        }
-        else if(input->attr.dim_num == 2 && rsFlg)
-        {
-            memcpy(&attr, &(input->attr), sizeof(vsi_nn_tensor_attr_t));
-            attr.size[0] *= attr.size[1];
-            attr.size[1] = 1;
-            self->nn_param.prelu.local.local_tensor[index] =
-                vxReshapeTensor(input->t, (int32_t*)(attr.size), attr.dim_num);
-            params[index] =  (vx_reference)self->nn_param.prelu.local.local_tensor[index];
-        }
-        else if(input->attr.dim_num == 3 && rsFlg)
-        {
-            memcpy(&attr, &(input->attr), sizeof(vsi_nn_tensor_attr_t));
-            attr.size[0] *= attr.size[1];
-            attr.size[1] = attr.size[2];
-            attr.size[2] = 1;
-            self->nn_param.prelu.local.local_tensor[index] =
-                vxReshapeTensor(input->t, (int32_t*)(attr.size), attr.dim_num);
-            params[index] =  (vx_reference)self->nn_param.prelu.local.local_tensor[index];
-        }
-        else if(input->attr.dim_num == 4 && rsFlg)
-        {
-            memcpy(&attr, &(input->attr), sizeof(vsi_nn_tensor_attr_t));
-            attr.size[0] *= attr.size[1];
-            attr.size[1] = attr.size[2];
-            attr.size[2] = 1;
-            attr.size[3] = attr.size[3];
-            self->nn_param.prelu.local.local_tensor[index] =
-                vxReshapeTensor(input->t, (int32_t*)(attr.size), attr.dim_num);
-            params[index] =  (vx_reference)self->nn_param.prelu.local.local_tensor[index];
-        }
-        else
-             params[index] = (vx_reference)input->t;
-    }
-}
 
 static void _set_inputs_outputs
     (
@@ -172,27 +171,83 @@ static void _set_inputs_outputs
     vsi_nn_tensor_t ** outputs
     )
 {
-    uint32_t i;
-    uint32_t cnt;
-
     /* Set inputs */
-    params[0] = (vx_reference)inputs[0]->t;
-    if (self->nn_param.prelu.local.local_tensor[0] == NULL)
+    if (self->nn_param.prelu.local->local_tensor[0] == NULL)
+    {
+        params[0] = (vx_reference)inputs[0]->t;
+    }
+    else
+    {
+        params[0] = (vx_reference)self->nn_param.prelu.local->local_tensor[0];
+    }
+
+    if (self->nn_param.prelu.local->local_tensor[1] == NULL)
     {
         params[1] = (vx_reference)inputs[1]->t;
     }
     else
     {
-        params[1] = (vx_reference)self->nn_param.prelu.local.local_tensor[0];
+        params[1] = (vx_reference)self->nn_param.prelu.local->local_tensor[1];
     }
-    cnt = 2;
 
-    /* Set outputs */
-    for( i = 0; i < _OUTPUT_NUM; i ++, cnt ++ )
+    if (self->nn_param.prelu.local->local_tensor[2] == NULL)
     {
-        params[cnt] = (vx_reference)outputs[i]->t;
+        params[2] = (vx_reference)outputs[0]->t;
     }
+    else
+    {
+        params[2] = (vx_reference)self->nn_param.prelu.local->local_tensor[2];
+    }
+
 } /* _set_inputs_outputs() */
+
+static vsi_status _create_params
+    (
+    vsi_nn_node_t * node,
+    vx_reference * params,
+    uint32_t num
+    )
+{
+    vsi_status status = VSI_SUCCESS;
+    vx_context ctx    = NULL;
+    vsi_nn_prelu_param * p = NULL;
+    if( 0 == num )
+    {
+        return VSI_SUCCESS;
+    }
+    memset( params, 0, sizeof( vx_reference * ) * num );
+    p = &(node->nn_param.prelu);
+    ctx = vxGetContext( (vx_reference)node->graph->g );
+    /* Init parameters */
+#define _SET_PARAM( i, type, arg ) do{ \
+    params[i] = (vx_reference)vxCreateScalar( ctx, type, &p->arg ); \
+    status = vxGetStatus( params[i] ); \
+    if( VSI_SUCCESS != status ) { \
+    goto set_param_error; \
+    } \
+    } while(0)
+
+    _SET_PARAM( 0, VX_TYPE_INT32, axis );
+#undef _SET_PARAM
+set_param_error:
+
+    return status;
+} /* _create_params */
+
+static void _release_params
+    (
+    vx_reference * params,
+    uint32_t num
+    )
+{
+    uint32_t i = 0;
+    vx_scalar scalar = NULL;
+    for( i = 0; i < num; i ++ )
+    {
+        scalar = (vx_scalar)params[i];
+        vxReleaseScalar( &scalar );
+    }
+} /* _release_params() */
 
 static vsi_status cpu_op_compute
     (
@@ -203,6 +258,9 @@ static vsi_status cpu_op_compute
 {
     vsi_status status = VSI_SUCCESS;
     vx_reference params[_PARAM_NUM];
+    vx_reference * args = NULL;
+
+    args = &params[_IO_NUM];
 
     if( NULL == self->n )
     {
@@ -212,10 +270,190 @@ static vsi_status cpu_op_compute
     /* Set inputs and outputs */
     _set_inputs_outputs( self, params, inputs, outputs );
 
+    /* Init parameters. */
+    _create_params( self, args, _ARG_NUM );
+
     /* Pass parameters to node. */
     status = vsi_nn_ClientNodePassParameters( self->n, params, _PARAM_NUM );
 
+    _release_params( args, _ARG_NUM );
+
     return status;
+}
+
+static vsi_nn_shader_kernel_type_e get_prelu_type(vsi_nn_type_e type)
+{
+    switch (type)
+    {
+    case VSI_NN_TYPE_INT8:
+        return I8;
+    case VSI_NN_TYPE_INT16:
+        return I16;
+    case VSI_NN_TYPE_INT32:
+        return I32;
+    case VSI_NN_TYPE_INT64:
+        return I64;
+    case VSI_NN_TYPE_UINT8:
+        return U8;
+    case VSI_NN_TYPE_UINT16:
+        return U16;
+    case VSI_NN_TYPE_UINT32:
+        return U32;
+    case VSI_NN_TYPE_FLOAT16:
+        return F16;
+    case VSI_NN_TYPE_FLOAT32:
+        return F32;
+    case VSI_NN_TYPE_BFLOAT16:
+        return BF16;
+    default:
+        VSILOGE("error data type %d", type);
+        break;
+    }
+    return I8;
+}
+
+static int32_t reshape_tensor_set_input_output
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs,
+    vx_bool is_reshape
+    )
+{
+    uint32_t sizes[VSI_NN_MAX_DIM_NUM] = {1, 1 ,1 ,1};
+    uint32_t dims = vsi_nn_max(inputs[0]->attr.dim_num, 2);
+    int32_t axis = 0;
+    vsi_nn_prelu_param * p = NULL;
+    vsi_bool is_2d_image = FALSE;
+    uint32_t input_size[VSI_NN_MAX_DIM_NUM] = {1};
+    int32_t i = 0;
+
+    for (i = 0; i < inputs[0]->attr.dim_num; i++)
+    {
+        input_size[i] = inputs[0]->attr.size[i];
+    }
+
+    for(; i < VSI_NN_MAX_DIM_NUM; i++)
+    {
+        input_size[i] = 1;
+    }
+
+    p = &(self->nn_param.prelu);
+    axis = p->axis;
+
+    is_2d_image = _check_tensor_shape(self, inputs, outputs);
+
+    if (axis == 0)
+    {
+        sizes[0] = input_size[0];
+
+        if (is_2d_image)
+        {
+            sizes[1] = input_size[1] * input_size[2];
+            sizes[2] = 1;
+            sizes[3] = dims > 3 ? input_size[3] : 1;
+        }
+        else
+        {
+            sizes[1] = input_size[1];
+            sizes[2] = dims > 2 ? input_size[2] : 1;
+            sizes[3] = dims > 3 ? input_size[3] : 1;
+        }
+    }
+    else if (axis == 1)
+    {
+        if (1 == input_size[0])
+        {
+            sizes[0] = input_size[1];
+            sizes[1] = dims > 2 ? input_size[2] : 1;
+            sizes[2] = 1;
+            sizes[3] = dims > 3 ? input_size[3] : 1;
+            axis = 0;
+        }
+        else
+        {
+            sizes[0] = input_size[0];
+            sizes[1] = input_size[1];
+            sizes[2] = dims > 2 ? input_size[2] : 1;
+            sizes[3] = dims > 3 ? input_size[3] : 1;
+        }
+    }
+    else if (axis == 2)
+    {
+        if(1 == input_size[0] && 1 == input_size[1])
+        {
+            sizes[0] = input_size[2];
+            sizes[1] = 1;
+            sizes[2] = 1;
+            sizes[3] = dims > 3 ? input_size[3] : 1;
+            axis = 0;
+        }
+        else if (is_2d_image)
+        {
+            sizes[0] = input_size[0] * input_size[1];
+            sizes[1] = input_size[2];
+            sizes[2] = 1;
+            sizes[3] = dims > 3 ? input_size[3] : 1;
+            axis = 1;
+        }
+        else
+        {
+            sizes[0] = input_size[0];
+            sizes[1] = input_size[1];
+            sizes[2] = dims > 2 ? input_size[2] : 1;
+            sizes[3] = dims > 3 ? input_size[3] : 1;
+        }
+    }
+
+    if (is_reshape)
+    {
+        p->axis = axis;
+        p->local->local_tensor[0] =
+            vxReshapeTensor(inputs[0]->t,  (int32_t *)sizes, dims);
+        p->local->local_tensor[2] =
+            vxReshapeTensor(outputs[0]->t, (int32_t *)sizes, dims);
+    }
+
+    return axis;
+}
+
+
+static void _get_prelu_hashtable_idx
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs
+    )
+{
+    vsi_nn_type_e inputFormat = inputs[0]->attr.dtype.vx_type;
+    vsi_nn_type_e outputFormat  = outputs[0]->attr.dtype.vx_type;
+    vsi_nn_shader_kernel_type_e _input_type;
+    vsi_nn_shader_kernel_type_e _output_type;
+    int32_t axis = 0;
+    uint32_t key = 0;
+    vsi_bool is_2d_image = FALSE;
+    uint32_t i = 0;
+    vsi_nn_prelu_param * p = NULL;
+
+    p = &(self->nn_param.prelu);
+    axis = reshape_tensor_set_input_output(self, inputs, outputs, vx_false_e);
+    _input_type  = get_prelu_type(inputFormat);
+    _output_type = get_prelu_type(outputFormat);
+    is_2d_image = _check_tensor_shape(self, inputs, outputs);
+    key = VSI_NN_GEN_PRELU_KEY(axis, _input_type, _output_type, is_2d_image);
+
+    for (i = 0; i < sizeof(prelu_map) / sizeof(prelu_map[0]); i++)
+    {
+        if (key == prelu_map[i].key)
+        {
+            p->local->hash_idx = i;
+            p->local->execute_on_sw = FALSE;
+            return;
+        }
+    }
+
+    p->local->execute_on_sw = TRUE;
+    VSILOGE("Shader unsupport data format or axis! execute on the SW [prelu]\n");
 }
 
 static vsi_status vx_op_pre_compute
@@ -226,141 +464,18 @@ static vsi_status vx_op_pre_compute
     vsi_nn_kernel_info_t * kernel_info
     )
 {
-    vsi_nn_type_e inputDataformat = inputs[0]->attr.dtype.vx_type;
-    vsi_nn_type_e paraDataformat = inputs[1]->attr.dtype.vx_type;
-    vsi_nn_type_e outputDataformat = outputs[0]->attr.dtype.vx_type;
-    int8_t input_fixPointPos = inputs[0]->attr.dtype.fl;
-    int8_t output_fixPointPos = outputs[0]->attr.dtype.fl;
-    vx_uint32   width               = inputs[0]->attr.size[0];
-    vx_uint32   height              = inputs[0]->attr.size[1];
-    vx_uint32   depth               = inputs[0]->attr.size[2];
-    vx_bool     enable_image_2d     = vx_false_e;
-    vx_uint32   hwLitimLen          = 65536;
+    vsi_nn_prelu_param * p = NULL;
 
-    enable_image_2d = (vx_bool)((width * height < hwLitimLen && depth < hwLitimLen)
-                        || depth == 1);
+    p = &(self->nn_param.prelu);
 
-    if (paraDataformat != VSI_NN_TYPE_FLOAT16)
-    {
-        VSILOGE("Not support parameter data format!(PRELU)\n");
-        return VSI_FAILURE;
-    }
+    kernel_info->kernel_index = prelu_map[p->local->hash_idx].kernel_index;
+    kernel_info->resource_num = 2;
+    kernel_info->resource_name[0] = "vsi_nn_kernel_header";
+    kernel_info->resource_name[1] = prelu_map[p->local->hash_idx].resource_name;
 
-    if ((inputDataformat == VSI_NN_TYPE_FLOAT16) && (outputDataformat == VSI_NN_TYPE_FLOAT16))
-    {
-        kernel_info->kernel_index = 1;
-    }
-    else if ((inputDataformat == VSI_NN_TYPE_INT8) && (outputDataformat == VSI_NN_TYPE_INT8))
-    {
-        if((input_fixPointPos >= output_fixPointPos) && (input_fixPointPos - output_fixPointPos < 32)
-            && enable_image_2d)
-        {
-            kernel_info->resource_name[0] = "vsi_nn_kernel_header";
-            kernel_info->resource_name[1] = "vsi_nn_kernel_prelu_i8_i16";
+    return VSI_SUCCESS;
 
-            kernel_info->resource_num     = 2;
-            kernel_info->kernel_index     = 10;
-        }
-        else if((input_fixPointPos < output_fixPointPos) && (output_fixPointPos -  input_fixPointPos < 16)
-            && enable_image_2d)
-        {
-            kernel_info->resource_name[0] = "vsi_nn_kernel_header";
-            kernel_info->resource_name[1] = "vsi_nn_kernel_prelu_i8_i16";
 
-            kernel_info->resource_num     = 2;
-            kernel_info->kernel_index     = 12;
-        }
-        else
-        {
-            kernel_info->kernel_index = 2;
-        }
-    }
-    else if ((inputDataformat == VSI_NN_TYPE_INT8) && (outputDataformat == VSI_NN_TYPE_FLOAT16))
-    {
-        kernel_info->kernel_index = 3;
-    }
-    else if ((inputDataformat == VSI_NN_TYPE_UINT8) && (outputDataformat == VSI_NN_TYPE_UINT8))
-    {
-        if(enable_image_2d)
-        {
-            kernel_info->resource_name[0] = "vsi_nn_kernel_header";
-            kernel_info->resource_name[1] = "vsi_nn_kernel_prelu_u8";
-
-            kernel_info->resource_num     = 2;
-            kernel_info->kernel_index     = 14;
-        }
-        else
-        {
-            kernel_info->kernel_index = 4;
-        }
-    }
-    else if ((inputDataformat == VSI_NN_TYPE_INT16) && (outputDataformat == VSI_NN_TYPE_INT16))
-    {
-        if((input_fixPointPos - output_fixPointPos >= 0) && (input_fixPointPos - output_fixPointPos < 32)
-            && enable_image_2d)
-        {
-            kernel_info->resource_name[0] = "vsi_nn_kernel_header";
-            kernel_info->resource_name[1] = "vsi_nn_kernel_prelu_i8_i16";
-
-            kernel_info->resource_num     = 2;
-            kernel_info->kernel_index = 11;
-        }
-        else if((input_fixPointPos < output_fixPointPos) && (output_fixPointPos -  input_fixPointPos < 16)
-            && enable_image_2d)
-        {
-            kernel_info->resource_name[0] = "vsi_nn_kernel_header";
-            kernel_info->resource_name[1] = "vsi_nn_kernel_prelu_i8_i16";
-
-            kernel_info->resource_num     = 2;
-            kernel_info->kernel_index     = 13;
-        }
-        else
-        {
-            kernel_info->kernel_index = 5;
-        }
-    }
-    else if ((inputDataformat == VSI_NN_TYPE_FLOAT16) && (outputDataformat == VSI_NN_TYPE_UINT8))
-    {
-        kernel_info->kernel_index = 6;
-    }
-    else if ((inputDataformat == VSI_NN_TYPE_FLOAT16) && (outputDataformat == VSI_NN_TYPE_INT16))
-    {
-        kernel_info->kernel_index = 7;
-    }
-    else if ((inputDataformat == VSI_NN_TYPE_INT16) && (outputDataformat == VSI_NN_TYPE_FLOAT16))
-    {
-        kernel_info->kernel_index = 8;
-    }
-    else if ((inputDataformat == VSI_NN_TYPE_UINT8) && (outputDataformat == VSI_NN_TYPE_FLOAT16))
-    {
-        if(enable_image_2d)
-        {
-            kernel_info->resource_name[0] = "vsi_nn_kernel_header";
-            kernel_info->resource_name[1] = "vsi_nn_kernel_prelu_u8";
-
-            kernel_info->resource_num     = 2;
-            kernel_info->kernel_index     = 15;
-        }
-        else
-        {
-            kernel_info->resource_name[0] = "vsi_nn_kernel_header";
-            kernel_info->resource_name[1] = "vsi_nn_kernel_prelu_u8";
-
-            kernel_info->resource_num     = 2;
-            kernel_info->kernel_index = 9;
-        }
-    }
-    else if ((inputDataformat == VSI_NN_TYPE_FLOAT16) && (outputDataformat == VSI_NN_TYPE_INT8))
-    {
-        kernel_info->resource_name[0] = "vsi_nn_kernel_header";
-        kernel_info->resource_name[1] = "vsi_nn_kernel_prelu_u8";
-        kernel_info->kernel_index = 16;
-    }
-    else
-    {
-        VSILOGE("Not support input or output data format!(PRELU)\n");
-        return VSI_FAILURE;
-    }
     return VSI_SUCCESS;
 }
 
@@ -371,23 +486,29 @@ static vsi_status check_const_tensor_shape
     )
 {
     vsi_status status = VSI_SUCCESS;
-#if 0
-    self->nn_param.prelu.local.local_tensor[1] = NULL;
+    uint32_t   size   = 1;
+    uint32_t   i      = 0;
+    self->nn_param.prelu.local->local_tensor[1] = NULL;
 
-    if (inputs[1]->attr.dim_num == 1)
+    size = inputs[1]->attr.size[0];
+    for (i = 1; i < inputs[1]->attr.dim_num; i ++)
     {
-        uint32_t num = inputs[1]->attr.size[0];
+        size *= inputs[1]->attr.size[i];
+    }
+
+    if (1)
+    {
         vsi_nn_tensor_attr_t attr;
-        attr.size[0] = num;
+        attr.size[0] = size;
         attr.size[1] = 1;
         attr.size[2] = 1;
         attr.size[3] = 1;
-        attr.dim_num = 4;
+        attr.dim_num = 2;
 
-        self->nn_param.prelu.local.local_tensor[1] = vxReshapeTensor(inputs[1]->t,
+        self->nn_param.prelu.local->local_tensor[1] = vxReshapeTensor(inputs[1]->t,
             (int32_t *)(attr.size), attr.dim_num);
     }
-#endif
+
     return status;
 }
 
@@ -398,58 +519,55 @@ static vsi_status vx_op_compute
     vsi_nn_tensor_t ** outputs
     )
 {
-    vsi_status status = VSI_SUCCESS;
+    vsi_status   status = VSI_SUCCESS;
     vx_reference params[_PARAM_NUM];
-    vx_border_t border;
-    vx_bool     rsFlg = vx_false_e;
-    vsi_enum    inDataType, outDataType;
-    int8_t      input_fixPointPos   = 0;
-    int8_t      output_fixPointPos  = 0;
-    vx_uint32   width               = inputs[0]->attr.size[0];
-    vx_uint32   height              = inputs[0]->attr.size[1];
-    vx_uint32   depth               = inputs[0]->attr.size[2];
-    vx_bool     enable_image_2d     = vx_false_e;
-    vx_uint32   hwLitimLen          = 65536;
+    vx_border_t  border;
+    vx_reference * args = NULL;
 
-    enable_image_2d = (vx_bool)(width * height < hwLitimLen && depth < hwLitimLen);
-
+    memset(&border, 0, sizeof(vx_border_t));
+    border.mode = VX_BORDER_REPLICATE;
+    border.constant_value.U32 = 0;
+    args = &params[_IO_NUM];
     if( NULL == self->n )
     {
         return VSI_FAILURE;
     }
-    inDataType  = inputs[0]->attr.dtype.vx_type;
-    outDataType = outputs[0]->attr.dtype.vx_type;
 
-    if((inDataType == VX_TYPE_INT8 && outDataType == VX_TYPE_INT8)
-    || (inDataType == VX_TYPE_INT16 && outDataType == VX_TYPE_INT16))
+    if (self->nn_param.prelu.local->local_tensor[0] == NULL)
     {
-        input_fixPointPos  = inputs[0]->attr.dtype.fl;
-        output_fixPointPos = outputs[0]->attr.dtype.fl;
-
-        if((((input_fixPointPos  >= output_fixPointPos) && (input_fixPointPos - output_fixPointPos < 32))
-         ||((input_fixPointPos  < output_fixPointPos) && (output_fixPointPos - input_fixPointPos < 16)))
-         && enable_image_2d)
-        {
-            rsFlg = vx_true_e;
-        }
+        params[0] = (vx_reference)inputs[0]->t;
     }
-    else if (inDataType == VX_TYPE_UINT8 && enable_image_2d
-        && (outDataType == VX_TYPE_UINT8 || outDataType == VX_TYPE_FLOAT16))
+    else
     {
-        rsFlg = vx_true_e;
+        params[0] = (vx_reference)self->nn_param.prelu.local->local_tensor[0];
     }
 
-    check_tensor_shape(self,inputs[0],params,0,rsFlg);
-    check_tensor_shape(self,inputs[1],params,1,rsFlg);
-    check_tensor_shape(self,outputs[0],params,2,rsFlg);
-    /* Set inputs and outputs */
-    //_set_inputs_outputs( self, params, inputs, outputs );
+    if (self->nn_param.prelu.local->local_tensor[1] == NULL)
+    {
+        params[1] = (vx_reference)inputs[1]->t;
+    }
+    else
+    {
+        params[1] = (vx_reference)self->nn_param.prelu.local->local_tensor[1];
+    }
+
+    if (self->nn_param.prelu.local->local_tensor[2] == NULL)
+    {
+        params[2] = (vx_reference)outputs[0]->t;
+    }
+    else
+    {
+        params[2] = (vx_reference)self->nn_param.prelu.local->local_tensor[2];
+    }
+
+    /* Init parameters. */
+    _create_params( self, args, _ARG_NUM );
 
     /* Pass parameters to node. */
     status = vsi_nn_ClientNodePassParameters( self->n, params, _PARAM_NUM );
 
-    border.mode = VX_BORDER_REPLICATE;
-    border.constant_value.U32 = 0;
+    _release_params( args, _ARG_NUM );
+
     status |= vxSetNodeAttribute(self->n, VX_NODE_BORDER, &border, sizeof(border));
 
     return status;
@@ -461,7 +579,6 @@ static vsi_nn_op_compute_t op_compute_list[] =
     vx_op_compute,
     NULL
 };
-#endif
 
 static vsi_status op_compute
     (
@@ -471,49 +588,88 @@ static vsi_status op_compute
     )
 {
     vsi_status status = VSI_FAILURE;
-#if (USE_OVX_API == TRUE)
-    self->n = vxPReluLayer(
-        self->graph->g,
-        inputs[0]->t,
-        inputs[1]->t,
-        outputs[0]->t
-        );
-    if( NULL != self->n )
-    {
-        status = VSI_SUCCESS;
-    }
-#else
     vsi_nn_kernel_info_t kernel_info;
+    vsi_nn_prelu_param * p = NULL;
 
     memset(&kernel_info, 0x0, sizeof(vsi_nn_kernel_info_t));
-    status = VSI_FAILURE;
-    check_const_tensor_shape(self, inputs);
-    kernel_info.resource_num  = 2;
-    kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));
-    kernel_info.resource_name[0] = "vsi_nn_kernel_header";
-    kernel_info.resource_name[1] = "vsi_nn_kernel_prelu";
-    kernel_info.type = vsi_nn_GetVXKernelTypeForShader();
-    kernel_info.kernel = vx_kernel_PRELU_list;
-    kernel_info.init_index = 1;
 
-    if (vsi_nn_is_do_vx_op_pre_init(kernel_info.type))
+    if (2 == self->nn_param.prelu.axis)
     {
-        vx_op_pre_compute(self, inputs, outputs, &kernel_info);
+        self->n = vxPReluLayer(
+            self->graph->g,
+            inputs[0]->t,
+            inputs[1]->t,
+            outputs[0]->t
+            );
+        if( NULL != self->n )
+        {
+            status = VSI_SUCCESS;
+        }
     }
+    else
+    {
+        p = &(self->nn_param.prelu);
+        _get_prelu_hashtable_idx(self, inputs, outputs);
+        check_const_tensor_shape(self, inputs);
 
-    self->n = vsi_nn_RegisterClientKernelAndNewNode(
-        self->graph, &kernel_info);
-    if (kernel_info.resource_name) free(kernel_info.resource_name);
-    if( NULL == self->n )
-    {
-        return VSI_FAILURE;
-    }
+        if (p->local->execute_on_sw)
+        {
+            reshape_tensor_set_input_output(self, inputs, outputs, vx_true_e);
+            kernel_info.resource_num = 1;
+            kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));
+            kernel_info.resource_name[0] = "vsi_nn_kernel_prelu_sw";
+            kernel_info.type = VX_KERNEL_TYPE_CPU;
+            kernel_info.kernel = vx_kernel_PRELU_list;
+            kernel_info.init_index = 0;
 
-    if (NULL != op_compute_list[kernel_info.init_index])
-    {
-        status = op_compute_list[kernel_info.init_index](self, inputs, outputs);
+            self->n = vsi_nn_RegisterClientKernelAndNewNode(
+            self->graph, &kernel_info);
+            if( NULL == self->n )
+            {
+                status = VSI_FAILURE;
+                goto final;
+            }
+            status = cpu_op_compute(self, inputs, outputs);
+            if(VX_SUCCESS != status)
+            {
+                goto final;
+            }
+        }
+        else
+        {
+            reshape_tensor_set_input_output(self, inputs, outputs, vx_true_e);
+            kernel_info.type   = vsi_nn_GetVXKernelTypeForShader();
+            kernel_info.kernel = vx_kernel_PRELU_list;
+            kernel_info.resource_num = 2;
+            kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));
+            kernel_info.init_index = 1;
+            kernel_info.resource_name[0] = "vsi_nn_kernel_header";
+            kernel_info.resource_name[1] = "vsi_nn_kernel_internal_prelu";
+
+            if (vsi_nn_is_do_vx_op_pre_init(kernel_info.type))
+            {
+                vx_op_pre_compute(self, inputs, outputs, &kernel_info);
+            }
+
+            self->n = vsi_nn_RegisterClientKernelAndNewNode(
+                    self->graph, &kernel_info);
+            if( NULL == self->n )
+            {
+                status = VSI_FAILURE;
+                goto final;
+            }
+            if (NULL != op_compute_list[kernel_info.init_index])
+            {
+                status = op_compute_list[kernel_info.init_index](self, inputs, outputs);
+            }
+        }
     }
-#endif
+final:
+    if (kernel_info.resource_name)
+    {
+        free(kernel_info.resource_name);
+        kernel_info.resource_name = NULL;
+    }
     return status;
 } /* op_compute() */
 
@@ -533,21 +689,80 @@ static vsi_status op_deinit
     vsi_nn_node_t * self
     )
 {
-#if (USE_OVX_API == FALSE)
-    uint32_t i;
-    for (i = 0; i < _VSI_NN_PRELU_LOCAL_TENSOR_NUM; i++)
-    {
-        if (self->nn_param.prelu.local.local_tensor[i] != NULL)
-        {
-            vxReleaseTensor(&(self->nn_param.prelu.local.local_tensor[i]));
-            self->nn_param.prelu.local.local_tensor[i] = NULL;
-        }
-    }
-#endif
-    vsi_nn_op_common_deinit(self);
+    uint32_t i = 0;
 
+    if (self->nn_param.prelu.local)
+    {
+        for (i = 0; i < _VSI_NN_PRELU_LOCAL_TENSOR_NUM; i++)
+        {
+            if (self->nn_param.prelu.local->local_tensor[i] != NULL)
+            {
+                vxReleaseTensor(&(self->nn_param.prelu.local->local_tensor[i]));
+                self->nn_param.prelu.local->local_tensor[i] = NULL;
+            }
+        }
+        free(self->nn_param.prelu.local);
+        self->nn_param.prelu.local = NULL;
+    }
+    vsi_nn_op_common_deinit(self);
     return VSI_SUCCESS;
 } /* op_deinit() */
+
+static vsi_bool op_setup
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs
+    )
+{
+    vsi_bool ret = TRUE;
+    if( NULL == self )
+    {
+        return FALSE;
+    }
+
+    if (self->nn_param.prelu.axis < 0)
+    {
+        self->nn_param.prelu.axis += (int32_t)inputs[0]->attr.dim_num;
+    }
+
+    if (self->nn_param.prelu.axis < 0)
+    {
+        VSILOGD("Prelu Invalid Axis: %d \n", self->nn_param.prelu.axis);
+        return FALSE;
+    }
+
+    ret = vsi_nn_op_common_setup(self, inputs, outputs);
+
+    return ret;
+}
+
+static vsi_status op_init
+    (
+    vsi_nn_node_t * self
+    )
+{
+    vsi_status status = VSI_SUCCESS;
+    uint32_t   graph_version_major = 0;
+    uint32_t   graph_version_minor = 0;
+    uint32_t   graph_version_patch = 0;
+
+    self->nn_param.prelu.local   =
+    (vsi_nn_prelu_lcl_data *)malloc(sizeof(vsi_nn_prelu_lcl_data));
+    if (NULL == self->nn_param.prelu.local)
+    {
+        return  VX_ERROR_NO_MEMORY;
+    }
+
+    vsi_nn_GetGraphVersion( self->graph, &graph_version_major,
+        &graph_version_minor, &graph_version_patch );
+    if (!( graph_version_major >= 1 && graph_version_minor >= 1 && graph_version_patch >= 17 ))
+    {
+        self->nn_param.prelu.axis = VSI_NN_PRELU_DEFAULT_AXIS;
+    }
+
+    return status;
+} /* op_init() */
 
 #ifdef __cplusplus
 extern "C" {
@@ -556,11 +771,11 @@ extern "C" {
 DEF_OP_REG
     (
     /* op_name    */ PRELU,
-    /* init       */ NULL,
+    /* init       */ op_init,
     /* compute    */ op_compute,
     /* deinit     */ op_deinit,
     /* check      */ op_check,
-    /* setup      */ vsi_nn_op_common_setup,
+    /* setup      */ op_setup,
     /* optimize   */ NULL,
     /* input_num  */ 2,
     /* output_num */ 1

@@ -34,7 +34,7 @@ enum
     RNN_INPUT_WEIGHT_I     = 1,
     RNN_INPUT_WEIGHT_H     = 2,
     RNN_INPUT_BIAS         = 3,
-    RNN_INPUT_HIDDEN_STATE       = 4,
+    RNN_INPUT_H_STATE      = 4,
     RNN_INPUT_CNT,
 
     RNN_OUTPUT_OUTPUT      = 0,

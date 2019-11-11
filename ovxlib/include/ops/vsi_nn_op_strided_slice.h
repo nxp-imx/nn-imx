@@ -35,13 +35,26 @@ extern "C" {
 typedef struct _vsi_nn_strided_slice_lcl_data2
 {
     vsi_nn_link_list_t link_list;
-    /* used for optimze concat to tensor view */
+    /* used for optimze strided slice to tensor view */
     struct
     {
         vx_node            cp_node;
         vx_tensor          src_tensor;
         vx_tensor          dst_tensor;
     };
+
+    struct
+    {
+        int32_t *begin_dims;
+        int32_t *end_dims;
+        int32_t *stride_dims;
+        int32_t begin_mask;
+        int32_t end_mask;
+        int32_t shrink_axis_mask;
+    };
+
+    vsi_bool is_dataconvert_op;
+    vsi_bool is_optimized;
 } vsi_nn_strided_slice_lcl_data2;
 
 typedef struct _vsi_nn_strided_slice_lcl_data_t

@@ -26,9 +26,97 @@
 
 #include "vsi_nn_types.h"
 
+enum
+{
+    BI_LSTM_INPUT_INPUT             = 0,
+
+    BI_LSTM_FW_INPUT_WEIGHT_I2I     = 1,
+    BI_LSTM_FW_INPUT_WEIGHT_I2F     = 2,
+    BI_LSTM_FW_INPUT_WEIGHT_I2C     = 3,
+    BI_LSTM_FW_INPUT_WEIGHT_I2O     = 4,
+
+    BI_LSTM_FW_INPUT_WEIGHT_R2I     = 5,
+    BI_LSTM_FW_INPUT_WEIGHT_R2F     = 6,
+    BI_LSTM_FW_INPUT_WEIGHT_R2C     = 7,
+    BI_LSTM_FW_INPUT_WEIGHT_R2O     = 8,
+
+    BI_LSTM_FW_INPUT_WEIGHT_C2I     = 9,
+    BI_LSTM_FW_INPUT_WEIGHT_C2F     = 10,
+    BI_LSTM_FW_INPUT_WEIGHT_C2O     = 11,
+
+    BI_LSTM_FW_INPUT_BIAS_I         = 12,
+    BI_LSTM_FW_INPUT_BIAS_F         = 13,
+    BI_LSTM_FW_INPUT_BIAS_C         = 14,
+    BI_LSTM_FW_INPUT_BIAS_O         = 15,
+
+    BI_LSTM_FW_INPUT_WEIGHT_PROJ    = 16,
+    BI_LSTM_FW_INPUT_BIAS_PROJ      = 17,
+
+    BI_LSTM_BW_INPUT_WEIGHT_I2I     = 18,
+    BI_LSTM_BW_INPUT_WEIGHT_I2F     = 19,
+    BI_LSTM_BW_INPUT_WEIGHT_I2C     = 20,
+    BI_LSTM_BW_INPUT_WEIGHT_I2O     = 21,
+
+    BI_LSTM_BW_INPUT_WEIGHT_R2I     = 22,
+    BI_LSTM_BW_INPUT_WEIGHT_R2F     = 23,
+    BI_LSTM_BW_INPUT_WEIGHT_R2C     = 24,
+    BI_LSTM_BW_INPUT_WEIGHT_R2O     = 25,
+
+    BI_LSTM_BW_INPUT_WEIGHT_C2I     = 26,
+    BI_LSTM_BW_INPUT_WEIGHT_C2F     = 27,
+    BI_LSTM_BW_INPUT_WEIGHT_C2O     = 28,
+
+    BI_LSTM_BW_INPUT_BIAS_I         = 29,
+    BI_LSTM_BW_INPUT_BIAS_F         = 30,
+    BI_LSTM_BW_INPUT_BIAS_C         = 31,
+    BI_LSTM_BW_INPUT_BIAS_O         = 32,
+
+    BI_LSTM_BW_INPUT_WEIGHT_PROJ    = 33,
+    BI_LSTM_BW_INPUT_BIAS_PROJ      = 34,
+
+    BI_LSTM_FW_INPUT_H_STATE      = 35,
+    BI_LSTM_FW_INPUT_C_STATE     = 36,
+
+    BI_LSTM_BW_INPUT_H_STATE      = 37,
+    BI_LSTM_BW_INPUT_C_STATE     = 38,
+
+    BI_LSTM_AUX_INPUT               = 39,
+
+    BI_LSTM_FW_AUX_INPUT_WEIGHT_I2I = 40,
+    BI_LSTM_FW_AUX_INPUT_WEIGHT_I2F = 41,
+    BI_LSTM_FW_AUX_INPUT_WEIGHT_I2C = 42,
+    BI_LSTM_FW_AUX_INPUT_WEIGHT_I2O = 43,
+
+    BI_LSTM_BW_AUX_INPUT_WEIGHT_I2I = 44,
+    BI_LSTM_BW_AUX_INPUT_WEIGHT_I2F = 45,
+    BI_LSTM_BW_AUX_INPUT_WEIGHT_I2C = 46,
+    BI_LSTM_BW_AUX_INPUT_WEIGHT_I2O = 47,
+
+    BI_LSTM_FW_INPUT_LAYERNORM_I    = 48,
+    BI_LSTM_FW_INPUT_LAYERNORM_F    = 49,
+    BI_LSTM_FW_INPUT_LAYERNORM_C    = 50,
+    BI_LSTM_FW_INPUT_LAYERNORM_O    = 51,
+
+    BI_LSTM_BW_INPUT_LAYERNORM_I    = 48,
+    BI_LSTM_BW_INPUT_LAYERNORM_F    = 49,
+    BI_LSTM_BW_INPUT_LAYERNORM_C    = 50,
+    BI_LSTM_BW_INPUT_LAYERNORM_O    = 51,
+
+    BI_LSTM_INPUT_CNT,
+
+    BI_LSTM_FW_OUTPUT_OUTPUT      = 0,
+    BI_LSTM_BW_OUTPUT_OUTPUT      = 1,
+    BI_LSTM_OUTPUT_CNT
+};
+
 typedef struct _vsi_nn_bidirectional_sequence_lstm_param
 {
-    vsi_enum     type;
+    vsi_bool time_major;
+    vsi_bool merge_outputs;
+    vsi_nn_activation_e activation;
+    float cell_clip;
+    float proj_clip;
+    vsi_nn_dtype_t internal_dtype[LSTMUNIT_QUANTIZE_PARAM_COUNT];
 } vsi_nn_bidirectional_sequence_lstm_param;
 
 #endif

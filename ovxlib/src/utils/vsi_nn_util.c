@@ -1095,5 +1095,10 @@ vsi_bool vsi_nn_OptimizedEltWiseOPShape
     if (status == TRUE)
         *dim_num = vsi_nn_max(dims, 2);
 
+    if (dims > 2 && sizes2[2] != 1)
+    {
+        status = FALSE;
+    }
+
     return status;
 }

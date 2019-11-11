@@ -36,6 +36,167 @@
 #include "vsi_nn_log.h"
 #include "client/vsi_nn_vxkernel.h"
 #include "libnnext/vx_lib_nnext.h"
+#include "utils/vsi_nn_dtype_util.h"
+
+#define TENSOR_NUM_INPUT  (PRELLU_INPUTS_COUNT)
+#define TENSOR_NUM_OUTPUT (PRELLU_OUTPUTS_COUNT)
+#define TENSOR_NUM (TENSOR_NUM_INPUT+TENSOR_NUM_OUTPUT)
+
+static float vsi_nn_DtypeToFloat32_Ex
+    (
+    uint8_t   * src,
+    uint32_t    index,
+    const vsi_nn_dtype_t * src_dtype
+    )
+{
+    float value = 0.0f;
+    vsi_status status;
+
+    src = src + index * vsi_nn_TypeGetBytes(src_dtype->vx_type);
+
+    status = vsi_nn_DtypeToFloat32(src, &value, src_dtype);
+    if(VSI_SUCCESS != status)
+    {
+        VSILOGE("Convert data to float32 fail!");
+        value = 0.0f;
+    }
+
+    return value;
+}
+
+static vsi_status vsi_nn_Float32ToDtype_Ext
+    (
+    float   src,
+    uint8_t   * dst,
+    uint32_t    index,
+    const vsi_nn_dtype_t * dst_dtype
+    )
+{
+    vsi_nn_dtype_t src_dtype;
+
+    dst = dst + index * vsi_nn_TypeGetBytes(dst_dtype->vx_type);
+
+    memset( &src_dtype, 0, sizeof( vsi_nn_dtype_t ) );
+    src_dtype.vx_type = VSI_NN_TYPE_FLOAT32;
+
+    return vsi_nn_DtypeConvert( (uint8_t *)&src, &src_dtype, dst, dst_dtype );
+} /* vsi_nn_Float32ToDtype_Ext */
+
+static vsi_status VX_CALLBACK vxParametricReluKernel
+    (
+    vx_node node,
+    const vx_reference* paramObj,
+    uint32_t paramNum
+    )
+{
+    vsi_status status = VX_SUCCESS;
+    vsi_nn_tensor_attr_t attr[TENSOR_NUM];
+    vx_tensor_addressing user_addr[TENSOR_NUM]  = {NULL};
+    vx_uint8    *buffer_ptr[TENSOR_NUM]            = {NULL};
+    vx_tensor   tensor[TENSOR_NUM] = {NULL};
+    uint32_t    stride_size[TENSOR_NUM][VSI_NN_MAX_DIM_NUM];
+    vx_context   context                        = vxGetContext((vx_reference)node);
+    vx_uint32   size[4] = {1, 1, 1, 1};
+    vx_uint32   dims = 0, innerSize = 0, outerSize = 0, axisSize = 0;
+    vx_uint32   outer = 0, inner = 0, i = 0, index = 0, j = 0;
+    vx_float32  inValue = 0.0f, result = 0.0f;
+    int32_t    axis = 0;
+    vx_float32 aV = 0.0f;
+
+    for (i = 0; i < TENSOR_NUM; i++)
+    {
+        memset(&attr[i], 0, sizeof(vsi_nn_tensor_attr_t));
+        for (j = 0; j < VSI_NN_MAX_DIM_NUM; j++)
+        {
+            stride_size[i][j] = 1;
+        }
+    }
+
+    for( i = 0; i < TENSOR_NUM_INPUT; i ++ )
+    {
+        tensor[i] = (vx_tensor)paramObj[i];
+        buffer_ptr[i] = vsi_nn_ConvertRawTensorToData2(context, tensor[i],
+            &(attr[i]), stride_size[i], &(user_addr[i]), VX_READ_ONLY);
+    }
+
+    for( i = TENSOR_NUM_INPUT; i < TENSOR_NUM; i ++ )
+    {
+        tensor[i] = (vx_tensor)paramObj[i];
+        buffer_ptr[i] = vsi_nn_ConvertRawTensorToData2(context, tensor[i],
+            &(attr[i]), stride_size[i], &(user_addr[i]), VX_WRITE_ONLY);
+    }
+    vxCopyScalar((vx_scalar)paramObj[TENSOR_NUM], &(axis), VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
+
+    if(paramNum != 4)
+    {
+        VSILOGE("Error ParamNum input %d \n", paramNum);
+        status = VX_ERROR_INVALID_PARAMETERS;
+        goto final;
+    }
+
+    dims = attr[PRELLU_INPUT].dim_num;
+    size[0] = attr[PRELLU_INPUT].size[0];
+    size[1] = dims > 1 ? attr[PRELLU_INPUT].size[1] : 1;
+    size[2] = dims > 2 ? attr[PRELLU_INPUT].size[2] : 1;
+    size[3] = dims > 3 ? attr[PRELLU_INPUT].size[3] : 1;
+    axisSize =  attr[PRELLU_INPUT].size[axis];
+
+    switch(axis)
+    {
+        case 0:
+            innerSize = 1;
+            outerSize = size[1] * size[2] * size[3];
+            break;
+        case 1:
+            innerSize = size[0];
+            outerSize = size[2] * size[3];
+            break;
+        case 2:
+            innerSize = size[0] * size[1];
+            outerSize = size[3];
+            break;
+        case 3:
+            innerSize = size[0] * size[1] * size[2];
+            outerSize = 1;
+            break;
+        default:
+        VSILOGE("Input tensor error dimension[%u]\n", dims);
+        status = VX_ERROR_INVALID_DIMENSION;
+        goto final;
+    }
+
+    for (outer = 0; outer < outerSize; ++outer) {
+        for (inner = 0; inner < innerSize; ++inner) {
+            for (i = 0; i < axisSize; ++i) {
+                index    = (outer * axisSize + i) * innerSize + inner;
+                inValue  = vsi_nn_DtypeToFloat32_Ex(buffer_ptr[PRELLU_INPUT],
+                                                   index, &attr[PRELLU_INPUT].dtype);
+                aV       = vsi_nn_DtypeToFloat32_Ex(buffer_ptr[PRELLU_INPUT1],
+                                                   i, &attr[PRELLU_INPUT1].dtype);
+                result   = (inValue < 0) ? inValue * aV : inValue;
+                vsi_nn_Float32ToDtype_Ext(result, buffer_ptr[PRELLU_INPUTS_COUNT + PRELLU_OUTPUT],
+                            index, &attr[PRELLU_INPUTS_COUNT + PRELLU_OUTPUT].dtype);
+            }
+        }
+    }
+
+    for( i = TENSOR_NUM_INPUT; i < TENSOR_NUM; i ++ )
+    {
+        if (buffer_ptr[i])
+        {
+            status = vsi_nn_copy_tensor_patch(tensor[i], &attr[i], buffer_ptr[i], VX_WRITE_ONLY);
+        }
+    }
+final:
+    for( i = 0; i < TENSOR_NUM; i ++ )
+    {
+        if (buffer_ptr[i]) free(buffer_ptr[i]);
+
+        if (user_addr[i]) vxReleaseTensorAddressing(&(user_addr[i]));
+    }
+    return status;
+} /* _VX_KERNEL_FUNC_KERNEL() */
+
 
 vsi_status VX_CALLBACK vxParametricReluInitializer
     (
@@ -44,1042 +205,649 @@ vsi_status VX_CALLBACK vxParametricReluInitializer
     uint32_t paraNum
     )
 {
-// Alignment with a power of two value.
+    // Alignment with a power of two value.
 #define gcmALIGN(n, align) ((n) + ((align) - 1)) & ~((align) - 1)
+#define gcmMIN(x, y)            (((x) <= (y)) ?  (x) :  (y))
+#define IMG_MAX_WIDTH 65536
+#define MAX_MULTIPLIER_NUM      (65535)
+#define MAX_POST_SHIFT_BITS     (31)
     vx_kernel_execution_parameters_t shaderParam = {
         3,          // workdim
         {0, 0, 0},  // globalWorkOffset: control the start location be processed in the image
         {0, 0, 0},  // globalWorkScale: how many pixels could be processed by a single thread
         {0, 0, 0},  // localWorkSize: local group size in thread
         {0, 0, 0}}; // globalWorkSize: image size in thread
-    uint32_t UniFP16Mul_dp2x8[16] = {
-        0x11111111, // TCfg
-        0x00000000, // ASelt
-        0x03020100, 0x07060504, // ABin
-        0x11111111, // BSelt
-        0x00000000, 0x00000000, // BBin
-        0x00000100, // AccumType, ConstantType, and PostShift
-        0x00000000, 0x00000000, 0x00000000, 0x00000000,
-        0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
-    };
-    uint32_t UniS8xFp16_dp2x8[16] = {
-        0x11111111, // TCfg
-        0x00000000, // ASelt
-        0x03020100, 0x07060504, // ABin
-        0x11111111, // BSelt
-        0x00000000, 0x00000000, // BBin
-        0x00000400, // AccumType, ConstantType, and PostShift
-        0x00000000, 0x00000000, 0x00000000, 0x00000000,
-        0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
-    };
 
-    vsi_status status = VX_SUCCESS;
+    vsi_status    status                = VX_SUCCESS;
+    vx_tensor     input                 = (vx_tensor)paramObj[0];
+    vx_tensor     output                = (vx_tensor)paramObj[2];
+    vx_uint32     dims                  = 0;
+    vx_uint32     width                 = 0;
+    vx_uint32     height                = 0;
+    vx_uint32     depth                 = 0;
+    vx_enum       srcFormat             = VSI_NN_TYPE_FLOAT16;
+    vx_enum       dstFormat             = VSI_NN_TYPE_FLOAT16;
+    vx_float32    input_scale           = 1.0f;
+    vx_float32    output_scale          = 1.0f;
+    vx_int32      inputZP               = 0;
+    vx_int32      outputZP              = 0;
+    vx_int8       srcFixPointPos        = 0;
+    vx_int8       dstFixPointPos        = 0;
+    vx_enum       srcQuantType          = 0;
+    vx_enum       dstQuantType          = 0;
+    vx_bool       enable_image_2d       = vx_false_e;
+    vx_uint32     hwLitimLen            = IMG_MAX_WIDTH;
+    vx_uint16     M0                    = 0;
+    vx_int8       postShift             = 0;
+    int32_t       axis                  = 0;
+    vsi_nn_tensor_attr_t attr[2];
 
-    vx_tensor   input                   = (vx_tensor)paramObj[0];
-    vx_tensor   output                  = (vx_tensor)paramObj[2];
-    uint32_t    input_size[DIM_SIZE];
-    int8_t      input_fixPointPos       = 0;
-    int8_t      output_fixPointPos      = 0;
-    vx_float32  in_scale                = 1.0f;
-    vx_float32  out_scale               = 1.0f;
-    vx_float32  scale_inOut             = 1.0f;
-    vsi_enum    inDataType, outDataType;
-    vx_float32  scaleIn                 = 0;
-    vx_float32  scaleOut                = 0;
-    int32_t     output_ZP               = 0;
-    int32_t     input_ZP                = 0;
-    vx_float32  scaleInInt16            = 0;
-    vx_float32  scaleOutInt16           = 0;
-    vx_float32  reScaleOut_u8           = 0;
-    vx_bool     optFlg                  = vx_false_e;
-    vx_uint16   M0                      = 0;
-    vx_int8     postShift               = 0;
-    vx_bool     enable_image_2d         = vx_false_e;
-
-    status = vxQueryTensor(input, VX_TENSOR_DIMS, input_size, sizeof(input_size));
-    status |= vxQueryTensor(input, VX_TENSOR_FIXED_POINT_POS, &input_fixPointPos, sizeof(input_fixPointPos));
-    status |= vxQueryTensor(output, VX_TENSOR_FIXED_POINT_POS, &output_fixPointPos, sizeof(output_fixPointPos));
-    status |= vxQueryTensor(input, VX_TENSOR_DATA_TYPE, &inDataType, sizeof(inDataType));
-    status |= vxQueryTensor(output, VX_TENSOR_DATA_TYPE, &outDataType, sizeof(outDataType));
-    status |= vxQueryTensor(input, VX_TENSOR_ZERO_POINT, &input_ZP, sizeof(input_ZP));
-    status |= vxQueryTensor(input, VX_TENSOR_SCALE, &scaleIn, sizeof(scaleIn));
-    status |= vxQueryTensor(output, VX_TENSOR_ZERO_POINT, &output_ZP, sizeof(output_ZP));
-    status |= vxQueryTensor(output, VX_TENSOR_SCALE, &scaleOut, sizeof(scaleOut));
-
-    if(outDataType == VX_TYPE_UINT8)
-        reScaleOut_u8 = 1 / scaleOut;
-    else
-        scaleOut = 1.0f;
-
-    enable_image_2d = (vx_bool)(input_size[2] == 1);
-
+    memset(&attr[0], 0, sizeof(vsi_nn_tensor_attr_t));
+    memset(&attr[1], 0, sizeof(vsi_nn_tensor_attr_t));
+    status  = vsi_nn_vxGetTensorAttr(input,  &attr[0]);
+    status |= vsi_nn_vxGetTensorAttr(output, &attr[1]);
     if (status != VX_SUCCESS)
     {
-        VSILOGE("vxQueryTensor FIXED_POINT_POS failure!\n");
+        VSILOGE("vsi_nn_vxGetTensorAttr failure! at line %d\n", __LINE__);
         return status;
     }
-    if (input_fixPointPos >= 0)
+
+    vxCopyScalar((vx_scalar)paramObj[3], &(axis), VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
+
+    dims            = attr[1].dim_num;
+    width           = attr[1].size[0];
+    height          = dims > 1 ? attr[1].size[1] : 1;
+    depth           = dims > 2 ? attr[1].size[2] : 1;
+    srcFormat       = attr[0].dtype.vx_type;
+    dstFormat       = attr[1].dtype.vx_type;
+    input_scale     = attr[0].dtype.scale;
+    output_scale    = attr[1].dtype.scale;
+    inputZP         = attr[0].dtype.zero_point;
+    outputZP        = attr[1].dtype.zero_point;
+    srcFixPointPos  = attr[0].dtype.fl;
+    dstFixPointPos  = attr[1].dtype.fl;
+    srcQuantType    = attr[0].dtype.qnt_type;
+    dstQuantType    = attr[1].dtype.qnt_type;
+
+    if (0 == axis)
     {
-        in_scale = 1.0f / (vx_float32) (1 << input_fixPointPos);
+        if ((height * depth < hwLitimLen) && width < hwLitimLen)
+        {
+            enable_image_2d = vx_true_e;
+        }
     }
-    else if (input_fixPointPos < 0)
+    else if(1 == axis)
     {
-        in_scale = (vx_float32) (1 << -input_fixPointPos);
-    }
-    if (output_fixPointPos >= 0)
-    {
-        out_scale = (vx_float32) (1 << output_fixPointPos);
-    }
-    else if (output_fixPointPos < 0)
-    {
-        out_scale = 1.0f / (vx_float32) (1 << -output_fixPointPos);
+        if (1 == depth)
+        {
+            enable_image_2d = vx_true_e;
+        }
     }
 
-    if (input_fixPointPos > 0)
+    if(srcQuantType == VSI_NN_QNT_TYPE_DFP)
     {
-        scaleInInt16 = (1.0f / ((vx_float32) (1 << input_fixPointPos)));
+        if (srcFixPointPos >= 0)
+        {
+            input_scale = 1.0f / (vx_float32) (1 << srcFixPointPos);
+        }
+        else if (srcFixPointPos < 0)
+        {
+            input_scale = (vx_float32) (1 << -srcFixPointPos);
+        }
     }
-    else
+    else if (VSI_NN_QNT_TYPE_NONE == srcQuantType)
     {
-        scaleInInt16 = ((vx_float32) (1 << -input_fixPointPos));
-    }
-
-    if (output_fixPointPos > 0)
-    {
-        scaleOutInt16 = (vx_float32)(1 << output_fixPointPos);
-    }
-    else
-    {
-        scaleOutInt16 = (1.0f / (vx_float32)(1 << -output_fixPointPos));
-    }
-    scale_inOut = in_scale * out_scale;
-
-    if(((inDataType == VX_TYPE_INT8 && outDataType == VX_TYPE_INT8)
-        || (inDataType == VX_TYPE_INT16 && outDataType == VX_TYPE_INT16))
-        && (((input_fixPointPos >= output_fixPointPos) && (input_fixPointPos - output_fixPointPos < 32))
-        || ((input_fixPointPos < output_fixPointPos) && (output_fixPointPos - input_fixPointPos < 16))) && enable_image_2d)
-    {
-        optFlg = vx_true_e;
-    }
-    else if (enable_image_2d && inDataType == VX_TYPE_UINT8
-        && (outDataType == VX_TYPE_UINT8 || outDataType == VX_TYPE_FLOAT16))
-    {
-        vsi_nn_GetFP32MultiAndPostShift(scaleIn / scaleOut, &M0, &postShift);
-        optFlg = vx_true_e;
+        srcFixPointPos = 0;
+        input_scale    = 1.0;
     }
 
-    shaderParam.globalWorkOffset[0] = 0;
-    shaderParam.globalWorkOffset[1] = 0;
-    shaderParam.globalWorkOffset[2] = 0;
+    if(dstQuantType == VSI_NN_QNT_TYPE_DFP)
+    {
+        if (dstFixPointPos >= 0)
+        {
+            output_scale = (vx_float32) (1 << dstFixPointPos);
+        }
+        else if (dstFixPointPos < 0)
+        {
+            output_scale = 1.0f / (vx_float32) (1 << -dstFixPointPos);
+        }
+    }
+    else if (VSI_NN_QNT_TYPE_NONE == dstQuantType)
+    {
+        dstFixPointPos = 0;
+        output_scale   = 1.0;
+    }
+
+    vsi_nn_GetFP32MultiAndPostShift(input_scale / output_scale, &M0, &postShift);
+
     shaderParam.globalWorkScale[0]  = 8;
     shaderParam.globalWorkScale[1]  = 1;
     shaderParam.globalWorkScale[2]  = 1;
-    shaderParam.localWorkSize[0]    = 8;
-    shaderParam.localWorkSize[1]    = 1;
-    shaderParam.localWorkSize[2]    = 1;
 
-    if (inDataType == VX_TYPE_INT8 && outDataType == VX_TYPE_INT8)
-        shaderParam.globalWorkScale[0]  = 16;
-    else if (inDataType == VX_TYPE_UINT8 && enable_image_2d
-        && (outDataType == VX_TYPE_UINT8 || outDataType == VX_TYPE_FLOAT16))
-        shaderParam.globalWorkScale[0]  = 16;
-
-    if(optFlg)
+    if (srcFormat == VX_TYPE_INT8 && (dstFormat == VX_TYPE_INT8 || dstFormat == VX_TYPE_FLOAT16))
     {
-        shaderParam.workDim = 2;
-        shaderParam.globalWorkSize[0]   = gcmALIGN((input_size[0] + shaderParam.globalWorkScale[0] - 1)
-            / shaderParam.globalWorkScale[0], shaderParam.localWorkSize[0]);
-        shaderParam.globalWorkSize[1]   = gcmALIGN((input_size[1] + shaderParam.globalWorkScale[1] - 1)
-            / shaderParam.globalWorkScale[1], shaderParam.localWorkSize[1]);
+        vx_uint32 uniF16MulF16_2x8[16] = {
+            0x11111111, // TCfg
+            0x00000000, // ASelt
+            0x03020100, 0x07060504, // ABin
+            0x11111111, // BSelt
+            0x03020100, 0x07060504, // BBin
+            0x00000400, // AccumType, ConstantType, and PostShift
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
+        };
+        vx_uint32 uniPreluI8toF16Lo_2x8[16] = {
+            0x11111111, // TCfg
+            0x00000000, // ASelt
+            0x03020100, 0x07060504, // ABin
+            0x22222222, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000600, // AccumType, ConstantType, and PostShift
+            0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
+        };
+        vx_uint32 uniPreluI8toF16Hi_2x8[16] = {
+            0x11111111, // TCfg
+            0x00000000, // ASelt
+            0x0b0a0908, 0x0f0e0d0c, // ABin
+            0x22222222, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000600, // AccumType, ConstantType, and PostShift
+            0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
+        };
+
+        if (dstFormat == VX_TYPE_FLOAT16)
+        {
+            dstFixPointPos = 0;
+        }
+
+        if (srcFixPointPos >= dstFixPointPos)
+        {
+            vx_uint8  postshift      = gcmMIN(srcFixPointPos - dstFixPointPos, MAX_POST_SHIFT_BITS);
+
+            uniPreluI8toF16Lo_2x8[7]    = uniPreluI8toF16Lo_2x8[7] | (postshift & 0x1F);
+            uniPreluI8toF16Hi_2x8[7]    = uniPreluI8toF16Hi_2x8[7] | (postshift & 0x1F);
+        }
+        else
+        {
+            vx_uint32 idx = 0;
+            vx_int32 multiplier = gcmMIN(1 << (dstFixPointPos - srcFixPointPos), MAX_MULTIPLIER_NUM);
+            for (idx = 8; idx < 16; idx ++)
+            {
+                uniPreluI8toF16Hi_2x8[idx] = uniPreluI8toF16Lo_2x8[idx] = (vx_uint32)(multiplier << 16) | (multiplier & 0xffff);
+            }
+        }
+        status |= vxSetNodeUniform(nodObj, "uniPreluI8toF16Lo_2x8", 1, uniPreluI8toF16Lo_2x8);
+        status |= vxSetNodeUniform(nodObj, "uniPreluI8toF16Hi_2x8", 1, uniPreluI8toF16Hi_2x8);
+        status |= vxSetNodeUniform(nodObj, "uniF16MulF16_2x8", 1, uniF16MulF16_2x8);
+        if (dstFormat == VX_TYPE_INT8)
+        {
+            shaderParam.globalWorkScale[0]  = 16;
+        }
+    }
+    else if (srcFormat == VX_TYPE_INT16 && (dstFormat == VX_TYPE_INT16 || dstFormat == VX_TYPE_FLOAT16))
+    {
+        vx_uint32 uniF16MulF16_2x8[16] = {
+            0x11111111, // TCfg
+            0x00000000, // ASelt
+            0x03020100, 0x07060504, // ABin
+            0x11111111, // BSelt
+            0x03020100, 0x07060504, // BBin
+            0x00000400, // AccumType, ConstantType, and PostShift
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
+        };
+        vx_uint32 uniPreluI16toF16_2x8[16] = {
+            0x11111111, // TCfg
+            0x00000000, // ASelt
+            0x03020100, 0x07060504, // ABin
+            0x22222222, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000600, // AccumType, ConstantType, and PostShift
+            0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
+        };
+
+        if (dstFormat == VX_TYPE_FLOAT16)
+        {
+            dstFixPointPos = 0;
+        }
+
+        if (srcFixPointPos >= dstFixPointPos)
+        {
+            vx_uint8  postshift      = gcmMIN(srcFixPointPos - dstFixPointPos, MAX_POST_SHIFT_BITS);
+
+            uniPreluI16toF16_2x8[7]    = uniPreluI16toF16_2x8[7] | (postshift & 0x1F);
+        }
+        else
+        {
+            vx_uint32 idx = 0;
+            vx_int32 multiplier = gcmMIN(1 << (dstFixPointPos - srcFixPointPos), MAX_MULTIPLIER_NUM);
+            for (idx = 8; idx < 16; idx ++)
+            {
+                uniPreluI16toF16_2x8[idx] = (vx_uint32)(multiplier << 16) | (multiplier & 0xffff);
+            }
+        }
+        status |= vxSetNodeUniform(nodObj, "uniPreluI16toF16_2x8", 1, uniPreluI16toF16_2x8);
+        status |= vxSetNodeUniform(nodObj, "uniF16MulF16_2x8", 1, uniF16MulF16_2x8);
+    }
+    else if (srcFormat == VX_TYPE_UINT8 && dstFormat == VX_TYPE_UINT8)
+    {
+        vx_uint32 idx = 0;
+        vx_uint32 uniU8SubZP_MulM_PStoF16Lo_2x8[16] = {
+            0x99999999, // TCfg
+            0x44444444, // ASelt
+            0x03020100, 0x07060504, // ABin
+            0xaaaaaaaa, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000600, // AccumType, ConstantType, and PostShift
+            0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001 // Constant
+        };
+        vx_uint32 uniU8SubZP_MulM_PStoF16Hi_2x8[16] = {
+            0x99999999, // TCfg
+            0x44444444, // ASelt
+            0x0b0a0908, 0x0f0e0d0c, // ABin
+            0xaaaaaaaa, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000600, // AccumType, ConstantType, and PostShift
+            0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001 // Constant
+        };
+        vx_uint32 uniF16MulF16_2x8[16] = {
+            0x11111111, // TCfg
+            0x00000000, // ASelt
+            0x03020100, 0x07060504, // ABin
+            0x11111111, // BSelt
+            0x03020100, 0x07060504, // BBin
+            0x00000400, // AccumType, ConstantType, and PostShift
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
+        };
+        vx_uint32 uniS16AddZP_2x8[16] = {
+            0x55555555, // TCfg
+            0x44444444, // ASelt
+            0x03020100, 0x07060504, // ABin
+            0xaaaaaaaa, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000400, // AccumType, ConstantType, and PostShift
+            0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001 // Constant
+        };
+        uniU8SubZP_MulM_PStoF16Lo_2x8[7] |= postShift;
+        uniU8SubZP_MulM_PStoF16Hi_2x8[7] |= postShift;
+
+        for (idx = 8; idx < 16; idx ++)
+        {
+            uniU8SubZP_MulM_PStoF16Hi_2x8[idx] = uniU8SubZP_MulM_PStoF16Lo_2x8[idx] = (vx_uint32)(M0 << 16) | M0;
+        }
+
+        status |= vxSetNodeUniform(nodObj, "uniU8SubZP_MulM_PStoF16Lo_2x8", 1, uniU8SubZP_MulM_PStoF16Lo_2x8);
+        status |= vxSetNodeUniform(nodObj, "uniU8SubZP_MulM_PStoF16Hi_2x8", 1, uniU8SubZP_MulM_PStoF16Hi_2x8);
+        status |= vxSetNodeUniform(nodObj, "uniF16MulF16_2x8", 1, uniF16MulF16_2x8);
+        status |= vxSetNodeUniform(nodObj, "uniS16AddZP_2x8", 1, uniS16AddZP_2x8);
+        status |= vxSetNodeUniform(nodObj, "outputZP", 1, &outputZP);
+        status |= vxSetNodeUniform(nodObj, "inputZP", 1, &inputZP);
+
+        shaderParam.globalWorkScale[0]  = 16;
+    }
+    else if (srcFormat == VX_TYPE_UINT8 && dstFormat == VX_TYPE_FLOAT16)
+    {
+        vx_uint32 idx = 0;
+        vx_uint32 uniU8SubZP_MulM_PStoF16Lo_2x8[16] = {
+            0x99999999, // TCfg
+            0x44444444, // ASelt
+            0x03020100, 0x07060504, // ABin
+            0xaaaaaaaa, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000600, // AccumType, ConstantType, and PostShift
+            0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001 // Constant
+        };
+        vx_uint32 uniU8SubZP_MulM_PStoF16Hi_2x8[16] = {
+            0x99999999, // TCfg
+            0x44444444, // ASelt
+            0x0b0a0908, 0x0f0e0d0c, // ABin
+            0xaaaaaaaa, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000600, // AccumType, ConstantType, and PostShift
+            0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001 // Constant
+        };
+        vx_uint32 uniF16MulF16_2x8[16] = {
+            0x11111111, // TCfg
+            0x00000000, // ASelt
+            0x03020100, 0x07060504, // ABin
+            0x11111111, // BSelt
+            0x03020100, 0x07060504, // BBin
+            0x00000400, // AccumType, ConstantType, and PostShift
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
+        };
+        uniU8SubZP_MulM_PStoF16Lo_2x8[7] |= postShift;
+        uniU8SubZP_MulM_PStoF16Hi_2x8[7] |= postShift;
+
+        for (idx = 8; idx < 16; idx ++)
+        {
+            uniU8SubZP_MulM_PStoF16Hi_2x8[idx] = uniU8SubZP_MulM_PStoF16Lo_2x8[idx] = (vx_uint32)(M0 << 16) | M0;
+        }
+        status |= vxSetNodeUniform(nodObj, "uniU8SubZP_MulM_PStoF16Lo_2x8", 1, uniU8SubZP_MulM_PStoF16Lo_2x8);
+        status |= vxSetNodeUniform(nodObj, "uniU8SubZP_MulM_PStoF16Hi_2x8", 1, uniU8SubZP_MulM_PStoF16Hi_2x8);
+        status |= vxSetNodeUniform(nodObj, "uniF16MulF16_2x8", 1, uniF16MulF16_2x8);
+        status |= vxSetNodeUniform(nodObj, "inputZP", 1, &inputZP);
+        shaderParam.globalWorkScale[0]  = 16;
+    }
+    else if (srcFormat == VX_TYPE_FLOAT16)
+    {
+        vx_uint32 UniFP16Mul_dp2x8[16] = {
+            0x11111111, // TCfg
+            0x00000000, // ASelt
+            0x03020100, 0x07060504, // ABin
+            0x11111111, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000100, // AccumType, ConstantType, and PostShift
+            0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
+        };
+        vx_uint32 uniConvertDirInt16Fp32_4x4[16] = {
+            0x01010101, // TCfg
+            0x00000000, // ASelt
+            0x00010000, 0x00030002, // ABin
+            0x02020202, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000100, // AccumType, ConstantType, and PostShift
+            0x00003c00, 0x00000000, 0x00003c00, 0x00000000,
+            0x00003c00, 0x00000000, 0x00003c00, 0x00000000 // Constant
+        };
+        vx_uint32 uniConvertEndInt16Fp32_4x4[16] = {
+            0x01010101, // TCfg
+            0x00000000, // ASelt
+            0x00050004, 0x00070006, // ABin
+            0x02020202, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000100, // AccumType, ConstantType, and PostShift
+            0x00003c00, 0x00000000, 0x00003c00, 0x00000000,
+            0x00003c00, 0x00000000, 0x00003c00, 0x00000000 // Constant
+        };
+        vx_uint32 uniConvertInt32toUint8_2x8[16] = {
+            0x33333333, // TCfg
+            0x11110000, // ASelt
+            0x03020100, 0x03020100, // ABin
+            0x00000000, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00002400, // AccumType, ConstantType, and PostShift
+            0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
+        };
+
+        if (0 == axis)
+        {
+            vx_uint32 mul_config[2] = {0x03020100, 0x07060504};
+            UniFP16Mul_dp2x8[5] = mul_config[0];
+            UniFP16Mul_dp2x8[6] = mul_config[1];
+        }
+
+        if (dstFormat == VX_TYPE_FLOAT16)
+        {
+            status |= vxSetNodeUniform(nodObj, "UniFP16Mul_dp2x8", 1, UniFP16Mul_dp2x8);
+        }
+        else if (dstFormat == VX_TYPE_INT8)
+        {
+            status |= vxSetNodeUniform(nodObj, "uniConvertDirInt16Fp32_4x4", 1, uniConvertDirInt16Fp32_4x4);
+            status |= vxSetNodeUniform(nodObj, "uniConvertEndInt16Fp32_4x4", 1, uniConvertEndInt16Fp32_4x4);
+            status |= vxSetNodeUniform(nodObj, "uniConvertInt32toUint8_2x8", 1, uniConvertInt32toUint8_2x8);
+            status |= vxSetNodeUniform(nodObj, "outputScale", 1, &output_scale);
+        }
+        else if (dstFormat == VX_TYPE_UINT8)
+        {
+            output_scale = 1.0f / output_scale;
+            status |= vxSetNodeUniform(nodObj, "uniConvertDirInt16Fp32_4x4", 1, uniConvertDirInt16Fp32_4x4);
+            status |= vxSetNodeUniform(nodObj, "uniConvertEndInt16Fp32_4x4", 1, uniConvertEndInt16Fp32_4x4);
+            status |= vxSetNodeUniform(nodObj, "uniConvertInt32toUint8_2x8", 1, uniConvertInt32toUint8_2x8);
+            status |= vxSetNodeUniform(nodObj, "outputScale", 1, &output_scale);
+            status |= vxSetNodeUniform(nodObj, "outputZP", 1, &outputZP);
+        }
+        else if (dstFormat == VX_TYPE_INT16)
+        {
+            status |= vxSetNodeUniform(nodObj, "uniConvertDirInt16Fp32_4x4", 1, uniConvertDirInt16Fp32_4x4);
+            status |= vxSetNodeUniform(nodObj, "uniConvertEndInt16Fp32_4x4", 1, uniConvertEndInt16Fp32_4x4);
+            status |= vxSetNodeUniform(nodObj, "uniConvertInt32toUint8_2x8", 1, uniConvertInt32toUint8_2x8);
+            status |= vxSetNodeUniform(nodObj, "outputScale", 1, &output_scale);
+        }
+    }
+    else if (srcFormat == VX_TYPE_BFLOAT16 && dstFormat == VX_TYPE_BFLOAT16)
+    {
+        vx_uint32 uniConvBF16toF32_Part0_2x8[16] = {
+            0x11111111, // TCfg
+            0x01010101, // ASelt
+            0x01010000, 0x03030202, // ABin
+            0x22222222, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000600, // AccumType, ConstantType, and PostShift
+            0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
+        };
+        vx_uint32 uniConvBF16toF32_Part1_2x8[16] = {
+            0x11111111, // TCfg
+            0x01010101, // ASelt
+            0x05050404, 0x07070606, // ABin
+            0x22222222, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000600, // AccumType, ConstantType, and PostShift
+            0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
+        };
+        vx_uint32 uniConvF16toF32_Part0_4x4[16] = {
+            0x01010101, // TCfg
+            0x00000000, // ASelt
+            0x00010000, 0x00030002, // ABin
+            0x02020202, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000100, // AccumType, ConstantType, and PostShift
+            0x00003c00, 0x00000000, 0x00003c00, 0x00000000, 0x00003c00, 0x00000000, 0x00003c00, 0x00000000 // Constant
+        };
+        vx_uint32 uniConvF16toF32_Part1_4x4[16] = {
+            0x01010101, // TCfg
+            0x00000000, // ASelt
+            0x00050004, 0x00070006, // ABin
+            0x02020202, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000100, // AccumType, ConstantType, and PostShift
+            0x00003c00, 0x00000000, 0x00003c00, 0x00000000, 0x00003c00, 0x00000000, 0x00003c00, 0x00000000 // Constant
+        };
+        vx_uint32 uniPackedBF16_2x8[16] = {
+            0x11111111, // TCfg
+            0x11110000, // ASelt
+            0x07050301, 0x07050301, // ABin
+            0x22222222, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000600, // AccumType, ConstantType, and PostShift
+            0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
+        };
+
+        status |= vxSetNodeUniform(nodObj, "uniConvBF16toF32_Part0_2x8", 1, uniConvBF16toF32_Part0_2x8);
+        status |= vxSetNodeUniform(nodObj, "uniConvBF16toF32_Part1_2x8", 1, uniConvBF16toF32_Part1_2x8);
+        status |= vxSetNodeUniform(nodObj, "uniConvF16toF32_Part0_4x4", 1, uniConvF16toF32_Part0_4x4);
+        if (0 == axis)
+        {
+            status |= vxSetNodeUniform(nodObj, "uniConvF16toF32_Part1_4x4", 1, uniConvF16toF32_Part1_4x4);
+        }
+        status |= vxSetNodeUniform(nodObj, "uniPackedBF16_2x8", 1, uniPackedBF16_2x8);
+    }
+
+    if (enable_image_2d)
+    {
+        shaderParam.workDim             = 2;
+        shaderParam.globalWorkSize[0]   = gcmALIGN((width * height + shaderParam.globalWorkScale[0] - 1)
+            / shaderParam.globalWorkScale[0], 4);
+        shaderParam.globalWorkSize[1]   = (depth + shaderParam.globalWorkScale[1] - 1)
+            / shaderParam.globalWorkScale[1];
     }
     else
     {
-        shaderParam.globalWorkSize[0]   = gcmALIGN((input_size[0] + shaderParam.globalWorkScale[0] - 1)
-            / shaderParam.globalWorkScale[0], shaderParam.localWorkSize[0]);
-        shaderParam.globalWorkSize[1]   = gcmALIGN((input_size[1] + shaderParam.globalWorkScale[1] - 1)
-            / shaderParam.globalWorkScale[1], shaderParam.localWorkSize[1]);
-        shaderParam.globalWorkSize[2]   = input_size[2];
-    }
-
-    if(inDataType == VX_TYPE_UINT8 && outDataType == VX_TYPE_UINT8)
-    {
-        if (enable_image_2d)
-        {
-            vx_uint32 idx = 0;
-            vx_uint32 uniU8SubZP_MulM_PStoF16Lo_2x8[16] = {
-                0x99999999, // TCfg
-                0x44444444, // ASelt
-                0x03020100, 0x07060504, // ABin
-                0xaaaaaaaa, // BSelt
-                0x00000000, 0x00000000, // BBin
-                0x00000600, // AccumType, ConstantType, and PostShift
-                0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001 // Constant
-            };
-            vx_uint32 uniU8SubZP_MulM_PStoF16Hi_2x8[16] = {
-                0x99999999, // TCfg
-                0x44444444, // ASelt
-                0x0b0a0908, 0x0f0e0d0c, // ABin
-                0xaaaaaaaa, // BSelt
-                0x00000000, 0x00000000, // BBin
-                0x00000600, // AccumType, ConstantType, and PostShift
-                0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001 // Constant
-            };
-            vx_uint32 uniF16MulF16_2x8[16] = {
-                0x11111111, // TCfg
-                0x00000000, // ASelt
-                0x03020100, 0x07060504, // ABin
-                0x11111111, // BSelt
-                0x03020100, 0x07060504, // BBin
-                0x00000400, // AccumType, ConstantType, and PostShift
-                0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
-            };
-            vx_uint32 uniS16AddZP_2x8[16] = {
-                0x55555555, // TCfg
-                0x44444444, // ASelt
-                0x03020100, 0x07060504, // ABin
-                0xaaaaaaaa, // BSelt
-                0x00000000, 0x00000000, // BBin
-                0x00000400, // AccumType, ConstantType, and PostShift
-                0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001 // Constant
-            };
-            uniU8SubZP_MulM_PStoF16Lo_2x8[7] |= postShift;
-            uniU8SubZP_MulM_PStoF16Hi_2x8[7] |= postShift;
-
-            for (idx = 8; idx < 16; idx ++)
-            {
-                uniU8SubZP_MulM_PStoF16Hi_2x8[idx] = uniU8SubZP_MulM_PStoF16Lo_2x8[idx] = (vx_uint32)(M0 << 16) | M0;
-            }
-
-            status |= vxSetNodeUniform(nodObj, "uniU8SubZP_MulM_PStoF16Lo_2x8", 1, uniU8SubZP_MulM_PStoF16Lo_2x8);
-            status |= vxSetNodeUniform(nodObj, "uniU8SubZP_MulM_PStoF16Hi_2x8", 1, uniU8SubZP_MulM_PStoF16Hi_2x8);
-            status |= vxSetNodeUniform(nodObj, "uniF16MulF16_2x8", 1, uniF16MulF16_2x8);
-            status |= vxSetNodeUniform(nodObj, "uniS16AddZP_2x8", 1, uniS16AddZP_2x8);
-            status |= vxSetNodeUniform(nodObj, "outputZP", 1, &output_ZP);
-            status |= vxSetNodeUniform(nodObj, "inputZP", 1, &input_ZP);
-        }
-        else
-        {
-            vx_uint32 uniConvertUint8SubZpToFp32_4x4[16] = {
-                0x05050505, // TCfg
-                0x04040404, // ASelt
-                0x00010000, 0x00030002, // ABin
-                0x0a0a0a0a, // BSelt
-                0x00000000, 0x00000000, // BBin
-                0x00002100, // AccumType, ConstantType, and PostShift
-                0xbc003c00, 0x00000000, 0xbc003c00, 0x00000000, 0xbc003c00, 0x00000000, 0xbc003c00, 0x00000000 // Constant
-            };
-
-            vx_uint32 uniConvertSecUint8SubZpToFp32_4x4[16] = {
-                0x05050505, // TCfg
-                0x04040404, // ASelt
-                0x00050004, 0x00070006, // ABin
-                0x0a0a0a0a, // BSelt
-                0x00000000, 0x00000000, // BBin
-                0x00000100, // AccumType, ConstantType, and PostShift
-                0xbc003c00, 0x00000000, 0xbc003c00, 0x00000000, 0xbc003c00, 0x00000000, 0xbc003c00, 0x00000000 // Constant
-            };
-            uint32_t uniConvertInt32toUint8_2x8[16] = {
-                0x33333333, // TCfg
-                0x11110000, // ASelt
-                0x03020100, 0x03020100, // ABin
-                0x00000000, // BSelt
-                0x00000000, 0x00000000, // BBin
-                0x00002400, // AccumType, ConstantType, and PostShift
-                0x00000000, 0x00000000, 0x00000000, 0x00000000,
-                0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
-            };
-
-            vx_float32 scale_inOut_u8 = scaleIn * reScaleOut_u8;
-
-            status |= vxSetNodeUniform(nodObj, "uniConvertInt32toUint8_2x8",
-                1, uniConvertInt32toUint8_2x8);
-            status |= vxSetNodeUniform(nodObj, "uniConvertUint8SubZpToFp32_4x4",
-                1, uniConvertUint8SubZpToFp32_4x4);
-            status |= vxSetNodeUniform(nodObj, "uniConvertSecUint8SubZpToFp32_4x4",
-                1, uniConvertSecUint8SubZpToFp32_4x4);
-            status |= vxSetNodeUniform(nodObj, "scale_inOut_u8", 1, &scale_inOut_u8);
-            status |= vxSetNodeUniform(nodObj, "input_ZP", 1, &input_ZP);
-            status |= vxSetNodeUniform(nodObj, "output_ZP", 1, &output_ZP);
-        }
-    }
-    else if(inDataType == VX_TYPE_INT16 && outDataType == VX_TYPE_INT16)
-    {
-        uint32_t uniConvertInt32toUint8_2x8[16] = {
-            0x33333333, // TCfg
-            0x11110000, // ASelt
-            0x03020100, 0x03020100, // ABin
-            0x00000000, // BSelt
-            0x00000000, 0x00000000, // BBin
-            0x00002400, // AccumType, ConstantType, and PostShift
-            0x00000000, 0x00000000, 0x00000000, 0x00000000,
-            0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
-        };
-        uint32_t uniConvertDirInt16Fp32_4x4[16] = {
-            0x01010101, // TCfg
-            0x00000000, // ASelt
-            0x00010000, 0x00030002, // ABin
-            0x02020202, // BSelt
-            0x00000000, 0x00000000, // BBin
-            0x00000100, // AccumType, ConstantType, and PostShift
-            0x00003c00, 0x00000000, 0x00003c00, 0x00000000,
-            0x00003c00, 0x00000000, 0x00003c00, 0x00000000 // Constant
-        };
-        uint32_t uniConvertEndInt16Fp32_4x4[16] = {
-            0x01010101, // TCfg
-            0x00000000, // ASelt
-            0x00050004, 0x00070006, // ABin
-            0x02020202, // BSelt
-            0x00000000, 0x00000000, // BBin
-            0x00000100, // AccumType, ConstantType, and PostShift
-            0x00003c00, 0x00000000, 0x00003c00, 0x00000000,
-            0x00003c00, 0x00000000, 0x00003c00, 0x00000000 // Constant
-        };
-
-        ///
-        vx_uint32 uniPreluInt16_2x8b[16] = {
-            0x77777777, // TCfg
-            0x44444444, // ASelt
-            0x31211000, 0x73635242, // ABin
-            0x00000000, // BSelt
-            0x00000000, 0x00000000, // BBin
-            0x00003000, // AccumType, ConstantType, and PostShift
-            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
-        };
-
-        vx_uint32 uniPreluInt16_4x4[16] = {
-            0x05050505, // TCfg
-            0x00000000, // ASelt
-            0x00510040, 0x00730062, // ABin
-            0x06060606, // BSelt
-            0x00000000, 0x00000000, // BBin
-            0x00000400, // AccumType, ConstantType, and PostShift
-            0x00000001, 0x00000000, 0x00000001, 0x00000000, 0x00000001, 0x00000000, 0x00000001, 0x00000000 // Constant
-        };
-        // output fl > input fl
-        vx_uint32 uniMergeMultiplier_2x8[16] = {
-            0x00000011, // TCfg
-            0x00000010, // ASelt
-            0x00000000, 0x00000000, // ABin
-            0x00000021, // BSelt
-            0x00000000, 0x00000000, // BBin
-            0x00000400, // AccumType, ConstantType, and PostShift
-            0x00000000, 0x00000001, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
-        };
-        if(optFlg)
-        {
-            if (input_fixPointPos >= output_fixPointPos)
-            {
-                uniPreluInt16_2x8b[7] = uniPreluInt16_2x8b[7] | (input_fixPointPos - output_fixPointPos);
-                uniPreluInt16_4x4[7]  = uniPreluInt16_4x4[7] | (input_fixPointPos - output_fixPointPos);
-                vxSetNodeUniform(nodObj, "uniPreluInt16_2x8b", 1, uniPreluInt16_2x8b);
-                vxSetNodeUniform(nodObj, "uniPreluInt16_4x4", 1, uniPreluInt16_4x4);
-            }
-            else
-            {
-                vx_uint32 uniPreluInt16Mul_2x8b[16] = {
-                    0x55555555, // TCfg
-                    0x44444444, // ASelt
-                    0x33221100, 0x77665544, // ABin
-                    0x00000000, // BSelt
-                    0x01010101, 0x01010101, // BBin
-                    0x00000000, // AccumType, ConstantType, and PostShift
-                    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
-                };
-                vx_int32 multiplier = 1 << (output_fixPointPos - input_fixPointPos);
-                vxSetNodeUniform(nodObj, "uniPreluInt16_2x8b", 1, uniPreluInt16Mul_2x8b);
-                vxSetNodeUniform(nodObj, "uniPreluInt16_4x4", 1, uniPreluInt16_4x4);
-                vxSetNodeUniform(nodObj, "uniMergeMultiplier_2x8", 1, uniMergeMultiplier_2x8);
-                vxSetNodeUniform(nodObj, "multiplier", 1, &multiplier);
-            }
-        }
-        else
-        {
-            status |= vxSetNodeUniform(nodObj, "uniConvertDirInt16Fp32_4x4",
-                1, uniConvertDirInt16Fp32_4x4);
-            status |= vxSetNodeUniform(nodObj, "uniConvertEndInt16Fp32_4x4",
-                1, uniConvertEndInt16Fp32_4x4);
-            status |= vxSetNodeUniform(nodObj, "uniConvertInt32toUint8_2x8",
-                1, uniConvertInt32toUint8_2x8);
-        }
-    }
-    else if(inDataType == VX_TYPE_FLOAT16 && outDataType == VX_TYPE_UINT8)
-    {
-        uint32_t uniConvertInt32toUint8_2x8[16] = {
-            0x33333333, // TCfg
-            0x11110000, // ASelt
-            0x03020100, 0x03020100, // ABin
-            0x00000000, // BSelt
-            0x00000000, 0x00000000, // BBin
-            0x00002400, // AccumType, ConstantType, and PostShift
-            0x00000000, 0x00000000, 0x00000000, 0x00000000,
-            0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
-        };
-        uint32_t uniConvertDirInt16Fp32_4x4[16] = {
-            0x01010101, // TCfg
-            0x00000000, // ASelt
-            0x00010000, 0x00030002, // ABin
-            0x02020202, // BSelt
-            0x00000000, 0x00000000, // BBin
-            0x00000100, // AccumType, ConstantType, and PostShift
-            0x00003c00, 0x00000000, 0x00003c00, 0x00000000,
-            0x00003c00, 0x00000000, 0x00003c00, 0x00000000 // Constant
-        };
-        uint32_t uniConvertEndInt16Fp32_4x4[16] = {
-            0x01010101, // TCfg
-            0x00000000, // ASelt
-            0x00050004, 0x00070006, // ABin
-            0x02020202, // BSelt
-            0x00000000, 0x00000000, // BBin
-            0x00000100, // AccumType, ConstantType, and PostShift
-            0x00003c00, 0x00000000, 0x00003c00, 0x00000000,
-            0x00003c00, 0x00000000, 0x00003c00, 0x00000000 // Constant
-        };
-
-        status |= vxSetNodeUniform(nodObj, "uniConvertDirInt16Fp32_4x4",
-            1, uniConvertDirInt16Fp32_4x4);
-        status |= vxSetNodeUniform(nodObj, "uniConvertEndInt16Fp32_4x4",
-            1, uniConvertEndInt16Fp32_4x4);
-        status |= vxSetNodeUniform(nodObj, "uniConvertInt32toUint8_2x8",
-            1, uniConvertInt32toUint8_2x8);
-        status |= vxSetNodeUniform(nodObj, "outputScale", 1, &reScaleOut_u8);
-        status |= vxSetNodeUniform(nodObj, "output_ZP", 1, &output_ZP);
-    }
-    else if(inDataType == VX_TYPE_FLOAT16 && outDataType == VX_TYPE_INT16)
-    {
-        uint32_t uniConvertInt32toUint8_2x8[16] = {
-            0x33333333, // TCfg
-            0x11110000, // ASelt
-            0x03020100, 0x03020100, // ABin
-            0x00000000, // BSelt
-            0x00000000, 0x00000000, // BBin
-            0x00002400, // AccumType, ConstantType, and PostShift
-            0x00000000, 0x00000000, 0x00000000, 0x00000000,
-            0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
-        };
-        uint32_t uniConvertDirInt16Fp32_4x4[16] = {
-            0x01010101, // TCfg
-            0x00000000, // ASelt
-            0x00010000, 0x00030002, // ABin
-            0x02020202, // BSelt
-            0x00000000, 0x00000000, // BBin
-            0x00000100, // AccumType, ConstantType, and PostShift
-            0x00003c00, 0x00000000, 0x00003c00, 0x00000000,
-            0x00003c00, 0x00000000, 0x00003c00, 0x00000000 // Constant
-        };
-        uint32_t uniConvertEndInt16Fp32_4x4[16] = {
-            0x01010101, // TCfg
-            0x00000000, // ASelt
-            0x00050004, 0x00070006, // ABin
-            0x02020202, // BSelt
-            0x00000000, 0x00000000, // BBin
-            0x00000100, // AccumType, ConstantType, and PostShift
-            0x00003c00, 0x00000000, 0x00003c00, 0x00000000,
-            0x00003c00, 0x00000000, 0x00003c00, 0x00000000 // Constant
-        };
-
-        status |= vxSetNodeUniform(nodObj, "uniConvertDirInt16Fp32_4x4",
-            1, uniConvertDirInt16Fp32_4x4);
-        status |= vxSetNodeUniform(nodObj, "uniConvertEndInt16Fp32_4x4",
-            1, uniConvertEndInt16Fp32_4x4);
-        status |= vxSetNodeUniform(nodObj, "uniConvertInt32toUint8_2x8",
-            1, uniConvertInt32toUint8_2x8);
-        status |= vxSetNodeUniform(nodObj, "outScaleInt16", 1, &scaleOutInt16);
-    }
-    else if(inDataType == VX_TYPE_INT16 && outDataType == VX_TYPE_FLOAT16)
-    {
-        uint32_t uniConvertInt32toUint8_2x8[16] = {
-            0x33333333, // TCfg
-            0x11110000, // ASelt
-            0x03020100, 0x03020100, // ABin
-            0x00000000, // BSelt
-            0x00000000, 0x00000000, // BBin
-            0x00002400, // AccumType, ConstantType, and PostShift
-            0x00000000, 0x00000000, 0x00000000, 0x00000000,
-            0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
-        };
-        uint32_t uniConvertDirInt16Fp32_4x4[16] = {
-            0x01010101, // TCfg
-            0x00000000, // ASelt
-            0x00010000, 0x00030002, // ABin
-            0x02020202, // BSelt
-            0x00000000, 0x00000000, // BBin
-            0x00000100, // AccumType, ConstantType, and PostShift
-            0x00003c00, 0x00000000, 0x00003c00, 0x00000000,
-            0x00003c00, 0x00000000, 0x00003c00, 0x00000000 // Constant
-        };
-        uint32_t uniConvertEndInt16Fp32_4x4[16] = {
-            0x01010101, // TCfg
-            0x00000000, // ASelt
-            0x00050004, 0x00070006, // ABin
-            0x02020202, // BSelt
-            0x00000000, 0x00000000, // BBin
-            0x00000100, // AccumType, ConstantType, and PostShift
-            0x00003c00, 0x00000000, 0x00003c00, 0x00000000,
-            0x00003c00, 0x00000000, 0x00003c00, 0x00000000 // Constant
-        };
-
-        status |= vxSetNodeUniform(nodObj, "uniConvertDirInt16Fp32_4x4",
-            1, uniConvertDirInt16Fp32_4x4);
-        status |= vxSetNodeUniform(nodObj, "uniConvertEndInt16Fp32_4x4",
-            1, uniConvertEndInt16Fp32_4x4);
-        status |= vxSetNodeUniform(nodObj, "uniConvertInt32toUint8_2x8",
-            1, uniConvertInt32toUint8_2x8);
-        status |= vxSetNodeUniform(nodObj, "inScaleInt16", 1, &scaleInInt16);
-    }
-    else if(inDataType == VX_TYPE_INT8 && outDataType == VX_TYPE_INT8)
-    {
-        vx_uint32 uniConvertInt8FstFp32_4x4[16] = {
-            0x01010101, // TCfg
-            0x00000000, // ASelt
-            0x00010000, 0x00030002, // ABin
-            0x02020202, // BSelt
-            0x00000000, 0x00000000, // BBin
-            0x00000400, // AccumType, ConstantType, and PostShift
-            0x00000001, 0x00000000, 0x00000001, 0x00000000, 0x00000001, 0x00000000, 0x00000001, 0x00000000 // Constant
-        };
-        vx_uint32 uniConvertInt8SecFp32_4x4[16] = {
-            0x01010101, // TCfg
-            0x00000000, // ASelt
-            0x00050004, 0x00070006, // ABin
-            0x02020202, // BSelt
-            0x00000000, 0x00000000, // BBin
-            0x00000400, // AccumType, ConstantType, and PostShift
-            0x00000001, 0x00000000, 0x00000001, 0x00000000, 0x00000001, 0x00000000, 0x00000001, 0x00000000 // Constant
-        };
-        vx_uint32 uniConvertInt8TrdFp32_4x4[16] = {
-            0x01010101, // TCfg
-            0x00000000, // ASelt
-            0x00090008, 0x000b000a, // ABin
-            0x02020202, // BSelt
-            0x00000000, 0x00000000, // BBin
-            0x00000400, // AccumType, ConstantType, and PostShift
-            0x00000001, 0x00000000, 0x00000001, 0x00000000, 0x00000001, 0x00000000, 0x00000001, 0x00000000 // Constant
-        };
-        vx_uint32 uniConvertInt8ForFp32_4x4[16] = {
-            0x01010101, // TCfg
-            0x00000000, // ASelt
-            0x000d000c, 0x000f000e, // ABin
-            0x02020202, // BSelt
-            0x00000000, 0x00000000, // BBin
-            0x00000400, // AccumType, ConstantType, and PostShift
-            0x00000001, 0x00000000, 0x00000001, 0x00000000, 0x00000001, 0x00000000, 0x00000001, 0x00000000 // Constant
-        };
-        uint32_t uniConvertInt32toUint8_2x8[16] = {
-            0x33333333, // TCfg
-            0x11110000, // ASelt
-            0x03020100, 0x03020100, // ABin
-            0x00000000, // BSelt
-            0x00000000, 0x00000000, // BBin
-            0x00002400, // AccumType, ConstantType, and PostShift
-            0x00000000, 0x00000000, 0x00000000, 0x00000000,
-            0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
-        };
-
-        ///
-        vx_uint32 uniPreluInt8Lo_2x8b[16] = {
-            0x77777777, // TCfg
-            0x44444444, // ASelt
-            0x33221100, 0x77665544, // ABin
-            0x00000000, // BSelt
-            0x00000000, 0x00000000, // BBin
-            0x00004000, // AccumType, ConstantType, and PostShift
-            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
-        };
-        vx_uint32 uniPreluInt8Hi_2x8b[16] = {
-            0x77777777, // TCfg
-            0x44444444, // ASelt
-            0xbbaa9988, 0xffeeddcc, // ABin
-            0x00000000, // BSelt
-            0x00000000, 0x00000000, // BBin
-            0x00004000, // AccumType, ConstantType, and PostShift
-            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
-        };
-        vx_uint32 uniPreluInt8_2x8[16] = {
-            0x55555555, // TCfg
-            0x00000000, // ASelt
-            0xb3a29180, 0xf7e6d5c4, // ABin
-            0x66666666, // BSelt
-            0x00000000, 0x00000000, // BBin
-            0x00000400, // AccumType, ConstantType, and PostShift
-            0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
-        };
-        // output fl > input fl
-        vx_uint32 uniMergeMultiplier_2x8[16] = {
-            0x00000011, // TCfg
-            0x00000010, // ASelt
-            0x00000000, 0x00000000, // ABin
-            0x00000021, // BSelt
-            0x00000000, 0x00000000, // BBin
-            0x00000400, // AccumType, ConstantType, and PostShift
-            0x00000000, 0x00000001, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
-        };
-
-        if(optFlg)
-        {
-            if (input_fixPointPos >= output_fixPointPos)
-            {
-                uniPreluInt8Lo_2x8b[7] = uniPreluInt8Lo_2x8b[7] | (input_fixPointPos - output_fixPointPos);
-                uniPreluInt8Hi_2x8b[7] = uniPreluInt8Hi_2x8b[7] | (input_fixPointPos - output_fixPointPos);
-                uniPreluInt8_2x8[7]    = uniPreluInt8_2x8[7] | (input_fixPointPos - output_fixPointPos);
-
-                vxSetNodeUniform(nodObj, "uniPreluInt8Lo_2x8b", 1, uniPreluInt8Lo_2x8b);
-                vxSetNodeUniform(nodObj, "uniPreluInt8Hi_2x8b", 1, uniPreluInt8Hi_2x8b);
-                vxSetNodeUniform(nodObj, "uniPreluInt8_2x8", 1, uniPreluInt8_2x8);
-            }
-            else
-            {
-                vx_uint32 uniPreluInt8Lo_2x8b[16] = {
-                    0x55555555, // TCfg
-                    0x44444444, // ASelt
-                    0x33221100, 0x77665544, // ABin
-                    0x00000000, // BSelt
-                    0x01010101, 0x01010101, // BBin
-                    0x00000000, // AccumType, ConstantType, and PostShift
-                    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
-                };
-                vx_uint32 uniPreluInt8Hi_2x8b[16] = {
-                    0x55555555, // TCfg
-                    0x44444444, // ASelt
-                    0xbbaa9988, 0xffeeddcc, // ABin
-                    0x00000000, // BSelt
-                    0x01010101, 0x01010101, // BBin
-                    0x00000000, // AccumType, ConstantType, and PostShift
-                    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
-                };
-                vx_int32 multiplier = 1 << (output_fixPointPos - input_fixPointPos);
-
-                vxSetNodeUniform(nodObj, "uniPreluInt8Lo_2x8b", 1, uniPreluInt8Lo_2x8b);
-                vxSetNodeUniform(nodObj, "uniPreluInt8Hi_2x8b", 1, uniPreluInt8Hi_2x8b);
-                vxSetNodeUniform(nodObj, "uniMergeMultiplier_2x8", 1, uniMergeMultiplier_2x8);
-                vxSetNodeUniform(nodObj, "uniPreluInt8_2x8", 1, uniPreluInt8_2x8);
-                vxSetNodeUniform(nodObj, "multiplier", 1, &multiplier);
-            }
-        }
-        else
-        {
-            status = vxSetNodeUniform(nodObj, "uniConvertInt8FstFp32_4x4", 1, uniConvertInt8FstFp32_4x4);
-            status |= vxSetNodeUniform(nodObj, "uniConvertInt8SecFp32_4x4", 1, uniConvertInt8SecFp32_4x4);
-            status |= vxSetNodeUniform(nodObj, "uniConvertInt8TrdFp32_4x4", 1, uniConvertInt8TrdFp32_4x4);
-            status |= vxSetNodeUniform(nodObj, "uniConvertInt8ForFp32_4x4", 1, uniConvertInt8ForFp32_4x4);
-            status |= vxSetNodeUniform(nodObj, "uniConvertInt32toUint8_2x8", 1, uniConvertInt32toUint8_2x8);
-        }
-    }
-    else if(inDataType == VX_TYPE_UINT8 && outDataType == VX_TYPE_FLOAT16)
-    {
-        if (enable_image_2d)
-        {
-            vx_uint32 idx = 0;
-            vx_uint32 uniU8SubZP_MulM_PStoF16Lo_2x8[16] = {
-                0x99999999, // TCfg
-                0x44444444, // ASelt
-                0x03020100, 0x07060504, // ABin
-                0xaaaaaaaa, // BSelt
-                0x00000000, 0x00000000, // BBin
-                0x00000600, // AccumType, ConstantType, and PostShift
-                0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001 // Constant
-            };
-            vx_uint32 uniU8SubZP_MulM_PStoF16Hi_2x8[16] = {
-                0x99999999, // TCfg
-                0x44444444, // ASelt
-                0x0b0a0908, 0x0f0e0d0c, // ABin
-                0xaaaaaaaa, // BSelt
-                0x00000000, 0x00000000, // BBin
-                0x00000600, // AccumType, ConstantType, and PostShift
-                0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001 // Constant
-            };
-            vx_uint32 uniF16MulF16_2x8[16] = {
-                0x11111111, // TCfg
-                0x00000000, // ASelt
-                0x03020100, 0x07060504, // ABin
-                0x11111111, // BSelt
-                0x03020100, 0x07060504, // BBin
-                0x00000400, // AccumType, ConstantType, and PostShift
-                0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
-            };
-            vx_uint32 uniS16AddZP_2x8[16] = {
-                0x55555555, // TCfg
-                0x44444444, // ASelt
-                0x03020100, 0x07060504, // ABin
-                0xaaaaaaaa, // BSelt
-                0x00000000, 0x00000000, // BBin
-                0x00000400, // AccumType, ConstantType, and PostShift
-                0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001 // Constant
-            };
-            uniU8SubZP_MulM_PStoF16Lo_2x8[7] |= postShift;
-            uniU8SubZP_MulM_PStoF16Hi_2x8[7] |= postShift;
-
-            for (idx = 8; idx < 16; idx ++)
-            {
-                uniU8SubZP_MulM_PStoF16Hi_2x8[idx] = uniU8SubZP_MulM_PStoF16Lo_2x8[idx] = (vx_uint32)(M0 << 16) | M0;
-            }
-
-            status |= vxSetNodeUniform(nodObj, "uniU8SubZP_MulM_PStoF16Lo_2x8", 1, uniU8SubZP_MulM_PStoF16Lo_2x8);
-            status |= vxSetNodeUniform(nodObj, "uniU8SubZP_MulM_PStoF16Hi_2x8", 1, uniU8SubZP_MulM_PStoF16Hi_2x8);
-            status |= vxSetNodeUniform(nodObj, "uniF16MulF16_2x8", 1, uniF16MulF16_2x8);
-            status |= vxSetNodeUniform(nodObj, "uniS16AddZP_2x8", 1, uniS16AddZP_2x8);
-            status |= vxSetNodeUniform(nodObj, "inputZP", 1, &input_ZP);
-        }
-        else
-        {
-            vx_uint32 uniConvertUint8SubZpToFp32_4x4[16] = {
-                0x05050505, // TCfg
-                0x04040404, // ASelt
-                0x00010000, 0x00030002, // ABin
-                0x0a0a0a0a, // BSelt
-                0x00000000, 0x00000000, // BBin
-                0x00002100, // AccumType, ConstantType, and PostShift
-                0xbc003c00, 0x00000000, 0xbc003c00, 0x00000000, 0xbc003c00, 0x00000000, 0xbc003c00, 0x00000000 // Constant
-            };
-
-            vx_uint32 uniConvertSecUint8SubZpToFp32_4x4[16] = {
-                0x05050505, // TCfg
-                0x04040404, // ASelt
-                0x00050004, 0x00070006, // ABin
-                0x0a0a0a0a, // BSelt
-                0x00000000, 0x00000000, // BBin
-                0x00000100, // AccumType, ConstantType, and PostShift
-                0xbc003c00, 0x00000000, 0xbc003c00, 0x00000000, 0xbc003c00, 0x00000000, 0xbc003c00, 0x00000000 // Constant
-            };
-
-            uint32_t uniConvertInt32toUint8_2x8[16] = {
-                0x33333333, // TCfg
-                0x11110000, // ASelt
-                0x03020100, 0x03020100, // ABin
-                0x00000000, // BSelt
-                0x00000000, 0x00000000, // BBin
-                0x00002400, // AccumType, ConstantType, and PostShift
-                0x00000000, 0x00000000, 0x00000000, 0x00000000,
-                0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
-            };
-
-            status = vxSetNodeUniform(nodObj, "uniConvertUint8SubZpToFp32_4x4", 1, uniConvertUint8SubZpToFp32_4x4);
-            status |= vxSetNodeUniform(nodObj, "uniConvertSecUint8SubZpToFp32_4x4", 1, uniConvertSecUint8SubZpToFp32_4x4);
-            status |= vxSetNodeUniform(nodObj, "uniConvertInt32toUint8_2x8", 1, uniConvertInt32toUint8_2x8);
-            status |= vxSetNodeUniform(nodObj, "inputScale", 1, &scaleIn);
-            status |= vxSetNodeUniform(nodObj, "input_ZP", 1, &input_ZP);
-        }
-    }
-    else if(inDataType == VX_TYPE_FLOAT16 && outDataType == VX_TYPE_INT8)
-    {
-        uint32_t uniConvertDirInt16Fp32_4x4[16] = {
-            0x01010101, // TCfg
-            0x00000000, // ASelt
-            0x00010000, 0x00030002, // ABin
-            0x02020202, // BSelt
-            0x00000000, 0x00000000, // BBin
-            0x00000100, // AccumType, ConstantType, and PostShift
-            0x00003c00, 0x00000000, 0x00003c00, 0x00000000,
-            0x00003c00, 0x00000000, 0x00003c00, 0x00000000 // Constant
-        };
-        uint32_t uniConvertEndInt16Fp32_4x4[16] = {
-            0x01010101, // TCfg
-            0x00000000, // ASelt
-            0x00050004, 0x00070006, // ABin
-            0x02020202, // BSelt
-            0x00000000, 0x00000000, // BBin
-            0x00000100, // AccumType, ConstantType, and PostShift
-            0x00003c00, 0x00000000, 0x00003c00, 0x00000000,
-            0x00003c00, 0x00000000, 0x00003c00, 0x00000000 // Constant
-        };
-        uint32_t uniConvertInt32toUint8_2x8[16] = {
-            0x33333333, // TCfg
-            0x11110000, // ASelt
-            0x03020100, 0x03020100, // ABin
-            0x00000000, // BSelt
-            0x00000000, 0x00000000, // BBin
-            0x00002400, // AccumType, ConstantType, and PostShift
-            0x00000000, 0x00000000, 0x00000000, 0x00000000,
-            0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
-        };
-
-        status |= vxSetNodeUniform(nodObj, "uniConvertDirFp16Fp32_4x4",
-            1, uniConvertDirInt16Fp32_4x4);
-        status |= vxSetNodeUniform(nodObj, "uniConvertEndFp16Fp32_4x4",
-            1, uniConvertEndInt16Fp32_4x4);
-        status |= vxSetNodeUniform(nodObj, "uniConvertInt32toInt8_2x8",
-            1, uniConvertInt32toUint8_2x8);
-        status |= vxSetNodeUniform(nodObj, "outputFl_i8", 1, &out_scale);
-    }
-
-    if(!optFlg && !(inDataType == VX_TYPE_FLOAT16 && outDataType == VX_TYPE_INT8))
-    {
-        status = vxSetNodeUniform(nodObj, "UniFP16Mul_dp2x8", 1, UniFP16Mul_dp2x8);
-        status |= vxSetNodeUniform(nodObj, "UniS8xFp16_dp2x8", 1, UniS8xFp16_dp2x8);
-        status |= vxSetNodeUniform(nodObj, "in_scale_prelu", 1, &in_scale);
-        //status |= vxSetNodeUniform(nodObj, "out_scale_prelu", 1, &out_scale);
-        status |= vxSetNodeUniform(nodObj, "scale_inOut", 1, &scale_inOut);
-    }
-
-    if(status != VX_SUCCESS)
-    {
-        printf("Set uniform failed(prelu).\n");
-        return status;
+        shaderParam.workDim             = 3;
+        shaderParam.globalWorkSize[0]   = gcmALIGN((width + shaderParam.globalWorkScale[0] - 1)
+            / shaderParam.globalWorkScale[0], 4);
+        shaderParam.globalWorkSize[1]   = (height + shaderParam.globalWorkScale[1] - 1)
+            / shaderParam.globalWorkScale[1];
+        shaderParam.globalWorkSize[2]   = depth;
     }
 
     status |= vxSetNodeAttribute(nodObj, VX_NODE_ATTRIBUTE_KERNEL_EXECUTION_PARAMETERS,
         &shaderParam, sizeof(vx_kernel_execution_parameters_t));
-    if(status != VX_SUCCESS)
-    {
-        printf("Set node attribute failed(prelu).\n");
-        return status;
-    }
 
-    return VX_SUCCESS;
+
+#undef gcmALIGN
+#undef IMG_MAX_WIDTH
+#undef gcmMIN
+#undef MAX_MULTIPLIER_NUM
+#undef MAX_POST_SHIFT_BITS
+    return status;
 }
 
 static vx_param_description_t vxParametricReluKernelParam[] =
 {
-    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
-    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
-    {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED}
+    {VX_INPUT,  VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT,  VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED}
 };
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-vx_kernel_description_t vxParametricReluKernelInfo =
+
+vx_kernel_description_t vxParametricReluKernelInfo_CPU =
 {
     VX_KERNEL_ENUM_PARAMETRICRELU,
-    VX_KERNEL_NAME_PARAMETRICRELU,
-    NULL,
+    "com.vivantecorp.extension.vxcParametricRelu_sw",
+    vxParametricReluKernel,
     vxParametricReluKernelParam,
     (sizeof(vxParametricReluKernelParam) / sizeof(vxParametricReluKernelParam[0])),
     vsi_nn_KernelValidator,
     NULL,
     NULL,
-    vxParametricReluInitializer,
+    vsi_nn_KernelInitializer,
     vsi_nn_KernelDeinitializer
 };
 
-vx_kernel_description_t vxParametricReluKernelInfo_int8 =
-{
-    VX_KERNEL_ENUM_PARAMETRICRELU,
-    VX_KERNEL_NAME_PARAMETRICRELU_INT8,
-    NULL,
-    vxParametricReluKernelParam,
-    (sizeof(vxParametricReluKernelParam) / sizeof(vxParametricReluKernelParam[0])),
-    vsi_nn_KernelValidator,
-    NULL,
-    NULL,
-    vxParametricReluInitializer,
-    vsi_nn_KernelDeinitializer
+
+#define PRELU_KERNELS(AXI_INDEX, SRC_TYPE, DST_TYPE) \
+    vx_kernel_description_t vxParametricRelu_##AXI_INDEX##_##SRC_TYPE##to##DST_TYPE##_Kernel = \
+{ \
+    VX_KERNEL_ENUM_PARAMETRICRELU, \
+    VX_KERNEL_NAME_PARAMETRICRELU_##AXI_INDEX##_##SRC_TYPE##TO##DST_TYPE, \
+    NULL, \
+    vxParametricReluKernelParam, \
+    (sizeof(vxParametricReluKernelParam) / sizeof(vxParametricReluKernelParam[0])), \
+    vsi_nn_KernelValidator, \
+    NULL, \
+    NULL, \
+    vxParametricReluInitializer, \
+    vsi_nn_KernelDeinitializer \
 };
 
-vx_kernel_description_t vxParametricReluKernelInfo_int8_opt =
-{
-    VX_KERNEL_ENUM_PARAMETRICRELU,
-    VX_KERNEL_NAME_PARAMETRICRELU_INT8_OPT,
-    NULL,
-    vxParametricReluKernelParam,
-    (sizeof(vxParametricReluKernelParam) / sizeof(vxParametricReluKernelParam[0])),
-    vsi_nn_KernelValidator,
-    NULL,
-    NULL,
-    vxParametricReluInitializer,
-    vsi_nn_KernelDeinitializer
+#define PRELU_KERNELS_2D(AXI_INDEX, SRC_TYPE, DST_TYPE) \
+    vx_kernel_description_t vxParametricRelu_##AXI_INDEX##_##SRC_TYPE##to##DST_TYPE##_2D_Kernel = \
+{ \
+    VX_KERNEL_ENUM_PARAMETRICRELU, \
+    VX_KERNEL_NAME_PARAMETRICRELU_##AXI_INDEX##_##SRC_TYPE##TO##DST_TYPE##_2D, \
+    NULL, \
+    vxParametricReluKernelParam, \
+    (sizeof(vxParametricReluKernelParam) / sizeof(vxParametricReluKernelParam[0])), \
+    vsi_nn_KernelValidator, \
+    NULL, \
+    NULL, \
+    vxParametricReluInitializer, \
+    vsi_nn_KernelDeinitializer \
 };
 
-vx_kernel_description_t vxParametricReluKernelInfo_int8_opt1 =
-{
-    VX_KERNEL_ENUM_PARAMETRICRELU,
-    VX_KERNEL_NAME_PARAMETRICRELU_INT8_OPT1,
-    NULL,
-    vxParametricReluKernelParam,
-    (sizeof(vxParametricReluKernelParam) / sizeof(vxParametricReluKernelParam[0])),
-    vsi_nn_KernelValidator,
-    NULL,
-    NULL,
-    vxParametricReluInitializer,
-    vsi_nn_KernelDeinitializer
-};
+PRELU_KERNELS(AXI0, BF16, BF16)
+PRELU_KERNELS(AXI0, F16, F16)
+PRELU_KERNELS(AXI0, F16, I16)
+PRELU_KERNELS(AXI0, F16, I8)
+PRELU_KERNELS(AXI0, F16, U8)
+PRELU_KERNELS(AXI0, I16, I16)
+PRELU_KERNELS(AXI0, I8,  I8)
+PRELU_KERNELS(AXI0, U8,  U8)
+PRELU_KERNELS(AXI0, I16, F16)
+PRELU_KERNELS(AXI0, I8,  F16)
+PRELU_KERNELS(AXI0, U8,  F16)
 
-vx_kernel_description_t vxParametricReluKernelInfo_int8_fp16 =
-{
-    VX_KERNEL_ENUM_PARAMETRICRELU,
-    VX_KERNEL_NAME_PARAMETRICRELU_INT8_FP16,
-    NULL,
-    vxParametricReluKernelParam,
-    (sizeof(vxParametricReluKernelParam) / sizeof(vxParametricReluKernelParam[0])),
-    vsi_nn_KernelValidator,
-    NULL,
-    NULL,
-    vxParametricReluInitializer,
-    vsi_nn_KernelDeinitializer
-};
+PRELU_KERNELS(AXI1, BF16, BF16)
+PRELU_KERNELS(AXI1, F16, F16)
+PRELU_KERNELS(AXI1, F16, I16)
+PRELU_KERNELS(AXI1, F16, I8)
+PRELU_KERNELS(AXI1, F16, U8)
+PRELU_KERNELS(AXI1, I16, I16)
+PRELU_KERNELS(AXI1, I8,  I8)
+PRELU_KERNELS(AXI1, U8,  U8)
+PRELU_KERNELS(AXI1, I16, F16)
+PRELU_KERNELS(AXI1, I8,  F16)
+PRELU_KERNELS(AXI1, U8,  F16)
 
-vx_kernel_description_t vxParametricReluKernelInfo_uint8_uint8 =
-{
-    VX_KERNEL_ENUM_PARAMETRICRELU,
-    VX_KERNEL_NAME_PARAMETRICRELU_UINT8_UINT8,
-    NULL,
-    vxParametricReluKernelParam,
-    (sizeof(vxParametricReluKernelParam) / sizeof(vxParametricReluKernelParam[0])),
-    vsi_nn_KernelValidator,
-    NULL,
-    NULL,
-    vxParametricReluInitializer,
-    vsi_nn_KernelDeinitializer
-};
+PRELU_KERNELS_2D(AXI0, BF16, BF16)
+PRELU_KERNELS_2D(AXI0, F16, F16)
+PRELU_KERNELS_2D(AXI0, F16, I16)
+PRELU_KERNELS_2D(AXI0, F16, I8)
+PRELU_KERNELS_2D(AXI0, F16, U8)
+PRELU_KERNELS_2D(AXI0, I16, I16)
+PRELU_KERNELS_2D(AXI0, I8,  I8)
+PRELU_KERNELS_2D(AXI0, U8,  U8)
+PRELU_KERNELS_2D(AXI0, I16, F16)
+PRELU_KERNELS_2D(AXI0, I8,  F16)
+PRELU_KERNELS_2D(AXI0, U8,  F16)
 
-vx_kernel_description_t vxParametricReluKernelInfo_uint8_opt =
-{
-    VX_KERNEL_ENUM_PARAMETRICRELU,
-    VX_KERNEL_NAME_PARAMETRICRELU_UINT8_2D,
-    NULL,
-    vxParametricReluKernelParam,
-    (sizeof(vxParametricReluKernelParam) / sizeof(vxParametricReluKernelParam[0])),
-    vsi_nn_KernelValidator,
-    NULL,
-    NULL,
-    vxParametricReluInitializer,
-    vsi_nn_KernelDeinitializer
-};
+PRELU_KERNELS_2D(AXI1, BF16, BF16)
+PRELU_KERNELS_2D(AXI1, F16, F16)
+PRELU_KERNELS_2D(AXI1, F16, I16)
+PRELU_KERNELS_2D(AXI1, F16, I8)
+PRELU_KERNELS_2D(AXI1, F16, U8)
+PRELU_KERNELS_2D(AXI1, I16, I16)
+PRELU_KERNELS_2D(AXI1, I8,  I8)
+PRELU_KERNELS_2D(AXI1, U8,  U8)
+PRELU_KERNELS_2D(AXI1, I16, F16)
+PRELU_KERNELS_2D(AXI1, I8,  F16)
+PRELU_KERNELS_2D(AXI1, U8,  F16)
 
-vx_kernel_description_t vxParametricReluKernelInfo_int16_int16 =
-{
-    VX_KERNEL_ENUM_PARAMETRICRELU,
-    VX_KERNEL_NAME_PARAMETRICRELU_INT16_INT16,
-    NULL,
-    vxParametricReluKernelParam,
-    (sizeof(vxParametricReluKernelParam) / sizeof(vxParametricReluKernelParam[0])),
-    vsi_nn_KernelValidator,
-    NULL,
-    NULL,
-    vxParametricReluInitializer,
-    vsi_nn_KernelDeinitializer
-};
+#define PRELU_KERENLS_NAME(AXI_INDEX, SRC_TYPE, DST_TYPE, INSTR) \
+    &vxParametricRelu_##AXI_INDEX##_##SRC_TYPE##to##DST_TYPE##_##INSTR##Kernel,
 
-vx_kernel_description_t vxParametricReluKernelInfo_int16_int16_opt =
-{
-    VX_KERNEL_ENUM_PARAMETRICRELU,
-    VX_KERNEL_NAME_PARAMETRICRELU_INT16_INT16_OPT,
-    NULL,
-    vxParametricReluKernelParam,
-    (sizeof(vxParametricReluKernelParam) / sizeof(vxParametricReluKernelParam[0])),
-    vsi_nn_KernelValidator,
-    NULL,
-    NULL,
-    vxParametricReluInitializer,
-    vsi_nn_KernelDeinitializer
-};
-
-vx_kernel_description_t vxParametricReluKernelInfo_int16_int16_opt1 =
-{
-    VX_KERNEL_ENUM_PARAMETRICRELU,
-    VX_KERNEL_NAME_PARAMETRICRELU_INT16_INT16_OPT1,
-    NULL,
-    vxParametricReluKernelParam,
-    (sizeof(vxParametricReluKernelParam) / sizeof(vxParametricReluKernelParam[0])),
-    vsi_nn_KernelValidator,
-    NULL,
-    NULL,
-    vxParametricReluInitializer,
-    vsi_nn_KernelDeinitializer
-};
-
-vx_kernel_description_t vxParametricReluKernelInfo_fp16_uint8 =
-{
-    VX_KERNEL_ENUM_PARAMETRICRELU,
-    VX_KERNEL_NAME_PARAMETRICRELU_FP16_UINT8,
-    NULL,
-    vxParametricReluKernelParam,
-    (sizeof(vxParametricReluKernelParam) / sizeof(vxParametricReluKernelParam[0])),
-    vsi_nn_KernelValidator,
-    NULL,
-    NULL,
-    vxParametricReluInitializer,
-    vsi_nn_KernelDeinitializer
-};
-
-vx_kernel_description_t vxParametricReluKernelInfo_fp16_int16 =
-{
-    VX_KERNEL_ENUM_PARAMETRICRELU,
-    VX_KERNEL_NAME_PARAMETRICRELU_FP16_INT16,
-    NULL,
-    vxParametricReluKernelParam,
-    (sizeof(vxParametricReluKernelParam) / sizeof(vxParametricReluKernelParam[0])),
-    vsi_nn_KernelValidator,
-    NULL,
-    NULL,
-    vxParametricReluInitializer,
-    vsi_nn_KernelDeinitializer
-};
-
-vx_kernel_description_t vxParametricReluKernelInfo_int16_fp16 =
-{
-    VX_KERNEL_ENUM_PARAMETRICRELU,
-    VX_KERNEL_NAME_PARAMETRICRELU_INT16_FP16,
-    NULL,
-    vxParametricReluKernelParam,
-    (sizeof(vxParametricReluKernelParam) / sizeof(vxParametricReluKernelParam[0])),
-    vsi_nn_KernelValidator,
-    NULL,
-    NULL,
-    vxParametricReluInitializer,
-    vsi_nn_KernelDeinitializer
-};
-
-vx_kernel_description_t vxParametricReluKernelInfo_uint8_fp16 =
-{
-    VX_KERNEL_ENUM_PARAMETRICRELU,
-    VX_KERNEL_NAME_PARAMETRICRELU_UINT8_FP16,
-    NULL,
-    vxParametricReluKernelParam,
-    (sizeof(vxParametricReluKernelParam) / sizeof(vxParametricReluKernelParam[0])),
-    vsi_nn_KernelValidator,
-    NULL,
-    NULL,
-    vxParametricReluInitializer,
-    vsi_nn_KernelDeinitializer
-};
-
-vx_kernel_description_t vxParametricReluKernelInfo_uint8_fp16_2d =
-{
-    VX_KERNEL_ENUM_PARAMETRICRELU,
-    VX_KERNEL_NAME_PARAMETRICRELU_UINT8_FP16_2D,
-    NULL,
-    vxParametricReluKernelParam,
-    (sizeof(vxParametricReluKernelParam) / sizeof(vxParametricReluKernelParam[0])),
-    vsi_nn_KernelValidator,
-    NULL,
-    NULL,
-    vxParametricReluInitializer,
-    vsi_nn_KernelDeinitializer
-};
-
-vx_kernel_description_t vxParametricReluKernelInfo_fp16_int8 =
-{
-    VX_KERNEL_ENUM_PARAMETRICRELU,
-    VX_KERNEL_NAME_PARAMETRICRELU_FP16_INT8,
-    NULL,
-    vxParametricReluKernelParam,
-    (sizeof(vxParametricReluKernelParam) / sizeof(vxParametricReluKernelParam[0])),
-    vsi_nn_KernelValidator,
-    NULL,
-    NULL,
-    vxParametricReluInitializer,
-    vsi_nn_KernelDeinitializer
-};
 
 vx_kernel_description_t * vx_kernel_PRELU_list[] =
 {
-    NULL,
-    &vxParametricReluKernelInfo,
-    &vxParametricReluKernelInfo_int8,
-    &vxParametricReluKernelInfo_int8_fp16,
-    &vxParametricReluKernelInfo_uint8_uint8,
-    &vxParametricReluKernelInfo_int16_int16,
-    &vxParametricReluKernelInfo_fp16_uint8,
-    &vxParametricReluKernelInfo_fp16_int16,
-    &vxParametricReluKernelInfo_int16_fp16,
-    &vxParametricReluKernelInfo_uint8_fp16,
-    &vxParametricReluKernelInfo_int8_opt,
-    &vxParametricReluKernelInfo_int16_int16_opt,
-    &vxParametricReluKernelInfo_int8_opt1,
-    &vxParametricReluKernelInfo_int16_int16_opt1,
-    &vxParametricReluKernelInfo_uint8_opt,
-    &vxParametricReluKernelInfo_uint8_fp16_2d,
-    &vxParametricReluKernelInfo_fp16_int8,
+    &vxParametricReluKernelInfo_CPU,
+    PRELU_KERENLS_NAME(AXI0, BF16, BF16, )
+    PRELU_KERENLS_NAME(AXI0, F16,  F16, )
+    PRELU_KERENLS_NAME(AXI0, F16,  I16, )
+    PRELU_KERENLS_NAME(AXI0, F16,  I8, )
+    PRELU_KERENLS_NAME(AXI0, F16,  U8, )
+    PRELU_KERENLS_NAME(AXI0, I16,  I16, )
+    PRELU_KERENLS_NAME(AXI0, I8,   I8, )
+    PRELU_KERENLS_NAME(AXI0, U8,   U8, )
+    PRELU_KERENLS_NAME(AXI0, I16,  F16, )
+    PRELU_KERENLS_NAME(AXI0, I8,   F16, )
+    PRELU_KERENLS_NAME(AXI0, U8,   F16, )
+    PRELU_KERENLS_NAME(AXI0, BF16, BF16, 2D_)
+    PRELU_KERENLS_NAME(AXI0, F16,  F16,  2D_)
+    PRELU_KERENLS_NAME(AXI0, F16,  I16,  2D_)
+    PRELU_KERENLS_NAME(AXI0, F16,  I8,   2D_)
+    PRELU_KERENLS_NAME(AXI0, F16,  U8,   2D_)
+    PRELU_KERENLS_NAME(AXI0, I16,  I16,  2D_)
+    PRELU_KERENLS_NAME(AXI0, I8,   I8,   2D_)
+    PRELU_KERENLS_NAME(AXI0, U8,   U8,   2D_)
+    PRELU_KERENLS_NAME(AXI0, I16,  F16,  2D_)
+    PRELU_KERENLS_NAME(AXI0, I8,   F16,  2D_)
+    PRELU_KERENLS_NAME(AXI0, U8,   F16,  2D_)
+    PRELU_KERENLS_NAME(AXI1, BF16, BF16, )
+    PRELU_KERENLS_NAME(AXI1, F16,  F16, )
+    PRELU_KERENLS_NAME(AXI1, F16,  I16, )
+    PRELU_KERENLS_NAME(AXI1, F16,  I8, )
+    PRELU_KERENLS_NAME(AXI1, F16,  U8, )
+    PRELU_KERENLS_NAME(AXI1, I16,  I16, )
+    PRELU_KERENLS_NAME(AXI1, I8,   I8, )
+    PRELU_KERENLS_NAME(AXI1, U8,   U8, )
+    PRELU_KERENLS_NAME(AXI1, I16,  F16, )
+    PRELU_KERENLS_NAME(AXI1, I8,   F16, )
+    PRELU_KERENLS_NAME(AXI1, U8,   F16, )
+    PRELU_KERENLS_NAME(AXI1, BF16, BF16, 2D_)
+    PRELU_KERENLS_NAME(AXI1, F16,  F16,  2D_)
+    PRELU_KERENLS_NAME(AXI1, F16,  I16,  2D_)
+    PRELU_KERENLS_NAME(AXI1, F16,  I8,   2D_)
+    PRELU_KERENLS_NAME(AXI1, F16,  U8,   2D_)
+    PRELU_KERENLS_NAME(AXI1, I16,  I16,  2D_)
+    PRELU_KERENLS_NAME(AXI1, I8,   I8,   2D_)
+    PRELU_KERENLS_NAME(AXI1, U8,   U8,   2D_)
+    PRELU_KERENLS_NAME(AXI1, I16,  F16,  2D_)
+    PRELU_KERENLS_NAME(AXI1, I8,   F16,  2D_)
+    PRELU_KERENLS_NAME(AXI1, U8,   F16,  2D_)
     NULL
 };
 #ifdef __cplusplus

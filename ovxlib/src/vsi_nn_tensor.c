@@ -1200,7 +1200,7 @@ vsi_status vsi_nn_CopyDataToTensor
         memcpy( ptr, data, vsi_nn_GetTensorSize(tensor->attr.size, tensor->attr.dim_num,
                     tensor->attr.dtype.vx_type));
         status = vxSwapTensorHandle( tensor->t, ptr, NULL );
-        status = vxFlushHandle( (vx_reference)tensor->t );
+        status |= vxFlushHandle( (vx_reference)tensor->t );
     }
     else
     {

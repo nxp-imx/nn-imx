@@ -79,6 +79,38 @@ static vsi_status _try_set_high_presision_tensor
     return status;
 }
 
+static vsi_bool _is_3d_batchnorm
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs
+    )
+{
+    uint32_t graph_version_major = 0;
+    uint32_t graph_version_minor = 0;
+    uint32_t graph_version_patch = 0;
+
+    /*
+        We support 3d batchnorm at version 1.1.12
+    */
+    vsi_nn_GetGraphVersion( self->graph, &graph_version_major,
+        &graph_version_minor, &graph_version_patch );
+    if (!( graph_version_major >= 1 && graph_version_minor >= 1 && graph_version_patch >= 12 ))
+    {
+        return FALSE;
+    }
+    else
+    {
+        if ( 3 == inputs[0]->attr.dim_num )
+        {
+            return TRUE;
+        }
+        else
+        {
+            return FALSE;
+        }
+    }
+}
+
 static vsi_status op_compute
     (
     vsi_nn_node_t * self,
@@ -96,20 +128,15 @@ static vsi_status op_compute
         VSILOGE("Set tensor attr of high presision fail");
         return status;
     }
-    if(3 == inputs[0]->attr.dim_num)
+    if(_is_3d_batchnorm(self, inputs))
     {
         vx_input  = self->nn_param.batch_norm.local->reshaped_input->t;
         vx_output = self->nn_param.batch_norm.local->reshaped_output->t;
     }
-    else if(4 == inputs[0]->attr.dim_num)
+    else
     {
         vx_input  = inputs[0]->t;
         vx_output = outputs[0]->t;
-    }
-    else
-    {
-        VSILOGE("Batchnormlize only support 4D or 3D");
-        return status;
     }
 
     self->n = vxBatchNormalizationLayer(
@@ -143,7 +170,7 @@ static vsi_status op_optimize
     char tensor_name[128];
 
     dim = inputs[0]->attr.dim_num;
-    if(3 != dim)
+    if(_is_3d_batchnorm(self, inputs) == FALSE)
     {
         return VSI_SUCCESS;
     }
@@ -207,7 +234,7 @@ static vsi_bool op_setup
             VSI_NN_MAX_DIM_NUM * sizeof( uint32_t ) );
     }
 
-    if(3 == inputs[0]->attr.dim_num)
+    if(_is_3d_batchnorm(self, inputs))
     {
         local = (vsi_nn_batcnnorm_lcl_data *)malloc(sizeof(vsi_nn_batcnnorm_lcl_data));
         if(NULL == local)

@@ -44,6 +44,9 @@ extern "C" {
 #define _cnt_of_array( arr )            (sizeof( arr )/sizeof( arr[0] ))
 #endif
 
+#define vsi_nn_safe_free( _PTR ) if( _PTR ){ \
+    free( _PTR ); _PTR = NULL; }
+
 /*-------------------------------------------
                   Functions
 -------------------------------------------*/

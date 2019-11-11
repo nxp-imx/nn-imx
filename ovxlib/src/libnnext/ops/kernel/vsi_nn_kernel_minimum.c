@@ -155,7 +155,7 @@ vsi_status VX_CALLBACK vxMinimumKernel
         vx_float32 outData   = 0;
 
         in0offset = getExpandTensorOffset(i, attr[0].dim_num, attr[0].size, stride_size[0], attr[2].size);
-        in1offset = getExpandTensorOffset(i, attr[1].dim_num, attr[0].size, stride_size[1], attr[2].size);
+        in1offset = getExpandTensorOffset(i, attr[1].dim_num, attr[1].size, stride_size[1], attr[2].size);
 
         in0_ptr = (vx_uint8 *)buffer_ptr[0] + in0offset;
         in1_ptr = (vx_uint8 *)buffer_ptr[1] + in1offset;
@@ -296,7 +296,7 @@ vx_status VX_CALLBACK vxMinimumInitializer
                                         / shaderParam.globalWorkScale[0], 4);
     shaderParam.globalWorkSize[1]   = (output_size[1] + shaderParam.globalWorkScale[1] - 1)
                                         / shaderParam.globalWorkScale[1];
-    shaderParam.globalWorkSize[2]   = output_size[2];
+    shaderParam.globalWorkSize[2]   = output_dim > 2 ? output_size[2] : 1;
 
     if ((isDymFixPoint && src0Format == VX_TYPE_INT8 && src1Format == VX_TYPE_INT8 && dstFormat == VX_TYPE_INT8)
         || (src0Format == VX_TYPE_INT8 && src1Format == VX_TYPE_FLOAT16 && dstFormat == VX_TYPE_INT8))

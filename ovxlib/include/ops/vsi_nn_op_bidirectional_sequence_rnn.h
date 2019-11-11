@@ -30,17 +30,17 @@
 /* enum for inputs/outputs */
 enum
 {
-    BI_RNN_INPUT_INPUT        = 0,
+    BI_RNN_INPUT_INPUT           = 0,
 
     BI_RNN_FW_INPUT_WEIGHT_I     = 1,
     BI_RNN_FW_INPUT_WEIGHT_H     = 2,
     BI_RNN_FW_INPUT_BIAS         = 3,
-    BI_RNN_FW_INPUT_HIDDEN_STATE = 4,
+    BI_RNN_FW_INPUT_H_STATE      = 4,
 
     BI_RNN_BW_INPUT_WEIGHT_I     = 5,
     BI_RNN_BW_INPUT_WEIGHT_H     = 6,
     BI_RNN_BW_INPUT_BIAS         = 7,
-    BI_RNN_BW_INPUT_HIDDEN_STATE = 8,
+    BI_RNN_BW_INPUT_H_STATE      = 8,
 
     BI_RNN_AUX_INPUT             = 9,
     BI_RNN_FW_AUX_INPUT_WEIGHT   = 10,
@@ -49,7 +49,7 @@ enum
     BI_RNN_INPUT_CNT,
 
     BI_RNN_FW_OUTPUT_OUTPUT      = 0,
-    BI_RNN_BW_OUTPUT_OUTPUT      = 0,
+    BI_RNN_BW_OUTPUT_OUTPUT      = 1,
     BI_RNN_OUTPUT_CNT
 };
 

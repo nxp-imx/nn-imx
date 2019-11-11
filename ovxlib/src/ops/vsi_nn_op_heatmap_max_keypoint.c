@@ -37,8 +37,8 @@
 #include "client/vsi_nn_vxkernel.h"
 
 #define _ARG_NUM            (1)
-#define _INPUT_NUM          (1)
-#define _OUTPUT_NUM         (1)
+#define _INPUT_NUM          (2)
+#define _OUTPUT_NUM         (2)
 #define _IO_NUM             (_INPUT_NUM + _OUTPUT_NUM)
 #define _PARAM_NUM          (_ARG_NUM + _IO_NUM)
 

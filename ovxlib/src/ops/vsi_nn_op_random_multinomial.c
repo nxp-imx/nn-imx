@@ -316,16 +316,12 @@ static vsi_status op_compute
     vsi_nn_kernel_info_t kernel_info;
     vx_array arrayCdf = NULL;
     vsi_nn_tensor_t* random_keys = NULL;
-    uint32_t input_size[4] = {0};
     vsi_nn_type_e inputDataFormat     = inputs[0]->attr.dtype.vx_type;
 
     memset(&kernel_info, 0x0, sizeof(vsi_nn_kernel_info_t));
     status = VSI_FAILURE;
-    kernel_info.type = vsi_nn_GetVXKernelTypeForShader();;
+    kernel_info.type = vsi_nn_GetVXKernelTypeForShader();
     kernel_info.kernel = vx_kernel_RANDOM_MULTINOMIAL_list;
-    kernel_info.resource_num = 1;
-    kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));
-    kernel_info.resource_name[0] = "vsi_nn_kernel_random_multinomial";
 
     if( kernel_info.type == VX_KERNEL_TYPE_VX
         && (inputDataFormat == VSI_NN_TYPE_FLOAT32 || inputDataFormat == VSI_NN_TYPE_FLOAT16)
@@ -335,22 +331,24 @@ static vsi_status op_compute
         vsi_nn_tensor_attr_t attr;
         uint32_t class_max_stride = 0;
         uint32_t class_size;
+
+        kernel_info.resource_num = 2;
+        kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));
+        kernel_info.resource_name[0] = "vsi_nn_kernel_header";
+        kernel_info.resource_name[1] = "vsi_nn_kernel_random_multinomial";
+
         ctx = vxGetContext( (vx_reference)self->graph->g );
         memcpy(&attr, &(outputs[0]->attr), sizeof(vsi_nn_tensor_attr_t));
         attr.dtype.vx_type = VSI_NN_TYPE_FLOAT32;
         attr.vtl = FALSE;
         random_keys = vsi_nn_CreateTensor(self->graph, &attr);
 
-        status = vxQueryTensor(inputs[0]->t, VX_TENSOR_DIMS, input_size, sizeof(input_size));
-        if(status != VSI_SUCCESS)
-            goto final;
-
-        class_size = input_size[0];
+        class_size = inputs[0]->attr.size[0];
         if(inputDataFormat == VSI_NN_TYPE_FLOAT32)
-            class_max_stride = ((input_size[0] + 3) >> 2) << 2;
+            class_max_stride = ((inputs[0]->attr.size[0] + 3) >> 2) << 2;
         else
-            class_max_stride = ((input_size[0] + 7) >> 3) << 3;
-        arrayCdf = vxCreateArray(ctx, VX_TYPE_FLOAT32, class_max_stride * input_size[1] * sizeof(vx_float32));
+            class_max_stride = ((inputs[0]->attr.size[0] + 7) >> 3) << 3;
+        arrayCdf = vxCreateArray(ctx, VX_TYPE_FLOAT32, class_max_stride * inputs[0]->attr.size[1] * sizeof(vx_float32));
 
         // generate random keys
         {
@@ -409,6 +407,9 @@ static vsi_status op_compute
     }
     else /*kernel_info.type = VX_KERNEL_TYPE_CPU;*/
     {
+        kernel_info.resource_num = 1;
+        kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));
+        kernel_info.resource_name[0] = "vsi_nn_kernel_random_multinomial";
         kernel_info.type = VX_KERNEL_TYPE_CPU;
         kernel_info.kernel_index = 0;
         kernel_info.init_index = 0;

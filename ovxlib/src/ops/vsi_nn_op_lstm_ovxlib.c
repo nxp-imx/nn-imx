@@ -31,14 +31,12 @@
 #include "vsi_nn_node.h"
 #include "vsi_nn_prv.h"
 #include "utils/vsi_nn_math.h"
+#include "utils/vsi_nn_util.h"
 #include "vsi_nn_ops.h"
 #include "vsi_nn_tensor.h"
 #include "vsi_nn_tensor_util.h"
 #include "client/vsi_nn_vxkernel.h"
 #include "vsi_nn_internal_node.h"
-
-#define SAFE_FREE( _PTR ) if( _PTR ){                       \
-    free( _PTR ); _PTR = NULL; }
 
 static vsi_bool setup_op_shapes
     (
@@ -381,8 +379,8 @@ static vsi_bool op_setup
         }
     }
 
-    SAFE_FREE( split_output_tensors );
-    SAFE_FREE( lstmunit_reshape_output_tensors );
+    vsi_nn_safe_free( split_output_tensors );
+    vsi_nn_safe_free( lstmunit_reshape_output_tensors );
 
     return TRUE;
 } /* op_setup() */

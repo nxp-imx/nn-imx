@@ -28,13 +28,13 @@
 #include "vsi_nn_log.h"
 #include "vsi_nn_tensor_util.h"
 #include "utils/vsi_nn_dtype_util.h"
+#include "utils/vsi_nn_util.h"
 #include "vsi_nn_rnn_prv.h"
 #include "vsi_nn_internal_node.h"
 
 /**********************************************************
 * MACROS
 **********************************************************/
-#define RNN_SAFE_FREE(_PTR) { if( _PTR ) { free( _PTR ); _PTR = NULL; } }
 #define RNN_WKSP(_GRAPH) ( (vsi_nn_rnn_wksp_t *)((_GRAPH)->rnn_wksp) )
 
 /**********************************************************
@@ -95,7 +95,7 @@ static vsi_status internal_buffer_init
 error:
     if( VSI_SUCCESS != status )
     {
-        RNN_SAFE_FREE(data);
+        vsi_nn_safe_free(data);
     }
     return status;
 } /* internal_buffer_init() */
@@ -113,7 +113,7 @@ static vsi_status internal_buffer_deinit
         return status;
     }
 
-    RNN_SAFE_FREE( buffer->data );
+    vsi_nn_safe_free( buffer->data );
 
     return VSI_SUCCESS;
 } /* internal_buffer_deinit() */
@@ -181,7 +181,7 @@ static vsi_status internal_buffer_copy_from_tensor
         status = VSI_SUCCESS;
     }
 
-    RNN_SAFE_FREE( data );
+    vsi_nn_safe_free( data );
 
     return status;
 } /* internal_buffer_copy_from_tensor() */
@@ -303,10 +303,10 @@ vsi_status vsi_nn_rnn_DeinitWksp
         cur_conn = (vsi_nn_rnn_connection_t *)vsi_nn_LinkListPopStart(
             (vsi_nn_link_list_t **)&RNN_WKSP(graph)->external_connection_list );
         internal_buffer_deinit( &cur_conn->buffer );
-        RNN_SAFE_FREE( cur_conn );
+        vsi_nn_safe_free( cur_conn );
     }
 
-    RNN_SAFE_FREE( graph->rnn_wksp );
+    vsi_nn_safe_free( graph->rnn_wksp );
 
     return status;
 } /* vsi_nn_rnn_DeinitWksp() */
