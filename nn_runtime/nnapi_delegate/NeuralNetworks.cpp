@@ -23,8 +23,6 @@
 *****************************************************************************/
 #include <memory>
 
-#include "vsi_nn_pub.h"
-#include "vsi_nn_log.h"
 #include "nnrt/event.hpp"
 #include "nnrt/compilation.hpp"
 #include "nnrt/execution.hpp"
@@ -33,6 +31,8 @@
 #include "nnrt/error.hpp"
 #include "nnrt/types.hpp"
 #include "nnrt/op/operation.hpp"
+#include "nnrt/version.hpp"
+#include "nnrt/logging.hpp"
 
 #include "NeuralNetworks.h"
 
@@ -169,9 +169,11 @@ static OperationType mapOperationCode(OperationCode code)
         default:
             break;
     }
-    VSILOGW("Unknown operation code %d", code);
+    NNRT_LOGW_PRINT("Unknown operation code %d", code);
     return OperationType::NONE;
 }
+
+#define UNUSED_PARAM(param) do{(void)(param);}while(0)
 
 static OperandType mapOperandCode(OperandCode code)
 {
@@ -236,7 +238,7 @@ static void _convert_operand_type(OperandPtr operand_type,
 int ANeuralNetworksMemory_createFromFd(size_t size, int protect, int fd, size_t offset,
                                        ANeuralNetworksMemory** memory)
 {
-    VSILOGD("%s: %d", __FUNCTION__, __LINE__);
+    NNRT_LOGD_PRINT("%s: %d", __FUNCTION__, __LINE__);
     if (nullptr == memory)
     {
         return AERROR_CODE(UNEXPECTED_NULL);
@@ -245,7 +247,7 @@ int ANeuralNetworksMemory_createFromFd(size_t size, int protect, int fd, size_t 
     Memory* shared_memory   = new Memory();
     if (nullptr == shared_memory)
     {
-        VSILOGW("New shared memory fail.");
+        NNRT_LOGW_PRINT("New shared memory fail.");
         return AERROR_CODE(OUT_OF_MEMORY);
     }
     int err = translateErrorCode(shared_memory->readFromFd(size, protect, fd, offset));
@@ -262,7 +264,7 @@ int ANeuralNetworksMemory_createFromFd(size_t size, int protect, int fd, size_t 
 
 void ANeuralNetworksMemory_free(ANeuralNetworksMemory* memory)
 {
-    VSILOGD("%s: %d", __FUNCTION__, __LINE__);
+    NNRT_LOGD_PRINT("%s: %d", __FUNCTION__, __LINE__);
     if (nullptr == memory)
     {
         return;
@@ -273,10 +275,10 @@ void ANeuralNetworksMemory_free(ANeuralNetworksMemory* memory)
 
 int ANeuralNetworksModel_create(ANeuralNetworksModel** model)
 {
-    VSILOGD("%s: %d", __FUNCTION__, __LINE__);
+    NNRT_LOGD_PRINT("%s: %d", __FUNCTION__, __LINE__);
     if (!model)
     {
-        VSILOGW("Invalid mode pointer.");
+        NNRT_LOGW_PRINT("Invalid mode pointer.");
         return AERROR_CODE(UNEXPECTED_NULL);
     }
     *model = nullptr;
@@ -292,7 +294,7 @@ int ANeuralNetworksModel_create(ANeuralNetworksModel** model)
 
 void ANeuralNetworksModel_free(ANeuralNetworksModel* model)
 {
-    VSILOGD("%s: %d", __FUNCTION__, __LINE__);
+    NNRT_LOGD_PRINT("%s: %d", __FUNCTION__, __LINE__);
     if (!model)
     {
         return;
@@ -303,16 +305,16 @@ void ANeuralNetworksModel_free(ANeuralNetworksModel* model)
 
 int ANeuralNetworksModel_finish(ANeuralNetworksModel* model)
 {
-    VSILOGD("%s: %d", __FUNCTION__, __LINE__);
+    NNRT_LOGD_PRINT("%s: %d", __FUNCTION__, __LINE__);
     if (!model)
     {
-        VSILOGW("Pass null pointer to model.");
+        NNRT_LOGW_PRINT("Pass null pointer to model.");
         return AERROR_CODE(UNEXPECTED_NULL);
     }
     Model* m = reinterpret_cast<Model*>(model);
     if(m->isFinished())
     {
-        VSILOGW("Cannot modify a finished model.");
+        NNRT_LOGW_PRINT("Cannot modify a finished model.");
         return AERROR_CODE(BAD_STATE);
     }
 
@@ -323,16 +325,16 @@ int ANeuralNetworksModel_finish(ANeuralNetworksModel* model)
 int ANeuralNetworksModel_addOperand(ANeuralNetworksModel* model,
                                     const ANeuralNetworksOperandType* type)
 {
-    VSILOGD("%s: %d", __FUNCTION__, __LINE__);
+    NNRT_LOGD_PRINT("%s: %d", __FUNCTION__, __LINE__);
     if (!model || !type)
     {
-        VSILOGW("Passs null pointer to model or type");
+        NNRT_LOGW_PRINT("Passs null pointer to model or type");
         return AERROR_CODE(UNEXPECTED_NULL);
     }
     Model* m = reinterpret_cast<Model*>(model);
     if(m->isFinished())
     {
-        VSILOGW("Cannot modify a finished model.");
+        NNRT_LOGW_PRINT("Cannot modify a finished model.");
         return AERROR_CODE(BAD_DATA);
     }
 
@@ -355,16 +357,16 @@ int ANeuralNetworksModel_addOperand(ANeuralNetworksModel* model,
 int ANeuralNetworksModel_setOperandValue(ANeuralNetworksModel* model, int32_t index,
                                          const void* buffer, size_t length)
 {
-    VSILOGD("%s: %d", __FUNCTION__, __LINE__);
+    NNRT_LOGD_PRINT("%s: %d", __FUNCTION__, __LINE__);
     if (!model || !buffer)
     {
-        VSILOGW("Passs null pointer to model or buffer");
+        NNRT_LOGW_PRINT("Passs null pointer to model or buffer");
         return AERROR_CODE(UNEXPECTED_NULL);
     }
     Model* m = reinterpret_cast<Model*>(model);
     if(m->isFinished())
     {
-        VSILOGW("Cannot modify a finished model.");
+        NNRT_LOGW_PRINT("Cannot modify a finished model.");
         return AERROR_CODE(BAD_DATA);
     }
     return translateErrorCode(m->setOperandValue((uint32_t)index, buffer, length));
@@ -374,16 +376,16 @@ int ANeuralNetworksModel_setOperandValueFromMemory(ANeuralNetworksModel* model, 
                                                    const ANeuralNetworksMemory* memory,
                                                    size_t offset, size_t length)
 {
-    VSILOGD("%s: %d", __FUNCTION__, __LINE__);
+    NNRT_LOGD_PRINT("%s: %d", __FUNCTION__, __LINE__);
     if (!model || !memory)
     {
-        VSILOGW("Passs null pointer to model or memory");
+        NNRT_LOGW_PRINT("Passs null pointer to model or memory");
         return AERROR_CODE(UNEXPECTED_NULL);
     }
     Model* m = reinterpret_cast<Model*>(model);
     if(m->isFinished())
     {
-        VSILOGW("Cannot modify a finished model.");
+        NNRT_LOGW_PRINT("Cannot modify a finished model.");
         return AERROR_CODE(BAD_DATA);
     }
     const Memory* shared_memory = reinterpret_cast<const Memory*>(memory);
@@ -396,16 +398,16 @@ int ANeuralNetworksModel_addOperation(ANeuralNetworksModel* model,
                                       const uint32_t* inputs, uint32_t outputCount,
                                       const uint32_t* outputs)
 {
-    VSILOGD("%s: %d", __FUNCTION__, __LINE__);
+    NNRT_LOGD_PRINT("%s: %d", __FUNCTION__, __LINE__);
     if (!model || !inputs || !outputs)
     {
-        VSILOGW("Passs null pointer to model or inputs, outputs");
+        NNRT_LOGW_PRINT("Passs null pointer to model or inputs, outputs");
         return AERROR_CODE(UNEXPECTED_NULL);
     }
     Model* m = reinterpret_cast<Model*>(model);
     if(m->isFinished())
     {
-        VSILOGW("Cannot modify a finished model.");
+        NNRT_LOGW_PRINT("Cannot modify a finished model.");
         return AERROR_CODE(BAD_DATA);
     }
     OperationPtr op = m->addOperation(mapOperationCode((OperationCode)type),
@@ -422,17 +424,17 @@ int ANeuralNetworksModel_identifyInputsAndOutputs(ANeuralNetworksModel* model,
                                                   uint32_t inputCount, const uint32_t* inputs,
                                                   uint32_t outputCount, const uint32_t* outputs)
 {
-    VSILOGD("%s: %d", __FUNCTION__, __LINE__);
+    NNRT_LOGD_PRINT("%s: %d", __FUNCTION__, __LINE__);
     if (!model || !inputs || !outputs)
     {
-        VSILOGW("Passs null pointer to model or inputs, outputs");
+        NNRT_LOGW_PRINT("Passs null pointer to model or inputs, outputs");
         return AERROR_CODE(UNEXPECTED_NULL);
     }
     Model* m = reinterpret_cast<Model*>(model);
 
     if(m->isFinished())
     {
-        VSILOGW("Cannot modify a finished model.");
+        NNRT_LOGW_PRINT("Cannot modify a finished model.");
         return AERROR_CODE(BAD_DATA);
     }
     m->identifyInputsAndOutputs(inputs, inputCount, outputs, outputCount);
@@ -446,10 +448,10 @@ int ANeuralNetworksModel_identifyInputsAndOutputs(ANeuralNetworksModel* model,
 int ANeuralNetworksCompilation_create(ANeuralNetworksModel* model,
                                       ANeuralNetworksCompilation** compilation)
 {
-    VSILOGD("%s: %d", __FUNCTION__, __LINE__);
+    NNRT_LOGD_PRINT("%s: %d", __FUNCTION__, __LINE__);
     if (!model || !compilation)
     {
-        VSILOGW("Passs null pointer to model or compilation");
+        NNRT_LOGW_PRINT("Passs null pointer to model or compilation");
         return AERROR_CODE(UNEXPECTED_NULL);
     }
 
@@ -457,7 +459,7 @@ int ANeuralNetworksCompilation_create(ANeuralNetworksModel* model,
     Compilation* c =  new Compilation(m);
     if (!c)
     {
-        VSILOGW("Failt to new compilation.");
+        NNRT_LOGW_PRINT("Failt to new compilation.");
         return AERROR_CODE(OUT_OF_MEMORY);
     }
 
@@ -469,7 +471,7 @@ int ANeuralNetworksCompilation_create(ANeuralNetworksModel* model,
 
 void ANeuralNetworksCompilation_free(ANeuralNetworksCompilation* compilation)
 {
-    VSILOGD("%s: %d", __FUNCTION__, __LINE__);
+    NNRT_LOGD_PRINT("%s: %d", __FUNCTION__, __LINE__);
     Compilation* c = reinterpret_cast<Compilation*>(compilation);
     delete c;
 }
@@ -477,7 +479,7 @@ void ANeuralNetworksCompilation_free(ANeuralNetworksCompilation* compilation)
 int ANeuralNetworksCompilation_setPreference(ANeuralNetworksCompilation* compilation,
                                              int32_t preference)
 {
-    VSILOGD("%s: %d", __FUNCTION__, __LINE__);
+    NNRT_LOGD_PRINT("%s: %d", __FUNCTION__, __LINE__);
 #if 0
     return  (reinterpret_cast<Compilation *>(compilation))->setPreference(preference);
 #endif
@@ -486,18 +488,18 @@ int ANeuralNetworksCompilation_setPreference(ANeuralNetworksCompilation* compila
 
 int ANeuralNetworksCompilation_finish(ANeuralNetworksCompilation* compilation)
 {
-    VSILOGD("%s: %d", __FUNCTION__, __LINE__);
+    NNRT_LOGD_PRINT("%s: %d", __FUNCTION__, __LINE__);
     return  translateErrorCode((reinterpret_cast<Compilation *>(compilation))->run());
 }
 
 int ANeuralNetworksExecution_create(ANeuralNetworksCompilation* compilation,
                                     ANeuralNetworksExecution** execution)
 {
-    VSILOGD("%s: %d", __FUNCTION__, __LINE__);
+    NNRT_LOGD_PRINT("%s: %d", __FUNCTION__, __LINE__);
 
     if (!compilation || !execution)
     {
-        VSILOGW("Pass nullptr to compilation or execution.");
+        NNRT_LOGW_PRINT("Pass nullptr to compilation or execution.");
         return AERROR_CODE(UNEXPECTED_NULL);
     }
 
@@ -505,7 +507,7 @@ int ANeuralNetworksExecution_create(ANeuralNetworksCompilation* compilation,
     Execution* exec = new Execution(c);
     if(!exec)
     {
-        VSILOGW("Out of memory.");
+        NNRT_LOGW_PRINT("Out of memory.");
         return AERROR_CODE(OUT_OF_MEMORY);
     }
 
@@ -516,7 +518,7 @@ int ANeuralNetworksExecution_create(ANeuralNetworksCompilation* compilation,
 
 void ANeuralNetworksExecution_free(ANeuralNetworksExecution* execution)
 {
-    VSILOGD("%s: %d", __FUNCTION__, __LINE__);
+    NNRT_LOGD_PRINT("%s: %d", __FUNCTION__, __LINE__);
     if (!execution)
     {
         return;
@@ -530,10 +532,10 @@ int ANeuralNetworksExecution_setInput(ANeuralNetworksExecution* execution, int32
                                       const ANeuralNetworksOperandType* type,
                                       const void* buffer, size_t length)
 {
-    VSILOGD("%s: %d", __FUNCTION__, __LINE__);
+    NNRT_LOGD_PRINT("%s: %d", __FUNCTION__, __LINE__);
     if (!execution)
     {
-        VSILOGW("Pass nullptr to execution");
+        NNRT_LOGW_PRINT("Pass nullptr to execution");
         return AERROR_CODE(UNEXPECTED_NULL);
     }
     Execution* exec = reinterpret_cast<Execution*>(execution);
@@ -552,10 +554,10 @@ int ANeuralNetworksExecution_setInputFromMemory(ANeuralNetworksExecution* execut
                                                 const ANeuralNetworksMemory* memory,
                                                 size_t offset, size_t length)
  {
-    VSILOGD("%s: %d", __FUNCTION__, __LINE__);
+    NNRT_LOGD_PRINT("%s: %d", __FUNCTION__, __LINE__);
     if (!execution)
     {
-        VSILOGW("Pass nullptr to exection.");
+        NNRT_LOGW_PRINT("Pass nullptr to exection.");
         return AERROR_CODE(UNEXPECTED_NULL);
     }
 
@@ -575,10 +577,10 @@ int ANeuralNetworksExecution_setOutput(ANeuralNetworksExecution* execution, int3
                                        const ANeuralNetworksOperandType* type, void* buffer,
                                        size_t length)
 {
-    VSILOGD("%s: %d", __FUNCTION__, __LINE__);
+    NNRT_LOGD_PRINT("%s: %d", __FUNCTION__, __LINE__);
     if (!execution)
     {
-        VSILOGW("Pass nullptr to execution");
+        NNRT_LOGW_PRINT("Pass nullptr to execution");
         return AERROR_CODE(UNEXPECTED_NULL);
     }
     Execution* exec = reinterpret_cast<Execution*>(execution);
@@ -596,10 +598,10 @@ int ANeuralNetworksExecution_setOutputFromMemory(ANeuralNetworksExecution* execu
                                                  const ANeuralNetworksMemory* memory,
                                                  size_t offset, size_t length)
  {
-    VSILOGD("%s: %d", __FUNCTION__, __LINE__);
+    NNRT_LOGD_PRINT("%s: %d", __FUNCTION__, __LINE__);
     if (!execution)
     {
-        VSILOGW("Pass nullptr to execution");
+        NNRT_LOGW_PRINT("Pass nullptr to execution");
         return AERROR_CODE(UNEXPECTED_NULL);
     }
 
@@ -617,16 +619,16 @@ int ANeuralNetworksExecution_setOutputFromMemory(ANeuralNetworksExecution* execu
 int ANeuralNetworksExecution_startCompute(ANeuralNetworksExecution* execution,
                                           ANeuralNetworksEvent** event)
 {
-    VSILOGD("%s: %d", __FUNCTION__, __LINE__);
+    NNRT_LOGD_PRINT("%s: %d", __FUNCTION__, __LINE__);
 
     if (!event) {
-        VSILOGW("Pass nullptr to event");
+        NNRT_LOGW_PRINT("Pass nullptr to event");
         return AERROR_CODE(UNEXPECTED_NULL);
     }
 
     *event = nullptr;
     if (!execution) {
-        VSILOGW("Pass nullptr to execution");
+        NNRT_LOGW_PRINT("Pass nullptr to execution");
         return AERROR_CODE(UNEXPECTED_NULL);
     }
     EventShell* clbk = new EventShell();
@@ -653,10 +655,10 @@ int ANeuralNetworksExecution_startCompute(ANeuralNetworksExecution* execution,
 
 int ANeuralNetworksEvent_wait(ANeuralNetworksEvent* event)
 {
-    VSILOGD("%s: %d", __FUNCTION__, __LINE__);
+    NNRT_LOGD_PRINT("%s: %d", __FUNCTION__, __LINE__);
     if (!event)
     {
-        VSILOGW("Pass nullptr to event.");
+        NNRT_LOGW_PRINT("Pass nullptr to event.");
         return AERROR_CODE(UNEXPECTED_NULL);
     }
     return  (reinterpret_cast<EventShell*> (event))->wait();
@@ -665,7 +667,7 @@ int ANeuralNetworksEvent_wait(ANeuralNetworksEvent* event)
 
 void ANeuralNetworksEvent_free(ANeuralNetworksEvent* event)
 {
-    VSILOGD("%s: %d", __FUNCTION__, __LINE__);
+    NNRT_LOGD_PRINT("%s: %d", __FUNCTION__, __LINE__);
     if(!event)
     {
         return ;
@@ -678,7 +680,7 @@ void ANeuralNetworksEvent_free(ANeuralNetworksEvent* event)
 // it is always relaxed in our driver.
 int ANeuralNetworksModel_relaxComputationFloat32toFloat16(ANeuralNetworksModel* model, bool allow)
 {
-    VSILOGD("%s: %d", __FUNCTION__, __LINE__);
+    NNRT_LOGD_PRINT("%s: %d", __FUNCTION__, __LINE__);
     if (!model)
     {
         return AERROR_CODE(BAD_DATA);
@@ -691,7 +693,7 @@ int ANeuralNetworksModel_setOperandSymmPerChannelQuantParams(
         ANeuralNetworksModel* model, int32_t index,
         const ANeuralNetworksSymmPerChannelQuantParams* channelQuant)
 {
-    VSILOGD("%s: %d", __FUNCTION__, __LINE__);
+    NNRT_LOGD_PRINT("%s: %d", __FUNCTION__, __LINE__);
     if (!model || !channelQuant) {
         return AERROR_CODE(UNEXPECTED_NULL);
     }
@@ -706,9 +708,9 @@ int ANeuralNetworksModel_setOperandSymmPerChannelQuantParams(
 
 int ANeuralNetworksExecution_compute(ANeuralNetworksExecution* execution)
 {
-    VSILOGD("%s: %d", __FUNCTION__, __LINE__);
+    NNRT_LOGD_PRINT("%s: %d", __FUNCTION__, __LINE__);
     if (!execution) {
-        VSILOGW("Pass nullptr to execution");
+        NNRT_LOGW_PRINT("Pass nullptr to execution");
         return AERROR_CODE(UNEXPECTED_NULL);
     }
     Execution* exec = reinterpret_cast<Execution*>(execution);
@@ -719,7 +721,7 @@ int ANeuralNetworksExecution_compute(ANeuralNetworksExecution* execution)
 int ANeuralNetworksBurst_create(ANeuralNetworksCompilation* compilation,
                                 ANeuralNetworksBurst** burst)
 {
-    VSILOGD("%s: %d", __FUNCTION__, __LINE__);
+    NNRT_LOGD_PRINT("%s: %d", __FUNCTION__, __LINE__);
     if (!compilation || !burst) {
         return AERROR_CODE(UNEXPECTED_NULL);
     }
@@ -737,7 +739,8 @@ int ANeuralNetworksBurst_create(ANeuralNetworksCompilation* compilation,
 
 void ANeuralNetworksBurst_free(ANeuralNetworksBurst* burst)
 {
-    VSILOGD("%s: %d", __FUNCTION__, __LINE__);
+    NNRT_LOGD_PRINT("%s: %d", __FUNCTION__, __LINE__);
+    UNUSED_PARAM(burst);
     // No validation.  Free of nullptr is valid.
     // TODO: Add implementation
     /*
@@ -749,7 +752,7 @@ void ANeuralNetworksBurst_free(ANeuralNetworksBurst* burst)
 int ANeuralNetworksExecution_burstCompute(ANeuralNetworksExecution* execution,
                                           ANeuralNetworksBurst* burst)
 {
-    VSILOGD("%s: %d", __FUNCTION__, __LINE__);
+    NNRT_LOGD_PRINT("%s: %d", __FUNCTION__, __LINE__);
     if (!execution || !burst) {
         return AERROR_CODE(UNEXPECTED_NULL);
     }
@@ -783,7 +786,7 @@ int ANeuralNetworksExecution_burstCompute(ANeuralNetworksExecution* execution,
 
 int ANeuralNetworksExecution_getOutputOperandRank(ANeuralNetworksExecution* execution,
                                                   int32_t index, uint32_t* rank) {
-    VSILOGD("%s: %d", __FUNCTION__, __LINE__);
+    NNRT_LOGD_PRINT("%s: %d", __FUNCTION__, __LINE__);
     if (!execution) {
         return AERROR_CODE(UNEXPECTED_NULL);
     }
@@ -794,7 +797,7 @@ int ANeuralNetworksExecution_getOutputOperandRank(ANeuralNetworksExecution* exec
 int ANeuralNetworksExecution_getOutputOperandDimensions(ANeuralNetworksExecution* execution,
                                                         int32_t index, uint32_t* dimensions)
 {
-    VSILOGD("%s: %d", __FUNCTION__, __LINE__);
+    NNRT_LOGD_PRINT("%s: %d", __FUNCTION__, __LINE__);
     if (!execution) {
         return AERROR_CODE(UNEXPECTED_NULL);
     }
@@ -802,11 +805,94 @@ int ANeuralNetworksExecution_getOutputOperandDimensions(ANeuralNetworksExecution
     return exec->getOutputOperandDimensions(index, dimensions);
 }
 
+// Android NNAPI 1.2 : new apis
+static constexpr const char* DeviceList[] = {
+    "VsiNpu"
+};
+
+static constexpr uint32_t DeviceCount = sizeof(DeviceList)/sizeof(DeviceList[0]);
+
+int ANeuralNetworks_getDeviceCount(uint32_t* numDevices) {
+    *numDevices = DeviceCount;
+    return AERROR_CODE(NO_ERROR);
+}
+
+int ANeuralNetworks_getDevice(uint32_t devIndex, ANeuralNetworksDevice** device) {
+    if (devIndex < DeviceCount) {
+        *device = (ANeuralNetworksDevice*)DeviceList[devIndex];
+        return AERROR_CODE(NO_ERROR);
+    }
+
+    return AERROR_CODE(BAD_DATA);
+}
+
+int ANeuralNetworksDevice_getName(const ANeuralNetworksDevice* device, const char** name) {
+    *name = (const char*)(device);
+    return AERROR_CODE(NO_ERROR);
+}
+
+int ANeuralNetworksDevice_getType(const ANeuralNetworksDevice* device, int32_t* type) {
+    UNUSED_PARAM(device);
+    *type = DeviceTypeCode::ANEURALNETWORKS_DEVICE_ACCELERATOR;
+    return AERROR_CODE(NO_ERROR);
+}
+
+int ANeuralNetworksDevice_getVersion(const ANeuralNetworksDevice* device, const char** version){
+    UNUSED_PARAM(device);
+    *version = nnrt::VERSION::as_str();
+    return AERROR_CODE(NO_ERROR);
+}
+
+int ANeuralNetworksDevice_getFeatureLevel(const ANeuralNetworksDevice* device, int64_t* featureLevel) {
+    UNUSED_PARAM(device);
+    *featureLevel = 29;
+    return AERROR_CODE(NO_ERROR);
+}
+
+int ANeuralNetworksModel_getSupportedOperationsForDevices(const ANeuralNetworksModel* model,
+                                                          const ANeuralNetworksDevice* const* devices,
+                                                          uint32_t numDevices,
+                                                          bool* supportedOps) {
+    const nnrt::Model* m = reinterpret_cast<const nnrt::Model*>(model);
+    // TODO: {juku} add detail
+    auto num_ops = m->operations().size();
+    for (auto i{0U}; i < num_ops; ++i) {
+        supportedOps[i] = true;
+    }
+
+    return AERROR_CODE(NO_ERROR);
+}
+
+int ANeuralNetworksCompilation_createForDevices(ANeuralNetworksModel* model,
+                                                const ANeuralNetworksDevice* const* devices,
+                                                uint32_t numDevices,
+                                                ANeuralNetworksCompilation** compilation) {
+    ANeuralNetworksCompilation_create(model, compilation);
+    return AERROR_CODE(NO_ERROR);
+}
+
+int ANeuralNetworksCompilation_setCaching(ANeuralNetworksCompilation* compilation,
+                                          const char* cacheDir,
+                                          const uint8_t* token) {
+    return AERROR_CODE(NO_ERROR);
+}
+
+int ANeuralNetworksExecution_setMeasureTiming(ANeuralNetworksExecution* execution, bool measure) {
+    return AERROR_CODE(NO_ERROR);
+}
+
+int ANeuralNetworksExecution_getDuration(const ANeuralNetworksExecution* execution,
+                                         int32_t durationCode, uint64_t* duration) {
+                                             *duration = 1;
+    return AERROR_CODE(NO_ERROR);
+
+                                         }
+
 #if defined(ANDROID_STUB)
 int ANeuralNetworksMemory_createFromAHardwareBuffer(const AHardwareBuffer* ahwb,
                                                     ANeuralNetworksMemory** memory)
 {
-    VSILOGD("%s: %d", __FUNCTION__, __LINE__);
+    NNRT_LOGD_PRINT("%s: %d", __FUNCTION__, __LINE__);
 
 
     // TODO: Add implementation
