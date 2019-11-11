@@ -159,7 +159,13 @@ static OperationType mapOperationCode(OperationCode code)
         REGISTER_OP(AXIS_ALIGNED_BBOX_TRANSFORM);
         REGISTER_OP(GENERATE_PROPOSALS);
         REGISTER_OP(RANDOM_MULTINOMIAL);
+        REGISTER_OP(LOG_SOFTMAX);
+        REGISTER_OP(HEATMAP_MAX_KEYPOINT);
+        REGISTER_OP(BOX_WITH_NMS_LIMIT);
+        REGISTER_OP(TILE);
 #undef REGISTER_OP
+        case ANEURALNETWORKS_TOPK_V2:
+            return OperationType::TOPK;
         default:
             break;
     }
