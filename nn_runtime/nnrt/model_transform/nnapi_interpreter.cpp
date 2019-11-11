@@ -209,6 +209,7 @@ NnApiInterpreter::NnApiInterpreter()
     REGISTER_OP(HEATMAP_MAX_KEYPOINT);
     //REGISTER_OP(LOG_SOFTMAX);
     REGISTER_OP(BOX_WITH_NMS_LIMIT);
+    REGISTER_OP(LOG_SOFTMAX);
     //REGISTER_OP(TILE);
     REGISTER_OP(TOPK);
 
@@ -1460,6 +1461,25 @@ OperationPtr NnApiInterpreter::map_BOX_WITH_NMS_LIMIT(Model* model,
         assert(false);
     }
     truncateOperationIOs(model, operation, 3, 4);
+    return op;
+}
+
+OperationPtr NnApiInterpreter::map_LOG_SOFTMAX(Model* model,
+        OperationPtr operation, uint32_t operation_index)
+{
+    NNAPI_CHECK_IO_NUM(operation, 3, 1);
+    std::shared_ptr<LogSoftmaxOperation> op = std::make_shared<LogSoftmaxOperation>();
+    NNAPI_CHECK_PTR(op);
+    std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
+    auto argList = matchArgList(inputs, "LogSoftmaxOperation");
+    if (argList) {
+        op->beta = inputs[argList->ArgPos("beta")]->scalar.float32;
+        op->axis = inputs[argList->ArgPos("axis")]->scalar.int32;
+    } else {
+        NNRT_LOGE_PRINT("LogSoftmax argument list not support");
+        assert(false);
+    }
+    truncateOperationIOs(model, operation, 1, 1);
     return op;
 }
 

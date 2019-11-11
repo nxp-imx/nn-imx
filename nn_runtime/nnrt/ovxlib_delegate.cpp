@@ -190,6 +190,7 @@ OvxlibDelegate::OvxlibDelegate()
     REGISTER_OP(HEATMAP_MAX_KEYPOINT);
     //REGISTER_OP(LOG_SOFTMAX);
     REGISTER_OP(BOX_WITH_NMS_LIMIT);
+    REGISTER_OP(LOG_SOFTMAX);
     //REGISTER_OP(TILE);
     REGISTER_OP(TOPK);
 #undef REGISTER_OP
@@ -978,6 +979,22 @@ int OvxlibDelegate::addNode_SOFTMAX(Model* model,
     std::vector<OperandPtr> outputs = model->getOperands(operation->outputs());
     int32_t dim = static_cast<int32_t>(outputs[0]->dimensions.size());
     nodes[0]->nn_param.softmax.axis = static_cast<uint32_t>(convertAxis(softmax->axis, dim));
+    return err;
+}
+
+int OvxlibDelegate::addNode_LOG_SOFTMAX(Model* model,
+        OperationPtr operation, uint32_t operation_index)
+{
+    (void)model;
+    int err = NNA_ERROR_CODE(NO_ERROR);
+    LogSoftmaxOperation* op =  reinterpret_cast<LogSoftmaxOperation*>(operation.get());
+    std::vector<vsi_nn_node_t*> nodes;
+    err = addNode(VSI_NN_OP_LOG_SOFTMAX, op->inputs(), op->outputs(),
+            op->fusedType(), &nodes, operation_index);
+    nodes[0]->nn_param.log_softmax.betaValue = op->beta;
+    std::vector<OperandPtr> outputs = model->getOperands(operation->outputs());
+    int32_t dim = static_cast<int32_t>(outputs[0]->dimensions.size());
+    nodes[0]->nn_param.log_softmax.axis = static_cast<uint32_t>(convertAxis(op->axis, dim));
     return err;
 }
 

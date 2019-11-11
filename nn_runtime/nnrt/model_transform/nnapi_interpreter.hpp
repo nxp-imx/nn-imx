@@ -176,6 +176,7 @@ class NnApiInterpreter : public Interpreter
         REGISTER_OP(HEATMAP_MAX_KEYPOINT);
         //REGISTER_OP(LOG_SOFTMAX);
         REGISTER_OP(BOX_WITH_NMS_LIMIT);
+        REGISTER_OP(LOG_SOFTMAX);
         //REGISTER_OP(TILE);
         REGISTER_OP(TOPK);
 #undef  REGISTER_OP
