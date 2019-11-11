@@ -22,8 +22,8 @@
 *
 *****************************************************************************/
 
-#ifndef __OVXLIB_NNAPI_INTERPRETER_H__
-#define __OVXLIB_NNAPI_INTERPRETER_H__
+#ifndef __ARM_NN_INTERPRETER_H__
+#define __ARM_NN_INTERPRETER_H__
 
 #include <set>
 #include <vector>
