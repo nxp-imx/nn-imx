@@ -74,125 +74,15 @@ static int getEnv(std::string name, int &result)
     return get_success;
 }
 
-static void setEnv(std::string name, std::string val)
-{
-#ifdef __ANDROID__
-    __system_property_set(name.c_str(), val.c_str());
-#elif __linux__
-    setenv(name.c_str(), val.c_str(), 1);
-#endif
-}
-
-int8_t getProcessName(char * process) {
-    int32_t pid = getpid();
-#ifdef __ANDROID__
-    char line[256] = { '\0' }, t[32] = { '\0' }, type[32] = { '\0' }, mode[32] = { '\0' };
-    char last[256] = { '\0' };
-    FILE* fp = fopen("/sys/kernel/debug/binder/transactions", "r");
-    if (NULL == fp)
-        return -1;
-    int32_t _from_pid_out = 0, _from_tid_out = 0, _to_pid_out = 0, _to_tid_out = 0, time = 0, s = 0;
-    int32_t _from_pid_in = 0, _from_tid_in = 0, _to_pid_in = 0, _to_tid_in = 0;
-    sprintf(line, "%d", pid);
-    while (fgets(last, 256, fp)) {
-        if (strstr(last, line) != NULL && strstr(last, "transaction") != NULL) {
-            /**********************************************************************************
-            * outgoing transaction 14397865: 00000000 from 10450:10450 to 10443:10452 code 7 flags 10 pri 0:120 r1
-            * incoming transaction 14397865: 00000000 from 10450:10450 to 10443:10452 code 7 flags 10 pri 0:120 r1
-            ***********************************************************************************/
-            if (strstr(last, "incoming") != NULL) {
-                sscanf(last, "%s %s %d: %d from %d:%d to %d:%d %s",
-                    type, mode, &time, &s, &_from_pid_in, &_from_tid_in, &_to_pid_in, &_to_tid_in, t);
-            }
-            else if (strstr(last, "outgoing") != NULL) {
-                sscanf(last, "%s %s %d: %d from %d:%d to %d:%d %s",
-                    type, mode, &time, &s, &_from_pid_out, &_from_tid_out, &_to_pid_out, &_to_tid_out, t);
-            }
-        }
-    }
-
-    fclose(fp);
-
-    if (pid == _to_pid_out && (_from_pid_out == _from_pid_in) && (_from_tid_out == _from_tid_in) &&
-        (_to_pid_out == _to_pid_in) && (_to_tid_out == _to_tid_in)) {
-        sprintf(line, "/proc/%d/cmdline", _from_pid_out);
-        fp = fopen(line, "r");
-        fgets(last, 256, fp);
-        NNRT_LOGD_PRINT(" PROCESSNAME: %s",last);
-        fclose(fp);
-
-        if (strlen(last) > 0 && process)
-            memcpy(process, last, strlen(last));
-    }
-    return 1;
-
-#elif __linux__
-    char file_name[256] = { '\0' };
-    char string[256] = { '\0' };
-    sprintf(file_name, "/proc/%d/cmdline", pid);
-    FILE *fp = fopen(file_name, "r");
-    if (fp) {
-        fread(string, 1, 255, fp);
-        string[255] = '\0';
-    }
-    else {
-        return -1;
-    }
-    NNRT_LOGD_PRINT("proc name: %s",string );
-    fclose(fp);
-    if (strlen(string) > 0 && process)
-        memcpy(process, string, strlen(string));
-    return 1;
-#else
-    // the hack is invalid in windows or other OS.
-    return -1;
-#endif
-
-}
-
-void Model::checkProcess() {
-
-    char processName[256] = { '\0' };
-    if (-1 == getProcessName(processName)){
-        int val = 1;
-        getEnv(FAST_MODE, val);
-        relaxed_ = val;
-
-        return;
-    }
-    // for the CTS process, run with the hack
-    std::string fp32_process_name = "NeuralNetworksTest_";
-    if (strstr(processName, fp32_process_name.c_str()) != NULL) {
-        NNRT_LOGD_PRINT("set env variable VIV_VX_DISABLE_TP_NN_EVIS = 1");
-        setEnv("VIV_VX_DISABLE_TP_NN_EVIS", "1");
-
-        relaxed_ = false;
-    }
-    else {
-        int val = -1;
-        if (getEnv("VIV_VX_DISABLE_TP_NN_EVIS", val)) {
-            // for non-CTS process, run without hack
-            NNRT_LOGD_PRINT("reset VIV_VX_DISABLE_TP_NN_EVIS to 0");
-            setEnv("VIV_VX_DISABLE_TP_NN_EVIS", "0");
-        }
-
-        // run the model with fp32 data-type depending on VIV_FAST_MODE
-        // VIV_FAST_MODE:
-        //     0: run with fp32 data type for float data by default.
-        //     1: run with fp16 data type.for float data
-        val = 1;
-        getEnv(FAST_MODE, val);
-        relaxed_ = val;
-    }
-
-    return;
-}
-
 Model::Model() : memory_pool_(*this)
 {
     /*fetch env ${VIV_FAST_MODEL} to set the relaxed mode,
       run on relaxed mode by default*/
-    checkProcess();
+    int val = 1;
+    if (getEnv(FAST_MODE, val)) {
+        NNRT_LOGD_PRINT("%s = %d", FAST_MODE, val);
+        relaxed_ = val;
+    }
 }
 
 Model::~Model()
