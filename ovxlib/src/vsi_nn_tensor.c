@@ -564,6 +564,8 @@ vsi_status vsi_nn_FillTensorWithValue
             {
                 VSILOGE("Copy data to tensor fail");
             }
+            free( data );
+            data = NULL;
         }
     }
 

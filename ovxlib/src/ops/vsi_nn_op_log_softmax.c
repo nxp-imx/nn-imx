@@ -169,12 +169,12 @@ static vsi_bool _check_tensor_shape
 
     if (axis == 0)
     {
-        if (dims < 3 || (inputs[0]->attr.size[1] * inputs[0]->attr.size[2] < VSI_NN_TENSOR_WIDTH_MAX))
+        if (dims < 3 || ((inputs[0]->attr.size[1] * inputs[0]->attr.size[2] < VSI_NN_TENSOR_WIDTH_MAX) && (dims <= 4)))
             ret = TRUE;
     }
     else if (axis == 2)
     {
-        if (dims < 3 || (inputs[0]->attr.size[0] * inputs[0]->attr.size[1] < VSI_NN_TENSOR_WIDTH_MAX))
+        if (dims < 3 || ((inputs[0]->attr.size[0] * inputs[0]->attr.size[1] < VSI_NN_TENSOR_WIDTH_MAX) && (dims <= 4)))
             ret = TRUE;
     }
     else if (axis == 1)
@@ -344,11 +344,11 @@ static int32_t reshape_tensor_set_input_output
     vsi_nn_node_t * self,
     vsi_nn_tensor_t * input,
     vsi_nn_tensor_t * output,
-    vx_reference * params
+    vx_reference * params,
+    vsi_bool  *is_2d_in
     )
 {
     uint32_t sizes[VSI_NN_MAX_DIM_NUM] = {1};
-    uint32_t dst_sizes[VSI_NN_MAX_DIM_NUM] = {1};
     uint32_t dims = vsi_nn_max(input->attr.dim_num, 2);
     int32_t axis = 0;
     vsi_nn_log_softmax_param * p = NULL;
@@ -371,86 +371,120 @@ static int32_t reshape_tensor_set_input_output
 
     is_2d_image = _check_tensor_shape(self, &input, &output);
 
-    if (axis == 0)
+    if (dims <= 4 && axis < 3)
     {
-        sizes[0] = input_size[0];
-
-        if (is_2d_image)
-        {
-            sizes[1] = input_size[1] * input_size[2];
-            sizes[2] = 1;
-            sizes[3] = dims > 3 ? input_size[3] : 1;
-
-            dst_sizes[0] = input_size[0];
-            dst_sizes[1] = input_size[1] * input_size[2];
-            dst_sizes[2] = 1;
-            dst_sizes[3] = dims > 3 ? input_size[3] : 1;
-        }
-        else
-        {
-            sizes[1] = input_size[1];
-            sizes[2] = dims > 2 ? input_size[2] : 1;
-            sizes[3] = dims > 3 ? input_size[3] : 1;
-
-            dst_sizes[0] = input_size[0];
-            dst_sizes[1] = input_size[1];
-            dst_sizes[2] = dims > 2 ? input_size[2] : 1;
-            dst_sizes[3] = dims > 3 ? input_size[3] : 1;
-        }
-    }
-    else if (axis == 1)
-    {
-        if (1 == input_size[0])
-        {
-            sizes[0] = input_size[1];
-            sizes[1] = dims > 2 ? input_size[2] : 1;
-            sizes[2] = 1;
-            sizes[3] = dims > 3 ? input_size[3] : 1;
-            dst_sizes[0] = sizes[0];
-            dst_sizes[1] = sizes[1];
-            dst_sizes[2] = sizes[2];
-            dst_sizes[3] = sizes[3];
-            axis = 0;
-        }
-        else
+        if (axis == 0)
         {
             sizes[0] = input_size[0];
-            sizes[1] = input_size[1];
-            sizes[2] = dims > 2 ? input_size[2] : 1;
-            sizes[3] = dims > 3 ? input_size[3] : 1;
-            dst_sizes[0] = input_size[0];
-            dst_sizes[1] = input_size[1];
-            dst_sizes[2] = dims > 2 ? input_size[2] : 1;
-            dst_sizes[3] = dims > 3 ? input_size[3] : 1;
+
+            if (is_2d_image)
+            {
+                sizes[1] = input_size[1] * input_size[2];
+                sizes[2] = 1;
+                sizes[3] = dims > 3 ? input_size[3] : 1;
+            }
+            else
+            {
+                sizes[1] = input_size[1];
+                sizes[2] = dims > 2 ? input_size[2] : 1;
+                sizes[3] = dims > 3 ? input_size[3] : 1;
+            }
+        }
+        else if (axis == 1)
+        {
+            if (1 == input_size[0])
+            {
+                sizes[0] = input_size[1];
+                sizes[1] = dims > 2 ? input_size[2] : 1;
+                sizes[2] = 1;
+                sizes[3] = dims > 3 ? input_size[3] : 1;
+                axis = 0;
+            }
+            else
+            {
+                sizes[0] = input_size[0];
+                sizes[1] = input_size[1];
+                sizes[2] = dims > 2 ? input_size[2] : 1;
+                sizes[3] = dims > 3 ? input_size[3] : 1;
+            }
+        }
+        else if (axis == 2)
+        {
+            if (is_2d_image)
+            {
+                sizes[0] = input_size[0] * input_size[1];
+                sizes[1] = input_size[2];
+                sizes[2] = 1;
+                sizes[3] = dims > 3 ? input_size[3] : 1;
+                axis = 1;
+            }
+            else
+            {
+                sizes[0] = input_size[0];
+                sizes[1] = input_size[1];
+                sizes[2] = dims > 2 ? input_size[2] : 1;
+                sizes[3] = dims > 3 ? input_size[3] : 1;
+            }
         }
     }
-    else if (axis == 2)
+    else
     {
-        if (is_2d_image)
+        uint32_t innerSize = 1;
+        uint32_t outerSize = 1;
+        for (i = 0; i < (uint32_t)axis; i++)
         {
-            sizes[0] = input_size[0] * input_size[1];
-            sizes[1] = input_size[2];
-            sizes[2] = 1;
-            sizes[3] = dims > 3 ? input_size[3] : 1;
+            sizes[i] = input_size[i];
+            innerSize *= input_size[i];
+        }
 
-            dst_sizes[0] = input_size[0] * input_size[1];
-            dst_sizes[1] = input_size[2];
-            dst_sizes[2] = 1;
-            dst_sizes[3] = dims > 3 ? input_size[3] : 1;
+        for (i = (uint32_t)(axis + 1); i < dims; i++)
+        {
+            outerSize *= input_size[i];
+        }
+
+        if (axis == 1)
+        {
+            if (sizes[0] == 1)
+            {
+                sizes[0] = input_size[axis];
+                sizes[1] = outerSize;
+                axis     = 0;
+                dims = 2;
+            }
+            else
+            {
+                sizes[1] = input_size[axis];
+                sizes[2] = outerSize;
+                sizes[3] = 1;
+                dims = 4;
+            }
+        }
+        else if (axis >= 3)
+        {
+            sizes[0] = innerSize;
+            sizes[1] = input_size[axis];
+            sizes[2] = outerSize;
+            sizes[3] = 1;
             axis = 1;
+            dims = 4;
         }
         else
         {
-            sizes[0] = input_size[0];
-            sizes[1] = input_size[1];
-            sizes[2] = dims > 2 ? input_size[2] : 1;
-            sizes[3] = dims > 3 ? input_size[3] : 1;
+            sizes[axis] = input_size[axis];
+            sizes[axis + 1] = outerSize;
 
-            dst_sizes[0] = input_size[0];
-            dst_sizes[1] = input_size[1];
-            dst_sizes[2] = dims > 2 ? input_size[2] : 1;
-            dst_sizes[3] = dims > 3 ? input_size[3] : 1;
+            dims = vsi_nn_min((uint32_t)(axis + 2), dims);
         }
+
+        if (dims < 3)
+        {
+            is_2d_image = TRUE;
+        }
+    }
+
+    if (is_2d_in)
+    {
+        *is_2d_in = is_2d_image;
     }
 
     if (params)
@@ -459,7 +493,7 @@ static int32_t reshape_tensor_set_input_output
         self->nn_param.log_softmax.local.local_tensor[0] =
             vxReshapeTensor(input->t, (int32_t *)sizes, dims);
         self->nn_param.log_softmax.local.local_tensor[1] =
-            vxReshapeTensor(output->t, (int32_t *)dst_sizes, dims);
+            vxReshapeTensor(output->t, (int32_t *)sizes, dims);
         params[0] = (vx_reference)self->nn_param.log_softmax.local.local_tensor[0];
         params[1] = (vx_reference)self->nn_param.log_softmax.local.local_tensor[1];
     }
@@ -477,22 +511,7 @@ static vsi_status vx_op_compute
     vsi_status status = VSI_SUCCESS;
     vx_reference params[_PARAM_NUM];
     vx_reference * args = NULL;
-    uint32_t dims = vsi_nn_max(inputs[0]->attr.dim_num, 2);
-    int32_t axis = 0;
-    vsi_nn_log_softmax_param * p = NULL;
     vx_border_t border;
-
-    p = &(self->nn_param.log_softmax);
-    axis = p->axis;
-    if (axis < 0)
-    {
-        axis = (int32_t)dims + axis;
-        if (axis < 0)
-        {
-            axis = 0;
-        }
-        p->axis = axis;
-    }
 
     args = &params[_IO_NUM];
 
@@ -502,7 +521,7 @@ static vsi_status vx_op_compute
     }
 
     /* Set inputs and outputs */
-    reshape_tensor_set_input_output( self, inputs[0], outputs[0], params);
+    reshape_tensor_set_input_output( self, inputs[0], outputs[0], params, NULL);
     /*TODO: Add code if need to change your parameter*/
 
     /* Init parameters. */
@@ -532,25 +551,14 @@ static void _get_logsoftmax_hashtable_idx
     uint32_t key;
     vsi_bool is_2d_image = FALSE;
     uint32_t i = 0;
-    uint32_t dims = vsi_nn_max(inputs[0]->attr.dim_num, 2);
     vsi_nn_log_softmax_param * p = NULL;
 
     p = &(self->nn_param.log_softmax);
     axis = p->axis;
-    if (axis < 0)
-    {
-        axis = (int32_t)dims + axis;
-        if (axis < 0)
-        {
-            axis = 0;
-        }
-        p->axis = axis;
-    }
 
-    axis = reshape_tensor_set_input_output(self, inputs[0], outputs[0], NULL);
+    axis = reshape_tensor_set_input_output(self, inputs[0], outputs[0], NULL, &is_2d_image);
     _input_type = get_logsoftmax_intra_type(inputFormat);
     _output_type = get_logsoftmax_intra_type(outputFormat);
-    is_2d_image = _check_tensor_shape(self, inputs, outputs);
     key = VSI_NN_GEN_LOGSOFTMAX_KEY(axis, _input_type, _output_type, is_2d_image);
 
     for (i = 0; i < sizeof(logsoftmax_map) / sizeof(logsoftmax_map[0]); i++)
@@ -687,6 +695,21 @@ static vsi_bool op_setup
     )
 {
     /* TODO: Add code to comput outputs' shape. */
+    if( NULL == self )
+    {
+        return FALSE;
+    }
+
+    if (self->nn_param.log_softmax.axis < 0)
+        self->nn_param.log_softmax.axis += (int32_t)inputs[0]->attr.dim_num;
+
+    if (self->nn_param.log_softmax.axis < 0)
+    {
+        VSILOGD("LogSoftMax Invalid Axis: %d", self->nn_param.log_softmax.axis);
+        return FALSE;
+    }
+
+    vsi_nn_op_common_setup(self, inputs, outputs);
     return TRUE;
 } /* op_setup() */
 
