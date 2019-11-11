@@ -108,7 +108,7 @@ vsi_status VX_CALLBACK vxL2NormalizeScaleValidator
                     VSILOGE("vsi_nn_vxGetTensorAttr  failure! at line %d\n", __LINE__);
                 }
                 data_format = attr.dtype.vx_type;
-                if (data_format != VX_TYPE_FLOAT16)
+                if (data_format != VSI_NN_TYPE_FLOAT16)
                     status |= VX_ERROR_INVALID_TYPE;
 
                 status |= vxReleaseTensor(&input_tensor);
@@ -136,7 +136,7 @@ vsi_status VX_CALLBACK vxL2NormalizeScaleValidator
                     // VX_SCALAR_TYPE
                     vsi_enum type = 0;
                     status |= vxQueryScalar(scalar, VX_SCALAR_TYPE, &type, sizeof(type));
-                    if (type != VX_TYPE_INT32)
+                    if (type != VSI_NN_TYPE_INT32)
                         status = VX_ERROR_INVALID_TYPE;
 
                     status |= vxReleaseScalar(&scalar);
@@ -454,7 +454,7 @@ vsi_status VX_CALLBACK vxL2NormScale_SumRsqrtInitializer
     vsi_status status = VX_SUCCESS;
 
     vx_tensor input         = (vx_tensor)paramObj[0];
-    int32_t   input_size[4] = {0};
+    int32_t   input_size[4] = {1, 1, 1, 1};
     vsi_enum  dataFormat;
     int8_t    fixPointPos   = 0;
     int32_t   inputZP       = 0;
@@ -484,7 +484,7 @@ vsi_status VX_CALLBACK vxL2NormScale_SumRsqrtInitializer
 
     vxCopyScalar((vx_scalar)paramObj[2], &(axis), VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
 
-    if(dataFormat == VX_TYPE_INT8 || dataFormat == VX_TYPE_INT16)
+    if(dataFormat == VSI_NN_TYPE_INT8 || dataFormat == VSI_NN_TYPE_INT16)
     {
         if (fixPointPos >= 0)
             inputScale = 1.0f / (float) (1 << fixPointPos);
@@ -525,24 +525,24 @@ vsi_status VX_CALLBACK vxL2NormScale_SumRsqrtInitializer
     if (1 == axis)
     {
         vxSetNodeUniform(nodObj, "L2NorS_depth", 1, &input_size[1]);
-        if(dataFormat == VX_TYPE_FLOAT16)
+        if(dataFormat == VSI_NN_TYPE_FLOAT16)
         {
             vxSetNodeUniform(nodObj, "UniFp16MulLo_dp4x4", 1, UniFp16MulLo_dp4x4);
             vxSetNodeUniform(nodObj, "UniFp16MulHi_dp4x4", 1, UniFp16MulHi_dp4x4);
         }
-        else if(dataFormat == VX_TYPE_INT8)
+        else if(dataFormat == VSI_NN_TYPE_INT8)
         {
             vxSetNodeUniform(nodObj, "r_inputScale", 1, &r_inputScale);
             vxSetNodeUniform(nodObj, "uniDataSquareAddU32Lo_4x4", 1, uniDataSquareAddU32Lo_4x4);
             vxSetNodeUniform(nodObj, "uniDataSquareAddU32Hi_4x4", 1, uniDataSquareAddU32Hi_4x4);
         }
-        else if(dataFormat == VX_TYPE_INT16)
+        else if(dataFormat == VSI_NN_TYPE_INT16)
         {
             vxSetNodeUniform(nodObj, "r_inputScale", 1, &r_inputScale);
             vxSetNodeUniform(nodObj, "uniIntegerSquareLo_4x4", 1, uniIntegerSquareLo_4x4);
             vxSetNodeUniform(nodObj, "uniIntegerSquareHi_4x4", 1, uniIntegerSquareHi_4x4);
         }
-        else if(dataFormat == VX_TYPE_UINT8)
+        else if(dataFormat == VSI_NN_TYPE_UINT8)
         {
             vxSetNodeUniform(nodObj, "r_inputScale", 1, &r_inputScale);
             vxSetNodeUniform(nodObj, "inputZP", 1, &inputZP);
@@ -560,11 +560,11 @@ vsi_status VX_CALLBACK vxL2NormScale_SumRsqrtInitializer
         vxSetNodeUniform(nodObj, "inputWidthRemain256", 1, &inputWidthRemain256);
         vxSetNodeUniform(nodObj, "inputWidthCount", 1, &inputWidthCount);
         vxSetNodeUniform(nodObj, "uniSumSqrt_16x1", 1, uniSumSqrt_16x1);
-        if (dataFormat == VX_TYPE_INT16 || dataFormat == VX_TYPE_INT8)
+        if (dataFormat == VSI_NN_TYPE_INT16 || dataFormat == VSI_NN_TYPE_INT8)
         {
             vxSetNodeUniform(nodObj, "r_inputScale", 1, &r_inputScale);
         }
-        else if(dataFormat == VX_TYPE_UINT8)
+        else if(dataFormat == VSI_NN_TYPE_UINT8)
         {
             float zP2x = 2 * (float)inputZP;
             float zpSqrt16x =  16 * (float)inputZP * (float)inputZP;
@@ -610,7 +610,7 @@ vsi_status VX_CALLBACK vxL2NormScale_MulScaleInitializer
     vsi_enum    outputFormat;
     vx_tensor   input           = (vx_tensor)paramObj[0];
     vx_tensor   output          = (vx_tensor)paramObj[3];
-    int32_t     input_size[DIM_SIZE]   = {0};
+    int32_t     input_size[DIM_SIZE]   = {1, 1, 1, 1};
     int8_t      srcFixPointPos  = 0;
     int32_t     inputZP         = 0;
     int8_t      dstFixPointPos  = 0;
@@ -648,7 +648,7 @@ vsi_status VX_CALLBACK vxL2NormScale_MulScaleInitializer
 
     vxCopyScalar((vx_scalar)paramObj[4], &(axis), VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
 
-    if(inputFormat == VX_TYPE_INT8 || inputFormat == VX_TYPE_INT16)
+    if(inputFormat == VSI_NN_TYPE_INT8 || inputFormat == VSI_NN_TYPE_INT16)
     {
         if (srcFixPointPos >= 0)
             inputScale = 1.0f / (float) (1 << srcFixPointPos);
@@ -657,13 +657,13 @@ vsi_status VX_CALLBACK vxL2NormScale_MulScaleInitializer
 
         inputZP = 0;
     }
-    else if(inputFormat == VX_TYPE_FLOAT16)
+    else if(inputFormat == VSI_NN_TYPE_FLOAT16)
     {
         inputScale     = 1.0f;
         inputZP        = 0;
     }
 
-    if(outputFormat == VX_TYPE_INT8 || outputFormat == VX_TYPE_INT16)
+    if(outputFormat == VSI_NN_TYPE_INT8 || outputFormat == VSI_NN_TYPE_INT16)
     {
         if (dstFixPointPos >= 0)
             outputScale = (float) (1 << dstFixPointPos);
@@ -672,7 +672,7 @@ vsi_status VX_CALLBACK vxL2NormScale_MulScaleInitializer
 
         outputZP = 0;
     }
-    else if(outputFormat == VX_TYPE_FLOAT16)
+    else if(outputFormat == VSI_NN_TYPE_FLOAT16)
     {
         outputScale    = 1.0f;
         outputZP       = 0;
@@ -764,7 +764,7 @@ vsi_status VX_CALLBACK vxL2NormScale_MulScaleInitializer
         };
 
 
-        if (outputFormat == VX_TYPE_UINT8)
+        if (outputFormat == VSI_NN_TYPE_UINT8)
             IntergerScale = IntergerScale / outputScale;
         else
             IntergerScale = IntergerScale * outputScale;
@@ -778,7 +778,7 @@ vsi_status VX_CALLBACK vxL2NormScale_MulScaleInitializer
         vxSetNodeUniform(nodObj, "uniFp16toFp32_4x4", 1, uniFp16toFp32_4x4);
         vxSetNodeUniform(nodObj, "uniFp16toFp32Hi_4x4", 1, uniFp16toFp32Hi_4x4);
 
-        if(outputFormat == VX_TYPE_FLOAT16)
+        if(outputFormat == VSI_NN_TYPE_FLOAT16)
             vxSetNodeUniform(nodObj, "uniExtact8Bin_2x8", 1, uniExtractHalf8_2x8);
         else
             vxSetNodeUniform(nodObj, "uniExtact8Bin_2x8", 1, uniExtact8Bin_2x8);

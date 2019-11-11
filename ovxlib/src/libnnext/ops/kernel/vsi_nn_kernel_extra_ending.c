@@ -131,10 +131,23 @@ vx_status VX_CALLBACK vxExtra_endingInitializer
     vx_uint32 width             = 0;
     vx_uint32 height            = 0;
     vx_uint32 channel           = 0;
+    vx_uint32  dst_size[4]   = {1, 1, 1, 1};
+    vsi_nn_tensor_attr_t attr;
+    uint32_t i;
+    uint32_t output_dims;
 
-    vx_uint32  dst_size[4]   = {0, 0, 0, 0};
-
-    status = vxQueryTensor(output, VX_TENSOR_DIMS, dst_size, sizeof(dst_size));
+    memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
+    status  = vsi_nn_vxGetTensorAttr(output, &attr);
+    if (status != VX_SUCCESS)
+    {
+        VSILOGE("vsi_nn_vxGetTensorAttr  failure! at line %d\n", __LINE__);
+        return status;
+    }
+    output_dims  = attr.dim_num;
+    for (i = 0; i < output_dims; i++)
+    {
+        dst_size[i] = attr.size[i];
+    }
 
     width = dst_size[0];
     height = dst_size[1];
@@ -159,7 +172,7 @@ vx_status VX_CALLBACK vxExtra_endingInitializer
                                     &shaderParam, sizeof(vx_kernel_execution_parameters_t));
 
     if(status < 0)
-        printf("error-%s,%d\n",__FILE__,__LINE__);
+        VSILOGE("error-%s,%d\n",__FILE__,__LINE__);
 
     return status;
 }

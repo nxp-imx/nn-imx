@@ -241,7 +241,7 @@ vsi_status VX_CALLBACK vxMaximumInitializer
     status |= vsi_nn_vxGetTensorAttr(output, &attr[2]);
 
     if(status < 0)
-        printf("error-%s,%d\n",__FILE__,__LINE__);
+        VSILOGE("error-%s,%d\n",__FILE__,__LINE__);
 
     src0Format = attr[0].dtype.vx_type;
     src0QuantType = attr[0].dtype.qnt_type;

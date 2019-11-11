@@ -237,7 +237,9 @@ static vsi_status vx_op_compute
     vx_border_t border;
     int32_t in_zp;
     vsi_nn_type_e inputDataFormat = inputs[0]->attr.dtype.vx_type;
+    vsi_nn_tensor_attr_t input_attr;
 
+    memset(&input_attr, 0, sizeof(vsi_nn_tensor_attr_t));
     args = &params[_IO_NUM];
 
     if( NULL == self->n )
@@ -250,8 +252,13 @@ static vsi_status vx_op_compute
     reshape_tensor_shape(self, inputs[0], params, 0);
     reshape_tensor_shape(self, outputs[0], params, 1);
     /*TODO: Add code if need to change your parameter*/
-    status = vxQueryTensor(inputs[0]->t, VX_TENSOR_ZERO_POINT, &in_zp, sizeof(in_zp));
-
+    status  = vsi_nn_vxGetTensorAttr(inputs[0]->t, &input_attr);
+    if (status != VX_SUCCESS)
+    {
+        VSILOGE("vsi_nn_vxGetTensorAttr  failure! at line %d\n", __LINE__);
+        return status;
+    }
+    in_zp = input_attr.dtype.zero_point;
     /* Init parameters. */
     _create_params( self, args, _ARG_NUM );
 

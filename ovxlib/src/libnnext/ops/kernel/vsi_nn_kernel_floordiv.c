@@ -220,9 +220,8 @@ vsi_status VX_CALLBACK vxFloorDivInitializer
     vx_tensor     input1          = (vx_tensor)paramObj[1];
     vx_tensor     output          = (vx_tensor)paramObj[2];
 
-    uint32_t      input_size[DIM_SIZE]   = {0};
+    uint32_t      input_size[DIM_SIZE]   = {1, 1, 1, 1};
     uint32_t      input_dims      = 0;
-    uint32_t      output_dims     = 0;
     uint32_t      zAx             = 1;
     vsi_nn_type_e inputDataFormat = VSI_NN_TYPE_FLOAT16;
     vsi_nn_type_e inputDataFormat1 = VSI_NN_TYPE_FLOAT16;
@@ -239,29 +238,41 @@ vsi_status VX_CALLBACK vxFloorDivInitializer
     int32_t     inZp0 = 0;
     int32_t     inZp1 = 0;
     int32_t     outZp = 0;
-    //vx_uint32 factor = 1;
-    //vx_uint32 maxWorkGroupSize = 8;
+    vx_uint32   i     = 0;
+    vsi_nn_tensor_attr_t attr[3];
 
-    status  = vxQueryTensor(input0, VX_TENSOR_DIMS, input_size, sizeof(input_size));
-    status |= vxQueryTensor(input0, VX_TENSOR_NUM_OF_DIMS, &input_dims, sizeof(input_dims));
-    status |= vxQueryTensor(input0, VX_TENSOR_DATA_TYPE, &inputDataFormat, sizeof(inputDataFormat));
-    status |= vxQueryTensor(input0, VX_TENSOR_FIXED_POINT_POS, &input_fixPointPos0, sizeof(input_fixPointPos0));
-    status |= vxQueryTensor(input0, VX_TENSOR_ZERO_POINT, &inZp0, sizeof(inZp0));
-    status |= vxQueryTensor(input0, VX_TENSOR_SCALE, &u8InScale0, sizeof(u8InScale0));
-    status |= vxQueryTensor(input1, VX_TENSOR_DATA_TYPE, &inputDataFormat1, sizeof(inputDataFormat1));
-    status |= vxQueryTensor(input1, VX_TENSOR_FIXED_POINT_POS, &input_fixPointPos1, sizeof(input_fixPointPos1));
-    status |= vxQueryTensor(input1, VX_TENSOR_ZERO_POINT, &inZp1, sizeof(inZp1));
-    status |= vxQueryTensor(input1, VX_TENSOR_SCALE, &u8InScale1, sizeof(u8InScale1));
-    status |= vxQueryTensor(output, VX_TENSOR_NUM_OF_DIMS, &output_dims, sizeof(output_dims));
-    status |= vxQueryTensor(output, VX_TENSOR_DATA_TYPE, &outputDataFormat, sizeof(outputDataFormat));
-    status |= vxQueryTensor(output, VX_TENSOR_FIXED_POINT_POS, &output_fixPointPos, sizeof(output_fixPointPos));
-    status |= vxQueryTensor(output, VX_TENSOR_ZERO_POINT, &outZp, sizeof(outZp));
-    status |= vxQueryTensor(output, VX_TENSOR_SCALE, &u8OutScale, sizeof(u8OutScale));
-    if(VX_SUCCESS != status)
+    memset(&attr[0], 0, sizeof(vsi_nn_tensor_attr_t));
+    memset(&attr[1], 0, sizeof(vsi_nn_tensor_attr_t));
+    memset(&attr[2], 0, sizeof(vsi_nn_tensor_attr_t));
+
+    status  = vsi_nn_vxGetTensorAttr(input0, &attr[0]);
+    status |= vsi_nn_vxGetTensorAttr(input1, &attr[1]);
+    status |= vsi_nn_vxGetTensorAttr(output, &attr[2]);
+    if (status != VX_SUCCESS)
     {
-        VSILOGE("[%s : %d]Initializer  failure! \n",__FILE__, __LINE__);
+        VSILOGE("vsi_nn_vxGetTensorAttr  failure! at line %d\n", __LINE__);
         return status;
     }
+
+    //vx_uint32 factor = 1;
+    //vx_uint32 maxWorkGroupSize = 8;
+    input_dims = attr[0].dim_num;
+    for (i = 0; i < input_dims; i++)
+    {
+        input_size[i] = attr[0].size[i];
+    }
+    inputDataFormat     = attr[0].dtype.vx_type;
+    input_fixPointPos0  = attr[0].dtype.fl;
+    inZp0               = attr[0].dtype.zero_point;
+    u8InScale0          = attr[0].dtype.scale;
+    inputDataFormat1    = attr[1].dtype.vx_type;
+    input_fixPointPos1  = attr[1].dtype.fl;
+    inZp1               = attr[1].dtype.zero_point;
+    u8InScale1          = attr[1].dtype.scale;
+    outputDataFormat    = attr[2].dtype.vx_type;
+    output_fixPointPos  = attr[2].dtype.fl;
+    outZp               = attr[2].dtype.zero_point;
+    u8OutScale          = attr[2].dtype.scale;
 
     if(inputDataFormat == VSI_NN_TYPE_INT16 || inputDataFormat == VSI_NN_TYPE_INT8)
     {

@@ -67,11 +67,24 @@ vsi_status VX_CALLBACK vxParametricDropoutInitializer
 
     vsi_status status = VX_SUCCESS;
     uint32_t dims = 0;
-    uint32_t size[DIM_SIZE] = {0};
-
+    uint32_t size[DIM_SIZE] = {1, 1, 1, 1};
     vx_tensor tensor = (vx_tensor)paramObj[0];
-    status = vxQueryTensor(tensor, VX_TENSOR_NUM_OF_DIMS, &dims, sizeof(uint32_t));
-    status = vxQueryTensor(tensor, VX_TENSOR_DIMS, size, sizeof(uint32_t) * dims);
+    vsi_nn_tensor_attr_t attr;
+    uint32_t i = 0;
+
+    memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
+    status  = vsi_nn_vxGetTensorAttr(tensor, &attr);
+    if (status != VX_SUCCESS)
+    {
+        VSILOGE("vsi_nn_vxGetTensorAttr  failure! at line %d\n", __LINE__);
+        return status;
+    }
+
+    dims  = attr.dim_num;
+    for (i = 0; i < dims; i++)
+    {
+        size[i] = attr.size[i];
+    }
 
     shaderParam.globalWorkOffset[0] = 0;
     shaderParam.globalWorkOffset[1] = 0;

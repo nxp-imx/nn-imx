@@ -186,7 +186,7 @@ vsi_status VX_CALLBACK vxTensorResizeInitializer
     vsi_status status = VX_SUCCESS;
 
     vx_tensor input = (vx_tensor)paramObj[0];
-    uint32_t input_size[DIM_SIZE];
+    uint32_t input_size[DIM_SIZE] = {1, 1, 1, 1};
     vsi_nn_tensor_attr_t attr;
     uint32_t i, input_dim;
 

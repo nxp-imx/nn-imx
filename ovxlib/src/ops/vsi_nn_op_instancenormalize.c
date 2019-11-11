@@ -399,6 +399,10 @@ static vsi_status vx_sum_op_compute
     vsi_nn_type_e inputDataFormat = inputs[0]->attr.dtype.vx_type;
     vsi_nn_tensor_attr_t attr;
     vsi_nn_tensor_t* tmpTensor = NULL;
+    vsi_nn_tensor_attr_t input_attr;
+
+    memset(&input_attr, 0, sizeof(vsi_nn_tensor_attr_t));
+
     args = &params[_SUM_IO_NUM];
 
     if( NULL == self->n )
@@ -423,7 +427,13 @@ static vsi_status vx_sum_op_compute
         check_tensor_shape(self, tmpTensor, params, 1, rsFlg);
     }
 #endif
-    status = vxQueryTensor(inputs[0]->t, VX_TENSOR_ZERO_POINT, &in_zp, sizeof(in_zp));
+    status  = vsi_nn_vxGetTensorAttr(inputs[0]->t, &input_attr);
+    if (status != VX_SUCCESS)
+    {
+        VSILOGE("vsi_nn_vxGetTensorAttr  failure! at line %d\n", __LINE__);
+        return status;
+    }
+    in_zp = input_attr.dtype.zero_point;
     /* Init parameters. */
     args[0] = (vx_reference)*arrayList[0];
     args[1] = (vx_reference)*arrayList[1];
@@ -467,6 +477,10 @@ static vsi_status vx_sqr_op_compute
     vsi_nn_type_e inputDataFormat = inputs[0]->attr.dtype.vx_type;
     vsi_nn_tensor_attr_t attr;
     vsi_nn_tensor_t* tmpTensor = NULL;
+    vsi_nn_tensor_attr_t input_attr;
+
+    memset(&input_attr, 0, sizeof(vsi_nn_tensor_attr_t));
+
     args = &params[_SQR_IO_NUM];
 
     if( NULL == self->n )
@@ -499,11 +513,10 @@ static vsi_status vx_sqr_op_compute
     args[4] = (vx_reference)*arrayList[3];
 
     /* Pass parameters to node. */
-    status = vsi_nn_ClientNodePassParameters( self->n, params, _SQR_PARAM_NUM );
-
-    status |= vxQueryTensor(inputs[0]->t, VX_TENSOR_ZERO_POINT, &in_zp, sizeof(in_zp));
+    status  = vsi_nn_ClientNodePassParameters( self->n, params, _SQR_PARAM_NUM );
+    status |= vsi_nn_vxGetTensorAttr(inputs[0]->t, &input_attr);
+    in_zp = input_attr.dtype.zero_point;
     _release_params( args, 1 );
-
     border.mode = VX_BORDER_CONSTANT;
     border.constant_value.U32 = 0;
     border.constant_value.S16 = 0;
@@ -535,6 +548,9 @@ static vsi_status vx_mean_vari_op_compute
     vx_bool rsFlg = vx_false_e;
     int32_t in_zp;
     vsi_nn_type_e inputDataFormat = inputs[0]->attr.dtype.vx_type;
+    vsi_nn_tensor_attr_t input_attr;
+
+    memset(&input_attr, 0, sizeof(vsi_nn_tensor_attr_t));
     //vsi_nn_tensor_attr_t attr;
     //vsi_nn_tensor_t* tmpTensor = NULL;
     args = &params[_VARI_IO_NUM];
@@ -564,9 +580,9 @@ static vsi_status vx_mean_vari_op_compute
     _create_params( self, args, _VARI_ARG_NUM );
 
     /* Pass parameters to node. */
-    status = vsi_nn_ClientNodePassParameters( self->n, params, _VARI_PARAM_NUM );
-
-    status |= vxQueryTensor(inputs[0]->t, VX_TENSOR_ZERO_POINT, &in_zp, sizeof(in_zp));
+    status  = vsi_nn_ClientNodePassParameters( self->n, params, _VARI_PARAM_NUM );
+    status |= vsi_nn_vxGetTensorAttr(inputs[0]->t, &input_attr);
+    in_zp = input_attr.dtype.zero_point;
     _release_params( args, 1 );
 
     border.mode = VX_BORDER_CONSTANT;
@@ -601,7 +617,9 @@ static vsi_status vx_op_compute
     vx_bool rsFlg = vx_false_e;
     int32_t in_zp;
     vsi_nn_type_e inputDataFormat = inputs[0]->attr.dtype.vx_type;
+    vsi_nn_tensor_attr_t input_attr;
 
+    memset(&input_attr, 0, sizeof(vsi_nn_tensor_attr_t));
     args = &params[_IO_NUM];
 
     if( NULL == self->n )
@@ -616,7 +634,8 @@ static vsi_status vx_op_compute
     check_tensor_shape(self, inputs[2], params, 2, rsFlg);
     check_tensor_shape(self, outputs[0], params, 3, rsFlg);
     check_tensor_shape(self, tmpInput, params, 4, rsFlg);
-    status = vxQueryTensor(inputs[0]->t, VX_TENSOR_ZERO_POINT, &in_zp, sizeof(in_zp));
+    status = vsi_nn_vxGetTensorAttr(inputs[0]->t, &input_attr);
+    in_zp = input_attr.dtype.zero_point;
     /* Init parameters. */
     _create_params( self, args, _ARG_NUM );
 
@@ -651,20 +670,30 @@ static vsi_status op_compute
     vsi_nn_kernel_info_t kernel_info;
 
     vsi_nn_type_e inputDataFormat     = inputs[0]->attr.dtype.vx_type;
-    uint32_t input_size[4] = {0};
+    uint32_t input_size[4] = {1, 1, 1, 1};
     vx_array* array_list[4] = {0};
     vx_array arraySum = NULL;
     vx_array arraySqr = NULL;
     vx_array resultSum = NULL;
     vx_array resultSqr = NULL;
     vsi_nn_tensor_t* tmpMeanVari = NULL;
+    uint32_t input_dims = 1;
+    uint32_t i = 0;
+    vsi_nn_tensor_attr_t input_attr;
+
     status = VSI_FAILURE;
     memset(&kernel_info, 0x0, sizeof(vsi_nn_kernel_info_t));
-    status = vxQueryTensor(inputs[0]->t, VX_TENSOR_DIMS, input_size, sizeof(input_size));
+    memset(&input_attr, 0, sizeof(vsi_nn_tensor_attr_t));
+    status = vsi_nn_vxGetTensorAttr(inputs[0]->t, &input_attr);
     if (status != VX_SUCCESS)
     {
-        VSILOGE("vxQueryTensor input_size failure! at line %d\n", __LINE__);
+        VSILOGE("vsi_nn_vxGetTensorAttr  failure! at line %d\n", __LINE__);
         return status;
+    }
+    input_dims  = input_attr.dim_num;
+    for (i = 0; i < input_dims; i++)
+    {
+        input_size[i] = input_attr.size[i];
     }
 
     {

@@ -218,7 +218,11 @@ vsi_status VX_CALLBACK vxArgMaxInitializer
 
     status  = vsi_nn_vxGetTensorAttr(input, &attr[0]);
     status |= vsi_nn_vxGetTensorAttr(output, &attr[1]);
-
+    if (status != VX_SUCCESS)
+    {
+        VSILOGE("vsi_nn_vxGetTensorAttr  failure! at line %d\n", __LINE__);
+        return status;
+    }
     srcFormat = attr[0].dtype.vx_type;
     dstFormat = attr[1].dtype.vx_type;
 

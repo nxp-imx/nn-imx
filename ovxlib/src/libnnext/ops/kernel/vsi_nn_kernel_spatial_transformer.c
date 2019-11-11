@@ -182,7 +182,7 @@ static vsi_status VX_CALLBACK vxSpatial_transformerKernel
     memset(&out_attr, 0x0, sizeof(vsi_nn_tensor_attr_t));
     memset(&thre_data_attr, 0x0, sizeof(vsi_nn_tensor_attr_t));
     memset(&thre_proto_attr, 0x0, sizeof(vsi_nn_tensor_attr_t));
-    //VX_TYPE_FLOAT16 *in_buffer = NULL, *out_buffer = NULL;
+    //VSI_NN_TYPE_FLOAT16 *in_buffer = NULL, *out_buffer = NULL;
 
     /* TODO: Add CPU kernel implement */
     if(paramNum != 5)
@@ -212,7 +212,7 @@ static vsi_status VX_CALLBACK vxSpatial_transformerKernel
     f32_out_grid = (float *)malloc(out_attr.size[0] * out_attr.size[1] * 2 * sizeof(float));
     if(f32_out_grid == NULL || f32_out_grid== NULL)
     {
-        printf("Malloc space for grid failed \n");
+        VSILOGE("Malloc space for grid failed \n");
         status = VSI_FAILURE;
         goto OnError;
     }
@@ -234,7 +234,7 @@ static vsi_status VX_CALLBACK vxSpatial_transformerKernel
     f32_in_buffer = (float*)malloc(size*sizeof(float));
     if(f32_in_buffer == NULL)
     {
-        printf("Malloc space for input failed \n");
+        VSILOGE("Malloc space for input failed \n");
         status = VSI_FAILURE;
         goto OnError;
     }
@@ -255,7 +255,7 @@ static vsi_status VX_CALLBACK vxSpatial_transformerKernel
         size *= thre_data_attr.size[i];
     if(size + thre_num > 6)
     {
-        printf("The dim of thre must 6\n");
+        VSILOGE("The dim of thre must 6\n");
         status = VSI_FAILURE;
         goto OnError;
     }
@@ -286,7 +286,7 @@ static vsi_status VX_CALLBACK vxSpatial_transformerKernel
     f32_out_buffer = (float*)malloc(size*sizeof(float));
     if(f32_out_buffer == NULL)
     {
-        printf("Malloc space for output failed \n");
+        VSILOGE("Malloc space for output failed \n");
         status = VSI_FAILURE;
         goto OnError;
     }
@@ -425,38 +425,35 @@ vx_status VX_CALLBACK vxTransform_GemmInitializer(vx_node nodObj, const vx_refer
     vx_tensor    input0             = (vx_tensor)paramObj[0];
     vx_tensor    input1             = (vx_tensor)paramObj[1];
     vx_tensor    output             = (vx_tensor)paramObj[2];
-    vx_enum      src0Format         = VX_TYPE_FLOAT16;
-    vx_enum      src1Format         = VX_TYPE_FLOAT16;
-    vx_enum      dstFormat          = VX_TYPE_FLOAT16;
-    vx_enum      src0QuantType      = 0;
-    vx_int8      src0FixPointPos    = 0;
-    vx_enum      src1QuantType      = 0;
-    vx_int8      src1FixPointPos    = 0;
-    vx_enum      dstQuantType       = 0;
-    vx_int8      dstFixPointPos     = 0;
+    vx_enum      src0Format         = VSI_NN_TYPE_FLOAT16;
+    vx_enum      src1Format         = VSI_NN_TYPE_FLOAT16;
+    vx_enum      dstFormat          = VSI_NN_TYPE_FLOAT16;
+    vx_uint32    coord_size[4]      = {1, 1, 1, 1};
+    vx_uint32    i     = 0;
+    vsi_nn_tensor_attr_t attr[3];
 
-    vx_uint32    coord_size[4]      = {0, 0, 0, 0};
-    vx_uint32    input_size[4]      = {0, 0, 0, 0};
-    vx_uint32    output_size[4]     = {0, 0, 0, 0};
+    memset(&attr[0], 0, sizeof(vsi_nn_tensor_attr_t));
+    memset(&attr[1], 0, sizeof(vsi_nn_tensor_attr_t));
+    memset(&attr[2], 0, sizeof(vsi_nn_tensor_attr_t));
 
-    status = vxQueryTensor(input0, VX_TENSOR_DATA_TYPE, &src0Format, sizeof(src0Format));
-    status |= vxQueryTensor(input0, VX_TENSOR_QUANT_FORMAT, &src0QuantType, sizeof(src0QuantType));
-    status |= vxQueryTensor(input0, VX_TENSOR_FIXED_POINT_POSITION, &src0FixPointPos, sizeof(src0FixPointPos));
-    status |= vxQueryTensor(input0, VX_TENSOR_DIMS, input_size, sizeof(input_size));
+    status  = vsi_nn_vxGetTensorAttr(input0, &attr[0]);
+    status |= vsi_nn_vxGetTensorAttr(input1, &attr[1]);
+    status |= vsi_nn_vxGetTensorAttr(output, &attr[2]);
+    if (status != VX_SUCCESS)
+    {
+        VSILOGE("vsi_nn_vxGetTensorAttr  failure! at line %d\n", __LINE__);
+        return status;
+    }
 
-    status |= vxQueryTensor(input1, VX_TENSOR_DATA_TYPE, &src1Format, sizeof(src1Format));
-    status |= vxQueryTensor(input1, VX_TENSOR_QUANT_FORMAT, &src1QuantType, sizeof(src1QuantType));
-    status |= vxQueryTensor(input1, VX_TENSOR_FIXED_POINT_POSITION, &src1FixPointPos, sizeof(src1FixPointPos));
-    status |= vxQueryTensor(input1, VX_TENSOR_DIMS, coord_size, sizeof(coord_size));
-    status |= vxQueryTensor(output, VX_TENSOR_DATA_TYPE, &dstFormat, sizeof(dstFormat));
-    status |= vxQueryTensor(output, VX_TENSOR_QUANT_FORMAT, &dstQuantType, sizeof(dstQuantType));
-    status |= vxQueryTensor(output, VX_TENSOR_FIXED_POINT_POSITION, &dstFixPointPos, sizeof(dstFixPointPos));
-    status |= vxQueryTensor(output, VX_TENSOR_DIMS, output_size, sizeof(output_size));
+    src0Format       = attr[0].dtype.vx_type;
+    src1Format       = attr[1].dtype.vx_type;
+    for (i = 0; i < attr[1].dim_num; i++)
+    {
+        coord_size[i] = attr[1].size[i];
+    }
+    dstFormat        = attr[2].dtype.vx_type;
 
-    if(status < 0)
-        printf("error-%s,%d\n",__FILE__,__LINE__);
-
-    if (src0Format == VX_TYPE_FLOAT16 && src1Format == VX_TYPE_FLOAT16 && dstFormat == VX_TYPE_FLOAT16)
+    if (src0Format == VSI_NN_TYPE_FLOAT16 && src1Format == VSI_NN_TYPE_FLOAT16 && dstFormat == VSI_NN_TYPE_FLOAT16)
     {
         shaderParam.globalWorkScale[0]  = 12;
         shaderParam.globalWorkScale[1]  = 1;
@@ -516,8 +513,8 @@ vx_status VX_CALLBACK vxTransform_setupThresInitializer
 
     vx_status    status             = VX_SUCCESS;
     vx_scalar    thresFlag_s        = (vx_scalar)paramObj[2];
-    vx_enum      src0Format         = VX_TYPE_FLOAT16;
-    vx_enum      src1Format         = VX_TYPE_FLOAT16;
+    vx_enum      src0Format         = VSI_NN_TYPE_FLOAT16;
+    vx_enum      src1Format         = VSI_NN_TYPE_FLOAT16;
 
     vx_int32     thresFlag          = 0;
     vx_uint32    extract_packed[4]  = {0};
@@ -525,7 +522,7 @@ vx_status VX_CALLBACK vxTransform_setupThresInitializer
     vxCopyScalar(thresFlag_s, &thresFlag, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
 
     if(status < 0)
-        printf("error-%s,%d\n",__FILE__,__LINE__);
+        VSILOGE("error-%s,%d\n",__FILE__,__LINE__);
 
     shaderParam.globalWorkScale[0]  = 1;
     shaderParam.globalWorkScale[1]  = 1;
@@ -534,7 +531,7 @@ vx_status VX_CALLBACK vxTransform_setupThresInitializer
     shaderParam.globalWorkSize[0]   = 1;
     shaderParam.globalWorkSize[1]   = 1;
 
-    if (src0Format == src1Format && src0Format == VX_TYPE_FLOAT16)
+    if (src0Format == src1Format && src0Format == VSI_NN_TYPE_FLOAT16)
     {
         vx_uint32 i = 0;
         vx_uint32 j = 0;
@@ -608,39 +605,46 @@ vx_status VX_CALLBACK vxTransform_InterPInitializer
     vx_tensor    input0             = (vx_tensor)paramObj[0];
     vx_tensor    input1             = (vx_tensor)paramObj[1];
     vx_tensor    output             = (vx_tensor)paramObj[2];
-    vx_enum      src0Format         = VX_TYPE_FLOAT16;
-    vx_enum      src1Format         = VX_TYPE_FLOAT16;
-    vx_enum      dstFormat          = VX_TYPE_FLOAT16;
-    vx_enum      src0QuantType      = 0;
-    vx_int8      src0FixPointPos    = 0;
-    vx_enum      src1QuantType      = 0;
-    vx_int8      src1FixPointPos    = 0;
-    vx_enum      dstQuantType       = 0;
-    vx_int8      dstFixPointPos     = 0;
+    vx_enum      src0Format         = VSI_NN_TYPE_FLOAT16;
+    vx_enum      src1Format         = VSI_NN_TYPE_FLOAT16;
+    vx_enum      dstFormat          = VSI_NN_TYPE_FLOAT16;
+    vx_uint32    coord_size[4]      = {1, 1, 1, 1};
+    vx_uint32    input_size[4]      = {1, 1, 1, 1};
+    vx_uint32    output_size[4]     = {1, 1, 1, 1};
+    vx_uint32    i     = 0;
+    vsi_nn_tensor_attr_t attr[3];
 
-    vx_uint32    coord_size[4]      = {0, 0, 0, 0};
-    vx_uint32    input_size[4]      = {0, 0, 0, 0};
-    vx_uint32    output_size[4]     = {0, 0, 0, 0};
+    memset(&attr[0], 0, sizeof(vsi_nn_tensor_attr_t));
+    memset(&attr[1], 0, sizeof(vsi_nn_tensor_attr_t));
+    memset(&attr[2], 0, sizeof(vsi_nn_tensor_attr_t));
 
-    status = vxQueryTensor(input0, VX_TENSOR_DATA_TYPE, &src0Format, sizeof(src0Format));
-    status |= vxQueryTensor(input0, VX_TENSOR_QUANT_FORMAT, &src0QuantType, sizeof(src0QuantType));
-    status |= vxQueryTensor(input0, VX_TENSOR_FIXED_POINT_POSITION, &src0FixPointPos, sizeof(src0FixPointPos));
-    status |= vxQueryTensor(input0, VX_TENSOR_DIMS, input_size, sizeof(input_size));
+    status  = vsi_nn_vxGetTensorAttr(input0, &attr[0]);
+    status |= vsi_nn_vxGetTensorAttr(input1, &attr[1]);
+    status |= vsi_nn_vxGetTensorAttr(output, &attr[2]);
+    if (status != VX_SUCCESS)
+    {
+        VSILOGE("vsi_nn_vxGetTensorAttr  failure! at line %d\n", __LINE__);
+        return status;
+    }
 
-    status |= vxQueryTensor(input1, VX_TENSOR_DATA_TYPE, &src1Format, sizeof(src1Format));
-    status |= vxQueryTensor(input1, VX_TENSOR_QUANT_FORMAT, &src1QuantType, sizeof(src1QuantType));
-    status |= vxQueryTensor(input1, VX_TENSOR_FIXED_POINT_POSITION, &src1FixPointPos, sizeof(src1FixPointPos));
-    status |= vxQueryTensor(input1, VX_TENSOR_DIMS, coord_size, sizeof(coord_size));
-    status |= vxQueryTensor(output, VX_TENSOR_DATA_TYPE, &dstFormat, sizeof(dstFormat));
-    status |= vxQueryTensor(output, VX_TENSOR_QUANT_FORMAT, &dstQuantType, sizeof(dstQuantType));
-    status |= vxQueryTensor(output, VX_TENSOR_FIXED_POINT_POSITION, &dstFixPointPos, sizeof(dstFixPointPos));
-    status |= vxQueryTensor(output, VX_TENSOR_DIMS, output_size, sizeof(output_size));
+    for (i = 0; i < attr[0].dim_num; i++)
+    {
+        input_size[i] = attr[0].size[i];
+    }
+    src0Format       = attr[0].dtype.vx_type;
+    src1Format       = attr[1].dtype.vx_type;
+    for (i = 0; i < attr[1].dim_num; i++)
+    {
+        coord_size[i] = attr[1].size[i];
+    }
+    dstFormat        = attr[2].dtype.vx_type;
+    for (i = 0; i < attr[2].dim_num; i++)
+    {
+        output_size[i] = attr[2].size[i];
+    }
 
-    if(status < 0)
-        printf("error-%s,%d\n",__FILE__,__LINE__);
-
-    if ((src0Format == VX_TYPE_FLOAT16 && src1Format == VX_TYPE_FLOAT16 && dstFormat == VX_TYPE_FLOAT16)
-     || (src0Format == VX_TYPE_INT16 && src1Format == VX_TYPE_INT16 && dstFormat == VX_TYPE_INT16))
+    if ((src0Format == VSI_NN_TYPE_FLOAT16 && src1Format == VSI_NN_TYPE_FLOAT16 && dstFormat == VSI_NN_TYPE_FLOAT16)
+     || (src0Format == VSI_NN_TYPE_INT16 && src1Format == VSI_NN_TYPE_INT16 && dstFormat == VSI_NN_TYPE_INT16))
     {
         shaderParam.globalWorkScale[0]  = 2;
         shaderParam.globalWorkScale[1]  = 1;

@@ -254,7 +254,7 @@ vx_status VX_CALLBACK vxReduceany_internalInitializer
             shaderParam.globalWorkSize[1]   = height;
         break;
         default:
-            printf("error input axis value %d \n", axis);
+            VSILOGE("error input axis value %d \n", axis);
             return VX_ERROR_INVALID_PARAMETERS;
         break;
     }

@@ -79,16 +79,32 @@ vsi_status VX_CALLBACK TensorCropInitializer
 
     vx_tensor input             = (vx_tensor)paramObj[0];
     vx_tensor output            = (vx_tensor)paramObj[1];
-    uint32_t output_size[4]     = {0, 0, 0, 0};
+    uint32_t output_size[4]     = {1, 1, 1, 1};
     vsi_enum dataFormat, dstFormat;
     int8_t  input_fixPointPos   = 0;
+    vx_uint32 i  =  0;
     int32_t offset[3];
     size_t size[DIM_SIZE];
+    vsi_nn_tensor_attr_t attr[2];
 
-    status = vxQueryTensor(input, VX_TENSOR_DATA_TYPE, &dataFormat, sizeof(dataFormat));
-    status |= vxQueryTensor(input, VX_TENSOR_FIXED_POINT_POSITION, &input_fixPointPos, sizeof(input_fixPointPos));
-    status |= vxQueryTensor(output, VX_TENSOR_DIMS, output_size, sizeof(output_size));
-    status |= vxQueryTensor(output, VX_TENSOR_DATA_TYPE, &dstFormat, sizeof(dstFormat));
+    memset(&attr[0], 0, sizeof(vsi_nn_tensor_attr_t));
+    memset(&attr[1], 0, sizeof(vsi_nn_tensor_attr_t));
+
+    status  = vsi_nn_vxGetTensorAttr(input, &attr[0]);
+    status |= vsi_nn_vxGetTensorAttr(output, &attr[1]);
+    if (status != VX_SUCCESS)
+    {
+        VSILOGE("vsi_nn_vxGetTensorAttr  failure! at line %d\n", __LINE__);
+        return status;
+    }
+
+    dataFormat        = attr[0].dtype.vx_type;
+    input_fixPointPos = attr[0].dtype.fl;
+    dstFormat         = attr[1].dtype.vx_type;
+    for (i = 0; i < attr[1].dim_num; i++)
+    {
+        output_size[i] = attr[1].size[i];
+    }
 
     vxCopyScalar((vx_scalar)paramObj[2], &offset[0], VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
     vxCopyScalar((vx_scalar)paramObj[3], &offset[1], VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
@@ -97,14 +113,14 @@ vsi_status VX_CALLBACK TensorCropInitializer
     memset(size, 0, sizeof(size_t) * DIM_SIZE);
     switch(dstFormat)
     {
-    case VX_TYPE_INT8:
-    case VX_TYPE_UINT8:
+    case VSI_NN_TYPE_INT8:
+    case VSI_NN_TYPE_UINT8:
         size[0] = 16;
         size[1] = 4;
         break;
-    case VX_TYPE_INT16:
-    case VX_TYPE_UINT16:
-    case VX_TYPE_FLOAT16:
+    case VSI_NN_TYPE_INT16:
+    case VSI_NN_TYPE_UINT16:
+    case VSI_NN_TYPE_FLOAT16:
         size[0] = 8;
         size[1] = 4;
         break;
@@ -122,7 +138,7 @@ vsi_status VX_CALLBACK TensorCropInitializer
         / shaderParam.globalWorkScale[1];
     shaderParam.globalWorkSize[2] = output_size[2];
 
-    if(dataFormat == VX_TYPE_INT16 && dstFormat == VX_TYPE_FLOAT16)
+    if(dataFormat == VSI_NN_TYPE_INT16 && dstFormat == VSI_NN_TYPE_FLOAT16)
     {
         vx_uint32 uniConvertInt16toFp16_2x8[16] = {
             0x11111111, // TCfg

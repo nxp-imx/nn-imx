@@ -208,7 +208,7 @@ vx_status VX_CALLBACK vxRelu_keras_internalInitializer
     status |= vxCopyScalar((vx_scalar)paramObj[4], &(threshold),VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
 
     if(status < 0)
-        printf("error-%s,%d\n",__FILE__,__LINE__);
+        VSILOGE("error-%s,%d\n",__FILE__,__LINE__);
 
     srcFormat = attr[0].dtype.vx_type;
     dstFormat = attr[1].dtype.vx_type;

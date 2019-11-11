@@ -88,7 +88,7 @@ vx_status VX_CALLBACK vxPre_process_rgbInitializer
 
     memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
 
-    status |= vsi_nn_vxGetTensorAttr(output, &attr);
+    status = vsi_nn_vxGetTensorAttr(output, &attr);
 
     width = attr.size[0];
     height = attr.size[1];
@@ -101,7 +101,7 @@ vx_status VX_CALLBACK vxPre_process_rgbInitializer
     }
 
     if(status < 0)
-        printf("error-%s,%d\n",__FILE__,__LINE__);
+        VSILOGE("error-%s,%d\n",__FILE__,__LINE__);
 
     enable_copy = (vx_bool)(xRatio == (1 << 15) && yRatio == (1 << 15));
 

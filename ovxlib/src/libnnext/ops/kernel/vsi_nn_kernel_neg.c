@@ -82,7 +82,7 @@ vx_status VX_CALLBACK vxTensorNegInitializer(vx_node nodObj, const vx_reference 
     vx_int8      postShift          = 0;
     vx_int8      srcFixPointPos     = 0;
     vx_int8      dstFixPointPos     = 0;
-    vx_enum      srcFormat          = VX_TYPE_FLOAT16;
+    vx_enum      srcFormat          = VSI_NN_TYPE_FLOAT16;
     vsi_nn_tensor_attr_t attr[2];
 
     memset(&attr[0], 0, sizeof(vsi_nn_tensor_attr_t));
@@ -92,19 +92,19 @@ vx_status VX_CALLBACK vxTensorNegInitializer(vx_node nodObj, const vx_reference 
     status |= vsi_nn_vxGetTensorAttr(output, &attr[1]);
 
     if(status < 0)
-        printf("error-%s,%d\n",__FILE__,__LINE__);
+        VSILOGE("error-%s,%d\n",__FILE__,__LINE__);
 
     srcFormat = attr[0].dtype.vx_type;
     srcFixPointPos = attr[0].dtype.fl;
     dstFixPointPos = attr[1].dtype.fl;
 
-    if (srcFormat == VX_TYPE_FLOAT16 || srcFormat == VX_TYPE_INT16)
+    if (srcFormat == VSI_NN_TYPE_FLOAT16 || srcFormat == VSI_NN_TYPE_INT16)
     {
         shaderParam.globalWorkScale[0]  = 8;
         shaderParam.globalWorkScale[1]  = 1;
         shaderParam.globalWorkScale[2]  = 1;
     }
-    else if (srcFormat == VX_TYPE_INT8 || srcFormat == VX_TYPE_UINT8)
+    else if (srcFormat == VSI_NN_TYPE_INT8 || srcFormat == VSI_NN_TYPE_UINT8)
     {
         shaderParam.globalWorkScale[0]  = 16;
         shaderParam.globalWorkScale[1]  = 1;
@@ -115,7 +115,7 @@ vx_status VX_CALLBACK vxTensorNegInitializer(vx_node nodObj, const vx_reference 
     shaderParam.globalWorkSize[2]   = attr[1].size[2];
 
 
-    if (srcFormat == VX_TYPE_FLOAT16)
+    if (srcFormat == VSI_NN_TYPE_FLOAT16)
     {
         vx_uint32 multAndoutZP[2]    = {0};
         vx_uint32 uniDataMulAndPostShift_2x8[16] = {

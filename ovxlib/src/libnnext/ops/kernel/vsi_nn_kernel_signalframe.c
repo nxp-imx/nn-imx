@@ -102,7 +102,7 @@ void mySignalFrameFunc
     {
         if(axis != 0)
         {
-            printf("error.\n");
+            VSILOGE("error.\n");
             return;
         }
         *dstW = frame_len;
@@ -410,19 +410,25 @@ vsi_status VX_CALLBACK vxSignalFrameKernel
         uint8_t *output = NULL;
 #endif
 
-        uint32_t input_size[DIM_SIZE] = {0}, output_size[DIM_SIZE] = {0}, dst_size[DIM_SIZE] = {0};
+        uint32_t input_size[DIM_SIZE] = {1, 1, 1, 1}, output_size[DIM_SIZE] = {1, 1, 1, 1}, dst_size[DIM_SIZE] = {1, 1, 1, 1};
         vsi_nn_tensor_attr_t in_attr, out_attr;
 
-        vsi_nn_type_e inputFormat = VSI_NN_TYPE_FLOAT16, outputFormat = VSI_NN_TYPE_FLOAT16;
+        vsi_nn_type_e outputFormat = VSI_NN_TYPE_FLOAT16;
         uint32_t input_dims = 0, output_dims = 0, tmpDim = 0;
 
-        int32_t in_zp = 0, out_zp = 0;
-        float in_scale = 1, out_scale = 1;
         vx_scalar scalar[5] = { NULL };
         uint32_t frame_length = 0, step = 0, pad_end = 0, pad = 0, axis = 0, axis0 = 0;
+        uint32_t i  = 0;
 
         memset(&in_attr, 0x0, sizeof(vsi_nn_tensor_attr_t));
         memset(&out_attr, 0x0, sizeof(vsi_nn_tensor_attr_t));
+        status  = vsi_nn_vxGetTensorAttr(imgObj[0], &in_attr);
+        status |= vsi_nn_vxGetTensorAttr(imgObj[1], &out_attr);
+        if (status != VX_SUCCESS)
+        {
+            VSILOGE("vsi_nn_vxGetTensorAttr failure! at line %d\n", __LINE__);
+            goto OnError;
+        }
 
         imgObj[0] = (vx_tensor)paramObj[0];
         imgObj[1] = (vx_tensor)paramObj[1];  //output
@@ -438,61 +444,18 @@ vsi_status VX_CALLBACK vxSignalFrameKernel
             goto OnError;
         }
         //input
-        status = vxQueryTensor(imgObj[0], VX_TENSOR_NUM_OF_DIMS, &input_dims, sizeof(input_dims));
-        if (status != VX_SUCCESS)
+        input_dims  = in_attr.dim_num;
+        for (i = 0; i < input_dims; i++)
         {
-            VSILOGE("vxQueryTensor input_dims failure! at line %d\n", __LINE__);
-            goto OnError;
+            input_size[i] = in_attr.size[i];
         }
-        status = vxQueryTensor(imgObj[0], VX_TENSOR_DATA_TYPE, &inputFormat, sizeof(inputFormat));
-        if (status != VX_SUCCESS)
-        {
-            VSILOGE("vxQueryTensor inputFormat failure! at line %d\n", __LINE__);
-            goto OnError;
-        }
-        status = vxQueryTensor(imgObj[0], VX_TENSOR_DIMS, input_size, sizeof(input_size));
-        if (status != VX_SUCCESS)
-        {
-            VSILOGE("vxQueryTensor input_size failure! at line %d\n", __LINE__);
-            goto OnError;
-        }
-        status = vxQueryTensor(imgObj[0], VX_TENSOR_ZERO_POINT, &in_zp, sizeof(in_zp));
-        if (status != VX_SUCCESS)
-        {
-            VSILOGE("vxQueryTensor input_size failure! at line %d\n", __LINE__);
-            goto OnError;
-        }
-        status = vxQueryTensor(imgObj[0], VX_TENSOR_SCALE, &in_scale, sizeof(in_scale));
-        if (status != VX_SUCCESS)
-        {
-            VSILOGE("vxQueryTensor input_size failure! at line %d\n", __LINE__);
-            goto OnError;
-        }
+
         //output
-        status  = vxQueryTensor(imgObj[1], VX_TENSOR_DATA_TYPE, &outputFormat, sizeof(outputFormat));
-        status |= vxQueryTensor(imgObj[1], VX_TENSOR_NUM_OF_DIMS, &output_dims, sizeof(output_dims));
-        if (status != VX_SUCCESS)
+        output_dims  = out_attr.dim_num;
+        outputFormat = out_attr.dtype.vx_type;
+        for (i = 0; i < output_dims; i++)
         {
-            VSILOGE("vxQueryTensor outputFormat failure! at line %d\n", __LINE__);
-            goto OnError;
-        }
-        status = vxQueryTensor(imgObj[1], VX_TENSOR_DIMS, output_size, sizeof(output_size));
-        if (status != VX_SUCCESS)
-        {
-            VSILOGE("vxQueryTensor output_size failure! at line %d\n", __LINE__);
-            goto OnError;
-        }
-        status = vxQueryTensor(imgObj[1], VX_TENSOR_ZERO_POINT, &out_zp, sizeof(out_zp));
-        if (status != VX_SUCCESS)
-        {
-            VSILOGE("vxQueryTensor input_size failure! at line %d\n", __LINE__);
-            goto OnError;
-        }
-        status = vxQueryTensor(imgObj[1], VX_TENSOR_SCALE, &out_scale, sizeof(out_scale));
-        if (status != VX_SUCCESS)
-        {
-            VSILOGE("vxQueryTensor input_size failure! at line %d\n", __LINE__);
-            goto OnError;
+            output_size[i] = out_attr.size[i];
         }
 
         input_size[2] = (input_dims <= 2)?1:input_size[2];
@@ -509,13 +472,7 @@ vsi_status VX_CALLBACK vxSignalFrameKernel
 #else
         output = (uint8_t*)malloc(output_size[0]*output_size[1]*output_size[2]*vsi_nn_GetTypeBytes(outputFormat));
 #endif
-        status = vsi_nn_vxGetTensorAttr(imgObj[0], &in_attr);
-        status |= vsi_nn_vxGetTensorAttr(imgObj[1], &out_attr);
-        if (status != VX_SUCCESS)
-        {
-            VSILOGE("vsi_nn_vxGetTensorAttr failure! at line %d\n", __LINE__);
-            goto OnError;
-        }
+
         input = vsi_nn_vxCopyTensorToData(context, imgObj[0], &in_attr);
 
         // scalar
@@ -579,32 +536,38 @@ vsi_status VX_CALLBACK vxSignalFrameInitializer
     vx_tensor     input           = (vx_tensor)paramObj[0];
     vx_tensor     output          = (vx_tensor)paramObj[1];
 
-    uint32_t      input_size[DIM_SIZE]   = {0};
+    uint32_t      input_size[DIM_SIZE]   = {1, 1, 1, 1};
     uint32_t      input_dims      = 0;
     uint32_t      output_dims      = 0;
-    vsi_nn_type_e inputDataFormat = VSI_NN_TYPE_FLOAT16;
-    vsi_nn_type_e outputDataFormat = VSI_NN_TYPE_FLOAT16;
     //vx_uint32 factor = 1;
     //vx_uint32 maxWorkGroupSize = 8;
     uint32_t frame_length, step, pad_end, pad, axis, axis0;
     uint32_t output_channel = 0;
+
+    vx_uint32  i        = 0;
+    vsi_nn_tensor_attr_t attr[2];
+    memset(&attr[0], 0, sizeof(vsi_nn_tensor_attr_t));
+    memset(&attr[1], 0, sizeof(vsi_nn_tensor_attr_t));
+    status  = vsi_nn_vxGetTensorAttr(input, &attr[0]);
+    status |= vsi_nn_vxGetTensorAttr(output, &attr[1]);
+    if (status != VX_SUCCESS)
+    {
+        VSILOGE("vsi_nn_vxGetTensorAttr  failure! at line %d\n", __LINE__);
+        return status;
+    }
+
+    input_dims       = attr[0].dim_num;
+    for (i = 0; i < input_dims; i++)
+    {
+        input_size[i] = attr[0].size[i];
+    }
+    output_dims       = attr[1].dim_num;
 
     scalar[0]            = (vx_scalar)paramObj[2];
     scalar[1]            = (vx_scalar)paramObj[3];
     scalar[2]            = (vx_scalar)paramObj[4];
     scalar[3]            = (vx_scalar)paramObj[5];
     scalar[4]            = (vx_scalar)paramObj[6];
-
-    status  = vxQueryTensor(input, VX_TENSOR_DIMS, input_size, sizeof(input_size));
-    status |= vxQueryTensor(input, VX_TENSOR_NUM_OF_DIMS, &input_dims, sizeof(input_dims));
-    status |= vxQueryTensor(input, VX_TENSOR_DATA_TYPE, &inputDataFormat, sizeof(inputDataFormat));
-    status |= vxQueryTensor(output, VX_TENSOR_NUM_OF_DIMS, &output_dims, sizeof(output_dims));
-    status |= vxQueryTensor(output, VX_TENSOR_DATA_TYPE, &outputDataFormat, sizeof(outputDataFormat));
-    if(VX_SUCCESS != status)
-    {
-        VSILOGE("[%s : %d]Initializer  failure! \n",__FILE__, __LINE__);
-        return status;
-    }
 
     status = vxCopyScalar(scalar[0], &frame_length, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
     status |= vxCopyScalar(scalar[1], &step, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);

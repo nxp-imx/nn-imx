@@ -190,8 +190,8 @@ vsi_status VX_CALLBACK vxLayerNormKernel
         vsi_nn_tensor_attr_t attr[4];
         int16_t *input = NULL, *output = NULL, *scale = NULL;
         float *bias = NULL;
-        uint32_t input_size[4] = {0}, output_size[4] = {0};
-        uint32_t scale_size[4] = {0}, bias_size[4] = {0};
+        uint32_t input_size[4] = {1, 1, 1, 1}, output_size[4] = {1, 1, 1, 1};
+        uint32_t scale_size[4] = {1, 1, 1, 1}, bias_size[4] = {1, 1, 1, 1};
         uint32_t input_stride_size[4]  = {0};
         uint32_t output_stride_size[4] = {0};
         uint32_t scale_stride_size[4]  = {0};
@@ -355,7 +355,7 @@ vsi_status VX_CALLBACK vxLayerNormInitializer
 
     vx_tensor     input           = (vx_tensor)paramObj[0];
     vx_tensor     output          = (vx_tensor)paramObj[3];
-    uint32_t      input_size[4]   = {0};
+    uint32_t      input_size[4]   = {1, 1, 1, 1};
     uint32_t      input_dims      = 0;
     vsi_nn_type_e inputDataFormat = VSI_NN_TYPE_FLOAT16;
     vsi_nn_type_e outputDataFormat = VSI_NN_TYPE_FLOAT16;

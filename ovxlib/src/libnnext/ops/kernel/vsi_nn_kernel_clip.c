@@ -195,9 +195,10 @@ vx_status VX_CALLBACK vxClipInitializer
     vx_tensor     output          = (vx_tensor)paramObj[1];
     vx_scalar     minScl          = (vx_scalar)paramObj[2];
     vx_scalar     maxScl          = (vx_scalar)paramObj[3];
-    uint32_t      input_size[4]   = {0};
-    vx_uint32     output_size[4] = {0, 0, 0, 0};
+    uint32_t      input_size[4]   = {1, 1, 1, 1};
+    vx_uint32     output_size[4] = {1, 1, 1, 1};
     uint32_t      input_dims      = 0;
+    uint32_t      output_dims     = 0;
     vsi_enum inputDataFormat = VSI_NN_TYPE_FLOAT16;
     vsi_enum outputDataFormat = VSI_NN_TYPE_FLOAT16;
     vx_float32 scaleIn = 0;
@@ -207,20 +208,37 @@ vx_status VX_CALLBACK vxClipInitializer
     int8_t srcFixPointPos  = 0;
     int8_t dstFixPointPos   = 0;
     vx_float32 minVal, maxVal;
+    vsi_nn_tensor_attr_t attr[2];
+    vx_uint32 i = 0;
 
-    status  = vxQueryTensor(input, VX_TENSOR_DIMS, input_size, sizeof(input_size));
-    status |= vxQueryTensor(input, VX_TENSOR_NUM_OF_DIMS, &input_dims, sizeof(input_dims));
-    status |= vxQueryTensor(input, VX_TENSOR_DATA_TYPE, &inputDataFormat, sizeof(inputDataFormat));
-    status |= vxQueryTensor(input, VX_TENSOR_ZERO_POINT, &input_ZP, sizeof(input_ZP));
-    status |= vxQueryTensor(input, VX_TENSOR_SCALE, &scaleIn, sizeof(scaleIn));
-    status |= vxQueryTensor(input, VX_TENSOR_FIXED_POINT_POS,
-        &srcFixPointPos, sizeof(srcFixPointPos));
-    status |= vxQueryTensor(output, VX_TENSOR_FIXED_POINT_POS,
-        &dstFixPointPos, sizeof(dstFixPointPos));
-    status |= vxQueryTensor(output, VX_TENSOR_ZERO_POINT, &output_ZP, sizeof(output_ZP));
-    status |= vxQueryTensor(output, VX_TENSOR_SCALE, &scaleOut, sizeof(scaleOut));
-    status |= vxQueryTensor(output, VX_TENSOR_DATA_TYPE, &outputDataFormat, sizeof(outputDataFormat));
-    status |= vxQueryTensor(output, VX_TENSOR_DIMS, output_size, sizeof(output_size));
+    memset(&attr[0], 0, sizeof(vsi_nn_tensor_attr_t));
+    memset(&attr[1], 0, sizeof(vsi_nn_tensor_attr_t));
+    status  = vsi_nn_vxGetTensorAttr(input, &attr[0]);
+    status |= vsi_nn_vxGetTensorAttr(output, &attr[1]);
+    if (status != VX_SUCCESS)
+    {
+        VSILOGE("vsi_nn_vxGetTensorAttr  failure! at line %d\n", __LINE__);
+        return status;
+    }
+
+    input_dims  = attr[0].dim_num;
+    for (i = 0; i < input_dims; i++)
+    {
+        input_size[i] = attr[0].size[i];
+    }
+    inputDataFormat  = attr[0].dtype.vx_type;
+    input_ZP         = attr[0].dtype.zero_point;
+    scaleIn          = attr[0].dtype.scale;
+    srcFixPointPos   = attr[0].dtype.fl;
+    dstFixPointPos   = attr[1].dtype.fl;
+    output_ZP        = attr[1].dtype.zero_point;
+    scaleOut         = attr[1].dtype.scale;
+    outputDataFormat = attr[1].dtype.vx_type;
+    output_dims      = attr[1].dim_num;
+    for (i = 0; i < output_dims; i++)
+    {
+        output_size[i] = attr[1].size[i];
+    }
 
     status |= vxCopyScalar(minScl, &minVal, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
     status |= vxCopyScalar(maxScl, &maxVal, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
@@ -235,7 +253,7 @@ vx_status VX_CALLBACK vxClipInitializer
     shaderParam.globalWorkOffset[0] = 0;
     shaderParam.globalWorkOffset[1] = 0;
     shaderParam.globalWorkOffset[2] = 0;
-    if (outputDataFormat == VX_TYPE_FLOAT16 || outputDataFormat == VX_TYPE_INT16)
+    if (outputDataFormat == VSI_NN_TYPE_FLOAT16 || outputDataFormat == VSI_NN_TYPE_INT16)
     {
         shaderParam.globalWorkScale[0]  = 8;
         shaderParam.globalWorkScale[1]  = 1;
@@ -253,7 +271,7 @@ vx_status VX_CALLBACK vxClipInitializer
                                         / shaderParam.globalWorkScale[1];
     shaderParam.globalWorkSize[2]   = output_size[2];
 
-    if (inputDataFormat == VX_TYPE_FLOAT16 && outputDataFormat == VX_TYPE_FLOAT16)
+    if (inputDataFormat == VSI_NN_TYPE_FLOAT16 && outputDataFormat == VSI_NN_TYPE_FLOAT16)
     {
         vx_uint16 minTmp   = 0;
         vx_uint16 maxTmp   = 0;
@@ -277,7 +295,7 @@ vx_status VX_CALLBACK vxClipInitializer
         status |= vxSetNodeUniform(nodObj, "packedMinData_FP16", 1, packedMinData_FP16);
         status |= vxSetNodeUniform(nodObj, "packedMaxData_FP16", 1, packedMaxData_FP16);
     }
-    else if (inputDataFormat == VX_TYPE_INT8 && outputDataFormat == VX_TYPE_INT8)
+    else if (inputDataFormat == VSI_NN_TYPE_INT8 && outputDataFormat == VSI_NN_TYPE_INT8)
     {
         vx_uint8 minData   = 0;
         vx_uint8 maxData   = 0;
@@ -338,7 +356,7 @@ vx_status VX_CALLBACK vxClipInitializer
         status |= vxSetNodeUniform(nodObj, "packedMinData", 1, packedMinData);
         status |= vxSetNodeUniform(nodObj, "packedMaxData", 1, packedMaxData);
     }
-    else if (inputDataFormat == VX_TYPE_INT16 && outputDataFormat == VX_TYPE_INT16)
+    else if (inputDataFormat == VSI_NN_TYPE_INT16 && outputDataFormat == VSI_NN_TYPE_INT16)
     {
         vx_uint16 minData  = 0;
         vx_uint16 maxData  = 0;
@@ -398,7 +416,7 @@ vx_status VX_CALLBACK vxClipInitializer
         status |= vxSetNodeUniform(nodObj, "packedMinData", 1, packedMinData);
         status |= vxSetNodeUniform(nodObj, "packedMaxData", 1, packedMaxData);
     }
-    else if (inputDataFormat == VX_TYPE_UINT8 && outputDataFormat == VX_TYPE_UINT8)
+    else if (inputDataFormat == VSI_NN_TYPE_UINT8 && outputDataFormat == VSI_NN_TYPE_UINT8)
     {
         vx_uint8   minData          = 0;
         vx_uint8   maxData          = 0;

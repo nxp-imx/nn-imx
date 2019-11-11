@@ -286,7 +286,9 @@ static vsi_status vx_op_compute
     vx_border_t border;
     int32_t out_zp;
     vsi_nn_type_e inputDataFormat = outputs[0]->attr.dtype.vx_type;
+    vsi_nn_tensor_attr_t output_attr;
 
+    memset(&output_attr, 0, sizeof(vsi_nn_tensor_attr_t));
     args = &params[_IO_NUM];
 
     if( NULL == self->n )
@@ -304,13 +306,17 @@ static vsi_status vx_op_compute
     /* Init parameters. */
     _create_params( self, args, _ARG_NUM );
 
-    status = vxQueryTensor(outputs[0]->t, VX_TENSOR_ZERO_POINT, &out_zp, sizeof(out_zp));
-
+    status  = vsi_nn_vxGetTensorAttr(outputs[0]->t, &output_attr);
     /* Pass parameters to node. */
     status |= vsi_nn_ClientNodePassParameters( self->n, params, _PARAM_NUM );
 
     _release_params( args, _ARG_NUM );
-
+    if (status != VX_SUCCESS)
+    {
+        VSILOGE("vsi_nn_vxGetTensorAttr  failure! at line %d\n", __LINE__);
+        return status;
+    }
+    out_zp  = output_attr.dtype.zero_point;
     border.mode = VX_BORDER_REPLICATE;
     border.constant_value.U32 = 0;
     border.constant_value.S16 = 0;

@@ -201,17 +201,24 @@ vx_status VX_CALLBACK vxTileInitializer
         {0, 0, 0}}; // globalWorkSize: image size in thread
 
     vx_tensor     input                = (vx_tensor)paramObj[0];
-    uint32_t      input_size[DIM_SIZE] = {0};
+    uint32_t      input_size[DIM_SIZE] = {1, 1, 1, 1};
     int32_t       depth  = 0;
     int32_t       width  = 0;
     int32_t       height = 0;
     int32_t       lastThread = 0;
+    vx_uint32 i = 0;
+    vsi_nn_tensor_attr_t attr;
 
-    status = vxQueryTensor(input, VX_TENSOR_DIMS, input_size, sizeof(input_size));
-    if(VX_SUCCESS != status)
+    memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
+    status = vsi_nn_vxGetTensorAttr(input, &attr);
+    if (status != VX_SUCCESS)
     {
-        VSILOGE("[%s : %d]Initializer  failure! \n",__FILE__, __LINE__);
+        VSILOGE("vsi_nn_vxGetTensorAttr  failure! at line %d\n", __LINE__);
         return status;
+    }
+    for (i = 0; i < attr.dim_num; i++)
+    {
+        input_size[i] = attr.size[i];
     }
 
     depth  = input_size[2];

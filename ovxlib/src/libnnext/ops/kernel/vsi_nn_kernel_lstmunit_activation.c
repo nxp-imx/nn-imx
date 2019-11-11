@@ -767,14 +767,14 @@ vx_status VX_CALLBACK vxLSTMUnit_Activation_Initializer
     vx_tensor    lstmunit_param         = (vx_tensor)paramObj[paraNum - 1];
     vx_tensor    cell_state_in          = NULL;
     vx_tensor    output                 = NULL;
-    vx_uint32    output_size[4]         = {0, 0, 0, 0};
+    vx_uint32    output_size[4]         = {1, 1, 1, 1};
     vx_float32   cell_clip              = 0;
     vx_float32   outputScale            = 1.0f;
     vx_float32   outputZP               = 0;
     vx_int32     dstZP                  = 0;
     vx_float32   dstScale               = 0;
-    vx_enum      cellFormat             = VX_TYPE_FLOAT16;
-    vx_enum      dstFormat              = VX_TYPE_FLOAT16;
+    vx_enum      cellFormat             = VSI_NN_TYPE_FLOAT16;
+    vx_enum      dstFormat              = VSI_NN_TYPE_FLOAT16;
     vx_enum      dstQuantType           = 0;
     vx_int8      dstFixPointPos         = 0;
     vx_float32   logE                   = (vx_float32)(log10(exp(1.0f)) / log10(2.0f));
@@ -947,10 +947,10 @@ vx_status VX_CALLBACK vxLSTMUnit_Activation_Initializer
             outputScale = 1.0f / dstScale;
         }
 
-        if (cellFormat == VX_TYPE_FLOAT16)
+        if (cellFormat == VSI_NN_TYPE_FLOAT16)
             vxSetNodeUniform(node, "uniExtractHalf4_4x4", 1, uniExtractHalf4_4x4);
 
-        if (dstFormat == VX_TYPE_FLOAT16)
+        if (dstFormat == VSI_NN_TYPE_FLOAT16)
             vxSetNodeUniform(node, "uniExtract8Data_2x8", 1, uniExtractHalf8_2x8);
         else
             vxSetNodeUniform(node, "uniExtract8Data_2x8", 1, uniExtractInteger_2x8);

@@ -72,14 +72,14 @@ static vsi_status VX_CALLBACK vxScaleKernel
         uint32_t   scale_dims = 0;
         uint32_t   bias_dims = 0;
         uint32_t   output_dims = 0;
-        vsi_enum     inputFormat = VX_TYPE_FLOAT16;
-        vsi_enum     scaleFormat = VX_TYPE_FLOAT16;
-        vsi_enum     biasFormat = VX_TYPE_FLOAT32;
-        vsi_enum     outputFormat = VX_TYPE_FLOAT16;
-        uint32_t   input_size[4] = { 0 };
-        uint32_t   scale_size[4] = { 0 };
-        uint32_t   bias_size[4] = { 0 };
-        uint32_t   output_size[4] = { 0 };
+        vsi_enum     inputFormat = VSI_NN_TYPE_FLOAT16;
+        vsi_enum     scaleFormat = VSI_NN_TYPE_FLOAT16;
+        vsi_enum     biasFormat = VSI_NN_TYPE_FLOAT32;
+        vsi_enum     outputFormat = VSI_NN_TYPE_FLOAT16;
+        uint32_t   input_size[4] = {1, 1, 1, 1};
+        uint32_t   scale_size[4] = {1, 1, 1, 1};
+        uint32_t   bias_size[4] = {1, 1, 1, 1};
+        uint32_t   output_size[4] = {1, 1, 1, 1};
         uint32_t   input_stride_size[VSI_NN_MAX_DIM_NUM] = { 0 };
         uint32_t   output_stride_size[VSI_NN_MAX_DIM_NUM] = { 0 };
         vx_tensor_addressing input_user_addr = NULL;
@@ -147,7 +147,7 @@ static vsi_status VX_CALLBACK vxScaleKernel
             goto OnError;
         }
 
-        status |= vsi_nn_vxGetTensorAttr(output_tensor, &out_attr);
+        status = vsi_nn_vxGetTensorAttr(output_tensor, &out_attr);
         if (status != VX_SUCCESS)
         {
             VSILOGE("vsi_nn_vxGetTensorAttr failure! at line %d\n", __LINE__);
@@ -324,9 +324,21 @@ vsi_status VX_CALLBACK vxScaleInitializer
     vsi_status status = VX_SUCCESS;
 
     vx_tensor input     = (vx_tensor)paramObj[0];
-    uint32_t input_size[DIM_SIZE];
+    uint32_t input_size[DIM_SIZE] = {1, 1, 1, 1};
+    vx_uint32 i = 0;
+    vsi_nn_tensor_attr_t attr;
 
-    status = vxQueryTensor(input, VX_TENSOR_DIMS, input_size, sizeof(input_size));
+    memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
+    status = vsi_nn_vxGetTensorAttr(input, &attr);
+    if (status != VX_SUCCESS)
+    {
+        VSILOGE("vsi_nn_vxGetTensorAttr  failure! at line %d\n", __LINE__);
+        return status;
+    }
+    for (i = 0; i < attr.dim_num; i++)
+    {
+        input_size[i] = attr.size[i];
+    }
 
     shaderParam.globalWorkOffset[0] = 0;
     shaderParam.globalWorkOffset[1] = 0;

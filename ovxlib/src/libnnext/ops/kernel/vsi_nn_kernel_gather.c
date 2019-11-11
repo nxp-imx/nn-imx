@@ -191,23 +191,35 @@ vx_status VX_CALLBACK vxGatherInitializer
     vx_tensor     input0          = (vx_tensor)paramObj[0];
     vx_tensor     input1          = (vx_tensor)paramObj[1];
 
-    uint32_t      input1_size[DIM_SIZE]   = {0};
+    uint32_t      input1_size[DIM_SIZE]   = {1, 1, 1, 1};
     int32_t       block_size = 0;
     int32_t       block_num = 0;
     int32_t       indices_num = 0;
     uint32_t      input_dims1      = 0;
     vsi_nn_type_e inputDataFormat = VSI_NN_TYPE_FLOAT16;
+    vsi_nn_tensor_attr_t attr[2];
+    vx_uint32     i       = 0;
+
+    memset(&attr[0], 0, sizeof(vsi_nn_tensor_attr_t));
+    memset(&attr[1], 0, sizeof(vsi_nn_tensor_attr_t));
+
+    status  = vsi_nn_vxGetTensorAttr(input0, &attr[0]);
+    status |= vsi_nn_vxGetTensorAttr(input1, &attr[1]);
+    if (status != VX_SUCCESS)
+    {
+        VSILOGE("vsi_nn_vxGetTensorAttr  failure! at line %d\n", __LINE__);
+        return status;
+    }
+
 
     scalar[0]            = (vx_scalar)paramObj[3];
     scalar[1]            = (vx_scalar)paramObj[4];
 
-    status  = vxQueryTensor(input0, VX_TENSOR_DATA_TYPE, &inputDataFormat, sizeof(inputDataFormat));
-    status |= vxQueryTensor(input1, VX_TENSOR_DIMS, input1_size, sizeof(input1_size));
-    status |= vxQueryTensor(input1, VX_TENSOR_NUM_OF_DIMS, &input_dims1, sizeof(input_dims1));
-    if(VX_SUCCESS != status)
+    inputDataFormat      = attr[0].dtype.vx_type;
+    input_dims1          = attr[1].dim_num;
+    for (i = 0; i < input_dims1; i++)
     {
-        VSILOGE("[%s : %d]Initializer  failure! \n",__FILE__, __LINE__);
-        return status;
+        input1_size[i] = attr[1].size[i];
     }
 
     indices_num = input1_size[0] * input1_size[1];

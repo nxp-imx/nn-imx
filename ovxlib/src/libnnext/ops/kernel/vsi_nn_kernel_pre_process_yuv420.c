@@ -44,25 +44,25 @@ static vx_uint32 vxcGetTypeSize(vx_enum format)
 {
     switch(format)
     {
-    case VX_TYPE_INT8:
-    case VX_TYPE_UINT8:
+    case VSI_NN_TYPE_INT8:
+    case VSI_NN_TYPE_UINT8:
         return 1;
-    case VX_TYPE_INT16:
-    case VX_TYPE_UINT16:
+    case VSI_NN_TYPE_INT16:
+    case VSI_NN_TYPE_UINT16:
         return 2;
-    case VX_TYPE_INT32:
-    case VX_TYPE_UINT32:
+    case VSI_NN_TYPE_INT32:
+    case VSI_NN_TYPE_UINT32:
         return 4;
-    case VX_TYPE_INT64:
-    case VX_TYPE_UINT64:
+    case VSI_NN_TYPE_INT64:
+    case VSI_NN_TYPE_UINT64:
         return 8;
-    case VX_TYPE_FLOAT32:
+    case VSI_NN_TYPE_FLOAT32:
         return 4;
-    case VX_TYPE_FLOAT64:
+    case VSI_NN_TYPE_FLOAT64:
         return 8;
     case VX_TYPE_ENUM:
         return 4;
-    case VX_TYPE_FLOAT16:
+    case VSI_NN_TYPE_FLOAT16:
         return 2;
     }
 
@@ -71,7 +71,7 @@ static vx_uint32 vxcGetTypeSize(vx_enum format)
 
 vx_status tensorRead(vx_context context, vx_tensor ts, void *buf)
 {
-    vx_uint32  ts_size[4];
+    vx_uint32  ts_size[4] = {1, 1, 1, 1};
     vx_uint32 input_stride_size[4];
     vx_uint32 output_num,num_of_dim;
     vx_tensor_addressing input_user_addr = NULL;
@@ -79,10 +79,21 @@ vx_status tensorRead(vx_context context, vx_tensor ts, void *buf)
     vx_uint32 i = 0;
     void *dataBuf = (vx_uint16 *)buf;
     vx_uint32 dataFormat;
+    vsi_nn_tensor_attr_t attr;
 
-    status = vxQueryTensor(ts, VX_TENSOR_NUM_OF_DIMS, &num_of_dim, sizeof(num_of_dim));
-    status |= vxQueryTensor(ts, VX_TENSOR_DIMS, ts_size, sizeof(ts_size));
-    status |= vxQueryTensor(ts, VX_TENSOR_DATA_TYPE, &dataFormat, sizeof(dataFormat));
+    memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
+    status = vsi_nn_vxGetTensorAttr(ts, &attr);
+    if (status != VX_SUCCESS)
+    {
+        VSILOGE("vsi_nn_vxGetTensorAttr  failure! at line %d\n", __LINE__);
+        return status;
+    }
+    dataFormat = attr.dtype.vx_type;
+    num_of_dim = attr.dim_num;
+    for (i = 0; i < num_of_dim; i++)
+    {
+        ts_size[i] = attr.size[i];
+    }
 
     input_stride_size[0] = vxcGetTypeSize(dataFormat);
     output_num = ts_size[0];
@@ -94,7 +105,7 @@ vx_status tensorRead(vx_context context, vx_tensor ts, void *buf)
 
     if(dataBuf == NULL)
     {
-        printf("TensorRead fail! input empty \n");
+        VSILOGE("TensorRead fail! input empty \n");
         return VX_FAILURE;
     }
 
@@ -117,7 +128,7 @@ vx_status tensorRead(vx_context context, vx_tensor ts, void *buf)
     {
         free(dataBuf);
         dataBuf = NULL;
-        printf("TensorRead fail! status = %d\n",status);
+        VSILOGE("TensorRead fail! status = %d\n",status);
         return status;
     }
 
@@ -151,8 +162,8 @@ static vsi_status VX_CALLBACK vxYuv2rbgKernel
     vsi_nn_tensor_attr_t in_attr[TENSOR_NUM_INPUT];
     vsi_nn_tensor_attr_t out_attr[TENSOR_NUM_OUTPUT];
     uint32_t out_elements[TENSOR_NUM_OUTPUT]= {0};
-    vx_uint32  dst_size[4]   = {0, 0, 0, 0};
-    vx_uint32  src_size[4]   = {0, 0, 0, 0};
+    vx_uint32  dst_size[4]   = {1, 1, 1, 1};
+    vx_uint32  src_size[4]   = {1, 1, 1, 1};
     vx_float32 outputScale      = 1.0;
     vx_int32   output_ZP        = 0;
     vsi_nn_type_e outputFormat = VSI_NN_TYPE_FLOAT16;
@@ -161,7 +172,7 @@ static vsi_status VX_CALLBACK vxYuv2rbgKernel
     float rMean = 0, gMean = 0, bMean = 0, var = 0;
     int32_t order = 0/*, trans*/;
 
-    int32_t i = 0;
+    int32_t i = 0, j = 0;
     for(i = 0; i < TENSOR_NUM_INPUT; i++)
     {
         memset(&in_attr[i], 0x0, sizeof(vsi_nn_tensor_attr_t));
@@ -180,7 +191,12 @@ static vsi_status VX_CALLBACK vxYuv2rbgKernel
         TEST_CHECK_STATUS(status, final);
         u8_in_buffer[i] = vsi_nn_vxCopyTensorToData(context, input[i], &in_attr[i]);
         if(i == 0)
-            status |= vxQueryTensor(input[i], VX_TENSOR_DIMS, src_size, sizeof(src_size));
+        {
+            for (j = 0; j < in_attr[i].dim_num; j++)
+            {
+                src_size[j] = in_attr[i].size[j];
+            }
+        }
     }
     for(i = 0; i < TENSOR_NUM_OUTPUT; i ++)
     {
@@ -190,11 +206,13 @@ static vsi_status VX_CALLBACK vxYuv2rbgKernel
         out_elements[i] = vsi_nn_vxGetTensorElementNum(&out_attr[i]);
         u8_out_buffer[i]= (uint8_t *)malloc(out_elements[i] * sizeof(uint8_t));
         memset(u8_out_buffer[i], 0, out_elements[i] * sizeof(uint8_t));
-
-        status |= vxQueryTensor(output[i], VX_TENSOR_DIMS, dst_size, sizeof(dst_size));
-        status |= vxQueryTensor(output[i], VX_TENSOR_SCALE, &outputScale, sizeof(outputScale));
-        status |= vxQueryTensor(output[i], VX_TENSOR_ZERO_POINT, &output_ZP, sizeof(output_ZP));
-        status |= vxQueryTensor(output[i], VX_TENSOR_DATA_TYPE, &outputFormat, sizeof(outputFormat));
+        for (j = 0; j < out_attr[i].dim_num; j++)
+        {
+            dst_size[j] = out_attr[i].size[j];
+        }
+        outputScale  = out_attr[i].dtype.scale;
+        output_ZP    = out_attr[i].dtype.zero_point;
+        outputFormat = out_attr[i].dtype.vx_type;
     }
 
     status |= vxCopyScalar((vx_scalar)paramObj[TENSOR_NUM], &(xRatio),
@@ -451,13 +469,25 @@ vx_status VX_CALLBACK vxYuv2rbgInitializer
     vx_int32   output_ZP        = 0;
     vx_int32 reorder = 0;
     vx_int32 order1 = 2;
+    vx_uint32  dst_size[4]   ={1, 1, 1, 1};
+    vx_uint32 i = 0;
+    vsi_nn_tensor_attr_t attr;
 
-    vx_uint32  dst_size[4]   = {0, 0, 0, 0};
+    memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
+    status = vsi_nn_vxGetTensorAttr(output, &attr);
+    if (status != VX_SUCCESS)
+    {
+        VSILOGE("vsi_nn_vxGetTensorAttr  failure! at line %d\n", __LINE__);
+        return status;
+    }
+    outFormat = attr.dtype.vx_type;
+    for (i = 0; i < attr.dim_num; i++)
+    {
+        dst_size[i] = attr.size[i];
+    }
+    outputScale = attr.dtype.scale;
+    output_ZP   = attr.dtype.zero_point;
 
-    status = vxQueryTensor(output, VX_TENSOR_DIMS, dst_size, sizeof(dst_size));
-    status |= vxQueryTensor(output, VX_TENSOR_DATA_TYPE, &outFormat, sizeof(outFormat));
-    status |= vxQueryTensor(output, VX_TENSOR_SCALE, &outputScale, sizeof(outputScale));
-    status |= vxQueryTensor(output, VX_TENSOR_ZERO_POINT, &output_ZP, sizeof(output_ZP));
     status |= vxCopyScalar(reorder_s, (void*)&reorder, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
 
     if(reorder != 0)
@@ -466,7 +496,7 @@ vx_status VX_CALLBACK vxYuv2rbgInitializer
         order1 = 0;
     }
 
-    if(outFormat == VX_TYPE_UINT8)
+    if(outFormat == VSI_NN_TYPE_UINT8)
     {
         outputScale = 1.0f / outputScale;
     }
@@ -477,9 +507,9 @@ vx_status VX_CALLBACK vxYuv2rbgInitializer
     shaderParam.globalWorkOffset[0] = 0;
     shaderParam.globalWorkOffset[1] = 0;
     shaderParam.globalWorkOffset[2] = 0;
-    if(outFormat == VX_TYPE_UINT8)
+    if(outFormat == VSI_NN_TYPE_UINT8)
         shaderParam.globalWorkScale[0]  = 16;
-    else if(outFormat == VX_TYPE_INT16 || outFormat == VX_TYPE_FLOAT16)
+    else if(outFormat == VSI_NN_TYPE_INT16 || outFormat == VSI_NN_TYPE_FLOAT16)
         shaderParam.globalWorkScale[0]  = 8;
     shaderParam.globalWorkScale[1]  = 1;
     shaderParam.globalWorkScale[2]  = 1;
@@ -492,7 +522,7 @@ vx_status VX_CALLBACK vxYuv2rbgInitializer
                                         / shaderParam.globalWorkScale[1], shaderParam.localWorkSize[1]);
     shaderParam.globalWorkSize[2]   = 1;
 
-    if(outFormat == VX_TYPE_UINT8)
+    if(outFormat == VSI_NN_TYPE_UINT8)
     {
         vx_uint32 uniPackBG0_2x8[16] = {
             0x11011011, // TCfg
@@ -884,7 +914,7 @@ vx_status VX_CALLBACK vxYuv2rbgInitializer
                                     &shaderParam, sizeof(vx_kernel_execution_parameters_t));
 
     if(status < 0)
-        printf("error-%s,%d\n",__FILE__,__LINE__);
+        VSILOGE("error-%s,%d\n",__FILE__,__LINE__);
 
     return status;
 }
@@ -915,13 +945,25 @@ vx_status VX_CALLBACK vxYuvScaleRbgInitializer
     vx_int32   output_ZP        = 0;
     vx_int32 reorder = 0;
     vx_int32 order1 = 2;
+    vx_uint32  dst_size[4]   = {1, 1, 1, 1};
+    vx_uint32 i = 0;
+    vsi_nn_tensor_attr_t attr;
 
-    vx_uint32  dst_size[4]   = {0, 0, 0, 0};
+    memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
+    status = vsi_nn_vxGetTensorAttr(output, &attr);
+    if (status != VX_SUCCESS)
+    {
+        VSILOGE("vsi_nn_vxGetTensorAttr  failure! at line %d\n", __LINE__);
+        return status;
+    }
+    outFormat = attr.dtype.vx_type;
+    for (i = 0; i < attr.dim_num; i++)
+    {
+        dst_size[i] = attr.size[i];
+    }
+    outputScale = attr.dtype.scale;
+    output_ZP   = attr.dtype.zero_point;
 
-    status |= vxQueryTensor(output, VX_TENSOR_DATA_TYPE, &outFormat, sizeof(outFormat));
-    status |= vxQueryTensor(output, VX_TENSOR_DIMS, dst_size, sizeof(dst_size));
-    status |= vxQueryTensor(output, VX_TENSOR_SCALE, &outputScale, sizeof(outputScale));
-    status |= vxQueryTensor(output, VX_TENSOR_ZERO_POINT, &output_ZP, sizeof(output_ZP));
     status |= vxCopyScalar(reorder_s, (void*)&reorder, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
 
     if(reorder != 0)
@@ -930,7 +972,7 @@ vx_status VX_CALLBACK vxYuvScaleRbgInitializer
         order1 = 0;
     }
 
-    if(outFormat == VX_TYPE_UINT8)
+    if(outFormat == VSI_NN_TYPE_UINT8)
     {
         outputScale = 1.0f / outputScale;
     }
@@ -954,7 +996,7 @@ vx_status VX_CALLBACK vxYuvScaleRbgInitializer
                                             shaderParam.globalWorkScale[1], shaderParam.localWorkSize[1]);
     shaderParam.globalWorkSize[2]   = 1;
 
-    if(outFormat == VX_TYPE_UINT8)
+    if(outFormat == VSI_NN_TYPE_UINT8)
     {
         vx_uint32 uniConvertInt32toUint8_2x8[16] = {
             0x33333333, // TCfg
@@ -1207,7 +1249,7 @@ vx_status VX_CALLBACK vxYuvScaleRbgInitializer
         status |= vxSetNodeUniform(nodObj, "bOrder", 1, &order1);
 
         if(status < 0)
-            printf("error-%s,%d\n",__FILE__,__LINE__);
+            VSILOGE("error-%s,%d\n",__FILE__,__LINE__);
 
         status |= vxSetNodeAttribute(nodObj, VX_NODE_ATTRIBUTE_KERNEL_EXECUTION_PARAMETERS,
                                         &shaderParam, sizeof(vx_kernel_execution_parameters_t));

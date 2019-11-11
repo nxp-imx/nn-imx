@@ -70,7 +70,7 @@ vx_status VX_CALLBACK vxPre_process_grayInitializer
 
     memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
 
-    status |= vsi_nn_vxGetTensorAttr(output, &attr);
+    status  = vsi_nn_vxGetTensorAttr(output, &attr);
     status |= vxCopyScalar(xRatio_s, (void*)&xRatio, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
     status |= vxCopyScalar(yRatio_s, (void*)&yRatio, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
 

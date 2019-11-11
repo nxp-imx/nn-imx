@@ -249,12 +249,19 @@ vx_status VX_CALLBACK vxRandom_generateInitializer
     uint32_t      w = 0;
     float         rand_max = (float)(pow(2.0,32));
     float         re_rand_max = 1 / rand_max;
+    vx_uint32 i = 0;
+    vsi_nn_tensor_attr_t attr;
 
-    status  = vxQueryTensor(output, VX_TENSOR_DIMS, output_size, sizeof(output_size));
-    if(VX_SUCCESS != status)
+    memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
+    status = vsi_nn_vxGetTensorAttr(output, &attr);
+    if (status != VX_SUCCESS)
     {
-        VSILOGE("[%s : %d]Initializer  failure! \n",__FILE__, __LINE__);
+        VSILOGE("vsi_nn_vxGetTensorAttr  failure! at line %d\n", __LINE__);
         return status;
+    }
+    for (i = 0; i < attr.dim_num; i++)
+    {
+        output_size[i] = attr.size[i];
     }
 
     if(output_size[0] <= 4)
@@ -321,18 +328,26 @@ vx_status VX_CALLBACK vxRandom_sumInitializer
 
     vx_tensor     input           = (vx_tensor)paramObj[0];
     vsi_nn_type_e inputDataFormat = VSI_NN_TYPE_FLOAT16;
-    uint32_t      input_size[DIM_SIZE]   = {0};
+    uint32_t      input_size[DIM_SIZE]   = {1, 1, 1, 1};
     uint32_t      class_size = 0, batch = 0;
     uint32_t      class_max_stride = 0;
     uint32_t      class_max_iter = 0;
+    vx_uint32 i = 0;
+    vsi_nn_tensor_attr_t attr;
 
-    status  = vxQueryTensor(input, VX_TENSOR_DIMS, input_size, sizeof(input_size));
-    status |= vxQueryTensor(input, VX_TENSOR_DATA_TYPE, &inputDataFormat, sizeof(inputDataFormat));
-    if(VX_SUCCESS != status)
+    memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
+    status = vsi_nn_vxGetTensorAttr(input, &attr);
+    if (status != VX_SUCCESS)
     {
-        VSILOGE("[%s : %d]Initializer  failure! \n",__FILE__, __LINE__);
+        VSILOGE("vsi_nn_vxGetTensorAttr  failure! at line %d\n", __LINE__);
         return status;
     }
+    for (i = 0; i < attr.dim_num; i++)
+    {
+        input_size[i] = attr.size[i];
+    }
+    inputDataFormat = attr.dtype.vx_type;
+
     class_size = input_size[0];
     batch = input_size[1];
     if(inputDataFormat == VSI_NN_TYPE_FLOAT32)
@@ -423,16 +438,24 @@ vx_status VX_CALLBACK vxRandom_multinomialInitializer
         {0, 0, 0}}; // globalWorkSize: image size in thread
 
     vx_tensor     input           = (vx_tensor)paramObj[0];
-    uint32_t      input_size[DIM_SIZE]   = {0};
+    uint32_t      input_size[DIM_SIZE]   = {1, 1, 1, 1};
     uint32_t      sample_num = 0;
     uint32_t      batch = 0;
+    vx_uint32 i = 0;
+    vsi_nn_tensor_attr_t attr;
 
-    status  = vxQueryTensor(input, VX_TENSOR_DIMS, input_size, sizeof(input_size));
-    if(VX_SUCCESS != status)
+    memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
+    status = vsi_nn_vxGetTensorAttr(input, &attr);
+    if (status != VX_SUCCESS)
     {
-        VSILOGE("[%s : %d]Initializer  failure! \n",__FILE__, __LINE__);
+        VSILOGE("vsi_nn_vxGetTensorAttr  failure! at line %d\n", __LINE__);
         return status;
     }
+    for (i = 0; i < attr.dim_num; i++)
+    {
+        input_size[i] = attr.size[i];
+    }
+
     sample_num = input_size[0];
     batch = input_size[1];
 

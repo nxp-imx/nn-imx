@@ -340,8 +340,8 @@ static vsi_status vx_op_compute
     axsFormat = inputs[1]->attr.dtype.vx_type;
     dstFormat = outputs[0]->attr.dtype.vx_type;
 
-    if ((srcFormat == VX_TYPE_UINT8 && dstFormat == VX_TYPE_UINT8 && axsFormat == VX_TYPE_UINT8)
-      ||(srcFormat == VX_TYPE_FLOAT16 && dstFormat == VX_TYPE_UINT8 && axsFormat == VX_TYPE_UINT8))
+    if ((srcFormat == VSI_NN_TYPE_UINT8 && dstFormat == VSI_NN_TYPE_UINT8 && axsFormat == VSI_NN_TYPE_UINT8)
+      ||(srcFormat == VSI_NN_TYPE_FLOAT16 && dstFormat == VSI_NN_TYPE_UINT8 && axsFormat == VSI_NN_TYPE_UINT8))
     {
         if ((height % 2 == 0) || depth == 1)
         {

@@ -337,7 +337,7 @@ vx_status VX_CALLBACK vxScaletoTensorInitializer
     vx_uint32 height            = 0;
     vx_int32   xRatio           = 0;
     vx_int32   yRatio           = 0;
-    vx_uint32  output_size[DIM_SIZE]   = {0, 0, 0, 0};
+    vx_uint32  output_size[DIM_SIZE]   = {1, 1, 1, 1};
     vx_int8    dstFixedPointPos = 0;
     vx_enum    dstFormat;
     vx_float32 outputScale      = 1.0;
@@ -404,9 +404,9 @@ vx_status VX_CALLBACK vxScaletoTensorInitializer
         };
         shaderParam.globalWorkOffset[0] = 0;
         shaderParam.globalWorkOffset[1] = 0;
-        if (dstFormat == VX_TYPE_FLOAT16 || dstFormat == VX_TYPE_INT16)
+        if (dstFormat == VSI_NN_TYPE_FLOAT16 || dstFormat == VSI_NN_TYPE_INT16)
             shaderParam.globalWorkScale[0]  = 8;
-        else if (dstFormat == VX_TYPE_INT8 || dstFormat == VX_TYPE_UINT8)
+        else if (dstFormat == VSI_NN_TYPE_INT8 || dstFormat == VSI_NN_TYPE_UINT8)
             shaderParam.globalWorkScale[0]  = 10;
 
         shaderParam.globalWorkScale[1]  = 1;
@@ -415,7 +415,7 @@ vx_status VX_CALLBACK vxScaletoTensorInitializer
         shaderParam.globalWorkSize[1]   = (output_size[1] + shaderParam.globalWorkScale[1] - 1)
             / shaderParam.globalWorkScale[1];
 
-        if (dstFormat == VX_TYPE_INT8 || dstFormat == VX_TYPE_INT16)
+        if (dstFormat == VSI_NN_TYPE_INT8 || dstFormat == VSI_NN_TYPE_INT16)
         {
             if(dstFixedPointPos > 0)
                 outputScale = (vx_float32) (1 << dstFixedPointPos);
@@ -427,7 +427,7 @@ vx_status VX_CALLBACK vxScaletoTensorInitializer
                 uniExtractB_2x8[7] |= ((-dstFixedPointPos) & 0x1F);
             }
         }
-        else if (dstFormat == VX_TYPE_UINT8)
+        else if (dstFormat == VSI_NN_TYPE_UINT8)
         {
             vx_float32 outputZP = (vx_float32)output_ZP;
 
@@ -573,7 +573,7 @@ vx_status VX_CALLBACK vxScaletoTensorInitializer
         status |= vxSetNodeUniform(nodObj, "uniGetTempVal", 1, uniGetTempVal);
         status |= vxSetNodeUniform(nodObj, "uniExtractBytes", 1, uniExtractBytes);
 
-        if (dstFormat == VX_TYPE_INT8 || dstFormat == VX_TYPE_INT16)
+        if (dstFormat == VSI_NN_TYPE_INT8 || dstFormat == VSI_NN_TYPE_INT16)
         {
             if(dstFixedPointPos > 0)
                 outputScale = (vx_float32) (1 << dstFixedPointPos);
@@ -585,7 +585,7 @@ vx_status VX_CALLBACK vxScaletoTensorInitializer
             status |= vxSetNodeUniform(nodObj, "outputScale", 1, &outputScale);
             status |= vxSetNodeUniform(nodObj, "uniExtactInteger_2x8", 1, uniExtactInteger_2x8);
         }
-        else if (dstFormat == VX_TYPE_UINT8)
+        else if (dstFormat == VSI_NN_TYPE_UINT8)
         {
             vx_float32 outputZP = (vx_float32)output_ZP;
 
@@ -625,7 +625,7 @@ vx_status VX_CALLBACK vxGrayScaletoTensorInitializer(vx_node nodObj, const vx_re
     vx_uint32 height            = 0;
     vx_int32   xRatio           = 0;
     vx_int32   yRatio           = 0;
-    vx_uint32  output_size[4]   = {0, 0, 0, 0};
+    vx_uint32  output_size[4]   = {1, 1, 1, 1};
     vx_int8    dstFixedPointPos = 0;
     vx_enum    dstFormat;
     vx_float32 outputScale      = 1.0;
@@ -683,9 +683,9 @@ vx_status VX_CALLBACK vxGrayScaletoTensorInitializer(vx_node nodObj, const vx_re
 
         shaderParam.globalWorkOffset[0] = 0;
         shaderParam.globalWorkOffset[1] = 0;
-        if (dstFormat == VX_TYPE_FLOAT16 || dstFormat == VX_TYPE_INT16)
+        if (dstFormat == VSI_NN_TYPE_FLOAT16 || dstFormat == VSI_NN_TYPE_INT16)
             shaderParam.globalWorkScale[0]  = 16;
-        else if (dstFormat == VX_TYPE_INT8 || dstFormat == VX_TYPE_UINT8)
+        else if (dstFormat == VSI_NN_TYPE_INT8 || dstFormat == VSI_NN_TYPE_UINT8)
             shaderParam.globalWorkScale[0]  = 16;
 
         shaderParam.globalWorkScale[1]  = 1;
@@ -698,7 +698,7 @@ vx_status VX_CALLBACK vxGrayScaletoTensorInitializer(vx_node nodObj, const vx_re
             shaderParam.globalWorkScale[1] - 1)
             / shaderParam.globalWorkScale[1], shaderParam.localWorkSize[1]);
 
-        if (dstFormat == VX_TYPE_INT8 || dstFormat == VX_TYPE_INT16)
+        if (dstFormat == VSI_NN_TYPE_INT8 || dstFormat == VSI_NN_TYPE_INT16)
         {
             if(dstFixedPointPos > 0)
                 outputScale = (vx_float32) (1 << dstFixedPointPos);
@@ -709,7 +709,7 @@ vx_status VX_CALLBACK vxGrayScaletoTensorInitializer(vx_node nodObj, const vx_re
                 uniDataMeanStddevHi_2x8[7] |= ((-dstFixedPointPos) & 0x1F);
             }
         }
-        else if (dstFormat == VX_TYPE_UINT8)
+        else if (dstFormat == VSI_NN_TYPE_UINT8)
         {
             vx_float32 outputZP = (vx_float32)output_ZP;
 
@@ -818,7 +818,7 @@ vx_status VX_CALLBACK vxGrayScaletoTensorInitializer(vx_node nodObj, const vx_re
             shaderParam.globalWorkScale[1] - 1)
             / shaderParam.globalWorkScale[1], shaderParam.localWorkSize[1]);
 
-        if (dstFormat == VX_TYPE_FLOAT16)
+        if (dstFormat == VSI_NN_TYPE_FLOAT16)
         {
             status |= vxSetNodeUniform(nodObj, "uniDataMulAlpha_4x4", 1, uniDataMulAlpha_4x4);
             status |= vxSetNodeUniform(nodObj, "uniDataSubMean_4x4", 1, uniDataSubMean_4x4);
@@ -829,7 +829,7 @@ vx_status VX_CALLBACK vxGrayScaletoTensorInitializer(vx_node nodObj, const vx_re
         status |= vxSetNodeUniform(nodObj, "uniGetTempVal", 1, uniGetTempVal);
         status |= vxSetNodeUniform(nodObj, "uniExtractBytes", 1, uniExtractBytes);
 
-        if (dstFormat == VX_TYPE_INT8 || dstFormat == VX_TYPE_INT16)
+        if (dstFormat == VSI_NN_TYPE_INT8 || dstFormat == VSI_NN_TYPE_INT16)
         {
             if(dstFixedPointPos > 0)
                 outputScale *= (vx_float32) (1 << dstFixedPointPos);
@@ -842,7 +842,7 @@ vx_status VX_CALLBACK vxGrayScaletoTensorInitializer(vx_node nodObj, const vx_re
             status |= vxSetNodeUniform(nodObj, "uniExtactInteger_2x8", 1,
                 uniExtactInteger_2x8);
         }
-        else if (dstFormat == VX_TYPE_UINT8)
+        else if (dstFormat == VSI_NN_TYPE_UINT8)
         {
             vx_float32 outputZP = (vx_float32)output_ZP;
 

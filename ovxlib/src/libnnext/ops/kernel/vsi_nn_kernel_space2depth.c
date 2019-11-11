@@ -96,8 +96,7 @@ static vsi_status VX_CALLBACK vxSpace2DepthKernel
     vxCopyScalar((vx_scalar)paramObj[TENSOR_NUM + 1], &(block_size_y),
         VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
 
-    status = vxQueryTensor(tensor[0], VX_TENSOR_NUM_OF_DIMS,
-        &dim, sizeof(uint32_t));
+    dim = attr[0].dim_num;
     if(dim < 4)
         attr[0].size[3] = 1;
     //op calc
@@ -176,11 +175,24 @@ vsi_status VX_CALLBACK vxSpace2DepthInitializer
     vsi_status status = VX_SUCCESS;
 
     vx_tensor input     = (vx_tensor)paramObj[0];
-    uint32_t input_size[4];
+    uint32_t input_size[4] = {1, 1, 1, 1};
     vx_uint32 input_dimz = 0;
     vx_uint32 input_depth = 0;
+    vx_uint32 i = 0;
+    vsi_nn_tensor_attr_t attr;
 
-    status = vxQueryTensor(input, VX_TENSOR_DIMS, input_size, sizeof(input_size));
+    memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
+    status = vsi_nn_vxGetTensorAttr(input, &attr);
+    if (status != VX_SUCCESS)
+    {
+        VSILOGE("vsi_nn_vxGetTensorAttr  failure! at line %d\n", __LINE__);
+        return status;
+    }
+    for (i = 0; i < attr.dim_num; i++)
+    {
+        input_size[i] = attr.size[i];
+    }
+
     input_depth = input_size[2];
     if(input_size[3] > 0)
         input_dimz = input_depth * input_size[3];

@@ -324,7 +324,7 @@ vsi_status VX_CALLBACK vxParametricReluInitializer
     shaderParam.globalWorkScale[1]  = 1;
     shaderParam.globalWorkScale[2]  = 1;
 
-    if (srcFormat == VX_TYPE_INT8 && (dstFormat == VX_TYPE_INT8 || dstFormat == VX_TYPE_FLOAT16))
+    if (srcFormat == VSI_NN_TYPE_INT8 && (dstFormat == VSI_NN_TYPE_INT8 || dstFormat == VSI_NN_TYPE_FLOAT16))
     {
         vx_uint32 uniF16MulF16_2x8[16] = {
             0x11111111, // TCfg
@@ -354,7 +354,7 @@ vsi_status VX_CALLBACK vxParametricReluInitializer
             0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
         };
 
-        if (dstFormat == VX_TYPE_FLOAT16)
+        if (dstFormat == VSI_NN_TYPE_FLOAT16)
         {
             dstFixPointPos = 0;
         }
@@ -378,12 +378,12 @@ vsi_status VX_CALLBACK vxParametricReluInitializer
         status |= vxSetNodeUniform(nodObj, "uniPreluI8toF16Lo_2x8", 1, uniPreluI8toF16Lo_2x8);
         status |= vxSetNodeUniform(nodObj, "uniPreluI8toF16Hi_2x8", 1, uniPreluI8toF16Hi_2x8);
         status |= vxSetNodeUniform(nodObj, "uniF16MulF16_2x8", 1, uniF16MulF16_2x8);
-        if (dstFormat == VX_TYPE_INT8)
+        if (dstFormat == VSI_NN_TYPE_INT8)
         {
             shaderParam.globalWorkScale[0]  = 16;
         }
     }
-    else if (srcFormat == VX_TYPE_INT16 && (dstFormat == VX_TYPE_INT16 || dstFormat == VX_TYPE_FLOAT16))
+    else if (srcFormat == VSI_NN_TYPE_INT16 && (dstFormat == VSI_NN_TYPE_INT16 || dstFormat == VSI_NN_TYPE_FLOAT16))
     {
         vx_uint32 uniF16MulF16_2x8[16] = {
             0x11111111, // TCfg
@@ -404,7 +404,7 @@ vsi_status VX_CALLBACK vxParametricReluInitializer
             0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
         };
 
-        if (dstFormat == VX_TYPE_FLOAT16)
+        if (dstFormat == VSI_NN_TYPE_FLOAT16)
         {
             dstFixPointPos = 0;
         }
@@ -427,7 +427,7 @@ vsi_status VX_CALLBACK vxParametricReluInitializer
         status |= vxSetNodeUniform(nodObj, "uniPreluI16toF16_2x8", 1, uniPreluI16toF16_2x8);
         status |= vxSetNodeUniform(nodObj, "uniF16MulF16_2x8", 1, uniF16MulF16_2x8);
     }
-    else if (srcFormat == VX_TYPE_UINT8 && dstFormat == VX_TYPE_UINT8)
+    else if (srcFormat == VSI_NN_TYPE_UINT8 && dstFormat == VSI_NN_TYPE_UINT8)
     {
         vx_uint32 idx = 0;
         vx_uint32 uniU8SubZP_MulM_PStoF16Lo_2x8[16] = {
@@ -483,7 +483,7 @@ vsi_status VX_CALLBACK vxParametricReluInitializer
 
         shaderParam.globalWorkScale[0]  = 16;
     }
-    else if (srcFormat == VX_TYPE_UINT8 && dstFormat == VX_TYPE_FLOAT16)
+    else if (srcFormat == VSI_NN_TYPE_UINT8 && dstFormat == VSI_NN_TYPE_FLOAT16)
     {
         vx_uint32 idx = 0;
         vx_uint32 uniU8SubZP_MulM_PStoF16Lo_2x8[16] = {
@@ -526,7 +526,7 @@ vsi_status VX_CALLBACK vxParametricReluInitializer
         status |= vxSetNodeUniform(nodObj, "inputZP", 1, &inputZP);
         shaderParam.globalWorkScale[0]  = 16;
     }
-    else if (srcFormat == VX_TYPE_FLOAT16)
+    else if (srcFormat == VSI_NN_TYPE_FLOAT16)
     {
         vx_uint32 UniFP16Mul_dp2x8[16] = {
             0x11111111, // TCfg
@@ -576,18 +576,18 @@ vsi_status VX_CALLBACK vxParametricReluInitializer
             UniFP16Mul_dp2x8[6] = mul_config[1];
         }
 
-        if (dstFormat == VX_TYPE_FLOAT16)
+        if (dstFormat == VSI_NN_TYPE_FLOAT16)
         {
             status |= vxSetNodeUniform(nodObj, "UniFP16Mul_dp2x8", 1, UniFP16Mul_dp2x8);
         }
-        else if (dstFormat == VX_TYPE_INT8)
+        else if (dstFormat == VSI_NN_TYPE_INT8)
         {
             status |= vxSetNodeUniform(nodObj, "uniConvertDirInt16Fp32_4x4", 1, uniConvertDirInt16Fp32_4x4);
             status |= vxSetNodeUniform(nodObj, "uniConvertEndInt16Fp32_4x4", 1, uniConvertEndInt16Fp32_4x4);
             status |= vxSetNodeUniform(nodObj, "uniConvertInt32toUint8_2x8", 1, uniConvertInt32toUint8_2x8);
             status |= vxSetNodeUniform(nodObj, "outputScale", 1, &output_scale);
         }
-        else if (dstFormat == VX_TYPE_UINT8)
+        else if (dstFormat == VSI_NN_TYPE_UINT8)
         {
             output_scale = 1.0f / output_scale;
             status |= vxSetNodeUniform(nodObj, "uniConvertDirInt16Fp32_4x4", 1, uniConvertDirInt16Fp32_4x4);
@@ -596,7 +596,7 @@ vsi_status VX_CALLBACK vxParametricReluInitializer
             status |= vxSetNodeUniform(nodObj, "outputScale", 1, &output_scale);
             status |= vxSetNodeUniform(nodObj, "outputZP", 1, &outputZP);
         }
-        else if (dstFormat == VX_TYPE_INT16)
+        else if (dstFormat == VSI_NN_TYPE_INT16)
         {
             status |= vxSetNodeUniform(nodObj, "uniConvertDirInt16Fp32_4x4", 1, uniConvertDirInt16Fp32_4x4);
             status |= vxSetNodeUniform(nodObj, "uniConvertEndInt16Fp32_4x4", 1, uniConvertEndInt16Fp32_4x4);
@@ -604,7 +604,7 @@ vsi_status VX_CALLBACK vxParametricReluInitializer
             status |= vxSetNodeUniform(nodObj, "outputScale", 1, &output_scale);
         }
     }
-    else if (srcFormat == VX_TYPE_BFLOAT16 && dstFormat == VX_TYPE_BFLOAT16)
+    else if (srcFormat == VSI_NN_TYPE_BFLOAT16 && dstFormat == VSI_NN_TYPE_BFLOAT16)
     {
         vx_uint32 uniConvBF16toF32_Part0_2x8[16] = {
             0x11111111, // TCfg

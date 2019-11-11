@@ -163,8 +163,21 @@ static vsi_status vx_op_pre_compute
     int8_t input_fixPointPos = 0;
     int8_t output_fixPointPos = 0;
     vx_bool dataTypeFlg = vx_false_e;
-    status |= vxQueryTensor(inputs[0]->t, VX_TENSOR_FIXED_POINT_POS, &input_fixPointPos, sizeof(input_fixPointPos));
-    status |= vxQueryTensor(outputs[0]->t, VX_TENSOR_FIXED_POINT_POS, &output_fixPointPos, sizeof(output_fixPointPos));
+    vsi_nn_tensor_attr_t attr[2];
+
+    memset(&attr[0], 0, sizeof(vsi_nn_tensor_attr_t));
+    memset(&attr[1], 0, sizeof(vsi_nn_tensor_attr_t));
+
+    status  = vsi_nn_vxGetTensorAttr(inputs[0]->t, &attr[0]);
+    status |= vsi_nn_vxGetTensorAttr(outputs[0]->t, &attr[1]);
+    if (status != VX_SUCCESS)
+    {
+        VSILOGE("vsi_nn_vxGetTensorAttr  failure! at line %d\n", __LINE__);
+        return status;
+    }
+
+    input_fixPointPos  = attr[0].dtype.fl;
+    output_fixPointPos = attr[1].dtype.fl;
 
     if(input_fixPointPos == output_fixPointPos)
         dataTypeFlg = vx_true_e;

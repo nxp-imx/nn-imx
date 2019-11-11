@@ -221,9 +221,9 @@ vx_status VX_CALLBACK vxMinimumInitializer
     vx_tensor    input0             = (vx_tensor)paramObj[0];
     vx_tensor    input1             = (vx_tensor)paramObj[1];
     vx_tensor    output             = (vx_tensor)paramObj[2];
-    vx_enum      src0Format         = VX_TYPE_FLOAT16;
-    vx_enum      src1Format         = VX_TYPE_FLOAT16;
-    vx_enum      dstFormat          = VX_TYPE_FLOAT16;
+    vx_enum      src0Format         = VSI_NN_TYPE_FLOAT16;
+    vx_enum      src1Format         = VSI_NN_TYPE_FLOAT16;
+    vx_enum      dstFormat          = VSI_NN_TYPE_FLOAT16;
     vx_enum      src0QuantType      = 0;
     vx_int8      src0FixPointPos    = 0;
     vx_int32     src0ZP             = 0;
@@ -238,7 +238,7 @@ vx_status VX_CALLBACK vxMinimumInitializer
     vx_float32   dstScale           = 0;
     vx_bool      isDymFixPoint      = vx_false_e;
 
-    vx_uint32 output_size[4] = {0, 0, 0, 0};
+    vx_uint32 output_size[4] = {1, 1, 1, 1};
 
     vsi_nn_tensor_attr_t attr[3];
     uint32_t i, output_dim;
@@ -279,7 +279,7 @@ vx_status VX_CALLBACK vxMinimumInitializer
     isDymFixPoint = (vx_bool)(src0QuantType == src1QuantType && src0QuantType == VX_QUANT_DYNAMIC_FIXED_POINT
                            && dstQuantType == VX_QUANT_DYNAMIC_FIXED_POINT);
 
-    if (dstFormat == VX_TYPE_FLOAT16 || dstFormat == VX_TYPE_INT16)
+    if (dstFormat == VSI_NN_TYPE_FLOAT16 || dstFormat == VSI_NN_TYPE_INT16)
     {
         shaderParam.globalWorkScale[0]  = 8;
         shaderParam.globalWorkScale[1]  = 1;
@@ -298,8 +298,8 @@ vx_status VX_CALLBACK vxMinimumInitializer
                                         / shaderParam.globalWorkScale[1];
     shaderParam.globalWorkSize[2]   = output_dim > 2 ? output_size[2] : 1;
 
-    if ((isDymFixPoint && src0Format == VX_TYPE_INT8 && src1Format == VX_TYPE_INT8 && dstFormat == VX_TYPE_INT8)
-        || (src0Format == VX_TYPE_INT8 && src1Format == VX_TYPE_FLOAT16 && dstFormat == VX_TYPE_INT8))
+    if ((isDymFixPoint && src0Format == VSI_NN_TYPE_INT8 && src1Format == VSI_NN_TYPE_INT8 && dstFormat == VSI_NN_TYPE_INT8)
+        || (src0Format == VSI_NN_TYPE_INT8 && src1Format == VSI_NN_TYPE_FLOAT16 && dstFormat == VSI_NN_TYPE_INT8))
     {
         vx_uint32 uniConvertI8toI8_0_part0_2x8[16] = {
             0x11111111, // TCfg
@@ -364,7 +364,7 @@ vx_status VX_CALLBACK vxMinimumInitializer
         status |= vxSetNodeUniform(nodObj, "uniConvertI8toI8_0_part0_2x8", 1, uniConvertI8toI8_0_part0_2x8);
         status |= vxSetNodeUniform(nodObj, "uniConvertI8toI8_0_part1_2x8", 1, uniConvertI8toI8_0_part1_2x8);
 
-        if(src1Format == VX_TYPE_FLOAT16)
+        if(src1Format == VSI_NN_TYPE_FLOAT16)
         {
             vx_uint32 uinConvertFp16ToInt8_2x8[16] = {
                 0x11111111, // TCfg
@@ -421,7 +421,7 @@ vx_status VX_CALLBACK vxMinimumInitializer
             status |= vxSetNodeUniform(nodObj, "uniConvertI8toI8_1_part1_2x8", 1, uniConvertI8toI8_1_part1_2x8);
         }
     }
-    else if (isDymFixPoint && src0Format == VX_TYPE_INT16 && src1Format == VX_TYPE_INT16 && dstFormat == VX_TYPE_INT16)
+    else if (isDymFixPoint && src0Format == VSI_NN_TYPE_INT16 && src1Format == VSI_NN_TYPE_INT16 && dstFormat == VSI_NN_TYPE_INT16)
     {
         vx_uint32 uniConvertI16toI16_0_2x8[16] = {
             0x11111111, // TCfg
@@ -482,8 +482,8 @@ vx_status VX_CALLBACK vxMinimumInitializer
 
         status |= vxSetNodeUniform(nodObj, "uniConvertI16toI16_1_2x8", 1, uniConvertI16toI16_1_2x8);
     }
-    else if ((src0Format == VX_TYPE_UINT8 && src1Format == VX_TYPE_UINT8 && dstFormat == VX_TYPE_UINT8)
-            || (src0Format == VX_TYPE_UINT8 && src1Format == VX_TYPE_FLOAT16 && dstFormat == VX_TYPE_UINT8))
+    else if ((src0Format == VSI_NN_TYPE_UINT8 && src1Format == VSI_NN_TYPE_UINT8 && dstFormat == VSI_NN_TYPE_UINT8)
+            || (src0Format == VSI_NN_TYPE_UINT8 && src1Format == VSI_NN_TYPE_FLOAT16 && dstFormat == VSI_NN_TYPE_UINT8))
     {
         vx_uint16   M0                      = 0;
         vx_int8     postShift0              = 0;
@@ -527,7 +527,7 @@ vx_status VX_CALLBACK vxMinimumInitializer
         status |= vxSetNodeUniform(nodObj, "multAndoutZP0",  1, multAndoutZP0);
         status |= vxSetNodeUniform(nodObj, "multAndoutZP1",  1, multAndoutZP1);
 
-        if(src1Format == VX_TYPE_FLOAT16)
+        if(src1Format == VSI_NN_TYPE_FLOAT16)
         {
             vx_uint32 uniConvertFp16toU8_2x8[16] = {
                 0xdddddddd, // TCfg
@@ -551,7 +551,7 @@ vx_status VX_CALLBACK vxMinimumInitializer
             status |= vxSetNodeUniform(nodObj, "uniU8MulAndPostShift1_Hi_2x8",  1, uniU8MulAndPostShift_Hi_2x8);
         }
     }
-    else if(src0Format == VX_TYPE_INT8 && src1Format == VX_TYPE_FLOAT16 && dstFormat == VX_TYPE_FLOAT16)
+    else if(src0Format == VSI_NN_TYPE_INT8 && src1Format == VSI_NN_TYPE_FLOAT16 && dstFormat == VSI_NN_TYPE_FLOAT16)
     {
         vx_uint32 uniConvertInt8toFp16_2x8[16] = {
             0x11111111, // TCfg
@@ -582,7 +582,7 @@ vx_status VX_CALLBACK vxMinimumInitializer
 
         status |= vxSetNodeUniform(nodObj, "uniConvertInt8toFp16_2x8", 1, uniConvertInt8toFp16_2x8);
     }
-    else if(src0Format == VX_TYPE_UINT8 && src1Format == VX_TYPE_FLOAT16 && dstFormat == VX_TYPE_FLOAT16)
+    else if(src0Format == VSI_NN_TYPE_UINT8 && src1Format == VSI_NN_TYPE_FLOAT16 && dstFormat == VSI_NN_TYPE_FLOAT16)
     {
         vx_uint16  M0                   = 0;
         vx_int8    postShift            = 0;
@@ -606,7 +606,7 @@ vx_status VX_CALLBACK vxMinimumInitializer
         status |= vxSetNodeUniform(nodObj, "uniU8MulAndPostShift_0_Lo_2x8", 1, uniU8MulAndPostShift_0_Lo_2x8);
         status |= vxSetNodeUniform(nodObj, "multAndoutZP0", 1, multAndoutZP0);
     }
-    else if(src0Format == VX_TYPE_INT16 && src1Format == VX_TYPE_FLOAT16 && dstFormat == VX_TYPE_INT16)
+    else if(src0Format == VSI_NN_TYPE_INT16 && src1Format == VSI_NN_TYPE_FLOAT16 && dstFormat == VSI_NN_TYPE_INT16)
     {
         vx_uint32 uniConvertI16toI16_2x8[16] = {
             0x11111111, // TCfg
@@ -663,7 +663,7 @@ vx_status VX_CALLBACK vxMinimumInitializer
         status |= vxSetNodeUniform(nodObj, "uniConvertI16toI16_2x8", 1, uniConvertI16toI16_2x8);
         status |= vxSetNodeUniform(nodObj, "uinConvertFp16ToInt16_2x8", 1, uinConvertFp16ToInt16_2x8);
     }
-    else if(src0Format == VX_TYPE_INT16 && src1Format == VX_TYPE_FLOAT16 && dstFormat == VX_TYPE_FLOAT16)
+    else if(src0Format == VSI_NN_TYPE_INT16 && src1Format == VSI_NN_TYPE_FLOAT16 && dstFormat == VSI_NN_TYPE_FLOAT16)
     {
         vx_uint32 uniConvertInt16toFp16_2x8[16] = {
             0x11111111, // TCfg

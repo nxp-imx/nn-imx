@@ -210,8 +210,8 @@ vsi_status VX_CALLBACK vxFullyConnected_Axis2Initializer
         {0, 0, 0},  // localWorkSize: local group size in threads
         {0, 0, 0}}; // globalWorkSize: image size in threads
 
-    uint32_t       input_size[DIM_SIZE] = {0, 0, 0, 0};
-    uint32_t       output_size[DIM_SIZE] = {0, 0, 0, 0};
+    uint32_t       input_size[DIM_SIZE] = {1, 1, 1, 1};
+    uint32_t       output_size[DIM_SIZE] = {1, 1, 1, 1};
 
     uint32_t uniMulAcc_16x1[16] = {
         0x00005555, // TCfg

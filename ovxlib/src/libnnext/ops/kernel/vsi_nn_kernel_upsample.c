@@ -28,7 +28,7 @@
 #include <stdint.h>
 
 #include "vsi_nn_platform.h"
-
+#include "vsi_nn_log.h"
 #include "vsi_nn_prv.h"
 #include "vsi_nn_tensor_util.h"
 #include "utils/vsi_nn_util.h"
@@ -825,7 +825,7 @@ vsi_status VX_CALLBACK vxunpoolingInitializer
     }
     if(status != VX_SUCCESS)
     {
-        printf("Set uniform failed(unpooling).\n");
+        VSILOGE("Set uniform failed(unpooling).\n");
         return status;
     }
 
@@ -833,7 +833,7 @@ vsi_status VX_CALLBACK vxunpoolingInitializer
         &shaderParam, sizeof(vx_kernel_execution_parameters_t));
     if(status != VX_SUCCESS)
     {
-        printf("Set node attribute failed(unpooling).\n");
+        VSILOGE("Set node attribute failed(unpooling).\n");
         return status;
     }
 

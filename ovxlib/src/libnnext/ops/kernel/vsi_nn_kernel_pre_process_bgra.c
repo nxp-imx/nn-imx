@@ -68,8 +68,8 @@ static vsi_status VX_CALLBACK vxPre_process_bgraKernel
     vsi_nn_tensor_attr_t in_attr[TENSOR_NUM_INPUT];
     vsi_nn_tensor_attr_t out_attr[TENSOR_NUM_OUTPUT];
     uint32_t out_elements[TENSOR_NUM_OUTPUT]= {0};
-    vx_uint32  dst_size[4]   = {0, 0, 0, 0};
-    vx_uint32  src_size[4]   = {0, 0, 0, 0};
+    vx_uint32  dst_size[4]   = {1, 1, 1, 1};
+    vx_uint32  src_size[4]   = {1, 1, 1, 1};
     vx_float32 outputScale      = 1.0;
     vx_int32   output_ZP        = 0;
     vsi_nn_type_e outputFormat = VSI_NN_TYPE_FLOAT16;
@@ -77,8 +77,8 @@ static vsi_status VX_CALLBACK vxPre_process_bgraKernel
     int32_t xRatio = 0, yRatio = 0, xOffset = 0, yOffset = 0;
     float rMean = 0, gMean = 0, bMean = 0, var = 0;
     int32_t order = 0, trans = 0;
+    int32_t i = 0, j = 0;
 
-    int32_t i = 0;
     for(i = 0; i < TENSOR_NUM_INPUT; i++)
     {
         memset(&in_attr[i], 0x0, sizeof(vsi_nn_tensor_attr_t));
@@ -98,7 +98,12 @@ static vsi_status VX_CALLBACK vxPre_process_bgraKernel
         u8_in_buffer[i] = vsi_nn_vxCopyTensorToData(context, input[i], &in_attr[i]);
         TEST_CHECK_STATUS(status, final);
         if(i == 0)
-            status |= vxQueryTensor(input[i], VX_TENSOR_DIMS, src_size, sizeof(src_size));
+        {
+            for (j = 0; j < in_attr[i].dim_num; j++)
+            {
+                src_size[j] = in_attr[i].size[j];
+            }
+        }
     }
     for(i = 0; i < TENSOR_NUM_OUTPUT; i ++)
     {
@@ -108,11 +113,13 @@ static vsi_status VX_CALLBACK vxPre_process_bgraKernel
         out_elements[i] = vsi_nn_vxGetTensorElementNum(&out_attr[i]);
         u8_out_buffer[i]= (uint8_t *)malloc(out_elements[i] * sizeof(uint8_t));
         memset(u8_out_buffer[i], 0, out_elements[i] * sizeof(uint8_t));
-
-        status |= vxQueryTensor(output[i], VX_TENSOR_DIMS, dst_size, sizeof(dst_size));
-        status |= vxQueryTensor(output[i], VX_TENSOR_SCALE, &outputScale, sizeof(outputScale));
-        status |= vxQueryTensor(output[i], VX_TENSOR_ZERO_POINT, &output_ZP, sizeof(output_ZP));
-        status |= vxQueryTensor(output[i], VX_TENSOR_DATA_TYPE, &outputFormat, sizeof(outputFormat));
+        for (j = 0; j < out_attr[i].dim_num; j++)
+        {
+            dst_size[j] = out_attr[i].size[j];
+        }
+        outputScale  = out_attr[i].dtype.scale;
+        output_ZP    = out_attr[i].dtype.zero_point;
+        outputFormat = out_attr[i].dtype.vx_type;
     }
     status |= vxCopyScalar((vx_scalar)paramObj[TENSOR_NUM], &(xRatio),
         VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
@@ -450,13 +457,25 @@ vx_status VX_CALLBACK vxPre_process_bgra_copyInitializer
     vx_int32   output_ZP        = 0;
     vx_int32 reorder = 0;
     vx_int32 order1 = 2;
+    vx_uint32  dst_size[4]   = {1, 1, 1, 1};
+    vx_uint32 i = 0;
+    vsi_nn_tensor_attr_t attr;
 
-    vx_uint32  dst_size[4]   = {0, 0, 0, 0};
+    memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
+    status = vsi_nn_vxGetTensorAttr(output, &attr);
+    if (status != VX_SUCCESS)
+    {
+        VSILOGE("vsi_nn_vxGetTensorAttr  failure! at line %d\n", __LINE__);
+        return status;
+    }
+    outFormat = attr.dtype.vx_type;
+    for (i = 0; i < attr.dim_num; i++)
+    {
+        dst_size[i] = attr.size[i];
+    }
+    outputScale = attr.dtype.scale;
+    output_ZP   = attr.dtype.zero_point;
 
-    status |= vxQueryTensor(output, VX_TENSOR_DATA_TYPE, &outFormat, sizeof(outFormat));
-    status |= vxQueryTensor(output, VX_TENSOR_DIMS, dst_size, sizeof(dst_size));
-    status |= vxQueryTensor(output, VX_TENSOR_SCALE, &outputScale, sizeof(outputScale));
-    status |= vxQueryTensor(output, VX_TENSOR_ZERO_POINT, &output_ZP, sizeof(output_ZP));
     status |= vxCopyScalar(reorder_s, (void*)&reorder, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
 
     if(reorder != 0)
@@ -465,7 +484,7 @@ vx_status VX_CALLBACK vxPre_process_bgra_copyInitializer
         order1 = 0;
     }
 
-    if(outFormat == VX_TYPE_UINT8)
+    if(outFormat == VSI_NN_TYPE_UINT8)
     {
         outputScale = 1.0f / outputScale;
     }
@@ -539,7 +558,7 @@ vx_status VX_CALLBACK vxPre_process_bgra_copyInitializer
         status |= vxSetNodeUniform(nodObj, "bOrder", 1, &order1);
 
         if(status < 0)
-            printf("error-%s,%d\n",__FILE__,__LINE__);
+            VSILOGE("error-%s,%d\n",__FILE__,__LINE__);
 
         status |= vxSetNodeAttribute(nodObj, VX_NODE_ATTRIBUTE_KERNEL_EXECUTION_PARAMETERS,
                                         &shaderParam, sizeof(vx_kernel_execution_parameters_t));
@@ -574,13 +593,25 @@ vx_status VX_CALLBACK vxPre_process_bgraInitializer
     vx_int32   output_ZP        = 0;
     vx_int32 reorder = 0;
     vx_int32 order1 = 2;
+    vx_uint32  dst_size[4]   = {1, 1, 1, 1};
+    vx_uint32 i = 0;
+    vsi_nn_tensor_attr_t attr;
 
-    vx_uint32  dst_size[4]   = {0, 0, 0, 0};
+    memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
+    status = vsi_nn_vxGetTensorAttr(output, &attr);
+    if (status != VX_SUCCESS)
+    {
+        VSILOGE("vsi_nn_vxGetTensorAttr  failure! at line %d\n", __LINE__);
+        return status;
+    }
+    outFormat = attr.dtype.vx_type;
+    for (i = 0; i < attr.dim_num; i++)
+    {
+        dst_size[i] = attr.size[i];
+    }
+    outputScale = attr.dtype.scale;
+    output_ZP   = attr.dtype.zero_point;
 
-    status |= vxQueryTensor(output, VX_TENSOR_DATA_TYPE, &outFormat, sizeof(outFormat));
-    status |= vxQueryTensor(output, VX_TENSOR_DIMS, dst_size, sizeof(dst_size));
-    status |= vxQueryTensor(output, VX_TENSOR_SCALE, &outputScale, sizeof(outputScale));
-    status |= vxQueryTensor(output, VX_TENSOR_ZERO_POINT, &output_ZP, sizeof(output_ZP));
     status |= vxCopyScalar(reorder_s, (void*)&reorder, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
 
     if(reorder != 0)
@@ -589,7 +620,7 @@ vx_status VX_CALLBACK vxPre_process_bgraInitializer
         order1 = 0;
     }
 
-    if(outFormat == VX_TYPE_UINT8)
+    if(outFormat == VSI_NN_TYPE_UINT8)
     {
         outputScale = 1.0f / outputScale;
     }
@@ -757,7 +788,7 @@ vx_status VX_CALLBACK vxPre_process_bgraInitializer
         status |= vxSetNodeUniform(nodObj, "bOrder", 1, &order1);
 
         if(status < 0)
-            printf("error-%s,%d\n",__FILE__,__LINE__);
+            VSILOGE("error-%s,%d\n",__FILE__,__LINE__);
 
         status |= vxSetNodeAttribute(nodObj, VX_NODE_ATTRIBUTE_KERNEL_EXECUTION_PARAMETERS,
                                         &shaderParam, sizeof(vx_kernel_execution_parameters_t));
@@ -790,14 +821,26 @@ vx_status VX_CALLBACK vxPre_process_bgra_transInitializer
     vx_float32 outputScale      = 1.0;
     vx_int32   output_ZP        = 0;
 
-    vx_uint32  dst_size[4]   = {0, 0, 0, 0};
+    vx_uint32  dst_size[4]   = {1, 1, 1, 1};
+    vx_uint32 i = 0;
+    vsi_nn_tensor_attr_t attr;
 
-    status |= vxQueryTensor(output, VX_TENSOR_DATA_TYPE, &outFormat, sizeof(outFormat));
-    status |= vxQueryTensor(output, VX_TENSOR_DIMS, dst_size, sizeof(dst_size));
-    status |= vxQueryTensor(output, VX_TENSOR_SCALE, &outputScale, sizeof(outputScale));
-    status |= vxQueryTensor(output, VX_TENSOR_ZERO_POINT, &output_ZP, sizeof(output_ZP));
+    memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
+    status = vsi_nn_vxGetTensorAttr(output, &attr);
+    if (status != VX_SUCCESS)
+    {
+        VSILOGE("vsi_nn_vxGetTensorAttr  failure! at line %d\n", __LINE__);
+        return status;
+    }
+    outFormat = attr.dtype.vx_type;
+    for (i = 0; i < attr.dim_num; i++)
+    {
+        dst_size[i] = attr.size[i];
+    }
+    outputScale = attr.dtype.scale;
+    output_ZP   = attr.dtype.zero_point;
 
-    if(outFormat == VX_TYPE_UINT8)
+    if(outFormat == VSI_NN_TYPE_UINT8)
     {
         outputScale = 1.0f / outputScale;
     }
@@ -940,7 +983,7 @@ vx_status VX_CALLBACK vxPre_process_bgra_transInitializer
         status |= vxSetNodeUniform(nodObj, "outputScale", 1, &outputScale);
 
         if(status < 0)
-            printf("error-%s,%d\n",__FILE__,__LINE__);
+            VSILOGE("error-%s,%d\n",__FILE__,__LINE__);
 
         status |= vxSetNodeAttribute(nodObj, VX_NODE_ATTRIBUTE_KERNEL_EXECUTION_PARAMETERS,
                                         &shaderParam, sizeof(vx_kernel_execution_parameters_t));

@@ -124,9 +124,27 @@ static vx_status VX_CALLBACK vxCustomSoftmaxInitializer
         {0, 0, 0},  // globalWorkScale: how many pixels could be processed by a single thread
         {0, 0, 0},  // localWorkSize: local group size in thread
         {0, 0, 0}}; // globalWorkSize: image size in thread
-    int input_size[6];
+    int input_size[6] = {1, 1, 1, 1, 1, 1};
     int sf_size;
-    status |= vxQueryTensor((vx_tensor)paramObj[0], VX_TENSOR_DIMS, input_size, sizeof(input_size));
+    uint32_t input_dims;
+    uint32_t i;
+    vsi_nn_tensor_attr_t input_attr;
+
+    memset(&input_attr, 0, sizeof(vsi_nn_tensor_attr_t));
+
+    status  = vsi_nn_vxGetTensorAttr((vx_tensor)paramObj[0], &input_attr);
+    if (status != VX_SUCCESS)
+    {
+        VSILOGE("vsi_nn_vxGetTensorAttr  failure! at line %d\n", __LINE__);
+        return status;
+    }
+
+    input_dims  = input_attr.dim_num;
+    for (i = 0; i < input_dims; i++)
+    {
+        input_size[i] = input_attr.size[i];
+    }
+
     sf_size  =  input_size[0];
 
     shaderParam.globalWorkOffset[0] = 0;

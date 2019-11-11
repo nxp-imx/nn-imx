@@ -64,8 +64,8 @@ static vsi_status VX_CALLBACK vxReverseKernel
         uint32_t   axis = 1;
         uint32_t   input_dims = 0;
         uint32_t   output_dims = 0;
-        vsi_enum     inputFormat = VX_TYPE_FLOAT16;
-        vsi_enum     outputFormat = VX_TYPE_FLOAT16;
+        vsi_enum     inputFormat = VSI_NN_TYPE_FLOAT16;
+        vsi_enum     outputFormat = VSI_NN_TYPE_FLOAT16;
         uint32_t   input_size[VSI_NN_MAX_DIM_NUM] = { 0 };
         uint32_t   output_size[VSI_NN_MAX_DIM_NUM] = { 0 };
         uint32_t   input_stride_size[VSI_NN_MAX_DIM_NUM] = { 0 };
@@ -110,7 +110,7 @@ static vsi_status VX_CALLBACK vxReverseKernel
             goto OnError;
         }
 
-        status |= vsi_nn_vxGetTensorAttr(output_tensor, &out_attr);
+        status = vsi_nn_vxGetTensorAttr(output_tensor, &out_attr);
         if (status != VX_SUCCESS)
         {
             VSILOGE("vsi_nn_vxGetTensorAttr failure! at line %d\n", __LINE__);
@@ -235,10 +235,22 @@ vsi_status VX_CALLBACK vxTensorReverseInitializer
     vsi_status status = VX_SUCCESS;
 
     vx_tensor input     = (vx_tensor)paramObj[0];
-    uint32_t input_size[DIM_SIZE];
+    uint32_t input_size[DIM_SIZE] = {1, 1, 1, 1};
     uint32_t cur_axis_sz_sub1 = 0;
+    vx_uint32 i = 0;
+    vsi_nn_tensor_attr_t attr;
 
-    status = vxQueryTensor(input, VX_TENSOR_DIMS, input_size, sizeof(input_size));
+    memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
+    status = vsi_nn_vxGetTensorAttr(input, &attr);
+    if (status != VX_SUCCESS)
+    {
+        VSILOGE("vsi_nn_vxGetTensorAttr  failure! at line %d\n", __LINE__);
+        return status;
+    }
+    for (i = 0; i < attr.dim_num; i++)
+    {
+        input_size[i] = attr.size[i];
+    }
 
     cur_axis_sz_sub1 = input_size[1] - 1;
 

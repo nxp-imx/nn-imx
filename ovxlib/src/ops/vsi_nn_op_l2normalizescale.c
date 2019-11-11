@@ -612,7 +612,7 @@ static vsi_status op_compute
     vsi_nn_tensor_t * inputs_mul_scale[_INPUT_NUM_MUL_SCALE] = {0};
     vsi_nn_l2normalizescale_param * p = NULL;
     int32_t   axis = 0;
-    int32_t   input_size[4] = {0};
+    int32_t   input_size[4] = {1, 1, 1, 1};
     uint32_t  input_dims = 0;
 
     memset(&kernel_info, 0x0, sizeof(vsi_nn_kernel_info_t));

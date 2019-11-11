@@ -71,9 +71,9 @@ vsi_status VX_CALLBACK vxTensorStackConcatKernel
         vx_tensor imgObj[2] = { NULL };
         vsi_nn_tensor_attr_t attr[2];
         int16_t *input = NULL, *output = NULL;
-        uint32_t input_size[4] = {0}, output_size[4] = {0};
-        uint32_t input_stride_size[4]  = {0};
-        uint32_t output_stride_size[4] = {0};
+        uint32_t input_size[4] = {1, 1, 1, 1}, output_size[4] = {1, 1, 1, 1};
+        uint32_t input_stride_size[4]  = {1, 1, 1, 1};
+        uint32_t output_stride_size[4] = {1, 1, 1, 1};
         vx_tensor_addressing input_user_addr = NULL;
         vx_tensor_addressing output_user_addr = NULL;
         vsi_nn_type_e inputFormat = VSI_NN_TYPE_FLOAT16, outputFormat = VSI_NN_TYPE_FLOAT16;
@@ -178,7 +178,7 @@ vsi_status VX_CALLBACK vxTensorStackConcatInitializer
         {0, 0, 0}}; // globalWorkSize: image size in thread
 
     vx_tensor     input           = (vx_tensor)paramObj[0];
-    uint32_t      input_size[4]   = {0};
+    uint32_t      input_size[4]   = {1, 1, 1, 1};
     uint32_t      input_dims      = 0;
     vsi_nn_type_e inputDataFormat = VSI_NN_TYPE_FLOAT16;
     vsi_nn_tensor_attr_t attr;

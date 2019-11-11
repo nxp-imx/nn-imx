@@ -171,27 +171,40 @@ vsi_status VX_CALLBACK vxShuffleChannelInitializer
     vx_tensor     input           = (vx_tensor)paramObj[0];
     vx_scalar     group_numbers   = (vx_scalar)paramObj[2];
     vx_scalar     axis_s          = (vx_scalar)paramObj[3];
-    uint32_t      input_size[4]   = {0};
+    uint32_t      input_size[4]   = {1, 1, 1, 1};
     vsi_nn_type_e inputDataFormat = VSI_NN_TYPE_FLOAT16;
     int32_t       group_number    = 0;
     int32_t       axis            = 0;
     int32_t       group_column    = 0;
     float         rgroup_column   = 0.0f;
     uint32_t      chs             = 0;
+    vx_uint32     i               = 0;
+    vsi_nn_tensor_attr_t attr;
 
-    status  = vxQueryTensor(input, VX_TENSOR_DIMS, input_size, sizeof(input_size));
-    status |= vxQueryTensor(input, VX_TENSOR_DATA_TYPE, &inputDataFormat, sizeof(inputDataFormat));
+    memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
+    status = vsi_nn_vxGetTensorAttr(input, &attr);
+    if (status != VX_SUCCESS)
+    {
+        VSILOGE("vsi_nn_vxGetTensorAttr  failure! at line %d\n", __LINE__);
+        return status;
+    }
+    for (i = 0; i < attr.dim_num; i++)
+    {
+        input_size[i] = attr.size[i];
+    }
+    inputDataFormat = attr.dtype.vx_type;
+
     status |= vxCopyScalar(group_numbers, &group_number, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
     status |= vxCopyScalar(axis_s, &axis, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
     if(VX_SUCCESS != status)
     {
-        printf("[%s : %d]Initializer failure! \n",__FILE__, __LINE__);
+        VSILOGE("[%s : %d]Initializer failure! \n",__FILE__, __LINE__);
         return status;
     }
     chs = input_size[axis];
     if (chs % group_number)
     {
-        printf("input channel can't be exact divided by group number! at line %d\n", __LINE__);
+        VSILOGE("input channel can't be exact divided by group number! at line %d\n", __LINE__);
         return VX_FAILURE;
     }
 
@@ -226,7 +239,7 @@ vsi_status VX_CALLBACK vxShuffleChannelInitializer
     }
     else
     {
-        printf("[%s : %d]Initializer failure, not support axis: %d! \n",__FILE__, __LINE__, axis);
+        VSILOGE("[%s : %d]Initializer failure, not support axis: %d! \n",__FILE__, __LINE__, axis);
         return VX_FAILURE;
     }
     group_column = chs / group_number;
@@ -239,7 +252,7 @@ vsi_status VX_CALLBACK vxShuffleChannelInitializer
 
     if(status < 0)
     {
-        printf("[%s : %d]Initializer failure! \n",__FILE__, __LINE__);
+        VSILOGE("[%s : %d]Initializer failure! \n",__FILE__, __LINE__);
     }
     return status;
 }
