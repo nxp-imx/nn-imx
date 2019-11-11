@@ -699,9 +699,9 @@ ARMNN_AUTO_TEST_CASE(L2Normalization4dUint8Nhwc, L2Normalization4dUint8Test, Dat
 //  TODO: Driver need fix batch issue
 //  ARMNN_AUTO_TEST_CASE(PadUint84d, PadUint84dTest)
 
-// // Constant
-// ARMNN_AUTO_TEST_CASE(Constant, ConstantTest)
-// ARMNN_AUTO_TEST_CASE(ConstantUint8, ConstantUint8CustomQuantizationScaleAndOffsetTest)
+// Constant
+ARMNN_AUTO_TEST_CASE(Constant, ConstantTest)
+ARMNN_AUTO_TEST_CASE(ConstantUint8, ConstantUint8CustomQuantizationScaleAndOffsetTest)
 // ARMNN_AUTO_TEST_CASE(ConstantInt16, ConstantInt16CustomQuantizationScaleAndOffsetTest)
 
 // // Concat

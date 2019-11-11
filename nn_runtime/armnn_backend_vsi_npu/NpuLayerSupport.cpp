@@ -463,12 +463,11 @@ bool NpuLayerSupport::IsConcatSupported(const std::vector<const TensorInfo*> inp
 
 bool NpuLayerSupport::IsConstantSupported(const TensorInfo& output,
                                           Optional<std::string&> reasonIfUnsupported) const {
-    std::array<DataType, 4> supportedTypes = {DataType::Float32,
-                                              DataType::Signed32,
-                                              DataType::QuantisedAsymm8,
-                                              DataType::QuantisedSymm16};
+    std::array<DataType, 3> supportedTypes = {DataType::Float32,
+                                              DataType::Float16,
+                                              DataType::QuantisedAsymm8};
 
-    return false && CheckSupportRule(TypeAnyOf(output, supportedTypes),
+    return CheckSupportRule(TypeAnyOf(output, supportedTypes),
                                      reasonIfUnsupported,
                                      "Npu constant: output is not a supported type.");
 }

@@ -59,6 +59,7 @@
 #include "workloads/NpuTransposeConvolution2dWorkload.hpp"
 #include "workloads/NpuNormalizationWorkload.hpp"
 #include "workloads/NpuResizeWorkload.hpp"
+#include "workloads/NpuConstantWorkload.hpp"
 
 #include <boost/log/trivial.hpp>
 
@@ -282,9 +283,11 @@ std::unique_ptr<armnn::IWorkload> NpuWorkloadFactory::CreateConcat(
         descriptor, info);
 }
 
-std::unique_ptr<IWorkload> NpuWorkloadFactory::CreateConstant(const ConstantQueueDescriptor& descriptor,
-                                                              const WorkloadInfo& info) const {
-    return MakeWorkload<NullWorkload, NullWorkload, NullWorkload>(descriptor, info);
+std::unique_ptr<IWorkload> NpuWorkloadFactory::CreateConstant(
+    const ConstantQueueDescriptor& descriptor, const WorkloadInfo& info) const {
+    return MakeWorkload<NpuConstantFloat16Workload,
+                        NpuConstantFloat32Workload,
+                        NpuConstantUint8Workload>(descriptor, info);
 }
 
 std::unique_ptr<IWorkload> NpuWorkloadFactory::CreateReshape(
