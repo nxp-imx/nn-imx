@@ -54,6 +54,13 @@ Compilation::Compilation(Model * model)
         thread_local_context.reset(vsi_nn_CreateContext(), ContextDeleter());
     }
     context_ = thread_local_context;
+
+    // TODO {Juku} : remove this once Driver fixed fp32
+    // check whether the hardware support evis,
+    // if not, do not convert fp32 to fp16
+    if (context_->config.evis.ver == VSI_NN_HW_EVIS_NONE) {
+        model_->relax(false);
+    }
 }
 
 Compilation::~Compilation()
