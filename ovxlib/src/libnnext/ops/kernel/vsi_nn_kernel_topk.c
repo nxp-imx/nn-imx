@@ -162,7 +162,7 @@ static vsi_status VX_CALLBACK vxTopkKernel
 
     /* TODO: Add CPU kernel implement */
     {
-        uint32_t block_num = 1;
+        uint32_t block_num = in_attr[0].size[1];
         uint32_t block_size = in_attr[0].size[0];
         uint32_t i;
         uint32_t * indices = (uint32_t*)malloc(block_size * sizeof(uint32_t));
@@ -171,9 +171,9 @@ static vsi_status VX_CALLBACK vxTopkKernel
         {
             uint32_t in_index = i * block_size;
             uint32_t out_index = i * top_k;
-            find_top_k_1d(&(f32_in_buffer[0][in_index * sizeof(float)]),
-                block_size, top_k, &(f32_out_buffer[out_index * sizeof(float)]), indices);
-            memcpy(&(u32_out_buffer[out_index * sizeof(uint32_t)]),
+            find_top_k_1d(&(f32_in_buffer[0][in_index]),
+                block_size, top_k, &(f32_out_buffer[out_index]), indices);
+            memcpy(&(u32_out_buffer[out_index]),
                 indices, top_k * sizeof(uint32_t));
         }
         if (indices) free(indices);
