@@ -258,7 +258,7 @@ static vsi_bool op_setup
 {
     if( VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num )
     {
-        outputs[0]->attr.size[0] = inputs[1]->attr.size[1];
+        outputs[0]->attr.size[0] = inputs[1]->attr.size[0];
         outputs[0]->attr.size[1] = inputs[1]->attr.size[1];
         outputs[0]->attr.dim_num = 2;
     }
