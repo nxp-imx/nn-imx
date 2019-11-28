@@ -287,6 +287,7 @@ vsi_status VX_CALLBACK vxMaximumInitializer
         shaderParam.globalWorkScale[2]  = 1;
     }
 
+    shaderParam.workDim = attr[2].dim_num < 3 ? 2 : 3;
     shaderParam.globalWorkSize[0]   = gcmALIGN((attr[2].size[0] + shaderParam.globalWorkScale[0] - 1)
                                         / shaderParam.globalWorkScale[0], 4);
     shaderParam.globalWorkSize[1]   = (attr[2].size[1] + shaderParam.globalWorkScale[1] - 1)
