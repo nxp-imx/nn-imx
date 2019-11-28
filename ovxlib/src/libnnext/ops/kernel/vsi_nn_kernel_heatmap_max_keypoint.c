@@ -168,6 +168,8 @@ static vsi_status VX_CALLBACK vxHeatmap_max_keypointKernel
         uint32_t heatmapSize = in_attr[0].size[2];
         uint32_t numKeypoints = in_attr[0].size[0];
         uint32_t boxInfoLength = 4;
+        uint32_t output_score_index = 0;
+        uint32_t output_keypoint_index = 0;
 
         for(i = 0; i < numBoxes; i++)
         {
@@ -230,9 +232,11 @@ static vsi_status VX_CALLBACK vxHeatmap_max_keypointKernel
                     (float)(heatmapSize);
                 hRelativePos = ((float)(maxIndexHeight) + delta[1] + 0.5f) /
                     (float)(heatmapSize);
-                f32_out_buffer[0][i * boxInfoLength] = deltaScore;
-                f32_out_buffer[1][i * 2] = wRelativePos * roiWidth + wRoiStart;
-                f32_out_buffer[1][i * 2 + 1] = hRelativePos * roiHeight + hRoiStart;
+                f32_out_buffer[0][output_score_index] = deltaScore;
+                f32_out_buffer[1][output_keypoint_index] = wRelativePos * roiWidth + wRoiStart;
+                f32_out_buffer[1][output_keypoint_index + 1] = hRelativePos * roiHeight + hRoiStart;
+                output_score_index++;
+                output_keypoint_index +=2;
             }
         }
     }
