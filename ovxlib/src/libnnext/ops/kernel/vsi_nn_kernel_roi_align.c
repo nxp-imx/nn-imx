@@ -137,21 +137,30 @@ static vsi_status VX_CALLBACK vxRoi_alignKernel
     /* TODO: Add CPU kernel implement */
     {
         uint32_t n, i, j, k;
-        uint32_t numRois = in_attr[1].size[1];
+        uint32_t kRoiDim = 4;
         float heightScale = 1.0f / height_ratio;
         float widthScale = 1.0f / width_ratio;
+        uint32_t inHeight = in_attr[0].size[2];
+        uint32_t inWidth = in_attr[0].size[1];
+        uint32_t inDepth = in_attr[0].size[0];
+        uint32_t numRois = in_attr[1].size[1];
+        uint32_t outHeight = out_attr[0].size[2];
+        uint32_t outWidth = out_attr[0].size[1];
+        uint32_t out_index = 0;
+
         for(n = 0; n < numRois; n++)
         {
             uint32_t batchId = int32_in_buffer[2][n];
-            float wRoiStart = f32_in_buffer[1][n * 4 + 0] * widthScale;
-            float hRoiStart = f32_in_buffer[1][n * 4 + 1] * heightScale;
-            float wRoiEnd = f32_in_buffer[1][n * 4 + 2] * widthScale;
-            float hRoiEnd = f32_in_buffer[1][n * 4 + 3] * heightScale;
+            float scale = (in_attr[1].dtype.vx_type == VSI_NN_TYPE_UINT16) ? 0.125 : 1.0;
+            float wRoiStart = f32_in_buffer[1][n * kRoiDim] * widthScale * scale;
+            float hRoiStart = f32_in_buffer[1][n * kRoiDim + 1] * heightScale * scale;
+            float wRoiEnd = f32_in_buffer[1][n * kRoiDim + 2] * widthScale * scale;
+            float hRoiEnd = f32_in_buffer[1][n * kRoiDim + 3] * heightScale * scale;
 
             float roiWidth = MAX((wRoiEnd - wRoiStart), 1.0f);
             float roiHeight = MAX((hRoiEnd - hRoiStart), 1.0f);
-            float wStepSize = roiWidth / out_attr[0].size[0];
-            float hStepSize = roiHeight / out_attr[0].size[1];
+            float wStepSize = roiWidth / outWidth;
+            float hStepSize = roiHeight / outHeight;
 
             uint32_t wSamplingRatio = width_sample_num > 0
                 ? width_sample_num : (uint32_t)ceil(wStepSize);
@@ -161,67 +170,61 @@ static vsi_status VX_CALLBACK vxRoi_alignKernel
             float wBinSize = wStepSize / (float)(wSamplingRatio);
             float hBinSize = hStepSize / (float)(hSamplingRatio);
 
-            for (i = 0; i < out_attr[0].size[1]; i++)
+            int32_t batch_base_index = batchId * inHeight * inWidth * inDepth;
+
+            for (i = 0; i < outHeight; i++)
             {
-                for (j = 0; j < out_attr[0].size[0]; j++)
+                for (j = 0; j < outWidth; j++)
                 {
                     float wStart = wStepSize * j + wRoiStart;
-                    //float wEnd = wStepSize * (j + 1) + wRoiStart;
+                    float wEnd = wStepSize * (j + 1) + wRoiStart;
                     float hStart = hStepSize * i + hRoiStart;
-                    //float hEnd = hStepSize * (i + 1) + hRoiStart;
+                    float hEnd = hStepSize * (i + 1) + hRoiStart;
 
-                    uint32_t xInd, yInd;
-                    for (k = 0; k < in_attr[0].size[2]; k++)
+                    float x,y;
+                    for (y = hStart + hBinSize / 2; y < hEnd; y += hBinSize)
                     {
-                        for (yInd = 0; yInd < hSamplingRatio; yInd++)
+                        for (x = wStart + wBinSize / 2; x < wEnd; x += wBinSize)
                         {
-                            for (xInd = 0; xInd < wSamplingRatio; xInd++)
+                            uint32_t x1 = (uint32_t)floor(x);
+                            uint32_t y1 = (uint32_t)floor(y);
+                            uint32_t x2 = x1 + 1, y2 = y1 + 1;
+                            float dx1 = x - (float)(x1);
+                            float dy1 = y - (float)(y1);
+                            if (x1 >= inWidth - 1) {
+                                x1 = x2 = inWidth - 1;
+                                dx1 = 0;
+                            }
+                            if (y1 >= inHeight - 1) {
+                                y1 = y2 = inHeight - 1;
+                                dy1 = 0;
+                            }
                             {
-                                float y = hStart + hBinSize / 2 + hBinSize * yInd;
-                                float x = wStart + wBinSize / 2 + wBinSize * xInd;
-                                uint32_t x1 = (uint32_t)floor(x);
-                                uint32_t y1 = (uint32_t)floor(y);
-                                uint32_t x2 = x1 + 1, y2 = y1 + 1;
-                                float dx1 = x - (float)(x1);
-                                float dy1 = y - (float)(y1);
-
-                                if (x1 >= in_attr[0].size[0] - 1) {
-                                    x1 = x2 = in_attr[0].size[0] - 1;
-                                    dx1 = 0;
-                                }
-                                if (y1 >= in_attr[0].size[1] - 1) {
-                                    y1 = y2 = in_attr[0].size[1] - 1;
-                                    dy1 = 0;
-                                }
-
-                                {
-                                    float dx2 = 1.0f - dx1, dy2 = 1.0f - dy1;
-                                    float ws[] = {dx2 * dy2, dx1 * dy2,
-                                        dx2 * dy1, dx1 * dy1};
-                                    uint32_t offsets[] = {y1 * in_attr[0].size[0] + x1,
-                                        y1 * in_attr[0].size[0] + x2,
-                                        y2 * in_attr[0].size[0] + x1,
-                                        y2 * in_attr[0].size[0] + x2};
-
+                                float dx2 = 1.0f - dx1, dy2 = 1.0f - dy1;
+                                float ws[] = {dx2 * dy2, dx1 * dy2,
+                                    dx2 * dy1, dx1 * dy1};
+                                uint32_t offsets[] = {y1 * inWidth * inDepth + x1 * inDepth,
+                                    y1 * inWidth * inDepth + x2 * inDepth,
+                                    y2 * inWidth * inDepth + x1 * inDepth,
+                                    y2 * inWidth * inDepth + x2 * inDepth};
+                                for (k = 0; k < inDepth; k++) {
                                     float interpolation = 0;
-                                    uint32_t in_coords[] = {0, 0, k, batchId};
-                                    uint32_t in_index = vsi_nn_GetOffsetByCoords(
-                                        &in_attr[0], in_coords);
-                                    uint32_t out_coords[] = {j, i, k, n};
-                                    uint32_t out_index = vsi_nn_GetOffsetByCoords(
-                                        &out_attr[0], out_coords);
                                     uint32_t c;
                                     for (c = 0; c < 4; c++)
                                     {
                                         interpolation += ws[c]
-                                        * f32_in_buffer[0][in_index + offsets[c]];
+                                        * f32_in_buffer[0][batch_base_index + offsets[c] + k];
                                     }
-                                    interpolation /= (float)(numSamplingPoints);
-                                    f32_out_buffer[0][out_index] = interpolation;
+                                    f32_out_buffer[0][out_index + k] += interpolation;
                                 }
                             }
                         }
                     }
+                    for (k = 0; k < inDepth; k++)
+                    {
+                        f32_out_buffer[0][out_index + k] /= (float)(numSamplingPoints);
+                    }
+                    out_index += inDepth;
                 }
             }
         }

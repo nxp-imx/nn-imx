@@ -267,16 +267,15 @@ static vsi_bool op_setup
     vsi_nn_tensor_t ** outputs
     )
 {
-
-    /* TODO: Add code to comput outputs' shape. */
+    /* TODO: Add code to compute outputs' shape. */
     if( VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num )
     {
         vsi_nn_roi_align_param *p;
         p = &(self->nn_param.roi_align);
         outputs[0]->attr.dim_num = 4;
-        outputs[0]->attr.size[0] = p->output_width;
-        outputs[0]->attr.size[1] = p->output_height;
-        outputs[0]->attr.size[2] = inputs[0]->attr.size[2];
+        outputs[0]->attr.size[0] = inputs[0]->attr.size[0];
+        outputs[0]->attr.size[1] = p->output_width;
+        outputs[0]->attr.size[2] = p->output_height;
         outputs[0]->attr.size[3] = inputs[1]->attr.size[1];
     }
     return TRUE;
