@@ -36,6 +36,7 @@
 #include "vsi_nn_tensor.h"
 #include "vsi_nn_tensor_util.h"
 #include "client/vsi_nn_vxkernel.h"
+#include "utils/vsi_nn_util.h"
 
 #define _ARG_NUM            (1)
 #define _INPUT_NUM          (LSTMUNIT_ACT_INPUTS_COUNT)
@@ -790,7 +791,7 @@ static vsi_status op_compute
 
    _get_lstmunit_hashtable_idx(self, inputs, outputs);
 
-   if (p->local.execute_on_sw)
+   if (p->local.execute_on_sw || !vsi_nn_IsEVISFeatureAvaiable(self->graph->ctx))
     {
         kernel_info.resource_num = 1;
         kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));

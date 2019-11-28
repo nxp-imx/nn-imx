@@ -35,6 +35,7 @@
 #include "vsi_nn_tensor.h"
 #include "vsi_nn_tensor_util.h"
 #include "client/vsi_nn_vxkernel.h"
+#include "utils/vsi_nn_util.h"
 
 #define _ARG_NUM            (1)
 #define _INPUT_NUM          (2)
@@ -325,7 +326,8 @@ static vsi_status op_compute
 
     if( kernel_info.type == VX_KERNEL_TYPE_VX
         && (inputDataFormat == VSI_NN_TYPE_FLOAT32 || inputDataFormat == VSI_NN_TYPE_FLOAT16)
-        && ((outputs[0]->attr.size[0] * outputs[0]->attr.size[1]) > 128))
+        && ((outputs[0]->attr.size[0] * outputs[0]->attr.size[1]) > 128)
+        && vsi_nn_IsEVISFeatureAvaiable(self->graph->ctx))
     {
         vx_context ctx;
         vsi_nn_tensor_attr_t attr;

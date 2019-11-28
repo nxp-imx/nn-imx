@@ -36,6 +36,7 @@
 #include "vsi_nn_tensor_util.h"
 #include "client/vsi_nn_vxkernel.h"
 #include "vsi_nn_internal_node.h"
+#include "utils/vsi_nn_util.h"
 
 
 static vsi_status op_compute

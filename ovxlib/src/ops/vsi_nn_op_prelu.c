@@ -35,6 +35,7 @@
 #include "vsi_nn_prv.h"
 #include "vsi_nn_log.h"
 #include "client/vsi_nn_vxkernel.h"
+#include "utils/vsi_nn_util.h"
 
 #define VSI_NN_PRELU_DEFAULT_AXIS 2
 
@@ -612,7 +613,7 @@ static vsi_status op_compute
         _get_prelu_hashtable_idx(self, inputs, outputs);
         check_const_tensor_shape(self, inputs);
 
-        if (p->local->execute_on_sw)
+        if (p->local->execute_on_sw || !vsi_nn_IsEVISFeatureAvaiable(self->graph->ctx))
         {
             reshape_tensor_set_input_output(self, inputs, outputs, vx_true_e);
             kernel_info.resource_num = 1;

@@ -357,7 +357,7 @@ static vsi_status op_compute
             p->local->sizes0, p->local->sizes1, p->local->sizes2, &p->local->dim_num);
     _get_maximum_hashtable_idx(self, inputs, outputs);
 
-    if (p->local->execute_on_sw)
+    if (p->local->execute_on_sw || !vsi_nn_IsEVISFeatureAvaiable(self->graph->ctx))
     {
         kernel_info.resource_num = 1;
         kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));

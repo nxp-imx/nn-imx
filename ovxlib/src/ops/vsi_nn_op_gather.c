@@ -35,6 +35,7 @@
 #include "vsi_nn_tensor.h"
 #include "vsi_nn_tensor_util.h"
 #include "client/vsi_nn_vxkernel.h"
+#include "utils/vsi_nn_util.h"
 
 #define _ARG_NUM            (1)
 #define _INPUT_NUM          (2)
@@ -337,7 +338,7 @@ static vsi_status op_compute
     kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));
     kernel_info.resource_name[0] = "vsi_nn_kernel_gather";
 
-    if( kernel_info.type == VX_KERNEL_TYPE_VX)
+    if( kernel_info.type == VX_KERNEL_TYPE_VX && vsi_nn_IsEVISFeatureAvaiable(self->graph->ctx))
     {
         kernel_info.kernel_index = 1;
         kernel_info.init_index = 1;

@@ -31,6 +31,7 @@
 #include "vsi_nn_platform.h"
 #include "vsi_nn_tensor.h"
 #include "vsi_nn_types.h"
+#include "vsi_nn_context.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -287,6 +288,11 @@ vsi_bool vsi_nn_OptimizedEltWiseOPShape
     uint32_t          sizes1[VSI_NN_MAX_DIM_NUM],
     uint32_t          sizes2[VSI_NN_MAX_DIM_NUM],
     uint32_t        * dim_num
+    );
+
+vsi_bool vsi_nn_IsEVISFeatureAvaiable
+    (
+    vsi_nn_context_t context
     );
 
 typedef uint32_t(*comp_func)(void* data, int32_t left, int32_t right);

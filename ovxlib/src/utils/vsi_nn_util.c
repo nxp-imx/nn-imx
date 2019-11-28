@@ -1102,3 +1102,18 @@ vsi_bool vsi_nn_OptimizedEltWiseOPShape
 
     return status;
 }
+
+vsi_bool vsi_nn_IsEVISFeatureAvaiable
+    (
+    vsi_nn_context_t context
+    )
+{
+    if ( context->config.evis.ver == VSI_NN_HW_EVIS_1
+      || context->config.evis.ver == VSI_NN_HW_EVIS_2
+      )
+    {
+        return TRUE;
+    }
+
+    return FALSE;
+}

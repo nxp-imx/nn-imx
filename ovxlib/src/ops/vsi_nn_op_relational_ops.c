@@ -35,6 +35,7 @@
 #include "vsi_nn_prv.h"
 #include "vsi_nn_log.h"
 #include "client/vsi_nn_vxkernel.h"
+#include "utils/vsi_nn_util.h"
 
 #define _ARG_NUM            (0)
 #define _INPUT_NUM          (2)
@@ -339,7 +340,7 @@ static vsi_status op_compute
     vsi_nn_type_e outputDataFormat    = outputs[0]->attr.dtype.vx_type;
 
     memset(&kernel_info, 0x0, sizeof(vsi_nn_kernel_info_t));
-    if(inputDataFormat == outputDataFormat && inputDataFormat != VSI_NN_TYPE_FLOAT32)
+    if(inputDataFormat == outputDataFormat && inputDataFormat != VSI_NN_TYPE_FLOAT32 && vsi_nn_IsEVISFeatureAvaiable(self->graph->ctx))
     {
         kernel_info.resource_num = 1;
         kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));

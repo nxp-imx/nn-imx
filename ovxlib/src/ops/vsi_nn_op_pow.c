@@ -35,6 +35,7 @@
 #include "vsi_nn_prv.h"
 #include "vsi_nn_log.h"
 #include "client/vsi_nn_vxkernel.h"
+#include "utils/vsi_nn_util.h"
 
 #define _ARG_NUM            (0)
 #define _INPUT_NUM          (2)
@@ -285,7 +286,7 @@ static vsi_status op_compute
 
     memset(&kernel_info, 0x0, sizeof(vsi_nn_kernel_info_t));
     _get_pow_hashtable_idx(self, inputs, outputs);
-    if (p->local.execute_on_sw)
+    if (p->local.execute_on_sw || !vsi_nn_IsEVISFeatureAvaiable(self->graph->ctx))
     {
         kernel_info.resource_num = 1;
         kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));
