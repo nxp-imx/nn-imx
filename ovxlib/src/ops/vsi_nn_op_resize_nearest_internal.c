@@ -498,6 +498,8 @@ static vsi_status op_init
         return  VX_ERROR_NO_MEMORY;
     }
 
+    memset(self->nn_param.resize_nearest_internal.lcl_data_ptr, 0, sizeof(vsi_nn_resize_nearest_in_lcl_data));
+
     return status;
 } /* op_init() */
 

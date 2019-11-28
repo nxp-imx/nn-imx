@@ -356,6 +356,7 @@ static vsi_bool op_setup
     {
         return ret;
     }
+    memset(local, 0, sizeof(vsi_nn_shufflechannel_lcl_data_t));
     p->local = local;
 
     if (axis < 0)

@@ -472,6 +472,7 @@ static vsi_status op_init
     {
         return  VX_ERROR_NO_MEMORY;
     }
+    memset(self->nn_param.maximum.local, 0, sizeof(vsi_nn_maximum_lcl_data));
 
     return status;
 } /* op_init() */

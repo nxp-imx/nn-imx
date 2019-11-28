@@ -7,7 +7,7 @@ _viv_uniform VXC_512Bits uniConvertInt32toUint8_2x8;
 _viv_uniform float outputScale;
 _viv_uniform int   outputZP;
 
-#define PRELU_AXIS0_F16TOF16_PROCESS(read_fun, write_fun) \
+#define PRELU_AXIS0_F16F16TOF16_PROCESS(read_fun, write_fun) \
     vxc_short8 img1_s16, para_s16, val_s16; \
     vxc_half8 img_fp16, para_fp16, val_fp16; \
     read_fun(img1_s16, input, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \
@@ -20,7 +20,7 @@ _viv_uniform int   outputZP;
     val_s16 = img1_s16 > 0 ? img1_s16 : mulData; \
     write_fun(output, coord, val_s16, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
 
-__kernel void vxcParametricRelu_axis0_F16toF16_2D
+__kernel void vxcParametricRelu_axis0_F16F16toF16_2D
     (
     image2d_array_t input,
     image2d_array_t para,
@@ -30,10 +30,10 @@ __kernel void vxcParametricRelu_axis0_F16toF16_2D
 {
     int2 coord = (int2)(get_global_id(0), get_global_id(1));
     int2 coord_para = (int2)(get_global_id(0), 0);
-    PRELU_AXIS0_F16TOF16_PROCESS(VXC_ReadImage, VXC_WriteImage)
+    PRELU_AXIS0_F16F16TOF16_PROCESS(VXC_ReadImage, VXC_WriteImage)
 }
 
-__kernel void vxcParametricRelu_axis0_F16toF16
+__kernel void vxcParametricRelu_axis0_F16F16toF16
     (
     image2d_array_t input,
     image2d_array_t para,
@@ -43,10 +43,10 @@ __kernel void vxcParametricRelu_axis0_F16toF16
 {
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);
     int2 coord_para = (int2)(get_global_id(0), 0);
-    PRELU_AXIS0_F16TOF16_PROCESS(VXC_ReadImage2DArray, VXC_WriteImage2DArray)
+    PRELU_AXIS0_F16F16TOF16_PROCESS(VXC_ReadImage2DArray, VXC_WriteImage2DArray)
 }
 
-#define PRELU_AXIS0_F16TOINT_PROCESS(read_fun, write_fun, OUT_SCALE, OUT_ZP) \
+#define PRELU_AXIS0_F16F16TOINT_PROCESS(read_fun, write_fun, OUT_SCALE, OUT_ZP) \
     vxc_short8 img_s16, para_s16; \
     vxc_half8 img_fp16; \
     vxc_half8 paraHlf; \
@@ -81,7 +81,7 @@ __kernel void vxcParametricRelu_axis0_F16toF16
     write_fun(output, coord, outval, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
 
 
-__kernel void vxcParametricRelu_axis0_F16toI8
+__kernel void vxcParametricRelu_axis0_F16F16toI8
     (
     image2d_array_t input,
     image2d_array_t para,
@@ -92,10 +92,10 @@ __kernel void vxcParametricRelu_axis0_F16toI8
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);
     int2 coord_para = (int2)(get_global_id(0), 0);
     vxc_char16 outval;
-    PRELU_AXIS0_F16TOINT_PROCESS(VXC_ReadImage2DArray, VXC_WriteImage2DArray, outputScale, 0)
+    PRELU_AXIS0_F16F16TOINT_PROCESS(VXC_ReadImage2DArray, VXC_WriteImage2DArray, outputScale, 0)
 }
 
-__kernel void vxcParametricRelu_axis0_F16toU8
+__kernel void vxcParametricRelu_axis0_F16F16toU8
     (
     image2d_array_t input,
     image2d_array_t para,
@@ -106,10 +106,10 @@ __kernel void vxcParametricRelu_axis0_F16toU8
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);
     int2 coord_para = (int2)(get_global_id(0), 0);
     vxc_uchar8 outval;
-    PRELU_AXIS0_F16TOINT_PROCESS(VXC_ReadImage2DArray, VXC_WriteImage2DArray, outputScale, outputZP)
+    PRELU_AXIS0_F16F16TOINT_PROCESS(VXC_ReadImage2DArray, VXC_WriteImage2DArray, outputScale, outputZP)
 }
 
-__kernel void vxcParametricRelu_axis0_F16toI16
+__kernel void vxcParametricRelu_axis0_F16F16toI16
     (
     image2d_array_t input,
     image2d_array_t para,
@@ -120,10 +120,10 @@ __kernel void vxcParametricRelu_axis0_F16toI16
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);
     int2 coord_para = (int2)(get_global_id(0), 0);
     vxc_short8 outval;
-    PRELU_AXIS0_F16TOINT_PROCESS(VXC_ReadImage2DArray, VXC_WriteImage2DArray, outputScale, 0)
+    PRELU_AXIS0_F16F16TOINT_PROCESS(VXC_ReadImage2DArray, VXC_WriteImage2DArray, outputScale, 0)
 }
 
-__kernel void vxcParametricRelu_axis0_F16toI8_2D
+__kernel void vxcParametricRelu_axis0_F16F16toI8_2D
     (
     image2d_array_t input,
     image2d_array_t para,
@@ -134,10 +134,10 @@ __kernel void vxcParametricRelu_axis0_F16toI8_2D
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);
     int2 coord_para = (int2)(get_global_id(0), 0);
     vxc_char16 outval;
-    PRELU_AXIS0_F16TOINT_PROCESS(VXC_ReadImage, VXC_WriteImage, outputScale, 0)
+    PRELU_AXIS0_F16F16TOINT_PROCESS(VXC_ReadImage, VXC_WriteImage, outputScale, 0)
 }
 
-__kernel void vxcParametricRelu_axis0_F16toU8_2D
+__kernel void vxcParametricRelu_axis0_F16F16toU8_2D
     (
     image2d_array_t input,
     image2d_array_t para,
@@ -148,10 +148,10 @@ __kernel void vxcParametricRelu_axis0_F16toU8_2D
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);
     int2 coord_para = (int2)(get_global_id(0), 0);
     vxc_uchar8 outval;
-    PRELU_AXIS0_F16TOINT_PROCESS(VXC_ReadImage, VXC_WriteImage, outputScale, outputZP)
+    PRELU_AXIS0_F16F16TOINT_PROCESS(VXC_ReadImage, VXC_WriteImage, outputScale, outputZP)
 }
 
-__kernel void vxcParametricRelu_axis0_F16toI16_2D
+__kernel void vxcParametricRelu_axis0_F16F16toI16_2D
     (
     image2d_array_t input,
     image2d_array_t para,
@@ -162,10 +162,10 @@ __kernel void vxcParametricRelu_axis0_F16toI16_2D
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);
     int2 coord_para = (int2)(get_global_id(0), 0);
     vxc_short8 outval;
-    PRELU_AXIS0_F16TOINT_PROCESS(VXC_ReadImage, VXC_WriteImage, outputScale, 0)
+    PRELU_AXIS0_F16F16TOINT_PROCESS(VXC_ReadImage, VXC_WriteImage, outputScale, 0)
 }
 
-#define PRELU_AXIS1_F16TOF16_PROCESS(read_fun, write_fun) \
+#define PRELU_AXIS1_F16F16TOF16_PROCESS(read_fun, write_fun) \
     vxc_short8 img1_s16, para_s16, val_s16; \
     vxc_half8 img_fp16, para_fp16, val_fp16; \
     read_fun(img1_s16, input, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \
@@ -178,7 +178,7 @@ __kernel void vxcParametricRelu_axis0_F16toI16_2D
     val_s16 = img1_s16 > 0 ? img1_s16 : mulData; \
     write_fun(output, coord, val_s16, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
 
-__kernel void vxcParametricRelu_axis1_F16toF16_2D
+__kernel void vxcParametricRelu_axis1_F16F16toF16_2D
     (
     image2d_array_t input,
     image2d_array_t para,
@@ -188,10 +188,10 @@ __kernel void vxcParametricRelu_axis1_F16toF16_2D
 {
     int2 coord = (int2)(get_global_id(0), get_global_id(1));
     int2 coord_para = (int2)(get_global_id(1), 0);
-    PRELU_AXIS1_F16TOF16_PROCESS(VXC_ReadImage, VXC_WriteImage)
+    PRELU_AXIS1_F16F16TOF16_PROCESS(VXC_ReadImage, VXC_WriteImage)
 }
 
-__kernel void vxcParametricRelu_axis1_F16toF16
+__kernel void vxcParametricRelu_axis1_F16F16toF16
     (
     image2d_array_t input,
     image2d_array_t para,
@@ -201,10 +201,10 @@ __kernel void vxcParametricRelu_axis1_F16toF16
 {
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);
     int2 coord_para = (int2)(get_global_id(1), 0);
-    PRELU_AXIS1_F16TOF16_PROCESS(VXC_ReadImage2DArray, VXC_WriteImage2DArray)
+    PRELU_AXIS1_F16F16TOF16_PROCESS(VXC_ReadImage2DArray, VXC_WriteImage2DArray)
 }
 
-#define PRELU_AXIS1_F16TOINT_PROCESS(read_fun, write_fun, OUT_SCALE, OUT_ZP) \
+#define PRELU_AXIS1_F16F16TOINT_PROCESS(read_fun, write_fun, OUT_SCALE, OUT_ZP) \
     vxc_short8 img_s16, para_s16; \
     vxc_half8 img_fp16; \
     half paraHlf; \
@@ -236,7 +236,7 @@ __kernel void vxcParametricRelu_axis1_F16toF16
     write_fun(output, coord, outval, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
 
 
-__kernel void vxcParametricRelu_axis1_F16toI8
+__kernel void vxcParametricRelu_axis1_F16F16toI8
     (
     image2d_array_t input,
     image2d_array_t para,
@@ -247,10 +247,10 @@ __kernel void vxcParametricRelu_axis1_F16toI8
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);
     int2 coord_para = (int2)(get_global_id(1), 0);
     vxc_char16 outval;
-    PRELU_AXIS1_F16TOINT_PROCESS(VXC_ReadImage2DArray, VXC_WriteImage2DArray, outputScale, 0)
+    PRELU_AXIS1_F16F16TOINT_PROCESS(VXC_ReadImage2DArray, VXC_WriteImage2DArray, outputScale, 0)
 }
 
-__kernel void vxcParametricRelu_axis1_F16toU8
+__kernel void vxcParametricRelu_axis1_F16F16toU8
     (
     image2d_array_t input,
     image2d_array_t para,
@@ -261,10 +261,10 @@ __kernel void vxcParametricRelu_axis1_F16toU8
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);
     int2 coord_para = (int2)(get_global_id(1), 0);
     vxc_uchar8 outval;
-    PRELU_AXIS1_F16TOINT_PROCESS(VXC_ReadImage2DArray, VXC_WriteImage2DArray, outputScale, outputZP)
+    PRELU_AXIS1_F16F16TOINT_PROCESS(VXC_ReadImage2DArray, VXC_WriteImage2DArray, outputScale, outputZP)
 }
 
-__kernel void vxcParametricRelu_axis1_F16toI16
+__kernel void vxcParametricRelu_axis1_F16F16toI16
     (
     image2d_array_t input,
     image2d_array_t para,
@@ -275,10 +275,10 @@ __kernel void vxcParametricRelu_axis1_F16toI16
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);
     int2 coord_para = (int2)(get_global_id(1), 0);
     vxc_short8 outval;
-    PRELU_AXIS1_F16TOINT_PROCESS(VXC_ReadImage2DArray, VXC_WriteImage2DArray, outputScale, 0)
+    PRELU_AXIS1_F16F16TOINT_PROCESS(VXC_ReadImage2DArray, VXC_WriteImage2DArray, outputScale, 0)
 }
 
-__kernel void vxcParametricRelu_axis1_F16toI8_2D
+__kernel void vxcParametricRelu_axis1_F16F16toI8_2D
     (
     image2d_array_t input,
     image2d_array_t para,
@@ -289,10 +289,10 @@ __kernel void vxcParametricRelu_axis1_F16toI8_2D
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);
     int2 coord_para = (int2)(get_global_id(1), 0);
     vxc_char16 outval;
-    PRELU_AXIS1_F16TOINT_PROCESS(VXC_ReadImage, VXC_WriteImage, outputScale, 0)
+    PRELU_AXIS1_F16F16TOINT_PROCESS(VXC_ReadImage, VXC_WriteImage, outputScale, 0)
 }
 
-__kernel void vxcParametricRelu_axis1_F16toU8_2D
+__kernel void vxcParametricRelu_axis1_F16F16toU8_2D
     (
     image2d_array_t input,
     image2d_array_t para,
@@ -303,10 +303,10 @@ __kernel void vxcParametricRelu_axis1_F16toU8_2D
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);
     int2 coord_para = (int2)(get_global_id(1), 0);
     vxc_uchar8 outval;
-    PRELU_AXIS1_F16TOINT_PROCESS(VXC_ReadImage, VXC_WriteImage, outputScale, outputZP)
+    PRELU_AXIS1_F16F16TOINT_PROCESS(VXC_ReadImage, VXC_WriteImage, outputScale, outputZP)
 }
 
-__kernel void vxcParametricRelu_axis1_F16toI16_2D
+__kernel void vxcParametricRelu_axis1_F16F16toI16_2D
     (
     image2d_array_t input,
     image2d_array_t para,
@@ -317,5 +317,5 @@ __kernel void vxcParametricRelu_axis1_F16toI16_2D
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);
     int2 coord_para = (int2)(get_global_id(1), 0);
     vxc_short8 outval;
-    PRELU_AXIS1_F16TOINT_PROCESS(VXC_ReadImage, VXC_WriteImage, outputScale, 0)
+    PRELU_AXIS1_F16F16TOINT_PROCESS(VXC_ReadImage, VXC_WriteImage, outputScale, 0)
 }

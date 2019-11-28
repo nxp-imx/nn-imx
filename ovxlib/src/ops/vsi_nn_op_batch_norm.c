@@ -241,6 +241,7 @@ static vsi_bool op_setup
         {
             return VSI_FAILURE;
         }
+        memset(local, 0, sizeof(vsi_nn_batcnnorm_lcl_data));
         self->nn_param.batch_norm.local = local;
     }
     return TRUE;

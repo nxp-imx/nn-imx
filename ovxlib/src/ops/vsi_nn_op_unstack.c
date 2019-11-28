@@ -69,6 +69,12 @@ static void _set_inputs_outputs
         tensors[i] = outputs[i]->t;
     }
     data = (vsi_nn_unstack_lcl_data *)malloc(sizeof(vsi_nn_unstack_lcl_data));
+    if (NULL == data)
+    {
+        VSILOGE("vsi_nn_unstack_lcl_data malloc fail.\n");
+        goto final;
+    }
+    memset(data, 0, sizeof(vsi_nn_unstack_lcl_data));
     data->array = vxCreateTensorObjectArray(self->graph->ctx->c,
                     num, tensors);
 
@@ -76,7 +82,7 @@ static void _set_inputs_outputs
     params[1] = (vx_reference)data->array;
 
     self->nn_param.unstack.lcl_data = data;
-
+final:
     if (tensors) free(tensors);
 } /* _set_inputs_outputs() */
 

@@ -46,15 +46,15 @@ typedef enum _prelu_nn_image_dims_e
     IMAGE     = FALSE,
 }prelu_nn_activation_type_e;
 
-#define VSI_NN_GEN_PRELU_KEY(_axis, _input_type, _output_type, _image_2d) \
-    ((_axis << 20) | (_input_type << 12) | (_output_type << 4) | (_image_2d))
+#define VSI_NN_GEN_PRELU_KEY(_axis, _input_type, _alpha_type, _output_type, _image_2d) \
+    ((_axis << 28) | (_alpha_type << 20) | (_input_type << 12) | (_output_type << 4) | (_image_2d))
 
 #define VSI_NN_GEN_PRELU_KERNEL_SOURCE_NAME(_suffix) \
     "vsi_nn_kernel_prelu_"#_suffix
 
-#define VSI_NN_GEN_PRELU_STRUCT_ITEMS(_axis, _input_type, _output_type, _image_2d) \
-    VSI_NN_GEN_PRELU_KEY(_axis, _input_type, _output_type, _image_2d), \
-    VSI_NN_PRELU_SH_KERNEL_IDX(_axis, _input_type, _output_type, _image_2d) \
+#define VSI_NN_GEN_PRELU_STRUCT_ITEMS(_axis, _input_type, _alpha_type, _output_type, _image_2d) \
+    VSI_NN_GEN_PRELU_KEY(_axis, _input_type, _alpha_type, _output_type, _image_2d), \
+    VSI_NN_PRELU_SH_KERNEL_IDX(_axis, _input_type, _alpha_type, _output_type, _image_2d) \
     VSI_NN_GEN_PRELU_KERNEL_SOURCE_NAME(_input_type)
 
 static struct {
@@ -63,50 +63,54 @@ static struct {
         char *resource_name;
     } prelu_map[] =
     {
-        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, BF16, BF16, IMAGE)},
-        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, F16,  F16,  IMAGE)},
-        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, F16,  I16,  IMAGE)},
-        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, F16,  I8,   IMAGE)},
-        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, F16,  U8,   IMAGE)},
-        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, I16,  I16,  IMAGE)},
-        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, I8,   I8,   IMAGE)},
-        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, U8,   U8,   IMAGE)},
-        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, I16,  F16,  IMAGE)},
-        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, I8,   F16,  IMAGE)},
-        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, U8,   F16,  IMAGE)},
-        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, BF16, BF16, IMAGE_2D)},
-        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, F16,  F16,  IMAGE_2D)},
-        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, F16,  I16,  IMAGE_2D)},
-        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, F16,  I8,   IMAGE_2D)},
-        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, F16,  U8,   IMAGE_2D)},
-        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, I16,  I16,  IMAGE_2D)},
-        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, I8,   I8,   IMAGE_2D)},
-        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, U8,   U8,   IMAGE_2D)},
-        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, I16,  F16,  IMAGE_2D)},
-        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, I8,   F16,  IMAGE_2D)},
-        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, U8,   F16,  IMAGE_2D)},
-        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, BF16, BF16, IMAGE)},
-        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, F16,  F16,  IMAGE)},
-        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, F16,  I16,  IMAGE)},
-        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, F16,  I8,   IMAGE)},
-        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, F16,  U8,   IMAGE)},
-        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, I16,  I16,  IMAGE)},
-        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, I8,   I8,   IMAGE)},
-        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, U8,   U8,   IMAGE)},
-        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, I16,  F16,  IMAGE)},
-        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, I8,   F16,  IMAGE)},
-        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, U8,   F16,  IMAGE)},
-        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, BF16, BF16, IMAGE_2D)},
-        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, F16,  F16,  IMAGE_2D)},
-        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, F16,  I16,  IMAGE_2D)},
-        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, F16,  I8,   IMAGE_2D)},
-        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, F16,  U8,   IMAGE_2D)},
-        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, I16,  I16,  IMAGE_2D)},
-        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, I8,   I8,   IMAGE_2D)},
-        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, U8,   U8,   IMAGE_2D)},
-        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, I16,  F16,  IMAGE_2D)},
-        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, I8,   F16,  IMAGE_2D)},
-        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, U8,   F16,  IMAGE_2D)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, BF16, F16, BF16, IMAGE)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, BF16, BF16, BF16, IMAGE)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, F16,  F16, F16,  IMAGE)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, F16,  F16, I16,  IMAGE)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, F16,  F16, I8,   IMAGE)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, F16,  F16, U8,   IMAGE)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, I16,  F16, I16,  IMAGE)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, I8,   F16, I8,   IMAGE)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, U8,   F16, U8,   IMAGE)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, I16,  F16, F16,  IMAGE)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, I8,   F16, F16,  IMAGE)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, U8,   F16, F16,  IMAGE)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, BF16, F16, BF16, IMAGE_2D)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, BF16, BF16, BF16, IMAGE_2D)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, F16,  F16, F16,  IMAGE_2D)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, F16,  F16, I16,  IMAGE_2D)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, F16,  F16, I8,   IMAGE_2D)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, F16,  F16, U8,   IMAGE_2D)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, I16,  F16, I16,  IMAGE_2D)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, I8,   F16, I8,   IMAGE_2D)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, U8,   F16, U8,   IMAGE_2D)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, I16,  F16, F16,  IMAGE_2D)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, I8,   F16, F16,  IMAGE_2D)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(0, U8,   F16, F16,  IMAGE_2D)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, BF16, F16, BF16, IMAGE)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, BF16, BF16, BF16, IMAGE)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, F16,  F16, F16,  IMAGE)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, F16,  F16, I16,  IMAGE)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, F16,  F16, I8,   IMAGE)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, F16,  F16, U8,   IMAGE)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, I16,  F16, I16,  IMAGE)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, I8,   F16, I8,   IMAGE)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, U8,   F16, U8,   IMAGE)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, I16,  F16, F16,  IMAGE)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, I8,   F16, F16,  IMAGE)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, U8,   F16, F16,  IMAGE)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, BF16, F16, BF16, IMAGE_2D)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, BF16, BF16, BF16, IMAGE_2D)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, F16,  F16, F16,  IMAGE_2D)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, F16,  F16, I16,  IMAGE_2D)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, F16,  F16, I8,   IMAGE_2D)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, F16,  F16, U8,   IMAGE_2D)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, I16,  F16, I16,  IMAGE_2D)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, I8,   F16, I8,   IMAGE_2D)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, U8,   F16, U8,   IMAGE_2D)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, I16,  F16, F16,  IMAGE_2D)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, I8,   F16, F16,  IMAGE_2D)},
+        {VSI_NN_GEN_PRELU_STRUCT_ITEMS(1, U8,   F16, F16,  IMAGE_2D)},
     };
 
 static vsi_bool _check_tensor_shape
@@ -427,9 +431,11 @@ static void _get_prelu_hashtable_idx
     )
 {
     vsi_nn_type_e inputFormat = inputs[0]->attr.dtype.vx_type;
+    vsi_nn_type_e alphaFormat = inputs[1]->attr.dtype.vx_type;
     vsi_nn_type_e outputFormat  = outputs[0]->attr.dtype.vx_type;
     vsi_nn_shader_kernel_type_e _input_type;
     vsi_nn_shader_kernel_type_e _output_type;
+    vsi_nn_shader_kernel_type_e _alpha_type;
     int32_t axis = 0;
     uint32_t key = 0;
     vsi_bool is_2d_image = FALSE;
@@ -440,8 +446,9 @@ static void _get_prelu_hashtable_idx
     axis = reshape_tensor_set_input_output(self, inputs, outputs, vx_false_e);
     _input_type  = get_prelu_type(inputFormat);
     _output_type = get_prelu_type(outputFormat);
+    _alpha_type  = get_prelu_type(alphaFormat);
     is_2d_image = _check_tensor_shape(self, inputs, outputs);
-    key = VSI_NN_GEN_PRELU_KEY(axis, _input_type, _output_type, is_2d_image);
+    key = VSI_NN_GEN_PRELU_KEY(axis, _input_type, _alpha_type, _output_type, is_2d_image);
 
     for (i = 0; i < sizeof(prelu_map) / sizeof(prelu_map[0]); i++)
     {
@@ -754,7 +761,7 @@ static vsi_status op_init
     {
         return  VX_ERROR_NO_MEMORY;
     }
-
+    memset(self->nn_param.prelu.local, 0, sizeof(vsi_nn_prelu_lcl_data));
     vsi_nn_GetGraphVersion( self->graph, &graph_version_major,
         &graph_version_minor, &graph_version_patch );
     if (!( graph_version_major >= 1 && graph_version_minor >= 1 && graph_version_patch >= 17 ))
