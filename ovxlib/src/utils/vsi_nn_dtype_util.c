@@ -533,7 +533,7 @@ vsi_status vsi_nn_vxConvertFloat32DataToTensor
 
     data = (uint8_t *)malloc(elements * stride);
     TEST_CHECK_PTR(data, final);
-    memset(data, 0, sizeof(elements * stride));
+    memset(data, 0, sizeof(uint8_t) * elements * stride);
     vsi_nn_DtypeConvertFloat32ToRawData(f32_data,
                                         elements,
                                         data,
