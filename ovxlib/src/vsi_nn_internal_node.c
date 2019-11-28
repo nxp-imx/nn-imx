@@ -411,7 +411,7 @@ vsi_status vsi_nn_release_internal_node
         }
         if( ptr->node )
         {
-            vsi_nn_OpDeinit(ptr->node->op, ptr->node );
+            vsi_nn_ReleaseNode( &ptr->node );
         }
 
         free( ptr );
