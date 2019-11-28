@@ -241,6 +241,7 @@ static vsi_status op_compute
     vsi_nn_tensor_t *end_dims_tensor = NULL;
     vsi_nn_tensor_t *stride_dims_tensor = NULL;
     vsi_nn_tensor_attr_t attr;
+    int32_t start[VSI_NN_MAX_DIM_NUM] = {0};
     int32_t end[VSI_NN_MAX_DIM_NUM] = {0};
     int32_t stride[VSI_NN_MAX_DIM_NUM] = {0};
     uint32_t i;
@@ -249,19 +250,27 @@ static vsi_status op_compute
 
     for (i = 0; i < self->nn_param.crop.dims; i++)
     {
+        start[i] = self->nn_param.crop.offset[i];
         end[i] = self->nn_param.crop.offset[i] + outputs[0]->attr.size[i];
         stride[i] = 1;
     }
 
+    for (i = self->nn_param.crop.dims; i < inputs[0]->attr.dim_num; i++)
+    {
+        start[i] = 0;
+        end[i] = outputs[0]->attr.size[i];
+        stride[i] = 1;
+    }
+
     memset(&attr, 0, sizeof(attr));
-    attr.size[0] = self->nn_param.crop.dims;
+    attr.size[0] = inputs[0]->attr.dim_num;
     attr.dim_num = 1;
     attr.is_const = TRUE;
     attr.dtype.vx_type = VSI_NN_TYPE_INT32;
     attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
     begin_dims_tensor = vsi_nn_CreateTensorFromData(
         self->graph,
-        (uint8_t *)self->nn_param.crop.offset,
+        (uint8_t *)start,
         &attr);
     if( NULL == begin_dims_tensor )
     {
