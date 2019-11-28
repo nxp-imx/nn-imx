@@ -247,8 +247,8 @@ static vsi_status op_compute
     )
 {
     vsi_status status = VSI_FAILURE;
-    uint32_t size_x = self->nn_param.space2depth.block_size[0];
-    uint32_t size_y = self->nn_param.space2depth.block_size[1];
+    int32_t size_x = self->nn_param.space2depth.block_size[0];
+    int32_t size_y = self->nn_param.space2depth.block_size[1];
     if (size_x == size_y)
     {
         vx_nn_reorg_params_t param;
@@ -257,7 +257,7 @@ static vsi_status op_compute
 
         block_size_tensor = vsi_nn_VariableToTensor(self,
             (uint8_t *)&self->nn_param.space2depth.block_size[0],
-            VSI_NN_TYPE_UINT32);
+            VSI_NN_TYPE_INT32);
         if( NULL == block_size_tensor )
         {
             VSILOGE("Create block_size_tensor fail.(space2depth)");

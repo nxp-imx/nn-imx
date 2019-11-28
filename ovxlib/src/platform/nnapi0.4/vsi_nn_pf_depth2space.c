@@ -44,7 +44,7 @@ vsi_status vsi_nn_depth2space_compute
 
     block_size_tensor = vsi_nn_VariableToTensor(self,
         (uint8_t *)&self->nn_param.depth2space.block_size,
-        VSI_NN_TYPE_UINT32);
+        VSI_NN_TYPE_INT32);
     if( NULL == block_size_tensor )
     {
         VSILOGE("Create block_size_tensor fail.(depth2space)");

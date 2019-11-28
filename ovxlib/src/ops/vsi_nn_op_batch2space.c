@@ -53,7 +53,7 @@ static vsi_status op_compute
     attr.size[0] = 2;
     attr.dim_num = 1;
     attr.is_const = TRUE;
-    attr.dtype.vx_type = VSI_NN_TYPE_UINT32;
+    attr.dtype.vx_type = VSI_NN_TYPE_INT32;
     attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
     block_size_tensor = vsi_nn_CreateTensorFromData(
         self->graph,
