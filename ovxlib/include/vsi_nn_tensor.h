@@ -157,6 +157,8 @@ struct _vsi_nn_tensor
     vx_tensor t;
     /** Optimized weight bias tensor */
     vx_weights_biases_parameter wb;
+    /** Mark tensor swapped by vxSwapTensor */
+    int8_t  is_swapped;
 };
 
 /**

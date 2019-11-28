@@ -74,6 +74,64 @@ final:
     return status;
 } /* _set_reference_name() */
 
+static vsi_status _check_swapped_tensors
+    (
+    vsi_nn_graph_t* graph
+    )
+{
+    uint32_t i = 0;
+    vsi_status status = VSI_SUCCESS;
+
+    VSILOGD("Check swapped tensors");
+    for( i = 0; i < graph->node_num; i++ )
+    {
+        vsi_nn_node_t* node = vsi_nn_GetNode( graph, (vsi_nn_node_id_t)i );
+
+        /* For NBG node, all inputs/outputs need to be set if tensors are swapped */
+        if( node && VSI_NN_OP_NBG == node->op )
+        {
+            uint32_t idx, j;
+            vsi_nn_tensor_t* tensor = NULL;
+
+            idx = 0;
+            for( j = 0; j < node->input.num; j++ )
+            {
+                tensor = vsi_nn_GetTensor( graph, node->input.tensors[j] );
+                if( tensor && tensor->is_swapped )
+                {
+                    status = vxSetParameterByIndex( node->n, idx, (vx_reference)tensor->t );
+                    if( VSI_SUCCESS != status )
+                    {
+                        VSILOGE( "Set input parameter %d for node[%08x] fail!", idx, node->n );
+                        goto final;
+                    }
+                    tensor->is_swapped = FALSE;
+                }
+                idx++;
+            }
+
+            for( j = 0; j < node->output.num; j++ )
+            {
+                tensor = vsi_nn_GetTensor( graph, node->output.tensors[j] );
+                if( tensor && tensor->is_swapped )
+                {
+                    status = vxSetParameterByIndex( node->n, idx, (vx_reference)tensor->t );
+                    if( VSI_SUCCESS != status )
+                    {
+                        VSILOGE( "Set output parameter %d for node[%08x] fail!", idx, node->n );
+                        goto final;
+                    }
+                    tensor->is_swapped = FALSE;
+                }
+                idx++;
+            }
+        }
+    }
+
+final:
+    return status;
+} /* _check_swapped_tensors() */
+
 static void free_io_buffer
     (
     vsi_nn_tensor_t **buffer
@@ -693,6 +751,11 @@ vsi_status vsi_nn_RunGraph
         else
         {
             status = VSI_SUCCESS;
+        }
+
+        if( VSI_SUCCESS == status )
+        {
+            status = _check_swapped_tensors( graph );
         }
 
         if( VSI_SUCCESS == status )

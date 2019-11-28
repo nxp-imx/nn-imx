@@ -449,6 +449,7 @@ static vsi_nn_tensor_t * _create_tensor
     {
         memset( tensor, 0, sizeof( vsi_nn_tensor_t ) );
         memcpy( &tensor->attr, attr, sizeof( vsi_nn_tensor_attr_t ) );
+        tensor->is_swapped = FALSE;
         if( attr->dim_num != VSI_NN_DIM_AUTO )
         {
             _init_tensor( graph, tensor, data);
@@ -517,6 +518,8 @@ vsi_nn_tensor_t * vsi_nn_CreateTensorWithDefault
             }
 
             status = vsi_nn_CopyDataToTensor( graph, t, data );
+            free( data );
+            data = NULL;
             if( VSI_FAILURE == status )
             {
                 VSILOGE("Copy data to tensor fail");
@@ -560,12 +563,12 @@ vsi_status vsi_nn_FillTensorWithValue
             }
 
             status = vsi_nn_CopyDataToTensor( graph, tensor, data );
+            free( data );
+            data = NULL;
             if( VSI_FAILURE == status )
             {
                 VSILOGE("Copy data to tensor fail");
             }
-            free( data );
-            data = NULL;
         }
     }
 
@@ -1751,6 +1754,11 @@ vsi_status vsi_nn_SwapTensorHandle
     }
 
     status = vxSwapTensor( tensor0->t, tensor1->t );
+    if( VX_SUCCESS == status )
+    {
+        tensor0->is_swapped = TRUE;
+        tensor1->is_swapped = TRUE;
+    }
 
     return status;
 } /* vsi_nn_SwapTensorHandle() */
