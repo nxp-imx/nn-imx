@@ -151,7 +151,7 @@ static vsi_status VX_CALLBACK vxRoi_alignKernel
         for(n = 0; n < numRois; n++)
         {
             uint32_t batchId = int32_in_buffer[2][n];
-            float scale = (in_attr[1].dtype.vx_type == VSI_NN_TYPE_UINT16) ? 0.125 : 1.0;
+            float scale = (in_attr[1].dtype.vx_type == VSI_NN_TYPE_UINT16) ? 0.125f : 1.0f;
             float wRoiStart = f32_in_buffer[1][n * kRoiDim] * widthScale * scale;
             float hRoiStart = f32_in_buffer[1][n * kRoiDim + 1] * heightScale * scale;
             float wRoiEnd = f32_in_buffer[1][n * kRoiDim + 2] * widthScale * scale;

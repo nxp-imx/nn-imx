@@ -120,7 +120,7 @@ static uint32_t max_comp_func
     )
 {
     float* fdata = (float*)data;
-    return fdata[left] > fdata[right];
+    return fdata[left] >= fdata[right];
 }
 
 void sort_element_by_score
@@ -281,7 +281,6 @@ static vsi_status VX_CALLBACK vxBox_with_nms_limitKernel
         VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
     vxCopyScalar((vx_scalar)paramObj[TENSOR_NUM + 5], &(nms_score_threshold),
         VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
-
     /* TODO: Add CPU kernel implement */
     {
         uint32_t i, j, n, b, c;
@@ -291,36 +290,38 @@ static vsi_status VX_CALLBACK vxBox_with_nms_limitKernel
         int32_t ind;
 
         uint32_t * batch_data = (uint32_t*)malloc(numRois * sizeof(uint32_t));
-        int32_t numBatch = -1;
-        uint32_t * select = (uint32_t*)malloc(numBatch * numRois
-            * numClasses * sizeof(uint32_t));
+        int32_t numBatch = 0;
+        uint32_t * select = NULL;
         uint32_t select_size = 0;
         uint32_t scores_index = 0;
         uint32_t roi_index = 0;
         uint32_t roi_out_index = 0;
+
+        memset(batch_data, 0, numRois * sizeof(uint32_t));
         for (i = 0, ind = -1; i < numRois; i++)
         {
-            if (int32_in_buffer[2][i] == ind)
-            {
-                batch_data[numBatch]++;
-            }
-            else
+            if (int32_in_buffer[2][i] != ind)
             {
                 ind = int32_in_buffer[2][i];
                 numBatch++;
             }
+            batch_data[numBatch - 1]++;
         }
-        numBatch++;
-
+        select = (uint32_t*)malloc(numBatch * numRois
+            * numClasses * sizeof(uint32_t));
+        memset(select, 0, numBatch * numRois * numClasses * sizeof(uint32_t));
         for (n = 0; n < (uint32_t)numBatch; n++)
         {
-            uint32_t select_start = select_size;
+            int32_t numDetections_batch = 0;
+            uint32_t select_start_batch = select_size;
             uint32_t select_len = 0;
-            uint32_t numDetections = 0;
             // Exclude class 0 (background)
             for (c = 1; c < numClasses; c++)
             {
-                for (b = 0; b < numRois; b++)
+                uint32_t select_start = select_size;
+                int32_t maxNumDetections0 = maxNumDetections;
+                uint32_t numDetections = 0;
+                for (b = 0; b < batch_data[n]; b++)
                 {
                     uint32_t index = b * numClasses + c;
                     float score = f32_in_buffer[0][scores_index + index];
@@ -329,67 +330,77 @@ static vsi_status VX_CALLBACK vxBox_with_nms_limitKernel
                         select_size++;
                     }
                 }
-            }
-            select_len = select_size - select_start;
+                select_len = select_size - select_start;
 
-            if (maxNumDetections < 0)
-            {
-                maxNumDetections = select_len;
-            }
-
-            for (j = 0; (j < select_len && numDetections < (uint32_t)maxNumDetections); j++)
-            {
-                // find max score and swap to the front.
-                int32_t max_index = max_element(&(f32_in_buffer[0][scores_index]),
-                    &(select[select_start]), select_len);
-                swap_element(&(select[select_start]), max_index, j);
-
-                // Calculate IoU of the rest, swap to the end (disgard) if needed.
-                for (i = j + 1; i < select_len; i++)
+                if (maxNumDetections0 < 0)
                 {
-                    int32_t roiBase0 = roi_index + select[i] * kRoiDim;
-                    int32_t roiBase1 = roi_index + select[j] * kRoiDim;
-                    float iou = getIoUAxisAligned(&(f32_in_buffer[1][roiBase0]),
-                        &(f32_in_buffer[1][roiBase1]));
-                    float kernel_iou;
-                    if (nms_kernel_method == 0)
+                    maxNumDetections0 = select_len;
+                }
+
+                for (j = 0; (j < select_len && numDetections < (uint32_t)maxNumDetections0); j++)
+                {
+                    // find max score and swap to the front.
+                    int32_t max_index = max_element(&(f32_in_buffer[0][scores_index]),
+                        &(select[select_start + j]), select_len - j) + j;
+
+                    swap_element(&(select[select_start]), max_index, j);
+
+                    // Calculate IoU of the rest, swap to the end (disgard) if needed.
+                    for (i = j + 1; i < select_len; i++)
                     {
-                        kernel_iou = hard_nms_kernel(iou, iou_threshold);
-                    }
-                    else if (nms_kernel_method == 1)
-                    {
-                        kernel_iou = linear_nms_kernel(iou, iou_threshold);
-                    }
-                    else
-                    {
-                        kernel_iou = gaussian_nms_kernel(iou, sigma);
-                    }
-                    f32_in_buffer[0][scores_index + select[i]] *= kernel_iou;
-                    if (f32_in_buffer[0][scores_index + select[i]] < scoreThreshold)
-                    {
-                        swap_element(&(select[select_start]), i, select_len - 1);
-                        i--;
-                        select_len--;
+                        int32_t roiBase0 = roi_index + select[select_start + i] * kRoiDim;
+                        int32_t roiBase1 = roi_index + select[select_start + j] * kRoiDim;
+                        float iou = getIoUAxisAligned(&(f32_in_buffer[1][roiBase0]),
+                            &(f32_in_buffer[1][roiBase1]));
+                        float kernel_iou;
+                        if (nms_kernel_method == 0)
+                        {
+                            kernel_iou = hard_nms_kernel(iou, iou_threshold);
+                        }
+                        else if (nms_kernel_method == 1)
+                        {
+                            kernel_iou = linear_nms_kernel(iou, iou_threshold);
+                        }
+                        else
+                        {
+                            kernel_iou = gaussian_nms_kernel(iou, sigma);
+
+                        }
+                        f32_in_buffer[0][scores_index + select[select_start + i]] *= kernel_iou;
+                        if (f32_in_buffer[0][scores_index + select[select_start + i]] < nms_score_threshold)
+                        {
+                            swap_element(&(select[select_start]), i, select_len - 1);
+                            i--;
+                            select_len--;
+                        }
                     }
                     numDetections++;
                 }
+                select_size = select_start + select_len;
+                numDetections_batch += numDetections;
             }
-            select_size = select_start + select_len;
+
             // Take top maxNumDetections.
-            sort_element_by_score(&(f32_in_buffer[0][scores_index]), &(select[select_start]),
-                select_len);
+            sort_element_by_score(&(f32_in_buffer[0][scores_index]), &(select[select_start_batch]),
+                numDetections_batch);
+
+            if (numDetections_batch > maxNumDetections)
+            {
+                select_size = select_start_batch + maxNumDetections;
+            }
+            select_len = select_size - select_start_batch;
             // Sort again by class.
-            sort_element_by_class(&(f32_in_buffer[0][scores_index]), &(select[select_start]),
+            sort_element_by_class(&(f32_in_buffer[0][scores_index]), &(select[select_start_batch]),
                 select_len, numClasses);
 
             for (i = 0; i < select_len; i++)
             {
-                int32_t in_index0 = scores_index + select[select_start + i];
-                int32_t in_index1 = roi_index + select[select_start + i] * kRoiDim;
+                int32_t in_index0 = scores_index + select[select_start_batch + i];
+                int32_t in_index1 = roi_index + select[select_start_batch + i] * kRoiDim;
                 f32_out_buffer[0][roi_out_index] = f32_in_buffer[0][in_index0];
                 memcpy(&(f32_out_buffer[1][roi_out_index * kRoiDim]),
                     &f32_in_buffer[1][in_index1], kRoiDim * sizeof(float));
-                int32_out_buffer[2][roi_out_index] = select[select_start + i] % numClasses;
+                int32_out_buffer[2][roi_out_index] = select[select_start_batch + i] % numClasses;
                 int32_out_buffer[3][roi_out_index] = n;
                 roi_out_index++;
             }
