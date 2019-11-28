@@ -168,4 +168,10 @@ void vsi_nn_internal_node_init_attr
     vsi_bool use_virtual_tensor
     );
 
+vsi_nn_internal_node_t* vsi_nn_get_internal_node_by_uid
+    (
+    vsi_nn_node_t* node,
+    int uid
+    );
+
 #endif /* _VSI_NN_INTRNAL_NODE_H */

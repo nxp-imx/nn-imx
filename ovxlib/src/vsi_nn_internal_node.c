@@ -536,3 +536,29 @@ void vsi_nn_internal_node_init_attr
         memcpy(&attr->dtype, dtype, sizeof(vsi_nn_dtype_t));
     }
 }
+
+vsi_nn_internal_node_t* vsi_nn_get_internal_node_by_uid
+    (
+    vsi_nn_node_t* node,
+    int uid
+    )
+{
+    vsi_nn_internal_node_t* head = NULL;
+    vsi_nn_internal_node_t* curr = NULL;
+
+    if( node && node->internal_node_wksp )
+    {
+        head = WKSP(node)->nodes;
+        while( NULL != head )
+        {
+            curr = (vsi_nn_internal_node_t *)vsi_nn_LinkListPopStart(
+                (vsi_nn_link_list_t **)&head );
+            if( curr->node->uid == uid )
+            {
+                return curr;
+            }
+        }
+    }
+
+    return NULL;
+} /* vsi_nn_get_internal_node_by_uid() */

@@ -44,7 +44,9 @@ static vsi_status op_compute
     vsi_nn_tensor_t ** outputs
     )
 {
-    return vsi_nn_compute_internal_node( self );
+    vsi_status status = vsi_nn_compute_internal_node( self );
+    self->n = vsi_nn_get_internal_node_by_uid(self, 1)->node->n;
+    return status;
 } /* op_compute() */
 
 static vsi_bool op_check
