@@ -876,9 +876,18 @@ vsi_status vsi_nn_op_imageprocess_single_node
                 _SET_PARAM( 1, VX_TYPE_INT32, scaletotensor_kernel_params.ratio[1]);
                 _SET_PARAM( 2, VX_TYPE_INT32, scaletotensor_kernel_params.offset[0]);
                 _SET_PARAM( 3, VX_TYPE_INT32, scaletotensor_kernel_params.offset[1]);
-                _SET_PARAM( 4, VX_TYPE_FLOAT32, scaletotensor_kernel_params.mean[0]);
-                _SET_PARAM( 5, VX_TYPE_FLOAT32, scaletotensor_kernel_params.mean[1]);
-                _SET_PARAM( 6, VX_TYPE_FLOAT32, scaletotensor_kernel_params.mean[2]);
+                if (p->reverse_channel == vx_true_e)
+                {
+                    _SET_PARAM( 4, VX_TYPE_FLOAT32, scaletotensor_kernel_params.mean[0]);
+                    _SET_PARAM( 5, VX_TYPE_FLOAT32, scaletotensor_kernel_params.mean[1]);
+                    _SET_PARAM( 6, VX_TYPE_FLOAT32, scaletotensor_kernel_params.mean[2]);
+                }
+                else
+                {
+                    _SET_PARAM( 4, VX_TYPE_FLOAT32, scaletotensor_kernel_params.mean[2]);
+                    _SET_PARAM( 5, VX_TYPE_FLOAT32, scaletotensor_kernel_params.mean[1]);
+                    _SET_PARAM( 6, VX_TYPE_FLOAT32, scaletotensor_kernel_params.mean[0]);
+                }
                 _SET_PARAM( 7, VX_TYPE_FLOAT32, scaletotensor_kernel_params.scale);
             }
             arg_num = _ARG_NUM_SCALETOTENSOR;
