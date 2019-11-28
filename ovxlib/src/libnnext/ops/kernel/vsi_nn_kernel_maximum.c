@@ -264,7 +264,7 @@ vsi_status VX_CALLBACK vxMaximumInitializer
     dstFormat = attr[2].dtype.vx_type;
     dstQuantType = attr[2].dtype.qnt_type;
     dstFixPointPos = attr[2].dtype.fl;
-    if (src1QuantType == VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC)
+    if (dstQuantType == VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC)
     {
         dstZP = attr[2].dtype.zero_point;
         dstScale = attr[2].dtype.scale;
