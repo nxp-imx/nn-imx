@@ -190,8 +190,8 @@ static vsi_bool _check_is_same_shape(
     int32_t *stride
     )
 {
-    uint32_t i = 0;
-    uint32_t dims = inputs[0]->attr.dim_num;
+    int32_t i = 0;
+    int32_t dims = (int32_t)inputs[0]->attr.dim_num;
 
     for (i = dims - 1; i >= 0; i --)
     {
