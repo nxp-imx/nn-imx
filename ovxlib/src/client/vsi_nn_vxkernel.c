@@ -219,6 +219,7 @@ static vsi_status vsi_nn_RegisterVXKernel
     vsi_nn_context_t context = NULL;
     vx_kernel_description_t * kernel = kernel_info->kernel[kernel_info->kernel_index];
     uint8_t i = 0;
+    vsi_bool load_from_file = FALSE;
 
 #define MAX_BUILDPROGRAM_LEN 128
     char cmd[MAX_BUILDPROGRAM_LEN] = {0};
@@ -240,6 +241,7 @@ static vsi_status vsi_nn_RegisterVXKernel
             VSILOGI("Try to Load VX Resource from file...\n");
 
             program_src[i] = vsi_nn_LoadVxResourceFromFile(kernel_info->resource_name[i], &program_len[i]);
+            load_from_file = TRUE;
         }
     }
 
@@ -287,6 +289,13 @@ static vsi_status vsi_nn_RegisterVXKernel
         VSILOGE( "Add kernel %s fail.", kernel->name );
     }
 OnError:
+    for (i = 0; i < kernel_info->resource_num; i++)
+    {
+        if (program_src[i] && load_from_file)
+        {
+            free((char *)program_src[i]);
+        }
+    }
     if(program_src) free((char**)program_src);
     if(program_len) free(program_len);
     return status;
