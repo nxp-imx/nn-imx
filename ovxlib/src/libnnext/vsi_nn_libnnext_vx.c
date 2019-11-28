@@ -22822,6 +22822,68 @@ TENSOR_TRANSCENDENTAL_2D(Sin, U8,  U8,  vxc_uchar8, vxc_uchar8, int4,  vxc_uchar
 TENSOR_TRANSCENDENTAL_2D(Sin, U8,  F16, vxc_uchar8, vxc_uchar8, half4, vxc_half8,  vxc_short8)\n\
 TENSOR_TRANSCENDENTAL_2D(Sin, I16, I16, vxc_short8, vxc_short8, int4,  vxc_short8, vxc_short8)\n\
 TENSOR_TRANSCENDENTAL_2D(Sin, I16, F16, vxc_short8, vxc_short8, half4, vxc_half8,  vxc_short8)\n\
+\n\
+_viv_uniform VXC_512Bits uniConvBF16toF32_Part0_2x8;\n\
+_viv_uniform VXC_512Bits uniConvBF16toF32_Part1_2x8;\n\
+_viv_uniform VXC_512Bits uniExtractOddData_2x8;\n\
+#define TENSOR_TRANSCENDENTAL_BF16(funcName) \\\n\
+    __kernel void vxTensor##funcName##_BF16toBF16( \\\n\
+    __read_only  image2d_array_t  input, \\\n\
+    __write_only image2d_array_t  output \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
+    vxc_ushort8   src0, src1, dst; \\\n\
+    VXC_ReadImage2DArray(src0, input, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+ \\\n\
+    float4 vecA; \\\n\
+    float4 vecB; \\\n\
+    vxc_short8 zero = (vxc_short8)(0, 0, 0, 0, 0, 0, 0, 0); \\\n\
+    VXC_DP2x8(src1, src0, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvBF16toF32_Part0_2x8); \\\n\
+    _viv_asm(COPY, vecA, src1, 16); \\\n\
+    VXC_DP2x8(src1, src0, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvBF16toF32_Part1_2x8); \\\n\
+    _viv_asm(COPY, vecB, src1, 16); \\\n\
+    vecA = funcName##_(vecA); \\\n\
+    vecB = funcName##_(vecB); \\\n\
+ \\\n\
+    _viv_asm(COPY, src0, vecA, 16); \\\n\
+    _viv_asm(COPY, src1, vecB, 16); \\\n\
+ \\\n\
+    VXC_DP2x8(dst, src0, src1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniExtractOddData_2x8); \\\n\
+    VXC_WriteImage2DArray(output, coord, dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+}\n\
+\n\
+//SIN\n\
+TENSOR_TRANSCENDENTAL_BF16(Sin)\n\
+\n\
+#define TENSOR_TRANSCENDENTAL_BF16_2D(funcName) \\\n\
+    __kernel void vxTensor##funcName##_BF16toBF16_2D( \\\n\
+    __read_only  image2d_array_t  input, \\\n\
+    __write_only image2d_array_t  output \\\n\
+    ) \\\n\
+{ \\\n\
+    int2 coord = (int2)(get_global_id(0), get_global_id(1)); \\\n\
+    vxc_ushort8   src0, src1, dst; \\\n\
+    VXC_ReadImage(src0, input, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+ \\\n\
+    float4 vecA; \\\n\
+    float4 vecB; \\\n\
+    vxc_short8 zero = (vxc_short8)(0, 0, 0, 0, 0, 0, 0, 0); \\\n\
+    VXC_DP2x8(src1, src0, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvBF16toF32_Part0_2x8); \\\n\
+    _viv_asm(COPY, vecA, src1, 16); \\\n\
+    VXC_DP2x8(src1, src0, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvBF16toF32_Part1_2x8); \\\n\
+    _viv_asm(COPY, vecB, src1, 16); \\\n\
+    vecA = funcName##_(vecA); \\\n\
+    vecB = funcName##_(vecB); \\\n\
+ \\\n\
+    _viv_asm(COPY, src0, vecA, 16); \\\n\
+    _viv_asm(COPY, src1, vecB, 16); \\\n\
+ \\\n\
+    VXC_DP2x8(dst, src0, src1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniExtractOddData_2x8); \\\n\
+    VXC_WriteImage(output, coord, dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+}\n\
+//SIN\n\
+TENSOR_TRANSCENDENTAL_BF16_2D(Sin)\n\
 "; /* end of vsi_nn_kernel_sin_vx*/
 
 static const char vsi_nn_kernel_space2depth_vx[] = "#include \"cl_viv_vx_ext.h\"\n\

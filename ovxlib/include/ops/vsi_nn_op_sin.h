@@ -27,6 +27,37 @@
 #include "vsi_nn_types.h"
 
 
+#define VSI_NN_SIN_SH_KERNEL_IDX(_INPUT_TYPE, _OUTPUT_TYPE, _IMAGE_DIMS) \
+    VSI_NN_SIN_##_INPUT_TYPE##TO##_OUTPUT_TYPE##_##_IMAGE_DIMS##_KERNEL,
+
+enum {
+    SIN_CPU_KERNEL,
+
+    VSI_NN_SIN_SH_KERNEL_IDX(F16,  F16,  IMAGE_3D)
+    VSI_NN_SIN_SH_KERNEL_IDX(F16,  I16,  IMAGE_3D)
+    VSI_NN_SIN_SH_KERNEL_IDX(F16,  I8,   IMAGE_3D)
+    VSI_NN_SIN_SH_KERNEL_IDX(F16,  U8,   IMAGE_3D)
+    VSI_NN_SIN_SH_KERNEL_IDX(I16,  I16,  IMAGE_3D)
+    VSI_NN_SIN_SH_KERNEL_IDX(I16,  F16,  IMAGE_3D)
+    VSI_NN_SIN_SH_KERNEL_IDX(I8,   I8,   IMAGE_3D)
+    VSI_NN_SIN_SH_KERNEL_IDX(I8,   F16,  IMAGE_3D)
+    VSI_NN_SIN_SH_KERNEL_IDX(U8,   U8,   IMAGE_3D)
+    VSI_NN_SIN_SH_KERNEL_IDX(U8,   F16,  IMAGE_3D)
+    VSI_NN_SIN_SH_KERNEL_IDX(BF16, BF16, IMAGE_3D)
+
+    VSI_NN_SIN_SH_KERNEL_IDX(F16,  F16,  IMAGE_2D)
+    VSI_NN_SIN_SH_KERNEL_IDX(F16,  I16,  IMAGE_2D)
+    VSI_NN_SIN_SH_KERNEL_IDX(F16,  I8,   IMAGE_2D)
+    VSI_NN_SIN_SH_KERNEL_IDX(F16,  U8,   IMAGE_2D)
+    VSI_NN_SIN_SH_KERNEL_IDX(I16,  I16,  IMAGE_2D)
+    VSI_NN_SIN_SH_KERNEL_IDX(I16,  F16,  IMAGE_2D)
+    VSI_NN_SIN_SH_KERNEL_IDX(I8,   I8,   IMAGE_2D)
+    VSI_NN_SIN_SH_KERNEL_IDX(I8,   F16,  IMAGE_2D)
+    VSI_NN_SIN_SH_KERNEL_IDX(U8,   U8,   IMAGE_2D)
+    VSI_NN_SIN_SH_KERNEL_IDX(U8,   F16,  IMAGE_2D)
+    VSI_NN_SIN_SH_KERNEL_IDX(BF16, BF16, IMAGE_2D)
+};
+
 enum {
     TENSOR_SIN_INPUT,
 
@@ -72,11 +103,13 @@ enum {
 typedef struct _vsi_nn_sin_lcl_data
 {
     vx_tensor   local_tensor[_VSI_NN_SIN_LOCAL_TENSOR_NUM];
+    uint32_t    hash_idx;
+    vsi_bool    execute_on_sw;
 } vsi_nn_sin_lcl_data;
 
 typedef struct _vsi_nn_sin_param
 {
-    /* exp layer local data structure */
+    /* sin layer local data structure */
     vsi_nn_sin_lcl_data local;
 } vsi_nn_sin_param;
 
