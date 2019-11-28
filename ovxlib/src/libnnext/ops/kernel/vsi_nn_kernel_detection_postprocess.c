@@ -233,6 +233,7 @@ static vsi_status VX_CALLBACK vxDetection_postprocessKernel
         uint32_t class_out_index = 0;
         float* maxScores = (float*)malloc(numAnchors * sizeof(float));
         uint32_t* scoreInds = (uint32_t*)malloc((numClasses - 1) * sizeof(uint32_t));
+
         for (n = 0; n < numBatches; n++)
         {
             for (a = 0; a < numAnchors; a++)
@@ -258,6 +259,7 @@ static vsi_status VX_CALLBACK vxDetection_postprocessKernel
                 uint32_t numDetections = 0;
                 for (c = 1; c < numClasses; c++)
                 {
+                    select_start = select_size;
                     for (b = 0; b < numAnchors; b++)
                     {
                         const uint32_t index = b * numClasses + c;
@@ -267,38 +269,43 @@ static vsi_status VX_CALLBACK vxDetection_postprocessKernel
                             select_size++;
                         }
                     }
-                }
-                select_len = select_size - select_start;
+                    select_len = select_size - select_start;
 
-                if (maxNumDetectionsPerClass < 0)
-                {
-                    maxNumDetectionsPerClass = select_len;
-                }
-
-                for (j = 0; (j < select_len && numDetections < (uint32_t)maxNumDetectionsPerClass); j++)
-                {
-                    // find max score and swap to the front.
-                    int32_t max_index = max_element(&(f32_in_buffer[0][scores_index]),
-                        &(select[select_start]), select_len);
-                    swap_element(&(select[select_start]), max_index, j);
-
-                    // Calculate IoU of the rest, swap to the end (disgard) if needed.
-                    for (i = j + 1; i < select_len; i++)
+                    if (maxNumDetectionsPerClass < 0)
                     {
-                        int32_t roiBase0 = (select[i] / numClasses) * kRoiDim;
-                        int32_t roiBase1 = (select[j] / numClasses) * kRoiDim;
-                        float iou = getIoUAxisAligned(&(roiBuffer[roiBase0]),
-                            &(roiBuffer[roiBase1]));
-                        if (iou >= iouThreshold)
+                        maxNumDetectionsPerClass = select_len;
+                    }
+                    numDetections = 0;
+                    for (j = 0; (j < select_len && numDetections < (uint32_t)maxNumDetectionsPerClass); j++)
+                    {
+                        // find max score and swap to the front.
+                        int32_t max_index = max_element(&(f32_in_buffer[0][scores_index]),
+                            &(select[select_start]), select_len);
+                        swap_element(&(select[select_start]), max_index, j);
+
+                        // Calculate IoU of the rest, swap to the end (disgard) if needed.
+                        for (i = j + 1; i < select_len; i++)
                         {
-                            swap_element(&(select[select_start]), i, select_len - 1);
-                            i--;
-                            select_len--;
+                            int32_t roiBase0 = (select[select_start + i] / numClasses) * kRoiDim;
+                            int32_t roiBase1 = (select[select_start + j] / numClasses) * kRoiDim;
+                            float iou = getIoUAxisAligned(&(roiBuffer[roiBase0]),
+                                &(roiBuffer[roiBase1]));
+
+                            if (iou >= iouThreshold)
+                            {
+                                swap_element(&(select[select_start]), i, select_len - 1);
+                                i--;
+                                select_len--;
+                            }
                         }
                         numDetections++;
                     }
+                    select_size = select_start + numDetections;
                 }
-                select_size = select_start + select_len;
+
+                //select_size = select_start + select_len;
+                select_len = select_size;
+                select_start = 0;
 
                 // Take top maxNumDetections.
                 sort_element_by_score(&(f32_in_buffer[0][scores_index]),
@@ -314,7 +321,7 @@ static vsi_status VX_CALLBACK vxDetection_postprocessKernel
                     int32_out_buffer[2][class_out_index + i] = (ind % numClasses)
                         - (isBGInLabel ? 0 : 1);
                 }
-                int32_out_buffer[2][n] = select_len;
+                int32_out_buffer[3][n] = select_len;
             }
             else
             {
