@@ -77,7 +77,7 @@ typedef enum
     /** affine asymmetric */
     VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC = VX_QUANT_AFFINE_SCALE,
     /** affine perchannel symmetric */
-    VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC = 0xfe,
+    VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC = 0x3,/*VX_QUANT_AFFINE_SCALE_PER_CHANNEL*/
     /** undefined type */
     VSI_NN_QNT_TYPE_NA = 0xff,
 } vsi_nn_qnt_type_e;
@@ -112,11 +112,11 @@ typedef struct vsi_nn_dtype
             /** Meanful in AFFINE_PERCHANNEL_SYMMETRIC */
             struct
             {
-                float* scales;
-                int    scale_dim;
-                int    channel_dim;
-                float* zero_points;
-                int    zero_points_dim;
+                float      *scales;
+                int32_t    scale_dim;
+                int32_t    channel_dim;
+                int32_t    *zero_points;
+                int32_t    zero_points_dim;
             };
 #endif
         };

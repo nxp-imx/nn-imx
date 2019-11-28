@@ -319,6 +319,8 @@ static vsi_bool _init_tensor
         params.quant_data.affinePerChannel.channelDim = tensor->attr.dtype.channel_dim;
         params.quant_data.affinePerChannel.scaleCount = tensor->attr.dtype.scale_dim;
         params.quant_data.affinePerChannel.scales = tensor->attr.dtype.scales;
+        params.quant_data.affinePerChannel.zeroPoint = tensor->attr.dtype.zero_points;
+        params.quant_data.affinePerChannel.zeroPointCount = tensor->attr.dtype.zero_points_dim;
         break;
 #else
     VSILOGE( "can't support qnt_type VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC." );
