@@ -543,7 +543,7 @@ static vsi_status op_compute
         }
 
         attr.size[0] = ((input_size[0] + 255) / 256) * 4;
-        if(inputDataFormat == VSI_NN_TYPE_INT16 || VSI_NN_TYPE_FLOAT16)
+        if((inputDataFormat == VSI_NN_TYPE_INT16) || (inputDataFormat == VSI_NN_TYPE_FLOAT16))
         {
             attr.size[0] = ((input_size[0] + 127) / 128) * 4;
         }
