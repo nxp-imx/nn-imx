@@ -38,6 +38,71 @@
 #include "client/vsi_nn_vxkernel.h"
 #include "libnnext/vx_lib_nnext.h"
 
+
+static vsi_status VX_CALLBACK vxExpKernel
+    (
+    vx_node node,
+    const vx_reference* paramObj,
+    uint32_t paramNum
+    )
+{
+    vsi_status status = VX_SUCCESS;
+    vx_tensor            input              = NULL;
+    vx_tensor            output             = NULL;
+    float                *f32_in_buffer     = NULL;
+    float                *f32_out_buffer    = NULL;
+    vx_context           context            = NULL;
+    vsi_nn_tensor_attr_t in_attr;
+    vsi_nn_tensor_attr_t out_attr;
+    uint32_t             i                  = 0;
+    uint32_t             in_elements        = 0;
+    uint32_t             out_elements       = 0;
+
+    memset(&in_attr, 0, sizeof(vsi_nn_tensor_attr_t));
+    memset(&out_attr, 0, sizeof(vsi_nn_tensor_attr_t));
+
+    context = vxGetContext((vx_reference)node);
+    input  = (vx_tensor)paramObj[0];
+    output = (vx_tensor)paramObj[1];
+
+    /* Fill input & output attribute data struct */
+    status = vsi_nn_vxGetTensorAttr(input, &in_attr);
+    TEST_CHECK_STATUS(status, final);
+    status = vsi_nn_vxGetTensorAttr(output, &out_attr);
+    TEST_CHECK_STATUS(status, final);
+
+    in_elements = vsi_nn_vxGetTensorElementNum(&in_attr);
+    out_elements = vsi_nn_vxGetTensorElementNum(&out_attr);
+
+    /* alloc the float32 data buffer */
+    f32_in_buffer = (float *)malloc(in_elements * sizeof(float));
+    TEST_CHECK_PTR(f32_in_buffer, final);
+    f32_out_buffer= (float *)malloc(out_elements * sizeof(float));
+    TEST_CHECK_PTR(f32_out_buffer, final);
+    memset(f32_in_buffer, 0, in_elements * sizeof(float));
+    memset(f32_out_buffer, 0, out_elements * sizeof(float));
+
+    /* Copy tensor to buffer, and convert bufer to float32 format */
+    status = vsi_nn_vxConvertTensorToFloat32Data(
+        context, input, &in_attr, f32_in_buffer, in_elements * sizeof(float));
+    TEST_CHECK_STATUS(status, final);
+
+    /* log implement */
+    for ( i = 0; i < out_elements; i++)
+    {
+        f32_out_buffer[i] = expf(f32_in_buffer[i]);
+    }
+
+    status = vsi_nn_vxConvertFloat32DataToTensor(
+        context, output, &out_attr, f32_out_buffer, out_elements * sizeof(float));
+
+final:
+    if(f32_in_buffer)free(f32_in_buffer);
+    if(f32_out_buffer)free(f32_out_buffer);
+
+    return status;
+}
+
 vx_status VX_CALLBACK vxTensorExpInitializer
     (
     vx_node node,
@@ -93,6 +158,37 @@ vx_status VX_CALLBACK vxTensorExpInitializer
         0x00003c00, 0x00000000, 0x00003c00, 0x00000000,
         0x00003c00, 0x00000000, 0x00003c00, 0x00000000 // Constant
     };
+    vx_uint32 uniConvBF16toF32_Part0_2x8[16] = {
+        0x11111111, // TCfg
+        0x01010101, // ASelt
+        0x01050004, 0x03070206, // ABin
+        0x22222222, // BSelt
+        0x00000000, 0x00000000, // BBin
+        0x00000600, // AccumType, ConstantType, and PostShift
+        0x00000001, 0x00000001, 0x00000001, 0x00000001,
+        0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
+    };
+    vx_uint32 uniConvBF16toF32_Part1_2x8[16] = {
+        0x11111111, // TCfg
+        0x01010101, // ASelt
+        0x05050404, 0x07070606, // ABin
+        0x22222222, // BSelt
+        0x00000000, 0x00000000, // BBin
+        0x00000600, // AccumType, ConstantType, and PostShift
+        0x00000001, 0x00000001, 0x00000001, 0x00000001,
+        0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
+    };
+    vx_uint32 uniExtractOddData_2x8[16] = {
+        0x11111111, // TCfg
+        0x11110000, // ASelt
+        0x07050301, 0x07050301, // ABin
+        0x22222222, // BSelt
+        0x00000000, 0x00000000, // BBin
+        0x00000600, // AccumType, ConstantType, and PostShift
+        0x00000001, 0x00000001, 0x00000001, 0x00000001,
+        0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
+    };
+
     vx_status       status          = VX_SUCCESS;
 
     vx_tensor       input              = (vx_tensor)paramObj[0];
@@ -168,16 +264,26 @@ vx_status VX_CALLBACK vxTensorExpInitializer
 
     if (dstFormat == VSI_NN_TYPE_FLOAT16)
         status |= vxSetNodeUniform(node, "uniExtract8Data_2x8", 1, uniExtractHalf8_2x8);
+    else if (dstFormat == VSI_NN_TYPE_BFLOAT16)
+        status |= vxSetNodeUniform(node, "uniExtractOddData_2x8", 1, uniExtractOddData_2x8);
     else
         status |= vxSetNodeUniform(node, "uniExtract8Data_2x8", 1, uniExtractInteger_2x8);
 
     status |= vxSetNodeUniform(node, "logE", 1, &logE);
-    status |= vxSetNodeUniform(node, "inputScale", 1, &inputScale);
-    status |= vxSetNodeUniform(node, "inputTail", 1, &inputTail);
-    status |= vxSetNodeUniform(node, "outputScale", 1, &outputScale);
-    status |= vxSetNodeUniform(node, "outputZP", 1, &outputZP);
-    status |= vxSetNodeUniform(node, "uniDatatoFp32Part0_4x4", 1, uniDatatoFp32Part0_4x4);
-    status |= vxSetNodeUniform(node, "uniDatatoFp32Part1_4x4", 1, uniDatatoFp32Part1_4x4);
+    if (dstFormat == VSI_NN_TYPE_BFLOAT16)
+    {
+        status |= vxSetNodeUniform(node, "uniConvBF16toF32_Part0_2x8", 1, uniConvBF16toF32_Part0_2x8);
+        status |= vxSetNodeUniform(node, "uniConvBF16toF32_Part1_2x8", 1, uniConvBF16toF32_Part1_2x8);
+    }
+    else
+    {
+        status |= vxSetNodeUniform(node, "inputScale", 1, &inputScale);
+        status |= vxSetNodeUniform(node, "inputTail", 1, &inputTail);
+        status |= vxSetNodeUniform(node, "outputScale", 1, &outputScale);
+        status |= vxSetNodeUniform(node, "outputZP", 1, &outputZP);
+        status |= vxSetNodeUniform(node, "uniDatatoFp32Part0_4x4", 1, uniDatatoFp32Part0_4x4);
+        status |= vxSetNodeUniform(node, "uniDatatoFp32Part1_4x4", 1, uniDatatoFp32Part1_4x4);
+    }
 
     return VX_SUCCESS;
 }
@@ -192,13 +298,28 @@ static vx_param_description_t vxTensorExpKernelParam[] =
 #ifdef __cplusplus
 extern "C" {
 #endif
+vx_kernel_description_t vxExpKernelInfo_CPU =
+{
+    VX_KERNEL_ENUM_TENSOR_EXP,
+    "com.vivantecorp.extension.exp_sw",
+    vxExpKernel,
+    vxTensorExpKernelParam,
+    (sizeof(vxTensorExpKernelParam) / sizeof(vxTensorExpKernelParam[0])),
+    vsi_nn_KernelValidator,
+    NULL,
+    NULL,
+    vsi_nn_KernelInitializer,
+    vsi_nn_KernelDeinitializer
+};
 
+#define GEN_EXP_SH_KERNEL_NAME(SRC_TYPE, DST_TYPE) \
+    "com.vivantecorp.extension.vxTensorExp_"#SRC_TYPE"to"#DST_TYPE
 
 #define TENSOR_EXP_KERNELS(SRC_TYPE, DST_TYPE) \
     vx_kernel_description_t vxTensorExp_##SRC_TYPE##to##DST_TYPE##_Kernel = \
 { \
     VX_KERNEL_ENUM_TENSOR_EXP, \
-    VX_KERNEL_NAME_TENSOR_EXP_##SRC_TYPE##TO##DST_TYPE, \
+    GEN_EXP_SH_KERNEL_NAME(SRC_TYPE, DST_TYPE), \
     NULL, \
     vxTensorExpKernelParam, \
     (sizeof(vxTensorExpKernelParam) / sizeof(vxTensorExpKernelParam[0])), \
@@ -209,11 +330,14 @@ extern "C" {
     vsi_nn_KernelDeinitializer \
 };
 
+#define GEN_EXP_SH_KERNEL_NAME_2D(SRC_TYPE, DST_TYPE) \
+    "com.vivantecorp.extension.vxTensorExp_"#SRC_TYPE"to"#DST_TYPE"_2D"
+
 #define TENSOR_EXP_KERNELS_2D(SRC_TYPE, DST_TYPE) \
     vx_kernel_description_t vxTensorExp_##SRC_TYPE##to##DST_TYPE##_2D_Kernel = \
 { \
     VX_KERNEL_ENUM_TENSOR_EXP, \
-    VX_KERNEL_NAME_TENSOR_EXP_##SRC_TYPE##TO##DST_TYPE##_2D, \
+    GEN_EXP_SH_KERNEL_NAME_2D(SRC_TYPE, DST_TYPE), \
     NULL, \
     vxTensorExpKernelParam, \
     (sizeof(vxTensorExpKernelParam) / sizeof(vxTensorExpKernelParam[0])), \
@@ -234,6 +358,8 @@ TENSOR_EXP_KERNELS(I16, I16)
 TENSOR_EXP_KERNELS(I16, F16)
 TENSOR_EXP_KERNELS(U8, U8)
 TENSOR_EXP_KERNELS(U8, F16)
+TENSOR_EXP_KERNELS(BF16, BF16)
+
 TENSOR_EXP_KERNELS_2D(F16, F16)
 TENSOR_EXP_KERNELS_2D(F16, I8)
 TENSOR_EXP_KERNELS_2D(F16, I16)
@@ -244,34 +370,37 @@ TENSOR_EXP_KERNELS_2D(I16, I16)
 TENSOR_EXP_KERNELS_2D(I16, F16)
 TENSOR_EXP_KERNELS_2D(U8, U8)
 TENSOR_EXP_KERNELS_2D(U8, F16)
+TENSOR_EXP_KERNELS_2D(BF16, BF16)
 
 #define TENSOR_EXP_KERENLS_NAME(SRC_TYPE, DST_TYPE, INSTR) \
     &vxTensorExp_##SRC_TYPE##to##DST_TYPE##_##INSTR##Kernel,
 
 vx_kernel_description_t * vx_kernel_EXP_list[] =
 {
-    NULL,
-    TENSOR_EXP_KERENLS_NAME(F16, F16, )
-    TENSOR_EXP_KERENLS_NAME(F16, I16, )
-    TENSOR_EXP_KERENLS_NAME(F16, I8, )
-    TENSOR_EXP_KERENLS_NAME(F16, U8, )
-    TENSOR_EXP_KERENLS_NAME(I16, I16, )
-    TENSOR_EXP_KERENLS_NAME(I16, F16, )
-    TENSOR_EXP_KERENLS_NAME(I8,  I8, )
-    TENSOR_EXP_KERENLS_NAME(I8,  F16, )
-    TENSOR_EXP_KERENLS_NAME(U8,  U8, )
-    TENSOR_EXP_KERENLS_NAME(U8,  F16, )
+    &vxExpKernelInfo_CPU,
+    TENSOR_EXP_KERENLS_NAME(F16,  F16, )
+    TENSOR_EXP_KERENLS_NAME(F16,  I16, )
+    TENSOR_EXP_KERENLS_NAME(F16,  I8, )
+    TENSOR_EXP_KERENLS_NAME(F16,  U8, )
+    TENSOR_EXP_KERENLS_NAME(I16,  I16, )
+    TENSOR_EXP_KERENLS_NAME(I16,  F16, )
+    TENSOR_EXP_KERENLS_NAME(I8,   I8, )
+    TENSOR_EXP_KERENLS_NAME(I8,   F16, )
+    TENSOR_EXP_KERENLS_NAME(U8,   U8, )
+    TENSOR_EXP_KERENLS_NAME(U8,   F16, )
+    TENSOR_EXP_KERENLS_NAME(BF16, BF16, )
 
-    TENSOR_EXP_KERENLS_NAME(F16, F16, 2D_)
-    TENSOR_EXP_KERENLS_NAME(F16, I16, 2D_)
-    TENSOR_EXP_KERENLS_NAME(F16, I8, 2D_)
-    TENSOR_EXP_KERENLS_NAME(F16, U8, 2D_)
-    TENSOR_EXP_KERENLS_NAME(I16, I16, 2D_)
-    TENSOR_EXP_KERENLS_NAME(I16, F16, 2D_)
-    TENSOR_EXP_KERENLS_NAME(I8,  I8, 2D_)
-    TENSOR_EXP_KERENLS_NAME(I8,  F16, 2D_)
-    TENSOR_EXP_KERENLS_NAME(U8,  U8, 2D_)
-    TENSOR_EXP_KERENLS_NAME(U8,  F16, 2D_)
+    TENSOR_EXP_KERENLS_NAME(F16,  F16, 2D_)
+    TENSOR_EXP_KERENLS_NAME(F16,  I16, 2D_)
+    TENSOR_EXP_KERENLS_NAME(F16,  I8, 2D_)
+    TENSOR_EXP_KERENLS_NAME(F16,  U8, 2D_)
+    TENSOR_EXP_KERENLS_NAME(I16,  I16, 2D_)
+    TENSOR_EXP_KERENLS_NAME(I16,  F16, 2D_)
+    TENSOR_EXP_KERENLS_NAME(I8,   I8, 2D_)
+    TENSOR_EXP_KERENLS_NAME(I8,   F16, 2D_)
+    TENSOR_EXP_KERENLS_NAME(U8,   U8, 2D_)
+    TENSOR_EXP_KERENLS_NAME(U8,   F16, 2D_)
+    TENSOR_EXP_KERENLS_NAME(BF16, BF16, 2D_)
 
     NULL
 };

@@ -42,7 +42,6 @@
 #define _OUTPUT_NUM         (1)
 #define _IO_NUM             (_INPUT_NUM + _OUTPUT_NUM)
 #define _PARAM_NUM          (_ARG_NUM + _IO_NUM)
-#define IMG_MAX_WIDTH 65536
 
 extern vx_kernel_description_t * vx_kernel_LOG_list[];
 

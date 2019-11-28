@@ -35,73 +35,61 @@
 #include "vsi_nn_tensor.h"
 #include "vsi_nn_tensor_util.h"
 #include "client/vsi_nn_vxkernel.h"
+#include "utils/vsi_nn_util.h"
 
 #define _ARG_NUM            (0)
 #define _INPUT_NUM          (1)
 #define _OUTPUT_NUM         (1)
 #define _IO_NUM             (_INPUT_NUM + _OUTPUT_NUM)
 #define _PARAM_NUM          (_ARG_NUM + _IO_NUM)
-#define IMG_MAX_WIDTH 65536
 
 extern vx_kernel_description_t * vx_kernel_EXP_list[];
 
-
-/* Greatest Common Divisor*/
-static vsi_bool vxoGetDataDivisors(uint32_t input_value, uint32_t *divisors, uint32_t gcd)
+/* Type enum */
+typedef enum _exp_nn_image_dims_e
 {
-    uint32_t i                 = 0;
+    IMAGE_2D = TRUE,
+    IMAGE_3D = FALSE,
+}exp_nn_image_dims_e;
 
-    for (i = vsi_nn_min(input_value, IMG_MAX_WIDTH - 1); i > 0; i --)
+
+#define VSI_NN_GEN_EXP_KEY(_input_type, _output_type, _image_2d) \
+    ((_input_type << 24) | (_output_type << 8) | (_image_2d))
+
+#define VSI_NN_GEN_EXP_STRUCT_ITEMS(_input_type, _output_type, _image_2d) \
+    VSI_NN_GEN_EXP_KEY(_input_type, _output_type, _image_2d), \
+    VSI_NN_EXP_SH_KERNEL_IDX(_input_type, _output_type, _image_2d)
+
+static struct {
+        uint32_t key;
+        uint32_t kernel_index;
+        char *resource_name;
+    } exp_map[] =
     {
-        if ((i % gcd == 0) && (input_value % i == 0))
-        {
-            *divisors = i;
+        {VSI_NN_GEN_EXP_STRUCT_ITEMS(F16,  F16,  IMAGE_3D)  "vsi_nn_kernel_exp"},
+        {VSI_NN_GEN_EXP_STRUCT_ITEMS(F16,  I8,   IMAGE_3D)  "vsi_nn_kernel_exp"},
+        {VSI_NN_GEN_EXP_STRUCT_ITEMS(F16,  I16,  IMAGE_3D)  "vsi_nn_kernel_exp"},
+        {VSI_NN_GEN_EXP_STRUCT_ITEMS(F16,  U8,   IMAGE_3D)  "vsi_nn_kernel_exp"},
+        {VSI_NN_GEN_EXP_STRUCT_ITEMS(I8,   I8,   IMAGE_3D)  "vsi_nn_kernel_exp"},
+        {VSI_NN_GEN_EXP_STRUCT_ITEMS(I8,   F16,  IMAGE_3D)  "vsi_nn_kernel_exp"},
+        {VSI_NN_GEN_EXP_STRUCT_ITEMS(I16,  I16,  IMAGE_3D)  "vsi_nn_kernel_exp"},
+        {VSI_NN_GEN_EXP_STRUCT_ITEMS(I16,  F16,  IMAGE_3D)  "vsi_nn_kernel_exp"},
+        {VSI_NN_GEN_EXP_STRUCT_ITEMS(U8,   U8,   IMAGE_3D)  "vsi_nn_kernel_exp"},
+        {VSI_NN_GEN_EXP_STRUCT_ITEMS(U8,   F16,  IMAGE_3D)  "vsi_nn_kernel_exp"},
+        {VSI_NN_GEN_EXP_STRUCT_ITEMS(BF16, BF16, IMAGE_3D)  "vsi_nn_kernel_exp"},
 
-            return TRUE;
-        }
-    }
-
-    return FALSE;
-}
-
-static vsi_bool vxoElementOptimization_GetTensorShape(vsi_nn_tensor_t *input,uint32_t sizes[VSI_NN_MAX_DIM_NUM],
-                                                      uint32_t * num_of_dims)
-{
-    uint32_t element_count     = 0;
-    uint32_t i                 = 0;
-
-    element_count = vsi_nn_GetElementNum(input);
-
-    for (i = 0; i < VSI_NN_MAX_DIM_NUM; i++)
-    {
-        sizes[i] = 1;
-    }
-
-    if (element_count < IMG_MAX_WIDTH)
-    {
-        sizes[0] = element_count;
-
-        *num_of_dims = 2;
-    }
-    else
-    {
-        uint32_t divisors = 1;
-        for (i = 0; i < 2; i++)
-        {
-            divisors = 1;
-            vxoGetDataDivisors(element_count, &divisors, 1);
-
-            sizes[i] = divisors;
-            element_count = element_count / divisors;
-        }
-
-        sizes[2] = element_count;
-        *num_of_dims = 3;
-    }
-
-    return TRUE;
-}
-
+        {VSI_NN_GEN_EXP_STRUCT_ITEMS(F16,  F16,  IMAGE_2D)  "vsi_nn_kernel_exp"},
+        {VSI_NN_GEN_EXP_STRUCT_ITEMS(F16,  I8,   IMAGE_2D)  "vsi_nn_kernel_exp"},
+        {VSI_NN_GEN_EXP_STRUCT_ITEMS(F16,  I16,  IMAGE_2D)  "vsi_nn_kernel_exp"},
+        {VSI_NN_GEN_EXP_STRUCT_ITEMS(F16,  U8,   IMAGE_2D)  "vsi_nn_kernel_exp"},
+        {VSI_NN_GEN_EXP_STRUCT_ITEMS(I8,   I8,   IMAGE_2D)  "vsi_nn_kernel_exp"},
+        {VSI_NN_GEN_EXP_STRUCT_ITEMS(I8,   F16,  IMAGE_2D)  "vsi_nn_kernel_exp"},
+        {VSI_NN_GEN_EXP_STRUCT_ITEMS(I16,  I16,  IMAGE_2D)  "vsi_nn_kernel_exp"},
+        {VSI_NN_GEN_EXP_STRUCT_ITEMS(I16,  F16,  IMAGE_2D)  "vsi_nn_kernel_exp"},
+        {VSI_NN_GEN_EXP_STRUCT_ITEMS(U8,   U8,   IMAGE_2D)  "vsi_nn_kernel_exp"},
+        {VSI_NN_GEN_EXP_STRUCT_ITEMS(U8,   F16,  IMAGE_2D)  "vsi_nn_kernel_exp"},
+        {VSI_NN_GEN_EXP_STRUCT_ITEMS(BF16, BF16, IMAGE_2D)  "vsi_nn_kernel_exp"},
+    };
 
 static void _set_inputs_outputs
     (
@@ -151,145 +139,36 @@ static vsi_status cpu_op_compute
     return status;
 }
 
-static vsi_status vx_op_pre_compute
-    (
-    vsi_nn_node_t * self,
-    vsi_nn_tensor_t ** inputs,
-    vsi_nn_tensor_t ** outputs,
-    vsi_nn_kernel_info_t * kernel_info
-    )
+static vsi_nn_shader_kernel_type_e get_exp_intra_type(vsi_nn_type_e type)
 {
-    vsi_nn_type_e input_format = inputs[0]->attr.dtype.vx_type;
-    vsi_nn_type_e output_format = outputs[0]->attr.dtype.vx_type;
-    vsi_bool useImage2D  =  FALSE;
-    uint32_t sizes[VSI_NN_MAX_DIM_NUM] = {1};
-    uint32_t num_of_dims = 0;
-
-    vxoElementOptimization_GetTensorShape(inputs[0], sizes, &num_of_dims);
-    useImage2D  =  (vsi_bool)(sizes[2] == 1);
-
-    if (useImage2D)
+    switch (type)
     {
-        if (input_format == VSI_NN_TYPE_FLOAT16)
-        {
-            if (output_format == VSI_NN_TYPE_FLOAT16)
-                kernel_info->kernel_index = TENSOR_EXP_F16TOF16_2D_KERNEL;
-            else if (output_format == VSI_NN_TYPE_INT16)
-                kernel_info->kernel_index = TENSOR_EXP_F16TOI16_2D_KERNEL;
-            else if (output_format == VSI_NN_TYPE_INT8)
-                kernel_info->kernel_index = TENSOR_EXP_F16TOI8_2D_KERNEL;
-            else if (output_format == VSI_NN_TYPE_UINT8)
-                kernel_info->kernel_index = TENSOR_EXP_F16TOU8_2D_KERNEL;
-            else
-            {
-                VSILOGE("Not support input or output data format!(EXP)\n");
-                return VSI_FAILURE;
-            }
-        }
-        else if (input_format == VSI_NN_TYPE_INT16)
-        {
-            if (output_format == VSI_NN_TYPE_INT16)
-                kernel_info->kernel_index = TENSOR_EXP_I16TOI16_2D_KERNEL;
-            else if (output_format == VSI_NN_TYPE_FLOAT16)
-                kernel_info->kernel_index = TENSOR_EXP_I16TOF16_2D_KERNEL;
-            else
-            {
-                VSILOGE("Not support input or output data format!(EXP)\n");
-                return VSI_FAILURE;
-            }
-        }
-        else if (input_format == VSI_NN_TYPE_INT8)
-        {
-            if (output_format == VSI_NN_TYPE_INT8)
-                kernel_info->kernel_index = TENSOR_EXP_I8TOI8_2D_KERNEL;
-            else if (output_format == VSI_NN_TYPE_FLOAT16)
-                kernel_info->kernel_index = TENSOR_EXP_I8TOF16_2D_KERNEL;
-            else
-            {
-                VSILOGE("Not support input or output data format!(EXP)\n");
-                return VSI_FAILURE;
-            }
-        }
-        else if (input_format == VSI_NN_TYPE_UINT8)
-        {
-            if (output_format == VSI_NN_TYPE_UINT8)
-                kernel_info->kernel_index = TENSOR_EXP_U8TOU8_2D_KERNEL;
-            else if (output_format == VSI_NN_TYPE_FLOAT16)
-                kernel_info->kernel_index = TENSOR_EXP_U8TOF16_2D_KERNEL;
-            else
-            {
-                VSILOGE("Not support input or output data format!(EXP)\n");
-                return VSI_FAILURE;
-            }
-        }
-        else
-        {
-            VSILOGE("Not support input or output data format!(EXP)\n");
-            return VSI_FAILURE;
-        }
-    }
-    else
-    {
-        if (input_format == VSI_NN_TYPE_FLOAT16)
-        {
-            if (output_format == VSI_NN_TYPE_FLOAT16)
-                kernel_info->kernel_index = TENSOR_EXP_F16TOF16_KERNEL;
-            else if (output_format == VSI_NN_TYPE_INT16)
-                kernel_info->kernel_index = TENSOR_EXP_F16TOI16_KERNEL;
-            else if (output_format == VSI_NN_TYPE_INT8)
-                kernel_info->kernel_index = TENSOR_EXP_F16TOI8_KERNEL;
-            else if (output_format == VSI_NN_TYPE_UINT8)
-                kernel_info->kernel_index = TENSOR_EXP_F16TOU8_KERNEL;
-            else
-            {
-                VSILOGE("Not support input or output data format!(EXP)\n");
-                return VSI_FAILURE;
-            }
-        }
-        else if (input_format == VSI_NN_TYPE_INT16)
-        {
-            if (output_format == VSI_NN_TYPE_INT16)
-                kernel_info->kernel_index = TENSOR_EXP_I16TOI16_KERNEL;
-            else if (output_format == VSI_NN_TYPE_FLOAT16)
-                kernel_info->kernel_index = TENSOR_EXP_I16TOF16_KERNEL;
-            else
-            {
-                VSILOGE("Not support input or output data format!(EXP)\n");
-                return VSI_FAILURE;
-            }
-        }
-        else if (input_format == VSI_NN_TYPE_INT8)
-        {
-            if (output_format == VSI_NN_TYPE_INT8)
-                kernel_info->kernel_index = TENSOR_EXP_I8TOI8_KERNEL;
-            else if (output_format == VSI_NN_TYPE_FLOAT16)
-                kernel_info->kernel_index = TENSOR_EXP_I8TOF16_KERNEL;
-            else
-            {
-                VSILOGE("Not support input or output data format!(EXP)\n");
-                return VSI_FAILURE;
-            }
-        }
-        else if (input_format == VSI_NN_TYPE_UINT8)
-        {
-            if (output_format == VSI_NN_TYPE_UINT8)
-                kernel_info->kernel_index = TENSOR_EXP_U8TOU8_KERNEL;
-            else if (output_format == VSI_NN_TYPE_FLOAT16)
-                kernel_info->kernel_index = TENSOR_EXP_U8TOF16_KERNEL;
-            else
-            {
-                VSILOGE("Not support input or output data format!(EXP)\n");
-                return VSI_FAILURE;
-            }
-        }
-        else
-        {
-            VSILOGE("Not support input or output data format!(EXP)\n");
-            return VSI_FAILURE;
-        }
+    case VSI_NN_TYPE_INT8:
+        return I8;
+    case VSI_NN_TYPE_INT16:
+        return I16;
+    case VSI_NN_TYPE_INT32:
+        return I32;
+    case VSI_NN_TYPE_INT64:
+        return I64;
+    case VSI_NN_TYPE_UINT8:
+        return U8;
+    case VSI_NN_TYPE_UINT16:
+        return U16;
+    case VSI_NN_TYPE_UINT32:
+        return U32;
+    case VSI_NN_TYPE_FLOAT16:
+        return F16;
+    case VSI_NN_TYPE_BFLOAT16:
+        return BF16;
+    case VSI_NN_TYPE_FLOAT32:
+        return F32;
+    default:
+        VSILOGE("error data type %d", type);
+        break;
     }
 
-    return VSI_SUCCESS;
+    return I8;
 }
 
 static void reshape_tensor_shape
@@ -301,9 +180,11 @@ static void reshape_tensor_shape
     )
 {
     uint32_t sizes[VSI_NN_MAX_DIM_NUM] = {1};
-    uint32_t num_of_dims = vsi_nn_max(input->attr.dim_num, 2);
+    uint32_t num_of_dims = 0;
 
-    vxoElementOptimization_GetTensorShape(input, sizes, &num_of_dims);
+    vsi_nn_OptimizedEltOPShape(input, sizes, &num_of_dims);
+    num_of_dims = vsi_nn_max(input->attr.dim_num, 2);
+    num_of_dims = vsi_nn_min(input->attr.dim_num, 4);
 
     self->nn_param.exp.local.local_tensor[index] =
          vxReshapeTensor(input->t, (int32_t *)sizes, num_of_dims);
@@ -340,6 +221,68 @@ static vsi_status vx_op_compute
     return status;
 }
 
+static void _get_exp_hashtable_idx
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs
+    )
+{
+    vsi_nn_type_e inputFormat = inputs[0]->attr.dtype.vx_type;
+    vsi_nn_type_e outputFormat = outputs[0]->attr.dtype.vx_type;
+    vsi_nn_shader_kernel_type_e _input_type;
+    vsi_nn_shader_kernel_type_e _output_type;
+    vsi_bool enable_image_2d  = FALSE;
+    uint32_t sizes[VSI_NN_MAX_DIM_NUM] = {1};
+    uint32_t num_of_dims = 0;
+    uint32_t key = 0;
+    uint32_t i   = 0;
+    vsi_nn_exp_param * p     = NULL;
+
+    p = &(self->nn_param.exp);
+
+    vsi_nn_OptimizedEltOPShape(inputs[0], sizes, &num_of_dims);
+
+    enable_image_2d = (vsi_bool)(num_of_dims < 3 || (sizes[2] == 1));
+
+    _input_type = get_exp_intra_type(inputFormat);
+    _output_type = get_exp_intra_type(outputFormat);
+
+    key = VSI_NN_GEN_EXP_KEY(_input_type, _output_type, enable_image_2d);
+
+    for (i = 0; i < sizeof(exp_map) / sizeof(exp_map[0]); i++)
+    {
+        if (key == exp_map[i].key)
+        {
+            p->local.hash_idx = i;
+            p->local.execute_on_sw = FALSE;
+            return;
+        }
+    }
+
+    p->local.execute_on_sw = TRUE;
+    VSILOGE("Shader unsupport data format! execute on the SW [exp]\n");
+}
+
+static vsi_bool vx_op_pre_compute
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs,
+    vsi_nn_kernel_info_t * kernel_info
+    )
+{
+    vsi_nn_exp_param * p = NULL;
+
+    p = &(self->nn_param.exp);
+
+    kernel_info->kernel_index = exp_map[p->local.hash_idx].kernel_index;
+    kernel_info->resource_num = 1;
+    kernel_info->resource_name[0] = exp_map[p->local.hash_idx].resource_name;
+
+    return TRUE;
+}
+
 static vsi_nn_op_compute_t op_compute_list[] =
 {
     cpu_op_compute,
@@ -356,33 +299,67 @@ static vsi_status op_compute
 {
     vsi_status status;
     vsi_nn_kernel_info_t kernel_info;
+    vsi_nn_exp_param * p    = NULL;
 
     memset(&kernel_info, 0x0, sizeof(vsi_nn_kernel_info_t));
     status = VSI_FAILURE;
-    kernel_info.resource_num = 1;
-    kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));
-    kernel_info.resource_name[0] = "vsi_nn_kernel_exp";
-    kernel_info.type = vsi_nn_GetVXKernelTypeForShader();
-    kernel_info.kernel = vx_kernel_EXP_list;
-    kernel_info.init_index = 1;
-
-    if (vsi_nn_is_do_vx_op_pre_init(kernel_info.type))
-    {
-        vx_op_pre_compute(self, inputs, outputs, &kernel_info);
-    }
-
-    self->n = vsi_nn_RegisterClientKernelAndNewNode(
-        self->graph, &kernel_info);
-    if (kernel_info.resource_name) free(kernel_info.resource_name);
-    if( NULL == self->n )
+    if( NULL == self )
     {
         return VSI_FAILURE;
     }
+    p = &(self->nn_param.exp);
 
-    if (NULL != op_compute_list[kernel_info.init_index])
+    _get_exp_hashtable_idx(self, inputs, outputs);
+
+    if (p->local.execute_on_sw || !vsi_nn_IsEVISFeatureAvaiable(self->graph->ctx))
     {
-        status = op_compute_list[kernel_info.init_index](self, inputs, outputs);
+        kernel_info.resource_num = 1;
+        kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));
+        kernel_info.resource_name[0] = "vsi_nn_kernel_exp";
+        kernel_info.type = VX_KERNEL_TYPE_CPU;
+        kernel_info.kernel = vx_kernel_EXP_list;
+        kernel_info.init_index = 0;
+
+        self->n = vsi_nn_RegisterClientKernelAndNewNode(
+            self->graph, &kernel_info);
+        if (kernel_info.resource_name) free(kernel_info.resource_name);
+        if( NULL == self->n )
+        {
+            return VSI_FAILURE;
+        }
+
+        status = cpu_op_compute(self, inputs, outputs);
     }
+    else
+    {
+        kernel_info.type = vsi_nn_GetVXKernelTypeForShader();
+        kernel_info.kernel = vx_kernel_EXP_list;
+        kernel_info.resource_num = 1;
+        kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));
+        kernel_info.init_index = 1;
+        kernel_info.resource_name[0] = "vsi_nn_kernel_exp";
+
+        if (vsi_nn_is_do_vx_op_pre_init(kernel_info.type))
+        {
+            vx_op_pre_compute(self, inputs, outputs, &kernel_info);
+        }
+
+        self->n = vsi_nn_RegisterClientKernelAndNewNode(
+            self->graph, &kernel_info);
+        if (kernel_info.resource_name)
+        {
+            free(kernel_info.resource_name);
+        }
+        if( NULL == self->n )
+        {
+            return VSI_FAILURE;
+        }
+        if (NULL != op_compute_list[kernel_info.init_index])
+        {
+            status = op_compute_list[kernel_info.init_index](self, inputs, outputs);
+        }
+    }
+
     return status;
 } /* op_compute() */
 
@@ -415,6 +392,7 @@ static vsi_status op_deinit
 
     return VSI_SUCCESS;
 } /* op_deinit() */
+
 
 #ifdef __cplusplus
 extern "C" {
