@@ -390,7 +390,6 @@ vsi_status VX_CALLBACK vxInstanceNormInitializer
     dimRatio = (vx_float32)(1.0 / (width * height));
 
     in_attr.size[2] = (in_attr.dim_num <= 2)?1:in_attr.size[2];
-    in_attr.size[2] = (in_attr.dim_num == 4)?(in_attr.size[2] * in_attr.size[3]):in_attr.size[2];
 
     group_num = (width + 255) / 256;
 
@@ -741,7 +740,6 @@ vsi_status VX_CALLBACK vxInstanceNormMeanVariInitializer
     }
 
     in_attr.size[2] = (in_attr.dim_num <= 2)?1:in_attr.size[2];
-    in_attr.size[2] = (in_attr.dim_num == 4)?(in_attr.size[2] * in_attr.size[3]):in_attr.size[2];
 
     shaderParam.globalWorkOffset[0] = 0;
     shaderParam.globalWorkOffset[1] = 0;

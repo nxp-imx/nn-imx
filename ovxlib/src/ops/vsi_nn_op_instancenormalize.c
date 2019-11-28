@@ -178,7 +178,6 @@ static void check_tensor_shape
                 memcpy(&attr, &(input->attr), sizeof(vsi_nn_tensor_attr_t));
                 attr.size[1] = attr.size[1] * attr.size[2];
                 attr.size[2] = 1;
-                attr.dim_num = 2;
                 self->nn_param.instancenorm.local.local_tensor[index] =
                     vxReshapeTensor(input->t, (int32_t*)(attr.size), attr.dim_num);
             }
@@ -240,7 +239,6 @@ static void check_tensor_shape
                 memcpy(&attr, &(input->attr), sizeof(vsi_nn_tensor_attr_t));
                 attr.size[1] = attr.size[1] * attr.size[2];
                 attr.size[2] = 1;
-                attr.dim_num = 2;
                 self->nn_param.instancenorm.local.local_tensor[index] =
                     vxReshapeTensor(input->t, (int32_t*)(attr.size), attr.dim_num);
             }
@@ -549,8 +547,8 @@ static vsi_status op_compute
         }
         attr.size[1] = input_size[2];
         attr.size[2] = 1;
-        attr.size[3] = 1;
-        attr.dim_num = 2;
+        attr.size[3] = input_size[3] > 0 ? input_size[3] : 1;
+        attr.dim_num = 4;
         attr.dtype.vx_type = VSI_NN_TYPE_FLOAT32;
         attr.vtl = FALSE;
         tmpMeanVari = vsi_nn_CreateTensor(self->graph, &attr);
