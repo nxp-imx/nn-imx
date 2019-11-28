@@ -637,6 +637,12 @@ static vsi_bool op_setup
         {
             outputs[0]->attr.size[i] = inputs[0]->attr.size[i + 1];
         }
+
+        if (inputs[0]->attr.dim_num == 1)
+        {
+            outputs[0]->attr.dim_num = 1;
+            outputs[0]->attr.size[0] = 1;
+        }
     }
 
     return TRUE;
