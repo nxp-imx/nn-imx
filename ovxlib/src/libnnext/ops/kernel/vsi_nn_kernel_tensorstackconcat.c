@@ -145,7 +145,7 @@ vsi_status VX_CALLBACK vxTensorStackConcatKernel
         if (status != VX_SUCCESS)
         {
             VSILOGE("vxCopyScalar failure! at line %d\n", __LINE__);
-            return status;
+            goto final;
         }
         // Call C Prototype
         tensorStackConcatFunc(input, output, index, input_size[0],

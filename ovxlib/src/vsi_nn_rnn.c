@@ -370,6 +370,7 @@ vsi_status vsi_nn_rnn_InitWksp
         {
             VSILOGE("The count of inputs is greater than maximum value: %d.", VSI_NN_MAX_RNN_CONNECTION_INPUTS);
             status = VSI_FAILURE;
+            vsi_nn_safe_free( cur_conn );
             break;
         }
         else

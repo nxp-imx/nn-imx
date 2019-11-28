@@ -443,7 +443,11 @@ OnError:
     if (paraTensor0) vxReleaseTensor(&paraTensor0);
     if (paraTensor1) vxReleaseTensor(&paraTensor1);
     if (paraTensor2) vxReleaseTensor(&paraTensor2);
-
+    if(out_buffer)
+    {
+        free(out_buffer);
+        out_buffer = NULL;
+    }
     return status;
 }
 
