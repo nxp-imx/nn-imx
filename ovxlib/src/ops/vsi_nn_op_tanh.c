@@ -48,8 +48,8 @@ static vsi_status op_compute
         self->graph->g,
         inputs[0]->t,
         VX_CONVOLUTIONAL_NETWORK_ACTIVATION_HYPERBOLIC_TAN,
-        (vx_int32)self->nn_param.tanh.scale_a,
-        (vx_int32)self->nn_param.tanh.scale_b,
+        self->nn_param.tanh.scale_a,
+        self->nn_param.tanh.scale_b,
         outputs[0]->t
         );
 
