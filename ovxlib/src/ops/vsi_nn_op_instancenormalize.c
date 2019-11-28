@@ -36,33 +36,118 @@
 #include "vsi_nn_log.h"
 #include "client/vsi_nn_vxkernel.h"
 
-#define _ARG_NUM            (1)
+#define _ARG_NUM            (2)
 #define _INPUT_NUM          (4)
 #define _OUTPUT_NUM         (1)
 #define _IO_NUM             (_INPUT_NUM + _OUTPUT_NUM)
 #define _PARAM_NUM          (_ARG_NUM + _IO_NUM)
 
-#define _SUM_ARG_NUM            (2)
-#define _SUM_INPUT_NUM          (1)
-#define _SUM_OUTPUT_NUM         (1)
-#define _SUM_IO_NUM             (_SUM_INPUT_NUM + _SUM_OUTPUT_NUM)
-#define _SUM_PARAM_NUM          (_SUM_ARG_NUM + _SUM_IO_NUM)
-
-#define _SQR_ARG_NUM            (5)
-#define _SQR_INPUT_NUM          (1)
-#define _SQR_OUTPUT_NUM         (1)
-#define _SQR_IO_NUM             (_SQR_INPUT_NUM + _SQR_OUTPUT_NUM)
-#define _SQR_PARAM_NUM          (_SQR_ARG_NUM + _SQR_IO_NUM)
-
-#define _VARI_ARG_NUM            (1)
+#define _VARI_ARG_NUM            (2)
 #define _VARI_INPUT_NUM          (1)
 #define _VARI_OUTPUT_NUM         (1)
 #define _VARI_IO_NUM             (_VARI_INPUT_NUM + _VARI_OUTPUT_NUM)
 #define _VARI_PARAM_NUM          (_VARI_ARG_NUM + _VARI_IO_NUM)
-
-#define ENABLE_CPU 0
+#define TEMP_DIM_SIZE            (4)
 
 extern vx_kernel_description_t * vx_kernel_INSTANCENORM_list[];
+
+#define VSI_NN_GEN_INSTANCENORM_KEY(_input0_type, _output_type, _reshape_flag) \
+    ((_input0_type << 24) | (_output_type << 16) | (_reshape_flag << 8))
+
+#define VSI_NN_GEN_INSTANCENORM_STRUCT_ITEMS(_input0_type, _output_type, _reshape_flag) \
+    VSI_NN_GEN_INSTANCENORM_KEY(_input0_type, _output_type, _reshape_flag), \
+    VSI_NN_SUMSQR_SH_KERNEL_IDX(_input0_type, _reshape_flag) \
+    VSI_NN_INSTANCENORM_SH_KERNEL_IDX(_input0_type, _output_type, _reshape_flag)
+
+static struct {
+        uint32_t key;
+        uint32_t kernel_index0;
+        uint32_t kernel_index1;
+        char *resource_name;
+    } instancenorm_map[] =
+    {
+        {VSI_NN_GEN_INSTANCENORM_STRUCT_ITEMS(U8, U8, 1)  "vsi_nn_kernel_instancenormalize_u8"},
+        {VSI_NN_GEN_INSTANCENORM_STRUCT_ITEMS(U8, F16, 1)  "vsi_nn_kernel_instancenormalize_u8"},
+        {VSI_NN_GEN_INSTANCENORM_STRUCT_ITEMS(U8, U8, 0)  "vsi_nn_kernel_instancenormalize_u8"},
+        {VSI_NN_GEN_INSTANCENORM_STRUCT_ITEMS(U8, F16, 0)  "vsi_nn_kernel_instancenormalize_u8"},
+        {VSI_NN_GEN_INSTANCENORM_STRUCT_ITEMS(I8, I8, 1)  "vsi_nn_kernel_instancenormalize"},
+        {VSI_NN_GEN_INSTANCENORM_STRUCT_ITEMS(I8, F16, 1)  "vsi_nn_kernel_instancenormalize"},
+        {VSI_NN_GEN_INSTANCENORM_STRUCT_ITEMS(I8, I8, 0)  "vsi_nn_kernel_instancenormalize"},
+        {VSI_NN_GEN_INSTANCENORM_STRUCT_ITEMS(I8, F16, 0)  "vsi_nn_kernel_instancenormalize"},
+        {VSI_NN_GEN_INSTANCENORM_STRUCT_ITEMS(I16, I16, 1)  "vsi_nn_kernel_instancenormalize_i16"},
+        {VSI_NN_GEN_INSTANCENORM_STRUCT_ITEMS(I16, F16, 1)  "vsi_nn_kernel_instancenormalize_i16"},
+        {VSI_NN_GEN_INSTANCENORM_STRUCT_ITEMS(I16, I16, 0)  "vsi_nn_kernel_instancenormalize_i16"},
+        {VSI_NN_GEN_INSTANCENORM_STRUCT_ITEMS(I16, F16, 0)  "vsi_nn_kernel_instancenormalize_i16"},
+        {VSI_NN_GEN_INSTANCENORM_STRUCT_ITEMS(F16, F16, 1)  "vsi_nn_kernel_instancenormalize_fp16"},
+        {VSI_NN_GEN_INSTANCENORM_STRUCT_ITEMS(F16, F16, 0)  "vsi_nn_kernel_instancenormalize_fp16"},
+    };
+
+static vsi_nn_shader_kernel_type_e get_instancenorm_intra_type(vsi_nn_type_e type)
+{
+    switch (type)
+    {
+    case VSI_NN_TYPE_INT8:
+        return I8;
+    case VSI_NN_TYPE_INT16:
+        return I16;
+    case VSI_NN_TYPE_INT32:
+        return I32;
+    case VSI_NN_TYPE_INT64:
+        return I64;
+    case VSI_NN_TYPE_UINT8:
+        return U8;
+    case VSI_NN_TYPE_UINT16:
+        return U16;
+    case VSI_NN_TYPE_UINT32:
+        return U32;
+    case VSI_NN_TYPE_FLOAT16:
+        return F16;
+    case VSI_NN_TYPE_FLOAT32:
+        return F32;
+    default:
+        VSILOGE("error data type %d", type);
+        break;
+    }
+
+    return I8;
+}
+
+static void _get_instancenorm_hashtable_idx
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs
+    )
+{
+    vsi_nn_type_e input0Format = inputs[0]->attr.dtype.vx_type;
+    vsi_nn_type_e outputFormat  = outputs[0]->attr.dtype.vx_type;
+    vsi_nn_shader_kernel_type_e _input0_type;
+    vsi_nn_shader_kernel_type_e _output_type;
+    uint32_t key;
+    uint32_t i = 0;
+    uint32_t rsFlg = 0;
+
+    vsi_nn_instancenormalize_param * p = &(self->nn_param.instancenorm);
+
+    rsFlg = p->lcl2_data->reshapeFlg;
+    _input0_type = get_instancenorm_intra_type(input0Format);
+    _output_type = get_instancenorm_intra_type(outputFormat);
+
+    key = VSI_NN_GEN_INSTANCENORM_KEY(_input0_type, _output_type, rsFlg);
+
+    for (i = 0; i < sizeof(instancenorm_map) / sizeof(instancenorm_map[0]); i++)
+    {
+        if (key == instancenorm_map[i].key)
+        {
+            p->lcl2_data->hash_idx = i;
+            p->lcl2_data->execute_on_sw = FALSE;
+            return;
+        }
+    }
+
+    p->lcl2_data->execute_on_sw = TRUE;
+    VSILOGE("Shader unsupport data format! execute on the SW [instancenorm]\n");
+}
 
 static void check_tensor_shape
     (
@@ -86,8 +171,23 @@ static void check_tensor_shape
                 vxReshapeTensor(input->t, (int32_t*)(attr.size), attr.dim_num);
             params[index] =  (vx_reference)self->nn_param.instancenorm.local.local_tensor[index];
         }
+        else if(rsFlg)
+        {
+            if(self->nn_param.instancenorm.local.local_tensor[index] == NULL)
+            {
+                memcpy(&attr, &(input->attr), sizeof(vsi_nn_tensor_attr_t));
+                attr.size[1] = attr.size[1] * attr.size[2];
+                attr.size[2] = 1;
+                attr.dim_num = 2;
+                self->nn_param.instancenorm.local.local_tensor[index] =
+                    vxReshapeTensor(input->t, (int32_t*)(attr.size), attr.dim_num);
+            }
+            params[index] =  (vx_reference)self->nn_param.instancenorm.local.local_tensor[index];
+        }
         else
+        {
             params[index] = (vx_reference)input->t;
+        }
     }
     else if(index == 1 )
     {
@@ -101,7 +201,9 @@ static void check_tensor_shape
             params[index] =  (vx_reference)self->nn_param.instancenorm.local.local_tensor[index];
         }
         else
+        {
              params[index] = (vx_reference)input->t;
+        }
 
     }
     else if(index == 2 )
@@ -116,7 +218,9 @@ static void check_tensor_shape
             params[index] =  (vx_reference)self->nn_param.instancenorm.local.local_tensor[index];
         }
         else
+        {
              params[index] = (vx_reference)input->t;
+        }
     }
     else if(index == 3 )
     {
@@ -129,8 +233,23 @@ static void check_tensor_shape
                 vxReshapeTensor(input->t, (int32_t*)(attr.size), attr.dim_num);
             params[index] =  (vx_reference)self->nn_param.instancenorm.local.local_tensor[index];
         }
+        else if(rsFlg)
+        {
+            if(self->nn_param.instancenorm.local.local_tensor[index] == NULL)
+            {
+                memcpy(&attr, &(input->attr), sizeof(vsi_nn_tensor_attr_t));
+                attr.size[1] = attr.size[1] * attr.size[2];
+                attr.size[2] = 1;
+                attr.dim_num = 2;
+                self->nn_param.instancenorm.local.local_tensor[index] =
+                    vxReshapeTensor(input->t, (int32_t*)(attr.size), attr.dim_num);
+            }
+            params[index] =  (vx_reference)self->nn_param.instancenorm.local.local_tensor[index];
+        }
         else
+        {
              params[index] = (vx_reference)input->t;
+        }
     }
     else if(index == 4 )
     {
@@ -144,39 +263,15 @@ static void check_tensor_shape
             params[index] =  (vx_reference)self->nn_param.instancenorm.local.local_tensor[index];
         }
         else
+        {
              params[index] = (vx_reference)input->t;
+        }
     }
     else
     {
         VSILOGE("No more local tensor!(INSTANCENORM) at [%s : %d]\n", __FILE__, __LINE__);
     }
 }
-
-#if ENABLE_CPU
-static void _set_inputs_outputs
-    (
-    vx_reference * params,
-    vsi_nn_tensor_t ** inputs,
-    vsi_nn_tensor_t ** outputs
-    )
-{
-    uint32_t i;
-    uint32_t cnt;
-
-    /* Set inputs */
-    cnt = 0;
-    for( i = 0; i < _INPUT_NUM; i ++, cnt ++ )
-    {
-        params[cnt] = (vx_reference)inputs[i]->t;
-    }
-
-    /* Set outputs */
-    for( i = 0; i < _OUTPUT_NUM; i ++, cnt ++ )
-    {
-        params[cnt] = (vx_reference)outputs[i]->t;
-    }
-} /* _set_inputs_outputs() */
-#endif
 
 static vsi_status _create_params
     (
@@ -204,6 +299,7 @@ static vsi_status _create_params
     } \
     } while(0)
     _SET_PARAM( 0, VX_TYPE_FLOAT32, eps );
+    _SET_PARAM( 1, VX_TYPE_INT32, lcl2_data->reshapeFlg );
 #undef _SET_PARAM
 set_param_error:
 
@@ -225,13 +321,12 @@ static void _release_params
     }
 } /* _release_params() */
 
-#if ENABLE_CPU
 static vsi_status cpu_op_compute
     (
     vsi_nn_node_t * self,
     vsi_nn_tensor_t ** inputs,
     vsi_nn_tensor_t ** outputs,
-    vx_array ** arrayList
+    vsi_nn_tensor_t * tmpInput
     )
 {
     vsi_status status = VSI_SUCCESS;
@@ -246,62 +341,21 @@ static vsi_status cpu_op_compute
     }
 
     /* Set inputs and outputs */
-    _set_inputs_outputs( params, inputs, outputs );
+    check_tensor_shape(self, inputs[0], params, 0, 0);
+    check_tensor_shape(self, inputs[1], params, 1, 0);
+    check_tensor_shape(self, inputs[2], params, 2, 0);
+    check_tensor_shape(self, outputs[0], params, 3, 0);
+    check_tensor_shape(self, tmpInput, params, 4, 0);
 
     /* Init parameters. */
     _create_params( self, args, _ARG_NUM );
-    args[1] = (vx_reference)*arrayList[0];
-    args[2] = (vx_reference)*arrayList[1];
 
     /* Pass parameters to node. */
     status = vsi_nn_ClientNodePassParameters( self->n, params, _PARAM_NUM );
 
-    _release_params( args, 1 );
+    _release_params( args, _ARG_NUM );
 
     return status;
-}
-#endif
-
-static vsi_status vx_sum_op_pre_compute
-    (
-    vsi_nn_node_t * self,
-    vsi_nn_tensor_t ** inputs,
-    vsi_nn_tensor_t ** outputs,
-    vsi_nn_kernel_info_t * kernel_info
-    )
-{
-    vsi_nn_type_e inputDataFormat     = inputs[0]->attr.dtype.vx_type;
-    if (inputDataFormat == VSI_NN_TYPE_UINT8)
-    {
-        kernel_info->kernel_index = 4;
-    }
-    else
-    {
-        VSILOGE("Not support input or output data format!(INSTANCENORM_SUM) at [%s : %d]\n", __FILE__, __LINE__);
-        return VSI_FAILURE;
-    }
-    return VSI_SUCCESS;
-}
-
-static vsi_status vx_sqr_op_pre_compute
-    (
-    vsi_nn_node_t * self,
-    vsi_nn_tensor_t ** inputs,
-    vsi_nn_tensor_t ** outputs,
-    vsi_nn_kernel_info_t * kernel_info
-    )
-{
-    vsi_nn_type_e inputDataFormat     = inputs[0]->attr.dtype.vx_type;
-    if (inputDataFormat == VSI_NN_TYPE_UINT8)
-    {
-        kernel_info->kernel_index = 5;
-    }
-    else
-    {
-        VSILOGE("Not support input or output data format!(INSTANCENORM_SQR) at [%s : %d]\n", __FILE__, __LINE__);
-        return VSI_FAILURE;
-    }
-    return VSI_SUCCESS;
 }
 
 static vsi_status vx_mean_vari_op_pre_compute
@@ -312,16 +366,13 @@ static vsi_status vx_mean_vari_op_pre_compute
     vsi_nn_kernel_info_t * kernel_info
     )
 {
-    vsi_nn_type_e inputDataFormat     = inputs[0]->attr.dtype.vx_type;
-    if (inputDataFormat == VSI_NN_TYPE_UINT8)
-    {
-        kernel_info->kernel_index = 6;
-    }
-    else
-    {
-        VSILOGE("Not support input or output data format!(INSTANCENORM_SQR) at [%s : %d]\n", __FILE__, __LINE__);
-        return VSI_FAILURE;
-    }
+    vsi_nn_instancenormalize_param * p = &(self->nn_param.instancenorm);
+
+    kernel_info->kernel_index = instancenorm_map[p->lcl2_data->hash_idx].kernel_index0;
+    kernel_info->resource_num = 2;
+    kernel_info->resource_name[0] = "vsi_nn_kernel_header";
+    kernel_info->resource_name[1] = instancenorm_map[p->lcl2_data->hash_idx].resource_name;
+
     return VSI_SUCCESS;
 }
 
@@ -333,205 +384,14 @@ static vsi_status vx_op_pre_compute
     vsi_nn_kernel_info_t * kernel_info
     )
 {
-    vsi_nn_type_e inputDataFormat     = inputs[0]->attr.dtype.vx_type;
-    vsi_nn_type_e outputDataFormat    = outputs[0]->attr.dtype.vx_type;
-    vsi_nn_type_e scaleDataFormat     = inputs[2]->attr.dtype.vx_type;
-    if (inputDataFormat == VSI_NN_TYPE_FLOAT16 && outputDataFormat == VSI_NN_TYPE_FLOAT16)
-    {
-        kernel_info->kernel_index = 1;
-    }
-    else if (inputDataFormat == VSI_NN_TYPE_UINT8 && outputDataFormat == VSI_NN_TYPE_UINT8
-             && scaleDataFormat == VSI_NN_TYPE_FLOAT16)
-    {
-        kernel_info->kernel_index = 2;
-    }
-    else if (inputDataFormat == VSI_NN_TYPE_UINT8 && outputDataFormat == VSI_NN_TYPE_FLOAT16
-             && scaleDataFormat == VSI_NN_TYPE_FLOAT16)
-    {
-        kernel_info->kernel_index = 3;
-    }
-    else if (inputDataFormat == VSI_NN_TYPE_INT8 && outputDataFormat == VSI_NN_TYPE_INT8
-             && scaleDataFormat == VSI_NN_TYPE_FLOAT16)
-    {
-        kernel_info->resource_name[0] = "vsi_nn_kernel_instancenormalize_i8";
-        kernel_info->kernel_index = 7;
-    }
-    else if (inputDataFormat == VSI_NN_TYPE_INT8 && outputDataFormat == VSI_NN_TYPE_FLOAT16
-             && scaleDataFormat == VSI_NN_TYPE_FLOAT16)
-    {
-        kernel_info->resource_name[0] = "vsi_nn_kernel_instancenormalize_i8";
-        kernel_info->kernel_index = 8;
-    }
-    else if (inputDataFormat == VSI_NN_TYPE_INT16 && outputDataFormat == VSI_NN_TYPE_INT16
-             && scaleDataFormat == VSI_NN_TYPE_FLOAT16)
-    {
-        kernel_info->resource_name[0] = "vsi_nn_kernel_instancenormalize_i8";
-        kernel_info->kernel_index = 9;
-    }
-    else if (inputDataFormat == VSI_NN_TYPE_INT16 && outputDataFormat == VSI_NN_TYPE_FLOAT16
-             && scaleDataFormat == VSI_NN_TYPE_FLOAT16)
-    {
-        kernel_info->resource_name[0] = "vsi_nn_kernel_instancenormalize_i8";
-        kernel_info->kernel_index = 10;
-    }
-    else
-    {
-        VSILOGE("Not support input or output data format!(INSTANCENORM) at [%s : %d]\n", __FILE__, __LINE__);
-        return VSI_FAILURE;
-    }
+    vsi_nn_instancenormalize_param * p = &(self->nn_param.instancenorm);
+
+    kernel_info->kernel_index = instancenorm_map[p->lcl2_data->hash_idx].kernel_index1;
+    kernel_info->resource_num = 2;
+    kernel_info->resource_name[0] = "vsi_nn_kernel_header";
+    kernel_info->resource_name[1] = instancenorm_map[p->lcl2_data->hash_idx].resource_name;
+
     return VSI_SUCCESS;
-}
-
-static vsi_status vx_sum_op_compute
-    (
-    vsi_nn_node_t * self,
-    vsi_nn_tensor_t ** inputs,
-    vsi_nn_tensor_t ** outputs,
-    vx_array ** arrayList
-    )
-{
-    vsi_status status = VSI_SUCCESS;
-    vx_reference params[_SUM_PARAM_NUM];
-    vx_border_t border;
-    vx_reference * args;
-    vx_bool rsFlg = vx_false_e;
-    int32_t in_zp;
-    vsi_nn_type_e inputDataFormat = inputs[0]->attr.dtype.vx_type;
-    vsi_nn_tensor_attr_t attr;
-    vsi_nn_tensor_t* tmpTensor = NULL;
-    vsi_nn_tensor_attr_t input_attr;
-
-    memset(&input_attr, 0, sizeof(vsi_nn_tensor_attr_t));
-
-    args = &params[_SUM_IO_NUM];
-
-    if( NULL == self->n )
-    {
-        return VSI_FAILURE;
-    }
-
-    /* Set inputs and outputs */
-    check_tensor_shape(self, inputs[0], params, 0, rsFlg);
-    //check_tensor_shape(self, outputs[0], params, 1, rsFlg);
-#if 1
-    {
-        memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
-        attr.size[0] = 1;
-        attr.size[1] = 1;
-        attr.size[2] = 1;
-        attr.size[3] = 1;
-        attr.dim_num = 3;
-        attr.dtype.vx_type = VSI_NN_TYPE_FLOAT32;
-        attr.vtl = FALSE;
-        tmpTensor = vsi_nn_CreateTensor(self->graph, &attr);
-        check_tensor_shape(self, tmpTensor, params, 1, rsFlg);
-    }
-#endif
-    status  = vsi_nn_vxGetTensorAttr(inputs[0]->t, &input_attr);
-    if (status != VX_SUCCESS)
-    {
-        VSILOGE("vsi_nn_vxGetTensorAttr  failure! at line %d\n", __LINE__);
-        return status;
-    }
-    in_zp = input_attr.dtype.zero_point;
-    /* Init parameters. */
-    args[0] = (vx_reference)*arrayList[0];
-    args[1] = (vx_reference)*arrayList[1];
-
-    /* Pass parameters to node. */
-    status |= vsi_nn_ClientNodePassParameters( self->n, params, _SUM_PARAM_NUM );
-
-    //_release_params( args, _ARG_NUM );
-
-    border.mode = VX_BORDER_CONSTANT;
-    border.constant_value.U32 = 0;
-    border.constant_value.S16 = 0;
-    border.constant_value.U8 = 0;
-    if(inputDataFormat == VSI_NN_TYPE_UINT8)
-    {
-        border.constant_value.U32 = in_zp;
-        border.constant_value.S16 = in_zp;
-        border.constant_value.U8 = in_zp;
-    }
-    status |= vxSetNodeAttribute(self->n, VX_NODE_BORDER, &border, sizeof(border));
-
-    if(tmpTensor)vsi_nn_ReleaseTensor(&tmpTensor);
-
-    return status;
-}
-
-static vsi_status vx_sqr_op_compute
-    (
-    vsi_nn_node_t * self,
-    vsi_nn_tensor_t ** inputs,
-    vsi_nn_tensor_t ** outputs,
-    vx_array ** arrayList
-    )
-{
-    vsi_status status = VSI_SUCCESS;
-    vx_reference params[_SQR_PARAM_NUM];
-    vx_border_t border;
-    vx_reference * args;
-    vx_bool rsFlg = vx_false_e;
-    int32_t in_zp;
-    vsi_nn_type_e inputDataFormat = inputs[0]->attr.dtype.vx_type;
-    vsi_nn_tensor_attr_t attr;
-    vsi_nn_tensor_t* tmpTensor = NULL;
-    vsi_nn_tensor_attr_t input_attr;
-
-    memset(&input_attr, 0, sizeof(vsi_nn_tensor_attr_t));
-
-    args = &params[_SQR_IO_NUM];
-
-    if( NULL == self->n )
-    {
-        return VSI_FAILURE;
-    }
-
-    /* Set inputs and outputs */
-    check_tensor_shape(self, inputs[0], params, 0, rsFlg);
-    //check_tensor_shape(self, outputs[1], params, 1, rsFlg);
-#if 1
-    {
-        memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
-        attr.size[0] = 1;
-        attr.size[1] = 1;
-        attr.size[2] = 1;
-        attr.size[3] = 1;
-        attr.dim_num = 3;
-        attr.dtype.vx_type = VSI_NN_TYPE_FLOAT32;
-        attr.vtl = FALSE;
-        tmpTensor = vsi_nn_CreateTensor(self->graph, &attr);
-        check_tensor_shape(self, tmpTensor, params, 1, rsFlg);
-    }
-#endif
-    _create_params( self, args, _SQR_ARG_NUM );
-    /* Init parameters. */
-    args[1] = (vx_reference)*arrayList[0];
-    args[2] = (vx_reference)*arrayList[1];
-    args[3] = (vx_reference)*arrayList[2];
-    args[4] = (vx_reference)*arrayList[3];
-
-    /* Pass parameters to node. */
-    status  = vsi_nn_ClientNodePassParameters( self->n, params, _SQR_PARAM_NUM );
-    status |= vsi_nn_vxGetTensorAttr(inputs[0]->t, &input_attr);
-    in_zp = input_attr.dtype.zero_point;
-    _release_params( args, 1 );
-    border.mode = VX_BORDER_CONSTANT;
-    border.constant_value.U32 = 0;
-    border.constant_value.S16 = 0;
-    border.constant_value.U8 = 0;
-    if(inputDataFormat == VSI_NN_TYPE_UINT8)
-    {
-        border.constant_value.U32 = in_zp;
-        border.constant_value.S16 = in_zp;
-        border.constant_value.U8 = in_zp;
-    }
-    status |= vxSetNodeAttribute(self->n, VX_NODE_BORDER, &border, sizeof(border));
-
-    if(tmpTensor)vsi_nn_ReleaseTensor(&tmpTensor);
-
-    return status;
 }
 
 static vsi_status vx_mean_vari_op_compute
@@ -546,11 +406,8 @@ static vsi_status vx_mean_vari_op_compute
     vx_border_t border;
     vx_reference * args;
     vx_bool rsFlg = vx_false_e;
-    int32_t in_zp;
+    int32_t in_zp = inputs[0]->attr.dtype.zero_point;
     vsi_nn_type_e inputDataFormat = inputs[0]->attr.dtype.vx_type;
-    vsi_nn_tensor_attr_t input_attr;
-
-    memset(&input_attr, 0, sizeof(vsi_nn_tensor_attr_t));
     //vsi_nn_tensor_attr_t attr;
     //vsi_nn_tensor_t* tmpTensor = NULL;
     args = &params[_VARI_IO_NUM];
@@ -560,30 +417,18 @@ static vsi_status vx_mean_vari_op_compute
         return VSI_FAILURE;
     }
 
+    if(self->nn_param.instancenorm.lcl2_data->reshapeFlg)
+    {
+        rsFlg = vx_true_e;
+    }
     /* Set inputs and outputs */
     check_tensor_shape(self, inputs[0], params, 0, rsFlg);
     check_tensor_shape(self, output, params, 1, rsFlg);
-#if 0
-    {
-        memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
-        attr.size[0] = 1;
-        attr.size[1] = 1;
-        attr.size[2] = 1;
-        attr.size[3] = 1;
-        attr.dim_num = 3;
-        attr.dtype.vx_type = VSI_NN_TYPE_FLOAT32;
-        attr.vtl = FALSE;
-        tmpTensor = vsi_nn_CreateTensor(self->graph, &attr);
-        check_tensor_shape(self, tmpTensor, params, 1, rsFlg);
-    }
-#endif
     _create_params( self, args, _VARI_ARG_NUM );
 
     /* Pass parameters to node. */
-    status  = vsi_nn_ClientNodePassParameters( self->n, params, _VARI_PARAM_NUM );
-    status |= vsi_nn_vxGetTensorAttr(inputs[0]->t, &input_attr);
-    in_zp = input_attr.dtype.zero_point;
-    _release_params( args, 1 );
+    status = vsi_nn_ClientNodePassParameters( self->n, params, _VARI_PARAM_NUM );
+    _release_params( args, _VARI_ARG_NUM );
 
     border.mode = VX_BORDER_CONSTANT;
     border.constant_value.U32 = 0;
@@ -615,11 +460,9 @@ static vsi_status vx_op_compute
     vx_border_t border;
     vx_reference * args;
     vx_bool rsFlg = vx_false_e;
-    int32_t in_zp;
+    int32_t in_zp = inputs[0]->attr.dtype.zero_point;
     vsi_nn_type_e inputDataFormat = inputs[0]->attr.dtype.vx_type;
-    vsi_nn_tensor_attr_t input_attr;
 
-    memset(&input_attr, 0, sizeof(vsi_nn_tensor_attr_t));
     args = &params[_IO_NUM];
 
     if( NULL == self->n )
@@ -627,22 +470,24 @@ static vsi_status vx_op_compute
         return VSI_FAILURE;
     }
 
+    if(self->nn_param.instancenorm.lcl2_data->reshapeFlg)
+    {
+        rsFlg = vx_true_e;
+    }
+
     /* Set inputs and outputs */
-    //_set_inputs_outputs( params, inputs, outputs );
     check_tensor_shape(self, inputs[0], params, 0, rsFlg);
     check_tensor_shape(self, inputs[1], params, 1, rsFlg);
     check_tensor_shape(self, inputs[2], params, 2, rsFlg);
     check_tensor_shape(self, outputs[0], params, 3, rsFlg);
     check_tensor_shape(self, tmpInput, params, 4, rsFlg);
-    status = vsi_nn_vxGetTensorAttr(inputs[0]->t, &input_attr);
-    in_zp = input_attr.dtype.zero_point;
     /* Init parameters. */
     _create_params( self, args, _ARG_NUM );
 
     /* Pass parameters to node. */
-    status |= vsi_nn_ClientNodePassParameters( self->n, params, _PARAM_NUM );
+    status = vsi_nn_ClientNodePassParameters( self->n, params, _PARAM_NUM );
 
-    _release_params( args, 1 );
+    _release_params( args, _ARG_NUM );
 
     border.mode = VX_BORDER_CONSTANT;
     border.constant_value.U32 = 0;
@@ -666,54 +511,43 @@ static vsi_status op_compute
     vsi_nn_tensor_t ** outputs
     )
 {
-    vsi_status status;
+    vsi_status status = VX_SUCCESS;
     vsi_nn_kernel_info_t kernel_info;
-
+    vsi_nn_instancenormalize_param* p = &(self->nn_param.instancenorm);
     vsi_nn_type_e inputDataFormat     = inputs[0]->attr.dtype.vx_type;
-    uint32_t input_size[4] = {1, 1, 1, 1};
-    vx_array* array_list[4] = {0};
-    vx_array arraySum = NULL;
-    vx_array arraySqr = NULL;
-    vx_array resultSum = NULL;
-    vx_array resultSqr = NULL;
+    uint32_t input_size[TEMP_DIM_SIZE] = {0};
     vsi_nn_tensor_t* tmpMeanVari = NULL;
-    uint32_t input_dims = 1;
     uint32_t i = 0;
-    vsi_nn_tensor_attr_t input_attr;
 
-    status = VSI_FAILURE;
     memset(&kernel_info, 0x0, sizeof(vsi_nn_kernel_info_t));
-    memset(&input_attr, 0, sizeof(vsi_nn_tensor_attr_t));
-    status = vsi_nn_vxGetTensorAttr(inputs[0]->t, &input_attr);
-    if (status != VX_SUCCESS)
-    {
-        VSILOGE("vsi_nn_vxGetTensorAttr  failure! at line %d\n", __LINE__);
-        return status;
-    }
-    input_dims  = input_attr.dim_num;
-    for (i = 0; i < input_dims; i++)
-    {
-        input_size[i] = input_attr.size[i];
-    }
 
+    // create temp tensor
     {
-        vx_context ctx;
         vsi_nn_tensor_attr_t attr;
-        vx_int32 iter = (input_size[1] + 7) / 8;
-
-        ctx = vxGetContext( (vx_reference)self->graph->g );
-        arraySum = vxCreateArray(ctx, VX_TYPE_INT32, input_size[2] * sizeof(vx_int32));
-        arraySqr = vxCreateArray(ctx, VX_TYPE_INT32, input_size[2] * iter * sizeof(vx_int32));
-        resultSum = vxCreateArray(ctx, VX_TYPE_FLOAT32, input_size[2] * sizeof(vx_float32));
-        resultSqr = vxCreateArray(ctx, VX_TYPE_FLOAT32, input_size[2] * sizeof(vx_float32));
-        array_list[0] = &arraySum;
-        array_list[1] = &arraySqr;
-        array_list[2] = &resultSum;
-        array_list[3] = &resultSqr;
-
         memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
-        attr.size[0] = input_size[2] * 4;
-        attr.size[1] = 1;
+
+        for(i = 0; i < inputs[0]->attr.dim_num; i++)
+        {
+            input_size[i] = inputs[0]->attr.size[i];
+        }
+
+        if(input_size[2] < 1)
+        {
+            input_size[2] = 1;
+        }
+
+        if((input_size[1] * input_size[2] < 65536)
+            && inputs[0]->attr.dim_num > 2)
+        {
+            self->nn_param.instancenorm.lcl2_data->reshapeFlg = 1;
+        }
+
+        attr.size[0] = ((input_size[0] + 255) / 256) * 4;
+        if(inputDataFormat == VSI_NN_TYPE_INT16 || VSI_NN_TYPE_FLOAT16)
+        {
+            attr.size[0] = ((input_size[0] + 127) / 128) * 4;
+        }
+        attr.size[1] = input_size[2];
         attr.size[2] = 1;
         attr.size[3] = 1;
         attr.dim_num = 2;
@@ -722,7 +556,10 @@ static vsi_status op_compute
         tmpMeanVari = vsi_nn_CreateTensor(self->graph, &attr);
     }
 
-#if ENABLE_CPU //cpu
+    // check shader kernel
+    _get_instancenorm_hashtable_idx(self, inputs, outputs);
+
+    if(p->lcl2_data->execute_on_sw)
     {
         kernel_info.resource_num = 1;
         kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));
@@ -733,125 +570,74 @@ static vsi_status op_compute
 
         self->n = vsi_nn_RegisterClientKernelAndNewNode(
         self->graph, &kernel_info);
-        if (kernel_info.resource_name) free(kernel_info.resource_name);
+        if (kernel_info.resource_name) {free(kernel_info.resource_name);}
         if( NULL == self->n )
         {
-            return VSI_FAILURE;
+            goto OnError;
         }
 
-        status = cpu_op_compute(self, inputs, outputs, array_list);
+        status = cpu_op_compute(self, inputs, outputs, tmpMeanVari);
+        if(tmpMeanVari){vsi_nn_ReleaseTensor(&tmpMeanVari);}
 
-        if(arraySum)vxReleaseArray(&arraySum);
-        if(arraySqr)vxReleaseArray(&arraySqr);
-        if(resultSum)vxReleaseArray(&resultSum);
-        if(resultSqr)vxReleaseArray(&resultSqr);
         return status;
     }
-#endif
-
-    // prepare sum & sqr
-    if(inputDataFormat == VSI_NN_TYPE_UINT8 && 0)
+    else
     {
-        kernel_info.resource_num = 1;
+        {
+            kernel_info.resource_num = 2;
+            kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));
+            kernel_info.resource_name[0] = "vsi_nn_kernel_header";
+            kernel_info.resource_name[1] = "vsi_nn_kernel_instancenormalize";
+            kernel_info.type = VX_KERNEL_TYPE_VX;
+            kernel_info.kernel = vx_kernel_INSTANCENORM_list;
+            kernel_info.init_index = 1;
+            if (kernel_info.type == VX_KERNEL_TYPE_VX)
+            {
+                vx_mean_vari_op_pre_compute(self, inputs, outputs, &kernel_info);
+            }
+
+            self->n = vsi_nn_RegisterClientKernelAndNewNode(
+                self->graph, &kernel_info);
+            if (kernel_info.resource_name) {free(kernel_info.resource_name);}
+            if( NULL == self->n )
+            {
+                status = VSI_FAILURE;
+                goto OnError;
+            }
+            status = vx_mean_vari_op_compute(self, inputs, tmpMeanVari);
+            if(status != VX_SUCCESS)
+            {
+                goto OnError;
+            }
+        }
+
+        kernel_info.resource_num = 2;
         kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));
-        kernel_info.resource_name[0] = "vsi_nn_kernel_instancenormalize";
-        kernel_info.type = VX_KERNEL_TYPE_VX;
+        kernel_info.resource_name[0] = "vsi_nn_kernel_header";
+        kernel_info.resource_name[1] = "vsi_nn_kernel_instancenormalize";
+        kernel_info.type = vsi_nn_GetVXKernelTypeForShader();
         kernel_info.kernel = vx_kernel_INSTANCENORM_list;
         kernel_info.init_index = 1;
-        if (kernel_info.type == VX_KERNEL_TYPE_VX)
+
+        if (vsi_nn_is_do_vx_op_pre_init(kernel_info.type))
         {
-            vx_sum_op_pre_compute(self, inputs, outputs, &kernel_info);
+            vx_op_pre_compute(self, inputs, outputs, &kernel_info);
         }
 
         self->n = vsi_nn_RegisterClientKernelAndNewNode(
             self->graph, &kernel_info);
-        if (kernel_info.resource_name) free(kernel_info.resource_name);
+        if (kernel_info.resource_name) {free(kernel_info.resource_name);}
         if( NULL == self->n )
         {
             status = VSI_FAILURE;
             goto OnError;
         }
-        status |= vx_sum_op_compute(self, inputs, outputs, array_list);
+
+        status = vx_op_compute(self, inputs, outputs, tmpMeanVari);
     }
-
-    // float sum & sqr
-    if(inputDataFormat == VSI_NN_TYPE_UINT8 && 0)
-    {
-        kernel_info.resource_num = 1;
-        kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));
-        kernel_info.resource_name[0] = "vsi_nn_kernel_instancenormalize";
-        kernel_info.type = VX_KERNEL_TYPE_VX;
-        kernel_info.kernel = vx_kernel_INSTANCENORM_list;
-        kernel_info.init_index = 1;
-        if (kernel_info.type == VX_KERNEL_TYPE_VX)
-        {
-            vx_sqr_op_pre_compute(self, inputs, outputs, &kernel_info);
-        }
-
-        self->n = vsi_nn_RegisterClientKernelAndNewNode(
-            self->graph, &kernel_info);
-        if (kernel_info.resource_name) free(kernel_info.resource_name);
-        if( NULL == self->n )
-        {
-            status = VSI_FAILURE;
-            goto OnError;
-        }
-        status |= vx_sqr_op_compute(self, inputs, outputs, array_list);
-    }
-
-    if(inputDataFormat == VSI_NN_TYPE_UINT8)
-    {
-        kernel_info.resource_num = 1;
-        kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));
-        kernel_info.resource_name[0] = "vsi_nn_kernel_instancenormalize";
-        kernel_info.type = VX_KERNEL_TYPE_VX;
-        kernel_info.kernel = vx_kernel_INSTANCENORM_list;
-        kernel_info.init_index = 1;
-        if (kernel_info.type == VX_KERNEL_TYPE_VX)
-        {
-            vx_mean_vari_op_pre_compute(self, inputs, outputs, &kernel_info);
-        }
-
-        self->n = vsi_nn_RegisterClientKernelAndNewNode(
-            self->graph, &kernel_info);
-        if (kernel_info.resource_name) free(kernel_info.resource_name);
-        if( NULL == self->n )
-        {
-            status = VSI_FAILURE;
-            goto OnError;
-        }
-        status |= vx_mean_vari_op_compute(self, inputs, tmpMeanVari);
-    }
-
-    kernel_info.resource_num = 1;
-    kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));
-    kernel_info.resource_name[0] = "vsi_nn_kernel_instancenormalize";
-    kernel_info.type = vsi_nn_GetVXKernelTypeForShader();
-    kernel_info.kernel = vx_kernel_INSTANCENORM_list;
-    kernel_info.init_index = 1;
-
-    if (vsi_nn_is_do_vx_op_pre_init(kernel_info.type))
-    {
-        vx_op_pre_compute(self, inputs, outputs, &kernel_info);
-    }
-
-    self->n = vsi_nn_RegisterClientKernelAndNewNode(
-        self->graph, &kernel_info);
-    if (kernel_info.resource_name) free(kernel_info.resource_name);
-    if( NULL == self->n )
-    {
-        status = VSI_FAILURE;
-        goto OnError;
-    }
-
-    status |= vx_op_compute(self, inputs, outputs, tmpMeanVari);
 
 OnError:
-    if(arraySum)vxReleaseArray(&arraySum);
-    if(arraySqr)vxReleaseArray(&arraySqr);
-    if(resultSum)vxReleaseArray(&resultSum);
-    if(resultSqr)vxReleaseArray(&resultSqr);
-    if(tmpMeanVari)vsi_nn_ReleaseTensor(&tmpMeanVari);
+    if(tmpMeanVari){vsi_nn_ReleaseTensor(&tmpMeanVari);}
 
     return status;
 } /* op_compute() */
@@ -867,6 +653,29 @@ static vsi_bool op_check
     return TRUE;
 } /* op_check() */
 
+static vsi_status op_init
+    (
+    vsi_nn_node_t * self
+    )
+{
+    vsi_status status = VSI_SUCCESS;
+
+    self->nn_param.instancenorm.lcl2_data =
+    (vsi_nn_instancenorm_lcl_data2 *)malloc(sizeof(vsi_nn_instancenorm_lcl_data2));
+    if (NULL == self->nn_param.instancenorm.lcl2_data)
+    {
+        return  VX_ERROR_NO_MEMORY;
+    }
+
+    memset( self->nn_param.instancenorm.lcl2_data, 0, sizeof(vsi_nn_instancenorm_lcl_data2) );
+
+    self->nn_param.instancenorm.lcl2_data->reshapeFlg = 0;
+    self->nn_param.instancenorm.lcl2_data->execute_on_sw = 0;
+    self->nn_param.instancenorm.lcl2_data->hash_idx = 0;
+
+    return status;
+} /* op_init() */
+
 static vsi_status op_deinit
     (
     vsi_nn_node_t * self
@@ -881,6 +690,11 @@ static vsi_status op_deinit
             self->nn_param.instancenorm.local.local_tensor[i] = NULL;
         }
     }
+    if(self->nn_param.instancenorm.lcl2_data)
+    {
+        free(self->nn_param.instancenorm.lcl2_data);
+        self->nn_param.instancenorm.lcl2_data = NULL;
+    }
     vsi_nn_op_common_deinit(self);
 
     return VSI_SUCCESS;
@@ -893,7 +707,7 @@ extern "C" {
 DEF_OP_REG
     (
     /* op_name    */ INSTANCE_NORM,
-    /* init       */ NULL,
+    /* init       */ op_init,
     /* compute    */ op_compute,
     /* deinit     */ op_deinit,
     /* check      */ op_check,

@@ -58,7 +58,7 @@ __kernel __attribute__((reqd_work_group_size(8, 1, 1))) void vxcTensorPow_I16Fp1
 {
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);
 
-    vxc_uchar8 src0;
+    vxc_short8 src0;
     vxc_short8 src1;
     vxc_short8 dst;
     vxc_half8 data1;
