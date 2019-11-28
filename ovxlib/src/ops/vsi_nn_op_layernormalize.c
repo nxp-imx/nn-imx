@@ -249,10 +249,9 @@ static vsi_status vx_op_pre_compute
 {
     vsi_nn_type_e inputDataFormat     = inputs[0]->attr.dtype.vx_type;
     vsi_nn_type_e outputDataFormat    = outputs[0]->attr.dtype.vx_type;
-    uint32_t      inputDims           = inputs[0]->attr.dim_num;
     vsi_nn_type_e scaleDataFormat     = inputs[2]->attr.dtype.vx_type;
     if (inputDataFormat == VSI_NN_TYPE_FLOAT16 && outputDataFormat == VSI_NN_TYPE_FLOAT16
-        && inputDims ==2)
+        && scaleDataFormat == VSI_NN_TYPE_FLOAT16)
     {
         kernel_info->kernel_index = 1;
     }
@@ -265,6 +264,12 @@ static vsi_status vx_op_pre_compute
         && scaleDataFormat == VSI_NN_TYPE_FLOAT16)
     {
         kernel_info->kernel_index = 3;
+    }
+    else if (inputDataFormat == VSI_NN_TYPE_UINT8 && outputDataFormat == VSI_NN_TYPE_FLOAT16
+        && scaleDataFormat == VSI_NN_TYPE_FLOAT16)
+    {
+        kernel_info->resource_name[0] = "vsi_nn_kernel_layernormalize_U8";
+        kernel_info->kernel_index = 4;
     }
     else
     {

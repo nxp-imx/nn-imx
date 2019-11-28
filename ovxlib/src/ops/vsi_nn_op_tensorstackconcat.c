@@ -44,155 +44,84 @@
 
 extern vx_kernel_description_t * vx_kernel_TENSORSTACKCONCAT_list[];
 
-static void check_tensor_shape
+static vsi_bool _reshape_tensor
     (
     vsi_nn_node_t * self,
-    vsi_nn_tensor_t * input,
-    vx_reference * params,
-    uint32_t index,
-    vx_bool rsFlg
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs
     )
 {
-    vsi_nn_tensor_attr_t attr;
+    uint32_t i = 0;
+    uint32_t sizes[VSI_NN_MAX_DIM_NUM] = {0};
+    int32_t axis = 0;
+    vsi_nn_tensorstackconcat_param * p = NULL;
+    uint32_t before_size = 1;
+    uint32_t after_size = 1;
+    uint32_t * input_sizes = inputs[0]->attr.size;
+    uint32_t dims = inputs[0]->attr.dim_num;
+    uint32_t * output_sizes = outputs[0]->attr.size;
+    uint32_t new_dims = 0;
 
-    if (index == 0)
-    {
-        if(input->attr.dim_num == 1)
-        {
-            memcpy(&attr, &(input->attr), sizeof(vsi_nn_tensor_attr_t));
-            attr.size[1] = 1;
-            attr.dim_num = 2;
-            self->nn_param.tensorstackconcat.local.local_tensor[index] =
-                vxReshapeTensor(input->t, (int32_t*)(attr.size), attr.dim_num);
-            params[index] =  (vx_reference)self->nn_param.tensorstackconcat.local.local_tensor[index];
-        }
-        else if ((input->attr.dim_num == 3 && input->attr.size[2] == 1)
-            ||(input->attr.dim_num == 4 && input->attr.size[2] == 1 && input->attr.size[3] == 1))
-        {
-            memcpy(&attr, &(input->attr), sizeof(vsi_nn_tensor_attr_t));
-            attr.dim_num = 2;
-            self->nn_param.tensorstackconcat.local.local_tensor[index] =
-                vxReshapeTensor(input->t, (int32_t*)(attr.size), attr.dim_num);
-            params[index] =  (vx_reference)self->nn_param.tensorstackconcat.local.local_tensor[index];
-        }
-        else
-            params[index] = (vx_reference)input->t;
-    }
-    else if(index == 1)
-    {
-        if(input->attr.dim_num == 1)
-        {
-            memcpy(&attr, &(input->attr), sizeof(vsi_nn_tensor_attr_t));
-            attr.size[1] = 1;
-            attr.dim_num = 2;
-            self->nn_param.tensorstackconcat.local.local_tensor[index] =
-                vxReshapeTensor(input->t, (int32_t*)(attr.size), attr.dim_num);
-            params[index] =  (vx_reference)self->nn_param.tensorstackconcat.local.local_tensor[index];
-        }
-        else
-             params[index] = (vx_reference)input->t;
+    p = &(self->nn_param.tensorstackconcat);
+    axis = p->axis;
 
-    }
-    else if(index == 2)
+    for ( i = 0; i < (uint32_t)axis; i++)
     {
-        if(input->attr.dim_num == 1)
-        {
-            memcpy(&attr, &(input->attr), sizeof(vsi_nn_tensor_attr_t));
-            attr.size[1] = 1;
-            attr.dim_num = 2;
-            self->nn_param.tensorstackconcat.local.local_tensor[index] =
-                vxReshapeTensor(input->t, (int32_t*)(attr.size), attr.dim_num);
-            params[index] =  (vx_reference)self->nn_param.tensorstackconcat.local.local_tensor[index];
-        }
-        else if ((input->attr.dim_num == 3 && input->attr.size[2] == 1)
-            ||(input->attr.dim_num == 4 && input->attr.size[2] == 1 && input->attr.size[3] == 1))
-        {
-            memcpy(&attr, &(input->attr), sizeof(vsi_nn_tensor_attr_t));
-            attr.dim_num = 2;
-            self->nn_param.tensorstackconcat.local.local_tensor[index] =
-                vxReshapeTensor(input->t, (int32_t*)(attr.size), attr.dim_num);
-            params[index] =  (vx_reference)self->nn_param.tensorstackconcat.local.local_tensor[index];
-        }
-        else
-             params[index] = (vx_reference)input->t;
+        before_size *= input_sizes[i];
     }
-    else
+    for ( i = axis + 1; i < dims; i++)
     {
-        VSILOGE("No more local tensor!(TENSORSTACKCONCAT) at [%s : %d]\n", __FILE__, __LINE__);
+        after_size *= input_sizes[i];
     }
+    sizes[0] = before_size;
+    sizes[1] = input_sizes[axis];
+    sizes[2] = after_size;
+    new_dims = 3;
+    p->local->local_tensor[0] = vxReshapeTensor(inputs[0]->t, (int32_t *)sizes, new_dims);
+
+    sizes[0] = 1;
+    sizes[1] = 1;
+    new_dims = 2;
+    p->local->local_tensor[1] = vxReshapeTensor(inputs[1]->t, (int32_t *)sizes, new_dims);
+
+    before_size = 1;
+    after_size = 1;
+    for ( i = 0; i < (uint32_t)axis; i++)
+    {
+        before_size *= output_sizes[i];
+    }
+    for ( i = axis + 1; i < dims; i++)
+    {
+        after_size *= output_sizes[i];
+    }
+    sizes[0] = before_size;
+    sizes[1] = output_sizes[axis];
+    sizes[2] = after_size;
+    new_dims = 3;
+    p->local->local_tensor[2] = vxReshapeTensor(outputs[0]->t, (int32_t *)sizes, new_dims);
+
+    p->axis = 1;
+    return TRUE;
 }
 
 static void _set_inputs_outputs
     (
+    vsi_nn_node_t * self,
     vx_reference * params,
     vsi_nn_tensor_t ** inputs,
     vsi_nn_tensor_t ** outputs
     )
 {
-    uint32_t i;
-    uint32_t cnt;
+    vsi_nn_tensorstackconcat_param *p = NULL;
+    uint32_t i = 0;
 
-    /* Set inputs */
-    cnt = 0;
-    for( i = 0; i < _INPUT_NUM; i ++, cnt ++ )
-    {
-        params[cnt] = (vx_reference)inputs[i]->t;
-    }
+    p = &(self->nn_param.tensorstackconcat);
 
-    /* Set outputs */
-    for( i = 0; i < _OUTPUT_NUM; i ++, cnt ++ )
+    for (i = 0; i < _IO_NUM; i++)
     {
-        params[cnt] = (vx_reference)outputs[i]->t;
+        params[i] = (vx_reference)(p->local->local_tensor[i]);
     }
 } /* _set_inputs_outputs() */
-
-static vsi_status _create_params
-    (
-    vsi_nn_node_t * node,
-    vx_reference * params,
-    uint32_t num
-    )
-{
-    vsi_status status;
-    vx_context ctx;
-    vsi_nn_tensorstackconcat_param * p;
-    if( 0 == num )
-    {
-        return VSI_SUCCESS;
-    }
-    memset( params, 0, sizeof( vx_reference * ) * num );
-    p = &(node->nn_param.tensorstackconcat);
-    ctx = vxGetContext( (vx_reference)node->graph->g );
-    /* Init parameters */
-#define _SET_PARAM( i, type, arg ) do{ \
-    params[i] = (vx_reference)vxCreateScalar( ctx, type, &p->arg ); \
-    status = vxGetStatus( params[i] ); \
-    if( VSI_SUCCESS != status ) { \
-    goto set_param_error; \
-    } \
-    } while(0)
-    _SET_PARAM( 0, VX_TYPE_INT32, index );
-#undef _SET_PARAM
-    p->indexs = (vx_scalar)params[0];
-set_param_error:
-
-    return status;
-} /* _create_params */
-
-static void _release_params
-    (
-    vx_reference * params,
-    uint32_t num
-    )
-{
-    uint32_t i;
-    vx_scalar scalar;
-    for( i = 0; i < num; i ++ )
-    {
-        scalar = (vx_scalar)params[i];
-        vxReleaseScalar( &scalar );
-    }
-} /* _release_params() */
 
 static vsi_status cpu_op_compute
     (
@@ -203,9 +132,6 @@ static vsi_status cpu_op_compute
 {
     vsi_status status = VSI_SUCCESS;
     vx_reference params[_PARAM_NUM];
-    vx_reference * args;
-
-    args = &params[_IO_NUM];
 
     if( NULL == self->n )
     {
@@ -213,10 +139,7 @@ static vsi_status cpu_op_compute
     }
 
     /* Set inputs and outputs */
-    _set_inputs_outputs( params, inputs, outputs );
-
-    /* Init parameters. */
-    _create_params( self, args, _ARG_NUM );
+    _set_inputs_outputs( self, params, inputs, outputs );
 
     /* Pass parameters to node. */
     status = vsi_nn_ClientNodePassParameters( self->n, params, _PARAM_NUM );
@@ -242,17 +165,22 @@ static vsi_status vx_op_pre_compute
     uint32_t      outputZeroPoint     = outputs[0]->attr.dtype.zero_point;
     vx_float32    inputScale          = inputs[0]->attr.dtype.scale;
     vx_float32    outputScale         = outputs[0]->attr.dtype.scale;
+    vsi_bool      is16Bits            = vx_false_e;
+    vsi_bool      is8Bits             = vx_false_e;
 
-    if ((inputDataFormat == VSI_NN_TYPE_FLOAT16 && outputDataFormat == VSI_NN_TYPE_FLOAT16)
-        || (inputDataFormat == VSI_NN_TYPE_INT16 && outputDataFormat == VSI_NN_TYPE_INT16
-        && inputFixedPointPos == outputFixedPointPos))
+    is16Bits = ((inputDataFormat == VSI_NN_TYPE_FLOAT16 && outputDataFormat == VSI_NN_TYPE_FLOAT16)
+            || (inputDataFormat == VSI_NN_TYPE_INT16 && outputDataFormat == VSI_NN_TYPE_INT16
+            && inputFixedPointPos == outputFixedPointPos)) ? vx_true_e : vx_false_e;
+    is8Bits = ((inputDataFormat == VSI_NN_TYPE_INT8 && outputDataFormat == VSI_NN_TYPE_INT8
+            && inputFixedPointPos == outputFixedPointPos)
+            || (inputDataFormat == VSI_NN_TYPE_UINT8 && outputDataFormat == VSI_NN_TYPE_UINT8
+            && inputZeroPoint == outputZeroPoint && inputScale == outputScale)) ? vx_true_e : vx_false_e;
+
+    if (is16Bits)
     {
         kernel_info->kernel_index = 1;
     }
-    else if ((inputDataFormat == VSI_NN_TYPE_INT8 && outputDataFormat == VSI_NN_TYPE_INT8
-        && inputFixedPointPos == outputFixedPointPos)
-        || (inputDataFormat == VSI_NN_TYPE_UINT8 && outputDataFormat == VSI_NN_TYPE_UINT8
-        && inputZeroPoint == outputZeroPoint && inputScale == outputScale))
+    else if (is8Bits)
     {
         kernel_info->kernel_index = 2;
     }
@@ -275,10 +203,6 @@ static vsi_status vx_op_compute
     vsi_status status = VSI_SUCCESS;
     vx_reference params[_PARAM_NUM];
     vx_border_t border;
-    vx_reference * args;
-    vx_bool rsFlg = vx_false_e;
-
-    args = &params[_IO_NUM];
 
     if( NULL == self->n )
     {
@@ -286,17 +210,10 @@ static vsi_status vx_op_compute
     }
 
     /* Set inputs and outputs */
-    //_set_inputs_outputs( params, inputs, outputs );
-    check_tensor_shape(self, inputs[0], params, 0, rsFlg);
-    check_tensor_shape(self, inputs[1], params, 1, rsFlg);
-    check_tensor_shape(self, outputs[0], params, 2, rsFlg);
-    /* Init parameters. */
-    _create_params( self, args, _ARG_NUM );
+    _set_inputs_outputs( self, params, inputs, outputs );
 
     /* Pass parameters to node. */
     status = vsi_nn_ClientNodePassParameters( self->n, params, _PARAM_NUM );
-
-    _release_params( args, _ARG_NUM );
 
     border.mode = VX_BORDER_REPLICATE;
     border.constant_value.U32 = 0;
@@ -319,11 +236,14 @@ static vsi_status op_compute
     vsi_nn_tensor_t ** outputs
     )
 {
-    vsi_status status;
+    vsi_status status = VSI_FAILURE;
     vsi_nn_kernel_info_t kernel_info;
 
     memset(&kernel_info, 0x0, sizeof(vsi_nn_kernel_info_t));
-    status = VSI_FAILURE;
+
+    /* reshape input/output */
+    _reshape_tensor( self, inputs, outputs);
+
     kernel_info.resource_num = 1;
     kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));
     kernel_info.resource_name[0] = "vsi_nn_kernel_tensorstackconcat";
@@ -351,6 +271,42 @@ static vsi_status op_compute
     return status;
 } /* op_compute() */
 
+static vsi_bool op_setup
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs
+    )
+{
+    vsi_bool ret = FALSE;
+    vsi_nn_tensorstackconcat_param *p = NULL;
+    vsi_nn_stackconcat_lcl_data *local = NULL;
+    int32_t axis = 0;
+
+    if( NULL == self )
+    {
+        return ret;
+    }
+
+    p = &(self->nn_param.tensorstackconcat);
+    axis = p->axis;
+    local = (vsi_nn_stackconcat_lcl_data *)malloc(sizeof(vsi_nn_stackconcat_lcl_data));
+    if (NULL == local)
+    {
+        return ret;
+    }
+    memset(local, 0, sizeof(vsi_nn_stackconcat_lcl_data));
+    p->local = local;
+
+    if (axis < 0)
+    {
+        axis = axis + inputs[0]->attr.dim_num;
+        p->axis = axis;
+    }
+
+    return TRUE;
+} /* op_setup() */
+
 static vsi_bool op_check
     (
     vsi_nn_node_t * self,
@@ -358,23 +314,67 @@ static vsi_bool op_check
     vsi_nn_tensor_t ** outputs
     )
 {
-    //TODO: Check tensor shapes.
+    vsi_nn_tensorstackconcat_param *p = NULL;
+    int32_t axis = 0;
+    int32_t dims = (int32_t)inputs[0]->attr.dim_num;
+    int32_t out_dims = (int32_t)outputs[0]->attr.dim_num;
+
+    p = &(self->nn_param.tensorstackconcat);
+    axis = p->axis;
+
+    if (axis < 0)
+    {
+        axis = axis + dims;
+    }
+
+    if (axis > (dims - 1))
+    {
+        VSILOGE("Invalid Axis: %d, (TENSORSTACKCONCAT) at [%s : %d]\n", axis, __FILE__, __LINE__);
+        return FALSE;
+    }
+    if( VSI_NN_DIM_AUTO == out_dims )
+    {
+        VSILOGE("Invalid output, (TENSORSTACKCONCAT) at [%s : %d]\n", __FILE__, __LINE__);
+        return FALSE;
+    }
+    if( dims != out_dims )
+    {
+        VSILOGE("Input and output's dims not matched, (TENSORSTACKCONCAT) at [%s : %d]\n", __FILE__, __LINE__);
+        return FALSE;
+    }
     return TRUE;
 } /* op_check() */
+
+static vsi_status op_init
+    (
+    vsi_nn_node_t * self
+    )
+{
+    vsi_status status = VSI_SUCCESS;
+
+    self->nn_param.tensorstackconcat.axis = 1;
+
+    return status;
+} /* op_init() */
 
 static vsi_status op_deinit
     (
     vsi_nn_node_t * self
     )
 {
-    uint32_t i;
-    for (i = 0; i < _VSI_NN_STACKCONCAT_LOCAL_TENSOR_NUM; i++)
+    vsi_nn_tensorstackconcat_param *p = &(self->nn_param.tensorstackconcat);
+    uint32_t i = 0;
+    if (p->local)
     {
-        if (self->nn_param.tensorstackconcat.local.local_tensor[i] != NULL)
+        for (i = 0; i < _VSI_NN_STACKCONCAT_LOCAL_TENSOR_NUM; i++)
         {
-            vxReleaseTensor(&(self->nn_param.tensorstackconcat.local.local_tensor[i]));
-            self->nn_param.tensorstackconcat.local.local_tensor[i] = NULL;
+            if (p->local->local_tensor[i])
+            {
+                vxReleaseTensor(&(p->local->local_tensor[i]));
+                p->local->local_tensor[i] = NULL;
+            }
         }
+        p->local = NULL;
     }
     vsi_nn_op_common_deinit(self);
 
@@ -388,11 +388,11 @@ extern "C" {
 DEF_OP_REG
     (
     /* op_name    */ TENSORSTACKCONCAT,
-    /* init       */ NULL,
+    /* init       */ op_init,
     /* compute    */ op_compute,
     /* deinit     */ op_deinit,
     /* check      */ op_check,
-    /* setup      */ vsi_nn_op_common_setup,
+    /* setup      */ op_setup,
     /* optimize   */ NULL,
     /* input_num  */ 2,
     /* output_num */ 1

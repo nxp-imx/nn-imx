@@ -354,10 +354,12 @@ vsi_status VX_CALLBACK vxLayerNormInitializer
         {0, 0, 0}}; // globalWorkSize: image size in thread
 
     vx_tensor     input           = (vx_tensor)paramObj[0];
+    vx_tensor     scale           = (vx_tensor)paramObj[2];
     vx_tensor     output          = (vx_tensor)paramObj[3];
     uint32_t      input_size[4]   = {1, 1, 1, 1};
     uint32_t      input_dims      = 0;
     vsi_nn_type_e inputDataFormat = VSI_NN_TYPE_FLOAT16;
+    vsi_nn_type_e scaleDataFormat = VSI_NN_TYPE_FLOAT16;
     vsi_nn_type_e outputDataFormat = VSI_NN_TYPE_FLOAT16;
     vx_float32 scaleIn = 0;
     vx_float32 scaleOut = 0;
@@ -370,13 +372,15 @@ vsi_status VX_CALLBACK vxLayerNormInitializer
     int32_t tmpZp1 = 0;
     int32_t tmpZp2 = 0;
     vx_float32 e2InScale = 0;
-    vsi_nn_tensor_attr_t attr[2];
+    vsi_nn_tensor_attr_t attr[3];
     uint32_t i;
 
     memset(&attr[0], 0, sizeof(vsi_nn_tensor_attr_t));
     memset(&attr[1], 0, sizeof(vsi_nn_tensor_attr_t));
+    memset(&attr[2], 0, sizeof(vsi_nn_tensor_attr_t));
     status  = vsi_nn_vxGetTensorAttr(input, &attr[0]);
     status |= vsi_nn_vxGetTensorAttr(output, &attr[1]);
+    status |= vsi_nn_vxGetTensorAttr(scale, &attr[2]);
     if (status != VX_SUCCESS)
     {
         VSILOGE("vsi_nn_vxGetTensorAttr failure! at line %d\n", __LINE__);
@@ -394,6 +398,7 @@ vsi_status VX_CALLBACK vxLayerNormInitializer
     outputDataFormat = attr[1].dtype.vx_type;
     output_ZP = attr[1].dtype.zero_point;
     scaleOut = attr[1].dtype.scale;
+    scaleDataFormat = attr[2].dtype.vx_type;
 
     if(outputDataFormat == VSI_NN_TYPE_UINT8)
     {
@@ -454,85 +459,115 @@ vsi_status VX_CALLBACK vxLayerNormInitializer
             0x00000100, // AccumType, ConstantType, and PostShift
             0x00003c00, 0x00000000, 0x00003c00, 0x00000000, 0x00003c00, 0x00000000, 0x00003c00, 0x00000000 // Constant
         };
-        status  = vxSetNodeUniform(nodObj, "uniFp16SumSqr_dp8x2", 1, uniFp16SumSqr_dp8x2);
-        status |= vxSetNodeUniform(nodObj, "width", 1, &input_size[0]);
-        status |= vxSetNodeUniform(nodObj, "dimRatio", 1, &dimRatio);
-        status |= vxSetNodeUniform(nodObj, "UniFP16toFP32Lo4_dp4x4", 1, UniFP16toFP32Lo4_dp4x4);
-        status |= vxSetNodeUniform(nodObj, "uniExtractHalf4_dp4x4", 1, uniExtractHalf4_dp4x4);
-        if(inputDataFormat == VSI_NN_TYPE_UINT8 || outputDataFormat == VSI_NN_TYPE_UINT8)
+        vx_uint32 uniConvertSecFp16Fp32_4x4[16] = {
+            0x01010101, // TCfg
+            0x00000000, // ASelt
+            0x00050004, 0x00070006, // ABin
+            0x02020202, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000100, // AccumType, ConstantType, and PostShift
+            0x00003c00, 0x00000000, 0x00003c00, 0x00000000, 0x00003c00, 0x00000000, 0x00003c00, 0x00000000 // Constant
+        };
+        vx_uint32 uniSumU8_16x1[16] = {
+            0x55555555, // TCfg
+            0x00000000, // ASelt
+            0x76543210, 0xfedcba98, // ABin
+            0xaaaaaaaa, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00002400, // AccumType, ConstantType, and PostShift
+            0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001 // Constant
+        };
+        vx_uint32 uniSqrSum_16x1[16] = {
+            0x55555555, // TCfg
+            0x00000000, // ASelt
+            0x76543210, 0xfedcba98, // ABin
+            0x55555555, // BSelt
+            0x76543210, 0xfedcba98, // BBin
+            0x00000400, // AccumType, ConstantType, and PostShift
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
+        };
+        vx_uint32 uniConvert1stUint8SubZpToFp32_4x4[16] = {
+            0x05050505, // TCfg
+            0x04040404, // ASelt
+            0x00010000, 0x00030002, // ABin
+            0x0a0a0a0a, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000400, // AccumType, ConstantType, and PostShift
+            0xffff0001, 0x00000000, 0xffff0001, 0x00000000, 0xffff0001, 0x00000000, 0xffff0001, 0x00000000 // Constant
+        };
+        vx_uint32 uniConvert2ndUint8SubZpToFp32_4x4[16] = {
+            0x05050505, // TCfg
+            0x04040404, // ASelt
+            0x00050004, 0x00070006, // ABin
+            0x0a0a0a0a, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000400, // AccumType, ConstantType, and PostShift
+            0xffff0001, 0x00000000, 0xffff0001, 0x00000000, 0xffff0001, 0x00000000, 0xffff0001, 0x00000000 // Constant
+        };
+        vx_uint32 uniConvert3rdUint8SubZpToFp32_4x4[16] = {
+            0x05050505, // TCfg
+            0x04040404, // ASelt
+            0x00090008, 0x000b000a, // ABin
+            0x0a0a0a0a, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000400, // AccumType, ConstantType, and PostShift
+            0xffff0001, 0x00000000, 0xffff0001, 0x00000000, 0xffff0001, 0x00000000, 0xffff0001, 0x00000000 // Constant
+        };
+        vx_uint32 uniConvert4thUint8SubZpToFp32_4x4[16] = {
+            0x05050505, // TCfg
+            0x04040404, // ASelt
+            0x000d000c, 0x000f000e, // ABin
+            0x0a0a0a0a, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00002400, // AccumType, ConstantType, and PostShift
+            0xffff0001, 0x00000000, 0xffff0001, 0x00000000, 0xffff0001, 0x00000000, 0xffff0001, 0x00000000 // Constant
+        };
+        vx_uint32 uniConvertInt32toUint8_2x8[16] = {
+            0x33333333, // TCfg
+            0x11110000, // ASelt
+            0x03020100, 0x03020100, // ABin
+            0x00000000, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00002400, // AccumType, ConstantType, and PostShift
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
+        };
+        vx_uint32 UniPackFP16even_2x8[16] = {
+           0x11111111, // TCfg
+           0x11110000, // ASelt
+           0x06040200, 0x06040200, // ABin
+           0x22222222, // BSelt
+           0x00000000, 0x00000000, // BBin
+           0x00000100, // AccumType, ConstantType, and PostShift
+           0x00003c00, 0x00003c00, 0x00003c00, 0x00003c00, 0x00003c00, 0x00003c00, 0x00003c00, 0x00003c00 // Constant
+        };
+        if (inputDataFormat == VSI_NN_TYPE_UINT8 && outputDataFormat == VSI_NN_TYPE_FLOAT16
+            && scaleDataFormat == VSI_NN_TYPE_FLOAT16)
         {
-            vx_uint32 uniConvertSecFp16Fp32_4x4[16] = {
-                0x01010101, // TCfg
-                0x00000000, // ASelt
-                0x00050004, 0x00070006, // ABin
-                0x02020202, // BSelt
-                0x00000000, 0x00000000, // BBin
-                0x00000100, // AccumType, ConstantType, and PostShift
-                0x00003c00, 0x00000000, 0x00003c00, 0x00000000, 0x00003c00, 0x00000000, 0x00003c00, 0x00000000 // Constant
-            };
-            vx_uint32 uniSumU8_16x1[16] = {
-                0x55555555, // TCfg
-                0x00000000, // ASelt
-                0x76543210, 0xfedcba98, // ABin
-                0xaaaaaaaa, // BSelt
-                0x00000000, 0x00000000, // BBin
-                0x00002400, // AccumType, ConstantType, and PostShift
-                0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001, 0x00010001 // Constant
-            };
-            vx_uint32 uniSqrSum_16x1[16] = {
-                0x55555555, // TCfg
-                0x00000000, // ASelt
-                0x76543210, 0xfedcba98, // ABin
-                0x55555555, // BSelt
-                0x76543210, 0xfedcba98, // BBin
-                0x00000400, // AccumType, ConstantType, and PostShift
-                0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
-            };
-            vx_uint32 uniConvert1stUint8SubZpToFp32_4x4[16] = {
-                0x05050505, // TCfg
-                0x04040404, // ASelt
-                0x00010000, 0x00030002, // ABin
-                0x0a0a0a0a, // BSelt
-                0x00000000, 0x00000000, // BBin
-                0x00000400, // AccumType, ConstantType, and PostShift
-                0xffff0001, 0x00000000, 0xffff0001, 0x00000000, 0xffff0001, 0x00000000, 0xffff0001, 0x00000000 // Constant
-            };
-            vx_uint32 uniConvert2ndUint8SubZpToFp32_4x4[16] = {
-                0x05050505, // TCfg
-                0x04040404, // ASelt
-                0x00050004, 0x00070006, // ABin
-                0x0a0a0a0a, // BSelt
-                0x00000000, 0x00000000, // BBin
-                0x00000400, // AccumType, ConstantType, and PostShift
-                0xffff0001, 0x00000000, 0xffff0001, 0x00000000, 0xffff0001, 0x00000000, 0xffff0001, 0x00000000 // Constant
-            };
-            vx_uint32 uniConvert3rdUint8SubZpToFp32_4x4[16] = {
-                0x05050505, // TCfg
-                0x04040404, // ASelt
-                0x00090008, 0x000b000a, // ABin
-                0x0a0a0a0a, // BSelt
-                0x00000000, 0x00000000, // BBin
-                0x00000400, // AccumType, ConstantType, and PostShift
-                0xffff0001, 0x00000000, 0xffff0001, 0x00000000, 0xffff0001, 0x00000000, 0xffff0001, 0x00000000 // Constant
-            };
-            vx_uint32 uniConvert4thUint8SubZpToFp32_4x4[16] = {
-                0x05050505, // TCfg
-                0x04040404, // ASelt
-                0x000d000c, 0x000f000e, // ABin
-                0x0a0a0a0a, // BSelt
-                0x00000000, 0x00000000, // BBin
-                0x00002400, // AccumType, ConstantType, and PostShift
-                0xffff0001, 0x00000000, 0xffff0001, 0x00000000, 0xffff0001, 0x00000000, 0xffff0001, 0x00000000 // Constant
-            };
-            vx_uint32 uniConvertInt32toUint8_2x8[16] = {
-                0x33333333, // TCfg
-                0x11110000, // ASelt
-                0x03020100, 0x03020100, // ABin
-                0x00000000, // BSelt
-                0x00000000, 0x00000000, // BBin
-                0x00002400, // AccumType, ConstantType, and PostShift
-                0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
-            };
+            status  = vxSetNodeUniform(nodObj, "width", 1, &input_size[0]);
+            status |= vxSetNodeUniform(nodObj, "dimRatio", 1, &dimRatio);
+            status |= vxSetNodeUniform(nodObj, "UniFP16toFP32Lo4_dp4x4", 1, UniFP16toFP32Lo4_dp4x4);
+            status |= vxSetNodeUniform(nodObj, "uniConvertSecFp16Fp32_4x4", 1, uniConvertSecFp16Fp32_4x4);
+            status |= vxSetNodeUniform(nodObj, "uniSumU8_16x1", 1, uniSumU8_16x1);
+            status |= vxSetNodeUniform(nodObj, "uniSqrSum_16x1", 1, uniSqrSum_16x1);
+            status |= vxSetNodeUniform(nodObj, "uniConvert1stUint8SubZpToFp32_4x4", 1, uniConvert1stUint8SubZpToFp32_4x4);
+            status |= vxSetNodeUniform(nodObj, "uniConvert2ndUint8SubZpToFp32_4x4", 1, uniConvert2ndUint8SubZpToFp32_4x4);
+            status |= vxSetNodeUniform(nodObj, "uniConvert3rdUint8SubZpToFp32_4x4", 1, uniConvert3rdUint8SubZpToFp32_4x4);
+            status |= vxSetNodeUniform(nodObj, "uniConvert4thUint8SubZpToFp32_4x4", 1, uniConvert4thUint8SubZpToFp32_4x4);
+            status |= vxSetNodeUniform(nodObj, "inputZP", 1, &input_ZP);
+            status |= vxSetNodeUniform(nodObj, "input_scale", 1, &scaleIn);
+            status |= vxSetNodeUniform(nodObj, "sumInZp", 1, &sumInZp);
+            status |= vxSetNodeUniform(nodObj, "tmpZp1", 1, &tmpZp1);
+            status |= vxSetNodeUniform(nodObj, "tmpZp2", 1, &tmpZp2);
+            status |= vxSetNodeUniform(nodObj, "e2InScale", 1, &e2InScale);
+            status |= vxSetNodeUniform(nodObj, "UniPackFP16even_2x8", 1, UniPackFP16even_2x8);
+        }
+        else
+        {
+            status  = vxSetNodeUniform(nodObj, "uniFp16SumSqr_dp8x2", 1, uniFp16SumSqr_dp8x2);
+            status |= vxSetNodeUniform(nodObj, "width", 1, &input_size[0]);
+            status |= vxSetNodeUniform(nodObj, "dimRatio", 1, &dimRatio);
+            status |= vxSetNodeUniform(nodObj, "UniFP16toFP32Lo4_dp4x4", 1, UniFP16toFP32Lo4_dp4x4);
+            status |= vxSetNodeUniform(nodObj, "uniExtractHalf4_dp4x4", 1, uniExtractHalf4_dp4x4);
             status |= vxSetNodeUniform(nodObj, "uniConvertInt32toUint8_2x8", 1, uniConvertInt32toUint8_2x8);
             status |= vxSetNodeUniform(nodObj, "uniConvertSecFp16Fp32_4x4", 1, uniConvertSecFp16Fp32_4x4);
             status |= vxSetNodeUniform(nodObj, "uniSumU8_16x1", 1, uniSumU8_16x1);
@@ -611,6 +646,20 @@ vx_kernel_description_t vxLayerNormKernelInfo_FP16toU8 =
     vsi_nn_KernelDeinitializer
 };
 
+vx_kernel_description_t vxLayerNormKernelInfo_U8toFP16 =
+{
+    VX_KERNEL_ENUM_LAYERNORM,
+    VX_KERNEL_NAME_LAYERNORM_U8TOFP16,
+    NULL,
+    vxLayerNormKernelParam,
+    (sizeof(vxLayerNormKernelParam) / sizeof(vxLayerNormKernelParam[0])),
+    vsi_nn_KernelValidator,
+    NULL,
+    NULL,
+    vxLayerNormInitializer,
+    vsi_nn_KernelDeinitializer
+};
+
 vx_kernel_description_t vxLayerNormKernelInfo_CPU =
 {
     VX_KERNEL_ENUM_LAYERNORM,
@@ -631,6 +680,7 @@ vx_kernel_description_t * vx_kernel_LAYERNORM_list[] =
     &vxLayerNormKernelInfo,
     &vxLayerNormKernelInfo_u8,
     &vxLayerNormKernelInfo_FP16toU8,
+    &vxLayerNormKernelInfo_U8toFP16,
     NULL
 };
 #ifdef __cplusplus

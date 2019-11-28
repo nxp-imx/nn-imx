@@ -190,6 +190,12 @@ static vsi_status vx_op_pre_compute
             kernel_info->resource_name[0] = "vsi_nn_kernel_matrixmul_transbp2";
             kernel_info->kernel_index = 7;
         }
+        else if ((inputADataformat == VSI_NN_TYPE_UINT8) && (inputBDataformat == VSI_NN_TYPE_UINT8)
+            && (outputDataformat == VSI_NN_TYPE_UINT8))
+        {
+            kernel_info->resource_name[0] = "vsi_nn_kernel_matrixmul_transbp2";
+            kernel_info->kernel_index = 9;
+        }
         else
         {
             VSILOGE("Not support input or output data format!(MATRIXMUL)\n");
