@@ -80,7 +80,7 @@ static vx_status _create_params
 {
     vx_status status;
     vx_context ctx;
-    vsi_nn_reduce_param * p;
+    vsi_nn_reduce_param * p = NULL;
     if( 0 == num )
     {
         return VX_SUCCESS;
@@ -133,7 +133,7 @@ static vx_status cpu_op_compute
 {
     vx_status status = VX_SUCCESS;
     vx_reference params[_PARAM_NUM];
-    vx_reference * args;
+    vx_reference * args = NULL;
 
     args = &params[_IO_NUM];
 
@@ -406,7 +406,7 @@ static vsi_bool op_set_reduce_internal
         &(self->nn_param.reduce.axis[1]), 1, vx_true_e);
         curr->inputs[0]  = tmp_output_tensor[0]->t;
         curr->outputs[0] = new_output;
-        self->nn_param.reduce.local2.reshaped_output = new_output;
+        self->nn_param.reduce.local2->reshaped_output = new_output;
         vsi_nn_setup_internal_node_op(self, curr);
     }
     else if (3 == resolved_dim_count)
@@ -448,7 +448,7 @@ static vsi_bool op_set_reduce_internal
         &(self->nn_param.reduce.axis[2]), 1, vx_true_e);
         curr->inputs[0]  = tmp_output_tensor[1]->t;
         curr->outputs[0] = new_output;
-        self->nn_param.reduce.local2.reshaped_output = new_output;
+        self->nn_param.reduce.local2->reshaped_output = new_output;
         vsi_nn_setup_internal_node_op(self, curr);
     }
     else
@@ -578,9 +578,14 @@ static vsi_status op_deinit
         vsi_nn_ReleaseTensor(&(self->nn_param.reduce.local.axis_tensor));
     }
 
-    if (self->nn_param.reduce.local2.reshaped_output != NULL)
+    if (self->nn_param.reduce.local2 != NULL)
     {
-        vsi_nn_ReleaseTensor(&(self->nn_param.reduce.local2.reshaped_output));
+        if (self->nn_param.reduce.local2->reshaped_output != NULL)
+        {
+            vsi_nn_ReleaseTensor(&(self->nn_param.reduce.local2->reshaped_output));
+        }
+        free(self->nn_param.reduce.local2);
+        self->nn_param.reduce.local2 = NULL;
     }
 
     if (self->nn_param.reduce.type == VSI_NN_REDUCE_SUM ||
@@ -600,6 +605,22 @@ static vsi_status op_deinit
     return VSI_SUCCESS;
 } /* op_deinit() */
 
+static vsi_status op_init
+    (
+    vsi_nn_node_t * self
+    )
+{
+    vsi_status status = VSI_SUCCESS;
+    self->nn_param.reduce.local2   =
+    (vsi_nn_reduce_lcl2_data_t *)malloc(sizeof(vsi_nn_reduce_lcl2_data_t));
+    if (NULL == self->nn_param.reduce.local2)
+    {
+        return  VX_ERROR_NO_MEMORY;
+    }
+    memset(self->nn_param.reduce.local2, 0, sizeof(vsi_nn_reduce_lcl2_data_t));
+    return status;
+} /* op_init() */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -607,7 +628,7 @@ extern "C" {
 DEF_OP_REG
     (
     /* op_name    */ REDUCE,
-    /* init       */ NULL,
+    /* init       */ op_init,
     /* compute    */ op_compute,
     /* deinit     */ op_deinit,
     /* check      */ op_check,
