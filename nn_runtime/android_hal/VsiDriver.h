@@ -35,14 +35,11 @@
 #include "ValidateHal.h"
 #endif
 
-#include <android/hardware/neuralnetworks/1.2/IDevice.h>
 #include <sys/system_properties.h>
 #include <android-base/logging.h>
 #include <hidl/LegacySupport.h>
 #include <thread>
 
-
-using namespace android::hardware::neuralnetworks::V1_2;
 
 namespace android {
 namespace nn {
@@ -56,9 +53,9 @@ class VsiDriver : public VsiDevice {
     Return<void> getSupportedOperations(const V1_0::Model& model, V1_0::IDevice::getSupportedOperations_cb cb) ;
 
 #if ANDROID_SDK_VERSION > 27
-    Return<void> getCapabilities_1_1(V1_2::IDevice::getCapabilities_1_1_cb _hidl_cb) ;
+    Return<void> getCapabilities_1_1(V1_1::IDevice::getCapabilities_1_1_cb _hidl_cb) ;
     Return<void> getSupportedOperations_1_1(const V1_1::Model& model,
-                                                                V1_2::IDevice::getSupportedOperations_1_1_cb cb) ;
+                                                                V1_1::IDevice::getSupportedOperations_1_1_cb cb) ;
 #endif
 
 #if ANDROID_SDK_VERSION > 28

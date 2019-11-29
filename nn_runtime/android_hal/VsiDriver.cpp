@@ -81,7 +81,13 @@ Return<void> VsiDriver::getSupportedOperations(const V1_0::Model& model, V1_0::I
         cb(ErrorStatus::INVALID_ARGUMENT, supported);
         return Void();
     }
+#if ANDROID_SDK_VERSION > 28
     return getSupportedOperationsBase(convertToV1_2(model), cb);
+#elif ANDROID_SDK_VERSION > 27
+    return getSupportedOperationsBase(convertToV1_1(model), cb);
+#else
+    return getSupportedOperationsBase(model, cb);
+#endif
 }
 
 #if ANDROID_SDK_VERSION > 27
@@ -108,7 +114,11 @@ Return<void> VsiDriver::getSupportedOperations_1_1(const V1_1::Model& model,
         cb(ErrorStatus::INVALID_ARGUMENT, supported);
         return Void();
     }
+#if ANDROID_SDK_VERSION > 28
     return getSupportedOperationsBase(convertToV1_2(model), cb);
+#else
+    return getSupportedOperationsBase(model, cb);
+#endif
 }
 #endif
 
