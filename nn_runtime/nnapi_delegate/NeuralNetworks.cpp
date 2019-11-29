@@ -859,7 +859,7 @@ int ANeuralNetworksModel_getSupportedOperationsForDevices(const ANeuralNetworksM
     const nnrt::Model* m = reinterpret_cast<const nnrt::Model*>(model);
     // TODO: {juku} add detail
     auto num_ops = m->operations().size();
-    for (auto i{0U}; i < num_ops; ++i) {
+    for (auto i(0U); i < num_ops; ++i) {
         supportedOps[i] = true;
     }
 
