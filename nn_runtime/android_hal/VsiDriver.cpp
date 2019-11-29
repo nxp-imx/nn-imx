@@ -305,7 +305,6 @@ Return<void> VsiDriver::getSupportedOperations_1_1(const V1_1::Model& model,
             default:
                 return true;
         }
-#endif
         return true;
     }
 
