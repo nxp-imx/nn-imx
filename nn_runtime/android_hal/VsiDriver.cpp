@@ -162,6 +162,19 @@ Return<void> VsiDriver::getSupportedOperations_1_1(const V1_1::Model& model,
         switch (operation.type)
         {
             //TODO: check API 28 op new feature
+            case OperationType::AVERAGE_POOL_2D:
+            case OperationType::MAX_POOL_2D:
+            case OperationType::SOFTMAX:
+                {
+                    auto & input = model.operands[operation.inputs[0]];
+                    if( input.lifetime == OperandLifeTime::CONSTANT_COPY ||
+                        input.lifetime == OperandLifeTime::CONSTANT_REFERENCE
+                        ){
+                        LOG(INFO)<<"Device don't support constant input";
+                        return false;
+                    }
+                    break;
+                }
             case OperationType::LSH_PROJECTION:{
                 auto typePtr = getOpeandPtr(model.operands[operation.inputs[3]]);
                 if(3 == *(int32_t*)typePtr)
