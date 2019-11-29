@@ -60,11 +60,20 @@ int Transpose(Model* model, op::Operand* src, op::Operand* dst,
 
     auto _compute_strides = [](std::vector<uint32_t>& shape,
             std::vector<int>& strides) {
-        int s = 1;
-        for (uint32_t i = shape.size() - 1; i >= 0; -- i) {
-            strides[i] = s;
-            s *= static_cast<int>(shape[i]);
-        }
+
+        int acc = 1;
+        std::transform(shape.rbegin(),
+                       shape.rend(),
+                       std::back_inserter(strides),
+                       [&strides, &acc](const uint32_t d) {
+                           if (strides.empty()) {
+                               return 1;  // Stride for last dimension
+                           } else {
+                               acc *= static_cast<int>(d);
+                               return acc;
+                           }
+                       });
+        std::reverse(strides.begin(), strides.end());
     };
     _compute_strides(src->dimensions, src_strides);
     _compute_strides(dst->dimensions, dst_strides);

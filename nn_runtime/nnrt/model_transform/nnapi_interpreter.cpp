@@ -429,9 +429,14 @@ OperationPtr NnApiInterpreter::map_DIV(Model* model,
 {
     NNAPI_CHECK_IO_NUM(operation, 3, 1);
     std::shared_ptr<DivOperation> div = std::make_shared<DivOperation>();
-    div->setVxParam(OverflowPolicy::SATURATE, RoundingPolicy::RTNE, Rounding::RTNE);
-    resetFusedType(model, operation, 2);
-    truncateOperationIOs(model, operation, 2, 1);
+    if (div) {
+        div->setVxParam(OverflowPolicy::SATURATE, RoundingPolicy::RTNE, Rounding::RTNE);
+        resetFusedType(model, operation, 2);
+        truncateOperationIOs(model, operation, 2, 1);
+    } else {
+        NNRT_LOGE("nnapi_interpreter") << "OOM";
+    }
+
     return div;
 }
 

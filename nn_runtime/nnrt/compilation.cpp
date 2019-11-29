@@ -90,7 +90,7 @@ void Compilation::cachePreparedModel(PreparedModelPtr& prepared_model)
                 keys_to_remove.push_back(it->first);
             }
         }
-        for (auto key : keys_to_remove) {
+        for (auto& key : keys_to_remove) {
             prepared_models_.erase(key);
         }
     }

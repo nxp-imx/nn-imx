@@ -31,6 +31,10 @@
 namespace nnrt {
 namespace op {
 
+namespace {
+    const std::string tag = "Operand";
+}
+
 size_t Operand::bytes() const {
     size_t bytes = static_cast<size_t>(operand_utils::GetTypeBytes(type));
     for (auto i : dimensions) {
@@ -57,12 +61,17 @@ bool Operand::isQuantized() const {
 
 OperandPtr Operand::clone() {
     OperandPtr operand = std::make_shared<Operand>();
-    operand->type = type;
-    operand->dimensions = dimensions;
-    // operand->scale = scale;
-    // operand->zeroPoint = zeroPoint;
-    operand->cloneQuantParams(this);
-    operand->number_of_consumers_ = number_of_consumers_;
+    if (operand) {
+        operand->type = type;
+        operand->dimensions = dimensions;
+        // operand->scale = scale;
+        // operand->zeroPoint = zeroPoint;
+        operand->cloneQuantParams(this);
+        operand->number_of_consumers_ = number_of_consumers_;
+    } else {
+        assert(false);
+        NNRT_LOGE(tag) << "Fatal Error: OOM cannot allocate Operand";
+    }
     return operand;
 }
 

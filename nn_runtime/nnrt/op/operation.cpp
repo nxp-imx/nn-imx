@@ -251,7 +251,7 @@ void Operation::echo(uint32_t index) {
     } else {
         sz += snprintf(&buf[sz], 256 - sz, "%-30s", op_str);
     }
-    char subbuf[128];
+    char subbuf[128] = {'\0'};
     size_t subsz = 0;
     for (uint32_t i = 0; i < inputs_.size(); ++i) {
         subsz += snprintf(&subbuf[subsz], 128 - subsz, "% d,", inputs_[i]);

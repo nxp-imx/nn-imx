@@ -64,6 +64,12 @@ class PreparedModel
         std::string signature() { return model_->signature(); }
 
     private:
+        // disable copy constructor
+        PreparedModel(const PreparedModel&) = default;
+        PreparedModel(PreparedModel&&) = default;
+        PreparedModel& operator=(const PreparedModel&) = default;
+
+    private:
         vsi_nn_graph_t* graph_{nullptr};
         Model* model_{nullptr};
         std::map<uint32_t, vsi_nn_tensor_id_t> tensor_mapping_;

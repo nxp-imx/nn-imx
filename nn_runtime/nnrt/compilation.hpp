@@ -55,6 +55,10 @@ class Compilation
         Interpreter* getInterpreter() { return interpreter_; };
 
         PreparedModelPtr prepareModel(int* err_ptr);
+    private:
+    Compilation(const Compilation&) = default;
+    Compilation(Compilation&& ) = default;
+    Compilation& operator=(const Compilation&) = default;
 
     private:
         void cachePreparedModel(PreparedModelPtr& model);

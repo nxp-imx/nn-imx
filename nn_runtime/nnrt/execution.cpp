@@ -35,6 +35,10 @@
 #ifdef _DUMP_JSON_MODEL_
 #include "dump_model/dump_json_model.hpp"
 #endif
+
+namespace {
+    static const std::string tag = "Execution";
+}
 namespace nnrt
 {
 Execution::Execution(Compilation* compilation)
@@ -114,9 +118,14 @@ int Execution::compute()
     int err = NNA_ERROR_CODE(NO_ERROR);
     PreparedModelPtr prepared_model = compilation_->prepareModel(&err);
     if (err == NNA_ERROR_CODE(NO_ERROR)) {
-        TaskPtr task = std::make_shared<GraphTask>(
-                prepared_model, nullptr, inputs_, outputs_);
-        err = task->execute();
+        TaskPtr task = std::make_shared<GraphTask>(prepared_model, nullptr, inputs_, outputs_);
+        if (!task) {
+            NNRT_LOGE(tag) << "Fatal error: OOM";
+            assert(false);
+            err = NNA_ERROR_CODE(OUT_OF_MEMORY);
+        } else {
+            err = task->execute();
+        }
     }
     return err;
 }
@@ -136,7 +145,11 @@ int Execution::setInput(uint32_t index, const op::OperandPtr operand_type,
     }
     Model* model = compilation_->getModel();
     uint32_t operand_index = model->inputIndex(index);
-    assert(operand_index >= 0);
+    if (operand_index < 0 ) {
+        NNRT_LOGE(tag)<< "Fatal Error : invalid operand index < 0";
+        return NNA_ERROR_CODE(BAD_DATA);
+    }
+
     if (!buffer || 0 == length) {
         NNRT_LOGD_PRINT("Set idx=%d as novalue", index);
 
@@ -173,7 +186,12 @@ int Execution::setInputFromMemory(uint32_t index, const op::OperandPtr operand_t
 
     Model* model = compilation_->getModel();
     uint32_t operand_index = model->inputIndex(index);
-    model->operand(operand_index)->clearNull();
+    if (model->operand(operand_index)) {
+        model->operand(operand_index)->clearNull();
+    } else {
+        NNRT_LOGE(tag) << "Fatal error: found not found operand at " << operand_index;
+        assert(false);
+    }
     if (operand_type) {
         model->updateOperand(operand_index, operand_type);
     }
@@ -205,7 +223,12 @@ int Execution::setOutput(uint32_t index, const op::OperandPtr operand_type,
         outputs_[index]->state = ExecutionIO::BUFFER;
         Model* model = compilation_->getModel();
         uint32_t operand_index = model->outputIndex(index);
-        model->operand(operand_index)->clearNull();
+        if (model->operand(operand_index)) {
+            model->operand(operand_index)->clearNull();
+        } else {
+            NNRT_LOGE(tag) << "Fatal error: found not found operand at " << operand_index;
+            assert(false);
+        }
         if (operand_type) {
             model->updateOperand(operand_index, operand_type);
         }
@@ -235,7 +258,13 @@ int Execution::setOutputFromMemory(uint32_t index, const op::OperandPtr operand_
 
     Model* model = compilation_->getModel();
     uint32_t operand_index = model->outputIndex(index);
+    if (model->operand(operand_index)) {
     model->operand(operand_index)->clearNull();
+    }
+    else {
+        NNRT_LOGE(tag) << "Fatal error: can not found operand at " << operand_index ;
+        assert(false);
+    }
     if (operand_type) {
         model->updateOperand(operand_index, operand_type);
     }

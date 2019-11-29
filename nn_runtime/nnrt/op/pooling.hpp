@@ -25,19 +25,64 @@
 #define _OP_POOLING_H_
 
 #include "operation.hpp"
+#include "model.hpp"
+#include "logging.hpp"
 
 namespace nnrt {
 namespace op {
-struct AveragePool2DOperation : Operation {
-    AveragePool2DOperation() : Operation(OperationType::AVERAGE_POOL_2D) {
+
+namespace {
+    static const std::string tag = "Pooling";
+}
+
+template <nnrt::OperationType OpType>
+struct TPoolOperation : Operation {
+    TPoolOperation() : Operation(OpType) {}
+
+    virtual void handleLayoutInferenceOnInputs(
+        nnrt::Model& model,
+        std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>& out_permute_vectors)
+        override {
+        assert(input_permute_cache_.cached_permutes_.size() == 1);
+        OperandPtr inputOperand = model.operand(inputs()[0]);
+        OperandPtr outputOperand = model.operand(outputs()[0]);
+
+        auto permuteVector = input_permute_cache_.cached_permutes_[inputs()[0]];
+
+        if (!permuteVector) {
+            NNRT_LOGE(tag)<< "Fatal Error: Input permute vector not setup properly" ;
+            assert(false);
+        }
+
+        if (inputOperand->ndim() != 4) {
+            Operation::handleLayoutInferenceOnInputs(model, out_permute_vectors);
+            return;
+        }
+
+        // {0, 1, 2, 3}
+        auto requiredPermute = nnrt::layout_inference::make_shared(inputOperand->ndim());
+        if (DataLayout::NHWC == getDataLayout()) {
+            requiredPermute = std::make_shared<nnrt::layout_inference::PermuteVector<4>>(
+                std::initializer_list<uint32_t>({0, 3, 1, 2}));
+        }
+
+        auto finalPermute = permuteVector->reverse()->add(requiredPermute);
+        auto permuteOp = nnrt::op::utils::asOp(finalPermute);
+
+        if (permuteOp) {
+            insertPermute(model, permuteOp, finalPermute->asStdVec(), true, inputs()[0]);
+        }
+        out_permute_vectors.insert(std::make_pair(outputs()[0], requiredPermute));
+    }
+};
+
+struct AveragePool2DOperation : TPoolOperation<OperationType::AVERAGE_POOL_2D> {
+    AveragePool2DOperation() : TPoolOperation() {
         strides.resize(2);
         ksize.resize(2);
         pad.resize(4);
     }
-    virtual void handleLayoutInferenceOnInputs(
-        nnrt::Model& model,
-        std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>& out_permute_vectors)
-        override;
+
     std::vector<int32_t> strides;
     std::vector<int32_t> ksize;
     std::vector<int32_t> pad;
@@ -46,16 +91,13 @@ struct AveragePool2DOperation : Operation {
     PoolMode poolMode{PoolMode::VALID};
 };
 
-struct MaxPool2DOperation : Operation {
-    MaxPool2DOperation() : Operation(OperationType::MAX_POOL_2D) {
+struct MaxPool2DOperation : TPoolOperation<OperationType::MAX_POOL_2D> {
+    MaxPool2DOperation() : TPoolOperation() {
         strides.resize(2);
         ksize.resize(2);
         pad.resize(4);
     }
-    virtual void handleLayoutInferenceOnInputs(
-        nnrt::Model& model,
-        std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>& out_permute_vectors)
-        override;
+
     std::vector<int32_t> strides;
     std::vector<int32_t> ksize;
     std::vector<int32_t> pad;
@@ -63,16 +105,12 @@ struct MaxPool2DOperation : Operation {
     Rounding roundType{Rounding::FLOOR};
 };
 
-struct L2Pool2DOperation : Operation {
-    L2Pool2DOperation() : Operation(OperationType::L2_POOL_2D) {
+struct L2Pool2DOperation : TPoolOperation<OperationType::L2_POOL_2D> {
+    L2Pool2DOperation() : TPoolOperation() {
         strides.resize(2);
         ksize.resize(2);
         pad.resize(4);
     }
-    virtual void handleLayoutInferenceOnInputs(
-        nnrt::Model& model,
-        std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>& out_permute_vectors)
-        override;
 
     std::vector<int32_t> strides;
     std::vector<int32_t> ksize;
