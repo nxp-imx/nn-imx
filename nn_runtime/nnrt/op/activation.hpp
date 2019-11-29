@@ -28,89 +28,39 @@
 
 namespace nnrt {
 namespace op {
+template <nnrt::OperationType activationType>
+struct ActivationOperation : Operation {
+    ActivationOperation() : Operation(activationType) {}
 
-struct TanhOperation : Operation {
-    TanhOperation() : Operation(OperationType::TANH) {}
     virtual void handleLayoutInferenceOnInputs(
         nnrt::Model& model,
-        std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>& out_permute_vectors)
-        override;
+        std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>&
+            next_permute_vectors) {
+        assert(input_permute_cache_.cached_permutes_.size() == 1);
+        nnrt::layout_inference::IPermuteVectorPtr permuteVector =
+            input_permute_cache_.cached_permutes_[inputs()[0]];
+        next_permute_vectors.insert(std::make_pair(outputs()[0], permuteVector));
+    }
+};
+
+struct TanhOperation : ActivationOperation<OperationType::TANH> {
     float scaleA{1.0f};
     float scaleB{1.0f};
 };
 
-struct Relu1Operation : Operation {
-    Relu1Operation() : Operation(OperationType::RELU1) {}
-    virtual void handleLayoutInferenceOnInputs(
-        nnrt::Model& model,
-        std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>& out_permute_vectors)
-        override;
-};
-
-struct Relu6Operation : Operation {
-    Relu6Operation() : Operation(OperationType::RELU6) {}
-    virtual void handleLayoutInferenceOnInputs(
-        nnrt::Model& model,
-        std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>& out_permute_vectors)
-        override;
-};
-
-struct LeakyReluOperation : Operation {
-    LeakyReluOperation() : Operation(OperationType::LEAKY_RELU) {}
-    virtual void handleLayoutInferenceOnInputs(
-        nnrt::Model& model,
-        std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>& out_permute_vectors)
-        override;
+struct LeakyReluOperation : ActivationOperation<OperationType::LEAKY_RELU> {
     float ratio{0.1f};
 };
 
-struct ReluOperation : Operation {
-    ReluOperation() : Operation(OperationType::RELU) {}
-    virtual void handleLayoutInferenceOnInputs(
-        nnrt::Model& model,
-        std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>& out_permute_vectors)
-        override;
-};
-
-struct SigmoidOperation : Operation {
-    SigmoidOperation() : Operation(OperationType::SIGMOID) {}
-    virtual void handleLayoutInferenceOnInputs(
-        nnrt::Model& model,
-        std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>& out_permute_vectors)
-        override;
-};
-
-struct SoftReluOperation : Operation {
-    SoftReluOperation() : Operation(OperationType::SOFT_RELU) {}
-    virtual void handleLayoutInferenceOnInputs(
-        nnrt::Model& model,
-        std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>& out_permute_vectors)
-        override;
-};
-
-struct AbsOperation : Operation {
-    AbsOperation() : Operation(OperationType::ABS) {}
-    virtual void handleLayoutInferenceOnInputs(
-        nnrt::Model& model,
-        std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>& out_permute_vectors)
-        override;
-};
-
-struct SqrtOperation : Operation {
-    SqrtOperation() : Operation(OperationType::SQRT) {}
-    virtual void handleLayoutInferenceOnInputs(
-        nnrt::Model& model,
-        std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>& out_permute_vectors)
-        override;
-};
-
-struct SquareOperation : Operation {
-    SquareOperation() : Operation(OperationType::SQUARE) {}
-    virtual void handleLayoutInferenceOnInputs(
-        nnrt::Model& model,
-        std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>& out_permute_vectors)
-        override;
-};
+using Relu1Operation = ActivationOperation<OperationType::RELU1>;
+using Relu6Operation = ActivationOperation<OperationType::RELU6>;
+using ReluOperation = ActivationOperation<OperationType::RELU>;
+using SigmoidOperation = ActivationOperation<OperationType::SIGMOID>;
+using SoftReluOperation = ActivationOperation<OperationType::SOFT_RELU>;
+using AbsOperation = ActivationOperation<OperationType::ABS>;
+using SqrtOperation = ActivationOperation<OperationType::SQRT>;
+using RSqrtOperation = ActivationOperation<OperationType::RSQRT>;
+using SquareOperation = ActivationOperation<OperationType::SQUARE>;
 
 }
 }
