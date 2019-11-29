@@ -163,6 +163,100 @@ static vsi_nn_op_compute_t op_compute_list[] =
 };
 #endif
 
+static vsi_status op_comput_reduce_mean(vsi_nn_node_t * self,
+                                        vsi_nn_tensor_t *axis_tensor,
+                                        vx_bool keep_dim,
+                                        vx_tensor input_t,
+                                        vx_tensor output_t)
+{
+    vsi_status status = VSI_FAILURE;
+    vx_nn_mean_params_t para;
+
+    para.axis = REQUIRED_IO(axis_tensor);
+    para.keep_dims = keep_dim;
+    self->n = vxTensorMeanNode( self->graph->g, input_t, &para,
+        sizeof(vx_nn_mean_params_t), output_t );
+    if( NULL != self->n )
+    {
+        status = VSI_SUCCESS;
+    }
+    return status;
+}
+
+static vsi_bool caculate_reshape_size(uint32_t* dim_value,
+                                      uint32_t* re_sizes, uint32_t* re_sizes2,
+                                      vx_int32 *resolved_dim, vx_int32 resolved_dim_count)
+{
+#define VSI_NN_MAX_IMAGE_WIDTH  (65536)
+    vsi_bool enable_reshape = vx_true_e;
+    uint32_t size_count = 1;
+    uint32_t i = 0;
+    uint32_t dim_num = *dim_value;
+    if (dim_num > 4)
+    {
+        for (i = 4; i < dim_num; i++)
+        {
+            size_count *= re_sizes[i];
+        }
+    }
+
+    if (re_sizes[0] * re_sizes[1] * re_sizes[2] < VSI_NN_MAX_IMAGE_WIDTH)
+    {
+        re_sizes2[0] = re_sizes[0] * re_sizes[1] * re_sizes[2];
+        re_sizes2[1] = re_sizes[3];
+        if (size_count != 1)
+        {
+            re_sizes2[2] = size_count;
+            dim_num = 3;
+        }
+        else
+        {
+            dim_num = 2;
+        }
+        resolved_dim[resolved_dim_count - 1] = 1;
+    }
+    else if (re_sizes[0] * re_sizes[1] < VSI_NN_MAX_IMAGE_WIDTH)
+    {
+        re_sizes2[0] = re_sizes[0] * re_sizes[1];
+        re_sizes2[1] = re_sizes[2];
+        re_sizes2[2] = re_sizes[3];
+        if (size_count != 1)
+        {
+            re_sizes2[3] = size_count;
+            dim_num = 4;
+        }
+        else
+        {
+            dim_num = 3;
+        }
+        resolved_dim[resolved_dim_count - 1] = 2;
+    }
+    else if (re_sizes[1] * re_sizes[2] < VSI_NN_MAX_IMAGE_WIDTH)
+    {
+        re_sizes2[0] = re_sizes[0];
+        re_sizes2[1] = re_sizes[1] * re_sizes[2];
+        re_sizes2[2] = re_sizes[3];
+        if (size_count != 1)
+        {
+            re_sizes2[3] = size_count;
+            dim_num = 4;
+        }
+        else
+        {
+            dim_num = 3;
+        }
+        resolved_dim[resolved_dim_count - 1] = 2;
+    }
+    else
+    {
+        enable_reshape = vx_false_e;
+    }
+    *dim_value = dim_num;
+#undef VSI_NN_MAX_IMAGE_WIDTH
+    return enable_reshape;
+}
+
+
 static vsi_status op_compute
     (
     vsi_nn_node_t * self,
@@ -172,38 +266,296 @@ static vsi_status op_compute
 {
     vsi_status status = VSI_FAILURE;
 #if (USE_OVX_API == TRUE)
+
     if (self->nn_param.reduce.type == VSI_NN_REDUCE_MEAN)
     {
-        vx_nn_mean_params_t para;
+        vx_tensor input_t, output_t;
         vsi_nn_tensor_t *axis_tensor = NULL;
-        vsi_nn_tensor_attr_t attr;
+        vsi_nn_tensor_t *axis_tensor2 = NULL;
+        vsi_nn_tensor_attr_t attr, attr2;
+        vx_int32 resolved_dim[4]    = {-1, -1, -1, -1};
+        vx_int32 resolved_dim_count = 0;
+        uint32_t i = 0;
+        uint32_t re_sizes[VSI_NN_MAX_DIM_NUM] = {1};
+        uint32_t re_sizes2[VSI_NN_MAX_DIM_NUM] = {1};
+        uint32_t dim_num;
+        vsi_nn_tensor_t *mean_tmp_tensor = NULL;
 
-        memset(&attr, 0, sizeof(attr));
-        attr.size[0] = self->nn_param.reduce.axis_num;
-        attr.dim_num = 1;
-        attr.is_const = TRUE;
-        attr.dtype.vx_type = VSI_NN_TYPE_UINT32;
-        attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
-        axis_tensor = vsi_nn_CreateTensorFromData(
-            self->graph,
-            (uint8_t *)self->nn_param.reduce.axis,
-            &attr);
-        if( NULL == axis_tensor )
+        resolved_dim_count = self->nn_param.reduce.axis_num;
+
+        for (i = 0; i < self->nn_param.reduce.axis_num; i++)
         {
-            VSILOGE("Create axis_tensor fail.(reduce)");
-            return VSI_FAILURE;
+            resolved_dim[i] = self->nn_param.reduce.axis[i];
         }
 
-        self->nn_param.reduce.local.axis_tensor = axis_tensor;
-        para.axis = REQUIRED_IO(axis_tensor);
-        para.keep_dims = self->nn_param.reduce.keep_dim;
-
-        self->n = vxTensorMeanNode( self->graph->g, inputs[0]->t, &para,
-            sizeof(vx_nn_mean_params_t), outputs[0]->t );
-        if( NULL != self->n )
+        for (i = 0; i < VSI_NN_MAX_DIM_NUM; i++)
         {
-            status = VSI_SUCCESS;
+            re_sizes[i]  = 1;
+            re_sizes2[i] = 1;
         }
+        memset(&attr2, 0, sizeof(attr));
+        memcpy( &attr2, &inputs[0]->attr, sizeof(vsi_nn_tensor_attr_t) );
+        dim_num = inputs[0]->attr.dim_num;
+        for (i = 0; i < dim_num; i++)
+        {
+            attr2.size[i] = inputs[0]->attr.size[i];
+            re_sizes[i]  = inputs[0]->attr.size[i];
+        }
+
+        if ((2 == resolved_dim_count && resolved_dim[0] < 3 && resolved_dim[1] < 3)
+           || (1 == resolved_dim_count && resolved_dim[0] < 3)
+           || (resolved_dim[resolved_dim_count - 1] > 3)
+           || resolved_dim_count > 3)
+        {
+            memset(&attr, 0, sizeof(attr));
+            attr.size[0] = resolved_dim_count;
+            attr.dim_num = 1;
+            attr.is_const = TRUE;
+            attr.dtype.vx_type = VSI_NN_TYPE_UINT32;
+            attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
+            axis_tensor = vsi_nn_CreateTensorFromData(
+                self->graph,
+                (uint8_t *)resolved_dim,
+                &attr);
+            if( NULL == axis_tensor )
+            {
+                VSILOGE("Create axis_tensor fail.(reduce)");
+                return VSI_FAILURE;
+            }
+
+            self->nn_param.reduce.local.axis_tensor = axis_tensor;
+            input_t  = inputs[0]->t;
+            output_t = outputs[0]->t;
+            status = op_comput_reduce_mean(self,
+                                           axis_tensor,
+                                           self->nn_param.reduce.keep_dim,
+                                           input_t,
+                                           output_t);
+        }
+        else if (3 == resolved_dim[resolved_dim_count - 1] && resolved_dim_count < 3)
+        {
+            if (1 == resolved_dim_count)
+            {
+                vsi_bool enable_reshape = vx_true_e;
+
+                enable_reshape = caculate_reshape_size(&dim_num, re_sizes, re_sizes2,
+                                      resolved_dim, resolved_dim_count);
+                if (enable_reshape)
+                {
+                    self->nn_param.reduce.local2->reshaped_input  =
+                    vsi_nn_reshape_tensor(self->graph, inputs[0], re_sizes2, dim_num);
+                    re_sizes2[resolved_dim[resolved_dim_count - 1]] = 1;
+                    self->nn_param.reduce.local2->reshaped_output =
+                    vsi_nn_reshape_tensor(self->graph, outputs[0], re_sizes2, dim_num);
+                }
+                memset(&attr, 0, sizeof(attr));
+                attr.size[0] = resolved_dim_count;
+                attr.dim_num = 1;
+                attr.is_const = TRUE;
+                attr.dtype.vx_type = VSI_NN_TYPE_UINT32;
+                attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
+                axis_tensor = vsi_nn_CreateTensorFromData(
+                    self->graph,
+                    (uint8_t *)resolved_dim,
+                    &attr);
+                if( NULL == axis_tensor )
+                {
+                    VSILOGE("Create axis_tensor fail.(reduce)");
+                    return VSI_FAILURE;
+                }
+
+                self->nn_param.reduce.local.axis_tensor = axis_tensor;
+                if (self->nn_param.reduce.local2->reshaped_input)
+                {
+                    input_t  = self->nn_param.reduce.local2->reshaped_input->t;
+                }
+                else
+                {
+                    input_t  = inputs[0]->t;
+                }
+                if (self->nn_param.reduce.local2->reshaped_output)
+                {
+                    output_t = self->nn_param.reduce.local2->reshaped_output->t;
+                }
+                else
+                {
+                    output_t = outputs[0]->t;
+                }
+                status = op_comput_reduce_mean(self,
+                                               axis_tensor,
+                                               self->nn_param.reduce.keep_dim,
+                                               input_t,
+                                               output_t);
+            }
+            else if (2 == resolved_dim_count)
+            {
+                vsi_bool enable_reshape = vx_true_e;
+
+                attr2.size[resolved_dim[0]] = 1;
+                attr2.vtl = FALSE;
+                mean_tmp_tensor = vsi_nn_CreateTensor(self->graph, &attr2);
+                self->nn_param.reduce.local2->reshaped_tmp = mean_tmp_tensor;
+                re_sizes[resolved_dim[0]] = 1;
+                memset(&attr, 0, sizeof(attr));
+                attr.size[0] = 1;
+                attr.dim_num = 1;
+                attr.is_const = TRUE;
+                attr.dtype.vx_type = VSI_NN_TYPE_UINT32;
+                attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
+                axis_tensor = vsi_nn_CreateTensorFromData(
+                    self->graph,
+                    (uint8_t *)&resolved_dim[0],
+                    &attr);
+                if( NULL == axis_tensor )
+                {
+                    VSILOGE("Create axis_tensor fail.(reduce)");
+                    return VSI_FAILURE;
+                }
+                self->nn_param.reduce.local.axis_tensor = axis_tensor;
+                status = op_comput_reduce_mean(self,
+                                               axis_tensor,
+                                               self->nn_param.reduce.keep_dim,
+                                               inputs[0]->t,
+                                               mean_tmp_tensor->t);
+
+                enable_reshape = caculate_reshape_size(&dim_num, re_sizes, re_sizes2,
+                                      resolved_dim, resolved_dim_count);
+
+                if (enable_reshape)
+                {
+                    self->nn_param.reduce.local2->reshaped_input  =
+                    vsi_nn_reshape_tensor(self->graph, mean_tmp_tensor, re_sizes2, dim_num);
+                    re_sizes2[resolved_dim[resolved_dim_count - 1]] = 1;
+                    self->nn_param.reduce.local2->reshaped_output =
+                    vsi_nn_reshape_tensor(self->graph, outputs[0], re_sizes2, dim_num);
+                }
+
+                memset(&attr, 0, sizeof(attr));
+                attr.size[0] = 1;
+                attr.dim_num = 1;
+                attr.is_const = TRUE;
+                attr.dtype.vx_type = VSI_NN_TYPE_UINT32;
+                attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
+                axis_tensor2 = vsi_nn_CreateTensorFromData(
+                    self->graph,
+                    (uint8_t *)&resolved_dim[1],
+                    &attr);
+                if( NULL == axis_tensor2 )
+                {
+                    VSILOGE("Create axis_tensor fail.(reduce)");
+                    return VSI_FAILURE;
+                }
+
+                self->nn_param.reduce.local2->axis_tensor2 = axis_tensor2;
+                if (self->nn_param.reduce.local2->reshaped_input)
+                {
+                    input_t  = self->nn_param.reduce.local2->reshaped_input->t;
+                }
+                else
+                {
+                    input_t  = mean_tmp_tensor->t;
+                }
+                if (self->nn_param.reduce.local2->reshaped_output)
+                {
+                    output_t = self->nn_param.reduce.local2->reshaped_output->t;
+                }
+                else
+                {
+                    output_t = outputs[0]->t;
+                }
+                status = op_comput_reduce_mean(self,
+                                               axis_tensor2,
+                                               self->nn_param.reduce.keep_dim,
+                                               input_t,
+                                               output_t);
+            }
+        }
+        else if (3 == resolved_dim_count)
+        {
+            vsi_bool enable_reshape = vx_true_e;
+
+            attr2.size[resolved_dim[0]] = 1;
+            attr2.size[resolved_dim[1]] = 1;
+            attr2.vtl = FALSE;
+            mean_tmp_tensor = vsi_nn_CreateTensor(self->graph, &attr2);
+            self->nn_param.reduce.local2->reshaped_tmp = mean_tmp_tensor;
+            re_sizes[resolved_dim[0]] = 1;
+            re_sizes[resolved_dim[1]] = 1;
+            memset(&attr, 0, sizeof(attr));
+            attr.size[0] = 2;
+            attr.dim_num = 1;
+            attr.is_const = TRUE;
+            attr.dtype.vx_type = VSI_NN_TYPE_UINT32;
+            attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
+            axis_tensor = vsi_nn_CreateTensorFromData(
+                self->graph,
+                (uint8_t *)&resolved_dim[0],
+                &attr);
+            if( NULL == axis_tensor )
+            {
+                VSILOGE("Create axis_tensor fail.(reduce)");
+                return VSI_FAILURE;
+            }
+            self->nn_param.reduce.local.axis_tensor = axis_tensor;
+            status = op_comput_reduce_mean(self,
+                                            axis_tensor,
+                                            self->nn_param.reduce.keep_dim,
+                                            inputs[0]->t,
+                                            mean_tmp_tensor->t);
+            if (3 == resolved_dim[resolved_dim_count - 1])
+            {
+                enable_reshape = caculate_reshape_size(&dim_num, re_sizes, re_sizes2,
+                                      resolved_dim, resolved_dim_count);
+                if (enable_reshape)
+                {
+                    self->nn_param.reduce.local2->reshaped_input  =
+                    vsi_nn_reshape_tensor(self->graph, mean_tmp_tensor, re_sizes2, dim_num);
+                    re_sizes2[resolved_dim[resolved_dim_count - 1]] = 1;
+                    self->nn_param.reduce.local2->reshaped_output =
+                    vsi_nn_reshape_tensor(self->graph, outputs[0], re_sizes2, dim_num);
+                }
+            }
+
+            memset(&attr, 0, sizeof(attr));
+            attr.size[0] = 1;
+            attr.dim_num = 1;
+            attr.is_const = TRUE;
+            attr.dtype.vx_type = VSI_NN_TYPE_UINT32;
+            attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
+            axis_tensor2 = vsi_nn_CreateTensorFromData(
+                self->graph,
+                (uint8_t *)&resolved_dim[2],
+                &attr);
+            if( NULL == axis_tensor2 )
+            {
+                VSILOGE("Create axis_tensor fail.(reduce)");
+                return VSI_FAILURE;
+            }
+
+            self->nn_param.reduce.local2->axis_tensor2 = axis_tensor2;
+            if (self->nn_param.reduce.local2->reshaped_input)
+            {
+                input_t  = self->nn_param.reduce.local2->reshaped_input->t;
+            }
+            else
+            {
+                input_t  = mean_tmp_tensor->t;
+            }
+            if (self->nn_param.reduce.local2->reshaped_output)
+            {
+                output_t = self->nn_param.reduce.local2->reshaped_output->t;
+            }
+            else
+            {
+                output_t = outputs[0]->t;
+            }
+            status = op_comput_reduce_mean(self,
+                                            axis_tensor2,
+                                            self->nn_param.reduce.keep_dim,
+                                            input_t,
+                                            output_t);
+        }
+
     }
     else if (self->nn_param.reduce.type == VSI_NN_REDUCE_SUM ||
              self->nn_param.reduce.type == VSI_NN_REDUCE_MAX ||
@@ -321,26 +673,16 @@ static void op_set_reduce_param_value(vsi_nn_nn_param_t *nn_param,
     }
 }
 
-static vsi_bool op_set_reduce_internal
-    (
-    vsi_nn_node_t * self,
-    vsi_nn_tensor_t ** inputs,
-    vsi_nn_tensor_t ** outputs,
-    vsi_nn_op_t  type_name
-    )
+static vsi_bool op_set_reduce_axis(
+                vsi_nn_node_t * self,
+                vsi_nn_tensor_t ** inputs
+                )
 {
-    uint32_t i, j;
-    vsi_nn_tensor_attr_t attr;
-    vsi_nn_internal_node_t* curr = NULL;
-    vsi_nn_internal_tensor_t* tmp_output_tensor[2] = {NULL, NULL};
-    vsi_bool use_virtual_tensor = TRUE;
-    uint32_t re_sizes[VSI_NN_MAX_DIM_NUM];
-    vsi_nn_tensor_t* new_output = NULL;
-    uint32_t dim_num;
+    uint32_t i = 0, j = 0;
     vx_int32 resolved_dim[4]    = {-1, -1, -1, -1};
     vx_int32 resolved_dim_count = 0;
+    vsi_bool is_loop = vx_true_e;
 
-    vsi_nn_init_internal_node_wksp( self );
     for (i = 0; i < self->nn_param.reduce.axis_num; i++)
     {
         vx_int32 current_axis = self->nn_param.reduce.axis[i] < 0 ? \
@@ -362,62 +704,182 @@ static vsi_bool op_set_reduce_internal
             resolved_dim[resolved_dim_count++] = current_axis;
     }
 
+    for (i = resolved_dim_count; is_loop && (i > 0); i--)
+    {
+        is_loop = vx_false_e;
+        for (j = 1; j < i; j++)
+        {
+            if (resolved_dim[j] < resolved_dim[j - 1])
+            {
+                vx_int32 temp = 0;
+                temp = resolved_dim[j];
+                resolved_dim[j] = resolved_dim[j - 1];
+                resolved_dim[j - 1] = temp;
+                is_loop = vx_true_e;
+            }
+        }
+    }
+
+    if (resolved_dim_count > 1)
+    {
+        j = 0;
+        for (i = 0; i < resolved_dim_count; i++)
+        {
+            if (inputs[POST_PROCESS_OUTPUT]->attr.size[resolved_dim[i]] > 1)
+            {
+                resolved_dim[j] = resolved_dim[i];
+                j++;
+            }
+        }
+        if (j == 0)
+        {
+            j = 1;
+        }
+        resolved_dim_count = j;
+    }
+
     for (i = 0; i < (uint32_t)resolved_dim_count; i++)
     {
         self->nn_param.reduce.axis[i] = resolved_dim[i];
     }
+    self->nn_param.reduce.axis_num = resolved_dim_count;
+    return vx_true_e;
+}
+
+
+static vsi_bool op_set_reduce_internal
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs,
+    vsi_nn_op_t  type_name
+    )
+{
+    uint32_t i = 0;
+    vsi_nn_tensor_attr_t attr;
+    vsi_nn_internal_node_t* curr = NULL;
+    vsi_nn_internal_tensor_t* tmp_output_tensor[2] = {NULL, NULL};
+    vsi_bool use_virtual_tensor = TRUE;
+    uint32_t re_sizes[VSI_NN_MAX_DIM_NUM] = {1};
+    uint32_t re_sizes2[VSI_NN_MAX_DIM_NUM] = {1};
+    vsi_nn_tensor_t* new_output = NULL;
+    uint32_t dim_num;
+    vx_int32 resolved_dim_count = 0;
+
+    vsi_nn_init_internal_node_wksp( self );
+    resolved_dim_count = self->nn_param.reduce.axis_num;
+
+    memcpy( &attr, &inputs[POST_PROCESS_INPUT]->attr, sizeof(vsi_nn_tensor_attr_t) );
+    dim_num = inputs[POST_PROCESS_INPUT]->attr.dim_num;
+
+    for (i = 0; i < VSI_NN_MAX_DIM_NUM; i++)
+    {
+        re_sizes[i]  = 1;
+        re_sizes2[i] = 1;
+    }
+
+    for (i = 0; i < dim_num; i++)
+    {
+        attr.size[i] = inputs[POST_PROCESS_OUTPUT]->attr.size[i];
+        re_sizes[i]  = inputs[POST_PROCESS_OUTPUT]->attr.size[i];
+    }
+
 
     if (1 == resolved_dim_count)
     {
+        if (3 == self->nn_param.reduce.axis[resolved_dim_count - 1])
+        {
+            vsi_bool enable_reshape = vx_true_e;
+            enable_reshape = caculate_reshape_size(&dim_num, re_sizes, re_sizes2,
+                                    (vx_int32 *)(self->nn_param.reduce.axis), resolved_dim_count);
+            if (enable_reshape)
+            {
+                self->nn_param.reduce.local2->reshaped_input  =
+                vsi_nn_reshape_tensor(self->graph, inputs[0], re_sizes2, dim_num);
+                re_sizes2[self->nn_param.reduce.axis[resolved_dim_count - 1]] = 1;
+                self->nn_param.reduce.local2->reshaped_output =
+                vsi_nn_reshape_tensor(self->graph, outputs[0], re_sizes2, dim_num);
+            }
+        }
+
         curr = vsi_nn_new_internal_node( self, type_name, 0, 0 );
         op_set_reduce_param_value(&(curr->node->nn_param), type_name,
         self->nn_param.reduce.axis, 1, self->nn_param.reduce.keep_dim);
-        curr->inputs[0]  = inputs[0];
-        curr->outputs[0] = outputs[0];
+        if (self->nn_param.reduce.local2->reshaped_input)
+        {
+            curr->inputs[0] = self->nn_param.reduce.local2->reshaped_input;
+        }
+        else
+        {
+            curr->inputs[0]  = inputs[0];
+        }
+        if (self->nn_param.reduce.local2->reshaped_output)
+        {
+            curr->outputs[0] = self->nn_param.reduce.local2->reshaped_output;
+        }
+        else
+        {
+            curr->outputs[0] = outputs[0];
+        }
         vsi_nn_setup_internal_node_op(self, curr);
     }
     else if (2 == resolved_dim_count)
     {
-        memcpy( &attr, &inputs[POST_PROCESS_INPUT]->attr, sizeof(vsi_nn_tensor_attr_t) );
-        dim_num = inputs[POST_PROCESS_INPUT]->attr.dim_num;
-        for (i = 0; i < dim_num; i++)
-        {
-            attr.size[i] = inputs[POST_PROCESS_OUTPUT]->attr.size[i];
-            re_sizes[i]  = inputs[POST_PROCESS_OUTPUT]->attr.size[i];
-        }
         attr.size[self->nn_param.reduce.axis[0]] = 1;
         attr.vtl = use_virtual_tensor;
         attr.is_const = FALSE;
         tmp_output_tensor[0] = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
         re_sizes[self->nn_param.reduce.axis[0]] = 1;
-        re_sizes[self->nn_param.reduce.axis[1]] = 1;
-        new_output = vsi_nn_reshape_tensor(self->graph, outputs[0], re_sizes, dim_num);
 
         curr = vsi_nn_new_internal_node( self, type_name, 0, 0 );
         op_set_reduce_param_value(&(curr->node->nn_param), type_name,
         &(self->nn_param.reduce.axis[0]), 1, vx_true_e);
         curr->inputs[0]  = inputs[POST_PROCESS_INPUT];
         curr->outputs[0] = tmp_output_tensor[0]->t;
-
         vsi_nn_setup_internal_node_op( self, curr );
+
+        if (3 == self->nn_param.reduce.axis[resolved_dim_count - 1])
+        {
+            vsi_bool enable_reshape = vx_true_e;
+            enable_reshape = caculate_reshape_size(&dim_num, re_sizes, re_sizes2,
+                                    (vx_int32 *)(self->nn_param.reduce.axis), resolved_dim_count);
+
+            if (enable_reshape)
+            {
+                self->nn_param.reduce.local2->reshaped_input  =
+                vsi_nn_reshape_tensor(self->graph, tmp_output_tensor[0]->t, re_sizes2, dim_num);
+                re_sizes2[self->nn_param.reduce.axis[resolved_dim_count - 1]] = 1;
+                new_output = vsi_nn_reshape_tensor(self->graph, outputs[0], re_sizes2, dim_num);
+            }
+            else
+            {
+                re_sizes[self->nn_param.reduce.axis[1]] = 1;
+                new_output = vsi_nn_reshape_tensor(self->graph, outputs[0], re_sizes, dim_num);
+            }
+        }
+        else
+        {
+            re_sizes[self->nn_param.reduce.axis[1]] = 1;
+            new_output = vsi_nn_reshape_tensor(self->graph, outputs[0], re_sizes, dim_num);
+        }
 
         curr = vsi_nn_new_internal_node( self, type_name, 0, 0 );
         op_set_reduce_param_value(&(curr->node->nn_param), type_name,
         &(self->nn_param.reduce.axis[1]), 1, vx_true_e);
-        curr->inputs[0]  = tmp_output_tensor[0]->t;
+        if (self->nn_param.reduce.local2->reshaped_input)
+        {
+            curr->inputs[0] = self->nn_param.reduce.local2->reshaped_input;
+        }
+        else
+        {
+            curr->inputs[0]  = tmp_output_tensor[0]->t;
+        }
         curr->outputs[0] = new_output;
         self->nn_param.reduce.local2->reshaped_output = new_output;
         vsi_nn_setup_internal_node_op(self, curr);
     }
     else if (3 == resolved_dim_count)
     {
-        memcpy( &attr, &inputs[POST_PROCESS_INPUT]->attr, sizeof(vsi_nn_tensor_attr_t) );
-        dim_num = inputs[POST_PROCESS_INPUT]->attr.dim_num;
-        for (i = 0; i < dim_num; i++)
-        {
-            attr.size[i] = inputs[POST_PROCESS_OUTPUT]->attr.size[i];
-            re_sizes[i]  = inputs[POST_PROCESS_OUTPUT]->attr.size[i];
-        }
         attr.size[self->nn_param.reduce.axis[0]] = 1;
         attr.vtl = use_virtual_tensor;
         attr.is_const = FALSE;
@@ -426,8 +888,6 @@ static vsi_bool op_set_reduce_internal
         tmp_output_tensor[1] = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
         re_sizes[self->nn_param.reduce.axis[0]] = 1;
         re_sizes[self->nn_param.reduce.axis[1]] = 1;
-        re_sizes[self->nn_param.reduce.axis[2]] = 1;
-        new_output = vsi_nn_reshape_tensor(self->graph, outputs[0], re_sizes, dim_num);
 
         curr = vsi_nn_new_internal_node( self, type_name, 0, 0 );
         op_set_reduce_param_value(&(curr->node->nn_param), type_name,
@@ -443,10 +903,42 @@ static vsi_bool op_set_reduce_internal
         curr->outputs[0] = tmp_output_tensor[1]->t;
         vsi_nn_setup_internal_node_op( self, curr );
 
+
+        if (3 == self->nn_param.reduce.axis[resolved_dim_count - 1])
+        {
+            vsi_bool enable_reshape = vx_true_e;
+            enable_reshape = caculate_reshape_size(&dim_num, re_sizes, re_sizes2,
+                                    (vx_int32 *)(self->nn_param.reduce.axis), resolved_dim_count);
+            if (enable_reshape)
+            {
+                self->nn_param.reduce.local2->reshaped_input  =
+                vsi_nn_reshape_tensor(self->graph, tmp_output_tensor[1]->t, re_sizes2, dim_num);
+                re_sizes2[self->nn_param.reduce.axis[resolved_dim_count - 1]] = 1;
+                new_output = vsi_nn_reshape_tensor(self->graph, outputs[0], re_sizes2, dim_num);
+            }
+            else
+            {
+                re_sizes[self->nn_param.reduce.axis[2]] = 1;
+                new_output = vsi_nn_reshape_tensor(self->graph, outputs[0], re_sizes, dim_num);
+            }
+        }
+        else
+        {
+            re_sizes[self->nn_param.reduce.axis[2]] = 1;
+            new_output = vsi_nn_reshape_tensor(self->graph, outputs[0], re_sizes, dim_num);
+        }
+
         curr = vsi_nn_new_internal_node( self, type_name, 0, 0 );
         op_set_reduce_param_value(&(curr->node->nn_param), type_name,
         &(self->nn_param.reduce.axis[2]), 1, vx_true_e);
-        curr->inputs[0]  = tmp_output_tensor[1]->t;
+        if (self->nn_param.reduce.local2->reshaped_input)
+        {
+            curr->inputs[0]  = self->nn_param.reduce.local2->reshaped_input;
+        }
+        else
+        {
+            curr->inputs[0]  = tmp_output_tensor[1]->t;
+        }
         curr->outputs[0] = new_output;
         self->nn_param.reduce.local2->reshaped_output = new_output;
         vsi_nn_setup_internal_node_op(self, curr);
@@ -456,7 +948,6 @@ static vsi_bool op_set_reduce_internal
         VSILOGE("error: resolved_dim_count is %d\n", resolved_dim_count);
         return vx_false_e;
     }
-
     return vx_true_e;
 }
 
@@ -540,6 +1031,12 @@ static vsi_bool op_setup
         }
     }
 
+    if (vx_false_e == op_set_reduce_axis(self, inputs))
+    {
+        VSILOGE("op_set_reduce_axis error");
+        return vx_false_e;
+    }
+
     if (self->nn_param.reduce.type == VSI_NN_REDUCE_SUM)
     {
         ret = op_set_reduce_internal(self, inputs, outputs, VSI_NN_OP_REDUCESUM_INTERNAL);
@@ -580,10 +1077,23 @@ static vsi_status op_deinit
 
     if (self->nn_param.reduce.local2 != NULL)
     {
+        if (self->nn_param.reduce.local2->axis_tensor2 != NULL)
+        {
+            vsi_nn_ReleaseTensor(&(self->nn_param.reduce.local2->axis_tensor2));
+        }
+        if (self->nn_param.reduce.local2->reshaped_tmp != NULL)
+        {
+            vsi_nn_ReleaseTensor(&(self->nn_param.reduce.local2->reshaped_tmp));
+        }
         if (self->nn_param.reduce.local2->reshaped_output != NULL)
         {
             vsi_nn_ReleaseTensor(&(self->nn_param.reduce.local2->reshaped_output));
         }
+        if (self->nn_param.reduce.local2->reshaped_input != NULL)
+        {
+            vsi_nn_ReleaseTensor(&(self->nn_param.reduce.local2->reshaped_input));
+        }
+
         free(self->nn_param.reduce.local2);
         self->nn_param.reduce.local2 = NULL;
     }

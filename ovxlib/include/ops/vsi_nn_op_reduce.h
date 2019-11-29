@@ -49,7 +49,10 @@ typedef struct _vsi_nn_reduce_lcl_data_t
 
 typedef struct _vsi_nn_reduce_lcl2_data_t
 {
+    vsi_nn_tensor_t *reshaped_input;
     vsi_nn_tensor_t *reshaped_output;
+    vsi_nn_tensor_t *reshaped_tmp;
+    vsi_nn_tensor_t *axis_tensor2;
 } vsi_nn_reduce_lcl2_data_t;
 
 typedef struct _vsi_nn_reduce_param
