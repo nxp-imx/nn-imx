@@ -28,15 +28,17 @@
 #include <string>
 #include <stdarg.h>
 #include <stdio.h>
+#include <cstdlib>
 
 namespace nnrt {
 namespace logging {
 
-enum Level {
-    Debug,
-    Info,
-    Warn,
-    Error
+enum class Level {
+    None = -1,
+    Error = 0,
+    Warn = 1,
+    Info = 2,
+    Debug = 3,
 };
 
 using endl_type = std::ostream&(std::ostream&);
@@ -48,8 +50,16 @@ struct Logger
             const std::string& function, const int number)
         : level_(level), tag_(tag), new_msg_(true) {}
 
-    inline bool enabled() {
-        return (level_ >= Level::Error);
+    inline bool enabled() const {
+        static Level slogLevel = Level::None;
+
+        if (Level::None == slogLevel) {
+            if (const char* logLevel = std::getenv("NNRT_LOG_LEVEL")) {
+                slogLevel = static_cast<Level>(std::atoi(logLevel));
+            }
+        }
+
+        return (slogLevel >= level_);
     }
 
     inline std::string getLabel() {
@@ -76,7 +86,7 @@ struct Logger
     inline std::string getHeader() {
         std::string header = getLabel() + " ";
         if (tag_.length() > 0) {
-            header += "("+tag_+")" + " ";
+            header += "(" + tag_ + ")" + " ";
         }
         return header;
     }
