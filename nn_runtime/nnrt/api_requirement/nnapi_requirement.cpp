@@ -70,3 +70,4 @@ void NNapiRequirementRegister(const std::string& opName, const IArgList* arglist
 #include "nnapi_spec/ANEURALNETWORKS_HEATMAP_MAX_KEYPOINT.hpp"
 #include "nnapi_spec/ANEURALNETWORKS_DETECTION_POSTPROCESSING.hpp"
 #include "nnapi_spec/ANEURALNETWORKS_TRANSPOSE_CONV_2D.hpp"
+#include "nnapi_spec/ANEURALNETWORKS_DEPTHWISE_CONV_2D.hpp"

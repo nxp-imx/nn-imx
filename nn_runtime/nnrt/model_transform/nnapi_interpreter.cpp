@@ -542,29 +542,50 @@ OperationPtr NnApiInterpreter::map_DEPTHWISE_CONV_2D(Model* model,
 {
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
     std::shared_ptr<DepthwiseConv2DOperation> conv2d = std::make_shared<DepthwiseConv2DOperation>();
+
     NNAPI_CHECK_PTR(conv2d);
-    conv2d->setDataLayout(DataLayout::NHWC);
-    if (inputs.size() == 11)
-    {
-        conv2d->pad[0] = inputs[3]->scalar.int32;
-        conv2d->pad[1] = inputs[4]->scalar.int32;
-        conv2d->pad[2] = inputs[5]->scalar.int32;
-        conv2d->pad[3] = inputs[6]->scalar.int32;
-        conv2d->strides[0] = inputs[7]->scalar.int32;
-        conv2d->strides[1] = inputs[8]->scalar.int32;
-        conv2d->multiplier = inputs[9]->scalar.int32;
-        resetFusedType(model, operation, 10);
+    auto argList = matchArgList(inputs, "DepthwiseConvolution2D");
+    if (argList) {
+        if (-1 != argList->ArgPos("explicit_pad_left")) {
+            conv2d->pad[0] = inputs[argList->ArgPos("explicit_pad_left")]->scalar.int32;
+            conv2d->pad[1] = inputs[argList->ArgPos("explicit_pad_right")]->scalar.int32;
+            conv2d->pad[2] = inputs[argList->ArgPos("explicit_pad_top")]->scalar.int32;
+            conv2d->pad[3] = inputs[argList->ArgPos("explicit_pad_bottom")]->scalar.int32;
+        } else if (-1 != argList->ArgPos("implicit_pad_type")){
+            conv2d->padType = mapPadType(inputs[argList->ArgPos("implicit_pad_type")]->scalar.int32);
+        } else {
+            assert(0);
+            NNRT_LOGE("NNAPI_interpreter") << "Argument padding method not found";
+        }
+
+        conv2d->strides[0] = inputs[argList->ArgPos("stride_w")]->scalar.int32;
+        conv2d->strides[1] = inputs[argList->ArgPos("stride_h")]->scalar.int32;
+        conv2d->multiplier = inputs[argList->ArgPos("multiplier")]->scalar.int32;
+
+        conv2d->setDataLayout(DataLayout::NHWC);  // default layout
+        if (-1 != argList->ArgPos("data_layout")) {
+            conv2d->setDataLayout(getDataLayout(inputs[argList->ArgPos("data_layout")]->scalar.boolean));
+        }
+
+        conv2d->dilations[0] = 1;
+        conv2d->dilations[1] = 1;
+        if (-1 != argList->ArgPos("dilation_w")) {
+            conv2d->dilations[0] = inputs[argList->ArgPos("dilation_w")]->scalar.int32;
+            NNRT_LOGD("NNAPI_interpreter") << "dilation_w = " << conv2d->dilations[0];
+        }
+        if (-1 != argList->ArgPos("dilation_h")) {
+            conv2d->dilations[1] = inputs[argList->ArgPos("dilation_h")]->scalar.int32;
+            NNRT_LOGD("NNAPI_interpreter") << "dilation_h = " << conv2d->dilations[1];
+        }
+
+        resetFusedType(model, operation, argList->ArgPos("fuse_code"));
+        conv2d->setVxParam(OverflowPolicy::WRAP, RoundingPolicy::TO_ZERO, Rounding::FLOOR);
+        truncateOperationIOs(model, operation, 3, 1);
+    } else {
+        assert(0);
+        NNRT_LOGE("NNAPI_interpreter") << "Argument match failed";
     }
-    else
-    {
-        conv2d->padType = mapPadType(inputs[3]->scalar.int32);
-        conv2d->strides[0] = inputs[4]->scalar.int32;
-        conv2d->strides[1] = inputs[5]->scalar.int32;
-        conv2d->multiplier = inputs[6]->scalar.int32;
-        resetFusedType(model, operation, 7);
-    }
-    conv2d->setVxParam(OverflowPolicy::WRAP, RoundingPolicy::TO_ZERO, Rounding::FLOOR);
-    truncateOperationIOs(model, operation, 3, 1);
+
     return conv2d;
 }
 
