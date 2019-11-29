@@ -470,10 +470,12 @@ Return<ErrorStatus> VsiPreparedModel::executeBase(const Request& request,
     release_rtinfo(io_buffer_);
 
     time_point deviceEnd;
-    if (measure == MeasureTiming::YES) deviceEnd = now();
-
-    Timing timing = {.timeOnDevice = uint64_t(microsecondsDuration(deviceEnd, deviceStart)),
-                     .timeInDriver = uint64_t(microsecondsDuration(deviceEnd, deviceStart))};
+    Timing timing = kNoTiming;
+    if (measure == MeasureTiming::YES) {
+        deviceEnd = now();
+        timing.timeOnDevice = uint64_t(microsecondsDuration(deviceEnd, deviceStart));
+        timing.timeInDriver = uint64_t(microsecondsDuration(deviceEnd, deviceStart));
+    }
 
     LOG(INFO) << __FUNCTION__<<" time: " << toString(timing);
 
