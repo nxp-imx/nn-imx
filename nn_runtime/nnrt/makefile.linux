@@ -63,7 +63,6 @@ OBJECTS += \
 
 vpath %.cpp ./op
 OBJECTS += \
-        $(OBJ_DIR)/activation.o\
         $(OBJ_DIR)/convolution.o\
         $(OBJ_DIR)/normalization.o\
         $(OBJ_DIR)/elementwise.o\
