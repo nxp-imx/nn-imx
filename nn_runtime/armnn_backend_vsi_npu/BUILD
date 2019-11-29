@@ -27,6 +27,8 @@ package(
     features = ["-parse_headers"],
 )
 
+load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
+
 filegroup(
     name = "ovxArmnnBackendWorkload_files",
     srcs = glob([
@@ -100,4 +102,31 @@ cc_binary(
             ["@boost//:boost_unit_test_framework"] +
             ["@boost//:boost_filesystem"] ,
     linkopts = ["-lpthread"],
+)
+
+cc_test(
+    name = "ci-unit_test",
+    srcs = ["backend_ut_files"],
+    copts = ["-std=c++1z"],
+    deps =  ["armnn_ovx_backend"] +
+            ["@armnn//:backend_common_ut"] +
+            ["@boost//:boost_system"] +
+            ["@boost//:boost_unit_test_framework"] +
+            ["@boost//:boost_filesystem"] ,
+    linkopts = ["-lpthread"],
+    testonly = False,
+    visibility = ['//visibility:public'],
+)
+
+pkg_tar(
+    name = "armnn-ut_pkg",
+    extension = "tar.gz",
+    srcs = [
+        ":ci-unit_test",
+        "@VIV_SDK//:VIV_EXT_HDR",
+    ],
+    deps = [
+        "//:base_pkg",
+    ],
+    package_dir = "armnn-ut_pkg",
 )
