@@ -299,16 +299,17 @@ void VsiPreparedModel::release_rtinfo(std::vector<VsiRTInfo>& rtInfos){
             uint32_t registered_idx = 0;
             auto ovx_operand = native_model_->addOperand(nullptr, &registered_idx);
             auto status = construct_ovx_operand(ovx_operand, hal_operand);
-            if (ErrorStatus::NONE != status)
+            if (ErrorStatus::NONE != status){
+                LOG(INFO)<<"Deivce do not support the operand type"<< static_cast<int32_t>(hal_operand.type);
                 return status;
-
+            }
             fill_operand_value(ovx_operand, hal_operand);
         }
 
         for (const auto& hal_op : model_.operations) {
             auto ovx_op_type = op_code_mapping(hal_op.type);
             if( nnrt::OperationType::NONE == ovx_op_type){
-                LOG(ERROR)<<" do not support operand type: "<<static_cast<int>(hal_op.type);
+                LOG(ERROR)<<"Device do not support operation type: "<<static_cast<int>(hal_op.type);
                 return ErrorStatus::INVALID_ARGUMENT;
             }
 

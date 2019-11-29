@@ -48,6 +48,16 @@ namespace vsi_driver {
         callback->notify_1_2(status, preparedModel);
     }
 
+    template <typename T_IPreparedModelCallback>
+    void asyncPrepareModel(sp<VsiPreparedModel> vsiPreapareModel, const T_IPreparedModelCallback &callback){
+          auto status = vsiPreapareModel->initialize();
+          if( ErrorStatus::NONE != status){
+            notify(callback, status, nullptr);
+            return;
+          }
+          notify(callback, status, vsiPreapareModel);
+    }
+
     template <typename T_Model, typename T_IPreparedModelCallback>
     Return<ErrorStatus> VsiDevice::prepareModelBase(const T_Model& model,
                                          ExecutionPreference preference,
@@ -71,13 +81,8 @@ namespace vsi_driver {
             return ErrorStatus::INVALID_ARGUMENT;
         }
 
-        // TODO: make asynchronous later
         sp<VsiPreparedModel> preparedModel = new VsiPreparedModel( convertToV1_2(model));
-        if (ErrorStatus::NONE != preparedModel->initialize()) {
-            notify(callback, ErrorStatus::INVALID_ARGUMENT, nullptr);
-            return ErrorStatus::INVALID_ARGUMENT;
-        }
-        notify(callback, ErrorStatus::NONE, preparedModel);
+        std::thread(asyncPrepareModel<sp<T_IPreparedModelCallback>>, preparedModel, callback).detach();
 
         return ErrorStatus::NONE;
 
