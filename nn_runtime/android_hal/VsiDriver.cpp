@@ -21,78 +21,13 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-
-#define LOG_TAG "VsiDriver"
-
-#if ANDROID_SDK_VERSION > 28
-#include "VsiDevice1_2.h"
-#elif ANDROID_SDK_VERSION > 27
-#include "VsiDevice.h"
-#endif
-
-#include "HalInterfaces.h"
-#include "Utils.h"
-
-#if ANDROID_SDK_VERSION > 27
-#include "ValidateHal.h"
-#endif
-
-#include <sys/system_properties.h>
-#include <android-base/logging.h>
-#include <hidl/LegacySupport.h>
-#include <thread>
+#include "VsiDriver.h"
 
 namespace android {
 namespace nn {
 namespace vsi_driver {
 
-class VsiDriver : public VsiDevice {
-   public:
-    VsiDriver() : VsiDevice("vsi-npu") {initalizeEnv();}
-    Return<void> getCapabilities(getCapabilities_cb _hidl_cb) ;
-    Return<void> getSupportedOperations(const V1_0::Model& model, getSupportedOperations_cb cb) ;
-
-#if ANDROID_SDK_VERSION > 27
-    Return<void> getCapabilities_1_1(getCapabilities_1_1_cb _hidl_cb) ;
-    Return<void> getSupportedOperations_1_1(const V1_1::Model& model,
-                                            getSupportedOperations_1_1_cb cb) ;
-#endif
-
-#if ANDROID_SDK_VERSION > 28
-    Return<void> getCapabilities_1_2(V1_2::IDevice::getCapabilities_1_2_cb _hidl_cb) override;
-    Return<void> getSupportedOperations_1_2(const V1_2::Model& model,
-                                            V1_2::IDevice::getSupportedOperations_1_2_cb cb) ;
-
-    Return<void>
-        getVersionString(getVersionString_cb _hidl_cb) override{
-        _hidl_cb(ErrorStatus::NONE, "android hal vsi npu 1.2 alpha");
-        return Void();
-    };
-
-    Return<void>
-        getType(getType_cb _hidl_cb) override{
-        _hidl_cb(ErrorStatus::NONE, V1_2::DeviceType::ACCELERATOR);
-        return Void();
-    };
-
-    Return<void>
-        getSupportedExtensions(getSupportedExtensions_cb _hidl_cb)override{
-        _hidl_cb(ErrorStatus::NONE, {/* No extensions. */});
-        return Void();
-    };
-
-    Return<void>
-        getNumberOfCacheFilesNeeded(getNumberOfCacheFilesNeeded_cb _hidl_cb)override{
-        // Set both numbers to be 0 for cache not supported.
-        _hidl_cb(ErrorStatus::NONE, /*numModelCache=*/0, /*numDataCache=*/0);
-        return Void();
-    };
-#endif
-
-   private:
-   int32_t disable_float_feature_; // switch that float-type running on hal
-   private:
-    void initalizeEnv()
+    void VsiDriver::initalizeEnv()
     {
         disable_float_feature_ = 0;
         char env[100] = {0};
@@ -104,8 +39,9 @@ class VsiDriver : public VsiDevice {
                 LOG(INFO)<< "float-type model will not running on hal";
         }
     }
+
     template <typename T_model, typename T_getSupportOperationsCallback>
-    Return<void> getSupportedOperationsBase(const T_model& model,
+    Return<void> VsiDriver::getSupportedOperationsBase(const T_model& model,
                                             T_getSupportOperationsCallback cb) {
            LOG(INFO)<< "getSupportedOperations";
           if(validateModel(model)) {
@@ -122,12 +58,7 @@ class VsiDriver : public VsiDevice {
         }
         LOG(INFO)<< "getSupportedOperations exit";
         return Void();
-    };
-
-    template<typename T_Model>
-    bool getSupportedOperation(const size_t operation_index,
-                                               const T_Model& model);
-};
+    }
 
 Return<void> VsiDriver::getCapabilities(getCapabilities_cb cb) {
     V1_0::Capabilities capabilities;
@@ -142,7 +73,7 @@ Return<void> VsiDriver::getCapabilities(getCapabilities_cb cb) {
     return Void();
 }
 
-Return<void> VsiDriver::getSupportedOperations(const V1_0::Model& model, getSupportedOperations_cb cb) {
+Return<void> VsiDriver::getSupportedOperations(const V1_0::Model& model, V1_0::IDevice::getSupportedOperations_cb cb) {
     return getSupportedOperationsBase(model, cb);
 }
 
@@ -163,7 +94,7 @@ Return<void> VsiDriver::getCapabilities_1_1(getCapabilities_1_1_cb cb) {
 }
 
 Return<void> VsiDriver::getSupportedOperations_1_1(const V1_1::Model& model,
-                                                   getSupportedOperations_1_1_cb cb) {
+                                                   V1_1::IDevice::getSupportedOperations_1_1_cb cb) {
     return getSupportedOperationsBase(model, cb);
 }
 #endif
@@ -241,6 +172,14 @@ Return<void> VsiDriver::getSupportedOperations_1_1(const V1_1::Model& model,
                 auto & scalarOperand= model_1_2.operands[operation.inputs[1]];
                 if(OperandType::INT32 != scalarOperand.type)
                     return false;
+                break;
+                }
+            case OperationType::TRANSPOSE:{
+                auto & perm= model_1_2.operands[operation.inputs[1]];
+                if(OperandLifeTime::MODEL_INPUT== perm.lifetime ){
+                    LOG(ERROR)<<"do not support perm as input";
+                    return false;
+                }
                 break;
                 }
             //to-do: check operand with operation
@@ -337,7 +276,7 @@ Return<void> VsiDriver::getSupportedOperations_1_1(const V1_1::Model& model,
  #endif
 }  // namespace vsi_driver
 }  // namespace nn
-}  // namespace android
+}
 
 using android::nn::vsi_driver::VsiDriver;
 using android::sp;
