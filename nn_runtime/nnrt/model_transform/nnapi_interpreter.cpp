@@ -190,7 +190,7 @@ NnApiInterpreter::NnApiInterpreter()
     REGISTER_OP(POW);
     REGISTER_OP(PRELU);
     //REGISTER_OP(ROI_ALIGN);
-    REGISTER_OP(ROI_POOL);
+    REGISTER_OP(ROI_POOLING);
     REGISTER_OP(RSQRT);
     REGISTER_OP(SELECT);
     //REGISTER_OP(SLICE);
@@ -1432,10 +1432,9 @@ OperationPtr NnApiInterpreter::map_TILE(Model* model,
     return op;
 }
 
-OperationPtr NnApiInterpreter::map_ROI_POOL(Model* model,
+OperationPtr NnApiInterpreter::map_ROI_POOLING(Model* model,
         OperationPtr operation, uint32_t operation_index)
 {
-    NNAPI_CHECK_IO_NUM(operation, 10, 1);
     std::shared_ptr<ROIPoolingOperation> op = std::make_shared<ROIPoolingOperation>();
     NNAPI_CHECK_PTR(op);
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
@@ -1445,8 +1444,6 @@ OperationPtr NnApiInterpreter::map_ROI_POOL(Model* model,
         op->width = inputs[argList->ArgPos("width")]->scalar.int32;
         op->height_ratio = inputs[argList->ArgPos("height_ratio")]->scalar.float32;
         op->width_ratio = inputs[argList->ArgPos("width_ratio")]->scalar.float32;
-        op->sampling_points_height = inputs[argList->ArgPos("width_ratio")]->scalar.int32;
-        op->sampling_points_width = inputs[argList->ArgPos("width_ratio")]->scalar.int32;
         op->setDataLayout(getDataLayout(inputs[argList->ArgPos("layout")]->scalar.boolean));
     } else {
         NNRT_LOGE_PRINT("ROIPooling argument list not support");

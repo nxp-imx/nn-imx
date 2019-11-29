@@ -24,19 +24,18 @@
 
 /**
 * Select and scale the feature map of each region of interest to a unified
-* output size by average pooling sampling points from bilinear interpolation.
+* output size by max-pooling.
 *
 * The region of interest is represented by its upper-left corner coordinate
 * (x1,y1) and lower-right corner coordinate (x2,y2) in the original image.
 * A spatial scaling factor is applied to map into feature map coordinate.
 * A valid region of interest should satisfy x1 <= x2 and y1 <= y2.
 *
-* No rounding is applied in this operation. The sampling points are unified
-* distributed in the pooling bin and their values are calculated by bilinear
-* interpolation.
+* Rounding is applied in this operation to ensure integer boundary for
+* regions of interest and pooling bins.
 *
 * Supported tensor {@link OperandCode}:
-* * {@link ANEURALNETWORKS_TENSOR_FLOAT16} (since API level 29)
+* * {@link ANEURALNETWORKS_TENSOR_FLOAT16}
 * * {@link ANEURALNETWORKS_TENSOR_FLOAT32}
 * * {@link ANEURALNETWORKS_TENSOR_QUANT8_ASYMM}
 *
@@ -51,12 +50,10 @@
 *      the regions of interest, each line with format [x1, y1, x2, y2].
 *      For input0 of type {@link ANEURALNETWORKS_TENSOR_QUANT8_ASYMM},
 *      this tensor should be of {@link ANEURALNETWORKS_TENSOR_QUANT16_ASYMM},
-*      with zeroPoint of 0 and scale of 0.125. Zero num_rois is
-*      supported for this tensor.
+*      with zeroPoint of 0 and scale of 0.125.
 * * 2: An 1-D {@link ANEURALNETWORKS_TENSOR_INT32} tensor, of shape
 *      [num_rois], specifying the batch index of each box. Boxes with
-*      the same batch index are grouped together. Zero num_rois is
-*      supported for this tensor.
+*      the same batch index are grouped together.
 * * 3: An {@link ANEURALNETWORKS_INT32} scalar, specifying the output
 *      height of the output tensor.
 * * 4: An {@link ANEURALNETWORKS_INT32} scalar, specifying the output
@@ -65,13 +62,7 @@
 *      from the height of original image to the height of feature map.
 * * 6: An {@link ANEURALNETWORKS_FLOAT32} scalar, specifying the ratio
 *      from the width of original image to the width of feature map.
-* * 7: An {@link ANEURALNETWORKS_INT32} scalar, specifying the number of
-*      sampling points in height dimension used to compute the output.
-*      Set to 0 for adaptive value of ceil(roi_height/out_height).
-* * 8: An {@link ANEURALNETWORKS_INT32} scalar, specifying the number of
-*      sampling points in width dimension used to compute the output.
-*      Set to 0 for adaptive value of ceil(roi_width/out_width).
-* * 9: An {@link ANEURALNETWORKS_BOOL} scalar, set to true to specify
+* * 7: An {@link ANEURALNETWORKS_BOOL} scalar, set to true to specify
 *      NCHW data layout for input0 and output0. Set to false for NHWC.
 *
 * Outputs:
@@ -96,8 +87,6 @@ OP_SPEC_BEGIN()
      width,               \
      height_ratio,        \
      width_ratio,         \
-     sampling_points_height,\
-     sampling_points_width,\
      layout)
 #define ARGC BOOST_PP_TUPLE_SIZE(ARG_NAMES)
 
@@ -115,8 +104,6 @@ MAKE_SPEC(roi_pooling)
     .width_(nnrt::OperandType::INT32)
     .height_ratio_(nnrt::OperandType::FLOAT32)
     .width_ratio_(nnrt::OperandType::FLOAT32)
-    .sampling_points_height_(nnrt::OperandType::INT32)
-    .sampling_points_width_(nnrt::OperandType::INT32)
     .layout_(nnrt::OperandType::BOOL)
     );
 

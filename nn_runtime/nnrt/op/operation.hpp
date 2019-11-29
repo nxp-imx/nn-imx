@@ -467,13 +467,11 @@ struct ROIAlignOperation : Operation {
 };
 
 struct ROIPoolingOperation : Operation {
-    ROIPoolingOperation() : Operation(OperationType::ROI_POOL) {}
+    ROIPoolingOperation() : Operation(OperationType::ROI_POOLING) {}
     int height;
     int width;
     float height_ratio;
     float width_ratio;
-    int sampling_points_height;
-    int sampling_points_width;
 };
 
 struct DetectionPostprocessingOperation : Operation {

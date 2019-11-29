@@ -51,7 +51,7 @@ enum class OperationType: uint32_t {
     DECONV_2D,
     TRANSPOSE_CONV_2D = DECONV_2D,
     //POOL_WITH_ARGMAX,
-    ROI_POOL,
+    ROI_POOLING,
     ROI_ALIGN,
 
     PAD,

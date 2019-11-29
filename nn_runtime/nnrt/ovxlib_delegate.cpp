@@ -172,7 +172,7 @@ OvxlibDelegate::OvxlibDelegate()
     REGISTER_OP(POW);
     REGISTER_OP(LOG);
     //REGISTER_OP(ROI_ALIGN);
-    REGISTER_OP(ROI_POOL);
+    REGISTER_OP(ROI_POOLING);
     REGISTER_OP(SELECT);
     REGISTER_OP(SLICE);
     REGISTER_OP(SPLIT);
@@ -1672,7 +1672,7 @@ int OvxlibDelegate::addNode_TILE(Model* model,
     return err;
 }
 
-int OvxlibDelegate::addNode_ROI_POOL(Model* model,
+int OvxlibDelegate::addNode_ROI_POOLING(Model* model,
         OperationPtr operation, uint32_t operation_index)
 {
     (void)model;
