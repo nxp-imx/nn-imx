@@ -207,12 +207,11 @@ NnApiInterpreter::NnApiInterpreter()
     REGISTER_OP(GENERATE_PROPOSALS);
     REGISTER_OP(RANDOM_MULTINOMIAL);
     REGISTER_OP(HEATMAP_MAX_KEYPOINT);
-    //REGISTER_OP(LOG_SOFTMAX);
     REGISTER_OP(BOX_WITH_NMS_LIMIT);
     REGISTER_OP(LOG_SOFTMAX);
-    //REGISTER_OP(TILE);
     REGISTER_OP(TOPK);
     REGISTER_OP(DETECTION_POSTPROCESSING);
+    REGISTER_OP(TILE);
 
     /*customer Op*/
 #undef REGISTER_OP
@@ -1411,6 +1410,25 @@ OperationPtr NnApiInterpreter::map_RANDOM_MULTINOMIAL(Model* model,
         NNRT_LOGE_PRINT("RandomMultinomial argument list not support");
         assert(false);
     }
+    return op;
+}
+
+OperationPtr NnApiInterpreter::map_TILE(Model* model,
+        OperationPtr operation, uint32_t operation_index)
+{
+    std::shared_ptr<TileOperation> op = std::make_shared<TileOperation>();
+    NNAPI_CHECK_PTR(op);
+    std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
+    auto argList = matchArgList(inputs, "TileOperation");
+    if (argList) {
+        auto multiples_tensor = inputs[argList->ArgPos("multiples")];
+        int32_t* multiples = model->getBuffer<int32_t>(multiples_tensor->weak_mem_ref.lock());
+        op->multiples.assign(multiples, multiples + multiples_tensor->size());
+    } else {
+        NNRT_LOGE_PRINT("Tile argument list not support");
+        assert(false);
+    }
+    truncateOperationIOs(model, operation, 1, 1);
     return op;
 }
 

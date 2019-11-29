@@ -188,12 +188,11 @@ OvxlibDelegate::OvxlibDelegate()
     REGISTER_OP(GENERATE_PROPOSALS);
     REGISTER_OP(RANDOM_MULTINOMIAL);
     REGISTER_OP(HEATMAP_MAX_KEYPOINT);
-    //REGISTER_OP(LOG_SOFTMAX);
     REGISTER_OP(BOX_WITH_NMS_LIMIT);
     REGISTER_OP(LOG_SOFTMAX);
-    //REGISTER_OP(TILE);
     REGISTER_OP(TOPK);
     REGISTER_OP(DETECTION_POSTPROCESSING);
+    REGISTER_OP(TILE);
 #undef REGISTER_OP
 }
 
@@ -1656,6 +1655,20 @@ int OvxlibDelegate::addNode_DETECTION_POSTPROCESSING(Model* model,
     nodes[0]->nn_param.detection_postprocess.score_threshold = op->score_threshold;
     nodes[0]->nn_param.detection_postprocess.iou_threshold = op->iou_threshold;
     nodes[0]->nn_param.detection_postprocess.is_bg_in_label = op->is_bg_in_label;
+    return err;
+}
+
+int OvxlibDelegate::addNode_TILE(Model* model,
+        OperationPtr operation, uint32_t operation_index)
+{
+    (void)model;
+    int err = NNA_ERROR_CODE(NO_ERROR);
+    TileOperation* op =  reinterpret_cast<TileOperation*>(operation.get());
+    std::vector<vsi_nn_node_t*> nodes;
+    err = addNode(VSI_NN_OP_TILE, operation, &nodes, operation_index);
+    int32_t *multiples = addParamPool(op->multiples, true);
+    nodes[0]->nn_param.tile.multiples = multiples;
+    nodes[0]->nn_param.tile.multiples_num = op->multiples.size();
     return err;
 }
 

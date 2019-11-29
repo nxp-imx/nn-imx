@@ -174,12 +174,11 @@ class NnApiInterpreter : public Interpreter
         REGISTER_OP(GENERATE_PROPOSALS);
         REGISTER_OP(RANDOM_MULTINOMIAL);
         REGISTER_OP(HEATMAP_MAX_KEYPOINT);
-        //REGISTER_OP(LOG_SOFTMAX);
         REGISTER_OP(BOX_WITH_NMS_LIMIT);
         REGISTER_OP(LOG_SOFTMAX);
-        //REGISTER_OP(TILE);
         REGISTER_OP(TOPK);
         REGISTER_OP(DETECTION_POSTPROCESSING);
+        REGISTER_OP(TILE);
 #undef  REGISTER_OP
     private:
         inline DataLayout getDataLayout(bool isNCHW) {
