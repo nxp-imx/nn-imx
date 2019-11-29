@@ -1539,11 +1539,11 @@ OperationPtr NnApiInterpreter::map_BOX_WITH_NMS_LIMIT(Model* model,
     auto argList = matchArgList(inputs, "BoxWithNmsLimitOperation");
     auto choose_nms_kernel_method = [](int32_t value) -> NmsKernelMethod {
         switch (value) {
-            case 1:
+            case 0:
                 return NmsKernelMethod::Hard;
-            case 2:
+            case 1:
                 return NmsKernelMethod::Linear;
-            case 3:
+            case 2:
                 return NmsKernelMethod::Gaussian;
             default:
                 NNRT_LOGE_PRINT("Unsupport nms kernel method %d", value);
