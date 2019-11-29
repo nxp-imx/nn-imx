@@ -512,35 +512,43 @@ void ConcatOperation::handleLayoutInferenceOnInputs(
     Model& model,
     std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>& next_permute_vectors) {
     (void)model;
-    assert(outputs().size() == 1);
-    assert(inputs().size() >= 2);
-    // TODO: find the optimized permutevector as requiredPermuteVector
-    nnrt::layout_inference::IPermuteVectorPtr requiredPermuteVector =
-        input_permute_cache_.cached_permutes_[inputs()[0]];
-    if (axis < 0) {
-        axis += requiredPermuteVector->rank();
-    }
-    axis = nnrt::op::utils::axisMapTo(requiredPermuteVector, axis);
-    // handle const operand
-    std::vector<uint32_t> constOprIds;
-    for (auto in : inputs()) {
-        if (model.operand(in)->isConst()) {
-            constOprIds.push_back(in);
-        }
-    }
-    if (!constOprIds.empty()) {
-        permuteConstOperands(model, constOprIds, requiredPermuteVector);
-    }
 
-    for (auto operandPermuteVector : input_permute_cache_.cached_permutes_) {
-        auto finalPermuteVec = operandPermuteVector.second->reverse()->add(requiredPermuteVector);
-        auto permuteOp = nnrt::op::utils::asOp(finalPermuteVec);
-        if (permuteOp) {
-            insertPermute(model, permuteOp, finalPermuteVec->asStdVec(), true, operandPermuteVector.first);
-        }
-    }
+    // Concat input tensor could be _1 or _2 parameter
+    if (!input_permute_cache_.cached_permutes_.empty()) {
+        auto iter = input_permute_cache_.cached_permutes_.begin();
+        auto requiredPermuteVector = iter->second;
 
-    next_permute_vectors.insert(std::make_pair(outputs()[0], requiredPermuteVector));
+        if (axis < 0 && requiredPermuteVector) {
+            axis += requiredPermuteVector->rank();
+        }
+        axis = nnrt::op::utils::axisMapTo(requiredPermuteVector, axis);
+
+        // align another input operand if it's not a constant
+        for (auto next = ++iter; next != input_permute_cache_.cached_permutes_.end(); ++next) {
+            // permute to required permute
+            auto finalPermuteVec = next->second->reverse()->add(requiredPermuteVector);
+            auto permuteOp = nnrt::op::utils::asOp(finalPermuteVec);
+            if (permuteOp) {
+                insertPermute(model, permuteOp, finalPermuteVec->asStdVec(), true, next->first);
+            }
+        }
+
+        // handle const operand IF ANY
+        std::vector<uint32_t> constOprIds;
+        for (auto in : inputs()) {
+            if (model.operand(in)->isConst()) {
+                constOprIds.push_back(in);
+            }
+        }
+        if (!constOprIds.empty()) {
+            permuteConstOperands(model, constOprIds, requiredPermuteVector);
+        }
+
+        next_permute_vectors.insert(std::make_pair(outputs()[0], requiredPermuteVector));
+    }
+    else {
+        NNRT_LOGE("Concat_LayoutInference") << "fatal error in layoutInference for concat";
+    }
 }
 
 void SpaceToBatchNDOperation::handleLayoutInferenceOnInputs(
