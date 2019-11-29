@@ -22,8 +22,8 @@
 *
 *****************************************************************************/
 
-#ifndef _ABS_VALIDATE_HPP_
-#define _ABS_VALIDATE_HPP_
+#ifndef _POOL_VALIDATE_HPP_
+#define _POOL_VALIDATE_HPP_
 
 #include "OperationValidate.hpp"
 
