@@ -76,7 +76,9 @@ LOCAL_SHARED_LIBRARIES += libfmq \
                           android.hardware.neuralnetworks@1.2
 
 LOCAL_SRC_FILES += VsiDevice1_2.cpp\
-    VsiPreparedModel1_2.cpp
+    VsiPreparedModel1_2.cpp\
+    VsiBurstExecutor.cpp
+
 LOCAL_MODULE      := android.hardware.neuralnetworks@1.2-service-vsi-npu-server
 else
 LOCAL_SRC_FILES += VsiDevice.cpp\

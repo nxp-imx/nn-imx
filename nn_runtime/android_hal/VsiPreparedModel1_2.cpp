@@ -22,6 +22,8 @@
 *
 *****************************************************************************/
 #include "VsiPreparedModel1_2.h"
+#include "ExecutionBurstServer.h"
+#include "VsiBurstExecutor.h"
 
 #include <sys/mman.h>
 #include <sys/system_properties.h>
@@ -338,19 +340,20 @@ void VsiPreparedModel::release_rtinfo(std::vector<VsiRTInfo>& rtInfos){
             const android::hardware::MQDescriptorSync<V1_2::FmqRequestDatum>& requestChannel,
             const android::hardware::MQDescriptorSync<V1_2::FmqResultDatum>& resultChannel,
             configureExecutionBurst_cb cb) {
-            const sp<V1_2::IBurstContext> burst =
-                    ExecutionBurstServer::create(callback, requestChannel, resultChannel, this);
+                // just cache the hidl model, and prepare it in BurstExecutorWithCache
+                // TODO: cache the meachine code
+                std::shared_ptr<BurstExecutorWithCache> executorWithCache =
+                        std::make_shared<BurstExecutorWithCache>(model_);
+                const sp<V1_2::IBurstContext> burst = ExecutionBurstServer::create(
+                        callback, requestChannel, resultChannel, executorWithCache);
 
-            LOG(INFO) << " do not support Burst model temprarily";
-            cb(ErrorStatus::GENERAL_FAILURE, {});
-#if 0
-            if (burst == nullptr) {
-                cb(ErrorStatus::GENERAL_FAILURE, {});
-            } else {
-                cb(ErrorStatus::NONE, burst);
-            }
-#endif
-            return Void();
+                if (burst == nullptr) {
+                    cb(ErrorStatus::GENERAL_FAILURE, {});
+                } else {
+                    cb(ErrorStatus::NONE, burst);
+                }
+
+                return Void();
             };
 
 
@@ -425,7 +428,6 @@ Return<ErrorStatus> VsiPreparedModel::executeBase(const Request& request,
                     if (io_buffer_[poolIndex].buffer_size < location.length + location.offset)
                     {
                         LOG(ERROR)<<"No Sufficient output, Execute failed";
-                        notify(callback, ErrorStatus::OUTPUT_INSUFFICIENT_SIZE, outputShapes, kNoTiming);
                         return ErrorStatus::OUTPUT_INSUFFICIENT_SIZE;
                     }
                 }
@@ -458,8 +460,13 @@ Return<ErrorStatus> VsiPreparedModel::executeBase(const Request& request,
         native_compile_->run();
     }
 
-    updateForArguments(model_.inputIndexes, input_args, IO::INPUT);
-    auto status =  updateForArguments(model_.outputIndexes, output_args, IO::OUTPUT);
+    auto status = updateForArguments(model_.inputIndexes, input_args, IO::INPUT);
+    if( ErrorStatus::NONE != status){
+        notify(callback, status, outputShapes, kNoTiming);
+        return status;
+    }
+
+    status =  updateForArguments(model_.outputIndexes, output_args, IO::OUTPUT);
     if( ErrorStatus::NONE != status){
         notify(callback, status, outputShapes, kNoTiming);
         return status;

@@ -271,6 +271,7 @@ Return<void> VsiDriver::getSupportedOperations_1_1(const V1_1::Model& model,
             case OperationType::LOGICAL_NOT:
             case OperationType::LOGICAL_OR:
             case OperationType::LOG_SOFTMAX:
+            case OperationType::LOG:
             case OperationType::MAXIMUM:
             case OperationType::MINIMUM:
             case OperationType::NEG:
