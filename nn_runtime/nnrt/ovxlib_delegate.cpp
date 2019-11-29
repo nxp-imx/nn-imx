@@ -171,7 +171,7 @@ OvxlibDelegate::OvxlibDelegate()
     REGISTER_OP(NOT_EQUAL);
     REGISTER_OP(POW);
     REGISTER_OP(LOG);
-    //REGISTER_OP(ROI_ALIGN);
+    REGISTER_OP(ROI_ALIGN);
     REGISTER_OP(ROI_POOLING);
     REGISTER_OP(SELECT);
     REGISTER_OP(SLICE);
@@ -1697,6 +1697,23 @@ int OvxlibDelegate::addNode_ROI_POOLING(Model* model,
     nodes[0]->nn_param.roi_pool.size[0] = op->width;
     nodes[0]->nn_param.roi_pool.size[1] = op->height;
     nodes[0]->nn_param.roi_pool.scale = op->height_ratio;
+    return err;
+}
+
+int OvxlibDelegate::addNode_ROI_ALIGN(Model* model,
+        OperationPtr operation, uint32_t operation_index)
+{
+    (void)model;
+    int err = NNA_ERROR_CODE(NO_ERROR);
+    ROIAlignOperation* op = reinterpret_cast<ROIAlignOperation*>(operation.get());
+    std::vector<vsi_nn_node_t*> nodes;
+    err = addNode(VSI_NN_OP_ROI_ALIGN, operation, &nodes, operation_index);
+    nodes[0]->nn_param.roi_align.output_height = op->width;
+    nodes[0]->nn_param.roi_align.output_width = op->height;
+    nodes[0]->nn_param.roi_align.height_ratio = op->height_ratio;
+    nodes[0]->nn_param.roi_align.width_ratio = op->width_ratio;
+    nodes[0]->nn_param.roi_align.height_sample_num = op->sampling_points_height;
+    nodes[0]->nn_param.roi_align.width_sample_num = op->sampling_points_width;
     return err;
 }
 

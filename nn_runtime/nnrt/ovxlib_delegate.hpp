@@ -237,7 +237,7 @@ class OvxlibDelegate
         REGISTER_OP(NEG);
         REGISTER_OP(NOT_EQUAL);
         REGISTER_OP(POW);
-        //REGISTER_OP(ROI_ALIGN);
+        REGISTER_OP(ROI_ALIGN);
         REGISTER_OP(ROI_POOLING);
         REGISTER_OP(SELECT);
         REGISTER_OP(SLICE);

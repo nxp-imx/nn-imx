@@ -458,12 +458,24 @@ struct GatherOperation : Operation {
 
 struct ROIAlignOperation : Operation {
     ROIAlignOperation() : Operation(OperationType::ROI_ALIGN) {}
+    virtual void handleLayoutInferenceOnInputs(
+        Model& model,
+        std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>&
+            out_permute_vectors) override;
     int height;
     int width;
     float height_ratio;
     float width_ratio;
     int sampling_points_height;
     int sampling_points_width;
+};
+
+struct HeatmapMaxKeypointOperation : Operation {
+    HeatmapMaxKeypointOperation() : Operation(OperationType::HEATMAP_MAX_KEYPOINT) {}
+    virtual void handleLayoutInferenceOnInputs(
+        Model& model,
+        std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>&
+            out_permute_vectors) override;
 };
 
 struct ROIPoolingOperation : Operation {
@@ -560,7 +572,6 @@ DECLARE_OPERATION(Select, SELECT);
 DECLARE_OPERATION(PRelu, PRELU);
 DECLARE_OPERATION(Sin, SIN);
 DECLARE_OPERATION(AxisAlignedBBoxTransform, AXIS_ALIGNED_BBOX_TRANSFORM);
-DECLARE_OPERATION(HeatmapMaxKeypoint, HEATMAP_MAX_KEYPOINT);
 
 #undef DECLARE_OPERATION
 }

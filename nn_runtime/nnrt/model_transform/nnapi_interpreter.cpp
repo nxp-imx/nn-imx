@@ -189,7 +189,7 @@ NnApiInterpreter::NnApiInterpreter()
     REGISTER_OP(NOT_EQUAL);
     REGISTER_OP(POW);
     REGISTER_OP(PRELU);
-    //REGISTER_OP(ROI_ALIGN);
+    REGISTER_OP(ROI_ALIGN);
     REGISTER_OP(ROI_POOLING);
     REGISTER_OP(SQRT);
     REGISTER_OP(RSQRT);
@@ -1456,6 +1456,30 @@ OperationPtr NnApiInterpreter::map_ROI_POOLING(Model* model,
         op->setDataLayout(getDataLayout(inputs[argList->ArgPos("layout")]->scalar.boolean));
     } else {
         NNRT_LOGE_PRINT("ROIPooling argument list not support");
+        assert(false);
+    }
+    truncateOperationIOs(model, operation, 3, 1);
+    return op;
+}
+
+OperationPtr NnApiInterpreter::map_ROI_ALIGN(Model* model,
+        OperationPtr operation, uint32_t operation_index)
+{
+    std::shared_ptr<ROIAlignOperation> op = std::make_shared<ROIAlignOperation>();
+    NNAPI_CHECK_PTR(op);
+    std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
+    auto argList = matchArgList(inputs, "ROIAlignOperation");
+    if (argList) {
+        op->height = inputs[argList->ArgPos("height")]->scalar.int32;
+        op->width = inputs[argList->ArgPos("width")]->scalar.int32;
+        op->height_ratio = inputs[argList->ArgPos("height_ratio")]->scalar.float32;
+        op->width_ratio = inputs[argList->ArgPos("width_ratio")]->scalar.float32;
+        op->sampling_points_height = inputs[argList->ArgPos("sampling_points_height")]->scalar.int32;
+        op->sampling_points_width = inputs[argList->ArgPos("sampling_points_width")]->scalar.int32;
+        op->setDataLayout(getDataLayout(inputs[argList->ArgPos("layout")]->scalar.boolean));
+        NNRT_LOGE_PRINT("ROIAlign layout: %d", getDataLayout(inputs[argList->ArgPos("layout")]->scalar.boolean));
+    } else {
+        NNRT_LOGE_PRINT("ROIAlign argument list not support");
         assert(false);
     }
     truncateOperationIOs(model, operation, 3, 1);
