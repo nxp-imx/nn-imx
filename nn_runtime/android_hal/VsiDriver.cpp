@@ -244,6 +244,18 @@ Return<void> VsiDriver::getSupportedOperations_1_1(const V1_1::Model& model,
             auto& location = operand.location;
             return model.operandValues.data() + location.offset;
          };
+        std::vector<OperationType> whiteList = {
+            OperationType::ADD, OperationType::SUB, OperationType::MUL,  OperationType::DIV,
+            OperationType::MAXIMUM, OperationType::MINIMUM, OperationType::CONCATENATION,
+            OperationType::CONV_2D, OperationType::FULLY_CONNECTED,
+            OperationType::LSTM, OperationType::DEPTHWISE_CONV_2D
+            };
+
+        // do not support constant tensor as operation's Input except whiteList.
+        if(std::find(whiteList.begin(), whiteList.end(), operation.type) == whiteList.end()){
+            if(isConstantTensor(model.operands[operation.inputs[0]]))
+                return false;
+         }
 
         // TODO: [NNRT-1] Support static shape inference for NNAPI 1.2
          for(size_t i = 0; i < operation.outputs.size(); i++){
