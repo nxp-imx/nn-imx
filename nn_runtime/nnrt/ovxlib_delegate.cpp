@@ -193,6 +193,7 @@ OvxlibDelegate::OvxlibDelegate()
     REGISTER_OP(LOG_SOFTMAX);
     //REGISTER_OP(TILE);
     REGISTER_OP(TOPK);
+    REGISTER_OP(DETECTION_POSTPROCESSING);
 #undef REGISTER_OP
 }
 
@@ -1632,6 +1633,29 @@ int OvxlibDelegate::addNode_RANDOM_MULTINOMIAL(Model* model,
     std::vector<vsi_nn_node_t*> nodes;
     err = addNode(VSI_NN_OP_RANDOM_MULTINOMIAL, operation, &nodes, operation_index);
     nodes[0]->nn_param.random_multinomial.sample_num = op->sample_num;
+    return err;
+}
+
+int OvxlibDelegate::addNode_DETECTION_POSTPROCESSING(Model* model,
+        OperationPtr operation, uint32_t operation_index)
+{
+    (void)model;
+    int err = NNA_ERROR_CODE(NO_ERROR);
+    DetectionPostprocessingOperation* op =
+        reinterpret_cast<DetectionPostprocessingOperation*>(operation.get());
+    std::vector<vsi_nn_node_t*> nodes;
+    err = addNode(VSI_NN_OP_DETECTION_POSTPROCESS, operation, &nodes, operation_index);
+    nodes[0]->nn_param.detection_postprocess.dy = op->dy;
+    nodes[0]->nn_param.detection_postprocess.dx = op->dx;
+    nodes[0]->nn_param.detection_postprocess.dh = op->dh;
+    nodes[0]->nn_param.detection_postprocess.dw = op->dw;
+    nodes[0]->nn_param.detection_postprocess.nms_type = op->nms_type;
+    nodes[0]->nn_param.detection_postprocess.max_num_detections = op->max_num_detections;
+    nodes[0]->nn_param.detection_postprocess.maximum_class_per_detection = op->maximum_class_per_detection;
+    nodes[0]->nn_param.detection_postprocess.maximum_detection_per_class = op->maximum_detection_per_class;
+    nodes[0]->nn_param.detection_postprocess.score_threshold = op->score_threshold;
+    nodes[0]->nn_param.detection_postprocess.iou_threshold = op->iou_threshold;
+    nodes[0]->nn_param.detection_postprocess.is_bg_in_label = op->is_bg_in_label;
     return err;
 }
 

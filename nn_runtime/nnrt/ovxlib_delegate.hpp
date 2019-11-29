@@ -260,6 +260,7 @@ class OvxlibDelegate
         //REGISTER_OP(TILE);
         REGISTER_OP(TOPK);
 
+        REGISTER_OP(DETECTION_POSTPROCESSING);
         REGISTER_OP(DATA_CONVERT);
 #undef  REGISTER_OP
 

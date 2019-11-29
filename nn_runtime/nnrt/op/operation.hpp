@@ -476,6 +476,21 @@ struct ROIPoolingOperation : Operation {
     int sampling_points_width;
 };
 
+struct DetectionPostprocessingOperation : Operation {
+    DetectionPostprocessingOperation() : Operation(OperationType::DETECTION_POSTPROCESSING) {}
+    float dy;
+    float dx;
+    float dh;
+    float dw;
+    bool nms_type;
+    int max_num_detections;
+    int maximum_class_per_detection;
+    int maximum_detection_per_class;
+    float score_threshold;
+    float iou_threshold;
+    bool is_bg_in_label;
+};
+
 struct GenerateProposalsOperation : Operation {
     GenerateProposalsOperation() : Operation(OperationType::GENERATE_PROPOSALS) {}
     float ratio_h;

@@ -212,6 +212,7 @@ NnApiInterpreter::NnApiInterpreter()
     REGISTER_OP(LOG_SOFTMAX);
     //REGISTER_OP(TILE);
     REGISTER_OP(TOPK);
+    REGISTER_OP(DETECTION_POSTPROCESSING);
 
     /*customer Op*/
 #undef REGISTER_OP
@@ -1360,6 +1361,34 @@ OperationPtr NnApiInterpreter::map_GENERATE_PROPOSALS(Model* model,
         assert(false);
     }
     truncateOperationIOs(model, operation, 4, 3);
+    return op;
+}
+
+OperationPtr NnApiInterpreter::map_DETECTION_POSTPROCESSING(Model* model,
+        OperationPtr operation, uint32_t operation_index)
+{
+    std::shared_ptr<DetectionPostprocessingOperation> op =
+        std::make_shared<DetectionPostprocessingOperation>();
+    NNAPI_CHECK_PTR(op);
+    std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
+    auto argList = matchArgList(inputs, "DetectionPostprocessingOperation");
+    if (argList) {
+        op->dy = inputs[argList->ArgPos("dy")]->scalar.float32;
+        op->dx = inputs[argList->ArgPos("dx")]->scalar.float32;
+        op->dh = inputs[argList->ArgPos("dh")]->scalar.float32;
+        op->dw = inputs[argList->ArgPos("dw")]->scalar.float32;
+        op->nms_type = inputs[argList->ArgPos("nms_type")]->scalar.boolean;
+        op->max_num_detections = inputs[argList->ArgPos("max_num_detections")]->scalar.int32;
+        op->maximum_class_per_detection = inputs[argList->ArgPos("maximum_class_per_detection")]->scalar.int32;
+        op->maximum_detection_per_class = inputs[argList->ArgPos("maximum_detection_per_class")]->scalar.int32;
+        op->score_threshold = inputs[argList->ArgPos("score_threshold")]->scalar.float32;
+        op->iou_threshold = inputs[argList->ArgPos("iou_threshold")]->scalar.float32;
+        op->is_bg_in_label = inputs[argList->ArgPos("is_bg_in_label")]->scalar.boolean;
+    } else {
+        NNRT_LOGE_PRINT("DetectionPostprocessing argument list not support");
+        assert(false);
+    }
+    truncateOperationIOs(model, operation, 3, 4);
     return op;
 }
 

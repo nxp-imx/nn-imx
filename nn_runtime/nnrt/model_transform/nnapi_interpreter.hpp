@@ -179,6 +179,7 @@ class NnApiInterpreter : public Interpreter
         REGISTER_OP(LOG_SOFTMAX);
         //REGISTER_OP(TILE);
         REGISTER_OP(TOPK);
+        REGISTER_OP(DETECTION_POSTPROCESSING);
 #undef  REGISTER_OP
     private:
         inline DataLayout getDataLayout(bool isNCHW) {

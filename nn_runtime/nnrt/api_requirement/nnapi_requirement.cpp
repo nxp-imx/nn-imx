@@ -67,3 +67,4 @@ void NNapiRequirementRegister(const std::string& opName, const IArgList* arglist
 #include "nnapi_spec/ANEURALNETWORKS_TOPK_V2.hpp"
 #include "nnapi_spec/ANEURALNETWORKS_LOG_SOFTMAX.hpp"
 #include "nnapi_spec/ANEURALNETWORKS_HEATMAP_MAX_KEYPOINT.hpp"
+#include "nnapi_spec/ANEURALNETWORKS_DETECTION_POSTPROCESSING.hpp"
