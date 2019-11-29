@@ -68,14 +68,14 @@ cc_library(
     linkstatic = True,
 )
 
-cc_binary(
-    name = "t2c_test",
-    copts = ["-Werror", "-fvisibility=hidden", '-DOVXLIB_API=__attribute__((visibility(\\"default\\")))'],
-    includes = [
-        ".",
-    ],
-    srcs = [
-        "graph_transformations/t2c_test.cpp",
-    ],
-    deps = ["nnrt"]
-)
+#cc_binary(
+#    name = "t2c_test",
+#    copts = ["-Werror", "-fvisibility=hidden", '-DOVXLIB_API=__attribute__((visibility(\\"default\\")))'],
+#    includes = [
+#        ".",
+#    ],
+#    srcs = [
+#        "model_transform/t2c_test.cpp",
+#    ],
+#    deps = ["nnrt"]
+#)
