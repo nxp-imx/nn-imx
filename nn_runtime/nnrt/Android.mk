@@ -41,7 +41,6 @@ LOCAL_SRC_FILES :=\
         model_transform/fp32tofp16.cpp \
         model_transform/validate_quantized_graph.cpp \
         model_transform/nnapi_interpreter.cpp \
-        op/activation.cpp \
         op/convolution.cpp \
         op/normalization.cpp \
         op/elementwise.cpp \
