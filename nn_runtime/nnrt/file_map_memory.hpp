@@ -38,10 +38,6 @@ class Memory
         Memory(){};
         virtual ~Memory() {
 #ifdef __linux__
-            //if (dup_fd_ >= 0)
-            //{
-            //    close(dup_fd_);
-            //}
             if (nullptr != data_ptr_)
             {
                 munmap(data_ptr_, data_length_);
@@ -64,7 +60,6 @@ class Memory
         virtual size_t length() const {return data_length_;}
 
     private:
-        int dup_fd_{-1};
         void * data_ptr_{nullptr};
         size_t data_length_{0};
 };

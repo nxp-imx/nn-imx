@@ -39,12 +39,12 @@ enum TaskType {
 
 struct Task
 {
-    explicit Task(TaskType type): task_type_(type) {}
+    explicit Task(/*TaskType type*/)/*: task_type_(type)*/ {}
     virtual ~Task()=default;
     virtual int execute() = 0;
 
 private:
-    TaskType task_type_;
+    // TaskType task_type_;
 };
 
 struct GraphTask: public Task {
@@ -52,7 +52,7 @@ struct GraphTask: public Task {
             EventPtr event,
             std::vector<ExecutionIOPtr>& inputs,
             std::vector<ExecutionIOPtr>& outputs)
-        : Task(TaskType::GRAPH_TASK)
+        : Task(/*TaskType::GRAPH_TASK*/)
         , prepared_model_(prepared_model)
         , event_(event)
         , inputs_(inputs)

@@ -71,7 +71,7 @@ int Fp32ToFp16::run(Model* model, bool* modified) {
         }
     };
 
-    auto mark_input_output_float_to_half = [model, mark_operand_float_to_half](OperationPtr operation) {
+    auto mark_input_output_float_to_half = [mark_operand_float_to_half](OperationPtr operation) {
         for (uint32_t operand_index : operation->inputs()) {
             mark_operand_float_to_half(operand_index);
         }
