@@ -146,6 +146,7 @@ static OperationType mapOperationCode(OperationCode code)
         REGISTER_OP(SIN);
         //REGISTER_OP(ROI_ALIGN);
         //REGISTER_OP(ROI_POOL);
+        REGISTER_OP(SQRT);
         REGISTER_OP(RSQRT);
         REGISTER_OP(SELECT);
         //REGISTER_OP(SLICE);
