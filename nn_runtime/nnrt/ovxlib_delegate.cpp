@@ -1230,7 +1230,7 @@ int OvxlibDelegate::addNode_BATCH_TO_SPACE_ND(Model* model,
     std::vector<vsi_nn_node_t*> nodes;
     err = addNode(VSI_NN_OP_BATCH2SPACE, operation, &nodes, operation_index);
     int32_t *blockSize_buf = addParamPool(bp_to_sp->blockSize, true);
-    nodes[0]->nn_param.batch2space.block_size = reinterpret_cast<uint32_t*>(blockSize_buf);
+    nodes[0]->nn_param.batch2space.block_size = blockSize_buf;
     nodes[0]->nn_param.batch2space.block_size_num = bp_to_sp->blockSize.size();
     nodes[0]->nn_param.batch2space.crop[0] = bp_to_sp->cropStart[0];
     nodes[0]->nn_param.batch2space.crop[1] = bp_to_sp->cropEnd[0];
@@ -1248,7 +1248,7 @@ int OvxlibDelegate::addNode_SPACE_TO_BATCH_ND(Model* model,
     std::vector<vsi_nn_node_t*> nodes;
     err = addNode(VSI_NN_OP_SPACE2BATCH, operation, &nodes, operation_index);
     int32_t *blockSize_buf = addParamPool(sp_to_batch->blockSize, true);
-    nodes[0]->nn_param.space2batch.block_size = reinterpret_cast<uint32_t*>(blockSize_buf);
+    nodes[0]->nn_param.space2batch.block_size = blockSize_buf;
     nodes[0]->nn_param.space2batch.block_size_num = sp_to_batch->blockSize.size();
     nodes[0]->nn_param.space2batch.pad[0] = sp_to_batch->padFront[1];
     nodes[0]->nn_param.space2batch.pad[1] = sp_to_batch->padBack[1];
