@@ -170,6 +170,7 @@ Return<void> VsiDriver::getSupportedOperations_1_1(const V1_1::Model& model,
 
     template<typename T_Model>
     bool VsiDriver::getSupportedOperation(const size_t operation_index, const T_Model& model){
+#if ANDROID_SDK_VERSION > 28
         const auto &model_1_2 = convertToV1_2(model);
         const auto &operation = model_1_2.operations[operation_index];
 
@@ -305,6 +306,7 @@ Return<void> VsiDriver::getSupportedOperations_1_1(const V1_1::Model& model,
             default:
                 return true;
         }
+#endif
         return true;
     }
 
