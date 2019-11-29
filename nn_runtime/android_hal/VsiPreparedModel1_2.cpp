@@ -67,6 +67,34 @@ static void notify(const V1_2::IPreparedModel::executeSynchronously_cb& callback
     return callback(status, outputShapes, timing);
 }
 
+static Return<ErrorStatus> convertResultCodeToErrorStatus(int resultCode) {
+    switch (resultCode) {
+        case NNA_NO_ERROR:
+            return ErrorStatus::NONE;
+
+        case NNA_BAD_DATA:
+        case NNA_UNEXPECTED_NULL:
+            LOG(ERROR)<<"INVALID_ARGUMENT";
+            return ErrorStatus::INVALID_ARGUMENT;
+
+        case NNA_OUTPUT_INSUFFICIENT_SIZE:
+            LOG(ERROR)<<"output insufficient size";
+            return ErrorStatus::OUTPUT_INSUFFICIENT_SIZE;
+
+        default:
+            LOG(ERROR) << "Unknown result code " << resultCode
+                       << " mapped to ErrorStatus::GENERAL_FAILURE";
+            return ErrorStatus::GENERAL_FAILURE;
+        case NNA_BAD_STATE:
+        case NNA_INCOMPLETE:
+        case NNA_OP_FAILED:
+        case NNA_OUT_OF_MEMORY:
+        case NNA_UNMAPPABLE:
+            LOG(ERROR)<<"GENERAL_FAILURE";
+            return ErrorStatus::GENERAL_FAILURE;
+    }
+}
+
 static nnrt::OperationType op_code_mapping(V1_2::OperationType op) { // Android O 8.1 API LEVEL 27
     switch (op)
     {
@@ -433,20 +461,28 @@ Return<ErrorStatus> VsiPreparedModel::executeBase(const Request& request,
                 }
 
                 auto &rt_info = io_buffer_[poolIndex];
+                int nn_return = NNA_NO_ERROR;
                 if("ashmem" == rt_info.mem_type){
                     uint8_t* buffer = rt_info.ptr;
                     if (flag == IO::INPUT)
-                        native_exec_->setInput(i, ovx_operand, buffer + location.offset, location.length);
-                    else
-                        native_exec_->setOutput(i, ovx_operand, buffer + location.offset, location.length);
+                        nn_return = native_exec_->setInput(i, ovx_operand, buffer + location.offset, location.length);
+                    else{
+                        nn_return = native_exec_->setOutput(i, ovx_operand, buffer + location.offset, location.length);
+                    }
                 }else if ("mmap_fd" == rt_info.mem_type) {
                     auto &vsi_mem = rt_info.vsi_mem;
                     if (flag == IO::INPUT)
-                        native_exec_->setInputFromMemory(
+                        nn_return = native_exec_->setInputFromMemory(
                             i, ovx_operand, vsi_mem.get(), location.offset, location.length);
                     else
-                        native_exec_->setOutputFromMemory(
+                        nn_return = native_exec_->setOutputFromMemory(
                             i, ovx_operand, vsi_mem.get(), location.offset, location.length);
+                }
+
+                auto status = convertResultCodeToErrorStatus(nn_return);
+                if(status != ErrorStatus::NONE){
+                    LOG(ERROR)<<"fail to set IO, return error code :";
+                    return status;
                 }
              }
         }
@@ -473,8 +509,14 @@ Return<ErrorStatus> VsiPreparedModel::executeBase(const Request& request,
     }
 
     int error = native_exec_->compute();
+    status = convertResultCodeToErrorStatus(error);
     native_exec_.reset();
     release_rtinfo(io_buffer_);
+
+    if(status != ErrorStatus::NONE){
+        notify(callback, status, outputShapes, kNoTiming);
+        return status;
+    }
 
     time_point deviceEnd;
     Timing timing = kNoTiming;
@@ -485,11 +527,6 @@ Return<ErrorStatus> VsiPreparedModel::executeBase(const Request& request,
     }
 
     LOG(INFO) << __FUNCTION__<<" time: " << toString(timing);
-
-    if(error != NNA_ERROR_CODE(NO_ERROR)){
-        notify(callback, ErrorStatus::INVALID_ARGUMENT, outputShapes, timing);
-        return ErrorStatus::INVALID_ARGUMENT;
-    }
 
     notify(callback, ErrorStatus::NONE, outputShapes, timing);
     return ErrorStatus::NONE;
