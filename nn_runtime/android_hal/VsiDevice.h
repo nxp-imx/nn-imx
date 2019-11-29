@@ -22,8 +22,8 @@
 *
 *****************************************************************************/
 
-#ifndef ANDROID_ML_NN_SAMPLE_DRIVER_SAMPLE_DRIVER_H
-#define ANDROID_ML_NN_SAMPLE_DRIVER_SAMPLE_DRIVER_H
+#ifndef ANDROID_ML_NN_VSI_DEVICE_H
+#define ANDROID_ML_NN_VSI_DEVICE_H
 
 #include "HalInterfaces.h"
 #include <nnrt/model.hpp>
@@ -78,5 +78,5 @@ class VsiDevice : public V1_1::IDevice {
 };
 }
 }
-#endif
 }
+#endif

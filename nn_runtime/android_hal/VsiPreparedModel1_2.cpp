@@ -23,15 +23,12 @@
 *****************************************************************************/
 
 #include "VsiPreparedModel1_2.h"
-#include "ExecutionBurstServer.h"
 #include "VsiBurstExecutor.h"
-#include "VsiDriver.h"
 
 #include <sys/mman.h>
 #include <sys/system_properties.h>
 
 #include "OperationsUtils.h"
-#include "Utils.h"
 #if ANDROID_SDK_VERSION > 27
 #include "ValidateHal.h"
 #endif
@@ -181,12 +178,7 @@ static nnrt::OperandType operand_mapping(V1_2::OperandType code)
 void VsiPreparedModel::release_rtinfo(std::vector<VsiRTInfo>& rtInfos){
     while(!rtInfos.empty()){
         auto &rt = rtInfos.back();
-        if("mmap_fd" == rt.mem_type)
-            rt.vsi_mem.reset();
-        else if("hardware_buffer_blob" == rt.mem_type){
-            rt.graphic_buffer->unlock();
-            rt.graphic_buffer = nullptr;
-        }
+        VsiDriver::releaseVsiRTInfo(rt);
         rtInfos.pop_back();
     }
 }
@@ -196,61 +188,9 @@ void VsiPreparedModel::release_rtinfo(std::vector<VsiRTInfo>& rtInfos){
         rtInfos.resize(pools.size());
 
     for(size_t i = 0; i < pools.size(); i++){
-        auto & hidl_memory = pools[i];
-        auto & rt = rtInfos[i];
-
-        sp<GraphicBuffer> graphic_buffer = nullptr;
-        std::shared_ptr<nnrt::Memory>  vsi_mem = nullptr;
-        sp<IMemory> shared_mem = nullptr;
-        uint8_t *buffer = nullptr;
-
-        if(!validatePool(hidl_memory)){
-            LOG(ERROR)<<"invalid hidl memory pool";
+        if(!VsiDriver::mapHidlMem(pools[i], rtInfos[i])){
             return ErrorStatus::INVALID_ARGUMENT;
         }
-
-        if ("ashmem" == hidl_memory.name()) {
-                shared_mem = mapMemory(hidl_memory);
-                assert(shared_mem);
-                shared_mem->read();
-                buffer =
-                    reinterpret_cast<uint8_t*>(static_cast<void*>(shared_mem->getPointer()));
-        }else if ("mmap_fd" == hidl_memory.name()) {
-                size_t size = hidl_memory.size();
-                int fd = hidl_memory.handle()->data[0];
-                int mode = hidl_memory.handle()->data[1];
-                size_t offset = getSizeFromInts(hidl_memory.handle()->data[2], hidl_memory.handle()->data[3]);
-
-                vsi_mem = std::make_shared<nnrt::Memory>();
-                vsi_mem ->readFromFd(size, mode, fd, offset);
-        }else if ("hardware_buffer_blob" == hidl_memory.name()) {
-            auto handle = hidl_memory.handle();
-            auto format = AHARDWAREBUFFER_FORMAT_BLOB;
-            auto usage = AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN | AHARDWAREBUFFER_USAGE_CPU_WRITE_OFTEN;
-            const uint32_t width = hidl_memory.size();
-            const uint32_t height = 1;  // height is always 1 for BLOB mode AHardwareBuffer.
-            const uint32_t layers = 1;  // layers is always 1 for BLOB mode AHardwareBuffer.
-            const uint32_t stride = hidl_memory.size();
-            graphic_buffer = new GraphicBuffer(handle, GraphicBuffer::HandleWrapMethod::CLONE_HANDLE,
-                                               width, height, format, layers, usage, stride);
-            void* gBuffer = nullptr;
-            auto status = graphic_buffer->lock(usage, &gBuffer);
-            if (status != NO_ERROR) {
-                LOG(ERROR) << "RunTimePoolInfo Can't lock the AHardwareBuffer.";
-                return ErrorStatus::INVALID_ARGUMENT;
-            }
-            buffer = static_cast<uint8_t*>(gBuffer);
-        }else{
-                LOG(ERROR) << "invalid hidl_memory";
-                return ErrorStatus::INVALID_ARGUMENT;
-        }
-
-        rt.shared_mem = shared_mem;
-        rt.mem_type = std::string(hidl_memory.name());
-        rt.ptr = buffer;
-        rt.vsi_mem = vsi_mem;
-        rt.buffer_size = hidl_memory.size();
-        rt.graphic_buffer = graphic_buffer;
     }
     return ErrorStatus::NONE;
 }

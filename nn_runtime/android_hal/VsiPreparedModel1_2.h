@@ -21,8 +21,8 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#ifndef ANDROID_ML_NN_COMMON_OPENVX_EXECUTOR_H
-#define ANDROID_ML_NN_COMMON_OPENVX_EXECUTOR_H
+#ifndef ANDROID_ML_NN_VSI_PREPARED_MODEL_1_2_H
+#define ANDROID_ML_NN_VSI_PREPARED_MODEL_1_2_H
 #include <vector>
 
 #include <nnrt/model.hpp>
@@ -33,7 +33,8 @@
 #include <nnrt/file_map_memory.hpp>
 #include "HalInterfaces.h"
 #include "ExecutionBurstServer.h"
-#include <ui/GraphicBuffer.h>
+
+#include "VsiDriver.h"
 
 #include "Utils.h"
 using android::sp;
@@ -41,17 +42,6 @@ using android::sp;
 namespace android {
 namespace nn {
 namespace vsi_driver {
-    /*record the info that is gotten from hidl_memory*/
-    struct VsiRTInfo{
-        sp<IMemory>         shared_mem;             /* if hidl_memory is "ashmem", */
-                                                    /* the shared_mem is relative to ptr */
-        size_t                buffer_size;
-        std::string         mem_type;               /* record type of hidl_memory*/
-        uint8_t *           ptr;                    /* record the data pointer gotten from "ashmem" hidl_memory*/
-        std::shared_ptr<nnrt::Memory>  vsi_mem;   /* ovx memory object converted from "mmap_fd" hidl_memory*/
-        sp<GraphicBuffer> graphic_buffer;
-    };
-
     class VsiPreparedModel : public V1_2::IPreparedModel {
    public:
     VsiPreparedModel(const V1_2::Model& model):model_(model) {

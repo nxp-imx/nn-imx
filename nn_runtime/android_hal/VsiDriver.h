@@ -22,8 +22,12 @@
 *
 *****************************************************************************/
 
+#ifndef ANDROID_ML_NN_VSI_DRIVER_H
+#define ANDROID_ML_NN_VSI_DRIVER_H
+
 #if ANDROID_SDK_VERSION > 28
 #include "VsiDevice1_2.h"
+#include <ui/GraphicBuffer.h>
 #elif ANDROID_SDK_VERSION > 27
 #include "VsiDevice.h"
 #endif
@@ -45,6 +49,18 @@ namespace android {
 namespace nn {
 namespace vsi_driver {
 
+    /*record the info that is gotten from hidl_memory*/
+    struct VsiRTInfo{
+        sp<IMemory>         shared_mem;             /* if hidl_memory is "ashmem", */
+                                                    /* the shared_mem is relative to ptr */
+        size_t                buffer_size;
+        std::string         mem_type;               /* record type of hidl_memory*/
+        uint8_t *           ptr;                    /* record the data pointer gotten from "ashmem" hidl_memory*/
+        std::shared_ptr<nnrt::Memory>  vsi_mem;   /* ovx memory object converted from "mmap_fd" hidl_memory*/
+#if ANDROID_SDK_VERSION > 28
+        sp<GraphicBuffer> graphic_buffer;
+#endif
+    };
 
 class VsiDriver : public VsiDevice {
    public:
@@ -92,6 +108,9 @@ class VsiDriver : public VsiDevice {
     template<typename T_operation,typename T_Model>
     static bool isSupportedOperation(const T_operation &operation, const T_Model& model);
 
+   static bool mapHidlMem(const hidl_memory & hidl_memory, VsiRTInfo &vsiMemory);
+   static void releaseVsiRTInfo(VsiRTInfo & rt);
+
    private:
    int32_t disable_float_feature_; // switch that float-type running on hal
    private:
@@ -101,6 +120,8 @@ class VsiDriver : public VsiDevice {
     Return<void> getSupportedOperationsBase(const T_model& model,
                                             T_getSupportOperationsCallback cb);
 };
+
 }
 }
 }
+#endif

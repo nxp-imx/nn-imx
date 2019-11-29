@@ -31,6 +31,7 @@
 #include <nnrt/execution.hpp>
 #include <nnrt/op/public.hpp>
 #include <nnrt/file_map_memory.hpp>
+#include "VsiDriver.h"
 #include "HalInterfaces.h"
 
 #include "Utils.h"
@@ -39,16 +40,6 @@ using android::sp;
 namespace android {
 namespace nn {
 namespace vsi_driver {
-    /*record the info that is gotten from hidl_memory*/
-    struct VsiRTInfo{
-        sp<IMemory>         shared_mem;             /* if hidl_memory is "ashmem", */
-                                                    /* the shared_mem is relative to ptr */
-        size_t                buffer_size;
-        std::string         mem_type;               /* record type of hidl_memory*/
-        uint8_t *           ptr;                    /* record the data pointer gotten from "ashmem" hidl_memory*/
-        std::shared_ptr<nnrt::Memory>  vsi_mem;   /* ovx memory object converted from "mmap_fd" hidl_memory*/
-    };
-
     class VsiPreparedModel : public V1_0::IPreparedModel {
    public:
     VsiPreparedModel(const V1_1::Model& model):model_(model) {

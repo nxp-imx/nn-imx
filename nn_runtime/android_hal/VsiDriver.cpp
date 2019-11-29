@@ -22,6 +22,7 @@
 *
 *****************************************************************************/
 #include "VsiDriver.h"
+#include <nnrt/file_map_memory.hpp>
 
 namespace android {
 namespace nn {
@@ -121,6 +122,82 @@ Return<void> VsiDriver::getSupportedOperations_1_1(const V1_1::Model& model,
 #endif
 }
 #endif
+
+    void VsiDriver::releaseVsiRTInfo(VsiRTInfo & rt){
+        if("mmap_fd" == rt.mem_type){
+            rt.vsi_mem.reset();
+        }
+#if ANDROID_SDK_VERSION > 28
+        else if("hardware_buffer_blob" == rt.mem_type){
+            rt.graphic_buffer->unlock();
+            rt.graphic_buffer = nullptr;
+        }
+#endif
+        }
+
+    bool VsiDriver::mapHidlMem(const hidl_memory & hidl_memory, VsiRTInfo &vsiMemory){
+#if ANDROID_SDK_VERSION > 28
+        sp<GraphicBuffer> graphic_buffer = nullptr;
+#endif
+        std::shared_ptr<nnrt::Memory>  vsi_mem = nullptr;
+        sp<IMemory> shared_mem = nullptr;
+        uint8_t *buffer = nullptr;
+
+#if ANDROID_SDK_VERSION > 28
+        if(!validatePool(hidl_memory)){
+            LOG(ERROR)<<"invalid hidl memory pool";
+            return false;
+        }
+#endif
+
+        if ("ashmem" == hidl_memory.name()) {
+                shared_mem = mapMemory(hidl_memory);
+                assert(shared_mem);
+                shared_mem->read();
+                buffer =
+                    reinterpret_cast<uint8_t*>(static_cast<void*>(shared_mem->getPointer()));
+        }else if ("mmap_fd" == hidl_memory.name()) {
+                size_t size = hidl_memory.size();
+                int fd = hidl_memory.handle()->data[0];
+                int mode = hidl_memory.handle()->data[1];
+                size_t offset = getSizeFromInts(hidl_memory.handle()->data[2], hidl_memory.handle()->data[3]);
+
+                vsi_mem = std::make_shared<nnrt::Memory>();
+                vsi_mem ->readFromFd(size, mode, fd, offset);
+        }
+#if ANDROID_SDK_VERSION > 28
+        else if ("hardware_buffer_blob" == hidl_memory.name()) {
+            auto handle = hidl_memory.handle();
+            auto format = AHARDWAREBUFFER_FORMAT_BLOB;
+            auto usage = AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN | AHARDWAREBUFFER_USAGE_CPU_WRITE_OFTEN;
+            const uint32_t width = hidl_memory.size();
+            const uint32_t height = 1;  // height is always 1 for BLOB mode AHardwareBuffer.
+            const uint32_t layers = 1;  // layers is always 1 for BLOB mode AHardwareBuffer.
+            const uint32_t stride = hidl_memory.size();
+            graphic_buffer = new GraphicBuffer(handle, GraphicBuffer::HandleWrapMethod::CLONE_HANDLE,
+                                               width, height, format, layers, usage, stride);
+            void* gBuffer = nullptr;
+            auto status = graphic_buffer->lock(usage, &gBuffer);
+            if (status != NO_ERROR) {
+                LOG(ERROR) << "RunTimePoolInfo Can't lock the AHardwareBuffer.";
+                return false;
+            }
+            buffer = static_cast<uint8_t*>(gBuffer);
+        }else{
+                LOG(ERROR) << "invalid hidl_memory";
+                return false;
+        }
+#endif
+        vsiMemory.shared_mem = shared_mem;
+        vsiMemory.mem_type = std::string(hidl_memory.name());
+        vsiMemory.ptr = buffer;
+        vsiMemory.vsi_mem = vsi_mem;
+        vsiMemory.buffer_size = hidl_memory.size();
+#if ANDROID_SDK_VERSION > 28
+        vsiMemory.graphic_buffer = graphic_buffer;
+#endif
+        return true;
+    }
 
     template<typename T_operation,typename T_Model>
     bool VsiDriver::isSupportedOperation(const T_operation &operation, const T_Model& model){

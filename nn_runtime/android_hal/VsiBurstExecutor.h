@@ -21,8 +21,11 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
+#ifndef ANDROID_ML_NN_VSI_BURST_EXECUTOR_H
+#define ANDROID_ML_NN_VSI_BURST_EXECUTOR_H
+
 #include "VsiPreparedModel1_2.h"
-#include "VsiDevice.h"
+#include "VsiDevice1_2.h"
 
 #include <android-base/logging.h>
 #include <hidl/LegacySupport.h>
@@ -57,3 +60,4 @@ class BurstExecutorWithCache : public ExecutionBurstServer::IBurstExecutorWithCa
 }
 }
 }
+#endif

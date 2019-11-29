@@ -123,8 +123,7 @@ static nnrt::OperandType operand_mapping(V1_0::OperandType code)
 void VsiPreparedModel::release_rtinfo(std::vector<VsiRTInfo>& rtInfos){
     while(!rtInfos.empty()){
         auto &rt = rtInfos.back();
-        if("mmap_fd" == rt.mem_type)
-            rt.vsi_mem.reset();
+        VsiDriver::releaseVsiRTInfo(rt);
         rtInfos.pop_back();
     }
 }
@@ -132,39 +131,10 @@ int VsiPreparedModel::map_rtinfo_from_hidl_memory(const hidl_vec<hidl_memory>& p
             std::vector<VsiRTInfo>& rtInfos){
         rtInfos.clear();
         rtInfos.resize(pools.size());
-
     for(size_t i = 0; i < pools.size(); i++){
-        auto & hidl_memory = pools[i];
-        auto & rt = rtInfos[i];
-
-        std::shared_ptr<nnrt::Memory>  vsi_mem = nullptr;
-        sp<IMemory> shared_mem = nullptr;
-        uint8_t *buffer = nullptr;
-
-        if ("ashmem" == hidl_memory.name()) {
-                shared_mem = mapMemory(hidl_memory);
-                assert(shared_mem);
-                shared_mem->read();
-                buffer =
-                    reinterpret_cast<uint8_t*>(static_cast<void*>(shared_mem->getPointer()));
-        }else if ("mmap_fd" == hidl_memory.name()) {
-                size_t size = hidl_memory.size();
-                int fd = hidl_memory.handle()->data[0];
-                int mode = hidl_memory.handle()->data[1];
-                size_t offset = getSizeFromInts(hidl_memory.handle()->data[2], hidl_memory.handle()->data[3]);
-
-                vsi_mem = std::make_shared<nnrt::Memory>();
-                vsi_mem ->readFromFd(size, mode, fd, offset);
-        }else{
-                LOG(ERROR) << "invalid hidl_memory";
-                return ANEURALNETWORKS_BAD_DATA;
+        if(!VsiDriver::mapHidlMem(pools[i], rtInfos[i])){
+            return ANEURALNETWORKS_BAD_DATA;
         }
-
-        rt.shared_mem = shared_mem;
-        rt.mem_type = std::string(hidl_memory.name());
-        rt.ptr = buffer;
-        rt.vsi_mem = vsi_mem;
-        rt.buffer_size = hidl_memory.size();
     }
     return ANEURALNETWORKS_NO_ERROR;
 }
