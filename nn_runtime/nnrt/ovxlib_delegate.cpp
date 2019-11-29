@@ -473,7 +473,20 @@ vsi_nn_type_e OvxlibDelegate::mapTensorType(OperandType code)
         case OperandType::TENSOR_BOOL8:
             dtype = VSI_NN_TYPE_BOOL8;
             break;
+        case OperandType::TENSOR_QUANT16_SYMM:
+            NNRT_LOGE_PRINT("Ovxlib doesn't support quant16_symm");
+            dtype = VSI_NN_TYPE_INT16;
+            break;
+        case OperandType::TENSOR_QUANT16_ASYMM:
+            NNRT_LOGE_PRINT("Ovxlib doesn't support quant16_asymm");
+            dtype = VSI_NN_TYPE_UINT16;
+            break;
+        case OperandType::TENSOR_QUANT8_SYMM_PER_CHANNEL:
+            NNRT_LOGE_PRINT("Ovxlib doesn't support quant8_symm_perchannel");
+            dtype = VSI_NN_TYPE_INT8;
+            break;
         default:
+            NNRT_LOGE_PRINT("Unsupport data type %d", code);
             break;
     }
     return dtype;
