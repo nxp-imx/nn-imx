@@ -122,8 +122,6 @@ static nnrt::OperandType operand_mapping(V1_0::OperandType code)
 }
 void VsiPreparedModel::release_rtinfo(std::vector<VsiRTInfo>& rtInfos){
     while(!rtInfos.empty()){
-        auto &rt = rtInfos.back();
-        VsiDriver::releaseVsiRTInfo(rt);
         rtInfos.pop_back();
     }
 }

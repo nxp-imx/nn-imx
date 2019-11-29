@@ -60,6 +60,27 @@ namespace vsi_driver {
 #if ANDROID_SDK_VERSION > 28
         sp<GraphicBuffer> graphic_buffer;
 #endif
+
+    VsiRTInfo(): buffer_size(0), ptr(nullptr)
+#if ANDROID_SDK_VERSION > 28
+    ,graphic_buffer(nullptr)
+#endif
+        {};
+
+    ~VsiRTInfo(){
+        if("mmap_fd" == mem_type){
+            if(vsi_mem)
+                vsi_mem.reset();
+        }
+#if ANDROID_SDK_VERSION > 28
+        else if("hardware_buffer_blob" == mem_type){
+            if(graphic_buffer){
+                graphic_buffer->unlock();
+                graphic_buffer = nullptr;
+            }
+        }
+#endif
+        };
     };
 
 class VsiDriver : public VsiDevice {
@@ -109,7 +130,6 @@ class VsiDriver : public VsiDevice {
     static bool isSupportedOperation(const T_operation &operation, const T_Model& model);
 
    static bool mapHidlMem(const hidl_memory & hidl_memory, VsiRTInfo &vsiMemory);
-   static void releaseVsiRTInfo(VsiRTInfo & rt);
 
    private:
    int32_t disable_float_feature_; // switch that float-type running on hal
@@ -119,6 +139,9 @@ class VsiDriver : public VsiDevice {
     template <typename T_model, typename T_getSupportOperationsCallback>
     Return<void> getSupportedOperationsBase(const T_model& model,
                                             T_getSupportOperationsCallback cb);
+
+    template<typename T_Model>
+    static const uint8_t* getOperandDataPtr(const T_Model &model, const Operand& hal_operand, VsiRTInfo &vsiMemory);
 };
 
 }

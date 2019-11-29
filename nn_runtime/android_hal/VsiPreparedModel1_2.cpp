@@ -177,8 +177,6 @@ static nnrt::OperandType operand_mapping(V1_2::OperandType code)
 }
 void VsiPreparedModel::release_rtinfo(std::vector<VsiRTInfo>& rtInfos){
     while(!rtInfos.empty()){
-        auto &rt = rtInfos.back();
-        VsiDriver::releaseVsiRTInfo(rt);
         rtInfos.pop_back();
     }
 }
@@ -210,13 +208,13 @@ void VsiPreparedModel::release_rtinfo(std::vector<VsiRTInfo>& rtInfos){
             native_model_->setOperandValue(ovx_operand,
                             model_.operandValues.data() + location.offset,
                             location.length);
-            break;
         } break;
         case OperandLifeTime::CONSTANT_REFERENCE: {
             const auto& location = hal_operand.location;
             auto &rt_info = const_buffer_[location.poolIndex];
 
-            if ("ashmem" == rt_info.mem_type) {
+            if ("ashmem" == rt_info.mem_type ||
+                "hardware_buffer_blob" == rt_info.mem_type) {
                 const uint8_t* buffer = rt_info.ptr;
                 native_model_->setOperandValue(ovx_operand, buffer + location.offset, location.length);
             } else if ("mmap_fd" == rt_info.mem_type) {

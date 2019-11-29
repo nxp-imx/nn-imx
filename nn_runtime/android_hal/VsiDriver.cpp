@@ -123,18 +123,6 @@ Return<void> VsiDriver::getSupportedOperations_1_1(const V1_1::Model& model,
 }
 #endif
 
-    void VsiDriver::releaseVsiRTInfo(VsiRTInfo & rt){
-        if("mmap_fd" == rt.mem_type){
-            rt.vsi_mem.reset();
-        }
-#if ANDROID_SDK_VERSION > 28
-        else if("hardware_buffer_blob" == rt.mem_type){
-            rt.graphic_buffer->unlock();
-            rt.graphic_buffer = nullptr;
-        }
-#endif
-        }
-
     bool VsiDriver::mapHidlMem(const hidl_memory & hidl_memory, VsiRTInfo &vsiMemory){
 #if ANDROID_SDK_VERSION > 28
         sp<GraphicBuffer> graphic_buffer = nullptr;
@@ -199,6 +187,28 @@ Return<void> VsiDriver::getSupportedOperations_1_1(const V1_1::Model& model,
         return true;
     }
 
+    template<typename T_Model>
+    const uint8_t* VsiDriver::getOperandDataPtr(const T_Model &model, const Operand& hal_operand, VsiRTInfo &vsiMemory){
+        if(OperandLifeTime::CONSTANT_COPY == hal_operand.lifetime){
+            return model.operandValues.data() + hal_operand.location.offset;
+        }
+        else if(OperandLifeTime::CONSTANT_REFERENCE == hal_operand.lifetime){
+            if(!mapHidlMem(model.pools[hal_operand.location.poolIndex], vsiMemory))
+                return nullptr;
+
+            if ("ashmem" == vsiMemory.mem_type) {
+                return vsiMemory.ptr;
+            } else if ("mmap_fd" == vsiMemory.mem_type) {
+                return static_cast<const uint8_t*>(vsiMemory.vsi_mem->data(hal_operand.location.offset));
+            }
+#if ANDROID_SDK_VERSION > 28
+            else if("hardware_buffer_blob" == vsiMemory.mem_type ){
+                return vsiMemory.ptr;
+            }
+#endif
+        }
+        return nullptr;
+    }
     template<typename T_operation,typename T_Model>
     bool VsiDriver::isSupportedOperation(const T_operation &operation, const T_Model& model){
 #if ANDROID_SDK_VERSION > 28
@@ -256,7 +266,7 @@ Return<void> VsiDriver::getSupportedOperations_1_1(const V1_1::Model& model,
          }
         switch (operation.type)
         {
-            //TODO: check API 28 op new feature
+            //TODO: remove all of the work around
             case OperationType::CONV_2D:{
                 auto & input = model.operands[operation.inputs[0]];
                 auto & weight = model.operands[operation.inputs[1]];
@@ -303,11 +313,22 @@ Return<void> VsiDriver::getSupportedOperations_1_1(const V1_1::Model& model,
                 break;
                 }
             case OperationType::TRANSPOSE:{
+                // according to the spec, perm is optinal.
+                if(operation.inputs.size() == 1)
+                    return false;
+
                 auto & perm= model.operands[operation.inputs[1]];
-                if(OperandLifeTime::MODEL_INPUT== perm.lifetime ){
+                if( OperandLifeTime::MODEL_INPUT== perm.lifetime){
                     LOG(ERROR)<<"do not support perm as input";
                     return false;
                 }
+                size_t dimSize = perm.location.length / sizeof((int32_t)0);
+                if(dimSize < 4)
+                    return true;
+
+                struct VsiRTInfo rt;
+                auto permData = getOperandDataPtr(model, perm, rt);
+                return permData && (*(int32_t*)permData == 0);
                 break;
                 }
             case OperationType::FULLY_CONNECTED:{
@@ -317,6 +338,26 @@ Return<void> VsiDriver::getSupportedOperations_1_1(const V1_1::Model& model,
                     (weight.dimensions.size() == 2 && input.dimensions[1] != weight.dimensions[1])
                     )
                     return false;
+                break;
+            }
+            case OperationType::PAD:{
+                // TODO: support pad at channel and batch
+                auto &pad = model.operands[operation.inputs[1]];
+                size_t dimSize = pad.location.length / sizeof((int32_t)0) / 2;
+                if(dimSize < 3)
+                    return true;
+
+                struct VsiRTInfo rt;
+                auto padData = reinterpret_cast<const int32_t *>(getOperandDataPtr(model, pad, rt));
+
+                if(!padData)
+                    return false;
+                if(dimSize > 2){
+                    if(dimSize == 3 && padData[4] + padData[5] != 0)
+                        return false;
+                    if(dimSize == 4 && padData[6] + padData[7] + padData[0] + padData[1] != 0)
+                        return false;
+                }
                 break;
             }
             //to-do: check operand with operation
