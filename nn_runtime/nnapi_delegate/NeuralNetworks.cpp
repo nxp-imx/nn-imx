@@ -134,6 +134,7 @@ static OperationType mapOperationCode(OperationCode code)
         REGISTER_OP(INSTANCE_NORMALIZATION);
         REGISTER_OP(LESS);
         REGISTER_OP(LESS_EQUAL);
+        REGISTER_OP(LOG);
         REGISTER_OP(LOGICAL_AND);
         REGISTER_OP(LOGICAL_OR);
         REGISTER_OP(MAXIMUM);
@@ -163,6 +164,7 @@ static OperationType mapOperationCode(OperationCode code)
         REGISTER_OP(HEATMAP_MAX_KEYPOINT);
         REGISTER_OP(BOX_WITH_NMS_LIMIT);
         REGISTER_OP(TILE);
+        REGISTER_OP(DETECTION_POSTPROCESSING);
 #undef REGISTER_OP
         case ANEURALNETWORKS_TOPK_V2:
             return OperationType::TOPK;
