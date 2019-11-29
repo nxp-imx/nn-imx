@@ -315,7 +315,8 @@ Return<void> VsiDriver::getSupportedOperations_1_1(const V1_1::Model& model,
     Return<void> VsiDriver::getCapabilities_1_2(V1_2::IDevice::getCapabilities_1_2_cb _hidl_cb){
         static const PerformanceInfo kPerf = {.execTime = 0.9f, .powerUsage = 0.9f};
         V1_2::Capabilities capabilities;
-
+        capabilities.relaxedFloat32toFloat16PerformanceScalar = kPerf;
+        capabilities.relaxedFloat32toFloat16PerformanceTensor = kPerf;
         // Set the base value for all operand types
         capabilities.operandPerformance = nonExtensionOperandPerformance({FLT_MAX, FLT_MAX});
 
