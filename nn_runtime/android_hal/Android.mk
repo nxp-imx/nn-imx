@@ -23,6 +23,7 @@ LOCAL_C_INCLUDES := \
         $(AQROOT)/sdk/inc/CL \
         $(AQROOT)/sdk/inc/VX \
         $(NNRT_ROOT)/nnrt \
+        $(NNRT_ROOT)/nnrt/boost/libs/preprocessor/include \
         $(NNRT_ROOT) \
         $(OVXLIB_DIR)/include \
         $(OVXLIB_DIR)/include/ops \
@@ -30,11 +31,15 @@ LOCAL_C_INCLUDES := \
         $(OVXLIB_DIR)/include/infernce \
         $(OVXLIB_DIR)/include/platform \
         $(OVXLIB_DIR)/include/client \
-        $(OVXLIB_DIR)/include/libnnext
+        $(OVXLIB_DIR)/include/libnnext \
+        $(LOCAL_PATH)/hal_limitation \
+        $(LOCAL_PATH)/op_validate
 
 
 LOCAL_SRC_FILES:= \
-    VsiDriver.cpp
+    VsiDriver.cpp \
+    hal_limitation/nnapi_limitation.cpp \
+    hal_limitation/support.cpp \
 
 LOCAL_SHARED_LIBRARIES := \
     libbase \

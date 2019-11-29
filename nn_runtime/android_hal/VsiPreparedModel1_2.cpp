@@ -132,6 +132,7 @@ static nnrt::OperationType op_code_mapping(V1_2::OperationType op) { // Android 
         MAP_OP(LSH_PROJECTION);
         MAP_OP(L2_POOL_2D);
 #if ANDROID_SDK_VERSION > 27
+        MAP_OP(ABS);
         MAP_OP(BATCH_TO_SPACE_ND);
         MAP_OP(DIV);
         MAP_OP(MEAN);
@@ -141,6 +142,7 @@ static nnrt::OperationType op_code_mapping(V1_2::OperationType op) { // Android 
         MAP_OP(STRIDED_SLICE);
         MAP_OP(SUB);
         MAP_OP(TRANSPOSE);
+        MAP_OP(RESIZE_NEAREST_NEIGHBOR);
 #endif
 #undef MAP_OP
 
@@ -161,12 +163,20 @@ static nnrt::OperandType operand_mapping(V1_2::OperandType code)
         }
 
     switch (code) {
+        MAP_OPERAND(BOOL);
+        MAP_OPERAND(FLOAT16);
+        MAP_OPERAND(TENSOR_BOOL8);
+        MAP_OPERAND(TENSOR_FLOAT16);
+        MAP_OPERAND(TENSOR_QUANT8_SYMM);
+        MAP_OPERAND(TENSOR_QUANT16_ASYMM);
+        MAP_OPERAND(TENSOR_QUANT16_SYMM);
         MAP_OPERAND(FLOAT32);
         MAP_OPERAND(INT32);
         MAP_OPERAND(UINT32);
         MAP_OPERAND(TENSOR_FLOAT32);
         MAP_OPERAND(TENSOR_INT32);
         MAP_OPERAND(TENSOR_QUANT8_ASYMM);
+        MAP_OPERAND(TENSOR_QUANT8_SYMM_PER_CHANNEL);
         default:
             break;
     }
