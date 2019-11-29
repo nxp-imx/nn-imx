@@ -135,6 +135,14 @@ Return<void> VsiDriver::getSupportedOperations_1_1(const V1_1::Model& model,
              return isSupported;
          };
 
+         auto isConstantTensor = [](auto &operand) -> bool{
+            if(operand.lifetime == OperandLifeTime::CONSTANT_COPY ||
+                operand.lifetime == OperandLifeTime::CONSTANT_REFERENCE)
+                return true;
+            else
+                return false;
+         };
+
          auto getOpeandPtr = [&model](auto &operand)->auto{
             auto& location = operand.location;
             return model.operandValues.data() + location.offset;
@@ -162,14 +170,24 @@ Return<void> VsiDriver::getSupportedOperations_1_1(const V1_1::Model& model,
         switch (operation.type)
         {
             //TODO: check API 28 op new feature
+            case OperationType::CONV_2D:{
+                auto & input = model.operands[operation.inputs[0]];
+                auto & weight = model.operands[operation.inputs[1]];
+                auto & bias = model.operands[operation.inputs[2]];
+                if( isConstantTensor(input) ){
+                        LOG(INFO)<<"Device don't support constant input";
+                        return false;
+                }
+
+                return ( !isConstantTensor(bias) && !isConstantTensor(weight)) ||
+                       ( isConstantTensor(bias) &&isConstantTensor(weight) );
+            }
             case OperationType::AVERAGE_POOL_2D:
             case OperationType::MAX_POOL_2D:
             case OperationType::SOFTMAX:
                 {
                     auto & input = model.operands[operation.inputs[0]];
-                    if( input.lifetime == OperandLifeTime::CONSTANT_COPY ||
-                        input.lifetime == OperandLifeTime::CONSTANT_REFERENCE
-                        ){
+                    if( isConstantTensor(input)){
                         LOG(INFO)<<"Device don't support constant input";
                         return false;
                     }
