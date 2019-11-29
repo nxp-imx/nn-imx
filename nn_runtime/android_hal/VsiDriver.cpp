@@ -192,6 +192,15 @@ Return<void> VsiDriver::getSupportedOperations_1_1(const V1_1::Model& model,
                 }
                 break;
                 }
+            case OperationType::FULLY_CONNECTED:{
+                auto &input = model.operands[operation.inputs[0]];
+                auto &weight = model.operands[operation.inputs[1]];
+                if( input.dimensions.size() != 2 ||
+                    (weight.dimensions.size() == 2 && input.dimensions[1] != weight.dimensions[1])
+                    )
+                    return false;
+                break;
+            }
             //to-do: check operand with operation
             //API 29 newly added operataion
             case OperationType::ABS:
