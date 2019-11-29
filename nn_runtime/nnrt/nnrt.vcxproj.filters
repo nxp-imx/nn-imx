@@ -57,9 +57,6 @@
     <ClCompile Include="execution_task.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="op/activation.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="op/convolution.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

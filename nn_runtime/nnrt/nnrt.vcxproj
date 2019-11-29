@@ -41,7 +41,6 @@
     <ClCompile Include="prepared_model.cpp" />
     <ClCompile Include="ovxlib_delegate.cpp" />
     <ClCompile Include="file_map_memory.cpp" />
-    <ClCompile Include="op/activation.cpp" />
     <ClCompile Include="op/convolution.cpp" />
     <ClCompile Include="op/normalization.cpp" />
     <ClCompile Include="op/elementwise.cpp" />
