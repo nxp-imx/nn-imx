@@ -150,8 +150,8 @@ MAKE_SPEC(generate_proposals)
     OVERRIDE_SPEC(generate_proposals, quant8_asymm)
     .score_(nnrt::OperandType::TENSOR_QUANT8_ASYMM)
     .bounding_box_(nnrt::OperandType::TENSOR_QUANT8_ASYMM)
-    .anchor_shape_(nnrt::OperandType::TENSOR_QUANT16_ASYMM)
-    .image_size_(nnrt::OperandType::TENSOR_QUANT16_ASYMM));
+    .anchor_shape_(nnrt::OperandType::TENSOR_QUANT16_SYMM)
+    .image_size_(nnrt::OperandType::TENSOR_QUANT16_SYMM));
 
 #undef ARG_NAMES
 #undef ARGC

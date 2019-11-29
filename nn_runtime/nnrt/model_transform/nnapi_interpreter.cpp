@@ -245,7 +245,7 @@ int NnApiInterpreter::run(Model* model, bool* modified)
         OperationPtr new_operation = (this->*op_container_[op->type()])(model, op, idx);
         if (!new_operation) {
             NNRT_LOGW_PRINT("Build operation: %d, index: %d fail", op->type(), idx);
-            return NNA_ERROR_CODE(OUT_OF_MEMORY);
+            return NNA_ERROR_CODE(BAD_DATA);
         }
         replaceOperation(model, idx, new_operation);
     }
@@ -1195,24 +1195,32 @@ OperationPtr NnApiInterpreter::map_DECONV_2D(Model* model,
         OperationPtr operation, uint32_t operation_index)
 {
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
-    std::shared_ptr<Deconv2DOperation> deconv2d = std::make_shared<Deconv2DOperation>();
-    NNAPI_CHECK_PTR(deconv2d);
-    if (inputs.size() == 9) {
-        deconv2d->padType = mapPadType(inputs[4]->scalar.int32);
-        deconv2d->strides[0] = inputs[5]->scalar.int32;
-        deconv2d->strides[1] = inputs[6]->scalar.int32;
-        resetFusedType(model, operation, 7);
-        deconv2d->setDataLayout(getDataLayout(inputs[8]->scalar.boolean));
+    std::shared_ptr<Deconv2DOperation> deconv2d;
+    auto argList = matchArgList(inputs, "TransposeConv2DOperation");
+    if (argList) {
+        if (argList->ArgPos("output_shape") != -1) {
+            // TODO: We donot support this case,
+            // It needs shape inference to convert padType to pad
+            //op->padType = mapPadtype(inputs[argList->ArgPos("impilicit_pad")]->scalar.int32);
+            NNRT_LOGE_PRINT("Transpose conv2d doesn't support implicit padding.");
+            return nullptr;
+        }
+        deconv2d = std::make_shared<Deconv2DOperation>();
+        NNAPI_CHECK_PTR(deconv2d);
+        deconv2d->pad[0] = inputs[argList->ArgPos("pad_left")]->scalar.int32;
+        deconv2d->pad[1] = inputs[argList->ArgPos("pad_top")]->scalar.int32;
+        deconv2d->pad[2] = inputs[argList->ArgPos("pad_right")]->scalar.int32;
+        deconv2d->pad[3] = inputs[argList->ArgPos("pad_bottom")]->scalar.int32;
+        deconv2d->strides[0] = inputs[argList->ArgPos("stride_w")]->scalar.int32;
+        deconv2d->strides[1] = inputs[argList->ArgPos("stride_h")]->scalar.int32;
+        resetFusedType(model, operation, argList->ArgPos("fuse_code"));
+        deconv2d->setDataLayout(getDataLayout(
+                    inputs[argList->ArgPos("layout")]->scalar.boolean));
     } else {
-        deconv2d->pad[0] = inputs[3]->scalar.int32;
-        deconv2d->pad[1] = inputs[4]->scalar.int32;
-        deconv2d->pad[2] = inputs[5]->scalar.int32;
-        deconv2d->pad[3] = inputs[6]->scalar.int32;
-        deconv2d->strides[0] = inputs[7]->scalar.int32;
-        deconv2d->strides[1] = inputs[8]->scalar.int32;
-        resetFusedType(model, operation, 9);
-        deconv2d->setDataLayout(getDataLayout(inputs[10]->scalar.boolean));
+        NNRT_LOGE_PRINT("Transpose conv2d argument list not support");
+        assert(false);
     }
+
     /* set default dilation value */
     deconv2d->setVxParam(OverflowPolicy::WRAP, RoundingPolicy::TO_ZERO, Rounding::FLOOR);
     truncateOperationIOs(model, operation, 3, 1);

@@ -60,13 +60,17 @@ int PreparedModel::prepare()
         transformations.add(new ValidateQuantizedGraph());
 
         // relaxed mode
-        if (model_->isRelaxed())
+        if (model_->isRelaxed()) {
             transformations.add(new Fp32ToFp16());
-
-        if(interpreter_) {
-            interpreter_->run(model_, &modified);
         }
 
+        if(interpreter_) {
+            err = interpreter_->run(model_, &modified);
+        }
+
+        if (err != NNA_ERROR_CODE(NO_ERROR)) {
+            return err;
+        }
         err = transformations.once(model_);
         model_->freezeCompile();
         if (err != NNA_ERROR_CODE(NO_ERROR)) {
