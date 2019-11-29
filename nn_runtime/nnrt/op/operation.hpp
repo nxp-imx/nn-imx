@@ -503,6 +503,10 @@ struct DetectionPostprocessingOperation : Operation {
 
 struct GenerateProposalsOperation : Operation {
     GenerateProposalsOperation() : Operation(OperationType::GENERATE_PROPOSALS) {}
+    virtual void handleLayoutInferenceOnInputs(
+        Model& model,
+        std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>&
+            out_permute_vectors) override;
     float ratio_h;
     float ratio_w;
     int pre_nms_topn;
