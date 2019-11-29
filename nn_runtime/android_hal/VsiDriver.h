@@ -92,9 +92,8 @@ class VsiDriver : public VsiDevice {
     };
 #endif
 
-    template<typename T_Model>
-    static bool getSupportedOperation(const size_t operation_index,
-                                               const T_Model& model);
+    template<typename T_operation,typename T_Model>
+    static bool isSupportedOperation(const T_operation &operation, const T_Model& model);
 
    private:
    int32_t disable_float_feature_; // switch that float-type running on hal

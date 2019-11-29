@@ -48,7 +48,8 @@ namespace vsi_driver {
             const size_t count = model.operations.size();
             std::vector<bool> supported(count, true);
             for (size_t i = 0; i < count; i++) {
-                 supported[i] = getSupportedOperation(i, model);
+                 const auto &operation = model.operations[i];
+                 supported[i] = isSupportedOperation(operation, model);
             }
             cb(ErrorStatus::NONE, supported);
         } else {
@@ -74,7 +75,13 @@ Return<void> VsiDriver::getCapabilities(getCapabilities_cb cb) {
 }
 
 Return<void> VsiDriver::getSupportedOperations(const V1_0::Model& model, V1_0::IDevice::getSupportedOperations_cb cb) {
-    return getSupportedOperationsBase(model, cb);
+    if (!validateModel(model)) {
+        LOG(ERROR) << __FUNCTION__;
+        std::vector<bool> supported;
+        cb(ErrorStatus::INVALID_ARGUMENT, supported);
+        return Void();
+    }
+    return getSupportedOperationsBase(convertToV1_2(model), cb);
 }
 
 #if ANDROID_SDK_VERSION > 27
@@ -95,16 +102,19 @@ Return<void> VsiDriver::getCapabilities_1_1(getCapabilities_1_1_cb cb) {
 
 Return<void> VsiDriver::getSupportedOperations_1_1(const V1_1::Model& model,
                                                    V1_1::IDevice::getSupportedOperations_1_1_cb cb) {
-    return getSupportedOperationsBase(model, cb);
+    if (!validateModel(model)) {
+        LOG(ERROR) << __FUNCTION__;
+        std::vector<bool> supported;
+        cb(ErrorStatus::INVALID_ARGUMENT, supported);
+        return Void();
+    }
+    return getSupportedOperationsBase(convertToV1_2(model), cb);
 }
 #endif
 
-    template<typename T_Model>
-    bool VsiDriver::getSupportedOperation(const size_t operation_index, const T_Model& model){
+    template<typename T_operation,typename T_Model>
+    bool VsiDriver::isSupportedOperation(const T_operation &operation, const T_Model& model){
 #if ANDROID_SDK_VERSION > 28
-        const auto &model_1_2 = convertToV1_2(model);
-        const auto &operation = model_1_2.operations[operation_index];
-
         auto checkSupportedOperand = [](auto &operand)->bool{
              bool isSupported = true;
              switch(operand.type){
@@ -125,14 +135,14 @@ Return<void> VsiDriver::getSupportedOperations_1_1(const V1_1::Model& model,
              return isSupported;
          };
 
-         auto getOpeandPtr = [&model_1_2](auto &operand)->auto{
+         auto getOpeandPtr = [&model](auto &operand)->auto{
             auto& location = operand.location;
-            return model_1_2.operandValues.data() + location.offset;
+            return model.operandValues.data() + location.offset;
          };
 
         // TODO: [NNRT-1] Support static shape inference for NNAPI 1.2
          for(size_t i = 0; i < operation.outputs.size(); i++){
-            auto &dims = model_1_2.operands[operation.outputs[i]].dimensions;
+            auto &dims = model.operands[operation.outputs[i]].dimensions;
             for(auto dimIndex: dims)
                 if(dimIndex == 0)
                     return false;
@@ -140,12 +150,12 @@ Return<void> VsiDriver::getSupportedOperations_1_1(const V1_1::Model& model,
 
          // TODO: nnapi 1.2 new operand type
          for(size_t i = 0; i < operation.inputs.size(); i++){
-              auto & operand = model_1_2.operands[operation.inputs[i]];
+              auto & operand = model.operands[operation.inputs[i]];
               if(false == checkSupportedOperand(operand))
                 return false;
          }
         for(size_t i = 0; i < operation.outputs.size(); i++){
-              auto & operand = model_1_2.operands[operation.outputs[i]];
+              auto & operand = model.operands[operation.outputs[i]];
               if(false == checkSupportedOperand(operand))
                 return false;
          }
@@ -153,13 +163,13 @@ Return<void> VsiDriver::getSupportedOperations_1_1(const V1_1::Model& model,
         {
             //TODO: check API 28 op new feature
             case OperationType::LSH_PROJECTION:{
-                auto typePtr = getOpeandPtr(model_1_2.operands[operation.inputs[3]]);
+                auto typePtr = getOpeandPtr(model.operands[operation.inputs[3]]);
                 if(3 == *(int32_t*)typePtr)
                     return false;
                 break;
                 }
             case OperationType::TANH:{
-                if(OperandType::TENSOR_FLOAT32 != model_1_2.operands[operation.inputs[0]].type)
+                if(OperandType::TENSOR_FLOAT32 != model.operands[operation.inputs[0]].type)
                     return false;
                 break;
                 }
@@ -169,13 +179,13 @@ Return<void> VsiDriver::getSupportedOperations_1_1(const V1_1::Model& model,
                 break;
                 }
             case OperationType::RESIZE_BILINEAR:{
-                auto & scalarOperand= model_1_2.operands[operation.inputs[1]];
+                auto & scalarOperand= model.operands[operation.inputs[1]];
                 if(OperandType::INT32 != scalarOperand.type)
                     return false;
                 break;
                 }
             case OperationType::TRANSPOSE:{
-                auto & perm= model_1_2.operands[operation.inputs[1]];
+                auto & perm= model.operands[operation.inputs[1]];
                 if(OperandLifeTime::MODEL_INPUT== perm.lifetime ){
                     LOG(ERROR)<<"do not support perm as input";
                     return false;
@@ -271,6 +281,12 @@ Return<void> VsiDriver::getSupportedOperations_1_1(const V1_1::Model& model,
 
     Return<void> VsiDriver::getSupportedOperations_1_2(const V1_2::Model& model,
                                             V1_2::IDevice::getSupportedOperations_1_2_cb _hidl_cb){
+        if (!validateModel(model)) {
+            LOG(ERROR) << __FUNCTION__;
+            std::vector<bool> supported;
+            _hidl_cb(ErrorStatus::INVALID_ARGUMENT, supported);
+            return Void();
+        }
         return getSupportedOperationsBase(model, _hidl_cb);
     }
  #endif
