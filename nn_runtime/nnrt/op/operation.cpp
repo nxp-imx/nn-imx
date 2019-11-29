@@ -350,10 +350,13 @@ void Operation::handleLayoutInferenceOnOutputs(
             }
         });
 
-    // remove permute vector for output tensor - no need spread them
+    // remove permute vector for output tensor - no need spread them except other operation still consume this output
     for (auto modelOutput : modelOutputs) {
         auto modelPermuteVector = next_permute_vectors.find(modelOutput);
-        next_permute_vectors.erase(modelPermuteVector);
+        auto consumers = model.getConsumers(model.operand(modelOutput));
+        if (consumers.empty()) {
+            next_permute_vectors.erase(modelPermuteVector);
+        }
     }
 }
 
