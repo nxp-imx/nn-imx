@@ -46,7 +46,7 @@ struct FakeBiasTypeSelector<DataType::Float16> {
 
 template <>
 struct FakeBiasTypeSelector<DataType::QuantisedAsymm8> {
-    using type = uint8_t;
+    using type = int32_t;
     static constexpr armnn::DataType value = DataType::Signed32;
 };
 

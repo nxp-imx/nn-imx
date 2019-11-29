@@ -24,13 +24,13 @@
 
 #pragma once
 
+#include <FloatingPointConverter.hpp>
 #include <backendsCommon/CpuTensorHandle.hpp>
 #include <backendsCommon/Workload.hpp>
 #include <backendsCommon/WorkloadData.hpp>
-#include <FloatingPointConverter.hpp>
 #include <boost/log/trivial.hpp>
-#include "TNpuWorkloads.hpp"
 #include "Permute.hpp"
+#include "TNpuWorkloads.hpp"
 
 #include "FakeBiasSelector.hpp"
 
@@ -45,8 +45,8 @@ class NpuDepthWiseConvolution2dWorkload
     static_assert(std::is_same<typename FakeBias::type, void>::value == false,
                   "FakeBias data type In DepthWiseConv not added");
 
-    explicit NpuDepthWiseConvolution2dWorkload(const DepthwiseConvolution2dQueueDescriptor& descriptor,
-                                               const WorkloadInfo& info)
+    explicit NpuDepthWiseConvolution2dWorkload(
+        const DepthwiseConvolution2dQueueDescriptor& descriptor, const WorkloadInfo& info)
         : TNpuWorkload<DepthwiseConvolution2dQueueDescriptor, DataTypes...>(descriptor, info),
           m_Weight(std::make_unique<ScopedCpuTensorHandle>(*(descriptor.m_Weight))),
           m_Bias(descriptor.m_Parameters.m_BiasEnabled
@@ -65,7 +65,8 @@ class NpuDepthWiseConvolution2dWorkload
         // order is important
         // ONLY 1 input
         assert(1 == descriptor.m_Inputs.size());
-        NpuTensorHandler* inputTensorHandle = dynamic_cast<NpuTensorHandler*>(descriptor.m_Inputs[0]);
+        NpuTensorHandler* inputTensorHandle =
+            dynamic_cast<NpuTensorHandler*>(descriptor.m_Inputs[0]);
         uint32_t inputOperandId = this->AddOperandAndSetValue(
             inputTensorHandle->GetTensorInfo(), inputTensorHandle->GetShape(), nullptr);
         inOperandIds.push_back(inputOperandId);
@@ -73,12 +74,50 @@ class NpuDepthWiseConvolution2dWorkload
         TensorShape weightShape = m_Weight->GetShape();
         const TensorInfo& weightInfo = m_Weight->GetTensorInfo();
 
-        // Weight is always NCHW in armnn, so permute needed for NHWC
+        // 1. Driver needs the [1, N*C, H, W] formate of weight and chooses the filter
+        //    as the order of batch0-channel0, batch0-channel1, batch1-channel0
+        //    batch1-channel1 ... So we need to permute weight data from NCHW to CNHW and reshape
+        //    weight shape to [1, N*C, H, W]
+        // 2. Weight is always NCHW in armnn, we need to permute weight data from NCHW to NHWC,
+        //    because all constant operand will be permuted from NHWC to NCHW
         if (m_DataLayout == armnn::DataLayout::NHWC) {
+            uint32_t dataTypeSize = 4;
+            if (weightInfo.GetDataType() == DataType::QuantisedAsymm8) {
+                dataTypeSize = 1;
+            } else if (weightInfo.GetDataType() == DataType::Float16) {
+                dataTypeSize = 2;
+            }
+            // swap N and C
+            std::swap(weightShape[0], weightShape[1]);
+            // NCHW->CNHW
+            const armnn::PermutationVector NCHWToCNHW = {1, 0, 2, 3};
+            boost::scoped_array<uint8_t> temp;
+            temp.reset(new uint8_t[weightInfo.GetNumBytes()]);
+            armnnUtils::Permute(
+                weightShape, NCHWToCNHW, m_Weight->GetTensor<void>(), temp.get(), dataTypeSize);
+
+            // convert shape from [C, N, H, W] to [1, C*N, H, W]
+            weightShape[1] = weightShape[0] * weightShape[1];
+            weightShape[0] = 1;
+
+            // permute for [1, C*N, H, W] to [1, H, W, C*N]
             std::swap(weightShape[1], weightShape[2]);
             std::swap(weightShape[2], weightShape[3]);
-
             const armnn::PermutationVector NCHWToNHWC = {0, 3, 1, 2};
+
+            m_KernelData.reset(new uint8_t[weightInfo.GetNumBytes()]);
+            armnnUtils::Permute(
+                weightShape, NCHWToNHWC, temp.get(), m_KernelData.get(), dataTypeSize);
+
+            inOperandIds.push_back(
+                this->AddOperandAndSetValue(weightInfo, weightShape, m_KernelData.get()));
+        } else {
+            // swap N and C
+            std::swap(weightShape[0], weightShape[1]);
+
+            // NCHW->CNHW
+            const armnn::PermutationVector NCHWToCNHW = {1, 0, 2, 3};
+
             uint32_t dataTypeSize = 4;
             if (weightInfo.GetDataType() == DataType::QuantisedAsymm8) {
                 dataTypeSize = 1;
@@ -86,13 +125,18 @@ class NpuDepthWiseConvolution2dWorkload
                 dataTypeSize = 2;
             }
             m_KernelData.reset(new uint8_t[weightInfo.GetNumBytes()]);
-            armnnUtils::Permute(
-                weightShape, NCHWToNHWC, m_Weight->GetTensor<void>(), m_KernelData.get(), dataTypeSize);
+            armnnUtils::Permute(weightShape,
+                                NCHWToCNHW,
+                                m_Weight->GetTensor<void>(),
+                                m_KernelData.get(),
+                                dataTypeSize);
 
-            inOperandIds.push_back(this->AddOperandAndSetValue(weightInfo, weightShape, m_KernelData.get()));
-        } else {
+            // convert shape to [1, N*C, H, W]
+            weightShape[1] = weightShape[0] * weightShape[1];
+            weightShape[0] = 1;
+
             inOperandIds.push_back(
-                this->AddOperandAndSetValue(weightInfo, weightShape, m_Weight->GetTensor<void>()));
+                this->AddOperandAndSetValue(weightInfo, weightShape, m_KernelData.get()));
         }
 
         // Add bias operand
@@ -113,7 +157,12 @@ class NpuDepthWiseConvolution2dWorkload
         } else {
             TensorShape biasShape(1);
             TensorInfo biasInfo(biasShape, FakeBias::value);
-            biasShape[0] = weightShape[3];  // Channels
+            if (m_DataLayout == armnn::DataLayout::NCHW) {
+                biasShape[0] = weightShape[1];  // Channels
+            } else {
+                biasShape[0] = weightShape[3];  // Channels
+            }
+
             m_FakeBiasData.resize(biasShape[0]);
             biasInfo.SetShape(biasShape);
 
@@ -125,10 +174,12 @@ class NpuDepthWiseConvolution2dWorkload
                 biasInfo.SetQuantizationOffset(biasZp);
                 biasInfo.SetQuantizationScale(biasScale);
             }
-            memset(m_FakeBiasData.data(), 0, m_FakeBiasData.size());
+            memset(m_FakeBiasData.data(),
+                   0,
+                   m_FakeBiasData.size() * sizeof(decltype(m_FakeBiasData[0])));
 
-            inOperandIds.push_back(this->AddOperandAndSetValue(biasInfo, biasShape, m_FakeBiasData.data()));
-            // inOperandIds.push_back(this->AddOperandAndSetValue(weightInfo, weightShape, nullptr));
+            inOperandIds.push_back(
+                this->AddOperandAndSetValue(biasInfo, biasShape, m_FakeBiasData.data()));
         }
 
         // Add padding left operand
@@ -170,12 +221,14 @@ class NpuDepthWiseConvolution2dWorkload
         inOperandIds.push_back(this->AddOperandAndSetValue(fuseCode));
 
         // Add layout operand
-        int32_t layoutCode = m_DataLayout == armnn::DataLayout::NCHW ? int32_t(nnrt::DataLayout::NCHW)
-                                                                     : int32_t(nnrt::DataLayout::NHWC);
+        int32_t layoutCode = m_DataLayout == armnn::DataLayout::NCHW
+                                 ? int32_t(nnrt::DataLayout::NCHW)
+                                 : int32_t(nnrt::DataLayout::NHWC);
         inOperandIds.push_back(this->AddOperandAndSetValue(layoutCode));
 
         std::vector<uint32_t> outOperandIds;
-        NpuTensorHandler* outputTensorHandle = dynamic_cast<NpuTensorHandler*>(descriptor.m_Outputs[0]);
+        NpuTensorHandler* outputTensorHandle =
+            dynamic_cast<NpuTensorHandler*>(descriptor.m_Outputs[0]);
         uint32_t outputTensorId = this->AddOperandAndSetValue(
             outputTensorHandle->GetTensorInfo(), outputTensorHandle->GetShape(), nullptr);
         outOperandIds.push_back(outputTensorId);
@@ -202,8 +255,10 @@ class NpuDepthWiseConvolution2dWorkload
     std::vector<typename FakeBias::type> m_FakeBiasData;  //!< workaround: bias required by shader
     mutable boost::scoped_array<float> m_Fp32BiasData;
 };
-using NpuDepthWiseConvolution2dFloat32Workload = NpuDepthWiseConvolution2dWorkload<armnn::DataType::Float32>;
-using NpuDepthWiseConvolution2dFloat16Workload = NpuDepthWiseConvolution2dWorkload<armnn::DataType::Float16>;
+using NpuDepthWiseConvolution2dFloat32Workload =
+    NpuDepthWiseConvolution2dWorkload<armnn::DataType::Float32>;
+using NpuDepthWiseConvolution2dFloat16Workload =
+    NpuDepthWiseConvolution2dWorkload<armnn::DataType::Float16>;
 using NpuDepthWiseConvolution2dUint8Workload =
     NpuDepthWiseConvolution2dWorkload<armnn::DataType::QuantisedAsymm8>;
 }  // namespace armnn
