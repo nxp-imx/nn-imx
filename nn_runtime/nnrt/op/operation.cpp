@@ -517,6 +517,9 @@ void ConcatOperation::handleLayoutInferenceOnInputs(
     // TODO: find the optimized permutevector as requiredPermuteVector
     nnrt::layout_inference::IPermuteVectorPtr requiredPermuteVector =
         input_permute_cache_.cached_permutes_[inputs()[0]];
+    if (axis < 0) {
+        axis += requiredPermuteVector->rank();
+    }
     axis = nnrt::op::utils::axisMapTo(requiredPermuteVector, axis);
     // handle const operand
     std::vector<uint32_t> constOprIds;
