@@ -36,24 +36,14 @@ namespace nnrt
 {
 int Memory::readFromFd(size_t size, int protect, int fd, size_t offset)
 {
-    if (fd < 0)
-    {
-        NNRT_LOGW_PRINT("Invalid file descriptor.");
-        return NNA_ERROR_CODE(UNEXPECTED_NULL);
-    }
     if (size <= 0) {
         NNRT_LOGW_PRINT("Invalid size.");
         return NNA_ERROR_CODE(BAD_DATA);
     }
 #ifdef __linux__
-    // No need to dup fd??
-    //dup_fd_ = dup(fd);
-    //if (dup_fd_ == -1) {
-    //    NNRT_LOGW_PRINT("Failed to dup the fd\n");
-    //    return NNA_ERROR_CODE(UNEXPECTED_NULL);
-    //}
+    auto flag = (-1 == fd) ? (MAP_SHARED | MAP_ANONYMOUS) : (MAP_SHARED);
 
-    data_ptr_ = mmap(nullptr, size, protect, MAP_SHARED, fd, offset);
+    data_ptr_ = mmap(nullptr, size, protect, flag, fd, offset);
     if (data_ptr_ == MAP_FAILED) {
         NNRT_LOGW_PRINT("Can't mmap the file descriptor.\n");
         return NNA_ERROR_CODE(UNMAPPABLE);
