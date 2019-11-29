@@ -50,7 +50,7 @@ namespace vsi_driver {
 
     template <typename T_Model, typename T_IPreparedModelCallback>
     Return<ErrorStatus> VsiDevice::prepareModelBase(const T_Model& model,
-                                         ExecutionPreference ,
+                                         ExecutionPreference preference,
                                          const sp<T_IPreparedModelCallback>& callback) {
         if (VLOG_IS_ON(DRIVER)) {
             VLOG(DRIVER) << "prepareModel";
@@ -61,13 +61,19 @@ namespace vsi_driver {
             return ErrorStatus::INVALID_ARGUMENT;
         }
         if (!validateModel(model)) {
+            LOG(ERROR) << "invalid hal model";
+            notify(callback, ErrorStatus::INVALID_ARGUMENT, nullptr);
+            return ErrorStatus::INVALID_ARGUMENT;
+        }
+        if( !validateExecutionPreference(preference)){
+            LOG(ERROR) << "invalid preference" << static_cast<int32_t>(preference);
             notify(callback, ErrorStatus::INVALID_ARGUMENT, nullptr);
             return ErrorStatus::INVALID_ARGUMENT;
         }
 
         // TODO: make asynchronous later
-        sp<VsiPreparedModel> preparedModel = new VsiPreparedModel(model);
-        if (!preparedModel.get()) {
+        sp<VsiPreparedModel> preparedModel = new VsiPreparedModel( convertToV1_2(model));
+        if (ErrorStatus::NONE != preparedModel->initialize()) {
             notify(callback, ErrorStatus::INVALID_ARGUMENT, nullptr);
             return ErrorStatus::INVALID_ARGUMENT;
         }
@@ -79,14 +85,14 @@ namespace vsi_driver {
 
     Return<ErrorStatus> VsiDevice::prepareModel(const V1_0::Model& model,
                                                 const sp<V1_0::IPreparedModelCallback>& callback) {
-        return prepareModelBase(convertToV1_2(model), ExecutionPreference::FAST_SINGLE_ANSWER, callback);
+        return prepareModelBase(model, ExecutionPreference::FAST_SINGLE_ANSWER, callback);
     }
 
     Return<ErrorStatus> VsiDevice::prepareModel_1_1(
         const V1_1::Model& model,
         ExecutionPreference preference,
         const sp<V1_0::IPreparedModelCallback>& callback)  {
-        return prepareModelBase(convertToV1_2(model), ExecutionPreference::FAST_SINGLE_ANSWER, callback);
+        return prepareModelBase(model, preference, callback);
     }
 
     Return<ErrorStatus> VsiDevice::prepareModel_1_2(const V1_2::Model& model, ExecutionPreference preference,
@@ -94,7 +100,7 @@ namespace vsi_driver {
         const hidl_vec<hidl_handle>& dataCache,
         const HidlToken& token,
         const sp<V1_2::IPreparedModelCallback>& callback) {
-        return prepareModelBase(model, ExecutionPreference::FAST_SINGLE_ANSWER, callback);
+        return prepareModelBase(model, preference, callback);
     }
 
     Return<ErrorStatus> VsiDevice::prepareModelFromCache(

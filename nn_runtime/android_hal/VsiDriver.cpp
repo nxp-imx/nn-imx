@@ -107,28 +107,26 @@ class VsiDriver : public VsiDevice {
     template <typename T_model, typename T_getSupportOperationsCallback>
     Return<void> getSupportedOperationsBase(const T_model& model,
                                             T_getSupportOperationsCallback cb) {
+           LOG(INFO)<< "getSupportedOperations";
           if(validateModel(model)) {
-            VLOG(DRIVER) << "getSupportedOperations";
             const size_t count = model.operations.size();
             std::vector<bool> supported(count, true);
             for (size_t i = 0; i < count; i++) {
-                auto& operation = model.operations[i];
-                if (operation.inputs.size() > 0) {
-                    auto& firstOperand = model.operands[operation.inputs[0]];
-                    supported[i] = getSupportedOperation(operation, model);
-                }
+                 supported[i] = getSupportedOperation(i, model);
             }
             cb(ErrorStatus::NONE, supported);
         } else {
+            LOG(ERROR)<< "invalid model";
             std::vector<bool> supported;
             cb(ErrorStatus::INVALID_ARGUMENT, supported);
         }
+        LOG(INFO)<< "getSupportedOperations exit";
         return Void();
     };
 
-    template<typename T_Operation, typename T_Model>
-    bool getSupportedOperation(const T_Operation& operation,
-                                                        const T_Model& model);
+    template<typename T_Model>
+    bool getSupportedOperation(const size_t operation_index,
+                                               const T_Model& model);
 };
 
 Return<void> VsiDriver::getCapabilities(getCapabilities_cb cb) {
@@ -145,13 +143,7 @@ Return<void> VsiDriver::getCapabilities(getCapabilities_cb cb) {
 }
 
 Return<void> VsiDriver::getSupportedOperations(const V1_0::Model& model, getSupportedOperations_cb cb) {
-#if ANDROID_SDK_VERSION > 28
-    return getSupportedOperationsBase(convertToV1_2(model), cb);
-#elif ANDROID_SDK_VERSION > 27
-    return getSupportedOperationsBase(convertToV1_1(model), cb);
-#else
     return getSupportedOperationsBase(model, cb);
-#endif
 }
 
 #if ANDROID_SDK_VERSION > 27
@@ -172,19 +164,16 @@ Return<void> VsiDriver::getCapabilities_1_1(getCapabilities_1_1_cb cb) {
 
 Return<void> VsiDriver::getSupportedOperations_1_1(const V1_1::Model& model,
                                                    getSupportedOperations_1_1_cb cb) {
-#if ANDROID_SDK_VERSION > 28
-    return getSupportedOperationsBase(convertToV1_2(model), cb);
-#else
     return getSupportedOperationsBase(model, cb);
-#endif
 }
 #endif
 
-    template<typename T_Operation, typename T_Model>
-    bool VsiDriver::getSupportedOperation(const T_Operation& operation,
-                                                        const T_Model& model){
-#if ANDROID_SDK_VERSION > 28
-         auto checkSupportedOperand = [&](auto &operand)->bool{
+    template<typename T_Model>
+    bool VsiDriver::getSupportedOperation(const size_t operation_index, const T_Model& model){
+        const auto &model_1_2 = convertToV1_2(model);
+        const auto &operation = model_1_2.operations[operation_index];
+
+        auto checkSupportedOperand = [](auto &operand)->bool{
              bool isSupported = true;
              switch(operand.type){
                     //API 29 newly added operand
@@ -204,14 +193,14 @@ Return<void> VsiDriver::getSupportedOperations_1_1(const V1_1::Model& model,
              return isSupported;
          };
 
-         auto getOpeandPtr = [&](auto &operand)->auto{
+         auto getOpeandPtr = [&model_1_2](auto &operand)->auto{
             auto& location = operand.location;
-            return model.operandValues.data() + location.offset;
+            return model_1_2.operandValues.data() + location.offset;
          };
 
         // TODO: [NNRT-1] Support static shape inference for NNAPI 1.2
          for(size_t i = 0; i < operation.outputs.size(); i++){
-            auto &dims = model.operands[operation.outputs[i]].dimensions;
+            auto &dims = model_1_2.operands[operation.outputs[i]].dimensions;
             for(auto dimIndex: dims)
                 if(dimIndex == 0)
                     return false;
@@ -219,12 +208,12 @@ Return<void> VsiDriver::getSupportedOperations_1_1(const V1_1::Model& model,
 
          // TODO: nnapi 1.2 new operand type
          for(size_t i = 0; i < operation.inputs.size(); i++){
-              auto & operand = model.operands[operation.inputs[i]];
+              auto & operand = model_1_2.operands[operation.inputs[i]];
               if(false == checkSupportedOperand(operand))
                 return false;
          }
         for(size_t i = 0; i < operation.outputs.size(); i++){
-              auto & operand = model.operands[operation.outputs[i]];
+              auto & operand = model_1_2.operands[operation.outputs[i]];
               if(false == checkSupportedOperand(operand))
                 return false;
          }
@@ -232,13 +221,13 @@ Return<void> VsiDriver::getSupportedOperations_1_1(const V1_1::Model& model,
         {
             //TODO: check API 28 op new feature
             case OperationType::LSH_PROJECTION:{
-                auto typePtr = getOpeandPtr(model.operands[operation.inputs[3]]);
+                auto typePtr = getOpeandPtr(model_1_2.operands[operation.inputs[3]]);
                 if(3 == *(int32_t*)typePtr)
                     return false;
                 break;
                 }
             case OperationType::TANH:{
-                if(OperandType::TENSOR_FLOAT32 != model.operands[operation.inputs[0]].type)
+                if(OperandType::TENSOR_FLOAT32 != model_1_2.operands[operation.inputs[0]].type)
                     return false;
                 break;
                 }
@@ -248,7 +237,7 @@ Return<void> VsiDriver::getSupportedOperations_1_1(const V1_1::Model& model,
                 break;
                 }
             case OperationType::RESIZE_BILINEAR:{
-                auto & scalarOperand= model.operands[operation.inputs[1]];
+                auto & scalarOperand= model_1_2.operands[operation.inputs[1]];
                 if(OperandType::INT32 != scalarOperand.type)
                     return false;
                 break;

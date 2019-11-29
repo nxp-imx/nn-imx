@@ -56,13 +56,14 @@ namespace vsi_driver {
    public:
     VsiPreparedModel(const V1_2::Model& model):model_(model) {
         native_model_ = std::make_shared<nnrt::Model>();
-        Create(model);
         }
 
     ~VsiPreparedModel() override {
         release_rtinfo(const_buffer_);
         }
 
+    /*map hidl model to ovxlib model and compliation*/
+    Return<ErrorStatus> initialize();
     Return<ErrorStatus> execute(const Request& request,
                                 const sp<V1_0::IExecutionCallback>& callback) override{
         // TODO: do asynchronously execute
@@ -88,11 +89,9 @@ namespace vsi_driver {
             configureExecutionBurst_cb cb) override;
 
    private:
-        /*create ovxlib model and compliation*/
-        Return<ErrorStatus> Create(const V1_2::Model& model);
 
         void fill_operand_value(nnrt::op::OperandPtr ovx_operand, const V1_2::Operand& hal_operand) ;
-        void construct_ovx_operand(nnrt::op::OperandPtr ovx_oprand,const V1_2::Operand& hal_operand);
+        Return<ErrorStatus>  construct_ovx_operand(nnrt::op::OperandPtr ovx_oprand,const V1_2::Operand& hal_operand);
          Return<ErrorStatus> map_rtinfo_from_hidl_memory(const hidl_vec<hidl_memory>& pools,
             std::vector<VsiRTInfo>& rtInfos);
         void release_rtinfo(std::vector<VsiRTInfo>& rtInfos);

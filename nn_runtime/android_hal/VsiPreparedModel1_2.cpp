@@ -172,6 +172,11 @@ void VsiPreparedModel::release_rtinfo(std::vector<VsiRTInfo>& rtInfos){
         sp<IMemory> shared_mem = nullptr;
         uint8_t *buffer = nullptr;
 
+        if(!validatePool(hidl_memory)){
+            LOG(ERROR)<<"invalid hidl memory pool";
+            return ErrorStatus::INVALID_ARGUMENT;
+        }
+
         if ("ashmem" == hidl_memory.name()) {
                 shared_mem = mapMemory(hidl_memory);
                 assert(shared_mem);
@@ -250,19 +255,16 @@ void VsiPreparedModel::release_rtinfo(std::vector<VsiRTInfo>& rtInfos){
     }
 }
 
-void VsiPreparedModel::construct_ovx_operand(nnrt::op::OperandPtr ovx_operand,const V1_2::Operand& hal_operand) {
-    ovx_operand->type = operand_mapping(hal_operand.type);
+    Return<ErrorStatus> VsiPreparedModel::construct_ovx_operand(nnrt::op::OperandPtr ovx_operand,const V1_2::Operand& hal_operand) {
+    auto ovx_nnrt_type = operand_mapping(hal_operand.type);
+    if(nnrt::OperandType::NONE == ovx_nnrt_type ){
+        LOG(ERROR)<<" do not support operand type: "<<static_cast<int>(hal_operand.type);
+        return ErrorStatus::INVALID_ARGUMENT;
+    }
+    ovx_operand->type = ovx_nnrt_type;
     ovx_operand->quant.scalar.scale = hal_operand.scale;
     ovx_operand->quant.scalar.zeroPoint = hal_operand.zeroPoint;
     ovx_operand->dimensions = hal_operand.dimensions;
-    // tensor shape with zero should set as Null, ovx won't create concrete tensor
-    // for this operand
-//    for (auto d : ovx_operand->dimensions) {
-//        if (0 == d) {
-//            ovx_operand->setNull();
-//            break;
-//        }
-//    }
 
     // TODO: add check error
     switch (ovx_operand->type) {
@@ -278,31 +280,40 @@ void VsiPreparedModel::construct_ovx_operand(nnrt::op::OperandPtr ovx_operand,co
         default:
             break;
     }
+    return ErrorStatus::NONE;
 }
 
-    Return<ErrorStatus> VsiPreparedModel::Create(const V1_2::Model& model){
+    Return<ErrorStatus> VsiPreparedModel::initialize(){
         // [0] validate HAL::Model, return ErrorCode if validate failed
         // For scalar operand, dimension must be 0
         // [1] create async procedure to prepare model
         // [1.0] convert HAL model to nnrt::Model
         LOG(INFO) << __FUNCTION__;
 
-        auto status = map_rtinfo_from_hidl_memory(model.pools, const_buffer_);
+        auto status = map_rtinfo_from_hidl_memory(model_.pools, const_buffer_);
         if(ErrorStatus::NONE != status)
             return status;
 
         // add operand and set its value
-        for (const auto& hal_operand : model.operands) {
+        for (const auto& hal_operand : model_.operands) {
             uint32_t registered_idx = 0;
             auto ovx_operand = native_model_->addOperand(nullptr, &registered_idx);
+            auto status = construct_ovx_operand(ovx_operand, hal_operand);
+            if (ErrorStatus::NONE != status)
+                return status;
 
-            construct_ovx_operand(ovx_operand, hal_operand);
             fill_operand_value(ovx_operand, hal_operand);
         }
 
-        for (const auto& hal_op : model.operations) {
+        for (const auto& hal_op : model_.operations) {
+            auto ovx_op_type = op_code_mapping(hal_op.type);
+            if( nnrt::OperationType::NONE == ovx_op_type){
+                LOG(ERROR)<<" do not support operand type: "<<static_cast<int>(hal_op.type);
+                return ErrorStatus::INVALID_ARGUMENT;
+            }
+
              auto ovx_op =
-                native_model_->addOperation(op_code_mapping(hal_op.type) /* Operation Type*/,
+                native_model_->addOperation(ovx_op_type/* Operation Type*/,
                                            &hal_op.inputs[0],    /*inputs */
                                            hal_op.inputs.size(), /*num of inputs */
                                            &hal_op.outputs[0],   /*outputs */
@@ -315,8 +326,8 @@ void VsiPreparedModel::construct_ovx_operand(nnrt::op::OperandPtr ovx_operand,co
 //            native_model_->relax(true);
 
         native_model_->finish();
-        std::vector<uint32_t> inputs = model.inputIndexes;
-        std::vector<uint32_t> outputs = model.outputIndexes;
+        std::vector<uint32_t> inputs = model_.inputIndexes;
+        std::vector<uint32_t> outputs = model_.outputIndexes;
         native_model_->identifyInputsAndOutputs(inputs.data(), inputs.size(), outputs.data(), outputs.size());
         native_compile_ = std::make_shared<nnrt::Compilation>(native_model_.get());
         return ErrorStatus::NONE;
@@ -349,6 +360,12 @@ Return<ErrorStatus> VsiPreparedModel::executeBase(const Request& request,
     LOG(INFO) << __FUNCTION__;
     time_point deviceStart;
     if (measure == MeasureTiming::YES) deviceStart = now();
+
+    if(!validateRequest(request, model_)){
+        LOG(ERROR)<<"invalid request";
+        notify(callback, ErrorStatus::INVALID_ARGUMENT, std::vector<OutputShape>(0), kNoTiming);
+        return ErrorStatus::INVALID_ARGUMENT;
+    }
 
     map_rtinfo_from_hidl_memory(request.pools, io_buffer_);
     if(!native_exec_)
