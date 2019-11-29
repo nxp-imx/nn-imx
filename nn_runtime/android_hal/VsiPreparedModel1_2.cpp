@@ -21,9 +21,11 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
+
 #include "VsiPreparedModel1_2.h"
 #include "ExecutionBurstServer.h"
 #include "VsiBurstExecutor.h"
+#include "VsiDriver.h"
 
 #include <sys/mman.h>
 #include <sys/system_properties.h>
@@ -337,6 +339,11 @@ void VsiPreparedModel::release_rtinfo(std::vector<VsiRTInfo>& rtInfos){
         }
 
         for (const auto& hal_op : model_.operations) {
+            if(!VsiDriver::isSupportedOperation(hal_op, model_)){
+                LOG(ERROR)<<"Device do not support operation type: "<<static_cast<int>(hal_op.type);
+                return ErrorStatus::INVALID_ARGUMENT;
+                }
+
             auto ovx_op_type = op_code_mapping(hal_op.type);
             if( nnrt::OperationType::NONE == ovx_op_type){
                 LOG(ERROR)<<"Device do not support operation type: "<<static_cast<int>(hal_op.type);
@@ -350,6 +357,7 @@ void VsiPreparedModel::release_rtinfo(std::vector<VsiRTInfo>& rtInfos){
                                            &hal_op.outputs[0],   /*outputs */
                                            hal_op.outputs.size() /*num of outputs */
                                            );
+
             ovx_op->setDataLayout(nnrt::DataLayout::NHWC);
         }
 
