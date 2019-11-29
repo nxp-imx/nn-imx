@@ -259,5 +259,8 @@ OVERRIDE_SPEC(implicit_padding_base, perchan_quant)
     .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM)
     .kernel_(nnrt::OperandType::TENSOR_QUANT8_SYMM_PER_CHANNEL)
     .bias_(nnrt::OperandType::TENSOR_INT32));
+#undef ARG_NAMES
+#undef ARGC
+#undef OP_SPEC_NAME
 
 #endif

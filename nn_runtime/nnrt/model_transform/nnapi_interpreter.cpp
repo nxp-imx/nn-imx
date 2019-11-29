@@ -171,7 +171,7 @@ NnApiInterpreter::NnApiInterpreter()
     REGISTER_OP(ARGMIN);
     REGISTER_OP(EQUAL);
     REGISTER_OP(EXP);
-    //REGISTER_OP(EXPAND_DIMS);
+    REGISTER_OP(EXPAND_DIMS);
     REGISTER_OP(GATHER);
     REGISTER_OP(CHANNEL_SHUFFLE);
     REGISTER_OP(GREATER);
@@ -632,6 +632,46 @@ OperationPtr NnApiInterpreter::map_RESHAPE(Model* model,
     truncateOperationIOs(model, operation, 1, 1);
     return reshape;
 }
+
+OperationPtr NnApiInterpreter::map_EXPAND_DIMS(Model* model,
+    OperationPtr operation, uint32_t operation_index) {
+        NNAPI_CHECK_IO_NUM(operation, 2, 1);
+        std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
+        std::shared_ptr<ReshapeOperation> reshape = std::make_shared<ReshapeOperation>();
+
+        auto argList = matchArgList(inputs, "ExpandDims");
+        if (argList) {
+            int32_t dimIndex = inputs[argList->ArgPos("dimIndex")]->scalar.int32;
+            int32_t inputRank = inputs[argList->ArgPos("input")]->dimensions.size();
+
+            // dimIndex in [-(n+1), n+1] where n is the input rank :
+            // CAUTION : reference cpu code not algined with API spec
+            if ( -1*(inputRank+1)<= dimIndex && dimIndex <= inputRank) {
+                std::vector<OperandPtr> outputs = model->getOperands(operation->outputs());
+                assert(outputs[0]->ndim() > 0);
+                reshape->shape =
+                    std::vector<int32_t>(inputs[0]->dimensions.begin(), inputs[0]->dimensions.end());
+
+                if (dimIndex < 0) {
+                    dimIndex += (inputRank + 1);
+                }
+
+                reshape->shape.insert(reshape->shape.begin() + dimIndex, 1);
+                // Fill output shape
+                outputs[0]->dimensions = std::vector<uint32_t>(reshape->shape.begin(), reshape->shape.end());
+            } else {
+                NNRT_LOGD_PRINT(" %d -> %d, %d", dimIndex, -1 * (inputRank + 1), inputRank);
+                assert(false);
+            }
+
+            truncateOperationIOs(model, operation, 1, 1);
+        } else {
+            NNRT_LOGE("NnApiInterpreter") << "Fatal error argmuent mismatch";
+            assert(false);
+        }
+
+        return reshape;
+    }
 
 OperationPtr NnApiInterpreter::map_SOFTMAX(Model* model,
         OperationPtr operation, uint32_t operation_index)

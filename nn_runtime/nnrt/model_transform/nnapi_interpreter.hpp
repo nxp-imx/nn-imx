@@ -138,7 +138,7 @@ class NnApiInterpreter : public Interpreter
         REGISTER_OP(ARGMIN);
         REGISTER_OP(EQUAL);
         REGISTER_OP(EXP);
-        //REGISTER_OP(EXPAND_DIMS);
+        REGISTER_OP(EXPAND_DIMS);
         REGISTER_OP(GATHER);
         REGISTER_OP(CHANNEL_SHUFFLE);
         REGISTER_OP(GREATER);
