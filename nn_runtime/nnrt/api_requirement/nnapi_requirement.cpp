@@ -72,3 +72,4 @@ void NNapiRequirementRegister(const std::string& opName, const IArgList* arglist
 #include "nnapi_spec/ANEURALNETWORKS_TRANSPOSE_CONV_2D.hpp"
 #include "nnapi_spec/ANEURALNETWORKS_DEPTHWISE_CONV_2D.hpp"
 #include "nnapi_spec/ANEURALNETWORKS_EXPAND_DIMS.hpp"
+#include "nnapi_spec/ANEURALNETWORKS_INSTANCE_NORMALIZATION.hpp"

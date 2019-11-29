@@ -1584,22 +1584,15 @@ int OvxlibDelegate::addNode_SPLIT(Model* model,
 }
 
 int OvxlibDelegate::addNode_INSTANCE_NORM(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
+                                          OperationPtr operation,
+                                          uint32_t operation_index) {
     (void)model;
     int err = NNA_ERROR_CODE(NO_ERROR);
-    InstanceNormOperation* op =  reinterpret_cast<InstanceNormOperation*>(operation.get());
+    InstanceNormOperation* op = reinterpret_cast<InstanceNormOperation*>(operation.get());
     std::vector<vsi_nn_node_t*> nodes;
     err = addNode(VSI_NN_OP_INSTANCE_NORM, operation, &nodes, operation_index);
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
-    std::vector<int32_t> convert_axes = convertAxes(op->axes, inputs[0]->ndim());
-    int32_t *axes_ptr = addParamPool(convert_axes, true);
-    // TODO: Add parameters ???
-    //nodes[0]->nn_param.instancenorm.gamma = op->gamma;
-    //nodes[0]->nn_param.instancenorm.beta = op->beta;
     nodes[0]->nn_param.instancenorm.eps = op->eps;
-    nodes[0]->nn_param.instancenorm.axis = axes_ptr;
-    nodes[0]->nn_param.instancenorm.axis_num = convert_axes.size();
     return err;
 }
 

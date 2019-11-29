@@ -74,23 +74,8 @@ struct BatchNormalization : TNormalization<OperationType::BATCH_NORM> {
 
 struct InstanceNormOperation : TNormalization<OperationType::INSTANCE_NORM> {
     InstanceNormOperation() : TNormalization() {}
-    virtual void handleLayoutInferenceOnInputs(
-        Model& model,
-        std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>&
-            out_permute_vectors) override {
-                TNormalization::handleLayoutInferenceOnInputs(model, out_permute_vectors);
-
-                auto finalPermVector = out_permute_vectors[0];
-                if (finalPermVector) {
-                    for (auto& axis : axes) {   // Remap axes to new data layout
-                        axis = nnrt::op::utils::axisMapTo(finalPermVector, axis);
-                    }
-                }
-            }
-
-    std::vector<int32_t> axes;
-    float gamma;
-    float beta;
+    std::vector<float> gamma;
+    std::vector<float> beta;
     float eps;
 };
 
@@ -167,7 +152,6 @@ struct LocalResponseNormOperation : TNormWithAxis<OperationType::LOCAL_RESPONSE_
     /// Normalization method algorithm to use (LocalBrightness, LocalContrast).
     NormalizationAlgorithmMethod methodType{NormalizationAlgorithmMethod::LocalBrightness};
 };
-
 
 }
 }

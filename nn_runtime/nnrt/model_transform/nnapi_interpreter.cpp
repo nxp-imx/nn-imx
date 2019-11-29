@@ -1399,19 +1399,86 @@ OperationPtr NnApiInterpreter::map_SPLIT(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_INSTANCE_NORMALIZATION(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
+                                                          OperationPtr operation,
+                                                          uint32_t operation_index) {
     NNAPI_CHECK_IO_NUM(operation, 5, 1);
-    std::shared_ptr<InstanceNormOperation> op = std::make_shared<InstanceNormOperation>();
-    NNAPI_CHECK_PTR(op);
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
-    op->gamma = inputs[1]->scalar.int32;
-    op->beta = inputs[2]->scalar.float32;
-    op->eps = inputs[3]->scalar.float32;
-    op->setDataLayout(getDataLayout(inputs[4]->scalar.boolean));
-    op->axes.push_back(-1);
-    truncateOperationIOs(model, operation, 1, 1);
-    return op;
+    std::shared_ptr<InstanceNormOperation> instanceNorm = std::make_shared<InstanceNormOperation>();
+    NNAPI_CHECK_PTR(instanceNorm);
+
+    std::vector<OperandType> argTypes;
+    std::transform(
+        inputs.begin(), inputs.end(), std::back_inserter(argTypes), [](const OperandPtr& operand) {
+            return operand->type;
+        });
+
+    auto argList = api::requirement::nnapi::match("InstanceNormOperation", argTypes);
+    if (argList) {
+        instanceNorm->setDataLayout(
+            getDataLayout(inputs[argList->ArgPos("data_layout")]->scalar.boolean));
+
+        auto inputOperand = inputs[argList->ArgPos("input")];
+        auto outputOperand = model->getOperands(operation->outputs())[0];
+        // No dynamic shape branch
+        if (!nnrt::operand_utils::IsDynamicShape(inputOperand) &&
+            !nnrt::operand_utils::IsDynamicShape(outputOperand)) {
+            if (inputs[argList->ArgPos("gamma")]->type == OperandType::FLOAT32) {
+                float gamma = inputs[argList->ArgPos("gamma")]->scalar.float32;
+                float beta = inputs[argList->ArgPos("beta")]->scalar.float32;
+                instanceNorm->eps = inputs[argList->ArgPos("epsilon")]->scalar.float32;
+                instanceNorm->setDataLayout(
+                    getDataLayout(inputs[argList->ArgPos("data_layout")]->scalar.boolean));
+
+                // Get input tensor channel num (Nnapi default data layout: NHWC)
+                uint32_t channelNum = inputs[0]->dimensions[3];
+                // Broadcast
+                for (uint32_t i = 0; i < channelNum; i++) {
+                    instanceNorm->gamma.push_back(gamma);
+                    instanceNorm->beta.push_back(beta);
+                }
+
+                // Convert scaler gamma to constant tensor
+                uint32_t gammaIds = 0;
+                OperandPtr gammaOperand = model->addOperand(nullptr, &gammaIds);
+                gammaOperand->type = OperandType::TENSOR_FLOAT32;
+                gammaOperand->dimensions = {channelNum};
+                model->setOperandValue(
+                    gammaIds,
+                    instanceNorm->gamma.data(),
+                    instanceNorm->gamma.size() * sizeof(decltype(instanceNorm->gamma[0])));
+
+                // Convert scaler beta to constant tensor
+                uint32_t betaIds = 0;
+                OperandPtr betaOperand = model->addOperand(nullptr, &betaIds);
+                betaOperand->type = OperandType::TENSOR_FLOAT32;
+                betaOperand->dimensions = {channelNum};
+                model->setOperandValue(
+                    betaIds,
+                    instanceNorm->beta.data(),
+                    instanceNorm->beta.size() * sizeof(decltype(instanceNorm->beta[0])));
+
+                // Add gamma and beta operand index into instance norm operation
+                auto inputsIds = operation->inputs();
+                auto it = inputsIds.begin();
+                // Note: the order is important
+                // {bias, scalar}
+                std::vector<uint32_t> insertIds = {betaIds, gammaIds};
+                inputsIds.insert(it + 1, insertIds.begin(), insertIds.end());
+                operation->setInputs(inputsIds);
+            } else {
+                NNRT_LOGE_PRINT("Float16 param not support");
+                assert(false);
+            }
+        } else {
+            // TODO: support dynamic input tensor shape
+            NNRT_LOGE_PRINT("Dynamic shape not support");
+            assert(false);
+        }
+    } else {
+        NNRT_LOGE_PRINT("Instance normalization argument list not support");
+    }
+    truncateOperationIOs(model, operation, 3, 1);
+    return instanceNorm;
 }
 
 OperationPtr NnApiInterpreter::map_GENERATE_PROPOSALS(Model* model,
