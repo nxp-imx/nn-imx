@@ -304,12 +304,12 @@ std::vector<op::OperandPtr> Model::getOperands(const std::vector<uint32_t> & ind
     return out_operands;
 }
 
-std::vector<uint32_t> Model::getConsumers(op::OperandPtr operand)
+std::vector<uint32_t> Model::getConsumers(const op::OperandPtr& operd)
 {
     std::vector<uint32_t> indexes;
     for( auto& op_kv : operations_) {
         for ( auto op_index : op_kv.second->inputs()){
-            if (operands_[op_index] == operand) {
+            if (operand(op_index) == operd) {
                 indexes.push_back(op_kv.first);
                 break;
             }
@@ -318,13 +318,13 @@ std::vector<uint32_t> Model::getConsumers(op::OperandPtr operand)
     return indexes;
 }
 
-std::vector<uint32_t> Model::getProducers(op::OperandPtr operand)
+std::vector<uint32_t> Model::getProducers(const op::OperandPtr& operd)
 {
     std::vector<uint32_t> indexes;
 
     for( auto& op_kv : operations_) {
         for ( auto op_index : op_kv.second->outputs()){
-            if (operands_[op_index] == operand) {
+            if (operand(op_index) == operd) {
                 indexes.push_back(op_kv.first);
                 break;
             }

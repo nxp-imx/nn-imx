@@ -164,9 +164,9 @@ class Model {
 
     std::vector<op::OperandPtr> getOperands(const std::vector<uint32_t>& indexes);
 
-    std::vector<uint32_t> getConsumers(op::OperandPtr operand);
+    std::vector<uint32_t> getConsumers(const op::OperandPtr& operd);
 
-    std::vector<uint32_t> getProducers(op::OperandPtr operand);
+    std::vector<uint32_t> getProducers(const op::OperandPtr& operd);
 
     void removeOperand(uint32_t index);
 
