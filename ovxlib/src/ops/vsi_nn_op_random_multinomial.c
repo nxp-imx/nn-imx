@@ -396,7 +396,6 @@ static vsi_status op_compute
 
             self->n = vsi_nn_RegisterClientKernelAndNewNode(
                 self->graph, &kernel_info);
-            if (kernel_info.resource_name) free(kernel_info.resource_name);
             if( NULL == self->n )
             {
                 status = VSI_FAILURE;
