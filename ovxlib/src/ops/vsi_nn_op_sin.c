@@ -36,6 +36,7 @@
 #include "vsi_nn_tensor_util.h"
 #include "client/vsi_nn_vxkernel.h"
 #include "utils/vsi_nn_util.h"
+#include "kernel/vsi_nn_kernel.h"
 
 #define _ARG_NUM            (0)
 #define _INPUT_NUM          (1)
@@ -139,38 +140,6 @@ static vsi_status cpu_op_compute
     return status;
 }
 
-static vsi_nn_shader_kernel_type_e get_sin_intra_type(vsi_nn_type_e type)
-{
-    switch (type)
-    {
-    case VSI_NN_TYPE_INT8:
-        return I8;
-    case VSI_NN_TYPE_INT16:
-        return I16;
-    case VSI_NN_TYPE_INT32:
-        return I32;
-    case VSI_NN_TYPE_INT64:
-        return I64;
-    case VSI_NN_TYPE_UINT8:
-        return U8;
-    case VSI_NN_TYPE_UINT16:
-        return U16;
-    case VSI_NN_TYPE_UINT32:
-        return U32;
-    case VSI_NN_TYPE_FLOAT16:
-        return F16;
-    case VSI_NN_TYPE_BFLOAT16:
-        return BF16;
-    case VSI_NN_TYPE_FLOAT32:
-        return F32;
-    default:
-        VSILOGE("error data type %d", type);
-        break;
-    }
-
-    return I8;
-}
-
 static void reshape_tensor_shape
     (
     vsi_nn_node_t * self,
@@ -230,8 +199,8 @@ static void _get_sin_hashtable_idx
 {
     vsi_nn_type_e inputFormat = inputs[0]->attr.dtype.vx_type;
     vsi_nn_type_e outputFormat = outputs[0]->attr.dtype.vx_type;
-    vsi_nn_shader_kernel_type_e _input_type;
-    vsi_nn_shader_kernel_type_e _output_type;
+    vsi_nn_kernel_dtype_e _input_type;
+    vsi_nn_kernel_dtype_e _output_type;
     vsi_bool enable_image_2d  = FALSE;
     uint32_t sizes[VSI_NN_MAX_DIM_NUM] = {1};
     uint32_t num_of_dims = 0;
@@ -245,8 +214,8 @@ static void _get_sin_hashtable_idx
 
     enable_image_2d = (vsi_bool)(num_of_dims < 3 || (sizes[2] == 1));
 
-    _input_type = get_sin_intra_type(inputFormat);
-    _output_type = get_sin_intra_type(outputFormat);
+    _input_type  = vsi_nn_kernel_map_dtype(inputFormat);
+    _output_type = vsi_nn_kernel_map_dtype(outputFormat);
 
     key = VSI_NN_GEN_SIN_KEY(_input_type, _output_type, enable_image_2d);
 

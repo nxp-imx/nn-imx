@@ -49,7 +49,6 @@ static vsi_status op_compute
     vsi_nn_tensor_attr_t attr;
 
     memset(&param, 0, sizeof(vx_nn_reorg_params_t));
-
     memset(&attr, 0, sizeof(attr));
     attr.size[0] = 2;
     attr.dim_num = 1;
@@ -116,6 +115,18 @@ static vsi_bool op_check
         VSILOGE("The input tensor shape must be 4-D!(space2batch)");
         return FALSE;
     }
+
+    if(self->nn_param.space2batch.block_size[0] < 0
+        || self->nn_param.space2batch.block_size[1] < 0
+        || self->nn_param.space2batch.pad[0] < 0
+        || self->nn_param.space2batch.pad[1] < 0
+        || self->nn_param.space2batch.pad[2] < 0
+        || self->nn_param.space2batch.pad[3] < 0)
+    {
+        VSILOGE("Block size or pad can't be less than zero in space to batch");
+        return FALSE;
+    }
+
     return TRUE;
 } /* op_add_check() */
 

@@ -46,7 +46,7 @@ static vsi_bool _check_log_level
         }
         else
         {
-            env_level = VSI_NN_LOG_CLOSE;
+            env_level = VSI_NN_LOG_DEBUG;
         }
     }
 

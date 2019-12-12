@@ -215,6 +215,12 @@ vx_status VX_CALLBACK vxgemmInitializer
             /* vsi_nn_kernel_matrixmul_fp16.vx */
             status |= VX_SUCCESS;
         }
+        else if (transA == FALSE && transB == TRUE &&
+           (inDataType == VSI_NN_TYPE_FLOAT16 || inDataType2 == VSI_NN_TYPE_FLOAT16 || outDataType == VSI_NN_TYPE_FLOAT16))
+        {
+            /* vsi_nn_kernel_matrixmul_transbfp16.vx */
+            status |= vxSetNodeUniform(nodObj, "uniFp16MulFp16AddtoFp32_dp8x2", 1, uniFp16MulFp16AddtoFp32_dp8x2);
+        }
         else
         {
             VSILOGE("[%s : %d]Initializer  failure!(MATRIXMUL)\n",__FILE__, __LINE__);
@@ -375,6 +381,20 @@ vx_kernel_description_t vxgemmKernelInfo_Fp16Fp16_U8 =
     vsi_nn_KernelDeinitializer
 };
 
+vx_kernel_description_t vxgemmKernelInfo_TransBFp16Fp16toFp16 =
+{
+    VX_KERNEL_ENUM_GEMM,
+    VX_KERNEL_NAME_GEMM_TRANSB_FP16FP16TOFP16,
+    NULL,
+    vxgemmKernelParam,
+    (sizeof(vxgemmKernelParam) / sizeof(vxgemmKernelParam[0])),
+    vsi_nn_KernelValidator,
+    NULL,
+    NULL,
+    vxgemmInitializer,
+    vsi_nn_KernelDeinitializer
+};
+
 vx_kernel_description_t * vx_kernel_MATRIXMUL_list[] =
 {
     NULL,
@@ -387,6 +407,7 @@ vx_kernel_description_t * vx_kernel_MATRIXMUL_list[] =
     &vxgemmKernelInfo_TransBU8U8toFp16,
     &vxgemmKernelInfo_Fp16Fp16_U8,
     &vxgemmKernelInfo_TransBU8U8toU8,
+    &vxgemmKernelInfo_TransBFp16Fp16toFp16,
     NULL
 };
 #ifdef __cplusplus

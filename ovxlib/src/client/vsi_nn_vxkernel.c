@@ -31,7 +31,8 @@
 #include "vsi_nn_prv.h"
 #include "vsi_nn_log.h"
 #include "client/vsi_nn_vxkernel.h"
-#include "libnnext/vsi_nn_libnnext_vx.h"
+#include "kernel/vsi_nn_kernel.h"
+#include "libnnext/vsi_nn_libnnext_resource.h"
 #if VSI_USE_VXC_BINARY
 /*this header can be only included once in all *.c files*/
 #include "libnnext/vx_bin/vxc_binaries.h"
@@ -166,27 +167,6 @@ static vsi_status vsi_nn_RegisterCPUKernel
     return status;
 } /* vsi_nn_RegisterCPUKernel() */
 
-static const char * vsi_nn_LoadVxResourceFromSrc
-    (
-    char * resource_name,
-    vx_size * program_len
-    )
-{
-    const char * vx_resource = NULL;
-    char resource_path[VSI_NN_MAX_PATH];
-    snprintf(resource_path, VSI_NN_MAX_PATH, "%s_vx", resource_name);
-    vx_resource = vsi_nn_VxResourceGetResource(resource_path);
-    if (vx_resource == NULL)
-    {
-        *program_len = 0;
-    }
-    else
-    {
-        *program_len = strlen(vx_resource);
-    }
-    return vx_resource;
-}
-
 static const char * vsi_nn_LoadVxResourceFromFile
     (
     char * resource_name,
@@ -235,7 +215,8 @@ static vsi_status vsi_nn_RegisterVXKernel
     program_len = (vx_size*)malloc(kernel_info->resource_num * sizeof(vx_size));
     for (i = 0; i < kernel_info->resource_num; i++)
     {
-        program_src[i] = vsi_nn_LoadVxResourceFromSrc(kernel_info->resource_name[i], &program_len[i]);
+        program_src[i] = vsi_nn_resource_load_source_code(
+                kernel_info->resource_name[i], &program_len[i], VSI_NN_KERNEL_TYPE_EVIS);
         if (program_src[i] == NULL)
         {
             VSILOGI("Try to Load VX Resource from file...\n");
@@ -554,24 +535,6 @@ void vsi_nn_VxResourceSetPath
 {
     strncpy(s_vx_resource_path, path, VSI_NN_MAX_PATH - 1);
 } /* vsi_nn_VxResourceSetPath() */
-
-const char * vsi_nn_VxResourceGetResource
-    (
-    char* name
-    )
-{
-    extern const vsi_nn_vx_resource_item_type vx_resource_items[];
-    extern const int vx_resource_items_cnt;
-    int i;
-    for (i = 0; i < vx_resource_items_cnt; i++)
-    {
-        if (strncmp(vx_resource_items[i].name, name, VSI_NN_MAX_PATH) == 0)
-        {
-            return vx_resource_items[i].data;
-        }
-    }
-    return NULL;
-} /* vsi_nn_VxResourceGetResource() */
 
 const uint8_t * vsi_nn_VxBinResourceGetResource
     (

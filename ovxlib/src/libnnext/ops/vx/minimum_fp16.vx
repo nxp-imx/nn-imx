@@ -5,7 +5,7 @@ _viv_uniform VXC_512Bits uniConvertI8toI8_0_part1_2x8;
 _viv_uniform VXC_512Bits uinConvertFp16ToInt8_2x8;
 _viv_uniform VXC_512Bits uniConvertInt8toFp16_2x8;
 
-__kernel void vxcTensorMinimum_I8F16toI8
+__kernel void minimum_I8F16toI8
     (
     __read_only  image2d_array_t    input0,
     __read_only  image2d_array_t    input1,
@@ -37,7 +37,7 @@ __kernel void vxcTensorMinimum_I8F16toI8
     VXC_WriteImage2DArray(output, coord, dst, VXC_MODIFIER(0, 15, 0,VXC_RM_TowardZero, 0));
 }
 
-__kernel void vxcTensorMinimum_I8F16toI8_2D
+__kernel void minimum_I8F16toI8_2D
     (
     __read_only  image2d_array_t    input0,
     __read_only  image2d_array_t    input1,
@@ -70,7 +70,7 @@ __kernel void vxcTensorMinimum_I8F16toI8_2D
     VXC_WriteImage(output, coord.xy, dst, VXC_MODIFIER(0, 15, 0,VXC_RM_TowardZero, 0));
 }
 
-__kernel void vxcTensorMinimum_I8F16toF16
+__kernel void minimum_I8F16toF16
     (
     __read_only  image2d_array_t    input0,
     __read_only  image2d_array_t    input1,
@@ -97,7 +97,7 @@ __kernel void vxcTensorMinimum_I8F16toF16
     VXC_WriteImage2DArray(output, coord, dst, VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0));
 }
 
-__kernel void vxcTensorMinimum_I8F16toF16_2D
+__kernel void minimum_I8F16toF16_2D
     (
     __read_only  image2d_array_t    input0,
     __read_only  image2d_array_t    input1,
@@ -126,7 +126,7 @@ __kernel void vxcTensorMinimum_I8F16toF16_2D
 _viv_uniform int2 multAndoutZP0;//[0:15] multiplier, [31:63] output zp
 _viv_uniform VXC_512Bits uniU8MulAndPostShift_0_Lo_2x8;
 
-__kernel void vxcTensorMinimum_U8F16toF16
+__kernel void minimum_U8F16toF16
     (
     __read_only  image2d_array_t    input0,
     __read_only  image2d_array_t    input1,
@@ -156,7 +156,7 @@ __kernel void vxcTensorMinimum_U8F16toF16
     VXC_WriteImage2DArray(output, coord, dst, VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0));
 }
 
-__kernel void vxcTensorMinimum_U8F16toF16_2D
+__kernel void minimum_U8F16toF16_2D
     (
     __read_only  image2d_array_t    input0,
     __read_only  image2d_array_t    input1,
@@ -190,7 +190,7 @@ _viv_uniform VXC_512Bits uniU8MulAndPostShift0_Lo_2x8;
 _viv_uniform VXC_512Bits uniU8MulAndPostShift0_Hi_2x8;
 _viv_uniform VXC_512Bits uniConvertFp16toU8_2x8;
 _viv_uniform int2 multAndoutZP1;//[0:15] multiplier, [31:63] output zp
-__kernel void vxcTensorMinimum_U8F16toU8
+__kernel void minimum_U8F16toU8
     (
     __read_only  image2d_array_t    input0,
     __read_only  image2d_array_t    input1,
@@ -225,7 +225,7 @@ __kernel void vxcTensorMinimum_U8F16toU8
     VXC_WriteImage2DArray(output, coord, dst0, VXC_MODIFIER(0, 15, 0,VXC_RM_TowardZero, 0));
 }
 
-__kernel void vxcTensorMinimum_U8F16toU8_2D
+__kernel void minimum_U8F16toU8_2D
     (
     __read_only  image2d_array_t    input0,
     __read_only  image2d_array_t    input1,
@@ -260,7 +260,7 @@ __kernel void vxcTensorMinimum_U8F16toU8_2D
     VXC_WriteImage(output, coord, dst0, VXC_MODIFIER(0, 15, 0,VXC_RM_TowardZero, 0));
 }
 
-__kernel void vxcTensorMinimum_F16F16toU8
+__kernel void minimum_F16F16toU8
     (
     __read_only  image2d_array_t    input0,
     __read_only  image2d_array_t    input1,
@@ -288,7 +288,7 @@ __kernel void vxcTensorMinimum_F16F16toU8
     VXC_WriteImage2DArray(output, coord, dst0, VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0));
 }
 
-__kernel void vxcTensorMinimum_F16F16toU8_2D
+__kernel void minimum_F16F16toU8_2D
     (
     __read_only  image2d_array_t    input0,
     __read_only  image2d_array_t    input1,

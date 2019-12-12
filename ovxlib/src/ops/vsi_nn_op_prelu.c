@@ -35,6 +35,7 @@
 #include "vsi_nn_prv.h"
 #include "vsi_nn_log.h"
 #include "client/vsi_nn_vxkernel.h"
+#include "kernel/vsi_nn_kernel.h"
 #include "utils/vsi_nn_util.h"
 
 #define VSI_NN_PRELU_DEFAULT_AXIS 2
@@ -286,37 +287,6 @@ static vsi_status cpu_op_compute
     return status;
 }
 
-static vsi_nn_shader_kernel_type_e get_prelu_type(vsi_nn_type_e type)
-{
-    switch (type)
-    {
-    case VSI_NN_TYPE_INT8:
-        return I8;
-    case VSI_NN_TYPE_INT16:
-        return I16;
-    case VSI_NN_TYPE_INT32:
-        return I32;
-    case VSI_NN_TYPE_INT64:
-        return I64;
-    case VSI_NN_TYPE_UINT8:
-        return U8;
-    case VSI_NN_TYPE_UINT16:
-        return U16;
-    case VSI_NN_TYPE_UINT32:
-        return U32;
-    case VSI_NN_TYPE_FLOAT16:
-        return F16;
-    case VSI_NN_TYPE_FLOAT32:
-        return F32;
-    case VSI_NN_TYPE_BFLOAT16:
-        return BF16;
-    default:
-        VSILOGE("error data type %d", type);
-        break;
-    }
-    return I8;
-}
-
 static int32_t reshape_tensor_set_input_output
     (
     vsi_nn_node_t * self,
@@ -433,9 +403,9 @@ static void _get_prelu_hashtable_idx
     vsi_nn_type_e inputFormat = inputs[0]->attr.dtype.vx_type;
     vsi_nn_type_e alphaFormat = inputs[1]->attr.dtype.vx_type;
     vsi_nn_type_e outputFormat  = outputs[0]->attr.dtype.vx_type;
-    vsi_nn_shader_kernel_type_e _input_type;
-    vsi_nn_shader_kernel_type_e _output_type;
-    vsi_nn_shader_kernel_type_e _alpha_type;
+    vsi_nn_kernel_dtype_e _input_type;
+    vsi_nn_kernel_dtype_e _output_type;
+    vsi_nn_kernel_dtype_e _alpha_type;
     int32_t axis = 0;
     uint32_t key = 0;
     vsi_bool is_2d_image = FALSE;
@@ -444,9 +414,9 @@ static void _get_prelu_hashtable_idx
 
     p = &(self->nn_param.prelu);
     axis = reshape_tensor_set_input_output(self, inputs, outputs, vx_false_e);
-    _input_type  = get_prelu_type(inputFormat);
-    _output_type = get_prelu_type(outputFormat);
-    _alpha_type  = get_prelu_type(alphaFormat);
+    _input_type  = vsi_nn_kernel_map_dtype(inputFormat);
+    _output_type = vsi_nn_kernel_map_dtype(outputFormat);
+    _alpha_type  = vsi_nn_kernel_map_dtype(alphaFormat);
     is_2d_image = _check_tensor_shape(self, inputs, outputs);
     key = VSI_NN_GEN_PRELU_KEY(axis, _input_type, _alpha_type, _output_type, is_2d_image);
 
@@ -480,9 +450,6 @@ static vsi_status vx_op_pre_compute
     kernel_info->resource_num = 2;
     kernel_info->resource_name[0] = "vsi_nn_kernel_header";
     kernel_info->resource_name[1] = prelu_map[p->local->hash_idx].resource_name;
-
-    return VSI_SUCCESS;
-
 
     return VSI_SUCCESS;
 }

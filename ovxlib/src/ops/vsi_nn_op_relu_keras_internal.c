@@ -35,6 +35,7 @@
 #include "vsi_nn_tensor.h"
 #include "vsi_nn_tensor_util.h"
 #include "client/vsi_nn_vxkernel.h"
+#include "kernel/vsi_nn_kernel.h"
 #include "utils/vsi_nn_util.h"
 
 #define _ARG_NUM            (3)
@@ -272,38 +273,6 @@ static vsi_status cpu_op_compute
 }
 
 
-static vsi_nn_shader_kernel_type_e get_keras_relu_intra_type(vsi_nn_type_e type)
-{
-    switch (type)
-    {
-    case VSI_NN_TYPE_INT8:
-        return I8;
-    case VSI_NN_TYPE_INT16:
-        return I16;
-    case VSI_NN_TYPE_INT32:
-        return I32;
-    case VSI_NN_TYPE_INT64:
-        return I64;
-    case VSI_NN_TYPE_UINT8:
-        return U8;
-    case VSI_NN_TYPE_UINT16:
-        return U16;
-    case VSI_NN_TYPE_UINT32:
-        return U32;
-    case VSI_NN_TYPE_FLOAT16:
-        return F16;
-    case VSI_NN_TYPE_BFLOAT16:
-        return BF16;
-    case VSI_NN_TYPE_FLOAT32:
-        return F32;
-    default:
-        VSILOGE("error data type %d", type);
-        break;
-    }
-
-    return I8;
-}
-
 static vsi_status vx_op_compute
     (
     vsi_nn_node_t * self,
@@ -369,8 +338,8 @@ static void _get_keras_relu_hashtable_idx
 {
     vsi_nn_type_e inputFormat = inputs[0]->attr.dtype.vx_type;
     vsi_nn_type_e outputFormat  = outputs[0]->attr.dtype.vx_type;
-    vsi_nn_shader_kernel_type_e _input_type;
-    vsi_nn_shader_kernel_type_e _output_type;
+    vsi_nn_kernel_dtype_e _input_type;
+    vsi_nn_kernel_dtype_e _output_type;
     uint32_t key;
     vsi_bool is_2d_image = FALSE;
     uint32_t i = 0;
@@ -379,8 +348,8 @@ static void _get_keras_relu_hashtable_idx
 
     p = &(self->nn_param.relu_keras_internal);
 
-    _input_type = get_keras_relu_intra_type(inputFormat);
-    _output_type = get_keras_relu_intra_type(outputFormat);
+    _input_type = vsi_nn_kernel_map_dtype(inputFormat);
+    _output_type = vsi_nn_kernel_map_dtype(outputFormat);
     is_2d_image = _check_tensor_shape(self, inputs, outputs);
 
     key = VSI_NN_GEN_KERAS_RELU_KEY(_input_type, _output_type, is_2d_image);

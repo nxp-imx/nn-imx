@@ -31,6 +31,7 @@
 #include "vsi_nn_node.h"
 #include "vsi_nn_ops.h"
 #include "vsi_nn_tensor.h"
+#include "vsi_nn_log.h"
 #include "platform/vsi_nn_pf_depth2space.h"
 #include "vsi_nn_tensor_util.h"
 
@@ -41,6 +42,12 @@ static vsi_bool op_check
     vsi_nn_tensor_t ** outputs
     )
 {
+    if(self->nn_param.depth2space.block_size < 0)
+    {
+        VSILOGE("Block size can't be less than zero in depth to space");
+        return FALSE;
+    }
+
     return TRUE;
 } /* op_check() */
 

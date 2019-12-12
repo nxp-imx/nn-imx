@@ -263,22 +263,27 @@ static vsi_bool op_setup
     if( VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num )
     {
         vsi_nn_generate_proposals_param * p;
+        int32_t num_output_rois;
         p = &(self->nn_param.generate_proposals);
-        if(p->pre_nms_top_n <=0 || p->post_nms_top_n <= 0)
+        num_output_rois = vsi_nn_GetElementNum(inputs[0]);
+        if(p->pre_nms_top_n > 0)
         {
-            VSILOGE("pre_nms_top_n & post_nms_top_n MUST >0\n");
-            return FALSE;
+            num_output_rois = p->pre_nms_top_n;
+        }
+        if(p->post_nms_top_n > 0)
+        {
+            num_output_rois = p->post_nms_top_n;
         }
 
         outputs[0]->attr.dim_num = 1;
-        outputs[0]->attr.size[0] = p->post_nms_top_n;
+        outputs[0]->attr.size[0] = num_output_rois;
 
         outputs[1]->attr.dim_num = 2;
         outputs[1]->attr.size[0] = 4;
-        outputs[1]->attr.size[1] = p->post_nms_top_n;
+        outputs[1]->attr.size[1] = num_output_rois;
 
         outputs[2]->attr.dim_num = 1;
-        outputs[2]->attr.size[0] = p->post_nms_top_n;
+        outputs[2]->attr.size[0] = num_output_rois;
     }
     return TRUE;
 } /* op_setup() */

@@ -31,10 +31,60 @@
 #include "vsi_nn_node.h"
 #include "vsi_nn_prv.h"
 #include "utils/vsi_nn_math.h"
+#include "utils/vsi_nn_util.h"
 #include "vsi_nn_ops.h"
 #include "vsi_nn_tensor.h"
 #include "vsi_nn_tensor_util.h"
 #include "client/vsi_nn_vxkernel.h"
+#include "kernel/vsi_nn_kernel.h"
+
+/* Type enum */
+typedef enum _clip_nn_image_dims_e
+{
+    IMAGE_2D  = TRUE,
+    IMAGE     = FALSE,
+}clip_nn_image_dims_e;
+
+#define VSI_NN_GEN_CLIP_KEY(_input_type, _output_type, _image_2d) \
+    ((_input_type << 12) | (_output_type << 4) | (_image_2d))
+
+#define VSI_NN_GEN_CLIP_KERNEL_SOURCE_NAME(_suffix) \
+    "vsi_nn_kernel_clip_"#_suffix
+
+#define VSI_NN_GEN_CLIP_STRUCT_ITEMS(_input_type, _output_type, _image_2d) \
+    VSI_NN_GEN_CLIP_KEY(_input_type, _output_type, _image_2d), \
+    VSI_NN_CLIP_SH_KERNEL_IDX(_input_type, _output_type, _image_2d) \
+    VSI_NN_GEN_CLIP_KERNEL_SOURCE_NAME(_input_type)
+
+
+static struct {
+        uint32_t key;
+        uint32_t kernel_index;
+        char *resource_name;
+    } clip_map[] =
+    {
+        {VSI_NN_GEN_CLIP_STRUCT_ITEMS(F16,  F16,  IMAGE)},
+        {VSI_NN_GEN_CLIP_STRUCT_ITEMS(F16,  I16,  IMAGE)},
+        {VSI_NN_GEN_CLIP_STRUCT_ITEMS(F16,  I8,   IMAGE)},
+        {VSI_NN_GEN_CLIP_STRUCT_ITEMS(F16,  U8,   IMAGE)},
+        {VSI_NN_GEN_CLIP_STRUCT_ITEMS(I16,  F16,  IMAGE)},
+        {VSI_NN_GEN_CLIP_STRUCT_ITEMS(I8,   F16,  IMAGE)},
+        {VSI_NN_GEN_CLIP_STRUCT_ITEMS(U8,   F16,  IMAGE)},
+        {VSI_NN_GEN_CLIP_STRUCT_ITEMS(I16,  I16,  IMAGE)},
+        {VSI_NN_GEN_CLIP_STRUCT_ITEMS(I8,   I8,   IMAGE)},
+        {VSI_NN_GEN_CLIP_STRUCT_ITEMS(U8,   U8,   IMAGE)},
+        {VSI_NN_GEN_CLIP_STRUCT_ITEMS(F16,  F16,  IMAGE_2D)},
+        {VSI_NN_GEN_CLIP_STRUCT_ITEMS(F16,  I16,  IMAGE_2D)},
+        {VSI_NN_GEN_CLIP_STRUCT_ITEMS(F16,  I8,   IMAGE_2D)},
+        {VSI_NN_GEN_CLIP_STRUCT_ITEMS(F16,  U8,   IMAGE_2D)},
+        {VSI_NN_GEN_CLIP_STRUCT_ITEMS(I16,  F16,  IMAGE_2D)},
+        {VSI_NN_GEN_CLIP_STRUCT_ITEMS(I8,   F16,  IMAGE_2D)},
+        {VSI_NN_GEN_CLIP_STRUCT_ITEMS(U8,   F16,  IMAGE_2D)},
+        {VSI_NN_GEN_CLIP_STRUCT_ITEMS(I16,  I16,  IMAGE_2D)},
+        {VSI_NN_GEN_CLIP_STRUCT_ITEMS(I8,   I8,   IMAGE_2D)},
+        {VSI_NN_GEN_CLIP_STRUCT_ITEMS(U8,   U8,   IMAGE_2D)},
+    };
+
 
 #define _ARG_NUM            (2)
 #define _INPUT_NUM          (1)
@@ -45,77 +95,18 @@
 
 extern vx_kernel_description_t * vx_kernel_CLIP_list[];
 
-/* Greatest Common Divisor*/
-static vsi_bool vxoGetDataDivisors(uint32_t input_value, uint32_t *divisors, uint32_t gcd)
-{
-    uint32_t i                 = 0;
-
-    for (i = vsi_nn_min(input_value, IMG_MAX_WIDTH - 1); i > 0; i --)
-    {
-        if ((i % gcd == 0) && (input_value % i == 0))
-        {
-            *divisors = i;
-
-            return TRUE;
-        }
-    }
-
-    return FALSE;
-}
-
-static vsi_bool vxoElementOptimization_GetTensorShape(vsi_nn_tensor_t *input,uint32_t sizes[VSI_NN_MAX_DIM_NUM],
-                                                      uint32_t * num_of_dims)
-{
-    uint32_t element_count     = 0;
-    uint32_t i                 = 0;
-
-    element_count = vsi_nn_GetElementNum(input);
-
-    for (i = 0; i < VSI_NN_MAX_DIM_NUM; i++)
-    {
-        sizes[i] = 1;
-    }
-
-    if (element_count < IMG_MAX_WIDTH)
-    {
-        sizes[0] = element_count;
-
-        *num_of_dims = 2;
-    }
-    else
-    {
-        uint32_t divisors = 1;
-        for (i = 0; i < 2; i++)
-        {
-            divisors = 1;
-            vxoGetDataDivisors(element_count, &divisors, 1);
-
-            sizes[i] = divisors;
-            element_count = element_count / divisors;
-        }
-
-        sizes[2] = element_count;
-        *num_of_dims = 3;
-    }
-
-    return TRUE;
-}
-
 static void reshape_tensor_shape
     (
     vsi_nn_node_t * self,
     vsi_nn_tensor_t * input,
     vx_reference * params,
-    uint32_t index
+    uint32_t index,
+    uint32_t *sizes,
+    uint32_t  dims
     )
 {
-    uint32_t sizes[VSI_NN_MAX_DIM_NUM] = {1};
-    uint32_t num_of_dims = vsi_nn_max(input->attr.dim_num, 2);
-
-    vxoElementOptimization_GetTensorShape(input, sizes, &num_of_dims);
-
     self->nn_param.clip.local.local_tensor[index] =
-         vxReshapeTensor(input->t, (int32_t *)sizes, num_of_dims);
+         vxReshapeTensor(input->t, (int32_t *)sizes, dims);
 
     params[index] = (vx_reference)self->nn_param.clip.local.local_tensor[index];
 }
@@ -224,6 +215,67 @@ static vsi_status cpu_op_compute
     return status;
 }
 
+static void _get_clip_hashtable_idx
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs
+    )
+{
+    vsi_nn_type_e inputFormat = inputs[0]->attr.dtype.vx_type;
+    vsi_nn_type_e outputFormat  = outputs[0]->attr.dtype.vx_type;
+    vsi_nn_kernel_dtype_e _input_type;
+    vsi_nn_kernel_dtype_e _output_type;
+    uint32_t key = 0;
+    vsi_bool is_2d_image = FALSE;
+    uint32_t i = 0;
+    vsi_nn_clip_param * p = NULL;
+
+    p = &(self->nn_param.clip);
+    _input_type  = vsi_nn_kernel_map_dtype(inputFormat);
+    _output_type = vsi_nn_kernel_map_dtype(outputFormat);
+    if (BF16 == _input_type && BF16 == _output_type)
+    {
+        _input_type  = F16;
+        _output_type = F16;
+    }
+    is_2d_image  = p->local2->enable_image_2d;
+    key = VSI_NN_GEN_CLIP_KEY(_input_type, _output_type, is_2d_image);
+
+    for (i = 0; i < sizeof(clip_map) / sizeof(clip_map[0]); i++)
+    {
+        if (key == clip_map[i].key)
+        {
+            p->local2->hash_idx = i;
+            p->local2->execute_on_sw = FALSE;
+            return;
+        }
+    }
+
+    p->local2->execute_on_sw = TRUE;
+    VSILOGE("Shader unsupport data format or axis! execute on the SW [clip]\n");
+}
+
+static vsi_status vx_op_pre_compute
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs,
+    vsi_nn_kernel_info_t * kernel_info
+    )
+{
+    vsi_nn_clip_param * p = NULL;
+
+    p = &(self->nn_param.clip);
+
+    kernel_info->kernel_index = clip_map[p->local2->hash_idx].kernel_index;
+    kernel_info->resource_num = 2;
+    kernel_info->resource_name[0] = "vsi_nn_kernel_header";
+    kernel_info->resource_name[1] = clip_map[p->local2->hash_idx].resource_name;
+
+    return VSI_SUCCESS;
+}
+
 static vsi_status vx_op_compute
     (
     vsi_nn_node_t * self,
@@ -233,15 +285,13 @@ static vsi_status vx_op_compute
 {
     vsi_status status = VSI_SUCCESS;
     vx_reference params[_PARAM_NUM];
-    vx_reference * args;
+    vx_reference * args = NULL;
     vx_border_t border;
-    int32_t in_zp;
-    vsi_nn_type_e inputDataFormat = inputs[0]->attr.dtype.vx_type;
-    vsi_nn_tensor_attr_t input_attr;
+    vsi_nn_clip_param * p = NULL;
 
-    memset(&input_attr, 0, sizeof(vsi_nn_tensor_attr_t));
+    border.mode = VX_BORDER_REPLICATE;
+    border.constant_value.U32 = 0;
     args = &params[_IO_NUM];
-
     if( NULL == self->n )
     {
         return VSI_FAILURE;
@@ -249,34 +299,18 @@ static vsi_status vx_op_compute
 
     /* Set inputs and outputs */
     //_set_inputs_outputs( params, inputs, outputs );
-    reshape_tensor_shape(self, inputs[0], params, 0);
-    reshape_tensor_shape(self, outputs[0], params, 1);
-    /*TODO: Add code if need to change your parameter*/
-    status  = vsi_nn_vxGetTensorAttr(inputs[0]->t, &input_attr);
-    if (status != VX_SUCCESS)
-    {
-        VSILOGE("vsi_nn_vxGetTensorAttr  failure! at line %d\n", __LINE__);
-        return status;
-    }
-    in_zp = input_attr.dtype.zero_point;
+    p = &(self->nn_param.clip);
+    reshape_tensor_shape(self, inputs[0],  params, 0, p->local2->sizes0, p->local2->dim_num);
+    reshape_tensor_shape(self, outputs[0], params, 1, p->local2->sizes1, p->local2->dim_num);
+
     /* Init parameters. */
     _create_params( self, args, _ARG_NUM );
 
     /* Pass parameters to node. */
-    status = vsi_nn_ClientNodePassParameters( self->n, params, _PARAM_NUM );
+    status  = vsi_nn_ClientNodePassParameters( self->n, params, _PARAM_NUM );
 
     _release_params( args, _ARG_NUM );
 
-    border.mode = VX_BORDER_REPLICATE;
-    border.constant_value.U32 = 0;
-    border.constant_value.S16 = 0;
-    border.constant_value.U8 = 0;
-    if(inputDataFormat == VSI_NN_TYPE_UINT8)
-    {
-        border.constant_value.U32 = in_zp;
-        border.constant_value.S16 = in_zp;
-        border.constant_value.U8 = in_zp;
-    }
     status |= vxSetNodeAttribute(self->n, VX_NODE_BORDER, &border, sizeof(border));
 
     return status;
@@ -289,41 +323,6 @@ static vsi_nn_op_compute_t op_compute_list[] =
     NULL
 };
 
-static vsi_status vx_op_pre_compute
-    (
-    vsi_nn_node_t * self,
-    vsi_nn_tensor_t ** inputs,
-    vsi_nn_tensor_t ** outputs,
-    vsi_nn_kernel_info_t * kernel_info
-    )
-{
-    vsi_nn_type_e inputDataFormat     = inputs[0]->attr.dtype.vx_type;
-    vsi_nn_type_e outputDataFormat    = outputs[0]->attr.dtype.vx_type;
-
-    if (inputDataFormat == VSI_NN_TYPE_FLOAT16 && outputDataFormat == VSI_NN_TYPE_FLOAT16)
-    {
-        kernel_info->kernel_index = 1;
-    }
-    else if (inputDataFormat == VSI_NN_TYPE_INT16 && outputDataFormat == VSI_NN_TYPE_INT16)
-    {
-        kernel_info->kernel_index = 2;
-    }
-    else if (inputDataFormat == VSI_NN_TYPE_INT8 && outputDataFormat == VSI_NN_TYPE_INT8)
-    {
-        kernel_info->kernel_index = 3;
-    }
-    else if (inputDataFormat == VSI_NN_TYPE_UINT8 && outputDataFormat == VSI_NN_TYPE_UINT8)
-    {
-        kernel_info->kernel_index = 4;
-    }
-    else
-    {
-        VSILOGE("Not support input or output data format!(CLIP) at [%s : %d]\n", __FILE__, __LINE__);
-        return VSI_FAILURE;
-    }
-    return VSI_SUCCESS;
-}
-
 static vsi_status op_compute
     (
     vsi_nn_node_t * self,
@@ -331,45 +330,84 @@ static vsi_status op_compute
     vsi_nn_tensor_t ** outputs
     )
 {
-    vsi_status status;
+    vsi_status status = VSI_FAILURE;
     vsi_nn_kernel_info_t kernel_info;
+    vsi_nn_clip_param * p = NULL;
 
     memset(&kernel_info, 0x0, sizeof(vsi_nn_kernel_info_t));
-    status = VSI_FAILURE;
-    kernel_info.type = vsi_nn_GetVXKernelTypeForShader();
-    kernel_info.kernel = vx_kernel_CLIP_list;
-    kernel_info.resource_num = 2;
-    kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));
-    kernel_info.resource_name[0] = "vsi_nn_kernel_header";
-    kernel_info.resource_name[1] = "vsi_nn_kernel_clip";
-
-    if( kernel_info.type == VX_KERNEL_TYPE_VX)
-    {
-        kernel_info.kernel_index = 1;
-        kernel_info.init_index = 1;
-
-        vx_op_pre_compute(self, inputs, outputs, &kernel_info);
-    }
-    else /*kernel_info.type = VX_KERNEL_TYPE_CPU;*/
-    {
-        kernel_info.kernel_index = 0;
-        kernel_info.init_index = 0;
-    }
-
-    self->n = vsi_nn_RegisterClientKernelAndNewNode(
-            self->graph, &kernel_info);
-    if (kernel_info.resource_name)
-    {
-        free(kernel_info.resource_name);
-    }
-    if( NULL == self->n )
+    if( NULL == self )
     {
         return VSI_FAILURE;
     }
-    if (NULL != op_compute_list[kernel_info.init_index])
+
+    p = &(self->nn_param.clip);
+
+    vsi_nn_OptimizedEltOPShape(inputs[0],  p->local2->sizes0, &(p->local2->dim_num));
+    vsi_nn_OptimizedEltOPShape(outputs[0], p->local2->sizes1, &(p->local2->dim_num));
+
+    if (p->local2->dim_num < 3)
     {
-        status = op_compute_list[kernel_info.init_index](self, inputs, outputs);
+        p->local2->enable_image_2d = vx_true_e;
     }
+    else
+    {
+        p->local2->enable_image_2d = vx_false_e;
+    }
+
+    _get_clip_hashtable_idx(self, inputs, outputs);
+
+    if (p->local2->execute_on_sw || !vsi_nn_IsEVISFeatureAvaiable(self->graph->ctx))
+    {
+        kernel_info.resource_num = 1;
+        kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));
+        kernel_info.resource_name[0] = "vsi_nn_kernel_clip_sw";
+        kernel_info.type = VX_KERNEL_TYPE_CPU;
+        kernel_info.kernel = vx_kernel_CLIP_list;
+        kernel_info.init_index = 0;
+
+        self->n = vsi_nn_RegisterClientKernelAndNewNode(
+            self->graph, &kernel_info);
+        if (kernel_info.resource_name) free(kernel_info.resource_name);
+        if( NULL == self->n )
+        {
+            return VSI_FAILURE;
+        }
+
+        status = cpu_op_compute(self, inputs, outputs);
+
+    }
+    else
+    {
+        kernel_info.type = vsi_nn_GetVXKernelTypeForShader();
+        kernel_info.kernel = vx_kernel_CLIP_list;
+        kernel_info.resource_num = 2;
+        kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));
+        kernel_info.init_index = 1;
+        kernel_info.resource_name[0] = "vsi_nn_kernel_header";
+        kernel_info.resource_name[1] = "vsi_nn_kernel_clip";
+
+        if (vsi_nn_is_do_vx_op_pre_init(kernel_info.type))
+        {
+            vx_op_pre_compute(self, inputs, outputs, &kernel_info);
+        }
+
+        self->n = vsi_nn_RegisterClientKernelAndNewNode(
+            self->graph, &kernel_info);
+        if (kernel_info.resource_name)
+        {
+            free(kernel_info.resource_name);
+        }
+        if( NULL == self->n )
+        {
+            return VSI_FAILURE;
+        }
+        if (NULL != op_compute_list[kernel_info.init_index])
+        {
+            status = op_compute_list[kernel_info.init_index](self, inputs, outputs);
+        }
+
+    }
+
     return status;
 } /* op_compute() */
 
@@ -398,10 +436,34 @@ static vsi_status op_deinit
             self->nn_param.clip.local.local_tensor[i] = NULL;
         }
     }
+
+    if (self->nn_param.clip.local2 != NULL)
+    {
+        free(self->nn_param.clip.local2);
+        self->nn_param.clip.local2 = NULL;
+    }
+
     vsi_nn_op_common_deinit(self);
 
     return VSI_SUCCESS;
 } /* op_deinit() */
+
+static vsi_status op_init
+    (
+    vsi_nn_node_t * self
+    )
+{
+    vsi_status status = VSI_SUCCESS;
+    self->nn_param.clip.local2   =
+    (vsi_nn_clip_lcl2_data *)malloc(sizeof(vsi_nn_clip_lcl2_data));
+    if (NULL == self->nn_param.reduce.local2)
+    {
+        return  VX_ERROR_NO_MEMORY;
+    }
+    memset(self->nn_param.clip.local2, 0, sizeof(vsi_nn_clip_lcl2_data));
+    return status;
+} /* op_init() */
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -410,7 +472,7 @@ extern "C" {
 DEF_OP_REG
     (
     /* op_name    */ CLIP,
-    /* init       */ NULL,
+    /* init       */ op_init,
     /* compute    */ op_compute,
     /* deinit     */ op_deinit,
     /* check      */ op_check,

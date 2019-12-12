@@ -35,6 +35,7 @@
 #include "vsi_nn_prv.h"
 #include "vsi_nn_log.h"
 #include "client/vsi_nn_vxkernel.h"
+#include "kernel/vsi_nn_kernel.h"
 
 #define _ARG_NUM            (2)
 #define _INPUT_NUM          (4)
@@ -82,36 +83,6 @@ static struct {
         {VSI_NN_GEN_INSTANCENORM_STRUCT_ITEMS(F16, F16, 0)  "vsi_nn_kernel_instancenormalize_fp16"},
     };
 
-static vsi_nn_shader_kernel_type_e get_instancenorm_intra_type(vsi_nn_type_e type)
-{
-    switch (type)
-    {
-    case VSI_NN_TYPE_INT8:
-        return I8;
-    case VSI_NN_TYPE_INT16:
-        return I16;
-    case VSI_NN_TYPE_INT32:
-        return I32;
-    case VSI_NN_TYPE_INT64:
-        return I64;
-    case VSI_NN_TYPE_UINT8:
-        return U8;
-    case VSI_NN_TYPE_UINT16:
-        return U16;
-    case VSI_NN_TYPE_UINT32:
-        return U32;
-    case VSI_NN_TYPE_FLOAT16:
-        return F16;
-    case VSI_NN_TYPE_FLOAT32:
-        return F32;
-    default:
-        VSILOGE("error data type %d", type);
-        break;
-    }
-
-    return I8;
-}
-
 static void _get_instancenorm_hashtable_idx
     (
     vsi_nn_node_t * self,
@@ -121,8 +92,8 @@ static void _get_instancenorm_hashtable_idx
 {
     vsi_nn_type_e input0Format = inputs[0]->attr.dtype.vx_type;
     vsi_nn_type_e outputFormat  = outputs[0]->attr.dtype.vx_type;
-    vsi_nn_shader_kernel_type_e _input0_type;
-    vsi_nn_shader_kernel_type_e _output_type;
+    vsi_nn_kernel_dtype_e _input0_type;
+    vsi_nn_kernel_dtype_e _output_type;
     uint32_t key;
     uint32_t i = 0;
     uint32_t rsFlg = 0;
@@ -130,8 +101,8 @@ static void _get_instancenorm_hashtable_idx
     vsi_nn_instancenormalize_param * p = &(self->nn_param.instancenorm);
 
     rsFlg = p->lcl2_data->reshapeFlg;
-    _input0_type = get_instancenorm_intra_type(input0Format);
-    _output_type = get_instancenorm_intra_type(outputFormat);
+    _input0_type = vsi_nn_kernel_map_dtype(input0Format);
+    _output_type = vsi_nn_kernel_map_dtype(outputFormat);
 
     key = VSI_NN_GEN_INSTANCENORM_KEY(_input0_type, _output_type, rsFlg);
 

@@ -46,7 +46,6 @@ static vsi_status op_compute
     vx_nn_reorg_params_t param;
     vsi_nn_tensor_t *block_size_tensor = NULL;
     vsi_nn_tensor_attr_t attr;
-
     memset(&param, 0, sizeof(vx_nn_reorg_params_t));
 
     memset(&attr, 0, sizeof(attr));
@@ -93,6 +92,14 @@ static vsi_bool op_check
         VSILOGE("batch2space only support 4D");
         return FALSE;
     }
+
+    if(self->nn_param.batch2space.block_size[0] < 0
+        || self->nn_param.batch2space.block_size[1] < 0)
+    {
+        VSILOGE("Block size can't be less than zero in batch to space");
+        return FALSE;
+    }
+
     return TRUE;
 } /* op_check() */
 

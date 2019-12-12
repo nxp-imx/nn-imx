@@ -28,14 +28,26 @@ endif
 ifneq ("$(OVXLIB_CONFIG)", "")
     CFLAGS += -D$(OVXLIB_CONFIG)
 endif
+
+ifneq ($(gcdSTATIC_LINK), 1)
+    ifeq ($(VSI_GPERF_DEBUG), 1)
+        TCMALLOC_DIR = $(OVXLIB_DIR)/third-party/gperftools
+        CFLAGS += -I$(TCMALLOC_DIR)/src
+        CFLAGS += -I$(TCMALLOC_DIR)/src/gperftools
+        CFLAGS += -fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free
+        CFLAGS += -g
+        LIBS += -L$(TCMALLOC_DIR)/.libs -ltcmalloc
+    endif
+endif
 #############################################################################
 # Objects.
-OBJECTS =     $(OBJ_DIR)/vsi_nn_context.o \
+OBJECTS =   $(OBJ_DIR)/vsi_nn_context.o \
             $(OBJ_DIR)/vsi_nn_client_op.o \
             $(OBJ_DIR)/vsi_nn_graph.o  \
             $(OBJ_DIR)/vsi_nn_node_attr_template.o  \
             $(OBJ_DIR)/vsi_nn_node.o  \
             $(OBJ_DIR)/vsi_nn_ops.o  \
+            $(OBJ_DIR)/vsi_nn_daemon.o  \
             $(OBJ_DIR)/vsi_nn_tensor.o \
             $(OBJ_DIR)/vsi_nn_version.o \
             $(OBJ_DIR)/vsi_nn_rnn.o \
@@ -43,10 +55,10 @@ OBJECTS =     $(OBJ_DIR)/vsi_nn_context.o \
             $(OBJ_DIR)/vsi_nn_log.o
 
 vpath %.c client
-OBJECTS +=      $(OBJ_DIR)/vsi_nn_vxkernel.o
+OBJECTS +=   $(OBJ_DIR)/vsi_nn_vxkernel.o
 
 vpath %.c utils
-OBJECTS +=      $(OBJ_DIR)/vsi_nn_code_generator.o   \
+OBJECTS +=   $(OBJ_DIR)/vsi_nn_code_generator.o   \
              $(OBJ_DIR)/vsi_nn_binary_tree.o   \
              $(OBJ_DIR)/vsi_nn_map.o   \
              $(OBJ_DIR)/vsi_nn_link_list.o   \
@@ -56,10 +68,11 @@ OBJECTS +=      $(OBJ_DIR)/vsi_nn_code_generator.o   \
              $(OBJ_DIR)/vsi_nn_vdata.o   \
              $(OBJ_DIR)/vsi_nn_util.o    \
              $(OBJ_DIR)/vsi_nn_dlfcn.o    \
+             $(OBJ_DIR)/vsi_nn_hashmap.o   \
              $(OBJ_DIR)/vsi_nn_tensor_op.o
 
 vpath %.c quantization
-OBJECTS +=      $(OBJ_DIR)/vsi_nn_dynamic_fixed_point.o   \
+OBJECTS +=   $(OBJ_DIR)/vsi_nn_dynamic_fixed_point.o   \
              $(OBJ_DIR)/vsi_nn_asymmetric_affine.o   \
              $(OBJ_DIR)/vsi_nn_perchannel_symmetric_affine.o
 
@@ -70,233 +83,8 @@ vpath %.c post
 OBJECTS +=      $(OBJ_DIR)/vsi_nn_post_fasterrcnn.o \
                 $(OBJ_DIR)/vsi_nn_post_cmupose.o
 
-vpath %.c cpu_backend
-OBJECTS +=      $(OBJ_DIR)/npuref_interface.o \
-                $(OBJ_DIR)/vsi_nn_cpu_backend_conv2d.o \
-                $(OBJ_DIR)/vsi_nn_cpu_backend_deconv2d.o \
-                $(OBJ_DIR)/vsi_nn_cpu_backend.o
-
-vpath %.c libnnext/ops/kernel
-OBJECTS += $(OBJ_DIR)/vsi_nn_kernel_argmax.o \
-        $(OBJ_DIR)/vsi_nn_kernel_crop.o \
-        $(OBJ_DIR)/vsi_nn_kernel_maximum.o \
-        $(OBJ_DIR)/vsi_nn_kernel_fullconnect2.o \
-        $(OBJ_DIR)/vsi_nn_kernel_l2normalizescale.o \
-        $(OBJ_DIR)/vsi_nn_kernel_poolwithargmax.o \
-        $(OBJ_DIR)/vsi_nn_kernel_prelu.o \
-        $(OBJ_DIR)/vsi_nn_kernel_elu.o \
-        $(OBJ_DIR)/vsi_nn_kernel_upsample.o \
-        $(OBJ_DIR)/vsi_nn_kernel_dropout.o \
-        $(OBJ_DIR)/vsi_nn_kernel_resize.o \
-        $(OBJ_DIR)/vsi_nn_kernel_reverse.o \
-        $(OBJ_DIR)/vsi_nn_kernel_scale.o \
-        $(OBJ_DIR)/vsi_nn_kernel_space2batch.o \
-        $(OBJ_DIR)/vsi_nn_kernel_reduce.o \
-        $(OBJ_DIR)/vsi_nn_kernel_batch2space.o \
-        $(OBJ_DIR)/vsi_nn_kernel_space2depth.o \
-        $(OBJ_DIR)/vsi_nn_kernel_imageprocess.o \
-        $(OBJ_DIR)/vsi_nn_kernel_matrixmul.o \
-        $(OBJ_DIR)/vsi_nn_kernel_shufflechannel.o \
-        $(OBJ_DIR)/vsi_nn_kernel_layernormalize.o \
-        $(OBJ_DIR)/vsi_nn_kernel_instancenormalize.o \
-        $(OBJ_DIR)/vsi_nn_kernel_signalframe.o \
-        $(OBJ_DIR)/vsi_nn_kernel_relational_ops.o \
-        $(OBJ_DIR)/vsi_nn_kernel_minimum.o \
-        $(OBJ_DIR)/vsi_nn_kernel_spatial_transformer.o \
-        $(OBJ_DIR)/vsi_nn_kernel_logical_ops.o \
-        $(OBJ_DIR)/vsi_nn_kernel_select.o \
-        $(OBJ_DIR)/vsi_nn_kernel_lstmunit_activation.o \
-        $(OBJ_DIR)/vsi_nn_kernel_tensor_add_mean_stddev_norm.o \
-        $(OBJ_DIR)/vsi_nn_kernel_stack.o \
-        $(OBJ_DIR)/vsi_nn_kernel_neg.o \
-        $(OBJ_DIR)/vsi_nn_kernel_exp.o \
-        $(OBJ_DIR)/vsi_nn_kernel_clip.o \
-        $(OBJ_DIR)/vsi_nn_kernel_pre_process_gray.o \
-        $(OBJ_DIR)/vsi_nn_kernel_unstack.o \
-        $(OBJ_DIR)/vsi_nn_kernel_pre_process_rgb.o \
-        $(OBJ_DIR)/vsi_nn_kernel_addn.o \
-        $(OBJ_DIR)/vsi_nn_kernel_pre_process_yuv420.o \
-        $(OBJ_DIR)/vsi_nn_kernel_extra_ending.o \
-        $(OBJ_DIR)/vsi_nn_kernel_gather.o \
-        $(OBJ_DIR)/vsi_nn_kernel_tile.o \
-        $(OBJ_DIR)/vsi_nn_kernel_topk.o \
-        $(OBJ_DIR)/vsi_nn_kernel_pre_process_bgra.o \
-        $(OBJ_DIR)/vsi_nn_kernel_logical_not.o \
-        $(OBJ_DIR)/vsi_nn_kernel_sin.o \
-        $(OBJ_DIR)/vsi_nn_kernel_log.o \
-        $(OBJ_DIR)/vsi_nn_kernel_argmin.o \
-        $(OBJ_DIR)/vsi_nn_kernel_roi_align.o \
-        $(OBJ_DIR)/vsi_nn_kernel_heatmap_max_keypoint.o \
-        $(OBJ_DIR)/vsi_nn_kernel_axis_aligned_bbox_transform.o \
-        $(OBJ_DIR)/vsi_nn_kernel_box_with_nms_limit.o \
-        $(OBJ_DIR)/vsi_nn_kernel_generate_proposals.o \
-        $(OBJ_DIR)/vsi_nn_kernel_detection_postprocess.o \
-        $(OBJ_DIR)/vsi_nn_kernel_random_multinomial.o \
-        $(OBJ_DIR)/vsi_nn_kernel_log_softmax.o \
-        $(OBJ_DIR)/vsi_nn_kernel_relu_keras_internal.o \
-        $(OBJ_DIR)/vsi_nn_kernel_reducemax_internal.o \
-        $(OBJ_DIR)/vsi_nn_kernel_reducemin_internal.o \
-        $(OBJ_DIR)/vsi_nn_kernel_reduceprod_internal.o \
-        $(OBJ_DIR)/vsi_nn_kernel_reduceall_internal.o \
-        $(OBJ_DIR)/vsi_nn_kernel_reduceany_internal.o \
-        $(OBJ_DIR)/vsi_nn_kernel_resize_internal.o \
-        $(OBJ_DIR)/vsi_nn_kernel_resize_nearest_internal.o \
-        $(OBJ_DIR)/vsi_nn_kernel_tensorstackconcat.o \
-        $(OBJ_DIR)/vsi_nn_kernel_pow.o \
-        $(OBJ_DIR)/vsi_nn_kernel_floordiv.o \
-        $(OBJ_DIR)/vsi_nn_kernel_conv2d.o \
-        $(OBJ_DIR)/vsi_nn_kernel_deconv2d.o \
-        $(OBJ_DIR)/vsi_nn_kernel_sync_host.o
-
 vpath %.c libnnext
-OBJECTS += $(OBJ_DIR)/vsi_nn_libnnext_vx.o
-
-vpath %.c custom/ops
-OBJECTS += $(OBJ_DIR)/vsi_nn_op_custom_softmax.o
-
-vpath %.c custom/ops/kernel
-OBJECTS += $(OBJ_DIR)/vsi_nn_kernel_custom_softmax.o
-
-vpath %.c ops
-OBJECTS +=      $(OBJ_DIR)/vsi_nn_op_add.o   \
-             $(OBJ_DIR)/vsi_nn_op_batch_norm.o   \
-             $(OBJ_DIR)/vsi_nn_op_multiply.o   \
-             $(OBJ_DIR)/vsi_nn_op_common.o   \
-             $(OBJ_DIR)/vsi_nn_op_concat.o   \
-             $(OBJ_DIR)/vsi_nn_op_split.o   \
-             $(OBJ_DIR)/vsi_nn_op_conv2d.o   \
-             $(OBJ_DIR)/vsi_nn_op_conv1d.o   \
-             $(OBJ_DIR)/vsi_nn_op_conv_relu.o   \
-             $(OBJ_DIR)/vsi_nn_op_conv_relu_pool.o   \
-             $(OBJ_DIR)/vsi_nn_op_deconvolution.o   \
-             $(OBJ_DIR)/vsi_nn_op_fullconnect.o   \
-             $(OBJ_DIR)/vsi_nn_op_fullconnect_relu.o   \
-             $(OBJ_DIR)/vsi_nn_op_leaky_relu.o   \
-             $(OBJ_DIR)/vsi_nn_op_lrn.o   \
-             $(OBJ_DIR)/vsi_nn_op_lrn2.o   \
-             $(OBJ_DIR)/vsi_nn_op_noop.o   \
-             $(OBJ_DIR)/vsi_nn_op_pool.o   \
-             $(OBJ_DIR)/vsi_nn_op_reshape.o   \
-             $(OBJ_DIR)/vsi_nn_op_permute.o   \
-             $(OBJ_DIR)/vsi_nn_op_prelu.o   \
-             $(OBJ_DIR)/vsi_nn_op_elu.o   \
-             $(OBJ_DIR)/vsi_nn_op_proposal.o   \
-             $(OBJ_DIR)/vsi_nn_op_roi_pool.o   \
-             $(OBJ_DIR)/vsi_nn_op_softmax.o   \
-             $(OBJ_DIR)/vsi_nn_op_relu.o   \
-             $(OBJ_DIR)/vsi_nn_op_relun.o   \
-             $(OBJ_DIR)/vsi_nn_op_reorg.o   \
-             $(OBJ_DIR)/vsi_nn_op_lstm.o   \
-             $(OBJ_DIR)/vsi_nn_op_variable.o   \
-             $(OBJ_DIR)/vsi_nn_op_l2_normalize.o   \
-             $(OBJ_DIR)/vsi_nn_op_upsample.o   \
-             $(OBJ_DIR)/vsi_nn_op_fullconnect2.o   \
-             $(OBJ_DIR)/vsi_nn_op_poolwithargmax.o   \
-             $(OBJ_DIR)/vsi_nn_op_argmax.o   \
-             $(OBJ_DIR)/vsi_nn_op_crop.o   \
-             $(OBJ_DIR)/vsi_nn_op_l2normalizescale.o   \
-             $(OBJ_DIR)/vsi_nn_op_maximum.o \
-             $(OBJ_DIR)/vsi_nn_op_subtract.o    \
-             $(OBJ_DIR)/vsi_nn_op_relu6.o   \
-             $(OBJ_DIR)/vsi_nn_op_relu1.o   \
-             $(OBJ_DIR)/vsi_nn_op_sigmoid.o \
-             $(OBJ_DIR)/vsi_nn_op_tanh.o \
-             $(OBJ_DIR)/vsi_nn_op_sqrt.o \
-             $(OBJ_DIR)/vsi_nn_op_rsqrt.o \
-             $(OBJ_DIR)/vsi_nn_op_softrelu.o \
-             $(OBJ_DIR)/vsi_nn_op_divide.o \
-             $(OBJ_DIR)/vsi_nn_op_dropout.o \
-             $(OBJ_DIR)/vsi_nn_op_resize.o   \
-             $(OBJ_DIR)/vsi_nn_op_reverse.o   \
-             $(OBJ_DIR)/vsi_nn_op_scale.o   \
-             $(OBJ_DIR)/vsi_nn_op_reduce.o   \
-             $(OBJ_DIR)/vsi_nn_op_slice.o   \
-             $(OBJ_DIR)/vsi_nn_op_shufflechannel.o \
-             $(OBJ_DIR)/vsi_nn_op_depth2space.o \
-             $(OBJ_DIR)/vsi_nn_op_space2depth.o \
-             $(OBJ_DIR)/vsi_nn_op_batch2space.o \
-             $(OBJ_DIR)/vsi_nn_op_space2batch.o \
-             $(OBJ_DIR)/vsi_nn_op_pad.o \
-             $(OBJ_DIR)/vsi_nn_op_imageprocess.o \
-             $(OBJ_DIR)/vsi_nn_op_matrixmul.o \
-             $(OBJ_DIR)/vsi_nn_op_lstmunit.o \
-             $(OBJ_DIR)/vsi_nn_op_dataconvert.o \
-             $(OBJ_DIR)/vsi_nn_op_layernormalize.o \
-             $(OBJ_DIR)/vsi_nn_op_instancenormalize.o \
-             $(OBJ_DIR)/vsi_nn_op_strided_slice.o \
-             $(OBJ_DIR)/vsi_nn_op_signalframe.o \
-             $(OBJ_DIR)/vsi_nn_op_relational_ops.o \
-             $(OBJ_DIR)/vsi_nn_op_pow.o \
-             $(OBJ_DIR)/vsi_nn_op_floordiv.o \
-             $(OBJ_DIR)/vsi_nn_op_a_times_b_plus_c.o \
-             $(OBJ_DIR)/vsi_nn_op_svdf.o \
-             $(OBJ_DIR)/vsi_nn_op_abs.o \
-             $(OBJ_DIR)/vsi_nn_op_nbg.o \
-             $(OBJ_DIR)/vsi_nn_op_minimum.o \
-             $(OBJ_DIR)/vsi_nn_op_spatial_transformer.o \
-             $(OBJ_DIR)/vsi_nn_op_logical_ops.o \
-             $(OBJ_DIR)/vsi_nn_op_select.o \
-             $(OBJ_DIR)/vsi_nn_op_lstmunit_activation.o \
-             $(OBJ_DIR)/vsi_nn_op_lstmunit_ovxlib.o \
-             $(OBJ_DIR)/vsi_nn_op_tensor_add_mean_stddev_norm.o \
-             $(OBJ_DIR)/vsi_nn_op_lstm_ovxlib.o \
-             $(OBJ_DIR)/vsi_nn_op_hashtable_lookup.o \
-             $(OBJ_DIR)/vsi_nn_op_embedding_lookup.o \
-             $(OBJ_DIR)/vsi_nn_op_lsh_projection.o \
-             $(OBJ_DIR)/vsi_nn_op_stack.o \
-             $(OBJ_DIR)/vsi_nn_op_floor.o \
-             $(OBJ_DIR)/vsi_nn_op_square.o \
-             $(OBJ_DIR)/vsi_nn_op_neg.o \
-             $(OBJ_DIR)/vsi_nn_op_exp.o \
-             $(OBJ_DIR)/vsi_nn_op_clip.o \
-             $(OBJ_DIR)/vsi_nn_op_pre_process_tensor.o \
-             $(OBJ_DIR)/vsi_nn_op_post_process.o \
-             $(OBJ_DIR)/vsi_nn_op_pre_process_gray.o \
-             $(OBJ_DIR)/vsi_nn_op_unstack.o \
-             $(OBJ_DIR)/vsi_nn_op_pre_process_rgb.o \
-             $(OBJ_DIR)/vsi_nn_op_pre_process.o \
-             $(OBJ_DIR)/vsi_nn_op_addn.o \
-             $(OBJ_DIR)/vsi_nn_op_softmax_internal.o \
-             $(OBJ_DIR)/vsi_nn_op_pre_process_yuv420.o \
-             $(OBJ_DIR)/vsi_nn_op_extra_ending.o \
-             $(OBJ_DIR)/vsi_nn_op_gather.o \
-             $(OBJ_DIR)/vsi_nn_op_tile.o \
-             $(OBJ_DIR)/vsi_nn_op_grouped_conv2d.o \
-             $(OBJ_DIR)/vsi_nn_op_topk.o \
-             $(OBJ_DIR)/vsi_nn_op_pre_process_bgra.o \
-             $(OBJ_DIR)/vsi_nn_op_logical_not.o \
-             $(OBJ_DIR)/vsi_nn_op_sin.o \
-             $(OBJ_DIR)/vsi_nn_op_log.o \
-             $(OBJ_DIR)/vsi_nn_op_argmin.o \
-             $(OBJ_DIR)/vsi_nn_op_roi_align.o \
-             $(OBJ_DIR)/vsi_nn_op_heatmap_max_keypoint.o \
-             $(OBJ_DIR)/vsi_nn_op_axis_aligned_bbox_transform.o \
-             $(OBJ_DIR)/vsi_nn_op_box_with_nms_limit.o \
-             $(OBJ_DIR)/vsi_nn_op_generate_proposals.o \
-             $(OBJ_DIR)/vsi_nn_op_detection_postprocess.o \
-             $(OBJ_DIR)/vsi_nn_op_random_multinomial.o \
-             $(OBJ_DIR)/vsi_nn_op_log_softmax.o \
-             $(OBJ_DIR)/vsi_nn_op_relu_keras.o \
-             $(OBJ_DIR)/vsi_nn_op_relu_keras_internal.o \
-             $(OBJ_DIR)/vsi_nn_op_reducesum_internal.o \
-             $(OBJ_DIR)/vsi_nn_op_reducemax_internal.o \
-             $(OBJ_DIR)/vsi_nn_op_reducemin_internal.o \
-             $(OBJ_DIR)/vsi_nn_op_gru_ovxlib.o \
-             $(OBJ_DIR)/vsi_nn_op_grucell_ovxlib.o \
-             $(OBJ_DIR)/vsi_nn_op_reduceprod_internal.o \
-             $(OBJ_DIR)/vsi_nn_op_reduceall_internal.o \
-             $(OBJ_DIR)/vsi_nn_op_reduceany_internal.o \
-             $(OBJ_DIR)/vsi_nn_op_unidirectional_sequence_rnn.o \
-             $(OBJ_DIR)/vsi_nn_op_quantized_16bit_lstm.o \
-             $(OBJ_DIR)/vsi_nn_op_bidirectional_sequence_rnn.o \
-             $(OBJ_DIR)/vsi_nn_op_bidirectional_sequence_lstm.o \
-             $(OBJ_DIR)/vsi_nn_op_resize_internal.o \
-             $(OBJ_DIR)/vsi_nn_op_resize_nearest_internal.o \
-             $(OBJ_DIR)/vsi_nn_op_rnncell_ovxlib.o \
-             $(OBJ_DIR)/vsi_nn_op_tensorstackconcat.o \
-             $(OBJ_DIR)/vsi_nn_op_concatshift.o \
-             $(OBJ_DIR)/vsi_nn_op_sync_host.o\
-             $(OBJ_DIR)/vsi_nn_op_rnn.o
+OBJECTS += $(OBJ_DIR)/vsi_nn_libnnext_resource.o
 
 ifeq ("$(OVXLIB_CONFIG)", "VSI_CFG_NNAPI_0_3")
 vpath %.c platform/nnapi0.3
@@ -307,20 +95,42 @@ OBJECTS += $(OBJ_DIR)/vsi_nn_pf_softmax.o
 OBJECTS += $(OBJ_DIR)/vsi_nn_pf_depth2space.o
 endif
 
+vpath %.c cpu_backend
+SRCS += ${notdir ${wildcard cpu_backend/*.c}}
+
+vpath %.c libnnext/ops/kernel
+SRCS += ${notdir ${wildcard libnnext/ops/kernel/*.c}}
+
+vpath %.c ops
+SRCS += ${notdir ${wildcard ops/*.c}}
+
+vpath %.c kernel
+SRCS += ${notdir ${wildcard kernel/*.c}}
+
+vpath %.c kernel/cl
+SRCS += ${notdir ${wildcard kernel/cl/*.c}}
+
+vpath %.c kernel/cpu
+SRCS += ${notdir ${wildcard kernel/cpu/*.c}}
+
+vpath %.c kernel/evis
+SRCS += ${notdir ${wildcard kernel/evis/*.c}}
+
+vpath %.c kernel/vx
+SRCS += ${notdir ${wildcard kernel/vx/*.c}}
+
+vpath %.c custom/ops
+SRCS += ${notdir ${wildcard custom/ops/*.c}}
+
+vpath %.c custom/ops/kernel
+SRCS += ${notdir ${wildcard custom/ops/kernel/*.c}}
+
+OBJECTS +=  ${patsubst %.c, $(OBJ_DIR)/%.o, $(SRCS)}
+
 # installation directory
-INSTALL_DIR := $(SDK_DIR)/drivers
+INSTALL_DIR := $(VIVANTE_SDK_LIB)
 
 ################################################################################
 # Include the common makefile.
 
 include $(AQROOT)/common.target
-
-################################################################################
-# Extra installation.
-
-install: extra_install
-
-.PHONY: extra_install
-extra_install:
-	@mkdir -p $(SDK_DIR)/include/OVXLIB
-	@-cp -rf $(AQROOT)/sdk/inc/OVXLIB/* $(SDK_DIR)/include/OVXLIB

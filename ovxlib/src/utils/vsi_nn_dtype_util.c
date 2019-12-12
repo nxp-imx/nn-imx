@@ -130,6 +130,15 @@ float vsi_nn_BFp16ToFp32
     return bfp16_to_fp32(in);
 } /* vsi_nn_Fp16ToFp32() */
 
+uint16_t vsi_nn_Fp32ToBFp16
+    (
+    float in
+    )
+{
+    return fp32_to_bfp16(in);
+} /* vsi_nn_Fp32ToFp16() */
+
+
 vsi_status vsi_nn_IntegerConvert
     (
     const void *    src,

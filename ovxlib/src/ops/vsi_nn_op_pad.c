@@ -33,6 +33,7 @@
 #include "vsi_nn_tensor_util.h"
 #include "vsi_nn_log.h"
 #include "utils/vsi_nn_util.h"
+#include "utils/vsi_nn_math.h"
 
 vsi_status vsi_nn_InitPadParameter
     (
@@ -80,10 +81,12 @@ vsi_status vsi_nn_InitPadParameter
      * work around(TODO):
      *      driver only support pad 2 dimensions
      */
-    param->numViewDimensions = 2;
+    param->numViewDimensions = vsi_nn_max(node->nn_param.pad.dim_num, 2);
     param->pad_front_array = (int32_t *)malloc(sizeof(int32_t) * param->numViewDimensions);
     param->pad_back_array = (int32_t *)malloc(sizeof(int32_t) * param->numViewDimensions);
-    for(i=0; i<param->numViewDimensions; i++)
+    memset(param->pad_front_array, 0, sizeof(int32_t) * param->numViewDimensions);
+    memset(param->pad_back_array, 0, sizeof(int32_t) * param->numViewDimensions);
+    for(i=0; i < vsi_nn_min(param->numViewDimensions, node->nn_param.pad.dim_num); i++)
     {
         param->pad_front_array[i] = (int32_t)node->nn_param.pad.front_size[i];
         param->pad_back_array[i]  = (int32_t)node->nn_param.pad.back_size[i];
@@ -155,7 +158,11 @@ static vsi_bool op_check
     vsi_nn_tensor_t ** outputs
     )
 {
-
+    if(self->nn_param.pad.dim_num != inputs[0]->attr.dim_num)
+    {
+        VSILOGE("Error:input tensor dim should be equal with pad's.");
+        return FALSE;
+    }
     return TRUE;
 } /* op_check() */
 

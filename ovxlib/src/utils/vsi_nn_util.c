@@ -901,19 +901,17 @@ void vsi_nn_OptimizedEltOPShape
 {
     uint32_t element_count     = 0;
     uint32_t i                 = 0;
-
+#define VSI_NN_MAX_IMAGE_WIDTH  (65536)
     element_count = vsi_nn_GetElementNum(input);
-
 
     for (i = 0; i < VSI_NN_MAX_DIM_NUM; i++)
     {
         sizes[i] = 1;
     }
 
-    if (element_count < VSI_NN_MAX_DIM_NUM)
+    if (element_count < VSI_NN_MAX_IMAGE_WIDTH)
     {
         sizes[0] = element_count;
-
         *num_of_dims = 2;
     }
     else
@@ -923,15 +921,25 @@ void vsi_nn_OptimizedEltOPShape
         {
             divisors = 1;
             vsi_nn_GetDataDivisors(element_count, &divisors, 1);
-
+            if (1 == divisors)
+            {
+                divisors = element_count;
+            }
             sizes[i] = divisors;
             element_count = element_count / divisors;
         }
 
         sizes[2] = element_count;
-        *num_of_dims = 3;
+        if (1 == sizes[2])
+        {
+            *num_of_dims = 2;
+        }
+        else
+        {
+            *num_of_dims = 3;
+        }
     }
-
+#undef VSI_NN_MAX_IMAGE_WIDTH
 }
 
 vsi_bool vsi_nn_OptimizedEltWiseOPShape
@@ -1102,6 +1110,21 @@ vsi_bool vsi_nn_OptimizedEltWiseOPShape
 
     return status;
 }
+
+void vsi_nn_print_int_array( int32_t* array, size_t size )
+{
+    size_t i;
+    size_t n;
+#define _MSG_SIZE   (256)
+    char buf[256];
+    n = 0;
+    for( i = 0; i < size; i ++ )
+    {
+        n += snprintf( &buf[n], _MSG_SIZE, "%d, ", array[i] );
+    }
+    VSILOGD( "%s", buf );
+#undef _MSG_SIZE
+} /* vsi_nn_print_int_array() */
 
 vsi_bool vsi_nn_IsEVISFeatureAvaiable
     (

@@ -171,6 +171,7 @@ vsi_status vsi_nn_OpInit
     proc = vsi_nn_OpGetProc( op );
     if( NULL != proc )
     {
+        status = VSI_SUCCESS;
         if( NULL != proc->init )
         {
             status = proc->init( node );
@@ -220,7 +221,11 @@ vsi_status vsi_nn_OpDeinit
     proc = vsi_nn_OpGetProc( op );
     if( NULL != proc )
     {
+        status = VSI_SUCCESS;
+        if( proc->deinit )
+        {
         status = proc->deinit( node );
+        }
     }
     return status;
 } /* vsi_nn_op_deinit() */
@@ -265,7 +270,11 @@ vsi_bool vsi_nn_OpCheck
     proc = vsi_nn_OpGetProc( op );
     if( NULL != proc )
     {
+        ret = TRUE;
+        if( proc->check )
+        {
         ret = proc->check( node, inputs, outputs );
+        }
     }
     return ret;
 } /* vsi_nn_op_check() */

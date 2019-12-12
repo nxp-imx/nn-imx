@@ -235,7 +235,7 @@ static vsi_status VX_CALLBACK vxGenerate_proposalsKernel
         uint32_t height = in_attr[0].size[2];
         uint32_t width = in_attr[0].size[1];
         uint32_t numAnchors = in_attr[0].size[0];
-        uint32_t imageInfoLength = in_attr[0].size[0];
+        uint32_t imageInfoLength = in_attr[3].size[0];
 
         uint32_t batchSize = height * width * numAnchors;
         uint32_t roiBufferSize = batchSize * kRoiDim;
@@ -257,13 +257,16 @@ static vsi_status VX_CALLBACK vxGenerate_proposalsKernel
             for(w = 0; w < width; w++)
             {
                 float wShift = w * widthStride;
+                uint32_t anchor_index = 0;
                 for(a = 0; a < numAnchors; a++)
                 {
+                    roiBuffer[index] = f32_in_buffer[2][anchor_index] + wShift;
+                    roiBuffer[index + 1] = f32_in_buffer[2][anchor_index + 1] + hShift;
+                    roiBuffer[index + 2] = f32_in_buffer[2][anchor_index + 2] + wShift;
+                    roiBuffer[index + 3] = f32_in_buffer[2][anchor_index + 3] + hShift;
+
                     index += kRoiDim;
-                    roiBuffer[index] = f32_in_buffer[2][index] + wShift;
-                    roiBuffer[index + 1] = f32_in_buffer[2][index + 1] + hShift;
-                    roiBuffer[index + 2] = f32_in_buffer[2][index + 2] + wShift;
-                    roiBuffer[index + 3] = f32_in_buffer[2][index + 3] + hShift;
+                    anchor_index += kRoiDim;
                 }
             }
         }
@@ -276,7 +279,7 @@ static vsi_status VX_CALLBACK vxGenerate_proposalsKernel
             uint32_t i;
             uint32_t roiIndex;
             uint32_t select_len;
-            uint32_t numDetections = 0;
+            int32_t numDetections = 0;
             for(roiIndex = 0; roiIndex < numRois; roiIndex++)
             {
                 float imageHeight = f32_in_buffer[3][imageInfo_index];
@@ -320,7 +323,7 @@ static vsi_status VX_CALLBACK vxGenerate_proposalsKernel
             }
 
             // Filter boxes, disgard regions with height or width < minSize.
-            filterBoxes(roiTransformedBuffer, &(f32_in_buffer[3][imageInfo_index]),
+            filterBoxes(roiTransformedBuffer, &(f32_in_buffer[3][0]),
                 minSize, select, &select_len);
 
             // Apply hard NMS.
@@ -329,11 +332,11 @@ static vsi_status VX_CALLBACK vxGenerate_proposalsKernel
                 postNmsTopN = select_len;
             }
 
-            for(j = 0; (j < select_len && numDetections < (uint32_t)postNmsTopN); j++)
+            for(j = 0; (j < select_len && numDetections < postNmsTopN); j++)
             {
                 // find max score and swap to the front.
                 int32_t max_index = max_element(&(f32_in_buffer[0][scores_index]),
-                    select, select_len);
+                    &(select[j]), select_len - j) + j;
                 swap_element(select, max_index, j);
 
                 // Calculate IoU of the rest, swap to the end (disgard) ifneeded.
@@ -341,16 +344,17 @@ static vsi_status VX_CALLBACK vxGenerate_proposalsKernel
                 {
                     int32_t roiBase0 = select[i] * kRoiDim;
                     int32_t roiBase1 = select[j] * kRoiDim;
-                    float iou = getIoUAxisAligned(&(roiBuffer[roiBase0]),
-                        &(roiBuffer[roiBase1]));
+                    float iou = getIoUAxisAligned(&(roiTransformedBuffer[roiBase0]),
+                        &(roiTransformedBuffer[roiBase1]));
+
                     if(iou >= iouThreshold)
                     {
                         swap_element(select, i, select_len - 1);
                         i--;
                         select_len--;
                     }
-                    numDetections++;
                 }
+                numDetections++;
             }
 
             for(i = 0; i < select_len; i++)
@@ -369,9 +373,9 @@ static vsi_status VX_CALLBACK vxGenerate_proposalsKernel
             imageInfo_index += imageInfoLength;
         }
 
-        if(roiBuffer) free(roiBuffer);
-        if(roiTransformedBuffer) free(roiTransformedBuffer);
-        if(select) free(select);
+        vsi_nn_safe_free(roiBuffer);
+        vsi_nn_safe_free(roiTransformedBuffer);
+        vsi_nn_safe_free(select);
     }
 
     /* save data */

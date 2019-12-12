@@ -19,8 +19,9 @@ do\
 #define VXC_VertMin3_Integer(dst, src0, src1, src2, info)\
 do\
 {\
-    dst = min(src0, src1);\
-    dst = min(src2, dst);\
+    typeof (dst) tmp; \
+    tmp  = min(src0, src1);\
+    dst  = min(src2, tmp);\
 } while (0)
 
 #define VXC_VertMin3_Half(dst, src0, src1, src2, info)\
@@ -128,8 +129,9 @@ do\
 #define VXC_Clamp_Half(dst, src0, src1, src2, info)\
 do\
 {\
-    VXC_VertMax3_Half(dst, src0, src0, src1, info);\
-    VXC_VertMin3_Half(dst, dst, dst, src2, info);\
+    typeof (dst) tmp;\
+    VXC_VertMax3_Half(tmp, src0, src0, src1, info);\
+    VXC_VertMin3_Half(dst, tmp, tmp, src2, info);\
 } while (0)
 
 #else

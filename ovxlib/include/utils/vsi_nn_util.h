@@ -320,6 +320,31 @@ OVXLIB_API int32_t vsi_nn_partition
         uint32_t* indices
     );
 
+/**
+ * Reorder tensors
+ *
+ * @param[in]  tensors Tensor list to reorder.
+ * @param[in]  order New orders.
+ * @param[in]  num Number of tensors.
+ * @param[out] out_tensors Ordered tensors
+ * */
+static inline void vsi_nn_reorder_tensor
+    (
+    vsi_nn_tensor_t** tensors,
+    const int32_t* order,
+    size_t num,
+    vsi_nn_tensor_t** out_tensors
+    )
+{
+    size_t i;
+    for( i = 0; i < num; i++ )
+    {
+        out_tensors[i] = tensors[order[i]];
+    }
+}
+
+void vsi_nn_print_int_array( int32_t* array, size_t size );
+
 #ifdef __cplusplus
 }
 #endif

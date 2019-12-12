@@ -22,23 +22,19 @@
 *
 *****************************************************************************/
 
-/* WARNING! AUTO-GENERATED, DO NOT MODIFY MANUALLY */
+#include "vsi_nn_daemon.h"
+#include "vsi_nn_log.h"
+#include "kernel/vsi_nn_kernel.h"
 
-#ifndef _VSI_NN_LIBNNEXT_VC_H
-#define _VSI_NN_LIBNNEXT_VC_H
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-typedef struct _vsi_nn_vx_resource_item_type
+_INITIALIZER( daemon_start )
 {
-    char const* name;
-    char const* data;
-} vsi_nn_vx_resource_item_type;
+    //VSILOGD("OVXLIB init ... ");
+    vsi_nn_kernel_backend_init();
+} /* _daemon_start() */
 
-#ifdef __cplusplus
-}
-#endif
+_DEINITIALIZER( daemon_shutdown )
+{
+    //VSILOGD("OVXLIB shutdown ... ");
+    vsi_nn_kernel_backend_deinit();
+} /* vsi_nn_daemen_shutdown() */
 
-#endif /* _VSI_NN_LIBNNEXT_VC_H */

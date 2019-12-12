@@ -330,6 +330,7 @@ OVXLIB_API const char * vsi_nn_OpGetName
     /* setup      */ setup,\
     /* optimize   */ optimize,\
     /* input_num  */ in,\
-    /* output_num */ out,\
+    /* output_num */ out \
 };
+
 #endif

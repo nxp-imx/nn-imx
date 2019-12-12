@@ -320,6 +320,12 @@ static vsi_bool op_check
     vsi_nn_tensor_t ** outputs
     )
 {
+    if(self->nn_param.space2depth.block_size[0] < 0
+        || self->nn_param.space2depth.block_size[1] < 0)
+    {
+        VSILOGE("Block size can't be less than zero in space to depth");
+        return FALSE;
+    }
     return TRUE;
 } /* op_check() */
 

@@ -445,7 +445,7 @@ static vsi_nn_tensor_t * _create_tensor
     }
 
     tensor = (vsi_nn_tensor_t *)malloc( sizeof( vsi_nn_tensor_t ) );
-    vsi_nn_UpdateTensorDims( attr );
+    //vsi_nn_UpdateTensorDims( attr );
 
     if( NULL != tensor )
     {
@@ -1321,12 +1321,14 @@ vsi_nn_tensor_t *vsi_nn_reshape_tensor
     output = vsi_nn_CreateTensor(graph, &attr);
     if (NULL == output)
     {
+        VSILOGW("Create tensor fail.");
         return NULL;
     }
 
     ret = vsi_nn_ReshapeTensor(graph, input, output, shape, dim_num);
     if (FALSE == ret)
     {
+        VSILOGW("Reshape tensor fail.");
         vsi_nn_ReleaseTensor(&output);
         output = NULL;
     }
@@ -1907,6 +1909,7 @@ vsi_status vsi_nn_copy_tensor_veiw_patch
     vsi_enum user_memory_type
     )
 {
+#define USE_OPENVX_1_2
     size_t dim,i;
     size_t vstart[VSI_NN_MAX_DIM_NUM],vend[VSI_NN_MAX_DIM_NUM],vstride[VSI_NN_MAX_DIM_NUM];
     vsi_status status = VSI_FAILURE;
@@ -1922,7 +1925,49 @@ vsi_status vsi_nn_copy_tensor_veiw_patch
         vend[i] = (size_t)end[i];
         vstride[i] = (size_t)stride[i];
     }
+
+#ifdef USE_OPENVX_1_2
     status = vxCopyTensorPatch(tensor, dim, vstart, vend, vstride, user_ptr, usage, user_memory_type);
+#else
+    {
+        vx_context context = NULL;
+        vx_tensor_addressing addr = NULL;
+        uint32_t stride_size[VSI_NN_MAX_DIM_NUM];
+        vsi_nn_tensor_attr_t t;
+
+        memset(vstart, 0, sizeof(size_t) * VSI_NN_MAX_DIM_NUM);
+        memset(vend, 0, sizeof(size_t) * VSI_NN_MAX_DIM_NUM);
+        memset(vstride, 0, sizeof(size_t) * VSI_NN_MAX_DIM_NUM);
+        status = vsi_nn_vxGetTensorAttr(tensor, &t);
+        vsi_nn_GetStrideSize( attr, stride_size );
+        context = vxGetContext((vx_reference)tensor);
+        if( NULL == context )
+        {
+            VSILOGE("Call vxGetContext fail");
+            return status;
+        }
+        addr = vxCreateTensorAddressing( context, attr->size,
+            stride_size, attr->dim_num );
+        if( NULL == addr )
+        {
+            VSILOGE("Call vxCreateTensorAddressing fail");
+            return status;
+        }
+        status = vxCopyTensorPatch_11( tensor,
+                                       NULL,
+                                       addr,
+                                       user_ptr,
+                                       usage,
+                                       user_memory_type
+                                      );
+        vxReleaseTensorAddressing( &addr );
+        if( VSI_SUCCESS != status )
+        {
+            VSILOGE("Call vxCopyTensorPatch_11 fail");
+            return status;
+        }
+    }
+#endif
     return status;
 } /* vsi_nn_copy_tensor_veiw_patch() */
 

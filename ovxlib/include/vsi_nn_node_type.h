@@ -77,7 +77,6 @@
 #include "ops/vsi_nn_op_svdf.h"
 #include "ops/vsi_nn_op_conv1d.h"
 #include "ops/vsi_nn_op_nbg.h"
-#include "ops/vsi_nn_op_minimum.h"
 #include "ops/vsi_nn_op_spatial_transformer.h"
 #include "ops/vsi_nn_op_logical_ops.h"
 #include "ops/vsi_nn_op_select.h"
@@ -210,7 +209,6 @@ typedef union _vsi_nn_nn_param
     vsi_nn_relational_ops_param     relational_ops;
     vsi_nn_pow_param                pow;
     vsi_nn_floordiv_param           floordiv;
-    vsi_nn_minimum_param            minimum;
     vsi_nn_spatial_transformer_param spatial_transformer;
     vsi_nn_logical_ops_param        logical_ops;
     vsi_nn_select_param             select;

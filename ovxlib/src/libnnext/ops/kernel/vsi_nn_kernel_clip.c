@@ -41,34 +41,9 @@
 
 #define _VX_KERNEL_FUNC_KERNEL  (vxClipKernel)
 
-#define clipMIN(x, y)            (((x) <= (y)) ?  (x) :  (y))
-#define clipMAX(x, y)            (((x) >= (y)) ?  (x) :  (y))
-#define gcmCLIP(x, minVal, maxVal)  (clipMIN(clipMAX((x), (minVal)), (maxVal)))
-
-#define MAX_MULTIPLIER_NUM      (65535)
-#define MAX_POST_SHIFT_BITS     (31)
-
-static void clipGetFP32M0AndN(vx_float32 mult, vx_uint16 *M0, vx_int8 *N)
-{
-    vx_uint32 uintMult          = *((vx_uint32*)(&mult));
-    vx_uint32 tmpMultiply       = 0;
-    vx_int32  exp               = 0;
-    vx_uint32 postShiftBit6to5  = 0;
-    vx_uint32 postShift         = 0;
-    vx_int8   tmpPostShift      = 0;
-
-    tmpMultiply         = (uintMult & 0x7FFFFF) >> 8;
-    *M0                 = (vx_uint16)((1U << 15) + tmpMultiply);
-
-    exp                 = (uintMult & 0x7F800000) >> 23; /* postShift is Scale's exp*/
-    tmpPostShift        = 15 - ((vx_int8)exp - 127);
-    postShift           = tmpPostShift & 0x1F;
-    tmpPostShift        = tmpPostShift >> 5;
-    postShiftBit6to5    = tmpPostShift & 3;
-
-    *N = (vx_int8)(((postShiftBit6to5 << 5) | (postShift & 0x1F)));
-    *N = (((vx_int32)*N << 25) >> 25);
-}
+#define TENSOR_NUM_INPUT  (CLIP_INPUTS_COUNT)
+#define TENSOR_NUM_OUTPUT (CLIP_OUTPUTS_COUNT)
+#define TENSOR_NUM (TENSOR_NUM_INPUT+TENSOR_NUM_OUTPUT)
 
 static vsi_status VX_CALLBACK vxClipKernel
     (
@@ -77,11 +52,6 @@ static vsi_status VX_CALLBACK vxClipKernel
     uint32_t paramNum
     )
 {
-#define ARG_NUM            (2)
-#define TENSOR_NUM_INPUT (1)
-#define TENSOR_NUM_OUTPUT (1)
-#define TENSOR_NUM (TENSOR_NUM_INPUT+TENSOR_NUM_OUTPUT)
-
     vsi_status status = VSI_FAILURE;
     vx_context context = NULL;
     vx_tensor input[TENSOR_NUM_INPUT] = {0};
@@ -121,9 +91,9 @@ static vsi_status VX_CALLBACK vxClipKernel
         f32_out_buffer[i]= (float *)malloc(out_elements[i] * sizeof(float));
         memset(f32_out_buffer[i], 0, out_elements[i] * sizeof(float));
     }
-    vxCopyScalar((vx_scalar)paramObj[ARG_NUM], &(minf),
+    vxCopyScalar((vx_scalar)paramObj[TENSOR_NUM], &(minf),
         VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
-    vxCopyScalar((vx_scalar)paramObj[ARG_NUM + 1], &(maxf),
+    vxCopyScalar((vx_scalar)paramObj[TENSOR_NUM + 1], &(maxf),
         VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
 
     /* TODO: Add CPU kernel implement */
@@ -145,13 +115,12 @@ static vsi_status VX_CALLBACK vxClipKernel
                     {
                         uint32_t index = w + h * width + c * width * height
                             + n * width * height * channel;
-                        f32_out_buffer[0][index] = gcmCLIP(f32_in_buffer[0][index], minf, maxf);
+                        f32_out_buffer[0][index] = vsi_nn_clamp(f32_in_buffer[0][index], minf, maxf);
                     }
                 }
             }
         }
     }
-
 
     /* save data */
     for(i = 0; i < TENSOR_NUM_OUTPUT; i++)
@@ -165,14 +134,28 @@ static vsi_status VX_CALLBACK vxClipKernel
 final:
     for (i = 0; i < TENSOR_NUM_INPUT; i++)
     {
-        if (f32_in_buffer[i]) free(f32_in_buffer[i]);
+        if (f32_in_buffer[i])
+        {
+            free(f32_in_buffer[i]);
+            f32_in_buffer[i] = NULL;
+        }
     }
     for(i = 0; i < TENSOR_NUM_OUTPUT; i++)
     {
-        if (f32_out_buffer[i]) free(f32_out_buffer[i]);
+        if (f32_out_buffer[i])
+        {
+            free(f32_out_buffer[i]);
+            f32_out_buffer[i] = NULL;
+        }
     }
     return status;
+
 } /* _VX_KERNEL_FUNC_KERNEL() */
+
+
+#define MAX_MULTIPLIER_NUM      (65535)
+#define MAX_POST_SHIFT_BITS     (31)
+
 
 vx_status VX_CALLBACK vxClipInitializer
     (
@@ -195,9 +178,7 @@ vx_status VX_CALLBACK vxClipInitializer
     vx_tensor     output          = (vx_tensor)paramObj[1];
     vx_scalar     minScl          = (vx_scalar)paramObj[2];
     vx_scalar     maxScl          = (vx_scalar)paramObj[3];
-    uint32_t      input_size[4]   = {1, 1, 1, 1};
-    vx_uint32     output_size[4] = {1, 1, 1, 1};
-    uint32_t      input_dims      = 0;
+    vx_uint32     output_size[4]  = {1, 1, 1, 1};
     uint32_t      output_dims     = 0;
     vsi_enum inputDataFormat = VSI_NN_TYPE_FLOAT16;
     vsi_enum outputDataFormat = VSI_NN_TYPE_FLOAT16;
@@ -221,11 +202,28 @@ vx_status VX_CALLBACK vxClipInitializer
         return status;
     }
 
-    input_dims  = attr[0].dim_num;
-    for (i = 0; i < input_dims; i++)
+    if (attr[0].dtype.qnt_type != VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC)
     {
-        input_size[i] = attr[0].size[i];
+        attr[0].dtype.scale = 1.0f;
+        attr[0].dtype.zero_point = 0;
     }
+
+    if (attr[1].dtype.qnt_type != VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC)
+    {
+        attr[1].dtype.scale = 1.0f;
+        attr[1].dtype.zero_point = 0;
+    }
+
+    if (attr[0].dtype.qnt_type != VSI_NN_QNT_TYPE_DFP)
+    {
+        attr[0].dtype.fl = 0;
+    }
+
+    if (attr[1].dtype.qnt_type != VSI_NN_QNT_TYPE_DFP)
+    {
+        attr[1].dtype.fl = 0;
+    }
+
     inputDataFormat  = attr[0].dtype.vx_type;
     input_ZP         = attr[0].dtype.zero_point;
     scaleIn          = attr[0].dtype.scale;
@@ -240,7 +238,7 @@ vx_status VX_CALLBACK vxClipInitializer
         output_size[i] = attr[1].size[i];
     }
 
-    status |= vxCopyScalar(minScl, &minVal, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
+    status  = vxCopyScalar(minScl, &minVal, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
     status |= vxCopyScalar(maxScl, &maxVal, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
     if(VX_SUCCESS != status)
     {
@@ -248,12 +246,12 @@ vx_status VX_CALLBACK vxClipInitializer
         return status;
     }
 
-    input_size[2] = (input_dims <= 2)?1:input_size[2];
-
     shaderParam.globalWorkOffset[0] = 0;
     shaderParam.globalWorkOffset[1] = 0;
     shaderParam.globalWorkOffset[2] = 0;
-    if (outputDataFormat == VSI_NN_TYPE_FLOAT16 || outputDataFormat == VSI_NN_TYPE_INT16)
+    if (inputDataFormat == VSI_NN_TYPE_FLOAT16
+       || inputDataFormat == VSI_NN_TYPE_INT16
+       || inputDataFormat == VSI_NN_TYPE_BFLOAT16)
     {
         shaderParam.globalWorkScale[0]  = 8;
         shaderParam.globalWorkScale[1]  = 1;
@@ -265,13 +263,18 @@ vx_status VX_CALLBACK vxClipInitializer
         shaderParam.globalWorkScale[1]  = 1;
         shaderParam.globalWorkScale[2]  = 1;
     }
+    shaderParam.workDim = output_dims < 3 ? 2 : 3;
     shaderParam.globalWorkSize[0]   = gcmALIGN((output_size[0] + shaderParam.globalWorkScale[0] - 1)
                                         / shaderParam.globalWorkScale[0], 4);
     shaderParam.globalWorkSize[1]   = (output_size[1] + shaderParam.globalWorkScale[1] - 1)
                                         / shaderParam.globalWorkScale[1];
     shaderParam.globalWorkSize[2]   = output_size[2];
 
-    if (inputDataFormat == VSI_NN_TYPE_FLOAT16 && outputDataFormat == VSI_NN_TYPE_FLOAT16)
+    if ((inputDataFormat == VSI_NN_TYPE_FLOAT16 &&
+        (outputDataFormat == VSI_NN_TYPE_FLOAT16 || outputDataFormat == VSI_NN_TYPE_INT8
+        || outputDataFormat == VSI_NN_TYPE_INT16 || outputDataFormat == VSI_NN_TYPE_UINT8))
+       || (VSI_NN_TYPE_BFLOAT16 == inputDataFormat && VSI_NN_TYPE_BFLOAT16 == outputDataFormat)
+       )
     {
         vx_uint16 minTmp   = 0;
         vx_uint16 maxTmp   = 0;
@@ -281,8 +284,17 @@ vx_status VX_CALLBACK vxClipInitializer
         vx_int32 packedMaxData_FP16[4];
         vx_int32 i;
 
-        minTmp = vsi_nn_Fp32toFp16(minVal);
-        maxTmp = vsi_nn_Fp32toFp16(maxVal);
+        if (inputDataFormat == VSI_NN_TYPE_BFLOAT16)
+        {
+            minTmp = vsi_nn_Fp32ToBFp16(minVal);
+            maxTmp = vsi_nn_Fp32ToBFp16(maxVal);
+        }
+        else
+        {
+            minTmp = vsi_nn_Fp32toFp16(minVal);
+            maxTmp = vsi_nn_Fp32toFp16(maxVal);
+        }
+
         packedMin = (minTmp << 16) | (minTmp);
         packedMax = (maxTmp << 16) | (maxTmp);
 
@@ -292,15 +304,66 @@ vx_status VX_CALLBACK vxClipInitializer
             packedMaxData_FP16[i] = packedMax;
         }
 
-        status |= vxSetNodeUniform(nodObj, "packedMinData_FP16", 1, packedMinData_FP16);
+        status  = vxSetNodeUniform(nodObj, "packedMinData_FP16", 1, packedMinData_FP16);
         status |= vxSetNodeUniform(nodObj, "packedMaxData_FP16", 1, packedMaxData_FP16);
+        if (outputDataFormat == VSI_NN_TYPE_INT8 || outputDataFormat == VSI_NN_TYPE_INT16)
+        {
+            vx_uint32 uniConvertF16toInt_2x8[16] = {
+                0x11111111, // TCfg
+                0x00000000, // ASelt
+                0x03020100, 0x07060504, // ABin
+                0x22222222, // BSelt
+                0x00000000, 0x00000000, // BBin
+                0x00000300, // AccumType, ConstantType, and PostShift
+                0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
+            };
+            if (dstFixPointPos <= 0)
+            {
+                uniConvertF16toInt_2x8[7] |= vsi_nn_min((-dstFixPointPos) & 0x1F, MAX_POST_SHIFT_BITS);
+            }
+            else
+            {
+                vx_uint32 lo_part    = vsi_nn_min((1 << dstFixPointPos), MAX_MULTIPLIER_NUM);
+                vx_uint32 multiplier = lo_part;
+                vx_uint32 i          = 0;
+
+                for (i = 0; i < 8; i++)
+                {
+                    uniConvertF16toInt_2x8[i + 8] = multiplier;
+                }
+            }
+            status |= vxSetNodeUniform(nodObj, "uniConvertF16toInt_2x8", 1, uniConvertF16toInt_2x8);
+        }
+        else if (outputDataFormat == VSI_NN_TYPE_UINT8)
+        {
+            vx_uint32  multAndoutZP[2]    = {0};
+            vx_uint16  M0                 = 0;
+            vx_int8    postShift          = 0;
+            vx_uint32  uniDataMulAndPostShift_2x8[16] = {
+                0xdddddddd, // TCfg
+                0x44444444, // ASelt
+                0x13121110, 0x17161514, // ABin
+                0x11111119, // BSelt
+                0x00000000, 0x00000000, // BBin
+                0x00002400, // AccumType, ConstantType, and PostShift
+                0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
+            };
+            vsi_nn_GetFP32MultiAndPostShift(scaleIn / scaleOut, &M0, &postShift);
+
+            multAndoutZP[0] = (vx_uint32)(M0);
+            multAndoutZP[1] = (vx_uint32)(output_ZP << postShift );
+
+            uniDataMulAndPostShift_2x8[7] |= (postShift & 0x1F);
+            status |= vxSetNodeUniform(nodObj, "multAndoutZP", 1, multAndoutZP);
+            status |= vxSetNodeUniform(nodObj, "uniDataMulAndPostShift_2x8", 1, uniDataMulAndPostShift_2x8);
+
+        }
     }
-    else if (inputDataFormat == VSI_NN_TYPE_INT8 && outputDataFormat == VSI_NN_TYPE_INT8)
+    else if (inputDataFormat == VSI_NN_TYPE_INT8
+         && (outputDataFormat == VSI_NN_TYPE_INT8 || outputDataFormat == VSI_NN_TYPE_FLOAT16))
     {
-        vx_uint8 minData   = 0;
-        vx_uint8 maxData   = 0;
-        vx_int32 packedMin = (minData << 24) | (minData << 16) | (minData << 8) | (minData);
-        vx_int32 packedMax = (maxData << 24) | (maxData << 16) | (maxData << 8) | (maxData);
+        vx_int32 packedMin = 0;
+        vx_int32 packedMax = 0;
         vx_int32 packedMinData[4];
         vx_int32 packedMaxData[4];
         vx_uint32 uniConvertIntegerLo_2x8[16] = {
@@ -341,22 +404,36 @@ vx_status VX_CALLBACK vxClipInitializer
             }
         }
 
-        minData =  vsi_nn_Fp32ToDFP(minVal, dstFixPointPos, VSI_NN_TYPE_INT8);
-        maxData =  vsi_nn_Fp32ToDFP(maxVal, dstFixPointPos, VSI_NN_TYPE_INT8);
-
-        packedMin = (minData << 24) | (minData << 16) | (minData << 8) | (minData);
-        packedMax = (maxData << 24) | (maxData << 16) | (maxData << 8) | (maxData);
+        if (outputDataFormat == VSI_NN_TYPE_FLOAT16)
+        {
+            vx_uint16 minData   = 0;
+            vx_uint16 maxData   = 0;
+            minData = vsi_nn_Fp32toFp16(minVal);
+            maxData = vsi_nn_Fp32toFp16(maxVal);
+            packedMin = (minData << 16) | (minData);
+            packedMax = (maxData << 16) | (maxData);
+        }
+        else
+        {
+            vx_uint8 minData   = 0;
+            vx_uint8 maxData   = 0;
+            minData =  vsi_nn_Fp32ToDFP(minVal, dstFixPointPos, VSI_NN_TYPE_INT8);
+            maxData =  vsi_nn_Fp32ToDFP(maxVal, dstFixPointPos, VSI_NN_TYPE_INT8);
+            packedMin = (minData << 24) | (minData << 16) | (minData << 8) | (minData);
+            packedMax = (maxData << 24) | (maxData << 16) | (maxData << 8) | (maxData);
+        }
 
         packedMinData[0] = packedMinData[1] = packedMinData[2] = packedMinData[3] = packedMin;
         packedMaxData[0] = packedMaxData[1] = packedMaxData[2] = packedMaxData[3] = packedMax;
 
-        status |= vxSetNodeUniform(nodObj, "uniConvertIntegerLo_2x8", 1, uniConvertIntegerLo_2x8);
+        status  = vxSetNodeUniform(nodObj, "uniConvertIntegerLo_2x8", 1, uniConvertIntegerLo_2x8);
         status |= vxSetNodeUniform(nodObj, "uniConvertIntegerHi_2x8", 1, uniConvertIntegerHi_2x8);
 
         status |= vxSetNodeUniform(nodObj, "packedMinData", 1, packedMinData);
         status |= vxSetNodeUniform(nodObj, "packedMaxData", 1, packedMaxData);
     }
-    else if (inputDataFormat == VSI_NN_TYPE_INT16 && outputDataFormat == VSI_NN_TYPE_INT16)
+    else if (inputDataFormat == VSI_NN_TYPE_INT16
+         && (outputDataFormat == VSI_NN_TYPE_INT16 || outputDataFormat == VSI_NN_TYPE_FLOAT16))
     {
         vx_uint16 minData  = 0;
         vx_uint16 maxData  = 0;
@@ -373,18 +450,16 @@ vx_status VX_CALLBACK vxClipInitializer
             0x00000600, // AccumType, ConstantType, and PostShift
             0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
         };
-        vx_uint32 uniConvertIntegerHi_2x8[16] = {
-            0x11111111, // TCfg
-            0x00000000, // ASelt
-            0x0b0a0908, 0x0f0e0d0c, // ABin
-            0x22222222, // BSelt
-            0x00000000, 0x00000000, // BBin
-            0x00000600, // AccumType, ConstantType, and PostShift
-            0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
-        };
-
-        minData =  vsi_nn_Fp32ToDFP(minVal, dstFixPointPos, VSI_NN_TYPE_INT16);
-        maxData =  vsi_nn_Fp32ToDFP(maxVal, dstFixPointPos, VSI_NN_TYPE_INT16);
+        if (outputDataFormat == VSI_NN_TYPE_FLOAT16)
+        {
+            minData = vsi_nn_Fp32toFp16(minVal);
+            maxData = vsi_nn_Fp32toFp16(maxVal);
+        }
+        else
+        {
+            minData =  vsi_nn_Fp32ToDFP(minVal, dstFixPointPos, VSI_NN_TYPE_INT16);
+            maxData =  vsi_nn_Fp32ToDFP(maxVal, dstFixPointPos, VSI_NN_TYPE_INT16);
+        }
 
         packedMin = (minData << 16) | (minData);
         packedMax = (maxData << 16) | (maxData);
@@ -397,7 +472,6 @@ vx_status VX_CALLBACK vxClipInitializer
             vx_uint8  postshift      = vsi_nn_min(srcFixPointPos - dstFixPointPos, MAX_POST_SHIFT_BITS);
 
             uniConvertIntegerLo_2x8[7] |= (postshift & 0x1F);
-            uniConvertIntegerHi_2x8[7] |= (postshift & 0x1F);
         }
         else
         {
@@ -407,19 +481,16 @@ vx_status VX_CALLBACK vxClipInitializer
             for (i = 0; i < 8; i++)
             {
                 uniConvertIntegerLo_2x8[i + 8] = multiplier;
-                uniConvertIntegerHi_2x8[i + 8] = multiplier;
             }
         }
 
-        status |= vxSetNodeUniform(nodObj, "uniConvertIntegerLo_2x8", 1, uniConvertIntegerLo_2x8);
-        status |= vxSetNodeUniform(nodObj, "uniConvertIntegerHi_2x8", 1, uniConvertIntegerHi_2x8);
+        status  = vxSetNodeUniform(nodObj, "uniConvertIntegerLo_2x8", 1, uniConvertIntegerLo_2x8);
         status |= vxSetNodeUniform(nodObj, "packedMinData", 1, packedMinData);
         status |= vxSetNodeUniform(nodObj, "packedMaxData", 1, packedMaxData);
     }
-    else if (inputDataFormat == VSI_NN_TYPE_UINT8 && outputDataFormat == VSI_NN_TYPE_UINT8)
+    else if (inputDataFormat == VSI_NN_TYPE_UINT8
+         && (outputDataFormat == VSI_NN_TYPE_UINT8 || outputDataFormat == VSI_NN_TYPE_FLOAT16))
     {
-        vx_uint8   minData          = 0;
-        vx_uint8   maxData          = 0;
         vx_int32   packedMin        = 0;
         vx_int32   packedMax        = 0;
         vx_int32   packedMinData[4];
@@ -447,30 +518,43 @@ vx_status VX_CALLBACK vxClipInitializer
             0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
         };
 
-        clipGetFP32M0AndN(uint8Scale, &M0, &postShift);
+        vsi_nn_GetFP32MultiAndPostShift(uint8Scale, &M0, &postShift);
         multAndoutZP[0] = (vx_uint32)(M0);
         multAndoutZP[1] = (vx_uint32)((output_ZP << postShift) - input_ZP * M0);
 
         uniU8MulAndPostShift_Lo_2x8[7] |= (postShift & 0x1F);
         uniU8MulAndPostShift_Hi_2x8[7] |= (postShift & 0x1F);
 
-        minData = vsi_nn_Fp32ToAffine(minVal, scaleOut, output_ZP, VSI_NN_TYPE_UINT8);
-        maxData = vsi_nn_Fp32ToAffine(maxVal, scaleOut, output_ZP, VSI_NN_TYPE_UINT8);
-
-        //calculateActivationRangeUInt8(funcType, scaleOut, output_ZP, &minData, &maxData, minVal, maxVal);
-        packedMin = (minData << 24) | (minData << 16) | (minData << 8) | (minData);
-        packedMax = (maxData << 24) | (maxData << 16) | (maxData << 8) | (maxData);
+        if (outputDataFormat == VSI_NN_TYPE_FLOAT16)
+        {
+            vx_uint16   minData          = 0;
+            vx_uint16   maxData          = 0;
+            minData = vsi_nn_Fp32toFp16(minVal);
+            maxData = vsi_nn_Fp32toFp16(maxVal);
+            packedMin = (minData << 16) | (minData);
+            packedMax = (maxData << 16) | (maxData);
+        }
+        else
+        {
+            vx_uint8   minData          = 0;
+            vx_uint8   maxData          = 0;
+            minData = vsi_nn_Fp32ToAffine(minVal, scaleOut, output_ZP, VSI_NN_TYPE_UINT8);
+            maxData = vsi_nn_Fp32ToAffine(maxVal, scaleOut, output_ZP, VSI_NN_TYPE_UINT8);
+            packedMin = (minData << 24) | (minData << 16) | (minData << 8) | (minData);
+            packedMax = (maxData << 24) | (maxData << 16) | (maxData << 8) | (maxData);
+        }
 
         packedMinData[0] = packedMinData[1] = packedMinData[2] = packedMinData[3] = packedMin;
         packedMaxData[0] = packedMaxData[1] = packedMaxData[2] = packedMaxData[3] = packedMax;
 
-        status |= vxSetNodeUniform(nodObj, "uniU8MulAndPostShift_Lo_2x8", 1, uniU8MulAndPostShift_Lo_2x8);
+        status  = vxSetNodeUniform(nodObj, "uniU8MulAndPostShift_Lo_2x8", 1, uniU8MulAndPostShift_Lo_2x8);
         status |= vxSetNodeUniform(nodObj, "uniU8MulAndPostShift_Hi_2x8", 1, uniU8MulAndPostShift_Hi_2x8);
         status |= vxSetNodeUniform(nodObj, "multAndoutZP", 1, multAndoutZP);
 
         status |= vxSetNodeUniform(nodObj, "packedMinData", 1, packedMinData);
         status |= vxSetNodeUniform(nodObj, "packedMaxData", 1, packedMaxData);
     }
+
 
     status |= vxSetNodeAttribute(nodObj, VX_NODE_ATTRIBUTE_KERNEL_EXECUTION_PARAMETERS,
         &shaderParam, sizeof(vx_kernel_execution_parameters_t));
@@ -479,15 +563,16 @@ vx_status VX_CALLBACK vxClipInitializer
         VSILOGE("[%s : %d]Initializer  failure! \n",__FILE__, __LINE__);
     }
 
+#undef gcmALIGN
     return status;
 }
 
 static vx_param_description_t vxClipKernelParam[] =
 {
-    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT,  VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
-    {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
-    {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
 };
 
 #ifdef __cplusplus
@@ -496,10 +581,10 @@ extern "C" {
 vx_kernel_description_t vxClip_CPU =
 {
     VX_KERNEL_ENUM_CLIP,
-    VX_KERNEL_NAME_CLIP_FP16,
+    "com.vivantecorp.extension.vxcTensorClip_sw",
     _VX_KERNEL_FUNC_KERNEL,
     vxClipKernelParam,
-    _cnt_of_array( vxClipKernelParam ),
+    (sizeof(vxClipKernelParam) / sizeof(vxClipKernelParam[0])),
     vsi_nn_KernelValidator,
     NULL,
     NULL,
@@ -507,69 +592,84 @@ vx_kernel_description_t vxClip_CPU =
     vsi_nn_KernelDeinitializer
 };
 
-vx_kernel_description_t vxClipKernelInfo_fp16 =
-{
-    VX_KERNEL_ENUM_CLIP,
-    VX_KERNEL_NAME_CLIP_FP16,
-    NULL,
-    vxClipKernelParam,
-    (sizeof(vxClipKernelParam) / sizeof(vxClipKernelParam[0])),
-    vsi_nn_KernelValidator,
-    NULL,
-    NULL,
-    vxClipInitializer,
-    vsi_nn_KernelDeinitializer
+#define CLIP_KERNELS(SRC_TYPE, DST_TYPE) \
+    vx_kernel_description_t vxClip_##SRC_TYPE##to##DST_TYPE##_Kernel = \
+{ \
+    VX_KERNEL_ENUM_CLIP, \
+    VX_KERNEL_NAME_CLIP_##SRC_TYPE##TO##DST_TYPE, \
+    NULL, \
+    vxClipKernelParam, \
+    (sizeof(vxClipKernelParam) / sizeof(vxClipKernelParam[0])), \
+    vsi_nn_KernelValidator, \
+    NULL, \
+    NULL, \
+    vxClipInitializer, \
+    vsi_nn_KernelDeinitializer \
 };
 
-vx_kernel_description_t vxClipKernelInfo_int16 =
-{
-    VX_KERNEL_ENUM_CLIP,
-    VX_KERNEL_NAME_CLIP_INT16,
-    NULL,
-    vxClipKernelParam,
-    (sizeof(vxClipKernelParam) / sizeof(vxClipKernelParam[0])),
-    vsi_nn_KernelValidator,
-    NULL,
-    NULL,
-    vxClipInitializer,
-    vsi_nn_KernelDeinitializer
+#define CLIP_KERNELS_2D(SRC_TYPE, DST_TYPE) \
+    vx_kernel_description_t vxClip_##SRC_TYPE##to##DST_TYPE##_2D_Kernel = \
+{ \
+    VX_KERNEL_ENUM_PARAMETRICRELU, \
+    VX_KERNEL_NAME_CLIP_##SRC_TYPE##TO##DST_TYPE##_2D, \
+    NULL, \
+    vxClipKernelParam, \
+    (sizeof(vxClipKernelParam) / sizeof(vxClipKernelParam[0])), \
+    vsi_nn_KernelValidator, \
+    NULL, \
+    NULL, \
+    vxClipInitializer, \
+    vsi_nn_KernelDeinitializer \
 };
 
-vx_kernel_description_t vxClipKernelInfo_int8 =
-{
-    VX_KERNEL_ENUM_CLIP,
-    VX_KERNEL_NAME_CLIP_INT8,
-    NULL,
-    vxClipKernelParam,
-    (sizeof(vxClipKernelParam) / sizeof(vxClipKernelParam[0])),
-    vsi_nn_KernelValidator,
-    NULL,
-    NULL,
-    vxClipInitializer,
-    vsi_nn_KernelDeinitializer
-};
+CLIP_KERNELS(F16,  F16)
+CLIP_KERNELS(F16,  I16)
+CLIP_KERNELS(F16,  I8)
+CLIP_KERNELS(F16,  U8)
+CLIP_KERNELS(I16,  F16)
+CLIP_KERNELS(I8,   F16)
+CLIP_KERNELS(U8,   F16)
+CLIP_KERNELS(I16,  I16)
+CLIP_KERNELS(I8,   I8)
+CLIP_KERNELS(U8,   U8)
 
-vx_kernel_description_t vxClipKernelInfo_uint8 =
-{
-    VX_KERNEL_ENUM_CLIP,
-    VX_KERNEL_NAME_CLIP_UINT8,
-    NULL,
-    vxClipKernelParam,
-    (sizeof(vxClipKernelParam) / sizeof(vxClipKernelParam[0])),
-    vsi_nn_KernelValidator,
-    NULL,
-    NULL,
-    vxClipInitializer,
-    vsi_nn_KernelDeinitializer
-};
+CLIP_KERNELS_2D(F16,  F16)
+CLIP_KERNELS_2D(F16,  I16)
+CLIP_KERNELS_2D(F16,  I8)
+CLIP_KERNELS_2D(F16,  U8)
+CLIP_KERNELS_2D(I16,  F16)
+CLIP_KERNELS_2D(I8,   F16)
+CLIP_KERNELS_2D(U8,   F16)
+CLIP_KERNELS_2D(I16,  I16)
+CLIP_KERNELS_2D(I8,   I8)
+CLIP_KERNELS_2D(U8,   U8)
+
+#define CLIP_KERENLS_NAME(SRC_TYPE, DST_TYPE, INSTR) \
+    &vxClip_##SRC_TYPE##to##DST_TYPE##_##INSTR##Kernel,
 
 vx_kernel_description_t * vx_kernel_CLIP_list[] =
 {
     &vxClip_CPU,
-    &vxClipKernelInfo_fp16,
-    &vxClipKernelInfo_int16,
-    &vxClipKernelInfo_int8,
-    &vxClipKernelInfo_uint8,
+    CLIP_KERENLS_NAME(F16,  F16,  )
+    CLIP_KERENLS_NAME(F16,  I16,  )
+    CLIP_KERENLS_NAME(F16,  I8,   )
+    CLIP_KERENLS_NAME(F16,  U8,   )
+    CLIP_KERENLS_NAME(I16,  F16,  )
+    CLIP_KERENLS_NAME(I8,   F16,  )
+    CLIP_KERENLS_NAME(U8,   F16,  )
+    CLIP_KERENLS_NAME(I16,  I16,  )
+    CLIP_KERENLS_NAME(I8,   I8,   )
+    CLIP_KERENLS_NAME(U8,   U8,   )
+    CLIP_KERENLS_NAME(F16,  F16,  2D_)
+    CLIP_KERENLS_NAME(F16,  I16,  2D_)
+    CLIP_KERENLS_NAME(F16,  I8,   2D_)
+    CLIP_KERENLS_NAME(F16,  U8,   2D_)
+    CLIP_KERENLS_NAME(I16,  F16,  2D_)
+    CLIP_KERENLS_NAME(I8,   F16,  2D_)
+    CLIP_KERENLS_NAME(U8,   F16,  2D_)
+    CLIP_KERENLS_NAME(I16,  I16,  2D_)
+    CLIP_KERENLS_NAME(I8,   I8,   2D_)
+    CLIP_KERENLS_NAME(U8,   U8,   2D_)
     NULL
 };
 #ifdef __cplusplus

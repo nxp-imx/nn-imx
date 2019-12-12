@@ -30,6 +30,7 @@
 #include "vsi_nn_platform.h"
 
 #include "vsi_nn_prv.h"
+#include "vsi_nn_test.h"
 #include "vsi_nn_tensor_util.h"
 #include "utils/vsi_nn_util.h"
 #include "utils/vsi_nn_dtype_util.h"
@@ -43,46 +44,6 @@
 #define TENSOR_NUM (TENSOR_NUM_INPUT+TENSOR_NUM_OUTPUT)
 
 
-static float vsi_nn_DtypeToFloat32_Ex
-    (
-    uint8_t   * src,
-    uint32_t    index,
-    const vsi_nn_dtype_t * src_dtype
-    )
-{
-    float value = 0.0f;
-    vsi_status status;
-
-    src = src + index * vsi_nn_TypeGetBytes(src_dtype->vx_type);
-
-    status = vsi_nn_DtypeToFloat32(src, &value, src_dtype);
-    if(VSI_SUCCESS != status)
-    {
-        VSILOGE("Convert data to float32 fail!");
-        value = 0.0f;
-    }
-
-    return value;
-}
-
-static vsi_status vsi_nn_Float32ToDtype_Ext
-    (
-    float   src,
-    uint8_t   * dst,
-    uint32_t    index,
-    const vsi_nn_dtype_t * dst_dtype
-    )
-{
-    vsi_nn_dtype_t src_dtype;
-
-    dst = dst + index * vsi_nn_TypeGetBytes(dst_dtype->vx_type);
-
-    memset( &src_dtype, 0, sizeof( vsi_nn_dtype_t ) );
-    src_dtype.vx_type = VSI_NN_TYPE_FLOAT32;
-
-    return vsi_nn_DtypeConvert( (uint8_t *)&src, &src_dtype, dst, dst_dtype );
-} /* vsi_nn_Float32ToDtype_Ext */
-
 vsi_status VX_CALLBACK vxArgMaxKernel
     (
     vx_node node,
@@ -91,11 +52,15 @@ vsi_status VX_CALLBACK vxArgMaxKernel
     )
 {
     vsi_status status = VX_SUCCESS;
-    vsi_nn_tensor_attr_t attr[TENSOR_NUM];
-    vx_tensor_addressing user_addr[TENSOR_NUM]  = {NULL};
-    vx_uint8    *buffer_ptr[TENSOR_NUM]            = {NULL};
-    vx_tensor   tensor[TENSOR_NUM];
-    uint32_t    stride_size[TENSOR_NUM][VSI_NN_MAX_DIM_NUM];
+
+    vx_tensor input[TENSOR_NUM_INPUT] = {0};
+    vx_tensor output[TENSOR_NUM_OUTPUT] = {0};
+    float *f32_in_buffer[TENSOR_NUM_INPUT] = {0};
+    float *f32_out_buffer[TENSOR_NUM_OUTPUT] = {0};
+    vsi_nn_tensor_attr_t in_attr[TENSOR_NUM_INPUT];
+    vsi_nn_tensor_attr_t out_attr[TENSOR_NUM_OUTPUT];
+    uint32_t in_elements[TENSOR_NUM_INPUT] = {0};
+    uint32_t out_elements[TENSOR_NUM_OUTPUT]= {0};
 
     vx_context   context                        = vxGetContext((vx_reference)node);
     vx_uint32    i                              = 0;
@@ -106,33 +71,49 @@ vsi_status VX_CALLBACK vxArgMaxKernel
     vx_uint32    outerSize                      = 1;
     vx_uint32    axisSize                       = 1;
 
-
-    for( i = 0; i < TENSOR_NUM_INPUT; i ++ )
+    for(i = 0; i < TENSOR_NUM_INPUT; i++)
     {
-        tensor[i] = (vx_tensor)paramObj[i];
-        buffer_ptr[i] = vsi_nn_ConvertRawTensorToData2(context, tensor[i],
-            &(attr[i]), stride_size[i], &(user_addr[i]), VX_READ_ONLY);
+        memset(&in_attr[i], 0x0, sizeof(vsi_nn_tensor_attr_t));
+    }
+    for(i = 0; i < TENSOR_NUM_OUTPUT; i ++)
+    {
+        memset(&out_attr[i], 0x0, sizeof(vsi_nn_tensor_attr_t));
     }
 
-    for( i = TENSOR_NUM_INPUT; i < TENSOR_NUM; i ++ )
+    for(i = 0; i < TENSOR_NUM_INPUT; i ++)
     {
-        tensor[i] = (vx_tensor)paramObj[i];
-        buffer_ptr[i] = vsi_nn_ConvertRawTensorToData2(context, tensor[i],
-            &(attr[i]), stride_size[i], &(user_addr[i]), VX_WRITE_ONLY);
+        input[i] = (vx_tensor)paramObj[i];
+        status = vsi_nn_vxGetTensorAttr(input[i], &in_attr[i]);
+        TEST_CHECK_STATUS(status, final);
+        in_elements[i] = vsi_nn_vxGetTensorElementNum(&in_attr[i]);
+        f32_in_buffer[i] = (float *)malloc(in_elements[i] * sizeof(float));
+        status = vsi_nn_vxConvertTensorToFloat32Data(
+            context, input[i], &in_attr[i], f32_in_buffer[i],
+            in_elements[i] * sizeof(float));
+        TEST_CHECK_STATUS(status, final);
+    }
+    for(i = 0; i < TENSOR_NUM_OUTPUT; i ++)
+    {
+        output[i] = (vx_tensor)paramObj[i + TENSOR_NUM_INPUT];
+        status = vsi_nn_vxGetTensorAttr(output[i], &out_attr[i]);
+        TEST_CHECK_STATUS(status, final);
+        out_elements[i] = vsi_nn_vxGetTensorElementNum(&out_attr[i]);
+        f32_out_buffer[i]= (float *)malloc(out_elements[i] * sizeof(float));
+        memset(f32_out_buffer[i], 0, out_elements[i] * sizeof(float));
     }
 
     vxCopyScalar((vx_scalar)paramObj[TENSOR_NUM], &(axis), VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
 
-    axisSize = attr[ARGMAX_INPUT].size[axis];
+    axisSize = in_attr[ARGMAX_INPUT].size[axis];
 
     for (i = 0; i < (uint32_t)axis; i++)
     {
-        innerSize *= attr[ARGMAX_INPUT].size[i];
+        innerSize *= in_attr[ARGMAX_INPUT].size[i];
     }
 
-    for (i = axis + 1; i < attr[ARGMAX_INPUT].dim_num; i++)
+    for (i = axis + 1; i < in_attr[ARGMAX_INPUT].dim_num; i++)
     {
-        outerSize *= attr[ARGMAX_INPUT].size[i];
+        outerSize *= in_attr[ARGMAX_INPUT].size[i];
     }
 
    for (outer = 0; outer < outerSize; outer++)
@@ -144,13 +125,13 @@ vsi_status VX_CALLBACK vxArgMaxKernel
             vx_float32 val = 0;
             vx_int32 maxminIndex = 0;
 
-            maxminVal = vsi_nn_DtypeToFloat32_Ex(buffer_ptr[ARGMAX_INPUT], index, &attr[ARGMAX_INPUT].dtype);
+            maxminVal = f32_in_buffer[ARGMAX_INPUT][index];
 
             for (i = 1; i < axisSize; i++)
             {
                 index = (outer * axisSize + i) * innerSize + inner;
 
-                val = vsi_nn_DtypeToFloat32_Ex(buffer_ptr[ARGMAX_INPUT], index, &attr[ARGMAX_INPUT].dtype);
+                val = f32_in_buffer[ARGMAX_INPUT][index];
 
                 if (val > maxminVal)
                 {
@@ -160,27 +141,35 @@ vsi_status VX_CALLBACK vxArgMaxKernel
             }
 
             index = outer * innerSize + inner;
-            vsi_nn_Float32ToDtype_Ext((float)maxminIndex, buffer_ptr[ARGMAX_INPUTS_COUNT + ARGMAX_OUTPUT],
-                index, &attr[ARGMAX_INPUTS_COUNT + ARGMAX_OUTPUT].dtype);
+            f32_out_buffer[ARGMAX_OUTPUT][index] = (float)maxminIndex;
         }
     }
 
-    //save data
-    for( i = TENSOR_NUM_INPUT; i < TENSOR_NUM; i ++ )
+    /* save data */
+    for(i = 0; i < TENSOR_NUM_OUTPUT; i++)
     {
-        if (buffer_ptr[i])
+        status = vsi_nn_vxConvertFloat32DataToTensor(
+            context, output[i], &out_attr[i], f32_out_buffer[i],
+            out_elements[i] * sizeof(float));
+        TEST_CHECK_STATUS(status, final);
+    }
+
+final:
+    for (i = 0; i < TENSOR_NUM_INPUT; i++)
+    {
+        if (f32_in_buffer[i])
         {
-            status = vsi_nn_copy_tensor_patch(tensor[i], &attr[i], buffer_ptr[i], VX_WRITE_ONLY);
+            free(f32_in_buffer[i]);
+            f32_in_buffer[i] = NULL;
         }
-
-        if (user_addr[i]) vxReleaseTensorAddressing(&(user_addr[i]));
     }
-
-    for( i = 0; i < TENSOR_NUM; i ++ )
+    for(i = 0; i < TENSOR_NUM_OUTPUT; i++)
     {
-        if (buffer_ptr[i]) free(buffer_ptr[i]);
-
-        if (user_addr[i]) vxReleaseTensorAddressing(&(user_addr[i]));
+        if (f32_out_buffer[i])
+        {
+            free(f32_out_buffer[i]);
+            f32_out_buffer[i] = NULL;
+        }
     }
 
     return status;

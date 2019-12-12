@@ -35,6 +35,7 @@
 #include "vsi_nn_prv.h"
 #include "vsi_nn_log.h"
 #include "client/vsi_nn_vxkernel.h"
+#include "kernel/vsi_nn_kernel.h"
 #include "utils/vsi_nn_util.h"
 
 #define _ARG_NUM            (0)
@@ -70,36 +71,6 @@ static struct {
         {VSI_NN_GEN_POW_STRUCT_ITEMS(F16, U8,  F16)  "vsi_nn_kernel_pow_i8_i16"},
     };
 
-static vsi_nn_shader_kernel_type_e get_pow_intra_type(vsi_nn_type_e type)
-{
-    switch (type)
-    {
-    case VSI_NN_TYPE_INT8:
-        return I8;
-    case VSI_NN_TYPE_INT16:
-        return I16;
-    case VSI_NN_TYPE_INT32:
-        return I32;
-    case VSI_NN_TYPE_INT64:
-        return I64;
-    case VSI_NN_TYPE_UINT8:
-        return U8;
-    case VSI_NN_TYPE_UINT16:
-        return U16;
-    case VSI_NN_TYPE_UINT32:
-        return U32;
-    case VSI_NN_TYPE_FLOAT16:
-        return F16;
-    case VSI_NN_TYPE_FLOAT32:
-        return F32;
-    default:
-        VSILOGE("error data type %d", type);
-        break;
-    }
-
-    return I8;
-}
-
 static void _get_pow_hashtable_idx
     (
     vsi_nn_node_t * self,
@@ -110,17 +81,17 @@ static void _get_pow_hashtable_idx
     vsi_nn_type_e input0Format = inputs[0]->attr.dtype.vx_type;
     vsi_nn_type_e input1Format = inputs[1]->attr.dtype.vx_type;
     vsi_nn_type_e outputFormat  = outputs[0]->attr.dtype.vx_type;
-    vsi_nn_shader_kernel_type_e _input0_type;
-    vsi_nn_shader_kernel_type_e _input1_type;
-    vsi_nn_shader_kernel_type_e _output_type;
+    vsi_nn_kernel_dtype_e _input0_type;
+    vsi_nn_kernel_dtype_e _input1_type;
+    vsi_nn_kernel_dtype_e _output_type;
     uint32_t key;
     uint32_t i = 0;
 
     vsi_nn_pow_param * p = &(self->nn_param.pow);
 
-    _input0_type = get_pow_intra_type(input0Format);
-    _input1_type = get_pow_intra_type(input1Format);
-    _output_type = get_pow_intra_type(outputFormat);
+    _input0_type = vsi_nn_kernel_map_dtype(input0Format);
+    _input1_type = vsi_nn_kernel_map_dtype(input1Format);
+    _output_type = vsi_nn_kernel_map_dtype(outputFormat);
 
     key = VSI_NN_GEN_POW_KEY(_input0_type, _input1_type, _output_type);
 

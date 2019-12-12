@@ -95,6 +95,11 @@ OVXLIB_API float vsi_nn_BFp16ToFp32
     int16_t in
     );
 
+OVXLIB_API uint16_t vsi_nn_Fp32ToBFp16
+    (
+    float in
+    );
+
 OVXLIB_API vsi_status vsi_nn_IntegerConvert
     (
     const void *    src,
