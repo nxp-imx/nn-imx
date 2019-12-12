@@ -143,6 +143,13 @@ static nnrt::OperationType op_code_mapping(V1_2::OperationType op) { // Android 
         MAP_OP(SUB);
         MAP_OP(TRANSPOSE);
         MAP_OP(RESIZE_NEAREST_NEIGHBOR);
+        MAP_OP(ARGMAX);
+        MAP_OP(ARGMIN);
+        MAP_OP(MAXIMUM);
+        MAP_OP(MINIMUM);
+        MAP_OP(SQRT);
+        MAP_OP(RSQRT);
+        MAP_OP(LOG)
 #endif
 #undef MAP_OP
 

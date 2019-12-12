@@ -120,11 +120,11 @@ OP_SPEC_END()
 // order of argument is important
 MAKE_SPEC(output)
     .input_(nnrt::OperandType::TENSOR_FLOAT32)
-    .output_(nnrt::OperandType::TENSOR_FLOAT32));
+    .output_(nnrt::OperandType::TENSOR_INT32));
 
     OVERRIDE_SPEC(output, 0)
     .input_(nnrt::OperandType::TENSOR_FLOAT16)
-    .output_(nnrt::OperandType::TENSOR_FLOAT16));
+    .output_(nnrt::OperandType::TENSOR_INT32));
 
     // OVERRIDE_SPEC(output, 1)
     // .input_(nnrt::OperandType::TENSOR_INT32)
@@ -132,7 +132,7 @@ MAKE_SPEC(output)
 
     OVERRIDE_SPEC(output, 2)
     .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM)
-    .output_(nnrt::OperandType::TENSOR_QUANT8_ASYMM));
+    .output_(nnrt::OperandType::TENSOR_INT32));
 
 #undef ARG_NAMES
 #undef ARGC

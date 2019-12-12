@@ -21,8 +21,15 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#include "VsiDriver.h"
+
+#include <memory>
 #include <nnrt/file_map_memory.hpp>
+
+#include "VsiDriver.h"
+#include "public.hpp"
+
+using OperationValidatePtr =
+    std::unique_ptr<android::nn::op_validate::OperationValidate<V1_2::Model, V1_2::Operation>>;
 
 namespace android {
 namespace nn {
@@ -346,9 +353,46 @@ bool VsiDriver::isSupportedOperation(const T_operation& operation, const T_Model
         }
         // to-do: check operand with operation
         // API 29 newly added operataion
-        case OperationType::ABS:
+        case OperationType::ABS: {
+            OperationValidatePtr absValidate =
+                std::make_unique<op_validate::AbsValidate<V1_2::Model, V1_2::Operation>>(model,
+                                                                                         operation);
+            return absValidate->Validate();
+        }
+
         case OperationType::ARGMAX:
-        case OperationType::ARGMIN:
+        case OperationType::ARGMIN: {
+            OperationValidatePtr argmaxArgmin =
+                std::make_unique<op_validate::ArgmaxArgminValidate<V1_2::Model, V1_2::Operation>>(
+                    model, operation);
+            // return argmaxArgmin->Validate();
+            // ovxlib only has sw imp
+            return false;
+        }
+
+        case OperationType::MAXIMUM:
+        case OperationType::MINIMUM: {
+            OperationValidatePtr maxMin =
+                std::make_unique<op_validate::MaximumMinimumValidate<V1_2::Model, V1_2::Operation>>(
+                    model, operation);
+            return maxMin->Validate();
+        }
+
+        case OperationType::RSQRT:
+        case OperationType::SQRT: {
+            OperationValidatePtr sqrtRsqrt =
+                std::make_unique<op_validate::SqrtRsqrtValidate<V1_2::Model, V1_2::Operation>>(
+                    model, operation);
+            return sqrtRsqrt->Validate();
+        }
+
+        case OperationType::LOG: {
+            OperationValidatePtr logValidate =
+                std::make_unique<op_validate::LogValidate<V1_2::Model, V1_2::Operation>>(model,
+                                                                                         operation);
+            return logValidate->Validate();
+        }
+
         case OperationType::AXIS_ALIGNED_BBOX_TRANSFORM:
         case OperationType::BIDIRECTIONAL_SEQUENCE_LSTM:
         case OperationType::BIDIRECTIONAL_SEQUENCE_RNN:
@@ -372,9 +416,6 @@ bool VsiDriver::isSupportedOperation(const T_operation& operation, const T_Model
         case OperationType::LOGICAL_NOT:
         case OperationType::LOGICAL_OR:
         case OperationType::LOG_SOFTMAX:
-        case OperationType::LOG:
-        case OperationType::MAXIMUM:
-        case OperationType::MINIMUM:
         case OperationType::NEG:
         case OperationType::NOT_EQUAL:
         case OperationType::PAD_V2:
@@ -391,12 +432,10 @@ bool VsiDriver::isSupportedOperation(const T_operation& operation, const T_Model
         case OperationType::REDUCE_SUM:
         case OperationType::ROI_ALIGN:
         case OperationType::ROI_POOLING:
-        case OperationType::RSQRT:
         case OperationType::SELECT:
         case OperationType::SIN:
         case OperationType::SLICE:
         case OperationType::SPLIT:
-        case OperationType::SQRT:
         case OperationType::TILE:
         case OperationType::TOPK_V2:
         case OperationType::TRANSPOSE_CONV_2D:
