@@ -411,9 +411,8 @@ ARMNN_AUTO_TEST_CASE(SquareUint8, SquareUint8Test)
 // ARMNN_AUTO_TEST_CASE(SquareInt16, SquareInt16Test)
 
 // Tanh Activation
-// Note: alpha = 2.0 beta = 3.0 not support
-// ARMNN_AUTO_TEST_CASE(Tanh, TanhTest)
-// ARMNN_AUTO_TEST_CASE(TanhUint8, TanhUint8Test)
+ARMNN_AUTO_TEST_CASE(Tanh, TanhTest)
+ARMNN_AUTO_TEST_CASE(TanhUint8, TanhUint8Test)
 // ARMNN_AUTO_TEST_CASE(TanhInt16, TanhInt16Test)
 
 // Fully Connected
