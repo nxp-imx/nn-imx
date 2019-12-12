@@ -352,6 +352,13 @@ struct RnnOperation : Operation {
     int32_t activation;
 };
 
+struct UnidirectionalSequenceRnnOperation : Operation {
+    UnidirectionalSequenceRnnOperation() : Operation(OperationType::UNIDIRECTIONAL_SEQUENCE_RNN) {}
+
+    int32_t activation;
+    bool timeMajor;
+};
+
 struct DepthToSpaceOperation : Operation {
     DepthToSpaceOperation() : Operation(OperationType::DEPTH_TO_SPACE) {}
     virtual void handleLayoutInferenceOnInputs(

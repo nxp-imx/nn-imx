@@ -159,6 +159,7 @@ NnApiInterpreter::NnApiInterpreter()
     REGISTER_OP(LOCAL_RESPONSE_NORMALIZATION);
     REGISTER_OP(EMBEDDING_LOOKUP);
     REGISTER_OP(RNN);
+    REGISTER_OP(UNIDIRECTIONAL_SEQUENCE_RNN);
     REGISTER_OP(HASHTABLE_LOOKUP);
     REGISTER_OP(LSTM);
     REGISTER_OP(SVDF);
@@ -1140,6 +1141,24 @@ OperationPtr NnApiInterpreter::map_RNN(Model* model,
     return rnn;
 }
 
+OperationPtr NnApiInterpreter::map_UNIDIRECTIONAL_SEQUENCE_RNN(Model* model,
+        OperationPtr operation, uint32_t operation_index)
+{
+    std::shared_ptr<UnidirectionalSequenceRnnOperation> op = std::make_shared<UnidirectionalSequenceRnnOperation>();
+    NNAPI_CHECK_PTR(op);
+    std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
+    auto argList = matchArgList(inputs, "UnidirectionalSequenceRnnOperation");
+    if (argList) {
+        op->activation = inputs[argList->ArgPos("fusedActivationFunction")]->scalar.int32;
+        op->timeMajor = inputs[argList->ArgPos("timeMajor")]->scalar.boolean;
+    } else {
+        NNRT_LOGE_PRINT("UnidirectionalSequenceRnn argument list not support");
+        assert(false);
+    }
+    truncateOperationIOs(model, operation, 5, 1);
+    return op;
+}
+
 OperationPtr NnApiInterpreter::map_LSTM(Model* model,
         OperationPtr operation, uint32_t operation_index)
 {
@@ -1610,7 +1629,6 @@ OperationPtr NnApiInterpreter::map_ROI_ALIGN(Model* model,
         op->sampling_points_height = inputs[argList->ArgPos("sampling_points_height")]->scalar.int32;
         op->sampling_points_width = inputs[argList->ArgPos("sampling_points_width")]->scalar.int32;
         op->setDataLayout(getDataLayout(inputs[argList->ArgPos("layout")]->scalar.boolean));
-        NNRT_LOGE_PRINT("ROIAlign layout: %d", getDataLayout(inputs[argList->ArgPos("layout")]->scalar.boolean));
     } else {
         NNRT_LOGE_PRINT("ROIAlign argument list not support");
         assert(false);

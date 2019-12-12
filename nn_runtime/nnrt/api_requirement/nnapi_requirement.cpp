@@ -64,6 +64,7 @@ void NNapiRequirementRegister(const std::string& opName, const IArgList* arglist
 #include "nnapi_spec/ANEURALNETWORKS_ROI_POOLING.hpp"
 #include "nnapi_spec/ANEURALNETWORKS_ROI_ALIGN.hpp"
 #include "nnapi_spec/ANEURALNETWORKS_BOX_WITH_NMS_LIMIT.hpp"
+#include "nnapi_spec/ANEURALNETWORKS_UNIDIRECTIONAL_SEQUENCE_RNN.hpp"
 #include "nnapi_spec/ANEURALNETWORKS_TILE.hpp"
 #include "nnapi_spec/ANEURALNETWORKS_TOPK_V2.hpp"
 #include "nnapi_spec/ANEURALNETWORKS_LOG_SOFTMAX.hpp"

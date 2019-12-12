@@ -100,6 +100,7 @@ enum class OperationType: uint32_t {
     FLOOR,
 
     RNN,
+    UNIDIRECTIONAL_SEQUENCE_RNN,
     SVDF,
     HASHTABLE_LOOKUP,
     EMBEDDING_LOOKUP,

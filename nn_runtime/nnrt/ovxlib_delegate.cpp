@@ -139,6 +139,7 @@ OvxlibDelegate::OvxlibDelegate()
     REGISTER_OP(BATCH_TO_SPACE_ND);
     REGISTER_OP(EMBEDDING_LOOKUP);
     REGISTER_OP(RNN);
+    REGISTER_OP(UNIDIRECTIONAL_SEQUENCE_RNN);
     REGISTER_OP(HASHTABLE_LOOKUP);
     REGISTER_OP(SVDF);
     REGISTER_OP(LSH_PROJECTION);
@@ -1450,6 +1451,21 @@ int OvxlibDelegate::addNode_RNN(Model* model,
     addNode(VSI_NN_OP_RNN, operation, &nodes, operation_index);
     nodes[0]->nn_param.rnn.activation = rnn->activation;
 
+    return err;
+}
+
+int OvxlibDelegate::addNode_UNIDIRECTIONAL_SEQUENCE_RNN(Model* model,
+        OperationPtr operation, uint32_t operation_index)
+{
+    (void)model;
+    int err = NNA_ERROR_CODE(NO_ERROR);
+    UnidirectionalSequenceRnnOperation* rnn =
+        reinterpret_cast<UnidirectionalSequenceRnnOperation*>(operation.get());
+
+    std::vector<vsi_nn_node_t*> nodes;
+    addNode(VSI_NN_OP_UNIDIRECTIONAL_SEQUENCE_RNN, operation, &nodes, operation_index);
+    nodes[0]->nn_param.unidirectional_sequence_rnn.activation = rnn->activation;
+    nodes[0]->nn_param.unidirectional_sequence_rnn.time_major = rnn->timeMajor;
     return err;
 }
 
