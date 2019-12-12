@@ -361,15 +361,15 @@ int ANeuralNetworksModel_setOperandValue(ANeuralNetworksModel* model, int32_t in
                                          const void* buffer, size_t length)
 {
     NNRT_LOGD_PRINT("%s: %d", __FUNCTION__, __LINE__);
-    if (!model || !buffer)
+    if (!model)
     {
-        NNRT_LOGW_PRINT("Passs null pointer to model or buffer");
+        NNRT_LOGE_PRINT("Passs null pointer to model or buffer");
         return AERROR_CODE(UNEXPECTED_NULL);
     }
     Model* m = reinterpret_cast<Model*>(model);
     if(m->isFinished())
     {
-        NNRT_LOGW_PRINT("Cannot modify a finished model.");
+        NNRT_LOGE_PRINT("Cannot modify a finished model.");
         return AERROR_CODE(BAD_DATA);
     }
     return translateErrorCode(m->setOperandValue((uint32_t)index, buffer, length));
@@ -382,13 +382,13 @@ int ANeuralNetworksModel_setOperandValueFromMemory(ANeuralNetworksModel* model, 
     NNRT_LOGD_PRINT("%s: %d", __FUNCTION__, __LINE__);
     if (!model || !memory)
     {
-        NNRT_LOGW_PRINT("Passs null pointer to model or memory");
+        NNRT_LOGE_PRINT("Passs null pointer to model or memory");
         return AERROR_CODE(UNEXPECTED_NULL);
     }
     Model* m = reinterpret_cast<Model*>(model);
     if(m->isFinished())
     {
-        NNRT_LOGW_PRINT("Cannot modify a finished model.");
+        NNRT_LOGE_PRINT("Cannot modify a finished model.");
         return AERROR_CODE(BAD_DATA);
     }
     const Memory* shared_memory = reinterpret_cast<const Memory*>(memory);
