@@ -370,7 +370,6 @@ bool VsiDriver::isSupportedOperation(const T_operation& operation, const T_Model
             return false;
         }
 
-        case OperationType::MAXIMUM:
         case OperationType::MINIMUM: {
             OperationValidatePtr maxMin =
                 std::make_unique<op_validate::MaximumMinimumValidate<V1_2::Model, V1_2::Operation>>(
@@ -442,6 +441,7 @@ bool VsiDriver::isSupportedOperation(const T_operation& operation, const T_Model
         case OperationType::UNIDIRECTIONAL_SEQUENCE_LSTM:
         case OperationType::UNIDIRECTIONAL_SEQUENCE_RNN:
         case OperationType::RESIZE_NEAREST_NEIGHBOR:
+        case OperationType::MAXIMUM:
             isSupport &= false;
             break;
         default:
