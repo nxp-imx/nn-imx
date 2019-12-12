@@ -680,7 +680,7 @@ void ANeuralNetworksEvent_free(ANeuralNetworksEvent* event)
     delete e;
 }
 
-// it is always relaxed in our driver.
+
 int ANeuralNetworksModel_relaxComputationFloat32toFloat16(ANeuralNetworksModel* model, bool allow)
 {
     NNRT_LOGD_PRINT("%s: %d", __FUNCTION__, __LINE__);
