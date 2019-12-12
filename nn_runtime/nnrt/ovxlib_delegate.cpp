@@ -1207,8 +1207,8 @@ int OvxlibDelegate::addNode_SPACE_TO_DEPTH(Model* model,
     SpaceToDepthOperation* sp_to_dp =  reinterpret_cast<SpaceToDepthOperation*>(operation.get());
     std::vector<vsi_nn_node_t*> nodes;
     err = addNode(VSI_NN_OP_SPACE2DEPTH, operation, &nodes, operation_index);
-    nodes[0]->nn_param.space2depth.block_size[0] = sp_to_dp->blockSize[0];
-    nodes[0]->nn_param.space2depth.block_size[1] = sp_to_dp->blockSize[1];
+    nodes[0]->nn_param.space2depth.block_size[0] = static_cast<uint32_t>(sp_to_dp->blockSize[0]);
+    nodes[0]->nn_param.space2depth.block_size[1] = static_cast<uint32_t>(sp_to_dp->blockSize[1]);
     return err;
 }
 
@@ -1220,8 +1220,8 @@ int OvxlibDelegate::addNode_DEPTH_TO_SPACE(Model* model,
     DepthToSpaceOperation* dp_to_sp =  reinterpret_cast<DepthToSpaceOperation*>(operation.get());
     std::vector<vsi_nn_node_t*> nodes;
     err = addNode(VSI_NN_OP_DEPTH2SPACE, operation, &nodes, operation_index);
-    nodes[0]->nn_param.space2depth.block_size[0] = dp_to_sp->blockSize[0];
-    nodes[0]->nn_param.space2depth.block_size[1] = dp_to_sp->blockSize[1];
+    nodes[0]->nn_param.space2depth.block_size[0] =  static_cast<uint32_t>(dp_to_sp->blockSize[0]);
+    nodes[0]->nn_param.space2depth.block_size[1] =  static_cast<uint32_t>(dp_to_sp->blockSize[1]);
     return err;
 }
 
