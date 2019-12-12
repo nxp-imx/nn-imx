@@ -22,27 +22,28 @@
 *
 *****************************************************************************/
 
-#ifndef _TRANSPOSE_CONV2D_VALIDATE_HPP_
-#define _TRANSPOSE_CONV2D_VALIDATE_HPP_
+#ifndef _OPS_VALIDATE_HPP_
+#define _OPS_VALIDATE_HPP_
 
 #include "OperationValidate.hpp"
+#include "AbsValidate.hpp"
+#include "ActivationValidate.hpp"
+#include "ArgmaxArgminValidate.hpp"
+#include "Conv2dValidate.hpp"
+#include "DepthwiseConv2dValidate.hpp"
+#include "ElementwiseValidate.hpp"
+#include "LogValidate.hpp"
+#include "MaximumMinimunValidate.hpp"
+#include "NormalizationValidate.hpp"
+#include "OperationValidate.hpp"
+#include "PoolValidate.hpp"
+#include "ReductionValidate.hpp"
+#include "ResizeValidate.hpp"
+#include "SoftmaxValidate.hpp"
+#include "SqrtRsqrtValidate.hpp"
+#include "TransposeConv2dValidate.hpp"
+#include "SinValidate.hpp"
+#include "ExpValidate.hpp"
 
-namespace android {
-namespace nn {
-namespace op_validate {
-template <typename T_model, typename T_Operation>
-class TransposeConv2d : public OperationValidate<T_model, T_Operation> {
-   public:
-    TransposeConv2d(const T_model& model, const T_Operation& operation)
-        : OperationValidate<T_model, T_Operation>(model, operation) {}
-    virtual bool SignatureCheck() override {
-        return hal::limitation::nnapi::match("TransposeConv2DOperationInput", this->m_InputArgTypes) &&
-               hal::limitation::nnapi::match("TransposeConv2DOperationOutput", this->m_OutputArgTypes);
-    };
-};
-
-}  // end of op_validate
-}
-}
 
 #endif

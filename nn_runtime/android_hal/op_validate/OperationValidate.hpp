@@ -44,22 +44,46 @@ class OperationValidate {
             m_InputArgTypes.push_back(MapToNnrtOperandType(m_Model.operands[inIdx].type));
         }
         // GenOutputArgTypes
-        for (auto inIdx : m_Operation.inputs) {
-            m_OutputArgTypes.push_back(MapToNnrtOperandType(m_Model.operands[inIdx].type));
+        // push first input into output argtypes
+        m_OutputArgTypes.push_back(
+                MapToNnrtOperandType(m_Model.operands[m_Operation.inputs[0]].type));
+        for (auto outIdx : m_Operation.outputs) {
+            m_OutputArgTypes.push_back(MapToNnrtOperandType(m_Model.operands[outIdx].type));
         }
     };
     virtual ~OperationValidate(){};
 
-    bool IsDynamicShape() {
+    bool DynamicShapeCheck() {
         for (auto outIdx : m_Operation.outputs) {
             auto& dims = m_Model.operands[outIdx].dimensions;
             for (auto dim : dims) {
                 if (dim == 0) {
-                    return true;
+                    return false;
                 }
             }
         }
-        return false;
+        return true;
+    }
+
+    bool ConstantTensorCheck() {
+        std::vector<OperationType> whiteList = {OperationType::ADD,
+                                                OperationType::SUB,
+                                                OperationType::MUL,
+                                                OperationType::DIV,
+                                                OperationType::MAXIMUM,
+                                                OperationType::MINIMUM,
+                                                OperationType::CONCATENATION,
+                                                OperationType::CONV_2D,
+                                                OperationType::FULLY_CONNECTED,
+                                                OperationType::LSTM,
+                                                OperationType::DEPTHWISE_CONV_2D};
+
+        if (std::find(whiteList.begin(), whiteList.end(), m_Operation.type) == whiteList.end()) {
+            if (IsConstantTensor(m_Operation.inputs[0])) {
+                return false;
+            }
+        }
+        return true;
     }
 
     // Default implementation
@@ -67,7 +91,8 @@ class OperationValidate {
 
     virtual bool Validate() {
         bool isSupport = true;
-        isSupport &= !IsDynamicShape();
+        isSupport &= DynamicShapeCheck();
+        isSupport &= ConstantTensorCheck();
         isSupport &= SignatureCheck();
         return isSupport;
     };
