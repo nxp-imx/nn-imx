@@ -21,6 +21,8 @@ ifeq ($(PLATFORM_VENDOR),1)
 LOCAL_VENDOR_MODULE  := true
 endif
 
+
+
 # source file
 LOCAL_SRC_FILES :=\
         memory_pool.cpp \
@@ -48,9 +50,13 @@ LOCAL_SRC_FILES :=\
         op/operation.cpp \
         op/pooling.cpp \
         api_requirement/nnapi_requirement.cpp \
-        api_requirement/spec.cpp\
+        api_requirement/spec.cpp
+
+ifeq ($(DUMP_JSON_MODEL), 1)
+LOCAL_SRC_FILES += \
         dump_model/dump_json_model.cpp \
         dump_model/jsoncpp.cpp
+endif
 
 LOCAL_C_INCLUDES += \
     $(AQROOT)/sdk/inc/CL \
@@ -74,6 +80,12 @@ LOCAL_CFLAGS :=  \
     -D'OVXLIB_API=__attribute__((visibility("default")))' \
     -Wno-unused-parameter\
     -Wno-implicit-fallthrough
+
+
+ifeq ($(DUMP_JSON_MODEL), 1)
+LOCAL_CFLAGS += \
+    -D_DUMP_JSON_MODEL_
+endif
 
 LOCAL_LDLIBS := -llog
 LOCAL_MODULE:= libnnrt

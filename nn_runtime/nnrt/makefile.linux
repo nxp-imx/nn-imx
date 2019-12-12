@@ -70,10 +70,13 @@ OBJECTS += \
         $(OBJ_DIR)/operation.o\
         $(OBJ_DIR)/pooling.o\
 
+ifeq ($(DUMP_JSON_MODEL), 1)
 vpath %.cpp ./dump_model
 OBJECTS += \
         $(OBJ_DIR)/dump_json_model.o \
         $(OBJ_DIR)/jsoncpp.o
+CXXFLAGS+=-D_DUMP_JSON_MODEL_
+endif
 
 # installation directory
 INSTALL_DIR := $(VIVANTE_SDK_LIB)
