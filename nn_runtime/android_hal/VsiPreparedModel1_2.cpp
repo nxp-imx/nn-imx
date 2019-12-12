@@ -316,8 +316,8 @@ void VsiPreparedModel::release_rtinfo(std::vector<VsiRTInfo>& rtInfos){
             ovx_op->setDataLayout(nnrt::DataLayout::NHWC);
         }
 
-//        if(preference == ExecutionPreference::FAST_SINGLE_ANSWER)
-//            native_model_->relax(true);
+        if(preference_ == ExecutionPreference::FAST_SINGLE_ANSWER)
+            native_model_->relax(true); // convert fp32 data to fp16 in nnrt.
 
         native_model_->finish();
         std::vector<uint32_t> inputs = model_.inputIndexes;
@@ -334,7 +334,7 @@ void VsiPreparedModel::release_rtinfo(std::vector<VsiRTInfo>& rtInfos){
                 // just cache the hidl model, and prepare it in BurstExecutorWithCache
                 // TODO: cache the meachine code
                 std::shared_ptr<BurstExecutorWithCache> executorWithCache =
-                        std::make_shared<BurstExecutorWithCache>(model_);
+                        std::make_shared<BurstExecutorWithCache>(model_, preference_);
                 const sp<V1_2::IBurstContext> burst = ExecutionBurstServer::create(
                         callback, requestChannel, resultChannel, executorWithCache);
 

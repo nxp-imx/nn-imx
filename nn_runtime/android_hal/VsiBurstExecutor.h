@@ -38,8 +38,8 @@ namespace nn {
 namespace vsi_driver {
 class BurstExecutorWithCache : public ExecutionBurstServer::IBurstExecutorWithCache {
    public:
-    BurstExecutorWithCache(const Model& model)
-        : model_(model) {}
+    BurstExecutorWithCache(const Model& model, ExecutionPreference preference):
+        model_(model), preference_(preference){};
 
     bool isCacheEntryPresent(int32_t slot) const override;
 
@@ -55,7 +55,7 @@ class BurstExecutorWithCache : public ExecutionBurstServer::IBurstExecutorWithCa
     const V1_2::Model model_;
     sp<VsiPreparedModel> perpareModel_;
     std::map<int32_t, std::optional<hidl_memory>> memoryCache_;  // cached hidl memory pool
-
+    ExecutionPreference preference_;
 };
 }
 }

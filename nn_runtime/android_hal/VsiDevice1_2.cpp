@@ -81,7 +81,7 @@ namespace vsi_driver {
             return ErrorStatus::INVALID_ARGUMENT;
         }
 
-        sp<VsiPreparedModel> preparedModel = new VsiPreparedModel( convertToV1_2(model));
+        sp<VsiPreparedModel> preparedModel = new VsiPreparedModel( convertToV1_2(model), preference);
         std::thread(asyncPrepareModel<sp<T_IPreparedModelCallback>>, preparedModel, callback).detach();
 
         return ErrorStatus::NONE;
@@ -90,7 +90,7 @@ namespace vsi_driver {
 
     Return<ErrorStatus> VsiDevice::prepareModel(const V1_0::Model& model,
                                                 const sp<V1_0::IPreparedModelCallback>& callback) {
-        return prepareModelBase(model, ExecutionPreference::FAST_SINGLE_ANSWER, callback);
+        return prepareModelBase(model, ExecutionPreference::SUSTAINED_SPEED, callback);
     }
 
     Return<ErrorStatus> VsiDevice::prepareModel_1_1(

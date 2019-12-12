@@ -227,10 +227,10 @@ void VsiPreparedModel::construct_ovx_operand(nnrt::op::OperandPtr ovx_operand,co
                                            );
             ovx_op->setDataLayout(nnrt::DataLayout::NHWC);
         }
-
-//        if(preference == ExecutionPreference::FAST_SINGLE_ANSWER)
-//            native_model_->relax(true);
-
+#if ANDROID_SDK_VERSION > 27
+        if(preference_ == ExecutionPreference::FAST_SINGLE_ANSWER)
+            native_model_->relax(true);
+#endif
         native_model_->finish();
         std::vector<uint32_t> inputs = model.inputIndexes;
         std::vector<uint32_t> outputs = model.outputIndexes;

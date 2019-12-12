@@ -72,7 +72,7 @@ namespace vsi_driver {
         }
 
         if(!perpareModel_){
-            perpareModel_ = new VsiPreparedModel(model_);
+            perpareModel_ = new VsiPreparedModel(model_, preference_);
             auto status = perpareModel_->initialize();
             if( ErrorStatus::NONE != status){
                 LOG(ERROR)<<"Fail to initialize";

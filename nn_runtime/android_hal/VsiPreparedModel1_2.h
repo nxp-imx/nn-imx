@@ -44,7 +44,7 @@ namespace nn {
 namespace vsi_driver {
     class VsiPreparedModel : public V1_2::IPreparedModel {
    public:
-    VsiPreparedModel(const V1_2::Model& model):model_(model) {
+    VsiPreparedModel(const V1_2::Model& model, ExecutionPreference preference):model_(model), preference_(preference){
         native_model_ = std::make_shared<nnrt::Model>();
         }
 
@@ -92,6 +92,7 @@ namespace vsi_driver {
                                               const T_IExecutionCallback& callback);
 
         const V1_2::Model model_;
+        ExecutionPreference preference_;
         std::shared_ptr<nnrt::Model> native_model_;
         std::shared_ptr<nnrt::Compilation> native_compile_;
         std::shared_ptr<nnrt::Execution> native_exec_;

@@ -47,6 +47,14 @@ namespace vsi_driver {
         Create(model);
         }
 
+#if ANDROID_SDK_VERSION > 27
+    VsiPreparedModel(const V1_1::Model& model, ExecutionPreference preference):
+        model_(model), preference_(preference){
+        native_model_ = std::make_shared<nnrt::Model>();
+        Create(model);
+        }
+#endif
+
     ~VsiPreparedModel() override {
         release_rtinfo(const_buffer_);
         }
@@ -70,7 +78,9 @@ namespace vsi_driver {
         std::shared_ptr<nnrt::Model> native_model_;
         std::shared_ptr<nnrt::Compilation> native_compile_;
         std::shared_ptr<nnrt::Execution> native_exec_;
-
+#if ANDROID_SDK_VERSION > 27
+        ExecutionPreference preference_;
+#endif
         /*store pointer of all of hidl_memory to buffer*/
         std::vector<VsiRTInfo> const_buffer_;
         std::vector<VsiRTInfo> io_buffer_;

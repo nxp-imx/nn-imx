@@ -59,7 +59,11 @@ Return<ErrorStatus> VsiDevice::prepareModel_1_1(const V1_1::Model& model,
     }
 
     // TODO: make asynchronous later
+#if ANDROID_SDK_VERSION > 27
+    sp<VsiPreparedModel> preparedModel = new VsiPreparedModel(model, preference);
+#else
     sp<VsiPreparedModel> preparedModel = new VsiPreparedModel(model);
+#endif
     if (!preparedModel.get()) {
         callback->notify(ErrorStatus::INVALID_ARGUMENT, nullptr);
         return ErrorStatus::INVALID_ARGUMENT;
