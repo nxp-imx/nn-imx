@@ -689,7 +689,7 @@ int ANeuralNetworksModel_relaxComputationFloat32toFloat16(ANeuralNetworksModel* 
         return AERROR_CODE(BAD_DATA);
     }
     nnrt::Model* m = reinterpret_cast<nnrt::Model*>(model);
-    m->relax( true );
+    m->relax( allow );
     return AERROR_CODE(NO_ERROR);
 }
 
