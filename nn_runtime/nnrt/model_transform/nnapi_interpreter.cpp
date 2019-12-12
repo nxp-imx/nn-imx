@@ -160,6 +160,9 @@ NnApiInterpreter::NnApiInterpreter()
     REGISTER_OP(EMBEDDING_LOOKUP);
     REGISTER_OP(RNN);
     REGISTER_OP(UNIDIRECTIONAL_SEQUENCE_RNN);
+    REGISTER_OP(BIDIRECTIONAL_SEQUENCE_RNN);
+    REGISTER_OP(UNIDIRECTIONAL_SEQUENCE_LSTM);
+    REGISTER_OP(BIDIRECTIONAL_SEQUENCE_LSTM);
     REGISTER_OP(HASHTABLE_LOOKUP);
     REGISTER_OP(LSTM);
     REGISTER_OP(SVDF);
@@ -1149,13 +1152,32 @@ OperationPtr NnApiInterpreter::map_UNIDIRECTIONAL_SEQUENCE_RNN(Model* model,
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
     auto argList = matchArgList(inputs, "UnidirectionalSequenceRnnOperation");
     if (argList) {
-        op->activation = inputs[argList->ArgPos("fusedActivationFunction")]->scalar.int32;
+        op->activation = inputs[argList->ArgPos("activation")]->scalar.int32;
         op->timeMajor = inputs[argList->ArgPos("timeMajor")]->scalar.boolean;
     } else {
         NNRT_LOGE_PRINT("UnidirectionalSequenceRnn argument list not support");
         assert(false);
     }
     truncateOperationIOs(model, operation, 5, 1);
+    return op;
+}
+
+OperationPtr NnApiInterpreter::map_BIDIRECTIONAL_SEQUENCE_RNN(Model* model,
+        OperationPtr operation, uint32_t operation_index)
+{
+    std::shared_ptr<BidirectionalSequenceRnnOperation> op = std::make_shared<BidirectionalSequenceRnnOperation>();
+    NNAPI_CHECK_PTR(op);
+    std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
+    auto argList = matchArgList(inputs, "BidirectionalSequenceRnnOperation");
+    if (argList) {
+        op->activation = inputs[argList->ArgPos("activation")]->scalar.int32;
+        op->timeMajor = inputs[argList->ArgPos("timeMajor")]->scalar.boolean;
+        op->mergeOutputs = inputs[argList->ArgPos("mergeOutputs")]->scalar.boolean;
+    } else {
+        NNRT_LOGE_PRINT("BidirectionalSequenceRnn argument list not support");
+        assert(false);
+    }
+    truncateOperationIOs(model, operation, 12, 2);
     return op;
 }
 
@@ -1183,6 +1205,47 @@ OperationPtr NnApiInterpreter::map_LSTM(Model* model,
     NNAPI_CHECK_IO_NUM(operation, LstmUnitOperation::INPUT_COUNT, LstmUnitOperation::OUTPUT_COUNT);
 
     return new_op;
+}
+
+OperationPtr NnApiInterpreter::map_UNIDIRECTIONAL_SEQUENCE_LSTM(Model* model,
+        OperationPtr operation, uint32_t operation_index)
+{
+    std::shared_ptr<UnidirectionalSequenceLstmOperation> op = std::make_shared<UnidirectionalSequenceLstmOperation>();
+    NNAPI_CHECK_PTR(op);
+    std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
+    auto argList = matchArgList(inputs, "UnidirectionalSequenceRnnOperation");
+    if (argList) {
+        op->activation = inputs[argList->ArgPos("activation")]->scalar.int32;
+        op->timeMajor = inputs[argList->ArgPos("timeMajor")]->scalar.boolean;
+        op->cell_clip = inputs[argList->ArgPos("cell_clip")]->scalar.float32;
+        op->proj_clip = inputs[argList->ArgPos("proj_clip")]->scalar.float32;
+    } else {
+        NNRT_LOGE_PRINT("UnidirectionalSequenceRnn argument list not support");
+        assert(false);
+    }
+    truncateOperationIOs(model, operation, 5, 1);
+    return op;
+}
+
+OperationPtr NnApiInterpreter::map_BIDIRECTIONAL_SEQUENCE_LSTM(Model* model,
+        OperationPtr operation, uint32_t operation_index)
+{
+    std::shared_ptr<BidirectionalSequenceLstmOperation> op = std::make_shared<BidirectionalSequenceLstmOperation>();
+    NNAPI_CHECK_PTR(op);
+    std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
+    auto argList = matchArgList(inputs, "BidirectionalSequenceRnnOperation");
+    if (argList) {
+        op->activation = inputs[argList->ArgPos("activation")]->scalar.int32;
+        op->timeMajor = inputs[argList->ArgPos("timeMajor")]->scalar.boolean;
+        op->mergeOutputs = inputs[argList->ArgPos("mergeOutputs")]->scalar.boolean;
+        op->cell_clip = inputs[argList->ArgPos("cell_clip")]->scalar.float32;
+        op->proj_clip = inputs[argList->ArgPos("proj_clip")]->scalar.float32;
+    } else {
+        NNRT_LOGE_PRINT("BidirectionalSequenceLstm argument list not support");
+        assert(false);
+    }
+    truncateOperationIOs(model, operation, 5, 1);
+    return op;
 }
 
 OperationPtr NnApiInterpreter::map_SVDF(Model* model,

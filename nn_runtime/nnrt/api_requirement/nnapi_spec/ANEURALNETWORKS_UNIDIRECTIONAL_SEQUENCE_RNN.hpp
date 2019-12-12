@@ -91,7 +91,7 @@ OP_SPEC_BEGIN()
      recurrent_weights,         \
      bias,              \
      hidden_state,               \
-     fusedActivationFunction,        \
+     activation,        \
      timeMajor)
 #define ARGC BOOST_PP_TUPLE_SIZE(ARG_NAMES)
 
@@ -107,7 +107,7 @@ MAKE_SPEC(unidirectional_sequence_rnn)
     .recurrent_weights_(nnrt::OperandType::TENSOR_FLOAT32)
     .bias_(nnrt::OperandType::TENSOR_FLOAT32)
     .hidden_state_(nnrt::OperandType::TENSOR_FLOAT32)
-    .fusedActivationFunction_(nnrt::OperandType::INT32)
+    .activation_(nnrt::OperandType::INT32)
     .timeMajor_(nnrt::OperandType::INT32)
     );
 

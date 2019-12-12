@@ -359,6 +359,33 @@ struct UnidirectionalSequenceRnnOperation : Operation {
     bool timeMajor;
 };
 
+struct BidirectionalSequenceRnnOperation : Operation {
+    BidirectionalSequenceRnnOperation() : Operation(OperationType::BIDIRECTIONAL_SEQUENCE_RNN) {}
+
+    int32_t activation;
+    bool timeMajor;
+    bool mergeOutputs;
+};
+
+struct UnidirectionalSequenceLstmOperation : Operation {
+    UnidirectionalSequenceLstmOperation() : Operation(OperationType::UNIDIRECTIONAL_SEQUENCE_LSTM) {}
+
+    int32_t activation;
+    bool timeMajor;
+    float cell_clip;
+    float proj_clip;
+};
+
+struct BidirectionalSequenceLstmOperation : Operation {
+    BidirectionalSequenceLstmOperation() : Operation(OperationType::BIDIRECTIONAL_SEQUENCE_LSTM) {}
+
+    int32_t activation;
+    bool timeMajor;
+    bool mergeOutputs;
+    float cell_clip;
+    float proj_clip;
+};
+
 struct DepthToSpaceOperation : Operation {
     DepthToSpaceOperation() : Operation(OperationType::DEPTH_TO_SPACE) {}
     virtual void handleLayoutInferenceOnInputs(

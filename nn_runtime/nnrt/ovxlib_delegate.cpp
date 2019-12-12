@@ -140,11 +140,14 @@ OvxlibDelegate::OvxlibDelegate()
     REGISTER_OP(EMBEDDING_LOOKUP);
     REGISTER_OP(RNN);
     REGISTER_OP(UNIDIRECTIONAL_SEQUENCE_RNN);
+    REGISTER_OP(BIDIRECTIONAL_SEQUENCE_RNN);
     REGISTER_OP(HASHTABLE_LOOKUP);
     REGISTER_OP(SVDF);
     REGISTER_OP(LSH_PROJECTION);
     REGISTER_OP(L2_POOL_2D);
     REGISTER_OP(LSTM);
+    REGISTER_OP(UNIDIRECTIONAL_SEQUENCE_LSTM);
+    REGISTER_OP(BIDIRECTIONAL_SEQUENCE_LSTM);
     REGISTER_OP(FLOOR);
     REGISTER_OP(BATCH_NORM);
     REGISTER_OP(MAXIMUM);
@@ -1466,6 +1469,54 @@ int OvxlibDelegate::addNode_UNIDIRECTIONAL_SEQUENCE_RNN(Model* model,
     addNode(VSI_NN_OP_UNIDIRECTIONAL_SEQUENCE_RNN, operation, &nodes, operation_index);
     nodes[0]->nn_param.unidirectional_sequence_rnn.activation = rnn->activation;
     nodes[0]->nn_param.unidirectional_sequence_rnn.time_major = rnn->timeMajor;
+    return err;
+}
+
+int OvxlibDelegate::addNode_BIDIRECTIONAL_SEQUENCE_RNN(Model* model,
+        OperationPtr operation, uint32_t operation_index)
+{
+    (void)model;
+    int err = NNA_ERROR_CODE(NO_ERROR);
+    NNRT_LOGD_PRINT("addNode_BIDIRECTIONAL_SEQUENCE_RNN");
+    BidirectionalSequenceRnnOperation* rnn =
+        reinterpret_cast<BidirectionalSequenceRnnOperation*>(operation.get());
+
+    std::vector<vsi_nn_node_t*> nodes;
+    addNode(VSI_NN_OP_BIDIRECTIONAL_SEQUENCE_RNN, operation, &nodes, operation_index);
+    nodes[0]->nn_param.bidirectional_sequence_rnn.activation = rnn->activation;
+    nodes[0]->nn_param.bidirectional_sequence_rnn.time_major = rnn->timeMajor;
+    nodes[0]->nn_param.bidirectional_sequence_rnn.merge_outputs = rnn->mergeOutputs;
+    return err;
+}
+
+int OvxlibDelegate::addNode_UNIDIRECTIONAL_SEQUENCE_LSTM(Model* model,
+        OperationPtr operation, uint32_t operation_index)
+{
+    (void)model;
+    int err = NNA_ERROR_CODE(NO_ERROR);
+    BidirectionalSequenceRnnOperation* rnn =
+        reinterpret_cast<BidirectionalSequenceRnnOperation*>(operation.get());
+
+    std::vector<vsi_nn_node_t*> nodes;
+    addNode(VSI_NN_OP_BIDIRECTIONAL_SEQUENCE_RNN, operation, &nodes, operation_index);
+    nodes[0]->nn_param.bidirectional_sequence_rnn.activation = rnn->activation;
+    nodes[0]->nn_param.bidirectional_sequence_rnn.time_major = rnn->timeMajor;
+    return err;
+}
+
+int OvxlibDelegate::addNode_BIDIRECTIONAL_SEQUENCE_LSTM(Model* model,
+        OperationPtr operation, uint32_t operation_index)
+{
+    (void)model;
+    int err = NNA_ERROR_CODE(NO_ERROR);
+    BidirectionalSequenceLstmOperation* lstm =
+        reinterpret_cast<BidirectionalSequenceLstmOperation*>(operation.get());
+
+    std::vector<vsi_nn_node_t*> nodes;
+    addNode(VSI_NN_OP_BIDIRECTIONAL_SEQUENCE_LSTM, operation, &nodes, operation_index);
+    nodes[0]->nn_param.bidirectional_sequence_lstm.activation = lstm->activation;
+    nodes[0]->nn_param.bidirectional_sequence_lstm.time_major = lstm->timeMajor;
+    nodes[0]->nn_param.bidirectional_sequence_lstm.merge_outputs = lstm->mergeOutputs;
     return err;
 }
 
