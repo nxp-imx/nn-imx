@@ -393,6 +393,20 @@ void NnApiInterpreter::fillIntArray(Model* model, OperationPtr operation,
     }
 }
 
+//remove scalar operand in [offset, offset+cnt)
+void NnApiInterpreter::removeScalarOperand(OperationPtr& op, size_t ofst, size_t cnt) {
+    auto start = computeAxis(ofst, op->inputs().size() + 1); // Map negative to positive
+    auto& inputs = op->inputs();
+    auto begin = inputs.begin();
+    auto end = inputs.begin();
+    std::advance(begin, start);
+    std::advance(end, start + cnt );
+    for(auto i = begin;i != inputs.end() && i != end; ++i) {
+        operands_to_remove_.emplace(*i);
+    }
+    inputs.erase(begin, end);
+}
+
 void NnApiInterpreter::truncateOperationIOs(Model* model, OperationPtr operation,
         int32_t input_num, int32_t output_num) {
     // Size - 1 = axis
@@ -1186,16 +1200,35 @@ OperationPtr NnApiInterpreter::map_LSTM(Model* model,
 {
     std::shared_ptr<LstmUnitOperation> new_op = std::make_shared<LstmUnitOperation>();
     NNAPI_CHECK_PTR(new_op);
-
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
-    auto input_num = inputs.size();
+    auto argList = matchArgList(inputs, "LstmUnit");
 
-    new_op->activation = mapLstmActivationType(inputs[20]->scalar.int32);
-    new_op->cellClip = inputs[21]->scalar.float32;
-    new_op->projClip = inputs[22]->scalar.float32;
-    input_num -= 3;
-    truncateOperationIOs(model, operation, 20, 4);
+    if (argList) {
+        if (inputs[0]->type == nnrt::OperandType::TENSOR_FLOAT32) {
+            NNRT_LOGI_PRINT("LSMT float32, proj_clip at %d", argList->ArgPos("proj_clip"));
+            new_op->activation = mapLstmActivationType(inputs[argList->ArgPos("activation")]->scalar.int32);
+            new_op->cellClip = inputs[argList->ArgPos("cell_clip")]->scalar.float32;
+            new_op->projClip = inputs[argList->ArgPos("proj_clip")]->scalar.float32;
+        }
+        else {
+            assert(false);
+            NNRT_LOGE_PRINT("TODO NNRT not support float16 datatype yet");
+            // new_op->activation = mapLstmActivationType(inputs[argList->ArgPos("activation")]->scalar.int32);
+            // new_op->cellClip = inputs[argList->ArgPos("cell_clip")]->scalar.float16;
+            // new_op->projClip = inputs[argList->ArgPos("proj_clip")]->scalar.float16;
+            new_op.reset();
+        }
+        removeScalarOperand(operation, argList->ArgPos("activation"), 3);
+    }
 
+    if (argList->ArgPos("weight_norm_input") != -1) {
+        // TODO {Xiang} port LSTM to new ovxlib API
+        NNRT_LOGE_PRINT("Don't support layer normal yet: remove related input");
+        truncateOperationIOs(model, operation, 20, 4);
+    }
+
+    auto input_num = model->getOperands(operation->inputs()).size();
+    // TODO {Xiang} port LSTM to new ovxlib API
     while (input_num < LstmUnitOperation::INPUT_COUNT) {
         operation->inputs().emplace_back(-1);
         NNRT_LOGD_PRINT("Append Inputs at [%d]", input_num);

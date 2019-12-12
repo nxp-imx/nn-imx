@@ -66,6 +66,7 @@ void NNapiRequirementRegister(const std::string& opName, const IArgList* arglist
 #include "nnapi_spec/ANEURALNETWORKS_BOX_WITH_NMS_LIMIT.hpp"
 #include "nnapi_spec/ANEURALNETWORKS_UNIDIRECTIONAL_SEQUENCE_RNN.hpp"
 #include "nnapi_spec/ANEURALNETWORKS_BIDIRECTIONAL_SEQUENCE_RNN.hpp"
+#include "nnapi_spec/ANEURALNETWORKS_LSTM.hpp"
 #include "nnapi_spec/ANEURALNETWORKS_UNIDIRECTIONAL_SEQUENCE_LSTM.hpp"
 #include "nnapi_spec/ANEURALNETWORKS_BIDIRECTIONAL_SEQUENCE_LSTM.hpp"
 #include "nnapi_spec/ANEURALNETWORKS_TILE.hpp"
