@@ -205,7 +205,7 @@ class Model {
    private:
     uint32_t operand_unique_id_{0};
     uint32_t operation_unique_id_{0};
-    bool relaxed_{true}; /* the flag to run fp16 data,instead of fp32*/
+    bool relaxed_{false}; /* the flag to run fp16 data,instead of fp32*/
     bool finalized_{false};
     bool compiled_{false};
     bool valid_{false};
