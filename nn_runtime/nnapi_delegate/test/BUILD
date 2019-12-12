@@ -22,7 +22,7 @@ cc_test (
 
 cc_test (
     name = "cts_q",
-    copts = ["-Werror", "-fvisibility=hidden", '-std=c++1z', '-DNNTEST_ONLY_PUBLIC_API', '-D__ANDROID_API__=29'],
+    copts = ["-Werror", "-fvisibility=hidden", '-std=c++1z', '-DNNTEST_ONLY_PUBLIC_API', '-D__ANDROID_API__=29', '-DNNTEST_CTS'],
     srcs = [
         "TestMain.cpp",
         ],
