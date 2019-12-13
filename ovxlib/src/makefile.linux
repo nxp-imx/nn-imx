@@ -128,9 +128,19 @@ SRCS += ${notdir ${wildcard custom/ops/kernel/*.c}}
 OBJECTS +=  ${patsubst %.c, $(OBJ_DIR)/%.o, $(SRCS)}
 
 # installation directory
-INSTALL_DIR := $(VIVANTE_SDK_LIB)
+INSTALL_DIR := $(SDK_DIR)/drivers
 
 ################################################################################
 # Include the common makefile.
 
 include $(AQROOT)/common.target
+
+################################################################################
+# Extra installation.
+
+install: extra_install
+
+.PHONY: extra_install
+extra_install:
+	@mkdir -p $(SDK_DIR)/include/OVXLIB
+	@-cp -rf $(AQROOT)/sdk/inc/OVXLIB/* $(SDK_DIR)/include/OVXLIB
