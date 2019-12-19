@@ -34,6 +34,7 @@
 #include "utils/vsi_nn_util.h"
 #include "utils/vsi_nn_dtype_util.h"
 #include "utils/vsi_nn_math.h"
+#include "vsi_nn_test.h"
 
 static vsi_status op_compute
     (
@@ -43,10 +44,11 @@ static vsi_status op_compute
     )
 {
     vsi_status status = VSI_FAILURE;
-    vx_nn_reorg_params_t param;
+    vx_nn_reorg_params_ext_t param;
     vsi_nn_tensor_t *block_size_tensor = NULL;
+    vsi_nn_tensor_t *pad_tensor = NULL;
     vsi_nn_tensor_attr_t attr;
-    memset(&param, 0, sizeof(vx_nn_reorg_params_t));
+    memset(&param, 0, sizeof(vx_nn_reorg_params_ext_t));
 
     memset(&attr, 0, sizeof(attr));
     attr.size[0] = 2;
@@ -58,25 +60,38 @@ static vsi_status op_compute
         self->graph,
         (uint8_t *)self->nn_param.batch2space.block_size,
         &attr);
-    if( NULL == block_size_tensor )
-    {
-        VSILOGE("Create block_size_tensor fail.(batch2space)");
-        return VSI_FAILURE;
-    }
-    self->nn_param.batch2space.local.block_size_tensor = block_size_tensor;
-    param.block_size = REQUIRED_IO(block_size_tensor);
-    param.type = VX_REORG_BATCH_TO_SPACE_ND;
+    TEST_CHECK_PTR(block_size_tensor, final);
 
+    memset(&attr, 0, sizeof(attr));
+    attr.size[0] = 4;
+    attr.dim_num = 1;
+    attr.is_const = TRUE;
+    attr.dtype.vx_type = VSI_NN_TYPE_INT32;
+    attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
+    pad_tensor = vsi_nn_CreateTensorFromData(
+        self->graph,
+        (uint8_t *)self->nn_param.batch2space.crop,
+        &attr);
+    TEST_CHECK_PTR(pad_tensor, final);
+
+    param.base.block_size = REQUIRED_IO(block_size_tensor);
+    param.pad = OPTIONAL_IO(pad_tensor);
+    param.base.type = VX_REORG_BATCH_TO_SPACE_ND;
     self->n = vxReorgLayer2( self->graph->g,
         inputs[0]->t,
-        &param,
-        sizeof(vx_nn_reorg_params_t),
+        (vx_nn_reorg_params_t *)&param,
+        sizeof(vx_nn_reorg_params_ext_t),
         outputs[0]->t);
 
     if( NULL != self->n )
     {
         status = VSI_SUCCESS;
     }
+
+final:
+    if (block_size_tensor) vsi_nn_ReleaseTensor(&block_size_tensor);
+    if (pad_tensor) vsi_nn_ReleaseTensor(&pad_tensor);
+
     return status;
 } /* op_compute() */
 
@@ -119,9 +134,9 @@ static vsi_bool op_setup
             inputs[0]->attr.size[3] / p->block_size[0] / p->block_size[1];
         outputs[0]->attr.size[2] = inputs[0]->attr.size[2];
         outputs[0]->attr.size[1] =
-            inputs[0]->attr.size[1] * p->block_size[1] - p->crop[0] - p->crop[1];
+            inputs[0]->attr.size[1] * p->block_size[1] - p->crop[2] - p->crop[3];
         outputs[0]->attr.size[0] =
-            inputs[0]->attr.size[0] * p->block_size[0] - p->crop[2] - p->crop[3];
+            inputs[0]->attr.size[0] * p->block_size[0] - p->crop[0] - p->crop[1];
         outputs[0]->attr.dim_num = 4;
     }
 

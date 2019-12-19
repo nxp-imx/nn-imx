@@ -42,7 +42,7 @@ typedef struct _vsi_nn_batch2space_param
 
     int32_t *block_size;
     uint32_t block_size_num;
-    int32_t crop[4]; // [top, bottom, left, right]
+    int32_t crop[4]; // [left, right, top, bottom]
 } vsi_nn_batch2space_param;
 
 #ifdef __cplusplus
