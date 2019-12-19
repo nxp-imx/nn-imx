@@ -243,9 +243,16 @@ void _binary_tree_new_node
     /* Insert node */
     if( NULL == iter )
     {
-        // Root must be NULL.
-        VSI_ASSERT( (*root) == NULL );
-        *root = node;
+        if( *root == NULL)
+        {
+            *root = node;
+        }
+        else
+        {
+            // Root must be NULL.
+            VSI_ASSERT( FALSE );
+            free( node );
+        }
     }
     else
     {

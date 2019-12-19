@@ -61,7 +61,7 @@ vsi_status _copy_tensor
     }
     if( !attr )
     {
-        attr = vsi_nn_kernel_tensor_attr_create( tensor );
+        internal_attr = vsi_nn_kernel_tensor_attr_create( tensor );
         CHECK_PTR_FAIL_GOTO( attr, "Create tensor attr fail.", final );
         attr = internal_attr;
     }
@@ -247,7 +247,7 @@ vsi_status vsi_nn_kernel_tensor_write_from_float
     size_t tensor_size = 0;
     if( !attr )
     {
-        attr = vsi_nn_kernel_tensor_attr_create( tensor );
+        internal_attr = vsi_nn_kernel_tensor_attr_create( tensor );
         CHECK_PTR_FAIL_GOTO( attr, "Create tensor attr fail.", final );
         attr = internal_attr;
     }
