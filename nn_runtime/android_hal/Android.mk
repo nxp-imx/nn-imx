@@ -32,14 +32,10 @@ LOCAL_C_INCLUDES := \
         $(OVXLIB_DIR)/include/platform \
         $(OVXLIB_DIR)/include/client \
         $(OVXLIB_DIR)/include/libnnext \
-        $(LOCAL_PATH)/hal_limitation \
-        $(LOCAL_PATH)/op_validate
 
 
 LOCAL_SRC_FILES:= \
     VsiDriver.cpp \
-    hal_limitation/nnapi_limitation.cpp \
-    hal_limitation/support.cpp \
 
 LOCAL_SHARED_LIBRARIES := \
     libbase \
@@ -74,7 +70,9 @@ ifeq ($(shell expr $(PLATFORM_SDK_VERSION) ">=" 29),1)
 LOCAL_C_INCLUDES += frameworks/ml/nn/runtime/include \
                     frameworks/native/libs/ui/include \
                     frameworks/native/libs/nativebase/include \
-                    system/libfmq/include
+                    system/libfmq/include   \
+                    $(LOCAL_PATH)/hal_limitation \
+                    $(LOCAL_PATH)/op_validate
 
 LOCAL_SHARED_LIBRARIES += libfmq \
                           libui \
@@ -82,7 +80,9 @@ LOCAL_SHARED_LIBRARIES += libfmq \
 
 LOCAL_SRC_FILES += VsiDevice1_2.cpp\
     VsiPreparedModel1_2.cpp\
-    VsiBurstExecutor.cpp
+    VsiBurstExecutor.cpp    \
+    hal_limitation/nnapi_limitation.cpp \
+    hal_limitation/support.cpp \
 
 LOCAL_MODULE      := android.hardware.neuralnetworks@1.2-service-vsi-npu-server
 else
@@ -103,6 +103,7 @@ LOCAL_MODULE_RELATIVE_PATH := hw
 LOCAL_INIT_RC := VsiDriver.rc
 
 LOCAL_CFLAGS += -DANDROID_SDK_VERSION=$(PLATFORM_SDK_VERSION)  -Wno-error=unused-parameter\
+                -Wno-unused-private-field \
                 -Wno-delete-non-virtual-dtor -Wno-non-virtual-dtor\
 
 LOCAL_MODULE_TAGS := optional

@@ -26,10 +26,11 @@
 #include <nnrt/file_map_memory.hpp>
 
 #include "VsiDriver.h"
+#if ANDROID_SDK_VERSION > 28
 #include "public.hpp"
-
 using OperationValidatePtr =
     std::unique_ptr<android::nn::op_validate::OperationValidate<V1_2::Model, V1_2::Operation>>;
+#endif
 
 namespace android {
 namespace nn {
