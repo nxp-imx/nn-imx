@@ -149,7 +149,13 @@ static nnrt::OperationType op_code_mapping(V1_2::OperationType op) { // Android 
         MAP_OP(MINIMUM);
         MAP_OP(SQRT);
         MAP_OP(RSQRT);
-        MAP_OP(LOG)
+        MAP_OP(LOG);
+        MAP_OP(EXP);
+        MAP_OP(SIN);
+        MAP_OP(REDUCE_MAX);
+        MAP_OP(REDUCE_MIN);
+        MAP_OP(REDUCE_PROD);
+        MAP_OP(REDUCE_SUM);
 #endif
 #undef MAP_OP
 

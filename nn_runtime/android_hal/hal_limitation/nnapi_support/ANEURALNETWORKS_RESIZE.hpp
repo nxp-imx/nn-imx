@@ -64,7 +64,7 @@ MAKE_SPEC(scale_base)
     .width_scale_(nnrt::OperandType::FLOAT32)
     .data_layout_(nnrt::OperandType::BOOL, OPTIONAL));
 
-    // // Note: not support float16
+    // // Note: nnrt not support float16 scaler
     // OVERRIDE_SPEC(scale_base, 0)
     // .input_(nnrt::OperandType::TENSOR_FLOAT16)
     // .height_scale_(nnrt::OperandType::FLOAT16)

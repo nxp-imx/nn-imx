@@ -298,11 +298,7 @@ bool VsiDriver::isSupportedOperation(const T_operation& operation, const T_Model
             if (operation.inputs.size() > 23) isSupport &= false;
             break;
         }
-        case OperationType::RESIZE_BILINEAR: {
-            auto& scalarOperand = model.operands[operation.inputs[1]];
-            if (OperandType::INT32 != scalarOperand.type) isSupport &= false;
-            break;
-        }
+
         case OperationType::TRANSPOSE: {
             // according to the spec, perm is optinal.
             if (operation.inputs.size() == 1) isSupport &= false;
@@ -392,6 +388,56 @@ bool VsiDriver::isSupportedOperation(const T_operation& operation, const T_Model
             return logValidate->Validate();
         }
 
+        case OperationType::EXP: {
+            OperationValidatePtr expValidate =
+                std::make_unique<op_validate::ExpValidate<V1_2::Model, V1_2::Operation>>(model,
+                                                                                         operation);
+            return expValidate->Validate();
+        }
+
+        case OperationType::SIN: {
+            OperationValidatePtr sinValidate =
+                std::make_unique<op_validate::SinValidate<V1_2::Model, V1_2::Operation>>(model,
+                                                                                         operation);
+            return sinValidate->Validate();
+        }
+
+        case OperationType::RESIZE_BILINEAR:
+        case OperationType::RESIZE_NEAREST_NEIGHBOR: {
+            OperationValidatePtr resizeValidate =
+                std::make_unique<op_validate::ResizeValidate<V1_2::Model, V1_2::Operation>>(
+                    model, operation);
+            return resizeValidate->Validate();
+        }
+
+        case OperationType::REDUCE_MAX: {
+            OperationValidatePtr reduceMax =
+                std::make_unique<op_validate::ReduceMaxValidate<V1_2::Model, V1_2::Operation>>(
+                    model, operation);
+            return reduceMax->Validate();
+        }
+
+        case OperationType::REDUCE_MIN: {
+            OperationValidatePtr reduceMin =
+                std::make_unique<op_validate::ReduceMinValidate<V1_2::Model, V1_2::Operation>>(
+                    model, operation);
+            return reduceMin->Validate();
+        }
+
+        case OperationType::REDUCE_PROD: {
+            OperationValidatePtr reduceProd =
+                std::make_unique<op_validate::ReduceProdValidate<V1_2::Model, V1_2::Operation>>(
+                    model, operation);
+            return reduceProd->Validate();
+        }
+
+        case OperationType::REDUCE_SUM: {
+            OperationValidatePtr reduceSum =
+                std::make_unique<op_validate::ReduceSumValidate<V1_2::Model, V1_2::Operation>>(
+                    model, operation);
+            return reduceSum->Validate();
+        }
+
         case OperationType::AXIS_ALIGNED_BBOX_TRANSFORM:
         case OperationType::BIDIRECTIONAL_SEQUENCE_LSTM:
         case OperationType::BIDIRECTIONAL_SEQUENCE_RNN:
@@ -400,7 +446,6 @@ bool VsiDriver::isSupportedOperation(const T_operation& operation, const T_Model
         case OperationType::CHANNEL_SHUFFLE:
         case OperationType::DETECTION_POSTPROCESSING:
         case OperationType::EQUAL:
-        case OperationType::EXP:
         case OperationType::EXPAND_DIMS:
         case OperationType::GATHER:
         case OperationType::GENERATE_PROPOSALS:
@@ -425,14 +470,9 @@ bool VsiDriver::isSupportedOperation(const T_operation& operation, const T_Model
         case OperationType::RANDOM_MULTINOMIAL:
         case OperationType::REDUCE_ALL:
         case OperationType::REDUCE_ANY:
-        case OperationType::REDUCE_MAX:
-        case OperationType::REDUCE_MIN:
-        case OperationType::REDUCE_PROD:
-        case OperationType::REDUCE_SUM:
         case OperationType::ROI_ALIGN:
         case OperationType::ROI_POOLING:
         case OperationType::SELECT:
-        case OperationType::SIN:
         case OperationType::SLICE:
         case OperationType::SPLIT:
         case OperationType::TILE:
@@ -440,7 +480,6 @@ bool VsiDriver::isSupportedOperation(const T_operation& operation, const T_Model
         case OperationType::TRANSPOSE_CONV_2D:
         case OperationType::UNIDIRECTIONAL_SEQUENCE_LSTM:
         case OperationType::UNIDIRECTIONAL_SEQUENCE_RNN:
-        case OperationType::RESIZE_NEAREST_NEIGHBOR:
         case OperationType::MAXIMUM:
             isSupport &= false;
             break;
