@@ -858,17 +858,45 @@ OperationPtr NnApiInterpreter::map_MEAN(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_SPACE_TO_DEPTH(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
-    NNAPI_CHECK_IO_NUM(operation, 2, 1);
-    std::shared_ptr<SpaceToDepthOperation> sp_to_dp = std::make_shared<SpaceToDepthOperation>();
-    NNAPI_CHECK_PTR(sp_to_dp);
+                                                  OperationPtr operation,
+                                                  uint32_t operation_index) {
+    std::shared_ptr<SpaceToDepthOperation> space2depth = std::make_shared<SpaceToDepthOperation>();
+    NNAPI_CHECK_PTR(space2depth);
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
-    sp_to_dp->blockSize[0] = inputs[1]->scalar.int32;
-    sp_to_dp->blockSize[1] = inputs[1]->scalar.int32;
-    sp_to_dp->setDataLayout(DataLayout::NHWC);
+
+    std::vector<OperandType> argTypes;
+    std::transform(
+        inputs.begin(), inputs.end(), std::back_inserter(argTypes), [](const OperandPtr& operand) {
+            return operand->type;
+        });
+
+    auto argList = api::requirement::nnapi::match("Space2DepthOperation", argTypes);
+    if (argList) {
+        auto inputOperand = inputs[argList->ArgPos("input")];
+        auto outputOperand = model->getOperands(operation->outputs())[0];
+        // No dynamic shape branch
+        if (!nnrt::operand_utils::IsDynamicShape(inputOperand) &&
+            !nnrt::operand_utils::IsDynamicShape(outputOperand)) {
+            space2depth->blockSize[0] = inputs[argList->ArgPos("block_size")]->scalar.int32;
+            space2depth->blockSize[1] = inputs[argList->ArgPos("block_size")]->scalar.int32;
+            if (-1 != argList->ArgPos("data_layout")) {
+                space2depth->setDataLayout(
+                getDataLayout(inputs[argList->ArgPos("data_layout")]->scalar.boolean));
+            } else {
+                // Default data layout is NHWC
+                space2depth->setDataLayout(DataLayout::NHWC);
+            }
+        } else {
+            // TODO: support dynamic input tensor shape
+            NNRT_LOGE_PRINT("Dynamic shape not support");
+            assert(false);
+        }
+
+    } else {
+        NNRT_LOGE_PRINT("Space to depth argument list not support.");
+    }
     truncateOperationIOs(model, operation, 1, 1);
-    return sp_to_dp;
+    return space2depth;
 }
 
 OperationPtr NnApiInterpreter::map_DEPTH_TO_SPACE(Model* model,
