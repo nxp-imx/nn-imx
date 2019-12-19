@@ -322,8 +322,8 @@ void VsiPreparedModel::release_rtinfo(std::vector<VsiRTInfo>& rtInfos){
             ovx_op->setDataLayout(nnrt::DataLayout::NHWC);
         }
 
-        //if(preference_ == ExecutionPreference::FAST_SINGLE_ANSWER)
-        //    native_model_->relax(true); // convert fp32 data to fp16 in nnrt.
+        if(model_.relaxComputationFloat32toFloat16)
+            native_model_->relax(true); // convert fp32 data to fp16 in nnrt.
 
         native_model_->finish();
         std::vector<uint32_t> inputs = model_.inputIndexes;
