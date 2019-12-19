@@ -416,7 +416,7 @@ void Operation::permuteConstOperands(Model& model,
                 operandPtr->setPerm(permVal);
                 operandPtr->dimensions = dimensionTrans(operandPtr->dimensions, permVal);
             } else {
-                NNRT_LOGW_PRINT("Can not convert const operand, ndim != permVal.size()");
+                NNRT_LOGE_PRINT("Can not convert const operand, ndim != permVal.size()");
                 assert(false);
             }
         }

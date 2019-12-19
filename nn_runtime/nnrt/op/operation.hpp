@@ -197,6 +197,8 @@ namespace utils {
 /**
  * @brief create Permute Operation
  *
+ * Don't insert permute operation for 1-D tensor
+ *
  * @param model which model will use this permute, input/output operand also added into model
  * @return OperationPtr return none-nullptr if permute is required else nullptr and nothing
  * changed in model

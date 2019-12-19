@@ -295,7 +295,8 @@ int OvxlibDelegate::process(nnrt::Model* model, vsi_nn_context_t ctx)
         if (!operand) {
             NNRT_LOGW_PRINT("Not operand found: %u, %u", it->first, it->second);
         }
-        if (operand->isConst() && operand->perm().size() > 0)
+        if (operand->isConst() && operand->perm().size() > 1)
+        // Don't apply transpose for 1-D tensor
         {
             vsi_nn_tensor_t* tensor = vsi_nn_GetTensor(graph_, it->second);
             // TODO: Fixme transpose tensor to use driver whcn sequence.
