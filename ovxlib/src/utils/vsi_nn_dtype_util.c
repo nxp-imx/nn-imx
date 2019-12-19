@@ -558,3 +558,4 @@ final:
     }
     return status;
 } /* vsi_nn_vxConvertFloat32DataToTensor() */
+

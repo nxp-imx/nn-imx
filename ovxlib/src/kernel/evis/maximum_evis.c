@@ -37,62 +37,62 @@
 
 __BEGIN_DECLS
 
-#define KERNEL_NAME_MINIMUM_F16F16TOF16             CVIVANTE_NAMESPACE("minimum_F16F16toF16")
-#define KERNEL_NAME_MINIMUM_F16F16TOF16_2D          CVIVANTE_NAMESPACE("minimum_F16F16toF16_2D")
-#define KERNEL_NAME_MINIMUM_I8I8TOI8                CVIVANTE_NAMESPACE("minimum_I8I8toI8")
-#define KERNEL_NAME_MINIMUM_I8I8TOI8_2D             CVIVANTE_NAMESPACE("minimum_I8I8toI8_2D")
-#define KERNEL_NAME_MINIMUM_I8F16TOI8               CVIVANTE_NAMESPACE("minimum_I8F16toI8")
-#define KERNEL_NAME_MINIMUM_I8F16TOI8_2D            CVIVANTE_NAMESPACE("minimum_I8F16toI8_2D")
-#define KERNEL_NAME_MINIMUM_I8F16TOF16              CVIVANTE_NAMESPACE("minimum_I8F16toF16")
-#define KERNEL_NAME_MINIMUM_I8F16TOF16_2D           CVIVANTE_NAMESPACE("minimum_I8F16toF16_2D")
-#define KERNEL_NAME_MINIMUM_U8F16TOF16              CVIVANTE_NAMESPACE("minimum_U8F16toF16")
-#define KERNEL_NAME_MINIMUM_U8F16TOF16_2D           CVIVANTE_NAMESPACE("minimum_U8F16toF16_2D")
-#define KERNEL_NAME_MINIMUM_U8F16TOU8               CVIVANTE_NAMESPACE("minimum_U8F16toU8")
-#define KERNEL_NAME_MINIMUM_U8F16TOU8_2D            CVIVANTE_NAMESPACE("minimum_U8F16toU8_2D")
-#define KERNEL_NAME_MINIMUM_U8U8TOU8                CVIVANTE_NAMESPACE("minimum_U8U8toU8")
-#define KERNEL_NAME_MINIMUM_U8U8TOU8_2D             CVIVANTE_NAMESPACE("minimum_U8U8toU8_2D")
-#define KERNEL_NAME_MINIMUM_I16I16TOI16             CVIVANTE_NAMESPACE("minimum_I16I16toI16")
-#define KERNEL_NAME_MINIMUM_I16I16TOI16_2D          CVIVANTE_NAMESPACE("minimum_I16I16toI16_2D")
-#define KERNEL_NAME_MINIMUM_I16F16TOI16             CVIVANTE_NAMESPACE("minimum_I16F16toI16")
-#define KERNEL_NAME_MINIMUM_I16F16TOI16_2D          CVIVANTE_NAMESPACE("minimum_I16F16toI16_2D")
-#define KERNEL_NAME_MINIMUM_I16F16TOF16             CVIVANTE_NAMESPACE("minimum_I16F16toF16")
-#define KERNEL_NAME_MINIMUM_I16F16TOF16_2D          CVIVANTE_NAMESPACE("minimum_I16F16toF16_2D")
-#define KERNEL_NAME_MINIMUM_F16F16TOU8              CVIVANTE_NAMESPACE("minimum_F16F16toU8")
-#define KERNEL_NAME_MINIMUM_F16F16TOU8_2D           CVIVANTE_NAMESPACE("minimum_F16F16toU8_2D")
-#define KERNEL_NAME_MINIMUM_F16F16TOI8              CVIVANTE_NAMESPACE("minimum_F16F16toI8")
-#define KERNEL_NAME_MINIMUM_F16F16TOI8_2D           CVIVANTE_NAMESPACE("minimum_F16F16toI8_2D")
+#define KERNEL_NAME_MAXIMUM_F16F16TOF16             CVIVANTE_NAMESPACE("maximum_F16F16toF16")
+#define KERNEL_NAME_MAXIMUM_F16F16TOF16_2D          CVIVANTE_NAMESPACE("maximum_F16F16toF16_2D")
+#define KERNEL_NAME_MAXIMUM_I8I8TOI8                CVIVANTE_NAMESPACE("maximum_I8I8toI8")
+#define KERNEL_NAME_MAXIMUM_I8I8TOI8_2D             CVIVANTE_NAMESPACE("maximum_I8I8toI8_2D")
+#define KERNEL_NAME_MAXIMUM_I8F16TOI8               CVIVANTE_NAMESPACE("maximum_I8F16toI8")
+#define KERNEL_NAME_MAXIMUM_I8F16TOI8_2D            CVIVANTE_NAMESPACE("maximum_I8F16toI8_2D")
+#define KERNEL_NAME_MAXIMUM_I8F16TOF16              CVIVANTE_NAMESPACE("maximum_I8F16toF16")
+#define KERNEL_NAME_MAXIMUM_I8F16TOF16_2D           CVIVANTE_NAMESPACE("maximum_I8F16toF16_2D")
+#define KERNEL_NAME_MAXIMUM_U8F16TOF16              CVIVANTE_NAMESPACE("maximum_U8F16toF16")
+#define KERNEL_NAME_MAXIMUM_U8F16TOF16_2D           CVIVANTE_NAMESPACE("maximum_U8F16toF16_2D")
+#define KERNEL_NAME_MAXIMUM_U8F16TOU8               CVIVANTE_NAMESPACE("maximum_U8F16toU8")
+#define KERNEL_NAME_MAXIMUM_U8F16TOU8_2D            CVIVANTE_NAMESPACE("maximum_U8F16toU8_2D")
+#define KERNEL_NAME_MAXIMUM_U8U8TOU8                CVIVANTE_NAMESPACE("maximum_U8U8toU8")
+#define KERNEL_NAME_MAXIMUM_U8U8TOU8_2D             CVIVANTE_NAMESPACE("maximum_U8U8toU8_2D")
+#define KERNEL_NAME_MAXIMUM_I16I16TOI16             CVIVANTE_NAMESPACE("maximum_I16I16toI16")
+#define KERNEL_NAME_MAXIMUM_I16I16TOI16_2D          CVIVANTE_NAMESPACE("maximum_I16I16toI16_2D")
+#define KERNEL_NAME_MAXIMUM_I16F16TOI16             CVIVANTE_NAMESPACE("maximum_I16F16toI16")
+#define KERNEL_NAME_MAXIMUM_I16F16TOI16_2D          CVIVANTE_NAMESPACE("maximum_I16F16toI16_2D")
+#define KERNEL_NAME_MAXIMUM_I16F16TOF16             CVIVANTE_NAMESPACE("maximum_I16F16toF16")
+#define KERNEL_NAME_MAXIMUM_I16F16TOF16_2D          CVIVANTE_NAMESPACE("maximum_I16F16toF16_2D")
+#define KERNEL_NAME_MAXIMUM_F16F16TOU8              CVIVANTE_NAMESPACE("maximum_F16F16toU8")
+#define KERNEL_NAME_MAXIMUM_F16F16TOU8_2D           CVIVANTE_NAMESPACE("maximum_F16F16toU8_2D")
+#define KERNEL_NAME_MAXIMUM_F16F16TOI8              CVIVANTE_NAMESPACE("maximum_F16F16toI8")
+#define KERNEL_NAME_MAXIMUM_F16F16TOI8_2D           CVIVANTE_NAMESPACE("maximum_F16F16toI8_2D")
 
-#define KERNEL_SOURCE_1    "minimum",
-#define KERNEL_SOURCE_2    "minimum_fp16",
-#define KERNEL_SOURCE_3    "minimum_i16"
+#define KERNEL_SOURCE_1    "maximum",
+#define KERNEL_SOURCE_2    "maximum_fp16",
+#define KERNEL_SOURCE_3    "maximum_i16"
 
-#define HASH_MINIMUM_KEY(_input0_type, _input1_type, _output_type, _image_2d) \
+#define HASH_MAXIMUM_KEY(_input0_type, _input1_type, _output_type, _image_2d) \
     ((_input0_type << 24) | (_input1_type << 16) | (_output_type << 8) | (_image_2d))
 
-#define TENSOR_MIN_KERNELS(IN0_TYPE, IN1_TYPE, OUT_TYPE, SOURCE) \
-    { HASH_MINIMUM_KEY(IN0_TYPE, IN1_TYPE, OUT_TYPE, 0), \
-        KERNEL_NAME_MINIMUM_##IN0_TYPE##IN1_TYPE##TO##OUT_TYPE, \
+#define TENSOR_MAX_KERNELS(IN0_TYPE, IN1_TYPE, OUT_TYPE, SOURCE) \
+    { HASH_MAXIMUM_KEY(IN0_TYPE, IN1_TYPE, OUT_TYPE, 0), \
+        KERNEL_NAME_MAXIMUM_##IN0_TYPE##IN1_TYPE##TO##OUT_TYPE, \
         SOURCE },
 
-#define TENSOR_MIN_KERNELS_2D(IN0_TYPE, IN1_TYPE, OUT_TYPE, SOURCE) \
-    { HASH_MINIMUM_KEY(IN0_TYPE, IN1_TYPE, OUT_TYPE, 1), \
-        KERNEL_NAME_MINIMUM_##IN0_TYPE##IN1_TYPE##TO##OUT_TYPE##_2D, \
+#define TENSOR_MAX_KERNELS_2D(IN0_TYPE, IN1_TYPE, OUT_TYPE, SOURCE) \
+    { HASH_MAXIMUM_KEY(IN0_TYPE, IN1_TYPE, OUT_TYPE, 1), \
+        KERNEL_NAME_MAXIMUM_##IN0_TYPE##IN1_TYPE##TO##OUT_TYPE##_2D, \
         SOURCE },
 
-#define HASH_MINIMUM_SH_KERNEL_NAME(SRC0_TYPE, SRC1_TYPE, DST_TYPE) \
-    CVIVANTE_NAMESPACE("minimum_"#SRC0_TYPE#SRC1_TYPE"to"#DST_TYPE)
+#define HASH_MAXIMUM_SH_KERNEL_NAME(SRC0_TYPE, SRC1_TYPE, DST_TYPE) \
+    CVIVANTE_NAMESPACE("maximum_"#SRC0_TYPE#SRC1_TYPE"to"#DST_TYPE)
 
-#define TENSOR_MIN_KERNELS_HALF(IN0_TYPE, IN1_TYPE, OUT_TYPE, SOURCE) \
-    { HASH_MINIMUM_KEY(IN0_TYPE, IN1_TYPE, OUT_TYPE, 0), \
-        HASH_MINIMUM_SH_KERNEL_NAME(F16, F16, F16), \
+#define TENSOR_MAX_KERNELS_HALF(IN0_TYPE, IN1_TYPE, OUT_TYPE, SOURCE) \
+    { HASH_MAXIMUM_KEY(IN0_TYPE, IN1_TYPE, OUT_TYPE, 0), \
+        HASH_MAXIMUM_SH_KERNEL_NAME(F16, F16, F16), \
         SOURCE },
 
-#define HASH_MINIMUM_SH_KERNEL_2D_NAME(SRC0_TYPE, SRC1_TYPE, DST_TYPE) \
-    CVIVANTE_NAMESPACE("minimum_"#SRC0_TYPE#SRC1_TYPE"to"#DST_TYPE"_2D")
+#define HASH_MAXIMUM_SH_KERNEL_2D_NAME(SRC0_TYPE, SRC1_TYPE, DST_TYPE) \
+    CVIVANTE_NAMESPACE("maximum_"#SRC0_TYPE#SRC1_TYPE"to"#DST_TYPE"_2D")
 
-#define TENSOR_MIN_KERNELS_2D_HALF(IN0_TYPE, IN1_TYPE, OUT_TYPE, SOURCE) \
-    { HASH_MINIMUM_KEY(IN0_TYPE, IN1_TYPE, OUT_TYPE, 1), \
-        HASH_MINIMUM_SH_KERNEL_2D_NAME(F16, F16, F16), \
+#define TENSOR_MAX_KERNELS_2D_HALF(IN0_TYPE, IN1_TYPE, OUT_TYPE, SOURCE) \
+    { HASH_MAXIMUM_KEY(IN0_TYPE, IN1_TYPE, OUT_TYPE, 1), \
+        HASH_MAXIMUM_SH_KERNEL_2D_NAME(F16, F16, F16), \
         SOURCE },
 
 static const struct {
@@ -101,37 +101,37 @@ static const struct {
         const char* source_name;
     } kernel_map[] =
 {
-    TENSOR_MIN_KERNELS_HALF(F16, F16, F16,       KERNEL_SOURCE_1)
-    TENSOR_MIN_KERNELS_HALF(BF16, BF16, BF16,    KERNEL_SOURCE_1)
-    TENSOR_MIN_KERNELS(F16, F16, I8,        KERNEL_SOURCE_1)
-    TENSOR_MIN_KERNELS(I8,  I8, I8,         KERNEL_SOURCE_1)
-    TENSOR_MIN_KERNELS(U8,  U8, U8,         KERNEL_SOURCE_1)
-    TENSOR_MIN_KERNELS(I16, I16, I16,       KERNEL_SOURCE_1)
+    TENSOR_MAX_KERNELS_HALF(F16, F16, F16,       KERNEL_SOURCE_1)
+    TENSOR_MAX_KERNELS_HALF(BF16, BF16, BF16,    KERNEL_SOURCE_1)
+    TENSOR_MAX_KERNELS(F16, F16, I8,        KERNEL_SOURCE_1)
+    TENSOR_MAX_KERNELS(I8,  I8, I8,         KERNEL_SOURCE_1)
+    TENSOR_MAX_KERNELS(U8,  U8, U8,         KERNEL_SOURCE_1)
+    TENSOR_MAX_KERNELS(I16, I16, I16,       KERNEL_SOURCE_1)
 
-    TENSOR_MIN_KERNELS(F16, F16, U8,        KERNEL_SOURCE_2)
-    TENSOR_MIN_KERNELS(I8,  F16, I8,        KERNEL_SOURCE_2)
-    TENSOR_MIN_KERNELS(I8,  F16, F16,       KERNEL_SOURCE_2)
-    TENSOR_MIN_KERNELS(U8,  F16, U8,        KERNEL_SOURCE_2)
-    TENSOR_MIN_KERNELS(U8,  F16, F16,       KERNEL_SOURCE_2)
+    TENSOR_MAX_KERNELS(F16, F16, U8,        KERNEL_SOURCE_2)
+    TENSOR_MAX_KERNELS(I8,  F16, I8,        KERNEL_SOURCE_2)
+    TENSOR_MAX_KERNELS(I8,  F16, F16,       KERNEL_SOURCE_2)
+    TENSOR_MAX_KERNELS(U8,  F16, U8,        KERNEL_SOURCE_2)
+    TENSOR_MAX_KERNELS(U8,  F16, F16,       KERNEL_SOURCE_2)
 
-    TENSOR_MIN_KERNELS(I16, F16, I16,       KERNEL_SOURCE_3)
-    TENSOR_MIN_KERNELS(I16, F16, F16,       KERNEL_SOURCE_3)
+    TENSOR_MAX_KERNELS(I16, F16, I16,       KERNEL_SOURCE_3)
+    TENSOR_MAX_KERNELS(I16, F16, F16,       KERNEL_SOURCE_3)
 
-    TENSOR_MIN_KERNELS_2D_HALF(F16, F16, F16,    KERNEL_SOURCE_1)
-    TENSOR_MIN_KERNELS_2D_HALF(BF16, BF16, BF16, KERNEL_SOURCE_1)
-    TENSOR_MIN_KERNELS_2D(F16, F16, I8,     KERNEL_SOURCE_1)
-    TENSOR_MIN_KERNELS_2D(I8,  I8, I8,      KERNEL_SOURCE_1)
-    TENSOR_MIN_KERNELS_2D(U8,  U8, U8,      KERNEL_SOURCE_1)
-    TENSOR_MIN_KERNELS_2D(I16, I16, I16,    KERNEL_SOURCE_1)
+    TENSOR_MAX_KERNELS_2D_HALF(F16, F16, F16,    KERNEL_SOURCE_1)
+    TENSOR_MAX_KERNELS_2D_HALF(BF16, BF16, BF16, KERNEL_SOURCE_1)
+    TENSOR_MAX_KERNELS_2D(F16, F16, I8,     KERNEL_SOURCE_1)
+    TENSOR_MAX_KERNELS_2D(I8,  I8, I8,      KERNEL_SOURCE_1)
+    TENSOR_MAX_KERNELS_2D(U8,  U8, U8,      KERNEL_SOURCE_1)
+    TENSOR_MAX_KERNELS_2D(I16, I16, I16,    KERNEL_SOURCE_1)
 
-    TENSOR_MIN_KERNELS_2D(F16, F16, U8,     KERNEL_SOURCE_2)
-    TENSOR_MIN_KERNELS_2D(I8,  F16, I8,     KERNEL_SOURCE_2)
-    TENSOR_MIN_KERNELS_2D(I8,  F16, F16,    KERNEL_SOURCE_2)
-    TENSOR_MIN_KERNELS_2D(U8,  F16, U8,     KERNEL_SOURCE_2)
-    TENSOR_MIN_KERNELS_2D(U8,  F16, F16,    KERNEL_SOURCE_2)
+    TENSOR_MAX_KERNELS_2D(F16, F16, U8,     KERNEL_SOURCE_2)
+    TENSOR_MAX_KERNELS_2D(I8,  F16, I8,     KERNEL_SOURCE_2)
+    TENSOR_MAX_KERNELS_2D(I8,  F16, F16,    KERNEL_SOURCE_2)
+    TENSOR_MAX_KERNELS_2D(U8,  F16, U8,     KERNEL_SOURCE_2)
+    TENSOR_MAX_KERNELS_2D(U8,  F16, F16,    KERNEL_SOURCE_2)
 
-    TENSOR_MIN_KERNELS_2D(I16, F16, I16,    KERNEL_SOURCE_3)
-    TENSOR_MIN_KERNELS_2D(I16, F16, F16,    KERNEL_SOURCE_3)
+    TENSOR_MAX_KERNELS_2D(I16, F16, I16,    KERNEL_SOURCE_3)
+    TENSOR_MAX_KERNELS_2D(I16, F16, F16,    KERNEL_SOURCE_3)
 };
 
 static vx_param_description_t kernel_param_def[] =
@@ -142,7 +142,7 @@ static vx_param_description_t kernel_param_def[] =
 };
 #define _EVIS_PARAM_NUM          _cnt_of_array(kernel_param_def)
 
-DEF_KERNEL_INITIALIZER(_minimum_initializer)
+DEF_KERNEL_INITIALIZER(_maximum_initializer)
     (
     vsi_nn_kernel_node_t node,
     const vsi_nn_kernel_node_param_t * param,
@@ -549,7 +549,7 @@ DEF_KERNEL_INITIALIZER(_minimum_initializer)
     vsi_nn_kernel_tensor_attr_release( &attr[1] );
     vsi_nn_kernel_tensor_attr_release( &attr[2] );
     return status;
-} /* _minmum_initializer() */
+} /* _maxmum_initializer() */
 
 static vsi_status _query_kernel
     (
@@ -569,7 +569,7 @@ static vsi_status _query_kernel
     input0_dtype = vsi_nn_kernel_map_dtype( inputs[0]->attr.dtype.vx_type );
     input1_dtype = vsi_nn_kernel_map_dtype( inputs[1]->attr.dtype.vx_type );
     output_dtype = vsi_nn_kernel_map_dtype( outputs[0]->attr.dtype.vx_type );
-    key = HASH_MINIMUM_KEY( input0_dtype, input1_dtype, output_dtype, image_2d );
+    key = HASH_MAXIMUM_KEY( input0_dtype, input1_dtype, output_dtype, image_2d );
 
     for( i = 0; i < _cnt_of_array(kernel_map); i ++ )
     {
@@ -583,7 +583,7 @@ static vsi_status _query_kernel
         snprintf( kernel->info.name, VX_MAX_KERNEL_NAME, "%s",  kernel_map[i].function_name );
         kernel->info.parameters = kernel_param_def;
         kernel->info.numParams = _cnt_of_array( kernel_param_def );
-        kernel->info.initialize = _minimum_initializer;
+        kernel->info.initialize = _maximum_initializer;
         vsi_nn_kernel_add_source( kernel, VSI_NN_GPU_SOURCE_FMT_CODE, 2,
                 "vsi_nn_kernel_header",
                 kernel_map[i].source_name );
@@ -649,5 +649,5 @@ static vsi_nn_kernel_node_t _setup
 
 __END_DECLS
 
-REGISTER_BACKEND_EVIS( minimum, _setup )
+REGISTER_BACKEND_EVIS( maximum, _setup )
 

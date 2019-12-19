@@ -28,6 +28,7 @@
 #define GPU_TENSOR_MAX_WIDTH    (65536)
 #define GPU_MAX_MULTIPLIER_NUM  (65535)
 #define GPU_MAX_POST_SHIFT_BITS (31)
+#define GPU_TENSOR_DIM_2        (2)
 
 #endif
 

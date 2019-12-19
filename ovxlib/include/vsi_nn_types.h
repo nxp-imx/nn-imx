@@ -43,6 +43,10 @@ typedef int32_t  vsi_enum;
 typedef int32_t  vsi_status;
 /** Bool type */
 typedef int32_t   vsi_bool;
+/** Half */
+typedef uint16_t vsi_float16;
+/** Truncate float16 */
+typedef uint16_t vsi_bfloat16;
 
 #ifndef TRUE
 #define TRUE 1

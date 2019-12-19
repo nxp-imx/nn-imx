@@ -562,3 +562,65 @@ vsi_nn_internal_node_t* vsi_nn_get_internal_node_by_uid
 
     return NULL;
 } /* vsi_nn_get_internal_node_by_uid() */
+
+void vsi_nn_dump_internal_node_output
+    (
+    vsi_nn_graph_t * graph,
+    const char * path,
+    const char * filename_prefix,
+    vsi_bool force_fp32,
+    vsi_nn_node_t * node
+    )
+{
+#define _MAX_TENSOR_NAME_SZ (1024)
+#define _SHAPE_BUF_SZ   (64)
+    char shape[_SHAPE_BUF_SZ] = { 0 };
+    char filename[_MAX_TENSOR_NAME_SZ] = { 0 };
+    const char * op_name;
+    uint32_t o;
+    vsi_nn_internal_node_t* head = ((vsi_nn_internal_node_wksp_t *)node->internal_node_wksp)->nodes;
+    while( NULL != head )
+    {
+        vsi_nn_internal_node_t* curr = (vsi_nn_internal_node_t *)vsi_nn_LinkListPopStart(
+            (vsi_nn_link_list_t **)&head );
+        if( curr )
+        {
+            if (curr->node->internal_node_wksp)
+            {
+                vsi_nn_dump_internal_node_output(graph, path, filename_prefix,
+                    force_fp32, curr->node);
+            }
+            else
+            {
+                for( o = 0; o < curr->node->output.num; o++ )
+                {
+                    vsi_nn_tensor_t *tensor = curr->outputs[o];
+                    if( tensor )
+                    {
+                        if( TRUE == tensor->attr.vtl )
+                        {
+                            VSILOGW("Uid %u node's tensor %d is virtual",
+                                curr->node->uid, o);
+                            continue;
+                        }
+                        // TODO: Support different tensor format
+                        vsi_nn_ShapeToString( tensor->attr.size, tensor->attr.dim_num,
+                            shape, _SHAPE_BUF_SZ, FALSE );
+                        op_name = vsi_nn_OpGetName( curr->node->op );
+                        snprintf( filename, _MAX_TENSOR_NAME_SZ,
+                            "%s/%s%s_uid_%u_sub_%u_t_%u_s_%s.txt", path, filename_prefix,
+                            op_name, node->uid, curr->node->uid, o, shape);
+                        if( FALSE == force_fp32 )
+                        {
+                            vsi_nn_SaveTensorToText( graph, tensor, filename, NULL );
+                        }
+                        else
+                        {
+                            vsi_nn_SaveTensorToTextByFp32( graph, tensor, filename, NULL );
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

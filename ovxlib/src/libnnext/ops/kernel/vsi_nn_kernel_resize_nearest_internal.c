@@ -77,16 +77,6 @@ static vsi_status vsi_nn_Float32ToDtype_Ext
     return vsi_nn_DtypeConvert( (uint8_t *)&src, &src_dtype, dst, dst_dtype );
 } /* vsi_nn_Float32ToDtype_Ext */
 
-#if defined(WIN32) && !defined(__MINGW32__)
-static vx_float32 roundf(vx_float32 x)
-{
-#if defined(_M_X64)
-    return (vx_float32) _copysignf(floorf(fabsf(x) + 0.5f), x);
-#else
-    return (vx_float32) _copysign(floorf(fabsf(x) + 0.5f), x);
-#endif
-}
-#endif
 
 static vsi_status VX_CALLBACK vxResize_nearest_internalKernel
     (
@@ -190,7 +180,7 @@ static vsi_status VX_CALLBACK vxResize_nearest_internalKernel
                 }
                 if (align_corners)
                 {
-                    in_y = gcmMIN((vx_uint32)roundf(input_h), input_height - 1);
+                    in_y = gcmMIN((vx_uint32)simple_round(input_h), input_height - 1);
                 }
                 else
                 {
@@ -215,7 +205,7 @@ static vsi_status VX_CALLBACK vxResize_nearest_internalKernel
                     }
                     if (align_corners)
                     {
-                        in_x = gcmMIN((vx_uint32)roundf(input_w), input_width - 1);
+                        in_x = gcmMIN((vx_uint32)simple_round(input_w), input_width - 1);
                     }
                     else
                     {

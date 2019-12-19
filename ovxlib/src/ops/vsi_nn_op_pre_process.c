@@ -86,7 +86,7 @@ static vsi_bool op_setup
 
     vsi_nn_init_internal_node_wksp( self );
 
-    if (p->type == VSI_NN_PRE_PROCESS_TENSOR)
+    if (p->type == VSI_NN_SOURCE_FORMAT_TENSOR)
     {
         curr = vsi_nn_new_internal_node( self, VSI_NN_OP_PRE_PROCESS_TENSOR, 0, 0 );
 
@@ -98,7 +98,7 @@ static vsi_bool op_setup
 
         vsi_nn_setup_internal_node_op(self, curr);
     }
-    else if (p->type == VSI_NN_PRE_PROCESS_GRAY)
+    else if (p->type == VSI_NN_SOURCE_FORMAT_IMAGE_GRAY)
     {
         curr = vsi_nn_new_internal_node( self, VSI_NN_OP_PRE_PROCESS_GRAY, 0, 0 );
 
@@ -116,7 +116,7 @@ static vsi_bool op_setup
 
         vsi_nn_setup_internal_node_op(self, curr);
     }
-    else if (p->type == VSI_NN_PRE_PROCESS_RGB)
+    else if (p->type == VSI_NN_SOURCE_FORMAT_IMAGE_RGB)
     {
         curr = vsi_nn_new_internal_node( self, VSI_NN_OP_PRE_PROCESS_RGB, 0, 0 );
 
@@ -149,7 +149,7 @@ static vsi_bool op_setup
 
         vsi_nn_setup_internal_node_op(self, curr);
     }
-    else if (p->type == VSI_NN_PRE_PROCESS_YUV420)
+    else if (p->type == VSI_NN_SOURCE_FORMAT_IMAGE_YUV420)
     {
         curr = vsi_nn_new_internal_node( self, VSI_NN_OP_PRE_PROCESS_YUV420, 0, 0 );
 
@@ -184,7 +184,7 @@ static vsi_bool op_setup
 
         vsi_nn_setup_internal_node_op(self, curr);
     }
-    else if (p->type == VSI_NN_PRE_PROCESS_BGRA)
+    else if (p->type == VSI_NN_SOURCE_FORMAT_IMAGE_BGRA)
     {
         curr = vsi_nn_new_internal_node( self, VSI_NN_OP_PRE_PROCESS_BGRA, 0, 0 );
 

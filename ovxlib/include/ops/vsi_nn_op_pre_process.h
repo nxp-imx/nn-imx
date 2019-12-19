@@ -25,6 +25,9 @@
 #define _VSI_NN_OP_PRE_PROCESS_H
 
 #include "vsi_nn_types.h"
+#include "vsi_nn_pre_post_process.h"
+
+typedef  vsi_nn_preprocess_source_format_e vsi_nn_pre_process_type_e;
 
 enum
 {
@@ -39,16 +42,6 @@ enum
 
     PRE_PROCESS_OUTPUT_CNT
 };
-
-typedef uint32_t vsi_nn_pre_process_type_e; enum
-{
-    VSI_NN_PRE_PROCESS_TENSOR = 0,
-    VSI_NN_PRE_PROCESS_GRAY,
-    VSI_NN_PRE_PROCESS_RGB,
-    VSI_NN_PRE_PROCESS_YUV420,
-    VSI_NN_PRE_PROCESS_BGRA,
-};
-
 
 typedef struct _vsi_nn_pre_process_param
 {

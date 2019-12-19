@@ -21,43 +21,37 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#ifndef _VSI_NN_ERROR_H
-#define _VSI_NN_ERROR_H
 
-#include <assert.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include "vsi_nn_types.h"
+#include "vsi_nn_tensor.h"
+#include "vsi_nn_graph.h"
 #include "vsi_nn_log.h"
+#include "vsi_nn_prv.h"
+#include "vsi_nn_error.h"
+#include "vsi_nn_tensor_util.h"
 #include "utils/vsi_nn_util.h"
+#include "kernel/vsi_nn_kernel.h"
 
-#define VSI_ASSERT( cond )  assert(cond)
+__BEGIN_DECLS
 
-#define VSI_CHECK_PTR( pointer, msg, retval ) \
-    do { \
-        if( pointer == NULL ) { \
-            VSILOGD("%s",msg); \
-            VSI_ASSERT(FALSE); \
-        } \
-    } while(0)
+static vsi_nn_kernel_node_t _setup
+    (
+    vsi_nn_graph_t              * graph,
+    vsi_nn_tensor_t            ** inputs,
+    size_t                        input_num,
+    vsi_nn_tensor_t            ** outputs,
+    size_t                        output_num,
+    const vsi_nn_kernel_param_t * params,
+    vsi_nn_kernel_t             * kernel
+    )
+{
+    return NULL;
+} /* _setup() */
 
+__END_DECLS
 
-#define CHECK_STATUS_FAIL_GOTO( stat, lbl )  do {\
-    if( VSI_SUCCESS != stat ) {\
-        VSILOGE("CHECK STATUS(%d:%s)", (stat), vsi_nn_DescribeStatus(stat));\
-        goto lbl;\
-    }\
-} while(0)
+REGISTER_BACKEND_EVIS( argmax, _setup )
 
-#define CHECK_STATUS( stat )  do {\
-    if( VSI_SUCCESS != stat ) {\
-        VSILOGE("CHECK STATUS(%d:%s)", (stat), vsi_nn_DescribeStatus(stat));\
-    }\
-} while(0)
-
-#define CHECK_PTR_FAIL_GOTO( pointer, msg, lbl ) \
-    do { \
-        if( pointer == NULL ) { \
-            VSILOGD("CHECK POINTER %s", msg); \
-            goto lbl; \
-        } \
-    } while(0)
-
-#endif

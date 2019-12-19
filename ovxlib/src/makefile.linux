@@ -52,7 +52,8 @@ OBJECTS =   $(OBJ_DIR)/vsi_nn_context.o \
             $(OBJ_DIR)/vsi_nn_version.o \
             $(OBJ_DIR)/vsi_nn_rnn.o \
             $(OBJ_DIR)/vsi_nn_internal_node.o \
-            $(OBJ_DIR)/vsi_nn_log.o
+            $(OBJ_DIR)/vsi_nn_log.o \
+            $(OBJ_DIR)/vsi_nn_pre_post_process.o
 
 vpath %.c client
 OBJECTS +=   $(OBJ_DIR)/vsi_nn_vxkernel.o
@@ -64,6 +65,8 @@ OBJECTS +=   $(OBJ_DIR)/vsi_nn_code_generator.o   \
              $(OBJ_DIR)/vsi_nn_link_list.o   \
              $(OBJ_DIR)/vsi_nn_math.o   \
              $(OBJ_DIR)/vsi_nn_dtype_util.o   \
+             $(OBJ_DIR)/vsi_nn_shape_util.o   \
+             $(OBJ_DIR)/vsi_nn_dtype.o   \
              $(OBJ_DIR)/vsi_nn_limits.o   \
              $(OBJ_DIR)/vsi_nn_vdata.o   \
              $(OBJ_DIR)/vsi_nn_util.o    \

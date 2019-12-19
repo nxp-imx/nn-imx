@@ -281,7 +281,8 @@ static vx_program _create_program
         sources[i] = (vx_char*)program_info[i].data;
         source_sizes[i] = (vx_size)program_info[i].size;
     }
-    program = vxCreateProgramWithSource( ctx, num, (const vx_char**)sources, source_sizes);
+    program = vxCreateProgramWithSource( ctx, (vx_uint32)num,
+            (const vx_char**)sources, source_sizes );
     status = vxGetStatus( (vx_reference)program );
     if(VSI_SUCCESS != status)
     {
@@ -635,7 +636,7 @@ vsi_status vsi_nn_kernel_node_pass_param
     )
 {
     vsi_status status;
-    size_t i;
+    uint32_t i;
 
     status = VSI_FAILURE;
     for( i = 0; i < num; i++ )

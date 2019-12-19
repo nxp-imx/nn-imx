@@ -31,10 +31,15 @@
 #include "vsi_nn_graph.h"
 #include "vsi_nn_tensor.h"
 #include "vsi_nn_daemon.h"
+#include "vsi_nn_prv.h"
+#include "utils/vsi_nn_util.h"
+#include "utils/vsi_nn_shape_util.h"
 #include "utils/vsi_nn_hashmap.h"
 #include "utils/vsi_nn_math.h"
 #include "kernel/vsi_nn_gpu.h"
 #include "libnnext/vx_lib_nnext.h"
+
+__BEGIN_DECLS
 
 /** Kernel types */
 typedef enum
@@ -72,6 +77,7 @@ typedef enum
     VSI_NN_KERNEL_QUANT_ASYMM_PERCHANNEL,
     VSI_NN_KERNEL_QUANT_SYMM,
     VSI_NN_KERNEL_QUANT_SYMM_PERCHANNEL,
+    VSI_NN_KERNEL_QUANT_TYPE_NUM
 } vsi_nn_kernel_quant_type_e;
 
 /** GPU source format */
@@ -119,6 +125,7 @@ typedef struct
 {
     vsi_float_array_t * scale;
     vsi_int_array_t   * zero_point;
+    int32_t             channel_dim;
 } vsi_nn_kernel_quant_asymm_perchannel_t;
 
 typedef struct
@@ -415,8 +422,9 @@ static inline vsi_nn_kernel_dtype_e vsi_nn_kernel_map_dtype
     case VSI_NN_TYPE_UINT32:
         return U32;
     case VSI_NN_TYPE_FLOAT16:
-    case VSI_NN_TYPE_BFLOAT16:
         return F16;
+    case VSI_NN_TYPE_BFLOAT16:
+        return BF16;
     case VSI_NN_TYPE_FLOAT32:
         return F32;
     default:
@@ -425,6 +433,34 @@ static inline vsi_nn_kernel_dtype_e vsi_nn_kernel_map_dtype
     }
     return I8;
 } /* vsi_nn_kernel_map_dtype() */
+
+static inline size_t vsi_nn_kernel_dtype_get_bytes
+    (
+    vsi_nn_kernel_dtype_e dtype
+    )
+{
+    switch( dtype )
+    {
+        case I8:
+        case U8:
+        case BOOL8:
+            return sizeof(int8_t);
+        case I16:
+        case U16:
+        case F16:
+            return sizeof(int16_t);
+        case I32:
+        case U32:
+        case F32:
+            return sizeof(int32_t);
+        case I64:
+            return sizeof(int64_t);
+        default:
+            VSILOGE("Error data type %d", dtype);
+            break;
+    }
+    return 0;
+} /* vsi_nn_kernel_dtype_get_bytes() */
 
 static inline vsi_nn_kernel_quant_type_e vsi_nn_kernel_map_quant_type
     ( vsi_nn_qnt_type_e quant_type )
@@ -492,5 +528,181 @@ vsi_nn_kernel_tensor_attr_t * vsi_nn_kernel_tensor_attr_create
 
 void vsi_nn_kernel_tensor_attr_release
     ( vsi_nn_kernel_tensor_attr_t ** attr );
+
+/*
+ * Create a buffer with a copy of tensor data.
+ * attr is optional
+ */
+void * vsi_nn_kernel_tensor_create_buffer
+    (
+    vsi_nn_kernel_tensor_t tensor,
+    const vsi_nn_kernel_tensor_attr_t * attr,
+    vsi_bool convert_to_float
+    );
+
+/*
+ * Read tensor data to buffer.
+ * attr is optional
+ */
+vsi_status vsi_nn_kernel_tensor_read
+    (
+    vsi_nn_kernel_tensor_t tensor,
+    const vsi_nn_kernel_tensor_attr_t * attr,
+    void * out_buffer,
+    size_t out_buffer_size
+    );
+
+/*
+ * Write float data to tensor.
+ * attr is optional
+ */
+vsi_status vsi_nn_kernel_tensor_write_from_float
+    (
+    vsi_nn_kernel_tensor_t tensor,
+    const vsi_nn_kernel_tensor_attr_t * attr,
+    const float * float_buffer,
+    size_t size
+    );
+
+/*
+ * Write data to tensor.
+ * attr is optional
+ */
+vsi_status vsi_nn_kernel_tensor_write
+    (
+    vsi_nn_kernel_tensor_t tensor,
+    const vsi_nn_kernel_tensor_attr_t * attr,
+    const void * buffer,
+    size_t size
+    );
+
+static inline size_t vsi_nn_kernel_tensor_attr_get_size
+    ( const vsi_nn_kernel_tensor_attr_t * attr )
+{
+    if( !attr )
+    {
+        return 0;
+    }
+    return vsi_nn_shape_get_size( attr->shape->data, attr->shape->size );
+} /* vsi_nn_kernel_tensor_attr_get_size() */
+
+static inline size_t vsi_nn_kernel_tensor_attr_get_bytes
+    ( const vsi_nn_kernel_tensor_attr_t * attr )
+{
+    size_t size;
+    size_t type_bytes;
+    if( !attr )
+    {
+        return 0;
+    }
+    size = vsi_nn_kernel_tensor_attr_get_size( attr );
+    type_bytes = vsi_nn_kernel_dtype_get_bytes( attr->dtype );
+    return size * type_bytes;
+} /* vsi_nn_kernel_tensor_attr_get_bytes() */
+
+static inline void vsi_nn_kernel_tensor_attr_get_stride
+    ( const vsi_nn_kernel_tensor_attr_t * attr, size_t * out_stride)
+{
+    if( !attr || !out_stride )
+    {
+        return;
+    }
+    return vsi_nn_shape_get_stride( attr->shape->data, attr->shape->size, out_stride );
+} /* vsi_nn_kernel_tensor_attr_get_size() */
+
+static inline vsi_bool vsi_nn_kernel_tensor_attr_is_quantized
+    ( const vsi_nn_kernel_tensor_attr_t * attr )
+{
+    return ( attr && attr->quant > VSI_NN_KERNEL_QUANT_NONE
+            && attr->quant < VSI_NN_KERNEL_QUANT_TYPE_NUM );
+} /* vsi_nn_kernel_tensor_attr_is_quantized() */
+
+//TODO: Make vsi_nn_kernel_dtype_e to public and move dtype functions to vsi_nn_dtype.h
+vsi_bool vsi_nn_dtype_convert_float_to_dtype
+    (
+    const float * buffer, size_t size,
+    vsi_nn_kernel_dtype_e dtype,
+    void * out_buffer
+    );
+
+vsi_bool vsi_nn_dtype_convert_float_to_quantize_asymm
+    (
+    const float * buffer, size_t size,
+    vsi_nn_kernel_dtype_e dtype,
+    float scale, int32_t zero_point,
+    void * out_buffer
+    );
+
+vsi_bool vsi_nn_dtype_convert_float_to_quantize_dfp
+    (
+    const float * buffer, size_t size,
+    vsi_nn_kernel_dtype_e dtype,
+    int32_t fl,
+    void * out_buffer
+    );
+
+vsi_bool vsi_nn_dtype_convert_float_to_quantize_symm
+    (
+    const float * buffer, size_t size,
+    vsi_nn_kernel_dtype_e dtype,
+    float scale, int32_t zero_point,
+    void * out_buffer
+    );
+
+vsi_bool vsi_nn_dtype_convert_float_to_quantize_symm_perchannel
+    (
+    const float * buffer, size_t size,
+    vsi_nn_kernel_dtype_e dtype,
+    const int32_t * shape, size_t rank,
+    const float * scale, size_t scale_size,
+    const int32_t * zero_point, size_t zero_point_size,
+    int32_t channel_dim,
+    void * out_buffer
+    );
+
+vsi_bool vsi_nn_dtype_convert_dtype_to_float
+    (
+    const void * buffer,
+    size_t size,
+    vsi_nn_kernel_dtype_e dtype,
+    float * out_buffer
+    );
+
+vsi_bool vsi_nn_dtype_convert_quantize_asymm_to_float
+    (
+    const void * buffer, size_t size,
+    vsi_nn_kernel_dtype_e dtype,
+    float scale, int32_t zero_point,
+    float * out_buffer
+    );
+
+vsi_bool vsi_nn_dtype_convert_quantize_dfp_to_float
+    (
+    const void * buffer, size_t size,
+    vsi_nn_kernel_dtype_e dtype,
+    int32_t fl,
+    float * out_buffer
+    );
+
+vsi_bool vsi_nn_dtype_convert_quantize_symm_to_float
+    (
+    const void * buffer, size_t size,
+    vsi_nn_kernel_dtype_e dtype,
+    float scale, int32_t zero_point,
+    float * out_buffer
+    );
+
+vsi_bool vsi_nn_dtype_convert_quantize_symm_perchannel_to_float
+    (
+    const void * buffer, size_t size,
+    vsi_nn_kernel_dtype_e dtype,
+    const int32_t * shape, size_t rank,
+    const float * scale, size_t scale_size,
+    const int32_t * zero_point, size_t zero_point_size,
+    int32_t channel_dim,
+    float * out_buffer
+    );
+
+__END_DECLS
 
 #endif

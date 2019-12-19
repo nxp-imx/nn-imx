@@ -31,11 +31,7 @@
 #include "vsi_nn_log.h"
 #include "vsi_nn_prv.h"
 #include "vsi_nn_error.h"
-#include "vsi_nn_tensor_util.h"
-#include "utils/vsi_nn_util.h"
-#include "utils/vsi_nn_dtype_util.h"
 #include "kernel/vsi_nn_kernel.h"
-#include "kernel/vsi_nn_kernel_eltwise.h"
 #include "client/vsi_nn_vxkernel.h"
 
 __BEGIN_DECLS
@@ -47,123 +43,100 @@ __BEGIN_DECLS
 #define _CPU_PARAM_NUM          (_CPU_ARG_NUM + _CPU_IO_NUM)
 #define _KERNEL_NAME            CVIVANTE_NAMESPACE("minimum_sw")
 
-static uint32_t getExpandTensorOffset(uint32_t index, uint32_t num_of_dims, uint32_t * in_dims,
-                                       uint32_t *strides, uint32_t * out_dims)
+static int32_t _expand_offset
+    (
+    int32_t index,
+    int32_t * shape, size_t rank,
+    size_t * strides, int32_t * out_shape
+    )
 {
-    uint32_t offset = 0;
     uint32_t i;
+    int32_t offset = 0;
 
-    for(i = 0; i < num_of_dims; i++)
+    for( i = 0; i < rank && index; i ++ )
     {
-        if(in_dims[i] == out_dims[i])
-            offset += strides[i] * (index % out_dims[i]);
-
-        index /= out_dims[i];
+        if( shape[i] == out_shape[i] )
+        {
+            offset += strides[i] * ( index % out_shape[i] );
+        }
+        index /= out_shape[i];
     }
-
     return offset;
 }
 
-static vsi_status VX_CALLBACK _minimum_kernel
+DEF_KERNEL_EXECUTOR(_minimum_exec)
     (
-    vx_node node,
-    const vx_reference* paramObj,
-    uint32_t paramNum
+    vsi_nn_kernel_node_t node,
+    const vsi_nn_kernel_node_param_t * param,
+    size_t param_size
     )
 {
     vsi_status status = VX_SUCCESS;
-    vx_tensor            input0             = NULL;
-    vx_tensor            input1             = NULL;
-    vx_tensor            output             = NULL;
-    float                *f32_in0_buffer    = NULL;
-    float                *f32_in1_buffer    = NULL;
-    float                *f32_out_buffer    = NULL;
-    uint32_t             in0_elements       = 0;
-    uint32_t             in1_elements       = 0;
-    uint32_t             out_elements       = 0;
-    vsi_nn_tensor_attr_t attr[_CPU_IO_NUM];
-    uint32_t    stride_size[_CPU_IO_NUM][VSI_NN_MAX_DIM_NUM];
+    vsi_nn_kernel_tensor_t tensors[_CPU_IO_NUM] = { NULL };
+    float * buffer[_CPU_IO_NUM] = { NULL };
+    size_t out_elements = 0;
+    size_t out_bytes = 0;
+    size_t stride_size[_CPU_INPUT_NUM][VSI_NN_MAX_DIM_NUM] = {{0}};
+    vsi_nn_kernel_tensor_attr_t * attr[_CPU_IO_NUM] = { NULL };
+    uint32_t i;
 
-    vx_context   context                     = vxGetContext((vx_reference)node);
-    vx_uint32    i                           = 0;
+    tensors[0]  = (vsi_nn_kernel_tensor_t)param[0];
+    tensors[1]  = (vsi_nn_kernel_tensor_t)param[1];
+    tensors[2]  = (vsi_nn_kernel_tensor_t)param[2];
 
-    for (i = 0; i < _CPU_IO_NUM; i++)
+    attr[0] = vsi_nn_kernel_tensor_attr_create( tensors[0] );
+    attr[1] = vsi_nn_kernel_tensor_attr_create( tensors[1] );
+    attr[2] = vsi_nn_kernel_tensor_attr_create( tensors[2] );
+
+    vsi_nn_kernel_tensor_attr_get_stride( attr[0], stride_size[0] );
+    vsi_nn_kernel_tensor_attr_get_stride( attr[1], stride_size[1] );
+
+    out_elements = vsi_nn_kernel_tensor_attr_get_size( attr[2] );
+    out_bytes = vsi_nn_kernel_tensor_attr_get_bytes( attr[2] );
+
+    buffer[0] = (float*)vsi_nn_kernel_tensor_create_buffer( tensors[0], attr[0], TRUE );
+    CHECK_PTR_FAIL_GOTO( buffer[0], "Create input0 buffer fail.", final );
+
+    buffer[1] = (float*)vsi_nn_kernel_tensor_create_buffer( tensors[1], attr[1], TRUE );
+    CHECK_PTR_FAIL_GOTO( buffer[1], "Create input1 buffer fail.", final );
+
+    buffer[2] = (float *)malloc( out_bytes );
+    CHECK_PTR_FAIL_GOTO( buffer[2], "Create output buffer fail.", final );
+    memset( buffer[2], 0, out_bytes );
+
+    for( i = 0; i < out_elements; i ++ )
     {
-        memset(&attr[i], 0, sizeof(vsi_nn_tensor_attr_t));
+        int32_t in0_offset = 0;
+        int32_t in1_offset = 0;
+        float val1 = 0.f;
+        float val2 = 0.f;
+
+        in0_offset = _expand_offset( i, attr[0]->shape->data, attr[0]->shape->size,
+                stride_size[0], attr[2]->shape->data );
+        in1_offset = _expand_offset( i, attr[1]->shape->data, attr[1]->shape->size,
+                stride_size[1], attr[2]->shape->data );
+
+        val1 = buffer[0][in0_offset];
+        val2 = buffer[1][in1_offset];
+
+        buffer[2][i] = vsi_nn_min( val1, val2 );
     }
 
-    input0  = (vx_tensor)paramObj[0];
-    input1  = (vx_tensor)paramObj[1];
-    output = (vx_tensor)paramObj[2];
-
-    /* Fill input & output attribute data struct */
-    status = vsi_nn_vxGetTensorAttr(input0, &attr[0]);
-    CHECK_STATUS_FAIL_GOTO(status, final);
-    status = vsi_nn_vxGetTensorAttr(input1, &attr[1]);
-    CHECK_STATUS_FAIL_GOTO(status, final);
-    status = vsi_nn_vxGetTensorAttr(output, &attr[2]);
-    CHECK_STATUS_FAIL_GOTO(status, final);
-
-    vsi_nn_GetStrideSize( &attr[0], stride_size[0] );
-    vsi_nn_GetStrideSize( &attr[1], stride_size[1] );
-    vsi_nn_GetStrideSize( &attr[2], stride_size[2] );
-
-    in0_elements = vsi_nn_vxGetTensorElementNum(&attr[0]);
-    in1_elements = vsi_nn_vxGetTensorElementNum(&attr[1]);
-    out_elements = vsi_nn_vxGetTensorElementNum(&attr[2]);
-
-    /* alloc the float32 data buffer */
-    f32_in0_buffer = (float *)malloc(in0_elements * sizeof(float));
-    VSI_CHECK_PTR(f32_in0_buffer, "malloc data failed", final);
-    f32_in1_buffer = (float *)malloc(in1_elements * sizeof(float));
-    VSI_CHECK_PTR(f32_in1_buffer, "malloc data failed", final);
-    f32_out_buffer = (float *)malloc(out_elements * sizeof(float));
-    VSI_CHECK_PTR(f32_out_buffer, "malloc data failed", final);
-    memset(f32_in0_buffer, 0, in0_elements * sizeof(float));
-    memset(f32_in1_buffer, 0, in1_elements * sizeof(float));
-    memset(f32_out_buffer, 0, out_elements * sizeof(float));
-
-    /* Copy tensor to buffer, and convert bufer to float32 format */
-    status = vsi_nn_vxConvertTensorToFloat32Data(
-        context, input0, &attr[0], f32_in0_buffer, in0_elements * sizeof(float));
-    CHECK_STATUS_FAIL_GOTO(status, final);
-    status = vsi_nn_vxConvertTensorToFloat32Data(
-        context, input1, &attr[1], f32_in1_buffer, in1_elements * sizeof(float));
-    CHECK_STATUS_FAIL_GOTO(status, final);
-
-    for (i = 0; i < out_elements; i++)
-    {
-        uint32_t  in0offset = 0;
-        uint32_t  in1offset = 0;
-        float   *in0_ptr  = NULL;
-        float   *in1_ptr  = NULL;
-        vx_float32 in0Data   = 0;
-        vx_float32 in1Data   = 0;
-
-        in0offset = getExpandTensorOffset(i, attr[0].dim_num, attr[0].size, stride_size[0], attr[2].size);
-        in1offset = getExpandTensorOffset(i, attr[1].dim_num, attr[1].size, stride_size[1], attr[2].size);
-
-        in0_ptr = f32_in0_buffer + in0offset / stride_size[0][0];
-        in1_ptr = f32_in1_buffer + in1offset / stride_size[1][0];
-
-        in0Data = in0_ptr[0];
-        in1Data = in1_ptr[0];
-
-        f32_out_buffer[i] = vsi_nn_min(in0Data, in1Data);
-
-    }
-
-    status = vsi_nn_vxConvertFloat32DataToTensor(
-        context, output, &attr[2], f32_out_buffer, out_elements * sizeof(float));
-    CHECK_STATUS_FAIL_GOTO(status, final);
+    status = vsi_nn_kernel_tensor_write_from_float( tensors[2], attr[2],
+            buffer[2], out_elements );
+    CHECK_STATUS_FAIL_GOTO( status, final );
 
 final:
-    if(f32_in0_buffer)free(f32_in0_buffer);
-    if(f32_in1_buffer)free(f32_in1_buffer);
-    if(f32_out_buffer)free(f32_out_buffer);
-
+    for( i = 0; i < _CPU_IO_NUM; i ++ )
+    {
+        if( buffer[i] )
+        {
+            free( buffer[i] );
+        }
+        vsi_nn_kernel_tensor_attr_release( &attr[i] );
+    }
     return status;
-} /* _minimum_kernel() */
+} /* _minimum_exec() */
 
 static vx_param_description_t kernel_param_def[] =
 {
@@ -177,7 +150,7 @@ const static vx_kernel_description_t _kernel_info =
 {
     KERNEL_ID_PLACEHOLDER,
     _KERNEL_NAME,
-    _minimum_kernel,
+    _minimum_exec,
     kernel_param_def,
     _cnt_of_array( kernel_param_def ),
     vsi_nn_KernelValidator,

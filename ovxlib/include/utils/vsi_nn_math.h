@@ -39,6 +39,8 @@ extern "C" {
                                  ((x) > (max)) ? (max) : (x))
 #define vsi_nn_float_compare(a,b,diff) (vsi_nn_abs((a) - (b)) < (diff) ? TRUE : FALSE)
 #define vsi_abs(x)                  vsi_nn_abs(x)
+#define vsi_clamp(x, min, max)      vsi_nn_clamp(x, min, max)
+#define vsi_rtne(x)                 vsi_rint(x)
 
 #define VSI_NN_FLOAT32_INF          (0x7F800000)
 #define VSI_NN_FLOAT32_NAN          (0x7FC00000)

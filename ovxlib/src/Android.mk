@@ -26,7 +26,8 @@ LOCAL_SRC_FILES :=     \
             vsi_nn_version.c \
             vsi_nn_rnn.c \
             vsi_nn_internal_node.c \
-            vsi_nn_log.c
+            vsi_nn_log.c \
+            vsi_nn_pre_post_process.c
 
 
 LOCAL_SRC_FILES +=     \
@@ -39,7 +40,9 @@ LOCAL_SRC_FILES +=      \
              utils/vsi_nn_hashmap.c   \
              utils/vsi_nn_link_list.c   \
              utils/vsi_nn_math.c   \
+             utils/vsi_nn_dtype.c   \
              utils/vsi_nn_dtype_util.c   \
+             utils/vsi_nn_shape_util.c   \
              utils/vsi_nn_limits.c   \
              utils/vsi_nn_vdata.c   \
              utils/vsi_nn_tensor_op.c   \
@@ -77,9 +80,11 @@ LOCAL_SRC_FILES += platform/nnapi0.4/vsi_nn_pf_softmax.c   \
 #LOCAL_SRC_FILES +=      platform/nnapi0.3/vsi_nn_pf_softmax.c   \
 
 LOCAL_SRC_FILES += kernel/vsi_nn_kernel.c \
+                   kernel/vsi_nn_kernel_util.c \
                    kernel/vsi_nn_kernel_backend.c \
                    kernel/vsi_nn_kernel_eltwise.c \
                    kernel/vsi_nn_kernel_param.c \
+                   kernel/vsi_nn_kernel_gpu_shape_optimize.c \
                    kernel/vsi_nn_gpu.c
 
 LIBNNEXT_KERNEL_SOURCES := $(wildcard $(LOCAL_PATH)/libnnext/ops/kernel/*.c)

@@ -401,14 +401,14 @@ static vsi_bool op_setup
     {
         if (p->dims == 1)
         {
-            for(i = 0; i < p->axis; i++)
-            {
-                outputs[0]->attr.size[i] = inputs[0]->attr.size[i];
-                p->offset[i] = p->offset[0];
-            }
-            for(i = p->axis; i < (int32_t)inputs[0]->attr.dim_num; i++)
+            for(i = 0; i <= p->axis; i++)
             {
                 outputs[0]->attr.size[i] = inputs[1]->attr.size[i];
+                p->offset[i] = p->offset[0];
+            }
+            for(i = p->axis + 1; i < (int32_t)inputs[0]->attr.dim_num; i++)
+            {
+                outputs[0]->attr.size[i] = inputs[0]->attr.size[i];
             }
             outputs[0]->attr.dim_num = inputs[0]->attr.dim_num;
         }

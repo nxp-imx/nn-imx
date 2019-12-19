@@ -21,43 +21,23 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#ifndef _VSI_NN_ERROR_H
-#define _VSI_NN_ERROR_H
+#ifndef __VSI_NN_SHAPE_UTIL_H
+#define __VSI_NN_SHAPE_UTIL_H
 
-#include <assert.h>
-#include "vsi_nn_log.h"
-#include "utils/vsi_nn_util.h"
+#include <stdio.h>
+#include <stdint.h>
 
-#define VSI_ASSERT( cond )  assert(cond)
+void vsi_nn_shape_get_stride
+    (
+    const int32_t * shape,
+    size_t rank,
+    size_t * out_stride
+    );
 
-#define VSI_CHECK_PTR( pointer, msg, retval ) \
-    do { \
-        if( pointer == NULL ) { \
-            VSILOGD("%s",msg); \
-            VSI_ASSERT(FALSE); \
-        } \
-    } while(0)
-
-
-#define CHECK_STATUS_FAIL_GOTO( stat, lbl )  do {\
-    if( VSI_SUCCESS != stat ) {\
-        VSILOGE("CHECK STATUS(%d:%s)", (stat), vsi_nn_DescribeStatus(stat));\
-        goto lbl;\
-    }\
-} while(0)
-
-#define CHECK_STATUS( stat )  do {\
-    if( VSI_SUCCESS != stat ) {\
-        VSILOGE("CHECK STATUS(%d:%s)", (stat), vsi_nn_DescribeStatus(stat));\
-    }\
-} while(0)
-
-#define CHECK_PTR_FAIL_GOTO( pointer, msg, lbl ) \
-    do { \
-        if( pointer == NULL ) { \
-            VSILOGD("CHECK POINTER %s", msg); \
-            goto lbl; \
-        } \
-    } while(0)
+size_t vsi_nn_shape_get_size
+    (
+    const int32_t * shape,
+    size_t rank
+    );
 
 #endif

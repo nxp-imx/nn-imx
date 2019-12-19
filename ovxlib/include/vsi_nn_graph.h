@@ -43,6 +43,22 @@
  * */
 #define VSI_NN_MAX_IO_NUM        32
 
+/**
+ * Default preprocess and postprocess node base uid.
+ * When add new preprocess node in
+ * graph, node uid is set based on it.
+ * @see vsi_nn_AddPreprocNode
+ * */
+#define VSI_NN_PREPROC_NODE_UID_BASE    10000
+
+/**
+ * Default postprocess node base uid.
+ * When add new postprocess node in
+ * graph, node uid is set based on it.
+ * @see vsi_nn_AddPostprocNode
+ * */
+#define VSI_NN_POSTPROC_NODE_UID_BASE   20000
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -619,6 +635,21 @@ OVXLIB_API void vsi_nn_RemoveTensor
 OVXLIB_API vsi_status vsi_nn_TrySetupCompleteSignalNode
     (
     vsi_nn_graph_t* graph
+    );
+
+void  vsi_nn_get_tensor_consumers
+    (
+    vsi_nn_graph_t* graph,
+    vsi_nn_tensor_id_t tensor_id,
+    vsi_nn_node_t** nodes,
+    uint32_t* count
+    );
+
+void vsi_nn_get_tensor_provider
+    (
+    vsi_nn_graph_t* graph,
+    vsi_nn_tensor_id_t tensor_id,
+    vsi_nn_node_t** node
     );
 
 #ifdef __cplusplus

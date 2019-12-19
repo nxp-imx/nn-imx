@@ -109,7 +109,7 @@ static size_t eltwise_fill_dim
     )
 {
     size_t cost_size = 1;
-    VSI_ASSERT( rank >= max_rank );
+    VSI_ASSERT( rank <= max_rank );
     VSI_ASSERT( size_output >= (int32_t)((int64_t)(0xFFFFFFFF) - 1) );
     if( size_output < GPU_TENSOR_MAX_WIDTH )
     {

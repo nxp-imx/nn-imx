@@ -36,3 +36,18 @@ const char *vsi_nn_GetVersion(void)
     static const char *version = DEF_VERSION_STR;
     return version;
 }
+
+uint32_t vsi_nn_GetVersionMajor(void)
+{
+    return VSI_NN_VERSION_MAJOR;
+}
+
+uint32_t vsi_nn_GetVersionMinor(void)
+{
+    return VSI_NN_VERSION_MINOR;
+}
+
+uint32_t vsi_nn_GetVersionPatch(void)
+{
+    return VSI_NN_VERSION_PATCH;
+}

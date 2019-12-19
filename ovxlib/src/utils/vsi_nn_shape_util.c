@@ -21,43 +21,57 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#ifndef _VSI_NN_ERROR_H
-#define _VSI_NN_ERROR_H
 
-#include <assert.h>
+#include <stdint.h>
 #include "vsi_nn_log.h"
-#include "utils/vsi_nn_util.h"
+#include "utils/vsi_nn_shape_util.h"
 
-#define VSI_ASSERT( cond )  assert(cond)
+void vsi_nn_shape_get_stride
+    (
+    const int32_t * shape,
+    size_t rank,
+    size_t * out_stride
+    )
+{
+    uint32_t i;
+    if( !shape || !out_stride )
+    {
+        return;
+    }
 
-#define VSI_CHECK_PTR( pointer, msg, retval ) \
-    do { \
-        if( pointer == NULL ) { \
-            VSILOGD("%s",msg); \
-            VSI_ASSERT(FALSE); \
-        } \
-    } while(0)
+    out_stride[0] = 1;
+    for( i = 1; i < rank; i ++ )
+    {
+        out_stride[i] = shape[i - 1] * out_stride[i - 1];
+    }
+} /* vsi_nn_shape_get_stride() */
 
+size_t vsi_nn_shape_get_size
+    (
+    const int32_t * shape,
+    size_t rank
+    )
+{
+    size_t size = 0;
+    uint32_t i;
+    if( !shape )
+    {
+        return size;
+    }
+    size = 1;
+    for( i = 0; i < rank; i ++ )
+    {
+        if( shape[i] > 0 )
+        {
+            size *= shape[i];
+        }
+        else
+        {
+            VSILOGE("Got invalid dim: %d at %d.", shape[i], i);
+            size = 0;
+            break;
+        }
+    }
+    return size;
+} /* vsi_nn_shape_get_size() */
 
-#define CHECK_STATUS_FAIL_GOTO( stat, lbl )  do {\
-    if( VSI_SUCCESS != stat ) {\
-        VSILOGE("CHECK STATUS(%d:%s)", (stat), vsi_nn_DescribeStatus(stat));\
-        goto lbl;\
-    }\
-} while(0)
-
-#define CHECK_STATUS( stat )  do {\
-    if( VSI_SUCCESS != stat ) {\
-        VSILOGE("CHECK STATUS(%d:%s)", (stat), vsi_nn_DescribeStatus(stat));\
-    }\
-} while(0)
-
-#define CHECK_PTR_FAIL_GOTO( pointer, msg, lbl ) \
-    do { \
-        if( pointer == NULL ) { \
-            VSILOGD("CHECK POINTER %s", msg); \
-            goto lbl; \
-        } \
-    } while(0)
-
-#endif

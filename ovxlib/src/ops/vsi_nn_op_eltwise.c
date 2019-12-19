@@ -161,7 +161,7 @@ extern "C" {
             DEF_OP_REG(name, NULL, op_compute_##kernel_name, NULL, NULL, op_setup, NULL, 2, 1)
 
 DEF_ELEMENT_WISE_OP( MINIMUM, minimum );
-//DEF_ELEMENT_WISE_OP( MAXIMUM, maximum );
+DEF_ELEMENT_WISE_OP( MAXIMUM, maximum );
 DEF_ELEMENT_WISE_OP( ADD, add );
 DEF_ELEMENT_WISE_OP( SUBTRACT, sub );
 DEF_ELEMENT_WISE_OP( DIVIDE, div );

@@ -1398,46 +1398,8 @@ void vsi_nn_DumpGraphNodeOutputsEx
 
         if( node->internal_node_wksp ) /* dump internal nodes if any */
         {
-            vsi_nn_internal_node_t* curr = NULL;
-            vsi_nn_internal_node_t* head = NULL;
-
-            head = ((vsi_nn_internal_node_wksp_t *)node->internal_node_wksp)->nodes;
-            while( NULL != head )
-            {
-                curr = (vsi_nn_internal_node_t *)vsi_nn_LinkListPopStart(
-                    (vsi_nn_link_list_t **)&head );
-                if( curr )
-                {
-                    for( o = 0; o < curr->node->output.num; o++ )
-                    {
-                        tensor = curr->outputs[o];
-                        if( tensor )
-                        {
-                            if( TRUE == tensor->attr.vtl )
-                            {
-                                VSILOGW("Uid %u node's tensor %d is virtual",
-                                    curr->node->uid, o);
-                                continue;
-                            }
-                            // TODO: Support different tensor format
-                            vsi_nn_ShapeToString( tensor->attr.size, tensor->attr.dim_num,
-                                shape, _SHAPE_BUF_SZ, FALSE );
-                            op_name = vsi_nn_OpGetName( curr->node->op );
-                            snprintf( filename, _MAX_TENSOR_NAME_SZ,
-                                "%s/%s%s_uid_%u_sub_%u_t_%u_s_%s.txt", path, filename_prefix,
-                                op_name, node->uid, curr->node->uid, o, shape);
-                            if( FALSE == force_fp32 )
-                            {
-                                vsi_nn_SaveTensorToText( graph, tensor, filename, NULL );
-                            }
-                            else
-                            {
-                                vsi_nn_SaveTensorToTextByFp32( graph, tensor, filename, NULL );
-                            }
-                        }
-                    }
-                }
-            }
+            vsi_nn_dump_internal_node_output(graph, path, filename_prefix,
+                force_fp32, node);
         }
 
         for( o = 0; o < node->output.num; o++ )
@@ -1744,4 +1706,60 @@ vsi_bool vsi_nn_HasRNN
 {
     return NULL != graph && NULL != graph->rnn_wksp;
 } /* vsi_nn_HasRNN() */
+
+void  vsi_nn_get_tensor_consumers
+    (
+    vsi_nn_graph_t* graph,
+    vsi_nn_tensor_id_t tensor_id,
+    vsi_nn_node_t** nodes,
+    uint32_t* count
+    )
+{
+    vsi_nn_node_t* node = NULL;
+    uint32_t i, j = 0;
+    uint32_t nodes_count = 0;
+    for(i = 0; i < graph->node_num; i++)
+    {
+        node = vsi_nn_GetNode(graph, i);
+        for(j = 0; j < node->input.num; j++)
+        {
+            if(node->input.tensors[j] == tensor_id)
+            {
+                if(nodes != NULL)
+                {
+                    nodes[nodes_count] = node;
+                }
+                nodes_count += 1;
+                break;
+            }
+        }
+    }
+    if(count != NULL)
+    {
+        *count = nodes_count;
+    }
+} /* vsi_nn_get_tensor_consumers() */
+
+void vsi_nn_get_tensor_provider
+    (
+    vsi_nn_graph_t* graph,
+    vsi_nn_tensor_id_t tensor_id,
+    vsi_nn_node_t** node
+    )
+{
+    vsi_nn_node_t* cur_node = NULL;
+    uint32_t i, j = 0;
+    for(i = 0; i < graph->node_num; i++)
+    {
+        cur_node = vsi_nn_GetNode(graph, i);
+        for(j = 0; j < cur_node->input.num; j++)
+        {
+            if(cur_node->output.tensors[j] == tensor_id)
+            {
+                *node = cur_node;
+                return;
+            }
+        }
+    }
+} /* vsi_nn_get_tensor_provider() */
 

@@ -21,43 +21,27 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#ifndef _VSI_NN_ERROR_H
-#define _VSI_NN_ERROR_H
 
-#include <assert.h>
-#include "vsi_nn_log.h"
-#include "utils/vsi_nn_util.h"
+#ifndef _VSI_NN_KERNEL_GPU_SHAPE_OPTIMIZE_H
+#define _VSI_NN_KERNEL_GPU_SHAPE_OPTIMIZE_H
 
-#define VSI_ASSERT( cond )  assert(cond)
+#include <stdint.h>
+#include "kernel/vsi_nn_kernel.h"
 
-#define VSI_CHECK_PTR( pointer, msg, retval ) \
-    do { \
-        if( pointer == NULL ) { \
-            VSILOGD("%s",msg); \
-            VSI_ASSERT(FALSE); \
-        } \
-    } while(0)
+vsi_bool vsi_nn_kernel_optimize_reduce_shape
+    (
+    const int32_t* shape_x, const size_t rank_x,
+    const int32_t *axis, const size_t axis_size,
+    const int32_t* shape_output, const size_t rank_output,
+    int32_t* out_shape_x, int32_t* out_rank_x,
+    int32_t* out_shape_output, uint32_t* out_rank_output,
+    int32_t* out_axis, uint32_t* out_axis_size
+    );
 
-
-#define CHECK_STATUS_FAIL_GOTO( stat, lbl )  do {\
-    if( VSI_SUCCESS != stat ) {\
-        VSILOGE("CHECK STATUS(%d:%s)", (stat), vsi_nn_DescribeStatus(stat));\
-        goto lbl;\
-    }\
-} while(0)
-
-#define CHECK_STATUS( stat )  do {\
-    if( VSI_SUCCESS != stat ) {\
-        VSILOGE("CHECK STATUS(%d:%s)", (stat), vsi_nn_DescribeStatus(stat));\
-    }\
-} while(0)
-
-#define CHECK_PTR_FAIL_GOTO( pointer, msg, lbl ) \
-    do { \
-        if( pointer == NULL ) { \
-            VSILOGD("CHECK POINTER %s", msg); \
-            goto lbl; \
-        } \
-    } while(0)
+vsi_bool vsi_nn_kernel_optimize_element_shape
+    (
+    const int32_t* shape_x, const size_t rank_x,
+    int32_t* out_shape_x, int32_t* out_rank_x
+    );
 
 #endif

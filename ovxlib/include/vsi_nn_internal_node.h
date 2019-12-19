@@ -174,4 +174,13 @@ vsi_nn_internal_node_t* vsi_nn_get_internal_node_by_uid
     int uid
     );
 
+void vsi_nn_dump_internal_node_output
+    (
+    vsi_nn_graph_t * graph,
+    const char * path,
+    const char * filename_prefix,
+    vsi_bool force_fp32,
+    vsi_nn_node_t * node
+    );
+
 #endif /* _VSI_NN_INTRNAL_NODE_H */
