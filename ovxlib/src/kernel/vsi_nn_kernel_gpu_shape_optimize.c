@@ -124,7 +124,7 @@ vsi_bool vsi_nn_kernel_optimize_reduce_shape
     )
 {
     vsi_bool ret                        = TRUE;
-    int32_t  i                          = 0;
+    uint32_t  i                         = 0;
     size_t   rank_in                    = 0;
     size_t   rank_out                   = 0;
     size_t   dims                       = 0;
@@ -209,7 +209,7 @@ vsi_bool vsi_nn_kernel_optimize_element_shape
     )
 {
     vsi_bool ret                        = TRUE;
-    int32_t  i                          = 0;
+    uint32_t  i                         = 0;
     size_t   rank_in                    = 0;
     int32_t  element_num                = 1;
 

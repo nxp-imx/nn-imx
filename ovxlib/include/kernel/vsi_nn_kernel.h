@@ -656,7 +656,7 @@ static inline void vsi_nn_kernel_tensor_attr_get_stride
     {
         return;
     }
-    return vsi_nn_shape_get_stride( attr->shape->data, attr->shape->size, out_stride );
+    vsi_nn_shape_get_stride( attr->shape->data, attr->shape->size, out_stride );
 } /* vsi_nn_kernel_tensor_attr_get_size() */
 
 static inline vsi_bool vsi_nn_kernel_tensor_attr_is_quantized

@@ -242,7 +242,7 @@ static vsi_nn_kernel_node_t _setup
     float outputScale = outputs[0]->attr.dtype.scale;
     float outputZP = (float)outputs[0]->attr.dtype.zero_point + 0.5f;
 
-    outputScale = outputScale == 0.0 ? 0.0 : 1.0 / outputScale;
+    outputScale = outputScale == 0.0f ? 0.0f : 1.0f / outputScale;
 
     if( !vsi_nn_kernel_gpu_check_shape( (int32_t*)outputs[0]->attr.size,
                 outputs[0]->attr.dim_num ) )
