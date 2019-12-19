@@ -276,6 +276,15 @@ bool VsiDriver::isSupportedOperation(const T_operation& operation, const T_Model
                          (isConstantTensor(bias) && isConstantTensor(weight));
             break;
         }
+        case OperationType::DEPTHWISE_CONV_2D: {
+            auto kernelDim = model.operands[operation.inputs[1]].dimensions;
+            if (kernelDim[0] == 1) {
+                isSupport &= true;
+            } else {
+                isSupport &= false;
+            }
+            break;
+        }
         case OperationType::MAX_POOL_2D:
         case OperationType::L2_POOL_2D:
         case OperationType::AVERAGE_POOL_2D: {
