@@ -32,9 +32,152 @@
 #include "libnnext/vsi_nn_libnnext_resource.h"
 
 
+static const char hswish_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+_viv_uniform float inputScale;\n\
+_viv_uniform float inputTail;\n\
+_viv_uniform float outputScale;\n\
+_viv_uniform float outputZP;\n\
+_viv_uniform VXC_512Bits uniExtract8Data_2x8;\n\
+_viv_uniform VXC_512Bits uniDatatoFp32Part0_4x4;\n\
+_viv_uniform VXC_512Bits uniDatatoFp32Part1_4x4;\n\
+\n\
+#define HSWISH_PROCESS(read_fun, write_fun, src_type, src_copy_type, convert_type, dst_type, dst_copy_type, \\\n\
+                     INSCALE, INTAIL, OUTSCALE, OUTZP) \\\n\
+    src_type      src0; \\\n\
+    src_copy_type src1; \\\n\
+    read_fun(src0, input, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    _viv_asm(COPY, src1, src0, 16); \\\n\
+    float4 vecA, vecB, vecC, vecD, vecE, vecDstA, vecDstB; \\\n\
+    VXC_DP4x4(vecA, src1, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDatatoFp32Part0_4x4); \\\n\
+    VXC_DP4x4(vecB, src1, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDatatoFp32Part1_4x4); \\\n\
+    vecA = vecA * INSCALE + INTAIL; \\\n\
+    vecB = vecB * INSCALE + INTAIL; \\\n\
+    vecC = vecA + 3.0f; \\\n\
+    vecD = vecB + 3.0f; \\\n\
+    vecE = 6.0f; \\\n\
+    _viv_asm(CLAMP0MAX, vecDstA, vecC, vecE); \\\n\
+    _viv_asm(CLAMP0MAX, vecDstB, vecD, vecE); \\\n\
+    vecA = vecA * vecDstA; \\\n\
+    vecB = vecB * vecDstB; \\\n\
+    vecA = vecA / 6.0f; \\\n\
+    vecB = vecB / 6.0f; \\\n\
+    vecA = vecA * OUTSCALE + OUTZP; \\\n\
+    vecB = vecB * OUTSCALE + OUTZP; \\\n\
+    convert_type dst0, dst1; \\\n\
+    _viv_asm(CONV_RTE, dst0, vecA); \\\n\
+    _viv_asm(CONV_RTE, dst1, vecB); \\\n\
+    dst_type dst2; \\\n\
+    VXC_DP2x8(dst2, dst0, dst1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), uniExtract8Data_2x8); \\\n\
+    dst_copy_type dst; \\\n\
+    _viv_asm(COPY, dst, dst2, 16); \\\n\
+    write_fun(output, coord, dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+\n\
+#define HSWISH_FUNC(src_type_name, dst_type_name, src_type, src_copy_type, convert_type, dst_type, \\\n\
+                   dst_copy_type, INSCALE, INTAIL, OUTSCALE, OUTZP) \\\n\
+    __kernel void hswish_##src_type_name##to##dst_type_name( \\\n\
+    __read_only  image2d_array_t  input, \\\n\
+    __write_only image2d_array_t  output, \\\n\
+                           float  beta \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
+    HSWISH_PROCESS(VXC_ReadImage2DArray, VXC_WriteImage2DArray, src_type, \\\n\
+                 src_copy_type, convert_type, dst_type, dst_copy_type, \\\n\
+                 INSCALE, INTAIL, OUTSCALE, OUTZP) \\\n\
+}\n\
+\n\
+HSWISH_FUNC(F16, F16, vxc_short8, vxc_half8,  half4, vxc_half8,  vxc_short8, 1, 0, 1, 0)\n\
+HSWISH_FUNC(F16, I8,  vxc_short8, vxc_half8,  int4,  vxc_char8,  vxc_char8,  1, 0, outputScale, 0)\n\
+HSWISH_FUNC(F16, U8,  vxc_short8, vxc_half8,  int4,  vxc_uchar8, vxc_uchar8, 1, 0, outputScale, outputZP)\n\
+HSWISH_FUNC(F16, I16, vxc_short8, vxc_half8,  int4,  vxc_short8, vxc_short8, 1, 0, outputScale, 0)\n\
+HSWISH_FUNC(I8,  I8,  vxc_char8,  vxc_char8,  int4,  vxc_char8,  vxc_char8,  inputScale, 0, outputScale, 0)\n\
+HSWISH_FUNC(I8,  F16, vxc_char8,  vxc_char8,  half4, vxc_half8,  vxc_short8, inputScale, 0, 1, 0)\n\
+HSWISH_FUNC(U8,  U8,  vxc_uchar8, vxc_uchar8, int4,  vxc_uchar8, vxc_uchar8, \\\n\
+            inputScale, inputTail, outputScale, outputZP)\n\
+HSWISH_FUNC(U8,  F16, vxc_uchar8, vxc_uchar8, half4, vxc_half8,  vxc_short8, inputScale, inputTail, 1, 0)\n\
+HSWISH_FUNC(I16, I16, vxc_short8, vxc_short8, int4,  vxc_short8, vxc_short8, inputScale, 0, outputScale, 0)\n\
+HSWISH_FUNC(I16, F16, vxc_short8, vxc_short8, half4, vxc_half8,  vxc_short8, inputScale, 0, 1, 0)\n\
+\n\
+\n\
+#define HSWISH_FUNC_2D(src_type_name, dst_type_name, src_type, src_copy_type, convert_type, dst_type, \\\n\
+                      dst_copy_type, INSCALE, INTAIL, OUTSCALE, OUTZP) \\\n\
+    __kernel void hswish_##src_type_name##to##dst_type_name##_2D( \\\n\
+    __read_only  image2d_array_t  input, \\\n\
+    __write_only image2d_array_t  output, \\\n\
+                           float  beta \\\n\
+    ) \\\n\
+{ \\\n\
+    int2 coord = (int2)(get_global_id(0), get_global_id(1)); \\\n\
+    HSWISH_PROCESS(VXC_ReadImage, VXC_WriteImage, src_type, src_copy_type, convert_type, dst_type, \\\n\
+                   dst_copy_type, INSCALE, INTAIL, OUTSCALE, OUTZP) \\\n\
+}\n\
+\n\
+HSWISH_FUNC_2D(F16, F16, vxc_short8, vxc_half8,  half4, vxc_half8,  vxc_short8, 1, 0, 1, 0)\n\
+HSWISH_FUNC_2D(F16, I8,  vxc_short8, vxc_half8,  int4,  vxc_char8,  vxc_char8,  1, 0, outputScale, 0)\n\
+HSWISH_FUNC_2D(F16, U8,  vxc_short8, vxc_half8,  int4,  vxc_uchar8, vxc_uchar8, 1, 0, outputScale, outputZP)\n\
+HSWISH_FUNC_2D(F16, I16, vxc_short8, vxc_half8,  int4,  vxc_short8, vxc_short8, 1, 0, outputScale, 0)\n\
+HSWISH_FUNC_2D(I8,  I8,  vxc_char8,  vxc_char8,  int4,  vxc_char8,  vxc_char8,  inputScale, 0, outputScale, 0)\n\
+HSWISH_FUNC_2D(I8,  F16, vxc_char8,  vxc_char8,  half4, vxc_half8,  vxc_short8, inputScale, 0, 1, 0)\n\
+HSWISH_FUNC_2D(U8,  U8,  vxc_uchar8, vxc_uchar8, int4,  vxc_uchar8, vxc_uchar8, inputScale, \\\n\
+               inputTail, outputScale, outputZP)\n\
+HSWISH_FUNC_2D(U8,  F16, vxc_uchar8, vxc_uchar8, half4, vxc_half8,  vxc_short8, inputScale, inputTail, 1, 0)\n\
+HSWISH_FUNC_2D(I16, I16, vxc_short8, vxc_short8, int4,  vxc_short8, vxc_short8, inputScale, 0, outputScale, 0)\n\
+HSWISH_FUNC_2D(I16, F16, vxc_short8, vxc_short8, half4, vxc_half8,  vxc_short8, inputScale, 0, 1, 0)\n\
+\n\
+\n\
+_viv_uniform VXC_512Bits uniConvBF16toF32_Part0_2x8;\n\
+_viv_uniform VXC_512Bits uniConvBF16toF32_Part1_2x8;\n\
+_viv_uniform VXC_512Bits uniExtractOddData_2x8;\n\
+\n\
+#define HSWISH_BF16_PROCESS(read_fun, write_fun) \\\n\
+    vxc_ushort8   src0, src1, dst; \\\n\
+    float4 vecA, vecB, vecC, vecD, vecE, vecDstA, vecDstB; \\\n\
+    read_fun(src0, input, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    vxc_short8 zero = (vxc_short8)(0, 0, 0, 0, 0, 0, 0, 0); \\\n\
+    VXC_DP2x8(src1, src0, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvBF16toF32_Part0_2x8); \\\n\
+    _viv_asm(COPY, vecA, src1, 16); \\\n\
+    VXC_DP2x8(src1, src0, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvBF16toF32_Part1_2x8); \\\n\
+    _viv_asm(COPY, vecB, src1, 16); \\\n\
+    vecC = vecA + 3.0f; \\\n\
+    vecD = vecB + 3.0f; \\\n\
+    vecE = 6.0f; \\\n\
+    _viv_asm(CLAMP0MAX, vecDstA, vecC, vecE); \\\n\
+    _viv_asm(CLAMP0MAX, vecDstB, vecD, vecE); \\\n\
+    vecA = vecA * vecDstA; \\\n\
+    vecB = vecB * vecDstB; \\\n\
+    vecA = vecA / 6.0f; \\\n\
+    vecB = vecB / 6.0f; \\\n\
+    _viv_asm(COPY, src0, vecA, 16); \\\n\
+    _viv_asm(COPY, src1, vecB, 16); \\\n\
+    VXC_DP2x8(dst, src0, src1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniExtractOddData_2x8); \\\n\
+    write_fun(output, coord, dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+__kernel void hswish_BF16toBF16(\n\
+    __read_only  image2d_array_t  input,\n\
+    __write_only image2d_array_t  output,\n\
+                           float  beta\n\
+    )\n\
+{\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+    HSWISH_BF16_PROCESS(VXC_ReadImage2DArray, VXC_WriteImage2DArray);\n\
+}\n\
+\n\
+__kernel void hswish_BF16toBF16_2D(\n\
+    __read_only  image2d_array_t  input,\n\
+    __write_only image2d_array_t  output,\n\
+                           float  beta\n\
+    )\n\
+{\n\
+    int2 coord = (int2)(get_global_id(0), get_global_id(1));\n\
+    HSWISH_BF16_PROCESS(VXC_ReadImage, VXC_WriteImage);\n\
+}\n\
+"; /* end of hswish_vx*/
+
 static const char maximum_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
-__kernel void maximum_F16F16toF16\n\
+__kernel void vxcTensorMaximum_F16F16toF16\n\
     (\n\
     __read_only  image2d_array_t    input0,\n\
     __read_only  image2d_array_t    input1,\n\
@@ -58,7 +201,7 @@ __kernel void maximum_F16F16toF16\n\
     VXC_WriteImage2DArray(output, coord, dst, VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0));\n\
 }\n\
 \n\
-__kernel void maximum_F16F16toF16_2D\n\
+__kernel void vxcTensorMaximum_F16F16toF16_2D\n\
     (\n\
     __read_only  image2d_array_t    input0,\n\
     __read_only  image2d_array_t    input1,\n\
@@ -86,7 +229,7 @@ __kernel void maximum_F16F16toF16_2D\n\
 \n\
 _viv_uniform VXC_512Bits uinConvertFp16ToInt8_2x8;\n\
 \n\
-__kernel void maximum_F16F16toI8\n\
+__kernel void vxcTensorMaximum_F16F16toI8\n\
     (\n\
     __read_only  image2d_array_t    input0,\n\
     __read_only  image2d_array_t    input1,\n\
@@ -110,7 +253,7 @@ __kernel void maximum_F16F16toI8\n\
     VXC_WriteImage2DArray(output, coord, dst, VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0));\n\
 }\n\
 \n\
-__kernel void maximum_F16F16toI8_2D\n\
+__kernel void vxcTensorMaximum_F16F16toI8_2D\n\
     (\n\
     __read_only  image2d_array_t    input0,\n\
     __read_only  image2d_array_t    input1,\n\
@@ -138,7 +281,7 @@ _viv_uniform VXC_512Bits uniConvertI8toI8_0_part0_2x8;\n\
 _viv_uniform VXC_512Bits uniConvertI8toI8_0_part1_2x8;\n\
 _viv_uniform VXC_512Bits uniConvertI8toI8_1_part0_2x8;\n\
 _viv_uniform VXC_512Bits uniConvertI8toI8_1_part1_2x8;\n\
-__kernel void maximum_I8I8toI8\n\
+__kernel void vxcTensorMaximum_I8I8toI8\n\
     (\n\
     __read_only  image2d_array_t    input0,\n\
     __read_only  image2d_array_t    input1,\n\
@@ -162,7 +305,7 @@ __kernel void maximum_I8I8toI8\n\
     VXC_WriteImage2DArray(output, coord, dst, VXC_MODIFIER(0, 15, 0,VXC_RM_TowardZero, 0));\n\
 }\n\
 \n\
-__kernel void maximum_I8I8toI8_2D\n\
+__kernel void vxcTensorMaximum_I8I8toI8_2D\n\
     (\n\
     __read_only  image2d_array_t    input0,\n\
     __read_only  image2d_array_t    input1,\n\
@@ -194,7 +337,7 @@ _viv_uniform VXC_512Bits uniU8MulAndPostShift1_Lo_2x8;\n\
 _viv_uniform VXC_512Bits uniU8MulAndPostShift1_Hi_2x8;\n\
 _viv_uniform int2 multAndoutZP0;//[0:15] multiplier, [31:63] output zp\n\
 _viv_uniform int2 multAndoutZP1;//[0:15] multiplier, [31:63] output zp\n\
-__kernel void maximum_U8U8toU8\n\
+__kernel void vxcTensorMaximum_U8U8toU8\n\
     (\n\
     __read_only  image2d_array_t    input0,\n\
     __read_only  image2d_array_t    input1,\n\
@@ -225,7 +368,7 @@ __kernel void maximum_U8U8toU8\n\
     VXC_WriteImage2DArray(output, coord, dst, VXC_MODIFIER(0, 15, 0,VXC_RM_TowardZero, 0));\n\
 }\n\
 \n\
-__kernel void maximum_U8U8toU8_2D\n\
+__kernel void vxcTensorMaximum_U8U8toU8_2D\n\
     (\n\
     __read_only  image2d_array_t    input0,\n\
     __read_only  image2d_array_t    input1,\n\
@@ -258,7 +401,7 @@ __kernel void maximum_U8U8toU8_2D\n\
 \n\
 _viv_uniform VXC_512Bits uniConvertI16toI16_0_2x8;\n\
 _viv_uniform VXC_512Bits uniConvertI16toI16_1_2x8;\n\
-__kernel void maximum_I16I16toI16\n\
+__kernel void vxcTensorMaximum_I16I16toI16\n\
     (\n\
     __read_only  image2d_array_t    input0,\n\
     __read_only  image2d_array_t    input1,\n\
@@ -280,7 +423,7 @@ __kernel void maximum_I16I16toI16\n\
     VXC_WriteImage2DArray(output, coord, dst, VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0));\n\
 }\n\
 \n\
-__kernel void maximum_I16I16toI16_2D\n\
+__kernel void vxcTensorMaximum_I16I16toI16_2D\n\
     (\n\
     __read_only  image2d_array_t    input0,\n\
     __read_only  image2d_array_t    input1,\n\
@@ -310,7 +453,7 @@ _viv_uniform VXC_512Bits uniConvertI8toI8_0_part1_2x8;\n\
 _viv_uniform VXC_512Bits uinConvertFp16ToInt8_2x8;\n\
 _viv_uniform VXC_512Bits uniConvertInt8toFp16_2x8;\n\
 \n\
-__kernel void maximum_I8F16toI8\n\
+__kernel void vxcTensorMaximum_I8F16toI8\n\
     (\n\
     __read_only  image2d_array_t    input0,\n\
     __read_only  image2d_array_t    input1,\n\
@@ -342,7 +485,7 @@ __kernel void maximum_I8F16toI8\n\
     VXC_WriteImage2DArray(output, coord, dst, VXC_MODIFIER(0, 15, 0,VXC_RM_TowardZero, 0));\n\
 }\n\
 \n\
-__kernel void maximum_I8F16toI8_2D\n\
+__kernel void vxcTensorMaximum_I8F16toI8_2D\n\
     (\n\
     __read_only  image2d_array_t    input0,\n\
     __read_only  image2d_array_t    input1,\n\
@@ -375,7 +518,7 @@ __kernel void maximum_I8F16toI8_2D\n\
     VXC_WriteImage(output, coord.xy, dst, VXC_MODIFIER(0, 15, 0,VXC_RM_TowardZero, 0));\n\
 }\n\
 \n\
-__kernel void maximum_I8F16toF16\n\
+__kernel void vxcTensorMaximum_I8F16toF16\n\
     (\n\
     __read_only  image2d_array_t    input0,\n\
     __read_only  image2d_array_t    input1,\n\
@@ -402,7 +545,7 @@ __kernel void maximum_I8F16toF16\n\
     VXC_WriteImage2DArray(output, coord, dst, VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0));\n\
 }\n\
 \n\
-__kernel void maximum_I8F16toF16_2D\n\
+__kernel void vxcTensorMaximum_I8F16toF16_2D\n\
     (\n\
     __read_only  image2d_array_t    input0,\n\
     __read_only  image2d_array_t    input1,\n\
@@ -431,7 +574,7 @@ __kernel void maximum_I8F16toF16_2D\n\
 _viv_uniform int2 multAndoutZP0;//[0:15] multiplier, [31:63] output zp\n\
 _viv_uniform VXC_512Bits uniU8MulAndPostShift_0_Lo_2x8;\n\
 \n\
-__kernel void maximum_U8F16toF16\n\
+__kernel void vxcTensorMaximum_U8F16toF16\n\
     (\n\
     __read_only  image2d_array_t    input0,\n\
     __read_only  image2d_array_t    input1,\n\
@@ -461,7 +604,7 @@ __kernel void maximum_U8F16toF16\n\
     VXC_WriteImage2DArray(output, coord, dst, VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0));\n\
 }\n\
 \n\
-__kernel void maximum_U8F16toF16_2D\n\
+__kernel void vxcTensorMaximum_U8F16toF16_2D\n\
     (\n\
     __read_only  image2d_array_t    input0,\n\
     __read_only  image2d_array_t    input1,\n\
@@ -495,7 +638,7 @@ _viv_uniform VXC_512Bits uniU8MulAndPostShift0_Lo_2x8;\n\
 _viv_uniform VXC_512Bits uniU8MulAndPostShift0_Hi_2x8;\n\
 _viv_uniform VXC_512Bits uniConvertFp16toU8_2x8;\n\
 _viv_uniform int2 multAndoutZP1;//[0:15] multiplier, [31:63] output zp\n\
-__kernel void maximum_U8F16toU8\n\
+__kernel void vxcTensorMaximum_U8F16toU8\n\
     (\n\
     __read_only  image2d_array_t    input0,\n\
     __read_only  image2d_array_t    input1,\n\
@@ -530,7 +673,7 @@ __kernel void maximum_U8F16toU8\n\
     VXC_WriteImage2DArray(output, coord, dst0, VXC_MODIFIER(0, 15, 0,VXC_RM_TowardZero, 0));\n\
 }\n\
 \n\
-__kernel void maximum_U8F16toU8_2D\n\
+__kernel void vxcTensorMaximum_U8F16toU8_2D\n\
     (\n\
     __read_only  image2d_array_t    input0,\n\
     __read_only  image2d_array_t    input1,\n\
@@ -565,7 +708,7 @@ __kernel void maximum_U8F16toU8_2D\n\
     VXC_WriteImage(output, coord, dst0, VXC_MODIFIER(0, 15, 0,VXC_RM_TowardZero, 0));\n\
 }\n\
 \n\
-__kernel void maximum_F16F16toU8\n\
+__kernel void vxcTensorMaximum_F16F16toU8\n\
     (\n\
     __read_only  image2d_array_t    input0,\n\
     __read_only  image2d_array_t    input1,\n\
@@ -593,7 +736,7 @@ __kernel void maximum_F16F16toU8\n\
     VXC_WriteImage2DArray(output, coord, dst0, VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0));\n\
 }\n\
 \n\
-__kernel void maximum_F16F16toU8_2D\n\
+__kernel void vxcTensorMaximum_F16F16toU8_2D\n\
     (\n\
     __read_only  image2d_array_t    input0,\n\
     __read_only  image2d_array_t    input1,\n\
@@ -628,7 +771,7 @@ _viv_uniform VXC_512Bits uniConvertI16toI16_2x8;\n\
 _viv_uniform VXC_512Bits uinConvertFp16ToInt16_2x8;\n\
 _viv_uniform VXC_512Bits uniConvertInt16toFp16_2x8;\n\
 \n\
-__kernel void maximum_I16F16toI16\n\
+__kernel void vxcTensorMaximum_I16F16toI16\n\
     (\n\
     __read_only  image2d_array_t    input0,\n\
     __read_only  image2d_array_t    input1,\n\
@@ -653,7 +796,7 @@ __kernel void maximum_I16F16toI16\n\
     VXC_WriteImage2DArray(output, coord, dst, VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0));\n\
 }\n\
 \n\
-__kernel void maximum_I16F16toI16_2D\n\
+__kernel void vxcTensorMaximum_I16F16toI16_2D\n\
     (\n\
     __read_only  image2d_array_t    input0,\n\
     __read_only  image2d_array_t    input1,\n\
@@ -679,7 +822,7 @@ __kernel void maximum_I16F16toI16_2D\n\
     VXC_WriteImage(output, coord.xy, dst, VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0));\n\
 }\n\
 \n\
-__kernel void maximum_I16F16toF16\n\
+__kernel void vxcTensorMaximum_I16F16toF16\n\
     (\n\
     __read_only  image2d_array_t    input0,\n\
     __read_only  image2d_array_t    input1,\n\
@@ -705,7 +848,7 @@ __kernel void maximum_I16F16toF16\n\
     VXC_WriteImage2DArray(output, coord, dst, VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0));\n\
 }\n\
 \n\
-__kernel void maximum_I16F16toF16_2D\n\
+__kernel void vxcTensorMaximum_I16F16toF16_2D\n\
     (\n\
     __read_only  image2d_array_t    input0,\n\
     __read_only  image2d_array_t    input1,\n\
@@ -1659,6 +1802,151 @@ __kernel void random_multinomial(\n\
 }\n\
 \n\
 "; /* end of random_multinomial_vx*/
+
+static const char swish_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+_viv_uniform float logE;\n\
+\n\
+float4 sigmoid_(float4 x)\n\
+{\n\
+    x *= -logE;\n\
+    x = 1 + exp2(x);\n\
+    return 1 / x;\n\
+}\n\
+\n\
+_viv_uniform float inputScale;\n\
+_viv_uniform float inputTail;\n\
+_viv_uniform float outputScale;\n\
+_viv_uniform float outputZP;\n\
+_viv_uniform VXC_512Bits uniExtract8Data_2x8;\n\
+_viv_uniform VXC_512Bits uniDatatoFp32Part0_4x4;\n\
+_viv_uniform VXC_512Bits uniDatatoFp32Part1_4x4;\n\
+\n\
+#define SWISH_PROCESS(read_fun, write_fun, src_type, src_copy_type, convert_type, dst_type, dst_copy_type, \\\n\
+                     INSCALE, INTAIL, OUTSCALE, OUTZP) \\\n\
+    src_type      src0; \\\n\
+    src_copy_type src1; \\\n\
+    read_fun(src0, input, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    _viv_asm(COPY, src1, src0, 16); \\\n\
+    float4 vecA, vecB, vecC, vecD; \\\n\
+    VXC_DP4x4(vecA, src1, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDatatoFp32Part0_4x4); \\\n\
+    VXC_DP4x4(vecB, src1, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDatatoFp32Part1_4x4); \\\n\
+    vecA = vecA * INSCALE + INTAIL; \\\n\
+    vecB = vecB * INSCALE + INTAIL; \\\n\
+    vecC = beta * vecA; \\\n\
+    vecD = beta * vecB; \\\n\
+    vecC = sigmoid_(vecC); \\\n\
+    vecD = sigmoid_(vecD); \\\n\
+    vecA = vecA * vecC; \\\n\
+    vecB = vecB * vecD; \\\n\
+    vecA = vecA * OUTSCALE + OUTZP; \\\n\
+    vecB = vecB * OUTSCALE + OUTZP; \\\n\
+    convert_type dst0, dst1; \\\n\
+    _viv_asm(CONV_RTE, dst0, vecA); \\\n\
+    _viv_asm(CONV_RTE, dst1, vecB); \\\n\
+    dst_type dst2; \\\n\
+    VXC_DP2x8(dst2, dst0, dst1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), uniExtract8Data_2x8); \\\n\
+    dst_copy_type dst; \\\n\
+    _viv_asm(COPY, dst, dst2, 16); \\\n\
+    write_fun(output, coord, dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+\n\
+#define SWISH_FUNC(src_type_name, dst_type_name, src_type, src_copy_type, convert_type, dst_type, dst_copy_type,\\\n\
+                   INSCALE, INTAIL, OUTSCALE, OUTZP) \\\n\
+    __kernel void swish_##src_type_name##to##dst_type_name( \\\n\
+    __read_only  image2d_array_t  input, \\\n\
+    __write_only image2d_array_t  output, \\\n\
+                           float  beta \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
+    SWISH_PROCESS(VXC_ReadImage2DArray, VXC_WriteImage2DArray, src_type, src_copy_type, convert_type, \\\n\
+                  dst_type, dst_copy_type, INSCALE, INTAIL, OUTSCALE, OUTZP) \\\n\
+}\n\
+\n\
+SWISH_FUNC(F16, F16, vxc_short8, vxc_half8,  half4, vxc_half8,  vxc_short8, 1, 0, 1, 0)\n\
+SWISH_FUNC(F16, I8,  vxc_short8, vxc_half8,  int4,  vxc_char8,  vxc_char8,  1, 0, outputScale, 0)\n\
+SWISH_FUNC(F16, U8,  vxc_short8, vxc_half8,  int4,  vxc_uchar8, vxc_uchar8, 1, 0, outputScale, outputZP)\n\
+SWISH_FUNC(F16, I16, vxc_short8, vxc_half8,  int4,  vxc_short8, vxc_short8, 1, 0, outputScale, 0)\n\
+SWISH_FUNC(I8,  I8,  vxc_char8,  vxc_char8,  int4,  vxc_char8,  vxc_char8,  inputScale, 0, outputScale, 0)\n\
+SWISH_FUNC(I8,  F16, vxc_char8,  vxc_char8,  half4, vxc_half8,  vxc_short8, inputScale, 0, 1, 0)\n\
+SWISH_FUNC(U8,  U8,  vxc_uchar8, vxc_uchar8, int4,  vxc_uchar8, vxc_uchar8, \\\n\
+inputScale, inputTail, outputScale, outputZP)\n\
+SWISH_FUNC(U8,  F16, vxc_uchar8, vxc_uchar8, half4, vxc_half8,  vxc_short8, inputScale, inputTail, 1, 0)\n\
+SWISH_FUNC(I16, I16, vxc_short8, vxc_short8, int4,  vxc_short8, vxc_short8, inputScale, 0, outputScale, 0)\n\
+SWISH_FUNC(I16, F16, vxc_short8, vxc_short8, half4, vxc_half8,  vxc_short8, inputScale, 0, 1, 0)\n\
+\n\
+\n\
+#define SWISH_FUNC_2D(src_type_name, dst_type_name, src_type, src_copy_type, convert_type, dst_type, \\\n\
+                     dst_copy_type, INSCALE, INTAIL, OUTSCALE, OUTZP) \\\n\
+    __kernel void swish_##src_type_name##to##dst_type_name##_2D( \\\n\
+    __read_only  image2d_array_t  input, \\\n\
+    __write_only image2d_array_t  output, \\\n\
+                           float  beta \\\n\
+    ) \\\n\
+{ \\\n\
+    int2 coord = (int2)(get_global_id(0), get_global_id(1)); \\\n\
+    SWISH_PROCESS(VXC_ReadImage, VXC_WriteImage, src_type, src_copy_type, convert_type, dst_type, \\\n\
+                  dst_copy_type, INSCALE, INTAIL, OUTSCALE, OUTZP) \\\n\
+}\n\
+\n\
+SWISH_FUNC_2D(F16, F16, vxc_short8, vxc_half8,  half4, vxc_half8,  vxc_short8, 1, 0, 1, 0)\n\
+SWISH_FUNC_2D(F16, I8,  vxc_short8, vxc_half8,  int4,  vxc_char8,  vxc_char8,  1, 0, outputScale, 0)\n\
+SWISH_FUNC_2D(F16, U8,  vxc_short8, vxc_half8,  int4,  vxc_uchar8, vxc_uchar8, 1, 0, outputScale, outputZP)\n\
+SWISH_FUNC_2D(F16, I16, vxc_short8, vxc_half8,  int4,  vxc_short8, vxc_short8, 1, 0, outputScale, 0)\n\
+SWISH_FUNC_2D(I8,  I8,  vxc_char8,  vxc_char8,  int4,  vxc_char8,  vxc_char8,  inputScale, 0, outputScale, 0)\n\
+SWISH_FUNC_2D(I8,  F16, vxc_char8,  vxc_char8,  half4, vxc_half8,  vxc_short8, inputScale, 0, 1, 0)\n\
+SWISH_FUNC_2D(U8,  U8,  vxc_uchar8, vxc_uchar8, int4,  vxc_uchar8, vxc_uchar8, \\\n\
+inputScale, inputTail, outputScale, outputZP)\n\
+SWISH_FUNC_2D(U8,  F16, vxc_uchar8, vxc_uchar8, half4, vxc_half8,  vxc_short8, inputScale, inputTail, 1, 0)\n\
+SWISH_FUNC_2D(I16, I16, vxc_short8, vxc_short8, int4,  vxc_short8, vxc_short8, inputScale, 0, outputScale, 0)\n\
+SWISH_FUNC_2D(I16, F16, vxc_short8, vxc_short8, half4, vxc_half8,  vxc_short8, inputScale, 0, 1, 0)\n\
+\n\
+\n\
+_viv_uniform VXC_512Bits uniConvBF16toF32_Part0_2x8;\n\
+_viv_uniform VXC_512Bits uniConvBF16toF32_Part1_2x8;\n\
+_viv_uniform VXC_512Bits uniExtractOddData_2x8;\n\
+\n\
+#define SWISH_BF16_PROCESS(read_fun, write_fun) \\\n\
+    vxc_ushort8   src0, src1, dst; \\\n\
+    float4 vecA, vecB, vecC, vecD; \\\n\
+    read_fun(src0, input, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    vxc_short8 zero = (vxc_short8)(0, 0, 0, 0, 0, 0, 0, 0); \\\n\
+    VXC_DP2x8(src1, src0, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvBF16toF32_Part0_2x8); \\\n\
+    _viv_asm(COPY, vecA, src1, 16); \\\n\
+    VXC_DP2x8(src1, src0, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvBF16toF32_Part1_2x8); \\\n\
+    _viv_asm(COPY, vecB, src1, 16); \\\n\
+    vecC = beta * vecA; \\\n\
+    vecD = beta * vecB; \\\n\
+    vecC = sigmoid_(vecC); \\\n\
+    vecD = sigmoid_(vecD); \\\n\
+    vecA = vecA * vecC; \\\n\
+    vecB = vecB * vecD; \\\n\
+    _viv_asm(COPY, src0, vecA, 16); \\\n\
+    _viv_asm(COPY, src1, vecB, 16); \\\n\
+    VXC_DP2x8(dst, src0, src1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniExtractOddData_2x8); \\\n\
+    write_fun(output, coord, dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+__kernel void swish_BF16toBF16(\n\
+    __read_only  image2d_array_t  input,\n\
+    __write_only image2d_array_t  output,\n\
+                           float  beta\n\
+    )\n\
+{\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+    SWISH_BF16_PROCESS(VXC_ReadImage2DArray, VXC_WriteImage2DArray);\n\
+}\n\
+\n\
+__kernel void swish_BF16toBF16_2D(\n\
+    __read_only  image2d_array_t  input,\n\
+    __write_only image2d_array_t  output,\n\
+                           float  beta\n\
+    )\n\
+{\n\
+    int2 coord = (int2)(get_global_id(0), get_global_id(1));\n\
+    SWISH_BF16_PROCESS(VXC_ReadImage, VXC_WriteImage);\n\
+}\n\
+"; /* end of swish_vx*/
 
 static const char vsi_nn_kernel_addn_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
@@ -25636,6 +25924,110 @@ __kernel void unpoolingUint8_Fp16\n\
 
 
 
+static const char hswish_cl[] = "#define HSWISH_F32_F32_PROCESS() \\\n\
+    float4 src, tmp, dst; \\\n\
+    src   = read_imagef(input, coord); \\\n\
+    tmp   = src + 3; \\\n\
+    tmp   = tmp > 0 ? tmp : 0; \\\n\
+    tmp   = tmp < 6 ? tmp : 6; \\\n\
+    dst   = src * tmp / 6.0f; \\\n\
+    write_imagef(output, coord, dst);\n\
+\n\
+__kernel void hswish_F32toF32(\n\
+    __read_only  image2d_array_t  input,\n\
+    __write_only image2d_array_t  output,\n\
+                 float            inputScale,\n\
+                 float            inputTail,\n\
+                 float            outputScale,\n\
+                 float            outputZP)\n\
+{\n\
+    int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+    HSWISH_F32_F32_PROCESS()\n\
+}\n\
+\n\
+__kernel void hswish_F32toF32_2D(\n\
+    __read_only  image2d_t        input,\n\
+    __write_only image2d_t        output,\n\
+                 float            inputScale,\n\
+                 float            inputTail,\n\
+                 float            outputScale,\n\
+                 float            outputZP)\n\
+{\n\
+    int2 coord =  (int2)(get_global_id(0), get_global_id(1));\n\
+    HSWISH_F32_F32_PROCESS()\n\
+}\n\
+\n\
+\n\
+#define HSWISH_U8_U8_PROCESS() \\\n\
+    float4 src, tmp, data; \\\n\
+    uint4 src0 = read_imageui(input, coord); \\\n\
+    src   = convert_float4(src0) * inputScale - inputTail; \\\n\
+    tmp   = src + 3; \\\n\
+    tmp   = tmp > 0 ? tmp : 0; \\\n\
+    tmp   = tmp < 6 ? tmp : 6; \\\n\
+    data   = src * tmp / 6.0f; \\\n\
+    uint4 dst = convert_uint4(data * outputScale + outputZP); \\\n\
+    write_imageui(output, coord, dst);\n\
+\n\
+__kernel void hswish_U8toU8(\n\
+    __read_only  image2d_array_t  input,\n\
+    __write_only image2d_array_t  output,\n\
+                 float            inputScale,\n\
+                 float            inputTail,\n\
+                 float            outputScale,\n\
+                 float            outputZP)\n\
+{\n\
+    int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+    HSWISH_U8_U8_PROCESS()\n\
+}\n\
+\n\
+__kernel void hswish_U8toU8_2D(\n\
+    __read_only  image2d_t        input,\n\
+    __write_only image2d_t        output,\n\
+                 float            inputScale,\n\
+                 float            inputTail,\n\
+                 float            outputScale,\n\
+                 float            outputZP)\n\
+{\n\
+    int2 coord =  (int2)(get_global_id(0), get_global_id(1));\n\
+    HSWISH_U8_U8_PROCESS()\n\
+}\n\
+\n\
+\n\
+#define HSWISH_I32_I32_PROCESS() \\\n\
+    int4 tmp, dst, src; \\\n\
+    src   = read_imagei(input, coord); \\\n\
+    tmp   = src + 3; \\\n\
+    tmp   = tmp > 0 ? tmp : 0; \\\n\
+    tmp   = tmp < 6 ? tmp : 6; \\\n\
+    dst   = src * tmp / 6; \\\n\
+    write_imagei(output, coord, dst);\n\
+\n\
+__kernel void hswish_I32toI32(\n\
+    __read_only  image2d_array_t  input,\n\
+    __write_only image2d_array_t  output,\n\
+                 float            inputScale,\n\
+                 float            inputTail,\n\
+                 float            outputScale,\n\
+                 float            outputZP)\n\
+{\n\
+    int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+    HSWISH_I32_I32_PROCESS()\n\
+}\n\
+\n\
+__kernel void hswish_I32toI32_2D(\n\
+    __read_only  image2d_t        input,\n\
+    __write_only image2d_t        output,\n\
+                 float            inputScale,\n\
+                 float            inputTail,\n\
+                 float            outputScale,\n\
+                 float            outputZP)\n\
+{\n\
+    int2 coord =  (int2)(get_global_id(0), get_global_id(1));\n\
+    HSWISH_I32_I32_PROCESS()\n\
+}\n\
+"; /* end of hswish_cl*/
+
 static const char maximum_cl[] = "__kernel void maximum_FP32FP32toFP32\n\
     (\n\
     __read_only  image2d_array_t    input0,\n\
@@ -25930,6 +26322,125 @@ __kernel void minimum_I32I32toI32_2D\n\
 \n\
 "; /* end of minimum_cl*/
 
+static const char swish_cl[] = "float sigmoid_(float x, float logE)\n\
+{\n\
+    x *= -logE;\n\
+    x = 1 + exp2(x);\n\
+    return 1 / x;\n\
+}\n\
+\n\
+#define SWISH_F32_F32_PROCESS() \\\n\
+    float4 src, tmp, dst; \\\n\
+    src   = read_imagef(input, coord); \\\n\
+    tmp.x = sigmoid_(src.x * beta, logE); \\\n\
+    dst.x = src.x * tmp.x; \\\n\
+    write_imagef(output, coord, dst);\n\
+\n\
+__kernel void swish_F32toF32(\n\
+    __read_only  image2d_array_t  input,\n\
+    __write_only image2d_array_t  output,\n\
+                 float            inputScale,\n\
+                 float            inputTail,\n\
+                 float            outputScale,\n\
+                 float            outputZP,\n\
+                 float            beta,\n\
+                 float            logE)\n\
+{\n\
+    int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+    SWISH_F32_F32_PROCESS()\n\
+}\n\
+\n\
+__kernel void swish_F32toF32_2D(\n\
+    __read_only  image2d_t        input,\n\
+    __write_only image2d_t        output,\n\
+                 float            inputScale,\n\
+                 float            inputTail,\n\
+                 float            outputScale,\n\
+                 float            outputZP,\n\
+                 float            beta,\n\
+                 float            logE)\n\
+{\n\
+    int2 coord =  (int2)(get_global_id(0), get_global_id(1));\n\
+    SWISH_F32_F32_PROCESS()\n\
+}\n\
+\n\
+\n\
+#define SWISH_U8_U8_PROCESS() \\\n\
+    float4 src, tmp, data; \\\n\
+    uint4 src0 = read_imageui(input, coord); \\\n\
+    src   = convert_float4(src0) * inputScale - inputTail; \\\n\
+    tmp.x = sigmoid_(src.x * beta, logE); \\\n\
+    data.x = src.x * tmp.x; \\\n\
+    uint4 dst = convert_uint4(data * outputScale + outputZP); \\\n\
+    write_imageui(output, coord, dst);\n\
+\n\
+__kernel void swish_U8toU8(\n\
+    __read_only  image2d_array_t  input,\n\
+    __write_only image2d_array_t  output,\n\
+                 float            inputScale,\n\
+                 float            inputTail,\n\
+                 float            outputScale,\n\
+                 float            outputZP,\n\
+                 float            beta,\n\
+                 float            logE)\n\
+{\n\
+    int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+    SWISH_U8_U8_PROCESS()\n\
+}\n\
+\n\
+__kernel void swish_U8toU8_2D(\n\
+    __read_only  image2d_t        input,\n\
+    __write_only image2d_t        output,\n\
+                 float            inputScale,\n\
+                 float            inputTail,\n\
+                 float            outputScale,\n\
+                 float            outputZP,\n\
+                 float            beta,\n\
+                 float            logE)\n\
+{\n\
+    int2 coord =  (int2)(get_global_id(0), get_global_id(1));\n\
+    SWISH_U8_U8_PROCESS()\n\
+}\n\
+\n\
+\n\
+#define SWISH_I32_I32_PROCESS() \\\n\
+    float4 src, tmp, data; \\\n\
+    int4 src0 = read_imagei(input, coord); \\\n\
+    src    = convert_float4(src0); \\\n\
+    tmp.x  = sigmoid_(src.x * beta, logE); \\\n\
+    data.x = src.x * tmp.x; \\\n\
+    int4 dst = convert_int4(data); \\\n\
+    write_imagei(output, coord, dst);\n\
+\n\
+__kernel void swish_I32toI32(\n\
+    __read_only  image2d_array_t  input,\n\
+    __write_only image2d_array_t  output,\n\
+                 float            inputScale,\n\
+                 float            inputTail,\n\
+                 float            outputScale,\n\
+                 float            outputZP,\n\
+                 float            beta,\n\
+                 float            logE)\n\
+{\n\
+    int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+    SWISH_I32_I32_PROCESS()\n\
+}\n\
+\n\
+__kernel void swish_I32toI32_2D(\n\
+    __read_only  image2d_t        input,\n\
+    __write_only image2d_t        output,\n\
+                 float            inputScale,\n\
+                 float            inputTail,\n\
+                 float            outputScale,\n\
+                 float            outputZP,\n\
+                 float            beta,\n\
+                 float            logE)\n\
+{\n\
+    int2 coord =  (int2)(get_global_id(0), get_global_id(1));\n\
+    SWISH_I32_I32_PROCESS()\n\
+}\n\
+"; /* end of swish_cl*/
+
 
 typedef struct {
     char const* name;
@@ -25938,6 +26449,7 @@ typedef struct {
 
 const static source_map_t evis_resource[] =
 {
+    {"hswish_vx", hswish_vx},
     {"maximum_vx", maximum_vx},
     {"maximum_fp16_vx", maximum_fp16_vx},
     {"maximum_i16_vx", maximum_i16_vx},
@@ -25945,6 +26457,7 @@ const static source_map_t evis_resource[] =
     {"minimum_fp16_vx", minimum_fp16_vx},
     {"minimum_i16_vx", minimum_i16_vx},
     {"random_multinomial_vx", random_multinomial_vx},
+    {"swish_vx", swish_vx},
     {"vsi_nn_kernel_addn_vx", vsi_nn_kernel_addn_vx},
     {"vsi_nn_kernel_argmax_axis0_vx", vsi_nn_kernel_argmax_axis0_vx},
     {"vsi_nn_kernel_argmax_axis1_vx", vsi_nn_kernel_argmax_axis1_vx},
@@ -26092,8 +26605,10 @@ const static source_map_t evis_resource[] =
 
 const static source_map_t cl_resource[] =
 {
+    {"hswish_cl", hswish_cl},
     {"maximum_cl", maximum_cl},
     {"minimum_cl", minimum_cl},
+    {"swish_cl", swish_cl},
 };
 
 static const char* _load_code
