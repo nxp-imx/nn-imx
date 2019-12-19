@@ -319,3 +319,80 @@ final:
     return status;
 } /* vsi_nn_kernel_tensor_write_from_float() */
 
+vsi_status vsi_nn_kernel_scalar_get_dtype
+    (
+    vsi_nn_kernel_scalar_t scalar,
+    vsi_nn_kernel_dtype_e * dtype
+    )
+{
+    vsi_status status;
+    vx_enum type;
+    if( !dtype )
+    {
+        VSILOGW("Pointer to dtype is NULL");
+        return VSI_FAILURE;
+    }
+    status = vxQueryScalar( (vx_scalar)scalar, VX_SCALAR_TYPE, &type, sizeof(vx_enum) );
+    if( status == VSI_SUCCESS )
+    {
+        *dtype = vsi_nn_kernel_map_dtype( (vsi_nn_type_e)type );
+    }
+    return status;
+} /* vsi_nn_kernel_scalar_get_dtype() */
+
+#define DEF_KERNEL_SCALAR_FUNC( READ_FUNC_NAME, WRITE_FUNC_NAME, DTYPE, DTYPE_ID ) \
+    vsi_status READ_FUNC_NAME \
+        ( vsi_nn_kernel_scalar_t scalar, DTYPE * ptr  ) \
+    { \
+        vsi_status status; \
+        vsi_nn_kernel_dtype_e dtype; \
+        if( !ptr ) \
+        { \
+            VSILOGE("Pointer to store scalar is null"); \
+            return VSI_FAILURE; \
+        } \
+        status = vsi_nn_kernel_scalar_get_dtype( scalar, &dtype ); \
+        if( dtype != DTYPE_ID ) \
+        { \
+            VSILOGE("Try read scalar type %d as %d", dtype, DTYPE_ID); \
+            return VSI_FAILURE; \
+        } \
+        if( status == VSI_SUCCESS ) \
+        { \
+            status = vxCopyScalarWithSize( (vx_scalar)scalar, sizeof(DTYPE), \
+                    ptr, VX_READ_ONLY, VX_MEMORY_TYPE_HOST ); \
+        } \
+        return status; \
+    } \
+    vsi_status WRITE_FUNC_NAME \
+        ( vsi_nn_kernel_scalar_t scalar, DTYPE data  ) \
+    { \
+        vsi_status status; \
+        status = vxCopyScalarWithSize( (vx_scalar)scalar, sizeof(DTYPE), \
+                &data, VX_WRITE_ONLY, VX_MEMORY_TYPE_HOST ); \
+        return status; \
+    }
+
+DEF_KERNEL_SCALAR_FUNC( vsi_nn_kernel_scalar_read_int8,
+                        vsi_nn_kernel_scalar_write_int8,
+                        int8_t,   I8 )
+DEF_KERNEL_SCALAR_FUNC( vsi_nn_kernel_scalar_read_int32,
+                        vsi_nn_kernel_scalar_write_int32,
+                        int32_t,  I32 )
+DEF_KERNEL_SCALAR_FUNC( vsi_nn_kernel_scalar_read_uint8,
+                        vsi_nn_kernel_scalar_write_uint8,
+                        uint8_t,  U8 )
+DEF_KERNEL_SCALAR_FUNC( vsi_nn_kernel_scalar_read_uint32,
+                        vsi_nn_kernel_scalar_write_uint32,
+                        uint32_t, U32 )
+DEF_KERNEL_SCALAR_FUNC( vsi_nn_kernel_scalar_read_int64,
+                        vsi_nn_kernel_scalar_write_int64,
+                        int64_t,  I64 )
+DEF_KERNEL_SCALAR_FUNC( vsi_nn_kernel_scalar_read_float32,
+                        vsi_nn_kernel_scalar_write_float32,
+                        float,    F32 )
+DEF_KERNEL_SCALAR_FUNC( vsi_nn_kernel_scalar_read_float64,
+                        vsi_nn_kernel_scalar_write_float64,
+                        double,   F64 )
+#undef DEF_KERNEL_SCALAR_FUNC
+

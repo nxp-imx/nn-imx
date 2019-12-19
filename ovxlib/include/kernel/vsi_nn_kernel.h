@@ -65,6 +65,7 @@ typedef enum
     U64,
     F16,
     F32,
+    F64,
     BF16,
     BOOL8
 } vsi_nn_kernel_dtype_e;
@@ -500,6 +501,54 @@ static inline void vsi_nn_kernel_scalar_release
         vxReleaseScalar( (vx_scalar*)scalar );
     }
 } /* vsi_nn_kernel_scalar_relase() */
+
+vsi_status vsi_nn_kernel_scalar_read_int8
+    ( vsi_nn_kernel_scalar_t scalar, int8_t * out_data );
+
+vsi_status vsi_nn_kernel_scalar_read_int32
+    ( vsi_nn_kernel_scalar_t scalar, int32_t * out_data );
+
+vsi_status vsi_nn_kernel_scalar_read_int64
+    ( vsi_nn_kernel_scalar_t scalar, int64_t * out_data );
+
+vsi_status vsi_nn_kernel_scalar_read_uint8
+    ( vsi_nn_kernel_scalar_t scalar, uint8_t * out_data );
+
+vsi_status vsi_nn_kernel_scalar_read_uint32
+    ( vsi_nn_kernel_scalar_t scalar, uint32_t * out_data );
+
+vsi_status vsi_nn_kernel_scalar_read_float32
+    ( vsi_nn_kernel_scalar_t scalar, float * out_data );
+
+vsi_status vsi_nn_kernel_scalar_read_float64
+    ( vsi_nn_kernel_scalar_t scalar, double * out_data );
+
+vsi_status vsi_nn_kernel_scalar_write_int8
+    ( vsi_nn_kernel_scalar_t scalar, int8_t out_data );
+
+vsi_status vsi_nn_kernel_scalar_write_int32
+    ( vsi_nn_kernel_scalar_t scalar, int32_t out_data );
+
+vsi_status vsi_nn_kernel_scalar_write_int64
+    ( vsi_nn_kernel_scalar_t scalar, int64_t out_data );
+
+vsi_status vsi_nn_kernel_scalar_write_uint8
+    ( vsi_nn_kernel_scalar_t scalar, uint8_t out_data );
+
+vsi_status vsi_nn_kernel_scalar_write_uint32
+    ( vsi_nn_kernel_scalar_t scalar, uint32_t out_data );
+
+vsi_status vsi_nn_kernel_scalar_write_float32
+    ( vsi_nn_kernel_scalar_t scalar, float out_data );
+
+vsi_status vsi_nn_kernel_scalar_write_float64
+    ( vsi_nn_kernel_scalar_t scalar, double out_data );
+
+vsi_status vsi_nn_kernel_scalar_get_dtype
+    (
+    vsi_nn_kernel_scalar_t scalar,
+    vsi_nn_kernel_dtype_e * dtype
+    );
 
 vsi_status vsi_nn_kernel_register
     (
