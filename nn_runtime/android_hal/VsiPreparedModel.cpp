@@ -228,8 +228,8 @@ void VsiPreparedModel::construct_ovx_operand(nnrt::op::OperandPtr ovx_operand,co
             ovx_op->setDataLayout(nnrt::DataLayout::NHWC);
         }
 #if ANDROID_SDK_VERSION > 27
-        //if(preference_ == ExecutionPreference::FAST_SINGLE_ANSWER)
-        //    native_model_->relax(true);
+        if(model_.relaxComputationFloat32toFloat16)
+            native_model_->relax(true); // convert fp32 data to fp16 in nnrt.
 #endif
         native_model_->finish();
         std::vector<uint32_t> inputs = model.inputIndexes;
