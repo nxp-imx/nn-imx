@@ -49,4 +49,8 @@ void npuref_interface_quant_deconv2d(
 
 vsi_bool npuref_exists();
 
+void npuref_init();
+
+void npuref_shutdown();
+
 #endif

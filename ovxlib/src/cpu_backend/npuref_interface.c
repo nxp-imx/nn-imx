@@ -36,6 +36,7 @@
 #include "utils/vsi_nn_dlfcn.h"
 
 typedef struct {
+    void * lib_handle;
     vsi_bool exists;
 
     void (*conv2d_quant8)(
@@ -63,6 +64,7 @@ typedef struct {
         const int32_t* bias, uint8_t* output);
 } npuref_impl_t;
 
+static npuref_impl_t s_npuref;
 static void* _load_function( void* handle, const char* name, vsi_bool optional )
 {
     void* fn = NULL;
@@ -85,7 +87,6 @@ static void* _load_function( void* handle, const char* name, vsi_bool optional )
 
 static npuref_impl_t* npuref_load()
 {
-    static npuref_impl_t npuref;
     void* libnpuref = NULL;
     char* dl_error;
 #if defined(_WIN32)
@@ -99,10 +100,11 @@ static npuref_impl_t* npuref_load()
     {
         VSILOGD("Skip npuref lib, reason: \"%s\"", dl_error);
     }
-    npuref.exists = (NULL != libnpuref);
-    npuref.conv2d_quant8 = LOAD_FUNCTION( libnpuref, "npuref_conv2d_quant8" );
-    npuref.transpose_conv2d_quant8 = LOAD_FUNCTION( libnpuref, "npuref_transpose_conv2d_quant8" );
-    return &npuref;
+    s_npuref.exists = (NULL != libnpuref);
+    s_npuref.conv2d_quant8 = LOAD_FUNCTION( libnpuref, "npuref_conv2d_quant8" );
+    s_npuref.transpose_conv2d_quant8 = LOAD_FUNCTION( libnpuref, "npuref_transpose_conv2d_quant8" );
+    s_npuref.lib_handle = libnpuref;
+    return &s_npuref;
 } /* npuref_load() */
 
 static const npuref_impl_t* npuref_impl()
@@ -164,3 +166,18 @@ void npuref_interface_quant_deconv2d(
         pad[2], pad[3], pad[0], pad[1],
         input_buffer, kernel_buffer, bias_buffer, output_buffer);
 } /* npuref_interface_quant_conv2d() */
+
+void npuref_init()
+{
+    npuref_exists();
+} /* npuref_init() */
+
+void npuref_shutdown()
+{
+    if( npuref_exists() )
+    {
+        vsi_nn_dlclose( s_npuref.lib_handle );
+        s_npuref.exists = FALSE;
+    }
+} /* npuref_shutdown() */
+

@@ -1120,7 +1120,11 @@ void vsi_nn_print_int_array( int32_t* array, size_t size )
     n = 0;
     for( i = 0; i < size; i ++ )
     {
-        n += snprintf( &buf[n], _MSG_SIZE, "%d, ", array[i] );
+        n += snprintf( &buf[n], _MSG_SIZE - n, "%d, ", array[i] );
+        if( n >= _MSG_SIZE )
+        {
+            break;
+        }
     }
     VSILOGD( "%s", buf );
 #undef _MSG_SIZE
