@@ -301,6 +301,18 @@ bool VsiDriver::isSupportedOperation(const T_operation& operation, const T_Model
             }
             break;
         }
+        case OperationType::RNN: {
+            int32_t fuseCode = getScalarData<int32_t>(model.operands[operation.inputs[5]]);
+            if (fuseCode == static_cast<int32_t>(FusedActivationFunc::NONE) ||
+                fuseCode == static_cast<int32_t>(FusedActivationFunc::RELU) ||
+                fuseCode == static_cast<int32_t>(FusedActivationFunc::RELU1) ||
+                fuseCode == static_cast<int32_t>(FusedActivationFunc::RELU6)) {
+                isSupport &= true;
+            } else {
+                isSupport &= false;
+            }
+            break;
+        }
         case OperationType::MAX_POOL_2D:
         case OperationType::L2_POOL_2D:
         case OperationType::AVERAGE_POOL_2D: {
