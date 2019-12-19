@@ -221,6 +221,14 @@ int OvxlibDelegate::process(nnrt::Model* model, vsi_nn_context_t ctx)
         }
     }
     graph_ = vsi_nn_CreateGraph(ctx, 0, 0);
+
+    auto major = vsi_nn_GetVersionMajor();
+    auto minor = vsi_nn_GetVersionMinor();
+    auto patch = vsi_nn_GetVersionPatch();
+
+    NNRT_LOGI_PRINT("ovxlib version %d_%d_%d", major, minor, patch);
+    vsi_nn_SetGraphVersion(graph_, major, minor, patch);
+
     if (nullptr == graph_)
     {
         return NNA_ERROR_CODE(OUT_OF_MEMORY);
