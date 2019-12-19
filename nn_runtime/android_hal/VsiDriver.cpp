@@ -302,7 +302,7 @@ bool VsiDriver::isSupportedOperation(const T_operation& operation, const T_Model
             break;
         }
         case OperationType::RNN: {
-            int32_t fuseCode = getScalarData<int32_t>(model.operands[operation.inputs[5]]);
+            int32_t fuseCode = getScalarData<int32_t>(model, model.operands[operation.inputs[5]]);
             if (fuseCode == static_cast<int32_t>(FusedActivationFunc::NONE) ||
                 fuseCode == static_cast<int32_t>(FusedActivationFunc::RELU) ||
                 fuseCode == static_cast<int32_t>(FusedActivationFunc::RELU1) ||
