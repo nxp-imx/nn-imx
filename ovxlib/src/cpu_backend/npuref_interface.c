@@ -169,15 +169,16 @@ void npuref_interface_quant_deconv2d(
 
 void npuref_init()
 {
+    memset( &s_npuref, 0, sizeof(s_npuref) );
     npuref_exists();
 } /* npuref_init() */
 
 void npuref_shutdown()
 {
-    if( npuref_exists() )
+    if( s_npuref.exists )
     {
         vsi_nn_dlclose( s_npuref.lib_handle );
-        s_npuref.exists = FALSE;
+        memset( &s_npuref, 0, sizeof(s_npuref) );
     }
 } /* npuref_shutdown() */
 
