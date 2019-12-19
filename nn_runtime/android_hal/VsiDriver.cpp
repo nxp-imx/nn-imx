@@ -23,6 +23,7 @@
 *****************************************************************************/
 
 #include <memory>
+#include <cmath>
 #include <nnrt/file_map_memory.hpp>
 
 #include "VsiDriver.h"
@@ -275,8 +276,85 @@ bool VsiDriver::isSupportedOperation(const T_operation& operation, const T_Model
                          (isConstantTensor(bias) && isConstantTensor(weight));
             break;
         }
-        case OperationType::AVERAGE_POOL_2D:
         case OperationType::MAX_POOL_2D:
+        case OperationType::L2_POOL_2D:
+        case OperationType::AVERAGE_POOL_2D: {
+            auto& input = model.operands[operation.inputs[0]];
+            if (isConstantTensor(input)) {
+                LOG(INFO) << "Device don't support constant input";
+                isSupport &= false;
+            }
+            int32_t padLeft;
+            int32_t padRight;
+            int32_t padTop;
+            int32_t padBottom;
+            int32_t strideWidth;
+            int32_t strideHeight;
+            int32_t filterWidth;
+            int32_t filterHeight;
+            auto inputSize = operation.inputs.size();
+            auto inputDim = model.operands[operation.inputs[0]].dimensions;
+            auto outputDim = model.operands[operation.outputs[0]].dimensions;
+            int32_t inputWidth = inputDim[2];
+            int32_t inputHeight = inputDim[1];
+            int32_t outputWidth = outputDim[2];
+            int32_t outputHeight = outputDim[1];
+
+            if (inputSize == 10 || inputSize == 11) {
+                padLeft = *(int32_t*)getOpeandPtr(model.operands[operation.inputs[1]]);
+                padRight = *(int32_t*)getOpeandPtr(model.operands[operation.inputs[2]]);
+                padTop = *(int32_t*)getOpeandPtr(model.operands[operation.inputs[3]]);
+                padBottom = *(int32_t*)getOpeandPtr(model.operands[operation.inputs[4]]);
+                filterWidth = *(int32_t*)getOpeandPtr(model.operands[operation.inputs[7]]);
+                filterHeight = *(int32_t*)getOpeandPtr(model.operands[operation.inputs[8]]);
+                strideWidth = *(int32_t*)getOpeandPtr(model.operands[operation.inputs[5]]);
+                strideHeight = *(int32_t*)getOpeandPtr(model.operands[operation.inputs[6]]);
+            } else {
+                filterWidth = *(int32_t*)getOpeandPtr(model.operands[operation.inputs[4]]);
+                filterHeight = *(int32_t*)getOpeandPtr(model.operands[operation.inputs[5]]);
+                strideWidth = *(int32_t*)getOpeandPtr(model.operands[operation.inputs[2]]);
+                strideHeight = *(int32_t*)getOpeandPtr(model.operands[operation.inputs[3]]);
+
+                int32_t computedOutputWidth = (inputDim[2] + strideWidth - 1) / strideWidth;
+                int32_t neededInputWidth = (computedOutputWidth - 1) * strideWidth + filterWidth;
+                int32_t totalPaddingWidth = std::max(0, neededInputWidth);
+                padLeft = totalPaddingWidth / 2;
+                padRight = (totalPaddingWidth + 1) / 2;
+
+                int32_t computedOutputHeight = (inputDim[1] + strideHeight - 1) / strideHeight;
+                int32_t neededInputHeight =
+                    (computedOutputHeight - 1) * strideHeight + filterHeight;
+                int32_t totalPaddingHeight = std::max(0, neededInputHeight);
+                padTop = totalPaddingHeight / 2;
+                padBottom = (totalPaddingHeight + 1) / 2;
+            }
+            // Compute stride
+            int32_t computedStrideWidth;
+            int32_t computedStrideHeight;
+            if (outputWidth == 1 && outputHeight == 1) {
+                computedStrideWidth = 1;
+                computedStrideHeight = 1;
+            } else if (outputWidth == 1) {
+                computedStrideWidth = 1;
+                computedStrideHeight = (int32_t)std::floor(
+                    (float)(inputHeight + padTop + padBottom - filterHeight) / (outputHeight - 1));
+            } else if (outputHeight == 1) {
+                computedStrideWidth = (int32_t)std::floor(
+                    (float)(inputWidth + padLeft + padRight - filterWidth) / (outputWidth - 1));
+                computedStrideHeight = 1;
+            } else {
+                computedStrideWidth = (int32_t)std::floor(
+                    (float)(inputWidth + padLeft + padRight - filterWidth) / (outputWidth - 1));
+                computedStrideHeight = (int32_t)std::floor(
+                    (float)(inputHeight + padTop + padBottom - filterHeight) / (outputHeight - 1));
+            }
+            if (computedStrideHeight == strideHeight && computedStrideWidth == strideWidth) {
+                isSupport &= true;
+            } else {
+                isSupport &= false;
+            }
+            break;
+        }
         case OperationType::SOFTMAX: {
             auto& input = model.operands[operation.inputs[0]];
             if (isConstantTensor(input)) {
