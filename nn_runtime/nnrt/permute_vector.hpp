@@ -178,6 +178,8 @@ using PermuteVector1 = PermuteVector<1>;
  */
 inline IPermuteVectorPtr make_shared(uint32_t rankVal) {
     switch (rankVal) {
+        // 0: represent scalar
+        case 0:
         case 1:
             return std::make_shared<PermuteVector<1>>();
         case 2:
