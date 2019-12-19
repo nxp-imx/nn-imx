@@ -54,6 +54,18 @@ class OperationValidate {
     virtual ~OperationValidate(){};
 
     bool DynamicShapeCheck() {
+        // Check inputs
+        if (0 == m_Operation.inputs.size()) return false;
+        for (auto inIdx : m_Operation.inputs) {
+            auto& dims = m_Model.operands[inIdx].dimensions;
+            for (auto dim : dims) {
+                if (dim == 0) {
+                    return false;
+                }
+            }
+        }
+        // Check outputs
+        if (0 == m_Operation.outputs.size()) return false;
         for (auto outIdx : m_Operation.outputs) {
             auto& dims = m_Model.operands[outIdx].dimensions;
             for (auto dim : dims) {

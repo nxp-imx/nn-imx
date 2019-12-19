@@ -637,6 +637,29 @@ bool VsiDriver::isSupportedOperation(const T_operation& operation, const T_Model
         auto& operand = model.operands[operation.outputs[i]];
         if (false == checkSupportedOperand(operand)) isSupport &= false;
     }
+
+    // Not support dynamic shape
+    // Check inputs
+    if (0 == operation.inputs.size()) isSupport &= false;
+    for (auto inIdx : operation.inputs) {
+        auto& dims = model.operands[inIdx].dimensions;
+        for (auto dim : dims) {
+            if (dim == 0) {
+                isSupport &= false;
+            }
+        }
+    }
+    // Check outputs
+    if (0 == operation.outputs.size()) isSupport = false;
+    for (auto outIdx : operation.outputs) {
+        auto& dims = model.operands[outIdx].dimensions;
+        for (auto dim : dims) {
+            if (dim == 0) {
+                isSupport &= false;
+            }
+        }
+    }
+
     return isSupport;
 #endif
     return true;
