@@ -129,7 +129,10 @@ class VsiDriver : public VsiDevice {
     template<typename T_operation,typename T_Model>
     static bool isSupportedOperation(const T_operation &operation, const T_Model& model);
 
-   static bool mapHidlMem(const hidl_memory & hidl_memory, VsiRTInfo &vsiMemory);
+    static bool mapHidlMem(const hidl_memory & hidl_memory, VsiRTInfo &vsiMemory);
+
+    template<typename T_Model>
+    static const uint8_t* getOperandDataPtr(const T_Model &model, const Operand& hal_operand, VsiRTInfo &vsiMemory);
 
    private:
    int32_t disable_float_feature_; // switch that float-type running on hal
@@ -140,8 +143,6 @@ class VsiDriver : public VsiDevice {
     Return<void> getSupportedOperationsBase(const T_model& model,
                                             T_getSupportOperationsCallback cb);
 
-    template<typename T_Model>
-    static const uint8_t* getOperandDataPtr(const T_Model &model, const Operand& hal_operand, VsiRTInfo &vsiMemory);
 };
 
 }

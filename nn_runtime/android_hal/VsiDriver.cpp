@@ -223,6 +223,26 @@ const uint8_t* VsiDriver::getOperandDataPtr(const T_Model& model,
     }
     return nullptr;
 }
+
+    template <typename T_Model, typename T_operand>
+    const uint8_t* getOpeandPtr (T_Model model, T_operand& operand, struct VsiRTInfo &rt){
+        auto& location = operand.location;
+        if(operand.lifetime == OperandLifeTime::CONSTANT_COPY){
+            return model.operandValues.data() + location.offset;
+        } else if(operand.lifetime == OperandLifeTime::CONSTANT_REFERENCE){
+            return VsiDriver::getOperandDataPtr(model, operand, rt);
+        } else
+            return nullptr;
+    };
+
+    template <typename T_type, typename T_Model, typename T_operand>
+    T_type getScalarData(T_Model model, T_operand &operand){
+        struct VsiRTInfo rt;
+        auto ptr = getOpeandPtr(model, operand, rt);
+        if(ptr) return *reinterpret_cast<T_type*>(const_cast<uint8_t*>(ptr));
+        else return 0;
+    }
+
 template <typename T_operation, typename T_Model>
 bool VsiDriver::isSupportedOperation(const T_operation& operation, const T_Model& model) {
 #if ANDROID_SDK_VERSION > 28
@@ -254,10 +274,6 @@ bool VsiDriver::isSupportedOperation(const T_operation& operation, const T_Model
             return false;
     };
 
-    auto getOpeandPtr = [&model](auto& operand) -> auto {
-        auto& location = operand.location;
-        return model.operandValues.data() + location.offset;
-    };
 
     bool isSupport = true;
     // each operation check
@@ -310,19 +326,19 @@ bool VsiDriver::isSupportedOperation(const T_operation& operation, const T_Model
             int32_t outputHeight = outputDim[1];
 
             if (inputSize == 10 || inputSize == 11) {
-                padLeft = *(int32_t*)getOpeandPtr(model.operands[operation.inputs[1]]);
-                padRight = *(int32_t*)getOpeandPtr(model.operands[operation.inputs[2]]);
-                padTop = *(int32_t*)getOpeandPtr(model.operands[operation.inputs[3]]);
-                padBottom = *(int32_t*)getOpeandPtr(model.operands[operation.inputs[4]]);
-                filterWidth = *(int32_t*)getOpeandPtr(model.operands[operation.inputs[7]]);
-                filterHeight = *(int32_t*)getOpeandPtr(model.operands[operation.inputs[8]]);
-                strideWidth = *(int32_t*)getOpeandPtr(model.operands[operation.inputs[5]]);
-                strideHeight = *(int32_t*)getOpeandPtr(model.operands[operation.inputs[6]]);
+                padLeft = getScalarData<int32_t>(model, model.operands[operation.inputs[1]]);
+                padRight = getScalarData<int32_t>(model, model.operands[operation.inputs[2]]);
+                padTop = getScalarData<int32_t>(model, model.operands[operation.inputs[3]]);
+                padBottom = getScalarData<int32_t>(model, model.operands[operation.inputs[4]]);
+                filterWidth = getScalarData<int32_t>(model, model.operands[operation.inputs[7]]);
+                filterHeight = getScalarData<int32_t>(model, model.operands[operation.inputs[8]]);
+                strideWidth = getScalarData<int32_t>(model, model.operands[operation.inputs[5]]);
+                strideHeight = getScalarData<int32_t>(model, model.operands[operation.inputs[6]]);
             } else {
-                filterWidth = *(int32_t*)getOpeandPtr(model.operands[operation.inputs[4]]);
-                filterHeight = *(int32_t*)getOpeandPtr(model.operands[operation.inputs[5]]);
-                strideWidth = *(int32_t*)getOpeandPtr(model.operands[operation.inputs[2]]);
-                strideHeight = *(int32_t*)getOpeandPtr(model.operands[operation.inputs[3]]);
+                filterWidth = getScalarData<int32_t>(model, model.operands[operation.inputs[4]]);
+                filterHeight = getScalarData<int32_t>(model, model.operands[operation.inputs[5]]);
+                strideWidth = getScalarData<int32_t>(model, model.operands[operation.inputs[2]]);
+                strideHeight = getScalarData<int32_t>(model, model.operands[operation.inputs[3]]);
 
                 int32_t computedOutputWidth = (inputDim[2] + strideWidth - 1) / strideWidth;
                 int32_t neededInputWidth = (computedOutputWidth - 1) * strideWidth + filterWidth;
@@ -373,8 +389,8 @@ bool VsiDriver::isSupportedOperation(const T_operation& operation, const T_Model
             break;
         }
         case OperationType::LSH_PROJECTION: {
-            auto typePtr = getOpeandPtr(model.operands[operation.inputs[3]]);
-            if (3 == *(int32_t*)typePtr) isSupport &= false;
+            int32_t typePtr = getScalarData<int32_t>(model, model.operands[operation.inputs[3]]);
+            if (3 == typePtr) isSupport &= false;
             break;
         }
         case OperationType::TANH: {
