@@ -184,16 +184,23 @@ void Armnn_Interpreter::replaceOperation(Model* model,
     model->operations()[op_index] = new_operation;
 }
 
+typedef enum {
+   FUSED_NONE = 0,
+   FUSED_RELU = 1,
+   FUSED_RELU1 = 2,
+   FUSED_RELU6 = 3,
+} FuseCode;
+
 FusedType Armnn_Interpreter::mapFusedType(int fused_code) {
     FusedType type = FusedType::NONE;
     switch (fused_code) {
-        case ANEURALNETWORKS_FUSED_RELU:
+        case FUSED_RELU:
             type = FusedType::RELU;
             break;
-        case ANEURALNETWORKS_FUSED_RELU1:
+        case FUSED_RELU1:
             type = FusedType::RELU1;
             break;
-        case ANEURALNETWORKS_FUSED_RELU6:
+        case FUSED_RELU6:
             type = FusedType::RELU6;
             break;
         default:
@@ -202,13 +209,18 @@ FusedType Armnn_Interpreter::mapFusedType(int fused_code) {
     return type;
 }
 
+typedef enum {
+    PADDING_SAME = 1,
+    PADDING_VALID = 2,
+} PaddingCode;
+
 PadType Armnn_Interpreter::mapPadType(int code) {
     PadType type = PadType::AUTO;
     switch (code) {
-        case ANEURALNETWORKS_PADDING_SAME:
+        case PADDING_SAME:
             type = PadType::SAME;
             break;
-        case ANEURALNETWORKS_PADDING_VALID:
+        case PADDING_VALID:
             type = PadType::VALID;
             break;
         default:
