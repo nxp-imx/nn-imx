@@ -22,37 +22,10 @@
 *
 *****************************************************************************/
 
-
 #ifndef __ANEURALNETWORKS_REDUCTION_HPP__
 #define __ANEURALNETWORKS_REDUCTION_HPP__
 
 #include "hal_limitation/support_macros.hpp"
-
-/**
-* Reduces a tensor by computing the "logical and" of elements along given
-* dimensions.
-*
-* If keep_dims is true, the reduced dimensions are
-* retained with length 1. Otherwise, the rank of the tensor is reduced by
-* 1 for each entry in dimensions.
-*
-* Supported tensor {@link OperandCode}:
-* * {@link ANEURALNETWORKS_TENSOR_BOOL8}
-*
-* Supported tensor rank: up to 4
-*
-* Inputs:
-* * 0: An n-D tensor.
-* * 1: A 1-D tensor of {@link ANEURALNETWORKS_TENSOR_INT32}. The dimensions
-*      to reduce. Dimension values must be in the range [-n, n).
-* * 2: An {@link ANEURALNETWORKS_BOOL} scalar, keep_dims. If true,
-*      retains reduced dimensions with length 1.
-*
-* Outputs:
-* * 0: A tensor of the same {@link OperandCode} as input0.
-*
-* Available since API level 29.
-*/
 
 #define OP_SPEC_NAME ReduceAllInput
 OP_SPEC_BEGIN()
@@ -94,31 +67,6 @@ OP_SPEC_END()
 #undef ARGC
 #undef OP_SPEC_NAME
 
-/**
- * Reduces a tensor by computing the "logical or" of elements along given
- * dimensions.
- *
- * If keep_dims is true, the reduced dimensions are
- * retained with length 1. Otherwise, the rank of the tensor is reduced by
- * 1 for each entry in dimensions.
- *
- * Supported tensor {@link OperandCode}:
- * * {@link ANEURALNETWORKS_TENSOR_BOOL8}
- *
- * Supported tensor rank: up to 4
- *
- * Inputs:
- * * 0: An n-D tensor.
- * * 1: A 1-D tensor of {@link ANEURALNETWORKS_TENSOR_INT32}. The dimensions
- *      to reduce. Dimension values must be in the range [-n, n).
- * * 2: An {@link ANEURALNETWORKS_BOOL} scalar, keep_dims. If true,
- *      retains reduced dimensions with length 1.
- *
- * Outputs:
- * * 0: A tensor of the same {@link OperandCode} as input0.
- *
- * Available since API level 29.
- */
 #define OP_SPEC_NAME ReduceAnyInput
 OP_SPEC_BEGIN()
 #define ARG_NAMES         \
@@ -157,33 +105,6 @@ OP_SPEC_END()
 #undef ARGC
 #undef OP_SPEC_NAME
 
-/**
- * Reduces a tensor by computing the maximum of elements along given
- * dimensions.
- *
- * If keep_dims is true, the reduced dimensions are
- * retained with length 1. Otherwise, the rank of the tensor is reduced by
- * 1 for each entry in dimensions.
- *
- * Supported tensor {@link OperandCode}:
- * * {@link ANEURALNETWORKS_TENSOR_FLOAT16}
- * * {@link ANEURALNETWORKS_TENSOR_FLOAT32}
- * * {@link ANEURALNETWORKS_TENSOR_QUANT8_ASYMM}
- *
- * Supported tensor rank: up to 4
- *
- * Inputs:
- * * 0: An n-D tensor.
- * * 1: A 1-D tensor of {@link ANEURALNETWORKS_TENSOR_INT32}. The dimensions
- *      to reduce. Dimension values must be in the range [-n, n).
- * * 2: An {@link ANEURALNETWORKS_BOOL} scalar, keep_dims. If true,
- *      retains reduced dimensions with length 1.
- *
- * Outputs:
- * * 0: A tensor of the same {@link OperandCode} as input0.
- *
- * Available since API level 29.
- */
 #define OP_SPEC_NAME ReduceMaxInput
 OP_SPEC_BEGIN()
 #define ARG_NAMES         \
@@ -244,33 +165,6 @@ MAKE_SPEC(float16_base)
 #undef ARGC
 #undef OP_SPEC_NAME
 
-/**
- * Reduces a tensor by computing the minimum of elements along given
- * dimensions.
- *
- * If keep_dims is true, the reduced dimensions are
- * retained with length 1. Otherwise, the rank of the tensor is reduced by
- * 1 for each entry in dimensions.
- *
- * Supported tensor {@link OperandCode}:
- * * {@link ANEURALNETWORKS_TENSOR_FLOAT16}
- * * {@link ANEURALNETWORKS_TENSOR_FLOAT32}
- * * {@link ANEURALNETWORKS_TENSOR_QUANT8_ASYMM}
- *
- * Supported tensor rank: up to 4
- *
- * Inputs:
- * * 0: An n-D tensor.
- * * 1: A 1-D tensor of {@link ANEURALNETWORKS_TENSOR_INT32}. The dimensions
- *      to reduce. Dimension values must be in the range [-n, n).
- * * 2: An {@link ANEURALNETWORKS_BOOL} scalar, keep_dims. If true,
- *      retains reduced dimensions with length 1.
- *
- * Outputs:
- * * 0: A tensor of the same {@link OperandCode} as input0.
- *
- * Available since API level 29.
- */
 #define OP_SPEC_NAME ReduceMinInput
 OP_SPEC_BEGIN()
 #define ARG_NAMES         \
@@ -332,31 +226,6 @@ MAKE_SPEC(float16_base)
 #undef ARGC
 #undef OP_SPEC_NAME
 
-/**
- * Reduces a tensor by summing elements along given dimensions.
- *
- * If keep_dims is true, the reduced dimensions are
- * retained with length 1. Otherwise, the rank of the tensor is reduced by
- * 1 for each entry in dimensions.
- *
- * Supported tensor {@link OperandCode}:
- * * {@link ANEURALNETWORKS_TENSOR_FLOAT16}
- * * {@link ANEURALNETWORKS_TENSOR_FLOAT32}
- *
- * Supported tensor rank: up to 4
- *
- * Inputs:
- * * 0: An n-D tensor.
- * * 1: A 1-D tensor of {@link ANEURALNETWORKS_TENSOR_INT32}. The dimensions
- *      to reduce. Dimension values must be in the range [-n, n).
- * * 2: An {@link ANEURALNETWORKS_BOOL} scalar, keep_dims. If true,
- *      retains reduced dimensions with length 1.
- *
- * Outputs:
- * * 0: A tensor of the same {@link OperandCode} as input0.
- *
- * Available since API level 29.
- */
 #define OP_SPEC_NAME ReduceSumInput
 OP_SPEC_BEGIN()
 #define ARG_NAMES         \
@@ -409,31 +278,6 @@ MAKE_SPEC(float16_base)
 #undef ARGC
 #undef OP_SPEC_NAME
 
-/**
- * Reduces a tensor by multiplying elements along given dimensions.
- *
- * If keep_dims is true, the reduced dimensions are
- * retained with length 1. Otherwise, the rank of the tensor is reduced by
- * 1 for each entry in dimensions.
- *
- * Supported tensor {@link OperandCode}:
- * * {@link ANEURALNETWORKS_TENSOR_FLOAT16}
- * * {@link ANEURALNETWORKS_TENSOR_FLOAT32}
- *
- * Supported tensor rank: up to 4
- *
- * Inputs:
- * * 0: An n-D tensor.
- * * 1: A 1-D tensor of {@link ANEURALNETWORKS_TENSOR_INT32}. The dimensions
- *      to reduce. Dimension values must be in the range [-n, n).
- * * 2: An {@link ANEURALNETWORKS_BOOL} scalar, keep_dims. If true,
- *      retains reduced dimensions with length 1.
- *
- * Outputs:
- * * 0: A tensor of the same {@link OperandCode} as input0.
- *
- * Available since API level 29.
- */
 #define OP_SPEC_NAME ReduceProdInput
 OP_SPEC_BEGIN()
 #define ARG_NAMES         \
