@@ -21,17 +21,17 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#include <cassert>
 #include <algorithm>
+#include <cassert>
 
-#include "logging.hpp"
-#include "types.hpp"
-#include "model.hpp"
 #include "error.hpp"
+#include "logging.hpp"
+#include "model.hpp"
+#include "types.hpp"
 #include "utils.hpp"
 
-#include "model_transform/nnapi_interpreter.hpp"
 #include "api_requirement/nnapi_requirement.hpp"
+#include "model_transform/nnapi_interpreter.hpp"
 
 // TODO: Xiang remove duplicate code
 /**
@@ -50,7 +50,6 @@ typedef enum {
     /** Fused ReLU6 activation function. */
     ANEURALNETWORKS_FUSED_RELU6 = 3,
 } FuseCode;
-
 
 /**
  * Implicit padding algorithms.
@@ -86,31 +85,29 @@ typedef enum {
     ANEURALNETWORKS_PADDING_VALID = 2,
 } PaddingCode;
 
+namespace nnrt {
 
-namespace nnrt
-{
+#define NNAPI_CHECK_IO_NUM(op, in_num, out_num)                             \
+    do {                                                                    \
+        if ((in_num > 0 && op->inputs().size() != (size_t)in_num) ||        \
+            (out_num > 0 && op->outputs().size() != (size_t)out_num)) {     \
+            NNRT_LOGW_PRINT("Operation IO number mismatch. %d(%d), %d(%d)", \
+                            op->inputs().size(),                            \
+                            in_num,                                         \
+                            op->outputs().size(),                           \
+                            out_num);                                       \
+            return nullptr;                                                 \
+        }                                                                   \
+    } while (0)
 
-#define NNAPI_CHECK_IO_NUM(op, in_num, out_num)         \
-    do {                                                \
-        if ((in_num > 0 && op->inputs().size() != (size_t)in_num)       \
-         || (out_num > 0 && op->outputs().size() != (size_t)out_num)) {           \
-            NNRT_LOGW_PRINT("Operation IO number mismatch. %d(%d), %d(%d)",     \
-                    op->inputs().size(), in_num,        \
-                    op->outputs().size(), out_num);     \
-            return nullptr;                             \
-        }                                               \
-    } while(0)
+#define NNAPI_CHECK_PTR(ptr) \
+    do {                     \
+        if (!ptr) {          \
+            return nullptr;  \
+        }                    \
+    } while (0)
 
-#define NNAPI_CHECK_PTR(ptr)                            \
-    do {                                                \
-        if (!ptr) {                                     \
-            return nullptr;                             \
-        }                                               \
-    } while(0)
-
-static void convert2DPadding(int32_t* padding,
-        size_t size, int32_t* front, int32_t* back)
-{
+static void convert2DPadding(int32_t* padding, size_t size, int32_t* front, int32_t* back) {
     if (!padding || !front || !back) {
         return;
     }
@@ -120,11 +117,11 @@ static void convert2DPadding(int32_t* padding,
     }
 }
 
-NnApiInterpreter::NnApiInterpreter()
-{
-#define REGISTER_OP(NAME)   do {                            \
-    op_container_[OperationType::NAME] = &NnApiInterpreter::map_##NAME;  \
-    } while(0)
+NnApiInterpreter::NnApiInterpreter() {
+#define REGISTER_OP(NAME)                                                   \
+    do {                                                                    \
+        op_container_[OperationType::NAME] = &NnApiInterpreter::map_##NAME; \
+    } while (0)
 
     REGISTER_OP(ADD);
     REGISTER_OP(CONV_2D);
@@ -198,7 +195,7 @@ NnApiInterpreter::NnApiInterpreter()
     REGISTER_OP(SQRT);
     REGISTER_OP(RSQRT);
     REGISTER_OP(SELECT);
-    //REGISTER_OP(SLICE);
+    // REGISTER_OP(SLICE);
     REGISTER_OP(SPLIT);
     REGISTER_OP(DECONV_2D);
     REGISTER_OP(SIN);
@@ -218,32 +215,24 @@ NnApiInterpreter::NnApiInterpreter()
     REGISTER_OP(DETECTION_POSTPROCESSING);
     REGISTER_OP(TILE);
 
-    /*customer Op*/
+/*customer Op*/
 #undef REGISTER_OP
-
 }
 
-NnApiInterpreter::~NnApiInterpreter()
-{
+NnApiInterpreter::~NnApiInterpreter() {}
 
-}
-
-int NnApiInterpreter::run(Model* model, bool* modified)
-{
+int NnApiInterpreter::run(Model* model, bool* modified) {
     *modified = false;
     const std::map<uint32_t, OperationPtr>& operations = model->operations();
-    for (auto it = operations.begin(); it != operations.end(); ++ it)
-    {
+    for (auto it = operations.begin(); it != operations.end(); ++it) {
         OperationPtr op = it->second;
-        if (op_container_.find(op->type()) == op_container_.end())
-        {
+        if (op_container_.find(op->type()) == op_container_.end()) {
             NNRT_LOGW_PRINT("Not support operation %d", op->type());
             return NNA_ERROR_CODE(BAD_DATA);
         }
     }
 
-    for (auto it = operations.begin(); it != operations.end(); ++ it)
-    {
+    for (auto it = operations.begin(); it != operations.end(); ++it) {
         uint32_t idx = it->first;
         OperationPtr op = it->second;
         NNRT_LOGD_PRINT("Convert node %u(%d)", idx, op->type());
@@ -258,10 +247,12 @@ int NnApiInterpreter::run(Model* model, bool* modified)
     NNRT_LOGD_PRINT("Convert operation completed.");
     // Unique vector
     for (uint32_t index : operands_to_remove_) {
-        //NNRT_LOGD_PRINT("Remove %d", index);
+        // NNRT_LOGD_PRINT("Remove %d", index);
         if (model->isInput(index) || model->isOutput(index)) {
-            NNRT_LOGW_PRINT("Try remove operand(%u) from model input or output, \
-some operations may not support dynamic configure.", index);
+            NNRT_LOGW_PRINT(
+                "Try remove operand(%u) from model input or output, \
+some operations may not support dynamic configure.",
+                index);
         } else {
             model->removeOperand(index);
         }
@@ -270,9 +261,9 @@ some operations may not support dynamic configure.", index);
     return NNA_ERROR_CODE(NO_ERROR);
 }
 
-void NnApiInterpreter::replaceOperation(Model* model, uint32_t op_index,
-        OperationPtr new_operation)
-{
+void NnApiInterpreter::replaceOperation(Model* model,
+                                        uint32_t op_index,
+                                        OperationPtr new_operation) {
     OperationPtr org_operation = model->operation(op_index);
     new_operation->setInputs(org_operation->inputs());
     new_operation->setOutputs(org_operation->outputs());
@@ -280,8 +271,7 @@ void NnApiInterpreter::replaceOperation(Model* model, uint32_t op_index,
     model->operations()[op_index] = new_operation;
 }
 
-FusedType NnApiInterpreter::mapFusedType(int fused_code)
-{
+FusedType NnApiInterpreter::mapFusedType(int fused_code) {
     FusedType type = FusedType::NONE;
     switch (fused_code) {
         case ANEURALNETWORKS_FUSED_RELU:
@@ -299,8 +289,7 @@ FusedType NnApiInterpreter::mapFusedType(int fused_code)
     return type;
 }
 
-PadType NnApiInterpreter::mapPadType(int code)
-{
+PadType NnApiInterpreter::mapPadType(int code) {
     PadType type = PadType::AUTO;
     switch (code) {
         case ANEURALNETWORKS_PADDING_SAME:
@@ -317,8 +306,7 @@ PadType NnApiInterpreter::mapPadType(int code)
     return type;
 }
 
-LshProjectionType NnApiInterpreter::mapLshProjectionType(int value)
-{
+LshProjectionType NnApiInterpreter::mapLshProjectionType(int value) {
     LshProjectionType type = LshProjectionType::SPARSE;
     switch (value) {
         case 1:
@@ -334,8 +322,7 @@ LshProjectionType NnApiInterpreter::mapLshProjectionType(int value)
     return type;
 }
 
-FusedType NnApiInterpreter::mapLstmActivationType(int value)
-{
+FusedType NnApiInterpreter::mapLstmActivationType(int value) {
     FusedType type = FusedType::NONE;
     switch (value) {
         case 0:
@@ -356,32 +343,32 @@ FusedType NnApiInterpreter::mapLstmActivationType(int value)
         default:
             NNRT_LOGW_PRINT("Unknown lstm activation: %d.", value);
             break;
-
     }
     return type;
 }
 
-std::vector<int32_t> NnApiInterpreter::convertAxes(
-        int32_t* axes_buffer, size_t length, size_t dim_num) {
+std::vector<int32_t> NnApiInterpreter::convertAxes(int32_t* axes_buffer,
+                                                   size_t length,
+                                                   size_t dim_num) {
     std::vector<int32_t> axes;
     axes.insert(axes.begin(), axes_buffer, axes_buffer + length);
     return convertAxes(axes, dim_num);
 }
 
-std::vector<int32_t> NnApiInterpreter::convertAxes(
-        std::vector<int32_t> & axes, size_t dim_num) {
+std::vector<int32_t> NnApiInterpreter::convertAxes(std::vector<int32_t>& axes, size_t dim_num) {
     std::vector<int32_t> new_axes(axes.size());
     size_t max_size = axes.size() - 1;
-    for (size_t i = 0; i < axes.size(); i ++)
-    {
+    for (size_t i = 0; i < axes.size(); i++) {
         new_axes[i] = convertAxis(axes[max_size - i], dim_num);
     }
     return new_axes;
 }
 
-void NnApiInterpreter::fillIntArray(Model* model, OperationPtr operation,
-        std::vector<int32_t>& array, int32_t op_index, bool is_axis)
-{
+void NnApiInterpreter::fillIntArray(Model* model,
+                                    OperationPtr operation,
+                                    std::vector<int32_t>& array,
+                                    int32_t op_index,
+                                    bool is_axis) {
     OperandPtr operand = model->operand(operation->input(op_index));
     int32_t* buffer = model->getBuffer<int32_t>(operand->weak_mem_ref.lock());
     size_t length = operand->size();
@@ -393,40 +380,40 @@ void NnApiInterpreter::fillIntArray(Model* model, OperationPtr operation,
     }
 }
 
-//remove scalar operand in [offset, offset+cnt)
+// remove scalar operand in [offset, offset+cnt)
 void NnApiInterpreter::removeScalarOperand(OperationPtr& op, size_t ofst, size_t cnt) {
-    auto start = computeAxis(ofst, op->inputs().size() + 1); // Map negative to positive
+    auto start = computeAxis(ofst, op->inputs().size() + 1);  // Map negative to positive
     auto& inputs = op->inputs();
     auto begin = inputs.begin();
     auto end = inputs.begin();
     std::advance(begin, start);
-    std::advance(end, start + cnt );
-    for(auto i = begin;i != inputs.end() && i != end; ++i) {
+    std::advance(end, start + cnt);
+    for (auto i = begin; i != inputs.end() && i != end; ++i) {
         operands_to_remove_.emplace(*i);
     }
     inputs.erase(begin, end);
 }
 
-void NnApiInterpreter::truncateOperationIOs(Model* model, OperationPtr operation,
-        int32_t input_num, int32_t output_num) {
+void NnApiInterpreter::truncateOperationIOs(Model* model,
+                                            OperationPtr operation,
+                                            int32_t input_num,
+                                            int32_t output_num) {
     // Size - 1 = axis
     input_num = computeAxis(input_num, operation->inputs().size() + 1);
     output_num = computeAxis(output_num, operation->outputs().size() + 1);
-    for (int i = input_num; i < (int)operation->inputs().size(); ++ i) {
+    for (int i = input_num; i < (int)operation->inputs().size(); ++i) {
         operands_to_remove_.emplace(operation->input(i));
     }
-    for (int i = output_num; i < (int)operation->outputs().size(); ++ i) {
+    for (int i = output_num; i < (int)operation->outputs().size(); ++i) {
         operands_to_remove_.emplace(operation->output(i));
     }
     operation->inputs().resize(input_num);
     operation->outputs().resize(output_num);
 }
 
-
-
 OperationPtr NnApiInterpreter::map_ADD(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
+                                       OperationPtr operation,
+                                       uint32_t operation_index) {
     NNAPI_CHECK_IO_NUM(operation, 3, 1);
     resetFusedType(model, operation, 2);
     truncateOperationIOs(model, operation, 2, 1);
@@ -434,8 +421,8 @@ OperationPtr NnApiInterpreter::map_ADD(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_SUB(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
+                                       OperationPtr operation,
+                                       uint32_t operation_index) {
     NNAPI_CHECK_IO_NUM(operation, 3, 1);
     resetFusedType(model, operation, 2);
     truncateOperationIOs(model, operation, 2, 1);
@@ -443,8 +430,8 @@ OperationPtr NnApiInterpreter::map_SUB(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_DIV(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
+                                       OperationPtr operation,
+                                       uint32_t operation_index) {
     NNAPI_CHECK_IO_NUM(operation, 3, 1);
     std::shared_ptr<DivOperation> div = std::make_shared<DivOperation>();
     if (div) {
@@ -459,8 +446,8 @@ OperationPtr NnApiInterpreter::map_DIV(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_CONCATENATION(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
+                                                 OperationPtr operation,
+                                                 uint32_t operation_index) {
     NNAPI_CHECK_IO_NUM(operation, -1, 1);
     std::shared_ptr<ConcatOperation> concat = std::make_shared<ConcatOperation>();
     NNAPI_CHECK_PTR(concat);
@@ -471,38 +458,40 @@ OperationPtr NnApiInterpreter::map_CONCATENATION(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_CONV_2D(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
+                                           OperationPtr operation,
+                                           uint32_t operation_index) {
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
     std::shared_ptr<Conv2DOperation> conv2d = std::make_shared<Conv2DOperation>();
 
     std::vector<OperandType> argTypes;
-    std::transform(inputs.begin(), inputs.end(), std::back_inserter(argTypes), [](const OperandPtr& operand){
-        return operand->type;
-    });
+    std::transform(
+        inputs.begin(), inputs.end(), std::back_inserter(argTypes), [](const OperandPtr& operand) {
+            return operand->type;
+        });
 
     auto argList = api::requirement::nnapi::match("Convolution2D", argTypes);
     if (argList) {
-        if (-1 == argList->ArgPos("explicit_pad_left") ) {
+        if (-1 == argList->ArgPos("explicit_pad_left")) {
             // implicit_pad
             auto padTypeIdx = argList->ArgPos("implicit_pad_type");
             conv2d->padType = mapPadType(inputs[padTypeIdx]->scalar.int32);
         } else {
-            conv2d->pad[0] = inputs[argList->ArgPos("explicit_pad_left")    ]->scalar.int32;
-            conv2d->pad[1] = inputs[argList->ArgPos("explicit_pad_right")   ]->scalar.int32;
-            conv2d->pad[2] = inputs[argList->ArgPos("explicit_pad_top")     ]->scalar.int32;
-            conv2d->pad[3] = inputs[argList->ArgPos("explicit_pad_bottom")  ]->scalar.int32;
+            conv2d->pad[0] = inputs[argList->ArgPos("explicit_pad_left")]->scalar.int32;
+            conv2d->pad[1] = inputs[argList->ArgPos("explicit_pad_right")]->scalar.int32;
+            conv2d->pad[2] = inputs[argList->ArgPos("explicit_pad_top")]->scalar.int32;
+            conv2d->pad[3] = inputs[argList->ArgPos("explicit_pad_bottom")]->scalar.int32;
         }
         // dilation is required in Lowlevel requirement
         conv2d->dilations[0] = 1;
         conv2d->dilations[1] = 1;
-        if ( -1 != argList->ArgPos("dilation_w") && -1 != argList->ArgPos("dilation_h")) {
+        if (-1 != argList->ArgPos("dilation_w") && -1 != argList->ArgPos("dilation_h")) {
             conv2d->dilations[0] = inputs[argList->ArgPos("dilation_w")]->scalar.int32;
             conv2d->dilations[1] = inputs[argList->ArgPos("dilation_h")]->scalar.int32;
         }
         conv2d->setDataLayout(DataLayout::NHWC);
-        if ( -1 != argList->ArgPos("data_layout")) {
-            conv2d->setDataLayout(getDataLayout(inputs[argList->ArgPos("data_layout")]->scalar.boolean));
+        if (-1 != argList->ArgPos("data_layout")) {
+            conv2d->setDataLayout(
+                getDataLayout(inputs[argList->ArgPos("data_layout")]->scalar.boolean));
         }
 
         resetFusedType(model, operation, argList->ArgPos("fuse_code"));
@@ -519,8 +508,8 @@ OperationPtr NnApiInterpreter::map_CONV_2D(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_GROUPED_CONV_2D(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
+                                                   OperationPtr operation,
+                                                   uint32_t operation_index) {
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
     std::shared_ptr<GroupedConv2DOperation> conv2d = std::make_shared<GroupedConv2DOperation>();
     NNAPI_CHECK_PTR(conv2d);
@@ -534,8 +523,8 @@ OperationPtr NnApiInterpreter::map_GROUPED_CONV_2D(Model* model,
         conv2d->groups = inputs[6]->scalar.int32;
         resetFusedType(model, operation, 7);
         conv2d->setDataLayout(getDataLayout(inputs[8]->scalar.boolean));
-        //conv2d->dilations[0] = inputs[8]->scalar.int32;
-        //conv2d->dilations[1] = inputs[9]->scalar.int32;
+        // conv2d->dilations[0] = inputs[8]->scalar.int32;
+        // conv2d->dilations[1] = inputs[9]->scalar.int32;
     } else {
         conv2d->pad[0] = inputs[3]->scalar.int32;
         conv2d->pad[1] = inputs[4]->scalar.int32;
@@ -546,8 +535,8 @@ OperationPtr NnApiInterpreter::map_GROUPED_CONV_2D(Model* model,
         conv2d->groups = inputs[9]->scalar.int32;
         resetFusedType(model, operation, 10);
         conv2d->setDataLayout(getDataLayout(inputs[11]->scalar.boolean));
-        //conv2d->dilations[0] = inputs[11]->scalar.int32;
-        //conv2d->dilations[1] = inputs[12]->scalar.int32;
+        // conv2d->dilations[0] = inputs[11]->scalar.int32;
+        // conv2d->dilations[1] = inputs[12]->scalar.int32;
     }
     /* set default dilation value */
     conv2d->setVxParam(OverflowPolicy::WRAP, RoundingPolicy::TO_ZERO, Rounding::FLOOR);
@@ -556,8 +545,8 @@ OperationPtr NnApiInterpreter::map_GROUPED_CONV_2D(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_DEPTHWISE_CONV_2D(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
+                                                     OperationPtr operation,
+                                                     uint32_t operation_index) {
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
     std::shared_ptr<DepthwiseConv2DOperation> conv2d = std::make_shared<DepthwiseConv2DOperation>();
 
@@ -569,8 +558,9 @@ OperationPtr NnApiInterpreter::map_DEPTHWISE_CONV_2D(Model* model,
             conv2d->pad[1] = inputs[argList->ArgPos("explicit_pad_right")]->scalar.int32;
             conv2d->pad[2] = inputs[argList->ArgPos("explicit_pad_top")]->scalar.int32;
             conv2d->pad[3] = inputs[argList->ArgPos("explicit_pad_bottom")]->scalar.int32;
-        } else if (-1 != argList->ArgPos("implicit_pad_type")){
-            conv2d->padType = mapPadType(inputs[argList->ArgPos("implicit_pad_type")]->scalar.int32);
+        } else if (-1 != argList->ArgPos("implicit_pad_type")) {
+            conv2d->padType =
+                mapPadType(inputs[argList->ArgPos("implicit_pad_type")]->scalar.int32);
         } else {
             assert(0);
             NNRT_LOGE("NNAPI_interpreter") << "Argument padding method not found";
@@ -582,7 +572,8 @@ OperationPtr NnApiInterpreter::map_DEPTHWISE_CONV_2D(Model* model,
 
         conv2d->setDataLayout(DataLayout::NHWC);  // default layout
         if (-1 != argList->ArgPos("data_layout")) {
-            conv2d->setDataLayout(getDataLayout(inputs[argList->ArgPos("data_layout")]->scalar.boolean));
+            conv2d->setDataLayout(
+                getDataLayout(inputs[argList->ArgPos("data_layout")]->scalar.boolean));
         }
 
         conv2d->dilations[0] = 1;
@@ -608,15 +599,15 @@ OperationPtr NnApiInterpreter::map_DEPTHWISE_CONV_2D(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_RELU(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
+                                        OperationPtr operation,
+                                        uint32_t operation_index) {
     NNAPI_CHECK_IO_NUM(operation, 1, 1);
     return std::make_shared<ReluOperation>();
 }
 
 OperationPtr NnApiInterpreter::map_FULLY_CONNECTED(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
+                                                   OperationPtr operation,
+                                                   uint32_t operation_index) {
     NNAPI_CHECK_IO_NUM(operation, 4, 1);
     std::shared_ptr<FullyConnectedOperation> fc = std::make_shared<FullyConnectedOperation>();
     NNAPI_CHECK_PTR(fc);
@@ -633,8 +624,8 @@ OperationPtr NnApiInterpreter::map_FULLY_CONNECTED(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_RESHAPE(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
+                                           OperationPtr operation,
+                                           uint32_t operation_index) {
     NNAPI_CHECK_IO_NUM(operation, 2, 1);
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
     std::shared_ptr<ReshapeOperation> reshape = std::make_shared<ReshapeOperation>();
@@ -642,8 +633,8 @@ OperationPtr NnApiInterpreter::map_RESHAPE(Model* model,
     if (!inputs[1]->isConst()) {
         std::vector<OperandPtr> outputs = model->getOperands(operation->outputs());
         assert(outputs[0]->ndim() > 0);
-        reshape->shape = std::vector<int32_t>(outputs[0]->dimensions.begin(),
-                outputs[0]->dimensions.end());
+        reshape->shape =
+            std::vector<int32_t>(outputs[0]->dimensions.begin(), outputs[0]->dimensions.end());
     } else {
         fillIntArray(model, operation, reshape->shape, 1, false);
     }
@@ -652,48 +643,50 @@ OperationPtr NnApiInterpreter::map_RESHAPE(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_EXPAND_DIMS(Model* model,
-    OperationPtr operation, uint32_t operation_index) {
-        NNAPI_CHECK_IO_NUM(operation, 2, 1);
-        std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
-        std::shared_ptr<ReshapeOperation> reshape = std::make_shared<ReshapeOperation>();
+                                               OperationPtr operation,
+                                               uint32_t operation_index) {
+    NNAPI_CHECK_IO_NUM(operation, 2, 1);
+    std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
+    std::shared_ptr<ReshapeOperation> reshape = std::make_shared<ReshapeOperation>();
 
-        auto argList = matchArgList(inputs, "ExpandDims");
-        if (argList) {
-            int32_t dimIndex = inputs[argList->ArgPos("dimIndex")]->scalar.int32;
-            int32_t inputRank = inputs[argList->ArgPos("input")]->dimensions.size();
+    auto argList = matchArgList(inputs, "ExpandDims");
+    if (argList) {
+        int32_t dimIndex = inputs[argList->ArgPos("dimIndex")]->scalar.int32;
+        int32_t inputRank = inputs[argList->ArgPos("input")]->dimensions.size();
 
-            // dimIndex in [-(n+1), n+1] where n is the input rank :
-            // CAUTION : reference cpu code not algined with API spec
-            if ( -1*(inputRank+1)<= dimIndex && dimIndex <= inputRank) {
-                std::vector<OperandPtr> outputs = model->getOperands(operation->outputs());
-                assert(outputs[0]->ndim() > 0);
-                reshape->shape =
-                    std::vector<int32_t>(inputs[0]->dimensions.begin(), inputs[0]->dimensions.end());
+        // dimIndex in [-(n+1), n+1] where n is the input rank :
+        // CAUTION : reference cpu code not algined with API spec
+        if (-1 * (inputRank + 1) <= dimIndex && dimIndex <= inputRank) {
+            std::vector<OperandPtr> outputs = model->getOperands(operation->outputs());
+            assert(outputs[0]->ndim() > 0);
+            reshape->shape =
+                std::vector<int32_t>(inputs[0]->dimensions.begin(), inputs[0]->dimensions.end());
 
-                if (dimIndex < 0) {
-                    dimIndex += (inputRank + 1);
-                }
-
-                reshape->shape.insert(reshape->shape.begin() + dimIndex, 1);
-                // Fill output shape
-                outputs[0]->dimensions = std::vector<uint32_t>(reshape->shape.begin(), reshape->shape.end());
-            } else {
-                NNRT_LOGD_PRINT(" %d -> %d, %d", dimIndex, -1 * (inputRank + 1), inputRank);
-                assert(false);
+            if (dimIndex < 0) {
+                dimIndex += (inputRank + 1);
             }
 
-            truncateOperationIOs(model, operation, 1, 1);
+            reshape->shape.insert(reshape->shape.begin() + dimIndex, 1);
+            // Fill output shape
+            outputs[0]->dimensions =
+                std::vector<uint32_t>(reshape->shape.begin(), reshape->shape.end());
         } else {
-            NNRT_LOGE("NnApiInterpreter") << "Fatal error argmuent mismatch";
+            NNRT_LOGD_PRINT(" %d -> %d, %d", dimIndex, -1 * (inputRank + 1), inputRank);
             assert(false);
         }
 
-        return reshape;
+        truncateOperationIOs(model, operation, 1, 1);
+    } else {
+        NNRT_LOGE("NnApiInterpreter") << "Fatal error argmuent mismatch";
+        assert(false);
     }
 
+    return reshape;
+}
+
 OperationPtr NnApiInterpreter::map_SOFTMAX(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
+                                           OperationPtr operation,
+                                           uint32_t operation_index) {
     std::shared_ptr<SoftmaxOperation> softmax = std::make_shared<SoftmaxOperation>();
     NNAPI_CHECK_PTR(softmax);
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
@@ -704,8 +697,8 @@ OperationPtr NnApiInterpreter::map_SOFTMAX(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_TRANSPOSE(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
+                                             OperationPtr operation,
+                                             uint32_t operation_index) {
     NNAPI_CHECK_IO_NUM(operation, 2, 1);
     std::shared_ptr<PermuteOperation> permute = std::make_shared<PermuteOperation>();
     NNAPI_CHECK_PTR(permute);
@@ -716,15 +709,15 @@ OperationPtr NnApiInterpreter::map_TRANSPOSE(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_AVERAGE_POOL_2D(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
+                                                   OperationPtr operation,
+                                                   uint32_t operation_index) {
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
     std::shared_ptr<AveragePool2DOperation> pool = std::make_shared<AveragePool2DOperation>();
     NNAPI_CHECK_PTR(pool);
 
     pool->setDataLayout(DataLayout::NHWC);
 
-    if (inputs.size() == 10 || inputs.size() == 11) // V1.2 add a optional data layout
+    if (inputs.size() == 10 || inputs.size() == 11)  // V1.2 add a optional data layout
     {
         pool->pad[0] = inputs[1]->scalar.int32;
         pool->pad[1] = inputs[2]->scalar.int32;
@@ -735,9 +728,7 @@ OperationPtr NnApiInterpreter::map_AVERAGE_POOL_2D(Model* model,
         pool->ksize[0] = inputs[7]->scalar.int32;
         pool->ksize[1] = inputs[8]->scalar.int32;
         resetFusedType(model, operation, 9);
-    }
-    else
-    {
+    } else {
         pool->padType = mapPadType(inputs[1]->scalar.int32);
         pool->strides[0] = inputs[2]->scalar.int32;
         pool->strides[1] = inputs[3]->scalar.int32;
@@ -757,14 +748,13 @@ OperationPtr NnApiInterpreter::map_AVERAGE_POOL_2D(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_MAX_POOL_2D(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
+                                               OperationPtr operation,
+                                               uint32_t operation_index) {
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
     std::shared_ptr<MaxPool2DOperation> pool = std::make_shared<MaxPool2DOperation>();
     NNAPI_CHECK_PTR(pool);
     pool->setDataLayout(DataLayout::NHWC);
-    if (inputs.size() == 10)
-    {
+    if (inputs.size() == 10) {
         pool->pad[0] = inputs[1]->scalar.int32;
         pool->pad[1] = inputs[2]->scalar.int32;
         pool->pad[2] = inputs[3]->scalar.int32;
@@ -774,9 +764,7 @@ OperationPtr NnApiInterpreter::map_MAX_POOL_2D(Model* model,
         pool->ksize[0] = inputs[7]->scalar.int32;
         pool->ksize[1] = inputs[8]->scalar.int32;
         resetFusedType(model, operation, 9);
-    }
-    else
-    {
+    } else {
         pool->padType = mapPadType(inputs[1]->scalar.int32);
         pool->strides[0] = inputs[2]->scalar.int32;
         pool->strides[1] = inputs[3]->scalar.int32;
@@ -789,10 +777,9 @@ OperationPtr NnApiInterpreter::map_MAX_POOL_2D(Model* model,
     return pool;
 }
 
-
 OperationPtr NnApiInterpreter::map_SQUEEZE(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
+                                           OperationPtr operation,
+                                           uint32_t operation_index) {
     NNAPI_CHECK_IO_NUM(operation, 2, 1);
     std::shared_ptr<SqueezeOperation> squeeze = std::make_shared<SqueezeOperation>();
     NNAPI_CHECK_PTR(squeeze);
@@ -801,15 +788,15 @@ OperationPtr NnApiInterpreter::map_SQUEEZE(Model* model,
         squeeze->axes.clear();
         int32_t* buffer = model->getBuffer<int32_t>(inputs[1]->weak_mem_ref.lock());
         squeeze->axes = convertAxes(buffer, inputs[1]->size(), inputs[0]->ndim());
-        //TODO: remove buffer
+        // TODO: remove buffer
     }
     truncateOperationIOs(model, operation, 1, 1);
     return squeeze;
 }
 
 OperationPtr NnApiInterpreter::map_PAD(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
+                                       OperationPtr operation,
+                                       uint32_t operation_index) {
     NNAPI_CHECK_IO_NUM(operation, 2, 1);
     std::shared_ptr<PadOperation> pad = std::make_shared<PadOperation>();
     NNAPI_CHECK_PTR(pad);
@@ -828,8 +815,8 @@ OperationPtr NnApiInterpreter::map_PAD(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_MUL(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
+                                       OperationPtr operation,
+                                       uint32_t operation_index) {
     NNAPI_CHECK_IO_NUM(operation, 3, 1);
     std::shared_ptr<MulOperation> mul = std::make_shared<MulOperation>();
     NNAPI_CHECK_PTR(mul);
@@ -840,8 +827,8 @@ OperationPtr NnApiInterpreter::map_MUL(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_MEAN(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
+                                        OperationPtr operation,
+                                        uint32_t operation_index) {
     NNAPI_CHECK_IO_NUM(operation, 3, 1);
     std::shared_ptr<ReduceMeanOperation> mean = std::make_shared<ReduceMeanOperation>();
     NNAPI_CHECK_PTR(mean);
@@ -850,7 +837,7 @@ OperationPtr NnApiInterpreter::map_MEAN(Model* model,
         mean->axes.clear();
         int32_t* buffer = model->getBuffer<int32_t>(inputs[1]->weak_mem_ref.lock());
         mean->axes.assign(buffer, buffer + inputs[1]->size());
-        //TODO: Remove Buffer
+        // TODO: Remove Buffer
     }
     mean->keepDim = static_cast<bool>(inputs[2]->scalar.int32);
     truncateOperationIOs(model, operation, 1, 1);
@@ -881,7 +868,7 @@ OperationPtr NnApiInterpreter::map_SPACE_TO_DEPTH(Model* model,
             space2depth->blockSize[1] = inputs[argList->ArgPos("block_size")]->scalar.int32;
             if (-1 != argList->ArgPos("data_layout")) {
                 space2depth->setDataLayout(
-                getDataLayout(inputs[argList->ArgPos("data_layout")]->scalar.boolean));
+                    getDataLayout(inputs[argList->ArgPos("data_layout")]->scalar.boolean));
             } else {
                 // Default data layout is NHWC
                 space2depth->setDataLayout(DataLayout::NHWC);
@@ -900,8 +887,8 @@ OperationPtr NnApiInterpreter::map_SPACE_TO_DEPTH(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_DEPTH_TO_SPACE(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
+                                                  OperationPtr operation,
+                                                  uint32_t operation_index) {
     NNAPI_CHECK_IO_NUM(operation, 2, 1);
     std::shared_ptr<DepthToSpaceOperation> dp_to_sp = std::make_shared<DepthToSpaceOperation>();
     NNAPI_CHECK_PTR(dp_to_sp);
@@ -914,8 +901,8 @@ OperationPtr NnApiInterpreter::map_DEPTH_TO_SPACE(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_SPACE_TO_BATCH_ND(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
+                                                     OperationPtr operation,
+                                                     uint32_t operation_index) {
     NNAPI_CHECK_IO_NUM(operation, 3, 1);
     std::shared_ptr<SpaceToBatchNDOperation> sp_to_bp = std::make_shared<SpaceToBatchNDOperation>();
     NNAPI_CHECK_PTR(sp_to_bp);
@@ -927,8 +914,8 @@ OperationPtr NnApiInterpreter::map_SPACE_TO_BATCH_ND(Model* model,
         buffer = model->getBuffer<int32_t>(inputs[2]->weak_mem_ref.lock());
         sp_to_bp->padFront.resize(inputs[0]->ndim() - 2);
         sp_to_bp->padBack.resize(inputs[0]->ndim() - 2);
-        convert2DPadding(buffer, inputs[2]->size(),
-                sp_to_bp->padFront.data(), sp_to_bp->padBack.data());
+        convert2DPadding(
+            buffer, inputs[2]->size(), sp_to_bp->padFront.data(), sp_to_bp->padBack.data());
     } else {
         NNRT_LOGW_PRINT("Not support dynamic SPACE_TO_BATCH_ND.");
         assert(false);
@@ -938,8 +925,8 @@ OperationPtr NnApiInterpreter::map_SPACE_TO_BATCH_ND(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_BATCH_TO_SPACE_ND(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
+                                                     OperationPtr operation,
+                                                     uint32_t operation_index) {
     std::shared_ptr<BatchToSpaceNDOperation> bp_to_sp = std::make_shared<BatchToSpaceNDOperation>();
     NNAPI_CHECK_PTR(bp_to_sp);
     bp_to_sp->setDataLayout(DataLayout::NHWC);
@@ -979,7 +966,8 @@ OperationPtr NnApiInterpreter::map_RESIZE_BILINEAR(Model* model,
         resize->setDataLayout(DataLayout::NHWC);
         // layout were set
         if (-1 != argList->ArgPos("data_layout")) {
-            resize->setDataLayout(getDataLayout(inputs[argList->ArgPos("data_layout")]->scalar.boolean));
+            resize->setDataLayout(
+                getDataLayout(inputs[argList->ArgPos("data_layout")]->scalar.boolean));
         }
         auto inputOperand = inputs[argList->ArgPos("input")];
         auto outputOperand = model->getOperands(operation->outputs())[0];
@@ -988,8 +976,12 @@ OperationPtr NnApiInterpreter::map_RESIZE_BILINEAR(Model* model,
             !nnrt::operand_utils::IsDynamicShape(outputOperand)) {
             if (-1 != argList->ArgPos("output_height")) {
                 // give output height and width
-                resize->outputHeight = inputs[argList->ArgPos("output_height")]->scalar.int32;
-                resize->outputWidth = inputs[argList->ArgPos("output_width")]->scalar.int32;
+                // resize->outputHeight = inputs[argList->ArgPos("output_height")]->scalar.int32;
+                // resize->outputWidth = inputs[argList->ArgPos("output_width")]->scalar.int32;
+                // Note: The order of height and width is't compatible with the spec,
+                // next code should be replaced by above code, once the problem is fixed.
+                resize->outputWidth = inputs[argList->ArgPos("output_height")]->scalar.int32;
+                resize->outputHeight = inputs[argList->ArgPos("output_width")]->scalar.int32;
 
             } else {
                 // give scale
@@ -1006,8 +998,10 @@ OperationPtr NnApiInterpreter::map_RESIZE_BILINEAR(Model* model,
                     // scale is float32
                     float heightScale = inputs[argList->ArgPos("height_scale")]->scalar.float32;
                     float widthScale = inputs[argList->ArgPos("width_scale")]->scalar.float32;
-                    resize->outputHeight = uint32_t(orgHeight * heightScale);
-                    resize->outputWidth = uint32_t(orgWidth * widthScale);
+                    // resize->outputHeight = uint32_t(orgHeight * heightScale);
+                    // resize->outputWidth = uint32_t(orgWidth * widthScale);
+                    resize->outputHeight = uint32_t(orgHeight * widthScale);
+                    resize->outputWidth = uint32_t(orgWidth * heightScale);
                 } else {
                     // scale is float16
                     // TODO: support float16
@@ -1028,10 +1022,11 @@ OperationPtr NnApiInterpreter::map_RESIZE_BILINEAR(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_RESIZE_NEAREST(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
+                                                  OperationPtr operation,
+                                                  uint32_t operation_index) {
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
-    std::shared_ptr<ResizeNearestNeighborOperation> resize = std::make_shared<ResizeNearestNeighborOperation>();
+    std::shared_ptr<ResizeNearestNeighborOperation> resize =
+        std::make_shared<ResizeNearestNeighborOperation>();
     NNAPI_CHECK_PTR(resize);
 
     std::vector<OperandType> argTypes;
@@ -1042,7 +1037,8 @@ OperationPtr NnApiInterpreter::map_RESIZE_NEAREST(Model* model,
 
     auto argList = api::requirement::nnapi::match("ResizeNearestNeighborOperation", argTypes);
     if (argList) {
-        resize->setDataLayout(getDataLayout(inputs[argList->ArgPos("data_layout")]->scalar.boolean));
+        resize->setDataLayout(
+            getDataLayout(inputs[argList->ArgPos("data_layout")]->scalar.boolean));
         auto inputOperand = inputs[argList->ArgPos("input")];
         auto outputOperand = model->getOperands(operation->outputs())[0];
         // No dynamic shape branch
@@ -1050,8 +1046,12 @@ OperationPtr NnApiInterpreter::map_RESIZE_NEAREST(Model* model,
             !nnrt::operand_utils::IsDynamicShape(outputOperand)) {
             if (-1 != argList->ArgPos("output_height")) {
                 // give output height and width
-                resize->outputHeight = inputs[argList->ArgPos("output_height")]->scalar.int32;
-                resize->outputWidth = inputs[argList->ArgPos("output_width")]->scalar.int32;
+                // resize->outputHeight = inputs[argList->ArgPos("output_height")]->scalar.int32;
+                // resize->outputWidth = inputs[argList->ArgPos("output_width")]->scalar.int32;
+                // Note: The order of height and width is't compatible with the spec,
+                // next code should be replaced by above code, once the problem is fixed.
+                resize->outputWidth = inputs[argList->ArgPos("output_height")]->scalar.int32;
+                resize->outputHeight = inputs[argList->ArgPos("output_width")]->scalar.int32;
 
             } else {
                 // give scale
@@ -1068,8 +1068,11 @@ OperationPtr NnApiInterpreter::map_RESIZE_NEAREST(Model* model,
                     // scale is float32
                     float heightScale = inputs[argList->ArgPos("height_scale")]->scalar.float32;
                     float widthScale = inputs[argList->ArgPos("width_scale")]->scalar.float32;
-                    resize->outputHeight = uint32_t(orgHeight * heightScale);
-                    resize->outputWidth = uint32_t(orgWidth * widthScale);
+                    // resize->outputHeight = uint32_t(orgHeight * heightScale);
+                    // resize->outputWidth = uint32_t(orgWidth * widthScale);
+                    resize->outputHeight = uint32_t(orgHeight * widthScale);
+                    resize->outputWidth = uint32_t(orgWidth * heightScale);
+
                 } else {
                     // scale is float16
                     // TODO: support float16
@@ -1134,8 +1137,8 @@ OperationPtr NnApiInterpreter::map_LOCAL_RESPONSE_NORMALIZATION(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_L2_NORMALIZATION(Model* model,
-                                                                OperationPtr operation,
-                                                                uint32_t operation_index) {
+                                                    OperationPtr operation,
+                                                    uint32_t operation_index) {
     std::shared_ptr<L2NormOperation> l2norm = std::make_shared<L2NormOperation>();
     NNAPI_CHECK_PTR(l2norm);
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
@@ -1173,8 +1176,8 @@ OperationPtr NnApiInterpreter::map_L2_NORMALIZATION(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_RNN(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
+                                       OperationPtr operation,
+                                       uint32_t operation_index) {
     NNAPI_CHECK_IO_NUM(operation, 6, 2);
     std::shared_ptr<RnnOperation> rnn = std::make_shared<RnnOperation>();
     NNAPI_CHECK_PTR(rnn);
@@ -1187,9 +1190,10 @@ OperationPtr NnApiInterpreter::map_RNN(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_UNIDIRECTIONAL_SEQUENCE_RNN(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
-    std::shared_ptr<UnidirectionalSequenceRnnOperation> op = std::make_shared<UnidirectionalSequenceRnnOperation>();
+                                                               OperationPtr operation,
+                                                               uint32_t operation_index) {
+    std::shared_ptr<UnidirectionalSequenceRnnOperation> op =
+        std::make_shared<UnidirectionalSequenceRnnOperation>();
     NNAPI_CHECK_PTR(op);
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
     auto argList = matchArgList(inputs, "UnidirectionalSequenceRnnOperation");
@@ -1205,9 +1209,10 @@ OperationPtr NnApiInterpreter::map_UNIDIRECTIONAL_SEQUENCE_RNN(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_BIDIRECTIONAL_SEQUENCE_RNN(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
-    std::shared_ptr<BidirectionalSequenceRnnOperation> op = std::make_shared<BidirectionalSequenceRnnOperation>();
+                                                              OperationPtr operation,
+                                                              uint32_t operation_index) {
+    std::shared_ptr<BidirectionalSequenceRnnOperation> op =
+        std::make_shared<BidirectionalSequenceRnnOperation>();
     NNAPI_CHECK_PTR(op);
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
     auto argList = matchArgList(inputs, "BidirectionalSequenceRnnOperation");
@@ -1224,8 +1229,8 @@ OperationPtr NnApiInterpreter::map_BIDIRECTIONAL_SEQUENCE_RNN(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_LSTM(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
+                                        OperationPtr operation,
+                                        uint32_t operation_index) {
     std::shared_ptr<LstmUnitOperation> new_op = std::make_shared<LstmUnitOperation>();
     NNAPI_CHECK_PTR(new_op);
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
@@ -1234,14 +1239,15 @@ OperationPtr NnApiInterpreter::map_LSTM(Model* model,
     if (argList) {
         if (inputs[0]->type == nnrt::OperandType::TENSOR_FLOAT32) {
             NNRT_LOGI_PRINT("LSMT float32, proj_clip at %d", argList->ArgPos("proj_clip"));
-            new_op->activation = mapLstmActivationType(inputs[argList->ArgPos("activation")]->scalar.int32);
+            new_op->activation =
+                mapLstmActivationType(inputs[argList->ArgPos("activation")]->scalar.int32);
             new_op->cellClip = inputs[argList->ArgPos("cell_clip")]->scalar.float32;
             new_op->projClip = inputs[argList->ArgPos("proj_clip")]->scalar.float32;
-        }
-        else {
+        } else {
             assert(false);
             NNRT_LOGE_PRINT("TODO NNRT not support float16 datatype yet");
-            // new_op->activation = mapLstmActivationType(inputs[argList->ArgPos("activation")]->scalar.int32);
+            // new_op->activation =
+            // mapLstmActivationType(inputs[argList->ArgPos("activation")]->scalar.int32);
             // new_op->cellClip = inputs[argList->ArgPos("cell_clip")]->scalar.float16;
             // new_op->projClip = inputs[argList->ArgPos("proj_clip")]->scalar.float16;
             new_op.reset();
@@ -1269,9 +1275,10 @@ OperationPtr NnApiInterpreter::map_LSTM(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_UNIDIRECTIONAL_SEQUENCE_LSTM(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
-    std::shared_ptr<UnidirectionalSequenceLstmOperation> op = std::make_shared<UnidirectionalSequenceLstmOperation>();
+                                                                OperationPtr operation,
+                                                                uint32_t operation_index) {
+    std::shared_ptr<UnidirectionalSequenceLstmOperation> op =
+        std::make_shared<UnidirectionalSequenceLstmOperation>();
     NNAPI_CHECK_PTR(op);
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
     auto argList = matchArgList(inputs, "UnidirectionalSequenceRnnOperation");
@@ -1289,9 +1296,10 @@ OperationPtr NnApiInterpreter::map_UNIDIRECTIONAL_SEQUENCE_LSTM(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_BIDIRECTIONAL_SEQUENCE_LSTM(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
-    std::shared_ptr<BidirectionalSequenceLstmOperation> op = std::make_shared<BidirectionalSequenceLstmOperation>();
+                                                               OperationPtr operation,
+                                                               uint32_t operation_index) {
+    std::shared_ptr<BidirectionalSequenceLstmOperation> op =
+        std::make_shared<BidirectionalSequenceLstmOperation>();
     NNAPI_CHECK_PTR(op);
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
     auto argList = matchArgList(inputs, "BidirectionalSequenceRnnOperation");
@@ -1310,8 +1318,8 @@ OperationPtr NnApiInterpreter::map_BIDIRECTIONAL_SEQUENCE_LSTM(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_SVDF(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
+                                        OperationPtr operation,
+                                        uint32_t operation_index) {
     NNAPI_CHECK_IO_NUM(operation, 7, 2);
     std::shared_ptr<SvdfOperation> new_op = std::make_shared<SvdfOperation>();
     NNAPI_CHECK_PTR(new_op);
@@ -1323,8 +1331,8 @@ OperationPtr NnApiInterpreter::map_SVDF(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_LSH_PROJECTION(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
+                                                  OperationPtr operation,
+                                                  uint32_t operation_index) {
     NNAPI_CHECK_IO_NUM(operation, 4, 1);
     std::shared_ptr<LshProjectionOperation> new_op = std::make_shared<LshProjectionOperation>();
     NNAPI_CHECK_PTR(new_op);
@@ -1335,14 +1343,13 @@ OperationPtr NnApiInterpreter::map_LSH_PROJECTION(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_L2_POOL_2D(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
+                                              OperationPtr operation,
+                                              uint32_t operation_index) {
     std::shared_ptr<L2Pool2DOperation> pool = std::make_shared<L2Pool2DOperation>();
     NNAPI_CHECK_PTR(pool);
     pool->setDataLayout(DataLayout::NHWC);
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
-    if (inputs.size() == 10 || inputs.size() == 11/*API LEVEL 29*/)
-    {
+    if (inputs.size() == 10 || inputs.size() == 11 /*API LEVEL 29*/) {
         pool->pad[0] = inputs[1]->scalar.int32;
         pool->pad[1] = inputs[2]->scalar.int32;
         pool->pad[2] = inputs[3]->scalar.int32;
@@ -1353,13 +1360,11 @@ OperationPtr NnApiInterpreter::map_L2_POOL_2D(Model* model,
         pool->ksize[1] = inputs[8]->scalar.int32;
         resetFusedType(model, operation, 9);
 
-        //TODO: if io_in_nchw is true, no more permute required
+        // TODO: if io_in_nchw is true, no more permute required
         if (inputs.size() == 11) {
             pool->setDataLayout(getDataLayout(inputs[10]->scalar.boolean));
         }
-    }
-    else if(inputs.size() == 7 || inputs.size() == 8/*API LEVEL 29*/)
-    {
+    } else if (inputs.size() == 7 || inputs.size() == 8 /*API LEVEL 29*/) {
         pool->padType = mapPadType(inputs[1]->scalar.int32);
         pool->strides[0] = inputs[2]->scalar.int32;
         pool->strides[1] = inputs[3]->scalar.int32;
@@ -1367,12 +1372,11 @@ OperationPtr NnApiInterpreter::map_L2_POOL_2D(Model* model,
         pool->ksize[1] = inputs[5]->scalar.int32;
         resetFusedType(model, operation, 6);
 
-        //TODO: if io_in_nchw is true, no more permute required
+        // TODO: if io_in_nchw is true, no more permute required
         if (inputs.size() == 8 && inputs[7]) {
             pool->setDataLayout(DataLayout::NCHW);
         }
-    }
-    else{
+    } else {
         NNRT_LOGE_PRINT("Number of input parameter not valid");
         assert(false);
     }
@@ -1382,8 +1386,8 @@ OperationPtr NnApiInterpreter::map_L2_POOL_2D(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_STRIDED_SLICE(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
+                                                 OperationPtr operation,
+                                                 uint32_t operation_index) {
     NNAPI_CHECK_IO_NUM(operation, 7, 1);
     std::shared_ptr<StridedSliceOperation> new_op = std::make_shared<StridedSliceOperation>();
     NNAPI_CHECK_PTR(new_op);
@@ -1402,8 +1406,8 @@ OperationPtr NnApiInterpreter::map_STRIDED_SLICE(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_DECONV_2D(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
+                                             OperationPtr operation,
+                                             uint32_t operation_index) {
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
     std::shared_ptr<Deconv2DOperation> deconv2d;
     auto argList = matchArgList(inputs, "TransposeConv2DOperation");
@@ -1411,7 +1415,7 @@ OperationPtr NnApiInterpreter::map_DECONV_2D(Model* model,
         if (argList->ArgPos("output_shape") != -1) {
             // TODO: We donot support this case,
             // It needs shape inference to convert padType to pad
-            //op->padType = mapPadtype(inputs[argList->ArgPos("impilicit_pad")]->scalar.int32);
+            // op->padType = mapPadtype(inputs[argList->ArgPos("impilicit_pad")]->scalar.int32);
             NNRT_LOGE_PRINT("Transpose conv2d doesn't support implicit padding.");
             return nullptr;
         }
@@ -1424,8 +1428,7 @@ OperationPtr NnApiInterpreter::map_DECONV_2D(Model* model,
         deconv2d->strides[0] = inputs[argList->ArgPos("stride_w")]->scalar.int32;
         deconv2d->strides[1] = inputs[argList->ArgPos("stride_h")]->scalar.int32;
         resetFusedType(model, operation, argList->ArgPos("fuse_code"));
-        deconv2d->setDataLayout(getDataLayout(
-                    inputs[argList->ArgPos("layout")]->scalar.boolean));
+        deconv2d->setDataLayout(getDataLayout(inputs[argList->ArgPos("layout")]->scalar.boolean));
     } else {
         NNRT_LOGE_PRINT("Transpose conv2d argument list not support");
         assert(false);
@@ -1438,8 +1441,8 @@ OperationPtr NnApiInterpreter::map_DECONV_2D(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_TOPK(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
+                                        OperationPtr operation,
+                                        uint32_t operation_index) {
     NNAPI_CHECK_IO_NUM(operation, 2, 2);
     std::shared_ptr<TopkOperation> op = std::make_shared<TopkOperation>();
     NNAPI_CHECK_PTR(op);
@@ -1456,8 +1459,8 @@ OperationPtr NnApiInterpreter::map_TOPK(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_ARGMAX(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
+                                          OperationPtr operation,
+                                          uint32_t operation_index) {
     NNAPI_CHECK_IO_NUM(operation, 2, 1);
     std::shared_ptr<ArgmaxOperation> op = std::make_shared<ArgmaxOperation>();
     NNAPI_CHECK_PTR(op);
@@ -1468,8 +1471,8 @@ OperationPtr NnApiInterpreter::map_ARGMAX(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_ARGMIN(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
+                                          OperationPtr operation,
+                                          uint32_t operation_index) {
     NNAPI_CHECK_IO_NUM(operation, 2, 1);
     std::shared_ptr<ArgminOperation> op = std::make_shared<ArgminOperation>();
     NNAPI_CHECK_PTR(op);
@@ -1480,8 +1483,8 @@ OperationPtr NnApiInterpreter::map_ARGMIN(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_GATHER(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
+                                          OperationPtr operation,
+                                          uint32_t operation_index) {
     NNAPI_CHECK_IO_NUM(operation, 3, 1);
     std::shared_ptr<GatherOperation> op = std::make_shared<GatherOperation>();
     NNAPI_CHECK_PTR(op);
@@ -1495,9 +1498,10 @@ OperationPtr NnApiInterpreter::map_GATHER(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_CHANNEL_SHUFFLE(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
-    std::shared_ptr<ChannelShuffleOperation> channel_shuffle = std::make_shared<ChannelShuffleOperation>();
+                                                   OperationPtr operation,
+                                                   uint32_t operation_index) {
+    std::shared_ptr<ChannelShuffleOperation> channel_shuffle =
+        std::make_shared<ChannelShuffleOperation>();
     NNAPI_CHECK_PTR(channel_shuffle);
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
 
@@ -1530,8 +1534,8 @@ OperationPtr NnApiInterpreter::map_CHANNEL_SHUFFLE(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_SPLIT(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
+                                         OperationPtr operation,
+                                         uint32_t operation_index) {
     std::shared_ptr<SplitOperation> op = std::make_shared<SplitOperation>();
     NNAPI_CHECK_PTR(op);
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
@@ -1625,8 +1629,8 @@ OperationPtr NnApiInterpreter::map_INSTANCE_NORMALIZATION(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_GENERATE_PROPOSALS(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
+                                                      OperationPtr operation,
+                                                      uint32_t operation_index) {
     NNAPI_CHECK_IO_NUM(operation, 11, 3);
     std::shared_ptr<GenerateProposalsOperation> op = std::make_shared<GenerateProposalsOperation>();
     NNAPI_CHECK_PTR(op);
@@ -1649,8 +1653,8 @@ OperationPtr NnApiInterpreter::map_GENERATE_PROPOSALS(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_DETECTION_POSTPROCESSING(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
+                                                            OperationPtr operation,
+                                                            uint32_t operation_index) {
     std::shared_ptr<DetectionPostprocessingOperation> op =
         std::make_shared<DetectionPostprocessingOperation>();
     NNAPI_CHECK_PTR(op);
@@ -1663,8 +1667,10 @@ OperationPtr NnApiInterpreter::map_DETECTION_POSTPROCESSING(Model* model,
         op->dw = inputs[argList->ArgPos("dw")]->scalar.float32;
         op->nms_type = inputs[argList->ArgPos("nms_type")]->scalar.boolean;
         op->max_num_detections = inputs[argList->ArgPos("max_num_detections")]->scalar.int32;
-        op->maximum_class_per_detection = inputs[argList->ArgPos("maximum_class_per_detection")]->scalar.int32;
-        op->maximum_detection_per_class = inputs[argList->ArgPos("maximum_detection_per_class")]->scalar.int32;
+        op->maximum_class_per_detection =
+            inputs[argList->ArgPos("maximum_class_per_detection")]->scalar.int32;
+        op->maximum_detection_per_class =
+            inputs[argList->ArgPos("maximum_detection_per_class")]->scalar.int32;
         op->score_threshold = inputs[argList->ArgPos("score_threshold")]->scalar.float32;
         op->iou_threshold = inputs[argList->ArgPos("iou_threshold")]->scalar.float32;
         op->is_bg_in_label = inputs[argList->ArgPos("is_bg_in_label")]->scalar.boolean;
@@ -1677,8 +1683,8 @@ OperationPtr NnApiInterpreter::map_DETECTION_POSTPROCESSING(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_RANDOM_MULTINOMIAL(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
+                                                      OperationPtr operation,
+                                                      uint32_t operation_index) {
     NNAPI_CHECK_IO_NUM(operation, 3, 1);
     std::shared_ptr<RandomMultinomialOperation> op = std::make_shared<RandomMultinomialOperation>();
     NNAPI_CHECK_PTR(op);
@@ -1699,8 +1705,8 @@ OperationPtr NnApiInterpreter::map_RANDOM_MULTINOMIAL(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_TILE(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
+                                        OperationPtr operation,
+                                        uint32_t operation_index) {
     std::shared_ptr<TileOperation> op = std::make_shared<TileOperation>();
     NNAPI_CHECK_PTR(op);
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
@@ -1718,8 +1724,8 @@ OperationPtr NnApiInterpreter::map_TILE(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_ROI_POOLING(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
+                                               OperationPtr operation,
+                                               uint32_t operation_index) {
     std::shared_ptr<ROIPoolingOperation> op = std::make_shared<ROIPoolingOperation>();
     NNAPI_CHECK_PTR(op);
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
@@ -1739,8 +1745,8 @@ OperationPtr NnApiInterpreter::map_ROI_POOLING(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_ROI_ALIGN(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
+                                             OperationPtr operation,
+                                             uint32_t operation_index) {
     std::shared_ptr<ROIAlignOperation> op = std::make_shared<ROIAlignOperation>();
     NNAPI_CHECK_PTR(op);
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
@@ -1750,7 +1756,8 @@ OperationPtr NnApiInterpreter::map_ROI_ALIGN(Model* model,
         op->width = inputs[argList->ArgPos("width")]->scalar.int32;
         op->height_ratio = inputs[argList->ArgPos("height_ratio")]->scalar.float32;
         op->width_ratio = inputs[argList->ArgPos("width_ratio")]->scalar.float32;
-        op->sampling_points_height = inputs[argList->ArgPos("sampling_points_height")]->scalar.int32;
+        op->sampling_points_height =
+            inputs[argList->ArgPos("sampling_points_height")]->scalar.int32;
         op->sampling_points_width = inputs[argList->ArgPos("sampling_points_width")]->scalar.int32;
         op->setDataLayout(getDataLayout(inputs[argList->ArgPos("layout")]->scalar.boolean));
     } else {
@@ -1762,10 +1769,11 @@ OperationPtr NnApiInterpreter::map_ROI_ALIGN(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_HEATMAP_MAX_KEYPOINT(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
+                                                        OperationPtr operation,
+                                                        uint32_t operation_index) {
     NNAPI_CHECK_IO_NUM(operation, 3, 2);
-    std::shared_ptr<HeatmapMaxKeypointOperation> op = std::make_shared<HeatmapMaxKeypointOperation>();
+    std::shared_ptr<HeatmapMaxKeypointOperation> op =
+        std::make_shared<HeatmapMaxKeypointOperation>();
     NNAPI_CHECK_PTR(op);
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
     auto argList = matchArgList(inputs, "HeatmapMaxKeypointOperation");
@@ -1780,8 +1788,8 @@ OperationPtr NnApiInterpreter::map_HEATMAP_MAX_KEYPOINT(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_BOX_WITH_NMS_LIMIT(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
+                                                      OperationPtr operation,
+                                                      uint32_t operation_index) {
     std::shared_ptr<BoxWithNmsLimitOperation> op = std::make_shared<BoxWithNmsLimitOperation>();
     NNAPI_CHECK_PTR(op);
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
@@ -1803,8 +1811,8 @@ OperationPtr NnApiInterpreter::map_BOX_WITH_NMS_LIMIT(Model* model,
     if (argList) {
         op->score_threshold = inputs[argList->ArgPos("score_threshold")]->scalar.float32;
         op->max_boxes = inputs[argList->ArgPos("max_boxes")]->scalar.int32;
-        op->nms_kernel_method = choose_nms_kernel_method(
-                inputs[argList->ArgPos("nms_kernel_method")]->scalar.int32);
+        op->nms_kernel_method =
+            choose_nms_kernel_method(inputs[argList->ArgPos("nms_kernel_method")]->scalar.int32);
         op->iou_threshold = inputs[argList->ArgPos("iou_threshold")]->scalar.float32;
         op->nms_sigma = inputs[argList->ArgPos("nms_sigma")]->scalar.float32;
         op->nms_score_threshold = inputs[argList->ArgPos("nms_score_threshold")]->scalar.float32;
@@ -1817,8 +1825,8 @@ OperationPtr NnApiInterpreter::map_BOX_WITH_NMS_LIMIT(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_LOG_SOFTMAX(Model* model,
-        OperationPtr operation, uint32_t operation_index)
-{
+                                               OperationPtr operation,
+                                               uint32_t operation_index) {
     NNAPI_CHECK_IO_NUM(operation, 3, 1);
     std::shared_ptr<LogSoftmaxOperation> op = std::make_shared<LogSoftmaxOperation>();
     NNAPI_CHECK_PTR(op);
@@ -1835,18 +1843,16 @@ OperationPtr NnApiInterpreter::map_LOG_SOFTMAX(Model* model,
     return op;
 }
 
-
-#define DECLARE_SAMPLE_OP(NAME, INPUT_NUM, OUTPUT_NUM, OPERATION_TYPE)  \
-    OperationPtr NnApiInterpreter::map_##NAME(Model* model,             \
-        OperationPtr operation, uint32_t operation_index)               \
-    {                                                                   \
-        NNAPI_CHECK_IO_NUM(operation, INPUT_NUM, OUTPUT_NUM);           \
-        OperationPtr op = std::make_shared<OPERATION_TYPE>();           \
-        if(op)                                                          \
-            op->setDataLayout(DataLayout::NHWC);                        \
-        else                                                            \
-            NNRT_LOGE_PRINT("Invalid operaton pointer");                        \
-        return op;                                                      \
+#define DECLARE_SAMPLE_OP(NAME, INPUT_NUM, OUTPUT_NUM, OPERATION_TYPE)    \
+    OperationPtr NnApiInterpreter::map_##NAME(                            \
+        Model* model, OperationPtr operation, uint32_t operation_index) { \
+        NNAPI_CHECK_IO_NUM(operation, INPUT_NUM, OUTPUT_NUM);             \
+        OperationPtr op = std::make_shared<OPERATION_TYPE>();             \
+        if (op)                                                           \
+            op->setDataLayout(DataLayout::NHWC);                          \
+        else                                                              \
+            NNRT_LOGE_PRINT("Invalid operaton pointer");                  \
+        return op;                                                        \
     }
 
 DECLARE_SAMPLE_OP(RELU1, 1, 1, Relu1Operation)
@@ -1882,26 +1888,25 @@ DECLARE_SAMPLE_OP(AXIS_ALIGNED_BBOX_TRANSFORM, 4, 1, AxisAlignedBBoxTransformOpe
 
 #undef DECLARE_SAMPLE_OP
 
-
-#define DECLARE_REDUCTION_OP(NAME, OPERATION_TYPE)   \
-    OperationPtr NnApiInterpreter::map_##NAME(Model* model, \
-            OperationPtr operation, uint32_t operation_index) {   \
-        auto op = std::make_shared<OPERATION_TYPE##Operation>();    \
-        NNAPI_CHECK_PTR(op);  \
-        std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());   \
-        auto argList = matchArgList(inputs, ""#OPERATION_TYPE);   \
-        if (argList) {  \
-            if (inputs[argList->ArgPos("axes")]->isConst()) { \
-                op->axes.clear(); \
+#define DECLARE_REDUCTION_OP(NAME, OPERATION_TYPE)                                              \
+    OperationPtr NnApiInterpreter::map_##NAME(                                                  \
+        Model* model, OperationPtr operation, uint32_t operation_index) {                       \
+        auto op = std::make_shared<OPERATION_TYPE##Operation>();                                \
+        NNAPI_CHECK_PTR(op);                                                                    \
+        std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());               \
+        auto argList = matchArgList(inputs, "" #OPERATION_TYPE);                                \
+        if (argList) {                                                                          \
+            if (inputs[argList->ArgPos("axes")]->isConst()) {                                   \
+                op->axes.clear();                                                               \
                 int32_t* buffer = model->getBuffer<int32_t>(inputs[1]->weak_mem_ref.lock());    \
-                op->axes.assign(buffer, buffer + inputs[1]->size());  \
-            }   \
+                op->axes.assign(buffer, buffer + inputs[1]->size());                            \
+            }                                                                                   \
             op->keepDim = static_cast<bool>(inputs[argList->ArgPos("keep_dim")]->scalar.int32); \
-            truncateOperationIOs(model, operation, 1, 1);   \
-        } else {    \
-            NNRT_LOGE_PRINT("Number of input parameter is not valid"); \
-        }   \
-        return op;    \
+            truncateOperationIOs(model, operation, 1, 1);                                       \
+        } else {                                                                                \
+            NNRT_LOGE_PRINT("Number of input parameter is not valid");                          \
+        }                                                                                       \
+        return op;                                                                              \
     }
 
 DECLARE_REDUCTION_OP(REDUCE_ALL, ReduceAll)
@@ -1911,5 +1916,4 @@ DECLARE_REDUCTION_OP(REDUCE_MIN, ReduceMin)
 DECLARE_REDUCTION_OP(REDUCE_SUM, ReduceSum)
 DECLARE_REDUCTION_OP(REDUCE_PROD, ReduceProd)
 #undef DECLARE_REDUCTION_OP
-
 }
