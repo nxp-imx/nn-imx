@@ -33,81 +33,30 @@
 #include "api_requirement/nnapi_requirement.hpp"
 #include "model_transform/nnapi_interpreter.hpp"
 
-// TODO: Xiang remove duplicate code
-/**
- * Fused activation function types.
- *
- *
- * Available since API level 27.
- */
-typedef enum {
-    /** NO fused activation function. */
-    ANEURALNETWORKS_FUSED_NONE = 0,
-    /** Fused ReLU activation function. */
-    ANEURALNETWORKS_FUSED_RELU = 1,
-    /** Fused ReLU1 activation function. */
-    ANEURALNETWORKS_FUSED_RELU1 = 2,
-    /** Fused ReLU6 activation function. */
-    ANEURALNETWORKS_FUSED_RELU6 = 3,
-} FuseCode;
+namespace nnrt
+{
 
-/**
- * Implicit padding algorithms.
- *
- *
- * Available since API level 27.
- */
-typedef enum {
-    /**
-     * SAME padding.
-     * Padding on both ends are the "same":
-     *     padding_to_beginning =  total_padding / 2
-     *     padding_to_end       = (total_padding + 1)/2.
-     * i.e., for even number of padding, padding to both ends are exactly
-     * the same; for odd number of padding, padding to the ending is bigger
-     * than the padding to the beginning by 1.
-     *
-     * total_padding is a function of input, stride and filter size.
-     * It could be computed as follows:
-     *    out_size = (input + stride - 1) / stride;
-     *    needed_input = (out_size - 1) * stride + filter_size
-     *    total_padding = max(0, needed_input - input_size)
-     *  The computation is the same for the horizontal and vertical directions.
-     */
-    ANEURALNETWORKS_PADDING_SAME = 1,
+#define NNAPI_CHECK_IO_NUM(op, in_num, out_num)         \
+    do {                                                \
+        if ((in_num > 0 && op->inputs().size() != (size_t)in_num)       \
+         || (out_num > 0 && op->outputs().size() != (size_t)out_num)) {           \
+            NNRT_LOGW_PRINT("Operation IO number mismatch. %d(%d), %d(%d)",     \
+                    op->inputs().size(), in_num,        \
+                    op->outputs().size(), out_num);     \
+            return nullptr;                             \
+        }                                               \
+    } while(0)
 
-    /**
-     * VALID padding.
-     * No padding. When the input size is not evenly divisible by
-     * the filter size, the input at the end that could not fill
-     * the whole filter tile will simply be ignored.
-     */
-    ANEURALNETWORKS_PADDING_VALID = 2,
-} PaddingCode;
+#define NNAPI_CHECK_PTR(ptr)                            \
+    do {                                                \
+        if (!ptr) {                                     \
+            return nullptr;                             \
+        }                                               \
+    } while(0)
 
-namespace nnrt {
-
-#define NNAPI_CHECK_IO_NUM(op, in_num, out_num)                             \
-    do {                                                                    \
-        if ((in_num > 0 && op->inputs().size() != (size_t)in_num) ||        \
-            (out_num > 0 && op->outputs().size() != (size_t)out_num)) {     \
-            NNRT_LOGW_PRINT("Operation IO number mismatch. %d(%d), %d(%d)", \
-                            op->inputs().size(),                            \
-                            in_num,                                         \
-                            op->outputs().size(),                           \
-                            out_num);                                       \
-            return nullptr;                                                 \
-        }                                                                   \
-    } while (0)
-
-#define NNAPI_CHECK_PTR(ptr) \
-    do {                     \
-        if (!ptr) {          \
-            return nullptr;  \
-        }                    \
-    } while (0)
-
-static void convert2DPadding(int32_t* padding, size_t size, int32_t* front, int32_t* back) {
+static void convert2DPadding(int32_t* padding,
+        size_t size, int32_t* front, int32_t* back)
+{
     if (!padding || !front || !back) {
         return;
     }

@@ -27,27 +27,6 @@
 
 #include "api_requirement/spec_macros.hpp"
 
-/**
- * Draws samples from a multinomial distribution.
- *
- * Supported tensor {@link OperandCode}:
- * * {@link ANEURALNETWORKS_TENSOR_FLOAT16}
- * * {@link ANEURALNETWORKS_TENSOR_FLOAT32}
- *
- * Inputs:
- * * 0: A 2-D tensor with shape [batches, classes], specifying the
- *      unnormalized log-probabilities for all classes.
- * * 1: A scalar {@link ANEURALNETWORKS_INT32}, specifying the number of
- *      independent samples to draw for each row slice.
- * * 2: A 1-D {@link ANEURALNETWORKS_TENSOR_INT32} tensor with shape [2],
- *      specifying seeds used to initialize the random distribution.
- * Outputs:
- * * 0: A 2-D {@link ANEURALNETWORKS_TENSOR_INT32} tensor with shape
- *      [batches, samples], containing the drawn samples.
- *
- * Available since API level 29.
- */
-
 #define OP_SPEC_NAME RandomMultinomialOperation
 OP_SPEC_BEGIN()
 #define ARG_NAMES         \

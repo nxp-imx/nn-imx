@@ -27,51 +27,6 @@
 
 #include "api_requirement/spec_macros.hpp"
 
-/**
- * Transform axis-aligned bounding box proposals using bounding box deltas.
- *
- * Given the positions of bounding box proposals and the corresponding
- * bounding box deltas for each class, return the refined bounding box
- * regions. The resulting bounding boxes are cliped against the edges of
- * the image.
- *
- * Supported tensor {@link OperandCode}:
- * * {@link ANEURALNETWORKS_TENSOR_FLOAT16}
- * * {@link ANEURALNETWORKS_TENSOR_FLOAT32}
- * * {@link ANEURALNETWORKS_TENSOR_QUANT16_ASYMM}
- *
- * Inputs:
- * * 0: A 2-D Tensor of shape [num_rois, 4], specifying the locations of the
- *      bounding box proposals, each line with format [x1, y1, x2, y2].
- *      For tensor of type {@link ANEURALNETWORKS_TENSOR_QUANT16_ASYMM},
- *      the zeroPoint must be 0 and the scale must be 0.125. Zero num_rois
- *      is supported for this tensor.
- * * 1: A 2-D Tensor of shape [num_rois, num_classes * 4], specifying the
- *      bounding box delta for each region of interest and each class. The
- *      bounding box deltas are organized in the following order
- *      [dx, dy, dw, dh], where dx and dy is the relative correction factor
- *      for the center position of the bounding box with respect to the width
- *      and height, dw and dh is the log-scale relative correction factor
- *      for the width and height. For input0 of type
- *      {@link ANEURALNETWORKS_TENSOR_QUANT16_ASYMM}, this tensor should be
- *      of {@link ANEURALNETWORKS_TENSOR_QUANT8_ASYMM}. Zero num_rois is
- *      supported for this tensor.
- * * 2: An 1-D {@link ANEURALNETWORKS_TENSOR_INT32} tensor, of shape
- *      [num_rois], specifying the batch index of each box. Boxes with
- *      the same batch index are grouped together. Zero num_rois is
- *      supported for this tensor.
- * * 3: A 2-D Tensor of shape [batches, 2], specifying the information of
- *      each image in the batch, each line with format
- *      [image_height, image_width].
- *
- * Outputs:
- * * 0: A tensor of the same {@link OperandCode} as input0, with shape
- *      [num_rois, num_classes * 4], specifying the coordinates of each
- *      output bounding box for each class, with format [x1, y1, x2, y2].
- *
- * Available since API level 29.
- */
-
 #define OP_SPEC_NAME AxisAlignedBBoxTransformOperation
 OP_SPEC_BEGIN()
 #define ARG_NAMES         \

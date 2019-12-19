@@ -22,62 +22,6 @@
 *
 *****************************************************************************/
 
-/**
-* A recurrent neural network layer that applies a basic RNN cell to a
-* sequence of inputs.
-*
-* This layer unrolls the input along the sequence dimension, and implements
-* the following operation
-* for each element in the sequence s = 1...sequence_length:
-*   outputs[s] = state = activation(inputs[s] * input_weights’ + state *
-*   recurrent_weights’ + bias)
-*
-* Where:
-* * “input_weights” is a weight matrix that multiplies the inputs;
-* * “recurrent_weights” is a weight matrix that multiplies the current
-*    “state” which itself is the output from the previous time step
-*    computation;
-* * “bias” is a bias vector (added to each output vector in the batch);
-* * “activation” is the function passed as the “fused_activation_function”
-*   argument (if not “NONE”).
-*
-* Supported tensor {@link OperandCode}:
-* * {@link ANEURALNETWORKS_TENSOR_FLOAT16}
-* * {@link ANEURALNETWORKS_TENSOR_FLOAT32}
-*
-* The input tensors must all be the same type.
-*
-* Inputs:
-* * 0: input.
-*      A 3-D tensor. The shape is defined by the input 6 (timeMajor). If
-*      it is set to 1, then the input has a shape [maxTime, batchSize,
-*      inputSize], otherwise the input has a shape [batchSize, maxTime,
-*      inputSize].
-* * 1: weights.
-*      A 2-D tensor of shape [numUnits, inputSize].
-* * 2: recurrent_weights.
-*      A 2-D tensor of shape [numUnits, numUnits].
-* * 3: bias.
-*      A 1-D tensor of shape [numUnits].
-* * 4: hidden state
-*      A 2-D tensor of shape [batchSize, numUnits]. Specifies a hidden
-*      state input for the first time step of the computation.
-* * 5: fusedActivationFunction.
-*      A {@link FuseCode} value indicating the activation function. If
-*      “NONE” is specified then it results in a linear activation.
-* * 6: timeMajor
-*      An {@link ANEURALNETWORKS_INT32} scalar specifying the shape format
-*      of input and output tensors. Must be set to either 0 or 1.
-* Outputs:
-* * 0: output.
-*      A 3-D tensor. The shape is defined by the input 6 (timeMajor). If
-*      it is set to 1, then the output has a shape [maxTime, batchSize,
-*      numUnits], otherwise the output has a shape [batchSize, maxTime,
-*      numUnits].
-*
-* Available since API level 29.
-*/
-
 #ifndef __AANEURALNETWORKS_UNIDIRECTIONAL_SEQUENCE_RNN_HPP__
 #define __AANEURALNETWORKS_UNIDIRECTIONAL_SEQUENCE_RNN_HPP__
 

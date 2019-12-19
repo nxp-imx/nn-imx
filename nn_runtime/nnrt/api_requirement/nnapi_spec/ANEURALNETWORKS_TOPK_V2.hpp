@@ -27,34 +27,6 @@
 
 #include "api_requirement/spec_macros.hpp"
 
-/**
- * Finds values and indices of the k largest entries for the last dimension.
- *
- * Resulting values in each dimensions are sorted in descending order. If
- * two values are equal, the one with larger index appears first.
- *
- * Supported tensor {@link OperandCode}:
- * * {@link ANEURALNETWORKS_TENSOR_FLOAT16}
- * * {@link ANEURALNETWORKS_TENSOR_FLOAT32}
- * * {@link ANEURALNETWORKS_TENSOR_INT32}
- * * {@link ANEURALNETWORKS_TENSOR_QUANT8_ASYMM}
- *
- * Supported tensor rank: from 1
- *
- * Inputs:
- * * 0: input, an n-D tensor specifying the input.
- * * 1: k, an {@link ANEURALNETWORKS_INT32} scalar, specifying the number of
- *      top elements to look for along the last dimension.
- *
- * Outputs:
- * * 0: An n-D tensor of the same type as the input, containing the k
- *      largest elements along each last dimensional slice.
- * * 1: An n-D tensor of type {@link ANEURALNETWORKS_TENSOR_INT32}
- *      containing the indices of values within the last dimension of input.
- *
- * Available since API level 29.
- */
-
 #define OP_SPEC_NAME TopkV2Operation
 OP_SPEC_BEGIN()
 #define ARG_NAMES         \

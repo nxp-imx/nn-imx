@@ -21,57 +21,6 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-
-/**
-* Select and scale the feature map of each region of interest to a unified
-* output size by max-pooling.
-*
-* The region of interest is represented by its upper-left corner coordinate
-* (x1,y1) and lower-right corner coordinate (x2,y2) in the original image.
-* A spatial scaling factor is applied to map into feature map coordinate.
-* A valid region of interest should satisfy x1 <= x2 and y1 <= y2.
-*
-* Rounding is applied in this operation to ensure integer boundary for
-* regions of interest and pooling bins.
-*
-* Supported tensor {@link OperandCode}:
-* * {@link ANEURALNETWORKS_TENSOR_FLOAT16}
-* * {@link ANEURALNETWORKS_TENSOR_FLOAT32}
-* * {@link ANEURALNETWORKS_TENSOR_QUANT8_ASYMM}
-*
-* Supported tensor rank: 4, with "NHWC" or "NCHW" data layout.
-* With the default data layout NHWC, the data is stored in the order of:
-* [batch, height, width, channels]. Alternatively, the data layout could
-* be NCHW, the data storage order of: [batch, channels, height, width].
-*
-* Inputs:
-* * 0: A 4-D tensor, specifying the feature map.
-* * 1: A 2-D Tensor of shape [num_rois, 4], specifying the locations of
-*      the regions of interest, each line with format [x1, y1, x2, y2].
-*      For input0 of type {@link ANEURALNETWORKS_TENSOR_QUANT8_ASYMM},
-*      this tensor should be of {@link ANEURALNETWORKS_TENSOR_QUANT16_ASYMM},
-*      with zeroPoint of 0 and scale of 0.125.
-* * 2: An 1-D {@link ANEURALNETWORKS_TENSOR_INT32} tensor, of shape
-*      [num_rois], specifying the batch index of each box. Boxes with
-*      the same batch index are grouped together.
-* * 3: An {@link ANEURALNETWORKS_INT32} scalar, specifying the output
-*      height of the output tensor.
-* * 4: An {@link ANEURALNETWORKS_INT32} scalar, specifying the output
-*      width of the output tensor.
-* * 5: An {@link ANEURALNETWORKS_FLOAT32} scalar, specifying the ratio
-*      from the height of original image to the height of feature map.
-* * 6: An {@link ANEURALNETWORKS_FLOAT32} scalar, specifying the ratio
-*      from the width of original image to the width of feature map.
-* * 7: An {@link ANEURALNETWORKS_BOOL} scalar, set to true to specify
-*      NCHW data layout for input0 and output0. Set to false for NHWC.
-*
-* Outputs:
-* * 0: A tensor of the same {@link OperandCode} as input0. The output
-*      shape is [num_rois, out_height, out_width, depth].
-*
-* Available since API level 29.
-*/
-
 #ifndef __AANEURALNETWORKS_ROI_POOLING_HPP__
 #define __AANEURALNETWORKS_ROI_POOLING_HPP__
 

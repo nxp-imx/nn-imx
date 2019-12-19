@@ -22,42 +22,6 @@
 *
 *****************************************************************************/
 
-/**
-* Applies L2 normalization along the depth dimension.
-*
-* The values in the output tensor are computed as:
-*
-*     output[batch, row, col, channel] =
-*         input[batch, row, col, channel] /
-*         sqrt(sum_{c} pow(input[batch, row, col, c], 2))
-*
-* For input tensor with rank less than 4, independently normalizes each
-* 1-D slice along dimension dim.
-*
-* Supported tensor {@link OperandCode}:
-* * {@link ANEURALNETWORKS_TENSOR_FLOAT16} (since API level 29)
-* * {@link ANEURALNETWORKS_TENSOR_FLOAT32}
-* * {@link ANEURALNETWORKS_TENSOR_QUANT8_ASYMM} (since API level 29)
-*
-* Supported tensor rank: up to 4
-* Tensors with rank less than 4 are only supported since API level 29.
-*
-* Inputs:
-* * 0: An n-D tensor, specifying the tensor to be normalized.
-* * 1: An optional {@link ANEURALNETWORKS_INT32} scalar, default to -1,
-*      specifying the dimension normalization would be performed on.
-*      Negative index is used to specify axis from the end (e.g. -1 for
-*      the last axis). Must be in the range [-n, n).
-*      Available since API level 29.
-*
-* Outputs:
-* * 0: A tensor of the same {@link OperandCode} and same shape as input0.
-*      For {@link ANEURALNETWORKS_TENSOR_QUANT8_ASYMM},
-*      the scale must be 1.f / 128 and the zeroPoint must be 128.
-*
-* Available since API level 27.
-*/
-
 #ifndef __ANEURALNETWORKS_L2_NORMALIZATION_HPP__
 #define __ANEURALNETWORKS_L2_NORMALIZATION_HPP__
 

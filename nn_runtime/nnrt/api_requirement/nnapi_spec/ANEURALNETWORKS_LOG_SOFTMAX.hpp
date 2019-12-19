@@ -27,34 +27,6 @@
 
 #include "api_requirement/spec_macros.hpp"
 
-/**
- * Computes the log softmax activations given logits.
- *
- * The output is calculated using this formula:
- *
- *     output = logits * beta - log(reduce_sum(exp(logits * beta), axis))
- *
- * Supported tensor {@link OperandCode}:
- * * {@link ANEURALNETWORKS_TENSOR_FLOAT16}
- * * {@link ANEURALNETWORKS_TENSOR_FLOAT32}
- *
- * Supported tensor rank: from 1.
- *
- * Inputs:
- * * 0: A tensor specifying the input logits.
- * * 1: An {@link ANEURALNETWORKS_FLOAT32} scalar, specifying the positive
- *      scaling factor for the exponent, beta.
- * * 2: An {@link ANEURALNETWORKS_INT32} scalar specifying the axis to
- *      reduce across. Negative index is used to specify axis from the
- *      end (e.g. -1 for the last axis). Must be in the range [-n, n).
- *
- * Outputs:
- * * 0: The output tensor of the same {@link OperandCode} and shape as
- *      input0.
- *
- * Available since API level 29.
- */
-
 #define OP_SPEC_NAME LogSoftmaxOperation
 OP_SPEC_BEGIN()
 #define ARG_NAMES         \
