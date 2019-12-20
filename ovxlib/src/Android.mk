@@ -135,7 +135,8 @@ LOCAL_CFLAGS :=  \
         -Wno-enum-conversion \
         -Wno-missing-field-initializers \
         -Wno-tautological-compare \
-        -Wno-missing-braces
+        -Wno-missing-braces \
+		-Wno-unused-function
 
 LOCAL_MODULE:= libovxlib
 LOCAL_MODULE_TAGS := optional
