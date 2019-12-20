@@ -446,7 +446,10 @@ bool VsiDriver::isSupportedOperation(const T_operation& operation, const T_Model
         case OperationType::PAD: {
             // TODO: support pad at channel and batch
             auto& pad = model.operands[operation.inputs[1]];
-            size_t dimSize = pad.location.length / sizeof((int32_t)0) / 2;
+            if (!isConstantTensor(pad)) return false;
+            size_t dimSize = pad.dimensions.size();
+            // Pad only support 4D PAD
+            if (dimSize != 4) return false;
             if (dimSize < 3) {
                 isSupport &= true;
                 break;
@@ -508,14 +511,16 @@ bool VsiDriver::isSupportedOperation(const T_operation& operation, const T_Model
             OperationValidatePtr expValidate =
                 std::make_unique<op_validate::ExpValidate<V1_2::Model, V1_2::Operation>>(model,
                                                                                          operation);
-            return expValidate->Validate();
+            return false;
+            // return expValidate->Validate();
         }
 
         case OperationType::SIN: {
             OperationValidatePtr sinValidate =
                 std::make_unique<op_validate::SinValidate<V1_2::Model, V1_2::Operation>>(model,
                                                                                          operation);
-            return sinValidate->Validate();
+            return false;
+            // return sinValidate->Validate();
         }
 
         case OperationType::RESIZE_BILINEAR:
@@ -530,28 +535,32 @@ bool VsiDriver::isSupportedOperation(const T_operation& operation, const T_Model
             OperationValidatePtr reduceMax =
                 std::make_unique<op_validate::ReduceMaxValidate<V1_2::Model, V1_2::Operation>>(
                     model, operation);
-            return reduceMax->Validate();
+            return false;
+            // return reduceMax->Validate();
         }
 
         case OperationType::REDUCE_MIN: {
             OperationValidatePtr reduceMin =
                 std::make_unique<op_validate::ReduceMinValidate<V1_2::Model, V1_2::Operation>>(
                     model, operation);
-            return reduceMin->Validate();
+            return false;
+            // return reduceMin->Validate();
         }
 
         case OperationType::REDUCE_PROD: {
             OperationValidatePtr reduceProd =
                 std::make_unique<op_validate::ReduceProdValidate<V1_2::Model, V1_2::Operation>>(
                     model, operation);
-            return reduceProd->Validate();
+            return false;
+            // return reduceProd->Validate();
         }
 
         case OperationType::REDUCE_SUM: {
             OperationValidatePtr reduceSum =
                 std::make_unique<op_validate::ReduceSumValidate<V1_2::Model, V1_2::Operation>>(
                     model, operation);
-            return reduceSum->Validate();
+            return false;
+            // return reduceSum->Validate();
         }
 
         case OperationType::AXIS_ALIGNED_BBOX_TRANSFORM:
