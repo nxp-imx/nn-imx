@@ -273,7 +273,7 @@ class OvxlibDelegate
         uint32_t node_unique_id_;
         std::map<uint32_t, vsi_nn_tensor_id_t> tensor_map_;
         std::map<uint32_t, vsi_nn_node_id_t> node_map_;
-        vsi_nn_graph_t* graph_;
+        vsi_nn_graph_t* graph_{nullptr};
         std::vector<std::vector<int8_t>> size_pool_;
 };
 
