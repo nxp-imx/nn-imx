@@ -29,7 +29,7 @@
 ######################################################
 # Include global difinitions.
 
-include $(AQROOT)/makefile.linux.def
+#include $(AQROOT)/makefile.linux.def
 
 ######################################################
 # Components of the project.

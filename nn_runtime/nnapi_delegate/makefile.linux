@@ -1,11 +1,11 @@
-include $(AQROOT)/makefile.linux.def
+#include $(AQROOT)/makefile.linux.def
 
-OVXLIB_DIR = $(AQROOT)/driver/nn/ovxlib
+OVXLIB_DIR = $(AQROOT)/ovxlib
 ifeq ($(OVXLIB_DIR),)
 $(error Please set OVXLIB_DIR env first)
 endif
 
-NNRT_ROOT = $(AQROOT)/driver/nn/nn_runtime
+NNRT_ROOT = $(AQROOT)/nn_runtime
 ifeq ($(NNRT_ROOT),)
 $(error Please set NNRT_ROOT env first)
 endif
@@ -22,7 +22,7 @@ CC      = $(CXX) -pthread
 ################################################################################
 # Supply necessary libraries.
 
-LIBS += -L$(VIVANTE_SDK_LIB) -l ovxlib -lnnrt
+LIBS += -L$(AQROOT) -l ovxlib -lnnrt
 #LIBS += -lm
 
 #############################################################################
@@ -42,9 +42,18 @@ vpath %.cpp ./
 OBJECTS = $(OBJ_DIR)/NeuralNetworks.o \
 
 # installation directory
-INSTALL_DIR := $(VIVANTE_SDK_LIB)
+# INSTALL_DIR := $(VIVANTE_SDK_LIB)
 
 ################################################################################
 # Include the common makefile.
 
 include $(AQROOT)/common.target
+
+################################################################################
+# Extra installation.
+
+install: extra_install
+
+.PHONY: extra_install
+extra_install:
+	@-cp -rf $(AQROOT)/nn_runtime/nnapi_delegate/bin_r/libneuralnetworks.so $(AQROOT)
