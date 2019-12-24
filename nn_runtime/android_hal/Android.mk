@@ -1,12 +1,13 @@
 LOCAL_PATH:= $(call my-dir)
 include $(CLEAR_VARS)
 
-OVXLIB_DIR = $(AQROOT)/driver/nn/ovxlib
+AQROOT=$(NNRT_LOCAL_PATH)
+OVXLIB_DIR = $(AQROOT)/ovxlib
 ifeq ($(OVXLIB_DIR),)
 $(error Please set OVXLIB_DIR env first)
 endif
 
-NNRT_ROOT = $(AQROOT)/driver/nn/nn_runtime
+NNRT_ROOT = $(AQROOT)/nn_runtime
 ifeq ($(NNRT_ROOT),)
 $(error Please set NNRT_ROOT env first)
 endif
@@ -19,10 +20,10 @@ endif
 LOCAL_C_INCLUDES := \
         frameworks/ml/nn/common/include/ \
         frameworks/ml/nn/runtime/include/  \
-        $(AQROOT)/sdk/inc   \
-        $(AQROOT)/sdk/inc/CL \
-        $(AQROOT)/sdk/inc/VX \
-        $(NNRT_ROOT)/nnrt \
+        vendor/nxp/fsl-proprietary/include/CL \
+        vendor/nxp/fsl-proprietary/include/VX \
+        vendor/nxp/fsl-proprietary/include \
+	$(NNRT_ROOT)/nnrt \
         $(NNRT_ROOT)/nnrt/boost/libs/preprocessor/include \
         $(NNRT_ROOT) \
         $(OVXLIB_DIR)/include \

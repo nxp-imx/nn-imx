@@ -4,6 +4,7 @@
 LOCAL_PATH:= $(call my-dir)
 include $(CLEAR_VARS)
 
+
 ifeq ($(AQROOT),)
 $(error Please set AQROOT env first)
 endif
@@ -112,10 +113,9 @@ LOCAL_SHARED_LIBRARIES := \
 
 LOCAL_C_INCLUDES += \
     external/libjpeg-turbo \
-    $(AQROOT)/sdk/inc/CL \
-    $(AQROOT)/sdk/inc/VX \
-    $(AQROOT)/sdk/inc/ \
-    $(AQROOT)/sdk/inc/HAL \
+    vendor/nxp/fsl-proprietary/include/CL \
+    vendor/nxp/fsl-proprietary/include/VX \
+    vendor/nxp/fsl-proprietary/include \
     $(LOCAL_PATH)/../include \
     $(LOCAL_PATH)/../include/ops \
     $(LOCAL_PATH)/../include/utils \

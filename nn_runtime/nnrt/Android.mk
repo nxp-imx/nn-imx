@@ -6,11 +6,12 @@ include $(CLEAR_VARS)
 
 LOCAL_CPP_EXTENSION := .cpp
 
+AQROOT=$(NNRT_LOCAL_PATH)
 ifeq ($(AQROOT),)
 $(error Please set AQROOT env first)
 endif
 
-OVXLIB_DIR = $(AQROOT)/driver/nn/ovxlib
+OVXLIB_DIR = $(AQROOT)/ovxlib
 ifeq ($(OVXLIB_DIR),)
 $(error Please set OVXLIB_DIR env first)
 endif
@@ -59,8 +60,9 @@ LOCAL_SRC_FILES += \
 endif
 
 LOCAL_C_INCLUDES += \
-    $(AQROOT)/sdk/inc/CL \
-    $(AQROOT)/sdk/inc/VX \
+    vendor/nxp/fsl-proprietary/include/CL \
+    vendor/nxp/fsl-proprietary/include/VX \
+    vendor/nxp/fsl-proprietary/include \
     $(OVXLIB_DIR)/include \
     $(OVXLIB_DIR)/include/ops \
     $(OVXLIB_DIR)/include/utils \
