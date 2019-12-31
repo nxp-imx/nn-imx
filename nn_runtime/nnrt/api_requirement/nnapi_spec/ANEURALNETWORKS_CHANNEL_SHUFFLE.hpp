@@ -22,43 +22,6 @@
 *
 *****************************************************************************/
 
-/**
-* Shuffle the channels of the input tensor.
-*
-* Given an input tensor and a integer value of num_groups, CHANNEL_SHUFFLE
-* divide the channel dimension into num_groups groups, and reorganize the
-* channels by grouping channels with the same index in each group.
-*
-* Along the channel dimension, the output is calculated using this formula:
-*
-*     output_channel[k * num_groups + g] = input_channel[g * group_size + k]
-*
-* where group_size = num_channels / num_groups
-*
-* The number of channels must be divisible by num_groups.
-*
-* Supported tensor {@link OperandCode}:
-* * {@link ANEURALNETWORKS_TENSOR_FLOAT16}
-* * {@link ANEURALNETWORKS_TENSOR_FLOAT32}
-* * {@link ANEURALNETWORKS_TENSOR_QUANT8_ASYMM}
-*
-* Supported tensor rank: up to 4
-*
-* Inputs:
-* * 0: An n-D tensor, specifying the tensor to be shuffled.
-* * 1: An {@link ANEURALNETWORKS_INT32} scalar, specifying the number of
-*      groups.
-* * 2: An {@link ANEURALNETWORKS_INT32} scalar, specifying the dimension
-*      channel shuffle would be performed on. Negative index is used to
-*      specify axis from the end (e.g. -1 for the last axis). Must be in
-*      the range [-n, n).
-*
-* Outputs:
-* * 0: A tensor of the same {@link OperandCode} and same shape as input0.
-*
-* Available since API level 29.
-*/
-
 #ifndef __AANEURALNETWORKS_CHANNEL_SHUFFLE_HPP__
 #define __AANEURALNETWORKS_CHANNEL_SHUFFLE_HPP__
 
