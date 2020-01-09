@@ -393,7 +393,7 @@ OVXLIB_API vsi_bool vsi_nn_ReshapeTensor
  * @param[in] tensor Tensor handle.
  * @return Element number of the tensor.
  */
-OVXLIB_API vsi_nn_size_t vsi_nn_GetElementNum
+OVXLIB_API uint32_t vsi_nn_GetElementNum
     (
     vsi_nn_tensor_t * tensor
     );
@@ -499,7 +499,7 @@ OVXLIB_API vsi_status vsi_nn_SwapTensorHandle
     vsi_nn_tensor_t * tensor1
     );
 
-OVXLIB_API vsi_nn_size_t vsi_nn_vxGetTensorElementNum
+OVXLIB_API uint32_t vsi_nn_vxGetTensorElementNum
     (
     vsi_nn_tensor_attr_t *attr
     );

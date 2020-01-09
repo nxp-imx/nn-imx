@@ -179,7 +179,7 @@ vsi_nn_tensor_t* vsi_nn_ConvertTensorDtype
 {
     vsi_status status = VSI_SUCCESS;
     uint32_t i = 0, src_stride = 0, dst_stride = 0;
-    vsi_nn_size_t sz = 0;
+    uint32_t sz = 0;
     uint8_t* src_buf = NULL;
     uint32_t dst_buf_sz = 0;
     uint8_t* dst_buf = NULL;

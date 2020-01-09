@@ -328,7 +328,7 @@ OVXLIB_API vsi_nn_tensor_id_t vsi_nn_AddTensorFromHandle
  *
  * @return The new tensor id on success, or VSI_NN_TENSOR_ID_NA otherwise.
  */
-OVXLIB_API vsi_nn_tensor_id_t vsi_nn_AttachTensorToGraph
+vsi_nn_tensor_id_t vsi_nn_AttachTensorToGraph
     (
     vsi_nn_graph_t       * graph,
     vsi_nn_tensor_id_t     id,
@@ -339,7 +339,7 @@ OVXLIB_API vsi_nn_tensor_id_t vsi_nn_AttachTensorToGraph
  * @deprecated
  * @see vsi_nn_RemoveTensor
  */
-OVXLIB_API void vsi_nn_DeleteTensor
+void vsi_nn_DeleteTensor
     (
     vsi_nn_graph_t       * graph,
     vsi_nn_tensor_id_t     id
@@ -468,7 +468,7 @@ OVXLIB_API vsi_bool vsi_nn_SetGraphOutputs
  * @param[in] graph Graph handle
  * @param[in] id Node id to be removed.
  */
-OVXLIB_API void vsi_nn_RemoveNode
+void vsi_nn_RemoveNode
     (
     vsi_nn_graph_t      * graph,
     vsi_nn_node_id_t      id
@@ -483,7 +483,7 @@ OVXLIB_API void vsi_nn_RemoveNode
  * @return Sorted nodes id. The node id buffer is malloc internal,
  *         the need to release it by user.
  */
-OVXLIB_API vsi_nn_node_id_t * vsi_nn_SortGraphNode
+vsi_nn_node_id_t * vsi_nn_SortGraphNode
     (
     vsi_nn_graph_t * graph
     );
@@ -626,7 +626,7 @@ OVXLIB_API vsi_bool vsi_nn_HasRNN
  * @param[in] graph Graph handle
  * @param[in] id Tensor id
  */
-OVXLIB_API void vsi_nn_RemoveTensor
+void vsi_nn_RemoveTensor
     (
     vsi_nn_graph_t       * graph,
     vsi_nn_tensor_id_t     id

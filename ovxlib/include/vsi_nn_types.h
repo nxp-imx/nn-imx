@@ -147,6 +147,7 @@ typedef int32_t vsi_nn_activation_e; enum
 };
 
 
+/** Deprecated */
 typedef uint32_t vsi_nn_size_t;
 
 /** Tensor id type */

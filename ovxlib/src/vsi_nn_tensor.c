@@ -63,21 +63,21 @@ static vsi_nn_tensor_t * _create_tensor
     vsi_nn_tensor_attr_t * attr
     );
 
-static vsi_nn_size_t get_tensor_elements_num
+static uint32_t get_tensor_elements_num
     (
     uint32_t   * shape,
     uint32_t     dim_num,
     vsi_nn_type_e type
     )
 {
-    vsi_nn_size_t num;
-    vsi_nn_size_t sz;
-    vsi_nn_size_t dsize;
+    uint32_t num;
+    uint32_t sz;
+    uint32_t dsize;
 
     sz = vsi_nn_GetTensorSize( shape,
         dim_num, type );
     dsize = vsi_nn_GetTypeBytes( type );
-    num = (vsi_nn_size_t)(sz / dsize);
+    num = (uint32_t)(sz / dsize);
     return num;
 } /* get_tensor_elements_num() */
 
@@ -725,7 +725,7 @@ float * vsi_nn_ConvertTensorToFloat32Data
 {
     vsi_status status;
     uint8_t *tensor_data = NULL;
-    vsi_nn_size_t elements;
+    uint32_t elements;
     uint32_t i,stride;
     float *data;
 
@@ -1225,7 +1225,7 @@ vsi_status vsi_nn_CopyRawDataToTensor
     )
 {
     vsi_status status           = VSI_FAILURE;
-    vsi_nn_size_t src_data_sz   = 0;
+    uint32_t src_data_sz   = 0;
     uint8_t* buffer             = NULL;
     uint32_t target_tensor_size = 0; /* in bytes */
 
@@ -1437,7 +1437,7 @@ void vsi_nn_TransposeTensor
     free( dst );
 } /* vsi_nn_TransposeTensor() */
 
-vsi_nn_size_t vsi_nn_GetElementNum
+uint32_t vsi_nn_GetElementNum
     (
     vsi_nn_tensor_t * tensor
     )
@@ -1767,7 +1767,7 @@ vsi_status vsi_nn_SwapTensorHandle
     return status;
 } /* vsi_nn_SwapTensorHandle() */
 
-vsi_nn_size_t vsi_nn_vxGetTensorElementNum
+uint32_t vsi_nn_vxGetTensorElementNum
     (
     vsi_nn_tensor_attr_t *attr
     )
