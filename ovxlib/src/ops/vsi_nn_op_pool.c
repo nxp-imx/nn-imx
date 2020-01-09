@@ -42,24 +42,26 @@ static vsi_status op_compute
     )
 {
     vsi_status status;
-    vx_nn_pooling_params_t params;
+    vx_nn_pooling_params_ext_t params;
     status = VSI_FAILURE;
 
     memset( &params, 0, sizeof( params ) );
-    params.pool_type = self->nn_param.pool.type;
-    params.pool_size_x = self->nn_param.pool.ksize[0];
-    params.pool_size_y = self->nn_param.pool.ksize[1];
-    params.pool_pad_x_left = self->nn_param.pool.pad[0];
-    params.pool_pad_x_right = self->nn_param.pool.pad[1];
-    params.pool_pad_y_top = self->nn_param.pool.pad[2];
-    params.pool_pad_y_bottom = self->nn_param.pool.pad[3];
-    params.rounding = self->vx_param.down_scale_size_rounding;
+    params.base.pool_type = self->nn_param.pool.type;
+    params.base.pool_size_x = self->nn_param.pool.ksize[0];
+    params.base.pool_size_y = self->nn_param.pool.ksize[1];
+    params.base.pool_pad_x_left = self->nn_param.pool.pad[0];
+    params.base.pool_pad_x_right = self->nn_param.pool.pad[1];
+    params.base.pool_pad_y_top = self->nn_param.pool.pad[2];
+    params.base.pool_pad_y_bottom = self->nn_param.pool.pad[3];
+    params.base.rounding = self->vx_param.down_scale_size_rounding;
+    params.stride_x = self->nn_param.pool.stride[0];
+    params.stride_y = self->nn_param.pool.stride[1];
     if( NULL == outputs[1] )
     {
         self->n = vxPoolingLayer2(
             self->graph->g,
             inputs[0]->t,
-            &params,
+            (vx_nn_pooling_params_t *)&params,
             sizeof( params ),
             outputs[0]->t
             );
