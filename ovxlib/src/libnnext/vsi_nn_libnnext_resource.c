@@ -19137,7 +19137,7 @@ _viv_uniform VXC_512Bits uniExtractBtoF32_part0_4x4;\n\
 _viv_uniform VXC_512Bits uniExtractBtoF32_part1_4x4;\n\
 _viv_uniform VXC_512Bits uniExtract8Data_2x8;\n\
 \n\
-#define IMAGE_PRE_PROCESS_COPY_16BITS(dst_name, dst_type, copy_type) \\\n\
+#define IMAGE_PRE_PROCESS_COPY_16BITS(dst_name, dst_type, copy_type, convert_type) \\\n\
 __kernel void vxRGBScaletoTensor_##dst_name##_copy \\\n\
     ( \\\n\
     __read_only image2d_array_t  input, \\\n\
@@ -19170,14 +19170,14 @@ __kernel void vxRGBScaletoTensor_##dst_name##_copy \\\n\
  \\\n\
     int4 coord_out = (int4)(get_global_id(0), get_global_id(1), r_order, 0); \\\n\
     float4 tmp0, tmp1; \\\n\
-    int4 result0, result1; \\\n\
+    convert_type result0, result1; \\\n\
  \\\n\
     VXC_DP4x4(tmp0, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractRtoF32_part0_4x4); \\\n\
     VXC_DP4x4(tmp1, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractRtoF32_part1_4x4); \\\n\
     tmp0 = tmp0 * paramData.w + paramData.x; \\\n\
     tmp1 = tmp1 * paramData.w + paramData.x; \\\n\
-    result0 = convert_int4_rte(tmp0); \\\n\
-    result1 = convert_int4_rte(tmp1); \\\n\
+    _viv_asm(CONV_RTE, result0, tmp0); \\\n\
+    _viv_asm(CONV_RTE, result1, tmp1); \\\n\
     VXC_DP2x8(dst0, result0, result1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtract8Data_2x8); \\\n\
     _viv_asm(COPY, dst, dst0, 16); \\\n\
     VXC_WriteImage2DArray(output, coord_out, dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
@@ -19187,8 +19187,8 @@ __kernel void vxRGBScaletoTensor_##dst_name##_copy \\\n\
     VXC_DP4x4(tmp1, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractGtoF32_part1_4x4); \\\n\
     tmp0 = tmp0 * paramData.w + paramData.x; \\\n\
     tmp1 = tmp1 * paramData.w + paramData.x; \\\n\
-    result0 = convert_int4_rte(tmp0); \\\n\
-    result1 = convert_int4_rte(tmp1); \\\n\
+    _viv_asm(CONV_RTE, result0, tmp0); \\\n\
+    _viv_asm(CONV_RTE, result1, tmp1); \\\n\
     VXC_DP2x8(dst0, result0, result1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtract8Data_2x8); \\\n\
     _viv_asm(COPY, dst, dst0, 16); \\\n\
     VXC_WriteImage2DArray(output, coord_out, dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
@@ -19198,14 +19198,14 @@ __kernel void vxRGBScaletoTensor_##dst_name##_copy \\\n\
     VXC_DP4x4(tmp1, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractBtoF32_part1_4x4); \\\n\
     tmp0 = tmp0 * paramData.w + paramData.x; \\\n\
     tmp1 = tmp1 * paramData.w + paramData.x; \\\n\
-    result0 = convert_int4_rte(tmp0); \\\n\
-    result1 = convert_int4_rte(tmp1); \\\n\
+    _viv_asm(CONV_RTE, result0, tmp0); \\\n\
+    _viv_asm(CONV_RTE, result1, tmp1); \\\n\
     VXC_DP2x8(dst0, result0, result1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtract8Data_2x8); \\\n\
     _viv_asm(COPY, dst, dst0, 16); \\\n\
     VXC_WriteImage2DArray(output, coord_out, dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
 }\n\
-IMAGE_PRE_PROCESS_COPY_16BITS(I16, vxc_short8,  vxc_short8)\n\
-IMAGE_PRE_PROCESS_COPY_16BITS(F16, vxc_half8,   vxc_short8)\n\
+IMAGE_PRE_PROCESS_COPY_16BITS(I16, vxc_short8, vxc_short8, int4)\n\
+IMAGE_PRE_PROCESS_COPY_16BITS(F16, vxc_half8,  vxc_short8, half4)\n\
 \n\
 #define IMAGE_PRE_PROCESS_COPY_8BITS(dst_name, dst_type) \\\n\
 __kernel void vxRGBScaletoTensor_##dst_name##_copy \\\n\
@@ -19281,7 +19281,7 @@ _viv_uniform float outputScale;\n\
 _viv_uniform float outputZP;\n\
 _viv_uniform VXC_512Bits uniNormilizationLo_2x8;\n\
 _viv_uniform VXC_512Bits uniNormilizationHi_2x8;\n\
-#define IMAGE_PRE_PROCESS_COPY_16BITS_NHWC(dst_name, dst_type, copy_type) \\\n\
+#define IMAGE_PRE_PROCESS_COPY_16BITS_NHWC(dst_name, dst_type, copy_type, convert_type) \\\n\
 __kernel void vxRGBScaletoTensor_##dst_name##_copy_NHWC \\\n\
     ( \\\n\
     __read_only image2d_array_t  input, \\\n\
