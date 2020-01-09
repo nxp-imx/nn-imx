@@ -4,7 +4,7 @@ _viv_uniform VXC_512Bits uniConvertI16toI16_2x8;
 _viv_uniform VXC_512Bits uinConvertFp16ToInt16_2x8;
 _viv_uniform VXC_512Bits uniConvertInt16toFp16_2x8;
 
-__kernel void vxcTensorMaximum_I16F16toI16
+__kernel void maximum_I16F16toI16
     (
     __read_only  image2d_array_t    input0,
     __read_only  image2d_array_t    input1,
@@ -29,7 +29,7 @@ __kernel void vxcTensorMaximum_I16F16toI16
     VXC_WriteImage2DArray(output, coord, dst, VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0));
 }
 
-__kernel void vxcTensorMaximum_I16F16toI16_2D
+__kernel void maximum_I16F16toI16_2D
     (
     __read_only  image2d_array_t    input0,
     __read_only  image2d_array_t    input1,
@@ -55,7 +55,7 @@ __kernel void vxcTensorMaximum_I16F16toI16_2D
     VXC_WriteImage(output, coord.xy, dst, VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0));
 }
 
-__kernel void vxcTensorMaximum_I16F16toF16
+__kernel void maximum_I16F16toF16
     (
     __read_only  image2d_array_t    input0,
     __read_only  image2d_array_t    input1,
@@ -81,7 +81,7 @@ __kernel void vxcTensorMaximum_I16F16toF16
     VXC_WriteImage2DArray(output, coord, dst, VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0));
 }
 
-__kernel void vxcTensorMaximum_I16F16toF16_2D
+__kernel void maximum_I16F16toF16_2D
     (
     __read_only  image2d_array_t    input0,
     __read_only  image2d_array_t    input1,

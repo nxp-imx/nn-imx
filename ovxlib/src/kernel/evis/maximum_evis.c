@@ -31,36 +31,37 @@
 #include "vsi_nn_log.h"
 #include "vsi_nn_prv.h"
 #include "vsi_nn_tensor_util.h"
+#include "vsi_nn_error.h"
 #include "utils/vsi_nn_util.h"
 #include "kernel/vsi_nn_kernel.h"
 #include "kernel/vsi_nn_kernel_eltwise.h"
 
 __BEGIN_DECLS
 
-#define KERNEL_NAME_MAXIMUM_F16F16TOF16             CVIVANTE_NAMESPACE("maximum_F16F16toF16")
-#define KERNEL_NAME_MAXIMUM_F16F16TOF16_2D          CVIVANTE_NAMESPACE("maximum_F16F16toF16_2D")
-#define KERNEL_NAME_MAXIMUM_I8I8TOI8                CVIVANTE_NAMESPACE("maximum_I8I8toI8")
-#define KERNEL_NAME_MAXIMUM_I8I8TOI8_2D             CVIVANTE_NAMESPACE("maximum_I8I8toI8_2D")
-#define KERNEL_NAME_MAXIMUM_I8F16TOI8               CVIVANTE_NAMESPACE("maximum_I8F16toI8")
-#define KERNEL_NAME_MAXIMUM_I8F16TOI8_2D            CVIVANTE_NAMESPACE("maximum_I8F16toI8_2D")
-#define KERNEL_NAME_MAXIMUM_I8F16TOF16              CVIVANTE_NAMESPACE("maximum_I8F16toF16")
-#define KERNEL_NAME_MAXIMUM_I8F16TOF16_2D           CVIVANTE_NAMESPACE("maximum_I8F16toF16_2D")
-#define KERNEL_NAME_MAXIMUM_U8F16TOF16              CVIVANTE_NAMESPACE("maximum_U8F16toF16")
-#define KERNEL_NAME_MAXIMUM_U8F16TOF16_2D           CVIVANTE_NAMESPACE("maximum_U8F16toF16_2D")
-#define KERNEL_NAME_MAXIMUM_U8F16TOU8               CVIVANTE_NAMESPACE("maximum_U8F16toU8")
-#define KERNEL_NAME_MAXIMUM_U8F16TOU8_2D            CVIVANTE_NAMESPACE("maximum_U8F16toU8_2D")
-#define KERNEL_NAME_MAXIMUM_U8U8TOU8                CVIVANTE_NAMESPACE("maximum_U8U8toU8")
-#define KERNEL_NAME_MAXIMUM_U8U8TOU8_2D             CVIVANTE_NAMESPACE("maximum_U8U8toU8_2D")
-#define KERNEL_NAME_MAXIMUM_I16I16TOI16             CVIVANTE_NAMESPACE("maximum_I16I16toI16")
-#define KERNEL_NAME_MAXIMUM_I16I16TOI16_2D          CVIVANTE_NAMESPACE("maximum_I16I16toI16_2D")
-#define KERNEL_NAME_MAXIMUM_I16F16TOI16             CVIVANTE_NAMESPACE("maximum_I16F16toI16")
-#define KERNEL_NAME_MAXIMUM_I16F16TOI16_2D          CVIVANTE_NAMESPACE("maximum_I16F16toI16_2D")
-#define KERNEL_NAME_MAXIMUM_I16F16TOF16             CVIVANTE_NAMESPACE("maximum_I16F16toF16")
-#define KERNEL_NAME_MAXIMUM_I16F16TOF16_2D          CVIVANTE_NAMESPACE("maximum_I16F16toF16_2D")
-#define KERNEL_NAME_MAXIMUM_F16F16TOU8              CVIVANTE_NAMESPACE("maximum_F16F16toU8")
-#define KERNEL_NAME_MAXIMUM_F16F16TOU8_2D           CVIVANTE_NAMESPACE("maximum_F16F16toU8_2D")
-#define KERNEL_NAME_MAXIMUM_F16F16TOI8              CVIVANTE_NAMESPACE("maximum_F16F16toI8")
-#define KERNEL_NAME_MAXIMUM_F16F16TOI8_2D           CVIVANTE_NAMESPACE("maximum_F16F16toI8_2D")
+#define KERNEL_NAME_MAXIMUM_F16F16TOF16             CVIVANTE_NAMESPACE("evis.maximum_F16F16toF16")
+#define KERNEL_NAME_MAXIMUM_F16F16TOF16_2D          CVIVANTE_NAMESPACE("evis.maximum_F16F16toF16_2D")
+#define KERNEL_NAME_MAXIMUM_I8I8TOI8                CVIVANTE_NAMESPACE("evis.maximum_I8I8toI8")
+#define KERNEL_NAME_MAXIMUM_I8I8TOI8_2D             CVIVANTE_NAMESPACE("evis.maximum_I8I8toI8_2D")
+#define KERNEL_NAME_MAXIMUM_I8F16TOI8               CVIVANTE_NAMESPACE("evis.maximum_I8F16toI8")
+#define KERNEL_NAME_MAXIMUM_I8F16TOI8_2D            CVIVANTE_NAMESPACE("evis.maximum_I8F16toI8_2D")
+#define KERNEL_NAME_MAXIMUM_I8F16TOF16              CVIVANTE_NAMESPACE("evis.maximum_I8F16toF16")
+#define KERNEL_NAME_MAXIMUM_I8F16TOF16_2D           CVIVANTE_NAMESPACE("evis.maximum_I8F16toF16_2D")
+#define KERNEL_NAME_MAXIMUM_U8F16TOF16              CVIVANTE_NAMESPACE("evis.maximum_U8F16toF16")
+#define KERNEL_NAME_MAXIMUM_U8F16TOF16_2D           CVIVANTE_NAMESPACE("evis.maximum_U8F16toF16_2D")
+#define KERNEL_NAME_MAXIMUM_U8F16TOU8               CVIVANTE_NAMESPACE("evis.maximum_U8F16toU8")
+#define KERNEL_NAME_MAXIMUM_U8F16TOU8_2D            CVIVANTE_NAMESPACE("evis.maximum_U8F16toU8_2D")
+#define KERNEL_NAME_MAXIMUM_U8U8TOU8                CVIVANTE_NAMESPACE("evis.maximum_U8U8toU8")
+#define KERNEL_NAME_MAXIMUM_U8U8TOU8_2D             CVIVANTE_NAMESPACE("evis.maximum_U8U8toU8_2D")
+#define KERNEL_NAME_MAXIMUM_I16I16TOI16             CVIVANTE_NAMESPACE("evis.maximum_I16I16toI16")
+#define KERNEL_NAME_MAXIMUM_I16I16TOI16_2D          CVIVANTE_NAMESPACE("evis.maximum_I16I16toI16_2D")
+#define KERNEL_NAME_MAXIMUM_I16F16TOI16             CVIVANTE_NAMESPACE("evis.maximum_I16F16toI16")
+#define KERNEL_NAME_MAXIMUM_I16F16TOI16_2D          CVIVANTE_NAMESPACE("evis.maximum_I16F16toI16_2D")
+#define KERNEL_NAME_MAXIMUM_I16F16TOF16             CVIVANTE_NAMESPACE("evis.maximum_I16F16toF16")
+#define KERNEL_NAME_MAXIMUM_I16F16TOF16_2D          CVIVANTE_NAMESPACE("evis.maximum_I16F16toF16_2D")
+#define KERNEL_NAME_MAXIMUM_F16F16TOU8              CVIVANTE_NAMESPACE("evis.maximum_F16F16toU8")
+#define KERNEL_NAME_MAXIMUM_F16F16TOU8_2D           CVIVANTE_NAMESPACE("evis.maximum_F16F16toU8_2D")
+#define KERNEL_NAME_MAXIMUM_F16F16TOI8              CVIVANTE_NAMESPACE("evis.maximum_F16F16toI8")
+#define KERNEL_NAME_MAXIMUM_F16F16TOI8_2D           CVIVANTE_NAMESPACE("evis.maximum_F16F16toI8_2D")
 
 #define KERNEL_SOURCE_1    "maximum",
 #define KERNEL_SOURCE_2    "maximum_fp16",
@@ -80,7 +81,7 @@ __BEGIN_DECLS
         SOURCE },
 
 #define HASH_MAXIMUM_SH_KERNEL_NAME(SRC0_TYPE, SRC1_TYPE, DST_TYPE) \
-    CVIVANTE_NAMESPACE("maximum_"#SRC0_TYPE#SRC1_TYPE"to"#DST_TYPE)
+    CVIVANTE_NAMESPACE("evis.maximum_"#SRC0_TYPE#SRC1_TYPE"to"#DST_TYPE)
 
 #define TENSOR_MAX_KERNELS_HALF(IN0_TYPE, IN1_TYPE, OUT_TYPE, SOURCE) \
     { HASH_MAXIMUM_KEY(IN0_TYPE, IN1_TYPE, OUT_TYPE, 0), \
@@ -88,7 +89,7 @@ __BEGIN_DECLS
         SOURCE },
 
 #define HASH_MAXIMUM_SH_KERNEL_2D_NAME(SRC0_TYPE, SRC1_TYPE, DST_TYPE) \
-    CVIVANTE_NAMESPACE("maximum_"#SRC0_TYPE#SRC1_TYPE"to"#DST_TYPE"_2D")
+    CVIVANTE_NAMESPACE("evis.maximum_"#SRC0_TYPE#SRC1_TYPE"to"#DST_TYPE"_2D")
 
 #define TENSOR_MAX_KERNELS_2D_HALF(IN0_TYPE, IN1_TYPE, OUT_TYPE, SOURCE) \
     { HASH_MAXIMUM_KEY(IN0_TYPE, IN1_TYPE, OUT_TYPE, 1), \
@@ -149,7 +150,7 @@ DEF_KERNEL_INITIALIZER(_maximum_initializer)
     size_t param_size
     )
 {
-    vsi_status status = VSI_SUCCESS;
+    vsi_status status = VSI_FAILURE;
     gpu_param_t gpu_param = {
         3,
         {0, 0, 0},
@@ -175,14 +176,11 @@ DEF_KERNEL_INITIALIZER(_maximum_initializer)
     uint32_t pack_key;
 
     attr[0] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[0] );
+    CHECK_PTR_FAIL_GOTO( attr[0], "Create tensor attr buffer fail.", final );
     attr[1] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[1] );
+    CHECK_PTR_FAIL_GOTO( attr[1], "Create tensor attr buffer fail.", final );
     attr[2] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[2] );
-
-    if( status != VSI_SUCCESS )
-    {
-        VSILOGE("Get tensor attribute fail!");
-        return status;
-    }
+    CHECK_PTR_FAIL_GOTO( attr[2], "Create tensor attr buffer fail.", final );
 
     out_shape  = attr[2]->shape;
     src0ZP     = attr[0]->asymm.zero_point;
@@ -282,10 +280,11 @@ DEF_KERNEL_INITIALIZER(_maximum_initializer)
             gpu_dp_inst_update_postshfit( &uniConvertI8toI8_0_part0_2x8, shift0 );
             gpu_dp_inst_update_postshfit( &uniConvertI8toI8_0_part1_2x8, shift0 );
 
-            status |= vsi_nn_kernel_gpu_add_param( node,
+            status = vsi_nn_kernel_gpu_add_param( node,
                     "uniConvertI8toI8_0_part0_2x8", &uniConvertI8toI8_0_part0_2x8 );
             status |= vsi_nn_kernel_gpu_add_param( node,
                     "uniConvertI8toI8_0_part1_2x8", &uniConvertI8toI8_0_part1_2x8 );
+            CHECK_STATUS_FAIL_GOTO(status, final );
 
             if( attr[1]->dtype == F16 )
             {
@@ -301,17 +300,19 @@ DEF_KERNEL_INITIALIZER(_maximum_initializer)
                 }, GPU_DP_TYPE_16 };
 
                 gpu_dp_inst_update_postshfit( &uinConvertFp16ToInt8_2x8, shift1 );
-                status |= vsi_nn_kernel_gpu_add_param( node,
+                status = vsi_nn_kernel_gpu_add_param( node,
                         "uinConvertFp16ToInt8_2x8", &uinConvertFp16ToInt8_2x8 );
+                CHECK_STATUS_FAIL_GOTO(status, final );
             }
             else
             {
                 gpu_dp_inst_update_postshfit( &uniConvertI8toI8_1_part0_2x8, shift1 );
                 gpu_dp_inst_update_postshfit( &uniConvertI8toI8_1_part1_2x8, shift1 );
-                status |= vsi_nn_kernel_gpu_add_param( node,
+                status = vsi_nn_kernel_gpu_add_param( node,
                         "uniConvertI8toI8_1_part0_2x8", &uniConvertI8toI8_1_part0_2x8 );
                 status |= vsi_nn_kernel_gpu_add_param( node,
                         "uniConvertI8toI8_1_part1_2x8", &uniConvertI8toI8_1_part1_2x8 );
+                CHECK_STATUS_FAIL_GOTO(status, final );
             }
         }
         break;
@@ -341,14 +342,16 @@ DEF_KERNEL_INITIALIZER(_maximum_initializer)
             gpu_dp_inst_update_postshfit( &uniConvertI16toI16_0_2x8, shift0 );
             gpu_dp_inst_update_postshfit( &uniConvertI16toI16_1_2x8, shift1 );
 
-            status |= vsi_nn_kernel_gpu_add_param( node,
+            status = vsi_nn_kernel_gpu_add_param( node,
                     "uniConvertI16toI16_0_2x8", &uniConvertI16toI16_0_2x8 );
             status |= vsi_nn_kernel_gpu_add_param( node,
                     "uniConvertI16toI16_1_2x8", &uniConvertI16toI16_1_2x8 );
+            CHECK_STATUS_FAIL_GOTO(status, final );
         }
         break;
     case _PACK_SELECT_KEY( U8, U8, U8 ):
     case _PACK_SELECT_KEY( U8, F16, U8 ):
+    case _PACK_SELECT_KEY( F16, F16, U8 ):
         {
             uint16_t M0               = 0;
             uint16_t M1               = 0;
@@ -389,12 +392,18 @@ DEF_KERNEL_INITIALIZER(_maximum_initializer)
             gpu_dp_inst_update_postshfit( &uniU8MulAndPostShift_Lo_2x8, postShift0 );
             gpu_dp_inst_update_postshfit( &uniU8MulAndPostShift_Hi_2x8, postShift0 );
 
-            status |= vsi_nn_kernel_gpu_add_param( node,
-                    "uniU8MulAndPostShift0_Lo_2x8",  &uniU8MulAndPostShift_Lo_2x8 );
-            status |= vsi_nn_kernel_gpu_add_param( node,
-                    "uniU8MulAndPostShift0_Hi_2x8",  &uniU8MulAndPostShift_Hi_2x8 );
-            status |= vsi_nn_kernel_gpu_add_param( node, "multAndoutZP0", &multAndoutZP0 );
-            status |= vsi_nn_kernel_gpu_add_param( node, "multAndoutZP1", &multAndoutZP1 );
+            status = vsi_nn_kernel_gpu_add_param( node, "multAndoutZP1", &multAndoutZP1 );
+            CHECK_STATUS_FAIL_GOTO(status, final );
+
+            if (attr[0]->dtype == U8)
+            {
+                status = vsi_nn_kernel_gpu_add_param( node,
+                        "uniU8MulAndPostShift0_Lo_2x8",  &uniU8MulAndPostShift_Lo_2x8 );
+                status |= vsi_nn_kernel_gpu_add_param( node,
+                        "uniU8MulAndPostShift0_Hi_2x8",  &uniU8MulAndPostShift_Hi_2x8 );
+                status |= vsi_nn_kernel_gpu_add_param( node, "multAndoutZP0", &multAndoutZP0 );
+                CHECK_STATUS_FAIL_GOTO(status, final );
+            }
 
             if( attr[1]->dtype == F16 )
             {
@@ -410,17 +419,19 @@ DEF_KERNEL_INITIALIZER(_maximum_initializer)
                 }, GPU_DP_TYPE_16 };
 
                 gpu_dp_inst_update_postshfit( &uniConvertFp16toU8_2x8, postShift1 );
-                status |= vsi_nn_kernel_gpu_add_param( node,
+                status = vsi_nn_kernel_gpu_add_param( node,
                         "uniConvertFp16toU8_2x8", &uniConvertFp16toU8_2x8 );
+                CHECK_STATUS_FAIL_GOTO(status, final );
             }
             else
             {
                 gpu_dp_inst_update_postshfit( &uniU8MulAndPostShift_Lo_2x8, postShift1 );
                 gpu_dp_inst_update_postshfit( &uniU8MulAndPostShift_Hi_2x8, postShift1 );
-                status |= vsi_nn_kernel_gpu_add_param( node,
+                status = vsi_nn_kernel_gpu_add_param( node,
                         "uniU8MulAndPostShift1_Lo_2x8", &uniU8MulAndPostShift_Lo_2x8 );
                 status |= vsi_nn_kernel_gpu_add_param( node,
                         "uniU8MulAndPostShift1_Hi_2x8", &uniU8MulAndPostShift_Hi_2x8 );
+                CHECK_STATUS_FAIL_GOTO(status, final );
             }
         }
         break;
@@ -438,8 +449,9 @@ DEF_KERNEL_INITIALIZER(_maximum_initializer)
             }, GPU_DP_TYPE_16 };
 
             gpu_dp_inst_update_postshfit( &uniConvertInt8toFp16_2x8, shift0 );
-            status |= vsi_nn_kernel_gpu_add_param( node,
+            status = vsi_nn_kernel_gpu_add_param( node,
                     "uniConvertInt8toFp16_2x8", &uniConvertInt8toFp16_2x8 );
+            CHECK_STATUS_FAIL_GOTO(status, final );
         }
         break;
     case _PACK_SELECT_KEY( U8, F16, F16 ):
@@ -463,9 +475,10 @@ DEF_KERNEL_INITIALIZER(_maximum_initializer)
             multAndoutZP0[1] = (uint32_t)((dstZP << postShift) - src0ZP * M0);
 
             gpu_dp_inst_update_postshfit( &uniU8MulAndPostShift_0_Lo_2x8, postShift );
-            status |= vsi_nn_kernel_gpu_add_param( node,
+            status = vsi_nn_kernel_gpu_add_param( node,
                     "uniU8MulAndPostShift_0_Lo_2x8", &uniU8MulAndPostShift_0_Lo_2x8 );
             status |= vsi_nn_kernel_gpu_add_param( node, "multAndoutZP0", &multAndoutZP0 );
+            CHECK_STATUS_FAIL_GOTO(status, final );
         }
         break;
     case _PACK_SELECT_KEY( I16, F16, I16 ):
@@ -493,10 +506,11 @@ DEF_KERNEL_INITIALIZER(_maximum_initializer)
 
             gpu_dp_inst_update_postshfit( &uniConvertI16toI16_2x8, shift0 );
             gpu_dp_inst_update_postshfit( &uinConvertFp16ToInt16_2x8, shift1 );
-            status |= vsi_nn_kernel_gpu_add_param( node,
+            status = vsi_nn_kernel_gpu_add_param( node,
                     "uniConvertI16toI16_2x8", &uniConvertI16toI16_2x8 );
             status |= vsi_nn_kernel_gpu_add_param( node,
                     "uinConvertFp16ToInt16_2x8", &uinConvertFp16ToInt16_2x8 );
+            CHECK_STATUS_FAIL_GOTO(status, final );
         }
         break;
     case _PACK_SELECT_KEY( I16, F16, F16 ):
@@ -513,8 +527,9 @@ DEF_KERNEL_INITIALIZER(_maximum_initializer)
             }, GPU_DP_TYPE_16 };
 
             gpu_dp_inst_update_postshfit( &uniConvertInt16toFp16_2x8, shift0 );
-            status |= vsi_nn_kernel_gpu_add_param( node,
+            status = vsi_nn_kernel_gpu_add_param( node,
                     "uniConvertInt16toFp16_2x8", &uniConvertInt16toFp16_2x8 );
+            CHECK_STATUS_FAIL_GOTO(status, final );
         }
         break;
     case _PACK_SELECT_KEY( F16, F16, I8 ):
@@ -531,8 +546,9 @@ DEF_KERNEL_INITIALIZER(_maximum_initializer)
             }, GPU_DP_TYPE_16 };
 
             gpu_dp_inst_update_postshfit( &uinConvertFp16ToInt8_2x8, shift0 );
-            status |= vsi_nn_kernel_gpu_add_param( node,
+            status = vsi_nn_kernel_gpu_add_param( node,
                     "uinConvertFp16ToInt8_2x8", &uinConvertFp16ToInt8_2x8 );
+            CHECK_STATUS_FAIL_GOTO(status, final );
         }
         break;
     default:
@@ -541,13 +557,13 @@ DEF_KERNEL_INITIALIZER(_maximum_initializer)
 
 #undef _PACK_SELECT_KEY
 
-    if( status == VSI_SUCCESS )
-    {
-        vsi_nn_kernel_gpu_config( node, &gpu_param );
-    }
-    vsi_nn_kernel_tensor_attr_release( &attr[0] );
-    vsi_nn_kernel_tensor_attr_release( &attr[1] );
-    vsi_nn_kernel_tensor_attr_release( &attr[2] );
+    status = vsi_nn_kernel_gpu_config( node, &gpu_param );
+
+final:
+    if (attr[0]) vsi_nn_kernel_tensor_attr_release( &attr[0] );
+    if (attr[1]) vsi_nn_kernel_tensor_attr_release( &attr[1] );
+    if (attr[2]) vsi_nn_kernel_tensor_attr_release( &attr[2] );
+
     return status;
 } /* _maxmum_initializer() */
 

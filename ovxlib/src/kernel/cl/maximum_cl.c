@@ -32,6 +32,7 @@
 #include "vsi_nn_prv.h"
 #include "vsi_nn_error.h"
 #include "vsi_nn_tensor_util.h"
+#include "math.h"
 #include "utils/vsi_nn_util.h"
 #include "kernel/vsi_nn_kernel.h"
 #include "kernel/vsi_nn_kernel_eltwise.h"
@@ -49,7 +50,7 @@ __BEGIN_DECLS
     ((_input0_type << 24) | (_input1_type << 16) | (_output_type << 8) | (_image_2d))
 
 #define HASH_MAXIMUM_SH_KERNEL_NAME(SRC0_TYPE, SRC1_TYPE, DST_TYPE) \
-    CVIVANTE_NAMESPACE("maximum_"#SRC0_TYPE#SRC1_TYPE"to"#DST_TYPE)
+    CVIVANTE_NAMESPACE("cl.maximum_"#SRC0_TYPE#SRC1_TYPE"to"#DST_TYPE)
 
 #define TENSOR_MAX_KERNELS(IN0_TYPE, IN1_TYPE, OUT_TYPE, SOURCE) \
     { HASH_MAXIMUM_KEY(IN0_TYPE, IN1_TYPE, OUT_TYPE, 0), \
@@ -63,7 +64,7 @@ __BEGIN_DECLS
 
 
 #define HASH_MAXIMUM_SH_KERNEL_2D_NAME(SRC0_TYPE, SRC1_TYPE, DST_TYPE) \
-    CVIVANTE_NAMESPACE("maximum_"#SRC0_TYPE#SRC1_TYPE"to"#DST_TYPE"_2D")
+    CVIVANTE_NAMESPACE("cl.maximum_"#SRC0_TYPE#SRC1_TYPE"to"#DST_TYPE"_2D")
 
 #define TENSOR_MAX_KERNELS_2D(IN0_TYPE, IN1_TYPE, OUT_TYPE, SOURCE) \
     { HASH_MAXIMUM_KEY(IN0_TYPE, IN1_TYPE, OUT_TYPE, 1), \
@@ -119,60 +120,50 @@ static vx_param_description_t kernel_param_def[] =
 /*
  * Kernel initializer
  */
-static vx_status VX_CALLBACK _maximum_initializer
+DEF_KERNEL_INITIALIZER(_maximum_initializer)
     (
-    vx_node nodObj,
-    const vx_reference *paramObj,
-    vx_uint32 paraNum
+    vsi_nn_kernel_node_t node,
+    const vsi_nn_kernel_node_param_t * param,
+    size_t param_size
     )
 {
-    vx_kernel_execution_parameters_t shaderParam = {
-        3,          // workdim
-        {0, 0, 0},  // globalWorkOffset: control the start location be processed in the image
-        {0, 0, 0},  // globalWorkScale: how many pixels could be processed by a single thread
-        {0, 0, 0},  // localWorkSize: local group size in thread
-        {0, 0, 0}}; // globalWorkSize: image size in thread
+    gpu_param_t gpu_param = {
+        3,
+        {0, 0, 0},
+        {0, 0, 0},
+        {0, 0, 0},
+        {0, 0, 0}
+        };
 
-    vx_status    status             = VX_SUCCESS;
-    vx_tensor    input0             = (vx_tensor)paramObj[0];
-    vx_tensor    input1             = (vx_tensor)paramObj[1];
-    vx_tensor    output             = (vx_tensor)paramObj[2];
+    vsi_status    status             = VSI_FAILURE;
+    vsi_nn_kernel_tensor_attr_t * attr[3] = { NULL };
+    vsi_int_array_t * out_shape = NULL;
 
-    vx_uint32 output_size[4] = {1, 1, 1, 1};
+    attr[0] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[0] );
+    CHECK_PTR_FAIL_GOTO( attr[0], "Create tensor attr buffer fail.", final );
+    attr[1] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[1] );
+    CHECK_PTR_FAIL_GOTO( attr[1], "Create tensor attr buffer fail.", final );
+    attr[2] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[2] );
+    CHECK_PTR_FAIL_GOTO( attr[2], "Create tensor attr buffer fail.", final );
 
-    vsi_nn_tensor_attr_t attr[3];
-    uint32_t i, output_dim;
+    out_shape  = attr[2]->shape;
 
-    memset(&attr[0], 0, sizeof(vsi_nn_tensor_attr_t));
-    memset(&attr[1], 0, sizeof(vsi_nn_tensor_attr_t));
-    memset(&attr[2], 0, sizeof(vsi_nn_tensor_attr_t));
-    status  = vsi_nn_vxGetTensorAttr(input0, &attr[0]);
-    status |= vsi_nn_vxGetTensorAttr(input1, &attr[1]);
-    status |= vsi_nn_vxGetTensorAttr(output, &attr[2]);
-    if (status != VX_SUCCESS)
-    {
-        VSILOGE("vsi_nn_vxGetTensorAttr failure! at line %d\n", __LINE__);
-        return status;
-    }
+    gpu_param.global_scale[0]  = 1;
+    gpu_param.global_scale[1]  = 1;
+    gpu_param.global_scale[2]  = 1;
 
-    output_dim  = attr[2].dim_num;
-    for (i = 0; i < output_dim; i++)
-    {
-        output_size[i] = attr[2].size[i];
-    }
+    gpu_param.global_size[0]   = gpu_align_p2((out_shape->data[0] + gpu_param.global_scale[0] - 1)
+                                        / gpu_param.global_scale[0], 4);
+    gpu_param.global_size[1]   = (out_shape->data[1] + gpu_param.global_scale[1] - 1)
+                                        / gpu_param.global_scale[1];
+    gpu_param.global_size[2]   = out_shape->size > 2 ? out_shape->data[2] : 1;
 
-    shaderParam.globalWorkScale[0]  = 1;
-    shaderParam.globalWorkScale[1]  = 1;
-    shaderParam.globalWorkScale[2]  = 1;
+    status = vsi_nn_kernel_gpu_config( node, &gpu_param );
 
-    shaderParam.globalWorkSize[0]   = gpu_align_p2((output_size[0] + shaderParam.globalWorkScale[0] - 1)
-                                        / shaderParam.globalWorkScale[0], 4);
-    shaderParam.globalWorkSize[1]   = (output_size[1] + shaderParam.globalWorkScale[1] - 1)
-                                        / shaderParam.globalWorkScale[1];
-    shaderParam.globalWorkSize[2]   = output_dim > 2 ? output_size[2] : 1;
-
-    status |= vxSetNodeAttribute(nodObj, VX_NODE_ATTRIBUTE_KERNEL_EXECUTION_PARAMETERS,
-        &shaderParam, sizeof(vx_kernel_execution_parameters_t));
+final:
+    if (attr[0]) vsi_nn_kernel_tensor_attr_release( &attr[0] );
+    if (attr[1]) vsi_nn_kernel_tensor_attr_release( &attr[1] );
+    if (attr[2]) vsi_nn_kernel_tensor_attr_release( &attr[2] );
 
     return status;
 } /* _maximum_initializer() */
@@ -242,7 +233,7 @@ static vsi_nn_kernel_node_t _setup
     float outputScale = outputs[0]->attr.dtype.scale;
     float outputZP = (float)outputs[0]->attr.dtype.zero_point + 0.5f;
 
-    outputScale = outputScale == 0.0 ? 0.0 : 1.0 / outputScale;
+    outputScale = vsi_abs(outputScale) < 1e-5 ? 0.0 : 1.0 / outputScale;
 
     if( !vsi_nn_kernel_gpu_check_shape( (int32_t*)outputs[0]->attr.size,
                 outputs[0]->attr.dim_num ) )
