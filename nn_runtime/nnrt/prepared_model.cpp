@@ -114,15 +114,6 @@ int PreparedModel::execute()
 
 int PreparedModel::setInput(uint32_t index, const void* data, size_t length)
 {
-    //bool input_mapped_as_vx_tensor = tensor_mapping_.find(index) != tensor_mapping_.end();
-
-    //if (!input_mapped_as_vx_tensor) {
-    //    NNRT_LOGD_PRINT("Should not set input for no-value optional parameter");
-    //    return NNA_ERROR_CODE(OP_FAILED);
-    //}
-
-    //index = tensor_mapping_[index];
-
     if (index >= graph_->input.num) {
         return NNA_ERROR_CODE(OP_FAILED);
     }
@@ -134,13 +125,18 @@ int PreparedModel::setInput(uint32_t index, const void* data, size_t length)
     } else if (!data || !length) {
         return NNA_ERROR_CODE(OP_FAILED);
     } else {
-        vsi_status run_state = vsi_nn_FlushHandle(tensor);
-        if (VSI_SUCCESS == run_state)
-        {
-            return NNA_ERROR_CODE(NO_ERROR);
+        vsi_status run_state;//= vsi_nn_FlushHandle(tensor);
+        void* cpuAddress = nullptr;
+        run_state = vsi_nn_GetTensorHandle(tensor, &cpuAddress);
+
+        if (cpuAddress) {
+            memcpy(cpuAddress, data, length);
+            vsi_nn_FlushHandle(tensor);
+
+            NNRT_LOGI_PRINT("Input memory sync to VideoMemory");
         }
-        else
-        {
+        else {
+            NNRT_LOGE_PRINT("Can not get handle from given tensor");
             NNRT_LOGE_PRINT("Process complete state: %d.", run_state);
             assert(0);
         }

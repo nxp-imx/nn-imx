@@ -313,7 +313,7 @@ int OvxlibDelegate::process(nnrt::Model* model, vsi_nn_context_t ctx)
             continue;
         }
         err = addTensor(graph_, operand,
-            TensorLifeTime::NORMAL, inputIndexes[i], inputs_[i]->tensorHandle, true);
+            TensorLifeTime::NORMAL, inputIndexes[i], nullptr, true);
         if (err != NNA_ERROR_CODE(NO_ERROR))
         {
             return err;
@@ -780,11 +780,11 @@ int OvxlibDelegate::addTensor
         return err;
     }
     vsi_nn_tensor_id_t tid;
-    void* nonconst_ptr = const_cast<void*>(data);
     if (isFromHandle) {
-        tid = vsi_nn_AddTensorFromHandle(graph, VSI_NN_TENSOR_ID_AUTO, attr, (uint8_t*)nonconst_ptr);
+        tid = vsi_nn_AddTensorFromHandle(graph, VSI_NN_TENSOR_ID_AUTO, attr, nullptr);
     }
     else {
+        void* nonconst_ptr = const_cast<void*>(data);
         tid = vsi_nn_AddTensor(graph, VSI_NN_TENSOR_ID_AUTO, attr, (uint8_t*)nonconst_ptr);
     }
 

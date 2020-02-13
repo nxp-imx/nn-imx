@@ -166,12 +166,6 @@ int Execution::setInput(uint32_t index, const op::OperandPtr operand_type,
             model->updateOperand(operand_index, operand_type);
         }
 
-        //TODO: hash the buffer for different graph
-        if (nullptr == inputs_[index]->tensorHandle) {
-            inputs_[index]->tensorHandle = vsi_nn_MallocAlignedBuffer(length,
-                ADDRESS_ALIGN_BYTES, MEMORY_BLOCK_ALIGN_BYTES);
-        }
-        memcpy(inputs_[index]->tensorHandle, buffer, length);
         inputs_[index]->state = ExecutionIO::BUFFER;
         inputs_[index]->weak_mem_ref = model->add_memory_reference(buffer, length, true);
     }
@@ -207,14 +201,7 @@ int Execution::setInputFromMemory(uint32_t index, const op::OperandPtr operand_t
     if (operand_type) {
         model->updateOperand(operand_index, operand_type);
     }
-    //TODO: hash the buffer for different graph
-    if (nullptr == inputs_[index]->tensorHandle) {
-        inputs_[index]->tensorHandle = vsi_nn_MallocAlignedBuffer(length,
-            ADDRESS_ALIGN_BYTES, MEMORY_BLOCK_ALIGN_BYTES);
-    }
 
-    // TODO: data should be copied into swaped tensor
-    memcpy(inputs_[index]->tensorHandle, memory->data(0), length);
     inputs_[index]->state = ExecutionIO::BUFFER;
     inputs_[index]->weak_mem_ref = model->add_memory_reference(memory, offset, length);
     return NNA_ERROR_CODE(NO_ERROR);

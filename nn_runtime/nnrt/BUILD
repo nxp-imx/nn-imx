@@ -31,6 +31,7 @@ cc_library(
         "memory_pool.hpp",
         "shared_context.hpp",
         "execution_task.hpp",
+        "execution_io.hpp",
         "version.hpp",
         "api_requirement/spec.hpp",
         "api_requirement/spec_macros.hpp",
