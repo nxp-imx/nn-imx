@@ -27,15 +27,21 @@
 #include <nnrt/file_map_memory.hpp>
 
 #include "VsiDriver.h"
-#if ANDROID_SDK_VERSION > 28
+#include "VsiPlatform.h"
+#include "VsiRTInfo.h"
+
+#if ANDROID_SDK_VERSION >= 29
 #include "public.hpp"
-using OperationValidatePtr =
-    std::unique_ptr<android::nn::op_validate::OperationValidate<V1_2::Model, V1_2::Operation>>;
 #endif
 
 namespace android {
 namespace nn {
 namespace vsi_driver {
+
+#if ANDROID_SDK_VERSION >= 29
+using OperationValidatePtr =
+    std::unique_ptr<android::nn::op_validate::OperationValidate<HalPlatform::Model, HalPlatform::Operation>>;
+#endif
 
 void VsiDriver::initalizeEnv() {
     disable_float_feature_ = 0;
@@ -47,185 +53,22 @@ void VsiDriver::initalizeEnv() {
     }
 }
 
-template <typename T_model, typename T_getSupportOperationsCallback>
-Return<void> VsiDriver::getSupportedOperationsBase(const T_model& model,
-                                                   T_getSupportOperationsCallback cb) {
-    LOG(INFO) << "getSupportedOperations";
-    if (validateModel(model)) {
-        const size_t count = model.operations.size();
-        std::vector<bool> supported(count, true);
-        for (size_t i = 0; i < count; i++) {
-            const auto& operation = model.operations[i];
-            supported[i] = isSupportedOperation(operation, model);
-        }
-        cb(ErrorStatus::NONE, supported);
-    } else {
-        LOG(ERROR) << "invalid model";
-        std::vector<bool> supported;
-        cb(ErrorStatus::INVALID_ARGUMENT, supported);
-    }
-    LOG(INFO) << "getSupportedOperations exit";
-    return Void();
-}
-
-Return<void> VsiDriver::getCapabilities(getCapabilities_cb cb) {
-    V1_0::Capabilities capabilities;
-    if (disable_float_feature_) {
-        capabilities.float32Performance = {.execTime = 1.9f, .powerUsage = 1.9f};
-        capabilities.quantized8Performance = {.execTime = 0.9f, .powerUsage = 0.9f};
-    } else {
-        capabilities.float32Performance = {.execTime = 0.9f, .powerUsage = 0.9f};
-        capabilities.quantized8Performance = {.execTime = 0.9f, .powerUsage = 0.9f};
-    }
-    cb(ErrorStatus::NONE, capabilities);
-    return Void();
-}
-
-Return<void> VsiDriver::getSupportedOperations(const V1_0::Model& model,
-                                               V1_0::IDevice::getSupportedOperations_cb cb) {
-    if (!validateModel(model)) {
-        LOG(ERROR) << __FUNCTION__;
-        std::vector<bool> supported;
-        cb(ErrorStatus::INVALID_ARGUMENT, supported);
-        return Void();
-    }
-#if ANDROID_SDK_VERSION > 28
-    return getSupportedOperationsBase(convertToV1_2(model), cb);
-#elif ANDROID_SDK_VERSION > 27
-    return getSupportedOperationsBase(convertToV1_1(model), cb);
-#else
-    return getSupportedOperationsBase(model, cb);
-#endif
-}
-
-#if ANDROID_SDK_VERSION > 27
-Return<void> VsiDriver::getCapabilities_1_1(getCapabilities_1_1_cb cb) {
-    V1_1::Capabilities capabilities;
-    if (disable_float_feature_) {
-        capabilities.float32Performance = {.execTime = 1.9f, .powerUsage = 1.9f};
-        capabilities.quantized8Performance = {.execTime = 0.9f, .powerUsage = 0.9f};
-        capabilities.relaxedFloat32toFloat16Performance = {.execTime = 1.5f, .powerUsage = 1.5f};
-    } else {
-        capabilities.float32Performance = {.execTime = 0.9f, .powerUsage = 0.9f};
-        capabilities.quantized8Performance = {.execTime = 0.9f, .powerUsage = 0.9f};
-        capabilities.relaxedFloat32toFloat16Performance = {.execTime = 0.5f, .powerUsage = 0.5f};
-    }
-    cb(ErrorStatus::NONE, capabilities);
-    return Void();
-}
-
-Return<void> VsiDriver::getSupportedOperations_1_1(
-    const V1_1::Model& model, V1_1::IDevice::getSupportedOperations_1_1_cb cb) {
-    if (!validateModel(model)) {
-        LOG(ERROR) << __FUNCTION__;
-        std::vector<bool> supported;
-        cb(ErrorStatus::INVALID_ARGUMENT, supported);
-        return Void();
-    }
-#if ANDROID_SDK_VERSION > 28
-    return getSupportedOperationsBase(convertToV1_2(model), cb);
-#else
-    return getSupportedOperationsBase(model, cb);
-#endif
-}
-#endif
-
-bool VsiDriver::mapHidlMem(const hidl_memory& hidl_memory, VsiRTInfo& vsiMemory) {
-#if ANDROID_SDK_VERSION > 28
-    sp<GraphicBuffer> graphic_buffer = nullptr;
-#endif
-    std::shared_ptr<nnrt::Memory> vsi_mem = nullptr;
-    sp<IMemory> shared_mem = nullptr;
-    uint8_t* buffer = nullptr;
-
-#if ANDROID_SDK_VERSION > 28
-    if (!validatePool(hidl_memory)) {
-        LOG(ERROR) << "invalid hidl memory pool";
-        return false;
-    }
-#endif
-
-    if ("ashmem" == hidl_memory.name()) {
-        shared_mem = mapMemory(hidl_memory);
-        assert(shared_mem);
-        shared_mem->read();
-        buffer = reinterpret_cast<uint8_t*>(static_cast<void*>(shared_mem->getPointer()));
-    } else if ("mmap_fd" == hidl_memory.name()) {
-        size_t size = hidl_memory.size();
-        int fd = hidl_memory.handle()->data[0];
-        int mode = hidl_memory.handle()->data[1];
-        size_t offset =
-            getSizeFromInts(hidl_memory.handle()->data[2], hidl_memory.handle()->data[3]);
-
-        vsi_mem = std::make_shared<nnrt::Memory>();
-        vsi_mem->readFromFd(size, mode, fd, offset);
-    }
-#if ANDROID_SDK_VERSION > 28
-    else if ("hardware_buffer_blob" == hidl_memory.name()) {
-        auto handle = hidl_memory.handle();
-        auto format = AHARDWAREBUFFER_FORMAT_BLOB;
-        auto usage = AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN | AHARDWAREBUFFER_USAGE_CPU_WRITE_OFTEN;
-        const uint32_t width = hidl_memory.size();
-        const uint32_t height = 1;  // height is always 1 for BLOB mode AHardwareBuffer.
-        const uint32_t layers = 1;  // layers is always 1 for BLOB mode AHardwareBuffer.
-        const uint32_t stride = hidl_memory.size();
-        graphic_buffer = new GraphicBuffer(handle,
-                                           GraphicBuffer::HandleWrapMethod::CLONE_HANDLE,
-                                           width,
-                                           height,
-                                           format,
-                                           layers,
-                                           usage,
-                                           stride);
-        void* gBuffer = nullptr;
-        auto status = graphic_buffer->lock(usage, &gBuffer);
-        if (status != NO_ERROR) {
-            LOG(ERROR) << "RunTimePoolInfo Can't lock the AHardwareBuffer.";
-            return false;
-        }
-        buffer = static_cast<uint8_t*>(gBuffer);
-    } else {
-        LOG(ERROR) << "invalid hidl_memory";
-        return false;
-    }
-#endif
-    vsiMemory.shared_mem = shared_mem;
-    vsiMemory.mem_type = std::string(hidl_memory.name());
-    vsiMemory.ptr = buffer;
-    vsiMemory.vsi_mem = vsi_mem;
-    vsiMemory.buffer_size = hidl_memory.size();
-#if ANDROID_SDK_VERSION > 28
-    vsiMemory.graphic_buffer = graphic_buffer;
-#endif
-    return true;
-}
-
-template <typename T_Model>
-const uint8_t* VsiDriver::getOperandDataPtr(const T_Model& model,
-                                            const Operand& hal_operand,
+const uint8_t* VsiDriver::getOperandDataPtr( const HalPlatform::Model& model,
+                                            const HalPlatform::Operand& hal_operand,
                                             VsiRTInfo& vsiMemory) {
     if (OperandLifeTime::CONSTANT_COPY == hal_operand.lifetime) {
         return model.operandValues.data() + hal_operand.location.offset;
     } else if (OperandLifeTime::CONSTANT_REFERENCE == hal_operand.lifetime) {
-        if (!mapHidlMem(model.pools[hal_operand.location.poolIndex], vsiMemory)) return nullptr;
-
-        if ("ashmem" == vsiMemory.mem_type) {
-            return vsiMemory.ptr;
-        } else if ("mmap_fd" == vsiMemory.mem_type) {
-            return static_cast<const uint8_t*>(
-                vsiMemory.vsi_mem->data(hal_operand.location.offset));
-        }
-#if ANDROID_SDK_VERSION > 28
-        else if ("hardware_buffer_blob" == vsiMemory.mem_type) {
-            return vsiMemory.ptr;
-        }
-#endif
+        if (!mapHidlMem(model.pools[hal_operand.location.poolIndex], vsiMemory))
+           return nullptr;
+        return vsiMemory.getPtr(hal_operand.location.offset);
     }
     return nullptr;
 }
 
-    template <typename T_Model, typename T_operand>
-    const uint8_t* getOpeandPtr (T_Model model, T_operand& operand, struct VsiRTInfo &rt){
+    const uint8_t* getOpeandPtr ( const HalPlatform::Model& model,
+                                  const HalPlatform::Operand& operand,
+                                  struct VsiRTInfo &rt){
         auto& location = operand.location;
         if(operand.lifetime == OperandLifeTime::CONSTANT_COPY){
             return model.operandValues.data() + location.offset;
@@ -235,17 +78,16 @@ const uint8_t* VsiDriver::getOperandDataPtr(const T_Model& model,
             return nullptr;
     };
 
-    template <typename T_type, typename T_Model, typename T_operand>
-    T_type getScalarData(T_Model model, T_operand &operand){
+    template <typename T_type>
+    T_type getScalarData(const HalPlatform::Model& model, const HalPlatform::Operand &operand){
         struct VsiRTInfo rt;
         auto ptr = getOpeandPtr(model, operand, rt);
         if(ptr) return *reinterpret_cast<T_type*>(const_cast<uint8_t*>(ptr));
         else return 0;
     }
 
-template <typename T_operation, typename T_Model>
-bool VsiDriver::isSupportedOperation(const T_operation& operation, const T_Model& model) {
-#if ANDROID_SDK_VERSION > 28
+bool VsiDriver::isSupportedOperation(const HalPlatform::Operation &operation, const HalPlatform::Model& model) {
+#if ANDROID_SDK_VERSION >= 29
     auto checkSupportedOperand = [](auto& operand) -> bool {
         bool isSupported = true;
         switch (operand.type) {
@@ -470,7 +312,7 @@ bool VsiDriver::isSupportedOperation(const T_operation& operation, const T_Model
         // API 29 newly added operataion
         case OperationType::ABS: {
             OperationValidatePtr absValidate =
-                std::make_unique<op_validate::AbsValidate<V1_2::Model, V1_2::Operation>>(model,
+                std::make_unique<op_validate::AbsValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
                                                                                          operation);
             return absValidate->Validate();
         }
@@ -478,7 +320,7 @@ bool VsiDriver::isSupportedOperation(const T_operation& operation, const T_Model
         case OperationType::ARGMAX:
         case OperationType::ARGMIN: {
             OperationValidatePtr argmaxArgmin =
-                std::make_unique<op_validate::ArgmaxArgminValidate<V1_2::Model, V1_2::Operation>>(
+                std::make_unique<op_validate::ArgmaxArgminValidate<HalPlatform::Model, HalPlatform::Operation>>(
                     model, operation);
             // return argmaxArgmin->Validate();
             // ovxlib only has sw imp
@@ -487,7 +329,7 @@ bool VsiDriver::isSupportedOperation(const T_operation& operation, const T_Model
 
         case OperationType::MINIMUM: {
             OperationValidatePtr maxMin =
-                std::make_unique<op_validate::MaximumMinimumValidate<V1_2::Model, V1_2::Operation>>(
+                std::make_unique<op_validate::MaximumMinimumValidate<HalPlatform::Model, HalPlatform::Operation>>(
                     model, operation);
             return maxMin->Validate();
         }
@@ -495,21 +337,21 @@ bool VsiDriver::isSupportedOperation(const T_operation& operation, const T_Model
         case OperationType::RSQRT:
         case OperationType::SQRT: {
             OperationValidatePtr sqrtRsqrt =
-                std::make_unique<op_validate::SqrtRsqrtValidate<V1_2::Model, V1_2::Operation>>(
+                std::make_unique<op_validate::SqrtRsqrtValidate<HalPlatform::Model, HalPlatform::Operation>>(
                     model, operation);
             return sqrtRsqrt->Validate();
         }
 
         case OperationType::LOG: {
             OperationValidatePtr logValidate =
-                std::make_unique<op_validate::LogValidate<V1_2::Model, V1_2::Operation>>(model,
+                std::make_unique<op_validate::LogValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
                                                                                          operation);
             return logValidate->Validate();
         }
 
         case OperationType::EXP: {
             OperationValidatePtr expValidate =
-                std::make_unique<op_validate::ExpValidate<V1_2::Model, V1_2::Operation>>(model,
+                std::make_unique<op_validate::ExpValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
                                                                                          operation);
             return false;
             // return expValidate->Validate();
@@ -517,7 +359,7 @@ bool VsiDriver::isSupportedOperation(const T_operation& operation, const T_Model
 
         case OperationType::SIN: {
             OperationValidatePtr sinValidate =
-                std::make_unique<op_validate::SinValidate<V1_2::Model, V1_2::Operation>>(model,
+                std::make_unique<op_validate::SinValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
                                                                                          operation);
             return false;
             // return sinValidate->Validate();
@@ -526,14 +368,14 @@ bool VsiDriver::isSupportedOperation(const T_operation& operation, const T_Model
         case OperationType::RESIZE_BILINEAR:
         case OperationType::RESIZE_NEAREST_NEIGHBOR: {
             OperationValidatePtr resizeValidate =
-                std::make_unique<op_validate::ResizeValidate<V1_2::Model, V1_2::Operation>>(
+                std::make_unique<op_validate::ResizeValidate<HalPlatform::Model, HalPlatform::Operation>>(
                     model, operation);
             return resizeValidate->Validate();
         }
 
         case OperationType::REDUCE_MAX: {
             OperationValidatePtr reduceMax =
-                std::make_unique<op_validate::ReduceMaxValidate<V1_2::Model, V1_2::Operation>>(
+                std::make_unique<op_validate::ReduceMaxValidate<HalPlatform::Model, HalPlatform::Operation>>(
                     model, operation);
             return false;
             // return reduceMax->Validate();
@@ -541,7 +383,7 @@ bool VsiDriver::isSupportedOperation(const T_operation& operation, const T_Model
 
         case OperationType::REDUCE_MIN: {
             OperationValidatePtr reduceMin =
-                std::make_unique<op_validate::ReduceMinValidate<V1_2::Model, V1_2::Operation>>(
+                std::make_unique<op_validate::ReduceMinValidate<HalPlatform::Model, HalPlatform::Operation>>(
                     model, operation);
             return false;
             // return reduceMin->Validate();
@@ -549,7 +391,7 @@ bool VsiDriver::isSupportedOperation(const T_operation& operation, const T_Model
 
         case OperationType::REDUCE_PROD: {
             OperationValidatePtr reduceProd =
-                std::make_unique<op_validate::ReduceProdValidate<V1_2::Model, V1_2::Operation>>(
+                std::make_unique<op_validate::ReduceProdValidate<HalPlatform::Model, HalPlatform::Operation>>(
                     model, operation);
             return false;
             // return reduceProd->Validate();
@@ -557,7 +399,7 @@ bool VsiDriver::isSupportedOperation(const T_operation& operation, const T_Model
 
         case OperationType::REDUCE_SUM: {
             OperationValidatePtr reduceSum =
-                std::make_unique<op_validate::ReduceSumValidate<V1_2::Model, V1_2::Operation>>(
+                std::make_unique<op_validate::ReduceSumValidate<HalPlatform::Model, HalPlatform::Operation>>(
                     model, operation);
             return false;
             // return reduceSum->Validate();
@@ -674,36 +516,6 @@ bool VsiDriver::isSupportedOperation(const T_operation& operation, const T_Model
     return true;
 }
 
-#if ANDROID_SDK_VERSION > 28
-Return<void> VsiDriver::getCapabilities_1_2(V1_2::IDevice::getCapabilities_1_2_cb _hidl_cb) {
-    static const PerformanceInfo kPerf = {.execTime = 0.9f, .powerUsage = 0.9f};
-    V1_2::Capabilities capabilities;
-    capabilities.relaxedFloat32toFloat16PerformanceScalar = kPerf;
-    capabilities.relaxedFloat32toFloat16PerformanceTensor = kPerf;
-    // Set the base value for all operand types
-    capabilities.operandPerformance = nonExtensionOperandPerformance({FLT_MAX, FLT_MAX});
-
-    // Load supported operand types
-    update(&capabilities.operandPerformance, OperandType::TENSOR_QUANT8_ASYMM, kPerf);
-    if (!disable_float_feature_) {
-        update(&capabilities.operandPerformance, OperandType::TENSOR_FLOAT32, kPerf);
-        update(&capabilities.operandPerformance, OperandType::TENSOR_FLOAT16, kPerf);
-    }
-    _hidl_cb(ErrorStatus::NONE, capabilities);
-    return Void();
-}
-
-Return<void> VsiDriver::getSupportedOperations_1_2(
-    const V1_2::Model& model, V1_2::IDevice::getSupportedOperations_1_2_cb _hidl_cb) {
-    if (!validateModel(model)) {
-        LOG(ERROR) << __FUNCTION__;
-        std::vector<bool> supported;
-        _hidl_cb(ErrorStatus::INVALID_ARGUMENT, supported);
-        return Void();
-    }
-    return getSupportedOperationsBase(model, _hidl_cb);
-}
-#endif
 }  // namespace vsi_driver
 }  // namespace nn
 }

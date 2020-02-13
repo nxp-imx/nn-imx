@@ -21,43 +21,26 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#ifndef ANDROID_ML_NN_VSI_BURST_EXECUTOR_H
-#define ANDROID_ML_NN_VSI_BURST_EXECUTOR_H
+#define LOG_TAG "VsiDevice"
 
-#include "VsiPreparedModel1_2.h"
-#include "VsiDevice1_2.h"
+#include "VsiDevice.h"
+
+#include "HalInterfaces.h"
+#include "ValidateHal.h"
 
 #include <android-base/logging.h>
 #include <hidl/LegacySupport.h>
-#include <chrono>
-#include <optional>
 #include <thread>
 
 namespace android {
 namespace nn {
 namespace vsi_driver {
-class BurstExecutorWithCache : public ExecutionBurstServer::IBurstExecutorWithCache {
-   public:
-    BurstExecutorWithCache(const Model& model, ExecutionPreference preference):
-        model_(model), preference_(preference){};
-
-    bool isCacheEntryPresent(int32_t slot) const override;
-
-    void addCacheEntry(const hidl_memory& memory, int32_t slot) override;
-
-    void removeCacheEntry(int32_t slot) override { memoryCache_.erase(slot); }
-
-    std::tuple<ErrorStatus, hidl_vec<OutputShape>, Timing> execute(
-            const Request& request, const std::vector<int32_t>& slots,
-            MeasureTiming measure) override;
-
-   private:
-    const V1_2::Model model_;
-    sp<VsiPreparedModel> perpareModel_;
-    std::map<int32_t, std::optional<hidl_memory>> memoryCache_;  // cached hidl memory pool
-    ExecutionPreference preference_;
-};
-}
-}
-}
-#endif
+    Return<ErrorStatus> VsiDevice::prepareModel_1_1(
+        const V1_1::Model& model,
+        ExecutionPreference preference,
+        const sp<V1_0::IPreparedModelCallback>& callback)  {
+        return prepareModelBase(model, preference, callback);
+    }
+}  // namespace ovx_driver
+}  // namespace nn
+}  // namespace android

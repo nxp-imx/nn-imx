@@ -34,10 +34,6 @@ LOCAL_C_INCLUDES := \
         $(OVXLIB_DIR)/include/client \
         $(OVXLIB_DIR)/include/libnnext \
 
-
-LOCAL_SRC_FILES:= \
-    VsiDriver.cpp \
-
 LOCAL_SHARED_LIBRARIES := \
     libbase \
     libdl   \
@@ -55,21 +51,38 @@ LOCAL_SHARED_LIBRARIES := \
     libovxlib\
     libnnrt
 
+LOCAL_SRC_FILES:= \
+    VsiRTInfo.cpp \
+    VsiDriver.cpp \
+    1.0/VsiDriver1_0.cpp \
+    1.0/VsiDevice1_0.cpp \
+    VsiPreparedModel.cpp
+
+ifeq ($(shell expr $(PLATFORM_SDK_VERSION) ">=" 28),1)
+LOCAL_SRC_FILES += 1.1/VsiDevice1_1.cpp \
+                   1.1/VsiDriver1_1.cpp
+endif
+
+ifeq ($(shell expr $(PLATFORM_SDK_VERSION) ">=" 29),1)
+LOCAL_SRC_FILES += \
+    1.2/VsiDevice1_2.cpp\
+    1.2/VsiPreparedModel1_2.cpp\
+    1.2/VsiDriver1_2.cpp \
+    1.2/VsiBurstExecutor.cpp    \
+    hal_limitation/nnapi_limitation.cpp \
+    hal_limitation/support.cpp
+
+endif
 
 ifeq ($(shell expr $(PLATFORM_SDK_VERSION) ">=" 28),1)
 
 LOCAL_SHARED_LIBRARIES += android.hardware.neuralnetworks@1.1
 LOCAL_STATIC_LIBRARIES += libneuralnetworks_common
-
-LOCAL_CFLAGS += -Wno-error=unused-variable -Wno-error=unused-function -Wno-error=return-type \
-                -Wno-unused-parameter
-
 LOCAL_C_INCLUDES += frameworks/native/libs/nativewindow/include \
                     frameworks//native/libs/arect/include
 
 ifeq ($(shell expr $(PLATFORM_SDK_VERSION) ">=" 29),1)
-LOCAL_C_INCLUDES += frameworks/ml/nn/runtime/include \
-                    frameworks/native/libs/ui/include \
+LOCAL_C_INCLUDES += frameworks/native/libs/ui/include \
                     frameworks/native/libs/nativebase/include \
                     system/libfmq/include   \
                     $(LOCAL_PATH)/hal_limitation \
@@ -79,17 +92,8 @@ LOCAL_SHARED_LIBRARIES += libfmq \
                           libui \
                           android.hardware.neuralnetworks@1.2
 
-LOCAL_SRC_FILES += VsiDevice1_2.cpp\
-    VsiPreparedModel1_2.cpp\
-    VsiBurstExecutor.cpp    \
-    hal_limitation/nnapi_limitation.cpp \
-    hal_limitation/support.cpp \
-
 LOCAL_MODULE      := android.hardware.neuralnetworks@1.2-service-vsi-npu-server
 else
-LOCAL_SRC_FILES += VsiDevice.cpp\
-    VsiPreparedModel.cpp
-
 LOCAL_SHARED_LIBRARIES += libneuralnetworks
 LOCAL_MODULE      := android.hardware.neuralnetworks@1.1-service-vsi-npu-server
 endif
@@ -105,6 +109,7 @@ LOCAL_INIT_RC := VsiDriver.rc
 
 LOCAL_CFLAGS += -DANDROID_SDK_VERSION=$(PLATFORM_SDK_VERSION)  -Wno-error=unused-parameter\
                 -Wno-unused-private-field \
+                -Wno-unused-parameter \
                 -Wno-delete-non-virtual-dtor -Wno-non-virtual-dtor\
 
 LOCAL_MODULE_TAGS := optional

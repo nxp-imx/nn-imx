@@ -21,8 +21,8 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#ifndef ANDROID_ML_NN_COMMON_OPENVX_EXECUTOR_H
-#define ANDROID_ML_NN_COMMON_OPENVX_EXECUTOR_H
+#ifndef ANDROID_ML_VSI_PREPAREMODEL_H
+#define ANDROID_ML_VSI_PREPAREMODEL_H
 #include <vector>
 
 #include <nnrt/model.hpp>
@@ -31,8 +31,9 @@
 #include <nnrt/execution.hpp>
 #include <nnrt/op/public.hpp>
 #include <nnrt/file_map_memory.hpp>
-#include "VsiDriver.h"
 #include "HalInterfaces.h"
+#include "VsiPlatform.h"
+#include "VsiRTInfo.h"
 
 #include "Utils.h"
 using android::sp;
@@ -40,47 +41,92 @@ using android::sp;
 namespace android {
 namespace nn {
 namespace vsi_driver {
-    class VsiPreparedModel : public V1_0::IPreparedModel {
-   public:
-    VsiPreparedModel(const V1_1::Model& model):model_(model) {
-        native_model_ = std::make_shared<nnrt::Model>();
-        Create(model);
-        }
 
-#if ANDROID_SDK_VERSION > 27
-    VsiPreparedModel(const V1_1::Model& model, ExecutionPreference preference):
+class VsiPreparedModel : public HalPlatform::PrepareModel
+{
+   public:
+    VsiPreparedModel(const HalPlatform::Model& model, ExecutionPreference preference):
         model_(model), preference_(preference){
         native_model_ = std::make_shared<nnrt::Model>();
-        Create(model);
-        }
-#endif
+    }
 
     ~VsiPreparedModel() override {
-        release_rtinfo(const_buffer_);
+            release_rtinfo(const_buffer_);
         }
 
-    // TODO: Make this asynchronous
-    Return<ErrorStatus> execute(
-        const Request& request,
-        const sp<V1_0::IExecutionCallback>& callback) override;
+    /*map hidl model to ovxlib model and compliation*/
+    Return<ErrorStatus> initialize();
+    Return<ErrorStatus> execute(const Request& request,
+                                const sp<V1_0::IExecutionCallback>& callback) override;
+
+#if ANDROID_SDK_VERSION >= 29
+    Return<void> executeSynchronously(const Request& request, MeasureTiming measure,
+                                   executeSynchronously_cb cb) override;
+
+    Return<ErrorStatus> execute_1_2(const Request& request, MeasureTiming measure,
+                                 const sp<V1_2::IExecutionCallback>& callback) override;
+
+    Return<void> configureExecutionBurst(
+            const sp<V1_2::IBurstCallback>& callback,
+            const android::hardware::MQDescriptorSync<V1_2::FmqRequestDatum>& requestChannel,
+            const android::hardware::MQDescriptorSync<V1_2::FmqResultDatum>& resultChannel,
+            configureExecutionBurst_cb cb) override;
+#endif
 
    private:
-        /*create ovxlib model and compliation*/
-        Return<ErrorStatus> Create(const V1_1::Model& model);
-
-        void fill_operand_value(nnrt::op::OperandPtr ovx_operand, const V1_0::Operand& hal_operand) ;
-        void construct_ovx_operand(nnrt::op::OperandPtr ovx_oprand,const V1_0::Operand& hal_operand);
-        int map_rtinfo_from_hidl_memory(const hidl_vec<hidl_memory>& pools,
-            std::vector<VsiRTInfo>& rtInfos);
+        enum IO{INPUT = 0, OUTPUT};
+#if ANDROID_SDK_VERSION < 29
+        struct OutputShape{
+            std::vector<uint32_t> dimensions;
+            bool    isSufficient;
+        };
+#endif
         void release_rtinfo(std::vector<VsiRTInfo>& rtInfos);
 
-        const V1_1::Model model_;
+        void fill_operand_value(nnrt::op::OperandPtr ovx_operand, const HalPlatform::Operand& hal_operand) ;
+
+        Return<ErrorStatus>  construct_ovx_operand( nnrt::op::OperandPtr ovx_oprand,
+                                                         const HalPlatform::Operand& hal_operand);
+
+        Return<ErrorStatus> map_rtinfo_from_hidl_memory( const hidl_vec<hidl_memory>& pools,
+                                                              std::vector<VsiRTInfo>& rtInfos);
+
+        void update_operand_from_request( const std::vector<uint32_t>& indexes,
+                                          const hidl_vec<RequestArgument>& arguments);
+
+        // Adjust the runtime info for the arguments passed to the model,
+        // modifying the buffer location, and possibly the dimensions.
+        Return<ErrorStatus> update_pool_info_from_request( const Request& request,
+                                                           const std::vector<uint32_t>& indexes,
+                                                           const hidl_vec<RequestArgument>& arguments,
+                                                           IO flag, std::vector<OutputShape> &outputShapes);
+
+        template <typename T_IExecutionCallback>
+        Return<ErrorStatus> executeBase(const Request& request,
+                                         const T_IExecutionCallback& callback);
+
+#if ANDROID_SDK_VERSION >= 29
+        template <typename T_IExecutionCallback>
+        Return<ErrorStatus> executeBase(const Request& request,
+                                         MeasureTiming measure,
+                                         const T_IExecutionCallback& callback);
+
+        static Return<void> notify( const sp<V1_0::IExecutionCallback>& callback, const ErrorStatus& status,
+                                 const hidl_vec<OutputShape>&, Timing);
+
+        static Return<void> notify(const sp<V1_2::IExecutionCallback>& callback, const ErrorStatus& status,
+                                const hidl_vec<OutputShape>& outputShapes, Timing timing);
+
+        static void notify(const V1_2::IPreparedModel::executeSynchronously_cb& callback, const ErrorStatus& status,
+                        const hidl_vec<OutputShape>& outputShapes, Timing timing);
+#endif
+
+        const HalPlatform::Model model_;
+        ExecutionPreference preference_;
         std::shared_ptr<nnrt::Model> native_model_;
         std::shared_ptr<nnrt::Compilation> native_compile_;
         std::shared_ptr<nnrt::Execution> native_exec_;
-#if ANDROID_SDK_VERSION > 27
-        ExecutionPreference preference_;
-#endif
+
         /*store pointer of all of hidl_memory to buffer*/
         std::vector<VsiRTInfo> const_buffer_;
         std::vector<VsiRTInfo> io_buffer_;
