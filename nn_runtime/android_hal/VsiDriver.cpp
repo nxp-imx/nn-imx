@@ -242,19 +242,12 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
 
         case OperationType::ARGMAX:
         case OperationType::ARGMIN: {
-<<<<<<< HEAD
             OperationValidatePtr argmaxArgmin =
                 std::make_unique<op_validate::ArgmaxArgminValidate<HalPlatform::Model, HalPlatform::Operation>>(
                     model, operation);
             // return argmaxArgmin->Validate();
             // ovxlib only has sw imp
             return false;
-=======
-            OperationValidatePtr argmaxArgmin = std::make_unique<
-                op_validate::ArgmaxArgminValidate<HalPlatform::Model, HalPlatform::Operation>>(
-                model, operation);
-            return argmaxArgmin->Validate();
->>>>>>> c4645c8... [NNRT-286] Remove stride limitation of pool in android hal
         }
 
         case OperationType::MINIMUM: {
@@ -280,7 +273,6 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
         }
 
         case OperationType::EXP: {
-<<<<<<< HEAD
             OperationValidatePtr expValidate =
                 std::make_unique<op_validate::ExpValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
                                                                                          operation);
@@ -294,19 +286,6 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
                                                                                          operation);
             return false;
             // return sinValidate->Validate();
-=======
-            OperationValidatePtr expValidate = std::make_unique<
-                op_validate::ExpValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
-                                                                                      operation);
-            return expValidate->Validate();
-        }
-
-        case OperationType::SIN: {
-            OperationValidatePtr sinValidate = std::make_unique<
-                op_validate::SinValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
-                                                                                      operation);
-            return sinValidate->Validate();
->>>>>>> c4645c8... [NNRT-286] Remove stride limitation of pool in android hal
         }
 
         case OperationType::RESIZE_BILINEAR:
@@ -318,7 +297,6 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
         }
 
         case OperationType::REDUCE_MAX: {
-<<<<<<< HEAD
             OperationValidatePtr reduceMax =
                 std::make_unique<op_validate::ReduceMaxValidate<HalPlatform::Model, HalPlatform::Operation>>(
                     model, operation);
@@ -348,47 +326,6 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
                     model, operation);
             return false;
             // return reduceSum->Validate();
-=======
-            OperationValidatePtr reduceMax = std::make_unique<
-                op_validate::ReduceMaxValidate<HalPlatform::Model, HalPlatform::Operation>>(
-                model, operation);
-            return reduceMax->Validate();
-        }
-
-        case OperationType::REDUCE_MIN: {
-            OperationValidatePtr reduceMin = std::make_unique<
-                op_validate::ReduceMinValidate<HalPlatform::Model, HalPlatform::Operation>>(
-                model, operation);
-            return reduceMin->Validate();
-        }
-
-        case OperationType::REDUCE_PROD: {
-            OperationValidatePtr reduceProd = std::make_unique<
-                op_validate::ReduceProdValidate<HalPlatform::Model, HalPlatform::Operation>>(
-                model, operation);
-            return reduceProd->Validate();
-        }
-
-        case OperationType::REDUCE_SUM: {
-            OperationValidatePtr reduceSum = std::make_unique<
-                op_validate::ReduceSumValidate<HalPlatform::Model, HalPlatform::Operation>>(
-                model, operation);
-            return reduceSum->Validate();
-        }
-
-        case OperationType::NEG: {
-            OperationValidatePtr neg = std::make_unique<
-                op_validate::NegValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
-                                                                                      operation);
-            return neg->Validate();
-        }
-
-        case OperationType::PRELU: {
-            OperationValidatePtr prelu = std::make_unique<
-                op_validate::PreluValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
-                                                                                        operation);
-            return prelu->Validate();
->>>>>>> c4645c8... [NNRT-286] Remove stride limitation of pool in android hal
         }
 
         case OperationType::AXIS_ALIGNED_BBOX_TRANSFORM:
