@@ -74,6 +74,18 @@ inline const char* get_operation_string(OperationType type) {
             return "l2pool";
         case OperationType::REDUCE_MEAN:
             return "reduce_mean";
+        case OperationType::REDUCE_ALL:
+            return "reduce_all";
+        case OperationType::REDUCE_ANY:
+            return "reduce_any";
+        case OperationType::REDUCE_MAX:
+            return "reduce_max";
+        case OperationType::REDUCE_MIN:
+            return "reduce_min";
+        case OperationType::REDUCE_PROD:
+            return "reduce_prod";
+        case OperationType::REDUCE_SUM:
+            return "reduce_sum";
         case OperationType::PAD:
             return "pad";
         case OperationType::RELU1:
