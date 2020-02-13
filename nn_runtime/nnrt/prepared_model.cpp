@@ -24,16 +24,18 @@
 #include "vsi_nn_pub.h"
 #include "prepared_model.hpp"
 #include "error.hpp"
-#include "ovxlib_delegate.hpp"
+#include "execution_io.hpp"
 #include "model_transform/transformations.hpp"
 
 namespace nnrt
 {
 PreparedModel::PreparedModel(Model* model,
-        SharedContextPtr context, Interpreter* interpreter)
+        SharedContextPtr context, std::vector<ExecutionIOPtr> &inputs,
+        Interpreter* interpreter)
     : model_(model)
     , interpreter_(interpreter)
     , context_(context)
+    , inputs_(inputs)
 {}
 
 PreparedModel::~PreparedModel()
@@ -79,7 +81,7 @@ int PreparedModel::prepare()
         model_->echo();
     }
     // Build ovxlib graph
-    OvxlibDelegate delegate;
+    OvxlibDelegate delegate(inputs_);
     err = delegate.process(model_, context_.get());
     tensor_mapping_ = delegate.getTensorMapping();
     graph_ = delegate.throwGraph();
@@ -125,19 +127,23 @@ int PreparedModel::setInput(uint32_t index, const void* data, size_t length)
         return NNA_ERROR_CODE(OP_FAILED);
     }
     vsi_nn_tensor_t* tensor = vsi_nn_GetTensor(graph_, graph_->input.tensors[index]);
+
     if (!tensor) {
         // TODO: Optional tensor.
         return NNA_ERROR_CODE(NO_ERROR);
     } else if (!data || !length) {
         return NNA_ERROR_CODE(OP_FAILED);
     } else {
-        uint32_t tensor_size = vsi_nn_GetTensorSize(tensor->attr.size, tensor->attr.dim_num,
-                tensor->attr.dtype.vx_type);
-        if (length != tensor_size) {
-            NNRT_LOGE_PRINT("Tensor size mismatch %u vs %u.", tensor_size, length);
-            return NNA_ERROR_CODE(OP_FAILED);
+        vsi_status run_state = vsi_nn_FlushHandle(tensor);
+        if (VSI_SUCCESS == run_state)
+        {
+            return NNA_ERROR_CODE(NO_ERROR);
         }
-        vsi_nn_CopyDataToTensor(graph_, tensor, (uint8_t*)data);
+        else
+        {
+            NNRT_LOGE_PRINT("Process complete state: %d.", run_state);
+            assert(0);
+        }
     }
     return NNA_ERROR_CODE(NO_ERROR);
 }

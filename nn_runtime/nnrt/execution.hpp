@@ -36,37 +36,6 @@
 
 namespace nnrt
 {
-
-struct ExecutionIO
-{
-    enum {
-        UNSPECIFIED,
-        BUFFER,
-        POINTER,
-        HAS_NO_VALUE,   //!< this is for optional inputs
-    } state = UNSPECIFIED;
-
-    ExecutionIO(const op::OperandPtr& operand = nullptr) {
-        if (!operand) {
-            assert(false);
-            return;
-        }
-        // API not allow to use the operand value to set an execution IO value.
-        // mem_ref = operand->weak_mem_ref.lock();
-        dimensions = operand->dimensions;
-    }
-
-    void setNoValue() {
-        state = HAS_NO_VALUE;
-    }
-
-    mem_pool::weak_ref weak_mem_ref;
-
-    std::vector<uint32_t> dimensions;
-};
-
-using ExecutionIOPtr = std::shared_ptr<ExecutionIO>;
-
 class Execution
 {
     public:

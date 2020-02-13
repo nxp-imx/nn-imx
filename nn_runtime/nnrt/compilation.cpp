@@ -90,7 +90,8 @@ void Compilation::cachePreparedModel(PreparedModelPtr& prepared_model)
     prepared_models_[prepared_model->signature()] = prepared_model;
 }
 
-PreparedModelPtr Compilation::prepareModel(int* err_ptr)
+PreparedModelPtr Compilation::prepareModel(int* err_ptr,
+                                std::vector<ExecutionIOPtr> &inputs)
 {
     int err = NNA_ERROR_CODE(NO_ERROR);
     std::unique_lock<std::mutex> lk(cache_mutex_);
@@ -102,7 +103,7 @@ PreparedModelPtr Compilation::prepareModel(int* err_ptr)
         // assert if we meet that case.
         assert(prepared_models_.size() == 0);
         prepared_model = std::make_shared<PreparedModel>(model_,
-                context_, getInterpreter());
+                context_, inputs, getInterpreter());
         err = prepared_model->prepare();
         if (err == NNA_ERROR_CODE(NO_ERROR)) {
             cachePreparedModel(prepared_model);

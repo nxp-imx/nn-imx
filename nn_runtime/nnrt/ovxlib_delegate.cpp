@@ -32,71 +32,72 @@
 namespace nnrt
 {
 using namespace op;
-namespace {
-void removeOperationWithNullInput(nnrt::Model* model)
-{
-    auto operands = model->operands();
+namespace{
+    void removeOperationWithNullInput(nnrt::Model* model)
+    {
+        auto operands = model->operands();
 
-    std::vector<uint32_t> operation_reduce_list;
-    for (auto op_itor = model->operations().begin();
+        std::vector<uint32_t> operation_reduce_list;
+        for (auto op_itor = model->operations().begin();
             op_itor != model->operations().end();
-            ++ op_itor) {
-        auto operation = op_itor->second;
+            ++op_itor) {
+            auto operation = op_itor->second;
 
-        bool all_input_empty(true);
-        for (size_t i = 0 ; all_input_empty && i < operation->inputNum(); ++i){
-            all_input_empty = (operands[operation->input(i)]->isNull());
+            bool all_input_empty(true);
+            for (size_t i = 0; all_input_empty && i < operation->inputNum(); ++i) {
+                all_input_empty = (operands[operation->input(i)]->isNull());
+            }
+
+            for (size_t i = 0; all_input_empty && i < operation->outputNum(); ++i) {
+                NNRT_LOGD_PRINT("Mark operand(%d) as NUll", operation->output(i));
+                operands[operation->output(i)]->setNull();
+            }
+            if (all_input_empty) {
+                NNRT_LOGD_PRINT("Operation[%d] planned to remove", op_itor->first);
+                operation_reduce_list.push_back(op_itor->first);
+            }
         }
 
-        for (size_t i = 0; all_input_empty && i < operation->outputNum(); ++i){
-            NNRT_LOGD_PRINT("Mark operand(%d) as NUll",  operation->output(i));
-            operands[operation->output(i)]->setNull();
-        }
-        if (all_input_empty){
-            NNRT_LOGD_PRINT("Operation[%d] planned to remove", op_itor->first);
-            operation_reduce_list.push_back(op_itor->first);
-        }
-    }
-
-    for (auto op_idx = operation_reduce_list.begin();
+        for (auto op_idx = operation_reduce_list.begin();
             op_idx != operation_reduce_list.end();
-            ++ op_idx) {
-        model->operations().erase(model->operations().find(*op_idx));
+            ++op_idx) {
+            model->operations().erase(model->operations().find(*op_idx));
+        }
+    }
+
+    vsi_nn_activation_e mapLstmUnitActivation(const FusedType& ftype)
+    {
+        vsi_nn_activation_e rValue = VSI_NN_ACT_NONE;
+
+        switch (ftype) {
+        case FusedType::RELU1:
+            NNRT_LOGE_PRINT("RELU1 Not supported, use RELU in case crash");
+            rValue = VSI_NN_ACT_RELU;
+            break;
+        case FusedType::RELU:
+            rValue = VSI_NN_ACT_RELU;
+            break;
+        case FusedType::RELU6:
+            rValue = VSI_NN_ACT_RELU6;
+            break;
+        case FusedType::TANH:
+            rValue = VSI_NN_ACT_TANH;
+            break;
+        case FusedType::SIGMOID:
+            rValue = VSI_NN_ACT_SIGMOID;
+            break;
+        default:
+            NNRT_LOGE_PRINT("Not supported activation type %d for LSTM_Unit", ftype);
+            assert(false);
+        }
+
+        return rValue;
     }
 }
 
-vsi_nn_activation_e mapLstmUnitActivation(const FusedType& ftype)
+OvxlibDelegate::OvxlibDelegate(std::vector<ExecutionIOPtr> &inputPtr)
 {
-    vsi_nn_activation_e rValue = VSI_NN_ACT_NONE;
-
-    switch (ftype){
-    case FusedType::RELU1:
-        NNRT_LOGE_PRINT("RELU1 Not supported, use RELU in case crash");
-        rValue = VSI_NN_ACT_RELU;
-        break;
-    case FusedType::RELU:
-        rValue = VSI_NN_ACT_RELU;
-        break;
-    case FusedType::RELU6:
-        rValue = VSI_NN_ACT_RELU6;
-        break;
-    case FusedType::TANH:
-        rValue = VSI_NN_ACT_TANH;
-        break;
-    case FusedType::SIGMOID:
-        rValue = VSI_NN_ACT_SIGMOID;
-        break;
-    default:
-        NNRT_LOGE_PRINT("Not supported activation type %d for LSTM_Unit", ftype);
-        assert(false);
-        }
-
-    return rValue;
-}
-}
-
-OvxlibDelegate::OvxlibDelegate()
-{
+    inputs_ = inputPtr;
 #define REGISTER_OP(NAME)   do {                            \
     op_container_[OperationType::NAME] = &OvxlibDelegate::addNode_##NAME;  \
     } while(0)
@@ -282,7 +283,11 @@ int OvxlibDelegate::process(nnrt::Model* model, vsi_nn_context_t ctx)
                         TensorLifeTime::CONST, idx, data);
             }
         }
-        else if (model->isInput(idx) || model->isOutput(idx))
+        else if (model->isInput(idx))
+        {
+            continue;
+        }
+        else if (model->isOutput(idx))
         {
             err = addTensor(graph_, operand,
                     TensorLifeTime::NORMAL, idx);
@@ -292,6 +297,23 @@ int OvxlibDelegate::process(nnrt::Model* model, vsi_nn_context_t ctx)
             err = addTensor(graph_, operand,
                     TensorLifeTime::VIRTUAL, idx);
         }
+        if (err != NNA_ERROR_CODE(NO_ERROR))
+        {
+            return err;
+        }
+    }
+
+    auto inputIndexes = model->inputIndexes();
+    for (size_t i = 0; i < inputIndexes.size(); i++)
+    {
+        auto operand = model->operand(inputIndexes[i]);
+        if (!operand->isTensor() || operand->isNull())
+        {
+            NNRT_LOGD_PRINT("Skip input Operand[%d]", i);
+            continue;
+        }
+        err = addTensor(graph_, operand,
+            TensorLifeTime::NORMAL, inputIndexes[i], inputs_[i]->tensorHandle, true);
         if (err != NNA_ERROR_CODE(NO_ERROR))
         {
             return err;
@@ -699,7 +721,8 @@ void OvxlibDelegate::mapTensorId(uint32_t operand_id,
 }
 
 int OvxlibDelegate::addTensor(vsi_nn_graph_t* graph,
-    OperandPtr operand, TensorLifeTime type, size_t idx, const void* data)
+    OperandPtr operand, TensorLifeTime type, size_t idx,
+    const void* data, bool isFromHandle)
 {
     int err = NNA_ERROR_CODE(BAD_DATA);
     if (nullptr == graph)
@@ -718,7 +741,7 @@ int OvxlibDelegate::addTensor(vsi_nn_graph_t* graph,
         vsi_nn_type_e dtype = mapTensorType(operand->type);
         bool is_quantized = operand->isQuantized();
         err = addTensor(graph, dtype, shape, is_quantized,
-                operand->quant.scalar.scale, operand->quant.scalar.zeroPoint, type, idx, data);
+                operand->quant.scalar.scale, operand->quant.scalar.zeroPoint, type, idx, data, isFromHandle);
     }
     return err;
 }
@@ -731,7 +754,7 @@ int OvxlibDelegate::addTensor
     bool is_quantized,
     float scale, int32_t zero_point,
     TensorLifeTime type, size_t idx,
-    const void* data
+    const void* data, bool isFromHandle
     )
 {
     if (nullptr == graph)
@@ -741,14 +764,14 @@ int OvxlibDelegate::addTensor
     vsi_nn_tensor_attr_t attr;
     packTensorAttr(&attr, dtype, shape, is_quantized,
             scale, zero_point, type);
-    return addTensor(graph, &attr, idx, data);
+    return addTensor(graph, &attr, idx, data, isFromHandle);
 }
 
 int OvxlibDelegate::addTensor
     (
     vsi_nn_graph_t* graph,
     vsi_nn_tensor_attr_t* attr, size_t idx,
-    const void* data
+    const void* data, bool isFromHandle
     )
 {
     int err = NNA_ERROR_CODE(BAD_DATA);
@@ -758,7 +781,13 @@ int OvxlibDelegate::addTensor
     }
     vsi_nn_tensor_id_t tid;
     void* nonconst_ptr = const_cast<void*>(data);
-    tid = vsi_nn_AddTensor(graph, VSI_NN_TENSOR_ID_AUTO, attr, (uint8_t*)nonconst_ptr);
+    if (isFromHandle) {
+        tid = vsi_nn_AddTensorFromHandle(graph, VSI_NN_TENSOR_ID_AUTO, attr, (uint8_t*)nonconst_ptr);
+    }
+    else {
+        tid = vsi_nn_AddTensor(graph, VSI_NN_TENSOR_ID_AUTO, attr, (uint8_t*)nonconst_ptr);
+    }
+
     // TODO: OVXLib need to support map loop
     //tid = vsi_nn_AddTensor(graph, (vsi_nn_tensor_id_t)idx, attr, (uint8_t*)data);
     if (VSI_NN_TENSOR_ID_NA == tid)

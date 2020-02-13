@@ -1,4 +1,4 @@
-/****************************************************************************
+﻿/****************************************************************************
 *
 *    Copyright (c) 2019 Vivante Corporation
 *
@@ -32,12 +32,17 @@
 #include "event.hpp"
 #include "error.hpp"
 #include "execution_task.hpp"
+#include "file_map_memory.hpp"
 #ifdef _DUMP_JSON_MODEL_
 #include "dump_model/dump_json_model.hpp"
 #endif
 
 namespace {
     static const std::string tag = "Execution";
+    /* Configure driver mem aligned size,
+    * driver requests address and tensor size are aligend to 64 bytes. */
+    const uint32_t ADDRESS_ALIGN_BYTES = 64;
+    const uint32_t MEMORY_BLOCK_ALIGN_BYTES = 64;
 }
 namespace nnrt
 {
@@ -84,7 +89,7 @@ int Execution::startCompute(EventPtr event)
     /**********************************************/
 
     int err = NNA_ERROR_CODE(NO_ERROR);
-    PreparedModelPtr prepared_model = compilation_->prepareModel(&err);
+    PreparedModelPtr prepared_model = compilation_->prepareModel(&err, inputs_);
     if (err == NNA_ERROR_CODE(NO_ERROR)) {
         event_ = event;
         event_->notify(Event::IN_PROCESS);
@@ -116,7 +121,7 @@ int Execution::compute()
     /**********************************************/
 
     int err = NNA_ERROR_CODE(NO_ERROR);
-    PreparedModelPtr prepared_model = compilation_->prepareModel(&err);
+    PreparedModelPtr prepared_model = compilation_->prepareModel(&err, inputs_);
     if (err == NNA_ERROR_CODE(NO_ERROR)) {
         TaskPtr task = std::make_shared<GraphTask>(prepared_model, nullptr, inputs_, outputs_);
         if (!task) {
@@ -160,6 +165,13 @@ int Execution::setInput(uint32_t index, const op::OperandPtr operand_type,
         if (operand_type) {
             model->updateOperand(operand_index, operand_type);
         }
+
+        //TODO: hash the buffer for different graph
+        if (nullptr == inputs_[index]->tensorHandle) {
+            inputs_[index]->tensorHandle = vsi_nn_MallocAlignedBuffer(length,
+                ADDRESS_ALIGN_BYTES, MEMORY_BLOCK_ALIGN_BYTES);
+        }
+        memcpy(inputs_[index]->tensorHandle, buffer, length);
         inputs_[index]->state = ExecutionIO::BUFFER;
         inputs_[index]->weak_mem_ref = model->add_memory_reference(buffer, length, true);
     }
@@ -195,6 +207,14 @@ int Execution::setInputFromMemory(uint32_t index, const op::OperandPtr operand_t
     if (operand_type) {
         model->updateOperand(operand_index, operand_type);
     }
+    //TODO: hash the buffer for different graph
+    if (nullptr == inputs_[index]->tensorHandle) {
+        inputs_[index]->tensorHandle = vsi_nn_MallocAlignedBuffer(length,
+            ADDRESS_ALIGN_BYTES, MEMORY_BLOCK_ALIGN_BYTES);
+    }
+
+    // TODO: data should be copied into swaped tensor
+    memcpy(inputs_[index]->tensorHandle, memory->data(0), length);
     inputs_[index]->state = ExecutionIO::BUFFER;
     inputs_[index]->weak_mem_ref = model->add_memory_reference(memory, offset, length);
     return NNA_ERROR_CODE(NO_ERROR);

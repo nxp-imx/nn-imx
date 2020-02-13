@@ -29,6 +29,7 @@
 #include "model.hpp"
 #include "interpreter.hpp"
 #include "shared_context.hpp"
+#include "ovxlib_delegate.hpp"
 
 namespace nnrt
 {
@@ -40,6 +41,7 @@ class PreparedModel
 {
     public:
         PreparedModel(Model* model, SharedContextPtr context,
+                std::vector<ExecutionIOPtr> &inputs,
                 Interpreter* interpreter = NULL);
         ~PreparedModel();
 
@@ -75,6 +77,7 @@ class PreparedModel
         std::map<uint32_t, vsi_nn_tensor_id_t> tensor_mapping_;
         Interpreter* interpreter_;
         SharedContextPtr context_;
+        std::vector<ExecutionIOPtr> inputs_;
 };
 }
 

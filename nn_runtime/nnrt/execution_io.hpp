@@ -1,3 +1,4 @@
+
 /****************************************************************************
 *
 *    Copyright (c) 2019 Vivante Corporation
@@ -21,58 +22,51 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#ifndef __OVXLIB_COMPILATION_H__
-#define __OVXLIB_COMPILATION_H__
-
-#include <mutex>
-#include "vsi_nn_pub.h"
-#include "interpreter.hpp"
-#include "prepared_model.hpp"
-#include "shared_context.hpp"
+#ifndef __EXECUTION_IO_HPP__
+#define __EXECUTION_IO_HPP__
 
 namespace nnrt
 {
-class Model;
+    struct ExecutionIO
+    {
+        enum {
+            UNSPECIFIED,
+            BUFFER,
+            POINTER,
+            HAS_NO_VALUE,   //!< this is for optional inputs
+        } state = UNSPECIFIED;
 
-class Compilation
-{
-    public:
-        Compilation(Model* model);
-
-        virtual ~Compilation();
-
-        virtual int run();
-
-        virtual int finish() {return 0;};
-
-        Model* getModel() {return model_;}
-
-        void setInterpreter(Interpreter* interpreter) {
-            if (nullptr != interpreter_)   delete interpreter_;
-            interpreter_ = interpreter;
+        ExecutionIO(const op::OperandPtr& operand = nullptr, uint8_t *alignedBuf = nullptr) {
+            if (!operand) {
+                assert(false);
+                return;
+            }
+            tensorHandle = alignedBuf;
+            // API not allow to use the operand value to set an execution IO value.
+            // mem_ref = operand->weak_mem_ref.lock();
+            dimensions = operand->dimensions;
         }
 
-        Interpreter* getInterpreter() { return interpreter_; };
+        void setNoValue() {
+            state = HAS_NO_VALUE;
+        }
 
-        PreparedModelPtr prepareModel(int* err_ptr,
-            std::vector<ExecutionIOPtr> &inputs);
-    private:
-    Compilation(const Compilation&) = default;
-    Compilation(Compilation&& ) = default;
-    Compilation& operator=(const Compilation&) = default;
+        mem_pool::weak_ref weak_mem_ref;
 
-    private:
-        void cachePreparedModel(PreparedModelPtr& model);
+        // the handle is for driver's handle tensor.
+        uint8_t *tensorHandle;
 
-        Model* model_;
-        Interpreter* interpreter_;  //!< default interpreter_ set as NNapi interperter
-        uint32_t prepared_model_cache_size_;
-        std::map<std::string, PreparedModelPtr> prepared_models_;
-        SharedContextPtr context_;
-        std::mutex cache_mutex_;
-};
+        std::vector<uint32_t> dimensions;
 
-using CompilerUniquePtr = std::unique_ptr<Compilation>;
+        ~ExecutionIO() {
+            if (tensorHandle)
+                vsi_nn_FreeAlignedBuffer(tensorHandle);
+        }
+    };
+
+    using ExecutionIOPtr = std::shared_ptr<ExecutionIO>;
+
 }
+
 
 #endif

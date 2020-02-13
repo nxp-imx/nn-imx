@@ -27,13 +27,15 @@
 #include "vsi_nn_pub.h"
 #include "model.hpp"
 #include "op/public.hpp"
+#include "execution_io.hpp"
 
 namespace nnrt
 {
+
 class OvxlibDelegate
 {
     public:
-        OvxlibDelegate();
+        OvxlibDelegate(std::vector<ExecutionIOPtr> &inputPtr);
         virtual ~OvxlibDelegate();
 
         int process(nnrt::Model* model, vsi_nn_context_t ctx = nullptr);
@@ -76,16 +78,16 @@ class OvxlibDelegate
         void mapTensorId(uint32_t operand_id, vsi_nn_tensor_id_t tensor_id);
 
         int addTensor(vsi_nn_graph_t* graph, nnrt::op::OperandPtr operand,
-                TensorLifeTime type, size_t idx, const void* data = nullptr);
+                TensorLifeTime type, size_t idx, const void* data = nullptr, bool isFromHandle = false);
 
         int addTensor(vsi_nn_graph_t* graph, vsi_nn_type_e dtype,
             std::vector<uint32_t> & shape, bool is_quantized,
             float scale, int32_t zero_point, TensorLifeTime type, size_t idx,
-            const void* data = nullptr);
+            const void* data = nullptr, bool isFromHandle = false);
 
         int addTensor(vsi_nn_graph_t* graph,
             vsi_nn_tensor_attr_t* attr, size_t idx,
-            const void* data = nullptr);
+            const void* data = nullptr, bool isFromHandle = false);
 
         inline uint32_t newNodeUid() {
             node_unique_id_ --;
@@ -275,6 +277,7 @@ class OvxlibDelegate
         std::map<uint32_t, vsi_nn_node_id_t> node_map_;
         vsi_nn_graph_t* graph_{nullptr};
         std::vector<std::vector<int8_t>> size_pool_;
+        std::vector<ExecutionIOPtr> inputs_;
 };
 
 inline std::map<uint32_t, vsi_nn_tensor_id_t> OvxlibDelegate::getTensorMapping()const{
