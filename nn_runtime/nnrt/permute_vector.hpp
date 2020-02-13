@@ -72,6 +72,8 @@ class IPermuteVector {
      */
     virtual IPermuteVectorPtr add(const IPermuteVectorPtr& other) const = 0;
 
+    virtual void reinitialize() = 0;
+
     virtual bool isAligned() const = 0 ;
 
     virtual std::vector<uint32_t> asStdVec() const = 0;
@@ -135,6 +137,12 @@ class PermuteVector : public IPermuteVector {
             r->at(param_[i]) = i;
         }
         return r;
+    }
+
+    void reinitialize() {
+        for (uint32_t i = 0; i < R; ++i) {
+            param_[i] = i;
+        }
     }
 
     virtual IPermuteVectorPtr add(const IPermuteVectorPtr& other) const override {

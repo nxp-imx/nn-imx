@@ -368,6 +368,11 @@ void Operation::handleLayoutInferenceOnOutputs(
         auto consumers = model.getConsumers(model.operand(modelOutput));
         if (consumers.empty()) {
             next_permute_vectors.erase(modelPermuteVector);
+        } else {
+            // When the operand is identifyed as the output of model,
+            // and it still is the input of next operation, we need to reset the permuteVector
+            // to prevent the redundant permute is inserted.
+            modelPermuteVector->second->reinitialize();
         }
     }
 }
