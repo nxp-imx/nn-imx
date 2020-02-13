@@ -400,10 +400,10 @@ static vsi_bool _init_tensor
         if( ( !tensor->attr.is_created_from_handle ) || tensor->attr.is_handle_malloc_by_ovxlib )
         {
             vsi_nn_FillTensorWithValue( graph, tensor, 0.0f );
-        }
-        if(tensor->attr.is_created_from_handle)
-        {
-            vxFlushHandle( (vx_reference)tensor->t );
+            if(tensor->attr.is_created_from_handle)
+            {
+                vxFlushHandle( (vx_reference)tensor->t );
+            }
         }
     }
 
@@ -1233,6 +1233,22 @@ vsi_status vsi_nn_FlushHandle
         return vxFlushHandle( (vx_reference)tensor->t );
     }
 } /* vsi_nn_FlushHandle() */
+
+vsi_status vsi_nn_GetTensorHandle
+    (
+    vsi_nn_tensor_t      * tensor,
+    void** ptr
+    )
+{
+    if ( NULL == tensor || NULL == tensor->t )
+    {
+        return VSI_FAILURE;
+    }
+    else
+    {
+        return vxSwapTensorHandle(tensor->t, NULL, ptr);
+    }
+} /* vsi_nn_GetTensorHandle() */
 
 vsi_status vsi_nn_CopyRawDataToTensor
     (

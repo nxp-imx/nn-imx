@@ -332,6 +332,21 @@ OVXLIB_API vsi_status vsi_nn_FlushHandle
     vsi_nn_tensor_t      * tensor
     );
 
+/**
+ * Get Tensor Handle
+ * Get the handle of the tensor
+ *
+ * @param[in] tensor Tensor.
+ * @param[out] ptr The handle of the tensor.
+ *
+ * @return VSI_SUCCESS on success, or error core otherwise.
+ */
+OVXLIB_API vsi_status vsi_nn_GetTensorHandle
+    (
+    vsi_nn_tensor_t      * tensor,
+    void** ptr
+    );
+
 OVXLIB_API vsi_status vsi_nn_CopyRawDataToTensor
     (
     vsi_nn_graph_t*         graph,
