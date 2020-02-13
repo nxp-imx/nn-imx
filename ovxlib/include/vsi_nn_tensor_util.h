@@ -319,6 +319,19 @@ OVXLIB_API vsi_status vsi_nn_CopyDataToTensor
     uint8_t             * data
     );
 
+/**
+ * Flush Handle
+ * If you swap the handle of the tensor, you should flush it.
+ *
+ * @param[in] tensor Tensor handle.
+ *
+ * @return VSI_SUCCESS on success, or error core otherwise.
+ */
+OVXLIB_API vsi_status vsi_nn_FlushHandle
+    (
+    vsi_nn_tensor_t      * tensor
+    );
+
 OVXLIB_API vsi_status vsi_nn_CopyRawDataToTensor
     (
     vsi_nn_graph_t*         graph,

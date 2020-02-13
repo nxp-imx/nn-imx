@@ -1219,6 +1219,14 @@ vsi_status vsi_nn_CopyDataToTensor
     return status;
 } /* vsi_nn_CopyDataToTensor() */
 
+vsi_status vsi_nn_FlushHandle
+    (
+    vsi_nn_tensor_t      * tensor
+    )
+{
+    return vxFlushHandle( (vx_reference)tensor->t );
+} /* vsi_nn_FlushHandle() */
+
 vsi_status vsi_nn_CopyRawDataToTensor
     (
     vsi_nn_graph_t*         graph,
