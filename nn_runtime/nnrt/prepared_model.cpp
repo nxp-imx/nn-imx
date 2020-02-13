@@ -85,7 +85,10 @@ int PreparedModel::prepare()
     graph_ = delegate.throwGraph();
     if (err != NNA_ERROR_CODE(NO_ERROR)) {
         NNRT_LOGE_PRINT("Prepare graph fail.");
-        vsi_nn_ReleaseGraph(&graph_);
+        if( graph_ != nullptr) {
+            vsi_nn_ReleaseGraph(&graph_);
+            graph_ = nullptr;
+        }
     }
     return err;
 }
