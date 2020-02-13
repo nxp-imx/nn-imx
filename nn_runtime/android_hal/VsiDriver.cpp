@@ -22,8 +22,8 @@
 *
 *****************************************************************************/
 
-#include <memory>
 #include <cmath>
+#include <memory>
 #include <nnrt/file_map_memory.hpp>
 
 #include "VsiDriver.h"
@@ -39,8 +39,8 @@ namespace nn {
 namespace vsi_driver {
 
 #if ANDROID_SDK_VERSION >= 29
-using OperationValidatePtr =
-    std::unique_ptr<android::nn::op_validate::OperationValidate<HalPlatform::Model, HalPlatform::Operation>>;
+using OperationValidatePtr = std::unique_ptr<
+    android::nn::op_validate::OperationValidate<HalPlatform::Model, HalPlatform::Operation>>;
 #endif
 
 void VsiDriver::initalizeEnv() {
@@ -53,40 +53,42 @@ void VsiDriver::initalizeEnv() {
     }
 }
 
-const uint8_t* VsiDriver::getOperandDataPtr( const HalPlatform::Model& model,
+const uint8_t* VsiDriver::getOperandDataPtr(const HalPlatform::Model& model,
                                             const HalPlatform::Operand& hal_operand,
                                             VsiRTInfo& vsiMemory) {
     if (OperandLifeTime::CONSTANT_COPY == hal_operand.lifetime) {
         return model.operandValues.data() + hal_operand.location.offset;
     } else if (OperandLifeTime::CONSTANT_REFERENCE == hal_operand.lifetime) {
-        if (!mapHidlMem(model.pools[hal_operand.location.poolIndex], vsiMemory))
-           return nullptr;
+        if (!mapHidlMem(model.pools[hal_operand.location.poolIndex], vsiMemory)) return nullptr;
         return vsiMemory.getPtr(hal_operand.location.offset);
     }
     return nullptr;
 }
 
-    const uint8_t* getOpeandPtr ( const HalPlatform::Model& model,
-                                  const HalPlatform::Operand& operand,
-                                  struct VsiRTInfo &rt){
-        auto& location = operand.location;
-        if(operand.lifetime == OperandLifeTime::CONSTANT_COPY){
-            return model.operandValues.data() + location.offset;
-        } else if(operand.lifetime == OperandLifeTime::CONSTANT_REFERENCE){
-            return VsiDriver::getOperandDataPtr(model, operand, rt);
-        } else
-            return nullptr;
-    };
+const uint8_t* getOpeandPtr(const HalPlatform::Model& model,
+                            const HalPlatform::Operand& operand,
+                            struct VsiRTInfo& rt) {
+    auto& location = operand.location;
+    if (operand.lifetime == OperandLifeTime::CONSTANT_COPY) {
+        return model.operandValues.data() + location.offset;
+    } else if (operand.lifetime == OperandLifeTime::CONSTANT_REFERENCE) {
+        return VsiDriver::getOperandDataPtr(model, operand, rt);
+    } else
+        return nullptr;
+};
 
-    template <typename T_type>
-    T_type getScalarData(const HalPlatform::Model& model, const HalPlatform::Operand &operand){
-        struct VsiRTInfo rt;
-        auto ptr = getOpeandPtr(model, operand, rt);
-        if(ptr) return *reinterpret_cast<T_type*>(const_cast<uint8_t*>(ptr));
-        else return 0;
-    }
+template <typename T_type>
+T_type getScalarData(const HalPlatform::Model& model, const HalPlatform::Operand& operand) {
+    struct VsiRTInfo rt;
+    auto ptr = getOpeandPtr(model, operand, rt);
+    if (ptr)
+        return *reinterpret_cast<T_type*>(const_cast<uint8_t*>(ptr));
+    else
+        return 0;
+}
 
-bool VsiDriver::isSupportedOperation(const HalPlatform::Operation &operation, const HalPlatform::Model& model) {
+bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
+                                     const HalPlatform::Model& model) {
 #if ANDROID_SDK_VERSION >= 29
     auto checkSupportedOperand = [](auto& operand) -> bool {
         bool isSupported = true;
@@ -115,7 +117,6 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation &operation, co
         else
             return false;
     };
-
 
     bool isSupport = true;
     // each operation check
@@ -155,85 +156,7 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation &operation, co
             }
             break;
         }
-        case OperationType::MAX_POOL_2D:
-        case OperationType::L2_POOL_2D:
-        case OperationType::AVERAGE_POOL_2D: {
-            auto& input = model.operands[operation.inputs[0]];
-            if (isConstantTensor(input)) {
-                LOG(INFO) << "Device don't support constant input";
-                isSupport &= false;
-            }
-            int32_t padLeft;
-            int32_t padRight;
-            int32_t padTop;
-            int32_t padBottom;
-            int32_t strideWidth;
-            int32_t strideHeight;
-            int32_t filterWidth;
-            int32_t filterHeight;
-            auto inputSize = operation.inputs.size();
-            auto inputDim = model.operands[operation.inputs[0]].dimensions;
-            auto outputDim = model.operands[operation.outputs[0]].dimensions;
-            int32_t inputWidth = inputDim[2];
-            int32_t inputHeight = inputDim[1];
-            int32_t outputWidth = outputDim[2];
-            int32_t outputHeight = outputDim[1];
 
-            if (inputSize == 10 || inputSize == 11) {
-                padLeft = getScalarData<int32_t>(model, model.operands[operation.inputs[1]]);
-                padRight = getScalarData<int32_t>(model, model.operands[operation.inputs[2]]);
-                padTop = getScalarData<int32_t>(model, model.operands[operation.inputs[3]]);
-                padBottom = getScalarData<int32_t>(model, model.operands[operation.inputs[4]]);
-                filterWidth = getScalarData<int32_t>(model, model.operands[operation.inputs[7]]);
-                filterHeight = getScalarData<int32_t>(model, model.operands[operation.inputs[8]]);
-                strideWidth = getScalarData<int32_t>(model, model.operands[operation.inputs[5]]);
-                strideHeight = getScalarData<int32_t>(model, model.operands[operation.inputs[6]]);
-            } else {
-                filterWidth = getScalarData<int32_t>(model, model.operands[operation.inputs[4]]);
-                filterHeight = getScalarData<int32_t>(model, model.operands[operation.inputs[5]]);
-                strideWidth = getScalarData<int32_t>(model, model.operands[operation.inputs[2]]);
-                strideHeight = getScalarData<int32_t>(model, model.operands[operation.inputs[3]]);
-
-                int32_t computedOutputWidth = (inputDim[2] + strideWidth - 1) / strideWidth;
-                int32_t neededInputWidth = (computedOutputWidth - 1) * strideWidth + filterWidth;
-                int32_t totalPaddingWidth = std::max(0, neededInputWidth);
-                padLeft = totalPaddingWidth / 2;
-                padRight = (totalPaddingWidth + 1) / 2;
-
-                int32_t computedOutputHeight = (inputDim[1] + strideHeight - 1) / strideHeight;
-                int32_t neededInputHeight =
-                    (computedOutputHeight - 1) * strideHeight + filterHeight;
-                int32_t totalPaddingHeight = std::max(0, neededInputHeight);
-                padTop = totalPaddingHeight / 2;
-                padBottom = (totalPaddingHeight + 1) / 2;
-            }
-            // Compute stride
-            int32_t computedStrideWidth;
-            int32_t computedStrideHeight;
-            if (outputWidth == 1 && outputHeight == 1) {
-                computedStrideWidth = 1;
-                computedStrideHeight = 1;
-            } else if (outputWidth == 1) {
-                computedStrideWidth = 1;
-                computedStrideHeight = (int32_t)std::floor(
-                    (float)(inputHeight + padTop + padBottom - filterHeight) / (outputHeight - 1));
-            } else if (outputHeight == 1) {
-                computedStrideWidth = (int32_t)std::floor(
-                    (float)(inputWidth + padLeft + padRight - filterWidth) / (outputWidth - 1));
-                computedStrideHeight = 1;
-            } else {
-                computedStrideWidth = (int32_t)std::floor(
-                    (float)(inputWidth + padLeft + padRight - filterWidth) / (outputWidth - 1));
-                computedStrideHeight = (int32_t)std::floor(
-                    (float)(inputHeight + padTop + padBottom - filterHeight) / (outputHeight - 1));
-            }
-            if (computedStrideHeight == strideHeight && computedStrideWidth == strideWidth) {
-                isSupport &= true;
-            } else {
-                isSupport &= false;
-            }
-            break;
-        }
         case OperationType::SOFTMAX: {
             auto& input = model.operands[operation.inputs[0]];
             if (isConstantTensor(input)) {
@@ -311,45 +234,53 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation &operation, co
         // to-do: check operand with operation
         // API 29 newly added operataion
         case OperationType::ABS: {
-            OperationValidatePtr absValidate =
-                std::make_unique<op_validate::AbsValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
-                                                                                         operation);
+            OperationValidatePtr absValidate = std::make_unique<
+                op_validate::AbsValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
+                                                                                      operation);
             return absValidate->Validate();
         }
 
         case OperationType::ARGMAX:
         case OperationType::ARGMIN: {
+<<<<<<< HEAD
             OperationValidatePtr argmaxArgmin =
                 std::make_unique<op_validate::ArgmaxArgminValidate<HalPlatform::Model, HalPlatform::Operation>>(
                     model, operation);
             // return argmaxArgmin->Validate();
             // ovxlib only has sw imp
             return false;
+=======
+            OperationValidatePtr argmaxArgmin = std::make_unique<
+                op_validate::ArgmaxArgminValidate<HalPlatform::Model, HalPlatform::Operation>>(
+                model, operation);
+            return argmaxArgmin->Validate();
+>>>>>>> c4645c8... [NNRT-286] Remove stride limitation of pool in android hal
         }
 
         case OperationType::MINIMUM: {
-            OperationValidatePtr maxMin =
-                std::make_unique<op_validate::MaximumMinimumValidate<HalPlatform::Model, HalPlatform::Operation>>(
-                    model, operation);
+            OperationValidatePtr maxMin = std::make_unique<
+                op_validate::MaximumMinimumValidate<HalPlatform::Model, HalPlatform::Operation>>(
+                model, operation);
             return maxMin->Validate();
         }
 
         case OperationType::RSQRT:
         case OperationType::SQRT: {
-            OperationValidatePtr sqrtRsqrt =
-                std::make_unique<op_validate::SqrtRsqrtValidate<HalPlatform::Model, HalPlatform::Operation>>(
-                    model, operation);
+            OperationValidatePtr sqrtRsqrt = std::make_unique<
+                op_validate::SqrtRsqrtValidate<HalPlatform::Model, HalPlatform::Operation>>(
+                model, operation);
             return sqrtRsqrt->Validate();
         }
 
         case OperationType::LOG: {
-            OperationValidatePtr logValidate =
-                std::make_unique<op_validate::LogValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
-                                                                                         operation);
+            OperationValidatePtr logValidate = std::make_unique<
+                op_validate::LogValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
+                                                                                      operation);
             return logValidate->Validate();
         }
 
         case OperationType::EXP: {
+<<<<<<< HEAD
             OperationValidatePtr expValidate =
                 std::make_unique<op_validate::ExpValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
                                                                                          operation);
@@ -363,17 +294,31 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation &operation, co
                                                                                          operation);
             return false;
             // return sinValidate->Validate();
+=======
+            OperationValidatePtr expValidate = std::make_unique<
+                op_validate::ExpValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
+                                                                                      operation);
+            return expValidate->Validate();
+        }
+
+        case OperationType::SIN: {
+            OperationValidatePtr sinValidate = std::make_unique<
+                op_validate::SinValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
+                                                                                      operation);
+            return sinValidate->Validate();
+>>>>>>> c4645c8... [NNRT-286] Remove stride limitation of pool in android hal
         }
 
         case OperationType::RESIZE_BILINEAR:
         case OperationType::RESIZE_NEAREST_NEIGHBOR: {
-            OperationValidatePtr resizeValidate =
-                std::make_unique<op_validate::ResizeValidate<HalPlatform::Model, HalPlatform::Operation>>(
-                    model, operation);
+            OperationValidatePtr resizeValidate = std::make_unique<
+                op_validate::ResizeValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
+                                                                                         operation);
             return resizeValidate->Validate();
         }
 
         case OperationType::REDUCE_MAX: {
+<<<<<<< HEAD
             OperationValidatePtr reduceMax =
                 std::make_unique<op_validate::ReduceMaxValidate<HalPlatform::Model, HalPlatform::Operation>>(
                     model, operation);
@@ -403,6 +348,47 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation &operation, co
                     model, operation);
             return false;
             // return reduceSum->Validate();
+=======
+            OperationValidatePtr reduceMax = std::make_unique<
+                op_validate::ReduceMaxValidate<HalPlatform::Model, HalPlatform::Operation>>(
+                model, operation);
+            return reduceMax->Validate();
+        }
+
+        case OperationType::REDUCE_MIN: {
+            OperationValidatePtr reduceMin = std::make_unique<
+                op_validate::ReduceMinValidate<HalPlatform::Model, HalPlatform::Operation>>(
+                model, operation);
+            return reduceMin->Validate();
+        }
+
+        case OperationType::REDUCE_PROD: {
+            OperationValidatePtr reduceProd = std::make_unique<
+                op_validate::ReduceProdValidate<HalPlatform::Model, HalPlatform::Operation>>(
+                model, operation);
+            return reduceProd->Validate();
+        }
+
+        case OperationType::REDUCE_SUM: {
+            OperationValidatePtr reduceSum = std::make_unique<
+                op_validate::ReduceSumValidate<HalPlatform::Model, HalPlatform::Operation>>(
+                model, operation);
+            return reduceSum->Validate();
+        }
+
+        case OperationType::NEG: {
+            OperationValidatePtr neg = std::make_unique<
+                op_validate::NegValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
+                                                                                      operation);
+            return neg->Validate();
+        }
+
+        case OperationType::PRELU: {
+            OperationValidatePtr prelu = std::make_unique<
+                op_validate::PreluValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
+                                                                                        operation);
+            return prelu->Validate();
+>>>>>>> c4645c8... [NNRT-286] Remove stride limitation of pool in android hal
         }
 
         case OperationType::AXIS_ALIGNED_BBOX_TRANSFORM:
