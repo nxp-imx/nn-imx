@@ -1224,7 +1224,14 @@ vsi_status vsi_nn_FlushHandle
     vsi_nn_tensor_t      * tensor
     )
 {
-    return vxFlushHandle( (vx_reference)tensor->t );
+    if ( NULL == tensor || NULL == tensor->t )
+    {
+        return VSI_FAILURE;
+    }
+    else
+    {
+        return vxFlushHandle( (vx_reference)tensor->t );
+    }
 } /* vsi_nn_FlushHandle() */
 
 vsi_status vsi_nn_CopyRawDataToTensor
