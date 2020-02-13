@@ -397,7 +397,10 @@ static vsi_bool _init_tensor
     if( !tensor->attr.vtl && !tensor->attr.is_const )
     {
         //norm tensor need to fill initial value
-        vsi_nn_FillTensorWithValue( graph, tensor, 0.0f );
+        if( ( !tensor->attr.is_created_from_handle ) || tensor->attr.is_handle_malloc_by_ovxlib )
+        {
+            vsi_nn_FillTensorWithValue( graph, tensor, 0.0f );
+        }
         if(tensor->attr.is_created_from_handle)
         {
             vxFlushHandle( (vx_reference)tensor->t );
