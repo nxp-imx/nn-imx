@@ -101,6 +101,8 @@ Return<ErrorStatus> VsiPreparedModel::executeBase(const Request& request,
         return ErrorStatus::INVALID_ARGUMENT;
     }
 
+    if(nullptr == native_compile_)
+        native_compile_ = std::make_shared<nnrt::Compilation>(native_model_.get());
     map_rtinfo_from_hidl_memory(request.pools, io_buffer_);
     if(!native_exec_)
         native_exec_ = std::make_shared<nnrt::Execution>(native_compile_.get());

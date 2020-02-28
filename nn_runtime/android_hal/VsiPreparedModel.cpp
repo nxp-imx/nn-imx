@@ -311,7 +311,6 @@ static Return<ErrorStatus> convertResultCodeToErrorStatus(int resultCode) {
         std::vector<uint32_t> inputs = model_.inputIndexes;
         std::vector<uint32_t> outputs = model_.outputIndexes;
         native_model_->identifyInputsAndOutputs(inputs.data(), inputs.size(), outputs.data(), outputs.size());
-        native_compile_ = std::make_shared<nnrt::Compilation>(native_model_.get());
         return ErrorStatus::NONE;
     }
 
@@ -405,7 +404,8 @@ static Return<ErrorStatus> convertResultCodeToErrorStatus(int resultCode) {
             callback->notify(ErrorStatus::INVALID_ARGUMENT);
             return ErrorStatus::INVALID_ARGUMENT;
         }
-
+        if(nullptr == native_compile_)
+            native_compile_ = std::make_shared<nnrt::Compilation>(native_model_.get());
         map_rtinfo_from_hidl_memory(request.pools, io_buffer_);
         if(!native_exec_)
             native_exec_ = std::make_shared<nnrt::Execution>(native_compile_.get());
