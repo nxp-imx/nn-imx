@@ -653,6 +653,16 @@ OperationPtr NnApiInterpreter::map_TRANSPOSE(Model* model,
     NNAPI_CHECK_PTR(permute);
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
     fillIntArray(model, operation, permute->perm, 1, false);
+    // For perm is empty and input rank = 2, need to set perm = {1, 0}
+    if (permute->perm.empty()) {
+        auto input0 = model->operand(operation->input(0));
+        if (2 == input0->ndim()) {
+            permute->perm = {1, 0};
+        } else {
+            NNRT_LOGE("The perm of tranpose is null");
+            assert(false);
+        }
+    }
     truncateOperationIOs(model, operation, 1, 1);
     return permute;
 }
