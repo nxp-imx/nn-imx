@@ -166,6 +166,18 @@ inline const char* get_operation_string(OperationType type) {
             return "deconv2d";
         case OperationType::SOFT_RELU:
             return "soft_relu";
+        case OperationType::EQUAL:
+            return "equal";
+        case OperationType::NOT_EQUAL:
+            return "not_equal";
+        case OperationType::GREATER:
+            return "greater";
+        case OperationType::GREATER_EQUAL:
+            return "greater_equal";
+        case OperationType::LESS:
+            return "less";
+        case OperationType::LESS_EQUAL:
+            return "less_equal";
         default:
             return nullptr;
     }
