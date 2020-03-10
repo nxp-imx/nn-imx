@@ -327,6 +327,13 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
             return neg->Validate();
         }
 
+        case OperationType::PRELU: {
+            OperationValidatePtr prelu = std::make_unique<
+                op_validate::PreluValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
+                                                                                      operation);
+            return prelu->Validate();
+        }
+
         case OperationType::AXIS_ALIGNED_BBOX_TRANSFORM:
         case OperationType::BIDIRECTIONAL_SEQUENCE_LSTM:
         case OperationType::BIDIRECTIONAL_SEQUENCE_RNN:
@@ -352,7 +359,6 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
         case OperationType::NOT_EQUAL:
         case OperationType::PAD_V2:
         case OperationType::POW:
-        case OperationType::PRELU:
         case OperationType::QUANTIZE:
         case OperationType::QUANTIZED_16BIT_LSTM:
         case OperationType::RANDOM_MULTINOMIAL:

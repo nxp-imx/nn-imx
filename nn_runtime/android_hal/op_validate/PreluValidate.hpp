@@ -22,28 +22,37 @@
 *
 *****************************************************************************/
 
-#ifndef _OPS_VALIDATE_HPP_
-#define _OPS_VALIDATE_HPP_
+#ifndef _PRELU_VALIDATE_HPP_
+#define _PRELU_VALIDATE_HPP_
 
 #include "OperationValidate.hpp"
-#include "AbsValidate.hpp"
-#include "ActivationValidate.hpp"
-#include "ArgmaxArgminValidate.hpp"
-#include "Conv2dValidate.hpp"
-#include "DepthwiseConv2dValidate.hpp"
-#include "ElementwiseValidate.hpp"
-#include "LogValidate.hpp"
-#include "MaximumMinimunValidate.hpp"
-#include "NormalizationValidate.hpp"
-#include "OperationValidate.hpp"
-#include "PoolValidate.hpp"
-#include "ReductionValidate.hpp"
-#include "ResizeValidate.hpp"
-#include "SoftmaxValidate.hpp"
-#include "SqrtRsqrtValidate.hpp"
-#include "TransposeConv2dValidate.hpp"
-#include "SinValidate.hpp"
-#include "ExpValidate.hpp"
-#include "NegValidate.hpp"
-#include "PreluValidate.hpp"
+
+namespace android {
+namespace nn {
+namespace op_validate {
+template <typename T_model, typename T_Operation>
+class PreluValidate : public OperationValidate<T_model, T_Operation> {
+   public:
+    PreluValidate(const T_model& model, const T_Operation& operation)
+        : OperationValidate<T_model, T_Operation>(model, operation) {}
+    virtual bool SignatureCheck() override {
+        auto inputList = hal::limitation::nnapi::match("PreluInput", this->m_InputArgTypes);
+        auto outputList = hal::limitation::nnapi::match("PreluOutput", this->m_OutputArgTypes);
+        if (inputList && outputList) {
+            // Alpha only support 1D shape in ovxlib currently.
+            int32_t alphaIndex = inputList->ArgPos("alpha");
+            auto alphaRank =
+                this->m_Model.operands[this->m_Operation.inputs[alphaIndex]].dimensions.size();
+            return alphaRank == 1 ? true : false;
+        } else {
+            // Input or output data type not support
+            return false;
+        }
+    };
+};
+
+}  // end of op_validate
+}
+}
+
 #endif
