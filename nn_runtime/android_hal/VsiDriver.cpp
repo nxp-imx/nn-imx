@@ -245,9 +245,7 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
             OperationValidatePtr argmaxArgmin =
                 std::make_unique<op_validate::ArgmaxArgminValidate<HalPlatform::Model, HalPlatform::Operation>>(
                     model, operation);
-            // return argmaxArgmin->Validate();
-            // ovxlib only has sw imp
-            return false;
+            return argmaxArgmin->Validate();
         }
 
         case OperationType::MINIMUM: {

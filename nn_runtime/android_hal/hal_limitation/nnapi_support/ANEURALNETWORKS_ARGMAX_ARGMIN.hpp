@@ -48,9 +48,8 @@ MAKE_SPEC(argmax_argmin)
     OVERRIDE_SPEC(argmax_argmin, float16)
     .input_(nnrt::OperandType::TENSOR_FLOAT16));
 
-    // Not support int32 tensor
-    // OVERRIDE_SPEC(argmax_argmin, int32)
-    // .input_(nnrt::OperandType::TENSOR_INT32));
+    OVERRIDE_SPEC(argmax_argmin, int32)
+    .input_(nnrt::OperandType::TENSOR_INT32));
 
     OVERRIDE_SPEC(argmax_argmin, aymm_u8)
     .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM));
@@ -77,15 +76,15 @@ MAKE_SPEC(output)
     .input_(nnrt::OperandType::TENSOR_FLOAT32)
     .output_(nnrt::OperandType::TENSOR_INT32));
 
-    OVERRIDE_SPEC(output, 0)
+    OVERRIDE_SPEC(output, float16)
     .input_(nnrt::OperandType::TENSOR_FLOAT16)
     .output_(nnrt::OperandType::TENSOR_INT32));
 
-    // OVERRIDE_SPEC(output, 1)
-    // .input_(nnrt::OperandType::TENSOR_INT32)
-    // .output_(nnrt::OperandType::TENSOR_INT32));
+    OVERRIDE_SPEC(output, int32)
+    .input_(nnrt::OperandType::TENSOR_INT32)
+    .output_(nnrt::OperandType::TENSOR_INT32));
 
-    OVERRIDE_SPEC(output, 2)
+    OVERRIDE_SPEC(output, asymm_u8)
     .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM)
     .output_(nnrt::OperandType::TENSOR_INT32));
 
