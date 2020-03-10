@@ -719,12 +719,28 @@ bool NpuLayerSupport::IsEqualSupported(const TensorInfo& input0,
                                        const TensorInfo& input1,
                                        const TensorInfo& output,
                                        Optional<std::string&> reasonIfUnsupported) const {
-    ignore_unused(input0);
-    ignore_unused(input1);
-    ignore_unused(output);
-    ignore_unused(reasonIfUnsupported);
-    return false && IsSupportedForDataTypeRef(
-                        reasonIfUnsupported, input0.GetDataType(), &TrueFunc<>, &TrueFunc<>);
+    bool supported = true;
+
+    std::array<DataType, 3> supportedTypes = {
+        DataType::Float32, DataType::Float16, DataType::QuantisedAsymm8};
+
+    supported &= CheckSupportRule(TypeAnyOf(input0, supportedTypes),
+                                  reasonIfUnsupported,
+                                  "Npu equal: input 0 is not a supported type.");
+
+    supported &= CheckSupportRule(TypeAnyOf(input1, supportedTypes),
+                                  reasonIfUnsupported,
+                                  "Npu equal: input 1 is not a supported type.");
+
+    supported &= CheckSupportRule(TypesAreEqual(input0, input1),
+                                  reasonIfUnsupported,
+                                  "Npu equal: input 0 and Input 1 types are mismatched");
+
+    supported &= CheckSupportRule(ShapesAreBroadcastCompatible(input0, input1, output),
+                                  reasonIfUnsupported,
+                                  "Npu equal: shapes are not suitable for implicit broadcast.");
+
+    return supported;
 }
 
 bool NpuLayerSupport::IsFakeQuantizationSupported(

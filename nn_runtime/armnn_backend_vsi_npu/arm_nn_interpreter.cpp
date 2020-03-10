@@ -123,6 +123,7 @@ Armnn_Interpreter::Armnn_Interpreter() {
     REGISTER_OP(DECONV_2D);
     REGISTER_OP(DATA_CONVERT);
     REGISTER_OP(GREATER);
+    REGISTER_OP(EQUAL);
 
 /*customer Op*/
 // REGISTER_OP(VSI_RESIZE_NEAREST);
@@ -966,4 +967,5 @@ DECLARE_SAMPLE_OP(RSQRT, 1, 1, RSqrtOperation)
 DECLARE_SAMPLE_OP(PRELU, 2, 1, PReluOperation)
 DECLARE_SAMPLE_OP(DATA_CONVERT, 1, 1, DataConvertOperation)
 DECLARE_SAMPLE_OP(GREATER, 2, 1, GreaterOperation)
+DECLARE_SAMPLE_OP(EQUAL, 2, 1, EqualOperation)
 }
