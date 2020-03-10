@@ -773,7 +773,7 @@ OperationPtr Armnn_Interpreter::map_RNN(Model* model,
     auto inputs = model->getOperands(operation->inputs());
 
     // RNN's activation is NeuralNetwork::FuseType
-    rnn->activation = inputs[5]->scalar.int32;
+    rnn->activation = FusedType(inputs[5]->scalar.int32);
     truncateOperationIOs(model, operation, 5, 2);
     return rnn;
 }
