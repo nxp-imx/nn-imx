@@ -265,6 +265,7 @@ struct SplitOperation : Operation {
             out_permute_vectors) override;
     int32_t axis{-1};
     int32_t split_number;
+    std::vector<int32_t> slices;
 };
 
 struct SqueezeOperation : Operation {

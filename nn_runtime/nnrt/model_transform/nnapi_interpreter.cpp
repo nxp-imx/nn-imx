@@ -1497,13 +1497,42 @@ OperationPtr NnApiInterpreter::map_CHANNEL_SHUFFLE(Model* model,
 OperationPtr NnApiInterpreter::map_SPLIT(Model* model,
                                          OperationPtr operation,
                                          uint32_t operation_index) {
-    std::shared_ptr<SplitOperation> op = std::make_shared<SplitOperation>();
-    NNAPI_CHECK_PTR(op);
+    std::shared_ptr<SplitOperation> split = std::make_shared<SplitOperation>();
+    NNAPI_CHECK_PTR(split);
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
-    op->axis = inputs[1]->scalar.int32;
-    op->split_number = inputs[2]->scalar.int32;
+
+    std::vector<OperandType> argTypes;
+    std::transform(
+        inputs.begin(), inputs.end(), std::back_inserter(argTypes), [](const OperandPtr& operand) {
+            return operand->type;
+        });
+
+    auto argList = api::requirement::nnapi::match("SplitOperation", argTypes);
+    if (argList) {
+        auto inputOperand = inputs[argList->ArgPos("input")];
+        auto outputOperand = model->getOperands(operation->outputs())[0];
+        // No dynamic shape branch
+        if (!nnrt::operand_utils::IsDynamicShape(inputOperand) &&
+            !nnrt::operand_utils::IsDynamicShape(outputOperand)) {
+            split->axis = inputs[argList->ArgPos("axis")]->scalar.int32;
+            if (split->axis < 0) {
+                split->axis += inputOperand->dimensions.size();
+            }
+            split->split_number = inputs[argList->ArgPos("split_number")]->scalar.int32;
+            split->slices.assign(split->split_number,
+                                 inputOperand->dimensions[split->axis] / split->split_number);
+
+        } else {
+            // TODO: support dynamic input tensor shape
+            NNRT_LOGE_PRINT("Dynamic shape not support");
+            assert(false);
+        }
+
+    } else {
+        NNRT_LOGE_PRINT("Split argument list not support");
+    }
     truncateOperationIOs(model, operation, 1, operation->outputs().size());
-    return op;
+    return split;
 }
 
 OperationPtr NnApiInterpreter::map_INSTANCE_NORMALIZATION(Model* model,

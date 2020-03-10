@@ -1633,10 +1633,12 @@ int OvxlibDelegate::addNode_SPLIT(Model* model, OperationPtr operation, uint32_t
     SplitOperation* op = reinterpret_cast<SplitOperation*>(operation.get());
     std::vector<vsi_nn_node_t*> nodes;
     addNode(VSI_NN_OP_SPLIT, operation, &nodes, operation_index);
-    // No need to set slice_number and slice parameters. Ovxlib will comute output shape related
-    // to the number of output operands.
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
     nodes[0]->nn_param.split.axis = static_cast<uint32_t>(convertAxis(op->axis, inputs[0]->ndim()));
+    nodes[0]->nn_param.split.slices_num = op->split_number;
+    int32_t* slices = addParamPool(op->slices, false);
+    nodes[0]->nn_param.split.slices = reinterpret_cast<uint32_t*>(slices);
+
     return err;
 }
 
