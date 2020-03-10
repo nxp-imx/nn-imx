@@ -22,29 +22,27 @@
 *
 *****************************************************************************/
 
-#ifndef _OPS_VALIDATE_HPP_
-#define _OPS_VALIDATE_HPP_
+#ifndef _NEG_VALIDATE_HPP_
+#define _NEG_VALIDATE_HPP_
 
 #include "OperationValidate.hpp"
-#include "AbsValidate.hpp"
-#include "ActivationValidate.hpp"
-#include "ArgmaxArgminValidate.hpp"
-#include "Conv2dValidate.hpp"
-#include "DepthwiseConv2dValidate.hpp"
-#include "ElementwiseValidate.hpp"
-#include "LogValidate.hpp"
-#include "MaximumMinimunValidate.hpp"
-#include "NormalizationValidate.hpp"
-#include "OperationValidate.hpp"
-#include "PoolValidate.hpp"
-#include "ReductionValidate.hpp"
-#include "ResizeValidate.hpp"
-#include "SoftmaxValidate.hpp"
-#include "SqrtRsqrtValidate.hpp"
-#include "TransposeConv2dValidate.hpp"
-#include "SinValidate.hpp"
-#include "ExpValidate.hpp"
-#include "NegValidate.hpp"
 
+namespace android {
+namespace nn {
+namespace op_validate {
+template <typename T_model, typename T_Operation>
+class NegValidate : public OperationValidate<T_model, T_Operation> {
+   public:
+    NegValidate(const T_model& model, const T_Operation& operation)
+        : OperationValidate<T_model, T_Operation>(model, operation) {}
+    virtual bool SignatureCheck() override {
+        return hal::limitation::nnapi::match("NegInput", this->m_InputArgTypes) &&
+               hal::limitation::nnapi::match("NegOutput", this->m_OutputArgTypes);
+    };
+};
+
+}  // end of op_validate
+}
+}
 
 #endif

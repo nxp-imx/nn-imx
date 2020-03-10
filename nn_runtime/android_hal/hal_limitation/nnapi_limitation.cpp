@@ -68,3 +68,4 @@ void NNapiLimitationRegister(const std::string& opName, const IArgList* arglist)
 #include "nnapi_support/ANEURALNETWORKS_LOG.hpp"
 #include "nnapi_support/ANEURALNETWORKS_SIN.hpp"
 #include "nnapi_support/ANEURALNETWORKS_EXP.hpp"
+#include "nnapi_support/ANEURALNETWORKS_NEG.hpp"

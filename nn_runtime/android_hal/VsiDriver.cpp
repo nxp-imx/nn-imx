@@ -320,6 +320,13 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
             return reduceSum->Validate();
         }
 
+        case OperationType::NEG: {
+            OperationValidatePtr neg = std::make_unique<
+                op_validate::NegValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
+                                                                                      operation);
+            return neg->Validate();
+        }
+
         case OperationType::AXIS_ALIGNED_BBOX_TRANSFORM:
         case OperationType::BIDIRECTIONAL_SEQUENCE_LSTM:
         case OperationType::BIDIRECTIONAL_SEQUENCE_RNN:
@@ -342,7 +349,6 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
         case OperationType::LOGICAL_NOT:
         case OperationType::LOGICAL_OR:
         case OperationType::LOG_SOFTMAX:
-        case OperationType::NEG:
         case OperationType::NOT_EQUAL:
         case OperationType::PAD_V2:
         case OperationType::POW:
