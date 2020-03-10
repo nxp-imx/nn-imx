@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -74,3 +74,4 @@ void NNapiLimitationRegister(const std::string& opName, const IArgList* arglist)
 #include "nnapi_support/ANEURALNETWORKS_LOGICAL.hpp"
 #include "nnapi_support/ANEURALNETWORKS_EXPAND_DIMS.hpp"
 #include "nnapi_support/ANEURALNETWORKS_POW.hpp"
+#include "nnapi_support/ANEURALNETWORKS_SPLIT.hpp"

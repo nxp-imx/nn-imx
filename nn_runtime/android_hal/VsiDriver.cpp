@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -376,6 +376,19 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
                                                                                       operation);
             return pow->Validate();
         }
+        case OperationType::INSTANCE_NORMALIZATION: {
+            OperationValidatePtr instanceNorm = std::make_unique<
+                op_validate::InstanceNormValidate<HalPlatform::Model, HalPlatform::Operation>>(
+                model, operation);
+            return false;
+            // return instanceNorm->Validate();
+        }
+        case OperationType::SPLIT: {
+            OperationValidatePtr split = std::make_unique<
+                op_validate::SplitValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
+                                                                                        operation);
+            return split->Validate();
+        }
 
         case OperationType::AXIS_ALIGNED_BBOX_TRANSFORM:
         case OperationType::BIDIRECTIONAL_SEQUENCE_LSTM:
@@ -388,7 +401,6 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
         case OperationType::GENERATE_PROPOSALS:
         case OperationType::GROUPED_CONV_2D:
         case OperationType::HEATMAP_MAX_KEYPOINT:
-        case OperationType::INSTANCE_NORMALIZATION:
         case OperationType::LOG_SOFTMAX:
         case OperationType::PAD_V2:
         case OperationType::QUANTIZE:
@@ -400,7 +412,6 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
         case OperationType::ROI_POOLING:
         case OperationType::SELECT:
         case OperationType::SLICE:
-        case OperationType::SPLIT:
         case OperationType::TILE:
         case OperationType::TOPK_V2:
         case OperationType::TRANSPOSE_CONV_2D:
