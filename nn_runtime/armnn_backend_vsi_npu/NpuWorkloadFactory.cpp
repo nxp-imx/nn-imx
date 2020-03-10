@@ -24,12 +24,11 @@
 
 #include "NpuWorkloadFactory.hpp"
 #include "NpuBackendId.hpp"
-#include "NpuTensorHandler.hpp"
 
-#include <backendsCommon/CpuTensorHandle.hpp>
 #include <backendsCommon/MakeWorkloadHelper.hpp>
 #include <backendsCommon/MemCopyWorkload.hpp>
 
+#include "NpuTensorHandler.hpp"
 #include "workloads/TNpuWorkloads.hpp"
 #include "workloads/NpuFullyConnectedWorkload.hpp"
 #include "workloads/NpuPooling2dWorkload.hpp"
