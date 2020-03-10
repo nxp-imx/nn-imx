@@ -114,6 +114,24 @@ int Fp32ToFp16::run(Model* model, bool* modified) {
                 mark_operand_float_to_half(operation->output(2));
                 mark_operand_float_to_half(operation->output(3));
             } break;
+            case OperationType::UNIDIRECTIONAL_SEQUENCE_LSTM: {
+                mark_operand_float_to_half(operation->input(0));
+                mark_operand_float_to_half(operation->input(1));
+                mark_operand_float_to_half(operation->input(2));
+                mark_operand_float_to_half(operation->input(3));
+                mark_operand_float_to_half(operation->input(4));
+                mark_operand_float_to_half(operation->input(5));
+                mark_operand_float_to_half(operation->input(6));
+                mark_operand_float_to_half(operation->input(7));
+                mark_operand_float_to_half(operation->input(8));
+                mark_operand_float_to_half(operation->input(9));
+                mark_operand_float_to_half(operation->input(10));
+                mark_operand_float_to_half(operation->input(11));
+                mark_operand_float_to_half(operation->input(16));
+                mark_operand_float_to_half(operation->input(18));
+                mark_operand_float_to_half(operation->input(19));
+                mark_operand_float_to_half(operation->output(0));
+            } break;
             case OperationType::LSH_PROJECTION:
                 break;
             default:

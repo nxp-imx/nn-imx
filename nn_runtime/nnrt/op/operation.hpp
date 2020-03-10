@@ -340,31 +340,23 @@ struct LstmUnitOperation : Operation {
     static const uint8_t OUTPUT_COUNT = 4;
 };
 
-struct LstmLayerOperation : Operation {
-    LstmLayerOperation() : Operation(OperationType::LSTM_LAYER) {}
-    FusedType activation{FusedType::TANH};
-    float cellClip{0.0f};
-    float projClip{0.0f};
-    float forgetBias{0.0f};
-};
-
 struct RnnOperation : Operation {
     RnnOperation() : Operation(OperationType::RNN) {}
 
-    int32_t activation;
+    FusedType activation{FusedType::SIGMOID};
 };
 
 struct UnidirectionalSequenceRnnOperation : Operation {
     UnidirectionalSequenceRnnOperation() : Operation(OperationType::UNIDIRECTIONAL_SEQUENCE_RNN) {}
 
-    int32_t activation;
+    FusedType activation{FusedType::SIGMOID};
     bool timeMajor;
 };
 
 struct BidirectionalSequenceRnnOperation : Operation {
     BidirectionalSequenceRnnOperation() : Operation(OperationType::BIDIRECTIONAL_SEQUENCE_RNN) {}
 
-    int32_t activation;
+    FusedType activation{FusedType::SIGMOID};
     bool timeMajor;
     bool mergeOutputs;
 };
@@ -372,7 +364,7 @@ struct BidirectionalSequenceRnnOperation : Operation {
 struct UnidirectionalSequenceLstmOperation : Operation {
     UnidirectionalSequenceLstmOperation() : Operation(OperationType::UNIDIRECTIONAL_SEQUENCE_LSTM) {}
 
-    int32_t activation;
+    FusedType activation{FusedType::TANH};
     bool timeMajor;
     float cell_clip;
     float proj_clip;
@@ -381,7 +373,7 @@ struct UnidirectionalSequenceLstmOperation : Operation {
 struct BidirectionalSequenceLstmOperation : Operation {
     BidirectionalSequenceLstmOperation() : Operation(OperationType::BIDIRECTIONAL_SEQUENCE_LSTM) {}
 
-    int32_t activation;
+    FusedType activation{FusedType::TANH};
     bool timeMajor;
     bool mergeOutputs;
     float cell_clip;

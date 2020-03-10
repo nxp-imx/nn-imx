@@ -65,30 +65,30 @@ namespace{
         }
     }
 
-    vsi_nn_activation_e mapLstmUnitActivation(const FusedType& ftype)
-    {
-        vsi_nn_activation_e rValue = VSI_NN_ACT_NONE;
+vsi_nn_activation_e mapActivation(const FusedType& ftype)
+{
+    vsi_nn_activation_e rValue = VSI_NN_ACT_NONE;
 
-        switch (ftype) {
-        case FusedType::RELU1:
-            NNRT_LOGE_PRINT("RELU1 Not supported, use RELU in case crash");
-            rValue = VSI_NN_ACT_RELU;
-            break;
-        case FusedType::RELU:
-            rValue = VSI_NN_ACT_RELU;
-            break;
-        case FusedType::RELU6:
-            rValue = VSI_NN_ACT_RELU6;
-            break;
-        case FusedType::TANH:
-            rValue = VSI_NN_ACT_TANH;
-            break;
-        case FusedType::SIGMOID:
-            rValue = VSI_NN_ACT_SIGMOID;
-            break;
-        default:
-            NNRT_LOGE_PRINT("Not supported activation type %d for LSTM_Unit", ftype);
-            assert(false);
+    switch (ftype){
+    case FusedType::RELU1:
+        NNRT_LOGE_PRINT("RELU1 Not supported, use RELU in case crash");
+        rValue = VSI_NN_ACT_RELU;
+        break;
+    case FusedType::RELU:
+        rValue = VSI_NN_ACT_RELU;
+        break;
+    case FusedType::RELU6:
+        rValue = VSI_NN_ACT_RELU6;
+        break;
+    case FusedType::TANH:
+        rValue = VSI_NN_ACT_TANH;
+        break;
+    case FusedType::SIGMOID:
+        rValue = VSI_NN_ACT_SIGMOID;
+        break;
+    default:
+        NNRT_LOGE_PRINT("Not supported activation type %d for LSTM_Unit", ftype);
+        assert(false);
         }
 
         return rValue;
@@ -1438,19 +1438,17 @@ int OvxlibDelegate::addNode_LSTM(Model* model,
     std::vector<vsi_nn_node_t*> nodes;
 
     auto mapped_inputs = reorderOperands(lstm_unit->inputs(),
-                        //0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 11 12  13, 14, 15, 16, 17, 18, 19
+                        //0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19
                         {0, 18, 19, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17 });
 
     auto mapped_outputs = reorderOperands(lstm_unit->outputs(), {3, 1, 2, 0});
 
     err = addNode(VSI_NN_OP_LSTMUNIT, mapped_inputs, mapped_outputs,
         lstm_unit->fusedType(), &nodes, operation_index);
-
     nodes[0]->nn_param.lstmunit.cell_clip = lstm_unit->cellClip;
     nodes[0]->nn_param.lstmunit.proj_clip = lstm_unit->projClip;
     nodes[0]->nn_param.lstmunit.forget_bias = lstm_unit->forgetBias;
-    nodes[0]->nn_param.lstmunit.activation = mapLstmUnitActivation(lstm_unit->activation);
-
+    nodes[0]->nn_param.lstmunit.activation = mapActivation(lstm_unit->activation);
     return err;
 }
 
@@ -1490,7 +1488,7 @@ int OvxlibDelegate::addNode_RNN(Model* model,
 
     std::vector<vsi_nn_node_t*> nodes;
     addNode(VSI_NN_OP_RNN, operation, &nodes, operation_index);
-    nodes[0]->nn_param.rnn.activation = rnn->activation;
+    nodes[0]->nn_param.rnn.activation = mapActivation(rnn->activation);
 
     return err;
 }
@@ -1505,7 +1503,7 @@ int OvxlibDelegate::addNode_UNIDIRECTIONAL_SEQUENCE_RNN(Model* model,
 
     std::vector<vsi_nn_node_t*> nodes;
     addNode(VSI_NN_OP_UNIDIRECTIONAL_SEQUENCE_RNN, operation, &nodes, operation_index);
-    nodes[0]->nn_param.unidirectional_sequence_rnn.activation = rnn->activation;
+    nodes[0]->nn_param.unidirectional_sequence_rnn.activation = mapActivation(rnn->activation);
     nodes[0]->nn_param.unidirectional_sequence_rnn.time_major = rnn->timeMajor;
     return err;
 }
@@ -1521,7 +1519,7 @@ int OvxlibDelegate::addNode_BIDIRECTIONAL_SEQUENCE_RNN(Model* model,
 
     std::vector<vsi_nn_node_t*> nodes;
     addNode(VSI_NN_OP_BIDIRECTIONAL_SEQUENCE_RNN, operation, &nodes, operation_index);
-    nodes[0]->nn_param.bidirectional_sequence_rnn.activation = rnn->activation;
+    nodes[0]->nn_param.bidirectional_sequence_rnn.activation = mapActivation(rnn->activation);
     nodes[0]->nn_param.bidirectional_sequence_rnn.time_major = rnn->timeMajor;
     nodes[0]->nn_param.bidirectional_sequence_rnn.merge_outputs = rnn->mergeOutputs;
     return err;
@@ -1532,13 +1530,20 @@ int OvxlibDelegate::addNode_UNIDIRECTIONAL_SEQUENCE_LSTM(Model* model,
 {
     (void)model;
     int err = NNA_ERROR_CODE(NO_ERROR);
-    BidirectionalSequenceRnnOperation* rnn =
-        reinterpret_cast<BidirectionalSequenceRnnOperation*>(operation.get());
+    UnidirectionalSequenceLstmOperation* lstm =
+        reinterpret_cast<UnidirectionalSequenceLstmOperation*>(operation.get());
 
     std::vector<vsi_nn_node_t*> nodes;
-    addNode(VSI_NN_OP_BIDIRECTIONAL_SEQUENCE_RNN, operation, &nodes, operation_index);
-    nodes[0]->nn_param.bidirectional_sequence_rnn.activation = rnn->activation;
-    nodes[0]->nn_param.bidirectional_sequence_rnn.time_major = rnn->timeMajor;
+    auto mapped_inputs = reorderOperands(lstm->inputs(),
+                        //0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23
+                        {0, 18, 19, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 20, 21, 22, 23});
+
+    err = addNode(VSI_NN_OP_LSTM_OVXLIB, mapped_inputs, lstm->outputs(),
+        lstm->fusedType(), &nodes, operation_index);
+    nodes[0]->nn_param.lstm_ovxlib.activation = mapActivation(lstm->activation);
+    nodes[0]->nn_param.lstm_ovxlib.time_major = lstm->timeMajor;
+    nodes[0]->nn_param.lstm_ovxlib.cell_clip = lstm->cell_clip;
+    nodes[0]->nn_param.lstm_ovxlib.proj_clip = lstm->proj_clip;
     return err;
 }
 
@@ -1552,8 +1557,10 @@ int OvxlibDelegate::addNode_BIDIRECTIONAL_SEQUENCE_LSTM(Model* model,
 
     std::vector<vsi_nn_node_t*> nodes;
     addNode(VSI_NN_OP_BIDIRECTIONAL_SEQUENCE_LSTM, operation, &nodes, operation_index);
-    nodes[0]->nn_param.bidirectional_sequence_lstm.activation = lstm->activation;
+    nodes[0]->nn_param.bidirectional_sequence_lstm.activation = mapActivation(lstm->activation);
     nodes[0]->nn_param.bidirectional_sequence_lstm.time_major = lstm->timeMajor;
+    nodes[0]->nn_param.bidirectional_sequence_lstm.cell_clip = lstm->cell_clip;
+    nodes[0]->nn_param.bidirectional_sequence_lstm.proj_clip = lstm->proj_clip;
     nodes[0]->nn_param.bidirectional_sequence_lstm.merge_outputs = lstm->mergeOutputs;
     return err;
 }

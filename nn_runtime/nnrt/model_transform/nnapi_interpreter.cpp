@@ -1133,7 +1133,7 @@ OperationPtr NnApiInterpreter::map_RNN(Model* model,
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
 
     // RNN's activation is NeuralNetwork::FuseType
-    rnn->activation = inputs[5]->scalar.int32;
+    rnn->activation = mapFusedType(inputs[5]->scalar.int32);
     truncateOperationIOs(model, operation, 5, 2);
     return rnn;
 }
@@ -1147,7 +1147,7 @@ OperationPtr NnApiInterpreter::map_UNIDIRECTIONAL_SEQUENCE_RNN(Model* model,
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
     auto argList = matchArgList(inputs, "UnidirectionalSequenceRnnOperation");
     if (argList) {
-        op->activation = inputs[argList->ArgPos("activation")]->scalar.int32;
+        op->activation = mapFusedType(inputs[argList->ArgPos("activation")]->scalar.int32);
         op->timeMajor = inputs[argList->ArgPos("timeMajor")]->scalar.boolean;
     } else {
         NNRT_LOGE_PRINT("UnidirectionalSequenceRnn argument list not support");
@@ -1166,7 +1166,7 @@ OperationPtr NnApiInterpreter::map_BIDIRECTIONAL_SEQUENCE_RNN(Model* model,
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
     auto argList = matchArgList(inputs, "BidirectionalSequenceRnnOperation");
     if (argList) {
-        op->activation = inputs[argList->ArgPos("activation")]->scalar.int32;
+        op->activation = mapFusedType(inputs[argList->ArgPos("activation")]->scalar.int32);
         op->timeMajor = inputs[argList->ArgPos("timeMajor")]->scalar.boolean;
         op->mergeOutputs = inputs[argList->ArgPos("mergeOutputs")]->scalar.boolean;
     } else {
@@ -1230,17 +1230,18 @@ OperationPtr NnApiInterpreter::map_UNIDIRECTIONAL_SEQUENCE_LSTM(Model* model,
         std::make_shared<UnidirectionalSequenceLstmOperation>();
     NNAPI_CHECK_PTR(op);
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
-    auto argList = matchArgList(inputs, "UnidirectionalSequenceRnnOperation");
+    auto argList = matchArgList(inputs, "UnidirectionalSequenceLstmOperation");
     if (argList) {
-        op->activation = inputs[argList->ArgPos("activation")]->scalar.int32;
+        op->activation = mapLstmActivationType(inputs[argList->ArgPos("activation")]->scalar.int32);
         op->timeMajor = inputs[argList->ArgPos("timeMajor")]->scalar.boolean;
         op->cell_clip = inputs[argList->ArgPos("cell_clip")]->scalar.float32;
         op->proj_clip = inputs[argList->ArgPos("proj_clip")]->scalar.float32;
+        removeScalarOperand(operation, argList->ArgPos("activation"), 4);
     } else {
-        NNRT_LOGE_PRINT("UnidirectionalSequenceRnn argument list not support");
+        NNRT_LOGE_PRINT("UnidirectionalSequenceLstm argument list not support");
         assert(false);
     }
-    truncateOperationIOs(model, operation, 5, 1);
+    truncateOperationIOs(model, operation, 24, 1);
     return op;
 }
 
@@ -1253,7 +1254,7 @@ OperationPtr NnApiInterpreter::map_BIDIRECTIONAL_SEQUENCE_LSTM(Model* model,
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
     auto argList = matchArgList(inputs, "BidirectionalSequenceRnnOperation");
     if (argList) {
-        op->activation = inputs[argList->ArgPos("activation")]->scalar.int32;
+        op->activation = mapLstmActivationType(inputs[argList->ArgPos("activation")]->scalar.int32);
         op->timeMajor = inputs[argList->ArgPos("timeMajor")]->scalar.boolean;
         op->mergeOutputs = inputs[argList->ArgPos("mergeOutputs")]->scalar.boolean;
         op->cell_clip = inputs[argList->ArgPos("cell_clip")]->scalar.float32;
