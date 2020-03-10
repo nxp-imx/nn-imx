@@ -141,6 +141,9 @@ static Return<ErrorStatus> convertResultCodeToErrorStatus(int resultCode) {
             MAP_OP(GREATER);
             MAP_OP(GREATER_EQUAL);
             MAP_OP(NOT_EQUAL);
+            MAP_OP(LOGICAL_AND);
+            MAP_OP(LOGICAL_OR);
+            MAP_OP(LOGICAL_NOT);
 #endif
 #undef MAP_OP
 

@@ -47,4 +47,5 @@
 #include "NegValidate.hpp"
 #include "PreluValidate.hpp"
 #include "ComparisonValidate.hpp"
+#include "LogicalValidate.hpp"
 #endif

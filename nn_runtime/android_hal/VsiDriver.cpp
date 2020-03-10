@@ -346,6 +346,25 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
             return compare->Validate();
         }
 
+        case OperationType::LOGICAL_AND: {
+            OperationValidatePtr logicalAnd = std::make_unique<
+                op_validate::LogicalAndValidate<HalPlatform::Model, HalPlatform::Operation>>(
+                model, operation);
+            return logicalAnd->Validate();
+        }
+        case OperationType::LOGICAL_NOT: {
+            OperationValidatePtr logicalNot = std::make_unique<
+                op_validate::LogicalNotValidate<HalPlatform::Model, HalPlatform::Operation>>(
+                model, operation);
+            return logicalNot->Validate();
+        }
+        case OperationType::LOGICAL_OR: {
+            OperationValidatePtr logicalOr = std::make_unique<
+                op_validate::LogicalOrValidate<HalPlatform::Model, HalPlatform::Operation>>(
+                model, operation);
+            return logicalOr->Validate();
+        }
+
         case OperationType::AXIS_ALIGNED_BBOX_TRANSFORM:
         case OperationType::BIDIRECTIONAL_SEQUENCE_LSTM:
         case OperationType::BIDIRECTIONAL_SEQUENCE_RNN:
@@ -359,9 +378,6 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
         case OperationType::GROUPED_CONV_2D:
         case OperationType::HEATMAP_MAX_KEYPOINT:
         case OperationType::INSTANCE_NORMALIZATION:
-        case OperationType::LOGICAL_AND:
-        case OperationType::LOGICAL_NOT:
-        case OperationType::LOGICAL_OR:
         case OperationType::LOG_SOFTMAX:
         case OperationType::PAD_V2:
         case OperationType::POW:
