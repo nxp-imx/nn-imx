@@ -276,16 +276,14 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
             OperationValidatePtr expValidate =
                 std::make_unique<op_validate::ExpValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
                                                                                          operation);
-            return false;
-            // return expValidate->Validate();
+            return expValidate->Validate();
         }
 
         case OperationType::SIN: {
             OperationValidatePtr sinValidate =
                 std::make_unique<op_validate::SinValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
                                                                                          operation);
-            return false;
-            // return sinValidate->Validate();
+            return sinValidate->Validate();
         }
 
         case OperationType::RESIZE_BILINEAR:
@@ -300,32 +298,28 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
             OperationValidatePtr reduceMax =
                 std::make_unique<op_validate::ReduceMaxValidate<HalPlatform::Model, HalPlatform::Operation>>(
                     model, operation);
-            return false;
-            // return reduceMax->Validate();
+            return reduceMax->Validate();
         }
 
         case OperationType::REDUCE_MIN: {
             OperationValidatePtr reduceMin =
                 std::make_unique<op_validate::ReduceMinValidate<HalPlatform::Model, HalPlatform::Operation>>(
                     model, operation);
-            return false;
-            // return reduceMin->Validate();
+            return reduceMin->Validate();
         }
 
         case OperationType::REDUCE_PROD: {
             OperationValidatePtr reduceProd =
                 std::make_unique<op_validate::ReduceProdValidate<HalPlatform::Model, HalPlatform::Operation>>(
                     model, operation);
-            return false;
-            // return reduceProd->Validate();
+            return reduceProd->Validate();
         }
 
         case OperationType::REDUCE_SUM: {
             OperationValidatePtr reduceSum =
                 std::make_unique<op_validate::ReduceSumValidate<HalPlatform::Model, HalPlatform::Operation>>(
                     model, operation);
-            return false;
-            // return reduceSum->Validate();
+            return reduceSum->Validate();
         }
 
         case OperationType::AXIS_ALIGNED_BBOX_TRANSFORM:
