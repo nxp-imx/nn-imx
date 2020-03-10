@@ -239,6 +239,7 @@ class OvxlibDelegate
         REGISTER_OP(LESS_EQUAL);
         REGISTER_OP(LOGICAL_AND);
         REGISTER_OP(LOGICAL_OR);
+        REGISTER_OP(LOGICAL_NOT);
         REGISTER_OP(LOG);
         REGISTER_OP(NEG);
         REGISTER_OP(NOT_EQUAL);
