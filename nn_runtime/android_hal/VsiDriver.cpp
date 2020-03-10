@@ -242,9 +242,9 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
 
         case OperationType::ARGMAX:
         case OperationType::ARGMIN: {
-            OperationValidatePtr argmaxArgmin =
-                std::make_unique<op_validate::ArgmaxArgminValidate<HalPlatform::Model, HalPlatform::Operation>>(
-                    model, operation);
+            OperationValidatePtr argmaxArgmin = std::make_unique<
+                op_validate::ArgmaxArgminValidate<HalPlatform::Model, HalPlatform::Operation>>(
+                model, operation);
             return argmaxArgmin->Validate();
         }
 
@@ -271,16 +271,16 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
         }
 
         case OperationType::EXP: {
-            OperationValidatePtr expValidate =
-                std::make_unique<op_validate::ExpValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
-                                                                                         operation);
+            OperationValidatePtr expValidate = std::make_unique<
+                op_validate::ExpValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
+                                                                                      operation);
             return expValidate->Validate();
         }
 
         case OperationType::SIN: {
-            OperationValidatePtr sinValidate =
-                std::make_unique<op_validate::SinValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
-                                                                                         operation);
+            OperationValidatePtr sinValidate = std::make_unique<
+                op_validate::SinValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
+                                                                                      operation);
             return sinValidate->Validate();
         }
 
@@ -293,30 +293,30 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
         }
 
         case OperationType::REDUCE_MAX: {
-            OperationValidatePtr reduceMax =
-                std::make_unique<op_validate::ReduceMaxValidate<HalPlatform::Model, HalPlatform::Operation>>(
-                    model, operation);
+            OperationValidatePtr reduceMax = std::make_unique<
+                op_validate::ReduceMaxValidate<HalPlatform::Model, HalPlatform::Operation>>(
+                model, operation);
             return reduceMax->Validate();
         }
 
         case OperationType::REDUCE_MIN: {
-            OperationValidatePtr reduceMin =
-                std::make_unique<op_validate::ReduceMinValidate<HalPlatform::Model, HalPlatform::Operation>>(
-                    model, operation);
+            OperationValidatePtr reduceMin = std::make_unique<
+                op_validate::ReduceMinValidate<HalPlatform::Model, HalPlatform::Operation>>(
+                model, operation);
             return reduceMin->Validate();
         }
 
         case OperationType::REDUCE_PROD: {
-            OperationValidatePtr reduceProd =
-                std::make_unique<op_validate::ReduceProdValidate<HalPlatform::Model, HalPlatform::Operation>>(
-                    model, operation);
+            OperationValidatePtr reduceProd = std::make_unique<
+                op_validate::ReduceProdValidate<HalPlatform::Model, HalPlatform::Operation>>(
+                model, operation);
             return reduceProd->Validate();
         }
 
         case OperationType::REDUCE_SUM: {
-            OperationValidatePtr reduceSum =
-                std::make_unique<op_validate::ReduceSumValidate<HalPlatform::Model, HalPlatform::Operation>>(
-                    model, operation);
+            OperationValidatePtr reduceSum = std::make_unique<
+                op_validate::ReduceSumValidate<HalPlatform::Model, HalPlatform::Operation>>(
+                model, operation);
             return reduceSum->Validate();
         }
 
@@ -330,7 +330,7 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
         case OperationType::PRELU: {
             OperationValidatePtr prelu = std::make_unique<
                 op_validate::PreluValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
-                                                                                      operation);
+                                                                                        operation);
             return prelu->Validate();
         }
 
