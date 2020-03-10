@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -52,6 +52,14 @@ typedef enum
     VSI_NN_KERNEL_TYPE_NONE = VSI_NN_KERNEL_TYPE_NUM
 } vsi_nn_kernel_type_e;
 
+/** Kernel pirority */
+enum
+{
+    VSI_NN_KERNEL_PIRORITY_DISABLE = 0,
+    VSI_NN_KERNEL_PIRORITY_NORMAL_LIMIT = 0x1FFFFFFF,
+    VSI_NN_KERNEL_PIRORITY_FORCE_EXEC = 0x20000000,
+};
+
 /** Kernel internal data type */
 typedef enum
 {
@@ -94,9 +102,14 @@ typedef uint32_t vsi_nn_kernel_unique_id_t;
 
 typedef struct
 {
+    char * data;
+} vsi_nn_kernel_build_option_t;
+
+typedef struct
+{
    size_t num;
    vsi_nn_kernel_source_t * data;
-   void * _reserve_mem;
+   vsi_nn_kernel_build_option_t build_option;
 } vsi_nn_kernel_source_info_t;
 
 typedef struct
@@ -142,11 +155,25 @@ typedef struct
     };
 } vsi_nn_kernel_tensor_attr_t;
 
+typedef struct
+{
+    vsi_nn_kernel_type_e kernel_type;
+    int32_t fps;
+} vsi_nn_kernel_pirority_t;
+
+typedef struct
+{
+    vsi_nn_kernel_pirority_t pirority[VSI_NN_KERNEL_TYPE_NUM];
+    int32_t allow_kernel_num;
+} vsi_nn_kernel_selector_t;
+
 typedef void * vsi_nn_kernel_node_param_t;
 
 typedef void * vsi_nn_kernel_tensor_t;
 
 typedef void * vsi_nn_kernel_node_t;
+
+typedef void * vsi_nn_kernel_graph_t;
 
 typedef void * vsi_nn_kernel_scalar_t;
 
@@ -163,10 +190,22 @@ typedef vsi_nn_kernel_node_t (* vsi_nn_kernel_setup_func_t)
     vsi_nn_kernel_t *
     );
 
+typedef vsi_status (* vsi_nn_kernel_selector_func_t)
+    (
+    vsi_nn_graph_t *,
+    vsi_nn_tensor_t **,
+    size_t input_num,
+    vsi_nn_tensor_t **,
+    size_t output_num,
+    const vsi_nn_kernel_param_t *,
+    vsi_nn_kernel_selector_t *
+    );
+
 typedef struct
 {
     vsi_nn_kernel_unique_id_t  unique_id;
     vsi_nn_kernel_setup_func_t setup[VSI_NN_KERNEL_TYPE_NUM];
+    vsi_nn_kernel_selector_func_t select;
 } vsi_nn_kernel_backend_t;
 
 vsi_nn_kernel_param_t * vsi_nn_kernel_param_create();
@@ -206,33 +245,20 @@ void * vsi_nn_kernel_param_get_buffer
     ( const vsi_nn_kernel_param_t * params, const char * key, size_t * size);
 
 /** Kernel register */
-#ifdef __cplusplus
-    #define REGISTER_KERNEL_BACKEND(operation, kernel_type, func)   \
-            _INITIALIZER(_register_kernel_##operation##_##kernel_type) \
-            { \
-                vsi_nn_kernel_backend_register( \
-                        ""#operation, \
-                        VSI_NN_KERNEL_TYPE_##kernel_type, func ); \
-            }
+#define REGISTER_KERNEL_BACKEND(kernel_name, kernel_type, func)   \
+        _INITIALIZER(_register_kernel_##kernel_name##_##kernel_type) \
+        { \
+            vsi_nn_kernel_backend_register( \
+                    ""#kernel_name, \
+                    VSI_NN_KERNEL_TYPE_##kernel_type, func ); \
+        }
+#define REGISTER_KERNEL_SELECTOR(kernel_name, func) \
+        _INITIALIZER(_register_kernel_##kernel_name##_selector) \
+        { \
+            vsi_nn_kernel_selector_register( \
+                    ""#kernel_name, func ); \
+        }
 
-#elif defined(_MSC_VER)
-    #define REGISTER_KERNEL_BACKEND(operation, kernel_type, func)   \
-            _INITIALIZER(_register_kernel_##operation##_##kernel_type) \
-            { \
-                vsi_nn_kernel_backend_register( \
-                        ""#operation, \
-                        VSI_NN_KERNEL_TYPE_##kernel_type, func ); \
-            }
-#elif defined(__linux__)
-#if 1
-    #define REGISTER_KERNEL_BACKEND(operation, kernel_type, func)   \
-            _INITIALIZER(_register_kernel_##operation##_##kernel_type) \
-            { \
-                vsi_nn_kernel_backend_register( \
-                        ""#operation, \
-                        VSI_NN_KERNEL_TYPE_##kernel_type, func ); \
-            }
-#endif
 #if 0
     typedef struct
     {
@@ -261,7 +287,6 @@ void * vsi_nn_kernel_param_get_buffer
                         vsi_nn_tensor_t** outputs, size_t output_num); \
                 vsi_nn_kernel_backend_register( ""#operation, \
                         VSI_NN_KERNEL_TYPE_##kernel_type, func##_ );
-#endif
 #endif
 
 #define REGISTER_BACKEND_CL(operation, func) \
@@ -306,6 +331,19 @@ vsi_status vsi_nn_kernel_backend_init( void );
 
 void vsi_nn_kernel_backend_deinit( void );
 
+void vsi_nn_kernel_selector_register
+    (
+    const char * kernel_name,
+    vsi_nn_kernel_selector_func_t selecotr_func
+    );
+
+vsi_status vsi_nn_kernel_pirority_set
+    (
+    vsi_nn_kernel_selector_t * selector,
+    const vsi_nn_kernel_pirority_t * pirority,
+    size_t pirority_size
+    );
+
 vsi_nn_kernel_t * vsi_nn_kernel_create
     (
     vsi_nn_kernel_type_e type
@@ -328,6 +366,19 @@ void vsi_nn_kernel_add_source
     vsi_nn_gpu_source_fmt_e fmt,
     size_t source_num,
     ...
+    );
+
+void vsi_nn_kernel_add_build_option
+    (
+    vsi_nn_kernel_t * kernel,
+    const char * option
+    );
+
+vsi_nn_kernel_tensor_t vsi_nn_kernel_tensor_create
+    (
+    vsi_nn_kernel_graph_t graph,
+    const vsi_nn_kernel_tensor_attr_t* attr,
+    vsi_bool is_virtual
     );
 
 void vsi_nn_kernel_tensor_release
@@ -377,13 +428,27 @@ static inline void vsi_nn_kernel_node_pack_io
     cnt = 0;
     for( i = 0; i < input_num && cnt < param_num; i ++, cnt ++ )
     {
-        params[cnt] = (vsi_nn_kernel_node_param_t)(inputs[i]->t);
+        if( inputs[i] )
+        {
+            params[cnt] = (vsi_nn_kernel_node_param_t)(inputs[i]->t);
+        }
+        else
+        {
+            params[cnt] = NULL;
+        }
     }
 
     /* Set outputs */
     for( i = 0; i < output_num && cnt < param_num; i ++, cnt ++ )
     {
-        params[cnt] = (vsi_nn_kernel_node_param_t)(outputs[i]->t);
+        if( outputs[i] )
+        {
+            params[cnt] = (vsi_nn_kernel_node_param_t)(outputs[i]->t);
+        }
+        else
+        {
+            params[cnt] = NULL;
+        }
     }
 } /* vsi_nn_kernel_node_pack_io() */
 
@@ -408,8 +473,9 @@ static inline vsi_nn_kernel_dtype_e vsi_nn_kernel_map_dtype
     switch( dtype )
     {
     case VSI_NN_TYPE_INT8:
-    case VSI_NN_TYPE_BOOL8:
         return I8;
+    case VSI_NN_TYPE_BOOL8:
+        return BOOL8;
     case VSI_NN_TYPE_INT16:
         return I16;
     case VSI_NN_TYPE_INT32:
@@ -490,7 +556,7 @@ vsi_nn_kernel_scalar_t vsi_nn_kernel_scalar_create
     (
     vsi_nn_graph_t * graph,
     vsi_nn_kernel_dtype_e dtype,
-    void * data
+    const void * data
     );
 
 static inline void vsi_nn_kernel_scalar_release
@@ -750,6 +816,25 @@ vsi_bool vsi_nn_dtype_convert_quantize_symm_perchannel_to_float
     const int32_t * zero_point, size_t zero_point_size,
     int32_t channel_dim,
     float * out_buffer
+    );
+
+vsi_nn_tensor_t* vsi_nn_pad_tensor
+    (
+    vsi_nn_graph_t  * graph,
+    vsi_nn_tensor_t * input,
+    int32_t * pad_front,
+    int32_t * pad_end,
+    size_t pad_size,
+    vsi_nn_pad_mode_e mode,
+    float pad_value
+    );
+
+vsi_nn_tensor_t* vsi_nn_merge_input_zeropoint_to_bias
+    (
+    vsi_nn_graph_t  * graph,
+    vsi_nn_tensor_t * input,
+    vsi_nn_tensor_t * weight,
+    vsi_nn_tensor_t * bias
     );
 
 __END_DECLS

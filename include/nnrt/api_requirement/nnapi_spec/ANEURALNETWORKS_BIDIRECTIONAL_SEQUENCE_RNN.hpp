@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -181,9 +181,9 @@ MAKE_SPEC(bidirectional_sequence_rnn)
     .bw_input_weight_h_(nnrt::OperandType::TENSOR_FLOAT32)
     .bw_input_bias_(nnrt::OperandType::TENSOR_FLOAT32)
     .bw_input_h_state_(nnrt::OperandType::TENSOR_FLOAT32)
-    .aux_input_(nnrt::OperandType::TENSOR_FLOAT32)
-    .fw_aux_input_weight_(nnrt::OperandType::TENSOR_FLOAT32)
-    .bw_aux_input_weight_(nnrt::OperandType::TENSOR_FLOAT32)
+    .aux_input_(nnrt::OperandType::TENSOR_FLOAT32, OPTIONAL)
+    .fw_aux_input_weight_(nnrt::OperandType::TENSOR_FLOAT32, OPTIONAL)
+    .bw_aux_input_weight_(nnrt::OperandType::TENSOR_FLOAT32, OPTIONAL)
     .activation_(nnrt::OperandType::INT32)
     .timeMajor_(nnrt::OperandType::BOOL)
     .mergeOutputs_(nnrt::OperandType::BOOL)
@@ -199,9 +199,9 @@ MAKE_SPEC(bidirectional_sequence_rnn)
     .bw_input_weight_h_(nnrt::OperandType::TENSOR_FLOAT16)
     .bw_input_bias_(nnrt::OperandType::TENSOR_FLOAT16)
     .bw_input_h_state_(nnrt::OperandType::TENSOR_FLOAT16)
-    .aux_input_(nnrt::OperandType::TENSOR_FLOAT16)
-    .fw_aux_input_weight_(nnrt::OperandType::TENSOR_FLOAT16)
-    .bw_aux_input_weight_(nnrt::OperandType::TENSOR_FLOAT16)
+    .aux_input_(nnrt::OperandType::TENSOR_FLOAT16, OPTIONAL)
+    .fw_aux_input_weight_(nnrt::OperandType::TENSOR_FLOAT16, OPTIONAL)
+    .bw_aux_input_weight_(nnrt::OperandType::TENSOR_FLOAT16, OPTIONAL)
     );
 
 #undef ARG_NAMES

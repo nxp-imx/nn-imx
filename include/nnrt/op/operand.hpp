@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -58,6 +58,7 @@ struct BaseOperand {
         bool boolean;
         int32_t int32;
         uint32_t uint32;
+        uint16_t float16;
         float float32;
         double float64;
     } scalar;

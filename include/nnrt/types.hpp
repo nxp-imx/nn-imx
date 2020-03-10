@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -25,6 +25,14 @@
 #define __OVXLIB_TYPES_H__
 
 #include <cstdint>
+
+#if defined(HALF_ROUND_STYLE)
+#undef HALF_ROUND_STYLE
+#endif
+
+// Set nearest round policy
+#define HALF_ROUND_STYLE 1
+#include "float16.hpp"
 namespace nnrt {
 
 enum class OperationType: uint32_t {

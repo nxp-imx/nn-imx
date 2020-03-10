@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -33,7 +33,7 @@ vsi_bool vsi_nn_kernel_optimize_reduce_shape
     const int32_t* shape_x, const size_t rank_x,
     const int32_t *axis, const size_t axis_size,
     const int32_t* shape_output, const size_t rank_output,
-    int32_t* out_shape_x, int32_t* out_rank_x,
+    int32_t* out_shape_x, uint32_t* out_rank_x,
     int32_t* out_shape_output, uint32_t* out_rank_output,
     int32_t* out_axis, uint32_t* out_axis_size
     );

@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -29,10 +29,11 @@
 #include <memory>
 #include <unordered_map>
 #include <vector>
+#include "float16.hpp"
+#include "logging.hpp"
 #include "op/ILayoutInference.hpp"
 #include "op/operand.hpp"
 #include "permute_vector.hpp"
-#include "logging.hpp"
 
 namespace nnrt {
 class Model;
@@ -264,6 +265,7 @@ struct SplitOperation : Operation {
             out_permute_vectors) override;
     int32_t axis{-1};
     int32_t split_number;
+    std::vector<int32_t> slices;
 };
 
 struct SqueezeOperation : Operation {
@@ -340,39 +342,32 @@ struct LstmUnitOperation : Operation {
     static const uint8_t OUTPUT_COUNT = 4;
 };
 
-struct LstmLayerOperation : Operation {
-    LstmLayerOperation() : Operation(OperationType::LSTM_LAYER) {}
-    FusedType activation{FusedType::TANH};
-    float cellClip{0.0f};
-    float projClip{0.0f};
-    float forgetBias{0.0f};
-};
-
 struct RnnOperation : Operation {
     RnnOperation() : Operation(OperationType::RNN) {}
 
-    int32_t activation;
+    FusedType activation{FusedType::SIGMOID};
 };
 
 struct UnidirectionalSequenceRnnOperation : Operation {
     UnidirectionalSequenceRnnOperation() : Operation(OperationType::UNIDIRECTIONAL_SEQUENCE_RNN) {}
 
-    int32_t activation;
+    FusedType activation{FusedType::SIGMOID};
     bool timeMajor;
 };
 
 struct BidirectionalSequenceRnnOperation : Operation {
     BidirectionalSequenceRnnOperation() : Operation(OperationType::BIDIRECTIONAL_SEQUENCE_RNN) {}
 
-    int32_t activation;
+    FusedType activation{FusedType::SIGMOID};
     bool timeMajor;
     bool mergeOutputs;
 };
 
 struct UnidirectionalSequenceLstmOperation : Operation {
-    UnidirectionalSequenceLstmOperation() : Operation(OperationType::UNIDIRECTIONAL_SEQUENCE_LSTM) {}
+    UnidirectionalSequenceLstmOperation()
+        : Operation(OperationType::UNIDIRECTIONAL_SEQUENCE_LSTM) {}
 
-    int32_t activation;
+    FusedType activation{FusedType::TANH};
     bool timeMajor;
     float cell_clip;
     float proj_clip;
@@ -381,7 +376,7 @@ struct UnidirectionalSequenceLstmOperation : Operation {
 struct BidirectionalSequenceLstmOperation : Operation {
     BidirectionalSequenceLstmOperation() : Operation(OperationType::BIDIRECTIONAL_SEQUENCE_LSTM) {}
 
-    int32_t activation;
+    FusedType activation{FusedType::TANH};
     bool timeMajor;
     bool mergeOutputs;
     float cell_clip;
@@ -578,8 +573,9 @@ struct BoxWithNmsLimitOperation : Operation {
 
 struct LogSoftmaxOperation : Operation {
     LogSoftmaxOperation() : Operation(OperationType::LOG_SOFTMAX) {}
-    float beta{1.0};
-    int32_t axis{-1};
+
+    float beta;
+    int32_t axis;
 };
 
 #define DECLARE_OPERATION(name, type)                         \
@@ -606,6 +602,7 @@ DECLARE_OPERATION(LessEqual, LESS_EQUAL);
 DECLARE_OPERATION(Log, LOG);
 DECLARE_OPERATION(LogicalAnd, LOGICAL_AND);
 DECLARE_OPERATION(LogicalOr, LOGICAL_OR);
+DECLARE_OPERATION(LogicalNot, LOGICAL_NOT);
 DECLARE_OPERATION(Neg, NEG);
 DECLARE_OPERATION(NotEqual, NOT_EQUAL);
 DECLARE_OPERATION(Select, SELECT);

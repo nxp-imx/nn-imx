@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -34,6 +34,13 @@
 #define gpu_postshift( x )  (gpu_min( x, GPU_MAX_POST_SHIFT_BITS))
 
 // Alignment with a power of two value.
+#define gpu_align_np2(n, align) (((n) + (align) - 1) - (((n) + (align) - 1) % (align)))
+
+#define gpu_align_np2_safe(n, align)                                        \
+(                                                                          \
+    (gpu_align_np2((n) & ~0ULL, (align) & ~0ULL) ^ gpu_align_np2(n, align)) ?   \
+        (n) : gpu_align_np2(n, align)                                       \
+)
 #define gpu_align_p2(n, align) ((n) + ((align) - 1)) & ~((align) - 1)
 
 #define GPU_MAX_DIMENSION_SIZE      (3)

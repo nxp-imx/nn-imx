@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -47,7 +47,8 @@ MAKE_SPEC(log_softmax)
     .axis_(nnrt::OperandType::INT32));
 
     OVERRIDE_SPEC(log_softmax, float16)
-    .logits_(nnrt::OperandType::TENSOR_FLOAT16));
+    .logits_(nnrt::OperandType::TENSOR_FLOAT16)
+    .beta_(nnrt::OperandType::FLOAT16));
 
 #undef ARG_NAMES
 #undef ARGC

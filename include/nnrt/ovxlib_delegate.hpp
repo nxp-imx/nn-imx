@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -239,6 +239,7 @@ class OvxlibDelegate
         REGISTER_OP(LESS_EQUAL);
         REGISTER_OP(LOGICAL_AND);
         REGISTER_OP(LOGICAL_OR);
+        REGISTER_OP(LOGICAL_NOT);
         REGISTER_OP(LOG);
         REGISTER_OP(NEG);
         REGISTER_OP(NOT_EQUAL);

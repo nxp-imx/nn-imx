@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2018 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -97,6 +97,7 @@ typedef enum
 /** Type enum */
 typedef enum
 {
+    VSI_NN_TYPE_NONE = VX_TYPE_INVALID,
     VSI_NN_TYPE_INT8 = VX_TYPE_INT8,
     VSI_NN_TYPE_INT16 = VX_TYPE_INT16,
     VSI_NN_TYPE_INT32 = VX_TYPE_INT32,
@@ -108,7 +109,11 @@ typedef enum
     VSI_NN_TYPE_FLOAT16 = VX_TYPE_FLOAT16,
     VSI_NN_TYPE_FLOAT32 = VX_TYPE_FLOAT32,
     VSI_NN_TYPE_FLOAT64 = VX_TYPE_FLOAT64,
-    VSI_NN_TYPE_BOOL8 = VX_TYPE_BOOL,
+#ifdef VSI_BOOL8_SUPPORT
+    VSI_NN_TYPE_BOOL8 = VX_TYPE_BOOL8,
+#else
+    VSI_NN_TYPE_BOOL8 = 0x011,
+#endif
 #ifdef VSI_BFLOAT16_SUPPORT
     VSI_NN_TYPE_BFLOAT16 = VX_TYPE_BFLOAT16,
 #else

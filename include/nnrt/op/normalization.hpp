@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -72,10 +72,11 @@ struct BatchNormalization : TNormalization<OperationType::BATCH_NORM> {
     float eps;
 };
 
+template <typename DType>
 struct InstanceNormOperation : TNormalization<OperationType::INSTANCE_NORM> {
     InstanceNormOperation() : TNormalization() {}
-    std::vector<float> gamma;
-    std::vector<float> beta;
+    std::vector<DType> gamma;
+    std::vector<DType> beta;
     float eps;
 };
 
