@@ -24,6 +24,47 @@
 #include <fstream>
 #include "dump_json_model.hpp"
 #include "model.hpp"
+#include <sstream>
+
+#if defined(__ANDROID__)
+#include <android/log.h>
+#define TAG "NNRT_MODEL_DUMP"
+#endif
+
+namespace {
+#if defined(__ANDROID__)
+void log_in_lines(const char* tag, const char* cstring, int line_length = 80) {
+    auto line_buf = std::vector<char>(line_length + 1);
+    auto cstr_len = std::strlen(cstring);
+    size_t begin = 0;
+    size_t end = begin + line_length;
+    int line_num = 0;
+
+    const char* fmt = "#%d%s%s\n";
+    while (end < cstr_len) {
+        snprintf(line_buf.data(), line_length + 1, "%s", cstring + begin);
+
+#if defined(__ANDROID__)
+        __android_log_print(ANDROID_LOG_DEBUG, TAG, fmt, line_num, tag, line_buf.data());
+#else
+        printf(fmt, line_num, tag, line_buf.data());
+#endif
+        begin += line_length;
+        end = begin + line_length;
+
+        line_num++;
+    }
+    if (begin < cstr_len) {
+        sprintf(line_buf.data(), "%s", cstring + begin);
+#if defined(__ANDROID__)
+        __android_log_print(ANDROID_LOG_DEBUG, TAG, fmt, line_num, tag, line_buf.data());
+#else
+        printf(fmt, line_num, tag, line_buf.data());
+#endif
+    }
+};
+#endif
+}  // namespace
 
 namespace nnrt {
     static size_t operandTypeSize(OperandType type) {
@@ -54,6 +95,26 @@ namespace nnrt {
         ofs.open("model.json");
         ofs << rtModel_.toStyledString();
         ofs.close();
+
+#if defined(__ANDROID__)
+        std::string str = rtModel_.toStyledString();
+        {
+            auto find_tab = str.find('\t');
+            while (find_tab != str.npos) {
+                str.replace(find_tab, 1, std::string("#"));
+                find_tab = str.find('\t');
+            }
+        }
+
+        {
+            auto find_tab = str.find('\n');
+            while (find_tab != str.npos) {
+                str.replace(find_tab, 1, std::string("`"));
+                find_tab = str.find('\n');
+            }
+        }
+        log_in_lines("ModelJson", str.c_str());
+#endif
     }
 
     void Dump::getInputsData(const Execution *exec) {
@@ -114,6 +175,18 @@ namespace nnrt {
         }else{
             NNRT_LOGE_PRINT("Fail to create the file");
         }
+
+#if defined(__ANDROID__)
+        auto sz = 0;
+        for (size_t i(0); i < modelData_.size(); ++i) {
+            sz += snprintf(nullptr, 0, ",%d", modelData_[i]);
+        }
+        std::vector<char> buf(sz + 1);
+        for (size_t i(0), ofst = 0; i < modelData_.size(); ++i) {
+            ofst += snprintf(buf.data() + ofst, buf.size() - ofst, ",%d", modelData_[i]);
+        }
+        log_in_lines("ModelData", buf.data());
+#endif
     }
 
     int Dump::dumpOperandValue(Json::Value &jOperand,

@@ -25,11 +25,18 @@
 #define __OVXLIB_UTIL_H__
 
 #include <vector>
-#include "model.hpp"
+#include <memory>
 #include "types.hpp"
 
 namespace nnrt
 {
+namespace op {
+        class Operand;
+        using OperandPtr = std::shared_ptr<Operand>;
+}
+
+class Model;
+
 namespace operand_utils
 {
 
@@ -47,6 +54,16 @@ float Fp16toFp32(uint16_t);
 bool IsDynamicShape(nnrt::op::OperandPtr operand);
 
 }
+
+namespace OS {
+
+/*
+fetch env{@name} and put it into @result,
+return:
+0, fail to get this env.
+*/
+int getEnv(std::string name, int& result);
+}  // namespace OS
 }
 
 #endif

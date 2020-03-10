@@ -42,44 +42,17 @@
 #include <process.h>
 #endif
 
-#ifdef __ANDROID__
-#include <sys/system_properties.h>
-#endif
-
 #define FAST_MODE "VIV_FAST_MODE"
 
 namespace nnrt
 {
-/*
-    fetch env{@name} and put it into @result,
-    return:
-        -1, fail to get this env.
-*/
-
-static int getEnv(std::string name, int &result)
-{
-    int get_success = 0;
-#ifdef __ANDROID__
-    char env[10] = { 0 };
-    get_success = __system_property_get(name.c_str(), env);
-    if (get_success)
-        result = atoi(env);
-#else
-    char *env = getenv(name.c_str());
-    if (env) {
-        result = atoi(env);
-        get_success = 1;
-    }
-#endif
-    return get_success;
-}
 
 Model::Model() : memory_pool_(*this)
 {
     /*fetch env ${VIV_FAST_MODEL} to set the relaxed mode,
       run on relaxed mode by default*/
     int val = 1;
-    if (getEnv(FAST_MODE, val)) {
+    if (OS::getEnv(FAST_MODE, val)) {
         NNRT_LOGD_PRINT("%s = %d", FAST_MODE, val);
         relaxed_ = val;
     }
@@ -391,7 +364,7 @@ int Model::updateOperand(uint32_t operand_index, const op::OperandPtr operand_ty
 
 void Model::relax(bool fast_model) {
     int fastVal = -1;
-    getEnv(FAST_MODE, fastVal);
+    OS::getEnv(FAST_MODE, fastVal);
     if (1 == fastVal) {
         if (!fast_model) {
             NNRT_LOGW_PRINT("VIV_FAST_MODE has been setted, fast mode can't be setted false.");

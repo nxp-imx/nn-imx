@@ -25,13 +25,15 @@
 #include <vector>
 #include <algorithm>
 #include <string.h>
+#ifdef __ANDROID__
+#include <sys/system_properties.h>
+#endif
 
 #include "utils.hpp"
 #include "model.hpp"
 #include "types.hpp"
 #include "error.hpp"
 #include "op/public.hpp"
-
 namespace nnrt
 {
 namespace operand_utils
@@ -211,4 +213,22 @@ bool IsDynamicShape(nnrt::op::OperandPtr operand) {
     return true;
 }
 }
+
+namespace OS {
+int getEnv(std::string name, int& result) {
+    int get_success = 0;
+#ifdef __ANDROID__
+    char env[10] = {0};
+    get_success = __system_property_get(name.c_str(), env);
+    if (get_success) result = atoi(env);
+#else
+    char* env = getenv(name.c_str());
+    if (env) {
+        result = atoi(env);
+        get_success = 1;
+    }
+#endif
+    return get_success;
+}
+}  // namespace OS
 }

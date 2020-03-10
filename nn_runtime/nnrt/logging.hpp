@@ -30,6 +30,7 @@
 #include <stdio.h>
 #include <cstdlib>
 
+#include "utils.hpp"
 namespace nnrt {
 namespace logging {
 
@@ -54,8 +55,9 @@ struct Logger
         static Level slogLevel = Level::None;
 
         if (Level::None == slogLevel) {
-            if (const char* logLevel = std::getenv("NNRT_LOG_LEVEL")) {
-                slogLevel = static_cast<Level>(std::atoi(logLevel));
+            int env_lvl = -1;
+            if (::nnrt::OS::getEnv("NNRT_LOG_LEVEL", env_lvl)) {
+                slogLevel = static_cast<Level>(env_lvl);
             }
         }
 
