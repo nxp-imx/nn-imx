@@ -39,10 +39,6 @@
 
 namespace {
     static const std::string tag = "Execution";
-    /* Configure driver mem aligned size,
-    * driver requests address and tensor size are aligend to 64 bytes. */
-    const uint32_t ADDRESS_ALIGN_BYTES = 64;
-    const uint32_t MEMORY_BLOCK_ALIGN_BYTES = 64;
 }
 namespace nnrt
 {
