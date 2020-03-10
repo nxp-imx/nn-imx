@@ -124,6 +124,7 @@ Armnn_Interpreter::Armnn_Interpreter() {
     REGISTER_OP(DATA_CONVERT);
     REGISTER_OP(GREATER);
     REGISTER_OP(EQUAL);
+    REGISTER_OP(SPLIT);
 
 /*customer Op*/
 // REGISTER_OP(VSI_RESIZE_NEAREST);
@@ -948,6 +949,21 @@ OperationPtr Armnn_Interpreter::map_LEAKY_RELU(Model* model,
     truncateOperationIOs(model, operation, 1, 1);
 
     return leaky_relu;
+}
+
+OperationPtr Armnn_Interpreter::map_SPLIT(Model* model,
+                                          OperationPtr operation,
+                                          uint32_t operation_index) {
+    std::shared_ptr<SplitOperation> op = std::make_shared<SplitOperation>();
+    NNAPI_CHECK_PTR(op);
+    std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
+    op->axis = inputs[1]->scalar.int32;
+    op->split_number = inputs[2]->scalar.int32;
+    int32_t* slices = model->getBuffer<int32_t>(inputs[3]->weak_mem_ref.lock());
+    op->slices.resize(op->split_number);
+    memcpy(op->slices.data(), slices, sizeof(int32_t) * op->split_number);
+    truncateOperationIOs(model, operation, 1, operation->outputs().size());
+    return op;
 }
 
 DECLARE_SAMPLE_OP(RELU1, 1, 1, Relu1Operation)

@@ -431,13 +431,13 @@ ARMNN_AUTO_TEST_CASE(UnbiasSimpleFullyConnectedWithTranspose, FullyConnectedFloa
 // ARMNN_AUTO_TEST_CASE(FullyConnectedLarge, FullyConnectedLargeTest, false)
 // ARMNN_AUTO_TEST_CASE(FullyConnectedLargeTransposed, FullyConnectedLargeTest, true)
 
-// // Splitter
-// ARMNN_AUTO_TEST_CASE(SimpleSplitter, SplitterTest)
-// ARMNN_AUTO_TEST_CASE(SimpleSplitterUint8, SplitterUint8Test)
+// Splitter
+ARMNN_AUTO_TEST_CASE(SimpleSplitter, SplitterTest)
+ARMNN_AUTO_TEST_CASE(SimpleSplitterUint8, SplitterUint8Test)
 // ARMNN_AUTO_TEST_CASE(SimpleSplitterInt16, SplitterInt16Test)
 
-// ARMNN_AUTO_TEST_CASE(CopyViaSplitter, CopyViaSplitterTest)
-// ARMNN_AUTO_TEST_CASE(CopyViaSplitterUint8, CopyViaSplitterUint8Test)
+ARMNN_AUTO_TEST_CASE(CopyViaSplitter, CopyViaSplitterTest)
+ARMNN_AUTO_TEST_CASE(CopyViaSplitterUint8, CopyViaSplitterUint8Test)
 // ARMNN_AUTO_TEST_CASE(CopyViaSplitterInt16, CopyViaSplitterInt16Test)
 
 // // Concat

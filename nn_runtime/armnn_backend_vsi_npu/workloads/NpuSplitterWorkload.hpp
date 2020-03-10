@@ -35,18 +35,53 @@ template <typename armnn::DataType... DataTypes>
 class NpuSplitterWorkload : public TNpuWorkload<SplitterQueueDescriptor, DataTypes...> {
    public:
     explicit NpuSplitterWorkload(const SplitterQueueDescriptor& descriptor,
-                                  const WorkloadInfo& info)
+                                 const WorkloadInfo& info)
         : TNpuWorkload<SplitterQueueDescriptor, DataTypes...>(descriptor, info) {
-        std::vector<uint32_t> inputIds = this->AddOperandWithTensorHandle(
-                descriptor.m_Inputs);
-        //inputIds.push_back(this->AddOperandAndSetValue(descriptor.m_Parameters.GetConcatAxis()));
-        std::vector<uint32_t> outputIds = this->AddOperandWithTensorHandle(
-                descriptor.m_Outputs);
+        std::vector<uint32_t> inputIds = this->AddOperandWithTensorHandle(descriptor.m_Inputs);
 
+        // Compute split axis according to input shape and output shap
+        auto inputShape = dynamic_cast<const NpuTensorHandler*>(descriptor.m_Inputs[0])->GetShape();
+        auto output0Shape =
+            dynamic_cast<const NpuTensorHandler*>(descriptor.m_Outputs[0])->GetShape();
+        if (inputShape.GetNumDimensions() != output0Shape.GetNumDimensions()) {
+            BOOST_LOG_TRIVIAL(error) << "Input and output dimension are mismatched.";
+            assert(false);
+        }
+        if (descriptor.m_Outputs.size() > 1) {
+            for (size_t i = 0; i < inputShape.GetNumDimensions(); ++i) {
+                if (inputShape[i] != output0Shape[i]) {
+                    m_Axis = i;
+                    break;
+                }
+            }
+        } else {
+            m_Axis = 0;
+        }
+        // Compute the slices according to outputs shape
+        m_SliceNum = descriptor.m_Outputs.size();
+        for (auto& output : descriptor.m_Outputs) {
+            auto outputShape = dynamic_cast<const NpuTensorHandler*>(output)->GetShape();
+            m_Slices.push_back(outputShape[m_Axis]);
+        }
+
+        inputIds.push_back(this->AddOperandAndSetValue(m_Axis));
+        inputIds.push_back(this->AddOperandAndSetValue(m_SliceNum));
+        std::vector<uint32_t> sliceShape = {static_cast<uint32_t>(m_Slices.size())};
+        inputIds.push_back(
+            this->AddOperandAndSetValue(sliceShape, DataType::Signed32, m_Slices.data()));
+
+        std::vector<uint32_t> outputIds = this->AddOperandWithTensorHandle(descriptor.m_Outputs);
         this->AddOperation(nnrt::OperationType::SPLIT,
-                inputIds.size(), inputIds.data(), outputIds.size(), outputIds.data());
+                           inputIds.size(),
+                           inputIds.data(),
+                           outputIds.size(),
+                           outputIds.data());
     }
 
+   private:
+    int32_t m_Axis;
+    int32_t m_SliceNum;
+    std::vector<int32_t> m_Slices;
 };
 using NpuSplitterFloat32Workload = NpuSplitterWorkload<armnn::DataType::Float32>;
 using NpuSplitterFloat16Workload = NpuSplitterWorkload<armnn::DataType::Float16>;

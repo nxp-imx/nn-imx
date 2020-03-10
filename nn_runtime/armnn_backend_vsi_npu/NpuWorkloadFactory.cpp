@@ -46,7 +46,7 @@
 #include "workloads/NpuReshapeWorkload.hpp"
 #include "workloads/NpuLstmWorkload.hpp"
 #include "workloads/NpuStridedSliceWorkload.hpp"
-//#include "workloads/NpuSplitterWorkload.hpp"
+#include "workloads/NpuSplitterWorkload.hpp"
 //#include "workloads/NpuStackWorkload.hpp"
 #include "workloads/NpuConcatWorkload.hpp"
 #include "workloads/NpuSpaceToDepthWorkload.hpp"
@@ -161,9 +161,11 @@ std::unique_ptr<IWorkload> NpuWorkloadFactory::CreateSoftmax(const SoftmaxQueueD
     return MakeWorkload<NpuSoftmaxFloat16Workload, NpuSoftmaxFloat32Workload, NpuSoftmaxUint8Workload>(descriptor, info);
 }
 
-std::unique_ptr<IWorkload> NpuWorkloadFactory::CreateSplitter(const SplitterQueueDescriptor& descriptor,
-                                                              const WorkloadInfo& info) const {
-    return MakeWorkload<NullWorkload, NullWorkload, NullWorkload>(descriptor, info);
+std::unique_ptr<IWorkload> NpuWorkloadFactory::CreateSplitter(
+    const SplitterQueueDescriptor& descriptor, const WorkloadInfo& info) const {
+    return MakeWorkload<NpuSplitterFloat16Workload,
+                        NpuSplitterFloat32Workload,
+                        NpuSplitterUint8Workload>(descriptor, info);
 }
 
 std::unique_ptr<armnn::IWorkload> NpuWorkloadFactory::CreateMerger(const MergerQueueDescriptor& descriptor,

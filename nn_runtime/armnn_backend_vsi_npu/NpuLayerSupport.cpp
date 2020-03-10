@@ -1494,8 +1494,15 @@ bool NpuLayerSupport::IsSplitterSupported(const TensorInfo& input,
                                           const ViewsDescriptor& descriptor,
                                           Optional<std::string&> reasonIfUnsupported) const {
     ignore_unused(descriptor);
-    return false && IsSupportedForDataTypeRef(
-                        reasonIfUnsupported, input.GetDataType(), &TrueFunc<>, &TrueFunc<>);
+    bool supported = true;
+    std::array<DataType, 3> supportedTypes = {
+        DataType::Float32, DataType::QuantisedAsymm8, DataType::Float16};
+
+    supported &= CheckSupportRule(TypeAnyOf(input, supportedTypes),
+                                  reasonIfUnsupported,
+                                  "Npu splitter: input type not supported");
+
+    return supported;
 }
 
 bool NpuLayerSupport::IsSplitterSupported(
