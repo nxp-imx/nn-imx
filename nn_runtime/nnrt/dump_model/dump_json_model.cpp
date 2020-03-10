@@ -80,13 +80,14 @@ namespace nnrt {
         auto rtOutputIndexes = model_->outputIndexes();;
 
         Json::Value jOperands, jOperations;
-        for (size_t i = 0; i < rtOperands.size(); i++) {
-            dumpOperand(jOperands, rtOperands[i]);
-            dumpOperandValue(i, jOperands, rtOperands[i]);
+
+        for (const auto& operand : rtOperands) {
+            dumpOperand(jOperands, operand.second);
+            dumpOperandValue(operand.first, jOperands, operand.second);
         }
 
-        for (size_t i = 0; i < rtOperations.size(); i++) {
-            dumpOpration(jOperations, rtOperations[i]);
+        for (const auto& operation : rtOperations) {
+            dumpOpration(jOperations, operation.second);
         }
 
         /*dump the input and output of model*/
@@ -129,21 +130,28 @@ namespace nnrt {
     }
 
     int Dump::dumpOperandValue(uint32_t index,
-        Json::Value &jOperands,
-        const op::OperandPtr& operand){
-        auto & jOperand = jOperands["container"][index];
+                               Json::Value& jOperands,
+                               const op::OperandPtr& operand) {
+        auto& jOperand = jOperands["container"][index];
 
         size_t length = 0;
-        int8_t *buffer = nullptr;
+        int8_t* buffer = nullptr;
         if (!operand->isNull()) {
             if (!operand->isTensor()) {
-                buffer = (int8_t *)&operand->scalar;
+                buffer = (int8_t*)&operand->scalar;
                 length = operandTypeSize(operand->type);
-            }
-            else {
-                buffer = model_->getBuffer<int8_t>(operand->weak_mem_ref.lock());
-                if (buffer)
-                    length = operand->weak_mem_ref.lock()->len_;
+            } else {
+                // Not need to dump value for model input and output operands.
+                // Model input value is dumped in getInputsData.
+                const auto modelInputIds = model_->inputIndexes();
+                const auto modelOutputIds = model_->outputIndexes();
+                if (modelInputIds.end() ==
+                        std::find(modelInputIds.begin(), modelInputIds.end(), index) &&
+                    modelOutputIds.end() ==
+                        std::find(modelInputIds.begin(), modelInputIds.end(), index)) {
+                    buffer = model_->getBuffer<int8_t>(operand->weak_mem_ref.lock());
+                    if (buffer) length = operand->weak_mem_ref.lock()->len_;
+                }
             }
         }
         dumpOperandValue(jOperand, buffer, length);
