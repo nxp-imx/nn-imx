@@ -364,6 +364,18 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
                 model, operation);
             return logicalOr->Validate();
         }
+        case OperationType::EXPAND_DIMS: {
+            OperationValidatePtr expandDims = std::make_unique<
+                op_validate::ExpandDimsValidate<HalPlatform::Model, HalPlatform::Operation>>(
+                model, operation);
+            return expandDims->Validate();
+        }
+        case OperationType::POW: {
+            OperationValidatePtr pow = std::make_unique<
+                op_validate::PowValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
+                                                                                      operation);
+            return pow->Validate();
+        }
 
         case OperationType::AXIS_ALIGNED_BBOX_TRANSFORM:
         case OperationType::BIDIRECTIONAL_SEQUENCE_LSTM:
@@ -372,7 +384,6 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
         case OperationType::CAST:
         case OperationType::CHANNEL_SHUFFLE:
         case OperationType::DETECTION_POSTPROCESSING:
-        case OperationType::EXPAND_DIMS:
         case OperationType::GATHER:
         case OperationType::GENERATE_PROPOSALS:
         case OperationType::GROUPED_CONV_2D:
@@ -380,7 +391,6 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
         case OperationType::INSTANCE_NORMALIZATION:
         case OperationType::LOG_SOFTMAX:
         case OperationType::PAD_V2:
-        case OperationType::POW:
         case OperationType::QUANTIZE:
         case OperationType::QUANTIZED_16BIT_LSTM:
         case OperationType::RANDOM_MULTINOMIAL:

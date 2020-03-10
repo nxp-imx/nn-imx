@@ -144,6 +144,8 @@ static Return<ErrorStatus> convertResultCodeToErrorStatus(int resultCode) {
             MAP_OP(LOGICAL_AND);
             MAP_OP(LOGICAL_OR);
             MAP_OP(LOGICAL_NOT);
+            MAP_OP(EXPAND_DIMS);
+            MAP_OP(POW);
 #endif
 #undef MAP_OP
 
