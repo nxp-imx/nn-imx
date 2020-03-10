@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2018 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -35,37 +35,7 @@
 #include "vsi_nn_tensor_util.h"
 #include "utils/vsi_nn_util.h"
 #include "utils/vsi_nn_link_list.h"
-
-static vsi_status copy_view_to_tensor
-    (
-    vsi_nn_node_t   * self,
-    vx_tensor         src_tensor,
-    uint32_t         axis,
-    vsi_nn_tensor_t * dst_out
-    )
-{
-    vsi_status ret;
-    vsi_nn_split_lcl_data * data;
-
-    ret = VSI_SUCCESS;
-    /* Malloc ptr */
-    data = (vsi_nn_split_lcl_data *)malloc( sizeof(vsi_nn_split_lcl_data) );
-    if( NULL == data )
-    {
-        VSILOGE( "Create split local data fail." );
-        return VSI_FAILURE;
-    }
-    memset( data, 0, sizeof(vsi_nn_split_lcl_data) );
-    data->src_tensor = src_tensor;
-    data->dst_tensor = dst_out->t;
-
-    /* Store node, ptr */
-    vsi_nn_LinkListPushStart(
-        (vsi_nn_link_list_t **)&self->nn_param.split.lcl_data,
-        (vsi_nn_link_list_t *)data );
-
-    return ret;
-} /* copy_view_to_tensor() */
+#include "vsi_nn_internal_node.h"
 
 static vsi_status op_compute
     (
@@ -74,24 +44,7 @@ static vsi_status op_compute
     vsi_nn_tensor_t ** outputs
     )
 {
-    vsi_status status;
-    vsi_nn_split_lcl_data * iter;
-
-    status = VSI_SUCCESS;
-    iter = self->nn_param.split.lcl_data;
-    while( NULL != iter )
-    {
-        iter->cp_node = vxTensorCopyNode(self->graph->g,
-            iter->src_tensor, iter->dst_tensor );
-        if( NULL == iter->cp_node )
-        {
-            VSILOGE( "Create TensorCopy fail." );
-            status = VSI_FAILURE;
-            break;
-        }
-        iter = (vsi_nn_split_lcl_data *)vsi_nn_LinkListNext( (vsi_nn_link_list_t *)iter );
-    }
-    return status;
+    return vsi_nn_compute_internal_node( self );
 } /* op_compute() */
 
 static vsi_bool op_check
@@ -199,6 +152,8 @@ static vsi_bool op_setup
     uint32_t axis = self->nn_param.split.axis;
     uint32_t *slices = self->nn_param.split.slices;
     uint32_t slices_num = self->nn_param.split.slices_num;
+    vsi_nn_split_param * p = NULL;
+    vsi_nn_internal_node_t* curr = NULL;
 
     ret = TRUE;
     average = 1;
@@ -214,9 +169,17 @@ static vsi_bool op_setup
     }
     num++;
 
+    p = &(self->nn_param.split);
+    vsi_nn_init_internal_node_wksp( self );
+
     if(slices_num == 0)
     {
         average = inputs[0]->attr.size[axis] / num;
+    }
+
+    for (i = 0; i < inputs[0]->attr.dim_num; i++)
+    {
+        p->lcl_data->stride_dims[i] = 1;
     }
 
     end[0] = inputs[0]->attr.size[0];
@@ -239,27 +202,107 @@ static vsi_bool op_setup
         outputs[i]->attr.size[2] = inputs[0]->attr.size[2];
         outputs[i]->attr.size[3] = inputs[0]->attr.size[3];
         outputs[i]->attr.size[axis] = end[axis] - start[axis];
+
+        memcpy(p->lcl_data->begin_dims, start, VSI_NN_MAX_DIM_NUM * sizeof(uint32_t));
+        memcpy(p->lcl_data->end_dims, end, VSI_NN_MAX_DIM_NUM * sizeof(uint32_t));
+        curr = vsi_nn_new_internal_node( self, VSI_NN_OP_STRIDED_SLICE, 0, 0 );
+        curr->node->nn_param.strided_slice.begin_dims = p->lcl_data->begin_dims;
+        curr->node->nn_param.strided_slice.begin_dims_num = inputs[0]->attr.dim_num;
+        curr->node->nn_param.strided_slice.end_dims = p->lcl_data->end_dims;
+        curr->node->nn_param.strided_slice.end_dims_num = inputs[0]->attr.dim_num;
+        curr->node->nn_param.strided_slice.stride_dims = p->lcl_data->stride_dims;
+        curr->node->nn_param.strided_slice.stride_dims_num = inputs[0]->attr.dim_num;
+        curr->node->nn_param.strided_slice.begin_mask = 0;
+        curr->node->nn_param.strided_slice.end_mask = 0;
+        curr->node->nn_param.strided_slice.shrink_axis_mask = 0;
+        curr->inputs[0] = inputs[0];
+        curr->outputs[0] = outputs[i];
+        vsi_nn_setup_internal_node_op( self, curr );
     }
 
     return ret;
 } /* op_setup() */
+
+static vsi_status op_init
+    (
+    vsi_nn_node_t * self
+    )
+{
+    vsi_status status = VSI_SUCCESS;
+    vsi_nn_split_param * p = NULL;
+
+    p = &(self->nn_param.split);
+
+    p->lcl_data   =
+    (vsi_nn_split_lcl_data *)malloc(sizeof(vsi_nn_split_lcl_data));
+    if (NULL == p->lcl_data)
+    {
+        return  VX_ERROR_NO_MEMORY;
+    }
+    memset(p->lcl_data, 0, sizeof(vsi_nn_split_lcl_data));
+
+    p->lcl_data->begin_dims =
+        (int32_t *)malloc(sizeof(int32_t) * VSI_NN_MAX_DIM_NUM);
+    if (NULL == p->lcl_data->begin_dims)
+    {
+        return  VX_ERROR_NO_MEMORY;
+    }
+    memset(p->lcl_data->begin_dims, 0, sizeof(int32_t) * VSI_NN_MAX_DIM_NUM);
+
+    p->lcl_data->end_dims =
+        (int32_t *)malloc(sizeof(int32_t) * VSI_NN_MAX_DIM_NUM);
+    if (NULL == p->lcl_data->end_dims)
+    {
+        return  VX_ERROR_NO_MEMORY;
+    }
+    memset(p->lcl_data->end_dims, 0, sizeof(int32_t) * VSI_NN_MAX_DIM_NUM);
+
+    p->lcl_data->stride_dims =
+        (int32_t *)malloc(sizeof(int32_t) * VSI_NN_MAX_DIM_NUM);
+    if (NULL == p->lcl_data->stride_dims)
+    {
+        return  VX_ERROR_NO_MEMORY;
+    }
+    memset(p->lcl_data->stride_dims, 0, sizeof(int32_t) * VSI_NN_MAX_DIM_NUM);
+
+    return status;
+}
 
 static vsi_status op_deinit
     (
     vsi_nn_node_t * self
     )
 {
-    vsi_nn_split_lcl_data * data;
-    vsi_nn_split_lcl_data * tmp;
-    data = self->nn_param.split.lcl_data;
-    while( NULL != data )
+    vsi_nn_split_param * p = NULL;
+
+    p = &(self->nn_param.split);
+
+    if (p->lcl_data->begin_dims)
     {
-        tmp = (vsi_nn_split_lcl_data *)vsi_nn_LinkListPopStart(
-            (vsi_nn_link_list_t **)&data );
-        vxReleaseNode( &tmp->cp_node );
-        vxReleaseTensor( &tmp->src_tensor );
-        free( tmp );
+        free(p->lcl_data->begin_dims);
+        p->lcl_data->begin_dims = NULL;
     }
+
+    if (p->lcl_data->end_dims)
+    {
+        free(p->lcl_data->end_dims);
+        p->lcl_data->end_dims = NULL;
+    }
+
+    if (p->lcl_data->stride_dims)
+    {
+        free(p->lcl_data->stride_dims);
+        p->lcl_data->stride_dims = NULL;
+    }
+
+    if (p->lcl_data)
+    {
+        free(p->lcl_data);
+        p->lcl_data = NULL;
+    }
+
+    vsi_nn_deinit_internal_node_wksp( self );
+
     return VSI_SUCCESS;
 } /* op_deinit() */
 
@@ -271,72 +314,7 @@ static vsi_status op_optimize
     vsi_nn_opt_direction_e direction
     )
 {
-    vsi_status status;
-    uint32_t i,num;
-    vx_tensor in_view_tensor;
-    uint32_t start[VSI_NN_MAX_DIM_NUM] = { 0 };
-    uint32_t end[VSI_NN_MAX_DIM_NUM] = { 0 };
-    uint32_t axis = self->nn_param.split.axis;
-
-    status = VSI_SUCCESS;
-    /* Only forward run split's optimize */
-    if( direction == VSI_NN_OPTIMIZE_BACKWARD )
-    {
-        return VSI_SUCCESS;
-    }
-
-    VSILOGD("Optimize %s, uid %u", vsi_nn_OpGetName(self->op), self->uid);
-    num = (uint32_t)(self->output.num - 1);
-    while( num >= 0 && NULL == outputs[num] )
-    {
-        num --;
-    }
-    if( 0 > num )
-    {
-        return VSI_FAILURE;
-    }
-    num++;
-
-    if( NULL == inputs[0]->t )
-    {
-        vsi_nn_TensorReinit( self->graph, inputs[0] );
-    }
-
-    end[0] = inputs[0]->attr.size[0];
-    end[1] = inputs[0]->attr.size[1];
-    end[2] = inputs[0]->attr.size[2];
-    end[3] = inputs[0]->attr.size[3];
-    end[axis] = 0;
-    for(i = 0; i < num; i++)
-    {
-        start[axis] = end[axis];
-        end[axis] += outputs[i]->attr.size[axis];
-
-        in_view_tensor = vsi_nn_CreateViewTensor(self->graph, start, end, inputs[0] );
-        if( NULL == in_view_tensor )
-        {
-            VSILOGE( "Create tensor %d from view fail.", i );
-            status = VSI_FAILURE;
-            break;
-        }
-
-        if( NULL != outputs[i]->t )
-        {
-            VSILOGW( "Split copy %d tensor.", i );
-            // Copy old tensor values to the new address.
-            status = copy_view_to_tensor( self, in_view_tensor, axis, outputs[i] );
-            if( VSI_FAILURE == status )
-            {
-                break;
-            }
-        }
-        else
-        {
-            outputs[i]->t = in_view_tensor;
-        }
-    }
-
-    return status;
+    return vsi_nn_optimize_internal_node( self, direction );
 }
 
 #ifdef __cplusplus
@@ -346,7 +324,7 @@ extern "C" {
 DEF_OP_REG
     (
     /* op_name    */ SPLIT,
-    /* init       */ NULL,
+    /* init       */ op_init,
     /* compute    */ op_compute,
     /* deinit     */ op_deinit,
     /* check      */ op_check,

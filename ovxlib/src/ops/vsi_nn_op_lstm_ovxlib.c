@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -51,6 +51,7 @@ static vsi_bool setup_op_shapes
     uint32_t num_units =  0;
     uint32_t output_size = 0;
     uint32_t batch_size = 0;
+    vsi_bool use_virtual_tensor = FALSE;
 
     memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
     if( curr_param->time_major )
@@ -102,7 +103,7 @@ static vsi_bool setup_op_shapes
         memset( attr.size, 0, VSI_NN_MAX_DIM_NUM * sizeof(uint32_t));
         attr.dim_num = VSI_NN_DIM_AUTO;
         memcpy( &attr.dtype, &outputs[LSTM_OUTPUT_OUTPUT]->attr.dtype, sizeof( attr.dtype ) );
-        attr.vtl = TRUE;
+        attr.vtl = use_virtual_tensor;
         output_tensor = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
         outputs[LSTM_OUTPUT_H_STATE] = output_tensor->t;
     }
@@ -112,7 +113,7 @@ static vsi_bool setup_op_shapes
         memset( attr.size, 0, VSI_NN_MAX_DIM_NUM * sizeof(uint32_t));
         attr.dim_num = VSI_NN_DIM_AUTO;
         memcpy( &attr.dtype, &inputs[LSTM_INPUT_C_STATE]->attr.dtype, sizeof( attr.dtype ) );
-        attr.vtl = TRUE;
+        attr.vtl = use_virtual_tensor;
         output_tensor = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
         outputs[LSTM_OUTPUT_C_STATE] = output_tensor->t;
     }

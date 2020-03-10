@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -207,19 +207,19 @@ static vsi_bool op_setup
     {
         /* tp */
         input_gate_fc_outputs = vsi_nn_rnn_create_tp_fc(self,
-            inputs[RNNCELL_INPUT_INPUT],
-            inputs[RNNCELL_INPUT_WEIGHT_I],
-            inputs[RNNCELL_INPUT_BIAS],
-            &p->internal_dtype[RNNCELL_QUANTIZE_PARAM_I],
-            use_virtual_tensor);
+                                    inputs[RNNCELL_INPUT_INPUT],
+                                    inputs[RNNCELL_INPUT_WEIGHT_I],
+                                    inputs[RNNCELL_INPUT_BIAS],
+                                    &p->internal_dtype[RNNCELL_QUANTIZE_PARAM_I],
+                                    use_virtual_tensor);
         if (inputs[RNNCELL_INPUT_AUX_INPUT] != NULL)
         {
             aux_input_gate_fc_outputs = vsi_nn_rnn_create_tp_fc(self,
-                inputs[RNNCELL_INPUT_AUX_INPUT],
-                inputs[RNNCELL_INPUT_AUX_WEIGHT],
-                NULL,
-                &p->internal_dtype[RNNCELL_QUANTIZE_PARAM_AUX],
-                use_virtual_tensor);
+                                            inputs[RNNCELL_INPUT_AUX_INPUT],
+                                            inputs[RNNCELL_INPUT_AUX_WEIGHT],
+                                            NULL,
+                                            &p->internal_dtype[RNNCELL_QUANTIZE_PARAM_AUX],
+                                            use_virtual_tensor);
         }
     }
     else
@@ -232,12 +232,12 @@ static vsi_bool op_setup
             kernel_h, kernel_w, use_virtual_tensor);
 
         tmp = vsi_nn_rnn_create_nn_fc(self,
-            input_tensor->t,
-            inputs[RNNCELL_INPUT_WEIGHT_I],
-            inputs[RNNCELL_INPUT_BIAS],
-            kernel_h, kernel_w,
-            &p->internal_dtype[RNNCELL_QUANTIZE_PARAM_I],
-            use_virtual_tensor);
+                input_tensor->t,
+                inputs[RNNCELL_INPUT_WEIGHT_I],
+                inputs[RNNCELL_INPUT_BIAS],
+                kernel_h, kernel_w,
+                &p->internal_dtype[RNNCELL_QUANTIZE_PARAM_I],
+                use_virtual_tensor);
         /* transpose and reshape output */
         input_gate_fc_outputs = vsi_nn_rnn_process_output_for_nn_fc(self, tmp->t, kernel_h,
             kernel_w, use_virtual_tensor);
@@ -248,19 +248,19 @@ static vsi_bool op_setup
                 inputs[RNNCELL_INPUT_AUX_INPUT]->attr.size[0],
                 &kernel_h, &kernel_w);
             input_tensor = vsi_nn_rnn_process_input_for_nn_fc(self,
-                inputs[RNNCELL_INPUT_AUX_INPUT],
-                kernel_h, kernel_w, use_virtual_tensor);
+                            inputs[RNNCELL_INPUT_AUX_INPUT],
+                            kernel_h, kernel_w, use_virtual_tensor);
             tmp = vsi_nn_rnn_create_nn_fc(self,
-                input_tensor->t,
-                inputs[RNNCELL_INPUT_AUX_INPUT],
-                NULL,
-                kernel_h, kernel_w,
-                &p->internal_dtype[RNNCELL_QUANTIZE_PARAM_AUX],
-                use_virtual_tensor);
+                    input_tensor->t,
+                    inputs[RNNCELL_INPUT_AUX_INPUT],
+                    NULL,
+                    kernel_h, kernel_w,
+                    &p->internal_dtype[RNNCELL_QUANTIZE_PARAM_AUX],
+                    use_virtual_tensor);
             /* transpose and reshape output */
             aux_input_gate_fc_outputs = vsi_nn_rnn_process_output_for_nn_fc(self,
-                tmp->t, kernel_h,
-                kernel_w, use_virtual_tensor);
+                                            tmp->t, kernel_h,
+                                            kernel_w, use_virtual_tensor);
         }
     }
 
@@ -268,11 +268,11 @@ static vsi_bool op_setup
     if( is_hstate_fc_on_tp )
     {
         hstate_gate_fc_outputs = vsi_nn_rnn_create_tp_fc(self,
-            inputs[RNNCELL_INPUT_H_STATE],
-            inputs[RNNCELL_INPUT_WEIGHT_H],
-            NULL,
-            &p->internal_dtype[RNNCELL_QUANTIZE_PARAM_H],
-            use_virtual_tensor);
+                                    inputs[RNNCELL_INPUT_H_STATE],
+                                    inputs[RNNCELL_INPUT_WEIGHT_H],
+                                    NULL,
+                                    &p->internal_dtype[RNNCELL_QUANTIZE_PARAM_H],
+                                    use_virtual_tensor);
     }
     else
     {
@@ -280,34 +280,34 @@ static vsi_bool op_setup
         vsi_nn_rnn_find_best_kernel_size(p->local->multi_batch,
             inputs[RNNCELL_INPUT_H_STATE]->attr.size[0], &kernel_h, &kernel_w);
         hstate_input_tensor = vsi_nn_rnn_process_input_for_nn_fc(self,
-            inputs[RNNCELL_INPUT_H_STATE],
-            kernel_h, kernel_w, use_virtual_tensor);
+                                inputs[RNNCELL_INPUT_H_STATE],
+                                kernel_h, kernel_w, use_virtual_tensor);
 
         tmp = vsi_nn_rnn_create_nn_fc(self,
-            hstate_input_tensor->t,
-            inputs[RNNCELL_INPUT_WEIGHT_H],
-            NULL,
-            kernel_h, kernel_w,
-            &p->internal_dtype[RNNCELL_QUANTIZE_PARAM_H],
-            use_virtual_tensor);
+                hstate_input_tensor->t,
+                inputs[RNNCELL_INPUT_WEIGHT_H],
+                NULL,
+                kernel_h, kernel_w,
+                &p->internal_dtype[RNNCELL_QUANTIZE_PARAM_H],
+                use_virtual_tensor);
         /* transpose and reshape output */
         hstate_gate_fc_outputs = vsi_nn_rnn_process_output_for_nn_fc(self,
             tmp->t, kernel_h, kernel_w, use_virtual_tensor);
     }
 
     input_add_hstate_outputs = vsi_nn_rnn_create_tensor_add(self,
-        input_gate_fc_outputs->t,
-        hstate_gate_fc_outputs->t,
-        &p->internal_dtype[RNNCELL_QUANTIZE_PARAM_I],
-        use_virtual_tensor);
+                                    input_gate_fc_outputs->t,
+                                    hstate_gate_fc_outputs->t,
+                                    &p->internal_dtype[RNNCELL_QUANTIZE_PARAM_I],
+                                    use_virtual_tensor);
 
     if (inputs[RNNCELL_INPUT_AUX_INPUT] != NULL)
     {
         gate_fc_outputs = vsi_nn_rnn_create_tensor_add(self,
-        input_add_hstate_outputs->t,
-        aux_input_gate_fc_outputs->t,
-        &p->internal_dtype[RNNCELL_QUANTIZE_PARAM_I],
-        use_virtual_tensor);
+                            input_add_hstate_outputs->t,
+                            aux_input_gate_fc_outputs->t,
+                            &p->internal_dtype[RNNCELL_QUANTIZE_PARAM_I],
+                            use_virtual_tensor);
     }
     else
     {
@@ -338,10 +338,28 @@ static vsi_status op_deinit
 {
     vsi_nn_rnncell_ovxlib_param* p = &self->nn_param.rnncell_ovxlib;
     vsi_nn_safe_free(p->local);
+    vsi_nn_safe_free(p->internal_dtype);
     vsi_nn_deinit_internal_node_wksp( self );
 
     return VSI_SUCCESS;
 } /* op_deinit() */
+
+static vsi_status op_init
+    (
+    vsi_nn_node_t * self
+    )
+{
+    self->nn_param.rnncell_ovxlib.local = (vsi_nn_rnncell_ovxlib_lcl_data_t *)
+        malloc(sizeof(vsi_nn_rnncell_ovxlib_lcl_data_t));
+    memset(self->nn_param.rnncell_ovxlib.local, 0,
+        sizeof(vsi_nn_rnncell_ovxlib_lcl_data_t));
+    self->nn_param.rnncell_ovxlib.internal_dtype = (vsi_nn_dtype_t *)
+        malloc(sizeof(vsi_nn_dtype_t) * RNNCELL_QUANTIZE_PARAM_COUNT);
+    memset(self->nn_param.rnncell_ovxlib.internal_dtype, 0,
+        sizeof(vsi_nn_dtype_t) * RNNCELL_QUANTIZE_PARAM_COUNT);
+
+    return VSI_SUCCESS;
+} /* op_init() */
 
 #ifdef __cplusplus
 extern "C" {
@@ -350,7 +368,7 @@ extern "C" {
 DEF_OP_REG
     (
     /* op_name    */ RNNCELL_OVXLIB,
-    /* init       */ NULL,
+    /* init       */ op_init,
     /* compute    */ op_compute,
     /* deinit     */ op_deinit,
     /* check      */ op_check,

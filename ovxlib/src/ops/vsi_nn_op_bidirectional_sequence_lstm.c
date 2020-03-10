@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -45,8 +45,8 @@ static vsi_bool setup_op_shapes
     vsi_nn_tensor_t ** outputs
     )
 {
-    vsi_nn_bidirectional_sequence_rnn_param* curr_param =
-        &self->nn_param.bidirectional_sequence_rnn;
+    vsi_nn_bidirectional_sequence_lstm_param* curr_param =
+        &self->nn_param.bidirectional_sequence_lstm;
     vsi_nn_tensor_attr_t attr;
     vsi_nn_internal_tensor_t* output_tensor = NULL;
     uint32_t num_units =  0;
@@ -159,16 +159,18 @@ static vsi_bool op_setup
     vsi_nn_tensor_t ** outputs
     )
 {
-    vsi_nn_bidirectional_sequence_rnn_param* curr_param =
-        &self->nn_param.bidirectional_sequence_rnn;
+    vsi_nn_bidirectional_sequence_lstm_param* curr_param =
+        &self->nn_param.bidirectional_sequence_lstm;
     vsi_nn_internal_node_t* curr = NULL;
     vsi_nn_tensor_attr_t attr;
     vsi_nn_internal_tensor_t* output_tensor = NULL;
     vsi_nn_tensor_t** split_output_tensors = NULL;
-    vsi_nn_tensor_t** rnncell_reshape_output_tensors_fw =NULL;
-    vsi_nn_tensor_t** rnncell_reshape_output_tensors_bw =NULL;
+    vsi_nn_tensor_t** lstmcell_reshape_output_tensors_fw =NULL;
+    vsi_nn_tensor_t** lstmcell_reshape_output_tensors_bw =NULL;
     vsi_nn_tensor_t* last_step_h_state_fw = NULL;
     vsi_nn_tensor_t* last_step_h_state_bw = NULL;
+    vsi_nn_tensor_t* last_step_c_state_fw = NULL;
+    vsi_nn_tensor_t* last_step_c_state_bw = NULL;
     vsi_nn_tensor_t* tensor = NULL;
     vsi_nn_tensor_t* input_tensor = NULL;
     vsi_nn_tensor_t* aux_input_tensor = NULL;
@@ -246,12 +248,12 @@ static vsi_bool op_setup
     }
 
     /* prepare output tensor */
-    rnncell_reshape_output_tensors_fw = (vsi_nn_tensor_t **)malloc(time_step *
+    lstmcell_reshape_output_tensors_fw = (vsi_nn_tensor_t **)malloc(time_step *
         sizeof(vsi_nn_tensor_t **));
-    memset( rnncell_reshape_output_tensors_fw, 0x00, time_step * sizeof(vsi_nn_tensor_t **));
-    rnncell_reshape_output_tensors_bw = (vsi_nn_tensor_t **)malloc(time_step *
+    memset( lstmcell_reshape_output_tensors_fw, 0x00, time_step * sizeof(vsi_nn_tensor_t **));
+    lstmcell_reshape_output_tensors_bw = (vsi_nn_tensor_t **)malloc(time_step *
         sizeof(vsi_nn_tensor_t **));
-    memset( rnncell_reshape_output_tensors_bw, 0x00, time_step * sizeof(vsi_nn_tensor_t **));
+    memset( lstmcell_reshape_output_tensors_bw, 0x00, time_step * sizeof(vsi_nn_tensor_t **));
 
     for( i = 0; i < time_step; i++ )
     {
@@ -269,114 +271,200 @@ static vsi_bool op_setup
         }
     }
 
-    /* forward rnn op */
+    /* forward lstm op */
     last_step_h_state_fw = inputs[BI_LSTM_FW_INPUT_H_STATE];
+    last_step_c_state_fw = inputs[BI_LSTM_FW_INPUT_C_STATE];
     for( i = 0; i < time_step; i++ )
     {
-        vsi_nn_tensor_t* rnncell_out0 = NULL;
-        vsi_nn_tensor_t* rnncell_out1 = NULL;
+        vsi_nn_tensor_t* lstmcell_out0 = NULL;
+        vsi_nn_tensor_t* lstmcell_out1 = NULL;
+        vsi_nn_tensor_t* lstmcell_out2 = NULL;
 
-        /* rnncell output */
+        /* lstmcell output */
         vsi_nn_internal_node_init_attr(&attr,
             &outputs[BI_LSTM_FW_OUTPUT_OUTPUT]->attr.dtype, use_virtual_tensor);
         output_tensor = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
-        rnncell_out0 = output_tensor->t;
+        lstmcell_out0 = output_tensor->t;
 
-        /* rnncell output h_state */
+        /* lstmcell output h_state */
         vsi_nn_internal_node_init_attr(&attr,
-                &outputs[BI_LSTM_FW_OUTPUT_OUTPUT]->attr.dtype, use_virtual_tensor);
+            &outputs[BI_LSTM_FW_OUTPUT_OUTPUT]->attr.dtype, use_virtual_tensor);
         output_tensor = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
-        rnncell_out1 = output_tensor->t;
+        lstmcell_out1 = output_tensor->t;
 
-        curr = vsi_nn_new_internal_node( self, VSI_NN_OP_RNN, 0, 0 );
-        curr->node->nn_param.rnn.activation = curr_param->activation;
-        memcpy( curr->node->nn_param.unidirectional_sequence_rnn.internal_dtype,
-            curr_param->internal_dtype, sizeof( curr_param->internal_dtype ) );
-        curr->inputs[RNNCELL_INPUT_INPUT] = reshape_output_tensors[i];
-        curr->inputs[RNNCELL_INPUT_H_STATE] = last_step_h_state_fw;
+        /* lstmcell output c_state */
+        vsi_nn_internal_node_init_attr(&attr,
+            &outputs[BI_LSTM_FW_OUTPUT_OUTPUT]->attr.dtype, use_virtual_tensor);
+        output_tensor = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
+        lstmcell_out2 = output_tensor->t;
 
-        //curr->inputs[RNNCELL_INPUT_WEIGHT_I] = inputs[BI_LSTM_FW_INPUT_WEIGHT_I];
-        //curr->inputs[RNNCELL_INPUT_WEIGHT_H] = inputs[BI_LSTM_FW_INPUT_WEIGHT_H];
+        curr = vsi_nn_new_internal_node( self, VSI_NN_OP_LSTMUNIT_OVXLIB, 0, 0 );
+        curr->node->nn_param.lstmunit_ovxlib.activation = curr_param->activation;
+        curr->node->nn_param.lstmunit_ovxlib.cell_clip = curr_param->cell_clip;
+        curr->node->nn_param.lstmunit_ovxlib.forget_bias = curr_param->forget_bias;
+        curr->node->nn_param.lstmunit_ovxlib.proj_clip = curr_param->proj_clip;
+        curr->node->nn_param.lstmunit_ovxlib.recurrent_activation = curr_param->recurrent_activation;
+        memcpy( curr->node->nn_param.lstm_ovxlib.internal_dtype,
+            curr_param->internal_dtype,
+            sizeof(vsi_nn_dtype_t) * LSTMUNIT_QUANTIZE_PARAM_COUNT);
+        curr->inputs[LSTMUNIT_INPUT_INPUT] = reshape_output_tensors[i];
+        curr->inputs[LSTMUNIT_INPUT_H_STATE] = last_step_h_state_fw;
+        curr->inputs[LSTMUNIT_INPUT_C_STATE] = last_step_c_state_fw;
+        curr->inputs[LSTMUNIT_INPUT_WEIGHT_I2I] = inputs[BI_LSTM_FW_INPUT_WEIGHT_I2I];
+        curr->inputs[LSTMUNIT_INPUT_WEIGHT_I2F] = inputs[BI_LSTM_FW_INPUT_WEIGHT_I2F];
+        curr->inputs[LSTMUNIT_INPUT_WEIGHT_I2C] = inputs[BI_LSTM_FW_INPUT_WEIGHT_I2C];
+        curr->inputs[LSTMUNIT_INPUT_WEIGHT_I2O] = inputs[BI_LSTM_FW_INPUT_WEIGHT_I2O];
 
-        //curr->inputs[RNNCELL_INPUT_BIAS] = inputs[BI_LSTM_FW_INPUT_BIAS];
+        curr->inputs[LSTMUNIT_INPUT_WEIGHT_R2I] = inputs[BI_LSTM_FW_INPUT_WEIGHT_R2I];
+        curr->inputs[LSTMUNIT_INPUT_WEIGHT_R2F] = inputs[BI_LSTM_FW_INPUT_WEIGHT_R2F];
+        curr->inputs[LSTMUNIT_INPUT_WEIGHT_R2C] = inputs[BI_LSTM_FW_INPUT_WEIGHT_R2C];
+        curr->inputs[LSTMUNIT_INPUT_WEIGHT_R2O] = inputs[BI_LSTM_FW_INPUT_WEIGHT_R2O];
+
+        curr->inputs[LSTMUNIT_INPUT_WEIGHT_C2I] = inputs[BI_LSTM_FW_INPUT_WEIGHT_C2I];
+        curr->inputs[LSTMUNIT_INPUT_WEIGHT_C2F] = inputs[BI_LSTM_FW_INPUT_WEIGHT_C2F];
+        curr->inputs[LSTMUNIT_INPUT_WEIGHT_C2O] = inputs[BI_LSTM_FW_INPUT_WEIGHT_C2O];
+
+        curr->inputs[LSTMUNIT_INPUT_BIAS_I] = inputs[BI_LSTM_FW_INPUT_BIAS_I];
+        curr->inputs[LSTMUNIT_INPUT_BIAS_F] = inputs[BI_LSTM_FW_INPUT_BIAS_F];
+        curr->inputs[LSTMUNIT_INPUT_BIAS_C] = inputs[BI_LSTM_FW_INPUT_BIAS_C];
+        curr->inputs[LSTMUNIT_INPUT_BIAS_O] = inputs[BI_LSTM_FW_INPUT_BIAS_O];
+
+        curr->inputs[LSTMUNIT_INPUT_WEIGHT_PROJ] = inputs[BI_LSTM_FW_INPUT_WEIGHT_PROJ];
+        curr->inputs[LSTMUNIT_INPUT_BIAS_PROJ] = inputs[BI_LSTM_FW_INPUT_BIAS_PROJ];
+
+        curr->inputs[LSTMUNIT_INPUT_LAYERNORM_I] = inputs[BI_LSTM_FW_INPUT_LAYERNORM_I];
+        curr->inputs[LSTMUNIT_INPUT_LAYERNORM_F] = inputs[BI_LSTM_FW_INPUT_LAYERNORM_F];
+        curr->inputs[LSTMUNIT_INPUT_LAYERNORM_C] = inputs[BI_LSTM_FW_INPUT_LAYERNORM_C];
+        curr->inputs[LSTMUNIT_INPUT_LAYERNORM_O] = inputs[BI_LSTM_FW_INPUT_LAYERNORM_O];
 
         if (has_aux_input)
         {
-            curr->inputs[RNNCELL_INPUT_AUX_INPUT] = aux_reshape_output_tensors[i];
-            //curr->inputs[RNNCELL_INPUT_AUX_WEIGHT] = inputs[BI_LSTM_FW_AUX_INPUT_WEIGHT];
+            curr->inputs[LSTM_INPUT_AUX_INPUT] = aux_reshape_output_tensors[i];
+            curr->inputs[LSTM_INPUT_AUX_WEIGHT_I2I] = inputs[BI_LSTM_FW_AUX_INPUT_WEIGHT_I2I];
+            curr->inputs[LSTM_INPUT_AUX_WEIGHT_I2F] = inputs[BI_LSTM_FW_AUX_INPUT_WEIGHT_I2F];
+            curr->inputs[LSTM_INPUT_AUX_WEIGHT_I2C] = inputs[BI_LSTM_FW_AUX_INPUT_WEIGHT_I2C];
+            curr->inputs[LSTM_INPUT_AUX_WEIGHT_I2O] = inputs[BI_LSTM_FW_AUX_INPUT_WEIGHT_I2O];
         }
         else
         {
-            curr->inputs[RNNCELL_INPUT_AUX_INPUT] = NULL;
-            curr->inputs[RNNCELL_INPUT_AUX_WEIGHT] = NULL;
+            curr->inputs[LSTM_INPUT_AUX_INPUT] = NULL;
+            curr->inputs[LSTM_INPUT_AUX_WEIGHT_I2I] = NULL;
+            curr->inputs[LSTM_INPUT_AUX_WEIGHT_I2F] = NULL;
+            curr->inputs[LSTM_INPUT_AUX_WEIGHT_I2C] = NULL;
+            curr->inputs[LSTM_INPUT_AUX_WEIGHT_I2O] = NULL;
         }
 
-        curr->outputs[RNNCELL_OUTPUT_OUTPUT] = rnncell_out0;
-        curr->outputs[RNNCELL_OUTPUT_H_STATE] = rnncell_out1;
+        curr->outputs[LSTMUNIT_OUTPUT_OUTPUT] = lstmcell_out0;
+        curr->outputs[LSTMUNIT_OUTPUT_H_STATE] = lstmcell_out1;
+        curr->outputs[LSTMUNIT_OUTPUT_C_STATE] = lstmcell_out2;
 
         vsi_nn_setup_internal_node_op( self, curr );
 
-        last_step_h_state_fw = rnncell_out1;
+        last_step_h_state_fw = lstmcell_out1;
+        last_step_c_state_fw = lstmcell_out2;
 
         /* reshape output to 3-dims */
         output_tensor = vsi_nn_rnn_reshape_cell_output(self,
-            rnncell_out0, batch_size, use_virtual_tensor);
-        rnncell_reshape_output_tensors_fw[i] = output_tensor->t;
+            lstmcell_out0, batch_size, use_virtual_tensor);
+        lstmcell_reshape_output_tensors_fw[i] = output_tensor->t;
     }
 
-    /* backward rnn op */
+    /* backward lstm op */
     last_step_h_state_bw = inputs[BI_LSTM_BW_INPUT_H_STATE];
+    last_step_c_state_bw = inputs[BI_LSTM_BW_INPUT_C_STATE];
     for( i = 0; i < time_step; i++ )
     {
-        vsi_nn_tensor_t* rnncell_out0 = NULL;
-        vsi_nn_tensor_t* rnncell_out1 = NULL;
+        vsi_nn_tensor_t* lstmcell_out0 = NULL;
+        vsi_nn_tensor_t* lstmcell_out1 = NULL;
+        vsi_nn_tensor_t* lstmcell_out2 = NULL;
 
-        /* rnncell output */
+        /* lstmcell output */
         vsi_nn_internal_node_init_attr(&attr,
             &outputs[BI_LSTM_BW_OUTPUT_OUTPUT]->attr.dtype, use_virtual_tensor);
         output_tensor = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
-        rnncell_out0 = output_tensor->t;
+        lstmcell_out0 = output_tensor->t;
 
-        /* rnncell output h_state */
+        /* lstmcell output h_state */
         vsi_nn_internal_node_init_attr(&attr,
-                &outputs[BI_LSTM_BW_OUTPUT_OUTPUT]->attr.dtype, use_virtual_tensor);
+            &outputs[BI_LSTM_BW_OUTPUT_OUTPUT]->attr.dtype, use_virtual_tensor);
         output_tensor = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
-        rnncell_out1 = output_tensor->t;
+        lstmcell_out1 = output_tensor->t;
 
-        curr = vsi_nn_new_internal_node( self, VSI_NN_OP_RNN, 0, 0 );
-        curr->node->nn_param.rnn.activation = curr_param->activation;
-        memcpy( curr->node->nn_param.unidirectional_sequence_rnn.internal_dtype,
-            curr_param->internal_dtype, sizeof( curr_param->internal_dtype ) );
-        curr->inputs[RNNCELL_INPUT_INPUT] = reshape_output_tensors[time_step - 1 - i];
-        curr->inputs[RNNCELL_INPUT_H_STATE] = last_step_h_state_bw;
+        /* lstmcell output c_state */
+        vsi_nn_internal_node_init_attr(&attr,
+            &outputs[BI_LSTM_BW_OUTPUT_OUTPUT]->attr.dtype, use_virtual_tensor);
+        output_tensor = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
+        lstmcell_out2 = output_tensor->t;
 
-        //curr->inputs[RNNCELL_INPUT_WEIGHT_I] = inputs[BI_LSTM_BW_INPUT_WEIGHT_I];
-        //curr->inputs[RNNCELL_INPUT_WEIGHT_H] = inputs[BI_LSTM_BW_INPUT_WEIGHT_H];
+        curr = vsi_nn_new_internal_node( self, VSI_NN_OP_LSTMUNIT_OVXLIB, 0, 0 );
+        curr->node->nn_param.lstmunit_ovxlib.activation = curr_param->activation;
+        curr->node->nn_param.lstmunit_ovxlib.cell_clip = curr_param->cell_clip;
+        curr->node->nn_param.lstmunit_ovxlib.forget_bias = curr_param->forget_bias;
+        curr->node->nn_param.lstmunit_ovxlib.proj_clip = curr_param->proj_clip;
+        curr->node->nn_param.lstmunit_ovxlib.recurrent_activation = curr_param->recurrent_activation;
+        memcpy( curr->node->nn_param.lstm_ovxlib.internal_dtype,
+            &(curr_param->internal_dtype[LSTMUNIT_QUANTIZE_PARAM_COUNT]),
+            sizeof(vsi_nn_dtype_t) * LSTMUNIT_QUANTIZE_PARAM_COUNT);
+        curr->inputs[LSTMUNIT_INPUT_INPUT] = reshape_output_tensors[time_step - 1 - i];
+        curr->inputs[LSTMUNIT_INPUT_H_STATE] = last_step_h_state_bw;
+        curr->inputs[LSTMUNIT_INPUT_C_STATE] = last_step_c_state_bw;
+        curr->inputs[LSTMUNIT_INPUT_WEIGHT_I2I] = inputs[BI_LSTM_BW_INPUT_WEIGHT_I2I];
+        curr->inputs[LSTMUNIT_INPUT_WEIGHT_I2F] = inputs[BI_LSTM_BW_INPUT_WEIGHT_I2F];
+        curr->inputs[LSTMUNIT_INPUT_WEIGHT_I2C] = inputs[BI_LSTM_BW_INPUT_WEIGHT_I2C];
+        curr->inputs[LSTMUNIT_INPUT_WEIGHT_I2O] = inputs[BI_LSTM_BW_INPUT_WEIGHT_I2O];
 
-        //curr->inputs[RNNCELL_INPUT_BIAS] = inputs[BI_LSTM_BW_INPUT_BIAS];
+        curr->inputs[LSTMUNIT_INPUT_WEIGHT_R2I] = inputs[BI_LSTM_BW_INPUT_WEIGHT_R2I];
+        curr->inputs[LSTMUNIT_INPUT_WEIGHT_R2F] = inputs[BI_LSTM_BW_INPUT_WEIGHT_R2F];
+        curr->inputs[LSTMUNIT_INPUT_WEIGHT_R2C] = inputs[BI_LSTM_BW_INPUT_WEIGHT_R2C];
+        curr->inputs[LSTMUNIT_INPUT_WEIGHT_R2O] = inputs[BI_LSTM_BW_INPUT_WEIGHT_R2O];
 
-        if(has_aux_input)
+        curr->inputs[LSTMUNIT_INPUT_WEIGHT_C2I] = inputs[BI_LSTM_BW_INPUT_WEIGHT_C2I];
+        curr->inputs[LSTMUNIT_INPUT_WEIGHT_C2F] = inputs[BI_LSTM_BW_INPUT_WEIGHT_C2F];
+        curr->inputs[LSTMUNIT_INPUT_WEIGHT_C2O] = inputs[BI_LSTM_BW_INPUT_WEIGHT_C2O];
+
+        curr->inputs[LSTMUNIT_INPUT_BIAS_I] = inputs[BI_LSTM_BW_INPUT_BIAS_I];
+        curr->inputs[LSTMUNIT_INPUT_BIAS_F] = inputs[BI_LSTM_BW_INPUT_BIAS_F];
+        curr->inputs[LSTMUNIT_INPUT_BIAS_C] = inputs[BI_LSTM_BW_INPUT_BIAS_C];
+        curr->inputs[LSTMUNIT_INPUT_BIAS_O] = inputs[BI_LSTM_BW_INPUT_BIAS_O];
+
+        curr->inputs[LSTMUNIT_INPUT_WEIGHT_PROJ] = inputs[BI_LSTM_BW_INPUT_WEIGHT_PROJ];
+        curr->inputs[LSTMUNIT_INPUT_BIAS_PROJ] = inputs[BI_LSTM_BW_INPUT_BIAS_PROJ];
+
+        curr->inputs[LSTMUNIT_INPUT_LAYERNORM_I] = inputs[BI_LSTM_BW_INPUT_LAYERNORM_I];
+        curr->inputs[LSTMUNIT_INPUT_LAYERNORM_F] = inputs[BI_LSTM_BW_INPUT_LAYERNORM_F];
+        curr->inputs[LSTMUNIT_INPUT_LAYERNORM_C] = inputs[BI_LSTM_BW_INPUT_LAYERNORM_C];
+        curr->inputs[LSTMUNIT_INPUT_LAYERNORM_O] = inputs[BI_LSTM_BW_INPUT_LAYERNORM_O];
+
+        if (has_aux_input)
         {
-            curr->inputs[RNNCELL_INPUT_AUX_INPUT] = aux_reshape_output_tensors[time_step - 1 - i];
-            //curr->inputs[RNNCELL_INPUT_AUX_WEIGHT] = inputs[BI_LSTM_BW_AUX_INPUT_WEIGHT];
+            curr->inputs[LSTM_INPUT_AUX_INPUT] = aux_reshape_output_tensors[time_step - 1 - i];
+            curr->inputs[LSTM_INPUT_AUX_WEIGHT_I2I] = inputs[BI_LSTM_BW_AUX_INPUT_WEIGHT_I2I];
+            curr->inputs[LSTM_INPUT_AUX_WEIGHT_I2F] = inputs[BI_LSTM_BW_AUX_INPUT_WEIGHT_I2F];
+            curr->inputs[LSTM_INPUT_AUX_WEIGHT_I2C] = inputs[BI_LSTM_BW_AUX_INPUT_WEIGHT_I2C];
+            curr->inputs[LSTM_INPUT_AUX_WEIGHT_I2O] = inputs[BI_LSTM_BW_AUX_INPUT_WEIGHT_I2O];
         }
         else
         {
-            curr->inputs[RNNCELL_INPUT_AUX_INPUT] = NULL;
-            curr->inputs[RNNCELL_INPUT_AUX_WEIGHT] = NULL;
+            curr->inputs[LSTM_INPUT_AUX_INPUT] = NULL;
+            curr->inputs[LSTM_INPUT_AUX_WEIGHT_I2I] = NULL;
+            curr->inputs[LSTM_INPUT_AUX_WEIGHT_I2F] = NULL;
+            curr->inputs[LSTM_INPUT_AUX_WEIGHT_I2C] = NULL;
+            curr->inputs[LSTM_INPUT_AUX_WEIGHT_I2O] = NULL;
         }
 
-        curr->outputs[RNNCELL_OUTPUT_OUTPUT] = rnncell_out0;
-        curr->outputs[RNNCELL_OUTPUT_H_STATE] = rnncell_out1;
+        curr->outputs[LSTMUNIT_OUTPUT_OUTPUT] = lstmcell_out0;
+        curr->outputs[LSTMUNIT_OUTPUT_H_STATE] = lstmcell_out1;
+        curr->outputs[LSTMUNIT_OUTPUT_C_STATE] = lstmcell_out2;
 
         vsi_nn_setup_internal_node_op( self, curr );
 
-        last_step_h_state_bw = rnncell_out1;
+        last_step_h_state_bw = lstmcell_out1;
+        last_step_c_state_bw = lstmcell_out2;
 
         /* reshape output to 3-dims */
         output_tensor = vsi_nn_rnn_reshape_cell_output(self,
-            rnncell_out0, batch_size, use_virtual_tensor);
-        rnncell_reshape_output_tensors_bw[i] = output_tensor->t;
+            lstmcell_out0, batch_size, use_virtual_tensor);
+        lstmcell_reshape_output_tensors_bw[i] = output_tensor->t;
     }
 
     if(curr_param->merge_outputs)
@@ -395,7 +483,7 @@ static vsi_bool op_setup
             tensor = output_tensor->t;
         }
 
-        /* concat fw & bw output, the rnn's output is 3-dims */
+        /* concat fw & bw output, the lstm's output is 3-dims */
         for( i = 0; i < time_step; i++ )
         {
             vsi_nn_internal_node_init_attr(&attr,
@@ -404,15 +492,15 @@ static vsi_bool op_setup
 
             curr = vsi_nn_new_internal_node( self, VSI_NN_OP_CONCAT, 2, 1 );
             curr->node->nn_param.concat.axis = 0;
-            curr->inputs[0] = rnncell_reshape_output_tensors_fw[i];
-            curr->inputs[1] = rnncell_reshape_output_tensors_bw[i];
+            curr->inputs[0] = lstmcell_reshape_output_tensors_fw[i];
+            curr->inputs[1] = lstmcell_reshape_output_tensors_bw[i];
             curr->outputs[0] = output_tensor->t;
             vsi_nn_setup_internal_node_op( self, curr );
             merge_tensors[i] = output_tensor->t;
         }
 
 
-        /* concat rnncell output, the rnn's output is 3-dims */
+        /* concat lstmcell output, the lstm's output is 3-dims */
         curr = vsi_nn_new_internal_node( self, VSI_NN_OP_CONCAT, time_step, 1 );
         curr->node->nn_param.concat.axis = 2;
         for( i = 0; i < time_step; i++ )
@@ -443,12 +531,12 @@ static vsi_bool op_setup
             tensor = output_tensor->t;
         }
 
-        /* concat rnncell output, the rnn's output is 3-dims */
+        /* concat lstmcell output, the lstm's output is 3-dims */
         curr = vsi_nn_new_internal_node( self, VSI_NN_OP_CONCAT, time_step, 1 );
         curr->node->nn_param.concat.axis = 2;
         for( i = 0; i < time_step; i++ )
         {
-            curr->inputs[i] = rnncell_reshape_output_tensors_fw[i];
+            curr->inputs[i] = lstmcell_reshape_output_tensors_fw[i];
         }
         curr->outputs[0] = tensor;
         vsi_nn_setup_internal_node_op( self, curr );
@@ -471,12 +559,12 @@ static vsi_bool op_setup
             tensor = output_tensor->t;
         }
 
-        /* concat rnncell output, the rnn's output is 3-dims */
+        /* concat lstmcell output, the lstm's output is 3-dims */
         curr = vsi_nn_new_internal_node( self, VSI_NN_OP_CONCAT, time_step, 1 );
         curr->node->nn_param.concat.axis = 2;
         for( i = 0; i < time_step; i++ )
         {
-            curr->inputs[i] = rnncell_reshape_output_tensors_bw[i];
+            curr->inputs[i] = lstmcell_reshape_output_tensors_bw[i];
         }
         curr->outputs[0] = tensor;
         vsi_nn_setup_internal_node_op( self, curr );
@@ -493,8 +581,8 @@ static vsi_bool op_setup
     vsi_nn_safe_free( aux_split_output_tensors )
     vsi_nn_safe_free( reshape_output_tensors );
     vsi_nn_safe_free( aux_reshape_output_tensors );
-    vsi_nn_safe_free( rnncell_reshape_output_tensors_fw );
-    vsi_nn_safe_free( rnncell_reshape_output_tensors_bw );
+    vsi_nn_safe_free( lstmcell_reshape_output_tensors_fw );
+    vsi_nn_safe_free( lstmcell_reshape_output_tensors_bw );
 
     return TRUE;
 } /* op_setup() */
@@ -506,10 +594,26 @@ static vsi_status op_deinit
 {
     vsi_status status = VSI_SUCCESS;
 
+    vsi_nn_safe_free(self->nn_param.bidirectional_sequence_lstm.internal_dtype);
     vsi_nn_deinit_internal_node_wksp( self );
 
     return status;
 } /* op_deinit() */
+
+static vsi_status op_init
+    (
+    vsi_nn_node_t * self
+    )
+{
+    vsi_status status = VSI_SUCCESS;
+
+    self->nn_param.bidirectional_sequence_lstm.internal_dtype = (vsi_nn_dtype_t *)
+        malloc(sizeof(vsi_nn_dtype_t) * LSTMUNIT_QUANTIZE_PARAM_COUNT * 2);
+    memset(self->nn_param.bidirectional_sequence_lstm.internal_dtype, 0,
+        sizeof(vsi_nn_dtype_t) * LSTMUNIT_QUANTIZE_PARAM_COUNT * 2);
+
+    return status;
+} /* op_init() */
 
 #ifdef __cplusplus
 extern "C" {
@@ -518,7 +622,7 @@ extern "C" {
 DEF_OP_REG
     (
     /* op_name    */ BIDIRECTIONAL_SEQUENCE_LSTM,
-    /* init       */ NULL,
+    /* init       */ op_init,
     /* compute    */ op_compute,
     /* deinit     */ op_deinit,
     /* check      */ op_check,

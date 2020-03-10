@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -92,7 +92,7 @@ static void _set_preproc_node_norm_params
     }
     else
     {
-        for(i = 0; i < attr.dim_num - 1; i++)
+        for(i = 0; i < (int32_t)attr.dim_num - 1; i++)
         {
             node->nn_param.pre_process.norm.mean[i] = 0;
         }
@@ -212,7 +212,7 @@ static void _set_postproc_node_output_attr
     }
     else
     {
-        for(i = 0; i < org_norm_tensor->attr.dim_num; i++)
+        for(i = 0; i < (int32_t)org_norm_tensor->attr.dim_num; i++)
         {
             output_attr->size[i] = org_norm_tensor->attr.size[i];
         }
@@ -387,7 +387,7 @@ vsi_status vsi_nn_add_single_postproc_node
     node->uid = (uint32_t)(VSI_NN_POSTPROC_NODE_UID_BASE) + output_idx;
 
     /* Get postprocess condigurations */
-    for(idx = 0; idx < proc_count; idx++)
+    for(idx = 0; idx < (int32_t)proc_count; idx++)
     {
         if(postprocess[idx].type == VSI_NN_POSTPROCESS_PERMUTE)
             permute = (vsi_nn_process_permute_t*)postprocess[idx].param;
@@ -425,7 +425,7 @@ vsi_status vsi_nn_add_single_postproc_node
     /* Reconnect node tensors */
     node->input.tensors[0] = postproc_input;
     node->output.tensors[0] = postproc_output;
-    for(i = 0; i < last_node->output.num; i++)
+    for(i = 0; i < (int32_t)last_node->output.num; i++)
     {
         if(last_node->output.tensors[i] == graph->output.tensors[output_idx])
         {

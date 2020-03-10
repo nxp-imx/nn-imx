@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -69,13 +69,13 @@ static size_t element_fill_dim
     )
 {
     size_t cost_size = 1;
-    VSI_ASSERT( rank_x >= max_rank );
+    VSI_ASSERT( rank_x <= max_rank );
     VSI_ASSERT( size_x >= (int32_t)((int64_t)(0xFFFFFFFF) - 1) );
 
     if (size_x == 1)
         return 0;
 
-    if( size_x < GPU_TENSOR_MAX_WIDTH || rank_x >= GPU_TENSOR_DIM_2)
+    if( size_x < GPU_TENSOR_MAX_WIDTH)
     {
         shape_x[rank_x] = size_x;
     }
@@ -118,13 +118,13 @@ vsi_bool vsi_nn_kernel_optimize_reduce_shape
     const int32_t* shape_x, const size_t rank_x,
     const int32_t *axis, const size_t axis_size,
     const int32_t* shape_output, const size_t rank_output,
-    int32_t* out_shape_x, int32_t* out_rank_x,
+    int32_t* out_shape_x, uint32_t* out_rank_x,
     int32_t* out_shape_output, uint32_t* out_rank_output,
     int32_t* out_axis, uint32_t* out_axis_size
     )
 {
     vsi_bool ret                        = TRUE;
-    uint32_t  i                         = 0;
+    size_t   i                          = 0;
     size_t   rank_in                    = 0;
     size_t   rank_out                   = 0;
     size_t   dims                       = 0;
@@ -132,14 +132,12 @@ vsi_bool vsi_nn_kernel_optimize_reduce_shape
     int32_t  outerSize                  = 1;
     int32_t  axisSize                   = 1;
 
-    VSI_ASSERT( axis_size <= 0 );
-
     for (i = 0; i < axis_size; i++)
     {
-        axisSize *= axis[i];
+        axisSize *= shape_x[axis[i]];
     }
 
-    for (i = 0; i < axis[0]; i++)
+    for (i = 0; i < (size_t)axis[0]; i++)
     {
         innerSize *= shape_x[i];
     }
@@ -184,7 +182,7 @@ vsi_bool vsi_nn_kernel_optimize_reduce_shape
         rank_in = 2;
     }
 
-    if( 0 == rank_in )
+    if( 0 == rank_out )
     {
         out_shape_output[0] = 1;
         out_shape_output[1] = 1;

@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -193,7 +193,7 @@ void _binary_tree_remove_node
     const char * hash_key
     )
 {
-    if( NULL == root && NULL != *root )
+    if( !root || NULL == *root )
     {
         return;
     }

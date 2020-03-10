@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2018 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -85,6 +85,7 @@ vsi_bool vsi_nn_QuantAffineCheck
         case VSI_NN_TYPE_UINT8:
         case VSI_NN_TYPE_UINT16:
         case VSI_NN_TYPE_UINT32:
+        case VSI_NN_TYPE_INT8:
         {
             double product_scale = (double)input->attr.dtype.scale * (double)weight->attr.dtype.scale;
             const double acuity_round_decimals = 1e-8;

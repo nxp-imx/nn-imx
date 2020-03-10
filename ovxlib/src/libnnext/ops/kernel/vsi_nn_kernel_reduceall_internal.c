@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -225,7 +225,7 @@ vx_status VX_CALLBACK vxReduceall_internalInitializer
 
 
     width          = attr[0].size[0];
-    height         = attr[0].size[1];
+    height         = attr[0].dim_num > 1 ? attr[0].size[1] : 1;
     depth          = attr[0].dim_num > 2 ? attr[0].size[2] : 1;
     axisSize       = attr[0].size[axis];
 

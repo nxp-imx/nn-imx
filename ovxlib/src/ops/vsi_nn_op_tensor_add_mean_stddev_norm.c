@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -157,6 +157,7 @@ static vsi_status vx_op_compute
     vsi_status status = VSI_SUCCESS;
     vx_reference params[_PARAM_NUM];
     vx_reference * args;
+    vx_border_t border;
 
     args = &params[_IO_NUM];
 
@@ -176,6 +177,16 @@ static vsi_status vx_op_compute
     status = vsi_nn_ClientNodePassParameters( self->n, params, _PARAM_NUM );
 
     _release_params( args, _ARG_NUM );
+
+    border.mode = VX_BORDER_CONSTANT;
+    border.constant_value.U32 = 0;
+    border.constant_value.S16 = 0;
+    border.constant_value.U8 = 0;
+    if (inputs[0]->attr.dtype.vx_type == VSI_NN_TYPE_UINT8)
+    {
+        border.constant_value.U8 = inputs[0]->attr.dtype.zero_point;
+    }
+    status |= vxSetNodeAttribute(self->n, VX_NODE_BORDER, &border, sizeof(border));
 
     return status;
 }

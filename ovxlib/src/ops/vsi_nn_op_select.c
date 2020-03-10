@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -25,214 +25,19 @@
 #include <stdlib.h>
 
 #include "vsi_nn_types.h"
-#include "vsi_nn_platform.h"
 #include "vsi_nn_log.h"
-#include "vsi_nn_graph.h"
 #include "vsi_nn_node.h"
 #include "vsi_nn_prv.h"
-#include "utils/vsi_nn_math.h"
 #include "vsi_nn_ops.h"
 #include "vsi_nn_tensor.h"
 #include "vsi_nn_tensor_util.h"
-#include "client/vsi_nn_vxkernel.h"
+#include "utils/vsi_nn_util.h"
+#include "kernel/vsi_nn_kernel.h"
+#include "kernel/vsi_nn_kernel_eltwise.h"
 
-#define _ARG_NUM            (0)
 #define _INPUT_NUM          (3)
 #define _OUTPUT_NUM         (1)
 #define _IO_NUM             (_INPUT_NUM + _OUTPUT_NUM)
-#define _PARAM_NUM          (_ARG_NUM + _IO_NUM)
-
-extern vx_kernel_description_t * vx_kernel_SELECT_list[];
-
-static void check_tensor_shape
-    (
-    vsi_nn_node_t * self,
-    vsi_nn_tensor_t * input,
-    vx_reference * params,
-    uint32_t index,
-    vx_bool rsFlg
-    )
-{
-    vsi_nn_tensor_attr_t attr;
-
-    if (index == 0)
-    {
-        if( input->attr.dim_num == 1)
-        {
-            memcpy(&attr, &(input->attr), sizeof(vsi_nn_tensor_attr_t));
-            attr.size[1] = 1;
-            attr.dim_num = 2;
-            self->nn_param.select.local.local_tensor[index] =
-                vxReshapeTensor(input->t, (int32_t*)(attr.size), attr.dim_num);
-            params[index] =  (vx_reference)self->nn_param.select.local.local_tensor[index];
-        }
-        else
-            params[index] = (vx_reference)input->t;
-    }
-    else if (index == 1)
-    {
-        if( input->attr.dim_num == 1)
-        {
-            memcpy(&attr, &(input->attr), sizeof(vsi_nn_tensor_attr_t));
-            attr.size[1] = 1;
-            attr.dim_num = 2;
-            self->nn_param.select.local.local_tensor[index] =
-                vxReshapeTensor(input->t, (int32_t*)(attr.size), attr.dim_num);
-            params[index] =  (vx_reference)self->nn_param.select.local.local_tensor[index];
-        }
-        else
-            params[index] = (vx_reference)input->t;
-    }
-    else if(index == 2)
-    {
-        if(input->attr.dim_num == 1)
-        {
-            memcpy(&attr, &(input->attr), sizeof(vsi_nn_tensor_attr_t));
-            attr.size[1] = 1;
-            attr.dim_num = 2;
-            self->nn_param.select.local.local_tensor[index] =
-                vxReshapeTensor(input->t, (int32_t*)(attr.size), attr.dim_num);
-            params[index] =  (vx_reference)self->nn_param.select.local.local_tensor[index];
-        }
-        else if(input->attr.dim_num == 4)
-        {
-            memcpy(&attr, &(input->attr), sizeof(vsi_nn_tensor_attr_t));
-            attr.size[2] *= attr.size[3];
-            attr.size[3] = 1;
-            attr.dim_num = 3;
-            self->nn_param.select.local.local_tensor[index] =
-                vxReshapeTensor(input->t, (int32_t*)(attr.size), attr.dim_num);
-            params[index] =  (vx_reference)self->nn_param.select.local.local_tensor[index];
-        }
-        else
-             params[index] = (vx_reference)input->t;
-    }
-    else if(index == 3)
-    {
-        if(input->attr.dim_num == 1)
-        {
-            memcpy(&attr, &(input->attr), sizeof(vsi_nn_tensor_attr_t));
-            attr.size[1] = 1;
-            attr.dim_num = 2;
-            self->nn_param.select.local.local_tensor[index] =
-                vxReshapeTensor(input->t, (int32_t*)(attr.size), attr.dim_num);
-            params[index] =  (vx_reference)self->nn_param.select.local.local_tensor[index];
-        }
-        else if(input->attr.dim_num == 4)
-        {
-            memcpy(&attr, &(input->attr), sizeof(vsi_nn_tensor_attr_t));
-            attr.size[2] *= attr.size[3];
-            attr.size[3] = 1;
-            attr.dim_num = 3;
-            self->nn_param.select.local.local_tensor[index] =
-                vxReshapeTensor(input->t, (int32_t*)(attr.size), attr.dim_num);
-            params[index] =  (vx_reference)self->nn_param.select.local.local_tensor[index];
-        }
-        else
-             params[index] = (vx_reference)input->t;
-    }
-    else
-    {
-        VSILOGE("No more local tensor!(select) at [%s : %d]\n", __FILE__, __LINE__);
-    }
-}
-
-static vsi_status cpu_op_compute
-    (
-    vsi_nn_node_t * self,
-    vsi_nn_tensor_t ** inputs,
-    vsi_nn_tensor_t ** outputs
-    )
-{
-    vsi_status status = VSI_SUCCESS;
-    vx_reference params[_PARAM_NUM];
-    vx_bool rsFlg = vx_false_e;
-
-    if( NULL == self->n )
-    {
-        return VSI_FAILURE;
-    }
-
-    /* Set inputs and outputs */
-    check_tensor_shape(self, inputs[0], params, 0, rsFlg);
-    check_tensor_shape(self, inputs[1], params, 1, rsFlg);
-    check_tensor_shape(self, inputs[2], params, 2, rsFlg);
-    check_tensor_shape(self, outputs[0], params, 3, rsFlg);
-
-    /* Pass parameters to node. */
-    status = vsi_nn_ClientNodePassParameters( self->n, params, _PARAM_NUM );
-
-    return status;
-}
-
-static vsi_status vx_op_pre_compute
-    (
-    vsi_nn_node_t * self,
-    vsi_nn_tensor_t ** inputs,
-    vsi_nn_tensor_t ** outputs,
-    vsi_nn_kernel_info_t * kernel_info
-    )
-{
-    vsi_nn_type_e inputDataFormat     = inputs[1]->attr.dtype.vx_type;
-    vsi_nn_type_e inputDataFormat1    = inputs[2]->attr.dtype.vx_type;
-
-    if(inputDataFormat == VSI_NN_TYPE_INT8 && inputDataFormat1 == VSI_NN_TYPE_INT8)
-    {
-        kernel_info->kernel_index = 2;
-    }
-    else if((inputDataFormat == VSI_NN_TYPE_INT16 && inputDataFormat1 == VSI_NN_TYPE_INT16)
-        || (inputDataFormat == VSI_NN_TYPE_FLOAT16 && inputDataFormat1 == VSI_NN_TYPE_FLOAT16))
-    {
-        kernel_info->kernel_index = 3;
-    }
-    else if(inputDataFormat == VSI_NN_TYPE_UINT8 && inputDataFormat1 == VSI_NN_TYPE_UINT8)
-    {
-        kernel_info->kernel_index = 1;
-    }
-    else
-    {
-        VSILOGE("Not support input or output data format!(select) at [%s : %d]\n", __FILE__, __LINE__);
-        return VSI_FAILURE;
-    }
-
-    return VSI_SUCCESS;
-}
-
-static vsi_status vx_op_compute
-    (
-    vsi_nn_node_t * self,
-    vsi_nn_tensor_t ** inputs,
-    vsi_nn_tensor_t ** outputs
-    )
-{
-    vsi_status status = VSI_SUCCESS;
-    vx_reference params[_PARAM_NUM];
-    vx_bool rsFlg = vx_false_e;
-
-    if( NULL == self->n )
-    {
-        return VSI_FAILURE;
-    }
-
-    /* Set inputs and outputs */
-    check_tensor_shape(self, inputs[0], params, 0, rsFlg);
-    check_tensor_shape(self, inputs[1], params, 1, rsFlg);
-    check_tensor_shape(self, inputs[2], params, 2, rsFlg);
-    check_tensor_shape(self, outputs[0], params, 3, rsFlg);
-    /*TODO: Add code if need to change your parameter*/
-
-    /* Pass parameters to node. */
-    status = vsi_nn_ClientNodePassParameters( self->n, params, _PARAM_NUM);
-
-    return status;
-}
-
-static vsi_nn_op_compute_t op_compute_list[] =
-{
-    cpu_op_compute,
-    vx_op_compute,
-    NULL
-};
 
 static vsi_status op_compute
     (
@@ -242,63 +47,65 @@ static vsi_status op_compute
     )
 {
     vsi_status status = VSI_FAILURE;
-    vsi_nn_kernel_info_t kernel_info;
-    vsi_nn_type_e inputDataFormat     = inputs[1]->attr.dtype.vx_type;
-    vsi_nn_type_e outputDataFormat    = outputs[0]->attr.dtype.vx_type;
+    vsi_nn_tensor_t* reshape_tensors[_IO_NUM] = { NULL };
+    int32_t  shapes[_IO_NUM][VSI_NN_MAX_DIM_NUM] = {{ 1 }};
+    int32_t* shapes_ptr[_IO_NUM];
+    int32_t* shapes_in[_INPUT_NUM];
+    uint32_t rank_in[_INPUT_NUM];
+    uint32_t new_rank = 0;
+    int32_t  i        = 0;
+    vsi_bool ret;
 
-    memset(&kernel_info, 0x0, sizeof(vsi_nn_kernel_info_t));
-    kernel_info.type = VX_KERNEL_TYPE_VX;
-    kernel_info.kernel = vx_kernel_SELECT_list;
-    kernel_info.resource_num = 1;
-    kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));
-    kernel_info.resource_name[0] = "vsi_nn_kernel_select";
-
-    if(inputs[0]->attr.dtype.vx_type != VSI_NN_TYPE_BOOL8)
+    if( NULL == self )
     {
-        VSILOGE("Data format is not VSI_NN_TYPE_BOOL8!(select) at [%s : %d]\n", __FILE__, __LINE__);
-        goto OnError;
+        return VSI_FAILURE;
     }
 
-    if( (inputDataFormat == outputDataFormat)
-        && (inputDataFormat == VSI_NN_TYPE_INT8
-           || inputDataFormat == VSI_NN_TYPE_INT16
-           || inputDataFormat == VSI_NN_TYPE_UINT8
-           || inputDataFormat == VSI_NN_TYPE_FLOAT16))
+    for (i = 0; i < _IO_NUM; i++)
     {
-        kernel_info.kernel_index = 1;
-        kernel_info.init_index = 1;
-        vx_op_pre_compute(self, inputs, outputs, &kernel_info);
-    }
-    else /*kernel_info.type = VX_KERNEL_TYPE_CPU;*/
-    {
-        kernel_info.type = VX_KERNEL_TYPE_CPU;
-        kernel_info.kernel_index = 0;
-        kernel_info.init_index = 0;
+        shapes_ptr[i] = shapes[i];
     }
 
-    self->n = vsi_nn_RegisterClientKernelAndNewNode(
-            self->graph, &kernel_info);
-    if( NULL == self->n )
+    for (i = 0; i < _INPUT_NUM; i++)
     {
-        VSILOGE("vsi_nn_RegisterClientKernelAndNewNode failed!(select) at [%s : %d]\n", __FILE__, __LINE__);
-        goto OnError;
+        shapes_in[i] = (int32_t *)inputs[i]->attr.size;
+        rank_in[i]   = inputs[i]->attr.dim_num;
     }
 
-    if (NULL != op_compute_list[kernel_info.init_index])
+    ret = vsi_nn_kernel_optimize_broadcast_shape(
+            (const int32_t**)shapes_in, (const size_t*)rank_in, _INPUT_NUM,
+            (int32_t *)outputs[0]->attr.size, outputs[0]->attr.dim_num,
+            shapes_ptr, shapes[_INPUT_NUM], &new_rank);
+
+    if( ret )
     {
-        status = op_compute_list[kernel_info.init_index](self, inputs, outputs);
-        if(status != VSI_SUCCESS)
+        for (i = 0; i < _INPUT_NUM; i++)
         {
-            VSILOGE("op_compute_list failed!(select) at [%s : %d]\n", __FILE__, __LINE__);
-            goto OnError;
+            reshape_tensors[i] = vsi_nn_reshape_tensor( self->graph,
+                    inputs[i], (uint32_t*)shapes[i], new_rank );
+        }
+
+        for (i = 0; i < _OUTPUT_NUM; i++)
+        {
+            reshape_tensors[i + _INPUT_NUM] = vsi_nn_reshape_tensor( self->graph,
+                    outputs[i], (uint32_t*)shapes[i + _INPUT_NUM], new_rank );
+        }
+
+        self->n = (vx_node)vsi_nn_kernel_selector( self->graph, "select",
+                                        &reshape_tensors[0], _INPUT_NUM,
+                                        &reshape_tensors[_INPUT_NUM], _OUTPUT_NUM, NULL );
+
+        for (i = 0; i < _IO_NUM; i++)
+        {
+            vsi_nn_ReleaseTensor( &reshape_tensors[i] );
         }
     }
 
-OnError:
-    if (kernel_info.resource_name)
+    if( self->n )
     {
-        free(kernel_info.resource_name);
+        status = VSI_SUCCESS;
     }
+
     return status;
 } /* op_compute() */
 
@@ -320,32 +127,47 @@ static vsi_bool op_setup
     vsi_nn_tensor_t ** outputs
     )
 {
-    vsi_bool ret = FALSE;
+    uint32_t i, out_rank, in0_rank, in1_rank, in2_rank;
+    uint32_t shape[VSI_NN_MAX_DIM_NUM] = { 0 };
+    vsi_bool ret = TRUE;
 
-    ret = vsi_nn_OpSetup( VSI_NN_OP_MULTIPLY, self, inputs, outputs );
+    in0_rank = inputs[0]->attr.dim_num;
+    in1_rank = inputs[1]->attr.dim_num;
+    in2_rank = inputs[2]->attr.dim_num;
+    out_rank = vsi_nn_max(in0_rank, vsi_nn_max( in1_rank, in2_rank ));
+
+    for(i = 0; i < out_rank; i++)
+    {
+        uint32_t sz0, sz1, sz2;
+        sz0 = i < in0_rank ? inputs[0]->attr.size[i] : 1;
+        sz1 = i < in1_rank ? inputs[1]->attr.size[i] : 1;
+        sz2 = i < in2_rank ? inputs[2]->attr.size[i] : 1;
+        shape[i] = vsi_nn_max(vsi_nn_max(sz0, sz1), sz2);
+    }
+
+    if( VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num )
+    {
+        outputs[0]->attr.dim_num = out_rank;
+        memcpy( outputs[0]->attr.size, shape, out_rank * sizeof(uint32_t) );
+    }
+    else
+    {
+        uint32_t total_size_got;
+        uint32_t total_size_expected;
+        total_size_expected = vsi_nn_ShapeProduct( shape, out_rank );
+        total_size_got = vsi_nn_ShapeProduct( outputs[0]->attr.size,
+                outputs[0]->attr.dim_num );
+        if( total_size_expected != total_size_got )
+        {
+            VSILOGW("Output size mismatch, expect %d, but got %d",
+                    total_size_expected, total_size_got);
+            ret = FALSE;
+        }
+    }
 
     return ret;
 } /* op_setup() */
 
-static vsi_status op_deinit
-    (
-    vsi_nn_node_t * self
-    )
-{
-    uint32_t i;
-    for (i = 0; i < _VSI_NN_SELECT_LOCAL_TENSOR_NUM; i++)
-    {
-        if (self->nn_param.select.local.local_tensor[i] != NULL)
-        {
-            vxReleaseTensor(&(self->nn_param.select.local.local_tensor[i]));
-            self->nn_param.select.local.local_tensor[i] = NULL;
-        }
-    }
-
-    vsi_nn_op_common_deinit(self);
-
-    return VSI_SUCCESS;
-} /* op_deinit() */
 
 #ifdef __cplusplus
 extern "C" {
@@ -356,7 +178,7 @@ DEF_OP_REG
     /* op_name    */ SELECT,
     /* init       */ NULL,
     /* compute    */ op_compute,
-    /* deinit     */ op_deinit,
+    /* deinit     */ vsi_nn_op_common_deinit,
     /* check      */ op_check,
     /* setup      */ op_setup,
     /* optimize   */ NULL,

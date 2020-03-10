@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2018 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -45,8 +45,6 @@
 #include "utils/vsi_nn_math.h"
 #include "utils/vsi_nn_util.h"
 #include "utils/vsi_nn_dtype_util.h"
-
-#define _GET_MAX(a, b)     ( (a) > (b) ? (a) : (b) )
 
 typedef struct _vx_status_desc_t
 {
@@ -136,7 +134,7 @@ static uint32_t _compute_padding
     int32_t padding;
     effective_ksize = (ksize - 1) * dilation_rate + 1;
     padding = (out_size - 1) * stride + effective_ksize - in_size;
-    return _GET_MAX(padding, 0);
+    return vsi_nn_max(padding, 0);
 } /* _compute_padding() */
 
 uint8_t * vsi_nn_LoadBinaryData
@@ -249,6 +247,9 @@ float vsi_nn_DataAsFloat32
     *p = 0xFFFFFFFF;
     switch( type )
     {
+    case VSI_NN_TYPE_BOOL8:
+        val = (float)((int8_t*)data)[0];
+        break;
     case VSI_NN_TYPE_INT8:
         val = (float)((int8_t*)data)[0];
         break;

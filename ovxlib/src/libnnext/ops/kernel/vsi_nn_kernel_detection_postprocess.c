@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -44,11 +44,6 @@
 #define _VX_KERNEL_ID           (VX_KERNEL_ENUM_DETECTION_POSTPROCESS)
 #define _VX_KERNEL_NAME         (VX_KERNEL_NAME_DETECTION_POSTPROCESS)
 #define _VX_KERNEL_FUNC_KERNEL  (vxDetection_postprocessKernel)
-
-#undef MAX
-#define MAX(a,b)    ((a) > (b) ? (a) : (b))
-#undef MIN
-#define MIN(a,b)    ((a) < (b) ? (a) : (b))
 
 // swap_element is implemented in vsi_nn_kernel_box_with_nms_limit.c
 void swap_element
@@ -325,7 +320,7 @@ static vsi_status VX_CALLBACK vxDetection_postprocessKernel
             }
             else
             {
-                uint32_t numOutClasses = MIN(numClasses - 1, (uint32_t)maxClassesPerDetection);
+                uint32_t numOutClasses = vsi_nn_min(numClasses - 1, (uint32_t)maxClassesPerDetection);
                 uint32_t select_size = 0;
                 uint32_t select_start = 0;
                 uint32_t select_len = 0;

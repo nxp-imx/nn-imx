@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -32,7 +32,6 @@
 #include "vsi_nn_graph.h"
 #include "vsi_nn_log.h"
 #include "vsi_nn_error.h"
-#include "vsi_nn_context.h"
 #include "kernel/vsi_nn_kernel.h"
 #include "utils/vsi_nn_math.h"
 
@@ -132,6 +131,24 @@ static vsi_status VX_CALLBACK _kernel_deinitializer
     return VSI_SUCCESS;
 } /* _kernel_deinitializer() */
 
+static void _kernel_clear_build_option
+    (
+    vsi_nn_kernel_source_info_t * source
+    )
+{
+    vsi_nn_kernel_build_option_t * option;
+    if( !source )
+    {
+        return;
+    }
+    option = &source->build_option;
+    if( option->data )
+    {
+        free( option->data );
+        option->data = NULL;
+    }
+} /* _kernel_clear_build_option() */
+
 static void _kernel_clear_source
     ( vsi_nn_kernel_t * kernel )
 {
@@ -156,6 +173,7 @@ static void _kernel_clear_source
             }
             free( source->data );
             source->data = NULL;
+            _kernel_clear_build_option( source );
         }
     }
 } /* _kernel_clear_source() */
@@ -389,8 +407,11 @@ static vsi_status _gpu_register
     vx_kernel obj;
     vsi_nn_context_t context;
     vx_program program = NULL;
-#define MAX_BUILDPROGRAM_LEN 128
-    char cmd[MAX_BUILDPROGRAM_LEN] = {0};
+    const vsi_nn_gpu_source_fmt_e active_fmt = kernel->gpu.active_source_fmt;
+
+#define MAX_BUILDPROGRAM_LEN 1024
+    char cmd[MAX_BUILDPROGRAM_LEN] = { 0 };
+    size_t cost_bytes = 0;
 
     memset( cmd, 0, sizeof(char) * MAX_BUILDPROGRAM_LEN );
     context = graph->ctx;
@@ -398,7 +419,7 @@ static vsi_status _gpu_register
     status = VSI_FAILURE;
     info = &(kernel->info);
 
-    switch( kernel->gpu.active_source_fmt )
+    switch( active_fmt )
     {
         case VSI_NN_GPU_SOURCE_FMT_CODE:
             program = _create_program_from_code( graph, kernel );
@@ -420,13 +441,30 @@ static vsi_status _gpu_register
         // set default evis version is 2
         if( VSI_NN_KERNEL_TYPE_EVIS == kernel->type )
         {
-            snprintf( cmd, MAX_BUILDPROGRAM_LEN, "-cl-viv-vx-extension -D VX_VERSION=2" );
+            cost_bytes = snprintf( cmd, MAX_BUILDPROGRAM_LEN,
+                    "-cl-viv-vx-extension -D VX_VERSION=2" );
         }
     }
     else
     {
-        snprintf( cmd, MAX_BUILDPROGRAM_LEN, "-cl-viv-vx-extension -D VX_VERSION=%d",
+        cost_bytes = snprintf( cmd, MAX_BUILDPROGRAM_LEN,
+                "-cl-viv-vx-extension -D VX_VERSION=%d",
                 context->config.evis.ver );
+    }
+    // Pack build option
+    if( kernel->gpu.sources[active_fmt].build_option.data )
+    {
+        vsi_nn_kernel_build_option_t * option = &kernel->gpu.sources[active_fmt].build_option;
+        if( MAX_BUILDPROGRAM_LEN - cost_bytes > strlen( option->data ) + 1 )
+        {
+            snprintf( &cmd[cost_bytes], MAX_BUILDPROGRAM_LEN - cost_bytes,
+                    " %s", option->data );
+        }
+        else
+        {
+            VSILOGE("Build option is too long!");
+            VSI_ASSERT( FALSE );
+        }
     }
 
     status = vxBuildProgram( program, cmd );
@@ -580,10 +618,10 @@ vsi_nn_kernel_node_t  vsi_nn_kernel_create_node
     ctx = vxGetContext( (vx_reference)graph->g );
 
     obj = vxGetKernelByName( ctx, info->name );
-    fprintf(stderr, "\n"); // TODO: This is a hack for driver msg
     status = vxGetStatus( (vx_reference)obj );
     if (VSI_SUCCESS != status)
     {
+        fprintf(stderr, "\n"); // TODO: This is a hack for driver msg
         /* Register kernel */
         status = vsi_nn_kernel_register( graph, kernel );
         if( VSI_SUCCESS != status )
@@ -728,6 +766,43 @@ void vsi_nn_kernel_add_source
     va_end(arg);
 } /* vsi_nn_kernel_add_source() */
 
+void vsi_nn_kernel_add_build_option
+    (
+    vsi_nn_kernel_t * kernel,
+    const char * option
+    )
+{
+    const vsi_nn_gpu_source_fmt_e fmt = VSI_NN_GPU_SOURCE_FMT_CODE;
+    vsi_nn_kernel_build_option_t * build_option;
+    size_t new_size;
+    size_t item_size;
+    size_t org_size;
+    char * buf = NULL;
+    if( !kernel || !option )
+    {
+        VSILOGW("Get NULL pointer.");
+        return;
+    }
+    build_option = &kernel->gpu.sources[fmt].build_option;
+    buf = build_option->data;
+    item_size = strlen( option );
+    org_size = 0;
+    if( buf )
+    {
+        org_size = strlen( buf );
+    }
+    new_size = org_size + item_size;
+    buf = (char*)realloc( buf, new_size + 2 ); // Space and terminator
+    if( !buf )
+    {
+        VSILOGE("Out of memory");
+        return;
+    }
+    snprintf( &buf[org_size], item_size + 2, " %s", option );
+    build_option->data = buf;
+
+} /* vsi_nn_kernel_add_build_option() */
+
 void vsi_nn_kernel_release
     (
     vsi_nn_kernel_t ** kernel
@@ -800,6 +875,8 @@ vsi_nn_kernel_node_t vsi_nn_kernel_selector
     vsi_nn_kernel_node_t node = NULL;
     vsi_nn_kernel_t * kernel;
     const vsi_nn_kernel_backend_t* backend;
+    vsi_nn_kernel_selector_t selector;
+    vsi_status status = VSI_SUCCESS;
     if( !kernel_name )
     {
         VSI_ASSERT( FALSE );
@@ -822,39 +899,58 @@ vsi_nn_kernel_node_t vsi_nn_kernel_selector
     {
         return NULL;
     }
+    memset( &selector, 0, sizeof(vsi_nn_kernel_selector_t) );
+    if( backend->select )
+    {
+        status = backend->select( graph, inputs, input_num, outputs, output_num,
+                params, &selector );
+        VSI_ASSERT( status == VSI_SUCCESS );
+    }
+    else
+    {
+        vsi_nn_kernel_pirority_t default_pirority[] = {
+            { VSI_NN_KERNEL_TYPE_EVIS,  4 },
+            { VSI_NN_KERNEL_TYPE_CL,    3 },
+            { VSI_NN_KERNEL_TYPE_VX,    2 },
+            { VSI_NN_KERNEL_TYPE_CPU,   1 },
+            };
+        vsi_nn_kernel_pirority_set( &selector,
+                default_pirority, _cnt_of_array(default_pirority) );
+    }
     /**
      * All kernels for one operation will share the same id.
      */
 
-    #define TRY_KERNEL_FUNC( kernel_type )  \
-        do { \
-            vsi_nn_kernel_setup_func_t kernel_func = backend->setup[kernel_type]; \
-            if( NULL == kernel_func ) \
-            { \
-                break; \
-            }\
-            vsi_nn_kernel_reset( kernel, kernel_type ); \
-            kernel->unique_id = KERNEL_ID_OVXLIB_START + backend->unique_id; \
-            node = kernel_func( graph, inputs, input_num, \
-                    outputs, output_num, params, kernel ); \
-            if( node ) { \
-                goto final; \
-            } \
-        } while(0)
-    // TODO: This is a simple selector.
-    //if support evis
-    if( graph->ctx->config.evis.ver != VSI_NN_HW_EVIS_NONE )
     {
-        TRY_KERNEL_FUNC( VSI_NN_KERNEL_TYPE_EVIS );
+        uint32_t i;
+        vsi_nn_kernel_type_e type;
+        vsi_nn_kernel_setup_func_t kernel_func = NULL;;
+        for( i = 0; i < selector.allow_kernel_num; i ++ )
+        {
+            type = selector.pirority[i].kernel_type;
+            // Skip evis if not support
+            if( type == VSI_NN_KERNEL_TYPE_EVIS
+                    && graph->ctx->config.evis.ver == VSI_NN_HW_EVIS_NONE )
+            {
+                continue;
+            }
+            kernel_func = backend->setup[type];
+            // Skip no kernel func
+            if( NULL == kernel_func )
+            {
+                continue;
+            }
+            vsi_nn_kernel_reset( kernel, type );
+            kernel->unique_id = KERNEL_ID_OVXLIB_START + backend->unique_id;
+            node = kernel_func( graph, inputs, input_num,
+                    outputs, output_num, params, kernel );
+            // If node created, break the loop
+            if( node )
+            {
+                break;
+            }
+        }
     }
-    //if support cl
-    TRY_KERNEL_FUNC( VSI_NN_KERNEL_TYPE_CL );
-    //if use vx
-    TRY_KERNEL_FUNC( VSI_NN_KERNEL_TYPE_VX );
-    //if use cpu
-    TRY_KERNEL_FUNC( VSI_NN_KERNEL_TYPE_CPU );
-    #undef TRY_KERNEL_FUNC
-final:
     if( !node )
     {
         VSILOGW("No valid kernel for %s", kernel_name);
@@ -886,7 +982,7 @@ vsi_nn_kernel_scalar_t vsi_nn_kernel_scalar_create
     (
     vsi_nn_graph_t * graph,
     vsi_nn_kernel_dtype_e dtype,
-    void * data
+    const void * data
     )
 {
     vx_enum vxtype = VX_TYPE_FLOAT32;
@@ -932,7 +1028,7 @@ vsi_nn_kernel_scalar_t vsi_nn_kernel_scalar_create
             VSILOGW("Unsupport dtype %d", dtype);
             return NULL;
     }
-    return vxCreateScalar( graph->ctx->c, vxtype, data );
+    return vxCreateScalar( graph->ctx->c, vxtype, (void*)data );
 }  /* vsi_nn_kernel_scalar_create() */
 
 vsi_status vsi_nn_kernel_gpu_add_param
@@ -1062,4 +1158,46 @@ void vsi_nn_kernel_tensor_attr_release
         *p_attr = NULL;
     }
 } /* vsi_nn_kernel_tensor_attr_release() */
+
+vsi_status vsi_nn_kernel_pirority_set
+    (
+    vsi_nn_kernel_selector_t * selector,
+    const vsi_nn_kernel_pirority_t * pirority,
+    size_t pirority_size
+    )
+{
+    vsi_status status = VSI_SUCCESS;
+    vsi_nn_kernel_pirority_t tmp;
+    uint32_t i, j, k;
+    VSI_ASSERT( pirority_size <= VSI_NN_KERNEL_TYPE_NUM );
+    VSI_ASSERT( pirority_size > 0 );
+    VSI_ASSERT( pirority != NULL );
+    VSI_ASSERT( selector != NULL );
+    memcpy( selector->pirority, pirority,
+            pirority_size * sizeof(vsi_nn_kernel_pirority_t) );
+    selector->allow_kernel_num = pirority_size;
+
+    for( i = 0; i < pirority_size; i ++ )
+    {
+        k = i;
+        VSI_ASSERT( selector->pirority[k].fps <= VSI_NN_KERNEL_PIRORITY_NORMAL_LIMIT );
+        for( j = i; j < pirority_size; j ++ )
+        {
+            if( selector->pirority[k].fps < selector->pirority[j].fps )
+            {
+                k = j;
+            }
+        }
+        if( k != i )
+        {
+            memcpy( &tmp, &selector->pirority[i],
+                    sizeof( vsi_nn_kernel_pirority_t ) );
+            memcpy( &selector->pirority[i], &selector->pirority[k],
+                    sizeof( vsi_nn_kernel_pirority_t ) );
+            memcpy( &selector->pirority[k], &tmp,
+                    sizeof( vsi_nn_kernel_pirority_t ) );
+        }
+    }
+    return status;
+} /* vsi_nn_kernel_pirority_set() */
 

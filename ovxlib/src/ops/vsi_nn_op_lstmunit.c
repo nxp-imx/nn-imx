@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2018 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -282,6 +282,7 @@ static vsi_bool op_setup
         outputs[2]->attr.size[1] = inputs[0]->attr.size[1]; /* batch_size */
     }
 
+    if ((NULL != outputs[3]) && (NULL != inputs[4]))
     {
         uint32_t cifg_factor = /*input2input_weight*/inputs[3] == NULL ? 3/*use_cifg*/ : 4;
         outputs[3]->attr.dim_num = inputs[0]->attr.dim_num;

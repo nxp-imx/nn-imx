@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2018 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -403,6 +403,7 @@ static _op_param_gen_t s_op_gen[] =
     /* BIDIRECTIONAL_SEQUENCE_LSTM */ NULL,
     /* RNNCELL_OVXLIB */        NULL,
     /* SWISH */        NULL,
+    /* DEPTHWISE_CONV1D */      NULL,
 };
 _compiler_assert( _cnt_of_array(s_op_gen) == VSI_NN_OP_NUM, vsi_nn_code_generator_c );
 

@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -44,13 +44,14 @@ static inline void _convert_##SRC_NAME##_to_##DST_NAME \
             out_buffer[i] = (DST_DTYPE)buffer[i]; \
         } \
     }
-DEF_DTYPE_CONVERT_NORMAL( bool8,  int8_t,   float, float )
+//DEF_DTYPE_CONVERT_NORMAL( bool8,  int8_t,   float, float )
 DEF_DTYPE_CONVERT_NORMAL( int8,   int8_t,   float, float )
 DEF_DTYPE_CONVERT_NORMAL( int16,  int16_t,  float, float )
 DEF_DTYPE_CONVERT_NORMAL( int32,  int32_t,  float, float )
 DEF_DTYPE_CONVERT_NORMAL( uint8,  uint8_t,  float, float )
 DEF_DTYPE_CONVERT_NORMAL( uint32, uint32_t, float, float )
 DEF_DTYPE_CONVERT_NORMAL( uint16, uint16_t, float, float )
+//DEF_DTYPE_CONVERT_NORMAL( float, float, bool8,   int8_t   )
 DEF_DTYPE_CONVERT_NORMAL( float, float, int8,   int8_t   )
 DEF_DTYPE_CONVERT_NORMAL( float, float, int16,  int16_t  )
 DEF_DTYPE_CONVERT_NORMAL( float, float, int32,  int32_t  )
@@ -214,6 +215,7 @@ vsi_bool vsi_nn_dtype_convert_float_to_dtype
     switch( dtype )
     {
         case I8:
+        case BOOL8:
             _convert_float_to_int8( buffer, size, (int8_t*)out_buffer );
             break;
         case I16:
@@ -353,6 +355,7 @@ vsi_bool vsi_nn_dtype_convert_dtype_to_float
     switch( dtype )
     {
         case I8:
+        case BOOL8:
             _convert_int8_to_float( (const int8_t*)buffer, size, out_buffer );
             break;
         case I16:

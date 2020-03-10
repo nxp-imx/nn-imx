@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -211,6 +211,11 @@ static vsi_status VX_CALLBACK vxTensor_add_mean_stddev_normKernel
         float eps = .0f;
         uint32_t i = 0;
 
+        imgObj[0] = (vx_tensor)paramObj[0];
+        imgObj[1] = (vx_tensor)paramObj[1];
+        imgObj[2] = (vx_tensor)paramObj[2];
+        scalar[0] = (vx_scalar)paramObj[3];
+
         memset(&in_attr, 0x0, sizeof(vsi_nn_tensor_attr_t));
         memset(&in_attr1, 0x0, sizeof(vsi_nn_tensor_attr_t));
         memset(&out_attr, 0x0, sizeof(vsi_nn_tensor_attr_t));
@@ -224,10 +229,6 @@ static vsi_status VX_CALLBACK vxTensor_add_mean_stddev_normKernel
             goto OnError;
         }
 
-        imgObj[0] = (vx_tensor)paramObj[0];
-        imgObj[1] = (vx_tensor)paramObj[1];
-        imgObj[2] = (vx_tensor)paramObj[2];
-        scalar[0] = (vx_scalar)paramObj[3];
         context = vxGetContext((vx_reference)node);
         if (context == NULL)
         {
@@ -350,13 +351,13 @@ vx_status VX_CALLBACK vxTensor_add_mean_stddev_normInitializer
     uint32_t      input_size[DIM_SIZE]   = {1, 1, 1, 1};
     uint32_t      input_dims      = 0;
     vsi_nn_type_e inputDataFormat = VSI_NN_TYPE_FLOAT16, outputDataFormat = VSI_NN_TYPE_FLOAT16;
-    vx_float32 scaleIn  = 0;
+    vx_float32 scaleIn  = 1.0f;
     int32_t input_ZP    = 0;
-    vx_float32 scaleIn1 = 0;
+    vx_float32 scaleIn1 = 1.0f;
     int32_t input_ZP1   = 0;
-    vx_float32 scaleOut = 0;
+    vx_float32 scaleOut = 1.0f;
     int32_t output_ZP   = 0;
-    vx_int8 fixpoint = 0, fixpoint1 = 0;
+    vx_int8 fixpoint = 0, fixpoint1 = 0, fixpoint_out = 0;
     vx_float32 inScale_dfp, inScale_dfp1;
 
     vx_float32 eps = 0;
@@ -364,6 +365,7 @@ vx_status VX_CALLBACK vxTensor_add_mean_stddev_normInitializer
     vx_float32 dimRatio = 0;
     uint32_t i = 0;
     vsi_nn_tensor_attr_t in_attr, in_attr1, out_attr;
+
     memset(&in_attr, 0x0, sizeof(vsi_nn_tensor_attr_t));
     memset(&in_attr1, 0x0, sizeof(vsi_nn_tensor_attr_t));
     memset(&out_attr, 0x0, sizeof(vsi_nn_tensor_attr_t));
@@ -384,19 +386,62 @@ vx_status VX_CALLBACK vxTensor_add_mean_stddev_normInitializer
     {
         input_size[i] = in_attr.size[i];
     }
-    input_ZP   = in_attr.dtype.zero_point;
-    scaleIn    = in_attr.dtype.scale;
-    fixpoint   = in_attr.dtype.fl;
+    if (VSI_NN_QNT_TYPE_DFP == in_attr.dtype.qnt_type)
+    {
+        fixpoint   = in_attr.dtype.fl;
+    }
+    else if (VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC == in_attr.dtype.qnt_type)
+    {
+        input_ZP   = in_attr.dtype.zero_point;
+        scaleIn    = in_attr.dtype.scale;
+    }
+    else
+    {
+        input_ZP   = 0;
+        scaleIn    = 1.0f;
+    }
 
     //input1
-    input_ZP1  = in_attr1.dtype.zero_point;
-    scaleIn1   = in_attr1.dtype.scale;
-    fixpoint1  = in_attr1.dtype.fl;
+    if (VSI_NN_QNT_TYPE_DFP == in_attr1.dtype.qnt_type)
+    {
+        fixpoint1  = in_attr1.dtype.fl;
+    }
+    else if (VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC == in_attr1.dtype.qnt_type)
+    {
+        input_ZP1  = in_attr1.dtype.zero_point;
+        scaleIn1   = in_attr1.dtype.scale;
+    }
+    else
+    {
+        input_ZP1   = 0;
+        scaleIn1    = 1.0f;
+    }
 
     //output
     outputDataFormat = out_attr.dtype.vx_type;
-    output_ZP        = out_attr.dtype.zero_point;
-    scaleOut         = out_attr.dtype.scale;
+    if (VSI_NN_QNT_TYPE_DFP == out_attr.dtype.qnt_type)
+    {
+        fixpoint_out = out_attr.dtype.fl;
+        if (fixpoint_out >= 0)
+        {
+            scaleOut = 1.0f / (vx_float32) (1 << fixpoint_out);
+        }
+        else
+        {
+            scaleOut = (vx_float32) (1 << -fixpoint_out);
+        }
+        output_ZP = 0;
+    }
+    else if (VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC == out_attr.dtype.qnt_type)
+    {
+        output_ZP        = out_attr.dtype.zero_point;
+        scaleOut         = out_attr.dtype.scale;
+    }
+    else
+    {
+        output_ZP   = 0;
+        scaleOut    = 1.0f;
+    }
 
     status = vxCopyScalar(scalar, &eps, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
     rsEps = (vx_float32)(1.0f / sqrtf(eps));

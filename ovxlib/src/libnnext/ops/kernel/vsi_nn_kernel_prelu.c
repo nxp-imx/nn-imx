@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2018 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -225,6 +225,8 @@ vsi_status VX_CALLBACK vxParametricReluInitializer
     vx_uint32     width                 = 0;
     vx_uint32     height                = 0;
     vx_uint32     depth                 = 0;
+    vx_uint32     thread_width          = 0;
+    vx_uint32     thread_height         = 0;
     vx_enum       srcFormat             = VSI_NN_TYPE_FLOAT16;
     vx_enum       dstFormat             = VSI_NN_TYPE_FLOAT16;
     vx_float32    input_scale           = 1.0f;
@@ -664,10 +666,20 @@ vsi_status VX_CALLBACK vxParametricReluInitializer
 
     if (enable_image_2d)
     {
+        if (0 == axis || (1 == axis && 1 == depth))
+        {
+            thread_width  =  width;
+            thread_height =  height * depth;
+        }
+        else
+        {
+            thread_width  =  width * height;
+            thread_height =  depth;
+        }
         shaderParam.workDim             = 2;
-        shaderParam.globalWorkSize[0]   = gcmALIGN((width * height + shaderParam.globalWorkScale[0] - 1)
+        shaderParam.globalWorkSize[0]   = gcmALIGN((thread_width + shaderParam.globalWorkScale[0] - 1)
             / shaderParam.globalWorkScale[0], 4);
-        shaderParam.globalWorkSize[1]   = (depth + shaderParam.globalWorkScale[1] - 1)
+        shaderParam.globalWorkSize[1]   = (thread_height + shaderParam.globalWorkScale[1] - 1)
             / shaderParam.globalWorkScale[1];
     }
     else

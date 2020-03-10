@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2018 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -526,7 +526,9 @@ void vsi_nn_internal_node_init_attr
     attr->vtl = use_virtual_tensor;
     attr->is_const = FALSE;
 
-    if( dtype->qnt_type == VSI_NN_QNT_TYPE_NONE )
+    if( dtype->qnt_type == VSI_NN_QNT_TYPE_NONE &&
+        ( dtype->vx_type != VSI_NN_TYPE_FLOAT16 &&
+          dtype->vx_type != VSI_NN_TYPE_FLOAT32 ) )
     {
         attr->dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
         attr->dtype.vx_type = VSI_NN_TYPE_FLOAT16;

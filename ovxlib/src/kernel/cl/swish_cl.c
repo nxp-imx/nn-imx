@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -55,26 +55,46 @@ typedef enum _internal_img_dim_e
 #define SWISH_HASH_KEY(SWISH_TYPE, IN_DTYPE, OUT_DTYPE, _image_2d) \
         ((SWISH_TYPE << 20) | ( IN_DTYPE << 12 ) | ( OUT_DTYPE << 4) | (_image_2d))
 
-#define SWISH_PACK_KERNEL_FLOAT_MAP( IN_DTYPE, OUT_DTYPE, INSTR) \
-        { SWISH_HASH_KEY(VSI_NN_SWISH, IN_DTYPE, OUT_DTYPE, IMAGE##INSTR), \
-        CVIVANTE_NAMESPACE("cl.swish_F32toF32"STR(INSTR)), \
+#define SWISH_PACK_KERNEL_FLOAT_MAP( IN_DTYPE, OUT_DTYPE) \
+        { SWISH_HASH_KEY(VSI_NN_SWISH, IN_DTYPE, OUT_DTYPE, IMAGE), \
+        CVIVANTE_NAMESPACE("cl.swish_F32toF32"), \
         _SWISH_KERNEL_SOURCE }
 
-#define HSWISH_PACK_KERNEL_FLOAT_MAP( IN_DTYPE, OUT_DTYPE, INSTR) \
-        { SWISH_HASH_KEY(VSI_NN_HSWISH, IN_DTYPE, OUT_DTYPE, IMAGE##INSTR), \
-        CVIVANTE_NAMESPACE("cl.hswish_F32toF32"STR(INSTR)), \
+#define HSWISH_PACK_KERNEL_FLOAT_MAP( IN_DTYPE, OUT_DTYPE) \
+        { SWISH_HASH_KEY(VSI_NN_HSWISH, IN_DTYPE, OUT_DTYPE, IMAGE), \
+        CVIVANTE_NAMESPACE("cl.hswish_F32toF32"), \
         _HSWISH_KERNEL_SOURCE }
 
-#define SWISH_PACK_KERNEL_MAP( IN_DTYPE, OUT_DTYPE, INSTR) \
-        { SWISH_HASH_KEY(VSI_NN_SWISH, IN_DTYPE, OUT_DTYPE, IMAGE##INSTR), \
-        CVIVANTE_NAMESPACE("cl.swish_"STR(IN_DTYPE)"to"STR(OUT_DTYPE)STR(INSTR)), \
+#define SWISH_PACK_KERNEL_MAP( IN_DTYPE, OUT_DTYPE) \
+        { SWISH_HASH_KEY(VSI_NN_SWISH, IN_DTYPE, OUT_DTYPE, IMAGE), \
+        CVIVANTE_NAMESPACE("cl.swish_"STR(IN_DTYPE)"to"STR(OUT_DTYPE)), \
         _SWISH_KERNEL_SOURCE }
 
-#define HSWISH_PACK_KERNEL_MAP( IN_DTYPE, OUT_DTYPE, INSTR) \
-        { SWISH_HASH_KEY(VSI_NN_HSWISH, IN_DTYPE, OUT_DTYPE, IMAGE##INSTR), \
-        CVIVANTE_NAMESPACE("cl.hswish_"STR(IN_DTYPE)"to"STR(OUT_DTYPE)STR(INSTR)), \
+#define HSWISH_PACK_KERNEL_MAP( IN_DTYPE, OUT_DTYPE) \
+        { SWISH_HASH_KEY(VSI_NN_HSWISH, IN_DTYPE, OUT_DTYPE, IMAGE), \
+        CVIVANTE_NAMESPACE("cl.hswish_"STR(IN_DTYPE)"to"STR(OUT_DTYPE)), \
         _HSWISH_KERNEL_SOURCE }
 
+
+#define SWISH_PACK_KERNEL_FLOAT_MAP_2D( IN_DTYPE, OUT_DTYPE) \
+        { SWISH_HASH_KEY(VSI_NN_SWISH, IN_DTYPE, OUT_DTYPE, IMAGE_2D), \
+        CVIVANTE_NAMESPACE("cl.swish_F32toF32_2D"), \
+        _SWISH_KERNEL_SOURCE }
+
+#define HSWISH_PACK_KERNEL_FLOAT_MAP_2D( IN_DTYPE, OUT_DTYPE) \
+        { SWISH_HASH_KEY(VSI_NN_HSWISH, IN_DTYPE, OUT_DTYPE, IMAGE_2D), \
+        CVIVANTE_NAMESPACE("cl.hswish_F32toF32_2D"), \
+        _HSWISH_KERNEL_SOURCE }
+
+#define SWISH_PACK_KERNEL_MAP_2D( IN_DTYPE, OUT_DTYPE) \
+        { SWISH_HASH_KEY(VSI_NN_SWISH, IN_DTYPE, OUT_DTYPE, IMAGE_2D), \
+        CVIVANTE_NAMESPACE("cl.swish_"STR(IN_DTYPE)"to"STR(OUT_DTYPE)"_2D"), \
+        _SWISH_KERNEL_SOURCE }
+
+#define HSWISH_PACK_KERNEL_MAP_2D( IN_DTYPE, OUT_DTYPE) \
+        { SWISH_HASH_KEY(VSI_NN_HSWISH, IN_DTYPE, OUT_DTYPE, IMAGE_2D), \
+        CVIVANTE_NAMESPACE("cl.hswish_"STR(IN_DTYPE)"to"STR(OUT_DTYPE)"_2D"), \
+        _HSWISH_KERNEL_SOURCE }
 
 typedef struct
 {
@@ -85,22 +105,22 @@ typedef struct
 
 static const _kernel_map_type _swish_kernel_map[] =
 {
-    SWISH_PACK_KERNEL_FLOAT_MAP(F32,  F32, ),
-    SWISH_PACK_KERNEL_FLOAT_MAP(F32,  F32, _2D),
-    SWISH_PACK_KERNEL_FLOAT_MAP(F16,  F16, ),
-    SWISH_PACK_KERNEL_FLOAT_MAP(F16,  F16, _2D),
-    SWISH_PACK_KERNEL_MAP(U8,  U8, ),
-    SWISH_PACK_KERNEL_MAP(U8,  U8, _2D),
-    SWISH_PACK_KERNEL_MAP(I32,  I32, ),
-    SWISH_PACK_KERNEL_MAP(I32,  I32, _2D),
-    HSWISH_PACK_KERNEL_FLOAT_MAP(F32,  F32, ),
-    HSWISH_PACK_KERNEL_FLOAT_MAP(F32,  F32, _2D),
-    HSWISH_PACK_KERNEL_FLOAT_MAP(F16,  F16, ),
-    HSWISH_PACK_KERNEL_FLOAT_MAP(F16,  F16, _2D),
-    HSWISH_PACK_KERNEL_MAP(U8,  U8, ),
-    HSWISH_PACK_KERNEL_MAP(U8,  U8, _2D),
-    HSWISH_PACK_KERNEL_MAP(I32,  I32, ),
-    HSWISH_PACK_KERNEL_MAP(I32,  I32, _2D),
+    SWISH_PACK_KERNEL_FLOAT_MAP(F32,  F32),
+    SWISH_PACK_KERNEL_FLOAT_MAP_2D(F32,  F32),
+    SWISH_PACK_KERNEL_FLOAT_MAP(F16,  F16),
+    SWISH_PACK_KERNEL_FLOAT_MAP_2D(F16,  F16),
+    SWISH_PACK_KERNEL_MAP(U8,  U8),
+    SWISH_PACK_KERNEL_MAP_2D(U8,  U8),
+    SWISH_PACK_KERNEL_MAP(I32,  I32),
+    SWISH_PACK_KERNEL_MAP_2D(I32,  I32),
+    HSWISH_PACK_KERNEL_FLOAT_MAP(F32,  F32),
+    HSWISH_PACK_KERNEL_FLOAT_MAP_2D(F32,  F32),
+    HSWISH_PACK_KERNEL_FLOAT_MAP(F16,  F16),
+    HSWISH_PACK_KERNEL_FLOAT_MAP_2D(F16,  F16),
+    HSWISH_PACK_KERNEL_MAP(U8,  U8),
+    HSWISH_PACK_KERNEL_MAP_2D(U8,  U8),
+    HSWISH_PACK_KERNEL_MAP(I32,  I32),
+    HSWISH_PACK_KERNEL_MAP_2D(I32,  I32),
 };
 
 
@@ -130,11 +150,11 @@ static vx_param_description_t _swish_kernel_param_def[] =
 /*
  * Kernel initializer
  */
-static vx_status VX_CALLBACK _swish_initializer
+DEF_KERNEL_INITIALIZER(_swish_initializer)
     (
-    vx_node              node,
-    const vx_reference * param,
-    uint32_t             param_size
+    vsi_nn_kernel_node_t node,
+    const vsi_nn_kernel_node_param_t * param,
+    size_t param_size
     )
 {
     gpu_param_t gpu_param = {
@@ -145,18 +165,13 @@ static vx_status VX_CALLBACK _swish_initializer
         {0, 0, 0}
         };
 
-    vx_status    status             = VX_SUCCESS;
+    vx_status    status             = VX_FAILURE;
     vx_tensor    output             = (vx_tensor)param[1];
     vsi_nn_kernel_tensor_attr_t * attr_out = NULL;
     vsi_int_array_t * out_shape = NULL;
 
     attr_out = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)output );
-    if (attr_out == NULL)
-    {
-        VSILOGE("vsi_nn_kernel_tensor_attr_create failure! at line %d\n", __LINE__);
-        status = VX_ERROR_NO_MEMORY;
-        return status;
-    }
+    CHECK_PTR_FAIL_GOTO( attr_out, "vsi_nn_kernel_tensor_attr_create fail.", final );
 
     out_shape = attr_out->shape;
 
@@ -170,8 +185,8 @@ static vx_status VX_CALLBACK _swish_initializer
                                         /  gpu_param.global_scale[1];
     gpu_param.global_size[2]   = out_shape->size > 2 ? out_shape->data[2] : 1;
 
-    vsi_nn_kernel_gpu_config( node, &gpu_param );
-
+    status = vsi_nn_kernel_gpu_config( node, &gpu_param );
+final:
     if (attr_out)
     {
         vsi_nn_kernel_tensor_attr_release(&attr_out);
@@ -202,7 +217,7 @@ static vsi_status _query_kernel
     size_t param_def_size               = _SWISH_PARAM_NUM;
     vx_kernel_initialize_f  initializer = _swish_initializer;
     uint32_t key;
-    int i;
+    uint32_t i;
 
     in_dtype  = vsi_nn_kernel_map_dtype( inputs[0]->attr.dtype.vx_type );
     out_dtype = vsi_nn_kernel_map_dtype( outputs[0]->attr.dtype.vx_type );
@@ -266,7 +281,7 @@ static vsi_nn_kernel_node_t _setup
     float   beta        = 1.0f;
     float   inputScale  = inputs[0]->attr.dtype.scale;
     float   inputTail   = (float)inputs[0]->attr.dtype.zero_point * inputScale;
-    float   outputScale = outputs[0]->attr.dtype.scale == 0.0 ? 0.0 : 1.0f / outputs[0]->attr.dtype.scale;
+    float   outputScale = outputs[0]->attr.dtype.scale == 0.0f ? 0.0f : 1.0f / outputs[0]->attr.dtype.scale;
     float   outputZP    = (float)outputs[0]->attr.dtype.zero_point + 0.5f;
     vx_float32  logE    = (vx_float32)(log10(exp(1.0f)) / log10(2.0f));
 

@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -211,9 +211,9 @@ static vsi_bool op_setup
         output_tensor = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
         rnncell_out1 = output_tensor->t;
 
-        curr = vsi_nn_new_internal_node( self, VSI_NN_OP_RNN, 0, 0 );
-        curr->node->nn_param.rnn.activation = curr_param->activation;
-        memcpy( curr->node->nn_param.unidirectional_sequence_rnn.internal_dtype,
+        curr = vsi_nn_new_internal_node( self, VSI_NN_OP_RNNCELL_OVXLIB, 0, 0 );
+        curr->node->nn_param.rnncell_ovxlib.activation = curr_param->activation;
+        memcpy( curr->node->nn_param.rnncell_ovxlib.internal_dtype,
             curr_param->internal_dtype, sizeof( curr_param->internal_dtype ) );
         curr->inputs[RNNCELL_INPUT_INPUT] = reshape_output;
         curr->inputs[RNNCELL_INPUT_H_STATE] = last_step_h_state;

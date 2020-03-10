@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -160,9 +160,21 @@ DEF_KERNEL_INITIALIZER(_minimum_initializer)
     status = vsi_nn_kernel_gpu_config( node, &gpu_param );
 
 final:
-    if (attr[0]) vsi_nn_kernel_tensor_attr_release( &attr[0] );
-    if (attr[1]) vsi_nn_kernel_tensor_attr_release( &attr[1] );
-    if (attr[2]) vsi_nn_kernel_tensor_attr_release( &attr[2] );
+    if (attr[0])
+    {
+        vsi_nn_kernel_tensor_attr_release( &attr[0] );
+        attr[0] = NULL;
+    }
+    if (attr[1])
+    {
+        vsi_nn_kernel_tensor_attr_release( &attr[1] );
+        attr[1] = NULL;
+    }
+    if (attr[2])
+    {
+        vsi_nn_kernel_tensor_attr_release( &attr[2] );
+        attr[2] = NULL;
+    }
 
     return status;
 } /* _minimum_initializer() */
@@ -200,7 +212,8 @@ static vsi_status _query_kernel
         kernel->info.parameters = kernel_param_def;
         kernel->info.numParams = _cnt_of_array( kernel_param_def );
         kernel->info.initialize = _minimum_initializer;
-        vsi_nn_kernel_add_source( kernel, VSI_NN_GPU_SOURCE_FMT_CODE, 1,
+        vsi_nn_kernel_add_source( kernel, VSI_NN_GPU_SOURCE_FMT_CODE, 2,
+                "eltwise_ops_helper",
                 kernel_map[i].source_name );
         vsi_nn_kernel_add_source( kernel, VSI_NN_GPU_SOURCE_FMT_EXECUTABLE, 1,
                 kernel_map[i].source_name );

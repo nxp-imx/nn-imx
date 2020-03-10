@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -99,7 +99,7 @@ static vsi_status VX_CALLBACK vxPre_process_bgraKernel
         TEST_CHECK_STATUS(status, final);
         if(i == 0)
         {
-            for (j = 0; j < in_attr[i].dim_num; j++)
+            for (j = 0; j < (int32_t)in_attr[i].dim_num; j++)
             {
                 src_size[j] = in_attr[i].size[j];
             }
@@ -113,7 +113,7 @@ static vsi_status VX_CALLBACK vxPre_process_bgraKernel
         out_elements[i] = vsi_nn_vxGetTensorElementNum(&out_attr[i]);
         u8_out_buffer[i]= (uint8_t *)malloc(out_elements[i] * sizeof(uint8_t));
         memset(u8_out_buffer[i], 0, out_elements[i] * sizeof(uint8_t));
-        for (j = 0; j < out_attr[i].dim_num; j++)
+        for (j = 0; j < (int32_t)out_attr[i].dim_num; j++)
         {
             dst_size[j] = out_attr[i].size[j];
         }

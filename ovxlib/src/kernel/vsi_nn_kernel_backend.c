@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -31,26 +31,30 @@
 #include "kernel/vsi_nn_kernel.h"
 #include "utils/vsi_nn_hashmap.h"
 
+static vsi_nn_kernel_unique_id_t _global_id()
+    {
+        static vsi_nn_kernel_unique_id_t global_id = 0;
+        return global_id ++;
+    } /* _global_id() */
 
-static vsi_bool s_backends_inited = FALSE;
-static vsi_nn_hashmap_t* s_backends = NULL;
-static vsi_nn_kernel_unique_id_t s_global_id = 0;
+static vsi_nn_hashmap_t* _backends()
+    {
+        static vsi_nn_hashmap_t* backends = NULL;
+        if( !backends )
+        {
+            backends = vsi_nn_hashmap_create();
+        }
+        return backends;
+    } /* _backends() */
 
-void vsi_nn_kernel_backend_register
-    (
-    const char* kernel_name,
-    vsi_nn_kernel_type_e kernel_type,
-    vsi_nn_kernel_setup_func_t setup_func
-    )
+static vsi_nn_kernel_backend_t* _get_or_new_backend
+    ( const char* kernel_name )
 {
-    vsi_nn_kernel_backend_t* backend;
-    if( !s_backends )
+    vsi_nn_kernel_backend_t* backend = NULL;
+    vsi_nn_hashmap_t* backends = _backends();
+    if( vsi_nn_hashmap_has( backends, kernel_name ) )
     {
-        s_backends = vsi_nn_hashmap_create();
-    }
-    if( vsi_nn_hashmap_has( s_backends, kernel_name ) )
-    {
-        backend = vsi_nn_hashmap_get( s_backends, kernel_name );
+        backend = vsi_nn_hashmap_get( backends, kernel_name );
     }
     else
     {
@@ -61,9 +65,22 @@ void vsi_nn_kernel_backend_register
             VSI_ASSERT( FALSE );
         }
         memset( backend, 0, sizeof(vsi_nn_kernel_backend_t) );
-        vsi_nn_hashmap_add( s_backends, kernel_name, backend );
-        backend->unique_id = s_global_id ++;
+        vsi_nn_hashmap_add( backends, kernel_name, backend );
+        backend->unique_id = _global_id();
     }
+    return backend;
+} /* _get_or_new_backend() */
+
+void vsi_nn_kernel_backend_register
+    (
+    const char* kernel_name,
+    vsi_nn_kernel_type_e kernel_type,
+    vsi_nn_kernel_setup_func_t setup_func
+    )
+{
+    vsi_nn_kernel_backend_t* backend = NULL;
+    backend = _get_or_new_backend( kernel_name );
+    VSI_ASSERT( backend != NULL );
     if( backend->setup[kernel_type] )
     {
         VSILOGE("Kernel %s backend %d has been registered!", kernel_name, kernel_type);
@@ -72,10 +89,23 @@ void vsi_nn_kernel_backend_register
     backend->setup[kernel_type] = setup_func;
 } /* vsi_nn_register_backend() */
 
+void vsi_nn_kernel_selector_register
+    (
+    const char* kernel_name,
+    vsi_nn_kernel_selector_func_t selector_func
+    )
+{
+    vsi_nn_kernel_backend_t* backend = NULL;
+    backend = _get_or_new_backend( kernel_name );
+    VSI_ASSERT( backend != NULL );
+    backend->select = selector_func;
+} /* vsi_nn_kernel_selector_register() */
+
 const vsi_nn_kernel_backend_t* vsi_nn_kernel_backend_get( const char* key )
 {
+    vsi_nn_hashmap_t* backends = _backends();
     const vsi_nn_kernel_backend_t* backend = NULL;
-    backend = (const vsi_nn_kernel_backend_t*)vsi_nn_hashmap_get( s_backends, key );
+    backend = (const vsi_nn_kernel_backend_t*)vsi_nn_hashmap_get( backends, key );
     return backend;
 } /* vsi_nn_backend_get() */
 
@@ -83,11 +113,10 @@ vsi_status vsi_nn_kernel_backend_init( void )
 {
     vsi_status status = VSI_SUCCESS;
     // TODO: Multi-thread support
-    if( s_backends_inited )
+    if( _backends() != NULL )
     {
         return status;
     }
-    s_backends_inited = TRUE;
 #if defined(__linux__)
 #if 0
     extern vsi_nn_kernel_section_meta_t* __start_kernel_meta_section;
@@ -111,6 +140,7 @@ vsi_status vsi_nn_kernel_backend_init( void )
 
 void vsi_nn_kernel_backend_deinit()
 {
-    vsi_nn_hashmap_release( &s_backends );
+    vsi_nn_hashmap_t* backends = _backends();
+    vsi_nn_hashmap_release( &backends );
 } /* vsi_nn_kernel_backend_deinit() */
 

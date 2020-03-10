@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -56,16 +56,26 @@ typedef enum _internal_img_dim_e
 #define SWISH_HASH_KEY(SWISH_TYPE, IN_DTYPE, OUT_DTYPE, _image_2d) \
         ((SWISH_TYPE << 20) | ( IN_DTYPE << 12 ) | ( OUT_DTYPE << 4) | (_image_2d))
 
-#define SWISH_PACK_KERNEL_MAP( IN_DTYPE, OUT_DTYPE, INSTR) \
-        { SWISH_HASH_KEY(VSI_NN_SWISH, IN_DTYPE, OUT_DTYPE, IMAGE##INSTR), \
-        CVIVANTE_NAMESPACE("evis.swish_"STR(IN_DTYPE)"to"STR(OUT_DTYPE)STR(INSTR)), \
+#define SWISH_PACK_KERNEL_MAP( IN_DTYPE, OUT_DTYPE) \
+        { SWISH_HASH_KEY(VSI_NN_SWISH, IN_DTYPE, OUT_DTYPE, IMAGE), \
+        CVIVANTE_NAMESPACE("evis.swish_"STR(IN_DTYPE)"to"STR(OUT_DTYPE)), \
         _SWISH_KERNEL_SOURCE }
 
-#define HSWISH_PACK_KERNEL_MAP( IN_DTYPE, OUT_DTYPE, INSTR) \
-        { SWISH_HASH_KEY(VSI_NN_HSWISH, IN_DTYPE, OUT_DTYPE, IMAGE##INSTR), \
-        CVIVANTE_NAMESPACE("evis.hswish_"STR(IN_DTYPE)"to"STR(OUT_DTYPE)STR(INSTR)), \
+#define HSWISH_PACK_KERNEL_MAP( IN_DTYPE, OUT_DTYPE) \
+        { SWISH_HASH_KEY(VSI_NN_HSWISH, IN_DTYPE, OUT_DTYPE, IMAGE), \
+        CVIVANTE_NAMESPACE("evis.hswish_"STR(IN_DTYPE)"to"STR(OUT_DTYPE)), \
         _HSWISH_KERNEL_SOURCE }
 
+
+#define SWISH_PACK_KERNEL_MAP_2D( IN_DTYPE, OUT_DTYPE) \
+        { SWISH_HASH_KEY(VSI_NN_SWISH, IN_DTYPE, OUT_DTYPE, IMAGE_2D), \
+        CVIVANTE_NAMESPACE("evis.swish_"STR(IN_DTYPE)"to"STR(OUT_DTYPE)"_2D"), \
+        _SWISH_KERNEL_SOURCE }
+
+#define HSWISH_PACK_KERNEL_MAP_2D( IN_DTYPE, OUT_DTYPE) \
+        { SWISH_HASH_KEY(VSI_NN_HSWISH, IN_DTYPE, OUT_DTYPE, IMAGE_2D), \
+        CVIVANTE_NAMESPACE("evis.hswish_"STR(IN_DTYPE)"to"STR(OUT_DTYPE)"_2D"), \
+        _HSWISH_KERNEL_SOURCE }
 typedef struct
 {
     uint32_t key;
@@ -76,50 +86,50 @@ typedef struct
 static const _kernel_map_type _swish_kernel_map[] =
 {
     // Register kernel here
-    SWISH_PACK_KERNEL_MAP(  F16,  F16,  ),
-    SWISH_PACK_KERNEL_MAP(  F16,  I16,  ),
-    SWISH_PACK_KERNEL_MAP(  F16,  I8,   ),
-    SWISH_PACK_KERNEL_MAP(  F16,  U8,   ),
-    SWISH_PACK_KERNEL_MAP(  I16,  I16,  ),
-    SWISH_PACK_KERNEL_MAP(  I16,  F16,  ),
-    SWISH_PACK_KERNEL_MAP(  I8,   I8,   ),
-    SWISH_PACK_KERNEL_MAP(  I8,   F16,  ),
-    SWISH_PACK_KERNEL_MAP(  U8,   U8,   ),
-    SWISH_PACK_KERNEL_MAP(  U8,   F16,  ),
-    SWISH_PACK_KERNEL_MAP(  BF16, BF16, ),
-    SWISH_PACK_KERNEL_MAP(  F16,  F16,  _2D),
-    SWISH_PACK_KERNEL_MAP(  F16,  I16,  _2D),
-    SWISH_PACK_KERNEL_MAP(  F16,  I8,   _2D),
-    SWISH_PACK_KERNEL_MAP(  F16,  U8,   _2D),
-    SWISH_PACK_KERNEL_MAP(  I16,  I16,  _2D),
-    SWISH_PACK_KERNEL_MAP(  I16,  F16,  _2D),
-    SWISH_PACK_KERNEL_MAP(  I8,   I8,   _2D),
-    SWISH_PACK_KERNEL_MAP(  I8,   F16,  _2D),
-    SWISH_PACK_KERNEL_MAP(  U8,   U8,   _2D),
-    SWISH_PACK_KERNEL_MAP(  U8,   F16,  _2D),
-    SWISH_PACK_KERNEL_MAP(  BF16, BF16, _2D),
-    HSWISH_PACK_KERNEL_MAP( F16,  F16,  ),
-    HSWISH_PACK_KERNEL_MAP( F16,  I16,  ),
-    HSWISH_PACK_KERNEL_MAP( F16,  I8,   ),
-    HSWISH_PACK_KERNEL_MAP( F16,  U8,   ),
-    HSWISH_PACK_KERNEL_MAP( I16,  I16,  ),
-    HSWISH_PACK_KERNEL_MAP( I16,  F16,  ),
-    HSWISH_PACK_KERNEL_MAP( I8,   I8,   ),
-    HSWISH_PACK_KERNEL_MAP( I8,   F16,  ),
-    HSWISH_PACK_KERNEL_MAP( U8,   U8,   ),
-    HSWISH_PACK_KERNEL_MAP( U8,   F16,  ),
-    HSWISH_PACK_KERNEL_MAP( BF16, BF16, ),
-    HSWISH_PACK_KERNEL_MAP( F16,  F16,  _2D),
-    HSWISH_PACK_KERNEL_MAP( F16,  I16,  _2D),
-    HSWISH_PACK_KERNEL_MAP( F16,  I8,   _2D),
-    HSWISH_PACK_KERNEL_MAP( F16,  U8,   _2D),
-    HSWISH_PACK_KERNEL_MAP( I16,  I16,  _2D),
-    HSWISH_PACK_KERNEL_MAP( I16,  F16,  _2D),
-    HSWISH_PACK_KERNEL_MAP( I8,   I8,   _2D),
-    HSWISH_PACK_KERNEL_MAP( I8,   F16,  _2D),
-    HSWISH_PACK_KERNEL_MAP( U8,   U8,   _2D),
-    HSWISH_PACK_KERNEL_MAP( U8,   F16,  _2D),
-    HSWISH_PACK_KERNEL_MAP( BF16, BF16, _2D),
+    SWISH_PACK_KERNEL_MAP(  F16,  F16),
+    SWISH_PACK_KERNEL_MAP(  F16,  I16),
+    SWISH_PACK_KERNEL_MAP(  F16,  I8),
+    SWISH_PACK_KERNEL_MAP(  F16,  U8),
+    SWISH_PACK_KERNEL_MAP(  I16,  I16),
+    SWISH_PACK_KERNEL_MAP(  I16,  F16),
+    SWISH_PACK_KERNEL_MAP(  I8,   I8),
+    SWISH_PACK_KERNEL_MAP(  I8,   F16),
+    SWISH_PACK_KERNEL_MAP(  U8,   U8),
+    SWISH_PACK_KERNEL_MAP(  U8,   F16),
+    SWISH_PACK_KERNEL_MAP(  BF16, BF16),
+    SWISH_PACK_KERNEL_MAP_2D(  F16,  F16),
+    SWISH_PACK_KERNEL_MAP_2D(  F16,  I16),
+    SWISH_PACK_KERNEL_MAP_2D(  F16,  I8),
+    SWISH_PACK_KERNEL_MAP_2D(  F16,  U8),
+    SWISH_PACK_KERNEL_MAP_2D(  I16,  I16),
+    SWISH_PACK_KERNEL_MAP_2D(  I16,  F16),
+    SWISH_PACK_KERNEL_MAP_2D(  I8,   I8),
+    SWISH_PACK_KERNEL_MAP_2D(  I8,   F16),
+    SWISH_PACK_KERNEL_MAP_2D(  U8,   U8),
+    SWISH_PACK_KERNEL_MAP_2D(  U8,   F16),
+    SWISH_PACK_KERNEL_MAP_2D(  BF16, BF16),
+    HSWISH_PACK_KERNEL_MAP( F16,  F16),
+    HSWISH_PACK_KERNEL_MAP( F16,  I16),
+    HSWISH_PACK_KERNEL_MAP( F16,  I8),
+    HSWISH_PACK_KERNEL_MAP( F16,  U8),
+    HSWISH_PACK_KERNEL_MAP( I16,  I16),
+    HSWISH_PACK_KERNEL_MAP( I16,  F16),
+    HSWISH_PACK_KERNEL_MAP( I8,   I8),
+    HSWISH_PACK_KERNEL_MAP( I8,   F16),
+    HSWISH_PACK_KERNEL_MAP( U8,   U8),
+    HSWISH_PACK_KERNEL_MAP( U8,   F16),
+    HSWISH_PACK_KERNEL_MAP( BF16, BF16),
+    HSWISH_PACK_KERNEL_MAP_2D( F16,  F16),
+    HSWISH_PACK_KERNEL_MAP_2D( F16,  I16),
+    HSWISH_PACK_KERNEL_MAP_2D( F16,  I8),
+    HSWISH_PACK_KERNEL_MAP_2D( F16,  U8),
+    HSWISH_PACK_KERNEL_MAP_2D( I16,  I16),
+    HSWISH_PACK_KERNEL_MAP_2D( I16,  F16),
+    HSWISH_PACK_KERNEL_MAP_2D( I8,   I8),
+    HSWISH_PACK_KERNEL_MAP_2D( I8,   F16),
+    HSWISH_PACK_KERNEL_MAP_2D( U8,   U8),
+    HSWISH_PACK_KERNEL_MAP_2D( U8,   F16),
+    HSWISH_PACK_KERNEL_MAP_2D( BF16, BF16),
 };
 
 
@@ -137,14 +147,14 @@ static vx_param_description_t _swish_kernel_param_def[] =
 /*
  * Kernel initializer
  */
-static vx_status VX_CALLBACK _swish_initializer
+DEF_KERNEL_INITIALIZER(_swish_initializer)
     (
-    vx_node              node,
-    const vx_reference * param,
-    uint32_t             param_size
+    vsi_nn_kernel_node_t node,
+    const vsi_nn_kernel_node_param_t * param,
+    size_t param_size
     )
 {
-    vsi_status status = VX_SUCCESS;
+    vsi_status status = VX_FAILURE;
     // Alignment with a power of two value.
     gpu_param_t gpu_param = {
         3,
@@ -168,19 +178,10 @@ static vx_status VX_CALLBACK _swish_initializer
     uint32_t                     pack_key   = 0;
 
     input_attr  = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)input);
-    if (NULL == input_attr)
-    {
-        VSILOGE("vsi_nn_kernel_tensor_attr_create failure! at line %d\n", __LINE__);
-        status = VX_ERROR_NO_MEMORY;
-        goto final;
-    }
+    CHECK_PTR_FAIL_GOTO( input_attr, "vsi_nn_kernel_tensor_attr_create fail.", final );
+
     output_attr = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)output);
-    if (status != VX_SUCCESS)
-    {
-        VSILOGE("vsi_nn_kernel_tensor_attr_create failure! at line %d\n", __LINE__);
-        status = VX_ERROR_NO_MEMORY;
-        goto final;
-    }
+    CHECK_PTR_FAIL_GOTO( output_attr, "vsi_nn_kernel_tensor_attr_create fail.", final );
 
     out_shape = output_attr->shape;
 
@@ -216,7 +217,7 @@ static vx_status VX_CALLBACK _swish_initializer
     }
     else if (output_attr->quant == VSI_NN_KERNEL_QUANT_ASYMM || output_attr->quant == VSI_NN_KERNEL_QUANT_SYMM)
     {
-        outputScale  = 1.0 / output_attr->asymm.scale;
+        outputScale  = 1.0f / output_attr->asymm.scale;
         outputZP     = (vx_float32)(output_attr->asymm.zero_point);
     }
 #define _PACK_SELECT_KEY( IN_TYPE, OUT_TYPE )    \
@@ -316,12 +317,13 @@ static vx_status VX_CALLBACK _swish_initializer
         {
             case _PACK_SELECT_KEY(BF16, BF16):
                 {
-                    status |= vsi_nn_kernel_gpu_add_param(node,
+                    status  = vsi_nn_kernel_gpu_add_param(node,
                         "uniConvBF16toF32_Part0_2x8", &uniConvBF16toF32_Part0_2x8);
                     status |= vsi_nn_kernel_gpu_add_param(node,
                         "uniConvBF16toF32_Part1_2x8", &uniConvBF16toF32_Part1_2x8);
                     status |= vsi_nn_kernel_gpu_add_param(node,
                         "uniExtractOddData_2x8", &uniExtractOddData_2x8);
+                    CHECK_STATUS_FAIL_GOTO(status, final );
                 }
                 break;
             default :
@@ -340,17 +342,17 @@ static vx_status VX_CALLBACK _swish_initializer
                     status |= vsi_nn_kernel_gpu_add_param(node, "outputZP", &outputZP);
                     status |= vsi_nn_kernel_gpu_add_param(node, "uniDatatoFp32Part0_4x4", &uniDatatoFp32Part0_4x4);
                     status |= vsi_nn_kernel_gpu_add_param(node, "uniDatatoFp32Part1_4x4", &uniDatatoFp32Part1_4x4);
+                    CHECK_STATUS_FAIL_GOTO(status, final );
                 }
                 break;
         }
 
-        status |= vsi_nn_kernel_gpu_add_param(node, "logE", &logE);
+        status = vsi_nn_kernel_gpu_add_param(node, "logE", &logE);
+        CHECK_STATUS_FAIL_GOTO(status, final );
     }
 
-    if( status == VSI_SUCCESS )
-    {
-        vsi_nn_kernel_gpu_config( node, &gpu_param );
-    }
+    status = vsi_nn_kernel_gpu_config( node, &gpu_param );
+    CHECK_STATUS_FAIL_GOTO(status, final );
 
 #undef _PACK_SELECT_KEY
 final:
@@ -366,14 +368,14 @@ final:
      return status;
 } /* _swish_initializer() */
 
-static vx_status VX_CALLBACK _hswish_initializer
+DEF_KERNEL_INITIALIZER(_hswish_initializer)
     (
-    vx_node              node,
-    const vx_reference * param,
-    uint32_t             param_size
+    vsi_nn_kernel_node_t node,
+    const vsi_nn_kernel_node_param_t * param,
+    size_t param_size
     )
 {
-    vsi_status status = VX_SUCCESS;
+    vsi_status status = VX_FAILURE;
     // Alignment with a power of two value.
     gpu_param_t gpu_param = {
         3,
@@ -396,19 +398,10 @@ static vx_status VX_CALLBACK _hswish_initializer
     uint32_t                     pack_key   = 0;
 
     input_attr  = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)input);
-    if (NULL == input_attr)
-    {
-        VSILOGE("vsi_nn_kernel_tensor_attr_create failure! at line %d\n", __LINE__);
-        status = VX_ERROR_NO_MEMORY;
-        goto final;
-    }
+    CHECK_PTR_FAIL_GOTO( input_attr, "vsi_nn_kernel_tensor_attr_create fail.", final );
+
     output_attr = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)output);
-    if (status != VX_SUCCESS)
-    {
-        VSILOGE("vsi_nn_kernel_tensor_attr_create failure! at line %d\n", __LINE__);
-        status = VX_ERROR_NO_MEMORY;
-        goto final;
-    }
+    CHECK_PTR_FAIL_GOTO( output_attr, "vsi_nn_kernel_tensor_attr_create fail.", final );
 
     out_shape = output_attr->shape;
 
@@ -444,7 +437,7 @@ static vx_status VX_CALLBACK _hswish_initializer
     }
     else if (output_attr->quant == VSI_NN_KERNEL_QUANT_ASYMM || output_attr->quant == VSI_NN_KERNEL_QUANT_SYMM)
     {
-        outputScale  = 1.0 / output_attr->asymm.scale;
+        outputScale  = 1.0f / output_attr->asymm.scale;
         outputZP     = (vx_float32)(output_attr->asymm.zero_point);
     }
 #define _PACK_SELECT_KEY( IN_TYPE, OUT_TYPE )    \
@@ -544,23 +537,24 @@ static vx_status VX_CALLBACK _hswish_initializer
         {
             case _PACK_SELECT_KEY(BF16, BF16):
                 {
-                    status |= vsi_nn_kernel_gpu_add_param( node,
+                    status  = vsi_nn_kernel_gpu_add_param( node,
                         "uniConvBF16toF32_Part0_2x8", &uniConvBF16toF32_Part0_2x8 );
                     status |= vsi_nn_kernel_gpu_add_param( node,
                         "uniConvBF16toF32_Part1_2x8", &uniConvBF16toF32_Part1_2x8);
                     status |= vsi_nn_kernel_gpu_add_param( node,
                         "uniExtractOddData_2x8", &uniExtractOddData_2x8);
+                    CHECK_STATUS_FAIL_GOTO(status, final );
                 }
                 break;
             default :
                 {
                     if (F16 == output_attr->dtype)
                     {
-                        status |= vsi_nn_kernel_gpu_add_param(node, "uniExtract8Data_2x8", &uniExtractHalf8_2x8);
+                        status = vsi_nn_kernel_gpu_add_param(node, "uniExtract8Data_2x8", &uniExtractHalf8_2x8);
                     }
                     else
                     {
-                        status |= vsi_nn_kernel_gpu_add_param(node, "uniExtract8Data_2x8", &uniExtractInteger_2x8);
+                        status = vsi_nn_kernel_gpu_add_param(node, "uniExtract8Data_2x8", &uniExtractInteger_2x8);
                     }
                     status |= vsi_nn_kernel_gpu_add_param(node, "inputScale", &inputScale);
                     status |= vsi_nn_kernel_gpu_add_param(node, "inputTail", &inputTail);
@@ -568,15 +562,14 @@ static vx_status VX_CALLBACK _hswish_initializer
                     status |= vsi_nn_kernel_gpu_add_param(node, "outputZP", &outputZP);
                     status |= vsi_nn_kernel_gpu_add_param(node, "uniDatatoFp32Part0_4x4", &uniDatatoFp32Part0_4x4);
                     status |= vsi_nn_kernel_gpu_add_param(node, "uniDatatoFp32Part1_4x4", &uniDatatoFp32Part1_4x4);
+                    CHECK_STATUS_FAIL_GOTO(status, final );
                 }
                 break;
         }
     }
 
-    if( status == VSI_SUCCESS )
-    {
-        vsi_nn_kernel_gpu_config( node, &gpu_param );
-    }
+    status = vsi_nn_kernel_gpu_config( node, &gpu_param );
+    CHECK_STATUS_FAIL_GOTO(status, final );
 
 #undef _PACK_SELECT_KEY
 final:
@@ -613,7 +606,7 @@ static vsi_status _query_kernel
     size_t param_def_size               = _cnt_of_array( _swish_kernel_param_def );
     vx_kernel_initialize_f  initializer = _swish_initializer;
     uint32_t key;
-    int i;
+    uint32_t i;
 
     in_dtype  = vsi_nn_kernel_map_dtype( inputs[0]->attr.dtype.vx_type );
     out_dtype = vsi_nn_kernel_map_dtype( outputs[0]->attr.dtype.vx_type );

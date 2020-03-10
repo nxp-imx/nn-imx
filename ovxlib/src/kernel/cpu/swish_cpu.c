@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -83,8 +83,8 @@ DEF_KERNEL_EXECUTOR(_swish_compute)
     size_t   out_stride_size[_OUTPUT_NUM][VSI_NN_MAX_DIM_NUM] = {{0}};
     size_t   out_elements[_OUTPUT_NUM] = {0};
     size_t   out_bytes[_OUTPUT_NUM] = {0};
-    float    beta = 1.0;
-    int32_t  i;
+    float    beta = 1.0f;
+    uint32_t  i;
 
     /* prepare data */
     for(i = 0; i < _INPUT_NUM; i ++)
@@ -101,7 +101,7 @@ DEF_KERNEL_EXECUTOR(_swish_compute)
         out_attr[i] = vsi_nn_kernel_tensor_attr_create( output[i] );
         vsi_nn_kernel_tensor_attr_get_stride( out_attr[i], out_stride_size[i] );
         out_elements[i] = vsi_nn_kernel_tensor_attr_get_size( out_attr[i] );
-        out_bytes[i] = vsi_nn_kernel_tensor_attr_get_bytes( out_attr[i] );
+        out_bytes[i] = out_elements[i] * sizeof(float);
         f32_out_buffer[i] = (float *)malloc( out_bytes[i] );
         CHECK_PTR_FAIL_GOTO( f32_out_buffer[i], "Create output buffer fail.", final );
         memset( f32_out_buffer[i], 0, out_bytes[i] );
@@ -114,7 +114,7 @@ DEF_KERNEL_EXECUTOR(_swish_compute)
     for (i = 0; i < out_elements[0]; i++)
     {
         float val = f32_in_buffer[0][i];
-        f32_out_buffer[0][i] = val * 1.0f / (1 + exp(beta * val * (-1)));
+        f32_out_buffer[0][i] = val * 1.0f / (1.0f + (float)exp(beta * val * (-1.0f)));
     }
 
     /* save data */
@@ -164,8 +164,7 @@ DEF_KERNEL_EXECUTOR(_hswish_compute)
     vsi_nn_kernel_tensor_attr_t *out_attr[_OUTPUT_NUM];
     size_t   out_stride_size[_OUTPUT_NUM][VSI_NN_MAX_DIM_NUM] = {{0}};
     size_t   out_elements[_OUTPUT_NUM] = {0};
-    size_t   out_bytes[_OUTPUT_NUM] = {0};
-    int32_t  i;
+    uint32_t  i;
 
     /* prepare data */
     for(i = 0; i < _INPUT_NUM; i ++)
@@ -182,10 +181,9 @@ DEF_KERNEL_EXECUTOR(_hswish_compute)
         out_attr[i] = vsi_nn_kernel_tensor_attr_create( output[i] );
         vsi_nn_kernel_tensor_attr_get_stride( out_attr[i], out_stride_size[i] );
         out_elements[i] = vsi_nn_kernel_tensor_attr_get_size( out_attr[i] );
-        out_bytes[i] = vsi_nn_kernel_tensor_attr_get_bytes( out_attr[i] );
-        f32_out_buffer[i] = (float *)malloc( out_bytes[i] );
+        f32_out_buffer[i] = (float *)malloc( out_elements[i] * sizeof(float) );
         CHECK_PTR_FAIL_GOTO( f32_out_buffer[i], "Create output buffer fail.", final );
-        memset( f32_out_buffer[i], 0, out_bytes[i] );
+        memset( f32_out_buffer[i], 0, out_elements[i] * sizeof(float) );
     }
 
     /* TODO: Add CPU kernel implement */

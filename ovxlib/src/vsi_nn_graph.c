@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2018 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -38,7 +38,6 @@
 #include "utils/vsi_nn_util.h"
 #include "utils/vsi_nn_vdata.h"
 #include "utils/vsi_nn_map.h"
-#include "cpu_backend/vsi_nn_cpu_backend.h"
 
 static vsi_status _set_reference_name
     (
@@ -494,11 +493,6 @@ vsi_nn_graph_t * vsi_nn_CreateGraph
         }
     }
 
-    if( vsi_nn_CpuBackendEnabled() )
-    {
-        VSILOGD("Use CPU backend.");
-        vsi_nn_RegisterCpuBackendPos( graph );
-    }
     return graph;
 } /* vsi_nn_CreateGraph() */
 
@@ -582,7 +576,7 @@ vsi_status vsi_nn_SetupGraph
         return status;
     }
 
-#define MAX_NODES_IN_SDK 1024
+#define MAX_NODES_IN_SDK 2048
     if(MAX_NODES_IN_SDK < graph->node_num)
     {
         VSILOGE("The number of nodes must be less than 1024\n");

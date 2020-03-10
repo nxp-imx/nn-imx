@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -44,11 +44,6 @@
 #define _VX_KERNEL_ID           (VX_KERNEL_ENUM_AXIS_ALIGNED_BBOX_TRANSFORM)
 #define _VX_KERNEL_NAME         (VX_KERNEL_NAME_AXIS_ALIGNED_BBOX_TRANSFORM)
 #define _VX_KERNEL_FUNC_KERNEL  (vxAxis_aligned_bbox_transformKernel)
-
-#undef MAX
-#define MAX(a,b)    ((a) > (b) ? (a) : (b))
-#undef MIN
-#define MIN(a,b)    ((a) < (b) ? (a) : (b))
 
 typedef struct
 {
@@ -181,10 +176,10 @@ static vsi_status VX_CALLBACK vxAxis_aligned_bbox_transformKernel
                 roi_ctr.x = roiBefore.x + f32_in_buffer[1][index] * roiBefore.w;
                 roi_ctr.y = roiBefore.y + f32_in_buffer[1][index + 1] * roiBefore.h;
                 toBoxEncodingCorner(&roi_ctr, &roiAfter);
-                cliped.x1 = MIN(MAX(roiAfter.x1, 0.0f), imageWidth);
-                cliped.y1 = MIN(MAX(roiAfter.y1, 0.0f), imageHeight);
-                cliped.x2 = MIN(MAX(roiAfter.x2, 0.0f), imageWidth);
-                cliped.y2 = MIN(MAX(roiAfter.y2, 0.0f), imageHeight);
+                cliped.x1 = vsi_nn_min(vsi_nn_max(roiAfter.x1, 0.0f), imageWidth);
+                cliped.y1 = vsi_nn_min(vsi_nn_max(roiAfter.y1, 0.0f), imageHeight);
+                cliped.x2 = vsi_nn_min(vsi_nn_max(roiAfter.x2, 0.0f), imageWidth);
+                cliped.y2 = vsi_nn_min(vsi_nn_max(roiAfter.y2, 0.0f), imageHeight);
                 f32_out_buffer[0][index] = cliped.x1;
                 f32_out_buffer[0][index + 1] = cliped.y1;
                 f32_out_buffer[0][index + 2] = cliped.x2;

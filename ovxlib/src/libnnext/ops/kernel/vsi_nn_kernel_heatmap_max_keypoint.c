@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -45,11 +45,6 @@
 #define _VX_KERNEL_NAME         (VX_KERNEL_NAME_HEATMAP_MAX_KEYPOINT)
 #define _VX_KERNEL_FUNC_KERNEL  (vxHeatmap_max_keypointKernel)
 
-#undef MAX
-#define MAX(a,b)    ((a) > (b) ? (a) : (b))
-#undef MIN
-#define MIN(a,b)    ((a) < (b) ? (a) : (b))
-
 // This function uses Taylor expansion up to the quatratic term to approximate bicubic
 // upscaling result.
 // 2nd order Taylor expansion: D(x) = D - b'x + 1/2 * x'Ax
@@ -89,7 +84,7 @@ static void solveForDelta
     // clip out of range delta, i.e. delta > 3/2
     if (fabs(delta[0]) > 1.5f || fabs(delta[1]) > 1.5f)
     {
-        float scale = (float)(1.5f / MAX(fabs(delta[0]), fabs(delta[1])));
+        float scale = (float)(1.5f / vsi_nn_max(fabs(delta[0]), fabs(delta[1])));
         delta[0] *= scale;
         delta[1] *= scale;
     }

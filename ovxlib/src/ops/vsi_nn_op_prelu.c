@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2018 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -127,7 +127,7 @@ static vsi_bool _check_tensor_shape
     uint32_t input_size[VSI_NN_MAX_DIM_NUM] = {1, 1, 1, 1};
     int32_t i;
 
-    for (i = 0; i < inputs[0]->attr.dim_num; i++)
+    for (i = 0; i < (int32_t)inputs[0]->attr.dim_num; i++)
     {
         input_size[i] = inputs[0]->attr.size[i];
     }
@@ -303,7 +303,7 @@ static int32_t reshape_tensor_set_input_output
     uint32_t input_size[VSI_NN_MAX_DIM_NUM] = {1};
     int32_t i = 0;
 
-    for (i = 0; i < inputs[0]->attr.dim_num; i++)
+    for (i = 0; i < (int32_t)inputs[0]->attr.dim_num; i++)
     {
         input_size[i] = inputs[0]->attr.size[i];
     }
@@ -555,7 +555,7 @@ static vsi_nn_op_compute_t op_compute_list[] =
     NULL
 };
 
-static vsi_status op_compute
+static vsi_status original_op_compute
     (
     vsi_nn_node_t * self,
     vsi_nn_tensor_t ** inputs,
@@ -564,18 +564,33 @@ static vsi_status op_compute
 {
     vsi_status status = VSI_FAILURE;
     vsi_nn_kernel_info_t kernel_info;
-    vsi_nn_prelu_param * p = NULL;
+    vsi_nn_prelu_param * p = &(self->nn_param.prelu);
 
     memset(&kernel_info, 0x0, sizeof(vsi_nn_kernel_info_t));
 
     if (2 == self->nn_param.prelu.axis)
     {
+        vx_tensor temp_tensor = inputs[1]->t;
+        if (p->local->style == PRELLU_STYLE_CAN_TRANS_ORIGINAL)
+        {
+            vsi_nn_tensor_attr_t attr;
+            attr.size[0] = inputs[1]->attr.size[2];
+            attr.size[1] = 1;
+            attr.size[2] = 1;
+            attr.size[3] = 1;
+            attr.dim_num = 1;
+            temp_tensor = vxReshapeTensor(inputs[1]->t, (int32_t *)attr.size, attr.dim_num);
+        }
         self->n = vxPReluLayer(
             self->graph->g,
             inputs[0]->t,
-            inputs[1]->t,
+            temp_tensor,
             outputs[0]->t
             );
+        if (p->local->style == PRELLU_STYLE_CAN_TRANS_ORIGINAL)
+        {
+            vxReleaseTensor(&temp_tensor);
+        }
         if( NULL != self->n )
         {
             status = VSI_SUCCESS;
@@ -583,7 +598,6 @@ static vsi_status op_compute
     }
     else
     {
-        p = &(self->nn_param.prelu);
         _get_prelu_hashtable_idx(self, inputs, outputs);
         check_const_tensor_shape(self, inputs);
 
@@ -646,6 +660,39 @@ final:
         kernel_info.resource_name = NULL;
     }
     return status;
+} /* original_op_compute() */
+
+static vsi_status nn_api_op_compute
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs
+    )
+{
+    return vsi_nn_compute_internal_node( self );
+} /* nn_api_op_compute() */
+
+static vsi_status op_compute
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs
+    )
+{
+    vsi_status status = VSI_FAILURE;
+    vsi_nn_prelu_param *prelu = &self->nn_param.prelu;
+
+    if (prelu->local->style == PRELLU_STYLE_ORIGINAL
+        || prelu->local->style == PRELLU_STYLE_CAN_TRANS_ORIGINAL)
+    {
+        status = original_op_compute(self, inputs, outputs);
+    }
+    else if (prelu->local->style == PRELLU_STYLE_ANDROID_NN)
+    {
+        status = nn_api_op_compute(self, inputs, outputs);
+    }
+
+    return status;
 } /* op_compute() */
 
 static vsi_bool op_check
@@ -658,6 +705,23 @@ static vsi_bool op_check
     //TODO: Check tensor shapes.
     return TRUE;
 } /* op_check() */
+
+static vsi_status op_optimize
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs,
+    vsi_nn_opt_direction_e direction
+    )
+{
+    vsi_nn_prelu_param *prelu = &self->nn_param.prelu;
+
+    if (prelu->local->style == PRELLU_STYLE_ANDROID_NN)
+    {
+        return vsi_nn_optimize_internal_node( self, direction );
+    }
+    return VSI_SUCCESS;
+} /* op_optimize() */
 
 static vsi_status op_deinit
     (
@@ -683,6 +747,107 @@ static vsi_status op_deinit
     return VSI_SUCCESS;
 } /* op_deinit() */
 
+static vsi_bool nn_api_op_setup
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs
+    )
+{
+    /* prelu(x) = min(x, 0) * alpha + max(x, 0) */
+    vsi_bool ret = TRUE;
+    vsi_nn_tensor_attr_t attr;
+    vsi_nn_internal_tensor_t* zero_tensor = NULL;
+#define TEMP_TENSOR_NUM 3
+    vsi_nn_internal_tensor_t* tmp_tensor[TEMP_TENSOR_NUM];
+    vsi_nn_internal_node_t* tmp_inode = NULL;
+    vsi_bool use_virtual_tensor = FALSE;
+
+    memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
+    memset(tmp_tensor, 0, sizeof(vsi_nn_internal_tensor_t*) * TEMP_TENSOR_NUM);
+
+    vsi_nn_init_internal_node_wksp( self );
+    ret = vsi_nn_op_eltwise_setup(self, inputs, outputs);
+
+    /* create zero tensor*/
+    memcpy(&attr, &outputs[0]->attr, sizeof(vsi_nn_tensor_attr_t));
+    attr.vtl = FALSE;
+    attr.is_const = TRUE;
+    zero_tensor = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
+
+    /* min(x, 0) */
+    vsi_nn_internal_node_init_attr(&attr, &outputs[0]->attr.dtype, use_virtual_tensor);
+    tmp_tensor[0] = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
+
+    tmp_inode = vsi_nn_new_internal_node(self, VSI_NN_OP_MINIMUM, 0, 0 );
+
+    tmp_inode->inputs[0] = inputs[0];
+    tmp_inode->inputs[1] = zero_tensor->t;
+    tmp_inode->outputs[0] = tmp_tensor[0]->t;
+    vsi_nn_setup_internal_node_op(self, tmp_inode);
+
+    /* min(x, 0) * alpha */
+    vsi_nn_internal_node_init_attr(&attr, &outputs[0]->attr.dtype, use_virtual_tensor);
+    tmp_tensor[1] = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
+
+    tmp_inode = vsi_nn_new_internal_node(self, VSI_NN_OP_MULTIPLY, 0, 0 );
+    tmp_inode->node->nn_param.multiply.scale = 1.0f;
+    tmp_inode->node->vx_param.overflow_policy = VX_CONVERT_POLICY_SATURATE;
+    tmp_inode->node->vx_param.rounding_policy = VX_ROUND_POLICY_TO_NEAREST_EVEN;
+    tmp_inode->inputs[0] = tmp_tensor[0]->t;
+    tmp_inode->inputs[1] = inputs[1];
+    tmp_inode->outputs[0] = tmp_tensor[1]->t;
+    vsi_nn_setup_internal_node_op(self, tmp_inode);
+
+    /* max(x, 0) */
+    vsi_nn_internal_node_init_attr(&attr, &outputs[0]->attr.dtype, use_virtual_tensor);
+    tmp_tensor[2] = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
+
+    tmp_inode = vsi_nn_new_internal_node(self, VSI_NN_OP_MAXIMUM, 0, 0 );
+
+    tmp_inode->inputs[0] = inputs[0];
+    tmp_inode->inputs[1] = zero_tensor->t;
+    tmp_inode->outputs[0] = tmp_tensor[2]->t;
+    vsi_nn_setup_internal_node_op(self, tmp_inode);
+
+    /* min(x, 0) * alpha + max(x, 0) */
+    tmp_inode = vsi_nn_new_internal_node(self, VSI_NN_OP_ADD, 0, 0 );
+
+    tmp_inode->inputs[0] = tmp_tensor[1]->t;
+    tmp_inode->inputs[1] = tmp_tensor[2]->t;
+    tmp_inode->outputs[0] = outputs[0];
+    vsi_nn_setup_internal_node_op(self, tmp_inode);
+
+#undef TEMP_TENSOR_NUM
+
+    return ret;
+}
+
+vsi_bool can_trans_to_original
+    (
+    vsi_nn_tensor_attr_t* attr,
+    vsi_nn_prelu_param *prelu
+    )
+{
+    uint32_t i = 0;
+    uint32_t not_one_num = 0, index = 0;
+    for (i = 0; i < attr->dim_num; i++)
+    {
+        if (attr->size[i] != 1)
+        {
+            index = i;
+            not_one_num++;
+        }
+    }
+    if (not_one_num == 1)
+    {
+        prelu->axis = index;
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
 static vsi_bool op_setup
     (
     vsi_nn_node_t * self,
@@ -691,23 +856,42 @@ static vsi_bool op_setup
     )
 {
     vsi_bool ret = TRUE;
+    vsi_nn_prelu_param *prelu = &self->nn_param.prelu;
+
     if( NULL == self )
     {
         return FALSE;
     }
 
-    if (self->nn_param.prelu.axis < 0)
+    if (prelu->axis < 0)
     {
-        self->nn_param.prelu.axis += (int32_t)inputs[0]->attr.dim_num;
+        prelu->axis += (int32_t)inputs[0]->attr.dim_num;
     }
 
-    if (self->nn_param.prelu.axis < 0)
+    if (prelu->axis < 0)
     {
-        VSILOGD("Prelu Invalid Axis: %d \n", self->nn_param.prelu.axis);
+        VSILOGD("Prelu Invalid Axis: %d \n", prelu->axis);
         return FALSE;
     }
 
-    ret = vsi_nn_op_common_setup(self, inputs, outputs);
+    if (inputs[1]->attr.dim_num == 1 &&
+        inputs[1]->attr.size[0] == inputs[0]->attr.size[prelu->axis])
+    {
+        /* original prelu */
+        prelu->local->style = PRELLU_STYLE_ORIGINAL;
+        ret = vsi_nn_op_common_setup(self, inputs, outputs);
+    }
+    else if (can_trans_to_original(&inputs[1]->attr, prelu))
+    {
+        prelu->local->style = PRELLU_STYLE_CAN_TRANS_ORIGINAL;
+        ret = vsi_nn_op_common_setup(self, inputs, outputs);
+    }
+    else
+    {
+        /* NN API prelu */
+        prelu->local->style = PRELLU_STYLE_ANDROID_NN;
+        ret = nn_api_op_setup(self, inputs, outputs);
+    }
 
     return ret;
 }
@@ -751,7 +935,7 @@ DEF_OP_REG
     /* deinit     */ op_deinit,
     /* check      */ op_check,
     /* setup      */ op_setup,
-    /* optimize   */ NULL,
+    /* optimize   */ op_optimize,
     /* input_num  */ 2,
     /* output_num */ 1
     );

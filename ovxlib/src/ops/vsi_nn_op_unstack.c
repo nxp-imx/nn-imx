@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -390,6 +390,10 @@ static vsi_bool op_setup
                 {
                     outputs[j]->attr.size[i] = inputs[0]->attr.size[i + 1];
                 }
+            }
+
+            for(j = 0; j < node->output.num; j++)
+            {
                 outputs[j]->attr.dim_num = inputs[0]->attr.dim_num - 1;
             }
         }

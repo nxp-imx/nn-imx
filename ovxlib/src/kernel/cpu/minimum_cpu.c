@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -75,7 +75,6 @@ DEF_KERNEL_EXECUTOR(_minimum_exec)
     vsi_nn_kernel_tensor_t tensors[_CPU_IO_NUM] = { NULL };
     float * buffer[_CPU_IO_NUM] = { NULL };
     size_t out_elements = 0;
-    size_t out_bytes = 0;
     size_t stride_size[_CPU_INPUT_NUM][VSI_NN_MAX_DIM_NUM] = {{0}};
     vsi_nn_kernel_tensor_attr_t * attr[_CPU_IO_NUM] = { NULL };
     uint32_t i;
@@ -92,7 +91,6 @@ DEF_KERNEL_EXECUTOR(_minimum_exec)
     vsi_nn_kernel_tensor_attr_get_stride( attr[1], stride_size[1] );
 
     out_elements = vsi_nn_kernel_tensor_attr_get_size( attr[2] );
-    out_bytes = vsi_nn_kernel_tensor_attr_get_bytes( attr[2] );
 
     buffer[0] = (float*)vsi_nn_kernel_tensor_create_buffer( tensors[0], attr[0], TRUE );
     CHECK_PTR_FAIL_GOTO( buffer[0], "Create input0 buffer fail.", final );
@@ -100,9 +98,9 @@ DEF_KERNEL_EXECUTOR(_minimum_exec)
     buffer[1] = (float*)vsi_nn_kernel_tensor_create_buffer( tensors[1], attr[1], TRUE );
     CHECK_PTR_FAIL_GOTO( buffer[1], "Create input1 buffer fail.", final );
 
-    buffer[2] = (float *)malloc( out_bytes );
+    buffer[2] = (float *)malloc( out_elements * sizeof(float) );
     CHECK_PTR_FAIL_GOTO( buffer[2], "Create output buffer fail.", final );
-    memset( buffer[2], 0, out_bytes );
+    memset( buffer[2], 0, out_elements * sizeof(float) );
 
     for( i = 0; i < out_elements; i ++ )
     {

@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2018 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -37,11 +37,15 @@
 #include "vsi_nn_test.h"
 #include "client/vsi_nn_vxkernel.h"
 
+#define USE_OVXLIB (0)
+
 #define _ARG_NUM            (2)
 #define _INPUT_NUM          (1)
 #define _OUTPUT_NUM         (1)
 #define _IO_NUM             (_INPUT_NUM + _OUTPUT_NUM)
 #define _PARAM_NUM          (_ARG_NUM + _IO_NUM)
+
+#if (USE_OVXLIB)
 
 extern vx_kernel_description_t * vx_kernel_SHUFFLECHANNEL_list[];
 
@@ -290,6 +294,8 @@ static vsi_nn_op_compute_t op_compute_list[] =
     NULL
 };
 
+#endif
+
 static vsi_status op_compute
     (
     vsi_nn_node_t * self,
@@ -297,6 +303,7 @@ static vsi_status op_compute
     vsi_nn_tensor_t ** outputs
     )
 {
+#if(USE_OVXLIB)
     vsi_status status = VSI_FAILURE;
     vsi_nn_kernel_info_t kernel_info;
 
@@ -330,6 +337,50 @@ static vsi_status op_compute
         status = op_compute_list[kernel_info.init_index](self, inputs, outputs);
     }
     return status;
+#else
+    vsi_status status = VSI_FAILURE;
+    vx_nn_reorg_params_ext2_t param;
+    vsi_nn_tensor_t *block_size_tensor = NULL;
+    vsi_nn_tensor_attr_t attr;
+    uint8_t data = 1;
+
+    memset(&param, 0, sizeof(vx_nn_reorg_params_ext2_t));
+    memset(&attr, 0, sizeof(attr));
+    attr.size[0] = 2;
+    attr.dim_num = 1;
+    attr.is_const = TRUE;
+    attr.dtype.vx_type = VSI_NN_TYPE_INT32;
+    attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
+    block_size_tensor = vsi_nn_CreateTensorFromData(
+        self->graph,
+        &data,
+        &attr);
+    if( NULL == block_size_tensor )
+    {
+        VSILOGE("Create block_size_tensor fail.(shufflechannel)");
+        return VSI_FAILURE;
+    }
+
+    self->nn_param.shufflechannel.local->block_size_tensor = block_size_tensor;
+    param.base.block_size = REQUIRED_IO(block_size_tensor);
+
+    param.base.type = VX_REORG_SHUFFLE_CHANNEL;
+    param.axis = &self->nn_param.shufflechannel.axis;
+    param.num_group = &self->nn_param.shufflechannel.group_number;
+
+    self->n = vxReorgLayer2( self->graph->g,
+        inputs[0]->t,
+        (vx_nn_reorg_params_t *)&param,
+        sizeof(vx_nn_reorg_params_ext2_t),
+        outputs[0]->t);
+
+    if( NULL != self->n )
+    {
+        status = VSI_SUCCESS;
+    }
+
+    return status;
+#endif
 } /* op_compute() */
 
 static vsi_bool op_setup
@@ -341,7 +392,6 @@ static vsi_bool op_setup
 {
     vsi_bool ret = FALSE;
     vsi_nn_shufflechannel_param *p = NULL;
-    vsi_nn_shufflechannel_lcl_data_t *local = NULL;
     int32_t axis = 0;
 
     if( NULL == self )
@@ -351,18 +401,17 @@ static vsi_bool op_setup
 
     p = &(self->nn_param.shufflechannel);
     axis = p->axis;
-    local = (vsi_nn_shufflechannel_lcl_data_t *)malloc(sizeof(vsi_nn_shufflechannel_lcl_data_t));
-    if (NULL == local)
-    {
-        return ret;
-    }
-    memset(local, 0, sizeof(vsi_nn_shufflechannel_lcl_data_t));
-    p->local = local;
 
     if (axis < 0)
     {
         axis = axis + inputs[0]->attr.dim_num;
         p->axis = axis;
+    }
+
+    if (p->axis < 0)
+    {
+        VSILOGD("shufflechannel Invalid Axis: %d", p->axis);
+        return FALSE;
     }
 
     if( VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num )
@@ -392,11 +441,6 @@ static vsi_bool op_check
     axis = p->axis;
     num_group = p->group_number;
 
-    if (axis < 0)
-    {
-        axis = axis + dims;
-    }
-
     if (axis > (dims - 1))
     {
         VSILOGE("Invalid Axis: %d, (SHUFFLECHANNEL) at [%s : %d]\n", axis, __FILE__, __LINE__);
@@ -417,8 +461,19 @@ static vsi_status op_init
     )
 {
     vsi_status status = VSI_SUCCESS;
+    vsi_nn_shufflechannel_lcl_data_t *local = NULL;
+    vsi_nn_shufflechannel_param *p = NULL;
 
+    p = &(self->nn_param.shufflechannel);
     self->nn_param.shufflechannel.axis = 2;
+    local = (vsi_nn_shufflechannel_lcl_data_t *)malloc(sizeof(vsi_nn_shufflechannel_lcl_data_t));
+    if (NULL == local)
+    {
+        VSILOGE("Malloc fail, (SHUFFLECHANNEL) at [%s : %d]\n", __FILE__, __LINE__);
+        return VSI_FAILURE;
+    }
+    memset(local, 0, sizeof(vsi_nn_shufflechannel_lcl_data_t));
+    p->local = local;
 
     return status;
 } /* op_init() */
@@ -441,6 +496,11 @@ static vsi_status op_deinit
             vxReleaseTensor(&(p->local->output_tensor));
             p->local->output_tensor = NULL;
         }
+        if (p->local->block_size_tensor != NULL)
+        {
+            vsi_nn_ReleaseTensor(&(p->local->block_size_tensor));
+        }
+
         p->local = NULL;
     }
     vsi_nn_op_common_deinit(self);

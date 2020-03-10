@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -35,7 +35,7 @@ _INITIALIZER( daemon_start )
 
     if( vsi_nn_CpuBackendEnabled() )
     {
-        npuref_init();
+        //npuref_init();
     }
 } /* _daemon_start() */
 

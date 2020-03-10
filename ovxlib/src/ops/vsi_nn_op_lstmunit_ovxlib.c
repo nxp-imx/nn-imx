@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -30,6 +30,7 @@
 #include "vsi_nn_graph.h"
 #include "vsi_nn_node.h"
 #include "vsi_nn_prv.h"
+#include "utils/vsi_nn_util.h"
 #include "utils/vsi_nn_math.h"
 #include "vsi_nn_ops.h"
 #include "vsi_nn_tensor.h"
@@ -57,7 +58,7 @@ static vsi_nn_internal_tensor_t* create_tp_fc
 
     memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
     tensor = bias;
-    if( !bias || p->local.use_layer_norm || p->local.use_hybrid )
+    if( !bias || p->local->use_layer_norm || p->local->use_hybrid )
     {
         /* create zero bias for NN/TP */
         tensor1 = vsi_nn_create_zero_bias_tensor(self, &input->attr, &weight->attr);
@@ -106,7 +107,7 @@ static vsi_nn_internal_tensor_t* create_nn_fc
 
     memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
     tensor = bias;
-    if( !bias || p->local.use_layer_norm || p->local.use_hybrid )
+    if( !bias || p->local->use_layer_norm || p->local->use_hybrid )
     {
         /* create zero bias for NN/TP */
         tensor1 = vsi_nn_create_zero_bias_tensor(self, &input->attr, &weight->attr);
@@ -157,6 +158,45 @@ static vsi_nn_internal_tensor_t* create_nn_fc
     return tensor2;
 }
 
+static void create_peephole
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t * input,
+    vsi_nn_tensor_t * weight,
+    vsi_nn_internal_tensor_t ** input_fc,
+    vsi_bool use_virtual_tensor
+    )
+{
+    vsi_nn_tensor_attr_t attr;
+    vsi_nn_internal_tensor_t* input_tensor0 = NULL;
+    vsi_nn_internal_tensor_t* input_tensor1 = NULL;
+    vsi_nn_internal_node_t* curr = NULL;
+
+    memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
+    attr.dim_num = VSI_NN_DIM_AUTO;
+    attr.vtl = use_virtual_tensor;
+    attr.is_const = FALSE;
+    memcpy(&(attr.dtype), &((*input_fc)->t->attr.dtype), sizeof(vsi_nn_dtype_t));
+    input_tensor0 = vsi_nn_new_internal_tensor(self, &attr, 0.0f);
+    /* create internal nodes */
+    curr = vsi_nn_new_internal_node( self, VSI_NN_OP_MULTIPLY, 0, 0 );
+    curr->node->nn_param.multiply.scale = 1.0f;
+    curr->node->vx_param.overflow_policy = VX_CONVERT_POLICY_SATURATE;
+    curr->node->vx_param.rounding_policy = VX_ROUND_POLICY_TO_NEAREST_EVEN;
+    curr->inputs[0] = input;
+    curr->inputs[1] = weight;
+    curr->outputs[0] = input_tensor0->t;
+    vsi_nn_setup_internal_node_op(self, curr);
+    input_tensor1 = vsi_nn_new_internal_tensor(self, &attr, 0.0f);
+    /* create internal nodes */
+    curr = vsi_nn_new_internal_node( self, VSI_NN_OP_ADD, 0, 0 );
+    curr->inputs[0] = (*input_fc)->t;
+    curr->inputs[1] = input_tensor0->t;
+    curr->outputs[0] = input_tensor1->t;
+    vsi_nn_setup_internal_node_op(self, curr);
+    *input_fc = input_tensor1;
+}
+
 static vsi_bool setup_op_shapes
     (
     vsi_nn_node_t * self,
@@ -170,7 +210,7 @@ static vsi_bool setup_op_shapes
     /* output */
     if(VSI_NN_DIM_AUTO == outputs[LSTMUNIT_OUTPUT_OUTPUT]->attr.dim_num)
     {
-        if(p->local.use_projection) /* enable projection_weight */
+        if(p->local->use_projection) /* enable projection_weight */
         {
             /* output_size */
             outputs[LSTMUNIT_OUTPUT_OUTPUT]->attr.size[0] = inputs[LSTMUNIT_INPUT_WEIGHT_PROJ]->attr.size[1];
@@ -251,6 +291,8 @@ static vsi_bool op_setup
     vsi_nn_internal_tensor_t* tmp_tensor = NULL;
     vsi_nn_internal_tensor_t* recurrent_input_tensor = NULL;
     vsi_nn_internal_tensor_t* input_fc_outputs[LSTMUNIT_IFCO_GATE_COUNT] = { NULL };
+    vsi_nn_internal_tensor_t* aux_input_fc_outputs[LSTMUNIT_IFCO_GATE_COUNT] = { NULL };
+    vsi_nn_internal_tensor_t* input_add_aux_input_fc_outputs[LSTMUNIT_IFCO_GATE_COUNT] = { NULL };
     vsi_nn_internal_tensor_t* recurrent_fc_outputs[LSTMUNIT_IFCO_GATE_COUNT] = { NULL };
     vsi_nn_internal_tensor_t* layernorm_outputs[LSTMUNIT_IFCO_GATE_COUNT] = { NULL };
     vsi_nn_tensor_t* bias_tensors[LSTMUNIT_IFCO_GATE_COUNT] = { NULL };
@@ -265,18 +307,19 @@ static vsi_bool op_setup
     memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
     vsi_nn_init_internal_node_wksp( self );
 
-    memset( &p->local, 0x00, sizeof( p->local ) );
+    memset( p->local, 0x00, sizeof(vsi_nn_lstmunit_ovxlib_lcl_data_t) );
     memset( &attr, 0x00, sizeof( attr ) );
-    p->local.use_cifg = ( NULL == inputs[LSTMUNIT_INPUT_WEIGHT_I2I] );
-    p->local.use_layer_norm = ( NULL != inputs[LSTMUNIT_INPUT_LAYERNORM_F] );
-    p->local.use_projection = ( NULL != inputs[LSTMUNIT_INPUT_WEIGHT_PROJ] );
-    p->local.use_projection_bias = FALSE;//NULL != inputs[19];
-    p->local.multi_batch = ( inputs[LSTMUNIT_INPUT_INPUT]->attr.size[1] > 1 );
-    ifco_start_index = p->local.use_cifg ? 1 : 0;
+    p->local->use_cifg = ( NULL == inputs[LSTMUNIT_INPUT_WEIGHT_I2I] );
+    p->local->use_layer_norm = ( NULL != inputs[LSTMUNIT_INPUT_LAYERNORM_F] );
+    p->local->use_projection = ( NULL != inputs[LSTMUNIT_INPUT_WEIGHT_PROJ] );
+    p->local->use_projection_bias = FALSE;//NULL != inputs[19];
+    p->local->multi_batch = ( inputs[LSTMUNIT_INPUT_INPUT]->attr.size[1] > 1 );
+    p->local->use_peephole = ( NULL != inputs[LSTMUNIT_INPUT_WEIGHT_C2O] );
+    ifco_start_index = p->local->use_cifg ? 1 : 0;
     if( inputs[LSTMUNIT_INPUT_WEIGHT_I2F]->attr.dtype.qnt_type
         != inputs[LSTMUNIT_INPUT_BIAS_F]->attr.dtype.qnt_type )
     {
-        p->local.use_hybrid = TRUE;
+        p->local->use_hybrid = TRUE;
     }
 
     if( inputs[LSTMUNIT_INPUT_INPUT]->attr.dtype.qnt_type
@@ -313,7 +356,7 @@ static vsi_bool op_setup
 
     for( i = 0; i < LSTMUNIT_IFCO_GATE_COUNT; i++)
     {
-        if( p->local.use_layer_norm || p->local.use_hybrid )
+        if( p->local->use_layer_norm || p->local->use_hybrid )
         {
             bias_tensors[i] = NULL;
         }
@@ -336,11 +379,23 @@ static vsi_bool op_setup
                                                 &p->internal_dtype[LSTMUNIT_QUANTIZE_PARAM_I2I + i],
                                                 use_virtual_tensor);
         }
+        if (inputs[LSTMUNIT_INPUT_AUX_INPUT] != NULL)
+        {
+            for( i = ifco_start_index; i < LSTMUNIT_IFCO_GATE_COUNT; i++)
+            {
+                aux_input_fc_outputs[i] = create_tp_fc(self,
+                                                    inputs[LSTMUNIT_INPUT_AUX_INPUT],
+                                                    inputs[LSTMUNIT_INPUT_AUX_WEIGHT_I2I + i],
+                                                    NULL,
+                                                    &p->internal_dtype_aux[LSTMUNIT_QUANTIZE_PARAM_AUX_I2I + i],
+                                                    use_virtual_tensor);
+            }
+        }
     }
     else
     {
         /* reshape and transpose input */
-        vsi_nn_rnn_find_best_kernel_size(p->local.multi_batch,
+        vsi_nn_rnn_find_best_kernel_size(p->local->multi_batch,
             inputs[LSTMUNIT_INPUT_INPUT]->attr.size[0], &kernel_h, &kernel_w);
         input_tensor = vsi_nn_rnn_process_input_for_nn_fc(self, inputs[LSTMUNIT_INPUT_INPUT],
                                                 kernel_h, kernel_w, use_virtual_tensor);
@@ -357,6 +412,41 @@ static vsi_bool op_setup
             /* transpose and reshape output */
             input_fc_outputs[i] = vsi_nn_rnn_process_output_for_nn_fc(self,
                 tmp->t, kernel_h, kernel_w, use_virtual_tensor);
+        }
+        if (inputs[LSTMUNIT_INPUT_AUX_INPUT] != NULL)
+        {
+            /* reshape and transpose input */
+            vsi_nn_rnn_find_best_kernel_size(p->local->multi_batch,
+                inputs[LSTMUNIT_INPUT_AUX_INPUT]->attr.size[0], &kernel_h, &kernel_w);
+            input_tensor = vsi_nn_rnn_process_input_for_nn_fc(self, inputs[LSTMUNIT_INPUT_AUX_INPUT],
+                                                    kernel_h, kernel_w, use_virtual_tensor);
+
+            for( i = ifco_start_index; i < LSTMUNIT_IFCO_GATE_COUNT; i++)
+            {
+                vsi_nn_internal_tensor_t* tmp = create_nn_fc(self,
+                                                    input_tensor->t,
+                                                    inputs[LSTMUNIT_INPUT_AUX_WEIGHT_I2I + i],
+                                                    NULL,
+                                                    kernel_h, kernel_w,
+                                                    &p->internal_dtype_aux[LSTMUNIT_QUANTIZE_PARAM_AUX_I2I + i],
+                                                    use_virtual_tensor);
+                /* transpose and reshape output */
+                aux_input_fc_outputs[i] = vsi_nn_rnn_process_output_for_nn_fc(self,
+                    tmp->t, kernel_h, kernel_w, use_virtual_tensor);
+            }
+        }
+    }
+
+    if (inputs[LSTMUNIT_INPUT_AUX_INPUT] != NULL)
+    {
+        for( i = ifco_start_index; i < LSTMUNIT_IFCO_GATE_COUNT; i++)
+        {
+            input_add_aux_input_fc_outputs[i] = vsi_nn_rnn_create_tensor_add(self,
+                                                    input_fc_outputs[i]->t,
+                                                    aux_input_fc_outputs[i]->t,
+                                                    &p->internal_dtype[LSTMUNIT_QUANTIZE_PARAM_I2I],
+                                                    use_virtual_tensor);
+            input_fc_outputs[i] = input_add_aux_input_fc_outputs[i];
         }
     }
 
@@ -376,7 +466,7 @@ static vsi_bool op_setup
     else
     {
         /* reshape and transpose input */
-        vsi_nn_rnn_find_best_kernel_size(p->local.multi_batch,
+        vsi_nn_rnn_find_best_kernel_size(p->local->multi_batch,
             inputs[LSTMUNIT_INPUT_H_STATE]->attr.size[0], &kernel_h, &kernel_w);
         recurrent_input_tensor = vsi_nn_rnn_process_input_for_nn_fc(self,
             inputs[LSTMUNIT_INPUT_H_STATE], kernel_h, kernel_w, use_virtual_tensor);
@@ -396,8 +486,29 @@ static vsi_bool op_setup
         }
     }
 
+    if (p->local->use_peephole)
+    {
+        /* update input gate */
+        if (!p->local->use_cifg)
+        {
+            create_peephole(self, inputs[LSTMUNIT_INPUT_C_STATE],
+                inputs[LSTMUNIT_INPUT_WEIGHT_C2I], &(input_fc_outputs[0]),
+                use_virtual_tensor);
+        }
+
+        /* update forget gate */
+        create_peephole(self, inputs[LSTMUNIT_INPUT_C_STATE],
+                inputs[LSTMUNIT_INPUT_WEIGHT_C2F], &(input_fc_outputs[1]),
+                use_virtual_tensor);
+
+        /* update output gate */
+        create_peephole(self, inputs[LSTMUNIT_INPUT_C_STATE],
+                inputs[LSTMUNIT_INPUT_WEIGHT_C2O], &(input_fc_outputs[3]),
+                use_virtual_tensor);
+    }
+
     /* layernorm */
-    if( p->local.use_layer_norm )
+    if( p->local->use_layer_norm )
     {
         for( i = ifco_start_index; i < LSTMUNIT_IFCO_GATE_COUNT; i++ )
         {
@@ -426,11 +537,11 @@ static vsi_bool op_setup
     curr->node->nn_param.lstmunit_activation.cell_clip = p->cell_clip;
     curr->node->nn_param.lstmunit_activation.proj_clip = p->proj_clip;
     curr->node->nn_param.lstmunit_activation.forget_bias = p->forget_bias;
-    curr->node->nn_param.lstmunit_activation.is_cifg = p->local.use_cifg;
-    curr->node->nn_param.lstmunit_activation.is_projection = p->local.use_projection;
-    curr->node->nn_param.lstmunit_activation.is_layer_norm = p->local.use_layer_norm;
+    curr->node->nn_param.lstmunit_activation.is_cifg = p->local->use_cifg;
+    curr->node->nn_param.lstmunit_activation.is_projection = p->local->use_projection;
+    curr->node->nn_param.lstmunit_activation.is_layer_norm = p->local->use_layer_norm;
     curr->node->nn_param.lstmunit_activation.is_peephole = FALSE;
-    curr->node->nn_param.lstmunit_activation.is_hybrid = p->local.use_hybrid;
+    curr->node->nn_param.lstmunit_activation.is_hybrid = p->local->use_hybrid;
     curr->node->nn_param.lstmunit_activation.recurrent_activation = p->recurrent_activation;
     curr->node->vx_param.overflow_policy = VX_CONVERT_POLICY_WRAP;
     curr->node->vx_param.rounding_policy = VX_ROUND_POLICY_TO_ZERO;
@@ -440,12 +551,12 @@ static vsi_bool op_setup
     curr->inputs[LSTMUNIT_ACT_CSTATE_IN] = inputs[LSTMUNIT_INPUT_C_STATE];
     for( i = ifco_start_index; i < LSTMUNIT_IFCO_GATE_COUNT; i++ )
     {
-        if( p->local.use_layer_norm || p->local.use_hybrid )
+        if( p->local->use_layer_norm || p->local->use_hybrid )
         {
             curr->inputs[LSTMUNIT_ACT_DATA_BI + i] = inputs[LSTMUNIT_INPUT_BIAS_I + i];
         }
 
-        if( p->local.use_layer_norm )
+        if( p->local->use_layer_norm )
         {
             /* Pass layernorm weights to VSI_NN_OP_LSTMUNIT_ACTIVATION */
             curr->inputs[LSTMUNIT_ACT_LN_WI + i] = inputs[LSTMUNIT_INPUT_LAYERNORM_I + i];
@@ -460,15 +571,17 @@ static vsi_bool op_setup
         }
     }
 
-    if( p->local.use_projection )
+    if( p->local->use_projection )
     {
         /* create virtual tensor for activations' output0 */
         memset( attr.size, 0, VSI_NN_MAX_DIM_NUM * sizeof(uint32_t));
+
         attr.dim_num = VSI_NN_DIM_AUTO;
         attr.vtl = use_virtual_tensor;
         attr.is_const = FALSE;
 
-        if( p->local.multi_batch )
+        if( p->local->multi_batch &&
+            inputs[LSTMUNIT_INPUT_WEIGHT_PROJ]->attr.dtype.vx_type == VSI_NN_TYPE_UINT8)
         {
             /* projection FC on NN requires quantized input */
             attr.dtype.scale = (float)0.007866097716834601;
@@ -496,9 +609,9 @@ static vsi_bool op_setup
     }
     vsi_nn_setup_internal_node_op(self, curr); /* setup for VSI_NN_OP_LSTMUNIT_ACTIVATION */
 
-    if( p->local.use_projection )
+    if( p->local->use_projection )
     {
-        if( p->local.use_hybrid || !p->local.use_projection_bias )
+        if( p->local->use_hybrid || !p->local->use_projection_bias )
         {
             input_tensor = vsi_nn_create_zero_bias_tensor(self, &output_tensor->t->attr,
                 &inputs[LSTMUNIT_INPUT_WEIGHT_PROJ]->attr);
@@ -524,7 +637,7 @@ static vsi_bool op_setup
         tmp_tensor = output_tensor;
 
         /* Save output to h_state first and copy to output */
-        if( p->local.use_hybrid && p->local.use_projection_bias )
+        if( p->local->use_hybrid && p->local->use_projection_bias )
         {
             vsi_nn_internal_node_init_attr(&attr,
                 &outputs[LSTMUNIT_OUTPUT_H_STATE]->attr.dtype, use_virtual_tensor);
@@ -538,7 +651,7 @@ static vsi_bool op_setup
 
         vsi_nn_setup_internal_node_op(self, curr);
 
-        if( p->local.use_hybrid && p->local.use_projection_bias )
+        if( p->local->use_hybrid && p->local->use_projection_bias )
         {
             curr = vsi_nn_new_internal_node( self, VSI_NN_OP_ADD, 0, 0 );
             curr->inputs[0] = tmp_tensor->t;
@@ -564,6 +677,8 @@ static vsi_status op_deinit
 {
     vsi_status status = VSI_SUCCESS;
 
+    vsi_nn_safe_free(self->nn_param.lstmunit_ovxlib.local);
+    vsi_nn_safe_free(self->nn_param.lstmunit_ovxlib.internal_dtype_aux);
     vsi_nn_deinit_internal_node_wksp( self );
 
     return status;
@@ -578,6 +693,14 @@ static vsi_status op_init
 
     self->nn_param.lstmunit_ovxlib.activation = VSI_NN_ACT_TANH;
     self->nn_param.lstmunit_ovxlib.recurrent_activation = VSI_NN_ACT_SIGMOID;
+    self->nn_param.lstmunit_ovxlib.local = (vsi_nn_lstmunit_ovxlib_lcl_data_t *)
+        malloc(sizeof(vsi_nn_lstmunit_ovxlib_lcl_data_t));
+    memset(self->nn_param.lstmunit_ovxlib.local, 0,
+        sizeof(vsi_nn_lstmunit_ovxlib_lcl_data_t));
+    self->nn_param.lstmunit_ovxlib.internal_dtype_aux = (vsi_nn_dtype_t *)
+        malloc(sizeof(vsi_nn_dtype_t) * LSTMUNIT_QUANTIZE_PARAM_AUX_COUNT);
+    memset(self->nn_param.lstmunit_ovxlib.internal_dtype_aux, 0,
+        sizeof(vsi_nn_dtype_t) * LSTMUNIT_QUANTIZE_PARAM_AUX_COUNT);
 
     return status;
 } /* op_init() */
@@ -595,8 +718,8 @@ DEF_OP_REG
     /* check      */ op_check,
     /* setup      */ op_setup,
     /* optimize   */ op_optimize,
-    /* input_num  */ 24,
-    /* output_num */ 4
+    /* input_num  */ LSTMUNIT_INPUT_CNT,
+    /* output_num */ LSTMUNIT_OUTPUT_CNT
     );
 #ifdef __cplusplus
 }

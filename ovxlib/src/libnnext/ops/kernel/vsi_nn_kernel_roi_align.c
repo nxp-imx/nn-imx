@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -43,11 +43,6 @@
 #define _VX_KERNEL_ID           (VX_KERNEL_ENUM_ROI_ALIGN)
 #define _VX_KERNEL_NAME         (VX_KERNEL_NAME_ROI_ALIGN)
 #define _VX_KERNEL_FUNC_KERNEL  (vxRoi_alignKernel)
-
-#undef MAX
-#define MAX(a,b)    ((a) > (b) ? (a) : (b))
-#undef MIN
-#define MIN(a,b)    ((a) < (b) ? (a) : (b))
 
 static vsi_status VX_CALLBACK vxRoi_alignKernel
     (
@@ -157,8 +152,8 @@ static vsi_status VX_CALLBACK vxRoi_alignKernel
             float wRoiEnd = f32_in_buffer[1][n * kRoiDim + 2] * widthScale * scale;
             float hRoiEnd = f32_in_buffer[1][n * kRoiDim + 3] * heightScale * scale;
 
-            float roiWidth = MAX((wRoiEnd - wRoiStart), 1.0f);
-            float roiHeight = MAX((hRoiEnd - hRoiStart), 1.0f);
+            float roiWidth = vsi_nn_max((wRoiEnd - wRoiStart), 1.0f);
+            float roiHeight = vsi_nn_max((hRoiEnd - hRoiStart), 1.0f);
             float wStepSize = roiWidth / outWidth;
             float hStepSize = roiHeight / outHeight;
 

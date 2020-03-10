@@ -13,8 +13,10 @@ __kernel void maximum_FP32FP32toFP32
 {
     int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);
 
-    float4 src0 = read_imagef(input0, coord);
-    float4 src1 = read_imagef(input1, coord);
+    float4 src0;
+    float4 src1;
+    readImage2DArray(src0, input0, coord);
+    readImage2DArray(src1, input1, coord);
 
     float4 dst = src0 > src1 ? src0 : src1;
 
@@ -59,8 +61,10 @@ __kernel void maximum_U8U8toU8
 {
     int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);
 
-    uint4 src0 = read_imageui(input0, coord);
-    uint4 src1 = read_imageui(input1, coord);
+    uint4 src0;
+    uint4 src1;
+    readImage2DArray(src0, input0, coord);
+    readImage2DArray(src1, input1, coord);
 
     float4 data0 = convert_float4(src0) * input0Scale - input0Tail;
     float4 data1 = convert_float4(src1) * input1Scale - input1Tail;
@@ -112,8 +116,10 @@ __kernel void maximum_I32I32toI32
 {
     int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);
 
-    int4 src0 = read_imagei(input0, coord);
-    int4 src1 = read_imagei(input1, coord);
+    int4 src0;
+    int4 src1;
+    readImage2DArray(src0, input0, coord);
+    readImage2DArray(src1, input1, coord);
 
     int4 dst = src0 > src1 ? src0 : src1;
 

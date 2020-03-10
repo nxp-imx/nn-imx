@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2018 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -91,6 +91,7 @@ static inline uint32_t type_get_bytes
     {
     case VSI_NN_TYPE_INT8:
     case VSI_NN_TYPE_UINT8:
+    case VSI_NN_TYPE_BOOL8:
         return 1;
     case VSI_NN_TYPE_INT16:
     case VSI_NN_TYPE_UINT16:
@@ -383,6 +384,7 @@ static inline vsi_status dtype_to_float32
         *dst = bfp16_to_fp32( *(int16_t *)src );
         break;
     case VSI_NN_TYPE_INT8:
+    case VSI_NN_TYPE_BOOL8:
     case VSI_NN_TYPE_UINT8:
     case VSI_NN_TYPE_INT16:
     case VSI_NN_TYPE_INT32:
@@ -431,6 +433,7 @@ static inline vsi_status float32_to_dtype
         *(int16_t *)dst = fp32_to_bfp16_rtne( src );
         break;
     case VSI_NN_TYPE_INT8:
+    case VSI_NN_TYPE_BOOL8:
     case VSI_NN_TYPE_UINT8:
     case VSI_NN_TYPE_INT16:
     case VSI_NN_TYPE_INT32:

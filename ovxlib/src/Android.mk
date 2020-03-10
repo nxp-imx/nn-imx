@@ -84,6 +84,8 @@ LOCAL_SRC_FILES += kernel/vsi_nn_kernel.c \
                    kernel/vsi_nn_kernel_util.c \
                    kernel/vsi_nn_kernel_backend.c \
                    kernel/vsi_nn_kernel_eltwise.c \
+                   kernel/vsi_nn_kernel_selector.c \
+                   kernel/vsi_nn_kernel_node.c \
                    kernel/vsi_nn_kernel_param.c \
                    kernel/vsi_nn_kernel_gpu_shape_optimize.c \
                    kernel/vsi_nn_gpu.c

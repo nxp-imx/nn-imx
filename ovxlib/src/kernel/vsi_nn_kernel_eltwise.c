@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -335,3 +335,219 @@ vsi_bool vsi_nn_kernel_optimize_eltwise_shape
     return ret;
 } /* vsi_nn_kernel_optimize_eltwise_shape() */
 
+
+
+static size_t broadcast_fill_dim
+    (
+    int32_t** shape_in, int32_t input_num,
+    int32_t* shape_output, size_t rank,
+    size_t max_rank, int32_t* size_in,
+    int32_t size_output
+    )
+{
+    int32_t i         = 0;
+    size_t cost_size = 1;
+    VSI_ASSERT( rank <= max_rank );
+    VSI_ASSERT( size_output >= (int32_t)((int64_t)(0xFFFFFFFF) - 1) );
+    if( size_output < GPU_TENSOR_MAX_WIDTH )
+    {
+        for (i = 0; i < input_num; i++)
+        {
+            shape_in[i][rank] = size_in[i];
+        }
+        shape_output[rank] = size_output;
+    }
+    else
+    {
+        int32_t divisor = 0;
+        int32_t remainder = 0;
+        compute_gpu_divisor( size_output, GPU_TENSOR_MAX_WIDTH, 1, &divisor );
+        remainder = size_output / divisor;
+        if( remainder > GPU_TENSOR_MAX_WIDTH || rank >= max_rank )
+        {
+            // Cannot optimize.
+            for (i = 0; i < input_num; i++)
+            {
+                shape_in[i][rank] = size_in[i];
+            }
+            shape_output[rank] = size_output;
+        }
+        else
+        {
+            /*
+             * We've limit the max size to 2^32 -1(Almost 4G * sizeof(data type)),
+             * so it should be always 2.
+             */
+            cost_size = 2;
+            for (i = 0; i < input_num; i++)
+            {
+                if (size_in[i] > 1)
+                {
+                    shape_in[i][rank]     = divisor;
+                    shape_in[i][rank + 1] = remainder;
+                }
+                else
+                {
+                    shape_in[i][rank]     = 1;
+                    shape_in[i][rank + 1] = 1;
+                }
+            }
+            shape_output[rank] = divisor;
+            shape_output[rank + 1] = remainder;
+        }
+    }
+    return cost_size;
+} /* broadcast_fill_dim() */
+
+vsi_bool vsi_nn_kernel_optimize_broadcast_shape
+    (
+    const int32_t** shape_in, const size_t* rank_in,
+    const int32_t   input_num,
+    const int32_t*  shape_output, const size_t rank_output,
+    int32_t** out_shape_in,
+    int32_t* out_shape_output, uint32_t* out_rank_output
+    )
+{
+#define MAX_INPUT_NUM    30
+    vsi_bool ret                              = TRUE;
+    vsi_bool append_dim                       = FALSE;
+    size_t   i                                = 0;
+    size_t   j                                = 0;
+    size_t   k                                = 0;
+    size_t   dims                             = 0;
+    int32_t  effective_size[MAX_INPUT_NUM]    = {1};
+    int32_t  tmp_sz                           = 0;
+    int32_t  size_in[MAX_INPUT_NUM]           = {0};
+    int32_t  state_mask                       = 0;
+    int32_t  prv_state_mask                   = -1;
+
+#define _swap_size(a, b, tmp)  \
+    do { \
+        tmp = a; \
+        a = b; \
+        b = tmp; \
+    } while(0)
+
+    if (input_num > MAX_INPUT_NUM)
+    {
+        VSILOGE("Max support input num is %d, while input num is %d.",
+                MAX_INPUT_NUM, input_num);
+        ret = FALSE;
+        goto final;
+    }
+
+    for (i = 0; i < (size_t)input_num; i++)
+    {
+        effective_size[i] = 1;
+    }
+
+    for( i = 0; i < rank_output; i++ )
+    {
+        for (j = 0; j < (size_t)input_num; j++)
+        {
+            size_in[j] = i < rank_in[j] ? shape_in[j][i] : 1;
+        }
+        /*
+         * Skip dim if the size is equal to 1
+         */
+        if( shape_output[i] == 1 )
+        {
+            continue;
+        }
+
+        // Invalid shape for broadcasting
+        k = 0;
+        for (j = 0; j < (size_t)input_num; j++)
+        {
+            if (size_in[k] > 1)
+            {
+                k = j;
+                break;
+            }
+        }
+
+        for (j = 0; j < input_num; j++)
+        {
+            if ((size_in[k] != size_in[j])
+             && (size_in[j] > 1))
+            {
+                ret = FALSE;
+                goto final;
+            }
+        }
+
+        state_mask = 0;
+        for (j = 0; j < (size_t)input_num; j++)
+        {
+            if (1 == size_in[j])
+            {
+                state_mask |= (1 << j);
+            }
+        }
+
+        append_dim = FALSE;
+
+        if ((-1 == prv_state_mask) || (state_mask == prv_state_mask))
+        {
+            for (j = 0; j < (size_t)input_num; j++)
+            {
+                effective_size[j] *= size_in[j];
+            }
+        }
+        else
+        {
+            for (j = 0; j < (size_t)input_num; j++)
+            {
+                _swap_size(size_in[j], effective_size[j], tmp_sz);
+            }
+            append_dim = TRUE;
+        }
+
+        prv_state_mask = state_mask;
+
+        if( append_dim )
+        {
+            int32_t size_output;
+            size_output = size_in[0];
+            for (j = 1; j < (size_t)input_num; j++)
+            {
+                size_output = vsi_nn_max(size_output, size_in[j]);
+            }
+            dims += broadcast_fill_dim(out_shape_in, input_num, out_shape_output,
+                    dims, VSI_NN_MAX_DIM_NUM, size_in, size_output);
+        }
+    }
+
+    if( ret )
+    {
+        /* Append the last dim */
+        if( i == rank_output )
+        {
+            int32_t size_output;
+            size_output = effective_size[0];
+            for (j = 1; j < (size_t)input_num; j++)
+            {
+                size_output = vsi_nn_max(size_output, effective_size[j]);
+            }
+            dims += broadcast_fill_dim(out_shape_in, input_num, out_shape_output,
+                    dims, VSI_NN_MAX_DIM_NUM, effective_size, size_output);
+        }
+        /* Avoid 1D shape*/
+        if( 1 == dims )
+        {
+            for (j = 0; j < (size_t)input_num; j++)
+            {
+                out_shape_in[j][1] = 1;
+            }
+            out_shape_output[1] = 1;
+            dims = 2;
+        }
+
+        *out_rank_output = dims;
+    }
+
+#undef _swap_size
+#undef MAX_INPUT_NUM
+final:
+    return ret;
+} /* vsi_nn_kernel_optimize_broadcast_shape() */

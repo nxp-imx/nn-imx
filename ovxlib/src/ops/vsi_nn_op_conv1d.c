@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2018 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -24,31 +24,13 @@
 #include <string.h>
 
 #include "vsi_nn_types.h"
-#include "vsi_nn_platform.h"
 #include "vsi_nn_graph.h"
 #include "vsi_nn_node.h"
 #include "vsi_nn_ops.h"
 #include "vsi_nn_tensor.h"
 #include "vsi_nn_tensor_util.h"
-#include "utils/vsi_nn_util.h"
 #include "utils/vsi_nn_dtype_util.h"
-
-static void _reshape_tensor
-    (
-    vsi_nn_tensor_t * input,
-    vx_tensor * output
-    )
-{
-    vsi_nn_tensor_attr_t attr;
-    memcpy(&attr, &(input->attr), sizeof(vsi_nn_tensor_attr_t));
-
-    attr.size[0] = 1;
-    attr.size[1] = input->attr.size[0];
-    attr.size[2] = input->attr.size[1];
-    attr.size[3] = input->attr.size[2];
-    attr.dim_num = 4;
-    *output = vxReshapeTensor( input->t, (int32_t *)attr.size, attr.dim_num );
-}
+#include "kernel/vsi_nn_kernel.h"
 
 static vsi_status op_compute
     (
@@ -57,42 +39,27 @@ static vsi_status op_compute
     vsi_nn_tensor_t ** outputs
     )
 {
-    vsi_status status;
-    vx_nn_convolution_params_ext_t p;
-    vsi_nn_conv1d_param *nn_param = &self->nn_param.conv1d;
+    vsi_status status = VSI_FAILURE;
+    vsi_nn_kernel_param_t * param = NULL;
 
-    memset( &p, 0, sizeof( vx_nn_convolution_params_ext_t ) );
+    param = vsi_nn_kernel_param_create();
 
-    status = VSI_FAILURE;
+    vsi_nn_kernel_param_add_int32( param, "stride", self->nn_param.conv1d.stride );
+    vsi_nn_kernel_param_add_int32( param, "pad_front", self->nn_param.conv1d.pad[0] );
+    vsi_nn_kernel_param_add_int32( param, "pad_end", self->nn_param.conv1d.pad[1] );
+    vsi_nn_kernel_param_add_int32( param, "dilation", self->nn_param.conv1d.multiplier );
+    vsi_nn_kernel_param_add_int32( param, "overflow_policy", self->vx_param.overflow_policy );
+    vsi_nn_kernel_param_add_int32( param, "rounding_policy", self->vx_param.rounding_policy );
+    vsi_nn_kernel_param_add_int32( param,
+            "down_scale_size_rounding", self->vx_param.down_scale_size_rounding );
+    self->n = (vx_node)vsi_nn_kernel_selector( self->graph, "conv1d",
+            inputs, 3, outputs, 1, param );
 
-    p.khr.padding_y = self->nn_param.conv1d.pad[0];
-    if (self->nn_param.conv1d.dilation > 0)
-    {
-        p.khr.dilation_y = self->nn_param.conv1d.dilation - 1;
-    }
-    p.khr.overflow_policy = self->vx_param.overflow_policy;
-    p.khr.rounding_policy =  self->vx_param.rounding_policy;
-    p.khr.down_scale_size_rounding = self->vx_param.down_scale_size_rounding;
-
-    p.padding_y_bottom = self->nn_param.conv1d.pad[1];
-
-    _reshape_tensor(inputs[0], &(nn_param->local.input_tensor));
-    _reshape_tensor(inputs[1], &(nn_param->local.weight_tensor));
-    _reshape_tensor(outputs[0], &(nn_param->local.output_tensor));
-
-    self->n = vxConvolutionLayer(
-        self->graph->g,
-        nn_param->local.input_tensor,
-        nn_param->local.weight_tensor,
-        (NULL == inputs[2]) ? NULL : inputs[2]->t,
-        (vx_nn_convolution_params_t *)&p,
-        sizeof( vx_nn_convolution_params_ext_t ),
-        nn_param->local.output_tensor
-        );
-    if( NULL != self->n )
+    if( self->n )
     {
         status = VSI_SUCCESS;
     }
+    vsi_nn_kernel_param_release( &param );
     return status;
 } /* op_compute() */
 
@@ -118,32 +85,23 @@ static vsi_bool op_setup
     vsi_nn_tensor_t ** outputs
     )
 {
-    vsi_nn_conv1d_param *nn_param = &self->nn_param.conv1d;
-
-    vsi_nn_compute_padding_conv1d(
-        inputs[0]->attr.size,
-        &self->nn_param.conv1d.ksize,
-        &self->nn_param.conv1d.stride,
-        &self->nn_param.conv1d.dilation,
-        self->nn_param.conv1d.pad_type,
-        self->nn_param.conv1d.pad
-    );
+    vsi_nn_conv1d_param* p = &self->nn_param.conv1d;
 
     if( VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num )
     {
         outputs[0]->attr.size[0] = vsi_nn_ComputeFilterSize
             (
             inputs[0]->attr.size[0],
-            nn_param->ksize,
-            &nn_param->pad[0],
-            nn_param->stride,
-            nn_param->dilation,
+            inputs[1]->attr.size[0],
+            p->pad,
+            p->stride,
+            p->dilation,
             VSI_NN_ROUND_FLOOR
             );
 
-        outputs[0]->attr.size[1] = nn_param->weights;
+        outputs[0]->attr.size[1] = inputs[1]->attr.size[2];
         outputs[0]->attr.size[2] = inputs[0]->attr.size[2];
-        outputs[0]->attr.dim_num = inputs[0]->attr.dim_num;
+        outputs[0]->attr.dim_num = 3;
     }
     return TRUE;
 } /* op_setup() */
@@ -153,22 +111,6 @@ static vsi_status op_deinit
     vsi_nn_node_t * self
     )
 {
-    if (self->nn_param.conv1d.local.input_tensor != NULL)
-    {
-        vxReleaseTensor(&self->nn_param.conv1d.local.input_tensor);
-        self->nn_param.conv1d.local.input_tensor = NULL;
-    }
-    if (self->nn_param.conv1d.local.weight_tensor != NULL)
-    {
-        vxReleaseTensor(&self->nn_param.conv1d.local.weight_tensor);
-        self->nn_param.conv1d.local.weight_tensor = NULL;
-    }
-    if (self->nn_param.conv1d.local.output_tensor != NULL)
-    {
-        vxReleaseTensor(&self->nn_param.conv1d.local.output_tensor);
-        self->nn_param.conv1d.local.output_tensor = NULL;
-    }
-    vsi_nn_op_common_deinit(self);
     return VSI_SUCCESS;
 }
 

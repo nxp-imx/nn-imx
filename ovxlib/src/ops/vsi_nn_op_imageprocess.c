@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2018 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -704,23 +704,75 @@ static vsi_bool op_setup
     return TRUE;
 } /* op_setup() */
 
+typedef struct _vsi_nn_image_data_t
+{
+    int32_t id;
+    vx_image handle;
+}vsi_nn_image_data_t;
+
+typedef struct _vsi_nn_image_list_t
+{
+    vsi_nn_link_list_t link_list;
+    vsi_nn_image_data_t image;
+} vsi_nn_image_list_t;
+
+static void _init_image_list(vsi_nn_link_list_t *node)
+{
+    vsi_nn_image_list_t *image_list = (vsi_nn_image_list_t *)node;
+    image_list->link_list.next = NULL;
+    image_list->link_list.prev = NULL;
+    memset(&image_list->image, 0, sizeof(vsi_nn_image_data_t));
+}
+
+static vsi_nn_image_list_t* get_image_by_id
+(
+    vsi_nn_image_list_t* head,
+    int32_t id
+)
+{
+    vsi_nn_image_list_t *iter;
+    iter = head;
+    while(iter)
+    {
+        if (iter->image.id == id)
+        {
+            return iter;
+        }
+        iter = (vsi_nn_image_list_t *)vsi_nn_LinkListNext( (vsi_nn_link_list_t *)iter);
+    }
+    iter = (vsi_nn_image_list_t *)vsi_nn_LinkListNewNode(
+                sizeof(vsi_nn_image_list_t), _init_image_list);
+    iter->image.id = id;
+    return iter;
+}
+
+vsi_nn_image_list_t* images_head = NULL;
 // pipeline:
 // 1.crop
 // 2.resize
 // 3.(val-mean)*scale
 // 4.RGBRGBRGB ---> BBBGGGRRR
 // 5.revert channel: BBBGGGRRR ---> RRRGGGBBB
-static vx_image image_global = NULL;
-vsi_status vsi_nn_op_imageprocess_single_node
+vsi_status vsi_nn_InsertImageprocessSingleNode
     (
     vsi_nn_graph_t *graph,
     vsi_nn_tensor_attr_t *attr,
     vsi_nn_imageprocess_param *p,
     uint8_t *data,
-    vsi_nn_tensor_t *tensor_out
+    vsi_nn_tensor_t *tensor_out,
+    int32_t id
     )
 {
-    if (image_global == NULL)
+    vsi_nn_image_list_t* p_image;
+    vx_image image_global;
+    if(images_head == NULL)
+    {
+        images_head = (vsi_nn_image_list_t *)vsi_nn_LinkListNewNode(
+            sizeof(vsi_nn_image_list_t), _init_image_list);
+    }
+    p_image = get_image_by_id(images_head, id);
+    image_global = p_image->image.handle;
+    if(image_global == NULL)
     {
         vsi_status status;
         vsi_nn_kernel_info_t kernel_info;
@@ -853,6 +905,7 @@ vsi_status vsi_nn_op_imageprocess_single_node
         }
 #endif
         image_global = image;
+        p_image->image.handle = image;
 
         /* Set inputs and outputs */
         params[0] = (vx_reference)image;
@@ -1041,6 +1094,31 @@ OnError:
 #endif
         return VSI_SUCCESS;
     }
+}
+
+vsi_status vsi_nn_op_imageprocess_single_node
+    (
+    vsi_nn_graph_t *graph,
+    vsi_nn_tensor_attr_t *attr,
+    vsi_nn_imageprocess_param *p,
+    uint8_t *data,
+    vsi_nn_tensor_t *tensor_out
+    )
+{
+    return vsi_nn_InsertImageprocessSingleNode(
+        graph, attr, p, data, tensor_out, 0);
+}
+
+static void _release_image_list(vsi_nn_link_list_t *node)
+{
+    vsi_nn_image_list_t *image_list = (vsi_nn_image_list_t *)node;
+    vxReleaseImage(&(image_list->image.handle));
+}
+
+vsi_status vsi_nn_ReleaseImageprocessSingleNode()
+{
+    vsi_nn_LinkListDeinit((vsi_nn_link_list_t *)images_head, _release_image_list);
+    return VSI_SUCCESS;
 }
 
 #ifdef __cplusplus

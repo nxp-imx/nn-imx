@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -289,10 +289,11 @@ static vsi_bool op_setup
         output_tensor = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
         rnncell_out1 = output_tensor->t;
 
-        curr = vsi_nn_new_internal_node( self, VSI_NN_OP_RNN, 0, 0 );
-        curr->node->nn_param.rnn.activation = curr_param->activation;
-        memcpy( curr->node->nn_param.unidirectional_sequence_rnn.internal_dtype,
-            curr_param->internal_dtype, sizeof( curr_param->internal_dtype ) );
+        curr = vsi_nn_new_internal_node( self, VSI_NN_OP_RNNCELL_OVXLIB, 0, 0 );
+        curr->node->nn_param.rnncell_ovxlib.activation = curr_param->activation;
+        memcpy( curr->node->nn_param.rnncell_ovxlib.internal_dtype,
+            curr_param->internal_dtype,
+            sizeof(vsi_nn_dtype_t) * RNNCELL_QUANTIZE_PARAM_COUNT);
         curr->inputs[RNNCELL_INPUT_INPUT] = reshape_output_tensors[i];
         curr->inputs[RNNCELL_INPUT_H_STATE] = last_step_h_state_fw;
 
@@ -344,10 +345,11 @@ static vsi_bool op_setup
         output_tensor = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
         rnncell_out1 = output_tensor->t;
 
-        curr = vsi_nn_new_internal_node( self, VSI_NN_OP_RNN, 0, 0 );
-        curr->node->nn_param.rnn.activation = curr_param->activation;
-        memcpy( curr->node->nn_param.unidirectional_sequence_rnn.internal_dtype,
-            curr_param->internal_dtype, sizeof( curr_param->internal_dtype ) );
+        curr = vsi_nn_new_internal_node( self, VSI_NN_OP_RNNCELL_OVXLIB, 0, 0 );
+        curr->node->nn_param.rnncell_ovxlib.activation = curr_param->activation;
+        memcpy( curr->node->nn_param.rnncell_ovxlib.internal_dtype,
+            &(curr_param->internal_dtype[RNNCELL_QUANTIZE_PARAM_COUNT]),
+            sizeof(vsi_nn_dtype_t) * RNNCELL_QUANTIZE_PARAM_COUNT);
         curr->inputs[RNNCELL_INPUT_INPUT] = reshape_output_tensors[time_step - 1 - i];
         curr->inputs[RNNCELL_INPUT_H_STATE] = last_step_h_state_bw;
 
@@ -507,10 +509,26 @@ static vsi_status op_deinit
 {
     vsi_status status = VSI_SUCCESS;
 
+    vsi_nn_safe_free(self->nn_param.bidirectional_sequence_rnn.internal_dtype);
     vsi_nn_deinit_internal_node_wksp( self );
 
     return status;
 } /* op_deinit() */
+
+static vsi_status op_init
+    (
+    vsi_nn_node_t * self
+    )
+{
+    vsi_status status = VSI_SUCCESS;
+
+    self->nn_param.bidirectional_sequence_rnn.internal_dtype = (vsi_nn_dtype_t *)
+        malloc(sizeof(vsi_nn_dtype_t) * RNNCELL_QUANTIZE_PARAM_COUNT * 2);
+    memset(self->nn_param.bidirectional_sequence_rnn.internal_dtype, 0,
+        sizeof(vsi_nn_dtype_t) * RNNCELL_QUANTIZE_PARAM_COUNT * 2);
+
+    return status;
+} /* op_init() */
 
 #ifdef __cplusplus
 extern "C" {
@@ -519,7 +537,7 @@ extern "C" {
 DEF_OP_REG
     (
     /* op_name    */ BIDIRECTIONAL_SEQUENCE_RNN,
-    /* init       */ NULL,
+    /* init       */ op_init,
     /* compute    */ op_compute,
     /* deinit     */ op_deinit,
     /* check      */ op_check,

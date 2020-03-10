@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -45,11 +45,6 @@
 #define _VX_KERNEL_ID           (VX_KERNEL_ENUM_BOX_WITH_NMS_LIMIT)
 #define _VX_KERNEL_NAME         (VX_KERNEL_NAME_BOX_WITH_NMS_LIMIT)
 #define _VX_KERNEL_FUNC_KERNEL  (vxBox_with_nms_limitKernel)
-
-#undef MAX
-#define MAX(a,b)    ((a) > (b) ? (a) : (b))
-#undef MIN
-#define MIN(a,b)    ((a) < (b) ? (a) : (b))
 
 static float hard_nms_kernel
     (
@@ -177,12 +172,12 @@ float getIoUAxisAligned
 {
     const float area1 = (roi1[2] - roi1[0]) * (roi1[3] - roi1[1]);
     const float area2 = (roi2[2] - roi2[0]) * (roi2[3] - roi2[1]);
-    const float x1 = MAX(roi1[0], roi2[0]);
-    const float x2 = MIN(roi1[2], roi2[2]);
-    const float y1 = MAX(roi1[1], roi2[1]);
-    const float y2 = MIN(roi1[3], roi2[3]);
-    const float w = MAX(x2 - x1, 0.0f);
-    const float h = MAX(y2 - y1, 0.0f);
+    const float x1 = vsi_nn_max(roi1[0], roi2[0]);
+    const float x2 = vsi_nn_min(roi1[2], roi2[2]);
+    const float y1 = vsi_nn_max(roi1[1], roi2[1]);
+    const float y2 = vsi_nn_min(roi1[3], roi2[3]);
+    const float w = vsi_nn_max(x2 - x1, 0.0f);
+    const float h = vsi_nn_max(y2 - y1, 0.0f);
     const float areaIntersect = w * h;
     const float areaUnion = area1 + area2 - areaIntersect;
     return areaIntersect / areaUnion;

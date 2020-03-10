@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2018 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -723,7 +723,7 @@ static vsi_bool op_set_reduce_axis(
     if (resolved_dim_count > 1)
     {
         j = 0;
-        for (i = 0; i < resolved_dim_count; i++)
+        for (i = 0; i < (uint32_t)resolved_dim_count; i++)
         {
             if (inputs[POST_PROCESS_OUTPUT]->attr.size[resolved_dim[i]] > 1)
             {

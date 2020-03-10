@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -560,9 +560,21 @@ DEF_KERNEL_INITIALIZER(_maximum_initializer)
     status = vsi_nn_kernel_gpu_config( node, &gpu_param );
 
 final:
-    if (attr[0]) vsi_nn_kernel_tensor_attr_release( &attr[0] );
-    if (attr[1]) vsi_nn_kernel_tensor_attr_release( &attr[1] );
-    if (attr[2]) vsi_nn_kernel_tensor_attr_release( &attr[2] );
+    if (attr[0])
+    {
+        vsi_nn_kernel_tensor_attr_release( &attr[0] );
+        attr[0] = NULL;
+    }
+    if (attr[1])
+    {
+        vsi_nn_kernel_tensor_attr_release( &attr[1] );
+        attr[1] = NULL;
+    }
+    if (attr[2])
+    {
+        vsi_nn_kernel_tensor_attr_release( &attr[2] );
+        attr[2] = NULL;
+    }
 
     return status;
 } /* _maxmum_initializer() */
@@ -647,7 +659,7 @@ static vsi_nn_kernel_node_t _setup
     }
 
     image_2d = (outputs[0]->attr.dim_num == 2);
-    status = _query_kernel( inputs, outputs, image_2d, kernel );
+    status = _query_kernel( tmp_inputs, outputs, image_2d, kernel );
     if( VSI_SUCCESS == status)
     {
         node = vsi_nn_kernel_create_node( graph, kernel );

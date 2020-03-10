@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -31,6 +31,7 @@
 #include "vsi_nn_log.h"
 #include "vsi_nn_types.h"
 #include "vsi_nn_tensor_util.h"
+#include "vsi_nn_error.h"
 #include "utils/vsi_nn_util.h"
 #include "utils/vsi_nn_dtype_util.h"
 #include "utils/vsi_nn_dlfcn.h"
@@ -62,6 +63,7 @@ typedef struct {
         int32_t pad_w_front, int32_t pad_w_end,
         const uint8_t* input, const uint8_t* kernel,
         const int32_t* bias, uint8_t* output);
+
 } npuref_impl_t;
 
 static npuref_impl_t s_npuref;
@@ -166,6 +168,72 @@ void npuref_interface_quant_deconv2d(
         pad[2], pad[3], pad[0], pad[1],
         input_buffer, kernel_buffer, bias_buffer, output_buffer);
 } /* npuref_interface_quant_conv2d() */
+
+void npuref_interface_quant_depthwise_conv2d(
+    const void* input_buffer,
+    const void* kernel_buffer,
+    const void* bias_buffer,
+    const int32_t* input_shape, uint32_t input_dim,
+    const int32_t* kernel_shape, uint32_t kernel_dim,
+    const int32_t* output_shape, uint32_t output_dim,
+    float input_scale, int32_t input_zero_point,
+    float kernel_scale, int32_t kernel_zero_point,
+    float output_scale, int32_t output_zero_point,
+    int32_t pad_h_front, int32_t pad_h_end,
+    int32_t pad_w_front, int32_t pad_w_end,
+    int32_t stride_h, int32_t stride_w, int32_t dilation_h, int32_t dilation_w,
+    void* output_buffer)
+{
+    const int32_t group = input_shape[2];
+    int32_t i;
+    uint32_t sinput_shape[4] = { 0 };
+    uint32_t skernel_shape[4] = { 0 };
+    uint32_t soutput_shape[4] = { 0 };
+    uint32_t input_ofset = 0;
+    uint32_t output_ofset = 0;
+    uint32_t kernel_ofset = 0;
+    uint32_t multiplier = 0;
+    memcpy( sinput_shape, input_shape, sizeof(uint32_t) * 4 );
+    memcpy( skernel_shape, kernel_shape, sizeof(uint32_t) * 4 );
+    memcpy( soutput_shape, output_shape, sizeof(uint32_t) * 4 );
+    skernel_shape[3] = (int)(kernel_shape[2] / input_shape[2]);
+    sinput_shape[2] = 1;
+    skernel_shape[2] = 1;
+    soutput_shape[2] = skernel_shape[3];
+    multiplier = skernel_shape[3];
+    VSI_ASSERT( sinput_shape[3] == 1 );
+    //VSILOGD("!!! ORG shape - [%d %d %d %d] [%d %d %d %d] [%d %d %d %d]",
+    //            input_shape[0], input_shape[1], input_shape[2], input_shape[3],
+    //            kernel_shape[0], kernel_shape[1], kernel_shape[2], kernel_shape[3],
+    //            output_shape[0], output_shape[1], output_shape[2], output_shape[3]);
+    //VSILOGD("PAD %d %d", pad_h_front, pad_h_end);
+    //VSILOGD("strde %d %d", stride_h, stride_w);
+    for( i = 0; i < group; i ++ )
+    {
+        //VSILOGD("!!! %d !!!", i);
+        //VSILOGD("!!! shape - [%d %d %d %d], [%d %d %d %d], [%d %d %d %d]",
+        //        sinput_shape[0], sinput_shape[1], sinput_shape[2], sinput_shape[3],
+        //        skernel_shape[0], skernel_shape[1], skernel_shape[2], skernel_shape[3],
+        //        soutput_shape[0], soutput_shape[1], soutput_shape[2], soutput_shape[3]
+        //        );
+        //VSILOGD("!!! ofset - %d %d %d", input_ofset, kernel_ofset, output_ofset);
+        npuref_impl()->conv2d_quant8(
+            sinput_shape, skernel_shape, soutput_shape,
+            input_scale, kernel_scale, output_scale,
+            input_zero_point, kernel_zero_point,
+            output_zero_point,
+            stride_h, stride_w,
+            dilation_h, dilation_w,
+            pad_h_front, pad_h_end, pad_w_front, pad_w_end,
+            ((const uint8_t*)input_buffer + input_ofset),
+            ((const uint8_t*)kernel_buffer + kernel_ofset),
+            bias_buffer ? ((const int32_t*)bias_buffer + multiplier*i) : NULL,
+            ((uint8_t*)output_buffer + output_ofset));
+        input_ofset += sinput_shape[0] * sinput_shape[1];
+        kernel_ofset += skernel_shape[0] * skernel_shape[1];
+        output_ofset += soutput_shape[0] * soutput_shape[1];
+    }
+} /* npuref_interface_quant_depthwise_conv2d() */
 
 void npuref_init()
 {

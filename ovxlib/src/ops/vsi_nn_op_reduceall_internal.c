@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2019 Vivante Corporation
+*    Copyright (c) 2020 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -389,7 +389,7 @@ static vsi_status vx_op_compute
     }
 
     /* Set inputs and outputs */
-    _set_inputs_outputs( params, inputs, outputs );
+    reshape_tensor_set_input_output( self, inputs[0], outputs[0], params);
     /*TODO: Add code if need to change your parameter*/
 
     /* Init parameters. */
@@ -438,6 +438,13 @@ static void _get_reduceall_hashtable_idx
     axis = reshape_tensor_set_input_output(self, inputs[0], outputs[0], NULL);
     _input_type = vsi_nn_kernel_map_dtype(inputFormat);
     _output_type = vsi_nn_kernel_map_dtype(outputFormat);
+
+    if (BOOL8 == _input_type && BOOL8 == _output_type)
+    {
+        _input_type  = I8;
+        _output_type = I8;
+    }
+
     is_2d_image = _check_tensor_shape(self, inputs, outputs);
     key = VSI_NN_GEN_REDUCEALL_KEY(axis, _input_type, _output_type, is_2d_image);
 
