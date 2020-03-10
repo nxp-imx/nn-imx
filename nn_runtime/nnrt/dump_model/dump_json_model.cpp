@@ -148,7 +148,7 @@ namespace nnrt {
                 if (modelInputIds.end() ==
                         std::find(modelInputIds.begin(), modelInputIds.end(), index) &&
                     modelOutputIds.end() ==
-                        std::find(modelInputIds.begin(), modelInputIds.end(), index)) {
+                        std::find(modelOutputIds.begin(), modelOutputIds.end(), index)) {
                     buffer = model_->getBuffer<int8_t>(operand->weak_mem_ref.lock());
                     if (buffer) length = operand->weak_mem_ref.lock()->len_;
                 }
