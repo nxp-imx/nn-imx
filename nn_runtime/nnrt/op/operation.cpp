@@ -182,6 +182,12 @@ inline const char* get_operation_string(OperationType type) {
             return "exp";
         case OperationType::NEG:
             return "neg";
+        case OperationType::LOGICAL_AND:
+            return "logical_and";
+        case OperationType::LOGICAL_NOT:
+            return "logical_not";
+        case OperationType::LOGICAL_OR:
+            return "logical_or";
         default:
             return nullptr;
     }
