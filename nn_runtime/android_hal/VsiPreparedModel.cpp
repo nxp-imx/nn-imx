@@ -135,6 +135,8 @@ static Return<ErrorStatus> convertResultCodeToErrorStatus(int resultCode) {
             MAP_OP(REDUCE_SUM);
             MAP_OP(NEG);
             MAP_OP(PRELU);
+            MAP_OP(LESS);
+            MAP_OP(LESS_EQUAL)
 #endif
 #undef MAP_OP
 
