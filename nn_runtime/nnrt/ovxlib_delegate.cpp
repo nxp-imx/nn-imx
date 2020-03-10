@@ -24,6 +24,8 @@
 #include "ovxlib_delegate.hpp"
 #include <algorithm>
 #include <cassert>
+#include <type_traits>
+
 #include "error.hpp"
 #include "model.hpp"
 #include "op/public.hpp"
@@ -619,9 +621,14 @@ void OvxlibDelegate::packTensorAttr(vsi_nn_tensor_attr_t* attr,
     attr->dtype.fmt = VSI_NN_DIM_FMT_NCHW;
     attr->dtype.vx_type = dtype;
     if (is_quantized) {
-        assert(zero_point >= 0);
         attr->dtype.qnt_type = VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC;
-        attr->dtype.zero_point = (uint32_t)zero_point;
+        if (std::is_signed<decltype(attr->dtype.zero_point)>::value) {
+            attr->dtype.zero_point = zero_point;
+        } else {
+            if (zero_point < 0)
+                NNRT_LOGE_PRINT("Negitive zero_point not supported, it force converted to uint32");
+            attr->dtype.zero_point = (uint32_t)zero_point;
+        }
         attr->dtype.scale = scale;
     }
 
