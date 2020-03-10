@@ -75,3 +75,4 @@ void NNapiLimitationRegister(const std::string& opName, const IArgList* arglist)
 #include "nnapi_support/ANEURALNETWORKS_EXPAND_DIMS.hpp"
 #include "nnapi_support/ANEURALNETWORKS_POW.hpp"
 #include "nnapi_support/ANEURALNETWORKS_SPLIT.hpp"
+#include "nnapi_support/ANEURALNETWORKS_LOG_SOFTMAX.hpp"

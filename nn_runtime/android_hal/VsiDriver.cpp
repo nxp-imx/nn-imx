@@ -389,6 +389,12 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
                                                                                         operation);
             return split->Validate();
         }
+        case OperationType::LOG_SOFTMAX: {
+            OperationValidatePtr logSoftmax = std::make_unique<
+                op_validate::LogSoftmaxValidate<HalPlatform::Model, HalPlatform::Operation>>(
+                model, operation);
+            return logSoftmax->Validate();
+        }
 
         case OperationType::AXIS_ALIGNED_BBOX_TRANSFORM:
         case OperationType::BIDIRECTIONAL_SEQUENCE_LSTM:
@@ -401,7 +407,6 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
         case OperationType::GENERATE_PROPOSALS:
         case OperationType::GROUPED_CONV_2D:
         case OperationType::HEATMAP_MAX_KEYPOINT:
-        case OperationType::LOG_SOFTMAX:
         case OperationType::PAD_V2:
         case OperationType::QUANTIZE:
         case OperationType::QUANTIZED_16BIT_LSTM:

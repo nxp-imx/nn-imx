@@ -148,6 +148,7 @@ static Return<ErrorStatus> convertResultCodeToErrorStatus(int resultCode) {
             MAP_OP(POW);
             MAP_OP(INSTANCE_NORMALIZATION);
             MAP_OP(SPLIT);
+            MAP_OP(LOG_SOFTMAX);
 #endif
 #undef MAP_OP
 
