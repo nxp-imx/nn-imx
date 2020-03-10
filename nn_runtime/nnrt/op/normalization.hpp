@@ -72,10 +72,11 @@ struct BatchNormalization : TNormalization<OperationType::BATCH_NORM> {
     float eps;
 };
 
+template <typename DType>
 struct InstanceNormOperation : TNormalization<OperationType::INSTANCE_NORM> {
     InstanceNormOperation() : TNormalization() {}
-    std::vector<float> gamma;
-    std::vector<float> beta;
+    std::vector<DType> gamma;
+    std::vector<DType> beta;
     float eps;
 };
 

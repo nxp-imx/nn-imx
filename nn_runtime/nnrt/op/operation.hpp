@@ -29,10 +29,11 @@
 #include <memory>
 #include <unordered_map>
 #include <vector>
+#include "float16.hpp"
+#include "logging.hpp"
 #include "op/ILayoutInference.hpp"
 #include "op/operand.hpp"
 #include "permute_vector.hpp"
-#include "logging.hpp"
 
 namespace nnrt {
 class Model;
@@ -362,7 +363,8 @@ struct BidirectionalSequenceRnnOperation : Operation {
 };
 
 struct UnidirectionalSequenceLstmOperation : Operation {
-    UnidirectionalSequenceLstmOperation() : Operation(OperationType::UNIDIRECTIONAL_SEQUENCE_LSTM) {}
+    UnidirectionalSequenceLstmOperation()
+        : Operation(OperationType::UNIDIRECTIONAL_SEQUENCE_LSTM) {}
 
     FusedType activation{FusedType::TANH};
     bool timeMajor;
@@ -570,8 +572,9 @@ struct BoxWithNmsLimitOperation : Operation {
 
 struct LogSoftmaxOperation : Operation {
     LogSoftmaxOperation() : Operation(OperationType::LOG_SOFTMAX) {}
-    float beta{1.0};
-    int32_t axis{-1};
+
+    float beta;
+    int32_t axis;
 };
 
 #define DECLARE_OPERATION(name, type)                         \

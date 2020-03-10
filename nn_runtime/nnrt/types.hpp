@@ -25,6 +25,7 @@
 #define __OVXLIB_TYPES_H__
 
 #include <cstdint>
+#include "float16.hpp"
 namespace nnrt {
 
 enum class OperationType: uint32_t {

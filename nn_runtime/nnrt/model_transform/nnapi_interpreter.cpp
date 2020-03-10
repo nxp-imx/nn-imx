@@ -33,30 +33,29 @@
 #include "api_requirement/nnapi_requirement.hpp"
 #include "model_transform/nnapi_interpreter.hpp"
 
-namespace nnrt
-{
+namespace nnrt {
 
-#define NNAPI_CHECK_IO_NUM(op, in_num, out_num)         \
-    do {                                                \
-        if ((in_num > 0 && op->inputs().size() != (size_t)in_num)       \
-         || (out_num > 0 && op->outputs().size() != (size_t)out_num)) {           \
-            NNRT_LOGW_PRINT("Operation IO number mismatch. %d(%d), %d(%d)",     \
-                    op->inputs().size(), in_num,        \
-                    op->outputs().size(), out_num);     \
-            return nullptr;                             \
-        }                                               \
-    } while(0)
+#define NNAPI_CHECK_IO_NUM(op, in_num, out_num)                             \
+    do {                                                                    \
+        if ((in_num > 0 && op->inputs().size() != (size_t)in_num) ||        \
+            (out_num > 0 && op->outputs().size() != (size_t)out_num)) {     \
+            NNRT_LOGW_PRINT("Operation IO number mismatch. %d(%d), %d(%d)", \
+                            op->inputs().size(),                            \
+                            in_num,                                         \
+                            op->outputs().size(),                           \
+                            out_num);                                       \
+            return nullptr;                                                 \
+        }                                                                   \
+    } while (0)
 
-#define NNAPI_CHECK_PTR(ptr)                            \
-    do {                                                \
-        if (!ptr) {                                     \
-            return nullptr;                             \
-        }                                               \
-    } while(0)
+#define NNAPI_CHECK_PTR(ptr) \
+    do {                     \
+        if (!ptr) {          \
+            return nullptr;  \
+        }                    \
+    } while (0)
 
-static void convert2DPadding(int32_t* padding,
-        size_t size, int32_t* front, int32_t* back)
-{
+static void convert2DPadding(int32_t* padding, size_t size, int32_t* front, int32_t* back) {
     if (!padding || !front || !back) {
         return;
     }
@@ -1512,71 +1511,136 @@ OperationPtr NnApiInterpreter::map_INSTANCE_NORMALIZATION(Model* model,
                                                           uint32_t operation_index) {
     NNAPI_CHECK_IO_NUM(operation, 5, 1);
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
-    std::shared_ptr<InstanceNormOperation> instanceNorm = std::make_shared<InstanceNormOperation>();
-    NNAPI_CHECK_PTR(instanceNorm);
-
     std::vector<OperandType> argTypes;
     std::transform(
         inputs.begin(), inputs.end(), std::back_inserter(argTypes), [](const OperandPtr& operand) {
             return operand->type;
         });
-
     auto argList = api::requirement::nnapi::match("InstanceNormOperation", argTypes);
+    OperationPtr op;
     if (argList) {
-        instanceNorm->setDataLayout(
-            getDataLayout(inputs[argList->ArgPos("data_layout")]->scalar.boolean));
-
         auto inputOperand = inputs[argList->ArgPos("input")];
         auto outputOperand = model->getOperands(operation->outputs())[0];
         // No dynamic shape branch
         if (!nnrt::operand_utils::IsDynamicShape(inputOperand) &&
             !nnrt::operand_utils::IsDynamicShape(outputOperand)) {
-            if (inputs[argList->ArgPos("gamma")]->type == OperandType::FLOAT32) {
-                float gamma = inputs[argList->ArgPos("gamma")]->scalar.float32;
-                float beta = inputs[argList->ArgPos("beta")]->scalar.float32;
-                instanceNorm->eps = inputs[argList->ArgPos("epsilon")]->scalar.float32;
-                instanceNorm->setDataLayout(
-                    getDataLayout(inputs[argList->ArgPos("data_layout")]->scalar.boolean));
+            switch (inputs[argList->ArgPos("gamma")]->type) {
+                case OperandType::FLOAT32: {
+                    auto instanceNorm = std::make_shared<InstanceNormOperation<float>>();
+                    instanceNorm->setDataLayout(
+                        getDataLayout(inputs[argList->ArgPos("data_layout")]->scalar.boolean));
+                    float gamma = inputs[argList->ArgPos("gamma")]->scalar.float32;
+                    float beta = inputs[argList->ArgPos("beta")]->scalar.float32;
+                    instanceNorm->eps = inputs[argList->ArgPos("epsilon")]->scalar.float32;
 
-                // Get input tensor channel num (Nnapi default data layout: NHWC)
-                uint32_t channelNum = inputs[0]->dimensions[3];
-                // Broadcast
-                for (uint32_t i = 0; i < channelNum; i++) {
-                    instanceNorm->gamma.push_back(gamma);
-                    instanceNorm->beta.push_back(beta);
+                    // Get input tensor channel num (Nnapi default data layout: NHWC)
+                    uint32_t channelNum;
+                    if (DataLayout::NHWC == instanceNorm->getDataLayout())
+                        channelNum = inputs[0]->dimensions[3];
+                    else
+                        channelNum = inputs[0]->dimensions[1];
+
+                    // Broadcast
+                    for (uint32_t i = 0; i < channelNum; i++) {
+                        instanceNorm->gamma.push_back(gamma);
+                        instanceNorm->beta.push_back(beta);
+                    }
+
+                    // Convert scaler gamma to constant tensor
+                    uint32_t gammaIds = 0;
+                    OperandPtr gammaOperand = model->addOperand(nullptr, &gammaIds);
+                    gammaOperand->type = OperandType::TENSOR_FLOAT32;
+                    gammaOperand->dimensions = {channelNum};
+                    model->setOperandValue(
+                        gammaIds,
+                        instanceNorm->gamma.data(),
+                        instanceNorm->gamma.size() * sizeof(decltype(instanceNorm->gamma[0])));
+
+                    // Convert scaler beta to constant tensor
+                    uint32_t betaIds = 0;
+                    OperandPtr betaOperand = model->addOperand(nullptr, &betaIds);
+                    betaOperand->type = OperandType::TENSOR_FLOAT32;
+                    betaOperand->dimensions = {channelNum};
+                    model->setOperandValue(
+                        betaIds,
+                        instanceNorm->beta.data(),
+                        instanceNorm->beta.size() * sizeof(decltype(instanceNorm->beta[0])));
+
+                    // Add gamma and beta operand index into instance norm operation
+                    auto inputsIds = operation->inputs();
+                    auto it = inputsIds.begin();
+                    // Note: the order is important
+                    // {bias, scalar}
+                    std::vector<uint32_t> insertIds = {betaIds, gammaIds};
+                    inputsIds.insert(it + 1, insertIds.begin(), insertIds.end());
+                    operation->setInputs(inputsIds);
+                    op = instanceNorm;
+                    break;
                 }
+                case OperandType::FLOAT16: {
+                    auto instanceNorm = std::make_shared<InstanceNormOperation<half_float::half>>();
+                    instanceNorm->setDataLayout(
+                        getDataLayout(inputs[argList->ArgPos("data_layout")]->scalar.boolean));
+                    half_float::half gamma;
+                    half_float::half beta;
+                    half_float::half eps;
+                    memcpy(&gamma,
+                           &inputs[argList->ArgPos("gamma")]->scalar.float16,
+                           sizeof(half_float::half));
+                    memcpy(&beta,
+                           &inputs[argList->ArgPos("beta")]->scalar.float16,
+                           sizeof(half_float::half));
+                    memcpy(&eps,
+                           &inputs[argList->ArgPos("epsilon")]->scalar.float16,
+                           sizeof(half_float::half));
+                    instanceNorm->eps = eps;
 
-                // Convert scaler gamma to constant tensor
-                uint32_t gammaIds = 0;
-                OperandPtr gammaOperand = model->addOperand(nullptr, &gammaIds);
-                gammaOperand->type = OperandType::TENSOR_FLOAT32;
-                gammaOperand->dimensions = {channelNum};
-                model->setOperandValue(
-                    gammaIds,
-                    instanceNorm->gamma.data(),
-                    instanceNorm->gamma.size() * sizeof(decltype(instanceNorm->gamma[0])));
+                    uint32_t channelNum;
+                    if (DataLayout::NHWC == instanceNorm->getDataLayout())
+                        channelNum = inputs[0]->dimensions[3];
+                    else
+                        channelNum = inputs[0]->dimensions[1];
+                    // Broadcast
+                    for (uint32_t i = 0; i < channelNum; i++) {
+                        instanceNorm->gamma.push_back(gamma);
+                        instanceNorm->beta.push_back(beta);
+                    }
 
-                // Convert scaler beta to constant tensor
-                uint32_t betaIds = 0;
-                OperandPtr betaOperand = model->addOperand(nullptr, &betaIds);
-                betaOperand->type = OperandType::TENSOR_FLOAT32;
-                betaOperand->dimensions = {channelNum};
-                model->setOperandValue(
-                    betaIds,
-                    instanceNorm->beta.data(),
-                    instanceNorm->beta.size() * sizeof(decltype(instanceNorm->beta[0])));
+                    // Convert scaler gamma to constant tensor
+                    uint32_t gammaIds = 0;
+                    OperandPtr gammaOperand = model->addOperand(nullptr, &gammaIds);
+                    gammaOperand->type = OperandType::TENSOR_FLOAT16;
+                    gammaOperand->dimensions = {channelNum};
+                    model->setOperandValue(
+                        gammaIds,
+                        instanceNorm->gamma.data(),
+                        instanceNorm->gamma.size() * sizeof(decltype(instanceNorm->gamma[0])));
 
-                // Add gamma and beta operand index into instance norm operation
-                auto inputsIds = operation->inputs();
-                auto it = inputsIds.begin();
-                // Note: the order is important
-                // {bias, scalar}
-                std::vector<uint32_t> insertIds = {betaIds, gammaIds};
-                inputsIds.insert(it + 1, insertIds.begin(), insertIds.end());
-                operation->setInputs(inputsIds);
-            } else {
-                NNRT_LOGE_PRINT("Float16 param not support");
-                assert(false);
+                    // Convert scaler beta to constant tensor
+                    uint32_t betaIds = 0;
+                    OperandPtr betaOperand = model->addOperand(nullptr, &betaIds);
+                    betaOperand->type = OperandType::TENSOR_FLOAT16;
+                    betaOperand->dimensions = {channelNum};
+                    model->setOperandValue(
+                        betaIds,
+                        instanceNorm->beta.data(),
+                        instanceNorm->beta.size() * sizeof(decltype(instanceNorm->beta[0])));
+
+                    // Add gamma and beta operand index into instance norm operation
+                    auto inputsIds = operation->inputs();
+                    auto it = inputsIds.begin();
+                    // Note: the order is important
+                    // {bias, scalar}
+                    std::vector<uint32_t> insertIds = {betaIds, gammaIds};
+                    inputsIds.insert(it + 1, insertIds.begin(), insertIds.end());
+                    operation->setInputs(inputsIds);
+                    op = instanceNorm;
+                    break;
+                }
+                default: {
+                    NNRT_LOGE_PRINT("InstanceNorm doesn't support given datatype");
+                    assert(false);
+                }
             }
         } else {
             // TODO: support dynamic input tensor shape
@@ -1587,7 +1651,7 @@ OperationPtr NnApiInterpreter::map_INSTANCE_NORMALIZATION(Model* model,
         NNRT_LOGE_PRINT("Instance normalization argument list not support");
     }
     truncateOperationIOs(model, operation, 3, 1);
-    return instanceNorm;
+    return op;
 }
 
 OperationPtr NnApiInterpreter::map_GENERATE_PROPOSALS(Model* model,
@@ -1790,19 +1854,35 @@ OperationPtr NnApiInterpreter::map_LOG_SOFTMAX(Model* model,
                                                OperationPtr operation,
                                                uint32_t operation_index) {
     NNAPI_CHECK_IO_NUM(operation, 3, 1);
-    std::shared_ptr<LogSoftmaxOperation> op = std::make_shared<LogSoftmaxOperation>();
-    NNAPI_CHECK_PTR(op);
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
     auto argList = matchArgList(inputs, "LogSoftmaxOperation");
+    auto op_ptr = std::make_shared<LogSoftmaxOperation>();
     if (argList) {
-        op->beta = inputs[argList->ArgPos("beta")]->scalar.float32;
-        op->axis = inputs[argList->ArgPos("axis")]->scalar.int32;
+        switch (inputs[argList->ArgPos("beta")]->type) {
+            case OperandType::FLOAT16: {
+                half_float::half beta;
+                memcpy(&beta,
+                       &inputs[argList->ArgPos("beta")]->scalar.float16,
+                       sizeof(half_float::half));
+                op_ptr->beta = beta;
+                op_ptr->axis = inputs[argList->ArgPos("axis")]->scalar.int32;
+                break;
+            }
+            case OperandType::FLOAT32: {
+                op_ptr->beta = inputs[argList->ArgPos("beta")]->scalar.float32;
+                op_ptr->axis = inputs[argList->ArgPos("axis")]->scalar.int32;
+                break;
+            }
+            default:
+                assert(false);
+                NNRT_LOGE_PRINT("LogSoftmax doesn't support given datatype");
+        }
     } else {
         NNRT_LOGE_PRINT("LogSoftmax argument list not support");
         assert(false);
     }
     truncateOperationIOs(model, operation, 1, 1);
-    return op;
+    return op_ptr;
 }
 
 #define DECLARE_SAMPLE_OP(NAME, INPUT_NUM, OUTPUT_NUM, OPERATION_TYPE)    \

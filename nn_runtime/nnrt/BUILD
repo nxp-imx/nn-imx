@@ -33,6 +33,7 @@ cc_library(
         "execution_task.hpp",
         "execution_io.hpp",
         "version.hpp",
+        "float16.hpp",
         "api_requirement/spec.hpp",
         "api_requirement/spec_macros.hpp",
         "api_requirement/nnapi_requirement.hpp",

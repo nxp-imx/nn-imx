@@ -188,6 +188,8 @@ inline const char* get_operation_string(OperationType type) {
             return "logical_not";
         case OperationType::LOGICAL_OR:
             return "logical_or";
+        case OperationType::LOG_SOFTMAX:
+            return "log_softmax";
         default:
             return nullptr;
     }

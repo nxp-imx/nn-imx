@@ -58,6 +58,7 @@ struct BaseOperand {
         bool boolean;
         int32_t int32;
         uint32_t uint32;
+        uint16_t float16;
         float float32;
         double float64;
     } scalar;
