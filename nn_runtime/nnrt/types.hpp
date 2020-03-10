@@ -25,6 +25,13 @@
 #define __OVXLIB_TYPES_H__
 
 #include <cstdint>
+
+#if defined(HALF_ROUND_STYLE)
+#undef HALF_ROUND_STYLE
+#endif
+
+// Set nearest round policy
+#define HALF_ROUND_STYLE 1
 #include "float16.hpp"
 namespace nnrt {
 
