@@ -60,6 +60,7 @@
 #include "workloads/NpuNormalizationWorkload.hpp"
 #include "workloads/NpuResizeWorkload.hpp"
 #include "workloads/NpuConstantWorkload.hpp"
+#include "workloads/NpuGreaterWorkload.hpp"
 
 #include <boost/log/trivial.hpp>
 
@@ -391,9 +392,11 @@ std::unique_ptr<IWorkload> NpuWorkloadFactory::CreateStridedSlice(
                         NpuStridedSliceUint8Workload>(descriptor, info);
 }
 
-std::unique_ptr<IWorkload> NpuWorkloadFactory::CreateGreater(const GreaterQueueDescriptor& descriptor,
-                                                             const WorkloadInfo& info) const {
-    return MakeWorkload<NullWorkload, NullWorkload, NullWorkload>(descriptor, info);
+std::unique_ptr<IWorkload> NpuWorkloadFactory::CreateGreater(
+    const GreaterQueueDescriptor& descriptor, const WorkloadInfo& info) const {
+    return MakeWorkload<NpuGreaterFloat16Workload,
+                        NpuGreaterFloat32Workload,
+                        NpuGreaterUint8Workload>(descriptor, info);
 }
 
 std::unique_ptr<IWorkload> NpuWorkloadFactory::CreateDebug(const DebugQueueDescriptor& descriptor,

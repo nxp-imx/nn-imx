@@ -197,6 +197,8 @@ class TNpuWorkload : public NpuBaseWorkload<QueueDescriptor, DataTypes...> {
             case DataType::QuantisedSymm16:
                 type = nnrt::OperandType::TENSOR_INT16;
                 break;
+            case DataType::Boolean:
+                type = nnrt::OperandType::TENSOR_BOOL8;
             default:
                 break;
         }
