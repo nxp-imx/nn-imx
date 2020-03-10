@@ -335,7 +335,11 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
         }
 
         case OperationType::LESS:
-        case OperationType::LESS_EQUAL: {
+        case OperationType::LESS_EQUAL:
+        case OperationType::EQUAL:
+        case OperationType::GREATER:
+        case OperationType::GREATER_EQUAL:
+        case OperationType::NOT_EQUAL: {
             OperationValidatePtr compare = std::make_unique<
                 op_validate::ComparisonValidate<HalPlatform::Model, HalPlatform::Operation>>(
                 model, operation);
@@ -349,12 +353,9 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
         case OperationType::CAST:
         case OperationType::CHANNEL_SHUFFLE:
         case OperationType::DETECTION_POSTPROCESSING:
-        case OperationType::EQUAL:
         case OperationType::EXPAND_DIMS:
         case OperationType::GATHER:
         case OperationType::GENERATE_PROPOSALS:
-        case OperationType::GREATER:
-        case OperationType::GREATER_EQUAL:
         case OperationType::GROUPED_CONV_2D:
         case OperationType::HEATMAP_MAX_KEYPOINT:
         case OperationType::INSTANCE_NORMALIZATION:
@@ -362,7 +363,6 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
         case OperationType::LOGICAL_NOT:
         case OperationType::LOGICAL_OR:
         case OperationType::LOG_SOFTMAX:
-        case OperationType::NOT_EQUAL:
         case OperationType::PAD_V2:
         case OperationType::POW:
         case OperationType::QUANTIZE:
