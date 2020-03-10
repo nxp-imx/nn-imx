@@ -1,0 +1,41 @@
+package(
+    default_visibility = ["//visibility:public"],
+    features = ["-parse_headers"],
+)
+
+load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
+
+cc_binary(
+    name = "nnapi_inference_model",
+    linkstatic = False,
+    copts = ['-std=c++1z', '-DNNAPI_INTERPRETER'],
+    srcs = [
+        "interpreter.cpp",
+        "interpreter.h",
+        "main.cpp",
+    ],
+    deps = [
+        "//nnrt:nnrt",
+        "//nnrt:json",
+    ],
+    linkopts = ["-lpthread"],
+)
+
+cc_binary(
+    name = "armnn_inference_model",
+    linkstatic = False,
+    copts = ['-std=c++1z'],
+    srcs = [
+        "interpreter.cpp",
+        "interpreter.h",
+        "main.cpp",
+    ],
+    deps = [
+        "//nnrt:nnrt",
+        "//nnrt:json",
+        "//armnn/backend/vsi_npu:armnn_ovx_backend",
+        "@boost//:boost_filesystem",
+        "@boost//:boost_system",
+    ],
+    linkopts = ["-lpthread"],
+)
