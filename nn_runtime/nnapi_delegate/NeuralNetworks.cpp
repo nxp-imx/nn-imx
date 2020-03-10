@@ -137,6 +137,7 @@ static OperationType mapOperationCode(OperationCode code)
         REGISTER_OP(LOG);
         REGISTER_OP(LOGICAL_AND);
         REGISTER_OP(LOGICAL_OR);
+        REGISTER_OP(LOGICAL_NOT);
         REGISTER_OP(MAXIMUM);
         REGISTER_OP(MINIMUM);
         REGISTER_OP(NEG);
