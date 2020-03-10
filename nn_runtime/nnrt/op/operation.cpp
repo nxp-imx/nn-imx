@@ -178,6 +178,10 @@ inline const char* get_operation_string(OperationType type) {
             return "less";
         case OperationType::LESS_EQUAL:
             return "less_equal";
+        case OperationType::EXP:
+            return "exp";
+        case OperationType::NEG:
+            return "neg";
         default:
             return nullptr;
     }
