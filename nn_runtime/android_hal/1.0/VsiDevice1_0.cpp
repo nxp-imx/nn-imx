@@ -33,11 +33,14 @@
 
 namespace android {
 namespace nn {
+namespace hal {
 namespace vsi_driver {
+
         Return<ErrorStatus> VsiDevice::prepareModel(const V1_0::Model& model,
                                                 const sp<V1_0::IPreparedModelCallback>& callback) {
         return prepareModelBase(model, ExecutionPreference::SUSTAINED_SPEED, callback);
     }
 }  // namespace ovx_driver
+}  // namespace hal
 }  // namespace nn
 }  // namespace android

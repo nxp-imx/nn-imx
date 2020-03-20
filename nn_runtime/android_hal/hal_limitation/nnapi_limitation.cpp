@@ -23,6 +23,8 @@
 *****************************************************************************/
 #include "nnapi_limitation.hpp"
 
+namespace android {
+namespace nn {
 namespace hal {
 namespace limitation {
 namespace nnapi {
@@ -47,6 +49,8 @@ void NNapiLimitationRegister(const std::string& opName, const IArgList* arglist)
     }
 }
 }  // end of namespace nnapi
+}
+}
 }
 }
 

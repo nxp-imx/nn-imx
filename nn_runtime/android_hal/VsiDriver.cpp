@@ -36,7 +36,10 @@
 
 namespace android {
 namespace nn {
+namespace hal {
 namespace vsi_driver {
+    using OperandType = HalPlatform::OperandType;
+    using OperationType = HalPlatform::OperationType;
 
 #if ANDROID_SDK_VERSION >= 29
 using OperationValidatePtr = std::unique_ptr<
@@ -562,10 +565,11 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
 }
 
 }  // namespace vsi_driver
+}  // namespace hal
 }  // namespace nn
 }
 
-using android::nn::vsi_driver::VsiDriver;
+using android::nn::hal::vsi_driver::VsiDriver;
 using android::sp;
 
 int main() {

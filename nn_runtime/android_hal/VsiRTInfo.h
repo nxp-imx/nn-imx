@@ -34,6 +34,7 @@
 
 namespace android {
 namespace nn {
+namespace hal {
 namespace vsi_driver {
 
     /*record the info that is gotten from hidl_memory*/
@@ -84,6 +85,7 @@ namespace vsi_driver {
     };
 
     extern bool mapHidlMem(const hidl_memory& hidl_memory, VsiRTInfo& vsiMemory);
+}
 }
 }
 }

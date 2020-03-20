@@ -3,7 +3,9 @@
 
 namespace android {
 namespace nn {
+namespace hal {
 namespace vsi_driver {
+
     Return<void> VsiDriver::getCapabilities(V1_0::IDevice::getCapabilities_cb cb) {
         V1_0::Capabilities capabilities;
         if (disable_float_feature_) {
@@ -27,6 +29,7 @@ namespace vsi_driver {
         }
         return getSupportedOperationsBase(HalPlatform::convertVersion(model), cb);
     }
+}
 }
 }
 }

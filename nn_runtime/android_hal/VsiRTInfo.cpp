@@ -26,6 +26,7 @@
 
 namespace android {
 namespace nn {
+namespace hal {
 namespace vsi_driver {
 
 bool mapHidlMem(const hidl_memory& hidl_memory, VsiRTInfo& vsiMemory) {
@@ -94,6 +95,7 @@ bool mapHidlMem(const hidl_memory& hidl_memory, VsiRTInfo& vsiMemory) {
     vsiMemory.graphic_buffer = graphic_buffer;
 #endif
     return true;
+}
 }
 }
 }

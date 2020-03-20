@@ -37,6 +37,7 @@
 
 namespace android {
 namespace nn {
+namespace hal {
 namespace vsi_driver {
 
 class VsiDriver : public VsiDevice {
@@ -90,6 +91,7 @@ class VsiDriver : public VsiDevice {
 
 };
 
+}
 }
 }
 }

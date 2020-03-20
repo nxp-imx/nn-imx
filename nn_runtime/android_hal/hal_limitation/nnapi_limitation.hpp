@@ -26,12 +26,16 @@
 
 #include "support.hpp"
 
+namespace android {
+namespace nn {
 namespace hal {
 namespace limitation {
 namespace nnapi {
 
 MatchedArgumentPtr match(const std::string& name, const std::vector<nnrt::OperandType>& args);
 
+}
+}
 }
 }
 }
