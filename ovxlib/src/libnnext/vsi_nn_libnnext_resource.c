@@ -2471,6 +2471,262 @@ __kernel void gather_F16toF16(\n\
 }\n\
 "; /* end of gather_vx*/
 
+static const char gather_nd_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+__kernel void gather_nd_I8toI8_1D(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int coord_dim\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // indices_num\n\
+\n\
+    int4 coord = (int4)(0, gidy, gidx, 0);\n\
+    int4 indice = read_imagei(input1, coord.xy);\n\
+    coord.w = indice.x;\n\
+\n\
+    vxc_char16 src;\n\
+    VXC_ReadImage(src, input0, coord.zw, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    VXC_WriteImage(output, coord.zy, src, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+__kernel void gather_nd_U8toU8_1D(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int coord_dim\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // indices_num\n\
+\n\
+    int4 coord = (int4)(0, gidy, gidx, 0);\n\
+    int4 indice = read_imagei(input1, coord.xy);\n\
+    coord.w = indice.x;\n\
+\n\
+    vxc_uchar16 src;\n\
+    VXC_ReadImage(src, input0, coord.zw, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_WriteImage(output, coord.zy, src, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+__kernel void gather_nd_I16toI16_1D(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int coord_dim\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // indices_num\n\
+\n\
+    int4 coord = (int4)(0, gidy, gidx, 0);\n\
+    int4 indice = read_imagei(input1, coord.xy);\n\
+    coord.w = indice.x;\n\
+\n\
+    vxc_short8 src;\n\
+    VXC_ReadImage(src, input0, coord.zw, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_WriteImage(output, coord.zy, src, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+__kernel void gather_nd_F16toF16_1D(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int coord_dim\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // indices_num\n\
+\n\
+    int4 coord = (int4)(0, gidy, gidx, 0);\n\
+    int4 indice = read_imagei(input1, coord.xy);\n\
+    coord.w = indice.x;\n\
+\n\
+    vxc_short8 src;\n\
+    VXC_ReadImage(src, input0, coord.zw, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_WriteImage(output, coord.zy, src, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+"; /* end of gather_nd_vx*/
+
+static const char gather_nd_2d_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+__kernel void gather_nd_I8toI8_2D(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int coord_dim\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // indices_num\n\
+\n\
+    int4 coord = (int4)(0, gidy, gidx, 0);\n\
+    int4 indice = read_imagei(input1, coord.xy);\n\
+    indice.x = indice.x * block_size + gidx;\n\
+\n\
+    vxc_char16 src;\n\
+    VXC_ReadImage(src, input0, indice.xy, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    VXC_WriteImage(output, coord.zy, src, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+__kernel void gather_nd_U8toU8_2D(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int coord_dim\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // indices_num\n\
+\n\
+    int4 coord = (int4)(0, gidy, gidx, 0);\n\
+    int4 indice = read_imagei(input1, coord.xy);\n\
+    indice.x = indice.x * block_size + gidx;\n\
+\n\
+    vxc_uchar16 src;\n\
+    VXC_ReadImage(src, input0, indice.xy, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_WriteImage(output, coord.zy, src, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+__kernel void gather_nd_I16toI16_2D(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int coord_dim\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // indices_num\n\
+\n\
+    int4 coord = (int4)(0, gidy, gidx, 0);\n\
+    int4 indice = read_imagei(input1, coord.xy);\n\
+    indice.x = indice.x * block_size + gidx;\n\
+\n\
+    vxc_short8 src;\n\
+    VXC_ReadImage(src, input0, indice.xy, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_WriteImage(output, coord.zy, src, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+__kernel void gather_nd_F16toF16_2D(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int coord_dim\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // indices_num\n\
+\n\
+    int4 coord = (int4)(0, gidy, gidx, 0);\n\
+    int4 indice = read_imagei(input1, coord.xy);\n\
+    indice.x = indice.x * block_size + gidx;\n\
+\n\
+    vxc_short8 src;\n\
+    VXC_ReadImage(src, input0, indice.xy, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_WriteImage(output, coord.zy, src, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+"; /* end of gather_nd_2d_vx*/
+
+static const char gather_nd_3d_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+__kernel void gather_nd_I8toI8_3D(\n\
+    __read_only image2d_array_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int coord_dim\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // indices_num\n\
+\n\
+    int4 coord = (int4)(0, gidy, gidx, 0);\n\
+    int4 indice = read_imagei(input1, coord.xy);\n\
+    indice.x = indice.x * block_size + gidx;\n\
+    indice.w = 0;\n\
+\n\
+    vxc_char16 src;\n\
+    VXC_ReadImage2DArray(src, input0, indice, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    VXC_WriteImage(output, coord.zy, src, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+__kernel void gather_nd_U8toU8_3D(\n\
+    __read_only image2d_array_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int coord_dim\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // indices_num\n\
+\n\
+    int4 coord = (int4)(0, gidy, gidx, 0);\n\
+    int4 indice = read_imagei(input1, coord.xy);\n\
+    indice.x = indice.x * block_size + gidx;\n\
+    indice.w = 0;\n\
+\n\
+    vxc_uchar16 src;\n\
+    VXC_ReadImage2DArray(src, input0, indice, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_WriteImage(output, coord.zy, src, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+__kernel void gather_nd_I16toI16_3D(\n\
+    __read_only image2d_array_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int coord_dim\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // indices_num\n\
+\n\
+    int4 coord = (int4)(0, gidy, gidx, 0);\n\
+    int4 indice = read_imagei(input1, coord.xy);\n\
+    indice.x = indice.x * block_size + gidx;\n\
+    indice.w = 0;\n\
+\n\
+    vxc_short8 src;\n\
+    VXC_ReadImage2DArray(src, input0, indice, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_WriteImage(output, coord.zy, src, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+__kernel void gather_nd_F16toF16_3D(\n\
+    __read_only image2d_array_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int coord_dim\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // indices_num\n\
+\n\
+    int4 coord = (int4)(0, gidy, gidx, 0);\n\
+    int4 indice = read_imagei(input1, coord.xy);\n\
+    indice.x = indice.x * block_size + gidx;\n\
+    indice.w = 0;\n\
+\n\
+    vxc_short8 src;\n\
+    VXC_ReadImage2DArray(src, input0, indice, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_WriteImage(output, coord.zy, src, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+"; /* end of gather_nd_3d_vx*/
+
 static const char hswish_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 _viv_uniform float inputScale;\n\
@@ -28477,6 +28733,260 @@ __kernel void gather_F32toF32(\n\
 }\n\
 "; /* end of gather_cl*/
 
+static const char gather_nd_cl[] = "__kernel void gather_nd_U8toU8_1D(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int coord_dim\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // indices_num\n\
+\n\
+    int4 coord = (int4)(0, gidy, gidx, 0);\n\
+    int4 indice = read_imagei(input1, coord.xy);\n\
+    coord.w = indice.x;\n\
+\n\
+    uint4 data = read_imageui(input0, coord.zw);\n\
+    write_imageui(output, coord.zy, data);\n\
+}\n\
+\n\
+__kernel void gather_nd_F16toF16_1D(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int coord_dim\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // indices_num\n\
+\n\
+    int4 coord = (int4)(0, gidy, gidx, 0);\n\
+    int4 indice = read_imagei(input1, coord.xy);\n\
+    coord.w = indice.x;\n\
+\n\
+    float4 data = read_imagef(input0, coord.zw);\n\
+    write_imagef(output, coord.zy, data);\n\
+}\n\
+\n\
+__kernel void gather_nd_I32toI32_1D(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int coord_dim\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // indices_num\n\
+\n\
+    int4 coord = (int4)(0, gidy, gidx, 0);\n\
+    int4 indice = read_imagei(input1, coord.xy);\n\
+    coord.w = indice.x;\n\
+\n\
+    int4 data = read_imagei(input0, coord.zw);\n\
+    write_imagei(output, coord.zy, data);\n\
+}\n\
+\n\
+__kernel void gather_nd_F32toF32_1D(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int coord_dim\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // indices_num\n\
+\n\
+    int4 coord = (int4)(0, gidy, gidx, 0);\n\
+    int4 indice = read_imagei(input1, coord.xy);\n\
+    coord.w = indice.x;\n\
+\n\
+    float4 data = read_imagef(input0, coord.zw);\n\
+    write_imagef(output, coord.zy, data);\n\
+}\n\
+\n\
+//2D\n\
+__kernel void gather_nd_U8toU8_2D(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int coord_dim\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // indices_num\n\
+\n\
+    int4 coord = (int4)(0, gidy, gidx, 1);\n\
+    int4 indice = read_imagei(input1, coord.xy);\n\
+    int4 indice1 = read_imagei(input1, coord.wy);\n\
+    indice.x = indice.x * block_size + gidx;\n\
+    indice.y = indice1.x;\n\
+\n\
+    uint4 data = read_imageui(input0, indice.xy);\n\
+    write_imageui(output, coord.zy, data);\n\
+}\n\
+\n\
+__kernel void gather_nd_F16toF16_2D(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int coord_dim\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // indices_num\n\
+\n\
+    int4 coord = (int4)(0, gidy, gidx, 1);\n\
+    int4 indice = read_imagei(input1, coord.xy);\n\
+    int4 indice1 = read_imagei(input1, coord.wy);\n\
+    indice.x = indice.x * block_size + gidx;\n\
+    indice.y = indice1.x;\n\
+\n\
+    float4 data = read_imagef(input0, indice.xy);\n\
+    write_imagef(output, coord.zy, data);\n\
+}\n\
+\n\
+__kernel void gather_nd_I32toI32_2D(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int coord_dim\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // indices_num\n\
+\n\
+    int4 coord = (int4)(0, gidy, gidx, 1);\n\
+    int4 indice = read_imagei(input1, coord.xy);\n\
+    int4 indice1 = read_imagei(input1, coord.wy);\n\
+    indice.x = indice.x * block_size + gidx;\n\
+    indice.y = indice1.x;\n\
+\n\
+    int4 data = read_imagei(input0, indice.xy);\n\
+    write_imagei(output, coord.zy, data);\n\
+}\n\
+\n\
+__kernel void gather_nd_F32toF32_2D(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int coord_dim\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // indices_num\n\
+\n\
+    int4 coord = (int4)(0, gidy, gidx, 1);\n\
+    int4 indice = read_imagei(input1, coord.xy);\n\
+    int4 indice1 = read_imagei(input1, coord.wy);\n\
+    indice.x = indice.x * block_size + gidx;\n\
+    indice.y = indice1.x;\n\
+\n\
+    float4 data = read_imagef(input0, indice.xy);\n\
+    write_imagef(output, coord.zy, data);\n\
+}\n\
+"; /* end of gather_nd_cl*/
+
+static const char gather_nd_3d_cl[] = "__kernel void gather_nd_U8toU8_3D(\n\
+    __read_only image2d_array_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int coord_dim\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // indices_num\n\
+\n\
+    int4 coord = (int4)(0, gidy, 1, 2);\n\
+    int4 indice = read_imagei(input1, coord.xy);\n\
+    int4 indice1 = read_imagei(input1, coord.zy);\n\
+    int4 indice2 = read_imagei(input1, coord.wy);\n\
+    indice = (int4)(indice.x * block_size + gidx, indice1.x, indice2.x, 0);\n\
+    coord.z = gidx;\n\
+\n\
+    uint4 data = read_imageui(input0, indice);\n\
+    write_imageui(output, coord.zy, data);\n\
+}\n\
+\n\
+__kernel void gather_nd_F16toF16_3D(\n\
+    __read_only image2d_array_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int coord_dim\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // indices_num\n\
+    int gidz = get_global_id(2);  // block_num\n\
+\n\
+    int4 coord = (int4)(0, gidy, 1, 2);\n\
+    int4 indice = read_imagei(input1, coord.xy);\n\
+    int4 indice1 = read_imagei(input1, coord.zy);\n\
+    int4 indice2 = read_imagei(input1, coord.wy);\n\
+    indice = (int4)(indice.x * block_size + gidx, indice1.x, indice2.x, 0);\n\
+    coord.z = gidx;\n\
+\n\
+    float4 data = read_imagef(input0, indice);\n\
+    write_imagef(output, coord.zy, data);\n\
+}\n\
+\n\
+__kernel void gather_nd_I32toI32_3D(\n\
+    __read_only image2d_array_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int coord_dim\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // indices_num\n\
+    int gidz = get_global_id(2);  // block_num\n\
+\n\
+    int4 coord = (int4)(0, gidy, 1, 2);\n\
+    int4 indice = read_imagei(input1, coord.xy);\n\
+    int4 indice1 = read_imagei(input1, coord.zy);\n\
+    int4 indice2 = read_imagei(input1, coord.wy);\n\
+    indice = (int4)(indice.x * block_size + gidx, indice1.x, indice2.x, 0);\n\
+    coord.z = gidx;\n\
+\n\
+    int4 data = read_imagei(input0, indice);\n\
+    write_imagei(output, coord.zy, data);\n\
+}\n\
+\n\
+__kernel void gather_nd_F32toF32_3D(\n\
+    __read_only image2d_array_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int coord_dim\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // indices_num\n\
+    int gidz = get_global_id(2);  // block_num\n\
+\n\
+    int4 coord = (int4)(0, gidy, 1, 2);\n\
+    int4 indice = read_imagei(input1, coord.xy);\n\
+    int4 indice1 = read_imagei(input1, coord.zy);\n\
+    int4 indice2 = read_imagei(input1, coord.wy);\n\
+    indice = (int4)(indice.x * block_size + gidx, indice1.x, indice2.x, 0);\n\
+    coord.z = gidx;\n\
+\n\
+    float4 data = read_imagef(input0, indice);\n\
+    write_imagef(output, coord.zy, data);\n\
+}\n\
+"; /* end of gather_nd_3d_cl*/
+
 static const char hswish_cl[] = "#define HSWISH_F32_F32_PROCESS() \\\n\
     float4 src, tmp, dst; \\\n\
     src   = read_imagef(input, coord); \\\n\
@@ -31540,6 +32050,9 @@ const static source_map_t evis_resource[] =
     {"eltwise_unary_3d_vx", eltwise_unary_3d_vx},
     {"floordiv_vx", floordiv_vx},
     {"gather_vx", gather_vx},
+    {"gather_nd_vx", gather_nd_vx},
+    {"gather_nd_2d_vx", gather_nd_2d_vx},
+    {"gather_nd_3d_vx", gather_nd_3d_vx},
     {"hswish_vx", hswish_vx},
     {"log_softmax_axis0_vx", log_softmax_axis0_vx},
     {"log_softmax_axis0_BF16_vx", log_softmax_axis0_BF16_vx},
@@ -31698,6 +32211,8 @@ const static source_map_t cl_resource[] =
     {"eltwise_unary_cl", eltwise_unary_cl},
     {"floordiv_cl", floordiv_cl},
     {"gather_cl", gather_cl},
+    {"gather_nd_cl", gather_nd_cl},
+    {"gather_nd_3d_cl", gather_nd_3d_cl},
     {"hswish_cl", hswish_cl},
     {"log_softmax_axis0_cl", log_softmax_axis0_cl},
     {"log_softmax_axis1_cl", log_softmax_axis1_cl},

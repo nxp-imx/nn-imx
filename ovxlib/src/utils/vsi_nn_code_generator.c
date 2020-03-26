@@ -404,6 +404,7 @@ static _op_param_gen_t s_op_gen[] =
     /* RNNCELL_OVXLIB */        NULL,
     /* SWISH */        NULL,
     /* DEPTHWISE_CONV1D */      NULL,
+    /* GATHER_ND */             NULL,
 };
 _compiler_assert( _cnt_of_array(s_op_gen) == VSI_NN_OP_NUM, vsi_nn_code_generator_c );
 
