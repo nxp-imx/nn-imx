@@ -22,30 +22,17 @@
 #*
 #*****************************************************************************/
 
-list(APPEND armnnNputBackend_sources
-    arm_nn_interpreter.cpp
-    arm_nn_interpreter.hpp
-    NpuBackendContext.cpp
-    NpuBackendContext.hpp
-    NpuBackend.cpp
-    NpuBackend.hpp
-    NpuBackendId.hpp
-    NpuLayerSupport.cpp
-    NpuLayerSupport.hpp
-    NpuModelShell.cpp
-    NpuModelShell.hpp
-    NpuTensorAllocator.cpp
-    NpuTensorAllocator.hpp
-    NpuTensorHandler.cpp
-    NpuTensorHandler.hpp
-    NpuWorkloadFactory.cpp
-    NpuWorkloadFactory.hpp
-)
+# Set the backend source path
+set(NpuBackendPath ${PROJECT_SOURCE_DIR}/src/backends/dynamic/vsi_npu)
+
+file(GLOB NpuBackendSrcFiles ${NpuBackendPath}/*.cpp)
+file(GLOB NpuBackendWorloadFiles ${NpuBackendPath}/workloads/*.cpp)
+
+set(armnnNputBackend_sources ${NpuBackendSrcFiles} ${NpuBackendWorloadFiles})
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -Wno-old-style-cast \
                     -Wno-sign-conversion -Wno-conversion -Wno-unused-variable")
-add_library(armnnNpuBackend OBJECT ${armnnNputBackend_sources})
-#target_link_libraries(armnnNpuBackend PUBLIC ovxlib)
-#TARGET_LINK_LIBRARIES(armnnNpuBackend libovxlib.so libnnrt.so)
+#target_link_libraries(Vsi_NpuAcc_backend PUBLIC ovxlib)
+#TARGET_LINK_LIBRARIES(Vsi_NpuAcc_backend libovxlib.so libnnrt.so)
 
 if(NOT DEFINED ENV{VIVANTE_SDK_DIR})
     message(FATAL_ERROR "please set ENV: VIVANTE_SDK_DIR")
@@ -82,12 +69,15 @@ message("ovxlib include: ${OVXLIB_INCLUDE}")
 message("driver include: ${OVX_DRIVER_INCLUDE}")
 message("nnrt include: ${NNRT_INCLUDE}")
 
-target_include_directories(armnnNpuBackend PRIVATE ${PROJECT_SOURCE_DIR}/src/armnn)
-target_include_directories(armnnNpuBackend PRIVATE ${PROJECT_SOURCE_DIR}/src/armnnUtils)
-target_include_directories(armnnNpuBackend PRIVATE ${PROJECT_SOURCE_DIR}/src/backends)
-target_include_directories(armnnNpuBackend PRIVATE ${PROJECT_SOURCE_DIR}/src/backends/vsi_npu)
+add_library(Vsi_NpuAcc_backend MODULE ${armnnNputBackend_sources})
 
-add_subdirectory(workloads)
+target_include_directories(Vsi_NpuAcc_backend PRIVATE ${PROJECT_SOURCE_DIR}/src/armnn)
+target_include_directories(Vsi_NpuAcc_backend PRIVATE ${PROJECT_SOURCE_DIR}/src/armnnUtils)
+target_include_directories(Vsi_NpuAcc_backend PRIVATE ${PROJECT_SOURCE_DIR}/src/backends)
+target_include_directories(Vsi_NpuAcc_backend PRIVATE ${PROJECT_SOURCE_DIR}/src/backends/dynamic/vsi_npu)
+
+set_target_properties(Vsi_NpuAcc_backend PROPERTIES PREFIX "")
+target_link_libraries(Vsi_NpuAcc_backend armnn)
 
 if(BUILD_UNIT_TESTS)
     add_subdirectory(test)

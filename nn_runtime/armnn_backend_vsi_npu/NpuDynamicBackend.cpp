@@ -22,56 +22,31 @@
 *
 *****************************************************************************/
 
+#include "NpuDynamicBackend.hpp"
+
 #include "NpuBackend.hpp"
-#include "NpuBackendId.hpp"
-#include "NpuWorkloadFactory.hpp"
-#include "NpuLayerSupport.hpp"
-#include "NpuTensorAllocator.hpp"
-#include "NpuBackendContext.hpp"
 
-#include <backendsCommon/IBackendContext.hpp>
-#include <backendsCommon/IMemoryManager.hpp>
-#include <backendsCommon/BackendRegistry.hpp>
+using namespace armnn;
 
-#include <Optimizer.hpp>
-
-#include <boost/cast.hpp>
-
-
-namespace armnn
+const char* GetBackendId()
 {
-
-const BackendId& NPUBackend::GetIdStatic()
-{
-    static const BackendId s_Id{NpuBackendId()};
-    return s_Id;
+    return NPUBackend::GetIdStatic().Get().c_str();
 }
 
-IBackendInternal::IWorkloadFactoryPtr NPUBackend::CreateWorkloadFactory(
-    const IBackendInternal::IMemoryManagerSharedPtr& memoryManager) const
+void GetVersion(uint32_t* outMajor, uint32_t* outMinor)
 {
-    return std::make_unique<NpuWorkloadFactory>();
+    if (!outMajor || !outMinor)
+    {
+        return;
+    }
+
+    BackendVersion apiVersion = IBackendInternal::GetApiVersion();
+
+    *outMajor = apiVersion.m_Major;
+    *outMinor = apiVersion.m_Minor;
 }
 
-IBackendInternal::IBackendContextPtr NPUBackend::CreateBackendContext(const IRuntime::CreationOptions& options) const
+void* BackendFactory()
 {
-    return IBackendContextPtr{ new NpuBackendContext{options} };
+    return new NPUBackend();
 }
-
-IBackendInternal::IMemoryManagerUniquePtr NPUBackend::CreateMemoryManager() const
-{
-    return std::make_unique<NPUTensorAllocator>();
-}
-
-IBackendInternal::Optimizations NPUBackend::GetOptimizations() const
-{
-    return Optimizations{};
-}
-
-IBackendInternal::ILayerSupportSharedPtr NPUBackend::GetLayerSupport() const
-{
-    static ILayerSupportSharedPtr layerSupport{new NpuLayerSupport};
-    return layerSupport;
-}
-
-} // namespace armnn
