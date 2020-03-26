@@ -84,6 +84,7 @@ static vsi_status _prelu_op_compute
     uint32_t alpha_shape = 1;
     uint32_t i = 0;
     vsi_nn_kernel_param_t * param = NULL;
+    uint32_t dims = outputs[0]->attr.dim_num;
 
     reshape_tensors[0] = inputs[0];
     one_rank = _is_one_rank_tensor(inputs[1], &alpha_shape);
@@ -99,11 +100,16 @@ static vsi_status _prelu_op_compute
 
         if (one_rank)
         {
-            shapes[axis] = alpha_shape;
-            reshape_tensors[1] = vsi_nn_reshape_tensor( self->graph,
-                inputs[1], (uint32_t*)shapes, outputs[0]->attr.dim_num );
-
             is_per_channel_alpha = (alpha_shape == 1) || axis == 2;
+
+            if (is_per_channel_alpha)
+            {
+                shapes[0] = alpha_shape;
+                dims = 2;
+            }
+
+            reshape_tensors[1] = vsi_nn_reshape_tensor( self->graph,
+                inputs[1], (uint32_t*)shapes, dims );
         }
         else
         {
@@ -114,15 +120,25 @@ static vsi_status _prelu_op_compute
     }
     else
     {
+        dims = inputs[1]->attr.dim_num;
+
         memcpy(shapes, inputs[1]->attr.size, inputs[1]->attr.dim_num * sizeof(int32_t));
-        reshape_tensors[1] = vsi_nn_reshape_tensor( self->graph,
-            inputs[1], (uint32_t*)shapes, inputs[1]->attr.dim_num );
 
         if (one_rank)
         {
             is_per_channel_alpha = (alpha_shape == 1)
                 || (inputs[1]->attr.dim_num > 2 && alpha_shape == inputs[1]->attr.size[2]);
         }
+
+        if (is_per_channel_alpha)
+        {
+            shapes[0] = alpha_shape;
+            shapes[1] = 1;
+            dims = 2;
+        }
+
+        reshape_tensors[1] = vsi_nn_reshape_tensor( self->graph,
+            inputs[1], (uint32_t*)shapes, dims );
     }
 
     // Add params
