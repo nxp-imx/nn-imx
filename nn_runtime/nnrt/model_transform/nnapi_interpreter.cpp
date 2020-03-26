@@ -636,11 +636,40 @@ OperationPtr NnApiInterpreter::map_EXPAND_DIMS(Model* model,
 OperationPtr NnApiInterpreter::map_SOFTMAX(Model* model,
                                            OperationPtr operation,
                                            uint32_t operation_index) {
-    std::shared_ptr<SoftmaxOperation> softmax = std::make_shared<SoftmaxOperation>();
-    NNAPI_CHECK_PTR(softmax);
+
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
-    softmax->beta = inputs[1]->scalar.float32;
-    softmax->axis = inputs.size() == 3 ? inputs[2]->scalar.int32 : -1;
+    auto argList = matchArgList(inputs, "SoftmaxOperation");
+    auto softmax = std::make_shared<SoftmaxOperation>();
+    NNAPI_CHECK_PTR(softmax);
+    if (argList) {
+        // Set beta param
+        switch (inputs[argList->ArgPos("beta")]->type) {
+            case OperandType::FLOAT16: {
+                half_float::half beta;
+                memcpy(&beta,
+                       &inputs[argList->ArgPos("beta")]->scalar.float16,
+                       sizeof(half_float::half));
+                softmax->beta = beta;
+                break;
+            }
+            case OperandType::FLOAT32: {
+                softmax->beta = inputs[argList->ArgPos("beta")]->scalar.float32;
+                break;
+            }
+            default:
+                assert(false);
+                NNRT_LOGE_PRINT("Softmax doesn't support given datatype");
+        }
+        // Set axis param
+        if (-1 != argList->ArgPos("axis")) {
+            softmax->axis = inputs[argList->ArgPos("axis")]->scalar.int32;
+        } else {
+            softmax->axis = -1;
+        }
+    } else {
+        NNRT_LOGE_PRINT("Softmax argument list not support");
+        assert(false);
+    }
     truncateOperationIOs(model, operation, 1, 1);
     return softmax;
 }
