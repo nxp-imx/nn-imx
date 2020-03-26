@@ -22,62 +22,70 @@
 #*
 #*****************************************************************************/
 
-# Set the backend source path
-set(NpuBackendPath ${PROJECT_SOURCE_DIR}/src/backends/dynamic/vsi_npu)
-
-file(GLOB NpuBackendSrcFiles ${NpuBackendPath}/*.cpp)
-file(GLOB NpuBackendWorloadFiles ${NpuBackendPath}/workloads/*.cpp)
-
-set(armnnNputBackend_sources ${NpuBackendSrcFiles} ${NpuBackendWorloadFiles})
+list(APPEND armnnNputBackend_sources
+        arm_nn_interpreter.cpp
+        arm_nn_interpreter.hpp
+        NpuBackendContext.cpp
+        NpuBackendContext.hpp
+        NpuBackend.cpp
+        NpuBackend.hpp
+        NpuBackendId.hpp
+        NpuLayerSupport.cpp
+        NpuLayerSupport.hpp
+        NpuModelShell.cpp
+        NpuModelShell.hpp
+        NpuTensorAllocator.cpp
+        NpuTensorAllocator.hpp
+        NpuTensorHandler.cpp
+        NpuTensorHandler.hpp
+        NpuWorkloadFactory.cpp
+        NpuWorkloadFactory.hpp
+    )
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -Wno-old-style-cast \
-                    -Wno-sign-conversion -Wno-conversion -Wno-unused-variable")
-#target_link_libraries(Vsi_NpuAcc_backend PUBLIC ovxlib)
-#TARGET_LINK_LIBRARIES(Vsi_NpuAcc_backend libovxlib.so libnnrt.so)
+        -Wno-sign-conversion -Wno-conversion -Wno-unused-variable")
+add_library(armnnNpuBackend OBJECT ${armnnNputBackend_sources})
+#target_link_libraries(armnnNpuBackend PUBLIC ovxlib)
+#TARGET_LINK_LIBRARIES(armnnNpuBackend libovxlib.so libnnrt.so)
 
 if(NOT DEFINED ENV{VIVANTE_SDK_DIR})
     message(FATAL_ERROR "please set ENV: VIVANTE_SDK_DIR")
-else()
-    set(OVX_DRIVER_ROOT $ENV{VIVANTE_SDK_DIR})
-    set(OVX_DRIVER_INCLUDE ${OVX_DRIVER_ROOT}/include)
-    set(OVX_DRIVER_LIB     ${OVX_DRIVER_ROOT}/drivers)
+    else()
+set(OVX_DRIVER_ROOT $ENV{VIVANTE_SDK_DIR})
+set(OVX_DRIVER_INCLUDE ${OVX_DRIVER_ROOT}/include)
+set(OVX_DRIVER_LIB     ${OVX_DRIVER_ROOT}/drivers)
 endif()
 
 if(NOT DEFINED ENV{OVXLIB_DIR})
     message(FATAL_ERROR "please set ENV: OVXLIB_DIR")
-else()
-    set(OVXLIB_DIR $ENV{OVXLIB_DIR})
-    set(OVXLIB_INCLUDE ${OVXLIB_DIR}/include)
+    else()
+set(OVXLIB_DIR $ENV{OVXLIB_DIR})
+set(OVXLIB_INCLUDE ${OVXLIB_DIR}/include)
 endif()
 
 if(NOT DEFINED ENV{NNRT_ROOT})
     message(FATAL_ERROR "please set ENV: NNRT_ROOT")
 else()
-   set(NNRT_ROOT $ENV{NNRT_ROOT})
-   set(NNRT_INCLUDE ${NNRT_ROOT} ${NNRT_ROOT}/nnrt)
+    set(NNRT_ROOT $ENV{NNRT_ROOT})
+    set(NNRT_INCLUDE ${NNRT_ROOT} ${NNRT_ROOT}/nnrt)
 endif()
 
 include_directories(
-    ${OVXLIB_INCLUDE}
-    ${OVX_DRIVER_INCLUDE}
-    ${NNRT_INCLUDE}
-    )
-
-
+        ${OVXLIB_INCLUDE}
+        ${OVX_DRIVER_INCLUDE}
+        ${NNRT_INCLUDE}
+        )
 
 link_directories(${OVX_DRIVER_LIB})
-message("ovxlib include: ${OVXLIB_INCLUDE}")
-message("driver include: ${OVX_DRIVER_INCLUDE}")
-message("nnrt include: ${NNRT_INCLUDE}")
+    message("ovxlib include: ${OVXLIB_INCLUDE}")
+    message("driver include: ${OVX_DRIVER_INCLUDE}")
+    message("nnrt include: ${NNRT_INCLUDE}")
 
-add_library(Vsi_NpuAcc_backend MODULE ${armnnNputBackend_sources})
+target_include_directories(armnnNpuBackend PRIVATE ${PROJECT_SOURCE_DIR}/src/armnn)
+target_include_directories(armnnNpuBackend PRIVATE ${PROJECT_SOURCE_DIR}/src/armnnUtils)
+target_include_directories(armnnNpuBackend PRIVATE ${PROJECT_SOURCE_DIR}/src/backends)
+target_include_directories(armnnNpuBackend PRIVATE ${PROJECT_SOURCE_DIR}/src/backends/vsi_npu)
 
-target_include_directories(Vsi_NpuAcc_backend PRIVATE ${PROJECT_SOURCE_DIR}/src/armnn)
-target_include_directories(Vsi_NpuAcc_backend PRIVATE ${PROJECT_SOURCE_DIR}/src/armnnUtils)
-target_include_directories(Vsi_NpuAcc_backend PRIVATE ${PROJECT_SOURCE_DIR}/src/backends)
-target_include_directories(Vsi_NpuAcc_backend PRIVATE ${PROJECT_SOURCE_DIR}/src/backends/dynamic/vsi_npu)
-
-set_target_properties(Vsi_NpuAcc_backend PROPERTIES PREFIX "")
-target_link_libraries(Vsi_NpuAcc_backend armnn)
+add_subdirectory(workloads)
 
 if(BUILD_UNIT_TESTS)
     add_subdirectory(test)

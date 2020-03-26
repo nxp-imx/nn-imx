@@ -24,7 +24,7 @@
 
 #include "NpuDynamicBackend.hpp"
 
-#include "NpuBackend.hpp"
+#include <vsi_npu/NpuBackend.hpp>
 
 using namespace armnn;
 
