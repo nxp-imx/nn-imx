@@ -25,8 +25,6 @@
 #ifndef __ANEURALNETWORKS_GENERATE_PROPOSALS_HPP__
 #define __ANEURALNETWORKS_GENERATE_PROPOSALS_HPP__
 
-#include "api_requirement/spec_macros.hpp"
-
 #define OP_SPEC_NAME GenerateProposalsOperation
 OP_SPEC_BEGIN()
 #define ARG_NAMES         \

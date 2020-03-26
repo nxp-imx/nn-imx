@@ -25,8 +25,6 @@
 #ifndef __AANEURALNETWORKS_ROI_ALIGN_HPP__
 #define __AANEURALNETWORKS_ROI_ALIGN_HPP__
 
-#include "api_requirement/spec_macros.hpp"
-
 #define OP_SPEC_NAME ROIAlignOperation
 OP_SPEC_BEGIN()
 #define ARG_NAMES         \

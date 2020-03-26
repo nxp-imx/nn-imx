@@ -24,7 +24,7 @@
 #ifndef _OP_CONV2D_
 #define _OP_CONV2D_
 
-#include "op/operation.hpp"
+#include "nnrt/op/operation.hpp"
 
 namespace nnrt {
 namespace op {

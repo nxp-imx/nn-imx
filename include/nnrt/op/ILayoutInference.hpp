@@ -24,7 +24,7 @@
 #ifndef _OP_LAYOUT_INFERENCE_H_
 #define _OP_LAYOUT_INFERENCE_H_
 #include <unordered_map>
-#include "permute_vector.hpp"
+#include "nnrt/permute_vector.hpp"
 
 namespace nnrt {
 class Model;

@@ -43,6 +43,12 @@ enum
     PRE_PROCESS_OUTPUT_CNT
 };
 
+#define _VSI_NN_PRE_PROCESS_LOCAL_TENSOR_NUM 10
+typedef struct _vsi_nn_pre_process_lcl_data
+{
+    vsi_nn_tensor_t *local_tensor[_VSI_NN_PRE_PROCESS_LOCAL_TENSOR_NUM];
+} vsi_nn_pre_process_lcl_data;
+
 typedef struct _vsi_nn_pre_process_param
 {
     struct
@@ -71,6 +77,8 @@ typedef struct _vsi_nn_pre_process_param
     vsi_bool reverse_channel;
 
     vsi_nn_pre_process_type_e type;
+
+    vsi_nn_pre_process_lcl_data *local;
 } vsi_nn_pre_process_param;
 #endif
 

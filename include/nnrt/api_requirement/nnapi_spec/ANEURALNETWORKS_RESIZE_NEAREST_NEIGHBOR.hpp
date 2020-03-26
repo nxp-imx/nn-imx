@@ -25,8 +25,6 @@
 #ifndef __ANEURALNETWORKS_RESIZE_NEAREST_NEIGHBOR_HPP__
 #define __ANEURALNETWORKS_RESIZE_NEAREST_NEIGHBOR_HPP__
 
-#include "api_requirement/spec_macros.hpp"
-
 #define OP_SPEC_NAME ResizeNearestNeighborOperation
 OP_SPEC_BEGIN()
 #define ARG_NAMES         \

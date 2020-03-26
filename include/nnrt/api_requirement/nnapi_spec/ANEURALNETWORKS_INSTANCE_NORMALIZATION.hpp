@@ -25,8 +25,6 @@
 #ifndef __ANEURALNETWORKS_INSTANCE_NORMALIZATION_HPP__
 #define __ANEURALNETWORKS_INSTANCE_NORMALIZATION_HPP__
 
-#include "api_requirement/spec_macros.hpp"
-
 #define OP_SPEC_NAME InstanceNormOperation
 OP_SPEC_BEGIN()
 #define ARG_NAMES         \

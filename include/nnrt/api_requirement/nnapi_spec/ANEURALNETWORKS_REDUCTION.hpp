@@ -26,8 +26,6 @@
 #ifndef __ANEURALNETWORKS_REDUCTION_HPP__
 #define __ANEURALNETWORKS_REDUCTION_HPP__
 
-#include "api_requirement/spec_macros.hpp"
-
 #define OP_SPEC_NAME ReduceAll
 OP_SPEC_BEGIN()
 #define ARG_NAMES         \

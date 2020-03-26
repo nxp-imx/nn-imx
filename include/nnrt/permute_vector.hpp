@@ -131,7 +131,7 @@ class PermuteVector : public IPermuteVector {
         return i == R;
     }
 
-    IPermuteVectorPtr reverse() {
+    IPermuteVectorPtr reverse() override {
         IPermuteVectorPtr r = std::make_shared<PermuteVector<R>>();
         for (uint32_t i = 0; i < R; ++i) {
             r->at(param_[i]) = i;
@@ -139,7 +139,7 @@ class PermuteVector : public IPermuteVector {
         return r;
     }
 
-    void reinitialize() {
+    void reinitialize() override {
         for (uint32_t i = 0; i < R; ++i) {
             param_[i] = i;
         }

@@ -22,32 +22,38 @@
 *
 *****************************************************************************/
 
-#ifndef _VSI_NN_KERNEL_GPU_SHAPE_OPTIMIZE_H
-#define _VSI_NN_KERNEL_GPU_SHAPE_OPTIMIZE_H
+#ifndef __ANEURALNETWORKS_PAD_V2_HPP__
+#define __ANEURALNETWORKS_PAD_V2_HPP__
 
-#include <stdint.h>
-#include "kernel/vsi_nn_kernel.h"
+#define OP_SPEC_NAME PadV2Operation
+OP_SPEC_BEGIN()
+#define ARG_NAMES         \
+    (input,               \
+     padding,             \
+     pad_value)
+#define ARGC BOOST_PP_TUPLE_SIZE(ARG_NAMES)
 
-vsi_bool vsi_nn_kernel_optimize_reduce_shape
-    (
-    const int32_t* shape_x, const size_t rank_x,
-    const int32_t *axis, const size_t axis_size,
-    const int32_t* shape_output, const size_t rank_output,
-    int32_t* out_shape_x, uint32_t* out_rank_x,
-    int32_t* out_shape_output, uint32_t* out_rank_output,
-    int32_t* out_axis, uint32_t* out_axis_size
-    );
+#define BOOST_PP_LOCAL_MACRO(n) OP_SPEC_ARG(BOOST_PP_TUPLE_ELEM(ARGC, n, ARG_NAMES))
+#define BOOST_PP_LOCAL_LIMITS (0, ARGC)
+#include BOOST_PP_LOCAL_ITERATE()
+OP_SPEC_END()
 
-vsi_bool vsi_nn_kernel_optimize_element_shape
-    (
-    const int32_t* shape_x, const size_t rank_x,
-    int32_t* out_shape_x, int32_t* out_rank_x
-    );
+// order of argument is important
+MAKE_SPEC(pad_v2)
+    .input_(nnrt::OperandType::TENSOR_FLOAT32)
+    .padding_(nnrt::OperandType::TENSOR_INT32)
+    .pad_value_(nnrt::OperandType::FLOAT32));
 
-vsi_bool vsi_nn_kernel_optimize_softmax_shape
-    (
-    const int32_t* shape_x, const size_t rank_x, const int32_t axis,
-    int32_t* out_shape_x, uint32_t* out_rank_x,int32_t* out_axis
-    );
+    OVERRIDE_SPEC(pad_v2, float16)
+    .input_(nnrt::OperandType::TENSOR_FLOAT16)
+    .pad_value_(nnrt::OperandType::FLOAT16));
+
+    OVERRIDE_SPEC(pad_v2, quant8_asymm)
+    .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM)
+    .pad_value_(nnrt::OperandType::INT32));
+
+#undef ARG_NAMES
+#undef ARGC
+#undef OP_SPEC_NAME
 
 #endif

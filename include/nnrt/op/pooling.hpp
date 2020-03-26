@@ -25,8 +25,8 @@
 #define _OP_POOLING_H_
 
 #include "operation.hpp"
-#include "model.hpp"
-#include "logging.hpp"
+#include "nnrt/model.hpp"
+#include "nnrt/logging.hpp"
 
 namespace nnrt {
 namespace op {

@@ -25,8 +25,6 @@
 #ifndef __ANEURALNETWORKS_L2_NORMALIZATION_HPP__
 #define __ANEURALNETWORKS_L2_NORMALIZATION_HPP__
 
-#include "api_requirement/spec_macros.hpp"
-
 #define OP_SPEC_NAME L2NormOperation
 OP_SPEC_BEGIN()
 #define ARG_NAMES         \

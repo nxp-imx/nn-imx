@@ -1406,7 +1406,12 @@ class half {
     friend struct detail::binary_specialized<half, half>;
     template <typename, typename, std::float_round_style>
     friend struct detail::half_caster;
+#if defined(__GLIBCXX__)
     friend struct std::numeric_limits<half>;
+#elif defined(_LIBCPP_VERSION)
+    friend class std::numeric_limits<half>;
+#endif
+
 #if HALF_ENABLE_CPP11_HASH
     friend struct std::hash<half>;
 #endif

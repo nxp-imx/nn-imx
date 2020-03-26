@@ -25,7 +25,6 @@
 #ifndef __AANEURALNETWORKS_CHANNEL_SHUFFLE_HPP__
 #define __AANEURALNETWORKS_CHANNEL_SHUFFLE_HPP__
 
-#include "api_requirement/spec_macros.hpp"
 
 #define OP_SPEC_NAME ChannelShuffleOperation
 OP_SPEC_BEGIN()

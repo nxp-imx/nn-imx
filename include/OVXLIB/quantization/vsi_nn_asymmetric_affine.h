@@ -36,7 +36,7 @@ OVXLIB_API vsi_status vsi_nn_QuantAffineCalParam
     float    max_data,
     float    min_data,
     float  * scale,
-    uint32_t   * zero_point
+    int32_t   * zero_point
     );
 
 OVXLIB_API vsi_bool vsi_nn_QuantAffineCheck

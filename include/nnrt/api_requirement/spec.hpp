@@ -30,7 +30,7 @@
 #include <string>
 #include <vector>
 
-#include "types.hpp"
+#include "nnrt/types.hpp"
 namespace api {
 namespace requirement {
 

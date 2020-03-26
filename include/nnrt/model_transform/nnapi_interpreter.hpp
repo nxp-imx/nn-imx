@@ -26,10 +26,10 @@
 
 #include <vector>
 #include <set>
-#include "model.hpp"
-#include "op/public.hpp"
-#include "interpreter.hpp"
-#include "api_requirement/nnapi_requirement.hpp"
+#include "nnrt/model.hpp"
+#include "nnrt/op/public.hpp"
+#include "nnrt/interpreter.hpp"
+#include "nnrt/api_requirement/nnapi_requirement.hpp"
 
 namespace nnrt
 {
@@ -187,6 +187,7 @@ class NnApiInterpreter : public Interpreter
         REGISTER_OP(TOPK);
         REGISTER_OP(DETECTION_POSTPROCESSING);
         REGISTER_OP(TILE);
+        REGISTER_OP(PAD_V2);
 #undef  REGISTER_OP
     private:
         inline DataLayout getDataLayout(bool isNCHW) {

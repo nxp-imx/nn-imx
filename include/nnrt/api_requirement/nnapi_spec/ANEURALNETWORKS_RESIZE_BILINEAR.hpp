@@ -25,8 +25,6 @@
 #ifndef __ANEURALNETWORKS_RESIZE_BILINEAR_HPP__
 #define __ANEURALNETWORKS_RESIZE_BILINEAR_HPP__
 
-#include "api_requirement/spec_macros.hpp"
-
 #define OP_SPEC_NAME ResizeBilinearOperation
 OP_SPEC_BEGIN()
 #define ARG_NAMES         \

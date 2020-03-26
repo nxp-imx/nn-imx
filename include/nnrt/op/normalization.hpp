@@ -24,8 +24,8 @@
 #ifndef _OP_NORMALIZATION_H_
 #define _OP_NORMALIZATION_H_
 
-#include "op/operation.hpp"
-#include "model.hpp"
+#include "nnrt/op/operation.hpp"
+#include "nnrt/model.hpp"
 
 namespace nnrt {
 namespace op {

@@ -4,8 +4,8 @@
 #include <vector>
 #include <set>
 
-#include "model.hpp"
-#include "op/public.hpp"
+#include "nnrt/model.hpp"
+#include "nnrt/op/public.hpp"
 
 namespace nnrt
 {

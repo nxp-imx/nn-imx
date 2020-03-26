@@ -25,7 +25,6 @@
 #ifndef __AANEURALNETWORKS_BIDIRECTIONAL_SEQUENCE_LSTM_HPP__
 #define __AANEURALNETWORKS_BIDIRECTIONAL_SEQUENCE_LSTM_HPP__
 
-#include "api_requirement/spec_macros.hpp"
 
 #define OP_SPEC_NAME BidirectionalSequenceLstmOperation
 OP_SPEC_BEGIN()

@@ -25,8 +25,6 @@
 #ifndef __ANEURALNETWORKS_DEPTHWISE_CONV_2D_HPP__
 #define __ANEURALNETWORKS_DEPTHWISE_CONV_2D_HPP__
 
-#include "api_requirement/spec_macros.hpp"
-
 #define OP_SPEC_NAME DepthwiseConvolution2D
 OP_SPEC_BEGIN()
 #define ARG_NAMES         \
