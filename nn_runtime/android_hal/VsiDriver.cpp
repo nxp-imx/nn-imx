@@ -395,24 +395,91 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
                 model, operation);
             return logSoftmax->Validate();
         }
+        case OperationType::REDUCE_ALL: {
+            OperationValidatePtr reduceAll = std::make_unique<
+                op_validate::ReduceAllValidate<HalPlatform::Model, HalPlatform::Operation>>(
+                model, operation);
+            return false;
+            // return reduceAll->Validate();
+        }
+        case OperationType::REDUCE_ANY: {
+            OperationValidatePtr reduceAny = std::make_unique<
+                op_validate::ReduceAnyValidate<HalPlatform::Model, HalPlatform::Operation>>(
+                model, operation);
+            return false;
+            // return reduceAny->Validate();
+        }
+        case OperationType::GATHER: {
+            OperationValidatePtr gather = std::make_unique<
+                op_validate::GatherValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
+                                                                                         operation);
+            return gather->Validate();
+        }
 
-        case OperationType::AXIS_ALIGNED_BBOX_TRANSFORM:
-        case OperationType::BIDIRECTIONAL_SEQUENCE_LSTM:
-        case OperationType::BIDIRECTIONAL_SEQUENCE_RNN:
+        case OperationType::AXIS_ALIGNED_BBOX_TRANSFORM: {
+            OperationValidatePtr axisAlignedBBoxTransform = std::make_unique<
+                op_validate::AxisAlignedBBoxTransformValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
+                                                                                      operation);
+            return axisAlignedBBoxTransform->Validate();
+        }
+        case OperationType::UNIDIRECTIONAL_SEQUENCE_LSTM: {
+            OperationValidatePtr unidirectionalSequenceLstm = std::make_unique<
+                op_validate::UnidirectionalSequenceLstmValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
+                                                                                      operation);
+            // All generated cases failed
+            return false;
+            // return unidirectionalSequenceLstm->Validate();
+        }
+        case OperationType::BIDIRECTIONAL_SEQUENCE_LSTM: {
+            OperationValidatePtr bidirectionalSequenceLstm = std::make_unique<
+                op_validate::BidirectionalSequenceLstmValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
+                                                                                      operation);
+            // All generated cases failed, need to fix
+            return false;
+            // return bidirectionalSequenceLstm->Validate();
+        }
+        case OperationType::GENERATE_PROPOSALS: {
+            OperationValidatePtr generateProposals = std::make_unique<
+                op_validate::GenerateProposalsValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
+                                                                                      operation);
+            // Some generated float32 cases failed
+            return false;
+            // return generateProposals->Validate();
+        }
+        case OperationType::DETECTION_POSTPROCESSING: {
+            OperationValidatePtr detectionPostprocessing = std::make_unique<
+                op_validate::DetectionPostprocessingValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
+                                                                                      operation);
+            // Some generated float32 cases crashed
+            return false;
+            // return detectionPostprocessing->Validate();
+        }
+        case OperationType::UNIDIRECTIONAL_SEQUENCE_RNN: {
+            OperationValidatePtr unidirectionalSequenceRnn = std::make_unique<
+                op_validate::UnidirectionalSequenceRnnValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
+                                                                                      operation);
+            // Some float32 cases failed
+            return false;
+            // return unidirectionalSequenceRnn->Validate();
+        }
+        case OperationType::BIDIRECTIONAL_SEQUENCE_RNN: {
+            OperationValidatePtr bidirectionalSequenceRnn = std::make_unique<
+                op_validate::BidirectionalSequenceRnnValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
+                                                                                      operation);
+            // All generated cases failed, need to fix
+            return false;
+            // return bidirectionalSequenceRnn->Validate();
+        }
+
         case OperationType::BOX_WITH_NMS_LIMIT:
         case OperationType::CAST:
         case OperationType::CHANNEL_SHUFFLE:
-        case OperationType::DETECTION_POSTPROCESSING:
-        case OperationType::GATHER:
-        case OperationType::GENERATE_PROPOSALS:
         case OperationType::GROUPED_CONV_2D:
         case OperationType::HEATMAP_MAX_KEYPOINT:
         case OperationType::PAD_V2:
         case OperationType::QUANTIZE:
         case OperationType::QUANTIZED_16BIT_LSTM:
         case OperationType::RANDOM_MULTINOMIAL:
-        case OperationType::REDUCE_ALL:
-        case OperationType::REDUCE_ANY:
         case OperationType::ROI_ALIGN:
         case OperationType::ROI_POOLING:
         case OperationType::SELECT:
@@ -420,8 +487,6 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
         case OperationType::TILE:
         case OperationType::TOPK_V2:
         case OperationType::TRANSPOSE_CONV_2D:
-        case OperationType::UNIDIRECTIONAL_SEQUENCE_LSTM:
-        case OperationType::UNIDIRECTIONAL_SEQUENCE_RNN:
         case OperationType::MAXIMUM:
             isSupport &= false;
             break;

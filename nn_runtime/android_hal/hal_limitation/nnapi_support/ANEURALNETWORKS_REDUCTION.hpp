@@ -39,11 +39,10 @@ OP_SPEC_BEGIN()
 #include BOOST_PP_LOCAL_ITERATE()
 OP_SPEC_END()
 // order of argument is important
-// Note: Not support bool8
-// MAKE_SPEC(base)
-//     .input_(nnrt::OperandType::TENSOR_BOOL8)
-//     .axes_(nnrt::OperandType::TENSOR_INT32)
-//     .keep_dim_(nnrt::OperandType::BOOL));
+MAKE_SPEC(base)
+    .input_(nnrt::OperandType::TENSOR_BOOL8)
+    .axes_(nnrt::OperandType::TENSOR_INT32)
+    .keep_dim_(nnrt::OperandType::BOOL));
 #undef ARG_NAMES
 #undef ARGC
 #undef OP_SPEC_NAME
@@ -59,10 +58,9 @@ OP_SPEC_BEGIN()
 #include BOOST_PP_LOCAL_ITERATE()
 OP_SPEC_END()
 // order of argument is important
-// Note: Not support bool8
-// MAKE_SPEC(base)
-//     .input_(nnrt::OperandType::TENSOR_BOOL8)
-//     .output_(nnrt::OperandType::TENSOR_BOOL8));
+MAKE_SPEC(base)
+    .input_(nnrt::OperandType::TENSOR_BOOL8)
+    .output_(nnrt::OperandType::TENSOR_BOOL8));
 #undef ARG_NAMES
 #undef ARGC
 #undef OP_SPEC_NAME
@@ -79,10 +77,10 @@ OP_SPEC_BEGIN()
 #include BOOST_PP_LOCAL_ITERATE()
 OP_SPEC_END()
 // order of argument is important
-// MAKE_SPEC(base)
-//     .input_(nnrt::OperandType::TENSOR_BOOL8)
-//     .axes_(nnrt::OperandType::TENSOR_INT32)
-//     .keep_dim_(nnrt::OperandType::BOOL));
+MAKE_SPEC(base)
+    .input_(nnrt::OperandType::TENSOR_BOOL8)
+    .axes_(nnrt::OperandType::TENSOR_INT32)
+    .keep_dim_(nnrt::OperandType::BOOL));
 #undef ARG_NAMES
 #undef ARGC
 #undef OP_SPEC_NAME
@@ -98,9 +96,9 @@ OP_SPEC_BEGIN()
 #include BOOST_PP_LOCAL_ITERATE()
 OP_SPEC_END()
 // order of argument is important
-// MAKE_SPEC(base)
-//     .input_(nnrt::OperandType::TENSOR_BOOL8)
-//     .output_(nnrt::OperandType::TENSOR_BOOL8));
+MAKE_SPEC(base)
+    .input_(nnrt::OperandType::TENSOR_BOOL8)
+    .output_(nnrt::OperandType::TENSOR_BOOL8));
 #undef ARG_NAMES
 #undef ARGC
 #undef OP_SPEC_NAME

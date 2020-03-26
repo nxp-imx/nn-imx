@@ -133,8 +133,17 @@ static Return<ErrorStatus> convertResultCodeToErrorStatus(int resultCode) {
             MAP_OP(REDUCE_MIN);
             MAP_OP(REDUCE_PROD);
             MAP_OP(REDUCE_SUM);
+            MAP_OP(REDUCE_ALL);
+            MAP_OP(REDUCE_ANY);
             MAP_OP(NEG);
             MAP_OP(PRELU);
+            MAP_OP(UNIDIRECTIONAL_SEQUENCE_RNN);
+            MAP_OP(BIDIRECTIONAL_SEQUENCE_RNN);
+            MAP_OP(UNIDIRECTIONAL_SEQUENCE_LSTM);
+            MAP_OP(BIDIRECTIONAL_SEQUENCE_LSTM);
+            MAP_OP(GENERATE_PROPOSALS);
+            MAP_OP(AXIS_ALIGNED_BBOX_TRANSFORM);
+            MAP_OP(DETECTION_POSTPROCESSING);
             MAP_OP(LESS);
             MAP_OP(LESS_EQUAL);
             MAP_OP(EQUAL);
@@ -149,6 +158,7 @@ static Return<ErrorStatus> convertResultCodeToErrorStatus(int resultCode) {
             MAP_OP(INSTANCE_NORMALIZATION);
             MAP_OP(SPLIT);
             MAP_OP(LOG_SOFTMAX);
+            MAP_OP(GATHER);
 #endif
 #undef MAP_OP
 
