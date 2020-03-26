@@ -77,7 +77,7 @@ LOCAL_C_INCLUDES += \
     $(AQROOT)/sdk/inc\
     $(LOCAL_PATH)/boost/libs/preprocessor/include\
     $(LOCAL_PATH)/api_requirement/\
-    $(NNRT_ROOT)
+    $(LOCAL_PATH)/../../include
 
 LOCAL_SHARED_LIBRARIES += libovxlib
 
