@@ -466,7 +466,7 @@ vsi_bool vsi_nn_kernel_optimize_broadcast_shape
             }
         }
 
-        for (j = 0; j < input_num; j++)
+        for (j = 0; j < (uint32_t)input_num; j++)
         {
             if ((size_in[k] != size_in[j])
              && (size_in[j] > 1))

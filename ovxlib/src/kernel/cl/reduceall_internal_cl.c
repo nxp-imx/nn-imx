@@ -153,7 +153,7 @@ static vsi_status _query_kernel
     vx_kernel_initialize_f  initializer = _reduceall_internal_initializer;
 
     uint32_t key;
-    int i;
+    uint32_t i;
 
     in_dtype  = vsi_nn_kernel_map_dtype( inputs[0]->attr.dtype.vx_type );
     out_dtype = vsi_nn_kernel_map_dtype( outputs[0]->attr.dtype.vx_type );

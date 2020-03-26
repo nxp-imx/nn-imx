@@ -39,29 +39,22 @@
 
 __BEGIN_DECLS
 
-typedef enum _internal_img_dim_e
-{
-    IMAGE = 0,
-    IMAGE_2D,
-} internal_img_dim_e;
+#define FLOORDIV_HASH_KEY(_input0_type, _input1_type, _output_type, _image_2d) \
+    ((_input0_type << 24) | (_input1_type << 16) | (_output_type << 8) | (_image_2d))
 
-#define _LOGICAL_OPS_KERNEL_SOURCE      "logical_ops"
 
-#define STR(a) #a
+ #define FLOORDIV_KERNEL_SOURCE_NAME \
+    "floordiv"
 
-// Add kernel hashtable here
-#define LOGICAL_OPS_HASH_KEY(OP_TYPE, IN_DTYPE, OUT_DTYPE, _image_2d) \
-        ((OP_TYPE << 20) | ( IN_DTYPE << 12 ) | ( OUT_DTYPE << 4) | (_image_2d))
+#define FLOORDIV_KERNELS(IN0_TYPE, IN1_TYPE, OUT_TYPE) \
+    { FLOORDIV_HASH_KEY(IN0_TYPE, IN1_TYPE, OUT_TYPE, 0), \
+      CVIVANTE_NAMESPACE("cl.floordiv_"#IN0_TYPE#IN1_TYPE"to"#OUT_TYPE), \
+      FLOORDIV_KERNEL_SOURCE_NAME },
 
-#define PACK_KERNEL_MAP(OP_TYPE, IN_DTYPE, OUT_DTYPE, op_name) \
-        { LOGICAL_OPS_HASH_KEY(OP_TYPE, IN_DTYPE, OUT_DTYPE, IMAGE), \
-        CVIVANTE_NAMESPACE("cl.logical_"op_name"_"STR(IN_DTYPE)"to"STR(OUT_DTYPE)), \
-        _LOGICAL_OPS_KERNEL_SOURCE}
-
-#define PACK_KERNEL_MAP_2D(OP_TYPE, IN_DTYPE, OUT_DTYPE, op_name) \
-        { LOGICAL_OPS_HASH_KEY(OP_TYPE, IN_DTYPE, OUT_DTYPE, IMAGE_2D), \
-        CVIVANTE_NAMESPACE("cl.logical_"op_name"_"STR(IN_DTYPE)"to"STR(OUT_DTYPE)"_2D"), \
-        _LOGICAL_OPS_KERNEL_SOURCE}
+#define FLOORDIV_KERNELS_2D(IN0_TYPE, IN1_TYPE, OUT_TYPE) \
+    { FLOORDIV_HASH_KEY(IN0_TYPE, IN1_TYPE, OUT_TYPE, 1), \
+      CVIVANTE_NAMESPACE("cl.floordiv_"#IN0_TYPE#IN1_TYPE"to"#OUT_TYPE"_2D"), \
+      FLOORDIV_KERNEL_SOURCE_NAME },
 
 typedef struct
 {
@@ -70,34 +63,50 @@ typedef struct
     const char * source_name;
 } _kernel_map_type;
 
-static const _kernel_map_type _logical_ops_kernel_map[] =
+static const _kernel_map_type _floordiv_kernel_map[] =
 {
     // Register kernel here
-    PACK_KERNEL_MAP(VSI_NN_LOGICAL_OR,  I8,  I8,  "or"),
-    PACK_KERNEL_MAP(VSI_NN_LOGICAL_AND, I8,  I8,  "and"),
-    PACK_KERNEL_MAP(VSI_NN_LOGICAL_XOR, I8,  I8,  "xor"),
-    PACK_KERNEL_MAP_2D(VSI_NN_LOGICAL_OR,  I8,  I8,  "or"),
-    PACK_KERNEL_MAP_2D(VSI_NN_LOGICAL_AND, I8,  I8,  "and"),
-    PACK_KERNEL_MAP_2D(VSI_NN_LOGICAL_XOR, I8,  I8,  "xor"),
+    FLOORDIV_KERNELS( F32, F32, F32 )
+    FLOORDIV_KERNELS( I32, I32, I32 )
+    FLOORDIV_KERNELS( U8,  U8,  U8 )
+
+    FLOORDIV_KERNELS_2D( F32, F32, F32 )
+    FLOORDIV_KERNELS_2D( I32, I32, I32 )
+    FLOORDIV_KERNELS_2D( U8,  U8,  U8 )
 };
 
 
 /*
  * Kernel params
  */
-static vx_param_description_t _logical_ops_kernel_param_def[] =
+static vx_param_description_t _floordiv_kernel_param_def[] =
 {
     {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
 };
+#define _FLOORDIV_PARAM_NUM  _cnt_of_array( _floordiv_kernel_param_def )
 
-#define _LOGICAL_OPS_PARAM_NUM  _cnt_of_array( _logical_ops_kernel_param_def )
+#define SCALAR_INPUT0_SCALE          (3)
+#define SCALAR_INPUT0_TAIL           (4)
+#define SCALAR_INPUT1_SCALE          (5)
+#define SCALAR_INPUT1_TAIL           (6)
+#define SCALAR_OUTPUT_SCALE          (7)
+#define SCALAR_OUTPUT_TAIL           (8)
+
+#define FLOORDIV_PARAM_NUM         3
+#define FLOORDIV_QUANT_PARAM_NUM   _cnt_of_array( _floordiv_kernel_param_def )
 
 /*
  * Kernel initializer
  */
-DEF_KERNEL_INITIALIZER(_logical_ops_initializer)
+DEF_KERNEL_INITIALIZER(_floordiv_initializer)
     (
     vsi_nn_kernel_node_t                node,
     const vsi_nn_kernel_node_param_t  * param,
@@ -140,7 +149,7 @@ final:
     }
 
     return status;
-} /* _logical_ops_initializer() */
+} /* _floordiv_initializer() */
 
 
 
@@ -153,37 +162,53 @@ static vsi_status _query_kernel
     vsi_nn_tensor_t * const * const inputs,
     vsi_nn_tensor_t * const * const outputs,
     vsi_bool image_2d,
-    vsi_nn_logical_ops_type_t op_type
+    vsi_bool *is_use_u8_kernel
     )
 {
     vsi_status status = VSI_FAILURE;
-    vsi_nn_kernel_dtype_e in_dtype;
+    vsi_nn_kernel_dtype_e in0_dtype;
     vsi_nn_kernel_dtype_e in1_dtype;
     vsi_nn_kernel_dtype_e out_dtype;
-    const _kernel_map_type * kernel_map = _logical_ops_kernel_map;
-    size_t kernel_map_size              = _cnt_of_array( _logical_ops_kernel_map );
-    vx_param_description_t * param_def  = _logical_ops_kernel_param_def;
-    size_t param_def_size               = _cnt_of_array( _logical_ops_kernel_param_def );
-    vx_kernel_initialize_f  initializer = _logical_ops_initializer;
+    const _kernel_map_type * kernel_map = _floordiv_kernel_map;
+    size_t kernel_map_size              = _cnt_of_array( _floordiv_kernel_map );
+    vx_param_description_t * param_def  = _floordiv_kernel_param_def;
+    size_t param_def_size               = _cnt_of_array( _floordiv_kernel_param_def );
+    vx_kernel_initialize_f  initializer = _floordiv_initializer;
+
     uint32_t key;
     uint32_t i;
 
-    in_dtype  = vsi_nn_kernel_map_dtype( inputs[0]->attr.dtype.vx_type );
+    in0_dtype = vsi_nn_kernel_map_dtype( inputs[0]->attr.dtype.vx_type );
     in1_dtype = vsi_nn_kernel_map_dtype( inputs[1]->attr.dtype.vx_type );
     out_dtype = vsi_nn_kernel_map_dtype( outputs[0]->attr.dtype.vx_type );
 
-    if (in_dtype != in1_dtype)
+    if (F16 == in0_dtype)
     {
-        return VSI_FAILURE;
+        in0_dtype  = F32;
     }
 
-    if (BOOL8 == in_dtype && BOOL8 == out_dtype)
+    if (F16 == in1_dtype)
     {
-        in_dtype  = I8;
-        out_dtype = I8;
+        in1_dtype  = F32;
     }
 
-    key = LOGICAL_OPS_HASH_KEY(op_type, in_dtype, out_dtype, image_2d);
+    if (F16 == out_dtype)
+    {
+        out_dtype  = F32;
+    }
+
+    if ((U8 == in0_dtype) || (U8 == in1_dtype) || (U8 == out_dtype))
+    {
+        param_def_size = FLOORDIV_QUANT_PARAM_NUM;
+        *is_use_u8_kernel = TRUE;
+    }
+    else
+    {
+        param_def_size = FLOORDIV_PARAM_NUM;
+        *is_use_u8_kernel = FALSE;
+    }
+
+    key = FLOORDIV_HASH_KEY( in0_dtype, in1_dtype, out_dtype, image_2d);
 
     for( i = 0; i < kernel_map_size; i ++ )
     {
@@ -192,7 +217,6 @@ static vsi_status _query_kernel
             break;
         }
     }
-
     if( i < kernel_map_size )
     {
         snprintf( kernel->info.name, VX_MAX_KERNEL_NAME, "%s",  kernel_map[i].function_name );
@@ -201,14 +225,13 @@ static vsi_status _query_kernel
         kernel->info.initialize  = initializer;
         // Register code source
         vsi_nn_kernel_add_source( kernel, VSI_NN_GPU_SOURCE_FMT_CODE, 2,
-                "eltwise_ops_helper",
+               "eltwise_ops_helper",
                 kernel_map[i].source_name );
         // Register binary source
         vsi_nn_kernel_add_source( kernel, VSI_NN_GPU_SOURCE_FMT_EXECUTABLE, 1,
                 kernel_map[i].source_name );
         status = VSI_SUCCESS;
     }
-
     return status;
 } /* _query_kernel() */
 
@@ -225,10 +248,20 @@ static vsi_nn_kernel_node_t _setup
     )
 {
     vsi_status status = VSI_FAILURE;
-    vsi_nn_kernel_node_param_t node_params[_LOGICAL_OPS_PARAM_NUM];
-    vsi_bool image_2d = FALSE;
+    vsi_nn_kernel_node_param_t node_params[_FLOORDIV_PARAM_NUM];
     vsi_nn_kernel_node_t node = NULL;
-    uint32_t ops_type  = vsi_nn_kernel_param_get_int32( params, "ops_type" );
+    vsi_bool image_2d = FALSE;
+    float    outputScale  = outputs[0]->attr.dtype.scale == 0.0f ? 1.0f : outputs[0]->attr.dtype.scale;
+    float    outputTail   = (float)outputs[0]->attr.dtype.zero_point;
+    float    input0Scale  = inputs[0]->attr.dtype.scale == 0.0f ? 1.0f : inputs[0]->attr.dtype.scale;
+    float    input0Tail   = (float)inputs[0]->attr.dtype.zero_point;
+    float    input1Scale  = inputs[1]->attr.dtype.scale == 0.0f ? 1.0f : inputs[1]->attr.dtype.scale;
+    float    input1Tail   = (float)inputs[1]->attr.dtype.zero_point;
+    vsi_bool is_use_u8_kernel = FALSE;
+
+    outputScale = 1.0f / outputScale;
+    input0Tail   = -(input0Tail * input0Scale);
+    input1Tail   = -(input1Tail * input1Scale);
 
     if( !vsi_nn_kernel_gpu_check_shape( (int32_t*)outputs[0]->attr.size,
                 outputs[0]->attr.dim_num ) )
@@ -238,24 +271,44 @@ static vsi_nn_kernel_node_t _setup
 
     image_2d = (outputs[0]->attr.dim_num == 2);
 
-    status = _query_kernel( kernel, inputs, outputs, image_2d, (vsi_nn_logical_ops_type_t)ops_type);
-
+    status = _query_kernel( kernel, inputs, outputs, image_2d, &is_use_u8_kernel);
     if( VSI_SUCCESS == status)
     {
         node = vsi_nn_kernel_create_node( graph, kernel );
         if( node )
         {
-            /* Pass parameters to node. */
-            vsi_nn_kernel_node_pack_io( node_params, _LOGICAL_OPS_PARAM_NUM,
+            size_t node_params_num = FLOORDIV_PARAM_NUM;
+            /* Set inputs and outputs */
+            vsi_nn_kernel_node_pack_io( node_params, _FLOORDIV_PARAM_NUM,
                     inputs, input_num, outputs, output_num );
-            status  = vsi_nn_kernel_node_pass_param( node, node_params, _LOGICAL_OPS_PARAM_NUM );
+            if (is_use_u8_kernel)
+            {
+                node_params[SCALAR_INPUT0_SCALE]  = vsi_nn_kernel_scalar_create( graph, F32, &input0Scale );
+                node_params[SCALAR_INPUT0_TAIL]   = vsi_nn_kernel_scalar_create(graph, F32, &input0Tail );
+                node_params[SCALAR_INPUT1_SCALE]  = vsi_nn_kernel_scalar_create( graph, F32, &input1Scale );
+                node_params[SCALAR_INPUT1_TAIL]   = vsi_nn_kernel_scalar_create(graph, F32, &input1Tail );
+                node_params[SCALAR_OUTPUT_SCALE] = vsi_nn_kernel_scalar_create( graph, F32, &outputScale );
+                node_params[SCALAR_OUTPUT_TAIL]  = vsi_nn_kernel_scalar_create(graph, F32, &outputTail );
+                node_params_num = FLOORDIV_QUANT_PARAM_NUM;
+            }
+            /* Pass parameters to node. */
+            status  = vsi_nn_kernel_node_pass_param( node, node_params, node_params_num );
+            VSI_ASSERT( status == VSI_SUCCESS );
+            if (is_use_u8_kernel)
+            {
+                vsi_nn_kernel_scalar_release( &node_params[SCALAR_INPUT0_SCALE] );
+                vsi_nn_kernel_scalar_release( &node_params[SCALAR_INPUT0_TAIL] );
+                vsi_nn_kernel_scalar_release( &node_params[SCALAR_INPUT1_SCALE] );
+                vsi_nn_kernel_scalar_release( &node_params[SCALAR_INPUT1_TAIL] );
+                vsi_nn_kernel_scalar_release( &node_params[SCALAR_OUTPUT_SCALE] );
+                vsi_nn_kernel_scalar_release( &node_params[SCALAR_OUTPUT_TAIL] );
+            }
         }
     }
-
     return node;
 } /* _setup() */
 
 __END_DECLS
 
-REGISTER_BACKEND_CL( logical_ops, _setup )
+REGISTER_BACKEND_CL( floordiv, _setup )
 

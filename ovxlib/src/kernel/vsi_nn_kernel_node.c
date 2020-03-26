@@ -47,7 +47,7 @@ vsi_nn_kernel_tensor_t kernel_pad_node
     vsi_nn_kernel_tensor_t out_tensor = NULL;
     vsi_nn_kernel_node_t node = NULL;
     vx_nn_pad_params_t pad_param;
-    int32_t i;
+    uint32_t i;
 
     // Compute pad size
     for( i = pad_size - 1; i >= 0; i -- )

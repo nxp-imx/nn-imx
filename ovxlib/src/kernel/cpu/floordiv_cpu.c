@@ -42,23 +42,42 @@ __BEGIN_DECLS
 /*
  * Define kernel meta.
  */
-#define _INPUT_NUM          (1)
+#define _INPUT_NUM          (2)
 #define _OUTPUT_NUM         (1)
-#define _KERNEL_NAME        CVIVANTE_NAMESPACE("cpu.reduceall_internal")
+#define _KERNEL_NAME        CVIVANTE_NAMESPACE("cpu.floordiv")
 
 
 /*
  * Kernel params
  */
-static vx_param_description_t _reduceall_internal_kernel_param_def[] =
+static vx_param_description_t _floordiv_kernel_param_def[] =
 {
     {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
-    {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
 };
-#define _REDUCEALL_INTERNAL_PARAM_NUM  _cnt_of_array( _reduceall_internal_kernel_param_def )
+#define _FLOORDIV_PARAM_NUM  _cnt_of_array( _floordiv_kernel_param_def )
 
-#define SCALAR_INPUT_AXIS          (2)
+static int32_t _expand_offset
+    (
+    int32_t index,
+    int32_t * shape, size_t rank,
+    size_t * strides, int32_t * out_shape
+    )
+{
+    uint32_t i;
+    int32_t offset = 0;
+
+    for( i = 0; i < rank && index; i ++ )
+    {
+        if( shape[i] == out_shape[i] )
+        {
+            offset += strides[i] * ( index % out_shape[i] );
+        }
+        index /= out_shape[i];
+    }
+    return offset;
+}
 
 /*
  * Kernel function
@@ -77,22 +96,18 @@ DEF_KERNEL_EXECUTOR(_compute)
     float *f32_out_buffer[_OUTPUT_NUM] = {NULL};
     vsi_nn_kernel_tensor_attr_t *in_attr[_INPUT_NUM];
     vsi_nn_kernel_tensor_attr_t *out_attr[_OUTPUT_NUM];
+    size_t   in_stride_size[_INPUT_NUM][VSI_NN_MAX_DIM_NUM]   = {{1}};
     size_t   out_stride_size[_OUTPUT_NUM][VSI_NN_MAX_DIM_NUM] = {{1}};
     size_t   out_elements[_OUTPUT_NUM] = {0};
     size_t   out_bytes[_OUTPUT_NUM] = {0};
-    uint32_t i;
-    int32_t  axis        = 0;
-    int32_t  outerSize   = 1;
-    int32_t  axisSize    = 1;
-    int32_t  innerSize   = 1;
-    int32_t  inner       = 0;
-    int32_t  outer       = 0;
-    int32_t  all_result  = 0;
+    uint32_t  i;
 
+    /* prepare data */
     for(i = 0; i < _INPUT_NUM; i ++)
     {
         input[i] = (vsi_nn_kernel_tensor_t)param[i];
         in_attr[i] = vsi_nn_kernel_tensor_attr_create( input[i] );
+        vsi_nn_kernel_tensor_attr_get_stride( in_attr[i], in_stride_size[i] );
         f32_in_buffer[i] = (float*)vsi_nn_kernel_tensor_create_buffer( input[i], in_attr[i], TRUE );
         CHECK_PTR_FAIL_GOTO( f32_in_buffer[i], "Create input0 buffer fail.", final );
 
@@ -109,33 +124,20 @@ DEF_KERNEL_EXECUTOR(_compute)
         memset( f32_out_buffer[i], 0, out_bytes[i] );
     }
 
-    status = vsi_nn_kernel_scalar_read_int32((vsi_nn_kernel_scalar_t)param[SCALAR_INPUT_AXIS], &axis);
-    CHECK_STATUS_FAIL_GOTO(status, final );
-
-    for (i = 0; i < (uint32_t)axis; i++)
+    for (i = 0; i < out_elements[0]; i++)
     {
-        innerSize *= out_attr[0]->shape->data[i];
-    }
+        int32_t  in0_offset = 0;
+        int32_t  in1_offset = 0;
+        float    in0 = 0;
+        float    in1 = 0;
 
-    axisSize = out_attr[0]->shape->data[axis];
-
-    for (i = (uint32_t)axis + 1; i < out_attr[0]->shape->size; i++)
-    {
-        outerSize *= out_attr[0]->shape->data[i];
-    }
-
-    for ( outer = 0; outer < outerSize; ++outer)
-    {
-        for ( inner = 0; inner < innerSize; ++inner)
-        {
-            all_result = (!!(f32_in_buffer[0][outer * axisSize * innerSize + inner]));
-            for (i = 1; i < (uint32_t)axisSize; ++i)
-            {
-                int32_t value = (!!(f32_in_buffer[0][(outer * axisSize + i) * innerSize + inner]));
-                all_result = all_result && value;
-            }
-            f32_out_buffer[0][outer * innerSize + inner] = (float)all_result;
-        }
+        in0_offset = _expand_offset( i, in_attr[0]->shape->data, in_attr[0]->shape->size,
+                in_stride_size[0], out_attr[0]->shape->data );
+        in1_offset = _expand_offset( i, in_attr[1]->shape->data, in_attr[1]->shape->size,
+                in_stride_size[1], out_attr[0]->shape->data );
+        in0 = f32_in_buffer[0][in0_offset];
+        in1 = f32_in_buffer[1][in1_offset];
+        f32_out_buffer[0][i] = (float)floor(in0 / in1);
     }
 
     /* save data */
@@ -154,11 +156,13 @@ final:
             free(f32_in_buffer[i]);
             f32_in_buffer[i] = NULL;
         }
+
         if (in_attr[i])
         {
             vsi_nn_kernel_tensor_attr_release( &in_attr[i] );
         }
     }
+
     for(i = 0; i < _OUTPUT_NUM; i++)
     {
         if (f32_out_buffer[i])
@@ -166,6 +170,7 @@ final:
             free(f32_out_buffer[i]);
             f32_out_buffer[i] = NULL;
         }
+
         if (out_attr[i])
         {
             vsi_nn_kernel_tensor_attr_release( &out_attr[i] );
@@ -189,8 +194,8 @@ static vsi_status _query_kernel
     vsi_status status = VSI_FAILURE;
     snprintf( kernel->info.name, VX_MAX_KERNEL_NAME, "%s",  _KERNEL_NAME );
     kernel->info.function    = _compute;
-    kernel->info.parameters  = _reduceall_internal_kernel_param_def;
-    kernel->info.numParams   = _cnt_of_array( _reduceall_internal_kernel_param_def );
+    kernel->info.parameters  = _floordiv_kernel_param_def;
+    kernel->info.numParams   = _cnt_of_array( _floordiv_kernel_param_def );
     status = VSI_SUCCESS;
     return status;
 } /* _query_kernel() */
@@ -208,26 +213,21 @@ static vsi_nn_kernel_node_t _setup
     )
 {
     vsi_status status = VSI_FAILURE;
-    vsi_nn_kernel_node_param_t node_params[_REDUCEALL_INTERNAL_PARAM_NUM];
+    vsi_nn_kernel_node_param_t node_params[_FLOORDIV_PARAM_NUM];
     vsi_nn_kernel_node_t node = NULL;
-    int32_t axis = 0;
 
-    axis   = vsi_nn_kernel_param_get_int32(params, "axis");
-    status = _query_kernel( kernel, inputs, outputs );
+    status = _query_kernel( kernel, inputs, outputs);
     if( VSI_SUCCESS == status)
     {
         node = vsi_nn_kernel_create_node( graph, kernel );
         if( node )
         {
             /* Set inputs and outputs */
-            vsi_nn_kernel_node_pack_io( node_params, _REDUCEALL_INTERNAL_PARAM_NUM,
+            vsi_nn_kernel_node_pack_io( node_params, _FLOORDIV_PARAM_NUM,
                     inputs, input_num, outputs, output_num );
-            node_params[SCALAR_INPUT_AXIS] = vsi_nn_kernel_scalar_create(
-                    graph, I32, &axis );
             /* Pass parameters to node. */
-            status  = vsi_nn_kernel_node_pass_param( node, node_params, _REDUCEALL_INTERNAL_PARAM_NUM );
+            status  = vsi_nn_kernel_node_pass_param( node, node_params, _FLOORDIV_PARAM_NUM );
             VSI_ASSERT( status == VSI_SUCCESS );
-            vsi_nn_kernel_scalar_release( &node_params[SCALAR_INPUT_AXIS] );
         }
     }
     return node;
@@ -235,5 +235,5 @@ static vsi_nn_kernel_node_t _setup
 
 __END_DECLS
 
-REGISTER_BACKEND_CPU( reduceall_internal, _setup )
+REGISTER_BACKEND_CPU( floordiv, _setup )
 

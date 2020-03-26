@@ -198,9 +198,9 @@ DEF_KERNEL_EXECUTOR(_pre_process_yuv420_exec)
 
                         // right
                         subIdx = (((sx + 1) >> 1) + (sy >> 1) * subWidth + dz * subWidth * subHeight);
-                        C = buffer[0][source_index + 1] - 16;
-                        D = buffer[1][subIdx] - 128;
-                        E = buffer[2][subIdx] - 128;
+                        C = (int)buffer[0][source_index + 1] - 16;
+                        D = (int)buffer[1][subIdx] - 128;
+                        E = (int)buffer[2][subIdx] - 128;
 
                         rline1[1]            = vsi_clamp((298 * C + 409 * E + 128) >> 8, min, max);
                         gline1[1]            = vsi_clamp((298 * C - 100* D - 208 * E + 128) >> 8, min, max);
@@ -208,9 +208,9 @@ DEF_KERNEL_EXECUTOR(_pre_process_yuv420_exec)
 
                         // below
                         subIdx = (((sx + 0) >> 1) + ((sy + 1) >> 1) * subWidth + dz * subWidth * subHeight);
-                        C = buffer[0][source_index + src_width] - 16;
-                        D = buffer[1][subIdx] - 128;
-                        E = buffer[2][subIdx] - 128;
+                        C = (int)buffer[0][source_index + src_width] - 16;
+                        D = (int)buffer[1][subIdx] - 128;
+                        E = (int)buffer[2][subIdx] - 128;
 
                         rline2[0]            = vsi_clamp((298 * C + 409 * E + 128) >> 8, min, max);
                         gline2[0]            = vsi_clamp((298 * C - 100* D - 208 * E + 128) >> 8, min, max);
@@ -219,9 +219,9 @@ DEF_KERNEL_EXECUTOR(_pre_process_yuv420_exec)
                         // below right
                         //C = ySrc[source_index + src_width + 1] - 16;
                         subIdx = (((sx + 1) >> 1) + ((sy + 1) >> 1) * subWidth + dz * subWidth * subHeight);
-                        C = buffer[0][source_index + src_width + 1] - 16;
-                        D = buffer[1][subIdx] - 128;
-                        E = buffer[2][subIdx] - 128;
+                        C = (int)buffer[0][source_index + src_width + 1] - 16;
+                        D = (int)buffer[1][subIdx] - 128;
+                        E = (int)buffer[2][subIdx] - 128;
 
                         rline2[1]            = vsi_clamp((298 * C + 409 * E + 128) >> 8, min, max);
                         gline2[1]            = vsi_clamp((298 * C - 100* D - 208 * E + 128) >> 8, min, max);
@@ -255,9 +255,9 @@ DEF_KERNEL_EXECUTOR(_pre_process_yuv420_exec)
                     else
                     {
                         // do conversion
-                        C = buffer[0][source_index] - 16;
-                        D = buffer[1][subIdx] - 128;
-                        E = buffer[2][subIdx] - 128;
+                        C = (int)buffer[0][source_index] - 16;
+                        D = (int)buffer[1][subIdx] - 128;
+                        E = (int)buffer[2][subIdx] - 128;
 
                         R            = vsi_clamp((298 * C + 409 * E + 128) >> 8, min, max);
                         G            = vsi_clamp((298 * C - 100* D - 208 * E + 128) >> 8, min, max);

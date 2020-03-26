@@ -418,7 +418,7 @@ static vsi_status _query_kernel
     size_t param_def_size               = _cnt_of_array( _select_kernel_param_def );
     vx_kernel_initialize_f  initializer = _select_initializer;
     uint32_t key;
-    int i;
+    uint32_t i;
 
     cond_dtype  = vsi_nn_kernel_map_dtype( inputs[0]->attr.dtype.vx_type );
     in0_dtype   = vsi_nn_kernel_map_dtype( inputs[1]->attr.dtype.vx_type );

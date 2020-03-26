@@ -925,7 +925,7 @@ vsi_nn_kernel_node_t vsi_nn_kernel_selector
         uint32_t i;
         vsi_nn_kernel_type_e type;
         vsi_nn_kernel_setup_func_t kernel_func = NULL;;
-        for( i = 0; i < selector.allow_kernel_num; i ++ )
+        for( i = 0; i < (uint32_t)selector.allow_kernel_num; i ++ )
         {
             type = selector.pirority[i].kernel_type;
             // Skip evis if not support

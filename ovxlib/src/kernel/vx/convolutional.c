@@ -146,7 +146,7 @@ static vx_tensor _expand_tensor_dim
     {
         expand_dim = (int32_t)rank + expand_dim;
     }
-    if( expand_dim < 0 || expand_dim > rank )
+    if( expand_dim < 0 || (uint32_t)expand_dim > rank )
     {
         VSILOGE("Run dim to expand %d, rank is %lu", expand_dim, rank);
         return NULL;

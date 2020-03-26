@@ -101,9 +101,9 @@ DEF_KERNEL_EXECUTOR(_gather_exec)
             indices_num *= attr[1]->shape->data[i];
         }
 
-        for(i = 0; i < block_num; i++)
+        for(i = 0; i < (uint32_t)block_num; i++)
         {
-            for(j = 0; j < indices_num; j++)
+            for(j = 0; j < (uint32_t)indices_num; j++)
             {
                 uint32_t indice = buffer_idx[j];
                 uint32_t in_index = (i * axis_num + indice) * block_size;

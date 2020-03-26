@@ -111,14 +111,14 @@ DEF_KERNEL_EXECUTOR(_compute)
     status = vsi_nn_kernel_scalar_read_int32((vsi_nn_kernel_scalar_t)param[SCALAR_INPUT_AXIS], &axis);
     CHECK_STATUS_FAIL_GOTO(status, final );
 
-    for (i = 0; i < axis; i++)
+    for (i = 0; i < (uint32_t)axis; i++)
     {
         innerSize *= out_attr[0]->shape->data[i];
     }
 
     axisSize = out_attr[0]->shape->data[axis];
 
-    for (i = axis + 1; i < (int32_t)out_attr[0]->shape->size; i++)
+    for (i = (uint32_t)axis + 1; i < out_attr[0]->shape->size; i++)
     {
         outerSize *= out_attr[0]->shape->data[i];
     }
@@ -128,7 +128,7 @@ DEF_KERNEL_EXECUTOR(_compute)
         for ( inner = 0; inner < innerSize; ++inner)
         {
             prodValue = f32_in_buffer[0][outer * axisSize * innerSize + inner];
-            for (i = 1; i < axisSize; ++i)
+            for (i = 1; i < (uint32_t)axisSize; ++i)
             {
                 float value = f32_in_buffer[0][(outer * axisSize + i) * innerSize + inner];
                 prodValue = prodValue * value;
