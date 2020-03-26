@@ -236,18 +236,14 @@ void ModelShell::Execute() {
         ++idx;
     }
 
-    auto event = std::make_shared<nnrt::Event>();
-
     // Disable nnrt do fp32tofp16, for armnn support fp16-turbo-mode
     m_NativeModel->first->relax(false);
 
-    auto errCode = m_ExecutionPtr->startCompute(event);
+    auto errCode = m_ExecutionPtr->compute();
 
     if (0 != errCode){
         assert(false);
-        VSILOGE("Start Compute return error =%d", errCode);
-    }else {
-        event->wait();
+        BOOST_LOG_TRIVIAL(fatal) << "Execution Model failed";
     }
 }
 }
