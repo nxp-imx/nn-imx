@@ -61,6 +61,7 @@
 #include "workloads/NpuConstantWorkload.hpp"
 #include "workloads/NpuGreaterWorkload.hpp"
 #include "workloads/NpuEqualWorkload.hpp"
+#include "workloads/NpuGatherWorkload.hpp"
 
 #include <boost/log/trivial.hpp>
 
@@ -92,23 +93,6 @@ bool NpuWorkloadFactory::IsLayerSupported(const Layer& layer,
 
 std::unique_ptr<ITensorHandle> NpuWorkloadFactory::CreateTensorHandle(const TensorInfo& tensorInfo) const {
     return CreateTensorHandle(tensorInfo, DataLayout::NHWC);
-    // TensorShape shape = tensorInfo.GetShape();
-    // auto npuTensorHandler = std::make_unique<NpuTensorHandler>(tensorInfo);
-    // uint32_t dims[4] = {0};
-    // for (size_t i = 0; i < shape.GetNumDimensions(); i++) {
-    //     dims[i] = shape[i];
-    // }
-    // NNOperandType operandType;
-    // operandType.type = NpuModelContainer_Helper::TensorDataTypeMap(tensorInfo.GetDataType());
-    // operandType.scale = tensorInfo.GetQuantizationScale();
-    // operandType.zeroPoint = tensorInfo.GetQuantizationOffset();
-    // operandType.dimensionCount = shape.GetNumDimensions();
-    // operandType.dimensions = dims;
-
-    // // int index = modelContainer().AddOperand(&operandType);
-    // npuTensorHandler->SetOperandId(index);
-
-    // return std::move(npuTensorHandler);
 }
 
 std::unique_ptr<ITensorHandle> NpuWorkloadFactory::CreateTensorHandle(const TensorInfo& tensorInfo,
@@ -415,7 +399,7 @@ std::unique_ptr<IWorkload> NpuWorkloadFactory::CreateRsqrt(const RsqrtQueueDescr
 
 std::unique_ptr<IWorkload> NpuWorkloadFactory::CreateGather(const armnn::GatherQueueDescriptor& descriptor,
                                                             const armnn::WorkloadInfo& info) const {
-    return MakeWorkload<NullWorkload, NullWorkload, NullWorkload>(descriptor, info);
+    return MakeWorkload<NpuGatherWorkloadFp16, NpuGatherWorkloadFp32, NpuGatherWorkloadU8>(descriptor, info);
 }
 
 std::unique_ptr<IWorkload> NpuWorkloadFactory::CreatePreCompiled(const PreCompiledQueueDescriptor& descriptor,

@@ -167,6 +167,7 @@ class Armnn_Interpreter : public nnrt::Interpreter {
     REGISTER_OP(GREATER);
     REGISTER_OP(EQUAL);
     REGISTER_OP(SPLIT);
+    REGISTER_OP(GATHER);
 #undef REGISTER_OP
    protected:
     // TODO: Add a parent interpreter class and move this function to it.

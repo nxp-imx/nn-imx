@@ -122,17 +122,18 @@ using NpuBaseWorkload = vnn_helper::If_t<sizeof...(DataTypes) == 2,
                                          TypedWorkload<QueueDescriptor, DataTypes...>>;
 
 template <typename QueueDescriptor, armnn::DataType... DataTypes>
-class TNpuWorkload : public NpuBaseWorkload<QueueDescriptor, DataTypes...> {
-   public:
-    static_assert((sizeof...(DataTypes) == 1) ||
-                      (std::is_same<NpuBaseWorkload<QueueDescriptor, DataTypes...>,
-                                    MultiTypedWorkload<QueueDescriptor,
-                                                       vnn_helper::At_<0, DataTypes...>::value,
-                                                       vnn_helper::At_<1, DataTypes...>::value>>::value),
-                  "Base workload type not right");
+struct Base{
+    using type = NpuBaseWorkload<QueueDescriptor, DataTypes...>;
+};
 
+template <typename QueueDescriptor, armnn::DataType... DataTypes>
+using Base_t = typename Base<QueueDescriptor, DataTypes...>::type;
+
+template <typename QueueDescriptor, armnn::DataType... DataTypes>
+class TNpuWorkload : public Base_t<QueueDescriptor, DataTypes...>{
+   public:
     explicit TNpuWorkload(const QueueDescriptor& descriptor, const WorkloadInfo& info)
-        : NpuBaseWorkload<QueueDescriptor, DataTypes...>(descriptor, info) {
+        : Base_t<QueueDescriptor, DataTypes...>(descriptor, info) {
         for (size_t i = 0; i < descriptor.m_Inputs.size(); i++) {
             m_InputsHandler.push_back(dynamic_cast<NpuTensorHandler*>(descriptor.m_Inputs[i]));
         }
@@ -147,7 +148,7 @@ class TNpuWorkload : public NpuBaseWorkload<QueueDescriptor, DataTypes...> {
         m_Executed = false;
     }
 
-    virtual void Execute() const override {
+    void Execute() const override {
 
         // Our workload don't need executed repeatly, we just need construct final model
         // which deployed to our backend. But, if armnn also need support dynamic graph

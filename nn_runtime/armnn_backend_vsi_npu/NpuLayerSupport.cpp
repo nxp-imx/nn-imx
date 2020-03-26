@@ -833,7 +833,6 @@ bool NpuLayerSupport::IsGatherSupported(const armnn::TensorInfo& input0,
                                         armnn::Optional<std::string&> reasonIfUnsupported) const {
     ignore_unused(input1);
     ignore_unused(output);
-    return false;
     return IsSupportedForDataTypeRef(
         reasonIfUnsupported, input0.GetDataType(), &TrueFunc<>, &TrueFunc<>);
 }

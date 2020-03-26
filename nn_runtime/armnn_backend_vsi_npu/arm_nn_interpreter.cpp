@@ -125,6 +125,7 @@ Armnn_Interpreter::Armnn_Interpreter() {
     REGISTER_OP(GREATER);
     REGISTER_OP(EQUAL);
     REGISTER_OP(SPLIT);
+    REGISTER_OP(GATHER);
 
 /*customer Op*/
 // REGISTER_OP(VSI_RESIZE_NEAREST);
@@ -963,6 +964,19 @@ OperationPtr Armnn_Interpreter::map_SPLIT(Model* model,
     op->slices.resize(op->split_number);
     memcpy(op->slices.data(), slices, sizeof(int32_t) * op->split_number);
     truncateOperationIOs(model, operation, 1, operation->outputs().size());
+    return op;
+}
+
+OperationPtr Armnn_Interpreter::map_GATHER(Model* model,
+                                          OperationPtr operation,
+                                          uint32_t operation_index) {
+    NNAPI_CHECK_IO_NUM(operation, 2, 1);
+    // ARMNN no axis
+    std::shared_ptr<GatherOperation> op = std::make_shared<GatherOperation>();
+    NNAPI_CHECK_PTR(op);
+    std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
+    op->axis = 0;
+    truncateOperationIOs(model, operation, 2, 1);
     return op;
 }
 
