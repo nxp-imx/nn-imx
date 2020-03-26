@@ -38,6 +38,7 @@
 #include "ops/vsi_nn_op_grucell_ovxlib.h"
 #include "vsi_nn_internal_node.h"
 #include "vsi_nn_rnn.h"
+#include "utils/vsi_nn_tensor_op.h"
 
 static vsi_nn_internal_tensor_t* create_multiply
     (
@@ -172,6 +173,8 @@ static vsi_bool op_setup
     vsi_nn_tensor_attr_t attr;
     vsi_bool is_input_fc_on_tp = FALSE;
     vsi_bool is_hstate_fc_on_tp = FALSE;
+    vsi_bool is_input_cand_fc_op_tp = FALSE;
+    vsi_bool is_hstate_cand_fc_op_tp = FALSE;
     vsi_nn_internal_tensor_t* input_tensor = NULL;
     vsi_nn_internal_tensor_t* output_tensor = NULL;
     vsi_nn_internal_tensor_t* tmp_tensor = NULL;
@@ -197,7 +200,7 @@ static vsi_bool op_setup
 
     memset( &p->local, 0x00, sizeof( p->local ) );
     memset( &attr, 0x00, sizeof( attr ) );
-    p->local.multi_batch = (inputs[GRUCELL_INPUT_INPUT]->attr.size[1]);
+    p->local.multi_batch = (inputs[GRUCELL_INPUT_INPUT]->attr.size[1] > 1);
     if (p->local.gate_activation == VSI_NN_ACT_NONE)
     {
         p->local.gate_activation = VSI_NN_ACT_SIGMOID;
@@ -347,18 +350,115 @@ static vsi_bool op_setup
                          &p->internal_dtype[GRUCELL_QUANTIZE_PARAM_H2R],
                          use_virtual_tensor);
 
-    input_cand_fc_output = vsi_nn_rnn_create_tp_fc(self,
-                               inputs[GRUCELL_INPUT_INPUT],
-                               inputs[GRUCELL_INPUT_WEIGHT_I2C],
-                               inputs[GRUCELL_INPUT_BIAS_C],
-                               &p->internal_dtype[GRUCELL_QUANTIZE_PARAM_I2C],
-                               use_virtual_tensor);
-    rh_cand_fc_output = vsi_nn_rnn_create_tp_fc(self,
-                            rh_mul_outputs->t,
-                            inputs[GRUCELL_INPUT_WEIGHT_R2C],
-                            NULL,
-                            &p->internal_dtype[GRUCELL_QUANTIZE_PARAM_R2C],
-                            use_virtual_tensor);
+    if( inputs[GRUCELL_INPUT_INPUT]->attr.dtype.qnt_type
+        != inputs[GRUCELL_INPUT_WEIGHT_I2C]->attr.dtype.qnt_type)
+    {
+        /* input and input weights have different qtype, only TP can do this operation */
+        is_input_cand_fc_op_tp = TRUE;
+    }
+    else if( inputs[GRUCELL_INPUT_INPUT]->attr.size[0] % 64 != 0 )
+    {
+        /* NN performs bad if input's shape is not aligned to 64-byte */
+        is_input_cand_fc_op_tp = TRUE;
+    }
+
+    if( rh_mul_outputs->t->attr.dtype.qnt_type
+        != inputs[GRUCELL_INPUT_WEIGHT_R2C]->attr.dtype.qnt_type)
+    {
+        /* recurrent and recurrent weights have different qtype, only TP can do this operation */
+        is_hstate_cand_fc_op_tp = TRUE;
+    }
+    else if( rh_mul_outputs->t->attr.size[0] % 64 != 0 )
+    {
+        /* NN performs bad if inputs' shape is not aligned to 64-byte */
+        is_hstate_cand_fc_op_tp = TRUE;
+    }
+    /* if both input fc and recurrent fc could be executed on NN, offloads one to TP*/
+    if( !is_input_cand_fc_op_tp && !is_hstate_cand_fc_op_tp )
+    {
+        is_input_cand_fc_op_tp = TRUE;
+    }
+    /* TODO: now, all fc on tp because can't fetch the HW feature */
+    is_input_cand_fc_op_tp = TRUE;
+    is_hstate_cand_fc_op_tp = TRUE;
+
+    if ( is_input_cand_fc_op_tp )
+    {
+        input_cand_fc_output = vsi_nn_rnn_create_tp_fc(self,
+                                   inputs[GRUCELL_INPUT_INPUT],
+                                   inputs[GRUCELL_INPUT_WEIGHT_I2C],
+                                   inputs[GRUCELL_INPUT_BIAS_C],
+                                   &p->internal_dtype[GRUCELL_QUANTIZE_PARAM_I2C],
+                                   use_virtual_tensor);
+    }
+    else
+    {
+        vsi_nn_internal_tensor_t* tmp = NULL;
+        /* reshape and transpose input */
+        vsi_nn_rnn_find_best_kernel_size(p->local.multi_batch,
+            inputs[GRUCELL_INPUT_INPUT]->attr.size[0], &kernel_h, &kernel_w);
+        input_tensor = vsi_nn_rnn_process_input_for_nn_fc(self, inputs[GRUCELL_INPUT_INPUT],
+                                                kernel_h, kernel_w, use_virtual_tensor);
+        tmp = vsi_nn_rnn_create_nn_fc(self,
+                  input_tensor->t,
+                  inputs[GRUCELL_INPUT_WEIGHT_I2C],
+                  inputs[GRUCELL_INPUT_BIAS_C],
+                  kernel_h, kernel_w,
+                  &p->internal_dtype[GRUCELL_QUANTIZE_PARAM_I2C],
+                  use_virtual_tensor);
+        /* transpose and reshape output */
+        input_cand_fc_output = vsi_nn_rnn_process_output_for_nn_fc(self,
+            tmp->t, kernel_h, kernel_w, use_virtual_tensor);
+    }
+    if ( is_hstate_cand_fc_op_tp )
+    {
+        /* if the tp support in:fp16,weight:u8,bias:fp32 batch>1, remove this. */
+        if ((rh_mul_outputs->t->attr.dtype.vx_type) != (inputs[GRUCELL_INPUT_WEIGHT_R2C]->attr.dtype.vx_type)
+            && (p->local.multi_batch))
+        {
+            vsi_nn_tensor_t* wei_r2c_tensor = NULL;
+
+            memcpy(&attr, &(inputs[GRUCELL_INPUT_WEIGHT_R2C]->attr), sizeof(attr));
+            attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
+            attr.dtype.vx_type = VSI_NN_TYPE_FLOAT16;
+
+            wei_r2c_tensor = vsi_nn_ConvertTensorDtype(self->graph, inputs[GRUCELL_INPUT_WEIGHT_R2C], &(attr.dtype));
+            rh_cand_fc_output = vsi_nn_rnn_create_tp_fc(self,
+                                    rh_mul_outputs->t,
+                                    wei_r2c_tensor,
+                                    NULL,
+                                    &p->internal_dtype[GRUCELL_QUANTIZE_PARAM_R2C],
+                                    use_virtual_tensor);
+        }
+        else
+        {
+            rh_cand_fc_output = vsi_nn_rnn_create_tp_fc(self,
+                                    rh_mul_outputs->t,
+                                    inputs[GRUCELL_INPUT_WEIGHT_R2C],
+                                    NULL,
+                                    &p->internal_dtype[GRUCELL_QUANTIZE_PARAM_R2C],
+                                    use_virtual_tensor);
+        }
+    }
+    else
+    {
+        vsi_nn_internal_tensor_t* tmp = NULL;
+        /* reshape and transpose input */
+        vsi_nn_rnn_find_best_kernel_size(p->local.multi_batch,
+            rh_mul_outputs->t->attr.size[0], &kernel_h, &kernel_w);
+        hstate_input_tensor = vsi_nn_rnn_process_input_for_nn_fc(self, rh_mul_outputs->t,
+                                                kernel_h, kernel_w, use_virtual_tensor);
+        tmp = vsi_nn_rnn_create_nn_fc(self,
+                  hstate_input_tensor->t,
+                  inputs[GRUCELL_INPUT_WEIGHT_R2C],
+                  NULL,
+                  kernel_h, kernel_w,
+                  &p->internal_dtype[GRUCELL_QUANTIZE_PARAM_R2C],
+                  use_virtual_tensor);
+        /* transpose and reshape output */
+        rh_cand_fc_output = vsi_nn_rnn_process_output_for_nn_fc(self,
+            tmp->t, kernel_h, kernel_w, use_virtual_tensor);
+    }
 
     /* Candidate input FC add r*h FC */
     cand_fc_output = vsi_nn_rnn_create_tensor_add(self,
