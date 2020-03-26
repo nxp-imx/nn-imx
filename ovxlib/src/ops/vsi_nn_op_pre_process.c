@@ -36,6 +36,7 @@
 #include "vsi_nn_tensor_util.h"
 #include "client/vsi_nn_vxkernel.h"
 #include "vsi_nn_internal_node.h"
+#include "utils/vsi_nn_util.h"
 
 static vsi_status op_compute
     (
@@ -81,6 +82,7 @@ static vsi_bool op_setup
     /* TODO: Add code to comput outputs' shape. */
     vsi_nn_internal_node_t* curr = NULL;
     vsi_nn_pre_process_param * p;
+    vsi_bool ret = TRUE;
 
     p = (vsi_nn_pre_process_param *)&(self->nn_param.pre_process);
 
@@ -217,13 +219,93 @@ static vsi_bool op_setup
 
         vsi_nn_setup_internal_node_op(self, curr);
     }
+    else if (p->type == VSI_NN_SOURCE_FORMAT_IMAGE_RGB888_PLANAR)
+    {
+        uint32_t i = 0;
+        uint32_t axis = 2;
+        uint32_t group = 3;
+        vsi_nn_tensor_t ** input_tensor_group = &p->local->local_tensor[0];
+        vsi_nn_internal_tensor_t * output_tensor_group[3] = {NULL};
+        vsi_nn_internal_tensor_t* tmp_outputs[3] = { NULL };
+        vsi_nn_tensor_attr_t attr;
+        float mean[3] = {0};
+
+        memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
+
+        ret = vsi_nn_CreateTensorGroup(self->graph, inputs[0], axis,
+        input_tensor_group, group);
+        if (ret == FALSE)
+        {
+            goto final;
+        }
+
+        memcpy(&attr, &outputs[0]->attr, sizeof(vsi_nn_tensor_attr_t));
+        memcpy(&attr.size, p->output_attr.size, p->output_attr.dim_num * sizeof(uint32_t));
+        attr.size[axis] = 1;
+        attr.vtl = TRUE;
+        attr.is_const = FALSE;
+        output_tensor_group[0] = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
+        output_tensor_group[1] = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
+        output_tensor_group[2] = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
+
+        if (p->reverse_channel)
+        {
+            int32_t order[3] = {2, 1, 0};
+
+            mean[0] = p->norm.mean[2];
+            mean[1] = p->norm.mean[1];
+            mean[2] = p->norm.mean[0];
+
+            vsi_nn_reorder_tensor( (vsi_nn_tensor_t **)output_tensor_group, order,
+                    3, (vsi_nn_tensor_t **)tmp_outputs );
+        }
+        else
+        {
+            mean[0] = p->norm.mean[0];
+            mean[1] = p->norm.mean[1];
+            mean[2] = p->norm.mean[2];
+
+            memmove( tmp_outputs, output_tensor_group, sizeof(vsi_nn_tensor_t*) * 3 );
+        }
+
+        for (i = 0; i < 3; i++)
+        {
+            curr = vsi_nn_new_internal_node( self, VSI_NN_OP_PRE_PROCESS_GRAY, 0, 0 );
+
+            curr->node->nn_param.pre_process_gray.mean = mean[i];
+            curr->node->nn_param.pre_process_gray.scale = p->norm.scale;
+            curr->node->nn_param.pre_process_gray.rect.left = p->rect.left;
+            curr->node->nn_param.pre_process_gray.rect.top = p->rect.top;
+            curr->node->nn_param.pre_process_gray.rect.width = p->rect.width;
+            curr->node->nn_param.pre_process_gray.rect.height = p->rect.height;
+            curr->node->nn_param.pre_process_gray.output_attr.size = attr.size;
+            curr->node->nn_param.pre_process_gray.output_attr.dim_num = p->output_attr.dim_num;
+
+            curr->inputs[0] = input_tensor_group[i];
+            curr->outputs[0] = output_tensor_group[i]->t;
+
+            vsi_nn_setup_internal_node_op(self, curr);
+        }
+
+        curr = vsi_nn_new_internal_node( self, VSI_NN_OP_CONCAT, 0, 0 );
+
+        curr->node->nn_param.concat.axis = axis;
+        curr->inputs[0] = tmp_outputs[0]->t;
+        curr->inputs[1] = tmp_outputs[1]->t;
+        curr->inputs[2] = tmp_outputs[2]->t;
+        curr->outputs[0] = outputs[0];
+
+        vsi_nn_setup_internal_node_op(self, curr);
+    }
     else
     {
         VSILOGE( "Not support this type!(PRE_PROCESS)\n");
         return FALSE;
     }
 
-    return TRUE;
+final:
+
+    return ret;
 } /* op_setup() */
 
 static vsi_status op_deinit
@@ -235,8 +317,43 @@ static vsi_status op_deinit
 
     vsi_nn_deinit_internal_node_wksp( self );
 
+    if (self->nn_param.pre_process.local != NULL)
+    {
+        uint32_t i = 0;
+
+        for ( i = 0; i < _VSI_NN_PRE_PROCESS_LOCAL_TENSOR_NUM; i++)
+        {
+            if (self->nn_param.pre_process.local->local_tensor[i] != NULL)
+            {
+                vsi_nn_ReleaseTensor(&(self->nn_param.pre_process.local->local_tensor[i]));
+            }
+        }
+
+        free(self->nn_param.pre_process.local);
+        self->nn_param.pre_process.local = NULL;
+    }
+
     return status;
 } /* op_deinit() */
+
+static vsi_status op_init
+    (
+    vsi_nn_node_t * self
+    )
+{
+    vsi_status status = VSI_SUCCESS;
+
+    self->nn_param.pre_process.local   =
+    (vsi_nn_pre_process_lcl_data *)malloc(sizeof(vsi_nn_pre_process_lcl_data));
+
+    if (NULL == self->nn_param.pre_process.local)
+    {
+        return  VX_ERROR_NO_MEMORY;
+    }
+    memset(self->nn_param.pre_process.local, 0, sizeof(vsi_nn_pre_process_lcl_data));
+
+    return status;
+} /* op_init() */
 
 #ifdef __cplusplus
 extern "C" {
@@ -245,7 +362,7 @@ extern "C" {
 DEF_OP_REG
     (
     /* op_name    */ PRE_PROCESS,
-    /* init       */ NULL,
+    /* init       */ op_init,
     /* compute    */ op_compute,
     /* deinit     */ op_deinit,
     /* check      */ op_check,
