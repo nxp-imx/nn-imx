@@ -25,7 +25,6 @@
 #ifndef __ANEURALNETWORKS_CONV_2D_HPP__
 #define __ANEURALNETWORKS_CONV_2D_HPP__
 
-#include "api_requirement/spec_macros.hpp"
 
 #define OP_SPEC_NAME Convolution2D
 OP_SPEC_BEGIN()

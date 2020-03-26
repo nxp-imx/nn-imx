@@ -26,10 +26,10 @@
 
 #include <vector>
 #include <set>
-#include "model.hpp"
-#include "op/public.hpp"
-#include "interpreter.hpp"
-#include "api_requirement/nnapi_requirement.hpp"
+#include "nnrt/model.hpp"
+#include "nnrt/op/public.hpp"
+#include "nnrt/interpreter.hpp"
+#include "nnrt/api_requirement/nnapi_requirement.hpp"
 
 namespace nnrt
 {

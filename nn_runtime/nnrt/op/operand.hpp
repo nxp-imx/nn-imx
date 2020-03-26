@@ -28,11 +28,9 @@
 #include <memory>
 #include <vector>
 
-#include "logging.hpp"
-
-#include "types.hpp"
-#include "memory_pool.hpp"
-#include "permute_vector.hpp"
+#include "nnrt/types.hpp"
+#include "nnrt/memory_pool.hpp"
+#include "nnrt/permute_vector.hpp"
 
 namespace nnrt{
 namespace op {
@@ -101,7 +99,7 @@ class Operand : public BaseOperand {
         if (auto mem_ref = weak_mem_ref.lock()) {
             return (mem_ref->len_ > 0 && !is_graph_input_output_);
         } else {
-            NNRT_LOGW_PRINT("Operand Memory Isn't prepared yet: usually its input/output of model");
+            // NNRT_LOGW_PRINT("Operand Memory Isn't prepared yet: usually its input/output of model");
             return false;
         }
     }

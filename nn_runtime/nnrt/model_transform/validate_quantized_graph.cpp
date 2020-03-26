@@ -1,6 +1,6 @@
 #include <vector>
-#include "error.hpp"
-#include "model_transform/transformations.hpp"
+#include "nnrt/error.hpp"
+#include "nnrt/model_transform/transformations.hpp"
 
 using namespace nnrt::op;
 

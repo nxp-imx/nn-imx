@@ -27,7 +27,7 @@
 #include <set>
 #include <vector>
 
-#include "op/operation.hpp"
+#include "operation.hpp"
 
 namespace nnrt {
 namespace op {

@@ -1,9 +1,9 @@
 #include <set>
 #include <vector>
-#include "error.hpp"
-#include "model.hpp"
-#include "model_transform/transformations.hpp"
-#include "op/public.hpp"
+#include "nnrt/error.hpp"
+#include "nnrt/model.hpp"
+#include "nnrt/model_transform/transformations.hpp"
+#include "nnrt/op/public.hpp"
 using namespace nnrt::op;
 
 namespace nnrt {

@@ -23,10 +23,10 @@
 *****************************************************************************/
 #include <vector>
 
-#include "utils.hpp"
-#include "logging.hpp"
+#include "nnrt/utils.hpp"
+#include "nnrt/logging.hpp"
 
-#include "op/operand.hpp"
+#include "nnrt/op/operand.hpp"
 
 namespace nnrt {
 namespace op {

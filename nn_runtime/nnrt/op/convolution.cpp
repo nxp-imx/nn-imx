@@ -21,10 +21,9 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#include "op/convolution.hpp"
-
-#include "error.hpp"
-#include "model.hpp"
+#include "nnrt/op/convolution.hpp"
+#include "nnrt/error.hpp"
+#include "nnrt/model.hpp"
 
 namespace nnrt {
 namespace op {

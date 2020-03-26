@@ -25,8 +25,6 @@
 #ifndef __ANEURALNETWORKS_SPACE_TO_DEPTH_HPP__
 #define __ANEURALNETWORKS_SPACE_TO_DEPTH_HPP__
 
-#include "api_requirement/spec_macros.hpp"
-
 #define OP_SPEC_NAME Space2DepthOperation
 OP_SPEC_BEGIN()
 #define ARG_NAMES           \

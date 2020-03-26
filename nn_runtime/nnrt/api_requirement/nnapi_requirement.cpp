@@ -51,6 +51,8 @@ void NNapiRequirementRegister(const std::string& opName, const IArgList* arglist
 }
 
 #define OP_SPEC_REGISTER nnapi::NNapiRequirement
+#include "spec_macros.hpp"
+
 #include "nnapi_spec/ANEURALNETWORKS_CONV_2D.hpp"
 #include "nnapi_spec/ANEURALNETWORKS_RESIZE_BILINEAR.hpp"
 #include "nnapi_spec/ANEURALNETWORKS_RESIZE_NEAREST_NEIGHBOR.hpp"

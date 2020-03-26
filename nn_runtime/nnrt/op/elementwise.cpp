@@ -21,9 +21,8 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#include "op/elementwise.hpp"
-
-#include "model.hpp"
+#include "nnrt/op/elementwise.hpp"
+#include "nnrt/model.hpp"
 
 namespace nnrt {
 namespace op {

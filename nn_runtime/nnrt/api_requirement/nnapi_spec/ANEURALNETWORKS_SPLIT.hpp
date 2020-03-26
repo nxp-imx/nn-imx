@@ -25,8 +25,6 @@
 #ifndef __ANEURALNETWORKS_SPLIT_HPP__
 #define __ANEURALNETWORKS_SPLIT_HPP__
 
-#include "api_requirement/spec_macros.hpp"
-
 #define OP_SPEC_NAME SplitOperation
 OP_SPEC_BEGIN()
 #define ARG_NAMES         \

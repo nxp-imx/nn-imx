@@ -21,9 +21,9 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#include "op/normalization.hpp"
+#include "normalization.hpp"
 
-#include "model.hpp"
+#include "nnrt/model.hpp"
 
 namespace nnrt {
 namespace op {

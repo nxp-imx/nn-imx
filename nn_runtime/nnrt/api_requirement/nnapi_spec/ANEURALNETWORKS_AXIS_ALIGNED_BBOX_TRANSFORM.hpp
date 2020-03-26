@@ -25,7 +25,6 @@
 #ifndef __ANEURALNETWORKS_AXIS_ALIGNED_BBOX_TRANSFORM_HPP__
 #define __ANEURALNETWORKS_AXIS_ALIGNED_BBOX_TRANSFORM_HPP__
 
-#include "api_requirement/spec_macros.hpp"
 
 #define OP_SPEC_NAME AxisAlignedBBoxTransformOperation
 OP_SPEC_BEGIN()

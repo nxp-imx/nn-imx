@@ -24,13 +24,13 @@
 #include <vector>
 #include <set>
 
-#include "model.hpp"
-#include "types.hpp"
-#include "logging.hpp"
-#include "error.hpp"
+#include "nnrt/model.hpp"
+#include "nnrt/types.hpp"
+#include "nnrt/logging.hpp"
+#include "nnrt/error.hpp"
 
-#include "op/operand.hpp"
-#include "op/operation.hpp"
+#include "operand.hpp"
+#include "operation.hpp"
 
 namespace nnrt {
 namespace op {

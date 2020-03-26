@@ -24,14 +24,14 @@
 #include <algorithm>
 #include <cassert>
 
-#include "error.hpp"
-#include "logging.hpp"
-#include "model.hpp"
-#include "types.hpp"
-#include "utils.hpp"
+#include "nnrt/error.hpp"
+#include "nnrt/logging.hpp"
+#include "nnrt/model.hpp"
+#include "nnrt/types.hpp"
+#include "nnrt/utils.hpp"
 
-#include "api_requirement/nnapi_requirement.hpp"
-#include "model_transform/nnapi_interpreter.hpp"
+#include "nnrt/api_requirement/nnapi_requirement.hpp"
+#include "nnrt/model_transform/nnapi_interpreter.hpp"
 
 namespace nnrt {
 

@@ -25,8 +25,6 @@
 #ifndef __AANEURALNETWORKS_DETECTION_POSTPROCESSING_HPP__
 #define __AANEURALNETWORKS_DETECTION_POSTPROCESSING_HPP__
 
-#include "api_requirement/spec_macros.hpp"
-
 #define OP_SPEC_NAME DetectionPostprocessingOperation
 OP_SPEC_BEGIN()
 #define ARG_NAMES         \

@@ -24,7 +24,7 @@
 #ifndef _OP_ELEMENTWISE_H_
 #define _OP_ELEMENTWISE_H_
 
-#include "op/operation.hpp"
+#include "nnrt/op/operation.hpp"
 
 namespace nnrt {
 namespace op {

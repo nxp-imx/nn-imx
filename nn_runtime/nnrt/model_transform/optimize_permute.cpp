@@ -1,6 +1,6 @@
-#include "model.hpp"
-#include "error.hpp"
-#include "model_transform/transformations.hpp"
+#include "nnrt/model.hpp"
+#include "nnrt/error.hpp"
+#include "nnrt/model_transform/transformations.hpp"
 
 namespace nnrt
 {

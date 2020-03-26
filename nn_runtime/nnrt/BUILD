@@ -10,7 +10,6 @@ cc_library(
     includes = [
         ".",
         "boost/libs/preprocessor/include",
-        "api_requirement",
     ],
     hdrs = glob(["op/*.hpp"]) + [
         "model.hpp",
@@ -69,15 +68,3 @@ cc_library(
     deps = ["@OVXLIB//:ovxlib"],
     linkstatic = True,
 )
-
-#cc_binary(
-#    name = "t2c_test",
-#    copts = ["-Werror", "-fvisibility=hidden", '-DOVXLIB_API=__attribute__((visibility(\\"default\\")))'],
-#    includes = [
-#        ".",
-#    ],
-#    srcs = [
-#        "model_transform/t2c_test.cpp",
-#    ],
-#    deps = ["nnrt"]
-#)

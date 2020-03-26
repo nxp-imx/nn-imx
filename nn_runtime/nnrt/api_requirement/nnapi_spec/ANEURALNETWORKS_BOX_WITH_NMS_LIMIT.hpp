@@ -25,8 +25,6 @@
 #ifndef __ANEURALNETWORKS_BOX_WITH_NMS_LIMIT_HPP__
 #define __ANEURALNETWORKS_BOX_WITH_NMS_LIMIT_HPP__
 
-#include "api_requirement/spec_macros.hpp"
-
 #define OP_SPEC_NAME BoxWithNmsLimitOperation
 OP_SPEC_BEGIN()
 #define ARG_NAMES         \

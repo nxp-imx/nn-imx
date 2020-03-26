@@ -25,8 +25,6 @@
 #ifndef __ANEURALNETWORKS_TOPK_V2_HPP__
 #define __ANEURALNETWORKS_TOPK_V2_HPP__
 
-#include "api_requirement/spec_macros.hpp"
-
 #define OP_SPEC_NAME TopkV2Operation
 OP_SPEC_BEGIN()
 #define ARG_NAMES         \

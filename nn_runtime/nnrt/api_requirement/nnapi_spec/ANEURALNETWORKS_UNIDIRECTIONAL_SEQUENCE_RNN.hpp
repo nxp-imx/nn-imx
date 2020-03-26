@@ -25,8 +25,6 @@
 #ifndef __AANEURALNETWORKS_UNIDIRECTIONAL_SEQUENCE_RNN_HPP__
 #define __AANEURALNETWORKS_UNIDIRECTIONAL_SEQUENCE_RNN_HPP__
 
-#include "api_requirement/spec_macros.hpp"
-
 #define OP_SPEC_NAME UnidirectionalSequenceRnnOperation
 OP_SPEC_BEGIN()
 #define ARG_NAMES         \

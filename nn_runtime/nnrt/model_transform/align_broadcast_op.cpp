@@ -23,10 +23,10 @@
 *****************************************************************************/
 #include <vector>
 #include <cassert>
-#include "model.hpp"
-#include "error.hpp"
-#include "op/public.hpp"
-#include "model_transform/transformations.hpp"
+#include "nnrt/model.hpp"
+#include "nnrt/error.hpp"
+#include "nnrt/op/public.hpp"
+#include "nnrt/model_transform/transformations.hpp"
 
 using namespace nnrt::op;
 

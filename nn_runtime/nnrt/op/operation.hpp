@@ -29,11 +29,11 @@
 #include <memory>
 #include <unordered_map>
 #include <vector>
-#include "float16.hpp"
-#include "logging.hpp"
-#include "op/ILayoutInference.hpp"
-#include "op/operand.hpp"
-#include "permute_vector.hpp"
+#include "nnrt/float16.hpp"
+#include "nnrt/logging.hpp"
+#include "nnrt/permute_vector.hpp"
+#include "operand.hpp"
+#include "ILayoutInference.hpp"
 
 namespace nnrt {
 class Model;
