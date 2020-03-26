@@ -25,28 +25,24 @@
 #include <stdlib.h>
 
 #include "vsi_nn_types.h"
-#include "vsi_nn_platform.h"
 #include "vsi_nn_log.h"
-#include "vsi_nn_graph.h"
 #include "vsi_nn_node.h"
 #include "vsi_nn_prv.h"
-#include "utils/vsi_nn_math.h"
 #include "vsi_nn_ops.h"
 #include "vsi_nn_tensor.h"
 #include "vsi_nn_tensor_util.h"
-#include "client/vsi_nn_vxkernel.h"
-#include "kernel/vsi_nn_kernel.h"
 #include "utils/vsi_nn_util.h"
+#include "utils/vsi_nn_math.h"
+#include "kernel/vsi_nn_kernel.h"
 #include "kernel/vsi_nn_kernel_gpu_shape_optimize.h"
 
-#define _ARG_NUM            (1)
 #define _INPUT_NUM          (1)
 #define _OUTPUT_NUM         (1)
-#define _IO_NUM             (_INPUT_NUM + _OUTPUT_NUM)
-#define _PARAM_NUM          (_ARG_NUM + _IO_NUM)
 
-static vsi_status op_compute
+
+static vsi_status _reduce_internal_op_compute
     (
+    const char * kernel_name,
     vsi_nn_node_t * self,
     vsi_nn_tensor_t ** inputs,
     vsi_nn_tensor_t ** outputs
@@ -62,7 +58,6 @@ static vsi_status op_compute
     uint32_t axis_size = 0;
     vsi_bool ret;
     vsi_nn_kernel_param_t * param = NULL;
-    vsi_nn_reducemax_internal_param * p = NULL;
 
     if( NULL == self )
     {
@@ -70,11 +65,25 @@ static vsi_status op_compute
     }
     status = VSI_FAILURE;
 
-    p = &(self->nn_param.reducemax_internal);
-    axis = p->axis[0];
+
 
     param =vsi_nn_kernel_param_create();
 
+    if (strcmp(kernel_name, "reducemax_internal") == 0)
+    {
+        vsi_nn_reducemax_internal_param * p = &(self->nn_param.reducemax_internal);
+        axis = p->axis[0];
+    }
+    else if (strcmp(kernel_name, "reducemin_internal") == 0)
+    {
+        vsi_nn_reducemin_internal_param * p = &(self->nn_param.reducemin_internal);
+        axis = p->axis[0];
+    }
+    else
+    {
+        return VSI_FAILURE;
+
+    }
 
     ret = vsi_nn_kernel_optimize_reduce_shape(
             (int32_t *)inputs[0]->attr.size, inputs[0]->attr.dim_num,
@@ -94,7 +103,7 @@ static vsi_status op_compute
                 outputs[0], (uint32_t*)shapes[1], rank_out );
 
         self->n = (vx_node)vsi_nn_kernel_selector( self->graph,
-                "reducemax_internal",
+                kernel_name,
                 &reshape_tensors[0], 1,
                 &reshape_tensors[1], 1, param );
 
@@ -110,39 +119,53 @@ static vsi_status op_compute
     return status;
 } /* op_compute() */
 
-static vsi_bool op_check
+static vsi_bool _reduce_internal_op_setup
     (
-    vsi_nn_node_t * self,
-    vsi_nn_tensor_t ** inputs,
-    vsi_nn_tensor_t ** outputs
-    )
-{
-    /*TODO: Check tensor shapes. */
-    return TRUE;
-} /* op_check() */
-
-static vsi_bool op_setup
-    (
+    const char * kernel_name,
     vsi_nn_node_t * self,
     vsi_nn_tensor_t ** inputs,
     vsi_nn_tensor_t ** outputs
     )
 {
     int32_t axis = 0;
-    vsi_nn_reducemax_internal_param * p = NULL;
 
-    p = &(self->nn_param.reducemax_internal);
-    axis = p->axis[0];
-    if (axis < 0)
+    if (strcmp(kernel_name, "reducemax_internal") == 0)
     {
-        axis = axis + inputs[0]->attr.dim_num;
+        vsi_nn_reducemax_internal_param * p = &(self->nn_param.reducemax_internal);
+
+        axis = p->axis[0];
         if (axis < 0)
         {
-            VSILOGW("error input axis value %d input dim num is %d",
-             p->axis[0], inputs[0]->attr.dim_num);
-            return FALSE;
+            axis = axis + inputs[0]->attr.dim_num;
+            if (axis < 0)
+            {
+                VSILOGW("error input axis value %d input dim num is %d",
+                 p->axis[0], inputs[0]->attr.dim_num);
+                return FALSE;
+            }
+            p->axis[0] = axis;
         }
-        p->axis[0] = axis;
+    }
+    if (strcmp(kernel_name, "reducemin_internal") == 0)
+    {
+        vsi_nn_reducemin_internal_param * p = &(self->nn_param.reducemin_internal);
+
+        axis = p->axis[0];
+        if (axis < 0)
+        {
+            axis = axis + inputs[0]->attr.dim_num;
+            if (axis < 0)
+            {
+                VSILOGW("error input axis value %d input dim num is %d",
+                 p->axis[0], inputs[0]->attr.dim_num);
+                return FALSE;
+            }
+            p->axis[0] = axis;
+        }
+    }
+    else
+    {
+         return FALSE;
     }
 
     if( VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num )
@@ -175,19 +198,44 @@ static vsi_bool op_setup
 #ifdef __cplusplus
 extern "C" {
 #endif
-/* Registrar */
-DEF_OP_REG
-    (
-    /* op_name    */ REDUCEMAX_INTERNAL,
-    /* init       */ NULL,
-    /* compute    */ op_compute,
-    /* deinit     */ vsi_nn_op_common_deinit,
-    /* check      */ op_check,
-    /* setup      */ op_setup,
-    /* optimize   */ NULL,
-    /* input_num  */ _INPUT_NUM,
-    /* output_num */ _OUTPUT_NUM
-    );
+
+#define DEF_REDUCE_INTERNAL_OP(name, kernel_name) \
+            static vsi_status op_compute_##kernel_name \
+                ( \
+                vsi_nn_node_t * self, \
+                vsi_nn_tensor_t ** inputs, \
+                vsi_nn_tensor_t ** outputs \
+                ) \
+            { \
+                return _reduce_internal_op_compute( ""#kernel_name, self, inputs, outputs ); \
+            } \
+            static vsi_bool op_setup_##kernel_name \
+                ( \
+                vsi_nn_node_t * self, \
+                vsi_nn_tensor_t ** inputs, \
+                vsi_nn_tensor_t ** outputs \
+                ) \
+            { \
+                return _reduce_internal_op_setup( ""#kernel_name, self, inputs, outputs ); \
+            } \
+DEF_OP_REG  \
+    ( \
+    /* op_name    */ name, \
+    /* init       */ NULL, \
+    /* compute    */ op_compute_##kernel_name, \
+    /* deinit     */ NULL, \
+    /* check      */ NULL, \
+    /* setup      */ op_setup_##kernel_name, \
+    /* optimize   */ NULL, \
+    /* input_num  */ 1, \
+    /* output_num */ 1 \
+    )
+
+
+DEF_REDUCE_INTERNAL_OP( REDUCEMAX_INTERNAL, reducemax_internal );
+DEF_REDUCE_INTERNAL_OP( REDUCEMIN_INTERNAL, reducemin_internal );
+
+#undef DEF_REDUCE_INTERNAL_OP
 #ifdef __cplusplus
 }
 #endif

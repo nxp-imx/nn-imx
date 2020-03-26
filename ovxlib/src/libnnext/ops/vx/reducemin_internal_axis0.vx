@@ -34,8 +34,7 @@ _viv_uniform VXC_512Bits uniPackMaxData_2x8;
 #define REDUCEMIN_PROCESS_AXIS0_SAVE_SAME(save_type, write_fun) \
     save_type dst; \
     _viv_asm(COPY, dst, val, 16); \
-    coord.x = 0; \
-    write_fun(output, coord, dst, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));
+    write_fun(output, coord_out, dst, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));
 
 #define REDUCEMIN_PROCESS_AXIS0_SAVE(dst_type, save_type, conv_mode,\
 OUT_SCALE, OUT_OFFSET, IN_SCALE, IN_OFFSET, write_fun) \
@@ -46,11 +45,10 @@ OUT_SCALE, OUT_OFFSET, IN_SCALE, IN_OFFSET, write_fun) \
     prob = ((prob - IN_OFFSET) * IN_SCALE) * OUT_SCALE + OUT_OFFSET; \
     _viv_asm(conv_mode, vec1, prob); \
     _viv_asm(COPY, dst, vec1, 16); \
-    coord.x = 0; \
-    write_fun(output, coord, dst, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));
+    write_fun(output, coord_out, dst, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));
 
 #define REDUCEMIN_AXIS0_SAME(src_name, dst_name, src_type, copy_type, save_type, vert_min_fun, horz_min_fun) \
-__kernel void vxcReduceminAxis0_##src_name##to##dst_name \
+__kernel void reducemin_axis0_##src_name##to##dst_name \
     ( \
     __read_only  image2d_array_t input, \
     __write_only image2d_array_t output, \
@@ -58,18 +56,19 @@ __kernel void vxcReduceminAxis0_##src_name##to##dst_name \
     ) \
 { \
     int4 coord = (int4)(16, get_global_id(0), get_global_id(1), 0); \
+    int2 coord_out = (int2)(get_global_id(0), get_global_id(1)); \
     src_type img_val0, img_val1, img_val2, img_val3; \
     copy_type val0, val1, val2, val3; \
     src_type val; \
     REDUCEMIN_PROCESS_AXIS0(VXC_ReadImage2DArray, vert_min_fun, horz_min_fun); \
-    REDUCEMIN_PROCESS_AXIS0_SAVE_SAME(save_type, VXC_WriteImage2DArray); \
+    REDUCEMIN_PROCESS_AXIS0_SAVE_SAME(save_type, VXC_WriteImage); \
 }
 
 
 #define REDUCEMIN_AXIS0(src_name, dst_name, src_type, copy_type, dst_type,\
               save_type, conv_mode, OUT_SCALE, OUT_OFFSET,\
               IN_SCALE, IN_OFFSET, vert_min_fun, horz_min_fun) \
-__kernel void vxcReduceminAxis0_##src_name##to##dst_name \
+__kernel void reducemin_axis0_##src_name##to##dst_name \
     ( \
     __read_only  image2d_array_t input, \
     __write_only image2d_array_t output, \
@@ -77,12 +76,13 @@ __kernel void vxcReduceminAxis0_##src_name##to##dst_name \
     ) \
 { \
     int4 coord = (int4)(16, get_global_id(0), get_global_id(1), 0); \
+    int2 coord_out = (int2)(get_global_id(0), get_global_id(1)); \
     src_type img_val0, img_val1, img_val2, img_val3; \
     copy_type val0, val1, val2, val3; \
     src_type val; \
     REDUCEMIN_PROCESS_AXIS0(VXC_ReadImage2DArray, vert_min_fun, horz_min_fun); \
     REDUCEMIN_PROCESS_AXIS0_SAVE(dst_type, save_type, conv_mode,\
-    OUT_SCALE, OUT_OFFSET, IN_SCALE, IN_OFFSET, VXC_WriteImage2DArray); \
+    OUT_SCALE, OUT_OFFSET, IN_SCALE, IN_OFFSET, VXC_WriteImage); \
 }
 
 REDUCEMIN_AXIS0_SAME(F16, F16, vxc_half8, vxc_short8,  vxc_short8, VXC_VertMin3_Half, VXC_HorzMin3_Half)
@@ -110,14 +110,15 @@ VXC_VertMin3_Integer, VXC_HorzMin3_Integer)
 
 #define REDUCEMIN_AXIS0_SAME_2D(src_name, dst_name, src_type, copy_type,\
 save_type, vert_min_fun, horz_min_fun) \
-__kernel void vxcReduceminAxis0_##src_name##to##dst_name##_2D \
+__kernel void reducemin_axis0_##src_name##to##dst_name##_2D \
     ( \
     __read_only  image2d_array_t input, \
     __write_only image2d_array_t output, \
     int   axisVal \
     ) \
 { \
-    int4 coord = (int4)(16, get_global_id(0), get_global_id(1), 0); \
+    int2 coord = (int2)(16, get_global_id(0)); \
+    int2 coord_out = (int2)(get_global_id(0), 0); \
     src_type img_val0, img_val1, img_val2, img_val3; \
     copy_type val0, val1, val2, val3; \
     src_type val; \
@@ -128,7 +129,7 @@ __kernel void vxcReduceminAxis0_##src_name##to##dst_name##_2D \
 #define REDUCEMIN_AXIS0_2D(src_name, dst_name, src_type, copy_type,\
                            dst_type, save_type, conv_mode, OUT_SCALE,\
                            OUT_OFFSET, IN_SCALE, IN_OFFSET, vert_min_fun, horz_min_fun) \
-__kernel void vxcReduceminAxis0_##src_name##to##dst_name##_2D \
+__kernel void reducemin_axis0_##src_name##to##dst_name##_2D \
     ( \
     __read_only  image2d_array_t input, \
     __write_only image2d_array_t output, \
@@ -136,6 +137,7 @@ __kernel void vxcReduceminAxis0_##src_name##to##dst_name##_2D \
     ) \
 { \
     int2 coord = (int2)(16, get_global_id(0)); \
+    int2 coord_out = (int2)(get_global_id(0), 0); \
     src_type img_val0, img_val1, img_val2, img_val3; \
     copy_type val0, val1, val2, val3; \
     src_type val; \

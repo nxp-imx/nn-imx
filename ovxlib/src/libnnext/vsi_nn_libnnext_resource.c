@@ -8527,6 +8527,446 @@ outputScale, output_offset_asymmetric, inputScale, input_offset_asymmetric, VXC_
 \n\
 "; /* end of reducemax_internal_axis2_vx*/
 
+static const char reducemin_internal_axis0_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+_viv_uniform int         axisSize;\n\
+_viv_uniform float       outputScale;\n\
+_viv_uniform float       output_offset_asymmetric;\n\
+_viv_uniform float       inputScale;\n\
+_viv_uniform float       input_offset_asymmetric;\n\
+_viv_uniform VXC_512Bits uniGetLoData_4x4;\n\
+\n\
+_viv_uniform VXC_512Bits uniPackMaxData_2x8;\n\
+\n\
+#define REDUCEMIN_PROCESS_AXIS0(read_fun, vert_min_fun, horz_min_fun) \\\n\
+    read_fun(val0, input,  coord, VXC_5BITOFFSET_XY(-16, 0), VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    _viv_asm(COPY, val, val0, 16); \\\n\
+    coord.x += 8; \\\n\
+    do \\\n\
+    { \\\n\
+        read_fun(val0, input,  coord, VXC_5BITOFFSET_XY(-16, 0), VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+        _viv_asm(COPY, img_val0, val0, 16); \\\n\
+        read_fun(val1, input,  coord, VXC_5BITOFFSET_XY(-8, 0), VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+        _viv_asm(COPY, img_val1, val1, 16); \\\n\
+        read_fun(val2, input,  coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+        _viv_asm(COPY, img_val2, val2, 16); \\\n\
+        read_fun(val3, input,  coord, VXC_5BITOFFSET_XY(8, 0), VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+        _viv_asm(COPY, img_val3, val3, 16); \\\n\
+        coord.x += 32; \\\n\
+        vert_min_fun(val, img_val0, img_val1, val, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+        vert_min_fun(val, img_val2, img_val3, val, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+        horz_min_fun(val, val, VXC_MODIFIER(0, 5, 0, VXC_RM_TowardZero, 0)); \\\n\
+        VXC_DP2x8(val, val, val, VXC_MODIFIER(0, 2, 0, VXC_RM_TowardZero, 0), uniPackMaxData_2x8); \\\n\
+        horz_min_fun(val, val, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
+    } \\\n\
+    while(coord.x < (axisSize + 16));\n\
+\n\
+#define REDUCEMIN_PROCESS_AXIS0_SAVE_SAME(save_type, write_fun) \\\n\
+    save_type dst; \\\n\
+    _viv_asm(COPY, dst, val, 16); \\\n\
+    write_fun(output, coord_out, dst, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+#define REDUCEMIN_PROCESS_AXIS0_SAVE(dst_type, save_type, conv_mode,\\\n\
+OUT_SCALE, OUT_OFFSET, IN_SCALE, IN_OFFSET, write_fun) \\\n\
+    vxc_float4 prob; \\\n\
+    dst_type vec1; \\\n\
+    save_type dst; \\\n\
+    VXC_DP4x4(prob, val, val, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0), uniGetLoData_4x4); \\\n\
+    prob = ((prob - IN_OFFSET) * IN_SCALE) * OUT_SCALE + OUT_OFFSET; \\\n\
+    _viv_asm(conv_mode, vec1, prob); \\\n\
+    _viv_asm(COPY, dst, vec1, 16); \\\n\
+    write_fun(output, coord_out, dst, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+#define REDUCEMIN_AXIS0_SAME(src_name, dst_name, src_type, copy_type, save_type, vert_min_fun, horz_min_fun) \\\n\
+__kernel void reducemin_axis0_##src_name##to##dst_name \\\n\
+    ( \\\n\
+    __read_only  image2d_array_t input, \\\n\
+    __write_only image2d_array_t output, \\\n\
+    int   axisVal \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(16, get_global_id(0), get_global_id(1), 0); \\\n\
+    int2 coord_out = (int2)(get_global_id(0), get_global_id(1)); \\\n\
+    src_type img_val0, img_val1, img_val2, img_val3; \\\n\
+    copy_type val0, val1, val2, val3; \\\n\
+    src_type val; \\\n\
+    REDUCEMIN_PROCESS_AXIS0(VXC_ReadImage2DArray, vert_min_fun, horz_min_fun); \\\n\
+    REDUCEMIN_PROCESS_AXIS0_SAVE_SAME(save_type, VXC_WriteImage); \\\n\
+}\n\
+\n\
+\n\
+#define REDUCEMIN_AXIS0(src_name, dst_name, src_type, copy_type, dst_type,\\\n\
+              save_type, conv_mode, OUT_SCALE, OUT_OFFSET,\\\n\
+              IN_SCALE, IN_OFFSET, vert_min_fun, horz_min_fun) \\\n\
+__kernel void reducemin_axis0_##src_name##to##dst_name \\\n\
+    ( \\\n\
+    __read_only  image2d_array_t input, \\\n\
+    __write_only image2d_array_t output, \\\n\
+    int   axisVal \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(16, get_global_id(0), get_global_id(1), 0); \\\n\
+    int2 coord_out = (int2)(get_global_id(0), get_global_id(1)); \\\n\
+    src_type img_val0, img_val1, img_val2, img_val3; \\\n\
+    copy_type val0, val1, val2, val3; \\\n\
+    src_type val; \\\n\
+    REDUCEMIN_PROCESS_AXIS0(VXC_ReadImage2DArray, vert_min_fun, horz_min_fun); \\\n\
+    REDUCEMIN_PROCESS_AXIS0_SAVE(dst_type, save_type, conv_mode,\\\n\
+    OUT_SCALE, OUT_OFFSET, IN_SCALE, IN_OFFSET, VXC_WriteImage); \\\n\
+}\n\
+\n\
+REDUCEMIN_AXIS0_SAME(F16, F16, vxc_half8, vxc_short8,  vxc_short8, VXC_VertMin3_Half, VXC_HorzMin3_Half)\n\
+\n\
+REDUCEMIN_AXIS0(F16, I16, vxc_half8, vxc_short8, short4, vxc_short8, CONV_SAT_RTE, outputScale,\\\n\
+0, 1, 0, VXC_VertMin3_Half, VXC_HorzMin3_Half)\n\
+REDUCEMIN_AXIS0(F16, I8,  vxc_half8, vxc_short8, char4,  vxc_char8,  CONV_SAT_RTE, outputScale,\\\n\
+0, 1, 0, VXC_VertMin3_Half, VXC_HorzMin3_Half)\n\
+REDUCEMIN_AXIS0(F16, U8,  vxc_half8, vxc_short8, uchar4, vxc_uchar8,\\\n\
+ CONV_SAT_RTE, outputScale, output_offset_asymmetric, 1, 0, VXC_VertMin3_Half, VXC_HorzMin3_Half)\n\
+REDUCEMIN_AXIS0(I16, F16, vxc_short8, vxc_short8, half4,  vxc_short8, CONV, 1, 0,\\\n\
+inputScale, 0, VXC_VertMin3_Integer, VXC_HorzMin3_Integer)\n\
+REDUCEMIN_AXIS0(I8, F16, vxc_char16, vxc_char16, half4,  vxc_short8, CONV, 1, 0,\\\n\
+inputScale, 0, VXC_VertMin3_Integer, VXC_HorzMin3_Integer)\n\
+REDUCEMIN_AXIS0(U8, F16, vxc_uchar16, vxc_uchar16, half4,  vxc_short8, CONV,\\\n\
+1, 0, inputScale, input_offset_asymmetric, VXC_VertMin3_Integer, VXC_HorzMin3_Integer)\n\
+\n\
+REDUCEMIN_AXIS0(I16, I16, vxc_short8, vxc_short8, short4, vxc_short8,\\\n\
+CONV_SAT_RTE, outputScale, 0, inputScale, 0, VXC_VertMin3_Integer, VXC_HorzMin3_Integer)\n\
+REDUCEMIN_AXIS0(I8, I8,  vxc_char16, vxc_char16,  char4, vxc_char8,\\\n\
+CONV_SAT_RTE, outputScale, 0, inputScale, 0, VXC_VertMin3_Integer, VXC_HorzMin3_Integer)\n\
+REDUCEMIN_AXIS0(U8, U8,  vxc_uchar16, vxc_uchar16, uchar4, vxc_uchar8, CONV_SAT_RTE,\\\n\
+outputScale, output_offset_asymmetric, inputScale, input_offset_asymmetric,\\\n\
+VXC_VertMin3_Integer, VXC_HorzMin3_Integer)\n\
+\n\
+#define REDUCEMIN_AXIS0_SAME_2D(src_name, dst_name, src_type, copy_type,\\\n\
+save_type, vert_min_fun, horz_min_fun) \\\n\
+__kernel void reducemin_axis0_##src_name##to##dst_name##_2D \\\n\
+    ( \\\n\
+    __read_only  image2d_array_t input, \\\n\
+    __write_only image2d_array_t output, \\\n\
+    int   axisVal \\\n\
+    ) \\\n\
+{ \\\n\
+    int2 coord = (int2)(16, get_global_id(0)); \\\n\
+    int2 coord_out = (int2)(get_global_id(0), 0); \\\n\
+    src_type img_val0, img_val1, img_val2, img_val3; \\\n\
+    copy_type val0, val1, val2, val3; \\\n\
+    src_type val; \\\n\
+    REDUCEMIN_PROCESS_AXIS0(VXC_ReadImage, vert_min_fun, horz_min_fun); \\\n\
+    REDUCEMIN_PROCESS_AXIS0_SAVE_SAME(save_type, VXC_WriteImage); \\\n\
+}\n\
+\n\
+#define REDUCEMIN_AXIS0_2D(src_name, dst_name, src_type, copy_type,\\\n\
+                           dst_type, save_type, conv_mode, OUT_SCALE,\\\n\
+                           OUT_OFFSET, IN_SCALE, IN_OFFSET, vert_min_fun, horz_min_fun) \\\n\
+__kernel void reducemin_axis0_##src_name##to##dst_name##_2D \\\n\
+    ( \\\n\
+    __read_only  image2d_array_t input, \\\n\
+    __write_only image2d_array_t output, \\\n\
+    int   axisVal \\\n\
+    ) \\\n\
+{ \\\n\
+    int2 coord = (int2)(16, get_global_id(0)); \\\n\
+    int2 coord_out = (int2)(get_global_id(0), 0); \\\n\
+    src_type img_val0, img_val1, img_val2, img_val3; \\\n\
+    copy_type val0, val1, val2, val3; \\\n\
+    src_type val; \\\n\
+    REDUCEMIN_PROCESS_AXIS0(VXC_ReadImage, vert_min_fun, horz_min_fun); \\\n\
+    REDUCEMIN_PROCESS_AXIS0_SAVE(dst_type, save_type, conv_mode,\\\n\
+    OUT_SCALE, OUT_OFFSET, IN_SCALE, IN_OFFSET, VXC_WriteImage); \\\n\
+}\n\
+\n\
+REDUCEMIN_AXIS0_SAME_2D(F16, F16, vxc_half8, vxc_short8,  vxc_short8, VXC_VertMin3_Half, VXC_HorzMin3_Half)\n\
+\n\
+REDUCEMIN_AXIS0_2D(F16, I16, vxc_half8, vxc_short8, short4, vxc_short8,\\\n\
+CONV_SAT_RTE, outputScale, 0, 1, 0, VXC_VertMin3_Half, VXC_HorzMin3_Half)\n\
+REDUCEMIN_AXIS0_2D(F16, I8,  vxc_half8, vxc_short8, char4,  vxc_char8,\\\n\
+CONV_SAT_RTE, outputScale, 0, 1, 0, VXC_VertMin3_Half, VXC_HorzMin3_Half)\n\
+REDUCEMIN_AXIS0_2D(F16, U8,  vxc_half8, vxc_short8, uchar4, vxc_uchar8,\\\n\
+CONV_SAT_RTE, outputScale, output_offset_asymmetric, 1, 0, VXC_VertMin3_Half, VXC_HorzMin3_Half)\n\
+\n\
+REDUCEMIN_AXIS0_2D(I16, F16, vxc_short8, vxc_short8, half4,  vxc_short8,\\\n\
+CONV, 1, 0, inputScale, 0, VXC_VertMin3_Integer, VXC_HorzMin3_Integer)\n\
+REDUCEMIN_AXIS0_2D(I8, F16, vxc_char16, vxc_char16, half4,  vxc_short8,\\\n\
+CONV, 1, 0, inputScale, 0, VXC_VertMin3_Integer, VXC_HorzMin3_Integer)\n\
+REDUCEMIN_AXIS0_2D(U8, F16, vxc_uchar16, vxc_uchar16, half4,  vxc_short8,\\\n\
+CONV, 1, 0, inputScale, input_offset_asymmetric, VXC_VertMin3_Integer, VXC_HorzMin3_Integer)\n\
+REDUCEMIN_AXIS0_2D(I16, I16, vxc_short8, vxc_short8, short4, vxc_short8,\\\n\
+CONV_SAT_RTE, outputScale, 0, inputScale, 0, VXC_VertMin3_Integer, VXC_HorzMin3_Integer)\n\
+REDUCEMIN_AXIS0_2D(I8, I8,  vxc_char16, vxc_char16,  char4, vxc_char8,\\\n\
+CONV_SAT_RTE, outputScale, 0, inputScale, 0, VXC_VertMin3_Integer, VXC_HorzMin3_Integer)\n\
+REDUCEMIN_AXIS0_2D(U8, U8,  vxc_uchar16, vxc_uchar16, uchar4, vxc_uchar8, CONV_SAT_RTE,\\\n\
+outputScale, output_offset_asymmetric, inputScale, input_offset_asymmetric,\\\n\
+VXC_VertMin3_Integer, VXC_HorzMin3_Integer)\n\
+\n\
+\n\
+"; /* end of reducemin_internal_axis0_vx*/
+
+static const char reducemin_internal_axis1_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+_viv_uniform int         axisSize;\n\
+_viv_uniform float       outputScale;\n\
+_viv_uniform float       output_offset_asymmetric;\n\
+_viv_uniform float       inputScale;\n\
+_viv_uniform float       input_offset_asymmetric;\n\
+_viv_uniform VXC_512Bits uniGetLoData_4x4;\n\
+\n\
+_viv_uniform VXC_512Bits uniConvertInt32toUint8_2x8;\n\
+_viv_uniform VXC_512Bits uniGetHiData_4x4;\n\
+\n\
+#define REDUCEMIN_PROCESS_AXIS1(read_fun, vert_min_fun) \\\n\
+    read_fun(in0, input, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    _viv_asm(COPY, min, in0, 16); \\\n\
+    coord.y++; \\\n\
+    do \\\n\
+    { \\\n\
+        read_fun(in0, input, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+        _viv_asm(COPY, vec0, in0, 16); \\\n\
+        vert_min_fun(min, min, min, vec0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+        coord.y++; \\\n\
+    } \\\n\
+    while(coord.y < axisSize);\n\
+\n\
+#define REDUCEMIN_PROCESS_AXIS1_SAVE_SAME(save_type, write_fun) \\\n\
+    save_type vect; \\\n\
+    _viv_asm(COPY, vect, min, 16); \\\n\
+    write_fun(output, coord_out, vect, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+#define REDUCEMIN_PROCESS_AXIS1_SAVE(dst_type, save_type, conv_mode,\\\n\
+OUT_SCALE, OUT_OFFSET, IN_SCALE, IN_OFFSET, write_fun) \\\n\
+    dst_type dst0, dst1; \\\n\
+    save_type vect; \\\n\
+    VXC_DP4x4(data0, min, min, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniGetLoData_4x4); \\\n\
+    data0 = ((data0 - IN_OFFSET) * IN_SCALE) * OUT_SCALE + OUT_OFFSET; \\\n\
+    _viv_asm(conv_mode, dst0, data0); \\\n\
+    VXC_DP4x4(data0, min, min, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniGetHiData_4x4); \\\n\
+    data0 = ((data0 - IN_OFFSET) * IN_SCALE) * OUT_SCALE + OUT_OFFSET; \\\n\
+    _viv_asm(conv_mode, dst1, data0); \\\n\
+    VXC_DP2x8(vect, dst0, dst1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvertInt32toUint8_2x8); \\\n\
+    write_fun(output, coord_out, vect, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+#define REDUCEMIN_AXIS1_SAME(src_name, dst_name, src_type, copy_type, save_type, vert_min_fun) \\\n\
+__kernel void reducemin_axis1_##src_name##to##dst_name \\\n\
+    ( \\\n\
+    __read_only  image2d_array_t input, \\\n\
+    __write_only image2d_array_t output, \\\n\
+    int   axisVal \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), 0, get_global_id(1), 0); \\\n\
+    int2 coord_out = (int2)(get_global_id(0), get_global_id(1)); \\\n\
+    src_type vec0, min; \\\n\
+    copy_type in0; \\\n\
+    vxc_float4 data0; \\\n\
+    REDUCEMIN_PROCESS_AXIS1(VXC_ReadImage2DArray, vert_min_fun) \\\n\
+    REDUCEMIN_PROCESS_AXIS1_SAVE_SAME(save_type, VXC_WriteImage); \\\n\
+}\n\
+\n\
+#define REDUCEMIN_AXIS1(src_name, dst_name, src_type, copy_type, dst_type, save_type,\\\n\
+conv_mode, OUT_SCALE, OUT_OFFSET, IN_SCALE, IN_OFFSET, vert_min_fun) \\\n\
+__kernel void reducemin_axis1_##src_name##to##dst_name \\\n\
+    ( \\\n\
+    __read_only  image2d_array_t input, \\\n\
+    __write_only image2d_array_t output, \\\n\
+    int   axisVal \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), 0, get_global_id(1), 0); \\\n\
+    int2 coord_out = (int2)(get_global_id(0), get_global_id(1)); \\\n\
+    src_type vec0, min; \\\n\
+    copy_type in0; \\\n\
+    vxc_float4 data0; \\\n\
+    REDUCEMIN_PROCESS_AXIS1(VXC_ReadImage2DArray, vert_min_fun) \\\n\
+    REDUCEMIN_PROCESS_AXIS1_SAVE(dst_type, save_type, conv_mode,\\\n\
+    OUT_SCALE, OUT_OFFSET, IN_SCALE, IN_OFFSET, VXC_WriteImage); \\\n\
+}\n\
+\n\
+\n\
+\n\
+REDUCEMIN_AXIS1_SAME(F16, F16, vxc_half8, vxc_short8,  vxc_short8, VXC_VertMin3_Half)\n\
+\n\
+\n\
+REDUCEMIN_AXIS1(F16, I16, vxc_half8, vxc_short8, short4, vxc_short8,\\\n\
+CONV_SAT_RTE, outputScale, 0, 1, 0, VXC_VertMin3_Half)\n\
+REDUCEMIN_AXIS1(F16, I8,  vxc_half8, vxc_short8, char4,  vxc_char8,\\\n\
+CONV_SAT_RTE, outputScale, 0, 1, 0, VXC_VertMin3_Half)\n\
+REDUCEMIN_AXIS1(F16, U8,  vxc_half8, vxc_short8, uchar4, vxc_uchar8,\\\n\
+CONV_SAT_RTE, outputScale, output_offset_asymmetric, 1, 0, VXC_VertMin3_Half)\n\
+REDUCEMIN_AXIS1(I16, F16, vxc_short8, vxc_short8, half4,  vxc_short8,\\\n\
+CONV, 1, 0, inputScale, 0, VXC_VertMin3_Integer)\n\
+REDUCEMIN_AXIS1(I8, F16, vxc_char16, vxc_char16, half4,  vxc_short8,\\\n\
+CONV, 1, 0, inputScale, 0, VXC_VertMin3_Integer)\n\
+REDUCEMIN_AXIS1(U8, F16, vxc_uchar16, vxc_uchar16, half4,  vxc_short8,\\\n\
+CONV, 1, 0, inputScale, input_offset_asymmetric, VXC_VertMin3_Integer)\n\
+REDUCEMIN_AXIS1(I16, I16, vxc_short8, vxc_short8, short4,\\\n\
+vxc_short8, CONV_SAT_RTE, outputScale, 0, inputScale, 0, VXC_VertMin3_Integer)\n\
+REDUCEMIN_AXIS1(I8, I8,  vxc_char16, vxc_char16,  char4,\\\n\
+vxc_char8, CONV_SAT_RTE, outputScale, 0, inputScale, 0, VXC_VertMin3_Integer)\n\
+REDUCEMIN_AXIS1(U8, U8,  vxc_uchar16, vxc_uchar16, uchar4, vxc_uchar8, CONV_SAT_RTE,\\\n\
+outputScale, output_offset_asymmetric, inputScale, input_offset_asymmetric, VXC_VertMin3_Integer)\n\
+\n\
+\n\
+#define REDUCEMIN_AXIS1_SAME_2D(src_name, dst_name, src_type, copy_type, save_type, vert_min_fun) \\\n\
+__kernel void reducemin_axis1_##src_name##to##dst_name##_2D \\\n\
+    ( \\\n\
+    __read_only  image2d_array_t input, \\\n\
+    __write_only image2d_array_t output, \\\n\
+    int   axisVal \\\n\
+    ) \\\n\
+{ \\\n\
+    int2 coord = (int2)(get_global_id(0), 0); \\\n\
+    int2 coord_out = (int2)(get_global_id(0), 0); \\\n\
+    src_type vec0, min; \\\n\
+    copy_type in0; \\\n\
+    vxc_float4 data0; \\\n\
+    REDUCEMIN_PROCESS_AXIS1(VXC_ReadImage, vert_min_fun) \\\n\
+    REDUCEMIN_PROCESS_AXIS1_SAVE_SAME(save_type, VXC_WriteImage); \\\n\
+}\n\
+\n\
+#define REDUCEMIN_AXIS1_2D(src_name, dst_name, src_type, copy_type, dst_type, save_type,\\\n\
+conv_mode, OUT_SCALE, OUT_OFFSET, IN_SCALE, IN_OFFSET, vert_min_fun) \\\n\
+__kernel void reducemin_axis1_##src_name##to##dst_name##_2D \\\n\
+    ( \\\n\
+    __read_only  image2d_array_t input, \\\n\
+    __write_only image2d_array_t output, \\\n\
+    int   axisVal \\\n\
+    ) \\\n\
+{ \\\n\
+    int2 coord = (int2)(get_global_id(0), 0); \\\n\
+    int2 coord_out = (int2)(get_global_id(0), 0); \\\n\
+    src_type vec0, min; \\\n\
+    copy_type in0; \\\n\
+    vxc_float4 data0; \\\n\
+    REDUCEMIN_PROCESS_AXIS1(VXC_ReadImage, vert_min_fun) \\\n\
+    REDUCEMIN_PROCESS_AXIS1_SAVE(dst_type, save_type, conv_mode,\\\n\
+    OUT_SCALE, OUT_OFFSET, IN_SCALE, IN_OFFSET, VXC_WriteImage); \\\n\
+}\n\
+\n\
+REDUCEMIN_AXIS1_SAME_2D(F16, F16, vxc_half8, vxc_short8,  vxc_short8, VXC_VertMin3_Half)\n\
+\n\
+REDUCEMIN_AXIS1_2D(F16, I16, vxc_half8, vxc_short8, short4, vxc_short8,\\\n\
+CONV_SAT_RTE, outputScale, 0, 1, 0, VXC_VertMin3_Half)\n\
+REDUCEMIN_AXIS1_2D(F16, I8,  vxc_half8, vxc_short8, char4,  vxc_char8,\\\n\
+CONV_SAT_RTE, outputScale, 0, 1, 0, VXC_VertMin3_Half)\n\
+REDUCEMIN_AXIS1_2D(F16, U8,  vxc_half8, vxc_short8, uchar4, vxc_uchar8,\\\n\
+CONV_SAT_RTE, outputScale, output_offset_asymmetric, 1, 0, VXC_VertMin3_Half)\n\
+REDUCEMIN_AXIS1_2D(I16, F16, vxc_short8, vxc_short8, half4,  vxc_short8,\\\n\
+CONV, 1, 0, inputScale, 0, VXC_VertMin3_Integer)\n\
+REDUCEMIN_AXIS1_2D(I8, F16, vxc_char16, vxc_char16, half4,  vxc_short8,\\\n\
+CONV, 1, 0, inputScale, 0, VXC_VertMin3_Integer)\n\
+REDUCEMIN_AXIS1_2D(U8, F16, vxc_uchar16, vxc_uchar16, half4,  vxc_short8,\\\n\
+CONV, 1, 0, inputScale, input_offset_asymmetric, VXC_VertMin3_Integer)\n\
+REDUCEMIN_AXIS1_2D(I16, I16, vxc_short8, vxc_short8, short4, vxc_short8,\\\n\
+CONV_SAT_RTE, outputScale, 0, inputScale, 0, VXC_VertMin3_Integer)\n\
+REDUCEMIN_AXIS1_2D(I8, I8,  vxc_char16, vxc_char16,  char4, vxc_char8,\\\n\
+CONV_SAT_RTE, outputScale, 0, inputScale, 0, VXC_VertMin3_Integer)\n\
+REDUCEMIN_AXIS1_2D(U8, U8,  vxc_uchar16, vxc_uchar16, uchar4, vxc_uchar8, CONV_SAT_RTE,\\\n\
+outputScale, output_offset_asymmetric, inputScale, input_offset_asymmetric, VXC_VertMin3_Integer)\n\
+"; /* end of reducemin_internal_axis1_vx*/
+
+static const char reducemin_internal_axis2_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+_viv_uniform int         axisSize;\n\
+_viv_uniform float       outputScale;\n\
+_viv_uniform float       output_offset_asymmetric;\n\
+_viv_uniform float       inputScale;\n\
+_viv_uniform float       input_offset_asymmetric;\n\
+_viv_uniform VXC_512Bits uniGetLoData_4x4;\n\
+\n\
+_viv_uniform VXC_512Bits uniConvertInt32toUint8_2x8;\n\
+_viv_uniform VXC_512Bits uniGetHiData_4x4;\n\
+\n\
+#define REDUCEMIN_PROCESS_AXIS2(read_fun, vert_min_fun) \\\n\
+    read_fun(in0, input, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    _viv_asm(COPY, min, in0, 16); \\\n\
+    coord.z++; \\\n\
+    do \\\n\
+    { \\\n\
+        read_fun(in0, input, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+        _viv_asm(COPY, vec0, in0, 16); \\\n\
+        vert_min_fun(min, min, min, vec0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+        coord.z++; \\\n\
+    } \\\n\
+    while(coord.z < axisSize);\n\
+\n\
+#define REDUCEMIN_PROCESS_AXIS2_SAVE_SAME(save_type, write_fun) \\\n\
+    save_type vect; \\\n\
+    _viv_asm(COPY, vect, min, 16); \\\n\
+    write_fun(output, coord.xy, vect, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+#define REDUCEMIN_PROCESS_AXIS2_SAVE(dst_type, save_type, conv_mode,\\\n\
+OUT_SCALE, OUT_OFFSET, IN_SCALE, IN_OFFSET, write_fun) \\\n\
+    dst_type dst0, dst1; \\\n\
+    save_type vect; \\\n\
+    VXC_DP4x4(data0, min, min, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniGetLoData_4x4); \\\n\
+    data0 = ((data0 - IN_OFFSET) * IN_SCALE) * OUT_SCALE + OUT_OFFSET; \\\n\
+    _viv_asm(conv_mode, dst0, data0); \\\n\
+    VXC_DP4x4(data0, min, min, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniGetHiData_4x4); \\\n\
+    data0 = ((data0 - IN_OFFSET) * IN_SCALE) * OUT_SCALE + OUT_OFFSET; \\\n\
+    _viv_asm(conv_mode, dst1, data0); \\\n\
+    VXC_DP2x8(vect, dst0, dst1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvertInt32toUint8_2x8); \\\n\
+    write_fun(output, coord.xy, vect, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+#define REDUCEMIN_AXIS2_SAME(src_name, dst_name, src_type, copy_type, save_type, vert_min_fun) \\\n\
+__kernel void reducemin_axis2_##src_name##to##dst_name \\\n\
+    ( \\\n\
+    __read_only  image2d_array_t input, \\\n\
+    __write_only image2d_array_t output, \\\n\
+    int   axisVal \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), 0, 0); \\\n\
+    src_type vec0, min; \\\n\
+    copy_type in0; \\\n\
+    vxc_float4 data0; \\\n\
+    REDUCEMIN_PROCESS_AXIS2(VXC_ReadImage2DArray, vert_min_fun) \\\n\
+    REDUCEMIN_PROCESS_AXIS2_SAVE_SAME(save_type, VXC_WriteImage); \\\n\
+}\n\
+\n\
+#define REDUCEMIN_AXIS2(src_name, dst_name, src_type, copy_type, dst_type,\\\n\
+save_type, conv_mode, OUT_SCALE, OUT_OFFSET, IN_SCALE, IN_OFFSET, vert_min_fun) \\\n\
+__kernel void reducemin_axis2_##src_name##to##dst_name \\\n\
+    ( \\\n\
+    __read_only  image2d_array_t input, \\\n\
+    __write_only image2d_array_t output, \\\n\
+    int   axisVal \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), 0, 0); \\\n\
+    src_type vec0, min; \\\n\
+    copy_type in0; \\\n\
+    vxc_float4 data0; \\\n\
+    REDUCEMIN_PROCESS_AXIS2(VXC_ReadImage2DArray, vert_min_fun) \\\n\
+    REDUCEMIN_PROCESS_AXIS2_SAVE(dst_type, save_type, conv_mode,\\\n\
+    OUT_SCALE, OUT_OFFSET, IN_SCALE, IN_OFFSET, VXC_WriteImage); \\\n\
+}\n\
+\n\
+\n\
+\n\
+REDUCEMIN_AXIS2_SAME(F16, F16, vxc_half8, vxc_short8,  vxc_short8, VXC_VertMin3_Half)\n\
+\n\
+\n\
+REDUCEMIN_AXIS2(F16, I16, vxc_half8, vxc_short8, short4, vxc_short8,\\\n\
+CONV_SAT_RTE, outputScale, 0, 1, 0, VXC_VertMin3_Half)\n\
+REDUCEMIN_AXIS2(F16, I8,  vxc_half8, vxc_short8, char4,  vxc_char8,\\\n\
+CONV_SAT_RTE, outputScale, 0, 1, 0, VXC_VertMin3_Half)\n\
+REDUCEMIN_AXIS2(F16, U8,  vxc_half8, vxc_short8, uchar4, vxc_uchar8,\\\n\
+CONV_SAT_RTE, outputScale, output_offset_asymmetric, 1, 0, VXC_VertMin3_Half)\n\
+REDUCEMIN_AXIS2(I16, F16, vxc_short8, vxc_short8, half4,  vxc_short8,\\\n\
+CONV, 1, 0, inputScale, 0, VXC_VertMin3_Integer)\n\
+REDUCEMIN_AXIS2(I8, F16, vxc_char16, vxc_char16, half4,  vxc_short8,\\\n\
+CONV, 1, 0, inputScale, 0, VXC_VertMin3_Integer)\n\
+REDUCEMIN_AXIS2(U8, F16, vxc_uchar16, vxc_uchar16, half4,  vxc_short8,\\\n\
+CONV, 1, 0, inputScale, input_offset_asymmetric, VXC_VertMin3_Integer)\n\
+\n\
+REDUCEMIN_AXIS2(I16, I16, vxc_short8, vxc_short8, short4, vxc_short8,\\\n\
+CONV_SAT_RTE, outputScale, 0, inputScale, 0, VXC_VertMin3_Integer)\n\
+REDUCEMIN_AXIS2(I8, I8,  vxc_char16, vxc_char16,  char4, vxc_char8,\\\n\
+CONV_SAT_RTE, outputScale, 0, inputScale, 0, VXC_VertMin3_Integer)\n\
+REDUCEMIN_AXIS2(U8, U8,  vxc_uchar16, vxc_uchar16, uchar4, vxc_uchar8, CONV_SAT_RTE,\\\n\
+outputScale, output_offset_asymmetric, inputScale, input_offset_asymmetric, VXC_VertMin3_Integer)\n\
+\n\
+"; /* end of reducemin_internal_axis2_vx*/
+
 static const char relational_ops_2d_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 _viv_uniform float input0Scale;\n\
@@ -13858,444 +14298,6 @@ __kernel void vxcReduceanyAxis2_I8toI8\n\
 \n\
 \n\
 "; /* end of vsi_nn_kernel_internal_reduceanyAxis2_vx*/
-
-static const char vsi_nn_kernel_internal_reduceminAxis0_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
-_viv_uniform int         axisSize;\n\
-_viv_uniform float       outputScale;\n\
-_viv_uniform float       output_offset_asymmetric;\n\
-_viv_uniform float       inputScale;\n\
-_viv_uniform float       input_offset_asymmetric;\n\
-_viv_uniform VXC_512Bits uniGetLoData_4x4;\n\
-\n\
-_viv_uniform VXC_512Bits uniPackMaxData_2x8;\n\
-\n\
-#define REDUCEMIN_PROCESS_AXIS0(read_fun, vert_min_fun, horz_min_fun) \\\n\
-    read_fun(val0, input,  coord, VXC_5BITOFFSET_XY(-16, 0), VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
-    _viv_asm(COPY, val, val0, 16); \\\n\
-    coord.x += 8; \\\n\
-    do \\\n\
-    { \\\n\
-        read_fun(val0, input,  coord, VXC_5BITOFFSET_XY(-16, 0), VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
-        _viv_asm(COPY, img_val0, val0, 16); \\\n\
-        read_fun(val1, input,  coord, VXC_5BITOFFSET_XY(-8, 0), VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
-        _viv_asm(COPY, img_val1, val1, 16); \\\n\
-        read_fun(val2, input,  coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
-        _viv_asm(COPY, img_val2, val2, 16); \\\n\
-        read_fun(val3, input,  coord, VXC_5BITOFFSET_XY(8, 0), VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
-        _viv_asm(COPY, img_val3, val3, 16); \\\n\
-        coord.x += 32; \\\n\
-        vert_min_fun(val, img_val0, img_val1, val, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
-        vert_min_fun(val, img_val2, img_val3, val, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
-        horz_min_fun(val, val, VXC_MODIFIER(0, 5, 0, VXC_RM_TowardZero, 0)); \\\n\
-        VXC_DP2x8(val, val, val, VXC_MODIFIER(0, 2, 0, VXC_RM_TowardZero, 0), uniPackMaxData_2x8); \\\n\
-        horz_min_fun(val, val, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
-    } \\\n\
-    while(coord.x < (axisSize + 16));\n\
-\n\
-#define REDUCEMIN_PROCESS_AXIS0_SAVE_SAME(save_type, write_fun) \\\n\
-    save_type dst; \\\n\
-    _viv_asm(COPY, dst, val, 16); \\\n\
-    coord.x = 0; \\\n\
-    write_fun(output, coord, dst, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
-\n\
-#define REDUCEMIN_PROCESS_AXIS0_SAVE(dst_type, save_type, conv_mode,\\\n\
-OUT_SCALE, OUT_OFFSET, IN_SCALE, IN_OFFSET, write_fun) \\\n\
-    vxc_float4 prob; \\\n\
-    dst_type vec1; \\\n\
-    save_type dst; \\\n\
-    VXC_DP4x4(prob, val, val, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0), uniGetLoData_4x4); \\\n\
-    prob = ((prob - IN_OFFSET) * IN_SCALE) * OUT_SCALE + OUT_OFFSET; \\\n\
-    _viv_asm(conv_mode, vec1, prob); \\\n\
-    _viv_asm(COPY, dst, vec1, 16); \\\n\
-    coord.x = 0; \\\n\
-    write_fun(output, coord, dst, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
-\n\
-#define REDUCEMIN_AXIS0_SAME(src_name, dst_name, src_type, copy_type, save_type, vert_min_fun, horz_min_fun) \\\n\
-__kernel void vxcReduceminAxis0_##src_name##to##dst_name \\\n\
-    ( \\\n\
-    __read_only  image2d_array_t input, \\\n\
-    __write_only image2d_array_t output, \\\n\
-    int   axisVal \\\n\
-    ) \\\n\
-{ \\\n\
-    int4 coord = (int4)(16, get_global_id(0), get_global_id(1), 0); \\\n\
-    src_type img_val0, img_val1, img_val2, img_val3; \\\n\
-    copy_type val0, val1, val2, val3; \\\n\
-    src_type val; \\\n\
-    REDUCEMIN_PROCESS_AXIS0(VXC_ReadImage2DArray, vert_min_fun, horz_min_fun); \\\n\
-    REDUCEMIN_PROCESS_AXIS0_SAVE_SAME(save_type, VXC_WriteImage2DArray); \\\n\
-}\n\
-\n\
-\n\
-#define REDUCEMIN_AXIS0(src_name, dst_name, src_type, copy_type, dst_type,\\\n\
-              save_type, conv_mode, OUT_SCALE, OUT_OFFSET,\\\n\
-              IN_SCALE, IN_OFFSET, vert_min_fun, horz_min_fun) \\\n\
-__kernel void vxcReduceminAxis0_##src_name##to##dst_name \\\n\
-    ( \\\n\
-    __read_only  image2d_array_t input, \\\n\
-    __write_only image2d_array_t output, \\\n\
-    int   axisVal \\\n\
-    ) \\\n\
-{ \\\n\
-    int4 coord = (int4)(16, get_global_id(0), get_global_id(1), 0); \\\n\
-    src_type img_val0, img_val1, img_val2, img_val3; \\\n\
-    copy_type val0, val1, val2, val3; \\\n\
-    src_type val; \\\n\
-    REDUCEMIN_PROCESS_AXIS0(VXC_ReadImage2DArray, vert_min_fun, horz_min_fun); \\\n\
-    REDUCEMIN_PROCESS_AXIS0_SAVE(dst_type, save_type, conv_mode,\\\n\
-    OUT_SCALE, OUT_OFFSET, IN_SCALE, IN_OFFSET, VXC_WriteImage2DArray); \\\n\
-}\n\
-\n\
-REDUCEMIN_AXIS0_SAME(F16, F16, vxc_half8, vxc_short8,  vxc_short8, VXC_VertMin3_Half, VXC_HorzMin3_Half)\n\
-\n\
-REDUCEMIN_AXIS0(F16, I16, vxc_half8, vxc_short8, short4, vxc_short8, CONV_SAT_RTE, outputScale,\\\n\
-0, 1, 0, VXC_VertMin3_Half, VXC_HorzMin3_Half)\n\
-REDUCEMIN_AXIS0(F16, I8,  vxc_half8, vxc_short8, char4,  vxc_char8,  CONV_SAT_RTE, outputScale,\\\n\
-0, 1, 0, VXC_VertMin3_Half, VXC_HorzMin3_Half)\n\
-REDUCEMIN_AXIS0(F16, U8,  vxc_half8, vxc_short8, uchar4, vxc_uchar8,\\\n\
- CONV_SAT_RTE, outputScale, output_offset_asymmetric, 1, 0, VXC_VertMin3_Half, VXC_HorzMin3_Half)\n\
-REDUCEMIN_AXIS0(I16, F16, vxc_short8, vxc_short8, half4,  vxc_short8, CONV, 1, 0,\\\n\
-inputScale, 0, VXC_VertMin3_Integer, VXC_HorzMin3_Integer)\n\
-REDUCEMIN_AXIS0(I8, F16, vxc_char16, vxc_char16, half4,  vxc_short8, CONV, 1, 0,\\\n\
-inputScale, 0, VXC_VertMin3_Integer, VXC_HorzMin3_Integer)\n\
-REDUCEMIN_AXIS0(U8, F16, vxc_uchar16, vxc_uchar16, half4,  vxc_short8, CONV,\\\n\
-1, 0, inputScale, input_offset_asymmetric, VXC_VertMin3_Integer, VXC_HorzMin3_Integer)\n\
-\n\
-REDUCEMIN_AXIS0(I16, I16, vxc_short8, vxc_short8, short4, vxc_short8,\\\n\
-CONV_SAT_RTE, outputScale, 0, inputScale, 0, VXC_VertMin3_Integer, VXC_HorzMin3_Integer)\n\
-REDUCEMIN_AXIS0(I8, I8,  vxc_char16, vxc_char16,  char4, vxc_char8,\\\n\
-CONV_SAT_RTE, outputScale, 0, inputScale, 0, VXC_VertMin3_Integer, VXC_HorzMin3_Integer)\n\
-REDUCEMIN_AXIS0(U8, U8,  vxc_uchar16, vxc_uchar16, uchar4, vxc_uchar8, CONV_SAT_RTE,\\\n\
-outputScale, output_offset_asymmetric, inputScale, input_offset_asymmetric,\\\n\
-VXC_VertMin3_Integer, VXC_HorzMin3_Integer)\n\
-\n\
-#define REDUCEMIN_AXIS0_SAME_2D(src_name, dst_name, src_type, copy_type,\\\n\
-save_type, vert_min_fun, horz_min_fun) \\\n\
-__kernel void vxcReduceminAxis0_##src_name##to##dst_name##_2D \\\n\
-    ( \\\n\
-    __read_only  image2d_array_t input, \\\n\
-    __write_only image2d_array_t output, \\\n\
-    int   axisVal \\\n\
-    ) \\\n\
-{ \\\n\
-    int4 coord = (int4)(16, get_global_id(0), get_global_id(1), 0); \\\n\
-    src_type img_val0, img_val1, img_val2, img_val3; \\\n\
-    copy_type val0, val1, val2, val3; \\\n\
-    src_type val; \\\n\
-    REDUCEMIN_PROCESS_AXIS0(VXC_ReadImage, vert_min_fun, horz_min_fun); \\\n\
-    REDUCEMIN_PROCESS_AXIS0_SAVE_SAME(save_type, VXC_WriteImage); \\\n\
-}\n\
-\n\
-#define REDUCEMIN_AXIS0_2D(src_name, dst_name, src_type, copy_type,\\\n\
-                           dst_type, save_type, conv_mode, OUT_SCALE,\\\n\
-                           OUT_OFFSET, IN_SCALE, IN_OFFSET, vert_min_fun, horz_min_fun) \\\n\
-__kernel void vxcReduceminAxis0_##src_name##to##dst_name##_2D \\\n\
-    ( \\\n\
-    __read_only  image2d_array_t input, \\\n\
-    __write_only image2d_array_t output, \\\n\
-    int   axisVal \\\n\
-    ) \\\n\
-{ \\\n\
-    int2 coord = (int2)(16, get_global_id(0)); \\\n\
-    src_type img_val0, img_val1, img_val2, img_val3; \\\n\
-    copy_type val0, val1, val2, val3; \\\n\
-    src_type val; \\\n\
-    REDUCEMIN_PROCESS_AXIS0(VXC_ReadImage, vert_min_fun, horz_min_fun); \\\n\
-    REDUCEMIN_PROCESS_AXIS0_SAVE(dst_type, save_type, conv_mode,\\\n\
-    OUT_SCALE, OUT_OFFSET, IN_SCALE, IN_OFFSET, VXC_WriteImage); \\\n\
-}\n\
-\n\
-REDUCEMIN_AXIS0_SAME_2D(F16, F16, vxc_half8, vxc_short8,  vxc_short8, VXC_VertMin3_Half, VXC_HorzMin3_Half)\n\
-\n\
-REDUCEMIN_AXIS0_2D(F16, I16, vxc_half8, vxc_short8, short4, vxc_short8,\\\n\
-CONV_SAT_RTE, outputScale, 0, 1, 0, VXC_VertMin3_Half, VXC_HorzMin3_Half)\n\
-REDUCEMIN_AXIS0_2D(F16, I8,  vxc_half8, vxc_short8, char4,  vxc_char8,\\\n\
-CONV_SAT_RTE, outputScale, 0, 1, 0, VXC_VertMin3_Half, VXC_HorzMin3_Half)\n\
-REDUCEMIN_AXIS0_2D(F16, U8,  vxc_half8, vxc_short8, uchar4, vxc_uchar8,\\\n\
-CONV_SAT_RTE, outputScale, output_offset_asymmetric, 1, 0, VXC_VertMin3_Half, VXC_HorzMin3_Half)\n\
-\n\
-REDUCEMIN_AXIS0_2D(I16, F16, vxc_short8, vxc_short8, half4,  vxc_short8,\\\n\
-CONV, 1, 0, inputScale, 0, VXC_VertMin3_Integer, VXC_HorzMin3_Integer)\n\
-REDUCEMIN_AXIS0_2D(I8, F16, vxc_char16, vxc_char16, half4,  vxc_short8,\\\n\
-CONV, 1, 0, inputScale, 0, VXC_VertMin3_Integer, VXC_HorzMin3_Integer)\n\
-REDUCEMIN_AXIS0_2D(U8, F16, vxc_uchar16, vxc_uchar16, half4,  vxc_short8,\\\n\
-CONV, 1, 0, inputScale, input_offset_asymmetric, VXC_VertMin3_Integer, VXC_HorzMin3_Integer)\n\
-REDUCEMIN_AXIS0_2D(I16, I16, vxc_short8, vxc_short8, short4, vxc_short8,\\\n\
-CONV_SAT_RTE, outputScale, 0, inputScale, 0, VXC_VertMin3_Integer, VXC_HorzMin3_Integer)\n\
-REDUCEMIN_AXIS0_2D(I8, I8,  vxc_char16, vxc_char16,  char4, vxc_char8,\\\n\
-CONV_SAT_RTE, outputScale, 0, inputScale, 0, VXC_VertMin3_Integer, VXC_HorzMin3_Integer)\n\
-REDUCEMIN_AXIS0_2D(U8, U8,  vxc_uchar16, vxc_uchar16, uchar4, vxc_uchar8, CONV_SAT_RTE,\\\n\
-outputScale, output_offset_asymmetric, inputScale, input_offset_asymmetric,\\\n\
-VXC_VertMin3_Integer, VXC_HorzMin3_Integer)\n\
-\n\
-\n\
-"; /* end of vsi_nn_kernel_internal_reduceminAxis0_vx*/
-
-static const char vsi_nn_kernel_internal_reduceminAxis1_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
-\n\
-_viv_uniform int         axisSize;\n\
-_viv_uniform float       outputScale;\n\
-_viv_uniform float       output_offset_asymmetric;\n\
-_viv_uniform float       inputScale;\n\
-_viv_uniform float       input_offset_asymmetric;\n\
-_viv_uniform VXC_512Bits uniGetLoData_4x4;\n\
-\n\
-_viv_uniform VXC_512Bits uniConvertInt32toUint8_2x8;\n\
-_viv_uniform VXC_512Bits uniGetHiData_4x4;\n\
-\n\
-#define REDUCEMIN_PROCESS_AXIS1(read_fun, vert_min_fun) \\\n\
-    read_fun(in0, input, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
-    _viv_asm(COPY, min, in0, 16); \\\n\
-    coord.y++; \\\n\
-    do \\\n\
-    { \\\n\
-        read_fun(in0, input, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
-        _viv_asm(COPY, vec0, in0, 16); \\\n\
-        vert_min_fun(min, min, min, vec0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
-        coord.y++; \\\n\
-    } \\\n\
-    while(coord.y < axisSize);\n\
-\n\
-#define REDUCEMIN_PROCESS_AXIS1_SAVE_SAME(save_type, write_fun) \\\n\
-    coord.y = 0; \\\n\
-    save_type vect; \\\n\
-    _viv_asm(COPY, vect, min, 16); \\\n\
-    write_fun(output, coord, vect, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-\n\
-#define REDUCEMIN_PROCESS_AXIS1_SAVE(dst_type, save_type, conv_mode,\\\n\
-OUT_SCALE, OUT_OFFSET, IN_SCALE, IN_OFFSET, write_fun) \\\n\
-    coord.y = 0; \\\n\
-    dst_type dst0, dst1; \\\n\
-    save_type vect; \\\n\
-    VXC_DP4x4(data0, min, min, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniGetLoData_4x4); \\\n\
-    data0 = ((data0 - IN_OFFSET) * IN_SCALE) * OUT_SCALE + OUT_OFFSET; \\\n\
-    _viv_asm(conv_mode, dst0, data0); \\\n\
-    VXC_DP4x4(data0, min, min, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniGetHiData_4x4); \\\n\
-    data0 = ((data0 - IN_OFFSET) * IN_SCALE) * OUT_SCALE + OUT_OFFSET; \\\n\
-    _viv_asm(conv_mode, dst1, data0); \\\n\
-    VXC_DP2x8(vect, dst0, dst1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvertInt32toUint8_2x8); \\\n\
-    write_fun(output, coord, vect, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-\n\
-#define REDUCEMIN_AXIS1_SAME(src_name, dst_name, src_type, copy_type, save_type, vert_min_fun) \\\n\
-__kernel void vxcReduceminAxis1_##src_name##to##dst_name \\\n\
-    ( \\\n\
-    __read_only  image2d_array_t input, \\\n\
-    __write_only image2d_array_t output, \\\n\
-    int   axisVal \\\n\
-    ) \\\n\
-{ \\\n\
-    int4 coord = (int4)(get_global_id(0), 0, get_global_id(1), 0); \\\n\
-    src_type vec0, min; \\\n\
-    copy_type in0; \\\n\
-    vxc_float4 data0; \\\n\
-    REDUCEMIN_PROCESS_AXIS1(VXC_ReadImage2DArray, vert_min_fun) \\\n\
-    REDUCEMIN_PROCESS_AXIS1_SAVE_SAME(save_type, VXC_WriteImage2DArray); \\\n\
-}\n\
-\n\
-#define REDUCEMIN_AXIS1(src_name, dst_name, src_type, copy_type, dst_type, save_type,\\\n\
-conv_mode, OUT_SCALE, OUT_OFFSET, IN_SCALE, IN_OFFSET, vert_min_fun) \\\n\
-__kernel void vxcReduceminAxis1_##src_name##to##dst_name \\\n\
-    ( \\\n\
-    __read_only  image2d_array_t input, \\\n\
-    __write_only image2d_array_t output, \\\n\
-    int   axisVal \\\n\
-    ) \\\n\
-{ \\\n\
-    int4 coord = (int4)(get_global_id(0), 0, get_global_id(1), 0); \\\n\
-    src_type vec0, min; \\\n\
-    copy_type in0; \\\n\
-    vxc_float4 data0; \\\n\
-    REDUCEMIN_PROCESS_AXIS1(VXC_ReadImage2DArray, vert_min_fun) \\\n\
-    REDUCEMIN_PROCESS_AXIS1_SAVE(dst_type, save_type, conv_mode,\\\n\
-    OUT_SCALE, OUT_OFFSET, IN_SCALE, IN_OFFSET, VXC_WriteImage2DArray); \\\n\
-}\n\
-\n\
-\n\
-\n\
-REDUCEMIN_AXIS1_SAME(F16, F16, vxc_half8, vxc_short8,  vxc_short8, VXC_VertMin3_Half)\n\
-\n\
-\n\
-REDUCEMIN_AXIS1(F16, I16, vxc_half8, vxc_short8, short4, vxc_short8,\\\n\
-CONV_SAT_RTE, outputScale, 0, 1, 0, VXC_VertMin3_Half)\n\
-REDUCEMIN_AXIS1(F16, I8,  vxc_half8, vxc_short8, char4,  vxc_char8,\\\n\
-CONV_SAT_RTE, outputScale, 0, 1, 0, VXC_VertMin3_Half)\n\
-REDUCEMIN_AXIS1(F16, U8,  vxc_half8, vxc_short8, uchar4, vxc_uchar8,\\\n\
-CONV_SAT_RTE, outputScale, output_offset_asymmetric, 1, 0, VXC_VertMin3_Half)\n\
-REDUCEMIN_AXIS1(I16, F16, vxc_short8, vxc_short8, half4,  vxc_short8,\\\n\
-CONV, 1, 0, inputScale, 0, VXC_VertMin3_Integer)\n\
-REDUCEMIN_AXIS1(I8, F16, vxc_char16, vxc_char16, half4,  vxc_short8,\\\n\
-CONV, 1, 0, inputScale, 0, VXC_VertMin3_Integer)\n\
-REDUCEMIN_AXIS1(U8, F16, vxc_uchar16, vxc_uchar16, half4,  vxc_short8,\\\n\
-CONV, 1, 0, inputScale, input_offset_asymmetric, VXC_VertMin3_Integer)\n\
-REDUCEMIN_AXIS1(I16, I16, vxc_short8, vxc_short8, short4,\\\n\
-vxc_short8, CONV_SAT_RTE, outputScale, 0, inputScale, 0, VXC_VertMin3_Integer)\n\
-REDUCEMIN_AXIS1(I8, I8,  vxc_char16, vxc_char16,  char4,\\\n\
-vxc_char8, CONV_SAT_RTE, outputScale, 0, inputScale, 0, VXC_VertMin3_Integer)\n\
-REDUCEMIN_AXIS1(U8, U8,  vxc_uchar16, vxc_uchar16, uchar4, vxc_uchar8, CONV_SAT_RTE,\\\n\
-outputScale, output_offset_asymmetric, inputScale, input_offset_asymmetric, VXC_VertMin3_Integer)\n\
-\n\
-\n\
-#define REDUCEMIN_AXIS1_SAME_2D(src_name, dst_name, src_type, copy_type, save_type, vert_min_fun) \\\n\
-__kernel void vxcReduceminAxis1_##src_name##to##dst_name##_2D \\\n\
-    ( \\\n\
-    __read_only  image2d_array_t input, \\\n\
-    __write_only image2d_array_t output, \\\n\
-    int   axisVal \\\n\
-    ) \\\n\
-{ \\\n\
-    int2 coord = (int2)(get_global_id(0), 0); \\\n\
-    src_type vec0, min; \\\n\
-    copy_type in0; \\\n\
-    vxc_float4 data0; \\\n\
-    REDUCEMIN_PROCESS_AXIS1(VXC_ReadImage, vert_min_fun) \\\n\
-    REDUCEMIN_PROCESS_AXIS1_SAVE_SAME(save_type, VXC_WriteImage); \\\n\
-}\n\
-\n\
-#define REDUCEMIN_AXIS1_2D(src_name, dst_name, src_type, copy_type, dst_type, save_type,\\\n\
-conv_mode, OUT_SCALE, OUT_OFFSET, IN_SCALE, IN_OFFSET, vert_min_fun) \\\n\
-__kernel void vxcReduceminAxis1_##src_name##to##dst_name##_2D \\\n\
-    ( \\\n\
-    __read_only  image2d_array_t input, \\\n\
-    __write_only image2d_array_t output, \\\n\
-    int   axisVal \\\n\
-    ) \\\n\
-{ \\\n\
-    int2 coord = (int2)(get_global_id(0), 0); \\\n\
-    src_type vec0, min; \\\n\
-    copy_type in0; \\\n\
-    vxc_float4 data0; \\\n\
-    REDUCEMIN_PROCESS_AXIS1(VXC_ReadImage, vert_min_fun) \\\n\
-    REDUCEMIN_PROCESS_AXIS1_SAVE(dst_type, save_type, conv_mode,\\\n\
-    OUT_SCALE, OUT_OFFSET, IN_SCALE, IN_OFFSET, VXC_WriteImage); \\\n\
-}\n\
-\n\
-REDUCEMIN_AXIS1_SAME_2D(F16, F16, vxc_half8, vxc_short8,  vxc_short8, VXC_VertMin3_Half)\n\
-\n\
-REDUCEMIN_AXIS1_2D(F16, I16, vxc_half8, vxc_short8, short4, vxc_short8,\\\n\
-CONV_SAT_RTE, outputScale, 0, 1, 0, VXC_VertMin3_Half)\n\
-REDUCEMIN_AXIS1_2D(F16, I8,  vxc_half8, vxc_short8, char4,  vxc_char8,\\\n\
-CONV_SAT_RTE, outputScale, 0, 1, 0, VXC_VertMin3_Half)\n\
-REDUCEMIN_AXIS1_2D(F16, U8,  vxc_half8, vxc_short8, uchar4, vxc_uchar8,\\\n\
-CONV_SAT_RTE, outputScale, output_offset_asymmetric, 1, 0, VXC_VertMin3_Half)\n\
-REDUCEMIN_AXIS1_2D(I16, F16, vxc_short8, vxc_short8, half4,  vxc_short8,\\\n\
-CONV, 1, 0, inputScale, 0, VXC_VertMin3_Integer)\n\
-REDUCEMIN_AXIS1_2D(I8, F16, vxc_char16, vxc_char16, half4,  vxc_short8,\\\n\
-CONV, 1, 0, inputScale, 0, VXC_VertMin3_Integer)\n\
-REDUCEMIN_AXIS1_2D(U8, F16, vxc_uchar16, vxc_uchar16, half4,  vxc_short8,\\\n\
-CONV, 1, 0, inputScale, input_offset_asymmetric, VXC_VertMin3_Integer)\n\
-REDUCEMIN_AXIS1_2D(I16, I16, vxc_short8, vxc_short8, short4, vxc_short8,\\\n\
-CONV_SAT_RTE, outputScale, 0, inputScale, 0, VXC_VertMin3_Integer)\n\
-REDUCEMIN_AXIS1_2D(I8, I8,  vxc_char16, vxc_char16,  char4, vxc_char8,\\\n\
-CONV_SAT_RTE, outputScale, 0, inputScale, 0, VXC_VertMin3_Integer)\n\
-REDUCEMIN_AXIS1_2D(U8, U8,  vxc_uchar16, vxc_uchar16, uchar4, vxc_uchar8, CONV_SAT_RTE,\\\n\
-outputScale, output_offset_asymmetric, inputScale, input_offset_asymmetric, VXC_VertMin3_Integer)\n\
-"; /* end of vsi_nn_kernel_internal_reduceminAxis1_vx*/
-
-static const char vsi_nn_kernel_internal_reduceminAxis2_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
-\n\
-_viv_uniform int         axisSize;\n\
-_viv_uniform float       outputScale;\n\
-_viv_uniform float       output_offset_asymmetric;\n\
-_viv_uniform float       inputScale;\n\
-_viv_uniform float       input_offset_asymmetric;\n\
-_viv_uniform VXC_512Bits uniGetLoData_4x4;\n\
-\n\
-_viv_uniform VXC_512Bits uniConvertInt32toUint8_2x8;\n\
-_viv_uniform VXC_512Bits uniGetHiData_4x4;\n\
-\n\
-#define REDUCEMIN_PROCESS_AXIS2(read_fun, vert_min_fun) \\\n\
-    read_fun(in0, input, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
-    _viv_asm(COPY, min, in0, 16); \\\n\
-    coord.z++; \\\n\
-    do \\\n\
-    { \\\n\
-        read_fun(in0, input, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
-        _viv_asm(COPY, vec0, in0, 16); \\\n\
-        vert_min_fun(min, min, min, vec0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
-        coord.z++; \\\n\
-    } \\\n\
-    while(coord.z < axisSize);\n\
-\n\
-#define REDUCEMIN_PROCESS_AXIS2_SAVE_SAME(save_type, write_fun) \\\n\
-    coord.z = 0; \\\n\
-    save_type vect; \\\n\
-    _viv_asm(COPY, vect, min, 16); \\\n\
-    write_fun(output, coord, vect, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-\n\
-#define REDUCEMIN_PROCESS_AXIS2_SAVE(dst_type, save_type, conv_mode,\\\n\
-OUT_SCALE, OUT_OFFSET, IN_SCALE, IN_OFFSET, write_fun) \\\n\
-    coord.z = 0; \\\n\
-    dst_type dst0, dst1; \\\n\
-    save_type vect; \\\n\
-    VXC_DP4x4(data0, min, min, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniGetLoData_4x4); \\\n\
-    data0 = ((data0 - IN_OFFSET) * IN_SCALE) * OUT_SCALE + OUT_OFFSET; \\\n\
-    _viv_asm(conv_mode, dst0, data0); \\\n\
-    VXC_DP4x4(data0, min, min, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniGetHiData_4x4); \\\n\
-    data0 = ((data0 - IN_OFFSET) * IN_SCALE) * OUT_SCALE + OUT_OFFSET; \\\n\
-    _viv_asm(conv_mode, dst1, data0); \\\n\
-    VXC_DP2x8(vect, dst0, dst1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvertInt32toUint8_2x8); \\\n\
-    write_fun(output, coord, vect, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-\n\
-#define REDUCEMIN_AXIS2_SAME(src_name, dst_name, src_type, copy_type, save_type, vert_min_fun) \\\n\
-__kernel void vxcReduceminAxis2_##src_name##to##dst_name \\\n\
-    ( \\\n\
-    __read_only  image2d_array_t input, \\\n\
-    __write_only image2d_array_t output, \\\n\
-    int   axisVal \\\n\
-    ) \\\n\
-{ \\\n\
-    int4 coord = (int4)(get_global_id(0), get_global_id(1), 0, 0); \\\n\
-    src_type vec0, min; \\\n\
-    copy_type in0; \\\n\
-    vxc_float4 data0; \\\n\
-    REDUCEMIN_PROCESS_AXIS2(VXC_ReadImage2DArray, vert_min_fun) \\\n\
-    REDUCEMIN_PROCESS_AXIS2_SAVE_SAME(save_type, VXC_WriteImage2DArray); \\\n\
-}\n\
-\n\
-#define REDUCEMIN_AXIS2(src_name, dst_name, src_type, copy_type, dst_type,\\\n\
-save_type, conv_mode, OUT_SCALE, OUT_OFFSET, IN_SCALE, IN_OFFSET, vert_min_fun) \\\n\
-__kernel void vxcReduceminAxis2_##src_name##to##dst_name \\\n\
-    ( \\\n\
-    __read_only  image2d_array_t input, \\\n\
-    __write_only image2d_array_t output, \\\n\
-    int   axisVal \\\n\
-    ) \\\n\
-{ \\\n\
-    int4 coord = (int4)(get_global_id(0), get_global_id(1), 0, 0); \\\n\
-    src_type vec0, min; \\\n\
-    copy_type in0; \\\n\
-    vxc_float4 data0; \\\n\
-    REDUCEMIN_PROCESS_AXIS2(VXC_ReadImage2DArray, vert_min_fun) \\\n\
-    REDUCEMIN_PROCESS_AXIS2_SAVE(dst_type, save_type, conv_mode,\\\n\
-    OUT_SCALE, OUT_OFFSET, IN_SCALE, IN_OFFSET, VXC_WriteImage2DArray); \\\n\
-}\n\
-\n\
-\n\
-\n\
-REDUCEMIN_AXIS2_SAME(F16, F16, vxc_half8, vxc_short8,  vxc_short8, VXC_VertMin3_Half)\n\
-\n\
-\n\
-REDUCEMIN_AXIS2(F16, I16, vxc_half8, vxc_short8, short4, vxc_short8,\\\n\
-CONV_SAT_RTE, outputScale, 0, 1, 0, VXC_VertMin3_Half)\n\
-REDUCEMIN_AXIS2(F16, I8,  vxc_half8, vxc_short8, char4,  vxc_char8,\\\n\
-CONV_SAT_RTE, outputScale, 0, 1, 0, VXC_VertMin3_Half)\n\
-REDUCEMIN_AXIS2(F16, U8,  vxc_half8, vxc_short8, uchar4, vxc_uchar8,\\\n\
-CONV_SAT_RTE, outputScale, output_offset_asymmetric, 1, 0, VXC_VertMin3_Half)\n\
-REDUCEMIN_AXIS2(I16, F16, vxc_short8, vxc_short8, half4,  vxc_short8,\\\n\
-CONV, 1, 0, inputScale, 0, VXC_VertMin3_Integer)\n\
-REDUCEMIN_AXIS2(I8, F16, vxc_char16, vxc_char16, half4,  vxc_short8,\\\n\
-CONV, 1, 0, inputScale, 0, VXC_VertMin3_Integer)\n\
-REDUCEMIN_AXIS2(U8, F16, vxc_uchar16, vxc_uchar16, half4,  vxc_short8,\\\n\
-CONV, 1, 0, inputScale, input_offset_asymmetric, VXC_VertMin3_Integer)\n\
-\n\
-REDUCEMIN_AXIS2(I16, I16, vxc_short8, vxc_short8, short4, vxc_short8,\\\n\
-CONV_SAT_RTE, outputScale, 0, inputScale, 0, VXC_VertMin3_Integer)\n\
-REDUCEMIN_AXIS2(I8, I8,  vxc_char16, vxc_char16,  char4, vxc_char8,\\\n\
-CONV_SAT_RTE, outputScale, 0, inputScale, 0, VXC_VertMin3_Integer)\n\
-REDUCEMIN_AXIS2(U8, U8,  vxc_uchar16, vxc_uchar16, uchar4, vxc_uchar8, CONV_SAT_RTE,\\\n\
-outputScale, output_offset_asymmetric, inputScale, input_offset_asymmetric, VXC_VertMin3_Integer)\n\
-\n\
-"; /* end of vsi_nn_kernel_internal_reduceminAxis2_vx*/
 
 static const char vsi_nn_kernel_l2normalizescaleAxis0_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
@@ -30623,6 +30625,380 @@ __kernel void reducemax_axis2_I32toI32\n\
 \n\
 "; /* end of reducemax_internal_axis2_cl*/
 
+static const char reducemin_internal_axis0_cl[] = "__kernel void reducemin_axis0_F32toF32\n\
+    (\n\
+    __read_only  image2d_array_t input,\n\
+    __write_only image2d_t       output,\n\
+                 float           inputScale,\n\
+                 float           inputTail\n\
+    )\n\
+{\n\
+    int4 coord    =  (int4)(0, get_global_id(0), get_global_id(1), 0);\n\
+    int axisSize  = get_image_width(input);\n\
+    float4 minVal = read_imagef(input, coord);\n\
+    coord.x ++;\n\
+\n\
+    for (; coord.x < axisSize;)\n\
+    {\n\
+        float4 val = read_imagef(input, coord);\n\
+        minVal = val < minVal ? val : minVal;\n\
+        coord.x ++;\n\
+    }\n\
+\n\
+    write_imagef(output, coord.yz, minVal);\n\
+}\n\
+\n\
+__kernel void reducemin_axis0_F32toF32_2D\n\
+    (\n\
+    __read_only  image2d_t input,\n\
+    __write_only image2d_t output,\n\
+                 float     inputScale,\n\
+                 float     inputTail\n\
+    )\n\
+{\n\
+    int2 coord   =  (int2)(0, get_global_id(0));\n\
+    int axisSize = get_image_width(input);\n\
+    float4 minVal = read_imagef(input, coord);\n\
+    coord.x ++;\n\
+\n\
+    for (; coord.x < axisSize;)\n\
+    {\n\
+        float4 val = read_imagef(input, coord);\n\
+        minVal = val < minVal ? val : minVal;\n\
+        coord.x ++;\n\
+    }\n\
+\n\
+    coord.x = 0;\n\
+    write_imagef(output, coord.yx, minVal);\n\
+}\n\
+\n\
+__kernel void reducemin_axis0_U8toU8\n\
+    (\n\
+    __read_only  image2d_array_t input,\n\
+    __write_only image2d_t       output,\n\
+                 float           inputScale,\n\
+                 float           inputTail\n\
+    )\n\
+{\n\
+    int4 coord   =  (int4)(0, get_global_id(0), get_global_id(1), 0);\n\
+    int axisSize = get_image_width(input);\n\
+    uint4 dst;\n\
+    uint4 minVal = read_imageui(input, coord);\n\
+    coord.x ++;\n\
+\n\
+    for (; coord.x < axisSize;)\n\
+    {\n\
+        uint4 val = read_imageui(input, coord);\n\
+        minVal = val < minVal ? val : minVal;\n\
+        coord.x ++;\n\
+    }\n\
+    dst = convert_uint4(convert_float4(minVal) * inputScale + inputTail);\n\
+    write_imageui(output, coord.yz, minVal);\n\
+}\n\
+\n\
+__kernel void reducemin_axis0_U8toU8_2D\n\
+    (\n\
+    __read_only  image2d_t input,\n\
+    __write_only image2d_t output,\n\
+                 float     inputScale,\n\
+                 float     inputTail\n\
+    )\n\
+{\n\
+    int2 coord   =  (int2)(0, get_global_id(0));\n\
+    int axisSize = get_image_width(input);\n\
+    uint4 dst;\n\
+    uint4 minVal = read_imageui(input, coord);\n\
+    coord.x ++;\n\
+\n\
+    for (; coord.x < axisSize;)\n\
+    {\n\
+        uint4 val = read_imageui(input, coord);\n\
+        minVal = val < minVal ? val : minVal;\n\
+        coord.x ++;\n\
+    }\n\
+    dst = convert_uint4(convert_float4(minVal) * inputScale + inputTail);\n\
+    coord.x = 0;\n\
+    write_imageui(output, coord.yx, dst);\n\
+}\n\
+\n\
+__kernel void reducemin_axis0_I32toI32\n\
+    (\n\
+    __read_only  image2d_array_t input,\n\
+    __write_only image2d_t       output,\n\
+                 float           inputScale,\n\
+                 float           inputTail\n\
+    )\n\
+{\n\
+    int4 coord   =  (int4)(0, get_global_id(0), get_global_id(1), 0);\n\
+    int axisSize = get_image_width(input);\n\
+\n\
+    int4 minVal  = read_imagei(input, coord);\n\
+    coord.x ++;\n\
+\n\
+    for (; coord.x < axisSize;)\n\
+    {\n\
+        int4 val = read_imagei(input, coord);\n\
+        minVal = val < minVal ? val : minVal;\n\
+        coord.x ++;\n\
+    }\n\
+\n\
+    write_imagei(output, coord.yz, minVal);\n\
+}\n\
+\n\
+__kernel void reducemin_axis0_I32toI32_2D\n\
+    (\n\
+    __read_only  image2d_t input,\n\
+    __write_only image2d_t output,\n\
+                 float     inputScale,\n\
+                 float     inputTail\n\
+    )\n\
+{\n\
+    int2 coord   =  (int2)(0, get_global_id(0));\n\
+    int axisSize = get_image_width(input);\n\
+\n\
+    int4 minVal  = read_imagei(input, coord);\n\
+    coord.x ++;\n\
+\n\
+    for (; coord.x < axisSize;)\n\
+    {\n\
+        int4 val = read_imagei(input, coord);\n\
+        minVal = val < minVal ? val : minVal;\n\
+        coord.x ++;\n\
+    }\n\
+\n\
+    coord.x = 0;\n\
+    write_imagei(output, coord.yx, minVal);\n\
+}\n\
+\n\
+"; /* end of reducemin_internal_axis0_cl*/
+
+static const char reducemin_internal_axis1_cl[] = "__kernel void reducemin_axis1_F32toF32\n\
+    (\n\
+    __read_only  image2d_array_t input,\n\
+    __write_only image2d_t       output,\n\
+                 float           inputScale,\n\
+                 float           inputTail\n\
+    )\n\
+{\n\
+    int4 coord =  (int4)(get_global_id(0), 0, get_global_id(1), 0);\n\
+    int axisSize = get_image_height(input);\n\
+\n\
+    float4 minVal = read_imagef(input, coord);\n\
+    coord.y ++;\n\
+\n\
+    for (; coord.y < axisSize;)\n\
+    {\n\
+        float4 val = read_imagef(input, coord);\n\
+        minVal = val < minVal ? val : minVal;\n\
+        coord.y ++;\n\
+    }\n\
+\n\
+    write_imagef(output, coord.xz, minVal);\n\
+}\n\
+\n\
+__kernel void reducemin_axis1_F32toF32_2D\n\
+    (\n\
+    __read_only  image2d_t input,\n\
+    __write_only image2d_t output,\n\
+                 float     inputScale,\n\
+                 float     inputTail\n\
+    )\n\
+{\n\
+    int2 coord =  (int2)(get_global_id(0), 0);\n\
+    int axisSize = get_image_height(input);\n\
+\n\
+    float4 minVal = read_imagef(input, coord);\n\
+    coord.y ++;\n\
+\n\
+    for (; coord.y < axisSize;)\n\
+    {\n\
+        float4 val = read_imagef(input, coord);\n\
+        minVal = val < minVal ? val : minVal;\n\
+        coord.y ++;\n\
+    }\n\
+\n\
+    coord.y = 0;\n\
+    write_imagef(output, coord, minVal);\n\
+}\n\
+\n\
+__kernel void reducemin_axis1_U8toU8\n\
+    (\n\
+    __read_only  image2d_array_t input,\n\
+    __write_only image2d_t       output,\n\
+                 float           inputScale,\n\
+                 float           inputTail\n\
+    )\n\
+{\n\
+    int4 coord =  (int4)(get_global_id(0), 0, get_global_id(1), 0);\n\
+    int axisSize = get_image_height(input);\n\
+    uint4 dst;\n\
+    uint4 minVal = read_imageui(input, coord);\n\
+    coord.y ++;\n\
+\n\
+    for (; coord.y < axisSize;)\n\
+    {\n\
+        uint4 val = read_imageui(input, coord);\n\
+        minVal = val < minVal ? val : minVal;\n\
+        coord.y ++;\n\
+    }\n\
+    dst = convert_uint4(convert_float4(minVal) * inputScale + inputTail);\n\
+    write_imageui(output, coord.xz, dst);\n\
+}\n\
+\n\
+__kernel void reducemin_axis1_U8toU8_2D\n\
+    (\n\
+    __read_only  image2d_t input,\n\
+    __write_only image2d_t output,\n\
+                 float     inputScale,\n\
+                 float     inputTail\n\
+    )\n\
+{\n\
+    int2 coord =  (int2)(get_global_id(0), 0);\n\
+    int axisSize = get_image_height(input);\n\
+    uint4 dst;\n\
+    uint4 minVal = read_imageui(input, coord);\n\
+    coord.y ++;\n\
+\n\
+    for (; coord.y < axisSize;)\n\
+    {\n\
+        uint4 val = read_imageui(input, coord);\n\
+        minVal = val < minVal ? val : minVal;\n\
+        coord.y ++;\n\
+    }\n\
+    dst = convert_uint4(convert_float4(minVal) * inputScale + inputTail);\n\
+    coord.y = 0;\n\
+    write_imageui(output, coord, dst);\n\
+}\n\
+\n\
+__kernel void reducemin_axis1_I32toI32\n\
+    (\n\
+    __read_only  image2d_array_t input,\n\
+    __write_only image2d_t       output,\n\
+                 float           inputScale,\n\
+                 float           inputTail\n\
+    )\n\
+{\n\
+    int4 coord =  (int4)(get_global_id(0), 0, get_global_id(1), 0);\n\
+    int axisSize = get_image_height(input);\n\
+\n\
+    int4 minVal = read_imagei(input, coord);\n\
+    coord.y ++;\n\
+\n\
+    for (; coord.y < axisSize;)\n\
+    {\n\
+        int4 val = read_imagei(input, coord);\n\
+        minVal = val < minVal ? val : minVal;\n\
+        coord.y ++;\n\
+    }\n\
+\n\
+    write_imagei(output, coord.xz, minVal);\n\
+}\n\
+\n\
+__kernel void reducemin_axis1_I32toI32_2D\n\
+    (\n\
+    __read_only  image2d_t input,\n\
+    __write_only image2d_t output,\n\
+                 float     inputScale,\n\
+                 float     inputTail\n\
+    )\n\
+{\n\
+    int2 coord =  (int2)(get_global_id(0), 0);\n\
+    int axisSize = get_image_height(input);\n\
+\n\
+    int4 minVal = read_imagei(input, coord);\n\
+    coord.y ++;\n\
+\n\
+    for (; coord.y < axisSize;)\n\
+    {\n\
+        int4 val = read_imagei(input, coord);\n\
+        minVal = val < minVal ? val : minVal;\n\
+        coord.y ++;\n\
+    }\n\
+\n\
+    coord.y = 0;\n\
+    write_imagei(output, coord, minVal);\n\
+}\n\
+\n\
+"; /* end of reducemin_internal_axis1_cl*/
+
+static const char reducemin_internal_axis2_cl[] = "__kernel void reducemin_axis2_F32toF32\n\
+    (\n\
+    __read_only  image2d_array_t input,\n\
+    __write_only image2d_t       output,\n\
+                 float           inputScale,\n\
+                 float           inputTail\n\
+    )\n\
+{\n\
+    int4 coord =  (int4)(get_global_id(0), get_global_id(1), 0, 0);\n\
+    int axisSize = get_image_depth(input);\n\
+\n\
+    float4 minVal = read_imagef(input, coord);\n\
+    coord.z ++;\n\
+\n\
+    for (; coord.z < axisSize;)\n\
+    {\n\
+        float4 val = read_imagef(input, coord);\n\
+        minVal = val < minVal ? val : minVal;\n\
+        coord.z ++;\n\
+    }\n\
+\n\
+    write_imagef(output, coord.xy, minVal);\n\
+}\n\
+\n\
+\n\
+__kernel void reducemin_axis2_U8toU8\n\
+    (\n\
+    __read_only  image2d_array_t input,\n\
+    __write_only image2d_t       output,\n\
+                 float           inputScale,\n\
+                 float           inputTail\n\
+    )\n\
+{\n\
+    int4 coord =  (int4)(get_global_id(0), get_global_id(1), 0, 0);\n\
+    int axisSize = get_image_depth(input);\n\
+    uint4 dst;\n\
+    uint4 minVal = read_imageui(input, coord);\n\
+    coord.z ++;\n\
+\n\
+    for (; coord.z < axisSize;)\n\
+    {\n\
+        uint4 val = read_imageui(input, coord);\n\
+        minVal = val < minVal ? val : minVal;\n\
+        coord.z ++;\n\
+    }\n\
+    dst = convert_uint4(convert_float4(minVal) * inputScale + inputTail);\n\
+    write_imageui(output, coord.xy, dst);\n\
+}\n\
+\n\
+\n\
+__kernel void reducemin_axis2_I32toI32\n\
+    (\n\
+    __read_only  image2d_array_t input,\n\
+    __write_only image2d_t       output,\n\
+                 float           inputScale,\n\
+                 float           inputTail\n\
+    )\n\
+{\n\
+    int4 coord =  (int4)(get_global_id(0), get_global_id(1), 0, 0);\n\
+    int axisSize = get_image_depth(input);\n\
+\n\
+    int4 minVal = read_imagei(input, coord);\n\
+    coord.z ++;\n\
+\n\
+    for (; coord.z < axisSize;)\n\
+    {\n\
+        int4 val = read_imagei(input, coord);\n\
+        minVal = val < minVal ? val : minVal;\n\
+        coord.z ++;\n\
+    }\n\
+\n\
+    write_imagei(output, coord.xy, minVal);\n\
+}\n\
+\n\
+\n\
+\n\
+"; /* end of reducemin_internal_axis2_cl*/
+
 static const char relational_ops_cl[] = "\n\
 #define COMPARISONS_F32(func_name, comp_op) \\\n\
 __kernel void func_name##_F32F32toBOOL8 \\\n\
@@ -31101,6 +31477,9 @@ const static source_map_t evis_resource[] =
     {"reducemax_internal_axis0_vx", reducemax_internal_axis0_vx},
     {"reducemax_internal_axis1_vx", reducemax_internal_axis1_vx},
     {"reducemax_internal_axis2_vx", reducemax_internal_axis2_vx},
+    {"reducemin_internal_axis0_vx", reducemin_internal_axis0_vx},
+    {"reducemin_internal_axis1_vx", reducemin_internal_axis1_vx},
+    {"reducemin_internal_axis2_vx", reducemin_internal_axis2_vx},
     {"relational_ops_2d_vx", relational_ops_2d_vx},
     {"relational_ops_3d_vx", relational_ops_3d_vx},
     {"select_vx", select_vx},
@@ -31139,9 +31518,6 @@ const static source_map_t evis_resource[] =
     {"vsi_nn_kernel_internal_reduceanyAxis0_vx", vsi_nn_kernel_internal_reduceanyAxis0_vx},
     {"vsi_nn_kernel_internal_reduceanyAxis1_vx", vsi_nn_kernel_internal_reduceanyAxis1_vx},
     {"vsi_nn_kernel_internal_reduceanyAxis2_vx", vsi_nn_kernel_internal_reduceanyAxis2_vx},
-    {"vsi_nn_kernel_internal_reduceminAxis0_vx", vsi_nn_kernel_internal_reduceminAxis0_vx},
-    {"vsi_nn_kernel_internal_reduceminAxis1_vx", vsi_nn_kernel_internal_reduceminAxis1_vx},
-    {"vsi_nn_kernel_internal_reduceminAxis2_vx", vsi_nn_kernel_internal_reduceminAxis2_vx},
     {"vsi_nn_kernel_l2normalizescaleAxis0_vx", vsi_nn_kernel_l2normalizescaleAxis0_vx},
     {"vsi_nn_kernel_l2normalizescaleAxis1_vx", vsi_nn_kernel_l2normalizescaleAxis1_vx},
     {"vsi_nn_kernel_layernormalize_vx", vsi_nn_kernel_layernormalize_vx},
@@ -31245,6 +31621,9 @@ const static source_map_t cl_resource[] =
     {"reducemax_internal_axis0_cl", reducemax_internal_axis0_cl},
     {"reducemax_internal_axis1_cl", reducemax_internal_axis1_cl},
     {"reducemax_internal_axis2_cl", reducemax_internal_axis2_cl},
+    {"reducemin_internal_axis0_cl", reducemin_internal_axis0_cl},
+    {"reducemin_internal_axis1_cl", reducemin_internal_axis1_cl},
+    {"reducemin_internal_axis2_cl", reducemin_internal_axis2_cl},
     {"relational_ops_cl", relational_ops_cl},
     {"select_cl", select_cl},
     {"swish_cl", swish_cl},
