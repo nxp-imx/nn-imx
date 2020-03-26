@@ -67,7 +67,7 @@ static vsi_status op_compute
     }
     for(i = 0; i < (uint32_t)inputs[1]->attr.dim_num; ++i)
     {
-        indices_num *= inputs[0]->attr.size[i];
+        indices_num *= inputs[1]->attr.size[i];
     }
 
     vsi_nn_kernel_param_add_int32( param, "block_size", block_size );
