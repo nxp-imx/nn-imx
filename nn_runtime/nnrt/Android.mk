@@ -16,6 +16,10 @@ ifeq ($(OVXLIB_DIR),)
 $(error Please set OVXLIB_DIR env first)
 endif
 
+ifeq ($NNRT_ROOT),)
+$(error Please set NNRT_ROT to parent dir of nnrt)
+endif
+
 include $(AQROOT)/Android.mk.def
 
 ifeq ($(PLATFORM_VENDOR),1)
@@ -72,7 +76,8 @@ LOCAL_C_INCLUDES += \
     $(OVXLIB_DIR)/include/libnnext\
     $(AQROOT)/sdk/inc\
     $(LOCAL_PATH)/boost/libs/preprocessor/include\
-    $(LOCAL_PATH)/api_requirement/
+    $(LOCAL_PATH)/api_requirement/\
+    $(NNRT_ROOT)
 
 LOCAL_SHARED_LIBRARIES += libovxlib
 
