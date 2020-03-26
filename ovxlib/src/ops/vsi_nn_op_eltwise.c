@@ -49,7 +49,8 @@ static vsi_status _eltwise_op_compute
     vsi_nn_tensor_t* reshape_tensors[3] = { NULL };
     int32_t shapes[3][VSI_NN_MAX_DIM_NUM] = { { 0 } };
     uint32_t new_rank = 0;
-    vsi_bool ret;
+    vsi_bool ret = TRUE;
+    vx_bool doShapeOptimized = TRUE;
     vsi_nn_kernel_param_t * param = NULL;
 
     if( NULL == self )
@@ -58,13 +59,26 @@ static vsi_status _eltwise_op_compute
     }
     status = VSI_FAILURE;
 
+    if (strcmp(kernel_name, "sub") == 0 || strcmp(kernel_name, "add") == 0)
+    {
+        doShapeOptimized = FALSE;
+
+        reshape_tensors[0] = inputs[0];
+        reshape_tensors[1] = inputs[1];
+        reshape_tensors[2] = outputs[0];
+    }
+
     // TODO: This optimzie is a hack for gpu path,
     // it should be moved to gpu kernel setup.
-    ret = vsi_nn_kernel_optimize_eltwise_shape(
-            (int32_t *)inputs[0]->attr.size, inputs[0]->attr.dim_num,
-            (int32_t *)inputs[1]->attr.size, inputs[1]->attr.dim_num,
-            (int32_t *)outputs[0]->attr.size, outputs[0]->attr.dim_num,
-            shapes[0], shapes[1], shapes[2], &new_rank );
+    if (doShapeOptimized)
+    {
+        ret = vsi_nn_kernel_optimize_eltwise_shape(
+                (int32_t *)inputs[0]->attr.size, inputs[0]->attr.dim_num,
+                (int32_t *)inputs[1]->attr.size, inputs[1]->attr.dim_num,
+                (int32_t *)outputs[0]->attr.size, outputs[0]->attr.dim_num,
+                shapes[0], shapes[1], shapes[2], &new_rank );
+    }
+
     if( ret )
     {
         // Add params
@@ -73,21 +87,27 @@ static vsi_status _eltwise_op_compute
         vsi_nn_kernel_param_add_int32( param, "overflow_policy", self->vx_param.overflow_policy );
         vsi_nn_kernel_param_add_int32( param, "rounding_policy", self->vx_param.rounding_policy );
 
-        reshape_tensors[0] = vsi_nn_reshape_tensor( self->graph,
-                inputs[0], (uint32_t*)shapes[0], new_rank );
-        reshape_tensors[1] = vsi_nn_reshape_tensor( self->graph,
-                inputs[1], (uint32_t*)shapes[1], new_rank );
-        reshape_tensors[2] = vsi_nn_reshape_tensor( self->graph,
-                outputs[0], (uint32_t*)shapes[2], new_rank );
+        if (doShapeOptimized)
+        {
+            reshape_tensors[0] = vsi_nn_reshape_tensor( self->graph,
+                    inputs[0], (uint32_t*)shapes[0], new_rank );
+            reshape_tensors[1] = vsi_nn_reshape_tensor( self->graph,
+                    inputs[1], (uint32_t*)shapes[1], new_rank );
+            reshape_tensors[2] = vsi_nn_reshape_tensor( self->graph,
+                    outputs[0], (uint32_t*)shapes[2], new_rank );
+        }
 
         self->n = (vx_node)vsi_nn_kernel_selector( self->graph,
                 kernel_name,
                 &reshape_tensors[0], 2,
                 &reshape_tensors[2], 1, param );
 
-        vsi_nn_ReleaseTensor( &reshape_tensors[0] );
-        vsi_nn_ReleaseTensor( &reshape_tensors[1] );
-        vsi_nn_ReleaseTensor( &reshape_tensors[2] );
+        if (doShapeOptimized)
+        {
+            vsi_nn_ReleaseTensor( &reshape_tensors[0] );
+            vsi_nn_ReleaseTensor( &reshape_tensors[1] );
+            vsi_nn_ReleaseTensor( &reshape_tensors[2] );
+        }
 
         vsi_nn_kernel_param_release( &param );
     }
