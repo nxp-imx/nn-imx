@@ -192,6 +192,20 @@ inline const char* get_operation_string(OperationType type) {
             return "log_softmax";
         case OperationType::PAD_V2:
             return "pad_v2";
+        case OperationType::UNIDIRECTIONAL_SEQUENCE_LSTM:
+            return "unidirectional_sequence_lstm";
+        case OperationType::UNIDIRECTIONAL_SEQUENCE_RNN:
+            return "unidirectional_sequence_rnn";
+        case OperationType::AXIS_ALIGNED_BBOX_TRANSFORM:
+            return "axis_aligned_bbox_transform";
+        case OperationType::BIDIRECTIONAL_SEQUENCE_LSTM:
+            return "bidirectional_sequences_lstm";
+        case OperationType::BIDIRECTIONAL_SEQUENCE_RNN:
+            return "bidirectional_sequence_rnn";
+        case OperationType::DETECTION_POSTPROCESSING:
+            return "detection_postprocessing";
+        case OperationType::GENERATE_PROPOSALS:
+            return "generate_proposals";
         default:
             return nullptr;
     }
