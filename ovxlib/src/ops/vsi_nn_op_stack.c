@@ -104,17 +104,19 @@ static vsi_bool op_setup
 
     if( VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num )
     {
-        for(i = 0, j = 0; i < inputs[0]->attr.dim_num; i++)
+        outputs[0]->attr.dim_num = inputs[0]->attr.dim_num + 1;
+
+        for(i = 0, j = 0; j < outputs[0]->attr.dim_num; j++)
         {
-            if (i == p->axis)
+            if (j == p->axis)
             {
                 outputs[0]->attr.size[j] = node->input.num;
-                j++;
             }
-            outputs[0]->attr.size[j] = inputs[0]->attr.size[i];
-            j++;
+            else
+            {
+                outputs[0]->attr.size[j] = inputs[0]->attr.size[i ++];
+            }
         }
-        outputs[0]->attr.dim_num = inputs[0]->attr.dim_num + 1;
     }
 
     input_shape[0] = block_size;
