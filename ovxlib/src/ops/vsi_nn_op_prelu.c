@@ -75,9 +75,6 @@ static vsi_status _prelu_op_compute
     vsi_nn_tensor_t ** outputs
     )
 {
-    uint32_t   graph_version_major = 0;
-    uint32_t   graph_version_minor = 0;
-    uint32_t   graph_version_patch = 0;
     vsi_status status = VSI_FAILURE;
     vsi_nn_prelu_param *prelu = &self->nn_param.prelu;
     int32_t shapes[VSI_NN_MAX_DIM_NUM] = { 1 };
@@ -96,9 +93,7 @@ static vsi_status _prelu_op_compute
         shapes[i] = 1;
     }
 
-    vsi_nn_GetGraphVersion( self->graph, &graph_version_major,
-        &graph_version_minor, &graph_version_patch );
-    if (!( graph_version_major >= 1 && graph_version_minor >= 1 && graph_version_patch >= 20 ))
+    if (vsi_nn_compareVersion(self->graph, 1, 1, 20) == -1)
     {
         int32_t axis = prelu->axis;
 
@@ -156,9 +151,6 @@ vsi_bool vsi_nn_op_prelu_setup
     vsi_nn_tensor_t ** outputs
     )
 {
-    uint32_t   graph_version_major = 0;
-    uint32_t   graph_version_minor = 0;
-    uint32_t   graph_version_patch = 0;
     vsi_bool ret = TRUE;
     vsi_nn_prelu_param *prelu = &self->nn_param.prelu;
 
@@ -178,9 +170,7 @@ vsi_bool vsi_nn_op_prelu_setup
         return FALSE;
     }
 
-    vsi_nn_GetGraphVersion( self->graph, &graph_version_major,
-        &graph_version_minor, &graph_version_patch );
-    if (!( graph_version_major >= 1 && graph_version_minor >= 1 && graph_version_patch >= 20 ))
+    if (vsi_nn_compareVersion(self->graph, 1, 1, 20) == -1)
     {
         ret = vsi_nn_op_common_setup(self, inputs, outputs);
     }
@@ -199,13 +189,7 @@ static vsi_bool op_check
     vsi_nn_tensor_t ** outputs
     )
 {
-    uint32_t   graph_version_major = 0;
-    uint32_t   graph_version_minor = 0;
-    uint32_t   graph_version_patch = 0;
-
-    vsi_nn_GetGraphVersion( self->graph, &graph_version_major,
-        &graph_version_minor, &graph_version_patch );
-    if ( graph_version_major >= 1 && graph_version_minor >= 1 && graph_version_patch >= 20 )
+    if ( vsi_nn_compareVersion(self->graph, 1, 1, 20) >= 0 )
     {
         vsi_nn_OpCheck( VSI_NN_OP_MULTIPLY, self, inputs, outputs );
     }
@@ -219,9 +203,6 @@ static vsi_status op_init
     )
 {
     vsi_status status = VSI_SUCCESS;
-    uint32_t   graph_version_major = 0;
-    uint32_t   graph_version_minor = 0;
-    uint32_t   graph_version_patch = 0;
 
     self->nn_param.prelu.local   =
     (vsi_nn_prelu_lcl_data *)malloc(sizeof(vsi_nn_prelu_lcl_data));
@@ -230,9 +211,8 @@ static vsi_status op_init
         return  VX_ERROR_NO_MEMORY;
     }
     memset(self->nn_param.prelu.local, 0, sizeof(vsi_nn_prelu_lcl_data));
-    vsi_nn_GetGraphVersion( self->graph, &graph_version_major,
-        &graph_version_minor, &graph_version_patch );
-    if (!( graph_version_major >= 1 && graph_version_minor >= 1 && graph_version_patch >= 17 ))
+
+    if (vsi_nn_compareVersion(self->graph, 1, 1, 17) == -1)
     {
         self->nn_param.prelu.axis = VSI_NN_PRELU_DEFAULT_AXIS;
     }

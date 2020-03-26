@@ -29,6 +29,7 @@
 #include "vsi_nn_tensor.h"
 #include "vsi_nn_tensor_util.h"
 #include "utils/vsi_nn_math.h"
+#include "utils/vsi_nn_util.h"
 
 static vsi_status op_compute
     (
@@ -108,13 +109,8 @@ static vsi_status op_init
     )
 {
     vsi_status status = VSI_SUCCESS;
-    uint32_t graph_version_major = 0;
-    uint32_t graph_version_minor = 0;
-    uint32_t graph_version_patch = 0;
 
-    vsi_nn_GetGraphVersion( self->graph, &graph_version_major,
-        &graph_version_minor, &graph_version_patch );
-    if (!( graph_version_major >= 1 && graph_version_minor >= 1 && graph_version_patch >= 15 ))
+    if (vsi_nn_compareVersion(self->graph, 1, 1, 15) == -1)
     {
         self->nn_param.lrn.axis = 2;
     }

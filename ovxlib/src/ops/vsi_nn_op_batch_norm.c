@@ -31,6 +31,7 @@
 #include "vsi_nn_tensor.h"
 #include "vsi_nn_tensor_util.h"
 #include "vsi_nn_log.h"
+#include "utils/vsi_nn_util.h"
 
 static vsi_status _try_set_high_presision_tensor
     (
@@ -85,16 +86,10 @@ static vsi_bool _is_3d_batchnorm
     vsi_nn_tensor_t ** inputs
     )
 {
-    uint32_t graph_version_major = 0;
-    uint32_t graph_version_minor = 0;
-    uint32_t graph_version_patch = 0;
-
     /*
         We support 3d batchnorm at version 1.1.12
     */
-    vsi_nn_GetGraphVersion( self->graph, &graph_version_major,
-        &graph_version_minor, &graph_version_patch );
-    if (!( graph_version_major >= 1 && graph_version_minor >= 1 && graph_version_patch >= 12 ))
+    if (vsi_nn_compareVersion(self->graph, 1, 1, 12) == -1)
     {
         return FALSE;
     }

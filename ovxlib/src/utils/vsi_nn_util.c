@@ -1145,3 +1145,49 @@ vsi_bool vsi_nn_IsEVISFeatureAvaiable
 
     return FALSE;
 }
+
+/* compare verision, return 1 greater, 0 equal, -1 less*/
+int32_t vsi_nn_compareVersion
+    (
+    vsi_nn_graph_t * graph,
+    uint32_t version_major,
+    uint32_t version_minor,
+    uint32_t version_patch
+    )
+{
+    uint32_t   graph_version_major = 0;
+    uint32_t   graph_version_minor = 0;
+    uint32_t   graph_version_patch = 0;
+
+    vsi_nn_GetGraphVersion( graph, &graph_version_major,
+        &graph_version_minor, &graph_version_patch );
+
+    if (graph_version_major > version_major)
+    {
+        return 1;
+    }
+    else if (graph_version_major < version_major)
+    {
+        return -1;
+    }
+
+    if (graph_version_minor > version_minor)
+    {
+        return 1;
+    }
+    else if (graph_version_minor < version_minor)
+    {
+        return -1;
+    }
+
+    if (graph_version_patch > version_patch)
+    {
+        return 1;
+    }
+    else if (graph_version_patch < version_patch)
+    {
+        return -1;
+    }
+
+    return 0;
+}

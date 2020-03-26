@@ -177,13 +177,8 @@ static vsi_status _argmaxmin_op_init
     )
 {
     vsi_status status = VSI_SUCCESS;
-    uint32_t graph_version_major = 0;
-    uint32_t graph_version_minor = 0;
-    uint32_t graph_version_patch = 0;
 
-    vsi_nn_GetGraphVersion( self->graph, &graph_version_major,
-        &graph_version_minor, &graph_version_patch );
-    if (!( graph_version_major >= 1 && graph_version_minor >= 1 && graph_version_patch >= 11 ))
+    if (vsi_nn_compareVersion(self->graph, 1, 1, 11) == -1)
     {
         if (strcmp(kernel_name, "argmax") == 0)
         {

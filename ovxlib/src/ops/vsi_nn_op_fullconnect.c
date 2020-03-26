@@ -33,6 +33,7 @@
 #include "vsi_nn_tensor_util.h"
 #include "vsi_nn_log.h"
 #include "utils/vsi_nn_dtype_util.h"
+#include "utils/vsi_nn_util.h"
 
 static vsi_status op_compute
     (
@@ -126,9 +127,6 @@ static vsi_bool op_setup
     uint32_t dim_num;
     uint32_t perm[4] = { 0 };
     uint32_t as_shape[4] = { 0 };
-    uint32_t graph_version_major = 0;
-    uint32_t graph_version_minor = 0;
-    uint32_t graph_version_patch = 0;
 
     /* TODO: Driver should handle this,
     * Check transpose
@@ -165,8 +163,8 @@ static vsi_bool op_setup
     if( VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num )
     {
         uint32_t input_dim = inputs[0]->attr.dim_num;
-        vsi_nn_GetGraphVersion( self->graph, &graph_version_major, &graph_version_minor, &graph_version_patch );
-        if ( graph_version_major >= 1 && graph_version_minor >= 1 && graph_version_patch >= 0 )
+
+        if ( vsi_nn_compareVersion(self->graph, 1, 1, 0) >= 0)
         {
             switch (input_dim)
             {
