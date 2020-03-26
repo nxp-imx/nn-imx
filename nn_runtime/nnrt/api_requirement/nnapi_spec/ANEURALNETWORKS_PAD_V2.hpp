@@ -25,8 +25,6 @@
 #ifndef __ANEURALNETWORKS_PAD_V2_HPP__
 #define __ANEURALNETWORKS_PAD_V2_HPP__
 
-#include "api_requirement/spec_macros.hpp"
-
 #define OP_SPEC_NAME PadV2Operation
 OP_SPEC_BEGIN()
 #define ARG_NAMES         \
