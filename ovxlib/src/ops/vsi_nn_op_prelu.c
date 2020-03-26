@@ -107,6 +107,11 @@ static vsi_status _prelu_op_compute
                 shapes[0] = alpha_shape;
                 dims = 2;
             }
+            else
+            {
+               memcpy(shapes, inputs[1]->attr.size, inputs[1]->attr.dim_num * sizeof(int32_t));
+               dims = inputs[1]->attr.dim_num;
+            }
 
             reshape_tensors[1] = vsi_nn_reshape_tensor( self->graph,
                 inputs[1], (uint32_t*)shapes, dims );
