@@ -114,9 +114,13 @@ int Execution::compute()
     /**********************************************/
     // dump model and input data
 #ifdef _DUMP_JSON_MODEL_
-    Dump dump(compilation_->getModel());
-    dump.getInputsData(this);
-    dump.dump2json();
+    auto dump_json_enabled = 0;
+    ::nnrt::OS::getEnv("DUMP_JSON_MODEL", dump_json_enabled);
+    if (dump_json_enabled) {
+        Dump dump(compilation_->getModel());
+        dump.getInputsData(this);
+        dump.dump2json();
+    }
 #endif
     /**********************************************/
 
