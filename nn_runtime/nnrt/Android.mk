@@ -86,7 +86,8 @@ LOCAL_CFLAGS :=  \
     -fexceptions\
     -D'OVXLIB_API=__attribute__((visibility("default")))' \
     -Wno-unused-parameter\
-    -Wno-implicit-fallthrough
+    -Wno-implicit-fallthrough\
+    -frtti
 
 
 ifeq ($(DUMP_JSON_MODEL), 1)
