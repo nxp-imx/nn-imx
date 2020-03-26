@@ -275,13 +275,15 @@ int OvxlibDelegate::process(nnrt::Model* model, vsi_nn_context_t ctx) {
                 err = addTensor(graph_, operand, TensorLifeTime::CONST, idx, data);
             }
         }
-#ifndef NNRT_ENABLE_TENSOR_FROM_HANDLE
         else if (model->isInput(idx))
         {
+#ifdef NNRT_ENABLE_TENSOR_FROM_HANDLE
+            continue;
+#else
             err = addTensor(graph_, operand,
                 TensorLifeTime::NORMAL, idx);
-        }
 #endif
+        }
         else if (model->isOutput(idx))
         {
             err = addTensor(graph_, operand,
