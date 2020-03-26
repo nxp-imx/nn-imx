@@ -21,11 +21,10 @@ _viv_uniform VXC_512Bits  uniS8AddAll_16x1;
         coord.x += 16; \
     } \
     while(coord.x < axisSize); \
-    coord.x = 0; \
-    write_fun(output, coord, result, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));
+    write_fun(output, coord_out, result, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));
 
 
-__kernel void vxcReduceanyAxis0_I8toI8
+__kernel void reduceany_axis0_I8toI8
     (
     __read_only  image2d_array_t input,
     __write_only image2d_array_t output,
@@ -33,12 +32,13 @@ __kernel void vxcReduceanyAxis0_I8toI8
     )
 {
     int4 coord = (int4)(0, get_global_id(0), get_global_id(1), 0);
+    int2 coord_out = (int2)(get_global_id(0), get_global_id(1));
     vxc_char16 val0;
     vxc_char16 val, result;
-    REDUCEANY_AXIS0_PROCESS(VXC_ReadImage2DArray, VXC_WriteImage2DArray)
+    REDUCEANY_AXIS0_PROCESS(VXC_ReadImage2DArray, VXC_WriteImage)
 }
 
-__kernel void vxcReduceanyAxis0_I8toI8_2D
+__kernel void reduceany_axis0_I8toI8_2D
     (
     __read_only  image2d_array_t input,
     __write_only image2d_array_t output,
@@ -46,6 +46,7 @@ __kernel void vxcReduceanyAxis0_I8toI8_2D
     )
 {
     int2 coord = (int2)(0, get_global_id(0));
+    int2 coord_out = (int2)(get_global_id(0), 0);
     vxc_char16 val0;
     vxc_char16 val, result;
     REDUCEANY_AXIS0_PROCESS(VXC_ReadImage, VXC_WriteImage)

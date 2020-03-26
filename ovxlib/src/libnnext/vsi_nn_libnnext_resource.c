@@ -8087,6 +8087,292 @@ __kernel void random_multinomial(\n\
 \n\
 "; /* end of random_multinomial_vx*/
 
+static const char reduceall_internal_axis0_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+_viv_uniform int         axisSize;\n\
+\n\
+_viv_uniform VXC_512Bits  uniS8AddAll_16x1;\n\
+\n\
+#define REDUCEALL_AXIS0_PROCESS(read_fun, write_fun) \\\n\
+    vxc_char16 ones  = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}; \\\n\
+    vxc_char16 zeros = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; \\\n\
+    int4 sum_val = 0; \\\n\
+    result = ones; \\\n\
+    do \\\n\
+    { \\\n\
+        read_fun(val0, input,  coord, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
+        val = val0 != zeros ? ones : zeros; \\\n\
+        VXC_DP16x1(sum_val, val, val, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0), uniS8AddAll_16x1); \\\n\
+        if (sum_val.x != 16) \\\n\
+        { \\\n\
+            result = zeros; \\\n\
+            break; \\\n\
+        } \\\n\
+        coord.x += 16; \\\n\
+    } \\\n\
+    while(coord.x < axisSize); \\\n\
+    write_fun(output, coord_out, result, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+\n\
+__kernel void reduceall_axis0_I8toI8\n\
+    (\n\
+    __read_only  image2d_array_t input,\n\
+    __write_only image2d_array_t output,\n\
+    int   axisVal\n\
+    )\n\
+{\n\
+    int4 coord = (int4)(0, get_global_id(0), get_global_id(1), 0);\n\
+    int2 coord_out = (int2)(get_global_id(0), get_global_id(1));\n\
+    vxc_char16 val0;\n\
+    vxc_char16 val, result;\n\
+    REDUCEALL_AXIS0_PROCESS(VXC_ReadImage2DArray, VXC_WriteImage)\n\
+}\n\
+\n\
+__kernel void reduceall_axis0_I8toI8_2D\n\
+    (\n\
+    __read_only  image2d_array_t input,\n\
+    __write_only image2d_array_t output,\n\
+    int   axisVal\n\
+    )\n\
+{\n\
+    int2 coord = (int2)(0, get_global_id(0));\n\
+    int2 coord_out = (int2)(get_global_id(0), 0);\n\
+    vxc_char16 val0;\n\
+    vxc_char16 val, result;\n\
+    REDUCEALL_AXIS0_PROCESS(VXC_ReadImage, VXC_WriteImage)\n\
+}\n\
+\n\
+\n\
+"; /* end of reduceall_internal_axis0_vx*/
+
+static const char reduceall_internal_axis1_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+_viv_uniform int         axisSize;\n\
+\n\
+#define REDUCEALL_AXIS1_PROCESS(read_fun, write_fun) \\\n\
+    vxc_char16 ones  = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}; \\\n\
+    vxc_char16 zeros = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; \\\n\
+    read_fun(val0, input,  coord, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
+    result = val0 != zeros ? ones : zeros; \\\n\
+    coord.y++; \\\n\
+    while(coord.y < axisSize) \\\n\
+    { \\\n\
+        read_fun(val0, input,  coord, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
+        val = val0 != zeros ? ones : zeros; \\\n\
+        result = result & val; \\\n\
+        coord.y++; \\\n\
+    } \\\n\
+    write_fun(output, coord_out, result, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+\n\
+__kernel void reduceall_axis1_I8toI8\n\
+    (\n\
+    __read_only  image2d_array_t input,\n\
+    __write_only image2d_array_t output,\n\
+    int   axisVal\n\
+    )\n\
+{\n\
+    int4 coord = (int4)(get_global_id(0), 0, get_global_id(1), 0);\n\
+    int2 coord_out = (int2)(get_global_id(0), get_global_id(1));\n\
+    vxc_char16 val0;\n\
+    vxc_char16 val, result;\n\
+    REDUCEALL_AXIS1_PROCESS(VXC_ReadImage2DArray, VXC_WriteImage)\n\
+}\n\
+\n\
+__kernel void reduceall_axis1_I8toI8_2D\n\
+    (\n\
+    __read_only  image2d_array_t input,\n\
+    __write_only image2d_array_t output,\n\
+    int   axisVal\n\
+    )\n\
+{\n\
+    int2 coord = (int2)(get_global_id(0), 0);\n\
+    int2 coord_out = (int2)(get_global_id(0), 0);\n\
+    vxc_char16 val0;\n\
+    vxc_char16 val, result;\n\
+    REDUCEALL_AXIS1_PROCESS(VXC_ReadImage, VXC_WriteImage)\n\
+}\n\
+\n\
+"; /* end of reduceall_internal_axis1_vx*/
+
+static const char reduceall_internal_axis2_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+_viv_uniform int         axisSize;\n\
+\n\
+#define REDUCEALL_AXIS2_PROCESS(read_fun, write_fun) \\\n\
+    vxc_char16 ones  = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}; \\\n\
+    vxc_char16 zeros = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; \\\n\
+    read_fun(val0, input,  coord, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
+    result = val0 != zeros ? ones : zeros; \\\n\
+    coord.z++; \\\n\
+    while(coord.z < axisSize) \\\n\
+    { \\\n\
+        read_fun(val0, input,  coord, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
+        val = val0 != zeros ? ones : zeros; \\\n\
+        result = result & val; \\\n\
+        coord.z++; \\\n\
+    } \\\n\
+    write_fun(output, coord.xy, result, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+\n\
+__kernel void reduceall_axis2_I8toI8\n\
+    (\n\
+    __read_only  image2d_array_t input,\n\
+    __write_only image2d_array_t output,\n\
+    int   axisVal\n\
+    )\n\
+{\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), 0, 0);\n\
+    vxc_char16 val0;\n\
+    vxc_char16 val, result;\n\
+    REDUCEALL_AXIS2_PROCESS(VXC_ReadImage2DArray, VXC_WriteImage)\n\
+}\n\
+\n\
+\n\
+"; /* end of reduceall_internal_axis2_vx*/
+
+static const char reduceany_internal_axis0_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+_viv_uniform int         axisSize;\n\
+\n\
+_viv_uniform VXC_512Bits  uniS8AddAll_16x1;\n\
+\n\
+#define REDUCEANY_AXIS0_PROCESS(read_fun, write_fun) \\\n\
+    vxc_char16 ones  = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}; \\\n\
+    vxc_char16 zeros = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; \\\n\
+    int4 sum_val = 0; \\\n\
+    result = zeros; \\\n\
+    do \\\n\
+    { \\\n\
+        read_fun(val0, input,  coord, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
+        val = val0 != zeros ? ones : zeros; \\\n\
+        VXC_DP16x1(sum_val, val, val, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0), uniS8AddAll_16x1); \\\n\
+        if (sum_val.x != 0) \\\n\
+        { \\\n\
+            result = ones; \\\n\
+            break; \\\n\
+        } \\\n\
+        coord.x += 16; \\\n\
+    } \\\n\
+    while(coord.x < axisSize); \\\n\
+    write_fun(output, coord_out, result, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+\n\
+__kernel void reduceany_axis0_I8toI8\n\
+    (\n\
+    __read_only  image2d_array_t input,\n\
+    __write_only image2d_array_t output,\n\
+    int   axisVal\n\
+    )\n\
+{\n\
+    int4 coord = (int4)(0, get_global_id(0), get_global_id(1), 0);\n\
+    int2 coord_out = (int2)(get_global_id(0), get_global_id(1));\n\
+    vxc_char16 val0;\n\
+    vxc_char16 val, result;\n\
+    REDUCEANY_AXIS0_PROCESS(VXC_ReadImage2DArray, VXC_WriteImage)\n\
+}\n\
+\n\
+__kernel void reduceany_axis0_I8toI8_2D\n\
+    (\n\
+    __read_only  image2d_array_t input,\n\
+    __write_only image2d_array_t output,\n\
+    int   axisVal\n\
+    )\n\
+{\n\
+    int2 coord = (int2)(0, get_global_id(0));\n\
+    int2 coord_out = (int2)(get_global_id(0), 0);\n\
+    vxc_char16 val0;\n\
+    vxc_char16 val, result;\n\
+    REDUCEANY_AXIS0_PROCESS(VXC_ReadImage, VXC_WriteImage)\n\
+}\n\
+\n\
+\n\
+"; /* end of reduceany_internal_axis0_vx*/
+
+static const char reduceany_internal_axis1_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+_viv_uniform int         axisSize;\n\
+\n\
+#define REDUCEANY_AXIS1_PROCESS(read_fun, write_fun) \\\n\
+    vxc_char16 ones  = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}; \\\n\
+    vxc_char16 zeros = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; \\\n\
+    read_fun(val0, input,  coord, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
+    result = val0 != zeros ? ones : zeros; \\\n\
+    coord.y++; \\\n\
+    while(coord.y < axisSize) \\\n\
+    { \\\n\
+        read_fun(val0, input,  coord, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
+        val = val0 != zeros ? ones : zeros; \\\n\
+        result = result | val; \\\n\
+        coord.y++; \\\n\
+    } \\\n\
+    write_fun(output, coord_out, result, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+\n\
+__kernel void reduceany_axis1_I8toI8\n\
+    (\n\
+    __read_only  image2d_array_t input,\n\
+    __write_only image2d_array_t output,\n\
+    int   axisVal\n\
+    )\n\
+{\n\
+    int4 coord = (int4)(get_global_id(0), 0, get_global_id(1), 0);\n\
+    int2 coord_out = (int2)(get_global_id(0), get_global_id(1));\n\
+    vxc_char16 val0;\n\
+    vxc_char16 val, result;\n\
+    REDUCEANY_AXIS1_PROCESS(VXC_ReadImage2DArray, VXC_WriteImage)\n\
+}\n\
+\n\
+__kernel void reduceany_axis1_I8toI8_2D\n\
+    (\n\
+    __read_only  image2d_array_t input,\n\
+    __write_only image2d_array_t output,\n\
+    int   axisVal\n\
+    )\n\
+{\n\
+    int2 coord = (int2)(get_global_id(0), 0);\n\
+    int2 coord_out = (int2)(get_global_id(0), 0);\n\
+    vxc_char16 val0;\n\
+    vxc_char16 val, result;\n\
+    REDUCEANY_AXIS1_PROCESS(VXC_ReadImage, VXC_WriteImage)\n\
+}\n\
+\n\
+"; /* end of reduceany_internal_axis1_vx*/
+
+static const char reduceany_internal_axis2_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+_viv_uniform int         axisSize;\n\
+\n\
+#define REDUCEANY_AXIS2_PROCESS(read_fun, write_fun) \\\n\
+    vxc_char16 ones  = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}; \\\n\
+    vxc_char16 zeros = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; \\\n\
+    read_fun(val0, input,  coord, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
+    result = val0 != zeros ? ones : zeros; \\\n\
+    coord.z++; \\\n\
+    while(coord.z < axisSize) \\\n\
+    { \\\n\
+        read_fun(val0, input,  coord, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
+        val = val0 != zeros ? ones : zeros; \\\n\
+        result = result | val; \\\n\
+        coord.z++; \\\n\
+    } \\\n\
+    write_fun(output, coord.xy, result, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+\n\
+__kernel void reduceany_axis2_I8toI8\n\
+    (\n\
+    __read_only  image2d_array_t input,\n\
+    __write_only image2d_array_t output,\n\
+    int   axisVal\n\
+    )\n\
+{\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), 0, 0);\n\
+    vxc_char16 val0;\n\
+    vxc_char16 val, result;\n\
+    REDUCEANY_AXIS2_PROCESS(VXC_ReadImage2DArray, VXC_WriteImage)\n\
+}\n\
+\n\
+\n\
+"; /* end of reduceany_internal_axis2_vx*/
+
 static const char reducemax_internal_axis0_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 _viv_uniform int         axisSize;\n\
 _viv_uniform float       outputScale;\n\
@@ -14016,290 +14302,6 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void vxcInstanceNormU8_
     VXC_WriteImage(output, coord, src2, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
     }\n\
 }"; /* end of vsi_nn_kernel_instancenormalize_u8_vx*/
-
-static const char vsi_nn_kernel_internal_reduceallAxis0_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
-_viv_uniform int         axisSize;\n\
-\n\
-_viv_uniform VXC_512Bits  uniS8AddAll_16x1;\n\
-\n\
-#define REDUCEALL_AXIS0_PROCESS(read_fun, write_fun) \\\n\
-    vxc_char16 ones  = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}; \\\n\
-    vxc_char16 zeros = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; \\\n\
-    int4 sum_val = 0; \\\n\
-    result = ones; \\\n\
-    do \\\n\
-    { \\\n\
-        read_fun(val0, input,  coord, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
-        val = val0 != zeros ? ones : zeros; \\\n\
-        VXC_DP16x1(sum_val, val, val, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0), uniS8AddAll_16x1); \\\n\
-        if (sum_val.x != 16) \\\n\
-        { \\\n\
-            result = zeros; \\\n\
-            break; \\\n\
-        } \\\n\
-        coord.x += 16; \\\n\
-    } \\\n\
-    while(coord.x < axisSize); \\\n\
-    coord.x = 0; \\\n\
-    write_fun(output, coord, result, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
-\n\
-\n\
-__kernel void vxcReduceallAxis0_I8toI8\n\
-    (\n\
-    __read_only  image2d_array_t input,\n\
-    __write_only image2d_array_t output,\n\
-    int   axisVal\n\
-    )\n\
-{\n\
-    int4 coord = (int4)(0, get_global_id(0), get_global_id(1), 0);\n\
-    vxc_char16 val0;\n\
-    vxc_char16 val, result;\n\
-    REDUCEALL_AXIS0_PROCESS(VXC_ReadImage2DArray, VXC_WriteImage2DArray)\n\
-}\n\
-\n\
-__kernel void vxcReduceallAxis0_I8toI8_2D\n\
-    (\n\
-    __read_only  image2d_array_t input,\n\
-    __write_only image2d_array_t output,\n\
-    int   axisVal\n\
-    )\n\
-{\n\
-    int2 coord = (int2)(0, get_global_id(0));\n\
-    vxc_char16 val0;\n\
-    vxc_char16 val, result;\n\
-    REDUCEALL_AXIS0_PROCESS(VXC_ReadImage, VXC_WriteImage)\n\
-}\n\
-\n\
-\n\
-"; /* end of vsi_nn_kernel_internal_reduceallAxis0_vx*/
-
-static const char vsi_nn_kernel_internal_reduceallAxis1_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
-\n\
-_viv_uniform int         axisSize;\n\
-\n\
-#define REDUCEALL_AXIS1_PROCESS(read_fun, write_fun) \\\n\
-    vxc_char16 ones  = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}; \\\n\
-    vxc_char16 zeros = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; \\\n\
-    read_fun(val0, input,  coord, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
-    result = val0 != zeros ? ones : zeros; \\\n\
-    coord.y++; \\\n\
-    while(coord.y < axisSize) \\\n\
-    { \\\n\
-        read_fun(val0, input,  coord, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
-        val = val0 != zeros ? ones : zeros; \\\n\
-        result = result & val; \\\n\
-        coord.y++; \\\n\
-    } \\\n\
-    coord.y = 0; \\\n\
-    write_fun(output, coord, result, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
-\n\
-\n\
-__kernel void vxcReduceallAxis1_I8toI8\n\
-    (\n\
-    __read_only  image2d_array_t input,\n\
-    __write_only image2d_array_t output,\n\
-    int   axisVal\n\
-    )\n\
-{\n\
-    int4 coord = (int4)(get_global_id(0), 0, get_global_id(1), 0);\n\
-    vxc_char16 val0;\n\
-    vxc_char16 val, result;\n\
-    REDUCEALL_AXIS1_PROCESS(VXC_ReadImage2DArray, VXC_WriteImage2DArray)\n\
-}\n\
-\n\
-__kernel void vxcReduceallAxis1_I8toI8_2D\n\
-    (\n\
-    __read_only  image2d_array_t input,\n\
-    __write_only image2d_array_t output,\n\
-    int   axisVal\n\
-    )\n\
-{\n\
-    int2 coord = (int2)(get_global_id(0), 0);\n\
-    vxc_char16 val0;\n\
-    vxc_char16 val, result;\n\
-    REDUCEALL_AXIS1_PROCESS(VXC_ReadImage, VXC_WriteImage)\n\
-}\n\
-\n\
-"; /* end of vsi_nn_kernel_internal_reduceallAxis1_vx*/
-
-static const char vsi_nn_kernel_internal_reduceallAxis2_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
-\n\
-_viv_uniform int         axisSize;\n\
-\n\
-#define REDUCEALL_AXIS2_PROCESS(read_fun, write_fun) \\\n\
-    vxc_char16 ones  = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}; \\\n\
-    vxc_char16 zeros = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; \\\n\
-    read_fun(val0, input,  coord, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
-    result = val0 != zeros ? ones : zeros; \\\n\
-    coord.z++; \\\n\
-    while(coord.z < axisSize) \\\n\
-    { \\\n\
-        read_fun(val0, input,  coord, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
-        val = val0 != zeros ? ones : zeros; \\\n\
-        result = result & val; \\\n\
-        coord.z++; \\\n\
-    } \\\n\
-    coord.z = 0; \\\n\
-    write_fun(output, coord, result, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
-\n\
-\n\
-__kernel void vxcReduceallAxis2_I8toI8\n\
-    (\n\
-    __read_only  image2d_array_t input,\n\
-    __write_only image2d_array_t output,\n\
-    int   axisVal\n\
-    )\n\
-{\n\
-    int4 coord = (int4)(get_global_id(0), get_global_id(1), 0, 0);\n\
-    vxc_char16 val0;\n\
-    vxc_char16 val, result;\n\
-    REDUCEALL_AXIS2_PROCESS(VXC_ReadImage2DArray, VXC_WriteImage2DArray)\n\
-}\n\
-\n\
-\n\
-"; /* end of vsi_nn_kernel_internal_reduceallAxis2_vx*/
-
-static const char vsi_nn_kernel_internal_reduceanyAxis0_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
-_viv_uniform int         axisSize;\n\
-\n\
-_viv_uniform VXC_512Bits  uniS8AddAll_16x1;\n\
-\n\
-#define REDUCEANY_AXIS0_PROCESS(read_fun, write_fun) \\\n\
-    vxc_char16 ones  = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}; \\\n\
-    vxc_char16 zeros = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; \\\n\
-    int4 sum_val = 0; \\\n\
-    result = zeros; \\\n\
-    do \\\n\
-    { \\\n\
-        read_fun(val0, input,  coord, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
-        val = val0 != zeros ? ones : zeros; \\\n\
-        VXC_DP16x1(sum_val, val, val, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0), uniS8AddAll_16x1); \\\n\
-        if (sum_val.x != 0) \\\n\
-        { \\\n\
-            result = ones; \\\n\
-            break; \\\n\
-        } \\\n\
-        coord.x += 16; \\\n\
-    } \\\n\
-    while(coord.x < axisSize); \\\n\
-    coord.x = 0; \\\n\
-    write_fun(output, coord, result, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
-\n\
-\n\
-__kernel void vxcReduceanyAxis0_I8toI8\n\
-    (\n\
-    __read_only  image2d_array_t input,\n\
-    __write_only image2d_array_t output,\n\
-    int   axisVal\n\
-    )\n\
-{\n\
-    int4 coord = (int4)(0, get_global_id(0), get_global_id(1), 0);\n\
-    vxc_char16 val0;\n\
-    vxc_char16 val, result;\n\
-    REDUCEANY_AXIS0_PROCESS(VXC_ReadImage2DArray, VXC_WriteImage2DArray)\n\
-}\n\
-\n\
-__kernel void vxcReduceanyAxis0_I8toI8_2D\n\
-    (\n\
-    __read_only  image2d_array_t input,\n\
-    __write_only image2d_array_t output,\n\
-    int   axisVal\n\
-    )\n\
-{\n\
-    int2 coord = (int2)(0, get_global_id(0));\n\
-    vxc_char16 val0;\n\
-    vxc_char16 val, result;\n\
-    REDUCEANY_AXIS0_PROCESS(VXC_ReadImage, VXC_WriteImage)\n\
-}\n\
-\n\
-\n\
-"; /* end of vsi_nn_kernel_internal_reduceanyAxis0_vx*/
-
-static const char vsi_nn_kernel_internal_reduceanyAxis1_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
-\n\
-_viv_uniform int         axisSize;\n\
-\n\
-#define REDUCEANY_AXIS1_PROCESS(read_fun, write_fun) \\\n\
-    vxc_char16 ones  = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}; \\\n\
-    vxc_char16 zeros = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; \\\n\
-    read_fun(val0, input,  coord, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
-    result = val0 != zeros ? ones : zeros; \\\n\
-    coord.y++; \\\n\
-    while(coord.y < axisSize) \\\n\
-    { \\\n\
-        read_fun(val0, input,  coord, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
-        val = val0 != zeros ? ones : zeros; \\\n\
-        result = result | val; \\\n\
-        coord.y++; \\\n\
-    } \\\n\
-    coord.y = 0; \\\n\
-    write_fun(output, coord, result, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
-\n\
-\n\
-__kernel void vxcReduceanyAxis1_I8toI8\n\
-    (\n\
-    __read_only  image2d_array_t input,\n\
-    __write_only image2d_array_t output,\n\
-    int   axisVal\n\
-    )\n\
-{\n\
-    int4 coord = (int4)(get_global_id(0), 0, get_global_id(1), 0);\n\
-    vxc_char16 val0;\n\
-    vxc_char16 val, result;\n\
-    REDUCEANY_AXIS1_PROCESS(VXC_ReadImage2DArray, VXC_WriteImage2DArray)\n\
-}\n\
-\n\
-__kernel void vxcReduceanyAxis1_I8toI8_2D\n\
-    (\n\
-    __read_only  image2d_array_t input,\n\
-    __write_only image2d_array_t output,\n\
-    int   axisVal\n\
-    )\n\
-{\n\
-    int2 coord = (int2)(get_global_id(0), 0);\n\
-    vxc_char16 val0;\n\
-    vxc_char16 val, result;\n\
-    REDUCEANY_AXIS1_PROCESS(VXC_ReadImage, VXC_WriteImage)\n\
-}\n\
-\n\
-"; /* end of vsi_nn_kernel_internal_reduceanyAxis1_vx*/
-
-static const char vsi_nn_kernel_internal_reduceanyAxis2_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
-\n\
-_viv_uniform int         axisSize;\n\
-\n\
-#define REDUCEANY_AXIS2_PROCESS(read_fun, write_fun) \\\n\
-    vxc_char16 ones  = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}; \\\n\
-    vxc_char16 zeros = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; \\\n\
-    read_fun(val0, input,  coord, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
-    result = val0 != zeros ? ones : zeros; \\\n\
-    coord.z++; \\\n\
-    while(coord.z < axisSize) \\\n\
-    { \\\n\
-        read_fun(val0, input,  coord, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
-        val = val0 != zeros ? ones : zeros; \\\n\
-        result = result | val; \\\n\
-        coord.z++; \\\n\
-    } \\\n\
-    coord.z = 0; \\\n\
-    write_fun(output, coord, result, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
-\n\
-\n\
-__kernel void vxcReduceanyAxis2_I8toI8\n\
-    (\n\
-    __read_only  image2d_array_t input,\n\
-    __write_only image2d_array_t output,\n\
-    int   axisVal\n\
-    )\n\
-{\n\
-    int4 coord = (int4)(get_global_id(0), get_global_id(1), 0, 0);\n\
-    vxc_char16 val0;\n\
-    vxc_char16 val, result;\n\
-    REDUCEANY_AXIS2_PROCESS(VXC_ReadImage2DArray, VXC_WriteImage2DArray)\n\
-}\n\
-\n\
-\n\
-"; /* end of vsi_nn_kernel_internal_reduceanyAxis2_vx*/
 
 static const char vsi_nn_kernel_l2normalizescaleAxis0_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
@@ -30253,6 +30255,246 @@ __kernel void pow_FP32FP32toFP32_2D\n\
 }\n\
 "; /* end of pow_cl*/
 
+static const char reduceall_internal_axis0_cl[] = "__kernel void reduceall_axis0_I8toI8\n\
+    (\n\
+    __read_only  image2d_array_t input,\n\
+    __write_only image2d_t       output\n\
+    )\n\
+{\n\
+    int4 coord   =  (int4)(0, get_global_id(0), get_global_id(1), 0);\n\
+    int axisSize = get_image_width(input);\n\
+\n\
+    int4 allVal  = read_imagei(input, coord);\n\
+    coord.x ++;\n\
+\n\
+    for (; coord.x < axisSize;)\n\
+    {\n\
+        int4 val = read_imagei(input, coord);\n\
+        allVal = val && allVal;\n\
+        coord.x ++;\n\
+    }\n\
+    allVal.x = allVal.x * (-1);\n\
+    write_imagei(output, coord.yz, allVal);\n\
+}\n\
+\n\
+__kernel void reduceall_axis0_I8toI8_2D\n\
+    (\n\
+    __read_only  image2d_t input,\n\
+    __write_only image2d_t output\n\
+    )\n\
+{\n\
+    int2 coord   =  (int2)(0, get_global_id(0));\n\
+    int axisSize = get_image_width(input);\n\
+\n\
+    int4 allVal  = read_imagei(input, coord);\n\
+    coord.x ++;\n\
+\n\
+    for (; coord.x < axisSize;)\n\
+    {\n\
+        int4 val = read_imagei(input, coord);\n\
+        allVal = val && allVal;\n\
+        coord.x ++;\n\
+    }\n\
+    allVal.x = allVal.x * (-1);\n\
+    coord.x = 0;\n\
+    write_imagei(output, coord.yx, allVal);\n\
+}\n\
+\n\
+"; /* end of reduceall_internal_axis0_cl*/
+
+static const char reduceall_internal_axis1_cl[] = "__kernel void reduceall_axis1_I8toI8\n\
+    (\n\
+    __read_only  image2d_array_t input,\n\
+    __write_only image2d_t       output\n\
+    )\n\
+{\n\
+    int4 coord =  (int4)(get_global_id(0), 0, get_global_id(1), 0);\n\
+    int axisSize = get_image_height(input);\n\
+\n\
+    int4 allVal = read_imagei(input, coord);\n\
+    coord.y ++;\n\
+\n\
+    for (; coord.y < axisSize;)\n\
+    {\n\
+        int4 val = read_imagei(input, coord);\n\
+        allVal = val && allVal;\n\
+        coord.y ++;\n\
+    }\n\
+    allVal.x = allVal.x * (-1);\n\
+    write_imagei(output, coord.xz, allVal);\n\
+}\n\
+\n\
+__kernel void reduceall_axis1_I8toI8_2D\n\
+    (\n\
+    __read_only  image2d_t input,\n\
+    __write_only image2d_t output\n\
+    )\n\
+{\n\
+    int2 coord =  (int2)(get_global_id(0), 0);\n\
+    int axisSize = get_image_height(input);\n\
+\n\
+    int4 allVal = read_imagei(input, coord);\n\
+    coord.y ++;\n\
+\n\
+    for (; coord.y < axisSize;)\n\
+    {\n\
+        int4 val = read_imagei(input, coord);\n\
+        allVal = val && allVal;\n\
+        coord.y ++;\n\
+    }\n\
+    allVal.x = allVal.x * (-1);\n\
+    coord.y = 0;\n\
+    write_imagei(output, coord, allVal);\n\
+}\n\
+\n\
+"; /* end of reduceall_internal_axis1_cl*/
+
+static const char reduceall_internal_axis2_cl[] = "__kernel void reduceall_axis2_I8toI8\n\
+    (\n\
+    __read_only  image2d_array_t input,\n\
+    __write_only image2d_t       output\n\
+    )\n\
+{\n\
+    int4 coord =  (int4)(get_global_id(0), get_global_id(1), 0, 0);\n\
+    int axisSize = get_image_depth(input);\n\
+\n\
+    int4 allVal = read_imagei(input, coord);\n\
+    coord.z ++;\n\
+\n\
+    for (; coord.z < axisSize;)\n\
+    {\n\
+        int4 val = read_imagei(input, coord);\n\
+        allVal = val && allVal;\n\
+        coord.z ++;\n\
+    }\n\
+    allVal.x = allVal.x * (-1);\n\
+    write_imagei(output, coord.xy, allVal);\n\
+}\n\
+\n\
+\n\
+\n\
+"; /* end of reduceall_internal_axis2_cl*/
+
+static const char reduceany_internal_axis0_cl[] = "__kernel void reduceany_axis0_I8toI8\n\
+    (\n\
+    __read_only  image2d_array_t input,\n\
+    __write_only image2d_t       output\n\
+    )\n\
+{\n\
+    int4 coord   =  (int4)(0, get_global_id(0), get_global_id(1), 0);\n\
+    int axisSize = get_image_width(input);\n\
+\n\
+    int4 anyVal  = read_imagei(input, coord);\n\
+    coord.x ++;\n\
+\n\
+    for (; coord.x < axisSize;)\n\
+    {\n\
+        int4 val = read_imagei(input, coord);\n\
+        anyVal = val || anyVal;\n\
+        coord.x ++;\n\
+    }\n\
+    anyVal.x = anyVal.x * (-1);\n\
+    write_imagei(output, coord.yz, anyVal);\n\
+}\n\
+\n\
+__kernel void reduceany_axis0_I8toI8_2D\n\
+    (\n\
+    __read_only  image2d_t input,\n\
+    __write_only image2d_t output\n\
+    )\n\
+{\n\
+    int2 coord   =  (int2)(0, get_global_id(0));\n\
+    int axisSize = get_image_width(input);\n\
+\n\
+    int4 anyVal  = read_imagei(input, coord);\n\
+    coord.x ++;\n\
+\n\
+    for (; coord.x < axisSize;)\n\
+    {\n\
+        int4 val = read_imagei(input, coord);\n\
+        anyVal = val || anyVal;\n\
+        coord.x ++;\n\
+    }\n\
+    anyVal.x = anyVal.x * (-1);\n\
+    coord.x = 0;\n\
+    write_imagei(output, coord.yx, anyVal);\n\
+}\n\
+\n\
+"; /* end of reduceany_internal_axis0_cl*/
+
+static const char reduceany_internal_axis1_cl[] = "__kernel void reduceany_axis1_I8toI8\n\
+    (\n\
+    __read_only  image2d_array_t input,\n\
+    __write_only image2d_t       output\n\
+    )\n\
+{\n\
+    int4 coord =  (int4)(get_global_id(0), 0, get_global_id(1), 0);\n\
+    int axisSize = get_image_height(input);\n\
+\n\
+    int4 anyVal = read_imagei(input, coord);\n\
+    coord.y ++;\n\
+\n\
+    for (; coord.y < axisSize;)\n\
+    {\n\
+        int4 val = read_imagei(input, coord);\n\
+        anyVal = val || anyVal;\n\
+        coord.y ++;\n\
+    }\n\
+    anyVal.x = anyVal.x * (-1);\n\
+    write_imagei(output, coord.xz, anyVal);\n\
+}\n\
+\n\
+__kernel void reduceany_axis1_I8toI8_2D\n\
+    (\n\
+    __read_only  image2d_t input,\n\
+    __write_only image2d_t output\n\
+    )\n\
+{\n\
+    int2 coord =  (int2)(get_global_id(0), 0);\n\
+    int axisSize = get_image_height(input);\n\
+\n\
+    int4 anyVal = read_imagei(input, coord);\n\
+    coord.y ++;\n\
+\n\
+    for (; coord.y < axisSize;)\n\
+    {\n\
+        int4 val = read_imagei(input, coord);\n\
+        anyVal = val || anyVal;\n\
+        coord.y ++;\n\
+    }\n\
+    anyVal.x = anyVal.x * (-1);\n\
+    coord.y = 0;\n\
+    write_imagei(output, coord, anyVal);\n\
+}\n\
+\n\
+"; /* end of reduceany_internal_axis1_cl*/
+
+static const char reduceany_internal_axis2_cl[] = "__kernel void reduceany_axis2_I8toI8\n\
+    (\n\
+    __read_only  image2d_array_t input,\n\
+    __write_only image2d_t       output\n\
+    )\n\
+{\n\
+    int4 coord =  (int4)(get_global_id(0), get_global_id(1), 0, 0);\n\
+    int axisSize = get_image_depth(input);\n\
+\n\
+    int4 anyVal = read_imagei(input, coord);\n\
+    coord.z ++;\n\
+\n\
+    for (; coord.z < axisSize;)\n\
+    {\n\
+        int4 val = read_imagei(input, coord);\n\
+        anyVal = val || anyVal;\n\
+        coord.z ++;\n\
+    }\n\
+    anyVal.x = anyVal.x * (-1);\n\
+    write_imagei(output, coord.xy, anyVal);\n\
+}\n\
+\n\
+\n\
+\n\
+"; /* end of reduceany_internal_axis2_cl*/
+
 static const char reducemax_internal_axis0_cl[] = "__kernel void reducemax_axis0_F32toF32\n\
     (\n\
     __read_only  image2d_array_t input,\n\
@@ -31850,6 +32092,12 @@ const static source_map_t evis_resource[] =
     {"pre_process_yuv420_scale_u8_vx", pre_process_yuv420_scale_u8_vx},
     {"pre_process_yuv420_trans_u8_vx", pre_process_yuv420_trans_u8_vx},
     {"random_multinomial_vx", random_multinomial_vx},
+    {"reduceall_internal_axis0_vx", reduceall_internal_axis0_vx},
+    {"reduceall_internal_axis1_vx", reduceall_internal_axis1_vx},
+    {"reduceall_internal_axis2_vx", reduceall_internal_axis2_vx},
+    {"reduceany_internal_axis0_vx", reduceany_internal_axis0_vx},
+    {"reduceany_internal_axis1_vx", reduceany_internal_axis1_vx},
+    {"reduceany_internal_axis2_vx", reduceany_internal_axis2_vx},
     {"reducemax_internal_axis0_vx", reducemax_internal_axis0_vx},
     {"reducemax_internal_axis1_vx", reducemax_internal_axis1_vx},
     {"reducemax_internal_axis2_vx", reducemax_internal_axis2_vx},
@@ -31888,12 +32136,6 @@ const static source_map_t evis_resource[] =
     {"vsi_nn_kernel_instancenormalize_fp16_vx", vsi_nn_kernel_instancenormalize_fp16_vx},
     {"vsi_nn_kernel_instancenormalize_i16_vx", vsi_nn_kernel_instancenormalize_i16_vx},
     {"vsi_nn_kernel_instancenormalize_u8_vx", vsi_nn_kernel_instancenormalize_u8_vx},
-    {"vsi_nn_kernel_internal_reduceallAxis0_vx", vsi_nn_kernel_internal_reduceallAxis0_vx},
-    {"vsi_nn_kernel_internal_reduceallAxis1_vx", vsi_nn_kernel_internal_reduceallAxis1_vx},
-    {"vsi_nn_kernel_internal_reduceallAxis2_vx", vsi_nn_kernel_internal_reduceallAxis2_vx},
-    {"vsi_nn_kernel_internal_reduceanyAxis0_vx", vsi_nn_kernel_internal_reduceanyAxis0_vx},
-    {"vsi_nn_kernel_internal_reduceanyAxis1_vx", vsi_nn_kernel_internal_reduceanyAxis1_vx},
-    {"vsi_nn_kernel_internal_reduceanyAxis2_vx", vsi_nn_kernel_internal_reduceanyAxis2_vx},
     {"vsi_nn_kernel_l2normalizescaleAxis0_vx", vsi_nn_kernel_l2normalizescaleAxis0_vx},
     {"vsi_nn_kernel_l2normalizescaleAxis1_vx", vsi_nn_kernel_l2normalizescaleAxis1_vx},
     {"vsi_nn_kernel_layernormalize_vx", vsi_nn_kernel_layernormalize_vx},
@@ -31994,6 +32236,12 @@ const static source_map_t cl_resource[] =
     {"maximum_cl", maximum_cl},
     {"minimum_cl", minimum_cl},
     {"pow_cl", pow_cl},
+    {"reduceall_internal_axis0_cl", reduceall_internal_axis0_cl},
+    {"reduceall_internal_axis1_cl", reduceall_internal_axis1_cl},
+    {"reduceall_internal_axis2_cl", reduceall_internal_axis2_cl},
+    {"reduceany_internal_axis0_cl", reduceany_internal_axis0_cl},
+    {"reduceany_internal_axis1_cl", reduceany_internal_axis1_cl},
+    {"reduceany_internal_axis2_cl", reduceany_internal_axis2_cl},
     {"reducemax_internal_axis0_cl", reducemax_internal_axis0_cl},
     {"reducemax_internal_axis1_cl", reducemax_internal_axis1_cl},
     {"reducemax_internal_axis2_cl", reducemax_internal_axis2_cl},
