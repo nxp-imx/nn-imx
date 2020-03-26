@@ -190,6 +190,8 @@ inline const char* get_operation_string(OperationType type) {
             return "logical_or";
         case OperationType::LOG_SOFTMAX:
             return "log_softmax";
+        case OperationType::PAD_V2:
+            return "pad_v2";
         default:
             return nullptr;
     }

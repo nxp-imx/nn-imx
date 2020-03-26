@@ -187,6 +187,7 @@ class NnApiInterpreter : public Interpreter
         REGISTER_OP(TOPK);
         REGISTER_OP(DETECTION_POSTPROCESSING);
         REGISTER_OP(TILE);
+        REGISTER_OP(PAD_V2);
 #undef  REGISTER_OP
     private:
         inline DataLayout getDataLayout(bool isNCHW) {

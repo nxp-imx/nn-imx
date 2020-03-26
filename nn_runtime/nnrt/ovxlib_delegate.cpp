@@ -197,6 +197,7 @@ OvxlibDelegate::OvxlibDelegate(std::vector<ExecutionIOPtr> &inputPtr)
     REGISTER_OP(TOPK);
     REGISTER_OP(DETECTION_POSTPROCESSING);
     REGISTER_OP(TILE);
+    REGISTER_OP(PAD_V2);
 #undef REGISTER_OP
 }
 
@@ -1123,6 +1124,22 @@ int OvxlibDelegate::addNode_PAD(Model* model, OperationPtr operation, uint32_t o
     nodes[0]->nn_param.pad.dim_num = static_cast<uint8_t>(pad->padFront.size());
     nodes[0]->nn_param.pad.const_val = static_cast<int32_t>(pad->padValue);
     nodes[0]->nn_param.pad.mode = mapPadMode(pad->padMode);
+    return err;
+}
+
+int OvxlibDelegate::addNode_PAD_V2(Model* model, OperationPtr operation, uint32_t operation_index) {
+    (void)model;
+    int err = NNA_ERROR_CODE(NO_ERROR);
+    auto padV2 = std::dynamic_pointer_cast<PadV2Operation<int32_t>>(operation);
+    std::vector<vsi_nn_node_t*> nodes;
+    err = addNode(VSI_NN_OP_PAD, operation, &nodes, operation_index);
+    int32_t* padFront_buf = addParamPool(padV2->padFront, true);
+    int32_t* padBack_buf = addParamPool(padV2->padBack, true);
+    nodes[0]->nn_param.pad.front_size = reinterpret_cast<uint32_t*>(padFront_buf);
+    nodes[0]->nn_param.pad.back_size = reinterpret_cast<uint32_t*>(padBack_buf);
+    nodes[0]->nn_param.pad.dim_num = static_cast<uint8_t>(padV2->padFront.size());
+    nodes[0]->nn_param.pad.const_val = static_cast<int32_t>(padV2->padValue);
+    nodes[0]->nn_param.pad.mode = mapPadMode(padV2->padMode);
     return err;
 }
 

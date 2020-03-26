@@ -268,6 +268,7 @@ class OvxlibDelegate
 
         REGISTER_OP(DETECTION_POSTPROCESSING);
         REGISTER_OP(DATA_CONVERT);
+        REGISTER_OP(PAD_V2);
 #undef  REGISTER_OP
 
     private:

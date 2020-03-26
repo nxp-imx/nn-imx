@@ -163,6 +163,7 @@ NnApiInterpreter::NnApiInterpreter() {
     REGISTER_OP(TOPK);
     REGISTER_OP(DETECTION_POSTPROCESSING);
     REGISTER_OP(TILE);
+    REGISTER_OP(PAD_V2);
 
 /*customer Op*/
 #undef REGISTER_OP
@@ -800,6 +801,49 @@ OperationPtr NnApiInterpreter::map_PAD(Model* model,
     pad->padMode = PadMode::CONSTANT;
     truncateOperationIOs(model, operation, 1, 1);
     return pad;
+}
+
+OperationPtr NnApiInterpreter::map_PAD_V2(Model* model,
+                                       OperationPtr operation,
+                                       uint32_t operation_index) {
+    NNAPI_CHECK_IO_NUM(operation, 3, 1);
+    std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
+    auto argList = matchArgList(inputs, "PadV2Operation");
+    OperationPtr padV2;
+    if (argList) {
+        auto paddingIds = argList->ArgPos("padding");
+        int32_t* padding = model->getBuffer<int32_t>(inputs[paddingIds]->weak_mem_ref.lock());
+        auto inputRank = inputs[paddingIds]->dimensions[0];
+        switch (inputs[argList->ArgPos("pad_value")]->type) {
+            case OperandType::FLOAT16: {
+                // TODO: Add float16 pad value support
+                break;
+            }
+            case OperandType::FLOAT32: {
+                // TODO: Add float32 pad value support
+                break;
+            }
+            case OperandType::INT32: {
+                padV2 = std::make_shared<PadV2Operation<int32_t>>();
+                auto op = std::dynamic_pointer_cast<PadV2Operation<int32_t>>(padV2);
+                op->setDataLayout(DataLayout::NHWC);
+                op->padValue = inputs[argList->ArgPos("pad_value")]->scalar.int32;
+                op->padFront.resize(inputRank);
+                op->padBack.resize(inputRank);
+                convert2DPadding(padding, inputs[paddingIds]->size(), op->padFront.data(), op->padBack.data());
+                op->padMode = PadMode::CONSTANT;
+                break;
+            }
+            default:
+                NNRT_LOGE_PRINT("PadV2 doesn't support given datatype");
+                assert(false);
+        }
+    } else {
+        NNRT_LOGE_PRINT("PadV2 argument list not support");
+        assert(false);
+    }
+    truncateOperationIOs(model, operation, 1, 1);
+    return padV2;
 }
 
 OperationPtr NnApiInterpreter::map_MUL(Model* model,
