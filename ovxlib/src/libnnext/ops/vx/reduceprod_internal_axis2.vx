@@ -30,7 +30,6 @@ _viv_uniform VXC_512Bits uniExtractOddData_2x8;
 
 
 #define REDUCEPROD_PROCESS_AXIS2_SAVE(dst_type, save_type, conv_mode, OUT_SCALE, OUT_OFFSET, write_fun) \
-    coord.z = 0; \
     dst_type dst0, dst1; \
     save_type vect; \
     prodValueLo = prodValueLo * OUT_SCALE + OUT_OFFSET; \
@@ -38,12 +37,12 @@ _viv_uniform VXC_512Bits uniExtractOddData_2x8;
     prodValueHi = prodValueHi * OUT_SCALE + OUT_OFFSET; \
     _viv_asm(conv_mode, dst1, prodValueHi); \
     VXC_DP2x8(vect, dst0, dst1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvertInt32toUint8_2x8); \
-    write_fun(output, coord, vect, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+    write_fun(output, coord.xy, vect, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
 
 
 #define REDUCEPROD_AXIS2(src_name, dst_name, src_type, copy_type, dst_type, save_type,\
 conv_mode, OUT_SCALE, OUT_OFFSET, IN_SCALE, IN_OFFSET) \
-__kernel void vxcReduceProdAxis2_##src_name##to##dst_name \
+__kernel void reduceprod_axis2_##src_name##to##dst_name \
     ( \
     __read_only  image2d_array_t input, \
     __write_only image2d_array_t output, \
@@ -58,7 +57,7 @@ __kernel void vxcReduceProdAxis2_##src_name##to##dst_name \
     copy_type in0; \
     REDUCEPROD_PROCESS_AXIS2(VXC_ReadImage2DArray, IN_SCALE, IN_OFFSET) \
     REDUCEPROD_PROCESS_AXIS2_SAVE(dst_type, save_type, conv_mode,\
-    OUT_SCALE, OUT_OFFSET,  VXC_WriteImage2DArray); \
+    OUT_SCALE, OUT_OFFSET,  VXC_WriteImage); \
 }
 
 
@@ -96,15 +95,14 @@ outputScale, output_offset_asymmetric, inputScale, input_offset_asymmetric)
 
 
 #define REDUCEPROD_PROCESS_AXIS2_SAVE_BF16(write_fun) \
-    coord.z = 0; \
     vxc_ushort8 dst0, dst1; \
     vxc_ushort8 vect; \
     _viv_asm(COPY, dst0, prodValueLo, 16); \
     _viv_asm(COPY, dst1, prodValueHi, 16); \
     VXC_DP2x8(vect, dst0, dst1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniExtractOddData_2x8); \
-    write_fun(output, coord, vect, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+    write_fun(output, coord.xy, vect, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
 
-__kernel void vxcReduceProdAxis2_BF16toBF16
+__kernel void reduceprod_axis2_BF16toBF16
     (
     __read_only  image2d_array_t input,
     __write_only image2d_array_t output,
@@ -119,5 +117,5 @@ __kernel void vxcReduceProdAxis2_BF16toBF16
     vxc_short8 in0;
     vxc_short8 zero = (vxc_short8)(0, 0, 0, 0, 0, 0, 0, 0);
     REDUCEPROD_PROCESS_AXIS2_BF16(VXC_ReadImage2DArray)
-    REDUCEPROD_PROCESS_AXIS2_SAVE_BF16(VXC_WriteImage2DArray);
+    REDUCEPROD_PROCESS_AXIS2_SAVE_BF16(VXC_WriteImage);
 }

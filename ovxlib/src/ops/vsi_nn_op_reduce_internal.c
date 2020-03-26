@@ -79,6 +79,11 @@ static vsi_status _reduce_internal_op_compute
         vsi_nn_reducemin_internal_param * p = &(self->nn_param.reducemin_internal);
         axis = p->axis[0];
     }
+    else if (strcmp(kernel_name, "reduceprod_internal") == 0)
+    {
+        vsi_nn_reduceprod_internal_param * p = &(self->nn_param.reduceprod_internal);
+        axis = p->axis[0];
+    }
     else
     {
         return VSI_FAILURE;
@@ -146,9 +151,26 @@ static vsi_bool _reduce_internal_op_setup
             p->axis[0] = axis;
         }
     }
-    if (strcmp(kernel_name, "reducemin_internal") == 0)
+    else if (strcmp(kernel_name, "reducemin_internal") == 0)
     {
         vsi_nn_reducemin_internal_param * p = &(self->nn_param.reducemin_internal);
+
+        axis = p->axis[0];
+        if (axis < 0)
+        {
+            axis = axis + inputs[0]->attr.dim_num;
+            if (axis < 0)
+            {
+                VSILOGW("error input axis value %d input dim num is %d",
+                 p->axis[0], inputs[0]->attr.dim_num);
+                return FALSE;
+            }
+            p->axis[0] = axis;
+        }
+    }
+    else if (strcmp(kernel_name, "reduceprod_internal") == 0)
+    {
+        vsi_nn_reduceprod_internal_param * p = &(self->nn_param.reduceprod_internal);
 
         axis = p->axis[0];
         if (axis < 0)
@@ -232,8 +254,9 @@ DEF_OP_REG  \
     )
 
 
-DEF_REDUCE_INTERNAL_OP( REDUCEMAX_INTERNAL, reducemax_internal );
-DEF_REDUCE_INTERNAL_OP( REDUCEMIN_INTERNAL, reducemin_internal );
+DEF_REDUCE_INTERNAL_OP( REDUCEMAX_INTERNAL,  reducemax_internal );
+DEF_REDUCE_INTERNAL_OP( REDUCEMIN_INTERNAL,  reducemin_internal );
+DEF_REDUCE_INTERNAL_OP( REDUCEPROD_INTERNAL, reduceprod_internal );
 
 #undef DEF_REDUCE_INTERNAL_OP
 #ifdef __cplusplus

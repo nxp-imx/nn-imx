@@ -66,7 +66,7 @@ __kernel void reducemin_axis0_U8toU8
         coord.x ++;
     }
     dst = convert_uint4(convert_float4(minVal) * inputScale + inputTail);
-    write_imageui(output, coord.yz, minVal);
+    write_imageui(output, coord.yz, dst);
 }
 
 __kernel void reducemin_axis0_U8toU8_2D
