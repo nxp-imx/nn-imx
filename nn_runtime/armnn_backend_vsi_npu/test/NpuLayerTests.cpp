@@ -432,8 +432,8 @@ ARMNN_AUTO_TEST_CASE(UnbiasSimpleFullyConnectedWithTranspose, FullyConnectedFloa
 // ARMNN_AUTO_TEST_CASE(FullyConnectedLargeTransposed, FullyConnectedLargeTest, true)
 
 // Splitter
-ARMNN_AUTO_TEST_CASE(SimpleSplitter, SplitterTest)
-ARMNN_AUTO_TEST_CASE(SimpleSplitterUint8, SplitterUint8Test)
+// ARMNN_AUTO_TEST_CASE(SimpleSplitter, SplitterTest)
+// ARMNN_AUTO_TEST_CASE(SimpleSplitterUint8, SplitterUint8Test)
 // ARMNN_AUTO_TEST_CASE(SimpleSplitterInt16, SplitterInt16Test)
 
 ARMNN_AUTO_TEST_CASE(CopyViaSplitter, CopyViaSplitterTest)
