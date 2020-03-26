@@ -49,8 +49,8 @@ __kernel void vxRGBScaletoTensor_##dst_name##_copy \
  \
     VXC_DP4x4(tmp0, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractRtoF32_part0_4x4); \
     VXC_DP4x4(tmp1, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractRtoF32_part1_4x4); \
-    tmp0 = tmp0 * paramData.w + paramData.x; \
-    tmp1 = tmp1 * paramData.w + paramData.x; \
+    tmp0 = tmp0 * paramData.w - paramData.x; \
+    tmp1 = tmp1 * paramData.w - paramData.x; \
     _viv_asm(CONV_RTE, result0, tmp0); \
     _viv_asm(CONV_RTE, result1, tmp1); \
     VXC_DP2x8(dst0, result0, result1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtract8Data_2x8); \
@@ -60,8 +60,8 @@ __kernel void vxRGBScaletoTensor_##dst_name##_copy \
     coord_out.z = 1; \
     VXC_DP4x4(tmp0, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractGtoF32_part0_4x4); \
     VXC_DP4x4(tmp1, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractGtoF32_part1_4x4); \
-    tmp0 = tmp0 * paramData.w + paramData.x; \
-    tmp1 = tmp1 * paramData.w + paramData.x; \
+    tmp0 = tmp0 * paramData.w - paramData.y; \
+    tmp1 = tmp1 * paramData.w - paramData.y; \
     _viv_asm(CONV_RTE, result0, tmp0); \
     _viv_asm(CONV_RTE, result1, tmp1); \
     VXC_DP2x8(dst0, result0, result1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtract8Data_2x8); \
@@ -71,8 +71,8 @@ __kernel void vxRGBScaletoTensor_##dst_name##_copy \
     coord_out.z = b_order; \
     VXC_DP4x4(tmp0, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractBtoF32_part0_4x4); \
     VXC_DP4x4(tmp1, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractBtoF32_part1_4x4); \
-    tmp0 = tmp0 * paramData.w + paramData.x; \
-    tmp1 = tmp1 * paramData.w + paramData.x; \
+    tmp0 = tmp0 * paramData.w - paramData.z; \
+    tmp1 = tmp1 * paramData.w - paramData.z; \
     _viv_asm(CONV_RTE, result0, tmp0); \
     _viv_asm(CONV_RTE, result1, tmp1); \
     VXC_DP2x8(dst0, result0, result1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtract8Data_2x8); \
@@ -118,8 +118,8 @@ __kernel void vxRGBScaletoTensor_##dst_name##_copy \
  \
     VXC_DP4x4(tmp0, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractRtoF32_part0_4x4); \
     VXC_DP4x4(tmp1, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractRtoF32_part1_4x4); \
-    tmp0 = tmp0 * paramData.w + paramData.x; \
-    tmp1 = tmp1 * paramData.w + paramData.x; \
+    tmp0 = tmp0 * paramData.w - paramData.x; \
+    tmp1 = tmp1 * paramData.w - paramData.x; \
     result0 = convert_int4_rte(tmp0); \
     result1 = convert_int4_rte(tmp1); \
     VXC_DP2x8(dst, result0, result1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtract8Data_2x8); \
@@ -129,8 +129,8 @@ __kernel void vxRGBScaletoTensor_##dst_name##_copy \
     coord_out.z = 1; \
     VXC_DP4x4(tmp0, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractGtoF32_part0_4x4); \
     VXC_DP4x4(tmp1, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractGtoF32_part1_4x4); \
-    tmp0 = tmp0 * paramData.w + paramData.x; \
-    tmp1 = tmp1 * paramData.w + paramData.x; \
+    tmp0 = tmp0 * paramData.w - paramData.y; \
+    tmp1 = tmp1 * paramData.w - paramData.y; \
     result0 = convert_int4_rte(tmp0); \
     result1 = convert_int4_rte(tmp1); \
     VXC_DP2x8(dst, result0, result1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtract8Data_2x8); \
@@ -139,8 +139,8 @@ __kernel void vxRGBScaletoTensor_##dst_name##_copy \
     coord_out.z = b_order; \
     VXC_DP4x4(tmp0, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractBtoF32_part0_4x4); \
     VXC_DP4x4(tmp1, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractBtoF32_part1_4x4); \
-    tmp0 = tmp0 * paramData.w + paramData.x; \
-    tmp1 = tmp1 * paramData.w + paramData.x; \
+    tmp0 = tmp0 * paramData.w - paramData.z; \
+    tmp1 = tmp1 * paramData.w - paramData.z; \
     result0 = convert_int4_rte(tmp0); \
     result1 = convert_int4_rte(tmp1); \
     VXC_DP2x8(dst, result0, result1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtract8Data_2x8); \

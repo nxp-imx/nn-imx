@@ -22815,8 +22815,8 @@ __kernel void vxRGBScaletoTensor_##dst_name##_copy \\\n\
  \\\n\
     VXC_DP4x4(tmp0, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractRtoF32_part0_4x4); \\\n\
     VXC_DP4x4(tmp1, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractRtoF32_part1_4x4); \\\n\
-    tmp0 = tmp0 * paramData.w + paramData.x; \\\n\
-    tmp1 = tmp1 * paramData.w + paramData.x; \\\n\
+    tmp0 = tmp0 * paramData.w - paramData.x; \\\n\
+    tmp1 = tmp1 * paramData.w - paramData.x; \\\n\
     _viv_asm(CONV_RTE, result0, tmp0); \\\n\
     _viv_asm(CONV_RTE, result1, tmp1); \\\n\
     VXC_DP2x8(dst0, result0, result1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtract8Data_2x8); \\\n\
@@ -22826,8 +22826,8 @@ __kernel void vxRGBScaletoTensor_##dst_name##_copy \\\n\
     coord_out.z = 1; \\\n\
     VXC_DP4x4(tmp0, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractGtoF32_part0_4x4); \\\n\
     VXC_DP4x4(tmp1, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractGtoF32_part1_4x4); \\\n\
-    tmp0 = tmp0 * paramData.w + paramData.x; \\\n\
-    tmp1 = tmp1 * paramData.w + paramData.x; \\\n\
+    tmp0 = tmp0 * paramData.w - paramData.y; \\\n\
+    tmp1 = tmp1 * paramData.w - paramData.y; \\\n\
     _viv_asm(CONV_RTE, result0, tmp0); \\\n\
     _viv_asm(CONV_RTE, result1, tmp1); \\\n\
     VXC_DP2x8(dst0, result0, result1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtract8Data_2x8); \\\n\
@@ -22837,8 +22837,8 @@ __kernel void vxRGBScaletoTensor_##dst_name##_copy \\\n\
     coord_out.z = b_order; \\\n\
     VXC_DP4x4(tmp0, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractBtoF32_part0_4x4); \\\n\
     VXC_DP4x4(tmp1, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractBtoF32_part1_4x4); \\\n\
-    tmp0 = tmp0 * paramData.w + paramData.x; \\\n\
-    tmp1 = tmp1 * paramData.w + paramData.x; \\\n\
+    tmp0 = tmp0 * paramData.w - paramData.z; \\\n\
+    tmp1 = tmp1 * paramData.w - paramData.z; \\\n\
     _viv_asm(CONV_RTE, result0, tmp0); \\\n\
     _viv_asm(CONV_RTE, result1, tmp1); \\\n\
     VXC_DP2x8(dst0, result0, result1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtract8Data_2x8); \\\n\
@@ -22884,8 +22884,8 @@ __kernel void vxRGBScaletoTensor_##dst_name##_copy \\\n\
  \\\n\
     VXC_DP4x4(tmp0, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractRtoF32_part0_4x4); \\\n\
     VXC_DP4x4(tmp1, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractRtoF32_part1_4x4); \\\n\
-    tmp0 = tmp0 * paramData.w + paramData.x; \\\n\
-    tmp1 = tmp1 * paramData.w + paramData.x; \\\n\
+    tmp0 = tmp0 * paramData.w - paramData.x; \\\n\
+    tmp1 = tmp1 * paramData.w - paramData.x; \\\n\
     result0 = convert_int4_rte(tmp0); \\\n\
     result1 = convert_int4_rte(tmp1); \\\n\
     VXC_DP2x8(dst, result0, result1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtract8Data_2x8); \\\n\
@@ -22895,8 +22895,8 @@ __kernel void vxRGBScaletoTensor_##dst_name##_copy \\\n\
     coord_out.z = 1; \\\n\
     VXC_DP4x4(tmp0, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractGtoF32_part0_4x4); \\\n\
     VXC_DP4x4(tmp1, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractGtoF32_part1_4x4); \\\n\
-    tmp0 = tmp0 * paramData.w + paramData.x; \\\n\
-    tmp1 = tmp1 * paramData.w + paramData.x; \\\n\
+    tmp0 = tmp0 * paramData.w - paramData.y; \\\n\
+    tmp1 = tmp1 * paramData.w - paramData.y; \\\n\
     result0 = convert_int4_rte(tmp0); \\\n\
     result1 = convert_int4_rte(tmp1); \\\n\
     VXC_DP2x8(dst, result0, result1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtract8Data_2x8); \\\n\
@@ -22905,8 +22905,8 @@ __kernel void vxRGBScaletoTensor_##dst_name##_copy \\\n\
     coord_out.z = b_order; \\\n\
     VXC_DP4x4(tmp0, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractBtoF32_part0_4x4); \\\n\
     VXC_DP4x4(tmp1, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractBtoF32_part1_4x4); \\\n\
-    tmp0 = tmp0 * paramData.w + paramData.x; \\\n\
-    tmp1 = tmp1 * paramData.w + paramData.x; \\\n\
+    tmp0 = tmp0 * paramData.w - paramData.z; \\\n\
+    tmp1 = tmp1 * paramData.w - paramData.z; \\\n\
     result0 = convert_int4_rte(tmp0); \\\n\
     result1 = convert_int4_rte(tmp1); \\\n\
     VXC_DP2x8(dst, result0, result1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtract8Data_2x8); \\\n\
