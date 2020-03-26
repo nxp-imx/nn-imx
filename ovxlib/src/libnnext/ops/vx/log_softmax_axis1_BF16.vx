@@ -49,7 +49,7 @@ _viv_uniform VXC_512Bits uniExtractOddData_2x8;
     sum0 = log2(sum0) * rlogE; \
     sum1 = log2(sum1) * rlogE;
 
-__kernel void vxcLogSoftmaxAxis1_BF16toBF16(
+__kernel void log_softmax_axis1_BF16toBF16(
     __read_only image2d_array_t   input,
     __write_only image2d_array_t  output,
     float input_Scale,
@@ -88,7 +88,7 @@ __kernel void vxcLogSoftmaxAxis1_BF16toBF16(
     while(coord.y < axisSize);
 }
 
-__kernel void vxcLogSoftmaxAxis1_BF16toF16(
+__kernel void log_softmax_axis1_BF16toF16(
     __read_only image2d_array_t   input,
     __write_only image2d_array_t  output,
     float input_Scale,
@@ -129,7 +129,7 @@ __kernel void vxcLogSoftmaxAxis1_BF16toF16(
     while(coord.y < axisSize);
 }
 
-__kernel void vxcLogSoftmaxAxis1_BF16toF32(
+__kernel void log_softmax_axis1_BF16toF32(
     __read_only image2d_array_t   input,
     __write_only image2d_array_t  output,
     float input_Scale,
@@ -167,7 +167,7 @@ __kernel void vxcLogSoftmaxAxis1_BF16toF32(
     while (coord.y < axisSize);
 }
 
-__kernel void vxcLogSoftmaxAxis1_BF16toBF16_2D(
+__kernel void log_softmax_axis1_BF16toBF16_2D(
     __read_only image2d_array_t   input,
     __write_only image2d_array_t  output,
     float input_Scale,
@@ -206,7 +206,7 @@ __kernel void vxcLogSoftmaxAxis1_BF16toBF16_2D(
     while(coord.y < axisSize);
 }
 
-__kernel void vxcLogSoftmaxAxis1_BF16toF16_2D(
+__kernel void log_softmax_axis1_BF16toF16_2D(
     __read_only image2d_array_t   input,
     __write_only image2d_array_t  output,
     float input_Scale,
@@ -247,7 +247,7 @@ __kernel void vxcLogSoftmaxAxis1_BF16toF16_2D(
     while(coord.y < axisSize);
 }
 
-__kernel void vxcLogSoftmaxAxis1_BF16toF32_2D(
+__kernel void log_softmax_axis1_BF16toF32_2D(
     __read_only image2d_array_t   input,
     __write_only image2d_t        output,
     float input_Scale,

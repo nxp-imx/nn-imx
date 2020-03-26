@@ -283,7 +283,7 @@ DEF_KERNEL_INITIALIZER(_eltwise_unary_initializer)
             outputScale = (float)1.0f / (float) (1 << -fl);
         }
     }
-    else if( attr[0]->quant == VSI_NN_KERNEL_QUANT_ASYMM )
+    else if( attr[1]->quant == VSI_NN_KERNEL_QUANT_ASYMM )
     {
         outputScale = (float)1.0f / attr[1]->asymm.scale;
         outputZP     = (float)attr[1]->asymm.zero_point;

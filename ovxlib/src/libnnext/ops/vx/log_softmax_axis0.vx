@@ -99,7 +99,7 @@ _viv_uniform VXC_512Bits uniPackMaxData_2x8;
 
 #define LOGSOFTMAX_AXIS0(src_name, dst_name, src_type, copy_type, dst_type,\
                         save_type, conv_mode, OUT_SCALE, OUT_OFFSET, vert_max_fun, horz_max_fun) \
-__kernel void vxcLogSoftmaxAxis0_##src_name##to##dst_name \
+__kernel void log_softmax_axis0_##src_name##to##dst_name \
     ( \
     __read_only  image2d_array_t input, \
     __write_only image2d_array_t output, \
@@ -139,7 +139,7 @@ CONV, 1, 0, VXC_VertMax3_Integer, VXC_HorzMax3_Integer)
 
 #define LOGSOFTMAX_AXIS0_2D(src_name, dst_name, src_type, copy_type,\
                            dst_type, save_type, conv_mode, OUT_SCALE, OUT_OFFSET, vert_max_fun, horz_max_fun) \
-__kernel void vxcLogSoftmaxAxis0_##src_name##to##dst_name##_2D \
+__kernel void log_softmax_axis0_##src_name##to##dst_name##_2D \
     ( \
     __read_only  image2d_array_t input, \
     __write_only image2d_array_t output, \
@@ -193,7 +193,7 @@ CONV, 1, 0, VXC_VertMax3_Integer, VXC_HorzMax3_Integer)
     }
 
 #define LOGSOFTMAX_AXIS0_TOF32(src_name, src_type, copy_type, vert_max_fun, horz_max_fun) \
-__kernel void vxcLogSoftmaxAxis0_##src_name##toF32 \
+__kernel void log_softmax_axis0_##src_name##toF32 \
     ( \
     __read_only  image2d_array_t input, \
     __write_only image2d_array_t output, \
@@ -215,7 +215,7 @@ LOGSOFTMAX_AXIS0_TOF32(I8,  vxc_char16,  vxc_char16, VXC_VertMax3_Integer, VXC_H
 LOGSOFTMAX_AXIS0_TOF32(U8,  vxc_uchar16, vxc_uchar16, VXC_VertMax3_Integer, VXC_HorzMax3_Integer)
 
 #define LOGSOFTMAX_AXIS0_TOF32_2D(src_name, src_type, copy_type, vert_max_fun, horz_max_fun) \
-__kernel void vxcLogSoftmaxAxis0_##src_name##toF32_2D \
+__kernel void log_softmax_axis0_##src_name##toF32_2D \
     ( \
     __read_only  image2d_array_t input, \
     __write_only image2d_t       output, \

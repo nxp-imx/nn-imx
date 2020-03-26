@@ -136,7 +136,7 @@ _viv_uniform VXC_512Bits uniExtractHalf4_4x4;
         coord.x += 4; \
     }
 
-__kernel void vxcLogSoftmaxAxis0_BF16toBF16(
+__kernel void log_softmax_axis0_BF16toBF16(
     __read_only image2d_array_t   input,
     __write_only image2d_array_t  output,
     float input_Scale,
@@ -146,7 +146,7 @@ __kernel void vxcLogSoftmaxAxis0_BF16toBF16(
     LOGSOFTMAX_PROCESS_AXIS0_BF16(VXC_ReadImage2DArray)
     LOGSOFTMAX_PROCESS_AXIS0_BF16TOBF16_SAVE(VXC_ReadImage2DArray, VXC_WriteImage2DArray)
 }
-__kernel void vxcLogSoftmaxAxis0_BF16toF16(
+__kernel void log_softmax_axis0_BF16toF16(
     __read_only image2d_array_t   input,
     __write_only image2d_array_t  output,
     float input_Scale,
@@ -156,7 +156,7 @@ __kernel void vxcLogSoftmaxAxis0_BF16toF16(
     LOGSOFTMAX_PROCESS_AXIS0_BF16(VXC_ReadImage2DArray)
     LOGSOFTMAX_PROCESS_AXIS0_BF16TOF16_SAVE(VXC_ReadImage2DArray, VXC_WriteImage2DArray)
 }
-__kernel void vxcLogSoftmaxAxis0_BF16toF32(
+__kernel void log_softmax_axis0_BF16toF32(
     __read_only image2d_array_t   input,
     __write_only image2d_array_t  output,
     float input_Scale,
@@ -166,7 +166,7 @@ __kernel void vxcLogSoftmaxAxis0_BF16toF32(
     LOGSOFTMAX_PROCESS_AXIS0_BF16(VXC_ReadImage2DArray)
     LOGSOFTMAX_PROCESS_AXIS0_BF16TOF32_SAVE(VXC_ReadImage2DArray)
 }
-__kernel void vxcLogSoftmaxAxis0_BF16toBF16_2D(
+__kernel void log_softmax_axis0_BF16toBF16_2D(
     __read_only image2d_array_t   input,
     __write_only image2d_array_t  output,
     float input_Scale,
@@ -176,7 +176,7 @@ __kernel void vxcLogSoftmaxAxis0_BF16toBF16_2D(
     LOGSOFTMAX_PROCESS_AXIS0_BF16(VXC_ReadImage)
     LOGSOFTMAX_PROCESS_AXIS0_BF16TOBF16_SAVE(VXC_ReadImage, VXC_WriteImage)
 }
-__kernel void vxcLogSoftmaxAxis0_BF16toF16_2D(
+__kernel void log_softmax_axis0_BF16toF16_2D(
     __read_only image2d_array_t   input,
     __write_only image2d_array_t  output,
     float input_Scale,
@@ -186,7 +186,7 @@ __kernel void vxcLogSoftmaxAxis0_BF16toF16_2D(
     LOGSOFTMAX_PROCESS_AXIS0_BF16(VXC_ReadImage)
     LOGSOFTMAX_PROCESS_AXIS0_BF16TOF16_SAVE(VXC_ReadImage, VXC_WriteImage)
 }
-__kernel void vxcLogSoftmaxAxis0_BF16toF32_2D(
+__kernel void log_softmax_axis0_BF16toF32_2D(
     __read_only image2d_array_t   input,
     __write_only image2d_t        output,
     float input_Scale,

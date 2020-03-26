@@ -73,7 +73,7 @@ conv_mode, OUT_SCALE, OUT_OFFSET, read_fun, write_fun) \
 
 #define LOGSOFTMAX_AXIS2(src_name, dst_name, src_type, copy_type,\
 dst_type, save_type, conv_mode, OUT_SCALE, OUT_OFFSET, vert_max_fun) \
-__kernel void vxcLogSoftmaxAxis2_##src_name##to##dst_name \
+__kernel void log_softmax_axis2_##src_name##to##dst_name \
     ( \
     __read_only  image2d_array_t input, \
     __write_only image2d_array_t output, \
@@ -117,7 +117,7 @@ CONV, 1, 0, VXC_VertMax3_Integer)
 
 
 #define LOGSOFTMAX_AXIS2_TOF32(src_name, src_type, copy_type, vert_max_fun) \
-__kernel void vxcLogSoftmaxAxis2_##src_name##toF32 \
+__kernel void log_softmax_axis2_##src_name##toF32 \
     ( \
     __read_only  image2d_array_t input, \
     __write_only image2d_array_t output, \
@@ -193,7 +193,7 @@ LOGSOFTMAX_AXIS2_TOF32(U8,  vxc_uchar16, vxc_uchar16, VXC_VertMax3_Integer)
     sum0 = log2(sum0) * rlogE; \
     sum1 = log2(sum1) * rlogE;
 
-__kernel void vxcLogSoftmaxAxis2_BF16toBF16(
+__kernel void log_softmax_axis2_BF16toBF16(
     __read_only image2d_array_t   input,
     __write_only image2d_array_t  output,
     float input_Scale,
@@ -232,7 +232,7 @@ __kernel void vxcLogSoftmaxAxis2_BF16toBF16(
     while(coord.z < axisSize);
 }
 
-__kernel void vxcLogSoftmaxAxis2_BF16toF16(
+__kernel void log_softmax_axis2_BF16toF16(
     __read_only image2d_array_t   input,
     __write_only image2d_array_t  output,
     float input_Scale,
@@ -273,7 +273,7 @@ __kernel void vxcLogSoftmaxAxis2_BF16toF16(
     while(coord.z < axisSize);
 }
 
-__kernel void vxcLogSoftmaxAxis2_BF16toF32(
+__kernel void log_softmax_axis2_BF16toF32(
     __read_only image2d_array_t   input,
     __write_only image2d_array_t  output,
     float input_Scale,

@@ -235,4 +235,59 @@ vsi_bool vsi_nn_kernel_optimize_element_shape
     return ret;
 } /* vsi_nn_kernel_optimize_element_shape() */
 
+vsi_bool vsi_nn_kernel_optimize_softmax_shape
+    (
+    const int32_t* shape_x, const size_t rank_x, const int32_t axis,
+    int32_t* out_shape_x, uint32_t* out_rank_x,int32_t* out_axis
+    )
+{
+    vsi_bool ret                        = TRUE;
+    size_t   i                          = 0;
+    size_t   rank_in                    = 0;
+    size_t   dims                       = 0;
+    int32_t  innerSize                  = 1;
+    int32_t  outerSize                  = 1;
+    int32_t  axisSize                   = shape_x[axis];
 
+    for (i = 0; i < (size_t)axis; i++)
+    {
+        innerSize *= shape_x[i];
+    }
+
+    for (i = axis + 1; i < rank_x; i++)
+    {
+        outerSize *= shape_x[i];
+    }
+
+    rank_in += element_fill_dim(out_shape_x, rank_in, GPU_TENSOR_MAX_WIDTH, innerSize);
+    dims = element_fill_dim(out_shape_x, rank_in, GPU_TENSOR_MAX_WIDTH, axisSize);
+    if (dims == 0)
+    {
+        *out_axis = rank_in;
+        out_shape_x[rank_in ++] = 1;
+    }
+    else
+    {
+        *out_axis = rank_in;
+    }
+
+    rank_in += dims;
+
+    rank_in += element_fill_dim(out_shape_x, rank_in, GPU_TENSOR_MAX_WIDTH, outerSize);
+
+    if( 0 == rank_in )
+    {
+        out_shape_x[0] = 1;
+        out_shape_x[1] = 1;
+        rank_in = 2;
+    }
+    else if( 1 == rank_in )
+    {
+        out_shape_x[1] = 1;
+        rank_in = 2;
+    }
+
+    *out_rank_x = rank_in;
+
+    return ret;
+} /* vsi_nn_kernel_optimize_softmax_shape() */
