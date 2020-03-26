@@ -274,10 +274,14 @@ int OvxlibDelegate::process(nnrt::Model* model, vsi_nn_context_t ctx) {
             } else {
                 err = addTensor(graph_, operand, TensorLifeTime::CONST, idx, data);
             }
-        } else if (model->isInput(idx))
-        {
-            continue;
         }
+#ifndef NNRT_ENABLE_TENSOR_FROM_HANDLE
+        else if (model->isInput(idx))
+        {
+            err = addTensor(graph_, operand,
+                TensorLifeTime::NORMAL, idx);
+        }
+#endif
         else if (model->isOutput(idx))
         {
             err = addTensor(graph_, operand,
@@ -289,7 +293,7 @@ int OvxlibDelegate::process(nnrt::Model* model, vsi_nn_context_t ctx) {
             return err;
         }
     }
-
+#ifdef NNRT_ENABLE_TENSOR_FROM_HANDLE
     auto inputIndexes = model->inputIndexes();
     for (size_t i = 0; i < inputIndexes.size(); i++)
     {
@@ -306,6 +310,7 @@ int OvxlibDelegate::process(nnrt::Model* model, vsi_nn_context_t ctx) {
             return err;
         }
     }
+#endif
     for (auto it = tensor_map_.begin(); it != tensor_map_.end(); ++it) {
         OperandPtr operand = model->operand(it->first);
         if (!operand) {

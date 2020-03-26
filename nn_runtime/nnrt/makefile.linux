@@ -13,6 +13,7 @@ INCLUDE += -I ./ -I ./boost/libs/preprocessor/include/
 
 CFLAGS += $(INCLUDE) -std=c++11
 CFLAGS += -D'OVXLIB_API=__attribute__((visibility("default")))'
+CFLAGS += -DNNRT_ENABLE_TENSOR_FROM_HANDLE
 CC      = $(CXX) -pthread
 ################################################################################
 # Supply necessary libraries.
