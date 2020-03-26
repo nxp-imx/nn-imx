@@ -24,14 +24,12 @@ _viv_uniform VXC_512Bits uniGetHiData_4x4;
     while(coord.y < axisSize);
 
 #define REDUCEMAX_PROCESS_AXIS1_SAVE_SAME(save_type, write_fun) \
-    coord.y = 0; \
     save_type vect; \
     _viv_asm(COPY, vect, max, 16); \
-    write_fun(output, coord, vect, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+    write_fun(output, coord_out, vect, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
 
 #define REDUCEMAX_PROCESS_AXIS1_SAVE(dst_type, save_type, conv_mode,\
 OUT_SCALE, OUT_OFFSET, IN_SCALE, IN_OFFSET, write_fun) \
-    coord.y = 0; \
     dst_type dst0, dst1; \
     save_type vect; \
     VXC_DP4x4(data0, max, max, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniGetLoData_4x4); \
@@ -41,10 +39,10 @@ OUT_SCALE, OUT_OFFSET, IN_SCALE, IN_OFFSET, write_fun) \
     data0 = ((data0 - IN_OFFSET) * IN_SCALE) * OUT_SCALE + OUT_OFFSET; \
     _viv_asm(conv_mode, dst1, data0); \
     VXC_DP2x8(vect, dst0, dst1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvertInt32toUint8_2x8); \
-    write_fun(output, coord, vect, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+    write_fun(output, coord_out, vect, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
 
 #define REDUCEMAX_AXIS1_SAME(src_name, dst_name, src_type, copy_type, save_type, vert_max_fun) \
-__kernel void vxcReducemaxAxis1_##src_name##to##dst_name \
+__kernel void reducemax_axis1_##src_name##to##dst_name \
     ( \
     __read_only  image2d_array_t input, \
     __write_only image2d_array_t output, \
@@ -52,16 +50,17 @@ __kernel void vxcReducemaxAxis1_##src_name##to##dst_name \
     ) \
 { \
     int4 coord = (int4)(get_global_id(0), 0, get_global_id(1), 0); \
+    int2 coord_out = (int2)(get_global_id(0), get_global_id(1)); \
     src_type vec0, max; \
     copy_type in0; \
     vxc_float4 data0; \
     REDUCEMAX_PROCESS_AXIS1(VXC_ReadImage2DArray, vert_max_fun) \
-    REDUCEMAX_PROCESS_AXIS1_SAVE_SAME(save_type, VXC_WriteImage2DArray); \
+    REDUCEMAX_PROCESS_AXIS1_SAVE_SAME(save_type, VXC_WriteImage); \
 }
 
 #define REDUCEMAX_AXIS1(src_name, dst_name, src_type, copy_type, dst_type, save_type,\
 conv_mode, OUT_SCALE, OUT_OFFSET, IN_SCALE, IN_OFFSET, vert_max_fun) \
-__kernel void vxcReducemaxAxis1_##src_name##to##dst_name \
+__kernel void reducemax_axis1_##src_name##to##dst_name \
     ( \
     __read_only  image2d_array_t input, \
     __write_only image2d_array_t output, \
@@ -69,12 +68,13 @@ __kernel void vxcReducemaxAxis1_##src_name##to##dst_name \
     ) \
 { \
     int4 coord = (int4)(get_global_id(0), 0, get_global_id(1), 0); \
+    int2 coord_out = (int2)(get_global_id(0), get_global_id(1)); \
     src_type vec0, max; \
     copy_type in0; \
     vxc_float4 data0; \
     REDUCEMAX_PROCESS_AXIS1(VXC_ReadImage2DArray, vert_max_fun) \
     REDUCEMAX_PROCESS_AXIS1_SAVE(dst_type, save_type, conv_mode,\
-    OUT_SCALE, OUT_OFFSET, IN_SCALE, IN_OFFSET, VXC_WriteImage2DArray); \
+    OUT_SCALE, OUT_OFFSET, IN_SCALE, IN_OFFSET, VXC_WriteImage); \
 }
 
 
@@ -103,7 +103,7 @@ outputScale, output_offset_asymmetric, inputScale, input_offset_asymmetric, VXC_
 
 
 #define REDUCEMAX_AXIS1_SAME_2D(src_name, dst_name, src_type, copy_type, save_type, vert_max_fun) \
-__kernel void vxcReducemaxAxis1_##src_name##to##dst_name##_2D \
+__kernel void reducemax_axis1_##src_name##to##dst_name##_2D \
     ( \
     __read_only  image2d_array_t input, \
     __write_only image2d_array_t output, \
@@ -111,6 +111,7 @@ __kernel void vxcReducemaxAxis1_##src_name##to##dst_name##_2D \
     ) \
 { \
     int2 coord = (int2)(get_global_id(0), 0); \
+    int2 coord_out = (int2)(get_global_id(0), 0); \
     src_type vec0, max; \
     copy_type in0; \
     vxc_float4 data0; \
@@ -120,7 +121,7 @@ __kernel void vxcReducemaxAxis1_##src_name##to##dst_name##_2D \
 
 #define REDUCEMAX_AXIS1_2D(src_name, dst_name, src_type, copy_type, dst_type,\
 save_type, conv_mode, OUT_SCALE, OUT_OFFSET, IN_SCALE, IN_OFFSET, vert_max_fun) \
-__kernel void vxcReducemaxAxis1_##src_name##to##dst_name##_2D \
+__kernel void reducemax_axis1_##src_name##to##dst_name##_2D \
     ( \
     __read_only  image2d_array_t input, \
     __write_only image2d_array_t output, \
@@ -128,6 +129,7 @@ __kernel void vxcReducemaxAxis1_##src_name##to##dst_name##_2D \
     ) \
 { \
     int2 coord = (int2)(get_global_id(0), 0); \
+    int2 coord_out = (int2)(get_global_id(0), 0); \
     src_type vec0, max; \
     copy_type in0; \
     vxc_float4 data0; \
