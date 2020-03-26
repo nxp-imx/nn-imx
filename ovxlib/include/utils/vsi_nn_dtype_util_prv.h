@@ -154,7 +154,7 @@ static inline int32_t fp32_to_affine
     (
     const float  in,
     const float  scale,
-    const uint8_t    zero_point,
+    const int32_t    zero_point,
     const vsi_nn_type_e type
     )
 {
@@ -171,7 +171,7 @@ static inline float affine_to_fp32
     (
     const int32_t    val,
     const float  scale,
-    const uint8_t    zero_point,
+    const int32_t    zero_point,
     const vsi_nn_type_e type
     )
 {

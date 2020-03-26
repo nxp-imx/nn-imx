@@ -66,8 +66,8 @@ vsi_status VX_CALLBACK vxpoolingWithArgmaxInitializer
 
     vx_float32 scaleIn          = 0;
     vx_float32 scaleOut         = 0;
-    uint32_t   output_ZP        = 0;
-    uint32_t   input_ZP         = 0;
+    int32_t    output_ZP        = 0;
+    int32_t    input_ZP         = 0;
     vx_uint16  M0               = 0;
     vx_int8    postShift        = 0;
     vsi_bool   enable_image_2d  = FALSE;

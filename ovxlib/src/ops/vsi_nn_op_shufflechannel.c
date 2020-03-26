@@ -206,8 +206,8 @@ static vsi_status vx_op_pre_compute
     vsi_nn_type_e outputDataFormat    = outputs[0]->attr.dtype.vx_type;
     int8_t        inputFixedPointPos  = inputs[0]->attr.dtype.fl;
     int8_t        outputFixedPointPos = outputs[0]->attr.dtype.fl;
-    uint32_t      inputZeroPoint      = inputs[0]->attr.dtype.zero_point;
-    uint32_t      outputZeroPoint     = outputs[0]->attr.dtype.zero_point;
+    int32_t       inputZeroPoint      = inputs[0]->attr.dtype.zero_point;
+    int32_t       outputZeroPoint     = outputs[0]->attr.dtype.zero_point;
     vx_float32    inputScale          = inputs[0]->attr.dtype.scale;
     vx_float32    outputScale         = outputs[0]->attr.dtype.scale;
     int32_t       axis                = self->nn_param.shufflechannel.axis;

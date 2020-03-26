@@ -33,7 +33,7 @@ vsi_status vsi_nn_QuantAffinePerchannelCalParam
     float     max_data,
     float     min_data,
     float   * scales
-    //uint32_t    * zero_point
+    //int32_t    * zero_point
     )
 {
     double max_range, min_range;
@@ -55,7 +55,7 @@ vsi_status vsi_nn_QuantAffinePerchannelCalParam
     vsi_nn_TypeGetRange( type, &max_range, &min_range );
     *scales = ( max_data - min_data ) / (float)( max_range - min_range );
     //tmp = (int32_t)vsi_nn_Rint( (float)min_range - min_data / *scales );
-    //*zero_point = (uint32_t)vsi_nn_min( (int32_t)max_range,
+    //*zero_point = (int32_t)vsi_nn_min( (int32_t)max_range,
     //    vsi_nn_max( (int32_t)min_range, tmp ) );
     return VSI_SUCCESS;
 } /* vsi_nn_QuantAffinePerchannelCalParam() */

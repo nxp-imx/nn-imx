@@ -88,7 +88,7 @@ int32_t vsi_nn_Fp32ToAffine
     (
     const float  in,
     const float  scale,
-    const uint8_t    zero_point,
+    const int32_t    zero_point,
     const vsi_nn_type_e type
     )
 {
@@ -99,7 +99,7 @@ float vsi_nn_AffineToFp32
     (
     const int32_t    val,
     const float  scale,
-    const uint8_t    zero_point,
+    const int32_t    zero_point,
     const vsi_nn_type_e type
     )
 {

@@ -186,7 +186,7 @@ DEF_KERNEL_INITIALIZER(_depthwise_conv1d_initializer)
     vsi_nn_kernel_tensor_attr_t *output_attr    = NULL;
     vsi_nn_kernel_tensor_attr_t *weight_attr    = NULL;
     vsi_int_array_t             *output_shape   = NULL;
-    uint32_t                    weightZP        = 0;
+    int32_t                     weightZP        = 0;
     float                       outputScale     = 1.0f;
     float                       outputZP        = 0;
     vx_hardware_caps_params_t   hw_param;

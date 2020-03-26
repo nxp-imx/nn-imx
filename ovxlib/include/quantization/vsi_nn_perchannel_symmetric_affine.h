@@ -36,7 +36,7 @@ OVXLIB_API vsi_status vsi_nn_QuantAffinePerchannelCalParam
     float    max_data,
     float    min_data,
     float  * scales
-    //uint32_t   * zero_point
+    //int32_t   * zero_point
     );
 
 OVXLIB_API vsi_bool vsi_nn_QuantAffinePerchannelCheck
