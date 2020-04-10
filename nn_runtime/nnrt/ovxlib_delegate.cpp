@@ -1233,7 +1233,7 @@ int OvxlibDelegate::addNode_DEPTH_TO_SPACE(Model* model,
     std::vector<vsi_nn_node_t*> nodes;
     err = addNode(VSI_NN_OP_DEPTH2SPACE, operation, &nodes, operation_index);
     nodes[0]->nn_param.depth2space.block_size = static_cast<uint32_t>(dp_to_sp->blockSize);
-    nodes[0]->nn_param.depth2space.mode = vsi_nn_depth2space_mode_e::DCR;
+    nodes[0]->nn_param.depth2space.mode = vsi_nn_depth2space_mode_e::VSI_NN_DEPTH2SPACE_DCR;
     return err;
 }
 
