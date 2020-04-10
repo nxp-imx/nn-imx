@@ -172,6 +172,7 @@ static OperationType mapOperationCode(OperationCode code)
         REGISTER_OP(UNIDIRECTIONAL_SEQUENCE_RNN);
         REGISTER_OP(BIDIRECTIONAL_SEQUENCE_LSTM);
         REGISTER_OP(BIDIRECTIONAL_SEQUENCE_RNN);
+        REGISTER_OP(CAST);
 #undef REGISTER_OP
         case ANEURALNETWORKS_TOPK_V2:
             return OperationType::TOPK;
