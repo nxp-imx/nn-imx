@@ -1783,8 +1783,8 @@ int OvxlibDelegate::addNode_ROI_ALIGN(Model* model,
     ROIAlignOperation* op = reinterpret_cast<ROIAlignOperation*>(operation.get());
     std::vector<vsi_nn_node_t*> nodes;
     err = addNode(VSI_NN_OP_ROI_ALIGN, operation, &nodes, operation_index);
-    nodes[0]->nn_param.roi_align.output_height = op->width;
-    nodes[0]->nn_param.roi_align.output_width = op->height;
+    nodes[0]->nn_param.roi_align.output_height = op->height;
+    nodes[0]->nn_param.roi_align.output_width = op->width;
     nodes[0]->nn_param.roi_align.height_ratio = op->height_ratio;
     nodes[0]->nn_param.roi_align.width_ratio = op->width_ratio;
     nodes[0]->nn_param.roi_align.height_sample_num = op->sampling_points_height;

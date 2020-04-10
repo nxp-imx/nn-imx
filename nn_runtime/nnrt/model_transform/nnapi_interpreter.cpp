@@ -2003,10 +2003,33 @@ OperationPtr NnApiInterpreter::map_ROI_ALIGN(Model* model,
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
     auto argList = matchArgList(inputs, "ROIAlignOperation");
     if (argList) {
+        switch (inputs[argList->ArgPos("height_ratio")]->type) {
+            case OperandType::FLOAT16: {
+                half_float::half heightRatio;
+                memcpy(&heightRatio,
+                       &inputs[argList->ArgPos("height_ratio")]->scalar.float16,
+                       sizeof(half_float::half));
+                op->height_ratio = heightRatio;
+
+                half_float::half widthRatio;
+                memcpy(&widthRatio,
+                       &inputs[argList->ArgPos("width_ratio")]->scalar.float16,
+                       sizeof(half_float::half));
+                op->width_ratio = widthRatio;
+                break;
+            }
+            case OperandType::FLOAT32: {
+                op->height_ratio = inputs[argList->ArgPos("height_ratio")]->scalar.float32;
+                op->width_ratio = inputs[argList->ArgPos("width_ratio")]->scalar.float32;
+                break;
+            }
+            default: {
+                NNRT_LOGE_PRINT("RoiAlign does't support the given data type.");
+                assert(false);
+            }
+        }
         op->height = inputs[argList->ArgPos("height")]->scalar.int32;
         op->width = inputs[argList->ArgPos("width")]->scalar.int32;
-        op->height_ratio = inputs[argList->ArgPos("height_ratio")]->scalar.float32;
-        op->width_ratio = inputs[argList->ArgPos("width_ratio")]->scalar.float32;
         op->sampling_points_height =
             inputs[argList->ArgPos("sampling_points_height")]->scalar.int32;
         op->sampling_points_width = inputs[argList->ArgPos("sampling_points_width")]->scalar.int32;
