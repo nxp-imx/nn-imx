@@ -15,6 +15,7 @@ namespace vsi_driver {
 
         // Load supported operand types
         update(&capabilities.operandPerformance, OperandType::TENSOR_QUANT8_ASYMM, kPerf);
+        update(&capabilities.operandPerformance, OperandType::TENSOR_BOOL8, kPerf);
         if (!disable_float_feature_) {
             update(&capabilities.operandPerformance, OperandType::TENSOR_FLOAT32, kPerf);
             update(&capabilities.operandPerformance, OperandType::TENSOR_FLOAT16, kPerf);

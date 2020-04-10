@@ -399,15 +399,13 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
             OperationValidatePtr reduceAll = std::make_unique<
                 op_validate::ReduceAllValidate<HalPlatform::Model, HalPlatform::Operation>>(
                 model, operation);
-            return false;
-            // return reduceAll->Validate();
+            return reduceAll->Validate();
         }
         case OperationType::REDUCE_ANY: {
             OperationValidatePtr reduceAny = std::make_unique<
                 op_validate::ReduceAnyValidate<HalPlatform::Model, HalPlatform::Operation>>(
                 model, operation);
-            return false;
-            // return reduceAny->Validate();
+            return reduceAny->Validate();
         }
         case OperationType::GATHER: {
             OperationValidatePtr gather = std::make_unique<
