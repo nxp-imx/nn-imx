@@ -1351,12 +1351,48 @@ OperationPtr NnApiInterpreter::map_BIDIRECTIONAL_SEQUENCE_LSTM(Model* model,
         op->mergeOutputs = inputs[argList->ArgPos("merge_outputs")]->scalar.boolean;
         op->cell_clip = inputs[argList->ArgPos("cell_clip")]->scalar.float32;
         op->proj_clip = inputs[argList->ArgPos("proj_clip")]->scalar.float32;
+        if (OperandType::TENSOR_FLOAT16 == inputs[argList->ArgPos("fw_input_bias_i")]->type) {
+            if (!(operand_utils::InsertFp16ToFp32LayerBeforeOperand(
+                      model, operation, inputs[argList->ArgPos("fw_input_bias_i")]) &&
+                  operand_utils::InsertFp16ToFp32LayerBeforeOperand(
+                      model, operation, inputs[argList->ArgPos("fw_input_bias_f")]) &&
+                  operand_utils::InsertFp16ToFp32LayerBeforeOperand(
+                      model, operation, inputs[argList->ArgPos("fw_input_bias_c")]) &&
+                  operand_utils::InsertFp16ToFp32LayerBeforeOperand(
+                      model, operation, inputs[argList->ArgPos("fw_input_bias_o")]) &&
+                  operand_utils::InsertFp16ToFp32LayerBeforeOperand(
+                      model, operation, inputs[argList->ArgPos("bw_input_bias_i")]) &&
+                  operand_utils::InsertFp16ToFp32LayerBeforeOperand(
+                      model, operation, inputs[argList->ArgPos("bw_input_bias_f")]) &&
+                  operand_utils::InsertFp16ToFp32LayerBeforeOperand(
+                      model, operation, inputs[argList->ArgPos("bw_input_bias_c")]) &&
+                  operand_utils::InsertFp16ToFp32LayerBeforeOperand(
+                      model, operation, inputs[argList->ArgPos("bw_input_bias_o")]))) {
+                NNRT_LOGE_PRINT("Insert Fp16ToFp32 layer failed.");
+                assert(false);
+            }
+            // Insert data converter layer for optional float16 bias
+            if (-1 != argList->ArgPos("fw_input_bias_proj")) {
+                if (!operand_utils::InsertFp16ToFp32LayerBeforeOperand(
+                        model, operation, inputs[argList->ArgPos("fw_input_bias_proj")])) {
+                    NNRT_LOGE_PRINT("Insert Fp16ToFp32 layer failed.");
+                    assert(false);
+                }
+            }
+            if (-1 != argList->ArgPos("bw_input_bias_proj")) {
+                if (!operand_utils::InsertFp16ToFp32LayerBeforeOperand(
+                        model, operation, inputs[argList->ArgPos("bw_input_bias_proj")])) {
+                    NNRT_LOGE_PRINT("Insert Fp16ToFp32 layer failed.");
+                    assert(false);
+                }
+            }
+        }
         removeScalarOperand(operation, argList->ArgPos("activation"), 5);
     } else {
         NNRT_LOGE_PRINT("BidirectionalSequenceLstm argument list not support");
         assert(false);
     }
-    truncateOperationIOs(model, operation, 56, 2);
+    // truncateOperationIOs(model, operation, 56, 2);
     return op;
 }
 
