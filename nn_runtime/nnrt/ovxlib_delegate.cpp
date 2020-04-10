@@ -159,7 +159,6 @@ OvxlibDelegate::OvxlibDelegate(std::vector<ExecutionIOPtr> &inputPtr)
     REGISTER_OP(ARGMIN);
     REGISTER_OP(EQUAL);
     REGISTER_OP(EXP);
-    // REGISTER_OP(EXPAND_DIMS);
     REGISTER_OP(GATHER);
     REGISTER_OP(CHANNEL_SHUFFLE);
     REGISTER_OP(GREATER);
@@ -198,6 +197,7 @@ OvxlibDelegate::OvxlibDelegate(std::vector<ExecutionIOPtr> &inputPtr)
     REGISTER_OP(DETECTION_POSTPROCESSING);
     REGISTER_OP(TILE);
     REGISTER_OP(PAD_V2);
+    REGISTER_OP(LINEAR);
 #undef REGISTER_OP
 }
 
@@ -1807,6 +1807,14 @@ int OvxlibDelegate::addNode_BOX_WITH_NMS_LIMIT(Model* model,
     nodes[0]->nn_param.box_with_nms_limit.iou_threshold = op->iou_threshold;
     nodes[0]->nn_param.box_with_nms_limit.sigma = op->nms_sigma;
     nodes[0]->nn_param.box_with_nms_limit.nms_score_threshold = op->nms_score_threshold;
+    return err;
+}
+
+int OvxlibDelegate::addNode_LINEAR(Model* model, OperationPtr operation, uint32_t operation_index) {
+    (void)model;
+    int err = NNA_ERROR_CODE(NO_ERROR);
+    std::vector<vsi_nn_node_t*> nodes;
+    err = addNode(VSI_NN_OP_A_TIMES_B_PLUS_C, operation, &nodes, operation_index);
     return err;
 }
 

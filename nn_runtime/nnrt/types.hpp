@@ -197,6 +197,8 @@ enum class OperationType: uint32_t {
     RANDOM_MULTINOMIAL,
     LOG_SOFTMAX,
     PAD_V2,
+
+    LINEAR, // A_TIMES_B_PLUS_C
 };
 
 enum class OperandType: uint8_t {

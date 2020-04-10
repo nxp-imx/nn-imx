@@ -61,6 +61,7 @@ using AbsOperation = ActivationOperation<OperationType::ABS>;
 using SqrtOperation = ActivationOperation<OperationType::SQRT>;
 using RSqrtOperation = ActivationOperation<OperationType::RSQRT>;
 using SquareOperation = ActivationOperation<OperationType::SQUARE>;
+using LinearOperation = ActivationOperation<OperationType::LINEAR>;
 
 }
 }

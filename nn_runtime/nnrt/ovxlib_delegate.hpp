@@ -228,7 +228,6 @@ class OvxlibDelegate
         REGISTER_OP(ARGMIN);
         REGISTER_OP(EQUAL);
         REGISTER_OP(EXP);
-        //REGISTER_OP(EXPAND_DIMS);
         REGISTER_OP(GATHER);
         REGISTER_OP(CHANNEL_SHUFFLE);
         REGISTER_OP(GREATER);
@@ -265,10 +264,10 @@ class OvxlibDelegate
         REGISTER_OP(LOG_SOFTMAX);
         REGISTER_OP(TOPK);
         REGISTER_OP(TILE);
-
         REGISTER_OP(DETECTION_POSTPROCESSING);
         REGISTER_OP(DATA_CONVERT);
         REGISTER_OP(PAD_V2);
+        REGISTER_OP(LINEAR);
 #undef  REGISTER_OP
 
     private:
