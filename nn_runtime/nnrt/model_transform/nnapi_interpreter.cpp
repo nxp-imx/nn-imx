@@ -1261,6 +1261,15 @@ OperationPtr NnApiInterpreter::map_BIDIRECTIONAL_SEQUENCE_RNN(Model* model,
         op->activation = mapFusedType(inputs[argList->ArgPos("activation")]->scalar.int32);
         op->timeMajor = inputs[argList->ArgPos("timeMajor")]->scalar.boolean;
         op->mergeOutputs = inputs[argList->ArgPos("mergeOutputs")]->scalar.boolean;
+        if (OperandType::TENSOR_FLOAT16 == inputs[argList->ArgPos("fw_input_bias")]->type) {
+            if (!(operand_utils::InsertFp16ToFp32LayerBeforeOperand(
+                    model, operation, inputs[argList->ArgPos("fw_input_bias")]) &&
+                operand_utils::InsertFp16ToFp32LayerBeforeOperand(
+                    model, operation, inputs[argList->ArgPos("bw_input_bias")]))) {
+                NNRT_LOGE_PRINT("Insert Fp16ToFp32 Layer failed.");
+                assert(false);
+            }
+        }
     } else {
         NNRT_LOGE_PRINT("BidirectionalSequenceRnn argument list not support");
         assert(false);
