@@ -1960,10 +1960,33 @@ OperationPtr NnApiInterpreter::map_ROI_POOLING(Model* model,
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
     auto argList = matchArgList(inputs, "ROIPoolingOperation");
     if (argList) {
+        switch (inputs[argList->ArgPos("height_ratio")]->type) {
+            case OperandType::FLOAT16: {
+                half_float::half heightRatio;
+                memcpy(&heightRatio,
+                       &inputs[argList->ArgPos("height_ratio")]->scalar.float16,
+                       sizeof(half_float::half));
+                op->height_ratio = heightRatio;
+
+                half_float::half widthRatio;
+                memcpy(&widthRatio,
+                       &inputs[argList->ArgPos("width_ratio")]->scalar.float16,
+                       sizeof(half_float::half));
+                op->width_ratio = widthRatio;
+                break;
+            }
+            case OperandType::FLOAT32: {
+                op->height_ratio = inputs[argList->ArgPos("height_ratio")]->scalar.float32;
+                op->width_ratio = inputs[argList->ArgPos("width_ratio")]->scalar.float32;
+                break;
+            }
+            default: {
+                NNRT_LOGE_PRINT("ROIPooling does't support given data type.");
+                assert(false);
+            }
+        }
         op->height = inputs[argList->ArgPos("height")]->scalar.int32;
         op->width = inputs[argList->ArgPos("width")]->scalar.int32;
-        op->height_ratio = inputs[argList->ArgPos("height_ratio")]->scalar.float32;
-        op->width_ratio = inputs[argList->ArgPos("width_ratio")]->scalar.float32;
         op->setDataLayout(getDataLayout(inputs[argList->ArgPos("layout")]->scalar.boolean));
     } else {
         NNRT_LOGE_PRINT("ROIPooling argument list not support");

@@ -556,6 +556,10 @@ struct HeatmapMaxKeypointOperation : Operation {
 
 struct ROIPoolingOperation : Operation {
     ROIPoolingOperation() : Operation(OperationType::ROI_POOLING) {}
+    void handleLayoutInferenceOnInputs(
+        Model& model,
+        std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>&
+            out_permute_vectors) override;
     int height;
     int width;
     float height_ratio;

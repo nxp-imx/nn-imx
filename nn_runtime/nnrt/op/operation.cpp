@@ -747,6 +747,39 @@ void ROIAlignOperation::handleLayoutInferenceOnInputs(
     next_permute_vectors.insert(std::make_pair(outputs()[0], requiredPermute));
 }
 
+void ROIPoolingOperation::handleLayoutInferenceOnInputs(
+    Model& model,
+    std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>& next_permute_vectors) {
+    //assert(input_permute_cache_.cached_permutes_.size() == 1);
+    OperandPtr inputOperand = model.operand(inputs()[0]);
+    OperandPtr outputOperand = model.operand(outputs()[0]);
+
+    nnrt::layout_inference::IPermuteVectorPtr permuteVector =
+        input_permute_cache_.cached_permutes_[inputs()[0]];
+    CHECK_NULL_PTR(permuteVector);
+
+    if (inputOperand->ndim() != 4) {
+        Operation::handleLayoutInferenceOnInputs(model, next_permute_vectors);
+        auto reversePermVec = permuteVector->reverse();
+        return;
+    }
+
+    // {0, 1, 2, 3}
+    auto requiredPermute = nnrt::layout_inference::make_shared(inputOperand->ndim());
+    if (DataLayout::NHWC == getDataLayout()) {
+        requiredPermute = std::make_shared<nnrt::layout_inference::PermuteVector<4>>(
+            std::initializer_list<uint32_t>({0, 3, 1, 2}));
+    }
+
+    auto finalPermute = permuteVector->reverse()->add(requiredPermute);
+    auto permuteOp = nnrt::op::utils::asOp(finalPermute);
+
+    if (permuteOp) {
+        insertPermute(model, permuteOp, finalPermute->asStdVec(), true, inputs()[0]);
+    }
+    next_permute_vectors.insert(std::make_pair(outputs()[0], requiredPermute));
+}
+
 void HeatmapMaxKeypointOperation::handleLayoutInferenceOnInputs(
     Model& model,
     std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>& next_permute_vectors) {
