@@ -1381,11 +1381,9 @@ bool NpuLayerSupport::IsResizeBilinearSupported(const TensorInfo& input,
 bool NpuLayerSupport::IsRsqrtSupported(const TensorInfo& input,
                                        const TensorInfo& output,
                                        Optional<std::string&> reasonIfUnsupported) const {
-    bool supported = false;
-    std::array<DataType, 2> supportedTypes = {
-        DataType::Float32, DataType::QuantisedAsymm8,
-        // DataType::QuantisedSymm16
-    };
+    bool supported = true;
+    std::array<DataType, 3> supportedTypes = {
+        DataType::Float32, DataType::QuantisedAsymm8, DataType::Float16};
 
     supported &= CheckSupportRule(TypeAnyOf(input, supportedTypes),
                                   reasonIfUnsupported,
