@@ -926,8 +926,7 @@ OperationPtr NnApiInterpreter::map_DEPTH_TO_SPACE(Model* model,
     std::shared_ptr<DepthToSpaceOperation> dp_to_sp = std::make_shared<DepthToSpaceOperation>();
     NNAPI_CHECK_PTR(dp_to_sp);
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
-    dp_to_sp->blockSize[0] = inputs[1]->scalar.int32;
-    dp_to_sp->blockSize[1] = inputs[1]->scalar.int32;
+    dp_to_sp->blockSize = inputs[1]->scalar.int32;
     dp_to_sp->setDataLayout(DataLayout::NHWC);
     truncateOperationIOs(model, operation, 1, 1);
     return dp_to_sp;

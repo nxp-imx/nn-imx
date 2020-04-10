@@ -434,7 +434,7 @@ struct DepthToSpaceOperation : Operation {
         Model& model,
         std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>&
             out_permute_vectors);
-    int32_t blockSize[2];
+    int32_t blockSize;
 };
 
 struct SpaceToDepthOperation : Operation {
