@@ -1337,6 +1337,19 @@ OperationPtr NnApiInterpreter::map_UNIDIRECTIONAL_SEQUENCE_LSTM(Model* model,
         op->timeMajor = inputs[argList->ArgPos("timeMajor")]->scalar.boolean;
         op->cell_clip = inputs[argList->ArgPos("cell_clip")]->scalar.float32;
         op->proj_clip = inputs[argList->ArgPos("proj_clip")]->scalar.float32;
+        if (OperandType::TENSOR_FLOAT16 == inputs[argList->ArgPos("bias_i")]->type) {
+            if (!(operand_utils::InsertFp16ToFp32LayerBeforeOperand(
+                      model, operation, inputs[argList->ArgPos("bias_i")]) &&
+                  operand_utils::InsertFp16ToFp32LayerBeforeOperand(
+                      model, operation, inputs[argList->ArgPos("bias_f")]) &&
+                  operand_utils::InsertFp16ToFp32LayerBeforeOperand(
+                      model, operation, inputs[argList->ArgPos("bias_c")]) &&
+                  operand_utils::InsertFp16ToFp32LayerBeforeOperand(
+                      model, operation, inputs[argList->ArgPos("bias_o")]))) {
+                NNRT_LOGE_PRINT("Insert Fp16ToFp32 Layer failed.");
+                assert(false);
+            }
+        }
         removeScalarOperand(operation, argList->ArgPos("activation"), 4);
     } else {
         NNRT_LOGE_PRINT("UnidirectionalSequenceLstm argument list not support");
