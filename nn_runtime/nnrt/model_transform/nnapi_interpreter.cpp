@@ -164,6 +164,7 @@ NnApiInterpreter::NnApiInterpreter() {
     REGISTER_OP(DETECTION_POSTPROCESSING);
     REGISTER_OP(TILE);
     REGISTER_OP(PAD_V2);
+    REGISTER_OP(DATA_CONVERT);
 
 /*customer Op*/
 #undef REGISTER_OP
@@ -1232,6 +1233,14 @@ OperationPtr NnApiInterpreter::map_UNIDIRECTIONAL_SEQUENCE_RNN(Model* model,
     if (argList) {
         op->activation = mapFusedType(inputs[argList->ArgPos("activation")]->scalar.int32);
         op->timeMajor = inputs[argList->ArgPos("timeMajor")]->scalar.boolean;
+        // Insert Fp16ToFp32 data convert layer before bias if the type of bias is float16
+        if (OperandType::TENSOR_FLOAT16 == inputs[argList->ArgPos("bias")]->type) {
+            if (!operand_utils::InsertFp16ToFp32LayerBeforeOperand(
+                    model, operation, inputs[argList->ArgPos("bias")])) {
+                NNRT_LOGE_PRINT("Insert Fp16ToFp32 Layer failed.");
+                assert(false);
+            }
+        }
     } else {
         NNRT_LOGE_PRINT("UnidirectionalSequenceRnn argument list not support");
         assert(false);
@@ -2064,6 +2073,7 @@ DECLARE_SAMPLE_OP(PRELU, 2, 1, PReluOperation)
 DECLARE_SAMPLE_OP(SELECT, 3, 1, SelectOperation)
 DECLARE_SAMPLE_OP(SIN, 1, 1, SinOperation)
 DECLARE_SAMPLE_OP(AXIS_ALIGNED_BBOX_TRANSFORM, 4, 1, AxisAlignedBBoxTransformOperation)
+DECLARE_SAMPLE_OP(DATA_CONVERT, 1, 1, DataConvertOperation)
 
 #undef DECLARE_SAMPLE_OP
 

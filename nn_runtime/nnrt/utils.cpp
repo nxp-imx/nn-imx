@@ -212,6 +212,29 @@ bool IsDynamicShape(nnrt::op::OperandPtr operand) {
     }
     return true;
 }
+
+bool InsertFp16ToFp32LayerBeforeOperand(Model* model,
+                                        op::OperationPtr operation,
+                                        op::OperandPtr operand) {
+    std::vector<uint32_t> convertInputs;
+    std::vector<uint32_t> convertOutputs;
+    int orgIdx = model->getOperandIndex(operand);
+    int newIdx = -1;
+    auto newOperand = model->cloneOperand(operand, &newIdx);
+    newOperand->type = OperandType::TENSOR_FLOAT32;
+    convertInputs.push_back(orgIdx);
+    convertOutputs.push_back(newIdx);
+    operation->replaceInputs(orgIdx, newIdx);
+    if (model->addOperation(OperationType::DATA_CONVERT,
+                            convertInputs.data(),
+                            convertInputs.size(),
+                            convertOutputs.data(),
+                            convertOutputs.size())) {
+        return true;
+    } else {
+        return false;
+    }
+}
 }
 
 namespace OS {
