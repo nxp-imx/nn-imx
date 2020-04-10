@@ -2193,7 +2193,17 @@ DECLARE_SAMPLE_OP(CAST, 1, 1, CastOperation)
             if (inputs[argList->ArgPos("axes")]->isConst()) {                                   \
                 op->axes.clear();                                                               \
                 int32_t* buffer = model->getBuffer<int32_t>(inputs[1]->weak_mem_ref.lock());    \
-                op->axes.assign(buffer, buffer + inputs[1]->size());                            \
+                std::set<int32_t> axes;                                                         \
+                for (size_t i = 0; i < inputs[1]->size(); ++i) {                                \
+                    if (buffer[i] < 0) {                                                        \
+                        axes.insert(buffer[i] + inputs[0]->ndim());                             \
+                    } else {                                                                    \
+                        axes.insert(buffer[i]);                                                 \
+                    }                                                                           \
+                }                                                                               \
+                std::for_each(axes.begin(), axes.end(), [&op](const int32_t& axis) {            \
+                    op->axes.push_back(axis);                                                   \
+                });                                                                             \
             }                                                                                   \
             op->keepDim = static_cast<bool>(inputs[argList->ArgPos("keep_dim")]->scalar.int32); \
             truncateOperationIOs(model, operation, 1, 1);                                       \
