@@ -64,7 +64,11 @@ MAKE_SPEC(generate_proposals)
     .score_(nnrt::OperandType::TENSOR_FLOAT16)
     .bounding_box_(nnrt::OperandType::TENSOR_FLOAT16)
     .anchor_shape_(nnrt::OperandType::TENSOR_FLOAT16)
-    .image_size_(nnrt::OperandType::TENSOR_FLOAT16));
+    .image_size_(nnrt::OperandType::TENSOR_FLOAT16)
+    .ratio_h_(nnrt::OperandType::FLOAT16)
+    .ratio_w_(nnrt::OperandType::FLOAT16)
+    .iou_threshold_(nnrt::OperandType::FLOAT16)
+    .min_size_(nnrt::OperandType::FLOAT16));
 
     OVERRIDE_SPEC(generate_proposals, quant8_asymm)
     .score_(nnrt::OperandType::TENSOR_QUANT8_ASYMM)

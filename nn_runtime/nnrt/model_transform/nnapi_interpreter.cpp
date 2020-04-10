@@ -1765,13 +1765,47 @@ OperationPtr NnApiInterpreter::map_GENERATE_PROPOSALS(Model* model,
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
     auto argList = matchArgList(inputs, "GenerateProposalsOperation");
     if (argList) {
-        op->ratio_h = inputs[argList->ArgPos("ratio_h")]->scalar.float32;
-        op->ratio_w = inputs[argList->ArgPos("ratio_w")]->scalar.float32;
-        op->pre_nms_topn = inputs[argList->ArgPos("pre_nms_topn")]->scalar.int32;
-        op->post_nms_topn = inputs[argList->ArgPos("post_nms_topn")]->scalar.int32;
-        op->iou_threshold = inputs[argList->ArgPos("iou_threshold")]->scalar.float32;
-        op->min_size = inputs[argList->ArgPos("min_size")]->scalar.float32;
-        op->setDataLayout(getDataLayout(inputs[argList->ArgPos("layout")]->scalar.boolean));
+        switch (inputs[argList->ArgPos("ratio_h")]->type) {
+            case OperandType::FLOAT32: {
+                op->ratio_h = inputs[argList->ArgPos("ratio_h")]->scalar.float32;
+                op->ratio_w = inputs[argList->ArgPos("ratio_w")]->scalar.float32;
+                op->pre_nms_topn = inputs[argList->ArgPos("pre_nms_topn")]->scalar.int32;
+                op->post_nms_topn = inputs[argList->ArgPos("post_nms_topn")]->scalar.int32;
+                op->iou_threshold = inputs[argList->ArgPos("iou_threshold")]->scalar.float32;
+                op->min_size = inputs[argList->ArgPos("min_size")]->scalar.float32;
+                op->setDataLayout(getDataLayout(inputs[argList->ArgPos("layout")]->scalar.boolean));
+                break;
+            }
+            case OperandType::FLOAT16: {
+                half_float::half ratioH;
+                memcpy(&ratioH,
+                       &inputs[argList->ArgPos("ratio_h")]->scalar.float16,
+                       sizeof(half_float::half));
+                op->ratio_h = ratioH;
+
+                half_float::half ratioW;
+                memcpy(&ratioW,
+                       &inputs[argList->ArgPos("ratio_w")]->scalar.float16,
+                       sizeof(half_float::half));
+                op->ratio_w = ratioW;
+
+                half_float::half iouThreshold;
+                memcpy(&iouThreshold,
+                       &inputs[argList->ArgPos("iou_threshold")]->scalar.float16,
+                       sizeof(half_float::half));
+                op->iou_threshold = iouThreshold;
+
+                half_float::half minSize;
+                memcpy(&minSize,
+                       &inputs[argList->ArgPos("min_size")]->scalar.float16,
+                       sizeof(half_float::half));
+                op->min_size = minSize;
+                break;
+            }
+            default:
+                NNRT_LOGE_PRINT("GenerateProposals does't support given datatype");
+                assert(false);
+        }
     } else {
         NNRT_LOGE_PRINT("GenerateProposals argument list not support");
         assert(false);
