@@ -54,15 +54,17 @@ MAKE_SPEC(roi_pooling)
     .layout_(nnrt::OperandType::BOOL)
     );
 
-    OVERRIDE_SPEC(roi_pooling, 0)
+    OVERRIDE_SPEC(roi_pooling, float16)
     .input_(nnrt::OperandType::TENSOR_FLOAT16)
     .roi_location_(nnrt::OperandType::TENSOR_FLOAT16)
+    .height_ratio_(nnrt::OperandType::FLOAT16)
+    .width_ratio_(nnrt::OperandType::FLOAT16)
     );
-
-    OVERRIDE_SPEC(roi_pooling, 1)
-    .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM)
-    .roi_location_(nnrt::OperandType::TENSOR_QUANT8_ASYMM)
-    );
+    // Not support TENSOR_QUANT16_ASYMM
+    // OVERRIDE_SPEC(roi_pooling, asymm_u8)
+    // .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM)
+    // .roi_location_(nnrt::OperandType::TENSOR_QUANT16_ASYMM)
+    // );
 
 #undef ARG_NAMES
 #undef ARGC

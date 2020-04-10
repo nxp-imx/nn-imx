@@ -515,6 +515,7 @@ static inline size_t vsi_nn_kernel_dtype_get_bytes
         case I16:
         case U16:
         case F16:
+        case BF16:
             return sizeof(int16_t);
         case I32:
         case U32:

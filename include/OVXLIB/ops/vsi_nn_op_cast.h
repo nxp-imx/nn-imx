@@ -21,54 +21,17 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#ifndef __OVXLIB_UTIL_H__
-#define __OVXLIB_UTIL_H__
 
-#include <vector>
-#include <memory>
-#include "types.hpp"
+#ifndef _VSI_NN_OP_CAST_H
+#define _VSI_NN_OP_CAST_H
 
-namespace nnrt
+#include "vsi_nn_types.h"
+
+typedef struct _vsi_nn_cast_param
 {
-namespace op {
-        class Operand;
-        class Operation;
-        using OperandPtr = std::shared_ptr<Operand>;
-        using OperationPtr = std::shared_ptr<Operation>;
-}
-
-class Model;
-
-namespace operand_utils
-{
-
-int GetTypeBytes(OperandType type);
-
-int Transpose(Model* model, op::Operand* src, op::Operand* dst,
-        std::vector<uint32_t>& perm, DataLayout layout);
-
-int Reshape(op::Operand* src, op::Operand* dst, std::vector<int>& shape);
-
-uint16_t Fp32toFp16(float in);
-
-float Fp16toFp32(uint16_t);
-
-bool IsDynamicShape(nnrt::op::OperandPtr operand);
-
-bool InsertFp16ToFp32LayerBeforeOperand(Model* model,
-                                        op::OperationPtr operation,
-                                        op::OperandPtr operand);
-}
-
-namespace OS {
-
-/*
-fetch env{@name} and put it into @result,
-return:
-0, fail to get this env.
-*/
-int getEnv(std::string name, int& result);
-}  // namespace OS
-}
+    // Add parameters here
+    int32_t nothing;
+} vsi_nn_cast_param;
 
 #endif
+

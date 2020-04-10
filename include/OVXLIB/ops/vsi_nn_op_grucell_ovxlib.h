@@ -80,11 +80,16 @@ typedef struct _vsi_nn_grucell_ovxlib_lcl_data_t
     vsi_nn_activation_e gate_activation;
     vsi_nn_activation_e candidate_activation;
     vsi_bool multi_batch;
+    vsi_nn_tensor_t* weights_update;
+    vsi_nn_tensor_t* weights_reset;
+    vsi_nn_tensor_t* bias_z_r;
+    vsi_nn_tensor_t* weights_z_r;
+    vsi_nn_tensor_t* weights_c;
 } vsi_nn_grucell_ovxlib_lcl_data_t;
 
 typedef struct _vsi_nn_grucell_ovxlib_param
 {
-    vsi_nn_grucell_ovxlib_lcl_data_t local;
+    vsi_nn_grucell_ovxlib_lcl_data_t* local;
 
     vsi_nn_activation_e activation;
     vsi_nn_dtype_t internal_dtype[GRUCELL_QUANTIZE_PARAM_COUNT];

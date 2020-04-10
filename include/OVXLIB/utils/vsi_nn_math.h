@@ -81,6 +81,16 @@ OVXLIB_API void vsi_nn_Transpose
     vsi_nn_type_e type
     );
 
+OVXLIB_API void vsi_nn_Permute
+    (
+    uint8_t  * dst,
+    uint8_t  * data,
+    uint32_t * shape,
+    uint32_t   dim_num,
+    uint32_t * perm,
+    vsi_nn_type_e type
+    );
+
 OVXLIB_API void vsi_nn_SqueezeShape
     (
     uint32_t * shape,

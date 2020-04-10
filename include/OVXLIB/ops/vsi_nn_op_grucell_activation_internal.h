@@ -21,54 +21,34 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#ifndef __OVXLIB_UTIL_H__
-#define __OVXLIB_UTIL_H__
 
-#include <vector>
-#include <memory>
-#include "types.hpp"
+#ifndef _VSI_NN_OP_GRUCELL_ACTIVATION_INTERNAL_H
+#define _VSI_NN_OP_GRUCELL_ACTIVATION_INTERNAL_H
 
-namespace nnrt
+#include "vsi_nn_types.h"
+
+enum {
+    GRUCELL_ACTIVATION_INPUT_ZT_    = 0,
+    GRUCELL_ACTIVATION_INPUT_HT__   = 1,
+    GRUCELL_ACTIVATION_INPUT_HT_1   = 2,
+
+    GRUCELL_ACTIVATION_INPUT_COUNT,
+
+    GRUCELL_ACTIVATION_OUTPUT_OUTPUT    = 0,
+    GRUCELL_ACTIVATION_OUTPUT_H_STATE   = 1,
+    GRUCELL_ACTIVATION_OUTPUT_COUNT
+};
+
+typedef struct _vsi_nn_grucell_activation_internal_local {
+    uint32_t placeholder;
+} vsi_nn_grucell_activation_internal_local;
+
+typedef struct _vsi_nn_grucell_activation_internal_param
 {
-namespace op {
-        class Operand;
-        class Operation;
-        using OperandPtr = std::shared_ptr<Operand>;
-        using OperationPtr = std::shared_ptr<Operation>;
-}
-
-class Model;
-
-namespace operand_utils
-{
-
-int GetTypeBytes(OperandType type);
-
-int Transpose(Model* model, op::Operand* src, op::Operand* dst,
-        std::vector<uint32_t>& perm, DataLayout layout);
-
-int Reshape(op::Operand* src, op::Operand* dst, std::vector<int>& shape);
-
-uint16_t Fp32toFp16(float in);
-
-float Fp16toFp32(uint16_t);
-
-bool IsDynamicShape(nnrt::op::OperandPtr operand);
-
-bool InsertFp16ToFp32LayerBeforeOperand(Model* model,
-                                        op::OperationPtr operation,
-                                        op::OperandPtr operand);
-}
-
-namespace OS {
-
-/*
-fetch env{@name} and put it into @result,
-return:
-0, fail to get this env.
-*/
-int getEnv(std::string name, int& result);
-}  // namespace OS
-}
+    vsi_nn_grucell_activation_internal_local* local;
+    vsi_nn_activation_e gate_activation;
+    vsi_nn_activation_e candidate_activation;
+} vsi_nn_grucell_activation_internal_param;
 
 #endif
+

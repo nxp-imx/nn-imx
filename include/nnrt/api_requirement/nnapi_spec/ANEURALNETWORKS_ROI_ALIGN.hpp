@@ -62,6 +62,8 @@ MAKE_SPEC(roi_align)
     OVERRIDE_SPEC(roi_align, 0)
     .input_(nnrt::OperandType::TENSOR_FLOAT16)
     .roi_location_(nnrt::OperandType::TENSOR_FLOAT16)
+    .height_ratio_(nnrt::OperandType::FLOAT16)
+    .width_ratio_(nnrt::OperandType::FLOAT16)
     );
 
     OVERRIDE_SPEC(roi_align, 1)

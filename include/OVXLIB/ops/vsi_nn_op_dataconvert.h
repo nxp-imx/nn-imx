@@ -21,54 +21,30 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#ifndef __OVXLIB_UTIL_H__
-#define __OVXLIB_UTIL_H__
+#ifndef _VSI_NN_OP_DATACONVERT_H
+#define _VSI_NN_OP_DATACONVERT_H
 
-#include <vector>
-#include <memory>
-#include "types.hpp"
+#include "vsi_nn_platform.h"
+#include "vsi_nn_types.h"
 
-namespace nnrt
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef struct _vsi_nn_dataconvert_lcl_data
 {
-namespace op {
-        class Operand;
-        class Operation;
-        using OperandPtr = std::shared_ptr<Operand>;
-        using OperationPtr = std::shared_ptr<Operation>;
-}
+    vsi_bool use_reshape;
+} vsi_nn_dataconvert_lcl_data;
 
-class Model;
-
-namespace operand_utils
+typedef struct _vsi_nn_dataconvert_param
 {
+    /* local data must be the first. */
+    vsi_nn_dataconvert_lcl_data * lcl_data;
+} vsi_nn_dataconvert_param;
 
-int GetTypeBytes(OperandType type);
-
-int Transpose(Model* model, op::Operand* src, op::Operand* dst,
-        std::vector<uint32_t>& perm, DataLayout layout);
-
-int Reshape(op::Operand* src, op::Operand* dst, std::vector<int>& shape);
-
-uint16_t Fp32toFp16(float in);
-
-float Fp16toFp32(uint16_t);
-
-bool IsDynamicShape(nnrt::op::OperandPtr operand);
-
-bool InsertFp16ToFp32LayerBeforeOperand(Model* model,
-                                        op::OperationPtr operation,
-                                        op::OperandPtr operand);
+#ifdef __cplusplus
 }
-
-namespace OS {
-
-/*
-fetch env{@name} and put it into @result,
-return:
-0, fail to get this env.
-*/
-int getEnv(std::string name, int& result);
-}  // namespace OS
-}
+#endif
 
 #endif
+

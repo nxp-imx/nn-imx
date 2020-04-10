@@ -434,7 +434,7 @@ struct DepthToSpaceOperation : Operation {
         Model& model,
         std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>&
             out_permute_vectors);
-    int32_t blockSize[2];
+    int32_t blockSize;
 };
 
 struct SpaceToDepthOperation : Operation {
@@ -556,6 +556,10 @@ struct HeatmapMaxKeypointOperation : Operation {
 
 struct ROIPoolingOperation : Operation {
     ROIPoolingOperation() : Operation(OperationType::ROI_POOLING) {}
+    void handleLayoutInferenceOnInputs(
+        Model& model,
+        std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>&
+            out_permute_vectors) override;
     int height;
     int width;
     float height_ratio;
@@ -654,6 +658,7 @@ DECLARE_OPERATION(Select, SELECT);
 DECLARE_OPERATION(PRelu, PRELU);
 DECLARE_OPERATION(Sin, SIN);
 DECLARE_OPERATION(AxisAlignedBBoxTransform, AXIS_ALIGNED_BBOX_TRANSFORM);
+DECLARE_OPERATION(Cast, CAST);
 
 #undef DECLARE_OPERATION
 }
