@@ -52,7 +52,7 @@
 /**********************************************************
 * LOCAL FUNCTIONS
 **********************************************************/
-static vsi_nn_internal_node_t* vsi_nn_create_internal_node
+static vsi_nn_internal_node_t* vsi_nn_internal_create_node
     (
     vsi_nn_graph_t* graph,
     vsi_nn_op_t op,
@@ -111,16 +111,16 @@ static vsi_nn_internal_node_t* vsi_nn_create_internal_node
             free(outputs);
             outputs = NULL;
         }
-        vsi_nn_release_internal_node( &node );
+        vsi_nn_internal_release_node( &node );
         return NULL;
     }
-} /* vsi_nn_create_internal_node() */
+} /* vsi_nn_internal_create_node() */
 
-static vsi_nn_internal_tensor_t * vsi_nn_create_internal_tensor
+static vsi_nn_internal_tensor_t* vsi_nn_internal_create_tensor
     (
-    vsi_nn_graph_t       * graph,
-    vsi_nn_tensor_attr_t * attr,
-    float                  default_value
+    vsi_nn_graph_t* graph,
+    vsi_nn_tensor_attr_t* attr,
+    float default_value
     )
 {
     vsi_nn_internal_tensor_t* tensor = NULL;
@@ -145,305 +145,19 @@ static vsi_nn_internal_tensor_t * vsi_nn_create_internal_tensor
 
         if( !tensor->t )
         {
-            vsi_nn_release_internal_tensor( &tensor );
+            vsi_nn_internal_release_tensor( &tensor );
         }
     }
 
     return tensor;
-} /* vsi_nn_create_internal_tensor() */
+} /* vsi_nn_internal_create_tensor() */
 
 /**********************************************************
 * PUBLIC FUNCTIONS
 **********************************************************/
-vsi_status vsi_nn_init_internal_node_wksp
-    (
-    vsi_nn_node_t* node
-    )
-{
-    vsi_status status = VSI_FAILURE;
-    vsi_nn_internal_node_wksp_t* wksp = NULL;
-
-    if( node->internal_node_wksp )
-    {
-        vsi_nn_deinit_internal_node_wksp( node );
-    }
-
-    wksp = (vsi_nn_internal_node_wksp_t *)malloc( sizeof( vsi_nn_internal_node_wksp_t ) );
-    if( wksp )
-    {
-        memset( wksp, 0x00, sizeof( vsi_nn_internal_node_wksp_t ) );
-        wksp->curr_node_uid = 1;
-
-        node->internal_node_wksp = wksp;
-
-        status = VSI_SUCCESS;
-    }
-
-    return status;
-} /* vsi_nn_init_internal_node_wksp() */
-
-vsi_status vsi_nn_deinit_internal_node_wksp
-    (
-    vsi_nn_node_t* node
-    )
-{
-    vsi_status status = VSI_SUCCESS;
-    vsi_nn_internal_node_t* head = NULL;
-    vsi_nn_internal_node_t* curr = NULL;
-    vsi_nn_internal_tensor_t* tensor_head = NULL;
-    vsi_nn_internal_tensor_t* tensor_curr = NULL;
-
-    if( node && node->internal_node_wksp )
-    {
-        head = WKSP(node)->nodes;
-        while( NULL != head )
-        {
-            curr = (vsi_nn_internal_node_t *)vsi_nn_LinkListPopStart(
-                (vsi_nn_link_list_t **)&head );
-            vsi_nn_release_internal_node( &curr );
-        }
-
-        tensor_head = WKSP(node)->tensors;
-        while( NULL != tensor_head )
-        {
-            tensor_curr = (vsi_nn_internal_tensor_t *)vsi_nn_LinkListPopStart(
-                (vsi_nn_link_list_t **)&tensor_head );
-            vsi_nn_release_internal_tensor( &tensor_curr );
-        }
-
-        free( node->internal_node_wksp );
-        node->internal_node_wksp = NULL;
-    }
-
-    return status;
-} /* vsi_nn_deinit_internal_node_wksp() */
-
-vsi_nn_internal_node_t* vsi_nn_new_internal_node
+vsi_nn_internal_tensor_t* vsi_nn_internal_create_zero_bias_tensor
     (
     vsi_nn_node_t* node,
-    vsi_nn_op_t op,
-    uint32_t input_num,
-    uint32_t output_num
-    )
-{
-    vsi_nn_internal_node_t* inode = NULL;
-
-    inode = vsi_nn_create_internal_node( node->graph,
-                op, input_num, output_num );
-    return inode;
-} /* vsi_nn_new_internal_node() */
-
-void* vsi_nn_new_internal_node_param
-    (
-    vsi_nn_internal_node_t* inode,
-    size_t size /* in bytes */
-    )
-{
-    vsi_nn_internal_node_param_t* param = NULL;
-    size_t buf_sz = sizeof(vsi_nn_internal_node_param_t) + size;
-    void* ptr = NULL;
-    if( !inode )
-    {
-        return ptr;
-    }
-
-    param = (vsi_nn_internal_node_param_t *)malloc(buf_sz);
-    if( param )
-    {
-        memset(param, 0x00, buf_sz);
-        ptr = (void *)(&param->param[0]);
-        LINKLIST_APPEND(inode->param, param);
-    }
-
-    return ptr;
-} /* vsi_nn_new_internal_node_param() */
-
-vsi_nn_internal_tensor_t* vsi_nn_new_internal_tensor
-    (
-    vsi_nn_node_t*          node,
-    vsi_nn_tensor_attr_t*   attr,
-    float                   default_value
-    )
-{
-    vsi_nn_internal_tensor_t* tensor = NULL;
-
-    tensor = vsi_nn_create_internal_tensor( node->graph,
-                attr, default_value );
-    if( tensor )
-    {
-        LINKLIST_APPEND( WKSP(node)->tensors, tensor );
-    }
-
-    return tensor;
-} /* vsi_nn_new_internal_tensor() */
-
-vsi_bool vsi_nn_setup_internal_node_op
-    (
-    vsi_nn_node_t* node,
-    vsi_nn_internal_node_t* inode
-    )
-{
-    vsi_bool retn = TRUE;
-
-    retn = vsi_nn_OpSetup( inode->node->op, inode->node, inode->inputs, inode->outputs );
-    if( retn )
-    {
-        inode->node->uid = WKSP(node)->curr_node_uid;
-        LINKLIST_APPEND( WKSP(node)->nodes, inode );
-        WKSP(node)->curr_node_uid++;
-    }
-
-    return retn;
-} /* vsi_nn_setup_internal_node_op() */
-
-vsi_status vsi_nn_compute_internal_node
-    (
-    vsi_nn_node_t * node
-    )
-{
-    vsi_status status =  VSI_SUCCESS;
-    vsi_nn_internal_node_t* curr = NULL;
-    uint32_t j = 0;
-
-    curr = WKSP(node)->nodes;
-    while( NULL != curr )
-    {
-        for ( j = 0; j < curr->node->output.num; j++ )
-        {
-            if( NULL == curr->outputs[j] || NULL != curr->outputs[j]->t )
-                continue;
-            vsi_nn_TensorReinit( node->graph, curr->outputs[j] );
-        }
-
-        VSILOGD("Compute node uid[%u] sub_uid[%u] op[%s]",
-            node->uid, curr->node->uid, vsi_nn_OpGetName(curr->node->op));
-        status = vsi_nn_OpCompute( curr->node->op, curr->node, curr->inputs, curr->outputs );
-        if( VSI_SUCCESS != status )
-        {
-            VSILOGE("op_compute fail %d", curr->node->op);
-            break;
-        }
-
-        curr = (vsi_nn_internal_node_t *)vsi_nn_LinkListNext( (vsi_nn_link_list_t *)curr );
-    }
-
-    return status;
-} /* vsi_nn_compute_internal_node() */
-
-vsi_status vsi_nn_optimize_internal_node
-    (
-    vsi_nn_node_t * node,
-    vsi_nn_opt_direction_e direction
-    )
-{
-    vsi_status status = VSI_SUCCESS;
-    vsi_nn_internal_node_t* curr = NULL;
-
-    curr = WKSP(node)->nodes;
-    while( NULL != curr )
-    {
-        VSILOGD("Optimize node uid[%u] sub_uid[%u] op[%s]",
-            node->uid, curr->node->uid, vsi_nn_OpGetName(curr->node->op));
-
-        status = vsi_nn_OpOptimize( curr->node->op, curr->node,
-            curr->inputs, curr->outputs, direction );
-        if( VSI_SUCCESS != status )
-        {
-            VSILOGE("op_optimize fail %d", curr->node->op);
-            break;
-        }
-
-        curr = (vsi_nn_internal_node_t *)vsi_nn_LinkListNext( (vsi_nn_link_list_t *)curr );
-    }
-
-    return status;
-} /* vsi_nn_optimize_internal_node() */
-
-vsi_status vsi_nn_deinit_internal_node
-    (
-    vsi_nn_node_t * node
-    )
-{
-    vsi_status status = VSI_SUCCESS;
-    vsi_nn_internal_node_t* curr = NULL;
-
-    curr = WKSP(node)->nodes;
-    while( NULL != curr )
-    {
-        VSILOGD("Optimize node uid[%u] sub_uid[%u] op[%s]",
-            node->uid, curr->node->uid, vsi_nn_OpGetName(curr->node->op));
-
-        status = vsi_nn_OpDeinit( curr->node->op, curr->node );
-        if( VSI_SUCCESS != status )
-        {
-            VSILOGE("op_optimize fail %d", curr->node->op);
-            break;
-        }
-
-        curr = (vsi_nn_internal_node_t *)vsi_nn_LinkListNext( (vsi_nn_link_list_t *)curr );
-    }
-
-    return status;
-} /* vsi_nn_deinit_internal_node() */
-
-vsi_status vsi_nn_release_internal_node
-    (
-    vsi_nn_internal_node_t** node
-    )
-{
-    if( node && *node )
-    {
-        vsi_nn_internal_node_t* ptr = *node;
-
-        if( ptr->inputs && ptr->node->input.num )
-        {
-            free( ptr->inputs );
-            ptr->inputs = NULL;
-        }
-        if( ptr->outputs && ptr->node->output.num )
-        {
-            free( ptr->outputs );
-            ptr->outputs = NULL;
-        }
-        if( ptr->param )
-        {
-            vsi_nn_LinkListDeinit((vsi_nn_link_list_t *)(ptr->param), NULL);
-        }
-        if( ptr->node )
-        {
-            vsi_nn_ReleaseNode( &ptr->node );
-        }
-
-        free( ptr );
-        *node = NULL;
-    }
-
-    return VSI_SUCCESS;
-} /* vsi_nn_release_internal_node() */
-
-vsi_status vsi_nn_release_internal_tensor
-    (
-    vsi_nn_internal_tensor_t** tensor
-    )
-{
-    if( tensor && *tensor )
-    {
-        vsi_nn_internal_tensor_t* ptr = *tensor;
-
-        if( ptr->t )
-        {
-            vsi_nn_ReleaseTensor( &ptr->t );
-        }
-        free( ptr );
-        *tensor = NULL;
-    }
-
-    return VSI_SUCCESS;
-} /* vsi_nn_release_internal_tensor() */
-
-vsi_nn_internal_tensor_t* vsi_nn_create_zero_bias_tensor
-    (
-    vsi_nn_node_t * node,
     vsi_nn_tensor_attr_t* input_attr,
     vsi_nn_tensor_attr_t* weight_attr
     )
@@ -509,44 +223,46 @@ vsi_nn_internal_tensor_t* vsi_nn_create_zero_bias_tensor
             break;
     }
 
-    return vsi_nn_new_internal_tensor(node, &attr, 0.0f);
-}
+    return vsi_nn_internal_new_tensor(node, &attr, 0.0f);
+} /* vsi_nn_internal_create_zero_bias_tensor() */
 
-void vsi_nn_internal_node_init_attr
+vsi_status vsi_nn_internal_deinit_node
     (
-    vsi_nn_tensor_attr_t* attr,
-    const vsi_nn_dtype_t* dtype,
-    vsi_bool use_virtual_tensor
+    vsi_nn_node_t* node
     )
 {
-    memset(attr, 0x00, sizeof(vsi_nn_tensor_attr_t));
+    vsi_status status = VSI_SUCCESS;
+    vsi_nn_internal_node_t* curr = NULL;
 
-    //memset(attr->size, 0, VSI_NN_MAX_DIM_NUM * sizeof(uint32_t));
-    attr->dim_num = VSI_NN_DIM_AUTO;
-    attr->vtl = use_virtual_tensor;
-    attr->is_const = FALSE;
-
-    if( dtype->qnt_type == VSI_NN_QNT_TYPE_NONE &&
-        ( dtype->vx_type != VSI_NN_TYPE_FLOAT16 &&
-          dtype->vx_type != VSI_NN_TYPE_FLOAT32 ) )
+    curr = WKSP(node)->nodes;
+    while( NULL != curr )
     {
-        attr->dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
-        attr->dtype.vx_type = VSI_NN_TYPE_FLOAT16;
-    }
-    else
-    {
-        memcpy(&attr->dtype, dtype, sizeof(vsi_nn_dtype_t));
-    }
-}
+        VSILOGD("Optimize node uid[%u] sub_uid[%u] op[%s]",
+            node->uid, curr->node->uid, vsi_nn_OpGetName(curr->node->op));
 
-vsi_nn_internal_node_t* vsi_nn_get_internal_node_by_uid
+        status = vsi_nn_OpDeinit( curr->node->op, curr->node );
+        if( VSI_SUCCESS != status )
+        {
+            VSILOGE("op_optimize fail %d", curr->node->op);
+            break;
+        }
+
+        curr = (vsi_nn_internal_node_t *)vsi_nn_LinkListNext( (vsi_nn_link_list_t *)curr );
+    }
+
+    return status;
+} /* vsi_nn_internal_deinit_node() */
+
+vsi_status vsi_nn_internal_deinit_node_wksp
     (
-    vsi_nn_node_t* node,
-    int uid
+    vsi_nn_node_t* node
     )
 {
+    vsi_status status = VSI_SUCCESS;
     vsi_nn_internal_node_t* head = NULL;
     vsi_nn_internal_node_t* curr = NULL;
+    vsi_nn_internal_tensor_t* tensor_head = NULL;
+    vsi_nn_internal_tensor_t* tensor_curr = NULL;
 
     if( node && node->internal_node_wksp )
     {
@@ -555,30 +271,38 @@ vsi_nn_internal_node_t* vsi_nn_get_internal_node_by_uid
         {
             curr = (vsi_nn_internal_node_t *)vsi_nn_LinkListPopStart(
                 (vsi_nn_link_list_t **)&head );
-            if( curr->node->uid == uid )
-            {
-                return curr;
-            }
+            vsi_nn_internal_release_node( &curr );
         }
+
+        tensor_head = WKSP(node)->tensors;
+        while( NULL != tensor_head )
+        {
+            tensor_curr = (vsi_nn_internal_tensor_t *)vsi_nn_LinkListPopStart(
+                (vsi_nn_link_list_t **)&tensor_head );
+            vsi_nn_internal_release_tensor( &tensor_curr );
+        }
+
+        free( node->internal_node_wksp );
+        node->internal_node_wksp = NULL;
     }
 
-    return NULL;
-} /* vsi_nn_get_internal_node_by_uid() */
+    return status;
+} /* vsi_nn_internal_deinit_node_wksp() */
 
-void vsi_nn_dump_internal_node_output
+void vsi_nn_internal_dump_node_output
     (
-    vsi_nn_graph_t * graph,
-    const char * path,
-    const char * filename_prefix,
+    vsi_nn_graph_t* graph,
+    const char* path,
+    const char* filename_prefix,
     vsi_bool force_fp32,
-    vsi_nn_node_t * node
+    vsi_nn_node_t* node
     )
 {
 #define _MAX_TENSOR_NAME_SZ (1024)
 #define _SHAPE_BUF_SZ   (64)
     char shape[_SHAPE_BUF_SZ] = { 0 };
     char filename[_MAX_TENSOR_NAME_SZ] = { 0 };
-    const char * op_name;
+    const char* op_name;
     uint32_t o;
     vsi_nn_internal_node_t* head = ((vsi_nn_internal_node_wksp_t *)node->internal_node_wksp)->nodes;
     while( NULL != head )
@@ -589,14 +313,14 @@ void vsi_nn_dump_internal_node_output
         {
             if (curr->node->internal_node_wksp)
             {
-                vsi_nn_dump_internal_node_output(graph, path, filename_prefix,
+                vsi_nn_internal_dump_node_output(graph, path, filename_prefix,
                     force_fp32, curr->node);
             }
             else
             {
                 for( o = 0; o < curr->node->output.num; o++ )
                 {
-                    vsi_nn_tensor_t *tensor = curr->outputs[o];
+                    vsi_nn_tensor_t* tensor = curr->outputs[o];
                     if( tensor )
                     {
                         if( TRUE == tensor->attr.vtl )
@@ -625,4 +349,282 @@ void vsi_nn_dump_internal_node_output
             }
         }
     }
-}
+} /* vsi_nn_internal_dump_node_output() */
+
+vsi_nn_internal_node_t* vsi_nn_internal_get_node_by_uid
+    (
+    vsi_nn_node_t* node,
+    int uid
+    )
+{
+    vsi_nn_internal_node_t* head = NULL;
+    vsi_nn_internal_node_t* curr = NULL;
+
+    if( node && node->internal_node_wksp )
+    {
+        head = WKSP(node)->nodes;
+        while( NULL != head )
+        {
+            curr = (vsi_nn_internal_node_t *)vsi_nn_LinkListPopStart(
+                (vsi_nn_link_list_t **)&head );
+            if( curr->node->uid == uid )
+            {
+                return curr;
+            }
+        }
+    }
+
+    return NULL;
+} /* vsi_nn_internal_get_node_by_uid() */
+
+vsi_status vsi_nn_internal_init_node_wksp
+    (
+    vsi_nn_node_t* node
+    )
+{
+    vsi_status status = VSI_FAILURE;
+    vsi_nn_internal_node_wksp_t* wksp = NULL;
+
+    if( node->internal_node_wksp )
+    {
+        vsi_nn_internal_deinit_node_wksp( node );
+    }
+
+    wksp = (vsi_nn_internal_node_wksp_t *)malloc( sizeof( vsi_nn_internal_node_wksp_t ) );
+    if( wksp )
+    {
+        memset( wksp, 0x00, sizeof( vsi_nn_internal_node_wksp_t ) );
+        wksp->curr_node_uid = 1;
+
+        node->internal_node_wksp = wksp;
+
+        status = VSI_SUCCESS;
+    }
+
+    return status;
+} /* vsi_nn_internal_init_node_wksp() */
+
+void vsi_nn_internal_init_tensor_attr
+    (
+    vsi_nn_tensor_attr_t* attr,
+    const vsi_nn_dtype_t* dtype,
+    vsi_bool use_virtual_tensor
+    )
+{
+    memset(attr, 0x00, sizeof(vsi_nn_tensor_attr_t));
+
+    //memset(attr->size, 0, VSI_NN_MAX_DIM_NUM * sizeof(uint32_t));
+    attr->dim_num = VSI_NN_DIM_AUTO;
+    attr->vtl = use_virtual_tensor;
+    attr->is_const = FALSE;
+
+    if( dtype->qnt_type == VSI_NN_QNT_TYPE_NONE &&
+        ( dtype->vx_type != VSI_NN_TYPE_FLOAT16 &&
+          dtype->vx_type != VSI_NN_TYPE_FLOAT32 ) )
+    {
+        attr->dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
+        attr->dtype.vx_type = VSI_NN_TYPE_FLOAT16;
+    }
+    else
+    {
+        memcpy(&attr->dtype, dtype, sizeof(vsi_nn_dtype_t));
+    }
+} /* vsi_nn_internal_init_tensor_attr() */
+
+vsi_nn_internal_node_t* vsi_nn_internal_new_node
+    (
+    vsi_nn_node_t* node,
+    vsi_nn_op_t op,
+    uint32_t input_num,
+    uint32_t output_num
+    )
+{
+    vsi_nn_internal_node_t* inode = NULL;
+
+    inode = vsi_nn_internal_create_node( node->graph,
+                op, input_num, output_num );
+    return inode;
+} /* vsi_nn_internal_new_node() */
+
+void* vsi_nn_internal_new_node_param
+    (
+    vsi_nn_internal_node_t* inode,
+    size_t size /* in bytes */
+    )
+{
+    vsi_nn_internal_node_param_t* param = NULL;
+    size_t buf_sz = sizeof(vsi_nn_internal_node_param_t) + size;
+    void* ptr = NULL;
+    if( !inode )
+    {
+        return ptr;
+    }
+
+    param = (vsi_nn_internal_node_param_t *)malloc(buf_sz);
+    if( param )
+    {
+        memset( param, 0x00, buf_sz );
+        ptr = (void *)(&param->param[0]);
+        LINKLIST_APPEND(inode->param, param);
+    }
+
+    return ptr;
+} /* vsi_nn_internal_new_node_param() */
+
+vsi_nn_internal_tensor_t* vsi_nn_internal_new_tensor
+    (
+    vsi_nn_node_t*          node,
+    vsi_nn_tensor_attr_t*   attr,
+    float                   default_value
+    )
+{
+    vsi_nn_internal_tensor_t* tensor = NULL;
+
+    tensor = vsi_nn_internal_create_tensor( node->graph,
+                attr, default_value );
+    if( tensor )
+    {
+        LINKLIST_APPEND( WKSP(node)->tensors, tensor );
+    }
+
+    return tensor;
+} /* vsi_nn_internal_new_tensor() */
+
+vsi_status vsi_nn_internal_release_node
+    (
+    vsi_nn_internal_node_t** node
+    )
+{
+    if( node && *node )
+    {
+        vsi_nn_internal_node_t* ptr = *node;
+
+        if( ptr->inputs && ptr->node->input.num )
+        {
+            free( ptr->inputs );
+            ptr->inputs = NULL;
+        }
+        if( ptr->outputs && ptr->node->output.num )
+        {
+            free( ptr->outputs );
+            ptr->outputs = NULL;
+        }
+        if( ptr->param )
+        {
+            vsi_nn_LinkListDeinit((vsi_nn_link_list_t *)(ptr->param), NULL);
+        }
+        if( ptr->node )
+        {
+            vsi_nn_ReleaseNode( &ptr->node );
+        }
+
+        free( ptr );
+        *node = NULL;
+    }
+
+    return VSI_SUCCESS;
+} /* vsi_nn_internal_release_node() */
+
+vsi_status vsi_nn_internal_release_tensor
+    (
+    vsi_nn_internal_tensor_t** tensor
+    )
+{
+    if( tensor && *tensor )
+    {
+        vsi_nn_internal_tensor_t* ptr = *tensor;
+
+        if( ptr->t )
+        {
+            vsi_nn_ReleaseTensor( &ptr->t );
+        }
+        free( ptr );
+        *tensor = NULL;
+    }
+
+    return VSI_SUCCESS;
+} /* vsi_nn_internal_release_tensor() */
+
+vsi_bool vsi_nn_internal_setup_node
+    (
+    vsi_nn_node_t* node,
+    vsi_nn_internal_node_t* inode
+    )
+{
+    vsi_bool retn = TRUE;
+
+    retn = vsi_nn_OpSetup( inode->node->op, inode->node, inode->inputs, inode->outputs );
+    if( retn )
+    {
+        inode->node->uid = WKSP(node)->curr_node_uid;
+        LINKLIST_APPEND( WKSP(node)->nodes, inode );
+        WKSP(node)->curr_node_uid++;
+    }
+
+    return retn;
+} /* vsi_nn_internal_setup_node() */
+
+vsi_status vsi_nn_internal_compute_node
+    (
+    vsi_nn_node_t* node
+    )
+{
+    vsi_status status =  VSI_SUCCESS;
+    vsi_nn_internal_node_t* curr = NULL;
+    uint32_t j = 0;
+
+    curr = WKSP(node)->nodes;
+    while( NULL != curr )
+    {
+        for ( j = 0; j < curr->node->output.num; j++ )
+        {
+            if( NULL == curr->outputs[j] || NULL != curr->outputs[j]->t )
+                continue;
+            vsi_nn_TensorReinit( node->graph, curr->outputs[j] );
+        }
+
+        VSILOGD("Compute node uid[%u] sub_uid[%u] op[%s]",
+            node->uid, curr->node->uid, vsi_nn_OpGetName(curr->node->op));
+        status = vsi_nn_OpCompute( curr->node->op, curr->node, curr->inputs, curr->outputs );
+        if( VSI_SUCCESS != status )
+        {
+            VSILOGE("op_compute fail %d", curr->node->op);
+            break;
+        }
+
+        curr = (vsi_nn_internal_node_t *)vsi_nn_LinkListNext( (vsi_nn_link_list_t *)curr );
+    }
+
+    return status;
+} /* vsi_nn_internal_compute_node() */
+
+vsi_status vsi_nn_internal_optimize_node
+    (
+    vsi_nn_node_t* node,
+    vsi_nn_opt_direction_e direction
+    )
+{
+    vsi_status status = VSI_SUCCESS;
+    vsi_nn_internal_node_t* curr = NULL;
+
+    curr = WKSP(node)->nodes;
+    while( NULL != curr )
+    {
+        VSILOGD("Optimize node uid[%u] sub_uid[%u] op[%s]",
+            node->uid, curr->node->uid, vsi_nn_OpGetName(curr->node->op));
+
+        status = vsi_nn_OpOptimize( curr->node->op, curr->node,
+            curr->inputs, curr->outputs, direction );
+        if( VSI_SUCCESS != status )
+        {
+            VSILOGE("op_optimize fail %d", curr->node->op);
+            break;
+        }
+
+        curr = (vsi_nn_internal_node_t *)vsi_nn_LinkListNext( (vsi_nn_link_list_t *)curr );
+    }
+
+    return status;
+} /* vsi_nn_internal_optimize_node() */
+
+/* EOF */

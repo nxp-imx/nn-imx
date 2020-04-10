@@ -137,6 +137,13 @@ static vsi_bool op_setup
     vx_weights_biases_parameter_optimizations_ext_t opt;
     vx_weights_biases_parameter_optimizations_ext_t * p_opt;
 
+#ifdef VX_CONVERT_POLICY_WRAP_ENABLE
+    if ( vsi_nn_compareVersion(self->graph, 1, 1, 21) == -1 )
+    {
+        self->vx_param.overflow_policy = VX_CONVERT_POLICY_SATURATE;
+    }
+#endif
+
     ret = vsi_nn_OpSetup( VSI_NN_OP_FCL, self, inputs, outputs );
 
     /* Prepare weight_bias */

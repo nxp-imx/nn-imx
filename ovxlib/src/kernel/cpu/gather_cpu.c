@@ -60,7 +60,7 @@ DEF_KERNEL_EXECUTOR(_gather_exec)
     vsi_nn_kernel_tensor_t tensors[_CPU_IO_NUM] = { NULL };
     float * buffer[2] = { NULL };
     uint32_t* buffer_idx = NULL;
-    size_t out_elements = 0;
+    size_t in_elements = 0, out_elements = 0;
     vsi_nn_kernel_tensor_attr_t * attr[_CPU_IO_NUM] = { NULL };
     uint32_t i = 0, j = 0;
     int32_t block_size = 1, block_num = 1, indices_num = 1, axis_num = 0;
@@ -76,6 +76,7 @@ DEF_KERNEL_EXECUTOR(_gather_exec)
     attr[2] = vsi_nn_kernel_tensor_attr_create( tensors[2] );
     CHECK_PTR_FAIL_GOTO( attr[2], "Create tensor attr buffer fail.", final );
 
+    in_elements = vsi_nn_kernel_tensor_attr_get_size( attr[0] );
     out_elements = vsi_nn_kernel_tensor_attr_get_size( attr[2] );
 
     status = vsi_nn_kernel_scalar_read_int32((vsi_nn_kernel_scalar_t)param[3], &block_size);
@@ -107,8 +108,16 @@ DEF_KERNEL_EXECUTOR(_gather_exec)
             {
                 uint32_t indice = buffer_idx[j];
                 uint32_t in_index = (i * axis_num + indice) * block_size;
-                uint32_t out_index = (i * indices_num + j) * block_size;
-                memcpy(&(buffer[1][out_index]), &(buffer[0][in_index]), block_size * sizeof(float));
+                if(in_index < in_elements)
+                {
+                    uint32_t out_index = (i * indices_num + j) * block_size;
+                    memcpy(&(buffer[1][out_index]), &(buffer[0][in_index]), block_size * sizeof(float));
+                }
+                else
+                {
+                    status = VX_FAILURE;
+                    CHECK_STATUS_FAIL_GOTO( status, final );
+                }
             }
         }
     }
@@ -134,7 +143,7 @@ final:
         if(attr[i]) { vsi_nn_kernel_tensor_attr_release( &attr[i] ); }
     }
     return status;
-} /* _pre_process_yuv420_exec() */
+} /* _gather_exec() */
 /*
  * Kernel params
  */

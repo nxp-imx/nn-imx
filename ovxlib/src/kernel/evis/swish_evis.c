@@ -225,20 +225,10 @@ DEF_KERNEL_INITIALIZER(_swish_initializer)
 
     pack_key = _PACK_SELECT_KEY(input_attr->dtype, output_attr->dtype );
 
-    if (input_attr->dtype == F16
-       || input_attr->dtype == I16
-       || input_attr->dtype == BF16)
-    {
-        gpu_param.global_scale[0] = 8;
-        gpu_param.global_scale[1] = 1;
-        gpu_param.global_scale[2] = 1;
-    }
-    else
-    {
-        gpu_param.global_scale[0] = 16;
-        gpu_param.global_scale[1] = 1;
-        gpu_param.global_scale[2] = 1;
-    }
+    gpu_param.global_scale[0] = 8;
+    gpu_param.global_scale[1] = 1;
+    gpu_param.global_scale[2] = 1;
+
     gpu_param.dim = out_shape->size < 3 ? 2 : 3;
     gpu_param.global_size[0]   = gpu_align_p2((out_shape->data[0] +  gpu_param.global_scale[0] - 1)
                                         /  gpu_param.global_scale[0], 4);
@@ -445,20 +435,10 @@ DEF_KERNEL_INITIALIZER(_hswish_initializer)
 
     pack_key = _PACK_SELECT_KEY(input_attr->dtype, output_attr->dtype );
 
-    if (input_attr->dtype == F16
-       || input_attr->dtype == I16
-       || input_attr->dtype == BF16)
-    {
-        gpu_param.global_scale[0] = 8;
-        gpu_param.global_scale[1] = 1;
-        gpu_param.global_scale[2] = 1;
-    }
-    else
-    {
-        gpu_param.global_scale[0] = 16;
-        gpu_param.global_scale[1] = 1;
-        gpu_param.global_scale[2] = 1;
-    }
+    gpu_param.global_scale[0] = 8;
+    gpu_param.global_scale[1] = 1;
+    gpu_param.global_scale[2] = 1;
+
     gpu_param.dim = out_shape->size < 3 ? 2 : 3;
     gpu_param.global_size[0]   = gpu_align_p2((out_shape->data[0] +  gpu_param.global_scale[0] - 1)
                                         /  gpu_param.global_scale[0], 4);

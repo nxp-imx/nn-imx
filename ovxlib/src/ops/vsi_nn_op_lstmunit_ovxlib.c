@@ -38,6 +38,7 @@
 #include "client/vsi_nn_vxkernel.h"
 #include "ops/vsi_nn_op_lstmunit_ovxlib.h"
 #include "vsi_nn_internal_node.h"
+#include "vsi_nn_rnn_helper.h"
 
 static vsi_nn_internal_tensor_t* create_tp_fc
     (
@@ -61,14 +62,14 @@ static vsi_nn_internal_tensor_t* create_tp_fc
     if( !bias || p->local->use_layer_norm || p->local->use_hybrid )
     {
         /* create zero bias for NN/TP */
-        tensor1 = vsi_nn_create_zero_bias_tensor(self, &input->attr, &weight->attr);
+        tensor1 = vsi_nn_internal_create_zero_bias_tensor(self, &input->attr, &weight->attr);
         tensor = tensor1->t;
     }
 
-    vsi_nn_internal_node_init_attr(&attr, output_dtype, use_virtual_tensor);
-    tensor2 = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
+    vsi_nn_internal_init_tensor_attr(&attr, output_dtype, use_virtual_tensor);
+    tensor2 = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
 
-    tmp_inode = vsi_nn_new_internal_node(self, VSI_NN_OP_FCL, 0, 0 );
+    tmp_inode = vsi_nn_internal_new_node(self, VSI_NN_OP_FCL, 0, 0 );
     tmp_inode->node->nn_param.fcl.axis = 0;
     tmp_inode->node->nn_param.fcl.weights = weight->attr.size[1];
     tmp_inode->node->vx_param.overflow_policy = VX_CONVERT_POLICY_WRAP;
@@ -79,7 +80,7 @@ static vsi_nn_internal_tensor_t* create_tp_fc
     tmp_inode->inputs[1] = weight;
     tmp_inode->inputs[2] = tensor;
     tmp_inode->outputs[0] = tensor2->t;
-    vsi_nn_setup_internal_node_op(self, tmp_inode);
+    vsi_nn_internal_setup_node(self, tmp_inode);
 
     return tensor2;
 }
@@ -110,12 +111,12 @@ static vsi_nn_internal_tensor_t* create_nn_fc
     if( !bias || p->local->use_layer_norm || p->local->use_hybrid )
     {
         /* create zero bias for NN/TP */
-        tensor1 = vsi_nn_create_zero_bias_tensor(self, &input->attr, &weight->attr);
+        tensor1 = vsi_nn_internal_create_zero_bias_tensor(self, &input->attr, &weight->attr);
         tensor = tensor1->t;
     }
 
-    vsi_nn_internal_node_init_attr(&attr, output_dtype, use_virtual_tensor);
-    tensor2 = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
+    vsi_nn_internal_init_tensor_attr(&attr, output_dtype, use_virtual_tensor);
+    tensor2 = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
 
     reshaped_weight_shape[3] = weight->attr.size[1];
     reshaped_weight_shape[2] = weight->attr.size[0] / ( kernel_h * kernel_w );
@@ -128,11 +129,11 @@ static vsi_nn_internal_tensor_t* create_nn_fc
     attr.is_const = FALSE; //weight->attr.is_const;
     memcpy( &attr.dtype, &weight->attr.dtype, sizeof(attr.dtype) );
     memcpy( &attr.size, &reshaped_weight_shape, sizeof(attr.size));
-    reshaped_weight_tensor = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
+    reshaped_weight_tensor = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
 
     vsi_nn_ReshapeTensor( self->graph, weight, reshaped_weight_tensor->t, reshaped_weight_shape, 4 );
 
-    tmp_inode = vsi_nn_new_internal_node(self, VSI_NN_OP_CONV2D, 0, 0 );
+    tmp_inode = vsi_nn_internal_new_node(self, VSI_NN_OP_CONV2D, 0, 0 );
     tmp_inode->node->nn_param.conv2d.ksize[0] = kernel_w;
     tmp_inode->node->nn_param.conv2d.ksize[1] = kernel_h;
     tmp_inode->node->nn_param.conv2d.stride[0] = 1;
@@ -153,7 +154,7 @@ static vsi_nn_internal_tensor_t* create_nn_fc
     tmp_inode->inputs[1] = reshaped_weight_tensor->t;
     tmp_inode->inputs[2] = tensor;
     tmp_inode->outputs[0] = tensor2->t;
-    vsi_nn_setup_internal_node_op(self, tmp_inode);
+    vsi_nn_internal_setup_node(self, tmp_inode);
 
     return tensor2;
 }
@@ -177,23 +178,23 @@ static void create_peephole
     attr.vtl = use_virtual_tensor;
     attr.is_const = FALSE;
     memcpy(&(attr.dtype), &((*input_fc)->t->attr.dtype), sizeof(vsi_nn_dtype_t));
-    input_tensor0 = vsi_nn_new_internal_tensor(self, &attr, 0.0f);
+    input_tensor0 = vsi_nn_internal_new_tensor(self, &attr, 0.0f);
     /* create internal nodes */
-    curr = vsi_nn_new_internal_node( self, VSI_NN_OP_MULTIPLY, 0, 0 );
+    curr = vsi_nn_internal_new_node( self, VSI_NN_OP_MULTIPLY, 0, 0 );
     curr->node->nn_param.multiply.scale = 1.0f;
     curr->node->vx_param.overflow_policy = VX_CONVERT_POLICY_SATURATE;
     curr->node->vx_param.rounding_policy = VX_ROUND_POLICY_TO_NEAREST_EVEN;
     curr->inputs[0] = input;
     curr->inputs[1] = weight;
     curr->outputs[0] = input_tensor0->t;
-    vsi_nn_setup_internal_node_op(self, curr);
-    input_tensor1 = vsi_nn_new_internal_tensor(self, &attr, 0.0f);
+    vsi_nn_internal_setup_node(self, curr);
+    input_tensor1 = vsi_nn_internal_new_tensor(self, &attr, 0.0f);
     /* create internal nodes */
-    curr = vsi_nn_new_internal_node( self, VSI_NN_OP_ADD, 0, 0 );
+    curr = vsi_nn_internal_new_node( self, VSI_NN_OP_ADD, 0, 0 );
     curr->inputs[0] = (*input_fc)->t;
     curr->inputs[1] = input_tensor0->t;
     curr->outputs[0] = input_tensor1->t;
-    vsi_nn_setup_internal_node_op(self, curr);
+    vsi_nn_internal_setup_node(self, curr);
     *input_fc = input_tensor1;
 }
 
@@ -250,7 +251,7 @@ static vsi_status op_compute
     vsi_nn_tensor_t ** outputs
     )
 {
-    return vsi_nn_compute_internal_node( self );
+    return vsi_nn_internal_compute_node( self );
 } /* op_compute() */
 
 static vsi_bool op_check
@@ -272,7 +273,7 @@ static vsi_status op_optimize
     vsi_nn_opt_direction_e direction
     )
 {
-    return vsi_nn_optimize_internal_node( self, direction );
+    return vsi_nn_internal_optimize_node( self, direction );
 } /* op_optimize() */
 
 static vsi_bool op_setup
@@ -305,7 +306,7 @@ static vsi_bool op_setup
     vsi_bool use_virtual_tensor = FALSE;
 
     memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
-    vsi_nn_init_internal_node_wksp( self );
+    vsi_nn_internal_init_node_wksp( self );
 
     memset( p->local, 0x00, sizeof(vsi_nn_lstmunit_ovxlib_lcl_data_t) );
     memset( &attr, 0x00, sizeof( attr ) );
@@ -518,22 +519,22 @@ static vsi_bool op_setup
             attr.is_const = FALSE;
             attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
             attr.dtype.vx_type = VSI_NN_TYPE_FLOAT16;
-            input_tensor = vsi_nn_new_internal_tensor(self, &attr, 0.0f);
+            input_tensor = vsi_nn_internal_new_tensor(self, &attr, 0.0f);
 
             /* create internal nodes */
-            curr = vsi_nn_new_internal_node( self, VSI_NN_OP_TENSOR_ADD_MEAN_STDDEV_NORM, 0, 0 );
+            curr = vsi_nn_internal_new_node( self, VSI_NN_OP_TENSOR_ADD_MEAN_STDDEV_NORM, 0, 0 );
             curr->node->nn_param.tensor_add_mean_stddev_norm.eps = (float)1e-8;
             curr->inputs[0] = input_fc_outputs[i]->t;
             curr->inputs[1] = recurrent_fc_outputs[i]->t;
             curr->outputs[0] = input_tensor->t;
-            vsi_nn_setup_internal_node_op(self, curr);
+            vsi_nn_internal_setup_node(self, curr);
 
             layernorm_outputs[i] = input_tensor;
         }
     }
 
     /* activations */
-    curr = vsi_nn_new_internal_node( self, VSI_NN_OP_LSTMUNIT_ACTIVATION, 0, 0 );
+    curr = vsi_nn_internal_new_node( self, VSI_NN_OP_LSTMUNIT_ACTIVATION, 0, 0 );
     curr->node->nn_param.lstmunit_activation.cell_clip = p->cell_clip;
     curr->node->nn_param.lstmunit_activation.proj_clip = p->proj_clip;
     curr->node->nn_param.lstmunit_activation.forget_bias = p->forget_bias;
@@ -594,7 +595,7 @@ static vsi_bool op_setup
             attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
             attr.dtype.vx_type = VSI_NN_TYPE_FLOAT16;
         }
-        output_tensor = vsi_nn_new_internal_tensor(self, &attr, 0.0f);
+        output_tensor = vsi_nn_internal_new_tensor(self, &attr, 0.0f);
 
         curr->outputs[LSTMUNIT_ACT_OUTPUT] = output_tensor->t;
         curr->outputs[LSTMUNIT_ACT_CSTATE_OUT] = outputs[LSTMUNIT_OUTPUT_C_STATE];
@@ -607,13 +608,13 @@ static vsi_bool op_setup
         curr->outputs[LSTMUNIT_ACT_CSTATE_OUT] = outputs[LSTMUNIT_OUTPUT_C_STATE];
         curr->outputs[LSTMUNIT_ACT_HSTATE_OUT] = outputs[LSTMUNIT_OUTPUT_H_STATE];
     }
-    vsi_nn_setup_internal_node_op(self, curr); /* setup for VSI_NN_OP_LSTMUNIT_ACTIVATION */
+    vsi_nn_internal_setup_node(self, curr); /* setup for VSI_NN_OP_LSTMUNIT_ACTIVATION */
 
     if( p->local->use_projection )
     {
         if( p->local->use_hybrid || !p->local->use_projection_bias )
         {
-            input_tensor = vsi_nn_create_zero_bias_tensor(self, &output_tensor->t->attr,
+            input_tensor = vsi_nn_internal_create_zero_bias_tensor(self, &output_tensor->t->attr,
                 &inputs[LSTMUNIT_INPUT_WEIGHT_PROJ]->attr);
             zero_bias_tensor = input_tensor->t;
         }
@@ -622,7 +623,7 @@ static vsi_bool op_setup
             zero_bias_tensor = inputs[LSTMUNIT_INPUT_BIAS_PROJ];
         }
 
-        curr = vsi_nn_new_internal_node( self, VSI_NN_OP_FCL, 0, 0 );
+        curr = vsi_nn_internal_new_node( self, VSI_NN_OP_FCL, 0, 0 );
         curr->node->nn_param.fcl.axis = 0;
         curr->node->nn_param.fcl.weights = inputs[LSTMUNIT_INPUT_WEIGHT_PROJ]->attr.size[1];
         curr->node->vx_param.overflow_policy = VX_CONVERT_POLICY_WRAP;
@@ -639,9 +640,9 @@ static vsi_bool op_setup
         /* Save output to h_state first and copy to output */
         if( p->local->use_hybrid && p->local->use_projection_bias )
         {
-            vsi_nn_internal_node_init_attr(&attr,
+            vsi_nn_internal_init_tensor_attr(&attr,
                 &outputs[LSTMUNIT_OUTPUT_H_STATE]->attr.dtype, use_virtual_tensor);
-            output_tensor = vsi_nn_new_internal_tensor(self, &attr, 0.0f);
+            output_tensor = vsi_nn_internal_new_tensor(self, &attr, 0.0f);
             curr->outputs[0] = output_tensor->t;
         }
         else
@@ -649,22 +650,22 @@ static vsi_bool op_setup
             curr->outputs[0] = outputs[LSTMUNIT_OUTPUT_H_STATE];
         }
 
-        vsi_nn_setup_internal_node_op(self, curr);
+        vsi_nn_internal_setup_node(self, curr);
 
         if( p->local->use_hybrid && p->local->use_projection_bias )
         {
-            curr = vsi_nn_new_internal_node( self, VSI_NN_OP_ADD, 0, 0 );
+            curr = vsi_nn_internal_new_node( self, VSI_NN_OP_ADD, 0, 0 );
             curr->inputs[0] = tmp_tensor->t;
             curr->inputs[1] = inputs[LSTMUNIT_INPUT_BIAS_PROJ];
             curr->outputs[0] = outputs[LSTMUNIT_OUTPUT_H_STATE];
-            vsi_nn_setup_internal_node_op(self, curr);
+            vsi_nn_internal_setup_node(self, curr);
         }
 
         /* copy h_state to output */
-        curr = vsi_nn_new_internal_node( self, VSI_NN_OP_DATACONVERT, 0, 0 );
+        curr = vsi_nn_internal_new_node( self, VSI_NN_OP_DATACONVERT, 0, 0 );
         curr->inputs[0] = outputs[LSTMUNIT_OUTPUT_H_STATE];
         curr->outputs[0] = outputs[LSTMUNIT_OUTPUT_OUTPUT];
-        vsi_nn_setup_internal_node_op(self, curr);
+        vsi_nn_internal_setup_node(self, curr);
     }
 
     return TRUE;
@@ -679,7 +680,7 @@ static vsi_status op_deinit
 
     vsi_nn_safe_free(self->nn_param.lstmunit_ovxlib.local);
     vsi_nn_safe_free(self->nn_param.lstmunit_ovxlib.internal_dtype_aux);
-    vsi_nn_deinit_internal_node_wksp( self );
+    vsi_nn_internal_deinit_node_wksp( self );
 
     return status;
 } /* op_deinit() */

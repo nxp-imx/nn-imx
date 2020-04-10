@@ -564,7 +564,7 @@ static vsi_status op_compute
              self->nn_param.reduce.type == VSI_NN_REDUCE_ANY ||
              self->nn_param.reduce.type == VSI_NN_REDUCE_PROD)
     {
-        status = vsi_nn_compute_internal_node( self );
+        status = vsi_nn_internal_compute_node( self );
     }
 
 #else
@@ -609,7 +609,7 @@ static vsi_status op_optimize
         self->nn_param.reduce.type == VSI_NN_REDUCE_ANY ||
         self->nn_param.reduce.type == VSI_NN_REDUCE_PROD)
     {
-        return vsi_nn_optimize_internal_node(self, direction );
+        return vsi_nn_internal_optimize_node(self, direction );
     }
     else
     {
@@ -766,7 +766,7 @@ static vsi_bool op_set_reduce_internal
     uint32_t dim_num;
     vx_int32 resolved_dim_count = 0;
 
-    vsi_nn_init_internal_node_wksp( self );
+    vsi_nn_internal_init_node_wksp( self );
     resolved_dim_count = self->nn_param.reduce.axis_num;
 
     memcpy( &attr, &inputs[POST_PROCESS_INPUT]->attr, sizeof(vsi_nn_tensor_attr_t) );
@@ -802,7 +802,7 @@ static vsi_bool op_set_reduce_internal
             }
         }
 
-        curr = vsi_nn_new_internal_node( self, type_name, 0, 0 );
+        curr = vsi_nn_internal_new_node( self, type_name, 0, 0 );
         op_set_reduce_param_value(&(curr->node->nn_param), type_name,
         self->nn_param.reduce.axis, 1, self->nn_param.reduce.keep_dim);
         if (self->nn_param.reduce.local2->reshaped_input)
@@ -821,22 +821,22 @@ static vsi_bool op_set_reduce_internal
         {
             curr->outputs[0] = outputs[0];
         }
-        vsi_nn_setup_internal_node_op(self, curr);
+        vsi_nn_internal_setup_node(self, curr);
     }
     else if (2 == resolved_dim_count)
     {
         attr.size[self->nn_param.reduce.axis[0]] = 1;
         attr.vtl = use_virtual_tensor;
         attr.is_const = FALSE;
-        tmp_output_tensor[0] = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
+        tmp_output_tensor[0] = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
         re_sizes[self->nn_param.reduce.axis[0]] = 1;
 
-        curr = vsi_nn_new_internal_node( self, type_name, 0, 0 );
+        curr = vsi_nn_internal_new_node( self, type_name, 0, 0 );
         op_set_reduce_param_value(&(curr->node->nn_param), type_name,
         &(self->nn_param.reduce.axis[0]), 1, vx_true_e);
         curr->inputs[0]  = inputs[POST_PROCESS_INPUT];
         curr->outputs[0] = tmp_output_tensor[0]->t;
-        vsi_nn_setup_internal_node_op( self, curr );
+        vsi_nn_internal_setup_node( self, curr );
 
         if (3 == self->nn_param.reduce.axis[resolved_dim_count - 1])
         {
@@ -863,7 +863,7 @@ static vsi_bool op_set_reduce_internal
             new_output = vsi_nn_reshape_tensor(self->graph, outputs[0], re_sizes, dim_num);
         }
 
-        curr = vsi_nn_new_internal_node( self, type_name, 0, 0 );
+        curr = vsi_nn_internal_new_node( self, type_name, 0, 0 );
         op_set_reduce_param_value(&(curr->node->nn_param), type_name,
         &(self->nn_param.reduce.axis[1]), 1, vx_true_e);
         if (self->nn_param.reduce.local2->reshaped_input)
@@ -876,32 +876,32 @@ static vsi_bool op_set_reduce_internal
         }
         curr->outputs[0] = new_output;
         self->nn_param.reduce.local2->reshaped_output = new_output;
-        vsi_nn_setup_internal_node_op(self, curr);
+        vsi_nn_internal_setup_node(self, curr);
     }
     else if (3 == resolved_dim_count)
     {
         attr.size[self->nn_param.reduce.axis[0]] = 1;
         attr.vtl = use_virtual_tensor;
         attr.is_const = FALSE;
-        tmp_output_tensor[0] = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
+        tmp_output_tensor[0] = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
         attr.size[self->nn_param.reduce.axis[1]] = 1;
-        tmp_output_tensor[1] = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
+        tmp_output_tensor[1] = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
         re_sizes[self->nn_param.reduce.axis[0]] = 1;
         re_sizes[self->nn_param.reduce.axis[1]] = 1;
 
-        curr = vsi_nn_new_internal_node( self, type_name, 0, 0 );
+        curr = vsi_nn_internal_new_node( self, type_name, 0, 0 );
         op_set_reduce_param_value(&(curr->node->nn_param), type_name,
         &(self->nn_param.reduce.axis[0]), 1, vx_true_e);
         curr->inputs[0]  = inputs[POST_PROCESS_INPUT];
         curr->outputs[0] = tmp_output_tensor[0]->t;
-        vsi_nn_setup_internal_node_op( self, curr );
+        vsi_nn_internal_setup_node( self, curr );
 
-        curr = vsi_nn_new_internal_node( self, type_name, 0, 0 );
+        curr = vsi_nn_internal_new_node( self, type_name, 0, 0 );
         op_set_reduce_param_value(&(curr->node->nn_param), type_name,
         &(self->nn_param.reduce.axis[1]), 1, vx_true_e);
         curr->inputs[0]  = tmp_output_tensor[0]->t;
         curr->outputs[0] = tmp_output_tensor[1]->t;
-        vsi_nn_setup_internal_node_op( self, curr );
+        vsi_nn_internal_setup_node( self, curr );
 
 
         if (3 == self->nn_param.reduce.axis[resolved_dim_count - 1])
@@ -928,7 +928,7 @@ static vsi_bool op_set_reduce_internal
             new_output = vsi_nn_reshape_tensor(self->graph, outputs[0], re_sizes, dim_num);
         }
 
-        curr = vsi_nn_new_internal_node( self, type_name, 0, 0 );
+        curr = vsi_nn_internal_new_node( self, type_name, 0, 0 );
         op_set_reduce_param_value(&(curr->node->nn_param), type_name,
         &(self->nn_param.reduce.axis[2]), 1, vx_true_e);
         if (self->nn_param.reduce.local2->reshaped_input)
@@ -941,7 +941,7 @@ static vsi_bool op_set_reduce_internal
         }
         curr->outputs[0] = new_output;
         self->nn_param.reduce.local2->reshaped_output = new_output;
-        vsi_nn_setup_internal_node_op(self, curr);
+        vsi_nn_internal_setup_node(self, curr);
     }
     else
     {
@@ -1105,7 +1105,7 @@ static vsi_status op_deinit
         self->nn_param.reduce.type == VSI_NN_REDUCE_ANY ||
         self->nn_param.reduce.type == VSI_NN_REDUCE_PROD)
     {
-        vsi_nn_deinit_internal_node_wksp(self);
+        vsi_nn_internal_deinit_node_wksp(self);
     }
     else
     {

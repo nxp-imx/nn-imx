@@ -177,8 +177,9 @@ static _node_template s_template[] =
     /* BIDIRECTIONAL_SEQUENCE_RNN */ NULL,
     /* BIDIRECTIONAL_SEQUENCE_LSTM */ NULL,
     /* RNNCELL_OVXLIB */        NULL,
-    /* SWISH */        NULL,
+    /* SWISH */                 NULL,
     /* GATHER_ND */             NULL,
+    /* CAST */                  NULL,
 };
 //_compiler_assert( _cnt_of_array(s_template) == VSI_NN_OP_NUM, vsi_nn_node_attr_template_c );
 

@@ -95,6 +95,13 @@ static vsi_bool op_setup
 {
     vsi_bool ret = FALSE;
 
+#ifdef VX_CONVERT_POLICY_WRAP_ENABLE
+    if ( vsi_nn_compareVersion(self->graph, 1, 1, 21) == -1 )
+    {
+        self->vx_param.overflow_policy = VX_CONVERT_POLICY_SATURATE;
+    }
+#endif
+
     ret = vsi_nn_OpSetup( VSI_NN_OP_CONV2D, self, inputs, outputs );
 
     return ret;

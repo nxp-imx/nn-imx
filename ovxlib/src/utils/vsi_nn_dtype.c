@@ -279,7 +279,7 @@ vsi_bool vsi_nn_dtype_convert_float_to_quantize_dfp
     {
         return FALSE;
     }
-    scale = powf( 2.0f, (float)fl );
+    scale = powf( 2.0f, (float)(-fl) );
     return vsi_nn_dtype_convert_float_to_quantize_symm(
             buffer, size, dtype, scale, 0, out_buffer );
 } /* vsi_nn_dtype_convert_float_to_quantize_dfp() */
@@ -419,7 +419,7 @@ vsi_bool vsi_nn_dtype_convert_quantize_dfp_to_float
     {
         return FALSE;
     }
-    scale = powf( 2.0f, (float)fl );
+    scale = powf( 2.0f, (float)(-fl) );
     return vsi_nn_dtype_convert_quantize_symm_to_float(
             buffer, size, dtype, scale, 0, out_buffer );
 } /* vsi_nn_dtype_convert_quantize_dfp_to_float() */

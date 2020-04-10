@@ -10,7 +10,7 @@ _viv_uniform VXC_512Bits uniConvertHalfToFp16_2x8;
 _viv_uniform VXC_512Bits uniFp16SumSqr_dp8x2;
 _viv_uniform VXC_512Bits uniConvertEndInt16Fp32_4x4;
 
-__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void vxcInstanceNormMeanVari_fp16(
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_meanvari_F16(
     image2d_array_t input,
     image2d_array_t output,
               float eps,
@@ -68,7 +68,7 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void vxcInstanceNormMea
     }
 }
 
-__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void vxcInstanceNormMeanVariFp16_rsHc(
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_meanvari_F16_2D(
     image2d_array_t input,
     image2d_array_t output,
               float eps,
@@ -129,12 +129,12 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void vxcInstanceNormMea
     }
 }
 
-__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void vxcInstanceNorm_fp16(
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_F16toF16(
     image2d_array_t input,
     image2d_array_t bias,
     image2d_array_t scale,
-    image2d_array_t output,
     image2d_array_t meanVari,
+    image2d_array_t output,
               float eps,
               int rsFlg)
 {
@@ -150,9 +150,7 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void vxcInstanceNorm_fp
     VXC_ReadImage(src1, scale, coord_para.xy, VXC_5BITOFFSET_XY(0, 0),\
         VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));
     _viv_asm(COPY, scale_h, src1, 16);
-    VXC_DP4x4(scale_f, scale_h, scale_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\
-        UniFP16toFP32Lo4_dp4x4);
-
+    VXC_DP4x4(scale_f, scale_h, scale_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), UniFP16toFP32Lo4_dp4x4);
     bias_f = read_imagef(bias, coord_para);
 
     coord_para.x = 0;
@@ -196,12 +194,12 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void vxcInstanceNorm_fp
     }
 }
 
-__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void vxcInstanceNormFp16_rsHc(
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_F16toF16_2D(
     image2d_array_t input,
     image2d_array_t bias,
     image2d_array_t scale,
-    image2d_array_t output,
     image2d_array_t meanVari,
+    image2d_array_t output,
               float eps,
               int rsFlg)
 {
@@ -219,9 +217,7 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void vxcInstanceNormFp1
     VXC_ReadImage(src1, scale, coord_para.xy, VXC_5BITOFFSET_XY(0, 0),\
         VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));
     _viv_asm(COPY, scale_h, src1, 16);
-    VXC_DP4x4(scale_f, scale_h, scale_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\
-        UniFP16toFP32Lo4_dp4x4);
-
+    VXC_DP4x4(scale_f, scale_h, scale_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), UniFP16toFP32Lo4_dp4x4);
     bias_f = read_imagef(bias, coord_para);
 
     coord_para.x = 0;

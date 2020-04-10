@@ -37,6 +37,7 @@
 #include "vsi_nn_tensor_util.h"
 #include "client/vsi_nn_vxkernel.h"
 #include "vsi_nn_internal_node.h"
+#include "vsi_nn_rnn_helper.h"
 
 static vsi_bool setup_op_shapes
     (
@@ -76,7 +77,7 @@ static vsi_bool setup_op_shapes
         attr.vtl = FALSE;
         attr.is_const = TRUE;
 
-        output_tensor = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
+        output_tensor = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
         inputs[BI_RNN_FW_INPUT_H_STATE] = output_tensor->t;
     }
 
@@ -89,7 +90,7 @@ static vsi_bool setup_op_shapes
         attr.vtl = FALSE;
         attr.is_const = TRUE;
 
-        output_tensor = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
+        output_tensor = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
         inputs[BI_RNN_BW_INPUT_H_STATE] = output_tensor->t;
     }
 
@@ -127,7 +128,7 @@ static vsi_status op_compute
     vsi_nn_tensor_t ** outputs
     )
 {
-    return vsi_nn_compute_internal_node( self );
+    return vsi_nn_internal_compute_node( self );
 } /* op_compute() */
 
 static vsi_bool op_check
@@ -149,7 +150,7 @@ static vsi_status op_optimize
     vsi_nn_opt_direction_e direction
     )
 {
-    return vsi_nn_optimize_internal_node( self, direction );
+    return vsi_nn_internal_optimize_node( self, direction );
 } /* op_optimize() */
 
 
@@ -183,7 +184,7 @@ static vsi_bool op_setup
     uint32_t i = 0;
 
     memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
-    vsi_nn_init_internal_node_wksp( self );
+    vsi_nn_internal_init_node_wksp( self );
 
     if( curr_param->time_major )
     {
@@ -278,18 +279,18 @@ static vsi_bool op_setup
         vsi_nn_tensor_t* rnncell_out1 = NULL;
 
         /* rnncell output */
-        vsi_nn_internal_node_init_attr(&attr,
+        vsi_nn_internal_init_tensor_attr(&attr,
             &outputs[BI_RNN_FW_OUTPUT_OUTPUT]->attr.dtype, use_virtual_tensor);
-        output_tensor = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
+        output_tensor = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
         rnncell_out0 = output_tensor->t;
 
         /* rnncell output h_state */
-        vsi_nn_internal_node_init_attr(&attr,
+        vsi_nn_internal_init_tensor_attr(&attr,
                 &outputs[BI_RNN_FW_OUTPUT_OUTPUT]->attr.dtype, use_virtual_tensor);
-        output_tensor = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
+        output_tensor = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
         rnncell_out1 = output_tensor->t;
 
-        curr = vsi_nn_new_internal_node( self, VSI_NN_OP_RNNCELL_OVXLIB, 0, 0 );
+        curr = vsi_nn_internal_new_node( self, VSI_NN_OP_RNNCELL_OVXLIB, 0, 0 );
         curr->node->nn_param.rnncell_ovxlib.activation = curr_param->activation;
         memcpy( curr->node->nn_param.rnncell_ovxlib.internal_dtype,
             curr_param->internal_dtype,
@@ -316,7 +317,7 @@ static vsi_bool op_setup
         curr->outputs[RNNCELL_OUTPUT_OUTPUT] = rnncell_out0;
         curr->outputs[RNNCELL_OUTPUT_H_STATE] = rnncell_out1;
 
-        vsi_nn_setup_internal_node_op( self, curr );
+        vsi_nn_internal_setup_node( self, curr );
 
         last_step_h_state_fw = rnncell_out1;
 
@@ -334,18 +335,18 @@ static vsi_bool op_setup
         vsi_nn_tensor_t* rnncell_out1 = NULL;
 
         /* rnncell output */
-        vsi_nn_internal_node_init_attr(&attr,
+        vsi_nn_internal_init_tensor_attr(&attr,
             &outputs[BI_RNN_BW_OUTPUT_OUTPUT]->attr.dtype, use_virtual_tensor);
-        output_tensor = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
+        output_tensor = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
         rnncell_out0 = output_tensor->t;
 
         /* rnncell output h_state */
-        vsi_nn_internal_node_init_attr(&attr,
+        vsi_nn_internal_init_tensor_attr(&attr,
                 &outputs[BI_RNN_BW_OUTPUT_OUTPUT]->attr.dtype, use_virtual_tensor);
-        output_tensor = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
+        output_tensor = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
         rnncell_out1 = output_tensor->t;
 
-        curr = vsi_nn_new_internal_node( self, VSI_NN_OP_RNNCELL_OVXLIB, 0, 0 );
+        curr = vsi_nn_internal_new_node( self, VSI_NN_OP_RNNCELL_OVXLIB, 0, 0 );
         curr->node->nn_param.rnncell_ovxlib.activation = curr_param->activation;
         memcpy( curr->node->nn_param.rnncell_ovxlib.internal_dtype,
             &(curr_param->internal_dtype[RNNCELL_QUANTIZE_PARAM_COUNT]),
@@ -372,7 +373,7 @@ static vsi_bool op_setup
         curr->outputs[RNNCELL_OUTPUT_OUTPUT] = rnncell_out0;
         curr->outputs[RNNCELL_OUTPUT_H_STATE] = rnncell_out1;
 
-        vsi_nn_setup_internal_node_op( self, curr );
+        vsi_nn_internal_setup_node( self, curr );
 
         last_step_h_state_bw = rnncell_out1;
 
@@ -391,9 +392,9 @@ static vsi_bool op_setup
         tensor = outputs[BI_RNN_FW_OUTPUT_OUTPUT];
         if( !curr_param->time_major )
         {
-            vsi_nn_internal_node_init_attr(&attr,
+            vsi_nn_internal_init_tensor_attr(&attr,
                 &outputs[BI_RNN_FW_OUTPUT_OUTPUT]->attr.dtype, use_virtual_tensor);
-            output_tensor = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
+            output_tensor = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
 
             tensor = output_tensor->t;
         }
@@ -401,29 +402,29 @@ static vsi_bool op_setup
         /* concat fw & bw output, the rnn's output is 3-dims */
         for( i = 0; i < time_step; i++ )
         {
-            vsi_nn_internal_node_init_attr(&attr,
+            vsi_nn_internal_init_tensor_attr(&attr,
                 &outputs[BI_RNN_FW_OUTPUT_OUTPUT]->attr.dtype, use_virtual_tensor);
-            output_tensor = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
+            output_tensor = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
 
-            curr = vsi_nn_new_internal_node( self, VSI_NN_OP_CONCAT, 2, 1 );
+            curr = vsi_nn_internal_new_node( self, VSI_NN_OP_CONCAT, 2, 1 );
             curr->node->nn_param.concat.axis = 0;
             curr->inputs[0] = rnncell_reshape_output_tensors_fw[i];
             curr->inputs[1] = rnncell_reshape_output_tensors_bw[i];
             curr->outputs[0] = output_tensor->t;
-            vsi_nn_setup_internal_node_op( self, curr );
+            vsi_nn_internal_setup_node( self, curr );
             merge_tensors[i] = output_tensor->t;
         }
 
 
         /* concat rnncell output, the rnn's output is 3-dims */
-        curr = vsi_nn_new_internal_node( self, VSI_NN_OP_CONCAT, time_step, 1 );
+        curr = vsi_nn_internal_new_node( self, VSI_NN_OP_CONCAT, time_step, 1 );
         curr->node->nn_param.concat.axis = 2;
         for( i = 0; i < time_step; i++ )
         {
             curr->inputs[i] = merge_tensors[i];
         }
         curr->outputs[0] = tensor;
-        vsi_nn_setup_internal_node_op( self, curr );
+        vsi_nn_internal_setup_node( self, curr );
 
         if( !curr_param->time_major )
         {
@@ -439,22 +440,22 @@ static vsi_bool op_setup
         tensor = outputs[BI_RNN_FW_OUTPUT_OUTPUT];
         if( !curr_param->time_major )
         {
-            vsi_nn_internal_node_init_attr(&attr,
+            vsi_nn_internal_init_tensor_attr(&attr,
                 &outputs[BI_RNN_FW_OUTPUT_OUTPUT]->attr.dtype, use_virtual_tensor);
-            output_tensor = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
+            output_tensor = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
 
             tensor = output_tensor->t;
         }
 
         /* concat rnncell output, the rnn's output is 3-dims */
-        curr = vsi_nn_new_internal_node( self, VSI_NN_OP_CONCAT, time_step, 1 );
+        curr = vsi_nn_internal_new_node( self, VSI_NN_OP_CONCAT, time_step, 1 );
         curr->node->nn_param.concat.axis = 2;
         for( i = 0; i < time_step; i++ )
         {
             curr->inputs[i] = rnncell_reshape_output_tensors_fw[i];
         }
         curr->outputs[0] = tensor;
-        vsi_nn_setup_internal_node_op( self, curr );
+        vsi_nn_internal_setup_node( self, curr );
 
         if( !curr_param->time_major )
         {
@@ -467,22 +468,22 @@ static vsi_bool op_setup
         tensor = outputs[BI_RNN_BW_OUTPUT_OUTPUT];
         if( !curr_param->time_major )
         {
-            vsi_nn_internal_node_init_attr(&attr,
+            vsi_nn_internal_init_tensor_attr(&attr,
                 &outputs[BI_RNN_BW_OUTPUT_OUTPUT]->attr.dtype, use_virtual_tensor);
-            output_tensor = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
+            output_tensor = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
 
             tensor = output_tensor->t;
         }
 
         /* concat rnncell output, the rnn's output is 3-dims */
-        curr = vsi_nn_new_internal_node( self, VSI_NN_OP_CONCAT, time_step, 1 );
+        curr = vsi_nn_internal_new_node( self, VSI_NN_OP_CONCAT, time_step, 1 );
         curr->node->nn_param.concat.axis = 2;
         for( i = 0; i < time_step; i++ )
         {
             curr->inputs[i] = rnncell_reshape_output_tensors_bw[i];
         }
         curr->outputs[0] = tensor;
-        vsi_nn_setup_internal_node_op( self, curr );
+        vsi_nn_internal_setup_node( self, curr );
 
         if( !curr_param->time_major )
         {
@@ -510,7 +511,7 @@ static vsi_status op_deinit
     vsi_status status = VSI_SUCCESS;
 
     vsi_nn_safe_free(self->nn_param.bidirectional_sequence_rnn.internal_dtype);
-    vsi_nn_deinit_internal_node_wksp( self );
+    vsi_nn_internal_deinit_node_wksp( self );
 
     return status;
 } /* op_deinit() */

@@ -176,6 +176,13 @@ static vsi_status VX_CALLBACK vxTopkKernel
             memcpy(&(u32_out_buffer[out_index]),
                 indices, top_k * sizeof(uint32_t));
         }
+        // Handle the 1D input
+        if (!block_num) {
+            find_top_k_1d(&(f32_in_buffer[0][0]),
+                block_size, top_k, &(f32_out_buffer[0]), indices);
+            memcpy(&(u32_out_buffer[0]),
+                indices, top_k * sizeof(uint32_t));
+        }
         if (indices) free(indices);
     }
 

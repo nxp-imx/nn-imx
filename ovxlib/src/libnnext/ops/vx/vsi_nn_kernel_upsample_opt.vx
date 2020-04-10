@@ -3,8 +3,12 @@
 _viv_uniform VXC_512Bits uniQuantInOutInt16_2x8;
 _viv_uniform VXC_512Bits ucharMulShort_8x8_opt;
 
-_viv_uniform VXC_512Bits uniQuantInOutInt8_2x8;
-_viv_uniform VXC_512Bits uniQuantInOutInt8Hi_2x8;
+_viv_uniform int input_ZP;
+_viv_uniform VXC_512Bits uniU8SubZP_MulM_2x8;
+_viv_uniform VXC_512Bits uniU8SubZP_MulM_Hi_2x8;
+_viv_uniform VXC_512Bits uniS16AddOutZP_2x8;
+_viv_uniform VXC_512Bits uniS16AddOutZP_Hi_2x8;
+_viv_uniform vxc_uint4 packed_outputZP;
 
 __kernel void unpoolingInt8_Int8_opt
     (
@@ -40,9 +44,19 @@ __kernel void unpoolingInt8_Int8_opt
     _viv_asm(COPY, axisData1, axisData, 16);
     dout = axisData1 * dinExpand;
 
-    VXC_DP2x8(result, dout, dout, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniQuantInOutInt8_2x8);
-    VXC_DP2x8(result, dout, dout, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1),\
-        uniQuantInOutInt8Hi_2x8);
+    vxc_short8 tmp;
+    short zp = input_ZP;
+    vxc_short8 packed_outZP;
+    _viv_asm(COPY, packed_outZP, packed_outputZP, 16);
+    VXC_DP2x8(tmp, dout, zp, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1),\
+              uniU8SubZP_MulM_2x8);
+    VXC_DP2x8(result, tmp, packed_outZP, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1),\
+        uniS16AddOutZP_2x8);
+    VXC_DP2x8(tmp, dout, zp, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1),\
+              uniU8SubZP_MulM_Hi_2x8);
+    VXC_DP2x8(result, tmp, packed_outZP, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1),\
+        uniS16AddOutZP_Hi_2x8);
+
     VXC_WriteImage2DArray(dataOut, coordOut, result, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));
 
     constAxis = (vxc_uchar16)(2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3);
@@ -52,9 +66,15 @@ __kernel void unpoolingInt8_Int8_opt
     dout = axisData1 * dinExpand;
     coordOut.y += 1;
 
-    VXC_DP2x8(result, dout, dout, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniQuantInOutInt8_2x8);
-    VXC_DP2x8(result, dout, dout, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1),\
-        uniQuantInOutInt8Hi_2x8);
+    VXC_DP2x8(tmp, dout, zp, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1),\
+              uniU8SubZP_MulM_2x8);
+    VXC_DP2x8(result, tmp, packed_outZP, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1),\
+        uniS16AddOutZP_2x8);
+    VXC_DP2x8(tmp, dout, zp, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1),\
+              uniU8SubZP_MulM_Hi_2x8);
+    VXC_DP2x8(result, tmp, packed_outZP, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1),\
+        uniS16AddOutZP_Hi_2x8);
+
     VXC_WriteImage2DArray(dataOut, coordOut, result, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));
 }
 

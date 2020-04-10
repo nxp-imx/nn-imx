@@ -32,6 +32,7 @@
 #include "vsi_nn_graph.h"
 #include "vsi_nn_tensor.h"
 #include "vsi_nn_types.h"
+#include "utils/vsi_nn_util.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -398,6 +399,14 @@ OVXLIB_API void vsi_nn_TransposeTensor
     uint32_t       * as_shape
     );
 
+OVXLIB_API void vsi_nn_PermuteTensor
+    (
+    vsi_nn_graph_t  * graph,
+    vsi_nn_tensor_t * tensor,
+    uint32_t       * perm,
+    uint32_t         dim_num
+    );
+
 OVXLIB_API vsi_bool vsi_nn_CalcReshapeTensor
     (
     vsi_nn_tensor_t * input,
@@ -663,6 +672,28 @@ vsi_status vsi_nn_copy_tensor_patch
     void * user_ptr,
     vsi_enum usage
     );
+
+/**
+ * OVXLIB internal tensor util api
+ * Rotate 180 degrees in width*height*channel dims for weights data
+ *
+ * @param[in] graph Graph handle.
+ * @param[in] weights tensor.
+ */
+void vsi_nn_reshuffle_weight_data
+    (
+    vsi_nn_graph_t  * graph,
+    vsi_nn_tensor_t * weights
+    );
+
+vsi_nn_tensor_t* vsi_nn_ConcatTensor_impl
+    (
+    vsi_nn_graph_t* graph,
+    uint32_t axis,
+    ...
+    );
+#define vsi_nn_ConcatTensor(_graph, _axis, ...) \
+    vsi_nn_ConcatTensor_impl(_graph, _axis, __VA_ARGS__, END_OF_VARIADIC_ARGUMENTS)
 
 #ifdef __cplusplus
 }

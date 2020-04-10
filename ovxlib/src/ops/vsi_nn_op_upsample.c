@@ -200,7 +200,13 @@ static vsi_status vx_op_pre_init
         || axDataType == VSI_NN_TYPE_INT8) && outDataType == VSI_NN_TYPE_INT8)
     {
         kernel_info->resource_name[0] = "vsi_nn_kernel_upsample_i8";
-        if (inputs[0]->attr.dtype.fl == outputs[0]->attr.dtype.fl)
+        if ((inputs[0]->attr.dtype.fl == outputs[0]->attr.dtype.fl
+            && inputs[0]->attr.dtype.qnt_type  == VSI_NN_QNT_TYPE_DFP
+            && outputs[0]->attr.dtype.qnt_type == VSI_NN_QNT_TYPE_DFP)
+          || ((inputs[0]->attr.dtype.zero_point == outputs[0]->attr.dtype.zero_point)
+             && (inputs[0]->attr.dtype.scale == outputs[0]->attr.dtype.scale)
+             && inputs[0]->attr.dtype.qnt_type  == VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC
+             && outputs[0]->attr.dtype.qnt_type == VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC))
         {
             kernel_info->kernel_index = 2;
         }

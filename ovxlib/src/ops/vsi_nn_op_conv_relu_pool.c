@@ -94,6 +94,13 @@ static vsi_bool op_setup
 {
     vsi_bool ret;
 
+#ifdef VX_CONVERT_POLICY_WRAP_ENABLE
+    if ( vsi_nn_compareVersion(self->graph, 1, 1, 21) == -1 )
+    {
+        self->vx_param.overflow_policy = VX_CONVERT_POLICY_SATURATE;
+    }
+#endif
+
     ret = TRUE;
     if( VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num )
     {

@@ -23,6 +23,7 @@
 *****************************************************************************/
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 
 #include "vsi_nn_prv.h"
 #include "vsi_nn_log.h"
@@ -35,6 +36,7 @@
 #include "utils/vsi_nn_util.h"
 #include "utils/vsi_nn_dtype_util.h"
 #include "utils/vsi_nn_dtype_util_prv.h"
+#include "utils/vsi_nn_tensor_op.h"
 
 static vsi_bool _try_set_const_tensor
     (
@@ -589,9 +591,9 @@ void vsi_nn_ReleaseTensor
     ptr = *tensor;
     if( NULL != tensor && NULL != *tensor )
     {
+        uint8_t * handle = NULL;
         if( NULL != ptr->t )
         {
-            uint8_t * handle = NULL;
             if (ptr->attr.is_created_from_handle &&
                 ptr->attr.is_handle_malloc_by_ovxlib)
             {
@@ -601,12 +603,15 @@ void vsi_nn_ReleaseTensor
                     VSILOGE("vxSwapTensorHandle fail.");
                     return;
                 }
-                vsi_nn_FreeAlignedBuffer(handle);
             }
             vxReleaseTensor( &ptr->t );
+            if (handle) vsi_nn_FreeAlignedBuffer(handle);
         }
-        if(ptr->wb)
-            vxReleaseWeightsBiasesParameter( &ptr->wb );
+
+        if (ptr->wb) {
+            vxReleaseWeightsBiasesParameter(&ptr->wb);
+        }
+
         free( ptr );
         *tensor = NULL;
     }
@@ -1471,6 +1476,70 @@ void vsi_nn_TransposeTensor
     free( dst );
 } /* vsi_nn_TransposeTensor() */
 
+void vsi_nn_PermuteTensor
+    (
+    vsi_nn_graph_t  * graph,
+    vsi_nn_tensor_t * tensor,
+    uint32_t       * perm,
+    uint32_t         dim_num
+    )
+{
+    uint8_t * buf = NULL;
+    uint8_t * dst = NULL;
+    uint32_t  tensor_sz;
+    uint32_t * shape_ptr;
+    uint32_t   dst_shape[VSI_NN_MAX_DIM_NUM] = {0};
+    uint32_t i;
+    vsi_status  status;
+
+    if( NULL == tensor || NULL == perm || 0 == dim_num )
+    {
+        VSILOGE( "Wrong perm parameters." );
+        return;
+    }
+    tensor_sz = vsi_nn_GetTensorSize( tensor->attr.size, tensor->attr.dim_num,
+        tensor->attr.dtype.vx_type );
+    shape_ptr = tensor->attr.size;
+
+    buf = vsi_nn_ConvertTensorToData( graph, tensor );
+
+    if( NULL == buf )
+    {
+        VSILOGE( "Create tensor buf fail." );
+        return;
+    }
+    dst = (uint8_t *)malloc( tensor_sz * sizeof( uint8_t ) );
+    if ( NULL == dst)
+    {
+        VSILOGE( "Malloc dst buf fail." );
+        if( buf ) { free(buf); buf = NULL; }
+        return;
+    }
+
+    for ( i = 0; i < dim_num; i++)
+    {
+        if( perm[i] >= dim_num )
+        {
+            VSILOGW( "Incorrect perm %d", perm[i] );
+            if( buf ) { free(buf); buf = NULL; }
+            if( dst ) { free(dst); dst = NULL; }
+            return;
+        }
+        dst_shape[i] = shape_ptr[perm[i]];
+    }
+    memcpy(tensor->attr.size, dst_shape, sizeof(dst_shape));
+    vsi_nn_Permute( dst, buf, shape_ptr, dim_num, perm, tensor->attr.dtype.vx_type );
+    tensor->t = vxReshapeTensor(tensor->t, (int32_t *)tensor->attr.size, tensor->attr.dim_num);
+    status = vsi_nn_CopyDataToTensor( graph, tensor, dst );
+    if( VSI_SUCCESS != status )
+    {
+        VSILOGE( "Copy permute data fail with code %#x.", status );
+    }
+
+    if( buf ) { free(buf); buf = NULL; }
+    if( dst ) { free(dst); dst = NULL; }
+} /* vsi_nn_PermuteTensor() */
+
 uint32_t vsi_nn_GetElementNum
     (
     vsi_nn_tensor_t * tensor
@@ -2041,3 +2110,105 @@ uint32_t vsi_nn_GetOffsetByCoords
     }
     return res;
 }
+
+void vsi_nn_reshuffle_weight_data
+    (
+    vsi_nn_graph_t  * graph,
+    vsi_nn_tensor_t * weights
+    )
+{
+    int32_t b, sy, sx, c, h, w;
+    uint8_t* weight_data = NULL;
+    uint8_t* reshuffled_weights = NULL;
+    uint8_t* buffer = NULL;
+    int32_t kernel_size_x = weights->attr.size[0];
+    int32_t kernel_size_y = weights->attr.size[1];
+    int32_t weight_size_c = weights->attr.size[2];
+    int32_t weight_size_b = weights->attr.size[3];
+    int32_t slice_size = kernel_size_x * kernel_size_y;
+    int32_t item_size = vsi_nn_TypeGetBytes(weights->attr.dtype.vx_type);
+
+    weight_data = vsi_nn_ConvertTensorToData(graph, weights);
+    buffer = (uint8_t*)malloc(item_size * slice_size * weight_size_c * weight_size_b);
+    memset(buffer, 0x00, item_size * slice_size * weight_size_c * weight_size_b);
+    memcpy(buffer, weight_data, item_size * slice_size * weight_size_c * weight_size_b);
+#if 0 // transpose whnc to whcn if need
+    for (b = 0; b < weight_size_b; b++)
+    {
+        for (c = 0; c < weight_size_c; c++)
+        {
+            memcpy(buffer + kernel_size_x * kernel_size_y * (b * weight_size_c + c) * item_size,
+                weight_data + kernel_size_x * kernel_size_y * (c * weight_size_b + b) * item_size,
+                item_size * slice_size);
+        }
+    }
+#endif
+    reshuffled_weights = weight_data;
+    for (b = 0; b < weight_size_b; b++)
+    {
+        for (sy = 0; sy < 1; sy++)
+        {
+            for (sx = 0; sx < 1; sx++)
+            {
+                for (c = 0; c < weight_size_c; c++)
+                {
+                    uint8_t* weight_output = reshuffled_weights +
+                        (b * slice_size * weight_size_c + slice_size * c) * item_size;
+
+                    uint8_t* data = buffer + (b * slice_size * weight_size_c + slice_size * c) * item_size;
+
+                    for (h = 0; h < kernel_size_y; h++)
+                    {
+                        for (w = 0; w < kernel_size_x; w++)
+                        {
+                            uint8_t* reshuffled_output = weight_output + (h * kernel_size_x + w) * item_size;
+                            int32_t input_index = ((kernel_size_y - 1 - h) + sy) * kernel_size_x +
+                                ((kernel_size_x - 1 - w) + sx);
+
+                            memcpy(reshuffled_output, data + input_index * item_size, item_size);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    vsi_nn_CopyDataToTensor( graph, weights, weight_data );
+    vsi_nn_Free( buffer );
+    vsi_nn_Free( weight_data );
+}
+
+vsi_nn_tensor_t* vsi_nn_ConcatTensor_impl
+    (
+    vsi_nn_graph_t* graph,
+    uint32_t axis,
+    ...
+    )
+{
+    va_list args;
+    vsi_nn_tensor_t* next = NULL;
+    vsi_nn_tensor_t** tensors = NULL;
+    int tensor_count = 0;
+
+    va_start(args, axis);
+    FOREACH_ARGS(args, next, vsi_nn_tensor_t*)
+    {
+        tensor_count++;
+    }
+    va_end(args);
+
+    tensors = (vsi_nn_tensor_t**)malloc(sizeof(vsi_nn_tensor_t*) * tensor_count);
+    tensor_count = 0;
+    va_start(args, axis);
+    FOREACH_ARGS(args, next, vsi_nn_tensor_t*)
+    {
+        tensors[tensor_count++] = next;
+    }
+    va_end(args);
+
+    next = vsi_nn_Concat(graph, tensors, tensor_count, axis);
+
+    vsi_nn_safe_free(tensors);
+
+    return next;
+}
+

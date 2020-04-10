@@ -273,7 +273,7 @@ static vsi_status op_compute
        && (VSI_NN_INTERPOLATION_BILINEAR == self->nn_param.resize.type
           || VSI_NN_INTERPOLATION_NEAREST_NEIGHBOR == self->nn_param.resize.type))
     {
-        status = vsi_nn_compute_internal_node( self );
+        status = vsi_nn_internal_compute_node( self );
     }
     else
     {
@@ -335,7 +335,7 @@ static vsi_status op_optimize
        && (VSI_NN_INTERPOLATION_BILINEAR == self->nn_param.resize.type
           || VSI_NN_INTERPOLATION_NEAREST_NEIGHBOR == self->nn_param.resize.type))
     {
-        return vsi_nn_optimize_internal_node(self, direction );
+        return vsi_nn_internal_optimize_node(self, direction );
     }
     else
     {
@@ -385,26 +385,26 @@ static vsi_bool op_setup
     if ((self->nn_param.resize.align_corners || self->nn_param.resize.half_pixel_centers)
        && (VSI_NN_INTERPOLATION_BILINEAR == self->nn_param.resize.type))
     {
-        vsi_nn_init_internal_node_wksp( self );
-        curr = vsi_nn_new_internal_node( self, VSI_NN_OP_RESIZE_INTERNAL, 0, 0 );
+        vsi_nn_internal_init_node_wksp( self );
+        curr = vsi_nn_internal_new_node( self, VSI_NN_OP_RESIZE_INTERNAL, 0, 0 );
         curr->node->nn_param.resize_internal.align_corners = self->nn_param.resize.align_corners;
         curr->node->nn_param.resize_internal.factor = self->nn_param.resize.factor;
         curr->node->nn_param.resize_internal.half_pixel_centers = self->nn_param.resize.half_pixel_centers;
         curr->inputs[0]  = inputs[0];
         curr->outputs[0] = outputs[0];
-        vsi_nn_setup_internal_node_op(self, curr);
+        vsi_nn_internal_setup_node(self, curr);
     }
     else if ((self->nn_param.resize.align_corners || self->nn_param.resize.half_pixel_centers)
             && (VSI_NN_INTERPOLATION_NEAREST_NEIGHBOR == self->nn_param.resize.type))
     {
-        vsi_nn_init_internal_node_wksp( self );
-        curr = vsi_nn_new_internal_node( self, VSI_NN_OP_RESIZE_NEAREST_INTERNAL, 0, 0 );
+        vsi_nn_internal_init_node_wksp( self );
+        curr = vsi_nn_internal_new_node( self, VSI_NN_OP_RESIZE_NEAREST_INTERNAL, 0, 0 );
         curr->node->nn_param.resize_nearest_internal.align_corners = self->nn_param.resize.align_corners;
         curr->node->nn_param.resize_nearest_internal.factor = self->nn_param.resize.factor;
         curr->node->nn_param.resize_nearest_internal.half_pixel_centers = self->nn_param.resize.half_pixel_centers;
         curr->inputs[0]  = inputs[0];
         curr->outputs[0] = outputs[0];
-        vsi_nn_setup_internal_node_op(self, curr);
+        vsi_nn_internal_setup_node(self, curr);
     }
 
     return TRUE;
@@ -430,7 +430,7 @@ static vsi_status op_deinit
        && (VSI_NN_INTERPOLATION_BILINEAR == self->nn_param.resize.type
           || VSI_NN_INTERPOLATION_NEAREST_NEIGHBOR == self->nn_param.resize.type))
     {
-        vsi_nn_deinit_internal_node_wksp(self);
+        vsi_nn_internal_deinit_node_wksp(self);
     }
     else
     {

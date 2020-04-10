@@ -61,7 +61,7 @@ static vsi_status op_compute
     vsi_nn_tensor_t ** outputs
     )
 {
-    return vsi_nn_compute_internal_node( self );
+    return vsi_nn_internal_compute_node( self );
 } /* op_compute() */
 
 static vsi_bool op_check
@@ -82,7 +82,7 @@ static vsi_status op_optimize
     vsi_nn_opt_direction_e direction
     )
 {
-    return vsi_nn_optimize_internal_node( self, direction );
+    return vsi_nn_internal_optimize_node( self, direction );
 } /* op_optimize() */
 
 static vsi_bool op_setup
@@ -96,10 +96,10 @@ static vsi_bool op_setup
     uint32_t i;
     vsi_nn_tensor_attr_t attr;
     vsi_nn_internal_node_t* curr = NULL;
-    vsi_nn_internal_tensor_t* temp_output_tensor;
+    vsi_nn_internal_tensor_t* temp_output_tensor = NULL;
     uint32_t input_num = 0;
 
-    vsi_nn_init_internal_node_wksp( self );
+    vsi_nn_internal_init_node_wksp( self );
 
     input_num = _get_input_num(self, inputs);
     for(i = 0; i < input_num -1; i++)
@@ -107,7 +107,7 @@ static vsi_bool op_setup
         /* loop call add for input_num -1 times */
 
         /* setup input for each add */
-        curr = vsi_nn_new_internal_node( self, VSI_NN_OP_ADD, 0, 0 );
+        curr = vsi_nn_internal_new_node( self, VSI_NN_OP_ADD, 0, 0 );
         if(i == 0)
         {
             curr->inputs[0] = inputs[i];
@@ -127,7 +127,7 @@ static vsi_bool op_setup
             attr.is_const = FALSE;
             attr.dtype.vx_type = VSI_NN_TYPE_FLOAT16;
 
-            temp_output_tensor = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
+            temp_output_tensor = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
 
             curr->outputs[0] = temp_output_tensor->t;
         }
@@ -136,7 +136,7 @@ static vsi_bool op_setup
             curr->outputs[0] = outputs[0];
         }
 
-        vsi_nn_setup_internal_node_op( self, curr );
+        vsi_nn_internal_setup_node( self, curr );
     }
     return ret;
 } /* op_setup() */
@@ -148,7 +148,7 @@ static vsi_status op_deinit
 {
     vsi_status status = VSI_SUCCESS;
 
-    vsi_nn_deinit_internal_node_wksp( self );
+    vsi_nn_internal_deinit_node_wksp( self );
 
     return status;
 } /* op_deinit() */

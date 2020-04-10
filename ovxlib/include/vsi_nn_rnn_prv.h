@@ -52,6 +52,7 @@ typedef struct
 {
     vsi_nn_rnn_connection_t* external_connection_list;
     void* user_data;
+    vsi_bool is_first_run;
 } vsi_nn_rnn_wksp_t;
 
 #if defined(__cplusplus)

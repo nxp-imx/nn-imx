@@ -26,29 +26,31 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
 #include <float.h>
 #include "vsi_nn_types.h"
 #include "vsi_nn_tensor.h"
 #include "vsi_nn_graph.h"
 #include "vsi_nn_log.h"
-#include "vsi_nn_error.h"
 #include "vsi_nn_prv.h"
+#include "vsi_nn_error.h"
 #include "vsi_nn_tensor_util.h"
-#include "utils/vsi_nn_dtype_util.h"
 #include "utils/vsi_nn_util.h"
+#include "utils/vsi_nn_dtype_util.h"
 #include "kernel/vsi_nn_kernel.h"
-#include "libnnext/vx_lib_nnext.h"
+#include "kernel/vsi_nn_kernel_eltwise.h"
+#include "client/vsi_nn_vxkernel.h"
 
 __BEGIN_DECLS
 
 /*
  * Define kernel meta.
  */
-#define _INPUT_NUM          (2)
-#define _OUTPUT_NUM         (1)
-#define _KERNEL_NAME        CVIVANTE_NAMESPACE("cpu.random_multinomial")
-
+#define _CPU_ARG_NUM            (0)
+#define _CPU_INPUT_NUM          (2)
+#define _CPU_OUTPUT_NUM         (1)
+#define _CPU_IO_NUM             (_CPU_INPUT_NUM + _CPU_OUTPUT_NUM)
+#define _CPU_PARAM_NUM          (_CPU_ARG_NUM + _CPU_IO_NUM)
+#define _KERNEL_NAME            CVIVANTE_NAMESPACE("random_multinomial_sw")
 
 /*
  * Kernel params
@@ -61,7 +63,6 @@ static vx_param_description_t kernel_param_def[] =
     // Add kererl parameters here
 };
 #define _PARAM_NUM  _cnt_of_array( kernel_param_def )
-
 
 /*
  * Kernel function
@@ -80,132 +81,129 @@ static int upper_bound(float* a, int n, float x) {
     return l;
 } /* upper_bound() */
 
-static vx_status VX_CALLBACK _compute
+DEF_KERNEL_EXECUTOR(_compute)
     (
-    vx_node              node,
-    const vx_reference * param,
-    uint32_t             param_size
+    vsi_nn_kernel_node_t node,
+    const vsi_nn_kernel_node_param_t * param,
+    size_t param_size
     )
 {
     vsi_status status = VSI_FAILURE;
-    vx_context context = NULL;
-    vx_tensor input[_INPUT_NUM] = {0};
-    vx_tensor output[_OUTPUT_NUM] = {0};
-    float *f32_in_buffer[_INPUT_NUM] = {0};
-    int32_t* int32_in_buffer[_INPUT_NUM] = {0};
-    int32_t *int32_out_buffer[_OUTPUT_NUM] = {0};
-    vsi_nn_tensor_attr_t in_attr[_INPUT_NUM];
-    vsi_nn_tensor_attr_t out_attr[_OUTPUT_NUM];
-    uint32_t in_elements[_INPUT_NUM] = {0};
-    uint32_t out_elements[_OUTPUT_NUM]= {0};
+    vsi_nn_kernel_tensor_t tensors[_CPU_IO_NUM] = { NULL };
+    float * buffer[_CPU_IO_NUM] = { NULL };
+    size_t out_elements = 0;
+    size_t stride_size[_CPU_INPUT_NUM][VSI_NN_MAX_DIM_NUM] = {{0}};
+    vsi_nn_kernel_tensor_attr_t * attr[_CPU_IO_NUM] = { NULL };
+    uint32_t *random_integer = NULL;
+    float *random_float = NULL;
+    float *cdf = NULL;
+    uint32_t i = 0;
+    uint32_t n = 0;
+    uint32_t batch = 0;
+    uint32_t class_size = 0;
+    int32_t sample_num = 0;
 
-    int32_t sample_num;
+    tensors[0]  = (vsi_nn_kernel_tensor_t)param[0];
+    tensors[1]  = (vsi_nn_kernel_tensor_t)param[1];
+    tensors[2]  = (vsi_nn_kernel_tensor_t)param[2];
 
-    int32_t i;
-    for(i = 0; i < _INPUT_NUM; i++)
-    {
-        memset(&in_attr[i], 0x0, sizeof(vsi_nn_tensor_attr_t));
-    }
-    for(i = 0; i < _OUTPUT_NUM; i++)
-    {
-        memset(&out_attr[i], 0x0, sizeof(vsi_nn_tensor_attr_t));
-    }
-    /* prepare data */
-    context = vxGetContext((vx_reference)node);
+    attr[0] = vsi_nn_kernel_tensor_attr_create( tensors[0] );
+    CHECK_PTR_FAIL_GOTO( attr[0], "Create tensor attr buffer fail.", final );
+    attr[1] = vsi_nn_kernel_tensor_attr_create( tensors[1] );
+    CHECK_PTR_FAIL_GOTO( attr[1], "Create tensor attr buffer fail.", final );
+    attr[2] = vsi_nn_kernel_tensor_attr_create( tensors[2] );
+    CHECK_PTR_FAIL_GOTO( attr[2], "Create tensor attr buffer fail.", final );
 
-    for(i = 0; i < _INPUT_NUM; i ++)
+    sample_num = attr[2]->shape->data[0];
+    batch = attr[0]->shape->data[1];
+    class_size = attr[0]->shape->data[0];
+
+    vsi_nn_kernel_tensor_attr_get_stride( attr[0], stride_size[0] );
+    vsi_nn_kernel_tensor_attr_get_stride( attr[1], stride_size[1] );
+
+    out_elements = vsi_nn_kernel_tensor_attr_get_size( attr[2] );
+
+    buffer[0] = (float*)vsi_nn_kernel_tensor_create_buffer( tensors[0], attr[0], TRUE );
+    CHECK_PTR_FAIL_GOTO( buffer[0], "Create input0 buffer fail.", final );
+
+    buffer[1] = (float*)vsi_nn_kernel_tensor_create_buffer( tensors[1], attr[1], TRUE );
+    CHECK_PTR_FAIL_GOTO( buffer[1], "Create input1 buffer fail.", final );
+
+    buffer[2] = (float *)malloc( out_elements * sizeof(float) );
+    CHECK_PTR_FAIL_GOTO( buffer[2], "Create output buffer fail.", final );
+    memset( buffer[2], 0, out_elements * sizeof(float) );
+
+    random_integer = (uint32_t *)malloc(out_elements * sizeof(uint32_t));
+    CHECK_PTR_FAIL_GOTO( random_integer, "Create buffer fail.", final );
+    random_float = (float *)malloc(out_elements * sizeof(float));
+    CHECK_PTR_FAIL_GOTO( random_float, "Create buffer fail.", final );
+    cdf = (float *)malloc(class_size * sizeof(float));
+    CHECK_PTR_FAIL_GOTO( cdf, "Create buffer fail.", final );
+
+    vsi_nn_random_init_for_philox_4x32_10((uint32_t)(buffer[1][0]),
+        (uint32_t)(buffer[1][1]));
+    vsi_nn_random_generate_by_philox_4x32_10(random_integer, out_elements);
+    vsi_nn_random_uniform_transform(random_integer,
+            random_float, out_elements);
+
+    for (n = 0; n < batch; n++)
     {
-        input[i] = (vx_tensor)param[i];
-        status = vsi_nn_vxGetTensorAttr(input[i], &in_attr[i]);
-        CHECK_STATUS_FAIL_GOTO(status, final);
-        in_elements[i] = vsi_nn_vxGetTensorElementNum(&in_attr[i]);
-        if (i == 1)
+        uint32_t c = 0;
+        float batch_max = -FLT_MAX;
+        float total = 0;
+        for(c = 0; c < class_size; c++)
         {
-            int32_in_buffer[i] = (int32_t *)vsi_nn_vxCopyTensorToData(context,
-                input[i], &in_attr[i]);
-        }
-        else
-        {
-            f32_in_buffer[i] = (float *)malloc(in_elements[i] * sizeof(float));
-            status = vsi_nn_vxConvertTensorToFloat32Data(
-                context, input[i], &in_attr[i], f32_in_buffer[i],
-                in_elements[i] * sizeof(float));
-            CHECK_STATUS_FAIL_GOTO(status, final);
-        }
-    }
-    for(i = 0; i < _OUTPUT_NUM; i ++)
-    {
-        output[i] = (vx_tensor)param[i + _INPUT_NUM];
-        status = vsi_nn_vxGetTensorAttr(output[i], &out_attr[i]);
-        CHECK_STATUS_FAIL_GOTO(status, final);
-        out_elements[i] = vsi_nn_vxGetTensorElementNum(&out_attr[i]);
-        int32_out_buffer[i]= (int32_t *)malloc(out_elements[i] * sizeof(int32_t));
-        memset(int32_out_buffer[i], 0, out_elements[i] * sizeof(int32_t));
-    }
-    sample_num = out_attr[0].size[0];
-
-    {
-        uint32_t n, c;
-        uint32_t batch = in_attr[0].size[1];
-        uint32_t class_size = in_attr[0].size[0];
-        float *cdf = (float *)malloc(class_size * sizeof(float));
-        uint32_t *random_integer = (uint32_t *)malloc(out_elements[0] * sizeof(uint32_t));
-        float *random_float = (float *)malloc(out_elements[0] * sizeof(float));
-        vsi_nn_random_init_for_philox_4x32_10((uint32_t)(int32_in_buffer[1][0]),
-            (uint32_t)(int32_in_buffer[1][1]));
-        vsi_nn_random_generate_by_philox_4x32_10(random_integer, out_elements[0]);
-        vsi_nn_random_uniform_transform(random_integer,
-            random_float, out_elements[0]);
-        for(n = 0; n < batch; n++)
-        {
-            float batch_max = -FLT_MAX;
-            float total = 0;
-            for(c = 0; c < class_size; c++)
-            {
-                uint32_t index = n * class_size + c;
-                batch_max = vsi_nn_max(batch_max, f32_in_buffer[0][index]);
-            }
-            for(c = 0; c < class_size; c++)
-            {
-                uint32_t index = n * class_size + c;
-                total += (float)(exp(f32_in_buffer[0][index] - batch_max));
-                cdf[c] = total;
-            }
-
-            for(c = 0; c < (uint32_t)sample_num; c++)
-            {
-                uint32_t index = n * sample_num + c;
-                float target = random_float[index] * total;
-                uint32_t out_class = upper_bound(cdf, class_size, target);
-                int32_out_buffer[0][index] = out_class;
-            }
+            uint32_t index = n * class_size + c;
+            batch_max = vsi_nn_max(batch_max, buffer[0][index]);
         }
 
-        if (cdf) free(cdf);
-        if (random_integer) free(random_integer);
-        if (random_float) free(random_float);
-    }
+        for(c = 0; c < class_size; c++)
+        {
+            uint32_t index = n * class_size + c;
+            total += (float)(exp(buffer[0][index] - batch_max));
+            cdf[c] = total;
+        }
 
-    /* save data */
-    for(i = 0; i < _OUTPUT_NUM; i++)
-    {
-        vsi_nn_vxCopyDataToTensor(context, output[i], &out_attr[i],
-            (uint8_t *)(int32_out_buffer[i]));
+        for(c = 0; c < (uint32_t)sample_num; c++)
+        {
+            uint32_t index = n * sample_num + c;
+            float target = random_float[index] * total;
+            uint32_t out_class = upper_bound(cdf, class_size, target);
+            buffer[2][index] = (float)out_class;
+        }
     }
+    status = vsi_nn_kernel_tensor_write_from_float( tensors[2], attr[2],
+            buffer[2], out_elements );
+    CHECK_STATUS_FAIL_GOTO( status, final );
 
 final:
-    for (i = 0; i < _INPUT_NUM; i++)
+    for( i = 0; i < _CPU_IO_NUM; i ++ )
     {
-        if (f32_in_buffer[i]) free(f32_in_buffer[i]);
-        if (int32_in_buffer[i]) free(int32_in_buffer[i]);
+        if( buffer[i] )
+        {
+            free( buffer[i] );
+        }
+        vsi_nn_kernel_tensor_attr_release( &attr[i] );
     }
-    for(i = 0; i < _OUTPUT_NUM; i++)
+
+    if (cdf)
     {
-        if (int32_out_buffer[i]) free(int32_out_buffer[i]);
+        free(cdf);
+        cdf = NULL;
     }
+    if (random_integer)
+    {
+        free(random_integer);
+        random_integer = NULL;
+    }
+    if (random_float)
+    {
+        free(random_float);
+        random_float = NULL;
+    }
+
     return status;
 } /* _compute() */
-
 
 /*
  * Query kernel

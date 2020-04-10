@@ -54,7 +54,7 @@ static vsi_status op_compute
     vsi_nn_tensor_t ** outputs
     )
 {
-    return vsi_nn_compute_internal_node( self );
+    return vsi_nn_internal_compute_node( self );
 } /* op_compute() */
 
 static vsi_bool op_check
@@ -87,7 +87,7 @@ static vsi_bool op_setup
     vsi_nn_stack_lcl_data * data;
     vsi_bool ret = TRUE;
 
-    vsi_nn_init_internal_node_wksp( node );
+    vsi_nn_internal_init_node_wksp( node );
 
     p = (vsi_nn_stack_param *)&(node->nn_param.stack);
     axis = p->axis;
@@ -122,7 +122,7 @@ static vsi_bool op_setup
     input_shape[0] = block_size;
     input_shape[1] = block_num;
 
-    curr = vsi_nn_new_internal_node( node, VSI_NN_OP_CONCAT, 0, 0 );
+    curr = vsi_nn_internal_new_node( node, VSI_NN_OP_CONCAT, 0, 0 );
     for (i = 0; i < node->input.num; i++)
     {
         vsi_nn_tensor_t *input_rs = NULL;
@@ -180,7 +180,7 @@ static vsi_bool op_setup
     curr->node->nn_param.concat.axis = axis;
 
 final:
-    vsi_nn_setup_internal_node_op(node, curr);
+    vsi_nn_internal_setup_node(node, curr);
 
     return ret;
 } /* op_setup() */
@@ -193,7 +193,7 @@ static vsi_status op_optimize
     vsi_nn_opt_direction_e direction
     )
 {
-    return vsi_nn_optimize_internal_node( self, direction );
+    return vsi_nn_internal_optimize_node( self, direction );
 } /* op_optimize() */
 
 static vsi_status op_deinit
@@ -218,7 +218,7 @@ static vsi_status op_deinit
         free( tmp );
     }
 
-    vsi_nn_deinit_internal_node_wksp( self );
+    vsi_nn_internal_deinit_node_wksp( self );
 
     vsi_nn_op_common_deinit(self);
 

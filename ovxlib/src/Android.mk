@@ -26,6 +26,7 @@ LOCAL_SRC_FILES :=     \
             vsi_nn_tensor.c \
             vsi_nn_version.c \
             vsi_nn_rnn.c \
+            vsi_nn_rnn_helper.c \
             vsi_nn_internal_node.c \
             vsi_nn_log.c \
             vsi_nn_pre_post_process.c

@@ -62,7 +62,7 @@ DEF_KERNEL_EXECUTOR(_gather_nd_exec)
     uint32_t* buffer_idx = NULL;
     size_t out_elements = 0;
     vsi_nn_kernel_tensor_attr_t * attr[_CPU_IO_NUM] = { NULL };
-    uint32_t i = 0;
+    int32_t i = 0;
     int32_t block_size = 1, indices_num = 1;
     int32_t coord_stride = 1;
 
@@ -96,13 +96,13 @@ DEF_KERNEL_EXECUTOR(_gather_nd_exec)
     }
 
     // block size
-    for(i = 0; i < attr[0]->shape->size - coord_stride; ++i)
+    for(i = 0; i < (int32_t)attr[0]->shape->size - coord_stride; ++i)
     {
         block_size *= attr[0]->shape->data[i];
     }
 
     // index number
-    for(i = 0; i < attr[1]->shape->size; ++i)
+    for(i = 0; i < (int32_t)attr[1]->shape->size; ++i)
     {
         indices_num *= attr[1]->shape->data[i];
     }
@@ -122,7 +122,7 @@ DEF_KERNEL_EXECUTOR(_gather_nd_exec)
     {
         int32_t stride = 1;
         // stride after reshape
-        for(i = 0; i < attr[0]->shape->size - 1; ++i)
+        for(i = 0; i < (int32_t)attr[0]->shape->size - 1; ++i)
         {
             stride *= attr[0]->shape->data[i];
         }
@@ -144,7 +144,7 @@ DEF_KERNEL_EXECUTOR(_gather_nd_exec)
         int32_t stride = 1;
         int32_t height = attr[0]->shape->data[attr[0]->shape->size - 2];
         // stride after reshape
-        for(i = 0; i < attr[0]->shape->size - 1; ++i) // attr[0]->shape->size - 1
+        for(i = 0; i < (int32_t)attr[0]->shape->size - 1; ++i) // attr[0]->shape->size - 1
         {
             stride *= attr[0]->shape->data[i];
         }

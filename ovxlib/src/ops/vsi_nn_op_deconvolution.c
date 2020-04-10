@@ -101,15 +101,40 @@ static vsi_bool op_setup
 {
     vsi_nn_deconv_param *nn_param;
     uint32_t perm[] = { 3, 2, 0, 1 };
+    uint32_t perm1[] = { 0, 1, 3, 2 };
 
     /* TODO: Driver should handle this,
     * Check transpose
+    * TODO: remove this
     * */
     if( VSI_NN_DIM_FMT_NHWC == inputs[1]->attr.dtype.fmt )
     {
         vsi_nn_TransposeTensor( self->graph, inputs[1], perm, 4, NULL );
         inputs[1]->attr.dtype.fmt = VSI_NN_DIM_FMT_NCHW;
     }
+
+#ifdef VX_CONVERT_POLICY_WRAP_ENABLE
+    if ( vsi_nn_compareVersion(self->graph, 1, 1, 21) == -1 )
+    {
+        self->vx_param.overflow_policy = VX_CONVERT_POLICY_SATURATE;
+    }
+#endif
+
+#ifdef VX_DECONVOLUTION_WEIGHT_LAYOUT_COMPATIBLE_KHRONOS
+    if ( vsi_nn_compareVersion(self->graph, 1, 1, 21) == -1 )
+    {
+        /* whnc->whcn */
+        vsi_nn_PermuteTensor( self->graph, inputs[1], perm1, 4 );
+    }
+    /* Rotate 180 degrees for weights data */
+    vsi_nn_reshuffle_weight_data(self->graph, inputs[1]);
+#else
+    if ( vsi_nn_compareVersion(self->graph, 1, 1, 21) >= 0 )
+    {
+        /* whcn->whnc */
+        vsi_nn_PermuteTensor( self->graph, inputs[1], perm1, 4 );
+    }
+#endif
 
     nn_param = &self->nn_param.deconv;
 

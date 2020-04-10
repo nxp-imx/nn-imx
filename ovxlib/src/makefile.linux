@@ -52,6 +52,7 @@ OBJECTS =   $(OBJ_DIR)/vsi_nn_context.o \
             $(OBJ_DIR)/vsi_nn_tensor.o \
             $(OBJ_DIR)/vsi_nn_version.o \
             $(OBJ_DIR)/vsi_nn_rnn.o \
+            $(OBJ_DIR)/vsi_nn_rnn_helper.o \
             $(OBJ_DIR)/vsi_nn_internal_node.o \
             $(OBJ_DIR)/vsi_nn_log.o \
             $(OBJ_DIR)/vsi_nn_pre_post_process.o

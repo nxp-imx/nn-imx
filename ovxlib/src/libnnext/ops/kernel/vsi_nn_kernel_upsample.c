@@ -92,6 +92,18 @@ vsi_status VX_CALLBACK vxunpoolingInitializer
         input_ZP = attr[0].dtype.zero_point;
         scaleIn = attr[0].dtype.scale;
     }
+    else if (attr[0].dtype.qnt_type == VSI_NN_QNT_TYPE_DFP)
+    {
+        input_ZP = 0;
+        if (infixpoint > 0)
+        {
+            scaleIn = (1.0f / ((vx_float32) (1 << infixpoint)));
+        }
+        else
+        {
+            scaleIn = ((vx_float32) (1 << -infixpoint));
+        }
+    }
 
     outDataType = attr[2].dtype.vx_type;
     outfixpoint = attr[2].dtype.fl;
@@ -100,6 +112,18 @@ vsi_status VX_CALLBACK vxunpoolingInitializer
     {
         output_ZP = attr[2].dtype.zero_point;
         scaleOut = attr[2].dtype.scale;
+    }
+    else if (attr[2].dtype.qnt_type == VSI_NN_QNT_TYPE_DFP)
+    {
+        output_ZP = 0;
+        if (outfixpoint > 0)
+        {
+            scaleOut = (1.0f / ((vx_float32) (1 << outfixpoint)));
+        }
+        else
+        {
+            scaleOut = ((vx_float32) (1 << -outfixpoint));
+        }
     }
 
     axDataType = attr[1].dtype.vx_type;
@@ -120,6 +144,12 @@ vsi_status VX_CALLBACK vxunpoolingInitializer
             attr[0].size[2] = 1;
             enable_image_2d = TRUE;
         }
+    }
+
+    if ( (inDataType == VSI_NN_TYPE_INT8 || inDataType == VSI_NN_TYPE_FLOAT16)
+        && outDataType == VSI_NN_TYPE_INT8 )
+    {
+        vsi_nn_GetFP32MultiAndPostShift(scaleIn / scaleOut, &M0, &postShift);
     }
 
     if (infixpoint > 0)
@@ -149,6 +179,13 @@ vsi_status VX_CALLBACK vxunpoolingInitializer
     || (inDataType == VSI_NN_TYPE_FLOAT16 && outDataType == VSI_NN_TYPE_UINT8 && axDataType == VSI_NN_TYPE_UINT8)
         )
     {
+        vx_bool is_same_quant_type = (vx_bool)((attr[0].dtype.fl == attr[2].dtype.fl
+                                        && attr[0].dtype.qnt_type  == VSI_NN_QNT_TYPE_DFP
+                                        && attr[2].dtype.qnt_type == VSI_NN_QNT_TYPE_DFP)
+                                      || ((attr[0].dtype.zero_point == attr[2].dtype.zero_point)
+                                         && (attr[0].dtype.scale == attr[2].dtype.scale)
+                                         && attr[0].dtype.qnt_type  == VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC
+                                         && attr[2].dtype.qnt_type == VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC));
         if (enable_image_2d)
         {
             shaderParam.workDim             = 2;
@@ -176,50 +213,84 @@ vsi_status VX_CALLBACK vxunpoolingInitializer
             shaderParam.globalWorkSize[2]   = attr[0].size[2];
         }
 
-        if((inDataType == VSI_NN_TYPE_INT8 && outDataType == VSI_NN_TYPE_INT8) && infixpoint != outfixpoint)
+        if (inDataType == VSI_NN_TYPE_INT8 && outDataType == VSI_NN_TYPE_INT8 && is_same_quant_type)
         {
-            vx_uint32 uniQuantInOutInt8_2x8[16] = {
-                0x11111111, // TCfg
-                0x00000000, // ASelt
-                0x03020100, 0x07060504, // ABin
-                0x22222222, // BSelt
-                0x00000000, 0x00000000, // BBin
-                0x00000400, // AccumType, ConstantType, and PostShift
-                0x00000001, 0x00000001, 0x00000001, 0x00000001,
-                0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
-            };
-            vx_uint32 uniQuantInOutInt8Hi_2x8[16] = {
-                0x11111111, // TCfg
-                0x00000000, // ASelt
-                0x0b0a0908, 0x0f0e0d0c, // ABin
-                0x22222222, // BSelt
-                0x00000000, 0x00000000, // BBin
-                0x00000400, // AccumType, ConstantType, and PostShift
-                0x00000001, 0x00000001, 0x00000001, 0x00000001,
-                0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
-            };
-            if(infixpoint > outfixpoint)
-            {
-                uniQuantInOutInt8_2x8[7] = uniQuantInOutInt8_2x8[7] | (infixpoint - outfixpoint);
-                uniQuantInOutInt8Hi_2x8[7] = uniQuantInOutInt8Hi_2x8[7] | (infixpoint - outfixpoint);
-                status = vxSetNodeUniform(nodObj, "uniQuantInOutInt8_2x8", 1, uniQuantInOutInt8_2x8);
-                status |= vxSetNodeUniform(nodObj, "uniQuantInOutInt8Hi_2x8", 1, uniQuantInOutInt8Hi_2x8);
-            }
-            else
-            {
-                vx_uint32 multiply       = (1 << (outfixpoint - infixpoint));
-                vx_uint32 i              = 0;
-
-                for (i = 8; i < 16; i++)
-                {
-                    uniQuantInOutInt8_2x8[i] = multiply;
-                    uniQuantInOutInt8Hi_2x8[i] = multiply;
-                }
-            }
-            status = vxSetNodeUniform(nodObj, "uniQuantInOutInt8_2x8", 1, uniQuantInOutInt8_2x8);
-            status |= vxSetNodeUniform(nodObj, "uniQuantInOutInt8Hi_2x8", 1, uniQuantInOutInt8Hi_2x8);
+            status |= vxSetNodeUniform(nodObj, "input_ZP", 1, &input_ZP);
         }
-        else
+        else if((inDataType == VSI_NN_TYPE_INT8 && outDataType == VSI_NN_TYPE_INT8) && (!is_same_quant_type))
+        {
+            vx_uint32 uniU8SubZP_MulM_2x8[16] = {
+                0x99999999, // TCfg
+                0x44444444, // ASelt
+                0x03020100, 0x07060504, // ABin
+                0xaaaaaaaa, // BSelt
+                0x00000000, 0x00000000, // BBin
+                0x00000400, // AccumType, ConstantType, and PostShift
+                0x00010001, 0x00010001, 0x00010001, 0x00010001,
+                0x00010001, 0x00010001, 0x00010001, 0x00010001 // Constant
+            };
+            vx_uint32 uniU8SubZP_MulM_Hi_2x8[16] = {
+                0x99999999, // TCfg
+                0x44444444, // ASelt
+                0x0b0a0908, 0x0f0e0d0c, // ABin
+                0xaaaaaaaa, // BSelt
+                0x00000000, 0x00000000, // BBin
+                0x00000400, // AccumType, ConstantType, and PostShift
+                0x00010001, 0x00010001, 0x00010001, 0x00010001,
+                0x00010001, 0x00010001, 0x00010001, 0x00010001 // Constant
+            };
+            vx_uint32 uniS16AddOutZP_2x8[16] = {
+                0x55555555, // TCfg
+                0x44444444, // ASelt
+                0x03020100, 0x07060504, // ABin
+                0xaaaaaaaa, // BSelt
+                0x00000000, 0x00000000, // BBin
+                0x00000400, // AccumType, ConstantType, and PostShift
+                0x00010001, 0x00010001, 0x00010001, 0x00010001,
+                0x00010001, 0x00010001, 0x00010001, 0x00010001 // Constant
+            };
+            vx_uint32 uniS16AddOutZP_Hi_2x8[16] = {
+                0x55555555, // TCfg
+                0x44444444, // ASelt
+                0x0b0a0908, 0x0f0e0d0c, // ABin
+                0xaaaaaaaa, // BSelt
+                0x00000000, 0x00000000, // BBin
+                0x00000400, // AccumType, ConstantType, and PostShift
+                0x00010001, 0x00010001, 0x00010001, 0x00010001,
+                0x00010001, 0x00010001, 0x00010001, 0x00010001 // Constant
+            };
+
+            vx_uint32 idx                   = 0;
+            vx_uint32 packed_outputZP[4]    = {0};
+
+            for (idx = 0; idx < 4; idx ++)
+            {
+                vx_uint16  zp = (vx_uint16)(output_ZP & 0xFFFF);
+                packed_outputZP[idx] = (zp << 16) | zp;
+            }
+
+            uniU8SubZP_MulM_2x8[7]    |= postShift;
+            uniU8SubZP_MulM_Hi_2x8[7] |= postShift;
+
+            for (idx = 8; idx < 16; idx ++)
+            {
+                uniU8SubZP_MulM_2x8[idx]    = (vx_uint32)((M0 << 16) | M0);
+                uniU8SubZP_MulM_Hi_2x8[idx] = (vx_uint32)((M0 << 16) | M0);
+            }
+
+            status |= vxSetNodeUniform(nodObj, "uniU8SubZP_MulM_2x8",
+                1, uniU8SubZP_MulM_2x8);
+            status |= vxSetNodeUniform(nodObj, "uniU8SubZP_MulM_Hi_2x8",
+                1, uniU8SubZP_MulM_Hi_2x8);
+            status |= vxSetNodeUniform(nodObj, "uniS16AddOutZP_2x8",
+                1, uniS16AddOutZP_2x8);
+            status |= vxSetNodeUniform(nodObj, "uniS16AddOutZP_Hi_2x8",
+                1, uniS16AddOutZP_Hi_2x8);
+            status |= vxSetNodeUniform(nodObj, "packed_outputZP", 1, packed_outputZP);
+            status |= vxSetNodeUniform(nodObj, "input_ZP", 1, &input_ZP);
+
+        }
+        else if (!is_same_quant_type)
         {
             // uniforms
             uint32_t uniConvertDirUint8Fp32_4x4[16] = {
@@ -643,16 +714,6 @@ vsi_status VX_CALLBACK vxunpoolingInitializer
                 0x00000000, 0x00000000, 0x00000000, 0x00000000,
                 0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
             };
-            vx_uint32 uniConvertFp16toInt8_2x8[16] = {
-                0x11111111, // TCfg
-                0x00000000, // ASelt
-                0x03020100, 0x07060504, // ABin
-                0x11111111, // BSelt
-                0x00000000, 0x00000000, // BBin
-                0x00004400, // AccumType, ConstantType, and PostShift
-                0x00000000, 0x00000000, 0x00000000, 0x00000000,
-                0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
-            };
 
             status |= vxSetNodeUniform(nodObj, "uniConvertInt32toUint8_2x8",
                 1, uniConvertInt32toUint8_2x8);
@@ -676,9 +737,10 @@ vsi_status VX_CALLBACK vxunpoolingInitializer
             }
             else if(outDataType == VSI_NN_TYPE_INT8)
             {
-                status |= vxSetNodeUniform(nodObj, "uniConvertFp16toInt8_2x8",
-                    1, uniConvertFp16toInt8_2x8);
-                status |= vxSetNodeUniform(nodObj, "up_outFlScale_i8", 1, &factorOut);
+                float scale_out_f = 1.0f / scaleOut;
+                float output_ZP_f = (float)output_ZP;
+                status |= vxSetNodeUniform(nodObj, "scaleOut", 1, &scale_out_f);
+                status |= vxSetNodeUniform(nodObj, "outputZp", 1, &output_ZP_f);
             }
             else if(outDataType == VSI_NN_TYPE_INT16)
             {
@@ -740,6 +802,7 @@ vsi_status VX_CALLBACK vxunpoolingInitializer
             0x00000000, 0x00000000, 0x00000000, 0x00000000,
             0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
         };
+        float inputTail = (float)input_ZP * scaleIn * (-1.0f);
 
         shaderParam.globalWorkOffset[0] = 0;
         shaderParam.globalWorkOffset[1] = 0;
@@ -758,7 +821,8 @@ vsi_status VX_CALLBACK vxunpoolingInitializer
         status |= vxSetNodeUniform(nodObj, "uniConvertTrdUint8Fp32_4x4_2", 1, uniConvertTrdUint8Fp32_4x4);
         status |= vxSetNodeUniform(nodObj, "uniConvertFthUint8Fp32_4x4_2", 1, uniConvertFthUint8Fp32_4x4);
         status |= vxSetNodeUniform(nodObj, "uniConvertInt32toUint8_2x8_2", 1, uniConvertInt32toUint8_2x8);
-        status |= vxSetNodeUniform(nodObj, "inputFl_i8", 1, &factorIn);
+        status |= vxSetNodeUniform(nodObj, "scaleIn", 1, &scaleIn);
+        status |= vxSetNodeUniform(nodObj, "inputTail", 1, &inputTail);
     }
     else if(((inDataType == VSI_NN_TYPE_INT16)
         && (outDataType == VSI_NN_TYPE_FLOAT16)

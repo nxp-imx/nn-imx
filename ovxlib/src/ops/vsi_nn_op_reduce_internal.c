@@ -96,6 +96,7 @@ static vsi_status _reduce_internal_op_compute
     }
     else
     {
+        vsi_nn_kernel_param_release( &param );
         return VSI_FAILURE;
 
     }

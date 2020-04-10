@@ -57,6 +57,13 @@ static vsi_status _set_reference_name
     }
 
     status = VSI_SUCCESS;
+    memset(name, 0, sizeof(char) * _NODE_ID_LEN);
+    snprintf(name, sizeof(char) * _NODE_ID_LEN, "uid_%u", node->uid);
+    if(node && node->n)
+    {
+        status = vxSetReferenceName((vx_reference)node->n, name);
+    }
+    TEST_CHECK_STATUS(status, final);
     for(i = 0; i < node->output.num; i++)
     {
         memset(name, 0, sizeof(char) * _NODE_ID_LEN);
@@ -473,9 +480,15 @@ vsi_nn_graph_t * vsi_nn_CreateGraph
             /* Configure driver mem aligned size,
              * driver requests address and tensor size are aligend to 64 bytes. */
             const uint32_t ADDRESS_ALIGN_BYTES = 64;
-            const uint32_t MEMORY_BLOCK_ALIGN_BYTES = 64;
             graph->handle_manager.align_start_size = ADDRESS_ALIGN_BYTES;
-            graph->handle_manager.align_block_size = MEMORY_BLOCK_ALIGN_BYTES;
+            #ifdef VX_WRAP_USER_MEMORY_SIZE_ALIGNMENT
+                graph->handle_manager.align_block_size = (VX_WRAP_USER_MEMORY_SIZE_ALIGNMENT);
+            #else
+            {
+                const uint32_t MEMORY_BLOCK_ALIGN_BYTES = 4096;
+                graph->handle_manager.align_block_size = MEMORY_BLOCK_ALIGN_BYTES;
+            }
+            #endif
             graph->tensor_num = 0;
             graph->node_num = 0;
             graph->ctx = ctx;
@@ -547,6 +560,7 @@ void vsi_nn_ReleaseGraph
         free( ptr );
         *graph = NULL;
     }
+
 } /* vsi_nn_ReleaseGraph() */
 
 /*
@@ -1392,7 +1406,7 @@ void vsi_nn_DumpGraphNodeOutputsEx
 
         if( node->internal_node_wksp ) /* dump internal nodes if any */
         {
-            vsi_nn_dump_internal_node_output(graph, path, filename_prefix,
+            vsi_nn_internal_dump_node_output(graph, path, filename_prefix,
                 force_fp32, node);
         }
 

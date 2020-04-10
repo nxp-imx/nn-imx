@@ -23,6 +23,7 @@
 *****************************************************************************/
 #include <string.h>
 #include <stdlib.h>
+#include <stdarg.h>
 
 #include "vsi_nn_types.h"
 #include "vsi_nn_platform.h"
@@ -37,8 +38,9 @@
 #include "client/vsi_nn_vxkernel.h"
 #include "ops/vsi_nn_op_grucell_ovxlib.h"
 #include "vsi_nn_internal_node.h"
-#include "vsi_nn_rnn.h"
+#include "vsi_nn_rnn_helper.h"
 #include "utils/vsi_nn_tensor_op.h"
+#include "utils/vsi_nn_util.h"
 
 static vsi_nn_internal_tensor_t* create_multiply
     (
@@ -54,10 +56,10 @@ static vsi_nn_internal_tensor_t* create_multiply
     vsi_nn_internal_node_t* tmp_inode = NULL;
 
     memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
-    vsi_nn_internal_node_init_attr(&attr, output_dtype, use_virtual_tensor);
-    tensor1 = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
+    vsi_nn_internal_init_tensor_attr(&attr, output_dtype, use_virtual_tensor);
+    tensor1 = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
 
-    tmp_inode = vsi_nn_new_internal_node(self, VSI_NN_OP_MULTIPLY, 0, 0 );
+    tmp_inode = vsi_nn_internal_new_node(self, VSI_NN_OP_MULTIPLY, 0, 0 );
 
     tmp_inode->inputs[0] = input1;
     tmp_inode->inputs[1] = input2;
@@ -65,7 +67,7 @@ static vsi_nn_internal_tensor_t* create_multiply
     tmp_inode->node->vx_param.overflow_policy = VX_CONVERT_POLICY_SATURATE;
     tmp_inode->node->vx_param.rounding_policy = VX_ROUND_POLICY_TO_NEAREST_EVEN;
     tmp_inode->outputs[0] = tensor1->t;
-    vsi_nn_setup_internal_node_op(self, tmp_inode);
+    vsi_nn_internal_setup_node(self, tmp_inode);
 
     return tensor1;
 }
@@ -96,15 +98,15 @@ static vsi_bool setup_op_shapes
         attr.vtl = FALSE;
         attr.is_const = TRUE;
 
-        output_tensor = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
+        output_tensor = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
         inputs[GRUCELL_INPUT_H_STATE] = output_tensor->t;
     }
 
     if( !outputs[GRUCELL_OUTPUT_H_STATE] )
     {
-        vsi_nn_internal_node_init_attr(&attr,
+        vsi_nn_internal_init_tensor_attr(&attr,
             &outputs[GRUCELL_OUTPUT_OUTPUT]->attr.dtype, TRUE);
-        output_tensor = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
+        output_tensor = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
         outputs[GRUCELL_OUTPUT_H_STATE] = output_tensor->t;
     }
 
@@ -137,7 +139,7 @@ static vsi_status op_compute
     vsi_nn_tensor_t ** outputs
     )
 {
-    return vsi_nn_compute_internal_node( self );
+    return vsi_nn_internal_compute_node( self );
 } /* op_compute() */
 
 static vsi_bool op_check
@@ -159,8 +161,118 @@ static vsi_status op_optimize
     vsi_nn_opt_direction_e direction
     )
 {
-    return vsi_nn_optimize_internal_node( self, direction );
+    return vsi_nn_internal_optimize_node( self, direction );
 } /* op_optimize() */
+
+static vsi_bool op_setup_float
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs
+    )
+{
+    vsi_nn_grucell_ovxlib_param* p = &self->nn_param.grucell_ovxlib;
+    vsi_nn_dtype_t dtype;
+    vsi_bool use_virtual_tensor = TRUE;
+    vsi_nn_internal_node_t* curr = NULL;
+    vsi_nn_internal_tensor_t* tmp_tensor = NULL;
+    vsi_nn_internal_tensor_t* tensor_rt = NULL;
+    vsi_nn_internal_tensor_t* input_hstate = NULL;
+    vsi_nn_internal_tensor_t** splited_tensors = NULL;
+
+    p->local->weights_update = vsi_nn_ConcatTensor(self->graph, 0,
+        inputs[GRUCELL_INPUT_WEIGHT_I2Z], inputs[GRUCELL_INPUT_WEIGHT_H2Z]);
+    p->local->weights_reset = vsi_nn_ConcatTensor(self->graph, 0,
+        inputs[GRUCELL_INPUT_WEIGHT_I2R], inputs[GRUCELL_INPUT_WEIGHT_H2R]);
+    p->local->bias_z_r = vsi_nn_ConcatTensor(self->graph, 0,
+        inputs[GRUCELL_INPUT_BIAS_Z], inputs[GRUCELL_INPUT_BIAS_R]);
+    p->local->weights_z_r = vsi_nn_ConcatTensor(self->graph, 1, p->local->weights_update, p->local->weights_reset);
+    p->local->weights_c = vsi_nn_ConcatTensor(self->graph, 0,
+        inputs[GRUCELL_INPUT_WEIGHT_I2C], inputs[GRUCELL_INPUT_WEIGHT_R2C]);
+
+    p->local->bias_z_r->attr.is_const = TRUE;
+    vsi_nn_SetTensorAttr(p->local->bias_z_r, VSI_NN_TENSOR_ATTR_CONST);
+    p->local->weights_z_r->attr.is_const = TRUE;
+    vsi_nn_SetTensorAttr(p->local->weights_z_r, VSI_NN_TENSOR_ATTR_CONST);
+    p->local->weights_c->attr.is_const = TRUE;
+    vsi_nn_SetTensorAttr(p->local->weights_c, VSI_NN_TENSOR_ATTR_CONST);
+
+    input_hstate = vsi_nn_rnn_create_concat(self, 0,
+        use_virtual_tensor, inputs[GRUCELL_INPUT_INPUT], inputs[GRUCELL_INPUT_H_STATE]);
+
+    dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
+    dtype.vx_type = VSI_NN_TYPE_FLOAT16;
+    tmp_tensor = vsi_nn_rnn_create_tp_fc(self, input_hstate->t,
+        p->local->weights_z_r, p->local->bias_z_r, &dtype, use_virtual_tensor);
+
+    splited_tensors = vsi_nn_create_split(self, tmp_tensor->t, 0, 2, NULL, use_virtual_tensor);
+
+    /* reset Gate activations */
+    tensor_rt = vsi_nn_rnn_create_activation(self,
+                        splited_tensors[1]->t,
+                        p->local->gate_activation,
+                        &splited_tensors[1]->t->attr.dtype,
+                        use_virtual_tensor);
+
+    /* r{t} * h{t-1}*/
+    tensor_rt = vsi_nn_rnn_create_binary_operator(self, VSI_NN_OP_MULTIPLY,
+        tensor_rt->t, inputs[GRUCELL_INPUT_H_STATE], &tensor_rt->t->attr.dtype, use_virtual_tensor);
+
+    /* [x{t}, r{t}] */
+    tmp_tensor = vsi_nn_rnn_create_concat(self, 0, use_virtual_tensor,
+        inputs[GRUCELL_INPUT_INPUT], tensor_rt->t);
+
+    dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
+    dtype.vx_type = VSI_NN_TYPE_FLOAT16;
+    /* W{c} x [x{t}, r{t}] */
+    tmp_tensor = vsi_nn_rnn_create_tp_fc(self, tmp_tensor->t, p->local->weights_c, inputs[GRUCELL_INPUT_BIAS_C],
+        &dtype, use_virtual_tensor);
+
+#define USE_GRUCELL_ACTIVATION
+#ifdef USE_GRUCELL_ACTIVATION
+    curr = vsi_nn_internal_new_node( self, VSI_NN_OP_GRUCELL_ACTIVATION_INTERNAL, 0, 0 );
+    curr->inputs[0] = splited_tensors[0]->t;
+    curr->inputs[1] = tmp_tensor->t;
+    curr->inputs[2] = inputs[GRUCELL_INPUT_H_STATE];
+    curr->outputs[0] = outputs[GRUCELL_OUTPUT_OUTPUT];
+    curr->outputs[1] = outputs[GRUCELL_OUTPUT_H_STATE];
+    vsi_nn_internal_setup_node(self, curr);
+#else
+    {
+    vsi_nn_internal_tensor_t* tensor_zt = NULL;
+    vsi_nn_internal_tensor_t* tensor_ht_ = NULL;
+    /* z{t} */
+    tensor_zt = vsi_nn_rnn_create_activation(self,
+                        splited_tensors[0]->t,
+                        p->local->gate_activation,
+                        &splited_tensors[0]->t->attr.dtype,
+                        use_virtual_tensor);
+    /* h{t_} */
+    tensor_ht_ = vsi_nn_rnn_create_activation(self,
+                        tmp_tensor->t,
+                        p->local->candidate_activation,
+                        &tmp_tensor->t->attr.dtype,
+                        use_virtual_tensor);
+    /* z{t} * h{t-1} + (1 - z{t}) * h{t_} ==> z{t} * (h{t-1} - h{t_}) + h{t_} */
+    tmp_tensor = vsi_nn_rnn_create_binary_operator(self, VSI_NN_OP_SUBTRACT,
+        inputs[GRUCELL_INPUT_H_STATE], tensor_ht_->t, &tmp_tensor->t->attr.dtype, use_virtual_tensor);
+    tmp_tensor = vsi_nn_rnn_create_binary_operator(self, VSI_NN_OP_MULTIPLY,
+        tensor_zt->t, tmp_tensor->t, &tensor_ht_->t->attr.dtype, use_virtual_tensor);
+    curr = vsi_nn_internal_new_node( self, VSI_NN_OP_ADD, 0, 0 );
+    curr->inputs[0] = tmp_tensor->t;
+    curr->inputs[1] = tensor_ht_->t;
+    curr->outputs[0] = outputs[GRUCELL_OUTPUT_OUTPUT];
+    vsi_nn_internal_setup_node(self, curr);
+    }
+
+    curr = vsi_nn_internal_new_node( self, VSI_NN_OP_DATACONVERT, 0, 0 );
+    curr->inputs[0] = outputs[GRUCELL_OUTPUT_OUTPUT];
+    curr->outputs[0] = outputs[GRUCELL_OUTPUT_H_STATE];
+    vsi_nn_internal_setup_node(self, curr);
+#endif
+
+    return TRUE;
+}
 
 static vsi_bool op_setup
     (
@@ -195,20 +307,22 @@ static vsi_bool op_setup
     uint32_t kernel_w = 1;
     int32_t i = 0;
 
-    memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
-    vsi_nn_init_internal_node_wksp( self );
+    if(inputs[GRUCELL_INPUT_INPUT]->attr.dtype.vx_type == VSI_NN_TYPE_FLOAT16
+        && inputs[GRUCELL_INPUT_H_STATE]->attr.dtype.vx_type == VSI_NN_TYPE_FLOAT16
+        && inputs[GRUCELL_INPUT_WEIGHT_I2R]->attr.dtype.vx_type == VSI_NN_TYPE_FLOAT16
+        && inputs[GRUCELL_INPUT_WEIGHT_I2Z]->attr.dtype.vx_type == VSI_NN_TYPE_FLOAT16
+        && inputs[GRUCELL_INPUT_WEIGHT_H2R]->attr.dtype.vx_type == VSI_NN_TYPE_FLOAT16
+        && inputs[GRUCELL_INPUT_WEIGHT_H2Z]->attr.dtype.vx_type == VSI_NN_TYPE_FLOAT16
+        && inputs[GRUCELL_INPUT_WEIGHT_I2C]->attr.dtype.vx_type == VSI_NN_TYPE_FLOAT16
+        && inputs[GRUCELL_INPUT_WEIGHT_R2C]->attr.dtype.vx_type == VSI_NN_TYPE_FLOAT16)
+    {
+        return op_setup_float(self, inputs, outputs);
+    }
 
-    memset( &p->local, 0x00, sizeof( p->local ) );
+    memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
     memset( &attr, 0x00, sizeof( attr ) );
-    p->local.multi_batch = (inputs[GRUCELL_INPUT_INPUT]->attr.size[1] > 1);
-    if (p->local.gate_activation == VSI_NN_ACT_NONE)
-    {
-        p->local.gate_activation = VSI_NN_ACT_SIGMOID;
-    }
-    if (p->activation != VSI_NN_ACT_NONE)
-    {
-        p->local.candidate_activation = p->activation;
-    }
+    p->local->multi_batch = (inputs[GRUCELL_INPUT_INPUT]->attr.size[1] > 1);
+    p->local->candidate_activation = p->activation;
 
     if( inputs[GRUCELL_INPUT_INPUT]->attr.dtype.qnt_type
         != inputs[GRUCELL_INPUT_WEIGHT_I2R]->attr.dtype.qnt_type)
@@ -267,7 +381,7 @@ static vsi_bool op_setup
     else
     {
         /* reshape and transpose input */
-        vsi_nn_rnn_find_best_kernel_size(p->local.multi_batch,
+        vsi_nn_rnn_find_best_kernel_size(p->local->multi_batch,
             inputs[GRUCELL_INPUT_INPUT]->attr.size[0], &kernel_h, &kernel_w);
         input_tensor = vsi_nn_rnn_process_input_for_nn_fc(self, inputs[GRUCELL_INPUT_INPUT],
                                                 kernel_h, kernel_w, use_virtual_tensor);
@@ -303,7 +417,7 @@ static vsi_bool op_setup
     else
     {
         /* reshape and transpose input */
-        vsi_nn_rnn_find_best_kernel_size(p->local.multi_batch,
+        vsi_nn_rnn_find_best_kernel_size(p->local->multi_batch,
             inputs[GRUCELL_INPUT_H_STATE]->attr.size[0], &kernel_h, &kernel_w);
         hstate_input_tensor = vsi_nn_rnn_process_input_for_nn_fc(self,
             inputs[GRUCELL_INPUT_H_STATE], kernel_h, kernel_w, use_virtual_tensor);
@@ -338,7 +452,7 @@ static vsi_bool op_setup
     {
         gate_act_outputs[i] = vsi_nn_rnn_create_activation(self,
                                   gate_fc_outputs[i]->t,
-                                  p->local.gate_activation,
+                                  p->local->gate_activation,
                                   &p->internal_dtype[GRUCELL_QUANTIZE_PARAM_I2R + i],
                                   use_virtual_tensor);
     }
@@ -395,7 +509,7 @@ static vsi_bool op_setup
     {
         vsi_nn_internal_tensor_t* tmp = NULL;
         /* reshape and transpose input */
-        vsi_nn_rnn_find_best_kernel_size(p->local.multi_batch,
+        vsi_nn_rnn_find_best_kernel_size(p->local->multi_batch,
             inputs[GRUCELL_INPUT_INPUT]->attr.size[0], &kernel_h, &kernel_w);
         input_tensor = vsi_nn_rnn_process_input_for_nn_fc(self, inputs[GRUCELL_INPUT_INPUT],
                                                 kernel_h, kernel_w, use_virtual_tensor);
@@ -414,7 +528,7 @@ static vsi_bool op_setup
     {
         /* if the tp support in:fp16,weight:u8,bias:fp32 batch>1, remove this. */
         if ((rh_mul_outputs->t->attr.dtype.vx_type) != (inputs[GRUCELL_INPUT_WEIGHT_R2C]->attr.dtype.vx_type)
-            && (p->local.multi_batch))
+            && (p->local->multi_batch))
         {
             vsi_nn_tensor_t* wei_r2c_tensor = NULL;
 
@@ -444,7 +558,7 @@ static vsi_bool op_setup
     {
         vsi_nn_internal_tensor_t* tmp = NULL;
         /* reshape and transpose input */
-        vsi_nn_rnn_find_best_kernel_size(p->local.multi_batch,
+        vsi_nn_rnn_find_best_kernel_size(p->local->multi_batch,
             rh_mul_outputs->t->attr.size[0], &kernel_h, &kernel_w);
         hstate_input_tensor = vsi_nn_rnn_process_input_for_nn_fc(self, rh_mul_outputs->t,
                                                 kernel_h, kernel_w, use_virtual_tensor);
@@ -470,7 +584,7 @@ static vsi_bool op_setup
     /* Candidate activation */
     cand_act_output = vsi_nn_rnn_create_activation(self,
                                   cand_fc_output->t,
-                                  p->local.candidate_activation,
+                                  p->local->candidate_activation,
                                   &p->internal_dtype[GRUCELL_QUANTIZE_PARAM_I2C],
                                   use_virtual_tensor);
 
@@ -480,7 +594,7 @@ static vsi_bool op_setup
     attr.dim_num = gate_act_outputs[GRUCELL_GATE_Z]->t->attr.dim_num;
     attr.vtl = use_virtual_tensor;
     attr.is_const = TRUE;
-    input_tensor = vsi_nn_new_internal_tensor(self, &attr, 1.0f);
+    input_tensor = vsi_nn_internal_new_tensor(self, &attr, 1.0f);
 
     memset( &attr, 0x00, sizeof(attr) );
     //memset( attr.size, 0, VSI_NN_MAX_DIM_NUM * sizeof(uint32_t));
@@ -489,15 +603,15 @@ static vsi_bool op_setup
     attr.is_const = FALSE;
     attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
     attr.dtype.vx_type = VSI_NN_TYPE_FLOAT16;
-    tmp_tensor = vsi_nn_new_internal_tensor(self, &attr, 0.0f);
+    tmp_tensor = vsi_nn_internal_new_tensor(self, &attr, 0.0f);
 
     /* create internal tensor sub node (1-zt)*c */
-    curr = vsi_nn_new_internal_node( self, VSI_NN_OP_SUBTRACT, 0, 0 );
+    curr = vsi_nn_internal_new_node( self, VSI_NN_OP_SUBTRACT, 0, 0 );
     curr->inputs[0] = input_tensor->t;
     curr->inputs[1] = gate_act_outputs[GRUCELL_GATE_Z]->t;
     curr->outputs[0] = tmp_tensor->t;
 
-    vsi_nn_setup_internal_node_op(self, curr);
+    vsi_nn_internal_setup_node(self, curr);
 
     /* create internal multiply node (1-zt)*c */
     output_tensor = create_multiply(self,
@@ -514,18 +628,18 @@ static vsi_bool op_setup
                      use_virtual_tensor);
 
      /* create internal tensor add node (1-zt)*c + zt*hstate */
-    curr = vsi_nn_new_internal_node( self, VSI_NN_OP_ADD, 0, 0 );
+    curr = vsi_nn_internal_new_node( self, VSI_NN_OP_ADD, 0, 0 );
     curr->inputs[0] = output_tensor->t;
     curr->inputs[1] = tmp_tensor->t;
     curr->outputs[0] = outputs[GRUCELL_OUTPUT_OUTPUT];
 
-    vsi_nn_setup_internal_node_op(self, curr);
+    vsi_nn_internal_setup_node(self, curr);
 
     /* copy output to h_state  */
-    curr = vsi_nn_new_internal_node( self, VSI_NN_OP_DATACONVERT, 0, 0 );
+    curr = vsi_nn_internal_new_node( self, VSI_NN_OP_DATACONVERT, 0, 0 );
     curr->inputs[0] = outputs[GRUCELL_OUTPUT_OUTPUT];
     curr->outputs[0] = outputs[GRUCELL_OUTPUT_H_STATE];
-    vsi_nn_setup_internal_node_op(self, curr);
+    vsi_nn_internal_setup_node(self, curr);
 
     return TRUE;
 } /* op_setup() */
@@ -536,9 +650,33 @@ static vsi_status op_init
     )
 {
     vsi_status status = VSI_SUCCESS;
+    int i = 0;
 
-    self->nn_param.grucell_ovxlib.local.candidate_activation = VSI_NN_ACT_TANH;
-    self->nn_param.grucell_ovxlib.local.gate_activation = VSI_NN_ACT_SIGMOID;
+    vsi_nn_internal_init_node_wksp( self );
+
+    self->nn_param.grucell_ovxlib.local = \
+        (vsi_nn_grucell_ovxlib_lcl_data_t*)malloc(sizeof(vsi_nn_grucell_ovxlib_lcl_data_t));
+    if(self->nn_param.grucell_ovxlib.local)
+    {
+        memset(self->nn_param.grucell_ovxlib.local, 0x00,
+            sizeof(vsi_nn_grucell_ovxlib_lcl_data_t));
+        self->nn_param.grucell_ovxlib.local->candidate_activation = VSI_NN_ACT_TANH;
+        self->nn_param.grucell_ovxlib.local->gate_activation = VSI_NN_ACT_SIGMOID;
+    }
+    else
+    {
+        status = VSI_FAILURE;
+    }
+
+    for(i = 0; i < GRUCELL_QUANTIZE_PARAM_COUNT; i++)
+    {
+        memset(&self->nn_param.grucell_ovxlib.internal_dtype[i], 0x00,
+            sizeof(self->nn_param.grucell_ovxlib.internal_dtype[i]));
+        self->nn_param.grucell_ovxlib.internal_dtype[i].qnt_type = VSI_NN_QNT_TYPE_NONE;
+        self->nn_param.grucell_ovxlib.internal_dtype[i].vx_type = VSI_NN_TYPE_FLOAT16;
+    }
+
+    self->nn_param.grucell_ovxlib.activation = VSI_NN_ACT_TANH;
 
     return status;
 } /* op_init() */
@@ -549,8 +687,17 @@ static vsi_status op_deinit
     )
 {
     vsi_status status = VSI_SUCCESS;
+    vsi_nn_grucell_ovxlib_param* p = &self->nn_param.grucell_ovxlib;
 
-    vsi_nn_deinit_internal_node_wksp( self );
+#define _safe_release_tensor(_t) if(_t){vsi_nn_ReleaseTensor(&(_t));}
+    _safe_release_tensor(p->local->weights_update);
+    _safe_release_tensor(p->local->weights_reset);
+    _safe_release_tensor(p->local->bias_z_r);
+    _safe_release_tensor(p->local->weights_z_r);
+    _safe_release_tensor(p->local->weights_c);
+#undef _safe_release_tensor
+    vsi_nn_internal_deinit_node_wksp( self );
+    vsi_nn_safe_free(self->nn_param.grucell_ovxlib.local);
 
     return status;
 } /* op_deinit() */

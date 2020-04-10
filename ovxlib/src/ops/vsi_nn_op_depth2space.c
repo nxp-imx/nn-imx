@@ -34,6 +34,54 @@
 #include "vsi_nn_log.h"
 #include "platform/vsi_nn_pf_depth2space.h"
 #include "vsi_nn_tensor_util.h"
+#include "utils/vsi_nn_util.h"
+#include "vsi_nn_internal_node.h"
+#include "utils/vsi_nn_math.h"
+
+static vsi_status op_compute
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs
+    )
+{
+    vsi_status status = VSI_FAILURE;
+
+    if (self->nn_param.depth2space.mode == VSI_NN_DEPTH2SPACE_DCR)
+    {
+        status = vsi_nn_depth2space_compute(self, inputs, outputs);
+    }
+    else if (self->nn_param.depth2space.mode == VSI_NN_DEPTH2SPACE_CRD)
+    {
+        status = vsi_nn_internal_compute_node( self );
+    }
+    else
+    {
+        VSILOGE("Unknown depth2space mode.(depth2space)");
+        return status;
+    }
+
+
+    return status;
+} /* op_compute() */
+
+static vsi_status op_optimize
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs,
+    vsi_nn_opt_direction_e direction
+    )
+{
+    if (self->nn_param.depth2space.mode == VSI_NN_DEPTH2SPACE_CRD)
+    {
+        return vsi_nn_internal_optimize_node(self, direction );
+    }
+    else
+    {
+        return VSI_SUCCESS;
+    }
+} /* op_optimize() */
 
 static vsi_bool op_check
     (
@@ -51,6 +99,57 @@ static vsi_bool op_check
     return TRUE;
 } /* op_check() */
 
+static void op_set_depth2space_param_value(vsi_nn_nn_param_t *nn_param,
+                                    vsi_nn_op_t  type_name,
+                                    vsi_nn_depth2space_mode_e   mode,
+                                    vx_uint32   block_size
+                                    )
+{
+    if (type_name == VSI_NN_OP_DEPTH2SPACE_INTERNAL)
+    {
+        nn_param->depth2space_internal.block_size = block_size;
+        nn_param->depth2space_internal.mode = mode;
+    }
+}
+
+static vsi_bool op_set_depth2space_internal
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs,
+    vsi_nn_op_t  type_name
+    )
+{
+    vsi_bool retn = TRUE;
+    vsi_nn_internal_node_t* curr = NULL;
+
+    vsi_nn_internal_init_node_wksp( self );
+
+    curr = vsi_nn_internal_new_node( self, type_name, 0, 0 );
+    op_set_depth2space_param_value(&(curr->node->nn_param), type_name,
+        self->nn_param.depth2space.mode, self->nn_param.depth2space.block_size);
+    curr->inputs[0]  = inputs[0];
+    curr->outputs[0] = outputs[0];
+    retn = vsi_nn_internal_setup_node(self, curr);
+
+    return retn;
+}
+
+static vsi_status op_init
+    (
+    vsi_nn_node_t * self
+    )
+{
+    vsi_status status = VSI_SUCCESS;
+
+    if (vsi_nn_compareVersion(self->graph, 1, 1, 22) == -1)
+    {
+        self->nn_param.depth2space.mode = VSI_NN_DEPTH2SPACE_DCR;
+    }
+
+    return status;
+} /* op_init() */
+
 static vsi_bool op_setup
     (
     vsi_nn_node_t * node,
@@ -58,6 +157,7 @@ static vsi_bool op_setup
     vsi_nn_tensor_t ** outputs
     )
 {
+    vsi_bool ret = vx_true_e;
     uint32_t size = node->nn_param.depth2space.block_size;
     if( VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num )
     {
@@ -67,7 +167,12 @@ static vsi_bool op_setup
         outputs[0]->attr.size[2] = inputs[0]->attr.size[2] / (size * size);
         outputs[0]->attr.size[3] = inputs[0]->attr.size[3];
     }
-    return TRUE;
+
+    if (node->nn_param.depth2space.mode == VSI_NN_DEPTH2SPACE_CRD)
+    {
+        ret = op_set_depth2space_internal(node, inputs, outputs, VSI_NN_OP_DEPTH2SPACE_INTERNAL);
+    }
+    return ret;
 } /* op_setup() */
 
 static vsi_status op_deinit
@@ -79,7 +184,15 @@ static vsi_status op_deinit
     {
         vsi_nn_ReleaseTensor(&(self->nn_param.depth2space.local.block_size_tensor));
     }
-    vsi_nn_op_common_deinit(self);
+
+    if (self->nn_param.depth2space.mode == VSI_NN_DEPTH2SPACE_CRD)
+    {
+        vsi_nn_internal_deinit_node_wksp(self);
+    }
+    else
+    {
+        vsi_nn_op_common_deinit(self);
+    }
 
     return VSI_SUCCESS;
 } /* op_deinit() */
@@ -91,12 +204,12 @@ extern "C" {
 DEF_OP_REG
     (
     /* op_name    */ DEPTH2SPACE,
-    /* init       */ NULL,
-    /* compute    */ vsi_nn_depth2space_compute,
+    /* init       */ op_init,
+    /* compute    */ op_compute,
     /* deinit     */ op_deinit,
     /* check      */ op_check,
     /* setup      */ op_setup,
-    /* optimize   */ NULL,
+    /* optimize   */ op_optimize,
     /* input_num  */ 1,
     /* output_num */ 1
     );

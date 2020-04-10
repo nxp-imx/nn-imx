@@ -34,6 +34,7 @@
 #include "vsi_nn_tensor.h"
 #include "vsi_nn_tensor_util.h"
 #include "client/vsi_nn_vxkernel.h"
+#include "utils/vsi_nn_util.h"
 
 #define _ARG_NUM            (2)
 #define _INPUT_NUM          (3)
@@ -389,6 +390,13 @@ static vsi_bool op_setup
 {
     vsi_nn_fcl_param * p;
     uint32_t i, j;
+
+#ifdef VX_CONVERT_POLICY_WRAP_ENABLE
+    if ( vsi_nn_compareVersion(self->graph, 1, 1, 21) == -1 )
+    {
+        self->vx_param.overflow_policy = VX_CONVERT_POLICY_SATURATE;
+    }
+#endif
 
     if( VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num )
     {

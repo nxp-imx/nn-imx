@@ -64,7 +64,7 @@ static vsi_status op_compute
     vsi_nn_tensor_t ** outputs
     )
 {
-    return vsi_nn_compute_internal_node( self );
+    return vsi_nn_internal_compute_node( self );
 } /* op_compute() */
 
 static vsi_bool op_check
@@ -165,7 +165,7 @@ static vsi_status op_optimize
         p->local.reshaped_output = new_output;
     }
 
-    return vsi_nn_optimize_internal_node( self, direction );
+    return vsi_nn_internal_optimize_node( self, direction );
 } /* op_optimize() */
 
 
@@ -185,7 +185,7 @@ static vsi_status op_deinit
         vsi_nn_ReleaseTensor(&(p->local.reshaped_output));
     }
 
-    vsi_nn_deinit_internal_node_wksp( self );
+    vsi_nn_internal_deinit_node_wksp( self );
     return status;
 } /* op_deinit() */
 
@@ -230,12 +230,12 @@ static vsi_bool op_setup
         return FALSE;
     }
 
-    vsi_nn_init_internal_node_wksp(self);
-    curr = vsi_nn_new_internal_node(self, VSI_NN_OP_SOFTMAX_INTERNAL, 0, 0);
+    vsi_nn_internal_init_node_wksp(self);
+    curr = vsi_nn_internal_new_node(self, VSI_NN_OP_SOFTMAX_INTERNAL, 0, 0);
     curr->inputs[0] = inputs[0];
     curr->outputs[0] = outputs[0];
     curr->node->nn_param.softmax_internal.beta = self->nn_param.softmax.beta;
-    vsi_nn_setup_internal_node_op(self, curr);
+    vsi_nn_internal_setup_node(self, curr);
 
     return TRUE;
 }

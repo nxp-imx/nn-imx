@@ -46,7 +46,7 @@ static vsi_status op_compute
     vsi_nn_tensor_t ** outputs
     )
 {
-    return vsi_nn_compute_internal_node( self );
+    return vsi_nn_internal_compute_node( self );
 } /* op_compute() */
 
 static vsi_bool op_check
@@ -67,7 +67,7 @@ static vsi_status op_deinit
 {
     vsi_status status = VSI_SUCCESS;
 
-    status = vsi_nn_deinit_internal_node_wksp( self );
+    status = vsi_nn_internal_deinit_node_wksp( self );
     return status;
 } /* op_deinit() */
 
@@ -96,35 +96,35 @@ static vsi_bool op_setup
 
     max_raw = *(uint32_t*)&max_value;
 
-    vsi_nn_init_internal_node_wksp(self);
+    vsi_nn_internal_init_node_wksp(self);
 
     if (alpha == 0 && max_raw == VSI_NN_FLOAT32_INF && threshold == 0)
     {
-        curr = vsi_nn_new_internal_node(self, VSI_NN_OP_RELU, 0, 0);
+        curr = vsi_nn_internal_new_node(self, VSI_NN_OP_RELU, 0, 0);
         curr->inputs[0] = inputs[0];
         curr->outputs[0] = outputs[0];
     }
     else if (alpha == 1.0f && max_value == 1.0f && threshold == -1.0f)
     {
-        curr = vsi_nn_new_internal_node(self, VSI_NN_OP_RELU1, 0, 0);
+        curr = vsi_nn_internal_new_node(self, VSI_NN_OP_RELU1, 0, 0);
         curr->inputs[0] = inputs[0];
         curr->outputs[0] = outputs[0];
     }
     else if (alpha == 0 && max_value == 6.0f && threshold == 0)
     {
-        curr = vsi_nn_new_internal_node(self, VSI_NN_OP_RELU6, 0, 0);
+        curr = vsi_nn_internal_new_node(self, VSI_NN_OP_RELU6, 0, 0);
         curr->inputs[0] = inputs[0];
         curr->outputs[0] = outputs[0];
     }
     else if (alpha == 0.1 && max_value == VSI_NN_FLOAT32_INF && threshold == 0)
     {
-        curr = vsi_nn_new_internal_node(self, VSI_NN_OP_LEAKY_RELU, 0, 0);
+        curr = vsi_nn_internal_new_node(self, VSI_NN_OP_LEAKY_RELU, 0, 0);
         curr->inputs[0] = inputs[0];
         curr->outputs[0] = outputs[0];
     }
     else
     {
-        curr = vsi_nn_new_internal_node(self, VSI_NN_OP_RELU_KERAS_INTERNAL, 0, 0);
+        curr = vsi_nn_internal_new_node(self, VSI_NN_OP_RELU_KERAS_INTERNAL, 0, 0);
         curr->inputs[0] = inputs[0];
         curr->outputs[0] = outputs[0];
         curr->node->nn_param.relu_keras_internal.max_value = max_value;
@@ -132,7 +132,7 @@ static vsi_bool op_setup
         curr->node->nn_param.relu_keras_internal.threshold = threshold;
     }
 
-    vsi_nn_setup_internal_node_op(self, curr);
+    vsi_nn_internal_setup_node(self, curr);
 
     return TRUE;
 }

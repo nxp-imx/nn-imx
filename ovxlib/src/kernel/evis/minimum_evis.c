@@ -160,13 +160,13 @@ DEF_KERNEL_INITIALIZER(_minimum_initializer)
         };
     uint8_t     in0_fl     = 0;
     int32_t     src0ZP     = 0;
-    float       src0Scale  = 0;
+    float       src0Scale  = 1.0f;
     uint8_t     in1_fl     = 0;
     int32_t     src1ZP     = 0;
-    float       src1Scale  = 0;
+    float       src1Scale  = 1.0f;
     uint8_t     out_fl     = 0;
     int32_t     dstZP      = 0;
-    float       dstScale   = 0;
+    float       dstScale   = 1.0f;
 
     int32_t shift0 = 0;
     int32_t shift1 = 0;
@@ -183,24 +183,40 @@ DEF_KERNEL_INITIALIZER(_minimum_initializer)
     CHECK_PTR_FAIL_GOTO( attr[2], "Create tensor attr buffer fail.", final );
 
     out_shape  = attr[2]->shape;
-    src0ZP     = attr[0]->asymm.zero_point;
-    src0Scale  = attr[0]->asymm.scale;
-    src1ZP     = attr[1]->asymm.zero_point;
-    src1Scale  = attr[1]->asymm.scale;
-    dstZP      = attr[2]->asymm.zero_point;
-    dstScale   = attr[2]->asymm.scale;
+
     if( attr[0]->quant == VSI_NN_KERNEL_QUANT_DFP )
     {
         in0_fl = attr[0]->dfp.fl;
     }
+    else if( attr[0]->quant == VSI_NN_KERNEL_QUANT_ASYMM
+        || attr[0]->quant == VSI_NN_KERNEL_QUANT_SYMM)
+    {
+        src0ZP     = attr[0]->asymm.zero_point;
+        src0Scale  = attr[0]->asymm.scale;
+    }
+
     if( attr[1]->quant == VSI_NN_KERNEL_QUANT_DFP )
     {
         in1_fl = attr[1]->dfp.fl;
     }
+    else if( attr[1]->quant == VSI_NN_KERNEL_QUANT_ASYMM
+        || attr[1]->quant == VSI_NN_KERNEL_QUANT_SYMM)
+    {
+        src1ZP     = attr[1]->asymm.zero_point;
+        src1Scale  = attr[1]->asymm.scale;
+    }
+
     if( attr[2]->quant == VSI_NN_KERNEL_QUANT_DFP )
     {
         out_fl = attr[2]->dfp.fl;
     }
+    else if( attr[2]->quant == VSI_NN_KERNEL_QUANT_ASYMM
+        || attr[2]->quant == VSI_NN_KERNEL_QUANT_SYMM)
+    {
+        dstZP     = attr[2]->asymm.zero_point;
+        dstScale  = attr[2]->asymm.scale;
+    }
+
     shift0 = in0_fl - out_fl;
     shift1 = in1_fl - out_fl;
 

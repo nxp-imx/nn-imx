@@ -128,6 +128,13 @@ static vsi_bool op_setup
     uint32_t perm[4] = { 0 };
     uint32_t as_shape[4] = { 0 };
 
+#ifdef VX_CONVERT_POLICY_WRAP_ENABLE
+    if ( vsi_nn_compareVersion(self->graph, 1, 1, 21) == -1 )
+    {
+        self->vx_param.overflow_policy = VX_CONVERT_POLICY_SATURATE;
+    }
+#endif
+
     /* TODO: Driver should handle this,
     * Check transpose
     * */

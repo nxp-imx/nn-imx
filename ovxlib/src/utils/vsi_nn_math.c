@@ -112,6 +112,107 @@ void vsi_nn_Transpose
     }
 } /* vsi_nn_Transpose() */
 
+void vsi_nn_Permute
+    (
+    uint8_t  * dst,
+    uint8_t  * data,
+    uint32_t * shape,
+    uint32_t   dim_num,
+    uint32_t * perm,
+    vsi_nn_type_e type
+    )
+{
+    uint32_t unit_bytes, i;
+    uint32_t org_stride[VSI_NN_MAX_DIM_NUM] = {0};
+    uint32_t dst_stride[VSI_NN_MAX_DIM_NUM] = {0};
+    uint32_t dst_shape[VSI_NN_MAX_DIM_NUM] = {0};
+    uint32_t dim_stack[VSI_NN_MAX_DIM_NUM] = {0};
+    uint8_t * in_addr_stack[VSI_NN_MAX_DIM_NUM] = {NULL};
+    uint8_t * out_addr_stack[VSI_NN_MAX_DIM_NUM] = {NULL};
+    uint8_t * in_addr_tmp = NULL;
+    uint8_t * out_addr_tmp = NULL;
+    uint32_t current = 0;
+    vsi_bool back = FALSE;
+    uint32_t layer = dim_num - 1;
+
+    if( NULL == data || NULL == dst || NULL == shape || NULL == perm
+        || 0 == dim_num || dim_num > VSI_NN_MAX_DIM_NUM )
+    {
+        return;
+    }
+    if( 1 == dim_num )
+    {
+        VSILOGW( "Permute error, incorrect dim %d", dim_num );
+        return;
+    }
+
+    for( i = 0; i < dim_num; i ++ )
+    {
+        if( perm[i] >= dim_num )
+        {
+            VSILOGW( "Incorrect perm %d", perm[i] );
+            return;
+        }
+        dst_shape[i] = shape[perm[i]];
+    }
+    unit_bytes = vsi_nn_GetTypeBytes( type );
+    vsi_nn_GetStrideSizeBySize( shape, dim_num, type, org_stride );
+    vsi_nn_GetStrideSizeBySize( dst_shape, dim_num, type, dst_stride );
+
+    in_addr_tmp = data;
+    out_addr_tmp = dst;
+
+    for (;;)
+    {
+        in_addr_stack[current] = in_addr_tmp;
+        out_addr_stack[current] = out_addr_tmp;
+
+        if (layer == 1)
+        {
+            uint32_t x, y;
+            uint8_t* new_out_addr = out_addr_tmp;
+            for (y = 0; y < shape[perm[1]]; y++)
+            {
+                for (x = 0; x < shape[perm[0]]; x++)
+                {
+                    uint8_t* new_in_addr = in_addr_tmp + (y * org_stride[perm[1]] + x * org_stride[perm[0]]);
+                    memcpy(new_out_addr, new_in_addr, unit_bytes);
+                    new_out_addr += unit_bytes;
+                }
+            }
+
+            if (!current) break;
+            current--;
+            layer++;
+            back = TRUE;
+        }
+        else if (!back)
+        {
+            current++;
+            layer--;
+        }
+        else
+        {
+            dim_stack[current]++;
+            if (dim_stack[current] < shape[perm[layer]])
+            {
+                in_addr_tmp += org_stride[perm[layer]];
+                out_addr_tmp += dst_stride[layer];
+                back = FALSE;
+            }
+            else
+            {
+                dim_stack[current] = 0;
+                if (!current) break;
+                current--;
+                layer++;
+                in_addr_tmp = in_addr_stack[current];
+                out_addr_tmp = out_addr_stack[current];
+            }
+        }
+    }
+} /* vsi_nn_Permute() */
+
 void vsi_nn_SqueezeShape
     (
     uint32_t * shape,

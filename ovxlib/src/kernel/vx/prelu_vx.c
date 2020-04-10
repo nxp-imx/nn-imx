@@ -93,6 +93,14 @@ REGISTER_PRELU_OPENVX_KERNEL( prelu )
 {
     vsi_nn_tensor_t * alpha = NULL;
     vx_node node = NULL;
+    int32_t is_per_channel_alpha = 0;
+
+    is_per_channel_alpha = vsi_nn_kernel_param_get_int32(params, "is_per_channel_alpha");
+
+    if (!is_per_channel_alpha)
+    {
+        return NULL;
+    }
 
     alpha = _reshape_to_1d_tensor(graph, inputs[1]);
 

@@ -55,9 +55,7 @@ __kernel void poolingWithArgmax
 //-------------------max pooling with argmax uint8---------------
 
 _viv_uniform int input_ZP;
-_viv_uniform int output_ZP;
 _viv_uniform float inputScale;
-_viv_uniform float outputScale;
 _viv_uniform VXC_512Bits uniConvertUint8ToFp32_4x4;
 _viv_uniform VXC_512Bits uniConvertSubZpUint8Fp32_4x4;
 _viv_uniform VXC_512Bits uniPackHalf2Short_2x8;

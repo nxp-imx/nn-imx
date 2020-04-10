@@ -45,8 +45,8 @@ static vsi_status op_compute
     vsi_nn_tensor_t ** outputs
     )
 {
-    vsi_status status = vsi_nn_compute_internal_node( self );
-    self->n = vsi_nn_get_internal_node_by_uid(self, 1)->node->n;
+    vsi_status status = vsi_nn_internal_compute_node( self );
+    self->n = vsi_nn_internal_get_node_by_uid(self, 1)->node->n;
     return status;
 } /* op_compute() */
 
@@ -69,7 +69,7 @@ static vsi_status op_optimize
     vsi_nn_opt_direction_e direction
     )
 {
-    return vsi_nn_optimize_internal_node( self, direction );
+    return vsi_nn_internal_optimize_node( self, direction );
 } /* op_optimize() */
 
 static vsi_bool op_setup
@@ -86,11 +86,11 @@ static vsi_bool op_setup
 
     p = (vsi_nn_pre_process_param *)&(self->nn_param.pre_process);
 
-    vsi_nn_init_internal_node_wksp( self );
+    vsi_nn_internal_init_node_wksp( self );
 
     if (p->type == VSI_NN_SOURCE_FORMAT_TENSOR)
     {
-        curr = vsi_nn_new_internal_node( self, VSI_NN_OP_PRE_PROCESS_TENSOR, 0, 0 );
+        curr = vsi_nn_internal_new_node( self, VSI_NN_OP_PRE_PROCESS_TENSOR, 0, 0 );
 
         curr->node->nn_param.pre_process_tensor.perm = p->perm;
         curr->node->nn_param.pre_process_tensor.dim_num = p->dim_num;
@@ -98,11 +98,11 @@ static vsi_bool op_setup
         curr->inputs[0] = inputs[PRE_PROCESS_INPUT0];
         curr->outputs[0] = outputs[PRE_PROCESS_OUTPUT];
 
-        vsi_nn_setup_internal_node_op(self, curr);
+        vsi_nn_internal_setup_node(self, curr);
     }
     else if (p->type == VSI_NN_SOURCE_FORMAT_IMAGE_GRAY)
     {
-        curr = vsi_nn_new_internal_node( self, VSI_NN_OP_PRE_PROCESS_GRAY, 0, 0 );
+        curr = vsi_nn_internal_new_node( self, VSI_NN_OP_PRE_PROCESS_GRAY, 0, 0 );
 
         curr->node->nn_param.pre_process_gray.mean = p->norm.mean[0];
         curr->node->nn_param.pre_process_gray.scale = p->norm.scale;
@@ -116,11 +116,11 @@ static vsi_bool op_setup
         curr->inputs[0] = inputs[PRE_PROCESS_INPUT0];
         curr->outputs[0] = outputs[PRE_PROCESS_OUTPUT];
 
-        vsi_nn_setup_internal_node_op(self, curr);
+        vsi_nn_internal_setup_node(self, curr);
     }
     else if (p->type == VSI_NN_SOURCE_FORMAT_IMAGE_RGB)
     {
-        curr = vsi_nn_new_internal_node( self, VSI_NN_OP_PRE_PROCESS_RGB, 0, 0 );
+        curr = vsi_nn_internal_new_node( self, VSI_NN_OP_PRE_PROCESS_RGB, 0, 0 );
 
         if (p->reverse_channel)
         {
@@ -149,11 +149,11 @@ static vsi_bool op_setup
         curr->inputs[0] = inputs[PRE_PROCESS_INPUT0];
         curr->outputs[0] = outputs[PRE_PROCESS_OUTPUT];
 
-        vsi_nn_setup_internal_node_op(self, curr);
+        vsi_nn_internal_setup_node(self, curr);
     }
     else if (p->type == VSI_NN_SOURCE_FORMAT_IMAGE_YUV420)
     {
-        curr = vsi_nn_new_internal_node( self, VSI_NN_OP_PRE_PROCESS_YUV420, 0, 0 );
+        curr = vsi_nn_internal_new_node( self, VSI_NN_OP_PRE_PROCESS_YUV420, 0, 0 );
 
         if (p->reverse_channel)
         {
@@ -184,11 +184,11 @@ static vsi_bool op_setup
         curr->inputs[2] = inputs[PRE_PROCESS_INPUT2];
         curr->outputs[0] = outputs[PRE_PROCESS_OUTPUT];
 
-        vsi_nn_setup_internal_node_op(self, curr);
+        vsi_nn_internal_setup_node(self, curr);
     }
     else if (p->type == VSI_NN_SOURCE_FORMAT_IMAGE_BGRA)
     {
-        curr = vsi_nn_new_internal_node( self, VSI_NN_OP_PRE_PROCESS_BGRA, 0, 0 );
+        curr = vsi_nn_internal_new_node( self, VSI_NN_OP_PRE_PROCESS_BGRA, 0, 0 );
 
         if (p->reverse_channel)
         {
@@ -217,7 +217,7 @@ static vsi_bool op_setup
         curr->inputs[0] = inputs[PRE_PROCESS_INPUT0];
         curr->outputs[0] = outputs[PRE_PROCESS_OUTPUT];
 
-        vsi_nn_setup_internal_node_op(self, curr);
+        vsi_nn_internal_setup_node(self, curr);
     }
     else if (p->type == VSI_NN_SOURCE_FORMAT_IMAGE_RGB888_PLANAR)
     {
@@ -244,9 +244,9 @@ static vsi_bool op_setup
         attr.size[axis] = 1;
         attr.vtl = TRUE;
         attr.is_const = FALSE;
-        output_tensor_group[0] = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
-        output_tensor_group[1] = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
-        output_tensor_group[2] = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
+        output_tensor_group[0] = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
+        output_tensor_group[1] = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
+        output_tensor_group[2] = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
 
         if (p->reverse_channel)
         {
@@ -270,7 +270,7 @@ static vsi_bool op_setup
 
         for (i = 0; i < 3; i++)
         {
-            curr = vsi_nn_new_internal_node( self, VSI_NN_OP_PRE_PROCESS_GRAY, 0, 0 );
+            curr = vsi_nn_internal_new_node( self, VSI_NN_OP_PRE_PROCESS_GRAY, 0, 0 );
 
             curr->node->nn_param.pre_process_gray.mean = mean[i];
             curr->node->nn_param.pre_process_gray.scale = p->norm.scale;
@@ -284,10 +284,10 @@ static vsi_bool op_setup
             curr->inputs[0] = input_tensor_group[i];
             curr->outputs[0] = output_tensor_group[i]->t;
 
-            vsi_nn_setup_internal_node_op(self, curr);
+            vsi_nn_internal_setup_node(self, curr);
         }
 
-        curr = vsi_nn_new_internal_node( self, VSI_NN_OP_CONCAT, 0, 0 );
+        curr = vsi_nn_internal_new_node( self, VSI_NN_OP_CONCAT, 0, 0 );
 
         curr->node->nn_param.concat.axis = axis;
         curr->inputs[0] = tmp_outputs[0]->t;
@@ -295,7 +295,7 @@ static vsi_bool op_setup
         curr->inputs[2] = tmp_outputs[2]->t;
         curr->outputs[0] = outputs[0];
 
-        vsi_nn_setup_internal_node_op(self, curr);
+        vsi_nn_internal_setup_node(self, curr);
     }
     else
     {
@@ -315,7 +315,7 @@ static vsi_status op_deinit
 {
     vsi_status status = VSI_SUCCESS;
 
-    vsi_nn_deinit_internal_node_wksp( self );
+    vsi_nn_internal_deinit_node_wksp( self );
 
     if (self->nn_param.pre_process.local != NULL)
     {

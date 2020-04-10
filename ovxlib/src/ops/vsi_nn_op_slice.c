@@ -51,7 +51,7 @@ static vsi_status op_compute
     vsi_nn_tensor_t ** outputs
     )
 {
-    return vsi_nn_compute_internal_node( self );
+    return vsi_nn_internal_compute_node( self );
 } /* op_compute() */
 
 static vsi_bool op_check
@@ -73,7 +73,7 @@ static vsi_status op_optimize
     vsi_nn_opt_direction_e direction
     )
 {
-    return vsi_nn_optimize_internal_node( self, direction );
+    return vsi_nn_internal_optimize_node( self, direction );
 }
 
 static vsi_bool op_setup
@@ -88,7 +88,7 @@ static vsi_bool op_setup
     uint32_t i;
 
     p = (vsi_nn_slice_param *)&(self->nn_param.slice);
-    vsi_nn_init_internal_node_wksp( self );
+    vsi_nn_internal_init_node_wksp( self );
 
     if( VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num )
     {
@@ -106,7 +106,7 @@ static vsi_bool op_setup
         p->lcl_data->stride_dims[i] = 1;
     }
 
-    curr = vsi_nn_new_internal_node( self, VSI_NN_OP_STRIDED_SLICE, 0, 0 );
+    curr = vsi_nn_internal_new_node( self, VSI_NN_OP_STRIDED_SLICE, 0, 0 );
     curr->node->nn_param.strided_slice.begin_dims = p->lcl_data->begin_dims;
     curr->node->nn_param.strided_slice.begin_dims_num = inputs[0]->attr.dim_num;
     curr->node->nn_param.strided_slice.end_dims = p->lcl_data->end_dims;
@@ -118,7 +118,7 @@ static vsi_bool op_setup
     curr->node->nn_param.strided_slice.shrink_axis_mask = 0;
     curr->inputs[0] = inputs[0];
     curr->outputs[0] = outputs[0];
-    vsi_nn_setup_internal_node_op( self, curr );
+    vsi_nn_internal_setup_node( self, curr );
 
     return TRUE;
 } /* op_setup() */
@@ -160,7 +160,7 @@ static vsi_status op_deinit
         p->lcl_data = NULL;
     }
 
-    vsi_nn_deinit_internal_node_wksp( self );
+    vsi_nn_internal_deinit_node_wksp( self );
 
     return VSI_SUCCESS;
 } /* op_deinit() */

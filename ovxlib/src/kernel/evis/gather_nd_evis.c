@@ -45,6 +45,9 @@ __BEGIN_DECLS
 #define KERNEL_SOURCE_1    "gather_nd"
 #define KERNEL_SOURCE_2    "gather_nd_2d"
 #define KERNEL_SOURCE_3    "gather_nd_3d"
+#define KERNEL_SOURCE_4    "gather_nd_mix"
+#define KERNEL_SOURCE_5    "gather_nd_2d_mix"
+#define KERNEL_SOURCE_6    "gather_nd_3d_mix"
 
  typedef enum
 {
@@ -53,14 +56,14 @@ __BEGIN_DECLS
     _3D
 } vsi_nn_kernel_coord_type_e;
 
-#define HASH_GATHER_ND_KEY(_input0_type, _input1_type, _output_type, _coord_dim) \
-    ((_input0_type << 24) | (_input1_type << 16) | (_output_type << 8) | (_coord_dim))
+#define HASH_GATHER_ND_KEY(_input0_type, _output_type, _coord_dim, _quant_type) \
+    ((_input0_type << 24) | (_output_type << 16) | (_coord_dim << 8) | (_quant_type))
 
 #define HASH_GATHER_ND_SH_KERNEL_NAME(SRC0_TYPE, DST_TYPE, COORD_TYPE) \
     CVIVANTE_NAMESPACE("evis.gather_nd_"#SRC0_TYPE"to"#DST_TYPE#COORD_TYPE)
 
 #define TENSOR_GATHER_ND_KERNELS(IN0_TYPE, IN1_TYPE, OUT_TYPE, COORD_TYPE, SOURCE) \
-    { HASH_GATHER_ND_KEY(IN0_TYPE, IN1_TYPE, OUT_TYPE, COORD_TYPE), \
+    { HASH_GATHER_ND_KEY(IN0_TYPE, OUT_TYPE, COORD_TYPE, 0), \
         HASH_GATHER_ND_SH_KERNEL_NAME(IN0_TYPE, OUT_TYPE, COORD_TYPE), \
         SOURCE },
 
@@ -82,6 +85,27 @@ static const struct {
     TENSOR_GATHER_ND_KERNELS(U8,  I32, U8,  _3D,      KERNEL_SOURCE_3)
     TENSOR_GATHER_ND_KERNELS(I16, I32, I16, _3D,      KERNEL_SOURCE_3)
     TENSOR_GATHER_ND_KERNELS(F16, I32, F16, _3D,      KERNEL_SOURCE_3)
+
+    TENSOR_GATHER_ND_KERNELS(I8,  I32, F16, _1D,      KERNEL_SOURCE_4)
+    TENSOR_GATHER_ND_KERNELS(I16, I32, F16, _1D,      KERNEL_SOURCE_4)
+    TENSOR_GATHER_ND_KERNELS(F16, I32, I8,  _1D,      KERNEL_SOURCE_4)
+    TENSOR_GATHER_ND_KERNELS(F16, I32, I16, _1D,      KERNEL_SOURCE_4)
+    TENSOR_GATHER_ND_KERNELS(U8,  I32, F16, _1D,      KERNEL_SOURCE_4)
+    TENSOR_GATHER_ND_KERNELS(F16, I32, U8,  _1D,      KERNEL_SOURCE_4)
+
+    TENSOR_GATHER_ND_KERNELS(I8,  I32, F16, _2D,      KERNEL_SOURCE_5)
+    TENSOR_GATHER_ND_KERNELS(I16, I32, F16, _2D,      KERNEL_SOURCE_5)
+    TENSOR_GATHER_ND_KERNELS(F16, I32, I8,  _2D,      KERNEL_SOURCE_5)
+    TENSOR_GATHER_ND_KERNELS(F16, I32, I16, _2D,      KERNEL_SOURCE_5)
+    TENSOR_GATHER_ND_KERNELS(U8,  I32, F16, _2D,      KERNEL_SOURCE_5)
+    TENSOR_GATHER_ND_KERNELS(F16, I32, U8,  _2D,      KERNEL_SOURCE_5)
+
+    TENSOR_GATHER_ND_KERNELS(I8,  I32, F16, _3D,      KERNEL_SOURCE_6)
+    TENSOR_GATHER_ND_KERNELS(I16, I32, F16, _3D,      KERNEL_SOURCE_6)
+    TENSOR_GATHER_ND_KERNELS(F16, I32, I8,  _3D,      KERNEL_SOURCE_6)
+    TENSOR_GATHER_ND_KERNELS(F16, I32, I16, _3D,      KERNEL_SOURCE_6)
+    TENSOR_GATHER_ND_KERNELS(U8,  I32, F16, _3D,      KERNEL_SOURCE_6)
+    TENSOR_GATHER_ND_KERNELS(F16, I32, U8,  _3D,      KERNEL_SOURCE_6)
 };
 
 /*
@@ -181,23 +205,66 @@ DEF_KERNEL_INITIALIZER(_gather_nd_initializer)
         {0, 0, 0}
         };
 
-    vsi_nn_kernel_tensor_attr_t * attr[1] = { NULL };
+    vsi_nn_kernel_tensor_attr_t * attr[3] = { NULL };
     int32_t       block_size  = 0;
     int32_t       indices_num = 1;
 
-    attr[0] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[1] );
-    CHECK_PTR_FAIL_GOTO( attr[0], "Create tensor attr buffer fail.", final );
+    int32_t     src0ZP     = 0;
+    float       src0Scale  = 0;
+    int32_t     dstZP      = 0;
+    float       dstScale   = 0;
+
+    uint32_t pack_key = 0;
+
+    attr[0] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[0] );
+    CHECK_PTR_FAIL_GOTO( attr[0], "Create tensor attr buffer fail.", OnError );
+    attr[1] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[1] );
+    CHECK_PTR_FAIL_GOTO( attr[1], "Create tensor attr buffer fail.", OnError );
+    attr[2] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[2] );
+    CHECK_PTR_FAIL_GOTO( attr[2], "Create tensor attr buffer fail.", OnError );
 
     status = vsi_nn_kernel_scalar_read_int32((vsi_nn_kernel_scalar_t)param[3], &block_size);
-    CHECK_STATUS_FAIL_GOTO(status, final );
+    CHECK_STATUS_FAIL_GOTO(status, OnError );
 
-    indices_num = attr[0]->shape->data[1];
-
-    /*shaderParam.global_scale[0]  = 16;
-    if(attr[0]->dtype == I16 || attr[0]->dtype == F16)
+    src0ZP     = attr[0]->asymm.zero_point;
+    src0Scale  = attr[0]->asymm.scale;
+    dstZP      = attr[2]->asymm.zero_point;
+    dstScale   = attr[2]->asymm.scale;
+    if( attr[0]->quant == VSI_NN_KERNEL_QUANT_DFP )
     {
-        shaderParam.global_scale[0]  = 8;
-    }*/
+        if (attr[0]->dfp.fl > 0)
+        {
+            src0Scale = (1.0f / ((float) (1 << attr[0]->dfp.fl)));
+        }
+        else
+        {
+            src0Scale = ((float) (1 << -attr[0]->dfp.fl));
+        }
+    }
+    else if(attr[0]->quant == VSI_NN_KERNEL_QUANT_NONE)
+    {
+        src0Scale = 1;
+    }
+
+    if( attr[2]->quant == VSI_NN_KERNEL_QUANT_DFP )
+    {
+        if (attr[2]->dfp.fl > 0)
+        {
+            dstScale = (float)(1 << attr[2]->dfp.fl);
+        }
+        else
+        {
+            dstScale = (1.0f / (float)(1 << -attr[2]->dfp.fl));
+        }
+        dstScale = 1.0f / dstScale;
+    }
+    else if( attr[2]->quant == VSI_NN_KERNEL_QUANT_NONE )
+    {
+        dstScale = 1;
+    }
+
+    indices_num = attr[1]->shape->data[1];
+
     gpu_param.global_scale[0]  = 1;
     gpu_param.global_scale[1]  = 1;
     gpu_param.global_scale[2]  = 1;
@@ -208,13 +275,94 @@ DEF_KERNEL_INITIALIZER(_gather_nd_initializer)
     gpu_param.global_size[2]   = 1;
 
     status = vsi_nn_kernel_gpu_config( node, &gpu_param );
-    CHECK_STATUS_FAIL_GOTO(status, final);
+    CHECK_STATUS_FAIL_GOTO(status, OnError);
 
-final:
+#define _PACK_SELECT_KEY( IN0_TYPE, OUT_TYPE)    \
+        (IN0_TYPE | (OUT_TYPE << 8))
+
+    pack_key = _PACK_SELECT_KEY( attr[0]->dtype, attr[2]->dtype );
+    {
+        uint16_t M0               = 0;
+        int32_t  postShift        = 0;
+        uint32_t multAndoutZP0[2] = {0};
+        uint32_t multAndoutZP1[2] = {0};
+        gpu_dp_inst_t uniU8MulAndPostShift_0_Lo_2x8 = {{
+                0xdddddddd, // TCfg
+                0x44444444, // ASelt
+                0x13121110, 0x17161514, // ABin
+                0x11111111, // BSelt
+                0x00000000, 0x00000000, // BBin
+                0x00002600, // AccumType, ConstantType, and PostShift
+                0x00000000, 0x00000000, 0x00000000, 0x00000000,
+                0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
+        }, GPU_DP_TYPE_16 };
+
+        gpu_dp_inst_t uniConvertFp16toU8_2x8 = {{
+                0xdddddddd, // TCfg
+                0x44444444, // ASelt
+                0x13121110, 0x17161514, // ABin
+                0x11111111, // BSelt
+                0x00000000, 0x00000000, // BBin
+                0x00002600, // AccumType, ConstantType, and PostShift
+                0x00000000, 0x00000000, 0x00000000, 0x00000000,
+                0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
+        }, GPU_DP_TYPE_16 };
+
+        switch( pack_key )
+        {
+        case _PACK_SELECT_KEY( U8, F16 ):
+        case _PACK_SELECT_KEY( I8, F16 ):
+        case _PACK_SELECT_KEY( I16, F16 ):
+            {
+                gpu_quantize_multiplier_16bit( (double)src0Scale / dstScale, &M0, &postShift);
+                multAndoutZP0[0] = (uint32_t)(M0);
+                multAndoutZP0[1] = (uint32_t)((dstZP << postShift) - src0ZP * M0);
+
+                gpu_dp_inst_update_postshfit( &uniU8MulAndPostShift_0_Lo_2x8, postShift );
+                status = vsi_nn_kernel_gpu_add_param( node,
+                    "uniU8MulAndPostShift_0_Lo_2x8", &uniU8MulAndPostShift_0_Lo_2x8 );
+                status |= vsi_nn_kernel_gpu_add_param( node, "multAndoutZP0", &multAndoutZP0 );
+                CHECK_STATUS_FAIL_GOTO(status, OnError );
+            }
+            break;
+        case _PACK_SELECT_KEY( F16, U8 ):
+        case _PACK_SELECT_KEY( F16, I8 ):
+        case _PACK_SELECT_KEY( F16, I16 ):
+            {
+                int32_t  postShift0       = 0;
+                gpu_quantize_multiplier_16bit( (double)src0Scale / dstScale, &M0, &postShift0);
+
+                multAndoutZP1[0] = (uint32_t)(M0);
+                multAndoutZP1[1] = (uint32_t)((dstZP << postShift0) - src0ZP * M0);
+
+                gpu_dp_inst_update_postshfit( &uniConvertFp16toU8_2x8, postShift0 );
+                status = vsi_nn_kernel_gpu_add_param( node, "multAndoutZP1", &multAndoutZP1 );
+                status |= vsi_nn_kernel_gpu_add_param( node,
+                        "uniConvertFp16toU8_2x8", &uniConvertFp16toU8_2x8 );
+                CHECK_STATUS_FAIL_GOTO(status, OnError );
+            }
+            break;
+        default:
+            break;
+        }
+    }
+#undef _PACK_SELECT_KEY
+
+OnError:
     if (attr[0])
     {
         vsi_nn_kernel_tensor_attr_release( &attr[0] );
         attr[0] = NULL;
+    }
+    if (attr[1])
+    {
+        vsi_nn_kernel_tensor_attr_release( &attr[1] );
+        attr[1] = NULL;
+    }
+    if (attr[2])
+    {
+        vsi_nn_kernel_tensor_attr_release( &attr[2] );
+        attr[2] = NULL;
     }
     return status;
 } /* _gather_nd_initializer() */
@@ -252,7 +400,7 @@ static vsi_status _query_kernel
         coord_type = _3D;
     }
 
-    key = HASH_GATHER_ND_KEY( input0_dtype, I32, output_dtype, coord_type );
+    key = HASH_GATHER_ND_KEY( input0_dtype, output_dtype, coord_type, 0 );
 
     for( i = 0; i < _cnt_of_array(gather_nd_map); i ++ )
     {

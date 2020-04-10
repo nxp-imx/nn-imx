@@ -135,6 +135,13 @@ static vsi_bool op_setup
         inputs[1]->attr.dtype.fmt = VSI_NN_DIM_FMT_NCHW;
     }
 
+#ifdef VX_CONVERT_POLICY_WRAP_ENABLE
+    if ( vsi_nn_compareVersion(self->graph, 1, 1, 21) == -1 )
+    {
+        self->vx_param.overflow_policy = VX_CONVERT_POLICY_SATURATE;
+    }
+#endif
+
     nn_param = &self->nn_param.conv2d;
     vsi_nn_compute_padding(
         inputs[0]->attr.size,

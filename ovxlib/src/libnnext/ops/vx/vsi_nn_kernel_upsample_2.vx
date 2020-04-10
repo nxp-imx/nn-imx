@@ -7,7 +7,6 @@ _viv_uniform VXC_512Bits uniConvertSecFp16Fp32_4x4;
 _viv_uniform int upOutput_ZP;
 _viv_uniform float upOutput_Scale;
 _viv_uniform float reUpOutScale_u8;
-_viv_uniform float up_outFlScale_i8;
 _viv_uniform float up_outFlScale_i16;
 _viv_uniform VXC_512Bits uniConvertInt32toUint8_2x8;
 
@@ -145,7 +144,8 @@ __kernel void unpoolingFp16Fp16_Uint8
     VXC_WriteImage2DArray(dataOut, coordOut, tmpout, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
 }
 
-_viv_uniform VXC_512Bits uniConvertFp16toInt8_2x8;
+_viv_uniform float scaleOut;
+_viv_uniform float outputZp;
 
 __kernel void unpoolingFp16_Int8
     (
@@ -163,9 +163,9 @@ __kernel void unpoolingFp16_Int8
     vxc_uchar8 constAxis;
     vxc_uchar8 axisData;
     vxc_half8 dout;
-    float4 tmpVal1, tmpVal2;
-    int4 tmpData1, tmpData2;
+    vxc_float4 tmpVal0, tmpVal1;
     vxc_char8 result;
+    int4 tmpData1, tmpData2;
 
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);
     VXC_ReadImage2DArray(din, dataIn, coord, VXC_5BITOFFSET_XY(0, 0),\
@@ -181,10 +181,17 @@ __kernel void unpoolingFp16_Int8
     VXC_DP2x8(tmpOut, axisData, dinExp, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), ucharMulShort_8x8_2);
     _viv_asm(COPY, dout, tmpOut, 16);
 
-    half tmpScale;
-    _viv_asm(CONV, tmpScale, up_outFlScale_i8);
-    VXC_DP2x8(result, dout, tmpScale, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1),\
-        uniConvertFp16toInt8_2x8);
+    VXC_DP4x4(tmpVal0, dout, dout, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\
+        uniConvertFstFp16Fp32_4x4);
+    VXC_DP4x4(tmpVal1, dout, dout, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\
+        uniConvertSecFp16Fp32_4x4);
+    tmpVal0 = tmpVal0 * scaleOut + outputZp;
+    tmpVal1 = tmpVal1 * scaleOut + outputZp;
+    tmpData1 = convert_int4_rte(tmpVal0);
+    tmpData2 = convert_int4_rte(tmpVal1);
+    VXC_DP2x8(result, tmpData1, tmpData2, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),\
+        uniConvertInt32toUint8_2x8);
+
     VXC_WriteImage2DArray(dataOut, coordOut, result, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
 
     constAxis = (vxc_uchar8)(2, 3, 2, 3, 2, 3, 2, 3);
@@ -193,8 +200,18 @@ __kernel void unpoolingFp16_Int8
     VXC_DP2x8(tmpOut, axisData, dinExp, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), ucharMulShort_8x8_2);
     coordOut.y += 1;
     _viv_asm(COPY, dout, tmpOut, 16);
-    VXC_DP2x8(result, dout, tmpScale, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1),\
-        uniConvertFp16toInt8_2x8);
+
+    VXC_DP4x4(tmpVal0, dout, dout, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\
+        uniConvertFstFp16Fp32_4x4);
+    VXC_DP4x4(tmpVal1, dout, dout, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\
+        uniConvertSecFp16Fp32_4x4);
+    tmpVal0 = tmpVal0 * scaleOut + outputZp;
+    tmpVal1 = tmpVal1 * scaleOut + outputZp;
+    tmpData1 = convert_int4_rte(tmpVal0);
+    tmpData2 = convert_int4_rte(tmpVal1);
+    VXC_DP2x8(result, tmpData1, tmpData2, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),\
+        uniConvertInt32toUint8_2x8);
+
     VXC_WriteImage2DArray(dataOut, coordOut, result, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
 }
 

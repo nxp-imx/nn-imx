@@ -63,7 +63,7 @@ static vsi_status op_compute
     vsi_nn_tensor_t ** outputs
     )
 {
-    return vsi_nn_compute_internal_node( self );
+    return vsi_nn_internal_compute_node( self );
 } /* op_compute() */
 
 static vsi_bool op_check
@@ -85,7 +85,7 @@ static vsi_status op_optimize
     vsi_nn_opt_direction_e direction
     )
 {
-    return vsi_nn_optimize_internal_node( self, direction );
+    return vsi_nn_internal_optimize_node( self, direction );
 } /* op_optimize() */
 
 static vsi_bool op_setup
@@ -103,7 +103,7 @@ static vsi_bool op_setup
     vsi_nn_internal_tensor_t* output_tensor = NULL;
     vsi_bool use_virtual_tensor = TRUE;
 
-    vsi_nn_init_internal_node_wksp( self );
+    vsi_nn_internal_init_node_wksp( self );
 
     if( self->nn_param.pre_process_tensor.dim_num != inputs[0]->attr.dim_num )
     {
@@ -151,33 +151,33 @@ static vsi_bool op_setup
     if (self->nn_param.pre_process_tensor.local.enable_data_conv == FALSE &&
         self->nn_param.pre_process_tensor.local.enable_perm == FALSE)
     {
-        curr = vsi_nn_new_internal_node( self, VSI_NN_OP_RESHAPE, 0, 0 );
+        curr = vsi_nn_internal_new_node( self, VSI_NN_OP_RESHAPE, 0, 0 );
         curr->node->nn_param.reshape.size = outputs[0]->attr.size;
         curr->node->nn_param.reshape.dim_num = outputs[0]->attr.dim_num;
         curr->inputs[0] = inputs[PRE_PROCESS_TENSOR_INPUT];
         curr->outputs[0] = outputs[PRE_PROCESS_TENSOR_OUTPUT];
 
-        vsi_nn_setup_internal_node_op(self, curr);
+        vsi_nn_internal_setup_node(self, curr);
     }
     else if (self->nn_param.pre_process_tensor.local.enable_data_conv == TRUE &&
         self->nn_param.pre_process_tensor.local.enable_perm == FALSE)
     {
-        curr = vsi_nn_new_internal_node( self, VSI_NN_OP_DATACONVERT, 0, 0 );
+        curr = vsi_nn_internal_new_node( self, VSI_NN_OP_DATACONVERT, 0, 0 );
         curr->inputs[0] = inputs[PRE_PROCESS_TENSOR_INPUT];
         curr->outputs[0] = outputs[PRE_PROCESS_TENSOR_OUTPUT];
 
-        vsi_nn_setup_internal_node_op(self, curr);
+        vsi_nn_internal_setup_node(self, curr);
     }
     else if (self->nn_param.pre_process_tensor.local.enable_data_conv == FALSE &&
         self->nn_param.pre_process_tensor.local.enable_perm == TRUE)
     {
-        curr = vsi_nn_new_internal_node( self, VSI_NN_OP_PERMUTE, 0, 0 );
+        curr = vsi_nn_internal_new_node( self, VSI_NN_OP_PERMUTE, 0, 0 );
         curr->node->nn_param.permute.perm = self->nn_param.pre_process_tensor.perm;
         curr->node->nn_param.permute.dim_num = self->nn_param.pre_process_tensor.dim_num;
         curr->inputs[0] = inputs[PRE_PROCESS_TENSOR_INPUT];
         curr->outputs[0] = outputs[PRE_PROCESS_TENSOR_OUTPUT];
 
-        vsi_nn_setup_internal_node_op(self, curr);
+        vsi_nn_internal_setup_node(self, curr);
     }
     else
     {
@@ -186,21 +186,21 @@ static vsi_bool op_setup
         memcpy( &attr.size, &inputs[PRE_PROCESS_TENSOR_INPUT]->attr.size, sizeof( attr.size ) );
         attr.vtl = use_virtual_tensor;
         attr.is_const = FALSE;
-        output_tensor = vsi_nn_new_internal_tensor( self, &attr, 0.0f );
+        output_tensor = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
 
-        curr = vsi_nn_new_internal_node( self, VSI_NN_OP_DATACONVERT, 0, 0 );
+        curr = vsi_nn_internal_new_node( self, VSI_NN_OP_DATACONVERT, 0, 0 );
         curr->inputs[0] = inputs[PRE_PROCESS_TENSOR_INPUT];
         curr->outputs[0] = output_tensor->t;
 
-        vsi_nn_setup_internal_node_op( self, curr );
+        vsi_nn_internal_setup_node( self, curr );
 
-        curr = vsi_nn_new_internal_node( self, VSI_NN_OP_PERMUTE, 0, 0 );
+        curr = vsi_nn_internal_new_node( self, VSI_NN_OP_PERMUTE, 0, 0 );
         curr->node->nn_param.permute.perm = self->nn_param.pre_process_tensor.perm;
         curr->node->nn_param.permute.dim_num = self->nn_param.pre_process_tensor.dim_num;
         curr->inputs[0] = output_tensor->t;
         curr->outputs[0] = outputs[PRE_PROCESS_TENSOR_OUTPUT];
 
-        vsi_nn_setup_internal_node_op(self, curr);
+        vsi_nn_internal_setup_node(self, curr);
     }
 
     return ret;
@@ -213,7 +213,7 @@ static vsi_status op_deinit
 {
     vsi_status status = VSI_SUCCESS;
 
-    vsi_nn_deinit_internal_node_wksp( self );
+    vsi_nn_internal_deinit_node_wksp( self );
 
     return status;
 } /* op_deinit() */

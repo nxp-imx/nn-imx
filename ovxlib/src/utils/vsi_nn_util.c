@@ -221,6 +221,10 @@ uint32_t vsi_nn_GetStrideSizeBySize
         total_bytes *= size[i];
     }
     total_bytes *= size[0];
+    for( i = dim_num; i < VSI_NN_MAX_DIM_NUM; i ++ )
+    {
+        stride[i] = total_bytes;
+    }
     return total_bytes;
 } /* vsi_nn_GetStrideSizeBySize() */
 
@@ -1190,4 +1194,33 @@ int32_t vsi_nn_compareVersion
     }
 
     return 0;
+}
+
+float vsi_nn_activation
+    (
+    float value,
+    vsi_nn_activation_e activation
+    )
+{
+    switch(activation)
+    {
+        case VSI_NN_ACT_NONE:
+            return value;
+        case VSI_NN_ACT_RELU:
+            return value < 0.f ? 0.f : value;
+        case VSI_NN_ACT_RELU6:
+            return vsi_nn_max(0.f, vsi_nn_min(value, 6.f));
+        case VSI_NN_ACT_TANH:
+            return (float)tanh(value);
+        case VSI_NN_ACT_SIGMOID:
+            return (float)(1.0f / (1.0f + exp(-value)));
+        case VSI_NN_ACT_HARD_SIGMOID:
+            value = value * 0.2f + 0.5f;
+            return vsi_nn_max(0.f, vsi_nn_min(value, 1.f));
+        default:
+            VSILOGE("Unsupported activation: %d\n", activation);
+            exit(1);
+    }
+
+    return value;
 }

@@ -141,6 +141,14 @@ vsi_status vsi_nn_kernel_backend_init( void )
 void vsi_nn_kernel_backend_deinit()
 {
     vsi_nn_hashmap_t* backends = _backends();
+    vsi_nn_hashmap_item_t* p = vsi_nn_hashmap_iter( backends, NULL );
+    vsi_nn_hashmap_item_t* next;
+    while( p )
+    {
+        next = vsi_nn_hashmap_iter( backends, p );
+        free( p->data );
+        p = next;
+    }
     vsi_nn_hashmap_release( &backends );
 } /* vsi_nn_kernel_backend_deinit() */
 

@@ -21,7 +21,7 @@ _viv_uniform VXC_512Bits uniConvertFthInt8Fp32_4x4;
 _viv_uniform float inOut_fl_scale;
 _viv_uniform float output_fl_scale;
 
-__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void vxcInstanceNormMeanVari_i8(
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_meanvari_I8(
     image2d_array_t input,
     image2d_array_t output,
               float eps,
@@ -80,7 +80,7 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void vxcInstanceNormMea
     }
 }
 
-__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void vxcInstanceNormMeanVariI8_rsHc(
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_meanvari_I8_2D(
     image2d_array_t input,
     image2d_array_t output,
               float eps,
@@ -143,12 +143,12 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void vxcInstanceNormMea
     }
 }
 
-__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void vxcInstanceNormI8_fp16(
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_I8toF16(
     image2d_array_t input,
     image2d_array_t bias,
     image2d_array_t scale,
-    image2d_array_t output,
     image2d_array_t meanVari,
+    image2d_array_t output,
               float eps,
               int rsFlg)
 {
@@ -224,12 +224,12 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void vxcInstanceNormI8_
     }
 }
 
-__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void vxcInstanceNormI8Fp16_rsHc(
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_I8toF16_2D(
     image2d_array_t input,
     image2d_array_t bias,
     image2d_array_t scale,
-    image2d_array_t output,
     image2d_array_t meanVari,
+    image2d_array_t output,
               float eps,
               int rsFlg)
 {
@@ -306,12 +306,12 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void vxcInstanceNormI8F
     }
 }
 
-__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void vxcInstanceNorm_I8(
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_I8toI8(
     image2d_array_t input,
     image2d_array_t bias,
     image2d_array_t scale,
-    image2d_array_t output,
     image2d_array_t meanVari,
+    image2d_array_t output,
               float eps,
               int rsFlg)
 {
@@ -376,12 +376,12 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void vxcInstanceNorm_I8
     }
 }
 
-__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void vxcInstanceNormI8_rsHc(
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_I8toI8_2D(
     image2d_array_t input,
     image2d_array_t bias,
     image2d_array_t scale,
-    image2d_array_t output,
     image2d_array_t meanVari,
+    image2d_array_t output,
               float eps,
               int rsFlg)
 {
