@@ -58,6 +58,11 @@ class NpuActivationWorkload : public TNpuWorkload<ActivationQueueDescriptor, Dat
             // Add beta operand
             inOperandIds.push_back(this->AddOperandAndSetValue(m_B));
         }
+        if (ActivationFunction::Linear == m_Function) {
+            std::vector<uint32_t> shape({1});
+            inOperandIds.push_back(this->AddOperandAndSetValue(shape, armnn::DataType::Float32, &m_A));
+            inOperandIds.push_back(this->AddOperandAndSetValue(shape, armnn::DataType::Float32, &m_B));
+        }
 
         // Add output operand
         std::vector<uint32_t> outOperandIds;
@@ -110,6 +115,11 @@ class NpuActivationWorkload : public TNpuWorkload<ActivationQueueDescriptor, Dat
                 break;
             case ActivationFunction::TanH:
                 this->AddOperation(nnrt::OperationType::TANH, inSize, inPtr, outSize, outPtr);
+                break;
+            case ActivationFunction::Linear:
+                {
+                   this->AddOperation(nnrt::OperationType::LINEAR, inSize, inPtr, outSize, outPtr);
+                }
                 break;
             default:
                 BOOST_LOG_TRIVIAL(error) << "Unsupported Activation Function.";

@@ -302,21 +302,25 @@ bool NpuLayerSupport::IsActivationSupported(const TensorInfo& input,
                                   "Npu activation: input and output shapes are of different rank.");
 
     struct ActivationFunctionSupported : public Rule {
-        ActivationFunctionSupported(const ActivationDescriptor& desc) {
+        ActivationFunctionSupported(const ActivationDescriptor& desc, const TensorInfo& input) {
             switch (desc.m_Function) {
                 case ActivationFunction::Abs:
                 case ActivationFunction::BoundedReLu:
                 case ActivationFunction::LeakyReLu:
-                // case ActivationFunction::Linear:
                 case ActivationFunction::ReLu:
                 case ActivationFunction::Sigmoid:
                 case ActivationFunction::SoftReLu:
                 case ActivationFunction::Sqrt:
-                // case ActivationFunction::Square:
+                case ActivationFunction::Square:
                 case ActivationFunction::TanH: {
                     m_Res = true;
                     break;
                 }
+                case ActivationFunction::Linear:{
+                    std::array<DataType, 1> supportedTypes = {DataType::Float32};
+                    m_Res = TypeAnyOf(input, supportedTypes)();
+                }
+                break;
                 default: {
                     m_Res = false;
                     break;
@@ -326,7 +330,7 @@ bool NpuLayerSupport::IsActivationSupported(const TensorInfo& input,
     };
 
     // Function is supported
-    supported &= CheckSupportRule(ActivationFunctionSupported(descriptor),
+    supported &= CheckSupportRule(ActivationFunctionSupported(descriptor, input),
                                   reasonIfUnsupported,
                                   "Npu activation: function not supported.");
 
