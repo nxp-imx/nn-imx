@@ -206,6 +206,8 @@ inline const char* get_operation_string(OperationType type) {
             return "detection_postprocessing";
         case OperationType::GENERATE_PROPOSALS:
             return "generate_proposals";
+        case OperationType::CAST:
+            return "cast";
         default:
             return nullptr;
     }

@@ -165,6 +165,7 @@ NnApiInterpreter::NnApiInterpreter() {
     REGISTER_OP(TILE);
     REGISTER_OP(PAD_V2);
     REGISTER_OP(DATA_CONVERT);
+    REGISTER_OP(CAST);
 
 /*customer Op*/
 #undef REGISTER_OP
@@ -2177,6 +2178,7 @@ DECLARE_SAMPLE_OP(SELECT, 3, 1, SelectOperation)
 DECLARE_SAMPLE_OP(SIN, 1, 1, SinOperation)
 DECLARE_SAMPLE_OP(AXIS_ALIGNED_BBOX_TRANSFORM, 4, 1, AxisAlignedBBoxTransformOperation)
 DECLARE_SAMPLE_OP(DATA_CONVERT, 1, 1, DataConvertOperation)
+DECLARE_SAMPLE_OP(CAST, 1, 1, CastOperation)
 
 #undef DECLARE_SAMPLE_OP
 

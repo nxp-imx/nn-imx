@@ -90,7 +90,6 @@ enum class OperationType: uint32_t {
     INSTANCE_NORMALIZATION = INSTANCE_NORM,
 
     DATA_CONVERT,
-    CAST = DATA_CONVERT,
 
     RESHAPE,
     SQUEEZE,
@@ -199,6 +198,7 @@ enum class OperationType: uint32_t {
     PAD_V2,
 
     LINEAR, // A_TIMES_B_PLUS_C
+    CAST,
 };
 
 enum class OperandType: uint8_t {

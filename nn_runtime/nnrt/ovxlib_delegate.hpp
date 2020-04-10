@@ -268,6 +268,7 @@ class OvxlibDelegate
         REGISTER_OP(DATA_CONVERT);
         REGISTER_OP(PAD_V2);
         REGISTER_OP(LINEAR);
+        REGISTER_OP(CAST);
 #undef  REGISTER_OP
 
     private:
