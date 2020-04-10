@@ -135,6 +135,17 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
                          (isConstantTensor(bias) && isConstantTensor(weight));
             break;
         }
+        case OperationType::ADD:
+        case OperationType::SUB:
+        case OperationType::MUL:
+        case OperationType::DIV: {
+            auto input0 = model.operands[operation.inputs[0]];
+            auto input1 = model.operands[operation.inputs[1]];
+            if (isConstantTensor(input0) && isConstantTensor(input1)) {
+                isSupport &= false;
+            }
+            break;
+        }
         case OperationType::DEPTHWISE_CONV_2D: {
             auto kernelDim = model.operands[operation.inputs[1]].dimensions;
             if (kernelDim[0] == 1) {
@@ -493,11 +504,7 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
     }
 
     // Overall check
-    std::vector<OperationType> whiteList = {OperationType::ADD,
-                                            OperationType::SUB,
-                                            OperationType::MUL,
-                                            OperationType::DIV,
-                                            OperationType::MAXIMUM,
+    std::vector<OperationType> whiteList = {OperationType::MAXIMUM,
                                             OperationType::MINIMUM,
                                             OperationType::CONCATENATION,
                                             OperationType::CONV_2D,
