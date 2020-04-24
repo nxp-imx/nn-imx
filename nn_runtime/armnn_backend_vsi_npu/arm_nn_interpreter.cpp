@@ -423,7 +423,7 @@ OperationPtr Armnn_Interpreter::map_CONV_2D(Model* model,
     /* set default dilation value */
     conv2d->dilations[0] = 1;
     conv2d->dilations[1] = 1;
-    conv2d->setVxParam(OverflowPolicy::WRAP, RoundingPolicy::TO_ZERO, Rounding::FLOOR);
+    conv2d->setVxParam(OverflowPolicy::SATURATE, RoundingPolicy::TO_ZERO, Rounding::FLOOR);
     truncateOperationIOs(model, operation, 3, 1);
     return std::dynamic_pointer_cast<Operation>(conv2d);
 }
@@ -442,7 +442,7 @@ OperationPtr Armnn_Interpreter::map_DECONV_2D(Model* model,
     deconv2d->strides[0] = inputs[7]->scalar.int32;
     deconv2d->strides[1] = inputs[8]->scalar.int32;
     deconv2d->setDataLayout(DataLayout(inputs[9]->scalar.int32));
-    deconv2d->setVxParam(OverflowPolicy::WRAP, RoundingPolicy::TO_ZERO, Rounding::FLOOR);
+    deconv2d->setVxParam(OverflowPolicy::SATURATE, RoundingPolicy::TO_ZERO, Rounding::FLOOR);
     truncateOperationIOs(model, operation, 3, 1);
     return std::dynamic_pointer_cast<Operation>(deconv2d);
 }
@@ -472,7 +472,7 @@ OperationPtr Armnn_Interpreter::map_DEPTHWISE_CONV_2D(Model* model,
         conv2d->multiplier = inputs[6]->scalar.int32;
         resetFusedType(model, operation, 7);
     }
-    conv2d->setVxParam(OverflowPolicy::WRAP, RoundingPolicy::TO_ZERO, Rounding::FLOOR);
+    conv2d->setVxParam(OverflowPolicy::SATURATE, RoundingPolicy::TO_ZERO, Rounding::FLOOR);
     truncateOperationIOs(model, operation, 3, 1);
     return std::dynamic_pointer_cast<Operation>(conv2d);
 }
@@ -498,7 +498,7 @@ OperationPtr Armnn_Interpreter::map_FULLY_CONNECTED(Model* model,
     inputs[0]->dimensions[1] *= tmp;
     resetFusedType(model, operation, 3);
     truncateOperationIOs(model, operation, 3, 1);
-    fc->setVxParam(OverflowPolicy::WRAP, RoundingPolicy::TO_ZERO, Rounding::FLOOR);
+    fc->setVxParam(OverflowPolicy::SATURATE, RoundingPolicy::TO_ZERO, Rounding::FLOOR);
     return std::dynamic_pointer_cast<Operation>(fc);
 }
 
@@ -568,7 +568,7 @@ OperationPtr Armnn_Interpreter::map_AVERAGE_POOL_2D(Model* model,
         assert(false);
     }
     pool->poolMode = PoolMode::VALID;
-    pool->setVxParam(OverflowPolicy::WRAP, RoundingPolicy::TO_ZERO, pool->roundType);
+    pool->setVxParam(OverflowPolicy::SATURATE, RoundingPolicy::TO_ZERO, pool->roundType);
     truncateOperationIOs(model, operation, 1, 1);
     return pool;
 }
@@ -594,7 +594,7 @@ OperationPtr Armnn_Interpreter::map_MAX_POOL_2D(Model* model,
     } else {
         assert(false);
     }
-    pool->setVxParam(OverflowPolicy::WRAP, RoundingPolicy::TO_ZERO, pool->roundType);
+    pool->setVxParam(OverflowPolicy::SATURATE, RoundingPolicy::TO_ZERO, pool->roundType);
     truncateOperationIOs(model, operation, 1, 1);
     return pool;
 }
@@ -860,7 +860,7 @@ OperationPtr Armnn_Interpreter::map_L2_POOL_2D(Model* model,
         NNRT_LOGE_PRINT("Number of input parameter not valid");
         assert(false);
     }
-    pool->setVxParam(OverflowPolicy::WRAP, RoundingPolicy::TO_ZERO, pool->roundType);
+    pool->setVxParam(OverflowPolicy::SATURATE, RoundingPolicy::TO_ZERO, pool->roundType);
     truncateOperationIOs(model, operation, 1, 1);
     return pool;
 }
