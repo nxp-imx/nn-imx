@@ -825,6 +825,9 @@
     <ClCompile Include="src\kernel\cl\gather_nd_cl.c">
       <ObjectFileName>$(IntDir)\src\kernel\cl\gather_nd_cl.o</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="src\kernel\cl\matrixmul_cl.c">
+      <ObjectFileName>$(IntDir)\src\kernel\cl\matrixmul_cl.o</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="src\kernel\cl\instance_normalization_cl.c">
       <ObjectFileName>$(IntDir)\src\kernel\cl\instance_normalization_cl.o</ObjectFileName>
     </ClCompile>
@@ -872,6 +875,9 @@
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\gather_nd_cpu.c">
       <ObjectFileName>$(IntDir)\src\kernel\cpu\gather_nd_cpu.o</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\kernel\cpu\matrixmul_cpu.c">
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\matrixmul_cpu.o</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\depth2space_internal_cpu.c">
       <ObjectFileName>$(IntDir)\src\kernel\cpu\depth2space_internal_cpu.o</ObjectFileName>
@@ -932,6 +938,9 @@
     </ClCompile>
     <ClCompile Include="src\kernel\evis\gather_nd_evis.c">
       <ObjectFileName>$(IntDir)\src\kernel\evis\gather_nd_evis.o</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\kernel\evis\matrixmul_evis.c">
+      <ObjectFileName>$(IntDir)\src\kernel\evis\matrixmul_evis.o</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\depth2space_internal_evis.c">
       <ObjectFileName>$(IntDir)\src\kernel\evis\depth2space_internal_evis.o</ObjectFileName>
@@ -1049,9 +1058,6 @@
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_lstmunit_activation.c">
       <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\vsi_nn_kernel_lstmunit_activation.o</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_matrixmul.c">
-      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\vsi_nn_kernel_matrixmul.o</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_poolwithargmax.c">
       <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\vsi_nn_kernel_poolwithargmax.o</ObjectFileName>

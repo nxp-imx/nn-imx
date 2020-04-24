@@ -3,7 +3,7 @@
 /********************gemm transposeB fp16 fp16 to fp16*************************/
 _viv_uniform VXC_512Bits uniFp16MulFp16AddtoFp32_dp8x2;
 
-__kernel void gemmTransBFp16Fp16toFp16(image2d_array_t inputA,
+__kernel void gemm_transb_F16F16toF16(image2d_array_t inputA,
                         image2d_array_t inputB,
                         image2d_array_t output,
                                     int transposeA,

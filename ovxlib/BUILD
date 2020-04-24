@@ -283,7 +283,6 @@ cc_library(
         "src/libnnext/ops/kernel/vsi_nn_kernel_space2batch.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_space2depth.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_imageprocess.c",
-        "src/libnnext/ops/kernel/vsi_nn_kernel_matrixmul.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_layernormalize.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_reduce.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_signalframe.c",
