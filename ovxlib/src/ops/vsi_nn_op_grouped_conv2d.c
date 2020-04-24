@@ -218,6 +218,13 @@ static vsi_bool op_setup
     /* TODO: Driver should handle this,
     * Check transpose
     * */
+#ifdef VX_CONVERT_POLICY_WRAP_ENABLE
+    if ( vsi_nn_compareVersion(self->graph, 1, 1, 21) == -1 )
+    {
+        self->vx_param.overflow_policy = VX_CONVERT_POLICY_SATURATE;
+    }
+#endif
+
     if( VSI_NN_DIM_FMT_NHWC == inputs[1]->attr.dtype.fmt &&
         VSI_NN_TYPE_VDATA != inputs[1]->attr.dtype.vx_type )
     {

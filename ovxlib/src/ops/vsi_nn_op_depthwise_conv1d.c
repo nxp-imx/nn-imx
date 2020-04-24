@@ -98,6 +98,13 @@ static vsi_bool op_setup
 {
     vsi_nn_depthwise_conv1d_param* p = &self->nn_param.depthwise_conv1d;
 
+#ifdef VX_CONVERT_POLICY_WRAP_ENABLE
+    if ( vsi_nn_compareVersion(self->graph, 1, 1, 21) == -1 )
+    {
+        self->vx_param.overflow_policy = VX_CONVERT_POLICY_SATURATE;
+    }
+#endif
+
     if( VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num )
     {
         outputs[0]->attr.size[0] = vsi_nn_ComputeFilterSize
