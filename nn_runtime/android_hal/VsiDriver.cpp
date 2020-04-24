@@ -242,6 +242,14 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
             }
             break;
         }
+
+        case OperationType::HASHTABLE_LOOKUP: {
+            auto& value_tensor = model.operands[operation.inputs[2]];
+
+            // ONLY support 2-D value tensor
+            isSupport &= (2 == value_tensor.dimensions.size());
+            break;
+        }
         // to-do: check operand with operation
         // API 29 newly added operataion
         case OperationType::ABS: {
