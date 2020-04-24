@@ -191,8 +191,8 @@ ARMNN_AUTO_TEST_CASE(UnbiasedDepthwiseConvolution2dUint8Nhwc,
                      false,
                      DataLayout::NHWC)
 ARMNN_AUTO_TEST_CASE(DepthwiseConvolution2dDepthNhwc, DepthwiseConvolution2dDepthNhwcTest, true)
-// ARMNN_AUTO_TEST_CASE(SimpleDepthwiseConvolution2d3x3Dilation3x3Nhwc,
-//                      SimpleDepthwiseConvolution2d3x3Dilation3x3NhwcTest)
+ARMNN_AUTO_TEST_CASE(SimpleDepthwiseConvolution2d3x3Dilation3x3Nhwc,
+                     SimpleDepthwiseConvolution2d3x3Dilation3x3NhwcTest)
 
 // ARMNN_AUTO_TEST_CASE(DepthwiseConvolution2d3x3Dilation3x3,
 //                      DepthwiseConvolution2d3x3Dilation3x3Test<DataType::Float32,
@@ -209,11 +209,11 @@ ARMNN_AUTO_TEST_CASE(DepthwiseConvolution2dDepthNhwc, DepthwiseConvolution2dDept
 //                              <DataType::QuantisedAsymm8, DataType::Signed32>,
 //                      false,
 //                      DataLayout::NCHW)
-// ARMNN_AUTO_TEST_CASE(DepthwiseConvolution2d3x3Dilation3x3NhwcUint8,
-//                      DepthwiseConvolution2d3x3Dilation3x3Test
-//                              <DataType::QuantisedAsymm8, DataType::Signed32>,
-//                      false,
-//                      DataLayout::NHWC)
+ARMNN_AUTO_TEST_CASE(DepthwiseConvolution2d3x3Dilation3x3NhwcUint8,
+                     DepthwiseConvolution2d3x3Dilation3x3Test
+                             <DataType::QuantisedAsymm8, DataType::Signed32>,
+                     false,
+                     DataLayout::NHWC)
 // ARMNN_AUTO_TEST_CASE(DepthwiseConvolution2d3x3Dilation3x3Int16,
 //                      DepthwiseConvolution2d3x3Dilation3x3Test
 //                              <DataType::QuantisedSymm16, DataType::Signed32>,
@@ -225,66 +225,56 @@ ARMNN_AUTO_TEST_CASE(DepthwiseConvolution2dDepthNhwc, DepthwiseConvolution2dDept
 //                      false,
 //                      DataLayout::NHWC)
 
-// ARMNN_AUTO_TEST_CASE(DepthwiseConvolution2d2x3x3Dilation3x3,
-//                      DepthwiseConvolution2d2x3x3Dilation3x3Test
-//                              <DataType::Float32, DataType::Float32>,
-//                      false,
-//                      DataLayout::NCHW)
-// ARMNN_AUTO_TEST_CASE(DepthwiseConvolution2d2x3x3Dilation3x3Nhwc,
-//                      DepthwiseConvolution2d2x3x3Dilation3x3Test<DataType::Float32,
-//                      DataType::Float32>,test/NpuLayerTests.cpp
-//                      false,
-//                      DataLayout::NHWC)
+ARMNN_AUTO_TEST_CASE(DepthwiseConvolution2d2x3x3Dilation3x3,
+                     DepthwiseConvolution2d2x3x3Dilation3x3Test
+                             <DataType::Float32, DataType::Float32>,
+                     false,
+                     DataLayout::NCHW)
+ARMNN_AUTO_TEST_CASE(DepthwiseConvolution2d2x3x3Dilation3x3Nhwc,
+                     DepthwiseConvolution2d2x3x3Dilation3x3Test<DataType::Float32,
+                     DataType::Float32>,
+                     false,
+                     DataLayout::NHWC)
 // ARMNN_AUTO_TEST_CASE(DepthwiseConvolution2d2x3xtest/NpuLayerTests.cpp
 //                      DepthwiseConvolution2d2x3xtest/NpuLayerTests.cpp
-//                              <DataType::test/NpuLayerTests.cpp32>,
+//                              <DataType::Float32>,
 //                      false,
 //                      DataLayout::NCHW)
-// ARMNN_AUTO_TEST_CASE(DepthwiseConvolution2d2x3x3Dilation3x3NhwcUint8,
-//                      DepthwiseConvolution2d2x3x3Dilation3x3Test
-//                              <DataType::QuantisedAsymm8, DataType::Signed32>,
-//                      false,
-//                      DataLayout::NHWC)
-// ARMNN_AUTO_TEST_CASE(DepthwiseConvolution2d2x3x3Dilation3x3Int16,
-//                      DepthwiseConvolution2d2x3x3Dilation3x3Test
-//                              <DataType::QuantisedSymm16, DataType::Signed32>,
-//                      false,
-//                      DataLayout::NCHW)
-// ARMNN_AUTO_TEST_CASE(DepthwiseConvolution2d2x3x3Dilation3x3NhwcInt16,
-//                      DepthwiseConvolution2d2x3x3Dilation3x3Test
-//                              <DataType::QuantisedSymm16, DataType::Signed32>,
-//                      false,
-//                      DataLayout::NHWC)
+ARMNN_AUTO_TEST_CASE(DepthwiseConvolution2d2x3x3Dilation3x3NhwcUint8,
+                     DepthwiseConvolution2d2x3x3Dilation3x3Test
+                             <DataType::QuantisedAsymm8, DataType::Signed32>,
+                     false,
+                     DataLayout::NHWC)
+
 ARMNN_AUTO_TEST_CASE(DepthwiseConvolution2dDepthMul1,
                      DepthwiseConvolution2dDepthMul1Test, true, DataLayout::NCHW)
+
 ARMNN_AUTO_TEST_CASE(DepthwiseConvolution2dDepthMul1Uint8,
                      DepthwiseConvolution2dDepthMul1Uint8Test, true, DataLayout::NCHW)
-// ARMNN_AUTO_TEST_CASE(DepthwiseConvolution2dDepthMul1Int16,
-//                      DepthwiseConvolution2dDepthMul1Int16Test, true, DataLayout::NCHW)
 
-// ARMNN_AUTO_TEST_CASE(UnbiasedDepthwiseConvolution2dDepthMul1,
-//                      DepthwiseConvolution2dDepthMul1Test, false, DataLayout::NCHW)
-// ARMNN_AUTO_TEST_CASE(UnbiasedDepthwiseConvolution2dDepthMul1Uint8,
-//                      DepthwiseConvolution2dDepthMul1Uint8Test, false, DataLayout::NCHW)
+ARMNN_AUTO_TEST_CASE(UnbiasedDepthwiseConvolution2dDepthMul1,
+                     DepthwiseConvolution2dDepthMul1Test, false, DataLayout::NCHW)
+ARMNN_AUTO_TEST_CASE(UnbiasedDepthwiseConvolution2dDepthMul1Uint8,
+                     DepthwiseConvolution2dDepthMul1Uint8Test, false, DataLayout::NCHW)
 
 ARMNN_AUTO_TEST_CASE(DepthwiseConvolution2dDepthMul1Nhwc,
                      DepthwiseConvolution2dDepthMul1Test, true, DataLayout::NHWC)
 ARMNN_AUTO_TEST_CASE(DepthwiseConvolution2dDepthMul1Uint8Nhwc,
                      DepthwiseConvolution2dDepthMul1Uint8Test, true, DataLayout::NHWC)
 
-// ARMNN_AUTO_TEST_CASE(UnbiasedDepthwiseConvolution2dDepthMul1Nhwc,
-//                      DepthwiseConvolution2dDepthMul1Test, false, DataLayout::NHWC)
-// ARMNN_AUTO_TEST_CASE(UnbiasedDepthwiseConvolution2dDepthMul1Uint8Nhwc,
-//                      DepthwiseConvolution2dDepthMul1Uint8Test, false, DataLayout::NHWC)
+ARMNN_AUTO_TEST_CASE(UnbiasedDepthwiseConvolution2dDepthMul1Nhwc,
+                     DepthwiseConvolution2dDepthMul1Test, false, DataLayout::NHWC)
+ARMNN_AUTO_TEST_CASE(UnbiasedDepthwiseConvolution2dDepthMul1Uint8Nhwc,
+                     DepthwiseConvolution2dDepthMul1Uint8Test, false, DataLayout::NHWC)
 
-// ARMNN_AUTO_TEST_CASE(DepthwiseConvolution2dAsymmetric,
-//                      DepthwiseConvolution2dAsymmetricTest, true, DataLayout::NCHW)
-// ARMNN_AUTO_TEST_CASE(UnbiasedDepthwiseConvolution2dAsymmetric,
-//                      DepthwiseConvolution2dAsymmetricTest, false, DataLayout::NCHW)
-// ARMNN_AUTO_TEST_CASE(DepthwiseConvolution2dAsymmetricNhwc,
-//                      DepthwiseConvolution2dAsymmetricTest, true, DataLayout::NHWC)
-// ARMNN_AUTO_TEST_CASE(UnbiasedDepthwiseConvolution2dAsymmetricNhwc,
-//                      DepthwiseConvolution2dAsymmetricTest, false, DataLayout::NHWC)
+ARMNN_AUTO_TEST_CASE(DepthwiseConvolution2dAsymmetric,
+                     DepthwiseConvolution2dAsymmetricTest, true, DataLayout::NCHW)
+ARMNN_AUTO_TEST_CASE(UnbiasedDepthwiseConvolution2dAsymmetric,
+                     DepthwiseConvolution2dAsymmetricTest, false, DataLayout::NCHW)
+ARMNN_AUTO_TEST_CASE(DepthwiseConvolution2dAsymmetricNhwc,
+                     DepthwiseConvolution2dAsymmetricTest, true, DataLayout::NHWC)
+ARMNN_AUTO_TEST_CASE(UnbiasedDepthwiseConvolution2dAsymmetricNhwc,
+                     DepthwiseConvolution2dAsymmetricTest, false, DataLayout::NHWC)
 
 // // Pooling
 // //MaxPooling

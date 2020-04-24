@@ -58,7 +58,10 @@ class NpuDepthWiseConvolution2dWorkload
           m_PadBottom(descriptor.m_Parameters.m_PadBottom),
           m_StrideX(descriptor.m_Parameters.m_StrideX),
           m_StrideY(descriptor.m_Parameters.m_StrideY),
-          m_DataLayout(descriptor.m_Parameters.m_DataLayout) {
+          m_DilationX(descriptor.m_Parameters.m_DilationX),
+          m_DilationY(descriptor.m_Parameters.m_DilationY),
+          m_DataLayout(descriptor.m_Parameters.m_DataLayout)
+          {
         // Add inputs operand
         std::vector<uint32_t> inOperandIds;
 
@@ -226,6 +229,9 @@ class NpuDepthWiseConvolution2dWorkload
                                  : int32_t(nnrt::DataLayout::NHWC);
         inOperandIds.push_back(this->AddOperandAndSetValue(layoutCode));
 
+        inOperandIds.push_back(this->AddOperandAndSetValue(m_DilationX));
+        inOperandIds.push_back(this->AddOperandAndSetValue(m_DilationY));
+
         std::vector<uint32_t> outOperandIds;
         NpuTensorHandler* outputTensorHandle =
             dynamic_cast<NpuTensorHandler*>(descriptor.m_Outputs[0]);
@@ -249,6 +255,8 @@ class NpuDepthWiseConvolution2dWorkload
     uint32_t m_PadBottom;
     uint32_t m_StrideX;
     uint32_t m_StrideY;
+    uint32_t m_DilationX;
+    uint32_t m_DilationY;
     armnn::DataLayout m_DataLayout;
     mutable boost::scoped_array<uint8_t> m_KernelData;
 

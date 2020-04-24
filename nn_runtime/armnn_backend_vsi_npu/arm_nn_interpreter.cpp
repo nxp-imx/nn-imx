@@ -453,7 +453,7 @@ OperationPtr Armnn_Interpreter::map_DEPTHWISE_CONV_2D(Model* model,
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
     std::shared_ptr<DepthwiseConv2DOperation> conv2d = std::make_shared<DepthwiseConv2DOperation>();
     NNAPI_CHECK_PTR(conv2d);
-    if (inputs.size() == 12) {
+    if (inputs.size() == 14) {
         conv2d->pad[0] = inputs[3]->scalar.int32;
         conv2d->pad[1] = inputs[4]->scalar.int32;
         conv2d->pad[2] = inputs[5]->scalar.int32;
@@ -463,6 +463,8 @@ OperationPtr Armnn_Interpreter::map_DEPTHWISE_CONV_2D(Model* model,
         conv2d->multiplier = inputs[9]->scalar.int32;
         resetFusedType(model, operation, 10);
         conv2d->setDataLayout(DataLayout(inputs[11]->scalar.int32));
+        conv2d->dilations[0] = (inputs[12]->scalar.int32);
+        conv2d->dilations[1] = (inputs[13]->scalar.int32);
     } else {
         conv2d->padType = mapPadType(inputs[3]->scalar.int32);
         conv2d->strides[0] = inputs[4]->scalar.int32;
