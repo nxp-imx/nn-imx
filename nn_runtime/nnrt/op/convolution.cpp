@@ -171,6 +171,9 @@ void DepthwiseConv2DOperation::handleLayoutInferenceOnInputs(
     if (DataLayout::NHWC == getDataLayout()) {
         requiredPermute = std::make_shared<nnrt::layout_inference::PermuteVector<4>>(
             std::initializer_list<uint32_t>({0, 3, 1, 2}));
+        if (!constantTensorOperand.empty()) {
+            permuteConstOperands(model, constantTensorOperand, requiredPermute);
+        }
     }
 
     for (auto& inPermPair : input_permute_cache_.cached_permutes_) {
@@ -180,10 +183,6 @@ void DepthwiseConv2DOperation::handleLayoutInferenceOnInputs(
         if (permOp) {
             insertPermute(model, permOp, finalPermVec->asStdVec(), true, inPermPair.first);
         }
-    }
-
-    if (!constantTensorOperand.empty()) {
-        permuteConstOperands(model, constantTensorOperand, requiredPermute);
     }
 
     next_permute_vectors.insert(std::make_pair(outputs()[0], requiredPermute));

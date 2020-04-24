@@ -551,6 +551,24 @@ OperationPtr NnApiInterpreter::map_DEPTHWISE_CONV_2D(Model* model,
             conv2d->setDataLayout(
                 getDataLayout(inputs[argList->ArgPos("data_layout")]->scalar.boolean));
         }
+        // Transpose weight for nchw cases
+        if (DataLayout::NCHW == conv2d->getDataLayout()) {
+            std::vector<uint32_t> permVal = {0, 3, 1, 2};
+            auto kernelIdx = argList->ArgPos("kernel");
+            if (inputs[kernelIdx]->isConst()) {
+                // Set permute flag. Do transepose in ovxlib delegate
+                inputs[kernelIdx]->setPerm(permVal);
+                inputs[kernelIdx]->dimensions =
+                    conv2d->dimensionTrans(inputs[kernelIdx]->dimensions, permVal);
+            } else {
+                // Insert permute layer for weight as input
+                if (!operand_utils::InsertPermuteBeforeOperand(
+                    model, operation, operation->inputs()[1], permVal)) {
+                        NNRT_LOGE_PRINT("DepthwiseConv2d: insert permute failed.");
+                        assert(false);
+                }
+            }
+        }
 
         conv2d->dilations[0] = 1;
         conv2d->dilations[1] = 1;
