@@ -95,7 +95,7 @@ class OperationValidate {
 
     virtual bool Validate(std::string& reason) {
         bool isSupport = true;
-        isSupport &= DynamicShapeCheck();
+        isSupport &= DimentionCheck(reason);
         isSupport &= ConstantTensorCheck();
         isSupport &= SignatureCheck(reason);
         return isSupport;
@@ -105,11 +105,15 @@ class OperationValidate {
     // Default implementation
     virtual bool SignatureCheck(std::string& reason) { return true; };
 
-    bool DynamicShapeCheck() {
+    bool DimentionCheck(std::string& reason) {
         // Check inputs
         if (0 == m_Operation.inputs.size()) return false;
         for (auto inIdx : m_Operation.inputs) {
             auto& dims = m_Model.operands[inIdx].dimensions;
+            if (dims.size() > 6) {
+                reason += "reject op because its input rank > 6\n";
+                return false;
+            }
             for (auto dim : dims) {
                 if (dim == 0) {
                     return false;
@@ -120,6 +124,10 @@ class OperationValidate {
         if (0 == m_Operation.outputs.size()) return false;
         for (auto outIdx : m_Operation.outputs) {
             auto& dims = m_Model.operands[outIdx].dimensions;
+            if (dims.size() > 6) {
+                reason += "reject op because its output rank > 6\n";
+                return false;
+            }
             for (auto dim : dims) {
                 if (dim == 0) {
                     return false;
