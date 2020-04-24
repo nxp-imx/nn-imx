@@ -338,7 +338,7 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
             OperationValidatePtr absValidate = std::make_unique<
                 op_validate::AbsValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
                                                                                       operation);
-            return absValidate->Validate();
+            return absValidate->Validate(reason);
         }
 
         case OperationType::ARGMAX:
@@ -346,7 +346,7 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
             OperationValidatePtr argmaxArgmin = std::make_unique<
                 op_validate::ArgmaxArgminValidate<HalPlatform::Model, HalPlatform::Operation>>(
                 model, operation);
-            return argmaxArgmin->Validate();
+            return argmaxArgmin->Validate(reason);
         }
 
         case OperationType::MAXIMUM:
@@ -354,7 +354,7 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
             OperationValidatePtr maxMin = std::make_unique<
                 op_validate::MaximumMinimumValidate<HalPlatform::Model, HalPlatform::Operation>>(
                 model, operation);
-            return maxMin->Validate();
+            return maxMin->Validate(reason);
         }
 
         case OperationType::RSQRT:
@@ -362,28 +362,28 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
             OperationValidatePtr sqrtRsqrt = std::make_unique<
                 op_validate::SqrtRsqrtValidate<HalPlatform::Model, HalPlatform::Operation>>(
                 model, operation);
-            return sqrtRsqrt->Validate();
+            return sqrtRsqrt->Validate(reason);
         }
 
         case OperationType::LOG: {
             OperationValidatePtr logValidate = std::make_unique<
                 op_validate::LogValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
                                                                                       operation);
-            return logValidate->Validate();
+            return logValidate->Validate(reason);
         }
 
         case OperationType::EXP: {
             OperationValidatePtr expValidate = std::make_unique<
                 op_validate::ExpValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
                                                                                       operation);
-            return expValidate->Validate();
+            return expValidate->Validate(reason);
         }
 
         case OperationType::SIN: {
             OperationValidatePtr sinValidate = std::make_unique<
                 op_validate::SinValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
                                                                                       operation);
-            return sinValidate->Validate();
+            return sinValidate->Validate(reason);
         }
 
         case OperationType::RESIZE_BILINEAR:
@@ -391,49 +391,49 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
             OperationValidatePtr resizeValidate = std::make_unique<
                 op_validate::ResizeValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
                                                                                          operation);
-            return resizeValidate->Validate();
+            return resizeValidate->Validate(reason);
         }
 
         case OperationType::REDUCE_MAX: {
             OperationValidatePtr reduceMax = std::make_unique<
                 op_validate::ReduceMaxValidate<HalPlatform::Model, HalPlatform::Operation>>(
                 model, operation);
-            return reduceMax->Validate();
+            return reduceMax->Validate(reason);
         }
 
         case OperationType::REDUCE_MIN: {
             OperationValidatePtr reduceMin = std::make_unique<
                 op_validate::ReduceMinValidate<HalPlatform::Model, HalPlatform::Operation>>(
                 model, operation);
-            return reduceMin->Validate();
+            return reduceMin->Validate(reason);
         }
 
         case OperationType::REDUCE_PROD: {
             OperationValidatePtr reduceProd = std::make_unique<
                 op_validate::ReduceProdValidate<HalPlatform::Model, HalPlatform::Operation>>(
                 model, operation);
-            return reduceProd->Validate();
+            return reduceProd->Validate(reason);
         }
 
         case OperationType::REDUCE_SUM: {
             OperationValidatePtr reduceSum = std::make_unique<
                 op_validate::ReduceSumValidate<HalPlatform::Model, HalPlatform::Operation>>(
                 model, operation);
-            return reduceSum->Validate();
+            return reduceSum->Validate(reason);
         }
 
         case OperationType::NEG: {
             OperationValidatePtr neg = std::make_unique<
                 op_validate::NegValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
                                                                                       operation);
-            return neg->Validate();
+            return neg->Validate(reason);
         }
 
         case OperationType::PRELU: {
             OperationValidatePtr prelu = std::make_unique<
                 op_validate::PreluValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
                                                                                         operation);
-            return prelu->Validate();
+            return prelu->Validate(reason);
         }
 
         case OperationType::LESS:
@@ -445,74 +445,74 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
             OperationValidatePtr compare = std::make_unique<
                 op_validate::ComparisonValidate<HalPlatform::Model, HalPlatform::Operation>>(
                 model, operation);
-            return compare->Validate();
+            return compare->Validate(reason);
         }
 
         case OperationType::LOGICAL_AND: {
             OperationValidatePtr logicalAnd = std::make_unique<
                 op_validate::LogicalAndValidate<HalPlatform::Model, HalPlatform::Operation>>(
                 model, operation);
-            return logicalAnd->Validate();
+            return logicalAnd->Validate(reason);
         }
         case OperationType::LOGICAL_NOT: {
             OperationValidatePtr logicalNot = std::make_unique<
                 op_validate::LogicalNotValidate<HalPlatform::Model, HalPlatform::Operation>>(
                 model, operation);
-            return logicalNot->Validate();
+            return logicalNot->Validate(reason);
         }
         case OperationType::LOGICAL_OR: {
             OperationValidatePtr logicalOr = std::make_unique<
                 op_validate::LogicalOrValidate<HalPlatform::Model, HalPlatform::Operation>>(
                 model, operation);
-            return logicalOr->Validate();
+            return logicalOr->Validate(reason);
         }
         case OperationType::EXPAND_DIMS: {
             OperationValidatePtr expandDims = std::make_unique<
                 op_validate::ExpandDimsValidate<HalPlatform::Model, HalPlatform::Operation>>(
                 model, operation);
-            return expandDims->Validate();
+            return expandDims->Validate(reason);
         }
         case OperationType::POW: {
             OperationValidatePtr pow = std::make_unique<
                 op_validate::PowValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
                                                                                       operation);
-            return pow->Validate();
+            return pow->Validate(reason);
         }
         case OperationType::INSTANCE_NORMALIZATION: {
             OperationValidatePtr instanceNorm = std::make_unique<
                 op_validate::InstanceNormValidate<HalPlatform::Model, HalPlatform::Operation>>(
                 model, operation);
-            return instanceNorm->Validate();
+            return instanceNorm->Validate(reason);
         }
         case OperationType::SPLIT: {
             OperationValidatePtr split = std::make_unique<
                 op_validate::SplitValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
                                                                                         operation);
-            return split->Validate();
+            return split->Validate(reason);
         }
         case OperationType::LOG_SOFTMAX: {
             OperationValidatePtr logSoftmax = std::make_unique<
                 op_validate::LogSoftmaxValidate<HalPlatform::Model, HalPlatform::Operation>>(
                 model, operation);
-            return logSoftmax->Validate();
+            return logSoftmax->Validate(reason);
         }
         case OperationType::REDUCE_ALL: {
             OperationValidatePtr reduceAll = std::make_unique<
                 op_validate::ReduceAllValidate<HalPlatform::Model, HalPlatform::Operation>>(
                 model, operation);
-            return reduceAll->Validate();
+            return reduceAll->Validate(reason);
         }
         case OperationType::REDUCE_ANY: {
             OperationValidatePtr reduceAny = std::make_unique<
                 op_validate::ReduceAnyValidate<HalPlatform::Model, HalPlatform::Operation>>(
                 model, operation);
-            return reduceAny->Validate();
+            return reduceAny->Validate(reason);
         }
         case OperationType::GATHER: {
             OperationValidatePtr gather = std::make_unique<
                 op_validate::GatherValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
                                                                                          operation);
-            return gather->Validate();
+            return gather->Validate(reason);
         }
 
         case OperationType::AXIS_ALIGNED_BBOX_TRANSFORM: {
@@ -520,7 +520,7 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
                 op_validate::AxisAlignedBBoxTransformValidate<HalPlatform::Model,
                                                               HalPlatform::Operation>>(model,
                                                                                        operation);
-            return axisAlignedBBoxTransform->Validate();
+            return axisAlignedBBoxTransform->Validate(reason);
         }
         case OperationType::UNIDIRECTIONAL_SEQUENCE_LSTM: {
             // All generated cases failed
@@ -531,7 +531,7 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
             //    HalPlatform::Operation>>(model,
             //                                                                          operation);
 
-            // return unidirectionalSequenceLstm->Validate();
+            // return unidirectionalSequenceLstm->Validate(reason);
         }
         case OperationType::BIDIRECTIONAL_SEQUENCE_LSTM: {
             // All generated cases failed, need to fix
@@ -541,7 +541,7 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
             //    op_validate::BidirectionalSequenceLstmValidate<HalPlatform::Model,
             //    HalPlatform::Operation>>(model,
             //                                                                          operation);
-            // return bidirectionalSequenceLstm->Validate();
+            // return bidirectionalSequenceLstm->Validate(reason);
         }
         case OperationType::GENERATE_PROPOSALS: {
             // Some generated float32 cases failed
@@ -550,7 +550,7 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
             //    op_validate::GenerateProposalsValidate<HalPlatform::Model,
             //    HalPlatform::Operation>>(model,
             //                                                                          operation);
-            // return generateProposals->Validate();
+            // return generateProposals->Validate(reason);
         }
         case OperationType::DETECTION_POSTPROCESSING: {
             // Some generated float32 cases crashed
@@ -560,14 +560,14 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
             //    HalPlatform::Operation>>(model,
             //                                                                          operation);
 
-            // return detectionPostprocessing->Validate();
+            // return detectionPostprocessing->Validate(reason);
         }
         case OperationType::UNIDIRECTIONAL_SEQUENCE_RNN: {
             OperationValidatePtr unidirectionalSequenceRnn = std::make_unique<
                 op_validate::UnidirectionalSequenceRnnValidate<HalPlatform::Model,
                                                                HalPlatform::Operation>>(model,
                                                                                         operation);
-            return unidirectionalSequenceRnn->Validate();
+            return unidirectionalSequenceRnn->Validate(reason);
         }
         case OperationType::BIDIRECTIONAL_SEQUENCE_RNN: {
             // All generated cases failed, need to fix
@@ -576,69 +576,69 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
             //    op_validate::BidirectionalSequenceRnnValidate<HalPlatform::Model,
             //    HalPlatform::Operation>>(model,
             //                                                                          operation);
-            // return bidirectionalSequenceRnn->Validate();
+            // return bidirectionalSequenceRnn->Validate(reason);
         }
         case OperationType::ROI_ALIGN: {
             OperationValidatePtr roiAlign = std::make_unique<
                 op_validate::RoiAlignValidate<HalPlatform::Model, HalPlatform::Operation>>(
                 model, operation);
-            return roiAlign->Validate();
+            return roiAlign->Validate(reason);
         }
         case OperationType::TOPK_V2: {
             return false;
             // OperationValidatePtr topkV2 = std::make_unique<
             //    op_validate::TopkV2Validate<HalPlatform::Model, HalPlatform::Operation>>(
             //    model, operation);
-            // return topkV2->Validate();
+            // return topkV2->Validate(reason);
         }
         case OperationType::CAST: {
             OperationValidatePtr cast = std::make_unique<
                 op_validate::CastValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
                                                                                        operation);
-            return cast->Validate();
+            return cast->Validate(reason);
         }
         case OperationType::QUANTIZE: {
             OperationValidatePtr quantize = std::make_unique<
                 op_validate::QuantizeValidate<HalPlatform::Model, HalPlatform::Operation>>(
                 model, operation);
-            return quantize->Validate();
+            return quantize->Validate(reason);
         }
         case OperationType::SELECT: {
             OperationValidatePtr select = std::make_unique<
                 op_validate::SelectValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
                                                                                          operation);
-            return select->Validate();
+            return select->Validate(reason);
         }
         case OperationType::RANDOM_MULTINOMIAL: {
             OperationValidatePtr random = std::make_unique<
                 op_validate::RandomMultinomialValidate<HalPlatform::Model, HalPlatform::Operation>>(
                 model, operation);
-            return random->Validate();
+            return random->Validate(reason);
         }
         case OperationType::HEATMAP_MAX_KEYPOINT: {
             OperationValidatePtr heatmap =
                 std::make_unique<op_validate::HeatmapMaxKeypointValidate<HalPlatform::Model,
                                                                          HalPlatform::Operation>>(
                     model, operation);
-            return heatmap->Validate();
+            return heatmap->Validate(reason);
         }
         case OperationType::CHANNEL_SHUFFLE: {
             OperationValidatePtr channelShuffle = std::make_unique<
                 op_validate::ChannelShuffleValidate<HalPlatform::Model, HalPlatform::Operation>>(
                 model, operation);
-            return channelShuffle->Validate();
+            return channelShuffle->Validate(reason);
         }
         case OperationType::GROUPED_CONV_2D: {
             OperationValidatePtr groupedConv2D = std::make_unique<
                 op_validate::GroupedConv2DValidate<HalPlatform::Model, HalPlatform::Operation>>(
                 model, operation);
-            return groupedConv2D->Validate();
+            return groupedConv2D->Validate(reason);
         }
         case OperationType::TRANSPOSE_CONV_2D: {
             OperationValidatePtr transposeConv2D = std::make_unique<
                 op_validate::TransposeConv2dValidate<HalPlatform::Model, HalPlatform::Operation>>(
                 model, operation);
-            return transposeConv2D->Validate();
+            return transposeConv2D->Validate(reason);
         }
         case OperationType::BOX_WITH_NMS_LIMIT:
         case OperationType::PAD_V2:

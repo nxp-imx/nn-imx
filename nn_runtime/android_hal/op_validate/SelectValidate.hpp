@@ -35,7 +35,7 @@ class SelectValidate : public OperationValidate<T_model, T_Operation> {
    public:
     SelectValidate(const T_model& model, const T_Operation& operation)
         : OperationValidate<T_model, T_Operation>(model, operation) {}
-    bool SignatureCheck() override {
+    bool SignatureCheck(std::string& reason) override {
         return hal::limitation::nnapi::match("SelectInput", this->InputArgTypes()) &&
                hal::limitation::nnapi::match("SelectOutput", this->OutputArgTypes());
     };

@@ -35,7 +35,7 @@ class CastValidate : public OperationValidate<T_model, T_Operation> {
    public:
     CastValidate(const T_model& model, const T_Operation& operation)
         : OperationValidate<T_model, T_Operation>(model, operation) {}
-    bool SignatureCheck() override {
+    bool SignatureCheck(std::string& reason) override {
         if (hal::limitation::nnapi::match("CastInput", this->InputArgTypes())) {
             return true;
         } else {

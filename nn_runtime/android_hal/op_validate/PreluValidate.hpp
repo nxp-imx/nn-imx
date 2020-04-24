@@ -35,7 +35,7 @@ class PreluValidate : public OperationValidate<T_model, T_Operation> {
    public:
     PreluValidate(const T_model& model, const T_Operation& operation)
         : OperationValidate<T_model, T_Operation>(model, operation) {}
-    bool SignatureCheck() override {
+    bool SignatureCheck(std::string& reason) override {
         auto inputList = hal::limitation::nnapi::match("PreluInput", this->InputArgTypes());
         auto outputList = hal::limitation::nnapi::match("PreluOutput", this->OutputArgTypes());
         if (inputList && outputList) {
@@ -44,7 +44,11 @@ class PreluValidate : public OperationValidate<T_model, T_Operation> {
             auto alphaRank = this->ModelForRead()
                                  .operands[this->OperationForRead().inputs[alphaIndex]]
                                  .dimensions.size();
-            return alphaRank == 1 ? true : false;
+            if (alphaRank != 1) {
+                reason += "reject PRELU because alphaRank > 1 not support \n";
+                return false;
+            }
+            return true;
         } else {
             // Input or output data type not support
             return false;

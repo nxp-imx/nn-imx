@@ -35,7 +35,7 @@ class GroupedConv2DValidate : public OperationValidate<T_model, T_Operation> {
    public:
     GroupedConv2DValidate(const T_model& model, const T_Operation& operation)
         : OperationValidate<T_model, T_Operation>(model, operation) {}
-    bool SignatureCheck() override {
+    bool SignatureCheck(std::string& reason) override {
         uint32_t groupNumber = 0;
         uint32_t inputChannel = 0;
         uint32_t outputChannel = 0;
@@ -74,6 +74,7 @@ class GroupedConv2DValidate : public OperationValidate<T_model, T_Operation> {
         if (groupNumber == inputChannel / outputChannel) {
             support = true;
         } else {
+            reason += "reject GROUPED_CONV2D because the group number is invalid \n";
             support = false;
         }
 

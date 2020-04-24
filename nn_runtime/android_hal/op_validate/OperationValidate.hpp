@@ -93,17 +93,17 @@ class OperationValidate {
     };
     virtual ~OperationValidate(){};
 
-    virtual bool Validate() {
+    virtual bool Validate(std::string& reason) {
         bool isSupport = true;
         isSupport &= DynamicShapeCheck();
         isSupport &= ConstantTensorCheck();
-        isSupport &= SignatureCheck();
+        isSupport &= SignatureCheck(reason);
         return isSupport;
     };
 
    protected:
     // Default implementation
-    virtual bool SignatureCheck() { return true; };
+    virtual bool SignatureCheck(std::string& reason) { return true; };
 
     bool DynamicShapeCheck() {
         // Check inputs

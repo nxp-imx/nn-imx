@@ -35,7 +35,7 @@ class Conv2dValidate : public OperationValidate<T_model, T_Operation> {
    public:
     Conv2dValidate(const T_model& model, const T_Operation& operation)
         : OperationValidate<T_model, T_Operation>(model, operation) {}
-    bool SignatureCheck() override {
+    bool SignatureCheck(std::string& reason) override {
         bool isSupport = true;
         isSupport &= hal::limitation::nnapi::match("Convolution2DInput", this->InputArgTypes()) &&
                      hal::limitation::nnapi::match("Convolution2DOutput", this->OutputArgTypes());

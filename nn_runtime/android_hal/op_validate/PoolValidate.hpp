@@ -35,7 +35,7 @@ class L2PoolValidate : public OperationValidate<T_model, T_Operation> {
    public:
     L2PoolValidate(const T_model& model, const T_Operation& operation)
         : OperationValidate<T_model, T_Operation>(model, operation) {}
-    bool SignatureCheck() override {
+    bool SignatureCheck(std::string& reason) override {
         return hal::limitation::nnapi::match("L2PoolInput", this->InputArgTypes()) &&
                hal::limitation::nnapi::match("L2PoolOutput", this->OutputArgTypes());
     };
@@ -46,7 +46,7 @@ class AveragePoolValidate : public OperationValidate<T_model, T_Operation> {
    public:
     AveragePoolValidate(const T_model& model, const T_Operation& operation)
         : OperationValidate<T_model, T_Operation>(model, operation) {}
-    bool SignatureCheck() override {
+    bool SignatureCheck(std::string& reason) override {
         return hal::limitation::nnapi::match("AverageMaxPoolInput", this->InputArgTypes()) &&
                hal::limitation::nnapi::match("AverageMaxPoolOutput", this->OutputArgTypes());
     };
@@ -57,7 +57,7 @@ class MaxPoolValidate : public OperationValidate<T_model, T_Operation> {
    public:
     MaxPoolValidate(const T_model& model, const T_Operation& operation)
         : OperationValidate<T_model, T_Operation>(model, operation) {}
-    bool SignatureCheck() override {
+    bool SignatureCheck(std::string& reason) override {
         return hal::limitation::nnapi::match("AverageMaxPoolInput", this->InputArgTypes()) &&
                hal::limitation::nnapi::match("AverageMaxPoolOutput", this->OutputArgTypes());
     };
