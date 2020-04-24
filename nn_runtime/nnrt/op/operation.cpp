@@ -286,12 +286,12 @@ bool Operation::replaceOutputs(uint32_t org_index, uint32_t new_index) {
 }
 
 bool Operation::replaceInputs(uint32_t org_index, uint32_t new_index) {
-    int pos = find_position(inputs_, org_index);
-    if (pos < 0) {
-        return false;
+    int pos = -1;
+    while (find_position(inputs_, org_index) >= 0) {
+        pos = find_position(inputs_, org_index);
+        inputs_[pos] = new_index;
     }
-    inputs_[pos] = new_index;
-    return true;
+    return pos == -1 ? false : true;
 }
 
 int Operation::find_position(std::vector<uint32_t> operands_indexes, uint32_t index) {
