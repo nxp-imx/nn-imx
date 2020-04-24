@@ -501,6 +501,42 @@ static inline vsi_nn_kernel_dtype_e vsi_nn_kernel_map_dtype
     return I8;
 } /* vsi_nn_kernel_map_dtype() */
 
+static inline  vsi_nn_type_e vsi_nn_dtype_map_kernel
+    (
+    vsi_nn_kernel_dtype_e dtype
+    )
+{
+    switch( dtype )
+    {
+    case I8:
+        return VSI_NN_TYPE_INT8;
+    case BOOL8:
+        return VSI_NN_TYPE_BOOL8;
+    case I16:
+        return VSI_NN_TYPE_INT16;
+    case I32:
+        return VSI_NN_TYPE_INT32;
+    case I64:
+        return VSI_NN_TYPE_INT64;
+    case U8:
+        return VSI_NN_TYPE_UINT8;
+    case U16:
+        return VSI_NN_TYPE_UINT16;
+    case U32:
+        return VSI_NN_TYPE_UINT32;
+    case F16:
+        return VSI_NN_TYPE_FLOAT16;
+    case BF16:
+        return VSI_NN_TYPE_BFLOAT16;
+    case F32:
+        return VSI_NN_TYPE_FLOAT32;
+    default:
+        VSILOGE("error data type %d", dtype);
+        break;
+    }
+    return VSI_NN_TYPE_INT8;
+} /* vsi_nn_kernel_map_dtype() */
+
 static inline size_t vsi_nn_kernel_dtype_get_bytes
     (
     vsi_nn_kernel_dtype_e dtype

@@ -36,6 +36,7 @@
 #include "utils/vsi_nn_util.h"
 #include "kernel/vsi_nn_kernel.h"
 #include "libnnext/vx_lib_nnext.h"
+#include "utils/vsi_nn_dtype_util_prv.h"
 
 __BEGIN_DECLS
 
@@ -77,7 +78,9 @@ DEF_KERNEL_EXECUTOR(_compute)
     size_t   out_elements[_OUTPUT_NUM] = {0};
     size_t   out_bytes[_OUTPUT_NUM] = {0};
     uint32_t  i;
-
+    double     max_value = 0.0f, min_value = 0.0f;
+    vx_bool_e clamp_flag = vx_false_e;
+    vsi_nn_type_e out_type;
     /* prepare data */
     for(i = 0; i < _INPUT_NUM; i ++)
     {
@@ -103,7 +106,24 @@ DEF_KERNEL_EXECUTOR(_compute)
         memset( f32_out_buffer[i], 0, out_bytes[i] );
     }
 
-    memcpy((void *)f32_out_buffer[0], (void *)f32_in_buffer[0], out_bytes[0]);
+    out_type = vsi_nn_dtype_map_kernel(out_attr[0]->dtype);
+
+    if( type_is_integer( out_type ) )
+    {
+        clamp_flag = vx_true_e;
+        type_get_range(out_type, &max_value, &min_value);
+    }
+
+    for (i = 0; i < out_elements[0]; i++)
+    {
+        float val = f32_in_buffer[0][i];
+        if (clamp_flag)
+        {
+            val = vsi_nn_clamp(val, (float)min_value, (float)max_value);
+        }
+        f32_out_buffer[0][i] = val;
+    }
+
 
     /* save data */
     for(i = 0; i < _OUTPUT_NUM; i++)

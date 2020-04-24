@@ -1094,7 +1094,7 @@ _viv_uniform VXC_512Bits uniConvertInt32toUint8_2x8;\n\
     read_fun(read_val, input, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
                 VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
     _viv_asm(COPY, src_val, read_val, 16); \\\n\
-    VXC_DP2x8(dst_val, src_val, src_val, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniDataConvert_2x8); \\\n\
+    VXC_DP2x8(dst_val, src_val, src_val, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), uniDataConvert_2x8); \\\n\
     _viv_asm(COPY, write_val, dst_val, 16); \\\n\
     write_fun(output, coord, write_val, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
 \n\
@@ -1191,7 +1191,7 @@ CAST_TO_BOOL_FUN_2D(U8,  vxc_uchar8, vxc_char8)\n\
     src_val1 = read_fun(input, coord); \\\n\
     tmpData1 = convert_int4(src_val0); \\\n\
     tmpData2 = convert_int4(src_val1); \\\n\
-    VXC_DP2x8(dst_val, tmpData1, tmpData2, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),\\\n\
+    VXC_DP2x8(dst_val, tmpData1, tmpData2, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1),\\\n\
         uniConvertInt32toUint8_2x8); \\\n\
     coord.x -= 4; \\\n\
     write_fun(output, coord, dst_val, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
@@ -29183,7 +29183,7 @@ __kernel void argmin_axis2_I32toI32_2D\n\
 "; /* end of argmin_axis2_cl*/
 
 static const char cast_cl[] = "\n\
-#define CAST_FUN(src_name, dst_name, src_type, dst_type, conv_type, read_fun, write_fun) \\\n\
+#define CAST_FUN(src_name, dst_name, src_type, dst_type, conv_fun, read_fun, write_fun) \\\n\
 __kernel void cast_##src_name##to##dst_name( \\\n\
     __read_only  image2d_array_t  input, \\\n\
     __write_only image2d_array_t  output) \\\n\
@@ -29191,47 +29191,21 @@ __kernel void cast_##src_name##to##dst_name( \\\n\
     int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
     src_type src = read_fun(input, coord); \\\n\
     dst_type dst = 0; \\\n\
-    int4  tmp = convert_int4(src);\\\n\
-    dst.x = (conv_type)(tmp.x); \\\n\
+    dst = conv_fun(src); \\\n\
     write_fun(output, coord, dst); \\\n\
 }\n\
 \n\
-CAST_FUN(F32, I32, float4, int4,   int,   read_imagef,  write_imagei)\n\
-CAST_FUN(F32, U32, float4, uint4,  unsigned int,  read_imagef,  write_imageui)\n\
-CAST_FUN(F32, I16, float4, int4,   short,   read_imagef,  write_imagei)\n\
-CAST_FUN(F32, U16, float4, uint4,  unsigned short,  read_imagef,  write_imageui)\n\
-CAST_FUN(F32, I8,  float4, int4,   char,   read_imagef,  write_imagei)\n\
-CAST_FUN(F32, U8,  float4, uint4,  unsigned char,  read_imagef,  write_imageui)\n\
-CAST_FUN(I32, I32, int4,   int4,   int,   read_imagei,  write_imagei)\n\
-CAST_FUN(I32, U32, int4,   uint4,  unsigned int,  read_imagei,  write_imageui)\n\
-CAST_FUN(I32, I16, int4,   int4,   short,   read_imagei,  write_imagei)\n\
-CAST_FUN(I32, U16, int4,   uint4,  unsigned short,  read_imagei,  write_imageui)\n\
-CAST_FUN(I32, I8,  int4,   int4,   char,   read_imagei,  write_imagei)\n\
-CAST_FUN(I32, U8,  int4,   uint4,  unsigned char,  read_imagei,  write_imageui)\n\
-CAST_FUN(U32, I32, uint4,  int4,   int,   read_imageui, write_imagei)\n\
-CAST_FUN(U32, U32, uint4,  uint4,  unsigned int,  read_imageui, write_imageui)\n\
-CAST_FUN(U32, I16, uint4,  int4,   short,   read_imageui, write_imagei)\n\
-CAST_FUN(U32, U16, uint4,  uint4,  unsigned short,  read_imageui, write_imageui)\n\
-CAST_FUN(U32, I8,  uint4,  int4,   char,   read_imageui, write_imagei)\n\
-CAST_FUN(U32, U8,  uint4,  uint4,  unsigned char,  read_imageui, write_imageui)\n\
+CAST_FUN(F32, I32, float4, int4,   convert_int4_sat,  read_imagef,  write_imagei)\n\
+CAST_FUN(F32, U32, float4, uint4,  convert_uint4_sat, read_imagef,  write_imageui)\n\
+CAST_FUN(I32, I32, int4,   int4,   convert_int4_sat,  read_imagei,  write_imagei)\n\
+CAST_FUN(I32, U32, int4,   uint4,  convert_uint4_sat, read_imagei,  write_imageui)\n\
+CAST_FUN(U32, I32, uint4,  int4,   convert_int4_sat,  read_imageui, write_imagei)\n\
+CAST_FUN(U32, U32, uint4,  uint4,  convert_uint4_sat, read_imageui, write_imageui)\n\
+CAST_FUN(F32, F32, float4, float4, convert_float4,    read_imagef,  write_imagef)\n\
+CAST_FUN(I32, F32, int4,   float4, convert_float4,    read_imagei,  write_imagef)\n\
+CAST_FUN(U32, F32, uint4,  float4, convert_float4,    read_imageui, write_imagef)\n\
 \n\
-#define CAST_ToFloat_FUN(src_name, dst_name, src_type, read_fun) \\\n\
-__kernel void cast_##src_name##to##dst_name( \\\n\
-    __read_only  image2d_array_t  input, \\\n\
-    __write_only image2d_array_t  output) \\\n\
-{ \\\n\
-    int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
-    src_type src = read_fun(input, coord); \\\n\
-    float4 dst = 0; \\\n\
-    dst.x = (float)(src.x); \\\n\
-    write_imagef(output, coord, dst); \\\n\
-}\n\
-\n\
-CAST_ToFloat_FUN(F32, F32, float4, read_imagef)\n\
-CAST_ToFloat_FUN(I32, F32, int4,   read_imagei)\n\
-CAST_ToFloat_FUN(U32, F32, uint4,  read_imageui)\n\
-\n\
-#define CAST_FUN_2D(src_name, dst_name, src_type, dst_type, conv_type, read_fun, write_fun) \\\n\
+#define CAST_FUN_2D(src_name, dst_name, src_type, dst_type, conv_fun, read_fun, write_fun) \\\n\
 __kernel void cast_##src_name##to##dst_name##_2D( \\\n\
     __read_only  image2d_t  input, \\\n\
     __write_only image2d_t  output) \\\n\
@@ -29239,45 +29213,19 @@ __kernel void cast_##src_name##to##dst_name##_2D( \\\n\
     int2 coord =  (int2)(get_global_id(0), get_global_id(1)); \\\n\
     src_type src = read_fun(input, coord); \\\n\
     dst_type dst = 0; \\\n\
-    int4  tmp = convert_int4(src);\\\n\
-    dst.x = (conv_type)(tmp.x); \\\n\
+    dst = conv_fun(src); \\\n\
     write_fun(output, coord, dst); \\\n\
 }\n\
 \n\
-CAST_FUN_2D(F32, I32, float4, int4,   int,   read_imagef,  write_imagei)\n\
-CAST_FUN_2D(F32, U32, float4, uint4,  unsigned int,  read_imagef,  write_imageui)\n\
-CAST_FUN_2D(F32, I16, float4, int4,   short,   read_imagef,  write_imagei)\n\
-CAST_FUN_2D(F32, U16, float4, uint4,  unsigned short,  read_imagef,  write_imageui)\n\
-CAST_FUN_2D(F32, I8,  float4, int4,   char,   read_imagef,  write_imagei)\n\
-CAST_FUN_2D(F32, U8,  float4, uint4,  unsigned char,  read_imagef,  write_imageui)\n\
-CAST_FUN_2D(I32, I32, int4,   int4,   int,   read_imagei,  write_imagei)\n\
-CAST_FUN_2D(I32, U32, int4,   uint4,  unsigned int,  read_imagei,  write_imageui)\n\
-CAST_FUN_2D(I32, I16, int4,   int4,   short,   read_imagei,  write_imagei)\n\
-CAST_FUN_2D(I32, U16, int4,   uint4,  unsigned short,  read_imagei,  write_imageui)\n\
-CAST_FUN_2D(I32, I8,  int4,   int4,   char,   read_imagei,  write_imagei)\n\
-CAST_FUN_2D(I32, U8,  int4,   uint4,  unsigned char,  read_imagei,  write_imageui)\n\
-CAST_FUN_2D(U32, I32, uint4,  int4,   int,   read_imageui, write_imagei)\n\
-CAST_FUN_2D(U32, U32, uint4,  uint4,  unsigned int,  read_imageui, write_imageui)\n\
-CAST_FUN_2D(U32, I16, uint4,  int4,   short,   read_imageui, write_imagei)\n\
-CAST_FUN_2D(U32, U16, uint4,  uint4,  unsigned short,  read_imageui, write_imageui)\n\
-CAST_FUN_2D(U32, I8,  uint4,  int4,   char,   read_imageui, write_imagei)\n\
-CAST_FUN_2D(U32, U8,  uint4,  uint4,  unsigned char,  read_imageui, write_imageui)\n\
-\n\
-#define CAST_ToFloat_FUN_2D(src_name, dst_name, src_type, read_fun) \\\n\
-__kernel void cast_##src_name##to##dst_name##_2D( \\\n\
-    __read_only  image2d_t  input, \\\n\
-    __write_only image2d_t  output) \\\n\
-{ \\\n\
-    int2 coord =  (int2)(get_global_id(0), get_global_id(1)); \\\n\
-    src_type src = read_fun(input, coord); \\\n\
-    float4 dst = 0; \\\n\
-    dst.x = (float)(src.x); \\\n\
-    write_imagef(output, coord, dst); \\\n\
-}\n\
-\n\
-CAST_ToFloat_FUN_2D(F32, F32, float4, read_imagef)\n\
-CAST_ToFloat_FUN_2D(I32, F32, int4,   read_imagei)\n\
-CAST_ToFloat_FUN_2D(U32, F32, uint4,  read_imageui)\n\
+CAST_FUN_2D(F32, I32, float4, int4,   convert_int4_sat,  read_imagef,  write_imagei)\n\
+CAST_FUN_2D(F32, U32, float4, uint4,  convert_uint4_sat, read_imagef,  write_imageui)\n\
+CAST_FUN_2D(I32, I32, int4,   int4,   convert_int4_sat,  read_imagei,  write_imagei)\n\
+CAST_FUN_2D(I32, U32, int4,   uint4,  convert_uint4_sat, read_imagei,  write_imageui)\n\
+CAST_FUN_2D(U32, I32, uint4,  int4,   convert_int4_sat,  read_imageui, write_imagei)\n\
+CAST_FUN_2D(U32, U32, uint4,  uint4,  convert_uint4_sat, read_imageui, write_imageui)\n\
+CAST_FUN_2D(F32, F32, float4, float4, convert_float4,    read_imagef,  write_imagef)\n\
+CAST_FUN_2D(I32, F32, int4,   float4, convert_float4,    read_imagei,  write_imagef)\n\
+CAST_FUN_2D(U32, F32, uint4,  float4, convert_float4,    read_imageui, write_imagef)\n\
 \n\
 #define CAST_TO_BOOL_FUN(src_name, src_type, read_fun) \\\n\
 __kernel void cast_##src_name##toBOOL8( \\\n\

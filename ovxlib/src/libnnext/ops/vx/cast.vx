@@ -12,7 +12,7 @@ _viv_uniform VXC_512Bits uniConvertInt32toUint8_2x8;
     read_fun(read_val, input, coord, VXC_5BITOFFSET_XY(0, 0), \
                 VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \
     _viv_asm(COPY, src_val, read_val, 16); \
-    VXC_DP2x8(dst_val, src_val, src_val, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniDataConvert_2x8); \
+    VXC_DP2x8(dst_val, src_val, src_val, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), uniDataConvert_2x8); \
     _viv_asm(COPY, write_val, dst_val, 16); \
     write_fun(output, coord, write_val, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
 
@@ -109,7 +109,7 @@ CAST_TO_BOOL_FUN_2D(U8,  vxc_uchar8, vxc_char8)
     src_val1 = read_fun(input, coord); \
     tmpData1 = convert_int4(src_val0); \
     tmpData2 = convert_int4(src_val1); \
-    VXC_DP2x8(dst_val, tmpData1, tmpData2, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),\
+    VXC_DP2x8(dst_val, tmpData1, tmpData2, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1),\
         uniConvertInt32toUint8_2x8); \
     coord.x -= 4; \
     write_fun(output, coord, dst_val, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));

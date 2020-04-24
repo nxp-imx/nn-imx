@@ -74,48 +74,24 @@ static const _kernel_map_type _cast_kernel_map[] =
     PACK_KERNEL_MAP( F32, F32,   _CAST_KERNEL_SOURCE ),
     PACK_KERNEL_MAP( F32, I32,   _CAST_KERNEL_SOURCE ),
     PACK_KERNEL_MAP( F32, U32,   _CAST_KERNEL_SOURCE ),
-    PACK_KERNEL_MAP( F32, I16,   _CAST_KERNEL_SOURCE ),
-    PACK_KERNEL_MAP( F32, U16,   _CAST_KERNEL_SOURCE ),
-    PACK_KERNEL_MAP( F32, I8,    _CAST_KERNEL_SOURCE ),
-    PACK_KERNEL_MAP( F32, U8,    _CAST_KERNEL_SOURCE ),
     PACK_KERNEL_MAP( I32, F32,   _CAST_KERNEL_SOURCE ),
     PACK_KERNEL_MAP( I32, I32,   _CAST_KERNEL_SOURCE ),
     PACK_KERNEL_MAP( I32, U32,   _CAST_KERNEL_SOURCE ),
-    PACK_KERNEL_MAP( I32, I16,   _CAST_KERNEL_SOURCE ),
-    PACK_KERNEL_MAP( I32, U16,   _CAST_KERNEL_SOURCE ),
-    PACK_KERNEL_MAP( I32, I8,    _CAST_KERNEL_SOURCE ),
-    PACK_KERNEL_MAP( I32, U8,    _CAST_KERNEL_SOURCE ),
     PACK_KERNEL_MAP( U32, F32,   _CAST_KERNEL_SOURCE ),
     PACK_KERNEL_MAP( U32, I32,   _CAST_KERNEL_SOURCE ),
     PACK_KERNEL_MAP( U32, U32,   _CAST_KERNEL_SOURCE ),
-    PACK_KERNEL_MAP( U32, I16,   _CAST_KERNEL_SOURCE ),
-    PACK_KERNEL_MAP( U32, U16,   _CAST_KERNEL_SOURCE ),
-    PACK_KERNEL_MAP( U32, I8,    _CAST_KERNEL_SOURCE ),
-    PACK_KERNEL_MAP( U32, U8,    _CAST_KERNEL_SOURCE ),
     PACK_KERNEL_MAP( F32, BOOL8, _CAST_KERNEL_SOURCE ),
     PACK_KERNEL_MAP( I32, BOOL8, _CAST_KERNEL_SOURCE ),
     PACK_KERNEL_MAP( U32, BOOL8, _CAST_KERNEL_SOURCE ),
     PACK_KERNEL_MAP_2D( F32, F32,   _CAST_KERNEL_SOURCE ),
     PACK_KERNEL_MAP_2D( F32, I32,   _CAST_KERNEL_SOURCE ),
     PACK_KERNEL_MAP_2D( F32, U32,   _CAST_KERNEL_SOURCE ),
-    PACK_KERNEL_MAP_2D( F32, I16,   _CAST_KERNEL_SOURCE ),
-    PACK_KERNEL_MAP_2D( F32, U16,   _CAST_KERNEL_SOURCE ),
-    PACK_KERNEL_MAP_2D( F32, I8,    _CAST_KERNEL_SOURCE ),
-    PACK_KERNEL_MAP_2D( F32, U8,    _CAST_KERNEL_SOURCE ),
     PACK_KERNEL_MAP_2D( I32, F32,   _CAST_KERNEL_SOURCE ),
     PACK_KERNEL_MAP_2D( I32, I32,   _CAST_KERNEL_SOURCE ),
     PACK_KERNEL_MAP_2D( I32, U32,   _CAST_KERNEL_SOURCE ),
-    PACK_KERNEL_MAP_2D( I32, I16,   _CAST_KERNEL_SOURCE ),
-    PACK_KERNEL_MAP_2D( I32, U16,   _CAST_KERNEL_SOURCE ),
-    PACK_KERNEL_MAP_2D( I32, I8,    _CAST_KERNEL_SOURCE ),
-    PACK_KERNEL_MAP_2D( I32, U8,    _CAST_KERNEL_SOURCE ),
     PACK_KERNEL_MAP_2D( U32, F32,   _CAST_KERNEL_SOURCE ),
     PACK_KERNEL_MAP_2D( U32, I32,   _CAST_KERNEL_SOURCE ),
     PACK_KERNEL_MAP_2D( U32, U32,   _CAST_KERNEL_SOURCE ),
-    PACK_KERNEL_MAP_2D( U32, I16,   _CAST_KERNEL_SOURCE ),
-    PACK_KERNEL_MAP_2D( U32, U16,   _CAST_KERNEL_SOURCE ),
-    PACK_KERNEL_MAP_2D( U32, I8,    _CAST_KERNEL_SOURCE ),
-    PACK_KERNEL_MAP_2D( U32, U8,    _CAST_KERNEL_SOURCE ),
     PACK_KERNEL_MAP_2D( F32, BOOL8, _CAST_KERNEL_SOURCE ),
     PACK_KERNEL_MAP_2D( I32, BOOL8, _CAST_KERNEL_SOURCE ),
     PACK_KERNEL_MAP_2D( U32, BOOL8, _CAST_KERNEL_SOURCE ),
@@ -223,6 +199,14 @@ static vsi_status _query_kernel
     {
         out_dtype = F32;
     }
+    else if ((I8 == out_dtype) || (I16 == out_dtype))
+    {
+        out_dtype = I32;
+    }
+    else if ((U8 == out_dtype) || (U16 == out_dtype))
+    {
+        out_dtype = U32;
+    }
 
     key = CAST_HASH_KEY( in_dtype, out_dtype, image_2d );
 
@@ -247,6 +231,7 @@ static vsi_status _query_kernel
                 kernel_map[i].source_name );
         status = VSI_SUCCESS;
     }
+
     return status;
 } /* _query_kernel() */
 
@@ -275,6 +260,7 @@ static vsi_nn_kernel_node_t _setup
 
     image_2d = (inputs[0]->attr.dim_num == 2 || inputs[0]->attr.size[2] == 1);
     status = _query_kernel( kernel, inputs, outputs, image_2d );
+
     if( VSI_SUCCESS == status)
     {
         node = vsi_nn_kernel_create_node( graph, kernel );
@@ -287,6 +273,7 @@ static vsi_nn_kernel_node_t _setup
             status  = vsi_nn_kernel_node_pass_param( node, node_params, _CAST_PARAM_NUM );
         }
     }
+
     return node;
 } /* _setup() */
 
