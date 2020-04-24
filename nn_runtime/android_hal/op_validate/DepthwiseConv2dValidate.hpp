@@ -39,30 +39,36 @@ class DepthwiseConv2dValidate : public OperationValidate<T_model, T_Operation> {
         bool support = true;
         auto model = this->ModelForRead();
         auto operation = this->OperationForRead();
-        auto inputList = hal::limitation::nnapi::match("DepthwiseConvolution2DInput", this->InputArgTypes());
-        auto outputList = hal::limitation::nnapi::match("DepthwiseConvolution2DOutput", this->OutputArgTypes());
-        int32_t layoutIndex = inputList->ArgPos("data_layout");
-        if (-1 != layoutIndex) {
-            auto layoutOperand = model.operands[operation.inputs[layoutIndex]];
-            bool layoutData = get_buffer::getScalarData<bool>(model, layoutOperand);
-            if (layoutData) {
-                support = false;
-                reason += ("reject Depthwise_conv_2d because data_layout = true\n");
+        auto inputList =
+            hal::limitation::nnapi::match("DepthwiseConvolution2DInput", this->InputArgTypes());
+        auto outputList =
+            hal::limitation::nnapi::match("DepthwiseConvolution2DOutput", this->OutputArgTypes());
+        if (inputList && outputList) {
+            int32_t layoutIndex = inputList->ArgPos("data_layout");
+            if (-1 != layoutIndex) {
+                auto layoutOperand = model.operands[operation.inputs[layoutIndex]];
+                bool layoutData = get_buffer::getScalarData<bool>(model, layoutOperand);
+                if (layoutData) {
+                    support = false;
+                    reason += ("reject Depthwise_conv_2d because data_layout = true\n");
+                }
             }
-        }
-        int32_t kernelIndex = inputList->ArgPos("kernel");
-        if (-1 != kernelIndex) {
-            auto kernelDim = model.operands[operation.inputs[kernelIndex]].dimensions;
-            if (kernelDim[0] != 1) {
-                support = false;
-                reason += ("reject Depthwise_conv_2d because kernel[0] != 1\n");
+            int32_t kernelIndex = inputList->ArgPos("kernel");
+            if (-1 != kernelIndex) {
+                auto kernelDim = model.operands[operation.inputs[kernelIndex]].dimensions;
+                if (kernelDim[0] != 1) {
+                    support = false;
+                    reason += ("reject Depthwise_conv_2d because kernel[0] != 1\n");
+                }
+            } else {
+                LOG(ERROR) << "DepthwiseValidate: kernelIndex = -1";
+                assert(false);
             }
+            return support;
         } else {
-            LOG(ERROR) << "DepthwiseValidate: kernelIndex = -1";
-            assert(false);
+            reason += ("reject Depthwise_conv_2d because input data type not support\n");
+            return false;
         }
-
-        return support && inputList && outputList;
     };
 };
 
