@@ -32,10 +32,12 @@
 #include "vsi_nn_node.h"
 #include "vsi_nn_ops.h"
 #include "vsi_nn_tensor.h"
+#include "vsi_nn_error.h"
 #include "vsi_nn_tensor_util.h"
 #include "utils/vsi_nn_util.h"
-#include "utils/vsi_nn_link_list.h"
 #include "utils/vsi_nn_math.h"
+#include "kernel/vsi_nn_kernel.h"
+#include "kernel/vsi_nn_kernel_eltwise.h"
 
 static vsi_status op_compute
     (
@@ -44,58 +46,16 @@ static vsi_status op_compute
     vsi_nn_tensor_t ** outputs
     )
 {
-    vsi_status status;
-    float scale;
-    vsi_enum overflow_policy,rounding_policy;
-    vx_scalar scale_s = NULL;
-    vsi_nn_tensor_t * a_times_b = NULL;
-    vsi_nn_tensor_attr_t attr;
+    vsi_status status = VSI_FAILURE;
 
-    status = VX_SUCCESS;
-    scale = 1.0;
-    overflow_policy = VX_CONVERT_POLICY_WRAP;
-    rounding_policy = VX_ROUND_POLICY_TO_ZERO;
-
-    scale_s = vxCreateScalar(self->graph->ctx->c, VX_TYPE_FLOAT32, &scale);
-    if(!scale_s)
+    self->n = (vx_node)vsi_nn_kernel_selector( self->graph,
+        "a_times_b_plus_c",
+        inputs, 3,
+        outputs, 1, NULL );
+    if( self->n )
     {
-        VSILOGE("CreateScalar fail\n");
-        status = VSI_FAILURE;
-        goto OnError;
+        status = VSI_SUCCESS;
     }
-
-    memset(&attr, 0, sizeof(attr));
-    memcpy(attr.size, outputs[0]->attr.size,  VSI_NN_MAX_DIM_NUM * sizeof( uint32_t ));
-    attr.dim_num = outputs[0]->attr.dim_num;
-    attr.vtl = TRUE;
-    attr.dtype.vx_type = VSI_NN_TYPE_FLOAT16;
-    a_times_b = vsi_nn_CreateTensor(self->graph, &attr);
-
-    self->n = vxTensorMultiplyNode( self->graph->g,
-        inputs[0]->t, inputs[1]->t,
-        scale_s,
-        overflow_policy,
-        rounding_policy,
-        a_times_b->t );
-    if( NULL == self->n )
-    {
-        VSILOGE("Call vxTensorMultiplyNode fail.(a_times_b_plus_c)");
-        status = VSI_FAILURE;
-        goto OnError;
-    }
-
-    self->n = vxTensorAddNode( self->graph->g, a_times_b->t, inputs[2]->t,
-        VX_CONVERT_POLICY_SATURATE, outputs[0]->t );
-    if( NULL == self->n )
-    {
-        VSILOGE("Call vxTensorAddNode fail.(a_times_b_plus_c)");
-        status = VSI_FAILURE;
-        goto OnError;
-    }
-
-OnError:
-    if (scale_s) vxReleaseScalar(&scale_s);
-    if (a_times_b) vsi_nn_ReleaseTensor(&a_times_b);
 
     return status;
 } /* op_compute() */

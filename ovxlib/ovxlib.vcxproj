@@ -741,6 +741,7 @@
     <ClCompile Include="src\kernel\cpu\reduceprod_internal_cpu.c" />
     <ClCompile Include="src\kernel\cpu\select_cpu.c" />
     <ClCompile Include="src\kernel\cpu\tile_cpu.c" />
+    <ClCompile Include="src\kernel\evis\a_times_b_plus_c_evis.c" />
     <ClCompile Include="src\kernel\evis\cast_evis.c" />
     <ClCompile Include="src\kernel\evis\floordiv_evis.c" />
     <ClCompile Include="src\kernel\evis\grucell_activation_evis.c" />
@@ -752,6 +753,7 @@
     <ClCompile Include="src\kernel\evis\reduceprod_internal_evis.c" />
     <ClCompile Include="src\kernel\evis\select_evis.c" />
     <ClCompile Include="src\kernel\evis\tile_evis.c" />
+    <ClCompile Include="src\kernel\vx\a_times_b_plus_c_vx.c" />
     <ClCompile Include="src\platform\nnapi0.4\vsi_nn_pf_softmax.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Jenkins-Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Jenkins-Debug|x64'">true</ExcludedFromBuild>
