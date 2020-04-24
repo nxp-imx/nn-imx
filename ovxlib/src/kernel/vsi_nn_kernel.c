@@ -100,6 +100,8 @@ static vx_program _create_program
 static void _kernel_clear_source
     ( vsi_nn_kernel_t * kernel );
 
+static vsi_bool _check_shader_support();
+
 static vsi_status VX_CALLBACK _kernel_validator
     (
     vx_node node,
@@ -928,6 +930,13 @@ vsi_nn_kernel_node_t vsi_nn_kernel_selector
         for( i = 0; i < (uint32_t)selector.allow_kernel_num; i ++ )
         {
             type = selector.pirority[i].kernel_type;
+
+            //Skip evis and cl when disable shader
+            if ( (type == VSI_NN_KERNEL_TYPE_EVIS || type == VSI_NN_KERNEL_TYPE_CL)
+                && _check_shader_support() == FALSE)
+            {
+                continue;
+            }
             // Skip evis if not support
             if( type == VSI_NN_KERNEL_TYPE_EVIS
                     && graph->ctx->config.evis.ver == VSI_NN_HW_EVIS_NONE )
@@ -1202,4 +1211,23 @@ vsi_status vsi_nn_kernel_pirority_set
     }
     return status;
 } /* vsi_nn_kernel_pirority_set() */
+
+static vsi_bool _check_shader_support()
+{
+    char *envctrl;
+    int32_t enableShader = 1;
+
+    envctrl = getenv("VIV_VX_ENABLE_SHADER");
+    if (envctrl)
+    {
+        enableShader = atoi(envctrl);
+    }
+
+    if(enableShader == 1)
+    {
+        return TRUE;
+    }
+
+    return FALSE;
+}
 
