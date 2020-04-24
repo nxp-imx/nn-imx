@@ -34,8 +34,7 @@
 ######################################################
 # Components of the project.
 
-LIBS    := third-party/jpeg-9b \
-           src
+LIBS    :=  src
 
 ######################################################
 # Define the macros used in the common file.
