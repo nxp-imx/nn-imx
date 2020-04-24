@@ -345,6 +345,7 @@ static vsi_status compute_node
         }
 
         /* Create vx node */
+        VSILOGD("Instance node[%d] \"%s\" ...", node_id, vsi_nn_OpGetName(node->op));
         status = vsi_nn_OpCompute( node->op, node, inputs, outputs );
         if( VSI_SUCCESS != status )
         {

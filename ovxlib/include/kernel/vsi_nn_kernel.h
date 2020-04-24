@@ -874,6 +874,27 @@ vsi_nn_tensor_t* vsi_nn_merge_input_zeropoint_to_bias
     vsi_nn_tensor_t * bias
     );
 
+static inline const char* vsi_nn_kernel_type_str
+    (
+    vsi_nn_kernel_type_e type
+    )
+{
+    switch( type )
+    {
+    case VSI_NN_KERNEL_TYPE_CPU:
+        return "CPU";
+    case VSI_NN_KERNEL_TYPE_EVIS:
+        return "EVIS";
+    case VSI_NN_KERNEL_TYPE_CL:
+        return "CL";
+    case VSI_NN_KERNEL_TYPE_VX:
+        return "OPENVX";
+    default:
+        break;
+    }
+    return "None";
+} /* vsi_nn_kernel_type_str() */
+
 __END_DECLS
 
 #endif

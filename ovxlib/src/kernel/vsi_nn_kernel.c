@@ -947,6 +947,8 @@ vsi_nn_kernel_node_t vsi_nn_kernel_selector
             // If node created, break the loop
             if( node )
             {
+                VSILOGD("Instance %s node with kernel \"%s\" ",
+                    vsi_nn_kernel_type_str(type), kernel_name);
                 break;
             }
         }
