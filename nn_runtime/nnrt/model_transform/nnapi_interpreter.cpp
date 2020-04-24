@@ -454,7 +454,7 @@ OperationPtr NnApiInterpreter::map_CONV_2D(Model* model,
     }
 
     /* set default dilation value */
-    conv2d->setVxParam(OverflowPolicy::WRAP, RoundingPolicy::TO_ZERO, Rounding::FLOOR);
+    conv2d->setVxParam(OverflowPolicy::SATURATE, RoundingPolicy::TO_ZERO, Rounding::FLOOR);
     truncateOperationIOs(model, operation, 3, 1);
     return conv2d;
 }
@@ -514,7 +514,7 @@ OperationPtr NnApiInterpreter::map_GROUPED_CONV_2D(Model* model,
     }
 
     /* set default dilation value */
-    conv2d->setVxParam(OverflowPolicy::WRAP, RoundingPolicy::TO_ZERO, Rounding::FLOOR);
+    conv2d->setVxParam(OverflowPolicy::SATURATE, RoundingPolicy::TO_ZERO, Rounding::FLOOR);
     truncateOperationIOs(model, operation, 3, 1);
     return conv2d;
 }
@@ -563,7 +563,7 @@ OperationPtr NnApiInterpreter::map_DEPTHWISE_CONV_2D(Model* model,
         }
 
         resetFusedType(model, operation, argList->ArgPos("fuse_code"));
-        conv2d->setVxParam(OverflowPolicy::WRAP, RoundingPolicy::TO_ZERO, Rounding::FLOOR);
+        conv2d->setVxParam(OverflowPolicy::SATURATE, RoundingPolicy::TO_ZERO, Rounding::FLOOR);
         truncateOperationIOs(model, operation, 3, 1);
     } else {
         assert(0);
@@ -1582,7 +1582,7 @@ OperationPtr NnApiInterpreter::map_DECONV_2D(Model* model,
     }
 
     /* set default dilation value */
-    deconv2d->setVxParam(OverflowPolicy::WRAP, RoundingPolicy::TO_ZERO, Rounding::FLOOR);
+    deconv2d->setVxParam(OverflowPolicy::SATURATE, RoundingPolicy::TO_ZERO, Rounding::FLOOR);
     truncateOperationIOs(model, operation, 3, 1);
     return deconv2d;
 }
