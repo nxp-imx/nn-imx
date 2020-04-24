@@ -393,9 +393,11 @@ static vsi_nn_kernel_node_t _setup
             reshape_tensors[0] = vsi_nn_reshape_tensor( graph,
                     inputs[0], (uint32_t*)shapes[0], rank_in );
 
+            memcpy(shapes[1], shapes[0], rank_in * sizeof(int32_t));
+
             shapes[1][new_axis] = outputs[0]->attr.size[axis[0]];
             reshape_tensors[1] = vsi_nn_reshape_tensor( graph,
-                    outputs[0], (uint32_t*)shapes[1], rank_out );
+                    outputs[0], (uint32_t*)shapes[1], rank_in );
         }
         else
         {
