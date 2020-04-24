@@ -224,6 +224,8 @@ inline const char* get_operation_string(OperationType type) {
             return "expand_dims";
         case OperationType::HEATMAP_MAX_KEYPOINT:
             return "heatmap_max_keypoint";
+        case OperationType::SIN:
+            return "sin";
         default:
             return nullptr;
     }

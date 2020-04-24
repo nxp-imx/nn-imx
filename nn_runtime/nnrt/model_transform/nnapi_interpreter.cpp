@@ -773,7 +773,7 @@ OperationPtr NnApiInterpreter::map_MAX_POOL_2D(Model* model,
     std::shared_ptr<MaxPool2DOperation> pool = std::make_shared<MaxPool2DOperation>();
     NNAPI_CHECK_PTR(pool);
     pool->setDataLayout(DataLayout::NHWC);
-    if (inputs.size() == 10) {
+    if (inputs.size() == 10 || inputs.size() == 11) {
         pool->pad[0] = inputs[1]->scalar.int32;
         pool->pad[1] = inputs[2]->scalar.int32;
         pool->pad[2] = inputs[3]->scalar.int32;
@@ -790,6 +790,9 @@ OperationPtr NnApiInterpreter::map_MAX_POOL_2D(Model* model,
         pool->ksize[0] = inputs[4]->scalar.int32;
         pool->ksize[1] = inputs[5]->scalar.int32;
         resetFusedType(model, operation, 6);
+    }
+    if (inputs.size() == 11 || inputs.size() == 8) {
+        pool->setDataLayout(getDataLayout(inputs.back()->scalar.boolean));
     }
     pool->setVxParam(OverflowPolicy::WRAP, RoundingPolicy::TO_ZERO, Rounding::FLOOR);
     truncateOperationIOs(model, operation, 1, 1);
@@ -1504,8 +1507,6 @@ OperationPtr NnApiInterpreter::map_L2_POOL_2D(Model* model,
         pool->ksize[0] = inputs[7]->scalar.int32;
         pool->ksize[1] = inputs[8]->scalar.int32;
         resetFusedType(model, operation, 9);
-
-        // TODO: if io_in_nchw is true, no more permute required
         if (inputs.size() == 11) {
             pool->setDataLayout(getDataLayout(inputs[10]->scalar.boolean));
         }
@@ -1516,10 +1517,8 @@ OperationPtr NnApiInterpreter::map_L2_POOL_2D(Model* model,
         pool->ksize[0] = inputs[4]->scalar.int32;
         pool->ksize[1] = inputs[5]->scalar.int32;
         resetFusedType(model, operation, 6);
-
-        // TODO: if io_in_nchw is true, no more permute required
-        if (inputs.size() == 8 && inputs[7]) {
-            pool->setDataLayout(DataLayout::NCHW);
+        if (inputs.size() == 8) {
+            pool->setDataLayout(getDataLayout(inputs[7]->scalar.boolean));
         }
     } else {
         NNRT_LOGE_PRINT("Number of input parameter not valid");
