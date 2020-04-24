@@ -1527,8 +1527,8 @@ void vsi_nn_PermuteTensor
         }
         dst_shape[i] = shape_ptr[perm[i]];
     }
-    memcpy(tensor->attr.size, dst_shape, sizeof(dst_shape));
     vsi_nn_Permute( dst, buf, shape_ptr, dim_num, perm, tensor->attr.dtype.vx_type );
+    memcpy(tensor->attr.size, dst_shape, sizeof(dst_shape));
     tensor->t = vxReshapeTensor(tensor->t, (int32_t *)tensor->attr.size, tensor->attr.dim_num);
     status = vsi_nn_CopyDataToTensor( graph, tensor, dst );
     if( VSI_SUCCESS != status )
@@ -2137,8 +2137,8 @@ void vsi_nn_reshuffle_weight_data
     {
         for (c = 0; c < weight_size_c; c++)
         {
-            memcpy(buffer + kernel_size_x * kernel_size_y * (b * weight_size_c + c) * item_size,
-                weight_data + kernel_size_x * kernel_size_y * (c * weight_size_b + b) * item_size,
+            memcpy(buffer + kernel_size_x * kernel_size_y * (c * weight_size_b + b) * item_size,
+                weight_data + kernel_size_x * kernel_size_y * (b * weight_size_c + c) * item_size,
                 item_size * slice_size);
         }
     }
