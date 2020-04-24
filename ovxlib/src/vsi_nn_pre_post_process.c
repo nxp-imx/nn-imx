@@ -160,8 +160,17 @@ static void _set_preproc_node_input_attr
     }
     if(*source_format == VSI_NN_SOURCE_FORMAT_IMAGE_RGB)
     {
-        input_attr->size[0] = input_attr->size[2]*input_attr->size[0];
-        input_attr->size[2] = 1;
+        if(*source_layout == VSI_NN_SOURCE_LAYOUT_NHWC)
+        {
+            input_attr->size[0] = input_attr->size[1]*input_attr->size[0];
+            input_attr->size[1] = input_attr->size[2];
+            input_attr->size[2] = 1;
+        }
+        else
+        {
+            input_attr->size[0] = input_attr->size[2]*input_attr->size[0];
+            input_attr->size[2] = 1;
+        }
     }
 } /* vsi_nn_set_preproc_node_input_attr() */
 
