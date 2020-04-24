@@ -202,35 +202,27 @@ vx_status VX_CALLBACK vxClipInitializer
         return status;
     }
 
-    if (attr[0].dtype.qnt_type != VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC)
+    if (attr[0].dtype.qnt_type == VSI_NN_QNT_TYPE_DFP)
     {
-        attr[0].dtype.scale = 1.0f;
-        attr[0].dtype.zero_point = 0;
+        srcFixPointPos   = attr[0].dtype.fl;
+    }
+    else if (attr[0].dtype.qnt_type == VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC)
+    {
+        input_ZP         = attr[0].dtype.zero_point;
+        scaleIn          = attr[0].dtype.scale;
     }
 
-    if (attr[1].dtype.qnt_type != VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC)
+    if (attr[1].dtype.qnt_type == VSI_NN_QNT_TYPE_DFP)
     {
-        attr[1].dtype.scale = 1.0f;
-        attr[1].dtype.zero_point = 0;
+        dstFixPointPos   = attr[1].dtype.fl;
     }
-
-    if (attr[0].dtype.qnt_type != VSI_NN_QNT_TYPE_DFP)
+    else if (attr[1].dtype.qnt_type != VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC)
     {
-        attr[0].dtype.fl = 0;
-    }
-
-    if (attr[1].dtype.qnt_type != VSI_NN_QNT_TYPE_DFP)
-    {
-        attr[1].dtype.fl = 0;
+        output_ZP        = attr[1].dtype.zero_point;
+        scaleOut         = attr[1].dtype.scale;
     }
 
     inputDataFormat  = attr[0].dtype.vx_type;
-    input_ZP         = attr[0].dtype.zero_point;
-    scaleIn          = attr[0].dtype.scale;
-    srcFixPointPos   = attr[0].dtype.fl;
-    dstFixPointPos   = attr[1].dtype.fl;
-    output_ZP        = attr[1].dtype.zero_point;
-    scaleOut         = attr[1].dtype.scale;
     outputDataFormat = attr[1].dtype.vx_type;
     output_dims      = attr[1].dim_num;
     for (i = 0; i < output_dims; i++)

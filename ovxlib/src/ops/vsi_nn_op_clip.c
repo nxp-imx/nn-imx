@@ -37,6 +37,7 @@
 #include "vsi_nn_tensor_util.h"
 #include "client/vsi_nn_vxkernel.h"
 #include "kernel/vsi_nn_kernel.h"
+#include "vsi_nn_internal_node.h"
 
 /* Type enum */
 typedef enum _clip_nn_image_dims_e
@@ -333,79 +334,90 @@ static vsi_status op_compute
     vsi_status status = VSI_FAILURE;
     vsi_nn_kernel_info_t kernel_info;
     vsi_nn_clip_param * p = NULL;
+    float min = self->nn_param.clip.min;
+    float max = self->nn_param.clip.max;
 
-    memset(&kernel_info, 0x0, sizeof(vsi_nn_kernel_info_t));
-    if( NULL == self )
+    if ( (min == -1.0f && max == 1.0f)
+      || (min == 0.0f && max == 6.0f) )
     {
-        return VSI_FAILURE;
-    }
-
-    p = &(self->nn_param.clip);
-
-    vsi_nn_OptimizedEltOPShape(inputs[0],  p->local2->sizes0, &(p->local2->dim_num));
-    vsi_nn_OptimizedEltOPShape(outputs[0], p->local2->sizes1, &(p->local2->dim_num));
-
-    if (p->local2->dim_num < 3)
-    {
-        p->local2->enable_image_2d = vx_true_e;
+        status = VSI_SUCCESS;
+        vsi_nn_internal_compute_node( self );
     }
     else
     {
-        p->local2->enable_image_2d = vx_false_e;
-    }
-
-    _get_clip_hashtable_idx(self, inputs, outputs);
-
-    if (p->local2->execute_on_sw || !vsi_nn_IsEVISFeatureAvaiable(self->graph->ctx))
-    {
-        kernel_info.resource_num = 1;
-        kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));
-        kernel_info.resource_name[0] = "vsi_nn_kernel_clip_sw";
-        kernel_info.type = VX_KERNEL_TYPE_CPU;
-        kernel_info.kernel = vx_kernel_CLIP_list;
-        kernel_info.init_index = 0;
-
-        self->n = vsi_nn_RegisterClientKernelAndNewNode(
-            self->graph, &kernel_info);
-        if (kernel_info.resource_name) free(kernel_info.resource_name);
-        if( NULL == self->n )
+        memset(&kernel_info, 0x0, sizeof(vsi_nn_kernel_info_t));
+        if( NULL == self )
         {
             return VSI_FAILURE;
         }
 
-        status = cpu_op_compute(self, inputs, outputs);
+        p = &(self->nn_param.clip);
 
-    }
-    else
-    {
-        kernel_info.type = vsi_nn_GetVXKernelTypeForShader();
-        kernel_info.kernel = vx_kernel_CLIP_list;
-        kernel_info.resource_num = 2;
-        kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));
-        kernel_info.init_index = 1;
-        kernel_info.resource_name[0] = "vsi_nn_kernel_header";
-        kernel_info.resource_name[1] = "vsi_nn_kernel_clip";
+        vsi_nn_OptimizedEltOPShape(inputs[0],  p->local2->sizes0, &(p->local2->dim_num));
+        vsi_nn_OptimizedEltOPShape(outputs[0], p->local2->sizes1, &(p->local2->dim_num));
 
-        if (vsi_nn_is_do_vx_op_pre_init(kernel_info.type))
+        if (p->local2->dim_num < 3)
         {
-            vx_op_pre_compute(self, inputs, outputs, &kernel_info);
+            p->local2->enable_image_2d = vx_true_e;
+        }
+        else
+        {
+            p->local2->enable_image_2d = vx_false_e;
         }
 
-        self->n = vsi_nn_RegisterClientKernelAndNewNode(
-            self->graph, &kernel_info);
-        if (kernel_info.resource_name)
-        {
-            free(kernel_info.resource_name);
-        }
-        if( NULL == self->n )
-        {
-            return VSI_FAILURE;
-        }
-        if (NULL != op_compute_list[kernel_info.init_index])
-        {
-            status = op_compute_list[kernel_info.init_index](self, inputs, outputs);
-        }
+        _get_clip_hashtable_idx(self, inputs, outputs);
 
+        if (p->local2->execute_on_sw || !vsi_nn_IsEVISFeatureAvaiable(self->graph->ctx))
+        {
+            kernel_info.resource_num = 1;
+            kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));
+            kernel_info.resource_name[0] = "vsi_nn_kernel_clip_sw";
+            kernel_info.type = VX_KERNEL_TYPE_CPU;
+            kernel_info.kernel = vx_kernel_CLIP_list;
+            kernel_info.init_index = 0;
+
+            self->n = vsi_nn_RegisterClientKernelAndNewNode(
+                self->graph, &kernel_info);
+            if (kernel_info.resource_name) free(kernel_info.resource_name);
+            if( NULL == self->n )
+            {
+                return VSI_FAILURE;
+            }
+
+            status = cpu_op_compute(self, inputs, outputs);
+
+        }
+        else
+        {
+            kernel_info.type = vsi_nn_GetVXKernelTypeForShader();
+            kernel_info.kernel = vx_kernel_CLIP_list;
+            kernel_info.resource_num = 2;
+            kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));
+            kernel_info.init_index = 1;
+            kernel_info.resource_name[0] = "vsi_nn_kernel_header";
+            kernel_info.resource_name[1] = "vsi_nn_kernel_clip";
+
+            if (vsi_nn_is_do_vx_op_pre_init(kernel_info.type))
+            {
+                vx_op_pre_compute(self, inputs, outputs, &kernel_info);
+            }
+
+            self->n = vsi_nn_RegisterClientKernelAndNewNode(
+                self->graph, &kernel_info);
+            if (kernel_info.resource_name)
+            {
+                free(kernel_info.resource_name);
+            }
+            if( NULL == self->n )
+            {
+                return VSI_FAILURE;
+            }
+            if (NULL != op_compute_list[kernel_info.init_index])
+            {
+                status = op_compute_list[kernel_info.init_index](self, inputs, outputs);
+            }
+
+        }
     }
 
     return status;
@@ -428,6 +440,9 @@ static vsi_status op_deinit
     )
 {
     uint32_t i;
+    float min = self->nn_param.clip.min;
+    float max = self->nn_param.clip.max;
+
     for (i = 0; i < _VSI_NN_CLIP_LOCAL_TENSOR_NUM; i++)
     {
         if (self->nn_param.clip.local.local_tensor[i] != NULL)
@@ -441,6 +456,12 @@ static vsi_status op_deinit
     {
         free(self->nn_param.clip.local2);
         self->nn_param.clip.local2 = NULL;
+    }
+
+    if ( (min == -1.0f && max == 1.0f)
+      || (min == 0.0f && max == 6.0f) )
+    {
+        vsi_nn_internal_deinit_node_wksp( self );
     }
 
     vsi_nn_op_common_deinit(self);
@@ -464,6 +485,42 @@ static vsi_status op_init
     return status;
 } /* op_init() */
 
+static vsi_bool op_setup
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs
+    )
+{
+    vsi_bool ret = TRUE;
+    vsi_nn_internal_node_t* curr = NULL;
+    float min = self->nn_param.clip.min;
+    float max = self->nn_param.clip.max;
+
+    if ( (min == -1.0f && max == 1.0f)
+      || (min == 0.0f && max == 6.0f) )
+    {
+        vsi_nn_internal_init_node_wksp(self);
+        if (min == -1.0f && max == 1.0f)
+        {
+            curr = vsi_nn_internal_new_node(self, VSI_NN_OP_RELU1, 0, 0);
+        }
+        else
+        {
+            curr = vsi_nn_internal_new_node(self, VSI_NN_OP_RELU6, 0, 0);
+        }
+        curr->inputs[0] = inputs[0];
+        curr->outputs[0] = outputs[0];
+
+        vsi_nn_internal_setup_node(self, curr);
+    }
+    else
+    {
+        ret = vsi_nn_op_common_setup(self, inputs, outputs);
+    }
+    return ret;
+} /* op_init() */
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -476,7 +533,7 @@ DEF_OP_REG
     /* compute    */ op_compute,
     /* deinit     */ op_deinit,
     /* check      */ op_check,
-    /* setup      */ vsi_nn_op_common_setup,
+    /* setup      */ op_setup,
     /* optimize   */ NULL,
     /* input_num  */ _INPUT_NUM,
     /* output_num */ _OUTPUT_NUM
