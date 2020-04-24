@@ -722,6 +722,7 @@
     <ClCompile Include="src\kernel\cl\cast_cl.c" />
     <ClCompile Include="src\kernel\cl\floordiv_cl.c" />
     <ClCompile Include="src\kernel\cl\grucell_activation_cl.c" />
+    <ClCompile Include="src\kernel\cl\poolwithargmax_cl.c" />
     <ClCompile Include="src\kernel\cl\reduceall_internal_cl.c" />
     <ClCompile Include="src\kernel\cl\reduceany_internal_cl.c" />
     <ClCompile Include="src\kernel\cl\reducemax_internal_cl.c" />
@@ -732,6 +733,7 @@
     <ClCompile Include="src\kernel\cpu\cast_cpu.c" />
     <ClCompile Include="src\kernel\cpu\floordiv_cpu.c" />
     <ClCompile Include="src\kernel\cpu\grucell_activation_cpu.c" />
+    <ClCompile Include="src\kernel\cpu\poolwithargmax_cpu.c" />
     <ClCompile Include="src\kernel\cpu\reduceall_internal_cpu.c" />
     <ClCompile Include="src\kernel\cpu\reduceany_internal_cpu.c" />
     <ClCompile Include="src\kernel\cpu\reducemax_internal_cpu.c" />
@@ -742,6 +744,7 @@
     <ClCompile Include="src\kernel\evis\cast_evis.c" />
     <ClCompile Include="src\kernel\evis\floordiv_evis.c" />
     <ClCompile Include="src\kernel\evis\grucell_activation_evis.c" />
+    <ClCompile Include="src\kernel\evis\poolwithargmax_evis.c" />
     <ClCompile Include="src\kernel\evis\reduceall_internal_evis.c" />
     <ClCompile Include="src\kernel\evis\reduceany_internal_evis.c" />
     <ClCompile Include="src\kernel\evis\reducemax_internal_evis.c" />
@@ -1058,9 +1061,6 @@
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_lstmunit_activation.c">
       <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\vsi_nn_kernel_lstmunit_activation.o</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_poolwithargmax.c">
-      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\vsi_nn_kernel_poolwithargmax.o</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_pre_process_bgra.c">
       <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\vsi_nn_kernel_pre_process_bgra.o</ObjectFileName>
@@ -1524,7 +1524,7 @@
     <ClCompile Include="src\ops\vsi_nn_op_grucell_activation_internal.c">
       <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_grucell_activation_internal.o</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="src\ops\vsi_nn_op_linear.c" >
+    <ClCompile Include="src\ops\vsi_nn_op_linear.c">
       <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_linear.o</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_variable.c">

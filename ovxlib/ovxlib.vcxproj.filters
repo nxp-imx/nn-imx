@@ -983,9 +983,6 @@
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_lstmunit_activation.c">
       <Filter>Source Files\libnnext\ops\kernel</Filter>
     </ClCompile>
-    <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_poolwithargmax.c">
-      <Filter>Source Files\libnnext\ops\kernel</Filter>
-    </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_pre_process_bgra.c">
       <Filter>Source Files\libnnext\ops\kernel</Filter>
     </ClCompile>
@@ -1644,6 +1641,15 @@
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\grucell_activation_evis.c">
+      <Filter>Source Files\kernel\evis</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\cpu\poolwithargmax_cpu.c">
+      <Filter>Source Files\kernel\cpu</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\cl\poolwithargmax_cl.c">
+      <Filter>Source Files\kernel\cl</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\evis\poolwithargmax_evis.c">
       <Filter>Source Files\kernel\evis</Filter>
     </ClCompile>
   </ItemGroup>

@@ -272,7 +272,6 @@ cc_library(
         "src/libnnext/ops/kernel/vsi_nn_kernel_crop.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_fullconnect2.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_l2normalizescale.c",
-        "src/libnnext/ops/kernel/vsi_nn_kernel_poolwithargmax.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_upsample.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_dropout.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_shufflechannel.c",
