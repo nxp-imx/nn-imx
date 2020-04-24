@@ -47,8 +47,8 @@ MAKE_SPEC(random_multinomial)
     .samples_num_(nnrt::OperandType::INT32)
     .seeds_(nnrt::OperandType::TENSOR_INT32));
 
-    OVERRIDE_SPEC(random_multinomial, float16)
-    .input_(nnrt::OperandType::TENSOR_FLOAT16));
+    // OVERRIDE_SPEC(random_multinomial, float16)
+    // .input_(nnrt::OperandType::TENSOR_FLOAT16));
 
 #undef ARG_NAMES
 #undef ARGC
