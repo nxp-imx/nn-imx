@@ -10230,7 +10230,6 @@ _viv_uniform vxc_uint4 packed_outputZP;\n\
 #define POOLWITHARGMAX_U8_TO_U8_U8_PROCESS(read_fun, write_fun) \\\n\
     vxc_uchar16 din0, din1; \\\n\
     vxc_uchar16 maxDataVer, maxDataVer1; \\\n\
-    int4 bitExtractCoeff; \\\n\
     vxc_uchar16 din0EqualTmp, din1EqualTmp; \\\n\
     vxc_uchar8 axisEncode; \\\n\
     vxc_uchar8 axisOut; \\\n\
@@ -10238,9 +10237,9 @@ _viv_uniform vxc_uint4 packed_outputZP;\n\
         VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
     read_fun(din1, tensorIn, coord, VXC_5BITOFFSET_XY(0, 1),\\\n\
         VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
-    VXC_VertMax3_Integer(maxDataVer, din0, din1, din1, VXC_MODIFIER_BIN(0, 15, 0)); \\\n\
+    maxDataVer  = max(din0, din1); \\\n\
     maxDataVer1 = maxDataVer.s1032547698badcfe; \\\n\
-    VXC_VertMax3_Integer(maxDataVer, maxDataVer1, maxDataVer, maxDataVer, VXC_MODIFIER_BIN(0, 15, 0)); \\\n\
+    maxDataVer  = max(maxDataVer1, maxDataVer); \\\n\
     vxc_short8 tmp; \\\n\
     uchar zp = input_ZP; \\\n\
     VXC_DP2x8(tmp, maxDataVer, zp, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1),\\\n\
@@ -10249,8 +10248,7 @@ _viv_uniform vxc_uint4 packed_outputZP;\n\
     _viv_asm(COPY, packed_outZP, packed_outputZP, 16); \\\n\
     VXC_DP2x8(maxDataVer1, tmp, packed_outZP, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1),\\\n\
         uniS16AddOutZP_2x8); \\\n\
-    write_fun(tensorOut, coordOut, maxDataVer1,\\\n\
-        VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    write_fun(tensorOut, coordOut, maxDataVer1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
     VXC_Clamp(din0EqualTmp, din0, maxDataVer, maxDataVer, VXC_MODIFIER_CLAMP(0, 15, 0, 1)); \\\n\
     VXC_Clamp(din1EqualTmp, din1, maxDataVer, maxDataVer, VXC_MODIFIER_CLAMP(0, 15, 0, 1)); \\\n\
     din0EqualTmp &= (vxc_uchar16)(1); \\\n\
@@ -10258,7 +10256,6 @@ _viv_uniform vxc_uint4 packed_outputZP;\n\
     VXC_DP4x8(axisEncode, din0EqualTmp, din1EqualTmp, VXC_MODIFIER_BIN(0, 7, 0), uniEncodeUint8_4x8); \\\n\
     axisOut = clz(axisEncode); \\\n\
     write_fun(axis, coordOut, axisOut, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-\n\
 \n\
 __kernel void poolwithargmax_U8to_U8_U8\n\
     (\n\

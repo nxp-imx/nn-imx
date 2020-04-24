@@ -10,7 +10,6 @@ _viv_uniform vxc_uint4 packed_outputZP;
 #define POOLWITHARGMAX_U8_TO_U8_U8_PROCESS(read_fun, write_fun) \
     vxc_uchar16 din0, din1; \
     vxc_uchar16 maxDataVer, maxDataVer1; \
-    int4 bitExtractCoeff; \
     vxc_uchar16 din0EqualTmp, din1EqualTmp; \
     vxc_uchar8 axisEncode; \
     vxc_uchar8 axisOut; \
@@ -18,9 +17,9 @@ _viv_uniform vxc_uint4 packed_outputZP;
         VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \
     read_fun(din1, tensorIn, coord, VXC_5BITOFFSET_XY(0, 1),\
         VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \
-    VXC_VertMax3_Integer(maxDataVer, din0, din1, din1, VXC_MODIFIER_BIN(0, 15, 0)); \
+    maxDataVer  = max(din0, din1); \
     maxDataVer1 = maxDataVer.s1032547698badcfe; \
-    VXC_VertMax3_Integer(maxDataVer, maxDataVer1, maxDataVer, maxDataVer, VXC_MODIFIER_BIN(0, 15, 0)); \
+    maxDataVer  = max(maxDataVer1, maxDataVer); \
     vxc_short8 tmp; \
     uchar zp = input_ZP; \
     VXC_DP2x8(tmp, maxDataVer, zp, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1),\
@@ -29,8 +28,7 @@ _viv_uniform vxc_uint4 packed_outputZP;
     _viv_asm(COPY, packed_outZP, packed_outputZP, 16); \
     VXC_DP2x8(maxDataVer1, tmp, packed_outZP, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1),\
         uniS16AddOutZP_2x8); \
-    write_fun(tensorOut, coordOut, maxDataVer1,\
-        VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \
+    write_fun(tensorOut, coordOut, maxDataVer1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \
     VXC_Clamp(din0EqualTmp, din0, maxDataVer, maxDataVer, VXC_MODIFIER_CLAMP(0, 15, 0, 1)); \
     VXC_Clamp(din1EqualTmp, din1, maxDataVer, maxDataVer, VXC_MODIFIER_CLAMP(0, 15, 0, 1)); \
     din0EqualTmp &= (vxc_uchar16)(1); \
@@ -38,7 +36,6 @@ _viv_uniform vxc_uint4 packed_outputZP;
     VXC_DP4x8(axisEncode, din0EqualTmp, din1EqualTmp, VXC_MODIFIER_BIN(0, 7, 0), uniEncodeUint8_4x8); \
     axisOut = clz(axisEncode); \
     write_fun(axis, coordOut, axisOut, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
-
 
 __kernel void poolwithargmax_U8to_U8_U8
     (
