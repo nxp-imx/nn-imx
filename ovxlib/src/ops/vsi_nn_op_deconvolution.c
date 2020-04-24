@@ -60,7 +60,7 @@ static vsi_status op_compute
         vx_int32 axis_reverse[4] = {0, 1, 0, 0};
         vsi_nn_tensor_attr_t attr_reverse;
 
-        if (vsi_nn_compareVersion(self->graph, 1, 1, 21) >= 0)
+        if (vsi_nn_compareVersion(self->graph, 1, 1, 21) == -1)
         {
             uint32_t perm[] = { 0, 1, 3, 2 };
             vsi_nn_tensor_attr_t attr;
@@ -105,7 +105,7 @@ static vsi_status op_compute
     }
 
 #else
-    if ( vsi_nn_compareVersion(self->graph, 1, 1, 21) >= 0 && FALSE == inputs[1]->attr.is_const)
+    if ( vsi_nn_compareVersion(self->graph, 1, 1, 21) == -1 && FALSE == inputs[1]->attr.is_const)
     {
         uint32_t perm[] = { 0, 1, 3, 2 };
         vsi_nn_tensor_attr_t attr;
