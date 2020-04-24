@@ -226,6 +226,10 @@ inline const char* get_operation_string(OperationType type) {
             return "heatmap_max_keypoint";
         case OperationType::SIN:
             return "sin";
+        case OperationType::TILE:
+            return "tile";
+        case OperationType::LOG:
+            return "log";
         default:
             return nullptr;
     }

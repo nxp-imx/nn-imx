@@ -595,7 +595,7 @@ OperationPtr NnApiInterpreter::map_FULLY_CONNECTED(Model* model,
     inputs[0]->dimensions[1] *= tmp;
     resetFusedType(model, operation, 3);
     truncateOperationIOs(model, operation, 3, 1);
-    fc->setVxParam(OverflowPolicy::WRAP, RoundingPolicy::TO_ZERO, Rounding::FLOOR);
+    fc->setVxParam(OverflowPolicy::SATURATE, RoundingPolicy::TO_ZERO, Rounding::FLOOR);
     return fc;
 }
 
@@ -761,7 +761,7 @@ OperationPtr NnApiInterpreter::map_AVERAGE_POOL_2D(Model* model,
     }
 
     pool->poolMode = PoolMode::VALID;
-    pool->setVxParam(OverflowPolicy::WRAP, RoundingPolicy::TO_ZERO, Rounding::FLOOR);
+    pool->setVxParam(OverflowPolicy::SATURATE, RoundingPolicy::TO_ZERO, Rounding::FLOOR);
     truncateOperationIOs(model, operation, 1, 1);
     return pool;
 }
@@ -794,7 +794,7 @@ OperationPtr NnApiInterpreter::map_MAX_POOL_2D(Model* model,
     if (inputs.size() == 11 || inputs.size() == 8) {
         pool->setDataLayout(getDataLayout(inputs.back()->scalar.boolean));
     }
-    pool->setVxParam(OverflowPolicy::WRAP, RoundingPolicy::TO_ZERO, Rounding::FLOOR);
+    pool->setVxParam(OverflowPolicy::SATURATE, RoundingPolicy::TO_ZERO, Rounding::FLOOR);
     truncateOperationIOs(model, operation, 1, 1);
     return pool;
 }
@@ -1524,7 +1524,7 @@ OperationPtr NnApiInterpreter::map_L2_POOL_2D(Model* model,
         NNRT_LOGE_PRINT("Number of input parameter not valid");
         assert(false);
     }
-    pool->setVxParam(OverflowPolicy::WRAP, RoundingPolicy::TO_ZERO, Rounding::FLOOR);
+    pool->setVxParam(OverflowPolicy::SATURATE, RoundingPolicy::TO_ZERO, Rounding::FLOOR);
     truncateOperationIOs(model, operation, 1, 1);
     return pool;
 }
