@@ -543,39 +543,6 @@ void SplitOperation::handleLayoutInferenceOnInputs(
     }
 }
 
-
-void ArgmaxOperation::handleLayoutInferenceOnInputs(
-    Model& model,
-    std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>& next_permute_vectors) {
-    (void)model;
-    assert(input_permute_cache_.cached_permutes_.size() == 1);
-    nnrt::layout_inference::IPermuteVectorPtr permuteVector =
-        input_permute_cache_.cached_permutes_[inputs()[0]];
-    CHECK_NULL_PTR(permuteVector);
-    if (axis < 0) {
-        axis = permuteVector->rank() + axis;
-    }
-    // Convert axis to org platform format
-    axis = nnrt::op::utils::axisMapTo(permuteVector, axis);
-    next_permute_vectors.insert(std::make_pair(outputs()[0], permuteVector));
-}
-
-void ArgminOperation::handleLayoutInferenceOnInputs(
-    Model& model,
-    std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>& next_permute_vectors) {
-    (void)model;
-    assert(input_permute_cache_.cached_permutes_.size() == 1);
-    nnrt::layout_inference::IPermuteVectorPtr permuteVector =
-        input_permute_cache_.cached_permutes_[inputs()[0]];
-    CHECK_NULL_PTR(permuteVector);
-    if (axis < 0) {
-        axis = permuteVector->rank() + axis;
-    }
-    // Convert axis to org platform format
-    axis = nnrt::op::utils::axisMapTo(permuteVector, axis);
-    next_permute_vectors.insert(std::make_pair(outputs()[0], permuteVector));
-}
-
 void ChannelShuffleOperation::handleLayoutInferenceOnInputs(
     Model& model,
     std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>& next_permute_vectors) {
