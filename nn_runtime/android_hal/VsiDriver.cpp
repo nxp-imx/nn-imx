@@ -392,8 +392,7 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
             OperationValidatePtr instanceNorm = std::make_unique<
                 op_validate::InstanceNormValidate<HalPlatform::Model, HalPlatform::Operation>>(
                 model, operation);
-            return false;
-            // return instanceNorm->Validate();
+            return instanceNorm->Validate();
         }
         case OperationType::SPLIT: {
             OperationValidatePtr split = std::make_unique<
