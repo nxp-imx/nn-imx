@@ -320,11 +320,14 @@ static Return<ErrorStatus> convertResultCodeToErrorStatus(int resultCode) {
             fill_operand_value(ovx_operand, hal_operand);
         }
 
+        std::string not_supported_reason;
         for (const auto& hal_op : model_.operations) {
-            if(!VsiDriver::isSupportedOperation(hal_op, model_)){
-                LOG(ERROR)<<"Device do not support operation type: "<<static_cast<int>(hal_op.type);
+            if (!VsiDriver::isSupportedOperation(hal_op, model_, not_supported_reason)) {
+                LOG(ERROR) << "Device do not support operation type: "
+                           << static_cast<int>(hal_op.type);
+                LOG(INFO) << not_supported_reason;
                 return ErrorStatus::INVALID_ARGUMENT;
-                }
+            }
 
             auto ovx_op_type = op_code_mapping(hal_op.type);
             if( nnrt::OperationType::NONE == ovx_op_type){
