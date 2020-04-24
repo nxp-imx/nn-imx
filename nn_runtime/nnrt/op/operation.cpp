@@ -212,6 +212,18 @@ inline const char* get_operation_string(OperationType type) {
             return "grouped_conv2d";
         case OperationType::QUANTIZED_16BIT_LSTM:
             return "quantized_16bit_lstm";
+        case OperationType::ARGMAX:
+            return "argmax";
+        case OperationType::CHANNEL_SHUFFLE:
+            return "channel_shuffle";
+        case OperationType::SELECT:
+            return "select";
+        case OperationType::ROI_ALIGN:
+            return "roi_align";
+        case OperationType::EXPAND_DIMS:
+            return "expand_dims";
+        case OperationType::HEATMAP_MAX_KEYPOINT:
+            return "heatmap_max_keypoint";
         default:
             return nullptr;
     }
