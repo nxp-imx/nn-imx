@@ -159,6 +159,16 @@ static Return<ErrorStatus> convertResultCodeToErrorStatus(int resultCode) {
             MAP_OP(SPLIT);
             MAP_OP(LOG_SOFTMAX);
             MAP_OP(GATHER);
+            MAP_OP(CAST);
+            MAP_OP(HEATMAP_MAX_KEYPOINT);
+            MAP_OP(QUANTIZE);
+            MAP_OP(RANDOM_MULTINOMIAL);
+            MAP_OP(SELECT);
+            MAP_OP(ROI_ALIGN);
+            case HalPlatform::OperationType::TOPK_V2: {
+                LOG(INFO) << "add operation: TOPK_V2";
+                return nnrt::OperationType::TOPK;
+            };
 #endif
 #undef MAP_OP
 

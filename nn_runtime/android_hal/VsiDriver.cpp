@@ -259,6 +259,7 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
             return argmaxArgmin->Validate();
         }
 
+        case OperationType::MAXIMUM:
         case OperationType::MINIMUM: {
             OperationValidatePtr maxMin = std::make_unique<
                 op_validate::MaximumMinimumValidate<HalPlatform::Model, HalPlatform::Operation>>(
@@ -467,9 +468,7 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
             OperationValidatePtr unidirectionalSequenceRnn = std::make_unique<
                 op_validate::UnidirectionalSequenceRnnValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
                                                                                       operation);
-            // Some float32 cases failed
-            return false;
-            // return unidirectionalSequenceRnn->Validate();
+            return unidirectionalSequenceRnn->Validate();
         }
         case OperationType::BIDIRECTIONAL_SEQUENCE_RNN: {
             OperationValidatePtr bidirectionalSequenceRnn = std::make_unique<
@@ -479,24 +478,59 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
             return false;
             // return bidirectionalSequenceRnn->Validate();
         }
-
+        case OperationType::ROI_ALIGN: {
+            OperationValidatePtr roiAlign = std::make_unique<
+                op_validate::RoiAlignValidate<HalPlatform::Model, HalPlatform::Operation>>(
+                model, operation);
+            return roiAlign->Validate();
+        }
+        case OperationType::TOPK_V2: {
+            OperationValidatePtr topkV2 = std::make_unique<
+                op_validate::TopkV2Validate<HalPlatform::Model, HalPlatform::Operation>>(
+                model, operation);
+            return false;
+            // return topkV2->Validate();
+        }
+        case OperationType::CAST: {
+            OperationValidatePtr cast = std::make_unique<
+                op_validate::CastValidate<HalPlatform::Model, HalPlatform::Operation>>(
+                model, operation);
+            return cast->Validate();
+        }
+        case OperationType::QUANTIZE: {
+            OperationValidatePtr quantize = std::make_unique<
+                op_validate::QuantizeValidate<HalPlatform::Model, HalPlatform::Operation>>(
+                model, operation);
+            return quantize->Validate();
+        }
+        case OperationType::SELECT: {
+            OperationValidatePtr select = std::make_unique<
+                op_validate::SelectValidate<HalPlatform::Model, HalPlatform::Operation>>(
+                model, operation);
+            return select->Validate();
+        }
+        case OperationType::RANDOM_MULTINOMIAL: {
+            OperationValidatePtr random = std::make_unique<
+                op_validate::RandomMultinomialValidate<HalPlatform::Model, HalPlatform::Operation>>(
+                model, operation);
+            return random->Validate();
+        }
+        case OperationType::HEATMAP_MAX_KEYPOINT: {
+            OperationValidatePtr heatmap =
+                std::make_unique<op_validate::HeatmapMaxKeypointValidate<HalPlatform::Model,
+                                                                         HalPlatform::Operation>>(
+                    model, operation);
+            return heatmap->Validate();
+        }
         case OperationType::BOX_WITH_NMS_LIMIT:
-        case OperationType::CAST:
         case OperationType::CHANNEL_SHUFFLE:
         case OperationType::GROUPED_CONV_2D:
-        case OperationType::HEATMAP_MAX_KEYPOINT:
         case OperationType::PAD_V2:
-        case OperationType::QUANTIZE:
         case OperationType::QUANTIZED_16BIT_LSTM:
-        case OperationType::RANDOM_MULTINOMIAL:
-        case OperationType::ROI_ALIGN:
         case OperationType::ROI_POOLING:
-        case OperationType::SELECT:
         case OperationType::SLICE:
         case OperationType::TILE:
-        case OperationType::TOPK_V2:
         case OperationType::TRANSPOSE_CONV_2D:
-        case OperationType::MAXIMUM:
             isSupport &= false;
             break;
         default:

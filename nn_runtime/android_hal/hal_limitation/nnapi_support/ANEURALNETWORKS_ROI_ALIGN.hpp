@@ -22,22 +22,22 @@
 *
 *****************************************************************************/
 
-#ifndef __ANEURALNETWORKS_UNIDIRECTIONAL_SEQUENCE_RNN_HPP__
-#define __ANEURALNETWORKS_UNIDIRECTIONAL_SEQUENCE_RNN_HPP__
+#ifndef __AANEURALNETWORKS_ROI_ALIGN_HPP__
+#define __AANEURALNETWORKS_ROI_ALIGN_HPP__
 
-#include "hal_limitation/support_macros.hpp"
-
-// Input Spec
-#define OP_SPEC_NAME UnidirectionalSequenceRnnInput
+#define OP_SPEC_NAME ROIAlignOperationInput
 OP_SPEC_BEGIN()
 #define ARG_NAMES         \
     (input,               \
-     weights,             \
-     recurrent_weights,   \
-     bias,                \
-     hidden_state,        \
-     activation,          \
-     timeMajor)
+     roi_location,        \
+     batch_index,         \
+     height,              \
+     width,               \
+     height_ratio,        \
+     width_ratio,         \
+     sampling_points_height,\
+     sampling_points_width,\
+     layout)
 #define ARGC BOOST_PP_TUPLE_SIZE(ARG_NAMES)
 
 #define BOOST_PP_LOCAL_MACRO(n) OP_SPEC_ARG(BOOST_PP_TUPLE_ELEM(ARGC, n, ARG_NAMES))
@@ -46,30 +46,38 @@ OP_SPEC_BEGIN()
 OP_SPEC_END()
 
 // order of argument is important
-MAKE_SPEC(unidirectional_sequence_rnn)
+MAKE_SPEC(roi_align)
     .input_(nnrt::OperandType::TENSOR_FLOAT32)
-    .weights_(nnrt::OperandType::TENSOR_FLOAT32)
-    .recurrent_weights_(nnrt::OperandType::TENSOR_FLOAT32)
-    .bias_(nnrt::OperandType::TENSOR_FLOAT32)
-    .hidden_state_(nnrt::OperandType::TENSOR_FLOAT32)
-    .activation_(nnrt::OperandType::INT32)
-    .timeMajor_(nnrt::OperandType::INT32)
+    .roi_location_(nnrt::OperandType::TENSOR_FLOAT32)
+    .batch_index_(nnrt::OperandType::TENSOR_INT32)
+    .height_(nnrt::OperandType::INT32)
+    .width_(nnrt::OperandType::INT32)
+    .height_ratio_(nnrt::OperandType::FLOAT32)
+    .width_ratio_(nnrt::OperandType::FLOAT32)
+    .sampling_points_height_(nnrt::OperandType::INT32)
+    .sampling_points_width_(nnrt::OperandType::INT32)
+    .layout_(nnrt::OperandType::BOOL)
     );
 
-    OVERRIDE_SPEC(unidirectional_sequence_rnn, float16)
+    OVERRIDE_SPEC(roi_align, float16)
     .input_(nnrt::OperandType::TENSOR_FLOAT16)
-    .weights_(nnrt::OperandType::TENSOR_FLOAT16)
-    .recurrent_weights_(nnrt::OperandType::TENSOR_FLOAT16)
-    .bias_(nnrt::OperandType::TENSOR_FLOAT16)
-    .hidden_state_(nnrt::OperandType::TENSOR_FLOAT16)
+    .roi_location_(nnrt::OperandType::TENSOR_FLOAT16)
+    .height_ratio_(nnrt::OperandType::FLOAT16)
+    .width_ratio_(nnrt::OperandType::FLOAT16)
     );
+
+    // Not support aysmm_u8 currently
+    // OVERRIDE_SPEC(roi_align, aysmm_u8)
+    // .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM)
+    // .roi_location_(nnrt::OperandType::TENSOR_QUANT16_ASYMM)
+    // );
 
 #undef ARG_NAMES
 #undef ARGC
 #undef OP_SPEC_NAME
 
 //Output Spec
-#define OP_SPEC_NAME UnidirectionalSequenceRnnOutput
+#define OP_SPEC_NAME ROIAlignOperationOutput
 OP_SPEC_BEGIN()
 #define ARG_NAMES         \
     (input,               \
@@ -83,13 +91,16 @@ OP_SPEC_END()
 
 // order of argument is important
 MAKE_SPEC(output)
+    .input_(nnrt::OperandType::TENSOR_FLOAT32)
+    .output_(nnrt::OperandType::TENSOR_FLOAT32));
+
+    OVERRIDE_SPEC(output, float16)
     .input_(nnrt::OperandType::TENSOR_FLOAT16)
     .output_(nnrt::OperandType::TENSOR_FLOAT16));
 
-// Float32 not support temporarily due to accuracy issue
-// OVERRIDE_SPEC(output, float32)
-//     .input_(nnrt::OperandType::TENSOR_FLOAT32)
-//     .output_(nnrt::OperandType::TENSOR_FLOAT32));
+    OVERRIDE_SPEC(output, asymm_u8)
+    .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM)
+    .output_(nnrt::OperandType::TENSOR_QUANT8_ASYMM));
 
 #undef ARG_NAMES
 #undef ARGC

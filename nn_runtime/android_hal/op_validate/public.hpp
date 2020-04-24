@@ -60,4 +60,11 @@
 #include "SplitValidate.hpp"
 #include "LogSoftmaxValidate.hpp"
 #include "GatherValidate.hpp"
+#include "RoiAlignValidate.hpp"
+#include "TopkV2Validate.hpp"
+#include "CastValidate.hpp"
+#include "QuantizeValidate.hpp"
+#include "SelectValidate.hpp"
+#include "RandomMultinomialValidate.hpp"
+#include "HeatmapMaxKeypointValidate.hpp"
 #endif
