@@ -35,9 +35,9 @@ class QuantizeValidate : public OperationValidate<T_model, T_Operation> {
    public:
     QuantizeValidate(const T_model& model, const T_Operation& operation)
         : OperationValidate<T_model, T_Operation>(model, operation) {}
-    virtual bool SignatureCheck() override {
-        return hal::limitation::nnapi::match("QuantizeInput", this->m_InputArgTypes) &&
-               hal::limitation::nnapi::match("QuantizeOutput", this->m_OutputArgTypes);
+    bool SignatureCheck() override {
+        return hal::limitation::nnapi::match("QuantizeInput", this->InputArgTypes()) &&
+               hal::limitation::nnapi::match("QuantizeOutput", this->OutputArgTypes());
     };
 };
 

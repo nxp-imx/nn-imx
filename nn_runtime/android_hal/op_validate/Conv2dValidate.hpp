@@ -35,16 +35,16 @@ class Conv2dValidate : public OperationValidate<T_model, T_Operation> {
    public:
     Conv2dValidate(const T_model& model, const T_Operation& operation)
         : OperationValidate<T_model, T_Operation>(model, operation) {}
-    virtual bool SignatureCheck() override {
+    bool SignatureCheck() override {
         bool isSupport = true;
-        isSupport &= hal::limitation::nnapi::match("Convolution2DInput", this->m_InputArgTypes) &&
-                     hal::limitation::nnapi::match("Convolution2DOutput", this->m_OutputArgTypes);
+        isSupport &= hal::limitation::nnapi::match("Convolution2DInput", this->InputArgTypes()) &&
+                     hal::limitation::nnapi::match("Convolution2DOutput", this->OutputArgTypes());
 
         // Special validate
-        auto inputIdx = this->m_Operation.inputs[0];
+        auto inputIdx = this->OperationForRead().inputs[0];
         isSupport &= this->IsConstantTensor(inputIdx);
-        auto weightIdx = this->m_Operation.inputs[1];
-        auto biasIdx = this->m_Operation.inputs[2];
+        auto weightIdx = this->OperationForRead().inputs[1];
+        auto biasIdx = this->OperationForRead().inputs[2];
         isSupport &= (!this->IsConstantTensor(weightIdx) && !this->IsConstantTensor(biasIdx)) ||
                      (this->IsConstantTensor(weightIdx) && this->IsConstantTensor(biasIdx));
         return isSupport;

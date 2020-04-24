@@ -35,9 +35,9 @@ class ReduceAllValidate : public OperationValidate<T_model, T_Operation> {
    public:
     ReduceAllValidate(const T_model& model, const T_Operation& operation)
         : OperationValidate<T_model, T_Operation>(model, operation) {}
-    virtual bool SignatureCheck() override {
-        return hal::limitation::nnapi::match("ReduceAllInput", this->m_InputArgTypes) &&
-               hal::limitation::nnapi::match("ReduceAllOutput", this->m_OutputArgTypes);
+    bool SignatureCheck() override {
+        return hal::limitation::nnapi::match("ReduceAllInput", this->InputArgTypes()) &&
+               hal::limitation::nnapi::match("ReduceAllOutput", this->OutputArgTypes());
     };
 };
 
@@ -46,9 +46,9 @@ class ReduceAnyValidate : public OperationValidate<T_model, T_Operation> {
    public:
     ReduceAnyValidate(const T_model& model, const T_Operation& operation)
         : OperationValidate<T_model, T_Operation>(model, operation) {}
-    virtual bool SignatureCheck() override {
-        return hal::limitation::nnapi::match("ReduceAnyInput", this->m_InputArgTypes) &&
-               hal::limitation::nnapi::match("ReduceAnyOutput", this->m_OutputArgTypes);
+    bool SignatureCheck() override {
+        return hal::limitation::nnapi::match("ReduceAnyInput", this->InputArgTypes()) &&
+               hal::limitation::nnapi::match("ReduceAnyOutput", this->OutputArgTypes());
     };
 };
 
@@ -57,9 +57,9 @@ class ReduceMaxValidate : public OperationValidate<T_model, T_Operation> {
    public:
     ReduceMaxValidate(const T_model& model, const T_Operation& operation)
         : OperationValidate<T_model, T_Operation>(model, operation) {}
-    virtual bool SignatureCheck() override {
-        return hal::limitation::nnapi::match("ReduceMaxInput", this->m_InputArgTypes) &&
-               hal::limitation::nnapi::match("ReduceMaxOutput", this->m_OutputArgTypes);
+    bool SignatureCheck() override {
+        return hal::limitation::nnapi::match("ReduceMaxInput", this->InputArgTypes()) &&
+               hal::limitation::nnapi::match("ReduceMaxOutput", this->OutputArgTypes());
     };
 };
 
@@ -68,9 +68,9 @@ class ReduceMinValidate : public OperationValidate<T_model, T_Operation> {
    public:
     ReduceMinValidate(const T_model& model, const T_Operation& operation)
         : OperationValidate<T_model, T_Operation>(model, operation) {}
-    virtual bool SignatureCheck() override {
-        return hal::limitation::nnapi::match("ReduceMinInput", this->m_InputArgTypes) &&
-               hal::limitation::nnapi::match("ReduceMinOutput", this->m_OutputArgTypes);
+    bool SignatureCheck() override {
+        return hal::limitation::nnapi::match("ReduceMinInput", this->InputArgTypes()) &&
+               hal::limitation::nnapi::match("ReduceMinOutput", this->OutputArgTypes());
     };
 };
 
@@ -79,9 +79,9 @@ class ReduceSumValidate : public OperationValidate<T_model, T_Operation> {
    public:
     ReduceSumValidate(const T_model& model, const T_Operation& operation)
         : OperationValidate<T_model, T_Operation>(model, operation) {}
-    virtual bool SignatureCheck() override {
-        return hal::limitation::nnapi::match("ReduceSumInput", this->m_InputArgTypes) &&
-               hal::limitation::nnapi::match("ReduceSumOutput", this->m_OutputArgTypes);
+    bool SignatureCheck() override {
+        return hal::limitation::nnapi::match("ReduceSumInput", this->InputArgTypes()) &&
+               hal::limitation::nnapi::match("ReduceSumOutput", this->OutputArgTypes());
     };
 };
 
@@ -90,9 +90,9 @@ class ReduceProdValidate : public OperationValidate<T_model, T_Operation> {
    public:
     ReduceProdValidate(const T_model& model, const T_Operation& operation)
         : OperationValidate<T_model, T_Operation>(model, operation) {}
-    virtual bool SignatureCheck() override {
-        return hal::limitation::nnapi::match("ReduceProdInput", this->m_InputArgTypes) &&
-               hal::limitation::nnapi::match("ReduceProdOutput", this->m_OutputArgTypes);
+    bool SignatureCheck() override {
+        return hal::limitation::nnapi::match("ReduceProdInput", this->InputArgTypes()) &&
+               hal::limitation::nnapi::match("ReduceProdOutput", this->OutputArgTypes());
     };
 };
 

@@ -28,12 +28,52 @@
 #include <android-base/logging.h>
 #include <vector>
 #include "HalInterfaces.h"
+#include "VsiPlatform.h"
+#include "VsiRTInfo.h"
 #include "hal_limitation/nnapi_limitation.hpp"
 #include "nnrt/types.hpp"
 
 namespace android {
 namespace nn {
 namespace op_validate {
+namespace get_buffer {
+using HalPlatform = vsi_driver::HalPlatform;
+
+const uint8_t* getOperandDataPtr(const HalPlatform::Model& model,
+                                 const HalPlatform::Operand& halOperand,
+                                 vsi_driver::VsiRTInfo& vsiMemory) {
+    if (OperandLifeTime::CONSTANT_COPY == halOperand.lifetime) {
+        return model.operandValues.data() + halOperand.location.offset;
+    } else if (OperandLifeTime::CONSTANT_REFERENCE == halOperand.lifetime) {
+        if (!mapHidlMem(model.pools[halOperand.location.poolIndex], vsiMemory)) return nullptr;
+        return vsiMemory.getPtr(halOperand.location.offset);
+    }
+    return nullptr;
+}
+
+const uint8_t* getOpeandPtr(const HalPlatform::Model& model,
+                            const HalPlatform::Operand& operand,
+                            struct vsi_driver::VsiRTInfo& rt) {
+    auto& location = operand.location;
+    if (operand.lifetime == OperandLifeTime::CONSTANT_COPY) {
+        return model.operandValues.data() + location.offset;
+    } else if (operand.lifetime == OperandLifeTime::CONSTANT_REFERENCE) {
+        return getOperandDataPtr(model, operand, rt);
+    } else
+        return nullptr;
+}
+
+template <typename T_type>
+T_type getScalarData(const HalPlatform::Model& model, const HalPlatform::Operand& operand) {
+    struct vsi_driver::VsiRTInfo rt;
+    auto ptr = getOpeandPtr(model, operand, rt);
+    if (ptr)
+        return *reinterpret_cast<T_type*>(const_cast<uint8_t*>(ptr));
+    else
+        return 0;
+}
+}  // end of get_buffer
+
 template <typename T_Model, typename T_Operation>
 class OperationValidate {
    public:
@@ -46,12 +86,24 @@ class OperationValidate {
         // GenOutputArgTypes
         // push first input into output argtypes
         m_OutputArgTypes.push_back(
-                MapToNnrtOperandType(m_Model.operands[m_Operation.inputs[0]].type));
+            MapToNnrtOperandType(m_Model.operands[m_Operation.inputs[0]].type));
         for (auto outIdx : m_Operation.outputs) {
             m_OutputArgTypes.push_back(MapToNnrtOperandType(m_Model.operands[outIdx].type));
         }
     };
     virtual ~OperationValidate(){};
+
+    virtual bool Validate() {
+        bool isSupport = true;
+        isSupport &= DynamicShapeCheck();
+        isSupport &= ConstantTensorCheck();
+        isSupport &= SignatureCheck();
+        return isSupport;
+    };
+
+   protected:
+    // Default implementation
+    virtual bool SignatureCheck() { return true; };
 
     bool DynamicShapeCheck() {
         // Check inputs
@@ -77,6 +129,12 @@ class OperationValidate {
         return true;
     }
 
+    bool IsConstantTensor(size_t index) {
+        auto& operand = m_Model.operands[index];
+        return operand.lifetime == OperandLifeTime::CONSTANT_COPY ||
+               operand.lifetime == OperandLifeTime::CONSTANT_REFERENCE;
+    }
+
     bool ConstantTensorCheck() {
         std::vector<OperationType> whiteList = {OperationType::ADD,
                                                 OperationType::SUB,
@@ -98,27 +156,14 @@ class OperationValidate {
         return true;
     }
 
-    // Default implementation
-    virtual bool SignatureCheck() { return true; };
+    const T_Model ModelForRead() const { return m_Model; }
+    T_Model ModelForWrite() { return m_Model; }
 
-    virtual bool Validate() {
-        bool isSupport = true;
-        isSupport &= DynamicShapeCheck();
-        isSupport &= ConstantTensorCheck();
-        isSupport &= SignatureCheck();
-        return isSupport;
-    };
+    const T_Operation OperationForRead() const { return m_Operation; }
+    T_Operation OperationForWrite() { return m_Operation; }
 
-    bool IsConstantTensor(size_t index) {
-        auto& operand = m_Model.operands[index];
-        return operand.lifetime == OperandLifeTime::CONSTANT_COPY ||
-               operand.lifetime == OperandLifeTime::CONSTANT_REFERENCE;
-    }
-
-    T_Model m_Model;
-    T_Operation m_Operation;
-    std::vector<nnrt::OperandType> m_InputArgTypes;
-    std::vector<nnrt::OperandType> m_OutputArgTypes;
+    const std::vector<nnrt::OperandType>& InputArgTypes() const { return m_InputArgTypes; }
+    const std::vector<nnrt::OperandType>& OutputArgTypes() const { return m_OutputArgTypes; }
 
    private:
     nnrt::OperandType MapToNnrtOperandType(OperandType type) {
@@ -154,7 +199,11 @@ class OperationValidate {
             default:
                 return nnrt::OperandType::NONE;
         }
-    };
+    }
+    T_Model m_Model;
+    T_Operation m_Operation;
+    std::vector<nnrt::OperandType> m_InputArgTypes;
+    std::vector<nnrt::OperandType> m_OutputArgTypes;
 };
 
 }  // end of op_validate
