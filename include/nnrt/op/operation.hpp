@@ -86,7 +86,7 @@ class Operation : nnrt::layout_inference::ILayoutInference {
 
     bool replaceInputs(uint32_t org_index, uint32_t new_index);
 
-    int find_position(std::vector<uint32_t> operands_indexes, uint32_t index);
+    int32_t find_position(std::vector<uint32_t> operands_indexes, uint32_t index);
 
     void echo(uint32_t index = 0);
 
@@ -108,6 +108,9 @@ class Operation : nnrt::layout_inference::ILayoutInference {
         nnrt::Model& model,
         const std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>&
             operand_permute) override;
+
+    std::vector<uint32_t> dimensionTrans(std::vector<uint32_t>& orgDims,
+                                         const std::vector<uint32_t> perm);
 
    protected:
     /**
@@ -137,7 +140,6 @@ class Operation : nnrt::layout_inference::ILayoutInference {
     };
 
     InputTensorPermuteVectorCache input_permute_cache_;
-
     /**
      * @brief insert permute operation before input or after output for a opertion
      *
@@ -165,9 +167,6 @@ class Operation : nnrt::layout_inference::ILayoutInference {
     void permuteConstOperands(Model& model,
                               std::vector<uint32_t>& constOperandIds,
                               nnrt::layout_inference::IPermuteVectorPtr permVec);
-
-    std::vector<uint32_t> dimensionTrans(std::vector<uint32_t>& orgDims,
-                                         const std::vector<uint32_t> perm);
 
     virtual void handleLayoutInferenceOnInputs(
         Model& model,
@@ -275,7 +274,7 @@ struct SqueezeOperation : Operation {
 };
 struct ExpandDimsOperation : Operation {
     ExpandDimsOperation() : Operation(OperationType::EXPAND_DIMS) {}
-    int axis;
+    int32_t axis;
 };
 
 struct SoftmaxOperation : Operation {
@@ -285,7 +284,7 @@ struct SoftmaxOperation : Operation {
         std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>&
             out_permute_vectors) override;
     float beta{1.0f};
-    int axis{-1};
+    int32_t axis{-1};
 };
 
 struct PadOperation : Operation {
@@ -351,8 +350,8 @@ struct ResizeBilinearOperation : Operation {
         Model& model,
         std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>&
             out_permute_vectors) override;
-    int outputHeight;
-    int outputWidth;
+    int32_t outputHeight;
+    int32_t outputWidth;
 };
 
 struct ResizeNearestNeighborOperation : Operation {
@@ -362,8 +361,8 @@ struct ResizeNearestNeighborOperation : Operation {
         Model& model,
         std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>&
             out_permute_vectors) override;
-    int outputHeight;
-    int outputWidth;
+    int32_t outputHeight;
+    int32_t outputWidth;
 };
 
 struct MatrixMulOperation : Operation {
@@ -498,23 +497,19 @@ struct LshProjectionOperation : Operation {
     LshProjectionType type{LshProjectionType::SPARSE};
 };
 
-struct ArgmaxOperation : Operation {
-    ArgmaxOperation() : Operation(OperationType::ARGMAX) {}
-    virtual void handleLayoutInferenceOnInputs(
+
+template <nnrt::OperationType kOpType>
+struct ArgXXXOperation : Operation {
+    ArgXXXOperation() : Operation(kOpType) {}
+    void handleLayoutInferenceOnInputs(
         Model& model,
         std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>&
             out_permute_vectors) override;
-    int axis{0};
+    int32_t axis{0};
 };
 
-struct ArgminOperation : Operation {
-    ArgminOperation() : Operation(OperationType::ARGMIN) {}
-    virtual void handleLayoutInferenceOnInputs(
-        Model& model,
-        std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>&
-            out_permute_vectors) override;
-    int axis{0};
-};
+using ArgmaxOperation = ArgXXXOperation<OperationType::ARGMAX>;
+using ArgminOperation = ArgXXXOperation<OperationType::ARGMIN>;
 
 struct ChannelShuffleOperation : Operation {
     ChannelShuffleOperation() : Operation(OperationType::CHANNEL_SHUFFLE) {}
@@ -522,14 +517,14 @@ struct ChannelShuffleOperation : Operation {
         Model& model,
         std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>&
             out_permute_vectors) override;
-    int groups{1};
-    int axis{0};
+    int32_t groups{1};
+    int32_t axis{0};
 };
 
 struct GatherOperation : Operation {
     GatherOperation() : Operation(OperationType::GATHER) {}
-    int axis{-1};
-    std::vector<int> indices;
+    int32_t axis{-1};
+    std::vector<int32_t> indices;
 };
 
 struct ROIAlignOperation : Operation {
@@ -538,12 +533,12 @@ struct ROIAlignOperation : Operation {
         Model& model,
         std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>&
             out_permute_vectors) override;
-    int height;
-    int width;
+    int32_t height;
+    int32_t width;
     float height_ratio;
     float width_ratio;
-    int sampling_points_height;
-    int sampling_points_width;
+    int32_t sampling_points_height;
+    int32_t sampling_points_width;
 };
 
 struct HeatmapMaxKeypointOperation : Operation {
@@ -560,8 +555,8 @@ struct ROIPoolingOperation : Operation {
         Model& model,
         std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>&
             out_permute_vectors) override;
-    int height;
-    int width;
+    int32_t height;
+    int32_t width;
     float height_ratio;
     float width_ratio;
 };
@@ -573,9 +568,9 @@ struct DetectionPostprocessingOperation : Operation {
     float dh;
     float dw;
     bool nms_type;
-    int max_num_detections;
-    int maximum_class_per_detection;
-    int maximum_detection_per_class;
+    int32_t max_num_detections;
+    int32_t maximum_class_per_detection;
+    int32_t maximum_detection_per_class;
     float score_threshold;
     float iou_threshold;
     bool is_bg_in_label;
@@ -589,20 +584,20 @@ struct GenerateProposalsOperation : Operation {
             out_permute_vectors) override;
     float ratio_h;
     float ratio_w;
-    int pre_nms_topn;
-    int post_nms_topn;
+    int32_t pre_nms_topn;
+    int32_t post_nms_topn;
     float iou_threshold;
     float min_size;
 };
 
 struct RandomMultinomialOperation : Operation {
     RandomMultinomialOperation() : Operation(OperationType::RANDOM_MULTINOMIAL) {}
-    int sample_num;
+    int32_t sample_num;
 };
 
 struct TopkOperation : Operation {
     TopkOperation() : Operation(OperationType::TOPK) {}
-    int k{1};
+    int32_t k{1};
 };
 
 struct TileOperation : Operation {
@@ -659,6 +654,39 @@ DECLARE_OPERATION(PRelu, PRELU);
 DECLARE_OPERATION(Sin, SIN);
 DECLARE_OPERATION(AxisAlignedBBoxTransform, AXIS_ALIGNED_BBOX_TRANSFORM);
 DECLARE_OPERATION(Cast, CAST);
+DECLARE_OPERATION(Quantized16BitLstm, QUANTIZED_16BIT_LSTM);
+
+template <nnrt::OperationType kOpType>
+void ArgXXXOperation<kOpType>::handleLayoutInferenceOnInputs(
+    Model& model,
+    std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>& next_permute_vectors) {
+    (void)model;
+    assert(input_permute_cache_.cached_permutes_.size() == 1);
+    nnrt::layout_inference::IPermuteVectorPtr permuteVector =
+        input_permute_cache_.cached_permutes_[inputs()[0]];
+
+    if (!permuteVector) {
+        NNRT_LOGE_PRINT("Invalid pointer: %s", "permuteVector");
+        assert(0);
+        return;
+    }
+
+    if (axis < 0) {
+        axis = permuteVector->rank() + axis;
+    }
+    // Convert axis to org platform format
+    uint32_t originalAxis = static_cast<uint32_t>(axis);
+    axis = nnrt::op::utils::axisMapTo(permuteVector, axis);
+    auto reducedPermVec = nnrt::layout_inference::make_shared(permuteVector->rank() - 1);
+    for (uint32_t i = 0, j = 0; i < permuteVector->rank(); ++i) {
+        if (permuteVector->at(i) == originalAxis) continue;
+
+        uint32_t axisI = permuteVector->at(i);
+        reducedPermVec->at(j) = (axisI > originalAxis ? (axisI - 1) : (axisI));
+        ++j;
+    }
+    next_permute_vectors.insert(std::make_pair(outputs()[0], reducedPermVec));
+}
 
 #undef DECLARE_OPERATION
 }

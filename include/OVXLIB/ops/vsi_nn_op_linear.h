@@ -21,59 +21,26 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#ifndef __OVXLIB_UTIL_H__
-#define __OVXLIB_UTIL_H__
 
-#include <vector>
-#include <memory>
-#include "types.hpp"
+#ifndef _VSI_NN_OP_LINEAR_H
+#define _VSI_NN_OP_LINEAR_H
 
-namespace nnrt
+#include "vsi_nn_types.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef struct _vsi_nn_linear_param
 {
-namespace op {
-        class Operand;
-        class Operation;
-        using OperandPtr = std::shared_ptr<Operand>;
-        using OperationPtr = std::shared_ptr<Operation>;
+    void* reserve;
+    vx_float32 a;
+    vx_float32 b;
+} vsi_nn_linear_param;
+
+#ifdef __cplusplus
 }
-
-class Model;
-
-namespace operand_utils
-{
-
-int GetTypeBytes(OperandType type);
-
-int Transpose(Model* model, op::Operand* src, op::Operand* dst,
-        std::vector<uint32_t>& perm, DataLayout layout);
-
-int Reshape(op::Operand* src, op::Operand* dst, std::vector<int>& shape);
-
-uint16_t Fp32toFp16(float in);
-
-float Fp16toFp32(uint16_t);
-
-bool IsDynamicShape(nnrt::op::OperandPtr operand);
-
-bool InsertFp16ToFp32LayerBeforeOperand(Model* model,
-                                        op::OperationPtr operation,
-                                        op::OperandPtr operand);
-
-bool InsertPermuteBeforeOperand(Model* model,
-                                op::OperationPtr operation,
-                                uint32_t operandId,
-                                const std::vector<uint32_t>& permVal);
-}
-
-namespace OS {
-
-/*
-fetch env{@name} and put it into @result,
-return:
-0, fail to get this env.
-*/
-int getEnv(std::string name, int& result);
-}  // namespace OS
-}
+#endif
 
 #endif
+
