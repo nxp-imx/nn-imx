@@ -199,6 +199,7 @@ enum class OperationType: uint32_t {
 
     LINEAR, // A_TIMES_B_PLUS_C
     CAST,
+    QUANTIZED_16BIT_LSTM,
 };
 
 enum class OperandType: uint8_t {

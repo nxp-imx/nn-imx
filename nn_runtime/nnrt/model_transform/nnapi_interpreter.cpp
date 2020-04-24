@@ -166,6 +166,7 @@ NnApiInterpreter::NnApiInterpreter() {
     REGISTER_OP(PAD_V2);
     REGISTER_OP(DATA_CONVERT);
     REGISTER_OP(CAST);
+    REGISTER_OP(QUANTIZED_16BIT_LSTM);
 
 /*customer Op*/
 #undef REGISTER_OP
@@ -1349,6 +1350,22 @@ OperationPtr NnApiInterpreter::map_LSTM(Model* model,
     NNAPI_CHECK_IO_NUM(operation, LstmUnitOperation::INPUT_COUNT, LstmUnitOperation::OUTPUT_COUNT);
 
     return new_op;
+}
+
+OperationPtr NnApiInterpreter::map_QUANTIZED_16BIT_LSTM(Model* model,
+                                                               OperationPtr operation,
+                                                               uint32_t operation_index) {
+    OperationPtr op = std::make_shared<Quantized16BitLstmOperation>();
+    NNAPI_CHECK_PTR(op);
+    std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
+    auto argList = matchArgList(inputs, "Quantized16BitLstmOperation");
+    if (argList) {
+        op->setDataLayout(DataLayout::NCHW);
+    } else {
+        NNRT_LOGE_PRINT("Quantized16BitLstm argument list not support");
+        assert(false);
+    }
+    return op;
 }
 
 OperationPtr NnApiInterpreter::map_UNIDIRECTIONAL_SEQUENCE_LSTM(Model* model,
