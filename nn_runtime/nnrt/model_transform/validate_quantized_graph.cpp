@@ -18,7 +18,8 @@ int ValidateQuantizedGraph::run(Model* model, bool* modified) {
             case OperationType::CONV_2D:
             case OperationType::DEPTHWISE_CONV_2D:
             case OperationType::DECONV_2D:
-            case OperationType::FULLY_CONNECTED: {
+            case OperationType::FULLY_CONNECTED:
+            case OperationType::GROUPED_CONV_2D: {
                 std::vector<op::OperandPtr> inputs = model->getOperands(op->inputs());
                 if (inputs[0]->type == OperandType::TENSOR_QUANT8_ASYMM &&
                     inputs[2]->type == OperandType::TENSOR_INT32) {
