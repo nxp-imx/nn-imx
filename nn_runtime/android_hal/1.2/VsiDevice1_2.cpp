@@ -33,7 +33,6 @@
 #include <thread>
 namespace android {
 namespace nn {
-namespace hal {
 namespace vsi_driver {
 
     Return<ErrorStatus> VsiDevice::prepareModel_1_2(const V1_2::Model& model, ExecutionPreference preference,
@@ -50,7 +49,6 @@ namespace vsi_driver {
         notify(callback, ErrorStatus::GENERAL_FAILURE, nullptr);
         return ErrorStatus::GENERAL_FAILURE;
     }
-}
 }
 }
 }

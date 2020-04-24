@@ -25,8 +25,6 @@
 #include <iostream>
 #include "support.hpp"
 
-namespace android {
-namespace nn {
 namespace hal {
 namespace limitation {
 bool IArgList::match(const std::vector<nnrt::OperandType>& args) const {
@@ -98,8 +96,6 @@ const IArgList* OpSpecCollection::match(const std::string& opName,
     }
 
     return nullptr;
-}
-}
 }
 }
 }

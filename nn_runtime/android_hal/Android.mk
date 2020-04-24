@@ -92,13 +92,6 @@ LOCAL_SHARED_LIBRARIES += libfmq \
                           libui \
                           android.hardware.neuralnetworks@1.2
 
-ifeq ($(shell expr $(PLATFORM_VERSION) ">=" R),1)
-LOCAL_SHARED_LIBRARIES += \
-                          android.hardware.neuralnetworks@1.3
-
-LOCAL_CFLAGS += -DANDROID_NN_API=30
-endif
-
 LOCAL_MODULE      := android.hardware.neuralnetworks@1.2-service-vsi-npu-server
 else
 LOCAL_SHARED_LIBRARIES += libneuralnetworks

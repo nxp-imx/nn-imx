@@ -3,7 +3,6 @@
 
 namespace android {
 namespace nn {
-namespace hal {
 namespace vsi_driver {
 
     Return<void> VsiDriver::getCapabilities_1_2(V1_2::IDevice::getCapabilities_1_2_cb _hidl_cb) {
@@ -12,11 +11,7 @@ namespace vsi_driver {
         capabilities.relaxedFloat32toFloat16PerformanceScalar = kPerf;
         capabilities.relaxedFloat32toFloat16PerformanceTensor = kPerf;
         // Set the base value for all operand types
-#if ANDROID_NN_API >= 30
-        capabilities.operandPerformance = nonExtensionOperandPerformance<HalVersion::V1_2>({FLT_MAX, FLT_MAX});
-#else
         capabilities.operandPerformance = nonExtensionOperandPerformance({FLT_MAX, FLT_MAX});
-#endif
 
         // Load supported operand types
         update(&capabilities.operandPerformance, OperandType::TENSOR_QUANT8_ASYMM, kPerf);
@@ -40,7 +35,6 @@ namespace vsi_driver {
         }
         return getSupportedOperationsBase(model, _hidl_cb);
     }
-}
 }
 }
 }

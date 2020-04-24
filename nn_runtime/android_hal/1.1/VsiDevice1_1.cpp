@@ -34,9 +34,7 @@
 
 namespace android {
 namespace nn {
-namespace hal {
 namespace vsi_driver {
-
     Return<ErrorStatus> VsiDevice::prepareModel_1_1(
         const V1_1::Model& model,
         ExecutionPreference preference,
@@ -44,6 +42,5 @@ namespace vsi_driver {
         return prepareModelBase(model, preference, callback);
     }
 }  // namespace ovx_driver
-}  // namespace hal
 }  // namespace nn
 }  // namespace android

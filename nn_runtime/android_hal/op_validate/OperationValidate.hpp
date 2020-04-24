@@ -34,10 +34,6 @@
 namespace android {
 namespace nn {
 namespace op_validate {
-using OperationType = hal::vsi_driver::HalPlatform::OperationType;
-using OperandType = hal::vsi_driver::HalPlatform::OperandType;
-using OperandLifeTime = hal::vsi_driver::HalPlatform::OperandLifeTime;
-
 template <typename T_Model, typename T_Operation>
 class OperationValidate {
    public:

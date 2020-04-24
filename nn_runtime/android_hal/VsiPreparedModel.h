@@ -38,12 +38,9 @@
 #include "Utils.h"
 using android::sp;
 
-
 namespace android {
 namespace nn {
-namespace hal {
 namespace vsi_driver {
-
 
 class VsiPreparedModel : public HalPlatform::PrepareModel
 {
@@ -88,7 +85,8 @@ class VsiPreparedModel : public HalPlatform::PrepareModel
 
         void fill_operand_value(nnrt::op::OperandPtr ovx_operand, const HalPlatform::Operand& hal_operand) ;
 
-        Return<ErrorStatus>  construct_ovx_operand( nnrt::op::OperandPtr ovx_oprand, const HalPlatform::Operand& hal_operand);
+        Return<ErrorStatus>  construct_ovx_operand( nnrt::op::OperandPtr ovx_oprand,
+                                                         const HalPlatform::Operand& hal_operand);
 
         Return<ErrorStatus> map_rtinfo_from_hidl_memory( const hidl_vec<hidl_memory>& pools,
                                                               std::vector<VsiRTInfo>& rtInfos);
@@ -133,7 +131,6 @@ class VsiPreparedModel : public HalPlatform::PrepareModel
         std::vector<VsiRTInfo> const_buffer_;
         std::vector<VsiRTInfo> io_buffer_;
 };
-}
 }
 }
 }

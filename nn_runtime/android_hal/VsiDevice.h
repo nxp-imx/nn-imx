@@ -40,7 +40,6 @@ using android::sp;
 
 namespace android {
 namespace nn {
-namespace hal {
 namespace vsi_driver {
 
 class VsiDevice : public HalPlatform::Device
@@ -169,7 +168,6 @@ class VsiDevice : public HalPlatform::Device
             return ErrorStatus::NONE;
         }
 };
-}
 }
 }
 }

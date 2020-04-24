@@ -37,8 +37,6 @@
 #endif
 
 #define OP_SPEC_BEGIN()                                     \
-    namespace android {                                     \
-    namespace nn {                                          \
     namespace hal {                                         \
     namespace limitation {                                 \
     class BOOST_PP_CAT(OP_SPEC_NAME, _) : public IArgList { \
@@ -82,9 +80,7 @@
     };                                                                                             \
     } /*end of namespace limitation*/                                                             \
     } /*end of namespace hal*/                                                                     \
-    } /*end of namespace nn*/                                                                     \
-    } /*end of namespace android*/                                                                     \
-    using namespace android::nn::hal::limitation;
+    using namespace hal::limitation;
 
 #define MAKE_SPEC(uid)                                                    \
     static BOOST_PP_CAT(OP_SPEC_NAME, _) BOOST_PP_CAT(OP_SPEC_NAME, uid); \

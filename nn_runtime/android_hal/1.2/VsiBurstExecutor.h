@@ -35,9 +35,7 @@
 
 namespace android {
 namespace nn {
-namespace hal {
 namespace vsi_driver {
-
 class BurstExecutorWithCache : public ExecutionBurstServer::IBurstExecutorWithCache {
    public:
     BurstExecutorWithCache(const HalPlatform::Model& model, ExecutionPreference preference):
@@ -59,7 +57,6 @@ class BurstExecutorWithCache : public ExecutionBurstServer::IBurstExecutorWithCa
     std::map<int32_t, std::optional<hidl_memory>> memoryCache_;  // cached hidl memory pool
     ExecutionPreference preference_;
 };
-}
 }
 }
 }

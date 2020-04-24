@@ -31,8 +31,6 @@
 #include <vector>
 
 #include "nnrt/types.hpp"
-namespace android {
-namespace nn {
 namespace hal {
 namespace limitation {
 
@@ -90,8 +88,6 @@ class OpSpecCollection {
 
     std::map<std::string, std::vector<const IArgList*>> m_Collection;
 };
-}
-}
 }
 }
 #endif

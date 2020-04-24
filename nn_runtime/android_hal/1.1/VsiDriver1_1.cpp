@@ -3,7 +3,6 @@
 
 namespace android {
 namespace nn {
-namespace hal {
 namespace vsi_driver {
 
     Return<void> VsiDriver::getCapabilities_1_1(V1_1::IDevice::getCapabilities_1_1_cb cb) {
@@ -31,7 +30,6 @@ namespace vsi_driver {
         }
         return getSupportedOperationsBase(HalPlatform::convertVersion(model), cb);
     }
-}
 }
 }
 }

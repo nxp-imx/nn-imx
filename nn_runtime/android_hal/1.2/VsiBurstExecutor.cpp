@@ -27,7 +27,6 @@
 
 namespace android {
 namespace nn {
-namespace hal {
 namespace vsi_driver {
 
     using time_point = std::chrono::steady_clock::time_point;
@@ -95,6 +94,5 @@ namespace vsi_driver {
         return std::make_tuple(result, outputShapes, timing);
      }
 };
-}
 }
 }

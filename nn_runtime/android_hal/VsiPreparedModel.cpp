@@ -35,9 +35,9 @@
 #include <nnrt/event.hpp>
 #include <nnrt/error.hpp>
 
+
 namespace android {
 namespace nn {
-namespace hal {
 namespace vsi_driver {
 
 class VsiDriver;
@@ -476,7 +476,6 @@ static Return<ErrorStatus> convertResultCodeToErrorStatus(int resultCode) {
                                 const sp<V1_0::IExecutionCallback>& callback) {
         return executeBase(request, callback);
     };
-}
 }
 }
 }
