@@ -36,51 +36,47 @@ class GroupedConv2DValidate : public OperationValidate<T_model, T_Operation> {
     GroupedConv2DValidate(const T_model& model, const T_Operation& operation)
         : OperationValidate<T_model, T_Operation>(model, operation) {}
     bool SignatureCheck(std::string& reason) override {
-        uint32_t groupNumber = 0;
-        uint32_t inputChannel = 0;
-        uint32_t outputChannel = 0;
-        // Default layout = NHWC
-        bool layout = false;
-        bool support = true;
-        auto model = this->ModelForRead();
-        auto operation = this->OperationForRead();
-        auto input = model.operands[operation.inputs[0]];
-        auto output = model.operands[operation.outputs[0]];
-        if (12 == operation.inputs.size()) {
-            auto& groupNumberOperand = model.operands[operation.inputs[9]];
-            auto& layoutOperand = model.operands[operation.inputs[11]];
-            groupNumber = get_buffer::getScalarData<uint32_t>(model, groupNumberOperand);
-            layout = get_buffer::getScalarData<bool>(model, layoutOperand);
-        }
-        else if (9 == operation.inputs.size()) {
-            auto& groupNumberOperand = model.operands[operation.inputs[6]];
-            auto& layoutOperand = model.operands[operation.inputs[8]];
-            groupNumber = get_buffer::getScalarData<uint32_t>(model, groupNumberOperand);
-            layout = get_buffer::getScalarData<bool>(model, layoutOperand);
-        }
-        else {
-            LOG(ERROR) << "GROUPED_CONV_2D: inputs size mismatched";
-            assert(false);
-        }
-        if (layout) {
-            // NCHW
-            inputChannel = input.dimensions[1];
-            outputChannel = output.dimensions[1];
-        } else {
-            // NHWC
-            inputChannel = input.dimensions[3];
-            outputChannel = output.dimensions[3];
-        }
-        if (groupNumber == inputChannel / outputChannel) {
-            support = true;
-        } else {
-            reason += "reject GROUPED_CONV2D because the group number is invalid \n";
-            support = false;
-        }
+        auto inputList = hal::limitation::nnapi::match("GroupedConv2DInput", this->InputArgTypes());
+        auto outputList = hal::limitation::nnapi::match("GroupedConv2DOutput", this->OutputArgTypes());
+        if (inputList && outputList) {
+            int32_t inputIndex = inputList->ArgPos("input");
+            int32_t kernelIndex = inputList->ArgPos("kernel");
+            int32_t groupNumberIndex = inputList->ArgPos("groups_num");
+            int32_t layoutIndex = inputList->ArgPos("data_layout");
+            auto model = this->ModelForRead();
+            auto operation = this->OperationForRead();
+            if (operation.inputs[inputIndex] == operation.inputs[kernelIndex]) {
+                reason += "reject GROUPED_CONV_2D because input and kernel share a same tensor\n";
+                return false;
+            }
+            auto& groupNumberOperand = model.operands[operation.inputs[groupNumberIndex]];
+            auto& layoutOperand = model.operands[operation.inputs[layoutIndex]];
+            uint32_t groupNumber = get_buffer::getScalarData<uint32_t>(model, groupNumberOperand);
+            bool layout = get_buffer::getScalarData<bool>(model, layoutOperand);
+            uint32_t inputChannel = 0;
+            uint32_t outputChannel = 0;
+            auto inputOperand = model.operands[operation.inputs[inputIndex]];
+            auto outputOperand = model.operands[operation.outputs[outputList->ArgPos("output")]];
+            if (layout) {
+                // NCHW
+                inputChannel = inputOperand.dimensions[1];
+                outputChannel = outputOperand.dimensions[1];
+            } else {
+                // NHWC
+                inputChannel = inputOperand.dimensions[3];
+                outputChannel = outputOperand.dimensions[3];
+            }
+            if (groupNumber == inputChannel / outputChannel) {
+                return true;
+            } else {
+                reason += "reject GROUPED_CONV2D because the group number is invalid \n";
+                return false;
+            }
 
-        return support &&
-               hal::limitation::nnapi::match("GroupedConv2DInput", this->InputArgTypes()) &&
-               hal::limitation::nnapi::match("GroupedConv2DOutput", this->OutputArgTypes());
+        } else {
+            reason += "reject GROUPED_CONV_2D because input data type not support\n";
+            return false;
+        }
     };
 };
 

@@ -36,7 +36,6 @@ class DepthwiseConv2dValidate : public OperationValidate<T_model, T_Operation> {
     DepthwiseConv2dValidate(const T_model& model, const T_Operation& operation)
         : OperationValidate<T_model, T_Operation>(model, operation) {}
     bool SignatureCheck(std::string& reason) override {
-        bool support = true;
         auto model = this->ModelForRead();
         auto operation = this->OperationForRead();
         auto inputList =
@@ -45,26 +44,31 @@ class DepthwiseConv2dValidate : public OperationValidate<T_model, T_Operation> {
             hal::limitation::nnapi::match("DepthwiseConvolution2DOutput", this->OutputArgTypes());
         if (inputList && outputList) {
             int32_t layoutIndex = inputList->ArgPos("data_layout");
+            int32_t inputIndex = inputList->ArgPos("input");
+            int32_t kernelIndex = inputList->ArgPos("kernel");
+            if (operation.inputs[inputIndex] == operation.inputs[kernelIndex]) {
+                reason += "reject Depthwise_conv_2d because input and kernel share a same tensor\n";
+                return false;
+            }
             if (-1 != layoutIndex) {
                 auto layoutOperand = model.operands[operation.inputs[layoutIndex]];
                 bool layoutData = get_buffer::getScalarData<bool>(model, layoutOperand);
                 if (layoutData) {
-                    support = false;
                     reason += ("reject Depthwise_conv_2d because data_layout = true\n");
+                    return false;
                 }
             }
-            int32_t kernelIndex = inputList->ArgPos("kernel");
             if (-1 != kernelIndex) {
                 auto kernelDim = model.operands[operation.inputs[kernelIndex]].dimensions;
                 if (kernelDim[0] != 1) {
-                    support = false;
                     reason += ("reject Depthwise_conv_2d because kernel[0] != 1\n");
+                    return false;
                 }
             } else {
                 LOG(ERROR) << "DepthwiseValidate: kernelIndex = -1";
                 assert(false);
             }
-            return support;
+            return true;
         } else {
             reason += ("reject Depthwise_conv_2d because input data type not support\n");
             return false;
