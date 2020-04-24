@@ -341,8 +341,12 @@ uint32_t vsi_nn_ComputeFilterSize
     uint32_t out;
     if( 0 == stride )
     {
-        VSILOGW( "Error stride value: 0." );
-        return 0;
+        if (i_size == ksize) {
+            stride = 1;
+        } else {
+            VSILOGE( "Error stride value: 0." );
+            return 0;
+        }
     }
     if (dilation > 1)
     {
