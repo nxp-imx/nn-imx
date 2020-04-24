@@ -1566,8 +1566,8 @@ OperationPtr NnApiInterpreter::map_DECONV_2D(Model* model,
         deconv2d = std::make_shared<Deconv2DOperation>();
         NNAPI_CHECK_PTR(deconv2d);
         deconv2d->pad[0] = inputs[argList->ArgPos("pad_left")]->scalar.int32;
-        deconv2d->pad[1] = inputs[argList->ArgPos("pad_top")]->scalar.int32;
-        deconv2d->pad[2] = inputs[argList->ArgPos("pad_right")]->scalar.int32;
+        deconv2d->pad[1] = inputs[argList->ArgPos("pad_right")]->scalar.int32;
+        deconv2d->pad[2] = inputs[argList->ArgPos("pad_top")]->scalar.int32;
         deconv2d->pad[3] = inputs[argList->ArgPos("pad_bottom")]->scalar.int32;
         deconv2d->strides[0] = inputs[argList->ArgPos("stride_w")]->scalar.int32;
         deconv2d->strides[1] = inputs[argList->ArgPos("stride_h")]->scalar.int32;
