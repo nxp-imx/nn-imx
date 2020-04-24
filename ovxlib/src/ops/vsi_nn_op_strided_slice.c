@@ -270,6 +270,7 @@ static vsi_status op_compute
     vsi_nn_tensor_t *begin_dims_tensor = NULL;
     vsi_nn_tensor_t *end_dims_tensor = NULL;
     vsi_nn_tensor_t *stride_dims_tensor = NULL;
+    vsi_nn_tensor_t *output_tensor = NULL;
     vsi_nn_tensor_attr_t attr;
     int32_t   *start_dims = NULL;
     int32_t   *stop_dims = NULL;
@@ -298,6 +299,10 @@ static vsi_status op_compute
     }
     else
     {
+        uint32_t sizes[VSI_NN_MAX_DIM_NUM] = {1};
+        uint32_t dims = inputs[0]->attr.dim_num;
+        int32_t  shrink_axis_mask = self->nn_param.strided_slice.shrink_axis_mask;
+
         memset(&param, 0, sizeof(vx_nn_stride_slice_params_t));
 
         memset(&attr, 0, sizeof(attr));
@@ -361,13 +366,47 @@ static vsi_status op_compute
         param.end_mask = p->end_mask;
         param.shrink_axis_mask = p->shrink_axis_mask;
 
+        /* reshpae output tensor to keep output rank is the same as input's */
+        memset(&sizes, 0, sizeof(int32_t) * VSI_NN_MAX_DIM_NUM);
+        memcpy(&sizes, &outputs[0]->attr.size, sizeof(int32_t) * outputs[0]->attr.dim_num);
+
+        if (shrink_axis_mask && p->shrink_axis_mask == 0)
+        {
+            uint32_t i = 0;
+            uint32_t j = 0;
+
+            for (i = 0; i < inputs[0]->attr.dim_num; i++)
+            {
+                if (shrink_axis_mask & (1 << i))
+                {
+                    sizes[i] = 1;
+                }
+                else
+                {
+                    sizes[i] = outputs[0]->attr.size[j ++];
+                }
+            }
+        }
+
+        output_tensor = vsi_nn_reshape_tensor(self->graph, outputs[0], sizes, dims);
+        if( NULL == output_tensor )
+        {
+            VSILOGE("Create output_tensor fail.(strided_slice)");
+            return VSI_FAILURE;
+        }
+
         self->n = vxTensorStrideSliceNode(
             self->graph->g,
             inputs[0]->t,
             &param,
             sizeof(vx_nn_stride_slice_params_t),
-            outputs[0]->t
+            output_tensor->t
             );
+
+        if (output_tensor)
+        {
+            vsi_nn_ReleaseTensor(&output_tensor);
+        }
 
         if( NULL != self->n )
         {
