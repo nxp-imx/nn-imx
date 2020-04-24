@@ -84,3 +84,4 @@ void NNapiRequirementRegister(const std::string& opName, const IArgList* arglist
 #include "nnapi_spec/ANEURALNETWORKS_SPLIT.hpp"
 #include "nnapi_spec/ANEURALNETWORKS_SOFTMAX.hpp"
 #include "nnapi_spec/ANEURALNETWORKS_PAD_V2.hpp"
+#include "nnapi_spec/ANEURALNETWORKS_GROUPED_CONV_2D.hpp"

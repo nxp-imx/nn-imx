@@ -109,6 +109,9 @@ class Operation : nnrt::layout_inference::ILayoutInference {
         const std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>&
             operand_permute) override;
 
+    std::vector<uint32_t> dimensionTrans(std::vector<uint32_t>& orgDims,
+                                         const std::vector<uint32_t> perm);
+
    protected:
     /**
      * @brief Cache Permute Vector for each Input Tensor
@@ -137,7 +140,6 @@ class Operation : nnrt::layout_inference::ILayoutInference {
     };
 
     InputTensorPermuteVectorCache input_permute_cache_;
-
     /**
      * @brief insert permute operation before input or after output for a opertion
      *
@@ -165,9 +167,6 @@ class Operation : nnrt::layout_inference::ILayoutInference {
     void permuteConstOperands(Model& model,
                               std::vector<uint32_t>& constOperandIds,
                               nnrt::layout_inference::IPermuteVectorPtr permVec);
-
-    std::vector<uint32_t> dimensionTrans(std::vector<uint32_t>& orgDims,
-                                         const std::vector<uint32_t> perm);
 
     virtual void handleLayoutInferenceOnInputs(
         Model& model,

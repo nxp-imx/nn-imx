@@ -465,31 +465,54 @@ OperationPtr NnApiInterpreter::map_GROUPED_CONV_2D(Model* model,
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
     std::shared_ptr<GroupedConv2DOperation> conv2d = std::make_shared<GroupedConv2DOperation>();
     NNAPI_CHECK_PTR(conv2d);
-    conv2d->setDataLayout(DataLayout::NHWC);
     conv2d->dilations[0] = 1;
     conv2d->dilations[1] = 1;
-    if (inputs.size() == 9) {
-        conv2d->padType = mapPadType(inputs[3]->scalar.int32);
-        conv2d->strides[0] = inputs[4]->scalar.int32;
-        conv2d->strides[1] = inputs[5]->scalar.int32;
-        conv2d->groups = inputs[6]->scalar.int32;
-        resetFusedType(model, operation, 7);
-        conv2d->setDataLayout(getDataLayout(inputs[8]->scalar.boolean));
-        // conv2d->dilations[0] = inputs[8]->scalar.int32;
-        // conv2d->dilations[1] = inputs[9]->scalar.int32;
+    std::vector<OperandType> argTypes;
+    std::transform(
+        inputs.begin(), inputs.end(), std::back_inserter(argTypes), [](const OperandPtr& operand) {
+            return operand->type;
+        });
+
+    auto argList = api::requirement::nnapi::match("GroupedConv2DOperation", argTypes);
+    if (argList) {
+        if (-1 == argList->ArgPos("pad_left")) {
+            // implicit_pad
+            auto padTypeIdx = argList->ArgPos("implicit_pad");
+            conv2d->padType = mapPadType(inputs[padTypeIdx]->scalar.int32);
+        } else {
+            conv2d->pad[0] = inputs[argList->ArgPos("pad_left")]->scalar.int32;
+            conv2d->pad[1] = inputs[argList->ArgPos("pad_right")]->scalar.int32;
+            conv2d->pad[2] = inputs[argList->ArgPos("pad_top")]->scalar.int32;
+            conv2d->pad[3] = inputs[argList->ArgPos("pad_bottom")]->scalar.int32;
+        }
+        conv2d->strides[0] = inputs[argList->ArgPos("stride_w")]->scalar.int32;
+        conv2d->strides[1] = inputs[argList->ArgPos("stride_h")]->scalar.int32;
+        conv2d->groups = inputs[argList->ArgPos("groups_num")]->scalar.int32;
+        resetFusedType(model, operation, argList->ArgPos("fuse_code"));
+        conv2d->setDataLayout(
+            getDataLayout(inputs[argList->ArgPos("data_layout")]->scalar.boolean));
+        // Transpose weight for nchw cases
+        if (DataLayout::NCHW == conv2d->getDataLayout()) {
+            std::vector<uint32_t> permVal = {0, 3, 1, 2};
+            auto kernelIdx = argList->ArgPos("kernel");
+            if (inputs[kernelIdx]->isConst()) {
+                // Set permute flag. Do transepose in ovxlib delegate
+                inputs[kernelIdx]->setPerm(permVal);
+                inputs[kernelIdx]->dimensions =
+                    conv2d->dimensionTrans(inputs[kernelIdx]->dimensions, permVal);
+            } else {
+                // Insert permute layer for weight as input
+                if (!operand_utils::InsertPermuteBeforeOperand(
+                    model, operation, operation->inputs()[1], permVal)) {
+                        NNRT_LOGE_PRINT("GroupedConv2d: insert permute failed.");
+                        assert(false);
+                }
+            }
+        }
     } else {
-        conv2d->pad[0] = inputs[3]->scalar.int32;
-        conv2d->pad[1] = inputs[4]->scalar.int32;
-        conv2d->pad[2] = inputs[5]->scalar.int32;
-        conv2d->pad[3] = inputs[6]->scalar.int32;
-        conv2d->strides[0] = inputs[7]->scalar.int32;
-        conv2d->strides[1] = inputs[8]->scalar.int32;
-        conv2d->groups = inputs[9]->scalar.int32;
-        resetFusedType(model, operation, 10);
-        conv2d->setDataLayout(getDataLayout(inputs[11]->scalar.boolean));
-        // conv2d->dilations[0] = inputs[11]->scalar.int32;
-        // conv2d->dilations[1] = inputs[12]->scalar.int32;
+        NNRT_LOGE_PRINT("GroupedConv2D argument list not support");
     }
+
     /* set default dilation value */
     conv2d->setVxParam(OverflowPolicy::WRAP, RoundingPolicy::TO_ZERO, Rounding::FLOOR);
     truncateOperationIOs(model, operation, 3, 1);
@@ -680,23 +703,27 @@ OperationPtr NnApiInterpreter::map_SOFTMAX(Model* model,
 OperationPtr NnApiInterpreter::map_TRANSPOSE(Model* model,
                                              OperationPtr operation,
                                              uint32_t operation_index) {
-    NNAPI_CHECK_IO_NUM(operation, 2, 1);
-    std::shared_ptr<PermuteOperation> permute = std::make_shared<PermuteOperation>();
-    NNAPI_CHECK_PTR(permute);
-    std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
-    fillIntArray(model, operation, permute->perm, 1, false);
-    // For perm is empty and input rank = 2, need to set perm = {1, 0}
-    if (permute->perm.empty()) {
-        auto input0 = model->operand(operation->input(0));
-        if (2 == input0->ndim()) {
-            permute->perm = {1, 0};
-        } else {
-            NNRT_LOGE("The perm of tranpose is null");
-            assert(false);
+    // NNAPI_CHECK_IO_NUM(operation, 2, 1);
+    if (operation->inputs().size() == 2) {
+        std::shared_ptr<PermuteOperation> permute = std::make_shared<PermuteOperation>();
+        NNAPI_CHECK_PTR(permute);
+        std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
+        fillIntArray(model, operation, permute->perm, 1, false);
+        // For perm is empty and input rank = 2, need to set perm = {1, 0}
+        if (permute->perm.empty()) {
+            auto input0 = model->operand(operation->input(0));
+            if (2 == input0->ndim()) {
+                permute->perm = {1, 0};
+            } else {
+                NNRT_LOGE("The perm of tranpose is null");
+                assert(false);
+            }
         }
+        truncateOperationIOs(model, operation, 1, 1);
+        return permute;
+    } else {
+        return operation;
     }
-    truncateOperationIOs(model, operation, 1, 1);
-    return permute;
 }
 
 OperationPtr NnApiInterpreter::map_AVERAGE_POOL_2D(Model* model,

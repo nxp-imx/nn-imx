@@ -235,6 +235,35 @@ bool InsertFp16ToFp32LayerBeforeOperand(Model* model,
         return false;
     }
 }
+
+bool InsertPermuteBeforeOperand(Model* model,
+                                op::OperationPtr operation,
+                                uint32_t operandId,
+                                const std::vector<uint32_t>& permVal) {
+    int newOutOperandId = -1;
+    uint32_t permInputs[1];
+    uint32_t permOutputs[1];
+    auto inputOperandPtr = model->operand(operandId);
+    op::OperandPtr newOutOperandPtr = model->cloneOperand(inputOperandPtr, &newOutOperandId);
+    newOutOperandPtr->dimensions = operation->dimensionTrans(newOutOperandPtr->dimensions, permVal);
+    permInputs[0] = operandId;
+    permOutputs[0] = (uint32_t)newOutOperandId;
+    operation->replaceInputs(operandId, newOutOperandId);
+
+    std::shared_ptr<nnrt::op::PermuteOperation> permuteOp =
+        std::make_shared<nnrt::op::PermuteOperation>();
+    permuteOp->perm.assign(permVal.begin(), permVal.end());
+
+    uint32_t permId = 0;
+    permuteOp->setInputs(permInputs, 1);
+    permuteOp->setOutputs(permOutputs, 1);
+    if (model->addOperation(permuteOp, &permId)) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
 }
 
 namespace OS {

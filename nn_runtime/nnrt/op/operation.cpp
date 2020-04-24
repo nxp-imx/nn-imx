@@ -208,6 +208,8 @@ inline const char* get_operation_string(OperationType type) {
             return "generate_proposals";
         case OperationType::CAST:
             return "cast";
+        case OperationType::GROUPED_CONV_2D:
+            return "grouped_conv2d";
         default:
             return nullptr;
     }

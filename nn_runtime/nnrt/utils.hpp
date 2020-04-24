@@ -58,6 +58,11 @@ bool IsDynamicShape(nnrt::op::OperandPtr operand);
 bool InsertFp16ToFp32LayerBeforeOperand(Model* model,
                                         op::OperationPtr operation,
                                         op::OperandPtr operand);
+
+bool InsertPermuteBeforeOperand(Model* model,
+                                op::OperationPtr operation,
+                                uint32_t operandId,
+                                const std::vector<uint32_t>& permVal);
 }
 
 namespace OS {
