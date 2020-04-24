@@ -69,11 +69,10 @@ MAKE_SPEC(explict_padding_base)
     .dilation_w_(nnrt::OperandType::INT32, OPTIONAL)
     .dilation_h_(nnrt::OperandType::INT32, OPTIONAL));
 
-// // Note: Bias not support float16
-// OVERRIDE_SPEC(explict_padding_base, in_float16)
-//     .input_(nnrt::OperandType::TENSOR_FLOAT16)
-//     .kernel_(nnrt::OperandType::TENSOR_FLOAT16)
-//     .bias_(nnrt::OperandType::TENSOR_FLOAT16));
+OVERRIDE_SPEC(explict_padding_base, in_float16)
+    .input_(nnrt::OperandType::TENSOR_FLOAT16)
+    .kernel_(nnrt::OperandType::TENSOR_FLOAT16)
+    .bias_(nnrt::OperandType::TENSOR_FLOAT16));
 
 OVERRIDE_SPEC(explict_padding_base, in_asysm_u8)
     .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM)

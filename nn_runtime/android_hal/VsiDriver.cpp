@@ -194,16 +194,6 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
             }
             break;
         }
-        case OperationType::DEPTHWISE_CONV_2D: {
-            auto kernelDim = model.operands[operation.inputs[1]].dimensions;
-            if (kernelDim[0] == 1) {
-                isSupport &= true;
-            } else {
-                reason += ("reject Depthwise_conv_2d because kernel[0] != 1\n");
-                isSupport &= false;
-            }
-            break;
-        }
         case OperationType::RNN: {
             int32_t fuseCode = getScalarData<int32_t>(model, model.operands[operation.inputs[5]]);
             if (fuseCode == static_cast<int32_t>(FusedActivationFunc::NONE) ||
@@ -645,6 +635,12 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
                 op_validate::ReshapeValidate<HalPlatform::Model, HalPlatform::Operation>>(
                 model, operation);
             return reshape->Validate(reason);
+        }
+        case OperationType::DEPTHWISE_CONV_2D: {
+            OperationValidatePtr depthwiseConv2d = std::make_unique<
+                op_validate::DepthwiseConv2dValidate<HalPlatform::Model, HalPlatform::Operation>>(
+                model, operation);
+            return depthwiseConv2d->Validate(reason);
         }
         case OperationType::BOX_WITH_NMS_LIMIT:
         case OperationType::PAD_V2:
