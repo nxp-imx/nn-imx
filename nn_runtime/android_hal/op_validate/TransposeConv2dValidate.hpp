@@ -47,6 +47,11 @@ class TransposeConv2dValidate : public OperationValidate<T_model, T_Operation> {
                 reason += "reject TRANSPOSE_CONV_2D because input and kernel share the same tensor\n";
                 return false;
             }
+            auto inputOperand = model.operands[operation.inputs[inputIndex]];
+            if (inputOperand.dimensions[0] > 1 && inputOperand.type == OperandType::TENSOR_FLOAT32) {
+                reason += "reject TRANSPOSE_CONV_2D because not support input with multi batch\n";
+                return false;
+            }
             return true;
         } else {
             reason += "reject TRANSPOSE_CONV_2D because not support the input data type\n";
