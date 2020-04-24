@@ -1,0 +1,86 @@
+%LICENSE%
+
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include "vsi_nn_types.h"
+#include "vsi_nn_tensor.h"
+#include "vsi_nn_graph.h"
+#include "vsi_nn_log.h"
+#include "vsi_nn_error.h"
+#include "vsi_nn_prv.h"
+#include "vsi_nn_tensor_util.h"
+#include "utils/vsi_nn_util.h"
+#include "kernel/vsi_nn_kernel.h"
+#include "libnnext/vx_lib_nnext.h"
+
+__BEGIN_DECLS
+
+/*
+ * Define kernel meta.
+ */
+%KERNEL_META%
+
+/*
+ * Kernel params
+ */
+static vx_param_description_t _%KERNEL_NAME%_kernel_param_def[] =
+{
+    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    // Add kererl parameters here
+};
+#define _%upper(KERNEL_NAME)%_PARAM_NUM  _cnt_of_array( _%KERNEL_NAME%_kernel_param_def )
+%KERNEL_INITIALIZER%
+%KERNEL_FUNCTION%
+
+/*
+ * Query kernel
+ */
+%KERNEL_QUERY%
+
+static vsi_nn_kernel_node_t _setup
+    (
+    vsi_nn_graph_t              * graph,
+    vsi_nn_tensor_t            ** inputs,
+    size_t                        input_num,
+    vsi_nn_tensor_t            ** outputs,
+    size_t                        output_num,
+    const vsi_nn_kernel_param_t * params,
+    vsi_nn_kernel_t             * kernel
+    )
+{
+    vsi_status status = VSI_FAILURE;
+    vsi_nn_kernel_node_param_t node_params[_%upper(KERNEL_NAME)%_PARAM_NUM];
+    vsi_nn_kernel_node_t node = NULL;
+
+%KERNEL_CHECK%
+    /*
+     * Use kernel param
+     * int32_t integer  = vsi_nn_kernel_param_get_int32( param, "data_key_i32" );
+     * int64_t integer  = vsi_nn_kernel_param_get_int64( param, "hashkey" );
+     * float fp         = vsi_nn_kernel_param_get_float32( param, "data_key_f32" );
+     * const char * str = vsi_nn_kernel_param_get_char( param, "padding" );
+     * size_t buffer_size;
+     * int * buffer = (int*)vsi_nn_kernel_param_get_buffer( param, "padding", &buffer_size );
+     */
+    status = _query_kernel( kernel, inputs, outputs /* Add extra params */ );
+    if( VSI_SUCCESS == status)
+    {
+        node = vsi_nn_kernel_create_node( graph, kernel );
+        if( node )
+        {
+            /* Set inputs and outputs */
+            vsi_nn_kernel_node_pack_io( node_params, _%upper(KERNEL_NAME)%_PARAM_NUM,
+                    inputs, input_num, outputs, output_num );
+            /* Pass parameters to node. */
+            status  = vsi_nn_kernel_node_pass_param( node, node_params, _%upper(KERNEL_NAME)%_PARAM_NUM );
+        }
+    }
+    return node;
+} /* _setup() */
+
+__END_DECLS
+
+REGISTER_BACKEND_%KERNEL_TYPE%( %KERNEL_NAME%, _setup )
+

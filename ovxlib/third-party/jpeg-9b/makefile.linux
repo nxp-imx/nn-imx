@@ -1,0 +1,75 @@
+#
+# Driver part of OpenVX.
+#
+
+#############################################################################
+# Include common definitions.
+
+include $(AQROOT)/makefile.linux.def
+INCLUDE += -I.
+CFLAGS += $(INCLUDE)
+
+
+STATIC = 1
+CFLAGS += -fPIC
+
+TARGET_NAME = libjpeg.a
+
+INSTALL_DIR	:= ../../lib/
+#############################################################################
+# Objects.
+
+OBJECTS         =   $(OBJ_DIR)/jaricom.o   \
+                    $(OBJ_DIR)/jcapimin.o   \
+                    $(OBJ_DIR)/jcapistd.o   \
+                    $(OBJ_DIR)/jcarith.o   \
+                    $(OBJ_DIR)/jccoefct.o   \
+                    $(OBJ_DIR)/jccolor.o   \
+                    $(OBJ_DIR)/jcdctmgr.o   \
+                    $(OBJ_DIR)/jchuff.o   \
+                    $(OBJ_DIR)/jcinit.o   \
+                    $(OBJ_DIR)/jcmainct.o   \
+                    $(OBJ_DIR)/jcmarker.o   \
+                    $(OBJ_DIR)/jcmaster.o   \
+                    $(OBJ_DIR)/jcomapi.o   \
+                    $(OBJ_DIR)/jcparam.o   \
+                    $(OBJ_DIR)/jcprepct.o   \
+                    $(OBJ_DIR)/jcsample.o   \
+                    $(OBJ_DIR)/jctrans.o   \
+                    $(OBJ_DIR)/jdapimin.o   \
+                    $(OBJ_DIR)/jdapistd.o   \
+                    $(OBJ_DIR)/jdarith.o   \
+                    $(OBJ_DIR)/jdatadst.o   \
+                    $(OBJ_DIR)/jdatasrc.o   \
+                    $(OBJ_DIR)/jdcoefct.o   \
+                    $(OBJ_DIR)/jdcolor.o   \
+                    $(OBJ_DIR)/jddctmgr.o   \
+                    $(OBJ_DIR)/jdhuff.o   \
+                    $(OBJ_DIR)/jdinput.o   \
+                    $(OBJ_DIR)/jdmainct.o   \
+                    $(OBJ_DIR)/jdmarker.o   \
+                    $(OBJ_DIR)/jdmaster.o   \
+                    $(OBJ_DIR)/jdmerge.o   \
+                    $(OBJ_DIR)/jdpostct.o   \
+                    $(OBJ_DIR)/jdsample.o   \
+                    $(OBJ_DIR)/jdtrans.o   \
+                    $(OBJ_DIR)/jerror.o   \
+                    $(OBJ_DIR)/jfdctflt.o   \
+                    $(OBJ_DIR)/jfdctfst.o   \
+                    $(OBJ_DIR)/jfdctint.o   \
+                    $(OBJ_DIR)/jidctflt.o   \
+                    $(OBJ_DIR)/jidctfst.o   \
+                    $(OBJ_DIR)/jidctint.o   \
+                    $(OBJ_DIR)/jmemansi.o   \
+                    $(OBJ_DIR)/jmemmgr.o   \
+                    $(OBJ_DIR)/jmemnobs.o   \
+                    $(OBJ_DIR)/jquant1.o   \
+                    $(OBJ_DIR)/jquant2.o   \
+                    $(OBJ_DIR)/jutils.o   \
+
+
+################################################################################
+# Include the common makefile.
+
+include $(AQROOT)/common.target
+

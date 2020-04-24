@@ -1,0 +1,6 @@
+#!/bin/bash --norc
+
+PATH="external/rockchips_toybrick_aarch64_linux_gnu/libexec/gcc/aarch64-linux-gnu/6.3.1:$PATH" \
+    exec \
+    external/rockchips_toybrick_aarch64_linux_gnu/bin/aarch64-linux-gnu-gcc \
+    "$@"

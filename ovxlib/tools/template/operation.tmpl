@@ -1,0 +1,106 @@
+%LICENSE%
+
+#include <string.h>
+#include <stdlib.h>
+
+#include "vsi_nn_types.h"
+#include "vsi_nn_log.h"
+#include "vsi_nn_node.h"
+#include "vsi_nn_prv.h"
+#include "vsi_nn_ops.h"
+#include "vsi_nn_tensor.h"
+#include "utils/vsi_nn_util.h"
+#include "kernel/vsi_nn_kernel.h"
+
+/*
+ Declare number of input and output.
+ */
+#define _INPUT_NUM          (1)
+#define _OUTPUT_NUM         (1)
+
+static vsi_status op_compute
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs
+    )
+{
+    vsi_status status = VSI_FAILURE;
+
+    /*
+    // TODO:
+    // Create kernel param
+    vsi_nn_kernel_param_t * param;
+    vsi_nn_kernel_node_t    n;
+    param = vsi_nn_kernel_param_create();
+    */
+
+    /*
+    // TODO:
+    // Add params
+    // vsi_nn_kernel_param_add_int32( param, "stride", 1 );
+    // vsi_nn_kernel_param_add_int64( param, "hashkey", 0xABCDEF );
+    // vsi_nn_kernel_param_add_str( param, "padding", "SAME" );
+    // vsi_nn_kernel_param_add_buffer( param, "content", buffer, 1024 );
+    // vsi_nn_kernel_param_add_float32( param, "ratio", 1.0f );
+    // n = vsi_nn_kernel_selector( self->graph, "kernel1", inputs, 1, outputs, 1, param );
+    // vsi_nn_kernel_node_release( &n );
+    // vsi_nn_kernel_param_reset( param );
+    // vsi_nn_kernel_param_add_int32( param, "stride2", 2 );
+    // vsi_nn_kernel_param_add_float32( param, "ratio2", 2.0f );
+    // n = vsi_nn_kernel_selector( self->graph, "kernel2", inputs, 2, outputs, 1, param );
+    // node->n = (vx_node)n;
+    */
+
+    if( self->n )
+    {
+        status = VSI_SUCCESS;
+    }
+    /*
+    // TODO:
+    // Free kernel param
+    vsi_nn_kernel_param_release( &param );
+    */
+    return status;
+} /* op_compute() */
+
+static vsi_bool op_check
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs
+    )
+{
+    /*TODO: Check tensor shapes. */
+    return TRUE;
+} /* op_check() */
+
+static vsi_bool op_setup
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs
+    )
+{
+    /* TODO: Add code to comput outputs' shape. */
+    return TRUE;
+} /* op_setup() */
+
+__BEGIN_DECLS
+
+/* Registrar */
+DEF_OP_REG
+    (
+    /* op_name    */ %upper(OP_NAME)%,
+    /* init       */ NULL,
+    /* compute    */ op_compute,
+    /* deinit     */ vsi_nn_op_common_deinit,
+    /* check      */ op_check,
+    /* setup      */ op_setup,
+    /* optimize   */ NULL,
+    /* input_num  */ _INPUT_NUM,
+    /* output_num */ _OUTPUT_NUM
+    );
+
+__END_DECLS
+

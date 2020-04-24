@@ -1,0 +1,35 @@
+how to build/link/run app with gperftools?
+
+1 set env variables
+export OVXLIB_DIR=ovxlib_source_code_dir
+export VSI_GPERF_DEBUG=1
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$OVXLIB_DIR/third-party/gperftools/.libs
+export PPROF_PATH=$OVXLIB_DIR/third-party/gperftools/src/pprof
+export HEAPPROFILE=heap_result
+
+2 use 'bash make.sh' build ovxlib
+
+3 modify app's makefile.linux add the following:
+ifneq ($(gcdSTATIC_LINK), 1)
+    ifeq ($(VSI_GPERF_DEBUG), 1)
+         TCMALLOC_DIR = $(OVXLIB_DIR)/third-party/gperftools
+         CFLAGS += -I$(TCMALLOC_DIR)/src
+         CFLAGS += -fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free
+         CFLAGS += -g
+         LIBS += -L$(TCMALLOC_DIR)/.libs -ltcmalloc
+    endif
+endif
+
+4 buid app with $cc
+$cc clean
+$cc install
+
+5 run app with gperftools to get leak function
+HEAPCHECK=normal HEAP_CHECK_MAX_LEAKS=100 executable_path *.export.data *.jpg
+Ps.
+checking levels are avaiable:minimal, normal, strict, draconian
+if leak point exceed 100, please adjust HEAP_CHECK_MAX_LEAKS accordingly.
+
+6 get leak line
+$PPROF_PATH executable_path "/tmp/xxx.yyyyy._main_-end.heap" --inuse_objects --lines --heapcheck  --edgefraction=1e-10 --nodefraction=1e-10 --text
+change xxx yyyyy according to your testing

@@ -1,0 +1,122 @@
+Here is a sample of how to use ovxlib/third-party/gperftools to check memory leak, using sample leak.c to demostrate
+
+1 build gperftools, and add it to LD_LIBRARY_PATH(please change ovxlib path accordingly, similar operation could be found in ovxlib/make.sh)
+>cd /home/yangjin/git/ovxlib/third-party/gperftools
+>bash autogen.sh
+>./configure
+>make -f Makefile
+>export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/yangjin/git/ovxlib/third-party/gperftools/.libs
+>export PPROF_PATH=/home/yangjin/git/ovxlib/third-party/gperftools/src/pprof
+Please make sure all command executed successfully.
+
+2 assume that we have a issued code leak.c, we don't know where is the leak point. to use gperftools to check memory
+leak, we need include "heap-profiler.h" into leak.c, and modify leak.c to insert some HeapProfilerStart(),
+HeapProfilerDump(), HeapProfilerStop() to wrap some suspected code fragments.
+
+3 build/link executable
+change folder which contain leak.c, and excute
+>gcc leak.c -g -fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free  -o leak -L/home/yangjin/git/ovxlib/third-party/gperftools/.libs/ -ltcmalloc -I/home/yangjin/git/ovxlib/third-party/gperftools/src -I/home/yangjin/git/ovxlib/third-party/gperftools/src/gperftools
+
+4 run executable and generate profile result
+>./leak
+you'll find log message printed as the following, which is usefull for step5
+Starting tracking the heap
+Dumping heap profile to check_fragment1.0001.heap (check_fragment1)
+Starting tracking the heap
+Dumping heap profile to check_fragment2.0002.heap (check_fragment2)
+
+5 check heap leak(code fragment level)
+>/home/yangjin/git/ovxlib/third-party/gperftools/src/pprof ./leak "./check_fragment1.0001.heap" --inuse_objects --addresses --heapcheck  --edgefraction=1e-10 --nodefraction=1e-10 --text --stacks
+from the print log, we could know leak.c:25 has mem leak, also, call stack is shown:
+Using local file ./leak.
+Using local file ./check_fragment1.0001.heap.
+Total: 1 objects
+Stacks:
+
+1        (0000000000400803) /home/yangjin/git/acuity-networks/caffe_models/misc_networks/lenet/wksp/none_quantized/leak.c:25:main
+         (00007f6ad7ac482f) /build/glibc-Cl5G7W/glibc-2.23/csu/../csu/libc-start.c:291:__libc_start_main
+         (00000000004006d8) ??:0:_start
+
+0        (00000000004007e9) /home/yangjin/git/acuity-networks/caffe_models/misc_networks/lenet/wksp/none_quantized/leak.c:23:main
+         (00007f6ad7ac482f) /build/glibc-Cl5G7W/glibc-2.23/csu/../csu/libc-start.c:291:__libc_start_main
+         (00000000004006d8) ??:0:_start
+
+Leak of 40 bytes in 1 objects allocated from:
+        @ 00400803 unknown
+        @ 00007f6ad7ac482f __libc_start_main /build/glibc-Cl5G7W/glibc-2.23/csu/../csu/libc-start.c:291
+        @ 00000000004006d8 _start ??:0
+Leak of 0 bytes in 0 objects allocated from:
+        @ 004007e9 unknown
+        @ 00007f6ad7ac482f __libc_start_main /build/glibc-Cl5G7W/glibc-2.23/csu/../csu/libc-start.c:291
+        @ 00000000004006d8 _start ??:0
+
+       1 100.0% 100.0%        1 100.0% 0000000000400803 main /home/yangjin/git/acuity-networks/caffe_models/misc_networks/lenet/wksp/none_quantized/leak.c:25
+       0   0.0% 100.0%        1 100.0% 00000000004006d8 _start ??:0
+       0   0.0% 100.0%        1 100.0% 00007f6ad7ac482f __libc_start_main /build/glibc-Cl5G7W/glibc-2.23/csu/../csu/libc-start.c:291
+>/home/yangjin/git/ovxlib/third-party/gperftools/src/pprof ./leak "./check_fragment2.0002.heap" --inuse_objects --addresses --heapcheck  --edgefraction=1e-10 --nodefraction=1e-10 --text --stacks
+from the print log, we could know leak.c:14 has mem leak, also, call stack is shown:
+Using local file ./leak.
+Using local file ./check_fragment2.0002.heap.
+Total: 1 objects
+Stacks:
+
+1        (00000000004007c3) /home/yangjin/git/acuity-networks/caffe_models/misc_networks/lenet/wksp/none_quantized/leak.c:14:func2
+         (0000000000400848) /home/yangjin/git/acuity-networks/caffe_models/misc_networks/lenet/wksp/none_quantized/leak.c:32:main
+         (00007f6ad7ac482f) /build/glibc-Cl5G7W/glibc-2.23/csu/../csu/libc-start.c:291:__libc_start_main
+         (00000000004006d8) ??:0:_start
+
+0        (00000000004007a0) /home/yangjin/git/acuity-networks/caffe_models/misc_networks/lenet/wksp/none_quantized/leak.c:7:func1
+         (000000000040082e) /home/yangjin/git/acuity-networks/caffe_models/misc_networks/lenet/wksp/none_quantized/leak.c:30:main
+         (00007f6ad7ac482f) /build/glibc-Cl5G7W/glibc-2.23/csu/../csu/libc-start.c:291:__libc_start_main
+         (00000000004006d8) ??:0:_start
+
+Leak of 120 bytes in 1 objects allocated from:
+        @ 004007c3 unknown
+        @ 0000000000400848 main /home/yangjin/git/acuity-networks/caffe_models/misc_networks/lenet/wksp/none_quantized/leak.c:32
+        @ 00007f6ad7ac482f __libc_start_main /build/glibc-Cl5G7W/glibc-2.23/csu/../csu/libc-start.c:291
+        @ 00000000004006d8 _start ??:0
+Leak of 0 bytes in 0 objects allocated from:
+        @ 004007a0 unknown
+        @ 000000000040082e main /home/yangjin/git/acuity-networks/caffe_models/misc_networks/lenet/wksp/none_quantized/leak.c:30
+        @ 00007f6ad7ac482f __libc_start_main /build/glibc-Cl5G7W/glibc-2.23/csu/../csu/libc-start.c:291
+        @ 00000000004006d8 _start ??:0
+
+       1 100.0% 100.0%        1 100.0% 00000000004007c3 func2 /home/yangjin/git/acuity-networks/caffe_models/misc_networks/lenet/wksp/none_quantized/leak.c:14
+       0   0.0% 100.0%        1 100.0% 00000000004006d8 _start ??:0
+       0   0.0% 100.0%        1 100.0% 0000000000400848 main /home/yangjin/git/acuity-networks/caffe_models/misc_networks/lenet/wksp/none_quantized/leak.c:32
+       0   0.0% 100.0%        1 100.0% 00007f6ad7ac482f __libc_start_main /build/glibc-Cl5G7W/glibc-2.23/csu/../csu/libc-start.c:291
+
+7 Whole-program Heap Leak Checking
+>HEAPCHECK=normal HEAP_CHECK_MAX_LEAKS=100 ./leak
+Avaiable checking levels: minimal, normal, strict, draconian
+If leak point exceed 100, please adjust HEAP_CHECK_MAX_LEAKS accordingly.
+
+By combining the result of step6 and step5, we could get the exactly call stack of mem leak point:
+WARNING: Perftools heap leak checker is active -- Performance may suffer
+Starting tracking the heap
+Dumping heap profile to check_fragment1.0001.heap (check_fragment1)
+Starting tracking the heap
+Dumping heap profile to check_fragment2.0002.heap (check_fragment2)
+Have memory regions w/o callers: might report false leaks
+Leak check _main_ detected leaks of 160 bytes in 2 objects
+The 2 largest leaks:
+Using local file ./leak.
+Leak of 120 bytes in 1 objects allocated from:
+        @ 4007c3 func2
+        @ 400849 main
+        @ 7f2b3822d830 __libc_start_main
+        @ 4006d9 _start
+Leak of 40 bytes in 1 objects allocated from:
+        @ 400803 main
+        @ 7f2b3822d830 __libc_start_main
+        @ 4006d9 _start
+
+
+If the preceding stack traces are not enough to find the leaks, try running THIS shell command:
+
+pprof ./leak "/tmp/leak.29074._main_-end.heap" --inuse_objects --lines --heapcheck  --edgefraction=1e-10 --nodefraction=1e-10 --gv
+
+If you are still puzzled about why the leaks are there, try rerunning this program with HEAP_CHECK_TEST_POINTER_ALIGNMENT=1 and/or with HEAP_CHECK_MAX_POINTER_OFFSET=-1
+If the leak report occurs in a small fraction of runs, try running with TCMALLOC_MAX_FREE_QUEUE_SIZE of few hundred MB or with TCMALLOC_RECLAIM_MEMORY=false, it might help find leaks more repeatably
+Exiting with error code (instead of crashing) because of whole-program memory leaks
+

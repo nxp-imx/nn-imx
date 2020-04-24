@@ -1,0 +1,47 @@
+#
+#
+# OVXlib depends on Vivante SDK which contains OpenVX library
+# implementation
+#
+# export VIV_SDK_DIR=<DRIVER_PATH> to use local driver
+#
+#
+
+workspace(name = "OVXLIB")
+
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+load("//:workspace.bzl", "driver_archive")
+
+driver_archive(
+    name = "VIV_SDK",
+    url = "http://192.168.32.219/downloads/drivers/archives/dev246370/dev246370_6.4.x_x86_64-linux-vSimulator.tgz",
+    sha256 = "c86df9fb320a3506cc5cfac19470741b08e142f06b721b5afcfe535e89b9645d",
+    build_file = "@//:viv_sdk.BUILD",
+    local_driver_path_tag = "VIV_SDK_DIR",
+)
+
+http_archive(
+    name = "inception_v1_u8",
+    sha256 = "9f6e5087deb5422502a687bb97be017c10fd1e21b88a1ac500265f5c646a1208",
+    strip_prefix = "inception_v1_u8",
+    urls = [
+        "http://192.168.32.219/downloads/ovxlib_cases/inception_v1_u8.tgz",
+    ],
+)
+http_archive(
+    name = "inception_v3_u8",
+    sha256 = "ef8b0a7ed5aa38873b58ed68bbf4887df529ee68d42f2e8dd67c10423ad6bc8f",
+    strip_prefix = "inception_v3_u8",
+    urls = [
+        "http://192.168.32.219/downloads/ovxlib_cases/inception_v3_u8.tgz",
+    ],
+)
+http_archive(
+    name = "encoder0_80p_sparse_layer_norm_u8",
+    sha256 = "721c19bcc5529cbd563c7483da8429448b75de0301bb0db0b33f2e3dd240d206",
+    strip_prefix = "encoder0_80p_sparse_layer_norm_u8",
+    urls = [
+        "http://192.168.32.219/downloads/ovxlib_cases/encoder0_80p_sparse_layer_norm_u8.tgz",
+    ],
+)
+

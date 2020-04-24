@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<launchConfiguration type="org.eclipse.cdt.launch.OpenVXApplicationLaunchType">
+<intAttribute key="org.eclipse.cdt.launch.ATTR_BUILD_BEFORE_LAUNCH_ATTR" value="2"/>
+<stringAttribute key="org.eclipse.cdt.launch.COREFILE_PATH" value=""/>
+<stringAttribute key="org.eclipse.cdt.launch.PROGRAM_ARGUMENTS" value="&quot;${workspace_loc:/${project_name}/none_quantized.export.data}&quot; &quot;${workspace_loc:/${project_name}/0.jpg}&quot;"/>
+<stringAttribute key="org.eclipse.cdt.launch.PROGRAM_NAME" value="Release/lenet.exe"/>
+<stringAttribute key="org.eclipse.cdt.launch.PROJECT_ATTR" value="lenet"/>
+<stringAttribute key="org.eclipse.cdt.launch.PROJECT_BUILD_CONFIG_ID_ATTR" value="cdt.managedbuild.config.gnu.mingw.openvx.exe.release.1862629262"/>
+<booleanAttribute key="org.eclipse.cdt.launch.VDB_DEBUGGER_NN_EXTENSION" value="true"/>
+<stringAttribute key="org.eclipse.cdt.launch.VDB_RUNNER_TARGET" value="VIP8000_NANOD"/>
+<stringAttribute key="org.eclipse.cdt.launch.VDB_RUN_INSTRUCTION_SET" value="evis2"/>
+<booleanAttribute key="org.eclipse.cdt.launch.use_terminal" value="true"/>
+<listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_PATHS">
+<listEntry value="/lenet"/>
+</listAttribute>
+<listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_TYPES">
+<listEntry value="4"/>
+</listAttribute>
+<stringAttribute key="org.eclipse.debug.ui.ATTR_CONSOLE_ENCODING" value="UTF-8"/>
+<listAttribute key="org.eclipse.debug.ui.favoriteGroups">
+<listEntry value="org.eclipse.debug.ui.launchGroup.debug"/>
+<listEntry value="org.eclipse.debug.ui.launchGroup.run"/>
+</listAttribute>
+</launchConfiguration>
