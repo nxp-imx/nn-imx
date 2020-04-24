@@ -22,8 +22,8 @@
 *
 *****************************************************************************/
 
-#ifndef _TRANSPOSE_CONV2D_VALIDATE_HPP_
-#define _TRANSPOSE_CONV2D_VALIDATE_HPP_
+#ifndef _GROUPED_CONV2D_VALIDATE_HPP_
+#define _GROUPED_CONV2D_VALIDATE_HPP_
 
 #include "OperationValidate.hpp"
 
@@ -31,13 +31,13 @@ namespace android {
 namespace nn {
 namespace op_validate {
 template <typename T_model, typename T_Operation>
-class TransposeConv2dValidate : public OperationValidate<T_model, T_Operation> {
+class GroupedConv2DValidate : public OperationValidate<T_model, T_Operation> {
    public:
-    TransposeConv2dValidate(const T_model& model, const T_Operation& operation)
+    GroupedConv2DValidate(const T_model& model, const T_Operation& operation)
         : OperationValidate<T_model, T_Operation>(model, operation) {}
     virtual bool SignatureCheck() override {
-        return hal::limitation::nnapi::match("TransposeConv2DInput", this->m_InputArgTypes) &&
-               hal::limitation::nnapi::match("TransposeConv2DOutput", this->m_OutputArgTypes);
+        return hal::limitation::nnapi::match("GroupedConv2DInput", this->m_InputArgTypes) &&
+               hal::limitation::nnapi::match("GroupedConv2DOutput", this->m_OutputArgTypes);
     };
 };
 

@@ -67,4 +67,6 @@
 #include "SelectValidate.hpp"
 #include "RandomMultinomialValidate.hpp"
 #include "HeatmapMaxKeypointValidate.hpp"
+#include "GroupedConv2DValidate.hpp"
+#include "ChannelShuffleValidate.hpp"
 #endif

@@ -521,15 +521,30 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
                     model, operation);
             return heatmap->Validate();
         }
+        case OperationType::CHANNEL_SHUFFLE: {
+            OperationValidatePtr channelShuffle = std::make_unique<
+                op_validate::ChannelShuffleValidate<HalPlatform::Model, HalPlatform::Operation>>(
+                model, operation);
+            return channelShuffle->Validate();
+        }
+        case OperationType::GROUPED_CONV_2D: {
+            OperationValidatePtr groupedConv2D = std::make_unique<
+                op_validate::GroupedConv2DValidate<HalPlatform::Model, HalPlatform::Operation>>(
+                model, operation);
+            return groupedConv2D->Validate();
+        }
+        case OperationType::TRANSPOSE_CONV_2D: {
+            OperationValidatePtr transposeConv2D = std::make_unique<
+                op_validate::TransposeConv2dValidate<HalPlatform::Model, HalPlatform::Operation>>(
+                model, operation);
+            return transposeConv2D->Validate();
+        }
         case OperationType::BOX_WITH_NMS_LIMIT:
-        case OperationType::CHANNEL_SHUFFLE:
-        case OperationType::GROUPED_CONV_2D:
         case OperationType::PAD_V2:
         case OperationType::QUANTIZED_16BIT_LSTM:
         case OperationType::ROI_POOLING:
         case OperationType::SLICE:
         case OperationType::TILE:
-        case OperationType::TRANSPOSE_CONV_2D:
             isSupport &= false;
             break;
         default:

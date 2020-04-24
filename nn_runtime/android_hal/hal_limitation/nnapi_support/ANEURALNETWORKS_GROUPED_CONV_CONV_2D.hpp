@@ -22,26 +22,24 @@
 *
 *****************************************************************************/
 
-#ifndef __ANEURALNETWORKS_TRANSPOSE_CONV_2D_HPP__
-#define __ANEURALNETWORKS_TRANSPOSE_CONV_2D_HPP__
+#ifndef __ANEURALNETWORKS_GROUPED_CONV_CONV_2D_HPP__
+#define __ANEURALNETWORKS_GROUPED_CONV_CONV_2D_HPP__
 
-#include "hal_limitation/support_macros.hpp"
-
-#define OP_SPEC_NAME TransposeConv2DInput
+#define OP_SPEC_NAME GroupedConv2DInput
 OP_SPEC_BEGIN()
 #define ARG_NAMES         \
-    (input,                 \
-     kernel,           \
-     bias,           \
-     pad_left,  \
-     pad_right, \
-     pad_top,   \
-     pad_bottom,    \
-     stride_w,  \
-     stride_h, \
-     fuse_code, \
-     layout,    \
-     output_shape,  \
+    (input,               \
+     kernel,              \
+     bias,                \
+     pad_left,            \
+     pad_right,           \
+     pad_top,             \
+     pad_bottom,          \
+     stride_w,            \
+     stride_h,            \
+     groups_num,          \
+     fuse_code,           \
+     data_layout,         \
      implicit_pad)
 #define ARGC BOOST_PP_TUPLE_SIZE(ARG_NAMES)
 
@@ -51,7 +49,7 @@ OP_SPEC_BEGIN()
 OP_SPEC_END()
 
 // order of argument is important
-MAKE_SPEC(explicit_padding_transpose_conv_2d)
+MAKE_SPEC(explicit_padding_grouped_conv_2d)
     .input_(nnrt::OperandType::TENSOR_FLOAT32)
     .kernel_(nnrt::OperandType::TENSOR_FLOAT32)
     .bias_(nnrt::OperandType::TENSOR_FLOAT32)
@@ -61,61 +59,60 @@ MAKE_SPEC(explicit_padding_transpose_conv_2d)
     .pad_bottom_(nnrt::OperandType::INT32)
     .stride_w_(nnrt::OperandType::INT32)
     .stride_h_(nnrt::OperandType::INT32)
+    .groups_num_(nnrt::OperandType::INT32)
     .fuse_code_(nnrt::OperandType::INT32)
-    .layout_(nnrt::OperandType::BOOL));
+    .data_layout_(nnrt::OperandType::BOOL));
 
-    OVERRIDE_SPEC(explicit_padding_transpose_conv_2d, float16)
+    OVERRIDE_SPEC(explicit_padding_grouped_conv_2d, float16)
     .input_(nnrt::OperandType::TENSOR_FLOAT16)
     .kernel_(nnrt::OperandType::TENSOR_FLOAT16)
     .bias_(nnrt::OperandType::TENSOR_FLOAT16));
 
-    OVERRIDE_SPEC(explicit_padding_transpose_conv_2d, quant8)
+    OVERRIDE_SPEC(explicit_padding_grouped_conv_2d, quant8)
     .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM)
     .kernel_(nnrt::OperandType::TENSOR_QUANT8_ASYMM)
     .bias_(nnrt::OperandType::TENSOR_INT32));
 
-    // // Note: Kernel not support perchannel
-    // OVERRIDE_SPEC(explicit_padding_transpose_conv_2d, per_channel_quant8)
+    // OVERRIDE_SPEC(explicit_padding_grouped_conv_2d, per_channel_quant8)
     // .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM)
     // .kernel_(nnrt::OperandType::TENSOR_QUANT8_SYMM_PER_CHANNEL)
     // .bias_(nnrt::OperandType::TENSOR_INT32));
 
-// Note: not support implicit padding cases
-// MAKE_SPEC(implicit_padding_transpose_conv_2d)
-//     .input_(nnrt::OperandType::TENSOR_FLOAT32)
-//     .kernel_(nnrt::OperandType::TENSOR_FLOAT32)
-//     .bias_(nnrt::OperandType::TENSOR_FLOAT32)
-//     .output_shape_(nnrt::OperandType::TENSOR_INT32)
-//     .implicit_pad_(nnrt::OperandType::INT32)
-//     .stride_w_(nnrt::OperandType::INT32)
-//     .stride_h_(nnrt::OperandType::INT32)
-//     .fuse_code_(nnrt::OperandType::INT32)
-//     .layout_(nnrt::OperandType::BOOL));
+MAKE_SPEC(implicit_padding_grouped_conv_2d)
+    .input_(nnrt::OperandType::TENSOR_FLOAT32)
+    .kernel_(nnrt::OperandType::TENSOR_FLOAT32)
+    .bias_(nnrt::OperandType::TENSOR_FLOAT32)
+    .implicit_pad_(nnrt::OperandType::INT32)
+    .stride_w_(nnrt::OperandType::INT32)
+    .stride_h_(nnrt::OperandType::INT32)
+    .groups_num_(nnrt::OperandType::INT32)
+    .fuse_code_(nnrt::OperandType::INT32)
+    .data_layout_(nnrt::OperandType::BOOL));
 
-//     OVERRIDE_SPEC(implicit_padding_transpose_conv_2d, float16)
-//     .input_(nnrt::OperandType::TENSOR_FLOAT16)
-//     .kernel_(nnrt::OperandType::TENSOR_FLOAT16)
-//     .bias_(nnrt::OperandType::TENSOR_FLOAT16));
+    OVERRIDE_SPEC(implicit_padding_grouped_conv_2d, float16)
+    .input_(nnrt::OperandType::TENSOR_FLOAT16)
+    .kernel_(nnrt::OperandType::TENSOR_FLOAT16)
+    .bias_(nnrt::OperandType::TENSOR_FLOAT16));
 
-//     OVERRIDE_SPEC(implicit_padding_transpose_conv_2d, quant8)
-//     .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM)
-//     .kernel_(nnrt::OperandType::TENSOR_QUANT8_ASYMM)
-//     .bias_(nnrt::OperandType::TENSOR_INT32));
+    OVERRIDE_SPEC(implicit_padding_grouped_conv_2d, quant8)
+    .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM)
+    .kernel_(nnrt::OperandType::TENSOR_QUANT8_ASYMM)
+    .bias_(nnrt::OperandType::TENSOR_INT32));
 
-//     // OVERRIDE_SPEC(implicit_padding_transpose_conv_2d, per_channel_quant8)
-//     // .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM)
-//     // .kernel_(nnrt::OperandType::TENSOR_QUANT8_SYMM_PER_CHANNEL)
-//     // .bias_(nnrt::OperandType::TENSOR_INT32));
+    // OVERRIDE_SPEC(implicit_padding_grouped_conv_2d, per_channel_quant8)
+    // .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM)
+    // .kernel_(nnrt::OperandType::TENSOR_QUANT8_SYMM_PER_CHANNEL)
+    // .bias_(nnrt::OperandType::TENSOR_INT32));
 #undef ARG_NAMES
 #undef ARGC
 #undef OP_SPEC_NAME
 
-// Output Spec
-#define OP_SPEC_NAME TransposeConv2DOutput
+//Output Spec
+#define OP_SPEC_NAME GroupedConv2DOutput
 OP_SPEC_BEGIN()
 #define ARG_NAMES         \
     (input,               \
-     output)
+    output)
 #define ARGC BOOST_PP_TUPLE_SIZE(ARG_NAMES)
 
 #define BOOST_PP_LOCAL_MACRO(n) OP_SPEC_ARG(BOOST_PP_TUPLE_ELEM(ARGC, n, ARG_NAMES))
@@ -128,11 +125,11 @@ MAKE_SPEC(output)
     .input_(nnrt::OperandType::TENSOR_FLOAT32)
     .output_(nnrt::OperandType::TENSOR_FLOAT32));
 
-    OVERRIDE_SPEC(output, 0)
+    OVERRIDE_SPEC(output, float16)
     .input_(nnrt::OperandType::TENSOR_FLOAT16)
     .output_(nnrt::OperandType::TENSOR_FLOAT16));
 
-    OVERRIDE_SPEC(output, 1)
+    OVERRIDE_SPEC(output, asymm_u8)
     .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM)
     .output_(nnrt::OperandType::TENSOR_QUANT8_ASYMM));
 
