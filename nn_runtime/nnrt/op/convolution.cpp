@@ -192,7 +192,6 @@ void DepthwiseConv2DOperation::handleLayoutInferenceOnInputs(
 void Deconv2DOperation::handleLayoutInferenceOnInputs(
     nnrt::Model& model,
     std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>& next_permute_vectors) {
-    assert(input_permute_cache_.cached_permutes_.size() == 1);
 
     OperandPtr inputOperand = model.operand(inputs()[0]);
     OperandPtr outputOperand = model.operand(outputs()[0]);
@@ -211,8 +210,14 @@ void Deconv2DOperation::handleLayoutInferenceOnInputs(
         requiredPermute = std::make_shared<nnrt::layout_inference::PermuteVector<4>>(
             std::initializer_list<uint32_t>({0, 3, 1, 2}));
 
-        std::vector<uint32_t> constOprIds = {inputs()[1]};
-        permuteConstOperands(model, constOprIds, requiredPermute);
+        uint32_t kernel_index = input(1);
+        if (model.operand(kernel_index)->isConst()) {
+            std::vector<uint32_t> constOprIds = {kernel_index};
+            permuteConstOperands(model, constOprIds, requiredPermute);
+        } else {
+            auto permuteOp = nnrt::op::utils::asOp(requiredPermute);
+            insertPermute(model, permuteOp, requiredPermute->asStdVec(), true, kernel_index);
+        }
     }
 
     auto finalPermute = permuteVector->reverse()->add(requiredPermute);

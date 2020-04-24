@@ -1557,6 +1557,25 @@ OperationPtr NnApiInterpreter::map_DECONV_2D(Model* model,
         deconv2d->strides[1] = inputs[argList->ArgPos("stride_h")]->scalar.int32;
         resetFusedType(model, operation, argList->ArgPos("fuse_code"));
         deconv2d->setDataLayout(getDataLayout(inputs[argList->ArgPos("layout")]->scalar.boolean));
+
+        // Transpose weight for nchw cases
+        if (DataLayout::NCHW == deconv2d->getDataLayout()) {
+            std::vector<uint32_t> permVal = {0, 3, 1, 2};
+            auto kernelIdx = argList->ArgPos("kernel");
+            if (inputs[kernelIdx]->isConst()) {
+                // Set permute flag. Do transepose in ovxlib delegate
+                inputs[kernelIdx]->setPerm(permVal);
+                inputs[kernelIdx]->dimensions =
+                    deconv2d->dimensionTrans(inputs[kernelIdx]->dimensions, permVal);
+            } else {
+                // Insert permute layer for weight as input
+                if (!operand_utils::InsertPermuteBeforeOperand(
+                    model, operation, operation->inputs()[1], permVal)) {
+                        NNRT_LOGE_PRINT("Deconv2D: insert permute failed.");
+                        assert(false);
+                }
+            }
+        }
     } else {
         NNRT_LOGE_PRINT("Transpose conv2d argument list not support");
         assert(false);
