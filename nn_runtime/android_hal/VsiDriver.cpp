@@ -640,6 +640,12 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
                 model, operation);
             return transposeConv2D->Validate(reason);
         }
+        case OperationType::RESHAPE: {
+            OperationValidatePtr reshape = std::make_unique<
+                op_validate::ReshapeValidate<HalPlatform::Model, HalPlatform::Operation>>(
+                model, operation);
+            return reshape->Validate(reason);
+        }
         case OperationType::BOX_WITH_NMS_LIMIT:
         case OperationType::PAD_V2:
         case OperationType::QUANTIZED_16BIT_LSTM:
