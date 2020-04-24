@@ -56,7 +56,7 @@ class GroupedConv2DValidate : public OperationValidate<T_model, T_Operation> {
             uint32_t inputChannel = 0;
             uint32_t outputChannel = 0;
             auto inputOperand = model.operands[operation.inputs[inputIndex]];
-            auto outputOperand = model.operands[operation.outputs[outputList->ArgPos("output")]];
+            auto outputOperand = model.operands[operation.outputs[0]];
             if (layout) {
                 // NCHW
                 inputChannel = inputOperand.dimensions[1];
