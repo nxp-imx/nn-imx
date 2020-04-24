@@ -653,6 +653,7 @@
     <ClInclude Include="include\ops\vsi_nn_op_tensor_add_mean_stddev_norm.h" />
     <ClInclude Include="include\ops\vsi_nn_op_cast.h" />
     <ClInclude Include="include\ops\vsi_nn_op_grucell_activation_internal.h" />
+    <ClInclude Include="include\ops\vsi_nn_op_linear.h" />
     <ClInclude Include="include\ops\vsi_nn_op_tensorstackconcat.h" />
     <ClInclude Include="include\ops\vsi_nn_op_tile.h" />
     <ClInclude Include="include\ops\vsi_nn_op_topk.h" />
@@ -1516,6 +1517,9 @@
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_grucell_activation_internal.c">
       <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_grucell_activation_internal.o</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_linear.c" >
+      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_linear.o</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_variable.c">
       <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_variable.o</ObjectFileName>

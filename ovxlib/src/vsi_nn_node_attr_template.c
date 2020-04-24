@@ -180,6 +180,7 @@ static _node_template s_template[] =
     /* SWISH */                 NULL,
     /* GATHER_ND */             NULL,
     /* CAST */                  NULL,
+    /* LINEAR */                NULL,
 };
 //_compiler_assert( _cnt_of_array(s_template) == VSI_NN_OP_NUM, vsi_nn_node_attr_template_c );
 
