@@ -45,9 +45,89 @@ static vsi_status op_compute
 {
     vsi_status status;
     vx_nn_deconvolution_params_ext2_t param;
+    vsi_nn_tensor_t *permute_tensor = NULL;
+#ifdef VX_DECONVOLUTION_WEIGHT_LAYOUT_COMPATIBLE_KHRONOS
+    vsi_nn_tensor_t *reverse_tensor = NULL;
+#endif
+    vsi_nn_tensor_t *weight_tensor  = NULL;
 
     status = VSI_FAILURE;
+#ifdef VX_DECONVOLUTION_WEIGHT_LAYOUT_COMPATIBLE_KHRONOS
+    if (FALSE == inputs[1]->attr.is_const)
+    {
+        vsi_nn_tensor_t *tmp_in_tensor = NULL;
+        vx_nn_tensor_reverse_params_t para;
+        vx_int32 axis_reverse[4] = {0, 1, 0, 0};
+        vsi_nn_tensor_attr_t attr_reverse;
 
+        if (vsi_nn_compareVersion(self->graph, 1, 1, 21) >= 0)
+        {
+            uint32_t perm[] = { 0, 1, 3, 2 };
+            vsi_nn_tensor_attr_t attr;
+            memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
+            memcpy( &attr, &inputs[1]->attr, sizeof(vsi_nn_tensor_attr_t) );
+            attr.size[2] = inputs[1]->attr.size[3];
+            attr.size[3] = inputs[1]->attr.size[2];
+            permute_tensor = vsi_nn_CreateTensor(self->graph, &attr);
+            self->n = vxTensorPermuteNode( self->graph->g, inputs[1]->t,
+                        permute_tensor->t, perm, 4);
+            if( NULL == self->n )
+            {
+                status = VSI_FAILURE;
+                goto final;
+            }
+            tmp_in_tensor = permute_tensor;
+        }
+        else
+        {
+            tmp_in_tensor = inputs[1];
+        }
+
+        memset(&attr_reverse, 0, sizeof(vsi_nn_tensor_attr_t));
+        memcpy(&attr_reverse, &tmp_in_tensor->attr, sizeof(vsi_nn_tensor_attr_t) );
+        reverse_tensor = vsi_nn_CreateTensor(self->graph, &attr_reverse);
+        para.axis = axis_reverse;
+        para.numberOfAxis = 2;
+
+        self->n = vxTensorReverse( self->graph->g, tmp_in_tensor->t, &para,
+            sizeof(vx_nn_tensor_reverse_params_t), reverse_tensor->t );
+        if( NULL == self->n )
+        {
+            status = VSI_FAILURE;
+            goto final;
+        }
+
+        weight_tensor  = reverse_tensor;
+    }
+    else
+    {
+        weight_tensor = inputs[1];
+    }
+
+#else
+    if ( vsi_nn_compareVersion(self->graph, 1, 1, 21) >= 0 && FALSE == inputs[1]->attr.is_const)
+    {
+        uint32_t perm[] = { 0, 1, 3, 2 };
+        vsi_nn_tensor_attr_t attr;
+        memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
+        memcpy( &attr, &inputs[1]->attr, sizeof(vsi_nn_tensor_attr_t) );
+        attr.size[2] = inputs[1]->attr.size[3];
+        attr.size[3] = inputs[1]->attr.size[2];
+        permute_tensor = vsi_nn_CreateTensor(self->graph, &attr);
+        self->n = vxTensorPermuteNode( self->graph->g, inputs[1]->t,
+                    permute_tensor->t, perm, 4);
+        if( NULL == self->n )
+        {
+            status = VSI_FAILURE;
+            goto final;
+        }
+        weight_tensor  = permute_tensor;
+    }
+    else
+    {
+        weight_tensor = inputs[1];
+    }
+#endif
     // param.a_x = self->nn_param.deconv.dilation;
     // param.a_y = self->nn_param.deconv.dilation;
     param.ext.khr.a_x = 1;
@@ -67,18 +147,30 @@ static vsi_status op_compute
     self->n = vxDeconvolutionLayer(
         self->graph->g,
         inputs[0]->t,
-        inputs[1]->t,
+        weight_tensor->t,
         (NULL == inputs[2]) ? NULL : inputs[2]->t,
         (vx_nn_deconvolution_params_t *)&param,
         sizeof( vx_nn_deconvolution_params_ext2_t ),
         outputs[0]->t
         );
-
     if( NULL != self->n )
     {
         status = VSI_SUCCESS;
     }
+
+final:
+    if (permute_tensor)
+    {
+        vsi_nn_ReleaseTensor(&permute_tensor);
+    }
+#ifdef VX_DECONVOLUTION_WEIGHT_LAYOUT_COMPATIBLE_KHRONOS
+    if (reverse_tensor)
+    {
+        vsi_nn_ReleaseTensor(&reverse_tensor);
+    }
+#endif
     return status;
+
 } /* op_compute() */
 
 static vsi_bool op_check
@@ -121,15 +213,18 @@ static vsi_bool op_setup
 #endif
 
 #ifdef VX_DECONVOLUTION_WEIGHT_LAYOUT_COMPATIBLE_KHRONOS
-    if ( vsi_nn_compareVersion(self->graph, 1, 1, 21) == -1 )
+    if ( vsi_nn_compareVersion(self->graph, 1, 1, 21) == -1 && TRUE == inputs[1]->attr.is_const)
     {
         /* whnc->whcn */
         vsi_nn_PermuteTensor( self->graph, inputs[1], perm1, 4 );
     }
     /* Rotate 180 degrees for weights data */
-    vsi_nn_reshuffle_weight_data(self->graph, inputs[1]);
+    if (TRUE == inputs[1]->attr.is_const)
+    {
+        vsi_nn_reshuffle_weight_data(self->graph, inputs[1]);
+    }
 #else
-    if ( vsi_nn_compareVersion(self->graph, 1, 1, 21) >= 0 )
+    if ( vsi_nn_compareVersion(self->graph, 1, 1, 21) >= 0 && TRUE == inputs[1]->attr.is_const)
     {
         /* whcn->whnc */
         vsi_nn_PermuteTensor( self->graph, inputs[1], perm1, 4 );
