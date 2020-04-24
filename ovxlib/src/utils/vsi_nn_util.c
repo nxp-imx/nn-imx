@@ -550,11 +550,6 @@ vsi_bool vsi_nn_CreateTensorGroup
         return FALSE;
     }
 
-    if( 1 == group_number )
-    {
-        out_tensors[0] = in_tensor;
-        return TRUE;
-    }
     if( 0 != ( in_tensor->attr.size[axis] % group_number ) )
     {
         VSILOGW( "Create tensor group fail." );
@@ -583,6 +578,10 @@ vsi_bool vsi_nn_CreateTensorGroup
             VSILOGE( "Create tensor %d fail.", i );
             ret = FALSE;
             break;
+        }
+        if (out_tensors[i]->t)
+        {
+            vxReleaseTensor(&out_tensors[i]->t);
         }
         out_tensors[i]->t = vsi_nn_CreateViewTensor(graph, start, end, in_tensor);
         if( NULL == out_tensors[i]->t )

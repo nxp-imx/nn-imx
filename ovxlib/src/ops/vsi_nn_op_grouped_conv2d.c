@@ -44,6 +44,15 @@
 #define _IO_NUM             (_INPUT_NUM + _OUTPUT_NUM)
 #define _PARAM_NUM          (_ARG_NUM + _IO_NUM)
 
+#define LOCAL() ((vsi_nn_grouped_conv2d_param_local_data *)nn_param->local)
+
+typedef struct _vsi_nn_grouped_conv2d_param_local_data {
+    vsi_nn_tensor_t ** input_tensor_group;
+    vsi_nn_tensor_t ** weight_tensor_group;
+    vsi_nn_tensor_t ** bias_tensor_group;
+    vsi_nn_tensor_t ** output_tensor_group;
+} vsi_nn_grouped_conv2d_param_local_data;
+
 static vsi_status op_compute
     (
     vsi_nn_node_t * self,
@@ -51,48 +60,84 @@ static vsi_status op_compute
     vsi_nn_tensor_t ** outputs
     )
 {
-    vsi_status status;
     vsi_bool res;
-    vsi_nn_grouped_conv2d_param *nn_param = &self->nn_param.grouped_conv2d;
-    vsi_nn_tensor_t ** input_tensor_group = NULL;
-    vsi_nn_tensor_t ** weight_tensor_group = NULL;
-    vsi_nn_tensor_t ** bias_tensor_group = NULL;
-    vsi_nn_tensor_t ** output_tensor_group = NULL;
     uint32_t i;
-    status = VSI_FAILURE;
-
+    vsi_nn_grouped_conv2d_param *nn_param = &self->nn_param.grouped_conv2d;
+    nn_param->local = (vsi_nn_grouped_conv2d_param_local_data*)malloc(
+        sizeof(vsi_nn_grouped_conv2d_param_local_data));
+    memset(nn_param->local, 0, sizeof(vsi_nn_grouped_conv2d_param_local_data));
     /* TODO */
     /* example code : add op */
     /*
     self->n = vxTensorAddNode( self->graph->g, inputs[0]->t, inputs[1]->t,
         VX_CONVERT_POLICY_SATURATE, outputs[0]->t );
     */
-    input_tensor_group = (vsi_nn_tensor_t **)malloc(
+    LOCAL()->input_tensor_group = (vsi_nn_tensor_t **)malloc(
         nn_param->group * sizeof(vsi_nn_tensor_t *));
+    if (NULL == LOCAL()->input_tensor_group)
+    {
+        VSILOGE("Malloc fail, (GROUPED_CONV2D) at [%s : %d]\n", __FILE__, __LINE__);
+        return VSI_FAILURE;
+    }
+    memset(LOCAL()->input_tensor_group, 0, nn_param->group * sizeof(vsi_nn_tensor_t *));
     res = vsi_nn_CreateTensorGroup(self->graph, inputs[0], 2,
-        input_tensor_group, nn_param->group);
-    if (res == FALSE) goto exit;
+        LOCAL()->input_tensor_group, nn_param->group);
+    if (res == FALSE)
+    {
+        VSILOGE("CreateTensorGroup fail, (GROUPED_CONV2D) at [%s : %d]\n", __FILE__, __LINE__);
+        return VSI_FAILURE;
+    }
 
-    weight_tensor_group = (vsi_nn_tensor_t **)malloc(
+    LOCAL()->weight_tensor_group = (vsi_nn_tensor_t **)malloc(
         nn_param->group * sizeof(vsi_nn_tensor_t *));
+    if (NULL == LOCAL()->weight_tensor_group)
+    {
+        VSILOGE("Malloc fail, (GROUPED_CONV2D) at [%s : %d]\n", __FILE__, __LINE__);
+        return VSI_FAILURE;
+    }
+    memset(LOCAL()->weight_tensor_group, 0, nn_param->group * sizeof(vsi_nn_tensor_t *));
     res = vsi_nn_CreateTensorGroup(self->graph, inputs[1], 3,
-        weight_tensor_group, nn_param->group);
-    if (res == FALSE) goto exit;
+        LOCAL()->weight_tensor_group, nn_param->group);
+    if (res == FALSE)
+    {
+        VSILOGE("CreateTensorGroup fail, (GROUPED_CONV2D) at [%s : %d]\n", __FILE__, __LINE__);
+        return VSI_FAILURE;
+    }
 
-    bias_tensor_group = (vsi_nn_tensor_t **)malloc(
+    LOCAL()->bias_tensor_group = (vsi_nn_tensor_t **)malloc(
         nn_param->group * sizeof(vsi_nn_tensor_t *));
+    if (NULL == LOCAL()->bias_tensor_group)
+    {
+        VSILOGE("Malloc fail, (GROUPED_CONV2D) at [%s : %d]\n", __FILE__, __LINE__);
+        return VSI_FAILURE;
+    }
+    memset(LOCAL()->bias_tensor_group, 0, nn_param->group * sizeof(vsi_nn_tensor_t *));
     if (inputs[2] != NULL)
     {
         res = vsi_nn_CreateTensorGroup(self->graph, inputs[2], 0,
-            bias_tensor_group, nn_param->group);
-        if (res == FALSE) goto exit;
+            LOCAL()->bias_tensor_group, nn_param->group);
+        if (res == FALSE)
+        {
+            VSILOGE("CreateTensorGroup fail, (GROUPED_CONV2D) at [%s : %d]\n", __FILE__, __LINE__);
+            return VSI_FAILURE;
+        }
     }
 
-    output_tensor_group = (vsi_nn_tensor_t **)malloc(
+    LOCAL()->output_tensor_group = (vsi_nn_tensor_t **)malloc(
         nn_param->group * sizeof(vsi_nn_tensor_t *));
+    if (NULL == LOCAL()->output_tensor_group)
+    {
+        VSILOGE("Malloc fail, (GROUPED_CONV2D) at [%s : %d]\n", __FILE__, __LINE__);
+        return VSI_FAILURE;
+    }
+    memset(LOCAL()->output_tensor_group, 0, nn_param->group * sizeof(vsi_nn_tensor_t *));
     res = vsi_nn_CreateTensorGroup(self->graph, outputs[0], 2,
-        output_tensor_group, nn_param->group);
-    if (res == FALSE) goto exit;
+        LOCAL()->output_tensor_group, nn_param->group);
+    if (res == FALSE)
+    {
+        VSILOGE("CreateTensorGroup fail, (GROUPED_CONV2D) at [%s : %d]\n", __FILE__, __LINE__);
+        return VSI_FAILURE;
+    }
 
     for (i = 0; i < nn_param->group; i++)
     {
@@ -103,8 +148,6 @@ static vsi_status op_compute
         memset( &param_ext2, 0, sizeof( vx_nn_convolution_params_ext2_t ) );
         p_ext2 = &param_ext2;
         p_ext = &p_ext2->ext;
-
-        status = VSI_FAILURE;
 
         //set ext relative parameters
         p_ext->khr.padding_x = self->nn_param.conv2d.pad[0];
@@ -135,62 +178,25 @@ static vsi_status op_compute
         }
         else
         {
-            bias = bias_tensor_group[i]->t;
+            bias = LOCAL()->bias_tensor_group[i]->t;
         }
 
         self->n = vxConvolutionLayer(
             self->graph->g,
-            input_tensor_group[i]->t,
-            weight_tensor_group[i]->t,
+            LOCAL()->input_tensor_group[i]->t,
+            LOCAL()->weight_tensor_group[i]->t,
             bias,
             (vx_nn_convolution_params_t *)p_ext2,
             sizeof(vx_nn_convolution_params_ext2_t),
-            output_tensor_group[i]->t
+            LOCAL()->output_tensor_group[i]->t
             );
         if( NULL == self->n )
         {
-            goto exit;
+            VSILOGE("Add vxConvolutionLayer fail, (GROUPED_CONV2D) at [%s : %d]\n", __FILE__, __LINE__);
+            return VSI_FAILURE;
         }
-        status = VSI_SUCCESS;
     }
-
-exit:
-    if (input_tensor_group)
-    {
-        for (i = 0; i < nn_param->group; i++)
-        {
-            vsi_nn_ReleaseTensor(&(input_tensor_group[i]));
-        }
-        free(input_tensor_group);
-    }
-
-    if (weight_tensor_group)
-    {
-        for (i = 0; i < nn_param->group; i++)
-        {
-            vsi_nn_ReleaseTensor(&(weight_tensor_group[i]));
-        }
-        free(weight_tensor_group);
-    }
-
-    if (bias_tensor_group)
-    {
-        for (i = 0; i < nn_param->group; i++)
-        {
-            vsi_nn_ReleaseTensor(&(bias_tensor_group[i]));
-        }
-        free(bias_tensor_group);
-    }
-    if (output_tensor_group)
-    {
-        for (i = 0; i < nn_param->group; i++)
-        {
-            vsi_nn_ReleaseTensor(&(output_tensor_group[i]));
-        }
-        free(output_tensor_group);
-    }
-
-    return status;
+    return VSI_SUCCESS;
 } /* op_compute() */
 
 static vsi_bool op_check
@@ -269,6 +275,54 @@ static vsi_bool op_setup
     return TRUE;
 } /* op_setup() */
 
+static vsi_status op_deinit
+    (
+    vsi_nn_node_t * self
+    )
+{
+    vsi_nn_grouped_conv2d_param *nn_param = &(self->nn_param.grouped_conv2d);
+    uint32_t i;
+    if (LOCAL())
+    {
+        if (LOCAL()->input_tensor_group)
+        {
+            for (i = 0; i < nn_param->group; i++)
+            {
+                vsi_nn_ReleaseTensor(&(LOCAL()->input_tensor_group[i]));
+            }
+            free(LOCAL()->input_tensor_group);
+        }
+        if (LOCAL()->weight_tensor_group)
+        {
+            for (i = 0; i < nn_param->group; i++)
+            {
+                vsi_nn_ReleaseTensor(&(LOCAL()->weight_tensor_group[i]));
+            }
+            free(LOCAL()->weight_tensor_group);
+        }
+        if (LOCAL()->bias_tensor_group != NULL)
+        {
+            for (i = 0; i < nn_param->group; i++)
+            {
+                vsi_nn_ReleaseTensor(&(LOCAL()->bias_tensor_group[i]));
+            }
+            free(LOCAL()->bias_tensor_group);
+        }
+        if (LOCAL()->output_tensor_group != NULL)
+        {
+            for (i = 0; i < nn_param->group; i++)
+            {
+                vsi_nn_ReleaseTensor(&(LOCAL()->output_tensor_group[i]));
+            }
+            free(LOCAL()->output_tensor_group);
+        }
+
+        free(LOCAL());
+    }
+    vsi_nn_op_common_deinit(self);
+    return VSI_SUCCESS;
+} /* op_deinit() */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -278,7 +332,7 @@ DEF_OP_REG
     /* op_name    */ GROUPED_CONV2D,
     /* init       */ NULL,
     /* compute    */ op_compute,
-    /* deinit     */ vsi_nn_op_common_deinit,
+    /* deinit     */ op_deinit,
     /* check      */ op_check,
     /* setup      */ op_setup,
     /* optimize   */ NULL,
