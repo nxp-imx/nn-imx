@@ -55,6 +55,10 @@ class Conv2dValidate : public OperationValidate<T_model, T_Operation> {
                 reason += "reject CONVOLUTION_2D because kernel and bias not satisfy constant rule\n";
                 return false;
             }
+            if (kernelOperand.dimensions[1] * kernelOperand.dimensions[2] > 6400) {
+                reason += "reject CONVOLUTION_2D because kernel size > 6400\n";
+                return false;
+            }
         } else {
             reason += "reject CONVOLUTION_2D because input data type not support\n";
             return false;

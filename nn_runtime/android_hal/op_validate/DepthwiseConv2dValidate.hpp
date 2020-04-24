@@ -68,6 +68,11 @@ class DepthwiseConv2dValidate : public OperationValidate<T_model, T_Operation> {
                 LOG(ERROR) << "DepthwiseValidate: kernelIndex = -1";
                 assert(false);
             }
+            auto kernelOperand = model.operands[operation.inputs[kernelIndex]];
+            if (kernelOperand.dimensions[1] * kernelOperand.dimensions[2] > 6400) {
+                reason += "reject Depthwise_conv_2d because kernel size > 6400\n";
+                return false;
+            }
             return true;
         } else {
             reason += ("reject Depthwise_conv_2d because input data type not support\n");

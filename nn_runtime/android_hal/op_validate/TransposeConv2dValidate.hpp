@@ -52,6 +52,11 @@ class TransposeConv2dValidate : public OperationValidate<T_model, T_Operation> {
                 reason += "reject TRANSPOSE_CONV_2D because not support input with multi batch\n";
                 return false;
             }
+            auto kernelOperand = model.operands[operation.inputs[kernelIndex]];
+            if (kernelOperand.dimensions[1] * kernelOperand.dimensions[2] > 6400) {
+                reason += "reject TRANSPOSE_CONV_2D because kernel size > 6400\n";
+                return false;
+            }
             return true;
         } else {
             reason += "reject TRANSPOSE_CONV_2D because not support the input data type\n";

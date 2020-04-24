@@ -72,6 +72,11 @@ class GroupedConv2DValidate : public OperationValidate<T_model, T_Operation> {
                 reason += "reject GROUPED_CONV2D because the group number is invalid \n";
                 return false;
             }
+            auto kernelOperand = model.operands[operation.inputs[kernelIndex]];
+            if (kernelOperand.dimensions[1] * kernelOperand.dimensions[2] > 6400) {
+                reason += "reject GROUPED_CONV2D because kernel size > 6400\n";
+                return false;
+            }
 
         } else {
             reason += "reject GROUPED_CONV_2D because input data type not support\n";
