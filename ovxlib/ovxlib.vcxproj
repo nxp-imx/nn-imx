@@ -577,6 +577,7 @@
     <ClInclude Include="include\ops\vsi_nn_op_heatmap_max_keypoint.h" />
     <ClInclude Include="include\ops\vsi_nn_op_imageprocess.h" />
     <ClInclude Include="include\ops\vsi_nn_op_instancenormalize.h" />
+    <ClInclude Include="include\ops\vsi_nn_op_moments.h" />
     <ClInclude Include="include\ops\vsi_nn_op_l2_normalize.h" />
     <ClInclude Include="include\ops\vsi_nn_op_l2normalizescale.h" />
     <ClInclude Include="include\ops\vsi_nn_op_layernormalize.h" />
@@ -834,6 +835,9 @@
     <ClCompile Include="src\kernel\cl\gather_nd_cl.c">
       <ObjectFileName>$(IntDir)\src\kernel\cl\gather_nd_cl.o</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="src\kernel\cl\moments_cl.c">
+      <ObjectFileName>$(IntDir)\src\kernel\cl\moments_cl.o</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="src\kernel\cl\matrixmul_cl.c">
       <ObjectFileName>$(IntDir)\src\kernel\cl\matrixmul_cl.o</ObjectFileName>
     </ClCompile>
@@ -884,6 +888,9 @@
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\gather_nd_cpu.c">
       <ObjectFileName>$(IntDir)\src\kernel\cpu\gather_nd_cpu.o</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\kernel\cpu\moments_cpu.c">
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\moments_cpu.o</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\matrixmul_cpu.c">
       <ObjectFileName>$(IntDir)\src\kernel\cpu\matrixmul_cpu.o</ObjectFileName>
@@ -947,6 +954,9 @@
     </ClCompile>
     <ClCompile Include="src\kernel\evis\gather_nd_evis.c">
       <ObjectFileName>$(IntDir)\src\kernel\evis\gather_nd_evis.o</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\kernel\evis\moments_evis.c">
+      <ObjectFileName>$(IntDir)\src\kernel\evis\moments_evis.o</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\matrixmul_evis.c">
       <ObjectFileName>$(IntDir)\src\kernel\evis\matrixmul_evis.o</ObjectFileName>
@@ -1250,6 +1260,9 @@
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_gather_nd.c">
       <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_gather_nd.o</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_moments.c">
+      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_moments.o</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_depth2space_internal.c">
       <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_depth2space_internal.o</ObjectFileName>

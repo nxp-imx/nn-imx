@@ -26,6 +26,7 @@ __kernel void instance_norm_meanvari_F16(
         for(coord.y = 0; coord.y < height;)
         {
             data = read_imagef(input, coord);
+            coord.y++;
             sum += data.x;
             sqr += data.x * data.x;
         }

@@ -28,6 +28,7 @@ __kernel void instance_norm_meanvari_I32(
         for(coord.y = 0; coord.y < height;)
         {
             data = read_imagei(input, coord);
+            coord.y++;
             tmpSum += data.x;
             sqr += (data.x * data.x * e2InScale);
         }

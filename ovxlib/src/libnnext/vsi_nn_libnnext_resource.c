@@ -9929,6 +9929,924 @@ __kernel void minimum_I16F16toF16_2D\n\
 }\n\
 "; /* end of minimum_i16_vx*/
 
+static const char moments_axis0_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+_viv_uniform int width;\n\
+_viv_uniform int height;\n\
+_viv_uniform float dimRatio;\n\
+\n\
+_viv_uniform VXC_512Bits uniSumU8_16x1;\n\
+_viv_uniform VXC_512Bits uniSqrSum_16x1;\n\
+_viv_uniform float input_scale;\n\
+_viv_uniform int sumInZp;\n\
+_viv_uniform int tmpZp1;\n\
+_viv_uniform float e2InScale;\n\
+_viv_uniform float rowSumScale;\n\
+_viv_uniform VXC_512Bits uniFp16SumSqr_dp8x2;\n\
+_viv_uniform VXC_512Bits uniConvertHalftoFp16_2x8;\n\
+\n\
+#define MOMENTS_AXIS0_QINT(src0_type_name, read0_type) \\\n\
+__kernel void moments_axis0_##src0_type_name##toF16( \\\n\
+    image2d_array_t input, \\\n\
+    image2d_t output_mean, \\\n\
+    image2d_t output_vari, \\\n\
+    int axis, int axis_num) \\\n\
+{ \\\n\
+    int gidy = get_global_id(0); \\\n\
+    int gidz = get_global_id(1); \\\n\
+    int4 coord = (int4)(0, gidy, gidz, 0); \\\n\
+    read0_type src0; \\\n\
+    float sum = 0, sqr = 0; \\\n\
+    int tmpSum = 0, tmpSqr = 0; \\\n\
+    int4 tmpSum0, tmpSqr0; \\\n\
+ \\\n\
+    for(coord.x = 0; coord.x < width; coord.x += 16) \\\n\
+    { \\\n\
+        VXC_ReadImage2DArray(src0, input, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
+        VXC_DP16x1(tmpSum0, src0, src0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0), uniSumU8_16x1); \\\n\
+        VXC_DP16x1(tmpSqr0, src0, src0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0), uniSqrSum_16x1); \\\n\
+        tmpSum += (tmpSum0.x); \\\n\
+        tmpSqr += (tmpSqr0.x + tmpZp1 * tmpSum0.x); \\\n\
+    } \\\n\
+    sqr = (convert_float(tmpSqr) * e2InScale + rowSumScale); \\\n\
+    sum = convert_float(tmpSum + sumInZp) * input_scale; \\\n\
+ \\\n\
+    vxc_float4 mean_vari0 = (vxc_float4)(sum, sqr, 0, 0); \\\n\
+    mean_vari0 *= dimRatio; \\\n\
+    mean_vari0.s1 = mean_vari0.s1 - mean_vari0.s0 * mean_vari0.s0; \\\n\
+ \\\n\
+    int2 coord_out = (int2)(gidy, gidz); \\\n\
+    half4 tmpData; \\\n\
+    vxc_half8 tmpVal; \\\n\
+    vxc_short8 dst; \\\n\
+    _viv_asm(CONV, tmpData, mean_vari0); \\\n\
+    VXC_DP2x8(tmpVal, tmpData, tmpData, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvertHalftoFp16_2x8); \\\n\
+    _viv_asm(COPY, dst, tmpVal, 16); \\\n\
+ \\\n\
+    VXC_WriteImage(output_mean, coord_out, dst.s0123, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
+    VXC_WriteImage(output_vari, coord_out, dst.s1023, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
+}\n\
+\n\
+MOMENTS_AXIS0_QINT(U8, vxc_uchar16)\n\
+MOMENTS_AXIS0_QINT(I8, vxc_char16)\n\
+\n\
+#define MOMENTS_AXIS0_QINT_2D(src0_type_name, read0_type) \\\n\
+__kernel void moments_axis0_##src0_type_name##toF16_2D( \\\n\
+    image2d_t input, \\\n\
+    image2d_t output_mean, \\\n\
+    image2d_t output_vari, \\\n\
+    int axis, int axis_num) \\\n\
+{ \\\n\
+    int gidy = get_global_id(0); \\\n\
+    int2 coord = (int2)(0, gidy); \\\n\
+    read0_type src0; \\\n\
+    float sum = 0, sqr = 0; \\\n\
+    int tmpSum = 0, tmpSqr = 0; \\\n\
+    int4 tmpSum0, tmpSqr0; \\\n\
+ \\\n\
+    for(coord.x = 0; coord.x < width; coord.x += 16) \\\n\
+    { \\\n\
+        VXC_ReadImage(src0, input, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
+        VXC_DP16x1(tmpSum0, src0, src0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0), uniSumU8_16x1); \\\n\
+        VXC_DP16x1(tmpSqr0, src0, src0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0), uniSqrSum_16x1); \\\n\
+        tmpSum += (tmpSum0.x); \\\n\
+        tmpSqr += (tmpSqr0.x + tmpZp1 * tmpSum0.x); \\\n\
+    } \\\n\
+    sqr = (convert_float(tmpSqr) * e2InScale + rowSumScale); \\\n\
+    sum = convert_float(tmpSum + sumInZp) * input_scale; \\\n\
+ \\\n\
+    vxc_float4 mean_vari0 = (vxc_float4)(sum, sqr, 0, 0); \\\n\
+    mean_vari0 *= dimRatio; \\\n\
+    mean_vari0.s1 = mean_vari0.s1 - mean_vari0.s0 * mean_vari0.s0; \\\n\
+ \\\n\
+    int2 coord_out = (int2)(gidy, 0); \\\n\
+    half4 tmpData; \\\n\
+    vxc_half8 tmpVal; \\\n\
+    vxc_short8 dst; \\\n\
+    _viv_asm(CONV, tmpData, mean_vari0); \\\n\
+    VXC_DP2x8(tmpVal, tmpData, tmpData, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvertHalftoFp16_2x8); \\\n\
+    _viv_asm(COPY, dst, tmpVal, 16); \\\n\
+ \\\n\
+    VXC_WriteImage(output_mean, coord_out, dst.s0123, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
+    VXC_WriteImage(output_vari, coord_out, dst.s1023, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
+}\n\
+MOMENTS_AXIS0_QINT_2D(U8, vxc_uchar16)\n\
+MOMENTS_AXIS0_QINT_2D(I8, vxc_char16)\n\
+\n\
+__kernel void moments_axis0_F16toF16(\n\
+    image2d_array_t input,\n\
+    image2d_t output_mean,\n\
+    image2d_t output_vari,\n\
+              int axis, int axis_num)\n\
+{\n\
+    int gidy = get_global_id(0);\n\
+    int gidz = get_global_id(1);\n\
+    int4 coord = (int4)(0, gidy, gidz, 0);\n\
+    vxc_short8 src0;\n\
+    vxc_half8 in_h0;\n\
+    vxc_float4 sumsqr0;\n\
+    vxc_float4 mean_vari0 = (vxc_float4)(0);\n\
+    for(coord.x = 0; coord.x < width; coord.x += 8)\n\
+    {\n\
+        VXC_ReadImage2DArray(src0, input, coord, VXC_5BITOFFSET_XY(0, 0),\n\
+                VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+        _viv_asm(COPY, in_h0, src0, 16);\n\
+        VXC_DP8x2(sumsqr0, in_h0, in_h0, VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0),\\\n\
+                uniFp16SumSqr_dp8x2);\n\
+        mean_vari0 += sumsqr0;\n\
+    }\n\
+\n\
+    mean_vari0 *= dimRatio;\n\
+    mean_vari0.s1 = mean_vari0.s1 - mean_vari0.s0 * mean_vari0.s0;\n\
+\n\
+    int2 coord_out = (int2)(gidy, gidz);\n\
+\n\
+    half4 tmpData;\n\
+    vxc_half8 tmpVal;\n\
+    vxc_short8 dst;\n\
+    _viv_asm(CONV, tmpData, mean_vari0);\n\
+    VXC_DP2x8(tmpVal, tmpData, tmpData, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvertHalftoFp16_2x8);\n\
+    _viv_asm(COPY, dst, tmpVal, 16);\n\
+\n\
+    VXC_WriteImage(output_mean, coord_out, dst.s0123, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_WriteImage(output_vari, coord_out, dst.s1023, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+__kernel void moments_axis0_F16toF16_2D(\n\
+    image2d_t input,\n\
+    image2d_t output_mean,\n\
+    image2d_t output_vari,\n\
+              int axis, int axis_num)\n\
+{\n\
+    int gidy = get_global_id(0);\n\
+    int2 coord = (int2)(0, gidy);\n\
+    vxc_short8 src0;\n\
+    vxc_half8 in_h0;\n\
+    vxc_float4 sumsqr0;\n\
+    vxc_float4 mean_vari0 = (vxc_float4)(0);\n\
+\n\
+    for(coord.x = 0; coord.x < width; coord.x += 8)\n\
+    {\n\
+        VXC_ReadImage(src0, input, coord, VXC_5BITOFFSET_XY(0, 0),\n\
+                VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+        _viv_asm(COPY, in_h0, src0, 16);\n\
+        VXC_DP8x2(sumsqr0, in_h0, in_h0, VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0),\\\n\
+                uniFp16SumSqr_dp8x2);\n\
+        mean_vari0 += sumsqr0;\n\
+    }\n\
+    mean_vari0 *= dimRatio;\n\
+    mean_vari0.s1 = mean_vari0.s1 - mean_vari0.s0 * mean_vari0.s0;\n\
+\n\
+    int2 coord_out = (int2)(gidy, 0);\n\
+\n\
+    half4 tmpData;\n\
+    vxc_half8 tmpVal;\n\
+    vxc_short8 dst;\n\
+    _viv_asm(CONV, tmpData, mean_vari0);\n\
+    VXC_DP2x8(tmpVal, tmpData, tmpData, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvertHalftoFp16_2x8);\n\
+    _viv_asm(COPY, dst, tmpVal, 16);\n\
+\n\
+    VXC_WriteImage(output_mean, coord_out, dst.s0123, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_WriteImage(output_vari, coord_out, dst.s1023, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+"; /* end of moments_axis0_vx*/
+
+static const char moments_axis01_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+_viv_uniform int width;\n\
+_viv_uniform int height;\n\
+_viv_uniform int channel;\n\
+_viv_uniform float dimRatio;\n\
+\n\
+_viv_uniform VXC_512Bits uniSumU8_16x1;\n\
+_viv_uniform VXC_512Bits uniSqrSum_16x1;\n\
+_viv_uniform float input_scale;\n\
+_viv_uniform int inputZP;\n\
+_viv_uniform int sumInZp;\n\
+_viv_uniform int tmpZp1;\n\
+_viv_uniform float e2InScale;\n\
+_viv_uniform float rowSumScale;\n\
+_viv_uniform VXC_512Bits uniFp16SumSqr_dp8x2;\n\
+_viv_uniform VXC_512Bits uniConvertHalftoFp16_2x8;\n\
+\n\
+#define MOMENTS_AXIS01_QINT(src0_type_name, read0_type) \\\n\
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void moments_axis01_##src0_type_name##toF16( \\\n\
+    image2d_array_t input, image2d_t output_mean, image2d_t output_vari, \\\n\
+    int axis, int axis_num) \\\n\
+{ \\\n\
+    int gidx = get_global_id(0) << 4; \\\n\
+    int lidx = get_local_id(0); \\\n\
+    int gidz = get_global_id(1); \\\n\
+    int4 coord = (int4)(gidx, 0, gidz, 0); \\\n\
+    read0_type src0; \\\n\
+    float sum = 0, sqr = 0; \\\n\
+ \\\n\
+    __local float lcl_sum[16]; \\\n\
+    __local float lcl_sqr[16]; \\\n\
+ \\\n\
+    for(coord.x = gidx; coord.x < width; coord.x += 256) \\\n\
+    { \\\n\
+        int tmpSum = 0, tmpSqr = 0, tmpSum1, tmpSqr1; \\\n\
+        for(coord.y = 0; coord.y < height;) \\\n\
+        { \\\n\
+            VXC_ReadImage2DArray(src0, input, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                    VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
+            coord.y++; \\\n\
+            VXC_DP16x1(tmpSum1, src0, src0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0), uniSumU8_16x1); \\\n\
+            tmpSum += (tmpSum1); \\\n\
+            VXC_DP16x1(tmpSqr1, src0, src0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0), uniSqrSum_16x1); \\\n\
+            tmpSqr += (tmpSqr1 + tmpZp1 * tmpSum1); \\\n\
+        } \\\n\
+        sqr += (tmpSqr * e2InScale + rowSumScale); \\\n\
+        sum += (tmpSum + sumInZp) * input_scale; \\\n\
+    } \\\n\
+    lcl_sum[lidx] = sum; \\\n\
+    lcl_sqr[lidx] = sqr; \\\n\
+    barrier(CLK_LOCAL_MEM_FENCE); \\\n\
+    int2 coord_out = (int2)(gidz, 0); \\\n\
+    if(lidx == 0) \\\n\
+    { \\\n\
+        float4 one = (float4)(1, 1, 1, 1); \\\n\
+        __local float4* tmp_sum = (__local float4*)lcl_sum; \\\n\
+        __local float4* tmp_sqr = (__local float4*)lcl_sqr; \\\n\
+ \\\n\
+        sum = (0); \\\n\
+        sqr = (0); \\\n\
+        for(int i = 0; i < 4; i++) \\\n\
+        { \\\n\
+            sum += dot(tmp_sum[i], one); \\\n\
+            sqr += dot(tmp_sqr[i], one); \\\n\
+        } \\\n\
+        float4 mean, vari; \\\n\
+        mean.x = sum * dimRatio; \\\n\
+        vari.x = sqr * dimRatio; \\\n\
+        vari.x = vari.x - mean.x * mean.x; \\\n\
+ \\\n\
+        half4 tmpMean, tmpVari; \\\n\
+        vxc_half8 tmpVal; \\\n\
+        vxc_short8 dst; \\\n\
+        _viv_asm(CONV, tmpMean, mean); \\\n\
+        _viv_asm(CONV, tmpVari, vari); \\\n\
+        VXC_DP2x8(tmpVal, tmpMean, tmpVari, \\\n\
+                 VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvertHalftoFp16_2x8); \\\n\
+        _viv_asm(COPY, dst, tmpVal, 16); \\\n\
+        VXC_WriteImage(output_mean, coord_out, dst.s0123, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
+        VXC_WriteImage(output_vari, coord_out, dst.s4567, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
+    } \\\n\
+}\n\
+MOMENTS_AXIS01_QINT(U8, vxc_uchar16)\n\
+MOMENTS_AXIS01_QINT(I8, vxc_char16)\n\
+\n\
+#define MOMENTS_AXIS01_QINT_2D(src0_type_name, read0_type) \\\n\
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void moments_axis01_##src0_type_name##toF16_2D( \\\n\
+    image2d_t input, image2d_t output_mean, image2d_t output_vari, \\\n\
+    int axis, int axis_num) \\\n\
+{ \\\n\
+    int gidx = get_global_id(0) << 4; \\\n\
+    int lidx = get_local_id(0); \\\n\
+    int2 coord = (int2)(gidx, 0); \\\n\
+    read0_type src0; \\\n\
+    float sum = 0, sqr = 0; \\\n\
+ \\\n\
+    __local float lcl_sum[16]; \\\n\
+    __local float lcl_sqr[16]; \\\n\
+ \\\n\
+    for(coord.x = gidx; coord.x < width; coord.x += 256) \\\n\
+    { \\\n\
+        int tmpSum = 0, tmpSqr = 0, tmpSum1, tmpSqr1; \\\n\
+        for(coord.y = 0; coord.y < height;) \\\n\
+        { \\\n\
+            VXC_ReadImage(src0, input, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                    VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
+            coord.y++; \\\n\
+            VXC_DP16x1(tmpSum1, src0, src0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0), uniSumU8_16x1); \\\n\
+            tmpSum += (tmpSum1); \\\n\
+            VXC_DP16x1(tmpSqr1, src0, src0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0), uniSqrSum_16x1); \\\n\
+            tmpSqr += (tmpSqr1 + tmpZp1 * tmpSum1); \\\n\
+        } \\\n\
+        sqr += (tmpSqr * e2InScale + rowSumScale); \\\n\
+        sum += (tmpSum + sumInZp) * input_scale; \\\n\
+    } \\\n\
+    lcl_sum[lidx] = sum; \\\n\
+    lcl_sqr[lidx] = sqr; \\\n\
+    barrier(CLK_LOCAL_MEM_FENCE); \\\n\
+    int2 coord_out = (int2)(0, 0); \\\n\
+    if(lidx == 0) \\\n\
+    { \\\n\
+        float4 one = (float4)(1, 1, 1, 1); \\\n\
+        __local float4* tmp_sum = (__local float4*)lcl_sum; \\\n\
+        __local float4* tmp_sqr = (__local float4*)lcl_sqr; \\\n\
+ \\\n\
+        sum = (0); \\\n\
+        sqr = (0); \\\n\
+        for(int i = 0; i < 4; i++) \\\n\
+        { \\\n\
+            sum += dot(tmp_sum[i], one); \\\n\
+            sqr += dot(tmp_sqr[i], one); \\\n\
+        } \\\n\
+        float4 mean, vari; \\\n\
+        mean.x = sum * dimRatio; \\\n\
+        vari.x = sqr * dimRatio; \\\n\
+        vari.x = vari.x - mean.x * mean.x; \\\n\
+ \\\n\
+        half4 tmpMean, tmpVari; \\\n\
+        vxc_half8 tmpVal; \\\n\
+        vxc_short8 dst; \\\n\
+        _viv_asm(CONV, tmpMean, mean); \\\n\
+        _viv_asm(CONV, tmpVari, vari); \\\n\
+        VXC_DP2x8(tmpVal, tmpMean, tmpVari, \\\n\
+                 VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvertHalftoFp16_2x8); \\\n\
+        _viv_asm(COPY, dst, tmpVal, 16); \\\n\
+        VXC_WriteImage(output_mean, coord_out, dst.s0123, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
+        VXC_WriteImage(output_vari, coord_out, dst.s4567, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
+    } \\\n\
+}\n\
+MOMENTS_AXIS01_QINT_2D(U8, vxc_uchar16)\n\
+MOMENTS_AXIS01_QINT_2D(I8, vxc_char16)\n\
+\n\
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void moments_axis01_F16toF16(\n\
+    image2d_array_t input, image2d_t output_mean, image2d_t output_vari,\n\
+    int axis, int axis_num)\n\
+{\n\
+    int gidx = get_global_id(0) << 3;\n\
+    int lidx = get_local_id(0);\n\
+    int gidz = get_global_id(1);\n\
+    int4 coord = (int4)(gidx, 0, gidz, 0);\n\
+    vxc_short8 src0;\n\
+    vxc_half8 in_h;\n\
+    vxc_float4 sumsqr;\n\
+    vxc_float4 tmpSumSqr = (vxc_float4)(0);\n\
+\n\
+    __local float lcl_sum[16];\n\
+    __local float lcl_sqr[16];\n\
+\n\
+    for(coord.x = gidx; coord.x < width; coord.x += 128)\n\
+    {\n\
+        for(coord.y = 0; coord.y < height;)\n\
+        {\n\
+            VXC_ReadImage2DArray(src0, input, coord, VXC_5BITOFFSET_XY(0, 0),\n\
+                    VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+            coord.y++;\n\
+            _viv_asm(COPY, in_h, src0, 16);\n\
+            VXC_DP8x2(sumsqr, in_h, in_h, VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0),\\\n\
+                    uniFp16SumSqr_dp8x2);\n\
+            tmpSumSqr += sumsqr;\n\
+        }\n\
+    }\n\
+\n\
+    lcl_sum[lidx] = tmpSumSqr.x;\n\
+    lcl_sqr[lidx] = tmpSumSqr.y;\n\
+    barrier(CLK_LOCAL_MEM_FENCE);\n\
+\n\
+    int2 coord_out = (int2)(gidz, 0);\n\
+    if(lidx == 0)\n\
+    {\n\
+        float4 one = (float4)(1, 1, 1, 1);\n\
+        __local float4* tmp_sum = (__local float4*)lcl_sum;\n\
+        __local float4* tmp_sqr = (__local float4*)lcl_sqr;\n\
+\n\
+        float sum = 0.0f;\n\
+        float sqr = 0.0f;\n\
+        for(int i = 0; i < 4; i++)\n\
+        {\n\
+            sum += dot(tmp_sum[i], one);\n\
+            sqr += dot(tmp_sqr[i], one);\n\
+        }\n\
+        float4 mean, vari;\n\
+        mean.x = sum * dimRatio;\n\
+        vari.x = sqr * dimRatio;\n\
+        vari.x = vari.x - mean.x * mean.x;\n\
+\n\
+        half4 tmpMean, tmpVari;\n\
+        vxc_half8 tmpVal;\n\
+        vxc_short8 dst;\n\
+        _viv_asm(CONV, tmpMean, mean);\n\
+        _viv_asm(CONV, tmpVari, vari);\n\
+        VXC_DP2x8(tmpVal, tmpMean, tmpVari,\n\
+                VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvertHalftoFp16_2x8);\n\
+        _viv_asm(COPY, dst, tmpVal, 16);\n\
+\n\
+        VXC_WriteImage(output_mean, coord_out, dst.s0123, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+        VXC_WriteImage(output_vari, coord_out, dst.s4567, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    }\n\
+}\n\
+\n\
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void moments_axis01_F16toF16_2D(\n\
+    image2d_array_t input, image2d_t output_mean, image2d_t output_vari,\n\
+    int axis, int axis_num)\n\
+{\n\
+    int gidx = get_global_id(0) << 3;\n\
+    int lidx = get_local_id(0);\n\
+    int2 coord = (int2)(gidx, 0);\n\
+    vxc_short8 src0;\n\
+    vxc_half8 in_h;\n\
+    vxc_float4 sumsqr;\n\
+    vxc_float4 tmpSumSqr = (vxc_float4)(0);\n\
+\n\
+    __local float lcl_sum[16];\n\
+    __local float lcl_sqr[16];\n\
+\n\
+    for(coord.x = gidx; coord.x < width; coord.x += 128)\n\
+    {\n\
+        for(coord.y = 0; coord.y < height;)\n\
+        {\n\
+            VXC_ReadImage(src0, input, coord, VXC_5BITOFFSET_XY(0, 0),\n\
+                    VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+            coord.y++;\n\
+            _viv_asm(COPY, in_h, src0, 16);\n\
+            VXC_DP8x2(sumsqr, in_h, in_h, VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0),\\\n\
+                    uniFp16SumSqr_dp8x2);\n\
+            tmpSumSqr += sumsqr;\n\
+        }\n\
+    }\n\
+\n\
+    lcl_sum[lidx] = tmpSumSqr.x;\n\
+    lcl_sqr[lidx] = tmpSumSqr.y;\n\
+    barrier(CLK_LOCAL_MEM_FENCE);\n\
+\n\
+    int2 coord_out = (int2)(0, 0);\n\
+    if(lidx == 0)\n\
+    {\n\
+        float4 one = (float4)(1, 1, 1, 1);\n\
+        __local float4* tmp_sum = (__local float4*)lcl_sum;\n\
+        __local float4* tmp_sqr = (__local float4*)lcl_sqr;\n\
+\n\
+        float sum = 0.0f;\n\
+        float sqr = 0.0f;\n\
+        for(int i = 0; i < 4; i++)\n\
+        {\n\
+            sum += dot(tmp_sum[i], one);\n\
+            sqr += dot(tmp_sqr[i], one);\n\
+        }\n\
+        float4 mean, vari;\n\
+        mean.x = sum * dimRatio;\n\
+        vari.x = sqr * dimRatio;\n\
+        vari.x = vari.x - mean.x * mean.x;\n\
+\n\
+        half4 tmpMean, tmpVari;\n\
+        vxc_half8 tmpVal;\n\
+        vxc_short8 dst;\n\
+        _viv_asm(CONV, tmpMean, mean);\n\
+        _viv_asm(CONV, tmpVari, vari);\n\
+        VXC_DP2x8(tmpVal, tmpMean, tmpVari,\n\
+                 VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvertHalftoFp16_2x8);\n\
+        _viv_asm(COPY, dst, tmpVal, 16);\n\
+\n\
+        VXC_WriteImage(output_mean, coord_out, dst.s0123, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+        VXC_WriteImage(output_vari, coord_out, dst.s4567, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    }\n\
+}\n\
+"; /* end of moments_axis01_vx*/
+
+static const char moments_axis012_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+_viv_uniform int width;\n\
+_viv_uniform int height;\n\
+_viv_uniform int channel;\n\
+_viv_uniform float dimRatio;\n\
+\n\
+_viv_uniform VXC_512Bits uniSumU8_16x1;\n\
+_viv_uniform VXC_512Bits uniSqrSum_16x1;\n\
+_viv_uniform float input_scale;\n\
+_viv_uniform int inputZP;\n\
+_viv_uniform int sumInZp;\n\
+_viv_uniform int tmpZp1;\n\
+_viv_uniform float e2InScale;\n\
+_viv_uniform float rowSumScale;\n\
+_viv_uniform VXC_512Bits uniFp16SumSqr_dp8x2;\n\
+_viv_uniform VXC_512Bits uniConvertHalftoFp16_2x8;\n\
+\n\
+#define MOMENTS_AXIS012_QINT(src0_type_name, read0_type) \\\n\
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void moments_axis012_##src0_type_name##toF16( \\\n\
+    image2d_array_t input, image2d_t output_mean, image2d_t output_vari, \\\n\
+    int axis, int axis_num) \\\n\
+{ \\\n\
+    int gidx = get_global_id(0) << 4; \\\n\
+    int lidx = get_local_id(0); \\\n\
+    int4 coord = (int4)(gidx, 0, 0, 0); \\\n\
+    read0_type src0; \\\n\
+    float sum = 0, sqr = 0; \\\n\
+ \\\n\
+    __local float lcl_sum[16]; \\\n\
+    __local float lcl_sqr[16]; \\\n\
+ \\\n\
+    for(coord.z = 0; coord.z < channel; coord.z++) \\\n\
+    { \\\n\
+        for(coord.x = gidx; coord.x < width; coord.x += 256) \\\n\
+        { \\\n\
+            int tmpSum = 0, tmpSqr = 0, tmpSum1, tmpSqr1; \\\n\
+            for(coord.y = 0; coord.y < height;) \\\n\
+            { \\\n\
+                VXC_ReadImage2DArray(src0, input, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                    VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
+                coord.y++; \\\n\
+                VXC_DP16x1(tmpSum1, src0, src0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0), uniSumU8_16x1); \\\n\
+                tmpSum += (tmpSum1); \\\n\
+                VXC_DP16x1(tmpSqr1, src0, src0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0), uniSqrSum_16x1); \\\n\
+                tmpSqr += (tmpSqr1 + tmpZp1 * tmpSum1); \\\n\
+            } \\\n\
+            sqr += (tmpSqr * e2InScale + rowSumScale); \\\n\
+            sum += (tmpSum + sumInZp) * input_scale; \\\n\
+        } \\\n\
+    } \\\n\
+    lcl_sum[lidx] = sum; \\\n\
+    lcl_sqr[lidx] = sqr; \\\n\
+    barrier(CLK_LOCAL_MEM_FENCE); \\\n\
+    int2 coord_out = (int2)(0, 0); \\\n\
+    if(lidx == 0) \\\n\
+    { \\\n\
+        float4 one = (float4)(1, 1, 1, 1); \\\n\
+        __local float4* tmp_sum = (__local float4*)lcl_sum; \\\n\
+        __local float4* tmp_sqr = (__local float4*)lcl_sqr; \\\n\
+ \\\n\
+        sum = (0); \\\n\
+        sqr = (0); \\\n\
+        for(int i = 0; i < 4; i++) \\\n\
+        { \\\n\
+            sum += dot(tmp_sum[i], one); \\\n\
+            sqr += dot(tmp_sqr[i], one); \\\n\
+        } \\\n\
+        float4 mean, vari; \\\n\
+        mean.x = sum * dimRatio; \\\n\
+        vari.x = sqr * dimRatio; \\\n\
+        vari.x = vari.x - mean.x * mean.x; \\\n\
+ \\\n\
+        half4 tmpMean, tmpVari; \\\n\
+        vxc_half8 tmpVal; \\\n\
+        vxc_short8 dst; \\\n\
+        _viv_asm(CONV, tmpMean, mean); \\\n\
+        _viv_asm(CONV, tmpVari, vari); \\\n\
+        VXC_DP2x8(tmpVal, tmpMean, tmpVari, \\\n\
+                VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvertHalftoFp16_2x8); \\\n\
+        _viv_asm(COPY, dst, tmpVal, 16); \\\n\
+        VXC_WriteImage(output_mean, coord_out, dst.s0123, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
+        VXC_WriteImage(output_vari, coord_out, dst.s4567, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
+    } \\\n\
+}\n\
+\n\
+MOMENTS_AXIS012_QINT(U8, vxc_uchar16)\n\
+MOMENTS_AXIS012_QINT(I8, vxc_char16)\n\
+\n\
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void moments_axis012_F16toF16(\n\
+    image2d_array_t input,\n\
+    image2d_t output_mean,\n\
+    image2d_t output_vari,\n\
+              int axis,\n\
+              int axis_num)\n\
+{\n\
+    int gidx = get_global_id(0) << 3;\n\
+    int lidx = get_local_id(0);\n\
+    int4 coord = (int4)(gidx, 0, 0, 0);\n\
+    vxc_short8 src0;\n\
+    vxc_half8 in_h;\n\
+    vxc_float4 sumsqr;\n\
+\n\
+    __local float lcl_sum[16];\n\
+    __local float lcl_sqr[16];\n\
+    vxc_float4 tmpSumSqr = (vxc_float4)(0);\n\
+\n\
+    for(coord.z = 0; coord.z < channel; coord.z++)\n\
+    {\n\
+        for(coord.x = gidx; coord.x < width; coord.x += 128)\n\
+        {\n\
+            for(coord.y = 0; coord.y < height;)\n\
+            {\n\
+                VXC_ReadImage2DArray(src0, input, coord, VXC_5BITOFFSET_XY(0, 0),\n\
+                    VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+                coord.y++;\n\
+                _viv_asm(COPY, in_h, src0, 16);\n\
+                VXC_DP8x2(sumsqr, in_h, in_h, VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0),\\\n\
+                    uniFp16SumSqr_dp8x2);\n\
+                tmpSumSqr += sumsqr;\n\
+            }\n\
+        }\n\
+    }\n\
+    lcl_sum[lidx] = tmpSumSqr.x;\n\
+    lcl_sqr[lidx] = tmpSumSqr.y;\n\
+\n\
+    barrier(CLK_LOCAL_MEM_FENCE);\n\
+\n\
+    int2 coord_out = (int2)(0, 0);\n\
+    if(lidx == 0)\n\
+    {\n\
+        float4 one = (float4)(1, 1, 1, 1);\n\
+        __local float4* tmp_sum = (__local float4*)lcl_sum;\n\
+        __local float4* tmp_sqr = (__local float4*)lcl_sqr;\n\
+\n\
+        float sum = (float)(0);\n\
+        float sqr = (float)(0);\n\
+        for(int i = 0; i < 4; i++)\n\
+        {\n\
+            sum += dot(tmp_sum[i], one);\n\
+            sqr += dot(tmp_sqr[i], one);\n\
+        }\n\
+\n\
+        float4 mean, vari;\n\
+        mean.x = sum * dimRatio;\n\
+        vari.x = sqr * dimRatio;\n\
+        vari.x = vari.x - mean.x * mean.x;\n\
+\n\
+        half4 tmpMean, tmpVari;\n\
+        vxc_half8 tmpVal;\n\
+        vxc_short8 dst;\n\
+        _viv_asm(CONV, tmpMean, mean);\n\
+        _viv_asm(CONV, tmpVari, vari);\n\
+        VXC_DP2x8(tmpVal, tmpMean, tmpVari,\n\
+                 VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvertHalftoFp16_2x8);\n\
+        _viv_asm(COPY, dst, tmpVal, 16);\n\
+\n\
+        VXC_WriteImage(output_mean, coord_out, dst.s0123, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+        VXC_WriteImage(output_vari, coord_out, dst.s4567, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    }\n\
+}"; /* end of moments_axis012_vx*/
+
+static const char moments_axis1_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+_viv_uniform int height;\n\
+_viv_uniform float dimRatio;\n\
+\n\
+_viv_uniform float input_scale;\n\
+_viv_uniform int inputZP;\n\
+_viv_uniform float e2InScale;\n\
+\n\
+_viv_uniform VXC_512Bits UniFP16toFP32Lo4_dp4x4;\n\
+_viv_uniform VXC_512Bits uniConvert1stUint8SubZpToFp32_4x4;\n\
+_viv_uniform VXC_512Bits uniConvertHalftoFp16_2x8;\n\
+\n\
+#define MOMENTS_AXIS1_QINT(src0_type_name, read0_type) \\\n\
+__kernel void moments_axis1_##src0_type_name##toF16( \\\n\
+    image2d_array_t input, \\\n\
+    image2d_t output_mean, \\\n\
+    image2d_t output_vari, \\\n\
+    int axis, int axis_num) \\\n\
+{ \\\n\
+    int gidx = get_global_id(0); \\\n\
+    int gidz = get_global_id(1); \\\n\
+    int4 coord = (int4)(gidx, 0, gidz, 0); \\\n\
+    read0_type src0; \\\n\
+    float4 sum = 0, sqr = 0; \\\n\
+    short zp = inputZP;\\\n\
+    float4 tmpData0;\\\n\
+ \\\n\
+    for(coord.y = 0; coord.y < height; coord.y++) \\\n\
+    { \\\n\
+        VXC_ReadImage2DArray(src0, input, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+        VXC_DP4x4(tmpData0, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
+                uniConvert1stUint8SubZpToFp32_4x4); \\\n\
+        sum += (tmpData0); \\\n\
+        sqr += (tmpData0 * tmpData0); \\\n\
+    } \\\n\
+    sum *= input_scale; \\\n\
+    sqr *= e2InScale; \\\n\
+ \\\n\
+    float4 mean = sum * dimRatio; \\\n\
+    float4 vari = sqr * dimRatio; \\\n\
+    vari = vari - mean * mean; \\\n\
+ \\\n\
+    int2 coord_out = (int2)(gidx, gidz); \\\n\
+    half4 tmpMean, tmpVari; \\\n\
+    vxc_half8 tmpVal; \\\n\
+    vxc_short8 dst; \\\n\
+    _viv_asm(CONV, tmpMean, mean); \\\n\
+    _viv_asm(CONV, tmpVari, vari); \\\n\
+    VXC_DP2x8(tmpVal, tmpMean, tmpVari, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvertHalftoFp16_2x8); \\\n\
+    _viv_asm(COPY, dst, tmpVal, 16); \\\n\
+    VXC_WriteImage(output_mean, coord_out, dst.s0123, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+    VXC_WriteImage(output_vari, coord_out, dst.s4567, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+}\n\
+\n\
+MOMENTS_AXIS1_QINT(U8, vxc_uchar16)\n\
+MOMENTS_AXIS1_QINT(I8, vxc_char16)\n\
+\n\
+#define MOMENTS_AXIS1_QINT_2D(src0_type_name, read0_type) \\\n\
+__kernel void moments_axis1_##src0_type_name##toF16_2D( \\\n\
+    image2d_t input, \\\n\
+    image2d_t output_mean, \\\n\
+    image2d_t output_vari, \\\n\
+        int axis, int axis_num) \\\n\
+{ \\\n\
+    int gidx = get_global_id(0); \\\n\
+    int2 coord = (int2)(gidx, 0); \\\n\
+    read0_type src0; \\\n\
+    float4 sum = 0, sqr = 0; \\\n\
+    short zp = inputZP;\\\n\
+    float4 tmpData0;\\\n\
+ \\\n\
+    for(coord.y = 0; coord.y < height; coord.y++) \\\n\
+    { \\\n\
+        VXC_ReadImage(src0, input, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+        VXC_DP4x4(tmpData0, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
+                uniConvert1stUint8SubZpToFp32_4x4); \\\n\
+        sum += (tmpData0); \\\n\
+        sqr += (tmpData0 * tmpData0); \\\n\
+    } \\\n\
+    sum *= input_scale; \\\n\
+    sqr *= e2InScale; \\\n\
+ \\\n\
+    float4 mean = sum * dimRatio; \\\n\
+    float4 vari = sqr * dimRatio; \\\n\
+    vari = vari - mean * mean; \\\n\
+ \\\n\
+    int2 coord_out = (int2)(gidx, 0); \\\n\
+    half4 tmpMean, tmpVari; \\\n\
+    vxc_half8 tmpVal; \\\n\
+    vxc_short8 dst; \\\n\
+    _viv_asm(CONV, tmpMean, mean); \\\n\
+    _viv_asm(CONV, tmpVari, vari); \\\n\
+    VXC_DP2x8(tmpVal, tmpMean, tmpVari, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvertHalftoFp16_2x8); \\\n\
+    _viv_asm(COPY, dst, tmpVal, 16); \\\n\
+    VXC_WriteImage(output_mean, coord_out, dst.s0123, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+    VXC_WriteImage(output_vari, coord_out, dst.s4567, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+}\n\
+MOMENTS_AXIS1_QINT_2D(U8, vxc_uchar16)\n\
+MOMENTS_AXIS1_QINT_2D(I8, vxc_char16)\n\
+\n\
+__kernel void moments_axis1_F16toF16(\n\
+    image2d_array_t input,\n\
+    image2d_t output_mean,\n\
+    image2d_t output_vari,\n\
+              int axis, int axis_num)\n\
+{\n\
+    int gidx = get_global_id(0);\n\
+    int gidz = get_global_id(1);\n\
+    int4 coord = (int4)(gidx, 0, gidz, 0);\n\
+    vxc_short8 src0;\n\
+    vxc_half8 in_h0;\n\
+    vxc_float4 tmpSrc0;\n\
+    vxc_float4 sum = (vxc_float4)(0);\n\
+    vxc_float4 sqr = (vxc_float4)(0);\n\
+\n\
+    for(coord.y = 0; coord.y < height; coord.y++)\n\
+    {\n\
+        VXC_ReadImage2DArray(src0, input, coord, VXC_5BITOFFSET_XY(0, 0),\n\
+                VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+        _viv_asm(COPY, in_h0, src0, 16);\n\
+        VXC_DP4x4(tmpSrc0, in_h0, in_h0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), UniFP16toFP32Lo4_dp4x4);\n\
+        sum += tmpSrc0;\n\
+        sqr += (tmpSrc0 * tmpSrc0);\n\
+    }\n\
+\n\
+    vxc_float4 mean = sum * dimRatio;\n\
+    vxc_float4 vari = sqr * dimRatio;\n\
+    vari = vari - mean * mean;\n\
+\n\
+    int2 coord_out = (int2)(gidx, gidz);\n\
+    half4 tmpMean, tmpVari;\n\
+    vxc_half8 tmpVal;\n\
+    vxc_short8 dst;\n\
+    _viv_asm(CONV, tmpMean, mean);\n\
+    _viv_asm(CONV, tmpVari, vari);\n\
+    VXC_DP2x8(tmpVal, tmpMean, tmpVari, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvertHalftoFp16_2x8);\n\
+    _viv_asm(COPY, dst, tmpVal, 16);\n\
+    VXC_WriteImage(output_mean, coord_out, dst.s0123, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_WriteImage(output_vari, coord_out, dst.s4567, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+__kernel void moments_axis1_F16toF16_2D(\n\
+    image2d_t input,\n\
+    image2d_t output_mean,\n\
+    image2d_t output_vari,\n\
+              int axis, int axis_num)\n\
+{\n\
+    int gidx = get_global_id(0);\n\
+    int2 coord = (int2)(gidx, 0);\n\
+    vxc_short8 src0;\n\
+    vxc_half8 in_h0;\n\
+    vxc_float4 tmpSrc0;\n\
+    vxc_float4 sum = (vxc_float4)(0);\n\
+    vxc_float4 sqr = (vxc_float4)(0);\n\
+\n\
+    for(coord.y = 0; coord.y < height; coord.y++)\n\
+    {\n\
+        VXC_ReadImage(src0, input, coord, VXC_5BITOFFSET_XY(0, 0),\n\
+                VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+        _viv_asm(COPY, in_h0, src0, 16);\n\
+        VXC_DP4x4(tmpSrc0, in_h0, in_h0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), UniFP16toFP32Lo4_dp4x4);\n\
+        sum += tmpSrc0;\n\
+        sqr += (tmpSrc0 * tmpSrc0);\n\
+    }\n\
+\n\
+    vxc_float4 mean = sum * dimRatio;\n\
+    vxc_float4 vari = sqr * dimRatio;\n\
+    vari = vari - mean * mean;\n\
+\n\
+    int2 coord_out = (int2)(gidx, 0);\n\
+    half4 tmpMean, tmpVari;\n\
+    vxc_half8 tmpVal;\n\
+    vxc_short8 dst;\n\
+    _viv_asm(CONV, tmpMean, mean);\n\
+    _viv_asm(CONV, tmpVari, vari);\n\
+    VXC_DP2x8(tmpVal, tmpMean, tmpVari, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvertHalftoFp16_2x8);\n\
+    _viv_asm(COPY, dst, tmpVal, 16);\n\
+    VXC_WriteImage(output_mean, coord_out, dst.s0123, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_WriteImage(output_vari, coord_out, dst.s4567, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+"; /* end of moments_axis1_vx*/
+
+static const char moments_axis2_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+_viv_uniform int channel;\n\
+_viv_uniform float dimRatio;\n\
+\n\
+_viv_uniform float input_scale;\n\
+_viv_uniform int inputZP;\n\
+_viv_uniform float e2InScale;\n\
+_viv_uniform VXC_512Bits UniFP16toFP32Lo4_dp4x4;\n\
+_viv_uniform VXC_512Bits uniConvert1stUint8SubZpToFp32_4x4;\n\
+_viv_uniform VXC_512Bits uniConvertHalftoFp16_2x8;\n\
+\n\
+#define MOMENTS_AXIS2_QINT(src0_type_name, read0_type) \\\n\
+__kernel void moments_axis2_##src0_type_name##toF16( \\\n\
+    image2d_array_t input, \\\n\
+    image2d_t output_mean, \\\n\
+    image2d_t output_vari, \\\n\
+        int axis, int axis_num) \\\n\
+{ \\\n\
+    int gidx = get_global_id(0); \\\n\
+    int gidy = get_global_id(1); \\\n\
+    int4 coord = (int4)(gidx, gidy, 0, 0); \\\n\
+    read0_type src0; \\\n\
+    float4 sum = 0, sqr = 0; \\\n\
+    short zp = inputZP;\\\n\
+    float4 tmpData0;\\\n\
+ \\\n\
+    for(coord.z = 0; coord.z < channel; coord.z++) \\\n\
+    { \\\n\
+        VXC_ReadImage2DArray(src0, input, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+        VXC_DP4x4(tmpData0, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
+                uniConvert1stUint8SubZpToFp32_4x4); \\\n\
+        sum += (tmpData0); \\\n\
+        sqr += (tmpData0 * tmpData0); \\\n\
+    } \\\n\
+    sum *= input_scale; \\\n\
+    sqr *= e2InScale; \\\n\
+ \\\n\
+    float4 mean = sum * dimRatio; \\\n\
+    float4 vari = sqr * dimRatio; \\\n\
+    vari = vari - mean * mean; \\\n\
+ \\\n\
+    int2 coord_out = (int2)(gidx, gidy); \\\n\
+    half4 tmpMean, tmpVari; \\\n\
+    vxc_half8 tmpVal; \\\n\
+    vxc_short8 dst; \\\n\
+    _viv_asm(CONV, tmpMean, mean); \\\n\
+    _viv_asm(CONV, tmpVari, vari); \\\n\
+    VXC_DP2x8(tmpVal, tmpMean, tmpVari, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvertHalftoFp16_2x8); \\\n\
+    _viv_asm(COPY, dst, tmpVal, 16); \\\n\
+    VXC_WriteImage(output_mean, coord_out, dst.s0123, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+    VXC_WriteImage(output_vari, coord_out, dst.s4567, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+}\n\
+\n\
+MOMENTS_AXIS2_QINT(U8, vxc_uchar16)\n\
+MOMENTS_AXIS2_QINT(I8, vxc_char16)\n\
+\n\
+__kernel void moments_axis2_F16toF16(\n\
+    image2d_array_t input,\n\
+    image2d_t output_mean,\n\
+    image2d_t output_vari,\n\
+              int axis,\n\
+              int axis_num)\n\
+{\n\
+    int gidx = get_global_id(0);\n\
+    int gidy = get_global_id(1);\n\
+    int4 coord = (int4)(gidx, gidy, 0, 0);\n\
+    vxc_short8 src0;\n\
+    vxc_half8 in_h0;\n\
+    vxc_float4 tmpSrc0;\n\
+    vxc_float4 sum = (vxc_float4)(0);\n\
+    vxc_float4 sqr = (vxc_float4)(0);\n\
+\n\
+    for(coord.z = 0; coord.z < channel; coord.z++)\n\
+    {\n\
+        VXC_ReadImage2DArray(src0, input, coord, VXC_5BITOFFSET_XY(0, 0),\n\
+                VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+        _viv_asm(COPY, in_h0, src0, 16);\n\
+        VXC_DP4x4(tmpSrc0, in_h0, in_h0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), UniFP16toFP32Lo4_dp4x4);\n\
+        sum += tmpSrc0;\n\
+        sqr += (tmpSrc0 * tmpSrc0);\n\
+    }\n\
+\n\
+    vxc_float4 mean = sum * dimRatio;\n\
+    vxc_float4 vari = sqr * dimRatio;\n\
+    vari = vari - mean * mean;\n\
+\n\
+    int2 coord_out = (int2)(gidx, gidy);\n\
+    half4 tmpMean, tmpVari;\n\
+    vxc_half8 tmpVal;\n\
+    vxc_short8 dst;\n\
+    _viv_asm(CONV, tmpMean, mean);\n\
+    _viv_asm(CONV, tmpVari, vari);\n\
+    VXC_DP2x8(tmpVal, tmpMean, tmpVari, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvertHalftoFp16_2x8);\n\
+    _viv_asm(COPY, dst, tmpVal, 16);\n\
+    VXC_WriteImage(output_mean, coord_out, dst.s0123, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_WriteImage(output_vari, coord_out, dst.s4567, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+}"; /* end of moments_axis2_vx*/
+
 static const char poolwithargmax_F16_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 //-------------------max pooling with argmax---------------\n\
@@ -30933,6 +31851,7 @@ static const char instance_normalization_f16_cl[] = "__kernel void instance_norm
         for(coord.y = 0; coord.y < height;)\n\
         {\n\
             data = read_imagef(input, coord);\n\
+            coord.y++;\n\
             sum += data.x;\n\
             sqr += data.x * data.x;\n\
         }\n\
@@ -31163,6 +32082,7 @@ static const char instance_normalization_f32_cl[] = "__kernel void instance_norm
         for(coord.y = 0; coord.y < height;)\n\
         {\n\
             data = read_imagef(input, coord);\n\
+            coord.y++;\n\
             sum += data.x;\n\
             sqr += data.x * data.x;\n\
         }\n\
@@ -31395,6 +32315,7 @@ static const char instance_normalization_i32_cl[] = "__kernel void instance_norm
         for(coord.y = 0; coord.y < height;)\n\
         {\n\
             data = read_imagei(input, coord);\n\
+            coord.y++;\n\
             tmpSum += data.x;\n\
             sqr += (data.x * data.x * e2InScale);\n\
         }\n\
@@ -31749,6 +32670,7 @@ static const char instance_normalization_u8_cl[] = "__kernel void instance_norm_
         for(coord.y = 0; coord.y < height;)\n\
         {\n\
             data = read_imageui(input, coord);\n\
+            coord.y++;\n\
             tmpSum += data.x;\n\
             tmpSqr += data.x * data.x;\n\
         }\n\
@@ -33159,6 +34081,723 @@ __kernel void minimum_I32I32toI32_2D\n\
 }\n\
 \n\
 "; /* end of minimum_cl*/
+
+static const char moments_axis0_cl[] = "__kernel void moments_axis0_U8toF16(\n\
+    __read_only image2d_array_t   input,\n\
+    __write_only image2d_t  output_mean,\n\
+    __write_only image2d_t  output_vari,\n\
+    int axis,\n\
+    int axis_num,\n\
+    int input_zp,\n\
+    float input_scale,\n\
+    int width,\n\
+    int height,\n\
+    int chn,\n\
+    float dimRatio\n\
+    )\n\
+{\n\
+    int gidy = get_global_id(0);\n\
+    int gidz = get_global_id(1);\n\
+\n\
+    int4 coord0 = (int4)(0, gidy, gidz, 0);\n\
+    uint data;\n\
+    float sum = 0, sqr = 0;\n\
+    uint tmpSum = 0, tmpSqr = 0;\n\
+    float e2InScale = input_scale * input_scale;\n\
+\n\
+    {\n\
+        for(coord0.x = 0; coord0.x < width;)\n\
+        {\n\
+            data = read_imageui(input, coord0).x;\n\
+            coord0.x++;\n\
+            tmpSum += (data);\n\
+            tmpSqr += (data * data);\n\
+        }\n\
+        sqr = convert_float(tmpSqr - 2 * input_zp * tmpSum + width * input_zp * input_zp) * e2InScale;\n\
+        sum = convert_float(tmpSum - width * input_zp) * input_scale;\n\
+    }\n\
+    float4 mean, vari;\n\
+    mean.x = sum * dimRatio;\n\
+    vari.x = sqr * dimRatio;\n\
+    vari.x = vari.x - mean.x * mean.x;\n\
+\n\
+    int2 coord_out = (int2)(gidy, gidz);\n\
+    write_imagef(output_mean, coord_out, mean);\n\
+    write_imagef(output_vari, coord_out, vari);\n\
+}\n\
+\n\
+#define MOMENTS_AXIS0_F(src0_type_name) \\\n\
+__kernel void moments_axis0_##src0_type_name##to##src0_type_name( \\\n\
+    __read_only image2d_array_t   input, \\\n\
+    __write_only image2d_t  output_mean, \\\n\
+    __write_only image2d_t  output_vari, \\\n\
+    int axis, int axis_num, int input_zp, float input_scale, \\\n\
+    int width, int height, int chn, float dimRatio \\\n\
+    ) \\\n\
+{ \\\n\
+    int gidy = get_global_id(0); \\\n\
+    int gidz = get_global_id(1); \\\n\
+ \\\n\
+    int4 coord0 = (int4)(0, gidy, gidz, 0); \\\n\
+    float data; \\\n\
+    float sum = 0, sqr = 0; \\\n\
+ \\\n\
+    for(coord0.x = 0; coord0.x < width;) \\\n\
+    { \\\n\
+        data = read_imagef(input, coord0).x; \\\n\
+        coord0.x++; \\\n\
+        sum += (data); \\\n\
+        sqr += (data * data); \\\n\
+    } \\\n\
+ \\\n\
+    float4 mean, vari; \\\n\
+    mean.x = sum * dimRatio; \\\n\
+    vari.x = sqr * dimRatio; \\\n\
+    vari.x = vari.x - mean.x * mean.x; \\\n\
+ \\\n\
+    int2 coord_out = (int2)(gidy, gidz); \\\n\
+    write_imagef(output_mean, coord_out, mean); \\\n\
+    write_imagef(output_vari, coord_out, vari); \\\n\
+}\n\
+MOMENTS_AXIS0_F(F16)\n\
+MOMENTS_AXIS0_F(F32)\n\
+\n\
+__kernel void moments_axis0_I32toF32(\n\
+    __read_only image2d_array_t   input,\n\
+    __write_only image2d_t  output_mean,\n\
+    __write_only image2d_t  output_vari,\n\
+    int axis,\n\
+    int axis_num,\n\
+    int input_zp,\n\
+    float input_scale,\n\
+    int width,\n\
+    int height,\n\
+    int chn,\n\
+    float dimRatio\n\
+    )\n\
+{\n\
+    int gidy = get_global_id(0);\n\
+    int gidz = get_global_id(1);\n\
+\n\
+    int4 coord0 = (int4)(0, gidy, gidz, 0);\n\
+    int data;\n\
+    int sum = 0, sqr = 0;\n\
+\n\
+    for(coord0.x = 0; coord0.x < width;)\n\
+    {\n\
+        data = read_imagei(input, coord0).x;\n\
+        coord0.x++;\n\
+        sum += (data);\n\
+        sqr += (data * data);\n\
+    }\n\
+\n\
+    float4 mean, vari;\n\
+    mean.x = sum * dimRatio;\n\
+    vari.x = sqr * dimRatio;\n\
+    vari.x = vari.x - mean.x * mean.x;\n\
+\n\
+    int2 coord_out = (int2)(gidy, gidz);\n\
+    write_imagef(output_mean, coord_out, mean);\n\
+    write_imagef(output_vari, coord_out, vari);\n\
+}"; /* end of moments_axis0_cl*/
+
+static const char moments_axis01_cl[] = "__kernel void moments_axis01_U8toF16(\n\
+    image2d_array_t   input, image2d_t  output_mean, image2d_t  output_vari,\n\
+    int axis, int axis_num, int input_zp, float input_scale,\n\
+    int width, int height, int chn, float dimRatio\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);\n\
+    int gidz = get_global_id(1);\n\
+    int lidx = get_local_id(0);\n\
+\n\
+    int4 coord = (int4)(gidx, 0, gidz, 0);\n\
+    uint4 data;\n\
+    float sum = 0, sqr = 0;\n\
+    float e2InScale = input_scale * input_scale;\n\
+\n\
+    __local float lcl_sum[16];\n\
+    __local float lcl_sqr[16];\n\
+\n\
+    for(coord.x = gidx; coord.x < width; coord.x += 16)\n\
+    {\n\
+        int tmpSum = 0, tmpSqr = 0;\n\
+        for(coord.y = 0; coord.y < height;)\n\
+        {\n\
+            data = read_imageui(input, coord);\n\
+            coord.y++;\n\
+            tmpSum += data.x;\n\
+            tmpSqr += data.x * data.x;\n\
+        }\n\
+        sqr += (tmpSqr - 2 * input_zp * tmpSum + height * input_zp * input_zp) * e2InScale;\n\
+        sum += (tmpSum - height * input_zp) * input_scale;\n\
+    }\n\
+    lcl_sum[lidx] = sum;\n\
+    lcl_sqr[lidx] = sqr;\n\
+    barrier(CLK_LOCAL_MEM_FENCE);\n\
+\n\
+    int2 coord_out = (int2)(gidz, 0);\n\
+    if(lidx == 0)\n\
+    {\n\
+        float4 one = (float4)(1, 1, 1, 1);\n\
+        __local float4* tmp_sum = (__local float4*)lcl_sum;\n\
+        __local float4* tmp_sqr = (__local float4*)lcl_sqr;\n\
+\n\
+        sum = 0; sqr = 0;\n\
+        for(int i = 0; i < 4; i++)\n\
+        {\n\
+            sum += dot(tmp_sum[i], one);\n\
+            sqr += dot(tmp_sqr[i], one);\n\
+        }\n\
+\n\
+        float4 mean, vari;\n\
+        mean.x = sum * dimRatio;\n\
+        vari.x = sqr * dimRatio;\n\
+        vari.x = vari.x - mean.x * mean.x;\n\
+\n\
+        write_imagef(output_mean, coord_out, mean);\n\
+        write_imagef(output_vari, coord_out, vari);\n\
+    }\n\
+}\n\
+\n\
+#define MOMENTS_AXIS01_F(src0_type_name) \\\n\
+__kernel void moments_axis01_##src0_type_name##to##src0_type_name( \\\n\
+    image2d_array_t   input, image2d_t  output_mean, image2d_t  output_vari, \\\n\
+    int axis, int axis_num, int input_zp, float input_scale, \\\n\
+    int width, int height, int chn, float dimRatio \\\n\
+    ) \\\n\
+{ \\\n\
+    int gidx = get_global_id(0); \\\n\
+    int gidz = get_global_id(1); \\\n\
+    int lidx = get_local_id(0); \\\n\
+ \\\n\
+    int4 coord = (int4)(gidx, 0, gidz, 0); \\\n\
+    float4 data; \\\n\
+    float sum = 0, sqr = 0; \\\n\
+ \\\n\
+    __local float lcl_sum[16]; \\\n\
+    __local float lcl_sqr[16]; \\\n\
+ \\\n\
+    for(coord.x = gidx; coord.x < width; coord.x += 16) \\\n\
+    { \\\n\
+        for(coord.y = 0; coord.y < height;) \\\n\
+        { \\\n\
+            data = read_imagef(input, coord); \\\n\
+            coord.y++; \\\n\
+            sum += data.x; \\\n\
+            sqr += data.x * data.x; \\\n\
+        } \\\n\
+    } \\\n\
+    lcl_sum[lidx] = sum; \\\n\
+    lcl_sqr[lidx] = sqr; \\\n\
+    barrier(CLK_LOCAL_MEM_FENCE); \\\n\
+ \\\n\
+    int2 coord_out = (int2)(gidz, 0); \\\n\
+    if(lidx == 0) \\\n\
+    { \\\n\
+        float4 one = (float4)(1, 1, 1, 1); \\\n\
+        __local float4* tmp_sum = (__local float4*)lcl_sum; \\\n\
+        __local float4* tmp_sqr = (__local float4*)lcl_sqr; \\\n\
+ \\\n\
+        sum = 0; sqr = 0; \\\n\
+        for(int i = 0; i < 4; i++) \\\n\
+        { \\\n\
+            sum += dot(tmp_sum[i], one); \\\n\
+            sqr += dot(tmp_sqr[i], one); \\\n\
+        } \\\n\
+ \\\n\
+        float4 mean, vari; \\\n\
+        mean.x = sum * dimRatio; \\\n\
+        vari.x = sqr * dimRatio; \\\n\
+        vari.x = vari.x - mean.x * mean.x; \\\n\
+ \\\n\
+        write_imagef(output_mean, coord_out, mean); \\\n\
+        write_imagef(output_vari, coord_out, vari); \\\n\
+    } \\\n\
+}\n\
+MOMENTS_AXIS01_F(F16)\n\
+MOMENTS_AXIS01_F(F32)\n\
+\n\
+__kernel void moments_axis01_I32toF32(\n\
+    image2d_array_t   input, image2d_t  output_mean, image2d_t  output_vari,\n\
+    int axis, int axis_num, int input_zp, float input_scale,\n\
+    int width, int height, int chn, float dimRatio\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);\n\
+    int gidz = get_global_id(1);\n\
+    int lidx = get_local_id(0);\n\
+\n\
+    int4 coord = (int4)(gidx, 0, gidz, 0);\n\
+    int4 data;\n\
+    float sum = 0, sqr = 0;\n\
+    float e2InScale = input_scale * input_scale;\n\
+\n\
+    __local float lcl_sum[16];\n\
+    __local float lcl_sqr[16];\n\
+\n\
+    for(coord.x = gidx; coord.x < width; coord.x += 16)\n\
+    {\n\
+        int tmpSum = 0, tmpSqr = 0;\n\
+        for(coord.y = 0; coord.y < height;)\n\
+        {\n\
+            data = read_imagei(input, coord);\n\
+            coord.y++;\n\
+            tmpSum += data.x;\n\
+            tmpSqr += data.x * data.x;\n\
+        }\n\
+        sqr += (tmpSqr - 2 * input_zp * tmpSum + height * input_zp * input_zp) * e2InScale;\n\
+        sum += (tmpSum - height * input_zp) * input_scale;\n\
+    }\n\
+    lcl_sum[lidx] = sum;\n\
+    lcl_sqr[lidx] = sqr;\n\
+    barrier(CLK_LOCAL_MEM_FENCE);\n\
+\n\
+    int2 coord_out = (int2)(gidz, 0);\n\
+    if(lidx == 0)\n\
+    {\n\
+        float4 one = (float4)(1, 1, 1, 1);\n\
+        __local float4* tmp_sum = (__local float4*)lcl_sum;\n\
+        __local float4* tmp_sqr = (__local float4*)lcl_sqr;\n\
+\n\
+        sum = 0; sqr = 0;\n\
+        for(int i = 0; i < 4; i++)\n\
+        {\n\
+            sum += dot(tmp_sum[i], one);\n\
+            sqr += dot(tmp_sqr[i], one);\n\
+        }\n\
+\n\
+        float4 mean, vari;\n\
+        mean.x = sum * dimRatio;\n\
+        vari.x = sqr * dimRatio;\n\
+        vari.x = vari.x - mean.x * mean.x;\n\
+        write_imagef(output_mean, coord_out, mean);\n\
+        write_imagef(output_vari, coord_out, vari);\n\
+    }\n\
+}\n\
+"; /* end of moments_axis01_cl*/
+
+static const char moments_axis012_cl[] = "__kernel void moments_axis012_U8toF16(\n\
+    image2d_array_t   input, image2d_t  output_mean, image2d_t  output_vari,\n\
+    int axis, int axis_num, int input_zp, float input_scale,\n\
+    int width, int height, int chn, float dimRatio\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);\n\
+    int lidx = get_local_id(0);\n\
+\n\
+    int4 coord = (int4)(gidx, 0, 0, 0);\n\
+    uint4 data;\n\
+    float sum = 0, sqr = 0;\n\
+    float e2InScale = input_scale * input_scale;\n\
+\n\
+    __local float lcl_sum[16];\n\
+    __local float lcl_sqr[16];\n\
+\n\
+    for(coord.z = 0; coord.z < chn; coord.z++)\n\
+    {\n\
+        for(coord.x = gidx; coord.x < width; coord.x += 16)\n\
+        {\n\
+            int tmpSum = 0, tmpSqr = 0;\n\
+            for(coord.y = 0; coord.y < height;)\n\
+            {\n\
+                data = read_imageui(input, coord);\n\
+                coord.y++;\n\
+                tmpSum += data.x;\n\
+                tmpSqr += data.x * data.x;\n\
+            }\n\
+            sqr += (tmpSqr - 2 * input_zp * tmpSum + height * input_zp * input_zp) * e2InScale;\n\
+            sum += (tmpSum - height * input_zp) * input_scale;\n\
+        }\n\
+    }\n\
+    lcl_sum[lidx] = sum;\n\
+    lcl_sqr[lidx] = sqr;\n\
+    barrier(CLK_LOCAL_MEM_FENCE);\n\
+\n\
+    int2 coord_out = (int2)(0, 0);\n\
+    if(lidx == 0)\n\
+    {\n\
+        float4 one = (float4)(1, 1, 1, 1);\n\
+        __local float4* tmp_sum = (__local float4*)lcl_sum;\n\
+        __local float4* tmp_sqr = (__local float4*)lcl_sqr;\n\
+\n\
+        sum = 0; sqr = 0;\n\
+        for(int i = 0; i < 4; i++)\n\
+        {\n\
+            sum += dot(tmp_sum[i], one);\n\
+            sqr += dot(tmp_sqr[i], one);\n\
+        }\n\
+\n\
+        float4 mean, vari;\n\
+        mean.x = sum * dimRatio;\n\
+        vari.x = sqr * dimRatio;\n\
+        vari.x = vari.x - mean.x * mean.x;\n\
+\n\
+        write_imagef(output_mean, coord_out, mean);\n\
+        write_imagef(output_vari, coord_out, vari);\n\
+    }\n\
+}\n\
+\n\
+#define MOMENTS_AXIS012_F(src0_type_name) \\\n\
+__kernel void moments_axis012_##src0_type_name##to##src0_type_name( \\\n\
+    image2d_array_t   input, image2d_t  output_mean, image2d_t  output_vari, \\\n\
+    int axis, int axis_num, int input_zp, float input_scale, \\\n\
+    int width, int height, int chn, float dimRatio \\\n\
+    ) \\\n\
+{ \\\n\
+    int gidx = get_global_id(0); \\\n\
+    int lidx = get_local_id(0); \\\n\
+ \\\n\
+    int4 coord = (int4)(gidx, 0, 0, 0); \\\n\
+    float4 data; \\\n\
+    float sum = 0, sqr = 0; \\\n\
+ \\\n\
+    __local float lcl_sum[16]; \\\n\
+    __local float lcl_sqr[16]; \\\n\
+ \\\n\
+    for(coord.z = 0; coord.z < chn; coord.z++) \\\n\
+    { \\\n\
+        for(coord.x = gidx; coord.x < width; coord.x += 16) \\\n\
+        { \\\n\
+            for(coord.y = 0; coord.y < height;) \\\n\
+            { \\\n\
+                data = read_imagef(input, coord); \\\n\
+                coord.y++; \\\n\
+                sum += data.x; \\\n\
+                sqr += data.x * data.x; \\\n\
+            } \\\n\
+        } \\\n\
+    } \\\n\
+    lcl_sum[lidx] = sum; \\\n\
+    lcl_sqr[lidx] = sqr; \\\n\
+    barrier(CLK_LOCAL_MEM_FENCE); \\\n\
+ \\\n\
+    int2 coord_out = (int2)(0, 0); \\\n\
+    if(lidx == 0) \\\n\
+    { \\\n\
+        float4 one = (float4)(1, 1, 1, 1); \\\n\
+        __local float4* tmp_sum = (__local float4*)lcl_sum; \\\n\
+        __local float4* tmp_sqr = (__local float4*)lcl_sqr; \\\n\
+ \\\n\
+        sum = 0; sqr = 0; \\\n\
+        for(int i = 0; i < 4; i++) \\\n\
+        { \\\n\
+            sum += dot(tmp_sum[i], one); \\\n\
+            sqr += dot(tmp_sqr[i], one); \\\n\
+        } \\\n\
+ \\\n\
+        float4 mean, vari; \\\n\
+        mean.x = sum * dimRatio; \\\n\
+        vari.x = sqr * dimRatio; \\\n\
+        vari.x = vari.x - mean.x * mean.x; \\\n\
+ \\\n\
+        write_imagef(output_mean, coord_out, mean); \\\n\
+        write_imagef(output_vari, coord_out, vari); \\\n\
+    } \\\n\
+}\n\
+MOMENTS_AXIS012_F(F16)\n\
+MOMENTS_AXIS012_F(F32)\n\
+\n\
+__kernel void moments_axis012_I32toF32(\n\
+    image2d_array_t   input, image2d_t  output_mean, image2d_t  output_vari,\n\
+    int axis, int axis_num, int input_zp, float input_scale,\n\
+    int width, int height, int chn, float dimRatio\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);\n\
+    int lidx = get_local_id(0);\n\
+\n\
+    int4 coord = (int4)(gidx, 0, 0, 0);\n\
+    int4 data;\n\
+    float sum = 0, sqr = 0;\n\
+    float e2InScale = input_scale * input_scale;\n\
+\n\
+    __local float lcl_sum[16];\n\
+    __local float lcl_sqr[16];\n\
+\n\
+    for(coord.z = 0; coord.z < chn; coord.z++)\n\
+    {\n\
+        for(coord.x = gidx; coord.x < width; coord.x += 16)\n\
+        {\n\
+            int tmpSum = 0, tmpSqr = 0;\n\
+            for(coord.y = 0; coord.y < height;)\n\
+            {\n\
+                data = read_imagei(input, coord);\n\
+                coord.y++;\n\
+                tmpSum += data.x;\n\
+                tmpSqr += data.x * data.x;\n\
+            }\n\
+            sqr += (tmpSqr - 2 * input_zp * tmpSum + height * input_zp * input_zp) * e2InScale;\n\
+            sum += (tmpSum - height * input_zp) * input_scale;\n\
+        }\n\
+    }\n\
+    lcl_sum[lidx] = sum;\n\
+    lcl_sqr[lidx] = sqr;\n\
+    barrier(CLK_LOCAL_MEM_FENCE);\n\
+\n\
+    int2 coord_out = (int2)(0, 0);\n\
+    if(lidx == 0)\n\
+    {\n\
+        float4 one = (float4)(1, 1, 1, 1);\n\
+        __local float4* tmp_sum = (__local float4*)lcl_sum;\n\
+        __local float4* tmp_sqr = (__local float4*)lcl_sqr;\n\
+\n\
+        sum = 0; sqr = 0;\n\
+        for(int i = 0; i < 4; i++)\n\
+        {\n\
+            sum += dot(tmp_sum[i], one);\n\
+            sqr += dot(tmp_sqr[i], one);\n\
+        }\n\
+\n\
+        float4 mean, vari;\n\
+        mean.x = sum * dimRatio;\n\
+        vari.x = sqr * dimRatio;\n\
+        vari.x = vari.x - mean.x * mean.x;\n\
+        write_imagef(output_mean, coord_out, mean);\n\
+        write_imagef(output_vari, coord_out, vari);\n\
+    }\n\
+}\n\
+"; /* end of moments_axis012_cl*/
+
+static const char moments_axis1_cl[] = "__kernel void moments_axis1_U8toF16(\n\
+    __read_only image2d_array_t   input,\n\
+    __write_only image2d_t  output_mean,\n\
+    __write_only image2d_t  output_vari,\n\
+    int axis, int axis_num, int input_zp, float input_scale,\n\
+    int width, int height, int chn, float dimRatio\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);\n\
+    int gidz = get_global_id(1);\n\
+\n\
+    int4 coord0 = (int4)(gidx, 0, gidz, 0);\n\
+    uint data;\n\
+    float sum = 0, sqr = 0;\n\
+    uint tmpSum = 0, tmpSqr = 0;\n\
+    float e2InScale = input_scale * input_scale;\n\
+\n\
+    {\n\
+        for(coord0.y = 0; coord0.y < height;)\n\
+        {\n\
+            data = read_imageui(input, coord0).x;\n\
+            coord0.y++;\n\
+            tmpSum += (data);\n\
+            tmpSqr += (data * data);\n\
+        }\n\
+        sqr = convert_float(tmpSqr - 2 * input_zp * tmpSum + height * input_zp * input_zp) * e2InScale;\n\
+        sum = convert_float(tmpSum - height * input_zp) * input_scale;\n\
+    }\n\
+\n\
+    float4 mean, vari;\n\
+    mean.x = sum * dimRatio;\n\
+    vari.x = sqr * dimRatio;\n\
+    vari.x = vari.x - mean.x * mean.x;\n\
+\n\
+    int2 coord_out = (int2)(gidx, gidz);\n\
+    write_imagef(output_mean, coord_out, mean);\n\
+    write_imagef(output_vari, coord_out, vari);\n\
+}\n\
+\n\
+#define MOMENTS_AXIS1_F(src0_type_name) \\\n\
+__kernel void moments_axis1_##src0_type_name##to##src0_type_name( \\\n\
+    __read_only image2d_array_t   input, \\\n\
+    __write_only image2d_t  output_mean, \\\n\
+    __write_only image2d_t  output_vari, \\\n\
+    int axis, int axis_num, int input_zp, float input_scale, \\\n\
+    int width, int height, int chn, float dimRatio \\\n\
+    ) \\\n\
+{ \\\n\
+    int gidx = get_global_id(0); \\\n\
+    int gidz = get_global_id(1); \\\n\
+ \\\n\
+    int4 coord0 = (int4)(gidx, 0, gidz, 0); \\\n\
+    float data; \\\n\
+    float sum = 0, sqr = 0; \\\n\
+ \\\n\
+    for(coord0.y = 0; coord0.y < height;) \\\n\
+    { \\\n\
+        data = read_imagef(input, coord0).x; \\\n\
+        coord0.y++; \\\n\
+        sum += (data); \\\n\
+        sqr += (data * data); \\\n\
+    } \\\n\
+ \\\n\
+    float4 mean, vari; \\\n\
+    mean.x = sum * dimRatio; \\\n\
+    vari.x = sqr * dimRatio; \\\n\
+    vari.x = vari.x - mean.x * mean.x; \\\n\
+ \\\n\
+    int2 coord_out = (int2)(gidx, gidz); \\\n\
+    write_imagef(output_mean, coord_out, mean); \\\n\
+    write_imagef(output_vari, coord_out, vari); \\\n\
+}\n\
+MOMENTS_AXIS1_F(F16)\n\
+MOMENTS_AXIS1_F(F32)\n\
+\n\
+__kernel void moments_axis1_I32toF32(\n\
+    __read_only image2d_array_t   input,\n\
+    __write_only image2d_t  output_mean,\n\
+    __write_only image2d_t  output_vari,\n\
+    int axis,\n\
+    int axis_num,\n\
+    int input_zp,\n\
+    float input_scale,\n\
+    int width,\n\
+    int height,\n\
+    int chn,\n\
+    float dimRatio\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);\n\
+    int gidz = get_global_id(1);\n\
+\n\
+    int4 coord0 = (int4)(gidx, 0, gidz, 0);\n\
+    int data;\n\
+    int sum = 0, sqr = 0;\n\
+\n\
+    for(coord0.y = 0; coord0.y < height;)\n\
+    {\n\
+        data = read_imagei(input, coord0).x;\n\
+        coord0.y++;\n\
+        sum += (data);\n\
+        sqr += (data * data);\n\
+    }\n\
+\n\
+    float4 mean, vari;\n\
+    mean.x = sum * dimRatio;\n\
+    vari.x = sqr * dimRatio;\n\
+    vari.x = vari.x - mean.x * mean.x;\n\
+\n\
+    int2 coord_out = (int2)(gidx, gidz);\n\
+    write_imagef(output_mean, coord_out, mean);\n\
+    write_imagef(output_vari, coord_out, vari);\n\
+}"; /* end of moments_axis1_cl*/
+
+static const char moments_axis2_cl[] = "__kernel void moments_axis2_U8toF16(\n\
+    __read_only image2d_array_t   input,\n\
+    __write_only image2d_t  output_mean,\n\
+    __write_only image2d_t  output_vari,\n\
+    int axis,\n\
+    int axis_num,\n\
+    int input_zp,\n\
+    float input_scale,\n\
+    int width,\n\
+    int height,\n\
+    int chn,\n\
+    float dimRatio\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);\n\
+    int gidy = get_global_id(1);\n\
+\n\
+    int4 coord0 = (int4)(gidx, gidy, 0, 0);\n\
+    uint data;\n\
+    float sum = 0, sqr = 0;\n\
+    uint tmpSum = 0, tmpSqr = 0;\n\
+    float e2InScale = input_scale * input_scale;\n\
+\n\
+    {\n\
+        for(coord0.z = 0; coord0.z < chn;)\n\
+        {\n\
+            data = read_imageui(input, coord0).x;\n\
+            coord0.z++;\n\
+            tmpSum += (data);\n\
+            tmpSqr += (data * data);\n\
+        }\n\
+        sqr = (tmpSqr - 2 * input_zp * tmpSum + chn * input_zp * input_zp) * e2InScale;\n\
+        sum = (tmpSum - chn * input_zp) * input_scale;\n\
+    }\n\
+\n\
+    float4 mean, vari;\n\
+    mean.x = sum * dimRatio;\n\
+    vari.x = sqr * dimRatio;\n\
+    vari.x = vari.x - mean.x * mean.x;\n\
+\n\
+    int2 coord_out = (int2)(gidx, gidy);\n\
+    write_imagef(output_mean, coord_out, mean);\n\
+    write_imagef(output_vari, coord_out, vari);\n\
+}\n\
+\n\
+#define MOMENTS_AXIS2_F(src0_type_name) \\\n\
+__kernel void moments_axis2_##src0_type_name##to##src0_type_name( \\\n\
+    __read_only image2d_array_t   input, \\\n\
+    __write_only image2d_t  output_mean, \\\n\
+    __write_only image2d_t  output_vari, \\\n\
+    int axis, \\\n\
+    int axis_num, \\\n\
+    int input_zp, \\\n\
+    float input_scale, \\\n\
+    int width, \\\n\
+    int height, \\\n\
+    int chn, \\\n\
+    float dimRatio \\\n\
+    ) \\\n\
+{ \\\n\
+    int gidx = get_global_id(0); \\\n\
+    int gidy = get_global_id(1); \\\n\
+ \\\n\
+    int4 coord0 = (int4)(gidx, gidy, 0, 0); \\\n\
+    float data; \\\n\
+    float sum = 0, sqr = 0; \\\n\
+ \\\n\
+    for(coord0.z = 0; coord0.z < chn;) \\\n\
+    { \\\n\
+        data = read_imagef(input, coord0).x; \\\n\
+        coord0.z++; \\\n\
+        sum += (data); \\\n\
+        sqr += (data * data); \\\n\
+    } \\\n\
+ \\\n\
+    float4 mean, vari; \\\n\
+    mean.x = sum * dimRatio; \\\n\
+    vari.x = sqr * dimRatio; \\\n\
+    vari.x = vari.x - mean.x * mean.x; \\\n\
+ \\\n\
+    int2 coord_out = (int2)(gidx, gidy); \\\n\
+    write_imagef(output_mean, coord_out, mean); \\\n\
+    write_imagef(output_vari, coord_out, vari); \\\n\
+}\n\
+MOMENTS_AXIS2_F(F16)\n\
+MOMENTS_AXIS2_F(F32)\n\
+\n\
+__kernel void moments_axis2_I32toF32(\n\
+    __read_only image2d_array_t   input,\n\
+    __write_only image2d_t  output_mean,\n\
+    __write_only image2d_t  output_vari,\n\
+    int axis,\n\
+    int axis_num,\n\
+    int input_zp,\n\
+    float input_scale,\n\
+    int width,\n\
+    int height,\n\
+    int chn,\n\
+    float dimRatio\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);\n\
+    int gidy = get_global_id(1);\n\
+\n\
+    int4 coord0 = (int4)(gidx, gidy, 0, 0);\n\
+    int data;\n\
+    int sum = 0, sqr = 0;\n\
+\n\
+    for(coord0.z = 0; coord0.z < chn;)\n\
+    {\n\
+        data = read_imagei(input, coord0).x;\n\
+        coord0.z++;\n\
+        sum += (data);\n\
+        sqr += (data * data);\n\
+    }\n\
+\n\
+    float4 mean, vari;\n\
+    mean.x = sum * dimRatio;\n\
+    vari.x = sqr * dimRatio;\n\
+    vari.x = vari.x - mean.x * mean.x;\n\
+\n\
+    int2 coord_out = (int2)(gidx, gidy);\n\
+    write_imagef(output_mean, coord_out, mean);\n\
+    write_imagef(output_vari, coord_out, vari);\n\
+}"; /* end of moments_axis2_cl*/
 
 static const char poolwithargmax_cl[] = "\n\
 #define POOLWITHARGMAX_PROCESS(data_type, read_fun, write_fun0, write_fun1) \\\n\
@@ -35635,6 +37274,11 @@ const static source_map_t evis_resource[] =
     {"minimum_vx", minimum_vx},
     {"minimum_fp16_vx", minimum_fp16_vx},
     {"minimum_i16_vx", minimum_i16_vx},
+    {"moments_axis0_vx", moments_axis0_vx},
+    {"moments_axis01_vx", moments_axis01_vx},
+    {"moments_axis012_vx", moments_axis012_vx},
+    {"moments_axis1_vx", moments_axis1_vx},
+    {"moments_axis2_vx", moments_axis2_vx},
     {"poolwithargmax_F16_vx", poolwithargmax_F16_vx},
     {"poolwithargmax_I16_vx", poolwithargmax_I16_vx},
     {"poolwithargmax_I8_vx", poolwithargmax_I8_vx},
@@ -35788,6 +37432,11 @@ const static source_map_t cl_resource[] =
     {"matrixmul_transA_cl", matrixmul_transA_cl},
     {"maximum_cl", maximum_cl},
     {"minimum_cl", minimum_cl},
+    {"moments_axis0_cl", moments_axis0_cl},
+    {"moments_axis01_cl", moments_axis01_cl},
+    {"moments_axis012_cl", moments_axis012_cl},
+    {"moments_axis1_cl", moments_axis1_cl},
+    {"moments_axis2_cl", moments_axis2_cl},
     {"poolwithargmax_cl", poolwithargmax_cl},
     {"pow_cl", pow_cl},
     {"prelu_cl", prelu_cl},
