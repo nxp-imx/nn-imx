@@ -1761,7 +1761,7 @@ void vsi_nn_get_tensor_provider
     for(i = 0; i < graph->node_num; i++)
     {
         cur_node = vsi_nn_GetNode(graph, i);
-        for(j = 0; j < cur_node->input.num; j++)
+        for(j = 0; j < cur_node->output.num; j++)
         {
             if(cur_node->output.tensors[j] == tensor_id)
             {
