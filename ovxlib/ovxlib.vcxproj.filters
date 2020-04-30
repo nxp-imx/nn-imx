@@ -129,6 +129,9 @@
     <ClInclude Include="include\ops\vsi_nn_op_linear.h">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_batchnorm_single.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
     <ClInclude Include="include\client\vsi_nn_vxkernel.h">
       <Filter>Header Files\client</Filter>
     </ClInclude>
@@ -699,6 +702,9 @@
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_linear.c">
+      <Filter>Source Files\ops</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_batchnorm_single.c">
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\client\vsi_nn_vxkernel.c">
@@ -1657,6 +1663,15 @@
     </ClCompile>
     <ClCompile Include="src\kernel\evis\a_times_b_plus_c_evis.c">
       <Filter>Source Files\kernel\evis</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\evis\batchnorm_single_evis.c">
+      <Filter>Source Files\kernel\evis</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\cpu\batchnorm_single_cpu.c">
+      <Filter>Source Files\kernel\cpu</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\cl\batchnorm_single_cl.c">
+      <Filter>Source Files\kernel\cl</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

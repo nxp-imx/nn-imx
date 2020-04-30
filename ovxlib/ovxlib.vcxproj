@@ -654,6 +654,7 @@
     <ClInclude Include="include\ops\vsi_nn_op_cast.h" />
     <ClInclude Include="include\ops\vsi_nn_op_grucell_activation_internal.h" />
     <ClInclude Include="include\ops\vsi_nn_op_linear.h" />
+    <ClInclude Include="include\ops\vsi_nn_op_batchnorm_single.h" />
     <ClInclude Include="include\ops\vsi_nn_op_tensorstackconcat.h" />
     <ClInclude Include="include\ops\vsi_nn_op_tile.h" />
     <ClInclude Include="include\ops\vsi_nn_op_topk.h" />
@@ -719,6 +720,7 @@
     <None Include="include\interface\ops.def" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\kernel\cl\batchnorm_single_cl.c" />
     <ClCompile Include="src\kernel\cl\cast_cl.c" />
     <ClCompile Include="src\kernel\cl\floordiv_cl.c" />
     <ClCompile Include="src\kernel\cl\grucell_activation_cl.c" />
@@ -730,6 +732,7 @@
     <ClCompile Include="src\kernel\cl\reduceprod_internal_cl.c" />
     <ClCompile Include="src\kernel\cl\select_cl.c" />
     <ClCompile Include="src\kernel\cl\tile_cl.c" />
+    <ClCompile Include="src\kernel\cpu\batchnorm_single_cpu.c" />
     <ClCompile Include="src\kernel\cpu\cast_cpu.c" />
     <ClCompile Include="src\kernel\cpu\floordiv_cpu.c" />
     <ClCompile Include="src\kernel\cpu\grucell_activation_cpu.c" />
@@ -742,6 +745,7 @@
     <ClCompile Include="src\kernel\cpu\select_cpu.c" />
     <ClCompile Include="src\kernel\cpu\tile_cpu.c" />
     <ClCompile Include="src\kernel\evis\a_times_b_plus_c_evis.c" />
+    <ClCompile Include="src\kernel\evis\batchnorm_single_evis.c" />
     <ClCompile Include="src\kernel\evis\cast_evis.c" />
     <ClCompile Include="src\kernel\evis\floordiv_evis.c" />
     <ClCompile Include="src\kernel\evis\grucell_activation_evis.c" />
@@ -1528,6 +1532,9 @@
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_linear.c">
       <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_linear.o</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_batchnorm_single.c">
+      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_batchnorm_single.o</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_variable.c">
       <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_variable.o</ObjectFileName>
