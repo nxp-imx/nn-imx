@@ -230,6 +230,8 @@ inline const char* get_operation_string(OperationType type) {
             return "tile";
         case OperationType::LOG:
             return "log";
+        case OperationType::GATHER:
+            return "gather";
         default:
             return nullptr;
     }
