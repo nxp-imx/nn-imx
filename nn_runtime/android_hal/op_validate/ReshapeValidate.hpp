@@ -49,8 +49,8 @@ class ReshapeValidate : public OperationValidate<T_model, T_Operation> {
             reason = "reject RESHAPE because 1-value input tensor \n";
             support &= false;
         }
-        return support && hal::limitation::nnapi::match("ReshapeInput", this->InputArgTypes()) &&
-               hal::limitation::nnapi::match("ReshapeOutput", this->OutputArgTypes());
+        return support && ::hal::limitation::nnapi::match("ReshapeInput", this->InputArgTypes()) &&
+               ::hal::limitation::nnapi::match("ReshapeOutput", this->OutputArgTypes());
     };
 };
 

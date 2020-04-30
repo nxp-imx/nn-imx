@@ -37,8 +37,8 @@ class BidirectionalSequenceLstmValidate : public OperationValidate<T_model, T_Op
     BidirectionalSequenceLstmValidate(const T_model& model, const T_Operation& operation)
         : OperationValidate<T_model, T_Operation>(model, operation) {}
     bool SignatureCheck(std::string& reason) override {
-        return hal::limitation::nnapi::match("BidirectionalSequenceLstmInput", this->InputArgTypes()) &&
-               hal::limitation::nnapi::match("BidirectionalSequenceLstmOutput", this->OutputArgTypes());
+        return ::hal::limitation::nnapi::match("BidirectionalSequenceLstmInput", this->InputArgTypes()) &&
+               ::hal::limitation::nnapi::match("BidirectionalSequenceLstmOutput", this->OutputArgTypes());
     };
 };
 

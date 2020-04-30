@@ -36,8 +36,8 @@ class MaximumMinimumValidate : public OperationValidate<T_model, T_Operation> {
     MaximumMinimumValidate(const T_model& model, const T_Operation& operation)
         : OperationValidate<T_model, T_Operation>(model, operation) {}
     bool SignatureCheck(std::string& reason) override {
-        return hal::limitation::nnapi::match("MaximumMinimumInput", this->InputArgTypes()) &&
-               hal::limitation::nnapi::match("MaximumMinimumOutput", this->OutputArgTypes());
+        return ::hal::limitation::nnapi::match("MaximumMinimumInput", this->InputArgTypes()) &&
+               ::hal::limitation::nnapi::match("MaximumMinimumOutput", this->OutputArgTypes());
     };
 };
 

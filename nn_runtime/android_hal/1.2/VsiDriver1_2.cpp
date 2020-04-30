@@ -11,7 +11,11 @@ namespace vsi_driver {
         capabilities.relaxedFloat32toFloat16PerformanceScalar = kPerf;
         capabilities.relaxedFloat32toFloat16PerformanceTensor = kPerf;
         // Set the base value for all operand types
+#if ANDROID_NN_API >= 30
+        capabilities.operandPerformance = nonExtensionOperandPerformance<HalVersion::V1_2>({FLT_MAX, FLT_MAX});
+#else
         capabilities.operandPerformance = nonExtensionOperandPerformance({FLT_MAX, FLT_MAX});
+#endif
 
         // Load supported operand types
         update(&capabilities.operandPerformance, OperandType::TENSOR_QUANT8_ASYMM, kPerf);

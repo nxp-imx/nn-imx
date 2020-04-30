@@ -36,8 +36,8 @@ class TopkV2Validate : public OperationValidate<T_model, T_Operation> {
     TopkV2Validate(const T_model& model, const T_Operation& operation)
         : OperationValidate<T_model, T_Operation>(model, operation) {}
     bool SignatureCheck(std::string& reason) override {
-        return hal::limitation::nnapi::match("TopkV2Input", this->InputArgTypes()) &&
-               hal::limitation::nnapi::match("TopkV2Output", this->OutputArgTypes());
+        return ::hal::limitation::nnapi::match("TopkV2Input", this->InputArgTypes()) &&
+               ::hal::limitation::nnapi::match("TopkV2Output", this->OutputArgTypes());
     };
 };
 

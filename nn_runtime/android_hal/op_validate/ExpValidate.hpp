@@ -36,8 +36,8 @@ class ExpValidate : public OperationValidate<T_model, T_Operation> {
     ExpValidate(const T_model& model, const T_Operation& operation)
         : OperationValidate<T_model, T_Operation>(model, operation) {}
     bool SignatureCheck(std::string& reason) override {
-        return hal::limitation::nnapi::match("ExpInput", this->InputArgTypes()) &&
-               hal::limitation::nnapi::match("ExpOutput", this->OutputArgTypes());
+        return ::hal::limitation::nnapi::match("ExpInput", this->InputArgTypes()) &&
+               ::hal::limitation::nnapi::match("ExpOutput", this->OutputArgTypes());
     };
 };
 

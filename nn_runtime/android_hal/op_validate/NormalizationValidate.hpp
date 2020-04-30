@@ -36,8 +36,8 @@ class InstanceNormValidate : public OperationValidate<T_model, T_Operation> {
     InstanceNormValidate(const T_model& model, const T_Operation& operation)
         : OperationValidate<T_model, T_Operation>(model, operation) {}
     bool SignatureCheck(std::string& reason) override {
-        return hal::limitation::nnapi::match("InstanceNormOperationInput", this->InputArgTypes()) &&
-               hal::limitation::nnapi::match("InstanceNormOperationOutput", this->OutputArgTypes());
+        return ::hal::limitation::nnapi::match("InstanceNormOperationInput", this->InputArgTypes()) &&
+               ::hal::limitation::nnapi::match("InstanceNormOperationOutput", this->OutputArgTypes());
     };
 };
 
@@ -47,8 +47,8 @@ class L2NormValidate : public OperationValidate<T_model, T_Operation> {
     L2NormValidate(const T_model& model, const T_Operation& operation)
         : OperationValidate<T_model, T_Operation>(model, operation) {}
     bool SignatureCheck(std::string& reason) override {
-        return hal::limitation::nnapi::match("L2NormOperationInput", this->InputArgTypes()) &&
-               hal::limitation::nnapi::match("L2NormOperationOutput", this->OutputArgTypes());
+        return ::hal::limitation::nnapi::match("L2NormOperationInput", this->InputArgTypes()) &&
+               ::hal::limitation::nnapi::match("L2NormOperationOutput", this->OutputArgTypes());
     };
 };
 

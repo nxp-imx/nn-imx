@@ -36,8 +36,8 @@ class Conv2dValidate : public OperationValidate<T_model, T_Operation> {
     Conv2dValidate(const T_model& model, const T_Operation& operation)
         : OperationValidate<T_model, T_Operation>(model, operation) {}
     bool SignatureCheck(std::string& reason) override {
-        auto inputList = hal::limitation::nnapi::match("Convolution2DInput", this->InputArgTypes());
-        auto outputList = hal::limitation::nnapi::match("Convolution2DOutput", this->OutputArgTypes());
+        auto inputList = ::hal::limitation::nnapi::match("Convolution2DInput", this->InputArgTypes());
+        auto outputList = ::hal::limitation::nnapi::match("Convolution2DOutput", this->OutputArgTypes());
         if (inputList && outputList) {
             auto operation = this->OperationForRead();
             int32_t inputIndex = inputList->ArgPos("input");

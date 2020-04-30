@@ -36,8 +36,8 @@ class ChannelShuffleValidate : public OperationValidate<T_model, T_Operation> {
     ChannelShuffleValidate(const T_model& model, const T_Operation& operation)
         : OperationValidate<T_model, T_Operation>(model, operation) {}
     bool SignatureCheck(std::string& reason) override {
-        return hal::limitation::nnapi::match("ChannelShuffleInput", this->InputArgTypes()) &&
-               hal::limitation::nnapi::match("ChannelShuffleOutput", this->OutputArgTypes());
+        return ::hal::limitation::nnapi::match("ChannelShuffleInput", this->InputArgTypes()) &&
+               ::hal::limitation::nnapi::match("ChannelShuffleOutput", this->OutputArgTypes());
     };
 };
 

@@ -36,8 +36,8 @@ class LogicalAndValidate : public OperationValidate<T_model, T_Operation> {
     LogicalAndValidate(const T_model& model, const T_Operation& operation)
         : OperationValidate<T_model, T_Operation>(model, operation) {}
     bool SignatureCheck(std::string& reason) override {
-        return hal::limitation::nnapi::match("LogicalAndInput", this->InputArgTypes()) &&
-               hal::limitation::nnapi::match("LogicalAndOutput", this->OutputArgTypes());
+        return ::hal::limitation::nnapi::match("LogicalAndInput", this->InputArgTypes()) &&
+               ::hal::limitation::nnapi::match("LogicalAndOutput", this->OutputArgTypes());
     };
 };
 
@@ -47,8 +47,8 @@ class LogicalOrValidate : public OperationValidate<T_model, T_Operation> {
     LogicalOrValidate(const T_model& model, const T_Operation& operation)
         : OperationValidate<T_model, T_Operation>(model, operation) {}
     bool SignatureCheck(std::string& reason) override {
-        return hal::limitation::nnapi::match("LogicalOrInput", this->InputArgTypes()) &&
-               hal::limitation::nnapi::match("LogicalOrOutput", this->OutputArgTypes());
+        return ::hal::limitation::nnapi::match("LogicalOrInput", this->InputArgTypes()) &&
+               ::hal::limitation::nnapi::match("LogicalOrOutput", this->OutputArgTypes());
     };
 };
 
@@ -58,8 +58,8 @@ class LogicalNotValidate : public OperationValidate<T_model, T_Operation> {
     LogicalNotValidate(const T_model& model, const T_Operation& operation)
         : OperationValidate<T_model, T_Operation>(model, operation) {}
     bool SignatureCheck(std::string& reason) override {
-        return hal::limitation::nnapi::match("LogicalNotInput", this->InputArgTypes()) &&
-               hal::limitation::nnapi::match("LogicalNotOutput", this->OutputArgTypes());
+        return ::hal::limitation::nnapi::match("LogicalNotInput", this->InputArgTypes()) &&
+               ::hal::limitation::nnapi::match("LogicalNotOutput", this->OutputArgTypes());
     };
 };
 

@@ -65,8 +65,8 @@ class ReduceAllValidate : public OperationValidate<T_model, T_Operation> {
     bool SignatureCheck(std::string& reason) override {
         return ReduceOpRule<T_model, T_Operation>(
                    this->ModelForRead(), this->OperationForRead(), reason) &&
-               hal::limitation::nnapi::match("ReduceAllInput", this->InputArgTypes()) &&
-               hal::limitation::nnapi::match("ReduceAllOutput", this->OutputArgTypes());
+               ::hal::limitation::nnapi::match("ReduceAllInput", this->InputArgTypes()) &&
+               ::hal::limitation::nnapi::match("ReduceAllOutput", this->OutputArgTypes());
     };
 };
 
@@ -78,8 +78,8 @@ class ReduceAnyValidate : public OperationValidate<T_model, T_Operation> {
     bool SignatureCheck(std::string& reason) override {
         return ReduceOpRule<T_model, T_Operation>(
                    this->ModelForRead(), this->OperationForRead(), reason) &&
-               hal::limitation::nnapi::match("ReduceAnyInput", this->InputArgTypes()) &&
-               hal::limitation::nnapi::match("ReduceAnyOutput", this->OutputArgTypes());
+               ::hal::limitation::nnapi::match("ReduceAnyInput", this->InputArgTypes()) &&
+               ::hal::limitation::nnapi::match("ReduceAnyOutput", this->OutputArgTypes());
     };
 };
 
@@ -91,8 +91,8 @@ class ReduceMaxValidate : public OperationValidate<T_model, T_Operation> {
     bool SignatureCheck(std::string& reason) override {
         return ReduceOpRule<T_model, T_Operation>(
                    this->ModelForRead(), this->OperationForRead(), reason) &&
-               hal::limitation::nnapi::match("ReduceMaxInput", this->InputArgTypes()) &&
-               hal::limitation::nnapi::match("ReduceMaxOutput", this->OutputArgTypes());
+               ::hal::limitation::nnapi::match("ReduceMaxInput", this->InputArgTypes()) &&
+               ::hal::limitation::nnapi::match("ReduceMaxOutput", this->OutputArgTypes());
     };
 };
 
@@ -104,8 +104,8 @@ class ReduceMinValidate : public OperationValidate<T_model, T_Operation> {
     bool SignatureCheck(std::string& reason) override {
         return ReduceOpRule<T_model, T_Operation>(
                    this->ModelForRead(), this->OperationForRead(), reason) &&
-               hal::limitation::nnapi::match("ReduceMinInput", this->InputArgTypes()) &&
-               hal::limitation::nnapi::match("ReduceMinOutput", this->OutputArgTypes());
+               ::hal::limitation::nnapi::match("ReduceMinInput", this->InputArgTypes()) &&
+               ::hal::limitation::nnapi::match("ReduceMinOutput", this->OutputArgTypes());
     };
 };
 
@@ -117,8 +117,8 @@ class ReduceSumValidate : public OperationValidate<T_model, T_Operation> {
     bool SignatureCheck(std::string& reason) override {
         return ReduceOpRule<T_model, T_Operation>(
                    this->ModelForRead(), this->OperationForRead(), reason) &&
-               hal::limitation::nnapi::match("ReduceSumInput", this->InputArgTypes()) &&
-               hal::limitation::nnapi::match("ReduceSumOutput", this->OutputArgTypes());
+               ::hal::limitation::nnapi::match("ReduceSumInput", this->InputArgTypes()) &&
+               ::hal::limitation::nnapi::match("ReduceSumOutput", this->OutputArgTypes());
     };
 };
 
@@ -130,8 +130,8 @@ class ReduceProdValidate : public OperationValidate<T_model, T_Operation> {
     bool SignatureCheck(std::string& reason) override {
         return ReduceOpRule<T_model, T_Operation>(
                    this->ModelForRead(), this->OperationForRead(), reason) &&
-               hal::limitation::nnapi::match("ReduceProdInput", this->InputArgTypes()) &&
-               hal::limitation::nnapi::match("ReduceProdOutput", this->OutputArgTypes());
+               ::hal::limitation::nnapi::match("ReduceProdInput", this->InputArgTypes()) &&
+               ::hal::limitation::nnapi::match("ReduceProdOutput", this->OutputArgTypes());
     };
 };
 

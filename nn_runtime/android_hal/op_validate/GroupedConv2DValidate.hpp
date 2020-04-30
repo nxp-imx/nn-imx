@@ -36,8 +36,8 @@ class GroupedConv2DValidate : public OperationValidate<T_model, T_Operation> {
     GroupedConv2DValidate(const T_model& model, const T_Operation& operation)
         : OperationValidate<T_model, T_Operation>(model, operation) {}
     bool SignatureCheck(std::string& reason) override {
-        auto inputList = hal::limitation::nnapi::match("GroupedConv2DInput", this->InputArgTypes());
-        auto outputList = hal::limitation::nnapi::match("GroupedConv2DOutput", this->OutputArgTypes());
+        auto inputList = ::hal::limitation::nnapi::match("GroupedConv2DInput", this->InputArgTypes());
+        auto outputList = ::hal::limitation::nnapi::match("GroupedConv2DOutput", this->OutputArgTypes());
         if (inputList && outputList) {
             int32_t inputIndex = inputList->ArgPos("input");
             int32_t kernelIndex = inputList->ArgPos("kernel");

@@ -37,7 +37,7 @@ class SplitValidate : public OperationValidate<T_model, T_Operation> {
         : OperationValidate<T_model, T_Operation>(model, operation) {}
     bool SignatureCheck(std::string& reason) override {
         // The outputs of split is stochastic, we only check inputs
-        return hal::limitation::nnapi::match("SplitInput", this->InputArgTypes()) && true;
+        return ::hal::limitation::nnapi::match("SplitInput", this->InputArgTypes()) && true;
     };
 };
 

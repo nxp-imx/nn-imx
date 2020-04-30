@@ -36,8 +36,8 @@ class HeatmapMaxKeypointValidate : public OperationValidate<T_model, T_Operation
     HeatmapMaxKeypointValidate(const T_model& model, const T_Operation& operation)
         : OperationValidate<T_model, T_Operation>(model, operation) {}
     bool SignatureCheck(std::string& reason) override {
-        return hal::limitation::nnapi::match("HeatmapMaxKeypointInput", this->InputArgTypes()) &&
-               hal::limitation::nnapi::match("HeatmapMaxKeypointOutput", this->OutputArgTypes());
+        return ::hal::limitation::nnapi::match("HeatmapMaxKeypointInput", this->InputArgTypes()) &&
+               ::hal::limitation::nnapi::match("HeatmapMaxKeypointOutput", this->OutputArgTypes());
     };
 };
 
