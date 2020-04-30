@@ -878,31 +878,88 @@ int OvxlibDelegate::addNode_GROUPED_CONV_2D(Model* model,
     (void)model;
     int err = NNA_ERROR_CODE(NO_ERROR);
     GroupedConv2DOperation* conv2d = reinterpret_cast<GroupedConv2DOperation*>(operation.get());
-    std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
-    OperandPtr weight = inputs[1];
 
-    std::vector<vsi_nn_node_t*> nodes;
-    err = addNode(VSI_NN_OP_GROUPED_CONV2D,
-                  conv2d->inputs(),
-                  conv2d->outputs(),
-                  conv2d->fusedType(),
-                  &nodes,
-                  operation_index);
-    nodes[0]->nn_param.conv2d.pad_type = getPaddingType(conv2d->padType);
-    nodes[0]->nn_param.conv2d.stride[0] = conv2d->strides[0];
-    nodes[0]->nn_param.conv2d.stride[1] = conv2d->strides[1];
-    nodes[0]->nn_param.conv2d.pad[0] = conv2d->pad[0];
-    nodes[0]->nn_param.conv2d.pad[1] = conv2d->pad[1];
-    nodes[0]->nn_param.conv2d.pad[2] = conv2d->pad[2];
-    nodes[0]->nn_param.conv2d.pad[3] = conv2d->pad[3];
-    nodes[0]->nn_param.conv2d.dilation[0] = conv2d->dilations[0];
-    nodes[0]->nn_param.conv2d.dilation[1] = conv2d->dilations[1];
-    nodes[0]->nn_param.conv2d.ksize[0] = weight->dimensions[3];
-    nodes[0]->nn_param.conv2d.ksize[1] = weight->dimensions[2];
-    nodes[0]->nn_param.conv2d.weights = weight->dimensions[0];
-    nodes[0]->nn_param.conv2d.group = conv2d->groups;
-    fillVxParam(&nodes[0]->vx_param, conv2d->vxParam());
-    return err;
+    auto inChannelSize = model->getOperands(operation->inputs())[0]->dimensions[1];
+
+    if (conv2d->groups == 1) {
+        VSILOGI("Map grouped convolution as convolution 2d because gourp = 1");
+        std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
+        OperandPtr weight = inputs[1];
+
+        std::vector<vsi_nn_node_t*> nodes;
+        err = addNode(VSI_NN_OP_CONV2D,
+                      conv2d->inputs(),
+                      conv2d->outputs(),
+                      conv2d->fusedType(),
+                      &nodes,
+                      operation_index);
+        nodes[0]->nn_param.conv2d.pad_type = getPaddingType(conv2d->padType);
+        nodes[0]->nn_param.conv2d.stride[0] = conv2d->strides[0];
+        nodes[0]->nn_param.conv2d.stride[1] = conv2d->strides[1];
+        nodes[0]->nn_param.conv2d.pad[0] = conv2d->pad[0];
+        nodes[0]->nn_param.conv2d.pad[1] = conv2d->pad[1];
+        nodes[0]->nn_param.conv2d.pad[2] = conv2d->pad[2];
+        nodes[0]->nn_param.conv2d.pad[3] = conv2d->pad[3];
+        nodes[0]->nn_param.conv2d.dilation[0] = conv2d->dilations[0];
+        nodes[0]->nn_param.conv2d.dilation[1] = conv2d->dilations[1];
+        nodes[0]->nn_param.conv2d.ksize[0] = weight->dimensions[3];
+        nodes[0]->nn_param.conv2d.ksize[1] = weight->dimensions[2];
+        nodes[0]->nn_param.conv2d.weights = weight->dimensions[0];
+        fillVxParam(&nodes[0]->vx_param, conv2d->vxParam());
+        return err;
+    }
+    else if (static_cast<int32_t>(inChannelSize) == conv2d->groups) {
+        VSILOGI("Map Grouped conv2d as depthwise convolution due to group size equal to input channel size");
+        std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
+        OperandPtr weight = inputs[1];
+
+        std::vector<vsi_nn_node_t*> nodes;
+        err = addNode(VSI_NN_OP_CONV2D, operation, &nodes, operation_index);
+        nodes[0]->nn_param.conv2d.pad_type = getPaddingType(conv2d->padType);
+        nodes[0]->nn_param.conv2d.stride[0] = conv2d->strides[0];
+        nodes[0]->nn_param.conv2d.stride[1] = conv2d->strides[1];
+        nodes[0]->nn_param.conv2d.pad[0] = conv2d->pad[0];
+        nodes[0]->nn_param.conv2d.pad[1] = conv2d->pad[1];
+        nodes[0]->nn_param.conv2d.pad[2] = conv2d->pad[2];
+        nodes[0]->nn_param.conv2d.pad[3] = conv2d->pad[3];
+        nodes[0]->nn_param.conv2d.multiplier = 1;
+        nodes[0]->nn_param.conv2d.dilation[0] = conv2d->dilations[0];
+        nodes[0]->nn_param.conv2d.dilation[1] = conv2d->dilations[1];
+        nodes[0]->nn_param.conv2d.ksize[0] = weight->dimensions[3];
+        nodes[0]->nn_param.conv2d.ksize[1] = weight->dimensions[2];
+        nodes[0]->nn_param.conv2d.weights = weight->dimensions[0] * weight->dimensions[1];
+        fillVxParam(&nodes[0]->vx_param, conv2d->vxParam());
+
+        return err;
+    }
+    else {
+        std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
+        OperandPtr weight = inputs[1];
+
+        std::vector<vsi_nn_node_t*> nodes;
+        err = addNode(VSI_NN_OP_GROUPED_CONV2D,
+                      conv2d->inputs(),
+                      conv2d->outputs(),
+                      conv2d->fusedType(),
+                      &nodes,
+                      operation_index);
+        nodes[0]->nn_param.conv2d.pad_type = getPaddingType(conv2d->padType);
+        nodes[0]->nn_param.conv2d.stride[0] = conv2d->strides[0];
+        nodes[0]->nn_param.conv2d.stride[1] = conv2d->strides[1];
+        nodes[0]->nn_param.conv2d.pad[0] = conv2d->pad[0];
+        nodes[0]->nn_param.conv2d.pad[1] = conv2d->pad[1];
+        nodes[0]->nn_param.conv2d.pad[2] = conv2d->pad[2];
+        nodes[0]->nn_param.conv2d.pad[3] = conv2d->pad[3];
+        nodes[0]->nn_param.conv2d.dilation[0] = conv2d->dilations[0];
+        nodes[0]->nn_param.conv2d.dilation[1] = conv2d->dilations[1];
+        nodes[0]->nn_param.conv2d.ksize[0] = weight->dimensions[3];
+        nodes[0]->nn_param.conv2d.ksize[1] = weight->dimensions[2];
+        nodes[0]->nn_param.conv2d.weights = weight->dimensions[0];
+        nodes[0]->nn_param.conv2d.group = conv2d->groups;
+        fillVxParam(&nodes[0]->vx_param, conv2d->vxParam());
+        return err;
+    }
+
 }
 
 int OvxlibDelegate::addNode_DEPTHWISE_CONV_2D(Model* model,
