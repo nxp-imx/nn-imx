@@ -173,6 +173,13 @@ static vsi_bool op_setup
     )
 {
     /* TODO: Add code to comput outputs' shape. */
+    if( VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num )
+    {
+        outputs[0]->attr.dim_num = inputs[0]->attr.dim_num;
+        memcpy( outputs[0]->attr.size, inputs[0]->attr.size,
+            inputs[0]->attr.dim_num * sizeof( uint32_t ) );
+    }
+
     return TRUE;
 } /* op_setup() */
 
