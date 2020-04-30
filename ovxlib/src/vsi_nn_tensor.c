@@ -370,10 +370,15 @@ static vsi_bool _init_tensor
             {
                 addr = vxCreateTensorAddressing(graph->ctx->c,
                     tensor->attr.size, stride_size, tensor->attr.dim_num);
-
+#ifdef VX_13_NN_COMPATIBLITY
+                tensor->t = vxCreateTensorFromHandle2(graph->ctx->c,
+                    &params, sizeof(vx_tensor_create_params_t),
+                    addr, data, VX_MEMORY_TYPE_HOST);
+#else
                 tensor->t = vxCreateTensorFromHandle(graph->ctx->c,
                     &params, sizeof(vx_tensor_create_params_t),
                     addr, data, VX_MEMORY_TYPE_HOST);
+#endif
                 //memset(data, 0x5A, buf_sz);
                 vxReleaseTensorAddressing( &addr );
                 vxFlushHandle( (vx_reference)tensor->t );
