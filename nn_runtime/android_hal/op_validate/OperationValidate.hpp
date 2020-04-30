@@ -94,10 +94,8 @@ class OperationValidate {
     virtual ~OperationValidate(){};
 
     virtual bool Validate(std::string& reason) {
-        bool isSupport = true;
-        isSupport &= DimentionCheck(reason);
-        isSupport &= ConstantTensorCheck();
-        isSupport &= SignatureCheck(reason);
+        bool isSupport = DimentionCheck(reason) && ConstantTensorCheck(reason) &&
+                         ShareOperandCheck(reason) && SignatureCheck(reason);
         return isSupport;
     };
 
@@ -137,13 +135,34 @@ class OperationValidate {
         return true;
     }
 
+    /**
+     * @brief shared operand for single operation is not strongly supported, reject them
+     *
+     * @param reason promote message for the reason
+     * @return true
+     * @return false
+     */
+    bool ShareOperandCheck(std::string& reason) {
+        size_t numOfOperand = m_Operation.inputs.size();
+        std::set< uint32_t > uniqueOperands;
+        std::for_each(m_Operation.inputs.begin(), m_Operation.inputs.end(), [&uniqueOperands](const uint32_t& id){
+            uniqueOperands.insert(id);
+        });
+
+        if (uniqueOperands.size() != numOfOperand) {
+            reason += "reject operation because its inputs shared same opearnd\n";
+            return false;
+        }
+        return true;
+    }
+
     bool IsConstantTensor(size_t index) {
         auto& operand = m_Model.operands[index];
         return operand.lifetime == OperandLifeTime::CONSTANT_COPY ||
                operand.lifetime == OperandLifeTime::CONSTANT_REFERENCE;
     }
 
-    bool ConstantTensorCheck() {
+    bool ConstantTensorCheck(std::string& reason) {
         std::vector<OperationType> whiteList = {OperationType::ADD,
                                                 OperationType::SUB,
                                                 OperationType::MUL,
@@ -158,6 +177,7 @@ class OperationValidate {
 
         if (std::find(whiteList.begin(), whiteList.end(), m_Operation.type) == whiteList.end()) {
             if (IsConstantTensor(m_Operation.inputs[0])) {
+                reason += "reject operation due to its input[0] is contant tensor which is meaningless\n";
                 return false;
             }
         }
