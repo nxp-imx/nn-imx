@@ -542,6 +542,17 @@ vsi_bool vsi_nn_kernel_optimize_broadcast_shape
             out_shape_output[1] = 1;
             dims = 2;
         }
+        else
+        {
+            for (j = 0; j < (size_t)input_num; j++)
+            {
+                for ( i = 0; i < dims; i++)
+                {
+                    if ( out_shape_in[j][i] == 0 )
+                        out_shape_in[j][i] = 1;
+                }
+            }
+        }
 
         *out_rank_output = dims;
     }
