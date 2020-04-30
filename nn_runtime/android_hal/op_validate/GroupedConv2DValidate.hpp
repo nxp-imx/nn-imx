@@ -67,10 +67,18 @@ class GroupedConv2DValidate : public OperationValidate<T_model, T_Operation> {
                 outputChannel = outputOperand.dimensions[3];
             }
             if (groupNumber != inputChannel / outputChannel) {
-                reason += "reject GROUPED_CONV2D because the group number is invalid \n";
+                reason +=
+                    std::string(
+                        "reject GROUPED_CONV2D because the group number is invalid groupNumber") +
+                    std::to_string(groupNumber) + " != " + std::to_string(inputChannel) + "/" +
+                    std::to_string(outputChannel) + "\n";
                 return false;
             }
             auto kernelOperand = model.operands[operation.inputs[kernelIndex]];
+            if (kernelOperand.lifetime != OperandLifeTime::CONSTANT_COPY) {
+                reason += "reject GROUPED_CONV2D because kernel is not constant \n";
+                return false;
+            }
             if (kernelOperand.dimensions[1] * kernelOperand.dimensions[2] > 6400) {
                 reason += "reject GROUPED_CONV2D because kernel size > 6400\n";
                 return false;
