@@ -660,8 +660,7 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
                                             OperationType::CONCATENATION,
                                             OperationType::CONV_2D,
                                             OperationType::FULLY_CONNECTED,
-                                            OperationType::LSTM,
-                                            OperationType::DEPTHWISE_CONV_2D};
+                                            OperationType::LSTM};
 
     // do not support constant tensor as operation's Input except whiteList.
     if (std::find(whiteList.begin(), whiteList.end(), operation.type) == whiteList.end()) {

@@ -50,6 +50,11 @@ class DepthwiseConv2dValidate : public OperationValidate<T_model, T_Operation> {
                 reason += "reject Depthwise_conv_2d because input and kernel share a same tensor\n";
                 return false;
             }
+            if (this->IsConstantTensor(operation.inputs[inputIndex])) {
+                reason += "reject Depthwise_conv_2d because input is constant tensor\n";
+                return false;
+            }
+
             if (-1 != layoutIndex) {
                 auto layoutOperand = model.operands[operation.inputs[layoutIndex]];
                 bool layoutData = get_buffer::getScalarData<bool>(model, layoutOperand);
@@ -62,6 +67,10 @@ class DepthwiseConv2dValidate : public OperationValidate<T_model, T_Operation> {
                 auto kernelDim = model.operands[operation.inputs[kernelIndex]].dimensions;
                 if (kernelDim[0] != 1) {
                     reason += ("reject Depthwise_conv_2d because kernel[0] != 1\n");
+                    return false;
+                }
+                if (!this->IsConstantTensor(operation.inputs[kernelIndex])) {
+                    reason += "reject Depthwise_conv_2d because kernel is't constant tensor\n";
                     return false;
                 }
             } else {
