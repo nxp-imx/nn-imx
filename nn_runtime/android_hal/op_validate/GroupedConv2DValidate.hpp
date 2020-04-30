@@ -66,9 +66,7 @@ class GroupedConv2DValidate : public OperationValidate<T_model, T_Operation> {
                 inputChannel = inputOperand.dimensions[3];
                 outputChannel = outputOperand.dimensions[3];
             }
-            if (groupNumber == inputChannel / outputChannel) {
-                return true;
-            } else {
+            if (groupNumber != inputChannel / outputChannel) {
                 reason += "reject GROUPED_CONV2D because the group number is invalid \n";
                 return false;
             }
@@ -77,7 +75,7 @@ class GroupedConv2DValidate : public OperationValidate<T_model, T_Operation> {
                 reason += "reject GROUPED_CONV2D because kernel size > 6400\n";
                 return false;
             }
-
+            return true;
         } else {
             reason += "reject GROUPED_CONV_2D because input data type not support\n";
             return false;
