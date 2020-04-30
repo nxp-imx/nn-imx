@@ -206,7 +206,7 @@ DEF_KERNEL_INITIALIZER(_poolwithargmax_initializer)
     }
 
 
-    if (I8 == src_dtype && U8 == src_dtype)
+    if (I8 == src_dtype || U8 == src_dtype)
     {
         gpu_param.global_scale[0]  = 16;
         gpu_param.global_scale[1]  = 2;
