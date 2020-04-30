@@ -1070,9 +1070,6 @@
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_unstack.c">
       <Filter>Source Files\libnnext\ops\kernel</Filter>
     </ClCompile>
-    <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_upsample.c">
-      <Filter>Source Files\libnnext\ops\kernel</Filter>
-    </ClCompile>
     <ClCompile Include="src\libnnext\vsi_nn_libnnext_resource.c">
       <Filter>Source Files\libnnext</Filter>
     </ClCompile>
@@ -1687,6 +1684,15 @@
     </ClCompile>
     <ClCompile Include="src\kernel\cl\batchnorm_single_cl.c">
       <Filter>Source Files\kernel\cl</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\cpu\upsample_cpu.c">
+      <Filter>Source Files\kernel\cpu</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\cl\upsample_cl.c">
+      <Filter>Source Files\kernel\cl</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\evis\upsample_evis.c">
+      <Filter>Source Files\kernel\evis</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

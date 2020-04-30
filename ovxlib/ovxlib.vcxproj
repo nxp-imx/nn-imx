@@ -734,6 +734,7 @@
     <ClCompile Include="src\kernel\cl\select_cl.c" />
     <ClCompile Include="src\kernel\cl\tile_cl.c" />
     <ClCompile Include="src\kernel\cpu\batchnorm_single_cpu.c" />
+    <ClCompile Include="src\kernel\cl\upsample_cl.c" />
     <ClCompile Include="src\kernel\cpu\cast_cpu.c" />
     <ClCompile Include="src\kernel\cpu\floordiv_cpu.c" />
     <ClCompile Include="src\kernel\cpu\grucell_activation_cpu.c" />
@@ -747,6 +748,7 @@
     <ClCompile Include="src\kernel\cpu\tile_cpu.c" />
     <ClCompile Include="src\kernel\evis\a_times_b_plus_c_evis.c" />
     <ClCompile Include="src\kernel\evis\batchnorm_single_evis.c" />
+    <ClCompile Include="src\kernel\cpu\upsample_cpu.c" />
     <ClCompile Include="src\kernel\evis\cast_evis.c" />
     <ClCompile Include="src\kernel\evis\floordiv_evis.c" />
     <ClCompile Include="src\kernel\evis\grucell_activation_evis.c" />
@@ -759,6 +761,7 @@
     <ClCompile Include="src\kernel\evis\select_evis.c" />
     <ClCompile Include="src\kernel\evis\tile_evis.c" />
     <ClCompile Include="src\kernel\vx\a_times_b_plus_c_vx.c" />
+    <ClCompile Include="src\kernel\evis\upsample_evis.c" />
     <ClCompile Include="src\platform\nnapi0.4\vsi_nn_pf_softmax.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Jenkins-Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Jenkins-Debug|x64'">true</ExcludedFromBuild>
@@ -1146,9 +1149,6 @@
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_unstack.c">
       <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\vsi_nn_kernel_unstack.o</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_upsample.c">
-      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\vsi_nn_kernel_upsample.o</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\libnnext\vsi_nn_libnnext_resource.c">
       <ObjectFileName>$(IntDir)\src\libnnext\vsi_nn_libnnext_resource.o</ObjectFileName>
