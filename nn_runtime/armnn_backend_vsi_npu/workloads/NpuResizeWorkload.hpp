@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include <FloatingPointConverter.hpp>
+#include <armnnUtils/FloatingPointConverter.hpp>
 #include <backendsCommon/CpuTensorHandle.hpp>
 #include <backendsCommon/Workload.hpp>
 #include <backendsCommon/WorkloadData.hpp>
@@ -106,5 +106,5 @@ class NpuResizeWorkload : public TNpuWorkload<ResizeQueueDescriptor, DataTypes..
 };
 using NpuResizeFloat32Workload = NpuResizeWorkload<armnn::DataType::Float32>;
 using NpuResizeFloat16Workload = NpuResizeWorkload<armnn::DataType::Float16>;
-using NpuResizeUint8Workload = NpuResizeWorkload<armnn::DataType::QuantisedAsymm8>;
+using NpuResizeUint8Workload = NpuResizeWorkload<armnn::DataType::QAsymmU8>;
 }  // namespace armnn

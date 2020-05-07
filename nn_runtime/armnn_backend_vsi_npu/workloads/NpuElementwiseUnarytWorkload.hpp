@@ -32,33 +32,34 @@
 
 namespace armnn {
 template <typename armnn::DataType... DataTypes>
-class NpuEqualWorkload : public TNpuWorkload<EqualQueueDescriptor, DataTypes...> {
+class NpuElementwiseUnarytWorkload
+    : public TNpuWorkload<ElementwiseUnaryQueueDescriptor, DataTypes...> {
    public:
-    using base_type = TNpuWorkload<EqualQueueDescriptor, DataTypes...>;
-    explicit NpuEqualWorkload(const EqualQueueDescriptor& descriptor, const WorkloadInfo& info)
-        : TNpuWorkload<EqualQueueDescriptor, DataTypes...>(descriptor, info) {
-        // Add inputs operand
-        assert(2 == descriptor.m_Inputs.size());
-        std::vector<uint32_t> inOperandIds = this->AddOperandWithTensorHandle(descriptor.m_Inputs);
+    explicit NpuElementwiseUnarytWorkload(const ElementwiseUnaryQueueDescriptor& descriptor,
+                                          const WorkloadInfo& info)
+        : TNpuWorkload<ElementwiseUnaryQueueDescriptor, DataTypes...>(descriptor, info) {
+        std::vector<uint32_t> inputIds = this->AddOperandWithTensorHandle(descriptor.m_Inputs);
+        std::vector<uint32_t> outputIds = this->AddOperandWithTensorHandle(descriptor.m_Outputs);
 
-        std::vector<uint32_t> outOperandIds;
-        NpuTensorHandler* outputTensorHandle =
-            dynamic_cast<NpuTensorHandler*>(descriptor.m_Outputs[0]);
-        uint32_t outputTensorId = this->AddOperandAndSetValue(
-            outputTensorHandle->GetTensorInfo(), outputTensorHandle->GetShape(), nullptr);
-        outOperandIds.push_back(outputTensorId);
+        switch (descriptor.m_Parameters.m_Operation) {
+            case UnaryOperation::Rsqrt: {
+                this->AddOperation(nnrt::OperationType::RSQRT,
+                           inputIds.size(),
+                           inputIds.data(),
+                           outputIds.size(),
+                           outputIds.data());
+                break;
+            }
+            // TODO: Add Abs, Exp, Sqrt and Neg
+            default:
+                BOOST_LOG_TRIVIAL(error) << "Not support ElementwiseUnaryOperation.";
+                assert(false);
 
-        this->AddOperation(nnrt::OperationType::EQUAL,
-                           inOperandIds.size(),
-                           inOperandIds.data(),
-                           outOperandIds.size(),
-                           outOperandIds.data());
+        }
+
     }
 };
-using NpuEqualFloat32Workload =
-    NpuEqualWorkload<armnn::DataType::Float32, armnn::DataType::Boolean>;
-using NpuEqualFloat16Workload =
-    NpuEqualWorkload<armnn::DataType::Float16, armnn::DataType::Boolean>;
-using NpuEqualUint8Workload =
-    NpuEqualWorkload<armnn::DataType::QuantisedAsymm8, armnn::DataType::Boolean>;
+using NpuElementwiseUnarytFloat32Workload = NpuElementwiseUnarytWorkload<armnn::DataType::Float32>;
+using NpuElementwiseUnarytFloat16Workload = NpuElementwiseUnarytWorkload<armnn::DataType::Float16>;
+using NpuElementwiseUnarytUint8Workload = NpuElementwiseUnarytWorkload<armnn::DataType::QAsymmU8>;
 }  // namespace armnn

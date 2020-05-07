@@ -32,15 +32,14 @@
 
 namespace armnn {
 template <typename armnn::DataType... DataTypes>
-class NpuGreaterWorkload : public TNpuWorkload<GreaterQueueDescriptor, DataTypes...> {
+class NpuComparisonWorkload : public TNpuWorkload<ComparisonQueueDescriptor, DataTypes...> {
    public:
-    using base_type = TNpuWorkload<GreaterQueueDescriptor, DataTypes...>;
-    explicit NpuGreaterWorkload(const GreaterQueueDescriptor& descriptor, const WorkloadInfo& info)
-        : TNpuWorkload<GreaterQueueDescriptor, DataTypes...>(descriptor, info) {
+    using base_type = TNpuWorkload<ComparisonQueueDescriptor, DataTypes...>;
+    explicit NpuComparisonWorkload(const ComparisonQueueDescriptor& descriptor, const WorkloadInfo& info)
+        : TNpuWorkload<ComparisonQueueDescriptor, DataTypes...>(descriptor, info) {
         // Add inputs operand
         assert(2 == descriptor.m_Inputs.size());
-        std::vector<uint32_t> inOperandIds = this->AddOperandWithTensorHandle(
-                descriptor.m_Inputs);
+        std::vector<uint32_t> inOperandIds = this->AddOperandWithTensorHandle(descriptor.m_Inputs);
 
         std::vector<uint32_t> outOperandIds;
         NpuTensorHandler* outputTensorHandle =
@@ -49,17 +48,34 @@ class NpuGreaterWorkload : public TNpuWorkload<GreaterQueueDescriptor, DataTypes
             outputTensorHandle->GetTensorInfo(), outputTensorHandle->GetShape(), nullptr);
         outOperandIds.push_back(outputTensorId);
 
-        this->AddOperation(nnrt::OperationType::GREATER,
+        switch (descriptor.m_Parameters.m_Operation) {
+            case ComparisonOperation::Equal: {
+                this->AddOperation(nnrt::OperationType::EQUAL,
                            inOperandIds.size(),
                            inOperandIds.data(),
                            outOperandIds.size(),
                            outOperandIds.data());
+                           break;
+            }
+            case ComparisonOperation::Greater: {
+                this->AddOperation(nnrt::OperationType::GREATER,
+                           inOperandIds.size(),
+                           inOperandIds.data(),
+                           outOperandIds.size(),
+                           outOperandIds.data());
+                           break;
+            }
+            // TODO: Add GreaterOrEqual, Less, LessOrEqual, NotEqual
+            default:
+                BOOST_LOG_TRIVIAL(error) << "Not support ComparisonOperation.";
+                assert(false);
+        }
     }
 };
-using NpuGreaterFloat32Workload =
-    NpuGreaterWorkload<armnn::DataType::Float32, armnn::DataType::Boolean>;
-using NpuGreaterFloat16Workload =
-    NpuGreaterWorkload<armnn::DataType::Float16, armnn::DataType::Boolean>;
-using NpuGreaterUint8Workload =
-    NpuGreaterWorkload<armnn::DataType::QuantisedAsymm8, armnn::DataType::Boolean>;
+using NpuComparisonFloat32Workload =
+    NpuComparisonWorkload<armnn::DataType::Float32, armnn::DataType::Boolean>;
+using NpuComparisonFloat16Workload =
+    NpuComparisonWorkload<armnn::DataType::Float16, armnn::DataType::Boolean>;
+using NpuComparisonUint8Workload =
+    NpuComparisonWorkload<armnn::DataType::QAsymmU8, armnn::DataType::Boolean>;
 }  // namespace armnn

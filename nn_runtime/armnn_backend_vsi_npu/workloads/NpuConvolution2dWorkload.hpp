@@ -28,7 +28,7 @@
 #include <backendsCommon/Workload.hpp>
 #include <backendsCommon/WorkloadData.hpp>
 #include <boost/log/trivial.hpp>
-#include <FloatingPointConverter.hpp>
+#include <armnnUtils/FloatingPointConverter.hpp>
 #include "TNpuWorkloads.hpp"
 
 #include "FakeBiasSelector.hpp"
@@ -166,5 +166,5 @@ class NpuConvolution2dWorkload : public TNpuWorkload<Convolution2dQueueDescripto
 };
 using NpuConvolution2dFloat32Workload = NpuConvolution2dWorkload<armnn::DataType::Float32>;
 using NpuConvolution2dFloat16Workload = NpuConvolution2dWorkload<armnn::DataType::Float16>;
-using NpuConvolution2dUint8Workload = NpuConvolution2dWorkload<armnn::DataType::QuantisedAsymm8>;
+using NpuConvolution2dUint8Workload = NpuConvolution2dWorkload<armnn::DataType::QAsymmU8>;
 }  // namespace armnn

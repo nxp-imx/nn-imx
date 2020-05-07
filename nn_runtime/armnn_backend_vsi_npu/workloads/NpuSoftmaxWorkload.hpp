@@ -74,5 +74,5 @@ class NpuSoftmaxWorkload : public TNpuWorkload<SoftmaxQueueDescriptor, DataTypes
 };
 using NpuSoftmaxFloat32Workload = NpuSoftmaxWorkload<armnn::DataType::Float32>;
 using NpuSoftmaxFloat16Workload = NpuSoftmaxWorkload<armnn::DataType::Float16>;
-using NpuSoftmaxUint8Workload = NpuSoftmaxWorkload<armnn::DataType::QuantisedAsymm8>;
+using NpuSoftmaxUint8Workload = NpuSoftmaxWorkload<armnn::DataType::QAsymmU8>;
 }  // namespace armnn

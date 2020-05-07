@@ -29,9 +29,10 @@
 #include "NpuTensorAllocator.hpp"
 #include "NpuBackendContext.hpp"
 
-#include <backendsCommon/IBackendContext.hpp>
-#include <backendsCommon/IMemoryManager.hpp>
-#include <backendsCommon/BackendRegistry.hpp>
+#include <armnn/BackendRegistry.hpp>
+
+#include <armnn/backends/IBackendContext.hpp>
+#include <armnn/backends/IMemoryManager.hpp>
 
 #include <Optimizer.hpp>
 

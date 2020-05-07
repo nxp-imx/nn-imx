@@ -29,7 +29,7 @@
 #include "NpuTensorAllocator.hpp"
 #include "NpuWorkloadFactory.hpp"
 
-#include <backendsCommon/BackendRegistry.hpp>
+#include <armnn/BackendRegistry.hpp>
 #include <backendsCommon/IBackendContext.hpp>
 #include <backendsCommon/IMemoryManager.hpp>
 

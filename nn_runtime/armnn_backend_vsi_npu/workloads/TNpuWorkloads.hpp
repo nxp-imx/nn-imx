@@ -189,13 +189,13 @@ class TNpuWorkload : public Base_t<QueueDescriptor, DataTypes...>{
             case DataType::Float16:
                 type = nnrt::OperandType::TENSOR_FLOAT16;
                 break;
-            case DataType::QuantisedAsymm8:
+            case DataType::QAsymmU8:
                 type = nnrt::OperandType::TENSOR_QUANT8_ASYMM;
                 break;
             case DataType::Signed32:
                 type = nnrt::OperandType::TENSOR_INT32;
                 break;
-            case DataType::QuantisedSymm16:
+            case DataType::QSymmS16:
                 type = nnrt::OperandType::TENSOR_INT16;
                 break;
             case DataType::Boolean:

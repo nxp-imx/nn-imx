@@ -40,7 +40,7 @@
 
 #include "workloads/NpuElementwiseWorkload.hpp"
 #include "workloads/NpuMeanWorkload.hpp"
-#include "workloads/NpuRsqrtWorkload.hpp"
+#include "workloads/NpuElementwiseUnarytWorkload.hpp"
 #include "workloads/NpuPadWorkload.hpp"
 #include "workloads/NpuPermuteWorkload.hpp"
 #include "workloads/NpuReshapeWorkload.hpp"
@@ -59,8 +59,7 @@
 #include "workloads/NpuNormalizationWorkload.hpp"
 #include "workloads/NpuResizeWorkload.hpp"
 #include "workloads/NpuConstantWorkload.hpp"
-#include "workloads/NpuGreaterWorkload.hpp"
-#include "workloads/NpuEqualWorkload.hpp"
+#include "workloads/NpuComparisonWorkload.hpp"
 #include "workloads/NpuGatherWorkload.hpp"
 
 #include <boost/log/trivial.hpp>
@@ -74,9 +73,12 @@ static const BackendId s_Id{NpuBackendId()};
 template <typename Fp16Workload, typename F32Workload, typename U8Workload, typename QueueDescriptorType>
 std::unique_ptr<IWorkload> NpuWorkloadFactory::MakeWorkload(const QueueDescriptorType& descriptor,
                                                             const WorkloadInfo& info) const {
-    return armnn::MakeWorkloadHelper<Fp16Workload, F32Workload, U8Workload, NullWorkload, NullWorkload>(
-        descriptor, info);
-
+    return armnn::MakeWorkloadHelper<Fp16Workload,
+                                     F32Workload,
+                                     U8Workload,
+                                     NullWorkload,
+                                     NullWorkload,
+                                     NullWorkload>(descriptor, info);
 }
 
 NpuWorkloadFactory::NpuWorkloadFactory() {}
@@ -91,12 +93,13 @@ bool NpuWorkloadFactory::IsLayerSupported(const Layer& layer,
     return IWorkloadFactory::IsLayerSupported(s_Id, layer, dataType, outReasonIfUnsupported);
 }
 
-std::unique_ptr<ITensorHandle> NpuWorkloadFactory::CreateTensorHandle(const TensorInfo& tensorInfo) const {
+std::unique_ptr<ITensorHandle> NpuWorkloadFactory::CreateTensorHandle(
+    const TensorInfo& tensorInfo, const bool IsMemoryManaged) const {
     return CreateTensorHandle(tensorInfo, DataLayout::NHWC);
 }
 
-std::unique_ptr<ITensorHandle> NpuWorkloadFactory::CreateTensorHandle(const TensorInfo& tensorInfo,
-                                                                      DataLayout dataLayout) const {
+std::unique_ptr<ITensorHandle> NpuWorkloadFactory::CreateTensorHandle(
+    const TensorInfo& tensorInfo, DataLayout dataLayout, const bool IsMemoryManaged) const {
     // TODO: add dataLayout for tensor
     return std::make_unique<NpuTensorHandler>(tensorInfo);
 }
@@ -361,8 +364,10 @@ std::unique_ptr<IWorkload> NpuWorkloadFactory::CreatePad(const PadQueueDescripto
 
 std::unique_ptr<IWorkload> NpuWorkloadFactory::CreateEqual(const EqualQueueDescriptor& descriptor,
                                                            const WorkloadInfo& info) const {
-    return MakeWorkload<NpuEqualFloat16Workload, NpuEqualFloat32Workload, NpuEqualUint8Workload>(
-        descriptor, info);
+    ComparisonQueueDescriptor comparisonDescriptor;
+    comparisonDescriptor.m_Parameters.m_Operation = ComparisonOperation::Equal;
+
+    return CreateComparison(comparisonDescriptor, info);
 }
 
 std::unique_ptr<IWorkload> NpuWorkloadFactory::CreateBatchToSpaceNd(
@@ -381,9 +386,10 @@ std::unique_ptr<IWorkload> NpuWorkloadFactory::CreateStridedSlice(
 
 std::unique_ptr<IWorkload> NpuWorkloadFactory::CreateGreater(
     const GreaterQueueDescriptor& descriptor, const WorkloadInfo& info) const {
-    return MakeWorkload<NpuGreaterFloat16Workload,
-                        NpuGreaterFloat32Workload,
-                        NpuGreaterUint8Workload>(descriptor, info);
+    ComparisonQueueDescriptor comparisonDescriptor;
+    comparisonDescriptor.m_Parameters.m_Operation = ComparisonOperation::Greater;
+
+    return CreateComparison(comparisonDescriptor, info);
 }
 
 std::unique_ptr<IWorkload> NpuWorkloadFactory::CreateDebug(const DebugQueueDescriptor& descriptor,
@@ -393,8 +399,10 @@ std::unique_ptr<IWorkload> NpuWorkloadFactory::CreateDebug(const DebugQueueDescr
 
 std::unique_ptr<IWorkload> NpuWorkloadFactory::CreateRsqrt(const RsqrtQueueDescriptor& descriptor,
                                                            const WorkloadInfo& info) const {
-    return MakeWorkload<NpuRsqrtFloat16Workload, NpuRsqrtFloat32Workload, NpuRsqrtUint8Workload>(
-        descriptor, info);
+    ElementwiseUnaryQueueDescriptor elementwiseUnaryDescriptor;
+    elementwiseUnaryDescriptor.m_Parameters.m_Operation = UnaryOperation::Rsqrt;
+
+    return CreateElementwiseUnary(elementwiseUnaryDescriptor, info);
 }
 
 std::unique_ptr<IWorkload> NpuWorkloadFactory::CreateGather(const armnn::GatherQueueDescriptor& descriptor,
@@ -428,6 +436,20 @@ std::unique_ptr<IWorkload> NpuWorkloadFactory::CreateTransposeConvolution2d(
     return MakeWorkload<NpuTransposeConvolution2dFloat16Workload,
                         NpuTransposeConvolution2dFloat32Workload,
                         NpuTransposeConvolution2dUint8Workload>(descriptor, info);
+}
+
+std::unique_ptr<IWorkload> NpuWorkloadFactory::CreateComparison(
+    const ComparisonQueueDescriptor& descriptor, const WorkloadInfo& info) const {
+    return MakeWorkload<NpuComparisonFloat16Workload,
+                        NpuComparisonFloat32Workload,
+                        NpuComparisonUint8Workload>(descriptor, info);
+}
+
+std::unique_ptr<IWorkload> NpuWorkloadFactory::CreateElementwiseUnary(
+    const ElementwiseUnaryQueueDescriptor& descriptor, const WorkloadInfo& info) const {
+    return MakeWorkload<NpuElementwiseUnarytFloat16Workload,
+                        NpuElementwiseUnarytFloat32Workload,
+                        NpuElementwiseUnarytUint8Workload>(descriptor, info);
 }
 
 }  // namespace armnn

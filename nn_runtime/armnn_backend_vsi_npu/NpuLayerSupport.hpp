@@ -94,10 +94,16 @@ public:
                                const TensorInfo& output,
                                Optional<std::string&> reasonIfUnsupported = EmptyOptional()) const override;
 
-    bool IsDetectionPostProcessSupported(const TensorInfo& input0,
-                                         const TensorInfo& input1,
-                                         const DetectionPostProcessDescriptor& descriptor,
-                                         Optional<std::string&> reasonIfUnsupported = EmptyOptional()) const override;
+    bool IsDetectionPostProcessSupported(
+        const TensorInfo& boxEncodings,
+        const TensorInfo& scores,
+        const TensorInfo& anchors,
+        const TensorInfo& detectionBoxes,
+        const TensorInfo& detectionClasses,
+        const TensorInfo& detectionScores,
+        const TensorInfo& numDetections,
+        const DetectionPostProcessDescriptor& descriptor,
+        Optional<std::string&> reasonIfUnsupported = EmptyOptional()) const override;
 
     bool IsDilatedDepthwiseConvolutionSupported(const TensorInfo& input,
                                                 const TensorInfo& output,
@@ -248,9 +254,11 @@ public:
                              const TensorInfo& output,
                              Optional<std::string&> reasonIfUnsupported = EmptyOptional()) const override;
 
-    bool IsReshapeSupported(const TensorInfo& input,
-                            const ReshapeDescriptor& descriptor,
-                            Optional<std::string&> reasonIfUnsupported = EmptyOptional()) const override;
+    bool IsReshapeSupported(
+        const TensorInfo& input,
+        const TensorInfo& output,
+        const ReshapeDescriptor& descriptor,
+        Optional<std::string&> reasonIfUnsupported = EmptyOptional()) const override;
 
     bool IsResizeSupported(const TensorInfo& input,
                                         const TensorInfo& output,

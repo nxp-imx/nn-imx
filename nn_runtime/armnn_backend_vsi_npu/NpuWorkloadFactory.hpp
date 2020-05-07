@@ -26,7 +26,7 @@
 
 #include <armnn/Optional.hpp>
 #include <backendsCommon/WorkloadFactory.hpp>
-#include <backendsCommon/OutputHandler.hpp>
+#include <OutputHandler.hpp>
 
 #include <boost/core/ignore_unused.hpp>
 
@@ -57,10 +57,13 @@ public:
         return nullptr;
     }
 
-    std::unique_ptr<ITensorHandle> CreateTensorHandle(const TensorInfo& tensorInfo) const override;
+    std::unique_ptr<ITensorHandle> CreateTensorHandle(
+        const TensorInfo& tensorInfo, const bool IsMemoryManaged = true) const override;
 
-    std::unique_ptr<ITensorHandle> CreateTensorHandle(const TensorInfo& tensorInfo,
-                                                      DataLayout dataLayout) const override;
+    std::unique_ptr<ITensorHandle> CreateTensorHandle(
+        const TensorInfo& tensorInfo,
+        DataLayout dataLayout,
+        const bool IsMemoryManaged = true) const override;
 
     std::unique_ptr<IWorkload> CreateInput(const InputQueueDescriptor& descriptor,
                                            const WorkloadInfo& info) const override;
@@ -168,6 +171,7 @@ public:
     std::unique_ptr<IWorkload> CreatePad(const PadQueueDescriptor& descriptor,
                                          const WorkloadInfo& info) const override;
 
+    ARMNN_DEPRECATED_MSG("Use CreateComparison instead")
     std::unique_ptr<IWorkload> CreateEqual(const EqualQueueDescriptor& descriptor,
                                            const WorkloadInfo& info) const override;
 
@@ -180,12 +184,14 @@ public:
     std::unique_ptr<IWorkload> CreateMinimum(const MinimumQueueDescriptor& descriptor,
                                              const WorkloadInfo& info) const override;
 
+    ARMNN_DEPRECATED_MSG("Use CreateComparison instead")
     std::unique_ptr<IWorkload> CreateGreater(const GreaterQueueDescriptor& descriptor,
                                              const WorkloadInfo& info) const override;
 
     std::unique_ptr<IWorkload> CreateDebug(const DebugQueueDescriptor& descriptor,
                                            const WorkloadInfo& info) const override;
 
+    ARMNN_DEPRECATED_MSG("Use CreateElementwiseUnary instead")
     std::unique_ptr<IWorkload> CreateRsqrt(const RsqrtQueueDescriptor& descriptor,
                                            const WorkloadInfo& info) const override;
 
@@ -207,7 +213,14 @@ public:
     std::unique_ptr<IWorkload> CreateTransposeConvolution2d(
         const TransposeConvolution2dQueueDescriptor& descriptor,
         const WorkloadInfo& info) const override;
-private:
+
+    std::unique_ptr<IWorkload> CreateComparison(const ComparisonQueueDescriptor& descriptor,
+                                                const WorkloadInfo& info) const override;
+
+    std::unique_ptr<IWorkload> CreateElementwiseUnary(
+        const ElementwiseUnaryQueueDescriptor& descriptor, const WorkloadInfo& info) const override;
+
+   private:
 
     template <typename Fp16Workload, typename F32Workload, typename U8Workload, typename QueueDescriptorType>
     std::unique_ptr<IWorkload> MakeWorkload(const QueueDescriptorType& descriptor, const WorkloadInfo& info) const;

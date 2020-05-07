@@ -62,5 +62,5 @@ class NpuSpaceToDepthWorkload : public TNpuWorkload<SpaceToDepthQueueDescriptor,
 };
 using NpuSpaceToDepthFloat32Workload = NpuSpaceToDepthWorkload<armnn::DataType::Float32>;
 using NpuSpaceToDepthFloat16Workload = NpuSpaceToDepthWorkload<armnn::DataType::Float16>;
-using NpuSpaceToDepthUint8Workload = NpuSpaceToDepthWorkload<armnn::DataType::QuantisedAsymm8>;
+using NpuSpaceToDepthUint8Workload = NpuSpaceToDepthWorkload<armnn::DataType::QAsymmU8>;
 }  // namespace armnn

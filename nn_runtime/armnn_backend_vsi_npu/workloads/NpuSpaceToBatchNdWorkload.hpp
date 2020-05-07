@@ -102,5 +102,5 @@ class NpuSpaceToBatchNdWorkload : public TNpuWorkload<SpaceToBatchNdQueueDescrip
 };
 using NpuSpaceToBatchNDFloat32Workload = NpuSpaceToBatchNdWorkload<armnn::DataType::Float32>;
 using NpuSpaceToBatchNDFloat16Workload = NpuSpaceToBatchNdWorkload<armnn::DataType::Float16>;
-using NpuSpaceToBatchNDUint8Workload = NpuSpaceToBatchNdWorkload<armnn::DataType::QuantisedAsymm8>;
+using NpuSpaceToBatchNDUint8Workload = NpuSpaceToBatchNdWorkload<armnn::DataType::QAsymmU8>;
 }  // namespace armnn

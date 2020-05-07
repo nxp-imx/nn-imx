@@ -78,5 +78,5 @@ class NpuReshapeWorkload : public TNpuWorkload<ReshapeQueueDescriptor, DataTypes
 };
 using NpuReshapeFloat32Workload = NpuReshapeWorkload<armnn::DataType::Float32>;
 using NpuReshapeFloat16Workload = NpuReshapeWorkload<armnn::DataType::Float16>;
-using NpuReshapeUint8Workload = NpuReshapeWorkload<armnn::DataType::QuantisedAsymm8>;
+using NpuReshapeUint8Workload = NpuReshapeWorkload<armnn::DataType::QAsymmU8>;
 }  // namespace armnn

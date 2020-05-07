@@ -106,5 +106,5 @@ using NpuBatchNormalizationFloat32Workload =
 using NpuBatchNormalizationFloat16Workload =
     NpuBatchNormalizationWorkload<armnn::DataType::Float16>;
 using NpuBatchNormalizationUint8Workload =
-    NpuBatchNormalizationWorkload<armnn::DataType::QuantisedAsymm8>;
+    NpuBatchNormalizationWorkload<armnn::DataType::QAsymmU8>;
 }  // namespace armnn

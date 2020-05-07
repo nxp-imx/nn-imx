@@ -109,6 +109,18 @@ void NpuTensorHandler::getMemoryReady() const {
     // If InputHandle already allocated memory: means it allocated by previous sub-graph allocated on our backend.
     // In this case, we should not be here because we didn't ask memory allocation internally.
     if (IsInputTensor) {
+        //                input
+        //             _____|_____
+        //            |           |
+        //           NPU     copy_layer(NPU->CPU)
+        //            |            |
+        //          output        CPU
+        //                         |
+        //                    copy_layer(CPU->NPU)
+        //                         |
+        //                      output
+        // Start computing from right branch
+        if (m_ExternalMem || m_Memory) return;
         if (nullptr == m_ExternalMem) {
             m_Memory.reset(new uint8_t[m_TensorInfo.GetNumBytes()]);
             // Keep this track random caculation error issue

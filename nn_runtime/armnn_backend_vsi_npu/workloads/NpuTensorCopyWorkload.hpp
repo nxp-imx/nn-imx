@@ -53,11 +53,11 @@ class NpuTensorCopyWorkload : public TNpuWorkload<ParentDescriptor, DataTypes...
 };
 using NpuDequantizeUint8Workload = NpuTensorCopyWorkload<
         DequantizeQueueDescriptor, nnrt::OperationType::DATA_CONVERT,
-        armnn::DataType::QuantisedAsymm8, armnn::DataType::Float32>;
+        armnn::DataType::QAsymmU8, armnn::DataType::Float32>;
 
 using NpuQuantizeFloat32Workload = NpuTensorCopyWorkload<
         QuantizeQueueDescriptor, nnrt::OperationType::DATA_CONVERT,
-        armnn::DataType::Float32, armnn::DataType::QuantisedAsymm8>;
+        armnn::DataType::Float32, armnn::DataType::QAsymmU8>;
 
 using NpuFp32ToFp16Workload = NpuTensorCopyWorkload<
         ConvertFp32ToFp16QueueDescriptor, nnrt::OperationType::DATA_CONVERT,
@@ -77,5 +77,5 @@ using NpuMemCopyFloat16Workload = NpuTensorCopyWorkload<
 
 using NpuMemCopyUint8Workload = NpuTensorCopyWorkload<
         MemCopyQueueDescriptor, nnrt::OperationType::DATA_CONVERT,
-        armnn::DataType::QuantisedAsymm8>;
+        armnn::DataType::QAsymmU8>;
 }  // namespace armnn

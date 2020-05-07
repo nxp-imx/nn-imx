@@ -50,5 +50,5 @@ class NpuPreluWorkload : public TNpuWorkload<PreluQueueDescriptor, DataTypes...>
 };
 using NpuPreluFloat32Workload = NpuPreluWorkload<armnn::DataType::Float32>;
 using NpuPreluFloat16Workload = NpuPreluWorkload<armnn::DataType::Float16>;
-using NpuPreluUint8Workload = NpuPreluWorkload<armnn::DataType::QuantisedAsymm8>;
+using NpuPreluUint8Workload = NpuPreluWorkload<armnn::DataType::QAsymmU8>;
 }  // namespace armnn

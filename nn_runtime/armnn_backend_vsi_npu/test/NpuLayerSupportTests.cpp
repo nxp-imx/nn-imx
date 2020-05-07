@@ -77,7 +77,7 @@ BOOST_AUTO_TEST_CASE(IsLayerSupportedNpuAddition) {
 
 // BOOST_AUTO_TEST_CASE(IsLayerSupportedUint8Npu) {
 //     armnn::NpuWorkloadFactory factory;
-//     IsLayerSupportedTests<armnn::NpuWorkloadFactory, armnn::DataType::QuantisedAsymm8>(&factory);
+//     IsLayerSupportedTests<armnn::NpuWorkloadFactory, armnn::DataType::QAsymmU8>(&factory);
 // }
 
 BOOST_AUTO_TEST_CASE(IsConvertFp16ToFp32SupportedNpu) {

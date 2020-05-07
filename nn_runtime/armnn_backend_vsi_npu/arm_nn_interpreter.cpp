@@ -106,6 +106,7 @@ Armnn_Interpreter::Armnn_Interpreter() {
     REGISTER_OP(BATCH_TO_SPACE_ND);
     REGISTER_OP(L2_NORMALIZATION);
     REGISTER_OP(RESIZE_BILINEAR);
+    REGISTER_OP(RESIZE_NEAREST_NEIGHBOR);
     REGISTER_OP(LOCAL_RESPONSE_NORMALIZATION);
     REGISTER_OP(EMBEDDING_LOOKUP);
     REGISTER_OP(RNN);
@@ -737,6 +738,21 @@ OperationPtr Armnn_Interpreter::map_RESIZE_BILINEAR(Model* model,
                                                    uint32_t operation_index) {
     NNAPI_CHECK_IO_NUM(operation, 4, 1);
     std::shared_ptr<ResizeBilinearOperation> resize = std::make_shared<ResizeBilinearOperation>();
+    NNAPI_CHECK_PTR(resize);
+    std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
+    resize->outputHeight = inputs[1]->scalar.int32;
+    resize->outputWidth = inputs[2]->scalar.int32;
+    resize->setDataLayout(DataLayout(inputs[3]->scalar.int32));
+    truncateOperationIOs(model, operation, 1, 1);
+    return resize;
+}
+
+OperationPtr Armnn_Interpreter::map_RESIZE_NEAREST_NEIGHBOR(Model* model,
+                                                            OperationPtr operation,
+                                                            uint32_t operation_index) {
+    NNAPI_CHECK_IO_NUM(operation, 4, 1);
+    std::shared_ptr<ResizeNearestNeighborOperation> resize =
+        std::make_shared<ResizeNearestNeighborOperation>();
     NNAPI_CHECK_PTR(resize);
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
     resize->outputHeight = inputs[1]->scalar.int32;

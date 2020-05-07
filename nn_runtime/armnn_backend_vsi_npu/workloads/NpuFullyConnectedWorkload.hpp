@@ -27,7 +27,7 @@
 #include <backendsCommon/CpuTensorHandle.hpp>
 #include <backendsCommon/Workload.hpp>
 #include <backendsCommon/WorkloadData.hpp>
-#include <FloatingPointConverter.hpp>
+#include <armnnUtils/FloatingPointConverter.hpp>
 #include "TNpuWorkloads.hpp"
 
 #include "FakeBiasSelector.hpp"
@@ -76,7 +76,7 @@ class NpuFullyConnectedFloatWorkload
         } else {
             // Transpose weight
             m_TransposedWeight.reset(new uint8_t[weightInfo.GetNumBytes()]);
-            if (weightInfo.GetDataType() == DataType::QuantisedAsymm8) {
+            if (weightInfo.GetDataType() == DataType::QAsymmU8) {
                 TransposeWeight<uint8_t>((uint8_t*)m_Weight->GetTensor<void>(),
                                          (uint8_t*)m_TransposedWeight.get(),
                                          weightShape);
@@ -164,5 +164,5 @@ class NpuFullyConnectedFloatWorkload
 using NpuFullyConnectedFloat32Workload = NpuFullyConnectedFloatWorkload<armnn::DataType::Float32>;
 using NpuFullyConnectedFloat16Workload = NpuFullyConnectedFloatWorkload<armnn::DataType::Float16>;
 using NpuFullyConnectedUint8Workload =
-    NpuFullyConnectedFloatWorkload<armnn::DataType::QuantisedAsymm8>;
+    NpuFullyConnectedFloatWorkload<armnn::DataType::QAsymmU8>;
 }  // namespace armnn

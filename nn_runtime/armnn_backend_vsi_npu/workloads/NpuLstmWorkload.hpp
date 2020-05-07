@@ -101,5 +101,5 @@ class NpuLstmWorkload : public TNpuWorkload<LstmQueueDescriptor, DataTypes...> {
 };
 using NpuLstmFloat32Workload = NpuLstmWorkload<armnn::DataType::Float32>;
 using NpuLstmFloat16Workload = NpuLstmWorkload<armnn::DataType::Float16>;
-using NpuLstmUint8Workload = NpuLstmWorkload<armnn::DataType::QuantisedAsymm8>;
+using NpuLstmUint8Workload = NpuLstmWorkload<armnn::DataType::QAsymmU8>;
 }  // namespace armnn

@@ -80,5 +80,5 @@ class NpuL2NormalizationWorkload
 using NpuL2NormalizationFloat32Workload = NpuL2NormalizationWorkload<armnn::DataType::Float32>;
 using NpuL2NormalizationFloat16Workload = NpuL2NormalizationWorkload<armnn::DataType::Float16>;
 using NpuL2NormalizationUint8Workload =
-    NpuL2NormalizationWorkload<armnn::DataType::QuantisedAsymm8>;
+    NpuL2NormalizationWorkload<armnn::DataType::QAsymmU8>;
 }  // namespace armnn

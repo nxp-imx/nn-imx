@@ -49,5 +49,5 @@ class NpuConstantWorkload : public TNpuWorkload<ConstantQueueDescriptor, DataTyp
 };
 using NpuConstantFloat32Workload = NpuConstantWorkload<armnn::DataType::Float32>;
 using NpuConstantFloat16Workload = NpuConstantWorkload<armnn::DataType::Float16>;
-using NpuConstantUint8Workload = NpuConstantWorkload<armnn::DataType::QuantisedAsymm8>;
+using NpuConstantUint8Workload = NpuConstantWorkload<armnn::DataType::QAsymmU8>;
 }  // namespace armnn

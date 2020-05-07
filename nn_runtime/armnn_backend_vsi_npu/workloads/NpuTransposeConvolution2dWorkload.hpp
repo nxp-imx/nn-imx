@@ -101,5 +101,5 @@ class NpuTransposeConvolution2dWorkload : public TNpuWorkload<TransposeConvoluti
 };
 using NpuTransposeConvolution2dFloat32Workload = NpuTransposeConvolution2dWorkload<armnn::DataType::Float32>;
 using NpuTransposeConvolution2dFloat16Workload = NpuTransposeConvolution2dWorkload<armnn::DataType::Float16>;
-using NpuTransposeConvolution2dUint8Workload = NpuTransposeConvolution2dWorkload<armnn::DataType::QuantisedAsymm8>;
+using NpuTransposeConvolution2dUint8Workload = NpuTransposeConvolution2dWorkload<armnn::DataType::QAsymmU8>;
 }  // namespace armnn

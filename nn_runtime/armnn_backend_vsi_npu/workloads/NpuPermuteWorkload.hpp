@@ -68,5 +68,5 @@ class NpuPermuteWorkload : public TNpuWorkload<PermuteQueueDescriptor, DataTypes
 };
 using NpuPermuteFloat32Workload = NpuPermuteWorkload<armnn::DataType::Float32>;
 using NpuPermuteFloat16Workload = NpuPermuteWorkload<armnn::DataType::Float16>;
-using NpuPermuteUint8Workload = NpuPermuteWorkload<armnn::DataType::QuantisedAsymm8>;
+using NpuPermuteUint8Workload = NpuPermuteWorkload<armnn::DataType::QAsymmU8>;
 }  // namespace armnn

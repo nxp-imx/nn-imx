@@ -153,5 +153,5 @@ class NpuPooling2dWorkload : public TNpuWorkload<Pooling2dQueueDescriptor, DataT
 };
 using NpuPooling2dFloat32Workload = NpuPooling2dWorkload<armnn::DataType::Float32>;
 using NpuPooling2dFloat16Workload = NpuPooling2dWorkload<armnn::DataType::Float16>;
-using NpuPooling2dUint8Workload = NpuPooling2dWorkload<armnn::DataType::QuantisedAsymm8>;
+using NpuPooling2dUint8Workload = NpuPooling2dWorkload<armnn::DataType::QAsymmU8>;
 }  // namespace armnn

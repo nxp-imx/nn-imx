@@ -24,12 +24,12 @@
 
 #pragma once
 
-#include <FloatingPointConverter.hpp>
+#include <armnnUtils/FloatingPointConverter.hpp>
 #include <backendsCommon/CpuTensorHandle.hpp>
 #include <backendsCommon/Workload.hpp>
 #include <backendsCommon/WorkloadData.hpp>
 #include <boost/log/trivial.hpp>
-#include "Permute.hpp"
+#include <armnnUtils/Permute.hpp>
 #include "TNpuWorkloads.hpp"
 
 #include "FakeBiasSelector.hpp"
@@ -85,7 +85,7 @@ class NpuDepthWiseConvolution2dWorkload
         //    because all constant operand will be permuted from NHWC to NCHW
         if (m_DataLayout == armnn::DataLayout::NHWC) {
             uint32_t dataTypeSize = 4;
-            if (weightInfo.GetDataType() == DataType::QuantisedAsymm8) {
+            if (weightInfo.GetDataType() == DataType::QAsymmU8) {
                 dataTypeSize = 1;
             } else if (weightInfo.GetDataType() == DataType::Float16) {
                 dataTypeSize = 2;
@@ -122,7 +122,7 @@ class NpuDepthWiseConvolution2dWorkload
             const armnn::PermutationVector NCHWToCNHW = {1, 0, 2, 3};
 
             uint32_t dataTypeSize = 4;
-            if (weightInfo.GetDataType() == DataType::QuantisedAsymm8) {
+            if (weightInfo.GetDataType() == DataType::QAsymmU8) {
                 dataTypeSize = 1;
             } else if (weightInfo.GetDataType() == DataType::Float16) {
                 dataTypeSize = 2;
@@ -268,5 +268,5 @@ using NpuDepthWiseConvolution2dFloat32Workload =
 using NpuDepthWiseConvolution2dFloat16Workload =
     NpuDepthWiseConvolution2dWorkload<armnn::DataType::Float16>;
 using NpuDepthWiseConvolution2dUint8Workload =
-    NpuDepthWiseConvolution2dWorkload<armnn::DataType::QuantisedAsymm8>;
+    NpuDepthWiseConvolution2dWorkload<armnn::DataType::QAsymmU8>;
 }  // namespace armnn

@@ -50,5 +50,5 @@ class NpuConcatWorkload : public TNpuWorkload<ConcatQueueDescriptor, DataTypes..
 };
 using NpuConcatFloat32Workload = NpuConcatWorkload<armnn::DataType::Float32>;
 using NpuConcatFloat16Workload = NpuConcatWorkload<armnn::DataType::Float16>;
-using NpuConcatUint8Workload = NpuConcatWorkload<armnn::DataType::QuantisedAsymm8>;
+using NpuConcatUint8Workload = NpuConcatWorkload<armnn::DataType::QAsymmU8>;
 }  // namespace armnn

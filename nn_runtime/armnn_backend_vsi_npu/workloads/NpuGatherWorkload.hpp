@@ -55,5 +55,5 @@ class NpuGatherWorkload : public TNpuWorkload<GatherQueueDescriptor, DataTypes..
 };
 using NpuGatherWorkloadFp32 = NpuGatherWorkload<armnn::DataType::Float32>;
 using NpuGatherWorkloadFp16 = NpuGatherWorkload<armnn::DataType::Float16>;
-using NpuGatherWorkloadU8 = NpuGatherWorkload<armnn::DataType::QuantisedAsymm8>;
+using NpuGatherWorkloadU8 = NpuGatherWorkload<armnn::DataType::QAsymmU8>;
 }  // namespace armnn
