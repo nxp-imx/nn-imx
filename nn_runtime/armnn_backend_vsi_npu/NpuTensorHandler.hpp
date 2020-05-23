@@ -96,7 +96,7 @@ class NpuTensorHandler : public ITensorHandle {
 
     const TensorInfo& GetTensorInfo() const { return m_TensorInfo; }
 
-    const bool IsOperandIdValid() const { return m_OperandId != m_InValidOperandId; }
+    bool IsOperandIdValid() const { return m_OperandId != m_InValidOperandId; }
 
     void SetOperandIdInValid() { m_OperandId = m_InValidOperandId; }
 

@@ -27,7 +27,7 @@
 #include <backendsCommon/CpuTensorHandle.hpp>
 #include <backendsCommon/Workload.hpp>
 #include <backendsCommon/WorkloadData.hpp>
-#include <boost/log/trivial.hpp>
+#include <iostream>
 #include "TNpuWorkloads.hpp"
 
 namespace armnn {
@@ -144,7 +144,7 @@ class NpuPooling2dWorkload : public TNpuWorkload<Pooling2dQueueDescriptor, DataT
             case armnn::PoolingAlgorithm::L2:
                 return nnrt::OperationType::L2_POOL_2D;
             default:
-                BOOST_LOG_TRIVIAL(error) << "Pooling type not support.";
+                std::cout << "Pooling type not support.";
                 break;
         }
 

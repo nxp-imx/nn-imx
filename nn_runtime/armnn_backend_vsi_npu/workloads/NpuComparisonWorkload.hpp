@@ -27,7 +27,7 @@
 #include <backendsCommon/CpuTensorHandle.hpp>
 #include <backendsCommon/Workload.hpp>
 #include <backendsCommon/WorkloadData.hpp>
-#include <boost/log/trivial.hpp>
+#include <iostream>
 #include "TNpuWorkloads.hpp"
 
 namespace armnn {
@@ -67,7 +67,7 @@ class NpuComparisonWorkload : public TNpuWorkload<ComparisonQueueDescriptor, Dat
             }
             // TODO: Add GreaterOrEqual, Less, LessOrEqual, NotEqual
             default:
-                BOOST_LOG_TRIVIAL(error) << "Not support ComparisonOperation.";
+                std::cout << "Not support ComparisonOperation.";
                 assert(false);
         }
     }

@@ -40,6 +40,7 @@ list(APPEND armnnNputBackend_sources
         NpuTensorHandler.hpp
         NpuWorkloadFactory.cpp
         NpuWorkloadFactory.hpp
+        NpuStaticRegistry.cpp
     )
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -Wno-old-style-cast \
         -Wno-sign-conversion -Wno-conversion -Wno-unused-variable")
@@ -84,6 +85,7 @@ target_include_directories(armnnNpuBackend PRIVATE ${PROJECT_SOURCE_DIR}/src/arm
 target_include_directories(armnnNpuBackend PRIVATE ${PROJECT_SOURCE_DIR}/src/armnnUtils)
 target_include_directories(armnnNpuBackend PRIVATE ${PROJECT_SOURCE_DIR}/src/backends)
 target_include_directories(armnnNpuBackend PRIVATE ${PROJECT_SOURCE_DIR}/src/backends/vsi_npu)
+target_include_directories(armnnNpuBackend PRIVATE ${PROJECT_SOURCE_DIR}/src/profiling)
 
 add_subdirectory(workloads)
 

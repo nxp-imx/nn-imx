@@ -40,8 +40,8 @@ list(APPEND armnnNpuBackendWorkloads_sources
     NpuPooling2dWorkload.hpp
     NpuPreluWorkload.hpp
     NpuReshapeWorkload.hpp
-    NpuRsqrtWorkload.hpp
     NpuSoftmaxWorkload.hpp
+    NpuComparisonWorkload.hpp
     NpuSpaceToBatchNdWorkload.hpp
     NpuSpaceToDepthWorkload.hpp
     NpuSplitterWorkload.hpp

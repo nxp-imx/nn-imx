@@ -24,7 +24,7 @@
 
 #include "NpuBackendContext.hpp"
 
-#include <boost/log/trivial.hpp>
+#include <iostream>
 
 namespace armnn
 {

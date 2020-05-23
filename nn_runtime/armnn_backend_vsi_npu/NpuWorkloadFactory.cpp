@@ -62,7 +62,7 @@
 #include "workloads/NpuComparisonWorkload.hpp"
 #include "workloads/NpuGatherWorkload.hpp"
 
-#include <boost/log/trivial.hpp>
+#include <iostream>
 
 
 namespace armnn {

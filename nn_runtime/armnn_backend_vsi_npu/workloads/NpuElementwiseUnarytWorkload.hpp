@@ -27,7 +27,7 @@
 #include <backendsCommon/CpuTensorHandle.hpp>
 #include <backendsCommon/Workload.hpp>
 #include <backendsCommon/WorkloadData.hpp>
-#include <boost/log/trivial.hpp>
+#include <iostream>
 #include "TNpuWorkloads.hpp"
 
 namespace armnn {
@@ -52,7 +52,7 @@ class NpuElementwiseUnarytWorkload
             }
             // TODO: Add Abs, Exp, Sqrt and Neg
             default:
-                BOOST_LOG_TRIVIAL(error) << "Not support ElementwiseUnaryOperation.";
+                std::cout << "Not support ElementwiseUnaryOperation.";
                 assert(false);
 
         }

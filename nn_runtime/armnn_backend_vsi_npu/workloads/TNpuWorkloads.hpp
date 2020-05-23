@@ -33,7 +33,7 @@
 
 #include "NpuModelShell.hpp"
 
-#include <boost/log/trivial.hpp>
+#include <iostream>
 #include <type_traits>
 
 namespace armnn {
@@ -313,7 +313,7 @@ class TNpuWorkload : public Base_t<QueueDescriptor, DataTypes...>{
         nnrt::op::OperationPtr op =
             m_LocalModel->addOperation(opType, inOperands, numIn, outOperands, numOut, &index);
         if (!op) {
-            BOOST_LOG_TRIVIAL(error) << "Out of memory.";
+            std::cout << "Out of memory.";
         }
 
         // op->setOperandLayout(); TODO: setup layout

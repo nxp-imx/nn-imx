@@ -27,7 +27,7 @@
 #include <backendsCommon/CpuTensorHandle.hpp>
 #include <backendsCommon/Workload.hpp>
 #include <backendsCommon/WorkloadData.hpp>
-#include <boost/log/trivial.hpp>
+#include <iostream>
 #include <armnnUtils/FloatingPointConverter.hpp>
 #include "TNpuWorkloads.hpp"
 

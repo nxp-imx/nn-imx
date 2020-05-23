@@ -30,7 +30,7 @@
 #include <set>
 #include <type_traits>
 #include <utility>
-#include <boost/log/trivial.hpp>
+#include <iostream>
 
 namespace adaption {
 namespace utils {
@@ -243,7 +243,7 @@ void ModelShell::Execute() {
 
     if (0 != errCode){
         assert(false);
-        BOOST_LOG_TRIVIAL(fatal) << "Execution Model failed";
+        std::cout << "Execution Model failed";
     }
 }
 }

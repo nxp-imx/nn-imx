@@ -27,7 +27,7 @@
 #include <backendsCommon/CpuTensorHandle.hpp>
 #include <backendsCommon/Workload.hpp>
 #include <backendsCommon/WorkloadData.hpp>
-#include <boost/log/trivial.hpp>
+#include <iostream>
 #include "TNpuWorkloads.hpp"
 
 namespace armnn {
@@ -89,7 +89,7 @@ class NpuActivationWorkload : public TNpuWorkload<ActivationQueueDescriptor, Dat
                         nnrt::OperationType::RELU6, inSize, inPtr, outSize, outPtr);
 
                 } else {
-                    BOOST_LOG_TRIVIAL(error) << "Unsupported BoundedReLU.";
+                    std::cout << "Unsupported BoundedReLU.";
                     return;
                 }
                 break;
@@ -122,7 +122,7 @@ class NpuActivationWorkload : public TNpuWorkload<ActivationQueueDescriptor, Dat
                 }
                 break;
             default:
-                BOOST_LOG_TRIVIAL(error) << "Unsupported Activation Function.";
+                std::cout << "Unsupported Activation Function.";
                 return;
         }
     }

@@ -27,7 +27,7 @@
 #include <backendsCommon/CpuTensorHandle.hpp>
 #include <backendsCommon/Workload.hpp>
 #include <backendsCommon/WorkloadData.hpp>
-#include <boost/log/trivial.hpp>
+#include <iostream>
 #include "TNpuWorkloads.hpp"
 
 namespace armnn {
@@ -44,7 +44,7 @@ class NpuSplitterWorkload : public TNpuWorkload<SplitterQueueDescriptor, DataTyp
         auto output0Shape =
             dynamic_cast<const NpuTensorHandler*>(descriptor.m_Outputs[0])->GetShape();
         if (inputShape.GetNumDimensions() != output0Shape.GetNumDimensions()) {
-            BOOST_LOG_TRIVIAL(error) << "Input and output dimension are mismatched.";
+            std::cout << "Input and output dimension are mismatched.";
             assert(false);
         }
         if (descriptor.m_Outputs.size() > 1) {

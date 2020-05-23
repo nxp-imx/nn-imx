@@ -27,7 +27,7 @@
 #include <string>
 #include <armnn/TypesUtils.hpp>
 
-#include <boost/log/trivial.hpp>
+#include <iostream>
 
 namespace armnn
 {
@@ -124,7 +124,7 @@ void NpuTensorHandler::getMemoryReady() const {
         if (nullptr == m_ExternalMem) {
             m_Memory.reset(new uint8_t[m_TensorInfo.GetNumBytes()]);
             // Keep this track random caculation error issue
-            BOOST_LOG_TRIVIAL(info) << "allocated memory at" << m_Memory.get()
+            std::cout
                                     << ", size = " << m_TensorInfo.GetNumBytes();
         }
         return;
@@ -135,10 +135,10 @@ void NpuTensorHandler::getMemoryReady() const {
         // "Warn-Start NN execution"
         if (!m_ModelShell) {
             assert(false);
-            BOOST_LOG_TRIVIAL(debug) << "Model prepare failed: check previous log for error log";
+            std::cout << "Model prepare failed: check previous log for error log";
             return;
         }
-        BOOST_LOG_TRIVIAL(info) << "Warn-Start NN execution" ;
+        std::cout << "Warn-Start NN execution" ;
         m_ModelShell->Execute();
         return;
     }
@@ -151,13 +151,13 @@ void NpuTensorHandler::getMemoryReady() const {
             m_ModelShell.reset(new ModelShell(std::move(mergedModel)));
             if (!m_ModelShell) {
                 assert(false);
-                BOOST_LOG_TRIVIAL(debug)
+                std::cout
                     << "Model prepare failed: check previous log for error log";
                 return;
             }
         }
 
-        BOOST_LOG_TRIVIAL(info) << "Warn-Start NN execution" ;
+        std::cout << "Warn-Start NN execution" ;
 
         m_ModelShell->Execute();
         return;
