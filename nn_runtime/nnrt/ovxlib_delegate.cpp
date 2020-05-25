@@ -67,6 +67,9 @@ vsi_nn_activation_e mapActivation(const FusedType& ftype) {
     vsi_nn_activation_e rValue = VSI_NN_ACT_NONE;
 
     switch (ftype) {
+        case FusedType::NONE:
+            rValue = VSI_NN_ACT_NONE;
+            break;
         case FusedType::RELU1:
             NNRT_LOGE_PRINT("RELU1 Not supported, use RELU in case crash");
             rValue = VSI_NN_ACT_RELU;
