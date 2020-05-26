@@ -163,6 +163,8 @@ DEF_KERNEL_INITIALIZER(_matrix_mul_initializer)
     float       dstScale   = 0;
 
     uint32_t pack_key = 0;
+    int32_t  ac2zero = 0;
+    int32_t  bc2zero = 0;
 
     attr[0] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[0] );
     CHECK_PTR_FAIL_GOTO( attr[0], "Create tensor attr buffer fail.", OnError );
@@ -232,6 +234,19 @@ DEF_KERNEL_INITIALIZER(_matrix_mul_initializer)
     else if( attr[2]->quant == VSI_NN_KERNEL_QUANT_NONE )
     {
         dstScale = 1;
+    }
+
+    if((attr[0]->shape->size > attr[1]->shape->size) ||
+        (attr[0]->shape->data[2] > attr[1]->shape->data[2]
+    && attr[0]->shape->size > 2 && attr[1]->shape->size > 2))
+    {
+        bc2zero = 1;
+    }
+    else if((attr[1]->shape->size > attr[0]->shape->size) ||
+        (attr[1]->shape->data[2] > attr[0]->shape->data[2]
+    && attr[0]->shape->size > 2 && attr[1]->shape->size > 2))
+    {
+        ac2zero = 1;
     }
 
     width = attr[2]->shape->data[0];
@@ -413,6 +428,9 @@ DEF_KERNEL_INITIALIZER(_matrix_mul_initializer)
         default:
             break;
         }
+        status = vsi_nn_kernel_gpu_add_param( node, "ac2zero", &ac2zero );
+        status |= vsi_nn_kernel_gpu_add_param( node, "bc2zero", &bc2zero );
+        CHECK_STATUS_FAIL_GOTO(status, OnError );
     }
 #undef _PACK_SELECT_KEY
 

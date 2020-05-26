@@ -4,6 +4,9 @@ _viv_uniform int output_ZP;
 _viv_uniform float outputScale;
 _viv_uniform VXC_512Bits uniConvertInt32toUint8_2x8;
 
+_viv_uniform int ac2zero;
+_viv_uniform int bc2zero;
+
 __kernel void gemm_F16F16toF16(image2d_array_t inputA,
                         image2d_array_t inputB,
                         image2d_array_t output,
@@ -18,8 +21,8 @@ __kernel void gemm_F16F16toF16(image2d_array_t inputA,
     half4 valA, valB, valC;
     vxc_short8 srcA, srcB, outC, tmpA, tmpB;
 
-    int4 coord_a = (int4)(0, gidy, get_global_id(2), 0);
-    int4 coord_b = (int4)(get_global_id(0), 0, get_global_id(2), 0);
+    int4 coord_a = (int4)(0, gidy, (ac2zero ? 0 : get_global_id(2)), 0);
+    int4 coord_b = (int4)(get_global_id(0), 0, (bc2zero ? 0 : get_global_id(2)), 0);
 
     vxc_float4 sum0 = (vxc_float4)(0);
     vxc_float4 sum1 = (vxc_float4)(0);
@@ -115,8 +118,8 @@ __kernel void gemm_F16F16toU8(image2d_array_t inputA,
     half4 valA, valB, valC;
     vxc_short8 srcA, srcB, tmpA, tmpB;
 
-    int4 coord_a = (int4)(0, gidy, get_global_id(2), 0);
-    int4 coord_b = (int4)(get_global_id(0), 0, get_global_id(2), 0);
+    int4 coord_a = (int4)(0, gidy, (ac2zero ? 0 : get_global_id(2)), 0);
+    int4 coord_b = (int4)(get_global_id(0), 0, (bc2zero ? 0 : get_global_id(2)), 0);
 
     vxc_float4 sum0 = (vxc_float4)(0);
     vxc_float4 sum1 = (vxc_float4)(0);
@@ -210,8 +213,8 @@ __kernel void gemm_F32F32toF32(image2d_array_t inputA,
     uint gidx = get_global_id(0);
     uint gidy = get_global_id(1);
 
-    int4 coord_a = (int4)(0, gidy, get_global_id(2), 0);
-    int4 coord_b = (int4)(gidx, 0, get_global_id(2), 0);
+    int4 coord_a = (int4)(0, gidy, (ac2zero ? 0 : get_global_id(2)), 0);
+    int4 coord_b = (int4)(gidx, 0, (bc2zero ? 0 : get_global_id(2)), 0);
 
     vxc_float4 sum0 = (vxc_float4)(0);
     vxc_float4 sum1 = (vxc_float4)(0);

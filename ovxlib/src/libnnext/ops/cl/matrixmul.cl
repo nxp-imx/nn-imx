@@ -4,7 +4,9 @@ __kernel void gemm_F32F32toF32_2D(
     __write_only image2d_t  output,
     int M,
     int K,
-    int N
+    int N,
+    int ac2zero,
+    int bc2zero
     )
 {
     int gidx = get_global_id(0);
@@ -40,14 +42,16 @@ __kernel void gemm_F32F32toF32_3D(
     __write_only image2d_array_t  output,
     int M,
     int K,
-    int N
+    int N,
+    int ac2zero,
+    int bc2zero
     )
 {
     int gidx = get_global_id(0);
     int gidy = get_global_id(1);
 
-    int4 coord_a = (int4)(0, gidy, get_global_id(2), 0);
-    int4 coord_b = (int4)(gidx, 0, get_global_id(2), 0);
+    int4 coord_a = (int4)(0, gidy, (ac2zero ? 0 : get_global_id(2)), 0);
+    int4 coord_b = (int4)(gidx, 0, (bc2zero ? 0 : get_global_id(2)), 0);
 
     float4 sum = (float4)(0);
 

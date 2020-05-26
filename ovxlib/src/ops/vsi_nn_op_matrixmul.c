@@ -85,14 +85,8 @@ static vsi_bool op_check
     vsi_nn_tensor_t ** outputs
     )
 {
-    uint32_t i = 0;
     vx_bool status = TRUE;
 
-    if(inputs[0]->attr.dim_num != inputs[1]->attr.dim_num)
-    {
-         VSILOGE("input tensors have different dim_num");
-         return FALSE;
-    }
     if (self->nn_param.matrixmul.transpose[0] == FALSE
         && self->nn_param.matrixmul.transpose[1] == FALSE
         && inputs[0]->attr.size[0] != inputs[1]->attr.size[1])
@@ -100,14 +94,29 @@ static vsi_bool op_check
          VSILOGE("1st input tensor's size[0] is not equal to 2nd input tensor's size[1]");
          return FALSE;
     }
-    for (i = 2; i < inputs[0]->attr.dim_num; i++)
+    else if (self->nn_param.matrixmul.transpose[0] == TRUE
+        && self->nn_param.matrixmul.transpose[1] == FALSE
+        && inputs[0]->attr.size[1] != inputs[1]->attr.size[1])
     {
-        if (inputs[0]->attr.size[i] != inputs[1]->attr.size[i])
-        {
-            VSILOGE("1st input tensor's size[%d] is not equal to 2nd input tensor's size[%d]", i , i);
-            return FALSE;
-        }
+         VSILOGE("1st input tensor's size[1] is not equal to 2nd input tensor's size[1]");
+         return FALSE;
     }
+    else if (self->nn_param.matrixmul.transpose[0] == FALSE
+        && self->nn_param.matrixmul.transpose[1] == TRUE
+        && inputs[0]->attr.size[0] != inputs[1]->attr.size[0])
+    {
+         VSILOGE("1st input tensor's size[0] is not equal to 2nd input tensor's size[0]");
+         return FALSE;
+    }
+
+    if(inputs[0]->attr.dim_num > 2 && inputs[1]->attr.dim_num > 2
+        && inputs[0]->attr.size[2] != 1 && inputs[1]->attr.size[2] != 1
+        && inputs[0]->attr.size[2] != inputs[1]->attr.size[2])
+    {
+         VSILOGE("illegal inputs shape");
+         return FALSE;
+    }
+
     return status;
 } /* op_check() */
 
@@ -121,7 +130,8 @@ static vsi_bool op_setup
     uint32_t i = 0;
     if( VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num )
     {
-        outputs[0]->attr.dim_num = inputs[0]->attr.dim_num;
+        outputs[0]->attr.dim_num = vsi_nn_max(inputs[0]->attr.dim_num, inputs[1]->attr.dim_num);
+
         if (node->nn_param.matrixmul.transpose[0] == FALSE
             && node->nn_param.matrixmul.transpose[1] == FALSE)
         {
@@ -145,9 +155,34 @@ static vsi_bool op_setup
             VSILOGE("Not support transpose A and B both TRUE!(MATRIXMUL) at [%s : %d]\n", __FILE__, __LINE__);
             return FALSE;
         }
-        for (i = 2; i < inputs[0]->attr.dim_num; i++)
+
+        if(inputs[0]->attr.dim_num > inputs[1]->attr.dim_num)
         {
-            outputs[0]->attr.size[i] = inputs[0]->attr.size[i];
+            for (i = 2; i < inputs[0]->attr.dim_num; i++)
+            {
+                outputs[0]->attr.size[i] = inputs[0]->attr.size[i];
+            }
+        }
+        else if(inputs[1]->attr.dim_num > inputs[0]->attr.dim_num)
+        {
+            for (i = 2; i < inputs[1]->attr.dim_num; i++)
+            {
+                outputs[0]->attr.size[i] = inputs[1]->attr.size[i];
+            }
+        }
+        else if(inputs[0]->attr.size[2] >= inputs[1]->attr.size[2])
+        {
+            for (i = 2; i < inputs[0]->attr.dim_num; i++)
+            {
+                outputs[0]->attr.size[i] = inputs[0]->attr.size[i];
+            }
+        }
+        else
+        {
+            for (i = 2; i < inputs[1]->attr.dim_num; i++)
+            {
+                outputs[0]->attr.size[i] = inputs[1]->attr.size[i];
+            }
         }
     }
     return TRUE;

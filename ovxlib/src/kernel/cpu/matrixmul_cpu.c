@@ -110,17 +110,34 @@ DEF_KERNEL_EXECUTOR(_matrixmul_exec)
     strides1[1] = transposeB? K:1;
 
     {
-        int32_t batch = attr[2]->shape->size > 3 ? attr[2]->shape->data[3] : 1;
-        int32_t depth = attr[2]->shape->size > 2 ? attr[2]->shape->data[2] : 1;
+        int32_t batch   = attr[2]->shape->size > 3 ? attr[2]->shape->data[3] : 1;
+        int32_t depth   = attr[2]->shape->size > 2 ? attr[2]->shape->data[2] : 1;
+        int32_t a_depth = attr[0]->shape->size > 2 ? attr[0]->shape->data[2] : 1;
+        int32_t b_depth = attr[1]->shape->size > 2 ? attr[1]->shape->data[2] : 1;
         int32_t b = 0, c = 0, j = 0, y = 0;
         int32_t offsetA = 0, offsetB = 0, offsetD = 0;
+        int32_t ac2zero = 1;
+        int32_t bc2zero = 1;
+
+        if((attr[0]->shape->size > attr[1]->shape->size) ||
+            (attr[0]->shape->data[2] > attr[1]->shape->data[2]
+            && attr[0]->shape->size > 2 && attr[1]->shape->size > 2))
+        {
+            bc2zero = 0;
+        }
+        else if((attr[1]->shape->size > attr[0]->shape->size) ||
+            (attr[1]->shape->data[2] > attr[0]->shape->data[2]
+            && attr[0]->shape->size > 2 && attr[1]->shape->size > 2))
+        {
+            ac2zero = 0;
+        }
 
         for(b = 0; b < batch; b++)
         {
             for(c = 0; c < depth; c++)
             {
-                offsetA = c * M * K + b * M * K * depth;
-                offsetB = c * N * K + b * N * K * depth;
+                offsetA = c * M * K * ac2zero + b * M * K * a_depth;
+                offsetB = c * N * K * bc2zero + b * N * K * b_depth;
                 offsetD = c * M * N + b * M * N * depth;
                 for(i = 0 ; i < M; i++)
                 {

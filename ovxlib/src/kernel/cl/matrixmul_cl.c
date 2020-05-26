@@ -92,6 +92,8 @@ static vx_param_description_t _matrixmul_kernel_param_def[] =
     {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
 };
 
 #define _MATRIXMUL_PARAM_NUM          _cnt_of_array(_matrixmul_kernel_param_def)
@@ -220,7 +222,9 @@ static vsi_nn_kernel_node_t _setup
     uint32_t M = inputs[0]->attr.size[1];
     uint32_t K = inputs[0]->attr.size[0];
     uint32_t N = inputs[1]->attr.size[0];
-    uint32_t depth = inputs[0]->attr.dim_num > 2 ? inputs[0]->attr.size[2] : 1;
+    uint32_t depth = outputs[0]->attr.dim_num > 2 ? outputs[0]->attr.size[2] : 1;
+    uint32_t ac2zero = 0;
+    uint32_t bc2zero = 0;
 
     if( !vsi_nn_kernel_gpu_check_shape( (int32_t*)outputs[0]->attr.size,
                 outputs[0]->attr.dim_num ) )
@@ -239,6 +243,19 @@ static vsi_nn_kernel_node_t _setup
         M = inputs[0]->attr.size[0];
     }
 
+    if((inputs[0]->attr.dim_num > inputs[1]->attr.dim_num) ||
+       (inputs[0]->attr.size[2] > inputs[1]->attr.size[2]
+            && inputs[0]->attr.dim_num > 2 && inputs[1]->attr.dim_num > 2))
+    {
+        bc2zero = 1;
+    }
+    else if((inputs[1]->attr.dim_num > inputs[0]->attr.dim_num) ||
+       (inputs[1]->attr.size[2] > inputs[0]->attr.size[2]
+            && inputs[0]->attr.dim_num > 2 && inputs[1]->attr.dim_num > 2))
+    {
+        ac2zero = 1;
+    }
+
     status = _query_kernel( kernel, inputs, outputs, depth, transposeA );
     if( VSI_SUCCESS == status)
     {
@@ -252,12 +269,16 @@ static vsi_nn_kernel_node_t _setup
             node_params[index++] = vsi_nn_kernel_scalar_create( graph, I32, &M );
             node_params[index++] = vsi_nn_kernel_scalar_create( graph, I32, &K );
             node_params[index++] = vsi_nn_kernel_scalar_create( graph, I32, &N );
+            node_params[index++] = vsi_nn_kernel_scalar_create( graph, I32, &ac2zero );
+            node_params[index++] = vsi_nn_kernel_scalar_create( graph, I32, &bc2zero );
             /* Pass parameters to node. */
             status  = vsi_nn_kernel_node_pass_param( node, node_params, _MATRIXMUL_PARAM_NUM );
             CHECK_STATUS(status);
             vsi_nn_kernel_scalar_release( &node_params[3] );
             vsi_nn_kernel_scalar_release( &node_params[4] );
             vsi_nn_kernel_scalar_release( &node_params[5] );
+            vsi_nn_kernel_scalar_release( &node_params[6] );
+            vsi_nn_kernel_scalar_release( &node_params[7] );
         }
     }
     return node;

@@ -9,6 +9,9 @@ _viv_uniform float outputScale;
 _viv_uniform VXC_512Bits uniConvertUint8SubZpToFp32_4x4;
 _viv_uniform VXC_512Bits uniConvertInt32toUint8_2x8;
 
+_viv_uniform int ac2zero;
+_viv_uniform int bc2zero;
+
 #define GEMM_QINT_F16_TO_QINT(src0_type_name, read_type) \
 __kernel void gemm_##src0_type_name##F16to##src0_type_name( \
                     image2d_array_t inputA, \
@@ -21,8 +24,8 @@ __kernel void gemm_##src0_type_name##F16to##src0_type_name( \
     half4 valB; \
     read_type srcA, outC; \
  \
-    int4 coord_a = (int4)(0, gidy, get_global_id(2), 0); \
-    int4 coord_b = (int4)(get_global_id(0), 0, get_global_id(2), 0); \
+    int4 coord_a = (int4)(0, gidy, (ac2zero ? 0 : get_global_id(2)), 0); \
+    int4 coord_b = (int4)(get_global_id(0), 0, (bc2zero ? 0 : get_global_id(2)), 0); \
  \
     vxc_float4 sum0 = (vxc_float4)(0), sum1 = (vxc_float4)(0); \
     vxc_float4 sum2 = (vxc_float4)(0), sum3 = (vxc_float4)(0); \
@@ -122,8 +125,8 @@ __kernel void gemm_##src0_type_name##src0_type_name##toF16( \
     half4 valC; \
     vxc_short8 outC; \
  \
-    int4 coord_a = (int4)(0, gidy, get_global_id(2), 0); \
-    int4 coord_b = (int4)(get_global_id(0), 0, get_global_id(2), 0); \
+    int4 coord_a = (int4)(0, gidy, (ac2zero ? 0 : get_global_id(2)), 0); \
+    int4 coord_b = (int4)(get_global_id(0), 0, (bc2zero ? 0 : get_global_id(2)), 0); \
  \
     vxc_float4 sum0 = (vxc_float4)(0); \
     vxc_float4 sum1 = (vxc_float4)(0); \

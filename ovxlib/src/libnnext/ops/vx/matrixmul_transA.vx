@@ -9,6 +9,9 @@ _viv_uniform float outputScale;
 _viv_uniform VXC_512Bits uniConvertUint8SubZpToFp32_4x4;
 _viv_uniform VXC_512Bits uniConvertInt32toUint8_2x8;
 
+_viv_uniform int ac2zero;
+_viv_uniform int bc2zero;
+
 #define GEMM_TRANSA_QINT(src0_type_name, src1_type_name, dst_type_name, read0_type, read1_type, write_type) \
 __kernel void gemm_transa_##src0_type_name##src1_type_name##to##dst_type_name( \
                         image2d_array_t inputA, \
@@ -25,8 +28,8 @@ __kernel void gemm_transa_##src0_type_name##src1_type_name##to##dst_type_name( \
     read1_type srcB; \
     write_type outC; \
  \
-    int4 coord_a = (int4)(gidy, 0, get_global_id(2), 0); \
-    int4 coord_b = (int4)(get_global_id(0), 0, get_global_id(2), 0); \
+    int4 coord_a = (int4)(gidy, 0, (ac2zero ? 0 : get_global_id(2)), 0); \
+    int4 coord_b = (int4)(get_global_id(0), 0, (bc2zero ? 0 : get_global_id(2)), 0); \
  \
     vxc_float4 sum0 = (vxc_float4)(0); \
     vxc_float4 sum1 = (vxc_float4)(0); \
@@ -97,8 +100,8 @@ __kernel void gemm_transa_##src0_type_name##F16to##src0_type_name( \
     vxc_short8 srcB, tmpB; \
     half4 valB; \
  \
-    int4 coord_a = (int4)(gidy, 0, get_global_id(2), 0); \
-    int4 coord_b = (int4)(get_global_id(0), 0, get_global_id(2), 0); \
+    int4 coord_a = (int4)(gidy, 0, (ac2zero ? 0 : get_global_id(2)), 0); \
+    int4 coord_b = (int4)(get_global_id(0), 0, (bc2zero ? 0 : get_global_id(2)), 0); \
  \
     vxc_float4 sum0 = (vxc_float4)(0); \
     vxc_float4 sum1 = (vxc_float4)(0); \
@@ -168,8 +171,8 @@ __kernel void gemm_transa_F16F16toF16(
     half4 valA, valB, valC;
     vxc_short8 srcA, srcB, outC, tmpA, tmpB;
 
-    int4 coord_a = (int4)(gidy, 0, get_global_id(2), 0);
-    int4 coord_b = (int4)(get_global_id(0), 0, get_global_id(2), 0);
+    int4 coord_a = (int4)(gidy, 0, (ac2zero ? 0 : get_global_id(2)), 0);
+    int4 coord_b = (int4)(get_global_id(0), 0, (bc2zero ? 0 : get_global_id(2)), 0);
 
     vxc_float4 sum0 = (vxc_float4)(0);
     vxc_float4 sum1 = (vxc_float4)(0);
