@@ -656,6 +656,7 @@
     <ClInclude Include="include\ops\vsi_nn_op_grucell_activation_internal.h" />
     <ClInclude Include="include\ops\vsi_nn_op_linear.h" />
     <ClInclude Include="include\ops\vsi_nn_op_batchnorm_single.h" />
+    <ClInclude Include="include\ops\vsi_nn_op_squeeze.h" />
     <ClInclude Include="include\ops\vsi_nn_op_tensorstackconcat.h" />
     <ClInclude Include="include\ops\vsi_nn_op_tile.h" />
     <ClInclude Include="include\ops\vsi_nn_op_topk.h" />
@@ -1548,6 +1549,9 @@
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_batchnorm_single.c">
       <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_batchnorm_single.o</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_squeeze.c" >
+      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_squeeze.o</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_variable.c">
       <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_variable.o</ObjectFileName>

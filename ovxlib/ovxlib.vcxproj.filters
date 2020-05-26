@@ -132,6 +132,9 @@
     <ClInclude Include="include\ops\vsi_nn_op_batchnorm_single.h">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_squeeze.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
     <ClInclude Include="include\client\vsi_nn_vxkernel.h">
       <Filter>Header Files\client</Filter>
     </ClInclude>
@@ -708,6 +711,9 @@
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_batchnorm_single.c">
+      <Filter>Source Files\ops</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_squeeze.c">
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\client\vsi_nn_vxkernel.c">
