@@ -113,14 +113,14 @@ DEF_KERNEL_EXECUTOR(_compute)
 
     for (i = 0; i < (uint32_t)axis; i++)
     {
-        innerSize *= out_attr[0]->shape->data[i];
+        innerSize *= in_attr[0]->shape->data[i];
     }
 
-    axisSize = out_attr[0]->shape->data[axis];
+    axisSize = in_attr[0]->shape->data[axis];
 
-    for (i = (uint32_t)axis + 1; i < out_attr[0]->shape->size; i++)
+    for (i = (uint32_t)axis + 1; i < in_attr[0]->shape->size; i++)
     {
-        outerSize *= out_attr[0]->shape->data[i];
+        outerSize *= in_attr[0]->shape->data[i];
     }
 
     for ( outer = 0; outer < outerSize; ++outer)

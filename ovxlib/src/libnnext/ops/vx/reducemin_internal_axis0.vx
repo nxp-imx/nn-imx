@@ -25,11 +25,11 @@ _viv_uniform VXC_512Bits uniPackMaxData_2x8;
         coord.x += 32; \
         vert_min_fun(val, img_val0, img_val1, val, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \
         vert_min_fun(val, img_val2, img_val3, val, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \
-        horz_min_fun(val, val, VXC_MODIFIER(0, 5, 0, VXC_RM_TowardZero, 0)); \
-        VXC_DP2x8(val, val, val, VXC_MODIFIER(0, 2, 0, VXC_RM_TowardZero, 0), uniPackMaxData_2x8); \
-        horz_min_fun(val, val, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \
     } \
-    while(coord.x < (axisSize + 16));
+    while(coord.x < (axisSize + 16)); \
+    horz_min_fun(val, val, VXC_MODIFIER(0, 5, 0, VXC_RM_TowardZero, 0)); \
+    VXC_DP2x8(val, val, val, VXC_MODIFIER(0, 2, 0, VXC_RM_TowardZero, 0), uniPackMaxData_2x8); \
+    horz_min_fun(val, val, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));
 
 #define REDUCEMIN_PROCESS_AXIS0_SAVE_SAME(save_type, write_fun) \
     save_type dst; \

@@ -15738,11 +15738,11 @@ _viv_uniform VXC_512Bits uniPackMaxData_2x8;\n\
         coord.x += 32; \\\n\
         vert_min_fun(val, img_val0, img_val1, val, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
         vert_min_fun(val, img_val2, img_val3, val, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
-        horz_min_fun(val, val, VXC_MODIFIER(0, 5, 0, VXC_RM_TowardZero, 0)); \\\n\
-        VXC_DP2x8(val, val, val, VXC_MODIFIER(0, 2, 0, VXC_RM_TowardZero, 0), uniPackMaxData_2x8); \\\n\
-        horz_min_fun(val, val, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
     } \\\n\
-    while(coord.x < (axisSize + 16));\n\
+    while(coord.x < (axisSize + 16)); \\\n\
+    horz_min_fun(val, val, VXC_MODIFIER(0, 5, 0, VXC_RM_TowardZero, 0)); \\\n\
+    VXC_DP2x8(val, val, val, VXC_MODIFIER(0, 2, 0, VXC_RM_TowardZero, 0), uniPackMaxData_2x8); \\\n\
+    horz_min_fun(val, val, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
 \n\
 #define REDUCEMIN_PROCESS_AXIS0_SAVE_SAME(save_type, write_fun) \\\n\
     save_type dst; \\\n\
@@ -19091,11 +19091,12 @@ do\\\n\
     _viv_asm(COPY, val1, src1, 16);\\\n\
     _viv_asm(COPY, val2, src2, 16);\\\n\
     maxVal = max(val0, val1);\\\n\
-    maxVal = max(val2, maxVal);\\\n\
     minVal = min(val0, val1);\\\n\
+    minVal = maxVal < 0 ? maxVal : minVal; \\\n\
+    maxVal = max(val2, minVal);\\\n\
     minVal = min(val2, minVal);\\\n\
-    maxVal = maxVal >= 0 ? minVal : maxVal;\\\n\
-    _viv_asm(COPY, dst, maxVal, 16); \\\n\
+    minVal = maxVal < 0 ? maxVal : minVal; \\\n\
+    _viv_asm(COPY, dst, minVal, 16); \\\n\
 } while (0)\n\
 \n\
 #define VXC_VertMax3_Integer(dst, src0, src1, src2, info)\\\n\
