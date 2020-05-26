@@ -222,6 +222,17 @@ DEF_KERNEL_INITIALIZER(_upsample_initializer)
         dst_dtype = F16;
     }
 
+    if ((F16 == src_dtype) && (F16 == dst_dtype))
+    {
+        src_dtype  = I16;
+        dst_dtype  = I16;
+    }
+
+    if (I8 == axis_dtype)
+    {
+        axis_dtype = U8;
+    }
+
     if (I8 == src_dtype || U8 == src_dtype
        || (F16 == src_dtype && U8  == dst_dtype && U8  == axis_dtype))
     {
@@ -542,9 +553,21 @@ DEF_KERNEL_INITIALIZER(_upsample_initializer)
             0x00000001, 0x00000001, 0x00000001, 0x00000001,
             0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
         }, GPU_DP_TYPE_16};
+        gpu_dp_inst_t ucharMulShort_2x8 = {{
+            0x11111111, // TCfg
+            0x00000000, // ASelt
+            0x03020100, 0x07060504, // ABin
+            0x11111111, // BSelt
+            0x03020100, 0x07060504, // BBin
+            0x00000400, // AccumType, ConstantType, and PostShift
+            0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
+        }, GPU_DP_TYPE_16};
 
         if(I16 == src_dtype && I16 == dst_dtype )
         {
+            status = vsi_nn_kernel_gpu_add_param(node, "ucharMulShort_2x8",
+                                                    &ucharMulShort_2x8);
             if (input_fl != output_fl || I16 == axis_dtype)
             {
                 if(input_fl > output_fl)
@@ -562,10 +585,10 @@ DEF_KERNEL_INITIALIZER(_upsample_initializer)
                     }
                 }
 
-                status = vsi_nn_kernel_gpu_add_param(node, "uniQuantInOutInt16_2x8",
+                status |= vsi_nn_kernel_gpu_add_param(node, "uniQuantInOutInt16_2x8",
                                                      &uniQuantInOutInt16_2x8);
-                CHECK_STATUS_FAIL_GOTO(status, final );
             }
+            CHECK_STATUS_FAIL_GOTO(status, final );
         }
         else if(I16 == src_dtype && F16 == dst_dtype)
         {

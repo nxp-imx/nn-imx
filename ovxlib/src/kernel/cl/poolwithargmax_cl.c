@@ -65,9 +65,13 @@ typedef struct
 static const _kernel_map_type _poolwithargmax_kernel_map[] =
 {
     PACK_KERNEL_MAP( F32, F32, U8 ),
+    PACK_KERNEL_MAP( F32, U8,  U8 ),
+    PACK_KERNEL_MAP( U8,  F32, U8 ),
     PACK_KERNEL_MAP( U8,  U8,  U8 ),
     PACK_KERNEL_MAP( I32, I32, U8 ),
     PACK_KERNEL_MAP_2D( F32, F32, U8 ),
+    PACK_KERNEL_MAP_2D( F32, U8,  U8 ),
+    PACK_KERNEL_MAP_2D( U8,  F32, U8 ),
     PACK_KERNEL_MAP_2D( U8,  U8,  U8 ),
     PACK_KERNEL_MAP_2D( I32, I32, U8 ),
 };

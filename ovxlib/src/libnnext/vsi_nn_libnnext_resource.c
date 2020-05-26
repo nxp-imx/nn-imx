@@ -17508,6 +17508,7 @@ static const char upsample_I16_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 //--------------------------unpooling-------------------------\n\
 _viv_uniform VXC_512Bits uniQuantInOutInt16_2x8;\n\
+_viv_uniform VXC_512Bits ucharMulShort_2x8;\n\
 \n\
 #define UPSAMPLE_I16_U8TO_I16_SAME_PROCESS(read_fun, write_fun) \\\n\
     vxc_short4 din; \\\n\
@@ -17527,14 +17528,12 @@ _viv_uniform VXC_512Bits uniQuantInOutInt16_2x8;\n\
     constAxis = (vxc_uchar8)(0, 1, 0, 1, 0, 1, 0, 1); \\\n\
     VXC_Clamp(axisData, axisInExp, constAxis, constAxis, VXC_MODIFIER_CLAMP(0, 7, 0, 1)); \\\n\
     axisData &= (vxc_uchar8)(1); \\\n\
-    _viv_asm(CONV, axisData_short, axisData); \\\n\
-    dout = axisData_short == 1 ? dinExp : 0; \\\n\
+    VXC_DP2x8(dout, axisData, dinExp, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), ucharMulShort_2x8); \\\n\
     write_fun(dataOut, coordOut, dout, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
     constAxis = (vxc_uchar8)(2, 3, 2, 3, 2, 3, 2, 3); \\\n\
     VXC_Clamp(axisData, axisInExp, constAxis, constAxis, VXC_MODIFIER_CLAMP(0, 7, 0, 1)); \\\n\
     axisData &= (vxc_uchar8)(1); \\\n\
-    _viv_asm(CONV, axisData_short, axisData); \\\n\
-    dout = axisData_short == 1 ? dinExp : 0; \\\n\
+    VXC_DP2x8(dout, axisData, dinExp, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), ucharMulShort_2x8); \\\n\
     coordOut.y += 1; \\\n\
     write_fun(dataOut, coordOut, dout, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
 \n\
@@ -17580,15 +17579,13 @@ __kernel void upsample_I16_U8to_I16_SAME_2D\n\
     constAxis = (axis_type)(0, 1, 0, 1, 0, 1, 0, 1); \\\n\
     VXC_Clamp(axisData, axisInExp, constAxis, constAxis, VXC_MODIFIER_CLAMP(0, 7, 0, 1)); \\\n\
     axisData &= (axis_type)(1); \\\n\
-    _viv_asm(CONV, axisData_short, axisData); \\\n\
-    dout = axisData_short == 1 ? dinExp : 0; \\\n\
+    VXC_DP2x8(dout, axisData, dinExp, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), ucharMulShort_2x8); \\\n\
     VXC_DP2x8(dout, dout, dout, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniQuantInOutInt16_2x8); \\\n\
     write_fun(dataOut, coordOut, dout, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
     constAxis = (axis_type)(2, 3, 2, 3, 2, 3, 2, 3); \\\n\
     VXC_Clamp(axisData, axisInExp, constAxis, constAxis, VXC_MODIFIER_CLAMP(0, 7, 0, 1)); \\\n\
     axisData &= (axis_type)(1); \\\n\
-    _viv_asm(CONV, axisData_short, axisData); \\\n\
-    dout = axisData_short == 1 ? dinExp : 0; \\\n\
+    VXC_DP2x8(dout, axisData, dinExp, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), ucharMulShort_2x8); \\\n\
     VXC_DP2x8(dout, dout, dout, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniQuantInOutInt16_2x8); \\\n\
     coordOut.y += 1; \\\n\
     write_fun(dataOut, coordOut, dout, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
@@ -34876,6 +34873,125 @@ __kernel void poolwithargmax_U8to_U8_U8_2D(\n\
     int2 coord_in  =  (int2)(get_global_id(0) << 1, get_global_id(1) << 1);\n\
     POOLWITHARGMAX_U8_PROCESS()\n\
 }\n\
+\n\
+\n\
+#define POOLWITHARGMAX_U8_TO_F32_PROCESS() \\\n\
+    uint4 src  = 0; \\\n\
+    uint4 max  = 0; \\\n\
+    uint4 axis = 0; \\\n\
+    float4 result = 0.0f; \\\n\
+    src.x = read_imageui(input, coord_in).x; \\\n\
+    coord_in.x++; \\\n\
+    src.y = read_imageui(input, coord_in).x; \\\n\
+    coord_in.y++; \\\n\
+    src.w = read_imageui(input, coord_in).x; \\\n\
+    coord_in.x--; \\\n\
+    src.z = read_imageui(input, coord_in).x; \\\n\
+    max.x  = src.x; \\\n\
+    axis.x = 0; \\\n\
+    if (src.y > max.x) \\\n\
+    { \\\n\
+        max.x  = src.y; \\\n\
+        axis.x = 1; \\\n\
+    } \\\n\
+    if (src.z > max.x) \\\n\
+    { \\\n\
+        max.x  = src.z; \\\n\
+        axis.x = 2; \\\n\
+    } \\\n\
+    if (src.w > max.x) \\\n\
+    { \\\n\
+        max.x  = src.w; \\\n\
+        axis.x = 3; \\\n\
+    } \\\n\
+    result.x = convert_float4(max).x * scale_value + tail_value; \\\n\
+    write_imagef(output,  coord_out, result); \\\n\
+    write_imageui(outaxis, coord_out, axis);\n\
+\n\
+\n\
+__kernel void poolwithargmax_U8to_F32_U8(\n\
+    __read_only  image2d_array_t   input,\n\
+    __write_only image2d_array_t   output,\n\
+    __write_only image2d_array_t   outaxis,\n\
+                           float   scale_value,\n\
+                           float   tail_value)\n\
+{\n\
+    int4 coord_out =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+    int4 coord_in  =  (int4)(get_global_id(0) << 1, get_global_id(1) << 1, get_global_id(2), 0);\n\
+    POOLWITHARGMAX_U8_TO_F32_PROCESS()\n\
+}\n\
+\n\
+__kernel void poolwithargmax_U8to_F32_U8_2D(\n\
+    __read_only  image2d_t   input,\n\
+    __write_only image2d_t   output,\n\
+    __write_only image2d_t   outaxis,\n\
+                     float   scale_value,\n\
+                     float   tail_value)\n\
+{\n\
+    int2 coord_out =  (int2)(get_global_id(0), get_global_id(1));\n\
+    int2 coord_in  =  (int2)(get_global_id(0) << 1, get_global_id(1) << 1);\n\
+    POOLWITHARGMAX_U8_TO_F32_PROCESS()\n\
+}\n\
+\n\
+#define POOLWITHARGMAX_F32_TO_U8_PROCESS() \\\n\
+    float4 src  = 0; \\\n\
+    float4 max  = 0; \\\n\
+    uint4 axis = 0; \\\n\
+    uint4 dst  = 0; \\\n\
+    float4 result = 0.0f; \\\n\
+    src.x = read_imagef(input, coord_in).x; \\\n\
+    coord_in.x++; \\\n\
+    src.y = read_imagef(input, coord_in).x; \\\n\
+    coord_in.y++; \\\n\
+    src.w = read_imagef(input, coord_in).x; \\\n\
+    coord_in.x--; \\\n\
+    src.z = read_imagef(input, coord_in).x; \\\n\
+    max.x  = src.x; \\\n\
+    axis.x = 0; \\\n\
+    if (src.y > max.x) \\\n\
+    { \\\n\
+        max.x  = src.y; \\\n\
+        axis.x = 1; \\\n\
+    } \\\n\
+    if (src.z > max.x) \\\n\
+    { \\\n\
+        max.x  = src.z; \\\n\
+        axis.x = 2; \\\n\
+    } \\\n\
+    if (src.w > max.x) \\\n\
+    { \\\n\
+        max.x  = src.w; \\\n\
+        axis.x = 3; \\\n\
+    } \\\n\
+    result.x = max.x * scale_value + tail_value; \\\n\
+    dst = convert_uint4(result);\\\n\
+    write_imageui(output,  coord_out, dst); \\\n\
+    write_imageui(outaxis, coord_out, axis);\n\
+\n\
+\n\
+__kernel void poolwithargmax_F32to_U8_U8(\n\
+    __read_only  image2d_array_t   input,\n\
+    __write_only image2d_array_t   output,\n\
+    __write_only image2d_array_t   outaxis,\n\
+                           float   scale_value,\n\
+                           float   tail_value)\n\
+{\n\
+    int4 coord_out =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+    int4 coord_in  =  (int4)(get_global_id(0) << 1, get_global_id(1) << 1, get_global_id(2), 0);\n\
+    POOLWITHARGMAX_F32_TO_U8_PROCESS()\n\
+}\n\
+\n\
+__kernel void poolwithargmax_F32to_U8_U8_2D(\n\
+    __read_only  image2d_t   input,\n\
+    __write_only image2d_t   output,\n\
+    __write_only image2d_t   outaxis,\n\
+                     float   scale_value,\n\
+                     float   tail_value)\n\
+{\n\
+    int2 coord_out =  (int2)(get_global_id(0), get_global_id(1));\n\
+    int2 coord_in  =  (int2)(get_global_id(0) << 1, get_global_id(1) << 1);\n\
+    POOLWITHARGMAX_F32_TO_U8_PROCESS()\n\
+}\n\
 "; /* end of poolwithargmax_cl*/
 
 static const char pow_cl[] = "__kernel void pow_FP32FP32toFP32\n\
@@ -37268,6 +37384,103 @@ __kernel void upsample_U8_U8to_U8_2D(\n\
     int2 coord_out =  (int2)(get_global_id(0) << 1, get_global_id(1) << 1);\n\
     int2 coord_in  =  (int2)(get_global_id(0), get_global_id(1));\n\
     UPSAMPLE_U8_PROCESS()\n\
+}\n\
+\n\
+#define UPSAMPLE_U8_TO_F32PROCESS() \\\n\
+    uint4  src  = 0; \\\n\
+    float4  dst  = 0; \\\n\
+    uint4  axis = 0; \\\n\
+    float4 result = 0.0f; \\\n\
+    src.x  = read_imageui(input,  coord_in).x; \\\n\
+    axis.x = read_imageui(inaxis, coord_in).x; \\\n\
+    result.x = convert_float4(src).x * scale_value + tail_value; \\\n\
+    dst.x = axis.x == 0 ? result.x : 0.0f; \\\n\
+    write_imagef(output,  coord_out, dst); \\\n\
+    dst.x = axis.x == 1 ? result.x : 0.0f; \\\n\
+    coord_out.x++; \\\n\
+    write_imagef(output,  coord_out, dst); \\\n\
+    dst.x = axis.x == 3 ? result.x : 0.0f; \\\n\
+    coord_out.y++; \\\n\
+    write_imagef(output,  coord_out, dst); \\\n\
+    dst.x = axis.x == 2 ? result.x : 0.0f; \\\n\
+    coord_out.x--; \\\n\
+    write_imagef(output,  coord_out, dst);\n\
+\n\
+\n\
+__kernel void upsample_U8_U8to_F32(\n\
+    __read_only  image2d_array_t   input,\n\
+    __write_only image2d_array_t   inaxis,\n\
+    __write_only image2d_array_t   output,\n\
+                           float   scale_value,\n\
+                           float   tail_value,\n\
+                             int   zp_out)\n\
+{\n\
+    int4 coord_out =  (int4)(get_global_id(0) << 1, get_global_id(1) << 1, get_global_id(2), 0);\n\
+    int4 coord_in  =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+    UPSAMPLE_U8_TO_F32PROCESS()\n\
+}\n\
+\n\
+__kernel void upsample_U8_U8to_F32_2D(\n\
+    __read_only  image2d_t   input,\n\
+    __write_only image2d_t   inaxis,\n\
+    __write_only image2d_t   output,\n\
+                     float   scale_value,\n\
+                     float   tail_value,\n\
+                       int   zp_out)\n\
+{\n\
+    int2 coord_out =  (int2)(get_global_id(0) << 1, get_global_id(1) << 1);\n\
+    int2 coord_in  =  (int2)(get_global_id(0), get_global_id(1));\n\
+    UPSAMPLE_U8_TO_F32PROCESS()\n\
+}\n\
+\n\
+\n\
+#define UPSAMPLE_F32_TO_U8_PROCESS() \\\n\
+    uint4  src  = 0; \\\n\
+    uint4  dst  = 0; \\\n\
+    uint4  axis = 0; \\\n\
+    float4 result = 0.0f; \\\n\
+    uint   output_zp = (uint)zp_out; \\\n\
+    result.x  = read_imagef(input,  coord_in).x; \\\n\
+    axis.x = read_imageui(inaxis, coord_in).x; \\\n\
+    result.x = result.x * scale_value + tail_value; \\\n\
+    src = convert_uint4(result);\\\n\
+    dst.x = axis.x == 0 ? src.x : output_zp; \\\n\
+    write_imageui(output,  coord_out, dst); \\\n\
+    dst.x = axis.x == 1 ? src.x : output_zp; \\\n\
+    coord_out.x++; \\\n\
+    write_imageui(output,  coord_out, dst); \\\n\
+    dst.x = axis.x == 3 ? src.x : output_zp; \\\n\
+    coord_out.y++; \\\n\
+    write_imageui(output,  coord_out, dst); \\\n\
+    dst.x = axis.x == 2 ? src.x : output_zp; \\\n\
+    coord_out.x--; \\\n\
+    write_imageui(output,  coord_out, dst);\n\
+\n\
+\n\
+__kernel void upsample_F32_U8to_U8(\n\
+    __read_only  image2d_array_t   input,\n\
+    __write_only image2d_array_t   inaxis,\n\
+    __write_only image2d_array_t   output,\n\
+                           float   scale_value,\n\
+                           float   tail_value,\n\
+                             int   zp_out)\n\
+{\n\
+    int4 coord_out =  (int4)(get_global_id(0) << 1, get_global_id(1) << 1, get_global_id(2), 0);\n\
+    int4 coord_in  =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+    UPSAMPLE_F32_TO_U8_PROCESS()\n\
+}\n\
+\n\
+__kernel void upsample_F32_U8to_U8_2D(\n\
+    __read_only  image2d_t   input,\n\
+    __write_only image2d_t   inaxis,\n\
+    __write_only image2d_t   output,\n\
+                     float   scale_value,\n\
+                     float   tail_value,\n\
+                       int   zp_out)\n\
+{\n\
+    int2 coord_out =  (int2)(get_global_id(0) << 1, get_global_id(1) << 1);\n\
+    int2 coord_in  =  (int2)(get_global_id(0), get_global_id(1));\n\
+    UPSAMPLE_F32_TO_U8_PROCESS()\n\
 }\n\
 "; /* end of upsample_cl*/
 

@@ -2,6 +2,7 @@
 
 //--------------------------unpooling-------------------------
 _viv_uniform VXC_512Bits uniQuantInOutInt16_2x8;
+_viv_uniform VXC_512Bits ucharMulShort_2x8;
 
 #define UPSAMPLE_I16_U8TO_I16_SAME_PROCESS(read_fun, write_fun) \
     vxc_short4 din; \
@@ -21,14 +22,12 @@ _viv_uniform VXC_512Bits uniQuantInOutInt16_2x8;
     constAxis = (vxc_uchar8)(0, 1, 0, 1, 0, 1, 0, 1); \
     VXC_Clamp(axisData, axisInExp, constAxis, constAxis, VXC_MODIFIER_CLAMP(0, 7, 0, 1)); \
     axisData &= (vxc_uchar8)(1); \
-    _viv_asm(CONV, axisData_short, axisData); \
-    dout = axisData_short == 1 ? dinExp : 0; \
+    VXC_DP2x8(dout, axisData, dinExp, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), ucharMulShort_2x8); \
     write_fun(dataOut, coordOut, dout, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \
     constAxis = (vxc_uchar8)(2, 3, 2, 3, 2, 3, 2, 3); \
     VXC_Clamp(axisData, axisInExp, constAxis, constAxis, VXC_MODIFIER_CLAMP(0, 7, 0, 1)); \
     axisData &= (vxc_uchar8)(1); \
-    _viv_asm(CONV, axisData_short, axisData); \
-    dout = axisData_short == 1 ? dinExp : 0; \
+    VXC_DP2x8(dout, axisData, dinExp, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), ucharMulShort_2x8); \
     coordOut.y += 1; \
     write_fun(dataOut, coordOut, dout, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
 
@@ -74,15 +73,13 @@ __kernel void upsample_I16_U8to_I16_SAME_2D
     constAxis = (axis_type)(0, 1, 0, 1, 0, 1, 0, 1); \
     VXC_Clamp(axisData, axisInExp, constAxis, constAxis, VXC_MODIFIER_CLAMP(0, 7, 0, 1)); \
     axisData &= (axis_type)(1); \
-    _viv_asm(CONV, axisData_short, axisData); \
-    dout = axisData_short == 1 ? dinExp : 0; \
+    VXC_DP2x8(dout, axisData, dinExp, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), ucharMulShort_2x8); \
     VXC_DP2x8(dout, dout, dout, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniQuantInOutInt16_2x8); \
     write_fun(dataOut, coordOut, dout, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \
     constAxis = (axis_type)(2, 3, 2, 3, 2, 3, 2, 3); \
     VXC_Clamp(axisData, axisInExp, constAxis, constAxis, VXC_MODIFIER_CLAMP(0, 7, 0, 1)); \
     axisData &= (axis_type)(1); \
-    _viv_asm(CONV, axisData_short, axisData); \
-    dout = axisData_short == 1 ? dinExp : 0; \
+    VXC_DP2x8(dout, axisData, dinExp, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), ucharMulShort_2x8); \
     VXC_DP2x8(dout, dout, dout, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniQuantInOutInt16_2x8); \
     coordOut.y += 1; \
     write_fun(dataOut, coordOut, dout, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
