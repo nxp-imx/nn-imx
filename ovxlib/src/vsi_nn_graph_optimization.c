@@ -37,7 +37,8 @@ static vsi_bool _is_asmmtric_int8_norm_tensor
 {
     vsi_bool ret = FALSE;
 
-    ret = (tensor->attr.vtl == FALSE && tensor->attr.is_const == FALSE
+    ret = ( tensor != NULL
+   && tensor->attr.vtl == FALSE && tensor->attr.is_const == FALSE
    && tensor->attr.dtype.vx_type == VSI_NN_TYPE_INT8
    && tensor->attr.dtype.qnt_type == VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC);
 
@@ -51,7 +52,8 @@ static vsi_bool _is_asmmtric_int8_const_tensor
 {
     vsi_bool ret = FALSE;
 
-    ret = ( tensor->attr.is_const == TRUE
+    ret = ( tensor != NULL
+   && tensor->attr.is_const == TRUE
    && tensor->attr.dtype.vx_type == VSI_NN_TYPE_INT8
    && tensor->attr.dtype.qnt_type == VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC);
 
@@ -65,7 +67,8 @@ static vsi_bool _is_asmmtric_int8_virtual_tensor
 {
     vsi_bool ret = FALSE;
 
-    ret = ( tensor->attr.vtl == TRUE
+    ret = ( tensor != NULL
+   && tensor->attr.vtl == TRUE
    && tensor->attr.dtype.vx_type == VSI_NN_TYPE_INT8
    && tensor->attr.dtype.qnt_type == VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC);
 
