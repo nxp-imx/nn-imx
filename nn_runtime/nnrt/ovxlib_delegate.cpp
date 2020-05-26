@@ -743,9 +743,6 @@ int OvxlibDelegate::addTensor(vsi_nn_graph_t* graph,
         if (type != TensorLifeTime::VIRTUAL) {
             shape = operand->dimensions;
         }
-        /* Pass 0 dim to tensor so that
-         * ovxlib will compute shape automatically. */
-        vsi_nn_type_e dtype = mapTensorType(operand->type);
 
         vsi_nn_tensor_attr_t attr;
         packTensorAttr(&attr,operand, type);
