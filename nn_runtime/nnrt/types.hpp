@@ -41,6 +41,7 @@ enum class OperationType: uint32_t {
     MUL,
     DIV,
     SUB,
+    ADDN,
 
     CONCATENATION,
     SPLIT,

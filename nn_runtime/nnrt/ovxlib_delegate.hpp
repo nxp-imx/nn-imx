@@ -171,6 +171,7 @@ class OvxlibDelegate
 #define REGISTER_OP(NAME)   \
         int addNode_##NAME(nnrt::Model* model, nnrt::op::OperationPtr operation, uint32_t)
         REGISTER_OP(ADD);
+        REGISTER_OP(ADDN);
         REGISTER_OP(CONV_2D);
         REGISTER_OP(DEPTHWISE_CONV_2D);
         REGISTER_OP(RELU);

@@ -101,6 +101,7 @@ OvxlibDelegate::OvxlibDelegate(std::vector<ExecutionIOPtr> &inputPtr)
     } while (0)
 
     REGISTER_OP(ADD);
+    REGISTER_OP(ADDN);
     REGISTER_OP(CONV_2D);
     REGISTER_OP(DEPTHWISE_CONV_2D);
     REGISTER_OP(RELU);
@@ -818,6 +819,13 @@ int OvxlibDelegate::addNode_ADD(Model* model, OperationPtr operation, uint32_t o
     (void)model;
     int err = NNA_ERROR_CODE(NO_ERROR);
     err = addNode(VSI_NN_OP_ADD, operation, nullptr, operation_index);
+    return err;
+}
+
+int OvxlibDelegate::addNode_ADDN(Model* model, OperationPtr operation, uint32_t operation_index) {
+    (void)model;
+    int err = NNA_ERROR_CODE(NO_ERROR);
+    err = addNode(VSI_NN_OP_ADDN, operation, nullptr, operation_index);
     return err;
 }
 
