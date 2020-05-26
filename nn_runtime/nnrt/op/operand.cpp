@@ -47,16 +47,11 @@ bool Operand::isTensor() const {
     return (type >= OperandType::TENSOR_INDEX_START);
 }
 
-bool Operand::isPerChannel() const {
-    return isQuantized() && quant.vec.scale.size() > 0;
-}
-
 bool Operand::isQuantized() const {
     switch (type) {
         case OperandType::TENSOR_QUANT8_ASYMM:
         case OperandType::TENSOR_QUANT8_SYMM:
         case OperandType::TENSOR_QUANT32_SYMM:
-        case OperandType::TENSOR_QUANT8_SYMM_PER_CHANNEL:
             return true;
         default:
             break;

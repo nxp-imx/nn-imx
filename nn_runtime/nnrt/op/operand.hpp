@@ -43,7 +43,6 @@ struct QuantizationParams {
     } scalar;
 
     struct {
-        uint32_t channelDim;/* The index of the channel dimension. */
         std::vector<float> scale;
         std::vector<int32_t> zeroPoint;
     } vec;
@@ -95,8 +94,6 @@ class Operand : public BaseOperand {
     bool isTensor() const;
 
     bool isQuantized() const;
-
-    bool isPerChannel() const;
 
     bool isConst() const {
         if (auto mem_ref = weak_mem_ref.lock()) {

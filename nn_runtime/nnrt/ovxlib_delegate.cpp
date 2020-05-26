@@ -607,45 +607,12 @@ vsi_nn_tensor_id_t OvxlibDelegate::getMappedTensor(uint32_t operand_index) {
     return tensor_map_[operand_index];
 }
 
-void OvxlibDelegate::setQuantParameter(vsi_nn_tensor_attr_t* attr,
-                                    float scale, int32_t zero_point) {
-    if (nullptr == attr) {
-        return;
-    }
-    attr->dtype.qnt_type = VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC;
-    if (std::is_signed<decltype(attr->dtype.zero_point)>::value) {
-        attr->dtype.zero_point = zero_point;
-    } else {
-        if (zero_point < 0)
-            NNRT_LOGE_PRINT("Negitive zero_point not supported, it force converted to uint32");
-        attr->dtype.zero_point = (uint32_t)zero_point;
-    }
-    attr->dtype.scale = scale;
-}
-
-void OvxlibDelegate::setPerChannelParameter(vsi_nn_tensor_attr_t* attr,
-                                    float* scales, int32_t * zps,
-                                    uint32_t scales_num, uint32_t channel_dim) {
-    if (nullptr == attr) {
-        return;
-    }
-    attr->dtype.qnt_type = VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC;
-    attr->dtype.channel_dim = channel_dim;
-    attr->dtype.scale_dim = scales_num;
-    attr->dtype.scales = scales;
-    attr->dtype.zero_points = zps;
-    attr->dtype.zero_points_dim = scales_num;
-}
-
 void OvxlibDelegate::packTensorAttr(vsi_nn_tensor_attr_t* attr,
                                     vsi_nn_type_e dtype,
                                     std::vector<uint32_t>& nchw_shape,
                                     bool is_quantized,
-                                    bool is_perchannel,
-                                    float *scale,
-                                    int32_t *zero_point,
-                                    uint32_t scale_dim,
-                                    uint32_t channel_dim,
+                                    float scale,
+                                    int32_t zero_point,
                                     TensorLifeTime type) {
     if (nullptr == attr) {
         return;
@@ -664,13 +631,16 @@ void OvxlibDelegate::packTensorAttr(vsi_nn_tensor_attr_t* attr,
     /* Pack data type */
     attr->dtype.fmt = VSI_NN_DIM_FMT_NCHW;
     attr->dtype.vx_type = dtype;
-
-    /*perchannel tensor must be quantized*/
-    if(is_perchannel){
-        setPerChannelParameter(attr, scale, zero_point, scale_dim, channel_dim);
-    }
-    else if (is_quantized) {
-        setQuantParameter(attr, *scale, *zero_point);
+    if (is_quantized) {
+        attr->dtype.qnt_type = VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC;
+        if (std::is_signed<decltype(attr->dtype.zero_point)>::value) {
+            attr->dtype.zero_point = zero_point;
+        } else {
+            if (zero_point < 0)
+                NNRT_LOGE_PRINT("Negitive zero_point not supported, it force converted to uint32");
+            attr->dtype.zero_point = (uint32_t)zero_point;
+        }
+        attr->dtype.scale = scale;
     }
 
     /* Pack tensor type */
@@ -693,34 +663,13 @@ void OvxlibDelegate::packTensorAttr(vsi_nn_tensor_attr_t* attr,
                                     TensorLifeTime type) {
     vsi_nn_type_e dtype = mapTensorType(operand->type);
     bool is_quantized = operand->isQuantized();
-    bool is_perchannel = operand->isPerChannel();
-    if(is_perchannel){
-        std::vector<int32_t> zeropoints(operand->quant.vec.scale.size(), 0);
-        float* scales = addParamPool(operand->quant.vec.scale, false);
-        int32_t * zps = addParamPool(operand->quant.vec.zeroPoint, false);
-        packTensorAttr(attr,
-                    dtype,
-                    operand->dimensions,
-                    is_quantized,
-                    is_perchannel,
-                    scales,
-                    zps,
-                    operand->quant.vec.scale.size(),
-                    operand->quant.vec.channelDim,
-                    type);
-    }else{
-        packTensorAttr(attr,
-                    dtype,
-                    operand->dimensions,
-                    is_quantized,
-                    is_perchannel,
-                    &operand->quant.scalar.scale,
-                    &operand->quant.scalar.zeroPoint,
-                    1,
-                    0,
-                    type);
-    }
-
+    packTensorAttr(attr,
+                   dtype,
+                   operand->dimensions,
+                   is_quantized,
+                   operand->quant.scalar.scale,
+                   operand->quant.scalar.zeroPoint,
+                   type);
 }
 
 void OvxlibDelegate::mapTensorId(uint32_t operand_id, vsi_nn_tensor_id_t tensor_id) {
@@ -743,10 +692,20 @@ int OvxlibDelegate::addTensor(vsi_nn_graph_t* graph,
         if (type != TensorLifeTime::VIRTUAL) {
             shape = operand->dimensions;
         }
-
-        vsi_nn_tensor_attr_t attr;
-        packTensorAttr(&attr,operand, type);
-        return addTensor(graph, &attr, idx, data, isFromHandle);
+        /* Pass 0 dim to tensor so that
+         * ovxlib will compute shape automatically. */
+        vsi_nn_type_e dtype = mapTensorType(operand->type);
+        bool is_quantized = operand->isQuantized();
+        err = addTensor(graph,
+                        dtype,
+                        shape,
+                        is_quantized,
+                        operand->quant.scalar.scale,
+                        operand->quant.scalar.zeroPoint,
+                        type,
+                        idx,
+                        data,
+                        isFromHandle);
     }
     return err;
 }
@@ -765,7 +724,7 @@ int OvxlibDelegate::addTensor(vsi_nn_graph_t* graph,
         return NNA_ERROR_CODE(BAD_DATA);
     }
     vsi_nn_tensor_attr_t attr;
-    packTensorAttr(&attr, dtype, shape, is_quantized, false, &scale, &zero_point, 1, 0, type);
+    packTensorAttr(&attr, dtype, shape, is_quantized, scale, zero_point, type);
     return addTensor(graph, &attr, idx, data, isFromHandle);
 }
 
