@@ -182,18 +182,18 @@ DEF_KERNEL_INITIALIZER(_pow_initializer)
         {0, 0, 0},  // localWorkSize: local group size in thread
         {0, 0, 0}}; // globalWorkSize: image size in thread
 
-    uint8_t     in0_fl     = 0;
+    int8_t      in0_fl     = 0;
     int32_t     src0ZP     = 0;
     float       src0Scale  = 1.0f;
-    uint8_t     in1_fl     = 0;
+    int8_t      in1_fl     = 0;
     int32_t     src1ZP     = 0;
     float       src1Scale  = 1.0f;
-    uint8_t     out_fl     = 0;
+    int8_t      out_fl     = 0;
     int32_t     dstZP      = 0;
     float       dstScale   = 1.0f;
 
-    uint8_t   postshift0  = 0;
-    uint8_t   postshift1  = 0;
+    int8_t     postshift0  = 0;
+    int8_t     postshift1  = 0;
     float      outScale_fl = 1;
 
     uint32_t    zAx        = 1;
