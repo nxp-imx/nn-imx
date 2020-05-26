@@ -23,7 +23,7 @@
 *****************************************************************************/
 #include <fstream>
 #include "dump_json_model.hpp"
-#include "model.hpp"
+#include "nnrt/model.hpp"
 #include <sstream>
 
 #if defined(__ANDROID__)

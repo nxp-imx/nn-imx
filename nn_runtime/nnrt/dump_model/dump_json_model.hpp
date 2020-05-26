@@ -30,8 +30,8 @@
 *   dump.dump2json();
 */
 #include "json.h"
-#include "op/public.hpp"
-#include "execution.hpp"
+#include "nnrt/op/public.hpp"
+#include "nnrt/execution.hpp"
 
 namespace nnrt {
     class Dump {
