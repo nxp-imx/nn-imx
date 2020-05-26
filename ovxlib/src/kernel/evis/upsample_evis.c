@@ -211,11 +211,8 @@ DEF_KERNEL_INITIALIZER(_upsample_initializer)
 
     factorOut = 1.0f / outputScale;
 
-    if ( ( input_attr->quant == VSI_NN_KERNEL_QUANT_ASYMM )
-       && ( output_attr->quant == VSI_NN_KERNEL_QUANT_ASYMM ) )
-    {
-        vsi_nn_GetFP32MultiAndPostShift(inputScale / outputScale, &M0, &postShift);
-    }
+
+    vsi_nn_GetFP32MultiAndPostShift(inputScale / outputScale, &M0, &postShift);
 
     image_2d = (vsi_bool)(input_shape->size < 3 || 1 == input_shape->data[2]);
 
@@ -225,7 +222,8 @@ DEF_KERNEL_INITIALIZER(_upsample_initializer)
         dst_dtype = F16;
     }
 
-    if (I8 == src_dtype || U8 == src_dtype)
+    if (I8 == src_dtype || U8 == src_dtype
+       || (F16 == src_dtype && U8  == dst_dtype && U8  == axis_dtype))
     {
         gpu_param.global_scale[0]  = 8;
         gpu_param.global_scale[1]  = 1;

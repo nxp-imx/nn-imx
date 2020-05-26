@@ -63,7 +63,8 @@ static vsi_bool vsi_nn_upsample_optimize_shape
         }
         else
         {
-            enable_image_2d = (vsi_bool)(shape_out[1] * shape_out[2] < hwLitimLen);
+            enable_image_2d = (vsi_bool)((shape_out[1] * shape_out[2] < hwLitimLen)
+                                        && ( (shape_out[1] % 2) == 0 ));
         }
     }
 

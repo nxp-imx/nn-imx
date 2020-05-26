@@ -15,13 +15,13 @@ _viv_uniform vxc_uint4 packed_outputZP;
     vxc_uchar16 axisData; \
     vxc_uchar16 axisData1; \
     vxc_uchar16 dout; \
-    read_fun(din, dataIn, coord, VXC_5BITOFFSET_XY(0, 0), \
+    read_fun(din0, dataIn, coord, VXC_5BITOFFSET_XY(0, 0), \
         VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \
     read_fun(axisIn, axis, coord, VXC_5BITOFFSET_XY(0, 0), \
         VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \
     vxc_short8 tmp; \
     uchar zp = 0; \
-    _viv_asm(COPY, src, din, 16); \
+    _viv_asm(COPY, src, din0, 16); \
     VXC_DP2x8(tmp, src, src, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), \
         uniF16MulMultipiler_PostShft_2x8); \
     vxc_uchar16 packed_outZP; \
@@ -134,7 +134,7 @@ _viv_uniform VXC_512Bits uniConvertInt32toUint8_2x8;
     VXC_DP2x8(result, tmpData1, tmpData2, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), \
         uniConvertInt32toUint8_2x8); \
     coordOut.y += 1; \
-    write_fun(dataOut, coordOut, tmpout, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+    write_fun(dataOut, coordOut, result, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
 
 
 __kernel void upsample_F16_I16to_U8
