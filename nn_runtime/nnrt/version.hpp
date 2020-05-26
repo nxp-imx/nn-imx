@@ -42,7 +42,7 @@ struct Version {
     }
 };
 
-using VERSION = Version<1, 1, 5>;
+using VERSION = Version<1, 1, 6>;
 static constexpr uint32_t VERSION_NUM = VERSION::value;
 };
 
