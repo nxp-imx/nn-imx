@@ -34,8 +34,8 @@
 #include "utils/vsi_nn_util.h"
 #include "vsi_nn_log.h"
 
-#define COMPUTE_DECONV_SZ( in, ksize, pad_1, pad_2, stride )\
-    (( in - 1 ) * stride + ksize - pad_1 - pad_2)
+#define COMPUTE_DECONV_SZ( in, ksize, pad_1, pad_2, stride, output_padding )\
+    (( in - 1 ) * stride + ksize - pad_1 - pad_2 + output_padding)
 static vsi_status op_compute
     (
     vsi_nn_node_t * self,
@@ -246,7 +246,8 @@ static vsi_bool op_setup
             nn_param->ksize[0],
             nn_param->pad[0],
             nn_param->pad[1],
-            nn_param->stride[0]
+            nn_param->stride[0],
+            nn_param->output_padding[0]
         );
 
         outputs[0]->attr.size[1] = COMPUTE_DECONV_SZ(
@@ -254,7 +255,8 @@ static vsi_bool op_setup
             nn_param->ksize[1],
             nn_param->pad[2],
             nn_param->pad[3],
-            nn_param->stride[1]
+            nn_param->stride[1],
+            nn_param->output_padding[1]
         );
 
         outputs[0]->attr.size[2] = nn_param->weights;
