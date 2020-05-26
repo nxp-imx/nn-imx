@@ -29,6 +29,7 @@ LOCAL_SRC_FILES :=     \
             vsi_nn_rnn_helper.c \
             vsi_nn_internal_node.c \
             vsi_nn_log.c \
+            vsi_nn_graph_optimization.c \
             vsi_nn_pre_post_process.c
 
 

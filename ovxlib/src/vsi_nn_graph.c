@@ -38,6 +38,7 @@
 #include "utils/vsi_nn_util.h"
 #include "utils/vsi_nn_vdata.h"
 #include "utils/vsi_nn_map.h"
+#include "vsi_nn_graph_optimization.h"
 
 static vsi_status _set_reference_name
     (
@@ -582,6 +583,7 @@ vsi_status vsi_nn_SetupGraph
     uint32_t num_of_graph_outputs;
     vx_reference *graph_outputs = NULL;
     vsi_nn_tensor_t *tensor;
+    vsi_bool dirty = FALSE;
 
     status = VSI_FAILURE;
     sorted_nodes = NULL;
@@ -598,6 +600,13 @@ vsi_status vsi_nn_SetupGraph
         return status;
     }
 
+    /* Optimize graph */
+    status = vsi_nn_OptimizeGraph(graph, &dirty);
+    if(VSI_SUCCESS != status)
+    {
+        goto final;
+    }
+
     /* Prepare node list */
     nodes_list = (vsi_nn_node_id_t *)malloc(
         graph->node_num * sizeof( vsi_nn_node_id_t ) );
@@ -605,7 +614,7 @@ vsi_status vsi_nn_SetupGraph
     {
         goto final;
     }
-    if( TRUE == sort )
+    if( TRUE == sort || dirty)
     {
         VSILOGD( "Sort graph nodes.");
         sorted_nodes = vsi_nn_SortGraphNode( graph );
