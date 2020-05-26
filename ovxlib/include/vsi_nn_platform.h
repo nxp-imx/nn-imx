@@ -30,7 +30,6 @@
 #include <VX/vx_api.h>
 #include <VX/vx_compatibility.h>
 #include <VX/vx_khr_import_kernel.h>
-#include <VX/vx_khr_nn.h>
 #if defined(VX_KHR_COMPATIBILITY) && (0x1==VX_KHR_COMPATIBILITY)
 #include <VX/vx_khr_compatible.h>
 #endif
