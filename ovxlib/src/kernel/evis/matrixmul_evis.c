@@ -93,6 +93,9 @@ static const struct {
     TENSOR_MATRIX_MUL_KERNELS(U8,  U8,  F16,      KERNEL_SOURCE_6)
     TENSOR_MATRIX_MUL_KERNELS(I8,  I8,  F16,      KERNEL_SOURCE_6)
     TENSOR_MATRIX_MUL_KERNELS(I16, I16, F16,      KERNEL_SOURCE_6)
+    TENSOR_MATRIX_MUL_KERNELS(U8,  F16, F16,      KERNEL_SOURCE_6)
+    TENSOR_MATRIX_MUL_KERNELS(I8,  F16, F16,      KERNEL_SOURCE_6)
+    TENSOR_MATRIX_MUL_KERNELS(I16, F16, F16,      KERNEL_SOURCE_6)
     TENSOR_MATRIX_MUL_KERNELS(F16, F16, F16,      KERNEL_SOURCE_2)
     TENSOR_MATRIX_MUL_KERNELS(F16, F16, U8,       KERNEL_SOURCE_2)
     TENSOR_MATRIX_MUL_KERNELS(F32, F32, F32,      KERNEL_SOURCE_2)
@@ -104,8 +107,8 @@ static const struct {
     TENSOR_MATRIX_MUL_TRANSA_KERNELS(U8,  U8,  U8,     KERNEL_SOURCE_7)
     TENSOR_MATRIX_MUL_TRANSA_KERNELS(I8,  I8,  I8,     KERNEL_SOURCE_7)
     TENSOR_MATRIX_MUL_TRANSA_KERNELS(I16, I16, I16,    KERNEL_SOURCE_7)
-    TENSOR_MATRIX_MUL_TRANSA_KERNELS(U8,  F16,  U8,    KERNEL_SOURCE_7)
-    TENSOR_MATRIX_MUL_TRANSA_KERNELS(I8,  F16,  I8,    KERNEL_SOURCE_7)
+    TENSOR_MATRIX_MUL_TRANSA_KERNELS(U8,  F16, U8,     KERNEL_SOURCE_7)
+    TENSOR_MATRIX_MUL_TRANSA_KERNELS(I8,  F16, I8,     KERNEL_SOURCE_7)
     TENSOR_MATRIX_MUL_TRANSA_KERNELS(I16, F16, I16,    KERNEL_SOURCE_7)
     TENSOR_MATRIX_MUL_TRANSA_KERNELS(F16, F16, F16,    KERNEL_SOURCE_7)
 };
@@ -415,6 +418,17 @@ DEF_KERNEL_INITIALIZER(_matrix_mul_initializer)
                 status |= vsi_nn_kernel_gpu_add_param( node, "input1_ZP", &src0ZP );
                 status |= vsi_nn_kernel_gpu_add_param( node, "input2Scale", &src1Scale );
                 status |= vsi_nn_kernel_gpu_add_param( node, "input2_ZP", &src1ZP );
+                CHECK_STATUS_FAIL_GOTO(status, OnError );
+            }
+            break;
+        case _PACK_SELECT_KEY( U8,  F16, F16,  0, 0 ):
+        case _PACK_SELECT_KEY( I8,  F16, F16,  0, 0 ):
+        case _PACK_SELECT_KEY( I16, F16, F16,  0, 0 ):
+            {
+                status = vsi_nn_kernel_gpu_add_param( node,
+                        "uniConvertUint8SubZpToFp32_4x4", &uniConvertUint8SubZpToFp32_4x4 );
+                status |= vsi_nn_kernel_gpu_add_param( node, "input1Scale", &src0Scale );
+                status |= vsi_nn_kernel_gpu_add_param( node, "input1_ZP", &src0ZP );
                 CHECK_STATUS_FAIL_GOTO(status, OnError );
             }
             break;
