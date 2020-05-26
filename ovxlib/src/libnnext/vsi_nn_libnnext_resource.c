@@ -360,7 +360,7 @@ __write_only image2d_array_t  output, \\\n\
     _viv_asm(COPY, packIdx, packedArgIdx, 16); \\\n\
  \\\n\
     coord.y --; \\\n\
-    do \\\n\
+    for (;coord.y >= 0;) \\\n\
     { \\\n\
        VXC_ReadImage2DArray(vec, input, coord.xyzw, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
        _viv_asm(COPY, src, vec, 16); \\\n\
@@ -369,7 +369,7 @@ __write_only image2d_array_t  output, \\\n\
        VXC_VertMax3_##inst_type(maxVal, maxVal, maxVal, src, VXC_MODIFIER_BIN(0, 7, 0)); \\\n\
        _viv_asm(COPY, max, maxVal, 16); \\\n\
        axis = (max == vec) ? packIdx : axis; \\\n\
-    } while (coord.y >= 0); \\\n\
+    } \\\n\
  \\\n\
     dst_type dst_axis; \\\n\
     VXC_DP2x8(dst_axis, axis, axis, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniExtractData_2x8); \\\n\
@@ -402,7 +402,7 @@ __write_only image2d_array_t  output, \\\n\
     _viv_asm(COPY, packIdx, packedArgIdx, 16); \\\n\
  \\\n\
     coord.y --; \\\n\
-    do \\\n\
+    for (;coord.y >= 0;) \\\n\
     { \\\n\
        VXC_ReadImage(vec, input, coord.xy, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
        _viv_asm(COPY, src, vec, 16); \\\n\
@@ -411,7 +411,7 @@ __write_only image2d_array_t  output, \\\n\
        VXC_VertMax3_##inst_type(maxVal, maxVal, maxVal, src, VXC_MODIFIER_BIN(0, 7, 0)); \\\n\
        _viv_asm(COPY, max, maxVal, 16); \\\n\
        axis = (max == vec) ? packIdx : axis; \\\n\
-    } while (coord.y >= 0); \\\n\
+    } \\\n\
  \\\n\
     dst_type dst_axis; \\\n\
     VXC_DP2x8(dst_axis, axis, axis, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniExtractData_2x8); \\\n\
@@ -440,7 +440,7 @@ __write_only image2d_array_t  output, \\\n\
     _viv_asm(COPY, packIdx, packedArgIdx, 16); \\\n\
  \\\n\
     coord.y --; \\\n\
-    do \\\n\
+    for (;coord.y >= 0;) \\\n\
     { \\\n\
        VXC_ReadImage2DArray(src, input, coord.xyzw, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
        coord.y --; \\\n\
@@ -449,7 +449,7 @@ __write_only image2d_array_t  output, \\\n\
        dst_type condition; \\\n\
        VXC_Clamp(condition, src, maxVal, maxVal, VXC_MODIFIER_CLAMP(0, 7, 0, 1)); \\\n\
        axis = condition ? packIdx : axis; \\\n\
-    } while (coord.y >= 0); \\\n\
+    } \\\n\
  \\\n\
     VXC_WriteImage(output, coord.xz, axis, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
 }\n\
@@ -476,7 +476,7 @@ __write_only image2d_array_t  output, \\\n\
     _viv_asm(COPY, packIdx, packedArgIdx, 16); \\\n\
  \\\n\
     coord.y --; \\\n\
-    do \\\n\
+    for (;coord.y >= 0;) \\\n\
     { \\\n\
        VXC_ReadImage(src, input, coord.xy, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
        coord.y --; \\\n\
@@ -485,7 +485,7 @@ __write_only image2d_array_t  output, \\\n\
        dst_type condition; \\\n\
        VXC_Clamp(condition, src, maxVal, maxVal, VXC_MODIFIER_CLAMP(0, 7, 0, 1)); \\\n\
        axis = condition ? packIdx : axis; \\\n\
-    } while (coord.y >= 0); \\\n\
+    } \\\n\
  \\\n\
     VXC_WriteImage(output, coord.xz, axis, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
 }\n\
@@ -883,7 +883,7 @@ __write_only image2d_array_t  output, \\\n\
     _viv_asm(COPY, packIdx, packedArgIdx, 16); \\\n\
  \\\n\
     coord.y --; \\\n\
-    do \\\n\
+    for (;coord.y >= 0;) \\\n\
     { \\\n\
        VXC_ReadImage2DArray(vec, input, coord.xyzw, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
        _viv_asm(COPY, src, vec, 16); \\\n\
@@ -892,7 +892,7 @@ __write_only image2d_array_t  output, \\\n\
        VXC_VertMin3_##inst_type(minVal, minVal, minVal, src, VXC_MODIFIER_BIN(0, 7, 0)); \\\n\
        _viv_asm(COPY, min, minVal, 16); \\\n\
        axis = (min == vec) ? packIdx : axis; \\\n\
-    } while (coord.y >= 0); \\\n\
+    } \\\n\
  \\\n\
     dst_type dst_axis; \\\n\
     VXC_DP2x8(dst_axis, axis, axis, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniExtractData_2x8); \\\n\
@@ -925,7 +925,7 @@ __write_only image2d_array_t  output, \\\n\
     _viv_asm(COPY, packIdx, packedArgIdx, 16); \\\n\
  \\\n\
     coord.y --; \\\n\
-    do \\\n\
+    for (;coord.y >= 0;) \\\n\
     { \\\n\
        VXC_ReadImage(vec, input, coord.xy, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
        _viv_asm(COPY, src, vec, 16); \\\n\
@@ -934,7 +934,7 @@ __write_only image2d_array_t  output, \\\n\
        VXC_VertMin3_##inst_type(minVal, minVal, minVal, src, VXC_MODIFIER_BIN(0, 7, 0)); \\\n\
        _viv_asm(COPY, min, minVal, 16); \\\n\
        axis = (min == vec) ? packIdx : axis; \\\n\
-    } while (coord.y >= 0); \\\n\
+    } \\\n\
  \\\n\
     dst_type dst_axis; \\\n\
     VXC_DP2x8(dst_axis, axis, axis, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniExtractData_2x8); \\\n\
@@ -963,7 +963,7 @@ __write_only image2d_array_t  output, \\\n\
     _viv_asm(COPY, packIdx, packedArgIdx, 16); \\\n\
  \\\n\
     coord.y --; \\\n\
-    do \\\n\
+    for (;coord.y >= 0;) \\\n\
     { \\\n\
        VXC_ReadImage2DArray(src, input, coord.xyzw, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
        coord.y --; \\\n\
@@ -972,7 +972,7 @@ __write_only image2d_array_t  output, \\\n\
        dst_type condition; \\\n\
        VXC_Clamp(condition, src, minVal, minVal, VXC_MODIFIER_CLAMP(0, 7, 0, 1)); \\\n\
        axis = condition ? packIdx : axis; \\\n\
-    } while (coord.y >= 0); \\\n\
+    } \\\n\
  \\\n\
     VXC_WriteImage(output, coord.xz, axis, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
 }\n\
@@ -999,7 +999,7 @@ __write_only image2d_array_t  output, \\\n\
     _viv_asm(COPY, packIdx, packedArgIdx, 16); \\\n\
  \\\n\
     coord.y --; \\\n\
-    do \\\n\
+    for (;coord.y >= 0;) \\\n\
     { \\\n\
        VXC_ReadImage(src, input, coord.xy, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
        coord.y --; \\\n\
@@ -1008,7 +1008,7 @@ __write_only image2d_array_t  output, \\\n\
        dst_type condition; \\\n\
        VXC_Clamp(condition, src, minVal, minVal, VXC_MODIFIER_CLAMP(0, 7, 0, 1)); \\\n\
        axis = condition ? packIdx : axis; \\\n\
-    } while (coord.y >= 0); \\\n\
+    } \\\n\
  \\\n\
     VXC_WriteImage(output, coord.xz, axis, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
 }\n\

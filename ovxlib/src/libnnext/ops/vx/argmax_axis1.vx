@@ -26,7 +26,7 @@ __write_only image2d_array_t  output, \
     _viv_asm(COPY, packIdx, packedArgIdx, 16); \
  \
     coord.y --; \
-    do \
+    for (;coord.y >= 0;) \
     { \
        VXC_ReadImage2DArray(vec, input, coord.xyzw, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \
        _viv_asm(COPY, src, vec, 16); \
@@ -35,7 +35,7 @@ __write_only image2d_array_t  output, \
        VXC_VertMax3_##inst_type(maxVal, maxVal, maxVal, src, VXC_MODIFIER_BIN(0, 7, 0)); \
        _viv_asm(COPY, max, maxVal, 16); \
        axis = (max == vec) ? packIdx : axis; \
-    } while (coord.y >= 0); \
+    } \
  \
     dst_type dst_axis; \
     VXC_DP2x8(dst_axis, axis, axis, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniExtractData_2x8); \
@@ -68,7 +68,7 @@ __write_only image2d_array_t  output, \
     _viv_asm(COPY, packIdx, packedArgIdx, 16); \
  \
     coord.y --; \
-    do \
+    for (;coord.y >= 0;) \
     { \
        VXC_ReadImage(vec, input, coord.xy, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \
        _viv_asm(COPY, src, vec, 16); \
@@ -77,7 +77,7 @@ __write_only image2d_array_t  output, \
        VXC_VertMax3_##inst_type(maxVal, maxVal, maxVal, src, VXC_MODIFIER_BIN(0, 7, 0)); \
        _viv_asm(COPY, max, maxVal, 16); \
        axis = (max == vec) ? packIdx : axis; \
-    } while (coord.y >= 0); \
+    } \
  \
     dst_type dst_axis; \
     VXC_DP2x8(dst_axis, axis, axis, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniExtractData_2x8); \
@@ -106,7 +106,7 @@ __write_only image2d_array_t  output, \
     _viv_asm(COPY, packIdx, packedArgIdx, 16); \
  \
     coord.y --; \
-    do \
+    for (;coord.y >= 0;) \
     { \
        VXC_ReadImage2DArray(src, input, coord.xyzw, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \
        coord.y --; \
@@ -115,7 +115,7 @@ __write_only image2d_array_t  output, \
        dst_type condition; \
        VXC_Clamp(condition, src, maxVal, maxVal, VXC_MODIFIER_CLAMP(0, 7, 0, 1)); \
        axis = condition ? packIdx : axis; \
-    } while (coord.y >= 0); \
+    } \
  \
     VXC_WriteImage(output, coord.xz, axis, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \
 }
@@ -142,7 +142,7 @@ __write_only image2d_array_t  output, \
     _viv_asm(COPY, packIdx, packedArgIdx, 16); \
  \
     coord.y --; \
-    do \
+    for (;coord.y >= 0;) \
     { \
        VXC_ReadImage(src, input, coord.xy, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \
        coord.y --; \
@@ -151,7 +151,7 @@ __write_only image2d_array_t  output, \
        dst_type condition; \
        VXC_Clamp(condition, src, maxVal, maxVal, VXC_MODIFIER_CLAMP(0, 7, 0, 1)); \
        axis = condition ? packIdx : axis; \
-    } while (coord.y >= 0); \
+    } \
  \
     VXC_WriteImage(output, coord.xz, axis, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \
 }
