@@ -1159,13 +1159,14 @@ int OvxlibDelegate::addNode_SQUEEZE(Model* model,
                                     uint32_t operation_index) {
     (void)model;
     int err = NNA_ERROR_CODE(NO_ERROR);
-    // SqueezeOperation* squeeze =  reinterpret_cast<SqueezeOperation*>(operation.get());
-    std::vector<OperandPtr> outputs = model->getOperands(operation->outputs());
+    SqueezeOperation* squeeze =  reinterpret_cast<SqueezeOperation*>(operation.get());
+    std::vector<OperandPtr> inputs = model->getOperands(squeeze->inputs());
+    std::vector<int32_t> convert_axes = convertAxes(squeeze->axes, inputs[0]->ndim());
+    int32_t* axes = addParamPool(convert_axes, true);
     std::vector<vsi_nn_node_t*> nodes;
-    err = addNode(VSI_NN_OP_RESHAPE, operation, &nodes, operation_index);
-    // TODO: add squeeze node
-    nodes[0]->nn_param.reshape.size = (uint32_t*)outputs[0]->dimensions.data();
-    nodes[0]->nn_param.reshape.dim_num = outputs[0]->dimensions.size();
+    err = addNode(VSI_NN_OP_SQUEEZE, operation, &nodes, operation_index);
+    nodes[0]->nn_param.squeeze.axis = reinterpret_cast<uint32_t*>(axes);
+    nodes[0]->nn_param.squeeze.axis_num = squeeze->axes.size();
     return err;
 }
 
