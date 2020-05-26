@@ -278,9 +278,12 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
             // TODO: support pad at channel and batch
             auto& pad = model.operands[operation.inputs[1]];
             if (!isConstantTensor(pad)) return false;
-            size_t dimSize = pad.dimensions.size();
+            size_t dimSize = pad.dimensions[0];
             // Pad only support 4D PAD
-            if (dimSize != 4) return false;
+            if (dimSize != 4) {
+                reason += "reject Pad because dimSize !=4\n";
+                return false;
+            }
             if (dimSize < 3) {
                 isSupport &= true;
                 break;
@@ -293,7 +296,7 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
             if (dimSize > 2) {
                 bool noPadOn3rdDimFor3D = (dimSize == 3 && padData[4] + padData[5] != 0);
                 bool noPadOn0rd3rdFor4D =
-                    (dimSize == 4 && padData[6] + padData[7] + padData[0] + padData[1] != 0);
+                    (dimSize == 4 && padData[6] + padData[7] + padData[0] + padData[1] == 0);
                 isSupport &= (noPadOn3rdDimFor3D || noPadOn0rd3rdFor4D);
                 if (!isSupport) {
                     reason += "reject PAD because pad value for 3rd or 0rd/3rd dimensions\n";
