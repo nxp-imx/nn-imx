@@ -131,7 +131,8 @@ static vsi_status _prelu_op_compute
 
         if (one_rank)
         {
-            is_per_channel_alpha = (inputs[1]->attr.dim_num > 2 && alpha_shape == inputs[0]->attr.size[2]);
+            is_per_channel_alpha = (alpha_shape == 1)
+                || (inputs[1]->attr.dim_num > 2 && alpha_shape == inputs[1]->attr.size[2]);
         }
 
         if (is_per_channel_alpha)
