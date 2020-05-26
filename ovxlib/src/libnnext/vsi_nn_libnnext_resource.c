@@ -47,7 +47,7 @@ __kernel void a_times_b_plus_c_F16_F16_F16toF16\n\
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
 \n\
     vxc_half8   src0, src1, src2, dst;\n\
-    vxc_ushort8 vec0, vec1, vec2;\n\
+    vxc_ushort8 vec0, vec1, vec2, result;\n\
 \n\
     VXC_ReadImage2DArray(vec0, input0, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
     _viv_asm(COPY, src0, vec0, 16);\n\
@@ -58,8 +58,8 @@ __kernel void a_times_b_plus_c_F16_F16_F16toF16\n\
 \n\
     VXC_DP2x8(dst, src0, src1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), uniA_Times_B_2x8);\n\
     VXC_DP2x8(dst, dst, src2, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), uniA_Plus_B_2x8);\n\
-\n\
-    VXC_WriteImage2DArray(output, coord, dst, VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0));\n\
+    _viv_asm(COPY, result, dst, 16);\n\
+    VXC_WriteImage2DArray(output, coord, result, VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0));\n\
 }\n\
 \n\
 __kernel void a_times_b_plus_c_F16_F16_F16toF16_2D\n\
@@ -73,7 +73,7 @@ __kernel void a_times_b_plus_c_F16_F16_F16toF16_2D\n\
     int2 coord = (int2)(get_global_id(0), get_global_id(1));\n\
 \n\
     vxc_half8   src0, src1, src2, dst;\n\
-    vxc_ushort8 vec0, vec1, vec2;\n\
+    vxc_ushort8 vec0, vec1, vec2, result;\n\
 \n\
     VXC_ReadImage(vec0, input0, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
     _viv_asm(COPY, src0, vec0, 16);\n\
@@ -84,8 +84,8 @@ __kernel void a_times_b_plus_c_F16_F16_F16toF16_2D\n\
 \n\
     VXC_DP2x8(dst, src0, src1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), uniA_Times_B_2x8);\n\
     VXC_DP2x8(dst, dst, src2, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), uniA_Plus_B_2x8);\n\
-\n\
-    VXC_WriteImage(output, coord, dst, VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0));\n\
+    _viv_asm(COPY, result, dst, 16);\n\
+    VXC_WriteImage(output, coord, result, VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0));\n\
 }\n\
 \n\
 "; /* end of a_times_b_plus_c_vx*/
