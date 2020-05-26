@@ -39,7 +39,25 @@ static vsi_status op_compute
     vsi_nn_tensor_t ** outputs
     )
 {
-    vsi_status status;
+    vsi_status status = VX_FAILURE;
+#ifdef VX_L2NORM_AXIS_PARAMETER_SUPPORT
+    vx_nn_l2norm_params_t param;
+
+    param.axis = self->nn_param.l2_normalize.axis;
+
+    self->n = vxL2NormalizeLayer2(
+        self->graph->g,
+        inputs[0]->t,
+        &param,
+        sizeof(vx_nn_l2norm_params_t),
+        outputs[0]->t
+        );
+
+    if( NULL != self->n )
+    {
+        status = VSI_SUCCESS;
+    }
+#else
     vsi_nn_l2_normalize_param * p;
     int32_t axis = -1;
     uint32_t i = 0;
@@ -96,7 +114,7 @@ static vsi_status op_compute
 
     if (vx_input) vxReleaseTensor(&vx_input);
     if (vx_output) vxReleaseTensor(&vx_output);
-
+#endif
     return status;
 } /* op_compute() */
 
