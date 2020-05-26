@@ -434,6 +434,17 @@ OperationPtr NnApiInterpreter::map_CONV_2D(Model* model,
             conv2d->pad[2] = inputs[argList->ArgPos("explicit_pad_top")]->scalar.int32;
             conv2d->pad[3] = inputs[argList->ArgPos("explicit_pad_bottom")]->scalar.int32;
         }
+        /*driver require that bias' type is the sanme as weight's*/
+        if( inputs[1]->type == OperandType::TENSOR_QUANT8_SYMM_PER_CHANNEL ){
+            int32_t dim = inputs[1]->dimensions.size();
+            inputs[1]->quant.vec.channelDim =
+               static_cast<uint32_t>(convertAxis(inputs[1]->quant.vec.channelDim, dim));
+
+            inputs[2]->quant.vec.scale.resize(inputs[1]->quant.vec.scale.size(), 0);
+            inputs[2]->quant.vec.zeroPoint.resize(inputs[1]->quant.vec.scale.size(), 0);
+            for(size_t i = 0; i < inputs[2]->quant.vec.scale.size(); i++)
+                inputs[2]->quant.vec.scale[i] = inputs[0]->quant.scalar.scale * inputs[1]->quant.vec.scale[i];
+        }
         // dilation is required in Lowlevel requirement
         conv2d->dilations[0] = 1;
         conv2d->dilations[1] = 1;
@@ -486,6 +497,19 @@ OperationPtr NnApiInterpreter::map_GROUPED_CONV_2D(Model* model,
             conv2d->pad[2] = inputs[argList->ArgPos("pad_top")]->scalar.int32;
             conv2d->pad[3] = inputs[argList->ArgPos("pad_bottom")]->scalar.int32;
         }
+
+        /*driver require that bias' type is the sanme as weight's*/
+        if( inputs[1]->type == OperandType::TENSOR_QUANT8_SYMM_PER_CHANNEL ){
+            int32_t dim = inputs[1]->dimensions.size();
+            inputs[1]->quant.vec.channelDim =
+               static_cast<uint32_t>(convertAxis(inputs[1]->quant.vec.channelDim, dim));
+
+            inputs[2]->quant.vec.scale.resize(inputs[1]->quant.vec.scale.size(), 0);
+            inputs[2]->quant.vec.zeroPoint.resize(inputs[1]->quant.vec.scale.size(), 0);
+            for(size_t i = 0; i < inputs[2]->quant.vec.scale.size(); i++)
+                inputs[2]->quant.vec.scale[i] = inputs[0]->quant.scalar.scale * inputs[1]->quant.vec.scale[i];
+        }
+
         conv2d->strides[0] = inputs[argList->ArgPos("stride_w")]->scalar.int32;
         conv2d->strides[1] = inputs[argList->ArgPos("stride_h")]->scalar.int32;
         conv2d->groups = inputs[argList->ArgPos("groups_num")]->scalar.int32;
@@ -540,6 +564,18 @@ OperationPtr NnApiInterpreter::map_DEPTHWISE_CONV_2D(Model* model,
         } else {
             assert(0);
             NNRT_LOGE("NNAPI_interpreter") << "Argument padding method not found";
+        }
+
+        /*driver require that bias' type is the sanme as weight's*/
+        if( inputs[1]->type == OperandType::TENSOR_QUANT8_SYMM_PER_CHANNEL ){
+            int32_t dim = inputs[1]->dimensions.size();
+            inputs[1]->quant.vec.channelDim =
+               static_cast<uint32_t>(convertAxis(inputs[1]->quant.vec.channelDim, dim));
+
+            inputs[2]->quant.vec.scale.resize(inputs[1]->quant.vec.scale.size(), 0);
+            inputs[2]->quant.vec.zeroPoint.resize(inputs[1]->quant.vec.scale.size(), 0);
+            for(size_t i = 0; i < inputs[2]->quant.vec.scale.size(); i++)
+                inputs[2]->quant.vec.scale[i] = inputs[0]->quant.scalar.scale * inputs[1]->quant.vec.scale[i];
         }
 
         conv2d->strides[0] = inputs[argList->ArgPos("stride_w")]->scalar.int32;

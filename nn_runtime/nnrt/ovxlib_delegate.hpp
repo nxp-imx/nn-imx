@@ -67,10 +67,15 @@ class OvxlibDelegate
             return (code != FusedType::NONE);
         }
 
+        void setQuantParameter(vsi_nn_tensor_attr_t* attr, float scale, int32_t zero_point);
+
+        void setPerChannelParameter(vsi_nn_tensor_attr_t* attr, float* scales, int32_t * zps,
+                                    uint32_t scales_num, uint32_t channel_dim);
+
         void packTensorAttr(vsi_nn_tensor_attr_t* attr,
             vsi_nn_type_e dtype, std::vector<uint32_t> & nchw_shape,
-            bool is_quantized, float scale, int32_t zero_point,
-            TensorLifeTime type);
+            bool is_quantized, bool is_perchannel, float *scale,
+            int32_t *zero_point, uint32_t scale_dim, uint32_t channel_dim, TensorLifeTime type);
 
         void packTensorAttr(vsi_nn_tensor_attr_t* attr,
             nnrt::op::OperandPtr operand, TensorLifeTime type);
