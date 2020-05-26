@@ -224,14 +224,6 @@ static vsi_status op_init
 {
     vsi_status status = VSI_SUCCESS;
 
-    self->nn_param.prelu.local   =
-    (vsi_nn_prelu_lcl_data *)malloc(sizeof(vsi_nn_prelu_lcl_data));
-    if (NULL == self->nn_param.prelu.local)
-    {
-        return  VX_ERROR_NO_MEMORY;
-    }
-    memset(self->nn_param.prelu.local, 0, sizeof(vsi_nn_prelu_lcl_data));
-
     if (vsi_nn_compareVersion(self->graph, 1, 1, 17) == -1)
     {
         self->nn_param.prelu.axis = VSI_NN_PRELU_DEFAULT_AXIS;
