@@ -21,54 +21,25 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-/** @file */
-#ifndef _VSI_NN_VERSION_H_
-#define _VSI_NN_VERSION_H_
+#ifndef VSI_NN_GRAPH_OPTIMIZATION_H
+#define VSI_NN_GRAPH_OPTIMIZATION_H
 
 #include "vsi_nn_types.h"
+#include "vsi_nn_tensor.h"
 
-#if defined(__cplusplus)
-extern "C"{
+
+#ifdef __cplusplus
+extern "C" {
 #endif
 
-#define VSI_NN_VERSION_MAJOR 1
-#define VSI_NN_VERSION_MINOR 1
-#define VSI_NN_VERSION_PATCH 23
-#define VSI_NN_VERSION \
-    (VSI_NN_VERSION_MAJOR * 10000 + VSI_NN_VERSION_MINOR * 100 + VSI_NN_VERSION_PATCH)
+vsi_status vsi_nn_OptimizeGraph
+    (
+    vsi_nn_graph_t* graph,
+    vsi_bool *dirty
+    );
 
-/**
- * Ovxlib version check
- * Ovxlib will check the suitable version at compile time.
- * @note Ovxlib version should be always greater or equal to case version.
- */
-#define _version_assert _compiler_assert
-
-/**
- * Get ovxlib version
- * Get ovxlib version string.
- */
-OVXLIB_API const char *vsi_nn_GetVersion(void);
-
-/**
- * Get ovxlib version major
- * Get ovxlib version major, return integer value.
- */
-OVXLIB_API uint32_t vsi_nn_GetVersionMajor(void);
-
-/**
- * Get ovxlib version minor
- * Get ovxlib version minor, return integer value.
- */
-OVXLIB_API uint32_t vsi_nn_GetVersionMinor(void);
-
-/**
- * Get ovxlib version patch
- * Get ovxlib version patch, return integer value.
- */
-OVXLIB_API uint32_t vsi_nn_GetVersionPatch(void);
-
-#if defined(__cplusplus)
+#ifdef __cplusplus
 }
 #endif
+
 #endif

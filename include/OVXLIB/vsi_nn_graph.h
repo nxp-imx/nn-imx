@@ -59,6 +59,14 @@
  * */
 #define VSI_NN_POSTPROC_NODE_UID_BASE   20000
 
+/**
+ * Default data convert node base uid.
+ * When add new data convert node in
+ * graph, node uid is set based on it.
+ * @see vsi_nn_AddPreprocNode
+ * */
+#define VSI_NN_DATACONVERT_NODE_UID_BASE    30000
+
 #ifdef __cplusplus
 extern "C" {
 #endif

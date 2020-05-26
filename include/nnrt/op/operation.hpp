@@ -172,6 +172,10 @@ class Operation : nnrt::layout_inference::ILayoutInference {
         Model& model,
         std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>&
             out_permute_vectors);
+    void handleLayoutInferenceOnInputsForNhwcCommon(
+        Model& model,
+        std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>&
+            out_permute_vectors);
     void handleLayoutInferenceOnOutputs(
         Model& mode, std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>&);
 
