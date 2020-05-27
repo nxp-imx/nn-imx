@@ -12,15 +12,13 @@ INCLUDE += -I$(OVXLIB_DIR)/include/platform
 INCLUDE += -I ../ -I ./boost/libs/preprocessor/include/
 
 # git head shaid
-$(shell chmod u+x ./git_head_version.sh)
-HEAD_VERSION=$(shell ./git_head_version.sh)
+HEAD_VERSION=$(shell pwd | sh ./git_head_version.sh)
 
 ifneq ($(HEAD_VERSION),)
 DIRTY=$(shell git diff --quiet HEAD || echo '-dirty')
-CFLAGS += -DGIT_STRING='$(HEAD_VERSION)$(DIRTY)'
+CFLAGS += -D 'GIT_STRING=$(HEAD_VERSION)$(DIRTY)'
 $(info "add git head version $(HEAD_VERSION)$(DIRTY)")
 endif
-$(shell chmod u-x ./git_head_version.sh)
 
 CFLAGS += $(INCLUDE) -std=c++11
 CFLAGS += -D'OVXLIB_API=__attribute__((visibility("default")))'
