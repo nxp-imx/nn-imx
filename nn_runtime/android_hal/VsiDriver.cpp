@@ -698,9 +698,9 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
     }
     for (auto inIdx : operation.inputs) {
         auto& dims = model.operands[inIdx].dimensions;
-        if (dims.size() > 6) {
+        if (dims.size() > 6 || dims.size() == 0) {
             isSupport &= false;
-            reason += "reject op because its input rank > 6\n";
+            reason += "reject op because its input rank > 6 or = 0\n";
         }
         for (auto dim : dims) {
             if (dim == 0) {
@@ -718,9 +718,9 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
     }
     for (size_t i = 0; i < operation.outputs.size(); i++) {
         auto& dims = model.operands[operation.outputs[i]].dimensions;
-        if (dims.size() > 6) {
+        if (dims.size() > 6 || dims.size() == 0) {
             isSupport &= false;
-            reason += "reject op because its output rank > 6\n";
+            reason += "reject op because its output rank > 6 or = 0\n";
         }
         for (auto dimIndex : dims)
             if (dimIndex == 0) {

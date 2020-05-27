@@ -108,8 +108,8 @@ class OperationValidate {
         if (0 == m_Operation.inputs.size()) return false;
         for (auto inIdx : m_Operation.inputs) {
             auto& dims = m_Model.operands[inIdx].dimensions;
-            if (dims.size() > 6) {
-                reason += "reject op because its input rank > 6\n";
+            if (dims.size() > 6 || dims.size() == 0) {
+                reason += "reject op because its input rank > 6 or = 0\n";
                 return false;
             }
             for (auto dim : dims) {
@@ -122,8 +122,8 @@ class OperationValidate {
         if (0 == m_Operation.outputs.size()) return false;
         for (auto outIdx : m_Operation.outputs) {
             auto& dims = m_Model.operands[outIdx].dimensions;
-            if (dims.size() > 6) {
-                reason += "reject op because its output rank > 6\n";
+            if (dims.size() > 6 || dims.size() == 0) {
+                reason += "reject op because its output rank > 6 or = 0\n";
                 return false;
             }
             for (auto dim : dims) {
