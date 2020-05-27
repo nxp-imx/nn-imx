@@ -129,6 +129,22 @@ T_type getScalarData(const HalPlatform::Model& model, const HalPlatform::Operand
         return 0;
 }
 
+bool isTensor(const HalPlatform::Operand& operand) {
+    bool tensor = true;
+    switch (operand.type) {
+        case OperandType::BOOL:
+        case OperandType::FLOAT16:
+        case OperandType::FLOAT32:
+        case OperandType::INT32:
+        case OperandType::UINT32:
+            tensor = false;
+            break;
+        default:
+            tensor = true;
+    }
+    return tensor;
+}
+
 bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
                                      const HalPlatform::Model& model,
                                      std::string& reason) {
@@ -698,9 +714,13 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
     }
     for (auto inIdx : operation.inputs) {
         auto& dims = model.operands[inIdx].dimensions;
-        if (dims.size() > 6 || dims.size() == 0) {
+        if (isTensor(model.operands[inIdx]) && dims.size() == 0) {
             isSupport &= false;
-            reason += "reject op because its input rank > 6 or = 0\n";
+            reason += "reject op because its input tensor rank = 0\n";
+        }
+        if (dims.size() > 6) {
+            isSupport &= false;
+            reason += "reject op because its input rank > 6\n";
         }
         for (auto dim : dims) {
             if (dim == 0) {
@@ -718,9 +738,13 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
     }
     for (size_t i = 0; i < operation.outputs.size(); i++) {
         auto& dims = model.operands[operation.outputs[i]].dimensions;
-        if (dims.size() > 6 || dims.size() == 0) {
+        if (isTensor(model.operands[operation.outputs[i]]) && dims.size() == 0) {
             isSupport &= false;
-            reason += "reject op because its output rank > 6 or = 0\n";
+            reason += "reject op because its output tensor rank = 0\n";
+        }
+        if (dims.size() > 6) {
+            isSupport &= false;
+            reason += "reject op because its output rank > 6\n";
         }
         for (auto dimIndex : dims)
             if (dimIndex == 0) {

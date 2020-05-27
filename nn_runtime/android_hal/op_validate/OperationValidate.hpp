@@ -36,9 +36,8 @@
 namespace android {
 namespace nn {
 namespace op_validate {
-namespace get_buffer {
 using HalPlatform = vsi_driver::HalPlatform;
-
+namespace get_buffer {
 const uint8_t* getOperandDataPtr(const HalPlatform::Model& model,
                                  const HalPlatform::Operand& halOperand,
                                  vsi_driver::VsiRTInfo& vsiMemory) {
@@ -103,13 +102,33 @@ class OperationValidate {
     // Default implementation
     virtual bool SignatureCheck(std::string& reason) { return true; };
 
+    bool IsTensor(const HalPlatform::Operand& operand) {
+        bool tensor = true;
+        switch (operand.type) {
+            case OperandType::BOOL:
+            case OperandType::FLOAT16:
+            case OperandType::FLOAT32:
+            case OperandType::INT32:
+            case OperandType::UINT32:
+                tensor = false;
+                break;
+            default:
+                tensor = true;
+        }
+        return tensor;
+    }
+
     bool DimentionCheck(std::string& reason) {
         // Check inputs
         if (0 == m_Operation.inputs.size()) return false;
         for (auto inIdx : m_Operation.inputs) {
             auto& dims = m_Model.operands[inIdx].dimensions;
-            if (dims.size() > 6 || dims.size() == 0) {
-                reason += "reject op because its input rank > 6 or = 0\n";
+            if (IsTensor(m_Model.operands[inIdx]) && dims.size() == 0) {
+                reason += "reject op because its input tensor rank == 0\n";
+                return false;
+            }
+            if (dims.size() > 6) {
+                reason += "reject op because its input rank > 6\n";
                 return false;
             }
             for (auto dim : dims) {
@@ -122,8 +141,12 @@ class OperationValidate {
         if (0 == m_Operation.outputs.size()) return false;
         for (auto outIdx : m_Operation.outputs) {
             auto& dims = m_Model.operands[outIdx].dimensions;
-            if (dims.size() > 6 || dims.size() == 0) {
-                reason += "reject op because its output rank > 6 or = 0\n";
+            if (IsTensor(m_Model.operands[outIdx]) && dims.size() == 0) {
+                reason += "reject op because its output tensor rank == 0\n";
+                return false;
+            }
+            if (dims.size() > 6) {
+                reason += "reject op because its output rank > 6\n";
                 return false;
             }
             for (auto dim : dims) {
