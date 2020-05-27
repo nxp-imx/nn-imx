@@ -827,8 +827,17 @@ OperationPtr NnApiInterpreter::map_SQUEEZE(Model* model,
     if (inputs[1]->isConst()) {
         squeeze->axes.clear();
         int32_t* buffer = model->getBuffer<int32_t>(inputs[1]->weak_mem_ref.lock());
-        squeeze->axes = convertAxes(buffer, inputs[1]->size(), inputs[0]->ndim());
-        // TODO: remove buffer
+        std::set<int32_t> axes;
+        for (size_t i = 0; i < inputs[1]->size(); ++i) {
+            if (buffer[i] < 0) {
+                axes.insert(buffer[i] + inputs[0]->ndim());
+            } else {
+                axes.insert(buffer[i]);
+            }
+        }
+        std::for_each(axes.begin(), axes.end(), [&squeeze](const int32_t& axis) {
+            squeeze->axes.push_back(axis);
+        });
     }
     truncateOperationIOs(model, operation, 1, 1);
     return squeeze;
