@@ -89,15 +89,12 @@ LOCAL_CFLAGS :=  \
     -Wno-implicit-fallthrough\
     -frtti
 
-#$(shell chmod u+x $(LOCAL_PATH)/git_head_version.sh)
-HEAD_VERSION=$(shell $(LOCAL_PATH)/git_head_version.sh)
-
+NN_LOCAL_PATH := $(LOCAL_PATH)
+HEAD_VERSION=$(shell cd $(NN_LOCAL_PATH)/../../;./nn_runtime/nnrt/git_head_version.sh)
 ifneq ($(HEAD_VERSION),)
 DIRTY=$(shell git diff --quiet HEAD || echo '-dirty')
-LOCAL_CFLAGS += -DGIT_STRING='$(HEAD_VERSION)$(DIRTY)'
+LOCAL_CFLAGS += -DGIT_STRING=$(HEAD_VERSION)$(DIRTY)
 endif
-#$(shell chmod u-x $(LOCAL_PATH)/git_head_version.sh)
-
 
 ifeq ($(DUMP_JSON_MODEL), 1)
 LOCAL_CFLAGS += \
