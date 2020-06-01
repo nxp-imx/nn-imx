@@ -214,16 +214,19 @@ namespace nnrt {
                 buffer = (int8_t*)&operand->scalar;
                 length = operandTypeSize(operand->type);
             } else {
-                // Not need to dump value for model input and output operands.
-                // Model input value is dumped in getInputsData.
-                const auto modelInputIds = model_->inputIndexes();
-                const auto modelOutputIds = model_->outputIndexes();
-                if (modelInputIds.end() ==
-                        std::find(modelInputIds.begin(), modelInputIds.end(), index) &&
-                    modelOutputIds.end() ==
-                        std::find(modelOutputIds.begin(), modelOutputIds.end(), index)) {
-                    buffer = model_->getBuffer<int8_t>(operand->weak_mem_ref.lock());
-                    if (buffer) length = operand->weak_mem_ref.lock()->len_;
+                // Only dump constant tensor, not need to dump virtual tensor
+                if (operand->isConst()) {
+                    // Not need to dump value for model input and output operands.
+                    // Model input value is dumped in getInputsData.
+                    const auto modelInputIds = model_->inputIndexes();
+                    const auto modelOutputIds = model_->outputIndexes();
+                    if (modelInputIds.end() ==
+                            std::find(modelInputIds.begin(), modelInputIds.end(), index) &&
+                        modelOutputIds.end() ==
+                            std::find(modelOutputIds.begin(), modelOutputIds.end(), index)) {
+                        buffer = model_->getBuffer<int8_t>(operand->weak_mem_ref.lock());
+                        if (buffer) length = operand->weak_mem_ref.lock()->len_;
+                    }
                 }
             }
         }
