@@ -27,6 +27,10 @@
 #include <cstdint>
 #include <string>
 
+#ifdef LINUX
+#include <HAL/gc_hal_version.h>
+#endif
+
 #define NNRT_MAJOR_VERSION 1
 #define NNRT_MINOR_VERSION 0
 #define NNRT_PATCH_VERSION 4
@@ -37,13 +41,22 @@ const char * VERSION_STR ="\n\0$VERSION$"
                           STR(NNRT_MAJOR_VERSION) "."
                           STR(NNRT_MINOR_VERSION) "."
                           STR(NNRT_PATCH_VERSION)
-                          ":" STR(GIT_STRING)
+#ifdef LINUX
+                          "_"
+                          gcvVERSION_STRING
+#endif
+                          ":"
+                          STR(GIT_STRING)
                           "$\n";
 #else
 const char * VERSION_STR ="\n\0$VERSION$"
                           STR(NNRT_MAJOR_VERSION) "."
                           STR(NNRT_MINOR_VERSION) "."
                           STR(NNRT_PATCH_VERSION)
+#ifdef LINUX
+                          "_"
+                          gcvVERSION_STRING
+#endif
                           "$\n";
 #endif
 
