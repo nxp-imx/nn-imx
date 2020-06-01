@@ -27,16 +27,39 @@
 #include <cstdint>
 #include <string>
 
+#ifdef LINUX
+#include <HAL/gc_hal_version.h>
+#endif
+
 #define NNRT_MAJOR_VERSION 1
-#define NNRT_MINOR_VERSION 1
-#define NNRT_PATCH_VERSION 6
+#define NNRT_MINOR_VERSION 0
+#define NNRT_PATCH_VERSION 4
 #define _STR(A) #A
 #define STR(A) _STR(A)
 #ifdef GIT_STRING
-#define VERSION_STR(mj, mi, pt) STR(mj) "." STR(mi) "." STR(pt) "." STR(GIT_STRING)
-#else
-#define VERSION_STR(mj, mi, pt) STR(mj) "." STR(mi) "." STR(pt)
+const char * VERSION_STR ="\n\0$VERSION$"
+                          STR(NNRT_MAJOR_VERSION) "."
+                          STR(NNRT_MINOR_VERSION) "."
+                          STR(NNRT_PATCH_VERSION)
+#ifdef LINUX
+                          "_"
+                          gcvVERSION_STRING
 #endif
+                          ":"
+                          STR(GIT_STRING)
+                          "$\n";
+#else
+const char * VERSION_STR ="\n\0$VERSION$"
+                          STR(NNRT_MAJOR_VERSION) "."
+                          STR(NNRT_MINOR_VERSION) "."
+                          STR(NNRT_PATCH_VERSION)
+#ifdef LINUX
+                          "_"
+                          gcvVERSION_STRING
+#endif
+                          "$\n";
+#endif
+
 namespace nnrt {
 template <uint32_t Major, uint32_t Minor, uint32_t Patch>
 struct Version {
@@ -44,8 +67,7 @@ struct Version {
     static constexpr uint32_t value = Major * 10000U + Minor * 100U + Patch;
 
     static const char* as_str() {
-        static const char* nnrt_version =
-            VERSION_STR(NNRT_MAJOR_VERSION, NNRT_MINOR_VERSION, NNRT_PATCH_VERSION);
+        static const char* nnrt_version = VERSION_STR;
         return nnrt_version;
     }
 };
@@ -56,5 +78,4 @@ static constexpr uint32_t VERSION_NUM = VERSION::value;
 
 #undef STR
 #undef _STR
-#undef VERSION_STR
 #endif
