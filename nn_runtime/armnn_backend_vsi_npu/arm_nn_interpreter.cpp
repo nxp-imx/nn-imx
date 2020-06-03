@@ -685,11 +685,12 @@ OperationPtr Armnn_Interpreter::map_SPACE_TO_DEPTH(Model* model,
 OperationPtr Armnn_Interpreter::map_DEPTH_TO_SPACE(Model* model,
                                                   OperationPtr operation,
                                                   uint32_t operation_index) {
-    NNAPI_CHECK_IO_NUM(operation, 2, 1);
+    NNAPI_CHECK_IO_NUM(operation, 3, 1);
     std::shared_ptr<DepthToSpaceOperation> dp_to_sp = std::make_shared<DepthToSpaceOperation>();
     NNAPI_CHECK_PTR(dp_to_sp);
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
     dp_to_sp->blockSize = inputs[1]->scalar.int32;
+    dp_to_sp->setDataLayout(DataLayout(inputs[2]->scalar.int32));
     truncateOperationIOs(model, operation, 1, 1);
     return dp_to_sp;
 }

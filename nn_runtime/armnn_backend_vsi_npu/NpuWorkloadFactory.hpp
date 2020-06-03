@@ -220,6 +220,8 @@ public:
     std::unique_ptr<IWorkload> CreateElementwiseUnary(
         const ElementwiseUnaryQueueDescriptor& descriptor, const WorkloadInfo& info) const override;
 
+    std::unique_ptr<IWorkload> CreateDepthToSpace(const DepthToSpaceQueueDescriptor& descriptor,
+                                                  const WorkloadInfo& info) const override;
    private:
 
     template <typename Fp16Workload, typename F32Workload, typename U8Workload, typename QueueDescriptorType>

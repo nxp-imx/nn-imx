@@ -61,6 +61,7 @@
 #include "workloads/NpuConstantWorkload.hpp"
 #include "workloads/NpuComparisonWorkload.hpp"
 #include "workloads/NpuGatherWorkload.hpp"
+#include "workloads/NpuDepthToSpaceWorkload.hpp"
 
 #include <iostream>
 
@@ -450,6 +451,13 @@ std::unique_ptr<IWorkload> NpuWorkloadFactory::CreateElementwiseUnary(
     return MakeWorkload<NpuElementwiseUnarytFloat16Workload,
                         NpuElementwiseUnarytFloat32Workload,
                         NpuElementwiseUnarytUint8Workload>(descriptor, info);
+}
+
+std::unique_ptr<IWorkload> NpuWorkloadFactory::CreateDepthToSpace(
+    const DepthToSpaceQueueDescriptor& descriptor, const WorkloadInfo& info) const {
+    return MakeWorkload<NpuDepthToSpaceFloat16Workload,
+                        NpuDepthToSpaceFloat32Workload,
+                        NpuDepthToSpaceUint8Workload>(descriptor, info);
 }
 
 }  // namespace armnn

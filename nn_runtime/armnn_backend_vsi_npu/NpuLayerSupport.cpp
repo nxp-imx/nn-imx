@@ -1671,5 +1671,32 @@ bool NpuLayerSupport::IsComparisonSupported(const TensorInfo& input0,
     return supported;
 }
 
+bool NpuLayerSupport::IsDepthToSpaceSupported(const TensorInfo& input,
+                                              const TensorInfo& output,
+                                              const DepthToSpaceDescriptor& descriptor,
+                                              Optional<std::string&> reasonIfUnsupported) const
+{
+    ignore_unused(descriptor);
+    bool supported = true;
+
+    std::array<DataType,3> supportedTypes =
+    {
+        DataType::Float32,
+        DataType::Float16,
+        DataType::QAsymmU8,
+    };
+
+    supported &= CheckSupportRule(TypeAnyOf(input, supportedTypes), reasonIfUnsupported,
+        "NPU DepthToSpace: input type not supported");
+
+    supported &= CheckSupportRule(TypeAnyOf(output, supportedTypes), reasonIfUnsupported,
+        "NPU DepthToSpace: output type not supported");
+
+    supported &= CheckSupportRule(TypesAreEqual(input, output), reasonIfUnsupported,
+        "NPU DepthToSpace: input and output types are mismatched");
+
+    return supported;
+}
+
 
 }  // namespace armnn

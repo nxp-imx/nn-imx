@@ -325,6 +325,12 @@ public:
         const TensorInfo& output,
         const ComparisonDescriptor& descriptor,
         Optional<std::string&> reasonIfUnsupported = EmptyOptional()) const override;
+
+    bool IsDepthToSpaceSupported(
+        const TensorInfo& input,
+        const TensorInfo& output,
+        const DepthToSpaceDescriptor& descriptor,
+        Optional<std::string&> reasonIfUnsupported = EmptyOptional()) const override;
 };
 
 } // namespace armnn
