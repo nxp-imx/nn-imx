@@ -92,7 +92,7 @@ LOCAL_CFLAGS :=  \
 NN_LOCAL_PATH := $(LOCAL_PATH)
 HEAD_VERSION=$(shell cd $(NN_LOCAL_PATH)/../../;./nn_runtime/nnrt/git_head_version.sh)
 ifneq ($(HEAD_VERSION),)
-DIRTY=$(shell git diff --quiet HEAD || echo '-dirty')
+DIRTY=$(shell cd $(NN_LOCAL_PATH)/../../;git diff --quiet HEAD || echo '-dirty')
 LOCAL_CFLAGS += -DGIT_STRING=$(HEAD_VERSION)$(DIRTY)
 endif
 
