@@ -51,21 +51,52 @@ class NpuComparisonWorkload : public TNpuWorkload<ComparisonQueueDescriptor, Dat
         switch (descriptor.m_Parameters.m_Operation) {
             case ComparisonOperation::Equal: {
                 this->AddOperation(nnrt::OperationType::EQUAL,
-                           inOperandIds.size(),
-                           inOperandIds.data(),
-                           outOperandIds.size(),
-                           outOperandIds.data());
-                           break;
+                                   inOperandIds.size(),
+                                   inOperandIds.data(),
+                                   outOperandIds.size(),
+                                   outOperandIds.data());
+                break;
             }
             case ComparisonOperation::Greater: {
                 this->AddOperation(nnrt::OperationType::GREATER,
-                           inOperandIds.size(),
-                           inOperandIds.data(),
-                           outOperandIds.size(),
-                           outOperandIds.data());
-                           break;
+                                   inOperandIds.size(),
+                                   inOperandIds.data(),
+                                   outOperandIds.size(),
+                                   outOperandIds.data());
+                break;
             }
-            // TODO: Add GreaterOrEqual, Less, LessOrEqual, NotEqual
+            case ComparisonOperation::GreaterOrEqual: {
+                this->AddOperation(nnrt::OperationType::GREATER_EQUAL,
+                                   inOperandIds.size(),
+                                   inOperandIds.data(),
+                                   outOperandIds.size(),
+                                   outOperandIds.data());
+                break;
+            }
+            case ComparisonOperation::NotEqual: {
+                this->AddOperation(nnrt::OperationType::NOT_EQUAL,
+                                   inOperandIds.size(),
+                                   inOperandIds.data(),
+                                   outOperandIds.size(),
+                                   outOperandIds.data());
+                break;
+            }
+            case ComparisonOperation::Less: {
+                this->AddOperation(nnrt::OperationType::LESS,
+                                   inOperandIds.size(),
+                                   inOperandIds.data(),
+                                   outOperandIds.size(),
+                                   outOperandIds.data());
+                break;
+            }
+            case ComparisonOperation::LessOrEqual: {
+                this->AddOperation(nnrt::OperationType::LESS_EQUAL,
+                                   inOperandIds.size(),
+                                   inOperandIds.data(),
+                                   outOperandIds.size(),
+                                   outOperandIds.data());
+                break;
+            }
             default:
                 std::cout << "Not support ComparisonOperation.";
                 assert(false);

@@ -267,6 +267,14 @@ struct IsNormChannelTypeSupported : public Rule {
     }
 };
 
+struct TypeIs : public Rule
+{
+    TypeIs(const TensorInfo& info, DataType dt)
+    {
+        m_Res = dt == info.GetDataType();
+    }
+};
+
 }  // namespace
 
 bool NpuLayerSupport::IsActivationSupported(const TensorInfo& input,
@@ -733,28 +741,11 @@ bool NpuLayerSupport::IsEqualSupported(const TensorInfo& input0,
                                        const TensorInfo& input1,
                                        const TensorInfo& output,
                                        Optional<std::string&> reasonIfUnsupported) const {
-    bool supported = true;
-
-    std::array<DataType, 3> supportedTypes = {
-        DataType::Float32, DataType::Float16, DataType::QAsymmU8};
-
-    supported &= CheckSupportRule(TypeAnyOf(input0, supportedTypes),
-                                  reasonIfUnsupported,
-                                  "Npu equal: input 0 is not a supported type.");
-
-    supported &= CheckSupportRule(TypeAnyOf(input1, supportedTypes),
-                                  reasonIfUnsupported,
-                                  "Npu equal: input 1 is not a supported type.");
-
-    supported &= CheckSupportRule(TypesAreEqual(input0, input1),
-                                  reasonIfUnsupported,
-                                  "Npu equal: input 0 and Input 1 types are mismatched");
-
-    supported &= CheckSupportRule(ShapesAreBroadcastCompatible(input0, input1, output),
-                                  reasonIfUnsupported,
-                                  "Npu equal: shapes are not suitable for implicit broadcast.");
-
-    return supported;
+    return IsComparisonSupported(input0,
+                                 input1,
+                                 output,
+                                 ComparisonDescriptor(ComparisonOperation::Equal),
+                                 reasonIfUnsupported);
 }
 
 bool NpuLayerSupport::IsFakeQuantizationSupported(
@@ -855,13 +846,11 @@ bool NpuLayerSupport::IsGreaterSupported(const TensorInfo& input0,
                                          const TensorInfo& input1,
                                          const TensorInfo& output,
                                          Optional<std::string&> reasonIfUnsupported) const {
-    ignore_unused(input0);
-    ignore_unused(input1);
-    ignore_unused(output);
-    ignore_unused(reasonIfUnsupported);
-    return false;
-    return IsSupportedForDataTypeRef(
-        reasonIfUnsupported, input0.GetDataType(), &TrueFunc<>, &TrueFunc<>);
+    return IsComparisonSupported(input0,
+                                 input1,
+                                 output,
+                                 ComparisonDescriptor(ComparisonOperation::Greater),
+                                 reasonIfUnsupported);
 }
 
 bool NpuLayerSupport::IsInputSupported(const TensorInfo& input,
@@ -1625,31 +1614,59 @@ bool NpuLayerSupport::IsTransposeConvolution2dSupported(const TensorInfo& input,
 
     supported &= CheckSupportRule(TypeAnyOf(input, supportedTypes),
               reasonIfUnsupported,
-              "Reference transpose_convolution2d: input is not a supported type.");
+              "Npu transpose_convolution2d: input is not a supported type.");
 
     supported &= CheckSupportRule(TypeAnyOf(output, supportedTypes),
               reasonIfUnsupported,
-              "Reference transpose_convolution2d: output is not a supported type.");
+              "Npu transpose_convolution2d: output is not a supported type.");
 
     supported &= CheckSupportRule(TypeAnyOf(weights, supportedTypes),
               reasonIfUnsupported,
-              "Reference transpose_convolution2d: weights is not a supported type.");
+              "Npu transpose_convolution2d: weights is not a supported type.");
 
     supported &= CheckSupportRule(TypesAreEqual(input, output),
               reasonIfUnsupported,
-              "Reference transpose_convolution2d: input and output types mismatched.");
+              "Npu transpose_convolution2d: input and output types mismatched.");
 
     supported &= CheckSupportRule(TypesAreEqual(input, weights),
               reasonIfUnsupported,
-              "Reference transpose_convolution2d: input and weights types mismatched.");
+              "Npu transpose_convolution2d: input and weights types mismatched.");
 
     if (biases.has_value()) {
         std::array<DataType, 3> biasesSupportedTypes = {DataType::Float32, DataType::Signed32};
         supported &= CheckSupportRule(TypeAnyOf(biases.value(), biasesSupportedTypes),
                 reasonIfUnsupported,
-                "Reference transpose_convolution2d: biases is not a supported type.");
+                "Npu transpose_convolution2d: biases is not a supported type.");
     }
     ignore_unused(descriptor);
+
+    return supported;
+}
+
+bool NpuLayerSupport::IsComparisonSupported(const TensorInfo& input0,
+                                            const TensorInfo& input1,
+                                            const TensorInfo& output,
+                                            const ComparisonDescriptor& descriptor,
+                                            Optional<std::string&> reasonIfUnsupported) const
+{
+    boost::ignore_unused(descriptor);
+
+    std::array<DataType, 3> supportedInputTypes =
+    {
+        DataType::Float32,
+        DataType::Float16,
+        DataType::QAsymmU8,
+    };
+
+    bool supported = true;
+    supported &= CheckSupportRule(TypeAnyOf(input0, supportedInputTypes), reasonIfUnsupported,
+                                  "Npu comparison: input 0 is not a supported type");
+
+    supported &= CheckSupportRule(TypesAreEqual(input0, input1), reasonIfUnsupported,
+                                  "Npu comparison: input 0 and Input 1 types are mismatched");
+
+    supported &= CheckSupportRule(TypeIs(output, DataType::Boolean), reasonIfUnsupported,
+                                  "Npu comparison: output is not of type Boolean");
 
     return supported;
 }

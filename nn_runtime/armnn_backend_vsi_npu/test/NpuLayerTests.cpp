@@ -704,63 +704,59 @@ ARMNN_AUTO_TEST_CASE(GreaterSimpleUint8,            GreaterSimpleUint8Test)
 ARMNN_AUTO_TEST_CASE(GreaterBroadcast1ElementUint8, GreaterBroadcast1ElementUint8Test)
 ARMNN_AUTO_TEST_CASE(GreaterBroadcast1dVectorUint8, GreaterBroadcast1dVectorUint8Test)
 
-// // GreaterOrEqual
-// ARMNN_AUTO_TEST_CASE(GreaterOrEqualSimple,            GreaterOrEqualSimpleTest)
-// ARMNN_AUTO_TEST_CASE(GreaterOrEqualBroadcast1Element, GreaterOrEqualBroadcast1ElementTest)
-// ARMNN_AUTO_TEST_CASE(GreaterOrEqualBroadcast1dVector, GreaterOrEqualBroadcast1dVectorTest)
+// GreaterOrEqual
+ARMNN_AUTO_TEST_CASE(GreaterOrEqualSimple, GreaterOrEqualSimpleTest)
+ARMNN_AUTO_TEST_CASE(GreaterOrEqualBroadcast1Element, GreaterOrEqualBroadcast1ElementTest)
+ARMNN_AUTO_TEST_CASE(GreaterOrEqualBroadcast1dVector, GreaterOrEqualBroadcast1dVectorTest)
 
-// ARMNN_AUTO_TEST_CASE(GreaterOrEqualSimpleFloat16,            GreaterOrEqualSimpleFloat16Test)
-// ARMNN_AUTO_TEST_CASE(GreaterOrEqualBroadcast1ElementFloat16,
-// GreaterOrEqualBroadcast1ElementFloat16Test)
-// ARMNN_AUTO_TEST_CASE(GreaterOrEqualBroadcast1dVectorFloat16,
-// GreaterOrEqualBroadcast1dVectorFloat16Test)
+ARMNN_AUTO_TEST_CASE(GreaterOrEqualSimpleFloat16, GreaterOrEqualSimpleFloat16Test)
+ARMNN_AUTO_TEST_CASE(GreaterOrEqualBroadcast1ElementFloat16,
+                     GreaterOrEqualBroadcast1ElementFloat16Test)
+ARMNN_AUTO_TEST_CASE(GreaterOrEqualBroadcast1dVectorFloat16,
+                     GreaterOrEqualBroadcast1dVectorFloat16Test)
 
-// ARMNN_AUTO_TEST_CASE(GreaterOrEqualSimpleUint8,            GreaterOrEqualSimpleUint8Test)
-// ARMNN_AUTO_TEST_CASE(GreaterOrEqualBroadcast1ElementUint8,
-// GreaterOrEqualBroadcast1ElementUint8Test)
-// ARMNN_AUTO_TEST_CASE(GreaterOrEqualBroadcast1dVectorUint8,
-// GreaterOrEqualBroadcast1dVectorUint8Test)
+ARMNN_AUTO_TEST_CASE(GreaterOrEqualSimpleUint8, GreaterOrEqualSimpleUint8Test)
+ARMNN_AUTO_TEST_CASE(GreaterOrEqualBroadcast1ElementUint8, GreaterOrEqualBroadcast1ElementUint8Test)
+ARMNN_AUTO_TEST_CASE(GreaterOrEqualBroadcast1dVectorUint8, GreaterOrEqualBroadcast1dVectorUint8Test)
 
-// // Less
-// ARMNN_AUTO_TEST_CASE(LessSimple,            LessSimpleTest)
-// ARMNN_AUTO_TEST_CASE(LessBroadcast1Element, LessBroadcast1ElementTest)
-// ARMNN_AUTO_TEST_CASE(LessBroadcast1dVector, LessBroadcast1dVectorTest)
+// Less
+ARMNN_AUTO_TEST_CASE(LessSimple, LessSimpleTest)
+ARMNN_AUTO_TEST_CASE(LessBroadcast1Element, LessBroadcast1ElementTest)
+ARMNN_AUTO_TEST_CASE(LessBroadcast1dVector, LessBroadcast1dVectorTest)
 
-// ARMNN_AUTO_TEST_CASE(LessSimpleFloat16,            LessSimpleFloat16Test)
-// ARMNN_AUTO_TEST_CASE(LessBroadcast1ElementFloat16, LessBroadcast1ElementFloat16Test)
-// ARMNN_AUTO_TEST_CASE(LessBroadcast1dVectorFloat16, LessBroadcast1dVectorFloat16Test)
+ARMNN_AUTO_TEST_CASE(LessSimpleFloat16, LessSimpleFloat16Test)
+ARMNN_AUTO_TEST_CASE(LessBroadcast1ElementFloat16, LessBroadcast1ElementFloat16Test)
+ARMNN_AUTO_TEST_CASE(LessBroadcast1dVectorFloat16, LessBroadcast1dVectorFloat16Test)
 
-// ARMNN_AUTO_TEST_CASE(LessSimpleUint8,            LessSimpleUint8Test)
-// ARMNN_AUTO_TEST_CASE(LessBroadcast1ElementUint8, LessBroadcast1ElementUint8Test)
-// ARMNN_AUTO_TEST_CASE(LessBroadcast1dVectorUint8, LessBroadcast1dVectorUint8Test)
+ARMNN_AUTO_TEST_CASE(LessSimpleUint8, LessSimpleUint8Test)
+ARMNN_AUTO_TEST_CASE(LessBroadcast1ElementUint8, LessBroadcast1ElementUint8Test)
+ARMNN_AUTO_TEST_CASE(LessBroadcast1dVectorUint8, LessBroadcast1dVectorUint8Test)
 
-// // GreaterOrEqual
-// ARMNN_AUTO_TEST_CASE(LessOrEqualSimple,            LessOrEqualSimpleTest)
-// ARMNN_AUTO_TEST_CASE(LessOrEqualBroadcast1Element, LessOrEqualBroadcast1ElementTest)
-// ARMNN_AUTO_TEST_CASE(LessOrEqualBroadcast1dVector, LessOrEqualBroadcast1dVectorTest)
+// LessOrEqual
+ARMNN_AUTO_TEST_CASE(LessOrEqualSimple, LessOrEqualSimpleTest)
+ARMNN_AUTO_TEST_CASE(LessOrEqualBroadcast1Element, LessOrEqualBroadcast1ElementTest)
+ARMNN_AUTO_TEST_CASE(LessOrEqualBroadcast1dVector, LessOrEqualBroadcast1dVectorTest)
 
-// ARMNN_AUTO_TEST_CASE(LessOrEqualSimpleFloat16,            LessOrEqualSimpleFloat16Test)
-// ARMNN_AUTO_TEST_CASE(LessOrEqualBroadcast1ElementFloat16,
-// LessOrEqualBroadcast1ElementFloat16Test)
-// ARMNN_AUTO_TEST_CASE(LessOrEqualBroadcast1dVectorFloat16,
-// LessOrEqualBroadcast1dVectorFloat16Test)
+ARMNN_AUTO_TEST_CASE(LessOrEqualSimpleFloat16, LessOrEqualSimpleFloat16Test)
+ARMNN_AUTO_TEST_CASE(LessOrEqualBroadcast1ElementFloat16, LessOrEqualBroadcast1ElementFloat16Test)
+ARMNN_AUTO_TEST_CASE(LessOrEqualBroadcast1dVectorFloat16, LessOrEqualBroadcast1dVectorFloat16Test)
 
-// ARMNN_AUTO_TEST_CASE(LessOrEqualSimpleUint8,            LessOrEqualSimpleUint8Test)
-// ARMNN_AUTO_TEST_CASE(LessOrEqualBroadcast1ElementUint8, LessOrEqualBroadcast1ElementUint8Test)
-// ARMNN_AUTO_TEST_CASE(LessOrEqualBroadcast1dVectorUint8, LessOrEqualBroadcast1dVectorUint8Test)
+ARMNN_AUTO_TEST_CASE(LessOrEqualSimpleUint8, LessOrEqualSimpleUint8Test)
+ARMNN_AUTO_TEST_CASE(LessOrEqualBroadcast1ElementUint8, LessOrEqualBroadcast1ElementUint8Test)
+ARMNN_AUTO_TEST_CASE(LessOrEqualBroadcast1dVectorUint8, LessOrEqualBroadcast1dVectorUint8Test)
 
-// // NotEqual
-// ARMNN_AUTO_TEST_CASE(NotEqualSimple,            NotEqualSimpleTest)
-// ARMNN_AUTO_TEST_CASE(NotEqualBroadcast1Element, NotEqualBroadcast1ElementTest)
-// ARMNN_AUTO_TEST_CASE(NotEqualBroadcast1dVector, NotEqualBroadcast1dVectorTest)
+// NotEqual
+ARMNN_AUTO_TEST_CASE(NotEqualSimple,            NotEqualSimpleTest)
+ARMNN_AUTO_TEST_CASE(NotEqualBroadcast1Element, NotEqualBroadcast1ElementTest)
+ARMNN_AUTO_TEST_CASE(NotEqualBroadcast1dVector, NotEqualBroadcast1dVectorTest)
 
-// ARMNN_AUTO_TEST_CASE(NotEqualSimpleFloat16,            NotEqualSimpleFloat16Test)
-// ARMNN_AUTO_TEST_CASE(NotEqualBroadcast1ElementFloat16, NotEqualBroadcast1ElementFloat16Test)
-// ARMNN_AUTO_TEST_CASE(NotEqualBroadcast1dVectorFloat16, NotEqualBroadcast1dVectorFloat16Test)
+ARMNN_AUTO_TEST_CASE(NotEqualSimpleFloat16,            NotEqualSimpleFloat16Test)
+ARMNN_AUTO_TEST_CASE(NotEqualBroadcast1ElementFloat16, NotEqualBroadcast1ElementFloat16Test)
+ARMNN_AUTO_TEST_CASE(NotEqualBroadcast1dVectorFloat16, NotEqualBroadcast1dVectorFloat16Test)
 
-// ARMNN_AUTO_TEST_CASE(NotEqualSimpleUint8,            NotEqualSimpleUint8Test)
-// ARMNN_AUTO_TEST_CASE(NotEqualBroadcast1ElementUint8, NotEqualBroadcast1ElementUint8Test)
-// ARMNN_AUTO_TEST_CASE(NotEqualBroadcast1dVectorUint8, NotEqualBroadcast1dVectorUint8Test)
+ARMNN_AUTO_TEST_CASE(NotEqualSimpleUint8,            NotEqualSimpleUint8Test)
+ARMNN_AUTO_TEST_CASE(NotEqualBroadcast1ElementUint8, NotEqualBroadcast1ElementUint8Test)
+ARMNN_AUTO_TEST_CASE(NotEqualBroadcast1dVectorUint8, NotEqualBroadcast1dVectorUint8Test)
 
 // Max
 ARMNN_AUTO_TEST_CASE(SimpleMaximum, MaximumSimpleTest)
