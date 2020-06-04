@@ -1698,5 +1698,37 @@ bool NpuLayerSupport::IsDepthToSpaceSupported(const TensorInfo& input,
     return supported;
 }
 
+bool NpuLayerSupport::IsInstanceNormalizationSupported(const TensorInfo& input,
+                                                       const TensorInfo& output,
+                                                       const InstanceNormalizationDescriptor& descriptor,
+                                                       Optional<std::string&> reasonIfUnsupported) const
+{
+    ignore_unused(descriptor);
+    // Define supported types
+    std::array<DataType, 2> supportedTypes =
+        {
+            DataType::Float32,
+            DataType::Float16,
+        };
+
+    bool supported = true;
+
+    supported &= CheckSupportRule(TypeAnyOf(input, supportedTypes), reasonIfUnsupported,
+                                  "NPU Instance Normalization: input type not supported.");
+
+    supported &= CheckSupportRule(TypeAnyOf(output, supportedTypes), reasonIfUnsupported,
+                                  "NPU Instance Normalization: output type not supported.");
+
+    supported &= CheckSupportRule(TypesAreEqual(input, output), reasonIfUnsupported,
+                                  "NPU Instance Normalization: input and output types mismatched.");
+
+    supported &= CheckSupportRule(ShapesAreSameTotalSize(input, output), reasonIfUnsupported,
+                                  "NPU Instance Normalization: input and output shapes have different "
+                                  "num total elements.");
+
+    return supported;
+}
+
+
 
 }  // namespace armnn

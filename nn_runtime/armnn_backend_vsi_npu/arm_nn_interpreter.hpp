@@ -174,6 +174,7 @@ class Armnn_Interpreter : public nnrt::Interpreter {
     REGISTER_OP(NOT_EQUAL);
     REGISTER_OP(LESS);
     REGISTER_OP(LESS_EQUAL);
+    REGISTER_OP(INSTANCE_NORMALIZATION);
 #undef REGISTER_OP
    protected:
     // TODO: Add a parent interpreter class and move this function to it.

@@ -132,6 +132,7 @@ Armnn_Interpreter::Armnn_Interpreter() {
     REGISTER_OP(NOT_EQUAL);
     REGISTER_OP(LESS);
     REGISTER_OP(LESS_EQUAL);
+    REGISTER_OP(INSTANCE_NORMALIZATION);
 
 /*customer Op*/
 // REGISTER_OP(VSI_RESIZE_NEAREST);
@@ -1000,6 +1001,107 @@ OperationPtr Armnn_Interpreter::map_GATHER(Model* model,
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
     op->axis = 0;
     truncateOperationIOs(model, operation, 2, 1);
+    return op;
+}
+
+OperationPtr Armnn_Interpreter::map_INSTANCE_NORMALIZATION(Model* model,
+                                              OperationPtr operation,
+                                              uint32_t operation_index) {
+    NNAPI_CHECK_IO_NUM(operation, 5, 1);
+    std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
+    OperationPtr op;
+    uint32_t gammaIds = 0;
+    uint32_t betaIds = 0;
+    switch (inputs[0]->type) {
+        case OperandType::TENSOR_FLOAT32: {
+            auto instanceNorm = std::make_shared<InstanceNormOperation<float>>();
+            ;
+            NNAPI_CHECK_PTR(instanceNorm);
+            uint32_t channelNum;
+            if (DataLayout::NHWC == instanceNorm->getDataLayout())
+                channelNum = inputs[0]->dimensions[3];
+            else
+                channelNum = inputs[0]->dimensions[1];
+            // Broadcast
+            for (uint32_t i = 0; i < channelNum; i++) {
+                instanceNorm->gamma.push_back(inputs[1]->scalar.float32);
+                instanceNorm->beta.push_back(inputs[2]->scalar.float32);
+            }
+            instanceNorm->eps = inputs[3]->scalar.float32;
+            instanceNorm->setDataLayout(DataLayout(inputs[4]->scalar.int32));
+            // Convert scaler gamma to constant tensor
+            OperandPtr gammaOperand = model->addOperand(nullptr, &gammaIds);
+            gammaOperand->type = OperandType::TENSOR_FLOAT32;
+            gammaOperand->dimensions = {channelNum};
+            model->setOperandValue(
+                gammaIds,
+                instanceNorm->gamma.data(),
+                instanceNorm->gamma.size() * sizeof(decltype(instanceNorm->gamma[0])));
+
+            // Convert scaler beta to constant tensor
+            OperandPtr betaOperand = model->addOperand(nullptr, &betaIds);
+            betaOperand->type = OperandType::TENSOR_FLOAT32;
+            betaOperand->dimensions = {channelNum};
+            model->setOperandValue(
+                betaIds,
+                instanceNorm->beta.data(),
+                instanceNorm->beta.size() * sizeof(decltype(instanceNorm->beta[0])));
+            op = instanceNorm;
+            break;
+        }
+        case OperandType::TENSOR_FLOAT16: {
+            auto instanceNorm = std::make_shared<InstanceNormOperation<half_float::half>>();
+
+                    auto gamma = half_float::half(inputs[1]->scalar.float32);
+                    auto beta =  half_float::half(inputs[2]->scalar.float32);
+                    instanceNorm->eps = inputs[3]->scalar.float32;
+                    instanceNorm->setDataLayout(DataLayout(inputs[4]->scalar.int32));
+
+                    uint32_t channelNum;
+                    if (DataLayout::NHWC == instanceNorm->getDataLayout())
+                        channelNum = inputs[0]->dimensions[3];
+                    else
+                        channelNum = inputs[0]->dimensions[1];
+                    // Broadcast
+                    for (uint32_t i = 0; i < channelNum; i++) {
+                        instanceNorm->gamma.push_back(gamma);
+                        instanceNorm->beta.push_back(beta);
+                    }
+
+                    // Convert scaler gamma to constant tensor
+                    OperandPtr gammaOperand = model->addOperand(nullptr, &gammaIds);
+                    gammaOperand->type = OperandType::TENSOR_FLOAT16;
+                    gammaOperand->dimensions = {channelNum};
+                    model->setOperandValue(
+                        gammaIds,
+                        instanceNorm->gamma.data(),
+                        instanceNorm->gamma.size() * sizeof(decltype(instanceNorm->gamma[0])));
+
+                    // Convert scaler beta to constant tensor
+                    OperandPtr betaOperand = model->addOperand(nullptr, &betaIds);
+                    betaOperand->type = OperandType::TENSOR_FLOAT16;
+                    betaOperand->dimensions = {channelNum};
+                    model->setOperandValue(
+                        betaIds,
+                        instanceNorm->beta.data(),
+                        instanceNorm->beta.size() * sizeof(decltype(instanceNorm->beta[0])));
+                    op = instanceNorm;
+                    break;
+        }
+        default: {
+            NNRT_LOGE_PRINT("InstanceNorm doesn't support given datatype");
+            assert(false);
+        }
+    }
+    // Add gamma and beta operand index into instance norm operation
+    auto inputsIds = operation->inputs();
+    auto it = inputsIds.begin();
+    // Note: the order is important
+    // {bias, scalar}
+    std::vector<uint32_t> insertIds = {betaIds, gammaIds};
+    inputsIds.insert(it + 1, insertIds.begin(), insertIds.end());
+    operation->setInputs(inputsIds);
+    truncateOperationIOs(model, operation, 3, 1);
     return op;
 }
 
