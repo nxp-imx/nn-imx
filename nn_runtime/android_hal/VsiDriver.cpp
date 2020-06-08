@@ -132,8 +132,10 @@ T_type getScalarData(const HalPlatform::Model& model, const HalPlatform::Operand
 bool isTensor(const HalPlatform::Operand& operand) {
     bool tensor = true;
     switch (operand.type) {
+#if ANDROID_SDK_VERSION >= 29
         case OperandType::BOOL:
         case OperandType::FLOAT16:
+#endif
         case OperandType::FLOAT32:
         case OperandType::INT32:
         case OperandType::UINT32:
