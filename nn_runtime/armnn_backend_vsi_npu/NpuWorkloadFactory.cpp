@@ -63,6 +63,7 @@
 #include "workloads/NpuGatherWorkload.hpp"
 #include "workloads/NpuDepthToSpaceWorkload.hpp"
 #include "workloads/NpuInstanceNormWorkload.hpp"
+#include "workloads/NpuDetectionPostProcessWorkload.hpp"
 
 #include <iostream>
 
@@ -198,8 +199,10 @@ std::unique_ptr<armnn::IWorkload> NpuWorkloadFactory::CreateDepthwiseConvolution
 }
 
 std::unique_ptr<IWorkload> NpuWorkloadFactory::CreateDetectionPostProcess(
-    const armnn::DetectionPostProcessQueueDescriptor& descriptor, const armnn::WorkloadInfo& info) const {
-    return MakeWorkload<NullWorkload, NullWorkload, NullWorkload>(descriptor, info);
+    const armnn::DetectionPostProcessQueueDescriptor& descriptor,
+    const armnn::WorkloadInfo& info) const {
+    return MakeWorkload<NullWorkload, NpuDetectionPostProcessFloat32Workload, NullWorkload>(
+        descriptor, info);
 }
 
 std::unique_ptr<armnn::IWorkload> NpuWorkloadFactory::CreateNormalization(

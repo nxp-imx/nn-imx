@@ -133,6 +133,7 @@ Armnn_Interpreter::Armnn_Interpreter() {
     REGISTER_OP(LESS);
     REGISTER_OP(LESS_EQUAL);
     REGISTER_OP(INSTANCE_NORMALIZATION);
+    REGISTER_OP(DETECTION_POSTPROCESSING);
 
 /*customer Op*/
 // REGISTER_OP(VSI_RESIZE_NEAREST);
@@ -1102,6 +1103,30 @@ OperationPtr Armnn_Interpreter::map_INSTANCE_NORMALIZATION(Model* model,
     inputsIds.insert(it + 1, insertIds.begin(), insertIds.end());
     operation->setInputs(inputsIds);
     truncateOperationIOs(model, operation, 3, 1);
+    return op;
+}
+
+OperationPtr Armnn_Interpreter::map_DETECTION_POSTPROCESSING(Model* model,
+                                                            OperationPtr operation,
+                                                            uint32_t operation_index) {
+    std::shared_ptr<DetectionPostprocessingOperation> op =
+        std::make_shared<DetectionPostprocessingOperation>();
+    NNAPI_CHECK_PTR(op);
+    std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
+
+        op->dy = inputs[3]->scalar.float32;
+        op->dx = inputs[4]->scalar.float32;
+        op->dh = inputs[5]->scalar.float32;
+        op->dw = inputs[6]->scalar.float32;
+        op->nms_type = inputs[7]->scalar.boolean;
+        op->max_num_detections = inputs[8]->scalar.int32;
+        op->maximum_class_per_detection = inputs[9]->scalar.int32;
+        op->maximum_detection_per_class = inputs[10]->scalar.int32;
+        op->score_threshold = inputs[11]->scalar.float32;
+        op->iou_threshold = inputs[12]->scalar.float32;
+        op->is_bg_in_label = false;
+
+    truncateOperationIOs(model, operation, 3, 4);
     return op;
 }
 

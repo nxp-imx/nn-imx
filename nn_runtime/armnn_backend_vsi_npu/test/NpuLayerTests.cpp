@@ -1579,11 +1579,11 @@ GatherMultiDimParamsMultiDimIndicesUint8Test)
 // ARMNN_AUTO_TEST_CASE(Abs2dQuantisedSymm16, Abs2dTest<DataType::QSymmS16>)
 // ARMNN_AUTO_TEST_CASE(Abs3dQuantisedSymm16, Abs3dTest<DataType::QSymmS16>)
 
-// // Detection PostProcess
-// BOOST_AUTO_TEST_CASE(DetectionPostProcessRegularNmsFloat)
-// {
-//     DetectionPostProcessRegularNmsFloatTest<RefWorkloadFactory>();
-// }
+// Detection PostProcess
+BOOST_AUTO_TEST_CASE(DetectionPostProcessRegularNmsFloat)
+{
+    DetectionPostProcessRegularNmsFloatTest<NpuWorkloadFactory>();
+}
 // BOOST_AUTO_TEST_CASE(DetectionPostProcessFastNmsFloat)
 // {
 //     DetectionPostProcessFastNmsFloatTest<RefWorkloadFactory>();

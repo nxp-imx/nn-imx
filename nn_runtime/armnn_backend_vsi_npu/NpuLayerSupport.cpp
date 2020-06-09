@@ -672,8 +672,7 @@ bool NpuLayerSupport::IsDetectionPostProcessSupported(
 
     bool supported = true;
 
-    std::array<DataType, 3> supportedInputTypes = {
-        DataType::Float32, DataType::QAsymmU8, DataType::QSymmS16};
+    std::array<DataType, 1> supportedInputTypes = {DataType::Float32};
 
     supported &=
         CheckSupportRule(TypeAnyOf(boxEncodings, supportedInputTypes),

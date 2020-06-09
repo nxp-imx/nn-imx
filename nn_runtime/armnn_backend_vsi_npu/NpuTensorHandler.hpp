@@ -24,6 +24,7 @@
 
 #pragma once
 
+#include <functional>
 #include <armnn/Tensor.hpp>
 #include <backendsCommon/ITensorHandle.hpp>
 #include <boost/scoped_array.hpp>
@@ -32,7 +33,7 @@
 #include "NpuModelShell.hpp"
 
 namespace armnn {
-
+using func = std::function<void(void*, size_t)>;
 class NpuTensorHandler : public ITensorHandle {
    public:
     NpuTensorHandler(const TensorInfo& info)
@@ -103,6 +104,8 @@ class NpuTensorHandler : public ITensorHandle {
     virtual bool Import(void* memory, MemorySource source) override;
 
     MemorySourceFlags GetImportFlags() const override;
+
+    func callback = nullptr;
 
    private:
    /**

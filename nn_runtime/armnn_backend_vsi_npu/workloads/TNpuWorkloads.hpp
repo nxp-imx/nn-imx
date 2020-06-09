@@ -54,6 +54,11 @@ struct ScalarTypeSelector<int> {
 };
 
 template <>
+struct ScalarTypeSelector<bool> {
+    static constexpr nnrt::OperandType type = nnrt::OperandType::BOOL;
+};
+
+template <>
 struct ScalarTypeSelector<unsigned int> {
     static constexpr nnrt::OperandType type = nnrt::OperandType::UINT32;
 };
@@ -241,6 +246,36 @@ class TNpuWorkload : public Base_t<QueueDescriptor, DataTypes...>{
         return operandId;
     }
 
+    uint32_t AddOperandAndSetValue(const TensorInfo& info,
+                                   const TensorShape& shape,
+                                   const void* valueAddr,
+                                   bool floatToInt) {
+        std::vector<uint32_t> dims(shape.GetNumDimensions());
+        for (unsigned int i = 0; i < shape.GetNumDimensions(); i++) {
+            dims[i] = shape[i];
+        }
+
+        uint32_t operandId{0};
+        nnrt::op::OperandPtr operand = m_LocalModel->addOperand(nullptr, &operandId);
+        {
+            auto dataType = info.GetDataType();
+            operand->type = convertToOperandType(dataType);
+            if (floatToInt) {
+                operand->type = convertToOperandType(DataType::Signed32);
+            }
+            assert(operand->type != nnrt::OperandType::NONE);
+
+            operand->dimensions = dims;
+            if (info.IsQuantized()) {
+                operand->quant.scalar.scale = info.GetQuantizationScale();
+                operand->quant.scalar.zeroPoint = info.GetQuantizationOffset();
+            }
+        }
+        m_LocalModel->setOperandValue(operandId, valueAddr, info.GetNumBytes());
+
+        return operandId;
+    }
+
     template <typename DType>
     uint32_t AddOperandAndSetValue(DType value) {
         constexpr nnrt::OperandType data_type = vnn_helper::ScalarTypeSelector<DType>::type;
@@ -321,9 +356,10 @@ class TNpuWorkload : public Base_t<QueueDescriptor, DataTypes...>{
         return index;
     }
 
-   private:
     std::vector<NpuTensorHandler*> m_InputsHandler;
     std::vector<NpuTensorHandler*> m_OutputsHandler;
+
+   private:
     std::vector<TensorInfo> m_InputTensorInfos;
     std::vector<TensorInfo> m_OutputTensorInfos;
 

@@ -60,8 +60,14 @@ TensorShape NpuTensorHandler::GetStrides() const
 void NpuTensorHandler::CopyOutTo(void* memory) const {
     getMemoryReady();
     if (m_ExternalMem) {
+        if (callback) {
+            callback(m_ExternalMem, m_TensorInfo.GetNumBytes());
+        }
         std::memcpy(memory, m_ExternalMem, m_TensorInfo.GetNumBytes());
     } else {
+        if (callback) {
+            callback(static_cast<void*>(m_Memory.get()), m_TensorInfo.GetNumBytes());
+        }
         std::memcpy(memory, m_Memory.get(), m_TensorInfo.GetNumBytes());
     }
 }
@@ -83,17 +89,34 @@ TensorShape NpuTensorHandler::GetShape() const
 void* NpuTensorHandler::Map(bool blocking)
 {
     getMemoryReady();
+    if (callback) {
+        if (m_ExternalMem) {
+            callback(m_ExternalMem, m_TensorInfo.GetNumBytes());
+        } else {
+            callback(static_cast<void*>(m_Memory.get()), m_TensorInfo.GetNumBytes());
+        }
+    }
     return m_ExternalMem ? m_ExternalMem : static_cast<void*>(m_Memory.get());
 }
 
 const void* NpuTensorHandler::Map(bool blocking) const
 {
     getMemoryReady();
+    if (callback) {
+        if (m_ExternalMem) {
+            callback(m_ExternalMem, m_TensorInfo.GetNumBytes());
+        } else {
+            callback(static_cast<void*>(m_Memory.get()), m_TensorInfo.GetNumBytes());
+        }
+    }
     return m_ExternalMem ? m_ExternalMem : static_cast<const void*>(m_Memory.get());
 }
 
 void* NpuTensorHandler::GetMemArea()
 {
+    if (callback) {
+        callback(static_cast<void*>(m_Memory.get()), m_TensorInfo.GetNumBytes());
+    }
     return m_Memory.get();
 }
 
