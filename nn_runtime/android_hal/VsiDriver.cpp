@@ -212,8 +212,7 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
         }
         case OperationType::RNN: {
             int32_t fuseCode = getScalarData<int32_t>(model, model.operands[operation.inputs[5]]);
-            if (fuseCode == static_cast<int32_t>(FusedActivationFunc::NONE) ||
-                fuseCode == static_cast<int32_t>(FusedActivationFunc::RELU) ||
+            if (fuseCode == static_cast<int32_t>(FusedActivationFunc::RELU) ||
                 fuseCode == static_cast<int32_t>(FusedActivationFunc::RELU1) ||
                 fuseCode == static_cast<int32_t>(FusedActivationFunc::RELU6)) {
                 isSupport &= true;
