@@ -789,6 +789,58 @@ vsi_status vsi_nn_RunGraph
     return status;
 } /* vsi_nn_RunGraph() */
 
+
+vsi_status vsi_nn_AsyncRunGraph
+    (
+    vsi_nn_graph_t * graph
+    )
+{
+    vsi_status status;
+    status = VSI_FAILURE;
+    if( NULL != graph->g )
+    {
+        if( vsi_nn_HasRNN( graph ) )
+        {
+            status = vsi_nn_rnn_feed_internal_state( graph );
+        }
+        else
+        {
+            status = VSI_SUCCESS;
+        }
+
+        if( VSI_SUCCESS == status )
+        {
+            status = _check_swapped_tensors( graph );
+        }
+
+        if( VSI_SUCCESS == status )
+        {
+            status = vxScheduleGraph(graph->g);
+        }
+    }
+    return status;
+} /* vsi_nn_AsynRunGraph() */
+
+
+vsi_status vsi_nn_AsyncRunWait
+    (
+        vsi_nn_graph_t * graph
+    )
+{
+    vsi_status status;
+    status = VSI_FAILURE;
+    if( NULL != graph->g )
+    {
+        status = vxWaitGraph(graph->g);
+        if( VSI_SUCCESS == status && vsi_nn_HasRNN( graph ) )
+        {
+            status = vsi_nn_rnn_save_internal_state( graph );
+        }
+    }
+    return status;
+}
+
+
 vsi_status vsi_nn_SetGraphVersion
     (
     vsi_nn_graph_t * graph,
