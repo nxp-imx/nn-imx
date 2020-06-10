@@ -71,36 +71,6 @@ static vsi_bool op_check
     return TRUE;
 } /* op_check() */
 
-static vsi_bool op_setup
-    (
-    vsi_nn_node_t * self,
-    vsi_nn_tensor_t ** inputs,
-    vsi_nn_tensor_t ** outputs
-    )
-{
-    uint32_t sz0,sz1;
-
-    if(VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num)
-    {
-        sz0 = vsi_nn_GetElementNum(inputs[0]);
-        sz1 = vsi_nn_GetElementNum(inputs[1]);
-        if(sz0 > sz1)
-        {
-            outputs[0]->attr.dim_num = inputs[0]->attr.dim_num;
-            memcpy( outputs[0]->attr.size, inputs[0]->attr.size,
-                VSI_NN_MAX_DIM_NUM * sizeof( uint32_t ) );
-        }
-        else
-        {
-            outputs[0]->attr.dim_num = inputs[1]->attr.dim_num;
-            memcpy( outputs[0]->attr.size, inputs[1]->attr.size,
-                VSI_NN_MAX_DIM_NUM * sizeof( uint32_t ) );
-        }
-    }
-
-    return TRUE;
-} /* op_setup() */
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -112,7 +82,7 @@ DEF_OP_REG
     /* compute    */ op_compute,
     /* deinit     */ vsi_nn_op_common_deinit,
     /* check      */ op_check,
-    /* setup      */ op_setup,
+    /* setup      */ vsi_nn_op_eltwise_setup,
     /* optimize   */ NULL,
     /* input_num  */ 3,
     /* output_num */ 1

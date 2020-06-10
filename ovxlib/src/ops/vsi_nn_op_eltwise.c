@@ -126,29 +126,38 @@ vsi_bool vsi_nn_op_eltwise_setup
     vsi_nn_tensor_t ** outputs
     )
 {
-    uint32_t i, out_rank, in1_rank, in2_rank;
+    uint32_t i, j, out_rank, in2_rank;
     uint32_t shape[VSI_NN_MAX_DIM_NUM] = { 0 };
     vsi_bool ret = TRUE;
 
-    in1_rank = inputs[0]->attr.dim_num;
-    in2_rank = inputs[1]->attr.dim_num;
-    out_rank = vsi_nn_max( in1_rank, in2_rank );
+    out_rank = inputs[0]->attr.dim_num;
+    for ( i = 1; i < self->input.num; i++)
+    {
+        in2_rank = inputs[i]->attr.dim_num;
+        out_rank = vsi_nn_max( out_rank, in2_rank );
+    }
 
     for(i = 0; i < out_rank; i++)
     {
         uint32_t sz0, sz1;
-        sz0 = i < in1_rank ? inputs[0]->attr.size[i] : 1;
-        sz1 = i < in2_rank ? inputs[1]->attr.size[i] : 1;
-        shape[i] = vsi_nn_max( sz0, sz1 );
-        if (sz0 != sz1 && sz0 != 1 && sz1 != 1)
+
+        sz0 = i < inputs[0]->attr.dim_num ? inputs[0]->attr.size[i] : 1;
+        for ( j = 1; j < self->input.num; j++)
         {
-            /* Two dimensions are compatible when:
-            1. they are equal, or
-            2. one of them is 1*/
-            VSILOGE("Input size mismatch.");
-            return FALSE;
+            sz1 = i < inputs[j]->attr.dim_num  ? inputs[j]->attr.size[i] : 1;
+            sz0 = vsi_nn_max( sz0, sz1 );
+            if (sz0 != sz1 && sz0 != 1 && sz1 != 1)
+            {
+                /* Two dimensions are compatible when:
+                1. they are equal, or
+                2. one of them is 1*/
+                VSILOGE("Input size mismatch.");
+                return FALSE;
+            }
         }
+        shape[i] = sz0;
     }
+
     if( VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num )
     {
         outputs[0]->attr.dim_num = out_rank;
