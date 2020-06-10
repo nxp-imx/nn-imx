@@ -474,7 +474,7 @@ vx_status VX_CALLBACK vxTensor_add_mean_stddev_normInitializer
     shaderParam.localWorkSize[1]    = 1;
     shaderParam.globalWorkSize[0]   = 16;
     shaderParam.globalWorkSize[1]   = gcmALIGN((input_size[1] + shaderParam.globalWorkScale[1] - 1)
-        / shaderParam.globalWorkScale[1], 4);
+        / shaderParam.globalWorkScale[1], shaderParam.localWorkSize[1]);
 
     status |= vxSetNodeAttribute(nodObj, VX_NODE_ATTRIBUTE_KERNEL_EXECUTION_PARAMETERS,
         &shaderParam, sizeof(vx_kernel_execution_parameters_t));
