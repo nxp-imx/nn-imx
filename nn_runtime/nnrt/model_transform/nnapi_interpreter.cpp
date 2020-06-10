@@ -172,6 +172,29 @@ NnApiInterpreter::NnApiInterpreter() {
 #undef REGISTER_OP
 }
 
+void convertKenelDimOrder(std::shared_ptr<Operation> convOp, Model* model, OperationPtr operation,
+                                    api::requirement::MatchedArgumentPtr argList){
+    std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
+    // Transpose weight for nchw cases
+    if (DataLayout::NCHW == convOp->getDataLayout()) {
+        std::vector<uint32_t> permVal = {0, 3, 1, 2};
+        auto kernelIdx = argList->ArgPos("kernel");
+        if (inputs[kernelIdx]->isConst()) {
+            // Set permute flag. Do transepose in ovxlib delegate
+            inputs[kernelIdx]->setPerm(permVal);
+            inputs[kernelIdx]->dimensions =
+                convOp->dimensionTrans(inputs[kernelIdx]->dimensions, permVal);
+        } else {
+            // Insert permute layer for weight as input
+            if (!operand_utils::InsertPermuteBeforeOperand(
+                model, operation, operation->inputs()[1], permVal)) {
+                    NNRT_LOGE_PRINT("%s: insert permute failed.", __FUNCTION__);
+                    assert(false);
+            }
+        }
+    }
+}
+
 NnApiInterpreter::~NnApiInterpreter() {}
 
 int NnApiInterpreter::run(Model* model, bool* modified) {
@@ -446,6 +469,8 @@ OperationPtr NnApiInterpreter::map_CONV_2D(Model* model,
             conv2d->setDataLayout(
                 getDataLayout(inputs[argList->ArgPos("data_layout")]->scalar.boolean));
         }
+        // Transpose weight for nchw cases
+        convertKenelDimOrder(conv2d, model, operation, argList);
 
         resetFusedType(model, operation, argList->ArgPos("fuse_code"));
         conv2d->strides[0] = inputs[argList->ArgPos("stride_w")]->scalar.int32;
@@ -493,23 +518,7 @@ OperationPtr NnApiInterpreter::map_GROUPED_CONV_2D(Model* model,
         conv2d->setDataLayout(
             getDataLayout(inputs[argList->ArgPos("data_layout")]->scalar.boolean));
         // Transpose weight for nchw cases
-        if (DataLayout::NCHW == conv2d->getDataLayout()) {
-            std::vector<uint32_t> permVal = {0, 3, 1, 2};
-            auto kernelIdx = argList->ArgPos("kernel");
-            if (inputs[kernelIdx]->isConst()) {
-                // Set permute flag. Do transepose in ovxlib delegate
-                inputs[kernelIdx]->setPerm(permVal);
-                inputs[kernelIdx]->dimensions =
-                    conv2d->dimensionTrans(inputs[kernelIdx]->dimensions, permVal);
-            } else {
-                // Insert permute layer for weight as input
-                if (!operand_utils::InsertPermuteBeforeOperand(
-                    model, operation, operation->inputs()[1], permVal)) {
-                        NNRT_LOGE_PRINT("GroupedConv2d: insert permute failed.");
-                        assert(false);
-                }
-            }
-        }
+        convertKenelDimOrder(conv2d, model, operation, argList);
     } else {
         NNRT_LOGE_PRINT("GroupedConv2D argument list not support");
     }
@@ -552,23 +561,7 @@ OperationPtr NnApiInterpreter::map_DEPTHWISE_CONV_2D(Model* model,
                 getDataLayout(inputs[argList->ArgPos("data_layout")]->scalar.boolean));
         }
         // Transpose weight for nchw cases
-        if (DataLayout::NCHW == conv2d->getDataLayout()) {
-            std::vector<uint32_t> permVal = {0, 3, 1, 2};
-            auto kernelIdx = argList->ArgPos("kernel");
-            if (inputs[kernelIdx]->isConst()) {
-                // Set permute flag. Do transepose in ovxlib delegate
-                inputs[kernelIdx]->setPerm(permVal);
-                inputs[kernelIdx]->dimensions =
-                    conv2d->dimensionTrans(inputs[kernelIdx]->dimensions, permVal);
-            } else {
-                // Insert permute layer for weight as input
-                if (!operand_utils::InsertPermuteBeforeOperand(
-                    model, operation, operation->inputs()[1], permVal)) {
-                        NNRT_LOGE_PRINT("DepthwiseConv2d: insert permute failed.");
-                        assert(false);
-                }
-            }
-        }
+        convertKenelDimOrder(conv2d, model, operation, argList);
 
         conv2d->dilations[0] = 1;
         conv2d->dilations[1] = 1;
@@ -1602,23 +1595,7 @@ OperationPtr NnApiInterpreter::map_DECONV_2D(Model* model,
         deconv2d->setDataLayout(getDataLayout(inputs[argList->ArgPos("layout")]->scalar.boolean));
 
         // Transpose weight for nchw cases
-        if (DataLayout::NCHW == deconv2d->getDataLayout()) {
-            std::vector<uint32_t> permVal = {0, 3, 1, 2};
-            auto kernelIdx = argList->ArgPos("kernel");
-            if (inputs[kernelIdx]->isConst()) {
-                // Set permute flag. Do transepose in ovxlib delegate
-                inputs[kernelIdx]->setPerm(permVal);
-                inputs[kernelIdx]->dimensions =
-                    deconv2d->dimensionTrans(inputs[kernelIdx]->dimensions, permVal);
-            } else {
-                // Insert permute layer for weight as input
-                if (!operand_utils::InsertPermuteBeforeOperand(
-                    model, operation, operation->inputs()[1], permVal)) {
-                        NNRT_LOGE_PRINT("Deconv2D: insert permute failed.");
-                        assert(false);
-                }
-            }
-        }
+       convertKenelDimOrder(deconv2d, model, operation, argList);
     } else {
         NNRT_LOGE_PRINT("Transpose conv2d argument list not support");
         assert(false);
