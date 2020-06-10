@@ -12,7 +12,7 @@ INCLUDE += -I$(OVXLIB_DIR)/include/platform
 INCLUDE += -I ../ -I ./boost/libs/preprocessor/include/
 
 # git head shaid
-HEAD_VERSION=$(shell pwd | sh ./git_head_version.sh)
+HEAD_VERSION=$(shell git log -n 1 --format=%h)
 
 ifneq ($(HEAD_VERSION),)
 DIRTY=$(shell git diff --quiet HEAD || echo '-dirty')

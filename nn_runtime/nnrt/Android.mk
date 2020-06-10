@@ -17,7 +17,7 @@ $(error Please set OVXLIB_DIR env first)
 endif
 
 ifeq ($NNRT_ROOT),)
-$(error Please set NNRT_ROT to parent dir of nnrt)
+$(error Please set NNRT_ROOT to parent dir of nnrt)
 endif
 
 include $(AQROOT)/Android.mk.def
@@ -89,11 +89,14 @@ LOCAL_CFLAGS :=  \
     -Wno-implicit-fallthrough\
     -frtti
 
-NN_LOCAL_PATH := $(LOCAL_PATH)
-HEAD_VERSION=$(shell cd $(NN_LOCAL_PATH)/../../;./nn_runtime/nnrt/git_head_version.sh)
-ifneq ($(HEAD_VERSION),)
-DIRTY=$(shell cd $(NN_LOCAL_PATH)/../../;git diff --quiet HEAD || echo '-dirty')
-LOCAL_CFLAGS += -DGIT_STRING=$(HEAD_VERSION)$(DIRTY)
+IS_GIT:=$(shell cd $(NNRT_ROOT)/nnrt/;  git status  1>&2 > /dev/null; echo $$?)
+ifeq ($(IS_GIT),0)
+       HEAD_VERSION:=$(shell cd $(NNRT_ROOT)/nnrt/; git log -n 1 --format=%h)
+       DIRTY:=$(shell cd $(NNRT_ROOT)/nnrt/; git diff --quiet HEAD || echo '-dirty')
+       LOCAL_CFLAGS += -DGIT_STRING='$(HEAD_VERSION)$(DIRTY)'
+
+$(info $(HAED_VERSION))
+$(info $(LOCAL_CFLAGS))
 endif
 
 ifeq ($(DUMP_JSON_MODEL), 1)
