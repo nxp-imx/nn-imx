@@ -240,24 +240,24 @@ Sml_block_list::Sml_block_list() {}
 bool Sml_block_list::add_reference(const alloc::Sml_block_infor& infor, Ref& mem_ref) {
     NNRT_LOGD_PRINT("[mem_pool]Add small memory block to system");
 
-    { // Increase reference count if source address already copied to internal memory
-        auto found_at = std::find_if(ref_count_.begin(),
-                                ref_count_.end(),
-                                [&infor, &mem_ref](typename std::map<Ref, int>::value_type& item){
-                                    if (item.first.src_ == infor.address_) {
-                                        mem_ref = item.first;
-                                        ++ item.second;
-                                        NNRT_LOGD_PRINT("[mem_pool] Buffer@%p already"
-                                                " copied to internal memory", infor.address_);
-                                        return true;
-                                    }
-                                    return false;
-                                });
+    // { // Increase reference count if source address already copied to internal memory
+    //     auto found_at = std::find_if(ref_count_.begin(),
+    //                             ref_count_.end(),
+    //                             [&infor, &mem_ref](typename std::map<Ref, int>::value_type& item){
+    //                                 if (item.first.src_ == infor.address_) {
+    //                                     mem_ref = item.first;
+    //                                     ++ item.second;
+    //                                     NNRT_LOGD_PRINT("[mem_pool] Buffer@%p already"
+    //                                             " copied to internal memory", infor.address_);
+    //                                     return true;
+    //                                 }
+    //                                 return false;
+    //                             });
 
-        if (found_at != ref_count_.end()) {
-            return true;
-        }
-    }
+    //     if (found_at != ref_count_.end()) {
+    //         return true;
+    //     }
+    // }
     mem_list_.emplace_back();
     mem_list_.back().resize(infor.len_);
     std::memcpy(mem_list_.back().data(), infor.address_, infor.len_);
