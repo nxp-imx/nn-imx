@@ -675,7 +675,7 @@ static void _convert_const_I8toU8
         data[i] = data[i] ^ 0x80;
     }
 
-    attr->dtype.vx_type = VX_TYPE_UINT8;
+    attr->dtype.vx_type = VSI_NN_TYPE_UINT8;
     attr->dtype.zero_point += 128;
 
     if ( tensor->t ) vxReleaseTensor(&tensor->t);
