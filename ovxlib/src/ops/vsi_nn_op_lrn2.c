@@ -136,9 +136,9 @@ extern "C" {
 DEF_OP_REG
     (
     /* op_name    */ LRN2,
-    /* init       */ NULL,
+    /* init       */ op_init,
     /* compute    */ op_compute,
-    /* deinit     */ op_init,
+    /* deinit     */ NULL,
     /* check      */ op_check,
     /* setup      */ vsi_nn_op_common_setup,
     /* optimize   */ NULL,
