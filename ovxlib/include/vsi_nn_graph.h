@@ -241,6 +241,23 @@ OVXLIB_API vsi_status vsi_nn_RunGraph
     );
 
 /**
+ * Run graph in asynch way
+ * Invoke the all nodes in graph.
+ *
+ * @param[in] graph Graph handle
+ * @return VSI_SUCCESS on success, or appropriate error code otherwise
+ */
+OVXLIB_API vsi_status vsi_nn_AsyncRunGraph
+    (
+    vsi_nn_graph_t * graph
+    );
+
+OVXLIB_API vsi_status vsi_nn_AsyncRunWait
+    (
+        vsi_nn_graph_t * graph
+    );
+
+/**
  * Set graph version
  * Set the specific ovxlib version, this is used to fetch the
  * implementations of different ovxlib.
