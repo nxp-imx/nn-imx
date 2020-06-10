@@ -12,6 +12,7 @@
 
 
 NNRT_LOCAL_PATH := $(call my-dir)
+NNRT_ROOT = $(AQROOT)/nn_runtime
 include $(NNRT_LOCAL_PATH)/Android.mk.def
 include $(NNRT_LOCAL_PATH)/nn_runtime/nnrt/Android.mk
 include $(NNRT_LOCAL_PATH)/nn_runtime/android_hal/Android.mk
