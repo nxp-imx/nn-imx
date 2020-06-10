@@ -1249,7 +1249,7 @@ int OvxlibDelegate::addNode_MEAN(Model* model, OperationPtr operation, uint32_t 
     std::vector<int32_t> convert_axes = convertAxes(axes, inputs[0]->ndim());
     int32_t* axes_ptr = addParamPool(convert_axes, true);
     nodes[0]->nn_param.reduce.type = VSI_NN_REDUCE_MEAN;
-    nodes[0]->nn_param.reduce.axis = reinterpret_cast<uint32_t*>(axes_ptr);
+    nodes[0]->nn_param.reduce.axis = axes_ptr;
     nodes[0]->nn_param.reduce.axis_num = axes.size();
     nodes[0]->nn_param.reduce.keep_dim = (uint32_t)mean->keepDim;
     return err;
@@ -1967,7 +1967,7 @@ DECLARE_LOGICAL_OP(LOGICAL_OR, LOGICAL_OR)
         std::vector<int32_t> convert_axes = convertAxes(axes, inputs[0]->ndim()); \
         int32_t* axes_ptr = addParamPool(convert_axes, true);                     \
         nodes[0]->nn_param.reduce.type = VSI_NN_##REDUCTION_OP;                   \
-        nodes[0]->nn_param.reduce.axis = reinterpret_cast<uint32_t*>(axes_ptr);   \
+        nodes[0]->nn_param.reduce.axis = axes_ptr;                                \
         nodes[0]->nn_param.reduce.axis_num = axes.size();                         \
         nodes[0]->nn_param.reduce.keep_dim = (uint32_t)mean->keepDim;             \
         return err;                                                               \
