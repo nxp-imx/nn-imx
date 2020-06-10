@@ -47,11 +47,16 @@ bool Operand::isTensor() const {
     return (type >= OperandType::TENSOR_INDEX_START);
 }
 
+bool Operand::isPerChannel() const {
+    return type == OperandType::TENSOR_QUANT8_SYMM_PER_CHANNEL;
+}
+
 bool Operand::isQuantized() const {
     switch (type) {
         case OperandType::TENSOR_QUANT8_ASYMM:
         case OperandType::TENSOR_QUANT8_SYMM:
         case OperandType::TENSOR_QUANT32_SYMM:
+        case OperandType::TENSOR_QUANT8_SYMM_PER_CHANNEL:
             return true;
         default:
             break;
@@ -88,11 +93,12 @@ void Operand::cloneQuantParams(Operand* operand) {
             quant.scalar.scale = operand->quant.scalar.scale;
             quant.scalar.zeroPoint = operand->quant.scalar.zeroPoint;
             break;
-#if 0
         case OperandType::TENSOR_QUANT8_SYMM_PER_CHANNEL:
-            quant.vScale = operand->quant.vScale;
-            quant.vZeroPoint = operand->quant.vZeroPoint;
+            quant.vec.channelDim = operand->quant.vec.channelDim;
+            quant.vec.scale = operand->quant.vec.scale;
+            quant.vec.zeroPoint = operand->quant.vec.zeroPoint;
             break;
+#if 0
         case OperandType::TENSOR_QUANT8_ASYMM_PER_CHANNEL:
             quant.vScale = operand->quant.vScale;
             quant.vZeroPoint = operand->quant.vZeroPoint;

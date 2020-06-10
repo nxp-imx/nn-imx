@@ -111,6 +111,33 @@ class Operation : nnrt::layout_inference::ILayoutInference {
 
     std::vector<uint32_t> dimensionTrans(std::vector<uint32_t>& orgDims,
                                          const std::vector<uint32_t> perm);
+    /**
+     * @brief insert permute operation before input or after output for a opertion
+     *
+     * @param model
+     * @param permuteOp : operation going to insert
+     * @param appliedPermuteVec : the permute vector already applied to input data
+     * @param beforeInOrAfterOut : true indicate insert permute op before input of current OP, else
+     * insert
+     * permute after output of current OP
+     * @param operandId
+     */
+    void insertPermute(Model& model,
+                       std::shared_ptr<PermuteOperation>& permuteOp,
+                       const std::vector<uint32_t>& appliedPermuteVec,
+                       bool beforeInOrAfterOut,
+                       uint32_t operandId);
+
+    /**
+     * @brief
+     *
+     * @param model
+     * @param constOperandIds
+     * @param permVec
+     */
+    void permuteConstOperands(Model& model,
+                              std::vector<uint32_t>& constOperandIds,
+                              nnrt::layout_inference::IPermuteVectorPtr permVec);
 
    protected:
     /**
@@ -140,33 +167,6 @@ class Operation : nnrt::layout_inference::ILayoutInference {
     };
 
     InputTensorPermuteVectorCache input_permute_cache_;
-    /**
-     * @brief insert permute operation before input or after output for a opertion
-     *
-     * @param model
-     * @param permuteOp : operation going to insert
-     * @param appliedPermuteVec : the permute vector already applied to input data
-     * @param beforeInOrAfterOut : true indicate insert permute op before input of current OP, else
-     * insert
-     * permute after output of current OP
-     * @param operandId
-     */
-    void insertPermute(Model& model,
-                       std::shared_ptr<PermuteOperation>& permuteOp,
-                       const std::vector<uint32_t>& appliedPermuteVec,
-                       bool beforeInOrAfterOut,
-                       uint32_t operandId);
-
-    /**
-     * @brief
-     *
-     * @param model
-     * @param constOperandIds
-     * @param permVec
-     */
-    void permuteConstOperands(Model& model,
-                              std::vector<uint32_t>& constOperandIds,
-                              nnrt::layout_inference::IPermuteVectorPtr permVec);
 
     virtual void handleLayoutInferenceOnInputs(
         Model& model,
@@ -219,6 +219,17 @@ inline std::shared_ptr<nnrt::op::PermuteOperation> asOp(
         return permute;
     }
     return nullptr;
+}
+
+inline uint32_t axisMapTo(const std::vector<uint32_t> perm, uint32_t axisVal) {
+    for (uint32_t i = 0; i < perm.size(); i++) {
+        if (axisVal == perm[i]) {
+            return i;
+        }
+    }
+    NNRT_LOGE_PRINT("Cannot find the axis val");
+    assert(false);
+    return perm.size() - 1;
 }
 
 inline uint32_t axisMapTo(const nnrt::layout_inference::IPermuteVectorPtr perm, uint32_t axisVal) {

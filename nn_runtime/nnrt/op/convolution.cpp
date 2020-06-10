@@ -28,6 +28,30 @@
 namespace nnrt {
 namespace op {
 
+static void convertKenelLayout(Operation *convOp, nnrt::Model &model, bool noPermuted = true){
+     std::vector<OperandPtr> inputs = model.getOperands(convOp->inputs());
+    // Transpose weight for nchw cases
+    auto requiredPermute = std::make_shared<layout_inference::PermuteVector<4>>(
+        std::initializer_list<uint32_t>({0, 3, 1, 2}));
+    auto kernel_index = convOp->input(1);
+    if(noPermuted){
+        if (model.operand(kernel_index)->isConst()) {
+            std::vector<uint32_t> constOprIds = {convOp->input(1)};
+            convOp->permuteConstOperands(model, constOprIds, requiredPermute);
+        } else {
+            auto permuteOp = nnrt::op::utils::asOp(requiredPermute);
+            convOp->insertPermute(model, permuteOp, requiredPermute->asStdVec(), true, kernel_index);
+        }
+    }
+
+    /*the channel dim has to be changed as filter's dim order change*/
+    OperandPtr filterOperand = model.operand(convOp->input(1));
+    if(nullptr != filterOperand && filterOperand->isPerChannel()){
+        filterOperand->quant.vec.channelDim =
+            nnrt::op::utils::axisMapTo(requiredPermute, filterOperand->quant.vec.channelDim);
+    }
+}
+
 void Conv2DOperation::handleLayoutInferenceOnInputs(
     nnrt::Model& model,
     std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>& next_permute_vectors) {
@@ -51,19 +75,13 @@ void Conv2DOperation::handleLayoutInferenceOnInputs(
         return;
     }
 
+    convertKenelLayout(this, model);
+
     // {0, 1, 2, 3}
     auto requiredPermute = nnrt::layout_inference::make_shared(inputOperand->ndim());
     if (DataLayout::NHWC == getDataLayout()) {
         requiredPermute = std::make_shared<layout_inference::PermuteVector<4>>(
             std::initializer_list<uint32_t>({0, 3, 1, 2}));
-        uint32_t kernel_index = input(1);
-        if (model.operand(kernel_index)->isConst()) {
-            std::vector<uint32_t> constOprIds = {kernel_index};
-            permuteConstOperands(model, constOprIds, requiredPermute);
-        } else {
-            auto permuteOp = nnrt::op::utils::asOp(requiredPermute);
-            insertPermute(model, permuteOp, requiredPermute->asStdVec(), true, kernel_index);
-        }
     }
 
     auto finalPermute = permuteVector->reverse()->add(requiredPermute);
@@ -99,19 +117,13 @@ void GroupedConv2DOperation::handleLayoutInferenceOnInputs(
         return;
     }
 
+    convertKenelLayout(this, model);
+
     // {0, 1, 2, 3}
     auto requiredPermute = nnrt::layout_inference::make_shared(inputOperand->ndim());
     if (DataLayout::NHWC == getDataLayout()) {
         requiredPermute = std::make_shared<layout_inference::PermuteVector<4>>(
             std::initializer_list<uint32_t>({0, 3, 1, 2}));
-        uint32_t kernel_index = input(1);
-        if (model.operand(kernel_index)->isConst()) {
-            std::vector<uint32_t> constOprIds = {kernel_index};
-            permuteConstOperands(model, constOprIds, requiredPermute);
-        } else {
-            auto permuteOp = nnrt::op::utils::asOp(requiredPermute);
-            insertPermute(model, permuteOp, requiredPermute->asStdVec(), true, kernel_index);
-        }
     }
 
     auto finalPermute = permuteVector->reverse()->add(requiredPermute);
@@ -184,6 +196,8 @@ void DepthwiseConv2DOperation::handleLayoutInferenceOnInputs(
             insertPermute(model, permOp, finalPermVec->asStdVec(), true, inPermPair.first);
         }
     }
+    /*weight is always NHWC order, but if the operation is nchw, weight was not converted above*/
+    convertKenelLayout(this, model, DataLayout::NCHW == getDataLayout());
 
     next_permute_vectors.insert(std::make_pair(outputs()[0], requiredPermute));
 }
@@ -204,19 +218,12 @@ void Deconv2DOperation::handleLayoutInferenceOnInputs(
         return;
     }
 
+    convertKenelLayout(this, model);
+
     auto requiredPermute = nnrt::layout_inference::make_shared(inputOperand->ndim());
     if (DataLayout::NHWC == getDataLayout()) {
         requiredPermute = std::make_shared<nnrt::layout_inference::PermuteVector<4>>(
             std::initializer_list<uint32_t>({0, 3, 1, 2}));
-
-        uint32_t kernel_index = input(1);
-        if (model.operand(kernel_index)->isConst()) {
-            std::vector<uint32_t> constOprIds = {kernel_index};
-            permuteConstOperands(model, constOprIds, requiredPermute);
-        } else {
-            auto permuteOp = nnrt::op::utils::asOp(requiredPermute);
-            insertPermute(model, permuteOp, requiredPermute->asStdVec(), true, kernel_index);
-        }
     }
 
     auto finalPermute = permuteVector->reverse()->add(requiredPermute);

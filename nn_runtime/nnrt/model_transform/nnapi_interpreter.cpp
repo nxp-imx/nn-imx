@@ -172,29 +172,6 @@ NnApiInterpreter::NnApiInterpreter() {
 #undef REGISTER_OP
 }
 
-void convertKenelDimOrder(std::shared_ptr<Operation> convOp, Model* model, OperationPtr operation,
-                                    api::requirement::MatchedArgumentPtr argList){
-    std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
-    // Transpose weight for nchw cases
-    if (DataLayout::NCHW == convOp->getDataLayout()) {
-        std::vector<uint32_t> permVal = {0, 3, 1, 2};
-        auto kernelIdx = argList->ArgPos("kernel");
-        if (inputs[kernelIdx]->isConst()) {
-            // Set permute flag. Do transepose in ovxlib delegate
-            inputs[kernelIdx]->setPerm(permVal);
-            inputs[kernelIdx]->dimensions =
-                convOp->dimensionTrans(inputs[kernelIdx]->dimensions, permVal);
-        } else {
-            // Insert permute layer for weight as input
-            if (!operand_utils::InsertPermuteBeforeOperand(
-                model, operation, operation->inputs()[1], permVal)) {
-                    NNRT_LOGE_PRINT("%s: insert permute failed.", __FUNCTION__);
-                    assert(false);
-            }
-        }
-    }
-}
-
 NnApiInterpreter::~NnApiInterpreter() {}
 
 int NnApiInterpreter::run(Model* model, bool* modified) {
@@ -457,6 +434,13 @@ OperationPtr NnApiInterpreter::map_CONV_2D(Model* model,
             conv2d->pad[2] = inputs[argList->ArgPos("explicit_pad_top")]->scalar.int32;
             conv2d->pad[3] = inputs[argList->ArgPos("explicit_pad_bottom")]->scalar.int32;
         }
+        /*driver require that bias' type is the same as weight's*/
+        if( inputs[1]->type == OperandType::TENSOR_QUANT8_SYMM_PER_CHANNEL && inputs[2] != nullptr){
+            inputs[2]->quant.vec.scale.resize(inputs[1]->quant.vec.scale.size(), 0);
+            inputs[2]->quant.vec.zeroPoint.resize(inputs[1]->quant.vec.scale.size(), 0);
+            for(size_t i = 0; i < inputs[2]->quant.vec.scale.size(); i++)
+                inputs[2]->quant.vec.scale[i] = inputs[0]->quant.scalar.scale * inputs[1]->quant.vec.scale[i];
+        }
         // dilation is required in Lowlevel requirement
         conv2d->dilations[0] = 1;
         conv2d->dilations[1] = 1;
@@ -469,8 +453,6 @@ OperationPtr NnApiInterpreter::map_CONV_2D(Model* model,
             conv2d->setDataLayout(
                 getDataLayout(inputs[argList->ArgPos("data_layout")]->scalar.boolean));
         }
-        // Transpose weight for nchw cases
-        convertKenelDimOrder(conv2d, model, operation, argList);
 
         resetFusedType(model, operation, argList->ArgPos("fuse_code"));
         conv2d->strides[0] = inputs[argList->ArgPos("stride_w")]->scalar.int32;
@@ -511,14 +493,21 @@ OperationPtr NnApiInterpreter::map_GROUPED_CONV_2D(Model* model,
             conv2d->pad[2] = inputs[argList->ArgPos("pad_top")]->scalar.int32;
             conv2d->pad[3] = inputs[argList->ArgPos("pad_bottom")]->scalar.int32;
         }
+
+        /*driver require that bias' type is the same as weight's*/
+        if( inputs[1]->type == OperandType::TENSOR_QUANT8_SYMM_PER_CHANNEL && inputs[2] != nullptr){
+            inputs[2]->quant.vec.scale.resize(inputs[1]->quant.vec.scale.size(), 0);
+            inputs[2]->quant.vec.zeroPoint.resize(inputs[1]->quant.vec.scale.size(), 0);
+            for(size_t i = 0; i < inputs[2]->quant.vec.scale.size(); i++)
+                inputs[2]->quant.vec.scale[i] = inputs[0]->quant.scalar.scale * inputs[1]->quant.vec.scale[i];
+        }
+
         conv2d->strides[0] = inputs[argList->ArgPos("stride_w")]->scalar.int32;
         conv2d->strides[1] = inputs[argList->ArgPos("stride_h")]->scalar.int32;
         conv2d->groups = inputs[argList->ArgPos("groups_num")]->scalar.int32;
         resetFusedType(model, operation, argList->ArgPos("fuse_code"));
         conv2d->setDataLayout(
             getDataLayout(inputs[argList->ArgPos("data_layout")]->scalar.boolean));
-        // Transpose weight for nchw cases
-        convertKenelDimOrder(conv2d, model, operation, argList);
     } else {
         NNRT_LOGE_PRINT("GroupedConv2D argument list not support");
     }
@@ -551,6 +540,14 @@ OperationPtr NnApiInterpreter::map_DEPTHWISE_CONV_2D(Model* model,
             NNRT_LOGE("NNAPI_interpreter") << "Argument padding method not found";
         }
 
+        /*driver require that bias' type is the same as weight's*/
+        if( inputs[1]->type == OperandType::TENSOR_QUANT8_SYMM_PER_CHANNEL && inputs[2] != nullptr){
+            inputs[2]->quant.vec.scale.resize(inputs[1]->quant.vec.scale.size(), 0);
+            inputs[2]->quant.vec.zeroPoint.resize(inputs[1]->quant.vec.scale.size(), 0);
+            for(size_t i = 0; i < inputs[2]->quant.vec.scale.size(); i++)
+                inputs[2]->quant.vec.scale[i] = inputs[0]->quant.scalar.scale * inputs[1]->quant.vec.scale[i];
+        }
+
         conv2d->strides[0] = inputs[argList->ArgPos("stride_w")]->scalar.int32;
         conv2d->strides[1] = inputs[argList->ArgPos("stride_h")]->scalar.int32;
         conv2d->multiplier = inputs[argList->ArgPos("multiplier")]->scalar.int32;
@@ -560,8 +557,6 @@ OperationPtr NnApiInterpreter::map_DEPTHWISE_CONV_2D(Model* model,
             conv2d->setDataLayout(
                 getDataLayout(inputs[argList->ArgPos("data_layout")]->scalar.boolean));
         }
-        // Transpose weight for nchw cases
-        convertKenelDimOrder(conv2d, model, operation, argList);
 
         conv2d->dilations[0] = 1;
         conv2d->dilations[1] = 1;
@@ -1593,9 +1588,6 @@ OperationPtr NnApiInterpreter::map_DECONV_2D(Model* model,
         deconv2d->strides[1] = inputs[argList->ArgPos("stride_h")]->scalar.int32;
         resetFusedType(model, operation, argList->ArgPos("fuse_code"));
         deconv2d->setDataLayout(getDataLayout(inputs[argList->ArgPos("layout")]->scalar.boolean));
-
-        // Transpose weight for nchw cases
-       convertKenelDimOrder(deconv2d, model, operation, argList);
     } else {
         NNRT_LOGE_PRINT("Transpose conv2d argument list not support");
         assert(false);
