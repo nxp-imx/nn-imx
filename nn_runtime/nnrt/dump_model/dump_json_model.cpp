@@ -244,6 +244,13 @@ namespace nnrt {
         item["dims"] = dims;
         item["scale"] = operand->quant.scalar.scale;
         item["zeroPoint"] = operand->quant.scalar.zeroPoint;
+        if(operand->type == OperandType::TENSOR_QUANT8_SYMM_PER_CHANNEL){
+            item["channelDim"] = operand->quant.vec.channelDim;
+            Json::Value vScales;
+            for(uint32_t i = 0; i < operand->quant.vec.scale.size(); i ++)
+                vScales[i] = operand->quant.vec.scale[i];
+            item["perchannleScale"] = vScales;
+        }
 
         jOperand["container"].append(item);
         return 0;
