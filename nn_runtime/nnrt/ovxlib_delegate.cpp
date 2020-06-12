@@ -465,6 +465,12 @@ vsi_nn_pad_mode_e OvxlibDelegate::mapPadMode(PadMode mode) {
     switch (mode) {
         case PadMode::CONSTANT:
             return VSI_NN_PAD_MODE_CONSTANT;
+        case PadMode::REPLICATE:
+            return VSI_NN_PAD_MODE_REPLICATE;
+        case PadMode::SYMMETRIC:
+            return VSI_NN_PAD_MODE_SYMMETRIC;
+        case PadMode::REFLECT:
+            return VSI_NN_PAD_MODE_REFLECT;
         default:
             break;
     }
