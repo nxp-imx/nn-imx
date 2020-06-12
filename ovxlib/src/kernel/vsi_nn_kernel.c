@@ -668,6 +668,16 @@ vsi_nn_kernel_node_t  vsi_nn_kernel_create_node
     return (vsi_nn_kernel_node_t)node;
 } /* vsi_nn_kernel_create_node() */
 
+
+vsi_status vsi_nn_kernel_node_set_border
+    (vsi_nn_kernel_node_t node,
+    vx_border_t* border)
+{
+    vsi_status status = VSI_FAILURE;
+    status = vxSetNodeAttribute( (vx_node)node, VX_NODE_BORDER, border, sizeof(vx_border_t) );
+    return status;
+}
+
 vsi_status vsi_nn_kernel_node_pass_param
     (
     vsi_nn_kernel_node_t node,

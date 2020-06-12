@@ -289,7 +289,6 @@ cc_library(
         "src/libnnext/ops/kernel/vsi_nn_kernel_tensorstackconcat.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_sync_host.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_spatial_transformer.c",
-        "src/libnnext/ops/kernel/vsi_nn_kernel_tensor_add_mean_stddev_norm.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_stack.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_clip.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_pre_process_gray.c",
