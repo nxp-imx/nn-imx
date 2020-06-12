@@ -1728,6 +1728,29 @@ bool NpuLayerSupport::IsInstanceNormalizationSupported(const TensorInfo& input,
     return supported;
 }
 
+bool NpuLayerSupport::IsArgMinMaxSupported(const armnn::TensorInfo &input, const armnn::TensorInfo &output,
+                                           const armnn::ArgMinMaxDescriptor &descriptor,
+                                           armnn::Optional<std::string &> reasonIfUnsupported) const
+{
+    ignore_unused(descriptor);
+
+    std::array<DataType, 4> supportedTypes =
+    {
+        DataType::Float32,
+        DataType::QAsymmU8,
+        DataType::Float16,
+        DataType::Signed32
+    };
+
+    bool supported = true;
+
+    supported &= CheckSupportRule(TypeAnyOf(input, supportedTypes), reasonIfUnsupported,
+                                  "NPU ArgMinMax: input is not a supported type.");
+    supported &= CheckSupportRule(TypeIs(output, DataType::Signed32), reasonIfUnsupported,
+                                  "NPU ArgMinMax: output type not supported");
+
+    return supported;
+}
 
 
 }  // namespace armnn

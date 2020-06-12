@@ -134,6 +134,8 @@ Armnn_Interpreter::Armnn_Interpreter() {
     REGISTER_OP(LESS_EQUAL);
     REGISTER_OP(INSTANCE_NORMALIZATION);
     REGISTER_OP(DETECTION_POSTPROCESSING);
+    REGISTER_OP(ARGMAX);
+    REGISTER_OP(ARGMIN);
 
 /*customer Op*/
 // REGISTER_OP(VSI_RESIZE_NEAREST);
@@ -1127,6 +1129,30 @@ OperationPtr Armnn_Interpreter::map_DETECTION_POSTPROCESSING(Model* model,
         op->is_bg_in_label = false;
 
     truncateOperationIOs(model, operation, 3, 4);
+    return op;
+}
+
+OperationPtr Armnn_Interpreter::map_ARGMAX(Model* model,
+                                           OperationPtr operation,
+                                           uint32_t operation_index) {
+    NNAPI_CHECK_IO_NUM(operation, 2, 1);
+    std::shared_ptr<ArgmaxOperation> op = std::make_shared<ArgmaxOperation>();
+    NNAPI_CHECK_PTR(op);
+    std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
+    op->axis = inputs[1]->scalar.int32;
+    truncateOperationIOs(model, operation, 1, 1);
+    return op;
+}
+
+OperationPtr Armnn_Interpreter::map_ARGMIN(Model* model,
+                                           OperationPtr operation,
+                                           uint32_t operation_index) {
+    NNAPI_CHECK_IO_NUM(operation, 2, 1);
+    std::shared_ptr<ArgminOperation> op = std::make_shared<ArgminOperation>();
+    NNAPI_CHECK_PTR(op);
+    std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
+    op->axis = inputs[1]->scalar.int32;
+    truncateOperationIOs(model, operation, 1, 1);
     return op;
 }
 

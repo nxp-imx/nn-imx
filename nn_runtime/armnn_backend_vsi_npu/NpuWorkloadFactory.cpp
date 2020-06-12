@@ -64,6 +64,7 @@
 #include "workloads/NpuDepthToSpaceWorkload.hpp"
 #include "workloads/NpuInstanceNormWorkload.hpp"
 #include "workloads/NpuDetectionPostProcessWorkload.hpp"
+#include "workloads/NpuArgMinMaxWorkload.hpp"
 
 #include <iostream>
 
@@ -469,6 +470,13 @@ std::unique_ptr<IWorkload> NpuWorkloadFactory::CreateInstanceNormalization(
     return MakeWorkload<NpuInstanceNormFloat16Workload,
                         NpuInstanceNormFloat32Workload,
                         NpuInstanceNormUint8Workload>(descriptor, info);
+}
+
+std::unique_ptr<IWorkload> NpuWorkloadFactory::CreateArgMinMax(
+    const ArgMinMaxQueueDescriptor& descriptor, const WorkloadInfo& info) const {
+    return MakeWorkload<NpuArgMinMaxFloat16Workload,
+                        NpuArgMinMaxFloat32Workload,
+                        NpuArgMinMaxUint8Workload>(descriptor, info);
 }
 
 }  // namespace armnn

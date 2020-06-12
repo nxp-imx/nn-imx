@@ -337,6 +337,12 @@ public:
         const TensorInfo& output,
         const InstanceNormalizationDescriptor& descriptor,
         Optional<std::string&> reasonIfUnsupported = EmptyOptional()) const override;
+
+    bool IsArgMinMaxSupported(
+        const TensorInfo& input,
+        const TensorInfo& output,
+        const ArgMinMaxDescriptor& descriptor,
+        Optional<std::string&> reasonIfUnsupported = EmptyOptional()) const override;
 };
 
 } // namespace armnn

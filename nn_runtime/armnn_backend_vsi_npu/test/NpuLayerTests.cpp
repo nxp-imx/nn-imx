@@ -1249,13 +1249,13 @@ ARMNN_AUTO_TEST_CASE(MeanVts3QuantisedAsymm8, MeanVts3Test<DataType::QAsymmU8>)
 
 // ARMNN_AUTO_TEST_CASE(AdditionAfterMaxPool, AdditionAfterMaxPoolTest)
 
-// // ArgMinMax
-// ARMNN_AUTO_TEST_CASE(ArgMaxFloat32, ArgMaxSimpleTest<DataType::Float32>)
-// ARMNN_AUTO_TEST_CASE(ArgMinFloat32, ArgMinSimpleTest<DataType::Float32>)
-// ARMNN_AUTO_TEST_CASE(ArgMinChannelFloat32, ArgMinChannelTest<DataType::Float32>)
-// ARMNN_AUTO_TEST_CASE(ArgMaxChannelFloat32, ArgMaxChannelTest<DataType::Float32>)
-// ARMNN_AUTO_TEST_CASE(ArgMaxHeightFloat32, ArgMaxHeightTest<DataType::Float32>)
-// ARMNN_AUTO_TEST_CASE(ArgMinWidthFloat32, ArgMinWidthTest<DataType::Float32>)
+// ArgMinMax
+ARMNN_AUTO_TEST_CASE(ArgMaxFloat32, ArgMaxSimpleTest<DataType::Float32>)
+ARMNN_AUTO_TEST_CASE(ArgMinFloat32, ArgMinSimpleTest<DataType::Float32>)
+ARMNN_AUTO_TEST_CASE(ArgMinChannelFloat32, ArgMinChannelTest<DataType::Float32>)
+ARMNN_AUTO_TEST_CASE(ArgMaxChannelFloat32, ArgMaxChannelTest<DataType::Float32>)
+ARMNN_AUTO_TEST_CASE(ArgMaxHeightFloat32, ArgMaxHeightTest<DataType::Float32>)
+ARMNN_AUTO_TEST_CASE(ArgMinWidthFloat32, ArgMinWidthTest<DataType::Float32>)
 
 // ARMNN_AUTO_TEST_CASE(ArgMaxSigned32, ArgMaxSimpleTest<DataType::Signed32>)
 // ARMNN_AUTO_TEST_CASE(ArgMinSigned32, ArgMinSimpleTest<DataType::Signed32>)
@@ -1264,10 +1264,10 @@ ARMNN_AUTO_TEST_CASE(MeanVts3QuantisedAsymm8, MeanVts3Test<DataType::QAsymmU8>)
 // ARMNN_AUTO_TEST_CASE(ArgMaxHeightSigned32, ArgMaxHeightTest<DataType::Signed32>)
 // ARMNN_AUTO_TEST_CASE(ArgMinWidthSigned32, ArgMinWidthTest<DataType::Signed32>)
 
-// ARMNN_AUTO_TEST_CASE(ArgMaxSimpleQuantisedAsymm8, ArgMaxSimpleTest<DataType::QAsymmU8>)
-// ARMNN_AUTO_TEST_CASE(ArgMinSimpleQuantisedAsymm8, ArgMinSimpleTest<DataType::QAsymmU8>)
-// ARMNN_AUTO_TEST_CASE(ArgMinChannelQuantisedAsymm8, ArgMinChannelTest<DataType::QAsymmU8>)
-// ARMNN_AUTO_TEST_CASE(ArgMaxChannelQuantisedAsymm8, ArgMaxChannelTest<DataType::QAsymmU8>)
+ARMNN_AUTO_TEST_CASE(ArgMaxSimpleQuantisedAsymm8, ArgMaxSimpleTest<DataType::QAsymmU8>)
+ARMNN_AUTO_TEST_CASE(ArgMinSimpleQuantisedAsymm8, ArgMinSimpleTest<DataType::QAsymmU8>)
+ARMNN_AUTO_TEST_CASE(ArgMinChannelQuantisedAsymm8, ArgMinChannelTest<DataType::QAsymmU8>)
+ARMNN_AUTO_TEST_CASE(ArgMaxChannelQuantisedAsymm8, ArgMaxChannelTest<DataType::QAsymmU8>)
 
 // ARMNN_AUTO_TEST_CASE(ArgMaxSimpleQuantisedSymm16, ArgMaxSimpleTest<DataType::QSymmS16>)
 // ARMNN_AUTO_TEST_CASE(ArgMinSimpleQuantisedSymm16, ArgMinSimpleTest<DataType::QSymmS16>)
