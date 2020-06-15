@@ -34,8 +34,9 @@ template <typename T_model, typename T_Operation>
 class Conv2dValidate : public OperationValidate<T_model, T_Operation> {
    public:
     Conv2dValidate(const T_model& model, const T_Operation& operation)
-        : OperationValidate<T_model, T_Operation>(model, operation) {}
+        : OperationValidate<T_model, T_Operation>(model, operation) {};
     bool SignatureCheck(std::string& reason) override {
+        auto model = this->ModelForRead();
         auto inputList = ::hal::limitation::nnapi::match("Convolution2DInput", this->InputArgTypes());
         auto outputList = ::hal::limitation::nnapi::match("Convolution2DOutput", this->OutputArgTypes());
         if (inputList && outputList) {
@@ -46,19 +47,23 @@ class Conv2dValidate : public OperationValidate<T_model, T_Operation> {
                 reason += "reject CONVOLUTION_2D because input and kernel share a same tensor\n";
                 return false;
             }
-            auto kernelOperand = operation.inputs[kernelIndex];
-            auto biasOperand = operation.inputs[inputList->ArgPos("bias")];
-            if ((!this->IsConstantTensor(kernelOperand) && !this->IsConstantTensor(biasOperand)) ||
-                (this->IsConstantTensor(kernelOperand) && this->IsConstantTensor(biasOperand))) {
-                return true;
-            } else {
+            auto kernelOperandIndex = operation.inputs[kernelIndex];
+            auto biasOperandIndex = operation.inputs[inputList->ArgPos("bias")];
+            if (( (this->IsConstantTensor(kernelOperandIndex)) ^ (this->IsConstantTensor(biasOperandIndex)))) {
                 reason += "reject CONVOLUTION_2D because kernel and bias not satisfy constant rule\n";
                 return false;
             }
+            if (this->IsConstantTensor(operation.inputs[inputIndex])) {
+                reason += "reject conv_2d because input is constant tensor\n";
+                return false;
+            }
+
+            auto kernelOperand = model.operands[kernelOperandIndex];
             if (kernelOperand.dimensions[1] * kernelOperand.dimensions[2] > 6400) {
                 reason += "reject CONVOLUTION_2D because kernel size > 6400\n";
                 return false;
             }
+            return true;
         } else {
             reason += "reject CONVOLUTION_2D because input data type not support\n";
             return false;

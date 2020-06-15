@@ -188,17 +188,10 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
     switch (operation.type) {
         // TODO: remove all of the work around
         case OperationType::CONV_2D: {
-            auto& input = model.operands[operation.inputs[0]];
-            auto& weight = model.operands[operation.inputs[1]];
-            auto& bias = model.operands[operation.inputs[2]];
-            if (isConstantTensor(input)) {
-                LOG(INFO) << "Device don't support constant input";
-                isSupport &= false;
-            }
-
-            isSupport &= (!isConstantTensor(bias) && !isConstantTensor(weight)) ||
-                         (isConstantTensor(bias) && isConstantTensor(weight));
-            break;
+            OperationValidatePtr conv2D = std::make_unique<
+                op_validate::Conv2dValidate<HalPlatform::Model, HalPlatform::Operation>>(
+                model, operation);
+            return conv2D->Validate(reason);
         }
         case OperationType::ADD:
         case OperationType::SUB:
@@ -675,11 +668,8 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
     }
 
     // Overall check
-    std::vector<OperationType> whiteList = {OperationType::MAXIMUM,
-                                            OperationType::MINIMUM,
-                                            OperationType::CONCATENATION,
-                                            OperationType::CONV_2D,
-                                            OperationType::FULLY_CONNECTED,
+    // TODO: if all of LSTM's inputs are constant, the result will fail.
+    std::vector<OperationType> whiteList = { OperationType::CONCATENATION,
                                             OperationType::LSTM};
 
     // do not support constant tensor as operation's Input except whiteList.
