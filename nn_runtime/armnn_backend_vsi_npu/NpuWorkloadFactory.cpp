@@ -66,6 +66,7 @@
 #include "workloads/NpuDetectionPostProcessWorkload.hpp"
 #include "workloads/NpuArgMinMaxWorkload.hpp"
 #include "workloads/NpuLogSoftmaxWorkload.hpp"
+#include "workloads/NpuSliceWorkload.hpp"
 
 #include <iostream>
 
@@ -486,6 +487,14 @@ std::unique_ptr<IWorkload> NpuWorkloadFactory::CreateLogSoftmax(const LogSoftmax
     return MakeWorkload<NpuLogSoftmaxFloat16Workload,
                         NpuLogSoftmaxFloat32Workload,
                         NpuLogSoftmaxUint8Workload>(descriptor, info);
+}
+
+std::unique_ptr<IWorkload> NpuWorkloadFactory::CreateSlice(const SliceQueueDescriptor& descriptor,
+                                                           const WorkloadInfo& info) const
+{
+    return MakeWorkload<NpuSliceFloat16Workload,
+                        NpuSliceFloat32Workload,
+                        NpuSliceUint8Workload>(descriptor, info);
 }
 
 }  // namespace armnn

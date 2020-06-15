@@ -1779,5 +1779,32 @@ bool NpuLayerSupport::IsLogSoftmaxSupported(const TensorInfo& input,
     return supported;
 }
 
+bool NpuLayerSupport::IsSliceSupported(const TensorInfo& input,
+                                       const TensorInfo& output,
+                                       const SliceDescriptor& descriptor,
+                                       Optional<std::string&> reasonIfUnsupported) const
+{
+    boost::ignore_unused(descriptor);
+    bool supported = true;
+
+    std::array<DataType, 3> supportedTypes =
+    {
+        DataType::Float32,
+        DataType::QAsymmU8,
+        DataType::QSymmS16
+    };
+
+    supported &= CheckSupportRule(TypeAnyOf(input, supportedTypes), reasonIfUnsupported,
+                                  "Npu Slice: input type not supported");
+
+    supported &= CheckSupportRule(TypeAnyOf(output, supportedTypes), reasonIfUnsupported,
+                                  "Npu Slice: output type not supported");
+
+    supported &= CheckSupportRule(TypesAreEqual(input, output), reasonIfUnsupported,
+                                  "Npu Slice: input and output types are mismatched");
+
+    return supported;
+}
+
 
 }  // namespace armnn

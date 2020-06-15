@@ -348,6 +348,11 @@ public:
                                const TensorInfo& output,
                                const LogSoftmaxDescriptor& descriptor,
                                Optional<std::string&> reasonIfUnsupported) const override;
+
+    bool IsSliceSupported(const TensorInfo& input,
+                          const TensorInfo& output,
+                          const SliceDescriptor& descriptor,
+                          Optional<std::string&> reasonIfUnsupported = EmptyOptional()) const override;
 };
 
 } // namespace armnn
