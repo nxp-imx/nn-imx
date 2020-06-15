@@ -230,6 +230,9 @@ public:
     std::unique_ptr<IWorkload> CreateArgMinMax(const ArgMinMaxQueueDescriptor& descriptor,
                                                const WorkloadInfo& info) const override;
 
+    std::unique_ptr<IWorkload> CreateLogSoftmax(const LogSoftmaxQueueDescriptor& descriptor,
+                                                const WorkloadInfo& info) const override;
+
    private:
 
     template <typename Fp16Workload, typename F32Workload, typename U8Workload, typename QueueDescriptorType>

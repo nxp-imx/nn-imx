@@ -65,6 +65,7 @@
 #include "workloads/NpuInstanceNormWorkload.hpp"
 #include "workloads/NpuDetectionPostProcessWorkload.hpp"
 #include "workloads/NpuArgMinMaxWorkload.hpp"
+#include "workloads/NpuLogSoftmaxWorkload.hpp"
 
 #include <iostream>
 
@@ -477,6 +478,14 @@ std::unique_ptr<IWorkload> NpuWorkloadFactory::CreateArgMinMax(
     return MakeWorkload<NpuArgMinMaxFloat16Workload,
                         NpuArgMinMaxFloat32Workload,
                         NpuArgMinMaxUint8Workload>(descriptor, info);
+}
+
+std::unique_ptr<IWorkload> NpuWorkloadFactory::CreateLogSoftmax(const LogSoftmaxQueueDescriptor& descriptor,
+                                                                const WorkloadInfo& info) const
+{
+    return MakeWorkload<NpuLogSoftmaxFloat16Workload,
+                        NpuLogSoftmaxFloat32Workload,
+                        NpuLogSoftmaxUint8Workload>(descriptor, info);
 }
 
 }  // namespace armnn

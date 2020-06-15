@@ -343,6 +343,11 @@ public:
         const TensorInfo& output,
         const ArgMinMaxDescriptor& descriptor,
         Optional<std::string&> reasonIfUnsupported = EmptyOptional()) const override;
+
+    bool IsLogSoftmaxSupported(const TensorInfo& input,
+                               const TensorInfo& output,
+                               const LogSoftmaxDescriptor& descriptor,
+                               Optional<std::string&> reasonIfUnsupported) const override;
 };
 
 } // namespace armnn

@@ -1752,5 +1752,32 @@ bool NpuLayerSupport::IsArgMinMaxSupported(const armnn::TensorInfo &input, const
     return supported;
 }
 
+bool NpuLayerSupport::IsLogSoftmaxSupported(const TensorInfo& input,
+                                            const TensorInfo& output,
+                                            const LogSoftmaxDescriptor& descriptor,
+                                            Optional<std::string&> reasonIfUnsupported) const
+{
+    ignore_unused(descriptor);
+
+    std::array<DataType, 3> supportedTypes =
+    {
+            DataType::Float32,
+            DataType::Float16,
+            DataType::QAsymmU8
+    };
+
+    bool supported = true;
+    supported &= CheckSupportRule(TypeAnyOf(input, supportedTypes), reasonIfUnsupported,
+                                  "Npu LogSoftmax: input type not supported");
+
+    supported &= CheckSupportRule(TypeAnyOf(output, supportedTypes), reasonIfUnsupported,
+                                  "Npu LogSoftmax: output type not supported");
+
+    supported &= CheckSupportRule(TypesAreEqual(input, output), reasonIfUnsupported,
+                                  "Npu LogSoftmax: input and output types do not match");
+
+    return supported;
+}
+
 
 }  // namespace armnn

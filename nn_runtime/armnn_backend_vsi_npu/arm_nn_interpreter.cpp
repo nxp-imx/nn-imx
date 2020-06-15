@@ -136,6 +136,7 @@ Armnn_Interpreter::Armnn_Interpreter() {
     REGISTER_OP(DETECTION_POSTPROCESSING);
     REGISTER_OP(ARGMAX);
     REGISTER_OP(ARGMIN);
+    REGISTER_OP(LOG_SOFTMAX);
 
 /*customer Op*/
 // REGISTER_OP(VSI_RESIZE_NEAREST);
@@ -1154,6 +1155,19 @@ OperationPtr Armnn_Interpreter::map_ARGMIN(Model* model,
     op->axis = inputs[1]->scalar.int32;
     truncateOperationIOs(model, operation, 1, 1);
     return op;
+}
+
+OperationPtr Armnn_Interpreter::map_LOG_SOFTMAX(Model* model,
+                                           OperationPtr operation,
+                                           uint32_t operation_index) {
+    NNAPI_CHECK_IO_NUM(operation, 3, 1);
+    std::shared_ptr<LogSoftmaxOperation> logSoftmax = std::make_shared<LogSoftmaxOperation>();
+    NNAPI_CHECK_PTR(logSoftmax);
+    std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
+    logSoftmax->beta = inputs[1]->scalar.float32;
+    logSoftmax->axis = inputs[2]->scalar.int32;
+    truncateOperationIOs(model, operation, 1, 1);
+    return std::dynamic_pointer_cast<Operation>(logSoftmax);
 }
 
 DECLARE_SAMPLE_OP(LINEAR, 3, 1, LinearOperation)
