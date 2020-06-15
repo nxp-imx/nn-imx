@@ -417,12 +417,13 @@ ARMNN_AUTO_TEST_CASE(SimpleMaxPooling2dUint8Nhwc, SimpleMaxPooling2dUint8Test, D
 // AveragePooling
 ARMNN_AUTO_TEST_CASE(SimpleAveragePooling2d, SimpleAveragePooling2dTest, DataLayout::NCHW)
 ARMNN_AUTO_TEST_CASE(SimpleAveragePooling2dNhwc, SimpleAveragePooling2dTest, DataLayout::NHWC)
-ARMNN_AUTO_TEST_CASE(SimpleAveragePooling2dUint8, SimpleAveragePooling2dUint8Test, DataLayout::NCHW)
+// Not support zp = -1
+// ARMNN_AUTO_TEST_CASE(SimpleAveragePooling2dUint8, SimpleAveragePooling2dUint8Test, DataLayout::NCHW)
 // ARMNN_AUTO_TEST_CASE(SimpleAveragePooling2dInt16, SimpleAveragePooling2dInt16Test,
 // DataLayout::NCHW)
-ARMNN_AUTO_TEST_CASE(SimpleAveragePooling2dUint8Nhwc,
-                     SimpleAveragePooling2dUint8Test,
-                     DataLayout::NHWC)
+// ARMNN_AUTO_TEST_CASE(SimpleAveragePooling2dUint8Nhwc,
+//                      SimpleAveragePooling2dUint8Test,
+//                      DataLayout::NHWC)
 // ARMNN_AUTO_TEST_CASE(SimpleAveragePooling2dInt16Nhwc, SimpleAveragePooling2dInt16Test,
 // DataLayout::NHWC)
 
