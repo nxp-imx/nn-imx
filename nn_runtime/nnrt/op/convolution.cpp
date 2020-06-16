@@ -31,24 +31,25 @@ namespace op {
 static void convertKenelLayout(Operation *convOp, nnrt::Model &model, bool noPermuted = true){
      std::vector<OperandPtr> inputs = model.getOperands(convOp->inputs());
     // Transpose weight for nchw cases
-    auto requiredPermute = std::make_shared<layout_inference::PermuteVector<4>>(
-        std::initializer_list<uint32_t>({0, 3, 1, 2}));
-    auto kernel_index = convOp->input(1);
-    if(noPermuted){
-        if (model.operand(kernel_index)->isConst()) {
-            std::vector<uint32_t> constOprIds = {convOp->input(1)};
-            convOp->permuteConstOperands(model, constOprIds, requiredPermute);
-        } else {
-            auto permuteOp = nnrt::op::utils::asOp(requiredPermute);
-            convOp->insertPermute(model, permuteOp, requiredPermute->asStdVec(), true, kernel_index);
+    if (DataLayout::NHWC == convOp->getDataLayout()){
+        auto requiredPermute = std::make_shared<layout_inference::PermuteVector<4>>(
+            std::initializer_list<uint32_t>({0, 3, 1, 2}));
+        auto kernel_index = convOp->input(1);
+        if(noPermuted){
+            if (model.operand(kernel_index)->isConst()) {
+                std::vector<uint32_t> constOprIds = {convOp->input(1)};
+                convOp->permuteConstOperands(model, constOprIds, requiredPermute);
+            } else {
+                auto permuteOp = nnrt::op::utils::asOp(requiredPermute);
+                convOp->insertPermute(model, permuteOp, requiredPermute->asStdVec(), true, kernel_index);
+            }
         }
-    }
-
-    /*the channel dim has to be changed as filter's dim order change*/
-    OperandPtr filterOperand = model.operand(convOp->input(1));
-    if(nullptr != filterOperand && filterOperand->isPerChannel()){
-        filterOperand->quant.vec.channelDim =
-            nnrt::op::utils::axisMapTo(requiredPermute, filterOperand->quant.vec.channelDim);
+        /*the channel dim has to be changed as filter's dim order change*/
+        OperandPtr filterOperand = model.operand(convOp->input(1));
+        if(nullptr != filterOperand && filterOperand->isPerChannel()){
+            filterOperand->quant.vec.channelDim =
+                nnrt::op::utils::axisMapTo(requiredPermute, filterOperand->quant.vec.channelDim);
+        }
     }
 }
 

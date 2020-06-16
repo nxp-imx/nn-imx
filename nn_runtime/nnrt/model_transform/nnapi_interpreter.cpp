@@ -55,6 +55,38 @@ namespace nnrt {
         }                    \
     } while (0)
 
+void convertKenelLayout(std::shared_ptr<Operation> convOp, Model* model, OperationPtr operation,
+                                    api::requirement::MatchedArgumentPtr argList){
+    std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
+    // Transpose weight for nchw cases
+    // for any layout conv, weight is always nhwc layout in nnapi, but for other framework,
+    // the weight's layout may be related to the layout parameter.
+    // so nchw situlation is to be handled here, nhwc situlation will be handled in nnrt.
+    if (DataLayout::NCHW == convOp->getDataLayout()) {
+        std::vector<uint32_t> permVal = {0, 3, 1, 2};
+        auto kernelIdx = argList->ArgPos("kernel");
+        if (inputs[kernelIdx]->isConst()) {
+            // Set permute flag. Do transepose in ovxlib delegate
+            inputs[kernelIdx]->setPerm(permVal);
+            inputs[kernelIdx]->dimensions =
+                convOp->dimensionTrans(inputs[kernelIdx]->dimensions, permVal);
+        } else {
+            // Insert permute layer for weight as input
+            if (!operand_utils::InsertPermuteBeforeOperand(
+                model, operation, operation->inputs()[1], permVal)) {
+                    NNRT_LOGE_PRINT("%s: insert permute failed.", __FUNCTION__);
+                    assert(false);
+            }
+        }
+        // the channel dim has to be changed as filter's dim order change
+        OperandPtr filterOperand = model->operand(operation->inputs()[1]);
+        if(nullptr != filterOperand){
+            filterOperand->quant.vec.channelDim =
+                nnrt::op::utils::axisMapTo(permVal, filterOperand->quant.vec.channelDim);
+        }
+    }
+}
+
 static void convert2DPadding(int32_t* padding, size_t size, int32_t* front, int32_t* back) {
     if (!padding || !front || !back) {
         return;
@@ -453,6 +485,7 @@ OperationPtr NnApiInterpreter::map_CONV_2D(Model* model,
             conv2d->setDataLayout(
                 getDataLayout(inputs[argList->ArgPos("data_layout")]->scalar.boolean));
         }
+        convertKenelLayout(conv2d, model, operation, argList);
 
         resetFusedType(model, operation, argList->ArgPos("fuse_code"));
         conv2d->strides[0] = inputs[argList->ArgPos("stride_w")]->scalar.int32;
@@ -508,6 +541,7 @@ OperationPtr NnApiInterpreter::map_GROUPED_CONV_2D(Model* model,
         resetFusedType(model, operation, argList->ArgPos("fuse_code"));
         conv2d->setDataLayout(
             getDataLayout(inputs[argList->ArgPos("data_layout")]->scalar.boolean));
+        convertKenelLayout(conv2d, model, operation, argList);
     } else {
         NNRT_LOGE_PRINT("GroupedConv2D argument list not support");
     }
@@ -557,7 +591,7 @@ OperationPtr NnApiInterpreter::map_DEPTHWISE_CONV_2D(Model* model,
             conv2d->setDataLayout(
                 getDataLayout(inputs[argList->ArgPos("data_layout")]->scalar.boolean));
         }
-
+        convertKenelLayout(conv2d, model, operation, argList);
         conv2d->dilations[0] = 1;
         conv2d->dilations[1] = 1;
         if (-1 != argList->ArgPos("dilation_w")) {
@@ -1588,6 +1622,7 @@ OperationPtr NnApiInterpreter::map_DECONV_2D(Model* model,
         deconv2d->strides[1] = inputs[argList->ArgPos("stride_h")]->scalar.int32;
         resetFusedType(model, operation, argList->ArgPos("fuse_code"));
         deconv2d->setDataLayout(getDataLayout(inputs[argList->ArgPos("layout")]->scalar.boolean));
+        convertKenelLayout(deconv2d, model, operation, argList);
     } else {
         NNRT_LOGE_PRINT("Transpose conv2d argument list not support");
         assert(false);
