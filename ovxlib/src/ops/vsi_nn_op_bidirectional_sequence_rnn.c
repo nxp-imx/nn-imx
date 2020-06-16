@@ -178,7 +178,7 @@ static vsi_bool op_setup
     vsi_nn_tensor_t** reshape_output_tensors = NULL;
     vsi_nn_tensor_t** aux_reshape_output_tensors = NULL;
     vsi_bool has_aux_input = (inputs[BI_RNN_AUX_INPUT] != NULL);
-    vsi_bool use_virtual_tensor = TRUE;
+    vsi_bool use_virtual_tensor = FALSE;
     uint32_t batch_size = 0;
     uint32_t time_step = 0;
     uint32_t i = 0;

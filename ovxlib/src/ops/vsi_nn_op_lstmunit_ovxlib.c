@@ -297,7 +297,7 @@ static vsi_bool op_setup
     uint32_t kernel_h = 1;
     uint32_t kernel_w = 1;
     int32_t i = 0;
-    vsi_bool use_virtual_tensor = TRUE;
+    vsi_bool use_virtual_tensor = FALSE;
 
     memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
     vsi_nn_internal_init_node_wksp( self );
