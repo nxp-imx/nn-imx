@@ -32,6 +32,12 @@ float4 eltwise_unary_neg(float4 x)
     return x * -1;
 }
 
+float4 eltwise_unary_hard_sigmoid(float4 x)
+{
+    x = 0.2 * x + 0.5;
+    x = clamp(x, 0, 1);
+    return x;
+}
 
 #define ELTWISE_UNARY_F32(func_name) \
 __kernel void func_name##_F32toF32 \
@@ -57,6 +63,7 @@ ELTWISE_UNARY_F32(exp)
 ELTWISE_UNARY_F32(log)
 ELTWISE_UNARY_F32(elu)
 ELTWISE_UNARY_F32(neg)
+ELTWISE_UNARY_F32(hard_sigmoid)
 
 #define ELTWISE_UNARY_F32_2D(func_name) \
 __kernel void func_name##_F32toF32_2D \
@@ -82,6 +89,7 @@ ELTWISE_UNARY_F32_2D(exp)
 ELTWISE_UNARY_F32_2D(log)
 ELTWISE_UNARY_F32_2D(elu)
 ELTWISE_UNARY_F32_2D(neg)
+ELTWISE_UNARY_F32_2D(hard_sigmoid)
 
 #define ELTWISE_UNARY_U8(func_name) \
 __kernel void func_name##_U8toU8 \
@@ -109,6 +117,7 @@ ELTWISE_UNARY_U8(exp)
 ELTWISE_UNARY_U8(log)
 ELTWISE_UNARY_U8(elu)
 ELTWISE_UNARY_U8(neg)
+ELTWISE_UNARY_U8(hard_sigmoid)
 
 #define ELTWISE_UNARY_U8_2D(func_name) \
 __kernel void func_name##_U8toU8_2D \
@@ -136,6 +145,7 @@ ELTWISE_UNARY_U8_2D(exp)
 ELTWISE_UNARY_U8_2D(log)
 ELTWISE_UNARY_U8_2D(elu)
 ELTWISE_UNARY_U8_2D(neg)
+ELTWISE_UNARY_U8_2D(hard_sigmoid)
 
 
 __kernel void neg_I32toI32

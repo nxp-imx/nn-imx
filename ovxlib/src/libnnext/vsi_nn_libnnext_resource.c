@@ -2473,6 +2473,13 @@ float4 eltwise_unary_neg(float4 x)\n\
     return x * -1;\n\
 }\n\
 \n\
+float4 eltwise_unary_hard_sigmoid(float4 x)\n\
+{\n\
+    x = 0.2 * x + 0.5;\n\
+    x = clamp(x, 0, 1);\n\
+    return x;\n\
+}\n\
+\n\
 _viv_uniform float inputScale;\n\
 _viv_uniform float inputTail;\n\
 _viv_uniform float outputScale;\n\
@@ -2570,6 +2577,17 @@ ELTSISE_UNARY_2D(neg, U8,  U8,  vxc_uchar8, vxc_uchar8, int4,  vxc_uchar8, vxc_u
 ELTSISE_UNARY_2D(neg, U8,  F16, vxc_uchar8, vxc_uchar8, half4, vxc_half8,  vxc_short8)\n\
 ELTSISE_UNARY_2D(neg, I16, I16, vxc_short8, vxc_short8, int4,  vxc_short8, vxc_short8)\n\
 ELTSISE_UNARY_2D(neg, I16, F16, vxc_short8, vxc_short8, half4, vxc_half8,  vxc_short8)\n\
+//HARD_SIGMOID\n\
+ELTSISE_UNARY_2D(hard_sigmoid, F16, F16, vxc_short8, vxc_half8,  half4, vxc_half8,  vxc_short8)\n\
+ELTSISE_UNARY_2D(hard_sigmoid, F16, I8,  vxc_short8, vxc_half8,  int4,  vxc_char8,  vxc_char8)\n\
+ELTSISE_UNARY_2D(hard_sigmoid, F16, U8,  vxc_short8, vxc_half8,  int4,  vxc_uchar8, vxc_uchar8)\n\
+ELTSISE_UNARY_2D(hard_sigmoid, F16, I16, vxc_short8, vxc_half8,  int4,  vxc_short8, vxc_short8)\n\
+ELTSISE_UNARY_2D(hard_sigmoid, I8,  I8,  vxc_char8,  vxc_char8,  int4,  vxc_char8,  vxc_char8)\n\
+ELTSISE_UNARY_2D(hard_sigmoid, I8,  F16, vxc_char8,  vxc_char8,  half4, vxc_half8,  vxc_short8)\n\
+ELTSISE_UNARY_2D(hard_sigmoid, U8,  U8,  vxc_uchar8, vxc_uchar8, int4,  vxc_uchar8, vxc_uchar8)\n\
+ELTSISE_UNARY_2D(hard_sigmoid, U8,  F16, vxc_uchar8, vxc_uchar8, half4, vxc_half8,  vxc_short8)\n\
+ELTSISE_UNARY_2D(hard_sigmoid, I16, I16, vxc_short8, vxc_short8, int4,  vxc_short8, vxc_short8)\n\
+ELTSISE_UNARY_2D(hard_sigmoid, I16, F16, vxc_short8, vxc_short8, half4, vxc_half8,  vxc_short8)\n\
 \n\
 \n\
 _viv_uniform VXC_512Bits uniConvBF16toF32_Part0_2x8;\n\
@@ -2613,6 +2631,8 @@ ELTSISE_UNARY_BF16_2D(log)\n\
 ELTSISE_UNARY_BF16_2D(elu)\n\
 //NEG\n\
 ELTSISE_UNARY_BF16_2D(neg)\n\
+//HARD_SIGMOID\n\
+ELTSISE_UNARY_BF16_2D(hard_sigmoid)\n\
 "; /* end of eltwise_unary_2d_vx*/
 
 static const char eltwise_unary_3d_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
@@ -2649,6 +2669,13 @@ float4 eltwise_unary_elu(float4 val)\n\
 float4 eltwise_unary_neg(float4 x)\n\
 {\n\
     return x * -1;\n\
+}\n\
+\n\
+float4 eltwise_unary_hard_sigmoid(float4 x)\n\
+{\n\
+    x = 0.2 * x + 0.5;\n\
+    x = clamp(x, 0, 1);\n\
+    return x;\n\
 }\n\
 \n\
 _viv_uniform float inputScale;\n\
@@ -2748,6 +2775,17 @@ ELTSISE_UNARY_3D(neg, U8,  U8,  vxc_uchar8, vxc_uchar8, int4,  vxc_uchar8, vxc_u
 ELTSISE_UNARY_3D(neg, U8,  F16, vxc_uchar8, vxc_uchar8, half4, vxc_half8,  vxc_short8)\n\
 ELTSISE_UNARY_3D(neg, I16, I16, vxc_short8, vxc_short8, int4,  vxc_short8, vxc_short8)\n\
 ELTSISE_UNARY_3D(neg, I16, F16, vxc_short8, vxc_short8, half4, vxc_half8,  vxc_short8)\n\
+//HARD_SIGMOID\n\
+ELTSISE_UNARY_3D(hard_sigmoid, F16, F16, vxc_short8, vxc_half8,  half4, vxc_half8,  vxc_short8)\n\
+ELTSISE_UNARY_3D(hard_sigmoid, F16, I8,  vxc_short8, vxc_half8,  int4,  vxc_char8,  vxc_char8)\n\
+ELTSISE_UNARY_3D(hard_sigmoid, F16, U8,  vxc_short8, vxc_half8,  int4,  vxc_uchar8, vxc_uchar8)\n\
+ELTSISE_UNARY_3D(hard_sigmoid, F16, I16, vxc_short8, vxc_half8,  int4,  vxc_short8, vxc_short8)\n\
+ELTSISE_UNARY_3D(hard_sigmoid, I8,  I8,  vxc_char8,  vxc_char8,  int4,  vxc_char8,  vxc_char8)\n\
+ELTSISE_UNARY_3D(hard_sigmoid, I8,  F16, vxc_char8,  vxc_char8,  half4, vxc_half8,  vxc_short8)\n\
+ELTSISE_UNARY_3D(hard_sigmoid, U8,  U8,  vxc_uchar8, vxc_uchar8, int4,  vxc_uchar8, vxc_uchar8)\n\
+ELTSISE_UNARY_3D(hard_sigmoid, U8,  F16, vxc_uchar8, vxc_uchar8, half4, vxc_half8,  vxc_short8)\n\
+ELTSISE_UNARY_3D(hard_sigmoid, I16, I16, vxc_short8, vxc_short8, int4,  vxc_short8, vxc_short8)\n\
+ELTSISE_UNARY_3D(hard_sigmoid, I16, F16, vxc_short8, vxc_short8, half4, vxc_half8,  vxc_short8)\n\
 \n\
 _viv_uniform VXC_512Bits uniConvBF16toF32_Part0_2x8;\n\
 _viv_uniform VXC_512Bits uniConvBF16toF32_Part1_2x8;\n\
@@ -2788,7 +2826,9 @@ ELTSISE_UNARY_BF16(log)\n\
 //ELU\n\
 ELTSISE_UNARY_BF16(elu)\n\
 //NEG\n\
-ELTSISE_UNARY_BF16(neg)"; /* end of eltwise_unary_3d_vx*/
+ELTSISE_UNARY_BF16(neg)\n\
+//HARD_SIGMOID\n\
+ELTSISE_UNARY_BF16(hard_sigmoid)"; /* end of eltwise_unary_3d_vx*/
 
 static const char floordiv_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
@@ -31864,6 +31904,12 @@ float4 eltwise_unary_neg(float4 x)\n\
     return x * -1;\n\
 }\n\
 \n\
+float4 eltwise_unary_hard_sigmoid(float4 x)\n\
+{\n\
+    x = 0.2 * x + 0.5;\n\
+    x = clamp(x, 0, 1);\n\
+    return x;\n\
+}\n\
 \n\
 #define ELTWISE_UNARY_F32(func_name) \\\n\
 __kernel void func_name##_F32toF32 \\\n\
@@ -31889,6 +31935,7 @@ ELTWISE_UNARY_F32(exp)\n\
 ELTWISE_UNARY_F32(log)\n\
 ELTWISE_UNARY_F32(elu)\n\
 ELTWISE_UNARY_F32(neg)\n\
+ELTWISE_UNARY_F32(hard_sigmoid)\n\
 \n\
 #define ELTWISE_UNARY_F32_2D(func_name) \\\n\
 __kernel void func_name##_F32toF32_2D \\\n\
@@ -31914,6 +31961,7 @@ ELTWISE_UNARY_F32_2D(exp)\n\
 ELTWISE_UNARY_F32_2D(log)\n\
 ELTWISE_UNARY_F32_2D(elu)\n\
 ELTWISE_UNARY_F32_2D(neg)\n\
+ELTWISE_UNARY_F32_2D(hard_sigmoid)\n\
 \n\
 #define ELTWISE_UNARY_U8(func_name) \\\n\
 __kernel void func_name##_U8toU8 \\\n\
@@ -31941,6 +31989,7 @@ ELTWISE_UNARY_U8(exp)\n\
 ELTWISE_UNARY_U8(log)\n\
 ELTWISE_UNARY_U8(elu)\n\
 ELTWISE_UNARY_U8(neg)\n\
+ELTWISE_UNARY_U8(hard_sigmoid)\n\
 \n\
 #define ELTWISE_UNARY_U8_2D(func_name) \\\n\
 __kernel void func_name##_U8toU8_2D \\\n\
@@ -31968,6 +32017,7 @@ ELTWISE_UNARY_U8_2D(exp)\n\
 ELTWISE_UNARY_U8_2D(log)\n\
 ELTWISE_UNARY_U8_2D(elu)\n\
 ELTWISE_UNARY_U8_2D(neg)\n\
+ELTWISE_UNARY_U8_2D(hard_sigmoid)\n\
 \n\
 \n\
 __kernel void neg_I32toI32\n\

@@ -82,11 +82,11 @@ typedef struct {
     char const* data;
 } source_map_t;
 
-const static source_map_t evis_resource[] =
+static const source_map_t evis_resource[] =
 {#EVIS_RESOURCE_ITEMS#
 };
 
-const static source_map_t cl_resource[] =
+static const source_map_t cl_resource[] =
 {#CL_RESOURCE_ITEMS#
 };
 

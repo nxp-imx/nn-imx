@@ -44,6 +44,7 @@ typedef enum
     UNARY_LOG,
     UNARY_ELU,
     UNARY_NEG,
+    UNARY_HSIGMOID,
 } unary_type_e;
 
 
@@ -77,6 +78,14 @@ static float elu_eval(float data)
 static float neg_eval(float data)
 {
     return data * -1.0f;
+}
+
+static float hsigmoid_eval(float data)
+{
+    data = (float)(0.2 * data + 0.5);
+    data = vsi_nn_clamp(data, 0, 1);
+
+    return data;
 }
 
 DEF_KERNEL_EXECUTOR(_eltwise_unary_exec)
@@ -133,6 +142,9 @@ DEF_KERNEL_EXECUTOR(_eltwise_unary_exec)
             break;
         case UNARY_NEG:
             data = neg_eval(data);
+            break;
+        case UNARY_HSIGMOID:
+            data = hsigmoid_eval(data);
             break;
         default:
             break;
@@ -254,9 +266,10 @@ static vsi_nn_kernel_node_t _setup
 
 __END_DECLS
 
-REGISTER_ELTWISE_UNARY_BACKEND_CPU( sin, UNARY_SIN )
-REGISTER_ELTWISE_UNARY_BACKEND_CPU( exp, UNARY_EXP )
-REGISTER_ELTWISE_UNARY_BACKEND_CPU( log, UNARY_LOG )
-REGISTER_ELTWISE_UNARY_BACKEND_CPU( elu, UNARY_ELU )
-REGISTER_ELTWISE_UNARY_BACKEND_CPU( neg, UNARY_NEG )
+REGISTER_ELTWISE_UNARY_BACKEND_CPU( sin,          UNARY_SIN )
+REGISTER_ELTWISE_UNARY_BACKEND_CPU( exp,          UNARY_EXP )
+REGISTER_ELTWISE_UNARY_BACKEND_CPU( log,          UNARY_LOG )
+REGISTER_ELTWISE_UNARY_BACKEND_CPU( elu,          UNARY_ELU )
+REGISTER_ELTWISE_UNARY_BACKEND_CPU( neg,          UNARY_NEG )
+REGISTER_ELTWISE_UNARY_BACKEND_CPU( hard_sigmoid, UNARY_HSIGMOID )
 
