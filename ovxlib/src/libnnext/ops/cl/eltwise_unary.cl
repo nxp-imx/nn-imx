@@ -4,7 +4,8 @@ float4 eltwise_unary_sin(float4 x)
     return native_sin(x);
 }
 
-#define logE    (1.44269502f)
+#define logE        (1.44269502f)
+#define twoLogE     (logE * 2.0f)
 float4 eltwise_unary_exp(float4 x)
 {
     x *= logE;
@@ -39,6 +40,30 @@ float4 eltwise_unary_hard_sigmoid(float4 x)
     return x;
 }
 
+float4 _softrelu(float4 x)
+{
+    x *= logE;
+    x = exp2(x);
+    x += 1;
+    x = log2(x);
+    return x * rlogE;
+}
+
+float4 _tanh(float4 x)
+{
+    x *= -twoLogE;
+    x = 1 + exp2(x);
+    x = 1 / x;
+    return (2 * x - 1);
+}
+
+float4 eltwise_unary_mish(float4 x)
+{
+    float4 y = _softrelu(x);
+    x = x * _tanh(y);
+    return x;
+}
+
 #define ELTWISE_UNARY_F32(func_name) \
 __kernel void func_name##_F32toF32 \
     ( \
@@ -63,6 +88,7 @@ ELTWISE_UNARY_F32(exp)
 ELTWISE_UNARY_F32(log)
 ELTWISE_UNARY_F32(elu)
 ELTWISE_UNARY_F32(neg)
+ELTWISE_UNARY_F32(mish)
 ELTWISE_UNARY_F32(hard_sigmoid)
 
 #define ELTWISE_UNARY_F32_2D(func_name) \
@@ -89,6 +115,7 @@ ELTWISE_UNARY_F32_2D(exp)
 ELTWISE_UNARY_F32_2D(log)
 ELTWISE_UNARY_F32_2D(elu)
 ELTWISE_UNARY_F32_2D(neg)
+ELTWISE_UNARY_F32_2D(mish)
 ELTWISE_UNARY_F32_2D(hard_sigmoid)
 
 #define ELTWISE_UNARY_U8(func_name) \
@@ -117,6 +144,7 @@ ELTWISE_UNARY_U8(exp)
 ELTWISE_UNARY_U8(log)
 ELTWISE_UNARY_U8(elu)
 ELTWISE_UNARY_U8(neg)
+ELTWISE_UNARY_U8(mish)
 ELTWISE_UNARY_U8(hard_sigmoid)
 
 #define ELTWISE_UNARY_U8_2D(func_name) \
@@ -145,6 +173,7 @@ ELTWISE_UNARY_U8_2D(exp)
 ELTWISE_UNARY_U8_2D(log)
 ELTWISE_UNARY_U8_2D(elu)
 ELTWISE_UNARY_U8_2D(neg)
+ELTWISE_UNARY_U8_2D(mish)
 ELTWISE_UNARY_U8_2D(hard_sigmoid)
 
 

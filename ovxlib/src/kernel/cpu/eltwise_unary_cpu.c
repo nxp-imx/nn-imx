@@ -45,6 +45,7 @@ typedef enum
     UNARY_ELU,
     UNARY_NEG,
     UNARY_HSIGMOID,
+    UNARY_MISH,
 } unary_type_e;
 
 
@@ -84,6 +85,18 @@ static float hsigmoid_eval(float data)
 {
     data = (float)(0.2 * data + 0.5);
     data = vsi_nn_clamp(data, 0, 1);
+
+    return data;
+}
+
+static float soft_plus_eval(float data)
+{
+    return log_eval(exp_eval(data) + 1);
+}
+
+static float mish_eval(float data)
+{
+    data = (float)(data * tanh(soft_plus_eval(data)));
 
     return data;
 }
@@ -145,6 +158,9 @@ DEF_KERNEL_EXECUTOR(_eltwise_unary_exec)
             break;
         case UNARY_HSIGMOID:
             data = hsigmoid_eval(data);
+            break;
+        case UNARY_MISH:
+            data = mish_eval(data);
             break;
         default:
             break;
@@ -272,4 +288,4 @@ REGISTER_ELTWISE_UNARY_BACKEND_CPU( log,          UNARY_LOG )
 REGISTER_ELTWISE_UNARY_BACKEND_CPU( elu,          UNARY_ELU )
 REGISTER_ELTWISE_UNARY_BACKEND_CPU( neg,          UNARY_NEG )
 REGISTER_ELTWISE_UNARY_BACKEND_CPU( hard_sigmoid, UNARY_HSIGMOID )
-
+REGISTER_ELTWISE_UNARY_BACKEND_CPU( mish,         UNARY_MISH )

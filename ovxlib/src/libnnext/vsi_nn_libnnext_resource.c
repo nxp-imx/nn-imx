@@ -2743,7 +2743,8 @@ float4 eltwise_unary_sin(float4 x)\n\
     return native_sin(x);\n\
 }\n\
 \n\
-#define logE    (1.44269502f)\n\
+#define logE        (1.44269502f)\n\
+#define twoLogE     (logE * 2.0f)\n\
 float4 eltwise_unary_exp(float4 x)\n\
 {\n\
     x *= logE;\n\
@@ -2775,6 +2776,30 @@ float4 eltwise_unary_hard_sigmoid(float4 x)\n\
 {\n\
     x = 0.2 * x + 0.5;\n\
     x = clamp(x, 0, 1);\n\
+    return x;\n\
+}\n\
+\n\
+float4 _softrelu(float4 x)\n\
+{\n\
+    x *= logE;\n\
+    x = exp2(x);\n\
+    x += 1;\n\
+    x = log2(x);\n\
+    return x * rlogE;\n\
+}\n\
+\n\
+float4 _tanh(float4 x)\n\
+{\n\
+    x *= -twoLogE;\n\
+    x = 1 + exp2(x);\n\
+    x = 1 / x;\n\
+    return (2 * x - 1);\n\
+}\n\
+\n\
+float4 eltwise_unary_mish(float4 x)\n\
+{\n\
+    float4 y = _softrelu(x);\n\
+    x = x * _tanh(y);\n\
     return x;\n\
 }\n\
 \n\
@@ -2875,6 +2900,17 @@ ELTSISE_UNARY_2D(neg, U8,  U8,  vxc_uchar8, vxc_uchar8, int4,  vxc_uchar8, vxc_u
 ELTSISE_UNARY_2D(neg, U8,  F16, vxc_uchar8, vxc_uchar8, half4, vxc_half8,  vxc_short8)\n\
 ELTSISE_UNARY_2D(neg, I16, I16, vxc_short8, vxc_short8, int4,  vxc_short8, vxc_short8)\n\
 ELTSISE_UNARY_2D(neg, I16, F16, vxc_short8, vxc_short8, half4, vxc_half8,  vxc_short8)\n\
+//MISH\n\
+ELTSISE_UNARY_2D(mish, F16, F16, vxc_short8, vxc_half8,  half4, vxc_half8,  vxc_short8)\n\
+ELTSISE_UNARY_2D(mish, F16, I8,  vxc_short8, vxc_half8,  int4,  vxc_char8,  vxc_char8)\n\
+ELTSISE_UNARY_2D(mish, F16, U8,  vxc_short8, vxc_half8,  int4,  vxc_uchar8, vxc_uchar8)\n\
+ELTSISE_UNARY_2D(mish, F16, I16, vxc_short8, vxc_half8,  int4,  vxc_short8, vxc_short8)\n\
+ELTSISE_UNARY_2D(mish, I8,  I8,  vxc_char8,  vxc_char8,  int4,  vxc_char8,  vxc_char8)\n\
+ELTSISE_UNARY_2D(mish, I8,  F16, vxc_char8,  vxc_char8,  half4, vxc_half8,  vxc_short8)\n\
+ELTSISE_UNARY_2D(mish, U8,  U8,  vxc_uchar8, vxc_uchar8, int4,  vxc_uchar8, vxc_uchar8)\n\
+ELTSISE_UNARY_2D(mish, U8,  F16, vxc_uchar8, vxc_uchar8, half4, vxc_half8,  vxc_short8)\n\
+ELTSISE_UNARY_2D(mish, I16, I16, vxc_short8, vxc_short8, int4,  vxc_short8, vxc_short8)\n\
+ELTSISE_UNARY_2D(mish, I16, F16, vxc_short8, vxc_short8, half4, vxc_half8,  vxc_short8)\n\
 //HARD_SIGMOID\n\
 ELTSISE_UNARY_2D(hard_sigmoid, F16, F16, vxc_short8, vxc_half8,  half4, vxc_half8,  vxc_short8)\n\
 ELTSISE_UNARY_2D(hard_sigmoid, F16, I8,  vxc_short8, vxc_half8,  int4,  vxc_char8,  vxc_char8)\n\
@@ -2929,19 +2965,21 @@ ELTSISE_UNARY_BF16_2D(log)\n\
 ELTSISE_UNARY_BF16_2D(elu)\n\
 //NEG\n\
 ELTSISE_UNARY_BF16_2D(neg)\n\
+//MISH\n\
+ELTSISE_UNARY_BF16_2D(mish)\n\
 //HARD_SIGMOID\n\
 ELTSISE_UNARY_BF16_2D(hard_sigmoid)\n\
 "; /* end of eltwise_unary_2d_vx*/
 
 static const char eltwise_unary_3d_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
-\n\
 float4 eltwise_unary_sin(float4 x)\n\
 {\n\
     return native_sin(x);\n\
 }\n\
 \n\
-#define logE    (1.44269502f)\n\
+#define logE        (1.44269502f)\n\
+#define twoLogE     (logE * 2.0f)\n\
 float4 eltwise_unary_exp(float4 x)\n\
 {\n\
     x *= logE;\n\
@@ -2973,6 +3011,30 @@ float4 eltwise_unary_hard_sigmoid(float4 x)\n\
 {\n\
     x = 0.2 * x + 0.5;\n\
     x = clamp(x, 0, 1);\n\
+    return x;\n\
+}\n\
+\n\
+float4 _softrelu(float4 x)\n\
+{\n\
+    x *= logE;\n\
+    x = exp2(x);\n\
+    x += 1;\n\
+    x = log2(x);\n\
+    return x * rlogE;\n\
+}\n\
+\n\
+float4 _tanh(float4 x)\n\
+{\n\
+    x *= -twoLogE;\n\
+    x = 1 + exp2(x);\n\
+    x = 1 / x;\n\
+    return (2 * x - 1);\n\
+}\n\
+\n\
+float4 eltwise_unary_mish(float4 x)\n\
+{\n\
+    float4 y = _softrelu(x);\n\
+    x = x * _tanh(y);\n\
     return x;\n\
 }\n\
 \n\
@@ -3073,6 +3135,17 @@ ELTSISE_UNARY_3D(neg, U8,  U8,  vxc_uchar8, vxc_uchar8, int4,  vxc_uchar8, vxc_u
 ELTSISE_UNARY_3D(neg, U8,  F16, vxc_uchar8, vxc_uchar8, half4, vxc_half8,  vxc_short8)\n\
 ELTSISE_UNARY_3D(neg, I16, I16, vxc_short8, vxc_short8, int4,  vxc_short8, vxc_short8)\n\
 ELTSISE_UNARY_3D(neg, I16, F16, vxc_short8, vxc_short8, half4, vxc_half8,  vxc_short8)\n\
+//MISH\n\
+ELTSISE_UNARY_3D(mish, F16, F16, vxc_short8, vxc_half8,  half4, vxc_half8,  vxc_short8)\n\
+ELTSISE_UNARY_3D(mish, F16, I8,  vxc_short8, vxc_half8,  int4,  vxc_char8,  vxc_char8)\n\
+ELTSISE_UNARY_3D(mish, F16, U8,  vxc_short8, vxc_half8,  int4,  vxc_uchar8, vxc_uchar8)\n\
+ELTSISE_UNARY_3D(mish, F16, I16, vxc_short8, vxc_half8,  int4,  vxc_short8, vxc_short8)\n\
+ELTSISE_UNARY_3D(mish, I8,  I8,  vxc_char8,  vxc_char8,  int4,  vxc_char8,  vxc_char8)\n\
+ELTSISE_UNARY_3D(mish, I8,  F16, vxc_char8,  vxc_char8,  half4, vxc_half8,  vxc_short8)\n\
+ELTSISE_UNARY_3D(mish, U8,  U8,  vxc_uchar8, vxc_uchar8, int4,  vxc_uchar8, vxc_uchar8)\n\
+ELTSISE_UNARY_3D(mish, U8,  F16, vxc_uchar8, vxc_uchar8, half4, vxc_half8,  vxc_short8)\n\
+ELTSISE_UNARY_3D(mish, I16, I16, vxc_short8, vxc_short8, int4,  vxc_short8, vxc_short8)\n\
+ELTSISE_UNARY_3D(mish, I16, F16, vxc_short8, vxc_short8, half4, vxc_half8,  vxc_short8)\n\
 //HARD_SIGMOID\n\
 ELTSISE_UNARY_3D(hard_sigmoid, F16, F16, vxc_short8, vxc_half8,  half4, vxc_half8,  vxc_short8)\n\
 ELTSISE_UNARY_3D(hard_sigmoid, F16, I8,  vxc_short8, vxc_half8,  int4,  vxc_char8,  vxc_char8)\n\
@@ -3125,6 +3198,8 @@ ELTSISE_UNARY_BF16(log)\n\
 ELTSISE_UNARY_BF16(elu)\n\
 //NEG\n\
 ELTSISE_UNARY_BF16(neg)\n\
+//MISH\n\
+ELTSISE_UNARY_BF16(mish)\n\
 //HARD_SIGMOID\n\
 ELTSISE_UNARY_BF16(hard_sigmoid)"; /* end of eltwise_unary_3d_vx*/
 
@@ -32051,7 +32126,8 @@ float4 eltwise_unary_sin(float4 x)\n\
     return native_sin(x);\n\
 }\n\
 \n\
-#define logE    (1.44269502f)\n\
+#define logE        (1.44269502f)\n\
+#define twoLogE     (logE * 2.0f)\n\
 float4 eltwise_unary_exp(float4 x)\n\
 {\n\
     x *= logE;\n\
@@ -32086,6 +32162,30 @@ float4 eltwise_unary_hard_sigmoid(float4 x)\n\
     return x;\n\
 }\n\
 \n\
+float4 _softrelu(float4 x)\n\
+{\n\
+    x *= logE;\n\
+    x = exp2(x);\n\
+    x += 1;\n\
+    x = log2(x);\n\
+    return x * rlogE;\n\
+}\n\
+\n\
+float4 _tanh(float4 x)\n\
+{\n\
+    x *= -twoLogE;\n\
+    x = 1 + exp2(x);\n\
+    x = 1 / x;\n\
+    return (2 * x - 1);\n\
+}\n\
+\n\
+float4 eltwise_unary_mish(float4 x)\n\
+{\n\
+    float4 y = _softrelu(x);\n\
+    x = x * _tanh(y);\n\
+    return x;\n\
+}\n\
+\n\
 #define ELTWISE_UNARY_F32(func_name) \\\n\
 __kernel void func_name##_F32toF32 \\\n\
     ( \\\n\
@@ -32110,6 +32210,7 @@ ELTWISE_UNARY_F32(exp)\n\
 ELTWISE_UNARY_F32(log)\n\
 ELTWISE_UNARY_F32(elu)\n\
 ELTWISE_UNARY_F32(neg)\n\
+ELTWISE_UNARY_F32(mish)\n\
 ELTWISE_UNARY_F32(hard_sigmoid)\n\
 \n\
 #define ELTWISE_UNARY_F32_2D(func_name) \\\n\
@@ -32136,6 +32237,7 @@ ELTWISE_UNARY_F32_2D(exp)\n\
 ELTWISE_UNARY_F32_2D(log)\n\
 ELTWISE_UNARY_F32_2D(elu)\n\
 ELTWISE_UNARY_F32_2D(neg)\n\
+ELTWISE_UNARY_F32_2D(mish)\n\
 ELTWISE_UNARY_F32_2D(hard_sigmoid)\n\
 \n\
 #define ELTWISE_UNARY_U8(func_name) \\\n\
@@ -32164,6 +32266,7 @@ ELTWISE_UNARY_U8(exp)\n\
 ELTWISE_UNARY_U8(log)\n\
 ELTWISE_UNARY_U8(elu)\n\
 ELTWISE_UNARY_U8(neg)\n\
+ELTWISE_UNARY_U8(mish)\n\
 ELTWISE_UNARY_U8(hard_sigmoid)\n\
 \n\
 #define ELTWISE_UNARY_U8_2D(func_name) \\\n\
@@ -32192,6 +32295,7 @@ ELTWISE_UNARY_U8_2D(exp)\n\
 ELTWISE_UNARY_U8_2D(log)\n\
 ELTWISE_UNARY_U8_2D(elu)\n\
 ELTWISE_UNARY_U8_2D(neg)\n\
+ELTWISE_UNARY_U8_2D(mish)\n\
 ELTWISE_UNARY_U8_2D(hard_sigmoid)\n\
 \n\
 \n\

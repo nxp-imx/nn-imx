@@ -5,7 +5,8 @@ float4 eltwise_unary_sin(float4 x)
     return native_sin(x);
 }
 
-#define logE    (1.44269502f)
+#define logE        (1.44269502f)
+#define twoLogE     (logE * 2.0f)
 float4 eltwise_unary_exp(float4 x)
 {
     x *= logE;
@@ -37,6 +38,30 @@ float4 eltwise_unary_hard_sigmoid(float4 x)
 {
     x = 0.2 * x + 0.5;
     x = clamp(x, 0, 1);
+    return x;
+}
+
+float4 _softrelu(float4 x)
+{
+    x *= logE;
+    x = exp2(x);
+    x += 1;
+    x = log2(x);
+    return x * rlogE;
+}
+
+float4 _tanh(float4 x)
+{
+    x *= -twoLogE;
+    x = 1 + exp2(x);
+    x = 1 / x;
+    return (2 * x - 1);
+}
+
+float4 eltwise_unary_mish(float4 x)
+{
+    float4 y = _softrelu(x);
+    x = x * _tanh(y);
     return x;
 }
 
@@ -137,6 +162,17 @@ ELTSISE_UNARY_2D(neg, U8,  U8,  vxc_uchar8, vxc_uchar8, int4,  vxc_uchar8, vxc_u
 ELTSISE_UNARY_2D(neg, U8,  F16, vxc_uchar8, vxc_uchar8, half4, vxc_half8,  vxc_short8)
 ELTSISE_UNARY_2D(neg, I16, I16, vxc_short8, vxc_short8, int4,  vxc_short8, vxc_short8)
 ELTSISE_UNARY_2D(neg, I16, F16, vxc_short8, vxc_short8, half4, vxc_half8,  vxc_short8)
+//MISH
+ELTSISE_UNARY_2D(mish, F16, F16, vxc_short8, vxc_half8,  half4, vxc_half8,  vxc_short8)
+ELTSISE_UNARY_2D(mish, F16, I8,  vxc_short8, vxc_half8,  int4,  vxc_char8,  vxc_char8)
+ELTSISE_UNARY_2D(mish, F16, U8,  vxc_short8, vxc_half8,  int4,  vxc_uchar8, vxc_uchar8)
+ELTSISE_UNARY_2D(mish, F16, I16, vxc_short8, vxc_half8,  int4,  vxc_short8, vxc_short8)
+ELTSISE_UNARY_2D(mish, I8,  I8,  vxc_char8,  vxc_char8,  int4,  vxc_char8,  vxc_char8)
+ELTSISE_UNARY_2D(mish, I8,  F16, vxc_char8,  vxc_char8,  half4, vxc_half8,  vxc_short8)
+ELTSISE_UNARY_2D(mish, U8,  U8,  vxc_uchar8, vxc_uchar8, int4,  vxc_uchar8, vxc_uchar8)
+ELTSISE_UNARY_2D(mish, U8,  F16, vxc_uchar8, vxc_uchar8, half4, vxc_half8,  vxc_short8)
+ELTSISE_UNARY_2D(mish, I16, I16, vxc_short8, vxc_short8, int4,  vxc_short8, vxc_short8)
+ELTSISE_UNARY_2D(mish, I16, F16, vxc_short8, vxc_short8, half4, vxc_half8,  vxc_short8)
 //HARD_SIGMOID
 ELTSISE_UNARY_2D(hard_sigmoid, F16, F16, vxc_short8, vxc_half8,  half4, vxc_half8,  vxc_short8)
 ELTSISE_UNARY_2D(hard_sigmoid, F16, I8,  vxc_short8, vxc_half8,  int4,  vxc_char8,  vxc_char8)
@@ -191,5 +227,7 @@ ELTSISE_UNARY_BF16_2D(log)
 ELTSISE_UNARY_BF16_2D(elu)
 //NEG
 ELTSISE_UNARY_BF16_2D(neg)
+//MISH
+ELTSISE_UNARY_BF16_2D(mish)
 //HARD_SIGMOID
 ELTSISE_UNARY_BF16_2D(hard_sigmoid)
