@@ -52,7 +52,7 @@ static vsi_bool setup_op_shapes
     uint32_t num_units =  0;
     uint32_t output_size = 0;
     uint32_t batch_size = 0;
-    vsi_bool use_virtual_tensor = FALSE;
+    vsi_bool use_virtual_tensor = TRUE;
 
     memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
     if( curr_param->time_major )
@@ -204,7 +204,7 @@ static vsi_bool op_setup
     vsi_nn_tensor_t* last_step_c_state = NULL;
     vsi_nn_tensor_t* tensor = NULL;
     vsi_nn_tensor_t* input_tensor = NULL;
-    vsi_bool use_virtual_tensor = FALSE;
+    vsi_bool use_virtual_tensor = TRUE;
     uint32_t batch_size = 0;
     uint32_t time_step = 0;
     uint32_t i = 0;

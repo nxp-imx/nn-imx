@@ -154,7 +154,7 @@ static vsi_bool op_setup
     vsi_nn_internal_tensor_t* hstate_input_tensor = NULL;
     vsi_nn_internal_tensor_t* tmp = NULL;
     vsi_nn_internal_node_t* curr = NULL;
-    vsi_bool use_virtual_tensor = FALSE;
+    vsi_bool use_virtual_tensor = TRUE;
     uint32_t kernel_h = 1;
     uint32_t kernel_w = 1;
 
