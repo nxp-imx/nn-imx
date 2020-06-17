@@ -546,6 +546,8 @@ vsi_nn_op_t vsi_nn_rnn_get_act_op_type
         return VSI_NN_OP_TANH;
     case VSI_NN_ACT_SIGMOID:
         return VSI_NN_OP_SIGMOID;
+    case VSI_NN_ACT_HARD_SIGMOID:
+        return VSI_NN_OP_HARD_SIGMOID;
     default:
         VSILOGE("error activation type %d", type);
         break;

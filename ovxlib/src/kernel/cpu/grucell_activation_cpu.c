@@ -126,9 +126,9 @@ DEF_KERNEL_EXECUTOR(_compute)
     buffer[3] = (float*)vsi_nn_kernel_tensor_create_buffer( tensors[3], attr[3], TRUE );
     CHECK_PTR_FAIL_GOTO( buffer[3], "Create input buffer fail.", final );
 
-    status = vsi_nn_kernel_scalar_read_int32((vsi_nn_kernel_scalar_t)param[4], &gate_activation);
+    status = vsi_nn_kernel_scalar_read_int32((vsi_nn_kernel_scalar_t)param[5], &gate_activation);
     CHECK_STATUS_FAIL_GOTO(status, final);
-    status = vsi_nn_kernel_scalar_read_int32((vsi_nn_kernel_scalar_t)param[5], &candidate_activation);
+    status = vsi_nn_kernel_scalar_read_int32((vsi_nn_kernel_scalar_t)param[6], &candidate_activation);
     CHECK_STATUS_FAIL_GOTO(status, final);
 
     batch = attr[0]->shape->data[1];

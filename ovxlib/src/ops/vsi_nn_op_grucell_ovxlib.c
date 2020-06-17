@@ -274,6 +274,9 @@ static vsi_bool op_setup_float
     curr->inputs[2] = inputs[GRUCELL_INPUT_H_STATE];
     curr->outputs[0] = outputs[GRUCELL_OUTPUT_OUTPUT];
     curr->outputs[1] = outputs[GRUCELL_OUTPUT_H_STATE];
+    curr->node->nn_param.grucell_activation_internal.gate_activation = p->local->gate_activation;
+    curr->node->nn_param.grucell_activation_internal.candidate_activation = p->local->candidate_activation;
+    curr->node->nn_param.grucell_activation_internal.use_cudnn_implementation = p->use_cudnn_implementation;
     vsi_nn_internal_setup_node(self, curr);
 #else
     {
@@ -466,6 +469,8 @@ static vsi_bool op_setup_float_cudnn
     curr->inputs[GRUCELL_ACTIVATION_INPUT_COND_C] = inputs[GRUCELL_INPUT_COND_CANDIDATE];
     curr->outputs[0] = outputs[GRUCELL_OUTPUT_OUTPUT];
     curr->outputs[1] = outputs[GRUCELL_OUTPUT_H_STATE];
+    curr->node->nn_param.grucell_activation_internal.gate_activation = p->local->gate_activation;
+    curr->node->nn_param.grucell_activation_internal.candidate_activation = p->local->candidate_activation;
     curr->node->nn_param.grucell_activation_internal.input_category = GRUCELL_INPUT_CATEGORY_CUDNN;
     curr->node->nn_param.grucell_activation_internal.use_cudnn_implementation = TRUE;
     curr->node->nn_param.grucell_activation_internal.input_recurrent_fc_batch_first = input_recurrent_fc_batch_first;
@@ -666,6 +671,9 @@ static vsi_bool op_setup_float_cudnn_v2
     curr->inputs[GRUCELL_ACTIVATION_SMA_INPUT_Z_T] = splited_input_fc_output_tensors[1]->t;
     curr->outputs[0] = outputs[GRUCELL_OUTPUT_OUTPUT];
     curr->outputs[1] = outputs[GRUCELL_OUTPUT_H_STATE];
+    curr->node->nn_param.grucell_activation_internal.gate_activation = p->local->gate_activation;
+    curr->node->nn_param.grucell_activation_internal.candidate_activation = p->local->candidate_activation;
+    curr->node->nn_param.grucell_activation_internal.use_cudnn_implementation = p->use_cudnn_implementation;
     vsi_nn_internal_setup_node(self, curr);
 #else
     tmp_tensor = vsi_nn_rnn_create_binary_operator(self, VSI_NN_OP_SUBTRACT,
