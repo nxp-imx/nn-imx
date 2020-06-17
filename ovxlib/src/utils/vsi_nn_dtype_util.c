@@ -347,17 +347,45 @@ vsi_bool vsi_nn_QuantCheck
     vsi_nn_tensor_t *bias
     )
 {
-    vsi_bool ret;
-    vsi_nn_type_e dtype;
+    vsi_bool ret = TRUE;
+    uint32_t i = 0;
+    vsi_nn_qnt_type_e input_qnt_type, weight_qnt_type;
+    vsi_nn_type_e input_dtype, weight_dtype;
     vsi_nn_qnt_type_e qnt_type;
 
-    ret = TRUE;
-    dtype = input->attr.dtype.vx_type;
+    //declare supported hybrid quantization combinations
+    int supported_hybrid_combinaton[][4] =
+    {
+        //  input qnt_type       input dtype            weight qnt_type               weight dtype
+        {VSI_NN_QNT_TYPE_DFP, VSI_NN_TYPE_INT16, VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC, VSI_NN_TYPE_UINT8},
+        {VSI_NN_QNT_TYPE_DFP, VSI_NN_TYPE_INT16, VSI_NN_QNT_TYPE_DFP, VSI_NN_TYPE_INT8},
+    };
+
+    input_qnt_type = input->attr.dtype.qnt_type;
+    input_dtype = input->attr.dtype.vx_type;
+    weight_qnt_type = weight->attr.dtype.qnt_type;
+    weight_dtype = weight->attr.dtype.vx_type;
+
+    //do not check quant parammeters if types of input/weight in supported_hybrid_combinaton
+    for(i = 0; i < sizeof(supported_hybrid_combinaton) / sizeof(supported_hybrid_combinaton[0]); i++)
+    {
+        int support_input_qnt_type = supported_hybrid_combinaton[i][0];
+        int support_input_dtype = supported_hybrid_combinaton[i][1];
+        int support_weight_qnt_type = supported_hybrid_combinaton[i][2];
+        int support_weight_dtype = supported_hybrid_combinaton[i][3];
+
+        if(input_qnt_type == support_input_qnt_type && input_dtype == support_input_dtype
+            && weight_qnt_type == support_weight_qnt_type && weight_dtype == support_weight_dtype)
+        {
+            return ret;
+        }
+    }
+
     if(VSI_NN_TYPE_VDATA == weight->attr.dtype.vx_type)
     {
         return ret;
     }
-    if(type_is_integer(dtype) == FALSE)
+    if(type_is_integer(input_dtype) == FALSE)
     {
         return ret;
     }
