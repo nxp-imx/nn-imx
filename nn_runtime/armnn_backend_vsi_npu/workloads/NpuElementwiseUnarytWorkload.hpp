@@ -50,7 +50,38 @@ class NpuElementwiseUnarytWorkload
                            outputIds.data());
                 break;
             }
-            // TODO: Add Abs, Exp, Sqrt and Neg
+            case UnaryOperation::Abs: {
+                this->AddOperation(nnrt::OperationType::ABS,
+                                   inputIds.size(),
+                                   inputIds.data(),
+                                   outputIds.size(),
+                                   outputIds.data());
+                break;
+            }
+            case UnaryOperation::Exp: {
+                this->AddOperation(nnrt::OperationType::EXP,
+                                   inputIds.size(),
+                                   inputIds.data(),
+                                   outputIds.size(),
+                                   outputIds.data());
+                break;
+            }
+            case UnaryOperation::Sqrt: {
+                this->AddOperation(nnrt::OperationType::SQRT,
+                                   inputIds.size(),
+                                   inputIds.data(),
+                                   outputIds.size(),
+                                   outputIds.data());
+                break;
+            }
+            case UnaryOperation::Neg: {
+                this->AddOperation(nnrt::OperationType::NEG,
+                                   inputIds.size(),
+                                   inputIds.data(),
+                                   outputIds.size(),
+                                   outputIds.data());
+                break;
+            }
             default:
                 std::cout << "Not support ElementwiseUnaryOperation.";
                 assert(false);
