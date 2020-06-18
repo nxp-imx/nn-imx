@@ -1,5 +1,11 @@
 #include "cl_viv_vx_ext.h"
 
+#define VXC_Vstore3(Pointer, Offset, Data)   \
+do \
+{ int byteOffset = ((int)sizeof((Data)))*(Offset); \
+VXC_OP3_NoDest(vstore3, Pointer, byteOffset, Data); } \
+while(0)
+
 inline uchar* get_image2D_array_ptr(image2d_array_t  input)
 {
     int8 desc;
@@ -40,8 +46,8 @@ inline uchar* get_image2D_array_ptr(image2d_array_t  input)
                 }
 
 #define L2NORMSCALE_REM_PROCESS(ZpValue) \
-            src0 = vload8(0,  src_ptr); \
-            src1 = vload8(1, src_ptr); \
+            VXC_Vload8(src0, src_ptr, 0); \
+            VXC_Vload8(src1, src_ptr, 1); \
             if (inputRemain <= 8) \
             { \
                 L2NORMSCALE_SWITCH_PROCESS(inputRemain, src0, ZpValue) \
@@ -81,8 +87,8 @@ __kernel void vxcL2NormScale_SumRsqrt_axis0_##name##_2D \
     src_ptr += (get_global_id(0) + get_global_id(1) * inputWidth); \
     for (int i = 0; i < inputWidthCount; i++) \
     { \
-        src0 = vload8(0, src_ptr); \
-        src1 = vload8(1, src_ptr); \
+        VXC_Vload8(src0, src_ptr, 0); \
+        VXC_Vload8(src1, src_ptr, 1); \
         _viv_asm(COPY, val0, src0, 16); \
         _viv_asm(COPY, val1, src1, 16); \
         VXC_DP16x1(sum, val0, val1, VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 1),\
@@ -142,8 +148,8 @@ __kernel void vxcL2NormScale_SumRsqrt_axis0_U8_2D
     src_ptr += (get_global_id(0) + get_global_id(1) * inputWidth);
     for (int i = 0; i < inputWidthCount; i++)
     {
-        src0 = vload8(0, src_ptr);
-        src1 = vload8(1, src_ptr);
+        VXC_Vload8(src0, src_ptr, 0);
+        VXC_Vload8(src1, src_ptr, 1);
         _viv_asm(COPY, val0, src0, 16);
         _viv_asm(COPY, val1, src1, 16);
         VXC_DP16x1(sum, val0, val1, VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 1),\
@@ -192,9 +198,9 @@ _viv_uniform float output_ZP;
 _viv_uniform int inputWidthRemain128;
 
 #define L2NORMSCALE_MUL_PROCESS() \
-        vect0 = vload8(0, src_ptr); \
+        VXC_Vload8(vect0, src_ptr, 0); \
         _viv_asm(COPY, src0, vect0, 16); \
-        scale_s16 = vload8(0,  scale_ptr); \
+        VXC_Vload8(scale_s16, scale_ptr, 0); \
         _viv_asm(COPY, scale_f16, scale_s16, 16); \
         _viv_asm(COPY, input_ZP, inputZP, 4); \
         VXC_DP4x4(vec0, src0, input_ZP, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardInf, 0),\
@@ -226,7 +232,7 @@ _viv_uniform int inputWidthRemain128;
     int dim\
     )\
 {\
-    int4 coord = (int4)(get_global_id(1), 0, 0, 0);\
+    int4 coord = (int4)(0, get_global_id(1), 0, 0);\
     input_type  vect0;\
     incopy_type src0, src1;\
     vxc_float4 rsqrt0, rsqrt1;\
@@ -272,26 +278,28 @@ _viv_uniform int inputWidthRemain128;
                     VXC_Vstore2(dst_ptr, 0, dst); \
                 break; \
                 case 3: \
-                    VXC_Vstore2(dst_ptr, 0, dst); \
-                    dst_ptr[2] = dst.s2; \
+                    VXC_Vstore3(dst_ptr, 0, dst); \
                 break; \
                 case 4: \
                     VXC_Vstore4(dst_ptr, 0, dst); \
                 break; \
                 case 5: \
-                    VXC_Vstore4(dst_ptr, 0, dst); \
-                    dst_ptr[4] = dst.s4; \
+                    VXC_Vstore2(dst_ptr, 0, dst); \
+                    dst.s012 = dst.s234; \
+                    dst_ptr += 2; \
+                    VXC_Vstore3(dst_ptr, 0, dst); \
                 break; \
                 case 6: \
-                    VXC_Vstore4(dst_ptr, 0, dst); \
-                    dst_ptr[4] = dst.s4; \
-                    dst_ptr[5] = dst.s5; \
+                    VXC_Vstore3(dst_ptr, 0, dst); \
+                    dst.s012 = dst.s345; \
+                    dst_ptr += 3; \
+                    VXC_Vstore3(dst_ptr, 0, dst); \
                 break; \
                 case 7: \
                     VXC_Vstore4(dst_ptr, 0, dst); \
-                    dst_ptr[4] = dst.s4; \
-                    dst_ptr[5] = dst.s5; \
-                    dst_ptr[6] = dst.s6; \
+                     dst.s012 = dst.s456; \
+                    dst_ptr += 4; \
+                    VXC_Vstore3(dst_ptr, 0, dst); \
                 break; \
                 default: \
                     VXC_Vstore8(dst_ptr, 0, dst); \

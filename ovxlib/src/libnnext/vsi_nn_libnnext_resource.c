@@ -25618,6 +25618,12 @@ __kernel void GrayScaletoTensor_UInt8\n\
 
 static const char vsi_nn_kernel_l2normalizescaleAxis0_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
+#define VXC_Vstore3(Pointer, Offset, Data)   \\\n\
+do \\\n\
+{ int byteOffset = ((int)sizeof((Data)))*(Offset); \\\n\
+VXC_OP3_NoDest(vstore3, Pointer, byteOffset, Data); } \\\n\
+while(0)\n\
+\n\
 inline uchar* get_image2D_array_ptr(image2d_array_t  input)\n\
 {\n\
     int8 desc;\n\
@@ -25658,8 +25664,8 @@ inline uchar* get_image2D_array_ptr(image2d_array_t  input)\n\
                 }\n\
 \n\
 #define L2NORMSCALE_REM_PROCESS(ZpValue) \\\n\
-            src0 = vload8(0,  src_ptr); \\\n\
-            src1 = vload8(1, src_ptr); \\\n\
+            VXC_Vload8(src0, src_ptr, 0); \\\n\
+            VXC_Vload8(src1, src_ptr, 1); \\\n\
             if (inputRemain <= 8) \\\n\
             { \\\n\
                 L2NORMSCALE_SWITCH_PROCESS(inputRemain, src0, ZpValue) \\\n\
@@ -25699,8 +25705,8 @@ __kernel void vxcL2NormScale_SumRsqrt_axis0_##name##_2D \\\n\
     src_ptr += (get_global_id(0) + get_global_id(1) * inputWidth); \\\n\
     for (int i = 0; i < inputWidthCount; i++) \\\n\
     { \\\n\
-        src0 = vload8(0, src_ptr); \\\n\
-        src1 = vload8(1, src_ptr); \\\n\
+        VXC_Vload8(src0, src_ptr, 0); \\\n\
+        VXC_Vload8(src1, src_ptr, 1); \\\n\
         _viv_asm(COPY, val0, src0, 16); \\\n\
         _viv_asm(COPY, val1, src1, 16); \\\n\
         VXC_DP16x1(sum, val0, val1, VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 1),\\\n\
@@ -25760,8 +25766,8 @@ __kernel void vxcL2NormScale_SumRsqrt_axis0_U8_2D\n\
     src_ptr += (get_global_id(0) + get_global_id(1) * inputWidth);\n\
     for (int i = 0; i < inputWidthCount; i++)\n\
     {\n\
-        src0 = vload8(0, src_ptr);\n\
-        src1 = vload8(1, src_ptr);\n\
+        VXC_Vload8(src0, src_ptr, 0);\n\
+        VXC_Vload8(src1, src_ptr, 1);\n\
         _viv_asm(COPY, val0, src0, 16);\n\
         _viv_asm(COPY, val1, src1, 16);\n\
         VXC_DP16x1(sum, val0, val1, VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 1),\\\n\
@@ -25810,9 +25816,9 @@ _viv_uniform float output_ZP;\n\
 _viv_uniform int inputWidthRemain128;\n\
 \n\
 #define L2NORMSCALE_MUL_PROCESS() \\\n\
-        vect0 = vload8(0, src_ptr); \\\n\
+        VXC_Vload8(vect0, src_ptr, 0); \\\n\
         _viv_asm(COPY, src0, vect0, 16); \\\n\
-        scale_s16 = vload8(0,  scale_ptr); \\\n\
+        VXC_Vload8(scale_s16, scale_ptr, 0); \\\n\
         _viv_asm(COPY, scale_f16, scale_s16, 16); \\\n\
         _viv_asm(COPY, input_ZP, inputZP, 4); \\\n\
         VXC_DP4x4(vec0, src0, input_ZP, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardInf, 0),\\\n\
@@ -25844,7 +25850,7 @@ _viv_uniform int inputWidthRemain128;\n\
     int dim\\\n\
     )\\\n\
 {\\\n\
-    int4 coord = (int4)(get_global_id(1), 0, 0, 0);\\\n\
+    int4 coord = (int4)(0, get_global_id(1), 0, 0);\\\n\
     input_type  vect0;\\\n\
     incopy_type src0, src1;\\\n\
     vxc_float4 rsqrt0, rsqrt1;\\\n\
@@ -25890,26 +25896,28 @@ _viv_uniform int inputWidthRemain128;\n\
                     VXC_Vstore2(dst_ptr, 0, dst); \\\n\
                 break; \\\n\
                 case 3: \\\n\
-                    VXC_Vstore2(dst_ptr, 0, dst); \\\n\
-                    dst_ptr[2] = dst.s2; \\\n\
+                    VXC_Vstore3(dst_ptr, 0, dst); \\\n\
                 break; \\\n\
                 case 4: \\\n\
                     VXC_Vstore4(dst_ptr, 0, dst); \\\n\
                 break; \\\n\
                 case 5: \\\n\
-                    VXC_Vstore4(dst_ptr, 0, dst); \\\n\
-                    dst_ptr[4] = dst.s4; \\\n\
+                    VXC_Vstore2(dst_ptr, 0, dst); \\\n\
+                    dst.s012 = dst.s234; \\\n\
+                    dst_ptr += 2; \\\n\
+                    VXC_Vstore3(dst_ptr, 0, dst); \\\n\
                 break; \\\n\
                 case 6: \\\n\
-                    VXC_Vstore4(dst_ptr, 0, dst); \\\n\
-                    dst_ptr[4] = dst.s4; \\\n\
-                    dst_ptr[5] = dst.s5; \\\n\
+                    VXC_Vstore3(dst_ptr, 0, dst); \\\n\
+                    dst.s012 = dst.s345; \\\n\
+                    dst_ptr += 3; \\\n\
+                    VXC_Vstore3(dst_ptr, 0, dst); \\\n\
                 break; \\\n\
                 case 7: \\\n\
                     VXC_Vstore4(dst_ptr, 0, dst); \\\n\
-                    dst_ptr[4] = dst.s4; \\\n\
-                    dst_ptr[5] = dst.s5; \\\n\
-                    dst_ptr[6] = dst.s6; \\\n\
+                     dst.s012 = dst.s456; \\\n\
+                    dst_ptr += 4; \\\n\
+                    VXC_Vstore3(dst_ptr, 0, dst); \\\n\
                 break; \\\n\
                 default: \\\n\
                     VXC_Vstore8(dst_ptr, 0, dst); \\\n\

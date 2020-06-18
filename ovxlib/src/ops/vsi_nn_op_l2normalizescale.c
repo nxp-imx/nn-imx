@@ -630,6 +630,7 @@ static vsi_status op_compute
             input_size[i] = lc_attr.size[i];
         }
         input_size[axis] = 1;
+        input_size[0] = gpu_align_p2(input_size[0], 4);
         memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
         attr.size[0] = input_size[0];
         attr.size[1] = input_size[1];
@@ -637,7 +638,7 @@ static vsi_status op_compute
         attr.size[3] = input_dims > 3 ? input_size[3] : 1;
         attr.dim_num = input_dims > 1 ? input_dims : 2;
         attr.dtype.vx_type = VSI_NN_TYPE_FLOAT32;
-        attr.vtl = FALSE;
+        attr.vtl = TRUE;
         outputs_sum_r_sqrt[0] = vsi_nn_CreateTensor(self->graph, &attr);
 
         kernel_info.resource_num = 1;
