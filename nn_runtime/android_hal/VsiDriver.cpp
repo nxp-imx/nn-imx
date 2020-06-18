@@ -154,6 +154,9 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
         reason += " reject op because it blocked by debug blacklist file\n";
         return false;
     }
+#if ANDROID_SDK_VERSION >= 28
+    bool isSupport = true;
+#endif
 #if ANDROID_SDK_VERSION >= 29
     auto checkSupportedOperand = [](auto& operand) -> bool {
         bool isSupported = true;
@@ -174,7 +177,8 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
         }
         return isSupported;
     };
-
+#endif
+#if ANDROID_SDK_VERSION >= 28
     auto isConstantTensor = [](auto& operand) -> bool {
         if (operand.lifetime == OperandLifeTime::CONSTANT_COPY ||
             operand.lifetime == OperandLifeTime::CONSTANT_REFERENCE)
@@ -182,10 +186,10 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
         else
             return false;
     };
-
-    bool isSupport = true;
     // each operation check
     switch (operation.type) {
+#endif
+#if ANDROID_SDK_VERSION >= 29
         // TODO: remove all of the work around
         case OperationType::CONV_2D: {
             OperationValidatePtr conv2D = std::make_unique<
@@ -193,18 +197,37 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
                 model, operation);
             return conv2D->Validate(reason);
         }
+#endif
+#if ANDROID_SDK_VERSION >= 28
         case OperationType::ADD:
         case OperationType::SUB:
         case OperationType::MUL:
         case OperationType::DIV: {
+            // validate constant rule
             auto input0 = model.operands[operation.inputs[0]];
             auto input1 = model.operands[operation.inputs[1]];
             if (isConstantTensor(input0) && isConstantTensor(input1)) {
                 reason += ("reject ADD|SUB|MUL|DIV because all input tensor is constant\n");
                 isSupport &= false;
             }
+            // validate shape rule
+            if (input0.dimensions.size() == input1.dimensions.size()) {
+                for (size_t i = 0; i < input0.dimensions.size(); i++) {
+                    if (input0.dimensions[i] != input1.dimensions[i]) {
+                        if (input0.dimensions[i] != 1 && input1.dimensions[i] != 1) {
+                            reason += "reject ADD|SUB|MUL|DIV because inputs shape is invalidated\n";
+                            isSupport &= false;
+                            break;
+                        }
+                    }
+                }
+            } else {
+                isSupport &= true;
+            }
             break;
         }
+#endif
+#if ANDROID_SDK_VERSION >= 29
         case OperationType::RNN: {
             int32_t fuseCode = getScalarData<int32_t>(model, model.operands[operation.inputs[5]]);
             if (fuseCode == static_cast<int32_t>(FusedActivationFunc::RELU) ||
@@ -663,9 +686,13 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
         case OperationType::TILE:
             isSupport &= false;
             break;
+#endif
+#if ANDROID_SDK_VERSION >= 28
         default:
             isSupport &= true;
     }
+#endif
+#if ANDROID_SDK_VERSION >= 29
 
     // Overall check
     // TODO: if all of LSTM's inputs are constant, the result will fail.
@@ -696,7 +723,9 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
             isSupport &= false;
         }
     }
+#endif
 
+#if ANDROID_SDK_VERSION >= 28
     // Not support dynamic shape
     // Check inputs
     if (0 == operation.inputs.size()) {
@@ -745,7 +774,6 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
                 isSupport &= false;
             }
     }
-
     return isSupport;
 #endif
     return true;
