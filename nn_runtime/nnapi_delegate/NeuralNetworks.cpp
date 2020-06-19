@@ -150,7 +150,7 @@ static OperationType mapOperationCode(OperationCode code)
         REGISTER_OP(SQRT);
         REGISTER_OP(RSQRT);
         REGISTER_OP(SELECT);
-        //REGISTER_OP(SLICE);
+        REGISTER_OP(SLICE);
         REGISTER_OP(SPLIT);
         REGISTER_OP(TRANSPOSE_CONV_2D);
         REGISTER_OP(REDUCE_ALL);
