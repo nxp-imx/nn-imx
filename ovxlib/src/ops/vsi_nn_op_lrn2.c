@@ -31,6 +31,8 @@
 #include "utils/vsi_nn_math.h"
 #include "utils/vsi_nn_util.h"
 
+#define MAX_BATCH_COUNT   1024
+
 static vsi_status op_compute
     (
     vsi_nn_node_t * self,
@@ -38,8 +40,7 @@ static vsi_status op_compute
     vsi_nn_tensor_t ** outputs
     )
 {
-    vsi_status status;
-    vx_nn_normalization_params_t param;
+    vsi_status status = VSI_FAILURE;
     int32_t axis = -1;
     uint32_t sizes[VSI_NN_MAX_DIM_NUM] = {1};
     uint32_t innerSize = 1;
@@ -51,14 +52,64 @@ static vsi_status op_compute
     vx_tensor output = outputs[0]->t;
     uint32_t i = 0;
 
-    status = VSI_FAILURE;
+#ifdef VX_NORMALIZATION_AXIS_PARAMETER_SUPPORT
+    vx_nn_normalization_params_ext_t param;
+
+    memset(&param, 0, sizeof(vx_nn_normalization_params_ext_t));
+    axis = self->nn_param.lrn.axis;
+    param.base.alpha = self->nn_param.lrn.alpha;
+    param.base.beta = self->nn_param.lrn.beta;
+    param.base.bias = self->nn_param.lrn.bias;
+    param.base.norm_size = self->nn_param.lrn.size;
+    param.base.type = self->nn_param.lrn.type;
+    param.axis = axis;
+
+    if (param.base.type == VX_NN_NORMALIZATION_ACROSS_MAPS && axis != 2)
+    {
+        axisSize  = inputs[0]->attr.size[axis];
+
+        for (i = 0; i < (uint32_t)axis; i++)
+        {
+            innerSize *= inputs[0]->attr.size[i];
+        }
+
+        for (i = (uint32_t)(axis + 1); i < inputs[0]->attr.dim_num; i++)
+        {
+            outerSize *= inputs[0]->attr.size[i];
+        }
+
+        sizes[0] = innerSize;
+        sizes[1] = 1;
+        sizes[2] = axisSize;
+        sizes[3] = outerSize;
+
+        if(outerSize < MAX_BATCH_COUNT)
+        {
+            vx_input = vxReshapeTensor(inputs[0]->t, (int32_t *)sizes, vsi_nn_max(inputs[0]->attr.dim_num, 4));
+            vx_output = vxReshapeTensor(outputs[0]->t, (int32_t *)sizes, vsi_nn_max(inputs[0]->attr.dim_num, 4));
+
+            input = vx_input;
+            output = vx_output;
+
+            param.axis = 2;
+        }
+    }
+
+    self->n = vxNormalizationLayer2( self->graph->g,
+        input,
+        (vx_nn_normalization_params_t*)&param,
+        sizeof(vx_nn_normalization_params_ext_t),
+        output);
+#else
+    vx_nn_normalization_params_t param;
+
     memset(&param, 0, sizeof(vx_nn_normalization_params_t));
+    axis = self->nn_param.lrn.axis;
     param.alpha = self->nn_param.lrn.alpha;
     param.beta = self->nn_param.lrn.beta;
     param.bias = self->nn_param.lrn.bias;
     param.norm_size = self->nn_param.lrn.size;
     param.type = self->nn_param.lrn.type;
-    axis = self->nn_param.lrn.axis;
 
     if (param.type == VX_NN_NORMALIZATION_ACROSS_MAPS && axis != 2)
     {
@@ -91,6 +142,7 @@ static vsi_status op_compute
         &param,
         sizeof(vx_nn_normalization_params_t),
         output);
+#endif
 
     if( NULL != self->n )
     {
