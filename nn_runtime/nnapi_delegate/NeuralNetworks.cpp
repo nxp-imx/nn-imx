@@ -709,12 +709,15 @@ int ANeuralNetworksModel_setOperandSymmPerChannelQuantParams(
         return AERROR_CODE(UNEXPECTED_NULL);
     }
 
-    // TODO: Add implementation
-    /*
-    ModelBuilder* m = reinterpret_cast<ModelBuilder*>(model);
-    return m->setOperandSymmPerChannelQuantParams(index, *channelQuant);
-    */
-    return AERROR_CODE(INCOMPLETE);
+    nnrt::Model* m = reinterpret_cast<nnrt::Model*>(model);
+    auto operand = m->operand(index);
+    operand->quant.vec.channelDim = channelQuant->channelDim;
+    operand->quant.vec.scale.resize(channelQuant->scaleCount, 0);
+    operand->quant.vec.zeroPoint.resize(channelQuant->scaleCount, 0);
+    for(size_t i = 0; i < channelQuant->scaleCount; i++)
+        operand->quant.vec.scale[i] = channelQuant->scales[i];
+
+    return AERROR_CODE(NO_ERROR);
 }
 
 int ANeuralNetworksExecution_compute(ANeuralNetworksExecution* execution)
