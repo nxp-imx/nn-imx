@@ -297,16 +297,6 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
 
             break;
         }
-        case OperationType::FULLY_CONNECTED: {
-            auto& input = model.operands[operation.inputs[0]];
-            auto& weight = model.operands[operation.inputs[1]];
-            if (input.dimensions.size() != 2 ||
-                (weight.dimensions.size() == 2 && input.dimensions[1] != weight.dimensions[1])) {
-                reason += "reject FC because weight tensor require reshape\n";
-                isSupport &= false;
-            }
-            break;
-        }
         case OperationType::PAD: {
             // TODO: support pad at channel and batch
             auto& pad = model.operands[operation.inputs[1]];
