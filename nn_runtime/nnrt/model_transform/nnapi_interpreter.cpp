@@ -176,7 +176,7 @@ NnApiInterpreter::NnApiInterpreter() {
     REGISTER_OP(SQRT);
     REGISTER_OP(RSQRT);
     REGISTER_OP(SELECT);
-    // REGISTER_OP(SLICE);
+    REGISTER_OP(SLICE);
     REGISTER_OP(SPLIT);
     REGISTER_OP(DECONV_2D);
     REGISTER_OP(SIN);
@@ -628,11 +628,20 @@ OperationPtr NnApiInterpreter::map_FULLY_CONNECTED(Model* model,
     std::shared_ptr<FullyConnectedOperation> fc = std::make_shared<FullyConnectedOperation>();
     NNAPI_CHECK_PTR(fc);
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
-    uint32_t weights = inputs[1]->dimensions[1];
-    uint32_t batch_size = int(inputs[0]->size() / weights);
-    uint32_t tmp = int(inputs[0]->dimensions[0] / batch_size);
-    inputs[0]->dimensions[0] = batch_size;
-    inputs[0]->dimensions[1] *= tmp;
+
+    if (inputs[0]->dimensions.size() > 2 ||
+        (inputs[0]->dimensions.size() == 2 &&
+         inputs[0]->dimensions[1] != inputs[1]->dimensions[1])) {
+        uint32_t inputSize = inputs[1]->dimensions[1];
+        uint32_t batchSize = int(inputs[0]->size() / inputSize);
+        std::vector<uint32_t> shape = {batchSize, inputSize};
+        if (!operand_utils::InsertReshapeBeforeOperand(
+                model, operation, operation->inputs()[0], shape)) {
+            NNRT_LOGE_PRINT("%s: insert reshap failed.", __FUNCTION__);
+            assert(false);
+        }
+    }
+
     resetFusedType(model, operation, 3);
     truncateOperationIOs(model, operation, 3, 1);
     fc->setVxParam(OverflowPolicy::SATURATE, RoundingPolicy::TO_ZERO, Rounding::FLOOR);
@@ -2225,6 +2234,21 @@ OperationPtr NnApiInterpreter::map_LOG_SOFTMAX(Model* model,
     }
     truncateOperationIOs(model, operation, 1, 1);
     return op_ptr;
+}
+
+OperationPtr NnApiInterpreter::map_SLICE(Model* model,
+                                                 OperationPtr operation,
+                                                 uint32_t operation_index) {
+    NNAPI_CHECK_IO_NUM(operation, 3, 1);
+    std::shared_ptr<SliceOperation> new_op = std::make_shared<SliceOperation>();
+    NNAPI_CHECK_PTR(new_op);
+    std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
+    int32_t* starts = model->getBuffer<int32_t>(inputs[1]->weak_mem_ref.lock());
+    int32_t* sizes = model->getBuffer<int32_t>(inputs[2]->weak_mem_ref.lock());
+    new_op->starts.assign(starts, starts + inputs[1]->size());
+    new_op->sizes.assign(sizes, sizes + inputs[2]->size());
+    truncateOperationIOs(model, operation, 1, 1);
+    return new_op;
 }
 
 #define DECLARE_SAMPLE_OP(NAME, INPUT_NUM, OUTPUT_NUM, OPERATION_TYPE)    \

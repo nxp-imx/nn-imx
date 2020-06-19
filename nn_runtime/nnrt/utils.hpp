@@ -63,6 +63,11 @@ bool InsertPermuteBeforeOperand(Model* model,
                                 op::OperationPtr operation,
                                 uint32_t operandId,
                                 const std::vector<uint32_t>& permVal);
+
+bool InsertReshapeBeforeOperand(Model* model,
+                                op::OperationPtr operation,
+                                uint32_t operandId,
+                                const std::vector<uint32_t>& shape);
 }
 
 namespace OS {

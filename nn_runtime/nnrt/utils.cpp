@@ -264,6 +264,39 @@ bool InsertPermuteBeforeOperand(Model* model,
     }
 }
 
+bool InsertReshapeBeforeOperand(Model* model,
+                                op::OperationPtr operation,
+                                uint32_t operandId,
+                                const std::vector<uint32_t>& shape) {
+    int newOutOperandId = -1;
+    uint32_t reshapeInputs[2];
+    uint32_t reshapeOutputs[1];
+    auto inputOperandPtr = model->operand(operandId);
+    op::OperandPtr newOutOperandPtr = model->cloneOperand(inputOperandPtr, &newOutOperandId);
+    newOutOperandPtr->dimensions = shape;
+    reshapeInputs[0] = operandId;
+    reshapeOutputs[0] = (uint32_t)newOutOperandId;
+    operation->replaceInputs(operandId, newOutOperandId);
+
+    uint32_t shapeId = 0;
+    auto shapeOperandPtr = model->addOperand(nullptr, &shapeId);
+    shapeOperandPtr->type = nnrt::OperandType::TENSOR_INT32;
+    shapeOperandPtr->dimensions = {static_cast<uint32_t>(shape.size())};
+    model->setOperandValue(shapeId, shape.data(), shapeOperandPtr->bytes());
+    reshapeInputs[1] = shapeId;
+
+    std::shared_ptr<nnrt::op::ReshapeOperation> reshapeOp =
+        std::make_shared<nnrt::op::ReshapeOperation>();
+
+    uint32_t reshapeId = 0;
+    reshapeOp->setInputs(reshapeInputs, 2);
+    reshapeOp->setOutputs(reshapeOutputs, 1);
+    if (model->addOperation(reshapeOp, &reshapeId)) {
+        return true;
+    } else {
+        return false;
+    }
+}
 }
 
 namespace OS {
