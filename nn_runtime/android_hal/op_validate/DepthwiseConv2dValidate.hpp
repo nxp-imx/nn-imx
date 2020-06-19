@@ -43,6 +43,7 @@ class DepthwiseConv2dValidate : public OperationValidate<T_model, T_Operation> {
         auto outputList =
             ::hal::limitation::nnapi::match("DepthwiseConvolution2DOutput", this->OutputArgTypes());
         if (inputList && outputList) {
+            int32_t layoutIndex = inputList->ArgPos("data_layout");
             int32_t inputIndex = inputList->ArgPos("input");
             int32_t kernelIndex = inputList->ArgPos("kernel");
             if (operation.inputs[inputIndex] == operation.inputs[kernelIndex]) {
