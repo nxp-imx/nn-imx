@@ -59,6 +59,12 @@ typedef enum _batch_fisrt_layerout_e
     CN,
 } batch_fisrt_layerout_e;
 
+typedef enum _gru_activation_type_e
+{
+    sigmoid = VSI_NN_ACT_SIGMOID,
+    hsigmoid = VSI_NN_ACT_HARD_SIGMOID,
+}gru_activation_type_e;
+
 #define STR(a) #a
 // Add kernel hashtable here
 #define GRUCELL_ACTIVATION_HASH_KEY( IN0_DTYPE, IN1_DTYPE, IN2_DTYPE, OUT_DTYPE, GATE_ACT, CAND_ACT, LAYER_OUT ) \
@@ -67,9 +73,9 @@ typedef enum _batch_fisrt_layerout_e
         | ( (uint64_t)CAND_ACT << 40 ) | ( (uint64_t)LAYER_OUT << 48 ))
 
 #define PACK_KERNEL_MAP( IN0_DTYPE, IN1_DTYPE, IN2_DTYPE, OUT_DTYPE, GATE_ACT, CAND_ACT, LAYER_OUT ) \
-        { GRUCELL_ACTIVATION_HASH_KEY( IN0_DTYPE, IN1_DTYPE, IN2_DTYPE, OUT_DTYPE, GATE_ACT, CAND_ACT, LAYER_OUT ), \
-          CVIVANTE_NAMESPACE("evis.grucell_activation_"#IN0_DTYPE"_"#IN1_DTYPE"_"#IN2_DTYPE"_to_"#OUT_DTYPE), \
-          _GRUCELL_ACTIVATION_KERNEL_SOURCE }
+{ GRUCELL_ACTIVATION_HASH_KEY( IN0_DTYPE, IN1_DTYPE, IN2_DTYPE, OUT_DTYPE, GATE_ACT, CAND_ACT, LAYER_OUT ), \
+  CVIVANTE_NAMESPACE("evis.grucell_activation_"#IN0_DTYPE"_"#IN1_DTYPE"_"#IN2_DTYPE"_to_"#OUT_DTYPE"_"#GATE_ACT), \
+  _GRUCELL_ACTIVATION_KERNEL_SOURCE }
 
 #define PACK_KERNEL_CDNN_SEP_MAP( IN0_DTYPE, IN1_DTYPE, IN2_DTYPE, OUT_DTYPE, GATE_ACT, CAND_ACT, LAYER_OUT, SOURCE ) \
  { GRUCELL_ACTIVATION_HASH_KEY( IN0_DTYPE, IN1_DTYPE, IN2_DTYPE, OUT_DTYPE, GATE_ACT, CAND_ACT, LAYER_OUT ), \
@@ -92,13 +98,21 @@ typedef struct
 static const _kernel_map_type _grucell_activation_kernel_map[] =
 {
     // Register kernel here
-    PACK_KERNEL_MAP( U8, U8, U8, U8,     VSI_NN_ACT_SIGMOID, VSI_NN_ACT_TANH, NC),
-    PACK_KERNEL_MAP( F16, F16, F16, F16, VSI_NN_ACT_SIGMOID, VSI_NN_ACT_TANH, NC),
-    PACK_KERNEL_MAP( F16, F16, F16, U8,  VSI_NN_ACT_SIGMOID, VSI_NN_ACT_TANH, NC),
+    PACK_KERNEL_MAP( U8, U8, U8, U8,     sigmoid, VSI_NN_ACT_TANH, NC),
+    PACK_KERNEL_MAP( F16, F16, F16, F16, sigmoid, VSI_NN_ACT_TANH, NC),
+    PACK_KERNEL_MAP( F16, F16, F16, U8,  sigmoid, VSI_NN_ACT_TANH, NC),
 
-    PACK_KERNEL_MAP( U8, U8, U8, U8,     VSI_NN_ACT_SIGMOID, VSI_NN_ACT_TANH, CN),
-    PACK_KERNEL_MAP( F16, F16, F16, F16, VSI_NN_ACT_SIGMOID, VSI_NN_ACT_TANH, CN),
-    PACK_KERNEL_MAP( F16, F16, F16, U8,  VSI_NN_ACT_SIGMOID, VSI_NN_ACT_TANH, CN),
+    PACK_KERNEL_MAP( U8, U8, U8, U8,     sigmoid, VSI_NN_ACT_TANH, CN),
+    PACK_KERNEL_MAP( F16, F16, F16, F16, sigmoid, VSI_NN_ACT_TANH, CN),
+    PACK_KERNEL_MAP( F16, F16, F16, U8,  sigmoid, VSI_NN_ACT_TANH, CN),
+
+    PACK_KERNEL_MAP( U8, U8, U8, U8,     hsigmoid, VSI_NN_ACT_TANH, NC),
+    PACK_KERNEL_MAP( F16, F16, F16, F16, hsigmoid, VSI_NN_ACT_TANH, NC),
+    PACK_KERNEL_MAP( F16, F16, F16, U8,  hsigmoid, VSI_NN_ACT_TANH, NC),
+
+    PACK_KERNEL_MAP( U8, U8, U8, U8,     hsigmoid, VSI_NN_ACT_TANH, CN),
+    PACK_KERNEL_MAP( F16, F16, F16, F16, hsigmoid, VSI_NN_ACT_TANH, CN),
+    PACK_KERNEL_MAP( F16, F16, F16, U8,  hsigmoid, VSI_NN_ACT_TANH, CN),
 };
 
 static const _kernel_map_type _grucell_cunn_sep_activation_kernel_map[] =

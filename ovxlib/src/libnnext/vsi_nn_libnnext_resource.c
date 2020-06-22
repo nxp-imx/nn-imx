@@ -4098,7 +4098,7 @@ float4 sigmoid(float4 x)\n\
     x = 1 + exp2(x);\n\
     return 1 / x;\n\
 }\n\
-float4 hard_sigmoid(float4 x)\n\
+float4 hsigmoid(float4 x)\n\
 {\n\
     x = 0.2 * x + 0.5;\n\
     x = clamp(x, 0, 1);\n\
@@ -4117,9 +4117,9 @@ _viv_uniform VXC_512Bits uniExtract8Data_2x8;\n\
 _viv_uniform float4 tensorScale;\n\
 _viv_uniform float4 tensorZP;\n\
 \n\
-#define GRUCELL_ACTIVATION_SIGMOID_TANH(name0, name1, name2, name3, \\\n\
+#define GRUCELL_ACTIVATION_SIGMOID_TANH(name0, name1, name2, name3, activater, \\\n\
         type00, type01, type10, type11, type20, type21, dst_type, conv_type, copy_type) \\\n\
-__kernel void grucell_activation_##name0##_##name1##_##name2##_to_##name3 \\\n\
+__kernel void grucell_activation_##name0##_##name1##_##name2##_to_##name3##_##activater \\\n\
     ( \\\n\
     __read_only  image2d_array_t input0, \\\n\
     __read_only  image2d_array_t input1, \\\n\
@@ -4151,7 +4151,7 @@ __kernel void grucell_activation_##name0##_##name1##_##name2##_to_##name3 \\\n\
     VXC_DP4x4(ht_1, src21, src21, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvDatatoFp32_4x4); \\\n\
  \\\n\
     zt = zt * tensorScale.xxxx - tensorZP.xxxx; \\\n\
-    zt = sigmoid(zt); \\\n\
+    zt = activater(zt); \\\n\
  \\\n\
     ht = ht * tensorScale.yyyy - tensorZP.yyyy; \\\n\
     ht = tangentH(ht); \\\n\
@@ -4177,11 +4177,17 @@ __kernel void grucell_activation_##name0##_##name1##_##name2##_to_##name3 \\\n\
 #define SHORT8  vxc_short8\n\
 #define HALF8   vxc_half8\n\
 \n\
-GRUCELL_ACTIVATION_SIGMOID_TANH(U8,  U8,  U8,  U8,\n\
+GRUCELL_ACTIVATION_SIGMOID_TANH(U8,  U8,  U8,  U8, sigmoid,\n\
                                 UCHAR8, UCHAR8, UCHAR8, UCHAR8, UCHAR8, UCHAR8, UCHAR8, int4,  UCHAR8)\n\
-GRUCELL_ACTIVATION_SIGMOID_TANH(F16, F16, F16, F16,\n\
+GRUCELL_ACTIVATION_SIGMOID_TANH(F16, F16, F16, F16, sigmoid,\n\
                                 SHORT8, HALF8,  SHORT8, HALF8,  SHORT8, HALF8,  HALF8,  half4, SHORT8)\n\
-GRUCELL_ACTIVATION_SIGMOID_TANH(F16, F16, F16, U8,\n\
+GRUCELL_ACTIVATION_SIGMOID_TANH(F16, F16, F16, U8, sigmoid,\n\
+                                SHORT8, HALF8,  SHORT8, HALF8,  SHORT8, HALF8,  UCHAR8, int4,  UCHAR8)\n\
+GRUCELL_ACTIVATION_SIGMOID_TANH(U8,  U8,  U8,  U8, hsigmoid,\n\
+                                UCHAR8, UCHAR8, UCHAR8, UCHAR8, UCHAR8, UCHAR8, UCHAR8, int4,  UCHAR8)\n\
+GRUCELL_ACTIVATION_SIGMOID_TANH(F16, F16, F16, F16, hsigmoid,\n\
+                                SHORT8, HALF8,  SHORT8, HALF8,  SHORT8, HALF8,  HALF8,  half4, SHORT8)\n\
+GRUCELL_ACTIVATION_SIGMOID_TANH(F16, F16, F16, U8, hsigmoid,\n\
                                 SHORT8, HALF8,  SHORT8, HALF8,  SHORT8, HALF8,  UCHAR8, int4,  UCHAR8)\n\
 \n\
 #undef UCHAR8\n\
