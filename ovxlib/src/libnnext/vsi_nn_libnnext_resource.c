@@ -6574,6 +6574,582 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_U8to
     }\n\
 }"; /* end of instance_normalization_u8_vx*/
 
+static const char l2normalizescale_axis0_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+#define VXC_Vstore3(Pointer, Offset, Data)   \\\n\
+do \\\n\
+{ int byteOffset = ((int)sizeof((Data)))*(Offset); \\\n\
+VXC_OP3_NoDest(vstore3, Pointer, byteOffset, Data); } \\\n\
+while(0)\n\
+\n\
+inline uchar* get_image2D_array_ptr(image2d_array_t  input)\n\
+{\n\
+    int8 desc;\n\
+    _viv_asm(COPY, desc, input, sizeof(desc));\n\
+    uchar *src_ptr = (uchar*)desc.s0;\n\
+    return src_ptr;\n\
+}\n\
+\n\
+#define L2NORMSCALE_SWITCH_PROCESS(case_value, vec_val, ZpValue) \\\n\
+                switch (case_value) \\\n\
+                { \\\n\
+                    case 1: \\\n\
+                        vec_val.s123  = ZpValue; \\\n\
+                        vec_val.s4567 = ZpValue; \\\n\
+                    break; \\\n\
+                    case 2: \\\n\
+                        vec_val.s23  = ZpValue; \\\n\
+                        vec_val.s4567 = ZpValue; \\\n\
+                    break; \\\n\
+                    case 3: \\\n\
+                        vec_val.s3  = ZpValue; \\\n\
+                        vec_val.s4567 = ZpValue; \\\n\
+                    break; \\\n\
+                    case 4: \\\n\
+                        vec_val.s4567 = ZpValue; \\\n\
+                    break; \\\n\
+                    case 5: \\\n\
+                        vec_val.s567 = ZpValue; \\\n\
+                    break; \\\n\
+                    case 6: \\\n\
+                        vec_val.s67 = ZpValue; \\\n\
+                    break; \\\n\
+                    case 7: \\\n\
+                        vec_val.s7 = ZpValue; \\\n\
+                    break; \\\n\
+                    default: \\\n\
+                    break; \\\n\
+                }\n\
+\n\
+#define L2NORMSCALE_REM_PROCESS(ZpValue) \\\n\
+            VXC_Vload8(src0, src_ptr, 0); \\\n\
+            VXC_Vload8(src1, src_ptr, 1); \\\n\
+            if (inputRemain <= 8) \\\n\
+            { \\\n\
+                L2NORMSCALE_SWITCH_PROCESS(inputRemain, src0, ZpValue) \\\n\
+                src1 = 0; \\\n\
+            } \\\n\
+            else if (inputRemain < 16) \\\n\
+            { \\\n\
+                int inputRemain8 = inputRemain - 8; \\\n\
+                L2NORMSCALE_SWITCH_PROCESS(inputRemain8, src1, ZpValue) \\\n\
+            }\n\
+\n\
+\n\
+#define L2NORMSCALE_MUL_PROCESS(index) \\\n\
+        VXC_Vload8(src0, src_ptr, index); \\\n\
+        _viv_asm(COPY, val0, src0, 16); \\\n\
+        VXC_Vload8(scale_s16, scale_ptr, index); \\\n\
+        _viv_asm(COPY, scale_f16, scale_s16, 16); \\\n\
+        _viv_asm(COPY, input_ZP, inputZP, 4); \\\n\
+        VXC_DP4x4(vec0, val0, input_ZP, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardInf, 0),\\\n\
+            uniDataSubZPtoFp32Part0_4x4);\\\n\
+        VXC_DP4x4(vec1, val0, input_ZP, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardInf, 0),\\\n\
+            uniDataSubZPtoFp32Part1_4x4);\\\n\
+        VXC_DP4x4(scale_f32, scale_f16, scale_f16, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardInf, 0),\\\n\
+            uniFp16toFp32_4x4);\\\n\
+        VXC_DP4x4(scale1_f32, scale_f16, scale_f16, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardInf, 0),\\\n\
+            uniFp16toFp32Hi_4x4);\\\n\
+        vec0 = vec0 * rsqrt0.xxxx + output_ZP;\\\n\
+        vec1 = vec1 * rsqrt0.xxxx + output_ZP;\\\n\
+        vec0 *= scale_f32;\\\n\
+        vec1 *= scale1_f32;\\\n\
+        _viv_asm(CONV_RTE, dst0, vec0);\\\n\
+        _viv_asm(CONV_RTE, dst1, vec1);\\\n\
+        VXC_DP2x8(dst2, dst0, dst1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtact8Bin_2x8);\\\n\
+        _viv_asm(COPY, dst, dst2, 16);\n\
+\n\
+_viv_uniform int inputWidth;\n\
+_viv_uniform int inputWidthRemain256;\n\
+_viv_uniform int inputWidthCount;\n\
+_viv_uniform VXC_512Bits uniSumSqrt_16x1;\n\
+_viv_uniform float r_inputScale;\n\
+\n\
+_viv_uniform VXC_512Bits uniDataSubZPtoFp32Part0_4x4;\n\
+_viv_uniform VXC_512Bits uniDataSubZPtoFp32Part1_4x4;\n\
+_viv_uniform VXC_512Bits uniExtact8Bin_2x8;\n\
+_viv_uniform VXC_512Bits uniFp16toFp32_4x4;\n\
+_viv_uniform VXC_512Bits uniFp16toFp32Hi_4x4;\n\
+_viv_uniform float IntergerScale;\n\
+_viv_uniform float output_ZP;\n\
+_viv_uniform int inputWidthRemain128;\n\
+_viv_uniform float zP2x;\n\
+_viv_uniform float zpSqrt16x;\n\
+_viv_uniform VXC_512Bits uniSumAll_16x1;\n\
+_viv_uniform int inputZP;\n\
+\n\
+#define L2NORMSCALE_MUL_AXIS0_PROCESS(dst_type, convert_type, output_type, copy_type) \\\n\
+    vxc_float4 rsqrt0;\\\n\
+    dst_type  *dst_ptr = (dst_type *)get_image2D_array_ptr(output); \\\n\
+    short *scale_ptr = (short *)get_image2D_array_ptr(scale); \\\n\
+    vxc_float4 vec0, vec1;\\\n\
+    convert_type dst0, dst1;\\\n\
+    vxc_short8 scale_s16;\\\n\
+    vxc_half8  scale_f16;\\\n\
+    vxc_float4 scale_f32, scale1_f32;\\\n\
+    output_type dst2;\\\n\
+    copy_type dst;\\\n\
+    rsqrt0 = sum.xxxx * IntergerScale;\\\n\
+    src_ptr = src_ptr_base + (get_global_id(0) + get_global_id(1) * inputWidth); \\\n\
+    dst_ptr   += (get_global_id(0) + get_global_id(1) * inputWidth);\\\n\
+    scale_ptr += get_global_id(0);\\\n\
+    for(int i = 0; i < inputWidthCount; i++)\\\n\
+    {\\\n\
+        L2NORMSCALE_MUL_PROCESS(0) \\\n\
+        VXC_Vstore8(dst_ptr, 0, dst); \\\n\
+        L2NORMSCALE_MUL_PROCESS(1) \\\n\
+        VXC_Vstore8(dst_ptr, 1, dst); \\\n\
+        src_ptr   += 256; \\\n\
+        dst_ptr   += 256; \\\n\
+        scale_ptr += 256; \\\n\
+    }\\\n\
+    if (inputWidthRemain256) \\\n\
+    { \\\n\
+        offset  = get_global_id(0) + inputWidthCount * 128; \\\n\
+        inputRemain = inputWidth - offset; \\\n\
+        if (inputRemain >= 8) \\\n\
+        { \\\n\
+            L2NORMSCALE_MUL_PROCESS(0) \\\n\
+            VXC_Vstore8(dst_ptr, 0, dst); \\\n\
+            src_ptr   += 8; \\\n\
+            dst_ptr   += 8; \\\n\
+            scale_ptr += 8; \\\n\
+            inputRemain -= 8; \\\n\
+        } \\\n\
+        if (inputRemain > 0) \\\n\
+        { \\\n\
+            L2NORMSCALE_MUL_PROCESS(0) \\\n\
+            switch (inputRemain) \\\n\
+            { \\\n\
+                case 1: \\\n\
+                    dst_ptr[0] = dst.s0; \\\n\
+                break; \\\n\
+                case 2: \\\n\
+                    VXC_Vstore2(dst_ptr, 0, dst); \\\n\
+                break; \\\n\
+                case 3: \\\n\
+                    VXC_Vstore3(dst_ptr, 0, dst); \\\n\
+                break; \\\n\
+                case 4: \\\n\
+                    VXC_Vstore4(dst_ptr, 0, dst); \\\n\
+                break; \\\n\
+                case 5: \\\n\
+                    VXC_Vstore2(dst_ptr, 0, dst); \\\n\
+                    dst.s012 = dst.s234; \\\n\
+                    dst_ptr += 2; \\\n\
+                    VXC_Vstore3(dst_ptr, 0, dst); \\\n\
+                break; \\\n\
+                case 6: \\\n\
+                    VXC_Vstore3(dst_ptr, 0, dst); \\\n\
+                    dst.s012 = dst.s345; \\\n\
+                    dst_ptr += 3; \\\n\
+                    VXC_Vstore3(dst_ptr, 0, dst); \\\n\
+                break; \\\n\
+                case 7: \\\n\
+                    VXC_Vstore4(dst_ptr, 0, dst); \\\n\
+                     dst.s012 = dst.s456; \\\n\
+                    dst_ptr += 4; \\\n\
+                    VXC_Vstore3(dst_ptr, 0, dst); \\\n\
+                break; \\\n\
+                default: \\\n\
+                    VXC_Vstore8(dst_ptr, 0, dst); \\\n\
+                break; \\\n\
+            } \\\n\
+        } \\\n\
+    } \\\n\
+\n\
+\n\
+#define L2NORMSCALE_AXIS0_2D(in0_name, in1_name, out_name, read_type, read_type2, src_type, INPUTSCALE, \\\n\
+                            dst_type, convert_type, output_type, copy_type) \\\n\
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) \\\n\
+     void l2normalizescale_axis0_##in0_name##_##in1_name##to##out_name##_2D \\\n\
+    (\\\n\
+    __read_only  image2d_array_t input,\\\n\
+    __read_only  image2d_array_t scale,\\\n\
+    __write_only image2d_array_t output,\\\n\
+    int axis\\\n\
+    )\\\n\
+{ \\\n\
+    int lidx = get_local_id(0); \\\n\
+    int offset  = get_global_id(0); \\\n\
+    read_type *src_ptr_base = (read_type *)get_image2D_array_ptr(input); \\\n\
+    read_type *src_ptr; \\\n\
+    read_type2 src0, src1; \\\n\
+    src_type   val0, val1; \\\n\
+    int   inputRemain; \\\n\
+    vxc_float4 sum = {0.0f}; \\\n\
+    read_type2 input_ZP ;\\\n\
+    __local float lcl_sum[16]; \\\n\
+    src_ptr = src_ptr_base + (get_global_id(0) + get_global_id(1) * inputWidth); \\\n\
+    for (int i = 0; i < inputWidthCount; i++) \\\n\
+    { \\\n\
+        VXC_Vload8(src0, src_ptr, 0); \\\n\
+        VXC_Vload8(src1, src_ptr, 1); \\\n\
+        _viv_asm(COPY, val0, src0, 16); \\\n\
+        _viv_asm(COPY, val1, src1, 16); \\\n\
+        VXC_DP16x1(sum, val0, val1, VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 1),\\\n\
+            uniSumSqrt_16x1); \\\n\
+        sum.x += sum.y;  \\\n\
+        src_ptr += 256; \\\n\
+    } \\\n\
+    if (inputWidthRemain256) \\\n\
+    { \\\n\
+        offset  = get_global_id(0) + inputWidthCount * 256;\\\n\
+        inputRemain = inputWidth - offset; \\\n\
+        if (inputRemain > 0) \\\n\
+        { \\\n\
+            L2NORMSCALE_REM_PROCESS(0) \\\n\
+            _viv_asm(COPY, val0, src0, 16); \\\n\
+            _viv_asm(COPY, val1, src1, 16); \\\n\
+            VXC_DP16x1(sum, val0, val1, VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 1),\\\n\
+                uniSumSqrt_16x1); \\\n\
+            sum.x += sum.y; \\\n\
+        } \\\n\
+    } \\\n\
+    lcl_sum[lidx] = sum.x; \\\n\
+    barrier(CLK_LOCAL_MEM_FENCE); \\\n\
+    float4 *pLocalPtr = (float4 *)&lcl_sum[0]; \\\n\
+    float4 one = (float4)(1, 1, 1, 1); \\\n\
+    float4 data0; \\\n\
+    data0 = pLocalPtr[0] + pLocalPtr[1] + pLocalPtr[2] + pLocalPtr[3]; \\\n\
+    sum.x = dot(data0, one); \\\n\
+    sum.x = rsqrt(sum.x) * INPUTSCALE; \\\n\
+    L2NORMSCALE_MUL_AXIS0_PROCESS(dst_type, convert_type, output_type, copy_type) \\\n\
+}\n\
+\n\
+L2NORMSCALE_AXIS0_2D(F16, F16, F16, ushort, vxc_ushort8, vxc_half8, 1, \\\n\
+                     ushort, half4, vxc_half8, vxc_ushort8)\n\
+L2NORMSCALE_AXIS0_2D(I16, F16, F16, short,  vxc_short8, vxc_short8, r_inputScale, \\\n\
+                     ushort, half4, vxc_half8, vxc_ushort8)\n\
+L2NORMSCALE_AXIS0_2D(I16, F16, I16, short,  vxc_short8, vxc_short8, r_inputScale, \\\n\
+                     short, int4, vxc_short8, vxc_short8)\n\
+L2NORMSCALE_AXIS0_2D(I8,  F16, F16, char,   vxc_char8,  vxc_char8, r_inputScale, \\\n\
+                     ushort, half4, vxc_half8, vxc_ushort8)\n\
+L2NORMSCALE_AXIS0_2D(I8,  F16, I8,  char,   vxc_char8,  vxc_char8, r_inputScale, \\\n\
+                     char,  int4, vxc_char8, vxc_char8)\n\
+\n\
+\n\
+\n\
+#define L2NORMSCALE_AXIS0_U8_2D(in1_name, out_name,\\\n\
+                            dst_type, convert_type, output_type, copy_type) \\\n\
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) \\\n\
+     void l2normalizescale_axis0_U8_##in1_name##to##out_name##_2D \\\n\
+    (\\\n\
+    __read_only  image2d_array_t input,\\\n\
+    __read_only  image2d_array_t scale,\\\n\
+    __write_only image2d_array_t output,\\\n\
+    int axis\\\n\
+    )\\\n\
+{ \\\n\
+    int lidx = get_local_id(0); \\\n\
+    int offset  = get_global_id(0); \\\n\
+    uchar *src_ptr_base = (uchar *)get_image2D_array_ptr(input); \\\n\
+    uchar *src_ptr; \\\n\
+    vxc_uchar8 src0, src1; \\\n\
+    vxc_uchar8   val0, val1; \\\n\
+    int   inputRemain; \\\n\
+    vxc_float4 sum = {0.0f}; \\\n\
+    vxc_uchar8 input_ZP ; \\\n\
+    __local float lcl_sum[16]; \\\n\
+    src_ptr = src_ptr_base + (get_global_id(0) + get_global_id(1) * inputWidth); \\\n\
+    for (int i = 0; i < inputWidthCount; i++) \\\n\
+    { \\\n\
+        VXC_Vload8(src0, src_ptr, 0); \\\n\
+        VXC_Vload8(src1, src_ptr, 1); \\\n\
+        _viv_asm(COPY, val0, src0, 16); \\\n\
+        _viv_asm(COPY, val1, src1, 16); \\\n\
+        VXC_DP16x1(sum, val0, val1, VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 1),\\\n\
+            uniSumSqrt_16x1); \\\n\
+        VXC_DP16x1(sum, val0, val1, VXC_MODIFIER(2, 2, 0, VXC_RM_TowardZero, 1),\\\n\
+            uniSumAll_16x1); \\\n\
+        sum.w  = sum.y - zP2x * sum.z + zpSqrt16x; \\\n\
+        sum.x += sum.w; \\\n\
+        src_ptr += 256; \\\n\
+    } \\\n\
+    if (inputWidthRemain256) \\\n\
+    { \\\n\
+        offset  = get_global_id(0) + inputWidthCount * 256; \\\n\
+        inputRemain = inputWidth - offset; \\\n\
+        if (inputRemain > 0) \\\n\
+        { \\\n\
+            L2NORMSCALE_REM_PROCESS((uchar)inputZP) \\\n\
+            _viv_asm(COPY, val0, src0, 16); \\\n\
+            _viv_asm(COPY, val1, src1, 16); \\\n\
+            VXC_DP16x1(sum, val0, val1, VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 1),\\\n\
+                uniSumSqrt_16x1); \\\n\
+            VXC_DP16x1(sum, val0, val1, VXC_MODIFIER(2, 2, 0, VXC_RM_TowardZero, 1),\\\n\
+                uniSumAll_16x1); \\\n\
+            sum.w  = sum.y - zP2x * sum.z + zpSqrt16x; \\\n\
+            sum.x += sum.w; \\\n\
+        } \\\n\
+    } \\\n\
+    lcl_sum[lidx] = sum.x; \\\n\
+    barrier(CLK_LOCAL_MEM_FENCE); \\\n\
+    float4 *pLocalPtr = (float4 *)&lcl_sum[0]; \\\n\
+    float4 one = (float4)(1, 1, 1, 1); \\\n\
+    float4 data0; \\\n\
+    data0 = pLocalPtr[0] + pLocalPtr[1] + pLocalPtr[2] + pLocalPtr[3]; \\\n\
+    sum.x = dot(data0, one); \\\n\
+    sum.x = rsqrt(sum.x) * r_inputScale; \\\n\
+    L2NORMSCALE_MUL_AXIS0_PROCESS(dst_type, convert_type, output_type, copy_type) \\\n\
+}\n\
+\n\
+L2NORMSCALE_AXIS0_U8_2D(F16, F16, ushort, half4, vxc_half8,  vxc_ushort8)\n\
+L2NORMSCALE_AXIS0_U8_2D(F16, U8,  uchar,  int4,  vxc_uchar8, vxc_uchar8)\n\
+"; /* end of l2normalizescale_axis0_vx*/
+
+static const char l2normalizescale_axis1_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+/********************************************L2NormalizeScale*****************************************/\n\
+_viv_uniform int L2NorS_depth;\n\
+_viv_uniform VXC_512Bits UniFp16MulLo_dp4x4;\n\
+_viv_uniform VXC_512Bits UniFp16MulHi_dp4x4;\n\
+\n\
+//int8 version\n\
+_viv_uniform float r_inputScale;\n\
+_viv_uniform VXC_512Bits uniIntegerSquareLo_4x4;\n\
+_viv_uniform VXC_512Bits uniIntegerSquareHi_4x4;\n\
+_viv_uniform VXC_512Bits uniDataSquareAddU32Lo_4x4;\n\
+_viv_uniform VXC_512Bits uniDataSquareAddU32Hi_4x4;\n\
+\n\
+_viv_uniform VXC_512Bits uniUInt8SquareLo_4x4;\n\
+_viv_uniform VXC_512Bits uniUInt8SquareHi_4x4;\n\
+_viv_uniform int inputZP;\n\
+_viv_uniform VXC_512Bits uniDataSubZPtoFp32Part0_4x4;\n\
+_viv_uniform VXC_512Bits uniDataSubZPtoFp32Part1_4x4;\n\
+_viv_uniform VXC_512Bits uniExtact8Bin_2x8;\n\
+_viv_uniform VXC_512Bits uniFp16toFp32_4x4;\n\
+_viv_uniform float IntergerScale;\n\
+_viv_uniform float output_ZP;\n\
+\n\
+#define L2NORMSCALE_MUL_AXIS1_PROCESS(input_type, incopy_type, output_type, convert_type, copy_type) \\\n\
+    coord.y = get_global_id(1); \\\n\
+    input_type  vect0, vect1;\\\n\
+    incopy_type src0, src1;\\\n\
+    vxc_float4 rsqrt0, rsqrt1;\\\n\
+    rsqrt0 = sum_lo;\\\n\
+    rsqrt1 = sum_hi;\\\n\
+    rsqrt0 *= IntergerScale;\\\n\
+    rsqrt1 *= IntergerScale;\\\n\
+    for(int i = 0; i < L2NorS_depth; i += 2)\\\n\
+   {\\\n\
+        vxc_float4 vec0, vec1;\\\n\
+        input_type input_ZP ;\\\n\
+        convert_type dst0, dst1;\\\n\
+        VXC_ReadImage(vect0, input, coord.xy, VXC_5BITOFFSET_XY(0, 0),\\\n\
+            VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\\\n\
+        _viv_asm(COPY, src0, vect0, 16); \\\n\
+        VXC_ReadImage(vect1, input, coord.xy, VXC_5BITOFFSET_XY(0, 1),\\\n\
+            VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\\\n\
+        _viv_asm(COPY, src1, vect1, 16); \\\n\
+        vxc_short8 scale_s16;\\\n\
+        vxc_half8  scale_f16;\\\n\
+        vxc_float4 scale_f32;\\\n\
+        VXC_ReadImage(scale_s16, scale, coord.yw, VXC_5BITOFFSET_XY(0, 0),\\\n\
+            VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0));\\\n\
+        _viv_asm(COPY, scale_f16, scale_s16, 16); \\\n\
+        _viv_asm(COPY, input_ZP, inputZP, 4); \\\n\
+        VXC_DP4x4(vec0, src0, input_ZP, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardInf, 0),\\\n\
+            uniDataSubZPtoFp32Part0_4x4);\\\n\
+        VXC_DP4x4(vec1, src0, input_ZP, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardInf, 0),\\\n\
+            uniDataSubZPtoFp32Part1_4x4);\\\n\
+        VXC_DP4x4(scale_f32, scale_f16, scale_f16, VXC_MODIFIER(0, 1, 0, VXC_RM_TowardInf, 0),\\\n\
+            uniFp16toFp32_4x4);\\\n\
+        vec0 = vec0 * rsqrt0 + output_ZP;\\\n\
+        vec1 = vec1 * rsqrt1 + output_ZP;\\\n\
+        vec0 *= scale_f32.xxxx;\\\n\
+        vec1 *= scale_f32.xxxx;\\\n\
+        _viv_asm(CONV_RTE, dst0, vec0);\\\n\
+        _viv_asm(CONV_RTE, dst1, vec1);\\\n\
+        output_type dst2;\\\n\
+        VXC_DP2x8(dst2, dst0, dst1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtact8Bin_2x8);\\\n\
+        copy_type dst;\\\n\
+        _viv_asm(COPY, dst, dst2, 16); \\\n\
+        VXC_WriteImage(output, coord.xy, dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\\\n\
+        VXC_DP4x4(vec0, src1, input_ZP, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardInf, 0),\\\n\
+            uniDataSubZPtoFp32Part0_4x4);\\\n\
+        VXC_DP4x4(vec1, src1, input_ZP, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardInf, 0),\\\n\
+            uniDataSubZPtoFp32Part1_4x4);\\\n\
+        vec0 = vec0 * rsqrt0 + output_ZP;\\\n\
+        vec1 = vec1 * rsqrt1 + output_ZP;\\\n\
+        vec0 *= scale_f32.yyyy;\\\n\
+        vec1 *= scale_f32.yyyy;\\\n\
+        _viv_asm(CONV_RTE, dst0, vec0);\\\n\
+        _viv_asm(CONV_RTE, dst1, vec1);\\\n\
+        VXC_DP2x8(dst2, dst0, dst1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtact8Bin_2x8);\\\n\
+        coord.y++;\\\n\
+        _viv_asm(COPY, dst, dst2, 16); \\\n\
+        VXC_WriteImage(output, coord.xy, dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\\\n\
+        coord.y++;\\\n\
+    }\\\n\
+\n\
+\n\
+#define L2NORMSCALE_AXIS1_F16_2D(in1_name, out_name,\\\n\
+       input_type, incopy_type, output_type, convert_type, copy_type) \\\n\
+__kernel void l2normalizescale_axis1_F16_##in1_name##to##out_name##_2D \\\n\
+    (\\\n\
+    __read_only  image2d_array_t input,\\\n\
+    __read_only  image2d_array_t scale,\\\n\
+    __write_only image2d_array_t output,\\\n\
+    int axis\\\n\
+    )\\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(0), 0); \\\n\
+    vxc_short8 img1_s16, img2_s16; \\\n\
+    vxc_float4 squr, sum_lo = 0, sum_hi = 0; \\\n\
+    vxc_half8 img1_fp16, img2_fp16; \\\n\
+    for(int i = 0; i < L2NorS_depth; i += 2) \\\n\
+    { \\\n\
+        VXC_ReadImage(img1_s16, input, coord.xy, VXC_5BITOFFSET_XY(0, 0),\\\n\
+            VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+        VXC_ReadImage(img2_s16, input, coord.xy, VXC_5BITOFFSET_XY(0, 1),\\\n\
+            VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+        coord.y += 2; \\\n\
+        _viv_asm(COPY, img1_fp16, img1_s16, 16); \\\n\
+        _viv_asm(COPY, img2_fp16, img2_s16, 16); \\\n\
+        VXC_DP4x4(squr, img1_fp16, img1_fp16, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 1),\\\n\
+            UniFp16MulLo_dp4x4); \\\n\
+        sum_lo += squr; \\\n\
+        VXC_DP4x4(squr, img2_fp16, img2_fp16, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 1),\\\n\
+            UniFp16MulLo_dp4x4); \\\n\
+        sum_lo += squr; \\\n\
+        VXC_DP4x4(squr, img1_fp16, img1_fp16, VXC_MODIFIER(0, 3, 4, VXC_RM_TowardZero, 1),\\\n\
+            UniFp16MulHi_dp4x4); \\\n\
+        sum_hi += squr; \\\n\
+        VXC_DP4x4(squr, img2_fp16, img2_fp16, VXC_MODIFIER(0, 3, 4, VXC_RM_TowardZero, 1),\\\n\
+            UniFp16MulHi_dp4x4); \\\n\
+        sum_hi += squr; \\\n\
+    } \\\n\
+    sum_lo = rsqrt(sum_lo); \\\n\
+    sum_hi = rsqrt(sum_hi); \\\n\
+    L2NORMSCALE_MUL_AXIS1_PROCESS(input_type, incopy_type, output_type, convert_type, copy_type) \\\n\
+}\n\
+\n\
+L2NORMSCALE_AXIS1_F16_2D(F16, F16, vxc_short8,  vxc_half8,   vxc_half8,   half4,        vxc_short8)\n\
+\n\
+\n\
+#define L2NORMSCALE_AXIS1_I8_2D(in1_name, out_name,\\\n\
+       input_type, incopy_type, output_type, convert_type, copy_type) \\\n\
+__kernel void l2normalizescale_axis1_I8_##in1_name##to##out_name##_2D \\\n\
+    (\\\n\
+    __read_only  image2d_array_t input,\\\n\
+    __read_only  image2d_array_t scale,\\\n\
+    __write_only image2d_array_t output,\\\n\
+    int axis\\\n\
+    )\\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(0), 0); \\\n\
+    vxc_char8 src0_I8, src1_I8; \\\n\
+    vxc_uint4 dst0_I8 = 0, dst1_I8 = 0; \\\n\
+    for(int i = 0; i < L2NorS_depth; i += 2) \\\n\
+    { \\\n\
+        VXC_ReadImage(src0_I8, input, coord.xy, VXC_5BITOFFSET_XY(0, 0),\\\n\
+            VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+        VXC_ReadImage(src1_I8, input, coord.xy, VXC_5BITOFFSET_XY(0, 1),\\\n\
+            VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+        coord.y += 2; \\\n\
+        VXC_DP4x4(dst0_I8, src0_I8, dst0_I8, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
+            uniDataSquareAddU32Lo_4x4); \\\n\
+        VXC_DP4x4(dst1_I8, src0_I8, dst1_I8, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
+            uniDataSquareAddU32Hi_4x4); \\\n\
+        VXC_DP4x4(dst0_I8, src1_I8, dst0_I8, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
+            uniDataSquareAddU32Lo_4x4); \\\n\
+        VXC_DP4x4(dst1_I8, src1_I8, dst1_I8, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
+            uniDataSquareAddU32Hi_4x4); \\\n\
+    } \\\n\
+    vxc_float4 sum_lo, sum_hi; \\\n\
+    sum_lo = convert_float4(dst0_I8); \\\n\
+    sum_hi = convert_float4(dst1_I8); \\\n\
+    sum_lo = rsqrt(sum_lo) * r_inputScale; \\\n\
+    sum_hi = rsqrt(sum_hi) * r_inputScale; \\\n\
+    L2NORMSCALE_MUL_AXIS1_PROCESS(input_type, incopy_type, output_type, convert_type, copy_type) \\\n\
+}\n\
+\n\
+L2NORMSCALE_AXIS1_I8_2D(F16, I8,  vxc_char16,  vxc_char16,  vxc_char16,  int4,   vxc_char16)\n\
+L2NORMSCALE_AXIS1_I8_2D(F16, F16, vxc_char16,  vxc_char16,  vxc_half8,   half4,  vxc_short8)\n\
+\n\
+\n\
+#define L2NORMSCALE_AXIS1_I16_2D(in1_name, out_name,\\\n\
+       input_type, incopy_type, output_type, convert_type, copy_type) \\\n\
+__kernel void l2normalizescale_axis1_I16_##in1_name##to##out_name##_2D \\\n\
+    (\\\n\
+    __read_only  image2d_array_t input,\\\n\
+    __read_only  image2d_array_t scale,\\\n\
+    __write_only image2d_array_t output,\\\n\
+    int axis\\\n\
+    )\\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(0), 0); \\\n\
+    vxc_short8 src0_I16, src1_I16; \\\n\
+    vxc_float4 squr, sum_lo = 0, sum_hi = 0; \\\n\
+    for(int i = 0; i < L2NorS_depth; i += 2) \\\n\
+    { \\\n\
+        VXC_ReadImage(src0_I16, input, coord.xy, VXC_5BITOFFSET_XY(0, 0),\\\n\
+            VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+        VXC_ReadImage(src1_I16, input, coord.xy, VXC_5BITOFFSET_XY(0, 1),\\\n\
+            VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+        coord.y += 2; \\\n\
+        VXC_DP4x4(squr, src0_I16, src0_I16, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
+            uniIntegerSquareLo_4x4); \\\n\
+        sum_lo = squr + sum_lo; \\\n\
+        VXC_DP4x4(squr, src0_I16, src0_I16, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
+            uniIntegerSquareHi_4x4); \\\n\
+        sum_hi = squr + sum_hi; \\\n\
+        VXC_DP4x4(squr, src1_I16, src1_I16, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
+            uniIntegerSquareLo_4x4); \\\n\
+        sum_lo = squr + sum_lo; \\\n\
+        VXC_DP4x4(squr, src1_I16, src1_I16, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
+            uniIntegerSquareHi_4x4); \\\n\
+        sum_hi = squr + sum_hi; \\\n\
+    } \\\n\
+    sum_lo = rsqrt(sum_lo) * r_inputScale; \\\n\
+    sum_hi = rsqrt(sum_hi) * r_inputScale; \\\n\
+    L2NORMSCALE_MUL_AXIS1_PROCESS(input_type, incopy_type, output_type, convert_type, copy_type) \\\n\
+}\n\
+\n\
+L2NORMSCALE_AXIS1_I16_2D(F16, I16, vxc_short8, vxc_short8, vxc_short8, int4,  vxc_short8)\n\
+L2NORMSCALE_AXIS1_I16_2D(F16, F16, vxc_short8, vxc_short8, vxc_half8,  half4, vxc_short8)\n\
+\n\
+#define L2NORMSCALE_AXIS1_U8_2D(in1_name, out_name,\\\n\
+       input_type, incopy_type, output_type, convert_type, copy_type) \\\n\
+__kernel void l2normalizescale_axis1_U8_##in1_name##to##out_name##_2D \\\n\
+    (\\\n\
+    __read_only  image2d_array_t input,\\\n\
+    __read_only  image2d_array_t scale,\\\n\
+    __write_only image2d_array_t output,\\\n\
+    int axis\\\n\
+    )\\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(0), 0); \\\n\
+    vxc_uchar8 src0_U8, src1_U8; \\\n\
+    vxc_float4 squr, sum_lo = 0, sum_hi = 0; \\\n\
+    for(int i = 0; i < L2NorS_depth; i += 2) \\\n\
+    { \\\n\
+        vxc_uchar8 zero; \\\n\
+        VXC_ReadImage(src0_U8, input, coord.xy, VXC_5BITOFFSET_XY(0, 0),\\\n\
+            VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+        VXC_ReadImage(src1_U8, input, coord.xy, VXC_5BITOFFSET_XY(0, 1),\\\n\
+            VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+        coord.y += 2; \\\n\
+        _viv_asm(COPY, zero, inputZP, 4); \\\n\
+        VXC_DP4x4(squr, src0_U8, zero, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniUInt8SquareLo_4x4); \\\n\
+        sum_lo = squr + sum_lo; \\\n\
+        VXC_DP4x4(squr, src0_U8, zero, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniUInt8SquareHi_4x4); \\\n\
+        sum_hi = squr + sum_hi; \\\n\
+        VXC_DP4x4(squr, src1_U8, zero, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniUInt8SquareLo_4x4); \\\n\
+        sum_lo = squr + sum_lo; \\\n\
+        VXC_DP4x4(squr, src1_U8, zero, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniUInt8SquareHi_4x4); \\\n\
+        sum_hi = squr + sum_hi; \\\n\
+    } \\\n\
+    sum_lo = rsqrt(sum_lo) * r_inputScale; \\\n\
+    sum_hi = rsqrt(sum_hi) * r_inputScale; \\\n\
+    L2NORMSCALE_MUL_AXIS1_PROCESS(input_type, incopy_type, output_type, convert_type, copy_type) \\\n\
+}\n\
+\n\
+L2NORMSCALE_AXIS1_U8_2D(F16, F16, vxc_uchar16, vxc_uchar16, vxc_half8,   half4,  vxc_short8)\n\
+L2NORMSCALE_AXIS1_U8_2D(F16, U8,  vxc_uchar16, vxc_uchar16, vxc_uchar16, int4,   vxc_uchar16)\n\
+"; /* end of l2normalizescale_axis1_vx*/
+
 static const char log_softmax_axis0_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 _viv_uniform float       rlogE;\n\
 _viv_uniform int         axisSize;\n\
@@ -25616,587 +26192,6 @@ __kernel void GrayScaletoTensor_UInt8\n\
 }\n\
 "; /* end of vsi_nn_kernel_imageprocess_5_vx*/
 
-static const char vsi_nn_kernel_l2normalizescaleAxis0_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
-\n\
-#define VXC_Vstore3(Pointer, Offset, Data)   \\\n\
-do \\\n\
-{ int byteOffset = ((int)sizeof((Data)))*(Offset); \\\n\
-VXC_OP3_NoDest(vstore3, Pointer, byteOffset, Data); } \\\n\
-while(0)\n\
-\n\
-inline uchar* get_image2D_array_ptr(image2d_array_t  input)\n\
-{\n\
-    int8 desc;\n\
-    _viv_asm(COPY, desc, input, sizeof(desc));\n\
-    uchar *src_ptr = (uchar*)desc.s0;\n\
-    return src_ptr;\n\
-}\n\
-\n\
-#define L2NORMSCALE_SWITCH_PROCESS(case_value, vec_val, ZpValue) \\\n\
-                switch (case_value) \\\n\
-                { \\\n\
-                    case 1: \\\n\
-                        vec_val.s123  = ZpValue; \\\n\
-                        vec_val.s4567 = ZpValue; \\\n\
-                    break; \\\n\
-                    case 2: \\\n\
-                        vec_val.s23  = ZpValue; \\\n\
-                        vec_val.s4567 = ZpValue; \\\n\
-                    break; \\\n\
-                    case 3: \\\n\
-                        vec_val.s3  = ZpValue; \\\n\
-                        vec_val.s4567 = ZpValue; \\\n\
-                    break; \\\n\
-                    case 4: \\\n\
-                        vec_val.s4567 = ZpValue; \\\n\
-                    break; \\\n\
-                    case 5: \\\n\
-                        vec_val.s567 = ZpValue; \\\n\
-                    break; \\\n\
-                    case 6: \\\n\
-                        vec_val.s67 = ZpValue; \\\n\
-                    break; \\\n\
-                    case 7: \\\n\
-                        vec_val.s7 = ZpValue; \\\n\
-                    break; \\\n\
-                    default: \\\n\
-                    break; \\\n\
-                }\n\
-\n\
-#define L2NORMSCALE_REM_PROCESS(ZpValue) \\\n\
-            VXC_Vload8(src0, src_ptr, 0); \\\n\
-            VXC_Vload8(src1, src_ptr, 1); \\\n\
-            if (inputRemain <= 8) \\\n\
-            { \\\n\
-                L2NORMSCALE_SWITCH_PROCESS(inputRemain, src0, ZpValue) \\\n\
-                src1 = 0; \\\n\
-            } \\\n\
-            else if (inputRemain < 16) \\\n\
-            { \\\n\
-                int inputRemain8 = inputRemain - 8; \\\n\
-                L2NORMSCALE_SWITCH_PROCESS(inputRemain8, src1, ZpValue) \\\n\
-            }\n\
-\n\
-\n\
-_viv_uniform int inputWidth;\n\
-_viv_uniform int inputWidthRemain256;\n\
-_viv_uniform int inputWidthCount;\n\
-_viv_uniform VXC_512Bits uniSumSqrt_16x1;\n\
-//int8 version\n\
-_viv_uniform float r_inputScale;\n\
-\n\
-#define L2NORMSCALE_SUMSQRT_AXIS0_2D(name, read_type, read_type2, src_type, INPUTSCALE) \\\n\
-__kernel void vxcL2NormScale_SumRsqrt_axis0_##name##_2D \\\n\
-    ( \\\n\
-    image2d_array_t input, \\\n\
-    image2d_array_t output, \\\n\
-    int dim \\\n\
-    ) \\\n\
-{ \\\n\
-    int lidx = get_local_id(0); \\\n\
-    int4 coord = (int4)(0, get_global_id(1), 0, 0); \\\n\
-    int offset  = get_global_id(0); \\\n\
-    read_type *src_ptr = (read_type *)get_image2D_array_ptr(input); \\\n\
-    read_type2 src0, src1, dst; \\\n\
-    src_type   val0, val1; \\\n\
-    int   inputRemain; \\\n\
-    vxc_float4 sum = {0.0f}; \\\n\
-    __local float lcl_sum[16]; \\\n\
-    src_ptr += (get_global_id(0) + get_global_id(1) * inputWidth); \\\n\
-    for (int i = 0; i < inputWidthCount; i++) \\\n\
-    { \\\n\
-        VXC_Vload8(src0, src_ptr, 0); \\\n\
-        VXC_Vload8(src1, src_ptr, 1); \\\n\
-        _viv_asm(COPY, val0, src0, 16); \\\n\
-        _viv_asm(COPY, val1, src1, 16); \\\n\
-        VXC_DP16x1(sum, val0, val1, VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 1),\\\n\
-            uniSumSqrt_16x1); \\\n\
-        sum.x += sum.y;  \\\n\
-        src_ptr += 256; \\\n\
-    } \\\n\
-    if (inputWidthRemain256) \\\n\
-    { \\\n\
-        offset  = get_global_id(0) + inputWidthCount * 256;\\\n\
-        inputRemain = inputWidth - offset; \\\n\
-        if (inputRemain > 0) \\\n\
-        { \\\n\
-            L2NORMSCALE_REM_PROCESS(0) \\\n\
-            _viv_asm(COPY, val0, src0, 16); \\\n\
-            _viv_asm(COPY, val1, src1, 16); \\\n\
-            VXC_DP16x1(sum, val0, val1, VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 1),\\\n\
-                uniSumSqrt_16x1); \\\n\
-            sum.x += sum.y; \\\n\
-        } \\\n\
-    } \\\n\
-    lcl_sum[lidx] = sum.x; \\\n\
-    barrier(CLK_LOCAL_MEM_FENCE); \\\n\
-    float4 *pLocalPtr = (float4 *)&lcl_sum[0]; \\\n\
-    float4 one = (float4)(1, 1, 1, 1); \\\n\
-    float4 data0; \\\n\
-    data0 = pLocalPtr[0] + pLocalPtr[1] + pLocalPtr[2] + pLocalPtr[3]; \\\n\
-    sum.x = dot(data0, one); \\\n\
-    sum.x = rsqrt(sum.x) * INPUTSCALE; \\\n\
-    write_imagef(output, coord, sum.xxxx); \\\n\
-}\n\
-\n\
-L2NORMSCALE_SUMSQRT_AXIS0_2D(F16, ushort, vxc_ushort8, vxc_half8, 1);\n\
-L2NORMSCALE_SUMSQRT_AXIS0_2D(I16, ushort, vxc_ushort8, vxc_short8, r_inputScale);\n\
-L2NORMSCALE_SUMSQRT_AXIS0_2D(I8,  uchar, vxc_uchar8, vxc_char8, r_inputScale);\n\
-\n\
-_viv_uniform float zP2x;\n\
-_viv_uniform float zpSqrt16x;\n\
-_viv_uniform VXC_512Bits uniSumAll_16x1;\n\
-_viv_uniform int inputZP;\n\
-__kernel void vxcL2NormScale_SumRsqrt_axis0_U8_2D\n\
-    (\n\
-    image2d_array_t input,\n\
-    image2d_array_t output,\n\
-    int dim\n\
-    )\n\
-{\n\
-    int lidx = get_local_id(0);\n\
-    int4 coord = (int4)(0, get_global_id(1), 0, 0);\n\
-    int offset  = get_global_id(0);\n\
-    uchar *src_ptr = (uchar *)get_image2D_array_ptr(input);\n\
-    vxc_uchar8 src0, src1, dst;\n\
-    vxc_uchar8   val0, val1;\n\
-    int   inputRemain;\n\
-    vxc_float4 sum = {0.0f};\n\
-    __local float lcl_sum[16];\n\
-    src_ptr += (get_global_id(0) + get_global_id(1) * inputWidth);\n\
-    for (int i = 0; i < inputWidthCount; i++)\n\
-    {\n\
-        VXC_Vload8(src0, src_ptr, 0);\n\
-        VXC_Vload8(src1, src_ptr, 1);\n\
-        _viv_asm(COPY, val0, src0, 16);\n\
-        _viv_asm(COPY, val1, src1, 16);\n\
-        VXC_DP16x1(sum, val0, val1, VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 1),\\\n\
-            uniSumSqrt_16x1);\n\
-        VXC_DP16x1(sum, val0, val1, VXC_MODIFIER(2, 2, 0, VXC_RM_TowardZero, 1),\\\n\
-            uniSumAll_16x1);\n\
-        sum.w  = sum.y - zP2x * sum.z + zpSqrt16x;\n\
-        sum.x += sum.w;\n\
-        src_ptr += 256;\n\
-    }\n\
-    if (inputWidthRemain256)\n\
-    {\n\
-        offset  = get_global_id(0) + inputWidthCount * 256;\n\
-        inputRemain = inputWidth - offset;\n\
-        if (inputRemain > 0)\n\
-        {\n\
-            L2NORMSCALE_REM_PROCESS((uchar)inputZP)\n\
-            _viv_asm(COPY, val0, src0, 16);\n\
-            _viv_asm(COPY, val1, src1, 16);\n\
-            VXC_DP16x1(sum, val0, val1, VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 1),\\\n\
-                uniSumSqrt_16x1);\n\
-            VXC_DP16x1(sum, val0, val1, VXC_MODIFIER(2, 2, 0, VXC_RM_TowardZero, 1),\\\n\
-                uniSumAll_16x1);\n\
-            sum.w  = sum.y - zP2x * sum.z + zpSqrt16x;\n\
-            sum.x += sum.w;\n\
-        }\n\
-    }\n\
-    lcl_sum[lidx] = sum.x;\n\
-    barrier(CLK_LOCAL_MEM_FENCE);\n\
-    float4 *pLocalPtr = (float4 *)&lcl_sum[0];\n\
-    float4 one = (float4)(1, 1, 1, 1);\n\
-    float4 data0;\n\
-    data0 = pLocalPtr[0] + pLocalPtr[1] + pLocalPtr[2] + pLocalPtr[3];\n\
-    sum.x = dot(data0, one);\n\
-    sum.x = rsqrt(sum.x) * r_inputScale;\n\
-    write_imagef(output, coord, sum.xxxx);\n\
-}\n\
-\n\
-_viv_uniform VXC_512Bits uniDataSubZPtoFp32Part0_4x4;\n\
-_viv_uniform VXC_512Bits uniDataSubZPtoFp32Part1_4x4;\n\
-_viv_uniform VXC_512Bits uniExtact8Bin_2x8;\n\
-_viv_uniform VXC_512Bits uniFp16toFp32_4x4;\n\
-_viv_uniform VXC_512Bits uniFp16toFp32Hi_4x4;\n\
-_viv_uniform float IntergerScale;\n\
-_viv_uniform float output_ZP;\n\
-_viv_uniform int inputWidthRemain128;\n\
-\n\
-#define L2NORMSCALE_MUL_PROCESS() \\\n\
-        VXC_Vload8(vect0, src_ptr, 0); \\\n\
-        _viv_asm(COPY, src0, vect0, 16); \\\n\
-        VXC_Vload8(scale_s16, scale_ptr, 0); \\\n\
-        _viv_asm(COPY, scale_f16, scale_s16, 16); \\\n\
-        _viv_asm(COPY, input_ZP, inputZP, 4); \\\n\
-        VXC_DP4x4(vec0, src0, input_ZP, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardInf, 0),\\\n\
-            uniDataSubZPtoFp32Part0_4x4);\\\n\
-        VXC_DP4x4(vec1, src0, input_ZP, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardInf, 0),\\\n\
-            uniDataSubZPtoFp32Part1_4x4);\\\n\
-        VXC_DP4x4(scale_f32, scale_f16, scale_f16, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardInf, 0),\\\n\
-            uniFp16toFp32_4x4);\\\n\
-        VXC_DP4x4(scale1_f32, scale_f16, scale_f16, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardInf, 0),\\\n\
-            uniFp16toFp32Hi_4x4);\\\n\
-        vec0 = vec0 * rsqrt0.xxxx + output_ZP;\\\n\
-        vec1 = vec1 * rsqrt0.xxxx + output_ZP;\\\n\
-        vec0 *= scale_f32;\\\n\
-        vec1 *= scale1_f32;\\\n\
-        _viv_asm(CONV_RTE, dst0, vec0);\\\n\
-        _viv_asm(CONV_RTE, dst1, vec1);\\\n\
-        VXC_DP2x8(dst2, dst0, dst1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtact8Bin_2x8);\\\n\
-        _viv_asm(COPY, dst, dst2, 16);\n\
-\n\
-\n\
-#define L2NORMSCALE_MIXED_AXIS0_MODE_2D(name0, name1, input_type, incopy_type,\\\n\
-    output_type, convert_type, copy_type, input_type1, dst_type) \\\n\
-    __kernel void vxcL2NormScale_axis0_##name0##to##name1##_2D\\\n\
-    (\\\n\
-    __read_only  image2d_array_t input1,\\\n\
-    __read_only  image2d_array_t input2,\\\n\
-    __read_only  image2d_array_t scale,\\\n\
-    __write_only image2d_array_t output,\\\n\
-    int dim\\\n\
-    )\\\n\
-{\\\n\
-    int4 coord = (int4)(0, get_global_id(1), 0, 0);\\\n\
-    input_type  vect0;\\\n\
-    incopy_type src0, src1;\\\n\
-    vxc_float4 rsqrt0, rsqrt1;\\\n\
-    input_type1 *src_ptr = (input_type1 *)get_image2D_array_ptr(input1); \\\n\
-    dst_type    *dst_ptr = (dst_type    *)get_image2D_array_ptr(output); \\\n\
-    short *scale_ptr = (short *)get_image2D_array_ptr(scale); \\\n\
-    int offset  = (get_global_id(0) + get_global_id(1) * inputWidth); \\\n\
-    vxc_float4 vec0, vec1;\\\n\
-    input_type input_ZP ;\\\n\
-    convert_type dst0, dst1;\\\n\
-    vxc_short8 scale_s16;\\\n\
-    vxc_half8  scale_f16;\\\n\
-    vxc_float4 scale_f32, scale1_f32;\\\n\
-    output_type dst2;\\\n\
-    copy_type dst;\\\n\
-    int   inputRemain; \\\n\
-    rsqrt0 = read_imagef(input2, coord);\\\n\
-    rsqrt0 = rsqrt0.xxxx * IntergerScale;\\\n\
-    src_ptr   += (get_global_id(0) + get_global_id(1) * inputWidth);\\\n\
-    dst_ptr   += (get_global_id(0) + get_global_id(1) * inputWidth);\\\n\
-    scale_ptr += get_global_id(0);\\\n\
-    for(int i = 0; i < inputWidthCount; i++)\\\n\
-    {\\\n\
-        L2NORMSCALE_MUL_PROCESS() \\\n\
-        VXC_Vstore8(dst_ptr, 0, dst); \\\n\
-        src_ptr   += 128; \\\n\
-        dst_ptr   += 128; \\\n\
-        scale_ptr += 128; \\\n\
-    }\\\n\
-    if (inputWidthRemain128) \\\n\
-    { \\\n\
-        offset  = get_global_id(0) + inputWidthCount * 128; \\\n\
-        inputRemain = inputWidth - offset; \\\n\
-        if (inputRemain > 0) \\\n\
-        { \\\n\
-            L2NORMSCALE_MUL_PROCESS() \\\n\
-            switch (inputRemain) \\\n\
-            { \\\n\
-                case 1: \\\n\
-                    dst_ptr[0] = dst.s0; \\\n\
-                break; \\\n\
-                case 2: \\\n\
-                    VXC_Vstore2(dst_ptr, 0, dst); \\\n\
-                break; \\\n\
-                case 3: \\\n\
-                    VXC_Vstore3(dst_ptr, 0, dst); \\\n\
-                break; \\\n\
-                case 4: \\\n\
-                    VXC_Vstore4(dst_ptr, 0, dst); \\\n\
-                break; \\\n\
-                case 5: \\\n\
-                    VXC_Vstore2(dst_ptr, 0, dst); \\\n\
-                    dst.s012 = dst.s234; \\\n\
-                    dst_ptr += 2; \\\n\
-                    VXC_Vstore3(dst_ptr, 0, dst); \\\n\
-                break; \\\n\
-                case 6: \\\n\
-                    VXC_Vstore3(dst_ptr, 0, dst); \\\n\
-                    dst.s012 = dst.s345; \\\n\
-                    dst_ptr += 3; \\\n\
-                    VXC_Vstore3(dst_ptr, 0, dst); \\\n\
-                break; \\\n\
-                case 7: \\\n\
-                    VXC_Vstore4(dst_ptr, 0, dst); \\\n\
-                     dst.s012 = dst.s456; \\\n\
-                    dst_ptr += 4; \\\n\
-                    VXC_Vstore3(dst_ptr, 0, dst); \\\n\
-                break; \\\n\
-                default: \\\n\
-                    VXC_Vstore8(dst_ptr, 0, dst); \\\n\
-                break; \\\n\
-            } \\\n\
-        } \\\n\
-    } \\\n\
-}\n\
-\n\
-// name0, name1, input_type,  incopy_type, output_type, convert_type, copy_type, input_type1, dst_type\n\
-L2NORMSCALE_MIXED_AXIS0_MODE_2D(F16,  F16, vxc_short8, vxc_half8,  vxc_half8,  half4,  vxc_short8, short, short)\n\
-L2NORMSCALE_MIXED_AXIS0_MODE_2D(I8,   I8,  vxc_char8,  vxc_char8,  vxc_char8,  int4,   vxc_char8,  char,  char)\n\
-L2NORMSCALE_MIXED_AXIS0_MODE_2D(I8,   F16, vxc_char8,  vxc_char8,  vxc_half8,  half4,  vxc_short8, char,  short)\n\
-L2NORMSCALE_MIXED_AXIS0_MODE_2D(U8,   F16, vxc_uchar8, vxc_uchar8, vxc_half8,  half4,  vxc_short8, uchar, short)\n\
-L2NORMSCALE_MIXED_AXIS0_MODE_2D(U8,   U8,  vxc_uchar8, vxc_uchar8, vxc_uchar8, int4,   vxc_uchar8, uchar, uchar)\n\
-L2NORMSCALE_MIXED_AXIS0_MODE_2D(I16,  I16, vxc_short8, vxc_short8, vxc_short8, int4,   vxc_short8, short, short)\n\
-L2NORMSCALE_MIXED_AXIS0_MODE_2D(I16,  F16, vxc_short8, vxc_short8, vxc_half8,  half4,  vxc_short8, short, short)\n\
-//L2NORMSCALE_MIXED_AXIS0_MODE_2D(F16, I8,  vxc_short8,  vxc_half8, vxc_char16,  int4,  vxc_char16, short, char)\n\
-//L2NORMSCALE_MIXED_AXIS0_MODE_2D(F16, U8,  vxc_short8,  vxc_half8, vxc_uchar16, int4,  vxc_uchar16, short, uchar)\n\
-//L2NORMSCALE_MIXED_AXIS0_MODE_2D(F16, I16, vxc_short8,  vxc_half8, vxc_short8,  int4,  vxc_short8,  short, short)\n\
-"; /* end of vsi_nn_kernel_l2normalizescaleAxis0_vx*/
-
-static const char vsi_nn_kernel_l2normalizescaleAxis1_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
-\n\
-/********************************************L2NormalizeScale*****************************************/\n\
-_viv_uniform int L2NorS_depth;\n\
-_viv_uniform VXC_512Bits UniFp16MulLo_dp4x4;\n\
-_viv_uniform VXC_512Bits UniFp16MulHi_dp4x4;\n\
-__kernel void vxcL2NormScale_SumRsqrt_axis1_F16_2D\n\
-    (\n\
-    image2d_array_t input,\n\
-    image2d_array_t output,\n\
-    int dim\n\
-    )\n\
-{\n\
-    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(0), 0);\n\
-    vxc_short8 img1_s16, img2_s16;\n\
-    vxc_float4 squr, sum_lo = 0, sum_hi = 0;\n\
-    vxc_half8 img1_fp16, img2_fp16;\n\
-    half4 val1_h, val2_h;\n\
-    for(int i = 0; i < L2NorS_depth; i += 2)\n\
-    {\n\
-        VXC_ReadImage(img1_s16, input, coord.xy, VXC_5BITOFFSET_XY(0, 0),\\\n\
-            VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-        VXC_ReadImage(img2_s16, input, coord.xy, VXC_5BITOFFSET_XY(0, 1),\\\n\
-            VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-        coord.y += 2;\n\
-        _viv_asm(COPY, img1_fp16, img1_s16, 16);\n\
-        _viv_asm(COPY, img2_fp16, img2_s16, 16);\n\
-        _viv_asm(COPY, img1_fp16, img1_s16, 16);\n\
-        _viv_asm(COPY, img2_fp16, img2_s16, 16);\n\
-\n\
-        VXC_DP4x4(squr, img1_fp16, img1_fp16, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 1),\\\n\
-            UniFp16MulLo_dp4x4);\n\
-        sum_lo += squr;\n\
-        VXC_DP4x4(squr, img2_fp16, img2_fp16, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 1),\\\n\
-            UniFp16MulLo_dp4x4);\n\
-        sum_lo += squr;\n\
-        VXC_DP4x4(squr, img1_fp16, img1_fp16, VXC_MODIFIER(0, 3, 4, VXC_RM_TowardZero, 1),\\\n\
-            UniFp16MulHi_dp4x4);\n\
-        sum_hi += squr;\n\
-        VXC_DP4x4(squr, img2_fp16, img2_fp16, VXC_MODIFIER(0, 3, 4, VXC_RM_TowardZero, 1),\\\n\
-            UniFp16MulHi_dp4x4);\n\
-        sum_hi += squr;\n\
-    }\n\
-    sum_lo = rsqrt(sum_lo);\n\
-    sum_hi = rsqrt(sum_hi);\n\
-    write_imagef(output, coord.zwww, sum_lo);\n\
-    coord.z += 4;\n\
-    write_imagef(output, coord.zwww, sum_hi);\n\
-}\n\
-//int8 version\n\
-_viv_uniform float r_inputScale;\n\
-_viv_uniform VXC_512Bits uniIntegerSquareLo_4x4;\n\
-_viv_uniform VXC_512Bits uniIntegerSquareHi_4x4;\n\
-_viv_uniform VXC_512Bits uniDataSquareAddU32Lo_4x4;\n\
-_viv_uniform VXC_512Bits uniDataSquareAddU32Hi_4x4;\n\
-__kernel void vxcL2NormScale_SumRsqrt_axis1_I8_2D\n\
-    (\n\
-    image2d_array_t input,\n\
-    image2d_array_t output,\n\
-    int dim\n\
-    )\n\
-{\n\
-    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(0), 0);\n\
-    vxc_char8 src0, src1;\n\
-    vxc_uint4 dst0 = 0, dst1 = 0;\n\
-    for(int i = 0; i < L2NorS_depth; i += 2)\n\
-    {\n\
-        VXC_ReadImage(src0, input, coord.xy, VXC_5BITOFFSET_XY(0, 0),\\\n\
-            VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-        VXC_ReadImage(src1, input, coord.xy, VXC_5BITOFFSET_XY(0, 1),\\\n\
-            VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-        coord.y += 2;\n\
-        VXC_DP4x4(dst0, src0, dst0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
-            uniDataSquareAddU32Lo_4x4);\n\
-        VXC_DP4x4(dst1, src0, dst1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
-            uniDataSquareAddU32Hi_4x4);\n\
-        VXC_DP4x4(dst0, src1, dst0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
-            uniDataSquareAddU32Lo_4x4);\n\
-        VXC_DP4x4(dst1, src1, dst1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
-            uniDataSquareAddU32Hi_4x4);\n\
-    }\n\
-    vxc_float4 sum_lo, sum_hi;\n\
-    sum_lo = convert_float4(dst0);\n\
-    sum_hi = convert_float4(dst1);\n\
-    sum_lo = rsqrt(sum_lo) * r_inputScale;\n\
-    sum_hi = rsqrt(sum_hi) * r_inputScale;\n\
-    write_imagef(output, coord.zwww, sum_lo);\n\
-    coord.z += 4;\n\
-    write_imagef(output, coord.zwww, sum_hi);\n\
-}\n\
-__kernel void vxcL2NormScale_SumRsqrt_axis1_I16_2D\n\
-    (\n\
-    image2d_array_t input,\n\
-    image2d_array_t output,\n\
-    int dim\n\
-    )\n\
-{\n\
-    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(0), 0);\n\
-    vxc_short8 src0, src1;\n\
-    vxc_float4 squr, sum_lo = 0, sum_hi = 0;\n\
-    for(int i = 0; i < L2NorS_depth; i += 2)\n\
-    {\n\
-        VXC_ReadImage(src0, input, coord.xy, VXC_5BITOFFSET_XY(0, 0),\\\n\
-            VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-        VXC_ReadImage(src1, input, coord.xy, VXC_5BITOFFSET_XY(0, 1),\\\n\
-            VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-        coord.y += 2;\n\
-        VXC_DP4x4(squr, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
-            uniIntegerSquareLo_4x4);\n\
-        sum_lo = squr + sum_lo;\n\
-        VXC_DP4x4(squr, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
-            uniIntegerSquareHi_4x4);\n\
-        sum_hi = squr + sum_hi;\n\
-        VXC_DP4x4(squr, src1, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
-            uniIntegerSquareLo_4x4);\n\
-        sum_lo = squr + sum_lo;\n\
-        VXC_DP4x4(squr, src1, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
-            uniIntegerSquareHi_4x4);\n\
-        sum_hi = squr + sum_hi;\n\
-    }\n\
-    sum_lo = rsqrt(sum_lo) * r_inputScale;\n\
-    sum_hi = rsqrt(sum_hi) * r_inputScale;\n\
-    write_imagef(output, coord.zwww, sum_lo);\n\
-    coord.z += 4;\n\
-    write_imagef(output, coord.zwww, sum_hi);\n\
-}\n\
-_viv_uniform VXC_512Bits uniUInt8SquareLo_4x4;\n\
-_viv_uniform VXC_512Bits uniUInt8SquareHi_4x4;\n\
-_viv_uniform int inputZP;\n\
-__kernel void vxcL2NormScale_SumRsqrt_axis1_U8_2D\n\
-    (\n\
-    image2d_array_t input,\n\
-    image2d_array_t output,\n\
-    int dim\n\
-    )\n\
-{\n\
-    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(0), 0);\n\
-    vxc_uchar8 src0, src1;\n\
-    vxc_float4 squr, sum_lo = 0, sum_hi = 0;\n\
-    for(int i = 0; i < L2NorS_depth; i += 2)\n\
-    {\n\
-        vxc_uchar8 zero;\n\
-        VXC_ReadImage(src0, input, coord.xy, VXC_5BITOFFSET_XY(0, 0),\\\n\
-            VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-        VXC_ReadImage(src1, input, coord.xy, VXC_5BITOFFSET_XY(0, 1),\\\n\
-            VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-        coord.y += 2;\n\
-        _viv_asm(COPY, zero, inputZP, 4);\n\
-        VXC_DP4x4(squr, src0, zero, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniUInt8SquareLo_4x4);\n\
-        sum_lo = squr + sum_lo;\n\
-        VXC_DP4x4(squr, src0, zero, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniUInt8SquareHi_4x4);\n\
-        sum_hi = squr + sum_hi;\n\
-        VXC_DP4x4(squr, src1, zero, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniUInt8SquareLo_4x4);\n\
-        sum_lo = squr + sum_lo;\n\
-        VXC_DP4x4(squr, src1, zero, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniUInt8SquareHi_4x4);\n\
-        sum_hi = squr + sum_hi;\n\
-    }\n\
-    sum_lo = rsqrt(sum_lo) * r_inputScale;\n\
-    sum_hi = rsqrt(sum_hi) * r_inputScale;\n\
-    write_imagef(output, coord.zwww, sum_lo);\n\
-    coord.z += 4;\n\
-    write_imagef(output, coord.zwww, sum_hi);\n\
-}\n\
-\n\
-/****************************L2NormalizeMulScale**********************************/\n\
-\n\
-_viv_uniform VXC_512Bits uniDataSubZPtoFp32Part0_4x4;\n\
-_viv_uniform VXC_512Bits uniDataSubZPtoFp32Part1_4x4;\n\
-_viv_uniform VXC_512Bits uniExtact8Bin_2x8;\n\
-_viv_uniform VXC_512Bits uniFp16toFp32_4x4;\n\
-_viv_uniform float IntergerScale;\n\
-_viv_uniform float output_ZP;\n\
-#define L2NORMSCALE_MIXED_MODE(name0, name1, input_type, incopy_type,\\\n\
-    output_type, convert_type, copy_type) \\\n\
-    __kernel void vxcL2NormScale_axis1_##name0##to##name1##_2D\\\n\
-    (\\\n\
-    __read_only  image2d_array_t input1,\\\n\
-    __read_only  image2d_array_t input2,\\\n\
-    __read_only  image2d_array_t scale,\\\n\
-    __write_only image2d_array_t output,\\\n\
-    int dim\\\n\
-    )\\\n\
-{\\\n\
-    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(0), 0);\\\n\
-    input_type  vect0, vect1;\\\n\
-    incopy_type src0, src1;\\\n\
-    vxc_float4 rsqrt0, rsqrt1;\\\n\
-    rsqrt0 = read_imagef(input2, coord.zwww);\\\n\
-    coord.z += 4;\\\n\
-    rsqrt1 = read_imagef(input2, coord.zwww);\\\n\
-    rsqrt0 *= IntergerScale;\\\n\
-    rsqrt1 *= IntergerScale;\\\n\
-    for(int i = 0; i < L2NorS_depth; i += 2)\\\n\
-   {\\\n\
-        vxc_float4 vec0, vec1;\\\n\
-        input_type input_ZP ;\\\n\
-        convert_type dst0, dst1;\\\n\
-        VXC_ReadImage(vect0, input1, coord.xy, VXC_5BITOFFSET_XY(0, 0),\\\n\
-            VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\\\n\
-        _viv_asm(COPY, src0, vect0, 16); \\\n\
-        VXC_ReadImage(vect1, input1, coord.xy, VXC_5BITOFFSET_XY(0, 1),\\\n\
-            VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\\\n\
-        _viv_asm(COPY, src1, vect1, 16); \\\n\
-        vxc_short8 scale_s16;\\\n\
-        vxc_half8  scale_f16;\\\n\
-        vxc_float4 scale_f32;\\\n\
-        VXC_ReadImage(scale_s16, scale, coord.yw, VXC_5BITOFFSET_XY(0, 0),\\\n\
-            VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0));\\\n\
-        _viv_asm(COPY, scale_f16, scale_s16, 16); \\\n\
-        _viv_asm(COPY, input_ZP, inputZP, 4); \\\n\
-        VXC_DP4x4(vec0, src0, input_ZP, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardInf, 0),\\\n\
-            uniDataSubZPtoFp32Part0_4x4);\\\n\
-        VXC_DP4x4(vec1, src0, input_ZP, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardInf, 0),\\\n\
-            uniDataSubZPtoFp32Part1_4x4);\\\n\
-        VXC_DP4x4(scale_f32, scale_f16, scale_f16, VXC_MODIFIER(0, 1, 0, VXC_RM_TowardInf, 0),\\\n\
-            uniFp16toFp32_4x4);\\\n\
-        vec0 = vec0 * rsqrt0 + output_ZP;\\\n\
-        vec1 = vec1 * rsqrt1 + output_ZP;\\\n\
-        vec0 *= scale_f32.xxxx;\\\n\
-        vec1 *= scale_f32.xxxx;\\\n\
-        _viv_asm(CONV_RTE, dst0, vec0);\\\n\
-        _viv_asm(CONV_RTE, dst1, vec1);\\\n\
-        output_type dst2;\\\n\
-        VXC_DP2x8(dst2, dst0, dst1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtact8Bin_2x8);\\\n\
-        copy_type dst;\\\n\
-        _viv_asm(COPY, dst, dst2, 16); \\\n\
-        VXC_WriteImage(output, coord.xy, dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\\\n\
-        VXC_DP4x4(vec0, src1, input_ZP, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardInf, 0),\\\n\
-            uniDataSubZPtoFp32Part0_4x4);\\\n\
-        VXC_DP4x4(vec1, src1, input_ZP, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardInf, 0),\\\n\
-            uniDataSubZPtoFp32Part1_4x4);\\\n\
-        vec0 = vec0 * rsqrt0 + output_ZP;\\\n\
-        vec1 = vec1 * rsqrt1 + output_ZP;\\\n\
-        vec0 *= scale_f32.yyyy;\\\n\
-        vec1 *= scale_f32.yyyy;\\\n\
-        _viv_asm(CONV_RTE, dst0, vec0);\\\n\
-        _viv_asm(CONV_RTE, dst1, vec1);\\\n\
-        VXC_DP2x8(dst2, dst0, dst1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtact8Bin_2x8);\\\n\
-        coord.y++;\\\n\
-        _viv_asm(COPY, dst, dst2, 16); \\\n\
-        VXC_WriteImage(output, coord.xy, dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\\\n\
-        coord.y++;\\\n\
-    }\\\n\
-}\n\
-//                     name0, name1, input_type,  incopy_type, output_type, convert_type, copy_type\n\
-L2NORMSCALE_MIXED_MODE(F16,   F16,   vxc_short8,  vxc_half8,   vxc_half8,   half4,        vxc_short8)\n\
-L2NORMSCALE_MIXED_MODE(I8,    I8,    vxc_char16,  vxc_char16,  vxc_char16,  int4,         vxc_char16)\n\
-L2NORMSCALE_MIXED_MODE(I8,    F16,   vxc_char16,  vxc_char16,  vxc_half8,   half4,        vxc_short8)\n\
-L2NORMSCALE_MIXED_MODE(U8,    F16,   vxc_uchar16, vxc_uchar16, vxc_half8,   half4,        vxc_short8)\n\
-L2NORMSCALE_MIXED_MODE(U8,    U8,    vxc_uchar16, vxc_uchar16, vxc_uchar16, int4,         vxc_uchar16)\n\
-L2NORMSCALE_MIXED_MODE(I16,   I16,   vxc_short8,  vxc_short8,  vxc_short8,  int4,         vxc_short8)\n\
-L2NORMSCALE_MIXED_MODE(I16,   F16,   vxc_short8,  vxc_short8,  vxc_half8,   half4,        vxc_short8)\n\
-//L2NORMSCALE_MIXED_MODE(F16,  I8,    vxc_short8,  vxc_half8,   vxc_char16,  int4,         vxc_char16)\n\
-//L2NORMSCALE_MIXED_MODE(F16,  U8,    vxc_short8,  vxc_half8,   vxc_uchar16, int4,         vxc_uchar16)\n\
-//L2NORMSCALE_MIXED_MODE(F16,  I16,   vxc_short8,  vxc_half8,   vxc_short8,  int4,         vxc_short8)\n\
-"; /* end of vsi_nn_kernel_l2normalizescaleAxis1_vx*/
-
 static const char vsi_nn_kernel_layernormalize_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 /**************************layernorm float16***********************************/\n\
@@ -34095,6 +34090,174 @@ __kernel void instance_norm_U8toF16_2D(\n\
 }\n\
 "; /* end of instance_normalization_u8_cl*/
 
+static const char l2normalizescale_axis0_cl[] = "\n\
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void l2normalizescale_axis0_F32_F32toF32_2D(\n\
+    __read_only  image2d_t input,\n\
+    __read_only  image2d_t scale,\n\
+    __write_only image2d_t output,\n\
+                       int axis,\n\
+                       int axis_size,\n\
+                     float rsEps\n\
+    )\n\
+{\n\
+    int lidx = get_local_id(0);\n\
+    int gidx = get_global_id(0);\n\
+    float4 src, scale_value, result;\n\
+    float sum  = 0.0f, pSum = 0.0f, rsqrt_sum = 0.0f;\n\
+    int2 coord = (int2)(gidx, get_global_id(1));\n\
+    int2 coord_scale = (int2)(gidx, 0);\n\
+    __local float lcl_sum[16];\n\
+    for(; coord.x < axis_size; coord.x += 16)\n\
+    {\n\
+        src = read_imagef(input, coord);\n\
+        pSum += (src.x * src.x);\n\
+    }\n\
+    lcl_sum[lidx] = pSum;\n\
+    barrier(CLK_LOCAL_MEM_FENCE);\n\
+    float4 *pLocalPtr = (float4 *)&lcl_sum[0];\n\
+    float4 one = (float4)(1, 1, 1, 1);\n\
+    float4 data0;\n\
+    data0 = pLocalPtr[0] + pLocalPtr[1] + pLocalPtr[2] + pLocalPtr[3];\n\
+    sum = dot(data0, one);\n\
+    rsqrt_sum = (sum == 0 ? rsEps : rsqrt(sum));\n\
+    for(coord.x = gidx; coord.x < axis_size; coord.x += 16)\n\
+    {\n\
+        src         = read_imagef(input, coord);\n\
+        scale_value = read_imagef(scale, coord_scale);\n\
+        result      = src * rsqrt_sum * scale_value;\n\
+        write_imagef(output, coord, result.xxxx);\n\
+    }\n\
+}\n\
+\n\
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void l2normalizescale_axis0_U8_F32toU8_2D(\n\
+    __read_only  image2d_t input,\n\
+    __read_only  image2d_t scale,\n\
+    __write_only image2d_t output,\n\
+                       int axis,\n\
+                       int axis_size,\n\
+                     float rsEps,\n\
+                     float inputScale,\n\
+                     float inputTail,\n\
+                     float outputScale,\n\
+                     float outputZP\n\
+    )\n\
+{\n\
+    int lidx = get_local_id(0);\n\
+    int gidx = get_global_id(0);\n\
+    float4 src, scale_value, result;\n\
+    float sum  = 0.0f, pSum = 0.0f, rsqrt_sum = 0.0f;\n\
+    int2 coord = (int2)(gidx, get_global_id(1));\n\
+    int2 coord_scale = (int2)(gidx, 0);\n\
+    __local float lcl_sum[16];\n\
+    for(; coord.x < axis_size; coord.x += 16)\n\
+    {\n\
+        src = convert_float4(read_imageui(input, coord))  * inputScale + inputTail;\n\
+        pSum += (src.x * src.x);\n\
+    }\n\
+    lcl_sum[lidx] = pSum;\n\
+    barrier(CLK_LOCAL_MEM_FENCE);\n\
+    float4 *pLocalPtr = (float4 *)&lcl_sum[0];\n\
+    float4 one = (float4)(1, 1, 1, 1);\n\
+    float4 data0;\n\
+    data0 = pLocalPtr[0] + pLocalPtr[1] + pLocalPtr[2] + pLocalPtr[3];\n\
+    sum = dot(data0, one);\n\
+    rsqrt_sum = (sum == 0 ? rsEps : rsqrt(sum));\n\
+    for(coord.x = gidx; coord.x < axis_size; coord.x += 16)\n\
+    {\n\
+        src         = convert_float4(read_imageui(input, coord))  * inputScale + inputTail;\n\
+        scale_value = read_imagef(scale, coord_scale);\n\
+        result      = src * rsqrt_sum * scale_value;\n\
+        uint4 dst = convert_uint4_rte(result * outputScale + outputZP);\n\
+        write_imageui(output, coord, dst);\n\
+    }\n\
+}\n\
+\n\
+\n\
+"; /* end of l2normalizescale_axis0_cl*/
+
+static const char l2normalizescale_axis1_cl[] = "\n\
+__kernel __attribute__((reqd_work_group_size(1, 16, 1))) void l2normalizescale_axis1_F32_F32toF32_2D(\n\
+    __read_only  image2d_t input,\n\
+    __read_only  image2d_t scale,\n\
+    __write_only image2d_t output,\n\
+                       int axis,\n\
+                       int axis_size,\n\
+                     float rsEps\n\
+    )\n\
+{\n\
+    int lidx = get_local_id(1);\n\
+    int gidy = get_global_id(1);\n\
+    float4 src, scale_value, result;\n\
+    float sum  = 0.0f, pSum = 0.0f, rsqrt_sum = 0.0f;\n\
+    int2 coord = (int2)(get_global_id(0), gidy );\n\
+    int2 coord_scale = (int2)(gidy, 0);\n\
+    __local float lcl_sum[16];\n\
+    for(; coord.y < axis_size; coord.y += 16)\n\
+    {\n\
+        src = read_imagef(input, coord);\n\
+        pSum += (src.x * src.x);\n\
+    }\n\
+    lcl_sum[lidx] = pSum;\n\
+    barrier(CLK_LOCAL_MEM_FENCE);\n\
+    float4 *pLocalPtr = (float4 *)&lcl_sum[0];\n\
+    float4 one = (float4)(1, 1, 1, 1);\n\
+    float4 data0;\n\
+    data0 = pLocalPtr[0] + pLocalPtr[1] + pLocalPtr[2] + pLocalPtr[3];\n\
+    sum = dot(data0, one);\n\
+    rsqrt_sum = (sum == 0 ? rsEps : rsqrt(sum));\n\
+    for(coord.y = gidy; coord.y < axis_size; coord.y += 16)\n\
+    {\n\
+        src         = read_imagef(input, coord);\n\
+        scale_value = read_imagef(scale, coord_scale);\n\
+        result      = src * rsqrt_sum * scale_value;\n\
+        write_imagef(output, coord, result.xxxx);\n\
+    }\n\
+}\n\
+\n\
+__kernel __attribute__((reqd_work_group_size(1, 16, 1))) void l2normalizescale_axis1_U8_F32toU8_2D(\n\
+    __read_only  image2d_t input,\n\
+    __read_only  image2d_t scale,\n\
+    __write_only image2d_t output,\n\
+                       int axis,\n\
+                       int axis_size,\n\
+                     float rsEps,\n\
+                     float inputScale,\n\
+                     float inputTail,\n\
+                     float outputScale,\n\
+                     float outputZP\n\
+    )\n\
+{\n\
+    int lidx = get_local_id(1);\n\
+    int gidy = get_global_id(1);\n\
+    float4 src, scale_value, result;\n\
+    float sum  = 0.0f, pSum = 0.0f, rsqrt_sum = 0.0f;\n\
+    int2 coord = (int2)(get_global_id(0), gidy );\n\
+    int2 coord_scale = (int2)(gidy, 0);\n\
+    __local float lcl_sum[16];\n\
+    for(; coord.y < axis_size; coord.y += 16)\n\
+    {\n\
+        src = convert_float4(read_imageui(input, coord))  * inputScale + inputTail;\n\
+        pSum += (src.x * src.x);\n\
+    }\n\
+    lcl_sum[lidx] = pSum;\n\
+    barrier(CLK_LOCAL_MEM_FENCE);\n\
+    float4 *pLocalPtr = (float4 *)&lcl_sum[0];\n\
+    float4 one = (float4)(1, 1, 1, 1);\n\
+    float4 data0;\n\
+    data0 = pLocalPtr[0] + pLocalPtr[1] + pLocalPtr[2] + pLocalPtr[3];\n\
+    sum = dot(data0, one);\n\
+    rsqrt_sum = (sum == 0 ? rsEps : rsqrt(sum));\n\
+    for(coord.y = gidy; coord.y < axis_size; coord.y += 16)\n\
+    {\n\
+        src         = convert_float4(read_imageui(input, coord))  * inputScale + inputTail;\n\
+        scale_value = read_imagef(scale, coord_scale);\n\
+        result      = src * rsqrt_sum * scale_value;\n\
+        uint4 dst = convert_uint4_rte(result * outputScale + outputZP);\n\
+        write_imageui(output, coord, dst);\n\
+    }\n\
+}\n\
+"; /* end of l2normalizescale_axis1_cl*/
+
 static const char log_softmax_axis0_cl[] = "#define rlogE    (0.693147182f)\n\
 float LOG(float x)\n\
 {\n\
@@ -41591,6 +41754,8 @@ static const source_map_t evis_resource[] =
     {"instance_normalization_i16_vx", instance_normalization_i16_vx},
     {"instance_normalization_i8_vx", instance_normalization_i8_vx},
     {"instance_normalization_u8_vx", instance_normalization_u8_vx},
+    {"l2normalizescale_axis0_vx", l2normalizescale_axis0_vx},
+    {"l2normalizescale_axis1_vx", l2normalizescale_axis1_vx},
     {"log_softmax_axis0_vx", log_softmax_axis0_vx},
     {"log_softmax_axis0_BF16_vx", log_softmax_axis0_BF16_vx},
     {"log_softmax_axis1_vx", log_softmax_axis1_vx},
@@ -41698,8 +41863,6 @@ static const source_map_t evis_resource[] =
     {"vsi_nn_kernel_imageprocess_3_vx", vsi_nn_kernel_imageprocess_3_vx},
     {"vsi_nn_kernel_imageprocess_4_vx", vsi_nn_kernel_imageprocess_4_vx},
     {"vsi_nn_kernel_imageprocess_5_vx", vsi_nn_kernel_imageprocess_5_vx},
-    {"vsi_nn_kernel_l2normalizescaleAxis0_vx", vsi_nn_kernel_l2normalizescaleAxis0_vx},
-    {"vsi_nn_kernel_l2normalizescaleAxis1_vx", vsi_nn_kernel_l2normalizescaleAxis1_vx},
     {"vsi_nn_kernel_layernormalize_vx", vsi_nn_kernel_layernormalize_vx},
     {"vsi_nn_kernel_layernormalize_U8_vx", vsi_nn_kernel_layernormalize_U8_vx},
     {"vsi_nn_kernel_pre_process_bgra_vx", vsi_nn_kernel_pre_process_bgra_vx},
@@ -41760,6 +41923,8 @@ static const source_map_t cl_resource[] =
     {"instance_normalization_f32_cl", instance_normalization_f32_cl},
     {"instance_normalization_i32_cl", instance_normalization_i32_cl},
     {"instance_normalization_u8_cl", instance_normalization_u8_cl},
+    {"l2normalizescale_axis0_cl", l2normalizescale_axis0_cl},
+    {"l2normalizescale_axis1_cl", l2normalizescale_axis1_cl},
     {"log_softmax_axis0_cl", log_softmax_axis0_cl},
     {"log_softmax_axis1_cl", log_softmax_axis1_cl},
     {"log_softmax_axis2_cl", log_softmax_axis2_cl},

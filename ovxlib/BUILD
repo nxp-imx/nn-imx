@@ -273,7 +273,6 @@ cc_library(
         "src/kernel/vsi_nn_kernel_gpu_shape_optimize.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_crop.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_fullconnect2.c",
-        "src/libnnext/ops/kernel/vsi_nn_kernel_l2normalizescale.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_dropout.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_shufflechannel.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_resize.c",

@@ -731,10 +731,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\kernel\cl\add_mean_std_norm_cl.c" />
+    <ClCompile Include="src\kernel\cl\l2normalizescale_cl.c" />
     <ClCompile Include="src\kernel\cl\lstmunit_activation_cl.c" />
     <ClCompile Include="src\kernel\cpu\add_mean_std_norm_cpu.c" />
+    <ClCompile Include="src\kernel\cpu\l2normalizescale_cpu.c" />
     <ClCompile Include="src\kernel\cpu\lstmunit_activation_cpu.c" />
     <ClCompile Include="src\kernel\evis\add_mean_std_norm_evis.c" />
+    <ClCompile Include="src\kernel\evis\l2normalizescale_evis.c" />
     <ClCompile Include="src\kernel\evis\lstmunit_activation_evis.c" />
     <ClCompile Include="src\kernel\vx\swish_vx.c" />
     <ClCompile Include="src\platform\nnapi0.4\vsi_nn_pf_softmax.c">
@@ -1178,9 +1181,6 @@
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_imageprocess.c">
       <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\vsi_nn_kernel_imageprocess.o</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_l2normalizescale.c">
-      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\vsi_nn_kernel_l2normalizescale.o</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_layernormalize.c">
       <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\vsi_nn_kernel_layernormalize.o</ObjectFileName>
