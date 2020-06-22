@@ -3,13 +3,13 @@ package(default_visibility = ["//visibility:public"])
 filegroup(
     name = "libs",
     srcs = glob([
-        "lib/*.so",
-        "lib/*.so.1",
-        "drivers/*.so",
+        "lib/*.*",
+        "drivers/*.*",
     ], exclude = [
         "lib/libovxnne.so",
         "lib/libvsivxquant.so",
         "lib/libshaderc_shared.so",
+        "lib/libvsivxext.so",
     ]),
 )
 
@@ -89,7 +89,7 @@ filegroup(
     name = "dev_libs",
     srcs = select({
         ":i386_linux": glob([
-            "lib/i386_linux/*.so",
+            "lib/i386_linux/*.*",
         ]),
         ":win32": glob([
             "lib/win32/*.so",
@@ -98,10 +98,10 @@ filegroup(
             "lib/x64/*.so",
         ]),
         ":x64_linux": glob([
-            "lib/x64_linux/*.so",
+            "lib/x64_linux/*.*",
         ]),
         "//conditions:default": glob([
-            "lib/x64_linux/*.so",
+            "lib/x64_linux/*.*",
         ]),
     }),
 )
