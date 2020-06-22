@@ -572,6 +572,15 @@ vsi_bool vsi_nn_CreateTensorGroup
     {
         start[axis] = end[axis];
         end[axis] += sz;
+#ifdef VSI_PERCHANNEL_QUANTIZATION_SUPPORT
+        if ( attr.dtype.qnt_type == VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC )
+        {
+            attr.dtype.scales = in_tensor->attr.dtype.scales + sz * i;
+            attr.dtype.scale_dim = sz;
+            attr.dtype.zero_points = in_tensor->attr.dtype.zero_points + sz * i;
+            attr.dtype.zero_points_dim = sz;
+        }
+#endif
         out_tensors[i] = vsi_nn_CreateTensor( graph, &attr );
         if( NULL == out_tensors[i] )
         {
