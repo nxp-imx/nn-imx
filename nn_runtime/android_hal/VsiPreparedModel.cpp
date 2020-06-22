@@ -279,7 +279,17 @@ static Return<ErrorStatus> convertResultCodeToErrorStatus(int resultCode) {
         ovx_operand->quant.scalar.scale = hal_operand.scale;
         ovx_operand->quant.scalar.zeroPoint = hal_operand.zeroPoint;
         ovx_operand->dimensions = hal_operand.dimensions;
-
+#if ANDROID_SDK_VERSION >= 29
+        if(ovx_nnrt_type == nnrt::OperandType::TENSOR_QUANT8_SYMM_PER_CHANNEL){
+            auto& channelQuant = hal_operand.extraParams.channelQuant();
+            ovx_operand->quant.vec.channelDim = channelQuant.channelDim;
+            ovx_operand->quant.vec.scale.resize(channelQuant.scales.size());
+            ovx_operand->quant.vec.zeroPoint.resize(channelQuant.scales.size(), 0);
+            for(size_t i = 0; i < channelQuant.scales.size(); i++){
+                ovx_operand->quant.vec.scale[i] = channelQuant.scales[i];
+            }
+        }
+#endif
         // TODO: add check error
         switch (ovx_operand->type) {
             case nnrt::OperandType::FLOAT32:

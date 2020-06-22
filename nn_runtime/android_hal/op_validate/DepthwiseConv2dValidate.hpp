@@ -55,14 +55,6 @@ class DepthwiseConv2dValidate : public OperationValidate<T_model, T_Operation> {
                 return false;
             }
 
-            if (-1 != layoutIndex) {
-                auto layoutOperand = model.operands[operation.inputs[layoutIndex]];
-                bool layoutData = get_buffer::getScalarData<bool>(model, layoutOperand);
-                if (layoutData) {
-                    reason += ("reject Depthwise_conv_2d because data_layout = true\n");
-                    return false;
-                }
-            }
             if (-1 != kernelIndex) {
                 auto kernelDim = model.operands[operation.inputs[kernelIndex]].dimensions;
                 if (kernelDim[0] != 1) {
