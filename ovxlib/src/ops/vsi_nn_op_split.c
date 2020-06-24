@@ -173,14 +173,14 @@ static vsi_bool op_setup
     {
         p->lcl_data->stride_dims[i] = 1;
     }
-
-    end[0] = inputs[0]->attr.size[0];
-    end[1] = inputs[0]->attr.size[1];
-    end[2] = inputs[0]->attr.size[2];
-    end[3] = inputs[0]->attr.size[3];
+    for(i = 0; i < VSI_NN_MAX_DIM_NUM; i++)
+    {
+        end[i] = inputs[0]->attr.size[i];
+    }
     end[axis] = 0;
     for(i = 0; i < num; i++)
     {
+        int j;
         start[axis] = end[axis];
         if(slices_num == 0)
             end[axis] += average;
@@ -189,12 +189,11 @@ static vsi_bool op_setup
 
         memcpy(&outputs[i]->attr.dtype, &inputs[0]->attr.dtype, sizeof(vsi_nn_dtype_t));
         outputs[i]->attr.dim_num = inputs[0]->attr.dim_num;
-        outputs[i]->attr.size[0] = inputs[0]->attr.size[0];
-        outputs[i]->attr.size[1] = inputs[0]->attr.size[1];
-        outputs[i]->attr.size[2] = inputs[0]->attr.size[2];
-        outputs[i]->attr.size[3] = inputs[0]->attr.size[3];
+        for(j = 0; j < VSI_NN_MAX_DIM_NUM; j++)
+        {
+            outputs[i]->attr.size[j] = inputs[0]->attr.size[j];
+        }
         outputs[i]->attr.size[axis] = end[axis] - start[axis];
-
         memcpy(p->lcl_data->begin_dims, start, VSI_NN_MAX_DIM_NUM * sizeof(uint32_t));
         memcpy(p->lcl_data->end_dims, end, VSI_NN_MAX_DIM_NUM * sizeof(uint32_t));
         curr = vsi_nn_internal_new_node( self, VSI_NN_OP_STRIDED_SLICE, 0, 0 );
