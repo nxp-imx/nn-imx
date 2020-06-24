@@ -32,7 +32,7 @@ LOCAL_C_INCLUDES := \
         $(OVXLIB_DIR)/include/infernce \
         $(OVXLIB_DIR)/include/platform \
         $(OVXLIB_DIR)/include/client \
-        $(OVXLIB_DIR)/include/libnnext \
+        $(OVXLIB_DIR)/include/libnnext
 
 LOCAL_SHARED_LIBRARIES := \
     libbase \
@@ -56,7 +56,8 @@ LOCAL_SRC_FILES:= \
     VsiDriver.cpp \
     1.0/VsiDriver1_0.cpp \
     1.0/VsiDevice1_0.cpp \
-    VsiPreparedModel.cpp
+    VsiPreparedModel.cpp \
+    SandBox.cpp
 
 ifeq ($(shell expr $(PLATFORM_SDK_VERSION) ">=" 28),1)
 LOCAL_SRC_FILES += 1.1/VsiDevice1_1.cpp \
@@ -71,7 +72,6 @@ LOCAL_SRC_FILES += \
     1.2/VsiBurstExecutor.cpp    \
     hal_limitation/nnapi_limitation.cpp \
     hal_limitation/support.cpp
-
 endif
 
 ifeq ($(shell expr $(PLATFORM_SDK_VERSION) ">=" 28),1)
