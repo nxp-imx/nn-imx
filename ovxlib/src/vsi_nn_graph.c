@@ -596,7 +596,7 @@ vsi_status vsi_nn_SetupGraph
 #define MAX_NODES_IN_SDK 2048
     if(MAX_NODES_IN_SDK < graph->node_num)
     {
-        VSILOGE("The number of nodes must be less than 1024\n");
+        VSILOGE("The number of nodes %d is more than %d\n", graph->node_num, MAX_NODES_IN_SDK);
         return status;
     }
 
