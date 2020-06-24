@@ -154,9 +154,16 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
         reason += " reject op because it blocked by debug blacklist file\n";
         return false;
     }
-#if ANDROID_SDK_VERSION >= 28
+
     bool isSupport = true;
-#endif
+    auto isConstantTensor = [](auto& operand) -> bool {
+        if (operand.lifetime == OperandLifeTime::CONSTANT_COPY ||
+            operand.lifetime == OperandLifeTime::CONSTANT_REFERENCE)
+            return true;
+        else
+            return false;
+    };
+
 #if ANDROID_SDK_VERSION >= 29
     auto checkSupportedOperand = [](auto& operand) -> bool {
         bool isSupported = true;
@@ -178,27 +185,8 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
         return isSupported;
     };
 #endif
-#if ANDROID_SDK_VERSION >= 28
-    auto isConstantTensor = [](auto& operand) -> bool {
-        if (operand.lifetime == OperandLifeTime::CONSTANT_COPY ||
-            operand.lifetime == OperandLifeTime::CONSTANT_REFERENCE)
-            return true;
-        else
-            return false;
-    };
     // each operation check
     switch (operation.type) {
-#endif
-#if ANDROID_SDK_VERSION >= 29
-        // TODO: remove all of the work around
-        case OperationType::CONV_2D: {
-            OperationValidatePtr conv2D = std::make_unique<
-                op_validate::Conv2dValidate<HalPlatform::Model, HalPlatform::Operation>>(
-                model, operation);
-            return conv2D->Validate(reason);
-        }
-#endif
-#if ANDROID_SDK_VERSION >= 28
         case OperationType::ADD:
         case OperationType::SUB:
         case OperationType::MUL:
@@ -226,8 +214,31 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
             }
             break;
         }
-#endif
+        case OperationType::AVERAGE_POOL_2D:{
+            OperationValidatePtr avgPool = std::make_unique<
+                op_validate::AveragePoolValidate<HalPlatform::Model, HalPlatform::Operation>>(
+                model, operation);
+            return avgPool->Validate(reason);
+        }
+        case OperationType::MAX_POOL_2D:{
+            OperationValidatePtr maxPool = std::make_unique<
+                op_validate::MaxPoolValidate<HalPlatform::Model, HalPlatform::Operation>>(
+                model, operation);
+            return maxPool->Validate(reason);
+        }
+        case OperationType::L2_POOL_2D:{
+            OperationValidatePtr l2Pool = std::make_unique<
+                op_validate::L2PoolValidate<HalPlatform::Model, HalPlatform::Operation>>(
+                model, operation);
+            return l2Pool->Validate(reason);
+        }
 #if ANDROID_SDK_VERSION >= 29
+        case OperationType::CONV_2D: {
+            OperationValidatePtr conv2D = std::make_unique<
+                op_validate::Conv2dValidate<HalPlatform::Model, HalPlatform::Operation>>(
+                model, operation);
+            return conv2D->Validate(reason);
+        }
         case OperationType::RNN: {
             int32_t fuseCode = getScalarData<int32_t>(model, model.operands[operation.inputs[5]]);
             if (fuseCode == static_cast<int32_t>(FusedActivationFunc::RELU) ||
