@@ -786,9 +786,8 @@ OperationPtr Armnn_Interpreter::map_LOCAL_RESPONSE_NORMALIZATION(Model* model,
     lrn->exponent = inputs[4]->scalar.float32;
     lrn->channelType = NormalizationAlgorithmChannel(inputs[5]->scalar.uint32);
     lrn->methodType = NormalizationAlgorithmMethod(inputs[6]->scalar.uint32);
-    lrn->setDataLayout(DataLayout(inputs[7]->scalar.uint32));
     // Set default axis = channel
-    if (DataLayout::NCHW == lrn->getDataLayout()) {
+    if (DataLayout::NCHW == DataLayout(inputs[7]->scalar.uint32)) {
         lrn->axis = 1;
     } else {
         lrn->axis = -1;
@@ -937,9 +936,8 @@ OperationPtr Armnn_Interpreter::map_L2_NORMALIZATION(Model* model,
     NNAPI_CHECK_PTR(l2_norm);
 
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
-    l2_norm->setDataLayout(DataLayout(inputs[1]->scalar.int32));
     // Set default axis = channel
-    if (DataLayout::NCHW == l2_norm->getDataLayout()) {
+    if (DataLayout::NCHW == DataLayout(inputs[1]->scalar.int32)) {
         l2_norm->axis = 1;
     } else {
         l2_norm->axis = -1;
