@@ -821,7 +821,7 @@ int ANeuralNetworksExecution_getOutputOperandDimensions(ANeuralNetworksExecution
 
 // Android NNAPI 1.2 : new apis
 static constexpr const char* DeviceList[] = {
-    "VsiNpu"
+    "vsi-npu"
 };
 
 static constexpr uint32_t DeviceCount = sizeof(DeviceList)/sizeof(DeviceList[0]);
