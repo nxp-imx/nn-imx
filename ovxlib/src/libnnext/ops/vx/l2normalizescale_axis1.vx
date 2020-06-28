@@ -55,10 +55,10 @@ _viv_uniform float output_ZP;
             uniDataSubZPtoFp32Part1_4x4);\
         VXC_DP4x4(scale_f32, scale_f16, scale_f16, VXC_MODIFIER(0, 1, 0, VXC_RM_TowardInf, 0),\
             uniFp16toFp32_4x4);\
-        vec0 = vec0 * rsqrt0 + output_ZP;\
-        vec1 = vec1 * rsqrt1 + output_ZP;\
-        vec0 *= scale_f32.xxxx;\
-        vec1 *= scale_f32.xxxx;\
+        vec0 = vec0 * rsqrt0;\
+        vec1 = vec1 * rsqrt1;\
+        vec0 = vec0 * scale_f32.xxxx + output_ZP;\
+        vec1 = vec1 * scale_f32.xxxx + output_ZP;\
         _viv_asm(CONV_RTE, dst0, vec0);\
         _viv_asm(CONV_RTE, dst1, vec1);\
         output_type dst2;\
@@ -70,10 +70,10 @@ _viv_uniform float output_ZP;
             uniDataSubZPtoFp32Part0_4x4);\
         VXC_DP4x4(vec1, src1, input_ZP, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardInf, 0),\
             uniDataSubZPtoFp32Part1_4x4);\
-        vec0 = vec0 * rsqrt0 + output_ZP;\
-        vec1 = vec1 * rsqrt1 + output_ZP;\
-        vec0 *= scale_f32.yyyy;\
-        vec1 *= scale_f32.yyyy;\
+        vec0 = vec0 * rsqrt0;\
+        vec1 = vec1 * rsqrt1;\
+        vec0 = vec0 * scale_f32.yyyy + output_ZP;\
+        vec1 = vec1 * scale_f32.yyyy + output_ZP;\
         _viv_asm(CONV_RTE, dst0, vec0);\
         _viv_asm(CONV_RTE, dst1, vec1);\
         VXC_DP2x8(dst2, dst0, dst1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtact8Bin_2x8);\
