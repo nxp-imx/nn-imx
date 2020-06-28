@@ -100,7 +100,7 @@ static vx_program _create_program
 static void _kernel_clear_source
     ( vsi_nn_kernel_t * kernel );
 
-static vsi_bool _check_shader_support();
+static vsi_bool _check_shader_support(vsi_nn_graph_t* graph);
 
 static vsi_status VX_CALLBACK _kernel_validator
     (
@@ -943,7 +943,7 @@ vsi_nn_kernel_node_t vsi_nn_kernel_selector
 
             //Skip evis and cl when disable shader
             if ( (type == VSI_NN_KERNEL_TYPE_EVIS || type == VSI_NN_KERNEL_TYPE_CL)
-                && _check_shader_support() == FALSE)
+                && _check_shader_support(graph) == FALSE)
             {
                 continue;
             }
@@ -1222,7 +1222,7 @@ vsi_status vsi_nn_kernel_pirority_set
     return status;
 } /* vsi_nn_kernel_pirority_set() */
 
-static vsi_bool _check_shader_support()
+static vsi_bool _check_shader_support(vsi_nn_graph_t* graph)
 {
     char *envctrl;
     int32_t enableShader = 1;
@@ -1232,6 +1232,13 @@ static vsi_bool _check_shader_support()
     {
         enableShader = atoi(envctrl);
     }
+
+#if VX_HARDWARE_CAPS_PARAMS_EXT_SUPPORT
+    if ( graph->ctx->config.subGroupSize == 0 )
+    {
+        return FALSE;
+    }
+#endif
 
     if(enableShader == 1)
     {

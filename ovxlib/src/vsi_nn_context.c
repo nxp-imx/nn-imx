@@ -32,13 +32,26 @@ static vsi_status query_hardware_caps
     vsi_nn_context_t context
     )
 {
-    vsi_status status;
+    vsi_status status = VSI_FAILURE;
     vx_hardware_caps_params_t param;
 
-    status = VSI_FAILURE;
+#if VX_HARDWARE_CAPS_PARAMS_EXT_SUPPORT
+    vx_hardware_caps_params_ext_t paramExt;
+
+    memset(&paramExt, 0, sizeof(vx_hardware_caps_params_ext_t));
+    status = vxQueryHardwareCaps(context->c, (vx_hardware_caps_params_t*)(&paramExt),
+                sizeof(vx_hardware_caps_params_ext_t));
+    param.evis1 = paramExt.base.evis1;
+    param.evis2 = paramExt.base.evis2;
+#else
     memset(&param, 0, sizeof(vx_hardware_caps_params_t));
     status = vxQueryHardwareCaps(context->c, &param, sizeof(vx_hardware_caps_params_t));
+#endif
     TEST_CHECK_STATUS(status, final);
+
+#if VX_HARDWARE_CAPS_PARAMS_EXT_SUPPORT
+    context->config.subGroupSize = paramExt.subGroupSize;
+#endif
     if(param.evis1 == TRUE && param.evis2 == FALSE)
     {
         context->config.evis.ver = VSI_NN_HW_EVIS_1;
