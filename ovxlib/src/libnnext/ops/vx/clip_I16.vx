@@ -13,7 +13,7 @@ _viv_uniform int4 packedMaxData;
     VXC_Clamp(src0, src0, min, max, VXC_MODIFIER_CLAMP(0, 7, 0, 0)); \
     write_fun(output, coord, src0, VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0));
 
-__kernel void vxcTensorClip_I16toI16(
+__kernel void clip_I16toI16(
     __read_only  image2d_array_t   input,
     __write_only image2d_array_t   output,
                            float   minData,
@@ -23,7 +23,7 @@ __kernel void vxcTensorClip_I16toI16(
     TENSORCLIP_I16TOI16_PROCESS(VXC_ReadImage2DArray, VXC_WriteImage2DArray)
 }
 
-__kernel void vxcTensorClip_I16toI16_2D(
+__kernel void clip_I16toI16_2D(
     __read_only  image2d_array_t   input,
     __write_only image2d_array_t   output,
                            float   minData,
@@ -45,7 +45,7 @@ __kernel void vxcTensorClip_I16toI16_2D(
     write_fun(output, coord, dst, VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0));
 
 
-__kernel void vxcTensorClip_I16toF16(
+__kernel void clip_I16toF16(
     __read_only  image2d_array_t   input,
     __write_only image2d_array_t   output,
                            float   minData,
@@ -55,7 +55,7 @@ __kernel void vxcTensorClip_I16toF16(
     TENSORCLIP_I16TOF16_PROCESS(VXC_ReadImage2DArray, VXC_WriteImage2DArray)
 }
 
-__kernel void vxcTensorClip_I16toF16_2D(
+__kernel void clip_I16toF16_2D(
     __read_only  image2d_array_t   input,
     __write_only image2d_array_t   output,
                            float   minData,

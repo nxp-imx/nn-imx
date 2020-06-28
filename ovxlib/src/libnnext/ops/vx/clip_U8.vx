@@ -22,7 +22,7 @@ _viv_uniform int2 multAndoutZP;//[0:15] multiplier, [31:63] output zp
     write_fun(output, coord, dst, VXC_MODIFIER(0, 15, 0,VXC_RM_TowardZero, 0));
 
 
-__kernel void vxcTensorClip_U8toU8(
+__kernel void clip_U8toU8(
     __read_only  image2d_array_t   input,
     __write_only image2d_array_t   output,
                            float   minData,
@@ -32,7 +32,7 @@ __kernel void vxcTensorClip_U8toU8(
     TENSORCLIP_U8TOU8_PROCESS(VXC_ReadImage2DArray, VXC_WriteImage2DArray)
 }
 
-__kernel void vxcTensorClip_U8toU8_2D(
+__kernel void clip_U8toU8_2D(
     __read_only  image2d_array_t   input,
     __write_only image2d_array_t   output,
                            float   minData,
@@ -65,7 +65,7 @@ __kernel void vxcTensorClip_U8toU8_2D(
     write_fun(output, coord, dst1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
 
 
-__kernel void vxcTensorClip_U8toF16(
+__kernel void clip_U8toF16(
     __read_only  image2d_array_t   input,
     __write_only image2d_array_t   output,
                            float   minData,
@@ -75,7 +75,7 @@ __kernel void vxcTensorClip_U8toF16(
     TENSORCLIP_U8TOF16_PROCESS(VXC_ReadImage2DArray, VXC_WriteImage2DArray)
 }
 
-__kernel void vxcTensorClip_U8toF16_2D(
+__kernel void clip_U8toF16_2D(
     __read_only  image2d_array_t   input,
     __write_only image2d_array_t   output,
                            float   minData,

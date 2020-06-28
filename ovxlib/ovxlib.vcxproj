@@ -731,12 +731,15 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\kernel\cl\add_mean_std_norm_cl.c" />
+    <ClCompile Include="src\kernel\cl\clip_cl.c" />
     <ClCompile Include="src\kernel\cl\l2normalizescale_cl.c" />
     <ClCompile Include="src\kernel\cl\lstmunit_activation_cl.c" />
     <ClCompile Include="src\kernel\cpu\add_mean_std_norm_cpu.c" />
+    <ClCompile Include="src\kernel\cpu\clip_cpu.c" />
     <ClCompile Include="src\kernel\cpu\l2normalizescale_cpu.c" />
     <ClCompile Include="src\kernel\cpu\lstmunit_activation_cpu.c" />
     <ClCompile Include="src\kernel\evis\add_mean_std_norm_evis.c" />
+    <ClCompile Include="src\kernel\evis\clip_evis.c" />
     <ClCompile Include="src\kernel\evis\l2normalizescale_evis.c" />
     <ClCompile Include="src\kernel\evis\lstmunit_activation_evis.c" />
     <ClCompile Include="src\kernel\vx\swish_vx.c" />
@@ -1148,9 +1151,6 @@
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_box_with_nms_limit.c">
       <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\vsi_nn_kernel_box_with_nms_limit.o</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_clip.c">
-      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\vsi_nn_kernel_clip.o</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_conv2d.c">
       <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\vsi_nn_kernel_conv2d.o</ObjectFileName>

@@ -39,16 +39,22 @@
 
 __BEGIN_DECLS
 
-#define HASH_L2NORMALIZESCALE_HASH_KEY(AXIS, IN0_DTYPE, IN1_DTYPE, OUT_DTYPE, _image_2d) \
-    ((AXIS << 28) | (IN1_DTYPE << 20) | (IN0_DTYPE << 12) | (OUT_DTYPE << 4) | (_image_2d))
+#define _CLIP_KERNEL_SOURCE(_input_type)      "clip_"#_input_type
 
- #define HASH_L2NORMALIZESCALE_KERNEL_SOURCE_NAME(AXIS) \
-    "l2normalizescale_axis"#AXIS
+#define STR(a) #a
+// Add kernel hashtable here
+#define CLIP_HASH_KEY( IN_DTYPE, OUT_DTYPE, _image_2d ) \
+        (( IN_DTYPE << 20 ) | ( OUT_DTYPE << 8) | (_image_2d))
 
-#define HASH_L2NORMALIZESCALE_KERNELS_2D( AXIS, IN0_DTYPE, IN1_DTYPE, OUT_DTYPE) \
-        { HASH_L2NORMALIZESCALE_HASH_KEY(AXIS, IN0_DTYPE, IN1_DTYPE, OUT_DTYPE, 1), \
-        CVIVANTE_NAMESPACE("cl.l2normalizescale_axis"#AXIS"_"#IN0_DTYPE"_"#IN1_DTYPE"to"#OUT_DTYPE"_2D"), \
-        HASH_L2NORMALIZESCALE_KERNEL_SOURCE_NAME(AXIS) },
+#define PACK_KERNEL_MAP( IN_DTYPE, OUT_DTYPE ) \
+        { CLIP_HASH_KEY( IN_DTYPE, OUT_DTYPE, 0 ), \
+          CVIVANTE_NAMESPACE("cl.clip_"STR(IN_DTYPE)"to"STR(OUT_DTYPE)), \
+          _CLIP_KERNEL_SOURCE(IN_DTYPE) }
+
+#define PACK_KERNEL_MAP_2D( IN_DTYPE, OUT_DTYPE ) \
+        { CLIP_HASH_KEY( IN_DTYPE, OUT_DTYPE, 1 ), \
+          CVIVANTE_NAMESPACE("cl.clip_"STR(IN_DTYPE)"to"STR(OUT_DTYPE)"_2D"), \
+          _CLIP_KERNEL_SOURCE(IN_DTYPE) }
 
 typedef struct
 {
@@ -57,21 +63,24 @@ typedef struct
     const char * source_name;
 } _kernel_map_type;
 
-static const _kernel_map_type _l2normalizescale_kernel_map[] =
+static const _kernel_map_type _clip_kernel_map[] =
 {
-    HASH_L2NORMALIZESCALE_KERNELS_2D( 0, F32, F32, F32 )
-    HASH_L2NORMALIZESCALE_KERNELS_2D( 0, U8 , F32, U8  )
-    HASH_L2NORMALIZESCALE_KERNELS_2D( 1, F32, F32, F32 )
-    HASH_L2NORMALIZESCALE_KERNELS_2D( 1, U8 , F32, U8  )
+    PACK_KERNEL_MAP(F32, F32),
+    PACK_KERNEL_MAP(F32, U8),
+    PACK_KERNEL_MAP(U8,  U8),
+    PACK_KERNEL_MAP(U8,  F32),
+    PACK_KERNEL_MAP_2D(F32, F32),
+    PACK_KERNEL_MAP_2D(F32, U8),
+    PACK_KERNEL_MAP_2D(U8,  U8),
+    PACK_KERNEL_MAP_2D(U8,  F32),
 };
 
 
 /*
  * Kernel params
  */
-static vx_param_description_t _l2normalizescale_kernel_param_def[] =
+static vx_param_description_t _clip_kernel_param_def[] =
 {
-    {VX_INPUT,  VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT,  VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
@@ -80,25 +89,23 @@ static vx_param_description_t _l2normalizescale_kernel_param_def[] =
     {VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
-    {VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
 };
-#define _L2NORMALIZESCALE_PARAM_NUM  _cnt_of_array( _l2normalizescale_kernel_param_def )
+#define _CLIP_PARAM_NUM  _cnt_of_array( _clip_kernel_param_def )
 
-#define SCALAR_INPUT_AXIS           (3)
-#define SCALAR_AXIS_SIZE            (4)
-#define SCALAR_EPS_VALUE            (5)
-#define SCALAR_INPUT_SCALE          (6)
-#define SCALAR_INPUT_TAIL           (7)
-#define SCALAR_OUTPUT_SCALE         (8)
-#define SCALAR_OUTPUT_TAIL          (9)
+#define SCALAR_MIN_VALUE          (2)
+#define SCALAR_MAX_VALUE          (3)
+#define SCALAR_INPUT_SCALE        (4)
+#define SCALAR_INPUT_TAIL         (5)
+#define SCALAR_OUTPUT_SCALE       (6)
+#define SCALAR_OUTPUT_TAIL        (7)
 
-#define L2NORMSCALE_PARAM_NUM         6
-#define L2NORMSCALE_QUANT_PARAM_NUM   _cnt_of_array( _l2normalizescale_kernel_param_def )
+#define CLIP_PARAM_NUM         4
+#define CLIP_QUANT_PARAM_NUM   _cnt_of_array( _clip_kernel_param_def )
 
 /*
  * Kernel initializer
  */
-DEF_KERNEL_INITIALIZER(_l2normalizescale_initializer)
+DEF_KERNEL_INITIALIZER(_clip_initializer)
     (
     vsi_nn_kernel_node_t                node,
     const vsi_nn_kernel_node_param_t  * param,
@@ -107,56 +114,39 @@ DEF_KERNEL_INITIALIZER(_l2normalizescale_initializer)
 {
     vsi_status status = VSI_FAILURE;
     gpu_param_t gpu_param = {
-        2,
+        3,
         {0, 0, 0},
         {0, 0, 0},
         {0, 0, 0},
         {0, 0, 0}
         };
-    int32_t     axis                           = 0;
-    vsi_nn_kernel_tensor_attr_t *output_attr   = NULL;
-    vsi_int_array_t * output_shape             = NULL;
+    vsi_nn_kernel_tensor_attr_t * output_attr   = NULL;
+    vsi_int_array_t * out_shape                 = NULL;
 
-    output_attr = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[2] );
+    output_attr = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[1] );
     CHECK_PTR_FAIL_GOTO( output_attr, "Create tensor attr buffer fail.", final );
-    status = vsi_nn_kernel_scalar_read_int32((vsi_nn_kernel_scalar_t)param[3], &axis);
-    CHECK_STATUS_FAIL_GOTO(status, final );
-    output_shape  = output_attr->shape;
 
-    if (1 == axis)
-    {
-        gpu_param.global_offset[0] = 0;
-        gpu_param.global_offset[1] = 0;
-        gpu_param.global_scale[0]  = 1;
-        gpu_param.global_scale[1]  = 1;
-        gpu_param.local_size[0]    = 1;
-        gpu_param.local_size[1]    = 16;
-        gpu_param.global_size[0]   = gpu_align_p2((output_shape->data[0] + gpu_param.global_scale[0] - 1)
+    out_shape  = output_attr->shape;
+
+    gpu_param.global_scale[0]  = 1;
+    gpu_param.global_scale[1]  = 1;
+    gpu_param.global_scale[2]  = 1;
+
+    gpu_param.dim = (out_shape->size < 3 || 1 == out_shape->data[2]) ? 2 : 3;
+    gpu_param.global_size[0] = gpu_align_p2(
+            (out_shape->data[0] + gpu_param.global_scale[0] - 1)
             / gpu_param.global_scale[0], 4);
-        gpu_param.global_size[1]   = 16;
-    }
-    else if (0 == axis)
-    {
-        gpu_param.global_offset[0] = 0;
-        gpu_param.global_offset[1] = 0;
-        gpu_param.global_scale[0]  = 1;
-        gpu_param.global_scale[1]  = 1;
-        gpu_param.local_size[0]    = 16;
-        gpu_param.local_size[1]    = 1;
-        gpu_param.global_size[0]   = 16;
-        gpu_param.global_size[1]   = output_shape->data[1];
-    }
-    else
-    {
-        status = VSI_FAILURE;
-        CHECK_STATUS_FAIL_GOTO(status, final );
-    }
-
+    gpu_param.global_size[1] = (
+            (out_shape->data[1] + gpu_param.global_scale[1] - 1)
+            / gpu_param.global_scale[1]);
+    gpu_param.global_size[2] = out_shape->size > 2 ? out_shape->data[2] : 1;
     status = vsi_nn_kernel_gpu_config( node, &gpu_param );
+
 final:
-    if (output_attr) vsi_nn_kernel_tensor_attr_release( &output_attr );
+#define SAFE_FREE_TENSOR_ATTR(_PTR) if( _PTR ) { vsi_nn_kernel_tensor_attr_release( &_PTR ); _PTR = NULL; }
+    SAFE_FREE_TENSOR_ATTR(output_attr);
     return status;
-} /* _l2normalizescale_initializer() */
+} /* _clip_initializer() */
 
 
 
@@ -168,36 +158,28 @@ static vsi_status _query_kernel
     vsi_nn_kernel_t * kernel,
     vsi_nn_tensor_t * const * const inputs,
     vsi_nn_tensor_t * const * const outputs,
-    int32_t axis,
     vsi_bool image_2d,
     vsi_bool *is_use_u8_kernel
     )
 {
     vsi_status status = VSI_FAILURE;
-    vsi_nn_kernel_dtype_e in0_dtype;
-    vsi_nn_kernel_dtype_e in1_dtype;
+    vsi_nn_kernel_dtype_e in_dtype;
     vsi_nn_kernel_dtype_e out_dtype;
-    const _kernel_map_type * kernel_map = _l2normalizescale_kernel_map;
-    size_t kernel_map_size              = _cnt_of_array( _l2normalizescale_kernel_map );
-    vx_param_description_t * param_def  = _l2normalizescale_kernel_param_def;
-    size_t param_def_size               = _cnt_of_array( _l2normalizescale_kernel_param_def );
-    vx_kernel_initialize_f  initializer = _l2normalizescale_initializer;
+    const _kernel_map_type * kernel_map = _clip_kernel_map;
+    size_t kernel_map_size              = _cnt_of_array( _clip_kernel_map );
+    vx_param_description_t * param_def  = _clip_kernel_param_def;
+    size_t param_def_size               = _cnt_of_array( _clip_kernel_param_def );
+    vx_kernel_initialize_f  initializer = _clip_initializer;
 
     uint32_t key;
     uint32_t i;
 
-    in0_dtype  = vsi_nn_kernel_map_dtype( inputs[0]->attr.dtype.vx_type );
-    in1_dtype  = vsi_nn_kernel_map_dtype( inputs[1]->attr.dtype.vx_type );
-    out_dtype  = vsi_nn_kernel_map_dtype( outputs[0]->attr.dtype.vx_type );
+    in_dtype  = vsi_nn_kernel_map_dtype( inputs[0]->attr.dtype.vx_type );
+    out_dtype = vsi_nn_kernel_map_dtype( outputs[0]->attr.dtype.vx_type );
 
-    if (F16 == in0_dtype)
+    if (F16 == in_dtype)
     {
-        in0_dtype = F32;
-    }
-
-    if (F16 == in1_dtype)
-    {
-        in1_dtype = F32;
+        in_dtype = F32;
     }
 
     if (F16 == out_dtype)
@@ -205,27 +187,27 @@ static vsi_status _query_kernel
         out_dtype = F32;
     }
 
-   if ((U8 == in0_dtype) || (U8 == out_dtype))
+   if ((U8 == in_dtype) || (U8 == out_dtype))
     {
-        param_def_size = L2NORMSCALE_QUANT_PARAM_NUM;
+        param_def_size    = CLIP_QUANT_PARAM_NUM;
         *is_use_u8_kernel = TRUE;
     }
     else
     {
-        param_def_size = L2NORMSCALE_PARAM_NUM;
+        param_def_size    = CLIP_PARAM_NUM;
         *is_use_u8_kernel = FALSE;
     }
 
-    key = HASH_L2NORMALIZESCALE_HASH_KEY(axis, in0_dtype, in1_dtype, out_dtype, image_2d);
+    key = CLIP_HASH_KEY( in_dtype, out_dtype, image_2d );
 
-    for( i = 0; i < kernel_map_size; i ++ )
+    for( i = 0; i < (uint32_t)kernel_map_size; i ++ )
     {
         if( kernel_map[i].key == key )
         {
             break;
         }
     }
-    if( i < kernel_map_size )
+    if( i < (uint32_t)kernel_map_size )
     {
         snprintf( kernel->info.name, VX_MAX_KERNEL_NAME, "%s",  kernel_map[i].function_name );
         kernel->info.parameters  = param_def;
@@ -239,7 +221,9 @@ static vsi_status _query_kernel
                 kernel_map[i].source_name );
         status = VSI_SUCCESS;
     }
+
     return status;
+
 } /* _query_kernel() */
 
 
@@ -255,67 +239,55 @@ static vsi_nn_kernel_node_t _setup
     )
 {
     vsi_status status = VSI_FAILURE;
-    vsi_nn_kernel_node_param_t node_params[_L2NORMALIZESCALE_PARAM_NUM];
+    vsi_nn_kernel_node_param_t node_params[_CLIP_PARAM_NUM];
     vsi_nn_kernel_node_t node = NULL;
     vsi_bool image_2d = FALSE;
-    int32_t  axis = 0;
-    int32_t  axis_size = 0;
     float    outputScale  = outputs[0]->attr.dtype.scale == 0.0f ? 1.0f : outputs[0]->attr.dtype.scale;
     float    outputTail   = (float)outputs[0]->attr.dtype.zero_point;
     float    inputScale   = inputs[0]->attr.dtype.scale == 0.0f ? 1.0f : inputs[0]->attr.dtype.scale;
     float    inputTail    = (float)inputs[0]->attr.dtype.zero_point;
-    float    epsilon      = (float)10e-12;
-    float    rsEps        = 1.0f / sqrtf(epsilon);
     vsi_bool is_use_u8_kernel = FALSE;
+    float    min_value    = vsi_nn_kernel_param_get_float32( params, "min_value" );
+    float    max_value    = vsi_nn_kernel_param_get_float32( params, "max_value" );
 
     outputScale = 1.0f / outputScale;
     inputTail   = -(inputTail * inputScale);
 
-    axis = vsi_nn_kernel_param_get_int32(params, "axis");
-
     if( !vsi_nn_kernel_gpu_check_shape( (int32_t*)inputs[0]->attr.size,
-                inputs[0]->attr.dim_num )
-     || !vsi_nn_kernel_gpu_check_shape( (int32_t*)outputs[0]->attr.size,
-                outputs[0]->attr.dim_num )
-     || axis > 2)
+                inputs[0]->attr.dim_num ) )
     {
         return NULL;
     }
 
     image_2d = (inputs[0]->attr.dim_num == 2 || inputs[0]->attr.size[2] == 1);
-    status = _query_kernel( kernel, inputs, outputs, axis, image_2d, &is_use_u8_kernel );
-    axis_size = inputs[0]->attr.size[axis];
 
+    status = _query_kernel( kernel, inputs, outputs, image_2d, &is_use_u8_kernel);
 
     if( VSI_SUCCESS == status)
     {
+        size_t node_params_num = CLIP_PARAM_NUM;
+
         node = vsi_nn_kernel_create_node( graph, kernel );
         if( node )
         {
-            size_t node_params_num = L2NORMSCALE_PARAM_NUM;
             /* Set inputs and outputs */
-            vsi_nn_kernel_node_pack_io( node_params, _L2NORMALIZESCALE_PARAM_NUM,
+            vsi_nn_kernel_node_pack_io( node_params, _CLIP_PARAM_NUM,
                     inputs, input_num, outputs, output_num );
-            node_params[SCALAR_INPUT_AXIS] = vsi_nn_kernel_scalar_create(
-                    graph, I32, &axis );
-            node_params[SCALAR_AXIS_SIZE] = vsi_nn_kernel_scalar_create(
-                    graph, I32, &axis_size );
-            node_params[SCALAR_EPS_VALUE] = vsi_nn_kernel_scalar_create(
-                    graph, F32, &rsEps );
-            if (is_use_u8_kernel)
+            node_params[SCALAR_MIN_VALUE] = vsi_nn_kernel_scalar_create( graph, F32, &min_value );
+            node_params[SCALAR_MAX_VALUE] = vsi_nn_kernel_scalar_create( graph, F32, &max_value );
+           if (is_use_u8_kernel)
             {
                 node_params[SCALAR_INPUT_SCALE]  = vsi_nn_kernel_scalar_create( graph, F32, &inputScale );
                 node_params[SCALAR_INPUT_TAIL]   = vsi_nn_kernel_scalar_create(graph, F32, &inputTail );
                 node_params[SCALAR_OUTPUT_SCALE] = vsi_nn_kernel_scalar_create( graph, F32, &outputScale );
                 node_params[SCALAR_OUTPUT_TAIL]  = vsi_nn_kernel_scalar_create(graph, F32, &outputTail );
-                node_params_num = L2NORMSCALE_QUANT_PARAM_NUM;
+                node_params_num = CLIP_QUANT_PARAM_NUM;
             }
             /* Pass parameters to node. */
             status  = vsi_nn_kernel_node_pass_param( node, node_params, node_params_num );
             VSI_ASSERT( status == VSI_SUCCESS );
-            vsi_nn_kernel_scalar_release( &node_params[SCALAR_INPUT_AXIS] );
-            vsi_nn_kernel_scalar_release( &node_params[SCALAR_AXIS_SIZE] );
-            vsi_nn_kernel_scalar_release( &node_params[SCALAR_EPS_VALUE] );
+            vsi_nn_kernel_scalar_release( &node_params[SCALAR_MIN_VALUE] );
+            vsi_nn_kernel_scalar_release( &node_params[SCALAR_MAX_VALUE] );
             if (is_use_u8_kernel)
             {
                 vsi_nn_kernel_scalar_release( &node_params[SCALAR_INPUT_SCALE] );
@@ -330,5 +302,5 @@ static vsi_nn_kernel_node_t _setup
 
 __END_DECLS
 
-REGISTER_BACKEND_CL( l2normalizescale, _setup )
+REGISTER_BACKEND_CL( clip, _setup )
 

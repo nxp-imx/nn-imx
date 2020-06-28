@@ -289,7 +289,6 @@ cc_library(
         "src/libnnext/ops/kernel/vsi_nn_kernel_sync_host.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_spatial_transformer.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_stack.c",
-        "src/libnnext/ops/kernel/vsi_nn_kernel_clip.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_pre_process_gray.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_unstack.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_pre_process_rgb.c",
