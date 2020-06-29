@@ -112,15 +112,15 @@ std::unique_ptr<ITensorHandle> NpuWorkloadFactory::CreateTensorHandle(
 std::unique_ptr<IWorkload> NpuWorkloadFactory::CreateInput(const InputQueueDescriptor& descriptor,
                                                            const WorkloadInfo& info) const {
     if (info.m_InputTensorInfos.empty()) {
-        throw InvalidArgumentException("RefWorkloadFactory::CreateInput: Input cannot be zero length");
+        throw InvalidArgumentException("NpuWorkloadFactory::CreateInput: Input cannot be zero length");
     }
     if (info.m_OutputTensorInfos.empty()) {
-        throw InvalidArgumentException("RefWorkloadFactory::CreateInput: Output cannot be zero length");
+        throw InvalidArgumentException("NpuWorkloadFactory::CreateInput: Output cannot be zero length");
     }
 
     if (info.m_InputTensorInfos[0].GetNumBytes() != info.m_OutputTensorInfos[0].GetNumBytes()) {
         throw InvalidArgumentException(
-            "RefWorkloadFactory::CreateInput: data input and output differ in byte count.");
+            "NpuWorkloadFactory::CreateInput: data input and output differ in byte count.");
     }
 
     return std::make_unique<CopyMemGenericWorkload>(descriptor, info);
@@ -130,14 +130,14 @@ std::unique_ptr<IWorkload> NpuWorkloadFactory::CreateInput(const InputQueueDescr
 std::unique_ptr<IWorkload> NpuWorkloadFactory::CreateOutput(const OutputQueueDescriptor& descriptor,
                                                             const WorkloadInfo& info) const {
     if (info.m_InputTensorInfos.empty()) {
-        throw InvalidArgumentException("RefWorkloadFactory::CreateOutput: Input cannot be zero length");
+        throw InvalidArgumentException("NpuWorkloadFactory::CreateOutput: Input cannot be zero length");
     }
     if (info.m_OutputTensorInfos.empty()) {
-        throw InvalidArgumentException("RefWorkloadFactory::CreateOutput: Output cannot be zero length");
+        throw InvalidArgumentException("NpuWorkloadFactory::CreateOutput: Output cannot be zero length");
     }
     if (info.m_InputTensorInfos[0].GetNumBytes() != info.m_OutputTensorInfos[0].GetNumBytes()) {
         throw InvalidArgumentException(
-            "RefWorkloadFactory::CreateOutput: data input and output differ in byte count.");
+            "NpuWorkloadFactory::CreateOutput: data input and output differ in byte count.");
     }
 
     return std::make_unique<CopyMemGenericWorkload>(descriptor, info);
