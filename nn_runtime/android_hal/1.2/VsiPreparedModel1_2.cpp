@@ -198,7 +198,7 @@ Return<ErrorStatus> VsiPreparedModel::executeBase(const Request& request,
 
     oStatus = status;
     oOutputShapes = outputShapes;
-    oTiming = timing;
+    oTiming = MeasureTiming::YES == measure ? timing : kNoTiming;
 
     return ErrorStatus::NONE;
 }
