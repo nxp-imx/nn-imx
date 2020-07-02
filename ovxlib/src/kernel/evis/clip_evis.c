@@ -136,8 +136,8 @@ DEF_KERNEL_INITIALIZER(_clip_initializer)
     vsi_nn_kernel_dtype_e        output_dtype   = F16;
     float     minVal          = 1.0f;
     float     maxVal          = 1.0f;
-    float     scaleIn         = 0;
-    float     scaleOut        = 0;
+    float     scaleIn         = 1.0f;
+    float     scaleOut        = 1.0f;
     int32_t   output_ZP       = 0;
     int32_t   input_ZP        = 0;
     int32_t   srcFixPointPos  = 0;
