@@ -59,7 +59,9 @@ static vsi_status _eltwise_op_compute
     }
     status = VSI_FAILURE;
 
-    if (strcmp(kernel_name, "sub") == 0 || strcmp(kernel_name, "add") == 0)
+    if ( strcmp(kernel_name, "sub") == 0
+      || strcmp(kernel_name, "add") == 0
+      || strcmp(kernel_name, "mul") == 0 )
     {
         doShapeOptimized = FALSE;
 
