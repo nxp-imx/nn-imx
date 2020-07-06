@@ -232,6 +232,30 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
                 model, operation);
             return l2Pool->Validate(reason);
         }
+        case OperationType::DEPTH_TO_SPACE:{
+            OperationValidatePtr depth2space = std::make_unique<
+                op_validate::Depth2spaceValidate<HalPlatform::Model, HalPlatform::Operation>>(
+                model, operation);
+            return depth2space->Validate(reason);
+        }
+        case OperationType::SPACE_TO_DEPTH:{
+            OperationValidatePtr space2depth = std::make_unique<
+                op_validate::Space2depthValidate<HalPlatform::Model, HalPlatform::Operation>>(
+                model, operation);
+            return space2depth->Validate(reason);
+        }
+        case OperationType::SPACE_TO_BATCH_ND:{
+            OperationValidatePtr space2batch = std::make_unique<
+                op_validate::Space2BatchValidate<HalPlatform::Model, HalPlatform::Operation>>(
+                model, operation);
+            return space2batch->Validate(reason);
+        }
+        case OperationType::BATCH_TO_SPACE_ND:{
+            OperationValidatePtr batch2space = std::make_unique<
+                op_validate::Batch2spaceValidate<HalPlatform::Model, HalPlatform::Operation>>(
+                model, operation);
+            return batch2space->Validate(reason);
+        }
 #if ANDROID_SDK_VERSION >= 29
         case OperationType::CONV_2D: {
             OperationValidatePtr conv2D = std::make_unique<

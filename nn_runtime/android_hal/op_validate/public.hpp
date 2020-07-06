@@ -70,4 +70,5 @@
 #include "GroupedConv2DValidate.hpp"
 #include "ChannelShuffleValidate.hpp"
 #include "ReshapeValidate.hpp"
+#include "SpaceOpValidate.hpp"
 #endif

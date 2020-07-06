@@ -94,3 +94,4 @@ void NNapiLimitationRegister(const std::string& opName, const IArgList* arglist)
 #include "nnapi_support/ANEURALNETWORKS_GROUPED_CONV_CONV_2D.hpp"
 #include "nnapi_support/ANEURALNETWORKS_CHANNEL_SHUFFLE.hpp"
 #include "nnapi_support/ANEURALNETWORKS_RESHAPE.hpp"
+#include "nnapi_support/ANEURALNETWORKS_SPACE.hpp"

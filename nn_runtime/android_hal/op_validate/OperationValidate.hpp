@@ -98,6 +98,21 @@ class OperationValidate {
         return isSupport;
     };
 
+    const std::vector<nnrt::OperandType>& InputArgTypes() const { return m_InputArgTypes; }
+    const std::vector<nnrt::OperandType>& OutputArgTypes() const { return m_OutputArgTypes; }
+    const T_Model ModelForRead() const { return m_Model; }
+    const T_Operation OperationForRead() const { return m_Operation; }
+
+    bool IsConstantTensor(size_t index) {
+        auto& operand = m_Model.operands[index];
+        return operand.lifetime == OperandLifeTime::CONSTANT_COPY ||
+               operand.lifetime == OperandLifeTime::CONSTANT_REFERENCE;
+    }
+
+    bool IsInput(size_t index) {
+        auto operand = m_Model.operands[index];
+        return operand.lifetime == OperandLifeTime::MODEL_INPUT;
+    }
    protected:
     // Default implementation
     virtual bool SignatureCheck(std::string& reason) { return true; };
@@ -179,12 +194,6 @@ class OperationValidate {
         return true;
     }
 
-    bool IsConstantTensor(size_t index) {
-        auto& operand = m_Model.operands[index];
-        return operand.lifetime == OperandLifeTime::CONSTANT_COPY ||
-               operand.lifetime == OperandLifeTime::CONSTANT_REFERENCE;
-    }
-
     bool ConstantTensorCheck(std::string& reason) {
         std::vector<OperationType> whiteList = {OperationType::ADD,
                                                 OperationType::SUB,
@@ -207,14 +216,8 @@ class OperationValidate {
         return true;
     }
 
-    const T_Model ModelForRead() const { return m_Model; }
     T_Model ModelForWrite() { return m_Model; }
-
-    const T_Operation OperationForRead() const { return m_Operation; }
     T_Operation OperationForWrite() { return m_Operation; }
-
-    const std::vector<nnrt::OperandType>& InputArgTypes() const { return m_InputArgTypes; }
-    const std::vector<nnrt::OperandType>& OutputArgTypes() const { return m_OutputArgTypes; }
 
    private:
     nnrt::OperandType MapToNnrtOperandType(OperandType type) {
