@@ -980,7 +980,7 @@ OperationPtr NnApiInterpreter::map_SPACE_TO_DEPTH(Model* model,
             return operand->type;
         });
 
-    auto argList = api::requirement::nnapi::match("Space2DepthOperation", argTypes);
+    auto argList = api::requirement::nnapi::match("SpaceDepthOperation", argTypes);
     if (argList) {
         auto inputOperand = inputs[argList->ArgPos("input")];
         auto outputOperand = model->getOperands(operation->outputs())[0];
@@ -1012,35 +1012,91 @@ OperationPtr NnApiInterpreter::map_SPACE_TO_DEPTH(Model* model,
 OperationPtr NnApiInterpreter::map_DEPTH_TO_SPACE(Model* model,
                                                   OperationPtr operation,
                                                   uint32_t operation_index) {
-    NNAPI_CHECK_IO_NUM(operation, 2, 1);
-    std::shared_ptr<DepthToSpaceOperation> dp_to_sp = std::make_shared<DepthToSpaceOperation>();
-    NNAPI_CHECK_PTR(dp_to_sp);
+    std::shared_ptr<DepthToSpaceOperation> depth2space = std::make_shared<DepthToSpaceOperation>();
+    NNAPI_CHECK_PTR(depth2space);
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
-    dp_to_sp->blockSize = inputs[1]->scalar.int32;
-    dp_to_sp->setDataLayout(DataLayout::NHWC);
+
+    std::vector<OperandType> argTypes;
+    std::transform(
+        inputs.begin(), inputs.end(), std::back_inserter(argTypes), [](const OperandPtr& operand) {
+            return operand->type;
+        });
+
+    auto argList = api::requirement::nnapi::match("SpaceDepthOperation", argTypes);
+    if (argList) {
+        auto inputOperand = inputs[argList->ArgPos("input")];
+        auto outputOperand = model->getOperands(operation->outputs())[0];
+        // No dynamic shape branch
+        if (!nnrt::operand_utils::IsDynamicShape(inputOperand) &&
+            !nnrt::operand_utils::IsDynamicShape(outputOperand)) {
+            depth2space->blockSize = inputs[argList->ArgPos("block_size")]->scalar.int32;
+            if (-1 != argList->ArgPos("data_layout")) {
+                depth2space->setDataLayout(
+                    getDataLayout(inputs[argList->ArgPos("data_layout")]->scalar.boolean));
+            } else {
+                // Default data layout is NHWC
+                depth2space->setDataLayout(DataLayout::NHWC);
+            }
+        } else {
+            // TODO: support dynamic input tensor shape
+            NNRT_LOGE_PRINT("Dynamic shape not support");
+            assert(false);
+        }
+
+    } else {
+        NNRT_LOGE_PRINT("Depth to space argument list not support.");
+    }
     truncateOperationIOs(model, operation, 1, 1);
-    return dp_to_sp;
+    return depth2space;
 }
 
 OperationPtr NnApiInterpreter::map_SPACE_TO_BATCH_ND(Model* model,
                                                      OperationPtr operation,
                                                      uint32_t operation_index) {
-    NNAPI_CHECK_IO_NUM(operation, 3, 1);
     std::shared_ptr<SpaceToBatchNDOperation> sp_to_bp = std::make_shared<SpaceToBatchNDOperation>();
     NNAPI_CHECK_PTR(sp_to_bp);
-    sp_to_bp->setDataLayout(DataLayout::NHWC);
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
-    if (inputs[1]->isConst() && inputs[2]->isConst()) {
-        int32_t* buffer = model->getBuffer<int32_t>(inputs[1]->weak_mem_ref.lock());
-        sp_to_bp->blockSize.assign(buffer, buffer + inputs[1]->size());
-        buffer = model->getBuffer<int32_t>(inputs[2]->weak_mem_ref.lock());
-        sp_to_bp->padFront.resize(inputs[0]->ndim() - 2);
-        sp_to_bp->padBack.resize(inputs[0]->ndim() - 2);
-        convert2DPadding(
-            buffer, inputs[2]->size(), sp_to_bp->padFront.data(), sp_to_bp->padBack.data());
+
+    std::vector<OperandType> argTypes;
+    std::transform(
+        inputs.begin(), inputs.end(), std::back_inserter(argTypes), [](const OperandPtr& operand) {
+            return operand->type;
+        });
+
+    auto argList = api::requirement::nnapi::match("Space2batchInput", argTypes);
+    if (argList) {
+        auto inputOperand = inputs[argList->ArgPos("input")];
+        auto blockSizeOp = inputs[argList->ArgPos("blockSize")];
+        auto paddings = inputs[argList->ArgPos("padings")];
+        auto outputOperand = model->getOperands(operation->outputs())[0];
+        // No dynamic shape branch
+        if (!nnrt::operand_utils::IsDynamicShape(inputOperand) &&
+            blockSizeOp->isConst() &&
+            paddings->isConst() &&
+            !nnrt::operand_utils::IsDynamicShape(outputOperand)) {
+            int32_t* buffer = model->getBuffer<int32_t>(blockSizeOp->weak_mem_ref.lock());
+            sp_to_bp->blockSize.assign(buffer, buffer + blockSizeOp->size());
+
+            buffer = model->getBuffer<int32_t>(paddings->weak_mem_ref.lock());
+            sp_to_bp->padFront.resize(inputs[0]->ndim() - 2);
+            sp_to_bp->padBack.resize(inputs[0]->ndim() - 2);
+            convert2DPadding(
+                buffer, inputs[2]->size(), sp_to_bp->padFront.data(), sp_to_bp->padBack.data());
+            if (-1 != argList->ArgPos("layout")) {
+                sp_to_bp->setDataLayout(
+                    getDataLayout(inputs[argList->ArgPos("layout")]->scalar.boolean));
+            } else {
+                // Default data layout is NHWC
+                sp_to_bp->setDataLayout(DataLayout::NHWC);
+            }
+        } else {
+            // TODO: support dynamic input tensor shape
+            NNRT_LOGE_PRINT("Const paramter is needed or Dynamic shape not support");
+            assert(false);
+        }
+
     } else {
-        NNRT_LOGW_PRINT("Not support dynamic SPACE_TO_BATCH_ND.");
-        assert(false);
+        NNRT_LOGE_PRINT("Space to batch argument list not support.");
     }
     truncateOperationIOs(model, operation, 1, 1);
     return sp_to_bp;
@@ -1051,20 +1107,43 @@ OperationPtr NnApiInterpreter::map_BATCH_TO_SPACE_ND(Model* model,
                                                      uint32_t operation_index) {
     std::shared_ptr<BatchToSpaceNDOperation> bp_to_sp = std::make_shared<BatchToSpaceNDOperation>();
     NNAPI_CHECK_PTR(bp_to_sp);
-    bp_to_sp->setDataLayout(DataLayout::NHWC);
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
-    if (inputs[1]->isConst()) {
-        int32_t* buffer = model->getBuffer<int32_t>(inputs[1]->weak_mem_ref.lock());
-        bp_to_sp->blockSize.assign(buffer, buffer + inputs[1]->size());
-    }
-
-    if (inputs.size() == 3) {
-        bp_to_sp->setDataLayout(getDataLayout(inputs[2]->scalar.boolean));
-    }
-
     bp_to_sp->cropStart.resize(inputs[0]->ndim() - 2);
     bp_to_sp->cropEnd.resize(inputs[0]->ndim() - 2);
 
+    std::vector<OperandType> argTypes;
+    std::transform(
+        inputs.begin(), inputs.end(), std::back_inserter(argTypes), [](const OperandPtr& operand) {
+            return operand->type;
+        });
+
+    auto argList = api::requirement::nnapi::match("Batch2spaceInput", argTypes);
+    if (argList) {
+        auto inputOperand = inputs[argList->ArgPos("input")];
+        auto blockSizeOp = inputs[argList->ArgPos("blockSize")];
+        auto outputOperand = model->getOperands(operation->outputs())[0];
+        // No dynamic shape branch
+        if (!nnrt::operand_utils::IsDynamicShape(inputOperand) &&
+            blockSizeOp->isConst() &&
+            !nnrt::operand_utils::IsDynamicShape(outputOperand)) {
+            int32_t* buffer = model->getBuffer<int32_t>(blockSizeOp->weak_mem_ref.lock());
+            bp_to_sp->blockSize.assign(buffer, buffer + blockSizeOp->size());
+
+            if (-1 != argList->ArgPos("layout")) {
+                bp_to_sp->setDataLayout(
+                    getDataLayout(inputs[argList->ArgPos("layout")]->scalar.boolean));
+            } else {
+                // Default data layout is NHWC
+                bp_to_sp->setDataLayout(DataLayout::NHWC);
+            }
+        } else {
+            // TODO: support dynamic input tensor shape
+            NNRT_LOGE_PRINT("Const paramter is needed or Dynamic shape not support");
+            assert(false);
+        }
+    } else {
+        NNRT_LOGE_PRINT("Batch to space argument list not support.");
+    }
     truncateOperationIOs(model, operation, 1, 1);
     return bp_to_sp;
 }

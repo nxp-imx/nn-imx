@@ -22,15 +22,16 @@
 *
 *****************************************************************************/
 
-#ifndef __ANEURALNETWORKS_SPACE_TO_DEPTH_HPP__
-#define __ANEURALNETWORKS_SPACE_TO_DEPTH_HPP__
+#ifndef __ANEURALNETWORKS_SPACE_DEPTH_HPP__
+#define __ANEURALNETWORKS_SPACE_DEPTH_HPP__
 
-#define OP_SPEC_NAME Space2DepthOperation
+// Input Spec
+#define OP_SPEC_NAME Batch2spaceInput
 OP_SPEC_BEGIN()
-#define ARG_NAMES           \
-    (input,                 \
-     block_size,            \
-     data_layout)
+#define ARG_NAMES         \
+    (input,     \
+    blockSize,      \
+    layout)
 #define ARGC BOOST_PP_TUPLE_SIZE(ARG_NAMES)
 
 #define BOOST_PP_LOCAL_MACRO(n) OP_SPEC_ARG(BOOST_PP_TUPLE_ELEM(ARGC, n, ARG_NAMES))
@@ -39,15 +40,47 @@ OP_SPEC_BEGIN()
 OP_SPEC_END()
 
 // order of argument is important
-MAKE_SPEC(space2depth)
+MAKE_SPEC(batch2space)
     .input_(nnrt::OperandType::TENSOR_FLOAT32)
-    .block_size_(nnrt::OperandType::INT32)
-    .data_layout_(nnrt::OperandType::BOOL, OPTIONAL));
+    .blockSize_(nnrt::OperandType::TENSOR_INT32)
+    .layout_(nnrt::OperandType::BOOL, OPTIONAL));
 
-    OVERRIDE_SPEC(space2depth, float16)
+    OVERRIDE_SPEC(batch2space, float16)
     .input_(nnrt::OperandType::TENSOR_FLOAT16));
 
-    OVERRIDE_SPEC(space2depth, asymm_u8)
+    OVERRIDE_SPEC(batch2space, asymm_u8)
+    .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM));
+
+#undef ARG_NAMES
+#undef ARGC
+#undef OP_SPEC_NAME
+
+// Input Spec
+#define OP_SPEC_NAME Space2batchInput
+OP_SPEC_BEGIN()
+#define ARG_NAMES         \
+    (input,     \
+    blockSize,  \
+    padings,    \
+    layout)
+#define ARGC BOOST_PP_TUPLE_SIZE(ARG_NAMES)
+
+#define BOOST_PP_LOCAL_MACRO(n) OP_SPEC_ARG(BOOST_PP_TUPLE_ELEM(ARGC, n, ARG_NAMES))
+#define BOOST_PP_LOCAL_LIMITS (0, ARGC)
+#include BOOST_PP_LOCAL_ITERATE()
+OP_SPEC_END()
+
+// order of argument is important
+MAKE_SPEC(space2batch)
+    .input_(nnrt::OperandType::TENSOR_FLOAT32)
+    .blockSize_(nnrt::OperandType::TENSOR_INT32)
+    .padings_(nnrt::OperandType::TENSOR_INT32)
+    .layout_(nnrt::OperandType::BOOL, OPTIONAL));
+
+    OVERRIDE_SPEC(space2batch, float16)
+    .input_(nnrt::OperandType::TENSOR_FLOAT16));
+
+    OVERRIDE_SPEC(space2batch, asymm_u8)
     .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM));
 
 #undef ARG_NAMES
