@@ -102,6 +102,9 @@ DEF_KERNEL_EXECUTOR(_compute)
     int32_t  output_base = 0;
     int32_t  input_base  = 0;
     int32_t  max_index   = 0;
+    vsi_nn_kernel_dtype_e out1_dtype;
+    vsi_bool is_relative_coord = vx_false_e;
+
 
     for(i = 0; i < _INPUT_NUM; i ++)
     {
@@ -139,6 +142,13 @@ DEF_KERNEL_EXECUTOR(_compute)
     width    = in_attr[0]->shape->data[0];
     height   = in_attr[0]->shape->data[1];
 
+    out1_dtype = out_attr[1]->dtype;
+
+    if ((I8 == out1_dtype) || (U8 == out1_dtype) || (I16 == out1_dtype))
+    {
+        is_relative_coord = vx_true_e;
+    }
+
     for(b = 0; b < batch; b++)
     {
         for (p = 0; p < depth_v; p ++)
@@ -151,20 +161,34 @@ DEF_KERNEL_EXECUTOR(_compute)
                 {
                     int32_t hstart     = j * stride_y - pad_y;
                     int32_t wstart     = i * stride_x - pad_x;
+                    int32_t hoffset    = 0;
+                    int32_t woffset    = 0;
                     int32_t hend       = vsi_nn_min(hstart + ksize_y, height);
                     int32_t wend       = vsi_nn_min(wstart + ksize_x, width);
                     int32_t pool_index = 0;
                     int32_t h, w       = 0;
+                    int32_t cur_index  = 0;
                     float   d_f32      = 0.0f;
+
+                    if (hstart < 0)
+                    {
+                        hoffset = -hstart;
+                    }
+
+                    if (wstart < 0)
+                    {
+                        woffset = -wstart;
+                    }
 
                     hstart = vsi_nn_max(hstart, 0);
                     wstart = vsi_nn_max(wstart, 0);
 
                     pool_index = output_base + j * width_o + i;
-                    max_index = input_base + hstart * width + wstart;
-                    d_f32     = f32_in_buffer[0][max_index];
+                    max_index = is_relative_coord ? 0 : (input_base + hstart * width + wstart);
+                    d_f32     = f32_in_buffer[0][input_base + hstart * width + wstart];
                     for (h = hstart; h < hend; ++ h)
                     {
+                        cur_index = (h - hstart + hoffset) * ksize_x + woffset;
                         for (w = wstart; w < wend; ++ w)
                         {
                             int32_t index = input_base + h * width + w;
@@ -174,8 +198,9 @@ DEF_KERNEL_EXECUTOR(_compute)
                             if (d > d_f32)
                             {
                                 d_f32 = d;
-                                max_index = index;
+                                max_index = is_relative_coord ? cur_index : index;
                             }
+                            cur_index++;
                         }
                     }
                     f32_out_buffer[0][pool_index] = d_f32;

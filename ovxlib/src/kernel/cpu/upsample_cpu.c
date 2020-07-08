@@ -53,11 +53,16 @@ __BEGIN_DECLS
  */
 static vx_param_description_t _upsample_kernel_param_def[] =
 {
-    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
-    {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT,  VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT,  VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
 };
 #define _UPSAMPLE_PARAM_NUM  _cnt_of_array( _upsample_kernel_param_def )
+
+#define SCALAR_KSZIE_X          (3)
+#define SCALAR_KSZIE_Y          (4)
 
 /*
  * Kernel function
@@ -80,8 +85,13 @@ DEF_KERNEL_EXECUTOR(_compute)
     size_t   out_elements[_OUTPUT_NUM] = {0};
     size_t   out_bytes[_OUTPUT_NUM] = {0};
     int32_t  i, j, b, p;
-    int32_t  batch, depth, height, width;
+    int32_t  batch, depth, height, width, height_o, width_o;
     int32_t  input_base  = 0;
+    int32_t  output_base = 0;
+    int32_t  ksize_x     = 0;
+    int32_t  ksize_y     = 0;
+    vsi_bool is_relative_coord = vx_false_e;
+    vsi_nn_kernel_dtype_e input1_dtype;
 
     for(i = 0; i < _INPUT_NUM; i ++)
     {
@@ -103,24 +113,44 @@ DEF_KERNEL_EXECUTOR(_compute)
         memset( f32_out_buffer[i], 0, out_bytes[i] );
     }
 
+    status  = vsi_nn_kernel_scalar_read_int32((vsi_nn_kernel_scalar_t)param[SCALAR_KSZIE_X],  &ksize_x);
+    status |= vsi_nn_kernel_scalar_read_int32((vsi_nn_kernel_scalar_t)param[SCALAR_KSZIE_Y],  &ksize_y);
+
     batch    = in_attr[0]->shape->size > 3 ? in_attr[0]->shape->data[3] : 1;
     depth    = in_attr[0]->shape->size > 2 ? in_attr[0]->shape->data[2] : 1;
     width    = in_attr[0]->shape->data[0];
     height   = in_attr[0]->shape->data[1];
+    width_o  = out_attr[0]->shape->data[0];
+    height_o = out_attr[0]->shape->data[1];
+    input1_dtype = in_attr[1]->dtype;
+
+    if ((I8 == input1_dtype) || (U8 == input1_dtype) || (I16 == input1_dtype))
+    {
+        is_relative_coord = vx_true_e;
+    }
+
 
     for(b = 0; b < batch; b++)
     {
         for (p = 0; p < depth; p ++)
         {
             input_base  = b * depth * height * width + p * height * width;
+            output_base = b * depth * height_o * width_o + p * height_o * width_o;
             for (j = 0; j < height; j ++)
             {
                 for (i = 0; i < width; i ++)
                 {
-                    int32_t in_index = input_base + j * width + i;
-                    float   in_value = f32_in_buffer[0][in_index];
-                    int32_t up_index = (int32_t)f32_in_buffer[1][in_index];
-                    f32_out_buffer[0][up_index] = in_value;
+                    int32_t in_index  = input_base + j * width + i;
+                    float   in_value  = f32_in_buffer[0][in_index];
+                    int32_t up_index  = (int32_t)f32_in_buffer[1][in_index];
+                    int32_t out_index = up_index;
+                    if (is_relative_coord)
+                    {
+                        int32_t relative_y = up_index / ksize_x;
+                        int32_t relative_x = up_index % ksize_x;
+                        out_index = output_base + ((j * ksize_y) + relative_y) * width_o + i * ksize_x + relative_x;
+                    }
+                    f32_out_buffer[0][out_index] = in_value;
                 }
             }
         }
@@ -198,7 +228,12 @@ static vsi_nn_kernel_node_t _setup
 {
     vsi_status status = VSI_FAILURE;
     vsi_nn_kernel_node_param_t node_params[_UPSAMPLE_PARAM_NUM];
+    int32_t  scale_x  = 0;
+    int32_t  scale_y  = 0;
     vsi_nn_kernel_node_t node = NULL;
+
+    scale_x  = vsi_nn_kernel_param_get_int32(params, "scale_x");
+    scale_y  = vsi_nn_kernel_param_get_int32(params, "scale_y");
 
     status = _query_kernel( kernel, inputs, outputs );
     if( VSI_SUCCESS == status)
@@ -209,9 +244,15 @@ static vsi_nn_kernel_node_t _setup
             /* Set inputs and outputs */
             vsi_nn_kernel_node_pack_io( node_params, _UPSAMPLE_PARAM_NUM,
                     inputs, input_num, outputs, output_num );
+            node_params[SCALAR_KSZIE_X] = vsi_nn_kernel_scalar_create(
+                    graph, I32, &scale_x );
+            node_params[SCALAR_KSZIE_Y] = vsi_nn_kernel_scalar_create(
+                    graph, I32, &scale_y );
             /* Pass parameters to node. */
             status  = vsi_nn_kernel_node_pass_param( node, node_params, _UPSAMPLE_PARAM_NUM );
             VSI_ASSERT( status == VSI_SUCCESS );
+            vsi_nn_kernel_scalar_release( &node_params[SCALAR_KSZIE_X] );
+            vsi_nn_kernel_scalar_release( &node_params[SCALAR_KSZIE_Y] );
         }
     }
 
