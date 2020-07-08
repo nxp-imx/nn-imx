@@ -303,15 +303,17 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_dynamic|Win32'">
     <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>include;$(AQROOT)\sdk\inc;$(ProjectDir)\inc;</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WINDLL;_CRT_SECURE_NO_WARNINGS;OVXLIB_API=__declspec(dllexport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <DisableSpecificWarnings>4996;4201;4127;4200;4152;4245;4100;4310;4204</DisableSpecificWarnings>
+      <TreatWarningAsError>true</TreatWarningAsError>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(VIVANTE_SDK_DIR)\lib</AdditionalLibraryDirectories>
       <AdditionalDependencies>libOpenVX.lib;libCLC.lib;libVSC.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ImportLibrary>$(VIVANTE_SDK_DIR)\lib\$(TargetName).lib</ImportLibrary>
