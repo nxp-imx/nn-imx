@@ -49,6 +49,9 @@ static void convertKenelLayout(Operation *convOp, nnrt::Model &model, bool noPer
         if(nullptr != filterOperand && filterOperand->isPerChannel()){
             filterOperand->quant.vec.channelDim =
                 nnrt::op::utils::axisMapTo(requiredPermute, filterOperand->quant.vec.channelDim);
+            filterOperand->quant.vec.channelDim =
+                nnrt::op::utils::convertAxis(static_cast<int32_t>(filterOperand->quant.vec.channelDim),
+                                            static_cast<int32_t>(filterOperand->ndim()));
         }
     }
 }

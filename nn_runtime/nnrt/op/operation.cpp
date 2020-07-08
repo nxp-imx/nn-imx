@@ -514,6 +514,12 @@ void Operation::insertPermute(Model& model,
     permuteOp->setInputs(permInputs, 1);
     permuteOp->setOutputs(permOutputs, 1);
     model.addOperation(permuteOp, &permId);
+
+    if(inputOperandPtr->isPerChannel()){
+        inputOperandPtr->quant.vec.channelDim =
+            nnrt::op::utils::convertAxis(static_cast<int32_t>(inputOperandPtr->quant.vec.channelDim),
+                                            static_cast<int32_t>(inputOperandPtr->ndim()));
+    }
 }
 
 void Operation::permuteConstOperands(Model& model,

@@ -255,6 +255,31 @@ inline std::vector<int32_t> permuteArray(std::vector<int32_t>& array,
     }
     return tmp;
 }
+
+inline int32_t convertAxis(int32_t axis, int32_t dim_num)
+{
+    if (axis < 0) {
+        axis += dim_num;
+    }
+    return (dim_num - axis - 1);
+}
+
+template<typename T>
+inline std::vector<T> convertAxes(std::vector<T> &axes, size_t dim_num)
+{
+    std::vector<T> new_axes(axes.size());
+    size_t max_size = axes.size() - 1;
+    for (size_t i = 0; i < axes.size(); ++i) {
+        new_axes[i] = convertAxis(axes[max_size - i], dim_num);
+    }
+    return new_axes;
+}
+
+template<typename T>
+std::vector<T> convertPermute(std::vector<T> &perm)
+{
+    return convertAxes(perm, perm.size());
+}
 }
 
 struct ReshapeOperation : Operation {

@@ -256,11 +256,6 @@ int OvxlibDelegate::process(nnrt::Model* model, vsi_nn_context_t ctx) {
             continue;
         }
         // NNRT_LOGD_PRINT("Add tensor (%u)", idx);
-        /*convert nhwc order to driver order whcn*/
-        if(operand->isPerChannel()){
-            operand->quant.vec.channelDim =
-              convertAxis(static_cast<int32_t>(operand->quant.vec.channelDim), static_cast<int32_t>(operand->ndim()));
-        }
 
         if (operand->isConst()) {
             void* data = model->getBuffer<void>(operand->weak_mem_ref.lock());
@@ -335,7 +330,7 @@ int OvxlibDelegate::process(nnrt::Model* model, vsi_nn_context_t ctx) {
         {
             vsi_nn_tensor_t* tensor = vsi_nn_GetTensor(graph_, it->second);
             // TODO: Fixme transpose tensor to use driver whcn sequence.
-            // std::vector<uint32_t> perm = convertPermute(operand->perm());
+            // std::vector<uint32_t> perm = nnrt::op::utils::convertPermute(operand->perm());
             std::vector<uint32_t> t2c_perm = operand->perm();
             std::vector<uint32_t> as_shape;
             as_shape.resize(operand->dimensions.size());
@@ -911,7 +906,7 @@ int OvxlibDelegate::addNode_CONCATENATION(Model* model,
                   operation_index);
     std::vector<OperandPtr> outputs = model->getOperands(operation->outputs());
     int32_t dim = static_cast<int32_t>(outputs[0]->dimensions.size());
-    nodes[0]->nn_param.concat.axis = static_cast<uint32_t>(convertAxis(concat->axis, dim));
+    nodes[0]->nn_param.concat.axis = static_cast<uint32_t>(nnrt::op::utils::convertAxis(concat->axis, dim));
     return err;
 }
 
@@ -1125,7 +1120,7 @@ int OvxlibDelegate::addNode_SOFTMAX(Model* model,
     nodes[0]->nn_param.softmax.beta = softmax->beta;
     std::vector<OperandPtr> outputs = model->getOperands(operation->outputs());
     int32_t dim = static_cast<int32_t>(outputs[0]->dimensions.size());
-    nodes[0]->nn_param.softmax.axis = static_cast<uint32_t>(convertAxis(softmax->axis, dim));
+    nodes[0]->nn_param.softmax.axis = static_cast<uint32_t>(nnrt::op::utils::convertAxis(softmax->axis, dim));
     return err;
 }
 
@@ -1146,7 +1141,7 @@ int OvxlibDelegate::addNode_LOG_SOFTMAX(Model* model,
     nodes[0]->nn_param.log_softmax.betaValue = op->beta;
     std::vector<OperandPtr> outputs = model->getOperands(operation->outputs());
     int32_t dim = static_cast<int32_t>(outputs[0]->dimensions.size());
-    nodes[0]->nn_param.log_softmax.axis = static_cast<uint32_t>(convertAxis(op->axis, dim));
+    nodes[0]->nn_param.log_softmax.axis = static_cast<uint32_t>(nnrt::op::utils::convertAxis(op->axis, dim));
 
     return err;
 }
@@ -1164,7 +1159,7 @@ int OvxlibDelegate::addNode_TRANSPOSE(Model* model,
                   permute->fusedType(),
                   &nodes,
                   operation_index);
-    std::vector<int32_t> perm = convertPermute(permute->perm);
+    std::vector<int32_t> perm = nnrt::op::utils::convertPermute(permute->perm);
     int32_t* perm_buf = addParamPool(perm, false);
     nodes[0]->nn_param.permute.perm = reinterpret_cast<uint32_t*>(perm_buf);
     nodes[0]->nn_param.permute.dim_num = permute->perm.size();
@@ -1228,7 +1223,7 @@ int OvxlibDelegate::addNode_SQUEEZE(Model* model,
     int err = NNA_ERROR_CODE(NO_ERROR);
     SqueezeOperation* squeeze =  reinterpret_cast<SqueezeOperation*>(operation.get());
     std::vector<OperandPtr> inputs = model->getOperands(squeeze->inputs());
-    std::vector<int32_t> convert_axes = convertAxes(squeeze->axes, inputs[0]->ndim());
+    std::vector<int32_t> convert_axes = nnrt::op::utils::convertAxes(squeeze->axes, inputs[0]->ndim());
     int32_t* axes = addParamPool(convert_axes, true);
     std::vector<vsi_nn_node_t*> nodes;
     err = addNode(VSI_NN_OP_SQUEEZE, operation, &nodes, operation_index);
@@ -1313,7 +1308,7 @@ int OvxlibDelegate::addNode_MEAN(Model* model, OperationPtr operation, uint32_t 
             axes.push_back(i);
         }
     }
-    std::vector<int32_t> convert_axes = convertAxes(axes, inputs[0]->ndim());
+    std::vector<int32_t> convert_axes = nnrt::op::utils::convertAxes(axes, inputs[0]->ndim());
     int32_t* axes_ptr = addParamPool(convert_axes, true);
     nodes[0]->nn_param.reduce.type = VSI_NN_REDUCE_MEAN;
     nodes[0]->nn_param.reduce.axis = axes_ptr;
@@ -1462,7 +1457,7 @@ int OvxlibDelegate::addNode_LOCAL_RESPONSE_NORM(Model* model,
 
     std::vector<OperandPtr> outputs = model->getOperands(operation->outputs());
     int32_t dim = static_cast<int32_t>(outputs[0]->dimensions.size());
-    nodes[0]->nn_param.lrn.axis = static_cast<uint32_t>(convertAxis(lrn->axis, dim));
+    nodes[0]->nn_param.lrn.axis = static_cast<uint32_t>(nnrt::op::utils::convertAxis(lrn->axis, dim));
     return err;
 }
 
@@ -1477,7 +1472,7 @@ int OvxlibDelegate::addNode_L2_NORM(Model* model,
 
     std::vector<OperandPtr> outputs = model->getOperands(operation->outputs());
     int32_t dim = static_cast<int32_t>(outputs[0]->dimensions.size());
-    nodes[0]->nn_param.l2_normalize.axis = static_cast<uint32_t>(convertAxis(l2norm->axis, dim));
+    nodes[0]->nn_param.l2_normalize.axis = static_cast<uint32_t>(nnrt::op::utils::convertAxis(l2norm->axis, dim));
     return err;
 }
 
@@ -1740,7 +1735,7 @@ int OvxlibDelegate::addNode_ARGMAX(Model* model, OperationPtr operation, uint32_
 
     std::vector<vsi_nn_node_t*> nodes;
     addNode(VSI_NN_OP_ARGMAX, operation, &nodes, operation_index);
-    nodes[0]->nn_param.argmax.axis = static_cast<uint32_t>(convertAxis(op->axis, dim));
+    nodes[0]->nn_param.argmax.axis = static_cast<uint32_t>(nnrt::op::utils::convertAxis(op->axis, dim));
     return err;
 }
 
@@ -1753,7 +1748,7 @@ int OvxlibDelegate::addNode_ARGMIN(Model* model, OperationPtr operation, uint32_
 
     std::vector<vsi_nn_node_t*> nodes;
     addNode(VSI_NN_OP_ARGMIN, operation, &nodes, operation_index);
-    nodes[0]->nn_param.argmin.axis = static_cast<uint32_t>(convertAxis(op->axis, dim));
+    nodes[0]->nn_param.argmin.axis = static_cast<uint32_t>(nnrt::op::utils::convertAxis(op->axis, dim));
     return err;
 }
 
@@ -1766,7 +1761,7 @@ int OvxlibDelegate::addNode_GATHER(Model* model, OperationPtr operation, uint32_
 
     std::vector<vsi_nn_node_t*> nodes;
     addNode(VSI_NN_OP_GATHER, operation, &nodes, operation_index);
-    nodes[0]->nn_param.gather.axis = static_cast<uint32_t>(convertAxis(op->axis, dim));
+    nodes[0]->nn_param.gather.axis = static_cast<uint32_t>(nnrt::op::utils::convertAxis(op->axis, dim));
     return err;
 }
 
@@ -1781,7 +1776,7 @@ int OvxlibDelegate::addNode_CHANNEL_SHUFFLE(Model* model,
 
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
     int32_t dim = static_cast<int32_t>(inputs[0]->ndim());
-    nodes[0]->nn_param.shufflechannel.axis = static_cast<uint32_t>(convertAxis(op->axis, dim));
+    nodes[0]->nn_param.shufflechannel.axis = static_cast<uint32_t>(nnrt::op::utils::convertAxis(op->axis, dim));
     nodes[0]->nn_param.shufflechannel.group_number = op->groups;
     return err;
 }
@@ -1793,7 +1788,7 @@ int OvxlibDelegate::addNode_SPLIT(Model* model, OperationPtr operation, uint32_t
     std::vector<vsi_nn_node_t*> nodes;
     addNode(VSI_NN_OP_SPLIT, operation, &nodes, operation_index);
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
-    nodes[0]->nn_param.split.axis = static_cast<uint32_t>(convertAxis(op->axis, inputs[0]->ndim()));
+    nodes[0]->nn_param.split.axis = static_cast<uint32_t>(nnrt::op::utils::convertAxis(op->axis, inputs[0]->ndim()));
     nodes[0]->nn_param.split.slices_num = op->split_number;
     int32_t* slices = addParamPool(op->slices, false);
     nodes[0]->nn_param.split.slices = reinterpret_cast<uint32_t*>(slices);
@@ -2031,7 +2026,7 @@ DECLARE_LOGICAL_OP(LOGICAL_OR, LOGICAL_OR)
                 axes.push_back(i);                                                \
             }                                                                     \
         }                                                                         \
-        std::vector<int32_t> convert_axes = convertAxes(axes, inputs[0]->ndim()); \
+        std::vector<int32_t> convert_axes = nnrt::op::utils::convertAxes(axes, inputs[0]->ndim()); \
         int32_t* axes_ptr = addParamPool(convert_axes, true);                     \
         nodes[0]->nn_param.reduce.type = VSI_NN_##REDUCTION_OP;                   \
         nodes[0]->nn_param.reduce.axis = axes_ptr;                                \

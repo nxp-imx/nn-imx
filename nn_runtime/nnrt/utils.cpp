@@ -257,6 +257,12 @@ bool InsertPermuteBeforeOperand(Model* model,
     uint32_t permId = 0;
     permuteOp->setInputs(permInputs, 1);
     permuteOp->setOutputs(permOutputs, 1);
+    if(inputOperandPtr->isPerChannel()){
+        inputOperandPtr->quant.vec.channelDim =
+            nnrt::op::utils::convertAxis(static_cast<int32_t>(inputOperandPtr->quant.vec.channelDim),
+                                            static_cast<int32_t>(inputOperandPtr->ndim()));
+    }
+
     if (model->addOperation(permuteOp, &permId)) {
         return true;
     } else {

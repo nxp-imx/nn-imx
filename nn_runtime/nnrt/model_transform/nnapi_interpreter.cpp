@@ -83,6 +83,9 @@ void convertKenelLayout(std::shared_ptr<Operation> convOp, Model* model, Operati
         if(nullptr != filterOperand){
             filterOperand->quant.vec.channelDim =
                 nnrt::op::utils::axisMapTo(permVal, filterOperand->quant.vec.channelDim);
+            filterOperand->quant.vec.channelDim =
+                nnrt::op::utils::convertAxis(static_cast<int32_t>(filterOperand->quant.vec.channelDim),
+                                            static_cast<int32_t>(filterOperand->ndim()));
         }
     }
 }
