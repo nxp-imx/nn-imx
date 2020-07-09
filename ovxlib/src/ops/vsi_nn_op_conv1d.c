@@ -47,7 +47,7 @@ static vsi_status op_compute
     vsi_nn_kernel_param_add_int32( param, "stride", self->nn_param.conv1d.stride );
     vsi_nn_kernel_param_add_int32( param, "pad_front", self->nn_param.conv1d.pad[0] );
     vsi_nn_kernel_param_add_int32( param, "pad_end", self->nn_param.conv1d.pad[1] );
-    vsi_nn_kernel_param_add_int32( param, "dilation", self->nn_param.conv1d.multiplier );
+    vsi_nn_kernel_param_add_int32( param, "dilation", self->nn_param.conv1d.dilation);
     vsi_nn_kernel_param_add_int32( param, "overflow_policy", self->vx_param.overflow_policy );
     vsi_nn_kernel_param_add_int32( param, "rounding_policy", self->vx_param.rounding_policy );
     vsi_nn_kernel_param_add_int32( param,
