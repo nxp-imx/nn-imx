@@ -71,4 +71,5 @@
 #include "ChannelShuffleValidate.hpp"
 #include "ReshapeValidate.hpp"
 #include "SpaceOpValidate.hpp"
+#include "SliceValidate.hpp"
 #endif

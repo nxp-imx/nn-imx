@@ -703,11 +703,16 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
                 model, operation);
             return depthwiseConv2d->Validate(reason);
         }
+        case OperationType::SLICE: {
+            OperationValidatePtr slice = std::make_unique<
+                op_validate::SliceValidate<HalPlatform::Model, HalPlatform::Operation>>(
+                model, operation);
+            return slice->Validate(reason);
+        }
         case OperationType::BOX_WITH_NMS_LIMIT:
         case OperationType::PAD_V2:
         case OperationType::QUANTIZED_16BIT_LSTM:
         case OperationType::ROI_POOLING:
-        case OperationType::SLICE:
         case OperationType::TILE:
             isSupport &= false;
             break;
