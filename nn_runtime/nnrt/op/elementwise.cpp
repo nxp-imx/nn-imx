@@ -27,10 +27,9 @@
 namespace nnrt {
 namespace op {
 
-void EltwiseOperation::handleLayoutInferenceOnInputs(
+void EltwiseOperation::handleLayoutInferenceOnInputsHelper(
     Model& model,
     std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>& next_permute_vectors) {
-    assert(inputs().size() == 2);
     // Note: the inputs must have the same dimension
     if (!input_permute_cache_.cached_permutes_.empty()) {
         auto iter = input_permute_cache_.cached_permutes_.begin();
@@ -62,6 +61,19 @@ void EltwiseOperation::handleLayoutInferenceOnInputs(
         next_permute_vectors.insert(
             std::make_pair(outputs()[0], layout_inference::make_shared(outOperandPtr->ndim())));
     }
+}
+
+void EltwiseOperation::handleLayoutInferenceOnInputs(
+    Model& model,
+    std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>& next_permute_vectors) {
+    assert(inputs().size() == 2);
+    handleLayoutInferenceOnInputsHelper(model, next_permute_vectors);
+}
+
+void AddNOperation::handleLayoutInferenceOnInputs(
+    Model& model,
+    std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>& next_permute_vectors) {
+    handleLayoutInferenceOnInputsHelper(model, next_permute_vectors);
 }
 
 } // namespace op
