@@ -306,7 +306,7 @@ static vsi_bool vx_op_pre_compute
         VSILOGE("lcl_data_ptr is not malloc\n");
         return FALSE;
     }
-    kernel_info->kernel_index = resize_nearest_map[p->lcl_data_ptr->hash_idx].kernel_index;
+    kernel_info->kernel_index = (uint8_t)resize_nearest_map[p->lcl_data_ptr->hash_idx].kernel_index;
     kernel_info->resource_num = 1;
     kernel_info->resource_name[0] = resize_nearest_map[p->lcl_data_ptr->hash_idx].resource_name;
 

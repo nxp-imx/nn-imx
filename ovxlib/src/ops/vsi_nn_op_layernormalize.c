@@ -325,9 +325,9 @@ static vsi_status vx_op_compute
     border.constant_value.U8 = 0;
     if(inputDataFormat == VSI_NN_TYPE_UINT8)
     {
-        border.constant_value.U32 = in_zp;
-        border.constant_value.S16 = in_zp;
-        border.constant_value.U8 = in_zp;
+        border.constant_value.U32 = (vx_uint32)in_zp;
+        border.constant_value.S16 = (vx_int16)in_zp;
+        border.constant_value.U8 = (vx_uint8)in_zp;
     }
     status |= vxSetNodeAttribute(self->n, VX_NODE_BORDER, &border, sizeof(border));
 

@@ -208,7 +208,7 @@ static vsi_bool _check_is_same_shape(
 
     for (i = 0; i < dims - 1; i++)
     {
-        if (stride[i] != 1 || start[i] != 0 || stop[i] != inputs[0]->attr.size[i])
+        if (stride[i] != 1 || start[i] != 0 || stop[i] != (int32_t)inputs[0]->attr.size[i])
             return FALSE;
     }
 

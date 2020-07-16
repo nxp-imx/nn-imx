@@ -234,3 +234,114 @@ vsi_nn_tensor_t* vsi_nn_ConvertTensorDtype
 
     return dst_tensor;
 } /* vsi_nn_ConvertTensorDtype() */
+
+vsi_nn_tensor_t* vsi_nn_TensorAdd
+    (
+    vsi_nn_graph_t* graph,
+    vsi_nn_tensor_t** tensors,
+    uint32_t tensor_num,
+    vsi_nn_tensor_attr_t output_attr
+    )
+{
+#define MAX_TENSOR_NUM 16
+    vsi_status status = VSI_SUCCESS;
+    uint32_t i, j;
+    uint8_t* buffer[MAX_TENSOR_NUM] = {NULL};
+    uint8_t* tmp = NULL;
+    size_t total_bytes = 0;
+    size_t elements = 0;
+    uint32_t type_bytes = 0;
+    uint32_t out_bytes = 0;
+    float data = 0.0f, sum = 0.0f;
+    vsi_nn_tensor_t* tensor_out = NULL;
+
+    // Validate inputs
+    if( tensor_num < 2 || !graph || tensor_num > MAX_TENSOR_NUM)
+    {
+        return NULL;
+    }
+    for( i = 0; i < tensor_num; i ++ )
+    {
+        if( !tensors[i] )
+        {
+            VSILOGE("Tensor %u is null(TensorAdd).", i);
+            return NULL;
+        }
+    }
+    for( i = 1; i < tensor_num; i ++ )
+    {
+        if( tensors[0]->attr.dim_num != tensors[i]->attr.dim_num )
+        {
+            VSILOGE("Tensor dim number mismatch(TensorAdd).");
+            return NULL;
+        }
+        for( j = 0; j < tensors[0]->attr.dim_num; j ++)
+        {
+            if( tensors[0]->attr.size[j] != tensors[i]->attr.size[j] )
+            {
+                vsi_nn_PrintTensor(tensors[0], 0);
+                vsi_nn_PrintTensor(tensors[i], i);
+                VSILOGE("Tensor shapes mismatch(TensorAdd).");
+                return NULL;
+            }
+        }
+    }
+    for ( i = 0; i < tensor_num; i++ )
+    {
+        buffer[i] = vsi_nn_ConvertTensorToData(graph, tensors[i]);
+        if ( !buffer[i] )
+        {
+            VSILOGE("Convert tensor to data failed.");
+            goto error;
+        }
+    }
+
+    elements = vsi_nn_GetElementNum( tensors[0] );
+    out_bytes = vsi_nn_TypeGetBytes( output_attr.dtype.vx_type );
+    total_bytes = vsi_nn_GetTensorSize( output_attr.size, output_attr.dim_num,
+            output_attr.dtype.vx_type );
+    tmp = (uint8_t*)malloc( total_bytes );
+    if ( !tmp )
+    {
+        VSILOGE("Out of memroy.");
+        goto error;
+    }
+    for ( i = 0; i < elements; i++ )
+    {
+        sum = 0.0f;
+        for ( j = 0;  j < tensor_num;  j++ )
+        {
+            type_bytes = vsi_nn_TypeGetBytes( tensors[j]->attr.dtype.vx_type );
+            status = vsi_nn_DtypeToFloat32(&(buffer[j][type_bytes * i]), &data, &tensors[j]->attr.dtype);
+            if ( status != VSI_SUCCESS )
+            {
+                VSILOGE("Convert data failed.");
+                goto error;
+            }
+            sum += data;
+        }
+        status = vsi_nn_Float32ToDtype(sum, &tmp[out_bytes * i], &output_attr.dtype);
+        if ( status != VSI_SUCCESS )
+        {
+            VSILOGE("Convert data failed.");
+            goto error;
+        }
+    }
+    tensor_out = vsi_nn_CreateTensorFromData( graph, tmp, &output_attr );
+
+#undef MAX_TENSOR_NUM
+error:
+    for ( i = 0; i < tensor_num; i++ )
+    {
+        if ( buffer[i] )
+        {
+            free(buffer[i]);
+        }
+    }
+    if( tmp )
+    {
+        free(tmp);
+    }
+
+    return tensor_out;
+} /* vsi_nn_ConstTensorAdd() */

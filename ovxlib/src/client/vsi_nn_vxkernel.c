@@ -67,7 +67,7 @@ uint8_t * vsi_nn_LoadBinarySource
     fseek( fp, 0, SEEK_SET );
 
     buf = (uint8_t *)malloc( len + 1 );
-    n = fread( buf, 1, len, fp );
+    n = (int32_t)fread( buf, 1, len, fp );
     fclose( fp );
 
     if( n != len )

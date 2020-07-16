@@ -121,6 +121,14 @@ static void print_tensor
             tensor->attr.dtype.zero_point, tensor->attr.dtype.scale );
         ext_attr[count] = 0;
         break;
+#ifdef VSI_PERCHANNEL_QUANTIZATION_SUPPORT
+    case VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC:
+        count = snprintf( &ext_attr[0], _EXT_ATTR_BUF_SZ,
+            "SYM PERCHANNEL axis=%d, count=%d",
+            tensor->attr.dtype.channel_dim, tensor->attr.dtype.scale_dim );
+        ext_attr[count] = 0;
+        break;
+#endif
     default:
         strncpy(ext_attr, "NONE", _EXT_ATTR_BUF_SZ);
         break;
@@ -369,7 +377,7 @@ static vsi_bool _init_tensor
             if( data )
             {
                 addr = vxCreateTensorAddressing(graph->ctx->c,
-                    tensor->attr.size, stride_size, tensor->attr.dim_num);
+                    tensor->attr.size, stride_size, (uint8_t)tensor->attr.dim_num);
 #ifdef VX_13_NN_COMPATIBLITY
                 tensor->t = vxCreateTensorFromHandle2(graph->ctx->c,
                     &params, sizeof(vx_tensor_create_params_t),
@@ -990,7 +998,7 @@ void vsi_nn_SaveTensorToTextByFp32
     const float   c_flush_th = 0.7f;
     uint8_t    * data;
     uint8_t    * ptr;
-    uint8_t      type_bytes;
+    uint32_t     type_bytes;
     uint8_t      buf[_TENSOR_TMPBUF_SZ];
     FILE        * fp;
     float    write_data;
@@ -2195,6 +2203,7 @@ vsi_nn_tensor_t* vsi_nn_ConcatTensor_impl
     int tensor_count = 0;
 
     va_start(args, axis);
+
     FOREACH_ARGS(args, next, vsi_nn_tensor_t*)
     {
         tensor_count++;
@@ -2204,6 +2213,7 @@ vsi_nn_tensor_t* vsi_nn_ConcatTensor_impl
     tensors = (vsi_nn_tensor_t**)malloc(sizeof(vsi_nn_tensor_t*) * tensor_count);
     tensor_count = 0;
     va_start(args, axis);
+
     FOREACH_ARGS(args, next, vsi_nn_tensor_t*)
     {
         tensors[tensor_count++] = next;
@@ -2217,3 +2227,37 @@ vsi_nn_tensor_t* vsi_nn_ConcatTensor_impl
     return next;
 }
 
+vsi_nn_tensor_t* vsi_nn_ConstTensorAdd_impl
+    (
+    vsi_nn_graph_t* graph,
+    vsi_nn_tensor_attr_t output_attr,
+    ...
+    )
+{
+    va_list args;
+    vsi_nn_tensor_t* next = NULL;
+    vsi_nn_tensor_t** tensors = NULL;
+    int tensor_count = 0;
+
+    va_start(args, output_attr);
+    FOREACH_ARGS(args, next, vsi_nn_tensor_t*)
+    {
+        tensor_count++;
+    }
+    va_end(args);
+
+    tensors = (vsi_nn_tensor_t**)malloc(sizeof(vsi_nn_tensor_t*) * tensor_count);
+    tensor_count = 0;
+    va_start(args, output_attr);
+    FOREACH_ARGS(args, next, vsi_nn_tensor_t*)
+    {
+        tensors[tensor_count++] = next;
+    }
+    va_end(args);
+
+    next = vsi_nn_TensorAdd(graph, tensors, tensor_count, output_attr);
+
+    vsi_nn_safe_free(tensors);
+
+    return next;
+}

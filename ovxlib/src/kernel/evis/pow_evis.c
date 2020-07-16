@@ -213,7 +213,7 @@ DEF_KERNEL_INITIALIZER(_pow_initializer)
 
     if( attr[0]->quant == VSI_NN_KERNEL_QUANT_DFP )
     {
-        in0_fl = attr[0]->dfp.fl;
+        in0_fl = (int8_t)attr[0]->dfp.fl;
         postshift0 = in0_fl - 0;
     }
     else if( attr[0]->quant == VSI_NN_KERNEL_QUANT_ASYMM
@@ -225,7 +225,7 @@ DEF_KERNEL_INITIALIZER(_pow_initializer)
 
     if( attr[1]->quant == VSI_NN_KERNEL_QUANT_DFP )
     {
-        in1_fl = attr[1]->dfp.fl;
+        in1_fl = (int8_t)attr[1]->dfp.fl;
         postshift1 = in1_fl - 0;
     }
     else if( attr[1]->quant == VSI_NN_KERNEL_QUANT_ASYMM
@@ -237,7 +237,7 @@ DEF_KERNEL_INITIALIZER(_pow_initializer)
 
     if( attr[2]->quant == VSI_NN_KERNEL_QUANT_DFP )
     {
-        out_fl = attr[2]->dfp.fl;
+        out_fl = (int8_t)attr[2]->dfp.fl;
         if (out_fl > 0)
         {
             outScale_fl = (vx_float32)(1 << out_fl);

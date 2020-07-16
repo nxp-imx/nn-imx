@@ -320,7 +320,7 @@ vsi_status vsi_nn_add_single_preproc_node
 
     if(permute != NULL)
     {
-        if(permute->dim != attr.dim_num)
+        if((uint32_t)permute->dim != attr.dim_num)
         {
             VSILOGE("Preprocess permute dim dosen't match input dim");
             status = VSI_FAILURE;
@@ -408,7 +408,7 @@ vsi_status vsi_nn_add_single_postproc_node
     /* Set Postprocess node parameters */
     if(permute != NULL)
     {
-        if(permute->dim != org_norm_tensor->attr.dim_num)
+        if((uint32_t)permute->dim != org_norm_tensor->attr.dim_num)
         {
             VSILOGE("Postprocess permute dim doesn't match output dim!");
             status = VSI_FAILURE;

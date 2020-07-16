@@ -166,7 +166,7 @@ void myLayerNormFunc_u8
                     float biasVal = bias[w];
                     float normVal = data * vari * scaleVal + biasVal;
                     //imgOut[index] = vsi_nn_Fp32ToFp16(normVal);
-                    imgOut[index] = vsi_nn_Fp32ToAffine(normVal, outScale, outZp, VSI_NN_TYPE_UINT8);
+                    imgOut[index] = (vx_uint8)vsi_nn_Fp32ToAffine(normVal, outScale, outZp, VSI_NN_TYPE_UINT8);
                 }
             }
         }
@@ -282,7 +282,7 @@ vsi_status VX_CALLBACK vxLayerNormKernel
         }
         input  = (int16_t*)malloc(input_size[0]*input_size[1]*input_size[2]*sizeof(int16_t));
         output = (int16_t*)malloc(output_size[0]*output_size[1]*output_size[2]*sizeof(int16_t));
-        input_user_addr = vxCreateTensorAddressing(context, input_size, input_stride_size, input_dims);
+        input_user_addr = vxCreateTensorAddressing(context, input_size, input_stride_size, (vx_uint8)input_dims);
         vsi_nn_copy_tensor_patch(imgObj[0], &attr[0], input, VX_READ_ONLY);
         //scale and bias
         scale_stride_size[0]  = vsi_nn_GetTypeBytes(scaleFormat);
@@ -294,9 +294,9 @@ vsi_status VX_CALLBACK vxLayerNormKernel
         }
         scale  = (int16_t*)malloc(scale_size[0]*sizeof(int16_t));
         bias = (float*)malloc(bias_size[0]*sizeof(float));
-        bias_user_addr = vxCreateTensorAddressing(context, bias_size, bias_stride_size, bias_dims);
+        bias_user_addr = vxCreateTensorAddressing(context, bias_size, bias_stride_size, (vx_uint8)bias_dims);
         vsi_nn_copy_tensor_patch(imgObj[1], &attr[1], bias, VX_READ_ONLY);
-        scale_user_addr = vxCreateTensorAddressing(context, scale_size, scale_stride_size, scale_dims);
+        scale_user_addr = vxCreateTensorAddressing(context, scale_size, scale_stride_size, (vx_uint8)scale_dims);
         vsi_nn_copy_tensor_patch(imgObj[2], &attr[2], scale, VX_READ_ONLY);
 
         // scalar
@@ -320,7 +320,7 @@ vsi_status VX_CALLBACK vxLayerNormKernel
 
         //output tensor
         output_user_addr = vxCreateTensorAddressing(context, output_size,
-            output_stride_size, output_dims);
+            output_stride_size, (vx_uint8)output_dims);
         vsi_nn_copy_tensor_patch(imgObj[3], &attr[3], output, VX_WRITE_ONLY);
 
 OnError:

@@ -741,7 +741,7 @@ uint8_t * vsi_nn_MallocAlignedBuffer
     )
 {
     uint32_t sz;
-    long temp;
+    uintptr_t temp;
     uint8_t* raw_addr;
     uint8_t* p;
     uint8_t* align_addr;
@@ -752,7 +752,7 @@ uint8_t * vsi_nn_MallocAlignedBuffer
     memset(raw_addr, 0, sizeof( uint8_t ) * sz);
     p = raw_addr + sizeof(aligned_header);
 
-    temp = (long)(p) % align_start_size;
+    temp = (uintptr_t)(((uintptr_t)p) % align_start_size);
     if (temp == 0)
     {
         align_addr = p;
@@ -782,9 +782,9 @@ vsi_bool vsi_nn_IsBufferAligned
     uint32_t align_start_size
     )
 {
-    long temp;
+    uintptr_t temp;
 
-    temp = (long)(buf) % align_start_size;
+    temp = (uintptr_t)(((uintptr_t)buf) % align_start_size);
     if (temp == 0)
     {
         return TRUE;
@@ -1224,6 +1224,4 @@ float vsi_nn_activation
             VSILOGE("Unsupported activation: %d\n", activation);
             exit(1);
     }
-
-    return value;
 }

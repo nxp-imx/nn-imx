@@ -115,12 +115,12 @@ DEF_KERNEL_INITIALIZER(_minimum_initializer)
         {0, 0, 0},
         {0, 0, 0}
         };
-    uint8_t     in0_fl          = 0;
+    int8_t      in0_fl          = 0;
     int32_t     inputZP0        = 0;
     float       input_scale0    = 1.0f;
     int32_t     inputZP1        = 0;
     float       input_scale1    = 1.0f;
-    uint8_t     out_fl          = 0;
+    int8_t      out_fl          = 0;
     float       outputZP        = 0;
 
     int32_t  shift0             = 0;
@@ -157,7 +157,7 @@ DEF_KERNEL_INITIALIZER(_minimum_initializer)
     out_shape  = attr[2]->shape;
     if( attr[0]->quant == VSI_NN_KERNEL_QUANT_DFP )
     {
-        in0_fl = attr[0]->dfp.fl;
+        in0_fl = (int8_t)attr[0]->dfp.fl;
         if (in0_fl >= 0)
         {
             input_scale0 = 1.0f / (vx_float32) (1 << in0_fl);
@@ -181,7 +181,7 @@ DEF_KERNEL_INITIALIZER(_minimum_initializer)
 
     if( attr[2]->quant == VSI_NN_KERNEL_QUANT_DFP )
     {
-        out_fl = attr[2]->dfp.fl;
+        out_fl = (int8_t)attr[2]->dfp.fl;
 
         if (out_fl >= 0)
             input_scale0 *= (vx_float32)(1 << out_fl);

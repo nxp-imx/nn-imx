@@ -154,7 +154,7 @@ static vsi_bool op_setup
     vsi_nn_internal_tensor_t* hstate_input_tensor = NULL;
     vsi_nn_internal_tensor_t* tmp = NULL;
     vsi_nn_internal_node_t* curr = NULL;
-    vsi_bool use_virtual_tensor = FALSE;
+    vsi_bool use_virtual_tensor = TRUE;
     uint32_t kernel_h = 1;
     uint32_t kernel_w = 1;
 
@@ -229,7 +229,7 @@ static vsi_bool op_setup
             inputs[RNNCELL_INPUT_INPUT]->attr.size[0],
             &kernel_h, &kernel_w);
         input_tensor = vsi_nn_rnn_process_input_for_nn_fc(self, inputs[RNNCELL_INPUT_INPUT],
-            kernel_h, kernel_w, use_virtual_tensor);
+            p->local->multi_batch, kernel_h, kernel_w, use_virtual_tensor);
 
         tmp = vsi_nn_rnn_create_nn_fc(self,
                 input_tensor->t,
@@ -239,7 +239,7 @@ static vsi_bool op_setup
                 &p->internal_dtype[RNNCELL_QUANTIZE_PARAM_I],
                 use_virtual_tensor);
         /* transpose and reshape output */
-        input_gate_fc_outputs = vsi_nn_rnn_process_output_for_nn_fc(self, tmp->t, kernel_h,
+        input_gate_fc_outputs = vsi_nn_rnn_process_output_for_nn_fc(self, tmp->t, p->local->multi_batch, kernel_h,
             kernel_w, use_virtual_tensor);
         if (inputs[RNNCELL_INPUT_AUX_INPUT] != NULL)
         {
@@ -249,7 +249,7 @@ static vsi_bool op_setup
                 &kernel_h, &kernel_w);
             input_tensor = vsi_nn_rnn_process_input_for_nn_fc(self,
                             inputs[RNNCELL_INPUT_AUX_INPUT],
-                            kernel_h, kernel_w, use_virtual_tensor);
+                            p->local->multi_batch, kernel_h, kernel_w, use_virtual_tensor);
             tmp = vsi_nn_rnn_create_nn_fc(self,
                     input_tensor->t,
                     inputs[RNNCELL_INPUT_AUX_INPUT],
@@ -259,7 +259,7 @@ static vsi_bool op_setup
                     use_virtual_tensor);
             /* transpose and reshape output */
             aux_input_gate_fc_outputs = vsi_nn_rnn_process_output_for_nn_fc(self,
-                                            tmp->t, kernel_h,
+                                            tmp->t, p->local->multi_batch, kernel_h,
                                             kernel_w, use_virtual_tensor);
         }
     }
@@ -281,7 +281,7 @@ static vsi_bool op_setup
             inputs[RNNCELL_INPUT_H_STATE]->attr.size[0], &kernel_h, &kernel_w);
         hstate_input_tensor = vsi_nn_rnn_process_input_for_nn_fc(self,
                                 inputs[RNNCELL_INPUT_H_STATE],
-                                kernel_h, kernel_w, use_virtual_tensor);
+                                p->local->multi_batch, kernel_h, kernel_w, use_virtual_tensor);
 
         tmp = vsi_nn_rnn_create_nn_fc(self,
                 hstate_input_tensor->t,
@@ -292,7 +292,7 @@ static vsi_bool op_setup
                 use_virtual_tensor);
         /* transpose and reshape output */
         hstate_gate_fc_outputs = vsi_nn_rnn_process_output_for_nn_fc(self,
-            tmp->t, kernel_h, kernel_w, use_virtual_tensor);
+            tmp->t, p->local->multi_batch, kernel_h, kernel_w, use_virtual_tensor);
     }
 
     input_add_hstate_outputs = vsi_nn_rnn_create_tensor_add(self,

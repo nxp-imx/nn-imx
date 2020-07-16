@@ -283,14 +283,17 @@ static vsi_status _add_graph_dataconvert_for_int8
         input_ids = (vsi_nn_tensor_id_t *)malloc(sizeof(vsi_nn_tensor_id_t) * input_count);
         _get_graph_input_asmint8_norm_tensor(graph, NULL, input_ids, &input_valid_count);
 
-        input_nodes = (vsi_nn_node_t***)malloc(sizeof(vsi_nn_node_t**) * input_valid_count);
+        if ( input_valid_count > 0 )
+        {
+            input_nodes = (vsi_nn_node_t***)malloc(sizeof(vsi_nn_node_t**) * input_valid_count);
+        }
 
         for ( i = 0; i < input_valid_count; i++)
         {
             uint32_t nodes_count = 0;
             vsi_nn_get_tensor_consumers(graph, input_ids[i], NULL, &nodes_count);
 
-            if(nodes_count != 0)
+            if(nodes_count > 0)
             {
                 input_nodes[i] = (vsi_nn_node_t**)malloc(sizeof(vsi_nn_node_t*)*nodes_count);
                 vsi_nn_get_tensor_consumers(graph, input_ids[i], input_nodes[i], NULL);
@@ -302,7 +305,7 @@ static vsi_status _add_graph_dataconvert_for_int8
 
     _get_graph_output_asmint8_norm_tensor(graph, &output_count, NULL);
 
-    if(output_count != 0)
+    if(output_count > 0)
     {
         output_ids = (vsi_nn_tensor_id_t*)malloc(sizeof(vsi_nn_tensor_id_t) * input_count);
         _get_graph_output_asmint8_norm_tensor(graph, NULL, output_ids);
@@ -581,7 +584,7 @@ static vx_tensor _create_const_raw_tensor
             if( data )
             {
                 addr = vxCreateTensorAddressing(graph->ctx->c,
-                    attr.size, stride_size, attr.dim_num);
+                    attr.size, stride_size, (vx_uint8)attr.dim_num);
 #ifdef VX_13_NN_COMPATIBLITY
                 tensor = vxCreateTensorFromHandle2(graph->ctx->c,
                     &params, sizeof(vx_tensor_create_params_t),

@@ -226,7 +226,8 @@ static vsi_status VX_CALLBACK vxPre_process_bgraKernel
                         dstG_idx = output_index + gOffset;
                         dstB_idx = output_index + bOffset;
 
-                        if(dx <= dst_width - 1 && dy <= dst_height - 1 && (xRatio != (1 << 15) || yRatio != (1 << 15)))
+                        if(dx <= dst_width - 1 && dy <= dst_height - 1
+                          && (xRatio != (1 << 15) || yRatio != (1 << 15)))
                         {
                             //vx_int32 offset = xOffset + yOffset * src_width;
                             //vx_uint8 result;
@@ -254,7 +255,8 @@ static vsi_status VX_CALLBACK vxPre_process_bgraKernel
                             temp1 = fy * (temp2 - temp1) + (temp1 << 10);
                             B = (vx_uint8)(DESCALE(temp1));
                             final = (B - bMean) * var;
-                            dst[dstB_idx] = vsi_nn_Fp32ToAffine(final, outputScale, output_ZP, VSI_NN_TYPE_UINT8);
+                            dst[dstB_idx] = (vx_uint8)vsi_nn_Fp32ToAffine(final,
+                                            outputScale, output_ZP, VSI_NN_TYPE_UINT8);
 
                             //G
                             temp1 = fx * (gline1[1] - gline1[0]) + (gline1[0] << 10);
@@ -263,7 +265,8 @@ static vsi_status VX_CALLBACK vxPre_process_bgraKernel
 
                             G = (vx_uint8)(DESCALE(temp1));
                             final = (G - gMean) * var;
-                            dst[dstG_idx] = vsi_nn_Fp32ToAffine(final, outputScale, output_ZP, VSI_NN_TYPE_UINT8);
+                            dst[dstG_idx] = (vx_uint8)vsi_nn_Fp32ToAffine(final,
+                                            outputScale, output_ZP, VSI_NN_TYPE_UINT8);
 
                             // R
                             temp1 = fx * (rline1[1] - rline1[0]) + (rline1[0] << 10);
@@ -271,7 +274,8 @@ static vsi_status VX_CALLBACK vxPre_process_bgraKernel
                             temp1 = fy * (temp2 - temp1) + (temp1 << 10);
                             R = (vx_uint8)(DESCALE(temp1));
                             final = (R - rMean) * var;
-                            dst[dstR_idx] = vsi_nn_Fp32ToAffine(final, outputScale, output_ZP, VSI_NN_TYPE_UINT8);
+                            dst[dstR_idx] = (vx_uint8)vsi_nn_Fp32ToAffine(final,
+                                            outputScale, output_ZP, VSI_NN_TYPE_UINT8);
                         }
                         else
                         {
@@ -280,11 +284,14 @@ static vsi_status VX_CALLBACK vxPre_process_bgraKernel
                             R = rSrc[source_index ];
 
                             final = (B - bMean) * var;
-                            dst[dstB_idx] = vsi_nn_Fp32ToAffine(final, outputScale, output_ZP, VSI_NN_TYPE_UINT8);
+                            dst[dstB_idx] = (vx_uint8)vsi_nn_Fp32ToAffine(final,
+                                            outputScale, output_ZP, VSI_NN_TYPE_UINT8);
                             final = (G - gMean) * var;
-                            dst[dstG_idx] = vsi_nn_Fp32ToAffine(final, outputScale, output_ZP, VSI_NN_TYPE_UINT8);
+                            dst[dstG_idx] = (vx_uint8)vsi_nn_Fp32ToAffine(final,
+                                            outputScale, output_ZP, VSI_NN_TYPE_UINT8);
                             final = (R - rMean) * var;
-                            dst[dstR_idx] = vsi_nn_Fp32ToAffine(final, outputScale, output_ZP, VSI_NN_TYPE_UINT8);
+                            dst[dstR_idx] = (vx_uint8)vsi_nn_Fp32ToAffine(final,
+                                            outputScale, output_ZP, VSI_NN_TYPE_UINT8);
                         }
                     }
                 }
@@ -334,7 +341,8 @@ static vsi_status VX_CALLBACK vxPre_process_bgraKernel
                         dstG_idx = output_index + gOffset;
                         dstB_idx = output_index + bOffset;
 
-                        if(dx <= dst_width - 1 && dy <= dst_height - 1 && (xRatio != (1 << 15) || yRatio != (1 << 15)))
+                        if(dx <= dst_width - 1 && dy <= dst_height - 1
+                        && (xRatio != (1 << 15) || yRatio != (1 << 15)))
                         {
                             //vx_int32 offset = xOffset + yOffset * src_width;
                             //vx_uint8 result;
@@ -362,7 +370,8 @@ static vsi_status VX_CALLBACK vxPre_process_bgraKernel
                             temp1 = fy * (temp2 - temp1) + (temp1 << 10);
                             B = (vx_uint8)(DESCALE(temp1));
                             final = (B - bMean) * var;
-                            dst[dstB_idx] = vsi_nn_Fp32ToAffine(final, outputScale, output_ZP, VSI_NN_TYPE_UINT8);
+                            dst[dstB_idx] = (vx_uint8)vsi_nn_Fp32ToAffine(final,
+                                            outputScale, output_ZP, VSI_NN_TYPE_UINT8);
 
                             //G
                             temp1 = fx * (gline1[1] - gline1[0]) + (gline1[0] << 10);
@@ -371,7 +380,8 @@ static vsi_status VX_CALLBACK vxPre_process_bgraKernel
 
                             G = (vx_uint8)(DESCALE(temp1));
                             final = (G - gMean) * var;
-                            dst[dstG_idx] = vsi_nn_Fp32ToAffine(final, outputScale, output_ZP, VSI_NN_TYPE_UINT8);
+                            dst[dstG_idx] = (vx_uint8)vsi_nn_Fp32ToAffine(final,
+                                            outputScale, output_ZP, VSI_NN_TYPE_UINT8);
 
                             // R
                             temp1 = fx * (rline1[1] - rline1[0]) + (rline1[0] << 10);
@@ -379,7 +389,8 @@ static vsi_status VX_CALLBACK vxPre_process_bgraKernel
                             temp1 = fy * (temp2 - temp1) + (temp1 << 10);
                             R = (vx_uint8)(DESCALE(temp1));
                             final = (R - rMean) * var;
-                            dst[dstR_idx] = vsi_nn_Fp32ToAffine(final, outputScale, output_ZP, VSI_NN_TYPE_UINT8);
+                            dst[dstR_idx] = (vx_uint8)vsi_nn_Fp32ToAffine(final,
+                                            outputScale, output_ZP, VSI_NN_TYPE_UINT8);
                         }
                         else
                         {
@@ -388,11 +399,14 @@ static vsi_status VX_CALLBACK vxPre_process_bgraKernel
                             R = rSrc[source_index ];
 
                             final = (B - bMean) * var;
-                            dst[dstB_idx] = vsi_nn_Fp32ToAffine(final, outputScale, output_ZP, outputFormat);
+                            dst[dstB_idx] = (vx_uint8)vsi_nn_Fp32ToAffine(final,
+                                            outputScale, output_ZP, outputFormat);
                             final = (G - gMean) * var;
-                            dst[dstG_idx] = vsi_nn_Fp32ToAffine(final, outputScale, output_ZP, outputFormat);
+                            dst[dstG_idx] = (vx_uint8)vsi_nn_Fp32ToAffine(final,
+                                            outputScale, output_ZP, outputFormat);
                             final = (R - rMean) * var;
-                            dst[dstR_idx] = vsi_nn_Fp32ToAffine(final, outputScale, output_ZP, outputFormat);
+                            dst[dstR_idx] = (vx_uint8)vsi_nn_Fp32ToAffine(final,
+                                            outputScale, output_ZP, outputFormat);
                         }
                     }
                 }

@@ -409,8 +409,8 @@ vx_status VX_CALLBACK vxClipInitializer
         {
             vx_uint8 minData   = 0;
             vx_uint8 maxData   = 0;
-            minData =  vsi_nn_Fp32ToDFP(minVal, dstFixPointPos, VSI_NN_TYPE_INT8);
-            maxData =  vsi_nn_Fp32ToDFP(maxVal, dstFixPointPos, VSI_NN_TYPE_INT8);
+            minData =  (vx_uint8)vsi_nn_Fp32ToDFP(minVal, dstFixPointPos, VSI_NN_TYPE_INT8);
+            maxData =  (vx_uint8)vsi_nn_Fp32ToDFP(maxVal, dstFixPointPos, VSI_NN_TYPE_INT8);
             packedMin = (minData << 24) | (minData << 16) | (minData << 8) | (minData);
             packedMax = (maxData << 24) | (maxData << 16) | (maxData << 8) | (maxData);
         }
@@ -449,8 +449,8 @@ vx_status VX_CALLBACK vxClipInitializer
         }
         else
         {
-            minData =  vsi_nn_Fp32ToDFP(minVal, dstFixPointPos, VSI_NN_TYPE_INT16);
-            maxData =  vsi_nn_Fp32ToDFP(maxVal, dstFixPointPos, VSI_NN_TYPE_INT16);
+            minData =  (vx_uint16)vsi_nn_Fp32ToDFP(minVal, dstFixPointPos, VSI_NN_TYPE_INT16);
+            maxData =  (vx_uint16)vsi_nn_Fp32ToDFP(maxVal, dstFixPointPos, VSI_NN_TYPE_INT16);
         }
 
         packedMin = (minData << 16) | (minData);
@@ -530,8 +530,8 @@ vx_status VX_CALLBACK vxClipInitializer
         {
             vx_uint8   minData          = 0;
             vx_uint8   maxData          = 0;
-            minData = vsi_nn_Fp32ToAffine(minVal, scaleOut, output_ZP, VSI_NN_TYPE_UINT8);
-            maxData = vsi_nn_Fp32ToAffine(maxVal, scaleOut, output_ZP, VSI_NN_TYPE_UINT8);
+            minData = (vx_uint8)vsi_nn_Fp32ToAffine(minVal, scaleOut, output_ZP, VSI_NN_TYPE_UINT8);
+            maxData = (vx_uint8)vsi_nn_Fp32ToAffine(maxVal, scaleOut, output_ZP, VSI_NN_TYPE_UINT8);
             packedMin = (minData << 24) | (minData << 16) | (minData << 8) | (minData);
             packedMax = (maxData << 24) | (maxData << 16) | (maxData << 8) | (maxData);
         }

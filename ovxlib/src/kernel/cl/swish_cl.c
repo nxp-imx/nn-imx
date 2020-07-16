@@ -245,7 +245,7 @@ static vsi_status _query_kernel
     {
         snprintf( kernel->info.name, VX_MAX_KERNEL_NAME, "%s",  kernel_map[i].function_name );
         kernel->info.parameters  = param_def;
-        kernel->info.numParams   = param_def_size;
+        kernel->info.numParams   = (uint32_t)param_def_size;
         kernel->info.initialize  = initializer;
         // Register code source
         vsi_nn_kernel_add_source( kernel, VSI_NN_GPU_SOURCE_FMT_CODE, 1,
@@ -284,6 +284,13 @@ static vsi_nn_kernel_node_t _setup
     float   outputScale = outputs[0]->attr.dtype.scale == 0.0f ? 0.0f : 1.0f / outputs[0]->attr.dtype.scale;
     float   outputZP    = (float)outputs[0]->attr.dtype.zero_point + 0.5f;
     vx_float32  logE    = (vx_float32)(log10(exp(1.0f)) / log10(2.0f));
+
+#if (VX_ACTIVATION_EXT_SUPPORT)
+    if (VSI_NN_HW_EVIS_2 == graph->ctx->config.evis.ver)
+    {
+        return NULL;
+    }
+#endif
 
     vsi_nn_OptimizedEltOPShape(inputs[0],  (uint32_t *)(shapes[0]), &new_rank);
     vsi_nn_OptimizedEltOPShape(outputs[0], (uint32_t *)(shapes[1]), &new_rank);

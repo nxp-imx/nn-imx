@@ -406,7 +406,7 @@ static void _convert_tensor_attr_to_vx_tensor_param
 {
     memset( p, 0, sizeof( vx_tensor_create_params_t ) );
 
-    p->num_of_dims = attr->shape->size;
+    p->num_of_dims = (uint32_t)attr->shape->size;
     p->sizes = (uint32_t*)attr->shape->data;
 #define MAP_TYPE( var, src_type, dst_type ) \
     case src_type: \

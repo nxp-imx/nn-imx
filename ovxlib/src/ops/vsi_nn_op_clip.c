@@ -269,7 +269,7 @@ static vsi_status vx_op_pre_compute
 
     p = &(self->nn_param.clip);
 
-    kernel_info->kernel_index = clip_map[p->local2->hash_idx].kernel_index;
+    kernel_info->kernel_index = (uint8_t)clip_map[p->local2->hash_idx].kernel_index;
     kernel_info->resource_num = 2;
     kernel_info->resource_name[0] = "vsi_nn_kernel_header";
     kernel_info->resource_name[1] = clip_map[p->local2->hash_idx].resource_name;

@@ -228,8 +228,19 @@ uint32_t vsi_pycc_VdataCreate
         node->nn_param.pool.pad[3]     = pycc_params->pool_pad_bottom;
         node->nn_param.pool.type       = pycc_params->pool_type;
         node->nn_param.pool.round_type = pycc_params->pool_round_type;
+        break;
         /* Do not break */
     case VSI_NN_OP_CONV_RELU:
+        node->nn_param.pool.ksize[0]   = pycc_params->pool_ksize_h;
+        node->nn_param.pool.ksize[1]   = pycc_params->pool_ksize_w;
+        node->nn_param.pool.stride[0]  = pycc_params->pool_stride_h;
+        node->nn_param.pool.stride[1]  = pycc_params->pool_stride_w;
+        node->nn_param.pool.pad[0]     = pycc_params->pool_pad_left;
+        node->nn_param.pool.pad[1]     = pycc_params->pool_pad_right;
+        node->nn_param.pool.pad[2]     = pycc_params->pool_pad_top;
+        node->nn_param.pool.pad[3]     = pycc_params->pool_pad_bottom;
+        node->nn_param.pool.type       = pycc_params->pool_type;
+        node->nn_param.pool.round_type = pycc_params->pool_round_type;
         node->nn_param.conv2d.ksize[0]    = pycc_params->ksize_h;
         node->nn_param.conv2d.ksize[1]    = pycc_params->ksize_w;
         node->nn_param.conv2d.stride[0]   = pycc_params->stride_h;

@@ -188,7 +188,7 @@ static vx_param_description_t _instance_normalization_kernel_param_def[] =
 };
 #define _INSTANCE_NORMALIZATION_PARAM_NUM  _cnt_of_array( _instance_normalization_kernel_param_def )
 
-const static vx_kernel_description_t _kernel_info =
+static const vx_kernel_description_t _kernel_info =
 {
     KERNEL_ID_PLACEHOLDER,
     _KERNEL_NAME,

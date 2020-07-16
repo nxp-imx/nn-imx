@@ -90,10 +90,6 @@ static int run_test_fc(
     _CHECK_PTR( node, final );
     node->nn_param.fcl.weights = 1;
     node->vx_param.has_relu = vx_true_e;
-    node->vx_param.overflow_policy = VX_CONVERT_POLICY_WRAP;
-    node->vx_param.rounding_policy = VX_ROUND_POLICY_TO_ZERO;
-    node->vx_param.down_scale_size_rounding =
-        VX_CONVOLUTIONAL_NETWORK_DS_SIZE_ROUNDING_FLOOR;
 
     node->input.tensors[0] = vsi_nn_AddTensor( graph, VSI_NN_TENSOR_ID_AUTO, input_attr, input );
     node->input.tensors[1] = vsi_nn_AddTensor( graph, VSI_NN_TENSOR_ID_AUTO, kernel_attr, kernel );

@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='UTF-8'?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
   <ItemGroup>
     <Filter Include="Source Files">
@@ -115,9 +115,9 @@
     <Filter Include="Source Files\utils">
       <UniqueIdentifier>{28374633-e4c5-3557-9da2-dd71e103460c}</UniqueIdentifier>
     </Filter>
-    </ItemGroup>
+  </ItemGroup>
   <ItemGroup>
-    <Text Include="ReadMe.txt"/>
+    <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\client\vsi_nn_vxkernel.h">
@@ -286,6 +286,9 @@
       <Filter>Header Files\ops</Filter>
     </ClInclude>
     <ClInclude Include="include\ops\vsi_nn_op_grucell_activation_internal.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_grucell_activation_internal_sma.h">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
     <ClInclude Include="include\ops\vsi_nn_op_grucell_ovxlib.h">
@@ -755,6 +758,9 @@
     <ClCompile Include="src\kernel\cl\grucell_activation_cl.c">
       <Filter>Source Files\kernel\cl</Filter>
     </ClCompile>
+    <ClCompile Include="src\kernel\cl\grucell_activation_sma_cl.c">
+      <Filter>Source Files\kernel\cl</Filter>
+    </ClCompile>
     <ClCompile Include="src\kernel\cl\instance_normalization_cl.c">
       <Filter>Source Files\kernel\cl</Filter>
     </ClCompile>
@@ -852,6 +858,9 @@
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\grucell_activation_cpu.c">
+      <Filter>Source Files\kernel\cpu</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\cpu\grucell_activation_sma_cpu.c">
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\instance_normalization_cpu.c">
@@ -957,6 +966,9 @@
       <Filter>Source Files\kernel\evis</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\grucell_activation_evis.c">
+      <Filter>Source Files\kernel\evis</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\evis\grucell_activation_sma_evis.c">
       <Filter>Source Files\kernel\evis</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\instance_normalization_evis.c">
@@ -1113,9 +1125,6 @@
       <Filter>Source Files\libnnext\ops\kernel</Filter>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_layernormalize.c">
-      <Filter>Source Files\libnnext\ops\kernel</Filter>
-    </ClCompile>
-    <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_lstmunit_activation.c">
       <Filter>Source Files\libnnext\ops\kernel</Filter>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_pre_process_bgra.c">
@@ -1286,7 +1295,7 @@
     <ClCompile Include="src\ops\vsi_nn_op_extra_ending.c">
       <Filter>Source Files\ops</Filter>
     </ClCompile>
-  <ClCompile Include="src\ops\vsi_nn_op_floor.c">
+    <ClCompile Include="src\ops\vsi_nn_op_floor.c">
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_floordiv.c">
@@ -1317,6 +1326,9 @@
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_grucell_activation_internal.c">
+      <Filter>Source Files\ops</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_grucell_activation_internal_sma.c">
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_grucell_ovxlib.c">
@@ -1706,7 +1718,19 @@
     <ClCompile Include="src\vsi_nn_version.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    </ItemGroup>
+    <ClCompile Include="src\kernel\cl\lstmunit_activation_cl.c">
+      <Filter>Source Files\kernel\cl</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\cpu\lstmunit_activation_cpu.c">
+      <Filter>Source Files\kernel\cpu</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\evis\lstmunit_activation_evis.c">
+      <Filter>Source Files\kernel\evis</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\vx\swish_vx.c">
+      <Filter>Source Files\kernel\vx</Filter>
+    </ClCompile>
+  </ItemGroup>
   <ItemGroup>
     <None Include="include\custom\custom_node_type.def">
       <Filter>Header Files\custom</Filter>

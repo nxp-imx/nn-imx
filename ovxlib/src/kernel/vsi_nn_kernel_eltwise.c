@@ -329,7 +329,7 @@ vsi_bool vsi_nn_kernel_optimize_eltwise_shape
         vsi_nn_print_int_array( out_shape_y, dims );
         vsi_nn_print_int_array( out_shape_output, dims );
 #endif
-        *out_rank_output = dims;
+        *out_rank_output = (uint32_t)dims;
     }
 #undef _swap_size
     return ret;
@@ -554,7 +554,7 @@ vsi_bool vsi_nn_kernel_optimize_broadcast_shape
             }
         }
 
-        *out_rank_output = dims;
+        *out_rank_output = (uint32_t)dims;
     }
 
 #undef _swap_size

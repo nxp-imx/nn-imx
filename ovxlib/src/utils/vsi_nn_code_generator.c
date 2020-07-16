@@ -465,6 +465,7 @@ void vsi_nn_GenGraphCCode
         _write_code( "attr.vtl = %d;", (int)tensor->attr.vtl );
         _write_code( "attr.dtype.vx_type = %#x;", tensor->attr.dtype.vx_type );
 
+        ofst = 0;
         sz = 0;
         if( TRUE == tensor->attr.is_const )
         {

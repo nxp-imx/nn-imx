@@ -186,7 +186,7 @@ DEF_KERNEL_INITIALIZER(_minimum_initializer)
 
     if( attr[0]->quant == VSI_NN_KERNEL_QUANT_DFP )
     {
-        in0_fl = attr[0]->dfp.fl;
+        in0_fl = (uint8_t)attr[0]->dfp.fl;
     }
     else if( attr[0]->quant == VSI_NN_KERNEL_QUANT_ASYMM
         || attr[0]->quant == VSI_NN_KERNEL_QUANT_SYMM)
@@ -197,7 +197,7 @@ DEF_KERNEL_INITIALIZER(_minimum_initializer)
 
     if( attr[1]->quant == VSI_NN_KERNEL_QUANT_DFP )
     {
-        in1_fl = attr[1]->dfp.fl;
+        in1_fl = (uint8_t)attr[1]->dfp.fl;
     }
     else if( attr[1]->quant == VSI_NN_KERNEL_QUANT_ASYMM
         || attr[1]->quant == VSI_NN_KERNEL_QUANT_SYMM)
@@ -208,7 +208,7 @@ DEF_KERNEL_INITIALIZER(_minimum_initializer)
 
     if( attr[2]->quant == VSI_NN_KERNEL_QUANT_DFP )
     {
-        out_fl = attr[2]->dfp.fl;
+        out_fl = (uint8_t)attr[2]->dfp.fl;
     }
     else if( attr[2]->quant == VSI_NN_KERNEL_QUANT_ASYMM
         || attr[2]->quant == VSI_NN_KERNEL_QUANT_SYMM)

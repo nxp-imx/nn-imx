@@ -878,7 +878,7 @@ static vsi_nn_con_candidate_t *_get_connection_candidate
             _get_peak_data(candA, i, &candA_data);
             veci[0] = candB_data.location[0] - candA_data.location[0];
             veci[1] = candB_data.location[1] - candA_data.location[1];
-            norm = sqrtf(veci[0] * veci[0] + veci[1] * veci[1]);
+            norm = sqrtf((float)(veci[0] * veci[0] + veci[1] * veci[1]));
             vec[0] = veci[0] / norm;
             vec[1] = veci[1] / norm;
 
@@ -1129,7 +1129,7 @@ static vsi_bool _check_special_k
 
     for(i=0; i<special_k_num; i++)
     {
-        if(special_k[i] == index)
+        if(special_k[i] == (int32_t)index)
         {
             return FALSE;
         }

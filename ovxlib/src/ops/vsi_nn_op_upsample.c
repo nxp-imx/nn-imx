@@ -126,7 +126,7 @@ static vsi_bool vsi_nn_upsample_optimize_shape
             out_shape_input1[i]  = shape_in1[i];
             out_shape_output[i]  = shape_out[i];
         }
-        *out_rank_output = rank_in;
+        *out_rank_output = (uint32_t)rank_in;
     }
 
     return TRUE;

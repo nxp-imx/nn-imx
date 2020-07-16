@@ -4,7 +4,6 @@
 LOCAL_PATH:= $(call my-dir)
 include $(CLEAR_VARS)
 
-
 ifeq ($(AQROOT),)
 $(error Please set AQROOT env first)
 endif
@@ -117,9 +116,10 @@ LOCAL_SHARED_LIBRARIES := \
 
 LOCAL_C_INCLUDES += \
     external/libjpeg-turbo \
-    vendor/nxp/fsl-proprietary/include/CL \
-    vendor/nxp/fsl-proprietary/include/VX \
-    vendor/nxp/fsl-proprietary/include \
+    $(AQROOT)/sdk/inc/CL \
+    $(AQROOT)/sdk/inc/VX \
+    $(AQROOT)/sdk/inc/ \
+    $(AQROOT)/sdk/inc/HAL \
     $(LOCAL_PATH)/../include \
     $(LOCAL_PATH)/../include/ops \
     $(LOCAL_PATH)/../include/utils \
@@ -139,8 +139,7 @@ LOCAL_CFLAGS :=  \
         -Wno-enum-conversion \
         -Wno-missing-field-initializers \
         -Wno-tautological-compare \
-        -Wno-missing-braces \
-		-Wno-unused-function
+        -Wno-missing-braces
 
 LOCAL_MODULE:= libovxlib
 LOCAL_MODULE_TAGS := optional

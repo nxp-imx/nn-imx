@@ -70,7 +70,7 @@ vsi_bool vsi_nn_QuantAffinePerchannelCheck
 #ifdef VSI_PERCHANNEL_QUANTIZATION_SUPPORT
     vsi_bool ret;
     vsi_nn_type_e dtype;
-    const float diff_scale = 1e-5;
+    const float diff_scale = (float)1e-5;
     ret = FALSE;
     dtype = input->attr.dtype.vx_type;
 

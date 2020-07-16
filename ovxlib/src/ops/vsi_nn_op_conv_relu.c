@@ -216,7 +216,7 @@ vsi_status vsi_nn_InitConvReluPoolParameter
     param->pad_x_right   = node->nn_param.conv2d.pad[1];
     param->pad_y_top     = node->nn_param.conv2d.pad[2];
     param->pad_y_bottom  = node->nn_param.conv2d.pad[3];
-    param->accumulator_bits = node->vx_param.accumulator_bits;
+    param->accumulator_bits = (vx_uint8)node->vx_param.accumulator_bits;
     param->overflow_policy = node->vx_param.overflow_policy;
     param->rounding_policy = node->vx_param.rounding_policy;
     param->down_scale_size_rounding = node->vx_param.down_scale_size_rounding;

@@ -367,7 +367,7 @@ vsi_nn_internal_node_t* vsi_nn_internal_get_node_by_uid
         {
             curr = (vsi_nn_internal_node_t *)vsi_nn_LinkListPopStart(
                 (vsi_nn_link_list_t **)&head );
-            if( curr->node->uid == uid )
+            if( curr->node->uid == (uint32_t)uid )
             {
                 return curr;
             }
@@ -443,6 +443,7 @@ vsi_nn_internal_node_t* vsi_nn_internal_new_node
 
     inode = vsi_nn_internal_create_node( node->graph,
                 op, input_num, output_num );
+    inode->node->attr.cache_const_tensor_type = node->attr.cache_const_tensor_type;
     return inode;
 } /* vsi_nn_internal_new_node() */
 

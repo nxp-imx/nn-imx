@@ -117,7 +117,7 @@ static vsi_bool vsi_nn_poolwithargmax_optimize_shape
             out_shape_output0[i] = shape_out0[i];
             out_shape_output1[i] = shape_out1[i];
         }
-        *out_rank_output = rank_in;
+        *out_rank_output = (uint32_t)rank_in;
     }
 
     return TRUE;

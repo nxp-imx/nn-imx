@@ -32,7 +32,7 @@
 #include "interface/ops.def"
 #undef DEF_OP
 #define DEF_OP(NAME, ...) &vsi_nn_op_##NAME,
-const static vsi_nn_op_proc_t * vsi_nn_ops_tab[VSI_NN_OP_NUM] =
+static const vsi_nn_op_proc_t * vsi_nn_ops_tab[VSI_NN_OP_NUM] =
 {
 #include "interface/ops.def"
 };
@@ -43,7 +43,7 @@ const static vsi_nn_op_proc_t * vsi_nn_ops_tab[VSI_NN_OP_NUM] =
 #include "custom/custom_ops.def"
 #undef DEF_OP
 #define DEF_OP(NAME, ...) &vsi_nn_op_##NAME,
-const static vsi_nn_op_proc_t * vsi_nn_custom_ops_tab[VSI_NN_OP_CUSTOM_NUM] =
+static const vsi_nn_op_proc_t * vsi_nn_custom_ops_tab[VSI_NN_OP_CUSTOM_NUM] =
 {
 #include "custom/custom_ops.def"
 };
@@ -54,7 +54,7 @@ const static vsi_nn_op_proc_t * vsi_nn_custom_ops_tab[VSI_NN_OP_CUSTOM_NUM] =
 #include "internal/internal_ops.def"
 #undef DEF_OP
 #define DEF_OP(NAME, ...) &vsi_nn_op_##NAME,
-const static vsi_nn_op_proc_t * vsi_nn_internal_ops_tab[VSI_NN_OP_INTERNAL_NUM] =
+static const vsi_nn_op_proc_t * vsi_nn_internal_ops_tab[VSI_NN_OP_INTERNAL_NUM] =
 {
 #include "internal/internal_ops.def"
 };
@@ -62,7 +62,7 @@ const static vsi_nn_op_proc_t * vsi_nn_internal_ops_tab[VSI_NN_OP_INTERNAL_NUM] 
 
 // TODO: Add name item to op structure
 #define DEF_OP(NAME, ...) ""#NAME,
-const static char * vsi_nn_ops_name[] =
+static const char * vsi_nn_ops_name[] =
 {
 #include "interface/ops.def"
     "UNKNOWN"
@@ -70,7 +70,7 @@ const static char * vsi_nn_ops_name[] =
 #undef DEF_OP
 
 #define DEF_OP(NAME, ...) ""#NAME,
-const static char * vsi_nn_custom_ops_name[] =
+static const char * vsi_nn_custom_ops_name[] =
 {
 #include "custom/custom_ops.def"
     "UNKNOWN"
@@ -79,7 +79,7 @@ const static char * vsi_nn_custom_ops_name[] =
 
 // TODO: Add name item to internal op structure
 #define DEF_OP(NAME, ...) ""#NAME,
-const static char * vsi_nn_internal_ops_name[] =
+static const char * vsi_nn_internal_ops_name[] =
 {
 #include "internal/internal_ops.def"
     "UNKNOWN"
@@ -120,7 +120,7 @@ vsi_bool vsi_nn_OpIsValid
     vsi_bool valid;
     valid = TRUE;
 
-    if( ( op >= 0 && op < VSI_NN_OP_NUM ) || _is_internal_ops(op) )
+    if( (op < VSI_NN_OP_NUM ) || _is_internal_ops(op) )
     {
         valid = TRUE;
     }

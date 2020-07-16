@@ -630,7 +630,7 @@ static vsi_bool op_check
 
 static void op_set_reduce_param_value(vsi_nn_nn_param_t *nn_param,
                                     vsi_nn_op_t  type_name,
-                                    vx_uint32   *axis,
+                                    vx_int32   *axis,
                                     vx_uint32   axis_num,
                                     vx_bool     keep_dim
                                     )

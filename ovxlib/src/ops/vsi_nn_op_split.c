@@ -61,13 +61,9 @@ static vsi_bool op_check
 
     /* compute the output tensor number */
     num = (uint32_t)(self->output.num - 1);
-    while( num >= 0 && NULL == outputs[num] )
+    while( NULL == outputs[num] )
     {
         num --;
-    }
-    if( 0 > num )
-    {
-        return FALSE;
     }
     num++;
 
@@ -159,13 +155,9 @@ static vsi_bool op_setup
     average = 1;
     /* compute the output tensor number */
     num = (uint32_t)(self->output.num - 1);
-    while( num >= 0 && NULL == outputs[num] )
+    while( NULL == outputs[num] )
     {
         num --;
-    }
-    if( 0 > num )
-    {
-        return FALSE;
     }
     num++;
 

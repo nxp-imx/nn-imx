@@ -47,10 +47,10 @@ vsi_nn_kernel_tensor_t kernel_pad_node
     vsi_nn_kernel_tensor_t out_tensor = NULL;
     vsi_nn_kernel_node_t node = NULL;
     vx_nn_pad_params_t pad_param;
-    uint32_t i;
+    int32_t i;
 
     // Compute pad size
-    for( i = pad_size - 1; i >= 0; i -- )
+    for( i = (int32_t)pad_size - 1; i >= 0; i -- )
     {
         if( pad_front[i] > 0 || pad_end[i] > 0 )
         {
@@ -89,7 +89,7 @@ vsi_nn_kernel_tensor_t kernel_pad_node
             break;
     }
     pad_param.pad_const = (vx_scalar)vsi_nn_kernel_scalar_create( graph, I32, &pad_value );
-    pad_param.numViewDimensions = pad_size;
+    pad_param.numViewDimensions = (vx_uint8)pad_size;
     pad_param.pad_front_array = pad_front;
     pad_param.pad_back_array = pad_end;
 
@@ -102,14 +102,14 @@ vsi_nn_kernel_tensor_t kernel_pad_node
                 pad_size, attr->shape->size );
         goto final;
     }
-    for( i = 0; i < pad_size; i ++ )
+    for( i = 0; i < (int32_t)pad_size; i ++ )
     {
         attr->shape->data[i] += pad_front[i] + pad_end[i];
     }
     out_tensor = vsi_nn_kernel_tensor_create( graph->g, attr, TRUE );
     CHECK_PTR_FAIL_GOTO( out_tensor, "Create pad tensor fail.", final );
     node = (vsi_nn_kernel_node_t)vxTensorPadNode( graph->g,
-            tensor, out_tensor,
+            (vx_tensor)tensor, (vx_tensor)out_tensor,
             &pad_param, sizeof( pad_param ) );
 final:
     if( NULL == node ) {

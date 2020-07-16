@@ -1186,7 +1186,7 @@ vsi_status vsi_nn_kernel_pirority_set
     VSI_ASSERT( selector != NULL );
     memcpy( selector->pirority, pirority,
             pirority_size * sizeof(vsi_nn_kernel_pirority_t) );
-    selector->allow_kernel_num = pirority_size;
+    selector->allow_kernel_num = (int32_t)pirority_size;
 
     for( i = 0; i < pirority_size; i ++ )
     {

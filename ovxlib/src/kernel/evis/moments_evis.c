@@ -146,9 +146,9 @@ static int32_t set_constant_border
     vx_border_t border;
     border.mode = VX_BORDER_CONSTANT;
     border.constant_value.S32 = value;
-    border.constant_value.U32 = value;
-    border.constant_value.S16 = value;
-    border.constant_value.U8 = value;
+    border.constant_value.U32 = (vx_uint32)value;
+    border.constant_value.S16 = (vx_int16)value;
+    border.constant_value.U8 = (vx_uint8)value;
     status = vxSetNodeAttribute( (vx_node)node, VX_NODE_BORDER, &border, sizeof(border) );
     return status;
 }

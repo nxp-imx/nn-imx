@@ -55,6 +55,9 @@ vsi_nn_node_t * vsi_nn_NewNode
         memset( node, 0, sizeof( vsi_nn_node_t ) );
         node->graph = graph;
         node->op = op;
+        node->vx_param.overflow_policy = VX_CONVERT_POLICY_SATURATE;
+        node->vx_param.rounding_policy = VX_ROUND_POLICY_TO_ZERO;
+        node->vx_param.down_scale_size_rounding = VX_CONVOLUTIONAL_NETWORK_DS_SIZE_ROUNDING_FLOOR;
 
         /* init op */
         vsi_nn_OpInit( node->op, node );
@@ -75,6 +78,7 @@ vsi_nn_node_t * vsi_nn_NewNode
         node->input.tensors = (vsi_nn_tensor_id_t *) malloc(
             input_num * sizeof( vsi_nn_tensor_id_t ) );
         vsi_nn_InitTensorsId( node->input.tensors, input_num );
+        node->attr.cache_const_tensor_type = VSI_NN_CACHE_CONST_TENSOR_DISABLED;
     }
 
     node->uid = VSI_NN_NODE_UID_NA;

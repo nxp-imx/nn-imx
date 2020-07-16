@@ -144,7 +144,7 @@ static vsi_bool op_setup
     vsi_nn_tensor_t* last_step_h_state = NULL;
     vsi_nn_tensor_t* tensor = NULL;
     vsi_nn_tensor_t* input_tensor = NULL;
-    vsi_bool use_virtual_tensor = FALSE;
+    vsi_bool use_virtual_tensor = TRUE;
     uint32_t batch_size = 0;
     uint32_t time_step = 0;
     uint32_t i = 0;

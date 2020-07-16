@@ -47,7 +47,7 @@ void gpu_dp_inst_update_postshfit
     else
     {
         const int32_t index = 7;
-        const uint8_t postshift = gpu_postshift( shift );
+        const uint8_t postshift = (uint8_t)gpu_postshift( shift );
         // clear postshift
         dp_inst->data[index] &= ~((uint32_t)0x1F);
         // set postshift

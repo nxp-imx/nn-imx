@@ -152,7 +152,7 @@ static vsi_bool op_setup
                 outputs[1]->attr.size[i] = inputs[0]->attr.size[i];
             }
 
-            for (j = axis[0] + axis_num; j < inputs[0]->attr.dim_num; j++)
+            for (j = axis[0] + axis_num; j < (int32_t)inputs[0]->attr.dim_num; j++)
             {
                 outputs[0]->attr.size[i] = inputs[0]->attr.size[j];
                 outputs[1]->attr.size[i++] = inputs[0]->attr.size[j];

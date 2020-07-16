@@ -166,7 +166,7 @@ DEF_KERNEL_INITIALIZER(_depth2space_crd_initializer)
         dstScale = 1;
     }
 
-    output_dims = attr[1]->shape->size;
+    output_dims = (uint32_t)attr[1]->shape->size;
     output_width = attr[1]->shape->data[0];
     output_height = attr[1]->shape->data[1];
     output_chn = output_dims > 2 ? attr[1]->shape->data[2] : 1;

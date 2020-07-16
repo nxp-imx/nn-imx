@@ -187,7 +187,7 @@ DEF_KERNEL_INITIALIZER(_swish_initializer)
 
     if (input_attr->quant == VSI_NN_KERNEL_QUANT_DFP)
     {
-        srcFixPointPos = input_attr->dfp.fl;
+        srcFixPointPos = (int8_t)input_attr->dfp.fl;
         if (srcFixPointPos > 0)
         {
             inputScale = 1.0f / (vx_float32) (1 << srcFixPointPos);
@@ -205,7 +205,7 @@ DEF_KERNEL_INITIALIZER(_swish_initializer)
 
     if (output_attr->quant == VSI_NN_KERNEL_QUANT_DFP)
     {
-        dstFixPointPos = output_attr->dfp.fl;
+        dstFixPointPos = (int8_t)output_attr->dfp.fl;
         if (dstFixPointPos > 0)
         {
             outputScale = (vx_float32) (1 << dstFixPointPos);
@@ -397,7 +397,7 @@ DEF_KERNEL_INITIALIZER(_hswish_initializer)
 
     if (input_attr->quant == VSI_NN_KERNEL_QUANT_DFP)
     {
-        srcFixPointPos = input_attr->dfp.fl;
+        srcFixPointPos = (int8_t)input_attr->dfp.fl;
         if (srcFixPointPos > 0)
         {
             inputScale = 1.0f / (vx_float32) (1 << srcFixPointPos);
@@ -415,7 +415,7 @@ DEF_KERNEL_INITIALIZER(_hswish_initializer)
 
     if (output_attr->quant == VSI_NN_KERNEL_QUANT_DFP)
     {
-        dstFixPointPos = output_attr->dfp.fl;
+        dstFixPointPos = (int8_t)output_attr->dfp.fl;
         if (dstFixPointPos > 0)
         {
             outputScale = (vx_float32) (1 << dstFixPointPos);
@@ -613,7 +613,7 @@ static vsi_status _query_kernel
     {
         snprintf( kernel->info.name, VX_MAX_KERNEL_NAME, "%s",  kernel_map[i].function_name );
         kernel->info.parameters  = param_def;
-        kernel->info.numParams   = param_def_size;
+        kernel->info.numParams   = (uint32_t)param_def_size;
         kernel->info.initialize  = initializer;
         // Register code source
         vsi_nn_kernel_add_source( kernel, VSI_NN_GPU_SOURCE_FMT_CODE, 2,
@@ -648,7 +648,12 @@ static vsi_nn_kernel_node_t _setup
     vsi_nn_kernel_node_t node = NULL;
     int32_t swish_type  = vsi_nn_kernel_param_get_int32( params, "type" );
     float   beta        = 1.0f;
-
+#if (VX_ACTIVATION_EXT_SUPPORT)
+    if (VSI_NN_HW_EVIS_2 == graph->ctx->config.evis.ver)
+    {
+        return NULL;
+    }
+#endif
     vsi_nn_OptimizedEltOPShape(inputs[0],  (uint32_t *)(shapes[0]), &new_rank);
     vsi_nn_OptimizedEltOPShape(outputs[0], (uint32_t *)(shapes[1]), &new_rank);
 

@@ -29,12 +29,13 @@
 ######################################################
 # Include global difinitions.
 
-#include $(AQROOT)/makefile.linux.def
+include $(AQROOT)/makefile.linux.def
 
 ######################################################
 # Components of the project.
 
-LIBS    :=  src
+LIBS    := third-party/jpeg-9b \
+           src
 
 ######################################################
 # Define the macros used in the common file.

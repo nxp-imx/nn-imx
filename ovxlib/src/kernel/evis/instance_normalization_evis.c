@@ -783,7 +783,7 @@ static vsi_status _query_kernel
     {
         snprintf( kernel->info.name, VX_MAX_KERNEL_NAME, "%s",  kernel_map[i].function_name );
         kernel->info.parameters  = param_def;
-        kernel->info.numParams   = param_size;
+        kernel->info.numParams   = (uint32_t)param_size;
         kernel->info.initialize  = initializer;
         // Register code source
         vsi_nn_kernel_add_source( kernel, VSI_NN_GPU_SOURCE_FMT_CODE, 2,
@@ -945,7 +945,7 @@ static vsi_nn_kernel_node_t _setup
                 border.constant_value.U16 = 0;
                 if(inputs[0]->attr.dtype.vx_type == VSI_NN_TYPE_UINT8)
                 {
-                    border.constant_value.U8 = inputs[0]->attr.dtype.zero_point;
+                    border.constant_value.U8 = (vx_uint8)inputs[0]->attr.dtype.zero_point;
                 }
                 status = vxSetNodeAttribute( (vx_node)tmp_node, VX_NODE_BORDER, &border, sizeof(border) );
                 CHECK_STATUS(status);
@@ -1008,7 +1008,7 @@ static vsi_nn_kernel_node_t _setup
                 border.constant_value.U16 = 0;
                 if(outputs[0]->attr.dtype.vx_type == VSI_NN_TYPE_UINT8)
                 {
-                    border.constant_value.U8 = outputs[0]->attr.dtype.zero_point;
+                    border.constant_value.U8 = (vx_uint8)outputs[0]->attr.dtype.zero_point;
                 }
                 status = vxSetNodeAttribute( (vx_node)node, VX_NODE_BORDER, &border, sizeof(border) );
                 CHECK_STATUS(status);

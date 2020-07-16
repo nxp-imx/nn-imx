@@ -190,9 +190,6 @@ vsi_nn_graph_t * vnn_CreateLenet
     node[0]->nn_param.conv2d.dilation[0] = 1;
     node[0]->nn_param.conv2d.dilation[1] = 1;
     node[0]->nn_param.conv2d.multiplier = 0;
-    node[0]->vx_param.overflow_policy = VX_CONVERT_POLICY_WRAP;
-    node[0]->vx_param.rounding_policy = VX_ROUND_POLICY_TO_ZERO;
-    node[0]->vx_param.down_scale_size_rounding = VX_CONVOLUTIONAL_NETWORK_DS_SIZE_ROUNDING_FLOOR;
 
     /*-----------------------------------------
       lid       - pool1_2
@@ -237,9 +234,6 @@ vsi_nn_graph_t * vnn_CreateLenet
     node[2]->nn_param.conv2d.dilation[0] = 1;
     node[2]->nn_param.conv2d.dilation[1] = 1;
     node[2]->nn_param.conv2d.multiplier = 0;
-    node[2]->vx_param.overflow_policy = VX_CONVERT_POLICY_WRAP;
-    node[2]->vx_param.rounding_policy = VX_ROUND_POLICY_TO_ZERO;
-    node[2]->vx_param.down_scale_size_rounding = VX_CONVOLUTIONAL_NETWORK_DS_SIZE_ROUNDING_FLOOR;
 
     /*-----------------------------------------
       lid       - pool2_4
@@ -272,9 +266,6 @@ vsi_nn_graph_t * vnn_CreateLenet
     -----------------------------------------*/
     NEW_VXNODE(node[4], VSI_NN_OP_FCL, 3, 1, 5);
     node[4]->nn_param.fcl.weights = 500;
-    node[4]->vx_param.overflow_policy = VX_CONVERT_POLICY_WRAP;
-    node[4]->vx_param.rounding_policy = VX_ROUND_POLICY_TO_ZERO;
-    node[4]->vx_param.down_scale_size_rounding = VX_CONVOLUTIONAL_NETWORK_DS_SIZE_ROUNDING_FLOOR;
 
     /*-----------------------------------------
       lid       - relu1_6
@@ -296,9 +287,6 @@ vsi_nn_graph_t * vnn_CreateLenet
     -----------------------------------------*/
     NEW_VXNODE(node[6], VSI_NN_OP_FCL, 3, 1, 7);
     node[6]->nn_param.fcl.weights = 10;
-    node[6]->vx_param.overflow_policy = VX_CONVERT_POLICY_WRAP;
-    node[6]->vx_param.rounding_policy = VX_ROUND_POLICY_TO_ZERO;
-    node[6]->vx_param.down_scale_size_rounding = VX_CONVOLUTIONAL_NETWORK_DS_SIZE_ROUNDING_FLOOR;
 
     /*-----------------------------------------
       lid       - prob_8

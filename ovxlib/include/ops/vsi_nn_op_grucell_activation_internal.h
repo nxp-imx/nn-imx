@@ -32,11 +32,32 @@ enum {
     GRUCELL_ACTIVATION_INPUT_HT__   = 1,
     GRUCELL_ACTIVATION_INPUT_HT_1   = 2,
 
+    GRUCELL_ACTIVATION_INPUT_H_STATE        = 0,
+    GRUCELL_ACTIVATION_INPUT_INPUT_FC_R     = 1,
+    GRUCELL_ACTIVATION_INPUT_INPUT_FC_Z     = 2,
+    GRUCELL_ACTIVATION_INPUT_INPUT_FC_C     = 3,
+    GRUCELL_ACTIVATION_INPUT_RECURRENT_FC_R = 4,
+    GRUCELL_ACTIVATION_INPUT_RECURRENT_FC_Z = 5,
+    GRUCELL_ACTIVATION_INPUT_RECURRENT_FC_C = 6,
+    GRUCELL_ACTIVATION_INPUT_BIAS_R         = 7,
+    GRUCELL_ACTIVATION_INPUT_BIAS_Z         = 8,
+    GRUCELL_ACTIVATION_INPUT_BIAS_C         = 9,
+    GRUCELL_ACTIVATION_INPUT_COND_R         = 10,
+    GRUCELL_ACTIVATION_INPUT_COND_Z         = 11,
+    GRUCELL_ACTIVATION_INPUT_COND_C         = 12,
+
     GRUCELL_ACTIVATION_INPUT_COUNT,
 
     GRUCELL_ACTIVATION_OUTPUT_OUTPUT    = 0,
     GRUCELL_ACTIVATION_OUTPUT_H_STATE   = 1,
     GRUCELL_ACTIVATION_OUTPUT_COUNT
+};
+
+enum {
+    GRUCELL_INPUT_CATEGORY_DEFAULT,
+    GRUCELL_INPUT_CATEGORY_CUDNN,
+
+    GRUCELL_INPUT_CATEGORY_COUNT
 };
 
 typedef struct _vsi_nn_grucell_activation_internal_local {
@@ -48,6 +69,9 @@ typedef struct _vsi_nn_grucell_activation_internal_param
     vsi_nn_grucell_activation_internal_local* local;
     vsi_nn_activation_e gate_activation;
     vsi_nn_activation_e candidate_activation;
+    int32_t input_category;
+    vsi_bool use_cudnn_implementation;
+    vsi_bool input_recurrent_fc_batch_first;
 } vsi_nn_grucell_activation_internal_param;
 
 #endif

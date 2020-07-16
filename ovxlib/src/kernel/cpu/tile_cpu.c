@@ -129,7 +129,7 @@ DEF_KERNEL_EXECUTOR(_tile_exec)
     }
 
     tileOneDimension(attr[0]->shape, buffer[0], multiples, buffer[1],
-        attr[0]->shape->size - 1, &stride_size, &tiled_stride_size);
+        (int32_t)attr[0]->shape->size - 1, &stride_size, &tiled_stride_size);
 
     status = vsi_nn_kernel_tensor_write_from_float( tensors[1], attr[1],
             buffer[1], out_elements );
@@ -155,7 +155,7 @@ static vx_param_description_t kernel_param_def[] =
 };
 
 
-const static vx_kernel_description_t _kernel_info =
+static const vx_kernel_description_t _kernel_info =
 {
     KERNEL_ID_PLACEHOLDER,
     _KERNEL_NAME,

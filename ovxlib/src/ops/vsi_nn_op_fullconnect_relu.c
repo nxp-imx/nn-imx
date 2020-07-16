@@ -66,7 +66,7 @@ static vsi_status _set_fc_relu_parameter
     param->pad_y_bottom  = 0;
     param->dilation_x    = 0;
     param->dilation_y    = 0;
-    param->accumulator_bits = self->vx_param.accumulator_bits;
+    param->accumulator_bits = (vx_uint8)self->vx_param.accumulator_bits;
     param->overflow_policy = self->vx_param.overflow_policy;
     param->rounding_policy = self->vx_param.rounding_policy;
     param->down_scale_size_rounding = self->vx_param.down_scale_size_rounding;

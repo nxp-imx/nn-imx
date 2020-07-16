@@ -257,7 +257,7 @@ DEF_KERNEL_INITIALIZER(_select_initializer)
 
             if (input0_fl >= output_fl)
             {
-                uint8_t  postshift      = gpu_min(input0_fl - output_fl, MAX_POST_SHIFT_BITS);
+                uint8_t  postshift      = (uint8_t)gpu_min(input0_fl - output_fl, MAX_POST_SHIFT_BITS);
                 uniConvIntIn0toDst_2x8.data[7]    = uniConvIntIn0toDst_2x8.data[7] | (postshift & 0x1F);
             }
             else
@@ -273,7 +273,7 @@ DEF_KERNEL_INITIALIZER(_select_initializer)
 
             if (input1_fl >= output_fl)
             {
-                uint8_t  postshift      = gpu_min(input1_fl - output_fl, MAX_POST_SHIFT_BITS);
+                uint8_t  postshift      = (uint8_t)gpu_min(input1_fl - output_fl, MAX_POST_SHIFT_BITS);
                 uniConvIntIn1toDst_2x8.data[7]    = uniConvIntIn1toDst_2x8.data[7] | (postshift & 0x1F);
             }
             else
@@ -444,7 +444,7 @@ static vsi_status _query_kernel
     {
         snprintf( kernel->info.name, VX_MAX_KERNEL_NAME, "%s",  kernel_map[i].function_name );
         kernel->info.parameters  = param_def;
-        kernel->info.numParams   = param_def_size;
+        kernel->info.numParams   = (uint32_t)param_def_size;
         kernel->info.initialize  = initializer;
         // Register code source
         vsi_nn_kernel_add_source( kernel, VSI_NN_GPU_SOURCE_FMT_CODE, 2,

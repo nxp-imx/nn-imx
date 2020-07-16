@@ -128,7 +128,7 @@ vsi_status VX_CALLBACK vxTensorStackConcatKernel
             input_stride_size[i]  = input_stride_size[i-1] * input_size[i-1];
         }
         input  = (int16_t*)malloc(input_size[0]*input_size[1]*input_size[2]*sizeof(int16_t));
-        input_user_addr = vxCreateTensorAddressing(context, input_size, input_stride_size, input_dims);
+        input_user_addr = vxCreateTensorAddressing(context, input_size, input_stride_size, (vx_uint8)input_dims);
         vsi_nn_copy_tensor_patch(imgObj[0], &attr[0], input, VX_READ_ONLY);
         output_stride_size[0] = vsi_nn_GetTypeBytes(outputFormat);
         for (i=1; i< output_dims; i++)
@@ -137,7 +137,7 @@ vsi_status VX_CALLBACK vxTensorStackConcatKernel
         }
         output = (int16_t*)malloc(output_size[0]*output_size[1]*output_size[2]*sizeof(int16_t));
         output_user_addr = vxCreateTensorAddressing(context, output_size,
-            output_stride_size, output_dims);
+            output_stride_size, (vx_uint8)output_dims);
 
         vsi_nn_copy_tensor_patch(imgObj[1], &attr[1], output, VX_READ_ONLY);
         // scalar

@@ -2,7 +2,7 @@
 
 float4 eltwise_unary_sin(float4 x)
 {
-    return sin(x);
+    return native_sin(x);
 }
 
 #define logE    (1.44269502f)

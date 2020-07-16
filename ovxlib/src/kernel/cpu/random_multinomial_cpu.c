@@ -142,9 +142,9 @@ DEF_KERNEL_EXECUTOR(_compute)
 
     vsi_nn_random_init_for_philox_4x32_10((uint32_t)(buffer[1][0]),
         (uint32_t)(buffer[1][1]));
-    vsi_nn_random_generate_by_philox_4x32_10(random_integer, out_elements);
+    vsi_nn_random_generate_by_philox_4x32_10(random_integer, (uint32_t)out_elements);
     vsi_nn_random_uniform_transform(random_integer,
-            random_float, out_elements);
+            random_float, (uint32_t)out_elements);
 
     for (n = 0; n < batch; n++)
     {

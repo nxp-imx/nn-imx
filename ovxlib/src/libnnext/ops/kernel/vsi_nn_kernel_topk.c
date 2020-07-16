@@ -77,7 +77,7 @@ static void find_top_k_1d
     j = vsi_nn_partition(input, low, high, max_comp_func, FALSE, indices);
 
     //part_sort
-    while (j != k)
+    while (j != (int32_t)k)
     {
         if ((int32_t)k > j)
         {

@@ -293,8 +293,8 @@ static vsi_status VX_CALLBACK vxTensor_add_mean_stddev_normKernel
         }
         else if(inputFormat == VSI_NN_TYPE_UINT8 && outputFormat == VSI_NN_TYPE_FLOAT16)
         {
-            myTensorAddMeanStddevNormalization_u8_fp16(input, in_zp, in_scale, input1,
-                in_zp1, in_scale1, input_size[0], input_size[1], eps, output, out_fixpoint);
+            myTensorAddMeanStddevNormalization_u8_fp16(input, (vx_uint8)in_zp, in_scale, input1,
+                (vx_uint8)in_zp1, in_scale1, input_size[0], input_size[1], eps, output, out_fixpoint);
         }
         else
         {

@@ -246,7 +246,7 @@ DEF_KERNEL_INITIALIZER(_tile_initializer)
     gpu_param.global_size[1] = in_shape->data[1];
     gpu_param.global_size[2] = in_shape->size > 2 ? in_shape->data[2] : 1;
 
-    lastWorkItem = (gpu_param.global_size[0] - 1) * gpu_param.global_scale[0];
+    lastWorkItem = ((int32_t)gpu_param.global_size[0] - 1) * ((int32_t)gpu_param.global_scale[0]);
 
     switch( pack_key )
     {
@@ -319,23 +319,25 @@ static vsi_status _query_kernel
     return status;
 } /* _query_kernel() */
 
-static vsi_bool _is_single_axis(int32_t* multiples, uint32_t multiples_num, int32_t *axis, uint32_t *max_axis)
+static vsi_bool _is_supported_axis(int32_t* multiples, uint32_t multiples_num)
 {
     uint32_t i = 0;
-    uint32_t idx = 0;
 
-    for ( i = 0;  i < multiples_num;  i++)
+    if ( multiples_num < 4)
+    {
+        return TRUE;
+    }
+    else if ( multiples_num > 4)
+    {
+        return FALSE;
+    }
+
+    for ( i = 3;  i < multiples_num;  i++)
     {
         if (multiples[i] > 1)
         {
-            axis[idx ++] = i;
-            *max_axis = i;
+            return FALSE;
         }
-    }
-
-    if (idx > 1)
-    {
-        return FALSE;
     }
 
     return TRUE;
@@ -356,22 +358,13 @@ static vsi_nn_kernel_node_t _setup
     vsi_nn_kernel_node_param_t node_params[_EVIS_PARAM_NUM];
     vsi_bool image_2d = FALSE;
     vsi_nn_kernel_node_t node = NULL;
-    uint32_t max_axis = 0;
     vx_uint32 remainder = inputs[0]->attr.size[0] % 8;
+    int32_t shapes[3][VSI_NN_MAX_DIM_NUM] = { { 0 } };
     vsi_nn_tensor_t* reshape_tensors[2] = { NULL };
-    int32_t shapes[2][VSI_NN_MAX_DIM_NUM] = { { 0 } };
-    uint32_t rank_in = 0;
-    uint32_t rank_out = 0;
-    int32_t axis[VSI_NN_MAX_DIM_NUM] = { 0 };
     uint32_t i = 0;
-    int32_t new_axis = 0;
-    uint32_t axis_size = 0;
+    uint32_t new_rank = 0;
     vsi_bool ret = FALSE;
-    vsi_bool is_single_axis = FALSE;
     uint32_t dim = inputs[0]->attr.dim_num;
-    uint32_t depthIn = dim > 2 ? inputs[0]->attr.size[2] : 1;
-    uint32_t depthOut = dim > 2 ? outputs[0]->attr.size[2] : 1;
-    uint32_t batchIn = dim > 3 ? inputs[0]->attr.size[3] : 1;
     int32_t multiples[VSI_NN_MAX_DIM_NUM] = { 0 };
 
     for ( i = 0;  i < dim;  i++)
@@ -379,61 +372,31 @@ static vsi_nn_kernel_node_t _setup
         multiples[i] = outputs[0]->attr.size[i] / inputs[0]->attr.size[i];
     }
 
-    is_single_axis = _is_single_axis( multiples, dim, axis, &max_axis);
-    if (is_single_axis)
+    ret = vsi_nn_kernel_optimize_tile_shape(
+            (int32_t *)inputs[0]->attr.size, inputs[0]->attr.dim_num,
+            (int32_t *)multiples, inputs[0]->attr.dim_num,
+            (int32_t *)outputs[0]->attr.size, outputs[0]->attr.dim_num,
+            shapes[0], shapes[1], shapes[2], &new_rank );
+
+    if (ret)
     {
-        ret = vsi_nn_kernel_optimize_reduce_shape(
-                (int32_t *)inputs[0]->attr.size, inputs[0]->attr.dim_num,
-                axis, 1,
-                (int32_t *)outputs[0]->attr.size, outputs[0]->attr.dim_num,
-                shapes[0], &rank_in, shapes[1], &rank_out,
-                &new_axis, &axis_size);
-        if (ret)
+        if ( _is_supported_axis(shapes[1], new_rank) == FALSE)
         {
-            reshape_tensors[0] = vsi_nn_reshape_tensor( graph,
-                    inputs[0], (uint32_t*)shapes[0], rank_in );
-
-            memcpy(shapes[1], shapes[0], rank_in * sizeof(int32_t));
-
-            shapes[1][new_axis] = outputs[0]->attr.size[axis[0]];
-            reshape_tensors[1] = vsi_nn_reshape_tensor( graph,
-                    outputs[0], (uint32_t*)shapes[1], rank_in );
-        }
-        else
-        {
-            reshape_tensors[0] = inputs[0];
-            reshape_tensors[1] = outputs[0];
+            return NULL;
         }
 
-        new_axis = multiples[axis[0]];
-        multiples[axis[0]] = 1;
-        multiples[new_axis] = new_axis;
+        reshape_tensors[0] = vsi_nn_reshape_tensor( graph,
+            inputs[0], (uint32_t*)shapes[0], new_rank );
+        reshape_tensors[1] = vsi_nn_reshape_tensor( graph,
+            outputs[0], (uint32_t*)shapes[2], new_rank );
     }
     else
     {
-        uint32_t dim = inputs[0]->attr.dim_num;
-
-        memcpy(shapes[0], inputs[0]->attr.size, dim * sizeof(int32_t));
-        memcpy(shapes[1], outputs[0]->attr.size, dim * sizeof(int32_t));
-
-        for (i = 3; i < dim; i++)
-        {
-            shapes[0][2] *= shapes[0][i];
-            shapes[1][2] *= shapes[1][i];
-        }
-
-        rank_in = vsi_nn_min(dim, 3);
-        rank_out = vsi_nn_min(dim, 3);
-
-        reshape_tensors[0] = vsi_nn_reshape_tensor( graph,
-            inputs[0], (uint32_t*)shapes[0], rank_in );
-        reshape_tensors[1] = vsi_nn_reshape_tensor( graph,
-            outputs[0], (uint32_t*)shapes[1], rank_out );
+        return NULL;
     }
 
     if( !vsi_nn_kernel_gpu_check_shape( (int32_t*)reshape_tensors[1]->attr.size,
-                outputs[0]->attr.dim_num )
-     || (max_axis > 3))
+                outputs[0]->attr.dim_num ))
     {
         goto final;
     }
@@ -447,6 +410,10 @@ static vsi_nn_kernel_node_t _setup
         if( node )
         {
             /* Pass parameters to node. */
+            uint32_t depthIn = new_rank > 2 ? reshape_tensors[0]->attr.size[2] : 1;
+            uint32_t depthOut = new_rank > 2 ? reshape_tensors[1]->attr.size[2] : 1;
+            uint32_t batchIn = new_rank > 3 ? reshape_tensors[0]->attr.size[3] : 1;
+
 
             vsi_nn_kernel_node_pack_io( node_params, _EVIS_PARAM_NUM,
                     &reshape_tensors[0], 1, &reshape_tensors[1], 1 );
@@ -458,13 +425,13 @@ static vsi_nn_kernel_node_t _setup
             node_params[SCALAR_INPUT_DEPTH_OUT] = vsi_nn_kernel_scalar_create(
                     graph, I32, &depthOut );
             node_params[SCALAR_INPUT_MULTIPLES_0] = vsi_nn_kernel_scalar_create(
-                    graph, I32, &multiples[0] );
+                    graph, I32, &shapes[1][0] );
             node_params[SCALAR_INPUT_MULTIPLES_1] = vsi_nn_kernel_scalar_create(
-                    graph, I32, &multiples[1] );
+                    graph, I32, &shapes[1][1] );
             node_params[SCALAR_INPUT_MULTIPLES_2] = vsi_nn_kernel_scalar_create(
-                    graph, I32, &multiples[2] );
+                    graph, I32, &shapes[1][2] );
             node_params[SCALAR_INPUT_MULTIPLES_3] = vsi_nn_kernel_scalar_create(
-                    graph, I32, &multiples[3] );
+                    graph, I32, &shapes[1][3] );
 
             status = vsi_nn_kernel_node_pass_param( node, node_params, _EVIS_PARAM_NUM );
             VSI_ASSERT( status == VSI_SUCCESS );

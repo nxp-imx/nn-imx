@@ -72,9 +72,6 @@ static vsi_nn_internal_tensor_t* create_tp_fc
     tmp_inode = vsi_nn_internal_new_node(self, VSI_NN_OP_FCL, 0, 0 );
     tmp_inode->node->nn_param.fcl.axis = 0;
     tmp_inode->node->nn_param.fcl.weights = weight->attr.size[1];
-    tmp_inode->node->vx_param.overflow_policy = VX_CONVERT_POLICY_WRAP;
-    tmp_inode->node->vx_param.rounding_policy = VX_ROUND_POLICY_TO_ZERO;
-    tmp_inode->node->vx_param.down_scale_size_rounding = VX_CONVOLUTIONAL_NETWORK_DS_SIZE_ROUNDING_FLOOR;
 
     tmp_inode->inputs[0] = input;
     tmp_inode->inputs[1] = weight;
@@ -146,9 +143,6 @@ static vsi_nn_internal_tensor_t* create_nn_fc
     tmp_inode->node->nn_param.conv2d.dilation[0] = 1;
     tmp_inode->node->nn_param.conv2d.dilation[1] = 1;
     tmp_inode->node->nn_param.conv2d.weights = weight->attr.size[1];
-    tmp_inode->node->vx_param.overflow_policy = VX_CONVERT_POLICY_WRAP;
-    tmp_inode->node->vx_param.rounding_policy = VX_ROUND_POLICY_TO_ZERO;
-    tmp_inode->node->vx_param.down_scale_size_rounding = VX_CONVOLUTIONAL_NETWORK_DS_SIZE_ROUNDING_FLOOR;
 
     tmp_inode->inputs[0] = input;
     tmp_inode->inputs[1] = reshaped_weight_tensor->t;
@@ -303,7 +297,7 @@ static vsi_bool op_setup
     uint32_t kernel_h = 1;
     uint32_t kernel_w = 1;
     int32_t i = 0;
-    vsi_bool use_virtual_tensor = FALSE;
+    vsi_bool use_virtual_tensor = TRUE;
 
     memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
     vsi_nn_internal_init_node_wksp( self );
@@ -399,7 +393,7 @@ static vsi_bool op_setup
         vsi_nn_rnn_find_best_kernel_size(p->local->multi_batch,
             inputs[LSTMUNIT_INPUT_INPUT]->attr.size[0], &kernel_h, &kernel_w);
         input_tensor = vsi_nn_rnn_process_input_for_nn_fc(self, inputs[LSTMUNIT_INPUT_INPUT],
-                                                kernel_h, kernel_w, use_virtual_tensor);
+                                                p->local->multi_batch, kernel_h, kernel_w, use_virtual_tensor);
 
         for( i = ifco_start_index; i < LSTMUNIT_IFCO_GATE_COUNT; i++)
         {
@@ -412,7 +406,7 @@ static vsi_bool op_setup
                                                 use_virtual_tensor);
             /* transpose and reshape output */
             input_fc_outputs[i] = vsi_nn_rnn_process_output_for_nn_fc(self,
-                tmp->t, kernel_h, kernel_w, use_virtual_tensor);
+                tmp->t, p->local->multi_batch, kernel_h, kernel_w, use_virtual_tensor);
         }
         if (inputs[LSTMUNIT_INPUT_AUX_INPUT] != NULL)
         {
@@ -420,7 +414,7 @@ static vsi_bool op_setup
             vsi_nn_rnn_find_best_kernel_size(p->local->multi_batch,
                 inputs[LSTMUNIT_INPUT_AUX_INPUT]->attr.size[0], &kernel_h, &kernel_w);
             input_tensor = vsi_nn_rnn_process_input_for_nn_fc(self, inputs[LSTMUNIT_INPUT_AUX_INPUT],
-                                                    kernel_h, kernel_w, use_virtual_tensor);
+                                                    p->local->multi_batch, kernel_h, kernel_w, use_virtual_tensor);
 
             for( i = ifco_start_index; i < LSTMUNIT_IFCO_GATE_COUNT; i++)
             {
@@ -433,7 +427,7 @@ static vsi_bool op_setup
                                                     use_virtual_tensor);
                 /* transpose and reshape output */
                 aux_input_fc_outputs[i] = vsi_nn_rnn_process_output_for_nn_fc(self,
-                    tmp->t, kernel_h, kernel_w, use_virtual_tensor);
+                    tmp->t, p->local->multi_batch, kernel_h, kernel_w, use_virtual_tensor);
             }
         }
     }
@@ -470,7 +464,7 @@ static vsi_bool op_setup
         vsi_nn_rnn_find_best_kernel_size(p->local->multi_batch,
             inputs[LSTMUNIT_INPUT_H_STATE]->attr.size[0], &kernel_h, &kernel_w);
         recurrent_input_tensor = vsi_nn_rnn_process_input_for_nn_fc(self,
-            inputs[LSTMUNIT_INPUT_H_STATE], kernel_h, kernel_w, use_virtual_tensor);
+            inputs[LSTMUNIT_INPUT_H_STATE], p->local->multi_batch, kernel_h, kernel_w, use_virtual_tensor);
 
         for( i = ifco_start_index; i < LSTMUNIT_IFCO_GATE_COUNT; i++)
         {
@@ -483,7 +477,7 @@ static vsi_bool op_setup
                                                 use_virtual_tensor);
             /* transpose and reshape output */
             recurrent_fc_outputs[i] = vsi_nn_rnn_process_output_for_nn_fc(self,
-                tmp->t, kernel_h, kernel_w, use_virtual_tensor);
+                tmp->t, p->local->multi_batch, kernel_h, kernel_w, use_virtual_tensor);
         }
     }
 
@@ -538,16 +532,12 @@ static vsi_bool op_setup
     curr->node->nn_param.lstmunit_activation.cell_clip = p->cell_clip;
     curr->node->nn_param.lstmunit_activation.proj_clip = p->proj_clip;
     curr->node->nn_param.lstmunit_activation.forget_bias = p->forget_bias;
-    curr->node->nn_param.lstmunit_activation.is_cifg = p->local->use_cifg;
-    curr->node->nn_param.lstmunit_activation.is_projection = p->local->use_projection;
-    curr->node->nn_param.lstmunit_activation.is_layer_norm = p->local->use_layer_norm;
+    curr->node->nn_param.lstmunit_activation.is_cifg = (uint8_t)p->local->use_cifg;
+    curr->node->nn_param.lstmunit_activation.is_projection = (uint8_t)p->local->use_projection;
+    curr->node->nn_param.lstmunit_activation.is_layer_norm = (uint8_t)p->local->use_layer_norm;
     curr->node->nn_param.lstmunit_activation.is_peephole = FALSE;
-    curr->node->nn_param.lstmunit_activation.is_hybrid = p->local->use_hybrid;
+    curr->node->nn_param.lstmunit_activation.is_hybrid = (uint8_t)p->local->use_hybrid;
     curr->node->nn_param.lstmunit_activation.recurrent_activation = p->recurrent_activation;
-    curr->node->vx_param.overflow_policy = VX_CONVERT_POLICY_WRAP;
-    curr->node->vx_param.rounding_policy = VX_ROUND_POLICY_TO_ZERO;
-    curr->node->vx_param.down_scale_size_rounding =
-        VX_CONVOLUTIONAL_NETWORK_DS_SIZE_ROUNDING_FLOOR;
 
     curr->inputs[LSTMUNIT_ACT_CSTATE_IN] = inputs[LSTMUNIT_INPUT_C_STATE];
     for( i = ifco_start_index; i < LSTMUNIT_IFCO_GATE_COUNT; i++ )
@@ -626,10 +616,6 @@ static vsi_bool op_setup
         curr = vsi_nn_internal_new_node( self, VSI_NN_OP_FCL, 0, 0 );
         curr->node->nn_param.fcl.axis = 0;
         curr->node->nn_param.fcl.weights = inputs[LSTMUNIT_INPUT_WEIGHT_PROJ]->attr.size[1];
-        curr->node->vx_param.overflow_policy = VX_CONVERT_POLICY_WRAP;
-        curr->node->vx_param.rounding_policy = VX_ROUND_POLICY_TO_ZERO;
-        curr->node->vx_param.down_scale_size_rounding =
-            VX_CONVOLUTIONAL_NETWORK_DS_SIZE_ROUNDING_FLOOR;
 
         curr->inputs[0] = output_tensor->t;
         curr->inputs[1] = inputs[LSTMUNIT_INPUT_WEIGHT_PROJ];

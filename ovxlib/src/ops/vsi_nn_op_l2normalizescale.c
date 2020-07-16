@@ -398,7 +398,7 @@ static vsi_status vx_op_pre_init_sum_r_sqrt
 
     p = &(self->nn_param.l2normalizescale);
 
-    kernel_info->kernel_index = l2normalizescale_map[p->local.hash_idx].kernel_sum_index;
+    kernel_info->kernel_index = (uint8_t)l2normalizescale_map[p->local.hash_idx].kernel_sum_index;
     kernel_info->resource_num = 1;
     kernel_info->resource_name[0] = l2normalizescale_map[p->local.hash_idx].resource_name;
 
@@ -418,7 +418,7 @@ static vsi_status vx_op_pre_init_mul_scale
 
     p = &(self->nn_param.l2normalizescale);
 
-    kernel_info->kernel_index = l2normalizescale_map[p->local.hash_idx].kernel_mul_index;
+    kernel_info->kernel_index = (uint8_t)l2normalizescale_map[p->local.hash_idx].kernel_mul_index;
     kernel_info->resource_num = 1;
     kernel_info->resource_name[0] = l2normalizescale_map[p->local.hash_idx].resource_name;
 

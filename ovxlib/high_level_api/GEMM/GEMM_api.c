@@ -290,9 +290,6 @@ static vsi_bool gemm_load_graph(gemm_handle_t gemm)
 
         GEMM_NEW_VXNODE(gemm->ovx_graph_, fc_node, VSI_NN_OP_FCL, 3, 1, -1);
         fc_node->nn_param.fcl.weights = gemm->n_;
-        fc_node->vx_param.overflow_policy = VX_CONVERT_POLICY_WRAP;
-        fc_node->vx_param.rounding_policy = VX_ROUND_POLICY_TO_ZERO;
-        fc_node->vx_param.down_scale_size_rounding = VX_CONVOLUTIONAL_NETWORK_DS_SIZE_ROUNDING_FLOOR;
 
         GEMM_NEW_VXNODE(gemm->ovx_graph_, add_node, VSI_NN_OP_ADD, 2, 1, -2 );
 

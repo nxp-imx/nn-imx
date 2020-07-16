@@ -81,8 +81,6 @@ vsi_nn_SetGraphOutputs( graph, NULL, 1 );
 
 node = vsi_nn_AppendNode( graph, VSI_NN_OP_MULTIPLY, NULL );
 node->nn_param.multiply.scale = 0.5f;
-node->vx_param.overflow_policy = VX_CONVERT_POLICY_WRAP;
-node->vx_param.rounding_policy = VX_ROUND_POLICY_TO_ZERO;
 _CHECK_PTR( node, final );
 
 memset( &attr, 0, sizeof( vsi_nn_tensor_attr_t ) );

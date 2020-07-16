@@ -48,6 +48,9 @@ static vsi_status op_compute
     param = vsi_nn_kernel_param_create();
     vsi_nn_kernel_param_add_int32(param, "gate_activation", p->gate_activation);
     vsi_nn_kernel_param_add_int32(param, "candidate_activation", p->candidate_activation);
+    vsi_nn_kernel_param_add_int32(param, "input_category", p->input_category);
+    vsi_nn_kernel_param_add_int32(param, "use_cudnn_implementation", p->use_cudnn_implementation);
+    vsi_nn_kernel_param_add_int32(param, "input_recurrent_fc_batch_first", p->input_recurrent_fc_batch_first);
 
     n = vsi_nn_kernel_selector( self->graph, "grucell_activation",
         inputs, GRUCELL_ACTIVATION_INPUT_COUNT,
@@ -89,21 +92,43 @@ static vsi_bool op_setup
      * h{t_} = candidate_activation(h{t__})
      * h{t} = z{t} * (h{t-1} - h{t_}) + h{t_}
      */
+    vsi_nn_grucell_activation_internal_param* p = &self->nn_param.grucell_activation_internal;
+
     if(VSI_NN_DIM_AUTO == outputs[GRUCELL_ACTIVATION_OUTPUT_OUTPUT]->attr.dim_num)
     {
-        outputs[GRUCELL_ACTIVATION_OUTPUT_OUTPUT]->attr.dim_num = \
-            inputs[GRUCELL_ACTIVATION_INPUT_ZT_]->attr.dim_num;
-        memcpy( outputs[GRUCELL_ACTIVATION_OUTPUT_OUTPUT]->attr.size,
-            inputs[GRUCELL_ACTIVATION_INPUT_ZT_]->attr.size,
-            VSI_NN_MAX_DIM_NUM * sizeof( uint32_t ) );
+        if(p->input_category == GRUCELL_INPUT_CATEGORY_DEFAULT)
+        {
+            outputs[GRUCELL_ACTIVATION_OUTPUT_OUTPUT]->attr.dim_num = \
+                inputs[GRUCELL_ACTIVATION_INPUT_ZT_]->attr.dim_num;
+            memcpy( outputs[GRUCELL_ACTIVATION_OUTPUT_OUTPUT]->attr.size,
+                inputs[GRUCELL_ACTIVATION_INPUT_ZT_]->attr.size,
+                inputs[GRUCELL_ACTIVATION_INPUT_ZT_]->attr.dim_num * sizeof( uint32_t ) );
+        }
+        else
+        {
+            outputs[GRUCELL_ACTIVATION_OUTPUT_OUTPUT]->attr.dim_num = \
+                inputs[GRUCELL_ACTIVATION_INPUT_INPUT_FC_R]->attr.dim_num;
+            outputs[GRUCELL_ACTIVATION_OUTPUT_OUTPUT]->attr.size[1] = \
+                inputs[GRUCELL_ACTIVATION_INPUT_INPUT_FC_R]->attr.size[1];
+            if(inputs[GRUCELL_ACTIVATION_INPUT_INPUT_FC_Z])
+            {
+                outputs[GRUCELL_ACTIVATION_OUTPUT_OUTPUT]->attr.size[0] = \
+                    inputs[GRUCELL_ACTIVATION_INPUT_INPUT_FC_Z]->attr.size[0];
+            }
+            else
+            {
+                outputs[GRUCELL_ACTIVATION_OUTPUT_OUTPUT]->attr.size[0] = \
+                    inputs[GRUCELL_ACTIVATION_INPUT_INPUT_FC_R]->attr.size[0] / 3;
+            }
+        }
     }
     if(VSI_NN_DIM_AUTO == outputs[GRUCELL_ACTIVATION_OUTPUT_H_STATE]->attr.dim_num)
     {
         outputs[GRUCELL_ACTIVATION_OUTPUT_H_STATE]->attr.dim_num = \
-            inputs[GRUCELL_ACTIVATION_INPUT_ZT_]->attr.dim_num;
+            inputs[GRUCELL_ACTIVATION_OUTPUT_OUTPUT]->attr.dim_num;
         memcpy( outputs[GRUCELL_ACTIVATION_OUTPUT_H_STATE]->attr.size,
-            inputs[GRUCELL_ACTIVATION_OUTPUT_H_STATE]->attr.size,
-            VSI_NN_MAX_DIM_NUM * sizeof( uint32_t ) );
+            inputs[GRUCELL_ACTIVATION_OUTPUT_OUTPUT]->attr.size,
+            inputs[GRUCELL_ACTIVATION_OUTPUT_OUTPUT]->attr.dim_num * sizeof( uint32_t ) );
     }
     return TRUE;
 } /* op_setup() */
@@ -119,6 +144,9 @@ static vsi_status op_init
         (vsi_nn_grucell_activation_internal_local *)malloc(sizeof(vsi_nn_grucell_activation_internal_local));
     self->nn_param.grucell_activation_internal.gate_activation = VSI_NN_ACT_SIGMOID;
     self->nn_param.grucell_activation_internal.candidate_activation = VSI_NN_ACT_TANH;
+    self->nn_param.grucell_activation_internal.input_category = GRUCELL_INPUT_CATEGORY_DEFAULT;
+    self->nn_param.grucell_activation_internal.use_cudnn_implementation = FALSE;
+    self->nn_param.grucell_activation_internal.input_recurrent_fc_batch_first = TRUE;
 
     return status;
 } /* op_init() */
@@ -131,6 +159,7 @@ static vsi_status op_deinit
     vsi_status status = VSI_SUCCESS;
 
     vsi_nn_safe_free(self->nn_param.grucell_activation_internal.local);
+    status = vsi_nn_op_common_deinit(self);
 
     return status;
 } /* op_deinit() */

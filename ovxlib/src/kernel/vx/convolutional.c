@@ -153,7 +153,7 @@ static vx_tensor _expand_tensor_dim
     }
     for( i = 0, cnt = 0; i < rank; i ++ )
     {
-        if( i == expand_dim )
+        if( i == (uint32_t)expand_dim )
         {
             new_shape[cnt] = 1;
             cnt ++;
@@ -161,11 +161,11 @@ static vx_tensor _expand_tensor_dim
         new_shape[cnt] = shape[i];
         cnt ++;
     }
-    if( expand_dim == rank )
+    if( (uint32_t)expand_dim == rank )
     {
         new_shape[cnt] = 1;
     }
-    return vxReshapeTensor( tensor, new_shape, rank + 1 );
+    return vxReshapeTensor( tensor, new_shape, (uint32_t)rank + 1 );
 } /* _expand_tensor_dim() */
 
 
@@ -298,10 +298,10 @@ REGISTER_CONV_OPENVX_KERNEL( depthwise_conv1d )
         int32_t pad_front[4] = { 0 };
         int32_t pad_end[4] = { 0 };
         vx_tensor pad_tensor = NULL;
-        pad_front[0] = vxparam.ext.khr.padding_x;
-        pad_front[1] = vxparam.ext.khr.padding_y;
-        pad_end[0] = vxparam.ext.padding_x_right;
-        pad_end[1] = vxparam.ext.padding_y_bottom;
+        pad_front[0] = (int32_t)vxparam.ext.khr.padding_x;
+        pad_front[1] = (int32_t)vxparam.ext.khr.padding_y;
+        pad_end[0] = (int32_t)vxparam.ext.padding_x_right;
+        pad_end[1] = (int32_t)vxparam.ext.padding_y_bottom;
 
         pad_tensor = (vx_tensor)kernel_pad_node(
                 graph, (vsi_nn_kernel_tensor_t)temp_tensors[0],

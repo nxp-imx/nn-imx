@@ -170,7 +170,7 @@ DEF_KERNEL_INITIALIZER(_batch_norm_initializer)
 
     if( input_attr->quant == VSI_NN_KERNEL_QUANT_DFP )
     {
-        int8_t fl = input_attr->dfp.fl;
+        int32_t fl = input_attr->dfp.fl;
         if (fl > 0)
         {
             input_scale = 1.0f / (float) (1 << fl);
@@ -188,7 +188,7 @@ DEF_KERNEL_INITIALIZER(_batch_norm_initializer)
 
     if( output_attr->quant == VSI_NN_KERNEL_QUANT_DFP )
     {
-        int8_t fl = output_attr->dfp.fl;
+        int32_t fl = output_attr->dfp.fl;
         if (fl > 0)
         {
             output_scale = (float) (1 << fl);
@@ -361,7 +361,7 @@ static vsi_status _query_kernel
     {
         snprintf( kernel->info.name, VX_MAX_KERNEL_NAME, "%s",  kernel_map[i].function_name );
         kernel->info.parameters  = param_def;
-        kernel->info.numParams   = param_def_size;
+        kernel->info.numParams   = (uint32_t)param_def_size;
         kernel->info.initialize  = initializer;
         // Register code source
         vsi_nn_kernel_add_source( kernel, VSI_NN_GPU_SOURCE_FMT_CODE, 2,

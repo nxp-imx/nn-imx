@@ -241,10 +241,6 @@ static void _template_conv2d
     node->nn_param.conv2d.pad_type = VSI_NN_PAD_AUTO;
     node->nn_param.conv2d.group = 1;
     node->vx_param.has_relu = FALSE;
-
-    node->vx_param.overflow_policy = VX_CONVERT_POLICY_WRAP;
-    node->vx_param.rounding_policy = VX_ROUND_POLICY_TO_ZERO;
-    node->vx_param.down_scale_size_rounding = VX_CONVOLUTIONAL_NETWORK_DS_SIZE_ROUNDING_FLOOR;
 } /* _template_conv2d() */
 
 static void _template_conv_relu
@@ -266,10 +262,6 @@ static void _template_fcl
 {
     node->nn_param.fcl.weights = 1;
     node->vx_param.has_relu = FALSE;
-
-    node->vx_param.overflow_policy = VX_CONVERT_POLICY_WRAP;
-    node->vx_param.rounding_policy = VX_ROUND_POLICY_TO_ZERO;
-    node->vx_param.down_scale_size_rounding = VX_CONVOLUTIONAL_NETWORK_DS_SIZE_ROUNDING_FLOOR;
 } /* _template_fcl() */
 
 static void _template_fcl_relu

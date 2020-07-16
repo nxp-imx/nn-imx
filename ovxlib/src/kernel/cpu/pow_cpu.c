@@ -57,7 +57,7 @@ static int32_t _expand_offset
     {
         if( shape[i] == out_shape[i] )
         {
-            offset += strides[i] * ( index % out_shape[i] );
+            offset += (int32_t)strides[i] * ( index % out_shape[i] );
         }
         index /= out_shape[i];
     }
@@ -147,7 +147,7 @@ static vx_param_description_t kernel_param_def[] =
 };
 
 
-const static vx_kernel_description_t _kernel_info =
+static const vx_kernel_description_t _kernel_info =
 {
     KERNEL_ID_PLACEHOLDER,
     _KERNEL_NAME,

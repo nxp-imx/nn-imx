@@ -380,7 +380,7 @@ static vsi_bool vx_op_pre_compute
 
     p = &(self->nn_param.relu_keras_internal);
 
-    kernel_info->kernel_index = keras_relu_map[p->local.hash_idx].kernel_index;
+    kernel_info->kernel_index = (uint8_t)keras_relu_map[p->local.hash_idx].kernel_index;
     kernel_info->resource_num = 2;
     kernel_info->resource_name[0] = "vsi_nn_kernel_relu_keras_header";
     kernel_info->resource_name[1] = "vsi_nn_kernel_relu_keras_internal";

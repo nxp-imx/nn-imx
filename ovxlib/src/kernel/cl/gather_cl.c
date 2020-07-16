@@ -175,7 +175,7 @@ DEF_KERNEL_INITIALIZER(_gather_initializer)
     CHECK_STATUS_FAIL_GOTO(status, final );
 
     input1_shape  = attr[1]->shape;
-    input_dims1   = input1_shape->size;
+    input_dims1   = (uint32_t)input1_shape->size;
     for (i = 0; i < input_dims1; i++)
     {
         indices_num *= input1_shape->data[i];

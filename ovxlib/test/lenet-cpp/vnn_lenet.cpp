@@ -210,9 +210,6 @@ node[0]->nn_param.pool.pad[1] = 0;
 node[0]->nn_param.pool.pad[2] = 0;
 node[0]->nn_param.pool.pad[3] = 0;
 node[0]->vx_param.has_relu = vx_false_e;
-node[0]->vx_param.overflow_policy = VX_CONVERT_POLICY_WRAP;
-node[0]->vx_param.rounding_policy = VX_ROUND_POLICY_TO_ZERO;
-node[0]->vx_param.down_scale_size_rounding = VX_CONVOLUTIONAL_NETWORK_DS_SIZE_ROUNDING_FLOOR;
 
 /*-----------------------------------------
   lid       - conv2_3_pool2_4
@@ -245,9 +242,6 @@ node[1]->nn_param.pool.pad[1] = 0;
 node[1]->nn_param.pool.pad[2] = 0;
 node[1]->nn_param.pool.pad[3] = 0;
 node[1]->vx_param.has_relu = vx_false_e;
-node[1]->vx_param.overflow_policy = VX_CONVERT_POLICY_WRAP;
-node[1]->vx_param.rounding_policy = VX_ROUND_POLICY_TO_ZERO;
-node[1]->vx_param.down_scale_size_rounding = VX_CONVOLUTIONAL_NETWORK_DS_SIZE_ROUNDING_FLOOR;
 
 /*-----------------------------------------
   lid       - ip1_5_relu1_6
@@ -260,9 +254,6 @@ node[1]->vx_param.down_scale_size_rounding = VX_CONVOLUTIONAL_NETWORK_DS_SIZE_RO
 NEW_VXNODE(node[2], VSI_NN_OP_FCL_RELU);
 node[2]->nn_param.fcl.weights = 500;
 node[2]->vx_param.has_relu = vx_true_e;
-node[2]->vx_param.overflow_policy = VX_CONVERT_POLICY_WRAP;
-node[2]->vx_param.rounding_policy = VX_ROUND_POLICY_TO_ZERO;
-node[2]->vx_param.down_scale_size_rounding = VX_CONVOLUTIONAL_NETWORK_DS_SIZE_ROUNDING_FLOOR;
 
 /*-----------------------------------------
   lid       - trans_ip2_7
@@ -275,9 +266,6 @@ node[2]->vx_param.down_scale_size_rounding = VX_CONVOLUTIONAL_NETWORK_DS_SIZE_RO
 NEW_VXNODE(node[3], VSI_NN_OP_FCL_RELU);
 node[3]->nn_param.fcl.weights = 10;
 node[3]->vx_param.has_relu = vx_false_e;
-node[3]->vx_param.overflow_policy = VX_CONVERT_POLICY_WRAP;
-node[3]->vx_param.rounding_policy = VX_ROUND_POLICY_TO_ZERO;
-node[3]->vx_param.down_scale_size_rounding = VX_CONVOLUTIONAL_NETWORK_DS_SIZE_ROUNDING_FLOOR;
 
 /*-----------------------------------------
   lid       - prob_8

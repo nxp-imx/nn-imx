@@ -111,7 +111,7 @@ static vsi_status VX_CALLBACK vxUnstackKernel
             for (j = 0; j < itemCount; j++)
             {
                 uint32_t out_index = i * block_size;
-                uint32_t in_index = (i * itemCount + j) * block_size;
+                uint32_t in_index = (uint32_t)((i * itemCount + j) * block_size);
                 memcpy(&(out_buffer[j][out_index * stride]), &(in_buffer[in_index * stride]),
                     block_size * stride);
             }

@@ -148,6 +148,7 @@
 #include "ops/vsi_nn_op_cast.h"
 #include "ops/vsi_nn_op_depthwise_conv1d.h"
 #include "ops/vsi_nn_op_grucell_activation_internal.h"
+#include "ops/vsi_nn_op_grucell_activation_internal_sma.h"
 #include "ops/vsi_nn_op_linear.h"
 #include "ops/vsi_nn_op_batchnorm_single.h"
 #include "ops/vsi_nn_op_moments.h"
@@ -286,6 +287,7 @@ typedef union _vsi_nn_nn_param
     vsi_nn_swish_param              swish;
     vsi_nn_dataconvert_param        dataconvert;
     vsi_nn_grucell_activation_internal_param grucell_activation_internal;
+    vsi_nn_grucell_activation_internal_sma_param grucell_activation_internal_sma;
     vsi_nn_linear_param             linear;
     vsi_nn_batchnorm_single_param   batchnorm_single;
     vsi_nn_moments_param             moments;

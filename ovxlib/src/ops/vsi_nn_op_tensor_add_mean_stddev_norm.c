@@ -184,7 +184,7 @@ static vsi_status vx_op_compute
     border.constant_value.U8 = 0;
     if (inputs[0]->attr.dtype.vx_type == VSI_NN_TYPE_UINT8)
     {
-        border.constant_value.U8 = inputs[0]->attr.dtype.zero_point;
+        border.constant_value.U8 = (vx_uint8)inputs[0]->attr.dtype.zero_point;
     }
     status |= vxSetNodeAttribute(self->n, VX_NODE_BORDER, &border, sizeof(border));
 

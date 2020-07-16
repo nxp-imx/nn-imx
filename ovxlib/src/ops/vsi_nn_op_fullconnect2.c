@@ -390,6 +390,7 @@ static vsi_bool op_setup
 {
     vsi_nn_fcl_param * p;
     uint32_t i, j;
+    uint32_t num_in_fmp = 1;
 
 #ifdef VX_CONVERT_POLICY_WRAP_ENABLE
     if ( vsi_nn_compareVersion(self->graph, 1, 1, 21) == -1 )
@@ -401,10 +402,23 @@ static vsi_bool op_setup
     if( VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num )
     {
         p = (vsi_nn_fcl_param *)&(self->nn_param.fcl);
-        outputs[0]->attr.dim_num = inputs[0]->attr.dim_num - p->axis;
-        for(i = p->axis + 1, j = 1; i < inputs[0]->attr.dim_num && j < outputs[0]->attr.dim_num; ++i, ++j)
+        if (inputs[1]->attr.is_const == TRUE)
         {
-            outputs[0]->attr.size[j] = inputs[0]->attr.size[i];
+            outputs[0]->attr.dim_num = inputs[0]->attr.dim_num - p->axis;
+            for(i = p->axis + 1, j = 1; i < inputs[0]->attr.dim_num && j < outputs[0]->attr.dim_num; ++i, ++j)
+            {
+                outputs[0]->attr.size[j] = inputs[0]->attr.size[i];
+            }
+        }
+        else
+        {
+            /* For fullconnect_op, weight not const tensor */
+            outputs[0]->attr.dim_num = 2;
+            for (i = p->axis + 1; i < inputs[0]->attr.dim_num; i++)
+            {
+                num_in_fmp *= inputs[0]->attr.size[i];
+            }
+            outputs[0]->attr.size[1] = num_in_fmp;
         }
         outputs[0]->attr.size[0] = p->weights;
     }

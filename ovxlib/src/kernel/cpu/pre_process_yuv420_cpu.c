@@ -192,9 +192,9 @@ DEF_KERNEL_EXECUTOR(_pre_process_yuv420_exec)
                         D = (int)buffer[1][subIdx] - 128;
                         E = (int)buffer[2][subIdx] - 128;
 
-                        rline1[0]            = vsi_clamp((298 * C + 409 * E + 128) >> 8, min, max);
-                        gline1[0]            = vsi_clamp((298 * C - 100* D - 208 * E + 128) >> 8, min, max);
-                        bline1[0]            = vsi_clamp((298 * C + 516 * D + 128) >> 8, min, max);
+                        rline1[0]            = (uint8_t)vsi_clamp((298 * C + 409 * E + 128) >> 8, min, max);
+                        gline1[0]            = (uint8_t)vsi_clamp((298 * C - 100* D - 208 * E + 128) >> 8, min, max);
+                        bline1[0]            = (uint8_t)vsi_clamp((298 * C + 516 * D + 128) >> 8, min, max);
 
                         // right
                         subIdx = (((sx + 1) >> 1) + (sy >> 1) * subWidth + dz * subWidth * subHeight);
@@ -202,9 +202,9 @@ DEF_KERNEL_EXECUTOR(_pre_process_yuv420_exec)
                         D = (int)buffer[1][subIdx] - 128;
                         E = (int)buffer[2][subIdx] - 128;
 
-                        rline1[1]            = vsi_clamp((298 * C + 409 * E + 128) >> 8, min, max);
-                        gline1[1]            = vsi_clamp((298 * C - 100* D - 208 * E + 128) >> 8, min, max);
-                        bline1[1]            = vsi_clamp((298 * C + 516 * D + 128) >> 8, min, max);
+                        rline1[1]            = (uint8_t)vsi_clamp((298 * C + 409 * E + 128) >> 8, min, max);
+                        gline1[1]            = (uint8_t)vsi_clamp((298 * C - 100* D - 208 * E + 128) >> 8, min, max);
+                        bline1[1]            = (uint8_t)vsi_clamp((298 * C + 516 * D + 128) >> 8, min, max);
 
                         // below
                         subIdx = (((sx + 0) >> 1) + ((sy + 1) >> 1) * subWidth + dz * subWidth * subHeight);
@@ -212,9 +212,9 @@ DEF_KERNEL_EXECUTOR(_pre_process_yuv420_exec)
                         D = (int)buffer[1][subIdx] - 128;
                         E = (int)buffer[2][subIdx] - 128;
 
-                        rline2[0]            = vsi_clamp((298 * C + 409 * E + 128) >> 8, min, max);
-                        gline2[0]            = vsi_clamp((298 * C - 100* D - 208 * E + 128) >> 8, min, max);
-                        bline2[0]            = vsi_clamp((298 * C + 516 * D + 128) >> 8, min, max);
+                        rline2[0]            = (uint8_t)vsi_clamp((298 * C + 409 * E + 128) >> 8, min, max);
+                        gline2[0]            = (uint8_t)vsi_clamp((298 * C - 100* D - 208 * E + 128) >> 8, min, max);
+                        bline2[0]            = (uint8_t)vsi_clamp((298 * C + 516 * D + 128) >> 8, min, max);
 
                         // below right
                         //C = ySrc[source_index + src_width + 1] - 16;
@@ -223,9 +223,9 @@ DEF_KERNEL_EXECUTOR(_pre_process_yuv420_exec)
                         D = (int)buffer[1][subIdx] - 128;
                         E = (int)buffer[2][subIdx] - 128;
 
-                        rline2[1]            = vsi_clamp((298 * C + 409 * E + 128) >> 8, min, max);
-                        gline2[1]            = vsi_clamp((298 * C - 100* D - 208 * E + 128) >> 8, min, max);
-                        bline2[1]            = vsi_clamp((298 * C + 516 * D + 128) >> 8, min, max);
+                        rline2[1]            = (uint8_t)vsi_clamp((298 * C + 409 * E + 128) >> 8, min, max);
+                        gline2[1]            = (uint8_t)vsi_clamp((298 * C - 100* D - 208 * E + 128) >> 8, min, max);
+                        bline2[1]            = (uint8_t)vsi_clamp((298 * C + 516 * D + 128) >> 8, min, max);
 
                         //B
                         temp1 = fx * (bline1[1] - bline1[0]) + (bline1[0] << 10);
@@ -259,9 +259,9 @@ DEF_KERNEL_EXECUTOR(_pre_process_yuv420_exec)
                         D = (int)buffer[1][subIdx] - 128;
                         E = (int)buffer[2][subIdx] - 128;
 
-                        R            = vsi_clamp((298 * C + 409 * E + 128) >> 8, min, max);
-                        G            = vsi_clamp((298 * C - 100* D - 208 * E + 128) >> 8, min, max);
-                        B            = vsi_clamp((298 * C + 516 * D + 128) >> 8, min, max);
+                        R            = (uint8_t)vsi_clamp((298 * C + 409 * E + 128) >> 8, min, max);
+                        G            = (uint8_t)vsi_clamp((298 * C - 100* D - 208 * E + 128) >> 8, min, max);
+                        B            = (uint8_t)vsi_clamp((298 * C + 516 * D + 128) >> 8, min, max);
 
                         buffer[3][dstB_idx] = (B - bMean) * var;
                         buffer[3][dstG_idx] = (G - gMean) * var;
@@ -307,7 +307,7 @@ static vx_param_description_t kernel_param_def[] =
 };
 
 
-const static vx_kernel_description_t _kernel_info =
+static const vx_kernel_description_t _kernel_info =
 {
     KERNEL_ID_PLACEHOLDER,
     _KERNEL_NAME,

@@ -72,7 +72,7 @@ static int32_t _expand_offset
     {
         if( shape[i] == out_shape[i] )
         {
-            offset += strides[i] * ( index % out_shape[i] );
+            offset += (int32_t)strides[i] * ( index % out_shape[i] );
         }
         index /= out_shape[i];
     }
