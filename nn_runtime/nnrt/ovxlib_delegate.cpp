@@ -204,6 +204,7 @@ OvxlibDelegate::OvxlibDelegate(std::vector<ExecutionIOPtr> &inputPtr)
     REGISTER_OP(LINEAR);
     REGISTER_OP(CAST);
     REGISTER_OP(QUANTIZED_16BIT_LSTM);
+    REGISTER_OP(MATRIX_MUL);
 #undef REGISTER_OP
 }
 
@@ -1945,6 +1946,14 @@ int OvxlibDelegate::addNode_LINEAR(Model* model, OperationPtr operation, uint32_
     int err = NNA_ERROR_CODE(NO_ERROR);
     std::vector<vsi_nn_node_t*> nodes;
     err = addNode(VSI_NN_OP_A_TIMES_B_PLUS_C, operation, &nodes, operation_index);
+    return err;
+}
+
+int OvxlibDelegate::addNode_MATRIX_MUL(Model* model, OperationPtr operation, uint32_t operation_index) {
+    (void)model;
+    int err = NNA_ERROR_CODE(NO_ERROR);
+    std::vector<vsi_nn_node_t*> nodes;
+    err = addNode(VSI_NN_OP_MATRIXMUL, operation, &nodes, operation_index);
     return err;
 }
 

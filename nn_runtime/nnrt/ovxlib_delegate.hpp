@@ -252,6 +252,7 @@ class OvxlibDelegate
         REGISTER_OP(LINEAR);
         REGISTER_OP(CAST);
         REGISTER_OP(QUANTIZED_16BIT_LSTM);
+        REGISTER_OP(MATRIX_MUL);
 #undef  REGISTER_OP
 
     private:
