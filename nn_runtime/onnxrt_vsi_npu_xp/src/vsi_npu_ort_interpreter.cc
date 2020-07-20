@@ -657,6 +657,7 @@ std::map<std::string, std::shared_ptr<VsiOpInfo>> vsi_npu_supported_ops = {
     REGISTER_OP(Pad),
     REGISTER_OP(BatchNormalization),
     REGISTER_OP(ConvInteger),
+    REGISTER_OP(MatMul),
 };
 
 bool VsiSupported(const std::string& opName) {
