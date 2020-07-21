@@ -1,0 +1,589 @@
+From 5f7ebc40fddb2179b1024bb670e89e61180014ea Mon Sep 17 00:00:00 2001
+From: "jing.tang" <jing.tang@verisilicon.com>
+Date: Mon, 27 Apr 2020 09:53:25 +0800
+Subject: [PATCH 1/1] [VSI_NPU] the patch for ONNXRuntime framework
+
+---
+ cmake/CMakeLists.txt                          |   4 ++
+ cmake/onnxruntime.cmake                       |   1 +
+ cmake/onnxruntime_providers.cmake             |  24 ++++++++
+ cmake/onnxruntime_unittests.cmake             |   9 +++
+ include/onnxruntime/core/graph/constants.h    |   1 +
+ .../core/framework/ort_value_name_idx_map.h   |  14 ++++-
+ onnxruntime/core/framework/session_state.cc   |  14 ++++-
+ onnxruntime/core/framework/utils.cc           |  57 +++++++++++++++++-
+ .../core/optimizer/transformer_memcpy.cc      |   3 +-
+ onnxruntime/core/session/inference_session.cc |  12 ++++
+ onnxruntime/test/onnx/main.cc                 |  13 +++-
+ onnxruntime/test/onnx/runner.cc               |  18 +++++-
+ .../test/providers/provider_test_utils.cc     |   6 +-
+ .../{test_data_0_input.pb => input_0.pb}      | Bin
+ .../{test_data_0_output.pb => output_0.pb}    | Bin
+ onnxruntime/test/util/default_providers.cc    |   9 +++
+ .../test/util/include/default_providers.h     |   1 +
+ onnxruntime/test/util/include/providers.h     |   3 +
+ toolchain-arm-imx8qm.cmake                    |  29 +++++++++
+ tools/ci_build/build.py                       |  11 +++-
+ 20 files changed, 216 insertions(+), 13 deletions(-)
+ rename onnxruntime/test/testdata/squeezenet/test_data_set_0/{test_data_0_input.pb => input_0.pb} (100%)
+ rename onnxruntime/test/testdata/squeezenet/test_data_set_0/{test_data_0_output.pb => output_0.pb} (100%)
+ create mode 100755 toolchain-arm-imx8qm.cmake
+
+diff --git a/cmake/CMakeLists.txt b/cmake/CMakeLists.txt
+index ef2cd84e..53ef705e 100644
+--- a/cmake/CMakeLists.txt
++++ b/cmake/CMakeLists.txt
+@@ -49,6 +49,7 @@ option(onnxruntime_ENABLE_STATIC_ANALYSIS "Enable static analysis" OFF)
+ option(onnxruntime_ENABLE_PYTHON "Enable python buildings" OFF)
+ option(onnxruntime_USE_CUDA "Build with CUDA support" OFF)
+ option(onnxruntime_USE_OPENVINO "Build with OpenVINO support" OFF)
++option(onnxruntime_USE_VSI_NPU "Build with Vsi Npu support" OFF)
+ option(onnxruntime_USE_NSYNC "Build with NSYNC support. This option only takes effect on Linux" OFF)
+ option(onnxruntime_USE_EIGEN_FOR_BLAS "Use eign for blas" ON)
+ option(onnxruntime_USE_NNAPI "Build with DNNLibrary for Android NNAPI support" OFF)
+@@ -587,6 +588,9 @@ if(onnxruntime_USE_OPENVINO)
+ 
+ endif()
+ 
++if(onnxruntime_USE_VSI_NPU)
++  add_definitions(-DUSE_VSI_NPU=1)
++endif()
+ 
+ if (onnxruntime_USE_OPENBLAS)
+   add_definitions(-DUSE_OPENBLAS=1)
+diff --git a/cmake/onnxruntime.cmake b/cmake/onnxruntime.cmake
+index 591da416..c434eb57 100644
+--- a/cmake/onnxruntime.cmake
++++ b/cmake/onnxruntime.cmake
+@@ -63,6 +63,7 @@ target_link_libraries(onnxruntime PRIVATE
+     ${PROVIDERS_NNAPI}
+     ${PROVIDERS_TENSORRT}
+     ${PROVIDERS_OPENVINO}
++    ${PROVIDERS_VSI_NPU}
+     ${PROVIDERS_NUPHAR}
+     ${PROVIDERS_DML}
+     ${PROVIDERS_ACL}
+diff --git a/cmake/onnxruntime_providers.cmake b/cmake/onnxruntime_providers.cmake
+index 7549e2b5..cd475a0a 100644
+--- a/cmake/onnxruntime_providers.cmake
++++ b/cmake/onnxruntime_providers.cmake
+@@ -64,6 +64,10 @@ if(onnxruntime_USE_OPENVINO)
+   set(PROVIDERS_OPENVINO onnxruntime_providers_openvino)
+   list(APPEND ONNXRUNTIME_PROVIDER_NAMES openvino)
+ endif()
++if(onnxruntime_USE_VSI_NPU)
++  set(PROVIDERS_VSI_NPU onnxruntime_providers_vsi_npu)
++  list(APPEND ONNXRUNTIME_PROVIDER_NAMES vsi_npu)
++endif()
+ if(onnxruntime_USE_NNAPI)
+   set(PROVIDERS_NNAPI onnxruntime_providers_nnapi)
+   list(APPEND ONNXRUNTIME_PROVIDER_NAMES nnapi)
+@@ -468,6 +472,26 @@ if (onnxruntime_USE_ACL)
+   set_target_properties(onnxruntime_providers_acl PROPERTIES LINKER_LANGUAGE CXX)
+ endif()
+ 
++if (onnxruntime_USE_VSI_NPU)
++  add_definitions(-DUSE_VSI_NPU=1)
++  file(GLOB_RECURSE onnxruntime_providers_vsi_npu_cc_srcs
++    "${ONNXRUNTIME_ROOT}/core/providers/vsi_npu/*.h"
++    "${ONNXRUNTIME_ROOT}/core/providers/vsi_npu/*.cc"
++  )
++  set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wno-unused-parameter -Wl,-rpath-link $ENV{VIVANTE_SDK_DIR}/drivers")
++  source_group(TREE ${ONNXRUNTIME_ROOT}/core FILES ${onnxruntime_providers_vsi_npu_cc_srcs})
++  add_library(onnxruntime_providers_vsi_npu ${onnxruntime_providers_vsi_npu_cc_srcs})
++  onnxruntime_add_include_to_target(onnxruntime_providers_vsi_npu onnxruntime_common onnxruntime_framework onnx onnx_proto protobuf::libprotobuf)
++  add_dependencies(onnxruntime_providers_vsi_npu ${onnxruntime_EXTERNAL_DEPENDENCIES})
++  set_target_properties(onnxruntime_providers_vsi_npu PROPERTIES FOLDER "ONNXRuntime")
++  target_include_directories(onnxruntime_providers_vsi_npu PRIVATE ${ONNXRUNTIME_ROOT} ${VSI_NPU_INCLUDE_DIR} $ENV{VIVANTE_SDK_DIR}/include
++      $ENV{NNRT_ROOT} $ENV{NNRT_ROOT}/ovxlib/include)
++  install(DIRECTORY ${PROJECT_SOURCE_DIR}/../include/onnxruntime/core/providers/vsi_npu  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/onnxruntime/core/providers)
++  set_target_properties(onnxruntime_providers_vsi_npu PROPERTIES LINKER_LANGUAGE CXX)
++  link_directories(onnxruntime_providers_vsi_npu  $ENV{VIVANTE_SDK_DIR}/drivers )
++  target_link_libraries(onnxruntime_providers_vsi_npu nnrt)
++endif()
++
+ if (onnxruntime_ENABLE_MICROSOFT_INTERNAL)
+   include(onnxruntime_providers_internal.cmake)
+ endif()
+diff --git a/cmake/onnxruntime_unittests.cmake b/cmake/onnxruntime_unittests.cmake
+index 115776cf..303253bd 100644
+--- a/cmake/onnxruntime_unittests.cmake
++++ b/cmake/onnxruntime_unittests.cmake
+@@ -206,6 +206,10 @@ if(onnxruntime_USE_DNNL)
+   list(APPEND onnxruntime_test_providers_dependencies onnxruntime_providers_dnnl)
+ endif()
+ 
++if(onnxruntime_USE_VSI_NPU)
++  list(APPEND onnxruntime_test_providers_dependencies onnxruntime_providers_vsi_npu)
++endif()
++
+ if(onnxruntime_USE_NGRAPH)
+   list(APPEND onnxruntime_test_providers_dependencies onnxruntime_providers_ngraph)
+ endif()
+@@ -262,6 +266,7 @@ set(ONNXRUNTIME_TEST_LIBS
+     ${PROVIDERS_CUDA}
+     ${PROVIDERS_DNNL}
+     ${PROVIDERS_TENSORRT}
++    ${PROVIDERS_VSI_NPU}
+     ${PROVIDERS_NGRAPH}
+     ${PROVIDERS_OPENVINO}
+     ${PROVIDERS_NUPHAR}
+@@ -332,6 +337,10 @@ endif()
+ if (onnxruntime_USE_DNNL)
+   target_compile_definitions(onnxruntime_test_utils PUBLIC USE_DNNL=1)
+ endif()
++
++if (onnxruntime_USE_VSI_NPU)
++  target_compile_definitions(onnxruntime_test_utils PUBLIC USE_VSI_NPU=1)
++endif()
+ add_dependencies(onnxruntime_test_utils ${onnxruntime_EXTERNAL_DEPENDENCIES})
+ target_include_directories(onnxruntime_test_utils PUBLIC "${TEST_SRC_DIR}/util/include" PRIVATE ${eigen_INCLUDE_DIRS} ${ONNXRUNTIME_ROOT})
+ set_target_properties(onnxruntime_test_utils PROPERTIES FOLDER "ONNXRuntimeTest")
+diff --git a/include/onnxruntime/core/graph/constants.h b/include/onnxruntime/core/graph/constants.h
+index 26fc15d3..6749c29e 100644
+--- a/include/onnxruntime/core/graph/constants.h
++++ b/include/onnxruntime/core/graph/constants.h
+@@ -33,4 +33,5 @@ constexpr const char* kTensorrtExecutionProvider = "TensorrtExecutionProvider";
+ constexpr const char* kNnapiExecutionProvider = "NnapiExecutionProvider";
+ constexpr const char* kDmlExecutionProvider = "DmlExecutionProvider";
+ constexpr const char* kAclExecutionProvider = "ACLExecutionProvider";
++constexpr const char* kVsiNpuExecutionProvider = "VsiNpuExecutionProvider";
+ }  // namespace onnxruntime
+diff --git a/onnxruntime/core/framework/ort_value_name_idx_map.h b/onnxruntime/core/framework/ort_value_name_idx_map.h
+index dc906642..e42ce930 100644
+--- a/onnxruntime/core/framework/ort_value_name_idx_map.h
++++ b/onnxruntime/core/framework/ort_value_name_idx_map.h
+@@ -35,7 +35,19 @@ class OrtValueNameIdxMap {
+ 
+     auto it = map_.find(name);
+     if (it == map_.end()) {
+-      return ORT_MAKE_STATUS(ONNXRUNTIME, FAIL, "Could not find OrtValue with name '", name, "'");
++      std::string name1 = "";
++      for (auto kv : map_)
++      {
++        if (kv.first.find(name) != std::string::npos)
++        {
++          name1 = kv.first;
++          break;
++        }
++      }
++      it = map_.find(name1);
++      if (it == map_.end()) {
++        return ORT_MAKE_STATUS(ONNXRUNTIME, FAIL, "Could not find OrtValue with name '", name, "'");
++      }
+     }
+ 
+     idx = it->second;
+diff --git a/onnxruntime/core/framework/session_state.cc b/onnxruntime/core/framework/session_state.cc
+index 15fb8c32..a70066cc 100644
+--- a/onnxruntime/core/framework/session_state.cc
++++ b/onnxruntime/core/framework/session_state.cc
+@@ -227,7 +227,19 @@ common::Status SessionState::GetInputNodeInfo(const std::string& input_name,
+                                               std::vector<NodeInfo>& node_info_vec) const {
+   auto entry = input_names_to_nodeinfo_mapping_.find(input_name);
+   if (entry == input_names_to_nodeinfo_mapping_.cend()) {
+-    return Status(ONNXRUNTIME, FAIL, "Failed to find input name in the mapping: " + input_name);
++    std::string input_name1 = "";
++    for (auto kv : input_names_to_nodeinfo_mapping_)
++    {
++      if (kv.first.find(input_name) != std::string::npos)
++      {
++          input_name1 = kv.first;
++          break;
++      }
++    }
++    entry = input_names_to_nodeinfo_mapping_.find(input_name1);
++    if (entry == input_names_to_nodeinfo_mapping_.cend()) {
++      return Status(ONNXRUNTIME, FAIL, "Failed to find input name in the mapping: " + input_name);
++    }
+   }
+ 
+   node_info_vec = entry->second;
+diff --git a/onnxruntime/core/framework/utils.cc b/onnxruntime/core/framework/utils.cc
+index 64b60077..511625ea 100644
+--- a/onnxruntime/core/framework/utils.cc
++++ b/onnxruntime/core/framework/utils.cc
+@@ -573,6 +573,49 @@ static void DumpTensor(const Tensor& tensor, const TensorShape& shape) {
+   std::cout << std::endl;
+ }
+ 
++template <typename T>
++static void DumpTensor2(const Tensor& tensor, const TensorShape& shape,
++  const std::string& name) {
++  auto num_items = shape.Size();
++
++  if (num_items == 0) {
++    std::cout << "no data";
++    return;
++  }
++  std::ostringstream s;
++  size_t num_dims = shape.NumDimensions();
++  s << name << "_s_";
++  for (size_t i = 0; i < num_dims; i++) {
++    s << shape[i] << "_";
++  }
++  s << ".txt";
++
++  auto file_name = s.str();
++  auto n = file_name.find("_nchwc_");
++  if (n == std::string::npos || num_dims != 4)
++  {
++    std::ofstream ofout(file_name);
++    ofout.setf(std::ios::fixed);
++    ofout.precision(6);
++    auto data = tensor.DataAsSpan<T>();
++
++    for (int64_t i = 0; i < num_items; ++i) {
++      ofout << data[i] << "\n";
++    }
++  } else {
++    file_name.replace(n, 7, "_nchwc2nchw_");
++    std::ofstream ofout(file_name);
++    ofout.setf(std::ios::fixed);
++    ofout.precision(6);
++    std::unique_ptr<float[]> data(new float[num_items]);
++
++    MlasReorderOutput(shape.GetDims().data(), tensor.template Data<float>(), data.get());
++    for (int64_t i = 0; i < num_items; ++i) {
++      ofout << data[i] << "\n";
++    }
++  }
++}
++
+ void DumpNodeInputs(const OpKernelContext& context, const Node& node) {
+   std::cout << "-----------\n";
+   std::cout << node.OpType() << " node: " << node.Name() << "\n";
+@@ -591,6 +634,14 @@ void DumpNodeInputs(const OpKernelContext& context, const Node& node) {
+           const auto& shape = tensor.Shape();
+ 
+           std::cout << " Shape: " << shape << "\n";
++          if (DEBUG_NODE_INPUTS_OUTPUTS > 1) {
++            auto& tensor_location = tensor.Location();
++            const auto data_type = tensor.DataType();
++            if (tensor_location.device.Type() == OrtDevice::CPU || tensor_location.mem_type == OrtMemTypeCPUOutput) {
++              DispatchOnTensorType(data_type, DumpTensor2, tensor, shape,
++                node.Name()+ "_" + input_defs[i]->Name());
++            }
++          }
+         } else {
+           std::cout << " is non-tensor type.\n";
+         }
+@@ -625,7 +676,8 @@ void DumpNodeOutputs(OpKernelContext& context, const Node& node, const SessionSt
+             auto& tensor_location = tensor.Location();
+             const auto data_type = tensor.DataType();
+             if (tensor_location.device.Type() == OrtDevice::CPU || tensor_location.mem_type == OrtMemTypeCPUOutput) {
+-              DispatchOnTensorType(data_type, DumpTensor, tensor, shape);
++              DispatchOnTensorType(data_type, DumpTensor2, tensor, shape,
++                node.Name()+ "_" + output_defs[i]->Name());
+             } else {
+               std::cout << tensor_location << "\n";
+ 
+@@ -639,7 +691,8 @@ void DumpNodeOutputs(OpKernelContext& context, const Node& node, const SessionSt
+                 const auto& data_transfer_mgr = session_state.GetDataTransferMgr();
+                 auto status = data_transfer_mgr.CopyTensor(tensor, *cpu_tensor.get(), 0);
+                 if (status == common::Status::OK()) {
+-                  DispatchOnTensorType(data_type, DumpTensor, *cpu_tensor.get(), shape);
++                  DispatchOnTensorType(data_type, DumpTensor2, *cpu_tensor.get(), shape,
++                    node.Name()+ "_" + output_defs[i]->Name());
+                 } else {
+                   std::cout << " failed to transfer data to cpu.\n";
+                 }
+diff --git a/onnxruntime/core/optimizer/transformer_memcpy.cc b/onnxruntime/core/optimizer/transformer_memcpy.cc
+index d01b8f83..e0974ee0 100644
+--- a/onnxruntime/core/optimizer/transformer_memcpy.cc
++++ b/onnxruntime/core/optimizer/transformer_memcpy.cc
+@@ -74,7 +74,8 @@ common::Status MemcpyTransformer::ApplyImpl(Graph& graph, bool& modified, int gr
+         provider != onnxruntime::kNGraphExecutionProvider &&
+         provider != onnxruntime::kNupharExecutionProvider &&
+         provider != onnxruntime::kOpenVINOExecutionProvider &&
+-        provider != onnxruntime::kAclExecutionProvider) {
++        provider != onnxruntime::kAclExecutionProvider &&
++        provider != onnxruntime::kVsiNpuExecutionProvider) {
+       TransformerMemcpyImpl copy_impl(graph, provider);
+       auto current_modified = copy_impl.ModifyGraph(registry_manager_);
+       modified = modified || current_modified;
+diff --git a/onnxruntime/core/session/inference_session.cc b/onnxruntime/core/session/inference_session.cc
+index c56dfcf7..d76c9f54 100644
+--- a/onnxruntime/core/session/inference_session.cc
++++ b/onnxruntime/core/session/inference_session.cc
+@@ -926,7 +926,19 @@ common::Status InferenceSession::ValidateInputs(const std::vector<std::string>&
+ 
+     auto iter = input_def_map_.find(feed_name);
+     if (input_def_map_.end() == iter) {
++      std::string feed_name1 = "";
++      for (auto kv : input_def_map_)
++      {
++        if (kv.first.find(feed_name) != std::string::npos)
++        {
++          feed_name1 = kv.first;
++          break;
++        }
++      }
++      iter = input_def_map_.find(feed_name1);
++      if (input_def_map_.end() == iter) {
+       return ORT_MAKE_STATUS(ONNXRUNTIME, INVALID_ARGUMENT, "Invalid Feed Input Name:", feed_name);
++      }
+     }
+ 
+     auto expected_type = iter->second.ml_data_type;
+diff --git a/onnxruntime/test/onnx/main.cc b/onnxruntime/test/onnx/main.cc
+index 835f655a..f05c9733 100644
+--- a/onnxruntime/test/onnx/main.cc
++++ b/onnxruntime/test/onnx/main.cc
+@@ -37,7 +37,7 @@ void usage() {
+       "\t-v: verbose\n"
+       "\t-n [test_case_name]: Specifies a single test case to run.\n"
+       "\t-e [EXECUTION_PROVIDER]: EXECUTION_PROVIDER could be 'cpu', 'cuda', 'dnnl', 'tensorrt', 'ngraph', "
+-      "'openvino', 'nuphar' or 'acl'. "
++      "'openvino', 'vsi_npu', 'nuphar' or 'acl'. "
+       "Default: 'cpu'.\n"
+       "\t-x: Use parallel executor, default (without -x): sequential executor.\n"
+       "\t-d [device_id]: Specifies the device id for multi-device (e.g. GPU). The value should > 0\n"
+@@ -98,6 +98,7 @@ int real_main(int argc, char* argv[], Ort::Env& env) {
+   bool enable_tensorrt = false;
+   bool enable_mem_pattern = true;
+   bool enable_openvino = false;
++  bool enable_vsi_npu = false;
+   bool enable_nnapi = false;
+   bool enable_dml = false;
+   bool enable_acl = false;
+@@ -161,6 +162,8 @@ int real_main(int argc, char* argv[], Ort::Env& env) {
+             enable_tensorrt = true;
+           } else if (!CompareCString(optarg, ORT_TSTR("openvino"))) {
+             enable_openvino = true;
++          } else if (!CompareCString(optarg, ORT_TSTR("vsi_npu"))) {
++            enable_vsi_npu = true;
+           } else if (!CompareCString(optarg, ORT_TSTR("nnapi"))) {
+             enable_nnapi = true;
+           } else if (!CompareCString(optarg, ORT_TSTR("dml"))) {
+@@ -286,6 +289,14 @@ int real_main(int argc, char* argv[], Ort::Env& env) {
+ #else
+       fprintf(stderr, "OpenVINO is not supported in this build");
+       return -1;
++#endif
++    }
++    if (enable_vsi_npu) {
++#ifdef USE_VSI_NPU
++      Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_VsiNpu(sf, device_id));
++#else
++      fprintf(stderr, "VsiNpu is not supported in this build");
++      return -1;
+ #endif
+     }
+     if (enable_cuda) {
+diff --git a/onnxruntime/test/onnx/runner.cc b/onnxruntime/test/onnx/runner.cc
+index d8942fc2..c7c5c209 100644
+--- a/onnxruntime/test/onnx/runner.cc
++++ b/onnxruntime/test/onnx/runner.cc
+@@ -427,9 +427,21 @@ EXECUTE_RESULT DataRunner::RunTaskImpl(size_t task_id) {
+     const std::string& output_name = output.first;
+     auto iter = name_fetch_output_map.find(output_name);
+     if (iter == name_fetch_output_map.end()) {
+-      res = EXECUTE_RESULT::INVALID_GRAPH;
+-      LOGF_DEFAULT(ERROR, "cannot find %s in the outputs", output_name.c_str());
+-      break;
++      std::string output_name1 = "";
++      for (auto kv : name_fetch_output_map)
++      {
++        if (kv.first.find(output_name) != std::string::npos)
++        {
++          output_name1 = kv.first;
++          break;
++        }
++      }
++      iter = name_fetch_output_map.find(output_name1);
++      if (iter == name_fetch_output_map.end()) {
++        res = EXECUTE_RESULT::INVALID_GRAPH;
++        LOGF_DEFAULT(ERROR, "cannot find %s in the outputs", output_name.c_str());
++        break;
++      }
+     }
+     OrtValue* actual_output_value = iter->second;
+     std::pair<COMPARE_RESULT, std::string> ret =
+diff --git a/onnxruntime/test/providers/provider_test_utils.cc b/onnxruntime/test/providers/provider_test_utils.cc
+index 717c2c9e..8a1af25b 100644
+--- a/onnxruntime/test/providers/provider_test_utils.cc
++++ b/onnxruntime/test/providers/provider_test_utils.cc
+@@ -568,6 +568,7 @@ void OpTester::Run(SessionOptions so,  // Take the SessionOptions by value (i.e.
+     // Run the model
+     static const std::string all_provider_types[] = {
+         kCpuExecutionProvider,
++        kVsiNpuExecutionProvider,
+         kCudaExecutionProvider,
+         kDnnlExecutionProvider,
+         kNGraphExecutionProvider,
+@@ -620,6 +621,8 @@ void OpTester::Run(SessionOptions so,  // Take the SessionOptions by value (i.e.
+         std::unique_ptr<IExecutionProvider> execution_provider;
+         if (provider_type == onnxruntime::kCpuExecutionProvider)
+           execution_provider = DefaultCpuExecutionProvider();
++        else if (provider_type == onnxruntime::kVsiNpuExecutionProvider)
++          execution_provider = DefaultVsiNpuExecutionProvider();
+         else if (provider_type == onnxruntime::kCudaExecutionProvider)
+           execution_provider = DefaultCudaExecutionProvider();
+         else if (provider_type == onnxruntime::kDnnlExecutionProvider)
+@@ -654,7 +657,8 @@ void OpTester::Run(SessionOptions so,  // Take the SessionOptions by value (i.e.
+           if (provider_type == onnxruntime::kNGraphExecutionProvider ||
+               provider_type == onnxruntime::kTensorrtExecutionProvider ||
+               provider_type == onnxruntime::kOpenVINOExecutionProvider ||
+-              provider_type == onnxruntime::kNupharExecutionProvider)
++              provider_type == onnxruntime::kNupharExecutionProvider ||
++              provider_type == onnxruntime::kVsiNpuExecutionProvider)
+             continue;
+           auto reg = execution_provider->GetKernelRegistry();
+           const KernelCreateInfo* kci = reg->TryFindKernel(node, execution_provider->Type());
+diff --git a/onnxruntime/test/testdata/squeezenet/test_data_set_0/test_data_0_input.pb b/onnxruntime/test/testdata/squeezenet/test_data_set_0/input_0.pb
+similarity index 100%
+rename from onnxruntime/test/testdata/squeezenet/test_data_set_0/test_data_0_input.pb
+rename to onnxruntime/test/testdata/squeezenet/test_data_set_0/input_0.pb
+diff --git a/onnxruntime/test/testdata/squeezenet/test_data_set_0/test_data_0_output.pb b/onnxruntime/test/testdata/squeezenet/test_data_set_0/output_0.pb
+similarity index 100%
+rename from onnxruntime/test/testdata/squeezenet/test_data_set_0/test_data_0_output.pb
+rename to onnxruntime/test/testdata/squeezenet/test_data_set_0/output_0.pb
+diff --git a/onnxruntime/test/util/default_providers.cc b/onnxruntime/test/util/default_providers.cc
+index b6da3d14..37c79ccd 100644
+--- a/onnxruntime/test/util/default_providers.cc
++++ b/onnxruntime/test/util/default_providers.cc
+@@ -18,6 +18,7 @@ std::shared_ptr<IExecutionProviderFactory> CreateExecutionProviderFactory_Nnapi(
+ std::shared_ptr<IExecutionProviderFactory> CreateExecutionProviderFactory_Tensorrt(int device_id);
+ std::shared_ptr<IExecutionProviderFactory> CreateExecutionProviderFactory_OpenVINO(const char* device_id);
+ std::shared_ptr<IExecutionProviderFactory> CreateExecutionProviderFactory_ACL(int use_arena);
++std::shared_ptr<IExecutionProviderFactory> CreateExecutionProviderFactory_VsiNpu(int device_id);
+ 
+ namespace test {
+ 
+@@ -33,6 +34,14 @@ std::unique_ptr<IExecutionProvider> DefaultTensorrtExecutionProvider() {
+ #endif
+ }
+ 
++std::unique_ptr<IExecutionProvider> DefaultVsiNpuExecutionProvider() {
++#ifdef USE_VSI_NPU
++  return CreateExecutionProviderFactory_VsiNpu(0)->CreateProvider();
++#else
++  return nullptr;
++#endif
++}
++
+ std::unique_ptr<IExecutionProvider> DefaultOpenVINOExecutionProvider() {
+ #ifdef USE_OPENVINO
+   return CreateExecutionProviderFactory_OpenVINO("CPU")->CreateProvider();
+diff --git a/onnxruntime/test/util/include/default_providers.h b/onnxruntime/test/util/include/default_providers.h
+index 00193659..a876b03d 100644
+--- a/onnxruntime/test/util/include/default_providers.h
++++ b/onnxruntime/test/util/include/default_providers.h
+@@ -14,6 +14,7 @@ std::unique_ptr<IExecutionProvider> DefaultNGraphExecutionProvider();
+ std::unique_ptr<IExecutionProvider> DefaultNupharExecutionProvider(bool allow_unaligned_buffers = true);
+ std::unique_ptr<IExecutionProvider> DefaultBrainSliceExecutionProvider();
+ std::unique_ptr<IExecutionProvider> DefaultTensorrtExecutionProvider();
++std::unique_ptr<IExecutionProvider> DefaultVsiNpuExecutionProvider();
+ std::unique_ptr<IExecutionProvider> DefaultOpenVINOExecutionProvider();
+ std::unique_ptr<IExecutionProvider> DefaultNnapiExecutionProvider();
+ std::unique_ptr<IExecutionProvider> DefaultAclExecutionProvider(bool enable_arena = true);
+diff --git a/onnxruntime/test/util/include/providers.h b/onnxruntime/test/util/include/providers.h
+index dd728152..03b71ab4 100644
+--- a/onnxruntime/test/util/include/providers.h
++++ b/onnxruntime/test/util/include/providers.h
+@@ -25,6 +25,9 @@
+ #ifdef USE_OPENVINO
+ #include "core/providers/openvino/openvino_provider_factory.h"
+ #endif
++#ifdef USE_VSI_NPU
++#include "core/providers/vsi_npu/vsi_npu_provider_factory.h"
++#endif
+ #ifdef USE_NNAPI
+ #include "core/providers/nnapi/nnapi_provider_factory.h"
+ #endif
+diff --git a/toolchain-arm-imx8qm.cmake b/toolchain-arm-imx8qm.cmake
+new file mode 100755
+index 00000000..639aa6b5
+--- /dev/null
++++ b/toolchain-arm-imx8qm.cmake
+@@ -0,0 +1,29 @@
++# Platform defines.
++set(CMAKE_SYSTEM_NAME Linux)
++set(CMAKE_CROSSCOMPILING 1)
++set(DE_CPU "DE_CPU_ARM")
++
++set(CROSS_COMPILE_ENV "/home/software/Linux/freescale/ToolChain/L4.19.35-1.1.0_RC3_for_imx8/sysroots")
++set(ROOTFS "${CROSS_COMPILE_ENV}/aarch64-poky-linux")
++set(CMAKE_SYSROOT "${ROOTFS}")
++
++# Toolchain/compiler base.
++set(CROSS_COMPILE "${CROSS_COMPILE_ENV}/x86_64-pokysdk-linux/usr/bin/aarch64-poky-linux/aarch64-poky-linux-" CACHE STRING "Cross compiler prefix")
++set(CMAKE_C_COMPILER "${CROSS_COMPILE}gcc")
++set(CMAKE_CXX_COMPILER "${CROSS_COMPILE}g++")
++
++set(CMAKE_FIND_ROOT_PATH
++        "${ROOTFS}/lib"
++        "${ROOTFS}/usr/lib"
++        "${ROOTFS}/usr/lib/aarch64-poky-linux/8.3.0"
++        )
++
++message(CMAKE_FIND_ROOT_PATH "${CMAKE_FIND_ROOT_PATH}")
++
++# Search libs and include files (but not programs) from toolchain dir.
++set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
++set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY FIRST)
++set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
++set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
++
++add_definitions(-mtune=cortex-a53)
+diff --git a/tools/ci_build/build.py b/tools/ci_build/build.py
+index 10939a0b..72bccfbe 100755
+--- a/tools/ci_build/build.py
++++ b/tools/ci_build/build.py
+@@ -140,6 +140,7 @@ Use the individual flags to only run the specified stages.
+     parser.add_argument("--eigen_path", help="Path to pre-installed eigen.")
+     parser.add_argument("--use_tvm", action="store_true", help="Build with tvm")
+     parser.add_argument("--use_openmp", action='store_true', help="Build with OpenMP.")
++    parser.add_argument("--use_vsi_npu", action='store_true', help="Build with VSI NPU.")
+     parser.add_argument("--use_llvm", action="store_true", help="Build tvm with llvm")
+     parser.add_argument("--use_eigenthreadpool", action="store_true", help="Build with eigenthreadpool")
+     parser.add_argument("--enable_msinternal", action="store_true", help="Enable for Microsoft internal builds only.")
+@@ -161,6 +162,8 @@ Use the individual flags to only run the specified stages.
+     parser.add_argument("--enable_multi_device_test", action='store_true', help="Test with multi-device. Mostly used for multi-device GPU")
+     parser.add_argument("--use_dml", action='store_true', help="Build with DirectML.")
+     parser.add_argument("--use_telemetry", action='store_true', help="Only official builds can set this flag to enable telemetry.")
++    parser.add_argument("--use_cross_compile", action='store_true', help="Use corss compile.")
++    parser.add_argument("--cmake_toolchain", help="Path to cmake tool chain.")
+     return parser.parse_args()
+ 
+ def resolve_executable_path(command_or_path):
+@@ -312,6 +315,7 @@ def generate_build_tree(cmake_path, source_dir, build_dir, cuda_home, cudnn_home
+                  "-Donnxruntime_USE_OPENVINO_VAD_M=" + ("ON" if args.use_openvino == "VAD-M_FP16" else "OFF"),
+                  "-Donnxruntime_USE_OPENVINO_VAD_F=" + ("ON" if args.use_openvino == "VAD-F_FP32" else "OFF"),
+                  "-Donnxruntime_USE_NNAPI=" + ("ON" if args.use_dnnlibrary else "OFF"),
++                 "-Donnxruntime_USE_VSI_NPU=" + ("ON" if args.use_vsi_npu else "OFF"),
+                  "-Donnxruntime_USE_OPENMP=" + ("ON" if args.use_openmp and not args.use_dnnlibrary and not args.use_mklml and not args.use_ngraph else "OFF"),
+                  "-Donnxruntime_USE_TVM=" + ("ON" if args.use_tvm else "OFF"),
+                  "-Donnxruntime_USE_LLVM=" + ("ON" if args.use_llvm else "OFF"),
+@@ -349,6 +353,9 @@ def generate_build_tree(cmake_path, source_dir, build_dir, cuda_home, cudnn_home
+         nvml_stub_path = cuda_home + "/lib64/stubs"
+         cmake_args += ["-DCUDA_CUDA_LIBRARY=" + nvml_stub_path]
+ 
++    if args.use_cross_compile:
++        cmake_args += ["-DCMAKE_TOOLCHAIN_FILE=" + args.cmake_toolchain]
++
+     if args.use_preinstalled_eigen:
+         cmake_args += ["-Donnxruntime_USE_PREINSTALLED_EIGEN=ON",
+                        "-Deigen_SOURCE_PATH=" + args.eigen_path]
+@@ -789,8 +796,6 @@ def build_python_wheel(source_dir, build_dir, configs, use_cuda, use_ngraph, use
+         run_subprocess(args, cwd=cwd)
+ 
+ def build_protoc_for_host(cmake_path, source_dir, build_dir, args):
+-    if (args.arm or args.arm64) and not is_windows():
+-        raise BuildError('Currently only support building protoc for Windows host while cross-compiling for ARM/ARM64 arch')
+ 
+     log.info("Building protoc for host to be used in cross-compiled build process")
+     protoc_build_dir = os.path.join(os.getcwd(), build_dir, 'host_protoc')
+@@ -947,7 +952,7 @@ def main():
+             path_to_protoc_exe = build_protoc_for_host(cmake_path, source_dir, build_dir, args)
+         if is_ubuntu_1604():
+             if (args.arm or args.arm64):
+-                raise BuildError("Only Windows ARM(64) cross-compiled builds supported currently through this script")
++                 path_to_protoc_exe = build_protoc_for_host(cmake_path, source_dir, build_dir, args)
+             install_ubuntu_deps(args)
+             if not is_docker():
+                 install_python_deps()
+-- 
+2.25.1
+
