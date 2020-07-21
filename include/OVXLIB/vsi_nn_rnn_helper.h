@@ -53,6 +53,7 @@ vsi_nn_internal_tensor_t* vsi_nn_rnn_process_input_for_nn_fc
     (
     vsi_nn_node_t * self,
     vsi_nn_tensor_t * input,
+    vsi_bool multi_batch,
     uint32_t kernel_h,
     uint32_t kernel_w,
     int32_t use_virtual_tensor
@@ -62,6 +63,18 @@ vsi_nn_internal_tensor_t* vsi_nn_rnn_process_output_for_nn_fc
     (
     vsi_nn_node_t * self,
     vsi_nn_tensor_t * input,
+    vsi_bool multi_batch,
+    uint32_t kernel_h,
+    uint32_t kernel_w,
+    int32_t use_virtual_tensor
+    );
+
+vsi_bool vsi_nn_rnn_process_output_for_nn_fc2
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t * input,
+    vsi_nn_tensor_t * output,
+    vsi_bool multi_batch,
     uint32_t kernel_h,
     uint32_t kernel_w,
     int32_t use_virtual_tensor
@@ -85,6 +98,19 @@ vsi_nn_internal_tensor_t* vsi_nn_rnn_create_nn_fc
     vsi_nn_tensor_t * bias,
     uint32_t kernel_h,
     uint32_t kernel_w,
+    const vsi_nn_dtype_t* output_dtype,
+    vsi_bool use_virtual_tensor
+    );
+
+vsi_nn_internal_tensor_t* vsi_nn_rnn_create_nn_fc_relu
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t * input,
+    vsi_nn_tensor_t * weight,
+    vsi_nn_tensor_t * bias,
+    uint32_t kernel_h,
+    uint32_t kernel_w,
+    vsi_bool has_relu,
     const vsi_nn_dtype_t* output_dtype,
     vsi_bool use_virtual_tensor
     );
@@ -181,6 +207,15 @@ vsi_nn_internal_tensor_t** vsi_nn_create_split
     uint32_t axis,
     uint32_t slices_num,
     uint32_t* slices,
+    vsi_bool use_virtual_tensor
+    );
+
+vsi_nn_internal_tensor_t* vsi_nn_rnn_create_reshape
+    (
+    vsi_nn_node_t* self,
+    vsi_nn_tensor_t* tensor,
+    uint32_t* size,
+    uint32_t dim_num,
     vsi_bool use_virtual_tensor
     );
 

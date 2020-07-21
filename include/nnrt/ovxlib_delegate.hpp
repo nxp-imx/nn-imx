@@ -67,10 +67,15 @@ class OvxlibDelegate
             return (code != FusedType::NONE);
         }
 
+        void setQuantParameter(vsi_nn_tensor_attr_t* attr, float scale, int32_t zero_point);
+
+        void setPerChannelParameter(vsi_nn_tensor_attr_t* attr, float* scales, int32_t * zps,
+                                    uint32_t scales_num, uint32_t channel_dim);
+
         void packTensorAttr(vsi_nn_tensor_attr_t* attr,
             vsi_nn_type_e dtype, std::vector<uint32_t> & nchw_shape,
-            bool is_quantized, float scale, int32_t zero_point,
-            TensorLifeTime type);
+            bool is_quantized, float *scale, int32_t *zero_point, TensorLifeTime type,
+            bool is_perchannel = false, uint32_t scale_dim = 0, uint32_t channel_dim = 0);
 
         void packTensorAttr(vsi_nn_tensor_attr_t* attr,
             nnrt::op::OperandPtr operand, TensorLifeTime type);
@@ -82,8 +87,9 @@ class OvxlibDelegate
 
         int addTensor(vsi_nn_graph_t* graph, vsi_nn_type_e dtype,
             std::vector<uint32_t> & shape, bool is_quantized,
-            float scale, int32_t zero_point, TensorLifeTime type, size_t idx,
-            const void* data = nullptr, bool isFromHandle = false);
+            float *scale, int32_t *zero_point, TensorLifeTime type, size_t idx,
+            const void* data = nullptr, bool isFromHandle = false,
+            bool is_perchannel = false, uint32_t scale_dim = 0, uint32_t channel_dim = 0);
 
         int addTensor(vsi_nn_graph_t* graph,
             vsi_nn_tensor_attr_t* attr, size_t idx,
@@ -129,31 +135,6 @@ class OvxlibDelegate
             }
             size_pool_.push_back(handler);
             return reinterpret_cast<T*>(size_pool_.back().data());
-        };
-
-        template<typename T>
-        std::vector<T> convertPermute(std::vector<T> &perm)
-        {
-            return convertAxes(perm, perm.size());
-        };
-
-        template<typename T>
-        std::vector<T> convertAxes(std::vector<T> &axes, size_t dim_num)
-        {
-            std::vector<T> new_axes(axes.size());
-            size_t max_size = axes.size() - 1;
-            for (size_t i = 0; i < axes.size(); ++i) {
-                new_axes[i] = convertAxis(axes[max_size - i], dim_num);
-            }
-            return new_axes;
-        };
-
-        int32_t convertAxis(int32_t axis, int32_t dim_num)
-        {
-            if (axis < 0) {
-                axis += dim_num;
-            }
-            return (dim_num - axis - 1);
         };
 
         int32_t reverseMask(int32_t mask, size_t dim_num)

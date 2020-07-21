@@ -50,7 +50,7 @@ extern "C" {
 
 #define END_OF_VARIADIC_ARGUMENTS       0xbadcaffe
 #define FOREACH_ARGS(_args, _next, _arg_type) \
-    while(((_arg_type)END_OF_VARIADIC_ARGUMENTS) != (_next = va_arg(_args, _arg_type)))
+    while(((_arg_type)((size_t)END_OF_VARIADIC_ARGUMENTS)) != (_next = va_arg(_args, _arg_type)))
 
 /*-------------------------------------------
                   Functions

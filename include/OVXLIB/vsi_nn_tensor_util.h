@@ -695,6 +695,25 @@ vsi_nn_tensor_t* vsi_nn_ConcatTensor_impl
 #define vsi_nn_ConcatTensor(_graph, _axis, ...) \
     vsi_nn_ConcatTensor_impl(_graph, _axis, __VA_ARGS__, END_OF_VARIADIC_ARGUMENTS)
 
+/**
+ * Add multiple constant tensor
+ * All the input and output tensors must have the same shape.
+ *
+ * @param[in] graph Graph handle.
+ * @param[in] tensor attr.
+ * @param[in] input constant tensors.
+ *
+ * @return new constant tensor on success, or NULL otherwise.
+ */
+vsi_nn_tensor_t* vsi_nn_ConstTensorAdd_impl
+    (
+    vsi_nn_graph_t* graph,
+    vsi_nn_tensor_attr_t output_attr,
+    ...
+    );
+#define vsi_nn_ConstTensorAdd(_graph, _output_attr, ...) \
+    vsi_nn_ConstTensorAdd_impl(_graph, _output_attr, __VA_ARGS__, END_OF_VARIADIC_ARGUMENTS)
+
 #ifdef __cplusplus
 }
 #endif

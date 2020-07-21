@@ -276,6 +276,9 @@ enum class Rounding {
 
 enum class PadMode {
     CONSTANT,
+    REPLICATE,
+    SYMMETRIC,
+    REFLECT,
 };
 
 /*

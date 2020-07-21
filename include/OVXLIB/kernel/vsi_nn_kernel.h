@@ -589,6 +589,10 @@ vsi_nn_kernel_node_t  vsi_nn_kernel_create_node
     vsi_nn_kernel_t * kernel
     );
 
+vsi_status vsi_nn_kernel_node_set_border
+    (vsi_nn_kernel_node_t node,
+    vx_border_t* border);
+
 vsi_nn_kernel_scalar_t vsi_nn_kernel_scalar_create
     (
     vsi_nn_graph_t * graph,

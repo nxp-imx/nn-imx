@@ -21,52 +21,38 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#ifndef _VSI_NN_OP_REDUCEALL_INTERNAL_H
-#define _VSI_NN_OP_REDUCEALL_INTERNAL_H
 
-#include "vsi_nn_types.h"
+#ifndef __ANEURALNETWORKS_SPACE_TO_DEPTH_HPP__
+#define __ANEURALNETWORKS_SPACE_TO_DEPTH_HPP__
 
-#define VSI_NN_REDUCEALL_SH_KERNEL_IDX(_AXIS, _INPUT_TYPE, _OUTPUT_TYPE, _IMAGE_DIMS) \
-    VSI_NN_REDUCEALL_AXIS##_AXIS##_##_INPUT_TYPE##TO##_OUTPUT_TYPE##_##_IMAGE_DIMS##_KERNEL,
+// Compatibile with ANEURALNETWORKS_DEPTH_TO_SPACE and ANEURALNETWORKS_SPACE_TO_DEPTH
+#define OP_SPEC_NAME SpaceDepthOperation
+OP_SPEC_BEGIN()
+#define ARG_NAMES           \
+    (input,                 \
+     block_size,            \
+     data_layout)
+#define ARGC BOOST_PP_TUPLE_SIZE(ARG_NAMES)
 
-enum {
-    REDUCEALL_CPU_KERNEL,
-    VSI_NN_REDUCEALL_SH_KERNEL_IDX(0, I8,  I8, IMAGE)
-    VSI_NN_REDUCEALL_SH_KERNEL_IDX(0, I8,  I8, IMAGE_2D)
-    VSI_NN_REDUCEALL_SH_KERNEL_IDX(1, I8,  I8, IMAGE)
-    VSI_NN_REDUCEALL_SH_KERNEL_IDX(1, I8,  I8, IMAGE_2D)
-    VSI_NN_REDUCEALL_SH_KERNEL_IDX(2, I8,  I8, IMAGE)
-    REDUCEALL_KERNEL_COUNTS,
-};
+#define BOOST_PP_LOCAL_MACRO(n) OP_SPEC_ARG(BOOST_PP_TUPLE_ELEM(ARGC, n, ARG_NAMES))
+#define BOOST_PP_LOCAL_LIMITS (0, ARGC)
+#include BOOST_PP_LOCAL_ITERATE()
+OP_SPEC_END()
 
-enum {
-    REDUCEALL_INPUT = 0,
+// order of argument is important
+MAKE_SPEC(spaceDepth)
+    .input_(nnrt::OperandType::TENSOR_FLOAT32)
+    .block_size_(nnrt::OperandType::INT32)
+    .data_layout_(nnrt::OperandType::BOOL, OPTIONAL));
 
-    REDUCEALL_INPUTS_COUNT,
+    OVERRIDE_SPEC(spaceDepth, float16)
+    .input_(nnrt::OperandType::TENSOR_FLOAT16));
 
-    REDUCEALL_OUTPUT = 0,
+    OVERRIDE_SPEC(spaceDepth, asymm_u8)
+    .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM));
 
-    REDUCEALL_OUTPUTS_COUNT,
-
-    REDUCEALL_PARAM_COUT = REDUCEALL_INPUTS_COUNT + REDUCEALL_OUTPUTS_COUNT,
-};
-
-#define _VSI_NN_REDUCEALL_LOCAL_TENSOR_NUM 2
-
-typedef struct _vsi_nn_reduceall_lcl_data
-{
-    vx_tensor   local_tensor[_VSI_NN_REDUCEALL_LOCAL_TENSOR_NUM];
-    uint32_t    hash_idx;
-    vsi_bool    execute_on_sw;
-} vsi_nn_reduceall_lcl_data;
-
-typedef struct _vsi_nn_reduceall_internal_param
-{
-    vsi_nn_reduceall_lcl_data  local;
-    vx_int32    *axis;
-    vx_uint32   axis_num;
-    vx_bool     keep_dim;
-} vsi_nn_reduceall_internal_param;
+#undef ARG_NAMES
+#undef ARGC
+#undef OP_SPEC_NAME
 
 #endif
-
