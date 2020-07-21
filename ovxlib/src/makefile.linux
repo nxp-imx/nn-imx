@@ -1,19 +1,19 @@
-include $(AQROOT)/makefile.linux.def
+#include $(AQROOT)/makefile.linux.def
 
+INCLUDE += -I $(SDKTARGETSYSROOT)/usr/include
 INCLUDE += -I$(VIVANTE_SDK_INC) -I$(VIVANTE_SDK_INC)/HAL -I$(AQROOT)/sdk/inc
 INCLUDE += -I../include/ops -I../include/utils -I../include/inference
 INCLUDE += -I../include/client -I../include -I../include/libnnext
 INCLUDE += -I../include/platform -I../include/cpu_backend
 
 CFLAGS += $(INCLUDE)
-CFLAGS += -Wall -Wextra -Wno-unused-parameter -Wno-sign-compare -Werror
-CFLAGS += -fvisibility=hidden -D'OVXLIB_API=__attribute__((visibility("default")))'
+CFLAGS += -Werror -fvisibility=hidden -D'OVXLIB_API=__attribute__((visibility("default")))' -Wno-implicit-function-declaration
 
 ################################################################################
 # Supply necessary libraries.
 
-LIBS += -L$(VIVANTE_SDK_LIB) -l OpenVX -l OpenVXU -l CLC -l VSC
-LIBS += -lm -ldl
+LIBS += -L$(SDKTARGETSYSROOT)/usr/lib -l OpenVX -l OpenVXU -l CLC -l VSC
+LIBS += -L$(SDKTARGETSYSROOT)/usr/lib -lm -ldl
 
 #############################################################################
 # Macros.
@@ -134,9 +134,18 @@ SRCS += ${notdir ${wildcard custom/ops/kernel/*.c}}
 OBJECTS +=  ${patsubst %.c, $(OBJ_DIR)/%.o, $(SRCS)}
 
 # installation directory
-INSTALL_DIR := $(VIVANTE_SDK_LIB)
+# INSTALL_DIR := $(SDK_DIR)/drivers
 
 ################################################################################
 # Include the common makefile.
 
 include $(AQROOT)/common.target
+
+################################################################################
+# Extra installation.
+
+install: extra_install
+
+.PHONY: extra_install
+extra_install:
+	@-cp -rf $(AQROOT)/ovxlib/src/bin_r/libovxlib.so $(AQROOT)
