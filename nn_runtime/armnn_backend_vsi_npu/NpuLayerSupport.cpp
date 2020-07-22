@@ -1601,9 +1601,7 @@ bool NpuLayerSupport::IsTransposeConvolution2dSupported(const TensorInfo& input,
                                   const TensorInfo& weights,
                                   const Optional<TensorInfo>& biases,
                                   Optional<std::string&> reasonIfUnsupported) const {
-    bool supported = false;
-    //TODO: Currently no UT for this layer.
-    // So set it to unsupport before validation.
+    bool supported = true;
 
     // Define supported types.
     std::array<DataType, 3> supportedTypes = {

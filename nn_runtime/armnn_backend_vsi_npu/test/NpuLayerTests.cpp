@@ -1650,23 +1650,23 @@ ARMNN_AUTO_TEST_CASE(Slice1dUint8, Slice1dUint8Test)
 // ARMNN_AUTO_TEST_CASE(Slice2dInt16, Slice2dInt16Test)
 // ARMNN_AUTO_TEST_CASE(Slice1dInt16, Slice1dInt16Test)
 
-// // TransposeConvolution2d
-// ARMNN_AUTO_TEST_CASE(SimpleTransposeConvolution2dFloatNchw,
-//                      SimpleTransposeConvolution2dTest<DataType::Float32, DataType::Float32>,
-//                      true,
-//                      DataLayout::NCHW)
-// ARMNN_AUTO_TEST_CASE(SimpleTransposeConvolution2dFloatNhwc,
-//                      SimpleTransposeConvolution2dTest<DataType::Float32, DataType::Float32>,
-//                      true,
-//                      DataLayout::NHWC)
-// ARMNN_AUTO_TEST_CASE(SimpleTransposeConvolution2dUint8Nchw,
-//                      SimpleTransposeConvolution2dTest<DataType::QAsymmU8, DataType::Signed32>,
-//                      true,
-//                      DataLayout::NCHW)
-// ARMNN_AUTO_TEST_CASE(SimpleTransposeConvolution2dUint8Nhwc,
-//                      SimpleTransposeConvolution2dTest<DataType::QAsymmU8, DataType::Signed32>,
-//                      true,
-//                      DataLayout::NHWC)
+// TransposeConvolution2d
+ARMNN_AUTO_TEST_CASE(SimpleTransposeConvolution2dFloatNchw,
+                     SimpleTransposeConvolution2dTest<DataType::Float32, DataType::Float32>,
+                     true,
+                     DataLayout::NCHW)
+ARMNN_AUTO_TEST_CASE(SimpleTransposeConvolution2dFloatNhwc,
+                     SimpleTransposeConvolution2dTest<DataType::Float32, DataType::Float32>,
+                     true,
+                     DataLayout::NHWC)
+ARMNN_AUTO_TEST_CASE(SimpleTransposeConvolution2dUint8Nchw,
+                     SimpleTransposeConvolution2dTest<DataType::QAsymmU8, DataType::Signed32>,
+                     true,
+                     DataLayout::NCHW)
+ARMNN_AUTO_TEST_CASE(SimpleTransposeConvolution2dUint8Nhwc,
+                     SimpleTransposeConvolution2dTest<DataType::QAsymmU8, DataType::Signed32>,
+                     true,
+                     DataLayout::NHWC)
 // ARMNN_AUTO_TEST_CASE(SimpleTransposeConvolution2dInt16Nchw,
 //                      SimpleTransposeConvolution2dTest<DataType::QSymmS16, DataType::Signed32>,
 //                      true,
@@ -1676,22 +1676,22 @@ ARMNN_AUTO_TEST_CASE(Slice1dUint8, Slice1dUint8Test)
 //                      true,
 //                      DataLayout::NCHW)
 
-// ARMNN_AUTO_TEST_CASE(UnbiasedSimpleTransposeConvolution2dFloatNchw,
-//                      SimpleTransposeConvolution2dTest<DataType::Float32, DataType::Float32>,
-//                      false,
-//                      DataLayout::NCHW)
-// ARMNN_AUTO_TEST_CASE(UnbiasedSimpleTransposeConvolution2dFloatNhwc,
-//                      SimpleTransposeConvolution2dTest<DataType::Float32, DataType::Float32>,
-//                      true,
-//                      DataLayout::NHWC)
-// ARMNN_AUTO_TEST_CASE(UnbiasedSimpleTransposeConvolution2dUint8Nchw,
-//                      SimpleTransposeConvolution2dTest<DataType::QAsymmU8, DataType::Signed32>,
-//                      true,
-//                      DataLayout::NCHW)
-// ARMNN_AUTO_TEST_CASE(UnbiasedSimpleTransposeConvolution2dUint8Nhwc,
-//                      SimpleTransposeConvolution2dTest<DataType::QAsymmU8, DataType::Signed32>,
-//                      true,
-//                      DataLayout::NHWC)
+ARMNN_AUTO_TEST_CASE(UnbiasedSimpleTransposeConvolution2dFloatNchw,
+                     SimpleTransposeConvolution2dTest<DataType::Float32, DataType::Float32>,
+                     false,
+                     DataLayout::NCHW)
+ARMNN_AUTO_TEST_CASE(UnbiasedSimpleTransposeConvolution2dFloatNhwc,
+                     SimpleTransposeConvolution2dTest<DataType::Float32, DataType::Float32>,
+                     true,
+                     DataLayout::NHWC)
+ARMNN_AUTO_TEST_CASE(UnbiasedSimpleTransposeConvolution2dUint8Nchw,
+                     SimpleTransposeConvolution2dTest<DataType::QAsymmU8, DataType::Signed32>,
+                     true,
+                     DataLayout::NCHW)
+ARMNN_AUTO_TEST_CASE(UnbiasedSimpleTransposeConvolution2dUint8Nhwc,
+                     SimpleTransposeConvolution2dTest<DataType::QAsymmU8, DataType::Signed32>,
+                     true,
+                     DataLayout::NHWC)
 // ARMNN_AUTO_TEST_CASE(UnbiasedSimpleTransposeConvolution2dInt16Nchw,
 //                      SimpleTransposeConvolution2dTest<DataType::QSymmS16, DataType::Signed32>,
 //                      true,
@@ -1701,22 +1701,22 @@ ARMNN_AUTO_TEST_CASE(Slice1dUint8, Slice1dUint8Test)
 //                      true,
 //                      DataLayout::NCHW)
 
-// ARMNN_AUTO_TEST_CASE(PaddedTransposeConvolution2dFloatNchw,
-//                      PaddedTransposeConvolution2dTest<DataType::Float32, DataType::Float32>,
-//                      true,
-//                      DataLayout::NCHW)
-// ARMNN_AUTO_TEST_CASE(PaddedTransposeConvolution2dFloatNhwc,
-//                      PaddedTransposeConvolution2dTest<DataType::Float32, DataType::Float32>,
-//                      true,
-//                      DataLayout::NHWC)
-// ARMNN_AUTO_TEST_CASE(PaddedTransposeConvolution2dUint8Nchw,
-//                      PaddedTransposeConvolution2dTest<DataType::QAsymmU8, DataType::Signed32>,
-//                      true,
-//                      DataLayout::NCHW)
-// ARMNN_AUTO_TEST_CASE(PaddedTransposeConvolution2dUint8Nhwc,
-//                      PaddedTransposeConvolution2dTest<DataType::QAsymmU8, DataType::Signed32>,
-//                      true,
-//                      DataLayout::NHWC)
+ARMNN_AUTO_TEST_CASE(PaddedTransposeConvolution2dFloatNchw,
+                     PaddedTransposeConvolution2dTest<DataType::Float32, DataType::Float32>,
+                     true,
+                     DataLayout::NCHW)
+ARMNN_AUTO_TEST_CASE(PaddedTransposeConvolution2dFloatNhwc,
+                     PaddedTransposeConvolution2dTest<DataType::Float32, DataType::Float32>,
+                     true,
+                     DataLayout::NHWC)
+ARMNN_AUTO_TEST_CASE(PaddedTransposeConvolution2dUint8Nchw,
+                     PaddedTransposeConvolution2dTest<DataType::QAsymmU8, DataType::Signed32>,
+                     true,
+                     DataLayout::NCHW)
+ARMNN_AUTO_TEST_CASE(PaddedTransposeConvolution2dUint8Nhwc,
+                     PaddedTransposeConvolution2dTest<DataType::QAsymmU8, DataType::Signed32>,
+                     true,
+                     DataLayout::NHWC)
 // ARMNN_AUTO_TEST_CASE(PaddedTransposeConvolution2dInt16Nchw,
 //                      PaddedTransposeConvolution2dTest<DataType::QSymmS16, DataType::Signed32>,
 //                      true,
@@ -1726,22 +1726,22 @@ ARMNN_AUTO_TEST_CASE(Slice1dUint8, Slice1dUint8Test)
 //                      true,
 //                      DataLayout::NCHW)
 
-// ARMNN_AUTO_TEST_CASE(UnbiasedPaddedTransposeConvolution2dFloatNchw,
-//                      PaddedTransposeConvolution2dTest<DataType::Float32, DataType::Float32>,
-//                      false,
-//                      DataLayout::NCHW)
-// ARMNN_AUTO_TEST_CASE(UnbiasedPaddedTransposeConvolution2dFloatNhwc,
-//                      PaddedTransposeConvolution2dTest<DataType::Float32, DataType::Float32>,
-//                      true,
-//                      DataLayout::NHWC)
-// ARMNN_AUTO_TEST_CASE(UnbiasedPaddedTransposeConvolution2dUint8Nchw,
-//                      PaddedTransposeConvolution2dTest<DataType::QAsymmU8, DataType::Signed32>,
-//                      true,
-//                      DataLayout::NCHW)
-// ARMNN_AUTO_TEST_CASE(UnbiasedPaddedTransposeConvolution2dUint8Nhwc,
-//                      PaddedTransposeConvolution2dTest<DataType::QAsymmU8, DataType::Signed32>,
-//                      true,
-//                      DataLayout::NHWC)
+ARMNN_AUTO_TEST_CASE(UnbiasedPaddedTransposeConvolution2dFloatNchw,
+                     PaddedTransposeConvolution2dTest<DataType::Float32, DataType::Float32>,
+                     false,
+                     DataLayout::NCHW)
+ARMNN_AUTO_TEST_CASE(UnbiasedPaddedTransposeConvolution2dFloatNhwc,
+                     PaddedTransposeConvolution2dTest<DataType::Float32, DataType::Float32>,
+                     true,
+                     DataLayout::NHWC)
+ARMNN_AUTO_TEST_CASE(UnbiasedPaddedTransposeConvolution2dUint8Nchw,
+                     PaddedTransposeConvolution2dTest<DataType::QAsymmU8, DataType::Signed32>,
+                     true,
+                     DataLayout::NCHW)
+ARMNN_AUTO_TEST_CASE(UnbiasedPaddedTransposeConvolution2dUint8Nhwc,
+                     PaddedTransposeConvolution2dTest<DataType::QAsymmU8, DataType::Signed32>,
+                     true,
+                     DataLayout::NHWC)
 // ARMNN_AUTO_TEST_CASE(UnbiasedPaddedTransposeConvolution2dInt16Nchw,
 //                      PaddedTransposeConvolution2dTest<DataType::QSymmS16, DataType::Signed32>,
 //                      true,
@@ -1751,22 +1751,22 @@ ARMNN_AUTO_TEST_CASE(Slice1dUint8, Slice1dUint8Test)
 //                      true,
 //                      DataLayout::NCHW)
 
-// ARMNN_AUTO_TEST_CASE(StridedTransposeConvolution2dFloatNchw,
-//                      StridedTransposeConvolution2dTest<DataType::Float32, DataType::Float32>,
-//                      true,
-//                      DataLayout::NCHW)
-// ARMNN_AUTO_TEST_CASE(StridedTransposeConvolution2dFloatNhwc,
-//                      StridedTransposeConvolution2dTest<DataType::Float32, DataType::Float32>,
-//                      true,
-//                      DataLayout::NHWC)
-// ARMNN_AUTO_TEST_CASE(StridedTransposeConvolution2dUint8Nchw,
-//                      StridedTransposeConvolution2dTest<DataType::QAsymmU8, DataType::Signed32>,
-//                      true,
-//                      DataLayout::NCHW)
-// ARMNN_AUTO_TEST_CASE(StridedTransposeConvolution2dUint8Nhwc,
-//                      StridedTransposeConvolution2dTest<DataType::QAsymmU8, DataType::Signed32>,
-//                      true,
-//                      DataLayout::NHWC)
+ARMNN_AUTO_TEST_CASE(StridedTransposeConvolution2dFloatNchw,
+                     StridedTransposeConvolution2dTest<DataType::Float32, DataType::Float32>,
+                     true,
+                     DataLayout::NCHW)
+ARMNN_AUTO_TEST_CASE(StridedTransposeConvolution2dFloatNhwc,
+                     StridedTransposeConvolution2dTest<DataType::Float32, DataType::Float32>,
+                     true,
+                     DataLayout::NHWC)
+ARMNN_AUTO_TEST_CASE(StridedTransposeConvolution2dUint8Nchw,
+                     StridedTransposeConvolution2dTest<DataType::QAsymmU8, DataType::Signed32>,
+                     true,
+                     DataLayout::NCHW)
+ARMNN_AUTO_TEST_CASE(StridedTransposeConvolution2dUint8Nhwc,
+                     StridedTransposeConvolution2dTest<DataType::QAsymmU8, DataType::Signed32>,
+                     true,
+                     DataLayout::NHWC)
 // ARMNN_AUTO_TEST_CASE(StridedTransposeConvolution2dInt16Nchw,
 //                      StridedTransposeConvolution2dTest<DataType::QSymmS16, DataType::Signed32>,
 //                      true,
@@ -1776,22 +1776,22 @@ ARMNN_AUTO_TEST_CASE(Slice1dUint8, Slice1dUint8Test)
 //                      true,
 //                      DataLayout::NCHW)
 
-// ARMNN_AUTO_TEST_CASE(UnbiasedStridedTransposeConvolution2dFloatNchw,
-//                      StridedTransposeConvolution2dTest<DataType::Float32, DataType::Float32>,
-//                      false,
-//                      DataLayout::NCHW)
-// ARMNN_AUTO_TEST_CASE(UnbiasedStridedTransposeConvolution2dFloatNhwc,
-//                      StridedTransposeConvolution2dTest<DataType::Float32, DataType::Float32>,
-//                      true,
-//                      DataLayout::NHWC)
-// ARMNN_AUTO_TEST_CASE(UnbiasedStridedTransposeConvolution2dUint8Nchw,
-//                      StridedTransposeConvolution2dTest<DataType::QAsymmU8, DataType::Signed32>,
-//                      true,
-//                      DataLayout::NCHW)
-// ARMNN_AUTO_TEST_CASE(UnbiasedStridedTransposeConvolution2dUint8Nhwc,
-//                      StridedTransposeConvolution2dTest<DataType::QAsymmU8, DataType::Signed32>,
-//                      true,
-//                      DataLayout::NHWC)
+ARMNN_AUTO_TEST_CASE(UnbiasedStridedTransposeConvolution2dFloatNchw,
+                     StridedTransposeConvolution2dTest<DataType::Float32, DataType::Float32>,
+                     false,
+                     DataLayout::NCHW)
+ARMNN_AUTO_TEST_CASE(UnbiasedStridedTransposeConvolution2dFloatNhwc,
+                     StridedTransposeConvolution2dTest<DataType::Float32, DataType::Float32>,
+                     true,
+                     DataLayout::NHWC)
+ARMNN_AUTO_TEST_CASE(UnbiasedStridedTransposeConvolution2dUint8Nchw,
+                     StridedTransposeConvolution2dTest<DataType::QAsymmU8, DataType::Signed32>,
+                     true,
+                     DataLayout::NCHW)
+ARMNN_AUTO_TEST_CASE(UnbiasedStridedTransposeConvolution2dUint8Nhwc,
+                     StridedTransposeConvolution2dTest<DataType::QAsymmU8, DataType::Signed32>,
+                     true,
+                     DataLayout::NHWC)
 // ARMNN_AUTO_TEST_CASE(UnbiasedStridedTransposeConvolution2dInt16Nchw,
 //                      StridedTransposeConvolution2dTest<DataType::QSymmS16, DataType::Signed32>,
 //                      true,
@@ -1801,22 +1801,22 @@ ARMNN_AUTO_TEST_CASE(Slice1dUint8, Slice1dUint8Test)
 //                      true,
 //                      DataLayout::NCHW)
 
-// ARMNN_AUTO_TEST_CASE(MultiChannelTransposeConvolution2dFloatNchw,
-//                      MultiChannelTransposeConvolution2dTest<DataType::Float32,
-//                      DataType::Float32>,
-//                      DataLayout::NCHW)
-// ARMNN_AUTO_TEST_CASE(MultiChannelTransposeConvolution2dFloatNhwc,
-//                      MultiChannelTransposeConvolution2dTest<DataType::Float32,
-//                      DataType::Float32>,
-//                      DataLayout::NHWC)
-// ARMNN_AUTO_TEST_CASE(MultiChannelTransposeConvolution2dUint8Nchw,
-//                      MultiChannelTransposeConvolution2dTest<DataType::QAsymmU8,
-//                      DataType::Signed32>,
-//                      DataLayout::NCHW)
-// ARMNN_AUTO_TEST_CASE(MultiChannelTransposeConvolution2dUint8Nhwc,
-//                      MultiChannelTransposeConvolution2dTest<DataType::QAsymmU8,
-//                      DataType::Signed32>,
-//                      DataLayout::NHWC)
+ARMNN_AUTO_TEST_CASE(MultiChannelTransposeConvolution2dFloatNchw,
+                     MultiChannelTransposeConvolution2dTest<DataType::Float32,
+                     DataType::Float32>,
+                     DataLayout::NCHW)
+ARMNN_AUTO_TEST_CASE(MultiChannelTransposeConvolution2dFloatNhwc,
+                     MultiChannelTransposeConvolution2dTest<DataType::Float32,
+                     DataType::Float32>,
+                     DataLayout::NHWC)
+ARMNN_AUTO_TEST_CASE(MultiChannelTransposeConvolution2dUint8Nchw,
+                     MultiChannelTransposeConvolution2dTest<DataType::QAsymmU8,
+                     DataType::Signed32>,
+                     DataLayout::NCHW)
+ARMNN_AUTO_TEST_CASE(MultiChannelTransposeConvolution2dUint8Nhwc,
+                     MultiChannelTransposeConvolution2dTest<DataType::QAsymmU8,
+                     DataType::Signed32>,
+                     DataLayout::NHWC)
 // ARMNN_AUTO_TEST_CASE(MultiChannelTransposeConvolution2dInt16Nchw,
 //                      MultiChannelTransposeConvolution2dTest<DataType::QSymmS16,
 //                      DataType::Signed32>,
