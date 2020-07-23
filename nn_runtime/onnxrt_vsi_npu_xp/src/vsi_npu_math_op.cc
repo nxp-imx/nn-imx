@@ -79,6 +79,9 @@ void VsiOpCallbackInfoMatMul::Setup(const Node* node,
     }
     op->setInputs(in_operand_ids.data(), in_operand_ids.size());
     op->setOutputs(out_operand_ids.data(), out_operand_ids.size());
+    op->transpose[0] = false;
+    op->transpose[1] = false;
+
     model->AddOperation(op, nullptr);
 }
 
