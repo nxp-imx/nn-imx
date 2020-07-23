@@ -1952,8 +1952,11 @@ int OvxlibDelegate::addNode_LINEAR(Model* model, OperationPtr operation, uint32_
 int OvxlibDelegate::addNode_MATRIX_MUL(Model* model, OperationPtr operation, uint32_t operation_index) {
     (void)model;
     int err = NNA_ERROR_CODE(NO_ERROR);
+    MatrixMulOperation *matmul = reinterpret_cast<MatrixMulOperation*>(operation.get());
     std::vector<vsi_nn_node_t*> nodes;
     err = addNode(VSI_NN_OP_MATRIXMUL, operation, &nodes, operation_index);
+    nodes[0]->nn_param.matrixmul.transpose[0] = matmul->transpose[0];
+    nodes[0]->nn_param.matrixmul.transpose[1] = matmul->transpose[1];
     return err;
 }
 
