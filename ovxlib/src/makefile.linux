@@ -11,8 +11,7 @@ CFLAGS += -Werror -fvisibility=hidden -D'OVXLIB_API=__attribute__((visibility("d
 
 ################################################################################
 # Supply necessary libraries.
-
-LIBS += -L$(SDKTARGETSYSROOT)/usr/lib -l OpenVX -l OpenVXU -l CLC -l VSC
+LIBS += -L$(VIVANTE_SDK_LIB) -l OpenVX -l OpenVXU -l CLC -l VSC
 LIBS += -L$(SDKTARGETSYSROOT)/usr/lib -lm -ldl
 
 #############################################################################
