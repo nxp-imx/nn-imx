@@ -2,6 +2,7 @@
 #include "VsiPlatform.h"
 
 #include "CapabilityConfig.h"
+#include "AppDetectionConfig.h"
 
 namespace android {
 namespace nn {
@@ -32,6 +33,13 @@ Return<void> VsiDriver::getCapabilities_1_2(V1_2::IDevice::getCapabilities_1_2_c
 
     auto customer_caps = CustomizeOverlay();
     for (auto& override_cap : customer_caps) {
+        LOG(INFO) << "update capability for datatype(" << (uint32_t)override_cap.first
+                  << ")=" << override_cap.second.execTime << ", " << override_cap.second.powerUsage;
+        update(&capabilities.operandPerformance, override_cap.first, override_cap.second);
+    }
+
+    auto app_detection_caps = AppDetectionOverlay();
+    for (auto& override_cap : app_detection_caps) {
         LOG(INFO) << "update capability for datatype(" << (uint32_t)override_cap.first
                   << ")=" << override_cap.second.execTime << ", " << override_cap.second.powerUsage;
         update(&capabilities.operandPerformance, override_cap.first, override_cap.second);
