@@ -41,40 +41,6 @@
 #if ANDROID_SDK_VERSION >= 29
 #include "public.hpp"
 #endif
-namespace {
-// blacklist content:
-// single line include operation index defined by android nn spec
-// each number should end with ","
-bool IsOpBlockedByBlacklist(int32_t op_type) {
-    char env[128] = {0};
-    __system_property_get("NN_DBG_OP_BLK_LIST", env);
-    if (strlen(env) == 0) return false;
-
-    std::fstream fs(env);
-    if (!fs.good()) {
-        LOG(INFO) << "can not open blacklist file from -> " << env;
-        // Ignore if no whitelist found
-        return false;
-    }
-    std::string op_list_line;  // = fs.getline();
-    std::getline(fs, op_list_line);
-    std::vector<int32_t> op_list;
-
-    const char* splitor = ",";
-
-    auto end = op_list_line.find(splitor);
-    decltype(end) start = -1;
-    while (end != op_list_line.npos && end != start) {
-        auto value = op_list_line.substr(start + 1, end - start - 1);
-        start = op_list_line.find(splitor, end);
-        end = op_list_line.find(splitor, start + 1);
-        op_list.push_back(std::stoi(value));
-    }
-
-    return op_list.end() !=
-           std::find(op_list.begin(), op_list.end(), static_cast<int32_t>(op_type));
-}
-}  // namespace
 
 namespace android {
 namespace nn {
@@ -150,11 +116,6 @@ bool isTensor(const HalPlatform::Operand& operand) {
 bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
                                      const HalPlatform::Model& model,
                                      std::string& reason) {
-    if (IsOpBlockedByBlacklist(static_cast<int32_t>(operation.type))) {
-        reason += " reject op because it blocked by debug blacklist file\n";
-        return false;
-    }
-
     bool isSupport = true;
     auto isConstantTensor = [](auto& operand) -> bool {
         if (operand.lifetime == OperandLifeTime::CONSTANT_COPY ||

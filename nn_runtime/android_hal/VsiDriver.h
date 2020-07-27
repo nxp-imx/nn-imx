@@ -28,6 +28,7 @@
 #include "VsiDevice.h"
 #include "HalInterfaces.h"
 #include "Utils.h"
+#include "CustomizeOpSupportList.h"
 
 #include <sys/system_properties.h>
 #include <android-base/logging.h>
@@ -79,7 +80,9 @@ class VsiDriver : public VsiDevice {
             std::string notSupportReason = "";
             for (size_t i = 0; i < count; i++) {
                 const auto& operation = model.operations[i];
-                supported[i] = isSupportedOperation(operation, model, notSupportReason);
+
+                supported[i] = !IsOpBlocked(static_cast<int32_t>(operation.type)) &&
+                               isSupportedOperation(operation, model, notSupportReason);
             }
             LOG(INFO) << notSupportReason;
             cb(ErrorStatus::NONE, supported);
