@@ -1,7 +1,8 @@
 #include $(AQROOT)/makefile.linux.def
 
-INCLUDE += -I $(SDKTARGETSYSROOT)/usr/include
-INCLUDE += -I$(VIVANTE_SDK_INC) -I$(VIVANTE_SDK_INC)/HAL -I$(AQROOT)/sdk/inc
+OVX_INC ?= $(SDKTARGETSYSROOT)/usr/include
+
+INCLUDE += -I $(OVX_INC)
 INCLUDE += -I../include/ops -I../include/utils -I../include/inference
 INCLUDE += -I../include/client -I../include -I../include/libnnext
 INCLUDE += -I../include/platform -I../include/cpu_backend
@@ -12,7 +13,9 @@ CFLAGS += -Werror -fvisibility=hidden -D'OVXLIB_API=__attribute__((visibility("d
 ################################################################################
 # Supply necessary libraries.
 
-LIBS += -L$(SDKTARGETSYSROOT)/usr/lib -l OpenVX -l OpenVXU -l CLC -l VSC
+OVX_LIB ?= $(SDKTARGETSYSROOT)/usr/lib
+
+LIBS += -L$(OVX_LIB) -l OpenVX -l OpenVXU -l CLC -l VSC
 LIBS += -L$(SDKTARGETSYSROOT)/usr/lib -lm -ldl
 
 #############################################################################
