@@ -92,7 +92,7 @@ LOCAL_SHARED_LIBRARIES += libfmq \
                           libui \
                           android.hardware.neuralnetworks@1.2
 
-ifeq ($(shell expr $(PLATFORM_VERSION) ">=" R),1)
+ifeq ($(shell expr $(PLATFORM_SDK_VERSION) ">=" 30),1)
 LOCAL_SHARED_LIBRARIES += \
                           android.hardware.neuralnetworks@1.3
 
@@ -113,6 +113,10 @@ endif
 
 LOCAL_MODULE_RELATIVE_PATH := hw
 LOCAL_INIT_RC := VsiDriver.rc
+
+ifeq ($(shell expr $(PLATFORM_SDK_VERSION) ">=" 30),1)
+LOCAL_VINTF_FRAGMENTS := android.hardware.neuralnetworks@1.2-service-vsi-npu-server.xml
+endif
 
 LOCAL_CFLAGS += -DANDROID_SDK_VERSION=$(PLATFORM_SDK_VERSION)  -Wno-error=unused-parameter\
                 -Wno-unused-private-field \

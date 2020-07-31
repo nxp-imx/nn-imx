@@ -37,6 +37,10 @@ namespace android {
 namespace nn {
 namespace op_validate {
 using HalPlatform = vsi_driver::HalPlatform;
+using OperationType = vsi_driver::HalPlatform::OperationType;
+using OperandType = vsi_driver::HalPlatform::OperandType;
+using OperandLifeTime = vsi_driver::HalPlatform::OperandLifeTime;
+
 namespace get_buffer {
 const uint8_t* getOperandDataPtr(const HalPlatform::Model& model,
                                  const HalPlatform::Operand& halOperand,
