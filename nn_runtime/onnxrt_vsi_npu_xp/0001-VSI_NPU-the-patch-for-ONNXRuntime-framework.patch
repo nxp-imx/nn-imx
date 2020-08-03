@@ -95,7 +95,7 @@ index 7549e2b5..cd475a0a 100644
 +  add_dependencies(onnxruntime_providers_vsi_npu ${onnxruntime_EXTERNAL_DEPENDENCIES})
 +  set_target_properties(onnxruntime_providers_vsi_npu PROPERTIES FOLDER "ONNXRuntime")
 +  target_include_directories(onnxruntime_providers_vsi_npu PRIVATE ${ONNXRUNTIME_ROOT} ${VSI_NPU_INCLUDE_DIR} $ENV{VIVANTE_SDK_DIR}/include
-+      $ENV{NNRT_ROOT} $ENV{NNRT_ROOT}/ovxlib/include)
++      $ENV{NNRT_ROOT} $ENV{OVXLIB_DIR}/include)
 +  install(DIRECTORY ${PROJECT_SOURCE_DIR}/../include/onnxruntime/core/providers/vsi_npu  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/onnxruntime/core/providers)
 +  set_target_properties(onnxruntime_providers_vsi_npu PROPERTIES LINKER_LANGUAGE CXX)
 +  link_directories(onnxruntime_providers_vsi_npu  $ENV{VIVANTE_SDK_DIR}/drivers )
