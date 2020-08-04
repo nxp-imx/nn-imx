@@ -21,12 +21,12 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
+#include "execution.hpp"
 #include <thread>
 #include <cstring>
 #include <cassert>
 
 #include "logging.hpp"
-#include "execution.hpp"
 #include "compilation.hpp"
 #include "prepared_model.hpp"
 #include "event.hpp"
@@ -42,6 +42,18 @@ namespace {
 }
 namespace nnrt
 {
+/**
+ * Driver only support one context in a thread.
+ */
+SharedContextPtr global_ovx_context;
+
+struct ContextDeleter {
+    void operator()(vsi_nn_context_t ctx) {
+        NNRT_LOGD_PRINT("Release context");
+        vsi_nn_ReleaseContext(&ctx);
+    }
+};
+
 Execution::Execution(Compilation* compilation)
     : compilation_(compilation)
 {
@@ -56,6 +68,10 @@ Execution::Execution(Compilation* compilation)
         ExecutionIOPtr io = std::make_shared<ExecutionIO>(operand);
         outputs_.push_back(io);
     }
+    if (!global_ovx_context) {
+        global_ovx_context.reset(vsi_nn_CreateContext(), ContextDeleter());
+    }
+    ovx_context_ = global_ovx_context;
 }
 
 Execution::~Execution(){
@@ -63,6 +79,7 @@ Execution::~Execution(){
     outputs_.clear();
 }
 
+// Async Compute API
 int Execution::startCompute(EventPtr event)
 {
     if (!compilation_) {
@@ -89,7 +106,7 @@ int Execution::startCompute(EventPtr event)
     /**********************************************/
 
     int err = NNA_ERROR_CODE(NO_ERROR);
-    PreparedModelPtr prepared_model = compilation_->prepareModel(&err, inputs_);
+    PreparedModelPtr prepared_model = compilation_->prepareModel(&err, inputs_, ovx_context_);
     if (err == NNA_ERROR_CODE(NO_ERROR)) {
         event_ = event;
         event_->notify(Event::IN_PROCESS);
@@ -125,7 +142,7 @@ int Execution::compute()
     /**********************************************/
 
     int err = NNA_ERROR_CODE(NO_ERROR);
-    PreparedModelPtr prepared_model = compilation_->prepareModel(&err, inputs_);
+    PreparedModelPtr prepared_model = compilation_->prepareModel(&err, inputs_, ovx_context_);
     if (err == NNA_ERROR_CODE(NO_ERROR)) {
         TaskPtr task = std::make_shared<GraphTask>(prepared_model, nullptr, inputs_, outputs_);
         if (!task) {

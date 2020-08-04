@@ -32,28 +32,14 @@
 
 namespace nnrt
 {
-/**
- * Thread local context.
- * Driver only support one context in a thread.
- */
-thread_local SharedContextPtr thread_local_context;
 
-struct ContextDeleter {
-    void operator()(vsi_nn_context_t ctx) {
-        NNRT_LOGD_PRINT("Release context");
-        vsi_nn_ReleaseContext(&ctx);
-    }
-};
+extern SharedContextPtr global_ovx_context;
 
 Compilation::Compilation(Model * model)
     : model_(model)
     , interpreter_(new NnApiInterpreter())
     , prepared_model_cache_size_(1)
 {
-    if (!thread_local_context) {
-        thread_local_context.reset(vsi_nn_CreateContext(), ContextDeleter());
-    }
-    context_ = thread_local_context;
 }
 
 Compilation::~Compilation()
@@ -63,8 +49,8 @@ Compilation::~Compilation()
     }
     prepared_models_.clear();
     context_.reset();
-    if (thread_local_context.use_count() == 1) {
-        thread_local_context.reset();
+    if (global_ovx_context.use_count() == 1) {
+        global_ovx_context.reset();
     }
 }
 
@@ -91,8 +77,9 @@ void Compilation::cachePreparedModel(PreparedModelPtr& prepared_model)
 }
 
 PreparedModelPtr Compilation::prepareModel(int* err_ptr,
-                                std::vector<ExecutionIOPtr> &inputs)
-{
+                                           std::vector<ExecutionIOPtr>& inputs,
+                                           SharedContextPtr& context) {
+    context_ = context;
     int err = NNA_ERROR_CODE(NO_ERROR);
     std::unique_lock<std::mutex> lk(cache_mutex_);
     std::string model_signature = model_->generateSignature();
