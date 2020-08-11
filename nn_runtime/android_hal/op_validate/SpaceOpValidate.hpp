@@ -131,7 +131,7 @@ class Batch2spaceValidate : public OperationValidate<T_model, T_Operation> {
             reason += "reject BATCH_TO_SPACE because input data type not support\n";
             result = false;
         }
-        return true;
+        return result;
     };
 };
 
