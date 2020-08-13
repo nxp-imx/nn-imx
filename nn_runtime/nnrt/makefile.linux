@@ -39,7 +39,8 @@ TARGET_NAME  = libnnrt.a
 else
 CFLAGS += -fPIC
 DYNAMIC      := 1
-TARGET_NAME  = libnnrt.so
+TARGET_NAME  = libnnrt.so.1.1.8
+TARGET_LINKS  := libnnrt.so.1 libnnrt.so.1.1 libnnrt.so
 endif
 
 #############################################################################
@@ -104,4 +105,4 @@ install: extra_install
 
 .PHONY: extra_install
 extra_install:
-	@-cp -rf $(AQROOT)/nn_runtime/nnrt/bin_r/libnnrt.so $(AQROOT)
+	@-cp -rf $(AQROOT)/nn_runtime/nnrt/bin_r/libnnrt.so* $(AQROOT)
