@@ -37,6 +37,10 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <openssl/md5.h>
+
+#define MD5_SECRET_LEN_16     (16)
+#define MD5_BYTE_STRING_LEN   (4)
 
 #if ANDROID_SDK_VERSION >= 29
 #include "public.hpp"
@@ -113,17 +117,39 @@ bool isTensor(const HalPlatform::Operand& operand) {
     return tensor;
 }
 
+const std::string commonMd5Secret32(const std::string& src)
+{
+    MD5_CTX ctx;
+
+    std::string md5String;
+    unsigned char md[MD5_SECRET_LEN_16] = { 0 };
+    char tmp[MD5_BYTE_STRING_LEN] = { 0 };
+
+    MD5_Init( &ctx );
+    MD5_Update( &ctx, src.c_str(), src.size() );
+    MD5_Final( md, &ctx );
+
+    for( int i = 0; i < 16; ++i )
+    {
+        memset( tmp, 0x00, sizeof( tmp ) );
+        snprintf( tmp,sizeof(tmp) , "%02X", md[i] );
+        md5String += tmp;
+    }
+    return md5String;
+}
+
+bool isConstantTensor(const HalPlatform::Operand& operand) {
+    if (operand.lifetime == OperandLifeTime::CONSTANT_COPY ||
+        operand.lifetime == OperandLifeTime::CONSTANT_REFERENCE)
+        return true;
+    else
+        return false;
+}
+
 bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
                                      const HalPlatform::Model& model,
                                      std::string& reason) {
     bool isSupport = true;
-    auto isConstantTensor = [](auto& operand) -> bool {
-        if (operand.lifetime == OperandLifeTime::CONSTANT_COPY ||
-            operand.lifetime == OperandLifeTime::CONSTANT_REFERENCE)
-            return true;
-        else
-            return false;
-    };
 
 #if ANDROID_SDK_VERSION >= 29
     auto checkSupportedOperand = [](auto& operand) -> bool {
@@ -768,6 +794,25 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
     return isSupport;
 #endif
     return true;
+}
+
+bool VsiDriver::isWeightMd5Matched(const HalPlatform::Operation& operation,
+                                   const HalPlatform::Model& model) {
+    if (OperationType::CONV_2D == operation.type) {
+        auto& weight = model.operands[operation.inputs[1]];
+        if (!isConstantTensor(weight)) return false;
+        auto& shape = weight.dimensions;
+        // There are 64 * 3 * 3 * 64 kernels in vgg and srgan model
+        if (shape[0] != 64 || shape[1] != 3 || shape[2] != 3 || shape[3] != 64) return false;
+        struct VsiRTInfo rt;
+        const char* weight_data =
+            reinterpret_cast<const char*>(getOperandDataPtr(model, weight, rt));
+        std::string md5_src(weight_data, 512);
+        std::string md5 = commonMd5Secret32(md5_src);
+        return std::find(weight_md5.begin(), weight_md5.end(), md5) != weight_md5.end() ? true
+                                                                                        : false;
+    }
+    return false;
 }
 
 }  // namespace vsi_driver

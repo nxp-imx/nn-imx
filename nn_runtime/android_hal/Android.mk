@@ -20,6 +20,7 @@ endif
 LOCAL_C_INCLUDES := \
         frameworks/ml/nn/common/include/ \
         frameworks/ml/nn/runtime/include/  \
+        external/boringssl/src/include     \
         vendor/nxp/fsl-proprietary/include/CL \
         vendor/nxp/fsl-proprietary/include/VX \
         vendor/nxp/fsl-proprietary/include \
@@ -49,7 +50,8 @@ LOCAL_SHARED_LIBRARIES := \
     android.hidl.memory@1.0 \
     libneuralnetworks   \
     libovxlib\
-    libnnrt
+    libnnrt\
+    libcrypto
 
 LOCAL_SRC_FILES:= \
     VsiRTInfo.cpp \
