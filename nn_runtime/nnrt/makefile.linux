@@ -101,8 +101,14 @@ include $(AQROOT)/common.target
 ################################################################################
 # Extra installation.
 
-install: extra_install
+install: extra_install build_link
 
-.PHONY: extra_install
+.PHONY: extra_install build_link
 extra_install:
 	@-cp -rf $(AQROOT)/nn_runtime/nnrt/bin_r/libnnrt.so* $(AQROOT)
+build_link:
+ifneq ($(gcdSTATIC_LINK), 1)
+	@for lib in $(TARGET_LINKS); do \
+                ln -sf $(notdir $(TARGET_NAME)) $(AQROOT)/$$lib; \
+        done
+endif

@@ -26,7 +26,8 @@ TARGET_NAME  = libovxlib.a
 else
 CFLAGS += -fPIC
 DYNAMIC      := 1
-TARGET_NAME  = libovxlib.so
+TARGET_NAME  = libovxlib.so.1.1.0
+TARGET_LINKS  := libovxlib.so.1 libovxlib.so.1.1 libovxlib.so
 endif
 
 ifneq ("$(OVXLIB_CONFIG)", "")
@@ -147,8 +148,14 @@ include $(AQROOT)/common.target
 ################################################################################
 # Extra installation.
 
-install: extra_install
+install: extra_install build_link
 
-.PHONY: extra_install
+.PHONY: extra_install build_link
 extra_install:
-	@-cp -rf $(AQROOT)/ovxlib/src/bin_r/libovxlib.so $(AQROOT)
+	@-cp -rf $(AQROOT)/ovxlib/src/bin_r/libovxlib.so* $(AQROOT)
+build_link:
+ifneq ($(gcdSTATIC_LINK), 1)
+	@for lib in $(TARGET_LINKS); do \
+		ln -sf $(notdir $(TARGET_NAME)) $(AQROOT)/$$lib; \
+	done
+endif
