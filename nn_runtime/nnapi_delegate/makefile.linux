@@ -35,7 +35,8 @@ TARGET_NAME  = libneuralnetworks.a
 else
 CFLAGS += -fPIC
 DYNAMIC      := 1
-TARGET_NAME  = libneuralnetworks.so
+TARGET_NAME  = libneuralnetworks.so.1.1.8
+TARGET_LINKS  := libneuralnetworks.so.1 libneuralnetworks.so.1.1 libneuralnetworks.so
 endif
 
 #############################################################################
@@ -58,4 +59,4 @@ install: extra_install
 
 .PHONY: extra_install
 extra_install:
-	@-cp -rf $(AQROOT)/nn_runtime/nnapi_delegate/bin_r/libneuralnetworks.so $(AQROOT)
+	@-cp -rf $(AQROOT)/nn_runtime/nnapi_delegate/bin_r/libneuralnetworks.so* $(AQROOT)
