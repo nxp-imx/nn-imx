@@ -806,7 +806,11 @@ bool VsiDriver::isWeightMd5Matched(const HalPlatform::Operation& operation,
         decltype(weight.dimensions) match_shape_0 = {64, 3, 3, 64};
         // icnet_float inception_v3_float inception_face_float
         decltype(weight.dimensions) match_shape_1 = {32, 3, 3, 3};
-        if (shape != match_shape_0 && shape != match_shape_1) return false;
+        // srcnn
+        decltype(weight.dimensions) match_shape_2 = {64, 9, 9, 3};
+
+        if (shape != match_shape_0 && shape != match_shape_1 && shape != match_shape_2)
+            return false;
         struct VsiRTInfo rt;
         const char* weight_data =
             reinterpret_cast<const char*>(getOperandDataPtr(model, weight, rt));
