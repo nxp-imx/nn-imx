@@ -348,37 +348,19 @@ vsi_bool vsi_nn_QuantCheck
     )
 {
     vsi_bool ret = TRUE;
-    uint32_t i = 0;
     vsi_nn_qnt_type_e input_qnt_type, weight_qnt_type;
     vsi_nn_type_e input_dtype, weight_dtype;
     vsi_nn_qnt_type_e qnt_type;
-
-    //declare supported hybrid quantization combinations
-    int supported_hybrid_combinaton[][4] =
-    {
-        //  input qnt_type       input dtype            weight qnt_type               weight dtype
-        {VSI_NN_QNT_TYPE_DFP, VSI_NN_TYPE_INT16, VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC, VSI_NN_TYPE_UINT8},
-        {VSI_NN_QNT_TYPE_DFP, VSI_NN_TYPE_INT16, VSI_NN_QNT_TYPE_DFP, VSI_NN_TYPE_INT8},
-    };
 
     input_qnt_type = input->attr.dtype.qnt_type;
     input_dtype = input->attr.dtype.vx_type;
     weight_qnt_type = weight->attr.dtype.qnt_type;
     weight_dtype = weight->attr.dtype.vx_type;
 
-    //do not check quant parammeters if types of input/weight in supported_hybrid_combinaton
-    for(i = 0; i < sizeof(supported_hybrid_combinaton) / sizeof(supported_hybrid_combinaton[0]); i++)
+    //do not check quant parammeters if types of input/weight is hybrid combinaton
+    if(input_dtype != weight_dtype || input_qnt_type != weight_qnt_type)
     {
-        int support_input_qnt_type = supported_hybrid_combinaton[i][0];
-        int support_input_dtype = supported_hybrid_combinaton[i][1];
-        int support_weight_qnt_type = supported_hybrid_combinaton[i][2];
-        int support_weight_dtype = supported_hybrid_combinaton[i][3];
-
-        if(input_qnt_type == support_input_qnt_type && input_dtype == support_input_dtype
-            && weight_qnt_type == support_weight_qnt_type && weight_dtype == support_weight_dtype)
-        {
-            return ret;
-        }
+        return ret;
     }
 
     if(VSI_NN_TYPE_VDATA == weight->attr.dtype.vx_type)
@@ -417,7 +399,7 @@ vsi_bool vsi_nn_QuantCheck
       ret = vsi_nn_QuantAffineCheck(input, weight, bias);
       if(ret == FALSE)
       {
-        VSILOGE("input_scale[%f] * weight_scale[%f] != bias_scale[%f]",
+        VSILOGE("input_scale[%.12lf] * weight_scale[%.12lf] != bias_scale[%.12lf]",
           input->attr.dtype.scale,
           weight->attr.dtype.scale,
           bias->attr.dtype.scale);
