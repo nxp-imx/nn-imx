@@ -41,11 +41,11 @@ __BEGIN_DECLS
 #define _CPU_OUTPUT_NUM         (1)
 #define _CPU_IO_NUM             (_CPU_INPUT_NUM + _CPU_OUTPUT_NUM)
 #define _CPU_PARAM_NUM          (_CPU_ARG_NUM + _CPU_IO_NUM)
-#define _KERNEL_NAME            CVIVANTE_NAMESPACE("cpu.pre_process_yuv420_sw")
+#define _KERNEL_NAME            CVIVANTE_NAMESPACE("cpu.pre_process_yuv444_sw")
 
 #define DESCALE(x) (((x) + (1<<19)) >> 20)
 
-DEF_KERNEL_EXECUTOR(_pre_process_yuv420_exec)
+DEF_KERNEL_EXECUTOR(_pre_process_yuv444_exec)
     (
     vsi_nn_kernel_node_t node,
     const vsi_nn_kernel_node_param_t * param,
@@ -128,15 +128,12 @@ DEF_KERNEL_EXECUTOR(_pre_process_yuv420_exec)
         int32_t dx, dy, dz;
         int32_t src_width = attr[0]->shape->data[0];
         int32_t src_height = attr[0]->shape->data[1];
-        int32_t subWidth = src_width >> 1;
-        int32_t subHeight = src_height >> 1;
         int32_t dst_width = trans ? attr[3]->shape->data[1] : attr[3]->shape->data[0];
         int32_t dst_height = trans ? attr[3]->shape->data[2] : attr[3]->shape->data[1];
         int32_t stride = dst_width * dst_height;
         int32_t rOffset = 0;
         int32_t gOffset = 1 * stride;
         int32_t bOffset = 2 * stride;
-        int32_t subIdx = 0;
         int32_t C, D, E;
         uint8_t R, G, B;
         int32_t min = 0;
@@ -190,34 +187,31 @@ DEF_KERNEL_EXECUTOR(_pre_process_yuv420_exec)
                         sx += xOffset;
                         sy += yOffset;
                         source_index = (sx + sy * src_width + dz * src_width * src_height + 0);
-                        subIdx = ((sx >> 1) + (sy >> 1) * subWidth + dz * subWidth * subHeight + 0);
 
                         /*C = ySrc[source_index] - 16;
                         D = uSrc[subIdx] - 128;
                         E = vSrc[subIdx] - 128;*/
                         C = (int)buffer[0][source_index] - 16;
-                        D = (int)buffer[1][subIdx] - 128;
-                        E = (int)buffer[2][subIdx] - 128;
+                        D = (int)buffer[1][source_index] - 128;
+                        E = (int)buffer[2][source_index] - 128;
 
                         rline1[0]            = (uint8_t)vsi_clamp((298 * C + 409 * E + 128) >> 8, min, max);
                         gline1[0]            = (uint8_t)vsi_clamp((298 * C - 100* D - 208 * E + 128) >> 8, min, max);
                         bline1[0]            = (uint8_t)vsi_clamp((298 * C + 516 * D + 128) >> 8, min, max);
 
                         // right
-                        subIdx = (((sx + 1) >> 1) + (sy >> 1) * subWidth + dz * subWidth * subHeight);
                         C = (int)buffer[0][source_index + 1] - 16;
-                        D = (int)buffer[1][subIdx] - 128;
-                        E = (int)buffer[2][subIdx] - 128;
+                        D = (int)buffer[1][source_index + 1] - 128;
+                        E = (int)buffer[2][source_index + 1] - 128;
 
                         rline1[1]            = (uint8_t)vsi_clamp((298 * C + 409 * E + 128) >> 8, min, max);
                         gline1[1]            = (uint8_t)vsi_clamp((298 * C - 100* D - 208 * E + 128) >> 8, min, max);
                         bline1[1]            = (uint8_t)vsi_clamp((298 * C + 516 * D + 128) >> 8, min, max);
 
                         // below
-                        subIdx = (((sx + 0) >> 1) + ((sy + 1) >> 1) * subWidth + dz * subWidth * subHeight);
                         C = (int)buffer[0][source_index + src_width] - 16;
-                        D = (int)buffer[1][subIdx] - 128;
-                        E = (int)buffer[2][subIdx] - 128;
+                        D = (int)buffer[1][source_index + src_width] - 128;
+                        E = (int)buffer[2][source_index + src_width] - 128;
 
                         rline2[0]            = (uint8_t)vsi_clamp((298 * C + 409 * E + 128) >> 8, min, max);
                         gline2[0]            = (uint8_t)vsi_clamp((298 * C - 100* D - 208 * E + 128) >> 8, min, max);
@@ -225,10 +219,9 @@ DEF_KERNEL_EXECUTOR(_pre_process_yuv420_exec)
 
                         // below right
                         //C = ySrc[source_index + src_width + 1] - 16;
-                        subIdx = (((sx + 1) >> 1) + ((sy + 1) >> 1) * subWidth + dz * subWidth * subHeight);
                         C = (int)buffer[0][source_index + src_width + 1] - 16;
-                        D = (int)buffer[1][subIdx] - 128;
-                        E = (int)buffer[2][subIdx] - 128;
+                        D = (int)buffer[1][source_index + src_width + 1] - 128;
+                        E = (int)buffer[2][source_index + src_width + 1] - 128;
 
                         rline2[1]            = (uint8_t)vsi_clamp((298 * C + 409 * E + 128) >> 8, min, max);
                         gline2[1]            = (uint8_t)vsi_clamp((298 * C - 100* D - 208 * E + 128) >> 8, min, max);
@@ -263,8 +256,8 @@ DEF_KERNEL_EXECUTOR(_pre_process_yuv420_exec)
                     {
                         // do conversion
                         C = (int)buffer[0][source_index] - 16;
-                        D = (int)buffer[1][subIdx] - 128;
-                        E = (int)buffer[2][subIdx] - 128;
+                        D = (int)buffer[1][source_index] - 128;
+                        E = (int)buffer[2][source_index] - 128;
 
                         R            = (uint8_t)vsi_clamp((298 * C + 409 * E + 128) >> 8, min, max);
                         G            = (uint8_t)vsi_clamp((298 * C - 100* D - 208 * E + 128) >> 8, min, max);
@@ -284,7 +277,7 @@ DEF_KERNEL_EXECUTOR(_pre_process_yuv420_exec)
         uint32_t shape[] = {attr[3]->shape->data[0], attr[3]->shape->data[1], attr[3]->shape->data[2], 1};
         uint32_t perm[] = {1, 2, 0, 3};
         vsi_nn_Transpose((uint8_t*)outBuffer, (uint8_t*)buffer[3],
-            shape, (uint32_t)attr[3]->shape->size, perm, VSI_NN_TYPE_FLOAT32);
+                        shape, (uint32_t)attr[3]->shape->size, perm, VSI_NN_TYPE_FLOAT32);
 
         status = vsi_nn_kernel_tensor_write_from_float( tensors[3], attr[3],
             outBuffer, out_elements );
@@ -302,6 +295,7 @@ final:
     {
         free(outBuffer);
     }
+
     for( i = 0; i < _CPU_IO_NUM; i ++ )
     {
         if( buffer[i] )
@@ -311,7 +305,7 @@ final:
         if(attr[i]) { vsi_nn_kernel_tensor_attr_release( &attr[i] ); }
     }
     return status;
-} /* _pre_process_yuv420_exec() */
+} /* _pre_process_yuv444_exec() */
 
 static vx_param_description_t kernel_param_def[] =
 {
@@ -336,7 +330,7 @@ static const vx_kernel_description_t _kernel_info =
 {
     KERNEL_ID_PLACEHOLDER,
     _KERNEL_NAME,
-    _pre_process_yuv420_exec,
+    _pre_process_yuv444_exec,
     kernel_param_def,
     _cnt_of_array( kernel_param_def ),
     vsi_nn_KernelValidator,
@@ -428,5 +422,5 @@ static vsi_nn_kernel_node_t _setup
 
 __END_DECLS
 
-REGISTER_BACKEND_CPU( pre_process_yuv420, _setup )
+REGISTER_BACKEND_CPU( pre_process_yuv444, _setup )
 

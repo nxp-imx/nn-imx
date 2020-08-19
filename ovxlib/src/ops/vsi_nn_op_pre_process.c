@@ -157,27 +157,27 @@ static vsi_bool op_setup
 
         if (p->reverse_channel)
         {
-            curr->node->nn_param.pre_process_rgb.r_mean = p->norm.mean[2];
-            curr->node->nn_param.pre_process_rgb.g_mean = p->norm.mean[1];
-            curr->node->nn_param.pre_process_rgb.b_mean = p->norm.mean[0];
+            curr->node->nn_param.pre_process_yuv420.r_mean = p->norm.mean[2];
+            curr->node->nn_param.pre_process_yuv420.g_mean = p->norm.mean[1];
+            curr->node->nn_param.pre_process_yuv420.b_mean = p->norm.mean[0];
         }
         else
         {
-            curr->node->nn_param.pre_process_rgb.r_mean = p->norm.mean[0];
-            curr->node->nn_param.pre_process_rgb.g_mean = p->norm.mean[1];
-            curr->node->nn_param.pre_process_rgb.b_mean = p->norm.mean[2];
+            curr->node->nn_param.pre_process_yuv420.r_mean = p->norm.mean[0];
+            curr->node->nn_param.pre_process_yuv420.g_mean = p->norm.mean[1];
+            curr->node->nn_param.pre_process_yuv420.b_mean = p->norm.mean[2];
         }
 
-        curr->node->nn_param.pre_process_rgb.rgb_scale = p->norm.scale;
-        curr->node->nn_param.pre_process_rgb.reverse_channel = p->reverse_channel;
-        curr->node->nn_param.pre_process_rgb.rect.left = p->rect.left;
-        curr->node->nn_param.pre_process_rgb.rect.top = p->rect.top;
-        curr->node->nn_param.pre_process_rgb.rect.width = p->rect.width;
-        curr->node->nn_param.pre_process_rgb.rect.height = p->rect.height;
-        curr->node->nn_param.pre_process_rgb.output_attr.size = p->output_attr.size;
-        curr->node->nn_param.pre_process_rgb.output_attr.dim_num = p->output_attr.dim_num;
-        curr->node->nn_param.pre_process_rgb.perm = p->perm;
-        curr->node->nn_param.pre_process_rgb.dim_num = p->dim_num;
+        curr->node->nn_param.pre_process_yuv420.rgb_scale = p->norm.scale;
+        curr->node->nn_param.pre_process_yuv420.reverse_channel = p->reverse_channel;
+        curr->node->nn_param.pre_process_yuv420.rect.left = p->rect.left;
+        curr->node->nn_param.pre_process_yuv420.rect.top = p->rect.top;
+        curr->node->nn_param.pre_process_yuv420.rect.width = p->rect.width;
+        curr->node->nn_param.pre_process_yuv420.rect.height = p->rect.height;
+        curr->node->nn_param.pre_process_yuv420.output_attr.size = p->output_attr.size;
+        curr->node->nn_param.pre_process_yuv420.output_attr.dim_num = p->output_attr.dim_num;
+        curr->node->nn_param.pre_process_yuv420.perm = p->perm;
+        curr->node->nn_param.pre_process_yuv420.dim_num = p->dim_num;
 
         curr->inputs[0] = inputs[PRE_PROCESS_INPUT0];
         curr->inputs[1] = inputs[PRE_PROCESS_INPUT1];
@@ -294,6 +294,41 @@ static vsi_bool op_setup
         curr->inputs[1] = tmp_outputs[1]->t;
         curr->inputs[2] = tmp_outputs[2]->t;
         curr->outputs[0] = outputs[0];
+
+        vsi_nn_internal_setup_node(self, curr);
+    }
+    else if (p->type == VSI_NN_SOURCE_FORMAT_IMAGE_YUV444)
+    {
+        curr = vsi_nn_internal_new_node( self, VSI_NN_OP_PRE_PROCESS_YUV444, 0, 0 );
+
+        if (p->reverse_channel)
+        {
+            curr->node->nn_param.pre_process_yuv444.r_mean = p->norm.mean[2];
+            curr->node->nn_param.pre_process_yuv444.g_mean = p->norm.mean[1];
+            curr->node->nn_param.pre_process_yuv444.b_mean = p->norm.mean[0];
+        }
+        else
+        {
+            curr->node->nn_param.pre_process_yuv444.r_mean = p->norm.mean[0];
+            curr->node->nn_param.pre_process_yuv444.g_mean = p->norm.mean[1];
+            curr->node->nn_param.pre_process_yuv444.b_mean = p->norm.mean[2];
+        }
+
+        curr->node->nn_param.pre_process_yuv444.rgb_scale = p->norm.scale;
+        curr->node->nn_param.pre_process_yuv444.reverse_channel = p->reverse_channel;
+        curr->node->nn_param.pre_process_yuv444.rect.left = p->rect.left;
+        curr->node->nn_param.pre_process_yuv444.rect.top = p->rect.top;
+        curr->node->nn_param.pre_process_yuv444.rect.width = p->rect.width;
+        curr->node->nn_param.pre_process_yuv444.rect.height = p->rect.height;
+        curr->node->nn_param.pre_process_yuv444.output_attr.size = p->output_attr.size;
+        curr->node->nn_param.pre_process_yuv444.output_attr.dim_num = p->output_attr.dim_num;
+        curr->node->nn_param.pre_process_yuv444.perm = p->perm;
+        curr->node->nn_param.pre_process_yuv444.dim_num = p->dim_num;
+
+        curr->inputs[0] = inputs[PRE_PROCESS_INPUT0];
+        curr->inputs[1] = inputs[PRE_PROCESS_INPUT1];
+        curr->inputs[2] = inputs[PRE_PROCESS_INPUT2];
+        curr->outputs[0] = outputs[PRE_PROCESS_OUTPUT];
 
         vsi_nn_internal_setup_node(self, curr);
     }

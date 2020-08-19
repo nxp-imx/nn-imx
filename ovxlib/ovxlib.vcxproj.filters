@@ -399,6 +399,9 @@
     <ClInclude Include="include\ops\vsi_nn_op_pre_process_yuv420.h">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
+	<ClInclude Include="include\ops\vsi_nn_op_pre_process_yuv444.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
     <ClInclude Include="include\ops\vsi_nn_op_prelu.h">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
@@ -899,6 +902,9 @@
     <ClCompile Include="src\kernel\cpu\pre_process_yuv420_cpu.c">
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
+	<ClCompile Include="src\kernel\cpu\pre_process_yuv444_cpu.c">
+      <Filter>Source Files\kernel\cpu</Filter>
+    </ClCompile>
     <ClCompile Include="src\kernel\cpu\pre_process_gray_cpu.c">
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
@@ -1014,6 +1020,9 @@
       <Filter>Source Files\kernel\evis</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\pre_process_yuv420_evis.c">
+      <Filter>Source Files\kernel\evis</Filter>
+    </ClCompile>
+	<ClCompile Include="src\kernel\evis\pre_process_yuv444_evis.c">
       <Filter>Source Files\kernel\evis</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\pre_process_gray_evis.c">
@@ -1431,6 +1440,9 @@
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_pre_process_yuv420.c">
+      <Filter>Source Files\ops</Filter>
+    </ClCompile>
+	<ClCompile Include="src\ops\vsi_nn_op_pre_process_yuv444.c">
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_prelu.c">
