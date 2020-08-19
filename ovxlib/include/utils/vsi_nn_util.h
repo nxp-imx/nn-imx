@@ -363,6 +363,11 @@ float vsi_nn_activation
     vsi_nn_activation_e activation
     );
 
+vsi_bool vsi_nn_is_same_type
+    (
+    vsi_nn_tensor_t * src,
+    vsi_nn_tensor_t * dst
+    );
 #ifdef __cplusplus
 }
 #endif

@@ -10,7 +10,7 @@ _viv_uniform VXC_512Bits uniConvBF16toF32_Part0_2x8;
 _viv_uniform VXC_512Bits uniConvBF16toF32_Part1_2x8;
 _viv_uniform float half_pixel_value;
 
-__kernel void vxcResize_BF16toBF16
+__kernel void resize_bilinear_BF16toBF16_DOWN
     (
     __read_only     image2d_array_t input,
     __write_only    image2d_array_t output,
@@ -87,7 +87,7 @@ __kernel void vxcResize_BF16toBF16
     VXC_WriteImage2DArray(output, coord_out, dst, VXC_MODIFIER(0, 3, 0,VXC_RM_TowardZero, 0));
 }
 
-__kernel void vxcResize_BF16toBF16_up
+__kernel void resize_bilinear_BF16toBF16_UP
     (
     image2d_array_t input,
     image2d_array_t output,
