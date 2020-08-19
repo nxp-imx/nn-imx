@@ -6,9 +6,11 @@
 
 typedef struct _vsi_nn_%lower(OP_NAME)%_param
 {
+    struct _%lower(OP_NAME)%_local_data_t* local;
     // Add parameters here
-    int32_t nothing;
 } vsi_nn_%lower(OP_NAME)%_param;
+_compiler_assert(offsetof(vsi_nn_%lower(OP_NAME)%_param, local) == 0, \
+    vsi_nn_%lower(OP_NAME)%_h );
 
 #endif
 
