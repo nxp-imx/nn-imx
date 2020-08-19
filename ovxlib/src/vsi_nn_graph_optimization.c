@@ -245,7 +245,7 @@ static void _get_graph_output_asmint8_norm_tensor
             {
                 if(tensor_ids != NULL)
                 {
-                   tensor_ids[tensor_count ++] = id;
+                   tensor_ids[tensor_count] = id;
                 }
                 tensor_count += 1;
             }
@@ -307,7 +307,7 @@ static vsi_status _add_graph_dataconvert_for_int8
 
     if(output_count > 0)
     {
-        output_ids = (vsi_nn_tensor_id_t*)malloc(sizeof(vsi_nn_tensor_id_t) * input_count);
+        output_ids = (vsi_nn_tensor_id_t*)malloc(sizeof(vsi_nn_tensor_id_t) * output_count);
         _get_graph_output_asmint8_norm_tensor(graph, NULL, output_ids);
 
         output_nodes = (vsi_nn_node_t**)malloc(sizeof(vsi_nn_node_t*) * output_count);
@@ -340,12 +340,6 @@ static vsi_status _add_graph_dataconvert_for_int8
 
                _add_dataconvert_node(graph, dataconvert_idx ++, VSI_NN_OPTIMIZE_FORWARD,
                    input_nodes[i], nodes_count, id, output);
-
-                if(input_nodes[i])
-                {
-                    free(input_nodes[i]);
-                    input_nodes[i] = NULL;
-                }
             }
         }
 
@@ -372,12 +366,12 @@ static vsi_status _add_graph_dataconvert_for_int8
 
             _add_dataconvert_node(graph, dataconvert_idx ++, VSI_NN_OPTIMIZE_BACKWARD,
                 &output_nodes[i], 1, input, id);
+        }
 
-            if(output_nodes)
-            {
-                free(output_nodes);
-                output_nodes = NULL;
-            }
+        if(output_nodes)
+        {
+            free(output_nodes);
+            output_nodes = NULL;
         }
     }
 
