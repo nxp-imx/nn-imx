@@ -94,7 +94,7 @@ class Space2BatchValidate : public OperationValidate<T_model, T_Operation> {
                 reason += "reject SPACE_TO_BATCH because input is constant\n";
                 result = false;
             }
-            if ( !(this->IsConstantTensor(blockSize) || !this->IsConstantTensor(pading) )) {
+            if (!(this->IsConstantTensor(blockSize) && this->IsConstantTensor(pading))) {
                 reason += "reject SPACE_TO_BATCH because blocksize or padding not constant\n";
                 result = false;
             }
