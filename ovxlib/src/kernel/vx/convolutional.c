@@ -32,61 +32,6 @@
 #include "kernel/vsi_nn_kernel_node.h"
 #include "vsi_nn_feature.h"
 
-static vsi_bool _can_conv_support
-    (
-    const int32_t * input_shape,
-    const int32_t * kernel_shape,
-    const int32_t * output_shape,
-    size_t shape_rank,
-    vx_nn_convolution_params_ext2_t * param,
-    vsi_bool * need_explicit_padding
-    )
-{
-    const int32_t max_conv_ksize = vsi_nn_feature_conv_max_kernel_size();
-    vsi_bool is_depthwise = (param->depth_multiplier > 0);
-    int32_t reshuffled_ksize_w = 1;
-    int32_t reshuffled_ksize_h = 1;
-    int32_t stride_h = (int32_t)param->stride_y;
-    int32_t stride_w = (int32_t)param->stride_x;
-
-    if( shape_rank == 4 )
-    {
-        reshuffled_ksize_w = (int32_t)(((float)kernel_shape[0] / stride_w) + 0.5);
-        reshuffled_ksize_h = (int32_t)(((float)kernel_shape[1] / stride_h) + 0.5);
-    }
-    else
-    {
-        reshuffled_ksize_h = (int32_t)(((float)kernel_shape[0] / stride_h) + 0.5);
-    }
-
-    if( reshuffled_ksize_w * reshuffled_ksize_h > max_conv_ksize * max_conv_ksize )
-    {
-        return FALSE;
-    }
-    else if( reshuffled_ksize_w > max_conv_ksize || reshuffled_ksize_h > max_conv_ksize )
-    {
-        if( !is_depthwise )
-        {
-            return FALSE;
-        }
-        else if( need_explicit_padding )
-        {
-            if( param->ext.khr.padding_x > 0
-                    || param->ext.khr.padding_y > 0
-                    || param->ext.padding_x_right > 0
-                    ||  param->ext.padding_y_bottom > 0)
-            {
-                *need_explicit_padding = TRUE;
-            }
-            else
-            {
-                *need_explicit_padding = FALSE;
-            }
-        }
-    }
-    return TRUE;
-} /* _can_conv_support() */
-
 static vsi_bool _build_vx_conv2d_param
     (
     vx_nn_convolution_params_ext2_t * param,
@@ -211,15 +156,6 @@ REGISTER_CONV_OPENVX_KERNEL( conv1d )
             vsi_nn_kernel_param_get_int32(params, "rounding_policy"),
             vsi_nn_kernel_param_get_int32(params, "down_scale_size_rounding")
             );
-    if( ! _can_conv_support(
-            (const int32_t *)inputs[0]->attr.size,
-            (const int32_t *)inputs[1]->attr.size,
-            (const int32_t *)outputs[0]->attr.size,
-            inputs[0]->attr.dim_num,
-            &vxparam, NULL))
-    {
-        goto final;
-    }
 
     temp_tensors[0] = _expand_tensor_dim( inputs[0]->t,
             (int32_t*)inputs[0]->attr.size, inputs[0]->attr.dim_num, 0 );
@@ -271,15 +207,6 @@ REGISTER_CONV_OPENVX_KERNEL( depthwise_conv1d )
             vsi_nn_kernel_param_get_int32(params, "rounding_policy"),
             vsi_nn_kernel_param_get_int32(params, "down_scale_size_rounding")
             );
-    if( ! _can_conv_support(
-            (const int32_t *)inputs[0]->attr.size,
-            (const int32_t *)inputs[1]->attr.size,
-            (const int32_t *)outputs[0]->attr.size,
-            inputs[0]->attr.dim_num,
-            &vxparam, &need_explicit_padding))
-    {
-        goto final;
-    }
 
     temp_tensors[0] = _expand_tensor_dim( inputs[0]->t,
             (int32_t*)inputs[0]->attr.size, inputs[0]->attr.dim_num, 0 );
@@ -361,16 +288,6 @@ REGISTER_CONV_OPENVX_KERNEL( conv2d )
             vsi_nn_kernel_param_get_int32(params, "down_scale_size_rounding")
             );
 
-    if( ! _can_conv_support(
-            (const int32_t *)inputs[0]->attr.size,
-            (const int32_t *)inputs[1]->attr.size,
-            (const int32_t *)outputs[0]->attr.size,
-            inputs[0]->attr.dim_num,
-            &vxparam, NULL))
-    {
-        goto final;
-    }
-
     node = vxConvolutionLayer( graph->g,
         inputs[0]->t, inputs[1]->t, inputs[2] ? inputs[2]->t : NULL,
         (vx_nn_convolution_params_t *)&vxparam,
@@ -378,7 +295,6 @@ REGISTER_CONV_OPENVX_KERNEL( conv2d )
         outputs[2]->t
         );
 
-final:
     return (vsi_nn_kernel_node_t)node;
 } /* conv2d*/
 
@@ -403,16 +319,6 @@ REGISTER_CONV_OPENVX_KERNEL( depthwise_conv2d )
             vsi_nn_kernel_param_get_int32(params, "down_scale_size_rounding")
             );
 
-    if( ! _can_conv_support(
-            (const int32_t *)inputs[0]->attr.size,
-            (const int32_t *)inputs[1]->attr.size,
-            (const int32_t *)outputs[0]->attr.size,
-            inputs[0]->attr.dim_num,
-            &vxparam, NULL))
-    {
-        goto final;
-    }
-
     node = vxConvolutionLayer( graph->g,
         inputs[0]->t, inputs[1]->t, inputs[2] ? inputs[2]->t : NULL,
         (vx_nn_convolution_params_t *)&vxparam,
@@ -420,7 +326,6 @@ REGISTER_CONV_OPENVX_KERNEL( depthwise_conv2d )
         outputs[2]->t
         );
 
-final:
     return (vsi_nn_kernel_node_t)node;
 } /* depthwise_conv2d*/
 
