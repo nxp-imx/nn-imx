@@ -282,4 +282,160 @@ bool VsiOpCallbackInfoConvInteger::IsNodeSupported(const onnxruntime::GraphViewe
     return vsi_npu::CheckMainInputType(node, reason);
 }
 
+void VsiOpCallbackInfoQLinearConv::Setup(const onnxruntime::Node* node,
+                                         onnxruntime::ModelShellPtr& model,
+                                         const onnxruntime::GraphViewer* graph_viewer) {
+    auto op = std::make_shared<nnrt::op::GroupedConv2DOperation>();
+    auto input_defs = node->InputDefs();
+    uint32_t input_operand_id_x = model->AddOperand(input_defs[0], graph_viewer);
+    uint32_t input_operand_id_w = model->AddOperand(input_defs[3], graph_viewer);
+    uint32_t input_operand_id_b = -1;
+    if (input_defs.size() < 9) {
+        input_operand_id_b = model->AddOperand(input_defs[3]->Name() + "b");
+    } else if (input_defs.size() == 9) {
+        input_operand_id_b = model->AddOperand(input_defs[8], graph_viewer);
+    }
+
+    std::vector<uint32_t> in_operand_ids{
+        input_operand_id_x, input_operand_id_w, input_operand_id_b};
+
+    std::vector<uint32_t> out_operand_ids;
+    auto output_defs = node->OutputDefs();
+    uint32_t output_operand_id = model->AddOperand(output_defs[0], graph_viewer);
+    out_operand_ids.push_back(output_operand_id);
+
+    op->setInputs(in_operand_ids.data(), in_operand_ids.size());
+    op->setOutputs(out_operand_ids.data(), out_operand_ids.size());
+
+    if (input_defs.size() < 9) {
+        auto operand_b = model->GetOperand(input_operand_id_b);
+        auto shape = vsi_npu::GetTensorShape(*input_defs[0]);
+        const std::vector<int64_t>& dims = shape.GetDims();
+        operand_b->dimensions.push_back(dims[0]);
+        operand_b->type = nnrt::OperandType::TENSOR_INT32;
+
+        auto operand_b_size = operand_b->size();
+        auto value = new float[operand_b_size];
+        for (size_t i = 0; i < operand_b_size; i++) {
+            value[i] = 0;
+        }
+        std::shared_ptr<float> tensorValue(value);
+        const void* value_addr = reinterpret_cast<const void*>(tensorValue.get());
+        model->GetModelPtr()->setOperandValue(operand_b, value_addr, operand_b->bytes());
+    }
+
+    ProtoHelperNodeContext ctx(*node);
+    OpNodeProtoHelper<ProtoHelperNodeContext> attrs(&ctx);
+
+    std::vector<int32_t> vpads(4, 0);
+    std::vector<int32_t> pads;
+    bool status = vsi_npu::GetAttrs<int32_t>(attrs, "pads", pads, false).IsOK();
+    if (status) {
+        vpads[0] = pads[1];
+        vpads[1] = pads[3];
+        vpads[2] = pads[0];
+        vpads[3] = pads[2];
+    }
+
+    std::string auto_pad;
+    status = vsi_npu::GetAttr<std::string>(attrs, "auto_pad", &auto_pad).IsOK();
+    nnrt::PadType pad_type = nnrt::PadType::AUTO;
+    if (status) {
+        pad_type = vsi_npu::GetPadType(auto_pad);
+    }
+
+    std::vector<int32_t> strides(2, 1);
+    status = vsi_npu::GetAttrs<int32_t>(attrs, "strides", strides, true).IsOK();
+
+    std::vector<int32_t> vdilations(2, 1);
+    std::vector<int32_t> dilations;
+    status = vsi_npu::GetAttrs<int32_t>(attrs, "dilations", dilations, true).IsOK();
+    if (status) {
+        vdilations = std::move(dilations);
+    }
+
+    int32_t group = 1;
+    status = vsi_npu::GetAttr<int32_t>(attrs, "group", &group).IsOK();
+
+    op->pad = std::move(vpads);
+    op->dilations = std::move(vdilations);
+    op->groups = group;
+    op->padType = pad_type;
+    op->strides = std::move(strides);
+    op->setDataLayout(nnrt::DataLayout::NCHW);
+    op->setVxParam(
+        nnrt::OverflowPolicy::SATURATE, nnrt::RoundingPolicy::TO_ZERO, nnrt::Rounding::FLOOR);
+
+    const int32_t xIndexScale = 1;
+    const int32_t xIndexZeroPoint = 2;
+    const int32_t wIndexScale = 4;
+    const int32_t wIndexZeroPoint = 5;
+    const int32_t yIndexScale = 6;
+    const int32_t yIndexZeroPoint = 7;
+    std::vector<int32_t> compute_input_index(
+        {xIndexScale, xIndexZeroPoint, wIndexScale, wIndexZeroPoint, yIndexScale, yIndexZeroPoint});
+    auto compute_info = std::make_shared<VsiComputeInfo>();
+    compute_info->operand_ids.push_back(input_operand_id_x);
+    compute_info->operand_ids.push_back(input_operand_id_w);
+    compute_info->operand_ids.push_back(output_operand_id);
+    model->CollectComputeInfo(node, graph_viewer, compute_input_index, compute_info);
+
+    model->AddOperation(op, nullptr);
+}
+
+Status VsiOpCallbackInfoQLinearConv::Compute(FunctionState state,
+                                             const OrtApi* api,
+                                             OrtKernelContext* context,
+                                             NodeIndex node_index) {
+    Ort::CustomOpApi ort{*api};
+    ModelShell* model = reinterpret_cast<ModelShell*>(state);
+    auto local_model = model->GetModelPtr();
+
+    auto compute_info = model->GetComputeInfo(node_index);
+
+    auto compute_input_ids = model->GetComputeInputIds(compute_info->compute_input_names);
+
+    const OrtValue* x_tensor_scale = ort.KernelContext_GetInput(context, compute_input_ids[0]);
+    const auto x_tensor_scale_value = (float*)ort.GetTensorData<void>(x_tensor_scale);
+
+    const OrtValue* x_tensor_zp = ort.KernelContext_GetInput(context, compute_input_ids[1]);
+    const auto x_tensor_zp_value = (uint8_t*)ort.GetTensorData<void>(x_tensor_zp);
+
+    auto x_tensor = local_model->operand(compute_info->operand_ids[0]);
+    x_tensor->quant.scalar.scale = *x_tensor_scale_value;
+    x_tensor->quant.scalar.zeroPoint = *x_tensor_zp_value;
+
+    const OrtValue* w_tensor_scale = ort.KernelContext_GetInput(context, compute_input_ids[2]);
+    const auto w_tensor_scale_value = (float*)ort.GetTensorData<void>(w_tensor_scale);
+
+    const OrtValue* w_tensor_zp = ort.KernelContext_GetInput(context, compute_input_ids[3]);
+    const auto w_tensor_zp_value = (uint8_t*)ort.GetTensorData<void>(w_tensor_zp);
+
+    auto w_tensor = local_model->operand(compute_info->operand_ids[1]);
+    w_tensor->quant.scalar.scale = *w_tensor_scale_value;
+    w_tensor->quant.scalar.zeroPoint = *w_tensor_zp_value;
+
+    const OrtValue* y_tensor_scale = ort.KernelContext_GetInput(context, compute_input_ids[4]);
+    const auto y_tensor_scale_value = (float*)ort.GetTensorData<void>(y_tensor_scale);
+
+    const OrtValue* y_tensor_zp = ort.KernelContext_GetInput(context, compute_input_ids[5]);
+    const auto y_tensor_zp_value = (uint8_t*)ort.GetTensorData<void>(y_tensor_zp);
+
+    auto y_tensor = local_model->operand(compute_info->operand_ids[2]);
+    y_tensor->quant.scalar.scale = *y_tensor_scale_value;
+    y_tensor->quant.scalar.zeroPoint = *y_tensor_zp_value;
+    return Status::OK();
+}
+
+bool VsiOpCallbackInfoQLinearConv::IsNodeSupported(const onnxruntime::GraphViewer& graph_viewer,
+                                                   const Node* node,
+                                                   std::string& reason) {
+    auto input_defs = node->InputDefs();
+    auto shape = vsi_npu::GetTensorShape(*input_defs[0]);
+    if (shape.NumDimensions() != 4) {
+        reason += "## Only support Conv2D now.";
+        return false;
+    }
+    return vsi_npu::CheckMainInputType(node, reason);
+}
 }  // namespace onnxruntime
