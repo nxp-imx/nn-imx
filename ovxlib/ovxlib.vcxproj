@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build" ToolsVersion="4.0">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
@@ -576,6 +576,7 @@
     <ClInclude Include="include\ops\vsi_nn_op_elu.h" />
     <ClInclude Include="include\ops\vsi_nn_op_embedding_lookup.h" />
     <ClInclude Include="include\ops\vsi_nn_op_exp.h" />
+    <ClInclude Include="include\ops\vsi_nn_op_expand_broadcast.h" />
     <ClInclude Include="include\ops\vsi_nn_op_extra_ending.h" />
     <ClInclude Include="include\ops\vsi_nn_op_floor.h" />
     <ClInclude Include="include\ops\vsi_nn_op_floordiv.h" />
@@ -751,6 +752,7 @@
     <ClCompile Include="src\kernel\evis\resize_bilinear_evis.c" />
     <ClCompile Include="src\kernel\evis\resize_nearest_evis.c" />
     <ClCompile Include="src\kernel\vx\swish_vx.c" />
+    <ClCompile Include="src\ops\vsi_nn_op_expand_broadcast.c" />
     <ClCompile Include="src\platform\nnapi0.4\vsi_nn_pf_softmax.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Jenkins-Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Jenkins-Debug|x64'">true</ExcludedFromBuild>
