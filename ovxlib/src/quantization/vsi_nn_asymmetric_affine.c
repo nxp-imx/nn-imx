@@ -73,13 +73,6 @@ vsi_bool vsi_nn_QuantAffineCheck
     ret = FALSE;
     dtype = input->attr.dtype.vx_type;
 
-    if(dtype != weight->attr.dtype.vx_type)
-    {
-        VSILOGE("input dtype[%d] != weight dtype[%d]",
-            dtype, weight->attr.dtype.vx_type);
-        return FALSE;
-    }
-
     switch (dtype)
     {
         case VSI_NN_TYPE_UINT8:
