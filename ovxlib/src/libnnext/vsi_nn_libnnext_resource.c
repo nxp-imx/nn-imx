@@ -24132,6 +24132,246 @@ COMPARISONS_3D(not_equal, I16, F16, vxc_short8, vxc_short8, vxc_short8, vxc_half
 \n\
 "; /* end of relational_ops_3d_vx*/
 
+static const char relu_keras_vx[] = "\n\
+#define TENSOR_KERAS_RELU(src_type_name, dst_type_name, tensor_dims, image_type, \\\n\
+    convert2FP32_Func, convert2DstType_Func, src_type, dst_type) \\\n\
+__kernel void relu_keras_##src_type_name##to##dst_type_name##tensor_dims( \\\n\
+__read_only  image2d_array_t  input, \\\n\
+__write_only image2d_array_t  output, \\\n\
+                    float     alpha, \\\n\
+                    float     max_value, \\\n\
+                    float     threshold \\\n\
+                    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
+    src_type src; \\\n\
+ \\\n\
+    VXC_Read##image_type(src, input, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    float4 dataA = convert2FP32_Func##_Lo(src); \\\n\
+    float4 dataB = convert2FP32_Func##_Hi(src); \\\n\
+    float4 dataA0 = dataA < threshold ? threshold : dataA; \\\n\
+    dataA0 = dataA0 > max_value ? max_value : dataA0; \\\n\
+    float4 dataB0 = dataB < threshold ? threshold : dataB; \\\n\
+    dataB0 = dataB0 > max_value ? max_value : dataB0; \\\n\
+ \\\n\
+    float4 dataA1 = dataA * alpha - offset; \\\n\
+    float4 dataB1 = dataB * alpha - offset; \\\n\
+    float4 dst0 = dataA  < threshold ? dataA1 : dataA0; \\\n\
+    float4 dst1 = dataB  < threshold ? dataB1 : dataB0; \\\n\
+ \\\n\
+    dst_type result = convert2DstType_Func(dst0, dst1); \\\n\
+ \\\n\
+    VXC_Write##image_type(output, coord, result, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+}\n\
+TENSOR_KERAS_RELU(F16,  F16,  _3D, Image2DArray, F16toF32,  F32toF16,  vxc_ushort8, vxc_ushort8)\n\
+TENSOR_KERAS_RELU(F16,  I16,  _3D, Image2DArray, F16toF32,  F32toI16,  vxc_ushort8, vxc_short8)\n\
+TENSOR_KERAS_RELU(F16,  I8,   _3D, Image2DArray, F16toF32,  F32toI8,   vxc_ushort8, vxc_char8)\n\
+TENSOR_KERAS_RELU(F16,  U8,   _3D, Image2DArray, F16toF32,  F32toU8,   vxc_ushort8, vxc_uchar8)\n\
+TENSOR_KERAS_RELU(BF16, BF16, _3D, Image2DArray, BF16toF32, F32toBF16, vxc_ushort8, vxc_ushort8)\n\
+\n\
+TENSOR_KERAS_RELU(I16,  I16,  _3D, Image2DArray, I16toF32,  F32toI16,  vxc_short8,  vxc_short8)\n\
+TENSOR_KERAS_RELU(I16,  F16,  _3D, Image2DArray, I16toF32,  F32toF16,  vxc_short8,  vxc_ushort8)\n\
+TENSOR_KERAS_RELU(I8,   I8,   _3D, Image2DArray, I8toF32,   F32toI8,   vxc_char8,   vxc_char8)\n\
+TENSOR_KERAS_RELU(I8,   F16,  _3D, Image2DArray, I8toF32,   F32toF16,  vxc_char8,   vxc_ushort8)\n\
+TENSOR_KERAS_RELU(U8,   U8,   _3D, Image2DArray, U8toF32,   F32toU8,   vxc_uchar8,  vxc_uchar8)\n\
+TENSOR_KERAS_RELU(U8,   F16,  _3D, Image2DArray, U8toF32,   F32toF16,  vxc_uchar8,  vxc_ushort8)\n\
+\n\
+TENSOR_KERAS_RELU(F16,  F16,  _2D, Image,        F16toF32,  F32toF16,  vxc_ushort8, vxc_ushort8)\n\
+TENSOR_KERAS_RELU(F16,  I16,  _2D, Image,        F16toF32,  F32toI16,  vxc_ushort8, vxc_short8)\n\
+TENSOR_KERAS_RELU(F16,  I8,   _2D, Image,        F16toF32,  F32toI8,   vxc_ushort8, vxc_char8)\n\
+TENSOR_KERAS_RELU(F16,  U8,   _2D, Image,        F16toF32,  F32toU8,   vxc_ushort8, vxc_uchar8)\n\
+TENSOR_KERAS_RELU(BF16, BF16, _2D, Image,        BF16toF32, F32toBF16, vxc_ushort8, vxc_ushort8)\n\
+TENSOR_KERAS_RELU(I16,  I16,  _2D, Image,        I16toF32,  F32toI16,  vxc_short8,  vxc_short8)\n\
+TENSOR_KERAS_RELU(I16,  F16,  _2D, Image,        I16toF32,  F32toF16,  vxc_short8,  vxc_ushort8)\n\
+TENSOR_KERAS_RELU(I8,   I8,   _2D, Image,        I8toF32,   F32toI8,   vxc_char8,   vxc_char8)\n\
+TENSOR_KERAS_RELU(I8,   F16,  _2D, Image,        I8toF32,   F32toF16,  vxc_char8,   vxc_ushort8)\n\
+TENSOR_KERAS_RELU(U8,   U8,   _2D, Image,        U8toF32,   F32toU8,   vxc_uchar8,  vxc_uchar8)\n\
+TENSOR_KERAS_RELU(U8,   F16,  _2D, Image,        U8toF32,   F32toF16,  vxc_uchar8,  vxc_ushort8)\n\
+"; /* end of relu_keras_vx*/
+
+static const char relu_keras_header_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+_viv_uniform VXC_512Bits uniConvFP16toFP32_Lo_4x4;\n\
+_viv_uniform VXC_512Bits uniConvFP16toFP32_Hi_4x4;\n\
+_viv_uniform VXC_512Bits uniExtractHalf8_2x8;\n\
+_viv_uniform VXC_512Bits uniExtractInteger_2x8;\n\
+_viv_uniform VXC_512Bits uniConvBF16toF32_Part0_2x8;\n\
+_viv_uniform VXC_512Bits uniConvBF16toF32_Part1_2x8;\n\
+_viv_uniform VXC_512Bits uniPackedBF16_2x8;\n\
+_viv_uniform VXC_512Bits uniConvIntegertoFP32_Lo_4x4;\n\
+_viv_uniform VXC_512Bits uniConvIntegertoFP32_Hi_4x4;\n\
+_viv_uniform float offset;\n\
+_viv_uniform float input_scale;\n\
+_viv_uniform float inputTail;\n\
+_viv_uniform float output_scale;\n\
+_viv_uniform float outputZP;\n\
+\n\
+float4 I8toF32_Lo(vxc_char8 src)\n\
+{\n\
+    float4 dst;\n\
+\n\
+    VXC_DP4x4(dst, src, src, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvIntegertoFP32_Lo_4x4);\n\
+    dst *= input_scale;\n\
+    return dst;\n\
+}\n\
+\n\
+float4 I8toF32_Hi(vxc_char8 src)\n\
+{\n\
+    float4 dst;\n\
+\n\
+    VXC_DP4x4(dst, src, src, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvIntegertoFP32_Hi_4x4);\n\
+    dst *= input_scale;\n\
+    return dst;\n\
+}\n\
+\n\
+float4 U8toF32_Lo(vxc_uchar8 src)\n\
+{\n\
+    float4 dst;\n\
+\n\
+    VXC_DP4x4(dst, src, src, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvIntegertoFP32_Lo_4x4);\n\
+    dst = dst * input_scale + inputTail;\n\
+    return dst;\n\
+}\n\
+\n\
+float4 U8toF32_Hi(vxc_uchar8 src)\n\
+{\n\
+    float4 dst;\n\
+\n\
+    VXC_DP4x4(dst, src, src, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvIntegertoFP32_Hi_4x4);\n\
+    dst = dst * input_scale + inputTail;\n\
+    return dst;\n\
+}\n\
+\n\
+float4 I16toF32_Lo(vxc_short8 src)\n\
+{\n\
+    float4 dst;\n\
+\n\
+    VXC_DP4x4(dst, src, src, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvIntegertoFP32_Lo_4x4);\n\
+    dst *= input_scale;\n\
+    return dst;\n\
+}\n\
+\n\
+float4 I16toF32_Hi(vxc_short8 src)\n\
+{\n\
+    float4 dst;\n\
+\n\
+    VXC_DP4x4(dst, src, src, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvIntegertoFP32_Hi_4x4);\n\
+    dst *= input_scale;\n\
+    return dst;\n\
+}\n\
+\n\
+float4 F16toF32_Lo(vxc_ushort8 src)\n\
+{\n\
+    vxc_half8 srcHalf;\n\
+    float4 dst;\n\
+\n\
+    _viv_asm(COPY, srcHalf, src, 16);\n\
+    VXC_DP4x4(dst, srcHalf, srcHalf, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvFP16toFP32_Lo_4x4);\n\
+    return dst;\n\
+}\n\
+\n\
+float4 F16toF32_Hi(vxc_ushort8 src)\n\
+{\n\
+    vxc_half8 srcHalf;\n\
+    float4 dst;\n\
+\n\
+    _viv_asm(COPY, srcHalf, src, 16);\n\
+    VXC_DP4x4(dst, srcHalf, srcHalf, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvFP16toFP32_Hi_4x4);\n\
+    return dst;\n\
+}\n\
+\n\
+float4 BF16toF32_Lo(vxc_ushort8 src)\n\
+{\n\
+    vxc_ushort8 srcA;\n\
+    float4 dst;\n\
+\n\
+    vxc_short8 zero = (vxc_short8)(0, 0, 0, 0, 0, 0, 0, 0);\n\
+    VXC_DP2x8(srcA, src, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvBF16toF32_Part0_2x8);\n\
+    _viv_asm(COPY, dst, srcA, 16);\n\
+\n\
+    return dst;\n\
+}\n\
+\n\
+float4 BF16toF32_Hi(vxc_ushort8 src)\n\
+{\n\
+    vxc_ushort8 srcA;\n\
+    float4 dst;\n\
+\n\
+    vxc_short8 zero = (vxc_short8)(0, 0, 0, 0, 0, 0, 0, 0);\n\
+    VXC_DP2x8(srcA, src, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvBF16toF32_Part1_2x8);\n\
+    _viv_asm(COPY, dst, srcA, 16);\n\
+\n\
+    return dst;\n\
+}\n\
+\n\
+vxc_ushort8 F32toF16(float4 src0, float4 src1)\n\
+{\n\
+    half4 srcHalf0, srcHalf1;\n\
+    vxc_half8 dst0;\n\
+    vxc_ushort8 dst;\n\
+\n\
+    _viv_asm(CONV, srcHalf0, src0);\n\
+    _viv_asm(CONV, srcHalf1, src1);\n\
+\n\
+    VXC_DP2x8(dst0, srcHalf0, srcHalf1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniExtractHalf8_2x8);\n\
+    _viv_asm(COPY, dst, dst0, 16);\n\
+    return dst;\n\
+}\n\
+\n\
+vxc_ushort8 F32toBF16(float4 src0, float4 src1)\n\
+{\n\
+    vxc_ushort8 srcA, srcB;\n\
+    vxc_ushort8 dst;\n\
+\n\
+    _viv_asm(COPY, srcA, src0, 16);\n\
+    _viv_asm(COPY, srcB, src1, 16);\n\
+    VXC_DP2x8(dst, srcA, srcB, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniPackedBF16_2x8);\n\
+    return dst;\n\
+}\n\
+\n\
+vxc_char8 F32toI8(float4 src0, float4 src1)\n\
+{\n\
+    int4 srcInt0, srcInt1;\n\
+    vxc_char8 dst;\n\
+\n\
+    src0 *= output_scale;\n\
+    src1 *= output_scale;\n\
+    _viv_asm(CONV_RTE, srcInt0, src0);\n\
+    _viv_asm(CONV_RTE, srcInt1, src1);\n\
+\n\
+    VXC_DP2x8(dst, srcInt0, srcInt1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtractInteger_2x8);\n\
+    return dst;\n\
+}\n\
+\n\
+vxc_short8 F32toI16(float4 src0, float4 src1)\n\
+{\n\
+    int4 srcInt0, srcInt1;\n\
+    vxc_short8 dst;\n\
+\n\
+    src0 *= output_scale;\n\
+    src1 *= output_scale;\n\
+    _viv_asm(CONV_RTE, srcInt0, src0);\n\
+    _viv_asm(CONV_RTE, srcInt1, src1);\n\
+\n\
+    VXC_DP2x8(dst, srcInt0, srcInt1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtractInteger_2x8);\n\
+    return dst;\n\
+}\n\
+\n\
+vxc_uchar8 F32toU8(float4 src0, float4 src1)\n\
+{\n\
+    int4 srcInt0, srcInt1;\n\
+    vxc_uchar8 dst;\n\
+\n\
+    src0 = src0 * output_scale + outputZP;\n\
+    src1 = src1 * output_scale + outputZP;\n\
+    _viv_asm(CONV_RTE, srcInt0, src0);\n\
+    _viv_asm(CONV_RTE, srcInt1, src1);\n\
+\n\
+    VXC_DP2x8(dst, srcInt0, srcInt1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtractInteger_2x8);\n\
+    return dst;\n\
+}\n\
+"; /* end of relu_keras_header_vx*/
+
 static const char resize_bilinear_BF16_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 _viv_uniform float2 scale_xy;\n\
@@ -29776,246 +30016,6 @@ __kernel void vxcRandom_sum_fp32(\n\
         cdfPtr += 4;\n\
     }\n\
 }"; /* end of vsi_nn_kernel_random_multinomial_vx*/
-
-static const char vsi_nn_kernel_relu_keras_header_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
-\n\
-_viv_uniform VXC_512Bits uniConvFP16toFP32_Lo_4x4;\n\
-_viv_uniform VXC_512Bits uniConvFP16toFP32_Hi_4x4;\n\
-_viv_uniform VXC_512Bits uniExtractHalf8_2x8;\n\
-_viv_uniform VXC_512Bits uniExtractInteger_2x8;\n\
-_viv_uniform VXC_512Bits uniConvBF16toF32_Part0_2x8;\n\
-_viv_uniform VXC_512Bits uniConvBF16toF32_Part1_2x8;\n\
-_viv_uniform VXC_512Bits uniPackedBF16_2x8;\n\
-_viv_uniform VXC_512Bits uniConvIntegertoFP32_Lo_4x4;\n\
-_viv_uniform VXC_512Bits uniConvIntegertoFP32_Hi_4x4;\n\
-_viv_uniform float offset;\n\
-_viv_uniform float input_scale;\n\
-_viv_uniform float inputTail;\n\
-_viv_uniform float output_scale;\n\
-_viv_uniform float outputZP;\n\
-\n\
-float4 I8toF32_Lo(vxc_char8 src)\n\
-{\n\
-    float4 dst;\n\
-\n\
-    VXC_DP4x4(dst, src, src, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvIntegertoFP32_Lo_4x4);\n\
-    dst *= input_scale;\n\
-    return dst;\n\
-}\n\
-\n\
-float4 I8toF32_Hi(vxc_char8 src)\n\
-{\n\
-    float4 dst;\n\
-\n\
-    VXC_DP4x4(dst, src, src, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvIntegertoFP32_Hi_4x4);\n\
-    dst *= input_scale;\n\
-    return dst;\n\
-}\n\
-\n\
-float4 U8toF32_Lo(vxc_uchar8 src)\n\
-{\n\
-    float4 dst;\n\
-\n\
-    VXC_DP4x4(dst, src, src, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvIntegertoFP32_Lo_4x4);\n\
-    dst = dst * input_scale + inputTail;\n\
-    return dst;\n\
-}\n\
-\n\
-float4 U8toF32_Hi(vxc_uchar8 src)\n\
-{\n\
-    float4 dst;\n\
-\n\
-    VXC_DP4x4(dst, src, src, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvIntegertoFP32_Hi_4x4);\n\
-    dst = dst * input_scale + inputTail;\n\
-    return dst;\n\
-}\n\
-\n\
-float4 I16toF32_Lo(vxc_short8 src)\n\
-{\n\
-    float4 dst;\n\
-\n\
-    VXC_DP4x4(dst, src, src, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvIntegertoFP32_Lo_4x4);\n\
-    dst *= input_scale;\n\
-    return dst;\n\
-}\n\
-\n\
-float4 I16toF32_Hi(vxc_short8 src)\n\
-{\n\
-    float4 dst;\n\
-\n\
-    VXC_DP4x4(dst, src, src, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvIntegertoFP32_Hi_4x4);\n\
-    dst *= input_scale;\n\
-    return dst;\n\
-}\n\
-\n\
-float4 F16toF32_Lo(vxc_ushort8 src)\n\
-{\n\
-    vxc_half8 srcHalf;\n\
-    float4 dst;\n\
-\n\
-    _viv_asm(COPY, srcHalf, src, 16);\n\
-    VXC_DP4x4(dst, srcHalf, srcHalf, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvFP16toFP32_Lo_4x4);\n\
-    return dst;\n\
-}\n\
-\n\
-float4 F16toF32_Hi(vxc_ushort8 src)\n\
-{\n\
-    vxc_half8 srcHalf;\n\
-    float4 dst;\n\
-\n\
-    _viv_asm(COPY, srcHalf, src, 16);\n\
-    VXC_DP4x4(dst, srcHalf, srcHalf, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvFP16toFP32_Hi_4x4);\n\
-    return dst;\n\
-}\n\
-\n\
-float4 BF16toF32_Lo(vxc_ushort8 src)\n\
-{\n\
-    vxc_ushort8 srcA;\n\
-    float4 dst;\n\
-\n\
-    vxc_short8 zero = (vxc_short8)(0, 0, 0, 0, 0, 0, 0, 0);\n\
-    VXC_DP2x8(srcA, src, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvBF16toF32_Part0_2x8);\n\
-    _viv_asm(COPY, dst, srcA, 16);\n\
-\n\
-    return dst;\n\
-}\n\
-\n\
-float4 BF16toF32_Hi(vxc_ushort8 src)\n\
-{\n\
-    vxc_ushort8 srcA;\n\
-    float4 dst;\n\
-\n\
-    vxc_short8 zero = (vxc_short8)(0, 0, 0, 0, 0, 0, 0, 0);\n\
-    VXC_DP2x8(srcA, src, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvBF16toF32_Part1_2x8);\n\
-    _viv_asm(COPY, dst, srcA, 16);\n\
-\n\
-    return dst;\n\
-}\n\
-\n\
-vxc_ushort8 F32toF16(float4 src0, float4 src1)\n\
-{\n\
-    half4 srcHalf0, srcHalf1;\n\
-    vxc_half8 dst0;\n\
-    vxc_ushort8 dst;\n\
-\n\
-    _viv_asm(CONV, srcHalf0, src0);\n\
-    _viv_asm(CONV, srcHalf1, src1);\n\
-\n\
-    VXC_DP2x8(dst0, srcHalf0, srcHalf1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniExtractHalf8_2x8);\n\
-    _viv_asm(COPY, dst, dst0, 16);\n\
-    return dst;\n\
-}\n\
-\n\
-vxc_ushort8 F32toBF16(float4 src0, float4 src1)\n\
-{\n\
-    vxc_ushort8 srcA, srcB;\n\
-    vxc_ushort8 dst;\n\
-\n\
-    _viv_asm(COPY, srcA, src0, 16);\n\
-    _viv_asm(COPY, srcB, src1, 16);\n\
-    VXC_DP2x8(dst, srcA, srcB, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniPackedBF16_2x8);\n\
-    return dst;\n\
-}\n\
-\n\
-vxc_char8 F32toI8(float4 src0, float4 src1)\n\
-{\n\
-    int4 srcInt0, srcInt1;\n\
-    vxc_char8 dst;\n\
-\n\
-    src0 *= output_scale;\n\
-    src1 *= output_scale;\n\
-    _viv_asm(CONV_RTE, srcInt0, src0);\n\
-    _viv_asm(CONV_RTE, srcInt1, src1);\n\
-\n\
-    VXC_DP2x8(dst, srcInt0, srcInt1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtractInteger_2x8);\n\
-    return dst;\n\
-}\n\
-\n\
-vxc_short8 F32toI16(float4 src0, float4 src1)\n\
-{\n\
-    int4 srcInt0, srcInt1;\n\
-    vxc_short8 dst;\n\
-\n\
-    src0 *= output_scale;\n\
-    src1 *= output_scale;\n\
-    _viv_asm(CONV_RTE, srcInt0, src0);\n\
-    _viv_asm(CONV_RTE, srcInt1, src1);\n\
-\n\
-    VXC_DP2x8(dst, srcInt0, srcInt1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtractInteger_2x8);\n\
-    return dst;\n\
-}\n\
-\n\
-vxc_uchar8 F32toU8(float4 src0, float4 src1)\n\
-{\n\
-    int4 srcInt0, srcInt1;\n\
-    vxc_uchar8 dst;\n\
-\n\
-    src0 = src0 * output_scale + outputZP;\n\
-    src1 = src1 * output_scale + outputZP;\n\
-    _viv_asm(CONV_RTE, srcInt0, src0);\n\
-    _viv_asm(CONV_RTE, srcInt1, src1);\n\
-\n\
-    VXC_DP2x8(dst, srcInt0, srcInt1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtractInteger_2x8);\n\
-    return dst;\n\
-}\n\
-"; /* end of vsi_nn_kernel_relu_keras_header_vx*/
-
-static const char vsi_nn_kernel_relu_keras_internal_vx[] = "\n\
-#define TENSOR_KERAS_RELU(src_type_name, dst_type_name, tensor_dims, image_type, \\\n\
-    convert2FP32_Func, convert2DstType_Func, src_type, dst_type) \\\n\
-__kernel void vxKerasRelu_##src_type_name##to##dst_type_name##tensor_dims( \\\n\
-__read_only  image2d_array_t  input, \\\n\
-__write_only image2d_array_t  output, \\\n\
-                    float     alpha, \\\n\
-                    float     max_value, \\\n\
-                    float     threshold \\\n\
-                    ) \\\n\
-{ \\\n\
-    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
-    src_type src; \\\n\
- \\\n\
-    VXC_Read##image_type(src, input, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
-    float4 dataA = convert2FP32_Func##_Lo(src); \\\n\
-    float4 dataB = convert2FP32_Func##_Hi(src); \\\n\
-    float4 dataA0 = dataA < threshold ? threshold : dataA; \\\n\
-    dataA0 = dataA0 > max_value ? max_value : dataA0; \\\n\
-    float4 dataB0 = dataB < threshold ? threshold : dataB; \\\n\
-    dataB0 = dataB0 > max_value ? max_value : dataB0; \\\n\
- \\\n\
-    float4 dataA1 = dataA * alpha - offset; \\\n\
-    float4 dataB1 = dataB * alpha - offset; \\\n\
-    float4 dst0 = dataA  < threshold ? dataA1 : dataA0; \\\n\
-    float4 dst1 = dataB  < threshold ? dataB1 : dataB0; \\\n\
- \\\n\
-    dst_type result = convert2DstType_Func(dst0, dst1); \\\n\
- \\\n\
-    VXC_Write##image_type(output, coord, result, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
-}\n\
-TENSOR_KERAS_RELU(F16,  F16,  _3D, Image2DArray, F16toF32,  F32toF16,  vxc_ushort8, vxc_ushort8)\n\
-TENSOR_KERAS_RELU(F16,  I16,  _3D, Image2DArray, F16toF32,  F32toI16,  vxc_ushort8, vxc_short8)\n\
-TENSOR_KERAS_RELU(F16,  I8,   _3D, Image2DArray, F16toF32,  F32toI8,   vxc_ushort8, vxc_char8)\n\
-TENSOR_KERAS_RELU(F16,  U8,   _3D, Image2DArray, F16toF32,  F32toU8,   vxc_ushort8, vxc_uchar8)\n\
-TENSOR_KERAS_RELU(BF16, BF16, _3D, Image2DArray, BF16toF32, F32toBF16, vxc_ushort8, vxc_ushort8)\n\
-\n\
-TENSOR_KERAS_RELU(I16,  I16,  _3D, Image2DArray, I16toF32,  F32toI16,  vxc_short8,  vxc_short8)\n\
-TENSOR_KERAS_RELU(I16,  F16,  _3D, Image2DArray, I16toF32,  F32toF16,  vxc_short8,  vxc_ushort8)\n\
-TENSOR_KERAS_RELU(I8,   I8,   _3D, Image2DArray, I8toF32,   F32toI8,   vxc_char8,   vxc_char8)\n\
-TENSOR_KERAS_RELU(I8,   F16,  _3D, Image2DArray, I8toF32,   F32toF16,  vxc_char8,   vxc_ushort8)\n\
-TENSOR_KERAS_RELU(U8,   U8,   _3D, Image2DArray, U8toF32,   F32toU8,   vxc_uchar8,  vxc_uchar8)\n\
-TENSOR_KERAS_RELU(U8,   F16,  _3D, Image2DArray, U8toF32,   F32toF16,  vxc_uchar8,  vxc_ushort8)\n\
-\n\
-TENSOR_KERAS_RELU(F16,  F16,  _2D, Image,        F16toF32,  F32toF16,  vxc_ushort8, vxc_ushort8)\n\
-TENSOR_KERAS_RELU(F16,  I16,  _2D, Image,        F16toF32,  F32toI16,  vxc_ushort8, vxc_short8)\n\
-TENSOR_KERAS_RELU(F16,  I8,   _2D, Image,        F16toF32,  F32toI8,   vxc_ushort8, vxc_char8)\n\
-TENSOR_KERAS_RELU(F16,  U8,   _2D, Image,        F16toF32,  F32toU8,   vxc_ushort8, vxc_uchar8)\n\
-TENSOR_KERAS_RELU(BF16, BF16, _2D, Image,        BF16toF32, F32toBF16, vxc_ushort8, vxc_ushort8)\n\
-TENSOR_KERAS_RELU(I16,  I16,  _2D, Image,        I16toF32,  F32toI16,  vxc_short8,  vxc_short8)\n\
-TENSOR_KERAS_RELU(I16,  F16,  _2D, Image,        I16toF32,  F32toF16,  vxc_short8,  vxc_ushort8)\n\
-TENSOR_KERAS_RELU(I8,   I8,   _2D, Image,        I8toF32,   F32toI8,   vxc_char8,   vxc_char8)\n\
-TENSOR_KERAS_RELU(I8,   F16,  _2D, Image,        I8toF32,   F32toF16,  vxc_char8,   vxc_ushort8)\n\
-TENSOR_KERAS_RELU(U8,   U8,   _2D, Image,        U8toF32,   F32toU8,   vxc_uchar8,  vxc_uchar8)\n\
-TENSOR_KERAS_RELU(U8,   F16,  _2D, Image,        U8toF32,   F32toF16,  vxc_uchar8,  vxc_ushort8)\n\
-"; /* end of vsi_nn_kernel_relu_keras_internal_vx*/
 
 static const char vsi_nn_kernel_resize_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
@@ -41299,6 +41299,163 @@ COMPARISONS_I32_2D(not_equal, !=)\n\
 \n\
 "; /* end of relational_ops_cl*/
 
+static const char relu_keras_cl[] = "\n\
+__kernel void relu_keras_F32toF32(\n\
+    __read_only  image2d_array_t  input,\n\
+    __write_only image2d_array_t  output,\n\
+                           float  alpha,\n\
+                           float  max_value,\n\
+                           float  threshold,\n\
+                           float  offset\n\
+                           )\n\
+{\n\
+    int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+    float4 src = read_imagef(input, coord);\n\
+    float4 dst = src >= max_value ? max_value : src;\n\
+    dst = dst < threshold ? alpha * dst + offset : dst;\n\
+    write_imagef(output, coord, dst);\n\
+}\n\
+\n\
+__kernel void relu_keras_F32toF32_2D(\n\
+    __read_only  image2d_t  input,\n\
+    __write_only image2d_t  output,\n\
+                     float  alpha,\n\
+                     float  max_value,\n\
+                     float  threshold,\n\
+                     float  offset\n\
+                     )\n\
+{\n\
+    int2 coord =  (int2)(get_global_id(0), get_global_id(1));\n\
+    float4 src = read_imagef(input, coord);\n\
+    float4 dst = src >= max_value ? max_value : src;\n\
+    dst = dst < threshold ? alpha * dst + offset : dst;\n\
+    write_imagef(output, coord, dst);\n\
+}\n\
+\n\
+__kernel void relu_keras_F32toU8(\n\
+    __read_only  image2d_array_t  input,\n\
+    __write_only image2d_array_t  output,\n\
+                           float  alpha,\n\
+                           float  max_value,\n\
+                           float  threshold,\n\
+                           float  offset,\n\
+                           float  inputScale,\n\
+                           float  inputTail,\n\
+                           float  outputScale,\n\
+                           float  outputZP\n\
+                           )\n\
+{\n\
+    int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+    float4 src = read_imagef(input, coord);\n\
+    float4 result = src >= max_value ? max_value : src;\n\
+    result = result < threshold ? alpha * result + offset : result;\n\
+    uint4 dst = convert_uint4_rte(result * outputScale + outputZP);\n\
+    write_imageui(output, coord, dst);\n\
+}\n\
+\n\
+__kernel void relu_keras_F32toU8_2D(\n\
+    __read_only  image2d_t  input,\n\
+    __write_only image2d_t  output,\n\
+                     float  alpha,\n\
+                     float  max_value,\n\
+                     float  threshold,\n\
+                     float  offset,\n\
+                     float  inputScale,\n\
+                     float  inputTail,\n\
+                     float  outputScale,\n\
+                     float  outputZP\n\
+                     )\n\
+{\n\
+    int2 coord =  (int2)(get_global_id(0), get_global_id(1));\n\
+    float4 src = read_imagef(input, coord);\n\
+    float4 result = src >= max_value ? max_value : src;\n\
+    result = result < threshold ? alpha * result + offset : result;\n\
+    uint4 dst = convert_uint4_rte(result * outputScale + outputZP);\n\
+    write_imageui(output, coord, dst);\n\
+}\n\
+\n\
+__kernel void relu_keras_U8toU8(\n\
+    __read_only  image2d_array_t  input,\n\
+    __write_only image2d_array_t  output,\n\
+                           float  alpha,\n\
+                           float  max_value,\n\
+                           float  threshold,\n\
+                           float  offset,\n\
+                           float  inputScale,\n\
+                           float  inputTail,\n\
+                           float  outputScale,\n\
+                           float  outputZP\n\
+                           )\n\
+{\n\
+    int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+    float4 src = convert_float4(read_imageui(input, coord))  * inputScale + inputTail;\n\
+    float4 result = src >= max_value ? max_value : src;\n\
+    result = result < threshold ? alpha * result + offset : result;\n\
+    uint4 dst = convert_uint4_rte(result * outputScale + outputZP);\n\
+    write_imageui(output, coord, dst);\n\
+}\n\
+\n\
+__kernel void relu_keras_U8toU8_2D(\n\
+    __read_only  image2d_t  input,\n\
+    __write_only image2d_t  output,\n\
+                     float  alpha,\n\
+                     float  max_value,\n\
+                     float  threshold,\n\
+                     float  offset,\n\
+                     float  inputScale,\n\
+                     float  inputTail,\n\
+                     float  outputScale,\n\
+                     float  outputZP\n\
+                     )\n\
+{\n\
+    int2 coord =  (int2)(get_global_id(0), get_global_id(1));\n\
+    float4 src = convert_float4(read_imageui(input, coord))  * inputScale + inputTail;\n\
+    float4 result = src >= max_value ? max_value : src;\n\
+    result = result < threshold ? alpha * result + offset : result;\n\
+    uint4 dst = convert_uint4_rte(result * outputScale + outputZP);\n\
+    write_imageui(output, coord, dst);\n\
+}\n\
+\n\
+__kernel void relu_keras_U8toF32(\n\
+    __read_only  image2d_array_t  input,\n\
+    __write_only image2d_array_t  output,\n\
+                           float  alpha,\n\
+                           float  max_value,\n\
+                           float  threshold,\n\
+                           float  offset,\n\
+                           float  inputScale,\n\
+                           float  inputTail,\n\
+                           float  outputScale,\n\
+                           float  outputZP\n\
+                           )\n\
+{\n\
+    int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+    float4 src = convert_float4(read_imageui(input, coord))  * inputScale + inputTail;\n\
+    float4 dst = src >= max_value ? max_value : src;\n\
+    dst = dst < threshold ? alpha * dst + offset : dst;\n\
+    write_imagef(output, coord, dst);\n\
+}\n\
+\n\
+__kernel void relu_keras_U8toF32_2D(\n\
+    __read_only  image2d_t  input,\n\
+    __write_only image2d_t  output,\n\
+                     float  alpha,\n\
+                     float  max_value,\n\
+                     float  threshold,\n\
+                     float  offset,\n\
+                     float  inputScale,\n\
+                     float  inputTail,\n\
+                     float  outputScale,\n\
+                     float  outputZP\n\
+                     )\n\
+{\n\
+    int2 coord =  (int2)(get_global_id(0), get_global_id(1));\n\
+    float4 src = convert_float4(read_imageui(input, coord))  * inputScale + inputTail;\n\
+    float4 dst = src >= max_value ? max_value : src;\n\
+    dst = dst < threshold ? alpha * dst + offset : dst;\n\
+    write_imagef(output, coord, dst);\n\
+}"; /* end of relu_keras_cl*/
+
 static const char resize_bilinear_cl[] = "__kernel void resize_bilinear_F32toF32(\n\
     __read_only  image2d_array_t  input,\n\
     __write_only image2d_array_t  output,\n\
@@ -42107,6 +42264,8 @@ static const source_map_t evis_resource[] =
     {"reduceprod_internal_axis2_vx", reduceprod_internal_axis2_vx},
     {"relational_ops_2d_vx", relational_ops_2d_vx},
     {"relational_ops_3d_vx", relational_ops_3d_vx},
+    {"relu_keras_vx", relu_keras_vx},
+    {"relu_keras_header_vx", relu_keras_header_vx},
     {"resize_bilinear_BF16_vx", resize_bilinear_BF16_vx},
     {"resize_bilinear_F16_vx", resize_bilinear_F16_vx},
     {"resize_bilinear_I16_vx", resize_bilinear_I16_vx},
@@ -42140,8 +42299,6 @@ static const source_map_t evis_resource[] =
     {"vsi_nn_kernel_layernormalize_vx", vsi_nn_kernel_layernormalize_vx},
     {"vsi_nn_kernel_layernormalize_U8_vx", vsi_nn_kernel_layernormalize_U8_vx},
     {"vsi_nn_kernel_random_multinomial_vx", vsi_nn_kernel_random_multinomial_vx},
-    {"vsi_nn_kernel_relu_keras_header_vx", vsi_nn_kernel_relu_keras_header_vx},
-    {"vsi_nn_kernel_relu_keras_internal_vx", vsi_nn_kernel_relu_keras_internal_vx},
     {"vsi_nn_kernel_resize_vx", vsi_nn_kernel_resize_vx},
     {"vsi_nn_kernel_reverse_vx", vsi_nn_kernel_reverse_vx},
     {"vsi_nn_kernel_roi_align_vx", vsi_nn_kernel_roi_align_vx},
@@ -42243,6 +42400,7 @@ static const source_map_t cl_resource[] =
     {"reduceprod_internal_axis1_cl", reduceprod_internal_axis1_cl},
     {"reduceprod_internal_axis2_cl", reduceprod_internal_axis2_cl},
     {"relational_ops_cl", relational_ops_cl},
+    {"relu_keras_cl", relu_keras_cl},
     {"resize_bilinear_cl", resize_bilinear_cl},
     {"resize_nearest_cl", resize_nearest_cl},
     {"select_cl", select_cl},

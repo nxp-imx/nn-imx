@@ -300,7 +300,6 @@ cc_library(
         "src/libnnext/ops/kernel/vsi_nn_kernel_generate_proposals.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_detection_postprocess.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_random_multinomial.c",
-        "src/libnnext/ops/kernel/vsi_nn_kernel_relu_keras_internal.c",
         "src/libnnext/vsi_nn_libnnext_resource.c",
     ] + [":kernel_srcs"]
       + [":operation_srcs"]
