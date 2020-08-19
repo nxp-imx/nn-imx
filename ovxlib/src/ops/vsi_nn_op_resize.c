@@ -260,6 +260,27 @@ static vsi_nn_op_compute_t op_compute_list[] =
 };
 #endif
 
+static vsi_bool _is_same_shape
+    (
+    vsi_nn_tensor_t * inputs,
+    uint32_t *sizes,
+    uint32_t dims
+    )
+{
+    uint32_t i = 0;
+
+    if (inputs->attr.dim_num != dims)
+        return FALSE;
+
+    for (i = 0; i < dims; i++)
+    {
+        if (sizes[i] != inputs->attr.size[i])
+            return FALSE;
+    }
+
+    return TRUE;
+}
+
 static vsi_status op_compute
     (
     vsi_nn_node_t * self,
@@ -269,9 +290,10 @@ static vsi_status op_compute
 {
     vsi_status status = VSI_FAILURE;
 #if (USE_OVX_API == TRUE)
-    if ((self->nn_param.resize.align_corners || self->nn_param.resize.half_pixel_centers)
+    if ( ((self->nn_param.resize.align_corners || self->nn_param.resize.half_pixel_centers)
        && (VSI_NN_INTERPOLATION_BILINEAR == self->nn_param.resize.type
           || VSI_NN_INTERPOLATION_NEAREST_NEIGHBOR == self->nn_param.resize.type))
+       || _is_same_shape(inputs[0], outputs[0]->attr.size, outputs[0]->attr.dim_num) )
     {
         status = vsi_nn_internal_compute_node( self );
     }
@@ -331,9 +353,10 @@ static vsi_status op_optimize
     vsi_nn_opt_direction_e direction
     )
 {
-    if ((self->nn_param.resize.align_corners || self->nn_param.resize.half_pixel_centers)
+    if ( ((self->nn_param.resize.align_corners || self->nn_param.resize.half_pixel_centers)
        && (VSI_NN_INTERPOLATION_BILINEAR == self->nn_param.resize.type
-          || VSI_NN_INTERPOLATION_NEAREST_NEIGHBOR == self->nn_param.resize.type))
+          || VSI_NN_INTERPOLATION_NEAREST_NEIGHBOR == self->nn_param.resize.type) )
+        || _is_same_shape(inputs[0], outputs[0]->attr.size, outputs[0]->attr.dim_num) )
     {
         return vsi_nn_internal_optimize_node(self, direction );
     }
@@ -402,6 +425,14 @@ static vsi_bool op_setup
         curr->node->nn_param.resize_nearest_internal.align_corners = self->nn_param.resize.align_corners;
         curr->node->nn_param.resize_nearest_internal.factor = self->nn_param.resize.factor;
         curr->node->nn_param.resize_nearest_internal.half_pixel_centers = self->nn_param.resize.half_pixel_centers;
+        curr->inputs[0]  = inputs[0];
+        curr->outputs[0] = outputs[0];
+        vsi_nn_internal_setup_node(self, curr);
+    }
+    else if (_is_same_shape(inputs[0], outputs[0]->attr.size, outputs[0]->attr.dim_num))
+    {
+        vsi_nn_internal_init_node_wksp( self );
+        curr = vsi_nn_internal_new_node( self, VSI_NN_OP_DATACONVERT, 0, 0 );
         curr->inputs[0]  = inputs[0];
         curr->outputs[0] = outputs[0];
         vsi_nn_internal_setup_node(self, curr);
