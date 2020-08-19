@@ -802,8 +802,11 @@ bool VsiDriver::isWeightMd5Matched(const HalPlatform::Operation& operation,
         auto& weight = model.operands[operation.inputs[1]];
         if (!isConstantTensor(weight)) return false;
         auto& shape = weight.dimensions;
-        // There are 64 * 3 * 3 * 64 kernels in vgg and srgan model
-        if (shape[0] != 64 || shape[1] != 3 || shape[2] != 3 || shape[3] != 64) return false;
+        // vgg_quant vgg_float srgan_quant srgan_float dped_float
+        decltype(weight.dimensions) match_shape_0 = {64, 3, 3, 64};
+        // icnet_float inception_v3_float inception_face_float
+        decltype(weight.dimensions) match_shape_1 = {32, 3, 3, 3};
+        if (shape != match_shape_0 && shape != match_shape_1) return false;
         struct VsiRTInfo rt;
         const char* weight_data =
             reinterpret_cast<const char*>(getOperandDataPtr(model, weight, rt));
