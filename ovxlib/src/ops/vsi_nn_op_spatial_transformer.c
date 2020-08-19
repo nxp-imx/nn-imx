@@ -46,7 +46,6 @@
 
 extern vx_kernel_description_t * vx_kernel_SPATIAL_TRANSFORMER_list[];
 
-#if 0
 static void _set_inputs_outputs
     (
     vx_reference * params,
@@ -70,7 +69,7 @@ static void _set_inputs_outputs
         params[cnt] = (vx_reference)outputs[i]->t;
     }
 } /* _set_inputs_outputs() */
-#endif
+
 
 static vsi_status _create_params
     (
@@ -192,7 +191,7 @@ static vsi_status cpu_op_compute
     }
 
     /* Set inputs and outputs */
-    //_set_inputs_outputs( params, inputs, outputs );
+    _set_inputs_outputs( params, inputs, outputs );
 
     /* Init parameters. */
     _create_params( self, args, _ARG_NUM );
@@ -206,14 +205,20 @@ static vsi_status cpu_op_compute
 }
 
 int setUPGridData(vx_uint32 output_W_, vx_uint32 output_H_, vx_float32 scale, vx_int32 zeropoint,
-                  vsi_nn_dtype_t data_type, vsi_nn_qnt_type_e qnt_type, vx_uint8 fp, vx_uint8 *tensorData)
+         vsi_nn_dtype_t data_type, vsi_nn_qnt_type_e qnt_type, vx_uint8 fp, vx_int16 *tensorData)
 {
-    vx_uint32 x                = 0;
-    vx_uint32 y                = 0;
-    //float     fval            = 0.0;
+    vx_uint32 x               = 0;
+    vx_uint32 y               = 0;
     vx_uint32 idx             = 0;
-    float *tmp_buf = NULL;
+    vx_float32 *tmp_buf = NULL;
     vx_uint32 i = 0;
+    vsi_nn_dtype_t dtype;
+
+    dtype.vx_type = VSI_NN_TYPE_FLOAT16;
+    dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
+    dtype.fl = 0;
+    dtype.scale = 1;
+    dtype.zero_point = 0;
 
     tmp_buf = (float*) malloc(output_W_ * output_H_ * 3 * sizeof(float));
 
@@ -228,16 +233,12 @@ int setUPGridData(vx_uint32 output_W_, vx_uint32 output_H_, vx_float32 scale, vx
             tmp_buf[idx++] = data0;
             tmp_buf[idx++] = data1;
             tmp_buf[idx++] = data2;
-
-            //vxnneSaveDataExt(data_type, qnt_type, idx++, data0, tensorData, fp, zeropoint, scale);
-            //vxnneSaveDataExt(data_type, qnt_type, idx++, data1, tensorData, fp, zeropoint, scale);
-            //vxnneSaveDataExt(data_type, qnt_type, idx++, data2, tensorData, fp, zeropoint, scale);
         }
     }
 
     for(i = 0; i < output_H_ * output_W_ * 3; i++)
     {
-        vsi_nn_Float32ToDtype(tmp_buf[i],(uint8_t*)&tensorData[vsi_nn_GetTypeBytes(data_type.vx_type)*i], &data_type);
+        vsi_nn_Float32ToDtype(tmp_buf[i],(uint8_t*)&tensorData[i],&dtype);
     }
 
     if(tmp_buf)
@@ -248,41 +249,6 @@ int setUPGridData(vx_uint32 output_W_, vx_uint32 output_H_, vx_float32 scale, vx
 
     return 0;
 }
-
-#if 0
-static vsi_status vx_op_compute
-    (
-    vsi_nn_node_t * self,
-    vsi_nn_tensor_t ** inputs,
-    vsi_nn_tensor_t ** outputs
-    )
-{
-    vsi_status status = VSI_SUCCESS;
-    vx_reference params[_PARAM_NUM];
-    vx_reference * args;
-
-    args = &params[_IO_NUM];
-
-    if( NULL == self->n )
-    {
-        return VSI_FAILURE;
-    }
-
-    /* Set inputs and outputs */
-    _set_inputs_outputs( params, inputs, outputs );
-    /*TODO: Add code if need to change your parameter*/
-
-    /* Init parameters. */
-    _create_params( self, args, _ARG_NUM );
-
-    /* Pass parameters to node. */
-    status = vsi_nn_ClientNodePassParameters( self->n, params, _PARAM_NUM );
-
-    _release_params( args, _ARG_NUM );
-
-    return status;
-}
-#endif
 
 static vsi_status vx_op_compute_setupThre
     (
@@ -324,7 +290,11 @@ static vsi_status vx_op_compute_setupThre
     attr.dim_num = 4;
     attr.is_const = TRUE;
     attr.dtype.vx_type = VSI_NN_TYPE_FLOAT16;
-
+    attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
+    attr.dtype.fl = 0;
+    attr.dtype.scale = 1;
+    attr.dtype.zero_point = 0;
+    attr.vtl = FALSE;
     vsi_nn_Float32ToDtype(p->theta_1_1, (uint8_t*)(&value_buf[0]), &attr.dtype);
     vsi_nn_Float32ToDtype(p->theta_1_2, (uint8_t*)(&value_buf[1]), &attr.dtype);
     vsi_nn_Float32ToDtype(p->theta_1_3, (uint8_t*)(&value_buf[2]), &attr.dtype);
@@ -345,13 +315,13 @@ static vsi_status vx_op_compute_setupThre
 
     params[0] = (vx_reference)thre_tensor->t;
 
-    attr.size[0] = inputs[1]->attr.size[0] * inputs[1]->attr.size[1];
+    attr.size[0] = inputs[0]->attr.size[0] * inputs[0]->attr.size[1];
     attr.size[1] = 1;
-    attr.size[2] = inputs[1]->attr.size[2];
-    attr.size[3] = inputs[1]->attr.size[3];
-    attr.dim_num = inputs[1]->attr.dim_num;
+    attr.size[2] = inputs[0]->attr.size[2];
+    attr.size[3] = inputs[0]->attr.size[3];
+    attr.dim_num = inputs[0]->attr.dim_num;
 
-    tmp_t = vxReshapeTensor(inputs[1]->t, (vx_int32*)attr.size, attr.dim_num);
+    tmp_t = vxReshapeTensor(inputs[0]->t, (vx_int32*)attr.size, attr.dim_num);
 
     params[1] = (vx_reference)tmp_t;
     params[2] = (vx_reference)flag_s;
@@ -378,7 +348,6 @@ static vsi_status vx_op_compute_setupThre
     return status;
 }
 
-
 static vsi_status vx_op_compute_gemm
     (
     vsi_nn_node_t * self,
@@ -389,24 +358,33 @@ static vsi_status vx_op_compute_gemm
     vsi_status status = VSI_SUCCESS;
     vx_reference params[3];
     vx_tensor paraTensor0, paraTensor1, paraTensor2;
-    vsi_nn_spatial_transformer_param * p;
-
-    vx_context ctx;
     int     size[4]    = {1};
     vx_tensor_addressing out_addr = NULL;
     vsi_nn_tensor_attr_t out_attr;
-    uint32_t out_stride[6];
-    uint8_t *out_buffer = NULL;
+    vx_int16 *out_buffer = NULL;
+    uint32_t output_H,output_W;
+    vx_float32 *buf=NULL;
+    vx_context context = NULL;
+    vsi_nn_tensor_attr_t in_attr;
+    uint32_t in_elements;
 
-    p = (vsi_nn_spatial_transformer_param *)self->nn_param.client_param;
-    ctx = vxGetContext( (vx_reference)self->graph->g );
-
-    out_buffer = (uint8_t *)vsi_nn_ConvertRawTensorToData2(ctx,inputs[1]->t,
-                                                            &out_attr,out_stride,&out_addr,VX_WRITE_ONLY);
-
-    setUPGridData(p->output_W, p->output_H, out_attr.dtype.scale, out_attr.dtype.zero_point,
+    out_attr = outputs[0]->attr;
+    output_W = out_attr.size[0];
+    output_H = out_attr.size[1];
+    out_buffer = (vx_int16*)malloc(output_W*output_H*3*sizeof(vx_int16));
+    setUPGridData(output_W, output_H, out_attr.dtype.scale, out_attr.dtype.zero_point,
         out_attr.dtype, out_attr.dtype.qnt_type ,out_attr.dtype.fl, out_buffer);
     status = vsi_nn_copy_tensor_patch(inputs[1]->t, &inputs[1]->attr, out_buffer, VX_WRITE_ONLY);
+
+    /* Fill input & output attribute data struct */
+    status = vsi_nn_vxGetTensorAttr(inputs[1]->t, &in_attr);
+    in_elements = vsi_nn_vxGetTensorElementNum(&in_attr);
+    /* alloc the float32 data buffer */
+    buf = (float *)malloc(in_elements * sizeof(float));
+
+    /* Copy tensor to buffer, and convert bufer to float32 format */
+    status = vsi_nn_vxConvertTensorToFloat32Data(
+        context, inputs[1]->t, &in_attr, buf, in_elements * sizeof(float));
 
     memset( params, 0, sizeof( vx_reference * ) * 3 );
 
@@ -414,12 +392,12 @@ static vsi_status vx_op_compute_gemm
     size[1] = 1;
     paraTensor0 = vxReshapeTensor(inputs[0]->t,size,2);
 
-    size[0] = inputs[1]->attr.size[0] * p->output_W;
-    size[1] = p->output_H;
+    size[0] = inputs[1]->attr.size[0] * output_W;
+    size[1] = output_H;
     paraTensor1 = vxReshapeTensor(inputs[1]->t,size,2);
 
-    size[0] = inputs[0]->attr.size[1] * p->output_W;
-    size[1] = p->output_H;
+    size[0] = inputs[0]->attr.size[1] * output_W;
+    size[1] = output_H;
     paraTensor2 = vxReshapeTensor(inputs[2]->t,size,2);
 
     if (out_addr)
@@ -503,16 +481,49 @@ static vsi_status op_compute
     vsi_nn_tensor_t ** outputs
     )
 {
-    vsi_status status;
+    vsi_status status = VX_SUCCESS;
     vsi_nn_kernel_info_t kernel_info;
     char *path = NULL;
-    vsi_nn_tensor_attr_t attr;
+    vsi_nn_tensor_attr_t attr,outattr;
     vsi_nn_tensor_t *tmp_output_tensor[5] = {0};
-    vsi_nn_spatial_transformer_param * p;
+    vsi_nn_tensor_t *input_t,*fc_t,*output_t;
+    vx_graph graph = self->graph->g;
 
     memset(&kernel_info, 0x0, sizeof(vsi_nn_kernel_info_t));
-    p = (vsi_nn_spatial_transformer_param *)self->nn_param.client_param;
+    memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
+    attr = inputs[0]->attr;
+    attr.dtype.vx_type = VSI_NN_TYPE_FLOAT16;
+    attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
+    attr.dtype.fl = 0;
+    attr.dtype.scale = 1;
+    attr.dtype.zero_point = 0;
+    attr.vtl = FALSE;
 
+    input_t= vsi_nn_CreateTensor(self->graph, &attr);
+
+    attr = inputs[1]->attr;
+    attr.dtype.vx_type = VSI_NN_TYPE_FLOAT16;
+    attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
+    attr.dtype.fl = 0;
+    attr.dtype.scale = 1;
+    attr.dtype.zero_point = 0;
+    attr.vtl = FALSE;
+    fc_t= vsi_nn_CreateTensor(self->graph, &attr);
+
+    attr = outputs[0]->attr;
+    attr.dtype.vx_type = VSI_NN_TYPE_FLOAT16;
+    attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
+    attr.dtype.fl = 0;
+    attr.dtype.scale = 1;
+    attr.dtype.zero_point = 0;
+    attr.vtl = FALSE;
+    output_t= vsi_nn_CreateTensor(self->graph, &attr);
+
+    vxTensorCopyNode(graph, inputs[0]->t, input_t->t);
+    vxTensorCopyNode(graph, inputs[1]->t, fc_t->t);
+    vxTensorCopyNode(graph, output_t->t, outputs[0]->t);
+
+    outattr = outputs[0]->attr;
     // Tensor for thre_output
     memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
     attr.size[0] = 3;
@@ -526,7 +537,7 @@ static vsi_status op_compute
 
     // Tensor for grid
     attr.size[0] = 3;
-    attr.size[1] = p->output_H * p->output_W;
+    attr.size[1] = outattr.size[0]* outattr.size[1];//p->output_H * p->output_W;
     attr.size[2] = 1;
     attr.size[3] = 1;
     attr.dim_num = 2;
@@ -535,24 +546,16 @@ static vsi_status op_compute
     tmp_output_tensor[1] = vsi_nn_CreateTensor(self->graph, &attr);
 
     // Tensor for grid_out
-    attr.size[0] = 2 * p->output_W;
-    attr.size[1] = p->output_H ;
+    attr.size[0] = 2*outattr.size[0];//2 * p->output_W;
+    attr.size[1] = outattr.size[1];//p->output_H ;
     attr.size[2] = 1;
     attr.size[3] = 1;
     attr.dim_num = 2;
     attr.dtype.vx_type = VSI_NN_TYPE_FLOAT16;
     attr.vtl = FALSE;
     tmp_output_tensor[2] = vsi_nn_CreateTensor(self->graph, &attr);
-
-
     status = VSI_FAILURE;
-#if 0
-    kernel_info.type = VX_KERNEL_TYPE_CPU;
-    kernel_info.kernel = vx_kernel_SPATIAL_TRANSFORMER_list;
-    kernel_info.resource_num = 1;
-    kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));
-    kernel_info.resource_name[0] = "spatialtransformer";
-#else
+
 
     kernel_info.type = VX_KERNEL_TYPE_VX;
     kernel_info.kernel = vx_kernel_SPATIAL_TRANSFORMER_list;
@@ -560,9 +563,6 @@ static vsi_status op_compute
     kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));
     kernel_info.resource_name[0] = "vsi_nn_kernel_transform_setupThres";
 
-    //kernel_info.resource_name[0] = "";
-
-#endif
     path = getenv("USER_VX_SOURCE_PATH");
     if(path)
         vsi_nn_VxResourceSetPath(path);
@@ -576,7 +576,7 @@ static vsi_status op_compute
 
     if (NULL != op_compute_list[kernel_info.init_index])
     {
-        status = op_compute_list[kernel_info.init_index](self, inputs, tmp_output_tensor);
+        status = op_compute_list[kernel_info.init_index](self, &fc_t, tmp_output_tensor);
     }
 
      if( NULL == self->n )
@@ -598,26 +598,35 @@ static vsi_status op_compute
     }
 
     // add interp
-    if(inputs[0]->attr.dim_num == 2 && inputs[0]->attr.dtype.vx_type == VSI_NN_TYPE_FLOAT16
-            && outputs[0]->attr.dtype.vx_type == VSI_NN_TYPE_FLOAT16)
+    if(input_t->attr.dim_num == 2 && input_t->attr.dtype.vx_type == VSI_NN_TYPE_FLOAT16
+            && output_t->attr.dtype.vx_type == VSI_NN_TYPE_FLOAT16)
+    {
         kernel_info.kernel_index = 3;
-    else if(inputs[0]->attr.dim_num == 4 && inputs[0]->attr.dtype.vx_type == VSI_NN_TYPE_FLOAT16
-            && outputs[0]->attr.dtype.vx_type == VSI_NN_TYPE_FLOAT16)
-        kernel_info.kernel_index = 4;
-    kernel_info.init_index = 3;
+        kernel_info.init_index = 3;
+    }
+    else if(input_t->attr.dim_num == 4 && input_t->attr.dtype.vx_type == VSI_NN_TYPE_FLOAT16
+            && output_t->attr.dtype.vx_type == VSI_NN_TYPE_FLOAT16)
+     {
+         kernel_info.kernel_index = 4;
+         kernel_info.init_index = 3;
+    }
     kernel_info.resource_name[0] = "vsi_nn_kernel_transform_interp";
     self->n = vsi_nn_RegisterClientKernelAndNewNode(
             self->graph, &kernel_info);
-    tmp_output_tensor[3] = inputs[0];
+    tmp_output_tensor[3] = input_t;
 
     if (NULL != op_compute_list[kernel_info.init_index])
     {
-        status = op_compute_list[kernel_info.init_index](self, tmp_output_tensor, outputs);
+        status = op_compute_list[kernel_info.init_index](self, tmp_output_tensor, &output_t);
     }
 
     vsi_nn_ReleaseTensor(&tmp_output_tensor[0]);
     vsi_nn_ReleaseTensor(&tmp_output_tensor[1]);
     vsi_nn_ReleaseTensor(&tmp_output_tensor[2]);
+    vsi_nn_ReleaseTensor(&input_t);
+    vsi_nn_ReleaseTensor(&fc_t);
+    vsi_nn_ReleaseTensor(&output_t);
+
 final:
     if(kernel_info.resource_name)
     {
@@ -645,12 +654,12 @@ static vsi_bool op_setup
     )
 {
     /* TODO: Add code to comput outputs' shape. */
-    vsi_nn_spatial_transformer_param * p;
-    p = (vsi_nn_spatial_transformer_param *)&node->nn_param.client_param;
+    //vsi_nn_spatial_transformer_param * p;
+    //p = (vsi_nn_spatial_transformer_param *)&node->nn_param.client_param;
 
     outputs[0]->attr.dim_num = inputs[0]->attr.dim_num;
-    outputs[0]->attr.size[0] = p->output_W;  // W
-    outputs[0]->attr.size[1] = p->output_H;  // H
+    outputs[0]->attr.size[0] = inputs[0]->attr.size[0];//p->output_W;  // W
+    outputs[0]->attr.size[1] = inputs[0]->attr.size[1];//p->output_H;  // H
     outputs[0]->attr.size[2] = inputs[0]->attr.size[2]; // C
     outputs[0]->attr.size[3] = inputs[0]->attr.size[3]; // N
     return TRUE;
