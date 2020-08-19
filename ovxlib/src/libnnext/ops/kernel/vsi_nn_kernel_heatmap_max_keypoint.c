@@ -120,7 +120,7 @@ static vsi_status VX_CALLBACK vxHeatmap_max_keypointKernel
 
     int32_t type;
 
-    int32_t i;
+    uint32_t i = 0;
     for(i = 0; i < TENSOR_NUM_INPUT; i++)
     {
         memset(&in_attr[i], 0x0, sizeof(vsi_nn_tensor_attr_t));
@@ -158,7 +158,7 @@ static vsi_status VX_CALLBACK vxHeatmap_max_keypointKernel
 
     /* TODO: Add CPU kernel implement */
     {
-        uint32_t i, j, k;
+        uint32_t j, k;
         uint32_t numBoxes = in_attr[0].size[3];
         uint32_t heatmapSize = in_attr[0].size[2];
         uint32_t numKeypoints = in_attr[0].size[0];

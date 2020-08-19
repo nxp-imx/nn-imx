@@ -168,7 +168,7 @@ static vsi_status VX_CALLBACK vxGenerate_proposalsKernel
     float iouThreshold;
     float minSize;
 
-    int32_t i;
+    uint32_t i = 0;
     for(i = 0; i < TENSOR_NUM_INPUT; i++)
     {
         memset(&in_attr[i], 0x0, sizeof(vsi_nn_tensor_attr_t));
@@ -271,7 +271,6 @@ static vsi_status VX_CALLBACK vxGenerate_proposalsKernel
             const uint32_t roiLength = 4;
 
             uint32_t numRois = batchSize;
-            uint32_t i;
             uint32_t roiIndex;
             uint32_t select_len;
             int32_t numDetections = 0;
@@ -290,20 +289,20 @@ static vsi_status VX_CALLBACK vxGenerate_proposalsKernel
                     BoxEncodingCenter roi_ctr;
                     BoxEncodingCorner roiAfter;
                     BoxEncodingCorner cliped;
-                    uint32_t index = bboxDeltas_index + roiIndex * roiLength;
-                    roi_ctr.w = (float)(exp(f32_in_buffer[1][index + 2]) * roiBefore.w);
-                    roi_ctr.h = (float)(exp(f32_in_buffer[1][index + 3]) * roiBefore.h);
-                    roi_ctr.x = roiBefore.x + f32_in_buffer[1][index] * roiBefore.w;
-                    roi_ctr.y = roiBefore.y + f32_in_buffer[1][index + 1] * roiBefore.h;
+                    uint32_t idx = bboxDeltas_index + roiIndex * roiLength;
+                    roi_ctr.w = (float)(exp(f32_in_buffer[1][idx + 2]) * roiBefore.w);
+                    roi_ctr.h = (float)(exp(f32_in_buffer[1][idx + 3]) * roiBefore.h);
+                    roi_ctr.x = roiBefore.x + f32_in_buffer[1][idx] * roiBefore.w;
+                    roi_ctr.y = roiBefore.y + f32_in_buffer[1][idx + 1] * roiBefore.h;
                     toBoxEncodingCorner(&roi_ctr, &roiAfter);
                     cliped.x1 = vsi_nn_min(vsi_nn_max(roiAfter.x1, 0.0f), imageWidth);
                     cliped.y1 = vsi_nn_min(vsi_nn_max(roiAfter.y1, 0.0f), imageHeight);
                     cliped.x2 = vsi_nn_min(vsi_nn_max(roiAfter.x2, 0.0f), imageWidth);
                     cliped.y2 = vsi_nn_min(vsi_nn_max(roiAfter.y2, 0.0f), imageHeight);
-                    roiTransformedBuffer[index] = cliped.x1;
-                    roiTransformedBuffer[index + 1] = cliped.y1;
-                    roiTransformedBuffer[index + 2] = cliped.x2;
-                    roiTransformedBuffer[index + 3] = cliped.y2;
+                    roiTransformedBuffer[idx] = cliped.x1;
+                    roiTransformedBuffer[idx + 1] = cliped.y1;
+                    roiTransformedBuffer[idx + 2] = cliped.x2;
+                    roiTransformedBuffer[idx + 3] = cliped.y2;
                 }
             }
 
