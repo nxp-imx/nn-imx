@@ -41,7 +41,7 @@ static inline bool IsOpBlockedByBlockList(int32_t op_type) {
     std::fstream fs(env);
     if (!fs.good()) {
         LOG(INFO) << "can not open blocklist file from -> " << env;
-        // Ignore if no whitelist found
+        // Ignore if no blocklist found
         return false;
     }
     std::string op_list_line;  // = fs.getline();
