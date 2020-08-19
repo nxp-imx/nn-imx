@@ -49,7 +49,7 @@ static vsi_status op_compute
     param =vsi_nn_kernel_param_create();
 
     vsi_nn_kernel_param_add_int32( param, "scale_x", self->nn_param.pre_process_yuv420.local.scale_x );
-    vsi_nn_kernel_param_add_int32( param, "scale_y", self->nn_param.pre_process_yuv420.local.scale_x );
+    vsi_nn_kernel_param_add_int32( param, "scale_y", self->nn_param.pre_process_yuv420.local.scale_y );
     vsi_nn_kernel_param_add_int32( param, "left", self->nn_param.pre_process_yuv420.rect.left );
     vsi_nn_kernel_param_add_int32( param, "top", self->nn_param.pre_process_yuv420.rect.top );
     vsi_nn_kernel_param_add_float32( param, "r_mean", self->nn_param.pre_process_yuv420.r_mean );
