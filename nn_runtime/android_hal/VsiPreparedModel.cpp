@@ -311,7 +311,7 @@ Return<ErrorStatus> VsiPreparedModel::initialize() {
     // For scalar operand, dimension must be 0
     // [1] create async procedure to prepare model
     // [1.0] convert HAL model to nnrt::Model
-    LOG(INFO) << __FUNCTION__;
+    LOG(INFO) << "VsiPreparedModel::initialize()";
 
     auto status = map_rtinfo_from_hidl_memory(model_.pools, const_buffer_);
     if (ErrorStatus::NONE != status) return status;
@@ -331,7 +331,8 @@ Return<ErrorStatus> VsiPreparedModel::initialize() {
 
     std::string not_supported_reason;
     for (const auto& hal_op : model_.operations) {
-        if (!VsiDriver::isSupportedOperation(hal_op, model_, not_supported_reason)) {
+        if (IsOpBlocked(static_cast<int32_t>(hal_op.type)) ||
+            !VsiDriver::isSupportedOperation(hal_op, model_, not_supported_reason)) {
             LOG(ERROR) << "Device do not support operation type: " << static_cast<int>(hal_op.type);
             LOG(INFO) << not_supported_reason;
             return ErrorStatus::INVALID_ARGUMENT;
