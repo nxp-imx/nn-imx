@@ -546,6 +546,18 @@ vsi_status vsi_nn_internal_release_tensor
     return VSI_SUCCESS;
 } /* vsi_nn_internal_release_tensor() */
 
+vsi_bool vsi_nn_internal_check_node
+    (
+    vsi_nn_internal_node_t* inode
+    )
+{
+    vsi_bool retn = TRUE;
+
+    retn = vsi_nn_OpCheck( inode->node->op, inode->node, inode->inputs, inode->outputs );
+
+    return retn;
+} /* vsi_nn_internal_setup_node() */
+
 vsi_bool vsi_nn_internal_setup_node
     (
     vsi_nn_node_t* node,
@@ -560,6 +572,8 @@ vsi_bool vsi_nn_internal_setup_node
         inode->node->uid = WKSP(node)->curr_node_uid;
         LINKLIST_APPEND( WKSP(node)->nodes, inode );
         WKSP(node)->curr_node_uid++;
+
+        retn = vsi_nn_internal_check_node(inode);
     }
 
     return retn;
