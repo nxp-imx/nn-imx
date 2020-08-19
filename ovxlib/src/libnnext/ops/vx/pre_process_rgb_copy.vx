@@ -13,7 +13,7 @@ _viv_uniform VXC_512Bits uniExtractBtoF32_part1_4x4;
 _viv_uniform VXC_512Bits uniExtract8Data_2x8;
 
 #define IMAGE_PRE_PROCESS_COPY_16BITS(dst_name, dst_type, copy_type, convert_type) \
-__kernel void vxRGBScaletoTensor_##dst_name##_copy \
+__kernel void pre_process_rgb_copy_U8to##dst_name \
     ( \
     __read_only image2d_array_t  input, \
     __write_only image2d_array_t output, \
@@ -41,7 +41,8 @@ __kernel void vxRGBScaletoTensor_##dst_name##_copy \
         VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \
  \
     f32Var *= outputScale; \
-    float4 paramData = (float4)(rMean * f32Var, gMean * f32Var, bMean * f32Var, f32Var); \
+    float4 paramData = (float4)(rMean * f32Var - outputZP, gMean * f32Var - outputZP, \
+        bMean * f32Var - outputZP, f32Var); \
  \
     int4 coord_out = (int4)(get_global_id(0), get_global_id(1), r_order, 0); \
     float4 tmp0, tmp1; \
@@ -83,7 +84,7 @@ IMAGE_PRE_PROCESS_COPY_16BITS(I16, vxc_short8, vxc_short8, int4)
 IMAGE_PRE_PROCESS_COPY_16BITS(F16, vxc_half8,  vxc_short8, half4)
 
 #define IMAGE_PRE_PROCESS_COPY_8BITS(dst_name, dst_type) \
-__kernel void vxRGBScaletoTensor_##dst_name##_copy \
+__kernel void pre_process_rgb_copy_U8to##dst_name \
     ( \
     __read_only image2d_array_t  input, \
     __write_only image2d_array_t output, \
@@ -109,7 +110,7 @@ __kernel void vxRGBScaletoTensor_##dst_name##_copy \
         VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \
  \
     f32Var *= outputScale; \
-    float4  paramData = (float4)(rMean * f32Var - outputZP, gMean * f32Var - outputZP, \
+    float4 paramData = (float4)(rMean * f32Var - outputZP, gMean * f32Var - outputZP, \
         bMean * f32Var - outputZP, f32Var); \
  \
     int4 coord_out = (int4)(get_global_id(0), get_global_id(1), r_order, 0); \
@@ -134,7 +135,7 @@ __kernel void vxRGBScaletoTensor_##dst_name##_copy \
     result0 = convert_int4_rte(tmp0); \
     result1 = convert_int4_rte(tmp1); \
     VXC_DP2x8(dst, result0, result1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtract8Data_2x8); \
-    VXC_WriteImage2DArray(output, coord_out, dst, VXC_MODIFIER(0, 9, 0, VXC_RM_TowardZero, 0)); \
+    VXC_WriteImage2DArray(output, coord_out, dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \
  \
     coord_out.z = b_order; \
     VXC_DP4x4(tmp0, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractBtoF32_part0_4x4); \
@@ -144,7 +145,7 @@ __kernel void vxRGBScaletoTensor_##dst_name##_copy \
     result0 = convert_int4_rte(tmp0); \
     result1 = convert_int4_rte(tmp1); \
     VXC_DP2x8(dst, result0, result1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtract8Data_2x8); \
-    VXC_WriteImage2DArray(output, coord_out, dst, VXC_MODIFIER(0, 9, 0, VXC_RM_TowardZero, 0)); \
+    VXC_WriteImage2DArray(output, coord_out, dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \
 }
 IMAGE_PRE_PROCESS_COPY_8BITS(U8, vxc_uchar16)
 IMAGE_PRE_PROCESS_COPY_8BITS(I8, vxc_char16)

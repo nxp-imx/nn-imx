@@ -5,7 +5,7 @@ _viv_uniform float outputZP;
 _viv_uniform VXC_512Bits uniNormilizationLo_2x8;
 _viv_uniform VXC_512Bits uniNormilizationHi_2x8;
 #define IMAGE_PRE_PROCESS_COPY_16BITS_NHWC(dst_name, dst_type, copy_type) \
-__kernel void vxRGBScaletoTensor_##dst_name##_copy_NHWC \
+__kernel void pre_process_rgb_copy_nhwc_U8to##dst_name \
     ( \
     __read_only image2d_array_t  input, \
     __write_only image2d_array_t output, \
@@ -31,7 +31,8 @@ __kernel void vxRGBScaletoTensor_##dst_name##_copy_NHWC \
     VXC_ReadImage(src0, input, coord.xy, 0, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \
  \
     f32Var *= outputScale; \
-    float4      paramData = (float4)(rMean * f32Var, gMean * f32Var, bMean * f32Var, f32Var); \
+    float4  paramData = (float4)(rMean * f32Var - outputZP, gMean * f32Var - outputZP, \
+        bMean * f32Var - outputZP, f32Var); \
     half4 paramData_f16; \
     _viv_asm(CONV, paramData_f16, paramData); \
  \
@@ -51,7 +52,7 @@ IMAGE_PRE_PROCESS_COPY_16BITS_NHWC(I16, vxc_short8,  vxc_short8)
 IMAGE_PRE_PROCESS_COPY_16BITS_NHWC(F16, vxc_half8,   vxc_short8)
 
 #define IMAGE_PRE_PROCESS_COPY_8BITS_NHWC(dst_name, dst_type) \
-__kernel void vxRGBScaletoTensor_##dst_name##_copy_NHWC \
+__kernel void pre_process_rgb_copy_nhwc_U8to##dst_name \
     ( \
     __read_only image2d_array_t  input, \
     __write_only image2d_array_t output, \
