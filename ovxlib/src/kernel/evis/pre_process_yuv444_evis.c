@@ -38,20 +38,18 @@
 
 __BEGIN_DECLS
 
-#define VX_KERNEL_NAME_PRE_PROCESS_YUV420_SCALE_U8TOF16    CVIVANTE_NAMESPACE("evis.pre_process_yuv420_scale_U8toF16")
-#define VX_KERNEL_NAME_PRE_PROCESS_YUV420_SCALE_U8TOI16    CVIVANTE_NAMESPACE("evis.pre_process_yuv420_scale_U8toI16")
-#define VX_KERNEL_NAME_PRE_PROCESS_YUV420_SCALE_U8TOU8     CVIVANTE_NAMESPACE("evis.pre_process_yuv420_scale_U8toU8")
-#define VX_KERNEL_NAME_PRE_PROCESS_YUV420_SCALE_U8TOI8     CVIVANTE_NAMESPACE("evis.pre_process_yuv420_scale_U8toI8")
-#define VX_KERNEL_NAME_PRE_PROCESS_YUV420_COPY_U8TOU8      CVIVANTE_NAMESPACE("evis.pre_process_yuv420_copy_U8toU8")
-#define VX_KERNEL_NAME_PRE_PROCESS_YUV420_COPY_TRANS_U8TOU8 CVIVANTE_NAMESPACE("evis.pre_process_yuv420_copy_trans_U8")
-#define VX_KERNEL_NAME_PRE_PROCESS_YUV420_TRANS_U8TOU8     CVIVANTE_NAMESPACE("evis.pre_process_yuv420_trans_U8toU8")
+#define VX_KERNEL_NAME_PRE_PROCESS_YUV444_SCALE_U8TOF16    CVIVANTE_NAMESPACE("evis.pre_process_yuv444_scale_U8toF16")
+#define VX_KERNEL_NAME_PRE_PROCESS_YUV444_SCALE_U8TOI16    CVIVANTE_NAMESPACE("evis.pre_process_yuv444_scale_U8toI16")
+#define VX_KERNEL_NAME_PRE_PROCESS_YUV444_SCALE_U8TOU8     CVIVANTE_NAMESPACE("evis.pre_process_yuv444_scale_U8toU8")
+#define VX_KERNEL_NAME_PRE_PROCESS_YUV444_SCALE_U8TOI8     CVIVANTE_NAMESPACE("evis.pre_process_yuv444_scale_U8toI8")
+#define VX_KERNEL_NAME_PRE_PROCESS_YUV444_COPY_U8TOU8      CVIVANTE_NAMESPACE("evis.pre_process_yuv444_copy_U8toU8")
+#define VX_KERNEL_NAME_PRE_PROCESS_YUV444_COPY_TRANS_U8TOU8 CVIVANTE_NAMESPACE("evis.pre_process_yuv444_copy_trans_U8")
+#define VX_KERNEL_NAME_PRE_PROCESS_YUV444_TRANS_U8TOU8     CVIVANTE_NAMESPACE("evis.pre_process_yuv444_trans_U8toU8")
 
-#define KERNEL_SOURCE_1    "pre_process_yuv420_scale_u8",
-#define KERNEL_SOURCE_2    "pre_process_yuv420_copy_u8",
-#define KERNEL_SOURCE_3    "pre_process_yuv420_scale_fp16",
-#define KERNEL_SOURCE_4    "pre_process_yuv420_scale_i16",
-#define KERNEL_SOURCE_5    "pre_process_yuv420_scale_i8",
-#define KERNEL_SOURCE_6    "pre_process_yuv420_trans_u8"
+#define KERNEL_SOURCE_1    "pre_process_yuv444_scale",
+#define KERNEL_SOURCE_2    "pre_process_yuv444_trans_u8",
+#define KERNEL_SOURCE_3    "pre_process_yuv444_scale_fp16",
+#define KERNEL_SOURCE_4    "pre_process_yuv444_copy_u8",
 
 typedef enum
 {
@@ -61,30 +59,30 @@ typedef enum
     COPY_TRANS
 } vsi_nn_kernel_convert_type_e;
 
-#define HASH_PRE_PROCESS_YUV420_KEY(_input0_type, _output_type, _convert_type, _image_2d) \
+#define HASH_PRE_PROCESS_YUV444_KEY(_input0_type, _output_type, _convert_type, _image_2d) \
     ((_input0_type << 24) | (_output_type << 16) | (_convert_type << 8) | (_image_2d))
 
-#define TENSOR_PRE_PROCESS_YUV420_KERNELS(IN0_TYPE, OUT_TYPE, CONVERT_TYPE, SOURCE) \
-    { HASH_PRE_PROCESS_YUV420_KEY(IN0_TYPE, OUT_TYPE, CONVERT_TYPE, 0), \
-        VX_KERNEL_NAME_PRE_PROCESS_YUV420_##CONVERT_TYPE##_##IN0_TYPE##TO##OUT_TYPE, \
+#define TENSOR_PRE_PROCESS_YUV444_KERNELS(IN0_TYPE, OUT_TYPE, CONVERT_TYPE, SOURCE) \
+    { HASH_PRE_PROCESS_YUV444_KEY(IN0_TYPE, OUT_TYPE, CONVERT_TYPE, 0), \
+        VX_KERNEL_NAME_PRE_PROCESS_YUV444_##CONVERT_TYPE##_##IN0_TYPE##TO##OUT_TYPE, \
         SOURCE },
 
 static const struct {
         uint32_t key;
         char* function_name;
         const char* source_name;
-    } pre_process_yuv420_map[] =
+    } pre_process_yuv444_map[] =
 {
-    TENSOR_PRE_PROCESS_YUV420_KERNELS(U8, F16, SCALE,        KERNEL_SOURCE_3)
-    TENSOR_PRE_PROCESS_YUV420_KERNELS(U8, I16, SCALE,        KERNEL_SOURCE_4)
-    TENSOR_PRE_PROCESS_YUV420_KERNELS(U8, U8,  SCALE,        KERNEL_SOURCE_1)
-    TENSOR_PRE_PROCESS_YUV420_KERNELS(U8, I8,  SCALE,        KERNEL_SOURCE_5)
-    TENSOR_PRE_PROCESS_YUV420_KERNELS(U8, U8,  COPY,         KERNEL_SOURCE_2)
-    TENSOR_PRE_PROCESS_YUV420_KERNELS(U8, U8,  COPY_TRANS,   KERNEL_SOURCE_2)
-    TENSOR_PRE_PROCESS_YUV420_KERNELS(U8, U8,  TRANS,        KERNEL_SOURCE_6)
+    TENSOR_PRE_PROCESS_YUV444_KERNELS(U8, F16, SCALE,        KERNEL_SOURCE_3)
+    TENSOR_PRE_PROCESS_YUV444_KERNELS(U8, I16, SCALE,        KERNEL_SOURCE_1)
+    TENSOR_PRE_PROCESS_YUV444_KERNELS(U8, U8,  SCALE,        KERNEL_SOURCE_1)
+    TENSOR_PRE_PROCESS_YUV444_KERNELS(U8, I8,  SCALE,        KERNEL_SOURCE_1)
+    TENSOR_PRE_PROCESS_YUV444_KERNELS(U8, U8,  COPY,         KERNEL_SOURCE_4)
+    TENSOR_PRE_PROCESS_YUV444_KERNELS(U8, U8,  COPY_TRANS,   KERNEL_SOURCE_4)
+    TENSOR_PRE_PROCESS_YUV444_KERNELS(U8, U8,  TRANS,        KERNEL_SOURCE_2)
 };
 
-static vx_param_description_t vxPreProcessYuv420Kernel_param_def[] =
+static vx_param_description_t vxPreProcessYuv444Kernel_param_def[] =
 {
     {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
@@ -101,9 +99,9 @@ static vx_param_description_t vxPreProcessYuv420Kernel_param_def[] =
     {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
 };
-#define _EVIS_PRE_PROCESS_YUV420_PARAM_NUM          _cnt_of_array(vxPreProcessYuv420Kernel_param_def)
+#define _EVIS_PRE_PROCESS_YUV444_PARAM_NUM          _cnt_of_array(vxPreProcessYuv444Kernel_param_def)
 
-DEF_KERNEL_INITIALIZER(_pre_process_yuv420_copy_initializer)
+DEF_KERNEL_INITIALIZER(_pre_process_yuv444_copy_initializer)
     (
     vsi_nn_kernel_node_t node,
     const vsi_nn_kernel_node_param_t * param,
@@ -304,7 +302,7 @@ DEF_KERNEL_INITIALIZER(_pre_process_yuv420_copy_initializer)
         gpu_dp_inst_t uniCalculateTmpR1st_4x4 = {{
                 0x05050505, // TCfg
                 0x04040404, // ASelt
-                0x00010000, 0x00130012, // ABin
+                0x00110000, 0x00330022, // ABin
                 0x0a0a0a0a, // BSelt
                 0x00000000, 0x00000000, // BBin
                 0x00000600, // AccumType, ConstantType, and PostShift
@@ -314,7 +312,7 @@ DEF_KERNEL_INITIALIZER(_pre_process_yuv420_copy_initializer)
         gpu_dp_inst_t uniCalculateTmpR2nd_4x4 = {{
                 0x05050505, // TCfg
                 0x04040404, // ASelt
-                0x00250024, 0x00370036, // ABin
+                0x00550044, 0x00770066, // ABin
                 0x0a0a0a0a, // BSelt
                 0x00000000, 0x00000000, // BBin
                 0x00000600, // AccumType, ConstantType, and PostShift
@@ -324,7 +322,7 @@ DEF_KERNEL_INITIALIZER(_pre_process_yuv420_copy_initializer)
         gpu_dp_inst_t uniCalculateTmpR3rd_4x4 = {{
                 0x05050505, // TCfg
                 0x04040404, // ASelt
-                0x00490048, 0x005b005a, // ABin
+                0x00990088, 0x00bb00aa, // ABin
                 0x0a0a0a0a, // BSelt
                 0x00000000, 0x00000000, // BBin
                 0x00000600, // AccumType, ConstantType, and PostShift
@@ -334,7 +332,7 @@ DEF_KERNEL_INITIALIZER(_pre_process_yuv420_copy_initializer)
         gpu_dp_inst_t uniCalculateTmpR4th_4x4 = {{
                 0x05050505, // TCfg
                 0x04040404, // ASelt
-                0x006d006c, 0x007f007e, // ABin
+                0x00dd00cc, 0x00ff00ee, // ABin
                 0x0a0a0a0a, // BSelt
                 0x00000000, 0x00000000, // BBin
                 0x00000600, // AccumType, ConstantType, and PostShift
@@ -355,7 +353,7 @@ DEF_KERNEL_INITIALIZER(_pre_process_yuv420_copy_initializer)
         gpu_dp_inst_t uniCalculateTmpG1st_4x4 = {{
                 0x09090909, // TCfg
                 0x04040404, // ASelt
-                0x00010000, 0x00130012, // ABin
+                0x00110000, 0x00330022, // ABin
                 0x0a0a0a0a, // BSelt
                 0x00000000, 0x00000000, // BBin
                 0x00000600, // AccumType, ConstantType, and PostShift
@@ -365,7 +363,7 @@ DEF_KERNEL_INITIALIZER(_pre_process_yuv420_copy_initializer)
         gpu_dp_inst_t uniCalculateTmpG2nd_4x4 = {{
                 0x09090909, // TCfg
                 0x04040404, // ASelt
-                0x00250024, 0x00370036, // ABin
+                0x00550044, 0x00770066, // ABin
                 0x0a0a0a0a, // BSelt
                 0x00000000, 0x00000000, // BBin
                 0x00000600, // AccumType, ConstantType, and PostShift
@@ -375,7 +373,7 @@ DEF_KERNEL_INITIALIZER(_pre_process_yuv420_copy_initializer)
         gpu_dp_inst_t uniCalculateTmpG3rd_4x4 = {{
                 0x09090909, // TCfg
                 0x04040404, // ASelt
-                0x00490048, 0x005b005a, // ABin
+                0x00990088, 0x00bb00aa, // ABin
                 0x0a0a0a0a, // BSelt
                 0x00000000, 0x00000000, // BBin
                 0x00000600, // AccumType, ConstantType, and PostShift
@@ -385,7 +383,7 @@ DEF_KERNEL_INITIALIZER(_pre_process_yuv420_copy_initializer)
         gpu_dp_inst_t uniCalculateTmpG4th_4x4 = {{
                 0x09090909, // TCfg
                 0x04040404, // ASelt
-                0x006d006c, 0x007f007e, // ABin
+                0x00dd00cc, 0x00ff00ee, // ABin
                 0x0a0a0a0a, // BSelt
                 0x00000000, 0x00000000, // BBin
                 0x00000600, // AccumType, ConstantType, and PostShift
@@ -403,10 +401,22 @@ DEF_KERNEL_INITIALIZER(_pre_process_yuv420_copy_initializer)
                 0x00010064, 0x00010064, 0x00010064, 0x00010064,
                 0x00010064, 0x00010064, 0x00010064, 0x00010064 // Constant
         }, GPU_DP_TYPE_16 };
+
+        gpu_dp_inst_t uniCalculateTmpGbyU2_2x8 = {{
+                0x66666666, // TCfg
+                0x44444444, // ASelt
+                0x0b0a0908, 0x0f0e0d0c, // ABin
+                0xaaaaaaaa, // BSelt
+                0x00000000, 0x00000000, // BBin
+                0x00000600, // AccumType, ConstantType, and PostShift
+                0x00010064, 0x00010064, 0x00010064, 0x00010064,
+                0x00010064, 0x00010064, 0x00010064, 0x00010064 // Constant
+        }, GPU_DP_TYPE_16 };
+
         gpu_dp_inst_t uniCalculateG1st_4x4 = {{
                 0x07070707, // TCfg
                 0x04040404, // ASelt
-                0x00010000, 0x00130012, // ABin
+                0x00110000, 0x00330022, // ABin
                 0x08080808, // BSelt
                 0x00000000, 0x00000000, // BBin
                 0x00002608, // AccumType, ConstantType, and PostShift
@@ -414,29 +424,9 @@ DEF_KERNEL_INITIALIZER(_pre_process_yuv420_copy_initializer)
                 0x00010000, 0x00000000, 0x00010000, 0x00000000 // Constant
         }, GPU_DP_TYPE_16 };
         gpu_dp_inst_t uniCalculateG2nd_4x4 = {{
-                0x07130707, // TCfg
-                0x04100404, // ASelt
-                0x00210020, 0x00330302, // ABin
-                0x08200808, // BSelt
-                0x00000000, 0x00000000, // BBin
-                0x00002608, // AccumType, ConstantType, and PostShift
-                0x00010000, 0x00000000, 0x00010000, 0x00000000,
-                0x00000000, 0x00000001, 0x00010000, 0x00000000 // Constant
-        }, GPU_DP_TYPE_16 };
-        gpu_dp_inst_t uniCalculateG3rd_4x4 = {{
-                0x07130707, // TCfg
-                0x04100404, // ASelt
-                0x00410040, 0x00530502, // ABin
-                0x08200808, // BSelt
-                0x00000000, 0x00000000, // BBin
-                0x00002608, // AccumType, ConstantType, and PostShift
-                0x00010000, 0x00000000, 0x00010000, 0x00000000,
-                0x00000000, 0x00000001, 0x00010000, 0x00000000 // Constant
-        }, GPU_DP_TYPE_16 };
-        gpu_dp_inst_t uniCalculateG4th_4x4 = {{
                 0x07070707, // TCfg
                 0x04040404, // ASelt
-                0x00610060, 0x00730072, // ABin
+                0x00510040, 0x00730062, // ABin
                 0x08080808, // BSelt
                 0x00000000, 0x00000000, // BBin
                 0x00002608, // AccumType, ConstantType, and PostShift
@@ -447,7 +437,7 @@ DEF_KERNEL_INITIALIZER(_pre_process_yuv420_copy_initializer)
         gpu_dp_inst_t uniCalculateTmpB1st_4x4 = {{
                 0x05050505, // TCfg
                 0x04040404, // ASelt
-                0x00010000, 0x00130012, // ABin
+                0x00110000, 0x00330022, // ABin
                 0x0a0a0a0a, // BSelt
                 0x00000000, 0x00000000, // BBin
                 0x00000600, // AccumType, ConstantType, and PostShift
@@ -457,7 +447,7 @@ DEF_KERNEL_INITIALIZER(_pre_process_yuv420_copy_initializer)
         gpu_dp_inst_t uniCalculateTmpB2nd_4x4 = {{
                 0x05050505, // TCfg
                 0x04040404, // ASelt
-                0x00250024, 0x00370036, // ABin
+                0x00550044, 0x00770066, // ABin
                 0x0a0a0a0a, // BSelt
                 0x00000000, 0x00000000, // BBin
                 0x00000600, // AccumType, ConstantType, and PostShift
@@ -467,7 +457,7 @@ DEF_KERNEL_INITIALIZER(_pre_process_yuv420_copy_initializer)
         gpu_dp_inst_t uniCalculateTmpB3rd_4x4 = {{
                 0x05050505, // TCfg
                 0x04040404, // ASelt
-                0x00490048, 0x005b005a, // ABin
+                0x00990088, 0x00bb00aa, // ABin
                 0x0a0a0a0a, // BSelt
                 0x00000000, 0x00000000, // BBin
                 0x00000600, // AccumType, ConstantType, and PostShift
@@ -477,7 +467,7 @@ DEF_KERNEL_INITIALIZER(_pre_process_yuv420_copy_initializer)
         gpu_dp_inst_t uniCalculateTmpB4th_4x4 = {{
                 0x05050505, // TCfg
                 0x04040404, // ASelt
-                0x006d006c, 0x007f007e, // ABin
+                0x00dd00cc, 0x00ff00ee, // ABin
                 0x0a0a0a0a, // BSelt
                 0x00000000, 0x00000000, // BBin
                 0x00000600, // AccumType, ConstantType, and PostShift
@@ -562,10 +552,9 @@ DEF_KERNEL_INITIALIZER(_pre_process_yuv420_copy_initializer)
                 status |= vsi_nn_kernel_gpu_add_param(node, "uniCalculateTmpG3rd_4x4", &uniCalculateTmpG3rd_4x4);
                 status |= vsi_nn_kernel_gpu_add_param(node, "uniCalculateTmpG4th_4x4", &uniCalculateTmpG4th_4x4);
                 status |= vsi_nn_kernel_gpu_add_param(node, "uniCalculateTmpGbyU_2x8", &uniCalculateTmpGbyU_2x8);
+                status |= vsi_nn_kernel_gpu_add_param(node, "uniCalculateTmpGbyU2_2x8", &uniCalculateTmpGbyU2_2x8);
                 status |= vsi_nn_kernel_gpu_add_param(node, "uniCalculateG1st_4x4", &uniCalculateG1st_4x4);
                 status |= vsi_nn_kernel_gpu_add_param(node, "uniCalculateG2nd_4x4", &uniCalculateG2nd_4x4);
-                status |= vsi_nn_kernel_gpu_add_param(node, "uniCalculateG3rd_4x4", &uniCalculateG3rd_4x4);
-                status |= vsi_nn_kernel_gpu_add_param(node, "uniCalculateG4th_4x4", &uniCalculateG4th_4x4);
 
                 //B
                 status |= vsi_nn_kernel_gpu_add_param(node, "uniCalculateTmpB1st_4x4", &uniCalculateTmpB1st_4x4);
@@ -613,9 +602,9 @@ OnError:
         attr[0] = NULL;
     }
     return status;
-} /* _pre_process_yuv420_copy_initializer() */
+} /* _pre_process_yuv444_copy_initializer() */
 
-DEF_KERNEL_INITIALIZER(_pre_process_yuv420_initializer)
+DEF_KERNEL_INITIALIZER(_pre_process_yuv444_initializer)
     (
     vsi_nn_kernel_node_t node,
     const vsi_nn_kernel_node_param_t * param,
@@ -991,18 +980,12 @@ DEF_KERNEL_INITIALIZER(_pre_process_yuv420_initializer)
         switch( attr[0]->dtype )
         {
         case U8:
-            {
-                status = vsi_nn_kernel_gpu_add_param(node, "uniConvertInt32toUint8_2x8", &uniConvertInt32toUint8_2x8);
-                status |= vsi_nn_kernel_gpu_add_param(node, "outputScale", &dstScale);
-                status |= vsi_nn_kernel_gpu_add_param(node, "zp", &dstZP);
-                CHECK_STATUS_FAIL_GOTO(status, OnError );
-            }
-            break;
         case I8:
         case I16:
             {
                 status = vsi_nn_kernel_gpu_add_param(node, "uniConvertInt32toUint8_2x8", &uniConvertInt32toUint8_2x8);
                 status |= vsi_nn_kernel_gpu_add_param(node, "outputScale", &dstScale);
+                status |= vsi_nn_kernel_gpu_add_param(node, "zp", &dstZP);
                 CHECK_STATUS_FAIL_GOTO(status, OnError );
             }
             break;
@@ -1024,7 +1007,7 @@ OnError:
         attr[0] = NULL;
     }
     return status;
-} /* _pre_process_yuv420_initializer() */
+} /* _pre_process_yuv444_initializer() */
 
 static vsi_status _query_kernel
     (
@@ -1063,34 +1046,34 @@ static vsi_status _query_kernel
         convert_type = SCALE;
     }
 
-    key = HASH_PRE_PROCESS_YUV420_KEY( input0_dtype, output_dtype, convert_type, 0 );
+    key = HASH_PRE_PROCESS_YUV444_KEY( input0_dtype, output_dtype, convert_type, 0 );
 
-    for( i = 0; i < _cnt_of_array(pre_process_yuv420_map); i ++ )
+    for( i = 0; i < _cnt_of_array(pre_process_yuv444_map); i ++ )
     {
-        if( pre_process_yuv420_map[i].key == key )
+        if( pre_process_yuv444_map[i].key == key )
         {
             break;
         }
     }
-    if( i < _cnt_of_array(pre_process_yuv420_map) )
+    if( i < _cnt_of_array(pre_process_yuv444_map) )
     {
-        snprintf( kernel->info.name, VX_MAX_KERNEL_NAME, "%s",  pre_process_yuv420_map[i].function_name );
-        kernel->info.parameters = vxPreProcessYuv420Kernel_param_def;
-        kernel->info.numParams = _cnt_of_array( vxPreProcessYuv420Kernel_param_def );
+        snprintf( kernel->info.name, VX_MAX_KERNEL_NAME, "%s",  pre_process_yuv444_map[i].function_name );
+        kernel->info.parameters = vxPreProcessYuv444Kernel_param_def;
+        kernel->info.numParams = _cnt_of_array( vxPreProcessYuv444Kernel_param_def );
 
         if(enable_copy && output_dtype == U8)
         {
-            kernel->info.initialize = _pre_process_yuv420_copy_initializer;
+            kernel->info.initialize = _pre_process_yuv444_copy_initializer;
         }
         else
         {
-            kernel->info.initialize = _pre_process_yuv420_initializer;
+            kernel->info.initialize = _pre_process_yuv444_initializer;
         }
         vsi_nn_kernel_add_source( kernel, VSI_NN_GPU_SOURCE_FMT_CODE, 2,
                 "vsi_nn_kernel_header",
-                pre_process_yuv420_map[i].source_name );
+                pre_process_yuv444_map[i].source_name );
         vsi_nn_kernel_add_source( kernel, VSI_NN_GPU_SOURCE_FMT_EXECUTABLE, 1,
-                pre_process_yuv420_map[i].source_name );
+                pre_process_yuv444_map[i].source_name );
         status = VSI_SUCCESS;
     }
     return status;
@@ -1108,7 +1091,7 @@ static vsi_nn_kernel_node_t _setup
     )
 {
     vsi_status status = VSI_FAILURE;
-    vsi_nn_kernel_node_param_t tmp_params[_EVIS_PRE_PROCESS_YUV420_PARAM_NUM] = { NULL };
+    vsi_nn_kernel_node_param_t tmp_params[_EVIS_PRE_PROCESS_YUV444_PARAM_NUM] = { NULL };
     vsi_nn_kernel_node_t node = NULL;
     int32_t shapes[VSI_NN_MAX_DIM_NUM]  = {1, 1, 1, 1};
     vsi_nn_tensor_t* reshape_tensors[1] = {NULL};
@@ -1146,12 +1129,12 @@ static vsi_nn_kernel_node_t _setup
                 reshape_tensors[0] = vsi_nn_reshape_tensor( graph,
                     outputs[0], (uint32_t*)shapes, outputs[0]->attr.dim_num);
 
-                vsi_nn_kernel_node_pack_io( tmp_params, _EVIS_PRE_PROCESS_YUV420_PARAM_NUM,
+                vsi_nn_kernel_node_pack_io( tmp_params, _EVIS_PRE_PROCESS_YUV444_PARAM_NUM,
                     inputs, 3, &reshape_tensors[0], 1 );
             }
             else
             {
-                vsi_nn_kernel_node_pack_io( tmp_params, _EVIS_PRE_PROCESS_YUV420_PARAM_NUM,
+                vsi_nn_kernel_node_pack_io( tmp_params, _EVIS_PRE_PROCESS_YUV444_PARAM_NUM,
                     inputs, 3, outputs, 1 );
             }
             tmp_params[index++] = vsi_nn_kernel_scalar_create( graph, I32, &scale_x );
@@ -1164,7 +1147,7 @@ static vsi_nn_kernel_node_t _setup
             tmp_params[index++] = vsi_nn_kernel_scalar_create( graph, F32, &rgb_scale );
             tmp_params[index++] = vsi_nn_kernel_scalar_create( graph, I32, &reverse );
             tmp_params[index++] = vsi_nn_kernel_scalar_create( graph, I32, &trans );
-            status = vsi_nn_kernel_node_pass_param( node, tmp_params, _EVIS_PRE_PROCESS_YUV420_PARAM_NUM );
+            status = vsi_nn_kernel_node_pass_param( node, tmp_params, _EVIS_PRE_PROCESS_YUV444_PARAM_NUM );
             CHECK_STATUS(status);
             vsi_nn_kernel_scalar_release( &tmp_params[4] );
             vsi_nn_kernel_scalar_release( &tmp_params[5] );
@@ -1187,5 +1170,5 @@ static vsi_nn_kernel_node_t _setup
 
 __END_DECLS
 
-REGISTER_BACKEND_EVIS( pre_process_yuv420, _setup )
+REGISTER_BACKEND_EVIS( pre_process_yuv444, _setup )
 

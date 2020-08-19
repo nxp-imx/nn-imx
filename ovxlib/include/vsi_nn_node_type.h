@@ -105,6 +105,7 @@
 #include "ops/vsi_nn_op_addn.h"
 #include "ops/vsi_nn_op_softmax_internal.h"
 #include "ops/vsi_nn_op_pre_process_yuv420.h"
+#include "ops/vsi_nn_op_pre_process_yuv444.h"
 #include "ops/vsi_nn_op_extra_ending.h"
 #include "ops/vsi_nn_op_gather.h"
 #include "ops/vsi_nn_op_tile.h"
@@ -244,6 +245,7 @@ typedef union _vsi_nn_nn_param
     vsi_nn_addn_param               addn;
     vsi_nn_softmax_internal_param   softmax_internal;
     vsi_nn_pre_process_yuv420_param pre_process_yuv420;
+    vsi_nn_pre_process_yuv444_param pre_process_yuv444;
     vsi_nn_extra_ending_param       extra_ending;
     vsi_nn_gather_param             gather;
     vsi_nn_tile_param               tile;
