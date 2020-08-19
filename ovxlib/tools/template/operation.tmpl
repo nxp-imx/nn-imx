@@ -12,6 +12,10 @@
 #include "utils/vsi_nn_util.h"
 #include "kernel/vsi_nn_kernel.h"
 
+typedef struct _%lower(OP_NAME)%_local_data_t {
+    int32_t placeholder;
+} %lower(OP_NAME)%_local_data_t;
+
 /*
  Declare number of input and output.
  */
@@ -86,15 +90,44 @@ static vsi_bool op_setup
     return TRUE;
 } /* op_setup() */
 
+static vsi_status op_init
+    (
+    vsi_nn_node_t* self
+    )
+{
+    /* TODO
+    //self->nn_param.%lower(OP_NAME)%.local = \
+    //    (%lower(OP_NAME)%_local_data_t*)malloc(sizeof(%lower(OP_NAME)%_local_data_t));
+    */
+
+    return VSI_SUCCESS;
+} /* op_init() */
+
+static vsi_status op_deinit
+    (
+    vsi_nn_node_t* self
+    )
+{
+    vsi_status status = VSI_SUCCESS;
+
+    status = vsi_nn_op_common_deinit(self);
+
+    /* TODO
+    //vsi_nn_safe_free(self->nn_param.%lower(OP_NAME)%.local);
+    */
+
+    return status;
+} /* op_deinit() */
+
 __BEGIN_DECLS
 
 /* Registrar */
 DEF_OP_REG
     (
     /* op_name    */ %upper(OP_NAME)%,
-    /* init       */ NULL,
+    /* init       */ op_init,
     /* compute    */ op_compute,
-    /* deinit     */ vsi_nn_op_common_deinit,
+    /* deinit     */ op_deinit,
     /* check      */ op_check,
     /* setup      */ op_setup,
     /* optimize   */ NULL,
