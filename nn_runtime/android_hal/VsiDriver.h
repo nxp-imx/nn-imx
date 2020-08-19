@@ -178,6 +178,15 @@ static const std::vector<std::string> weight_md5 = {
     "4D9A66570895DA7F324629B120353197",
     "6A8A44E021ACD9FFAFF69EB03C8CCB22",
     "6EB4A5B7FB4735A5817A970E154D5A7D",
+
+    // srcnn_float
+    "14EE8F7B5C4492159470CBD66CFE545A",
+
+    // srcnn_quant
+    "329F391220862B8CAB0AA46C6C440793",
+
+    // srcnn_200-2000
+    "A7C4E8420FF11F9A40E8EE324312FC9F",
 };
 
 class VsiDriver : public VsiDevice {
