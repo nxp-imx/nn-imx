@@ -92,7 +92,7 @@ __kernel void lstmunit_activation_CBP_U8to##out_type_name##_F32_##act_name( \
     data_o_t = data_o_t * data_c_t * outputScale + outputZP; \
     _viv_asm(CONV_RTE, dst0, data_o_t); \
     dst_type dst1; \
-    VXC_DP2x8(dst1, dst0, dst0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtract8Data_2x8); \
+    VXC_DP2x8(dst1, dst0, dst0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 1), uniExtract8Data_2x8); \
     copy_type dst; \
     _viv_asm(COPY, dst, dst1, 16); \
     VXC_WriteImage(output, coord_in.zy, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \
@@ -172,7 +172,7 @@ __kernel void lstmunit_activation_CBP_U8to##out_type_name##_F16_##act_name( \
     data_o_t = data_o_t * data_c_t * outputScale + outputZP; \
     _viv_asm(CONV_RTE, dst0, data_o_t); \
     dst_type dst1; \
-    VXC_DP2x8(dst1, dst0, dst0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtract8Data_2x8); \
+    VXC_DP2x8(dst1, dst0, dst0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 1), uniExtract8Data_2x8); \
     copy_type dst; \
     _viv_asm(COPY, dst, dst1, 16); \
     VXC_WriteImage(output, coord_in.zy, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \
