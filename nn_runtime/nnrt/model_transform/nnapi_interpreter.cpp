@@ -471,10 +471,27 @@ OperationPtr NnApiInterpreter::map_CONV_2D(Model* model,
         }
         /*driver require that bias' type is the same as weight's*/
         if( inputs[1]->type == OperandType::TENSOR_QUANT8_SYMM_PER_CHANNEL && inputs[2] != nullptr){
+            if (inputs[2]->quant.vec.scale.size() != 0) {
+                /*that means the operand is shared by more than one operation, it is dangerous to
+                 * change its scale*/
+                uint32_t biasIndex;
+                OperandPtr biasOp = model->addOperand(nullptr, &biasIndex);
+                biasOp->type = inputs[2]->type;
+                biasOp->dimensions = inputs[2]->dimensions;
+                biasOp->cloneQuantParams(inputs[2].get());
+                if (inputs[2]->isConst()) {
+                    model->setOperandValue(
+                        biasIndex, inputs[2]->weak_mem_ref.lock()->address_, inputs[2]->bytes());
+                }
+                operation->replaceInputs(operation->inputs()[2], biasIndex);
+                inputs[2] = biasOp;
+            }
             inputs[2]->quant.vec.scale.resize(inputs[1]->quant.vec.scale.size(), 0);
             inputs[2]->quant.vec.zeroPoint.resize(inputs[1]->quant.vec.scale.size(), 0);
-            for(size_t i = 0; i < inputs[2]->quant.vec.scale.size(); i++)
-                inputs[2]->quant.vec.scale[i] = inputs[0]->quant.scalar.scale * inputs[1]->quant.vec.scale[i];
+            for (size_t i = 0; i < inputs[2]->quant.vec.scale.size(); i++) {
+                inputs[2]->quant.vec.scale[i] =
+                    inputs[0]->quant.scalar.scale * inputs[1]->quant.vec.scale[i];
+            }
         }
         // dilation is required in Lowlevel requirement
         conv2d->dilations[0] = 1;
@@ -532,10 +549,27 @@ OperationPtr NnApiInterpreter::map_GROUPED_CONV_2D(Model* model,
 
         /*driver require that bias' type is the same as weight's*/
         if( inputs[1]->type == OperandType::TENSOR_QUANT8_SYMM_PER_CHANNEL && inputs[2] != nullptr){
+            if (inputs[2]->quant.vec.scale.size() != 0) {
+                /*that means the operand is shared by more than one operation, it is dangerous to
+                 * change its scale*/
+                uint32_t biasIndex;
+                OperandPtr biasOp = model->addOperand(nullptr, &biasIndex);
+                biasOp->type = inputs[2]->type;
+                biasOp->dimensions = inputs[2]->dimensions;
+                biasOp->cloneQuantParams(inputs[2].get());
+                if (inputs[2]->isConst()) {
+                    model->setOperandValue(
+                        biasIndex, inputs[2]->weak_mem_ref.lock()->address_, inputs[2]->bytes());
+                }
+                operation->replaceInputs(operation->inputs()[2], biasIndex);
+                inputs[2] = biasOp;
+            }
             inputs[2]->quant.vec.scale.resize(inputs[1]->quant.vec.scale.size(), 0);
             inputs[2]->quant.vec.zeroPoint.resize(inputs[1]->quant.vec.scale.size(), 0);
-            for(size_t i = 0; i < inputs[2]->quant.vec.scale.size(); i++)
-                inputs[2]->quant.vec.scale[i] = inputs[0]->quant.scalar.scale * inputs[1]->quant.vec.scale[i];
+            for (size_t i = 0; i < inputs[2]->quant.vec.scale.size(); i++) {
+                inputs[2]->quant.vec.scale[i] =
+                    inputs[0]->quant.scalar.scale * inputs[1]->quant.vec.scale[i];
+            }
         }
 
         conv2d->strides[0] = inputs[argList->ArgPos("stride_w")]->scalar.int32;
@@ -579,12 +613,26 @@ OperationPtr NnApiInterpreter::map_DEPTHWISE_CONV_2D(Model* model,
 
         /*driver require that bias' type is the same as weight's*/
         if( inputs[1]->type == OperandType::TENSOR_QUANT8_SYMM_PER_CHANNEL && inputs[2] != nullptr){
+            if (inputs[2]->quant.vec.scale.size() != 0) {
+                /*that means the operand is shared by more than one operation, it is dangerous to change its scale*/
+                uint32_t biasIndex;
+                OperandPtr biasOp = model->addOperand(nullptr, &biasIndex);
+                biasOp->type = inputs[2]->type;
+                biasOp->dimensions = inputs[2]->dimensions;
+                biasOp->cloneQuantParams(inputs[2].get());
+                if (inputs[2]->isConst()) {
+                    model->setOperandValue(
+                        biasIndex, inputs[2]->weak_mem_ref.lock()->address_, inputs[2]->bytes());
+                }
+                operation->replaceInputs(operation->inputs()[2], biasIndex);
+                inputs[2] = biasOp;
+            }
             inputs[2]->quant.vec.scale.resize(inputs[1]->quant.vec.scale.size(), 0);
             inputs[2]->quant.vec.zeroPoint.resize(inputs[1]->quant.vec.scale.size(), 0);
-            for(size_t i = 0; i < inputs[2]->quant.vec.scale.size(); i++)
+            for (size_t i = 0; i < inputs[2]->quant.vec.scale.size(); i++) {
                 inputs[2]->quant.vec.scale[i] = inputs[0]->quant.scalar.scale * inputs[1]->quant.vec.scale[i];
+            }
         }
-
         conv2d->strides[0] = inputs[argList->ArgPos("stride_w")]->scalar.int32;
         conv2d->strides[1] = inputs[argList->ArgPos("stride_h")]->scalar.int32;
         conv2d->multiplier = inputs[argList->ArgPos("multiplier")]->scalar.int32;
