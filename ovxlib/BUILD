@@ -293,7 +293,6 @@ cc_library(
         "src/libnnext/ops/kernel/vsi_nn_kernel_addn.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_extra_ending.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_topk.c",
-        "src/libnnext/ops/kernel/vsi_nn_kernel_pre_process_bgra.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_roi_align.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_heatmap_max_keypoint.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_axis_aligned_bbox_transform.c",

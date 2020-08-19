@@ -1,6 +1,7 @@
 #include "cl_viv_vx_ext.h"
 
 _viv_uniform VXC_512Bits uniDescaleU8_4x4;
+_viv_uniform VXC_512Bits uniConvertIntergetoF32_4x4;
 
 _viv_uniform VXC_512Bits uniBilinearTmp1BgraShort_4x4;
 _viv_uniform VXC_512Bits uniBilinearTmp2BgraShort_4x4;
@@ -17,7 +18,7 @@ _viv_uniform VXC_512Bits uniExtractInt32BgraToU8Bgr_2x8;
 _viv_uniform int zp;
 _viv_uniform float outputScale;
 
-__kernel void vxcPre_process_bgra_trans(
+__kernel void pre_process_bgra_scale_nhwc_U8toU8(
     __read_only image2d_array_t input, __write_only image2d_array_t    output,
     global int *xRatio, global int * yRatio, global int * xOffset, global int * yOffset,
     float rMean, float gMean, float bMean, float var, int reverse_channel, int trans)
@@ -72,8 +73,9 @@ __kernel void vxcPre_process_bgra_trans(
     VXC_ReadImage(lineBGRA3, input, srcPos.wz, VXC_5BITOFFSET_XY(0, 0),
                      VXC_MODIFIER(8, 15, 0, VXC_RM_TowardZero, 0));
 
+    vxc_uchar4 val_u8;
     int4 tmp1, tmp2, result1, result2;
-    float4 tmpDst;
+    float4 tmpDst, tmp0;
     float4 mean = (float4)(bMean, gMean, rMean, 0);
     //tmpFx = (int4)(fx.x, fx.x, fx.x, fx.x);
     int tmpV = 1 << 19;
@@ -86,16 +88,20 @@ __kernel void vxcPre_process_bgra_trans(
     VXC_DP4x4(tmp2, lineBGRA0, tmpFx, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),
                  uniBilinearTmp2BgraShort_4x4);
     tmp1 = fy * (tmp2 - tmp1) + (tmp1 << 10);
-    VXC_DP4x4(tmpDst, tmp1, tmpV, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), uniDescaleU8_4x4);
-    tmpDst = (tmpDst - mean) * var;
+    VXC_DP4x4(val_u8, tmp1, tmpV, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), uniDescaleU8_4x4);
+    VXC_DP4x4(tmp0, val_u8, val_u8, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), \
+        uniConvertIntergetoF32_4x4);
+    tmpDst = (tmp0 - mean) * var;
     result1 = convert_int4_rte(tmpDst * outputScale + zp);
 
     //tmpFx = fx.yyyy;
     VXC_DP4x4(tmp1, lineBGRA1, tmpFx, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniBilinearTmp3BgraShort_4x4);
     VXC_DP4x4(tmp2, lineBGRA1, tmpFx, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniBilinearTmp4BgraShort_4x4);
     tmp1 = fy * (tmp2 - tmp1) + (tmp1 << 10);
-    VXC_DP4x4(tmpDst, tmp1, tmpV, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), uniDescaleU8_4x4);
-    tmpDst = (tmpDst - mean) * var;
+    VXC_DP4x4(val_u8, tmp1, tmpV, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), uniDescaleU8_4x4);
+    VXC_DP4x4(tmp0, val_u8, val_u8, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), \
+        uniConvertIntergetoF32_4x4);
+    tmpDst = (tmp0 - mean) * var;
     result2 = convert_int4_rte(tmpDst * outputScale + zp);
 
     vxc_uchar16 dst;
@@ -106,16 +112,20 @@ __kernel void vxcPre_process_bgra_trans(
     VXC_DP4x4(tmp1, lineBGRA2, tmpFx, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniBilinearTmp5BgraShort_4x4);
     VXC_DP4x4(tmp2, lineBGRA2, tmpFx, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniBilinearTmp6BgraShort_4x4);
     tmp1 = fy * (tmp2 - tmp1) + (tmp1 << 10);
-    VXC_DP4x4(tmpDst, tmp1, tmpV, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), uniDescaleU8_4x4);
-    tmpDst = (tmpDst - mean) * var;
+    VXC_DP4x4(val_u8, tmp1, tmpV, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), uniDescaleU8_4x4);
+    VXC_DP4x4(tmp0, val_u8, val_u8, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), \
+        uniConvertIntergetoF32_4x4);
+    tmpDst = (tmp0 - mean) * var;
     result1 = convert_int4_rte(tmpDst * outputScale + zp);
 
     //tmpFx = fx.wwww;
     VXC_DP4x4(tmp1, lineBGRA3, tmpFx, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniBilinearTmp7BgraShort_4x4);
     VXC_DP4x4(tmp2, lineBGRA3, tmpFx, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniBilinearTmp8BgraShort_4x4);
     tmp1 = fy * (tmp2 - tmp1) + (tmp1 << 10);
-    VXC_DP4x4(tmpDst, tmp1, tmpV, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), uniDescaleU8_4x4);
-    tmpDst = (tmpDst - mean) * var;
+    VXC_DP4x4(val_u8, tmp1, tmpV, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), uniDescaleU8_4x4);
+    VXC_DP4x4(tmp0, val_u8, val_u8, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), \
+        uniConvertIntergetoF32_4x4);
+    tmpDst = (tmp0 - mean) * var;
     result2 = convert_int4_rte(tmpDst * outputScale + zp);
 
     VXC_DP2x8(dst, result1, result2, VXC_MODIFIER(6, 11, 0, VXC_RM_ToNearestEven, 1),
