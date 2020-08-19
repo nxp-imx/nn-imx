@@ -804,20 +804,42 @@ bool VsiDriver::isWeightMd5Matched(const HalPlatform::Operation& operation,
         auto& shape = weight.dimensions;
         // vgg_quant vgg_float srgan_quant srgan_float dped_float
         decltype(weight.dimensions) match_shape_0 = {64, 3, 3, 64};
-        // icnet_float inception_v3_float inception_face_float
+        // icnet_float inception_v3_float/quant inception_face_float/quant mobilenet_v2_float/quant
         decltype(weight.dimensions) match_shape_1 = {32, 3, 3, 3};
         // srcnn
         decltype(weight.dimensions) match_shape_2 = {64, 9, 9, 3};
+        // unet
+        decltype(weight.dimensions) match_shape_3 = {4, 4, 4, 12};
 
-        if (shape != match_shape_0 && shape != match_shape_1 && shape != match_shape_2)
-            return false;
-        struct VsiRTInfo rt;
-        const char* weight_data =
-            reinterpret_cast<const char*>(getOperandDataPtr(model, weight, rt));
-        std::string md5_src(weight_data, 512);
-        std::string md5 = commonMd5Secret32(md5_src);
-        return std::find(weight_md5.begin(), weight_md5.end(), md5) != weight_md5.end() ? true
-                                                                                        : false;
+        if (shape == match_shape_0 || shape == match_shape_1 || shape == match_shape_2 ||
+            shape == match_shape_3) {
+            struct VsiRTInfo rt;
+            const char* weight_data =
+                reinterpret_cast<const char*>(getOperandDataPtr(model, weight, rt));
+            std::string md5_src(weight_data, 512);
+            std::string md5 = commonMd5Secret32(md5_src);
+            if(std::find(weight_md5.begin(), weight_md5.end(), md5) != weight_md5.end()) {
+                LOG(INFO) << "MD5 matched.";
+                return true;
+            }
+        }
+
+        // Special shape check
+        // mobilenet_v2
+        decltype(weight.dimensions) special_shape_0 = {192, 1, 1, 32};
+        // srcnn
+        decltype(weight.dimensions) special_shape_1 = {32, 5, 5, 64};
+        // inception_face
+        decltype(weight.dimensions) special_shape_2 = {192, 1, 1, 1792};
+        // vgg
+        decltype(weight.dimensions) special_shape_3 = {64, 3, 3, 64};
+
+        if (shape == special_shape_0 || shape == special_shape_1 || shape == special_shape_2 ||
+            shape == special_shape_3) {
+            LOG(INFO) << "Spectial shape matched";
+            return true;
+        }
+        return false;
     }
     return false;
 }

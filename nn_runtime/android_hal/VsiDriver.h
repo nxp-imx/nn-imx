@@ -167,9 +167,13 @@ static const std::vector<std::string> weight_md5 = {
 
     // inception_v3_float
     "CA7BC170719FEC8FE04EC685FEBF8CA7",
+    // inception_v3_quant
+    "E494867C3D9B911F9C401531E4C97390",
 
     // inception_face_float
     "3C1812918369446168A511D2E2207599",
+    // inception_face_quant
+    "3071BB800BEE3652D7F38BEF08EE40DE",
 
     // icnet_float
     "31A7681CDBA02DEB562E4D3D9C367CB7",
@@ -187,6 +191,14 @@ static const std::vector<std::string> weight_md5 = {
 
     // srcnn_200-2000
     "A7C4E8420FF11F9A40E8EE324312FC9F",
+
+    // mobilenet_v2_float
+    "303C6EAA6EAEC4483B684E4D43AAD139",
+    // mobilenet_v2_quant
+    "0860871B70644D172A977254799C9306",
+
+    // unet
+    "637EA97C1E00783AEB6005005A0822D8",
 };
 
 class VsiDriver : public VsiDevice {
