@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build" ToolsVersion="4.0">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
@@ -737,18 +737,21 @@
     <ClCompile Include="src\kernel\cl\clip_cl.c" />
     <ClCompile Include="src\kernel\cl\l2normalizescale_cl.c" />
     <ClCompile Include="src\kernel\cl\lstmunit_activation_cl.c" />
+    <ClCompile Include="src\kernel\cl\relu_keras_cl.c" />
     <ClCompile Include="src\kernel\cl\resize_bilinear_cl.c" />
     <ClCompile Include="src\kernel\cl\resize_nearest_cl.c" />
     <ClCompile Include="src\kernel\cpu\add_mean_std_norm_cpu.c" />
     <ClCompile Include="src\kernel\cpu\clip_cpu.c" />
     <ClCompile Include="src\kernel\cpu\l2normalizescale_cpu.c" />
     <ClCompile Include="src\kernel\cpu\lstmunit_activation_cpu.c" />
+    <ClCompile Include="src\kernel\cpu\relu_keras_cpu.c" />
     <ClCompile Include="src\kernel\cpu\resize_bilinear_cpu.c" />
     <ClCompile Include="src\kernel\cpu\resize_nearest_cpu.c" />
     <ClCompile Include="src\kernel\evis\add_mean_std_norm_evis.c" />
     <ClCompile Include="src\kernel\evis\clip_evis.c" />
     <ClCompile Include="src\kernel\evis\l2normalizescale_evis.c" />
     <ClCompile Include="src\kernel\evis\lstmunit_activation_evis.c" />
+    <ClCompile Include="src\kernel\evis\relu_keras_evis.c" />
     <ClCompile Include="src\kernel\evis\resize_bilinear_evis.c" />
     <ClCompile Include="src\kernel\evis\resize_nearest_evis.c" />
     <ClCompile Include="src\kernel\vx\swish_vx.c" />
@@ -1218,9 +1221,6 @@
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_reduce.c">
       <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\vsi_nn_kernel_reduce.o</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_relu_keras_internal.c">
-      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\vsi_nn_kernel_relu_keras_internal.o</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_resize.c">
       <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\vsi_nn_kernel_resize.o</ObjectFileName>

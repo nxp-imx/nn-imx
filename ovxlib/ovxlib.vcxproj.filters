@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
   <ItemGroup>
     <Filter Include="Source Files">
@@ -1148,9 +1148,6 @@
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_reduce.c">
       <Filter>Source Files\libnnext\ops\kernel</Filter>
     </ClCompile>
-    <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_relu_keras_internal.c">
-      <Filter>Source Files\libnnext\ops\kernel</Filter>
-    </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_resize.c">
       <Filter>Source Files\libnnext\ops\kernel</Filter>
     </ClCompile>
@@ -1774,6 +1771,15 @@
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_expand_broadcast.c">
       <Filter>Source Files\ops</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\cpu\relu_keras_cpu.c">
+      <Filter>Source Files\kernel\cpu</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\evis\relu_keras_evis.c">
+      <Filter>Source Files\kernel\evis</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\cl\relu_keras_cl.c">
+      <Filter>Source Files\kernel\cl</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

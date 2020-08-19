@@ -1,7 +1,7 @@
 
 #define TENSOR_KERAS_RELU(src_type_name, dst_type_name, tensor_dims, image_type, \
     convert2FP32_Func, convert2DstType_Func, src_type, dst_type) \
-__kernel void vxKerasRelu_##src_type_name##to##dst_type_name##tensor_dims( \
+__kernel void relu_keras_##src_type_name##to##dst_type_name##tensor_dims( \
 __read_only  image2d_array_t  input, \
 __write_only image2d_array_t  output, \
                     float     alpha, \
