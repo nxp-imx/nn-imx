@@ -201,6 +201,7 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
             }
             break;
         }
+#if ANDROID_SDK_VERSION >= 29
         case OperationType::AVERAGE_POOL_2D:{
             OperationValidatePtr avgPool = std::make_unique<
                 op_validate::AveragePoolValidate<HalPlatform::Model, HalPlatform::Operation>>(
@@ -243,7 +244,6 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
                 model, operation);
             return batch2space->Validate(reason);
         }
-#if ANDROID_SDK_VERSION >= 29
         case OperationType::CONV_2D: {
             OperationValidatePtr conv2D = std::make_unique<
                 op_validate::Conv2dValidate<HalPlatform::Model, HalPlatform::Operation>>(
@@ -707,8 +707,8 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
 #if ANDROID_SDK_VERSION >= 28
         default:
             isSupport &= true;
-    }
 #endif
+    }
 #if ANDROID_SDK_VERSION >= 29
 
     // Overall check
