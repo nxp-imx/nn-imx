@@ -27567,17 +27567,17 @@ do\\\n\
 #define VXC_VertMin3_Half(dst, src0, src1, src2, info)\\\n\
 do\\\n\
 {\\\n\
-    vxc_short8 val0, val1, val2, minVal, maxVal;\\\n\
-    _viv_asm(COPY, val0, src0, 16);\\\n\
-    _viv_asm(COPY, val1, src1, 16);\\\n\
-    _viv_asm(COPY, val2, src2, 16);\\\n\
-    maxVal = max(val0, val1);\\\n\
-    minVal = min(val0, val1);\\\n\
-    minVal = maxVal < 0 ? maxVal : minVal; \\\n\
-    maxVal = max(val2, minVal);\\\n\
-    minVal = min(val2, minVal);\\\n\
-    minVal = maxVal < 0 ? maxVal : minVal; \\\n\
-    _viv_asm(COPY, dst, minVal, 16); \\\n\
+    vxc_short8 val0_ver1, val1_ver1, val2_ver1, minVal_ver1, maxVal_ver1;\\\n\
+    _viv_asm(COPY, val0_ver1, src0, 16);\\\n\
+    _viv_asm(COPY, val1_ver1, src1, 16);\\\n\
+    _viv_asm(COPY, val2_ver1, src2, 16);\\\n\
+    maxVal_ver1 = max(val0_ver1, val1_ver1);\\\n\
+    minVal_ver1 = min(val0_ver1, val1_ver1);\\\n\
+    minVal_ver1 = maxVal_ver1 < 0 ? maxVal_ver1 : minVal_ver1; \\\n\
+    maxVal_ver1 = max(val2_ver1, minVal_ver1);\\\n\
+    minVal_ver1 = min(val2_ver1, minVal_ver1);\\\n\
+    minVal_ver1 = maxVal_ver1 < 0 ? maxVal_ver1 : minVal_ver1; \\\n\
+    _viv_asm(COPY, dst, minVal_ver1, 16); \\\n\
 } while (0)\n\
 \n\
 #define VXC_VertMax3_Integer(dst, src0, src1, src2, info)\\\n\
@@ -27596,16 +27596,16 @@ do\\\n\
 #define VXC_VertMax3_Half(dst, src0, src1, src2, info)\\\n\
  do\\\n\
  {\\\n\
-     vxc_short8 val0, val1, val2, minVal, maxVal;\\\n\
-     _viv_asm(COPY, val0, src0, 16);\\\n\
-     _viv_asm(COPY, val1, src1, 16);\\\n\
-     _viv_asm(COPY, val2, src2, 16);\\\n\
-     maxVal = max(val0, val1);\\\n\
-     maxVal = max(val2, maxVal);\\\n\
-     minVal = min(val0, val1);\\\n\
-     minVal = min(val2, minVal);\\\n\
-     maxVal = maxVal >= 0 ? maxVal : minVal;\\\n\
-     _viv_asm(COPY, dst, maxVal, 16); \\\n\
+     vxc_short8 val0_ver1, val1_ver1, val2_ver1, minVal_ver1, maxVal_ver1;\\\n\
+     _viv_asm(COPY, val0_ver1, src0, 16);\\\n\
+     _viv_asm(COPY, val1_ver1, src1, 16);\\\n\
+     _viv_asm(COPY, val2_ver1, src2, 16);\\\n\
+     maxVal_ver1 = max(val0_ver1, val1_ver1);\\\n\
+     maxVal_ver1 = max(val2_ver1, maxVal_ver1);\\\n\
+     minVal_ver1 = min(val0_ver1, val1_ver1);\\\n\
+     minVal_ver1 = min(val2_ver1, minVal_ver1);\\\n\
+     maxVal_ver1 = maxVal_ver1 >= 0 ? maxVal_ver1 : minVal_ver1;\\\n\
+     _viv_asm(COPY, dst, maxVal_ver1, 16); \\\n\
  } while (0)\n\
 \n\
 #define VXC_HorzMax3_Integer(dst, src0, info)\\\n\
