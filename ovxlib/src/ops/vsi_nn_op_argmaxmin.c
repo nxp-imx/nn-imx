@@ -230,7 +230,7 @@ DEF_OP_REG  \
     /* op_name    */ name, \
     /* init       */ op_init_##kernel_name, \
     /* compute    */ op_compute_##kernel_name, \
-    /* deinit     */ NULL, \
+    /* deinit     */ vsi_nn_op_common_deinit, \
     /* check      */ NULL, \
     /* setup      */ op_setup_##kernel_name, \
     /* optimize   */ NULL, \

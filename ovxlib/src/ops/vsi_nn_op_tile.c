@@ -130,7 +130,7 @@ extern "C" {
     { \
         return _tile_op_compute( ""#kernel_name, self, inputs, outputs ); \
     } \
-    DEF_OP_REG(name, NULL, op_compute_##kernel_name, NULL, op_check, op_setup, NULL, 1, 1)
+DEF_OP_REG(name, NULL, op_compute_##kernel_name, vsi_nn_op_common_deinit, op_check, op_setup, NULL, 1, 1)
 
 DEF_TILE_OP( TILE, tile );
 

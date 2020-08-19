@@ -246,7 +246,8 @@ extern "C" {
             { \
                 return _prelu_op_compute( ""#kernel_name, self, inputs, outputs ); \
             } \
-DEF_OP_REG(name, op_init, op_compute_##kernel_name, NULL, op_check, vsi_nn_op_prelu_setup, NULL, 2, 1)
+DEF_OP_REG(name, op_init, op_compute_##kernel_name, vsi_nn_op_common_deinit, \
+        op_check, vsi_nn_op_prelu_setup, NULL, 2, 1)
 
 DEF_ELEMENT_WISE_OP( PRELU, prelu );
 
