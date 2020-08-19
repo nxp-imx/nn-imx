@@ -593,13 +593,6 @@ vsi_status vsi_nn_SetupGraph
         return status;
     }
 
-#define MAX_NODES_IN_SDK 2048
-    if(MAX_NODES_IN_SDK < graph->node_num)
-    {
-        VSILOGE("The number of nodes %d is more than %d\n", graph->node_num, MAX_NODES_IN_SDK);
-        return status;
-    }
-
     /* Optimize graph */
     status = vsi_nn_OptimizeGraph(graph, &dirty);
     if(VSI_SUCCESS != status)
