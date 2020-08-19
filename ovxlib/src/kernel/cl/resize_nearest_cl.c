@@ -39,17 +39,25 @@
 
 __BEGIN_DECLS
 
-#define _RESIZE_BILINEAR_KERNEL_SOURCE()      "resize_bilinear"
+/*
+ * Define kernel meta.
+ */
+typedef enum
+{
+    INTERNAL_KERNEL_RESIZE_NEAREST,
+} _internal_kernel_e;
+
+#define _RESIZE_NEAREST_KERNEL_SOURCE      "resize_nearest"
 
 #define STR(a) #a
 // Add kernel hashtable here
-#define RESIZE_BILINEAR_HASH_KEY( IN_DTYPE, OUT_DTYPE ) \
-        (( IN_DTYPE << 20 ) | ( OUT_DTYPE << 8) )
+#define RESIZE_NEAREST_HASH_KEY( IN_DTYPE, OUT_DTYPE ) \
+        (( IN_DTYPE << 8 ) | ( OUT_DTYPE ))
 
 #define PACK_KERNEL_MAP( IN_DTYPE, OUT_DTYPE ) \
-        { RESIZE_BILINEAR_HASH_KEY( IN_DTYPE, OUT_DTYPE ), \
-          CVIVANTE_NAMESPACE("cl.resize_bilinear_"STR(IN_DTYPE)"to"STR(OUT_DTYPE)), \
-          _RESIZE_BILINEAR_KERNEL_SOURCE() }
+        { RESIZE_NEAREST_HASH_KEY( IN_DTYPE, OUT_DTYPE ), \
+          CVIVANTE_NAMESPACE("cl.resize_nearest_"STR(IN_DTYPE)"to"STR(OUT_DTYPE)), \
+          _RESIZE_NEAREST_KERNEL_SOURCE }
 
 typedef struct
 {
@@ -58,17 +66,19 @@ typedef struct
     const char * source_name;
 } _kernel_map_type;
 
-static const _kernel_map_type _resize_bilinear_kernel_map[] =
+static const _kernel_map_type _resize_nearest_kernel_map[] =
 {
     PACK_KERNEL_MAP( F32, F32),
     PACK_KERNEL_MAP( U8,  U8),
 };
 
 
+
+
 /*
  * Kernel params
  */
-static vx_param_description_t _resize_bilinear_kernel_param_def[] =
+static vx_param_description_t _resize_nearest_kernel_param_def[] =
 {
     {VX_INPUT,  VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
@@ -78,26 +88,22 @@ static vx_param_description_t _resize_bilinear_kernel_param_def[] =
     {VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
-    {VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
 };
+
+#define _RESIZE_NEAREST_PARAM_NUM  6
+#define _RESIZE_NEAREST_QUANT_NUM  _cnt_of_array( _resize_nearest_kernel_param_def )
 
 #define SCALAR_SCALE_X         (2)
 #define SCALAR_SCALE_Y         (3)
 #define SCALAR_HALF_PIXEL      (4)
-#define SCALAR_INPUT_SCALE     (5)
-#define SCALAR_INPUT_TAIL      (6)
-#define SCALAR_OUTPUT_SCALE    (7)
-#define SCALAR_OUTPUT_TAIL     (8)
-
-
-#define RESIZE_BILINEAR_NUM         5
-#define RESIZE_BILINEAR_QUANT_NUM   _cnt_of_array( _resize_bilinear_kernel_param_def )
-
+#define SCALAR_ROUND_VALUE     (5)
+#define SCALAR_SCALE_VALUE     (6)
+#define SCALAR_TAIL_VALUE      (7)
 
 /*
  * Kernel initializer
  */
-DEF_KERNEL_INITIALIZER(_resize_bilinear_initializer)
+DEF_KERNEL_INITIALIZER(_resize_nearest_initializer)
     (
     vsi_nn_kernel_node_t                node,
     const vsi_nn_kernel_node_param_t  * param,
@@ -138,7 +144,7 @@ final:
 #define SAFE_FREE_TENSOR_ATTR(_PTR) if( _PTR ) { vsi_nn_kernel_tensor_attr_release( &_PTR ); _PTR = NULL; }
     SAFE_FREE_TENSOR_ATTR(output_attr);
     return status;
-} /* _resize_bilinear_initializer() */
+} /* _resize_nearest_initializer() */
 
 
 
@@ -156,11 +162,11 @@ static vsi_status _query_kernel
     vsi_status status = VSI_FAILURE;
     vsi_nn_kernel_dtype_e in_dtype;
     vsi_nn_kernel_dtype_e out_dtype;
-    const _kernel_map_type * kernel_map = _resize_bilinear_kernel_map;
-    size_t kernel_map_size              = _cnt_of_array( _resize_bilinear_kernel_map );
-    vx_param_description_t * param_def  = _resize_bilinear_kernel_param_def;
-    size_t param_def_size               = _cnt_of_array( _resize_bilinear_kernel_param_def );
-    vx_kernel_initialize_f  initializer = _resize_bilinear_initializer;
+    const _kernel_map_type * kernel_map = _resize_nearest_kernel_map;
+    size_t kernel_map_size              = _cnt_of_array( _resize_nearest_kernel_map );
+    vx_param_description_t * param_def  = _resize_nearest_kernel_param_def;
+    size_t param_def_size               = _cnt_of_array( _resize_nearest_kernel_param_def );
+    vx_kernel_initialize_f  initializer = _resize_nearest_initializer;
 
     uint32_t key;
     uint32_t i;
@@ -179,16 +185,16 @@ static vsi_status _query_kernel
 
     if ((U8 == in_dtype) || (U8 == out_dtype))
     {
-        param_def_size = RESIZE_BILINEAR_QUANT_NUM;
+        param_def_size = _RESIZE_NEAREST_QUANT_NUM;
         *is_use_u8_kernel = TRUE;
     }
     else
     {
-        param_def_size = RESIZE_BILINEAR_NUM;
+        param_def_size = _RESIZE_NEAREST_PARAM_NUM;
         *is_use_u8_kernel = FALSE;
     }
 
-    key = RESIZE_BILINEAR_HASH_KEY( in_dtype, out_dtype );
+    key = RESIZE_NEAREST_HASH_KEY( in_dtype, out_dtype );
 
     for( i = 0; i < (uint32_t)kernel_map_size; i ++ )
     {
@@ -197,7 +203,7 @@ static vsi_status _query_kernel
             break;
         }
     }
-    if( i < kernel_map_size )
+    if( i < (uint32_t)kernel_map_size )
     {
         snprintf( kernel->info.name, VX_MAX_KERNEL_NAME, "%s",  kernel_map[i].function_name );
         kernel->info.parameters  = param_def;
@@ -211,9 +217,7 @@ static vsi_status _query_kernel
                 kernel_map[i].source_name );
         status = VSI_SUCCESS;
     }
-
     return status;
-
 } /* _query_kernel() */
 
 
@@ -229,7 +233,7 @@ static vsi_nn_kernel_node_t _setup
     )
 {
     vsi_status status = VSI_FAILURE;
-    vsi_nn_kernel_node_param_t node_params[RESIZE_BILINEAR_QUANT_NUM];
+    vsi_nn_kernel_node_param_t node_params[_RESIZE_NEAREST_QUANT_NUM];
     vsi_nn_kernel_node_t node = NULL;
     int32_t align_corners       = vsi_nn_kernel_param_get_int32( params, "align_corners" );
     int32_t half_pixel_centers  = vsi_nn_kernel_param_get_int32( params, "half_pixel_centers" );
@@ -239,10 +243,11 @@ static vsi_nn_kernel_node_t _setup
     int32_t out_height   = outputs[0]->attr.size[1];
     float   input_zp     = (float)inputs[0]->attr.dtype.zero_point;
     float   input_scale  = inputs[0]->attr.dtype.scale;
-    float   input_tail   = -(input_zp * input_scale);
-    float   output_zp    = (float)outputs[0]->attr.dtype.zero_point;
-    float   output_scale = (0 == outputs[0]->attr.dtype.scale) ? 1.0f : 1.0f / outputs[0]->attr.dtype.scale;
+    float   output_scale = (0 == outputs[0]->attr.dtype.scale) ? \
+                           input_scale : input_scale / outputs[0]->attr.dtype.scale;
+    float   output_tail  = (float)outputs[0]->attr.dtype.zero_point - input_zp * output_scale;
     float   half_pixel_value = 0.0f;
+    float   round_value    = 0.0f;
     float   scale_factor_x = 0.0f;
     float   scale_factor_y = 0.0f;
     vsi_bool is_use_u8_kernel = FALSE;
@@ -265,6 +270,15 @@ static vsi_nn_kernel_node_t _setup
         scale_factor_y = ((vx_float32)in_height * 1.0f) / (vx_float32)out_height;
     }
 
+    if (align_corners)
+    {
+        round_value = 0.5f;
+    }
+    else
+    {
+        round_value = 0.0f;
+    }
+
     if (half_pixel_centers)
     {
         half_pixel_value = 0.5f;
@@ -274,49 +288,43 @@ static vsi_nn_kernel_node_t _setup
         half_pixel_value = 0.0f;
     }
 
-
     status = _query_kernel( kernel, inputs, outputs, &is_use_u8_kernel );
     if( VSI_SUCCESS == status)
     {
         node = vsi_nn_kernel_create_node( graph, kernel );
         if( node )
         {
-            size_t node_params_num = RESIZE_BILINEAR_NUM;
+            size_t node_params_num = _RESIZE_NEAREST_PARAM_NUM;
             /* Set inputs and outputs */
-            vsi_nn_kernel_node_pack_io( node_params, RESIZE_BILINEAR_QUANT_NUM,
+            vsi_nn_kernel_node_pack_io( node_params, _RESIZE_NEAREST_PARAM_NUM,
                     inputs, input_num, outputs, output_num );
-            node_params[SCALAR_SCALE_X]    = vsi_nn_kernel_scalar_create( graph, F32, &scale_factor_x );
-            node_params[SCALAR_SCALE_Y]    = vsi_nn_kernel_scalar_create(graph, F32, &scale_factor_y );
-            node_params[SCALAR_HALF_PIXEL] = vsi_nn_kernel_scalar_create( graph, F32, &half_pixel_value );
+            node_params[SCALAR_SCALE_X]     = vsi_nn_kernel_scalar_create( graph, F32, &scale_factor_x );
+            node_params[SCALAR_SCALE_Y]     = vsi_nn_kernel_scalar_create(graph, F32, &scale_factor_y );
+            node_params[SCALAR_HALF_PIXEL]  = vsi_nn_kernel_scalar_create( graph, F32, &half_pixel_value );
+            node_params[SCALAR_ROUND_VALUE] = vsi_nn_kernel_scalar_create( graph, F32, &round_value );
             if (is_use_u8_kernel)
             {
-                node_params[SCALAR_INPUT_SCALE]  = vsi_nn_kernel_scalar_create( graph, F32, &input_scale );
-                node_params[SCALAR_INPUT_TAIL]   = vsi_nn_kernel_scalar_create(graph, F32, &input_tail );
-                node_params[SCALAR_OUTPUT_SCALE] = vsi_nn_kernel_scalar_create( graph, F32, &output_scale );
-                node_params[SCALAR_OUTPUT_TAIL]  = vsi_nn_kernel_scalar_create(graph, F32, &output_zp );
-                node_params_num = RESIZE_BILINEAR_QUANT_NUM;
+                node_params[SCALAR_SCALE_VALUE]  = vsi_nn_kernel_scalar_create( graph, F32, &output_scale );
+                node_params[SCALAR_TAIL_VALUE]   = vsi_nn_kernel_scalar_create(graph, F32, &output_tail );
+                node_params_num = _RESIZE_NEAREST_QUANT_NUM;
             }
             /* Pass parameters to node. */
             status  = vsi_nn_kernel_node_pass_param( node, node_params, node_params_num );
-            VSI_ASSERT( status == VSI_SUCCESS );
             vsi_nn_kernel_scalar_release( &node_params[SCALAR_SCALE_X] );
             vsi_nn_kernel_scalar_release( &node_params[SCALAR_SCALE_Y] );
             vsi_nn_kernel_scalar_release( &node_params[SCALAR_HALF_PIXEL] );
+            vsi_nn_kernel_scalar_release( &node_params[SCALAR_ROUND_VALUE] );
             if (is_use_u8_kernel)
             {
-                vsi_nn_kernel_scalar_release( &node_params[SCALAR_INPUT_SCALE] );
-                vsi_nn_kernel_scalar_release( &node_params[SCALAR_INPUT_TAIL] );
-                vsi_nn_kernel_scalar_release( &node_params[SCALAR_OUTPUT_SCALE] );
-                vsi_nn_kernel_scalar_release( &node_params[SCALAR_OUTPUT_TAIL] );
+                vsi_nn_kernel_scalar_release( &node_params[SCALAR_SCALE_VALUE] );
+                vsi_nn_kernel_scalar_release( &node_params[SCALAR_TAIL_VALUE] );
             }
         }
     }
-
     return node;
-
 } /* _setup() */
 
 __END_DECLS
 
-REGISTER_BACKEND_CL( resize_bilinear, _setup )
+REGISTER_BACKEND_CL( resize_nearest, _setup )
 

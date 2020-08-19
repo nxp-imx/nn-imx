@@ -25493,6 +25493,249 @@ __kernel void resize_bilinear_U8toU8_UP_opt\n\
 \n\
 #endif"; /* end of resize_bilinear_U8_opt_vx*/
 
+static const char resize_nearest_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+_viv_uniform VXC_512Bits uniMultiplyAndPostShift_2x8;\n\
+_viv_uniform float2 scale_xy;\n\
+_viv_uniform float half_pixel_value;\n\
+_viv_uniform float round_value;\n\
+_viv_uniform int2 multAndoutZP;//[0:15] multiplier, [31:63] output zp\n\
+\n\
+#define NEAREST_INDEX_PROCESS() \\\n\
+    int4   coord_out  = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
+    int4   coord_x    = coord_out.xxxx + (int4)(0, 1, 2, 3); \\\n\
+    float4 in_x       = (convert_float4(coord_x) + half_pixel_value) * scale_xy.xxxx + round_value; \\\n\
+    int4   in_x_idx   = convert_int4(in_x); \\\n\
+    float  in_y       = (convert_float(coord_out.y) + half_pixel_value) * scale_xy.y + round_value; \\\n\
+    int    in_y_idx   = convert_int(in_y); \\\n\
+\n\
+\n\
+__kernel void resize_nearest_F16toF16\n\
+    (\n\
+    __read_only  image2d_array_t input,\n\
+    __write_only image2d_array_t output,\n\
+    int   align_corners,\n\
+    int   half_pixel_centers\n\
+    )\n\
+{\n\
+    NEAREST_INDEX_PROCESS()\n\
+\n\
+    vxc_short8 src;\n\
+    int4 coord_in = (int4)(in_x_idx.x, in_y_idx, coord_out.z, 0);\n\
+\n\
+    VXC_ReadImage2DArray(src, input, coord_in, \\\n\
+    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    coord_in.x = in_x_idx.y;\n\
+    VXC_ReadImage2DArray(src, input, coord_in, \\\n\
+    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 0));\n\
+    coord_in.x = in_x_idx.z;\n\
+    VXC_ReadImage2DArray(src, input, coord_in, \\\n\
+    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(2, 2, 0, VXC_RM_TowardZero, 0));\n\
+    coord_in.x = in_x_idx.w;\n\
+    VXC_ReadImage2DArray(src, input, coord_in, \\\n\
+    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(3, 3, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_WriteImage2DArray(output, coord_out, src, VXC_MODIFIER(0, 3, 0,VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+_viv_uniform VXC_512Bits uniGetExtractData_2x8;\n\
+__kernel void resize_nearest_F16toF16_op\n\
+    (\n\
+    __read_only  image2d_array_t input,\n\
+    __write_only image2d_array_t output,\n\
+    int   align_corners,\n\
+    int   half_pixel_centers\n\
+    )\n\
+{\n\
+    NEAREST_INDEX_PROCESS()\n\
+\n\
+    vxc_ushort8 src0, src1, dst;\n\
+    int4 coord_in = (int4)(in_x_idx.x, in_y_idx, coord_out.z, 0);\n\
+\n\
+    VXC_ReadImage2DArray(src0, input, coord_in, \\\n\
+    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage2DArray(src1, input, coord_in, \\\n\
+    VXC_5BITOFFSET_XY(8, 0), VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+    //in_x_idx = in_x_idx - in_x_idx.xxxx;\n\
+    vxc_uchar16 mask = (vxc_uchar16)(8, 8, 8, 8, 8, 8, 8, 8, 16, 16, 16, 16, 16, 16, 16, 16);\n\
+    vxc_ushort8 input_idx;\n\
+    _viv_asm(COPY, input_idx, in_x_idx, 16);\n\
+    VXC_DP2x8(mask, input_idx, input_idx, \\\n\
+    VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniGetExtractData_2x8);\n\
+    VXC_BitExtract(dst, src0, src1, mask, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_WriteImage2DArray(output, coord_out, dst, VXC_MODIFIER(0, 3, 0,VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+_viv_uniform VXC_512Bits uniConvertI8toI8_2x8;\n\
+__kernel void resize_nearest_I8toI8\n\
+    (\n\
+    __read_only  image2d_array_t input,\n\
+    __write_only image2d_array_t output,\n\
+    int   align_corners,\n\
+    int   half_pixel_centers\n\
+    )\n\
+{\n\
+    NEAREST_INDEX_PROCESS()\n\
+\n\
+    vxc_char16 src;\n\
+    int4 coord_in = (int4)(in_x_idx.x, in_y_idx, coord_out.z, 0);\n\
+\n\
+    VXC_ReadImage2DArray(src, input, coord_in, \\\n\
+    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    coord_in.x = in_x_idx.y;\n\
+    VXC_ReadImage2DArray(src, input, coord_in, \\\n\
+    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 0));\n\
+    coord_in.x = in_x_idx.z;\n\
+    VXC_ReadImage2DArray(src, input, coord_in, \\\n\
+    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(2, 2, 0, VXC_RM_TowardZero, 0));\n\
+    coord_in.x = in_x_idx.w;\n\
+    VXC_ReadImage2DArray(src, input, coord_in, \\\n\
+    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(3, 3, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_DP2x8(src, src, src, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniConvertI8toI8_2x8);\n\
+    VXC_WriteImage2DArray(output, coord_out, src, VXC_MODIFIER(0, 3, 0,VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+__kernel void resize_nearest_I8toI8_op\n\
+    (\n\
+    __read_only  image2d_array_t input,\n\
+    __write_only image2d_array_t output,\n\
+    int   align_corners,\n\
+    int   half_pixel_centers\n\
+    )\n\
+{\n\
+    NEAREST_INDEX_PROCESS()\n\
+\n\
+    vxc_uchar16 src0, dst0;\n\
+    vxc_char16 dst;\n\
+    int4 coord_in = (int4)(in_x_idx.x, in_y_idx, coord_out.z, 0);\n\
+\n\
+    VXC_ReadImage2DArray(src0, input, coord_in, \\\n\
+    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
+    vxc_uchar16 mask = (vxc_uchar16)(8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8);\n\
+    vxc_ushort8 input_idx;\n\
+    _viv_asm(COPY, input_idx, in_x_idx, 16);\n\
+    VXC_DP2x8(mask, input_idx, input_idx, \\\n\
+    VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniGetExtractData_2x8);\n\
+    VXC_BitExtract(dst0, src0, src0, mask, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+    _viv_asm(COPY, dst, dst0, 8);\n\
+    VXC_DP2x8(dst, dst, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), uniConvertI8toI8_2x8);\n\
+    VXC_WriteImage2DArray(output, coord_out, dst, VXC_MODIFIER(0, 3, 0,VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+__kernel void resize_nearest_U8toU8\n\
+    (\n\
+    image2d_array_t input,\n\
+    image2d_array_t output,\n\
+    int   align_corners,\n\
+    int   half_pixel_centers\n\
+    )\n\
+{\n\
+    NEAREST_INDEX_PROCESS()\n\
+\n\
+    vxc_uchar16 src;\n\
+    int4 coord_in = (int4)(in_x_idx.x, in_y_idx, coord_out.z, 0);\n\
+\n\
+    VXC_ReadImage2DArray(src, input, coord_in, \\\n\
+    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    coord_in.x = in_x_idx.y;\n\
+    VXC_ReadImage2DArray(src, input, coord_in, \\\n\
+    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 0));\n\
+    coord_in.x = in_x_idx.z;\n\
+    VXC_ReadImage2DArray(src, input, coord_in, \\\n\
+    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(2, 2, 0, VXC_RM_TowardZero, 0));\n\
+    coord_in.x = in_x_idx.w;\n\
+    VXC_ReadImage2DArray(src, input, coord_in, \\\n\
+    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(3, 3, 0, VXC_RM_TowardZero, 0));\n\
+    vxc_ushort8 multiplier;\n\
+    _viv_asm(COPY, multiplier, multAndoutZP, 16);\n\
+    VXC_DP2x8(src, src, multiplier, \\\n\
+    VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), uniMultiplyAndPostShift_2x8);\n\
+    VXC_WriteImage2DArray(output, coord_out, src, VXC_MODIFIER(0, 3, 0,VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+__kernel void resize_nearest_U8toU8_op\n\
+    (\n\
+    __read_only  image2d_array_t input,\n\
+    __write_only image2d_array_t output,\n\
+    int   align_corners,\n\
+    int   half_pixel_centers\n\
+    )\n\
+{\n\
+    NEAREST_INDEX_PROCESS()\n\
+\n\
+    vxc_uchar16 src0, dst;\n\
+    int4 coord_in = (int4)(in_x_idx.x, in_y_idx, coord_out.z, 0);\n\
+\n\
+    VXC_ReadImage2DArray(src0, input, coord_in, \\\n\
+    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
+    vxc_uchar16 mask = (vxc_uchar16)(8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8);\n\
+    vxc_ushort8 input_idx;\n\
+    _viv_asm(COPY, input_idx, in_x_idx, 16);\n\
+    VXC_DP2x8(mask, input_idx, input_idx, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniGetExtractData_2x8);\n\
+    VXC_BitExtract(dst, src0, src0, mask, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+    vxc_ushort8 multiplier;\n\
+    _viv_asm(COPY, multiplier, multAndoutZP, 16);\n\
+    VXC_DP2x8(dst, dst, multiplier, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), uniMultiplyAndPostShift_2x8);\n\
+    VXC_WriteImage2DArray(output, coord_out, dst, VXC_MODIFIER(0, 3, 0,VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+__kernel void resize_nearest_I16toI16\n\
+    (\n\
+    __read_only  image2d_array_t input,\n\
+    __write_only image2d_array_t output,\n\
+    int   align_corners,\n\
+    int   half_pixel_centers\n\
+    )\n\
+{\n\
+    NEAREST_INDEX_PROCESS()\n\
+\n\
+    vxc_short8 src;\n\
+    int4 coord_in = (int4)(in_x_idx.x, in_y_idx, coord_out.z, 0);\n\
+\n\
+    VXC_ReadImage2DArray(src, input, coord_in, \\\n\
+    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    coord_in.x = in_x_idx.y;\n\
+    VXC_ReadImage2DArray(src, input, coord_in, \\\n\
+    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 0));\n\
+    coord_in.x = in_x_idx.z;\n\
+    VXC_ReadImage2DArray(src, input, coord_in, \\\n\
+    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(2, 2, 0, VXC_RM_TowardZero, 0));\n\
+    coord_in.x = in_x_idx.w;\n\
+    VXC_ReadImage2DArray(src, input, coord_in, \\\n\
+    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(3, 3, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_DP2x8(src, src, src, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), uniConvertI8toI8_2x8);\n\
+    VXC_WriteImage2DArray(output, coord_out, src, VXC_MODIFIER(0, 3, 0,VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+__kernel void resize_nearest_I16toI16_op\n\
+    (\n\
+    __read_only  image2d_array_t input,\n\
+    __write_only image2d_array_t output,\n\
+    int   align_corners,\n\
+    int   half_pixel_centers\n\
+    )\n\
+{\n\
+    NEAREST_INDEX_PROCESS()\n\
+\n\
+    vxc_ushort8 src0, src1, dst0;\n\
+    vxc_short8 dst;\n\
+    int4 coord_in = (int4)(in_x_idx.x, in_y_idx, coord_out.z, 0);\n\
+    VXC_ReadImage2DArray(src0, input, coord_in, \\\n\
+    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage2DArray(src1, input, coord_in, \\\n\
+    VXC_5BITOFFSET_XY(8, 0), VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    //in_x_idx = in_x_idx - in_x_idx.xxxx;\n\
+    vxc_uchar16 mask = (vxc_uchar16)(8, 8, 8, 8, 8, 8, 8, 8, 16, 16, 16, 16, 16, 16, 16, 16);\n\
+    vxc_ushort8 input_idx;\n\
+    _viv_asm(COPY, input_idx, in_x_idx, 16);\n\
+    VXC_DP2x8(mask, input_idx, input_idx, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniGetExtractData_2x8);\n\
+    VXC_BitExtract(dst0, src0, src1, mask, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+    _viv_asm(COPY, dst, dst0, 8);\n\
+    VXC_DP2x8(dst, dst, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), uniConvertI8toI8_2x8);\n\
+    VXC_WriteImage2DArray(output, coord_out, dst, VXC_MODIFIER(0, 3, 0,VXC_RM_TowardZero, 0));\n\
+}\n\
+"; /* end of resize_nearest_vx*/
+
 static const char select_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 _viv_uniform VXC_512Bits uniConvConditiontoDst_2x8;\n\
@@ -29813,251 +30056,6 @@ __kernel void resize_8bits_downsample_quarter\n\
     VXC_WriteImage(output, coord, dst, VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0));\n\
 }\n\
 "; /* end of vsi_nn_kernel_resize_vx*/
-
-static const char vsi_nn_kernel_resize_nearest_internal_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
-\n\
-_viv_uniform VXC_512Bits uniMultiplyAndPostShift_2x8;\n\
-_viv_uniform float2 scale_xy;\n\
-_viv_uniform float half_pixel_value;\n\
-_viv_uniform float round_value;\n\
-_viv_uniform int2 multAndoutZP;//[0:15] multiplier, [31:63] output zp\n\
-\n\
-#define NEAREST_INDEX_PROCESS() \\\n\
-    int4   coord_out  = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
-    int4   coord_x    = coord_out.xxxx + (int4)(0, 1, 2, 3); \\\n\
-    float4 in_x       = (convert_float4(coord_x) + half_pixel_value) * scale_xy.xxxx + round_value; \\\n\
-    float4 in_x_f     = floor(in_x); \\\n\
-    int4   in_x_idx   = convert_int4(in_x_f); \\\n\
-    float  in_y       = (convert_float(coord_out.y) + half_pixel_value) * scale_xy.y + round_value; \\\n\
-    float  in_y_f     = floor(in_y); \\\n\
-    int    in_y_idx   = convert_int(in_y_f); \\\n\
-\n\
-\n\
-__kernel void vxcResize_nearest_F16toF16\n\
-    (\n\
-    __read_only  image2d_array_t input,\n\
-    __write_only image2d_array_t output,\n\
-    int   align_corners,\n\
-    int   half_pixel_centers\n\
-    )\n\
-{\n\
-    NEAREST_INDEX_PROCESS()\n\
-\n\
-    vxc_short8 src;\n\
-    int4 coord_in = (int4)(in_x_idx.x, in_y_idx, coord_out.z, 0);\n\
-\n\
-    VXC_ReadImage2DArray(src, input, coord_in, \\\n\
-    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
-    coord_in.x = in_x_idx.y;\n\
-    VXC_ReadImage2DArray(src, input, coord_in, \\\n\
-    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 0));\n\
-    coord_in.x = in_x_idx.z;\n\
-    VXC_ReadImage2DArray(src, input, coord_in, \\\n\
-    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(2, 2, 0, VXC_RM_TowardZero, 0));\n\
-    coord_in.x = in_x_idx.w;\n\
-    VXC_ReadImage2DArray(src, input, coord_in, \\\n\
-    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(3, 3, 0, VXC_RM_TowardZero, 0));\n\
-    VXC_WriteImage2DArray(output, coord_out, src, VXC_MODIFIER(0, 3, 0,VXC_RM_TowardZero, 0));\n\
-}\n\
-\n\
-_viv_uniform VXC_512Bits uniGetExtractData_2x8;\n\
-__kernel void vxcResize_nearest_F16toF16_op\n\
-    (\n\
-    __read_only  image2d_array_t input,\n\
-    __write_only image2d_array_t output,\n\
-    int   align_corners,\n\
-    int   half_pixel_centers\n\
-    )\n\
-{\n\
-    NEAREST_INDEX_PROCESS()\n\
-\n\
-    vxc_ushort8 src0, src1, dst;\n\
-    int4 coord_in = (int4)(in_x_idx.x, in_y_idx, coord_out.z, 0);\n\
-\n\
-    VXC_ReadImage2DArray(src0, input, coord_in, \\\n\
-    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-    VXC_ReadImage2DArray(src1, input, coord_in, \\\n\
-    VXC_5BITOFFSET_XY(8, 0), VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-    //in_x_idx = in_x_idx - in_x_idx.xxxx;\n\
-    vxc_uchar16 mask = (vxc_uchar16)(8, 8, 8, 8, 8, 8, 8, 8, 16, 16, 16, 16, 16, 16, 16, 16);\n\
-    vxc_ushort8 input_idx;\n\
-    _viv_asm(COPY, input_idx, in_x_idx, 16);\n\
-    VXC_DP2x8(mask, input_idx, input_idx, \\\n\
-    VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniGetExtractData_2x8);\n\
-    VXC_BitExtract(dst, src0, src1, mask, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
-    VXC_WriteImage2DArray(output, coord_out, dst, VXC_MODIFIER(0, 3, 0,VXC_RM_TowardZero, 0));\n\
-}\n\
-\n\
-_viv_uniform VXC_512Bits uniConvertI8toI8_2x8;\n\
-__kernel void vxcResize_nearest_I8toI8\n\
-    (\n\
-    __read_only  image2d_array_t input,\n\
-    __write_only image2d_array_t output,\n\
-    int   align_corners,\n\
-    int   half_pixel_centers\n\
-    )\n\
-{\n\
-    NEAREST_INDEX_PROCESS()\n\
-\n\
-    vxc_char16 src;\n\
-    int4 coord_in = (int4)(in_x_idx.x, in_y_idx, coord_out.z, 0);\n\
-\n\
-    VXC_ReadImage2DArray(src, input, coord_in, \\\n\
-    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
-    coord_in.x = in_x_idx.y;\n\
-    VXC_ReadImage2DArray(src, input, coord_in, \\\n\
-    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 0));\n\
-    coord_in.x = in_x_idx.z;\n\
-    VXC_ReadImage2DArray(src, input, coord_in, \\\n\
-    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(2, 2, 0, VXC_RM_TowardZero, 0));\n\
-    coord_in.x = in_x_idx.w;\n\
-    VXC_ReadImage2DArray(src, input, coord_in, \\\n\
-    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(3, 3, 0, VXC_RM_TowardZero, 0));\n\
-    VXC_DP2x8(src, src, src, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniConvertI8toI8_2x8);\n\
-    VXC_WriteImage2DArray(output, coord_out, src, VXC_MODIFIER(0, 3, 0,VXC_RM_TowardZero, 0));\n\
-}\n\
-\n\
-__kernel void vxcResize_nearest_I8toI8_op\n\
-    (\n\
-    __read_only  image2d_array_t input,\n\
-    __write_only image2d_array_t output,\n\
-    int   align_corners,\n\
-    int   half_pixel_centers\n\
-    )\n\
-{\n\
-    NEAREST_INDEX_PROCESS()\n\
-\n\
-    vxc_uchar16 src0, dst0;\n\
-    vxc_char16 dst;\n\
-    int4 coord_in = (int4)(in_x_idx.x, in_y_idx, coord_out.z, 0);\n\
-\n\
-    VXC_ReadImage2DArray(src0, input, coord_in, \\\n\
-    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
-    vxc_uchar16 mask = (vxc_uchar16)(8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8);\n\
-    vxc_ushort8 input_idx;\n\
-    _viv_asm(COPY, input_idx, in_x_idx, 16);\n\
-    VXC_DP2x8(mask, input_idx, input_idx, \\\n\
-    VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniGetExtractData_2x8);\n\
-    VXC_BitExtract(dst0, src0, src0, mask, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
-    _viv_asm(COPY, dst, dst0, 8);\n\
-    VXC_DP2x8(dst, dst, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), uniConvertI8toI8_2x8);\n\
-    VXC_WriteImage2DArray(output, coord_out, dst, VXC_MODIFIER(0, 3, 0,VXC_RM_TowardZero, 0));\n\
-}\n\
-\n\
-__kernel void vxcResize_nearest_U8toU8\n\
-    (\n\
-    image2d_array_t input,\n\
-    image2d_array_t output,\n\
-    int   align_corners,\n\
-    int   half_pixel_centers\n\
-    )\n\
-{\n\
-    NEAREST_INDEX_PROCESS()\n\
-\n\
-    vxc_uchar16 src;\n\
-    int4 coord_in = (int4)(in_x_idx.x, in_y_idx, coord_out.z, 0);\n\
-\n\
-    VXC_ReadImage2DArray(src, input, coord_in, \\\n\
-    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
-    coord_in.x = in_x_idx.y;\n\
-    VXC_ReadImage2DArray(src, input, coord_in, \\\n\
-    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 0));\n\
-    coord_in.x = in_x_idx.z;\n\
-    VXC_ReadImage2DArray(src, input, coord_in, \\\n\
-    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(2, 2, 0, VXC_RM_TowardZero, 0));\n\
-    coord_in.x = in_x_idx.w;\n\
-    VXC_ReadImage2DArray(src, input, coord_in, \\\n\
-    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(3, 3, 0, VXC_RM_TowardZero, 0));\n\
-    vxc_ushort8 multiplier;\n\
-    _viv_asm(COPY, multiplier, multAndoutZP, 16);\n\
-    VXC_DP2x8(src, src, multiplier, \\\n\
-    VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), uniMultiplyAndPostShift_2x8);\n\
-    VXC_WriteImage2DArray(output, coord_out, src, VXC_MODIFIER(0, 3, 0,VXC_RM_TowardZero, 0));\n\
-}\n\
-\n\
-__kernel void vxcResize_nearest_U8toU8_op\n\
-    (\n\
-    __read_only  image2d_array_t input,\n\
-    __write_only image2d_array_t output,\n\
-    int   align_corners,\n\
-    int   half_pixel_centers\n\
-    )\n\
-{\n\
-    NEAREST_INDEX_PROCESS()\n\
-\n\
-    vxc_uchar16 src0, dst;\n\
-    int4 coord_in = (int4)(in_x_idx.x, in_y_idx, coord_out.z, 0);\n\
-\n\
-    VXC_ReadImage2DArray(src0, input, coord_in, \\\n\
-    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
-    vxc_uchar16 mask = (vxc_uchar16)(8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8);\n\
-    vxc_ushort8 input_idx;\n\
-    _viv_asm(COPY, input_idx, in_x_idx, 16);\n\
-    VXC_DP2x8(mask, input_idx, input_idx, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniGetExtractData_2x8);\n\
-    VXC_BitExtract(dst, src0, src0, mask, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
-    vxc_ushort8 multiplier;\n\
-    _viv_asm(COPY, multiplier, multAndoutZP, 16);\n\
-    VXC_DP2x8(dst, dst, multiplier, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), uniMultiplyAndPostShift_2x8);\n\
-    VXC_WriteImage2DArray(output, coord_out, dst, VXC_MODIFIER(0, 3, 0,VXC_RM_TowardZero, 0));\n\
-}\n\
-\n\
-__kernel void vxcResize_nearest_I16toI16\n\
-    (\n\
-    __read_only  image2d_array_t input,\n\
-    __write_only image2d_array_t output,\n\
-    int   align_corners,\n\
-    int   half_pixel_centers\n\
-    )\n\
-{\n\
-    NEAREST_INDEX_PROCESS()\n\
-\n\
-    vxc_short8 src;\n\
-    int4 coord_in = (int4)(in_x_idx.x, in_y_idx, coord_out.z, 0);\n\
-\n\
-    VXC_ReadImage2DArray(src, input, coord_in, \\\n\
-    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
-    coord_in.x = in_x_idx.y;\n\
-    VXC_ReadImage2DArray(src, input, coord_in, \\\n\
-    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 0));\n\
-    coord_in.x = in_x_idx.z;\n\
-    VXC_ReadImage2DArray(src, input, coord_in, \\\n\
-    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(2, 2, 0, VXC_RM_TowardZero, 0));\n\
-    coord_in.x = in_x_idx.w;\n\
-    VXC_ReadImage2DArray(src, input, coord_in, \\\n\
-    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(3, 3, 0, VXC_RM_TowardZero, 0));\n\
-    VXC_DP2x8(src, src, src, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), uniConvertI8toI8_2x8);\n\
-    VXC_WriteImage2DArray(output, coord_out, src, VXC_MODIFIER(0, 3, 0,VXC_RM_TowardZero, 0));\n\
-}\n\
-\n\
-__kernel void vxcResize_nearest_I16toI16_op\n\
-    (\n\
-    __read_only  image2d_array_t input,\n\
-    __write_only image2d_array_t output,\n\
-    int   align_corners,\n\
-    int   half_pixel_centers\n\
-    )\n\
-{\n\
-    NEAREST_INDEX_PROCESS()\n\
-\n\
-    vxc_ushort8 src0, src1, dst0;\n\
-    vxc_short8 dst;\n\
-    int4 coord_in = (int4)(in_x_idx.x, in_y_idx, coord_out.z, 0);\n\
-    VXC_ReadImage2DArray(src0, input, coord_in, \\\n\
-    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-    VXC_ReadImage2DArray(src1, input, coord_in, \\\n\
-    VXC_5BITOFFSET_XY(8, 0), VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-\n\
-    //in_x_idx = in_x_idx - in_x_idx.xxxx;\n\
-    vxc_uchar16 mask = (vxc_uchar16)(8, 8, 8, 8, 8, 8, 8, 8, 16, 16, 16, 16, 16, 16, 16, 16);\n\
-    vxc_ushort8 input_idx;\n\
-    _viv_asm(COPY, input_idx, in_x_idx, 16);\n\
-    VXC_DP2x8(mask, input_idx, input_idx, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniGetExtractData_2x8);\n\
-    VXC_BitExtract(dst0, src0, src1, mask, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
-    _viv_asm(COPY, dst, dst0, 8);\n\
-    VXC_DP2x8(dst, dst, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), uniConvertI8toI8_2x8);\n\
-    VXC_WriteImage2DArray(output, coord_out, dst, VXC_MODIFIER(0, 3, 0,VXC_RM_TowardZero, 0));\n\
-}\n\
-"; /* end of vsi_nn_kernel_resize_nearest_internal_vx*/
 
 static const char vsi_nn_kernel_reverse_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
@@ -41387,6 +41385,48 @@ __kernel void resize_bilinear_U8toU8(\n\
 }\n\
 "; /* end of resize_bilinear_cl*/
 
+static const char resize_nearest_cl[] = "\n\
+#define NEAREST_INDEX_PROCESS() \\\n\
+    int4   coord_out  = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
+    float  in_x       = (convert_float(coord_out.x) + half_pixel_value) * scale_x + round_value; \\\n\
+    int    in_x_idx   = convert_int(in_x); \\\n\
+    float  in_y       = (convert_float(coord_out.y) + half_pixel_value) * scale_y + round_value; \\\n\
+    int    in_y_idx   = convert_int(in_y); \\\n\
+\n\
+__kernel void resize_nearest_F32toF32(\n\
+    __read_only  image2d_array_t  input,\n\
+    __write_only image2d_array_t  output,\n\
+                           float  scale_x,\n\
+                           float  scale_y,\n\
+                           float  half_pixel_value,\n\
+                           float  round_value)\n\
+{\n\
+    NEAREST_INDEX_PROCESS()\n\
+    int4 coord_in = (int4)(in_x_idx, in_y_idx, coord_out.z, 0);\n\
+    float4 dst;\n\
+    dst    = read_imagef(input, coord_in);\n\
+    write_imagef(output, coord_out, dst);\n\
+}\n\
+\n\
+\n\
+__kernel void resize_nearest_U8toU8(\n\
+    __read_only  image2d_array_t  input,\n\
+    __write_only image2d_array_t  output,\n\
+                           float  scale_x,\n\
+                           float  scale_y,\n\
+                           float  half_pixel_value,\n\
+                           float  round_value,\n\
+                           float  output_scale,\n\
+                           float  output_tail)\n\
+{\n\
+    NEAREST_INDEX_PROCESS()\n\
+    int4 coord_in = (int4)(in_x_idx, in_y_idx, coord_out.z, 0);\n\
+    uint4 dst;\n\
+    dst    = convert_uint4(convert_float4(read_imageui(input, coord_in)) * output_scale + output_tail);\n\
+    write_imageui(output, coord_out, dst);\n\
+}\n\
+"; /* end of resize_nearest_cl*/
+
 static const char select_cl[] = "__kernel void select_I8_U8_U8toU8(\n\
     __read_only  image2d_array_t  condition,\n\
     __read_only  image2d_array_t  input0,\n\
@@ -42073,6 +42113,7 @@ static const source_map_t evis_resource[] =
     {"resize_bilinear_I8_vx", resize_bilinear_I8_vx},
     {"resize_bilinear_U8_vx", resize_bilinear_U8_vx},
     {"resize_bilinear_U8_opt_vx", resize_bilinear_U8_opt_vx},
+    {"resize_nearest_vx", resize_nearest_vx},
     {"select_vx", select_vx},
     {"swish_vx", swish_vx},
     {"tile_vx", tile_vx},
@@ -42102,7 +42143,6 @@ static const source_map_t evis_resource[] =
     {"vsi_nn_kernel_relu_keras_header_vx", vsi_nn_kernel_relu_keras_header_vx},
     {"vsi_nn_kernel_relu_keras_internal_vx", vsi_nn_kernel_relu_keras_internal_vx},
     {"vsi_nn_kernel_resize_vx", vsi_nn_kernel_resize_vx},
-    {"vsi_nn_kernel_resize_nearest_internal_vx", vsi_nn_kernel_resize_nearest_internal_vx},
     {"vsi_nn_kernel_reverse_vx", vsi_nn_kernel_reverse_vx},
     {"vsi_nn_kernel_roi_align_vx", vsi_nn_kernel_roi_align_vx},
     {"vsi_nn_kernel_scale_vx", vsi_nn_kernel_scale_vx},
@@ -42204,6 +42244,7 @@ static const source_map_t cl_resource[] =
     {"reduceprod_internal_axis2_cl", reduceprod_internal_axis2_cl},
     {"relational_ops_cl", relational_ops_cl},
     {"resize_bilinear_cl", resize_bilinear_cl},
+    {"resize_nearest_cl", resize_nearest_cl},
     {"select_cl", select_cl},
     {"swish_cl", swish_cl},
     {"tile_cl", tile_cl},
