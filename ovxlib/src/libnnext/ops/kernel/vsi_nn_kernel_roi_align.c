@@ -75,7 +75,7 @@ static vsi_status VX_CALLBACK vxRoi_alignKernel
     int32_t height_sample_num;
     int32_t width_sample_num;
 
-    int32_t i;
+    uint32_t i = 0;
     for(i = 0; i < TENSOR_NUM_INPUT; i++)
     {
         memset(&in_attr[i], 0x0, sizeof(vsi_nn_tensor_attr_t));
@@ -131,7 +131,7 @@ static vsi_status VX_CALLBACK vxRoi_alignKernel
 
     /* TODO: Add CPU kernel implement */
     {
-        uint32_t n, i, j, k;
+        uint32_t n, j, k;
         uint32_t kRoiDim = 4;
         float heightScale = 1.0f / height_ratio;
         float widthScale = 1.0f / width_ratio;

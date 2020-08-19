@@ -215,7 +215,7 @@ static vsi_status VX_CALLBACK vxBox_with_nms_limitKernel
     float sigma;
     float nms_score_threshold;
 
-    int32_t i;
+    uint32_t i = 0;
     for(i = 0; i < TENSOR_NUM_INPUT; i++)
     {
         memset(&in_attr[i], 0x0, sizeof(vsi_nn_tensor_attr_t));
@@ -278,7 +278,7 @@ static vsi_status VX_CALLBACK vxBox_with_nms_limitKernel
         VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
     /* TODO: Add CPU kernel implement */
     {
-        uint32_t i, j, n, b, c;
+        uint32_t j, n, b, c;
         const uint32_t kRoiDim = 4;
         uint32_t numRois = in_attr[0].size[1];
         uint32_t numClasses = in_attr[0].size[0];

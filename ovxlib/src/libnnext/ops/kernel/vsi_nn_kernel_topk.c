@@ -124,7 +124,7 @@ static vsi_status VX_CALLBACK vxTopkKernel
 
     int32_t top_k;
 
-    int32_t i;
+    uint32_t i = 0;
     for(i = 0; i < TENSOR_NUM_INPUT; i++)
     {
         memset(&in_attr[i], 0x0, sizeof(vsi_nn_tensor_attr_t));
@@ -164,7 +164,6 @@ static vsi_status VX_CALLBACK vxTopkKernel
     {
         uint32_t block_num = in_attr[0].size[1];
         uint32_t block_size = in_attr[0].size[0];
-        uint32_t i;
         uint32_t * indices = (uint32_t*)malloc(block_size * sizeof(uint32_t));
 
         for(i = 0; i < block_num; i++)

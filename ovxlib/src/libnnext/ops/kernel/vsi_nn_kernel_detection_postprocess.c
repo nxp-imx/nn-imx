@@ -146,7 +146,7 @@ static vsi_status VX_CALLBACK vxDetection_postprocessKernel
     float iouThreshold;
     int32_t isBGInLabel;
 
-    int32_t i;
+    uint32_t i = 0;
     for(i = 0; i < TENSOR_NUM_INPUT; i++)
     {
         memset(&in_attr[i], 0x0, sizeof(vsi_nn_tensor_attr_t));
@@ -221,7 +221,7 @@ static vsi_status VX_CALLBACK vxDetection_postprocessKernel
         float* roiBuffer = (float*)malloc(numAnchors * kRoiDim * sizeof(float));
         float* scoreBuffer = (float*)malloc(numAnchors * sizeof(float));
         uint32_t* select = (uint32_t*)malloc(numAnchors * numClasses * sizeof(uint32_t));
-        uint32_t a, b, c, n, i, j;
+        uint32_t a, b, c, n, j;
         uint32_t scores_index = 0;
         uint32_t scores_out_index = 0;
         uint32_t roi_out_index = 0;

@@ -255,11 +255,11 @@ DEF_KERNEL_INITIALIZER(_clip_initializer)
             {
                 uint32_t lo_part    = vsi_nn_min((1 << dstFixPointPos), MAX_MULTIPLIER_NUM);
                 uint32_t multiplier = lo_part;
-                uint32_t i          = 0;
+                uint32_t j          = 0;
 
-                for (i = 0; i < 8; i++)
+                for (j = 0; j < 8; j++)
                 {
-                    uniConvertF16toInt_2x8.data[i + 8] = multiplier;
+                    uniConvertF16toInt_2x8.data[j + 8] = multiplier;
                 }
             }
             status |= vsi_nn_kernel_gpu_add_param( node, "uniConvertF16toInt_2x8", &uniConvertF16toInt_2x8);

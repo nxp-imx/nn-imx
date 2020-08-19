@@ -151,7 +151,7 @@ static vsi_status VX_CALLBACK vxAxis_aligned_bbox_transformKernel
 
         uint32_t numClasses = in_attr[1].size[0] / roiLength;
         uint32_t numRois = in_attr[0].size[1];
-        uint32_t i;
+        uint32_t j;
         uint32_t roiIndex;
         for(roiIndex = 0; roiIndex < numRois; roiIndex++)
         {
@@ -165,12 +165,12 @@ static vsi_status VX_CALLBACK vxAxis_aligned_bbox_transformKernel
             roi_cnr.x2 = f32_in_buffer[0][roiIndex * roiLength + 2];
             roi_cnr.y2 = f32_in_buffer[0][roiIndex * roiLength + 3];
             toBoxEncodingCenter(&roi_cnr, &roiBefore);
-            for (i = 0; i < numClasses; i++)
+            for (j = 0; j < numClasses; j++)
             {
                 BoxEncodingCenter roi_ctr;
                 BoxEncodingCorner roiAfter;
                 BoxEncodingCorner cliped;
-                uint32_t index = (roiIndex * numClasses + i) * roiLength;
+                uint32_t index = (roiIndex * numClasses + j) * roiLength;
                 roi_ctr.w = (float)(exp(f32_in_buffer[1][index + 2]) * roiBefore.w);
                 roi_ctr.h = (float)(exp(f32_in_buffer[1][index + 3]) * roiBefore.h);
                 roi_ctr.x = roiBefore.x + f32_in_buffer[1][index] * roiBefore.w;
