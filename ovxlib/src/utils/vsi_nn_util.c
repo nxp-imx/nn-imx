@@ -1234,3 +1234,80 @@ float vsi_nn_activation
             exit(1);
     }
 }
+
+vsi_bool vsi_nn_is_same_data_type(
+    vsi_nn_tensor_t * src,
+    vsi_nn_tensor_t * dst
+    )
+{
+    return (src->attr.dtype.vx_type == dst->attr.dtype.vx_type);
+}
+
+vsi_bool vsi_nn_is_same_quant_type(
+    vsi_nn_tensor_t * src,
+    vsi_nn_tensor_t * dst
+    )
+{
+    vx_bool result = vx_false_e;
+
+    if (src->attr.dtype.vx_type == dst->attr.dtype.vx_type)
+    {
+        switch (src->attr.dtype.qnt_type)
+        {
+        case VSI_NN_QNT_TYPE_NONE:
+            result = vx_true_e;
+            break;
+
+        case VSI_NN_QNT_TYPE_DFP:
+            if (src->attr.dtype.fl == dst->attr.dtype.fl)
+            {
+                result = vx_true_e;
+            }
+            break;
+
+        case VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC:
+            if (src->attr.dtype.scale == dst->attr.dtype.scale &&
+                src->attr.dtype.zero_point == dst->attr.dtype.zero_point)
+            {
+                result = vx_true_e;
+            }
+            break;
+
+        case VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC:
+            {
+                int32_t i = 0;
+                int32_t scale_cnt0 = src->attr.dtype.scale_dim;
+                int32_t scale_cnt1 = dst->attr.dtype.scale_dim;
+
+                if (scale_cnt0 == scale_cnt1)
+                {
+                    float *src_scale_ptr = src->attr.dtype.scales;
+                    float *dst_scale_ptr = dst->attr.dtype.scales;
+                    for (i = 0; i < scale_cnt0; i++)
+                    {
+                        if (src_scale_ptr[i] != dst_scale_ptr[i])
+                            break;
+                    }
+
+                    if (i == scale_cnt0)
+                        result = vx_true_e;
+                }
+            }
+            break;
+
+        default:
+            break;
+        }
+    }
+
+    return result;
+}
+
+vsi_bool vsi_nn_is_same_type
+    (
+    vsi_nn_tensor_t * src,
+    vsi_nn_tensor_t * dst
+    )
+{
+    return (vsi_nn_is_same_data_type(src, dst) && vsi_nn_is_same_quant_type(src, dst));
+}

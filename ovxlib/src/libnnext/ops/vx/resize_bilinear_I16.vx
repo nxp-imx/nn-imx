@@ -10,7 +10,7 @@ _viv_uniform VXC_512Bits uniConvertDFP2FP32_4x4;
 _viv_uniform float dfpScale;
 _viv_uniform float half_pixel_value;
 
-__kernel void vxcResize_I16toI16_up
+__kernel void resize_bilinear_I16toI16_UP
     (
     image2d_array_t input,
     image2d_array_t output,
@@ -109,7 +109,7 @@ __kernel void vxcResize_I16toI16_up
     } while (coord_in.z < depth);
 }
 
-__kernel void vxcResize_I16toI16
+__kernel void resize_bilinear_I16toI16_DOWN
     (
     image2d_array_t input,
     image2d_array_t output,
