@@ -209,7 +209,7 @@ DEF_KERNEL_EXECUTOR(_compute)
             }
         }
     }
-
+    out_attr[1]->quant = VSI_NN_KERNEL_QUANT_NONE;
     /* save data */
     for(i = 0; i < _OUTPUT_NUM; i++)
     {
