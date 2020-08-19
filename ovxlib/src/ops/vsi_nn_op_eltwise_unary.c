@@ -137,7 +137,7 @@ extern "C" {
     { \
         return _eltwise_unary_op_compute( ""#kernel_name, self, inputs, outputs ); \
     } \
-    DEF_OP_REG(name, NULL, op_compute_##kernel_name, NULL, NULL, op_setup, NULL, 2, 1)
+DEF_OP_REG(name, NULL, op_compute_##kernel_name, vsi_nn_op_common_deinit, NULL, op_setup, NULL, 2, 1)
 
 DEF_ELEMENT_WISE_UNARY_OP( SIN, sin );
 DEF_ELEMENT_WISE_UNARY_OP( EXP, exp );

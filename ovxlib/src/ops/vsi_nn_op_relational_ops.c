@@ -156,7 +156,7 @@ extern "C" {
             { \
                 return _comparisons_op_compute( ""#kernel_name, self, inputs, outputs ); \
             } \
-            DEF_OP_REG(name, NULL, op_compute_##kernel_name, NULL, NULL, op_setup, NULL, 2, 1)
+DEF_OP_REG(name, NULL, op_compute_##kernel_name, vsi_nn_op_common_deinit, NULL, op_setup, NULL, 2, 1)
 
 DEF_COMPARISONS_OP( RELATIONAL_OPS, relational_ops );
 

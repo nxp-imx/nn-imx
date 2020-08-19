@@ -190,7 +190,7 @@ DEF_OP_REG
     /* op_name    */ LRN2,
     /* init       */ op_init,
     /* compute    */ op_compute,
-    /* deinit     */ NULL,
+    /* deinit     */ vsi_nn_op_common_deinit,
     /* check      */ op_check,
     /* setup      */ vsi_nn_op_common_setup,
     /* optimize   */ NULL,
