@@ -100,7 +100,7 @@ DEF_KERNEL_INITIALIZER(_add_mean_std_norm_initializer)
         {0, 0, 0}
         };
     vx_tensor              input0        = (vx_tensor)param[0];
-    vx_tensor              input1        = (vx_tensor)param[0];
+    vx_tensor              input1        = (vx_tensor)param[1];
     vx_tensor              output        = (vx_tensor)param[2];
     vsi_nn_kernel_dtype_e  input_dtype   = F16;
     vsi_nn_kernel_dtype_e  output_dtype  = F16;

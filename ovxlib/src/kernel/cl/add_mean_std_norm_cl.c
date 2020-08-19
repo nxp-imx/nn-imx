@@ -228,8 +228,8 @@ static vsi_nn_kernel_node_t _setup
     float   dimRatio    = (float)(1.0f / (inputs[0]->attr.size[0]));
     float   input0Scale = inputs[0]->attr.dtype.scale;
     float   input0Tail  = (float)inputs[0]->attr.dtype.zero_point * input0Scale;
-    float   input1Scale = inputs[0]->attr.dtype.scale;
-    float   input1Tail  = (float)inputs[0]->attr.dtype.zero_point * input1Scale;
+    float   input1Scale = inputs[1]->attr.dtype.scale;
+    float   input1Tail  = (float)inputs[1]->attr.dtype.zero_point * input1Scale;
     float   outputScale = outputs[0]->attr.dtype.scale == 0.0f ? 0.0f : 1.0f / outputs[0]->attr.dtype.scale;
     float   outputZP    = (float)outputs[0]->attr.dtype.zero_point;
     int32_t width       = (int32_t)inputs[0]->attr.size[0];
