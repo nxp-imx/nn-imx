@@ -104,6 +104,7 @@ class Execution
 
         std::vector<ExecutionIOPtr> inputs_;
         std::vector<ExecutionIOPtr> outputs_;
+        SharedContextPtr ovx_context_;
         Compilation* compilation_;
         std::mutex mutex_;
         EventPtr event_;

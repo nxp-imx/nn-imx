@@ -21,37 +21,23 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
+#ifndef _VSI_NN_OP_EXPAND_BROADCAST_H
+#define _VSI_NN_OP_EXPAND_BROADCAST_H
 
-#ifndef __ANEURALNETWORKS_SPACE_TO_DEPTH_HPP__
-#define __ANEURALNETWORKS_SPACE_TO_DEPTH_HPP__
+#include "vsi_nn_types.h"
 
-#define OP_SPEC_NAME Space2DepthOperation
-OP_SPEC_BEGIN()
-#define ARG_NAMES           \
-    (input,                 \
-     block_size,            \
-     data_layout)
-#define ARGC BOOST_PP_TUPLE_SIZE(ARG_NAMES)
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-#define BOOST_PP_LOCAL_MACRO(n) OP_SPEC_ARG(BOOST_PP_TUPLE_ELEM(ARGC, n, ARG_NAMES))
-#define BOOST_PP_LOCAL_LIMITS (0, ARGC)
-#include BOOST_PP_LOCAL_ITERATE()
-OP_SPEC_END()
+typedef struct _vsi_nn_expand_broadcast_param
+{
+    uint32_t *shape;
+    uint32_t dim_num;
+} vsi_nn_expand_broadcast_param;
 
-// order of argument is important
-MAKE_SPEC(space2depth)
-    .input_(nnrt::OperandType::TENSOR_FLOAT32)
-    .block_size_(nnrt::OperandType::INT32)
-    .data_layout_(nnrt::OperandType::BOOL, OPTIONAL));
-
-    OVERRIDE_SPEC(space2depth, float16)
-    .input_(nnrt::OperandType::TENSOR_FLOAT16));
-
-    OVERRIDE_SPEC(space2depth, asymm_u8)
-    .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM));
-
-#undef ARG_NAMES
-#undef ARGC
-#undef OP_SPEC_NAME
+#ifdef __cplusplus
+}
+#endif
 
 #endif

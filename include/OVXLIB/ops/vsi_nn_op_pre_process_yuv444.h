@@ -21,54 +21,58 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-/** @file */
-#ifndef _VSI_NN_VERSION_H_
-#define _VSI_NN_VERSION_H_
+#ifndef _VSI_NN_OP_PRE_PROCESS_YUV444_H
+#define _VSI_NN_OP_PRE_PROCESS_YUV444_H
 
 #include "vsi_nn_types.h"
 
-#if defined(__cplusplus)
-extern "C"{
+#ifdef __cplusplus
+extern "C" {
 #endif
 
-#define VSI_NN_VERSION_MAJOR 1
-#define VSI_NN_VERSION_MINOR 1
-#define VSI_NN_VERSION_PATCH 26
-#define VSI_NN_VERSION \
-    (VSI_NN_VERSION_MAJOR * 10000 + VSI_NN_VERSION_MINOR * 100 + VSI_NN_VERSION_PATCH)
+#define _VSI_NN_PRE_PROCESS_YUV444_LOCAL_TENSOR_NUM 4
 
-/**
- * Ovxlib version check
- * Ovxlib will check the suitable version at compile time.
- * @note Ovxlib version should be always greater or equal to case version.
- */
-#define _version_assert _compiler_assert
+typedef struct _vsi_nn_pre_process_yuv444_lcl_data
+{
+    int32_t scale_x;
+    int32_t scale_y;
+    vsi_bool enable_copy;
+    vsi_bool enable_perm;
+    vx_tensor   local_tensor[_VSI_NN_PRE_PROCESS_YUV444_LOCAL_TENSOR_NUM];
+} vsi_nn_pre_process_yuv444_lcl_data;
 
-/**
- * Get ovxlib version
- * Get ovxlib version string.
- */
-OVXLIB_API const char *vsi_nn_GetVersion(void);
+typedef struct _vsi_nn_pre_process_yuv444_param
+{
+    struct
+    {
+        uint32_t left;
+        uint32_t top;
+        uint32_t width;
+        uint32_t height;
+    } rect;
 
-/**
- * Get ovxlib version major
- * Get ovxlib version major, return integer value.
- */
-OVXLIB_API uint32_t vsi_nn_GetVersionMajor(void);
+    struct
+    {
+        uint32_t   *size;
+        uint32_t   dim_num;
+    } output_attr;
 
-/**
- * Get ovxlib version minor
- * Get ovxlib version minor, return integer value.
- */
-OVXLIB_API uint32_t vsi_nn_GetVersionMinor(void);
+    uint32_t * perm;
+    uint32_t   dim_num;
 
-/**
- * Get ovxlib version patch
- * Get ovxlib version patch, return integer value.
- */
-OVXLIB_API uint32_t vsi_nn_GetVersionPatch(void);
+    float r_mean;
+    float g_mean;
+    float b_mean;
+    float rgb_scale;
 
-#if defined(__cplusplus)
+    vsi_bool reverse_channel;
+    /* local data must be the first. */
+    vsi_nn_pre_process_yuv444_lcl_data* local;
+} vsi_nn_pre_process_yuv444_param;
+
+#ifdef __cplusplus
 }
 #endif
+
 #endif
+
