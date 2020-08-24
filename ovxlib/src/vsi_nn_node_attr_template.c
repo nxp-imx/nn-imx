@@ -184,6 +184,7 @@ static _node_template s_template[] =
     /* MOMENTS */               NULL,
     /* PRE_PROCESS_YUV444 */    NULL,
     /* PRE_PROCESS_NV12 */      NULL,
+    /* SCATTER_ND */            NULL,
 };
 //_compiler_assert( _cnt_of_array(s_template) == VSI_NN_OP_NUM, vsi_nn_node_attr_template_c );
 

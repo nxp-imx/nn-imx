@@ -582,6 +582,7 @@
     <ClInclude Include="include\ops\vsi_nn_op_floordiv.h" />
     <ClInclude Include="include\ops\vsi_nn_op_fullconnect.h" />
     <ClInclude Include="include\ops\vsi_nn_op_gather.h" />
+    <ClInclude Include="include\ops\vsi_nn_op_scatter_nd.h" />
     <ClInclude Include="include\ops\vsi_nn_op_generate_proposals.h" />
     <ClInclude Include="include\ops\vsi_nn_op_grouped_conv2d.h" />
     <ClInclude Include="include\ops\vsi_nn_op_gru_ovxlib.h" />
@@ -834,6 +835,9 @@
     <ClCompile Include="src\kernel\cl\gather_nd_cl.c">
       <ObjectFileName>$(IntDir)\src\kernel\cl\gather_nd_cl.o</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="src\kernel\cl\scatter_nd_cl.c">
+      <ObjectFileName>$(IntDir)\src\kernel\cl\scatter_nd_cl.o</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="src\kernel\cl\grucell_activation_cl.c">
       <ObjectFileName>$(IntDir)\src\kernel\cl\grucell_activation_cl.o</ObjectFileName>
     </ClCompile>
@@ -935,6 +939,9 @@
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\gather_nd_cpu.c">
       <ObjectFileName>$(IntDir)\src\kernel\cpu\gather_nd_cpu.o</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\kernel\cpu\scatter_nd_cpu.c">
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\scatter_nd_cpu.o</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\grucell_activation_cpu.c">
       <ObjectFileName>$(IntDir)\src\kernel\cpu\grucell_activation_cpu.o</ObjectFileName>
@@ -1058,6 +1065,9 @@
     </ClCompile>
     <ClCompile Include="src\kernel\evis\gather_nd_evis.c">
       <ObjectFileName>$(IntDir)\src\kernel\evis\gather_nd_evis.o</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\kernel\evis\scatter_nd_evis.c">
+      <ObjectFileName>$(IntDir)\src\kernel\evis\scatter_nd_evis.o</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\grucell_activation_evis.c">
       <ObjectFileName>$(IntDir)\src\kernel\evis\grucell_activation_evis.o</ObjectFileName>
@@ -1397,6 +1407,9 @@
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_gather_nd.c">
       <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_gather_nd.o</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_scatter_nd.c">
+      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_scatter_nd.o</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_generate_proposals.c">
       <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_generate_proposals.o</ObjectFileName>

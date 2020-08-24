@@ -42,14 +42,14 @@ __BEGIN_DECLS
 /*
  * Define kernel meta.
  */
-#define _CPU_ARG_NUM            (2)
+#define _CPU_ARG_NUM            (3)
 #define _CPU_INPUT_NUM          (2)
 #define _CPU_OUTPUT_NUM         (1)
 #define _CPU_IO_NUM             (_CPU_INPUT_NUM + _CPU_OUTPUT_NUM)
 #define _CPU_PARAM_NUM          (_CPU_ARG_NUM + _CPU_IO_NUM)
-#define _KERNEL_NAME            CVIVANTE_NAMESPACE("cpu.gather_nd")
+#define _KERNEL_NAME            CVIVANTE_NAMESPACE("cpu.scatter_nd")
 
-DEF_KERNEL_EXECUTOR(_gather_nd_exec)
+DEF_KERNEL_EXECUTOR(_scatter_nd_exec)
     (
     vsi_nn_kernel_node_t node,
     const vsi_nn_kernel_node_param_t * param,
@@ -58,17 +58,17 @@ DEF_KERNEL_EXECUTOR(_gather_nd_exec)
 {
     vsi_status status = VSI_FAILURE;
     vsi_nn_kernel_tensor_t tensors[_CPU_IO_NUM] = { NULL };
+    uint32_t *   para_buffer[1] = { NULL };
     float * buffer[2] = { NULL };
-    uint32_t* buffer_idx = NULL;
     size_t out_elements = 0;
     vsi_nn_kernel_tensor_attr_t * attr[_CPU_IO_NUM] = { NULL };
-    int32_t i = 0;
+    int32_t i = 0, j = 0;
     int32_t block_size = 1, indices_num = 1;
-    int32_t coord_stride = 1;
+    int32_t coord_dim = 1;
 
-    tensors[0]  = (vsi_nn_kernel_tensor_t)param[0];
-    tensors[1]  = (vsi_nn_kernel_tensor_t)param[1];
-    tensors[2]  = (vsi_nn_kernel_tensor_t)param[2];
+    tensors[0]  = (vsi_nn_kernel_tensor_t)param[0]; // idx    int
+    tensors[1]  = (vsi_nn_kernel_tensor_t)param[1]; // update
+    tensors[2]  = (vsi_nn_kernel_tensor_t)param[2]; // output
 
     attr[0] = vsi_nn_kernel_tensor_attr_create( tensors[0] );
     CHECK_PTR_FAIL_GOTO( attr[0], "Create tensor attr buffer fail.", final );
@@ -77,49 +77,47 @@ DEF_KERNEL_EXECUTOR(_gather_nd_exec)
     attr[2] = vsi_nn_kernel_tensor_attr_create( tensors[2] );
     CHECK_PTR_FAIL_GOTO( attr[2], "Create tensor attr buffer fail.", final );
 
-    vsi_nn_kernel_scalar_read_int32((vsi_nn_kernel_scalar_t)param[3], &(block_size));
-    vsi_nn_kernel_scalar_read_int32((vsi_nn_kernel_scalar_t)param[4], &(coord_stride));
-
     out_elements = vsi_nn_kernel_tensor_attr_get_size( attr[2] );
 
-    buffer[0] = (float*)vsi_nn_kernel_tensor_create_buffer( tensors[0], attr[0], TRUE );
-    CHECK_PTR_FAIL_GOTO( buffer[0], "Create input0 buffer fail.", final );
+    para_buffer[0] = (uint32_t*)vsi_nn_kernel_tensor_create_buffer( tensors[0], attr[0], FALSE );
+    CHECK_PTR_FAIL_GOTO( para_buffer[0], "Create input0 buffer fail.", final );
 
-    buffer_idx = (uint32_t*)vsi_nn_kernel_tensor_create_buffer( tensors[1], attr[1], FALSE );
-    CHECK_PTR_FAIL_GOTO( buffer_idx, "Create input1 buffer fail.", final );
+    buffer[0] = (float*)vsi_nn_kernel_tensor_create_buffer( tensors[1], attr[1], TRUE );
+    CHECK_PTR_FAIL_GOTO( buffer[0], "Create input1 buffer fail.", final );
+
+    vsi_nn_kernel_scalar_read_int32((vsi_nn_kernel_scalar_t)param[3], &(block_size));
+    vsi_nn_kernel_scalar_read_int32((vsi_nn_kernel_scalar_t)param[4], &(coord_dim));
+    vsi_nn_kernel_scalar_read_int32((vsi_nn_kernel_scalar_t)param[5], &(indices_num));
 
     buffer[1] = (float *)malloc( out_elements * sizeof(float) );
     CHECK_PTR_FAIL_GOTO( buffer[1], "Create output buffer fail.", final );
     memset( buffer[1], 0, out_elements * sizeof(float) );
 
-    // index number
-    for(i = 0; i < (int32_t)attr[1]->shape->size; ++i)
-    {
-        indices_num *= attr[1]->shape->data[i];
-    }
-    indices_num /= coord_stride;
-
-    if(coord_stride <= 3) // reshape 3D
+    if(coord_dim <= 3)
     {
         int32_t stride[3] = {block_size, 0, 0};
-        for(i = 1; i < coord_stride; ++i)
+
+        for(i = 1; i < coord_dim; ++i)
         {
-            stride[i] = stride[i - 1] * attr[0]->shape->data[i];
+            stride[i] = stride[i - 1] * attr[2]->shape->data[i];
         }
 
         for(i = 0; i < indices_num; i++)
         {
-            uint32_t out_index = i * block_size;
+            uint32_t in_index = i * block_size;
+            uint32_t out_index = 0;
             uint32_t coord[3] = {0};
-            uint32_t in_index = 0;
-            int32_t j = 0;
 
-            for(j = 0; j < coord_stride; j++)
+            for(j = 0; j < coord_dim; j++)
             {
-                coord[j] = buffer_idx[i * coord_stride + j];
+                coord[j] = para_buffer[0][i * coord_dim + j];
             }
-            in_index = coord[2] * stride[2] + coord[1] * stride[1] + coord[0] * stride[0];
-            memcpy(&(buffer[1][out_index]), &(buffer[0][in_index]), block_size * sizeof(float));
+
+            out_index = coord[2] * stride[2] + coord[1] * stride[1] + coord[0] * stride[0];
+            for(j = 0; j < block_size; j++)
+            {
+                buffer[1][out_index + j] += buffer[0][in_index + j];
+            }
         }
     }
     else
@@ -133,9 +131,9 @@ DEF_KERNEL_EXECUTOR(_gather_nd_exec)
     CHECK_STATUS_FAIL_GOTO( status, final );
 
 final:
-    if( buffer_idx )
+    if( para_buffer[0] )
     {
-        free( buffer_idx );
+        free( para_buffer[0] );
     }
     for( i = 0; i < 2; i ++ )
     {
@@ -149,28 +147,28 @@ final:
         if(attr[i]) { vsi_nn_kernel_tensor_attr_release( &attr[i] ); }
     }
     return status;
-} /* _pre_process_yuv420_exec() */
+} /* _scatter_nd_exec() */
 /*
  * Kernel params
  */
-static vx_param_description_t _gather_nd_kernel_param_def[] =
+static vx_param_description_t _scatter_nd_kernel_param_def[] =
 {
     {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
     // Add kererl parameters here
 };
-#define _GATHER_ND_PARAM_NUM  _cnt_of_array( _gather_nd_kernel_param_def )
 
 static const vx_kernel_description_t _kernel_info =
 {
     KERNEL_ID_PLACEHOLDER,
     _KERNEL_NAME,
-    _gather_nd_exec,
-    _gather_nd_kernel_param_def,
-    _cnt_of_array( _gather_nd_kernel_param_def ),
+    _scatter_nd_exec,
+    _scatter_nd_kernel_param_def,
+    _cnt_of_array( _scatter_nd_kernel_param_def ),
     vsi_nn_KernelValidator,
     NULL,
     NULL,
@@ -205,6 +203,7 @@ static vsi_nn_kernel_node_t _setup
     vsi_nn_kernel_node_t node = NULL;
     int32_t block_size  = vsi_nn_kernel_param_get_int32( params, "block_size" );
     int32_t coord_dim  = vsi_nn_kernel_param_get_int32( params, "coord_dim" );
+    int32_t idx_num  = vsi_nn_kernel_param_get_int32( params, "idx_num" );
 
     status = _query_kernel( inputs, outputs, kernel );
     if( VSI_SUCCESS == status)
@@ -218,12 +217,13 @@ static vsi_nn_kernel_node_t _setup
                     inputs, _CPU_INPUT_NUM, outputs, _CPU_OUTPUT_NUM );
             backend_params[index++] = vsi_nn_kernel_scalar_create( graph, I32, &block_size );
             backend_params[index++] = vsi_nn_kernel_scalar_create( graph, I32, &coord_dim );
-
+            backend_params[index++] = vsi_nn_kernel_scalar_create( graph, I32, &idx_num );
             /* Pass parameters to node. */
             status = vsi_nn_kernel_node_pass_param( node, backend_params, _CPU_PARAM_NUM );
             CHECK_STATUS( status );
             vsi_nn_kernel_scalar_release( &backend_params[3] );
             vsi_nn_kernel_scalar_release( &backend_params[4] );
+            vsi_nn_kernel_scalar_release( &backend_params[5] );
         }
         else
         {
@@ -235,5 +235,5 @@ static vsi_nn_kernel_node_t _setup
 
 __END_DECLS
 
-REGISTER_BACKEND_CPU( gather_nd, _setup )
+REGISTER_BACKEND_CPU( scatter_nd, _setup )
 
