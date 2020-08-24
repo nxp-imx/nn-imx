@@ -27509,6 +27509,72 @@ __kernel void resize_nearest_I16toI16_op\n\
 }\n\
 "; /* end of resize_nearest_vx*/
 
+static const char scatter_nd_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+_viv_uniform VXC_512Bits uniAccumulateSum_2x8;\n\
+_viv_uniform int index_num;\n\
+\n\
+__kernel void scatter_nd_F16toF16(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    image2d_array_t  output,\n\
+    int width,\n\
+    int area\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);\n\
+    int gidy = get_global_id(1);\n\
+\n\
+    vxc_short8 tmpVal = (vxc_short8)(0, 0, 0, 0, 0, 0, 0, 0);\n\
+    vxc_half8 sum;\n\
+    _viv_asm(COPY, sum, tmpVal, 16);\n\
+    for(int i = 0; i < index_num; i++)\n\
+    {\n\
+        int4 indice = read_imagei(input0, (int2)(0, i));\n\
+        int idx = indice.x + indice.y * width + indice.z * area;\n\
+        if(gidy == idx)\n\
+        {\n\
+            vxc_half8 src;\n\
+            VXC_ReadImage(tmpVal, input1, (int2)(gidx, i), 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+            _viv_asm(COPY, src, tmpVal, 16);\n\
+            VXC_DP2x8(sum, sum, src, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniAccumulateSum_2x8);\n\
+        }\n\
+    }\n\
+    _viv_asm(COPY, tmpVal, sum, 16);\n\
+    VXC_WriteImage(output, (int2)(gidx, gidy), tmpVal, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+#define SCATTER_ND_QINT(src0_type_name, data_type) \\\n\
+__kernel void scatter_nd_##src0_type_name##to##src0_type_name##( \\\n\
+    __read_only image2d_t   input0, \\\n\
+    __read_only image2d_t   input1, \\\n\
+    image2d_array_t  output, \\\n\
+    int width, \\\n\
+    int area \\\n\
+    ) \\\n\
+{ \\\n\
+    int gidx = get_global_id(0);  \\\n\
+    int gidy = get_global_id(1); \\\n\
+ \\\n\
+    data_type sum = (data_type)(0, 0, 0, 0, 0, 0, 0, 0); \\\n\
+    for(int i = 0; i < index_num; i++) \\\n\
+    { \\\n\
+        int4 indice = read_imagei(input0, (int2)(0, i)); \\\n\
+        int idx = indice.x + indice.y * width + indice.z * area; \\\n\
+        if(gidy == idx) \\\n\
+        { \\\n\
+            data_type src; \\\n\
+            VXC_ReadImage(src, input1, (int2)(gidx, i), 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+            VXC_DP2x8(sum, sum, src, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniAccumulateSum_2x8); \\\n\
+        } \\\n\
+    } \\\n\
+    VXC_WriteImage(output, (int2)(gidx, gidy), sum, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+}\n\
+SCATTER_ND_QINT(U8,  vxc_uchar8)\n\
+SCATTER_ND_QINT(I8,  vxc_char8)\n\
+SCATTER_ND_QINT(I16, vxc_short8)\n\
+"; /* end of scatter_nd_vx*/
+
 static const char select_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 _viv_uniform VXC_512Bits uniConvConditiontoDst_2x8;\n\
@@ -43117,6 +43183,246 @@ __kernel void resize_nearest_U8toU8(\n\
 }\n\
 "; /* end of resize_nearest_cl*/
 
+static const char scatter_nd_cl[] = "__kernel void scatter_nd_U32toU32_1D(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int width,\n\
+    int area,\n\
+    int index_num\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // indices_num\n\
+\n\
+    uint4 sum = (uint4)(0, 0, 0, 0);\n\
+    for(int i = 0; i < index_num; i++)\n\
+    {\n\
+        int4 indice = read_imagei(input0, (int2)(0, i));\n\
+        if(gidy == indice.x)\n\
+        {\n\
+            uint4 data = read_imageui(input1, (int2)(gidx, i));\n\
+            sum += data;\n\
+        }\n\
+    }\n\
+    write_imageui(output, (int2)(gidx, gidy), sum);\n\
+}\n\
+\n\
+__kernel void scatter_nd_U32toU32_2D(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int width,\n\
+    int area,\n\
+    int index_num\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // indices_num\n\
+\n\
+    uint4 sum = (uint4)(0, 0, 0, 0);\n\
+    for(int i = 0; i < index_num; i++)\n\
+    {\n\
+        int4 indice0 = read_imagei(input0, (int2)(0, i));\n\
+        int4 indice1 = read_imagei(input0, (int2)(1, i));\n\
+        int idx = indice0.x + indice1.x * width;\n\
+        if(gidy == idx)\n\
+        {\n\
+            uint4 data = read_imageui(input1, (int2)(gidx, i));\n\
+            sum += data;\n\
+        }\n\
+    }\n\
+    write_imageui(output, (int2)(gidx, gidy), sum);\n\
+}\n\
+\n\
+__kernel void scatter_nd_U32toU32_3D(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int width,\n\
+    int area,\n\
+    int index_num\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // indices_num\n\
+\n\
+    uint4 sum = (uint4)(0, 0, 0, 0);\n\
+    for(int i = 0; i < index_num; i++)\n\
+    {\n\
+        int4 indice0 = read_imagei(input0, (int2)(0, i));\n\
+        int4 indice1 = read_imagei(input0, (int2)(1, i));\n\
+        int4 indice2 = read_imagei(input0, (int2)(2, i));\n\
+        int idx = indice0.x + indice1.x * width + indice2.x * area;\n\
+        if(gidy == idx)\n\
+        {\n\
+            uint4 data = read_imageui(input1, (int2)(gidx, i));\n\
+            sum += data;\n\
+        }\n\
+    }\n\
+    write_imageui(output, (int2)(gidx, gidy), sum);\n\
+}\n\
+\n\
+__kernel void scatter_nd_I32toI32_1D(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int width,\n\
+    int area,\n\
+    int index_num\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // indices_num\n\
+\n\
+    int4 sum = (int4)(0, 0, 0, 0);\n\
+    for(int i = 0; i < index_num; i++)\n\
+    {\n\
+        int4 indice = read_imagei(input0, (int2)(0, i));\n\
+        if(gidy == indice.x)\n\
+        {\n\
+            int4 data = read_imagei(input1, (int2)(gidx, i));\n\
+            sum += data;\n\
+        }\n\
+    }\n\
+    write_imagei(output, (int2)(gidx, gidy), sum);\n\
+}\n\
+\n\
+__kernel void scatter_nd_I32toI32_2D(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int width,\n\
+    int area,\n\
+    int index_num\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // indices_num\n\
+\n\
+    int4 sum = (int4)(0, 0, 0, 0);\n\
+    for(int i = 0; i < index_num; i++)\n\
+    {\n\
+        int4 indice0 = read_imagei(input0, (int2)(0, i));\n\
+        int4 indice1 = read_imagei(input0, (int2)(1, i));\n\
+        int idx = indice0.x + indice1.x * width;\n\
+        if(gidy == idx)\n\
+        {\n\
+            int4 data = read_imagei(input1, (int2)(gidx, i));\n\
+            sum += data;\n\
+        }\n\
+    }\n\
+    write_imagei(output, (int2)(gidx, gidy), sum);\n\
+}\n\
+\n\
+__kernel void scatter_nd_I32toI32_3D(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int width,\n\
+    int area,\n\
+    int index_num\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // indices_num\n\
+\n\
+    int4 sum = (int4)(0, 0, 0, 0);\n\
+    for(int i = 0; i < index_num; i++)\n\
+    {\n\
+        int4 indice0 = read_imagei(input0, (int2)(0, i));\n\
+        int4 indice1 = read_imagei(input0, (int2)(1, i));\n\
+        int4 indice2 = read_imagei(input0, (int2)(2, i));\n\
+        int idx = indice0.x + indice1.x * width + indice2.x * area;\n\
+        if(gidy == idx)\n\
+        {\n\
+            int4 data = read_imagei(input1, (int2)(gidx, i));\n\
+            sum += data;\n\
+        }\n\
+    }\n\
+    write_imagei(output, (int2)(gidx, gidy), sum);\n\
+}\n\
+\n\
+__kernel void scatter_nd_F32toF32_1D(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int width,\n\
+    int area,\n\
+    int index_num\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // indices_num\n\
+\n\
+    float4 sum = (float4)(0, 0, 0, 0);\n\
+    for(int i = 0; i < index_num; i++)\n\
+    {\n\
+        int4 indice = read_imagei(input0, (int2)(0, i));\n\
+        if(gidy == indice.x)\n\
+        {\n\
+            float4 data = read_imagef(input1, (int2)(gidx, i));\n\
+            sum += data;\n\
+        }\n\
+    }\n\
+    write_imagef(output, (int2)(gidx, gidy), sum);\n\
+}\n\
+\n\
+__kernel void scatter_nd_F32toF32_2D(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int width,\n\
+    int area,\n\
+    int index_num\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // indices_num\n\
+\n\
+    float4 sum = (float4)(0, 0, 0, 0);\n\
+    for(int i = 0; i < index_num; i++)\n\
+    {\n\
+        int4 indice0 = read_imagei(input0, (int2)(0, i));\n\
+        int4 indice1 = read_imagei(input0, (int2)(1, i));\n\
+        int idx = indice0.x + indice1.x * width;\n\
+        if(gidy == idx)\n\
+        {\n\
+            float4 data = read_imagef(input1, (int2)(gidx, i));\n\
+            sum += data;\n\
+        }\n\
+    }\n\
+    write_imagef(output, (int2)(gidx, gidy), sum);\n\
+}\n\
+\n\
+__kernel void scatter_nd_F32toF32_3D(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int width,\n\
+    int area,\n\
+    int index_num\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // indices_num\n\
+\n\
+    float4 sum = (float4)(0, 0, 0, 0);\n\
+    for(int i = 0; i < index_num; i++)\n\
+    {\n\
+        int4 indice0 = read_imagei(input0, (int2)(0, i));\n\
+        int4 indice1 = read_imagei(input0, (int2)(1, i));\n\
+        int4 indice2 = read_imagei(input0, (int2)(2, i));\n\
+        int idx = indice0.x + indice1.x * width + indice2.x * area;\n\
+        if(gidy == idx)\n\
+        {\n\
+            float4 data = read_imagef(input1, (int2)(gidx, i));\n\
+            sum += data;\n\
+        }\n\
+    }\n\
+    write_imagef(output, (int2)(gidx, gidy), sum);\n\
+}"; /* end of scatter_nd_cl*/
+
 static const char select_cl[] = "__kernel void select_I8_U8_U8toU8(\n\
     __read_only  image2d_array_t  condition,\n\
     __read_only  image2d_array_t  input0,\n\
@@ -43813,6 +44119,7 @@ static const source_map_t evis_resource[] =
     {"resize_bilinear_U8_vx", resize_bilinear_U8_vx},
     {"resize_bilinear_U8_opt_vx", resize_bilinear_U8_opt_vx},
     {"resize_nearest_vx", resize_nearest_vx},
+    {"scatter_nd_vx", scatter_nd_vx},
     {"select_vx", select_vx},
     {"swish_vx", swish_vx},
     {"tile_vx", tile_vx},
@@ -43943,6 +44250,7 @@ static const source_map_t cl_resource[] =
     {"relu_keras_cl", relu_keras_cl},
     {"resize_bilinear_cl", resize_bilinear_cl},
     {"resize_nearest_cl", resize_nearest_cl},
+    {"scatter_nd_cl", scatter_nd_cl},
     {"select_cl", select_cl},
     {"swish_cl", swish_cl},
     {"tile_cl", tile_cl},
