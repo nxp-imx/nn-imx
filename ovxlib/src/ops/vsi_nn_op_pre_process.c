@@ -287,7 +287,7 @@ static vsi_bool op_setup
             vsi_nn_internal_setup_node(self, curr);
         }
 
-        curr = vsi_nn_internal_new_node( self, VSI_NN_OP_CONCAT, 0, 0 );
+        curr = vsi_nn_internal_new_node( self, VSI_NN_OP_CONCAT, 3, 1 );
 
         curr->node->nn_param.concat.axis = axis;
         curr->inputs[0] = tmp_outputs[0]->t;

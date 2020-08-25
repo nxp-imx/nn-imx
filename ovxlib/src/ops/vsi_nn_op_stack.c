@@ -122,7 +122,7 @@ static vsi_bool op_setup
     input_shape[0] = block_size;
     input_shape[1] = block_num;
 
-    curr = vsi_nn_internal_new_node( node, VSI_NN_OP_CONCAT, 0, 0 );
+    curr = vsi_nn_internal_new_node( node, VSI_NN_OP_CONCAT, node->input.num, node->output.num );
     for (i = 0; i < node->input.num; i++)
     {
         vsi_nn_tensor_t *input_rs = NULL;
