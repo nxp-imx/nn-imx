@@ -422,6 +422,11 @@ def add_vsi_nn_kernel_custom_xxx_vx_get_name(op, env):
     op = env.prefix + op
     return env.path + '/src/custom/ops/vx/vsi_nn_kernel_' + op.lower() + '.vx'
 
+def modify_ops_def(lines, env):
+    for op in env.op_name:
+        lines.append('DEF_OP(' + op.upper() + ')\n')
+    return lines
+
 modify_list_for_embedded = [
     {'file': '/include/interface/ops.def', 'func': modify_ops_def},
     #{'file': '/BUILD', 'func': modify_BUILD},
