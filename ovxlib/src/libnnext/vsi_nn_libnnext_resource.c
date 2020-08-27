@@ -23110,7 +23110,7 @@ static const char prelu_vx[] = "\n\
 #if (VX_VERSION==2)\n\
 _viv_uniform VXC_512Bits uniPreluDFPLo_2x8b;\n\
 _viv_uniform VXC_512Bits uniPreluDFPHi_2x8b;\n\
-__kernel void prelu_I8F16toI8_2D\n\
+__kernel void prelu_I8F16toI8_2D_OPT\n\
 (\n\
     image2d_array_t input,\n\
     image2d_array_t param,\n\
@@ -23136,7 +23136,7 @@ __kernel void prelu_I8F16toI8_2D\n\
     VXC_WriteImage(output, coord, dst, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
 }\n\
 \n\
-__kernel void prelu_I16F16toI16_2D\n\
+__kernel void prelu_I16F16toI16_2D_OPT\n\
     (\n\
     image2d_array_t input,\n\
     image2d_array_t param,\n\
@@ -23161,7 +23161,7 @@ __kernel void prelu_I16F16toI16_2D\n\
 _viv_uniform VXC_512Bits uniPreluInt8_2x8;\n\
 _viv_uniform VXC_512Bits uniPreluInt16_part0_4x4;\n\
 _viv_uniform VXC_512Bits uniPreluInt16_part1_4x4;\n\
-__kernel void prelu_I8F16toI8_2D\n\
+__kernel void prelu_I8F16toI8_2D_OPT\n\
 (\n\
     image2d_array_t input,\n\
     image2d_array_t param,\n\
@@ -23189,7 +23189,7 @@ __kernel void prelu_I8F16toI8_2D\n\
     VXC_WriteImage(output, coord, dst, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
 }\n\
 \n\
-__kernel void prelu_I16F16toI16_2D\n\
+__kernel void prelu_I16F16toI16_2D_OPT\n\
     (\n\
     image2d_array_t input,\n\
     image2d_array_t param,\n\
@@ -23323,12 +23323,14 @@ PRELU_F16_3D(F16F16, U8,  vxc_short8,  vxc_half8,   vxc_uchar16, int4,  vxc_ucha
     VXC_WriteImage(output, coord, dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\\\n\
 }\n\
 PRELU_F16_2D(I8F16,  F16, vxc_char16,  vxc_char16,  vxc_half8,   half4, vxc_short8)\n\
+PRELU_F16_2D(I8F16,  I8,  vxc_char16,  vxc_char16,  vxc_char16,  int4,  vxc_char16)\n\
 PRELU_F16_2D(I16F16, F16, vxc_short8,  vxc_short8,  vxc_half8,   half4, vxc_short8)\n\
 PRELU_F16_2D(U8F16,  U8,  vxc_uchar16, vxc_uchar16, vxc_uchar16, int4,  vxc_uchar16)\n\
 PRELU_F16_2D(U8F16,  F16, vxc_uchar16, vxc_uchar16, vxc_half8,   half4, vxc_short8)\n\
 PRELU_F16_2D(F16F16, F16, vxc_short8,  vxc_half8,   vxc_half8,   half4, vxc_short8)\n\
 PRELU_F16_2D(F16F16, I8,  vxc_short8,  vxc_half8,   vxc_char16,  int4,  vxc_char16)\n\
 PRELU_F16_2D(F16F16, I16, vxc_short8,  vxc_half8,   vxc_short8,  int4,  vxc_short8)\n\
+PRELU_F16_2D(I16F16, I16, vxc_short8,  vxc_short8,  vxc_short8,  int4,  vxc_short8)\n\
 PRELU_F16_2D(F16F16, U8,  vxc_short8,  vxc_half8,   vxc_uchar16, int4,  vxc_uchar16)\n\
 \n\
 #define PRELU_U8_2D(name, output_type, convert_type, copy_type) \\\n\

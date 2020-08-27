@@ -42,6 +42,13 @@ __BEGIN_DECLS
 #define KERNEL_SOURCE0    "prelu",
 #define KERNEL_SOURCE1    "prelu_BF16",
 
+ typedef enum
+{
+    _3D = 0,
+    _2D,
+    _2D_OPT,
+} vsi_nn_shader_type_e;
+
 #define HASH_PRELU_KEY(_input0_type, _input1_type, _output_type, _image_2d) \
     ((_input0_type << 24) | (_input1_type << 16) | (_output_type << 8) | (_image_2d))
 
@@ -50,9 +57,9 @@ __BEGIN_DECLS
     CVIVANTE_NAMESPACE("evis.prelu_"#IN0_TYPE#IN1_TYPE"to"#OUT_TYPE), \
         SOURCE },
 
-#define PRELU_KERNELS_2D(IN0_TYPE, IN1_TYPE, OUT_TYPE, SOURCE) \
-    { HASH_PRELU_KEY(IN0_TYPE, IN1_TYPE, OUT_TYPE, 1), \
-        CVIVANTE_NAMESPACE("evis.prelu_"#IN0_TYPE#IN1_TYPE"to"#OUT_TYPE"_2D"), \
+#define PRELU_KERNELS_2D(IN0_TYPE, IN1_TYPE, OUT_TYPE, SH_TYPE, SOURCE) \
+    { HASH_PRELU_KEY(IN0_TYPE, IN1_TYPE, OUT_TYPE, SH_TYPE), \
+    CVIVANTE_NAMESPACE("evis.prelu_"#IN0_TYPE#IN1_TYPE"to"#OUT_TYPE#SH_TYPE), \
         SOURCE },
 
 static const struct {
@@ -75,20 +82,22 @@ static const struct {
     PRELU_KERNELS(I8,   F16,  F16,  KERNEL_SOURCE0)
     PRELU_KERNELS(I8,   F16,  F16,  KERNEL_SOURCE0)
 
-    PRELU_KERNELS_2D(BF16, BF16, BF16, KERNEL_SOURCE1)
-    PRELU_KERNELS_2D(BF16, F16,  BF16, KERNEL_SOURCE1)
-    PRELU_KERNELS_2D(F16,  F16,  F16,  KERNEL_SOURCE0)
-    PRELU_KERNELS_2D(F16,  F16,  I16,  KERNEL_SOURCE0)
-    PRELU_KERNELS_2D(F16,  F16,  U8,   KERNEL_SOURCE0)
-    PRELU_KERNELS_2D(F16,  F16,  I8,   KERNEL_SOURCE0)
-    PRELU_KERNELS_2D(I16,  F16,  I16,  KERNEL_SOURCE0)
-    PRELU_KERNELS_2D(I16,  F16,  F16,  KERNEL_SOURCE0)
-    PRELU_KERNELS_2D(U8,   F16,  U8,   KERNEL_SOURCE0)
-    PRELU_KERNELS_2D(U8,   F16,  F16,  KERNEL_SOURCE0)
-    PRELU_KERNELS_2D(I8,   F16,  I8,   KERNEL_SOURCE0)
-    PRELU_KERNELS_2D(I8,   F16,  F16,  KERNEL_SOURCE0)
-    PRELU_KERNELS_2D(U8,   U8,   U8,   KERNEL_SOURCE0)
-    PRELU_KERNELS_2D(U8,   U8,   F16,  KERNEL_SOURCE0)
+    PRELU_KERNELS_2D(BF16, BF16, BF16, _2D,     KERNEL_SOURCE1)
+    PRELU_KERNELS_2D(BF16, F16,  BF16, _2D,     KERNEL_SOURCE1)
+    PRELU_KERNELS_2D(F16,  F16,  F16,  _2D,     KERNEL_SOURCE0)
+    PRELU_KERNELS_2D(F16,  F16,  I16,  _2D,     KERNEL_SOURCE0)
+    PRELU_KERNELS_2D(F16,  F16,  U8,   _2D,     KERNEL_SOURCE0)
+    PRELU_KERNELS_2D(F16,  F16,  I8,   _2D,     KERNEL_SOURCE0)
+    PRELU_KERNELS_2D(I16,  F16,  I16,  _2D,     KERNEL_SOURCE0)
+    PRELU_KERNELS_2D(I16,  F16,  I16,  _2D_OPT, KERNEL_SOURCE0)
+    PRELU_KERNELS_2D(I16,  F16,  F16,  _2D,     KERNEL_SOURCE0)
+    PRELU_KERNELS_2D(U8,   F16,  U8,   _2D,     KERNEL_SOURCE0)
+    PRELU_KERNELS_2D(U8,   F16,  F16,  _2D,     KERNEL_SOURCE0)
+    PRELU_KERNELS_2D(I8,   F16,  I8,   _2D,     KERNEL_SOURCE0)
+    PRELU_KERNELS_2D(I8,   F16,  I8,   _2D_OPT, KERNEL_SOURCE0)
+    PRELU_KERNELS_2D(I8,   F16,  F16,  _2D,     KERNEL_SOURCE0)
+    PRELU_KERNELS_2D(U8,   U8,   U8,   _2D,     KERNEL_SOURCE0)
+    PRELU_KERNELS_2D(U8,   U8,   F16,  _2D,     KERNEL_SOURCE0)
 
 };
 
@@ -203,7 +212,7 @@ DEF_KERNEL_INITIALIZER(_minimum_initializer)
 
     pack_key = _PACK_SELECT_KEY( attr[0]->dtype, attr[2]->dtype, is_ge_fl, is_2d_img, evis_version );
 
-    if( attr[0]->dtype == I8 && attr[2]->dtype == I8 )
+    if( attr[0]->dtype == I8 && attr[2]->dtype == I8 && is_ge_fl)
     {
         gpu_param.global_scale[0] = 16;
         gpu_param.global_scale[1] = 1;
@@ -509,6 +518,11 @@ static vsi_status _query_kernel
     vsi_nn_kernel_dtype_e input0_dtype;
     vsi_nn_kernel_dtype_e input1_dtype;
     vsi_nn_kernel_dtype_e output_dtype;
+    int8_t input_fl = inputs[0]->attr.dtype.qnt_type == VSI_NN_QNT_TYPE_DFP ?
+        inputs[0]->attr.dtype.fl : 0;
+    int8_t output_fl = outputs[0]->attr.dtype.qnt_type == VSI_NN_QNT_TYPE_DFP ?
+        outputs[0]->attr.dtype.fl : 0;
+    vsi_nn_shader_type_e  sh_type = image_2d ? (input_fl >= output_fl ? _2D_OPT : _2D) : _3D;
     vsi_status status = VSI_FAILURE;
     uint32_t key;
     int i;
@@ -516,7 +530,8 @@ static vsi_status _query_kernel
     input0_dtype = vsi_nn_kernel_map_dtype( inputs[0]->attr.dtype.vx_type );
     input1_dtype = vsi_nn_kernel_map_dtype( inputs[1]->attr.dtype.vx_type );
     output_dtype = vsi_nn_kernel_map_dtype( outputs[0]->attr.dtype.vx_type );
-    key = HASH_PRELU_KEY( input0_dtype, input1_dtype, output_dtype, image_2d );
+
+    key = HASH_PRELU_KEY( input0_dtype, input1_dtype, output_dtype, sh_type );
 
     for( i = 0; i < _cnt_of_array(kernel_map); i ++ )
     {
