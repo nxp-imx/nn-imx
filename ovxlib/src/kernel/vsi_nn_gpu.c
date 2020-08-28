@@ -41,7 +41,7 @@ void gpu_dp_inst_update_postshfit
     VSI_ASSERT( dp_inst->type == GPU_DP_TYPE_16 );
     if( shift < 0 )
     {
-        const uint32_t multiplier = gpu_postshift( 1 << (-shift) );
+        const uint32_t multiplier = gpu_multiplier( 1 << (-shift) );
         gpu_dp_inst_update_multiplier( dp_inst, 0, 8, multiplier );
     }
     else
