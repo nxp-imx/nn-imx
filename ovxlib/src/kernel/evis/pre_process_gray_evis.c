@@ -108,7 +108,7 @@ DEF_KERNEL_INITIALIZER(_pre_process_gray_copy_initializer)
         {0, 0, 0},  // localWorkSize: local group size in thread
         {0, 0, 0}}; // globalWorkSize: image size in thread
 
-    int32_t     dstZP      = 0;
+    float       dstZP      = 0;
     float       outputScale   = 1;
     uint32_t    width      = 0;
     uint32_t    height     = 0;
@@ -120,7 +120,7 @@ DEF_KERNEL_INITIALIZER(_pre_process_gray_copy_initializer)
     CHECK_PTR_FAIL_GOTO( attr[0], "Create tensor attr buffer fail.", OnError );
 
     out_shape  = attr[0]->shape;
-    dstZP      = attr[0]->asymm.zero_point;
+    dstZP      = (float)attr[0]->asymm.zero_point;
     outputScale   = attr[0]->asymm.scale;
     width      = out_shape->data[0];
     height     = out_shape->data[1];
@@ -135,7 +135,7 @@ DEF_KERNEL_INITIALIZER(_pre_process_gray_copy_initializer)
         {
             outputScale = (1.0f / (float)(1 << -attr[0]->dfp.fl));
         }
-        dstZP = 0;
+        dstZP = 0.0f;
     }
     else if(attr[0]->quant == VSI_NN_KERNEL_QUANT_ASYMM)
     {
@@ -144,7 +144,7 @@ DEF_KERNEL_INITIALIZER(_pre_process_gray_copy_initializer)
     else if( attr[0]->quant == VSI_NN_KERNEL_QUANT_NONE )
     {
         outputScale = 1;
-        dstZP = 0;
+        dstZP = 0.0f;
     }
 
     shaderParam.global_scale[0]  = 16;
@@ -209,7 +209,7 @@ DEF_KERNEL_INITIALIZER(_pre_process_gray_initializer)
         {0, 0, 0},  // localWorkSize: local group size in thread
         {0, 0, 0}}; // globalWorkSize: image size in thread
 
-    int32_t     dstZP      = 0;
+    float       dstZP      = 0;
     float       outputScale   = 1;
     uint32_t    width      = 0;
     uint32_t    height     = 0;
@@ -221,7 +221,7 @@ DEF_KERNEL_INITIALIZER(_pre_process_gray_initializer)
     CHECK_PTR_FAIL_GOTO( attr[0], "Create tensor attr buffer fail.", OnError );
 
     out_shape  = attr[0]->shape;
-    dstZP      = attr[0]->asymm.zero_point;
+    dstZP      = (float)attr[0]->asymm.zero_point;
     outputScale   = attr[0]->asymm.scale;
     width      = out_shape->data[0];
     height     = out_shape->data[1];
@@ -236,7 +236,7 @@ DEF_KERNEL_INITIALIZER(_pre_process_gray_initializer)
         {
             outputScale = (1.0f / (float)(1 << -attr[0]->dfp.fl));
         }
-        dstZP = 0;
+        dstZP = 0.0f;
     }
     else if(attr[0]->quant == VSI_NN_KERNEL_QUANT_ASYMM)
     {
@@ -245,7 +245,7 @@ DEF_KERNEL_INITIALIZER(_pre_process_gray_initializer)
     else if( attr[0]->quant == VSI_NN_KERNEL_QUANT_NONE )
     {
         outputScale = 1;
-        dstZP = 0;
+        dstZP = 0.0f;
     }
 
     shaderParam.global_scale[0]  = 4;
