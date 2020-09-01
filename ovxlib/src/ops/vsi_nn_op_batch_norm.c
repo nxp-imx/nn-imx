@@ -260,7 +260,7 @@ static vsi_status op_deinit
             vsi_nn_ReleaseTensor(&(p->local->reshaped_output));
             p->local->reshaped_output = NULL;
         }
-        p->local = NULL;
+        vsi_nn_safe_free(p->local);
     }
     vsi_nn_op_common_deinit(self);
     return VSI_SUCCESS;
