@@ -757,6 +757,9 @@
     <ClCompile Include="src\kernel\evis\relu_keras_evis.c" />
     <ClCompile Include="src\kernel\evis\resize_bilinear_evis.c" />
     <ClCompile Include="src\kernel\evis\resize_nearest_evis.c" />
+    <ClCompile Include="src\kernel\vx\clip_vx.c" />
+    <ClCompile Include="src\kernel\vx\eltwise_unary_vx.c" />
+    <ClCompile Include="src\kernel\vx\relu_keras_vx.c" />
     <ClCompile Include="src\kernel\vx\swish_vx.c" />
     <ClCompile Include="src\ops\vsi_nn_op_expand_broadcast.c" />
     <ClCompile Include="src\platform\nnapi0.4\vsi_nn_pf_softmax.c">
