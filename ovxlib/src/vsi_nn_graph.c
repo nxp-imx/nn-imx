@@ -84,7 +84,7 @@ final:
 
 static vsi_status _check_swapped_tensors
     (
-    vsi_nn_graph_t* graph
+    const vsi_nn_graph_t* graph
     )
 {
     uint32_t i = 0;
@@ -758,7 +758,7 @@ vsi_status vsi_nn_VerifyGraph
 
 vsi_status vsi_nn_RunGraph
     (
-    vsi_nn_graph_t * graph
+    const vsi_nn_graph_t * graph
     )
 {
     vsi_status status;
@@ -1006,7 +1006,7 @@ void vsi_nn_RemoveTensor
 
 vsi_nn_tensor_t * vsi_nn_GetTensor
     (
-    vsi_nn_graph_t   * graph,
+    const vsi_nn_graph_t   * graph,
     vsi_nn_tensor_id_t id
     )
 {
@@ -1021,7 +1021,7 @@ vsi_nn_tensor_t * vsi_nn_GetTensor
 
 vsi_nn_node_t * vsi_nn_GetNode
     (
-    vsi_nn_graph_t   * graph,
+    const vsi_nn_graph_t   * graph,
     vsi_nn_node_id_t   id
     )
 {
@@ -1774,7 +1774,7 @@ vsi_status vsi_nn_ResetRNNBuffers
 
 vsi_bool vsi_nn_HasRNN
     (
-    vsi_nn_graph_t* graph
+    const vsi_nn_graph_t* graph
     )
 {
     return NULL != graph && NULL != graph->rnn_wksp;
@@ -1876,3 +1876,27 @@ vsi_status vsi_nn_SetGraphPreloadSize
 
     return status;
 }
+
+vsi_nn_tensor_id_t vsi_nn_get_tensor_id
+    (
+    vsi_nn_graph_t* graph,
+    const vsi_nn_tensor_t * tensor
+    )
+{
+    uint32_t i;
+    vsi_nn_tensor_t * iter;
+    if( !graph || !tensor )
+    {
+        return VSI_NN_TENSOR_ID_NA;
+    }
+    for(i = 0; i < graph->tensor_num; i++)
+    {
+        iter = vsi_nn_GetTensor( graph, i );
+        if(iter && iter == tensor)
+        {
+            return i;
+        }
+    }
+    return VSI_NN_TENSOR_ID_NA;
+} /* vsi_nn_get_tensor_id() */
+

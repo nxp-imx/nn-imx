@@ -21,12 +21,14 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "vsi_nn_prv.h"
 #include "vsi_nn_log.h"
 #include "vsi_nn_node.h"
+#include "vsi_nn_graph.h"
 #include "vsi_nn_ops.h"
 #include "vsi_nn_tensor.h"
 #include "vsi_nn_types.h"
@@ -119,6 +121,43 @@ void vsi_nn_ReleaseNode
         *node = NULL;
     }
 } /* vsi_nn_ReleaseNode() */
+
+vsi_status vsi_nn_SetNodeInputsAndOutputs
+    (
+    vsi_nn_node_t * node,
+    vsi_nn_tensor_t * const inputs[],
+    int input_num,
+    vsi_nn_tensor_t * const outputs[],
+    int output_num
+    )
+{
+    vsi_status status = VSI_SUCCESS;
+    int i;
+    vsi_nn_tensor_id_t id;
+    if( !node )
+    {
+        return VSI_FAILURE;
+    }
+    if( inputs && input_num > 0 )
+    {
+        assert(input_num <= (int)node->input.num);
+        for(i = 0; i < input_num; i ++)
+        {
+            id = vsi_nn_get_tensor_id(node->graph, inputs[i]);
+            node->input.tensors[i] = id;
+        }
+    }
+    if( outputs && output_num > 0 )
+    {
+        assert(output_num <= (int)node->output.num);
+        for(i = 0; i < output_num; i ++)
+        {
+            id = vsi_nn_get_tensor_id(node->graph, outputs[i]);
+            node->output.tensors[i] = id;
+        }
+    }
+    return status;
+} /* vsi_nn_SetNodeInputsAndOutputs() */
 
 void vsi_nn_PrintNode
     (

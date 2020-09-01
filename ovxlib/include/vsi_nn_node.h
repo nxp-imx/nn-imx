@@ -165,6 +165,24 @@ vsi_status vsi_nn_update_node_attr
     vsi_nn_node_t *node
     );
 
+/**
+ * Set node inputs and outputs
+ *
+ * @param[in] node Node to set IO
+ * @param[in] inputs Input tensors
+ * @param[in] input_num Input tensors' number
+ * @param[in] outputs Output tensors
+ * @param[in] output_num Output tensors' number
+ */
+vsi_status vsi_nn_SetNodeInputsAndOutputs
+    (
+    vsi_nn_node_t * node,
+    vsi_nn_tensor_t * const inputs[],
+    int input_num,
+    vsi_nn_tensor_t * const outputs[],
+    int output_num
+    );
+
 #if defined(__cplusplus)
 }
 #endif

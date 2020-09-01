@@ -181,7 +181,7 @@ static vsi_bool op_setup
             case 3:
             case 4:
                 outputs[0]->attr.dim_num = 2;
-                outputs[0]->attr.size[0] = self->nn_param.fcl.weights;
+                outputs[0]->attr.size[0] = inputs[1]->attr.size[1];
                 outputs[0]->attr.size[1] = inputs[0]->attr.size[input_dim-1];
                 break;
             default:
@@ -201,12 +201,12 @@ static vsi_bool op_setup
                 // But nput with 3 dimensions and with batch size will go into this path.
                 // FIX ME
                 outputs[0]->attr.dim_num = 1;
-                outputs[0]->attr.size[0] = self->nn_param.fcl.weights;
+                outputs[0]->attr.size[0] = inputs[1]->attr.size[1];
                 break;
             case 2:
             case 4:
                 outputs[0]->attr.dim_num = 2;
-                outputs[0]->attr.size[0] = self->nn_param.fcl.weights;
+                outputs[0]->attr.size[0] = inputs[1]->attr.size[1];
                 outputs[0]->attr.size[1] = inputs[0]->attr.size[input_dim-1];
                 break;
             default:

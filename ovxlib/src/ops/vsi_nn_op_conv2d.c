@@ -145,7 +145,7 @@ static vsi_bool op_setup
     nn_param = &self->nn_param.conv2d;
     vsi_nn_compute_padding(
         inputs[0]->attr.size,
-        self->nn_param.conv2d.ksize,
+        inputs[1]->attr.size,
         self->nn_param.conv2d.stride,
         self->nn_param.conv2d.dilation,
         self->nn_param.conv2d.pad_type,
@@ -157,7 +157,7 @@ static vsi_bool op_setup
         outputs[0]->attr.size[0] = vsi_nn_ComputeFilterSize
             (
             inputs[0]->attr.size[0],
-            nn_param->ksize[0],
+            inputs[1]->attr.size[0],
             &nn_param->pad[0],
             nn_param->stride[0],
             nn_param->dilation[0],
@@ -166,13 +166,24 @@ static vsi_bool op_setup
         outputs[0]->attr.size[1] = vsi_nn_ComputeFilterSize
             (
             inputs[0]->attr.size[1],
-            nn_param->ksize[1],
+            inputs[1]->attr.size[1],
             &nn_param->pad[2],
             nn_param->stride[1],
             nn_param->dilation[1],
             VSI_NN_ROUND_FLOOR
             );
-        outputs[0]->attr.size[2] = nn_param->weights;
+        if(self->nn_param.conv2d.weights > 0)
+        {
+            outputs[0]->attr.size[2] = self->nn_param.conv2d.weights;
+        }
+        else if(self->nn_param.conv2d.multiplier > 0)
+        {
+            outputs[0]->attr.size[2] = inputs[0]->attr.size[2] * self->nn_param.conv2d.multiplier;
+        }
+        else
+        {
+            outputs[0]->attr.size[2] = inputs[1]->attr.size[3];
+        }
         outputs[0]->attr.size[3] = inputs[0]->attr.size[3];
         outputs[0]->attr.dim_num = inputs[0]->attr.dim_num;
     }

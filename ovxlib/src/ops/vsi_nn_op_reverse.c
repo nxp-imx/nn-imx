@@ -260,8 +260,10 @@ static vsi_status op_compute
 #if (USE_OVX_API == TRUE)
     vx_nn_tensor_reverse_params_t para;
     vsi_nn_reverse_param * p;
+    int32_t axes[VSI_NN_MAX_DIM_NUM] = {0};
     p = &self->nn_param.reverse;
-    para.axis = p->axis;
+    memcpy(axes, p->axis, sizeof(int32_t) * p->axis_num);
+    para.axis = axes;
     para.numberOfAxis = p->axis_num;
     self->n = vxTensorReverse( self->graph->g, inputs[0]->t, &para,
         sizeof(vx_nn_tensor_reverse_params_t), outputs[0]->t );

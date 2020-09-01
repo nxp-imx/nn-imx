@@ -51,7 +51,7 @@ static int test_quantize_multiplier()
         gpu_quantize_multiplier_16bit( data[i], &mul1, &shift1 );
         if( mul0 != mul1 || shift0 != shift1 )
         {
-            VSILOGE("%lf, mul(%d vs %d), shift(%d vs %d)",data[i], mul0, mul1, shift0, shift1);
+            VSILOGE("%.15lf, mul(%d vs %d), shift(%d vs %d)",data[i], mul0, mul1, shift0, shift1);
             ret = FALSE;
         }
     }

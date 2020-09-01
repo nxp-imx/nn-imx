@@ -83,9 +83,12 @@ static vsi_bool op_setup
     vsi_bool ret = TRUE;
     if( VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num )
     {
+        uint32_t shape[VSI_NN_MAX_DIM_NUM] = {0};
+        memcpy(shape, self->nn_param.reshape.size,
+            sizeof(uint32_t) * self->nn_param.reshape.dim_num);
         ret = vsi_nn_CalcReshapeTensor(inputs[0],
             outputs[0],
-            self->nn_param.reshape.size,
+            shape,
             self->nn_param.reshape.dim_num);
     }
 
