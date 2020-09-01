@@ -696,6 +696,12 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
                 model, operation);
             return slice->Validate(reason);
         }
+        case OperationType::STRIDED_SLICE: {
+            auto strided_slice = std::make_unique<
+                op_validate::StridedSliceValidate<HalPlatform::Model, HalPlatform::Operation>>(
+                model, operation);
+            return strided_slice->Validate(reason);
+        }
         case OperationType::BOX_WITH_NMS_LIMIT:
         case OperationType::PAD_V2:
         case OperationType::QUANTIZED_16BIT_LSTM:

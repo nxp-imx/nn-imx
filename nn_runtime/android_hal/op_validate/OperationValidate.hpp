@@ -223,7 +223,7 @@ class OperationValidate {
     T_Model ModelForWrite() { return m_Model; }
     T_Operation OperationForWrite() { return m_Operation; }
 
-   private:
+   protected:
     nnrt::OperandType MapToNnrtOperandType(OperandType type) {
         switch (type) {
             case OperandType::BOOL:
