@@ -158,7 +158,8 @@ static vsi_bool op_check
     vsi_nn_tensor_t ** outputs
     )
 {
-    if(self->nn_param.pad.dim_num != inputs[0]->attr.dim_num)
+    if(self->nn_param.pad.dim_num != inputs[0]->attr.dim_num
+        && self->nn_param.pad.dim_num != 0 )
     {
         VSILOGE("Error:input tensor dim should be equal with pad's.");
         return FALSE;
@@ -174,6 +175,10 @@ static vsi_bool op_setup
     )
 {
     uint32_t i;
+    if(self->nn_param.pad.dim_num == 0)
+    {
+        self->nn_param.pad.dim_num = (uint8_t)inputs[0]->attr.dim_num;
+    }
     if(VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num)
     {
         for(i=0; i<self->nn_param.pad.dim_num; i++)

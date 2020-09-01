@@ -434,6 +434,12 @@ static vsi_bool op_setup
     vsi_nn_tensor_t ** outputs
     )
 {
+    if(self->nn_param.strided_slice.begin_dims_num == 0)
+    {
+        self->nn_param.strided_slice.begin_dims_num = inputs[0]->attr.dim_num;
+        self->nn_param.strided_slice.end_dims_num = inputs[0]->attr.dim_num;
+        self->nn_param.strided_slice.stride_dims_num = inputs[0]->attr.dim_num;
+    }
     /* TODO: Add code to comput outputs' shape. */
 
     if( VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num )

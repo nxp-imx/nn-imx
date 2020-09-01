@@ -114,11 +114,11 @@ typedef struct vsi_nn_dtype
             /** Meanful in AFFINE_PERCHANNEL_SYMMETRIC */
             struct
             {
-                float      *scales;
-                int32_t    scale_dim;
-                int32_t    channel_dim;
-                int32_t    *zero_points;
-                int32_t    zero_points_dim;
+                const float *   scales;
+                int32_t         scale_dim;
+                int32_t         channel_dim;
+                const int32_t * zero_points;
+                int32_t         zero_points_dim;
             };
 #endif
         };

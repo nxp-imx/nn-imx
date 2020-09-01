@@ -1281,8 +1281,8 @@ vsi_bool vsi_nn_is_same_quant_type(
 
                 if (scale_cnt0 == scale_cnt1)
                 {
-                    float *src_scale_ptr = src->attr.dtype.scales;
-                    float *dst_scale_ptr = dst->attr.dtype.scales;
+                    const float *src_scale_ptr = src->attr.dtype.scales;
+                    const float *dst_scale_ptr = dst->attr.dtype.scales;
                     for (i = 0; i < scale_cnt0; i++)
                     {
                         if (src_scale_ptr[i] != dst_scale_ptr[i])

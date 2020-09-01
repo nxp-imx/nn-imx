@@ -146,7 +146,7 @@ static vsi_bool op_setup
     uint32_t start[VSI_NN_MAX_DIM_NUM] = { 0 };
     uint32_t end[VSI_NN_MAX_DIM_NUM] = { 0 };
     uint32_t axis = self->nn_param.split.axis;
-    uint32_t *slices = self->nn_param.split.slices;
+    const uint32_t *slices = self->nn_param.split.slices;
     uint32_t slices_num = self->nn_param.split.slices_num;
     vsi_nn_split_param * p = NULL;
     vsi_nn_internal_node_t* curr = NULL;

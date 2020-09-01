@@ -82,8 +82,8 @@ vsi_bool vsi_nn_QuantAffinePerchannelCheck
     case VSI_NN_TYPE_UINT32:
         {
             float input_scale = input->attr.dtype.scale;
-            float *w = NULL;
-            float *b = NULL;
+            const float *w = NULL;
+            const float *b = NULL;
             int i = 0;
             w = weight->attr.dtype.scales;
             if(bias && bias->attr.dtype.scales)

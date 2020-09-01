@@ -86,6 +86,10 @@ static vsi_bool op_setup
     vsi_nn_slice_param * p;
     vsi_nn_internal_node_t* curr = NULL;
     uint32_t i;
+    if(self->nn_param.slice.dims == 0)
+    {
+        self->nn_param.slice.dims = inputs[0]->attr.dim_num;
+    }
 
     p = (vsi_nn_slice_param *)&(self->nn_param.slice);
     vsi_nn_internal_init_node_wksp( self );

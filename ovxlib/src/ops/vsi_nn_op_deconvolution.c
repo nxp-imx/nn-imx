@@ -259,7 +259,14 @@ static vsi_bool op_setup
             nn_param->output_padding[1]
         );
 
-        outputs[0]->attr.size[2] = nn_param->weights;
+        if(self->nn_param.conv2d.weights > 0)
+        {
+            outputs[0]->attr.size[2] = self->nn_param.deconv.weights;
+        }
+        else
+        {
+            outputs[0]->attr.size[2] = inputs[1]->attr.size[3];
+        }
         outputs[0]->attr.size[3] = inputs[0]->attr.size[3];
         outputs[0]->attr.dim_num = inputs[0]->attr.dim_num;
     }

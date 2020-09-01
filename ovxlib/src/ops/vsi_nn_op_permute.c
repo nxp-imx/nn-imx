@@ -120,15 +120,18 @@ static vsi_status op_compute
     )
 {
     vsi_status status;
+    uint32_t perm[VSI_NN_MAX_DIM_NUM] = {0};
     status = VSI_SUCCESS;
 
     if (self->nn_param.permute.local.initialized == FALSE)
     {
+        memcpy(perm, self->nn_param.permute.perm,
+            sizeof(uint32_t) * self->nn_param.permute.dim_num);
         self->n = vxTensorPermuteNode(
             self->graph->g,
             inputs[0]->t,
             outputs[0]->t,
-            self->nn_param.permute.perm,
+            perm,
             self->nn_param.permute.dim_num
             );
 

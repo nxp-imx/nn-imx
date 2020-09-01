@@ -519,6 +519,7 @@ static vx_tensor _create_const_raw_tensor
 {
     vx_tensor tensor = NULL;
     vx_tensor_create_params_t params;
+    float * scales = NULL;
 
     memset( &params, 0, sizeof( vx_tensor_create_params_t ) );
     params.num_of_dims = attr.dim_num;
@@ -536,11 +537,13 @@ static vx_tensor _create_const_raw_tensor
         break;
     case VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC:
 #ifdef VSI_PERCHANNEL_QUANTIZATION_SUPPORT
+        // This is a hack that driver doesn't support const scale
+        scales = (float *)malloc(sizeof(float) * attr.dtype.scale_dim);
         params.quant_data.affinePerChannel.channelDim = attr.dtype.channel_dim;
         params.quant_data.affinePerChannel.scaleCount = attr.dtype.scale_dim;
-        params.quant_data.affinePerChannel.scales = attr.dtype.scales;
-        params.quant_data.affinePerChannel.zeroPoint = attr.dtype.zero_points;
-        params.quant_data.affinePerChannel.zeroPointCount = attr.dtype.zero_points_dim;
+        params.quant_data.affinePerChannel.scales = scales;
+        params.quant_data.affinePerChannel.zeroPoint = NULL;
+        params.quant_data.affinePerChannel.zeroPointCount = 0;
         break;
 #else
     VSILOGE( "can't support qnt_type VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC." );
@@ -572,6 +575,10 @@ static vx_tensor _create_const_raw_tensor
                 if (!vsi_nn_IsBufferAligned(data, align_start_size))
                 {
                     VSILOGE( "vsi_nn_IsBufferAligned is FALSE." );
+                    if( scales )
+                    {
+                        free( scales );
+                    }
                     return NULL;
                 }
             }
@@ -607,6 +614,10 @@ static vx_tensor _create_const_raw_tensor
     if( NULL == tensor )
     {
         VSILOGE( "Create vx tensor fail." );
+    }
+    if( scales )
+    {
+        free( scales );
     }
 
     return tensor;

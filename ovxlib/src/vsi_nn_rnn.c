@@ -120,7 +120,7 @@ static vsi_status internal_buffer_deinit
 
 static vsi_status internal_buffer_copy_to_tensor
     (
-    vsi_nn_graph_t* graph,
+    const vsi_nn_graph_t* graph,
     vsi_nn_rnn_internal_buffer_t* buffer,
     vsi_nn_tensor_id_t tensorid
     )
@@ -150,7 +150,7 @@ static vsi_status internal_buffer_copy_to_tensor
 
 static vsi_status internal_buffer_copy_from_tensor
     (
-    vsi_nn_graph_t* graph,
+    const vsi_nn_graph_t* graph,
     vsi_nn_rnn_internal_buffer_t* buffer,
     vsi_nn_tensor_id_t tensorid
     )
@@ -188,7 +188,7 @@ static vsi_status internal_buffer_copy_from_tensor
 
 static vsi_status _swap_rnn_tensor_handle
     (
-    vsi_nn_graph_t* graph,
+    const vsi_nn_graph_t* graph,
     vsi_nn_tensor_id_t output_id,
     vsi_nn_tensor_id_t input_id
     )
@@ -207,7 +207,7 @@ static vsi_status _swap_rnn_tensor_handle
 **********************************************************/
 vsi_status vsi_nn_rnn_feed_internal_state
     (
-    vsi_nn_graph_t* graph
+    const vsi_nn_graph_t* graph
     )
 {
     vsi_status status = VSI_SUCCESS;
@@ -260,7 +260,7 @@ vsi_status vsi_nn_rnn_feed_internal_state
 
 vsi_status vsi_nn_rnn_save_internal_state
     (
-    vsi_nn_graph_t* graph
+    const vsi_nn_graph_t* graph
     )
 {
     vsi_status status = VSI_SUCCESS;
