@@ -1084,7 +1084,7 @@ int OvxlibDelegate::addNode_FULLY_CONNECTED(Model* model,
     }
 
     std::vector<vsi_nn_node_t*> nodes;
-    err = addNode(VSI_NN_OP_FCL, operation, &nodes, operation_index);
+    err = addNode(VSI_NN_OP_FCL2, operation, &nodes, operation_index);
     nodes[0]->nn_param.fcl.axis = axis;
     nodes[0]->nn_param.fcl.weights = weight->dimensions[0];
     fillVxParam(&nodes[0]->vx_param, fc->vxParam());
