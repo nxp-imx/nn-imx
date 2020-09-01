@@ -54,6 +54,34 @@ static int32_t _get_input_num
     return num;
 }
 
+vsi_bool _is_float32_data_format
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs
+    )
+{
+    uint32_t input_num = 0;
+    uint32_t i = 0;
+
+    input_num = _get_input_num(self, inputs);
+
+    if (outputs[0]->attr.dtype.vx_type != VSI_NN_TYPE_FLOAT32)
+    {
+        return FALSE;
+    }
+
+    for ( i = 0; i < input_num; i++)
+    {
+        if (inputs[i]->attr.dtype.vx_type != VSI_NN_TYPE_FLOAT32)
+        {
+            return FALSE;
+        }
+    }
+
+    return TRUE;
+}
+
 static vsi_status op_compute
     (
     vsi_nn_node_t * self,
@@ -125,7 +153,14 @@ static vsi_bool op_setup
             attr.dim_num = VSI_NN_DIM_AUTO;
             attr.vtl = TRUE;
             attr.is_const = FALSE;
-            attr.dtype.vx_type = VSI_NN_TYPE_FLOAT16;
+            if (_is_float32_data_format(self, inputs, outputs))
+            {
+                attr.dtype.vx_type = VSI_NN_TYPE_FLOAT32;
+            }
+            else
+            {
+                attr.dtype.vx_type = VSI_NN_TYPE_FLOAT16;
+            }
 
             temp_output_tensor = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
 
