@@ -1,6 +1,6 @@
-From f2530decd5e283bc55d8e6d291930e505297528a Mon Sep 17 00:00:00 2001
+From b644cf38a5a3d7b2d26e8750028272ed776f74e2 Mon Sep 17 00:00:00 2001
 From: "jing.tang" <jing.tang@verisilicon.com>
-Date: Fri, 21 Aug 2020 13:42:10 +0800
+Date: Fri, 21 Aug 2020 09:31:18 +0800
 Subject: [PATCH] [VSI_NPU] the patch for ONNXRuntime framework
 
 ---
@@ -20,14 +20,14 @@ Subject: [PATCH] [VSI_NPU] the patch for ONNXRuntime framework
  .../test/perftest/command_args_parser.cc           |   2 +
  onnxruntime/test/perftest/ort_test_session.cc      |   6 ++
  .../test/providers/cpu/nn/batch_norm_op_test.cc    |   3 ++
- .../test/providers/provider_test_utils.cc          |   6 +-
+ .../test/providers/provider_test_utils.cc          |  44 ++++++++++++++++-
  .../{test_data_0_input.pb => input_0.pb}           | Bin
  .../{test_data_0_output.pb => output_0.pb}         | Bin
  onnxruntime/test/util/default_providers.cc         |   9 +++
  .../test/util/include/default_providers.h          |   1 +
  onnxruntime/test/util/include/providers.h          |   3 +
  tools/ci_build/build.py                            |  11 +++-
- 23 files changed, 216 insertions(+), 15 deletions(-)
+ 23 files changed, 254 insertions(+), 15 deletions(-)
  rename onnxruntime/test/testdata/squeezenet/test_data_set_0/{test_data_0_input.pb => input_0.pb} (100%)
  rename onnxruntime/test/testdata/squeezenet/test_data_set_0/{test_data_0_output.pb => output_0.pb} (100%)
 
@@ -510,10 +510,55 @@ index 9b86271..0aae5b3 100644
  }
  
 diff --git a/onnxruntime/test/providers/provider_test_utils.cc b/onnxruntime/test/providers/provider_test_utils.cc
-index 717c2c9e..8a1af25b 100644
+index 717c2c9..86847b3 100644
 --- a/onnxruntime/test/providers/provider_test_utils.cc
 +++ b/onnxruntime/test/providers/provider_test_utils.cc
-@@ -568,6 +568,7 @@ void OpTester::Run(SessionOptions so,  // Take the SessionOptions by value (i.e.
+@@ -59,6 +59,44 @@ void Check(const OpTester::Data& expected_data, const Tensor& output_tensor, con
+ }
+ 
+ template <>
++void Check<int8_t>(const OpTester::Data& expected_data, const Tensor& output_tensor, const std::string& provider_type) {
++  auto& expected_tensor = expected_data.data_.Get<Tensor>();
++  auto* expected = expected_tensor.template Data<int8_t>();
++  auto* output = output_tensor.template Data<int8_t>();
++  auto size = output_tensor.Shape().Size();
++
++  if (expected_data.sort_output_) {
++    // if order can be jumbled in the output of an operator, sort both the expected and output buffers prior to
++    // comparison this is a "best-effort" algo and should satisfy the requirement for the few ops that do require this
++    // support without investing in a more sophisticated infrastructure for the same
++    sort_expected_and_actual_buffers<int8_t>(expected, output, size);
++  }
++
++  for (int i = 0; i < size; ++i) {
++    EXPECT_NEAR(expected[i], output[i], 1) << "i:" << i << ", provider_type: " << provider_type;
++  }
++}
++
++template <>
++void Check<uint8_t>(const OpTester::Data& expected_data, const Tensor& output_tensor, const std::string& provider_type) {
++  auto& expected_tensor = expected_data.data_.Get<Tensor>();
++  auto* expected = expected_tensor.template Data<uint8_t>();
++  auto* output = output_tensor.template Data<uint8_t>();
++  auto size = output_tensor.Shape().Size();
++
++  if (expected_data.sort_output_) {
++    // if order can be jumbled in the output of an operator, sort both the expected and output buffers prior to
++    // comparison this is a "best-effort" algo and should satisfy the requirement for the few ops that do require this
++    // support without investing in a more sophisticated infrastructure for the same
++    sort_expected_and_actual_buffers<uint8_t>(expected, output, size);
++  }
++
++  for (int i = 0; i < size; ++i) {
++    EXPECT_NEAR(expected[i], output[i], 1) << "i:" << i << ", provider_type: " << provider_type;
++  }
++}
++
++template <>
+ void Check<double>(const OpTester::Data& expected_data, const Tensor& output_tensor,
+                    const std::string& provider_type) {
+   auto& expected_tensor = expected_data.data_.Get<Tensor>();
+@@ -568,6 +606,7 @@ void OpTester::Run(SessionOptions so,  // Take the SessionOptions by value (i.e.
      // Run the model
      static const std::string all_provider_types[] = {
          kCpuExecutionProvider,
@@ -521,7 +566,7 @@ index 717c2c9e..8a1af25b 100644
          kCudaExecutionProvider,
          kDnnlExecutionProvider,
          kNGraphExecutionProvider,
-@@ -620,6 +621,8 @@ void OpTester::Run(SessionOptions so,  // Take the SessionOptions by value (i.e.
+@@ -620,6 +659,8 @@ void OpTester::Run(SessionOptions so,  // Take the SessionOptions by value (i.e.
          std::unique_ptr<IExecutionProvider> execution_provider;
          if (provider_type == onnxruntime::kCpuExecutionProvider)
            execution_provider = DefaultCpuExecutionProvider();
@@ -530,7 +575,7 @@ index 717c2c9e..8a1af25b 100644
          else if (provider_type == onnxruntime::kCudaExecutionProvider)
            execution_provider = DefaultCudaExecutionProvider();
          else if (provider_type == onnxruntime::kDnnlExecutionProvider)
-@@ -654,7 +657,8 @@ void OpTester::Run(SessionOptions so,  // Take the SessionOptions by value (i.e.
+@@ -654,7 +695,8 @@ void OpTester::Run(SessionOptions so,  // Take the SessionOptions by value (i.e.
            if (provider_type == onnxruntime::kNGraphExecutionProvider ||
                provider_type == onnxruntime::kTensorrtExecutionProvider ||
                provider_type == onnxruntime::kOpenVINOExecutionProvider ||
