@@ -28,6 +28,75 @@
 #include "vsi_nn_log.h"
 #include "vsi_nn_test.h"
 
+static void _create_yuv_norm_tensors
+    (
+    vsi_nn_graph_t* graph,
+    vsi_nn_tensor_attr_t* input_attr,
+    vsi_nn_preprocess_source_layout_e* source_layout,
+    vsi_nn_preprocess_source_format_e* source_format,
+    vsi_nn_tensor_id_t* yuv_tensors
+    )
+{
+    int w = 0;
+    int h = 0;
+    vsi_nn_tensor_attr_t y_input_attr;
+    vsi_nn_tensor_attr_t uv_input_attr;
+
+    if (*source_layout == VSI_NN_SOURCE_LAYOUT_NHWC)
+    {
+        w = input_attr->size[1];
+        h = input_attr->size[2];
+    }
+    else
+    {
+        w = input_attr->size[0];
+        h = input_attr->size[1];
+    }
+    /* Create y norm tensor */
+    y_input_attr = *input_attr;
+    y_input_attr.size[0]= w;
+    y_input_attr.size[1]= h;
+    y_input_attr.size[2] = 1;
+    y_input_attr.size[3] = 1;
+    yuv_tensors[0] = vsi_nn_AddTensor( graph, VSI_NN_TENSOR_ID_AUTO, &y_input_attr, NULL );
+
+    /* Create uv norm tensor */
+    if (*source_format == VSI_NN_SOURCE_FORMAT_IMAGE_YUV420)
+    {
+        uv_input_attr = *input_attr;
+        uv_input_attr.size[0]= w/2;
+        uv_input_attr.size[1]= h/2;
+        uv_input_attr.size[2] = 1;
+        uv_input_attr.size[3] = 1;
+
+        yuv_tensors[1] =  vsi_nn_AddTensor( graph, VSI_NN_TENSOR_ID_AUTO, &uv_input_attr, NULL );
+        yuv_tensors[2] =  vsi_nn_AddTensor( graph, VSI_NN_TENSOR_ID_AUTO, &uv_input_attr, NULL );
+    }
+
+    else if (*source_format == VSI_NN_SOURCE_FORMAT_IMAGE_NV12)
+    {
+        uv_input_attr = *input_attr;
+        uv_input_attr.size[0]= w;
+        uv_input_attr.size[1]= h/2;
+        uv_input_attr.size[2] = 1;
+        uv_input_attr.size[3] = 1;
+
+        yuv_tensors[1] =  vsi_nn_AddTensor( graph, VSI_NN_TENSOR_ID_AUTO, &uv_input_attr, NULL );
+    }
+
+    else if (*source_format == VSI_NN_SOURCE_FORMAT_IMAGE_YUV444)
+    {
+        uv_input_attr = *input_attr;
+        uv_input_attr.size[0]= w;
+        uv_input_attr.size[1]= h;
+        uv_input_attr.size[2] = 1;
+        uv_input_attr.size[3] = 1;
+        yuv_tensors[1] =  vsi_nn_AddTensor( graph, VSI_NN_TENSOR_ID_AUTO, &uv_input_attr, NULL );
+        yuv_tensors[2] =  vsi_nn_AddTensor( graph, VSI_NN_TENSOR_ID_AUTO, &uv_input_attr, NULL );
+
+    }
+} /* _create_yuv_norm_tensors() */
+
 static vsi_status _set_preproc_node_type
     (
     vsi_nn_node_t* node,
@@ -43,7 +112,7 @@ static vsi_status _set_preproc_node_type
         status = VSI_FAILURE;
     }
     return status;
-} /* vsi_nn_set_preproc_node_type() */
+} /* _set_preproc_node_type() */
 
 static void _set_preproc_node_rect_params
     (
@@ -72,7 +141,7 @@ static void _set_preproc_node_rect_params
             node->nn_param.pre_process.rect.height = attr.size[2];
         }
     }
-} /* vsi_nn_set_preproc_node_rect_params() */
+} /* _set_preproc_node_rect_params() */
 
 static void _set_preproc_node_norm_params
     (
@@ -98,7 +167,7 @@ static void _set_preproc_node_norm_params
         }
         node->nn_param.pre_process.norm.scale = 1.0f;
     }
-} /* vsi_nn_set_preproc_node_norm_params() */
+} /* _set_preproc_node_norm_params() */
 
 static void _set_preproc_node_out_attr
     (
@@ -123,7 +192,7 @@ static void _set_preproc_node_out_attr
             node->nn_param.pre_process.output_attr.size[2]  = image_resize->h;
         }
     }
-} /* vsi_nn_set_preproc_node_out_attr() */
+} /* _set_preproc_node_out_attr() */
 
 static void _set_preproc_node_input_attr
     (
@@ -172,7 +241,7 @@ static void _set_preproc_node_input_attr
             input_attr->size[2] = 1;
         }
     }
-} /* vsi_nn_set_preproc_node_input_attr() */
+} /*_set_preproc_node_input_attr() */
 
 static void _set_preproc_node_output_attr
     (
@@ -190,7 +259,7 @@ static void _set_preproc_node_output_attr
     output_attr->dim_num = VSI_NN_DIM_AUTO;
     output_attr->is_const = FALSE;
     output_attr->vtl = TRUE;
-} /* vsi_nn_set_preproc_node_output_attr() */
+} /* _set_preproc_node_output_attr() */
 
 static void _set_postproc_node_output_attr
     (
@@ -226,7 +295,7 @@ static void _set_postproc_node_output_attr
             output_attr->size[i] = org_norm_tensor->attr.size[i];
         }
     }
-} /* vsi_nn_set_postproc_node_output_attr() */
+} /* _set_postproc_node_output_attr() */
 
 vsi_status vsi_nn_add_single_preproc_node
     (
@@ -253,7 +322,9 @@ vsi_status vsi_nn_add_single_preproc_node
     vsi_nn_tensor_attr_t  attr;
     vsi_nn_tensor_id_t preproc_input;
     vsi_nn_tensor_id_t preproc_output;
+    vsi_nn_tensor_id_t yuv_inputs[3];
     vsi_nn_tensor_t* org_norm_tensor = NULL;
+    uint32_t node_input_num = 1;
     int32_t reverse_channel = 0;
     uint32_t i = 0;
     uint32_t j = 0;
@@ -261,10 +332,6 @@ vsi_status vsi_nn_add_single_preproc_node
 
     org_norm_tensor = vsi_nn_GetTensor(graph,graph->input.tensors[input_idx]);
     attr = org_norm_tensor->attr;
-
-    /* Add preprocess node */
-    node = vsi_nn_AddNode(graph, VSI_NN_OP_PRE_PROCESS, 1, 1, NULL);
-    node->uid = (uint32_t)(VSI_NN_PREPROC_NODE_UID_BASE) + input_idx;
 
     /* Get preprocess configurations*/
     for(idx = 0; idx < proc_count; idx++)
@@ -311,6 +378,23 @@ vsi_status vsi_nn_add_single_preproc_node
         TEST_CHECK_STATUS(status, final);
     }
 
+    /* Add preprocess node */
+    if (*source_format == VSI_NN_SOURCE_FORMAT_IMAGE_YUV420)
+    {
+        node_input_num = 3;
+    }
+    else if (*source_format == VSI_NN_SOURCE_FORMAT_IMAGE_NV12)
+    {
+        node_input_num = 2;
+    }
+    else if (*source_format == VSI_NN_SOURCE_FORMAT_IMAGE_YUV444)
+    {
+        node_input_num = 3;
+    }
+
+    node = vsi_nn_AddNode(graph, VSI_NN_OP_PRE_PROCESS, node_input_num, 1, NULL);
+    node->uid = (uint32_t)(VSI_NN_PREPROC_NODE_UID_BASE) + input_idx;
+
     /* Set preprocess node parameters */
     status = _set_preproc_node_type(node, source_format);
     TEST_CHECK_STATUS(status, final);
@@ -343,6 +427,13 @@ vsi_status vsi_nn_add_single_preproc_node
     _set_preproc_node_output_attr(&output_attr, org_norm_tensor, data_convert);
 
     /* Create new norm and virtual tensors */
+    if (*source_format == VSI_NN_SOURCE_FORMAT_IMAGE_YUV420 ||
+        *source_format == VSI_NN_SOURCE_FORMAT_IMAGE_NV12 ||
+        *source_format == VSI_NN_SOURCE_FORMAT_IMAGE_YUV444)
+    {
+        _create_yuv_norm_tensors(graph, &input_attr, source_layout, source_format, yuv_inputs);
+    }
+
     preproc_input = vsi_nn_AddTensor(graph, VSI_NN_TENSOR_ID_AUTO, &input_attr, NULL);
     preproc_output = vsi_nn_AddTensor(graph, VSI_NN_TENSOR_ID_AUTO, &output_attr, NULL);
 
@@ -358,8 +449,22 @@ vsi_status vsi_nn_add_single_preproc_node
             }
         }
     }
-    node->input.tensors[0] = preproc_input;
-    graph->input.tensors[input_idx] = preproc_input;
+
+    if (*source_format == VSI_NN_SOURCE_FORMAT_IMAGE_YUV420 ||
+        *source_format == VSI_NN_SOURCE_FORMAT_IMAGE_NV12 ||
+        *source_format == VSI_NN_SOURCE_FORMAT_IMAGE_YUV444)
+    {
+        for (i = 0; i < node_input_num; i++)
+        {
+            node->input.tensors[i] = yuv_inputs[i];
+            graph->input.tensors[input_idx*node_input_num+i] = yuv_inputs[i];
+        }
+    }
+    else
+    {
+        node->input.tensors[0] = preproc_input;
+        graph->input.tensors[input_idx] = preproc_input;
+    }
     node->output.tensors[0] = preproc_output;
 
     status = VSI_SUCCESS;
