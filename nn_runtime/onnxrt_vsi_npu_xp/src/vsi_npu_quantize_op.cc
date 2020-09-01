@@ -52,6 +52,7 @@ void VsiOpCallbackInfoDequantizeLinear::SetupIO(nnrt::op::OperationPtr op,
         std::vector<int32_t> compute_input_index({kIndexScale, kIndexZeroPoint});
         auto compute_info = std::make_shared<VsiComputeInfo>();
         compute_info->operand_ids.push_back(input_operand_id);
+        compute_info->backup_names.push_back(*(input_defs[2]->Type()));
         model->CollectComputeInfo(node, graph_viewer, compute_input_index, compute_info);
     } else {
         auto tensor = model->GetModelPtr()->operand(input_operand_id);
@@ -66,10 +67,12 @@ Status VsiOpCallbackInfoDequantizeLinear::Compute(FunctionState state,
                                                   NodeIndex node_index) {
     Ort::CustomOpApi ort{*api};
     ModelShell* model = reinterpret_cast<ModelShell*>(state);
+
     auto local_model = model->GetModelPtr();
 
     auto compute_info = model->GetComputeInfo(node_index);
     if (compute_info != nullptr) {
+        auto tensor = local_model->operand(compute_info->operand_ids[0]);
         auto compute_input_ids = model->GetComputeInputIds(compute_info->compute_input_names);
 
         const int32_t kIndexScale = 0;
@@ -78,14 +81,17 @@ Status VsiOpCallbackInfoDequantizeLinear::Compute(FunctionState state,
         const OrtValue* input_tensor_scale =
             ort.KernelContext_GetInput(context, compute_input_ids[kIndexScale]);
         const auto input_tensor_scale_value = (float*)ort.GetTensorData<void>(input_tensor_scale);
+        tensor->quant.scalar.scale = *input_tensor_scale_value;
 
         const OrtValue* input_tensor_zp =
             ort.KernelContext_GetInput(context, compute_input_ids[kIndexZeroPoint]);
-        const auto input_tensor_zp_value = (uint8_t*)ort.GetTensorData<void>(input_tensor_zp);
-
-        auto tensor = local_model->operand(compute_info->operand_ids[0]);
-        tensor->quant.scalar.scale = *input_tensor_scale_value;
-        tensor->quant.scalar.zeroPoint = *input_tensor_zp_value;
+        if(compute_info->backup_names[0] == "tensor(uint8)"){
+            const auto input_tensor_zp_value = (uint8_t*)(ort.GetTensorData<void>(input_tensor_zp));
+            tensor->quant.scalar.zeroPoint = *input_tensor_zp_value;
+        }else{
+            const auto input_tensor_zp_value = (int8_t*)(ort.GetTensorData<void>(input_tensor_zp));
+            tensor->quant.scalar.zeroPoint = *input_tensor_zp_value;
+        }
     }
     return Status::OK();
 }
