@@ -1,37 +1,37 @@
-From db78478cd17896cb4df055c8f5213e3005e9094c Mon Sep 17 00:00:00 2001
-From: "jing.tang" <jing.tang@verisilicon.com>
-Date: Mon, 10 Aug 2020 14:12:08 +0800
+From 38036f565c4abfc52c011799e1748fc85316d52d Mon Sep 17 00:00:00 2001
+From: "Zhouheng.Zheng" <Zhouheng.Zheng@verisilicon.com>
+Date: Thu, 20 Aug 2020 16:47:17 +0800
 Subject: [PATCH] [VSI_NPU] the patch for ONNXRuntime framework
 
 ---
- cmake/CMakeLists.txt                               |   4 ++
- cmake/onnxruntime.cmake                            |   1 +
- cmake/onnxruntime_providers.cmake                  |  24 +++++++++
- cmake/onnxruntime_unittests.cmake                  |   9 ++++
- .../CXX_Api_Sample.cpp                             |   5 ++
- include/onnxruntime/core/graph/constants.h         |   1 +
- .../core/framework/ort_value_name_idx_map.h        |  14 ++++-
- onnxruntime/core/framework/session_state.cc        |  14 ++++-
- onnxruntime/core/framework/utils.cc                |  57 ++++++++++++++++++++-
- onnxruntime/core/optimizer/transformer_memcpy.cc   |   3 +-
- onnxruntime/core/session/inference_session.cc      |  12 +++++
- onnxruntime/test/onnx/main.cc                      |  13 ++++-
- onnxruntime/test/onnx/runner.cc                    |  18 +++++--
- onnxruntime/test/perftest/command_args_parser.cc   |   2 +
- onnxruntime/test/perftest/ort_test_session.cc      |   6 +++
- onnxruntime/test/providers/provider_test_utils.cc  |   6 ++-
- .../{test_data_0_input.pb => input_0.pb}           | Bin
- .../{test_data_0_output.pb => output_0.pb}         | Bin
- onnxruntime/test/util/default_providers.cc         |   9 ++++
- onnxruntime/test/util/include/default_providers.h  |   1 +
- onnxruntime/test/util/include/providers.h          |   3 ++
- tools/ci_build/build.py                            |  14 +++--
- 22 files changed, 202 insertions(+), 14 deletions(-)
+ cmake/CMakeLists.txt                          |   4 ++
+ cmake/onnxruntime.cmake                       |   1 +
+ cmake/onnxruntime_providers.cmake             |  24 ++++++++
+ cmake/onnxruntime_unittests.cmake             |   9 +++
+ .../CXX_Api_Sample.cpp                        |   5 ++
+ include/onnxruntime/core/graph/constants.h    |   1 +
+ .../core/framework/ort_value_name_idx_map.h   |  14 ++++-
+ onnxruntime/core/framework/session_state.cc   |  14 ++++-
+ onnxruntime/core/framework/utils.cc           |  57 +++++++++++++++++-
+ .../core/optimizer/transformer_memcpy.cc      |   3 +-
+ onnxruntime/core/session/inference_session.cc |  12 ++++
+ onnxruntime/test/onnx/main.cc                 |  28 ++++++++-
+ onnxruntime/test/onnx/runner.cc               |  18 +++++-
+ .../test/perftest/command_args_parser.cc      |   2 +
+ onnxruntime/test/perftest/ort_test_session.cc |   6 ++
+ .../test/providers/provider_test_utils.cc     |   6 +-
+ .../{test_data_0_input.pb => input_0.pb}      | Bin
+ .../{test_data_0_output.pb => output_0.pb}    | Bin
+ onnxruntime/test/util/default_providers.cc    |   9 +++
+ .../test/util/include/default_providers.h     |   1 +
+ onnxruntime/test/util/include/providers.h     |   3 +
+ tools/ci_build/build.py                       |  11 +++-
+ 22 files changed, 213 insertions(+), 15 deletions(-)
  rename onnxruntime/test/testdata/squeezenet/test_data_set_0/{test_data_0_input.pb => input_0.pb} (100%)
  rename onnxruntime/test/testdata/squeezenet/test_data_set_0/{test_data_0_output.pb => output_0.pb} (100%)
 
 diff --git a/cmake/CMakeLists.txt b/cmake/CMakeLists.txt
-index ef2cd84..53ef705 100644
+index ef2cd84e..53ef705e 100644
 --- a/cmake/CMakeLists.txt
 +++ b/cmake/CMakeLists.txt
 @@ -49,6 +49,7 @@ option(onnxruntime_ENABLE_STATIC_ANALYSIS "Enable static analysis" OFF)
@@ -53,7 +53,7 @@ index ef2cd84..53ef705 100644
  if (onnxruntime_USE_OPENBLAS)
    add_definitions(-DUSE_OPENBLAS=1)
 diff --git a/cmake/onnxruntime.cmake b/cmake/onnxruntime.cmake
-index 591da41..c434eb5 100644
+index 591da416..c434eb57 100644
 --- a/cmake/onnxruntime.cmake
 +++ b/cmake/onnxruntime.cmake
 @@ -63,6 +63,7 @@ target_link_libraries(onnxruntime PRIVATE
@@ -65,7 +65,7 @@ index 591da41..c434eb5 100644
      ${PROVIDERS_DML}
      ${PROVIDERS_ACL}
 diff --git a/cmake/onnxruntime_providers.cmake b/cmake/onnxruntime_providers.cmake
-index 7549e2b..cd475a0 100644
+index 7549e2b5..33be5522 100644
 --- a/cmake/onnxruntime_providers.cmake
 +++ b/cmake/onnxruntime_providers.cmake
 @@ -64,6 +64,10 @@ if(onnxruntime_USE_OPENVINO)
@@ -107,7 +107,7 @@ index 7549e2b..cd475a0 100644
    include(onnxruntime_providers_internal.cmake)
  endif()
 diff --git a/cmake/onnxruntime_unittests.cmake b/cmake/onnxruntime_unittests.cmake
-index 115776c..303253b 100644
+index 115776cf..303253bd 100644
 --- a/cmake/onnxruntime_unittests.cmake
 +++ b/cmake/onnxruntime_unittests.cmake
 @@ -206,6 +206,10 @@ if(onnxruntime_USE_DNNL)
@@ -141,7 +141,7 @@ index 115776c..303253b 100644
  target_include_directories(onnxruntime_test_utils PUBLIC "${TEST_SRC_DIR}/util/include" PRIVATE ${eigen_INCLUDE_DIRS} ${ONNXRUNTIME_ROOT})
  set_target_properties(onnxruntime_test_utils PROPERTIES FOLDER "ONNXRuntimeTest")
 diff --git a/csharp/test/Microsoft.ML.OnnxRuntime.EndToEndTests.Capi/CXX_Api_Sample.cpp b/csharp/test/Microsoft.ML.OnnxRuntime.EndToEndTests.Capi/CXX_Api_Sample.cpp
-index cd94ff5..4362881 100644
+index cd94ff5e..43628814 100644
 --- a/csharp/test/Microsoft.ML.OnnxRuntime.EndToEndTests.Capi/CXX_Api_Sample.cpp
 +++ b/csharp/test/Microsoft.ML.OnnxRuntime.EndToEndTests.Capi/CXX_Api_Sample.cpp
 @@ -6,6 +6,8 @@
@@ -164,7 +164,7 @@ index cd94ff5..4362881 100644
    // Available levels are
    // ORT_DISABLE_ALL -> To disable all optimizations
 diff --git a/include/onnxruntime/core/graph/constants.h b/include/onnxruntime/core/graph/constants.h
-index 26fc15d..6749c29 100644
+index 26fc15d3..6749c29e 100644
 --- a/include/onnxruntime/core/graph/constants.h
 +++ b/include/onnxruntime/core/graph/constants.h
 @@ -33,4 +33,5 @@ constexpr const char* kTensorrtExecutionProvider = "TensorrtExecutionProvider";
@@ -174,7 +174,7 @@ index 26fc15d..6749c29 100644
 +constexpr const char* kVsiNpuExecutionProvider = "VsiNpuExecutionProvider";
  }  // namespace onnxruntime
 diff --git a/onnxruntime/core/framework/ort_value_name_idx_map.h b/onnxruntime/core/framework/ort_value_name_idx_map.h
-index dc90664..e42ce93 100644
+index dc906642..e42ce930 100644
 --- a/onnxruntime/core/framework/ort_value_name_idx_map.h
 +++ b/onnxruntime/core/framework/ort_value_name_idx_map.h
 @@ -35,7 +35,19 @@ class OrtValueNameIdxMap {
@@ -199,7 +199,7 @@ index dc90664..e42ce93 100644
  
      idx = it->second;
 diff --git a/onnxruntime/core/framework/session_state.cc b/onnxruntime/core/framework/session_state.cc
-index 15fb8c3..a70066c 100644
+index 15fb8c32..a70066cc 100644
 --- a/onnxruntime/core/framework/session_state.cc
 +++ b/onnxruntime/core/framework/session_state.cc
 @@ -227,7 +227,19 @@ common::Status SessionState::GetInputNodeInfo(const std::string& input_name,
@@ -224,7 +224,7 @@ index 15fb8c3..a70066c 100644
  
    node_info_vec = entry->second;
 diff --git a/onnxruntime/core/framework/utils.cc b/onnxruntime/core/framework/utils.cc
-index 64b6007..511625e 100644
+index 64b60077..511625ea 100644
 --- a/onnxruntime/core/framework/utils.cc
 +++ b/onnxruntime/core/framework/utils.cc
 @@ -573,6 +573,49 @@ static void DumpTensor(const Tensor& tensor, const TensorShape& shape) {
@@ -313,7 +313,7 @@ index 64b6007..511625e 100644
                    std::cout << " failed to transfer data to cpu.\n";
                  }
 diff --git a/onnxruntime/core/optimizer/transformer_memcpy.cc b/onnxruntime/core/optimizer/transformer_memcpy.cc
-index d01b8f8..e0974ee 100644
+index d01b8f83..e0974ee0 100644
 --- a/onnxruntime/core/optimizer/transformer_memcpy.cc
 +++ b/onnxruntime/core/optimizer/transformer_memcpy.cc
 @@ -74,7 +74,8 @@ common::Status MemcpyTransformer::ApplyImpl(Graph& graph, bool& modified, int gr
@@ -327,7 +327,7 @@ index d01b8f8..e0974ee 100644
        auto current_modified = copy_impl.ModifyGraph(registry_manager_);
        modified = modified || current_modified;
 diff --git a/onnxruntime/core/session/inference_session.cc b/onnxruntime/core/session/inference_session.cc
-index c56dfcf..d76c9f5 100644
+index c56dfcf7..d76c9f54 100644
 --- a/onnxruntime/core/session/inference_session.cc
 +++ b/onnxruntime/core/session/inference_session.cc
 @@ -926,7 +926,19 @@ common::Status InferenceSession::ValidateInputs(const std::vector<std::string>&
@@ -351,19 +351,21 @@ index c56dfcf..d76c9f5 100644
  
      auto expected_type = iter->second.ml_data_type;
 diff --git a/onnxruntime/test/onnx/main.cc b/onnxruntime/test/onnx/main.cc
-index 835f655..f05c973 100644
+index 835f655a..110de111 100644
 --- a/onnxruntime/test/onnx/main.cc
 +++ b/onnxruntime/test/onnx/main.cc
-@@ -37,7 +37,7 @@ void usage() {
+@@ -37,8 +37,9 @@ void usage() {
        "\t-v: verbose\n"
        "\t-n [test_case_name]: Specifies a single test case to run.\n"
        "\t-e [EXECUTION_PROVIDER]: EXECUTION_PROVIDER could be 'cpu', 'cuda', 'dnnl', 'tensorrt', 'ngraph', "
 -      "'openvino', 'nuphar' or 'acl'. "
 +      "'openvino', 'vsi_npu', 'nuphar' or 'acl'. "
        "Default: 'cpu'.\n"
++      "\t-Q [quantize_models]: Specifies the use quantize model\n"
        "\t-x: Use parallel executor, default (without -x): sequential executor.\n"
        "\t-d [device_id]: Specifies the device id for multi-device (e.g. GPU). The value should > 0\n"
-@@ -98,6 +98,7 @@ int real_main(int argc, char* argv[], Ort::Env& env) {
+       "\t-o [optimization level]: Default is 99. Valid values are 0 (disable), 1 (basic), 2 (extended), 99 (all).\n"
+@@ -98,9 +99,11 @@ int real_main(int argc, char* argv[], Ort::Env& env) {
    bool enable_tensorrt = false;
    bool enable_mem_pattern = true;
    bool enable_openvino = false;
@@ -371,7 +373,20 @@ index 835f655..f05c973 100644
    bool enable_nnapi = false;
    bool enable_dml = false;
    bool enable_acl = false;
-@@ -161,6 +162,8 @@ int real_main(int argc, char* argv[], Ort::Env& env) {
++  bool enable_quantize = false;
+   int device_id = 0;
+   GraphOptimizationLevel graph_optimization_level = ORT_DISABLE_ALL;
+   bool user_graph_optimization_level_set = false;
+@@ -109,7 +112,7 @@ int real_main(int argc, char* argv[], Ort::Env& env) {
+   OrtLoggingLevel logging_level = ORT_LOGGING_LEVEL_WARNING;
+   {
+     int ch;
+-    while ((ch = getopt(argc, argv, ORT_TSTR("Ac:hj:Mn:r:e:xvo:d:"))) != -1) {
++    while ((ch = getopt(argc, argv, ORT_TSTR("Ac:hj:Mn:r:e:xvo:d:Q:"))) != -1) {
+       switch (ch) {
+         case 'A':
+           enable_cpu_mem_arena = false;
+@@ -161,6 +164,8 @@ int real_main(int argc, char* argv[], Ort::Env& env) {
              enable_tensorrt = true;
            } else if (!CompareCString(optarg, ORT_TSTR("openvino"))) {
              enable_openvino = true;
@@ -380,23 +395,48 @@ index 835f655..f05c973 100644
            } else if (!CompareCString(optarg, ORT_TSTR("nnapi"))) {
              enable_nnapi = true;
            } else if (!CompareCString(optarg, ORT_TSTR("dml"))) {
-@@ -288,6 +291,14 @@ int real_main(int argc, char* argv[], Ort::Env& env) {
+@@ -172,6 +177,9 @@ int real_main(int argc, char* argv[], Ort::Env& env) {
+             return -1;
+           }
+           break;
++        case 'Q':
++          enable_quantize = true;
++          break;
+         case 'x':
+           execution_mode = ExecutionMode::ORT_PARALLEL;
+           break;
+@@ -253,7 +261,13 @@ int real_main(int argc, char* argv[], Ort::Env& env) {
+     data_dirs.emplace_back(argv[i]);
+   }
+   {
+-    double per_sample_tolerance = 1e-3;
++    double per_sample_tolerance = 0.0;
++    if(enable_quantize){
++      per_sample_tolerance = enable_vsi_npu ? 0.15 : 1e-3;
++    }else{
++      per_sample_tolerance = 1e-3;
++    }
++    //double per_sample_tolerance = enable_vsi_npu ? 0.15 : 1e-3;
+     // when cuda is enabled, set it to a larger value for resolving random MNIST test failure
+     // when openvino is enabled, set it to a larger value for resolving MNIST accuracy mismatch
+     double relative_per_sample_tolerance = enable_cuda ? 0.017 : enable_openvino ? 0.009 : 1e-3;
+@@ -286,6 +300,14 @@ int real_main(int argc, char* argv[], Ort::Env& env) {
+ #else
+       fprintf(stderr, "OpenVINO is not supported in this build");
        return -1;
- #endif
-     }
++#endif
++    }
 +    if (enable_vsi_npu) {
 +#ifdef USE_VSI_NPU
 +      Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_VsiNpu(sf, device_id));
 +#else
 +      fprintf(stderr, "VsiNpu is not supported in this build");
 +      return -1;
-+#endif
-+    }
+ #endif
+     }
      if (enable_cuda) {
- #ifdef USE_CUDA
-       Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_CUDA(sf, device_id));
 diff --git a/onnxruntime/test/onnx/runner.cc b/onnxruntime/test/onnx/runner.cc
-index d8942fc..c7c5c20 100644
+index d8942fc2..c7c5c209 100644
 --- a/onnxruntime/test/onnx/runner.cc
 +++ b/onnxruntime/test/onnx/runner.cc
 @@ -427,9 +427,21 @@ EXECUTE_RESULT DataRunner::RunTaskImpl(size_t task_id) {
@@ -425,7 +465,7 @@ index d8942fc..c7c5c20 100644
      OrtValue* actual_output_value = iter->second;
      std::pair<COMPARE_RESULT, std::string> ret =
 diff --git a/onnxruntime/test/perftest/command_args_parser.cc b/onnxruntime/test/perftest/command_args_parser.cc
-index 7a80ded..ef0d7a3 100644
+index 7a80ded3..ef0d7a3e 100644
 --- a/onnxruntime/test/perftest/command_args_parser.cc
 +++ b/onnxruntime/test/perftest/command_args_parser.cc
 @@ -98,6 +98,8 @@ namespace perftest {
@@ -438,24 +478,24 @@ index 7a80ded..ef0d7a3 100644
            return false;
          }
 diff --git a/onnxruntime/test/perftest/ort_test_session.cc b/onnxruntime/test/perftest/ort_test_session.cc
-index 6ddcaf1..c25aff8 100644
+index 6ddcaf1a..c25aff84 100644
 --- a/onnxruntime/test/perftest/ort_test_session.cc
 +++ b/onnxruntime/test/perftest/ort_test_session.cc
-@@ -86,6 +86,12 @@ OnnxRuntimeTestSession::OnnxRuntimeTestSession(Ort::Env& env, std::random_device
+@@ -85,6 +85,12 @@ OnnxRuntimeTestSession::OnnxRuntimeTestSession(Ort::Env& env, std::random_device
+ 	performance_test_config.run_config.enable_cpu_mem_arena ? 1 : 0));
  #else
      ORT_THROW("Acl is not supported in this build\n");
- #endif
++#endif
 +  } else if (provider_name == onnxruntime::kVsiNpuExecutionProvider) {
 +#ifdef USE_VSI_NPU
 +    Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_VsiNpu(session_options, 0));
 +#else
 +    ORT_THROW("VSI_NPU is not supported in this build\n");
-+#endif
+ #endif
    } else if (!provider_name.empty() && provider_name != onnxruntime::kCpuExecutionProvider) {
      ORT_THROW("This backend is not included in perf test runner.\n");
-   }
 diff --git a/onnxruntime/test/providers/provider_test_utils.cc b/onnxruntime/test/providers/provider_test_utils.cc
-index 717c2c9..8a1af25 100644
+index 717c2c9e..8a1af25b 100644
 --- a/onnxruntime/test/providers/provider_test_utils.cc
 +++ b/onnxruntime/test/providers/provider_test_utils.cc
 @@ -568,6 +568,7 @@ void OpTester::Run(SessionOptions so,  // Take the SessionOptions by value (i.e.
@@ -494,7 +534,7 @@ similarity index 100%
 rename from onnxruntime/test/testdata/squeezenet/test_data_set_0/test_data_0_output.pb
 rename to onnxruntime/test/testdata/squeezenet/test_data_set_0/output_0.pb
 diff --git a/onnxruntime/test/util/default_providers.cc b/onnxruntime/test/util/default_providers.cc
-index b6da3d1..37c79cc 100644
+index b6da3d14..37c79ccd 100644
 --- a/onnxruntime/test/util/default_providers.cc
 +++ b/onnxruntime/test/util/default_providers.cc
 @@ -18,6 +18,7 @@ std::shared_ptr<IExecutionProviderFactory> CreateExecutionProviderFactory_Nnapi(
@@ -521,7 +561,7 @@ index b6da3d1..37c79cc 100644
  #ifdef USE_OPENVINO
    return CreateExecutionProviderFactory_OpenVINO("CPU")->CreateProvider();
 diff --git a/onnxruntime/test/util/include/default_providers.h b/onnxruntime/test/util/include/default_providers.h
-index 0019365..a876b03 100644
+index 00193659..a876b03d 100644
 --- a/onnxruntime/test/util/include/default_providers.h
 +++ b/onnxruntime/test/util/include/default_providers.h
 @@ -14,6 +14,7 @@ std::unique_ptr<IExecutionProvider> DefaultNGraphExecutionProvider();
@@ -533,7 +573,7 @@ index 0019365..a876b03 100644
  std::unique_ptr<IExecutionProvider> DefaultNnapiExecutionProvider();
  std::unique_ptr<IExecutionProvider> DefaultAclExecutionProvider(bool enable_arena = true);
 diff --git a/onnxruntime/test/util/include/providers.h b/onnxruntime/test/util/include/providers.h
-index dd72815..03b71ab 100644
+index dd728152..03b71ab4 100644
 --- a/onnxruntime/test/util/include/providers.h
 +++ b/onnxruntime/test/util/include/providers.h
 @@ -25,6 +25,9 @@
@@ -547,7 +587,7 @@ index dd72815..03b71ab 100644
  #include "core/providers/nnapi/nnapi_provider_factory.h"
  #endif
 diff --git a/tools/ci_build/build.py b/tools/ci_build/build.py
-index 10939a0..1332217 100755
+index 10939a0b..72bccfbe 100755
 --- a/tools/ci_build/build.py
 +++ b/tools/ci_build/build.py
 @@ -140,6 +140,7 @@ Use the individual flags to only run the specified stages.
@@ -604,5 +644,5 @@ index 10939a0..1332217 100755
              if not is_docker():
                  install_python_deps()
 -- 
-2.25.1
+2.26.2
 
