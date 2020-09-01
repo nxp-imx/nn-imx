@@ -623,7 +623,8 @@
     <ClInclude Include="include\ops\vsi_nn_op_pre_process_rgb.h" />
     <ClInclude Include="include\ops\vsi_nn_op_pre_process_tensor.h" />
     <ClInclude Include="include\ops\vsi_nn_op_pre_process_yuv420.h" />
-	<ClInclude Include="include\ops\vsi_nn_op_pre_process_yuv444.h" />
+    <ClInclude Include="include\ops\vsi_nn_op_pre_process_yuv444.h" />
+    <ClInclude Include="include\ops\vsi_nn_op_pre_process_nv12.h" />
     <ClInclude Include="include\ops\vsi_nn_op_prelu.h" />
     <ClInclude Include="include\ops\vsi_nn_op_proposal.h" />
     <ClInclude Include="include\ops\vsi_nn_op_quantized_16bit_lstm.h" />
@@ -974,8 +975,11 @@
     <ClCompile Include="src\kernel\cpu\pre_process_yuv420_cpu.c">
       <ObjectFileName>$(IntDir)\src\kernel\cpu\pre_process_yuv420_cpu.o</ObjectFileName>
     </ClCompile>
-	<ClCompile Include="src\kernel\cpu\pre_process_yuv444_cpu.c">
+    <ClCompile Include="src\kernel\cpu\pre_process_yuv444_cpu.c">
       <ObjectFileName>$(IntDir)\src\kernel\cpu\pre_process_yuv444_cpu.o</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\kernel\cpu\pre_process_nv12_cpu.c">
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\pre_process_nv12_cpu.o</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\pre_process_gray_cpu.c">
       <ObjectFileName>$(IntDir)\src\kernel\cpu\pre_process_gray_cpu.o</ObjectFileName>
@@ -1094,8 +1098,11 @@
     <ClCompile Include="src\kernel\evis\pre_process_yuv420_evis.c">
       <ObjectFileName>$(IntDir)\src\kernel\evis\pre_process_yuv420_evis.o</ObjectFileName>
     </ClCompile>
-	<ClCompile Include="src\kernel\evis\pre_process_yuv444_evis.c">
+    <ClCompile Include="src\kernel\evis\pre_process_yuv444_evis.c">
       <ObjectFileName>$(IntDir)\src\kernel\evis\pre_process_yuv444_evis.o</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\kernel\evis\pre_process_nv12_evis.c">
+      <ObjectFileName>$(IntDir)\src\kernel\evis\pre_process_nv12_evis.o</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\pre_process_gray_evis.c">
       <ObjectFileName>$(IntDir)\src\kernel\evis\pre_process_gray_evis.o</ObjectFileName>
@@ -1514,8 +1521,11 @@
     <ClCompile Include="src\ops\vsi_nn_op_pre_process_yuv420.c">
       <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_pre_process_yuv420.o</ObjectFileName>
     </ClCompile>
-	<ClCompile Include="src\ops\vsi_nn_op_pre_process_yuv444.c">
+    <ClCompile Include="src\ops\vsi_nn_op_pre_process_yuv444.c">
       <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_pre_process_yuv444.o</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_pre_process_nv12.c">
+      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_pre_process_nv12.o</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_prelu.c">
       <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_prelu.o</ObjectFileName>
