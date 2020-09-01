@@ -87,6 +87,9 @@ class VsiOpCallbackInfoQLinearConv : public VsiOpCallbackInfo {
                    OrtKernelContext* context,
                    NodeIndex node_index) override;
     bool IsNodeSupported(const onnxruntime::GraphViewer&, const Node*, std::string&) override;
+    void AddBiasOperand(const onnxruntime::Node* node,
+                        onnxruntime::ModelShellPtr& model,
+                        uint32_t operand_id);
 };
 
 #define MAP_OP_COMMON(name)                                                                    \
