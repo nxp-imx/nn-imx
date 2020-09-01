@@ -404,9 +404,8 @@ static vsi_status _query_kernel
         kernel->info.numParams   = (uint32_t)param_def_size;
         kernel->info.initialize  = initializer;
         // Register code source
-        vsi_nn_kernel_add_source( kernel, VSI_NN_GPU_SOURCE_FMT_CODE, 3,
+        vsi_nn_kernel_add_source( kernel, VSI_NN_GPU_SOURCE_FMT_CODE, 2,
                 "vsi_nn_kernel_header",
-                "relu_keras_header",
                 kernel_map[i].source_name );
         // Register binary source
         vsi_nn_kernel_add_source( kernel, VSI_NN_GPU_SOURCE_FMT_EXECUTABLE, 1,

@@ -25667,63 +25667,7 @@ COMPARISONS_3D(not_equal, I16, F16, vxc_short8, vxc_short8, vxc_short8, vxc_half
 "; /* end of relational_ops_3d_vx*/
 
 static const char relu_keras_vx[] = "\n\
-#define TENSOR_KERAS_RELU(src_type_name, dst_type_name, tensor_dims, image_type, \\\n\
-    convert2FP32_Func, convert2DstType_Func, src_type, dst_type) \\\n\
-__kernel void relu_keras_##src_type_name##to##dst_type_name##tensor_dims( \\\n\
-__read_only  image2d_array_t  input, \\\n\
-__write_only image2d_array_t  output, \\\n\
-                    float     alpha, \\\n\
-                    float     max_value, \\\n\
-                    float     threshold \\\n\
-                    ) \\\n\
-{ \\\n\
-    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
-    src_type src; \\\n\
- \\\n\
-    VXC_Read##image_type(src, input, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
-    float4 dataA = convert2FP32_Func##_Lo(src); \\\n\
-    float4 dataB = convert2FP32_Func##_Hi(src); \\\n\
-    float4 dataA0 = dataA < threshold ? threshold : dataA; \\\n\
-    dataA0 = dataA0 > max_value ? max_value : dataA0; \\\n\
-    float4 dataB0 = dataB < threshold ? threshold : dataB; \\\n\
-    dataB0 = dataB0 > max_value ? max_value : dataB0; \\\n\
- \\\n\
-    float4 dataA1 = dataA * alpha - offset; \\\n\
-    float4 dataB1 = dataB * alpha - offset; \\\n\
-    float4 dst0 = dataA  < threshold ? dataA1 : dataA0; \\\n\
-    float4 dst1 = dataB  < threshold ? dataB1 : dataB0; \\\n\
- \\\n\
-    dst_type result = convert2DstType_Func(dst0, dst1); \\\n\
- \\\n\
-    VXC_Write##image_type(output, coord, result, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
-}\n\
-TENSOR_KERAS_RELU(F16,  F16,  _3D, Image2DArray, F16toF32,  F32toF16,  vxc_ushort8, vxc_ushort8)\n\
-TENSOR_KERAS_RELU(F16,  I16,  _3D, Image2DArray, F16toF32,  F32toI16,  vxc_ushort8, vxc_short8)\n\
-TENSOR_KERAS_RELU(F16,  I8,   _3D, Image2DArray, F16toF32,  F32toI8,   vxc_ushort8, vxc_char8)\n\
-TENSOR_KERAS_RELU(F16,  U8,   _3D, Image2DArray, F16toF32,  F32toU8,   vxc_ushort8, vxc_uchar8)\n\
-TENSOR_KERAS_RELU(BF16, BF16, _3D, Image2DArray, BF16toF32, F32toBF16, vxc_ushort8, vxc_ushort8)\n\
-\n\
-TENSOR_KERAS_RELU(I16,  I16,  _3D, Image2DArray, I16toF32,  F32toI16,  vxc_short8,  vxc_short8)\n\
-TENSOR_KERAS_RELU(I16,  F16,  _3D, Image2DArray, I16toF32,  F32toF16,  vxc_short8,  vxc_ushort8)\n\
-TENSOR_KERAS_RELU(I8,   I8,   _3D, Image2DArray, I8toF32,   F32toI8,   vxc_char8,   vxc_char8)\n\
-TENSOR_KERAS_RELU(I8,   F16,  _3D, Image2DArray, I8toF32,   F32toF16,  vxc_char8,   vxc_ushort8)\n\
-TENSOR_KERAS_RELU(U8,   U8,   _3D, Image2DArray, U8toF32,   F32toU8,   vxc_uchar8,  vxc_uchar8)\n\
-TENSOR_KERAS_RELU(U8,   F16,  _3D, Image2DArray, U8toF32,   F32toF16,  vxc_uchar8,  vxc_ushort8)\n\
-\n\
-TENSOR_KERAS_RELU(F16,  F16,  _2D, Image,        F16toF32,  F32toF16,  vxc_ushort8, vxc_ushort8)\n\
-TENSOR_KERAS_RELU(F16,  I16,  _2D, Image,        F16toF32,  F32toI16,  vxc_ushort8, vxc_short8)\n\
-TENSOR_KERAS_RELU(F16,  I8,   _2D, Image,        F16toF32,  F32toI8,   vxc_ushort8, vxc_char8)\n\
-TENSOR_KERAS_RELU(F16,  U8,   _2D, Image,        F16toF32,  F32toU8,   vxc_ushort8, vxc_uchar8)\n\
-TENSOR_KERAS_RELU(BF16, BF16, _2D, Image,        BF16toF32, F32toBF16, vxc_ushort8, vxc_ushort8)\n\
-TENSOR_KERAS_RELU(I16,  I16,  _2D, Image,        I16toF32,  F32toI16,  vxc_short8,  vxc_short8)\n\
-TENSOR_KERAS_RELU(I16,  F16,  _2D, Image,        I16toF32,  F32toF16,  vxc_short8,  vxc_ushort8)\n\
-TENSOR_KERAS_RELU(I8,   I8,   _2D, Image,        I8toF32,   F32toI8,   vxc_char8,   vxc_char8)\n\
-TENSOR_KERAS_RELU(I8,   F16,  _2D, Image,        I8toF32,   F32toF16,  vxc_char8,   vxc_ushort8)\n\
-TENSOR_KERAS_RELU(U8,   U8,   _2D, Image,        U8toF32,   F32toU8,   vxc_uchar8,  vxc_uchar8)\n\
-TENSOR_KERAS_RELU(U8,   F16,  _2D, Image,        U8toF32,   F32toF16,  vxc_uchar8,  vxc_ushort8)\n\
-"; /* end of relu_keras_vx*/
-
-static const char relu_keras_header_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+#include \"cl_viv_vx_ext.h\"\n\
 \n\
 _viv_uniform VXC_512Bits uniConvFP16toFP32_Lo_4x4;\n\
 _viv_uniform VXC_512Bits uniConvFP16toFP32_Hi_4x4;\n\
@@ -25904,7 +25848,60 @@ vxc_uchar8 F32toU8(float4 src0, float4 src1)\n\
     VXC_DP2x8(dst, srcInt0, srcInt1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtractInteger_2x8);\n\
     return dst;\n\
 }\n\
-"; /* end of relu_keras_header_vx*/
+\n\
+\n\
+#define TENSOR_KERAS_RELU(src_type_name, dst_type_name, tensor_dims, image_type, \\\n\
+    convert2FP32_Func, convert2DstType_Func, src_type, dst_type) \\\n\
+__kernel void relu_keras_##src_type_name##to##dst_type_name##tensor_dims( \\\n\
+__read_only  image2d_array_t  input, \\\n\
+__write_only image2d_array_t  output, \\\n\
+                    float     alpha, \\\n\
+                    float     max_value, \\\n\
+                    float     threshold \\\n\
+                    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
+    src_type src; \\\n\
+    VXC_Read##image_type(src, input, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    float4 dataA = convert2FP32_Func##_Lo(src); \\\n\
+    float4 dataB = convert2FP32_Func##_Hi(src); \\\n\
+    float4 dataA0 = dataA < threshold ? threshold : dataA; \\\n\
+    dataA0 = dataA0 > max_value ? max_value : dataA0; \\\n\
+    float4 dataB0 = dataB < threshold ? threshold : dataB; \\\n\
+    dataB0 = dataB0 > max_value ? max_value : dataB0; \\\n\
+    float4 dataA1 = dataA * alpha - offset; \\\n\
+    float4 dataB1 = dataB * alpha - offset; \\\n\
+    float4 dst0 = dataA  < threshold ? dataA1 : dataA0; \\\n\
+    float4 dst1 = dataB  < threshold ? dataB1 : dataB0; \\\n\
+    dst_type result = convert2DstType_Func(dst0, dst1); \\\n\
+    VXC_Write##image_type(output, coord, result, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+}\n\
+\n\
+TENSOR_KERAS_RELU(F16,  F16,  _3D, Image2DArray, F16toF32,  F32toF16,  vxc_ushort8, vxc_ushort8)\n\
+TENSOR_KERAS_RELU(F16,  I16,  _3D, Image2DArray, F16toF32,  F32toI16,  vxc_ushort8, vxc_short8)\n\
+TENSOR_KERAS_RELU(F16,  I8,   _3D, Image2DArray, F16toF32,  F32toI8,   vxc_ushort8, vxc_char8)\n\
+TENSOR_KERAS_RELU(F16,  U8,   _3D, Image2DArray, F16toF32,  F32toU8,   vxc_ushort8, vxc_uchar8)\n\
+TENSOR_KERAS_RELU(BF16, BF16, _3D, Image2DArray, BF16toF32, F32toBF16, vxc_ushort8, vxc_ushort8)\n\
+\n\
+TENSOR_KERAS_RELU(I16,  I16,  _3D, Image2DArray, I16toF32,  F32toI16,  vxc_short8,  vxc_short8)\n\
+TENSOR_KERAS_RELU(I16,  F16,  _3D, Image2DArray, I16toF32,  F32toF16,  vxc_short8,  vxc_ushort8)\n\
+TENSOR_KERAS_RELU(I8,   I8,   _3D, Image2DArray, I8toF32,   F32toI8,   vxc_char8,   vxc_char8)\n\
+TENSOR_KERAS_RELU(I8,   F16,  _3D, Image2DArray, I8toF32,   F32toF16,  vxc_char8,   vxc_ushort8)\n\
+TENSOR_KERAS_RELU(U8,   U8,   _3D, Image2DArray, U8toF32,   F32toU8,   vxc_uchar8,  vxc_uchar8)\n\
+TENSOR_KERAS_RELU(U8,   F16,  _3D, Image2DArray, U8toF32,   F32toF16,  vxc_uchar8,  vxc_ushort8)\n\
+\n\
+TENSOR_KERAS_RELU(F16,  F16,  _2D, Image,        F16toF32,  F32toF16,  vxc_ushort8, vxc_ushort8)\n\
+TENSOR_KERAS_RELU(F16,  I16,  _2D, Image,        F16toF32,  F32toI16,  vxc_ushort8, vxc_short8)\n\
+TENSOR_KERAS_RELU(F16,  I8,   _2D, Image,        F16toF32,  F32toI8,   vxc_ushort8, vxc_char8)\n\
+TENSOR_KERAS_RELU(F16,  U8,   _2D, Image,        F16toF32,  F32toU8,   vxc_ushort8, vxc_uchar8)\n\
+TENSOR_KERAS_RELU(BF16, BF16, _2D, Image,        BF16toF32, F32toBF16, vxc_ushort8, vxc_ushort8)\n\
+TENSOR_KERAS_RELU(I16,  I16,  _2D, Image,        I16toF32,  F32toI16,  vxc_short8,  vxc_short8)\n\
+TENSOR_KERAS_RELU(I16,  F16,  _2D, Image,        I16toF32,  F32toF16,  vxc_short8,  vxc_ushort8)\n\
+TENSOR_KERAS_RELU(I8,   I8,   _2D, Image,        I8toF32,   F32toI8,   vxc_char8,   vxc_char8)\n\
+TENSOR_KERAS_RELU(I8,   F16,  _2D, Image,        I8toF32,   F32toF16,  vxc_char8,   vxc_ushort8)\n\
+TENSOR_KERAS_RELU(U8,   U8,   _2D, Image,        U8toF32,   F32toU8,   vxc_uchar8,  vxc_uchar8)\n\
+TENSOR_KERAS_RELU(U8,   F16,  _2D, Image,        U8toF32,   F32toF16,  vxc_uchar8,  vxc_ushort8)\n\
+"; /* end of relu_keras_vx*/
 
 static const char resize_bilinear_BF16_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
@@ -43807,7 +43804,6 @@ static const source_map_t evis_resource[] =
     {"relational_ops_2d_vx", relational_ops_2d_vx},
     {"relational_ops_3d_vx", relational_ops_3d_vx},
     {"relu_keras_vx", relu_keras_vx},
-    {"relu_keras_header_vx", relu_keras_header_vx},
     {"resize_bilinear_BF16_vx", resize_bilinear_BF16_vx},
     {"resize_bilinear_F16_vx", resize_bilinear_F16_vx},
     {"resize_bilinear_I16_vx", resize_bilinear_I16_vx},
