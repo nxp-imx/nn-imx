@@ -66,4 +66,50 @@ KERNEL_SELECTOR( depthwise_conv1d )
     return vsi_nn_kernel_pirority_set( selector, pirority, _cnt_of_array(pirority) );
 } /* depthwise_conv1d */
 
+
+static vsi_status _select
+    (
+    vsi_nn_graph_t              * graph,
+    vsi_nn_tensor_t            ** inputs,
+    size_t                        input_num,
+    vsi_nn_tensor_t            ** outputs,
+    size_t                        output_num,
+    const vsi_nn_kernel_param_t * params,
+    vsi_nn_kernel_selector_t    * selector
+    )
+{
+    vsi_nn_kernel_pirority_t pirority[] = {
+        { VSI_NN_KERNEL_TYPE_VX,    3 },
+        { VSI_NN_KERNEL_TYPE_EVIS,  2 },
+        { VSI_NN_KERNEL_TYPE_CL,    1 },
+        { VSI_NN_KERNEL_TYPE_CPU,   0 },
+        };
+    return vsi_nn_kernel_pirority_set( selector, pirority, _cnt_of_array(pirority) );
+} /* _select */
+
+#define REGISTER_VX_FIRST_KERNEL_SELECTOR(kernel_name) \
+    static vsi_status _##kernel_name##_kernel_selector( \
+        vsi_nn_graph_t              * graph, \
+        vsi_nn_tensor_t            ** inputs, \
+        size_t                        input_num, \
+        vsi_nn_tensor_t            ** outputs, \
+        size_t                        output_num, \
+        const vsi_nn_kernel_param_t * params, \
+        vsi_nn_kernel_selector_t    * selector \
+            ) \
+    { \
+        return _select(graph, inputs, input_num, outputs, output_num, \
+                params, selector); \
+    } \
+    REGISTER_KERNEL_SELECTOR( kernel_name, _##kernel_name##_kernel_selector )
+
+REGISTER_VX_FIRST_KERNEL_SELECTOR(exp)
+REGISTER_VX_FIRST_KERNEL_SELECTOR(log)
+REGISTER_VX_FIRST_KERNEL_SELECTOR(elu)
+REGISTER_VX_FIRST_KERNEL_SELECTOR(neg)
+REGISTER_VX_FIRST_KERNEL_SELECTOR(mish)
+REGISTER_VX_FIRST_KERNEL_SELECTOR(hard_sigmoid)
+REGISTER_VX_FIRST_KERNEL_SELECTOR(clip)
+REGISTER_VX_FIRST_KERNEL_SELECTOR(relu_keras)
+
 __END_DECLS

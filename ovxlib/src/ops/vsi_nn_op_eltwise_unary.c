@@ -34,7 +34,6 @@
 #include "utils/vsi_nn_util.h"
 #include "utils/vsi_nn_math.h"
 #include "kernel/vsi_nn_kernel.h"
-#include "kernel/vsi_nn_kernel_gpu_shape_optimize.h"
 
 static vsi_status _eltwise_unary_op_compute
     (
@@ -45,10 +44,6 @@ static vsi_status _eltwise_unary_op_compute
     )
 {
     vsi_status status = VSI_FAILURE;
-    vsi_nn_tensor_t* reshape_tensors[2] = { NULL };
-    int32_t shape[VSI_NN_MAX_DIM_NUM] = { 0 };
-    int32_t new_rank = 0;
-    vsi_bool ret;
 
     if( NULL == self )
     {
@@ -57,24 +52,9 @@ static vsi_status _eltwise_unary_op_compute
 
     // TODO: This optimzie is a hack for gpu path,
     // it should be moved to gpu kernel setup.
-    ret = vsi_nn_kernel_optimize_element_shape(
-            (int32_t *)inputs[0]->attr.size, inputs[0]->attr.dim_num,
-            shape, &new_rank );
-    if( ret )
-    {
-        reshape_tensors[0] = vsi_nn_reshape_tensor( self->graph,
-                inputs[0], (uint32_t*)shape, new_rank );
-        reshape_tensors[1] = vsi_nn_reshape_tensor( self->graph,
-                outputs[0], (uint32_t*)shape, new_rank );
+    self->n = (vx_node)vsi_nn_kernel_selector( self->graph,
+        kernel_name, inputs, 1, outputs, 1, NULL );
 
-        self->n = (vx_node)vsi_nn_kernel_selector( self->graph,
-                kernel_name,
-                &reshape_tensors[0], 1,
-                &reshape_tensors[1], 1, NULL );
-
-        vsi_nn_ReleaseTensor( &reshape_tensors[0] );
-        vsi_nn_ReleaseTensor( &reshape_tensors[1] );
-    }
     if( self->n )
     {
         status = VSI_SUCCESS;

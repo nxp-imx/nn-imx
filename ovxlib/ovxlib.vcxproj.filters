@@ -1820,6 +1820,15 @@
     <ClCompile Include="src\kernel\cl\relu_keras_cl.c">
       <Filter>Source Files\kernel\cl</Filter>
     </ClCompile>
+    <ClCompile Include="src\kernel\vx\eltwise_unary_vx.c">
+      <Filter>Source Files\kernel\vx</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\vx\clip_vx.c">
+      <Filter>Source Files\kernel\vx</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\vx\relu_keras_vx.c">
+      <Filter>Source Files\kernel\vx</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="include\custom\custom_node_type.def">
