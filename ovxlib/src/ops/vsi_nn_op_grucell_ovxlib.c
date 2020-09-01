@@ -873,7 +873,11 @@ static vsi_bool op_setup_default
     }
     else
     {
-        rh_mul_outputs->t = inputs[GRUCELL_INPUT_H_STATE];
+        rh_mul_outputs = vsi_nn_rnn_create_reshape(self,
+            inputs[GRUCELL_INPUT_H_STATE],
+            inputs[GRUCELL_INPUT_H_STATE]->attr.size,
+            inputs[GRUCELL_INPUT_H_STATE]->attr.dim_num,
+            use_virtual_tensor);
     }
 
     if( inputs[GRUCELL_INPUT_INPUT]->attr.dtype.qnt_type
