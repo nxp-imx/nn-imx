@@ -8,9 +8,13 @@ ONNXRuntime base version: V1.1.2
 
 ### Enable vsi_npu execution provider
 ```sh
-cp -r include/ $(ONNX_RT_PATH)/include/onnxruntime/core/providers/vsi_npu/
-cp -r src/ $(ONNX_RT_PATH)/onnxruntime/core/providers/vsi_npu/
-cp -r toolchain/ $(ONNX_RT_PATH)/
+export ONNX_RT_PATH=/path/to/onnx_runtime
+cp -r include/ $ONNX_RT_PATH/include/onnxruntime/core/providers/vsi_npu/
+cp -r src/ $ONNX_RT_PATH/onnxruntime/core/providers/vsi_npu/
+cp -r toolchain/ $ONNX_RT_PATH/
+cp ./0001-VSI_NPU-the-patch-for-ONNXRuntime-framework.patch $ONNX_RT_PATH/
+cp ./0002-fix-bug-for-ONNXRuntime-v1.1.2.patch $ONNX_RT_PATH/
+cd $ONNX_RT_PATH/
 git apply ./0001-VSI_NPU-the-patch-for-ONNXRuntime-framework.patch
 git apply ./0002-fix-bug-for-ONNXRuntime-v1.1.2.patch
 export NNRT_ROOT=/path/to/your/nn_runtime/root/dir
