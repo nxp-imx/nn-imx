@@ -191,7 +191,7 @@ __kernel void pre_process_yuv420_trans_U8toU8(
     result = fy * temp2 + (temp1 << 10);
 
     tmpV = 1 << 19;
-    vxc_uchar8 dst;
+    vxc_uchar8 dst, tmpPack;
     float4 tmpDst;
     VXC_DP4x4(tmpDst, result, tmpV, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), uniDescaleU8_4x4);
     tmpDst = (tmpDst - bMean) * var;

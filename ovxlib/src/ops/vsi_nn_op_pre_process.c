@@ -332,6 +332,40 @@ static vsi_bool op_setup
 
         vsi_nn_internal_setup_node(self, curr);
     }
+    else if (p->type == VSI_NN_SOURCE_FORMAT_IMAGE_NV12)
+    {
+        curr = vsi_nn_internal_new_node( self, VSI_NN_OP_PRE_PROCESS_NV12, 0, 0 );
+
+        if (p->reverse_channel)
+        {
+            curr->node->nn_param.pre_process_nv12.r_mean = p->norm.mean[2];
+            curr->node->nn_param.pre_process_nv12.g_mean = p->norm.mean[1];
+            curr->node->nn_param.pre_process_nv12.b_mean = p->norm.mean[0];
+        }
+        else
+        {
+            curr->node->nn_param.pre_process_nv12.r_mean = p->norm.mean[0];
+            curr->node->nn_param.pre_process_nv12.g_mean = p->norm.mean[1];
+            curr->node->nn_param.pre_process_nv12.b_mean = p->norm.mean[2];
+        }
+
+        curr->node->nn_param.pre_process_nv12.rgb_scale = p->norm.scale;
+        curr->node->nn_param.pre_process_nv12.reverse_channel = p->reverse_channel;
+        curr->node->nn_param.pre_process_nv12.rect.left = p->rect.left;
+        curr->node->nn_param.pre_process_nv12.rect.top = p->rect.top;
+        curr->node->nn_param.pre_process_nv12.rect.width = p->rect.width;
+        curr->node->nn_param.pre_process_nv12.rect.height = p->rect.height;
+        curr->node->nn_param.pre_process_nv12.output_attr.size = p->output_attr.size;
+        curr->node->nn_param.pre_process_nv12.output_attr.dim_num = p->output_attr.dim_num;
+        curr->node->nn_param.pre_process_nv12.perm = p->perm;
+        curr->node->nn_param.pre_process_nv12.dim_num = p->dim_num;
+
+        curr->inputs[0] = inputs[PRE_PROCESS_INPUT0];
+        curr->inputs[1] = inputs[PRE_PROCESS_INPUT1];
+        curr->outputs[0] = outputs[PRE_PROCESS_OUTPUT];
+
+        vsi_nn_internal_setup_node(self, curr);
+    }
     else
     {
         VSILOGE( "Not support this type!(PRE_PROCESS)\n");

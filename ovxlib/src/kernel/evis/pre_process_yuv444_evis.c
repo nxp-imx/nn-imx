@@ -1029,11 +1029,11 @@ static vsi_status _query_kernel
     input0_dtype = vsi_nn_kernel_map_dtype( inputs[0]->attr.dtype.vx_type );
     output_dtype = vsi_nn_kernel_map_dtype( outputs[0]->attr.dtype.vx_type );
 
-    if(enable_perm && enable_copy && output_dtype == U8)
+    if(enable_perm && enable_copy)
     {
         convert_type = COPY_TRANS;
     }
-    else if(enable_perm && output_dtype == U8)
+    else if(enable_perm)
     {
         convert_type = TRANS;
     }

@@ -589,6 +589,22 @@ static vsi_nn_kernel_node_t _setup
             vsi_nn_kernel_tensor_release( &tmp_params[7] );
             vsi_nn_kernel_tensor_release( &tmp_params[8] );
             vsi_nn_kernel_tensor_release( &tmp_params[9] );
+            {
+                // Set default border mode.
+                vx_border_t border;
+                border.mode = VX_BORDER_CONSTANT;
+                border.constant_value.U8 = 0;
+                border.constant_value.S16 = 0;
+                border.constant_value.U16 = 0;
+                border.constant_value.S32 = 0;
+                border.constant_value.U32 = 0;
+                if(inputs[0]->attr.dtype.vx_type == VSI_NN_TYPE_UINT8)
+                {
+                    border.constant_value.U8 = (vx_uint8)inputs[0]->attr.dtype.zero_point;
+                }
+                status = vxSetNodeAttribute( (vx_node)node, VX_NODE_BORDER, &border, sizeof(border) );
+                CHECK_STATUS(status);
+            }
         }
     }
     return node;
