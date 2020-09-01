@@ -1,32 +1,33 @@
-From 38036f565c4abfc52c011799e1748fc85316d52d Mon Sep 17 00:00:00 2001
-From: "Zhouheng.Zheng" <Zhouheng.Zheng@verisilicon.com>
-Date: Thu, 20 Aug 2020 16:47:17 +0800
+From f2530decd5e283bc55d8e6d291930e505297528a Mon Sep 17 00:00:00 2001
+From: "jing.tang" <jing.tang@verisilicon.com>
+Date: Fri, 21 Aug 2020 13:42:10 +0800
 Subject: [PATCH] [VSI_NPU] the patch for ONNXRuntime framework
 
 ---
- cmake/CMakeLists.txt                          |   4 ++
- cmake/onnxruntime.cmake                       |   1 +
- cmake/onnxruntime_providers.cmake             |  24 ++++++++
- cmake/onnxruntime_unittests.cmake             |   9 +++
- .../CXX_Api_Sample.cpp                        |   5 ++
- include/onnxruntime/core/graph/constants.h    |   1 +
- .../core/framework/ort_value_name_idx_map.h   |  14 ++++-
- onnxruntime/core/framework/session_state.cc   |  14 ++++-
- onnxruntime/core/framework/utils.cc           |  57 +++++++++++++++++-
- .../core/optimizer/transformer_memcpy.cc      |   3 +-
- onnxruntime/core/session/inference_session.cc |  12 ++++
- onnxruntime/test/onnx/main.cc                 |  28 ++++++++-
- onnxruntime/test/onnx/runner.cc               |  18 +++++-
- .../test/perftest/command_args_parser.cc      |   2 +
- onnxruntime/test/perftest/ort_test_session.cc |   6 ++
- .../test/providers/provider_test_utils.cc     |   6 +-
- .../{test_data_0_input.pb => input_0.pb}      | Bin
- .../{test_data_0_output.pb => output_0.pb}    | Bin
- onnxruntime/test/util/default_providers.cc    |   9 +++
- .../test/util/include/default_providers.h     |   1 +
- onnxruntime/test/util/include/providers.h     |   3 +
- tools/ci_build/build.py                       |  11 +++-
- 22 files changed, 213 insertions(+), 15 deletions(-)
+ cmake/CMakeLists.txt                               |   4 ++
+ cmake/onnxruntime.cmake                            |   1 +
+ cmake/onnxruntime_providers.cmake                  |  24 ++++++++
+ cmake/onnxruntime_unittests.cmake                  |   9 +++
+ .../CXX_Api_Sample.cpp                             |   5 ++
+ include/onnxruntime/core/graph/constants.h         |   1 +
+ .../core/framework/ort_value_name_idx_map.h        |  14 ++++-
+ onnxruntime/core/framework/session_state.cc        |  14 ++++-
+ onnxruntime/core/framework/utils.cc                |  57 +++++++++++++++++-
+ .../core/optimizer/transformer_memcpy.cc           |   3 +-
+ onnxruntime/core/session/inference_session.cc      |  12 ++++
+ onnxruntime/test/onnx/main.cc                      |  28 ++++++++-
+ onnxruntime/test/onnx/runner.cc                    |  18 +++++-
+ .../test/perftest/command_args_parser.cc           |   2 +
+ onnxruntime/test/perftest/ort_test_session.cc      |   6 ++
+ .../test/providers/cpu/nn/batch_norm_op_test.cc    |   3 ++
+ .../test/providers/provider_test_utils.cc          |   6 +-
+ .../{test_data_0_input.pb => input_0.pb}           | Bin
+ .../{test_data_0_output.pb => output_0.pb}         | Bin
+ onnxruntime/test/util/default_providers.cc         |   9 +++
+ .../test/util/include/default_providers.h          |   1 +
+ onnxruntime/test/util/include/providers.h          |   3 +
+ tools/ci_build/build.py                            |  11 +++-
+ 23 files changed, 216 insertions(+), 15 deletions(-)
  rename onnxruntime/test/testdata/squeezenet/test_data_set_0/{test_data_0_input.pb => input_0.pb} (100%)
  rename onnxruntime/test/testdata/squeezenet/test_data_set_0/{test_data_0_output.pb => output_0.pb} (100%)
 
@@ -494,6 +495,20 @@ index 6ddcaf1a..c25aff84 100644
  #endif
    } else if (!provider_name.empty() && provider_name != onnxruntime::kCpuExecutionProvider) {
      ORT_THROW("This backend is not included in perf test runner.\n");
+diff --git a/onnxruntime/test/providers/cpu/nn/batch_norm_op_test.cc b/onnxruntime/test/providers/cpu/nn/batch_norm_op_test.cc
+index 9b86271..0aae5b3 100644
+--- a/onnxruntime/test/providers/cpu/nn/batch_norm_op_test.cc
++++ b/onnxruntime/test/providers/cpu/nn/batch_norm_op_test.cc
+@@ -43,6 +43,9 @@ void TestBatchNorm(const InputDataMap& input_data_map,
+   if (spatial_mode == 0) {
+     excluded_eps.insert(kNGraphExecutionProvider);
+   }
++  if (expect_result == OpTester::ExpectResult::kExpectFailure) {
++    excluded_eps.insert(kVsiNpuExecutionProvider);
++  }
+   test.Run(expect_result, err_str, excluded_eps);
+ }
+ 
 diff --git a/onnxruntime/test/providers/provider_test_utils.cc b/onnxruntime/test/providers/provider_test_utils.cc
 index 717c2c9e..8a1af25b 100644
 --- a/onnxruntime/test/providers/provider_test_utils.cc
