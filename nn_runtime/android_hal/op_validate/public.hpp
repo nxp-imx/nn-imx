@@ -72,4 +72,5 @@
 #include "ReshapeValidate.hpp"
 #include "SpaceOpValidate.hpp"
 #include "SliceValidate.hpp"
+#include "StridedSliceValidate.hpp"
 #endif
