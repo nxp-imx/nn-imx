@@ -12,6 +12,7 @@ cp -r include/ $(ONNX_RT_PATH)/include/onnxruntime/core/providers/vsi_npu/
 cp -r src/ $(ONNX_RT_PATH)/onnxruntime/core/providers/vsi_npu/
 cp -r toolchain/ $(ONNX_RT_PATH)/
 git apply ./0001-VSI_NPU-the-patch-for-ONNXRuntime-framework.patch
+git apply ./0002-fix-bug-for-ONNXRuntime-v1.1.2.patch
 export NNRT_ROOT=/path/to/your/nn_runtime/root/dir
 export VIVANTE_SDK_DIR=/driver/root/build/sdk # driver build folder
 ```
