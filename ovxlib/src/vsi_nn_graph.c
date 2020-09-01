@@ -35,6 +35,7 @@
 #include "vsi_nn_rnn.h"
 #include "vsi_nn_test.h"
 #include "vsi_nn_internal_node.h"
+#include "vsi_nn_version.h"
 #include "utils/vsi_nn_util.h"
 #include "utils/vsi_nn_vdata.h"
 #include "utils/vsi_nn_map.h"
@@ -467,6 +468,9 @@ vsi_nn_graph_t * vsi_nn_CreateGraph
 {
     vsi_nn_graph_t * graph;
     graph = NULL;
+
+    VSILOGI( "%s", vsi_nn_GetVersion() );
+
     if( NULL == ctx )
     {
         return graph;
