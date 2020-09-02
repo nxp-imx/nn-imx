@@ -1127,13 +1127,7 @@
     <ClCompile Include="src\kernel\vx\prelu_vx.c">
       <Filter>Source Files\kernel\vx</Filter>
     </ClCompile>
-    <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_addn.c">
-      <Filter>Source Files\libnnext\ops\kernel</Filter>
-    </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_axis_aligned_bbox_transform.c">
-      <Filter>Source Files\libnnext\ops\kernel</Filter>
-    </ClCompile>
-    <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_batch2space.c">
       <Filter>Source Files\libnnext\ops\kernel</Filter>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_box_with_nms_limit.c">
@@ -1149,9 +1143,6 @@
       <Filter>Source Files\libnnext\ops\kernel</Filter>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_detection_postprocess.c">
-      <Filter>Source Files\libnnext\ops\kernel</Filter>
-    </ClCompile>
-    <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_dropout.c">
       <Filter>Source Files\libnnext\ops\kernel</Filter>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_extra_ending.c">
@@ -1172,16 +1163,10 @@
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_layernormalize.c">
       <Filter>Source Files\libnnext\ops\kernel</Filter>
     </ClCompile>
-    <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_random_multinomial.c">
-      <Filter>Source Files\libnnext\ops\kernel</Filter>
-    </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_reduce.c">
       <Filter>Source Files\libnnext\ops\kernel</Filter>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_resize.c">
-      <Filter>Source Files\libnnext\ops\kernel</Filter>
-    </ClCompile>
-    <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_reverse.c">
       <Filter>Source Files\libnnext\ops\kernel</Filter>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_roi_align.c">
@@ -1199,13 +1184,7 @@
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_space2batch.c">
       <Filter>Source Files\libnnext\ops\kernel</Filter>
     </ClCompile>
-    <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_space2depth.c">
-      <Filter>Source Files\libnnext\ops\kernel</Filter>
-    </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_spatial_transformer.c">
-      <Filter>Source Files\libnnext\ops\kernel</Filter>
-    </ClCompile>
-    <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_stack.c">
       <Filter>Source Files\libnnext\ops\kernel</Filter>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_sync_host.c">

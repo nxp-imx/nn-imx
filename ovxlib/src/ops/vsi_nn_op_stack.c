@@ -45,7 +45,6 @@
 #define _IO_NUM             (2)
 #define _PARAM_NUM          (_ARG_NUM + _IO_NUM)
 
-extern vx_kernel_description_t * vx_kernel_STACK_list[];
 
 static vsi_status op_compute
     (
