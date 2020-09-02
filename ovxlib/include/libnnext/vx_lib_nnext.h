@@ -345,7 +345,6 @@ enum vx_kernel_libnnext_offset_e
 #define VX_KERNEL_NAME_TENSORCROP_INT16                    VIVANTE_NAMESPACE ".vxcTensorCrop_Int16"
 #define VX_KERNEL_NAME_TENSORCROP_INT8                     VIVANTE_NAMESPACE ".vxcTensorCrop_Int8"
 #define VX_KERNEL_NAME_TENSORCROP_INT16_FP16               VIVANTE_NAMESPACE ".vxcTensorCrop_Int16_Fp16"
-#define VX_KERNEL_NAME_DROPOUT                             VIVANTE_NAMESPACE ".dropoutVXC"
 #define VX_KERNEL_NAME_SHUFFLECHANNEL                      VIVANTE_NAMESPACE ".shuffleChannelVXC"
 #define VX_KERNEL_NAME_SHUFFLECHANNEL8BITS                 VIVANTE_NAMESPACE ".shuffleChannel8BitsVXC"
 #define VX_KERNEL_NAME_SHUFFLECHANNEL16BITS_AXIS1          VIVANTE_NAMESPACE ".shuffleChannel16Bits_Axis1"

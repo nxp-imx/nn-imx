@@ -29078,16 +29078,6 @@ __kernel void upsample_U8_U8to_F16_2D\n\
 }\n\
 "; /* end of upsample_U8_vx*/
 
-static const char vsi_nn_kernel_addn_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
-\n\
-__kernel void vxcAddn(\n\
-    __read_only image2d_array_t   input,\n\
-    __write_only image2d_array_t  output)\n\
-{\n\
-\n\
-}\n\
-"; /* end of vsi_nn_kernel_addn_vx*/
-
 static const char vsi_nn_kernel_axis_aligned_bbox_transform_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 __kernel void vxcAxis_aligned_bbox_transform(\n\
@@ -29230,32 +29220,6 @@ __kernel void vxcDetection_postprocess(\n\
 \n\
 }\n\
 "; /* end of vsi_nn_kernel_detection_postprocess_vx*/
-
-static const char vsi_nn_kernel_dropout_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
-_viv_uniform VXC_512Bits fp16MulFp16ToFp16_2x8;\n\
-__kernel void dropoutVXC\n\
-    (\n\
-    image2d_array_t input,\n\
-    image2d_array_t output,\n\
-    float scale\n\
-    )\n\
-{\n\
-    vxc_short8 din, dout;\n\
-    vxc_half8 dinHalf, doutHalf;\n\
-    half scaleFp16;\n\
-    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
-\n\
-    VXC_ReadImage(din, input, coord.xy, VXC_5BITOFFSET_XY(0, 0),\\\n\
-        VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-    _viv_asm(CONV, scaleFp16, scale);\n\
-    _viv_asm(COPY, dinHalf, din, 16);\n\
-    VXC_DP2x8(doutHalf, dinHalf, scaleFp16, VXC_MODIFIER(0, 7, 0,\\\n\
-        VXC_RM_TowardZero, 0), fp16MulFp16ToFp16_2x8);\n\
-    _viv_asm(COPY, dout, doutHalf, 16);\n\
-    VXC_WriteImage(output, coord.xy, dout, VXC_MODIFIER(0, 7, 0,\\\n\
-        VXC_RM_TowardZero, 0));\n\
-}\n\
-"; /* end of vsi_nn_kernel_dropout_vx*/
 
 static const char vsi_nn_kernel_extra_ending_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
@@ -31401,221 +31365,6 @@ __kernel void vxcLayerNormU8toFp16(\n\
 }\n\
 "; /* end of vsi_nn_kernel_layernormalize_U8_vx*/
 
-static const char vsi_nn_kernel_random_multinomial_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
-\n\
-_viv_uniform int iter;\n\
-_viv_uniform int stride;\n\
-_viv_uniform int class_max_iter;\n\
-_viv_uniform int class_max_stride;\n\
-_viv_uniform float re_rand_max;\n\
-\n\
-_viv_uniform VXC_512Bits uniHorzSubMaxFp16_2x8;\n\
-_viv_uniform VXC_512Bits uniConvertFstFp16Fp32_4x4;\n\
-_viv_uniform VXC_512Bits uniConvertSecFp16Fp32_4x4;\n\
-\n\
-uint4 _philox4x32bumpkey(uint4 key)\n\
-{\n\
-    uint4 mask = (uint4)((uint)0x9E3779B9, (uint)0xBB67AE85, 0, 0);\n\
-    //key.x += ((uint)0x9E3779B9);\n\
-    //key.y += ((uint)0xBB67AE85);\n\
-    key += mask;\n\
-    return key;\n\
-}\n\
-\n\
-uint mulhilo32(uint a, uint b, uint* hip)\n\
-{\n\
-    uint product = (uint)(a * b);\n\
-    *hip = mul_hi(a, b);\n\
-    return product;\n\
-}\n\
-\n\
-uint4 _philox4x32round(uint4 ctr, uint4 key)\n\
-{\n\
-    uint hi0;\n\
-    uint hi1;\n\
-    uint PHILOX_M4x32_0 = ((uint)0xD2511F53);\n\
-    uint PHILOX_M4x32_1 = ((uint)0xCD9E8D57);\n\
-    uint lo0 = mulhilo32(PHILOX_M4x32_0, ctr.x, &hi0);\n\
-    uint lo1 = mulhilo32(PHILOX_M4x32_1, ctr.z, &hi1);\n\
-    uint4 out = (uint4)(hi1^ctr.y^key.x, lo1, hi0^ctr.w^key.y, lo0);\n\
-    return out;\n\
-}\n\
-\n\
-uint4 philox4x32_R_10(uint4 ctr, uint4 key)\n\
-{\n\
-    uint i;\n\
-    ctr = _philox4x32round(ctr, key);\n\
-    for (i = 1; i < 10; i++)\n\
-    {\n\
-        key = _philox4x32bumpkey(key);\n\
-        ctr = _philox4x32round(ctr, key);\n\
-    }\n\
-    return ctr;\n\
-}\n\
-\n\
-__kernel void vxcRandom_generate(\n\
-    __read_only image2d_array_t   seeds,\n\
-    __write_only image2d_array_t  output)\n\
-{\n\
-    int gidx = get_global_id(0);\n\
-    int gidy = get_global_id(1);\n\
-    int4 coord = (int4)(gidx << 1, gidy, 0, 0);\n\
-    uint4 key = read_imageui(seeds, coord);\n\
-\n\
-    uint4 ctr = (uint4)(0);\n\
-    float4 result = 0;\n\
-\n\
-    coord.x = gidx * stride;\n\
-    for(int i = 0; i < iter; i++)\n\
-    {\n\
-        ctr = philox4x32_R_10(ctr, key);\n\
-        result = convert_float4(ctr) * re_rand_max;\n\
-        write_imagef(output, coord, result);\n\
-        coord.x += 4;\n\
-    }\n\
-}\n\
-\n\
-// N times of 8\n\
-// x dim = 1\n\
-__kernel void vxcRandom_sum_fp16(\n\
-    __read_only image2d_array_t   input,\n\
-    vx_array_float  output)\n\
-{\n\
-    int gidx = get_global_id(0);\n\
-    int gidy = get_global_id(1);\n\
-    int4 coord = (int4)(gidx, gidy, 0, 0);\n\
-\n\
-    vxc_half8 maxData, data;\n\
-    vxc_short8 src0 = (vxc_short8)(0xFC00, 0xFC00, 0xFC00, 0xFC00, 0xFC00, 0xFC00, 0xFC00, 0xFC00);\n\
-    uint4 ctr = (uint4)(0);\n\
-    float4 dst0, dst1;\n\
-    float4 one = (float4)(1, 1, 1, 1);\n\
-    _viv_asm(COPY, maxData, src0, 16);\n\
-    float tmp = 0;\n\
-    int offset = gidy * class_max_stride;\n\
-    __global float* cdfPtr = (__global float*)output.item + offset;\n\
-\n\
-    for(int i = 0; i < class_max_iter; i++)\n\
-    {\n\
-        VXC_ReadImage(src0, input, coord, VXC_5BITOFFSET_XY(0, 0),\\\n\
-                VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-        coord.x += 8;\n\
-        _viv_asm(COPY, data, src0, 16);\n\
-        //VXC_DP2x8(sum, data, data, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),\n\
-        //        uniHorzSumFp16_8x2);\n\
-        VXC_HorzMax3_Half(data, data, VXC_MODIFIER(0, 5, 0,VXC_RM_TowardZero, 0));\n\
-        VXC_HorzMax3_Half(data, data, VXC_MODIFIER(0, 3, 0,VXC_RM_TowardZero, 0));\n\
-        VXC_HorzMax3_Half(data, data, VXC_MODIFIER(0, 1, 0,VXC_RM_TowardZero, 0));\n\
-        VXC_HorzMax3_Half(data, data, VXC_MODIFIER(0, 0, 0,VXC_RM_TowardZero, 0));\n\
-        VXC_VertMax3_Half(maxData, maxData, maxData, data, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
-    }\n\
-    coord.x = 0;\n\
-    for(int i = 0; i < class_max_iter; i++)\n\
-    {\n\
-        float4 val0, val1;\n\
-        VXC_ReadImage(src0, input, coord, VXC_5BITOFFSET_XY(0, 0),\\\n\
-                VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-        coord.x += 8;\n\
-        _viv_asm(COPY, data, src0, 16);\n\
-        VXC_DP2x8(data, data, maxData, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),\n\
-                uniHorzSubMaxFp16_2x8);\n\
-        VXC_DP4x4(val0, data, data, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertFstFp16Fp32_4x4);\n\
-        VXC_DP4x4(val1, data, data, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecFp16Fp32_4x4);\n\
-        val0 = exp(val0);\n\
-        val1 = exp(val1);\n\
-        tmp = dot(val0, one);\n\
-        dst0 = (float4)(val0.x, (val0.x + val0.y), (val0.x + val0.y + val0.z), tmp);\n\
-        dst1 = (float4)((tmp + val1.x), (tmp + val1.x + val1.y),\n\
-                 (tmp + val1.x + val1.y + val1.z), tmp + dot(val1, one));\n\
-        vstore4(dst0, 0, cdfPtr);\n\
-        vstore4(dst1, 1, cdfPtr);\n\
-        cdfPtr += 8;\n\
-    }\n\
-}\n\
-\n\
-uint upper_bound(float* a, int n, float x) {\n\
-    uint l = 0;\n\
-    uint h = n;\n\
-    while (l < h) {\n\
-        int mid = (l + h) / 2;\n\
-        if (x >= a[mid]) {\n\
-            l = mid + 1;\n\
-        } else {\n\
-            h = mid;\n\
-        }\n\
-    }\n\
-    return l;\n\
-}\n\
-\n\
-// one thread calculate 4\n\
-__kernel void vxcRandom_multinomial(\n\
-    __read_only image2d_array_t   randoms,\n\
-                 vx_array_float   cdfs,\n\
-   __write_only image2d_array_t   output,\n\
-                 int class_size, int max_stride)\n\
-{\n\
-    int gidx = get_global_id(0);\n\
-    int gidy = get_global_id(1);\n\
-    int4 coord = (int4)(gidx, gidy, 0, 0);\n\
-\n\
-    int offset = gidy * max_stride;\n\
-    __global float* cdfPtr = (__global float*)cdfs.item + offset;\n\
-\n\
-    float4 ran = read_imagef(randoms, coord);\n\
-    float total = cdfPtr[class_size - 1];\n\
-    float4 target = ran * total;\n\
-\n\
-    uint4 out_class = (uint4)(0);\n\
-    out_class.x = upper_bound(cdfPtr, class_size, target.x);\n\
-    out_class.y = upper_bound(cdfPtr, class_size, target.y);\n\
-    out_class.z = upper_bound(cdfPtr, class_size, target.z);\n\
-    out_class.w = upper_bound(cdfPtr, class_size, target.w);\n\
-\n\
-    write_imageui(output, coord, out_class);\n\
-}\n\
-\n\
-__kernel void vxcRandom_sum_fp32(\n\
-    __read_only image2d_array_t   input,\n\
-    vx_array_float  output)\n\
-{\n\
-    int gidx = get_global_id(0);\n\
-    int gidy = get_global_id(1);\n\
-    int4 coord = (int4)(gidx, gidy, 0, 0);\n\
-\n\
-    vxc_float4 src0, data;\n\
-    float maxData0 = FLT_MIN, maxData1 = FLT_MIN;\n\
-    uint4 ctr = (uint4)(0);\n\
-    float4 dst;\n\
-    float4 one = (float4)(1, 1, 1, 1);\n\
-\n\
-    float tmp = 0;\n\
-    int offset = gidy * class_max_stride;\n\
-    __global float* cdfPtr = (__global float*)output.item + offset;\n\
-\n\
-    for(int i = 0; i < class_max_iter; i++)\n\
-    {\n\
-        src0 = read_imagef(input, coord);\n\
-        coord.x += 4;\n\
-        maxData0 = max(src0.x, src0.y);\n\
-        maxData1 = max(src0.z, src0.w);\n\
-        maxData0 = max(maxData0, maxData1);\n\
-    }\n\
-    coord.x = 0;\n\
-    float4 maxData = (float4)(maxData0, maxData0, maxData0, maxData0);\n\
-    for(int i = 0; i < class_max_iter; i++)\n\
-    {\n\
-        float4 val;\n\
-        src0 = read_imagef(input, coord);\n\
-        coord.x += 4;\n\
-        data = src0 - maxData;\n\
-        val = exp(data);\n\
-        tmp = dot(val, one);\n\
-        dst = (float4)(val.x, (val.x + val.y), (val.x + val.y + val.z), tmp);\n\
-        vstore4(dst, 0, cdfPtr);\n\
-        cdfPtr += 4;\n\
-    }\n\
-}"; /* end of vsi_nn_kernel_random_multinomial_vx*/
-
 static const char vsi_nn_kernel_resize_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 //--------------------------resize-------------------------\n\
@@ -31655,26 +31404,6 @@ __kernel void resize_8bits_downsample_quarter\n\
     VXC_WriteImage(output, coord, dst, VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0));\n\
 }\n\
 "; /* end of vsi_nn_kernel_resize_vx*/
-
-static const char vsi_nn_kernel_reverse_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
-\n\
-/********************************************tensor reverse*****************************************/\n\
-_viv_uniform int cur_axis_sz_sub1;\n\
-__kernel void tensorReverse_axis0_fp16(\n\
-    __read_only     image2d_array_t input,\n\
-    __write_only    image2d_array_t output)\n\
-{\n\
-    int2 coord = (int2)(get_global_id(0), get_global_id(1));\n\
-    vxc_short8 vec0;\n\
-    VXC_ReadImage(vec0, input, coord.xy, VXC_5BITOFFSET_XY(0, 0),\\\n\
-        VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-\n\
-    coord.y = cur_axis_sz_sub1 - coord.y;\n\
-\n\
-    VXC_WriteImage(output, coord.xy, vec0, VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0));\n\
-}\n\
-\n\
-"; /* end of vsi_nn_kernel_reverse_vx*/
 
 static const char vsi_nn_kernel_roi_align_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
@@ -32195,16 +31924,6 @@ __kernel void vxcReorg2_fp16_fp16_sx2_sy1\n\
     VXC_WriteImage2DArray(output, coord_out, imgVal1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
 }\n\
 "; /* end of vsi_nn_kernel_space2depth_vx*/
-
-static const char vsi_nn_kernel_stack_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
-\n\
-__kernel void vxcStack(\n\
-    __read_only image2d_array_t   input,\n\
-    __write_only image2d_array_t  output)\n\
-{\n\
-\n\
-}\n\
-"; /* end of vsi_nn_kernel_stack_vx*/
 
 static const char vsi_nn_kernel_tensorstackconcat_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
@@ -44127,12 +43846,10 @@ static const source_map_t evis_resource[] =
     {"upsample_I16_vx", upsample_I16_vx},
     {"upsample_I8_vx", upsample_I8_vx},
     {"upsample_U8_vx", upsample_U8_vx},
-    {"vsi_nn_kernel_addn_vx", vsi_nn_kernel_addn_vx},
     {"vsi_nn_kernel_axis_aligned_bbox_transform_vx", vsi_nn_kernel_axis_aligned_bbox_transform_vx},
     {"vsi_nn_kernel_box_with_nms_limit_vx", vsi_nn_kernel_box_with_nms_limit_vx},
     {"vsi_nn_kernel_crop_vx", vsi_nn_kernel_crop_vx},
     {"vsi_nn_kernel_detection_postprocess_vx", vsi_nn_kernel_detection_postprocess_vx},
-    {"vsi_nn_kernel_dropout_vx", vsi_nn_kernel_dropout_vx},
     {"vsi_nn_kernel_extra_ending_vx", vsi_nn_kernel_extra_ending_vx},
     {"vsi_nn_kernel_fullconnect2_vx", vsi_nn_kernel_fullconnect2_vx},
     {"vsi_nn_kernel_generate_proposals_vx", vsi_nn_kernel_generate_proposals_vx},
@@ -44145,16 +43862,13 @@ static const source_map_t evis_resource[] =
     {"vsi_nn_kernel_imageprocess_5_vx", vsi_nn_kernel_imageprocess_5_vx},
     {"vsi_nn_kernel_layernormalize_vx", vsi_nn_kernel_layernormalize_vx},
     {"vsi_nn_kernel_layernormalize_U8_vx", vsi_nn_kernel_layernormalize_U8_vx},
-    {"vsi_nn_kernel_random_multinomial_vx", vsi_nn_kernel_random_multinomial_vx},
     {"vsi_nn_kernel_resize_vx", vsi_nn_kernel_resize_vx},
-    {"vsi_nn_kernel_reverse_vx", vsi_nn_kernel_reverse_vx},
     {"vsi_nn_kernel_roi_align_vx", vsi_nn_kernel_roi_align_vx},
     {"vsi_nn_kernel_scale_vx", vsi_nn_kernel_scale_vx},
     {"vsi_nn_kernel_shufflechannel_vx", vsi_nn_kernel_shufflechannel_vx},
     {"vsi_nn_kernel_shufflechannel_axis1_vx", vsi_nn_kernel_shufflechannel_axis1_vx},
     {"vsi_nn_kernel_signalframe_vx", vsi_nn_kernel_signalframe_vx},
     {"vsi_nn_kernel_space2depth_vx", vsi_nn_kernel_space2depth_vx},
-    {"vsi_nn_kernel_stack_vx", vsi_nn_kernel_stack_vx},
     {"vsi_nn_kernel_tensorstackconcat_vx", vsi_nn_kernel_tensorstackconcat_vx},
     {"vsi_nn_kernel_topk_vx", vsi_nn_kernel_topk_vx},
     {"vsi_nn_kernel_transform_gemm_vx", vsi_nn_kernel_transform_gemm_vx},
