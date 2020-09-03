@@ -32180,16 +32180,6 @@ __kernel void vxcTransform_setupThres_F16toF16\n\
 }\n\
 "; /* end of vsi_nn_kernel_transform_setupThres_vx*/
 
-static const char vsi_nn_kernel_unstack_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
-\n\
-__kernel void vxcUnstack(\n\
-    __read_only image2d_array_t   input,\n\
-    __write_only image2d_array_t  output)\n\
-{\n\
-\n\
-}\n\
-"; /* end of vsi_nn_kernel_unstack_vx*/
-
 
 
 static const char add_mean_std_norm_cl[] = "\n\
@@ -43874,7 +43864,6 @@ static const source_map_t evis_resource[] =
     {"vsi_nn_kernel_transform_gemm_vx", vsi_nn_kernel_transform_gemm_vx},
     {"vsi_nn_kernel_transform_interp_vx", vsi_nn_kernel_transform_interp_vx},
     {"vsi_nn_kernel_transform_setupThres_vx", vsi_nn_kernel_transform_setupThres_vx},
-    {"vsi_nn_kernel_unstack_vx", vsi_nn_kernel_unstack_vx},
 };
 
 static const source_map_t cl_resource[] =

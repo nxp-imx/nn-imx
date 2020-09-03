@@ -284,7 +284,6 @@ cc_library(
         "src/libnnext/ops/kernel/vsi_nn_kernel_tensorstackconcat.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_sync_host.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_spatial_transformer.c",
-        "src/libnnext/ops/kernel/vsi_nn_kernel_unstack.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_extra_ending.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_topk.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_roi_align.c",
