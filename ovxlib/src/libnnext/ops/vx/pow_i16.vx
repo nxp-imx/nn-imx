@@ -29,8 +29,14 @@ __kernel void pow_I16F16toF16(
     VXC_DP4x4(x1, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecDataToFp32_4x4);
     VXC_DP4x4(y0, data1, data1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertFstDataToFp32_4x4_2);
     VXC_DP4x4(y1, data1, data1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecDataToFp32_4x4_2);
-    tmpDst0 = exp2(y0*log2(x0));
-    tmpDst1 = exp2(y1*log2(x1));
+    float4  s0 = sign(x0);
+    float4  s1 = sign(x1);
+    int4 t0 = convert_int4(y0) & 1;
+    int4 t1 = convert_int4(y1) & 1;
+    s0 = s0 == -1 ? convert_float4(t0) == 1.0f ? -1.0f : 1.0f : s0;
+    s1 = s1 == -1 ? convert_float4(t1) == 1.0f ? -1.0f : 1.0f : s1;
+    tmpDst0 = s0 * exp2(y0 * log2(fabs(x0)));
+    tmpDst1 = s1 * exp2(y1 * log2(fabs(x1)));
 
     half4 tmpVal0, tmpVal1;
     _viv_asm(CONV, tmpVal0, tmpDst0);
@@ -60,8 +66,14 @@ __kernel void pow_I16F16toF16_2D(
     VXC_DP4x4(x1, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecDataToFp32_4x4);
     VXC_DP4x4(y0, data1, data1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertFstDataToFp32_4x4_2);
     VXC_DP4x4(y1, data1, data1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecDataToFp32_4x4_2);
-    tmpDst0 = exp2(y0*log2(x0));
-    tmpDst1 = exp2(y1*log2(x1));
+    float4  s0 = sign(x0);
+    float4  s1 = sign(x1);
+    int4 t0 = convert_int4(y0) & 1;
+    int4 t1 = convert_int4(y1) & 1;
+    s0 = s0 == -1 ? convert_float4(t0) == 1.0f ? -1.0f : 1.0f : s0;
+    s1 = s1 == -1 ? convert_float4(t1) == 1.0f ? -1.0f : 1.0f : s1;
+    tmpDst0 = s0 * exp2(y0 * log2(fabs(x0)));
+    tmpDst1 = s1 * exp2(y1 * log2(fabs(x1)));
 
     half4 tmpVal0, tmpVal1;
     _viv_asm(CONV, tmpVal0, tmpDst0);
@@ -91,8 +103,14 @@ __kernel void pow_I16F16toI16(
     VXC_DP4x4(x1, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecDataToFp32_4x4);
     VXC_DP4x4(y0, data1, data1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertFstDataToFp32_4x4_2);
     VXC_DP4x4(y1, data1, data1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecDataToFp32_4x4_2);
-    tmpDst0 = exp2(y0*log2(x0));
-    tmpDst1 = exp2(y1*log2(x1));
+    float4  s0 = sign(x0);
+    float4  s1 = sign(x1);
+    int4 t0 = convert_int4(y0) & 1;
+    int4 t1 = convert_int4(y1) & 1;
+    s0 = s0 == -1 ? convert_float4(t0) == 1.0f ? -1.0f : 1.0f : s0;
+    s1 = s1 == -1 ? convert_float4(t1) == 1.0f ? -1.0f : 1.0f : s1;
+    tmpDst0 = s0 * exp2(y0 * log2(fabs(x0)));
+    tmpDst1 = s1 * exp2(y1 * log2(fabs(x1)));
 
     int4 tmpVal0 = convert_int4_rte(tmpDst0 * outScale_fl);
     int4 tmpVal1 = convert_int4_rte(tmpDst1 * outScale_fl);
@@ -122,8 +140,14 @@ __kernel void pow_I16F16toI16_2D(
     VXC_DP4x4(x1, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecDataToFp32_4x4);
     VXC_DP4x4(y0, data1, data1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertFstDataToFp32_4x4_2);
     VXC_DP4x4(y1, data1, data1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecDataToFp32_4x4_2);
-    tmpDst0 = exp2(y0*log2(x0));
-    tmpDst1 = exp2(y1*log2(x1));
+    float4  s0 = sign(x0);
+    float4  s1 = sign(x1);
+    int4 t0 = convert_int4(y0) & 1;
+    int4 t1 = convert_int4(y1) & 1;
+    s0 = s0 == -1 ? convert_float4(t0) == 1.0f ? -1.0f : 1.0f : s0;
+    s1 = s1 == -1 ? convert_float4(t1) == 1.0f ? -1.0f : 1.0f : s1;
+    tmpDst0 = s0 * exp2(y0 * log2(fabs(x0)));
+    tmpDst1 = s1 * exp2(y1 * log2(fabs(x1)));
 
     int4 tmpVal0 = convert_int4_rte(tmpDst0 * outScale_fl);
     int4 tmpVal1 = convert_int4_rte(tmpDst1 * outScale_fl);
@@ -151,8 +175,14 @@ __kernel void pow_I16I16toI16(
     VXC_DP4x4(x1, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecDataToFp32_4x4);
     VXC_DP4x4(y0, src1, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertFstDataToFp32_4x4_2);
     VXC_DP4x4(y1, src1, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecDataToFp32_4x4_2);
-    tmpDst0 = exp2(y0*log2(x0));
-    tmpDst1 = exp2(y1*log2(x1));
+    float4  s0 = sign(x0);
+    float4  s1 = sign(x1);
+    int4 t0 = convert_int4(y0) & 1;
+    int4 t1 = convert_int4(y1) & 1;
+    s0 = s0 == -1 ? convert_float4(t0) == 1.0f ? -1.0f : 1.0f : s0;
+    s1 = s1 == -1 ? convert_float4(t1) == 1.0f ? -1.0f : 1.0f : s1;
+    tmpDst0 = s0 * exp2(y0 * log2(fabs(x0)));
+    tmpDst1 = s1 * exp2(y1 * log2(fabs(x1)));
 
     int4 tmpVal0 = convert_int4_rte(tmpDst0 * outScale_fl);
     int4 tmpVal1 = convert_int4_rte(tmpDst1 * outScale_fl);
@@ -180,8 +210,14 @@ __kernel void pow_I16I16toI16_2D(
     VXC_DP4x4(x1, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecDataToFp32_4x4);
     VXC_DP4x4(y0, src1, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertFstDataToFp32_4x4_2);
     VXC_DP4x4(y1, src1, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecDataToFp32_4x4_2);
-    tmpDst0 = exp2(y0*log2(x0));
-    tmpDst1 = exp2(y1*log2(x1));
+    float4  s0 = sign(x0);
+    float4  s1 = sign(x1);
+    int4 t0 = convert_int4(y0) & 1;
+    int4 t1 = convert_int4(y1) & 1;
+    s0 = s0 == -1 ? convert_float4(t0) == 1.0f ? -1.0f : 1.0f : s0;
+    s1 = s1 == -1 ? convert_float4(t1) == 1.0f ? -1.0f : 1.0f : s1;
+    tmpDst0 = s0 * exp2(y0 * log2(fabs(x0)));
+    tmpDst1 = s1 * exp2(y1 * log2(fabs(x1)));
 
     int4 tmpVal0 = convert_int4_rte(tmpDst0 * outScale_fl);
     int4 tmpVal1 = convert_int4_rte(tmpDst1 * outScale_fl);
