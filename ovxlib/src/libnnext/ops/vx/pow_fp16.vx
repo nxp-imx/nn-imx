@@ -37,8 +37,14 @@ __kernel void pow_F16F16toF16(
     VXC_DP4x4(x1, data0, data0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecDataToFp32_4x4);
     VXC_DP4x4(y0, data1, data1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertFstDataToFp32_4x4);
     VXC_DP4x4(y1, data1, data1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecDataToFp32_4x4);
-    tmpDst0 = exp2(y0*log2(x0));
-    tmpDst1 = exp2(y1*log2(x1));
+    float4  s0 = sign(x0);
+    float4  s1 = sign(x1);
+    int4 t0 = convert_int4(y0) & 1;
+    int4 t1 = convert_int4(y1) & 1;
+    s0 = s0 == -1 ? convert_float4(t0) == 1.0f ? -1.0f : 1.0f : s0;
+    s1 = s1 == -1 ? convert_float4(t1) == 1.0f ? -1.0f : 1.0f : s1;
+    tmpDst0 = s0 * exp2(y0 * log2(fabs(x0)));
+    tmpDst1 = s1 * exp2(y1 * log2(fabs(x1)));
 
     half4 tmpVal0, tmpVal1;
     _viv_asm(CONV, tmpVal0, tmpDst0);
@@ -70,8 +76,14 @@ __kernel void pow_F16F16toF16_2D(
     VXC_DP4x4(x1, data0, data0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecDataToFp32_4x4);
     VXC_DP4x4(y0, data1, data1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertFstDataToFp32_4x4);
     VXC_DP4x4(y1, data1, data1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecDataToFp32_4x4);
-    tmpDst0 = exp2(y0*log2(x0));
-    tmpDst1 = exp2(y1*log2(x1));
+    float4  s0 = sign(x0);
+    float4  s1 = sign(x1);
+    int4 t0 = convert_int4(y0) & 1;
+    int4 t1 = convert_int4(y1) & 1;
+    s0 = s0 == -1 ? convert_float4(t0) == 1.0f ? -1.0f : 1.0f : s0;
+    s1 = s1 == -1 ? convert_float4(t1) == 1.0f ? -1.0f : 1.0f : s1;
+    tmpDst0 = s0 * exp2(y0 * log2(fabs(x0)));
+    tmpDst1 = s1 * exp2(y1 * log2(fabs(x1)));
 
     half4 tmpVal0, tmpVal1;
     _viv_asm(CONV, tmpVal0, tmpDst0);
@@ -103,8 +115,14 @@ __kernel void pow_F16F16toU8(
     VXC_DP4x4(x1, data0, data0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecDataToFp32_4x4);
     VXC_DP4x4(y0, data1, data1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertFstDataToFp32_4x4);
     VXC_DP4x4(y1, data1, data1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecDataToFp32_4x4);
-    tmpDst0 = exp2(y0*log2(x0));
-    tmpDst1 = exp2(y1*log2(x1));
+    float4  s0 = sign(x0);
+    float4  s1 = sign(x1);
+    int4 t0 = convert_int4(y0) & 1;
+    int4 t1 = convert_int4(y1) & 1;
+    s0 = s0 == -1 ? convert_float4(t0) == 1.0f ? -1.0f : 1.0f : s0;
+    s1 = s1 == -1 ? convert_float4(t1) == 1.0f ? -1.0f : 1.0f : s1;
+    tmpDst0 = s0 * exp2(y0 * log2(fabs(x0)));
+    tmpDst1 = s1 * exp2(y1 * log2(fabs(x1)));
 
     int4 tmpVal0 = convert_int4_rte(tmpDst0 * outputScale + output_ZP);
     int4 tmpVal1 = convert_int4_rte(tmpDst1 * outputScale + output_ZP);
@@ -136,8 +154,14 @@ __kernel void pow_F16F16toU8_2D(
     VXC_DP4x4(x1, data0, data0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecDataToFp32_4x4);
     VXC_DP4x4(y0, data1, data1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertFstDataToFp32_4x4);
     VXC_DP4x4(y1, data1, data1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecDataToFp32_4x4);
-    tmpDst0 = exp2(y0*log2(x0));
-    tmpDst1 = exp2(y1*log2(x1));
+    float4  s0 = sign(x0);
+    float4  s1 = sign(x1);
+    int4 t0 = convert_int4(y0) & 1;
+    int4 t1 = convert_int4(y1) & 1;
+    s0 = s0 == -1 ? convert_float4(t0) == 1.0f ? -1.0f : 1.0f : s0;
+    s1 = s1 == -1 ? convert_float4(t1) == 1.0f ? -1.0f : 1.0f : s1;
+    tmpDst0 = s0 * exp2(y0 * log2(fabs(x0)));
+    tmpDst1 = s1 * exp2(y1 * log2(fabs(x1)));
 
     int4 tmpVal0 = convert_int4_rte(tmpDst0 * outputScale + output_ZP);
     int4 tmpVal1 = convert_int4_rte(tmpDst1 * outputScale + output_ZP);
@@ -173,8 +197,14 @@ __kernel void pow_F16U8toF16(
     y0 *= inputScale1;
     y1 *= inputScale1;
 
-    tmpDst0 = exp2(y0*log2(x0));
-    tmpDst1 = exp2(y1*log2(x1));
+    float4  s0 = sign(x0);
+    float4  s1 = sign(x1);
+    int4 t0 = convert_int4(y0) & 1;
+    int4 t1 = convert_int4(y1) & 1;
+    s0 = s0 == -1 ? convert_float4(t0) == 1.0f ? -1.0f : 1.0f : s0;
+    s1 = s1 == -1 ? convert_float4(t1) == 1.0f ? -1.0f : 1.0f : s1;
+    tmpDst0 = s0 * exp2(y0 * log2(fabs(x0)));
+    tmpDst1 = s1 * exp2(y1 * log2(fabs(x1)));
 
     half4 tmpVal0, tmpVal1;
     _viv_asm(CONV, tmpVal0, tmpDst0);
@@ -211,8 +241,14 @@ __kernel void pow_F16U8toF16_2D(
     y0 *= inputScale1;
     y1 *= inputScale1;
 
-    tmpDst0 = exp2(y0*log2(x0));
-    tmpDst1 = exp2(y1*log2(x1));
+    float4  s0 = sign(x0);
+    float4  s1 = sign(x1);
+    int4 t0 = convert_int4(y0) & 1;
+    int4 t1 = convert_int4(y1) & 1;
+    s0 = s0 == -1 ? convert_float4(t0) == 1.0f ? -1.0f : 1.0f : s0;
+    s1 = s1 == -1 ? convert_float4(t1) == 1.0f ? -1.0f : 1.0f : s1;
+    tmpDst0 = s0 * exp2(y0 * log2(fabs(x0)));
+    tmpDst1 = s1 * exp2(y1 * log2(fabs(x1)));
 
     half4 tmpVal0, tmpVal1;
     _viv_asm(CONV, tmpVal0, tmpDst0);
@@ -248,8 +284,14 @@ __kernel void pow_F16U8toU8(
     y0 *= inputScale1;
     y1 *= inputScale1;
 
-    tmpDst0 = exp2(y0*log2(x0));
-    tmpDst1 = exp2(y1*log2(x1));
+    float4  s0 = sign(x0);
+    float4  s1 = sign(x1);
+    int4 t0 = convert_int4(y0) & 1;
+    int4 t1 = convert_int4(y1) & 1;
+    s0 = s0 == -1 ? convert_float4(t0) == 1.0f ? -1.0f : 1.0f : s0;
+    s1 = s1 == -1 ? convert_float4(t1) == 1.0f ? -1.0f : 1.0f : s1;
+    tmpDst0 = s0 * exp2(y0 * log2(fabs(x0)));
+    tmpDst1 = s1 * exp2(y1 * log2(fabs(x1)));
     int4 tmpVal0 = convert_int4_rte(tmpDst0 * outputScale + output_ZP);
     int4 tmpVal1 = convert_int4_rte(tmpDst1 * outputScale + output_ZP);
 
@@ -284,8 +326,14 @@ __kernel void pow_F16U8toU8_2D(
     y0 *= inputScale1;
     y1 *= inputScale1;
 
-    tmpDst0 = exp2(y0*log2(x0));
-    tmpDst1 = exp2(y1*log2(x1));
+    float4  s0 = sign(x0);
+    float4  s1 = sign(x1);
+    int4 t0 = convert_int4(y0) & 1;
+    int4 t1 = convert_int4(y1) & 1;
+    s0 = s0 == -1 ? convert_float4(t0) == 1.0f ? -1.0f : 1.0f : s0;
+    s1 = s1 == -1 ? convert_float4(t1) == 1.0f ? -1.0f : 1.0f : s1;
+    tmpDst0 = s0 * exp2(y0 * log2(fabs(x0)));
+    tmpDst1 = s1 * exp2(y1 * log2(fabs(x1)));
     int4 tmpVal0 = convert_int4_rte(tmpDst0 * outputScale + output_ZP);
     int4 tmpVal1 = convert_int4_rte(tmpDst1 * outputScale + output_ZP);
 
