@@ -118,7 +118,7 @@ static vsi_status op_deinit
     vsi_nn_node_t * self
     )
 {
-    return VSI_SUCCESS;
+    return vsi_nn_op_common_deinit(self);
 }
 
 #ifdef __cplusplus
