@@ -228,7 +228,7 @@ OnError:
     REGISTER_BACKEND_OPENVX( KERNEL_NAME, _##KERNEL_NAME##_setup )
 
 REGISTER_ELTWISE_UNARY_OPENVX_KERNEL( mish,         mish_eval )
-REGISTER_ELTWISE_UNARY_OPENVX_KERNEL( exp,          exp_eval )
+//REGISTER_ELTWISE_UNARY_OPENVX_KERNEL( exp,          exp_eval )
 REGISTER_ELTWISE_UNARY_OPENVX_KERNEL( log,          log_eval )
 REGISTER_ELTWISE_UNARY_OPENVX_KERNEL( elu,          elu_eval )
 REGISTER_ELTWISE_UNARY_OPENVX_KERNEL( neg,          neg_eval )
