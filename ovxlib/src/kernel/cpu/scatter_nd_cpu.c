@@ -95,11 +95,21 @@ DEF_KERNEL_EXECUTOR(_scatter_nd_exec)
 
     if(coord_dim <= 3)
     {
-        int32_t stride[3] = {block_size, 0, 0};
+        int32_t stride[3] = {0, 0, 0};
+        int32_t new_shape[3] = {1, 1, 1};
+        int32_t merge_dim = (int32_t)attr[2]->shape->size - coord_dim + 1;
+
+        for(i = 0; i < merge_dim; ++i)
+        {
+            new_shape[0] *= attr[2]->shape->data[i];
+        }
+        stride[0] = new_shape[0] / block_size;
 
         for(i = 1; i < coord_dim; ++i)
         {
-            stride[i] = stride[i - 1] * attr[2]->shape->data[i];
+            new_shape[i] = attr[2]->shape->data[merge_dim + i - 1];
+
+            stride[i] = stride[i - 1] * new_shape[i];
         }
 
         for(i = 0; i < indices_num; i++)
@@ -107,13 +117,23 @@ DEF_KERNEL_EXECUTOR(_scatter_nd_exec)
             uint32_t in_index = i * block_size;
             uint32_t out_index = 0;
             uint32_t coord[3] = {0};
+            int32_t byd_flg = 0;
 
             for(j = 0; j < coord_dim; j++)
             {
                 coord[j] = para_buffer[0][i * coord_dim + j];
+                if(coord[j] >= (uint32_t)new_shape[j])
+                {
+                    byd_flg = 1;
+                    break;
+                }
+            }
+            if(byd_flg)
+            {
+                continue;
             }
 
-            out_index = coord[2] * stride[2] + coord[1] * stride[1] + coord[0] * stride[0];
+            out_index = (coord[2] * stride[1] + coord[1] * stride[0] + coord[0]) * block_size;
             for(j = 0; j < block_size; j++)
             {
                 buffer[1][out_index + j] += buffer[0][in_index + j];
