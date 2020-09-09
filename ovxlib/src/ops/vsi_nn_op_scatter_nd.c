@@ -94,35 +94,6 @@ static vsi_status op_compute
     return status;
 } /* op_compute() */
 
-static vsi_bool op_check
-    (
-    vsi_nn_node_t * self,
-    vsi_nn_tensor_t ** inputs,
-    vsi_nn_tensor_t ** outputs
-    )
-{
-    /*TODO: Check tensor shapes. */
-    uint32_t coord_dim = 1;
-
-    if(inputs[0]->attr.dim_num > 1)
-    {
-        coord_dim = inputs[0]->attr.size[0];
-    }
-    if( coord_dim > 3 )
-    {
-        return FALSE;
-    }
-
-    if (VSI_NN_DIM_AUTO != outputs[0]->attr.dim_num
-        && outputs[0]->attr.dim_num != coord_dim + inputs[1]->attr.dim_num - 1)
-    {
-        VSILOGE("Wrong dimensions about scatter_nd");
-        return FALSE;
-    }
-
-    return TRUE;
-} /* op_check() */
-
 static vsi_bool op_setup
     (
     vsi_nn_node_t * self,
@@ -171,7 +142,7 @@ DEF_OP_REG
     /* init       */ NULL,
     /* compute    */ op_compute,
     /* deinit     */ op_deinit,
-    /* check      */ op_check,
+    /* check      */ NULL,
     /* setup      */ op_setup,
     /* optimize   */ NULL,
     /* input_num  */ _INPUT_NUM,
