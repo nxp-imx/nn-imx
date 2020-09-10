@@ -40,7 +40,7 @@ __kernel void scatter_nd_U32toU32_2D(
     {
         int4 indice0 = read_imagei(input0, (int2)(0, i));
         int4 indice1 = read_imagei(input0, (int2)(1, i));
-        int idx = indice0.x + indice1.x * width;
+        int idx = indice0.x * width + indice1.x;
         if(gidy == idx)
         {
             uint4 data = read_imageui(input1, (int2)(gidx, i));
@@ -68,7 +68,7 @@ __kernel void scatter_nd_U32toU32_3D(
         int4 indice0 = read_imagei(input0, (int2)(0, i));
         int4 indice1 = read_imagei(input0, (int2)(1, i));
         int4 indice2 = read_imagei(input0, (int2)(2, i));
-        int idx = indice0.x + indice1.x * width + indice2.x * area;
+        int idx = indice0.x * area + indice1.x * width + indice2.x;
         if(gidy == idx)
         {
             uint4 data = read_imageui(input1, (int2)(gidx, i));
@@ -120,7 +120,7 @@ __kernel void scatter_nd_I32toI32_2D(
     {
         int4 indice0 = read_imagei(input0, (int2)(0, i));
         int4 indice1 = read_imagei(input0, (int2)(1, i));
-        int idx = indice0.x + indice1.x * width;
+        int idx = indice0.x * width + indice1.x;
         if(gidy == idx)
         {
             int4 data = read_imagei(input1, (int2)(gidx, i));
@@ -148,7 +148,7 @@ __kernel void scatter_nd_I32toI32_3D(
         int4 indice0 = read_imagei(input0, (int2)(0, i));
         int4 indice1 = read_imagei(input0, (int2)(1, i));
         int4 indice2 = read_imagei(input0, (int2)(2, i));
-        int idx = indice0.x + indice1.x * width + indice2.x * area;
+        int idx = indice0.x * area + indice1.x * width + indice2.x;
         if(gidy == idx)
         {
             int4 data = read_imagei(input1, (int2)(gidx, i));
@@ -200,7 +200,7 @@ __kernel void scatter_nd_F32toF32_2D(
     {
         int4 indice0 = read_imagei(input0, (int2)(0, i));
         int4 indice1 = read_imagei(input0, (int2)(1, i));
-        int idx = indice0.x + indice1.x * width;
+        int idx = indice0.x * width + indice1.x;
         if(gidy == idx)
         {
             float4 data = read_imagef(input1, (int2)(gidx, i));
@@ -228,7 +228,7 @@ __kernel void scatter_nd_F32toF32_3D(
         int4 indice0 = read_imagei(input0, (int2)(0, i));
         int4 indice1 = read_imagei(input0, (int2)(1, i));
         int4 indice2 = read_imagei(input0, (int2)(2, i));
-        int idx = indice0.x + indice1.x * width + indice2.x * area;
+        int idx = indice0.x * area + indice1.x * width + indice2.x;
         if(gidy == idx)
         {
             float4 data = read_imagef(input1, (int2)(gidx, i));

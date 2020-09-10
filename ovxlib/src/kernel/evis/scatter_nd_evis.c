@@ -184,6 +184,9 @@ DEF_KERNEL_INITIALIZER(_scatter_nd_initializer)
     int32_t     height     = 1;
     int32_t     index_num  = 1;
     int32_t     output_zp  = 0;
+    int32_t     width = 0, area = 0;
+    int32_t     coord_dim  = 0;
+    int32_t     offsetX = 0, offsetY = 0, offsetZ = 0;
 
     attr[0] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[0] );
     CHECK_PTR_FAIL_GOTO( attr[0], "Create tensor attr buffer fail.", OnError );
@@ -192,10 +195,36 @@ DEF_KERNEL_INITIALIZER(_scatter_nd_initializer)
     attr[2] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[2] );
     CHECK_PTR_FAIL_GOTO( attr[2], "Create tensor attr buffer fail.", OnError );
 
+    status = vsi_nn_kernel_scalar_read_int32((vsi_nn_kernel_scalar_t)param[3], &width);
+    CHECK_STATUS_FAIL_GOTO(status, OnError );
+    status = vsi_nn_kernel_scalar_read_int32((vsi_nn_kernel_scalar_t)param[4], &area);
+    CHECK_STATUS_FAIL_GOTO(status, OnError );
+    status = vsi_nn_kernel_scalar_read_int32((vsi_nn_kernel_scalar_t)param[5], &coord_dim);
+    CHECK_STATUS_FAIL_GOTO(status, OnError );
+
     block_size = attr[2]->shape->data[0];
     height     = attr[2]->shape->data[1];
     index_num  = attr[0]->shape->data[1];
     output_zp  = attr[2]->asymm.zero_point;
+
+    if(coord_dim == 3)
+    {
+        offsetX = area;
+        offsetY = width;
+        offsetZ = 1;
+    }
+    else if(coord_dim == 2)
+    {
+        offsetX = width;
+        offsetY = 1;
+        offsetZ = 0;
+    }
+    else if(coord_dim == 1)
+    {
+        offsetX = 1;
+        offsetY = 0;
+        offsetZ = 0;
+    }
 
     gpu_param.global_scale[0]  = 8;
     gpu_param.global_scale[1]  = 1;
@@ -225,6 +254,9 @@ DEF_KERNEL_INITIALIZER(_scatter_nd_initializer)
             "uniAccumulateSum_2x8", &uniAccumulateSum_2x8 );
         status |= vsi_nn_kernel_gpu_add_param( node, "index_num", &index_num );
         status |= vsi_nn_kernel_gpu_add_param( node, "zeropoint", &output_zp );
+        status |= vsi_nn_kernel_gpu_add_param( node, "offsetX", &offsetX );
+        status |= vsi_nn_kernel_gpu_add_param( node, "offsetY", &offsetY );
+        status |= vsi_nn_kernel_gpu_add_param( node, "offsetZ", &offsetZ );
         CHECK_STATUS_FAIL_GOTO(status, OnError);
     }
 
@@ -268,6 +300,9 @@ DEF_KERNEL_INITIALIZER(_scatter_nd_big_initializer)
     int32_t     height     = 1;
     int32_t     index_num  = 1;
     int32_t     output_zp  = 0;
+    int32_t     width = 0, area = 0;
+    int32_t     coord_dim  = 0;
+    int32_t     offsetX = 0, offsetY = 0, offsetZ = 0;
 
     attr[0] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[0] );
     CHECK_PTR_FAIL_GOTO( attr[0], "Create tensor attr buffer fail.", OnError );
@@ -276,10 +311,36 @@ DEF_KERNEL_INITIALIZER(_scatter_nd_big_initializer)
     attr[2] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[2] );
     CHECK_PTR_FAIL_GOTO( attr[2], "Create tensor attr buffer fail.", OnError );
 
+    status = vsi_nn_kernel_scalar_read_int32((vsi_nn_kernel_scalar_t)param[3], &width);
+    CHECK_STATUS_FAIL_GOTO(status, OnError );
+    status = vsi_nn_kernel_scalar_read_int32((vsi_nn_kernel_scalar_t)param[4], &area);
+    CHECK_STATUS_FAIL_GOTO(status, OnError );
+    status = vsi_nn_kernel_scalar_read_int32((vsi_nn_kernel_scalar_t)param[5], &coord_dim);
+    CHECK_STATUS_FAIL_GOTO(status, OnError );
+
     block_size = attr[2]->shape->data[0];
     height     = attr[2]->shape->data[1];
     index_num  = attr[0]->shape->data[1];
     output_zp  = attr[2]->asymm.zero_point;
+
+    if(coord_dim == 3)
+    {
+        offsetX = area;
+        offsetY = width;
+        offsetZ = 1;
+    }
+    else if(coord_dim == 2)
+    {
+        offsetX = width;
+        offsetY = 1;
+        offsetZ = 0;
+    }
+    else if(coord_dim == 1)
+    {
+        offsetX = 1;
+        offsetY = 0;
+        offsetZ = 0;
+    }
 
     gpu_param.global_scale[0]  = 1;
     gpu_param.global_scale[1]  = 1;
@@ -310,6 +371,9 @@ DEF_KERNEL_INITIALIZER(_scatter_nd_big_initializer)
         status |= vsi_nn_kernel_gpu_add_param( node, "update_width", &block_size );
         status |= vsi_nn_kernel_gpu_add_param( node, "output_width", &block_size );
         status |= vsi_nn_kernel_gpu_add_param( node, "zeropoint", &output_zp );
+        status |= vsi_nn_kernel_gpu_add_param( node, "offsetX", &offsetX );
+        status |= vsi_nn_kernel_gpu_add_param( node, "offsetY", &offsetY );
+        status |= vsi_nn_kernel_gpu_add_param( node, "offsetZ", &offsetZ );
         CHECK_STATUS_FAIL_GOTO(status, OnError);
     }
 

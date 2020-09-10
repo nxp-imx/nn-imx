@@ -6,6 +6,10 @@ _viv_uniform int update_width;
 _viv_uniform int output_width;
 _viv_uniform int zeropoint;
 
+_viv_uniform int offsetX;
+_viv_uniform int offsetY;
+_viv_uniform int offsetZ;
+
 inline uchar* get_image2D_array_ptr(image2d_t  input)
 {
     int8 desc;
@@ -37,7 +41,7 @@ __kernel void scatter_nd_F16toF16_big(
     {
         int4 indice = vload4(0, index_ptr + i * coord_dim);
 
-        int idx = indice.x + indice.y * width + indice.z * area;
+        int idx = indice.x * offsetX + indice.y * offsetY + indice.z * offsetZ;
         if(gidy == idx)
         {
             vxc_half8 src;
@@ -72,7 +76,7 @@ __kernel void scatter_nd_##src0_type_name##to##src0_type_name##_big( \
     for(int i = 0; i < index_num; i++) \
     { \
         int4 indice = vload4(0, index_ptr + i * coord_dim); \
-        int idx = indice.x + indice.y * width + indice.z * area; \
+        int idx = indice.x * offsetX + indice.y * offsetY + indice.z * offsetZ; \
         if(gidy == idx) \
         { \
             data_type src; \

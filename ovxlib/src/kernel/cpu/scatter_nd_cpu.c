@@ -121,7 +121,7 @@ DEF_KERNEL_EXECUTOR(_scatter_nd_exec)
 
             for(j = 0; j < coord_dim; j++)
             {
-                coord[j] = para_buffer[0][i * coord_dim + j];
+                coord[j] = para_buffer[0][i * coord_dim + coord_dim - j - 1];
                 if(coord[j] >= (uint32_t)new_shape[j])
                 {
                     byd_flg = 1;

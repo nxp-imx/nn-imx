@@ -27939,6 +27939,9 @@ static const char scatter_nd_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 _viv_uniform VXC_512Bits uniAccumulateSum_2x8;\n\
 _viv_uniform int index_num;\n\
 _viv_uniform int zeropoint;\n\
+_viv_uniform int offsetX;\n\
+_viv_uniform int offsetY;\n\
+_viv_uniform int offsetZ;\n\
 \n\
 __kernel void scatter_nd_F16toF16(\n\
     __read_only image2d_t   input0,\n\
@@ -27958,7 +27961,7 @@ __kernel void scatter_nd_F16toF16(\n\
     for(int i = 0; i < index_num; i++)\n\
     {\n\
         int4 indice = read_imagei(input0, (int2)(0, i));\n\
-        int idx = indice.x + indice.y * width + indice.z * area;\n\
+        int idx = indice.x * offsetX + indice.y * offsetY + indice.z * offsetZ;\n\
         if(gidy == idx)\n\
         {\n\
             vxc_half8 src;\n\
@@ -27989,7 +27992,7 @@ __kernel void scatter_nd_##src0_type_name##to##src0_type_name##( \\\n\
     for(int i = 0; i < index_num; i++) \\\n\
     { \\\n\
         int4 indice = read_imagei(input0, (int2)(0, i)); \\\n\
-        int idx = indice.x + indice.y * width + indice.z * area; \\\n\
+        int idx = indice.x * offsetX + indice.y * offsetY + indice.z * offsetZ; \\\n\
         if(gidy == idx) \\\n\
         { \\\n\
             data_type src; \\\n\
@@ -28020,6 +28023,10 @@ _viv_uniform int index_num;\n\
 _viv_uniform int update_width;\n\
 _viv_uniform int output_width;\n\
 _viv_uniform int zeropoint;\n\
+\n\
+_viv_uniform int offsetX;\n\
+_viv_uniform int offsetY;\n\
+_viv_uniform int offsetZ;\n\
 \n\
 inline uchar* get_image2D_array_ptr(image2d_t  input)\n\
 {\n\
@@ -28052,7 +28059,7 @@ __kernel void scatter_nd_F16toF16_big(\n\
     {\n\
         int4 indice = vload4(0, index_ptr + i * coord_dim);\n\
 \n\
-        int idx = indice.x + indice.y * width + indice.z * area;\n\
+        int idx = indice.x * offsetX + indice.y * offsetY + indice.z * offsetZ;\n\
         if(gidy == idx)\n\
         {\n\
             vxc_half8 src;\n\
@@ -28087,7 +28094,7 @@ __kernel void scatter_nd_##src0_type_name##to##src0_type_name##_big( \\\n\
     for(int i = 0; i < index_num; i++) \\\n\
     { \\\n\
         int4 indice = vload4(0, index_ptr + i * coord_dim); \\\n\
-        int idx = indice.x + indice.y * width + indice.z * area; \\\n\
+        int idx = indice.x * offsetX + indice.y * offsetY + indice.z * offsetZ; \\\n\
         if(gidy == idx) \\\n\
         { \\\n\
             data_type src; \\\n\
@@ -43481,7 +43488,7 @@ __kernel void scatter_nd_U32toU32_2D(\n\
     {\n\
         int4 indice0 = read_imagei(input0, (int2)(0, i));\n\
         int4 indice1 = read_imagei(input0, (int2)(1, i));\n\
-        int idx = indice0.x + indice1.x * width;\n\
+        int idx = indice0.x * width + indice1.x;\n\
         if(gidy == idx)\n\
         {\n\
             uint4 data = read_imageui(input1, (int2)(gidx, i));\n\
@@ -43509,7 +43516,7 @@ __kernel void scatter_nd_U32toU32_3D(\n\
         int4 indice0 = read_imagei(input0, (int2)(0, i));\n\
         int4 indice1 = read_imagei(input0, (int2)(1, i));\n\
         int4 indice2 = read_imagei(input0, (int2)(2, i));\n\
-        int idx = indice0.x + indice1.x * width + indice2.x * area;\n\
+        int idx = indice0.x * area + indice1.x * width + indice2.x;\n\
         if(gidy == idx)\n\
         {\n\
             uint4 data = read_imageui(input1, (int2)(gidx, i));\n\
@@ -43561,7 +43568,7 @@ __kernel void scatter_nd_I32toI32_2D(\n\
     {\n\
         int4 indice0 = read_imagei(input0, (int2)(0, i));\n\
         int4 indice1 = read_imagei(input0, (int2)(1, i));\n\
-        int idx = indice0.x + indice1.x * width;\n\
+        int idx = indice0.x * width + indice1.x;\n\
         if(gidy == idx)\n\
         {\n\
             int4 data = read_imagei(input1, (int2)(gidx, i));\n\
@@ -43589,7 +43596,7 @@ __kernel void scatter_nd_I32toI32_3D(\n\
         int4 indice0 = read_imagei(input0, (int2)(0, i));\n\
         int4 indice1 = read_imagei(input0, (int2)(1, i));\n\
         int4 indice2 = read_imagei(input0, (int2)(2, i));\n\
-        int idx = indice0.x + indice1.x * width + indice2.x * area;\n\
+        int idx = indice0.x * area + indice1.x * width + indice2.x;\n\
         if(gidy == idx)\n\
         {\n\
             int4 data = read_imagei(input1, (int2)(gidx, i));\n\
@@ -43641,7 +43648,7 @@ __kernel void scatter_nd_F32toF32_2D(\n\
     {\n\
         int4 indice0 = read_imagei(input0, (int2)(0, i));\n\
         int4 indice1 = read_imagei(input0, (int2)(1, i));\n\
-        int idx = indice0.x + indice1.x * width;\n\
+        int idx = indice0.x * width + indice1.x;\n\
         if(gidy == idx)\n\
         {\n\
             float4 data = read_imagef(input1, (int2)(gidx, i));\n\
@@ -43669,7 +43676,7 @@ __kernel void scatter_nd_F32toF32_3D(\n\
         int4 indice0 = read_imagei(input0, (int2)(0, i));\n\
         int4 indice1 = read_imagei(input0, (int2)(1, i));\n\
         int4 indice2 = read_imagei(input0, (int2)(2, i));\n\
-        int idx = indice0.x + indice1.x * width + indice2.x * area;\n\
+        int idx = indice0.x * area + indice1.x * width + indice2.x;\n\
         if(gidy == idx)\n\
         {\n\
             float4 data = read_imagef(input1, (int2)(gidx, i));\n\
