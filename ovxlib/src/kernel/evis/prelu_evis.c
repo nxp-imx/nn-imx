@@ -521,7 +521,7 @@ static vsi_status _query_kernel
     int8_t input_fl = inputs[0]->attr.dtype.qnt_type == VSI_NN_QNT_TYPE_DFP ?
         inputs[0]->attr.dtype.fl : 0;
     int8_t output_fl = outputs[0]->attr.dtype.qnt_type == VSI_NN_QNT_TYPE_DFP ?
-        outputs[0]->attr.dtype.fl : 0;
+        outputs[0]->attr.dtype.fl : 1;
     vsi_nn_shader_type_e  sh_type = image_2d ? (input_fl >= output_fl ? _2D_OPT : _2D) : _3D;
     vsi_status status = VSI_FAILURE;
     uint32_t key;
