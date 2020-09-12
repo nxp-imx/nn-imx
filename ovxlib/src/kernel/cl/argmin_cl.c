@@ -115,9 +115,11 @@ static vx_param_description_t kernel_param_def[] =
 {
     {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
 };
 
 #define _CL_PARAM_NUM          _cnt_of_array(kernel_param_def)
+#define SCALAR_AXIS_SIZE_VALUE          (2)
 
 /*
  * Kernel initializer
@@ -225,6 +227,7 @@ static vsi_nn_kernel_node_t _setup
     vsi_bool image_2d = FALSE;
     vsi_nn_kernel_node_t node = NULL;
     int32_t axis = 0;
+    int32_t axis_size = 0;
 
     axis = vsi_nn_kernel_param_get_int32(params, "axis");
 
@@ -237,6 +240,8 @@ static vsi_nn_kernel_node_t _setup
         return NULL;
     }
 
+    axis_size = inputs[0]->attr.size[axis];
+
     image_2d = (inputs[0]->attr.dim_num == 2 || inputs[0]->attr.size[2] == 1);
     status = _query_kernel( inputs, outputs, axis, image_2d, kernel );
     if( VSI_SUCCESS == status)
@@ -247,13 +252,22 @@ static vsi_nn_kernel_node_t _setup
         {
             vsi_nn_kernel_node_pack_io( node_params, _CL_PARAM_NUM,
                     inputs, 1, outputs, 1 );
+            node_params[SCALAR_AXIS_SIZE_VALUE] = vsi_nn_kernel_scalar_create(
+                    graph, I32, &axis_size );
 
             /* Pass parameters to node. */
             status  = vsi_nn_kernel_node_pass_param( node, node_params, _CL_PARAM_NUM );
-            VSI_ASSERT( status == VSI_SUCCESS );
+            CHECK_STATUS_FAIL_GOTO( status, OnError );
 
         }
     }
+
+OnError:
+    if (node_params[SCALAR_AXIS_SIZE_VALUE])
+    {
+        vsi_nn_kernel_scalar_release( &node_params[SCALAR_AXIS_SIZE_VALUE] );
+    }
+
     return node;
 } /* _setup() */
 
