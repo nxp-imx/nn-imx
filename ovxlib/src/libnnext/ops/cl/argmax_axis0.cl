@@ -1,11 +1,11 @@
 __kernel void argmax_axis0_F32toI32
     (
     __read_only  image2d_array_t input,
-    __write_only image2d_t       output
+    __write_only image2d_t       output,
+                         int     axisSize
     )
 {
     int4 coord =  (int4)(0, get_global_id(0), get_global_id(1), 0);
-    int axisSize = get_image_width(input);
 
     float4 minVal = read_imagef(input, coord);
     int minIdx = 0;
@@ -25,11 +25,11 @@ __kernel void argmax_axis0_F32toI32
 __kernel void argmax_axis0_F32toI32_2D
     (
     __read_only  image2d_t input,
-    __write_only image2d_t output
+    __write_only image2d_t output,
+                       int axisSize
     )
 {
     int2 coord =  (int2)(0, get_global_id(0));
-    int axisSize = get_image_width(input);
 
     float4 minVal = read_imagef(input, coord);
     int minIdx = 0;
@@ -50,11 +50,11 @@ __kernel void argmax_axis0_F32toI32_2D
 __kernel void argmax_axis0_U8toI32
     (
     __read_only  image2d_array_t input,
-    __write_only image2d_t       output
+    __write_only image2d_t       output,
+                         int     axisSize
     )
 {
     int4 coord =  (int4)(0, get_global_id(0), get_global_id(1), 0);
-    int axisSize = get_image_width(input);
 
     uint4 minVal = read_imageui(input, coord);
     int minIdx = 0;
@@ -74,11 +74,11 @@ __kernel void argmax_axis0_U8toI32
 __kernel void argmax_axis0_U8toI32_2D
     (
     __read_only  image2d_t input,
-    __write_only image2d_t output
+    __write_only image2d_t output,
+                       int axisSize
     )
 {
     int2 coord =  (int2)(0, get_global_id(0));
-    int axisSize = get_image_width(input);
 
     uint4 minVal = read_imageui(input, coord);
     int minIdx = 0;
@@ -99,11 +99,11 @@ __kernel void argmax_axis0_U8toI32_2D
 __kernel void argmax_axis0_I32toI32
     (
     __read_only  image2d_array_t input,
-    __write_only image2d_t       output
+    __write_only image2d_t       output,
+                         int     axisSize
     )
 {
     int4 coord =  (int4)(0, get_global_id(0), get_global_id(1), 0);
-    int axisSize = get_image_width(input);
 
     int4 minVal = read_imagei(input, coord);
     int minIdx = 0;
@@ -123,11 +123,11 @@ __kernel void argmax_axis0_I32toI32
 __kernel void argmax_axis0_I32toI32_2D
     (
     __read_only  image2d_t input,
-    __write_only image2d_t output
+    __write_only image2d_t output,
+                       int axisSize
     )
 {
     int2 coord =  (int2)(0, get_global_id(0));
-    int axisSize = get_image_width(input);
 
     int4 minVal = read_imagei(input, coord);
     int minIdx = 0;
