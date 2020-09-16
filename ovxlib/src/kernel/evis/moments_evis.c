@@ -97,27 +97,35 @@ static const struct {
 {
     TENSOR_MOMENTS_KERNELS(U8,  F16, 0,    KERNEL_SOURCE_1)
     TENSOR_MOMENTS_KERNELS(I8,  F16, 0,    KERNEL_SOURCE_1)
+    TENSOR_MOMENTS_KERNELS(I16, F16, 0,    KERNEL_SOURCE_1)
     TENSOR_MOMENTS_KERNELS(F16, F16, 0,    KERNEL_SOURCE_1)
     TENSOR_MOMENTS_KERNELS(U8,  F16, 1,    KERNEL_SOURCE_2)
     TENSOR_MOMENTS_KERNELS(I8,  F16, 1,    KERNEL_SOURCE_2)
+    TENSOR_MOMENTS_KERNELS(I16, F16, 1,    KERNEL_SOURCE_2)
     TENSOR_MOMENTS_KERNELS(F16, F16, 1,    KERNEL_SOURCE_2)
     TENSOR_MOMENTS_KERNELS(U8,  F16, 2,    KERNEL_SOURCE_3)
     TENSOR_MOMENTS_KERNELS(I8,  F16, 2,    KERNEL_SOURCE_3)
+    TENSOR_MOMENTS_KERNELS(I16, F16, 2,    KERNEL_SOURCE_3)
     TENSOR_MOMENTS_KERNELS(F16, F16, 2,    KERNEL_SOURCE_3)
     TENSOR_MOMENTS_TWO_AXIS_KERNELS(U8,  F16, 0, 1,       KERNEL_SOURCE_4)
     TENSOR_MOMENTS_TWO_AXIS_KERNELS(I8,  F16, 0, 1,       KERNEL_SOURCE_4)
+    TENSOR_MOMENTS_TWO_AXIS_KERNELS(I16, F16, 0, 1,       KERNEL_SOURCE_4)
     TENSOR_MOMENTS_TWO_AXIS_KERNELS(F16, F16, 0, 1,       KERNEL_SOURCE_4)
     TENSOR_MOMENTS_THREE_AXIS_KERNELS(U8,  F16, 0, 1, 2,  KERNEL_SOURCE_5)
     TENSOR_MOMENTS_THREE_AXIS_KERNELS(I8,  F16, 0, 1, 2,  KERNEL_SOURCE_5)
+    TENSOR_MOMENTS_THREE_AXIS_KERNELS(I16, F16, 0, 1, 2,  KERNEL_SOURCE_5)
     TENSOR_MOMENTS_THREE_AXIS_KERNELS(F16, F16, 0, 1, 2,  KERNEL_SOURCE_5)
     TENSOR_MOMENTS_KERNELS_2D(U8,  F16, 0,                KERNEL_SOURCE_1)
     TENSOR_MOMENTS_KERNELS_2D(I8,  F16, 0,                KERNEL_SOURCE_1)
+    TENSOR_MOMENTS_KERNELS_2D(I16, F16, 0,                KERNEL_SOURCE_1)
     TENSOR_MOMENTS_KERNELS_2D(F16, F16, 0,                KERNEL_SOURCE_1)
     TENSOR_MOMENTS_KERNELS_2D(U8,  F16, 1,                KERNEL_SOURCE_2)
     TENSOR_MOMENTS_KERNELS_2D(I8,  F16, 1,                KERNEL_SOURCE_2)
+    TENSOR_MOMENTS_KERNELS_2D(I16, F16, 1,                KERNEL_SOURCE_2)
     TENSOR_MOMENTS_KERNELS_2D(F16, F16, 1,                KERNEL_SOURCE_2)
     TENSOR_MOMENTS_TWO_AXIS_KERNELS_2D(U8,  F16, 0, 1,    KERNEL_SOURCE_4)
     TENSOR_MOMENTS_TWO_AXIS_KERNELS_2D(I8,  F16, 0, 1,    KERNEL_SOURCE_4)
+    TENSOR_MOMENTS_TWO_AXIS_KERNELS_2D(I16, F16, 0, 1,    KERNEL_SOURCE_4)
     TENSOR_MOMENTS_TWO_AXIS_KERNELS_2D(F16, F16, 0, 1,    KERNEL_SOURCE_4)
 };
 
@@ -187,6 +195,10 @@ DEF_KERNEL_INITIALIZER(_moments_initializer)
     int32_t height = 0;
     int32_t chn = 0;
     float dimRatio = 1.0;
+    int32_t iterSize = 16;
+    float   zpScaleSqr_i16 = 0.0f;
+    float   zpScale2_i16 = 0.0f;
+    float   sumScale_i16 = 0.0f;
 
     uint32_t pack_key = 0;
 
@@ -220,6 +232,11 @@ DEF_KERNEL_INITIALIZER(_moments_initializer)
     {
         input_zp = 0;
         scaleIn = 1;
+    }
+
+    if(attr[0]->dtype == I16)
+    {
+        iterSize = 8;
     }
 
     width = input_shape->data[0];
@@ -263,7 +280,7 @@ DEF_KERNEL_INITIALIZER(_moments_initializer)
     }
     else if(axis_num == 2)
     {
-        iter = height * 16;
+        iter = height * iterSize;
         dimRatio = (float)(1.0 / (width * height));
 
         shaderParam.local_size[0]  = 16;
@@ -275,7 +292,7 @@ DEF_KERNEL_INITIALIZER(_moments_initializer)
     }
     else if(axis_num == 3)
     {
-        iter = height * 16;
+        iter = height * iterSize;
         dimRatio = (float)(1.0 / (width * height * chn));
 
         shaderParam.local_size[0]  = 16;
@@ -294,6 +311,10 @@ DEF_KERNEL_INITIALIZER(_moments_initializer)
     tmpZp2 = input_zp * input_zp * e2InScale;
     sumInZp = input_zp * iter * (-1);
     rowSumScale = iter * tmpZp2;
+
+    zpScaleSqr_i16 = 8 * tmpZp2;
+    zpScale2_i16 = tmpZp1 * e2InScale;
+    sumScale_i16 = sumInZp * scaleIn;
 
 #define _PACK_SELECT_KEY( IN0_TYPE, AXIS_NUM, FIRST_AXIS )    \
         (IN0_TYPE | (AXIS_NUM << 8) | (FIRST_AXIS << 16))
@@ -358,8 +379,9 @@ DEF_KERNEL_INITIALIZER(_moments_initializer)
 
         switch( pack_key )
         {
-        case _PACK_SELECT_KEY( U8, 1, 0):
-        case _PACK_SELECT_KEY( I8, 1, 0):
+        case _PACK_SELECT_KEY( U8,  1, 0):
+        case _PACK_SELECT_KEY( I8,  1, 0):
+        case _PACK_SELECT_KEY( I16, 1, 0):
             {
                 status  = vsi_nn_kernel_gpu_add_param(node, "uniSumU8_16x1", &uniSumU8_16x1);
                 status |= vsi_nn_kernel_gpu_add_param(node, "uniSqrSum_16x1", &uniSqrSum_16x1);
@@ -369,6 +391,10 @@ DEF_KERNEL_INITIALIZER(_moments_initializer)
                 status |= vsi_nn_kernel_gpu_add_param(node, "e2InScale", &e2InScale);
                 status |= vsi_nn_kernel_gpu_add_param(node, "rowSumScale", &rowSumScale);
                 status |= vsi_nn_kernel_gpu_add_param(node, "width", &width);
+                status |= vsi_nn_kernel_gpu_add_param(node, "zpScaleSqr_i16", &zpScaleSqr_i16);
+                status |= vsi_nn_kernel_gpu_add_param(node, "zpScale2_i16", &zpScale2_i16);
+                status |= vsi_nn_kernel_gpu_add_param(node, "sumScale_i16", &sumScale_i16);
+                status |= vsi_nn_kernel_gpu_add_param(node, "uniFp16SumSqr_dp8x2", &uniFp16SumSqr_dp8x2);
                 CHECK_STATUS_FAIL_GOTO(status, OnError );
             }
             break;
@@ -379,8 +405,9 @@ DEF_KERNEL_INITIALIZER(_moments_initializer)
                 CHECK_STATUS_FAIL_GOTO(status, OnError );
             }
             break;
-        case _PACK_SELECT_KEY( U8, 1, 1):
-        case _PACK_SELECT_KEY( I8, 1, 1):
+        case _PACK_SELECT_KEY( U8,  1, 1):
+        case _PACK_SELECT_KEY( I8,  1, 1):
+        case _PACK_SELECT_KEY( I16, 1, 1):
             {
                 status = vsi_nn_kernel_gpu_add_param(node, "uniConvert1stUint8SubZpToFp32_4x4",
                         &uniConvert1stUint8SubZpToFp32_4x4);
@@ -398,8 +425,9 @@ DEF_KERNEL_INITIALIZER(_moments_initializer)
                 CHECK_STATUS_FAIL_GOTO(status, OnError );
             }
             break;
-        case _PACK_SELECT_KEY( U8, 1, 2):
-        case _PACK_SELECT_KEY( I8, 1, 2):
+        case _PACK_SELECT_KEY( U8,  1, 2):
+        case _PACK_SELECT_KEY( I8,  1, 2):
+        case _PACK_SELECT_KEY( I16, 1, 2):
             {
                 status = vsi_nn_kernel_gpu_add_param(node, "uniConvert1stUint8SubZpToFp32_4x4",
                         &uniConvert1stUint8SubZpToFp32_4x4);
@@ -417,8 +445,9 @@ DEF_KERNEL_INITIALIZER(_moments_initializer)
                 CHECK_STATUS_FAIL_GOTO(status, OnError );
             }
             break;
-        case _PACK_SELECT_KEY( U8, 2, 0):
-        case _PACK_SELECT_KEY( I8, 2, 0):
+        case _PACK_SELECT_KEY( U8,  2, 0):
+        case _PACK_SELECT_KEY( I8,  2, 0):
+        case _PACK_SELECT_KEY( I16, 2, 0):
             {
                 status  = vsi_nn_kernel_gpu_add_param(node, "uniSumU8_16x1", &uniSumU8_16x1);
                 status |= vsi_nn_kernel_gpu_add_param(node, "uniSqrSum_16x1", &uniSqrSum_16x1);
@@ -429,11 +458,16 @@ DEF_KERNEL_INITIALIZER(_moments_initializer)
                 status |= vsi_nn_kernel_gpu_add_param(node, "rowSumScale", &rowSumScale);
                 status |= vsi_nn_kernel_gpu_add_param(node, "width", &width);
                 status |= vsi_nn_kernel_gpu_add_param(node, "height", &height);
+                status |= vsi_nn_kernel_gpu_add_param(node, "zpScaleSqr_i16", &zpScaleSqr_i16);
+                status |= vsi_nn_kernel_gpu_add_param(node, "zpScale2_i16", &zpScale2_i16);
+                status |= vsi_nn_kernel_gpu_add_param(node, "sumScale_i16", &sumScale_i16);
+                status |= vsi_nn_kernel_gpu_add_param(node, "uniFp16SumSqr_dp8x2", &uniFp16SumSqr_dp8x2);
                 CHECK_STATUS_FAIL_GOTO(status, OnError );
             }
             break;
-        case _PACK_SELECT_KEY( U8, 3, 0):
-        case _PACK_SELECT_KEY( I8, 3, 0):
+        case _PACK_SELECT_KEY( U8,  3, 0):
+        case _PACK_SELECT_KEY( I8,  3, 0):
+        case _PACK_SELECT_KEY( I16, 3, 0):
             {
                 status  = vsi_nn_kernel_gpu_add_param(node, "uniSumU8_16x1", &uniSumU8_16x1);
                 status |= vsi_nn_kernel_gpu_add_param(node, "uniSqrSum_16x1", &uniSqrSum_16x1);
@@ -445,6 +479,10 @@ DEF_KERNEL_INITIALIZER(_moments_initializer)
                 status |= vsi_nn_kernel_gpu_add_param(node, "width", &width);
                 status |= vsi_nn_kernel_gpu_add_param(node, "height", &height);
                 status |= vsi_nn_kernel_gpu_add_param(node, "channel", &chn);
+                status |= vsi_nn_kernel_gpu_add_param(node, "zpScaleSqr_i16", &zpScaleSqr_i16);
+                status |= vsi_nn_kernel_gpu_add_param(node, "zpScale2_i16", &zpScale2_i16);
+                status |= vsi_nn_kernel_gpu_add_param(node, "sumScale_i16", &sumScale_i16);
+                status |= vsi_nn_kernel_gpu_add_param(node, "uniFp16SumSqr_dp8x2", &uniFp16SumSqr_dp8x2);
                 CHECK_STATUS_FAIL_GOTO(status, OnError );
             }
             break;

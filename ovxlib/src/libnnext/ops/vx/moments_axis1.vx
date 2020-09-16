@@ -56,6 +56,7 @@ __kernel void moments_axis1_##src0_type_name##toF16( \
 
 MOMENTS_AXIS1_QINT(U8, vxc_uchar16)
 MOMENTS_AXIS1_QINT(I8, vxc_char16)
+MOMENTS_AXIS1_QINT(I16, vxc_short8)
 
 #define MOMENTS_AXIS1_QINT_2D(src0_type_name, read0_type) \
 __kernel void moments_axis1_##src0_type_name##toF16_2D( \
@@ -100,6 +101,7 @@ __kernel void moments_axis1_##src0_type_name##toF16_2D( \
 }
 MOMENTS_AXIS1_QINT_2D(U8, vxc_uchar16)
 MOMENTS_AXIS1_QINT_2D(I8, vxc_char16)
+MOMENTS_AXIS1_QINT_2D(I16, vxc_short8)
 
 __kernel void moments_axis1_F16toF16(
     image2d_array_t input,
