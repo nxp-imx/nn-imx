@@ -55,6 +55,7 @@ __kernel void moments_axis2_##src0_type_name##toF16( \
 
 MOMENTS_AXIS2_QINT(U8, vxc_uchar16)
 MOMENTS_AXIS2_QINT(I8, vxc_char16)
+MOMENTS_AXIS2_QINT(I16, vxc_short8)
 
 __kernel void moments_axis2_F16toF16(
     image2d_array_t input,
