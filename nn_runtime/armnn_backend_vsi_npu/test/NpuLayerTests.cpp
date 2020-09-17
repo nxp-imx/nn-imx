@@ -1581,10 +1581,10 @@ ARMNN_AUTO_TEST_CASE(Abs3dQuantisedAsymm8, Abs3dTest<DataType::QAsymmU8>)
 // ARMNN_AUTO_TEST_CASE(Abs3dQuantisedSymm16, Abs3dTest<DataType::QSymmS16>)
 
 // Detection PostProcess
-BOOST_AUTO_TEST_CASE(DetectionPostProcessRegularNmsFloat)
-{
-    DetectionPostProcessRegularNmsFloatTest<NpuWorkloadFactory>();
-}
+//BOOST_AUTO_TEST_CASE(DetectionPostProcessRegularNmsFloat)
+//{
+//    DetectionPostProcessRegularNmsFloatTest<NpuWorkloadFactory>();
+//}
 // BOOST_AUTO_TEST_CASE(DetectionPostProcessFastNmsFloat)
 // {
 //     DetectionPostProcessFastNmsFloatTest<RefWorkloadFactory>();
