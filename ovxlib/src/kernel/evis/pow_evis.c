@@ -78,6 +78,8 @@ __BEGIN_DECLS
 #define VX_KERNEL_NAME_POW_I16I16TOI16_2D                  CVIVANTE_NAMESPACE("evis.pow_I16I16toI16_2D")
 #define VX_KERNEL_NAME_POW_BF16BF16TOBF16                  CVIVANTE_NAMESPACE("evis.pow_BF16BF16toBF16")
 #define VX_KERNEL_NAME_POW_BF16BF16TOBF16_2D               CVIVANTE_NAMESPACE("evis.pow_BF16BF16toBF16_2D")
+#define VX_KERNEL_NAME_POW_U8U8TOF16                       CVIVANTE_NAMESPACE("evis.pow_U8U8toF16")
+#define VX_KERNEL_NAME_POW_U8U8TOF16_2D                    CVIVANTE_NAMESPACE("evis.pow_U8U8toF16_2D")
 
 #define KERNEL_SOURCE_1    "pow_fp16",
 #define KERNEL_SOURCE_2    "pow_fp16_i8",
@@ -122,6 +124,7 @@ static const struct {
     TENSOR_POW_KERNELS(U8, F16, F16,        KERNEL_SOURCE_4)
     TENSOR_POW_KERNELS(U8, F16, U8,         KERNEL_SOURCE_4)
     TENSOR_POW_KERNELS(U8, U8, U8,          KERNEL_SOURCE_4)
+    TENSOR_POW_KERNELS(U8, U8, F16,         KERNEL_SOURCE_4)
 
     TENSOR_POW_KERNELS(I8, F16, F16,        KERNEL_SOURCE_5)
     TENSOR_POW_KERNELS(I8, F16, I8,         KERNEL_SOURCE_5)
@@ -148,6 +151,7 @@ static const struct {
     TENSOR_POW_KERNELS_2D(U8, F16, F16,     KERNEL_SOURCE_4)
     TENSOR_POW_KERNELS_2D(U8, F16, U8,      KERNEL_SOURCE_4)
     TENSOR_POW_KERNELS_2D(U8, U8, U8,       KERNEL_SOURCE_4)
+    TENSOR_POW_KERNELS_2D(U8, U8, F16,      KERNEL_SOURCE_4)
 
     TENSOR_POW_KERNELS_2D(I8, F16, F16,     KERNEL_SOURCE_5)
     TENSOR_POW_KERNELS_2D(I8, F16, I8,      KERNEL_SOURCE_5)
@@ -411,6 +415,15 @@ DEF_KERNEL_INITIALIZER(_pow_initializer)
             0x00000600, // AccumType, ConstantType, and PostShift
             0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
         }, GPU_DP_TYPE_16 };
+        gpu_dp_inst_t uniConvertHalftoFp16_2x8 = {{
+            0x11111111, // TCfg
+            0x11110000, // ASelt
+            0x06040200, 0x06040200, // ABin
+            0x22222222, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000600, // AccumType, ConstantType, and PostShift
+            0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
+        }, GPU_DP_TYPE_16 };
 
         if(attr[0]->dtype == I8 || attr[0]->dtype == I16)
         {
@@ -454,6 +467,7 @@ DEF_KERNEL_INITIALIZER(_pow_initializer)
             case _PACK_SELECT_KEY( U8, F16, F16 ):
             case _PACK_SELECT_KEY( U8, F16, U8 ):
             case _PACK_SELECT_KEY( U8, U8, U8 ):
+            case _PACK_SELECT_KEY( U8, U8, F16 ):
                 {
                     status = vsi_nn_kernel_gpu_add_param(node, "uniConvertUint8SubZpToFp32_4x4",
                         &uniConvertUint8SubZpToFp32_4x4);
@@ -467,6 +481,8 @@ DEF_KERNEL_INITIALIZER(_pow_initializer)
                         &uniConvertUint8SubZpToFp32_4x4_2);
                     status |= vsi_nn_kernel_gpu_add_param(node, "uniConvertSecUint8SubZpToFp32_4x4_2",
                         &uniConvertSecUint8SubZpToFp32_4x4_2);
+                    status |= vsi_nn_kernel_gpu_add_param(node, "uniConvertHalftoFp16_2x8",
+                        &uniConvertHalftoFp16_2x8);
                     status |= vsi_nn_kernel_gpu_add_param(node, "input_ZP0", &src0ZP);
                     status |= vsi_nn_kernel_gpu_add_param(node, "inputScale0", &src0Scale);
                     status |= vsi_nn_kernel_gpu_add_param(node, "input_ZP1", &src1ZP);
