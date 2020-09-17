@@ -345,7 +345,7 @@ static vsi_status cpu_op_compute
 {
     vsi_status status = VSI_SUCCESS;
     vx_reference params[_PARAM_NUM];
-    vx_bool rsFlg = vx_false_e;
+    vx_bool rsFlg = FALSE;
     vx_reference * args;
     args = &params[_IO_NUM];
 
@@ -385,17 +385,17 @@ static vsi_status vx_op_pre_compute
     uint32_t axis0 = self->nn_param.signalframe.axis;
     uint32_t axis = axis0;
     uint32_t dim = inputs[0]->attr.dim_num;
-    vx_bool dataTypeFlg = vx_false_e;
-    vx_bool etFlg = vx_false_e;
+    vx_bool dataTypeFlg = FALSE;
+    vx_bool etFlg = FALSE;
 
     if((inputDataFormat == VSI_NN_TYPE_INT8 && outputDataFormat == VSI_NN_TYPE_INT8) ||
         (inputDataFormat == VSI_NN_TYPE_UINT8 && outputDataFormat == VSI_NN_TYPE_UINT8))
-        etFlg = vx_true_e;
+        etFlg = TRUE;
 
     if ((inputDataFormat == VSI_NN_TYPE_FLOAT16 && outputDataFormat == VSI_NN_TYPE_FLOAT16) ||
         (inputDataFormat == VSI_NN_TYPE_INT16 && outputDataFormat == VSI_NN_TYPE_INT16) ||
         etFlg)
-        dataTypeFlg = vx_true_e;
+        dataTypeFlg = TRUE;
 
     axis = dim - axis0 - 1;
 
@@ -444,7 +444,7 @@ static vsi_status vx_op_compute
     vsi_status status = VSI_SUCCESS;
     vx_reference params[_PARAM_NUM];
     vx_border_t border;
-    vx_bool rsFlg = vx_false_e;
+    vx_bool rsFlg = FALSE;
     vx_reference * args;
     args = &params[_IO_NUM];
 

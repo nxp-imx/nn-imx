@@ -480,8 +480,8 @@ static vsi_status op_init
 
     if (vsi_nn_compareVersion(self->graph, 1, 1, 14) == -1)
     {
-        self->nn_param.resize.align_corners      = vx_false_e;
-        self->nn_param.resize.half_pixel_centers = vx_false_e;
+        self->nn_param.resize.align_corners      = FALSE;
+        self->nn_param.resize.half_pixel_centers = FALSE;
     }
 
     return status;

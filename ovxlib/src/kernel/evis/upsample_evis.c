@@ -160,7 +160,7 @@ DEF_KERNEL_INITIALIZER(_upsample_initializer)
     float    outputScale                       = 1.0f;
     int32_t  output_ZP                         = 0;
     float    factorOut                         = 1.0f;
-    vsi_bool image_2d                          = vx_false_e;
+    vsi_bool image_2d                          = FALSE;
 
     input_attr  = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[0] );
     CHECK_PTR_FAIL_GOTO( input_attr, "Create tensor attr buffer fail.", final );
@@ -785,7 +785,7 @@ static vsi_status _query_kernel
     vx_kernel_initialize_f  initializer = _upsample_initializer;
     uint32_t key;
     uint32_t i;
-    vsi_bool is_same_type = vx_false_e;
+    vsi_bool is_same_type = FALSE;
 
     in0_dtype = vsi_nn_kernel_map_dtype( inputs[0]->attr.dtype.vx_type );
     in1_dtype = vsi_nn_kernel_map_dtype( inputs[1]->attr.dtype.vx_type );
@@ -814,7 +814,7 @@ static vsi_status _query_kernel
             && inputs[0]->attr.dtype.qnt_type  == VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC
             && outputs[0]->attr.dtype.qnt_type == VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC))
             {
-                is_same_type = vx_true_e;
+                is_same_type = TRUE;
             }
     }
 
@@ -822,7 +822,7 @@ static vsi_status _query_kernel
     {
         in0_dtype  = I16;
         out_dtype  = I16;
-        is_same_type = vx_true_e;
+        is_same_type = TRUE;
     }
 
     key = UPSAMPLE_HASH_KEY( in0_dtype, in1_dtype, out_dtype, is_same_type, image_2d );

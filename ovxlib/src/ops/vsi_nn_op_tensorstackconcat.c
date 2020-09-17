@@ -165,16 +165,16 @@ static vsi_status vx_op_pre_compute
     int32_t       outputZeroPoint     = outputs[0]->attr.dtype.zero_point;
     vx_float32    inputScale          = inputs[0]->attr.dtype.scale;
     vx_float32    outputScale         = outputs[0]->attr.dtype.scale;
-    vsi_bool      is16Bits            = vx_false_e;
-    vsi_bool      is8Bits             = vx_false_e;
+    vsi_bool      is16Bits            = FALSE;
+    vsi_bool      is8Bits             = FALSE;
 
     is16Bits = ((inputDataFormat == VSI_NN_TYPE_FLOAT16 && outputDataFormat == VSI_NN_TYPE_FLOAT16)
             || (inputDataFormat == VSI_NN_TYPE_INT16 && outputDataFormat == VSI_NN_TYPE_INT16
-            && inputFixedPointPos == outputFixedPointPos)) ? vx_true_e : vx_false_e;
+            && inputFixedPointPos == outputFixedPointPos)) ? TRUE : FALSE;
     is8Bits = ((inputDataFormat == VSI_NN_TYPE_INT8 && outputDataFormat == VSI_NN_TYPE_INT8
             && inputFixedPointPos == outputFixedPointPos)
             || (inputDataFormat == VSI_NN_TYPE_UINT8 && outputDataFormat == VSI_NN_TYPE_UINT8
-            && inputZeroPoint == outputZeroPoint && inputScale == outputScale)) ? vx_true_e : vx_false_e;
+            && inputZeroPoint == outputZeroPoint && inputScale == outputScale)) ? TRUE : FALSE;
 
     if (is16Bits)
     {

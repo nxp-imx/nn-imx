@@ -273,7 +273,7 @@ static vsi_status VX_CALLBACK vximageprocessKernel
     temp_ptr[0] = (uint8_t *)malloc( buf_sz );
     temp_ptr[1] = (uint8_t *)malloc( buf_sz );
 
-    if (crop_enable == vx_true_e)
+    if (crop_enable == TRUE)
     {
         resize_crop_op(buffer_ptr[0], temp_ptr[0], &attr[0], &attr[1],
             stride_size[0], stride_size[1], resize_crop_start);

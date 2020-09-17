@@ -157,7 +157,7 @@ static vsi_bool op_setup
     vsi_nn_tensor_t ** outputs
     )
 {
-    vsi_bool ret = vx_true_e;
+    vsi_bool ret = TRUE;
     uint32_t size = node->nn_param.depth2space.block_size;
     if( VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num )
     {

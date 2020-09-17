@@ -976,8 +976,8 @@ vsi_bool vsi_nn_OptimizedEltWiseOPShape
     uint32_t  dims              = 0;
     uint32_t  element_count0    = 0;
     uint32_t  element_count1    = 0;
-    vsi_bool  enable_broadcast  = vx_false_e;
-    vsi_bool  enable_broadcast1 = vx_false_e;
+    vsi_bool  enable_broadcast  = FALSE;
+    vsi_bool  enable_broadcast1 = FALSE;
     uint32_t  broadcast_Bits    = 0;
 
     element_count0 = vsi_nn_GetElementNum(input0);
@@ -985,7 +985,7 @@ vsi_bool vsi_nn_OptimizedEltWiseOPShape
 
     if (element_count0 == 1 || element_count1 == 1)
     {
-        enable_broadcast1 = vx_true_e;
+        enable_broadcast1 = TRUE;
     }
 
     /*************step 1:init tensor shape*****************/
@@ -1025,13 +1025,13 @@ vsi_bool vsi_nn_OptimizedEltWiseOPShape
 
         if (sz0 != sz1)
         {
-            enable_broadcast = vx_true_e;
+            enable_broadcast = TRUE;
             broadcast_Bits |= (1 << i);
         }
     }
 
     /*************step 3:reshape tensor shape*****************/
-    if (enable_broadcast == vx_false_e || enable_broadcast1)
+    if (enable_broadcast == FALSE || enable_broadcast1)
     {
         vsi_nn_OptimizedEltOPShape(input0, sizes0, &dims);
         vsi_nn_OptimizedEltOPShape(input1, sizes1, &dims);
@@ -1248,20 +1248,20 @@ vsi_bool vsi_nn_is_same_quant_type(
     vsi_nn_tensor_t * dst
     )
 {
-    vx_bool result = vx_false_e;
+    vx_bool result = FALSE;
 
     if (src->attr.dtype.vx_type == dst->attr.dtype.vx_type)
     {
         switch (src->attr.dtype.qnt_type)
         {
         case VSI_NN_QNT_TYPE_NONE:
-            result = vx_true_e;
+            result = TRUE;
             break;
 
         case VSI_NN_QNT_TYPE_DFP:
             if (src->attr.dtype.fl == dst->attr.dtype.fl)
             {
-                result = vx_true_e;
+                result = TRUE;
             }
             break;
 
@@ -1269,7 +1269,7 @@ vsi_bool vsi_nn_is_same_quant_type(
             if (src->attr.dtype.scale == dst->attr.dtype.scale &&
                 src->attr.dtype.zero_point == dst->attr.dtype.zero_point)
             {
-                result = vx_true_e;
+                result = TRUE;
             }
             break;
 
@@ -1290,7 +1290,7 @@ vsi_bool vsi_nn_is_same_quant_type(
                     }
 
                     if (i == scale_cnt0)
-                        result = vx_true_e;
+                        result = TRUE;
                 }
             }
             break;

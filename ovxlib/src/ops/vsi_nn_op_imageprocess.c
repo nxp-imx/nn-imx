@@ -133,7 +133,7 @@ static vsi_status prepare_params_scaletotensor
     )
 {
     int32_t i;
-    if (p->crop.enable == vx_true_e)
+    if (p->crop.enable == TRUE)
     {
         params->offset[0] = p->crop.start[0];
         params->offset[1] = p->crop.start[1];
@@ -144,7 +144,7 @@ static vsi_status prepare_params_scaletotensor
         params->offset[1] = 0;
     }
 
-    if (p->crop.enable == vx_true_e)
+    if (p->crop.enable == TRUE)
     {
         params->ratio[0] = (p->crop.length[0] << 15) / attr_out->size[0];
         params->ratio[1] = (p->crop.length[1] << 15) / attr_out->size[1];
@@ -188,7 +188,7 @@ static vsi_status prepare_params_grayscaletotensor
     vsi_nn_tensor_attr_t *attr_out
     )
 {
-    if (p->crop.enable == vx_true_e)
+    if (p->crop.enable == TRUE)
     {
         params->offset[0] = p->crop.start[0];
         params->offset[1] = p->crop.start[1];
@@ -199,7 +199,7 @@ static vsi_status prepare_params_grayscaletotensor
         params->offset[1] = 0;
     }
 
-    if (p->crop.enable == vx_true_e)
+    if (p->crop.enable == TRUE)
     {
         params->ratio[0] = (p->crop.length[0] << 15) / attr_out->size[0];
         params->ratio[1] = (p->crop.length[1] << 15) / attr_out->size[1];
@@ -684,7 +684,7 @@ static vsi_bool op_setup
                 outputs[0]->attr.size[i] = p->resize.length[i];
             }
         }
-        else if (p->crop.enable == vx_true_e)
+        else if (p->crop.enable == TRUE)
         {
             outputs[0]->attr.dim_num = p->crop.dim_num;
             for(i = 0; i < (uint32_t)p->crop.dim_num; ++i)
@@ -793,7 +793,7 @@ vsi_status vsi_nn_InsertImageprocessSingleNode
         uint32_t perm[] = {2, 0, 1, 3};
         vsi_nn_tensor_t out0;
         uint32_t arg_num;
-        vx_bool is_gray = vx_false_e;
+        vx_bool is_gray = FALSE;
 
         memset(&kernel_info, 0x0, sizeof(vsi_nn_kernel_info_t));
         memset(&out0, 0, sizeof(vsi_nn_tensor_t));
@@ -810,15 +810,15 @@ vsi_status vsi_nn_InsertImageprocessSingleNode
 
             if (attr0.size[2] == 1)
             {
-                is_gray= vx_true_e;
-                p->reverse_channel = vx_false_e;
+                is_gray= TRUE;
+                p->reverse_channel = FALSE;
             }
             is_copy = (vx_bool)((attr->size[0] == attr0.size[0])
                     && (attr->size[1] == attr0.size[1]));
             if (!is_gray)
             {
                 output_scaletotensor = vsi_nn_CreateTensor(graph, &attr0);
-                if (p->reverse_channel == vx_true_e)
+                if (p->reverse_channel == TRUE)
                 {
                     output_reversetensor = vsi_nn_CreateTensor(graph, &attr0);
                 }
@@ -835,11 +835,11 @@ vsi_status vsi_nn_InsertImageprocessSingleNode
         {
             if (tensor_out->attr.size[2] == 1)
             {
-                is_gray= vx_true_e;
-                p->reverse_channel = vx_false_e;
+                is_gray= TRUE;
+                p->reverse_channel = FALSE;
             }
 
-            if (p->reverse_channel == vx_true_e)
+            if (p->reverse_channel == TRUE)
             {
                 output_scaletotensor = vsi_nn_CreateTensor(graph, &(tensor_out->attr));
                 tensor_temp = output_scaletotensor;
@@ -929,7 +929,7 @@ vsi_status vsi_nn_InsertImageprocessSingleNode
                 _SET_PARAM( 1, VX_TYPE_INT32, scaletotensor_kernel_params.ratio[1]);
                 _SET_PARAM( 2, VX_TYPE_INT32, scaletotensor_kernel_params.offset[0]);
                 _SET_PARAM( 3, VX_TYPE_INT32, scaletotensor_kernel_params.offset[1]);
-                if (p->reverse_channel == vx_true_e)
+                if (p->reverse_channel == TRUE)
                 {
                     _SET_PARAM( 4, VX_TYPE_FLOAT32, scaletotensor_kernel_params.mean[0]);
                     _SET_PARAM( 5, VX_TYPE_FLOAT32, scaletotensor_kernel_params.mean[1]);
@@ -972,7 +972,7 @@ vsi_status vsi_nn_InsertImageprocessSingleNode
 
         if (p->platform_type == VSI_NN_PLATFORM_TENSORFLOW)
         {
-            if (p->reverse_channel == vx_true_e)
+            if (p->reverse_channel == TRUE)
             {
                 node = vxTensorReverse( graph->g, output_scaletotensor->t, &para,
                     sizeof(vx_nn_tensor_reverse_params_t), output_reversetensor->t );
@@ -1013,7 +1013,7 @@ vsi_status vsi_nn_InsertImageprocessSingleNode
         }
         else /* VSI_NN_PLATFORM_CAFFE */
         {
-            if (p->reverse_channel == vx_true_e)
+            if (p->reverse_channel == TRUE)
             {
                 node = vxTensorReverse( graph->g, output_scaletotensor->t, &para,
                     sizeof(vx_nn_tensor_reverse_params_t), tensor_out->t );

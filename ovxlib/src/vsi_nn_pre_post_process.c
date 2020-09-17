@@ -414,9 +414,9 @@ vsi_status vsi_nn_add_single_preproc_node
     }
 
     if(reverse_channel)
-        node->nn_param.pre_process.reverse_channel = vx_true_e;
+        node->nn_param.pre_process.reverse_channel = TRUE;
     else
-        node->nn_param.pre_process.reverse_channel = vx_false_e;
+        node->nn_param.pre_process.reverse_channel = FALSE;
 
     _set_preproc_node_out_attr(node, image_resize, org_norm_tensor, source_layout);
 

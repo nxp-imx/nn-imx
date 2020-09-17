@@ -127,7 +127,7 @@ DEF_KERNEL_INITIALIZER(_upsample_initializer)
     vx_tensor    input              = (vx_tensor)param[0];
     vsi_nn_kernel_tensor_attr_t * attr_in = NULL;
     vsi_int_array_t * in_shape   = NULL;
-    vsi_bool          image_2d    = vx_false_e;
+    vsi_bool          image_2d    = FALSE;
 
     attr_in = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)input );
     CHECK_PTR_FAIL_GOTO( attr_in, "vsi_nn_kernel_tensor_attr_create fail.", final );
