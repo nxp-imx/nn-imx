@@ -162,7 +162,7 @@ static vsi_status vx_op_pre_compute
     vsi_nn_type_e dataFormat = inputs[0]->attr.dtype.vx_type;
     int8_t input_fixPointPos = 0;
     int8_t output_fixPointPos = 0;
-    vx_bool dataTypeFlg = vx_false_e;
+    vx_bool dataTypeFlg = FALSE;
     vsi_nn_tensor_attr_t attr[2];
 
     memset(&attr[0], 0, sizeof(vsi_nn_tensor_attr_t));
@@ -180,7 +180,7 @@ static vsi_status vx_op_pre_compute
     output_fixPointPos = attr[1].dtype.fl;
 
     if(input_fixPointPos == output_fixPointPos)
-        dataTypeFlg = vx_true_e;
+        dataTypeFlg = TRUE;
 
     if ((dataFormat == VSI_NN_TYPE_INT16 && dataTypeFlg) || dataFormat == VSI_NN_TYPE_FLOAT16)
     {

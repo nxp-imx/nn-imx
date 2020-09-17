@@ -290,7 +290,7 @@ static vsi_status vx_op_compute
     vx_reference params[_PARAM_NUM];
     vx_border_t border;
     vx_reference * args;
-    vx_bool rsFlg = vx_false_e;
+    vx_bool rsFlg = FALSE;
     int32_t in_zp;
     vsi_nn_type_e inputDataFormat = inputs[0]->attr.dtype.vx_type;
     vsi_nn_tensor_attr_t attr;

@@ -483,7 +483,7 @@ static vsi_bool op_setup
 
     _get_stride_slice_start_stop_stride(self, inputs, outputs);
 
-    return vx_true_e;
+    return TRUE;
 } /* op_setup() */
 
 static vsi_status op_optimize
@@ -511,7 +511,7 @@ static vsi_status op_optimize
         return status;
     }
 
-    if (_check_is_same_shape(inputs, start_dims, stop_dims, stride_dims) == vx_false_e)
+    if (_check_is_same_shape(inputs, start_dims, stop_dims, stride_dims) == FALSE)
         return status;
 
     VSILOGD("Optimize %s, uid %u", vsi_nn_OpGetName(self->op), self->uid);

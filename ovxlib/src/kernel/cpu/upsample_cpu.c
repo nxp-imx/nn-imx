@@ -90,7 +90,7 @@ DEF_KERNEL_EXECUTOR(_compute)
     int32_t  output_base = 0;
     int32_t  ksize_x     = 0;
     int32_t  ksize_y     = 0;
-    vsi_bool is_relative_coord = vx_false_e;
+    vsi_bool is_relative_coord = FALSE;
     vsi_nn_kernel_dtype_e input1_dtype;
 
     for(i = 0; i < _INPUT_NUM; i ++)
@@ -130,7 +130,7 @@ DEF_KERNEL_EXECUTOR(_compute)
 
     if ((I8 == input1_dtype) || (U8 == input1_dtype) || (I16 == input1_dtype))
     {
-        is_relative_coord = vx_true_e;
+        is_relative_coord = TRUE;
     }
 
 

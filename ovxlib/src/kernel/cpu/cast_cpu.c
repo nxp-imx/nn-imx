@@ -79,7 +79,7 @@ DEF_KERNEL_EXECUTOR(_compute)
     size_t   out_bytes[_OUTPUT_NUM] = {0};
     uint32_t  i;
     double     max_value = 0.0f, min_value = 0.0f;
-    vx_bool_e clamp_flag = vx_false_e;
+    vsi_bool clamp_flag = FALSE;
     vsi_nn_type_e out_type;
     /* prepare data */
     for(i = 0; i < _INPUT_NUM; i ++)
@@ -110,7 +110,7 @@ DEF_KERNEL_EXECUTOR(_compute)
 
     if( type_is_integer( out_type ) )
     {
-        clamp_flag = vx_true_e;
+        clamp_flag = TRUE;
         type_get_range(out_type, &max_value, &min_value);
     }
 

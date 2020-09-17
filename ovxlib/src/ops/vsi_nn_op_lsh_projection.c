@@ -45,7 +45,7 @@ static vsi_status op_compute
     vsi_status status = VSI_SUCCESS;
     vsi_nn_tensor_t * type_tensor = NULL;
     vx_nn_lshproj_params_t p;
-    vx_bool valued = vx_true_e;
+    vx_bool valued = TRUE;
     vsi_nn_tensor_t * weight_tensor = NULL;
 
     type_tensor = vsi_nn_VariableToTensor(self,
@@ -80,7 +80,7 @@ static vsi_status op_compute
             (uint8_t *)const_data, &attr);
         p.weights = weight_tensor->t;
         free(const_data);
-        //valued = vx_false_e;
+        //valued = FALSE;
     }
     vxSetTensorAttribute(p.weights, VX_TENSOR_VALUE, &valued, sizeof(vx_bool));
 

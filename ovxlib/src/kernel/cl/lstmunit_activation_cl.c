@@ -1345,7 +1345,7 @@ static vsi_status _query_kernel
     int32_t  _is_hybrid,
     int32_t  _is_peephole,
     int32_t  recurrent_activation,
-    vx_bool_e *is_u8_type,
+    vsi_bool *is_u8_type,
     LSTMUNIT_nn_activation_e lstm_activation
     )
 {
@@ -1410,11 +1410,11 @@ static vsi_status _query_kernel
 
     if ((U8 == in_dtype) || (U8 == out_dtype))
     {
-        *is_u8_type = vx_true_e;
+        *is_u8_type = TRUE;
     }
     else
     {
-        *is_u8_type = vx_false_e;
+        *is_u8_type = FALSE;
     }
 
     key = LSTMUNIT_ACTIVATION_HASH_KEY(_is_ln, _is_cifg, _is_proj, _is_hybrid, _is_peephole, \
@@ -1482,7 +1482,7 @@ static vsi_nn_kernel_node_t _setup
     float    float_max              = *(vx_float32 *)&uint_max;
     float    scale_val[9]           = {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f};
     float    tail_val[9]            = {0, 0, 0, 0, 0, 0, 0, 0, 0};
-    vx_bool_e is_u8_type = vx_false_e;
+    vsi_bool is_u8_type = FALSE;
     LSTMUNIT_nn_activation_e lstm_activation;
     size_t   lstm_activation_param_num = _LSTMUNIT_ACTIVATION_MAX_PARAM_NUM;
     size_t   lstm_activation_in_out_num = 0;

@@ -212,16 +212,16 @@ static vsi_status vx_op_pre_compute
     vx_float32    outputScale         = outputs[0]->attr.dtype.scale;
     int32_t       axis                = self->nn_param.shufflechannel.axis;
     uint32_t      *sizes              = inputs[0]->attr.size;
-    vsi_bool      is16Bits            = vx_false_e;
-    vsi_bool      is8Bits             = vx_false_e;
+    vsi_bool      is16Bits            = FALSE;
+    vsi_bool      is8Bits             = FALSE;
 
     is16Bits = ((inputDataFormat == VSI_NN_TYPE_FLOAT16 && outputDataFormat == VSI_NN_TYPE_FLOAT16)
             || (inputDataFormat == VSI_NN_TYPE_INT16 && outputDataFormat == VSI_NN_TYPE_INT16
-            && inputFixedPointPos == outputFixedPointPos)) ? vx_true_e : vx_false_e;
+            && inputFixedPointPos == outputFixedPointPos)) ? TRUE : FALSE;
     is8Bits = ((inputDataFormat == VSI_NN_TYPE_INT8 && outputDataFormat == VSI_NN_TYPE_INT8
             && inputFixedPointPos == outputFixedPointPos)
             || (inputDataFormat == VSI_NN_TYPE_UINT8 && outputDataFormat == VSI_NN_TYPE_UINT8
-            && inputZeroPoint == outputZeroPoint && inputScale == outputScale)) ? vx_true_e : vx_false_e;
+            && inputZeroPoint == outputZeroPoint && inputScale == outputScale)) ? TRUE : FALSE;
 #define VSI_NN_TENSOR_WIDTH_MAX (65536)
     kernel_info->kernel_index = 0;
     if (sizes[0] < VSI_NN_TENSOR_WIDTH_MAX && sizes[1] < VSI_NN_TENSOR_WIDTH_MAX)

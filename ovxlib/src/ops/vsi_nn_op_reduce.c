@@ -188,7 +188,7 @@ static vsi_bool caculate_reshape_size(uint32_t* dim_value,
                                       vx_int32 *resolved_dim, vx_int32 resolved_dim_count)
 {
 #define VSI_NN_MAX_IMAGE_WIDTH  (65536)
-    vsi_bool enable_reshape = vx_true_e;
+    vsi_bool enable_reshape = TRUE;
     uint32_t size_count = 1;
     uint32_t i = 0;
     uint32_t dim_num = *dim_value;
@@ -249,7 +249,7 @@ static vsi_bool caculate_reshape_size(uint32_t* dim_value,
     }
     else
     {
-        enable_reshape = vx_false_e;
+        enable_reshape = FALSE;
     }
     *dim_value = dim_num;
 #undef VSI_NN_MAX_IMAGE_WIDTH
@@ -336,7 +336,7 @@ static vsi_status op_compute
         {
             if (1 == resolved_dim_count)
             {
-                vsi_bool enable_reshape = vx_true_e;
+                vsi_bool enable_reshape = TRUE;
 
                 enable_reshape = caculate_reshape_size(&dim_num, re_sizes, re_sizes2,
                                       resolved_dim, resolved_dim_count);
@@ -389,7 +389,7 @@ static vsi_status op_compute
             }
             else if (2 == resolved_dim_count)
             {
-                vsi_bool enable_reshape = vx_true_e;
+                vsi_bool enable_reshape = TRUE;
 
                 attr2.size[resolved_dim[0]] = 1;
                 attr2.vtl = FALSE;
@@ -472,7 +472,7 @@ static vsi_status op_compute
         }
         else if (3 == resolved_dim_count)
         {
-            vsi_bool enable_reshape = vx_true_e;
+            vsi_bool enable_reshape = TRUE;
 
             attr2.size[resolved_dim[0]] = 1;
             attr2.size[resolved_dim[1]] = 1;
@@ -625,7 +625,7 @@ static vsi_bool op_check
     )
 {
     /*TODO: Check tensor shapes. */
-    return vx_true_e;
+    return TRUE;
 } /* op_check() */
 
 static void op_set_reduce_param_value(vsi_nn_nn_param_t *nn_param,
@@ -681,7 +681,7 @@ static vsi_bool op_set_reduce_axis(
     uint32_t i = 0, j = 0;
     vx_int32 resolved_dim[4]    = {-1, -1, -1, -1};
     vx_int32 resolved_dim_count = 0;
-    vsi_bool is_loop = vx_true_e;
+    vsi_bool is_loop = TRUE;
 
     for (i = 0; i < self->nn_param.reduce.axis_num; i++)
     {
@@ -691,7 +691,7 @@ static vsi_bool op_set_reduce_axis(
         if (current_axis < 0 || current_axis >= (vx_int32)inputs[0]->attr.dim_num)
         {
             VSILOGE("error: the axis value must be in the range [0, %d)\n", inputs[0]->attr.dim_num);
-            return vx_false_e;
+            return FALSE;
         }
 
         for (j = 0; j < 4; j++)
@@ -706,7 +706,7 @@ static vsi_bool op_set_reduce_axis(
 
     for (i = resolved_dim_count; is_loop && (i > 0); i--)
     {
-        is_loop = vx_false_e;
+        is_loop = FALSE;
         for (j = 1; j < i; j++)
         {
             if (resolved_dim[j] < resolved_dim[j - 1])
@@ -715,7 +715,7 @@ static vsi_bool op_set_reduce_axis(
                 temp = resolved_dim[j];
                 resolved_dim[j] = resolved_dim[j - 1];
                 resolved_dim[j - 1] = temp;
-                is_loop = vx_true_e;
+                is_loop = TRUE;
             }
         }
     }
@@ -743,7 +743,7 @@ static vsi_bool op_set_reduce_axis(
         self->nn_param.reduce.axis[i] = resolved_dim[i];
     }
     self->nn_param.reduce.axis_num = resolved_dim_count;
-    return vx_true_e;
+    return TRUE;
 }
 
 
@@ -789,7 +789,7 @@ static vsi_bool op_set_reduce_internal
     {
         if (3 == self->nn_param.reduce.axis[resolved_dim_count - 1])
         {
-            vsi_bool enable_reshape = vx_true_e;
+            vsi_bool enable_reshape = TRUE;
             enable_reshape = caculate_reshape_size(&dim_num, re_sizes, re_sizes2,
                                     (vx_int32 *)(self->nn_param.reduce.axis), resolved_dim_count);
             if (enable_reshape)
@@ -833,14 +833,14 @@ static vsi_bool op_set_reduce_internal
 
         curr = vsi_nn_internal_new_node( self, type_name, 0, 0 );
         op_set_reduce_param_value(&(curr->node->nn_param), type_name,
-        &(self->nn_param.reduce.axis[0]), 1, vx_true_e);
+        &(self->nn_param.reduce.axis[0]), 1, TRUE);
         curr->inputs[0]  = inputs[POST_PROCESS_INPUT];
         curr->outputs[0] = tmp_output_tensor[0]->t;
         vsi_nn_internal_setup_node( self, curr );
 
         if (3 == self->nn_param.reduce.axis[resolved_dim_count - 1])
         {
-            vsi_bool enable_reshape = vx_true_e;
+            vsi_bool enable_reshape = TRUE;
             enable_reshape = caculate_reshape_size(&dim_num, re_sizes, re_sizes2,
                                     (vx_int32 *)(self->nn_param.reduce.axis), resolved_dim_count);
 
@@ -865,7 +865,7 @@ static vsi_bool op_set_reduce_internal
 
         curr = vsi_nn_internal_new_node( self, type_name, 0, 0 );
         op_set_reduce_param_value(&(curr->node->nn_param), type_name,
-        &(self->nn_param.reduce.axis[1]), 1, vx_true_e);
+        &(self->nn_param.reduce.axis[1]), 1, TRUE);
         if (self->nn_param.reduce.local2->reshaped_input)
         {
             curr->inputs[0] = self->nn_param.reduce.local2->reshaped_input;
@@ -891,14 +891,14 @@ static vsi_bool op_set_reduce_internal
 
         curr = vsi_nn_internal_new_node( self, type_name, 0, 0 );
         op_set_reduce_param_value(&(curr->node->nn_param), type_name,
-        &(self->nn_param.reduce.axis[0]), 1, vx_true_e);
+        &(self->nn_param.reduce.axis[0]), 1, TRUE);
         curr->inputs[0]  = inputs[POST_PROCESS_INPUT];
         curr->outputs[0] = tmp_output_tensor[0]->t;
         vsi_nn_internal_setup_node( self, curr );
 
         curr = vsi_nn_internal_new_node( self, type_name, 0, 0 );
         op_set_reduce_param_value(&(curr->node->nn_param), type_name,
-        &(self->nn_param.reduce.axis[1]), 1, vx_true_e);
+        &(self->nn_param.reduce.axis[1]), 1, TRUE);
         curr->inputs[0]  = tmp_output_tensor[0]->t;
         curr->outputs[0] = tmp_output_tensor[1]->t;
         vsi_nn_internal_setup_node( self, curr );
@@ -906,7 +906,7 @@ static vsi_bool op_set_reduce_internal
 
         if (3 == self->nn_param.reduce.axis[resolved_dim_count - 1])
         {
-            vsi_bool enable_reshape = vx_true_e;
+            vsi_bool enable_reshape = TRUE;
             enable_reshape = caculate_reshape_size(&dim_num, re_sizes, re_sizes2,
                                     (vx_int32 *)(self->nn_param.reduce.axis), resolved_dim_count);
             if (enable_reshape)
@@ -930,7 +930,7 @@ static vsi_bool op_set_reduce_internal
 
         curr = vsi_nn_internal_new_node( self, type_name, 0, 0 );
         op_set_reduce_param_value(&(curr->node->nn_param), type_name,
-        &(self->nn_param.reduce.axis[2]), 1, vx_true_e);
+        &(self->nn_param.reduce.axis[2]), 1, TRUE);
         if (self->nn_param.reduce.local2->reshaped_input)
         {
             curr->inputs[0]  = self->nn_param.reduce.local2->reshaped_input;
@@ -946,9 +946,9 @@ static vsi_bool op_set_reduce_internal
     else
     {
         VSILOGE("error: resolved_dim_count is %d\n", resolved_dim_count);
-        return vx_false_e;
+        return FALSE;
     }
-    return vx_true_e;
+    return TRUE;
 }
 
 
@@ -959,7 +959,7 @@ static vsi_bool op_setup
     vsi_nn_tensor_t ** outputs
     )
 {
-    vsi_bool ret = vx_true_e;
+    vsi_bool ret = TRUE;
 
     if (self->nn_param.reduce.type != VSI_NN_REDUCE_MEAN &&
         self->nn_param.reduce.type != VSI_NN_REDUCE_SUM  &&
@@ -970,7 +970,7 @@ static vsi_bool op_setup
         self->nn_param.reduce.type != VSI_NN_REDUCE_PROD)
     {
         VSILOGE("The type of reduce is not supported now.(reduce)");
-        return vx_false_e;
+        return FALSE;
     }
     if( VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num )
     {
@@ -1031,10 +1031,10 @@ static vsi_bool op_setup
         }
     }
 
-    if (vx_false_e == op_set_reduce_axis(self, inputs))
+    if (FALSE == op_set_reduce_axis(self, inputs))
     {
         VSILOGE("op_set_reduce_axis error");
-        return vx_false_e;
+        return FALSE;
     }
 
     if (self->nn_param.reduce.type == VSI_NN_REDUCE_SUM)
