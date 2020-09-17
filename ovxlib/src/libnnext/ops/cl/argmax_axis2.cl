@@ -108,4 +108,3 @@ __kernel void argmax_axis2_I32toI32_2D
 
     write_imagei(output, coord.xy, minIdx);
 }
-

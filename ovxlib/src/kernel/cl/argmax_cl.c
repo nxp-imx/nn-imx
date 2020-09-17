@@ -187,6 +187,12 @@ static vsi_status _query_kernel
 
     input_dtype = vsi_nn_kernel_map_dtype( inputs[0]->attr.dtype.vx_type );
     output_dtype = vsi_nn_kernel_map_dtype( outputs[0]->attr.dtype.vx_type );
+
+    if(input_dtype == I8)
+    {
+        input_dtype = I32;
+    }
+
     key = HASH_ARGMAX_KEY( axis, input_dtype, output_dtype, image_2d );
 
     for( i = 0; i < _cnt_of_array(kernel_map); i ++ )
