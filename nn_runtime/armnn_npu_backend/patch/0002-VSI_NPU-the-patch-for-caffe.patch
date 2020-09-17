@@ -1,0 +1,31 @@
+From 9ba1ea730a9725fe5d01c8e96bac5c8f172dbef6 Mon Sep 17 00:00:00 2001
+From: "jing.tang" <jing.tang@verisilicon.com>
+Date: Mon, 14 Sep 2020 16:34:21 +0800
+Subject: [PATCH] [VSI_NPU] the patch for caffe
+
+Change-Id: I1e371a1a57f18c7c70ea75d9b887e6751ae00c4a
+---
+ Makefile | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index b7660e8..e9a850d 100644
+--- a/Makefile
++++ b/Makefile
+@@ -421,11 +421,11 @@ CXXFLAGS += -MMD -MP
+ 
+ # Complete build flags.
+ COMMON_FLAGS += $(foreach includedir,$(INCLUDE_DIRS),-I$(includedir))
+-CXXFLAGS += -pthread -fPIC $(COMMON_FLAGS) $(WARNINGS)
++CXXFLAGS += -pthread -fPIC -std=c++11 $(COMMON_FLAGS) $(WARNINGS)
+ NVCCFLAGS += -ccbin=$(CXX) -Xcompiler -fPIC $(COMMON_FLAGS)
+ # mex may invoke an older gcc that is too liberal with -Wuninitalized
+ MATLAB_CXXFLAGS := $(CXXFLAGS) -Wno-uninitialized
+-LINKFLAGS += -pthread -fPIC $(COMMON_FLAGS) $(WARNINGS)
++LINKFLAGS += -pthread -fPIC -std=c++11 $(COMMON_FLAGS) $(WARNINGS)
+ 
+ USE_PKG_CONFIG ?= 0
+ ifeq ($(USE_PKG_CONFIG), 1)
+-- 
+2.7.4
+

@@ -1,0 +1,30 @@
+{
+    "version": "0.1.0",
+    "toolchain": [
+        {
+            "name": "imx865",
+            "root": "/home/software/Linux/freescale/ToolChain/LF_v5.4.y-1.0.0_RC2/64/sysroots",
+            "sysroot": "/aarch64-poky-linux",
+            "cmake": "toolchain-arm-imx865.cmake",
+            "prefix": "aarch64-poky-linux",
+            "host": "/x86_64-pokysdk-linux/usr/bin/aarch64-poky-linux",
+            "include": [
+                "/x86_64-pokysdk-linux/usr/lib/aarch64-poky-linux/gcc/aarch64-poky-linux/9.2.0/include",
+                "/aarch64-poky-linux/usr/include/c++/9.2.0/aarch64-poky-linux",
+                "/aarch64-poky-linux/usr/include/c++/9.2.0"
+            ]
+        },
+        {
+            "name": "toybrick",
+            "root": "/home/software/Linux/rockchips/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu",
+            "sysroot": "/aarch64-linux-gnu/libc",
+            "cmake": "toolchain-toybrick.cmake",
+            "prefix": "aarch64-linux-gnu",
+            "host": "/bin",
+            "include": [
+                "/aarch64-linux-gnu/include/c++/6.3.1",
+                "/aarch64-linux-gnu/include/c++/6.3.1/aarch64-linux-gnu"
+            ]
+        }
+    ]
+}
