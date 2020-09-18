@@ -441,7 +441,7 @@ static vsi_status op_optimize
 
         if( NULL != inputs[i]->t )
         {
-            VSILOGW( "Concat copy %d tensor.", i );
+            VSILOGI( "Concat copy %d tensor.", i );
             // Copy old tensor values to the new address.
             status = copy_tensor_to_view( self, inputs[i], axis, in_view_tensor );
             if( VSI_FAILURE == status )
