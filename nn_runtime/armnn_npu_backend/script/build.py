@@ -67,6 +67,9 @@ def find_board(env):
 def build_prepare(env):
     log.debug("Package all binary files...")
 
+    args = ["git reset --hard"]
+    run_subprocess(args, cwd=env.armnn_dir, shell=True)
+
     args = ["cp -r " + root_dir + "/armnn-devenv/test/armnn/model " +
         env.armnn_dir + "/tests"]
     run_subprocess(args, cwd=env.armnn_dir, shell=True)
@@ -82,7 +85,7 @@ def build_boost(env):
     with open(env.boost_out_dir + "/user-config.jam", mode="w") as f:
         f.write("using gcc : arm : " + board["prefix"] + "-g++ ;")
     run_subprocess(["./bootstrap.sh", "--prefix=" + env.boost_out_dir + "/install"], cwd=env.boost_dir,
-        env={"PATH": board["root"] + board["host"] + ":" + os.getenv("PATH")})
+        env={"PATH": board["root"] + board["host"] + ":" + os.getenv("PATH", default="")})
 
     args = ["./b2", "install", "link=static", 'cxxflags=-fPIC']
     args.append('cxxflags=--sysroot=' + board["root"] + board["sysroot"])
@@ -94,7 +97,7 @@ def build_boost(env):
         "-j{0}".format(multiprocessing.cpu_count())])
 
     run_subprocess(args, cwd=env.boost_dir,
-        env={"PATH": board["root"] + board["host"] + ":" + os.getenv("PATH")})
+        env={"PATH": board["root"] + board["host"] + ":" + os.getenv("PATH", default="")})
 
 def build_flatbuffers_host(env):
     log.debug("Build flatbuffers library for host...")
@@ -163,7 +166,7 @@ def build_protobuf_target(env):
         flags = flags + " -isystem " + board["root"] + i
 
     my_env = {
-        "PATH": board["root"] + board["host"] + ":" + os.getenv("PATH"),
+        "PATH": board["root"] + board["host"] + ":" + os.getenv("PATH", default=""),
         "CC": board["prefix"]+ "-gcc",
         "CXX": board["prefix"]+ "-g++",
         "CFLAGS": flags,
@@ -186,6 +189,10 @@ def build_tf_pb(env):
 
 def build_caffe_pb(env):
     log.debug("Generate Caffe protobuf definitions...")
+
+    args = ["git reset --hard"]
+    run_subprocess(args, cwd=env.caffe_dir, shell=True)
+
     with open(env.caffe_dir + "/Makefile.config.example", mode='r', newline='\n', encoding='UTF-8') as f0:
         lines = f0.readlines()
 
@@ -202,7 +209,7 @@ def build_caffe_pb(env):
         {
             "origin": 'LIBRARY_DIRS := $(PYTHON_LIB) /usr/local/lib /usr/lib',
             "replace": 'LIBRARY_DIRS := $(PYTHON_LIB) /usr/local/lib /usr/lib ' +
-                '/usr/lib/x86_64-linux-gnu/hdf5/serial/ ' + 
+                '/usr/lib/x86_64-linux-gnu/hdf5/serial/ ' +
                 env.protobuf_host_dir + "/x86_pb_install/lib/",
         },
     ]
@@ -218,8 +225,9 @@ def build_caffe_pb(env):
     run_subprocess(args, cwd=env.caffe_dir, shell=True)
 
     my_env = {
-        "PATH": env.protobuf_host_dir + "/x86_pb_install/bin/:" + os.getenv("PATH"),
-        "LD_LIBRARY_PATH": env.protobuf_host_dir + "/x86_pb_install/lib/:" + os.getenv("LD_LIBRARY_PATH"),
+        "PATH": env.protobuf_host_dir + "/x86_pb_install/bin/:" + os.getenv("PATH", default=""),
+        "LD_LIBRARY_PATH": env.protobuf_host_dir + "/x86_pb_install/lib/:" +
+            os.getenv("LD_LIBRARY_PATH", default=""),
     }
     args = ["make", "all", "-j{0}".format(multiprocessing.cpu_count())]
     run_subprocess(args, cwd=env.caffe_dir, env=my_env)
