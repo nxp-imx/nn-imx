@@ -135,12 +135,11 @@ __kernel void upsample_I16_I16to_I16_2D
 
 
 _viv_uniform VXC_512Bits uniConvertDirInt16Fp32_4x4;
-_viv_uniform VXC_512Bits uniConvertEndInt16Fp32_4x4;
-_viv_uniform VXC_512Bits uniConvertInt32toInt16_2x8;
+_viv_uniform VXC_512Bits uniConvertU8toI16_2x8;
 _viv_uniform float inScaleInt16;
 
 #define UPSAMPLE_I16_TO_F16_PROCESS(axis_type, axis_in_type, read_fun, write_fun) \
-    vxc_short4 din; \
+    vxc_short8 din; \
     axis_in_type axisIn; \
     vxc_short8 dinExp; \
     axis_type  axisInExp; \
@@ -148,45 +147,33 @@ _viv_uniform float inScaleInt16;
     axis_type  axisData; \
     vxc_short8 axisData_short; \
     vxc_short8 dout; \
+    vxc_float4 tmpVal0, tmpVal1; \
+    half4 tmpOut0; \
+    vxc_short8 tmpOut1; \
     read_fun(din, dataIn, coord, VXC_5BITOFFSET_XY(0, 0),\
         VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \
     read_fun(axisIn, axis, coord, VXC_5BITOFFSET_XY(0, 0),\
         VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \
-    dinExp = din.s00112233; \
+    VXC_DP4x4(tmpVal0, din, din, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\
+        uniConvertDirInt16Fp32_4x4); \
+    tmpVal1 = tmpVal0 * inScaleInt16; \
+    _viv_asm(CONV, tmpOut0, tmpVal1); \
+    _viv_asm(COPY, tmpOut1, tmpOut0, 16); \
+    dinExp    = tmpOut1.s00224466; \
     axisInExp = axisIn.s00112233; \
     constAxis = (axis_type)(0, 1, 0, 1, 0, 1, 0, 1); \
     VXC_Clamp(axisData, axisInExp, constAxis, constAxis, VXC_MODIFIER_CLAMP(0, 7, 0, 1)); \
     axisData &= (axis_type)(1); \
-    _viv_asm(CONV, axisData_short, axisData); \
+    VXC_DP2x8(axisData_short, axisData, axisData, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),\
+        uniConvertU8toI16_2x8); \
     dout = axisData_short == 1 ? dinExp : 0; \
-    vxc_float4 tmpVal0, tmpVal1, tmpVal2, tmpVal3; \
-    half4 tmpOut0, tmpOut1; \
-    VXC_DP4x4(tmpVal0, dout, dout, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\
-        uniConvertDirInt16Fp32_4x4); \
-    VXC_DP4x4(tmpVal2, dout, dout, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\
-        uniConvertEndInt16Fp32_4x4); \
-    tmpVal1 = tmpVal0 * inScaleInt16; \
-    _viv_asm(CONV, tmpOut0, tmpVal1); \
-    tmpVal3 = tmpVal2 * inScaleInt16; \
-    _viv_asm(CONV, tmpOut1, tmpVal3); \
-    VXC_DP2x8(dout, tmpOut0, tmpOut1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),\
-        uniConvertInt32toInt16_2x8); \
     write_fun(dataOut, coordOut, dout, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \
     constAxis = (axis_type)(2, 3, 2, 3, 2, 3, 2, 3); \
     VXC_Clamp(axisData, axisInExp, constAxis, constAxis, VXC_MODIFIER_CLAMP(0, 7, 0, 1)); \
     axisData &= (axis_type)(1); \
-    _viv_asm(CONV, axisData_short, axisData); \
+    VXC_DP2x8(axisData_short, axisData, axisData, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),\
+        uniConvertU8toI16_2x8); \
     dout = axisData_short == 1 ? dinExp : 0; \
-    VXC_DP4x4(tmpVal0, dout, dout, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\
-        uniConvertDirInt16Fp32_4x4); \
-    VXC_DP4x4(tmpVal2, dout, dout, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\
-        uniConvertEndInt16Fp32_4x4); \
-    tmpVal1 = tmpVal0 * inScaleInt16; \
-    _viv_asm(CONV, tmpOut0, tmpVal1); \
-    tmpVal3 = tmpVal2 * inScaleInt16; \
-    _viv_asm(CONV, tmpOut1, tmpVal3); \
-    VXC_DP2x8(dout, tmpOut0, tmpOut1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),\
-        uniConvertInt32toInt16_2x8); \
     coordOut.y += 1; \
     write_fun(dataOut, coordOut, dout, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
 

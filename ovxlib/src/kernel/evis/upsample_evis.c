@@ -523,26 +523,6 @@ DEF_KERNEL_INITIALIZER(_upsample_initializer)
             0x00003c00, 0x00000000, 0x00003c00, 0x00000000,
             0x00003c00, 0x00000000, 0x00003c00, 0x00000000 // Constant
         }, GPU_DP_TYPE_16};
-        gpu_dp_inst_t uniConvertEndInt16Fp32_4x4 = {{
-            0x01010101, // TCfg
-            0x00000000, // ASelt
-            0x00050004, 0x00070006, // ABin
-            0x02020202, // BSelt
-            0x00000000, 0x00000000, // BBin
-            0x00000100, // AccumType, ConstantType, and PostShift
-            0x00003c00, 0x00000000, 0x00003c00, 0x00000000,
-            0x00003c00, 0x00000000, 0x00003c00, 0x00000000 // Constant
-        }, GPU_DP_TYPE_16};
-        gpu_dp_inst_t uniConvertInt32toUint8_2x8 = {{
-            0x33333333, // TCfg
-            0x11110000, // ASelt
-            0x03020100, 0x03020100, // ABin
-            0x00000000, // BSelt
-            0x00000000, 0x00000000, // BBin
-            0x00002400, // AccumType, ConstantType, and PostShift
-            0x00000000, 0x00000000, 0x00000000, 0x00000000,
-            0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
-        }, GPU_DP_TYPE_16};
         gpu_dp_inst_t uniQuantInOutInt16_2x8 = {{
             0x11111111, // TCfg
             0x00000000, // ASelt
@@ -562,6 +542,16 @@ DEF_KERNEL_INITIALIZER(_upsample_initializer)
             0x00000400, // AccumType, ConstantType, and PostShift
             0x00000000, 0x00000000, 0x00000000, 0x00000000,
             0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
+        }, GPU_DP_TYPE_16};
+        gpu_dp_inst_t uniConvertU8toI16_2x8 = {{
+            0x11111111, // TCfg
+            0x00000000, // ASelt
+            0x03020100, 0x07060504, // ABin
+            0x22222222, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000400, // AccumType, ConstantType, and PostShift
+            0x00000001, 0x00000001, 0x00000001, 0x00000001,
+            0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
         }, GPU_DP_TYPE_16};
 
         if(I16 == src_dtype && I16 == dst_dtype )
@@ -594,10 +584,8 @@ DEF_KERNEL_INITIALIZER(_upsample_initializer)
         {
             status  = vsi_nn_kernel_gpu_add_param(node, "uniConvertDirInt16Fp32_4x4",
                                                   &uniConvertDirInt16Fp32_4x4);
-            status |= vsi_nn_kernel_gpu_add_param(node, "uniConvertEndInt16Fp32_4x4",
-                                                  &uniConvertEndInt16Fp32_4x4);
-            status |= vsi_nn_kernel_gpu_add_param(node, "uniConvertInt32toInt16_2x8",
-                                                  &uniConvertInt32toUint8_2x8);
+            status |= vsi_nn_kernel_gpu_add_param(node, "uniConvertU8toI16_2x8",
+                                                  &uniConvertU8toI16_2x8);
             status |= vsi_nn_kernel_gpu_add_param(node, "inScaleInt16", &inputScale);
             CHECK_STATUS_FAIL_GOTO(status, final );
         }
