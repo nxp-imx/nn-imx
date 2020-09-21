@@ -125,8 +125,6 @@ int PreparedModel::setInput(uint32_t index, const void* data, size_t length)
     } else if (!data || !length) {
         return NNA_ERROR_CODE(OP_FAILED);
     } else {
-
-#ifdef NNRT_ENABLE_TENSOR_FROM_HANDLE
         vsi_status run_state;//= vsi_nn_FlushHandle(tensor);
         void* cpuAddress = nullptr;
         run_state = vsi_nn_GetTensorHandle(tensor, &cpuAddress);
@@ -142,15 +140,6 @@ int PreparedModel::setInput(uint32_t index, const void* data, size_t length)
             NNRT_LOGE_PRINT("Process complete state: %d.", run_state);
             assert(0);
         }
-#else
-        uint32_t tensor_size = vsi_nn_GetTensorSize(
-            tensor->attr.size, tensor->attr.dim_num, tensor->attr.dtype.vx_type);
-        if (length != tensor_size) {
-            NNRT_LOGE_PRINT("Tensor size mismatch %u vs %u.", tensor_size, length);
-            return NNA_ERROR_CODE(OP_FAILED);
-        }
-        vsi_nn_CopyDataToTensor(graph_, tensor, (uint8_t*)data);
-#endif
     }
     return NNA_ERROR_CODE(NO_ERROR);
 }
