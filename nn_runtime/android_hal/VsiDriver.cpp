@@ -708,6 +708,12 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
                     model, operation);
             return squeeze->Validate(reason);
         }
+        case OperationType::MEAN: {
+            auto mean = std::make_unique<
+                op_validate::MeanValidate<HalPlatform::Model, HalPlatform::Operation>>(
+                    model, operation);
+            return mean->Validate(reason);
+       }
         case OperationType::BOX_WITH_NMS_LIMIT:
         case OperationType::PAD_V2:
         case OperationType::QUANTIZED_16BIT_LSTM:
