@@ -743,6 +743,14 @@ static vsi_status _convert_graph_virtual_tensor
 
            status = _convert_virtual_tensor_attr(tensor);
         }
+
+        for(j = 0; j < node->output.num; j++)
+        {
+           vsi_nn_tensor_id_t id = node->output.tensors[j];
+           vsi_nn_tensor_t * tensor = vsi_nn_GetTensor(graph, id);
+
+           status = _convert_virtual_tensor_attr(tensor);
+        }
     }
 
     return status;
