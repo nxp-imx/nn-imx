@@ -73,4 +73,5 @@
 #include "SpaceOpValidate.hpp"
 #include "SliceValidate.hpp"
 #include "StridedSliceValidate.hpp"
+#include "SqueezeValidate.hpp"
 #endif
