@@ -303,6 +303,10 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
             }
 
             auto& perm = model.operands[operation.inputs[1]];
+            if (!isConstantTensor(perm)) {
+                isSupport &= false;
+                reason += "reject TRANSPOSE because permute is not constant operand \n";
+            }
             if (OperandLifeTime::MODEL_INPUT == perm.lifetime) {
                 isSupport &= false;
                 reason += "reject TRANSPOSE because permute not supported as an input \n";
