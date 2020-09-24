@@ -167,6 +167,7 @@ static nnrt::OperationType op_code_mapping(
         MAP_OP(GROUPED_CONV_2D);
         MAP_OP(CHANNEL_SHUFFLE);
         MAP_OP(TRANSPOSE_CONV_2D);
+        MAP_OP(SLICE);
         case HalPlatform::OperationType::TOPK_V2: {
             LOG(INFO) << "add operation: TOPK_V2";
             return nnrt::OperationType::TOPK;
