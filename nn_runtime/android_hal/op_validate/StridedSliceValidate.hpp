@@ -50,15 +50,17 @@ class StridedSliceValidate : public OperationValidate<T_model, T_Operation> {
             }
             auto operation = this->OperationForRead();
             auto model = this->ModelForRead();
-            vsi_driver::VsiRTInfo vsiMemory;
-            auto stride_op = model.operands[operation.inputs[3]];
-            auto ptr = (int32_t *)get_buffer::getOperandDataPtr(model, stride_op, vsiMemory);
-            for( auto i  = 0; i < stride_op.dimensions.size(); i++){
-                if(ptr[i] < 0){
-                    is_support = false;
-                    reason +=
-                    "StridedSilce: not supported stride parameter less than 0";
-                    break;
+            if(this->IsConstantTensor(operation.inputs[3])){
+                vsi_driver::VsiRTInfo vsiMemory;
+                auto stride_op = model.operands[operation.inputs[3]];
+                auto ptr = (int32_t *)get_buffer::getOperandDataPtr(model, stride_op, vsiMemory);
+                for( auto i  = 0; i < stride_op.dimensions.size(); i++){
+                    if(ptr[i] < 0){
+                        is_support = false;
+                        reason +=
+                            "StridedSilce: not supported stride parameter less than 0";
+                        break;
+                    }
                 }
             }
             return is_support;
