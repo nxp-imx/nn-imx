@@ -51,6 +51,7 @@ static vsi_status _comparisons_op_compute
     uint32_t new_rank = 0;
     vsi_bool ret;
     vsi_nn_kernel_param_t * param = NULL;
+    vsi_nn_relational_ops_type_t op_type = self->nn_param.relational_ops.op;
 
     if( NULL == self )
     {
@@ -68,15 +69,39 @@ static vsi_status _comparisons_op_compute
     if( ret )
     {
         // Add params
-        param =vsi_nn_kernel_param_create();
-        vsi_nn_kernel_param_add_int32( param, "operation", self->nn_param.relational_ops.op );
-
         reshape_tensors[0] = vsi_nn_reshape_tensor( self->graph,
                 inputs[0], (uint32_t*)shapes[0], new_rank );
         reshape_tensors[1] = vsi_nn_reshape_tensor( self->graph,
                 inputs[1], (uint32_t*)shapes[1], new_rank );
         reshape_tensors[2] = vsi_nn_reshape_tensor( self->graph,
                 outputs[0], (uint32_t*)shapes[2], new_rank );
+
+        if (shapes[1][3] > shapes[0][3] && new_rank == 4)
+        {
+            vsi_nn_tensor_t* reshape_tmp;
+            reshape_tmp = reshape_tensors[0];
+            reshape_tensors[0] = reshape_tensors[1];
+            reshape_tensors[1] = reshape_tmp;
+            if (VSI_NN_RELATIONAL_OPS_GREAT == op_type)
+            {
+                op_type = VSI_NN_RELATIONAL_OPS_LESS;
+            }
+            else if (VSI_NN_RELATIONAL_OPS_LESS == op_type)
+            {
+                op_type = VSI_NN_RELATIONAL_OPS_GREAT;
+            }
+            else if (VSI_NN_RELATIONAL_OPS_GREAT_EQUAL == op_type)
+            {
+                op_type = VSI_NN_RELATIONAL_OPS_LESS_EQUAL;
+            }
+            else if (VSI_NN_RELATIONAL_OPS_LESS_EQUAL == op_type)
+            {
+                op_type = VSI_NN_RELATIONAL_OPS_GREAT_EQUAL;
+            }
+        }
+
+        param = vsi_nn_kernel_param_create();
+        vsi_nn_kernel_param_add_int32( param, "operation", op_type );
 
         self->n = (vx_node)vsi_nn_kernel_selector( self->graph,
                 kernel_name,
