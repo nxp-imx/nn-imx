@@ -128,7 +128,7 @@ DEF_KERNEL_EXECUTOR(_compute)
     }
     vsi_nn_kernel_scalar_read_uint32((vsi_nn_kernel_scalar_t)param[_CPU_IO_NUM], &(ops_type_int));
     ops_type = (vsi_nn_logical_ops_type_t)ops_type_int;
-    if (VSI_NN_LOGICAL_OR == ops_type || VSI_NN_LOGICAL_AND == ops_type || VSI_NN_LOGICAL_XOR == ops_type)
+    if (!(VSI_NN_LOGICAL_OR == ops_type || VSI_NN_LOGICAL_AND == ops_type || VSI_NN_LOGICAL_XOR == ops_type))
     {
         status = VSI_FAILURE;
         goto final;
