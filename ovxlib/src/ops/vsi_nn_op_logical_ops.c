@@ -75,6 +75,15 @@ static vsi_status op_compute
                 inputs[1], (uint32_t*)shapes[1], new_rank );
         reshape_tensors[2] = vsi_nn_reshape_tensor( self->graph,
                 outputs[0], (uint32_t*)shapes[2], new_rank );
+
+        if (shapes[1][3] > shapes[0][3] && new_rank == 4)
+        {
+            vsi_nn_tensor_t* reshape_tmp;
+            reshape_tmp = reshape_tensors[0];
+            reshape_tensors[0] = reshape_tensors[1];
+            reshape_tensors[1] = reshape_tmp;
+        }
+
         self->n = (vx_node)vsi_nn_kernel_selector( self->graph, "logical_ops",
                                                  &reshape_tensors[0], _INPUT_NUM,
                                                  &reshape_tensors[2], _OUTPUT_NUM, param );
