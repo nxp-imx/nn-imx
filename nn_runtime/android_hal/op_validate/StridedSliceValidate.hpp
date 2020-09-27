@@ -40,18 +40,19 @@ class StridedSliceValidate : public OperationValidate<T_model, T_Operation> {
         if (::hal::limitation::nnapi::match("StridedSlice_Inputs", this->InputArgTypes()) &&
             ::hal::limitation::nnapi::match("StridedSlice_Outputs", this->OutputArgTypes())) {
             bool is_support = true;
-            for (auto input_idx = 1; input_idx < this->m_Operation.inputs.size(); ++input_idx) {
-                if (this->IsInput(input_idx)) {
+            auto operation = this->OperationForRead();
+            for (auto input_idx = 1; input_idx < operation.inputs.size(); ++input_idx) {
+                if (!this->IsConstantTensor(operation.inputs[input_idx])) {
                     is_support = false;
                     reason +=
                         "StridedSlice: not supported because only input(0) can be model_input";
                     break;
                 }
             }
-            auto operation = this->OperationForRead();
-            auto model = this->ModelForRead();
+
             if(this->IsConstantTensor(operation.inputs[3])){
                 vsi_driver::VsiRTInfo vsiMemory;
+                auto model = this->ModelForRead();
                 auto stride_op = model.operands[operation.inputs[3]];
                 auto ptr = (int32_t *)get_buffer::getOperandDataPtr(model, stride_op, vsiMemory);
                 for( auto i  = 0; i < stride_op.dimensions.size(); i++){
