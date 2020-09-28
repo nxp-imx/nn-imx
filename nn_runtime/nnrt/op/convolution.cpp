@@ -40,8 +40,22 @@ static void convertKenelLayout(Operation *convOp, nnrt::Model &model, bool noPer
                 std::vector<uint32_t> constOprIds = {convOp->input(1)};
                 convOp->permuteConstOperands(model, constOprIds, requiredPermute);
             } else {
-                auto permuteOp = nnrt::op::utils::asOp(requiredPermute);
-                convOp->insertPermute(model, permuteOp, requiredPermute->asStdVec(), true, kernel_index);
+                nnrt::layout_inference::IPermuteVectorPtr permuteVector =
+                    convOp->input_permute_cache_.cached_permutes_[convOp->inputs()[1]];
+                auto finalPermute = permuteVector->reverse()->add(requiredPermute);
+                auto permuteOp = nnrt::op::utils::asOp(finalPermute);
+                if (permuteOp) {
+                    convOp->insertPermute(model, permuteOp, requiredPermute->asStdVec(), true, kernel_index);
+                }
+                else {
+                    if (!permuteVector->isAligned()) {
+                        OperandPtr filterOperand = model.operand(convOp->input(1));
+                        auto v = filterOperand->dimensions;
+                        filterOperand->dimensions[1] = v[3];
+                        filterOperand->dimensions[2] = v[1];
+                        filterOperand->dimensions[3] = v[2];
+                    }
+                }
             }
         }
         /*the channel dim has to be changed as filter's dim order change*/
