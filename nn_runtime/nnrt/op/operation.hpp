@@ -138,8 +138,6 @@ class Operation : nnrt::layout_inference::ILayoutInference {
     void permuteConstOperands(Model& model,
                               std::vector<uint32_t>& constOperandIds,
                               nnrt::layout_inference::IPermuteVectorPtr permVec);
-
-   protected:
     /**
      * @brief Cache Permute Vector for each Input Tensor
      *
@@ -148,13 +146,13 @@ class Operation : nnrt::layout_inference::ILayoutInference {
         explicit InputTensorPermuteVectorCache(const Operation& op) : op_(op) {}
 
         bool add(Model& model,
-                 const std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>&
-                     permuteVecs) {
+            const std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>&
+            permuteVecs) {
             std::for_each(
                 permuteVecs.begin(),
                 permuteVecs.end(),
                 [this](const std::pair<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>&
-                           permuteVec) { cached_permutes_.insert(permuteVec); });
+                    permuteVec) { cached_permutes_.insert(permuteVec); });
 
             return isAllInputTensorSetupWithPermute(model);
         }
@@ -167,6 +165,7 @@ class Operation : nnrt::layout_inference::ILayoutInference {
     };
 
     InputTensorPermuteVectorCache input_permute_cache_;
+   protected:
 
     virtual void handleLayoutInferenceOnInputs(
         Model& model,
