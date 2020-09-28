@@ -16,7 +16,7 @@ __kernel void reduceall_axis0_I8toI8
         allVal = val && allVal;
         coord.x ++;
     }
-    allVal.x = allVal.x * (-1);
+    allVal.x = allVal.x & 1;
     write_imagei(output, coord.yz, allVal);
 }
 
@@ -38,7 +38,7 @@ __kernel void reduceall_axis0_I8toI8_2D
         allVal = val && allVal;
         coord.x ++;
     }
-    allVal.x = allVal.x * (-1);
+    allVal.x = allVal.x & 1;
     coord.x = 0;
     write_imagei(output, coord.yx, allVal);
 }

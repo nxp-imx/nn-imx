@@ -10,7 +10,7 @@ __kernel void logical_##name##_I8toI8( \
     readImage2DArray(src0, input, coord); \
     readImage2DArray(src1, input1, coord); \
     int4 dst  = (lgc_op2(src0))lgc_op(lgc_op2(src1)); \
-    dst.x = dst.x * (-1); \
+    dst.x = dst.x & 1; \
     write_imagei(output, coord, dst); \
 }
 
@@ -29,7 +29,7 @@ __kernel void logical_##name##_I8toI8_2D( \
     int4 src0 = read_imagei(input, coord); \
     int4 src1 = read_imagei(input1, coord); \
     int4 dst  = (lgc_op2(src0))lgc_op(lgc_op2(src1)); \
-    dst.x = dst.x * (-1); \
+    dst.x = dst.x & 1; \
     write_imagei(output, coord, dst); \
 }
 
