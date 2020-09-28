@@ -16,7 +16,7 @@ __kernel void reduceany_axis2_I8toI8
         anyVal = val || anyVal;
         coord.z ++;
     }
-    anyVal.x = anyVal.x * (-1);
+    anyVal.x = anyVal.x & 1;
     write_imagei(output, coord.xy, anyVal);
 }
 

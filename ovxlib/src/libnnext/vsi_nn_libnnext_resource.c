@@ -37335,7 +37335,7 @@ static const char logical_not_cl[] = "__kernel void logical_not_I8toI8(\n\
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
     int4 src   = read_imagei(input, coord);\n\
     int4 dst   = !src;\n\
-    dst.x = dst.x * (-1);\n\
+    dst.x = dst.x & 1;\n\
     write_imagei(output, coord, dst);\n\
 }\n\
 \n\
@@ -37346,7 +37346,7 @@ __kernel void logical_not_I8toI8_2D(\n\
     int2 coord = (int2)(get_global_id(0), get_global_id(1));\n\
     int4 src   = read_imagei(input, coord);\n\
     int4 dst   = !src;\n\
-    dst.x = dst.x * (-1);\n\
+    dst.x = dst.x & 1;\n\
     write_imagei(output, coord, dst);\n\
 }\n\
 "; /* end of logical_not_cl*/
@@ -37363,7 +37363,7 @@ __kernel void logical_##name##_I8toI8( \\\n\
     readImage2DArray(src0, input, coord); \\\n\
     readImage2DArray(src1, input1, coord); \\\n\
     int4 dst  = (lgc_op2(src0))lgc_op(lgc_op2(src1)); \\\n\
-    dst.x = dst.x * (-1); \\\n\
+    dst.x = dst.x & 1; \\\n\
     write_imagei(output, coord, dst); \\\n\
 }\n\
 \n\
@@ -37382,7 +37382,7 @@ __kernel void logical_##name##_I8toI8_2D( \\\n\
     int4 src0 = read_imagei(input, coord); \\\n\
     int4 src1 = read_imagei(input1, coord); \\\n\
     int4 dst  = (lgc_op2(src0))lgc_op(lgc_op2(src1)); \\\n\
-    dst.x = dst.x * (-1); \\\n\
+    dst.x = dst.x & 1; \\\n\
     write_imagei(output, coord, dst); \\\n\
 }\n\
 \n\
@@ -42151,7 +42151,7 @@ static const char reduceall_internal_axis0_cl[] = "__kernel void reduceall_axis0
         allVal = val && allVal;\n\
         coord.x ++;\n\
     }\n\
-    allVal.x = allVal.x * (-1);\n\
+    allVal.x = allVal.x & 1;\n\
     write_imagei(output, coord.yz, allVal);\n\
 }\n\
 \n\
@@ -42173,7 +42173,7 @@ __kernel void reduceall_axis0_I8toI8_2D\n\
         allVal = val && allVal;\n\
         coord.x ++;\n\
     }\n\
-    allVal.x = allVal.x * (-1);\n\
+    allVal.x = allVal.x & 1;\n\
     coord.x = 0;\n\
     write_imagei(output, coord.yx, allVal);\n\
 }\n\
@@ -42198,7 +42198,7 @@ static const char reduceall_internal_axis1_cl[] = "__kernel void reduceall_axis1
         allVal = val && allVal;\n\
         coord.y ++;\n\
     }\n\
-    allVal.x = allVal.x * (-1);\n\
+    allVal.x = allVal.x & 1;\n\
     write_imagei(output, coord.xz, allVal);\n\
 }\n\
 \n\
@@ -42220,7 +42220,7 @@ __kernel void reduceall_axis1_I8toI8_2D\n\
         allVal = val && allVal;\n\
         coord.y ++;\n\
     }\n\
-    allVal.x = allVal.x * (-1);\n\
+    allVal.x = allVal.x & 1;\n\
     coord.y = 0;\n\
     write_imagei(output, coord, allVal);\n\
 }\n\
@@ -42245,7 +42245,7 @@ static const char reduceall_internal_axis2_cl[] = "__kernel void reduceall_axis2
         allVal = val && allVal;\n\
         coord.z ++;\n\
     }\n\
-    allVal.x = allVal.x * (-1);\n\
+    allVal.x = allVal.x & 1;\n\
     write_imagei(output, coord.xy, allVal);\n\
 }\n\
 \n\
@@ -42271,7 +42271,7 @@ static const char reduceany_internal_axis0_cl[] = "__kernel void reduceany_axis0
         anyVal = val || anyVal;\n\
         coord.x ++;\n\
     }\n\
-    anyVal.x = anyVal.x * (-1);\n\
+    anyVal.x = anyVal.x & 1;\n\
     write_imagei(output, coord.yz, anyVal);\n\
 }\n\
 \n\
@@ -42293,7 +42293,7 @@ __kernel void reduceany_axis0_I8toI8_2D\n\
         anyVal = val || anyVal;\n\
         coord.x ++;\n\
     }\n\
-    anyVal.x = anyVal.x * (-1);\n\
+    anyVal.x = anyVal.x & 1;\n\
     coord.x = 0;\n\
     write_imagei(output, coord.yx, anyVal);\n\
 }\n\
@@ -42318,7 +42318,7 @@ static const char reduceany_internal_axis1_cl[] = "__kernel void reduceany_axis1
         anyVal = val || anyVal;\n\
         coord.y ++;\n\
     }\n\
-    anyVal.x = anyVal.x * (-1);\n\
+    anyVal.x = anyVal.x & 1;\n\
     write_imagei(output, coord.xz, anyVal);\n\
 }\n\
 \n\
@@ -42340,7 +42340,7 @@ __kernel void reduceany_axis1_I8toI8_2D\n\
         anyVal = val || anyVal;\n\
         coord.y ++;\n\
     }\n\
-    anyVal.x = anyVal.x * (-1);\n\
+    anyVal.x = anyVal.x & 1;\n\
     coord.y = 0;\n\
     write_imagei(output, coord, anyVal);\n\
 }\n\
@@ -42365,7 +42365,7 @@ static const char reduceany_internal_axis2_cl[] = "__kernel void reduceany_axis2
         anyVal = val || anyVal;\n\
         coord.z ++;\n\
     }\n\
-    anyVal.x = anyVal.x * (-1);\n\
+    anyVal.x = anyVal.x & 1;\n\
     write_imagei(output, coord.xy, anyVal);\n\
 }\n\
 \n\
