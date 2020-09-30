@@ -117,13 +117,13 @@ def build_flatbuffers_target(env):
     board = find_board(env)
     if not os.path.exists(env.flatbuffers_target_dir):
         os.mkdir(env.flatbuffers_target_dir)
-    args = [env.cmake_path, "-G", "Unix Makefiles", "-DCMAKE_BUILD_TYPE=Release",
-        "-DFLATBUFFERS_BUILD_TESTS=0",
-        '-DCMAKE_CXX_FLAGS="-fPIC"',
-        "-DCMAKE_TOOLCHAIN_FILE=" + env.toolchain_dir + "/" + board['cmake'],
-        "-DCMAKE_INSTALL_PREFIX:PATH="+ env.flatbuffers_target_dir + "/install",
+    args = [env.cmake_path + ' -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release' +
+        " -DFLATBUFFERS_BUILD_TESTS=0" +
+        ' -DCMAKE_CXX_FLAGS="-fPIC"' +
+        " -DCMAKE_TOOLCHAIN_FILE=" + env.toolchain_dir + "/" + board['cmake'] +
+        " -DCMAKE_INSTALL_PREFIX:PATH="+ env.flatbuffers_target_dir + "/install " +
         env.flatbuffers_dir]
-    run_subprocess(args, cwd=env.flatbuffers_target_dir)
+    run_subprocess(args, cwd=env.flatbuffers_target_dir, shell=True)
 
     args = ["make", "all", "install", "-j{0}".format(multiprocessing.cpu_count())]
     run_subprocess(args, cwd=env.flatbuffers_target_dir)
