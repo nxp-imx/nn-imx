@@ -581,6 +581,11 @@ static vsi_status op_deinit
         vxReleaseNode( &lcl2_data->cp_node );
     }
 
+    if (lcl2_data->src_tensor)
+    {
+        vxReleaseTensor( &lcl2_data->src_tensor );
+    }
+
     if (lcl2_data->dst_tensor)
     {
         vxReleaseTensor( &lcl2_data->dst_tensor );
