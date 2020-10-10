@@ -519,10 +519,21 @@ static void NpuCreateSoftmaxWorkloadTest()
 
     // Checks that outputs and inputs are as we expect them (see definition of
     // CreateSoftmaxWorkloadTest).
+    armnn::TensorInfo tensorInfo({4, 1}, DataType);
+    if (DataType == armnn::DataType::QAsymmU8)
+    {
+        tensorInfo.SetQuantizationOffset(0);
+        tensorInfo.SetQuantizationScale(1.f / 256);
+    }
+    else if (DataType == armnn::DataType::QAsymmS8)
+    {
+        tensorInfo.SetQuantizationOffset(-128);
+        tensorInfo.SetQuantizationScale(1.f / 256);
+    }
     CheckInputOutput(
         std::move(workload),
-        TensorInfo({4, 1}, DataType),
-        TensorInfo({4, 1}, DataType));
+        tensorInfo,
+        tensorInfo);
 }
 
 BOOST_AUTO_TEST_CASE(CreateSoftmaxFloat32Workload)
