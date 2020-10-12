@@ -297,8 +297,6 @@ static vsi_status VX_CALLBACK vxDetection_postprocessKernel
                     }
                     select_size = select_start + numDetections;
                 }
-
-                //select_size = select_start + select_len;
                 select_len = select_size;
                 select_start = 0;
 
@@ -342,18 +340,18 @@ static vsi_status VX_CALLBACK vxDetection_postprocessKernel
                 {
                     maxNumDetections = select_len;
                 }
-                for (j = 0; (j < select_len && numDetections < (uint32_t)maxNumDetectionsPerClass); j++)
+                for (j = 0; (j < select_len && numDetections < (uint32_t)maxNumDetections); j++)
                 {
                     // find max score and swap to the front.
                     int32_t max_index = max_element(maxScores,
-                        &(select[select_start]), select_len);
-                    swap_element(&(select[select_start]), max_index, j);
+                        &(select[select_start + j]), select_len - j);
+                    swap_element(&(select[select_start]), max_index + j, j);
 
                     // Calculate IoU of the rest, swap to the end (disgard) if needed.
                     for (i = j + 1; i < select_len; i++)
                     {
-                        int32_t roiBase0 = select[i] * kRoiDim;
-                        int32_t roiBase1 = select[j] * kRoiDim;
+                        int32_t roiBase0 = select[select_start + i] * kRoiDim;
+                        int32_t roiBase1 = select[select_start + j] * kRoiDim;
                         float iou = getIoUAxisAligned(&(roiBuffer[roiBase0]),
                             &(roiBuffer[roiBase1]));
                         if (iou >= iouThreshold)
@@ -362,26 +360,28 @@ static vsi_status VX_CALLBACK vxDetection_postprocessKernel
                             i--;
                             select_len--;
                         }
-                        numDetections++;
                     }
+                    numDetections++;
                 }
-                select_size = select_start + select_len;
+                select_size = select_start + numDetections;
+                select_len = select_size;
 
                 for (i = 0; i < select_len; i++)
                 {
                     iota((int32_t*)scoreInds, numClasses - 1, 1);
-                    sort_element_by_score(&(f32_in_buffer[0][scores_index + i * numClasses]),
+                    sort_element_by_score(&(f32_in_buffer[0][scores_index + select[i] * numClasses]),
                         scoreInds, numClasses - 1);
                     for (c = 0; c < numOutClasses; c++)
                     {
                         f32_out_buffer[0][scores_out_index + i * numOutClasses + c] =
-                            f32_in_buffer[0][scores_index + i * numClasses + scoreInds[c]];
+                            f32_in_buffer[0][scores_index + select[i] * numClasses + scoreInds[c]];
                         memcpy(&(f32_out_buffer[1][roi_out_index + (i * numOutClasses + c)
-                            * kRoiDim]), &roiBuffer[i * kRoiDim], kRoiDim * sizeof(float));
-                        int32_out_buffer[2][class_out_index + + i * numOutClasses + c]
+                            * kRoiDim]), &roiBuffer[select[i] * kRoiDim], kRoiDim * sizeof(float));
+                        int32_out_buffer[2][class_out_index + i * numOutClasses + c]
                             = scoreInds[c] - (isBGInLabel ? 0 : 1);
                     }
                 }
+                int32_out_buffer[3][n] = select_len;
             }
             scores_index += numAnchors * numClasses;
             scores_out_index += numOutDetection;
