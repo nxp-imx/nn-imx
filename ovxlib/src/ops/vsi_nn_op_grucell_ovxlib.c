@@ -378,7 +378,7 @@ static vsi_bool op_setup_float_cudnn
         /* transpose and reshape output */
         reshaped_size[0] = inputs[GRUCELL_INPUT_INPUT]->attr.size[1];
         reshaped_size[1] = p->local->weights_input->attr.size[1];
-        input_fc_output = vsi_nn_rnn_create_reshape(self, tmp->t,
+        input_fc_output = vsi_nn_rnn_create_reshape(self, tmp->t, NULL,
             reshaped_size, 2, use_virtual_tensor);
 
         input_recurrent_fc_batch_first = FALSE;
@@ -409,7 +409,7 @@ static vsi_bool op_setup_float_cudnn
         /* transpose and reshape output */
         reshaped_size[0] = inputs[GRUCELL_INPUT_H_STATE]->attr.size[1];
         reshaped_size[1] = p->local->weights_recurrent->attr.size[1];
-        recurrent_fc_output = vsi_nn_rnn_create_reshape(self, tmp->t,
+        recurrent_fc_output = vsi_nn_rnn_create_reshape(self, tmp->t, NULL,
             reshaped_size, 2, use_virtual_tensor);
     }
     else
@@ -875,6 +875,7 @@ static vsi_bool op_setup_default
     {
         rh_mul_outputs = vsi_nn_rnn_create_reshape(self,
             inputs[GRUCELL_INPUT_H_STATE],
+            NULL,
             inputs[GRUCELL_INPUT_H_STATE]->attr.size,
             inputs[GRUCELL_INPUT_H_STATE]->attr.dim_num,
             use_virtual_tensor);
