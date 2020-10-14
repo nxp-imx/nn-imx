@@ -173,7 +173,16 @@ vsi_nn_internal_tensor_t* vsi_nn_internal_create_zero_bias_tensor
     attr.dim_num = 1;
     attr.vtl = FALSE;
     attr.is_const = TRUE;
-    if (input_attr->dtype.qnt_type == VSI_NN_QNT_TYPE_NONE)
+
+    if(input_attr->dtype.qnt_type != VSI_NN_QNT_TYPE_NONE &&
+        input_attr->dtype.qnt_type != weight_attr->dtype.qnt_type)
+    {
+        VSILOGE("input qnt_type[%d] != weight qnt_type[%d]",
+            input_attr->dtype.qnt_type, weight_attr->dtype.vx_type);
+        return NULL;
+    }
+
+    if (weight_attr->dtype.qnt_type == VSI_NN_QNT_TYPE_NONE)
     {
         attr.dtype.vx_type = VSI_NN_TYPE_FLOAT32;
     }
@@ -443,7 +452,7 @@ vsi_nn_internal_node_t* vsi_nn_internal_new_node
 
     inode = vsi_nn_internal_create_node( node->graph,
                 op, input_num, output_num );
-    inode->node->attr.cache_const_tensor_type = node->attr.cache_const_tensor_type;
+    inode->node->attr.const_tensor_preload_type = node->attr.const_tensor_preload_type;
     return inode;
 } /* vsi_nn_internal_new_node() */
 
@@ -605,6 +614,12 @@ vsi_status vsi_nn_internal_compute_node
         {
             VSILOGE("op_compute fail %d", curr->node->op);
             break;
+        }
+
+        status = vsi_nn_update_node_attr(curr->node);
+        if( VSI_SUCCESS != status )
+        {
+            VSILOGW("Update node attribute fail");
         }
 
         curr = (vsi_nn_internal_node_t *)vsi_nn_LinkListNext( (vsi_nn_link_list_t *)curr );

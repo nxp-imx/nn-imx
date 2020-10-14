@@ -78,7 +78,7 @@ vsi_nn_node_t * vsi_nn_NewNode
         node->input.tensors = (vsi_nn_tensor_id_t *) malloc(
             input_num * sizeof( vsi_nn_tensor_id_t ) );
         vsi_nn_InitTensorsId( node->input.tensors, input_num );
-        node->attr.cache_const_tensor_type = VSI_NN_CACHE_CONST_TENSOR_DISABLED;
+        node->attr.const_tensor_preload_type = VSI_NN_NODE_PRELOAD_NONE;
     }
 
     node->uid = VSI_NN_NODE_UID_NA;
@@ -163,3 +163,43 @@ void vsi_nn_PrintNode
     VSILOGI( "(%16s)node[%u] %s [%08x]", vsi_nn_OpGetName(node->op), id, buf, node->n );
 } /* vsi_nn_PrintNode() */
 
+vsi_status vsi_nn_update_node_attr
+    (
+    vsi_nn_node_t *node
+    )
+{
+    vsi_status status = VSI_FAILURE;
+
+#if(defined(VX_PRELOAD_CONST_TENSOR_SUPPOR) && VX_PRELOAD_CONST_TENSOR_SUPPOR)
+    if(node)
+    {
+        /* some node don't have a `n`, skip it */
+        status = VSI_SUCCESS;
+        if(node->n)
+        {
+            vx_enum preload_type = VX_PRELOAD_NULL;
+            switch(node->attr.const_tensor_preload_type)
+            {
+                default:
+                case VSI_NN_NODE_PRELOAD_NONE:
+                    preload_type = VX_PRELOAD_NULL;
+                    break;
+
+                case VSI_NN_NODE_PRELOAD_VIPSRAM:
+                    preload_type = VX_PRELOAD_CONST_TENSOR_VIPSRAM;
+                    break;
+
+                case VSI_NN_NODE_PRELOAD_AXISRAM:
+                    preload_type = VX_PRELOAD_CONST_TENSOR_AXISRAM;
+                    break;
+            }
+            status = vxSetNodeAttribute(node->n, VX_NODE_ATTRIBUTE_CONST_TENSOR_CACHE,
+                &preload_type, sizeof(preload_type));
+        }
+    }
+#else
+    status = VSI_SUCCESS;
+#endif
+
+    return status;
+} /* vsi_nn_update_node_attr() */

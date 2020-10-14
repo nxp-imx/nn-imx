@@ -359,6 +359,12 @@ static vsi_status compute_node
         {
             VSILOGW("Set reference name fail");
         }
+
+        status = vsi_nn_update_node_attr(node);
+        if( VSI_SUCCESS != status )
+        {
+            VSILOGW("Update node attribute fail");
+        }
     }
 
 final:
@@ -1830,3 +1836,43 @@ void vsi_nn_get_tensor_provider
     }
 } /* vsi_nn_get_tensor_provider() */
 
+vsi_status vsi_nn_SetGraphPreloadSize
+    (
+    vsi_nn_graph_t* graph,
+    vsi_nn_graph_attr_preload_type_e attr,
+    uint32_t size
+    )
+{
+    vsi_status status;
+    status = VSI_FAILURE;
+
+#if(defined(VX_PRELOAD_CONST_TENSOR_SUPPOR) && VX_PRELOAD_CONST_TENSOR_SUPPOR)
+    if(graph && graph->g)
+    {
+        switch(attr)
+        {
+            case VSI_NN_GRAPH_PRELOAD_VIPSRAM:
+            {
+                status = vxSetGraphAttribute(graph->g, VX_GRAPH_VIP_SRAM_PRE_LOAD, &size, sizeof(size));
+                break;
+            }
+
+            case VSI_NN_GRAPH_PRELOAD_AXISRAM:
+            {
+                status = vxSetGraphAttribute(graph->g, VX_GRAPH_AXI_SRAM_PRE_LOAD, &size, sizeof(size));
+                break;
+            }
+
+            default:
+            {
+                VSILOGE("Unsupported graph attribute: %d", attr);
+                break;
+            }
+        }
+    }
+#else
+    status = VSI_SUCCESS;
+#endif
+
+    return status;
+}
