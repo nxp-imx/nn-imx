@@ -4838,6 +4838,94 @@ __kernel void grucell_activation_cdnn_sep_F16_F16_F16_to_F16_CN\n\
     VXC_WriteImage(hstate, coord.yx, dst, VXC_MODIFIER(3, 3, 0, VXC_RM_TowardZero, 0));\n\
 }\n\
 \n\
+__kernel void grucell_activation_cdnn_sep_F16_F16_F16_to_F16_CN_FULL\n\
+    (\n\
+    __read_only  image2d_array_t prev_state,\n\
+    __read_only  image2d_array_t input_r,\n\
+    __read_only  image2d_array_t input_z,\n\
+    __read_only  image2d_array_t input_c,\n\
+    __read_only  image2d_array_t recur_r,\n\
+    __read_only  image2d_array_t recur_z,\n\
+    __read_only  image2d_array_t recur_c,\n\
+    __read_only  image2d_t       bias_r,\n\
+    __read_only  image2d_t       bias_z,\n\
+    __read_only  image2d_t       bias_c,\n\
+    __read_only  image2d_t       cond_r,\n\
+    __read_only  image2d_t       cond_z,\n\
+    __read_only  image2d_t       cond_c,\n\
+    __write_only image2d_array_t output,\n\
+    __write_only image2d_array_t hstate,\n\
+                             int gate_activation,\n\
+                             int candidate_activation,\n\
+                             int batch_first\n\
+    )\n\
+{\n\
+    vxc_ushort8 s0, s1;\n\
+    vxc_half8   r0, r1;\n\
+    vxc_ushort8 s2, s3;\n\
+    vxc_half8   z0, z1;\n\
+    vxc_ushort8 s4, s5;\n\
+    vxc_half8   c0, c1;\n\
+    float4      r, r2, r3;\n\
+    float4      z, z2, z3;\n\
+    float4      c, c2, c3;\n\
+    int2 coord = (int2)(get_global_id(0), get_global_id(1));\n\
+\n\
+    VXC_ReadImage(s0, input_r, coord, 0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+    _viv_asm(COPY, r0, s0, 8);\n\
+    VXC_ReadImage(s1, recur_r, coord, 0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+    _viv_asm(COPY, r1, s1, 8);\n\
+    r2 = read_imagef(bias_r, coord.yx);\n\
+    r3 = read_imagef(cond_r, coord.yx);\n\
+\n\
+    VXC_ReadImage(s2, input_z, coord, 0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+    _viv_asm(COPY, z0, s2, 8);\n\
+    VXC_ReadImage(s3, recur_z, coord, 0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+    _viv_asm(COPY, z1, s3, 8);\n\
+    z2 = read_imagef(bias_z, coord.yx);\n\
+    z3 = read_imagef(cond_z, coord.yx);\n\
+\n\
+    VXC_ReadImage(s4, input_c, coord, 0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+    _viv_asm(COPY, c0, s4, 8);\n\
+    VXC_ReadImage(s5, recur_c, coord, 0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+    _viv_asm(COPY, c1, s5, 8);\n\
+    c2 = read_imagef(bias_c, coord.yx);\n\
+    c3 = read_imagef(cond_c, coord.yx);\n\
+\n\
+    VXC_DP4x4(r, r0, r1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uiF16AddF16_4x4);\n\
+    r = r + r2.xxxx + r3.xxxx;\n\
+    VXC_DP4x4(z, z0, z1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uiF16AddF16_4x4);\n\
+    z = z + z2.xxxx + z3.xxxx;\n\
+\n\
+    vxc_ushort8 s7;\n\
+    vxc_half8 h;\n\
+    VXC_ReadImage(s7, prev_state, coord, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+    _viv_asm(COPY, h, s7, 8);\n\
+\n\
+    r = sigmoid(r);\n\
+    z = sigmoid(z);\n\
+\n\
+    c = c2.xxxx * r + c3.xxxx;\n\
+    VXC_DP4x4(c2, c0, c0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvDatatoFp32_4x4);\n\
+    VXC_DP4x4(c3, c1, c1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvDatatoFp32_4x4);\n\
+    c = c2 + c3 * r + c;\n\
+    c = tangentH(c);\n\
+\n\
+    float4 state;\n\
+    VXC_DP4x4(state, h, h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvDatatoFp32_4x4);\n\
+\n\
+    state = z * (state - c) + c;\n\
+\n\
+    half4 dst0;\n\
+    vxc_half4 dst1;\n\
+    vxc_short4 dst;\n\
+    _viv_asm(CONV_RTE, dst0, state);\n\
+    VXC_DP2x8(dst1, dst0, dst0, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), uniExtract8Data_2x8);\n\
+    _viv_asm(COPY, dst, dst1, 8);\n\
+    VXC_WriteImage(output, coord, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_WriteImage(hstate, coord, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
 \n\
 __kernel void grucell_activation_cdnn_F16_F16_F16_to_F16\n\
     (\n\
@@ -5114,7 +5202,7 @@ __kernel void grucell_activation_cdnn_sep_U8_U8_U8_to_U8_CN\n\
     z = r0 + r1 + z2.xxxx + z3.xxxx;\n\
 \n\
     vxc_uchar8 h;\n\
-    VXC_ReadImage(h, prev_state, coord.yx, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(h, prev_state, coord.yx, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
     VXC_ReadImage(h, prev_state, coord.yx, VXC_5BITOFFSET_XY(0, 1), VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 0));\n\
     VXC_ReadImage(h, prev_state, coord.yx, VXC_5BITOFFSET_XY(0, 2), VXC_MODIFIER(2, 2, 0, VXC_RM_TowardZero, 0));\n\
     VXC_ReadImage(h, prev_state, coord.yx, VXC_5BITOFFSET_XY(0, 3), VXC_MODIFIER(3, 3, 0, VXC_RM_TowardZero, 0));\n\
@@ -5154,6 +5242,91 @@ __kernel void grucell_activation_cdnn_sep_U8_U8_U8_to_U8_CN\n\
     VXC_WriteImage(hstate, coord.yx, dst, VXC_MODIFIER(3, 3, 0, VXC_RM_TowardZero, 0));\n\
 }\n\
 \n\
+__kernel void grucell_activation_cdnn_sep_U8_U8_U8_to_U8_CN_FULL\n\
+    (\n\
+    __read_only  image2d_array_t prev_state,\n\
+    __read_only  image2d_array_t input_r,\n\
+    __read_only  image2d_array_t input_z,\n\
+    __read_only  image2d_array_t input_c,\n\
+    __read_only  image2d_array_t recur_r,\n\
+    __read_only  image2d_array_t recur_z,\n\
+    __read_only  image2d_array_t recur_c,\n\
+    __read_only  image2d_t       bias_r,\n\
+    __read_only  image2d_t       bias_z,\n\
+    __read_only  image2d_t       bias_c,\n\
+    __read_only  image2d_t       cond_r,\n\
+    __read_only  image2d_t       cond_z,\n\
+    __read_only  image2d_t       cond_c,\n\
+    __write_only image2d_array_t output,\n\
+    __write_only image2d_array_t hstate,\n\
+                             int gate_activation,\n\
+                             int candidate_activation,\n\
+                             int batch_first\n\
+    )\n\
+{\n\
+    vxc_uchar8   r00, r01;\n\
+    vxc_uchar8   z0, z1;\n\
+    vxc_uchar8   c0, c1;\n\
+    float4      r, r2, r3, r0, r1;\n\
+    float4      z, z2, z3;\n\
+    float4      c, c2, c3;\n\
+    int2 coord = (int2)(get_global_id(0), get_global_id(1));\n\
+\n\
+    VXC_ReadImage(r00, input_r, coord, 0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(r01, recur_r, coord, 0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+    r2 = read_imagef(bias_r, coord.yx);\n\
+    r3 = read_imagef(cond_r, coord.yx);\n\
+\n\
+    VXC_ReadImage(z0, input_z, coord, 0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(z1, recur_z, coord, 0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+    z2 = read_imagef(bias_z, coord.yx);\n\
+    z3 = read_imagef(cond_z, coord.yx);\n\
+\n\
+    VXC_ReadImage(c0, input_c, coord, 0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(c1, recur_c, coord, 0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+    c2 = read_imagef(bias_c, coord.yx);\n\
+    c3 = read_imagef(cond_c, coord.yx);\n\
+\n\
+    VXC_DP4x4(r0, r00, r00, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvDatatoFp32_4x4);\n\
+    VXC_DP4x4(r1, r01, r01, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvDatatoFp32_4x4);\n\
+    r0 = r0 * input_r_scale + input_r_tail;\n\
+    r1 = r1 * recur_r_scale + recur_r_tail;\n\
+    r = r0 + r1 + r2.xxxx + r3.xxxx;\n\
+\n\
+    VXC_DP4x4(r0, z0, z0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvDatatoFp32_4x4);\n\
+    VXC_DP4x4(r1, z1, z1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvDatatoFp32_4x4);\n\
+    r0 = r0 * input_z_scale + input_z_tail;\n\
+    r1 = r1 * recur_z_scale + recur_z_tail;\n\
+    z = r0 + r1 + z2.xxxx + z3.xxxx;\n\
+\n\
+    vxc_uchar8 h;\n\
+    VXC_ReadImage(h, prev_state, coord, 0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    r = sigmoid(r);\n\
+    z = sigmoid(z);\n\
+\n\
+    c = c2.xxxx * r + c3.xxxx;\n\
+    VXC_DP4x4(c2, c0, c0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvDatatoFp32_4x4);\n\
+    VXC_DP4x4(c3, c1, c1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvDatatoFp32_4x4);\n\
+    c2 = c2 * input_c_scale + input_c_tail;\n\
+    c3 = c3 * recur_c_scale + recur_c_tail;\n\
+    c = c2 + c3 * r + c;\n\
+    c = tangentH(c);\n\
+\n\
+    float4 state;\n\
+    VXC_DP4x4(state, h, h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvDatatoFp32_4x4);\n\
+    state = state * input_scale + input_tail;\n\
+    state = z * (state - c) + c;\n\
+\n\
+    state = state * output_scale + output_zp;\n\
+\n\
+    int4 dst0;\n\
+    vxc_uchar4 dst;\n\
+    _viv_asm(CONV_RTE, dst0, state);\n\
+    VXC_DP2x8(dst, dst0, dst0, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), uniExtract8Data_2x8);\n\
+    VXC_WriteImage(output, coord, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_WriteImage(hstate, coord, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
 \n\
 __kernel void grucell_activation_cdnn_U8_U8_U8_to_U8\n\
     (\n\
@@ -5181,8 +5354,8 @@ __kernel void grucell_activation_cdnn_U8_U8_U8_to_U8\n\
     float4      c, c2, c3;\n\
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(1) * 3, get_global_id(1));\n\
 \n\
-    VXC_ReadImage(r00, input_rzc, coord.xz, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
-    VXC_ReadImage(r01, recur_rzc, coord.xz, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(r00, input_rzc, coord.xz, 0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(r01, recur_rzc, coord.xz, 0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
     r2 = read_imagef(bias_r, coord.xy);\n\
     r3 = read_imagef(cond_r, coord.xy);\n\
 \n\

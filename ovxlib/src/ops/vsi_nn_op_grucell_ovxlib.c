@@ -42,7 +42,25 @@
 #include "utils/vsi_nn_tensor_op.h"
 #include "utils/vsi_nn_util.h"
 
-#define _safe_release_tensor(_t) if(_t){vsi_nn_ReleaseTensor(&(_t));}
+#define USE_GRUCELL_ACTIVATION
+
+typedef struct _grucell_ovxlib_local_data_t
+{
+    vsi_bool multi_batch;
+    vsi_bool force_input_recurrent_on_NN;
+    vsi_nn_activation_e gate_activation;
+    vsi_nn_activation_e candidate_activation;
+    vsi_nn_tensor_t* weights_update;
+    vsi_nn_tensor_t* weights_reset;
+    vsi_nn_tensor_t* weights_z_r;
+    vsi_nn_tensor_t* weights_c;
+    vsi_nn_tensor_t* weights_input;
+    vsi_nn_tensor_t* weights_recurrent;
+    vsi_nn_tensor_t* bias_z;
+    vsi_nn_tensor_t* bias_r;
+    vsi_nn_tensor_t* bias_z_r;
+    vsi_nn_tensor_t* bias_c;
+} grucell_ovxlib_local_data_t;
 
 static vsi_nn_internal_tensor_t* create_multiply
     (
@@ -203,8 +221,8 @@ static vsi_bool op_setup_float
     p->local->bias_c = vsi_nn_ConstTensorAdd(self->graph, inputs[GRUCELL_INPUT_BIAS_I2C]->attr,
         inputs[GRUCELL_INPUT_BIAS_I2C], inputs[GRUCELL_INPUT_BIAS_H2C]);
 
-    _safe_release_tensor(p->local->bias_z);
-    _safe_release_tensor(p->local->bias_r);
+    vsi_safe_release_tensor(p->local->bias_z);
+    vsi_safe_release_tensor(p->local->bias_r);
     p->local->bias_z_r->attr.is_const = TRUE;
     vsi_nn_SetTensorAttr(p->local->bias_z_r, VSI_NN_TENSOR_ATTR_CONST);
     p->local->weights_z_r->attr.is_const = TRUE;
@@ -330,7 +348,7 @@ static vsi_bool op_setup_float_cudnn
     vsi_nn_internal_tensor_t** splited_input_fc_output_tensors = NULL;
     vsi_nn_internal_tensor_t** splited_recurrent_fc_output_tensors = NULL;
     uint32_t kernel_h = 1, kernel_w = 1;
-    vsi_bool input_recurrent_fc_batch_first = TRUE;
+    grucell_activation_input_layout_e grucell_activation_input_layout = GRUCELL_ACTIVATION_INPUT_LAYOUT_ALL_NC;
     uint32_t reshaped_size[2] = { 0 };
 
     p->local->multi_batch = inputs[GRUCELL_INPUT_INPUT]->attr.size[1] > 1;
@@ -381,14 +399,14 @@ static vsi_bool op_setup_float_cudnn
         input_fc_output = vsi_nn_rnn_create_reshape(self, tmp->t, NULL,
             reshaped_size, 2, use_virtual_tensor);
 
-        input_recurrent_fc_batch_first = FALSE;
+        grucell_activation_input_layout = GRUCELL_ACTIVATION_INPUT_LAYOUT_INPUT_NC_FC_CN;
     }
     else
     {
         input_fc_output = vsi_nn_rnn_create_tp_fc(self, inputs[GRUCELL_INPUT_INPUT],
             p->local->weights_input, NULL,
             &p->internal_dtype[GRUCELL_CUDNN_QUANTIZE_PARAM_INPUT], use_virtual_tensor);
-        input_recurrent_fc_batch_first = TRUE;
+        grucell_activation_input_layout = GRUCELL_ACTIVATION_INPUT_LAYOUT_ALL_NC;
     }
 
     if(p->local->multi_batch && p->local->force_input_recurrent_on_NN)
@@ -418,14 +436,14 @@ static vsi_bool op_setup_float_cudnn
             p->local->weights_recurrent, NULL,
             &p->internal_dtype[GRUCELL_CUDNN_QUANTIZE_PARAM_HIDDEN], use_virtual_tensor);
     }
-#define USE_GRUCELL_ACTIVATION
+
 #ifdef USE_GRUCELL_ACTIVATION
     curr = vsi_nn_internal_new_node( self, VSI_NN_OP_GRUCELL_ACTIVATION_INTERNAL, 0, 0 );
     curr->inputs[GRUCELL_ACTIVATION_INPUT_H_STATE] = inputs[GRUCELL_INPUT_H_STATE];
 
     if(p->local->multi_batch)
     {
-        if (input_recurrent_fc_batch_first)
+        if(GRUCELL_ACTIVATION_INPUT_LAYOUT_ALL_NC == grucell_activation_input_layout)
         {
             curr->inputs[GRUCELL_ACTIVATION_INPUT_INPUT_FC_R] = input_fc_output->t;
             curr->inputs[GRUCELL_ACTIVATION_INPUT_INPUT_FC_Z] = NULL;
@@ -473,7 +491,7 @@ static vsi_bool op_setup_float_cudnn
     curr->node->nn_param.grucell_activation_internal.candidate_activation = p->local->candidate_activation;
     curr->node->nn_param.grucell_activation_internal.input_category = GRUCELL_INPUT_CATEGORY_CUDNN;
     curr->node->nn_param.grucell_activation_internal.use_cudnn_implementation = TRUE;
-    curr->node->nn_param.grucell_activation_internal.input_recurrent_fc_batch_first = input_recurrent_fc_batch_first;
+    curr->node->nn_param.grucell_activation_internal.input_layout = grucell_activation_input_layout;
     vsi_nn_internal_setup_node(self, curr);
 #else
     {
@@ -599,8 +617,8 @@ static vsi_bool op_setup_float_cudnn_v2
         p->local->weights_update, p->local->weights_reset);
     p->local->weights_input->attr.is_const = TRUE;
     vsi_nn_SetTensorAttr(p->local->weights_input, VSI_NN_TENSOR_ATTR_CONST);
-    _safe_release_tensor(p->local->weights_update);
-    _safe_release_tensor(p->local->weights_reset);
+    vsi_safe_release_tensor(p->local->weights_update);
+    vsi_safe_release_tensor(p->local->weights_reset);
 
     p->local->bias_z = vsi_nn_ConstTensorAdd(self->graph, inputs[GRUCELL_INPUT_BIAS_I2Z]->attr,
         inputs[GRUCELL_INPUT_BIAS_I2Z], inputs[GRUCELL_INPUT_BIAS_H2Z]);
@@ -610,8 +628,8 @@ static vsi_bool op_setup_float_cudnn_v2
         p->local->bias_r, p->local->bias_z);
     p->local->bias_z_r->attr.is_const = TRUE;
     vsi_nn_SetTensorAttr(p->local->bias_z_r, VSI_NN_TENSOR_ATTR_CONST);
-    _safe_release_tensor(p->local->bias_z);
-    _safe_release_tensor(p->local->bias_r);
+    vsi_safe_release_tensor(p->local->bias_z);
+    vsi_safe_release_tensor(p->local->bias_r);
 
     concated_input = vsi_nn_rnn_create_concat(self, 0/* axis */,
         use_virtual_tensor, inputs[GRUCELL_INPUT_INPUT], inputs[GRUCELL_INPUT_H_STATE]);
@@ -1178,11 +1196,11 @@ static vsi_status op_init
     vsi_nn_internal_init_node_wksp( self );
 
     self->nn_param.grucell_ovxlib.local = \
-        (vsi_nn_grucell_ovxlib_lcl_data_t*)malloc(sizeof(vsi_nn_grucell_ovxlib_lcl_data_t));
+        (grucell_ovxlib_local_data_t*)malloc(sizeof(grucell_ovxlib_local_data_t));
     if(self->nn_param.grucell_ovxlib.local)
     {
         memset(self->nn_param.grucell_ovxlib.local, 0x00,
-            sizeof(vsi_nn_grucell_ovxlib_lcl_data_t));
+            sizeof(grucell_ovxlib_local_data_t));
         self->nn_param.grucell_ovxlib.local->candidate_activation = VSI_NN_ACT_TANH;
         self->nn_param.grucell_ovxlib.local->gate_activation = VSI_NN_ACT_SIGMOID;
         self->nn_param.grucell_ovxlib.local->force_input_recurrent_on_NN = FALSE;
@@ -1216,16 +1234,16 @@ static vsi_status op_deinit
     vsi_status status = VSI_SUCCESS;
     vsi_nn_grucell_ovxlib_param* p = &self->nn_param.grucell_ovxlib;
 
-    _safe_release_tensor(p->local->weights_update);
-    _safe_release_tensor(p->local->weights_reset);
-    _safe_release_tensor(p->local->weights_z_r);
-    _safe_release_tensor(p->local->weights_c);
-    _safe_release_tensor(p->local->weights_input);
-    _safe_release_tensor(p->local->weights_recurrent);
-    _safe_release_tensor(p->local->bias_z);
-    _safe_release_tensor(p->local->bias_r);
-    _safe_release_tensor(p->local->bias_z_r);
-    _safe_release_tensor(p->local->bias_c);
+    vsi_safe_release_tensor(p->local->weights_update);
+    vsi_safe_release_tensor(p->local->weights_reset);
+    vsi_safe_release_tensor(p->local->weights_z_r);
+    vsi_safe_release_tensor(p->local->weights_c);
+    vsi_safe_release_tensor(p->local->weights_input);
+    vsi_safe_release_tensor(p->local->weights_recurrent);
+    vsi_safe_release_tensor(p->local->bias_z);
+    vsi_safe_release_tensor(p->local->bias_r);
+    vsi_safe_release_tensor(p->local->bias_z_r);
+    vsi_safe_release_tensor(p->local->bias_c);
     vsi_nn_internal_deinit_node_wksp( self );
     vsi_nn_safe_free(self->nn_param.grucell_ovxlib.local);
 

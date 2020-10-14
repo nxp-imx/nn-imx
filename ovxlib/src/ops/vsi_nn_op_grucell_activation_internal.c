@@ -42,7 +42,6 @@ static vsi_status op_compute
 {
     vsi_nn_grucell_activation_internal_param* p = &self->nn_param.grucell_activation_internal;
     vsi_status status = VSI_FAILURE;
-    vsi_nn_kernel_node_t n;
     vsi_nn_kernel_param_t* param;
 
     param = vsi_nn_kernel_param_create();
@@ -50,14 +49,13 @@ static vsi_status op_compute
     vsi_nn_kernel_param_add_int32(param, "candidate_activation", p->candidate_activation);
     vsi_nn_kernel_param_add_int32(param, "input_category", p->input_category);
     vsi_nn_kernel_param_add_int32(param, "use_cudnn_implementation", p->use_cudnn_implementation);
-    vsi_nn_kernel_param_add_int32(param, "input_recurrent_fc_batch_first", p->input_recurrent_fc_batch_first);
+    vsi_nn_kernel_param_add_int32(param, "input_layout", p->input_layout);
 
-    n = vsi_nn_kernel_selector( self->graph, "grucell_activation",
+    self->n = (vx_node)vsi_nn_kernel_selector( self->graph, "grucell_activation",
         inputs, GRUCELL_ACTIVATION_INPUT_COUNT,
         outputs, GRUCELL_ACTIVATION_OUTPUT_COUNT,
         param );
 
-    self->n = (vx_node)n;
     if( self->n )
     {
         status = VSI_SUCCESS;
@@ -108,17 +106,39 @@ static vsi_bool op_setup
         {
             outputs[GRUCELL_ACTIVATION_OUTPUT_OUTPUT]->attr.dim_num = \
                 inputs[GRUCELL_ACTIVATION_INPUT_INPUT_FC_R]->attr.dim_num;
-            outputs[GRUCELL_ACTIVATION_OUTPUT_OUTPUT]->attr.size[1] = \
-                inputs[GRUCELL_ACTIVATION_INPUT_INPUT_FC_R]->attr.size[1];
-            if(inputs[GRUCELL_ACTIVATION_INPUT_INPUT_FC_Z])
+
+            if(GRUCELL_ACTIVATION_INPUT_LAYOUT_ALL_NC == p->input_layout)
             {
-                outputs[GRUCELL_ACTIVATION_OUTPUT_OUTPUT]->attr.size[0] = \
-                    inputs[GRUCELL_ACTIVATION_INPUT_INPUT_FC_Z]->attr.size[0];
+                outputs[GRUCELL_ACTIVATION_OUTPUT_OUTPUT]->attr.size[1] = \
+                    inputs[GRUCELL_ACTIVATION_INPUT_INPUT_FC_R]->attr.size[1];
+                if(inputs[GRUCELL_ACTIVATION_INPUT_INPUT_FC_Z])
+                {
+                    outputs[GRUCELL_ACTIVATION_OUTPUT_OUTPUT]->attr.size[0] = \
+                        inputs[GRUCELL_ACTIVATION_INPUT_INPUT_FC_Z]->attr.size[0];
+                }
+                else
+                {
+                    /* for batch first, the inputs of Z/R/C are always concaetnated in axis-0 */
+                    outputs[GRUCELL_ACTIVATION_OUTPUT_OUTPUT]->attr.size[0] = \
+                        inputs[GRUCELL_ACTIVATION_INPUT_INPUT_FC_R]->attr.size[0] / 3;
+                }
             }
             else
             {
                 outputs[GRUCELL_ACTIVATION_OUTPUT_OUTPUT]->attr.size[0] = \
-                    inputs[GRUCELL_ACTIVATION_INPUT_INPUT_FC_R]->attr.size[0] / 3;
+                    inputs[GRUCELL_ACTIVATION_INPUT_INPUT_FC_R]->attr.size[0];
+
+                if(inputs[GRUCELL_ACTIVATION_INPUT_INPUT_FC_Z])
+                {
+                    outputs[GRUCELL_ACTIVATION_OUTPUT_OUTPUT]->attr.size[1] = \
+                        inputs[GRUCELL_ACTIVATION_INPUT_INPUT_FC_Z]->attr.size[1];
+                }
+                /* if `Z` is not provided, the inputs of Z/R/C are concatenated in axis-1 */
+                else
+                {
+                    outputs[GRUCELL_ACTIVATION_OUTPUT_OUTPUT]->attr.size[1] = \
+                        inputs[GRUCELL_ACTIVATION_INPUT_INPUT_FC_R]->attr.size[1] / 3;
+                }
             }
         }
     }
@@ -146,7 +166,7 @@ static vsi_status op_init
     self->nn_param.grucell_activation_internal.candidate_activation = VSI_NN_ACT_TANH;
     self->nn_param.grucell_activation_internal.input_category = GRUCELL_INPUT_CATEGORY_DEFAULT;
     self->nn_param.grucell_activation_internal.use_cudnn_implementation = FALSE;
-    self->nn_param.grucell_activation_internal.input_recurrent_fc_batch_first = TRUE;
+    self->nn_param.grucell_activation_internal.input_layout = GRUCELL_ACTIVATION_INPUT_LAYOUT_ALL_NC;
 
     return status;
 } /* op_init() */

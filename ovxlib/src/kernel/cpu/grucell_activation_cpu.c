@@ -178,7 +178,7 @@ DEF_KERNEL_EXECUTOR(_compute_separated)
     vsi_nn_activation_e gate_activation;
     vsi_nn_activation_e candidate_activation;
     vsi_bool use_cudnn_implementation;
-    vsi_bool input_recurrent_fc_batch_first = FALSE;
+    grucell_activation_input_layout_e input_layout = GRUCELL_ACTIVATION_INPUT_LAYOUT_ALL_NC;
     vsi_nn_kernel_tensor_t tensors[_IO_COUNT_SEPARATED] = { NULL };
     vsi_nn_kernel_tensor_attr_t* attr[_IO_COUNT_SEPARATED] = { NULL };
     float *i_r_base = NULL, *i_c_base = NULL, *i_u_base = NULL;
@@ -230,13 +230,12 @@ DEF_KERNEL_EXECUTOR(_compute_separated)
     CHECK_STATUS_FAIL_GOTO(status, final);
     status = vsi_nn_kernel_scalar_read_int32((vsi_nn_kernel_scalar_t)param[17], &use_cudnn_implementation);
     CHECK_STATUS_FAIL_GOTO(status, final);
-    status = vsi_nn_kernel_scalar_read_int32((vsi_nn_kernel_scalar_t)param[18], &input_recurrent_fc_batch_first);
+    status = vsi_nn_kernel_scalar_read_int32((vsi_nn_kernel_scalar_t)param[18], &input_layout);
     CHECK_STATUS_FAIL_GOTO(status, final);
 
-    batch = attr[0]->shape->data[1];
-
-    if(input_recurrent_fc_batch_first)
+    if(GRUCELL_ACTIVATION_INPUT_LAYOUT_ALL_NC == input_layout)
     {
+        batch = attr[1]->shape->data[1];
         hidden_units = attr[1]->shape->data[0];
 
         if(buffer[2] == NULL)
@@ -301,6 +300,13 @@ DEF_KERNEL_EXECUTOR(_compute_separated)
     }
     else
     {
+        vsi_bool input_transposed = FALSE;
+        float* input_base = buffer[0];
+        float* output_base = buffer[13];
+        float* curr_input = NULL;
+        float* curr_output = NULL;
+
+        batch = attr[1]->shape->data[0];
         hidden_units = attr[1]->shape->data[1];
 
         if(buffer[2] == NULL)
@@ -323,6 +329,15 @@ DEF_KERNEL_EXECUTOR(_compute_separated)
             r_c_base = buffer[6];
         }
 
+        if(GRUCELL_ACTIVATION_INPUT_LAYOUT_INPUT_NC_FC_CN == input_layout)
+        {
+            input_transposed = FALSE;
+        }
+        else
+        {
+            input_transposed = TRUE;
+        }
+
         for( i = 0; i < hidden_units; i++ )
         {
             cond_reset = buffer[10] ? buffer[10][i] : cond_reset;
@@ -334,6 +349,17 @@ DEF_KERNEL_EXECUTOR(_compute_separated)
 
             for( j = 0; j < batch; j++ )
             {
+                if(input_transposed)
+                {
+                    curr_input = &input_base[i * batch + j];
+                    curr_output = &output_base[i * batch + j];
+                }
+                else
+                {
+                    curr_input = &input_base[j * hidden_units + i];
+                    curr_output = &output_base[j * hidden_units + i];
+                }
+
                 i_r = i_r_base[i * batch + j];
                 i_u = i_u_base[i * batch + j];
                 i_c = i_c_base[i * batch + j];
@@ -344,9 +370,9 @@ DEF_KERNEL_EXECUTOR(_compute_separated)
                 r = vsi_nn_activation(i_r + cond_reset + r_r + bias_r, gate_activation);
                 u = vsi_nn_activation(i_u + cond_update + r_u + bias_u, gate_activation);
                 c = vsi_nn_activation(i_c + cond_candidate + r * (r_c + bias_c), candidate_activation);
-                state = u * (buffer[0][j * hidden_units + i] - c) + c;
+                state = u * (*curr_input - c) + c;
 
-                buffer[13][j * hidden_units + i] = state;
+                *curr_output = state;
             }
         }
     }
@@ -437,7 +463,7 @@ static vsi_nn_kernel_node_t _setup
     int32_t candidate_activation = vsi_nn_kernel_param_get_int32( params, "candidate_activation" );
     int32_t input_category = vsi_nn_kernel_param_get_int32( params, "input_category" );
     int32_t use_cudnn_implementation = vsi_nn_kernel_param_get_int32( params, "use_cudnn_implementation" );
-    int32_t input_recurrent_fc_batch_first = vsi_nn_kernel_param_get_int32( params, "input_recurrent_fc_batch_first" );
+    grucell_activation_input_layout_e input_layout = vsi_nn_kernel_param_get_int32( params, "input_layout" );
     vsi_nn_tensor_t** _inputs = NULL;
 
     status = _query_kernel( kernel, inputs, outputs, gate_activation, candidate_activation,
@@ -464,7 +490,7 @@ static vsi_nn_kernel_node_t _setup
             if(input_category != 0)
             {
                 node_params[j++] = vsi_nn_kernel_scalar_create(graph, I32, &use_cudnn_implementation );
-                node_params[j++] = vsi_nn_kernel_scalar_create(graph, I32, &input_recurrent_fc_batch_first );
+                node_params[j++] = vsi_nn_kernel_scalar_create(graph, I32, &input_layout );
             }
             /* Pass parameters to node. */
             status  = vsi_nn_kernel_node_pass_param( node, node_params, param_count );

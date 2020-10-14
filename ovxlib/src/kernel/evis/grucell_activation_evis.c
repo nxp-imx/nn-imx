@@ -57,13 +57,14 @@ typedef enum _batch_fisrt_layerout_e
 {
     NC,
     CN,
+    CN_FULL,
 } batch_fisrt_layerout_e;
 
 typedef enum _gru_activation_type_e
 {
     sigmoid = VSI_NN_ACT_SIGMOID,
     hsigmoid = VSI_NN_ACT_HARD_SIGMOID,
-}gru_activation_type_e;
+} gru_activation_type_e;
 
 #define STR(a) #a
 // Add kernel hashtable here
@@ -122,9 +123,13 @@ static const _kernel_map_type _grucell_cunn_sep_activation_kernel_map[] =
 
     PACK_KERNEL_CDNN_SEP_MAP( F16, F16, F16, F16, VSI_NN_ACT_SIGMOID, VSI_NN_ACT_TANH, CN, _CDNN_KERNEL_SOURCE0 ),
 
+    PACK_KERNEL_CDNN_SEP_MAP( F16, F16, F16, F16, VSI_NN_ACT_SIGMOID, VSI_NN_ACT_TANH, CN_FULL, _CDNN_KERNEL_SOURCE0 ),
+
     PACK_KERNEL_CDNN_SEP_MAP( U8, U8, U8, U8, VSI_NN_ACT_SIGMOID, VSI_NN_ACT_TANH, NC, _CDNN_KERNEL_SOURCE1 ),
 
     PACK_KERNEL_CDNN_SEP_MAP( U8, U8, U8, U8, VSI_NN_ACT_SIGMOID, VSI_NN_ACT_TANH, CN, _CDNN_KERNEL_SOURCE1 ),
+
+    PACK_KERNEL_CDNN_SEP_MAP( U8, U8, U8, U8, VSI_NN_ACT_SIGMOID, VSI_NN_ACT_TANH, CN_FULL, _CDNN_KERNEL_SOURCE1 ),
 };
 
 static const _kernel_map_type _grucell_cunn_activation_kernel_map[] =
@@ -466,15 +471,15 @@ DEF_KERNEL_INITIALIZER(_grucell_activation_cdnn_initializer)
         }
     }
 
-    if (layer_out == 1)
+    if (layer_out == 1 || layer_out == 2)
     {
-        input_size = output_shape->data[0];
-        batch      = output_shape->data[1];
+        input_size = attr[1]->shape->data[0];
+        batch      = attr[1]->shape->data[1];
     }
     else
     {
-        input_size = output_shape->data[1];
-        batch      = output_shape->data[0];
+        input_size = output_shape->data[0];
+        batch      = output_shape->data[1];
     }
 
     gpu_param.global_scale[0] = 4;
@@ -628,7 +633,7 @@ static vsi_status _query_kernel
     int32_t gate_activation,
     int32_t candidate_activation,
     int32_t input_category,
-    int32_t input_recurrent_fc_batch_first,
+    int32_t input_layout,
     int32_t use_cudnn,
     int32_t* param_count,
     int32_t* input_count,
@@ -650,7 +655,8 @@ static vsi_status _query_kernel
     uint64_t key = 0;
     int32_t  i = 0;
 
-    layer_out = input_recurrent_fc_batch_first ? NC : CN;
+    layer_out = input_layout == GRUCELL_ACTIVATION_INPUT_LAYOUT_ALL_NC ? NC :
+                input_layout == GRUCELL_ACTIVATION_INPUT_LAYOUT_INPUT_NC_FC_CN ? CN : CN_FULL;
 
     if (use_cudnn)
     {
@@ -744,6 +750,7 @@ static vsi_nn_kernel_node_t _setup
     vsi_nn_tensor_t** _inputs = NULL;
     vsi_nn_tensor_t* _biases[6] = {NULL};
     vsi_nn_tensor_t* _fc_r[2] = {NULL};
+    vsi_nn_tensor_t* cond_zeros = NULL;
     int32_t i = 0;
     int32_t j = 0;
     int32_t k = 0;
@@ -756,7 +763,7 @@ static vsi_nn_kernel_node_t _setup
     int32_t candidate_activation = 0;
     int32_t input_category = vsi_nn_kernel_param_get_int32( params, "input_category" );
     int32_t use_cudnn = vsi_nn_kernel_param_get_int32( params, "use_cudnn_implementation" );
-    int32_t input_recurrent_fc_batch_first = vsi_nn_kernel_param_get_int32( params, "input_recurrent_fc_batch_first" );
+    int32_t input_layout = vsi_nn_kernel_param_get_int32( params, "input_layout" );
 
     gate_activation = vsi_nn_kernel_param_get_int32( params, "gate_activation" );
     candidate_activation = vsi_nn_kernel_param_get_int32( params, "candidate_activation" );
@@ -771,7 +778,8 @@ static vsi_nn_kernel_node_t _setup
     }
 
     status = _query_kernel( kernel, inputs, outputs, gate_activation, candidate_activation,
-        input_category, input_recurrent_fc_batch_first, use_cudnn, &param_count, &input_count, &output_count );
+        input_category, input_layout, use_cudnn, &param_count, &input_count, &output_count );
+
     if( VSI_SUCCESS == status)
     {
         _inputs = (vsi_nn_tensor_t**)malloc(input_count * sizeof(vsi_nn_tensor_t**));
@@ -806,18 +814,32 @@ static vsi_nn_kernel_node_t _setup
                 inputs[GRUCELL_ACTIVATION_INPUT_BIAS_R + i] = _biases[i];
             }
 
+            if(!inputs[GRUCELL_ACTIVATION_INPUT_COND_R] || !inputs[GRUCELL_ACTIVATION_INPUT_COND_Z]
+                || !inputs[GRUCELL_ACTIVATION_INPUT_COND_C])
+            {
+                cond_zeros = vsi_nn_CreateTensorWithDefault(graph, &attr, 0.0);
+            }
             for ( i = 0; i < 3; i++)
             {
                 if (inputs[GRUCELL_ACTIVATION_INPUT_COND_R + i])
                 {
-                    _biases[i + 3] = vsi_nn_reshape_tensor(graph,
+                    /* Shader kernel cannot take 1-d tensors as inptus
+                      reshape them to 2-d to workaround */
+                    if(1 == inputs[GRUCELL_ACTIVATION_INPUT_COND_R + i]->attr.dim_num)
+                    {
+                        _biases[i + 3] = vsi_nn_reshape_tensor(graph,
                         inputs[GRUCELL_ACTIVATION_INPUT_COND_R + i], attr.size, attr.dim_num);
+                        inputs[GRUCELL_ACTIVATION_INPUT_COND_R + i] = _biases[i + 3];
+                    }
+                    else
+                    {
+                        /* high level had done the workaround */
+                    }
                 }
                 else
                 {
-                    _biases[i + 3] = vsi_nn_CreateTensorWithDefault(graph, &attr, 0.0);
+                    inputs[GRUCELL_ACTIVATION_INPUT_COND_R + i] = cond_zeros;
                 }
-                inputs[GRUCELL_ACTIVATION_INPUT_COND_R + i] = _biases[i + 3];
             }
         }
 
@@ -840,17 +862,21 @@ static vsi_nn_kernel_node_t _setup
             /* Pass parameters to node. */
             node_params[j++] = vsi_nn_kernel_scalar_create(graph, I32, &gate_activation );
             node_params[j++] = vsi_nn_kernel_scalar_create(graph, I32, &candidate_activation );
-            if (use_cudnn)
+            if( use_cudnn )
             {
-                node_params[j++] = vsi_nn_kernel_scalar_create(graph, I32, &input_recurrent_fc_batch_first );
+                node_params[j++] = vsi_nn_kernel_scalar_create(graph, I32, &input_layout );
             }
             status  = vsi_nn_kernel_node_pass_param( node, node_params, param_count );
             vsi_nn_kernel_scalar_release( &node_params[--j] );
             vsi_nn_kernel_scalar_release( &node_params[--j] );
-            if (use_cudnn)
+            if( use_cudnn )
             {
                 vsi_nn_kernel_scalar_release( &node_params[--j] );
             }
+        }
+        if(cond_zeros)
+        {
+            vsi_nn_ReleaseTensor(&cond_zeros);
         }
 
         for ( i = 0; i < 6; i++)
