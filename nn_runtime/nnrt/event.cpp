@@ -21,10 +21,10 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#include "logging.hpp"
-#include "event.hpp"
-#include "execution.hpp"
-#include "error.hpp"
+#include "nnrt/logging.hpp"
+#include "nnrt/event.hpp"
+#include "nnrt/execution.hpp"
+#include "nnrt/error.hpp"
 
 namespace nnrt
 {

@@ -22,9 +22,9 @@
 *
 *****************************************************************************/
 #include <thread>
-#include "error.hpp"
-#include "execution.hpp"
-#include "execution_task.hpp"
+#include "nnrt/error.hpp"
+#include "nnrt/execution.hpp"
+#include "nnrt/execution_task.hpp"
 
 namespace nnrt
 {

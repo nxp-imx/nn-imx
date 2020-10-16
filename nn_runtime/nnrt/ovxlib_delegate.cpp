@@ -21,14 +21,14 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#include "ovxlib_delegate.hpp"
+#include "nnrt/ovxlib_delegate.hpp"
 #include <algorithm>
 #include <cassert>
 #include <type_traits>
 
-#include "error.hpp"
-#include "model.hpp"
-#include "op/public.hpp"
+#include "nnrt/error.hpp"
+#include "nnrt/model.hpp"
+#include "nnrt/op/public.hpp"
 #include "vsi_nn_pub.h"
 
 namespace nnrt {

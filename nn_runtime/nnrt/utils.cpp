@@ -29,11 +29,11 @@
 #include <sys/system_properties.h>
 #endif
 
-#include "utils.hpp"
-#include "model.hpp"
-#include "types.hpp"
-#include "error.hpp"
-#include "op/public.hpp"
+#include "nnrt/utils.hpp"
+#include "nnrt/model.hpp"
+#include "nnrt/types.hpp"
+#include "nnrt/error.hpp"
+#include "nnrt/op/public.hpp"
 namespace nnrt
 {
 namespace operand_utils

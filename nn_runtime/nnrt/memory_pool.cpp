@@ -24,11 +24,11 @@
 #include <cstring>
 #include <algorithm>
 
-#include "memory_pool.hpp"
-#include "file_map_memory.hpp"
-#include "model.hpp"
+#include "nnrt/memory_pool.hpp"
+#include "nnrt/file_map_memory.hpp"
+#include "nnrt/model.hpp"
 
-#include "logging.hpp"
+#include "nnrt/logging.hpp"
 
 namespace mem_pool{
 

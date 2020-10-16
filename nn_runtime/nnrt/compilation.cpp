@@ -23,12 +23,12 @@
 *****************************************************************************/
 #include <cassert>
 #include "vsi_nn_pub.h"
-#include "model.hpp"
-#include "compilation.hpp"
-#include "error.hpp"
-#include "prepared_model.hpp"
+#include "nnrt/model.hpp"
+#include "nnrt/compilation.hpp"
+#include "nnrt/error.hpp"
+#include "nnrt/prepared_model.hpp"
 
-#include "model_transform/nnapi_interpreter.hpp"
+#include "nnrt/model_transform/nnapi_interpreter.hpp"
 
 namespace nnrt
 {

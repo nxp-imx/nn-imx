@@ -25,9 +25,9 @@
 #define __OVXLIB_DELEGATE_H__
 
 #include "vsi_nn_pub.h"
-#include "model.hpp"
-#include "op/public.hpp"
-#include "execution_io.hpp"
+#include "nnrt/model.hpp"
+#include "nnrt/op/public.hpp"
+#include "nnrt/execution_io.hpp"
 
 namespace nnrt
 {

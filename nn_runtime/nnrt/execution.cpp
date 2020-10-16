@@ -26,15 +26,15 @@
 #include <cstring>
 #include <cassert>
 
-#include "logging.hpp"
-#include "compilation.hpp"
-#include "prepared_model.hpp"
-#include "event.hpp"
-#include "error.hpp"
-#include "execution_task.hpp"
-#include "file_map_memory.hpp"
+#include "nnrt/logging.hpp"
+#include "nnrt/compilation.hpp"
+#include "nnrt/prepared_model.hpp"
+#include "nnrt/event.hpp"
+#include "nnrt/error.hpp"
+#include "nnrt/execution_task.hpp"
+#include "nnrt/file_map_memory.hpp"
 #ifdef _DUMP_JSON_MODEL_
-#include "dump_model/dump_json_model.hpp"
+#include "nnrt/dump_model/dump_json_model.hpp"
 #endif
 
 namespace {
