@@ -27,12 +27,12 @@
 #include <mutex>
 #include <vector>
 #include <memory>
-#include "model.hpp"
-#include "compilation.hpp"
-#include "prepared_model.hpp"
-#include "event.hpp"
+#include "nnrt/model.hpp"
+#include "nnrt/compilation.hpp"
+#include "nnrt/prepared_model.hpp"
+#include "nnrt/event.hpp"
 
-#include "op/public.hpp"
+#include "nnrt/op/public.hpp"
 
 namespace nnrt
 {

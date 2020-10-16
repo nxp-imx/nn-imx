@@ -22,10 +22,10 @@
 *
 *****************************************************************************/
 #include "vsi_nn_pub.h"
-#include "prepared_model.hpp"
-#include "error.hpp"
-#include "execution_io.hpp"
-#include "model_transform/transformations.hpp"
+#include "nnrt/prepared_model.hpp"
+#include "nnrt/error.hpp"
+#include "nnrt/execution_io.hpp"
+#include "nnrt/model_transform/transformations.hpp"
 
 namespace nnrt
 {

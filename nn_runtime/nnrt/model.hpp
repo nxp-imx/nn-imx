@@ -29,9 +29,9 @@
 #include <list>
 #include <string>
 
-#include "memory_pool.hpp"
-#include "types.hpp"
-#include "logging.hpp"
+#include "nnrt/memory_pool.hpp"
+#include "nnrt/types.hpp"
+#include "nnrt/logging.hpp"
 
 namespace nnrt {
 namespace op {

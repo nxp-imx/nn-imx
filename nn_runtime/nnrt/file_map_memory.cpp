@@ -28,9 +28,9 @@
 #include <sys/mman.h>
 #endif
 
-#include "logging.hpp"
-#include "file_map_memory.hpp"
-#include "error.hpp"
+#include "nnrt/logging.hpp"
+#include "nnrt/file_map_memory.hpp"
+#include "nnrt/error.hpp"
 
 namespace nnrt
 {

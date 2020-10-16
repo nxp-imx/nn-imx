@@ -29,12 +29,12 @@
 /* Include string.h for strlen() */
 #include <string.h>
 
-#include "logging.hpp"
-#include "model.hpp"
-#include "error.hpp"
-#include "version.hpp"
+#include "nnrt/logging.hpp"
+#include "nnrt/model.hpp"
+#include "nnrt/error.hpp"
+#include "nnrt/version.hpp"
 
-#include "op/public.hpp"
+#include "nnrt/op/public.hpp"
 
 #ifdef __linux__
 #include <unistd.h>
