@@ -109,6 +109,7 @@
 #include "ops/vsi_nn_op_pre_process_nv12.h"
 #include "ops/vsi_nn_op_extra_ending.h"
 #include "ops/vsi_nn_op_gather.h"
+#include "ops/vsi_nn_op_scatter_nd.h"
 #include "ops/vsi_nn_op_tile.h"
 #include "ops/vsi_nn_op_grouped_conv2d.h"
 #include "ops/vsi_nn_op_topk.h"
@@ -250,6 +251,7 @@ typedef union _vsi_nn_nn_param
     vsi_nn_pre_process_nv12_param   pre_process_nv12;
     vsi_nn_extra_ending_param       extra_ending;
     vsi_nn_gather_param             gather;
+    vsi_nn_scatter_nd_param         scatter_nd;
     vsi_nn_tile_param               tile;
     vsi_nn_grouped_conv2d_param     grouped_conv2d;
     vsi_nn_topk_param               topk;
