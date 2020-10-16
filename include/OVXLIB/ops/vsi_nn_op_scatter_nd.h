@@ -21,45 +21,24 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-
-#ifndef _VSI_NN_OP_RESIZE_H
-#define _VSI_NN_OP_RESIZE_H
+#ifndef _VSI_NN_OP_SCATTER_ND_H
+#define _VSI_NN_OP_SCATTER_ND_H
 
 #include "vsi_nn_types.h"
-#include "vsi_nn_platform.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define _VSI_NN_RESIZE_LOCAL_TENSOR_NUM 2
-
-typedef uint32_t vsi_nn_interpolation_type_t; enum
+typedef struct _vsi_nn_scatter_nd_param
 {
-    VSI_NN_INTERPOLATION_NEAREST_NEIGHBOR = 0,
-    VSI_NN_INTERPOLATION_BILINEAR,
-    VSI_NN_INTERPOLATION_AREA
-};
-
-typedef struct _vsi_nn_resize_lcl_data
-{
-    vx_tensor   local_tensor[_VSI_NN_RESIZE_LOCAL_TENSOR_NUM];
-} vsi_nn_resize_lcl_data;
-
-typedef struct _vsi_nn_resize_param
-{
-    vsi_enum     type;
-    float        factor;
-    int32_t      size[2];
-
-    /* resize layer local data structure */
-    vsi_nn_resize_lcl_data local;
-    vsi_bool    align_corners;
-    vsi_bool    half_pixel_centers;
-} vsi_nn_resize_param;
+    uint32_t     dim_num;
+    uint32_t*    shape;
+} vsi_nn_scatter_nd_param;
 
 #ifdef __cplusplus
 }
 #endif
 
 #endif
+
