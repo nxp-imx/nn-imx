@@ -68,7 +68,7 @@ static inline bool IsOpBlocked(int32_t op_type) {
     // https://developer.android.com/ndk/reference/group/neural-networks
     // to reject ANEURALNETWORKS_ADD,
     // block_list = {0};
-    std::vector<int32_t> customer_specific_block_list = {35,};
+    std::vector<int32_t> customer_specific_block_list = {};
 
     bool blocked = IsOpBlockedByBlockList(op_type) ||
            std::find(customer_specific_block_list.cbegin(),
