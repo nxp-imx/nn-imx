@@ -539,6 +539,7 @@ static vx_tensor _create_const_raw_tensor
 #ifdef VSI_PERCHANNEL_QUANTIZATION_SUPPORT
         // This is a hack that driver doesn't support const scale
         scales = (float *)malloc(sizeof(float) * attr.dtype.scale_dim);
+        memcpy(scales, attr.dtype.scales, attr.dtype.scale_dim * sizeof(float));
         params.quant_data.affinePerChannel.channelDim = attr.dtype.channel_dim;
         params.quant_data.affinePerChannel.scaleCount = attr.dtype.scale_dim;
         params.quant_data.affinePerChannel.scales = scales;

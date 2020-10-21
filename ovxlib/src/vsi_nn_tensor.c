@@ -329,6 +329,7 @@ static vsi_bool _init_tensor
 #ifdef VSI_PERCHANNEL_QUANTIZATION_SUPPORT
         // This is a hack that driver doesn't support const scales
         scales = (float*)malloc(sizeof(float) * tensor->attr.dtype.scale_dim);
+        memcpy(scales, tensor->attr.dtype.scales, tensor->attr.dtype.scale_dim * sizeof(float));
         params.quant_data.affinePerChannel.channelDim = tensor->attr.dtype.channel_dim;
         params.quant_data.affinePerChannel.scaleCount = tensor->attr.dtype.scale_dim;
         params.quant_data.affinePerChannel.scales = scales;
