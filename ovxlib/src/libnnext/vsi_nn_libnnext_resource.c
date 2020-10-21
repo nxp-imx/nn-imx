@@ -13819,7 +13819,7 @@ _viv_uniform int bc2zero;\n\
 #define GEMM_TRANSA_QINT(src0_type_name, src1_type_name, dst_type_name, read0_type, read1_type, write_type) \\\n\
 __kernel void gemm_transa_##src0_type_name##src1_type_name##to##dst_type_name( \\\n\
             image2d_array_t inputA, image2d_array_t inputB, image2d_array_t output, \\\n\
-            int transposeA, int transposeB, int adjointA, int adjointB,\n\
+            int transposeA, int transposeB, int adjointA, int adjointB, \\\n\
             uint M, uint K, uint N) \\\n\
 { \\\n\
     uint gidy = get_global_id(1); \\\n\

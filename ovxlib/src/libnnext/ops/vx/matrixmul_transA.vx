@@ -15,7 +15,7 @@ _viv_uniform int bc2zero;
 #define GEMM_TRANSA_QINT(src0_type_name, src1_type_name, dst_type_name, read0_type, read1_type, write_type) \
 __kernel void gemm_transa_##src0_type_name##src1_type_name##to##dst_type_name( \
             image2d_array_t inputA, image2d_array_t inputB, image2d_array_t output, \
-            int transposeA, int transposeB, int adjointA, int adjointB,
+            int transposeA, int transposeB, int adjointA, int adjointB, \
             uint M, uint K, uint N) \
 { \
     uint gidy = get_global_id(1); \
