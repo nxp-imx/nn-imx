@@ -132,7 +132,7 @@ DEF_KERNEL_INITIALIZER(_pre_process_rgb_initializer)
         {0, 0, 0},  // localWorkSize: local group size in thread
         {0, 0, 0}}; // globalWorkSize: image size in thread
 
-    int32_t     dstZP      = 0;
+    float       outputZP      = 0;
     float       outputScale   = 1;
     int32_t     reorder    = 0;
     int32_t     trans      = 0;
@@ -160,7 +160,7 @@ DEF_KERNEL_INITIALIZER(_pre_process_rgb_initializer)
     CHECK_STATUS_FAIL_GOTO(status, OnError );
 
     out_shape  = attr[0]->shape;
-    dstZP      = attr[0]->asymm.zero_point;
+    outputZP   = (float)attr[0]->asymm.zero_point;
     outputScale   = attr[0]->asymm.scale;
     width      = out_shape->data[0];
     height     = out_shape->data[1];
@@ -182,16 +182,16 @@ DEF_KERNEL_INITIALIZER(_pre_process_rgb_initializer)
         {
             outputScale = (1.0f / (float)(1 << -attr[0]->dfp.fl));
         }
-        dstZP = 0;
+        outputZP = 0;
     }
     else if(attr[0]->quant == VSI_NN_KERNEL_QUANT_ASYMM)
     {
-        outputScale = 1.0f/outputScale;
+        outputScale = 1.0f / outputScale;
     }
     else if( attr[0]->quant == VSI_NN_KERNEL_QUANT_NONE )
     {
         outputScale = 1;
-        dstZP = 0;
+        outputZP = 0;
     }
 
 #define _PACK_SELECT_KEY( COPY_FLAG, REVERSE_FLAG, TRANS_FLAG)    \
@@ -606,7 +606,7 @@ DEF_KERNEL_INITIALIZER(_pre_process_rgb_initializer)
         }
 
         status |= vsi_nn_kernel_gpu_add_param(node, "outputScale", &outputScale);
-        status |= vsi_nn_kernel_gpu_add_param(node, "outputZP", &dstZP);
+        status |= vsi_nn_kernel_gpu_add_param(node, "outputZP", &outputZP);
         CHECK_STATUS_FAIL_GOTO(status, OnError );
 
         status = vsi_nn_kernel_gpu_config( node, &shaderParam );
