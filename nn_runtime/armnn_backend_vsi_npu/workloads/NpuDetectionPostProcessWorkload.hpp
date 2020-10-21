@@ -157,6 +157,6 @@ using NpuDetectionPostProcessFloat32Workload =
     NpuDetectionPostProcessWorkload<armnn::DataType::Float32>;
 // using NpuDetectionPostProcessFloat16Workload =
 //     NpuDetectionPostProcessWorkload<armnn::DataType::Float16, armnn::DataType::Float32>;
-// using NpuDetectionPostProcessUint8Workload =
-//     NpuDetectionPostProcessWorkload<armnn::DataType::QAsymmU8, armnn::DataType::Float32>;
+using NpuDetectionPostProcessUint8Workload =
+    NpuDetectionPostProcessWorkload<armnn::DataType::QAsymmU8, armnn::DataType::Float32>;
 }  // namespace armnn

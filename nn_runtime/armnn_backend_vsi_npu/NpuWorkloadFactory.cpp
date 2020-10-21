@@ -204,7 +204,7 @@ std::unique_ptr<armnn::IWorkload> NpuWorkloadFactory::CreateDepthwiseConvolution
 std::unique_ptr<IWorkload> NpuWorkloadFactory::CreateDetectionPostProcess(
     const armnn::DetectionPostProcessQueueDescriptor& descriptor,
     const armnn::WorkloadInfo& info) const {
-    return MakeWorkload<NullWorkload, NpuDetectionPostProcessFloat32Workload, NullWorkload>(
+    return MakeWorkload<NullWorkload, NpuDetectionPostProcessFloat32Workload, NpuDetectionPostProcessUint8Workload>(
         descriptor, info);
 }
 
