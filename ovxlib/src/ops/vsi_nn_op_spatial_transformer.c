@@ -81,11 +81,11 @@ static vsi_status _create_params
     vsi_status status = VSI_SUCCESS;
     vx_context ctx;
     vsi_nn_spatial_transformer_param * p;
-    int  flag;
+    int32_t  flag = 0;
     vsi_nn_tensor_t * thre_tensor;
     vsi_nn_tensor_attr_t attr;
 
-    uint16_t value_buf[6];
+    uint16_t value_buf[6] = {0};
 
     if ( 0 == num )
     {
@@ -164,7 +164,7 @@ static void _release_params
     uint32_t num
     )
 {
-    vsi_nn_spatial_transformer_param * p;
+    vsi_nn_spatial_transformer_param * p = NULL;
 
     p = (vsi_nn_spatial_transformer_param *)node->nn_param.client_param;
 
@@ -381,13 +381,13 @@ static vsi_status vx_op_compute_gemm
     vsi_status   status = VSI_SUCCESS;
     vx_reference params[3] = {NULL};
     vx_tensor paraTensor0 = NULL, paraTensor1 = NULL, paraTensor2 = NULL;
-    int     size[4]    = {1};
-    vsi_nn_tensor_attr_t out_attr = { 0 };
+    int32_t     size[4]    = {1};
+    vsi_nn_tensor_attr_t out_attr;
     int16_t *out_buffer = NULL;
     uint32_t output_H = 0, output_W = 0;
     float   *buf = NULL;
 
-    out_attr = outputs[0]->attr;
+    memcpy( &out_attr, &(outputs[0]->attr), sizeof(vsi_nn_tensor_attr_t) );
     output_W = out_attr.size[0];
     output_H = out_attr.size[1];
     out_buffer = (int16_t*)malloc( output_W * output_H * 3 * sizeof(int16_t) );
