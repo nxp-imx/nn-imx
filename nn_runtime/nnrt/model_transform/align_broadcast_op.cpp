@@ -110,7 +110,8 @@ namespace nnrt
             case OperationType::ADD:
             case OperationType::DIV:
             case OperationType::SUB:
-            {
+            case OperationType::MINIMUM:
+            case OperationType::MAXIMUM: {
                 fill_broadcast_operations(model, operation, inputs);
                 break;
             }
