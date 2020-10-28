@@ -51,7 +51,7 @@ static vsi_status op_compute
     int32_t  shapes[_IO_NUM][VSI_NN_MAX_DIM_NUM] = {{ 1 }};
     int32_t* shapes_ptr[_IO_NUM];
     int32_t* shapes_in[_INPUT_NUM];
-    uint32_t rank_in[_INPUT_NUM];
+    size_t rank_in[_INPUT_NUM];
     uint32_t new_rank = 0;
     int32_t  i        = 0;
     vsi_bool ret;
@@ -69,7 +69,7 @@ static vsi_status op_compute
     for (i = 0; i < _INPUT_NUM; i++)
     {
         shapes_in[i] = (int32_t *)inputs[i]->attr.size;
-        rank_in[i]   = inputs[i]->attr.dim_num;
+        rank_in[i]   = (size_t)inputs[i]->attr.dim_num;
     }
 
     ret = vsi_nn_kernel_optimize_broadcast_shape(
