@@ -23,179 +23,24 @@
 *****************************************************************************/
 #include <string.h>
 #include <stdlib.h>
-
 #include "vsi_nn_types.h"
-#include "vsi_nn_platform.h"
 #include "vsi_nn_log.h"
-#include "vsi_nn_graph.h"
 #include "vsi_nn_node.h"
 #include "vsi_nn_prv.h"
-#include "utils/vsi_nn_math.h"
 #include "vsi_nn_ops.h"
 #include "vsi_nn_tensor.h"
 #include "vsi_nn_tensor_util.h"
-#include "client/vsi_nn_vxkernel.h"
+#include "vsi_nn_error.h"
+#include "utils/vsi_nn_util.h"
+#include "kernel/vsi_nn_kernel.h"
+#include "kernel/vsi_nn_kernel_eltwise.h"
 
-#define _ARG_NUM            (11)
 #define _INPUT_NUM          (3)
 #define _OUTPUT_NUM         (4)
-#define _IO_NUM             (_INPUT_NUM + _OUTPUT_NUM)
-#define _PARAM_NUM          (_ARG_NUM + _IO_NUM)
-
-extern vx_kernel_description_t * vx_kernel_DETECTION_POSTPROCESS_list[];
-
-static void _set_inputs_outputs
-    (
-    vx_reference * params,
-    vsi_nn_tensor_t ** inputs,
-    vsi_nn_tensor_t ** outputs
-    )
-{
-    uint32_t i;
-    uint32_t cnt;
-
-    /* Set inputs */
-    cnt = 0;
-    for( i = 0; i < _INPUT_NUM; i ++, cnt ++ )
-    {
-        params[cnt] = (vx_reference)inputs[i]->t;
-    }
-
-    /* Set outputs */
-    for( i = 0; i < _OUTPUT_NUM; i ++, cnt ++ )
-    {
-        params[cnt] = (vx_reference)outputs[i]->t;
-    }
-} /* _set_inputs_outputs() */
-
-static vsi_status _create_params
-    (
-    vsi_nn_node_t * node,
-    vx_reference * params,
-    uint32_t num
-    )
-{
-    vsi_status status;
-    vx_context ctx;
-    vsi_nn_detection_postprocess_param * p;
-    if( 0 == num )
-    {
-        return VSI_SUCCESS;
-    }
-    memset( params, 0, sizeof( vx_reference * ) * num );
-    p = &(node->nn_param.detection_postprocess);
-    ctx = vxGetContext( (vx_reference)node->graph->g );
-    /* Init parameters */
-    #define _SET_PARAM( i, type, arg ) do{ \
-        params[i] = (vx_reference)vxCreateScalar( ctx, type, &p->arg ); \
-        status = vxGetStatus( params[i] ); \
-        if( VSI_SUCCESS != status ) { \
-            goto set_param_error; \
-            } \
-        } while(0)
-    _SET_PARAM( 0, VX_TYPE_FLOAT32, dy );
-    _SET_PARAM( 1, VX_TYPE_FLOAT32, dx );
-    _SET_PARAM( 2, VX_TYPE_FLOAT32, dh );
-    _SET_PARAM( 3, VX_TYPE_FLOAT32, dw );
-    _SET_PARAM( 4, VX_TYPE_INT32, nms_type );
-    _SET_PARAM( 5, VX_TYPE_INT32, max_num_detections );
-    _SET_PARAM( 6, VX_TYPE_INT32, maximum_class_per_detection );
-    _SET_PARAM( 7, VX_TYPE_INT32, maximum_detection_per_class );
-    _SET_PARAM( 8, VX_TYPE_FLOAT32, score_threshold );
-    _SET_PARAM( 9, VX_TYPE_FLOAT32, iou_threshold );
-    _SET_PARAM( 10, VX_TYPE_INT32, is_bg_in_label );
-    #undef _SET_PARAM
-set_param_error:
-
-    return status;
-} /* _create_params */
-
-static void _release_params
-    (
-    vx_reference * params,
-    uint32_t num
-    )
-{
-    uint32_t i;
-    vx_scalar scalar;
-    for( i = 0; i < num; i ++ )
-    {
-        scalar = (vx_scalar)params[i];
-        vxReleaseScalar( &scalar );
-    }
-} /* _release_params() */
-
-static vsi_status cpu_op_compute
-    (
-    vsi_nn_node_t * self,
-    vsi_nn_tensor_t ** inputs,
-    vsi_nn_tensor_t ** outputs
-    )
-{
-    vsi_status status = VSI_SUCCESS;
-    vx_reference params[_PARAM_NUM];
-    vx_reference * args;
-
-    args = &params[_IO_NUM];
-
-    if( NULL == self->n )
-    {
-        return VSI_FAILURE;
-    }
-
-    /* Set inputs and outputs */
-    _set_inputs_outputs( params, inputs, outputs );
-
-    /* Init parameters. */
-    _create_params( self, args, _ARG_NUM );
-
-    /* Pass parameters to node. */
-    status = vsi_nn_ClientNodePassParameters( self->n, params, _PARAM_NUM );
-
-    _release_params( args, _ARG_NUM );
-
-    return status;
-}
-
-static vsi_status vx_op_compute
-    (
-    vsi_nn_node_t * self,
-    vsi_nn_tensor_t ** inputs,
-    vsi_nn_tensor_t ** outputs
-    )
-{
-    vsi_status status = VSI_SUCCESS;
-    vx_reference params[_PARAM_NUM];
-    vx_reference * args;
-
-    args = &params[_IO_NUM];
-
-    if( NULL == self->n )
-    {
-        return VSI_FAILURE;
-    }
-
-    /* Set inputs and outputs */
-    _set_inputs_outputs( params, inputs, outputs );
-    /*TODO: Add code if need to change your parameter*/
-
-    /* Init parameters. */
-    _create_params( self, args, _ARG_NUM );
-
-    /* Pass parameters to node. */
-    status = vsi_nn_ClientNodePassParameters( self->n, params, _PARAM_NUM );
-
-    _release_params( args, _ARG_NUM );
-
-    return status;
-}
-
-static vsi_nn_op_compute_t op_compute_list[] =
-{
-    cpu_op_compute,
-    vx_op_compute,
-    NULL
-};
+#define _BOX_INPUT_NUM          (2)
+#define _BOX_OUTPUT_NUM         (1)
+#define _NMS_INPUT_NUM          (2)
+#define _NMS_OUTPUT_NUM         (4)
 
 static vsi_status op_compute
     (
@@ -204,46 +49,72 @@ static vsi_status op_compute
     vsi_nn_tensor_t ** outputs
     )
 {
-    vsi_status status;
-    vsi_nn_kernel_info_t kernel_info;
-    char *path = NULL;
+    vsi_status status = VSI_FAILURE;
+    vsi_nn_kernel_param_t * param0 = NULL;
+    vsi_nn_kernel_param_t * param1 = NULL;
+    vsi_nn_tensor_t* box_tensors[3] = { NULL };
+    vsi_nn_tensor_t* nms_tensors[6] = { NULL };
+    vsi_nn_tensor_t* bbox_tensor = NULL;
+    vsi_nn_tensor_attr_t attr;
+    vsi_nn_detection_postprocess_param * p = &(self->nn_param.detection_postprocess);
+    float inv_scale_y, inv_scale_x, inv_scale_h, inv_scale_w;
 
-    memset(&kernel_info, 0x0, sizeof(vsi_nn_kernel_info_t));
-    status = VSI_FAILURE;
-    kernel_info.type = VX_KERNEL_TYPE_CPU;
-    kernel_info.kernel = vx_kernel_DETECTION_POSTPROCESS_list;
-    kernel_info.resource_num = 1;
-    kernel_info.resource_name = (char **)malloc(kernel_info.resource_num * sizeof(char *));
-    kernel_info.resource_name[0] = "vsi_nn_kernel_detection_postprocess";
-    path = getenv("USER_VX_SOURCE_PATH");
-    if(path)
-        vsi_nn_VxResourceSetPath(path);
+    memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
 
-    if( kernel_info.type == VX_KERNEL_TYPE_VX)
+    attr.size[0] = 4;
+    attr.size[1] = inputs[0]->attr.size[1];
+    attr.size[2] = inputs[0]->attr.size[2];
+    attr.dim_num = 3;
+    attr.dtype.vx_type = VSI_NN_TYPE_FLOAT32;
+    attr.is_const = FALSE;
+    attr.vtl = TRUE;
+    bbox_tensor = vsi_nn_CreateTensor( self->graph, &attr );
+
+    inv_scale_y = 1.0f / p->dy;
+    inv_scale_x = 1.0f / p->dx;
+    inv_scale_h = 1.0f / p->dh;
+    inv_scale_w = 1.0f / p->dw;
+
+    if (bbox_tensor)
     {
-        kernel_info.kernel_index = 1;
-        kernel_info.init_index = 1;
+        param0 = vsi_nn_kernel_param_create();
+        vsi_nn_kernel_param_add_float32( param0, "inv_scale_y", inv_scale_y);
+        vsi_nn_kernel_param_add_float32( param0, "inv_scale_x", inv_scale_x);
+        vsi_nn_kernel_param_add_float32( param0, "inv_scale_h", inv_scale_h);
+        vsi_nn_kernel_param_add_float32( param0, "inv_scale_w", inv_scale_w);
+        box_tensors[0] = inputs[1];
+        box_tensors[1] = inputs[2];
+        box_tensors[2] = bbox_tensor;
+        self->n = (vx_node)vsi_nn_kernel_selector( self->graph, "detect_post_box",
+                                                 &box_tensors[0], _BOX_INPUT_NUM,
+                                                 &box_tensors[2], _BOX_OUTPUT_NUM, param0 );
+
+        param1 =vsi_nn_kernel_param_create();
+        vsi_nn_kernel_param_add_int32( param1, "nms_type", p->nms_type);
+        vsi_nn_kernel_param_add_int32( param1, "max_num_detections", p->max_num_detections);
+        vsi_nn_kernel_param_add_int32( param1, "maximum_class_per_detection", p->maximum_class_per_detection);
+        vsi_nn_kernel_param_add_int32( param1, "maximum_detection_per_class", p->maximum_detection_per_class);
+        vsi_nn_kernel_param_add_float32( param1, "score_threshold", p->score_threshold);
+        vsi_nn_kernel_param_add_float32( param1, "iou_threshold", p->iou_threshold);
+        vsi_nn_kernel_param_add_int32( param1, "is_bg_in_label", p->is_bg_in_label);
+        nms_tensors[0] = inputs[0];
+        nms_tensors[1] = bbox_tensor;
+        nms_tensors[2] = outputs[0];
+        nms_tensors[3] = outputs[1];
+        nms_tensors[4] = outputs[2];
+        nms_tensors[5] = outputs[3];
+        self->n = (vx_node)vsi_nn_kernel_selector( self->graph, "detect_post_nms",
+                                                 &nms_tensors[0], _NMS_INPUT_NUM,
+                                                 &nms_tensors[2], _NMS_OUTPUT_NUM, param1 );
+        vsi_nn_ReleaseTensor( &bbox_tensor );
+        vsi_nn_kernel_param_release( &param0 );
+        vsi_nn_kernel_param_release( &param1 );
     }
-    else /*kernel_info.type = VX_KERNEL_TYPE_CPU;*/
+    if( self->n )
     {
-        kernel_info.kernel_index = 0;
-        kernel_info.init_index = 0;
+        status = VSI_SUCCESS;
     }
 
-    self->n = vsi_nn_RegisterClientKernelAndNewNode(
-            self->graph, &kernel_info);
-    if (kernel_info.resource_name)
-    {
-        free(kernel_info.resource_name);
-    }
-    if( NULL == self->n )
-    {
-        return VSI_FAILURE;
-    }
-    if (NULL != op_compute_list[kernel_info.init_index])
-    {
-        status = op_compute_list[kernel_info.init_index](self, inputs, outputs);
-    }
     return status;
 } /* op_compute() */
 

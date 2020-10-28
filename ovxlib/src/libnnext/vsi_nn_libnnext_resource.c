@@ -3097,6 +3097,84 @@ VXC_WriteImage(output, coord.xw, dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0
 \n\
 "; /* end of depthwise_conv1d_src3_vx*/
 
+static const char detect_post_box_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+_viv_uniform VXC_512Bits uniDataMerge_4x4;\n\
+_viv_uniform VXC_512Bits uniU8SubZptoF32Conv0_4x4;\n\
+_viv_uniform VXC_512Bits uniU8SubZptoF32Conv1_4x4;\n\
+_viv_uniform float logE;\n\
+_viv_uniform int   input0_ZP;\n\
+_viv_uniform int   input1_ZP;\n\
+\n\
+float exp_(float x)\n\
+{\n\
+    x *= logE;\n\
+    x = exp2(x);\n\
+    return x;\n\
+}\n\
+\n\
+__kernel void detect_post_box_F32_F32toF32(\n\
+     __read_only image2d_array_t   input0,\n\
+           __read_only image2d_t   input1,\n\
+    __write_only image2d_array_t   output,\n\
+                           float   inv_scale_y,\n\
+                           float   inv_scale_x,\n\
+                           float   inv_scale_h,\n\
+                           float   inv_scale_w)\n\
+{\n\
+    int4 coord =  (int4)(0, get_global_id(0), get_global_id(1), 0);\n\
+    float4 src0;\n\
+    float4 src1;\n\
+    float4 dst;\n\
+    float4 tmp0, tmp1, tmp2, tmp3;\n\
+    uint4  tmp5, tmp6, tmp7;\n\
+    src0 = read_imagef(input0, coord);\n\
+    src1 = read_imagef(input1, coord.xy);\n\
+    tmp0.x  = src1.x + src1.z * src0.x * inv_scale_y;\n\
+    tmp0.y  = src1.y + src1.w * src0.y * inv_scale_x;\n\
+    tmp1.x = src1.z * exp_(src0.z * inv_scale_h) * 0.5f;\n\
+    tmp1.y = src1.w * exp_(src0.w * inv_scale_w) * 0.5f;\n\
+    tmp2   = tmp0 - tmp1;\n\
+    tmp3   = tmp0 + tmp1;\n\
+    _viv_asm(COPY, tmp5, tmp2, 16);\n\
+    _viv_asm(COPY, tmp6, tmp3, 16);\n\
+    VXC_DP4x4(tmp7, tmp5, tmp6, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 1), uniDataMerge_4x4);\n\
+    _viv_asm(COPY, dst, tmp7, 16);\n\
+    write_imagef(output, coord, dst);\n\
+}\n\
+\n\
+__kernel void detect_post_box_U8_U8toF32(\n\
+     __read_only image2d_array_t   input0,\n\
+     __read_only image2d_array_t   input1,\n\
+    __write_only image2d_array_t   output,\n\
+                           float   inv_scale_y,\n\
+                           float   inv_scale_x,\n\
+                           float   inv_scale_h,\n\
+                           float   inv_scale_w)\n\
+{\n\
+    int4 coord =  (int4)(0, get_global_id(0), get_global_id(1), 0);\n\
+    float4 src0;\n\
+    float4 src1;\n\
+    float4 dst;\n\
+    float4 tmp0, tmp1, tmp2, tmp3;\n\
+    vxc_uchar8 in0 = 0, in1 = 0;\n\
+    vxc_short8 zp0 = (short)input0_ZP;\n\
+    vxc_short8 zp1 = (short)input1_ZP;\n\
+    VXC_ReadImage2DArray(in0, input0, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(in1, input1, coord.xy, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_DP4x4(src0, in0, zp0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 1), uniU8SubZptoF32Conv0_4x4);\n\
+    VXC_DP4x4(src1, in1, zp1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 1), uniU8SubZptoF32Conv1_4x4);\n\
+    tmp0.x  = src1.x + src1.z * src0.x * inv_scale_y;\n\
+    tmp0.y  = src1.y + src1.w * src0.y * inv_scale_x;\n\
+    tmp1.x = src1.z * exp_(src0.z * inv_scale_h) * 0.5f;\n\
+    tmp1.y = src1.w * exp_(src0.w * inv_scale_w) * 0.5f;\n\
+    dst.xy   = tmp0.xy - tmp1.xy;\n\
+    dst.zw   = tmp0.xy + tmp1.xy;\n\
+    write_imagef(output, coord, dst);\n\
+}\n\
+"; /* end of detect_post_box_vx*/
+
 static const char eltwise_unary_2d_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 float4 eltwise_unary_sin(float4 x)\n\
@@ -35560,6 +35638,108 @@ __kernel void clip_U8toF32_2D(\n\
 }\n\
 "; /* end of clip_U8_cl*/
 
+static const char detect_post_box_cl[] = "float exp_(float x, float logE)\n\
+{\n\
+    x *= logE;\n\
+    x = exp2(x);\n\
+    return x;\n\
+}\n\
+\n\
+__kernel void detect_post_box_F32_F32toF32(\n\
+     __read_only image2d_array_t   input0,\n\
+           __read_only image2d_t   input1,\n\
+    __write_only image2d_array_t   output,\n\
+                           float   inv_scale_y,\n\
+                           float   inv_scale_x,\n\
+                           float   inv_scale_h,\n\
+                           float   inv_scale_w,\n\
+                           float   logE)\n\
+{\n\
+    int4 coord =  (int4)(0, get_global_id(0), get_global_id(1), 0);\n\
+    float4 src0;\n\
+    float4 src1;\n\
+    float4 dst;\n\
+    float4 tmp0, tmp1;\n\
+    src0.x = read_imagef(input0, coord).x;\n\
+    src1.x = read_imagef(input1, coord.xy).x;\n\
+    coord.x++;\n\
+    src0.y = read_imagef(input0, coord).x;\n\
+    src1.y = read_imagef(input1, coord.xy).x;\n\
+    coord.x++;\n\
+    src0.z = read_imagef(input0, coord).x;\n\
+    src1.z = read_imagef(input1, coord.xy).x;\n\
+    coord.x++;\n\
+    src0.w = read_imagef(input0, coord).x;\n\
+    src1.w = read_imagef(input1, coord.xy).x;\n\
+\n\
+    tmp0.x  = src1.x + src1.z * src0.x * inv_scale_y;\n\
+    tmp0.y  = src1.y + src1.w * src0.y * inv_scale_x;\n\
+    tmp1.x = src1.z * exp_(src0.z * inv_scale_h, logE) * 0.5f;\n\
+    tmp1.y = src1.w * exp_(src0.w * inv_scale_w, logE) * 0.5f;\n\
+    dst.xy = tmp0.xy - tmp1.xy;\n\
+    dst.zw = tmp0.xy + tmp1.xy;\n\
+    coord.x = 0;\n\
+    write_imagef(output, coord, dst.xxxx);\n\
+    coord.x++;\n\
+    write_imagef(output, coord, dst.yyyy);\n\
+    coord.x++;\n\
+    write_imagef(output, coord, dst.zzzz);\n\
+    coord.x++;\n\
+    write_imagef(output, coord, dst.wwww);\n\
+}\n\
+\n\
+\n\
+__kernel void detect_post_box_U8_U8toF32(\n\
+     __read_only image2d_array_t   input0,\n\
+           __read_only image2d_t   input1,\n\
+    __write_only image2d_array_t   output,\n\
+                           float   inv_scale_y,\n\
+                           float   inv_scale_x,\n\
+                           float   inv_scale_h,\n\
+                           float   inv_scale_w,\n\
+                           float   logE,\n\
+                           float   input0Tail,\n\
+                           float   input1Tail,\n\
+                           float   input0Scale,\n\
+                           float   input1Scale)\n\
+{\n\
+    int4 coord =  (int4)(0, get_global_id(0), get_global_id(1), 0);\n\
+    uint4  in0, in1;\n\
+    float4 src0;\n\
+    float4 src1;\n\
+    float4 dst;\n\
+    float4 tmp0, tmp1;\n\
+    in0.x = read_imageui(input0, coord).x;\n\
+    in1.x = read_imageui(input1, coord.xy).x;\n\
+    coord.x++;\n\
+    in0.y = read_imageui(input0, coord).x;\n\
+    in1.y = read_imageui(input1, coord.xy).x;\n\
+    coord.x++;\n\
+    in0.z = read_imageui(input0, coord).x;\n\
+    in1.z = read_imageui(input1, coord.xy).x;\n\
+    coord.x++;\n\
+    in0.w = read_imageui(input0, coord).x;\n\
+    in1.w = read_imageui(input1, coord.xy).x;\n\
+\n\
+    src0 = convert_float4(in0) * input0Scale + input0Tail;\n\
+    src1 = convert_float4(in1) * input1Scale + input1Tail;\n\
+\n\
+    tmp0.x  = src1.x + src1.z * src0.x * inv_scale_y;\n\
+    tmp0.y  = src1.y + src1.w * src0.y * inv_scale_x;\n\
+    tmp1.x = src1.z * exp_(src0.z * inv_scale_h, logE) * 0.5f;\n\
+    tmp1.y = src1.w * exp_(src0.w * inv_scale_w, logE) * 0.5f;\n\
+    dst.xy = tmp0.xy - tmp1.xy;\n\
+    dst.zw = tmp0.xy + tmp1.xy;\n\
+    coord.x = 0;\n\
+    write_imagef(output, coord, dst.xxxx);\n\
+    coord.x++;\n\
+    write_imagef(output, coord, dst.yyyy);\n\
+    coord.x++;\n\
+    write_imagef(output, coord, dst.zzzz);\n\
+    coord.x++;\n\
+    write_imagef(output, coord, dst.wwww);\n\
+}"; /* end of detect_post_box_cl*/
+
 static const char eltwise_ops_helper_cl[] = "#pragma OPENCL EXTENSION CL_VIV_asm : enable\n\
 #pragma OPENCL EXTENSION cl_viv_vx_extension : enable\n\
 \n\
@@ -45740,6 +45920,7 @@ static const source_map_t evis_resource[] =
     {"depthwise_conv1d_src1_vx", depthwise_conv1d_src1_vx},
     {"depthwise_conv1d_src2_vx", depthwise_conv1d_src2_vx},
     {"depthwise_conv1d_src3_vx", depthwise_conv1d_src3_vx},
+    {"detect_post_box_vx", detect_post_box_vx},
     {"eltwise_unary_2d_vx", eltwise_unary_2d_vx},
     {"eltwise_unary_3d_vx", eltwise_unary_3d_vx},
     {"floordiv_vx", floordiv_vx},
@@ -45925,6 +46106,7 @@ static const source_map_t cl_resource[] =
     {"cast_cl", cast_cl},
     {"clip_F32_cl", clip_F32_cl},
     {"clip_U8_cl", clip_U8_cl},
+    {"detect_post_box_cl", detect_post_box_cl},
     {"eltwise_ops_helper_cl", eltwise_ops_helper_cl},
     {"eltwise_unary_cl", eltwise_unary_cl},
     {"floordiv_cl", floordiv_cl},

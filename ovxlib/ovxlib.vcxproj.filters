@@ -1142,9 +1142,6 @@
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_deconv2d.c">
       <Filter>Source Files\libnnext\ops\kernel</Filter>
     </ClCompile>
-    <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_detection_postprocess.c">
-      <Filter>Source Files\libnnext\ops\kernel</Filter>
-    </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_extra_ending.c">
       <Filter>Source Files\libnnext\ops\kernel</Filter>
     </ClCompile>
@@ -1179,9 +1176,6 @@
       <Filter>Source Files\libnnext\ops\kernel</Filter>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_signalframe.c">
-      <Filter>Source Files\libnnext\ops\kernel</Filter>
-    </ClCompile>
-    <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_space2batch.c">
       <Filter>Source Files\libnnext\ops\kernel</Filter>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_spatial_transformer.c">
@@ -1804,6 +1798,27 @@
     </ClCompile>
     <ClCompile Include="src\kernel\vx\relu_keras_vx.c">
       <Filter>Source Files\kernel\vx</Filter>
+    </ClCompile>
+    <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_space2depth.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\cl\detect_post_box_cl.c">
+      <Filter>Source Files\kernel\cl</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\cl\detect_post_nms_cl.c">
+      <Filter>Source Files\kernel\cl</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\cpu\detect_post_box_cpu.c">
+      <Filter>Source Files\kernel\cpu</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\cpu\detect_post_nms_cpu.c">
+      <Filter>Source Files\kernel\cpu</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\evis\detect_post_box_evis.c">
+      <Filter>Source Files\kernel\evis</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\evis\detect_post_nms_evis.c">
+      <Filter>Source Files\kernel\evis</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -291,7 +291,6 @@ cc_library(
         "src/libnnext/ops/kernel/vsi_nn_kernel_axis_aligned_bbox_transform.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_box_with_nms_limit.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_generate_proposals.c",
-        "src/libnnext/ops/kernel/vsi_nn_kernel_detection_postprocess.c",
         "src/libnnext/vsi_nn_libnnext_resource.c",
     ] + [":kernel_srcs"]
       + [":operation_srcs"]
