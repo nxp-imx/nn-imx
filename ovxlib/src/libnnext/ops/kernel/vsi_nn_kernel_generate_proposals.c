@@ -69,12 +69,20 @@ void toBoxEncodingCenter
     );
 
 // iota is implemented in vsi_nn_kernel_detection_postprocess.c
-void iota
+static void _iota
     (
     int32_t * data,
     uint32_t len,
     int32_t value
-    );
+    )
+{
+    uint32_t i;
+    for (i = 0; i < len; i++)
+    {
+        data [i] = value;
+        value++;
+    }
+}
 
 // swap_element is implemented in vsi_nn_kernel_box_with_nms_limit.c
 void swap_element
@@ -307,7 +315,7 @@ static vsi_status VX_CALLBACK vxGenerate_proposalsKernel
             }
 
             // Find the top preNmsTopN scores.
-            iota((int32_t*)select, batchSize, 0);
+            _iota((int32_t*)select, batchSize, 0);
             select_len = batchSize;
             if(preNmsTopN > 0 && preNmsTopN < (int32_t)batchSize)
             {

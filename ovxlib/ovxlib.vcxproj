@@ -738,6 +738,8 @@
   <ItemGroup>
     <ClCompile Include="src\kernel\cl\add_mean_std_norm_cl.c" />
     <ClCompile Include="src\kernel\cl\clip_cl.c" />
+    <ClCompile Include="src\kernel\cl\detect_post_box_cl.c" />
+    <ClCompile Include="src\kernel\cl\detect_post_nms_cl.c" />
     <ClCompile Include="src\kernel\cl\l2normalizescale_cl.c" />
     <ClCompile Include="src\kernel\cl\lstmunit_activation_cl.c" />
     <ClCompile Include="src\kernel\cl\relu_keras_cl.c" />
@@ -745,6 +747,8 @@
     <ClCompile Include="src\kernel\cl\resize_nearest_cl.c" />
     <ClCompile Include="src\kernel\cpu\add_mean_std_norm_cpu.c" />
     <ClCompile Include="src\kernel\cpu\clip_cpu.c" />
+    <ClCompile Include="src\kernel\cpu\detect_post_box_cpu.c" />
+    <ClCompile Include="src\kernel\cpu\detect_post_nms_cpu.c" />
     <ClCompile Include="src\kernel\cpu\l2normalizescale_cpu.c" />
     <ClCompile Include="src\kernel\cpu\lstmunit_activation_cpu.c" />
     <ClCompile Include="src\kernel\cpu\relu_keras_cpu.c" />
@@ -752,6 +756,8 @@
     <ClCompile Include="src\kernel\cpu\resize_nearest_cpu.c" />
     <ClCompile Include="src\kernel\evis\add_mean_std_norm_evis.c" />
     <ClCompile Include="src\kernel\evis\clip_evis.c" />
+    <ClCompile Include="src\kernel\evis\detect_post_box_evis.c" />
+    <ClCompile Include="src\kernel\evis\detect_post_nms_evis.c" />
     <ClCompile Include="src\kernel\evis\l2normalizescale_evis.c" />
     <ClCompile Include="src\kernel\evis\lstmunit_activation_evis.c" />
     <ClCompile Include="src\kernel\evis\relu_keras_evis.c" />
@@ -1212,9 +1218,6 @@
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_deconv2d.c">
       <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\vsi_nn_kernel_deconv2d.o</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_detection_postprocess.c">
-      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\vsi_nn_kernel_detection_postprocess.o</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_extra_ending.c">
       <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\vsi_nn_kernel_extra_ending.o</ObjectFileName>
