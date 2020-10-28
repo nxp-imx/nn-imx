@@ -55,7 +55,7 @@ static vsi_status op_compute
     int32_t  shapes[4][VSI_NN_MAX_DIM_NUM] = {{ 1 }};
     int32_t* shapes_ptr[4] = {NULL};
     int32_t  *shapes_in[3] = {NULL};
-    uint32_t rank_in[3] = {0};
+    size_t rank_in[3] = {0};
     uint32_t new_rank = 0;
     vsi_nn_tensor_t* reshape_tensors[6] = { NULL };
     vsi_bool ret = TRUE;
@@ -64,9 +64,9 @@ static vsi_status op_compute
     param = vsi_nn_kernel_param_create();
     vsi_nn_kernel_param_add_float32( param, "eps", self->nn_param.batch_norm.eps );
 
-    rank_in[0] = inputs[0]->attr.dim_num;
-    rank_in[1] = inputs[1]->attr.dim_num;
-    rank_in[2] = inputs[3]->attr.dim_num;
+    rank_in[0] = (size_t)inputs[0]->attr.dim_num;
+    rank_in[1] = (size_t)inputs[1]->attr.dim_num;
+    rank_in[2] = (size_t)inputs[3]->attr.dim_num;
     shapes_in[0] = (int32_t *)inputs[0]->attr.size;
     shapes_in[1] = (int32_t *)inputs[1]->attr.size;
     shapes_in[2] = (int32_t *)inputs[3]->attr.size;
