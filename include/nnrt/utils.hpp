@@ -26,7 +26,7 @@
 
 #include <vector>
 #include <memory>
-#include "types.hpp"
+#include "nnrt/types.hpp"
 
 namespace nnrt
 {

@@ -26,9 +26,9 @@
 
 #include <mutex>
 #include "vsi_nn_pub.h"
-#include "interpreter.hpp"
-#include "prepared_model.hpp"
-#include "shared_context.hpp"
+#include "nnrt/interpreter.hpp"
+#include "nnrt/prepared_model.hpp"
+#include "nnrt/shared_context.hpp"
 
 namespace nnrt
 {
