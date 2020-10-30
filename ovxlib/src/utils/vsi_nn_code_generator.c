@@ -416,6 +416,7 @@ static _op_param_gen_t s_op_gen[] =
     /* PRE_PROCESS_YUV444 */    NULL,
     /* PRE_PROCESS_NV12 */      NULL,
     /* SCATTER_ND */            NULL,
+    /* DECONVOLUTION1D */       NULL,
 };
 _compiler_assert( _cnt_of_array(s_op_gen) == VSI_NN_OP_NUM, vsi_nn_code_generator_c );
 

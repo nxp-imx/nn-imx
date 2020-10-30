@@ -21,54 +21,37 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-/** @file */
-#ifndef _VSI_NN_VERSION_H_
-#define _VSI_NN_VERSION_H_
+#ifndef _VSI_NN_OP_DECONVOLUTION1D_H
+#define _VSI_NN_OP_DECONVOLUTION1D_H
 
 #include "vsi_nn_types.h"
 
-#if defined(__cplusplus)
-extern "C"{
+#ifdef __cplusplus
+extern "C" {
 #endif
 
-#define VSI_NN_VERSION_MAJOR 1
-#define VSI_NN_VERSION_MINOR 1
-#define VSI_NN_VERSION_PATCH 28
-#define VSI_NN_VERSION \
-    (VSI_NN_VERSION_MAJOR * 10000 + VSI_NN_VERSION_MINOR * 100 + VSI_NN_VERSION_PATCH)
+typedef struct _vsi_nn_deconvolution1d_lcl_data
+{
+    vsi_nn_tensor_t *reshaped_weight;
+} vsi_nn_deconvolution1d_lcl_data;
 
-/**
- * Ovxlib version check
- * Ovxlib will check the suitable version at compile time.
- * @note Ovxlib version should be always greater or equal to case version.
- */
-#define _version_assert _compiler_assert
+typedef struct _vsi_nn_deconvolution1d_param
+{
+    /* local data must be the first. */
+    vsi_nn_deconvolution1d_lcl_data* local;
+    uint32_t     ksize;
+    uint32_t     stride;
+    /* Pad left, right */
+    uint32_t     pad[2];
+    /* Pad type default value shall be AUTO */
+    vsi_nn_pad_e pad_type;
+    uint32_t     weights;
+    uint32_t     group;
+    uint32_t     output_padding;
+} vsi_nn_deconvolution1d_param;
 
-/**
- * Get ovxlib version
- * Get ovxlib version string.
- */
-OVXLIB_API const char *vsi_nn_GetVersion(void);
-
-/**
- * Get ovxlib version major
- * Get ovxlib version major, return integer value.
- */
-OVXLIB_API uint32_t vsi_nn_GetVersionMajor(void);
-
-/**
- * Get ovxlib version minor
- * Get ovxlib version minor, return integer value.
- */
-OVXLIB_API uint32_t vsi_nn_GetVersionMinor(void);
-
-/**
- * Get ovxlib version patch
- * Get ovxlib version patch, return integer value.
- */
-OVXLIB_API uint32_t vsi_nn_GetVersionPatch(void);
-
-#if defined(__cplusplus)
+#ifdef __cplusplus
 }
 #endif
+
 #endif
