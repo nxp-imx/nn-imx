@@ -120,6 +120,9 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\ops\vsi_nn_op_deconvolution1d.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
     <ClInclude Include="include\client\vsi_nn_vxkernel.h">
       <Filter>Header Files\client</Filter>
     </ClInclude>
@@ -722,6 +725,9 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\ops\vsi_nn_op_deconvolution1d.c">
+      <Filter>Source Files\ops</Filter>
+    </ClCompile>
     <ClCompile Include="src\client\vsi_nn_vxkernel.c">
       <Filter>Source Files\client</Filter>
     </ClCompile>
