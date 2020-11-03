@@ -35,6 +35,7 @@
 #include "vsi_nn_log.h"
 #include "client/vsi_nn_vxkernel.h"
 #include "vsi_nn_internal_node.h"
+#include "kernel/vsi_nn_kernel_gpu_shape_optimize.h"
 
 #define _ARG_NUM            (6)
 #define _INPUT_NUM          (1)
@@ -48,6 +49,8 @@ typedef struct _vsi_nn_reduce_lcl2_data_t
 {
     vsi_nn_tensor_t *reshaped_input;
     vsi_nn_tensor_t *reshaped_output;
+    vsi_nn_tensor_t *reshaped_input1;
+    vsi_nn_tensor_t *reshaped_output1;
     vsi_nn_tensor_t *reshaped_tmp;
     vsi_nn_tensor_t *axis_tensor2;
     int32_t axes[VSI_NN_MAX_DIM_NUM];
@@ -311,6 +314,8 @@ static vsi_status op_compute
             attr2.size[i] = inputs[0]->attr.size[i];
             re_sizes[i]  = inputs[0]->attr.size[i];
         }
+        attr2.dtype.vx_type  = VSI_NN_TYPE_FLOAT16;
+        attr2.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
 
         if ((2 == resolved_dim_count && resolved_dim[0] < 3 && resolved_dim[1] < 3)
            || (1 == resolved_dim_count && resolved_dim[0] < 3)
@@ -683,14 +688,123 @@ static void op_set_reduce_param_value(vsi_nn_nn_param_t *nn_param,
     }
 }
 
+static vsi_bool optimzation_input_size(
+    const int32_t* shape_x, const size_t rank_x,
+          int32_t* out_shape_x, int32_t* out_rank_x,
+    const int32_t* resolved_dim, const int32_t resolved_dim_count,
+          int32_t* resolved_dim_out,  int32_t* resolved_dim_out_count
+    )
+{
+    int32_t i, j, k, out_i;
+    vx_bool is_change = vx_false_e;
+    int32_t shape[VSI_NN_MAX_DIM_NUM] = { 0 };
+    int32_t shape_out[VSI_NN_MAX_DIM_NUM] = { 0 };
+    int32_t rank_out;
+    int32_t dim_out;
+
+    out_i = 0;
+    for (i = 0; i < resolved_dim[0]; i++)
+    {
+        out_shape_x[out_i++] = shape_x[i];
+    }
+
+    j = 0;
+    dim_out = 0;
+    for (i = 0; i < (resolved_dim_count - 1); i++)
+    {
+       if ((resolved_dim[i] + 1) == resolved_dim[i + 1])
+       {
+            if (is_change)
+            {
+                shape[j++]  = shape_x[resolved_dim[i + 1]];
+            }
+            else
+            {
+                shape[j++]  = shape_x[resolved_dim[i]];
+                shape[j++]  = shape_x[resolved_dim[i + 1]];
+                is_change = vx_true_e;
+            }
+       }
+       else
+       {
+            if (is_change)
+            {
+                vsi_nn_kernel_optimize_element_shape(
+                        shape, (size_t)j,
+                        shape_out, &rank_out );
+                if (2 == rank_out &&  1 == shape_out[1])
+                {
+                    rank_out--;
+                }
+                for (k = 0; k < rank_out; k++)
+                {
+                    resolved_dim_out[dim_out++] = out_i;
+                    out_shape_x[out_i++] = shape_out[k];
+                }
+                j = 0;
+                is_change = vx_false_e;
+            }
+            else
+            {
+                  resolved_dim_out[dim_out++] = out_i;
+                  out_shape_x[out_i++] = shape_x[resolved_dim[i]];
+            }
+
+            for ( k = resolved_dim[i] + 1; k < resolved_dim[i + 1]; k++ )
+            {
+                out_shape_x[out_i++] = shape_x[k];
+            }
+       }
+    }
+
+    if (is_change)
+    {
+         vsi_nn_kernel_optimize_element_shape(
+                shape, (size_t)j,
+                shape_out, &rank_out );
+        if (2 == rank_out &&  1 == shape_out[1])
+        {
+            rank_out--;
+        }
+        for (k = 0; k < rank_out; k++)
+        {
+            resolved_dim_out[dim_out++] = out_i;
+            out_shape_x[out_i++] = shape_out[k];
+        }
+    }
+    else
+    {
+        resolved_dim_out[dim_out++] = out_i;
+        out_shape_x[out_i++] = shape_x[resolved_dim[resolved_dim_count - 1]];
+    }
+
+    for (i = resolved_dim[resolved_dim_count - 1] + 1; i < (int32_t)rank_x; i++)
+    {
+        out_shape_x[out_i++] = shape_x[i];
+    }
+
+    if (1 == out_i)
+    {
+        out_shape_x[out_i++] = 1;
+    }
+
+    *out_rank_x = out_i;
+    *resolved_dim_out_count = dim_out;
+
+    return TRUE;
+}
+
 static vsi_bool op_set_reduce_axis(
                 vsi_nn_node_t * self,
-                vsi_nn_tensor_t ** inputs
+                vsi_nn_tensor_t ** inputs,
+                int32_t* out_shape_x, int32_t* out_rank_x
                 )
 {
     uint32_t i = 0, j = 0;
     int32_t resolved_dim[4]    = {-1, -1, -1, -1};
+    int32_t resolved_dim2[4]    = {-1, -1, -1, -1};
     int32_t resolved_dim_count = 0;
+    int32_t resolved_dim_count2 = 0;
     vsi_bool is_loop = TRUE;
 
     for (i = 0; i < self->nn_param.reduce.axis_num; i++)
@@ -748,11 +862,31 @@ static vsi_bool op_set_reduce_axis(
         resolved_dim_count = j;
     }
 
-    for (i = 0; i < (uint32_t)resolved_dim_count; i++)
+    if (( 1 == resolved_dim_count ))
     {
-        self->nn_param.reduce.local2->axes[i] = resolved_dim[i];
+        resolved_dim2[0]    = resolved_dim[0];
+        resolved_dim_count2 = resolved_dim_count;
+        for (i = 0; i < inputs[0]->attr.dim_num; i++)
+        {
+            out_shape_x[i] = (int32_t)(inputs[0]->attr.size[i]);
+        }
+        *out_rank_x = inputs[0]->attr.dim_num;
     }
-    self->nn_param.reduce.local2->axes_num = resolved_dim_count;
+    else
+    {
+        optimzation_input_size(
+            (int32_t *)inputs[0]->attr.size, inputs[0]->attr.dim_num,
+            out_shape_x, out_rank_x, resolved_dim, resolved_dim_count,
+            resolved_dim2,  &resolved_dim_count2 );
+    }
+
+
+    for (i = 0; i < (uint32_t)resolved_dim_count2; i++)
+    {
+        self->nn_param.reduce.local2->axes[i] = resolved_dim2[i];
+    }
+    self->nn_param.reduce.local2->axes_num = resolved_dim_count2;
+
     return TRUE;
 }
 
@@ -776,7 +910,13 @@ static vsi_bool op_set_reduce_internal
     uint32_t dim_num;
     vx_int32 resolved_dim_count = 0;
     int32_t * axes = self->nn_param.reduce.local2->axes;
+    vx_bool  is_use_fp16 = vx_false_e;
     resolved_dim_count = self->nn_param.reduce.local2->axes_num;
+
+    if ((VSI_NN_OP_REDUCESUM_INTERNAL == type_name) || (VSI_NN_OP_REDUCEPROD_INTERNAL == type_name))
+    {
+        is_use_fp16 = vx_true_e;
+    }
 
     vsi_nn_internal_init_node_wksp( self );
 
@@ -795,6 +935,11 @@ static vsi_bool op_set_reduce_internal
         re_sizes[i]  = inputs[POST_PROCESS_OUTPUT]->attr.size[i];
     }
 
+    if (is_use_fp16)
+    {
+        attr.dtype.vx_type  = VSI_NN_TYPE_FLOAT16;
+        attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
+    }
 
     if (1 == resolved_dim_count)
     {
@@ -971,7 +1116,11 @@ static vsi_bool op_setup
     )
 {
     vsi_bool ret = TRUE;
-
+    vsi_nn_tensor_t* reshape_in_t[1] = { NULL };
+    vsi_nn_tensor_t* reshape_out_t[1] = { NULL };
+    int32_t shape[VSI_NN_MAX_DIM_NUM] = { 0 };
+    int32_t new_rank = 0;
+    int32_t j;
     if (self->nn_param.reduce.type != VSI_NN_REDUCE_MEAN &&
         self->nn_param.reduce.type != VSI_NN_REDUCE_SUM  &&
         self->nn_param.reduce.type != VSI_NN_REDUCE_MAX  &&
@@ -1042,36 +1191,48 @@ static vsi_bool op_setup
         }
     }
 
-    if (FALSE == op_set_reduce_axis(self, inputs))
+    if (FALSE == op_set_reduce_axis(self, inputs, shape, &new_rank))
     {
         VSILOGE("op_set_reduce_axis error");
         return FALSE;
     }
+    reshape_in_t[0] = vsi_nn_reshape_tensor( self->graph,
+            inputs[0], (uint32_t*)shape, new_rank );
 
+    self->nn_param.reduce.local2->reshaped_input1 = reshape_in_t[0];
+    for (j = 0; j < self->nn_param.reduce.local2->axes_num; j++)
+    {
+        shape[self->nn_param.reduce.local2->axes[j]] = 1;
+    }
+
+    reshape_out_t[0] = vsi_nn_reshape_tensor( self->graph,
+            outputs[0], (uint32_t*)shape, new_rank );
+    self->nn_param.reduce.local2->reshaped_output1 = reshape_out_t[0];
     if (self->nn_param.reduce.type == VSI_NN_REDUCE_SUM)
     {
-        ret = op_set_reduce_internal(self, inputs, outputs, VSI_NN_OP_REDUCESUM_INTERNAL);
+        ret = op_set_reduce_internal(self, reshape_in_t, reshape_out_t, VSI_NN_OP_REDUCESUM_INTERNAL);
     }
     else if (self->nn_param.reduce.type == VSI_NN_REDUCE_MAX)
     {
-        ret = op_set_reduce_internal(self, inputs, outputs, VSI_NN_OP_REDUCEMAX_INTERNAL);
+        ret = op_set_reduce_internal(self, reshape_in_t, reshape_out_t, VSI_NN_OP_REDUCEMAX_INTERNAL);
     }
     else if (self->nn_param.reduce.type == VSI_NN_REDUCE_MIN)
     {
-        ret = op_set_reduce_internal(self, inputs, outputs, VSI_NN_OP_REDUCEMIN_INTERNAL);
+        ret = op_set_reduce_internal(self, reshape_in_t, reshape_out_t, VSI_NN_OP_REDUCEMIN_INTERNAL);
     }
     else if (self->nn_param.reduce.type == VSI_NN_REDUCE_PROD)
     {
-        ret = op_set_reduce_internal(self, inputs, outputs, VSI_NN_OP_REDUCEPROD_INTERNAL);
+        ret = op_set_reduce_internal(self, reshape_in_t, reshape_out_t, VSI_NN_OP_REDUCEPROD_INTERNAL);
     }
     else if (self->nn_param.reduce.type == VSI_NN_REDUCE_ALL)
     {
-        ret = op_set_reduce_internal(self, inputs, outputs, VSI_NN_OP_REDUCEALL_INTERNAL);
+        ret = op_set_reduce_internal(self, reshape_in_t, reshape_out_t, VSI_NN_OP_REDUCEALL_INTERNAL);
     }
     else if (self->nn_param.reduce.type == VSI_NN_REDUCE_ANY)
     {
-        ret = op_set_reduce_internal(self, inputs, outputs, VSI_NN_OP_REDUCEANY_INTERNAL);
+        ret = op_set_reduce_internal(self, reshape_in_t, reshape_out_t, VSI_NN_OP_REDUCEANY_INTERNAL);
     }
+
 
     return ret;
 } /* op_setup() */
@@ -1104,7 +1265,14 @@ static vsi_status op_deinit
         {
             vsi_nn_ReleaseTensor(&(self->nn_param.reduce.local2->reshaped_input));
         }
-
+        if (self->nn_param.reduce.local2->reshaped_output1 != NULL)
+        {
+            vsi_nn_ReleaseTensor(&(self->nn_param.reduce.local2->reshaped_output1));
+        }
+        if (self->nn_param.reduce.local2->reshaped_input1 != NULL)
+        {
+            vsi_nn_ReleaseTensor(&(self->nn_param.reduce.local2->reshaped_input1));
+        }
         free(self->nn_param.reduce.local2);
         self->nn_param.reduce.local2 = NULL;
     }

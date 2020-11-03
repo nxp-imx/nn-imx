@@ -137,7 +137,7 @@ DEF_KERNEL_EXECUTOR(_compute)
         in2_offset = _expand_offset( i, in_attr[2]->shape->data, in_attr[2]->shape->size,
                 in_stride_size[2], out_attr[0]->shape->data );
 
-        f32_out_buffer[0][i] = ((int32_t)(f32_in_buffer[0][in0_offset])) ?
+        f32_out_buffer[0][i] = (f32_in_buffer[0][in0_offset]) ?
                                f32_in_buffer[1][in1_offset] : f32_in_buffer[2][in2_offset];
     }
 
