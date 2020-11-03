@@ -59,6 +59,8 @@ class ModelShell {
 
     void Execute();
 
+    adaption::FinalModel* GetFinalModelPtr() {return m_NativeModel.get();}
+
    private:
     adaption::FinalModelPtr m_NativeModel;
     nnrt::CompilerUniquePtr m_Compiler;  //!< model compiler

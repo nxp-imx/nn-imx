@@ -143,32 +143,43 @@ void NpuTensorHandler::getMemoryReady() const {
         //                         |
         //                      output
         // Start computing from right branch
+        if (m_Memory) {
+            this->dirty_flag = true;
+        }
         if (m_ExternalMem || m_Memory) return;
         if (nullptr == m_ExternalMem) {
             m_Memory.reset(new uint8_t[m_TensorInfo.GetNumBytes()]);
             // Keep this track random caculation error issue
-            std::cout
-                                    << ", size = " << m_TensorInfo.GetNumBytes();
+            std::cout << ", size = " << m_TensorInfo.GetNumBytes();
         }
         return;
     }
 
     // For middle tensor handler
     if (m_Memory) {
-        // "Warn-Start NN execution"
+        // "Warm-Start NN execution"
         if (!m_ModelShell) {
             assert(false);
             std::cout << "Model prepare failed: check previous log for error log";
             return;
         }
-        std::cout << "Warn-Start NN execution" ;
+        auto inputs_handle = m_ModelShell->GetFinalModelPtr()->second.first;
+        if (std::none_of(inputs_handle.cbegin(),
+                         inputs_handle.cend(),
+                         [](NpuTensorHandler* handle) { return handle->dirty_flag; })) {
+            return;
+        }
+        std::cout << "Warm-Start NN execution";
+        for (auto& inputHandle : inputs_handle) {
+            inputHandle->dirty_flag = false;
+        }
         m_ModelShell->Execute();
         return;
     }
 
     // Rest code for output handler
     if (m_ExternalMem) {
-        // "Warn-Start NN execution"
+        // "Warm-Start NN execution"
         if (!m_ModelShell) {
             auto mergedModel = adaption::utils::MergeModels(m_ModelStack);
             m_ModelShell.reset(new ModelShell(std::move(mergedModel)));
@@ -180,7 +191,7 @@ void NpuTensorHandler::getMemoryReady() const {
             }
         }
 
-        std::cout << "Warn-Start NN execution" ;
+        std::cout << "Warm-Start NN execution" ;
 
         m_ModelShell->Execute();
         return;

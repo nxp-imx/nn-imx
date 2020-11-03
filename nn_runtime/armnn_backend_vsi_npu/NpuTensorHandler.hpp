@@ -129,6 +129,7 @@ class NpuTensorHandler : public ITensorHandle {
     TensorInfo m_TensorInfo;
     mutable boost::scoped_array<uint8_t> m_Memory;
     void* m_ExternalMem;
+    mutable bool dirty_flag = false;
 
     mutable adaption::ModelStack m_ModelStack;  //!< TensorHandler doesn't create this, we pass through
                                                 // the local model hosted by workload to following workload
