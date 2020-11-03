@@ -376,6 +376,9 @@ static vsi_bool _init_tensor
                 data = vsi_nn_MallocAlignedBuffer(buf_sz, align_start_size,
                     align_block_size);
                 tensor->attr.is_handle_malloc_by_ovxlib = TRUE;
+#ifdef VX_CREATE_TENSOR_SUPPORT_PHYSICAL
+                tensor->attr.vsi_memory_type = VSI_MEMORY_TYPE_HOST;
+#endif
             }
             else
             {
@@ -399,6 +402,17 @@ static vsi_bool _init_tensor
             {
                 addr = vxCreateTensorAddressing(graph->ctx->c,
                     tensor->attr.size, stride_size, (uint8_t)tensor->attr.dim_num);
+#ifdef VX_CREATE_TENSOR_SUPPORT_PHYSICAL
+#ifdef VX_13_NN_COMPATIBLITY
+                tensor->t = vxCreateTensorFromHandle2(graph->ctx->c,
+                    &params, sizeof(vx_tensor_create_params_t),
+                    addr, data, tensor->attr.vsi_memory_type);
+#else
+                tensor->t = vxCreateTensorFromHandle(graph->ctx->c,
+                    &params, sizeof(vx_tensor_create_params_t),
+                    addr, data, tensor->attr.vsi_memory_type);
+#endif
+#else
 #ifdef VX_13_NN_COMPATIBLITY
                 tensor->t = vxCreateTensorFromHandle2(graph->ctx->c,
                     &params, sizeof(vx_tensor_create_params_t),
@@ -407,6 +421,8 @@ static vsi_bool _init_tensor
                 tensor->t = vxCreateTensorFromHandle(graph->ctx->c,
                     &params, sizeof(vx_tensor_create_params_t),
                     addr, data, VX_MEMORY_TYPE_HOST);
+#endif
+
 #endif
                 //memset(data, 0x5A, buf_sz);
                 vxReleaseTensorAddressing( &addr );
@@ -532,6 +548,12 @@ vsi_nn_tensor_t * vsi_nn_CreateTensorFromHandle
     )
 {
     attr->is_created_from_handle = TRUE;
+#ifdef VX_CREATE_TENSOR_SUPPORT_PHYSICAL
+    if(attr->vsi_memory_type == VSI_MEMORY_TYPE_NONE || attr->vsi_memory_type == 0)
+    {
+        attr->vsi_memory_type = VSI_MEMORY_TYPE_HOST;
+    }
+#endif
     return _create_tensor(graph, data, attr);
 } /* vsi_nn_CreateTensorFromHandle() */
 

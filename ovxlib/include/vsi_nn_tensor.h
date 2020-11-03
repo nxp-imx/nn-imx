@@ -145,6 +145,9 @@ typedef struct vsi_nn_tensor_attr
     vsi_nn_dtype_t dtype;
     vsi_bool     is_created_from_handle;
     vsi_bool     is_handle_malloc_by_ovxlib;
+#ifdef VX_CREATE_TENSOR_SUPPORT_PHYSICAL
+    vsi_memory_type_e vsi_memory_type;
+#endif
 } vsi_nn_tensor_attr_t;
 
 
