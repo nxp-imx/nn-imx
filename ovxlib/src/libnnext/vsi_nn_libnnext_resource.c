@@ -30108,6 +30108,141 @@ TILE_2D(I16, I16, 0, 7, vxc_short8)\n\
 \n\
 "; /* end of tile_vx*/
 
+static const char tile_mix_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+_viv_uniform VXC_512Bits uniU8MulAndPostShift_Lo_2x8;\n\
+_viv_uniform int2 multAndoutZP;//[0:15] multiplier, [31:63] output zp\n\
+\n\
+_viv_uniform int lastWorkItem;\n\
+\n\
+#define TILE_3D_MIX(name0, name1, name2, remainder, type, out_type) \\\n\
+__kernel void tile_remain##name2##_##name0##to##name1( \\\n\
+    __read_only image2d_array_t  input, \\\n\
+    __write_only image2d_array_t output, \\\n\
+                             int batchIn, \\\n\
+                             int depthIn, \\\n\
+                             int depthOut, \\\n\
+                             int multiples_0, \\\n\
+                             int multiples_1, \\\n\
+                             int multiples_2, \\\n\
+                             int multiples_3 \\\n\
+) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
+    int4 coord_out; \\\n\
+    int width = get_image_width(input); \\\n\
+    int height = get_image_height(input); \\\n\
+    int output_width = get_image_width(output); \\\n\
+    type src; \\\n\
+    vxc_half8  src1; \\\n\
+    out_type dst; \\\n\
+    VXC_ReadImage2DArray(src, input, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+ \\\n\
+    int isLastItem = coord.x == lastWorkItem; \\\n\
+ \\\n\
+    int batch_id = (short)coord.z / (short)depthIn; \\\n\
+    coord.z = (short)coord.z % (short)depthIn; \\\n\
+    coord_out = coord; \\\n\
+ \\\n\
+    vxc_ushort8 multiplier; \\\n\
+    _viv_asm(COPY, multiplier, multAndoutZP, 16); \\\n\
+    VXC_DP2x8(src1, src, multiplier,\\\n\
+            VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniU8MulAndPostShift_Lo_2x8); \\\n\
+    _viv_asm(COPY, dst, src1, 16); \\\n\
+ \\\n\
+    for (int w = 0; w < multiples_3; w++) \\\n\
+    { \\\n\
+        int batch = batchIn * w + batch_id; \\\n\
+ \\\n\
+        for(int z = 0; z < multiples_2; z++) \\\n\
+        { \\\n\
+            coord_out.z = coord.z + z * depthIn + batch * depthOut; \\\n\
+ \\\n\
+            for (int y = 0; y < multiples_1; y++) \\\n\
+            { \\\n\
+                coord_out.y = coord.y + y * height; \\\n\
+ \\\n\
+                for (int x = 0; x < multiples_0; x++) \\\n\
+                { \\\n\
+                    coord_out.x = coord.x + x * width; \\\n\
+                    if (isLastItem) \\\n\
+                        VXC_WriteImage2DArray(output, coord_out, dst, \\\n\
+                            VXC_MODIFIER(0, remainder, 0, VXC_RM_TowardZero, 0)); \\\n\
+                    else \\\n\
+                        VXC_WriteImage2DArray(output, coord_out, dst, \\\n\
+                            VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+                } \\\n\
+            } \\\n\
+        } \\\n\
+    } \\\n\
+}\n\
+TILE_3D_MIX(U8, F16, 1, 0, vxc_uchar8, vxc_short8)\n\
+TILE_3D_MIX(U8, F16, 2, 1, vxc_uchar8, vxc_short8)\n\
+TILE_3D_MIX(U8, F16, 3, 2, vxc_uchar8, vxc_short8)\n\
+TILE_3D_MIX(U8, F16, 4, 3, vxc_uchar8, vxc_short8)\n\
+TILE_3D_MIX(U8, F16, 5, 4, vxc_uchar8, vxc_short8)\n\
+TILE_3D_MIX(U8, F16, 6, 5, vxc_uchar8, vxc_short8)\n\
+TILE_3D_MIX(U8, F16, 7, 6, vxc_uchar8, vxc_short8)\n\
+TILE_3D_MIX(U8, F16, 0, 7, vxc_uchar8, vxc_short8)\n\
+\n\
+\n\
+#define TILE_2D_MIX(name0, name1, name2, remainder, type, out_type) \\\n\
+__kernel void tile_remain##name2##_##name0##to##name1##_2D( \\\n\
+    __read_only image2d_array_t  input, \\\n\
+    __write_only image2d_array_t output, \\\n\
+                             int batchIn, \\\n\
+                             int depthIn, \\\n\
+                             int depthOut, \\\n\
+                             int multiples_0, \\\n\
+                             int multiples_1, \\\n\
+                             int multiples_2, \\\n\
+                             int multiples_3 \\\n\
+) \\\n\
+{ \\\n\
+    int2 coord = (int2)(get_global_id(0), get_global_id(1)); \\\n\
+    int width = get_image_width(input); \\\n\
+    int height = get_image_height(input); \\\n\
+    int output_width = get_image_width(output); \\\n\
+    int output_height = get_image_height(output); \\\n\
+    type src; \\\n\
+    vxc_half8  src1; \\\n\
+    out_type dst; \\\n\
+    VXC_ReadImage(src, input, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+ \\\n\
+    int isLastItem = coord.x == lastWorkItem; \\\n\
+ \\\n\
+    vxc_ushort8 multiplier; \\\n\
+    _viv_asm(COPY, multiplier, multAndoutZP, 16); \\\n\
+    VXC_DP2x8(src1, src, multiplier,\\\n\
+            VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniU8MulAndPostShift_Lo_2x8); \\\n\
+    _viv_asm(COPY, dst, src1, 16); \\\n\
+ \\\n\
+    do \\\n\
+    { \\\n\
+        do \\\n\
+        { \\\n\
+            if (isLastItem) \\\n\
+                VXC_WriteImage(output, coord, dst, VXC_MODIFIER(0, remainder, 0, VXC_RM_TowardZero, 0)); \\\n\
+            else \\\n\
+                VXC_WriteImage(output, coord, dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+            coord.x += width; \\\n\
+        } while (coord.x < output_width); \\\n\
+        coord.x = get_global_id(0); \\\n\
+        coord.y += height; \\\n\
+    } while (coord.y < output_height); \\\n\
+}\n\
+TILE_2D_MIX(U8, F16, 1, 0, vxc_uchar8, vxc_short8)\n\
+TILE_2D_MIX(U8, F16, 2, 1, vxc_uchar8, vxc_short8)\n\
+TILE_2D_MIX(U8, F16, 3, 2, vxc_uchar8, vxc_short8)\n\
+TILE_2D_MIX(U8, F16, 4, 3, vxc_uchar8, vxc_short8)\n\
+TILE_2D_MIX(U8, F16, 5, 4, vxc_uchar8, vxc_short8)\n\
+TILE_2D_MIX(U8, F16, 6, 5, vxc_uchar8, vxc_short8)\n\
+TILE_2D_MIX(U8, F16, 7, 6, vxc_uchar8, vxc_short8)\n\
+TILE_2D_MIX(U8, F16, 0, 7, vxc_uchar8, vxc_short8)\n\
+"; /* end of tile_mix_vx*/
+
 static const char upsample_F16_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 _viv_uniform VXC_512Bits uniF16MulMultipiler_PostShft_2x8;\n\
@@ -46058,6 +46193,7 @@ static const source_map_t evis_resource[] =
     {"select_vx", select_vx},
     {"swish_vx", swish_vx},
     {"tile_vx", tile_vx},
+    {"tile_mix_vx", tile_mix_vx},
     {"upsample_F16_vx", upsample_F16_vx},
     {"upsample_I16_vx", upsample_I16_vx},
     {"upsample_I8_vx", upsample_I8_vx},
