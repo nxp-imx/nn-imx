@@ -397,7 +397,7 @@ DEF_KERNEL_INITIALIZER(_log_softmax_initializer)
         }
 
         status = vsi_nn_kernel_gpu_add_param( node,
-            "output_scale", &output_scale );
+            "outputScale", &output_scale );
         CHECK_STATUS_FAIL_GOTO(status, final );
     }
     else if (attr[1]->quant == VSI_NN_KERNEL_QUANT_ASYMM)
