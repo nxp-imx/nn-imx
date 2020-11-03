@@ -174,7 +174,7 @@ DEF_KERNEL_INITIALIZER(_matrix_mul_initializer)
     float       src0Scale  = 0;
     int32_t     src1ZP     = 0;
     float       src1Scale  = 0;
-    int32_t     dstZP      = 0;
+    float       dstZP      = 0;
     float       dstScale   = 0;
     uint16_t M0            = 0;
     uint16_t M1            = 0;
@@ -219,7 +219,7 @@ DEF_KERNEL_INITIALIZER(_matrix_mul_initializer)
     src0Scale  = attr[0]->asymm.scale;
     src1ZP     = attr[1]->asymm.zero_point;
     src1Scale  = attr[1]->asymm.scale;
-    dstZP      = attr[2]->asymm.zero_point;
+    dstZP      = (float)attr[2]->asymm.zero_point;
     dstScale   = attr[2]->asymm.scale;
 
     if( attr[0]->quant == VSI_NN_KERNEL_QUANT_DFP )
@@ -269,12 +269,12 @@ DEF_KERNEL_INITIALIZER(_matrix_mul_initializer)
             dstScale = (1.0f / (float)(1 << -attr[2]->dfp.fl));
         }
         dstScale = 1.0f / dstScale;
-        dstZP = 0;
+        dstZP = 0.0f;
     }
     else if( attr[2]->quant == VSI_NN_KERNEL_QUANT_NONE )
     {
         dstScale = 1;
-        dstZP = 0;
+        dstZP = 0.0f;
     }
     vsi_nn_GetFP32MultiAndPostShift(src0Scale / 1.0f, &M0, &postShift0);
     vsi_nn_GetFP32MultiAndPostShift(src1Scale / 1.0f, &M1, &postShift1);

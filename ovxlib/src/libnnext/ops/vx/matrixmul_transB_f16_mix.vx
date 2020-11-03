@@ -137,7 +137,7 @@ __kernel void gemm_transb_F16U8toF16(image2d_array_t inputA,
 /***********************gemm transposeB fp16 uint8 to uint8***********************************/
 _viv_uniform float scaleIn2divOut;
 _viv_uniform VXC_512Bits uniConvertInt32toUint8_2x8;
-_viv_uniform int output_ZP;
+_viv_uniform float output_ZP;
 
 __kernel void gemm_transb_F16U8toU8(image2d_array_t inputA,
                         image2d_array_t inputB,

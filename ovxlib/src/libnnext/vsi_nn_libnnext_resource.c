@@ -13278,7 +13278,7 @@ __kernel void gemm_F32F32toF32(image2d_array_t inputA,\n\
 
 static const char matrixmul_f16f16_u8_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
-_viv_uniform int output_ZP;\n\
+_viv_uniform float output_ZP;\n\
 _viv_uniform float outputScale;\n\
 _viv_uniform VXC_512Bits uniConvertInt32toUint8_2x8;\n\
 \n\
@@ -13679,7 +13679,7 @@ GEMM_F16_QINT16_TO_F16(I16, vxc_short8)\n\
 
 static const char matrixmul_f16u8_u8_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
-_viv_uniform int output_ZP;\n\
+_viv_uniform float output_ZP;\n\
 _viv_uniform VXC_512Bits uniConvertInt32toUint8_2x8;\n\
 _viv_uniform int ac2zero;\n\
 _viv_uniform int bc2zero;\n\
@@ -13779,7 +13779,7 @@ static const char matrixmul_i16_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 _viv_uniform int input0_ZP;\n\
 _viv_uniform int input1_ZP;\n\
-_viv_uniform int output_ZP;\n\
+_viv_uniform float output_ZP;\n\
 _viv_uniform float outputScale;\n\
 _viv_uniform VXC_512Bits uniConvertUint8SubZpToFp32_4x4;\n\
 _viv_uniform VXC_512Bits uniConvertUint8SubZpToFp32B_4x4;\n\
@@ -13884,7 +13884,7 @@ static const char matrixmul_transA_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 _viv_uniform int input0_ZP;\n\
 _viv_uniform int input1_ZP;\n\
-_viv_uniform int output_ZP;\n\
+_viv_uniform float output_ZP;\n\
 _viv_uniform float outputScale;\n\
 _viv_uniform VXC_512Bits uniConvertUint8SubZpToFp32_4x4;\n\
 _viv_uniform VXC_512Bits uniConvertUint8SubZpToFp32B_4x4;\n\
@@ -14404,7 +14404,7 @@ __kernel void gemm_transb_F16U8toF16(image2d_array_t inputA,\n\
 /***********************gemm transposeB fp16 uint8 to uint8***********************************/\n\
 _viv_uniform float scaleIn2divOut;\n\
 _viv_uniform VXC_512Bits uniConvertInt32toUint8_2x8;\n\
-_viv_uniform int output_ZP;\n\
+_viv_uniform float output_ZP;\n\
 \n\
 __kernel void gemm_transb_F16U8toU8(image2d_array_t inputA,\n\
                         image2d_array_t inputB,\n\
@@ -14673,7 +14673,7 @@ __kernel void gemm_transb_U8U8toF16(image2d_array_t inputA,\n\
 /********************gemm transposeB uint8 uint8 to uint8*************************/\n\
 _viv_uniform float inScaledivOut;\n\
 _viv_uniform VXC_512Bits uniConvertInt32toUint8_2x8;\n\
-_viv_uniform int output_ZP;\n\
+_viv_uniform float output_ZP;\n\
 \n\
 __kernel void gemm_transb_U8U8toU8(image2d_array_t inputA,\n\
                         image2d_array_t inputB,\n\
@@ -14804,7 +14804,7 @@ __kernel void gemm_transb_U8U8toU8(image2d_array_t inputA,\n\
 
 static const char matrixmul_u8_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
-_viv_uniform int output_ZP;\n\
+_viv_uniform float output_ZP;\n\
 _viv_uniform float mulKIn0In1Zp;\n\
 _viv_uniform float inOutScale;\n\
 _viv_uniform VXC_512Bits uniConvertInt32toUint8_2x8;\n\
@@ -14819,9 +14819,8 @@ __kernel void gemm_##src0_type_name##src0_type_name##to##src0_type_name( \\\n\
         image2d_array_t inputA, image2d_array_t inputB, image2d_array_t output, \\\n\
         int transposeA, int transposeB, int adjointA, int adjointB, uint M, uint K, uint N) \\\n\
 { \\\n\
-    uint gidy = get_global_id(1); \\\n\
     read_type srcA0, srcA1, srcA2, srcA3, srcB, outC; \\\n\
-    int4 coord_a = (int4)(0, gidy, (ac2zero ? 0 : get_global_id(2)), 0); \\\n\
+    int4 coord_a = (int4)(0, get_global_id(1), (ac2zero ? 0 : get_global_id(2)), 0); \\\n\
     int4 coord_b = (int4)(get_global_id(0), 0, (bc2zero ? 0 : get_global_id(2)), 0); \\\n\
     vxc_float4 sum0 = (vxc_float4)(mulKIn0In1Zp, mulKIn0In1Zp, mulKIn0In1Zp, mulKIn0In1Zp), sum1 = sum0; \\\n\
     vxc_float4 sum2 = sum0, sum3 = sum0; \\\n\
@@ -14878,7 +14877,7 @@ __kernel void gemm_##src0_type_name##src0_type_name##to##src0_type_name( \\\n\
         sum3 += tempA3 + tempB3; \\\n\
     } \\\n\
     vxc_int4 tmpOut0, tmpOut1; \\\n\
-    coord_b.y = gidy; \\\n\
+    coord_b.y = get_global_id(1); \\\n\
     _viv_asm(COPY, output_desc, output, sizeof(output_desc)); \\\n\
     int baseAddr = (int)get_global_id(2) * output_desc.s4 + output_desc.s0; \\\n\
     _viv_asm(MOV, coord_b.w, baseAddr); \\\n\
@@ -15129,7 +15128,7 @@ GEMM_QINT_F16_TO_F16(I16, vxc_short8)\n\
 static const char matrixmul_u8f16_u8_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 _viv_uniform int input0_ZP;\n\
-_viv_uniform int output_ZP;\n\
+_viv_uniform float output_ZP;\n\
 _viv_uniform float outputScale;\n\
 _viv_uniform VXC_512Bits uniConvertUint8SubZpToFp32_4x4;\n\
 _viv_uniform VXC_512Bits uniConvertInt32toUint8_2x8;\n\

@@ -1,6 +1,6 @@
 #include "cl_viv_vx_ext.h"
 
-_viv_uniform int output_ZP;
+_viv_uniform float output_ZP;
 _viv_uniform float mulKIn0In1Zp;
 _viv_uniform float inOutScale;
 _viv_uniform VXC_512Bits uniConvertInt32toUint8_2x8;
@@ -15,9 +15,8 @@ __kernel void gemm_##src0_type_name##src0_type_name##to##src0_type_name( \
         image2d_array_t inputA, image2d_array_t inputB, image2d_array_t output, \
         int transposeA, int transposeB, int adjointA, int adjointB, uint M, uint K, uint N) \
 { \
-    uint gidy = get_global_id(1); \
     read_type srcA0, srcA1, srcA2, srcA3, srcB, outC; \
-    int4 coord_a = (int4)(0, gidy, (ac2zero ? 0 : get_global_id(2)), 0); \
+    int4 coord_a = (int4)(0, get_global_id(1), (ac2zero ? 0 : get_global_id(2)), 0); \
     int4 coord_b = (int4)(get_global_id(0), 0, (bc2zero ? 0 : get_global_id(2)), 0); \
     vxc_float4 sum0 = (vxc_float4)(mulKIn0In1Zp, mulKIn0In1Zp, mulKIn0In1Zp, mulKIn0In1Zp), sum1 = sum0; \
     vxc_float4 sum2 = sum0, sum3 = sum0; \
@@ -74,7 +73,7 @@ __kernel void gemm_##src0_type_name##src0_type_name##to##src0_type_name( \
         sum3 += tempA3 + tempB3; \
     } \
     vxc_int4 tmpOut0, tmpOut1; \
-    coord_b.y = gidy; \
+    coord_b.y = get_global_id(1); \
     _viv_asm(COPY, output_desc, output, sizeof(output_desc)); \
     int baseAddr = (int)get_global_id(2) * output_desc.s4 + output_desc.s0; \
     _viv_asm(MOV, coord_b.w, baseAddr); \
