@@ -2,7 +2,7 @@
 
 _viv_uniform int input0_ZP;
 _viv_uniform int input1_ZP;
-_viv_uniform int output_ZP;
+_viv_uniform float output_ZP;
 _viv_uniform float outputScale;
 _viv_uniform VXC_512Bits uniConvertUint8SubZpToFp32_4x4;
 _viv_uniform VXC_512Bits uniConvertUint8SubZpToFp32B_4x4;

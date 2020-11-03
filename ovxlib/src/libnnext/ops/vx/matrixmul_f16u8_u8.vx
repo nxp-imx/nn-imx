@@ -1,6 +1,6 @@
 #include "cl_viv_vx_ext.h"
 
-_viv_uniform int output_ZP;
+_viv_uniform float output_ZP;
 _viv_uniform VXC_512Bits uniConvertInt32toUint8_2x8;
 _viv_uniform int ac2zero;
 _viv_uniform int bc2zero;
