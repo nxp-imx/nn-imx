@@ -19,6 +19,7 @@ class Env():
         self.args = args
         self.build = "Debug"
         self.driver_sdk_dir = args.driver_sdk_dir
+        self.ovxlib_dir = args.ovxlib_dir
         self.blender_dir = args.blender_dir
         if args.cmake_path:
             self.cmake_path = args.cmake_path
@@ -242,7 +243,7 @@ def build_armnn(env):
         + env.driver_sdk_dir + "/drivers"
     my_env = {
         "VIVANTE_SDK_DIR": env.driver_sdk_dir,
-        "OVXLIB_DIR": env.blender_dir + "/ovxlib",
+        "OVXLIB_DIR": env.ovxlib_dir,
         "NNRT_ROOT": env.blender_dir,
         "LDFLAGS": ld_flags,
     }
@@ -295,6 +296,7 @@ def parse_arguments(board_list):
     parser.add_argument("board_name", type=str, choices=board_list, help="Board Name.")
     parser.add_argument("driver_sdk_dir", type=str, help="Driver SDK directory.")
     parser.add_argument("blender_dir", type=str, help="Blender root directory.")
+    parser.add_argument("ovxlib_dir", type=str, help="Ovxlib directory.")
     parser.add_argument("--config", type=str, default="Debug",
                         choices=["Debug", "Release", "RelWithDebInfo"],
                         help="Configuration(s) to build.")
