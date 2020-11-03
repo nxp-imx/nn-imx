@@ -41595,21 +41595,19 @@ static const char matrixmul_cl[] = "__kernel void gemm_F32F32toF32_2D(\n\
 \n\
     float4 sum = (float4)(0);\n\
 \n\
-    for(int i = 0; i < K; i++)\n\
+    for(; coord_a.x < K;)\n\
     {\n\
         float4 tempA0;\n\
         float4 tempB0;\n\
 \n\
-        coord_a.x = i;\n\
-        coord_b.y = i;\n\
-\n\
         tempA0 = read_imagef(inputA, coord_a);\n\
         tempB0 = read_imagef(inputB, coord_b);\n\
+        coord_a.x++;\n\
+        coord_b.y++;\n\
 \n\
         sum += tempA0 * tempB0;\n\
     }\n\
 \n\
-    coord_b.x = gidx;\n\
     coord_b.y = gidy;\n\
     write_imagef(output, coord_b, sum);\n\
 }\n\
@@ -41625,30 +41623,26 @@ __kernel void gemm_F32F32toF32_3D(\n\
     int bc2zero\n\
     )\n\
 {\n\
-    int gidx = get_global_id(0);\n\
-    int gidy = get_global_id(1);\n\
-\n\
-    int4 coord_a = (int4)(0, gidy, (ac2zero ? 0 : get_global_id(2)), 0);\n\
-    int4 coord_b = (int4)(gidx, 0, (bc2zero ? 0 : get_global_id(2)), 0);\n\
+    int4 coord_a = (int4)(0, get_global_id(1), (ac2zero ? 0 : get_global_id(2)), 0);\n\
+    int4 coord_b = (int4)(get_global_id(0), 0, (bc2zero ? 0 : get_global_id(2)), 0);\n\
 \n\
     float4 sum = (float4)(0);\n\
 \n\
-    for(int i = 0; i < K; i++)\n\
+    for(; coord_a.x < K;)\n\
     {\n\
         float4 tempA0;\n\
         float4 tempB0;\n\
 \n\
-        coord_a.x = i;\n\
-        coord_b.y = i;\n\
-\n\
         tempA0 = read_imagef(inputA, coord_a);\n\
         tempB0 = read_imagef(inputB, coord_b);\n\
+        coord_a.x++;\n\
+        coord_b.y++;\n\
 \n\
         sum += tempA0 * tempB0;\n\
     }\n\
 \n\
-    coord_b.x = gidx;\n\
-    coord_b.y = gidy;\n\
+    coord_b.y = get_global_id(1);\n\
+    coord_b.z = get_global_id(2);\n\
     write_imagef(output, coord_b, sum);\n\
 }\n\
 "; /* end of matrixmul_cl*/
@@ -41672,21 +41666,19 @@ static const char matrixmul_transA_cl[] = "__kernel void gemm_transa_F32F32toF32
 \n\
     float4 sum = (float4)(0);\n\
 \n\
-    for(int i = 0; i < K; i++)\n\
+    for(; coord_a.y < K;)\n\
     {\n\
         float4 tempA0;\n\
         float4 tempB0;\n\
 \n\
-        coord_a.y = i;\n\
-        coord_b.y = i;\n\
-\n\
         tempA0 = read_imagef(inputA, coord_a);\n\
         tempB0 = read_imagef(inputB, coord_b);\n\
+        coord_a.y++;\n\
+        coord_b.y++;\n\
 \n\
         sum += tempA0 * tempB0;\n\
     }\n\
 \n\
-    coord_b.x = gidx;\n\
     coord_b.y = gidy;\n\
     write_imagef(output, coord_b, sum);\n\
 }\n\
@@ -41710,22 +41702,21 @@ __kernel void gemm_transa_F32F32toF32_3D(\n\
 \n\
     float4 sum = (float4)(0);\n\
 \n\
-    for(int i = 0; i < K; i++)\n\
+    for(; coord_a.y < K;)\n\
     {\n\
         float4 tempA0;\n\
         float4 tempB0;\n\
 \n\
-        coord_a.y = i;\n\
-        coord_b.y = i;\n\
-\n\
         tempA0 = read_imagef(inputA, coord_a);\n\
         tempB0 = read_imagef(inputB, coord_b);\n\
+        coord_a.y++;\n\
+        coord_b.y++;\n\
 \n\
         sum += tempA0 * tempB0;\n\
     }\n\
 \n\
-    coord_b.x = gidx;\n\
     coord_b.y = gidy;\n\
+    coord_b.z = get_global_id(2);\n\
     write_imagef(output, coord_b, sum);\n\
 }\n\
 "; /* end of matrixmul_transA_cl*/

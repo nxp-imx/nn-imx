@@ -17,21 +17,19 @@ __kernel void gemm_transa_F32F32toF32_2D(
 
     float4 sum = (float4)(0);
 
-    for(int i = 0; i < K; i++)
+    for(; coord_a.y < K;)
     {
         float4 tempA0;
         float4 tempB0;
 
-        coord_a.y = i;
-        coord_b.y = i;
-
         tempA0 = read_imagef(inputA, coord_a);
         tempB0 = read_imagef(inputB, coord_b);
+        coord_a.y++;
+        coord_b.y++;
 
         sum += tempA0 * tempB0;
     }
 
-    coord_b.x = gidx;
     coord_b.y = gidy;
     write_imagef(output, coord_b, sum);
 }
@@ -55,21 +53,20 @@ __kernel void gemm_transa_F32F32toF32_3D(
 
     float4 sum = (float4)(0);
 
-    for(int i = 0; i < K; i++)
+    for(; coord_a.y < K;)
     {
         float4 tempA0;
         float4 tempB0;
 
-        coord_a.y = i;
-        coord_b.y = i;
-
         tempA0 = read_imagef(inputA, coord_a);
         tempB0 = read_imagef(inputB, coord_b);
+        coord_a.y++;
+        coord_b.y++;
 
         sum += tempA0 * tempB0;
     }
 
-    coord_b.x = gidx;
     coord_b.y = gidy;
+    coord_b.z = get_global_id(2);
     write_imagef(output, coord_b, sum);
 }
