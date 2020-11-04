@@ -1268,6 +1268,7 @@ OperationPtr NnApiInterpreter::map_RESIZE_BILINEAR(Model* model,
         }
     } else {
         NNRT_LOGE_PRINT("Resize bilinear argument list not support");
+        assert(false);
     }
     truncateOperationIOs(model, operation, 1, 1);
     return resize;

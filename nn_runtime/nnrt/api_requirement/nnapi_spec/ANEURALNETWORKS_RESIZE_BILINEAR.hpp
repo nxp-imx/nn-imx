@@ -33,7 +33,9 @@ OP_SPEC_BEGIN()
      output_width,        \
      height_scale,        \
      width_scale,         \
-     data_layout)
+     data_layout,         \
+     align_corners,       \
+     half_pixel_corners)
 #define ARGC BOOST_PP_TUPLE_SIZE(ARG_NAMES)
 
 #define BOOST_PP_LOCAL_MACRO(n) OP_SPEC_ARG(BOOST_PP_TUPLE_ELEM(ARGC, n, ARG_NAMES))
@@ -46,7 +48,9 @@ MAKE_SPEC(height_width_base)
     .input_(nnrt::OperandType::TENSOR_FLOAT32)
     .output_height_(nnrt::OperandType::INT32)
     .output_width_(nnrt::OperandType::INT32)
-    .data_layout_(nnrt::OperandType::BOOL, OPTIONAL));
+    .data_layout_(nnrt::OperandType::BOOL, OPTIONAL)
+    .align_corners_(nnrt::OperandType::BOOL, OPTIONAL)
+    .half_pixel_corners_(nnrt::OperandType::BOOL, OPTIONAL));
 
     OVERRIDE_SPEC(height_width_base, 0)
     .input_(nnrt::OperandType::TENSOR_FLOAT16));
@@ -58,7 +62,9 @@ MAKE_SPEC(scale_base)
     .input_(nnrt::OperandType::TENSOR_FLOAT32)
     .height_scale_(nnrt::OperandType::FLOAT32)
     .width_scale_(nnrt::OperandType::FLOAT32)
-    .data_layout_(nnrt::OperandType::BOOL, OPTIONAL));
+    .data_layout_(nnrt::OperandType::BOOL, OPTIONAL)
+    .align_corners_(nnrt::OperandType::BOOL, OPTIONAL)
+    .half_pixel_corners_(nnrt::OperandType::BOOL, OPTIONAL));
 
     OVERRIDE_SPEC(scale_base, 0)
     .input_(nnrt::OperandType::TENSOR_FLOAT16)
