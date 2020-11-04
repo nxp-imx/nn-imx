@@ -141,12 +141,17 @@ class Operand : public BaseOperand {
 
     void cloneQuantParams(Operand* operand);
 
+    const bool isUsed() const { return is_used_; }
+
+    void setUsed(bool flag) { is_used_ = flag; }
+
    private:
     uint32_t number_of_consumers_;
     std::vector<uint32_t> perm_;
     nnrt::layout_inference::IPermuteVectorPtr perm_vector_ = nullptr;
     bool optional_null_ = false;
     bool is_graph_input_output_ = false;
+    bool is_used_ = false;
 };
 
 }

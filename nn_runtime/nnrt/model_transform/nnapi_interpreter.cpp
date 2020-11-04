@@ -469,23 +469,21 @@ OperationPtr NnApiInterpreter::map_CONV_2D(Model* model,
             conv2d->pad[2] = inputs[argList->ArgPos("explicit_pad_top")]->scalar.int32;
             conv2d->pad[3] = inputs[argList->ArgPos("explicit_pad_bottom")]->scalar.int32;
         }
+        /*that means the operand is shared by more than one operation, it is dangerous to
+         * change its scale*/
+        if (inputs[2]->isUsed()) {
+            int32_t biasIndex;
+            OperandPtr biasOp = model->cloneOperand(inputs[2], &biasIndex);
+            if (inputs[2]->isConst()) {
+                model->setOperandValue(
+                    biasIndex, inputs[2]->weak_mem_ref.lock()->address_, inputs[2]->bytes());
+            }
+            operation->replaceInputs(operation->inputs()[2], biasIndex);
+            inputs[2] = biasOp;
+        }
+        inputs[2]->setUsed(true);
         /*driver require that bias' type is the same as weight's*/
         if( inputs[1]->type == OperandType::TENSOR_QUANT8_SYMM_PER_CHANNEL && inputs[2] != nullptr){
-            if (inputs[2]->quant.vec.scale.size() != 0) {
-                /*that means the operand is shared by more than one operation, it is dangerous to
-                 * change its scale*/
-                uint32_t biasIndex;
-                OperandPtr biasOp = model->addOperand(nullptr, &biasIndex);
-                biasOp->type = inputs[2]->type;
-                biasOp->dimensions = inputs[2]->dimensions;
-                biasOp->cloneQuantParams(inputs[2].get());
-                if (inputs[2]->isConst()) {
-                    model->setOperandValue(
-                        biasIndex, inputs[2]->weak_mem_ref.lock()->address_, inputs[2]->bytes());
-                }
-                operation->replaceInputs(operation->inputs()[2], biasIndex);
-                inputs[2] = biasOp;
-            }
             inputs[2]->quant.vec.scale.resize(inputs[1]->quant.vec.scale.size(), 0);
             inputs[2]->quant.vec.zeroPoint.resize(inputs[1]->quant.vec.scale.size(), 0);
             for (size_t i = 0; i < inputs[2]->quant.vec.scale.size(); i++) {
@@ -547,23 +545,19 @@ OperationPtr NnApiInterpreter::map_GROUPED_CONV_2D(Model* model,
             conv2d->pad[3] = inputs[argList->ArgPos("pad_bottom")]->scalar.int32;
         }
 
+        if (inputs[2]->isUsed()) {
+            int32_t biasIndex;
+            OperandPtr biasOp = model->cloneOperand(inputs[2], &biasIndex);
+            if (inputs[2]->isConst()) {
+                model->setOperandValue(
+                    biasIndex, inputs[2]->weak_mem_ref.lock()->address_, inputs[2]->bytes());
+            }
+            operation->replaceInputs(operation->inputs()[2], biasIndex);
+            inputs[2] = biasOp;
+        }
+        inputs[2]->setUsed(true);
         /*driver require that bias' type is the same as weight's*/
         if( inputs[1]->type == OperandType::TENSOR_QUANT8_SYMM_PER_CHANNEL && inputs[2] != nullptr){
-            if (inputs[2]->quant.vec.scale.size() != 0) {
-                /*that means the operand is shared by more than one operation, it is dangerous to
-                 * change its scale*/
-                uint32_t biasIndex;
-                OperandPtr biasOp = model->addOperand(nullptr, &biasIndex);
-                biasOp->type = inputs[2]->type;
-                biasOp->dimensions = inputs[2]->dimensions;
-                biasOp->cloneQuantParams(inputs[2].get());
-                if (inputs[2]->isConst()) {
-                    model->setOperandValue(
-                        biasIndex, inputs[2]->weak_mem_ref.lock()->address_, inputs[2]->bytes());
-                }
-                operation->replaceInputs(operation->inputs()[2], biasIndex);
-                inputs[2] = biasOp;
-            }
             inputs[2]->quant.vec.scale.resize(inputs[1]->quant.vec.scale.size(), 0);
             inputs[2]->quant.vec.zeroPoint.resize(inputs[1]->quant.vec.scale.size(), 0);
             for (size_t i = 0; i < inputs[2]->quant.vec.scale.size(); i++) {
@@ -611,22 +605,20 @@ OperationPtr NnApiInterpreter::map_DEPTHWISE_CONV_2D(Model* model,
             NNRT_LOGE("NNAPI_interpreter") << "Argument padding method not found";
         }
 
+        if (inputs[2]->isUsed()) {
+            int32_t biasIndex;
+            OperandPtr biasOp = model->cloneOperand(inputs[2], &biasIndex);
+            if (inputs[2]->isConst()) {
+                model->setOperandValue(
+                    biasIndex, inputs[2]->weak_mem_ref.lock()->address_, inputs[2]->bytes());
+            }
+            operation->replaceInputs(operation->inputs()[2], biasIndex);
+            inputs[2] = biasOp;
+        }
+        inputs[2]->setUsed(true);
+
         /*driver require that bias' type is the same as weight's*/
         if( inputs[1]->type == OperandType::TENSOR_QUANT8_SYMM_PER_CHANNEL && inputs[2] != nullptr){
-            if (inputs[2]->quant.vec.scale.size() != 0) {
-                /*that means the operand is shared by more than one operation, it is dangerous to change its scale*/
-                uint32_t biasIndex;
-                OperandPtr biasOp = model->addOperand(nullptr, &biasIndex);
-                biasOp->type = inputs[2]->type;
-                biasOp->dimensions = inputs[2]->dimensions;
-                biasOp->cloneQuantParams(inputs[2].get());
-                if (inputs[2]->isConst()) {
-                    model->setOperandValue(
-                        biasIndex, inputs[2]->weak_mem_ref.lock()->address_, inputs[2]->bytes());
-                }
-                operation->replaceInputs(operation->inputs()[2], biasIndex);
-                inputs[2] = biasOp;
-            }
             inputs[2]->quant.vec.scale.resize(inputs[1]->quant.vec.scale.size(), 0);
             inputs[2]->quant.vec.zeroPoint.resize(inputs[1]->quant.vec.scale.size(), 0);
             for (size_t i = 0; i < inputs[2]->quant.vec.scale.size(); i++) {
