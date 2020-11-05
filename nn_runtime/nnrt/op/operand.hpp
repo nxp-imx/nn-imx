@@ -141,7 +141,7 @@ class Operand : public BaseOperand {
 
     void cloneQuantParams(Operand* operand);
 
-    const bool isUsed() const { return is_used_; }
+    bool isUsed() const { return is_used_; }
 
     void setUsed(bool flag) { is_used_ = flag; }
 
