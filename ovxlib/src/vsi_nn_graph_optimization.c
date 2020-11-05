@@ -30,7 +30,7 @@
 #include "vsi_nn_test.h"
 
 
-static vsi_bool _is_asmmtric_int8_norm_tensor
+static vsi_bool _is_asymm_int8_norm_tensor
     (
         vsi_nn_tensor_t * tensor
     )
@@ -43,9 +43,9 @@ static vsi_bool _is_asmmtric_int8_norm_tensor
    && tensor->attr.dtype.qnt_type == VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC);
 
     return ret;
-}/* _is_asmmtric_int8_norm_tensor() */
+}/* _is_asymm_int8_norm_tensor() */
 
-static vsi_bool _is_asmmtric_int8_const_tensor
+static vsi_bool _is_asymm_int8_const_tensor
     (
         vsi_nn_tensor_t * tensor
     )
@@ -58,9 +58,9 @@ static vsi_bool _is_asmmtric_int8_const_tensor
    && tensor->attr.dtype.qnt_type == VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC);
 
     return ret;
-}/* _is_asmmtric_int8_const_tensor() */
+}/* _is_asymm_int8_const_tensor() */
 
-static vsi_bool _is_asmmtric_int8_virtual_tensor
+static vsi_bool _is_asymm_int8_virtual_tensor
     (
         vsi_nn_tensor_t * tensor
     )
@@ -73,7 +73,7 @@ static vsi_bool _is_asmmtric_int8_virtual_tensor
    && tensor->attr.dtype.qnt_type == VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC);
 
     return ret;
-}/* _is_asmmtric_int8_virtual_tensor() */
+}/* _is_asymm_int8_virtual_tensor() */
 
 static vsi_status _add_forward_node
     (
@@ -172,7 +172,7 @@ final:
     return status;
 } /* _add_dataconvert_node() */
 
-static void _get_graph_input_asmint8_norm_tensor
+static void _get_graph_input_asymm_int8_norm_tensor
     (
     vsi_nn_graph_t* graph,
     uint32_t* count,
@@ -192,7 +192,7 @@ static void _get_graph_input_asmint8_norm_tensor
         {
             vsi_nn_tensor_id_t id = node->input.tensors[j];
             vsi_nn_tensor_t * tensor = vsi_nn_GetTensor(graph, id);
-            if (_is_asmmtric_int8_norm_tensor(tensor))
+            if (_is_asymm_int8_norm_tensor(tensor))
             {
                 if(tensor_ids != NULL)
                 {
@@ -221,9 +221,9 @@ static void _get_graph_input_asmint8_norm_tensor
     {
         *valid_count = id_count;
     }
-} /* _get_graph_input_asmint8_norm_tensor() */
+} /* _get_graph_input_asymm_int8_norm_tensor() */
 
-static void _get_graph_output_asmint8_norm_tensor
+static void _get_graph_output_asymm_int8_norm_tensor
     (
     vsi_nn_graph_t* graph,
     uint32_t* count,
@@ -241,7 +241,7 @@ static void _get_graph_output_asmint8_norm_tensor
         {
             vsi_nn_tensor_id_t id = node->output.tensors[j];
             vsi_nn_tensor_t * tensor = vsi_nn_GetTensor(graph, id);
-            if (_is_asmmtric_int8_norm_tensor(tensor))
+            if (_is_asymm_int8_norm_tensor(tensor))
             {
                 if(tensor_ids != NULL)
                 {
@@ -256,7 +256,7 @@ static void _get_graph_output_asmint8_norm_tensor
     {
         *count = tensor_count;
     }
-} /* _get_graph_output_asmint8_norm_tensor() */
+} /* _get_graph_output_asymm_int8_norm_tensor() */
 
 static vsi_status _add_graph_dataconvert_for_int8
     (
@@ -276,12 +276,12 @@ static vsi_status _add_graph_dataconvert_for_int8
     vsi_nn_node_t** output_nodes = NULL;
     uint32_t dataconvert_idx = 0;
 
-    _get_graph_input_asmint8_norm_tensor(graph, &input_count, NULL, NULL);
+    _get_graph_input_asymm_int8_norm_tensor(graph, &input_count, NULL, NULL);
 
     if(input_count != 0)
     {
         input_ids = (vsi_nn_tensor_id_t *)malloc(sizeof(vsi_nn_tensor_id_t) * input_count);
-        _get_graph_input_asmint8_norm_tensor(graph, NULL, input_ids, &input_valid_count);
+        _get_graph_input_asymm_int8_norm_tensor(graph, NULL, input_ids, &input_valid_count);
 
         if ( input_valid_count > 0 )
         {
@@ -303,12 +303,12 @@ static vsi_status _add_graph_dataconvert_for_int8
         }
     }
 
-    _get_graph_output_asmint8_norm_tensor(graph, &output_count, NULL);
+    _get_graph_output_asymm_int8_norm_tensor(graph, &output_count, NULL);
 
     if(output_count > 0)
     {
         output_ids = (vsi_nn_tensor_id_t*)malloc(sizeof(vsi_nn_tensor_id_t) * output_count);
-        _get_graph_output_asmint8_norm_tensor(graph, NULL, output_ids);
+        _get_graph_output_asymm_int8_norm_tensor(graph, NULL, output_ids);
 
         output_nodes = (vsi_nn_node_t**)malloc(sizeof(vsi_nn_node_t*) * output_count);
 
@@ -710,7 +710,7 @@ static vsi_status _convert_graph_const_tensor
            vsi_nn_tensor_id_t id = node->input.tensors[j];
            vsi_nn_tensor_t * tensor = vsi_nn_GetTensor(graph, id);
 
-           if (_is_asmmtric_int8_const_tensor(tensor))
+           if (_is_asymm_int8_const_tensor(tensor))
            {
                _convert_const_I8toU8(graph, id);
            }
@@ -725,7 +725,7 @@ static vsi_status _convert_virtual_tensor_attr
     vsi_nn_tensor_t * tensor
     )
 {
-    if (_is_asmmtric_int8_virtual_tensor(tensor))
+    if (_is_asymm_int8_virtual_tensor(tensor))
     {
         tensor->attr.dtype.vx_type = VSI_NN_TYPE_UINT8;
         tensor->attr.dtype.zero_point += 128;
