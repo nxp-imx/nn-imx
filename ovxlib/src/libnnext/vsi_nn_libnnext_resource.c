@@ -19083,9 +19083,8 @@ _viv_uniform VXC_512Bits uniConvertUint8SubZpToFp32_4x4_2;\n\
 _viv_uniform VXC_512Bits uniConvertSecUint8SubZpToFp32_4x4_2;\n\
 \n\
 _viv_uniform int input_ZP1;\n\
-_viv_uniform float inputScale1;\n\
 \n\
-_viv_uniform int output_ZP;\n\
+_viv_uniform float output_ZP;\n\
 _viv_uniform float outputScale;\n\
 \n\
 __kernel void pow_F16F16toF16(\n\
@@ -19263,13 +19262,12 @@ __kernel void pow_F16U8toF16(\n\
     float4 x0, x1;\n\
     float4 y0, y1;\n\
     float4 tmpDst0, tmpDst1;\n\
-    short zp = input_ZP1;\n\
+    short in1_zp;\n\
+    _viv_asm(COPY, in1_zp, input_ZP1, 4);\n\
     VXC_DP4x4(x0, data0, data0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertFstDataToFp32_4x4);\n\
     VXC_DP4x4(x1, data0, data0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecDataToFp32_4x4);\n\
-    VXC_DP4x4(y0, src1, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertUint8SubZpToFp32_4x4_2);\n\
-    VXC_DP4x4(y1, src1, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecUint8SubZpToFp32_4x4_2);\n\
-    y0 *= inputScale1;\n\
-    y1 *= inputScale1;\n\
+    VXC_DP4x4(y0, src1, in1_zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertUint8SubZpToFp32_4x4_2);\n\
+    VXC_DP4x4(y1, src1, in1_zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecUint8SubZpToFp32_4x4_2);\n\
 \n\
     float4  s0 = sign(x0);\n\
     float4  s1 = sign(x1);\n\
@@ -19307,13 +19305,12 @@ __kernel void pow_F16U8toF16_2D(\n\
     float4 x0, x1;\n\
     float4 y0, y1;\n\
     float4 tmpDst0, tmpDst1;\n\
-    short zp = input_ZP1;\n\
+    short in1_zp;\n\
+    _viv_asm(COPY, in1_zp, input_ZP1, 4);\n\
     VXC_DP4x4(x0, data0, data0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertFstDataToFp32_4x4);\n\
     VXC_DP4x4(x1, data0, data0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecDataToFp32_4x4);\n\
-    VXC_DP4x4(y0, src1, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertUint8SubZpToFp32_4x4_2);\n\
-    VXC_DP4x4(y1, src1, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecUint8SubZpToFp32_4x4_2);\n\
-    y0 *= inputScale1;\n\
-    y1 *= inputScale1;\n\
+    VXC_DP4x4(y0, src1, in1_zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertUint8SubZpToFp32_4x4_2);\n\
+    VXC_DP4x4(y1, src1, in1_zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecUint8SubZpToFp32_4x4_2);\n\
 \n\
     float4  s0 = sign(x0);\n\
     float4  s1 = sign(x1);\n\
@@ -19350,13 +19347,12 @@ __kernel void pow_F16U8toU8(\n\
     float4 x0, x1;\n\
     float4 y0, y1;\n\
     float4 tmpDst0, tmpDst1;\n\
-    short zp = input_ZP1;\n\
+    short in1_zp;\n\
+    _viv_asm(COPY, in1_zp, input_ZP1, 4);\n\
     VXC_DP4x4(x0, data0, data0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertFstDataToFp32_4x4);\n\
     VXC_DP4x4(x1, data0, data0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecDataToFp32_4x4);\n\
-    VXC_DP4x4(y0, src1, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertUint8SubZpToFp32_4x4_2);\n\
-    VXC_DP4x4(y1, src1, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecUint8SubZpToFp32_4x4_2);\n\
-    y0 *= inputScale1;\n\
-    y1 *= inputScale1;\n\
+    VXC_DP4x4(y0, src1, in1_zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertUint8SubZpToFp32_4x4_2);\n\
+    VXC_DP4x4(y1, src1, in1_zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecUint8SubZpToFp32_4x4_2);\n\
 \n\
     float4  s0 = sign(x0);\n\
     float4  s1 = sign(x1);\n\
@@ -19392,13 +19388,12 @@ __kernel void pow_F16U8toU8_2D(\n\
     float4 x0, x1;\n\
     float4 y0, y1;\n\
     float4 tmpDst0, tmpDst1;\n\
-    short zp = input_ZP1;\n\
+    short in1_zp;\n\
+    _viv_asm(COPY, in1_zp, input_ZP1, 4);\n\
     VXC_DP4x4(x0, data0, data0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertFstDataToFp32_4x4);\n\
     VXC_DP4x4(x1, data0, data0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecDataToFp32_4x4);\n\
-    VXC_DP4x4(y0, src1, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertUint8SubZpToFp32_4x4_2);\n\
-    VXC_DP4x4(y1, src1, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecUint8SubZpToFp32_4x4_2);\n\
-    y0 *= inputScale1;\n\
-    y1 *= inputScale1;\n\
+    VXC_DP4x4(y0, src1, in1_zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertUint8SubZpToFp32_4x4_2);\n\
+    VXC_DP4x4(y1, src1, in1_zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecUint8SubZpToFp32_4x4_2);\n\
 \n\
     float4  s0 = sign(x0);\n\
     float4  s1 = sign(x1);\n\
@@ -20453,10 +20448,8 @@ _viv_uniform VXC_512Bits uniConvertSecUint8SubZpToFp32_4x4_2;\n\
 _viv_uniform VXC_512Bits uniConvertHalftoFp16_2x8;\n\
 \n\
 _viv_uniform int input_ZP0;\n\
-_viv_uniform float inputScale0;\n\
 _viv_uniform int input_ZP1;\n\
-_viv_uniform float inputScale1;\n\
-_viv_uniform int output_ZP;\n\
+_viv_uniform float output_ZP;\n\
 _viv_uniform float outputScale;\n\
 \n\
 __kernel void pow_U8F16toF16(\n\
@@ -20478,13 +20471,12 @@ __kernel void pow_U8F16toF16(\n\
     float4 x0, x1;\n\
     float4 y0, y1;\n\
     float4 tmpDst0, tmpDst1;\n\
-    short zp = input_ZP0;\n\
-    VXC_DP4x4(x0, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertUint8SubZpToFp32_4x4);\n\
-    VXC_DP4x4(x1, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecUint8SubZpToFp32_4x4);\n\
+    short in0_zp;\n\
+    _viv_asm(COPY, in0_zp, input_ZP0, 4);\n\
+    VXC_DP4x4(x0, src0, in0_zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertUint8SubZpToFp32_4x4);\n\
+    VXC_DP4x4(x1, src0, in0_zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecUint8SubZpToFp32_4x4);\n\
     VXC_DP4x4(y0, data1, data1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertFstDataToFp32_4x4_2);\n\
     VXC_DP4x4(y1, data1, data1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecDataToFp32_4x4_2);\n\
-    x0 *= inputScale0;\n\
-    x1 *= inputScale0;\n\
 \n\
     float4  s0 = sign(x0);\n\
     float4  s1 = sign(x1);\n\
@@ -20521,13 +20513,12 @@ __kernel void pow_U8F16toF16_2D(\n\
     float4 x0, x1;\n\
     float4 y0, y1;\n\
     float4 tmpDst0, tmpDst1;\n\
-    short zp = input_ZP0;\n\
-    VXC_DP4x4(x0, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertUint8SubZpToFp32_4x4);\n\
-    VXC_DP4x4(x1, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecUint8SubZpToFp32_4x4);\n\
+    short in0_zp;\n\
+    _viv_asm(COPY, in0_zp, input_ZP0, 4);\n\
+    VXC_DP4x4(x0, src0, in0_zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertUint8SubZpToFp32_4x4);\n\
+    VXC_DP4x4(x1, src0, in0_zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecUint8SubZpToFp32_4x4);\n\
     VXC_DP4x4(y0, data1, data1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertFstDataToFp32_4x4_2);\n\
     VXC_DP4x4(y1, data1, data1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecDataToFp32_4x4_2);\n\
-    x0 *= inputScale0;\n\
-    x1 *= inputScale0;\n\
 \n\
     float4  s0 = sign(x0);\n\
     float4  s1 = sign(x1);\n\
@@ -20564,13 +20555,12 @@ __kernel void pow_U8F16toU8(\n\
     float4 x0, x1;\n\
     float4 y0, y1;\n\
     float4 tmpDst0, tmpDst1;\n\
-    short zp = input_ZP0;\n\
-    VXC_DP4x4(x0, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertUint8SubZpToFp32_4x4);\n\
-    VXC_DP4x4(x1, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecUint8SubZpToFp32_4x4);\n\
+    short in0_zp;\n\
+    _viv_asm(COPY, in0_zp, input_ZP0, 4);\n\
+    VXC_DP4x4(x0, src0, in0_zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertUint8SubZpToFp32_4x4);\n\
+    VXC_DP4x4(x1, src0, in0_zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecUint8SubZpToFp32_4x4);\n\
     VXC_DP4x4(y0, data1, data1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertFstDataToFp32_4x4_2);\n\
     VXC_DP4x4(y1, data1, data1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecDataToFp32_4x4_2);\n\
-    x0 *= inputScale0;\n\
-    x1 *= inputScale0;\n\
 \n\
     float4  s0 = sign(x0);\n\
     float4  s1 = sign(x1);\n\
@@ -20607,13 +20597,12 @@ __kernel void pow_U8F16toU8_2D(\n\
     float4 x0, x1;\n\
     float4 y0, y1;\n\
     float4 tmpDst0, tmpDst1;\n\
-    short zp = input_ZP0;\n\
-    VXC_DP4x4(x0, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertUint8SubZpToFp32_4x4);\n\
-    VXC_DP4x4(x1, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecUint8SubZpToFp32_4x4);\n\
+    short in0_zp;\n\
+    _viv_asm(COPY, in0_zp, input_ZP0, 4);\n\
+    VXC_DP4x4(x0, src0, in0_zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertUint8SubZpToFp32_4x4);\n\
+    VXC_DP4x4(x1, src0, in0_zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecUint8SubZpToFp32_4x4);\n\
     VXC_DP4x4(y0, data1, data1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertFstDataToFp32_4x4_2);\n\
     VXC_DP4x4(y1, data1, data1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecDataToFp32_4x4_2);\n\
-    x0 *= inputScale0;\n\
-    x1 *= inputScale0;\n\
 \n\
     float4  s0 = sign(x0);\n\
     float4  s1 = sign(x1);\n\
@@ -20646,16 +20635,13 @@ __kernel void pow_U8U8toU8(\n\
     float4 x0, x1;\n\
     float4 y0, y1;\n\
     float4 tmpDst0, tmpDst1;\n\
-    short zp = input_ZP0;\n\
-    short zp1 = input_ZP1;\n\
-    VXC_DP4x4(x0, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertUint8SubZpToFp32_4x4);\n\
-    VXC_DP4x4(x1, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecUint8SubZpToFp32_4x4);\n\
-    VXC_DP4x4(y0, src1, zp1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertUint8SubZpToFp32_4x4_2);\n\
-    VXC_DP4x4(y1, src1, zp1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecUint8SubZpToFp32_4x4_2);\n\
-    x0 *= inputScale0;\n\
-    x1 *= inputScale0;\n\
-    y0 *= inputScale1;\n\
-    y1 *= inputScale1;\n\
+    short in0_zp, in1_zp;\n\
+    _viv_asm(COPY, in0_zp, input_ZP0, 4);\n\
+    _viv_asm(COPY, in1_zp, input_ZP1, 4);\n\
+    VXC_DP4x4(x0, src0, in0_zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertUint8SubZpToFp32_4x4);\n\
+    VXC_DP4x4(x1, src0, in0_zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecUint8SubZpToFp32_4x4);\n\
+    VXC_DP4x4(y0, src1, in1_zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertUint8SubZpToFp32_4x4_2);\n\
+    VXC_DP4x4(y1, src1, in1_zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecUint8SubZpToFp32_4x4_2);\n\
 \n\
     float4  s0 = sign(x0);\n\
     float4  s1 = sign(x1);\n\
@@ -20688,16 +20674,13 @@ __kernel void pow_U8U8toU8_2D(\n\
     float4 x0, x1;\n\
     float4 y0, y1;\n\
     float4 tmpDst0, tmpDst1;\n\
-    short zp = input_ZP0;\n\
-    short zp1 = input_ZP1;\n\
-    VXC_DP4x4(x0, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertUint8SubZpToFp32_4x4);\n\
-    VXC_DP4x4(x1, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecUint8SubZpToFp32_4x4);\n\
-    VXC_DP4x4(y0, src1, zp1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertUint8SubZpToFp32_4x4_2);\n\
-    VXC_DP4x4(y1, src1, zp1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecUint8SubZpToFp32_4x4_2);\n\
-    x0 *= inputScale0;\n\
-    x1 *= inputScale0;\n\
-    y0 *= inputScale1;\n\
-    y1 *= inputScale1;\n\
+    short in0_zp, in1_zp;\n\
+    _viv_asm(COPY, in0_zp, input_ZP0, 4);\n\
+    _viv_asm(COPY, in1_zp, input_ZP1, 4);\n\
+    VXC_DP4x4(x0, src0, in0_zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertUint8SubZpToFp32_4x4);\n\
+    VXC_DP4x4(x1, src0, in0_zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecUint8SubZpToFp32_4x4);\n\
+    VXC_DP4x4(y0, src1, in1_zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertUint8SubZpToFp32_4x4_2);\n\
+    VXC_DP4x4(y1, src1, in1_zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecUint8SubZpToFp32_4x4_2);\n\
 \n\
     float4  s0 = sign(x0);\n\
     float4  s1 = sign(x1);\n\
@@ -20732,16 +20715,13 @@ __kernel void pow_U8U8toF16(\n\
     float4 x0, x1;\n\
     float4 y0, y1;\n\
     float4 tmpDst0, tmpDst1;\n\
-    short zp = input_ZP0;\n\
-    short zp1 = input_ZP1;\n\
-    VXC_DP4x4(x0, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertUint8SubZpToFp32_4x4);\n\
-    VXC_DP4x4(x1, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecUint8SubZpToFp32_4x4);\n\
-    VXC_DP4x4(y0, src1, zp1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertUint8SubZpToFp32_4x4);\n\
-    VXC_DP4x4(y1, src1, zp1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecUint8SubZpToFp32_4x4);\n\
-    x0 *= inputScale0;\n\
-    x1 *= inputScale0;\n\
-    y0 *= inputScale1;\n\
-    y1 *= inputScale1;\n\
+    short in0_zp, in1_zp;\n\
+    _viv_asm(COPY, in0_zp, input_ZP0, 4);\n\
+    _viv_asm(COPY, in1_zp, input_ZP1, 4);\n\
+    VXC_DP4x4(x0, src0, in0_zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertUint8SubZpToFp32_4x4);\n\
+    VXC_DP4x4(x1, src0, in0_zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecUint8SubZpToFp32_4x4);\n\
+    VXC_DP4x4(y0, src1, in1_zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertUint8SubZpToFp32_4x4);\n\
+    VXC_DP4x4(y1, src1, in1_zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecUint8SubZpToFp32_4x4);\n\
 \n\
     float4  s0 = sign(x0);\n\
     float4  s1 = sign(x1);\n\
@@ -20778,16 +20758,13 @@ __kernel void pow_U8U8toF16_2D(\n\
     float4 x0, x1;\n\
     float4 y0, y1;\n\
     float4 tmpDst0, tmpDst1;\n\
-    short zp = input_ZP0;\n\
-    short zp1 = input_ZP1;\n\
-    VXC_DP4x4(x0, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertUint8SubZpToFp32_4x4);\n\
-    VXC_DP4x4(x1, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecUint8SubZpToFp32_4x4);\n\
-    VXC_DP4x4(y0, src1, zp1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertUint8SubZpToFp32_4x4);\n\
-    VXC_DP4x4(y1, src1, zp1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecUint8SubZpToFp32_4x4);\n\
-    x0 *= inputScale0;\n\
-    x1 *= inputScale0;\n\
-    y0 *= inputScale1;\n\
-    y1 *= inputScale1;\n\
+    short in0_zp, in1_zp;\n\
+    _viv_asm(COPY, in0_zp, input_ZP0, 4);\n\
+    _viv_asm(COPY, in1_zp, input_ZP1, 4);\n\
+    VXC_DP4x4(x0, src0, in0_zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertUint8SubZpToFp32_4x4);\n\
+    VXC_DP4x4(x1, src0, in0_zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecUint8SubZpToFp32_4x4);\n\
+    VXC_DP4x4(y0, src1, in1_zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertUint8SubZpToFp32_4x4);\n\
+    VXC_DP4x4(y1, src1, in1_zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecUint8SubZpToFp32_4x4);\n\
 \n\
     float4  s0 = sign(x0);\n\
     float4  s1 = sign(x1);\n\
