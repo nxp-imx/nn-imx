@@ -308,6 +308,7 @@ static vsi_bool _init_tensor
     vsi_bool ret;
     vx_tensor_create_params_t params;
     float * scales = NULL;
+    int32_t * null_zp = NULL;
 
     ret = TRUE;
 
@@ -335,6 +336,13 @@ static vsi_bool _init_tensor
         params.quant_data.affinePerChannel.scales = scales;
         params.quant_data.affinePerChannel.zeroPoint = NULL;
         params.quant_data.affinePerChannel.zeroPointCount = 0;
+        // TODO: This is a hack since driver will access a NULL pointer and cause a crash.
+        // Remove me in the future.
+        {
+            null_zp = (int32_t*)malloc(sizeof(int32_t) * tensor->attr.dtype.scale_dim);
+            memset(null_zp, 0, sizeof(int32_t) * tensor->attr.dtype.scale_dim);
+            params.quant_data.affinePerChannel.zeroPoint = null_zp;
+        }
         break;
 #else
     VSILOGE( "can't support qnt_type VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC." );
@@ -378,6 +386,11 @@ static vsi_bool _init_tensor
                     if( scales )
                     {
                         free(scales);
+                    }
+                    if(null_zp)
+                    {
+                        free(null_zp);
+                        null_zp = NULL;
                     }
                     return FALSE;
                 }
@@ -435,6 +448,11 @@ static vsi_bool _init_tensor
     if( scales )
     {
         free(scales);
+    }
+    if(null_zp)
+    {
+        free(null_zp);
+        null_zp = NULL;
     }
     return ret;
 } /* _init_tensor() */
