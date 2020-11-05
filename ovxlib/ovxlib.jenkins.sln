@@ -41,6 +41,7 @@ Global
 		{D9873405-2CD5-49FE-8FE3-188357003E9D}.Debug|Win32.ActiveCfg = Debug|Win32
 		{D9873405-2CD5-49FE-8FE3-188357003E9D}.Debug|Win32.Build.0 = Debug|Win32
 		{D9873405-2CD5-49FE-8FE3-188357003E9D}.Debug|x64.ActiveCfg = Debug|x64
+		{D9873405-2CD5-49FE-8FE3-188357003E9D}.Debug|x64.Build.0 = Debug|x64
 		{D9873405-2CD5-49FE-8FE3-188357003E9D}.Jenkins-Debug|Win32.ActiveCfg = Jenkins-Debug|Win32
 		{D9873405-2CD5-49FE-8FE3-188357003E9D}.Jenkins-Debug|Win32.Build.0 = Jenkins-Debug|Win32
 		{D9873405-2CD5-49FE-8FE3-188357003E9D}.Jenkins-Debug|x64.ActiveCfg = Jenkins-Debug|Win32
@@ -49,10 +50,12 @@ Global
 		{D9873405-2CD5-49FE-8FE3-188357003E9D}.Jenkins-Debug-NNApi0.4|x64.ActiveCfg = Jenkins-Debug-NNApi0.4|Win32
 		{D9873405-2CD5-49FE-8FE3-188357003E9D}.Release_dynamic|Win32.ActiveCfg = Release_dynamic|Win32
 		{D9873405-2CD5-49FE-8FE3-188357003E9D}.Release_dynamic|Win32.Build.0 = Release_dynamic|Win32
-		{D9873405-2CD5-49FE-8FE3-188357003E9D}.Release_dynamic|x64.ActiveCfg = Release_dynamic|Win32
+		{D9873405-2CD5-49FE-8FE3-188357003E9D}.Release_dynamic|x64.ActiveCfg = Release_dynamic|x64
+		{D9873405-2CD5-49FE-8FE3-188357003E9D}.Release_dynamic|x64.Build.0 = Release_dynamic|x64
 		{D9873405-2CD5-49FE-8FE3-188357003E9E}.Debug|Win32.ActiveCfg = Debug|Win32
 		{D9873405-2CD5-49FE-8FE3-188357003E9E}.Debug|Win32.Build.0 = Debug|Win32
 		{D9873405-2CD5-49FE-8FE3-188357003E9E}.Debug|x64.ActiveCfg = Debug|x64
+		{D9873405-2CD5-49FE-8FE3-188357003E9E}.Debug|x64.Build.0 = Debug|x64
 		{D9873405-2CD5-49FE-8FE3-188357003E9E}.Jenkins-Debug|Win32.ActiveCfg = Jenkins-Debug|Win32
 		{D9873405-2CD5-49FE-8FE3-188357003E9E}.Jenkins-Debug|Win32.Build.0 = Jenkins-Debug|Win32
 		{D9873405-2CD5-49FE-8FE3-188357003E9E}.Jenkins-Debug|x64.ActiveCfg = Jenkins-Debug|Win32
@@ -61,7 +64,8 @@ Global
 		{D9873405-2CD5-49FE-8FE3-188357003E9E}.Jenkins-Debug-NNApi0.4|x64.ActiveCfg = Jenkins-Debug-NNApi0.4|Win32
 		{D9873405-2CD5-49FE-8FE3-188357003E9E}.Release_dynamic|Win32.ActiveCfg = Release_dynamic|Win32
 		{D9873405-2CD5-49FE-8FE3-188357003E9E}.Release_dynamic|Win32.Build.0 = Release_dynamic|Win32
-		{D9873405-2CD5-49FE-8FE3-188357003E9E}.Release_dynamic|x64.ActiveCfg = Release_dynamic|Win32
+		{D9873405-2CD5-49FE-8FE3-188357003E9E}.Release_dynamic|x64.ActiveCfg = Release_dynamic|x64
+		{D9873405-2CD5-49FE-8FE3-188357003E9E}.Release_dynamic|x64.Build.0 = Release_dynamic|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
