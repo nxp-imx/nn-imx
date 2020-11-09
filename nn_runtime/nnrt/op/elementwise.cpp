@@ -76,5 +76,17 @@ void AddNOperation::handleLayoutInferenceOnInputs(
     handleLayoutInferenceOnInputsHelper(model, next_permute_vectors);
 }
 
+void DequantizeOperation::handleLayoutInferenceOnInputs(
+    Model& model,
+    std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>& next_permute_vectors) {
+    handleLayoutInferenceOnInputsHelper(model, next_permute_vectors);
+}
+
+void QuantizeOperation::handleLayoutInferenceOnInputs(
+    Model& model,
+    std::unordered_map<uint32_t, nnrt::layout_inference::IPermuteVectorPtr>& next_permute_vectors) {
+    handleLayoutInferenceOnInputsHelper(model, next_permute_vectors);
+}
+
 } // namespace op
 } // namespace nnrt
