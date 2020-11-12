@@ -51,10 +51,8 @@ class SliceValidate : public OperationValidate<T_model, T_Operation> {
             auto& inputOperand = model.operands[operation.inputs[inputList->ArgPos("input")]];
             auto& outputOperand = model.operands[operation.outputs[0]];
             if (inputOperand.dimensions[0] != outputOperand.dimensions[0]) {
-                if (outputOperand.dimensions[0] != 1) {
-                    reason += "reject SLICE because not support slice on batch\n";
-                    return false;
-                }
+                reason += "reject SLICE because not support slice on batch\n";
+                return false;
             }
             return true;
         } else {
