@@ -181,8 +181,23 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
             // validate constant rule
             auto input0 = model.operands[operation.inputs[0]];
             auto input1 = model.operands[operation.inputs[1]];
+            auto act    = model.operands[operation.inputs[2]];
             if (isConstantTensor(input0) && isConstantTensor(input1)) {
                 reason += ("reject ADD|SUB|MUL|DIV because all input tensor is constant\n");
+                isSupport &= false;
+            }
+            if(isConstantTensor(act)){
+                struct vsi_driver::VsiRTInfo rt;
+                auto actCode = reinterpret_cast<const int32_t*>(
+                    op_validate::get_buffer::getOperandDataPtr(model, act, rt));
+                if(*actCode > 3){
+                    reason += ("reject ADD|SUB|MUL|DIV because fusedCode is invalid value " +
+                            std::to_string(*actCode));
+                    isSupport &= false;
+                }
+            }
+            else{
+                reason += ("reject ADD|SUB|MUL|DIV because fusedCode is not const\n");
                 isSupport &= false;
             }
             // validate shape rule
