@@ -75,6 +75,14 @@ T_type getScalarData(const HalPlatform::Model& model, const HalPlatform::Operand
     else
         return 0;
 }
+const HalPlatform::Operand& getOpeand(const HalPlatform::Model& model,
+                            const uint32_t index) {
+    if(index > model.operands.size()){
+        LOG(ERROR)<< index << "is out of operands size :" << model.operands.size();
+        assert(0);
+    }
+    return model.operands[index];
+}
 }  // end of get_buffer
 
 template <typename T_Model, typename T_Operation>
