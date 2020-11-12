@@ -81,14 +81,12 @@ class StridedSliceValidate : public OperationValidate<T_model, T_Operation> {
     bool SignatureCheck(std::string& reason) override {
         if (::hal::limitation::nnapi::match("StridedSlice_Inputs", this->InputArgTypes()) &&
             ::hal::limitation::nnapi::match("StridedSlice_Outputs", this->OutputArgTypes())) {
-            bool is_support = IsSplitOnBatch(reason);
             auto operation = this->OperationForRead();
             for (auto input_idx = 1; input_idx < operation.inputs.size(); ++input_idx) {
                 if (!this->IsConstantTensor(operation.inputs[input_idx])) {
-                    is_support = false;
                     reason +=
                         "StridedSlice: not supported because only input(0) can be model_input";
-                    break;
+                    return false;
                 }
             }
 
@@ -99,14 +97,13 @@ class StridedSliceValidate : public OperationValidate<T_model, T_Operation> {
                 auto ptr = (int32_t *)get_buffer::getOperandDataPtr(model, stride_op, vsiMemory);
                 for( auto i  = 0; i < stride_op.dimensions.size(); i++){
                     if(ptr[i] < 0){
-                        is_support = false;
                         reason +=
                             "StridedSilce: not supported stride parameter less than 0";
-                        break;
+                        return false;
                     }
                 }
             }
-            return is_support;
+            return IsSplitOnBatch(reason);
         }
         else {
             reason += "StridedSlice: signature matching failed";
