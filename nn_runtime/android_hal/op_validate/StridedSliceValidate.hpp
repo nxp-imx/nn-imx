@@ -36,31 +36,71 @@ class StridedSliceValidate : public OperationValidate<T_model, T_Operation> {
     StridedSliceValidate(const T_model& model, const T_Operation& operation)
         : OperationValidate<T_model, T_Operation>(model, operation){};
 
-    bool IsSplitOnBatch(std::string& reason) {
+    bool IsValidParam(std::string& reason) {
         bool isSupport = true;
         {
-            const uint32_t input = 0;
             const uint32_t operand_begin = 1;
             const uint32_t operand_end = 2;
             const uint32_t operand_stride = 3;
+            const uint32_t operand_begin_mask = 4;
+            const uint32_t operand_end_mask = 5;
+            const uint32_t operand_shrink_axis_mask = 6;
 
-            auto input_rank =
-                this->m_Model.operands[this->m_Operation.inputs[input]].dimensions.size();
-            auto input_batch =
-                this->m_Model.operands[this->m_Operation.inputs[input]].dimensions[0];
+            auto input_dims     = get_buffer::getOpeand(this->m_Model, 0).dimensions;
+            auto begin_dims     = get_buffer::getOpeand(this->m_Model,operand_begin).dimensions;
+            auto end_dims       = get_buffer::getOpeand(this->m_Model,operand_end).dimensions;
+            auto stride_dims    = get_buffer::getOpeand(this->m_Model,operand_stride).dimensions;
 
-            struct vsi_driver::VsiRTInfo rt;
+            if( begin_dims.size() != 1 || end_dims.size() != 1 || stride_dims.size() != 1 ||
+                begin_dims[0] != input_dims.size() || end_dims[0] != input_dims.size() ||
+                stride_dims[0] != input_dims.size()
+            ){
+                reason += "Reject StrideSlice, becasue of invalid parameter";
+                return false;
+            }
 
+            struct vsi_driver::VsiRTInfo begin_rt;
             auto begin_vec = reinterpret_cast<const int32_t*>(get_buffer::getOperandDataPtr(
-                this->m_Model,
-                this->m_Model.operands[this->m_Operation.inputs[operand_begin]],
-                rt));
+                this->m_Model, get_buffer::getOpeand(this->m_Model,operand_begin), begin_rt));
+
+            struct vsi_driver::VsiRTInfo end_rt;
             auto end_vec = reinterpret_cast<const int32_t*>(get_buffer::getOperandDataPtr(
-                this->m_Model, this->m_Model.operands[this->m_Operation.inputs[operand_end]], rt));
+                this->m_Model, get_buffer::getOpeand(this->m_Model,operand_end), end_rt));
+
+            struct vsi_driver::VsiRTInfo stride_rt;
             auto stride_vec = reinterpret_cast<const int32_t*>(get_buffer::getOperandDataPtr(
-                this->m_Model,
-                this->m_Model.operands[this->m_Operation.inputs[operand_stride]],
-                rt));
+                this->m_Model, get_buffer::getOpeand(this->m_Model,operand_stride), stride_rt));
+
+            const int32_t begin_mask = get_buffer::getScalarData<int32_t>(this->m_Model,
+                                            get_buffer::getOpeand(this->m_Model,operand_begin_mask));
+            const int32_t end_mask = get_buffer::getScalarData<int32_t>(this->m_Model,
+                                        get_buffer::getOpeand(this->m_Model,operand_end_mask));
+            const int32_t shrink_axis_mask = get_buffer::getScalarData<int32_t>(this->m_Model,
+                                                get_buffer::getOpeand(this->m_Model,operand_shrink_axis_mask));
+
+            for (int32_t idx = 0; idx < input_dims.size(); idx++) {
+                int32_t begin   = (begin_mask & (1 << idx)) ? 0 : begin_vec[idx];
+                int32_t end     = (end_mask   & (1 << idx)) ? input_dims.size() - 1 :  end_vec[idx];
+                int32_t stride  = stride_vec[idx];
+
+                if(stride <= 0){
+                    reason +=
+                            "StridedSilce: not supported stride parameter less than 0";
+                    return false;
+                }
+
+                int32_t outDim = ceil((end - begin) / static_cast<float>(stride));
+
+                if ( (shrink_axis_mask & (1 << idx)) && outDim != 1) {
+                    reason +=
+                            "StridedSilce: invalid input paramter, because the "
+                             + std::to_string(idx) + "th bit of shrink_axis_mask is set to 1,"
+                             + "please check parameter $begin and #end ";
+                    return false;
+                }
+            }
+            auto input_rank = get_buffer::getOpeand(this->m_Model, 0).dimensions.size();
+            auto input_batch = get_buffer::getOpeand(this->m_Model, 0).dimensions[0];
 
             bool isSplitNotOnBatch =
                 (begin_vec[0] == 0) && (end_vec[0] == input_batch) && (stride_vec[0] == 1);
@@ -74,7 +114,6 @@ class StridedSliceValidate : public OperationValidate<T_model, T_Operation> {
                 isSupport &= false;
             }
         }
-
         return isSupport;
     }
 
@@ -90,26 +129,14 @@ class StridedSliceValidate : public OperationValidate<T_model, T_Operation> {
                 }
             }
 
-            if(this->IsConstantTensor(operation.inputs[3])){
-                vsi_driver::VsiRTInfo vsiMemory;
-                auto model = this->ModelForRead();
-                auto stride_op = model.operands[operation.inputs[3]];
-                auto ptr = (int32_t *)get_buffer::getOperandDataPtr(model, stride_op, vsiMemory);
-                for( auto i  = 0; i < stride_op.dimensions.size(); i++){
-                    if(ptr[i] < 0){
-                        reason +=
-                            "StridedSilce: not supported stride parameter less than 0";
-                        return false;
-                    }
-                }
-            }
-            return IsSplitOnBatch(reason);
+            return IsValidParam(reason);
         }
         else {
             reason += "StridedSlice: signature matching failed";
             return false;
         }
     }
+
 };
 
 }  // namespace op_validate
