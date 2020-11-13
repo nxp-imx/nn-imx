@@ -351,11 +351,11 @@ DEF_KERNEL_INITIALIZER(_reduceprod_internal_initializer)
         input_fl = input_attr->dfp.fl;
         if (input_fl > 0)
         {
-            inputScale = 1.0f / (float) (1 << input_fl);
+            inputScale = 1.0f / (float) ((int64_t)1 << input_fl);
         }
         else
         {
-            inputScale = (float)(1 << -input_fl);
+            inputScale = (float)((int64_t)1 << -input_fl);
         }
         status  = vsi_nn_kernel_gpu_add_param( node, "inputScale", &inputScale );
         CHECK_STATUS_FAIL_GOTO(status, final );
@@ -374,11 +374,11 @@ DEF_KERNEL_INITIALIZER(_reduceprod_internal_initializer)
         output_fl = output_attr->dfp.fl;
         if (output_fl > 0)
         {
-            outputScale = (float) (1 << output_fl);
+            outputScale = (float) ((int64_t)1 << output_fl);
         }
         else
         {
-            outputScale = 1.0f / (float)(1 << -output_fl);
+            outputScale = 1.0f / (float)((int64_t)1 << -output_fl);
         }
         status  = vsi_nn_kernel_gpu_add_param( node, "outputScale", &outputScale );
         CHECK_STATUS_FAIL_GOTO(status, final );

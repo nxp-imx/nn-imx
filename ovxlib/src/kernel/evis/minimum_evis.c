@@ -216,11 +216,11 @@ DEF_KERNEL_INITIALIZER(_minimum_initializer)
         out_fl = (uint8_t)attr[2]->dfp.fl;
         if (out_fl > 0)
         {
-            dstScale = (float) (1 << out_fl);
+            dstScale = (float) ((int64_t)1 << out_fl);
         }
         else
         {
-            dstScale = 1.0f / (float)(1 << -out_fl);
+            dstScale = 1.0f / (float)((int64_t)1 << -out_fl);
         }
         dstZP = 0;
     }

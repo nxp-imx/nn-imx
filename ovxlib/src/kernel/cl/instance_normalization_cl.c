@@ -428,11 +428,11 @@ static vsi_nn_kernel_node_t _setup
     {
         if (input_fl > 0)
         {
-            in_fl_scale = (1.0f / ((float) (1 << input_fl)));
+            in_fl_scale = (1.0f / ((float) ((int64_t)1 << input_fl)));
         }
         else
         {
-            in_fl_scale = ((float) (1 << -input_fl));
+            in_fl_scale = ((float) ((int64_t)1 << -input_fl));
         }
     }
 
@@ -442,11 +442,11 @@ static vsi_nn_kernel_node_t _setup
     {
         if (output_fl > 0)
         {
-            out_fl_scale = (float)(1 << output_fl);
+            out_fl_scale = (float)((int64_t)1 << output_fl);
         }
         else
         {
-            out_fl_scale = (1.0f / (float)(1 << -output_fl));
+            out_fl_scale = (1.0f / (float)((int64_t)1 << -output_fl));
         }
     }
 

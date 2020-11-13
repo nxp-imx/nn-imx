@@ -216,11 +216,11 @@ DEF_KERNEL_INITIALIZER(_resize_bilinear_initializer)
         srcFixPointPos   = input_attr->dfp.fl;
         if (srcFixPointPos >= 0)
         {
-            input_scale = 1.0f / (vx_float32) (1 << srcFixPointPos);
+            input_scale = 1.0f / (vx_float32) ((int64_t)1 << srcFixPointPos);
         }
         else if (srcFixPointPos < 0)
         {
-            input_scale = (vx_float32)(1 << -srcFixPointPos);
+            input_scale = (vx_float32)((int64_t)1 << -srcFixPointPos);
         }
         inputZP = 0;
     }
@@ -240,11 +240,11 @@ DEF_KERNEL_INITIALIZER(_resize_bilinear_initializer)
         dstFixPointPos = output_attr->dfp.fl;
         if (dstFixPointPos >= 0)
         {
-            output_scale = (vx_float32) (1 << dstFixPointPos);
+            output_scale = (vx_float32) ((int64_t)1 << dstFixPointPos);
         }
         else if (dstFixPointPos < 0)
         {
-            output_scale = 1.0f / (vx_float32) (1 << -dstFixPointPos);
+            output_scale = 1.0f / (vx_float32) ((int64_t)1 << -dstFixPointPos);
         }
         outputZP = 0;
     }

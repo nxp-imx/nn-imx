@@ -389,11 +389,11 @@ DEF_KERNEL_INITIALIZER(_log_softmax_initializer)
 
         if (fl > 0)
         {
-            output_scale = (float)(1 << fl);
+            output_scale = (float)((int64_t)1 << fl);
         }
         else
         {
-            output_scale = (float)1.0f / (float) (1 << -fl);
+            output_scale = (float)1.0f / (float) ((int64_t)1 << -fl);
         }
 
         status = vsi_nn_kernel_gpu_add_param( node,
@@ -424,11 +424,11 @@ DEF_KERNEL_INITIALIZER(_log_softmax_initializer)
         int32_t fl = attr[0]->dfp.fl;
         if (fl > 0)
         {
-            input_scale = 1.0f / (float) (1 << fl);
+            input_scale = 1.0f / (float) ((int64_t)1 << fl);
         }
         else
         {
-            input_scale = (float)(1 << -fl);
+            input_scale = (float)((int64_t)1 << -fl);
         }
     }
     else if( attr[0]->quant == VSI_NN_KERNEL_QUANT_ASYMM )

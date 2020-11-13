@@ -219,11 +219,11 @@ DEF_KERNEL_INITIALIZER(_moments_initializer)
     {
         if (attr[0]->dfp.fl > 0)
         {
-            scaleIn = (1.0f / ((float) (1 << attr[0]->dfp.fl)));
+            scaleIn = (1.0f / ((float) ((int64_t)1 << attr[0]->dfp.fl)));
         }
         else
         {
-            scaleIn = ((float) (1 << -attr[0]->dfp.fl));
+            scaleIn = ((float) ((int64_t)1 << -attr[0]->dfp.fl));
         }
 
         input_zp = 0;

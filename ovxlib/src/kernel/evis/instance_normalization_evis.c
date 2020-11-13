@@ -213,11 +213,11 @@ DEF_KERNEL_INITIALIZER(_instancenorm_mean_vari_initializer)
     {
         if (attr[0]->dfp.fl > 0)
         {
-            in_scale_fl = (1.0f / ((float) (1 << attr[0]->dfp.fl)));
+            in_scale_fl = (1.0f / ((float) ((int64_t)1 << attr[0]->dfp.fl)));
         }
         else
         {
-            in_scale_fl = ((float) (1 << -attr[0]->dfp.fl));
+            in_scale_fl = ((float) ((int64_t)1 << -attr[0]->dfp.fl));
         }
         inFlScale_s2 = in_scale_fl * in_scale_fl;
     }
@@ -416,11 +416,11 @@ DEF_KERNEL_INITIALIZER(_instancenorm_initializer)
     {
         if (attr[0]->dfp.fl > 0)
         {
-            in_scale_fl = (1.0f / ((float) (1 << attr[0]->dfp.fl)));
+            in_scale_fl = (1.0f / ((float) ((int64_t)1 << attr[0]->dfp.fl)));
         }
         else
         {
-            in_scale_fl = ((float) (1 << -attr[0]->dfp.fl));
+            in_scale_fl = ((float) ((int64_t)1 << -attr[0]->dfp.fl));
         }
     }
 
@@ -428,11 +428,11 @@ DEF_KERNEL_INITIALIZER(_instancenorm_initializer)
     {
         if (attr[2]->dfp.fl > 0)
         {
-            out_scale_fl = (float)(1 << attr[2]->dfp.fl);
+            out_scale_fl = (float)((int64_t)1 << attr[2]->dfp.fl);
         }
         else
         {
-            out_scale_fl = (1.0f / (float)(1 << -attr[2]->dfp.fl));
+            out_scale_fl = (1.0f / (float)((int64_t)1 << -attr[2]->dfp.fl));
         }
     }
 

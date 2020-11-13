@@ -159,11 +159,11 @@ DEF_KERNEL_INITIALIZER(_poolwithargmax_initializer)
         input_fl = input_attr->dfp.fl;
         if (input_fl > 0)
         {
-            inputScale = 1.0f / (float) (1 << input_fl);
+            inputScale = 1.0f / (float) ((int64_t)1 << input_fl);
         }
         else
         {
-            inputScale = (float)(1 << -input_fl);
+            inputScale = (float)((int64_t)1 << -input_fl);
         }
     }
     else if( input_attr->quant == VSI_NN_KERNEL_QUANT_ASYMM )
@@ -177,11 +177,11 @@ DEF_KERNEL_INITIALIZER(_poolwithargmax_initializer)
         output_fl = output_attr->dfp.fl;
         if (output_fl > 0)
         {
-            outputScale = 1.0f / (float) (1 << output_fl);
+            outputScale = 1.0f / (float) ((int64_t)1 << output_fl);
         }
         else
         {
-            outputScale = (float)(1 << -output_fl);
+            outputScale = (float)((int64_t)1 << -output_fl);
         }
     }
     else if( output_attr->quant == VSI_NN_KERNEL_QUANT_ASYMM )
@@ -479,7 +479,7 @@ DEF_KERNEL_INITIALIZER(_poolwithargmax_initializer)
             }
             else
             {
-                vx_uint32 multiply       = (1 << (output_fl - input_fl));
+                vx_uint32 multiply       = ((int64_t)1 << (output_fl - input_fl));
                 vx_uint32 i              = 0;
 
                 for (i = 8; i < 16; i+=2)

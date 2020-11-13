@@ -173,11 +173,11 @@ DEF_KERNEL_INITIALIZER(_batch_norm_initializer)
         int32_t fl = input_attr->dfp.fl;
         if (fl > 0)
         {
-            input_scale = 1.0f / (float) (1 << fl);
+            input_scale = 1.0f / (float) ((int64_t)1 << fl);
         }
         else
         {
-            input_scale = (float)(1 << -fl);
+            input_scale = (float)((int64_t)1 << -fl);
         }
     }
     else if( input_attr->quant == VSI_NN_KERNEL_QUANT_ASYMM )
@@ -191,11 +191,11 @@ DEF_KERNEL_INITIALIZER(_batch_norm_initializer)
         int32_t fl = output_attr->dfp.fl;
         if (fl > 0)
         {
-            output_scale = (float) (1 << fl);
+            output_scale = (float) ((int64_t)1 << fl);
         }
         else
         {
-            output_scale = 1.0f / (float)(1 << -fl);
+            output_scale = 1.0f / (float)((int64_t)1 << -fl);
         }
     }
     else if( output_attr->quant == VSI_NN_KERNEL_QUANT_ASYMM )

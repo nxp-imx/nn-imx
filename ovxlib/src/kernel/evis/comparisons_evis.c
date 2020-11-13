@@ -321,11 +321,11 @@ DEF_KERNEL_INITIALIZER(_comparisons_initializer)
         int32_t fl = attr[0]->dfp.fl;
         if (fl > 0)
         {
-            input0Scale = 1.0f / (float) (1 << fl);
+            input0Scale = 1.0f / (float) ((int64_t)1 << fl);
         }
         else
         {
-            input0Scale = (float)(1 << -fl);
+            input0Scale = (float)((int64_t)1 << -fl);
         }
     }
     else if( attr[0]->quant == VSI_NN_KERNEL_QUANT_ASYMM )
@@ -339,11 +339,11 @@ DEF_KERNEL_INITIALIZER(_comparisons_initializer)
         int32_t fl = attr[1]->dfp.fl;
         if (fl > 0)
         {
-            input1Scale = 1.0f / (float) (1 << fl);
+            input1Scale = 1.0f / (float) ((int64_t)1 << fl);
         }
         else
         {
-            input1Scale = (float)(1 << -fl);
+            input1Scale = (float)((int64_t)1 << -fl);
         }
     }
     else if( attr[0]->quant == VSI_NN_KERNEL_QUANT_ASYMM )

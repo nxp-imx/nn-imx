@@ -169,11 +169,11 @@ DEF_KERNEL_INITIALIZER(_minimum_initializer)
         in0_fl = (int8_t)attr[0]->dfp.fl;
         if (in0_fl >= 0)
         {
-            input_scale0 = 1.0f / (vx_float32) (1 << in0_fl);
+            input_scale0 = 1.0f / (vx_float32) ((int64_t)1 << in0_fl);
         }
         else if (in0_fl < 0)
         {
-            input_scale0 = (vx_float32) (1 << -in0_fl);
+            input_scale0 = (vx_float32) ((int64_t)1 << -in0_fl);
         }
     }
     else if( attr[0]->quant == VSI_NN_KERNEL_QUANT_ASYMM )
@@ -193,9 +193,9 @@ DEF_KERNEL_INITIALIZER(_minimum_initializer)
         out_fl = (int8_t)attr[2]->dfp.fl;
 
         if (out_fl >= 0)
-            input_scale0 *= (vx_float32)(1 << out_fl);
+            input_scale0 *= (vx_float32)((int64_t)1 << out_fl);
         else if (out_fl < 0)
-            input_scale0 *= 1.0f / (vx_float32) (1 << -out_fl);
+            input_scale0 *= 1.0f / (vx_float32) ((int64_t)1 << -out_fl);
     }
     else if( attr[2]->quant == VSI_NN_KERNEL_QUANT_ASYMM )
     {

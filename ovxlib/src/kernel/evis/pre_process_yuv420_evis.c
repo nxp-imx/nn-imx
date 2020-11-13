@@ -669,11 +669,11 @@ DEF_KERNEL_INITIALIZER(_pre_process_yuv420_initializer)
     {
         if (attr[0]->dfp.fl > 0)
         {
-            dstScale = (vx_float32)(1 << attr[0]->dfp.fl);
+            dstScale = (vx_float32)((int64_t)1 << attr[0]->dfp.fl);
         }
         else
         {
-            dstScale = (1.0f / (vx_float32)(1 << -attr[0]->dfp.fl));
+            dstScale = (1.0f / (vx_float32)((int64_t)1 << -attr[0]->dfp.fl));
         }
         dstZP = 0;
     }

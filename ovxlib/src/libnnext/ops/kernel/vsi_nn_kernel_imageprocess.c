@@ -418,7 +418,7 @@ vx_status VX_CALLBACK vxScaletoTensorInitializer
         if (dstFormat == VSI_NN_TYPE_INT8 || dstFormat == VSI_NN_TYPE_INT16)
         {
             if(dstFixedPointPos > 0)
-                outputScale = (vx_float32) (1 << dstFixedPointPos);
+                outputScale = (vx_float32) ((int64_t)1 << dstFixedPointPos);
             else
             {
                 outputScale = 1.0f;
@@ -576,9 +576,9 @@ vx_status VX_CALLBACK vxScaletoTensorInitializer
         if (dstFormat == VSI_NN_TYPE_INT8 || dstFormat == VSI_NN_TYPE_INT16)
         {
             if(dstFixedPointPos > 0)
-                outputScale = (vx_float32) (1 << dstFixedPointPos);
+                outputScale = (vx_float32) ((int64_t)1 << dstFixedPointPos);
             else
-                outputScale = 1.0f / (vx_float32) (1 << -dstFixedPointPos);
+                outputScale = 1.0f / (vx_float32) ((int64_t)1 << -dstFixedPointPos);
 
             status |= vxSetNodeUniform(nodObj, "uniConvertIntergetoF32_4x4",
                 1, uniConvertIntergetoF32_4x4);
@@ -701,7 +701,7 @@ vx_status VX_CALLBACK vxGrayScaletoTensorInitializer(vx_node nodObj, const vx_re
         if (dstFormat == VSI_NN_TYPE_INT8 || dstFormat == VSI_NN_TYPE_INT16)
         {
             if(dstFixedPointPos > 0)
-                outputScale = (vx_float32) (1 << dstFixedPointPos);
+                outputScale = (vx_float32) ((int64_t)1 << dstFixedPointPos);
             else
             {
                 outputScale = 1.0f;
@@ -832,9 +832,9 @@ vx_status VX_CALLBACK vxGrayScaletoTensorInitializer(vx_node nodObj, const vx_re
         if (dstFormat == VSI_NN_TYPE_INT8 || dstFormat == VSI_NN_TYPE_INT16)
         {
             if(dstFixedPointPos > 0)
-                outputScale *= (vx_float32) (1 << dstFixedPointPos);
+                outputScale *= (vx_float32) ((int64_t)1 << dstFixedPointPos);
             else
-                outputScale *= 1.0f / (vx_float32) (1 << -dstFixedPointPos);
+                outputScale *= 1.0f / (vx_float32) ((int64_t)1 << -dstFixedPointPos);
 
             status |= vxSetNodeUniform(nodObj, "uniConvertIntergetoF32_4x4",
                 1, uniConvertIntergetoF32_4x4);

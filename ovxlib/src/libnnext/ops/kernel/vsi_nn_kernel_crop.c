@@ -162,7 +162,7 @@ vsi_status VX_CALLBACK TensorCropInitializer
         }
         else
         {
-            vx_uint32 multiplier = cropMIN(1 << (-input_fixPointPos), CROP_MAX_MULTIPLIER_NUM);
+            vx_uint32 multiplier = cropMIN((int64_t)1 << (-input_fixPointPos), CROP_MAX_MULTIPLIER_NUM);
 
             for (i = 0; i < 8; i++)
             {

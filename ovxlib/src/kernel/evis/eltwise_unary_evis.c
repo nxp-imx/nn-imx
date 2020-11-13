@@ -313,11 +313,11 @@ DEF_KERNEL_INITIALIZER(_eltwise_unary_initializer)
         int32_t fl = attr[0]->dfp.fl;
         if (fl > 0)
         {
-            inputScale = 1.0f / (float) (1 << fl);
+            inputScale = 1.0f / (float) ((int64_t)1 << fl);
         }
         else
         {
-            inputScale = (float)(1 << -fl);
+            inputScale = (float)((int64_t)1 << -fl);
         }
     }
     else if( attr[0]->quant == VSI_NN_KERNEL_QUANT_ASYMM )
@@ -331,11 +331,11 @@ DEF_KERNEL_INITIALIZER(_eltwise_unary_initializer)
         int32_t fl = attr[1]->dfp.fl;
         if (fl > 0)
         {
-            outputScale = (float)(1 << fl);
+            outputScale = (float)((int64_t)1 << fl);
         }
         else
         {
-            outputScale = (float)1.0f / (float) (1 << -fl);
+            outputScale = (float)1.0f / (float) ((int64_t)1 << -fl);
         }
     }
     else if( attr[1]->quant == VSI_NN_KERNEL_QUANT_ASYMM )

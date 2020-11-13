@@ -194,9 +194,9 @@ DEF_KERNEL_INITIALIZER(_relu_keras_initializer)
     else if (VSI_NN_KERNEL_QUANT_DFP == input_attr->quant)
     {
         if (srcFixPointPos >=0 )
-            scaleIn = 1.0f / (float) (1 << srcFixPointPos);
+            scaleIn = 1.0f / (float) ((int64_t)1 << srcFixPointPos);
         else
-            scaleIn = (float) (1 << -srcFixPointPos);
+            scaleIn = (float) ((int64_t)1 << -srcFixPointPos);
 
         status = vsi_nn_kernel_gpu_add_param(node, "input_scale", &scaleIn);
         CHECK_STATUS_FAIL_GOTO(status, final );
@@ -211,9 +211,9 @@ DEF_KERNEL_INITIALIZER(_relu_keras_initializer)
     else if (VSI_NN_KERNEL_QUANT_DFP == output_attr->quant)
     {
         if (dstFixPointPos >=0 )
-            scaleOut = (float) (1 << dstFixPointPos);
+            scaleOut = (float) ((int64_t)1 << dstFixPointPos);
         else
-            scaleOut = 1.0f / (float) (1 << -dstFixPointPos);
+            scaleOut = 1.0f / (float) ((int64_t)1 << -dstFixPointPos);
 
         status  = vsi_nn_kernel_gpu_add_param(node, "output_scale", &scaleOut);
         CHECK_STATUS_FAIL_GOTO(status, final );
