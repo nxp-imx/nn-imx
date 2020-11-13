@@ -253,7 +253,7 @@ DEF_KERNEL_INITIALIZER(_clip_initializer)
             }
             else
             {
-                uint32_t lo_part    = vsi_nn_min((1 << dstFixPointPos), MAX_MULTIPLIER_NUM);
+                uint32_t lo_part    = vsi_nn_min(((int64_t)1 << dstFixPointPos), MAX_MULTIPLIER_NUM);
                 uint32_t multiplier = lo_part;
                 uint32_t j          = 0;
 
@@ -328,7 +328,7 @@ DEF_KERNEL_INITIALIZER(_clip_initializer)
         }
         else
         {
-            uint32_t multiplier = vsi_nn_min(1 << (dstFixPointPos - srcFixPointPos), MAX_MULTIPLIER_NUM);
+            uint32_t multiplier = vsi_nn_min((int64_t)1 << (dstFixPointPos - srcFixPointPos), MAX_MULTIPLIER_NUM);
             uint32_t i          = 0;
 
             for (i = 0; i < 8; i++)
@@ -411,7 +411,7 @@ DEF_KERNEL_INITIALIZER(_clip_initializer)
         }
         else
         {
-            uint32_t multiplier = vsi_nn_min(1 << (dstFixPointPos - srcFixPointPos), MAX_MULTIPLIER_NUM);
+            uint32_t multiplier = vsi_nn_min((int64_t)1 << (dstFixPointPos - srcFixPointPos), MAX_MULTIPLIER_NUM);
             uint32_t i          = 0;
 
             for (i = 0; i < 8; i++)

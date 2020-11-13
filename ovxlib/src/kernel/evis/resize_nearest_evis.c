@@ -216,11 +216,11 @@ DEF_KERNEL_INITIALIZER(_resize_nearest_initializer)
         srcFixPointPos   = input_attr->dfp.fl;
         if (srcFixPointPos >= 0)
         {
-            input_scale = 1.0f / (float) (1 << srcFixPointPos);
+            input_scale = 1.0f / (float) ((int64_t)1 << srcFixPointPos);
         }
         else if (srcFixPointPos < 0)
         {
-            input_scale = (float)(1 << -srcFixPointPos);
+            input_scale = (float)((int64_t)1 << -srcFixPointPos);
         }
         inputZP = 0;
     }
@@ -240,11 +240,11 @@ DEF_KERNEL_INITIALIZER(_resize_nearest_initializer)
         dstFixPointPos = output_attr->dfp.fl;
         if (dstFixPointPos >= 0)
         {
-            output_scale = (float) (1 << dstFixPointPos);
+            output_scale = (float) ((int64_t)1 << dstFixPointPos);
         }
         else if (dstFixPointPos < 0)
         {
-            output_scale = 1.0f / (float) (1 << -dstFixPointPos);
+            output_scale = 1.0f / (float) ((int64_t)1 << -dstFixPointPos);
         }
         outputZP = 0;
     }
@@ -322,7 +322,7 @@ DEF_KERNEL_INITIALIZER(_resize_nearest_initializer)
         }
         else
         {
-            uint32_t multiplier = vsi_nn_min(1 << (dstFixPointPos - srcFixPointPos), MAX_MULTIPLIER_NUM);
+            uint32_t multiplier = vsi_nn_min((int64_t)1 << (dstFixPointPos - srcFixPointPos), MAX_MULTIPLIER_NUM);
             uint32_t i          = 0;
 
             for (i = 0; i < 8; i++)

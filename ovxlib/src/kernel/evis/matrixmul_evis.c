@@ -226,11 +226,11 @@ DEF_KERNEL_INITIALIZER(_matrix_mul_initializer)
     {
         if (attr[0]->dfp.fl > 0)
         {
-            src0Scale = (1.0f / ((float) (1 << attr[0]->dfp.fl)));
+            src0Scale = (1.0f / ((float) ((int64_t)1 << attr[0]->dfp.fl)));
         }
         else
         {
-            src0Scale = ((float) (1 << -attr[0]->dfp.fl));
+            src0Scale = ((float) ((int64_t)1 << -attr[0]->dfp.fl));
         }
         src0ZP = 0;
     }
@@ -244,11 +244,11 @@ DEF_KERNEL_INITIALIZER(_matrix_mul_initializer)
     {
         if (attr[1]->dfp.fl > 0)
         {
-            src1Scale = (1.0f / ((float) (1 << attr[1]->dfp.fl)));
+            src1Scale = (1.0f / ((float) ((int64_t)1 << attr[1]->dfp.fl)));
         }
         else
         {
-            src1Scale = ((float) (1 << -attr[1]->dfp.fl));
+            src1Scale = ((float) ((int64_t)1 << -attr[1]->dfp.fl));
         }
         src1ZP = 0;
     }
@@ -262,11 +262,11 @@ DEF_KERNEL_INITIALIZER(_matrix_mul_initializer)
     {
         if (attr[2]->dfp.fl > 0)
         {
-            dstScale = (float)(1 << attr[2]->dfp.fl);
+            dstScale = (float)((int64_t)1 << attr[2]->dfp.fl);
         }
         else
         {
-            dstScale = (1.0f / (float)(1 << -attr[2]->dfp.fl));
+            dstScale = (1.0f / (float)((int64_t)1 << -attr[2]->dfp.fl));
         }
         dstScale = 1.0f / dstScale;
         dstZP = 0.0f;

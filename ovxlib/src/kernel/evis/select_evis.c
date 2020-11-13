@@ -147,11 +147,11 @@ DEF_KERNEL_INITIALIZER(_select_initializer)
         input0_fl = input0_attr->dfp.fl;
         if (input0_fl > 0)
         {
-            input0Scale = 1.0f / (float) (1 << input0_fl);
+            input0Scale = 1.0f / (float) ((int64_t)1 << input0_fl);
         }
         else
         {
-            input0Scale = (float)(1 << -input0_fl);
+            input0Scale = (float)((int64_t)1 << -input0_fl);
         }
     }
     else if( input0_attr->quant == VSI_NN_KERNEL_QUANT_ASYMM )
@@ -165,11 +165,11 @@ DEF_KERNEL_INITIALIZER(_select_initializer)
         input1_fl = input1_attr->dfp.fl;
         if (input1_fl > 0)
         {
-            input1Scale = 1.0f / (float) (1 << input1_fl);
+            input1Scale = 1.0f / (float) ((int64_t)1 << input1_fl);
         }
         else
         {
-            input1Scale = (float)(1 << -input1_fl);
+            input1Scale = (float)((int64_t)1 << -input1_fl);
         }
     }
     else if( input1_attr->quant == VSI_NN_KERNEL_QUANT_ASYMM )
@@ -183,11 +183,11 @@ DEF_KERNEL_INITIALIZER(_select_initializer)
         output_fl = output_attr->dfp.fl;
         if (output_fl > 0)
         {
-            outputScale = 1.0f / (float) (1 << output_fl);
+            outputScale = 1.0f / (float) ((int64_t)1 << output_fl);
         }
         else
         {
-            outputScale = (float)(1 << -output_fl);
+            outputScale = (float)((int64_t)1 << -output_fl);
         }
     }
     else if( output_attr->quant == VSI_NN_KERNEL_QUANT_ASYMM )
@@ -263,7 +263,7 @@ DEF_KERNEL_INITIALIZER(_select_initializer)
             else
             {
                 uint32_t idx = 0;
-                uint32_t multiplier = gpu_min(1 << (output_fl - input0_fl), MAX_MULTIPLIER_NUM);
+                uint32_t multiplier = gpu_min((int64_t)1 << (output_fl - input0_fl), MAX_MULTIPLIER_NUM);
                 for (idx = 8; idx < 16; idx ++)
                 {
                     uniConvIntIn0toDst_2x8.data[idx] = (uint32_t)(multiplier << 16) | (multiplier & 0xffff);
@@ -279,7 +279,7 @@ DEF_KERNEL_INITIALIZER(_select_initializer)
             else
             {
                 uint32_t idx = 0;
-                uint32_t multiplier = gpu_min(1 << (output_fl - input1_fl), MAX_MULTIPLIER_NUM);
+                uint32_t multiplier = gpu_min((int64_t)1 << (output_fl - input1_fl), MAX_MULTIPLIER_NUM);
                 for (idx = 8; idx < 16; idx ++)
                 {
                     uniConvIntIn1toDst_2x8.data[idx] = (uint32_t)(multiplier << 16) | (multiplier & 0xffff);

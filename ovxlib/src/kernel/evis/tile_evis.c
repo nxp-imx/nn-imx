@@ -258,11 +258,11 @@ DEF_KERNEL_INITIALIZER(_tile_initializer)
     {
         if (attr[0]->dfp.fl > 0)
         {
-            scaleIn = (1.0f / ((float) (1 << attr[0]->dfp.fl)));
+            scaleIn = (1.0f / ((float) ((int64_t)1 << attr[0]->dfp.fl)));
         }
         else
         {
-            scaleIn = ((float) (1 << -attr[0]->dfp.fl));
+            scaleIn = ((float) ((int64_t)1 << -attr[0]->dfp.fl));
         }
         input_ZP = 0;
     }
@@ -276,11 +276,11 @@ DEF_KERNEL_INITIALIZER(_tile_initializer)
     {
         if (attr[1]->dfp.fl > 0)
         {
-            scaleOut = (float)(1 << attr[1]->dfp.fl);
+            scaleOut = (float)((int64_t)1 << attr[1]->dfp.fl);
         }
         else
         {
-            scaleOut = (1.0f / (float)(1 << -attr[1]->dfp.fl));
+            scaleOut = (1.0f / (float)((int64_t)1 << -attr[1]->dfp.fl));
         }
         output_ZP = 0;
     }

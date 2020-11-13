@@ -373,11 +373,11 @@ static vsi_nn_kernel_node_t _setup
     {
         if (inputs[0]->attr.dtype.fl > 0)
         {
-            input_scale = (1.0f / ((float) (1 << inputs[0]->attr.dtype.fl)));
+            input_scale = (1.0f / ((float) ((int64_t)1 << inputs[0]->attr.dtype.fl)));
         }
         else
         {
-            input_scale = ((float) (1 << -inputs[0]->attr.dtype.fl));
+            input_scale = ((float) ((int64_t)1 << -inputs[0]->attr.dtype.fl));
         }
         input_zp = 0;
     }

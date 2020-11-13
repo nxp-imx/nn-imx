@@ -172,11 +172,11 @@ DEF_KERNEL_INITIALIZER(_floordiv_initializer)
         input0_fl = input0_attr->dfp.fl;
         if (input0_fl > 0)
         {
-            inScale0 = 1.0f / (float) (1 << input0_fl);
+            inScale0 = 1.0f / (float) ((int64_t)1 << input0_fl);
         }
         else
         {
-            inScale0 = (float)(1 << -input0_fl);
+            inScale0 = (float)((int64_t)1 << -input0_fl);
         }
         status  = vsi_nn_kernel_gpu_add_param( node, "in_scale0", &inScale0 );
         CHECK_STATUS_FAIL_GOTO(status, final );
@@ -195,11 +195,11 @@ DEF_KERNEL_INITIALIZER(_floordiv_initializer)
         input1_fl = input1_attr->dfp.fl;
         if (input1_fl > 0)
         {
-            inScale1 = 1.0f / (float) (1 << input1_fl);
+            inScale1 = 1.0f / (float) ((int64_t)1 << input1_fl);
         }
         else
         {
-            inScale1 = (float)(1 << -input1_fl);
+            inScale1 = (float)((int64_t)1 << -input1_fl);
         }
         status  = vsi_nn_kernel_gpu_add_param( node, "in_scale1", &inScale1 );
         CHECK_STATUS_FAIL_GOTO(status, final );
@@ -218,11 +218,11 @@ DEF_KERNEL_INITIALIZER(_floordiv_initializer)
         output_fl = output_attr->dfp.fl;
         if (output_fl > 0)
         {
-            outScale = (float) (1 << output_fl);
+            outScale = (float) ((int64_t)1 << output_fl);
         }
         else
         {
-            outScale = 1.0f / (float)(1 << -output_fl);
+            outScale = 1.0f / (float)((int64_t)1 << -output_fl);
         }
         status  = vsi_nn_kernel_gpu_add_param( node, "out_scale", &outScale );
         CHECK_STATUS_FAIL_GOTO(status, final );

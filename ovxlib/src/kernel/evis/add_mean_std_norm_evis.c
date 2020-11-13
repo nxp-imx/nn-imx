@@ -171,11 +171,11 @@ DEF_KERNEL_INITIALIZER(_add_mean_std_norm_initializer)
         fixpoint_out = output_attr->dfp.fl;
         if (fixpoint_out >= 0)
         {
-            scaleOut = 1.0f / (vx_float32) (1 << fixpoint_out);
+            scaleOut = 1.0f / (vx_float32) ((int64_t)1 << fixpoint_out);
         }
         else
         {
-            scaleOut = (vx_float32) (1 << -fixpoint_out);
+            scaleOut = (vx_float32) ((int64_t)1 << -fixpoint_out);
         }
         output_ZP = 0;
     }
@@ -192,20 +192,20 @@ DEF_KERNEL_INITIALIZER(_add_mean_std_norm_initializer)
 
     if (fixpoint >= 0)
     {
-        inScale_dfp = 1.0f / (vx_float32) (1 << fixpoint);
+        inScale_dfp = 1.0f / (vx_float32) ((int64_t)1 << fixpoint);
     }
     else
     {
-        inScale_dfp = (vx_float32) (1 << -fixpoint);
+        inScale_dfp = (vx_float32) ((int64_t)1 << -fixpoint);
     }
 
     if (fixpoint1 >= 0)
     {
-        inScale_dfp1 = 1.0f / (vx_float32) (1 << fixpoint1);
+        inScale_dfp1 = 1.0f / (vx_float32) ((int64_t)1 << fixpoint1);
     }
     else
     {
-        inScale_dfp1 = (vx_float32) (1 << -fixpoint1);
+        inScale_dfp1 = (vx_float32) ((int64_t)1 << -fixpoint1);
     }
 
     gpu_param.global_offset[0] = 0;

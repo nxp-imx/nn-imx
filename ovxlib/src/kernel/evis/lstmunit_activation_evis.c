@@ -1138,9 +1138,9 @@ DEF_KERNEL_INITIALIZER(_lstmunit_activation_initializer)
         if (dstQuantType == VSI_NN_KERNEL_QUANT_DFP)
         {
             if (dstFixPointPos >= 0)
-                outputScale *= (vx_float32)(1 << dstFixPointPos);
+                outputScale *= (vx_float32)((int64_t)1 << dstFixPointPos);
             else if (dstFixPointPos < 0)
-                outputScale *= 1.0f / (vx_float32) (1 << -dstFixPointPos);
+                outputScale *= 1.0f / (vx_float32) ((int64_t)1 << -dstFixPointPos);
 
             outputZP = 0;
         }

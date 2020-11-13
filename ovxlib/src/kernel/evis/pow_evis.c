@@ -251,11 +251,11 @@ DEF_KERNEL_INITIALIZER(_pow_initializer)
         out_fl = (int8_t)attr[2]->dfp.fl;
         if (out_fl > 0)
         {
-            outScale_fl = (vx_float32)(1 << out_fl);
+            outScale_fl = (vx_float32)((int64_t)1 << out_fl);
         }
         else
         {
-            outScale_fl = (1.0f / (vx_float32)(1 << -out_fl));
+            outScale_fl = (1.0f / (vx_float32)((int64_t)1 << -out_fl));
         }
     }
     else if ( attr[2]->quant == VSI_NN_KERNEL_QUANT_ASYMM

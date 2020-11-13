@@ -234,11 +234,11 @@ DEF_KERNEL_INITIALIZER(_gather_nd_initializer)
     {
         if (attr[0]->dfp.fl > 0)
         {
-            src0Scale = (1.0f / ((float) (1 << attr[0]->dfp.fl)));
+            src0Scale = (1.0f / ((float) ((int64_t)1 << attr[0]->dfp.fl)));
         }
         else
         {
-            src0Scale = ((float) (1 << -attr[0]->dfp.fl));
+            src0Scale = ((float) ((int64_t)1 << -attr[0]->dfp.fl));
         }
     }
     else if(attr[0]->quant == VSI_NN_KERNEL_QUANT_NONE)
@@ -250,11 +250,11 @@ DEF_KERNEL_INITIALIZER(_gather_nd_initializer)
     {
         if (attr[2]->dfp.fl > 0)
         {
-            dstScale = (float)(1 << attr[2]->dfp.fl);
+            dstScale = (float)((int64_t)1 << attr[2]->dfp.fl);
         }
         else
         {
-            dstScale = (1.0f / (float)(1 << -attr[2]->dfp.fl));
+            dstScale = (1.0f / (float)((int64_t)1 << -attr[2]->dfp.fl));
         }
         dstScale = 1.0f / dstScale;
     }

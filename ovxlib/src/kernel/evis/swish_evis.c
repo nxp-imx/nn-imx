@@ -190,11 +190,11 @@ DEF_KERNEL_INITIALIZER(_swish_initializer)
         srcFixPointPos = (int8_t)input_attr->dfp.fl;
         if (srcFixPointPos > 0)
         {
-            inputScale = 1.0f / (vx_float32) (1 << srcFixPointPos);
+            inputScale = 1.0f / (vx_float32) ((int64_t)1 << srcFixPointPos);
         }
         else
         {
-            inputScale = (vx_float32)(1 << -srcFixPointPos);
+            inputScale = (vx_float32)((int64_t)1 << -srcFixPointPos);
         }
     }
     else if (input_attr->quant == VSI_NN_KERNEL_QUANT_ASYMM || input_attr->quant == VSI_NN_KERNEL_QUANT_SYMM)
@@ -208,11 +208,11 @@ DEF_KERNEL_INITIALIZER(_swish_initializer)
         dstFixPointPos = (int8_t)output_attr->dfp.fl;
         if (dstFixPointPos > 0)
         {
-            outputScale = (vx_float32) (1 << dstFixPointPos);
+            outputScale = (vx_float32) ((int64_t)1 << dstFixPointPos);
         }
         else
         {
-            outputScale = 1.0f / (vx_float32) (1 << -dstFixPointPos);
+            outputScale = 1.0f / (vx_float32) ((int64_t)1 << -dstFixPointPos);
         }
     }
     else if (output_attr->quant == VSI_NN_KERNEL_QUANT_ASYMM || output_attr->quant == VSI_NN_KERNEL_QUANT_SYMM)
@@ -400,11 +400,11 @@ DEF_KERNEL_INITIALIZER(_hswish_initializer)
         srcFixPointPos = (int8_t)input_attr->dfp.fl;
         if (srcFixPointPos > 0)
         {
-            inputScale = 1.0f / (vx_float32) (1 << srcFixPointPos);
+            inputScale = 1.0f / (vx_float32) ((int64_t)1 << srcFixPointPos);
         }
         else
         {
-            inputScale = (vx_float32)(1 << -srcFixPointPos);
+            inputScale = (vx_float32)((int64_t)1 << -srcFixPointPos);
         }
     }
     else if (input_attr->quant == VSI_NN_KERNEL_QUANT_ASYMM || input_attr->quant == VSI_NN_KERNEL_QUANT_SYMM)
@@ -418,11 +418,11 @@ DEF_KERNEL_INITIALIZER(_hswish_initializer)
         dstFixPointPos = (int8_t)output_attr->dfp.fl;
         if (dstFixPointPos > 0)
         {
-            outputScale = (vx_float32) (1 << dstFixPointPos);
+            outputScale = (vx_float32) ((int64_t)1 << dstFixPointPos);
         }
         else
         {
-            outputScale = 1.0f / (vx_float32) (1 << -dstFixPointPos);
+            outputScale = 1.0f / (vx_float32) ((int64_t)1 << -dstFixPointPos);
         }
     }
     else if (output_attr->quant == VSI_NN_KERNEL_QUANT_ASYMM || output_attr->quant == VSI_NN_KERNEL_QUANT_SYMM)

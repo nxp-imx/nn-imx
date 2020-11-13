@@ -129,11 +129,11 @@ DEF_KERNEL_INITIALIZER(_pre_process_gray_copy_initializer)
     {
         if (attr[0]->dfp.fl > 0)
         {
-            outputScale = (float)(1 << attr[0]->dfp.fl);
+            outputScale = (float)((int64_t)1 << attr[0]->dfp.fl);
         }
         else
         {
-            outputScale = (1.0f / (float)(1 << -attr[0]->dfp.fl));
+            outputScale = (1.0f / (float)((int64_t)1 << -attr[0]->dfp.fl));
         }
         dstZP = 0.0f;
     }
@@ -230,11 +230,11 @@ DEF_KERNEL_INITIALIZER(_pre_process_gray_initializer)
     {
         if (attr[0]->dfp.fl > 0)
         {
-            outputScale = (float)(1 << attr[0]->dfp.fl);
+            outputScale = (float)((int64_t)1 << attr[0]->dfp.fl);
         }
         else
         {
-            outputScale = (1.0f / (float)(1 << -attr[0]->dfp.fl));
+            outputScale = (1.0f / (float)((int64_t)1 << -attr[0]->dfp.fl));
         }
         dstZP = 0.0f;
     }
