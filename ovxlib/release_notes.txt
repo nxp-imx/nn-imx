@@ -1,0 +1,15 @@
+############################################################################
+Release notes for Ovxlib 1.1.27
+
+New Features:
+    1. add ops: expand_broadcast, scatter_nd
+    2. support preload const tensors to AXI-SRAM/VIP-SRAM
+Feature Refine:
+    1. optimize resize op when then input and output with same shape
+    2. refine ops: pre_process relative ops, dropout, unstack, exp
+    3. add TP LUT implementation for eltwise unary operations
+Bug Fixing:
+    1. fix poolwithargmax and upsample cpu implementaion
+    2. fix bug of argmax, argmin, lstmunit, prelu, upsample
+    3. fix bug of op matrixmul
+    4. fix bug of detection_postprocess_op
