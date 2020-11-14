@@ -26,6 +26,7 @@
 #include <map>
 #include <memory>
 #include <vector>
+#include <list>
 #include <string>
 
 #include "nnrt/memory_pool.hpp"
@@ -202,6 +203,12 @@ class Model {
         return mem_refs_.back();
     }
 
+    void remove_memory_reference(const mem_pool::shared_ref& ref) {
+        auto it = std::find(mem_refs_.begin(), mem_refs_.end(), ref);
+        it->reset();
+        mem_refs_.erase(it);
+    }
+
    private:
     uint32_t operand_unique_id_{0};
     uint32_t operation_unique_id_{0};
@@ -216,7 +223,7 @@ class Model {
     std::vector<uint32_t> output_indexes_;
 
     mem_pool::Manager memory_pool_;
-    std::vector<mem_pool::shared_ref> mem_refs_;
+    std::list<mem_pool::shared_ref> mem_refs_;
 };
 
 using ModelPtr = std::shared_ptr<Model>;
