@@ -30,7 +30,7 @@
 namespace nnrt
 {
 PreparedModel::PreparedModel(Model* model,
-        SharedContextPtr context, std::vector<ExecutionIOPtr> &inputs,
+        SharedContextPtr context, const std::vector<ExecutionIOPtr> &inputs,
         Interpreter* interpreter)
     : model_(model)
     , interpreter_(interpreter)

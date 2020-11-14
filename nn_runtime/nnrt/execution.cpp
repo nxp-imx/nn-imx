@@ -75,7 +75,13 @@ Execution::Execution(Compilation* compilation)
 }
 
 Execution::~Execution(){
+    for (auto i : inputs_) {
+        compilation_->getModel()->remove_memory_reference(i->weak_mem_ref.lock());
+    }
     inputs_.clear();
+    for (auto o : outputs_) {
+        compilation_->getModel()->remove_memory_reference(o->weak_mem_ref.lock());
+    }
     outputs_.clear();
 }
 

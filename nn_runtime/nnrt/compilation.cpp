@@ -77,7 +77,7 @@ void Compilation::cachePreparedModel(PreparedModelPtr& prepared_model)
 }
 
 PreparedModelPtr Compilation::prepareModel(int* err_ptr,
-                                           std::vector<ExecutionIOPtr>& inputs,
+                                           const std::vector<ExecutionIOPtr>& inputs,
                                            SharedContextPtr& context) {
     context_ = context;
     int err = NNA_ERROR_CODE(NO_ERROR);
