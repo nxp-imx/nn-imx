@@ -219,8 +219,10 @@ ModelShell::ModelShell(adaption::FinalModelPtr&& finalModel)
 }
 
 ModelShell::~ModelShell() {
-    m_Compiler.reset();
+    // The order is important!
     m_ExecutionPtr.reset();
+    m_Compiler.reset();
+    m_NativeModel.reset();
 }
 
 void ModelShell::Execute() {
