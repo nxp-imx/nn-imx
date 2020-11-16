@@ -27,11 +27,13 @@
 #include "vsi_nn_platform.h"
 #include "vsi_nn_prv.h"
 #include "vsi_nn_graph.h"
+#include "vsi_nn_log.h"
 #include "vsi_nn_node.h"
 #include "vsi_nn_ops.h"
 #include "vsi_nn_tensor.h"
 #include "vsi_nn_tensor_util.h"
 #include "utils/vsi_nn_util.h"
+#include "utils/vsi_nn_constraint_check.h"
 
 static vsi_status op_compute
     (
@@ -87,7 +89,39 @@ static vsi_bool op_check
     vsi_nn_tensor_t ** outputs
     )
 {
-    //TODO: Check tensor shapes.
+    /* check inputs outputs data type */
+    BEGIN_IO_TYPE_DECL(ABS, 2)
+        /* IO_TYPE(INPUT, OUTPUT) */
+        IO_TYPE(D_F32, D_F32)
+        IO_TYPE(D_F32, D_F16)
+        IO_TYPE(D_F32, D_BF16)
+
+        IO_TYPE(D_F16, D_F32)
+        IO_TYPE(D_F16, D_F16)
+        IO_TYPE(D_F16, D_U8|Q_ASYM)
+        IO_TYPE(D_F16, D_I8|Q_DFP)
+        IO_TYPE(D_F16, D_I16|Q_DFP)
+
+        IO_TYPE(D_BF16, D_BF16)
+        IO_TYPE(D_BF16, D_F32)
+
+        IO_TYPE(D_U8|Q_ASYM, D_U8|Q_ASYM)
+        IO_TYPE(D_U8|Q_ASYM, D_F16)
+
+        IO_TYPE(D_I8|Q_ASYM, D_I8|Q_ASYM)
+        IO_TYPE(D_I8|Q_ASYM, D_F16)
+
+        IO_TYPE(D_I8|Q_DFP, D_I8|Q_DFP)
+        IO_TYPE(D_I8|Q_DFP, D_F16)
+
+        IO_TYPE(D_I16|Q_DFP, D_I16|Q_DFP)
+        IO_TYPE(D_I16|Q_DFP, D_F16)
+    END_IO_TYPE_DECL(ABS)
+    if(!VALIDATE_OP_IO_TYPES(ABS, inputs, self->input.num, outputs, self->output.num)) {
+        VSILOGE("Inputs/Outputs data type not support.");
+        return FALSE;
+    }
+
     return TRUE;
 } /* op_check() */
 

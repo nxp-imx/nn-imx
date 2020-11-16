@@ -627,6 +627,9 @@
     <ClInclude Include="include\utils\vsi_nn_vdata.h">
       <Filter>Header Files\utils</Filter>
     </ClInclude>
+    <ClInclude Include="include\utils\vsi_nn_constraint_check.h">
+      <Filter>Header Files\utils</Filter>
+    </ClInclude>
     <ClInclude Include="include\vsi_nn_assert.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -1674,6 +1677,9 @@
       <Filter>Source Files\utils</Filter>
     </ClCompile>
     <ClCompile Include="src\utils\vsi_nn_vdata.c">
+      <Filter>Source Files\utils</Filter>
+    </ClCompile>
+    <ClCompile Include="src\utils\vsi_nn_constraint_check.c">
       <Filter>Source Files\utils</Filter>
     </ClCompile>
     <ClCompile Include="src\vsi_nn_client_op.c">

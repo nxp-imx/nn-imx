@@ -34,6 +34,7 @@
 #include "utils/vsi_nn_util.h"
 #include "utils/vsi_nn_math.h"
 #include "kernel/vsi_nn_kernel.h"
+#include "utils/vsi_nn_constraint_check.h"
 
 static vsi_status _eltwise_unary_op_compute
     (
@@ -103,6 +104,49 @@ static vsi_bool op_setup
     return ret;
 } /* op_setup() */
 
+static vsi_bool op_check
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs
+    )
+{
+    /* check inputs outputs data type */
+    BEGIN_IO_TYPE_DECL(ELTWISE_UNARY, 2)
+        /* IO_TYPE(INPUT, OUTPUT) */
+        IO_TYPE(D_F32, D_F32)
+        IO_TYPE(D_F32, D_F16)
+        IO_TYPE(D_F32, D_BF16)
+
+        IO_TYPE(D_F16, D_F32)
+        IO_TYPE(D_F16, D_F16)
+        IO_TYPE(D_F16, D_U8|Q_ASYM)
+        IO_TYPE(D_F16, D_I8|Q_DFP)
+        IO_TYPE(D_F16, D_I16|Q_DFP)
+
+        IO_TYPE(D_BF16, D_BF16)
+        IO_TYPE(D_BF16, D_F32)
+
+        IO_TYPE(D_U8|Q_ASYM, D_U8|Q_ASYM)
+        IO_TYPE(D_U8|Q_ASYM, D_F16)
+
+        IO_TYPE(D_I8|Q_ASYM, D_I8|Q_ASYM)
+        IO_TYPE(D_I8|Q_ASYM, D_F16)
+
+        IO_TYPE(D_I8|Q_DFP, D_I8|Q_DFP)
+        IO_TYPE(D_I8|Q_DFP, D_F16)
+
+        IO_TYPE(D_I16|Q_DFP, D_I16|Q_DFP)
+        IO_TYPE(D_I16|Q_DFP, D_F16)
+    END_IO_TYPE_DECL(ELTWISE_UNARY)
+    if(!VALIDATE_OP_IO_TYPES(ELTWISE_UNARY, inputs, self->input.num, outputs, self->output.num)) {
+        VSILOGE("Inputs/Outputs data type not support.");
+        return FALSE;
+    }
+
+    return TRUE;
+} /* op_check() */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -117,7 +161,7 @@ extern "C" {
     { \
         return _eltwise_unary_op_compute( ""#kernel_name, self, inputs, outputs ); \
     } \
-DEF_OP_REG(name, NULL, op_compute_##kernel_name, vsi_nn_op_common_deinit, NULL, op_setup, NULL, 2, 1)
+DEF_OP_REG(name, NULL, op_compute_##kernel_name, vsi_nn_op_common_deinit, op_check, op_setup, NULL, 2, 1)
 
 DEF_ELEMENT_WISE_UNARY_OP( SIN, sin );
 DEF_ELEMENT_WISE_UNARY_OP( EXP, exp );

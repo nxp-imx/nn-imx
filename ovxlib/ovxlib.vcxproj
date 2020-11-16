@@ -699,6 +699,7 @@
     <ClInclude Include="include\utils\vsi_nn_tensor_op.h" />
     <ClInclude Include="include\utils\vsi_nn_util.h" />
     <ClInclude Include="include\utils\vsi_nn_vdata.h" />
+    <ClInclude Include="include\utils\vsi_nn_constraint_check.h" />
     <ClInclude Include="include\vsi_nn_assert.h" />
     <ClInclude Include="include\vsi_nn_client_op.h" />
     <ClInclude Include="include\vsi_nn_compatibility.h" />
@@ -1746,6 +1747,9 @@
     </ClCompile>
     <ClCompile Include="src\utils\vsi_nn_vdata.c">
       <ObjectFileName>$(IntDir)\src\utils\vsi_nn_vdata.o</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\utils\vsi_nn_constraint_check.c">
+      <ObjectFileName>$(IntDir)\src\utils\vsi_nn_constraint_check.o</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\vsi_nn_client_op.c">
       <ObjectFileName>$(IntDir)\src\vsi_nn_client_op.o</ObjectFileName>
