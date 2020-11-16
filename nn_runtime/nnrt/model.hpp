@@ -204,6 +204,7 @@ class Model {
     }
 
     void remove_memory_reference(const mem_pool::shared_ref& ref) {
+        if (!ref) return;
         auto it = std::find(mem_refs_.begin(), mem_refs_.end(), ref);
         it->reset();
         mem_refs_.erase(it);
