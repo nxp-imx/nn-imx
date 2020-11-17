@@ -293,6 +293,8 @@ static vsi_status op_compute
         uint32_t re_sizes2[VSI_NN_MAX_DIM_NUM] = {1};
         uint32_t dim_num;
         vsi_nn_tensor_t *mean_tmp_tensor = NULL;
+        vsi_nn_tensor_t *reshaped_input1 = self->nn_param.reduce.local2->reshaped_input1;
+        vsi_nn_tensor_t *reshaped_output1 = self->nn_param.reduce.local2->reshaped_output1;
 
         resolved_dim_count = self->nn_param.reduce.local2->axes_num;
 
@@ -307,12 +309,12 @@ static vsi_status op_compute
             re_sizes2[i] = 1;
         }
         memset(&attr2, 0, sizeof(attr));
-        memcpy( &attr2, &inputs[0]->attr, sizeof(vsi_nn_tensor_attr_t) );
-        dim_num = inputs[0]->attr.dim_num;
+        memcpy( &attr2, &reshaped_input1->attr, sizeof(vsi_nn_tensor_attr_t) );
+        dim_num = reshaped_input1->attr.dim_num;
         for (i = 0; i < dim_num; i++)
         {
-            attr2.size[i] = inputs[0]->attr.size[i];
-            re_sizes[i]  = inputs[0]->attr.size[i];
+            attr2.size[i] = reshaped_input1->attr.size[i];
+            re_sizes[i]  = reshaped_input1->attr.size[i];
         }
         attr2.dtype.vx_type  = VSI_NN_TYPE_FLOAT16;
         attr2.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
@@ -339,8 +341,8 @@ static vsi_status op_compute
             }
 
             self->nn_param.reduce.local.axis_tensor = axis_tensor;
-            input_t  = inputs[0]->t;
-            output_t = outputs[0]->t;
+            input_t  = reshaped_input1->t;
+            output_t = reshaped_output1->t;
             status = op_comput_reduce_mean(self,
                                            axis_tensor,
                                            self->nn_param.reduce.keep_dim,
@@ -351,18 +353,6 @@ static vsi_status op_compute
         {
             if (1 == resolved_dim_count)
             {
-                vsi_bool enable_reshape = TRUE;
-
-                enable_reshape = caculate_reshape_size(&dim_num, re_sizes, re_sizes2,
-                                      resolved_dim, resolved_dim_count);
-                if (enable_reshape)
-                {
-                    self->nn_param.reduce.local2->reshaped_input  =
-                    vsi_nn_reshape_tensor(self->graph, inputs[0], re_sizes2, dim_num);
-                    re_sizes2[resolved_dim[resolved_dim_count - 1]] = 1;
-                    self->nn_param.reduce.local2->reshaped_output =
-                    vsi_nn_reshape_tensor(self->graph, outputs[0], re_sizes2, dim_num);
-                }
                 memset(&attr, 0, sizeof(attr));
                 attr.size[0] = resolved_dim_count;
                 attr.dim_num = 1;
@@ -380,22 +370,8 @@ static vsi_status op_compute
                 }
 
                 self->nn_param.reduce.local.axis_tensor = axis_tensor;
-                if (self->nn_param.reduce.local2->reshaped_input)
-                {
-                    input_t  = self->nn_param.reduce.local2->reshaped_input->t;
-                }
-                else
-                {
-                    input_t  = inputs[0]->t;
-                }
-                if (self->nn_param.reduce.local2->reshaped_output)
-                {
-                    output_t = self->nn_param.reduce.local2->reshaped_output->t;
-                }
-                else
-                {
-                    output_t = outputs[0]->t;
-                }
+                input_t  = reshaped_input1->t;
+                output_t = reshaped_output1->t;
                 status = op_comput_reduce_mean(self,
                                                axis_tensor,
                                                self->nn_param.reduce.keep_dim,
@@ -430,7 +406,7 @@ static vsi_status op_compute
                 status = op_comput_reduce_mean(self,
                                                axis_tensor,
                                                self->nn_param.reduce.keep_dim,
-                                               inputs[0]->t,
+                                               reshaped_input1->t,
                                                mean_tmp_tensor->t);
 
                 enable_reshape = caculate_reshape_size(&dim_num, re_sizes, re_sizes2,
@@ -442,7 +418,7 @@ static vsi_status op_compute
                     vsi_nn_reshape_tensor(self->graph, mean_tmp_tensor, re_sizes2, dim_num);
                     re_sizes2[resolved_dim[resolved_dim_count - 1]] = 1;
                     self->nn_param.reduce.local2->reshaped_output =
-                    vsi_nn_reshape_tensor(self->graph, outputs[0], re_sizes2, dim_num);
+                    vsi_nn_reshape_tensor(self->graph, reshaped_output1, re_sizes2, dim_num);
                 }
 
                 memset(&attr, 0, sizeof(attr));
@@ -476,7 +452,7 @@ static vsi_status op_compute
                 }
                 else
                 {
-                    output_t = outputs[0]->t;
+                    output_t = reshaped_output1->t;
                 }
                 status = op_comput_reduce_mean(self,
                                                axis_tensor2,
@@ -515,7 +491,7 @@ static vsi_status op_compute
             status = op_comput_reduce_mean(self,
                                             axis_tensor,
                                             self->nn_param.reduce.keep_dim,
-                                            inputs[0]->t,
+                                            reshaped_input1->t,
                                             mean_tmp_tensor->t);
             if (3 == resolved_dim[resolved_dim_count - 1])
             {
@@ -527,7 +503,7 @@ static vsi_status op_compute
                     vsi_nn_reshape_tensor(self->graph, mean_tmp_tensor, re_sizes2, dim_num);
                     re_sizes2[resolved_dim[resolved_dim_count - 1]] = 1;
                     self->nn_param.reduce.local2->reshaped_output =
-                    vsi_nn_reshape_tensor(self->graph, outputs[0], re_sizes2, dim_num);
+                    vsi_nn_reshape_tensor(self->graph, reshaped_output1, re_sizes2, dim_num);
                 }
             }
 
@@ -562,7 +538,7 @@ static vsi_status op_compute
             }
             else
             {
-                output_t = outputs[0]->t;
+                output_t = reshaped_output1->t;
             }
             status = op_comput_reduce_mean(self,
                                             axis_tensor2,
