@@ -140,10 +140,18 @@ class TNpuWorkload : public Base_t<QueueDescriptor, DataTypes...>{
     explicit TNpuWorkload(const QueueDescriptor& descriptor, const WorkloadInfo& info)
         : Base_t<QueueDescriptor, DataTypes...>(descriptor, info) {
         for (size_t i = 0; i < descriptor.m_Inputs.size(); i++) {
-            m_InputsHandler.push_back(dynamic_cast<NpuTensorHandler*>(descriptor.m_Inputs[i]));
+            NpuTensorHandler* inputTensorHandle =
+                dynamic_cast<NpuTensorHandler*>(descriptor.m_Inputs[i]);
+            if (inputTensorHandle) {
+                m_InputsHandler.push_back(inputTensorHandle);
+            }
         }
         for (size_t i = 0; i < descriptor.m_Outputs.size(); i++) {
-            m_OutputsHandler.push_back(dynamic_cast<NpuTensorHandler*>(descriptor.m_Outputs[i]));
+            NpuTensorHandler* outputTensorHandle =
+                dynamic_cast<NpuTensorHandler*>(descriptor.m_Outputs[i]);
+            if (outputTensorHandle) {
+                m_OutputsHandler.push_back(outputTensorHandle);
+            }
         }
         m_InputTensorInfos = info.m_InputTensorInfos;
         m_OutputTensorInfos = info.m_OutputTensorInfos;

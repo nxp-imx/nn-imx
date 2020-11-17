@@ -62,11 +62,16 @@ class NpuDetectionPostProcessWorkload : public TNpuWorkload<DetectionPostProcess
         std::vector<uint32_t> inOperandIds;
         // Add input operand
         auto scoresPtr = dynamic_cast<NpuTensorHandler*>(descriptor.m_Inputs[1]);
-        inOperandIds.push_back(this->AddOperandAndSetValue(
-            scoresPtr->GetTensorInfo(), scoresPtr->GetShape(), nullptr));
+        if (scoresPtr) {
+            inOperandIds.push_back(this->AddOperandAndSetValue(
+                scoresPtr->GetTensorInfo(), scoresPtr->GetShape(), nullptr));
+        }
+
         auto boxEncodingPtr = dynamic_cast<NpuTensorHandler*>(descriptor.m_Inputs[0]);
-        inOperandIds.push_back(this->AddOperandAndSetValue(
-            boxEncodingPtr->GetTensorInfo(), boxEncodingPtr->GetShape(), nullptr));
+        if (boxEncodingPtr) {
+            inOperandIds.push_back(this->AddOperandAndSetValue(
+                boxEncodingPtr->GetTensorInfo(), boxEncodingPtr->GetShape(), nullptr));
+        }
 
         // swap input npu tensor hanlder
         auto tmp = this->m_InputsHandler[0];
@@ -90,27 +95,36 @@ class NpuDetectionPostProcessWorkload : public TNpuWorkload<DetectionPostProcess
         // Add output operand
         std::vector<uint32_t> outOperandIds;
         auto detectionScoresPtr = dynamic_cast<NpuTensorHandler*>(descriptor.m_Outputs[2]);
-        outOperandIds.push_back(this->AddOperandAndSetValue(
-            detectionScoresPtr->GetTensorInfo(), detectionScoresPtr->GetShape(), nullptr));
+        if (detectionScoresPtr) {
+            outOperandIds.push_back(this->AddOperandAndSetValue(
+                detectionScoresPtr->GetTensorInfo(), detectionScoresPtr->GetShape(), nullptr));
+        }
 
         auto detectionBoxesPtr = dynamic_cast<NpuTensorHandler*>(descriptor.m_Outputs[0]);
-        outOperandIds.push_back(this->AddOperandAndSetValue(
-            detectionBoxesPtr->GetTensorInfo(), detectionBoxesPtr->GetShape(), nullptr));
+        if (detectionBoxesPtr) {
+            outOperandIds.push_back(this->AddOperandAndSetValue(
+                detectionBoxesPtr->GetTensorInfo(), detectionBoxesPtr->GetShape(), nullptr));
+        }
 
         auto detectionClassesPtr = dynamic_cast<NpuTensorHandler*>(descriptor.m_Outputs[1]);
-        // convert float to int to compatible with nnapi spec
-        outOperandIds.push_back(this->AddOperandAndSetValue(detectionClassesPtr->GetTensorInfo(),
-                                                            detectionClassesPtr->GetShape(),
-                                                            nullptr,
-                                                            true /*convert float to int32*/));
-        detectionClassesPtr->callback = &ConvertIntToFloat;
+        if (detectionClassesPtr) {
+            // convert float to int to compatible with nnapi spec
+            outOperandIds.push_back(
+                this->AddOperandAndSetValue(detectionClassesPtr->GetTensorInfo(),
+                                            detectionClassesPtr->GetShape(),
+                                            nullptr,
+                                            true /*convert float to int32*/));
+            detectionClassesPtr->callback = &ConvertIntToFloat;
+        }
 
         auto detectionNumsPtr = dynamic_cast<NpuTensorHandler*>(descriptor.m_Outputs[3]);
-        outOperandIds.push_back(this->AddOperandAndSetValue(detectionNumsPtr->GetTensorInfo(),
-                                                            detectionNumsPtr->GetShape(),
-                                                            nullptr,
-                                                            true /*convert float to int32*/));
-        detectionNumsPtr->callback = &ConvertIntToFloat;
+        if (detectionNumsPtr) {
+            outOperandIds.push_back(this->AddOperandAndSetValue(detectionNumsPtr->GetTensorInfo(),
+                                                                detectionNumsPtr->GetShape(),
+                                                                nullptr,
+                                                                true /*convert float to int32*/));
+            detectionNumsPtr->callback = &ConvertIntToFloat;
+        }
 
         // swap output npu handler
         tmp = this->m_OutputsHandler[0];

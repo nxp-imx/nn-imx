@@ -50,20 +50,24 @@ class NpuResizeWorkload : public TNpuWorkload<ResizeQueueDescriptor, DataTypes..
         assert(1 == descriptor.m_Inputs.size());
         NpuTensorHandler* inputTensorHandle =
             dynamic_cast<NpuTensorHandler*>(descriptor.m_Inputs[0]);
-        uint32_t inputOperandId = this->AddOperandAndSetValue(
-            inputTensorHandle->GetTensorInfo(), inputTensorHandle->GetShape(), nullptr);
-        inOperandIds.push_back(inputOperandId);
+        if (inputTensorHandle) {
+            uint32_t inputOperandId = this->AddOperandAndSetValue(
+                inputTensorHandle->GetTensorInfo(), inputTensorHandle->GetShape(), nullptr);
+            inOperandIds.push_back(inputOperandId);
+        }
 
         // Set target height and width
         NpuTensorHandler* outputTensorHandle =
             dynamic_cast<NpuTensorHandler*>(descriptor.m_Outputs[0]);
-        auto outShape = outputTensorHandle->GetShape();
-        if (m_DataLayout == armnn::DataLayout::NCHW) {
-            m_TargetHeight = outShape[2];
-            m_TargetWidth = outShape[3];
-        } else if (m_DataLayout == armnn::DataLayout::NHWC) {
-            m_TargetHeight = outShape[1];
-            m_TargetWidth = outShape[2];
+        if (outputTensorHandle) {
+            auto outShape = outputTensorHandle->GetShape();
+            if (m_DataLayout == armnn::DataLayout::NCHW) {
+                m_TargetHeight = outShape[2];
+                m_TargetWidth = outShape[3];
+            } else if (m_DataLayout == armnn::DataLayout::NHWC) {
+                m_TargetHeight = outShape[1];
+                m_TargetWidth = outShape[2];
+            }
         }
 
         // Add target height operand
@@ -79,9 +83,11 @@ class NpuResizeWorkload : public TNpuWorkload<ResizeQueueDescriptor, DataTypes..
         inOperandIds.push_back(this->AddOperandAndSetValue(layoutCode));
 
         std::vector<uint32_t> outOperandIds;
-        uint32_t outputTensorId = this->AddOperandAndSetValue(
-            outputTensorHandle->GetTensorInfo(), outputTensorHandle->GetShape(), nullptr);
-        outOperandIds.push_back(outputTensorId);
+        if (outputTensorHandle) {
+            uint32_t outputTensorId = this->AddOperandAndSetValue(
+                outputTensorHandle->GetTensorInfo(), outputTensorHandle->GetShape(), nullptr);
+            outOperandIds.push_back(outputTensorId);
+        }
 
         if (m_Method == armnn::ResizeMethod::Bilinear) {
             this->AddOperation(nnrt::OperationType::RESIZE_BILINEAR,

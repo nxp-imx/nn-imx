@@ -61,9 +61,11 @@ class NpuConvolution2dWorkload : public TNpuWorkload<Convolution2dQueueDescripto
         uint32_t inputIds[11];
         // Add input operand
         auto inputPtr = dynamic_cast<NpuTensorHandler*>(descriptor.m_Inputs[0]);
-        inputIds[0] =
-            this->AddOperandAndSetValue(inputPtr->GetTensorInfo(), inputPtr->GetShape(), nullptr);
-        // inputPtr->SetOperandId(inputIds[0]);
+        if (inputPtr) {
+            inputIds[0] = this->AddOperandAndSetValue(
+                inputPtr->GetTensorInfo(), inputPtr->GetShape(), nullptr);
+            // inputPtr->SetOperandId(inputIds[0]);
+        }
 
         // Add filter operand
         const TensorShape& weightShape = m_Weight->GetShape();
@@ -142,9 +144,11 @@ class NpuConvolution2dWorkload : public TNpuWorkload<Convolution2dQueueDescripto
 
         for (int i = 0; i < outputSize; i++) {
             auto outputPtr = dynamic_cast<NpuTensorHandler*>(descriptor.m_Outputs[i]);
-            outputIds[i] = this->AddOperandAndSetValue(
-                outputPtr->GetTensorInfo(), outputPtr->GetShape(), nullptr);
-            // outputPtr->SetOperandId(outputIds[i]);
+            if (outputPtr) {
+                outputIds[i] = this->AddOperandAndSetValue(
+                    outputPtr->GetTensorInfo(), outputPtr->GetShape(), nullptr);
+                // outputPtr->SetOperandId(outputIds[i]);
+            }
         }
 
         this->AddOperation(nnrt::OperationType::CONV_2D, 11, inputIds, outputSize, outputIds);

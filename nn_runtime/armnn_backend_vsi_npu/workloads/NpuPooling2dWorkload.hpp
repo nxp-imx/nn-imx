@@ -55,8 +55,11 @@ class NpuPooling2dWorkload : public TNpuWorkload<Pooling2dQueueDescriptor, DataT
         uint32_t inputIds[num_inputs];
         // Add input operand
         auto inputPtr = dynamic_cast<NpuTensorHandler*>(descriptor.m_Inputs[0]);
-        inputIds[0] = this->AddOperandAndSetValue(inputPtr->GetTensorInfo(), inputPtr->GetShape(), nullptr);
-        // inputPtr->SetOperandId(inputIds[0]);
+        if (inputPtr) {
+            inputIds[0] = this->AddOperandAndSetValue(
+                inputPtr->GetTensorInfo(), inputPtr->GetShape(), nullptr);
+            // inputPtr->SetOperandId(inputIds[0]);
+        }
 
         // Add padding left operand
         inputIds[1] = this->AddOperandAndSetValue(m_PadLeft);
@@ -100,7 +103,10 @@ class NpuPooling2dWorkload : public TNpuWorkload<Pooling2dQueueDescriptor, DataT
 
         for (int i = 0; i < outputSize; i++) {
             auto outputPtr = dynamic_cast<NpuTensorHandler*>(descriptor.m_Outputs[i]);
-            outputIds[i] = this->AddOperandAndSetValue(outputPtr->GetTensorInfo(), outputPtr->GetShape(), nullptr);
+            if (outputPtr) {
+                outputIds[i] = this->AddOperandAndSetValue(
+                    outputPtr->GetTensorInfo(), outputPtr->GetShape(), nullptr);
+            }
         }
 
         this->AddOperation(

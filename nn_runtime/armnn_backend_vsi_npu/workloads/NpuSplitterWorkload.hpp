@@ -39,29 +39,38 @@ class NpuSplitterWorkload : public TNpuWorkload<SplitterQueueDescriptor, DataTyp
         : TNpuWorkload<SplitterQueueDescriptor, DataTypes...>(descriptor, info) {
         std::vector<uint32_t> inputIds = this->AddOperandWithTensorHandle(descriptor.m_Inputs);
 
-        // Compute split axis according to input shape and output shap
-        auto inputShape = dynamic_cast<const NpuTensorHandler*>(descriptor.m_Inputs[0])->GetShape();
-        auto output0Shape =
-            dynamic_cast<const NpuTensorHandler*>(descriptor.m_Outputs[0])->GetShape();
-        if (inputShape.GetNumDimensions() != output0Shape.GetNumDimensions()) {
-            std::cout << "Input and output dimension are mismatched.";
-            assert(false);
-        }
-        if (descriptor.m_Outputs.size() > 1) {
-            for (size_t i = 0; i < inputShape.GetNumDimensions(); ++i) {
-                if (inputShape[i] != output0Shape[i]) {
-                    m_Axis = i;
-                    break;
-                }
+        // Compute split axis according to input shape and output shape
+        NpuTensorHandler* inputTensorHandle =
+            dynamic_cast<NpuTensorHandler*>(descriptor.m_Inputs[0]);
+        NpuTensorHandler* outputTensorHandle0 =
+            dynamic_cast<NpuTensorHandler*>(descriptor.m_Outputs[0]);
+        if (inputTensorHandle && outputTensorHandle0) {
+            auto inputShape = inputTensorHandle->GetShape();
+            auto output0Shape = outputTensorHandle0->GetShape();
+            if (inputShape.GetNumDimensions() != output0Shape.GetNumDimensions()) {
+                std::cout << "Input and output dimension are mismatched.";
+                assert(false);
             }
-        } else {
-            m_Axis = 0;
+            if (descriptor.m_Outputs.size() > 1) {
+                for (size_t i = 0; i < inputShape.GetNumDimensions(); ++i) {
+                    if (inputShape[i] != output0Shape[i]) {
+                        m_Axis = i;
+                        break;
+                    }
+                }
+            } else {
+                m_Axis = 0;
+            }
         }
+
         // Compute the slices according to outputs shape
         m_SliceNum = descriptor.m_Outputs.size();
         for (auto& output : descriptor.m_Outputs) {
-            auto outputShape = dynamic_cast<const NpuTensorHandler*>(output)->GetShape();
-            m_Slices.push_back(outputShape[m_Axis]);
+            NpuTensorHandler* outputTensorHandle = dynamic_cast<NpuTensorHandler*>(output);
+            if (outputTensorHandle) {
+                auto outputShape = outputTensorHandle->GetShape();
+                m_Slices.push_back(outputShape[m_Axis]);
+            }
         }
 
         inputIds.push_back(this->AddOperandAndSetValue(m_Axis));
