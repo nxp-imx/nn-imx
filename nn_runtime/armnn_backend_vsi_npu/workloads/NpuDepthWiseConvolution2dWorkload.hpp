@@ -70,9 +70,11 @@ class NpuDepthWiseConvolution2dWorkload
         assert(1 == descriptor.m_Inputs.size());
         NpuTensorHandler* inputTensorHandle =
             dynamic_cast<NpuTensorHandler*>(descriptor.m_Inputs[0]);
-        uint32_t inputOperandId = this->AddOperandAndSetValue(
-            inputTensorHandle->GetTensorInfo(), inputTensorHandle->GetShape(), nullptr);
-        inOperandIds.push_back(inputOperandId);
+        if (inputTensorHandle) {
+            uint32_t inputOperandId = this->AddOperandAndSetValue(
+                inputTensorHandle->GetTensorInfo(), inputTensorHandle->GetShape(), nullptr);
+            inOperandIds.push_back(inputOperandId);
+        }
 
         TensorShape weightShape = m_Weight->GetShape();
         const TensorInfo& weightInfo = m_Weight->GetTensorInfo();
@@ -209,13 +211,16 @@ class NpuDepthWiseConvolution2dWorkload
         int32_t depthMultiplier;
         auto inputPtr = dynamic_cast<NpuTensorHandler*>(descriptor.m_Inputs[0]);
         auto outputPtr = dynamic_cast<NpuTensorHandler*>(descriptor.m_Outputs[0]);
-        if (m_DataLayout == armnn::DataLayout::NHWC) {
-            inputChannels = inputPtr->GetShape()[3];
-            outputChannels = outputPtr->GetShape()[3];
-        } else {
-            inputChannels = inputPtr->GetShape()[1];
-            outputChannels = outputPtr->GetShape()[1];
+        if (inputPtr && outputPtr) {
+            if (m_DataLayout == armnn::DataLayout::NHWC) {
+                inputChannels = inputPtr->GetShape()[3];
+                outputChannels = outputPtr->GetShape()[3];
+            } else {
+                inputChannels = inputPtr->GetShape()[1];
+                outputChannels = outputPtr->GetShape()[1];
+            }
         }
+
         depthMultiplier = outputChannels / inputChannels;
         inOperandIds.push_back(this->AddOperandAndSetValue(depthMultiplier));
 
@@ -235,9 +240,11 @@ class NpuDepthWiseConvolution2dWorkload
         std::vector<uint32_t> outOperandIds;
         NpuTensorHandler* outputTensorHandle =
             dynamic_cast<NpuTensorHandler*>(descriptor.m_Outputs[0]);
-        uint32_t outputTensorId = this->AddOperandAndSetValue(
-            outputTensorHandle->GetTensorInfo(), outputTensorHandle->GetShape(), nullptr);
-        outOperandIds.push_back(outputTensorId);
+        if (outputTensorHandle) {
+            uint32_t outputTensorId = this->AddOperandAndSetValue(
+                outputTensorHandle->GetTensorInfo(), outputTensorHandle->GetShape(), nullptr);
+            outOperandIds.push_back(outputTensorId);
+        }
 
         this->AddOperation(nnrt::OperationType::DEPTHWISE_CONV_2D,
                            inOperandIds.size(),

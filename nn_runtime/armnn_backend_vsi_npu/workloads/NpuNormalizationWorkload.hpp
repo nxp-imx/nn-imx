@@ -50,9 +50,11 @@ class NpuNormalizationWorkload : public TNpuWorkload<NormalizationQueueDescripto
         // Only 1 input tensor
         NpuTensorHandler* inputTensorHandle =
             dynamic_cast<NpuTensorHandler*>(descriptor.m_Inputs[0]);
-        uint32_t inputOperandId = this->AddOperandAndSetValue(
-            inputTensorHandle->GetTensorInfo(), inputTensorHandle->GetShape(), nullptr);
-        inOperandIds.push_back(inputOperandId);
+        if (inputTensorHandle) {
+            uint32_t inputOperandId = this->AddOperandAndSetValue(
+                inputTensorHandle->GetTensorInfo(), inputTensorHandle->GetShape(), nullptr);
+            inOperandIds.push_back(inputOperandId);
+        }
 
         // order is important
         // Add norm size(radius) operand
@@ -83,9 +85,11 @@ class NpuNormalizationWorkload : public TNpuWorkload<NormalizationQueueDescripto
         std::vector<uint32_t> outOperandIds;
         NpuTensorHandler* outputTensorHandle =
             dynamic_cast<NpuTensorHandler*>(descriptor.m_Outputs[0]);
-        uint32_t outputTensorId = this->AddOperandAndSetValue(
-            outputTensorHandle->GetTensorInfo(), outputTensorHandle->GetShape(), nullptr);
-        outOperandIds.push_back(outputTensorId);
+        if (outputTensorHandle) {
+            uint32_t outputTensorId = this->AddOperandAndSetValue(
+                outputTensorHandle->GetTensorInfo(), outputTensorHandle->GetShape(), nullptr);
+            outOperandIds.push_back(outputTensorId);
+        }
 
         this->AddOperation(nnrt::OperationType::LOCAL_RESPONSE_NORMALIZATION,
                            inOperandIds.size(),

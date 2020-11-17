@@ -579,8 +579,6 @@ bool NpuLayerSupport::IsDebugSupported(const TensorInfo& input,
                                        Optional<std::string&> reasonIfUnsupported) const {
     ignore_unused(output);
     return false;
-    return IsSupportedForDataTypeRef(
-        reasonIfUnsupported, input.GetDataType(), &TrueFunc<>, &TrueFunc<>);
 }
 
 bool NpuLayerSupport::IsDepthwiseConvolutionSupported(

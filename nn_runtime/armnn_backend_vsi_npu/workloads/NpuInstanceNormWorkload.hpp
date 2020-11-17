@@ -45,8 +45,11 @@ class NpuInstanceNormWorkload : public TNpuWorkload<InstanceNormalizationQueueDe
         std::vector<uint32_t> inOperandIds;
         // Add input operand
         auto inputPtr = dynamic_cast<NpuTensorHandler*>(descriptor.m_Inputs[0]);
-        inOperandIds.push_back(
-            this->AddOperandAndSetValue(inputPtr->GetTensorInfo(), inputPtr->GetShape(), nullptr));
+        if (inputPtr) {
+            inOperandIds.push_back(this->AddOperandAndSetValue(
+                inputPtr->GetTensorInfo(), inputPtr->GetShape(), nullptr));
+        }
+
         // Add gamma operand
         inOperandIds.push_back(this->AddOperandAndSetValue(m_Gamma));
         // Add beta operand
@@ -62,8 +65,10 @@ class NpuInstanceNormWorkload : public TNpuWorkload<InstanceNormalizationQueueDe
         // Add output operand
         std::vector<uint32_t> outOperandIds;
         auto outputPtr = dynamic_cast<NpuTensorHandler*>(descriptor.m_Outputs[0]);
-        outOperandIds.push_back(this->AddOperandAndSetValue(
-            outputPtr->GetTensorInfo(), outputPtr->GetShape(), nullptr));
+        if (outputPtr) {
+            outOperandIds.push_back(this->AddOperandAndSetValue(
+                outputPtr->GetTensorInfo(), outputPtr->GetShape(), nullptr));
+        }
 
         this->AddOperation(nnrt::OperationType::INSTANCE_NORMALIZATION,
                            inOperandIds.size(),

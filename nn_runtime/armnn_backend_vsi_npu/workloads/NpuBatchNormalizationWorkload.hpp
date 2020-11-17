@@ -49,9 +49,11 @@ class NpuBatchNormalizationWorkload
         // Only 1 input tensor
         NpuTensorHandler* inputTensorHandle =
             dynamic_cast<NpuTensorHandler*>(descriptor.m_Inputs[0]);
-        uint32_t inputOperandId = this->AddOperandAndSetValue(
-            inputTensorHandle->GetTensorInfo(), inputTensorHandle->GetShape(), nullptr);
-        inOperandIds.push_back(inputOperandId);
+        if (inputTensorHandle) {
+            uint32_t inputOperandId = this->AddOperandAndSetValue(
+                inputTensorHandle->GetTensorInfo(), inputTensorHandle->GetShape(), nullptr);
+            inOperandIds.push_back(inputOperandId);
+        }
 
         // order is important
         auto shape = static_cast<const TensorShape>(m_Mean->GetShape());
@@ -83,9 +85,11 @@ class NpuBatchNormalizationWorkload
         std::vector<uint32_t> outOperandIds;
         NpuTensorHandler* outputTensorHandle =
             dynamic_cast<NpuTensorHandler*>(descriptor.m_Outputs[0]);
-        uint32_t outputTensorId = this->AddOperandAndSetValue(
-            outputTensorHandle->GetTensorInfo(), outputTensorHandle->GetShape(), nullptr);
-        outOperandIds.push_back(outputTensorId);
+        if (outputTensorHandle) {
+            uint32_t outputTensorId = this->AddOperandAndSetValue(
+                outputTensorHandle->GetTensorInfo(), outputTensorHandle->GetShape(), nullptr);
+            outOperandIds.push_back(outputTensorId);
+        }
 
         this->AddOperation(nnrt::OperationType::BATCH_NORM,
                            inOperandIds.size(),

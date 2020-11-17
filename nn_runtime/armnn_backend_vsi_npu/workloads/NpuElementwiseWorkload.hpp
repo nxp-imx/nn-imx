@@ -46,9 +46,11 @@ class NpuElementwiseWorkload : public TNpuWorkload<ParentDescriptor, DataTypes..
         std::vector<uint32_t> outOperandIds;
         NpuTensorHandler* outputTensorHandle =
             dynamic_cast<NpuTensorHandler*>(descriptor.m_Outputs[0]);
-        uint32_t outputTensorId = this->AddOperandAndSetValue(
-            outputTensorHandle->GetTensorInfo(), outputTensorHandle->GetShape(), nullptr);
-        outOperandIds.push_back(outputTensorId);
+        if (outputTensorHandle) {
+            uint32_t outputTensorId = this->AddOperandAndSetValue(
+                outputTensorHandle->GetTensorInfo(), outputTensorHandle->GetShape(), nullptr);
+            outOperandIds.push_back(outputTensorId);
+        }
 
         this->AddOperation(operationType,
                            inOperandIds.size(),

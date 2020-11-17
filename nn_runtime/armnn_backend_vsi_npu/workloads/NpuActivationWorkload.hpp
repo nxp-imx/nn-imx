@@ -46,9 +46,11 @@ class NpuActivationWorkload : public TNpuWorkload<ActivationQueueDescriptor, Dat
         std::vector<uint32_t> inOperandIds;
         NpuTensorHandler* inputTensorHandle =
             dynamic_cast<NpuTensorHandler*>(descriptor.m_Inputs[0]);
-        uint32_t inputOperandId = this->AddOperandAndSetValue(
-            inputTensorHandle->GetTensorInfo(), inputTensorHandle->GetShape(), nullptr);
-        inOperandIds.push_back(inputOperandId);
+        if (inputTensorHandle) {
+            uint32_t inputOperandId = this->AddOperandAndSetValue(
+                inputTensorHandle->GetTensorInfo(), inputTensorHandle->GetShape(), nullptr);
+            inOperandIds.push_back(inputOperandId);
+        }
 
         // Add alpha operand
         if (ActivationFunction::TanH == m_Function || ActivationFunction::LeakyReLu == m_Function) {
@@ -68,9 +70,11 @@ class NpuActivationWorkload : public TNpuWorkload<ActivationQueueDescriptor, Dat
         std::vector<uint32_t> outOperandIds;
         NpuTensorHandler* outputTensorHandle =
             dynamic_cast<NpuTensorHandler*>(descriptor.m_Outputs[0]);
-        uint32_t outputTensorId = this->AddOperandAndSetValue(
-            outputTensorHandle->GetTensorInfo(), outputTensorHandle->GetShape(), nullptr);
-        outOperandIds.push_back(outputTensorId);
+        if (outputTensorHandle) {
+            uint32_t outputTensorId = this->AddOperandAndSetValue(
+                outputTensorHandle->GetTensorInfo(), outputTensorHandle->GetShape(), nullptr);
+            outOperandIds.push_back(outputTensorId);
+        }
 
         auto inSize = inOperandIds.size();
         auto inPtr = inOperandIds.data();
