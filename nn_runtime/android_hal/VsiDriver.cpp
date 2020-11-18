@@ -170,6 +170,7 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
         return isSupported;
     };
 #endif
+
     // each operation check
     switch (operation.type) {
         case OperationType::ADD:
@@ -177,17 +178,21 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
         case OperationType::MUL:
         case OperationType::DIV: {
             // validate constant rule
-            auto input0 = model.operands[operation.inputs[0]];
-            auto input1 = model.operands[operation.inputs[1]];
-            auto act = model.operands[operation.inputs[2]];
+            auto input0 = GetHalOperand(model, operation.inputs[0]);
+            auto input1 = GetHalOperand(model, operation.inputs[1]);
+            auto act    = GetHalOperand(model, operation.inputs[2]);
+            // TODO{yzw}: remove the limitation when driver support int32
+            if (OperandType::TENSOR_INT32 == input0.type) {
+                reason += "reject ADD|SUB|MUL|DIV because not support TENSOR_INT32 temporary\n";
+                isSupport &= false;
+            }
             if (isConstantTensor(input0) && isConstantTensor(input1)) {
                 reason += ("reject ADD|SUB|MUL|DIV because all input tensor is constant\n");
                 isSupport &= false;
             }
             if (isConstantTensor(act)) {
                 struct vsi_driver::VsiRTInfo rt;
-                auto actCode = reinterpret_cast<const int32_t*>(
-                    op_validate::get_buffer::getOperandDataPtr(model, act, rt));
+                auto actCode = reinterpret_cast<const int32_t*>(getOperandDataPtr(model, act, rt));
                 if (*actCode > 3) {
                     reason += ("reject ADD|SUB|MUL|DIV because fusedCode is invalid value " +
                                std::to_string(*actCode));
@@ -264,7 +269,7 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
             return conv2D->Validate(reason);
         }
         case OperationType::RNN: {
-            int32_t fuseCode = getScalarData<int32_t>(model, model.operands[operation.inputs[5]]);
+            int32_t fuseCode = getScalarData<int32_t>(model, GetHalOperand(model, operation.inputs[5]));
             if (fuseCode == static_cast<int32_t>(FusedActivationFunc::RELU) ||
                 fuseCode == static_cast<int32_t>(FusedActivationFunc::RELU1) ||
                 fuseCode == static_cast<int32_t>(FusedActivationFunc::RELU6)) {
@@ -277,7 +282,7 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
         }
 
         case OperationType::SOFTMAX: {
-            auto& input = model.operands[operation.inputs[0]];
+            auto& input = GetHalOperand(model, operation.inputs[0]);
             if (isConstantTensor(input)) {
                 reason += ("reject SOFTMAX because input tensor is constant\n");
                 isSupport &= false;
@@ -294,7 +299,7 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
             // break;
         }
         case OperationType::TANH: {
-            if (OperandType::TENSOR_FLOAT32 != model.operands[operation.inputs[0]].type) {
+            if (OperandType::TENSOR_FLOAT32 != GetHalOperand(model, operation.inputs[0]).type) {
                 reason += "reject TANH because only support input_type = FLOAT32 tensor\n";
                 isSupport &= false;
             }
@@ -314,22 +319,28 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
                 reason += "reject TRANSPOSE because no perm vetor provided\n";
                 isSupport &= false;
             }
-
-            auto& perm = model.operands[operation.inputs[1]];
+            auto& perm = GetHalOperand(model, operation.inputs[1]);
             if (!isConstantTensor(perm)) {
                 isSupport &= false;
                 reason += "reject TRANSPOSE because permute is not constant operand \n";
             }
+#if ANDROID_SDK_VERSION < 30
             if (OperandLifeTime::MODEL_INPUT == perm.lifetime) {
                 isSupport &= false;
                 reason += "reject TRANSPOSE because permute not supported as an input \n";
             }
+#elif ANDROID_SDK_VERSION >= 30
+            if (OperandLifeTime::SUBGRAPH_INPUT == perm.lifetime) {
+                isSupport &= false;
+                reason += "reject TRANSPOSE because permute not supported as an input \n";
+            }
+#endif
             size_t dimSize = perm.location.length / sizeof(int32_t);
 
             struct VsiRTInfo rt;
             auto permData = getOperandDataPtr(model, perm, rt);
             bool batchIsTransposed = permData && (*(int32_t*)permData != 0);
-            if (dimSize >= 4 || batchIsTransposed) {
+            if (dimSize > 4 || batchIsTransposed) {
                 reason += "reject TRANSPOSE because >=4D or transposed on Batch not supported\n";
                 isSupport &= false;
             }
@@ -338,7 +349,7 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
         }
         case OperationType::PAD: {
             // TODO: support pad at channel and batch
-            auto& pad = model.operands[operation.inputs[1]];
+            auto& pad = GetHalOperand(model, operation.inputs[1]);
             if (!isConstantTensor(pad)) return false;
             size_t dimSize = pad.dimensions[0];
             // Pad only support 4D PAD
@@ -368,7 +379,7 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
         }
         case OperationType::SVDF: {
             struct VsiRTInfo rtInfo;
-            const auto& rankOperand = model.operands[operation.inputs[5]];
+            const auto& rankOperand = GetHalOperand(model, operation.inputs[5]);
             const int32_t* rankValue =
                 reinterpret_cast<const int32_t*>(getOperandDataPtr(model, rankOperand, rtInfo));
             if (rankValue && rankValue[0] <= 2) {
@@ -379,8 +390,7 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
         }
 
         case OperationType::HASHTABLE_LOOKUP: {
-            auto& value_tensor = model.operands[operation.inputs[2]];
-
+            auto& value_tensor = GetHalOperand(model, operation.inputs[2]);
             if (2 != value_tensor.dimensions.size()) {
                 reason += "reject HASHTABLE_LOOPUP until we support value tensor other than 2D\n";
                 isSupport &= false;
@@ -736,9 +746,19 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
         case OperationType::QUANTIZED_16BIT_LSTM:
         case OperationType::ROI_POOLING:
         case OperationType::TILE:
+
+        // NNAPI 1.3 new op
+#if ANDROID_SDK_VERSION >= 30
+        case OperationType::IF:
+        case OperationType::WHILE:
+        case OperationType::ELU:
+        case OperationType::HARD_SWISH:
+        case OperationType::FILL:
+        case OperationType::RANK:
             isSupport &= false;
             break;
-#endif
+# endif
+#endif // endif ANDOIR_SDK_VERSION >= 29
 #if ANDROID_SDK_VERSION >= 28
         default:
             isSupport &= true;
@@ -752,7 +772,7 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
 
     // do not support constant tensor as operation's Input except whiteList.
     if (std::find(whiteList.begin(), whiteList.end(), operation.type) == whiteList.end()) {
-        if (isConstantTensor(model.operands[operation.inputs[0]])) {
+        if (isConstantTensor(GetHalOperand(model, operation.inputs[0]))) {
             reason += "reject op because its input[0] is constant tensor\n";
             isSupport &= false;
         }
@@ -760,7 +780,7 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
 
     // TODO: nnapi 1.2 new operand type
     for (size_t i = 0; i < operation.inputs.size(); i++) {
-        auto& operand = model.operands[operation.inputs[i]];
+        auto& operand = GetHalOperand(model, operation.inputs[i]);
         if (false == checkSupportedOperand(operand)) {
             reason += "reject op because its operand data type is not supported yet\n";
             isSupport &= false;
@@ -768,7 +788,7 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
     }
 
     for (size_t i = 0; i < operation.outputs.size(); i++) {
-        auto& operand = model.operands[operation.outputs[i]];
+        auto& operand = GetHalOperand(model, operation.inputs[i]);
         if (false == checkSupportedOperand(operand)) {
             reason += "reject op because its operand data type is not supported yet\n";
             isSupport &= false;
@@ -784,8 +804,8 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
         isSupport &= false;
     }
     for (auto inIdx : operation.inputs) {
-        auto& dims = model.operands[inIdx].dimensions;
-        if (isTensor(model.operands[inIdx]) && dims.size() == 0) {
+        auto& dims = GetHalOperand(model, inIdx).dimensions;
+        if (isTensor(GetHalOperand(model, inIdx)) && dims.size() == 0) {
             isSupport &= false;
             reason += "reject op because its input tensor rank = 0\n";
         }
@@ -808,8 +828,8 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
         isSupport = false;
     }
     for (size_t i = 0; i < operation.outputs.size(); i++) {
-        auto& dims = model.operands[operation.outputs[i]].dimensions;
-        if (isTensor(model.operands[operation.outputs[i]]) && dims.size() == 0) {
+        auto& dims = GetHalOperand(model, operation.outputs[i]).dimensions;
+        if (isTensor(GetHalOperand(model, operation.outputs[i])) && dims.size() == 0) {
             isSupport &= false;
             reason += "reject op because its output tensor rank = 0\n";
         }
@@ -847,7 +867,7 @@ bool VsiDriver::isWeightMd5Matched(const HalPlatform::Operation& operation,
     }
 
     if (!block_list.empty() && OperationType::CONV_2D == operation.type) {
-        auto& weight = model.operands[operation.inputs[1]];
+        auto& weight = GetHalOperand(model, operation.inputs[1]);
         if (!isConstantTensor(weight)) return false;
         auto& shape = weight.dimensions;
         // vgg_quant vgg_float srgan_quant srgan_float dped_float

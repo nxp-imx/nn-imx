@@ -77,11 +77,18 @@ T_type getScalarData(const HalPlatform::Model& model, const HalPlatform::Operand
 }
 const HalPlatform::Operand& getOpeand(const HalPlatform::Model& model,
                             const uint32_t index) {
+#if ANDROID_SDK_VERSION < 30
     if(index > model.operands.size()){
         LOG(ERROR)<< index << "is out of operands size :" << model.operands.size();
         assert(0);
     }
-    return model.operands[index];
+#elif ANDROID_SDK_VERSION >= 30
+    if(index > model.main.operands.size()){
+        LOG(ERROR)<< index << "is out of operands size :" << model.main.operands.size();
+        assert(0);
+    }
+#endif
+    return vsi_driver::GetHalOperand(model, index);
 }
 }  // end of get_buffer
 
@@ -92,14 +99,14 @@ class OperationValidate {
         : m_Model(model), m_Operation(operation) {
         // GenInputArgTypes
         for (auto inIdx : m_Operation.inputs) {
-            m_InputArgTypes.push_back(MapToNnrtOperandType(m_Model.operands[inIdx].type));
+            m_InputArgTypes.push_back(MapToNnrtOperandType(vsi_driver::GetHalOperand(m_Model, inIdx).type));
         }
         // GenOutputArgTypes
         // push first input into output argtypes
         m_OutputArgTypes.push_back(
-            MapToNnrtOperandType(m_Model.operands[m_Operation.inputs[0]].type));
+            MapToNnrtOperandType(vsi_driver::GetHalOperand(m_Model, m_Operation.inputs[0]).type));
         for (auto outIdx : m_Operation.outputs) {
-            m_OutputArgTypes.push_back(MapToNnrtOperandType(m_Model.operands[outIdx].type));
+            m_OutputArgTypes.push_back(MapToNnrtOperandType(vsi_driver::GetHalOperand(m_Model, outIdx).type));
         }
     };
     virtual ~OperationValidate(){};
@@ -116,15 +123,20 @@ class OperationValidate {
     const T_Operation OperationForRead() const { return m_Operation; }
 
     bool IsConstantTensor(size_t index) {
-        auto& operand = m_Model.operands[index];
+        auto& operand = vsi_driver::GetHalOperand(m_Model, index);
         return operand.lifetime == OperandLifeTime::CONSTANT_COPY ||
                operand.lifetime == OperandLifeTime::CONSTANT_REFERENCE;
     }
 
     bool IsInput(size_t index) {
-        auto operand = m_Model.operands[index];
+        auto& operand =vsi_driver::GetHalOperand(m_Model, index);
+#if ANDROID_SDK_VERSION < 30
         return operand.lifetime == OperandLifeTime::MODEL_INPUT;
+#elif ANDROID_SDK_VERSION >=30
+        return operand.lifetime == OperandLifeTime::SUBGRAPH_INPUT;
+#endif
     }
+
    protected:
     // Default implementation
     virtual bool SignatureCheck(std::string& reason) { return true; };
@@ -149,8 +161,8 @@ class OperationValidate {
         // Check inputs
         if (0 == m_Operation.inputs.size()) return false;
         for (auto inIdx : m_Operation.inputs) {
-            auto& dims = m_Model.operands[inIdx].dimensions;
-            if (IsTensor(m_Model.operands[inIdx]) && dims.size() == 0) {
+            auto& dims = vsi_driver::GetHalOperand(m_Model, inIdx).dimensions;
+            if (IsTensor(vsi_driver::GetHalOperand(m_Model, inIdx)) && dims.size() == 0) {
                 reason += "reject op because its input tensor rank == 0\n";
                 return false;
             }
@@ -167,8 +179,8 @@ class OperationValidate {
         // Check outputs
         if (0 == m_Operation.outputs.size()) return false;
         for (auto outIdx : m_Operation.outputs) {
-            auto& dims = m_Model.operands[outIdx].dimensions;
-            if (IsTensor(m_Model.operands[outIdx]) && dims.size() == 0) {
+            auto& dims = vsi_driver::GetHalOperand(m_Model, outIdx).dimensions;
+            if (IsTensor(vsi_driver::GetHalOperand(m_Model, outIdx)) && dims.size() == 0) {
                 reason += "reject op because its output tensor rank == 0\n";
                 return false;
             }
@@ -262,6 +274,10 @@ class OperationValidate {
                 return nnrt::OperandType::TENSOR_QUANT16_SYMM;
             case OperandType::TENSOR_QUANT8_SYMM_PER_CHANNEL:
                 return nnrt::OperandType::TENSOR_QUANT8_SYMM_PER_CHANNEL;
+            #if ANDROID_SDK_VERSION >= 30
+            case OperandType::TENSOR_QUANT8_ASYMM_SIGNED:
+                return nnrt::OperandType::TENSOR_QUANT8_ASYMM_SIGNED;
+            #endif
             default:
                 return nnrt::OperandType::NONE;
         }

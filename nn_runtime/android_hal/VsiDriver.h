@@ -227,9 +227,15 @@ class VsiDriver : public VsiDevice {
 #endif
 
 #if ANDROID_SDK_VERSION >= 29
-    Return<void> getCapabilities_1_2(V1_2::IDevice::getCapabilities_1_2_cb _hidl_cb);
-    Return<void> getSupportedOperations_1_2(const V1_2::Model& model,
-                                            V1_2::IDevice::getSupportedOperations_1_2_cb cb);
+    Return<void> getCapabilities_1_2(V1_2::IDevice::getCapabilities_1_2_cb _hidl_cb) ;
+    Return<void> getSupportedOperations_1_2( const V1_2::Model& model,
+                                                   V1_2::IDevice::getSupportedOperations_1_2_cb cb) ;
+#endif
+
+#if ANDROID_SDK_VERSION >= 30
+    V1_2::OperandType convertOperandTypeToV1_2(OperandType type);
+    Return<void> getCapabilities_1_3(getCapabilities_1_3_cb _hidl_cb);
+    Return<void> getSupportedOperations_1_3(const V1_3::Model& model,getSupportedOperations_1_3_cb _hidl_cb);
 #endif
     static bool isSupportedOperation(const HalPlatform::Operation& operation,
                                      const HalPlatform::Model& model,
@@ -264,11 +270,19 @@ class VsiDriver : public VsiDevice {
         }
 
         if (validateModel(model)) {
+#if ANDROID_SDK_VERSION < 30
             const size_t count = model.operations.size();
+#elif ANDROID_SDK_VERSION >=30
+            const size_t count = model.main.operations.size();
+#endif
             std::vector<bool> supported(count, true);
             std::string notSupportReason = "";
             for (size_t i = 0; i < count; i++) {
+#if ANDROID_SDK_VERSION < 30
                 const auto& operation = model.operations[i];
+#elif ANDROID_SDK_VERSION >= 30
+                const auto& operation = model.main.operations[i];
+#endif
                 if (weight_md5_check || model_size_block_level) {
                     if ((is_md5_matched =
                              isWeightMd5Matched(operation, model, model_size_block_level)))

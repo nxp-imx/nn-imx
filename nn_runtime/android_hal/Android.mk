@@ -76,12 +76,23 @@ LOCAL_SRC_FILES += \
     hal_limitation/support.cpp
 endif
 
-ifeq ($(shell expr $(PLATFORM_SDK_VERSION) ">=" 28),1)
+ifeq ($(shell expr $(PLATFORM_SDK_VERSION) ">=" 30),1)
+LOCAL_SRC_FILES += \
+    1.3/VsiDevice1_3.cpp \
+    1.3/VsiDriver1_3.cpp \
+    1.3/VsiPrepareModel1_3.cpp \
+    1.3/VsiBuffer.cpp
+endif
 
+LOCAL_MODULE      := android.hardware.neuralnetworks@1.0-service-vsi-npu-server
+
+ifeq ($(shell expr $(PLATFORM_SDK_VERSION) ">=" 28),1)
 LOCAL_SHARED_LIBRARIES += android.hardware.neuralnetworks@1.1
 LOCAL_STATIC_LIBRARIES += libneuralnetworks_common
 LOCAL_C_INCLUDES += frameworks/native/libs/nativewindow/include \
-                    frameworks//native/libs/arect/include
+                    frameworks/native/libs/arect/include
+LOCAL_SHARED_LIBRARIES += libneuralnetworks
+LOCAL_MODULE      := android.hardware.neuralnetworks@1.1-service-vsi-npu-server
 
 ifeq ($(shell expr $(PLATFORM_SDK_VERSION) ">=" 29),1)
 LOCAL_C_INCLUDES += frameworks/native/libs/ui/include \
@@ -93,32 +104,30 @@ LOCAL_C_INCLUDES += frameworks/native/libs/ui/include \
 LOCAL_SHARED_LIBRARIES += libfmq \
                           libui \
                           android.hardware.neuralnetworks@1.2
+LOCAL_MODULE      := android.hardware.neuralnetworks@1.2-service-vsi-npu-server
 
 ifeq ($(shell expr $(PLATFORM_SDK_VERSION) ">=" 30),1)
 LOCAL_SHARED_LIBRARIES += \
-                          android.hardware.neuralnetworks@1.3
-
+                          android.hardware.neuralnetworks@1.3 \
+                          libnativewindow
 LOCAL_CFLAGS += -DANDROID_NN_API=30
-endif
+LOCAL_MODULE      := android.hardware.neuralnetworks@1.3-service-vsi-npu-server
+endif   # 30
+endif   # 29
+endif   # 28
 
-LOCAL_MODULE      := android.hardware.neuralnetworks@1.2-service-vsi-npu-server
-else
-LOCAL_SHARED_LIBRARIES += libneuralnetworks
-LOCAL_MODULE      := android.hardware.neuralnetworks@1.1-service-vsi-npu-server
-endif
-
-
-else
-
-LOCAL_MODULE      := android.hardware.neuralnetworks@1.0-service-vsi-npu-server
-endif
 
 LOCAL_MODULE_RELATIVE_PATH := hw
-LOCAL_INIT_RC := VsiDriver.rc
 
-ifeq ($(shell expr $(PLATFORM_SDK_VERSION) ">=" 30),1)
+ifeq ($(shell expr $(PLATFORM_SDK_VERSION) "==" 29),1)
+LOCAL_INIT_RC := VsiDriver1_2.rc
 LOCAL_VINTF_FRAGMENTS := android.hardware.neuralnetworks@1.2-service-vsi-npu-server.xml
-endif
+else
+ifeq ($(shell expr $(PLATFORM_SDK_VERSION) "==" 30),1)
+LOCAL_INIT_RC := VsiDriver1_3.rc
+LOCAL_VINTF_FRAGMENTS := android.hardware.neuralnetworks@1.3-service-vsi-npu-server.xml
+endif   # 30
+endif   # 29
 
 LOCAL_CFLAGS += -DANDROID_SDK_VERSION=$(PLATFORM_SDK_VERSION)  -Wno-error=unused-parameter\
                 -Wno-unused-private-field \

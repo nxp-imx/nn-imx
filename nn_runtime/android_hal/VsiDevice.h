@@ -36,16 +36,21 @@
 #include "Utils.h"
 
 #include "VsiPreparedModel.h"
+
+#if ANDROID_SDK_VERSION >= 30
+#include "BufferTracker.h"
+#endif
+
 using android::sp;
 
 namespace android {
 namespace nn {
 namespace vsi_driver {
-
 class VsiDevice : public HalPlatform::Device
 {
    public:
-    VsiDevice(const char* name) : name_(name) {}
+    VsiDevice(const char* name)
+        : name_(name) {}
     ~VsiDevice() override {}
 
     Return<ErrorStatus> prepareModel(
@@ -96,6 +101,26 @@ class VsiDevice : public HalPlatform::Device
     };
 #endif
 
+#if ANDROID_SDK_VERSION >= 30
+    Return<V1_3::ErrorStatus> prepareModel_1_3(
+            const V1_3::Model& model, ExecutionPreference preference,
+            hal::Priority priority, const OptionalTimePoint& deadline,
+            const hidl_vec<hidl_handle>& modelCache,
+            const hidl_vec<hidl_handle>& dataCache, const CacheToken& token,
+            const sp<V1_3::IPreparedModelCallback>& callback);
+
+    Return<V1_3::ErrorStatus> prepareModelFromCache_1_3(
+            const OptionalTimePoint& deadline,
+            const hidl_vec<hidl_handle>& modelCache,
+            const hidl_vec<hidl_handle>& dataCache, const CacheToken& token,
+            const sp<V1_3::IPreparedModelCallback>& callback) override;
+
+    Return<void> allocate(const V1_3::BufferDesc& desc,
+                          const hidl_vec<sp<V1_3::IPreparedModel>>& preparedModels,
+                          const hidl_vec<V1_3::BufferRole>& inputRoles,
+                          const hidl_vec<V1_3::BufferRole>& outputRoles,
+                          V1_3::IDevice::allocate_cb cb) override;
+#endif
     Return<DeviceStatus> getStatus() override {
         VLOG(DRIVER) << "getStatus()";
         return DeviceStatus::AVAILABLE;
@@ -130,6 +155,12 @@ class VsiDevice : public HalPlatform::Device
         }
 #endif
 
+#if ANDROID_SDK_VERSION >= 30
+        static void notify(const sp<V1_3::IPreparedModelCallback>& callback, const V1_3::ErrorStatus& status,
+                           const sp<VsiPreparedModel>& preparedModel) {
+            callback->notify_1_3(status, preparedModel);
+        }
+#endif
         template <typename T_IPreparedModelCallback>
         static void asyncPrepareModel(sp<VsiPreparedModel> vsiPreapareModel, const T_IPreparedModelCallback &callback){
             auto status = vsiPreapareModel->initialize();
@@ -139,6 +170,19 @@ class VsiDevice : public HalPlatform::Device
             }
             notify(callback, status, vsiPreapareModel);
         }
+
+#if ANDROID_SDK_VERSION >= 30
+        template <typename T_IPreparedModelCallback>
+        static void asyncPrepareModel_1_3(sp<VsiPreparedModel> vsiPreapareModel,
+                                          const T_IPreparedModelCallback& callback) {
+            auto status = vsiPreapareModel->initialize();
+            if( ErrorStatus::NONE != status){
+                notify(callback, HalPlatform::convertVersion(status), nullptr);
+                return;
+            }
+            notify(callback, HalPlatform::convertVersion(status), vsiPreapareModel);
+        }
+#endif
 
         template <typename T_Model, typename T_IPreparedModelCallback>
         Return<ErrorStatus> prepareModelBase(const T_Model& model,
