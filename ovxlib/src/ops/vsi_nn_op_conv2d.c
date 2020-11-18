@@ -115,7 +115,7 @@ static vsi_bool op_check
 
     if(ret) {
         /* check inputs outputs data type */
-        BEGIN_IO_TYPE_DECL(CONV2D, 4)
+        BEGIN_IO_TYPE_DECL(CONV2D, 3, 1)
             /* IO_TYPE(INPUT, WEIGHT, BIAS, OUTPUT) */
             IO_TYPE(D_F32, D_F32, D_F32, D_F32)
 
