@@ -85,13 +85,19 @@ static node_io_signature_t* _get_op_signature
     vsi_nn_tensor_t** inputs,
     int inputs_num,
     vsi_nn_tensor_t** outputs,
-    int outputs_num
+    int outputs_num,
+    const op_constraint_reg_type* op_constraint_reg
     )
 {
     int i = 0;
+    int reg_io_count = op_constraint_reg->reg_input_num +
+            op_constraint_reg->reg_output_num;
     node_io_signature_t* item = malloc(sizeof(node_io_signature_t) + \
-        (inputs_num + outputs_num - 1) * sizeof(vsi_nn_type_e));
+        (reg_io_count - 1) * sizeof(vsi_nn_type_e));
+
     item->count = inputs_num + outputs_num;
+    memset(&item->types[0], 0x00, reg_io_count * sizeof(vsi_nn_type_e));
+
     for(i = 0; i < inputs_num; i++) {
         if(!inputs[i]) {
             item->types[i] = VSI_NN_TYPE_NONE \
@@ -103,12 +109,13 @@ static node_io_signature_t* _get_op_signature
     }
     for(i = 0; i < outputs_num; i++) {
         if(!outputs[i]) {
-            item->types[inputs_num + i] = VSI_NN_TYPE_NONE \
-                | VSI_NN_QNT_TYPE_NONE << Q_SHIFT;
+            item->types[op_constraint_reg->reg_input_num + i] = \
+                    VSI_NN_TYPE_NONE | VSI_NN_QNT_TYPE_NONE << Q_SHIFT;
             continue;
         }
-        item->types[inputs_num + i] = outputs[i]->attr.dtype.vx_type \
-            | outputs[i]->attr.dtype.qnt_type << Q_SHIFT;
+        item->types[op_constraint_reg->reg_input_num + i] = \
+                outputs[i]->attr.dtype.vx_type |
+                outputs[i]->attr.dtype.qnt_type << Q_SHIFT;
     }
 
     return item;
@@ -132,23 +139,21 @@ vsi_bool validate_op_io_types
     int inputs_num,
     vsi_nn_tensor_t** outputs,
     int outputs_num,
-    const void* supported_io_types,
-    int io_types_item_size,
-    int supported_io_types_count,
+    const op_constraint_reg_type* op_constraint_reg,
     const char* name
     )
 {
-    int i = 0;
+    uint32_t i = 0;
     vsi_bool matched = FALSE;
     node_io_signature_t* sig = _get_op_signature(inputs, inputs_num,
-            outputs, outputs_num);
+            outputs, outputs_num, op_constraint_reg);
 
     VSILOGD("Validate [%s]", name);
-    if(sig && supported_io_types) {
-        for(i = 0; i < supported_io_types_count; i++) {
-            const uint8_t* curr = ((const uint8_t*)supported_io_types) \
-                    + io_types_item_size * i;
-            if(!memcmp(curr, sig->types, io_types_item_size)) {
+    if(sig && op_constraint_reg && op_constraint_reg->types) {
+        for(i = 0; i < op_constraint_reg->io_types_item_count; i++) {
+            const uint8_t* curr = ((const uint8_t*)op_constraint_reg->types) \
+                    + op_constraint_reg->io_types_item_size * i;
+            if(!memcmp(curr, sig->types, op_constraint_reg->io_types_item_size)) {
                 matched = TRUE;
                 break;
             }
@@ -163,16 +168,12 @@ vsi_bool validate_op_io_types
 void print_op_io_types
     (
     const char* name,
-    int io_count,
-    const void* supported_io_types,
-    int supported_io_types_count
+    const op_constraint_reg_type* op_constraint_reg
     )
 {
     /* print supported types for statistics use */
     VSILOGI("Operation: %s", name);
-    (void)io_count;
-    (void)supported_io_types;
-    (void)supported_io_types_count;
+    (void)op_constraint_reg;
     (void)_get_dtype_name;
     (void)_get_qtype_name;
 }

@@ -63,6 +63,14 @@ enum {
     Q_SYM = VSI_NN_QNT_TYPE_AFFINE_SYMMETRIC << Q_SHIFT,
 };
 
+typedef struct {
+    uint32_t reg_input_num;
+    uint32_t reg_output_num;
+    uint32_t io_types_item_size;
+    uint32_t io_types_item_count;
+    const void* types;
+} op_constraint_reg_type;
+
 vsi_bool is_const_tensor
     (
     const vsi_nn_tensor_t* tensor
@@ -74,40 +82,46 @@ vsi_bool validate_op_io_types
     int inputs_num,
     vsi_nn_tensor_t** outputs,
     int outputs_num,
-    const void* supported_io_types,
-    int io_types_item_size,
-    int supported_io_types_count,
+    const op_constraint_reg_type* op_constraint_reg,
     const char* name
     );
 
 void print_op_io_types
     (
     const char* name,
-    int io_count,
-    const void* supported_io_types,
-    int supported_io_types_count
+    const op_constraint_reg_type* op_constraint_reg
     );
 
 #define IO_TYPE(...) {{__VA_ARGS__}},
-#define BEGIN_IO_TYPE_DECL(NAME, IO_COUNT)   \
-enum { NAME##_IO_COUNT = IO_COUNT}; \
-const struct {vsi_nn_type_e types[NAME##_IO_COUNT];} \
+#define BEGIN_IO_TYPE_DECL(NAME, INPUT_COUNT, OUTPUT_COUNT)         \
+enum { NAME##_INPUT_COUNT = INPUT_COUNT,                            \
+    NAME##_OUTPUT_COUNT = OUTPUT_COUNT,                             \
+    NAME##_IO_COUNT = NAME##_INPUT_COUNT + NAME##_OUTPUT_COUNT};    \
+static const struct {vsi_nn_type_e types[NAME##_IO_COUNT];}         \
 NAME##_supported_io_types[] = {
-#define OUTPUT_OP_OP_CONSTRAINT
-#ifdef OUTPUT_OP_OP_CONSTRAINT
+
+#define DECL_OP_CONSTRAINT_REG(NAME) \
+static const op_constraint_reg_type NAME##_REG = {  \
+    NAME##_INPUT_COUNT,                             \
+    NAME##_OUTPUT_COUNT,                            \
+    sizeof(NAME##_supported_io_types[0]),           \
+    _cnt_of_array(NAME##_supported_io_types),       \
+    NAME##_supported_io_types                       \
+}
+
+#ifdef OUTPUT_OP_CONSTRAINT
 #define END_IO_TYPE_DECL(NAME) }; \
+    DECL_OP_CONSTRAINT_REG(NAME);
     print_op_io_types(#NAME, NAME##_IO_COUNT, NAME##_supported_io_types, \
         _cnt_of_array(NAME##_supported_io_types));
 #else
-#define END_IO_TYPE_DECL(NAME) };
+#define END_IO_TYPE_DECL(NAME) };                   \
+DECL_OP_CONSTRAINT_REG(NAME);
 #endif
 
 #define VALIDATE_OP_IO_TYPES(NAME, INPUTS, INPUTS_NUM, OUTPUTS, OUTPUTS_NUM) \
     validate_op_io_types(INPUTS, INPUTS_NUM, OUTPUTS, OUTPUTS_NUM, \
-        NAME##_supported_io_types, \
-        sizeof(NAME##_supported_io_types[0]), \
-        _cnt_of_array(NAME##_supported_io_types),\
-        #NAME)
+        &NAME##_REG, #NAME)
 
 #ifdef __cplusplus
 }

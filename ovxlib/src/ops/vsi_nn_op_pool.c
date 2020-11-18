@@ -87,7 +87,7 @@ static vsi_bool op_check
     )
 {
     /* check inputs outputs data type */
-    BEGIN_IO_TYPE_DECL(POOL, 2)
+    BEGIN_IO_TYPE_DECL(POOL, 1, 1)
         /* IO_TYPE(INPUT, OUTPUT) */
         IO_TYPE(D_F32, D_F32)
         IO_TYPE(D_F32, D_F16)
