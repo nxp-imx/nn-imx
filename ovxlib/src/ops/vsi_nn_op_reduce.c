@@ -316,7 +316,23 @@ static vsi_status op_compute
             attr2.size[i] = reshaped_input1->attr.size[i];
             re_sizes[i]  = reshaped_input1->attr.size[i];
         }
-        attr2.dtype.vx_type  = VSI_NN_TYPE_FLOAT16;
+        if ((VSI_NN_TYPE_FLOAT32 == inputs[POST_PROCESS_INPUT]->attr.dtype.vx_type)
+            || (VSI_NN_TYPE_INT32 == inputs[POST_PROCESS_INPUT]->attr.dtype.vx_type)
+            || (VSI_NN_TYPE_UINT32 == inputs[POST_PROCESS_INPUT]->attr.dtype.vx_type)
+            || (VSI_NN_TYPE_UINT64 == inputs[POST_PROCESS_INPUT]->attr.dtype.vx_type)
+            )
+        {
+            attr2.dtype.vx_type  = VSI_NN_TYPE_FLOAT32;
+        }
+        else if (VSI_NN_TYPE_FLOAT64 == inputs[POST_PROCESS_INPUT]->attr.dtype.vx_type)
+        {
+            attr2.dtype.vx_type  = VSI_NN_TYPE_FLOAT64;
+        }
+        else
+        {
+            attr2.dtype.vx_type  = VSI_NN_TYPE_FLOAT16;
+        }
+
         attr2.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
 
         if ((2 == resolved_dim_count && resolved_dim[0] < 3 && resolved_dim[1] < 3)
@@ -886,12 +902,12 @@ static vsi_bool op_set_reduce_internal
     uint32_t dim_num;
     vx_int32 resolved_dim_count = 0;
     int32_t * axes = self->nn_param.reduce.local2->axes;
-    vx_bool  is_use_fp16 = vx_false_e;
+    vx_bool  is_use_float = vx_false_e;
     resolved_dim_count = self->nn_param.reduce.local2->axes_num;
 
     if ((VSI_NN_OP_REDUCESUM_INTERNAL == type_name) || (VSI_NN_OP_REDUCEPROD_INTERNAL == type_name))
     {
-        is_use_fp16 = vx_true_e;
+        is_use_float = vx_true_e;
     }
 
     vsi_nn_internal_init_node_wksp( self );
@@ -911,9 +927,24 @@ static vsi_bool op_set_reduce_internal
         re_sizes[i]  = inputs[POST_PROCESS_OUTPUT]->attr.size[i];
     }
 
-    if (is_use_fp16)
+    if (is_use_float)
     {
-        attr.dtype.vx_type  = VSI_NN_TYPE_FLOAT16;
+        if (  (VSI_NN_TYPE_FLOAT32 == inputs[POST_PROCESS_INPUT]->attr.dtype.vx_type)
+           || (VSI_NN_TYPE_INT32   == inputs[POST_PROCESS_INPUT]->attr.dtype.vx_type)
+           || (VSI_NN_TYPE_UINT32  == inputs[POST_PROCESS_INPUT]->attr.dtype.vx_type)
+           || (VSI_NN_TYPE_UINT64  == inputs[POST_PROCESS_INPUT]->attr.dtype.vx_type)
+           )
+        {
+            attr.dtype.vx_type  = VSI_NN_TYPE_FLOAT32;
+        }
+        else if (VSI_NN_TYPE_FLOAT64 == inputs[POST_PROCESS_INPUT]->attr.dtype.vx_type)
+        {
+            attr.dtype.vx_type  = VSI_NN_TYPE_FLOAT64;
+        }
+        else
+        {
+            attr.dtype.vx_type  = VSI_NN_TYPE_FLOAT16;
+        }
         attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
     }
 
