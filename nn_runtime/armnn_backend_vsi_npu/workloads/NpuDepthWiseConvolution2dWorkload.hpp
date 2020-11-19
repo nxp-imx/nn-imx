@@ -206,9 +206,9 @@ class NpuDepthWiseConvolution2dWorkload
         inOperandIds.push_back(this->AddOperandAndSetValue(m_StrideY));
 
         // Add depthwise multiplier
-        int32_t inputChannels;
-        int32_t outputChannels;
-        int32_t depthMultiplier;
+        int32_t inputChannels = 1;
+        int32_t outputChannels = 1;
+        int32_t depthMultiplier = 1;
         auto inputPtr = dynamic_cast<NpuTensorHandler*>(descriptor.m_Inputs[0]);
         auto outputPtr = dynamic_cast<NpuTensorHandler*>(descriptor.m_Outputs[0]);
         if (inputPtr && outputPtr) {
