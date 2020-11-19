@@ -690,6 +690,12 @@ vsi_nn_tensor_id_t vsi_nn_get_tensor_id
     const vsi_nn_tensor_t * tensor
     );
 
+OVXLIB_API vsi_status vsi_nnSetGraphPriority
+    (
+    vsi_nn_graph_t* graph,
+    uint32_t priority
+    );
+
 #ifdef __cplusplus
 }
 #endif

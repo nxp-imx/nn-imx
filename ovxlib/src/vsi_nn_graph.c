@@ -1900,3 +1900,20 @@ vsi_nn_tensor_id_t vsi_nn_get_tensor_id
     return VSI_NN_TENSOR_ID_NA;
 } /* vsi_nn_get_tensor_id() */
 
+vsi_status vsi_nnSetGraphPriority
+    (
+    vsi_nn_graph_t* graph,
+    uint32_t priority
+    )
+{
+    vsi_status status = VSI_FAILURE;
+#ifdef VX_GRAPH_PREEMPTION_SUPPORT
+    if(graph && graph->g)
+    {
+        status = vxSetGraphAttribute(graph->g, VX_GRAPH_PRIORITY_VALUE_VIV, &priority, sizeof(priority));
+    }
+#else
+    VSILOGE("Current driver not support graph priority.");
+#endif
+    return status;
+}
