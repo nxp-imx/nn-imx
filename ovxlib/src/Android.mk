@@ -49,7 +49,8 @@ LOCAL_SRC_FILES +=      \
              utils/vsi_nn_vdata.c   \
              utils/vsi_nn_tensor_op.c   \
              utils/vsi_nn_util.c \
-             utils/vsi_nn_dlfcn.c
+             utils/vsi_nn_dlfcn.c \
+             utils/vsi_nn_constraint_check.c
 
 
 LOCAL_SRC_FILES +=      \
