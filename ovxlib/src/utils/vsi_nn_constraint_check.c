@@ -177,3 +177,24 @@ void print_op_io_types
     (void)_get_dtype_name;
     (void)_get_qtype_name;
 }
+
+vsi_bool is_item_in_array
+    (
+    const void* item,
+    const void* items,
+    int item_size,
+    int item_count
+    )
+{
+    int i = 0;
+
+    if (item && items) {
+        for (;i < item_count; i++) {
+            if(0 == memcmp(item, (uint8_t*)items + i * item_size, item_size)) {
+                return TRUE;
+            }
+        }
+    }
+
+    return FALSE;
+}

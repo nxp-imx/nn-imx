@@ -92,6 +92,14 @@ void print_op_io_types
     const op_constraint_reg_type* op_constraint_reg
     );
 
+vsi_bool is_item_in_array
+    (
+    const void* item,
+    const void* items,
+    int item_size,
+    int item_count
+    );
+
 #define IO_TYPE(...) {{__VA_ARGS__}},
 #define BEGIN_IO_TYPE_DECL(NAME, INPUT_COUNT, OUTPUT_COUNT)         \
 enum { NAME##_INPUT_COUNT = INPUT_COUNT,                            \
