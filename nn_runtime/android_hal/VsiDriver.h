@@ -1,48 +1,49 @@
 /****************************************************************************
-*
-*    Copyright (c) 2020 Vivante Corporation
-*
-*    Permission is hereby granted, free of charge, to any person obtaining a
-*    copy of this software and associated documentation files (the "Software"),
-*    to deal in the Software without restriction, including without limitation
-*    the rights to use, copy, modify, merge, publish, distribute, sublicense,
-*    and/or sell copies of the Software, and to permit persons to whom the
-*    Software is furnished to do so, subject to the following conditions:
-*
-*    The above copyright notice and this permission notice shall be included in
-*    all copies or substantial portions of the Software.
-*
-*    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-*    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-*    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-*    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-*    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-*    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-*    DEALINGS IN THE SOFTWARE.
-*
-*****************************************************************************/
+ *
+ *    Copyright (c) 2020 Vivante Corporation
+ *
+ *    Permission is hereby granted, free of charge, to any person obtaining a
+ *    copy of this software and associated documentation files (the "Software"),
+ *    to deal in the Software without restriction, including without limitation
+ *    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ *    and/or sell copies of the Software, and to permit persons to whom the
+ *    Software is furnished to do so, subject to the following conditions:
+ *
+ *    The above copyright notice and this permission notice shall be included in
+ *    all copies or substantial portions of the Software.
+ *
+ *    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ *    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ *    DEALINGS IN THE SOFTWARE.
+ *
+ *****************************************************************************/
 
 #ifndef ANDROID_ML_NN_VSI_DRIVER_H
 #define ANDROID_ML_NN_VSI_DRIVER_H
 
-#include "VsiDevice.h"
-#include "HalInterfaces.h"
-#include "Utils.h"
-#include "CustomizeOpSupportList.h"
-#include "WeightMd5CheckingConfig.h"
-
-#include <sys/system_properties.h>
 #include <android-base/logging.h>
 #include <hidl/LegacySupport.h>
-#include <thread>
-#include <string>
+#include <sys/system_properties.h>
 
+#include <string>
+#include <thread>
+
+#include "CustomizeOpSupportList.h"
+#include "HalInterfaces.h"
+#include "Utils.h"
+#include "VsiDevice.h"
+#include "WeightMd5CheckingConfig.h"
 
 namespace android {
 namespace nn {
 namespace vsi_driver {
 
-static const std::vector<std::string> weight_md5 = {
+namespace model_size {
+static const std::vector<std::string> L = {
     // vgg_float
     "0F308490FCD1009E922B340CEA5EE65B",
     "0C67D9A824D0C46D253395D7000A845B",
@@ -62,7 +63,6 @@ static const std::vector<std::string> weight_md5 = {
     "FFEDD3DD01A32A7F2318DEEB46DA7C62",
     "8CDED202E872B97734E44DFFD3060163",
     "69F8BE71509C2F3397E80110ECF79786",
-
     // vgg_quant
     "3211BFCF380B68DE5D4D4DE31F455437",
     "9D3C4886E40CC739AA57277DA834AB49",
@@ -82,7 +82,6 @@ static const std::vector<std::string> weight_md5 = {
     "8E4A887CF0111CED45DC61C0D22B5A90",
     "8A54333F7EA4418B8C512BBB9233E451",
     "8DAFD0FFBD3DD2C840B6C93EBBBAB1F8",
-
     // srgan_float
     "5639FA9397C762A043BAFBED8A370E21",
     "082433233B6B77115C343870590B95DE",
@@ -117,7 +116,6 @@ static const std::vector<std::string> weight_md5 = {
     "04649EDF3FFE31EBA58810819799E686",
     "746203379C6B1D0C60A82F81DD970C6D",
     "B241E7F4A1B99A47F2BA8D862D063912",
-
     // srgan_quant
     "3423DDC5CB926340E969D292E134D925",
     "F69CFF631DF8E0ABD00D74746E6F632A",
@@ -152,7 +150,21 @@ static const std::vector<std::string> weight_md5 = {
     "ADFA3C3AE51140A7C7651F4896434666",
     "CB093897870EBA1B55BDDE369FFA1071",
     "BABED20F5A1988EA4486510D0FFEAB6C",
+    // inception_face_float
+    "3C1812918369446168A511D2E2207599",
+    // inception_face_quant
+    "3071BB800BEE3652D7F38BEF08EE40DE",
+    // srcnn_float
+    "14EE8F7B5C4492159470CBD66CFE545A",
+    // srcnn_quant
+    "329F391220862B8CAB0AA46C6C440793",
 
+    // srcnn_200-2000
+    "A7C4E8420FF11F9A40E8EE324312FC9F",
+    // unet
+    "637EA97C1E00783AEB6005005A0822D8",
+};  // model MAC/Memory IO is large
+static const std::vector<std::string> M = {
     // dped_float
     "A59B0D480DFBA4FBC09D2F2EB1095668",
     "2998EC9356328DACF2F27F1BBA153470",
@@ -164,17 +176,10 @@ static const std::vector<std::string> weight_md5 = {
     "978F3BE63AB54755DD17E53E291E51CE",
     "8AD514778F1B76DF28AEA51EEB323A00",
     "4187083B2E58D0BDA414C128057D7333",
-
     // inception_v3_float
     "CA7BC170719FEC8FE04EC685FEBF8CA7",
     // inception_v3_quant
     "E494867C3D9B911F9C401531E4C97390",
-
-    // inception_face_float
-    "3C1812918369446168A511D2E2207599",
-    // inception_face_quant
-    "3071BB800BEE3652D7F38BEF08EE40DE",
-
     // icnet_float
     "31A7681CDBA02DEB562E4D3D9C367CB7",
     "0B1C4B3EE9E7D94B9A89A830F727D44B",
@@ -182,76 +187,79 @@ static const std::vector<std::string> weight_md5 = {
     "4D9A66570895DA7F324629B120353197",
     "6A8A44E021ACD9FFAFF69EB03C8CCB22",
     "6EB4A5B7FB4735A5817A970E154D5A7D",
-
-    // srcnn_float
-    "14EE8F7B5C4492159470CBD66CFE545A",
-
-    // srcnn_quant
-    "329F391220862B8CAB0AA46C6C440793",
-
-    // srcnn_200-2000
-    "A7C4E8420FF11F9A40E8EE324312FC9F",
-
+};
+static const std::vector<std::string> S = {
     // mobilenet_v2_float
     "303C6EAA6EAEC4483B684E4D43AAD139",
     // mobilenet_v2_quant
     "0860871B70644D172A977254799C9306",
-
-    // unet
-    "637EA97C1E00783AEB6005005A0822D8",
 };
-
+}  // namespace model_size
 class VsiDriver : public VsiDevice {
    public:
-    VsiDriver() : VsiDevice("vsi-npu") {initalizeEnv();}
-    Return<void> getCapabilities(getCapabilities_cb _hidl_cb) ;
-    Return<void> getSupportedOperations(const V1_0::Model& model, V1_0::IDevice::getSupportedOperations_cb cb) ;
+    VsiDriver() : VsiDevice("vsi-npu") { initalizeEnv(); }
+    Return<void> getCapabilities(getCapabilities_cb _hidl_cb);
+    Return<void> getSupportedOperations(const V1_0::Model& model,
+                                        V1_0::IDevice::getSupportedOperations_cb cb);
 
 #if ANDROID_SDK_VERSION >= 28
-    Return<void> getCapabilities_1_1(V1_1::IDevice::getCapabilities_1_1_cb _hidl_cb) ;
+    Return<void> getCapabilities_1_1(V1_1::IDevice::getCapabilities_1_1_cb _hidl_cb);
     Return<void> getSupportedOperations_1_1(const V1_1::Model& model,
-                                                  V1_1::IDevice::getSupportedOperations_1_1_cb cb) ;
+                                            V1_1::IDevice::getSupportedOperations_1_1_cb cb);
 #endif
 
 #if ANDROID_SDK_VERSION >= 29
-    Return<void> getCapabilities_1_2(V1_2::IDevice::getCapabilities_1_2_cb _hidl_cb) ;
-    Return<void> getSupportedOperations_1_2( const V1_2::Model& model,
-                                                   V1_2::IDevice::getSupportedOperations_1_2_cb cb) ;
+    Return<void> getCapabilities_1_2(V1_2::IDevice::getCapabilities_1_2_cb _hidl_cb);
+    Return<void> getSupportedOperations_1_2(const V1_2::Model& model,
+                                            V1_2::IDevice::getSupportedOperations_1_2_cb cb);
 #endif
     static bool isSupportedOperation(const HalPlatform::Operation& operation,
                                      const HalPlatform::Model& model,
                                      std::string& not_support_reason);
 
-    static const uint8_t* getOperandDataPtr( const HalPlatform::Model& model,
-                                             const HalPlatform::Operand& hal_operand,
-                                             VsiRTInfo &vsiMemory);
+    static const uint8_t* getOperandDataPtr(const HalPlatform::Model& model,
+                                            const HalPlatform::Operand& hal_operand,
+                                            VsiRTInfo& vsiMemory);
 
-    bool isWeightMd5Matched(const HalPlatform::Operation& operation, const HalPlatform::Model& model);
+    bool isWeightMd5Matched(const HalPlatform::Operation& operation,
+                            const HalPlatform::Model& model,
+                            int block_level);
 
    private:
-   int32_t disable_float_feature_; // switch that float-type running on hal
+    int32_t disable_float_feature_;  // switch that float-type running on hal
    private:
     void initalizeEnv();
 
     template <typename T_model, typename T_getSupportOperationsCallback>
     Return<void> getSupportedOperationsBase(const T_model& model,
-                                            T_getSupportOperationsCallback cb){
+                                            T_getSupportOperationsCallback cb) {
         LOG(INFO) << "getSupportedOperations";
         bool is_md5_matched = false;
-        bool is_md5_check_env_set = false;
+        int model_size_block_level = 0;
         char env[100] = {0};
-        int32_t read_env = __system_property_get("WEIGHT_MD5_CHECK", env);
+        int32_t read_env = __system_property_get("MODEL_BLOCK_LEVEL", env);
         if (read_env) {
-            is_md5_check_env_set = (atoi(env) == 1 ? true : false);
+            model_size_block_level = atoi(env);
         }
+
+        if (model_size_block_level < 0 || model_size_block_level > 4) {
+            LOG(FATAL) << "MODEL_BLOCK_LEVEL should be any value of {0, 1, 2, 3} \n"
+                          "block_level = 3: reject model with size L,M,S\n"
+                          "block_level = 2: reject model with size L,M\n"
+                          "block_level = 1: reject model with size L\n"
+                          "block_level = 0: don't reject model";
+        }
+
         if (validateModel(model)) {
             const size_t count = model.operations.size();
             std::vector<bool> supported(count, true);
             std::string notSupportReason = "";
             for (size_t i = 0; i < count; i++) {
                 const auto& operation = model.operations[i];
-                if (weight_md5_check || is_md5_check_env_set) {
-                    if ((is_md5_matched = isWeightMd5Matched(operation, model))) break;
+                if (weight_md5_check || model_size_block_level) {
+                    if ((is_md5_matched =
+                             isWeightMd5Matched(operation, model, model_size_block_level)))
+                        break;
                 }
                 supported[i] = !IsOpBlocked(static_cast<int32_t>(operation.type)) &&
                                isSupportedOperation(operation, model, notSupportReason);
@@ -272,10 +280,9 @@ class VsiDriver : public VsiDevice {
         LOG(INFO) << "getSupportedOperations exit";
         return Void();
     };
-
 };
 
-}
-}
-}
+}  // namespace vsi_driver
+}  // namespace nn
+}  // namespace android
 #endif

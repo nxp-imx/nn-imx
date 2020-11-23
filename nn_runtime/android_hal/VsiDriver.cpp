@@ -22,25 +22,26 @@
  *
  *****************************************************************************/
 
-#include <cmath>
-#include <memory>
-#include <nnrt/file_map_memory.hpp>
-
 #include "VsiDriver.h"
-#include "VsiPlatform.h"
-#include "VsiRTInfo.h"
+
+#include <openssl/md5.h>
 
 #include <algorithm>
+#include <cmath>
 #include <cstring>
 #include <fstream>
 #include <iostream>
+#include <memory>
+#include <nnrt/file_map_memory.hpp>
 #include <set>
 #include <string>
 #include <vector>
-#include <openssl/md5.h>
 
-#define MD5_SECRET_LEN_16     (16)
-#define MD5_BYTE_STRING_LEN   (4)
+#include "VsiPlatform.h"
+#include "VsiRTInfo.h"
+
+#define MD5_SECRET_LEN_16 (16)
+#define MD5_BYTE_STRING_LEN (4)
 
 #if ANDROID_SDK_VERSION >= 29
 #include "public.hpp"
@@ -117,22 +118,20 @@ bool isTensor(const HalPlatform::Operand& operand) {
     return tensor;
 }
 
-const std::string commonMd5Secret32(const std::string& src)
-{
+const std::string commonMd5Secret32(const std::string& src) {
     MD5_CTX ctx;
 
     std::string md5String;
-    unsigned char md[MD5_SECRET_LEN_16] = { 0 };
-    char tmp[MD5_BYTE_STRING_LEN] = { 0 };
+    unsigned char md[MD5_SECRET_LEN_16] = {0};
+    char tmp[MD5_BYTE_STRING_LEN] = {0};
 
-    MD5_Init( &ctx );
-    MD5_Update( &ctx, src.c_str(), src.size() );
-    MD5_Final( md, &ctx );
+    MD5_Init(&ctx);
+    MD5_Update(&ctx, src.c_str(), src.size());
+    MD5_Final(md, &ctx);
 
-    for( int i = 0; i < 16; ++i )
-    {
-        memset( tmp, 0x00, sizeof( tmp ) );
-        snprintf( tmp,sizeof(tmp) , "%02X", md[i] );
+    for (int i = 0; i < 16; ++i) {
+        memset(tmp, 0x00, sizeof(tmp));
+        snprintf(tmp, sizeof(tmp), "%02X", md[i]);
         md5String += tmp;
     }
     return md5String;
@@ -181,22 +180,21 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
             // validate constant rule
             auto input0 = model.operands[operation.inputs[0]];
             auto input1 = model.operands[operation.inputs[1]];
-            auto act    = model.operands[operation.inputs[2]];
+            auto act = model.operands[operation.inputs[2]];
             if (isConstantTensor(input0) && isConstantTensor(input1)) {
                 reason += ("reject ADD|SUB|MUL|DIV because all input tensor is constant\n");
                 isSupport &= false;
             }
-            if(isConstantTensor(act)){
+            if (isConstantTensor(act)) {
                 struct vsi_driver::VsiRTInfo rt;
                 auto actCode = reinterpret_cast<const int32_t*>(
                     op_validate::get_buffer::getOperandDataPtr(model, act, rt));
-                if(*actCode > 3){
+                if (*actCode > 3) {
                     reason += ("reject ADD|SUB|MUL|DIV because fusedCode is invalid value " +
-                            std::to_string(*actCode));
+                               std::to_string(*actCode));
                     isSupport &= false;
                 }
-            }
-            else{
+            } else {
                 reason += ("reject ADD|SUB|MUL|DIV because fusedCode is not const\n");
                 isSupport &= false;
             }
@@ -205,7 +203,8 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
                 for (size_t i = 0; i < input0.dimensions.size(); i++) {
                     if (input0.dimensions[i] != input1.dimensions[i]) {
                         if (input0.dimensions[i] != 1 && input1.dimensions[i] != 1) {
-                            reason += "reject ADD|SUB|MUL|DIV because inputs shape is invalidated\n";
+                            reason +=
+                                "reject ADD|SUB|MUL|DIV because inputs shape is invalidated\n";
                             isSupport &= false;
                             break;
                         }
@@ -217,43 +216,43 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
             break;
         }
 #if ANDROID_SDK_VERSION >= 29
-        case OperationType::AVERAGE_POOL_2D:{
+        case OperationType::AVERAGE_POOL_2D: {
             OperationValidatePtr avgPool = std::make_unique<
                 op_validate::AveragePoolValidate<HalPlatform::Model, HalPlatform::Operation>>(
                 model, operation);
             return avgPool->Validate(reason);
         }
-        case OperationType::MAX_POOL_2D:{
+        case OperationType::MAX_POOL_2D: {
             OperationValidatePtr maxPool = std::make_unique<
                 op_validate::MaxPoolValidate<HalPlatform::Model, HalPlatform::Operation>>(
                 model, operation);
             return maxPool->Validate(reason);
         }
-        case OperationType::L2_POOL_2D:{
+        case OperationType::L2_POOL_2D: {
             OperationValidatePtr l2Pool = std::make_unique<
-                op_validate::L2PoolValidate<HalPlatform::Model, HalPlatform::Operation>>(
-                model, operation);
+                op_validate::L2PoolValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
+                                                                                         operation);
             return l2Pool->Validate(reason);
         }
-        case OperationType::DEPTH_TO_SPACE:{
+        case OperationType::DEPTH_TO_SPACE: {
             OperationValidatePtr depth2space = std::make_unique<
                 op_validate::Depth2spaceValidate<HalPlatform::Model, HalPlatform::Operation>>(
                 model, operation);
             return depth2space->Validate(reason);
         }
-        case OperationType::SPACE_TO_DEPTH:{
+        case OperationType::SPACE_TO_DEPTH: {
             OperationValidatePtr space2depth = std::make_unique<
                 op_validate::Space2depthValidate<HalPlatform::Model, HalPlatform::Operation>>(
                 model, operation);
             return space2depth->Validate(reason);
         }
-        case OperationType::SPACE_TO_BATCH_ND:{
+        case OperationType::SPACE_TO_BATCH_ND: {
             OperationValidatePtr space2batch = std::make_unique<
                 op_validate::Space2BatchValidate<HalPlatform::Model, HalPlatform::Operation>>(
                 model, operation);
             return space2batch->Validate(reason);
         }
-        case OperationType::BATCH_TO_SPACE_ND:{
+        case OperationType::BATCH_TO_SPACE_ND: {
             OperationValidatePtr batch2space = std::make_unique<
                 op_validate::Batch2spaceValidate<HalPlatform::Model, HalPlatform::Operation>>(
                 model, operation);
@@ -261,8 +260,8 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
         }
         case OperationType::CONV_2D: {
             OperationValidatePtr conv2D = std::make_unique<
-                op_validate::Conv2dValidate<HalPlatform::Model, HalPlatform::Operation>>(
-                model, operation);
+                op_validate::Conv2dValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
+                                                                                         operation);
             return conv2D->Validate(reason);
         }
         case OperationType::RNN: {
@@ -711,8 +710,8 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
         }
         case OperationType::SLICE: {
             OperationValidatePtr slice = std::make_unique<
-                op_validate::SliceValidate<HalPlatform::Model, HalPlatform::Operation>>(
-                model, operation);
+                op_validate::SliceValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
+                                                                                        operation);
             return slice->Validate(reason);
         }
         case OperationType::STRIDED_SLICE: {
@@ -724,15 +723,15 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
         case OperationType::SQUEEZE: {
             auto squeeze = std::make_unique<
                 op_validate::SqueezeValidate<HalPlatform::Model, HalPlatform::Operation>>(
-                    model, operation);
+                model, operation);
             return squeeze->Validate(reason);
         }
         case OperationType::MEAN: {
             auto mean = std::make_unique<
-                op_validate::MeanValidate<HalPlatform::Model, HalPlatform::Operation>>(
-                    model, operation);
+                op_validate::MeanValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
+                                                                                       operation);
             return mean->Validate(reason);
-       }
+        }
         case OperationType::BOX_WITH_NMS_LIMIT:
         case OperationType::PAD_V2:
         case OperationType::QUANTIZED_16BIT_LSTM:
@@ -750,8 +749,7 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
 
     // Overall check
     // TODO: if all of LSTM's inputs are constant, the result will fail.
-    std::vector<OperationType> whiteList = { OperationType::CONCATENATION,
-                                            OperationType::LSTM};
+    std::vector<OperationType> whiteList = {OperationType::CONCATENATION, OperationType::LSTM};
 
     // do not support constant tensor as operation's Input except whiteList.
     if (std::find(whiteList.begin(), whiteList.end(), operation.type) == whiteList.end()) {
@@ -834,8 +832,22 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
 }
 
 bool VsiDriver::isWeightMd5Matched(const HalPlatform::Operation& operation,
-                                   const HalPlatform::Model& model) {
-    if (OperationType::CONV_2D == operation.type) {
+                                   const HalPlatform::Model& model,
+                                   int block_level) {
+    std::vector<std::string> block_list;
+    if (block_level >= 1) {
+        std::copy(model_size::L.begin(), model_size::L.end(), std::back_inserter(block_list));
+    }
+
+    if (block_level >= 2) {
+        std::copy(model_size::M.begin(), model_size::M.end(), std::back_inserter(block_list));
+    }
+
+    if (block_level == 3) {
+        std::copy(model_size::S.begin(), model_size::S.end(), std::back_inserter(block_list));
+    }
+
+    if (!block_list.empty() && OperationType::CONV_2D == operation.type) {
         auto& weight = model.operands[operation.inputs[1]];
         if (!isConstantTensor(weight)) return false;
         auto& shape = weight.dimensions;
@@ -855,7 +867,7 @@ bool VsiDriver::isWeightMd5Matched(const HalPlatform::Operation& operation,
                 reinterpret_cast<const char*>(getOperandDataPtr(model, weight, rt));
             std::string md5_src(weight_data, 512);
             std::string md5 = commonMd5Secret32(md5_src);
-            if(std::find(weight_md5.begin(), weight_md5.end(), md5) != weight_md5.end()) {
+            if (std::find(block_list.begin(), block_list.end(), md5) != block_list.end()) {
                 LOG(INFO) << "MD5 matched.";
                 return true;
             }
@@ -871,8 +883,27 @@ bool VsiDriver::isWeightMd5Matched(const HalPlatform::Operation& operation,
         // vgg
         decltype(weight.dimensions) special_shape_3 = {64, 3, 3, 64};
 
-        if (shape == special_shape_0 || shape == special_shape_1 || shape == special_shape_2 ||
-            shape == special_shape_3) {
+        std::list<decltype(weight.dimensions)> special_shape_list;
+
+        if (block_level >= 1) {
+            special_shape_list.push_back(special_shape_1);
+            special_shape_list.push_back(special_shape_2);
+            special_shape_list.push_back(special_shape_3);
+        }
+
+        // if (block_level >= 2) {}
+
+        if (block_level == 3) {
+            // mbv2 is small size
+            special_shape_list.push_back(special_shape_0);
+        }
+
+        bool hit_special_shape = std::any_of(
+            special_shape_list.begin(),
+            special_shape_list.end(),
+            [&shape](const decltype(weight.dimensions)& item) { return shape == item; });
+
+        if (hit_special_shape) {
             LOG(INFO) << "Spectial shape matched";
             return true;
         }
