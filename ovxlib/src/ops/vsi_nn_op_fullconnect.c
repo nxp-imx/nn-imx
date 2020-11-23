@@ -34,6 +34,7 @@
 #include "vsi_nn_log.h"
 #include "utils/vsi_nn_dtype_util.h"
 #include "utils/vsi_nn_util.h"
+#include "utils/vsi_nn_constraint_check.h"
 
 static vsi_status op_compute
     (
@@ -113,6 +114,45 @@ static vsi_bool op_check
 
     /* Check fl and scale*/
     ret = vsi_nn_QuantCheck(inputs[0], inputs[1], inputs[2]);
+
+    ret = ret && vsi_nn_OpCheck(VSI_NN_OP_FCL_RELU, self, inputs, outputs);
+
+    if(!ret) {
+        /* check inputs outputs data type */
+        BEGIN_IO_TYPE_DECL(FCL, 3, 1)
+            /* IO_TYPE(INPUT, WEIGHT, BIAS, OUTPUT) */
+            IO_TYPE(D_F16, D_F16, D_NONE, D_F16)
+            IO_TYPE(D_F16, D_F16, D_F32, D_F16)
+            IO_TYPE(D_F16, D_U8|Q_ASYM, D_F32, D_U8|Q_ASYM)
+
+            IO_TYPE(D_I8|Q_DFP, D_I8|Q_DFP, D_NONE, D_I8|Q_DFP)
+            IO_TYPE(D_I8|Q_DFP, D_I8|Q_DFP, D_I32|Q_DFP, D_I8|Q_DFP)
+
+            IO_TYPE(D_I16|Q_DFP, D_I16|Q_DFP, D_NONE, D_I16|Q_DFP)
+            IO_TYPE(D_I16|Q_DFP, D_I16|Q_DFP, D_I32|Q_DFP, D_I16|Q_DFP)
+            IO_TYPE(D_I16|Q_DFP, D_I16|Q_DFP, D_I64|Q_DFP, D_I16|Q_DFP)
+            IO_TYPE(D_I16|Q_DFP, D_I16|Q_DFP, D_I64|Q_DFP, D_F16)
+
+            IO_TYPE(D_U8|Q_ASYM, D_U8|Q_ASYM, D_NONE, D_U8|Q_ASYM)
+            IO_TYPE(D_U8|Q_ASYM, D_U8|Q_ASYM, D_NONE, D_I16|Q_DFP)
+            IO_TYPE(D_U8|Q_ASYM, D_U8|Q_ASYM, D_NONE, D_F16)
+
+            IO_TYPE(D_U8|Q_ASYM, D_U8|Q_ASYM, D_I32|Q_ASYM, D_U8|Q_ASYM)
+            IO_TYPE(D_U8|Q_ASYM, D_U8|Q_ASYM, D_I32|Q_ASYM, D_I16|Q_DFP)
+            IO_TYPE(D_U8|Q_ASYM, D_U8|Q_ASYM, D_I32|Q_ASYM, D_F16)
+
+            IO_TYPE(D_U8|Q_ASYM, D_U8|Q_ASYM, D_U8|Q_ASYM, D_U8|Q_ASYM)
+            IO_TYPE(D_U8|Q_ASYM, D_U8|Q_ASYM, D_U8|Q_ASYM, D_I16|Q_DFP)
+            IO_TYPE(D_U8|Q_ASYM, D_U8|Q_ASYM, D_U8|Q_ASYM, D_F16)
+
+            IO_TYPE(D_U8|Q_ASYM, D_I8|Q_SYM_PC, D_I32|Q_SYM_PC, D_U8|Q_ASYM)
+        END_IO_TYPE_DECL(FCL)
+        ret = VALIDATE_OP_IO_TYPES(FCL, inputs, self->input.num, outputs, self->output.num);
+        if(!ret) {
+            VSILOGE("Inputs/Outputs data type not support.");
+            return FALSE;
+        }
+    }
 
     return ret;
 } /* op_check() */

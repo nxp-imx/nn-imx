@@ -35,6 +35,7 @@
 #include "vsi_nn_tensor_util.h"
 #include "utils/vsi_nn_util.h"
 #include "utils/vsi_nn_dtype_util.h"
+#include "utils/vsi_nn_constraint_check.h"
 
 static vsi_status _set_fc_relu_parameter
     (
@@ -122,6 +123,101 @@ static vsi_bool op_check
     /* Check fl and scale*/
     ret = vsi_nn_QuantCheck(inputs[0], inputs[1], inputs[2]);
 
+    if(ret) {
+        /* check inputs outputs data type */
+        /* NN Support */
+        BEGIN_IO_TYPE_DECL(FCL_RELU, 3, 1)
+            /* IO_TYPE(INPUT, WEIGHT, BIAS, OUTPUT) */
+            /* NN Support - I8 */
+            IO_TYPE(D_I8|Q_SYM_PC, D_I8|Q_SYM_PC, D_I32|Q_SYM_PC, D_I8|Q_SYM_PC)
+            IO_TYPE(D_I8|Q_ASYM, D_I8|Q_SYM_PC, D_I32|Q_SYM_PC, D_I8|Q_ASYM)
+
+            IO_TYPE(D_I8|Q_ASYM, D_I8|Q_SYM_PC, D_I32|Q_SYM_PC, D_I16|Q_DFP)
+            IO_TYPE(D_I8|Q_ASYM, D_I8|Q_SYM_PC, D_I32|Q_SYM_PC, D_F16)
+
+            IO_TYPE(D_I8|Q_DFP, D_I8|Q_DFP, D_I32|Q_DFP, D_I8|Q_DFP)
+            IO_TYPE(D_I8|Q_DFP, D_I8|Q_DFP, D_I32|Q_DFP, D_F16)
+
+            /* NN Support - U8 */
+            IO_TYPE(D_U8|Q_SYM_PC, D_U8|Q_SYM_PC, D_I32|Q_SYM_PC, D_U8|Q_SYM_PC)
+            IO_TYPE(D_U8|Q_ASYM, D_U8|Q_SYM_PC, D_I32|Q_SYM_PC, D_U8|Q_ASYM)
+
+            IO_TYPE(D_U8|Q_ASYM, D_U8|Q_SYM_PC, D_I32|Q_SYM_PC, D_I16|Q_DFP)
+            IO_TYPE(D_U8|Q_ASYM, D_U8|Q_SYM_PC, D_I32|Q_SYM_PC, D_F16)
+
+            IO_TYPE(D_U8|Q_ASYM, D_U8|Q_ASYM, D_I32|Q_ASYM, D_I16|Q_DFP)
+            IO_TYPE(D_U8|Q_ASYM, D_U8|Q_ASYM, D_I32|Q_ASYM, D_F16)
+
+            /* NN Support - I16 */
+            IO_TYPE(D_I16|Q_DFP, D_I16|Q_DFP, D_I32|Q_DFP, D_I8|Q_DFP)
+            IO_TYPE(D_I16|Q_DFP, D_I16|Q_DFP, D_I32|Q_DFP, D_U8|Q_ASYM)
+            IO_TYPE(D_I16|Q_DFP, D_I16|Q_DFP, D_I32|Q_DFP, D_I16|Q_DFP)
+
+            /* NN Support - F16 */
+            IO_TYPE(D_F16, D_F16, D_F16, D_F16)
+            IO_TYPE(D_F16, D_F16, D_F16, D_I8|Q_DFP)
+            IO_TYPE(D_F16, D_F16, D_F16, D_U8|Q_ASYM)
+
+            /* NN Support - BF16 */
+            IO_TYPE(D_BF16, D_BF16, D_F32, D_BF16)
+            IO_TYPE(D_BF16, D_BF16, D_F32, D_F32)
+
+            /* NN Support - F32 */
+            IO_TYPE(D_F32, D_BF16, D_F32, D_F32)
+            IO_TYPE(D_F32, D_BF16, D_F32, D_BF16)
+        END_IO_TYPE_DECL(FCL_RELU)
+        ret = VALIDATE_OP_IO_TYPES(FCL_RELU, inputs, self->input.num, outputs, self->output.num);
+
+        /* TP Support */
+        if (!ret ) {
+            uint32_t valid_dtypes[] = {
+                D_F16, D_BF16, D_F32, D_I16|Q_DFP, D_I8|Q_DFP, D_I8|Q_ASYM, D_U8|Q_DFP, D_U8|Q_ASYM
+            };
+
+            uint32_t weight_type = inputs[1]->attr.dtype.vx_type | inputs[1]->attr.dtype.qnt_type << Q_SHIFT;
+            uint32_t inputs_types[3] = { 0 };
+            vsi_bool supported[3] = { FALSE, FALSE, FALSE };
+            int i = 0;
+
+            inputs_types[0] = inputs[0]->attr.dtype.vx_type | inputs[0]->attr.dtype.qnt_type << Q_SHIFT;
+            inputs_types[2] = outputs[0]->attr.dtype.vx_type | outputs[0]->attr.dtype.qnt_type << Q_SHIFT;
+            if (inputs[2]) {
+                switch(inputs[1]->attr.dtype.vx_type) {
+                    case D_F16:
+                    case D_BF16:
+                    case D_F32:
+                        if(inputs[2]->attr.dtype.vx_type == (vsi_nn_type_e)D_F32) {
+                            inputs_types[1] = weight_type;
+                        }
+                        break;
+                    case D_I16:
+                    case D_I8:
+                    case D_U8:
+                        if (inputs[2]->attr.dtype.vx_type == (vsi_nn_type_e)D_I32 ||
+                                inputs[2]->attr.dtype.vx_type == (vsi_nn_type_e)D_I64) {
+                            inputs_types[1] = weight_type;
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            } else {
+                inputs_types[1] = weight_type;
+            }
+
+            for (i = 0; i < 3; i++) {
+                supported[i] = is_item_in_array(&inputs_types[i], valid_dtypes,
+                        sizeof(uint32_t), _cnt_of_array(valid_dtypes));
+            }
+
+            ret = supported[0] && supported[1] && supported[2];
+        }
+
+        if(!ret) {
+            VSILOGE("Inputs/Outputs data type not support.");
+            return FALSE;
+        }
+    }
     return ret;
 } /* op_check() */
 
