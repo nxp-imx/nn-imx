@@ -189,29 +189,29 @@ DEF_KERNEL_INITIALIZER(_minimum_initializer)
 
     out_shape  = attr[2]->shape;
 
-    if( attr[0]->quant == VSI_NN_KERNEL_QUANT_DFP )
+    if ( attr[0]->quant == VSI_NN_KERNEL_QUANT_DFP )
     {
         in0_fl = (uint8_t)attr[0]->dfp.fl;
     }
-    else if( attr[0]->quant == VSI_NN_KERNEL_QUANT_ASYMM
+    else if ( attr[0]->quant == VSI_NN_KERNEL_QUANT_ASYMM
         || attr[0]->quant == VSI_NN_KERNEL_QUANT_SYMM)
     {
         src0ZP     = attr[0]->asymm.zero_point;
         src0Scale  = attr[0]->asymm.scale;
     }
 
-    if( attr[1]->quant == VSI_NN_KERNEL_QUANT_DFP )
+    if ( attr[1]->quant == VSI_NN_KERNEL_QUANT_DFP )
     {
         in1_fl = (uint8_t)attr[1]->dfp.fl;
     }
-    else if( attr[1]->quant == VSI_NN_KERNEL_QUANT_ASYMM
+    else if ( attr[1]->quant == VSI_NN_KERNEL_QUANT_ASYMM
         || attr[1]->quant == VSI_NN_KERNEL_QUANT_SYMM)
     {
         src1ZP     = attr[1]->asymm.zero_point;
         src1Scale  = attr[1]->asymm.scale;
     }
 
-    if( attr[2]->quant == VSI_NN_KERNEL_QUANT_DFP )
+    if ( attr[2]->quant == VSI_NN_KERNEL_QUANT_DFP )
     {
         out_fl = (uint8_t)attr[2]->dfp.fl;
         if (out_fl > 0)
@@ -224,7 +224,7 @@ DEF_KERNEL_INITIALIZER(_minimum_initializer)
         }
         dstZP = 0;
     }
-    else if( attr[2]->quant == VSI_NN_KERNEL_QUANT_ASYMM
+    else if ( attr[2]->quant == VSI_NN_KERNEL_QUANT_ASYMM
         || attr[2]->quant == VSI_NN_KERNEL_QUANT_SYMM)
     {
         dstZP     = attr[2]->asymm.zero_point;
@@ -241,7 +241,8 @@ DEF_KERNEL_INITIALIZER(_minimum_initializer)
     pack_key = _PACK_SELECT_KEY( attr[0]->dtype,
             attr[1]->dtype, attr[2]->dtype );
 
-    if( attr[2]->dtype == F16 || attr[2]->dtype == I16 )
+    if ( (attr[2]->dtype == F16 || attr[2]->dtype == I16)
+        || ((attr[2]->dtype == I8 || attr[2]->dtype == U8) && (attr[0]->dtype == F16 && attr[1]->dtype == F16)) )
     {
         gpu_param.global_scale[0] = 8;
         gpu_param.global_scale[1] = 1;
@@ -317,7 +318,7 @@ DEF_KERNEL_INITIALIZER(_minimum_initializer)
                     "uniConvertI8toI8_0_part1_2x8", &uniConvertI8toI8_0_part1_2x8 );
             CHECK_STATUS_FAIL_GOTO(status, final );
 
-            if( attr[1]->dtype == F16 )
+            if ( attr[1]->dtype == F16 )
             {
                 gpu_dp_inst_t uinConvertFp16ToInt8_2x8 = {{
                     0x11111111, // TCfg
@@ -436,7 +437,7 @@ DEF_KERNEL_INITIALIZER(_minimum_initializer)
                 CHECK_STATUS_FAIL_GOTO(status, final );
             }
 
-            if( attr[1]->dtype == F16 )
+            if ( attr[1]->dtype == F16 )
             {
                 gpu_dp_inst_t uniConvertFp16toU8_2x8 = {{
                     0xdddddddd, // TCfg
@@ -575,7 +576,7 @@ DEF_KERNEL_INITIALIZER(_minimum_initializer)
                 0x00000001, 0x00000000, 0x00000001, 0x00000000, 0x00000001, 0x00000000, 0x00000001, 0x00000000 // Constant
             }, GPU_DP_TYPE_16 };
 
-            if( attr[2]->quant == VSI_NN_KERNEL_QUANT_ASYMM
+            if ( attr[2]->quant == VSI_NN_KERNEL_QUANT_ASYMM
                 || attr[2]->quant == VSI_NN_KERNEL_QUANT_SYMM)
             {
                 dstScale  = 1.0f / dstScale;
@@ -680,14 +681,14 @@ static vsi_status _query_kernel
     output_dtype = vsi_nn_kernel_map_dtype( outputs[0]->attr.dtype.vx_type );
     key = HASH_MINIMUM_KEY( input0_dtype, input1_dtype, output_dtype, image_2d );
 
-    for( i = 0; i < _cnt_of_array(kernel_map); i ++ )
+    for ( i = 0; i < _cnt_of_array(kernel_map); i ++ )
     {
-        if( kernel_map[i].key == key )
+        if ( kernel_map[i].key == key )
         {
             break;
         }
     }
-    if( i < _cnt_of_array(kernel_map) )
+    if ( i < _cnt_of_array(kernel_map) )
     {
         snprintf( kernel->info.name, VX_MAX_KERNEL_NAME, "%s",  kernel_map[i].function_name );
         kernel->info.parameters = kernel_param_def;
@@ -722,14 +723,14 @@ static vsi_nn_kernel_node_t _setup
     vsi_nn_type_e dtype1 = inputs[0]->attr.dtype.vx_type;
     vsi_nn_type_e dtype2 = inputs[1]->attr.dtype.vx_type;
 
-    if( !vsi_nn_kernel_gpu_check_shape( (int32_t*)outputs[0]->attr.size,
+    if ( !vsi_nn_kernel_gpu_check_shape( (int32_t*)outputs[0]->attr.size,
                 outputs[0]->attr.dim_num ) )
     {
         return NULL;
     }
 
     // Reorder tensor
-    if( dtype1 != dtype2 && dtype1 == VSI_NN_TYPE_FLOAT16 )
+    if ( dtype1 != dtype2 && dtype1 == VSI_NN_TYPE_FLOAT16 )
     {
         int32_t order[2] = {1, 0};
         vsi_nn_reorder_tensor( inputs, order, 2, tmp_inputs );
@@ -741,10 +742,10 @@ static vsi_nn_kernel_node_t _setup
 
     image_2d = (outputs[0]->attr.dim_num == 2);
     status = _query_kernel( tmp_inputs, outputs, image_2d, kernel );
-    if( VSI_SUCCESS == status)
+    if ( VSI_SUCCESS == status )
     {
         node = vsi_nn_kernel_create_node( graph, kernel );
-        if( node )
+        if ( node )
         {
             /* Pass parameters to node. */
             vsi_nn_kernel_node_pack_io( tmp_params, _EVIS_PARAM_NUM,
