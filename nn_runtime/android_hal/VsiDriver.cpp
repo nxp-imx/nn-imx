@@ -859,9 +859,35 @@ bool VsiDriver::isWeightMd5Matched(const HalPlatform::Operation& operation,
         decltype(weight.dimensions) match_shape_2 = {64, 9, 9, 3};
         // unet
         decltype(weight.dimensions) match_shape_3 = {4, 4, 4, 12};
+        // mobilenet v1 0.25 128
+        decltype(weight.dimensions) mbv1_128 = {1001, 1, 1, 256};
+        // mobilenet v1 0.5 160
+        decltype(weight.dimensions) mbv1_160 = {1001, 1, 1, 512};
+        // mobilenet v1_0.75_192
+        decltype(weight.dimensions) mbv1_192 = {1001, 1, 1, 768};
+        // mobilenet_v1_1.0_224
+        decltype(weight.dimensions) mbv1_224 = {1001, 1, 1, 1024};
+        // mobilenet_v2_0.75_192
+        decltype(weight.dimensions) mbv2_192 = {1001, 1, 1, 1280};
 
-        if (shape == match_shape_0 || shape == match_shape_1 || shape == match_shape_2 ||
-            shape == match_shape_3) {
+        std::list<decltype(weight.dimensions)>
+            shape_filter;  // Match shape first to save cost on md5 caculation
+        shape_filter.push_back(match_shape_0);
+        shape_filter.push_back(match_shape_1);
+        shape_filter.push_back(match_shape_2);
+        shape_filter.push_back(match_shape_2);
+        shape_filter.push_back(mbv1_128);
+        shape_filter.push_back(mbv1_160);
+        shape_filter.push_back(mbv1_192);
+        shape_filter.push_back(mbv1_224);
+        shape_filter.push_back(mbv2_192);
+
+        bool shape_matched = std::any_of(
+            shape_filter.begin(),
+            shape_filter.end(),
+            [&shape](const decltype(weight.dimensions)& elem) { return shape == elem; });
+
+        if (shape_matched) {
             struct VsiRTInfo rt;
             const char* weight_data =
                 reinterpret_cast<const char*>(getOperandDataPtr(model, weight, rt));
@@ -870,6 +896,9 @@ bool VsiDriver::isWeightMd5Matched(const HalPlatform::Operation& operation,
             if (std::find(block_list.begin(), block_list.end(), md5) != block_list.end()) {
                 LOG(INFO) << "MD5 matched.";
                 return true;
+            } else {  // keep it for further debug
+                // LOG(INFO) << "Debug"<< shape[0] <<"," << shape[1] << "," << shape[2] <<","<<
+                // shape[3] << " , md5 = " << md5;
             }
         }
 
