@@ -193,6 +193,24 @@ static const std::vector<std::string> S = {
     "303C6EAA6EAEC4483B684E4D43AAD139",
     // mobilenet_v2_quant
     "0860871B70644D172A977254799C9306",
+    // mobilenet_v1_0.25_128: 1001x1x1x256
+    "D1A49E737E8C59700DC98FB4B0056BD0",
+    // mobilenet_v1_0.25_128_quant: 1001x1x1x256
+    "4310747F8368C75264E89AD2B75699C2",
+    // mobilenet_v1_0.5_160
+    "F40F00A93B0BFF0971430644493641F8",
+    // mobilenet_v1_0.5_160_quant
+    "C6406F6AB18BD32E2A8C07A8FB366C40",
+    // mobilenet_v1_0.75_192
+    "07A1A75E2F3FDB7415367B2B6A5D44D6",
+    // mobilenet_v1_0.75_192_quant
+    "74A952AF6354845236115920BD62D711",
+    // mobilenet_v1_1.0_224
+    "6A3834EE93D674E7A016C19464FA5514",
+    // mobilenet_v1_1.0_224_quant
+    "AAD0A219FB32747A68F6FEAC20126B47",
+    // mobilenet_v2_0.75_192
+    "DAAC1E40DD63B67003671E8E63B7338F",
 };
 }  // namespace model_size
 class VsiDriver : public VsiDevice {
