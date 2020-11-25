@@ -29,9 +29,9 @@
 #include <list>
 #include <string>
 
-#include "memory_pool.hpp"
-#include "types.hpp"
-#include "logging.hpp"
+#include "nnrt/memory_pool.hpp"
+#include "nnrt/types.hpp"
+#include "nnrt/logging.hpp"
 
 namespace nnrt {
 namespace op {
@@ -206,8 +206,10 @@ class Model {
     void remove_memory_reference(const mem_pool::shared_ref& ref) {
         if (!ref) return;
         auto it = std::find(mem_refs_.begin(), mem_refs_.end(), ref);
-        it->reset();
-        mem_refs_.erase(it);
+        if (it != mem_refs_.end()) {
+            it->reset();
+            mem_refs_.erase(it);
+        }
     }
 
    private:
