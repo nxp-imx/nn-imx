@@ -62,9 +62,11 @@ class NpuFullyConnectedFloatWorkload
                      ? std::make_unique<ScopedCpuTensorHandle>(*(descriptor.m_Bias))
                      : nullptr) {
         auto inputPtr = dynamic_cast<NpuTensorHandler*>(descriptor.m_Inputs[0]);
-
-        uint32_t inputOperandId =
-            this->AddOperandAndSetValue(inputPtr->GetTensorInfo(), inputPtr->GetShape(), nullptr);
+        uint32_t inputOperandId = 0;
+        if (inputPtr) {
+            inputOperandId = this->AddOperandAndSetValue(
+                inputPtr->GetTensorInfo(), inputPtr->GetShape(), nullptr);
+        }
 
         // Add weight operand
         TensorShape weightShape = m_Weight->GetShape();
@@ -145,9 +147,10 @@ class NpuFullyConnectedFloatWorkload
 
         for (int i = 0; i < outputSize; i++) {
             auto outputPtr = dynamic_cast<NpuTensorHandler*>(descriptor.m_Outputs[i]);
-
-            addOutputIndexes[i] = this->AddOperandAndSetValue(
-                outputPtr->GetTensorInfo(), outputPtr->GetShape(), nullptr);
+            if (outputPtr) {
+                addOutputIndexes[i] = this->AddOperandAndSetValue(
+                    outputPtr->GetTensorInfo(), outputPtr->GetShape(), nullptr);
+            }
         }
 
         this->AddOperation(
@@ -163,6 +166,6 @@ class NpuFullyConnectedFloatWorkload
 };
 using NpuFullyConnectedFloat32Workload = NpuFullyConnectedFloatWorkload<armnn::DataType::Float32>;
 using NpuFullyConnectedFloat16Workload = NpuFullyConnectedFloatWorkload<armnn::DataType::Float16>;
-using NpuFullyConnectedUint8Workload =
-    NpuFullyConnectedFloatWorkload<armnn::DataType::QAsymmU8>;
+using NpuFullyConnectedUint8Workload = NpuFullyConnectedFloatWorkload<armnn::DataType::QAsymmU8>;
+using NpuFullyConnectedInt8Workload = NpuFullyConnectedFloatWorkload<armnn::DataType::QAsymmS8>;
 }  // namespace armnn

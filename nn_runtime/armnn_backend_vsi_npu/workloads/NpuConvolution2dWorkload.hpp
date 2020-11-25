@@ -69,8 +69,17 @@ class NpuConvolution2dWorkload : public TNpuWorkload<Convolution2dQueueDescripto
 
         // Add filter operand
         const TensorShape& weightShape = m_Weight->GetShape();
-        const TensorInfo& weightInfo = m_Weight->GetTensorInfo();
+        TensorInfo weightInfo = m_Weight->GetTensorInfo();
         // assert(m_DataLayout == armnn::DataLayout::NHWC);
+
+        if (weightInfo.HasPerAxisQuantization()) {
+            // weight format in ArmNN: [O, H, W, I]
+            // weight format in OpenVX: [W, H, I, O]
+            // So (QuantizationDim in ArmNN == 0) equals (QuantizationDim in OpenVX == 3)
+            const unsigned int kWeightQuantizationDim4OpenVX = 3;
+            weightInfo.SetQuantizationDim(
+                armnn::Optional<unsigned int>(kWeightQuantizationDim4OpenVX));
+        }
         inputIds[1] =
             this->AddOperandAndSetValue(weightInfo, weightShape, m_Weight->GetTensor<void>());
 
@@ -107,7 +116,7 @@ class NpuConvolution2dWorkload : public TNpuWorkload<Convolution2dQueueDescripto
             }
             memset(m_FakeBiasData.data(), 0, m_FakeBiasData.size());
 
-            inputIds[2] = (this->AddOperandAndSetValue(biasInfo, biasShape, m_FakeBiasData.data()));
+            inputIds[2] = this->AddOperandAndSetValue(biasInfo, biasShape, m_FakeBiasData.data());
         }
 
         // Add padding left operand
@@ -171,4 +180,5 @@ class NpuConvolution2dWorkload : public TNpuWorkload<Convolution2dQueueDescripto
 using NpuConvolution2dFloat32Workload = NpuConvolution2dWorkload<armnn::DataType::Float32>;
 using NpuConvolution2dFloat16Workload = NpuConvolution2dWorkload<armnn::DataType::Float16>;
 using NpuConvolution2dUint8Workload = NpuConvolution2dWorkload<armnn::DataType::QAsymmU8>;
+using NpuConvolution2dInt8Workload = NpuConvolution2dWorkload<armnn::DataType::QAsymmS8>;
 }  // namespace armnn

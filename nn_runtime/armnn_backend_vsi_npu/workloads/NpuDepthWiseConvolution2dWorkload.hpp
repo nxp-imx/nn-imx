@@ -77,21 +77,16 @@ class NpuDepthWiseConvolution2dWorkload
         }
 
         TensorShape weightShape = m_Weight->GetShape();
-        const TensorInfo& weightInfo = m_Weight->GetTensorInfo();
+        TensorInfo weightInfo = m_Weight->GetTensorInfo();
 
-        // 1. Driver needs the [1, N*C, H, W] formate of weight and chooses the filter
+        // 1. Driver needs the [1, N*C, H, W] format of weight and chooses the filter
         //    as the order of batch0-channel0, batch0-channel1, batch1-channel0
         //    batch1-channel1 ... So we need to permute weight data from NCHW to CNHW and reshape
         //    weight shape to [1, N*C, H, W]
         // 2. Weight is always NCHW in armnn, we need to permute weight data from NCHW to NHWC,
         //    because all constant operand will be permuted from NHWC to NCHW
         if (m_DataLayout == armnn::DataLayout::NHWC) {
-            uint32_t dataTypeSize = 4;
-            if (weightInfo.GetDataType() == DataType::QAsymmU8) {
-                dataTypeSize = 1;
-            } else if (weightInfo.GetDataType() == DataType::Float16) {
-                dataTypeSize = 2;
-            }
+            uint32_t dataTypeSize = GetDataTypeSize(weightInfo.GetDataType());
             // swap N and C
             std::swap(weightShape[0], weightShape[1]);
             // NCHW->CNHW
@@ -105,7 +100,7 @@ class NpuDepthWiseConvolution2dWorkload
             weightShape[1] = weightShape[0] * weightShape[1];
             weightShape[0] = 1;
 
-            // permute for [1, C*N, H, W] to [1, H, W, C*N]
+            // permute from [1, H, W, C*N] to [1, C*N, H, W]
             std::swap(weightShape[1], weightShape[2]);
             std::swap(weightShape[2], weightShape[3]);
             const armnn::PermutationVector NCHWToNHWC = {0, 3, 1, 2};
@@ -114,6 +109,14 @@ class NpuDepthWiseConvolution2dWorkload
             armnnUtils::Permute(
                 weightShape, NCHWToNHWC, temp.get(), m_KernelData.get(), dataTypeSize);
 
+            if (weightInfo.HasPerAxisQuantization()) {
+                // weight format in ArmNN: [1, C*N, H, W]
+                // weight format in OpenVX: [W, H, C*N, 1]
+                // So QuantizationDim must be 2.
+                const unsigned int kWeightQuantizationDim4OpenVX = 2;
+                weightInfo.SetQuantizationDim(
+                    armnn::Optional<unsigned int>(kWeightQuantizationDim4OpenVX));
+            }
             inOperandIds.push_back(
                 this->AddOperandAndSetValue(weightInfo, weightShape, m_KernelData.get()));
         } else {
@@ -123,12 +126,7 @@ class NpuDepthWiseConvolution2dWorkload
             // NCHW->CNHW
             const armnn::PermutationVector NCHWToCNHW = {1, 0, 2, 3};
 
-            uint32_t dataTypeSize = 4;
-            if (weightInfo.GetDataType() == DataType::QAsymmU8) {
-                dataTypeSize = 1;
-            } else if (weightInfo.GetDataType() == DataType::Float16) {
-                dataTypeSize = 2;
-            }
+            uint32_t dataTypeSize = GetDataTypeSize(weightInfo.GetDataType());
             m_KernelData.reset(new uint8_t[weightInfo.GetNumBytes()]);
             armnnUtils::Permute(weightShape,
                                 NCHWToCNHW,
@@ -140,6 +138,14 @@ class NpuDepthWiseConvolution2dWorkload
             weightShape[1] = weightShape[0] * weightShape[1];
             weightShape[0] = 1;
 
+            if (weightInfo.HasPerAxisQuantization()) {
+                // weight format in ArmNN: [1, C*N, H, W]
+                // weight format in OpenVX: [W, H, C*N, 1]
+                // So QuantizationDim must be 2.
+                const unsigned int kWeightQuantizationDim4OpenVX = 2;
+                weightInfo.SetQuantizationDim(
+                    armnn::Optional<unsigned int>(kWeightQuantizationDim4OpenVX));
+            }
             inOperandIds.push_back(
                 this->AddOperandAndSetValue(weightInfo, weightShape, m_KernelData.get()));
         }
@@ -276,4 +282,6 @@ using NpuDepthWiseConvolution2dFloat16Workload =
     NpuDepthWiseConvolution2dWorkload<armnn::DataType::Float16>;
 using NpuDepthWiseConvolution2dUint8Workload =
     NpuDepthWiseConvolution2dWorkload<armnn::DataType::QAsymmU8>;
+using NpuDepthWiseConvolution2dInt8Workload =
+    NpuDepthWiseConvolution2dWorkload<armnn::DataType::QAsymmS8>;
 }  // namespace armnn

@@ -237,9 +237,12 @@ public:
                                            const WorkloadInfo& info) const override;
 
    private:
-
-    template <typename Fp16Workload, typename F32Workload, typename U8Workload, typename QueueDescriptorType>
-    std::unique_ptr<IWorkload> MakeWorkload(const QueueDescriptorType& descriptor, const WorkloadInfo& info) const;
+    template <typename Fp16Workload,
+              typename F32Workload,
+              typename U8Workload,
+              typename QueueDescriptorType>
+    std::unique_ptr<IWorkload> MakeWorkload(const QueueDescriptorType& descriptor,
+                                            const WorkloadInfo& info) const;
 };
 
 } // namespace armnn

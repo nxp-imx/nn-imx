@@ -50,6 +50,12 @@ struct FakeBiasTypeSelector<DataType::QAsymmU8> {
     static constexpr armnn::DataType value = DataType::Signed32;
 };
 
+template <>
+struct FakeBiasTypeSelector<DataType::QAsymmS8> {
+    using type = int32_t;
+    static constexpr armnn::DataType value = DataType::Signed32;
+};
+
 }
 
 #endif

@@ -142,4 +142,5 @@ class NpuActivationWorkload : public TNpuWorkload<ActivationQueueDescriptor, Dat
 using NpuActivationFloat32Workload = NpuActivationWorkload<armnn::DataType::Float32>;
 using NpuActivationFloat16Workload = NpuActivationWorkload<armnn::DataType::Float16>;
 using NpuActivationUint8Workload = NpuActivationWorkload<armnn::DataType::QAsymmU8>;
+using NpuActivationInt8Workload = NpuActivationWorkload<armnn::DataType::QAsymmS8>;
 }  // namespace armnn

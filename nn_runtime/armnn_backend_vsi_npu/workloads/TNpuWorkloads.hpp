@@ -205,6 +205,12 @@ class TNpuWorkload : public Base_t<QueueDescriptor, DataTypes...>{
             case DataType::QAsymmU8:
                 type = nnrt::OperandType::TENSOR_QUANT8_ASYMM;
                 break;
+            case DataType::QAsymmS8:
+                type = nnrt::OperandType::TENSOR_QUANT8_ASYMM_SIGNED;
+                break;
+            case DataType::QSymmS8:
+                type = nnrt::OperandType::TENSOR_QUANT8_SYMM;
+                break;
             case DataType::Signed32:
                 type = nnrt::OperandType::TENSOR_INT32;
                 break;
@@ -230,34 +236,10 @@ class TNpuWorkload : public Base_t<QueueDescriptor, DataTypes...>{
         return operandId;
     }
 
-    uint32_t AddOperandAndSetValue(const TensorInfo& info, const TensorShape& shape, const void* valueAddr) {
-        std::vector<uint32_t> dims(shape.GetNumDimensions());
-        for (unsigned int i = 0; i < shape.GetNumDimensions(); i++) {
-            dims[i] = shape[i];
-        }
-
-        uint32_t operandId{0};
-        nnrt::op::OperandPtr operand = m_LocalModel->addOperand(nullptr, &operandId);
-        {
-            auto dataType = info.GetDataType();
-            operand->type = convertToOperandType(dataType);
-            assert(operand->type != nnrt::OperandType::NONE);
-
-            operand->dimensions = dims;
-            if (info.IsQuantized()) {
-                operand->quant.scalar.scale = info.GetQuantizationScale();
-                operand->quant.scalar.zeroPoint = info.GetQuantizationOffset();
-            }
-        }
-        m_LocalModel->setOperandValue(operandId, valueAddr, info.GetNumBytes());
-
-        return operandId;
-    }
-
     uint32_t AddOperandAndSetValue(const TensorInfo& info,
                                    const TensorShape& shape,
                                    const void* valueAddr,
-                                   bool floatToInt) {
+                                   bool floatToInt = false) {
         std::vector<uint32_t> dims(shape.GetNumDimensions());
         for (unsigned int i = 0; i < shape.GetNumDimensions(); i++) {
             dims[i] = shape[i];
@@ -274,7 +256,13 @@ class TNpuWorkload : public Base_t<QueueDescriptor, DataTypes...>{
             assert(operand->type != nnrt::OperandType::NONE);
 
             operand->dimensions = dims;
-            if (info.IsQuantized()) {
+            if (info.HasPerAxisQuantization()) {
+                operand->quant.vec.channelDim = info.GetQuantizationDim().value();
+                operand->quant.vec.scale = info.GetQuantizationScales();
+                std::vector<int32_t> zeroPoint(info.GetQuantizationScales().size());
+                std::fill(zeroPoint.begin(), zeroPoint.end(), info.GetQuantizationOffset());
+                operand->quant.vec.zeroPoint = std::move(zeroPoint);
+            } else if (info.IsQuantized()) {
                 operand->quant.scalar.scale = info.GetQuantizationScale();
                 operand->quant.scalar.zeroPoint = info.GetQuantizationOffset();
             }

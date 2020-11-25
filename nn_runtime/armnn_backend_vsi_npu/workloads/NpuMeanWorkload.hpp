@@ -62,4 +62,5 @@ class NpuMeanWorkload : public TNpuWorkload<MeanQueueDescriptor, DataTypes...> {
 using NpuMeanFloat32Workload = NpuMeanWorkload<armnn::DataType::Float32>;
 using NpuMeanFloat16Workload = NpuMeanWorkload<armnn::DataType::Float16>;
 using NpuMeanUint8Workload = NpuMeanWorkload<armnn::DataType::QAsymmU8>;
+using NpuMeanInt8Workload = NpuMeanWorkload<armnn::DataType::QAsymmS8>;
 }  // namespace armnn

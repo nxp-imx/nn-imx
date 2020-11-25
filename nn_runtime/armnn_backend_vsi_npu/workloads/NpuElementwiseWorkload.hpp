@@ -65,6 +65,8 @@ using NpuAdditionFloat16Workload = NpuElementwiseWorkload<AdditionQueueDescripto
       nnrt::OperationType::ADD, armnn::DataType::Float16>;
 using NpuAdditionUint8Workload = NpuElementwiseWorkload<AdditionQueueDescriptor,
       nnrt::OperationType::ADD, armnn::DataType::QAsymmU8>;
+using NpuAdditionInt8Workload = NpuElementwiseWorkload<AdditionQueueDescriptor,
+      nnrt::OperationType::ADD, armnn::DataType::QAsymmS8>;
 
 using NpuMinimumFloat32Workload = NpuElementwiseWorkload<MinimumQueueDescriptor,
       nnrt::OperationType::MINIMUM, armnn::DataType::Float32>;
