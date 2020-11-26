@@ -57,7 +57,7 @@ bool Operand::isQuantized() const {
         case OperandType::TENSOR_QUANT8_SYMM:
         case OperandType::TENSOR_QUANT32_SYMM:
         case OperandType::TENSOR_QUANT8_SYMM_PER_CHANNEL:
-        case OperandType::TENSOR_QUANT_INT8_ASYMM:
+        case OperandType::TENSOR_QUANT8_ASYMM_SIGNED:
             return true;
         default:
             break;
@@ -91,7 +91,7 @@ void Operand::cloneQuantParams(Operand* operand) {
             quant.scalar.scale = operand->quant.scalar.scale;
             break;
         case OperandType::TENSOR_QUANT8_ASYMM:
-        case OperandType::TENSOR_QUANT_INT8_ASYMM:
+        case OperandType::TENSOR_QUANT8_ASYMM_SIGNED:
             quant.scalar.scale = operand->quant.scalar.scale;
             quant.scalar.zeroPoint = operand->quant.scalar.zeroPoint;
             break;
