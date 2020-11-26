@@ -33,7 +33,6 @@
 #include "vsi_nn_tensor.h"
 #include "utils/vsi_nn_util.h"
 #include "kernel/vsi_nn_kernel.h"
-
 /*
  Declare number of input and output.
  */
@@ -85,8 +84,11 @@ static vsi_bool op_check
     vsi_nn_tensor_t ** outputs
     )
 {
-    /*TODO: Check tensor shapes. */
-    return TRUE;
+    vsi_bool ret = FALSE;
+
+    ret = vsi_nn_OpCheck(VSI_NN_OP_CONV2D, self, inputs, outputs);
+
+    return ret;
 } /* op_check() */
 
 static vsi_bool op_setup

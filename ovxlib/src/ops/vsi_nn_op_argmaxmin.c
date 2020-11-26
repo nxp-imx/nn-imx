@@ -35,6 +35,7 @@
 #include "utils/vsi_nn_math.h"
 #include "kernel/vsi_nn_kernel.h"
 #include "kernel/vsi_nn_kernel_gpu_shape_optimize.h"
+#include "utils/vsi_nn_constraint_check.h"
 
 static vsi_status _argmaxmin_op_compute
     (
@@ -195,6 +196,42 @@ static vsi_status _argmaxmin_op_init
     return status;
 } /* _argmaxmin_op_init() */
 
+
+static vsi_bool op_check
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs
+    )
+{
+    /* check inputs outputs data type */
+    BEGIN_IO_TYPE_DECL(ARGMIN, 1, 1)
+        IO_TYPE(D_F16,  D_U8)
+        IO_TYPE(D_F16,  D_I16)
+        IO_TYPE(D_BF16, D_U8)
+        IO_TYPE(D_BF16, D_I16)
+        IO_TYPE(D_I8|Q_DFP, D_U8)
+        IO_TYPE(D_I8|Q_DFP, D_I16)
+        IO_TYPE(D_U8|Q_ASYM, D_U8)
+        IO_TYPE(D_U8|Q_ASYM, D_I16)
+        IO_TYPE(D_I16|Q_DFP, D_U8)
+        IO_TYPE(D_I16|Q_DFP, D_I16)
+        IO_TYPE(D_F32, D_I32)
+        IO_TYPE(D_F16, D_I32)
+        IO_TYPE(D_I32, D_I32)
+        IO_TYPE(D_U8|Q_ASYM, D_I32)
+    END_IO_TYPE_DECL(ARGMIN)
+    if(!VALIDATE_OP_IO_TYPES(ARGMIN, self, inputs, self->input.num, outputs, self->output.num)) {
+        char* desc = generate_op_io_types_desc(inputs,
+                self->input.num, outputs, self->output.num);
+        VSILOGE("Inputs/Outputs data type not support: %s", desc);
+        destroy_op_io_types_desc(desc);
+        return FALSE;
+    }
+
+    return TRUE;
+} /* op_check() */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -231,7 +268,7 @@ DEF_OP_REG  \
     /* init       */ op_init_##kernel_name, \
     /* compute    */ op_compute_##kernel_name, \
     /* deinit     */ vsi_nn_op_common_deinit, \
-    /* check      */ NULL, \
+    /* check      */ op_check, \
     /* setup      */ op_setup_##kernel_name, \
     /* optimize   */ NULL, \
     /* input_num  */ 1, \

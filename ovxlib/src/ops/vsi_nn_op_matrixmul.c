@@ -33,6 +33,7 @@
 #include "vsi_nn_error.h"
 #include "utils/vsi_nn_util.h"
 #include "kernel/vsi_nn_kernel.h"
+#include "utils/vsi_nn_constraint_check.h"
 
 #define _ARG_NUM            (7)
 #define _INPUT_NUM          (2)
@@ -86,6 +87,37 @@ static vsi_bool op_check
     )
 {
     vx_bool status = TRUE;
+
+    BEGIN_IO_TYPE_DECL(MATRIXMUL, 2, 1)
+        IO_TYPE(D_U8|Q_ASYM,  D_U8|Q_ASYM,  D_U8|Q_ASYM)
+        IO_TYPE(D_U8|Q_ASYM,  D_U8|Q_ASYM,  D_F16)
+        IO_TYPE(D_U8|Q_ASYM,  D_F16,  D_U8|Q_ASYM)
+        IO_TYPE(D_U8|Q_ASYM,  D_F16,  D_F16)
+        IO_TYPE(D_I8|Q_DFP,  D_I8|Q_DFP,  D_I8|Q_DFP)
+        IO_TYPE(D_I8|Q_DFP,  D_I8|Q_DFP,  D_F16)
+        IO_TYPE(D_I8|Q_DFP,  D_F16,  D_I8|Q_DFP)
+        IO_TYPE(D_I8|Q_DFP,  D_F16,  D_F16)
+        IO_TYPE(D_I16|Q_DFP,  D_I16|Q_DFP,  D_I16|Q_DFP)
+        IO_TYPE(D_I16|Q_DFP,  D_I16|Q_DFP,  D_F16)
+        IO_TYPE(D_I16|Q_DFP,  D_F16,  D_I16|Q_DFP)
+        IO_TYPE(D_I16|Q_DFP,  D_F16,  D_F16)
+        IO_TYPE(D_F16,  D_U8|Q_ASYM,  D_F16)
+        IO_TYPE(D_F16,  D_I16|Q_DFP,  D_F16)
+        IO_TYPE(D_F16,  D_I8|Q_DFP,   D_F16)
+        IO_TYPE(D_F16,  D_U8|Q_ASYM,  D_U8|Q_ASYM)
+        IO_TYPE(D_F16,  D_F16,  D_F16)
+        IO_TYPE(D_F32,  D_F32,  D_F32)
+        IO_TYPE(D_F16,  D_F16,  D_I16|Q_DFP)
+        IO_TYPE(D_F16,  D_F16,  D_I8|Q_DFP)
+        IO_TYPE(D_F16,  D_F16,  D_U8|Q_ASYM)
+    END_IO_TYPE_DECL(MATRIXMUL)
+    if(!VALIDATE_OP_IO_TYPES(MATRIXMUL, self, inputs, self->input.num, outputs, self->output.num)) {
+        char* desc = generate_op_io_types_desc(inputs,
+                self->input.num, outputs, self->output.num);
+        VSILOGE("Inputs/Outputs data type not support: %s", desc);
+        destroy_op_io_types_desc(desc);
+        return FALSE;
+    }
 
     if (self->nn_param.matrixmul.transpose[0] == FALSE
         && self->nn_param.matrixmul.transpose[1] == FALSE

@@ -36,6 +36,7 @@
 #include "utils/vsi_nn_util.h"
 #include "utils/vsi_nn_link_list.h"
 #include "vsi_nn_internal_node.h"
+#include "utils/vsi_nn_constraint_check.h"
 
 static vsi_status op_compute
     (
@@ -130,7 +131,25 @@ static vsi_bool op_check
             break;
         }
     }
-
+    for(i = 0; i < num; i++)
+    {
+        BEGIN_IO_TYPE_DECL(SPLIT, 1, 1)
+            IO_TYPE(D_F16,  D_F16)
+            IO_TYPE(D_I8|Q_DFP,  D_I8|Q_DFP)
+            IO_TYPE(D_I16|Q_DFP,  D_I16|Q_DFP)
+            IO_TYPE(D_U8|Q_ASYM,  D_U8|Q_ASYM)
+            IO_TYPE(D_F32,  D_F32)
+            IO_TYPE(D_F32,  D_BF16)
+            IO_TYPE(D_BF16, D_F32)
+            IO_TYPE(D_I32,  D_I32)
+        END_IO_TYPE_DECL(SPLIT)
+        if(!VALIDATE_OP_IO_TYPES(SPLIT, self, inputs, 1, &outputs[i], 1)) {
+            char* desc = generate_op_io_types_desc(inputs, 1, &outputs[i], 1);
+            VSILOGE("Inputs/Outputs data type not support: %s", desc);
+            destroy_op_io_types_desc(desc);
+            return FALSE;
+        }
+    }
     return ret;
 } /* op_check() */
 

@@ -69,7 +69,11 @@ static vsi_bool op_check
     vsi_nn_tensor_t ** outputs
     )
 {
-    return TRUE;
+    vsi_bool ret = FALSE;
+
+    ret = vsi_nn_OpCheck(VSI_NN_OP_DATACONVERT, self, inputs, outputs);
+
+    return ret;
 } /* op_check() */
 
 static vsi_status op_optimize

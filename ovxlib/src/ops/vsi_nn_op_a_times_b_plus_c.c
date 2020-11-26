@@ -38,6 +38,7 @@
 #include "utils/vsi_nn_math.h"
 #include "kernel/vsi_nn_kernel.h"
 #include "kernel/vsi_nn_kernel_eltwise.h"
+#include "utils/vsi_nn_constraint_check.h"
 
 static vsi_status op_compute
     (
@@ -67,8 +68,28 @@ static vsi_bool op_check
     vsi_nn_tensor_t ** outputs
     )
 {
-    //TODO: Check tensor shapes
-    return TRUE;
+    vsi_nn_tensor_t * a_times_b[2] = {NULL};
+    vsi_nn_tensor_attr_t attr;
+    vsi_bool ret = FALSE;
+
+    memset(&attr, 0, sizeof(attr));
+    memcpy(attr.size, outputs[0]->attr.size,  VSI_NN_MAX_DIM_NUM * sizeof( uint32_t ));
+    attr.dim_num = outputs[0]->attr.dim_num;
+    attr.vtl = TRUE;
+    attr.dtype.vx_type = VSI_NN_TYPE_FLOAT16;
+    a_times_b[0] = vsi_nn_CreateTensor(self->graph, &attr);
+    ret = vsi_nn_OpCheck(VSI_NN_OP_MULTIPLY, self, inputs, a_times_b);
+    if (!ret)
+    {
+        goto final;
+    }
+
+    a_times_b[1] = inputs[2];
+    ret = vsi_nn_OpCheck(VSI_NN_OP_ADD, self, a_times_b, outputs);
+final:
+    if (a_times_b[0]) vsi_nn_ReleaseTensor(&a_times_b[0]);
+    return ret;
+
 } /* op_check() */
 
 #ifdef __cplusplus
