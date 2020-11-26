@@ -486,6 +486,9 @@ vsi_nn_type_e OvxlibDelegate::mapTensorType(OperandType code) {
         case OperandType::TENSOR_QUANT8_ASYMM:
             dtype = VSI_NN_TYPE_UINT8;
             break;
+        case OperandType::TENSOR_QUANT8_ASYMM_SIGNED:
+            dtype = VSI_NN_TYPE_INT8;
+            break;
         case OperandType::TENSOR_QUANT8_SYMM:
             dtype = VSI_NN_TYPE_INT8;
             break;
