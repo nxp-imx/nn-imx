@@ -92,9 +92,16 @@ static node_io_signature_t* _get_op_signature
     int i = 0;
     int reg_io_count = op_constraint_reg->reg_input_num +
             op_constraint_reg->reg_output_num;
-    node_io_signature_t* item = malloc(sizeof(node_io_signature_t) + \
-        (reg_io_count - 1) * sizeof(vsi_nn_type_e));
+    node_io_signature_t* item = NULL;
 
+    if((inputs_num + outputs_num) > reg_io_count) {
+        VSILOGE("Inputs/outputs count greater than registered inputs/outputs count: %d > %d",
+                (inputs_num + outputs_num), reg_io_count);
+        return NULL;
+    }
+
+    item = malloc(sizeof(node_io_signature_t) + \
+        (reg_io_count - 1) * sizeof(vsi_nn_type_e));
     item->count = inputs_num + outputs_num;
     memset(&item->types[0], 0x00, reg_io_count * sizeof(vsi_nn_type_e));
 
