@@ -57,20 +57,14 @@ static vsi_status op_compute
     params.base.rounding = self->vx_param.down_scale_size_rounding;
     params.stride_x = self->nn_param.pool.stride[0];
     params.stride_y = self->nn_param.pool.stride[1];
-    if( NULL == outputs[1] )
-    {
-        self->n = vxPoolingLayer2(
-            self->graph->g,
-            inputs[0]->t,
-            (vx_nn_pooling_params_t *)&params,
-            sizeof( params ),
-            outputs[0]->t
-            );
-    }
-    else
-    {
-        // TODO:
-    }
+
+    self->n = vxPoolingLayer2(
+        self->graph->g,
+        inputs[0]->t,
+        (vx_nn_pooling_params_t *)&params,
+        sizeof( params ),
+        outputs[0]->t
+        );
 
     if( NULL != self->n )
     {
@@ -188,7 +182,7 @@ DEF_OP_REG
     /* setup      */ op_setup,
     /* optimize   */ NULL,
     /* input_num  */ 1,
-    /* output_num */ 2
+    /* output_num */ 1
     );
 #ifdef __cplusplus
 }
