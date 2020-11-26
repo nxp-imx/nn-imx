@@ -37,6 +37,7 @@
 #include "utils/vsi_nn_math.h"
 #include "client/vsi_nn_vxkernel.h"
 #include "libnnext/vx_lib_nnext.h"
+#include "utils/vsi_nn_constraint_check.h"
 
 #define _ARG_NUM            (2)
 #define _INPUT_NUM          (1)
@@ -326,6 +327,26 @@ static vsi_bool op_check
         VSILOGE("Block size can't be less than zero in space to depth");
         return FALSE;
     }
+
+    {
+        BEGIN_IO_TYPE_DECL(SPACE2DEPTH, 1, 1)
+            IO_TYPE(D_F16,  D_F16)
+            IO_TYPE(D_I8|Q_DFP,  D_I8|Q_DFP)
+            IO_TYPE(D_I16|Q_DFP,  D_I16|Q_DFP)
+            IO_TYPE(D_U8|Q_ASYM,  D_U8|Q_ASYM)
+            IO_TYPE(D_F32,  D_F32)
+            IO_TYPE(D_F32,  D_BF16)
+            IO_TYPE(D_BF16, D_F32)
+        END_IO_TYPE_DECL(SPACE2DEPTH)
+        if(!VALIDATE_OP_IO_TYPES(SPACE2DEPTH, self, inputs, self->input.num, outputs, self->output.num)) {
+            char* desc = generate_op_io_types_desc(inputs,
+                    self->input.num, outputs, self->output.num);
+            VSILOGE("Inputs/Outputs data type not support: %s", desc);
+            destroy_op_io_types_desc(desc);
+            return FALSE;
+        }
+    }
+
     return TRUE;
 } /* op_check() */
 

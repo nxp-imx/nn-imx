@@ -32,6 +32,7 @@
 #include "vsi_nn_tensor.h"
 #include "utils/vsi_nn_util.h"
 #include "kernel/vsi_nn_kernel.h"
+#include "utils/vsi_nn_constraint_check.h"
 
 #define _INPUT_NUM          (2)
 #define _OUTPUT_NUM         (1)
@@ -81,7 +82,19 @@ static vsi_bool op_check
     vsi_nn_tensor_t ** outputs
     )
 {
-    /*TODO: Check tensor shapes. */
+    BEGIN_IO_TYPE_DECL(PRE_PROCESS_NV12, 2, 1)
+        IO_TYPE(D_U8|Q_ASYM, D_U8|Q_ASYM, D_U8|Q_ASYM)
+        IO_TYPE(D_U8|Q_ASYM, D_U8|Q_ASYM, D_I8|Q_DFP)
+        IO_TYPE(D_U8|Q_ASYM, D_U8|Q_ASYM, D_I16|Q_DFP)
+        IO_TYPE(D_U8|Q_ASYM, D_U8|Q_ASYM, D_F16)
+    END_IO_TYPE_DECL(PRE_PROCESS_NV12)
+    if(!VALIDATE_OP_IO_TYPES(PRE_PROCESS_NV12, self, inputs, self->input.num, outputs, self->output.num)) {
+        char* desc = generate_op_io_types_desc(inputs,
+                self->input.num, outputs, self->output.num);
+        VSILOGE("Inputs/Outputs data type not support: %s", desc);
+        destroy_op_io_types_desc(desc);
+        return FALSE;
+    }
     return TRUE;
 } /* op_check() */
 

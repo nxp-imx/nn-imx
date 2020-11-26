@@ -36,6 +36,7 @@
 #include "vsi_nn_log.h"
 #include "client/vsi_nn_vxkernel.h"
 #include "vsi_nn_internal_node.h"
+#include "utils/vsi_nn_constraint_check.h"
 
 #define _ARG_NUM            (3)
 #define _INPUT_NUM          (1)
@@ -61,8 +62,11 @@ static vsi_bool op_check
     vsi_nn_tensor_t ** outputs
     )
 {
-    //TODO: Check tensor shapes.
-    return TRUE;
+    vsi_bool ret = FALSE;
+
+    ret = vsi_nn_OpCheck(VSI_NN_OP_STRIDED_SLICE, self, inputs, outputs);
+
+    return ret;
 } /* op_check() */
 
 static vsi_status op_optimize

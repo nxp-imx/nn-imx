@@ -36,6 +36,7 @@
 #include "vsi_nn_prv.h"
 #include "vsi_nn_log.h"
 #include "client/vsi_nn_vxkernel.h"
+#include "utils/vsi_nn_constraint_check.h"
 
 #define _ARG_NUM            (1)
 #define _INPUT_NUM          (1)
@@ -306,7 +307,35 @@ static vsi_bool op_check
     vsi_nn_tensor_t ** outputs
     )
 {
-    /*TODO: Check tensor shapes. */
+    BEGIN_IO_TYPE_DECL(REVERSE, 1, 1)
+        IO_TYPE(D_F16,  D_F16)
+        IO_TYPE(D_U8|Q_DFP,   D_U8|Q_DFP)
+        IO_TYPE(D_I8|Q_DFP,   D_I8|Q_DFP)
+        IO_TYPE(D_I16|Q_DFP,  D_I16|Q_DFP)
+        IO_TYPE(D_I32|Q_DFP,  D_I32|Q_DFP)
+        IO_TYPE(D_U8|Q_ASYM,  D_U8|Q_ASYM)
+        IO_TYPE(D_I8|Q_ASYM,  D_I8|Q_ASYM)
+        IO_TYPE(D_I16|Q_ASYM, D_I16|Q_ASYM)
+        IO_TYPE(D_I32|Q_ASYM, D_I32|Q_ASYM)
+        IO_TYPE(D_U8|Q_SYM_PC,   D_U8|Q_SYM_PC)
+        IO_TYPE(D_I8|Q_SYM_PC,   D_I8|Q_SYM_PC)
+        IO_TYPE(D_I16|Q_SYM_PC,  D_I16|Q_SYM_PC)
+        IO_TYPE(D_I32|Q_SYM_PC,  D_I32|Q_SYM_PC)
+        IO_TYPE(D_U8,   D_U8)
+        IO_TYPE(D_I8,   D_I8)
+        IO_TYPE(D_I16,  D_I16)
+        IO_TYPE(D_I32,  D_I32)
+        IO_TYPE(D_F32,  D_F32)
+        IO_TYPE(D_F32,  D_BF16)
+        IO_TYPE(D_BF16, D_F32)
+    END_IO_TYPE_DECL(REVERSE)
+    if(!VALIDATE_OP_IO_TYPES(REVERSE, self, inputs, self->input.num, outputs, self->output.num)) {
+        char* desc = generate_op_io_types_desc(inputs,
+                self->input.num, outputs, self->output.num);
+        VSILOGE("Inputs/Outputs data type not support: %s", desc);
+        destroy_op_io_types_desc(desc);
+        return FALSE;
+    }
     return TRUE;
 } /* op_check() */
 

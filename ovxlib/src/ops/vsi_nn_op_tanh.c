@@ -67,8 +67,11 @@ static vsi_bool op_check
     vsi_nn_tensor_t ** outputs
     )
 {
-    //TODO: Check tensor shapes.
-    return TRUE;
+    vsi_bool ret = FALSE;
+
+    ret = vsi_nn_OpCheck(VSI_NN_OP_RSQRT, self, inputs, outputs);
+
+    return ret;
 } /* op_check() */
 
 #ifdef __cplusplus

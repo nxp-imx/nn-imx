@@ -36,6 +36,7 @@
 #include "utils/vsi_nn_math.h"
 #include "kernel/vsi_nn_kernel.h"
 #include "kernel/vsi_nn_kernel_eltwise.h"
+#include "utils/vsi_nn_constraint_check.h"
 
 static vsi_status _eltwise_op_compute
     (
@@ -183,6 +184,372 @@ vsi_bool vsi_nn_op_eltwise_setup
     return ret;
 } /* vsi_nn_op_eltwise_setup() */
 
+
+static vsi_bool op_check_minimum
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs
+    )
+{
+    /* check inputs outputs data type */
+    BEGIN_IO_TYPE_DECL(MINIMUM, 2, 1)
+        IO_TYPE(D_F16,  D_F16,  D_F16)
+        IO_TYPE(D_BF16, D_BF16, D_BF16)
+        IO_TYPE(D_F16,  D_F16,  D_I8|Q_DFP)
+        IO_TYPE(D_I8|Q_DFP,   D_I8|Q_DFP,   D_I8|Q_DFP)
+        IO_TYPE(D_U8|Q_ASYM,  D_U8|Q_ASYM,  D_U8|Q_ASYM)
+        IO_TYPE(D_I16|Q_DFP,  D_I16|Q_DFP,  D_I16|Q_DFP)
+        IO_TYPE(D_F16,  D_F16,  D_U8|Q_ASYM)
+        IO_TYPE(D_I8|Q_DFP,   D_F16,  D_I8|Q_DFP)
+        IO_TYPE(D_I8|Q_DFP,   D_F16,  D_F16)
+        IO_TYPE(D_U8|Q_ASYM,  D_F16,  D_U8|Q_ASYM)
+        IO_TYPE(D_U8|Q_ASYM,  D_F16,  D_F16)
+        IO_TYPE(D_I16|Q_DFP,  D_F16,  D_I16|Q_DFP)
+        IO_TYPE(D_I16|Q_DFP,  D_F16,  D_F16)
+        IO_TYPE(D_F16,  D_F16,  D_I16|Q_DFP)
+        IO_TYPE(D_F32,  D_F32,  D_F32)
+        IO_TYPE(D_I32,  D_I32,  D_I32)
+    END_IO_TYPE_DECL(MINIMUM)
+    if(!VALIDATE_OP_IO_TYPES(MINIMUM, self, inputs, self->input.num, outputs, self->output.num)) {
+        char* desc = generate_op_io_types_desc(inputs,
+                self->input.num, outputs, self->output.num);
+        VSILOGE("Inputs/Outputs data type not support: %s", desc);
+        destroy_op_io_types_desc(desc);
+        return FALSE;
+    }
+
+    return TRUE;
+} /* op_check() */
+
+static vsi_bool op_check_maximum
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs
+    )
+{
+    /* check inputs outputs data type */
+    BEGIN_IO_TYPE_DECL(MAXIMUM, 2, 1)
+        IO_TYPE(D_F16,  D_F16,  D_F16)
+        IO_TYPE(D_BF16, D_BF16, D_BF16)
+        IO_TYPE(D_F16,  D_F16,  D_I8|Q_DFP)
+        IO_TYPE(D_I8|Q_DFP,   D_I8|Q_DFP,   D_I8|Q_DFP)
+        IO_TYPE(D_U8|Q_ASYM,  D_U8|Q_ASYM,  D_U8|Q_ASYM)
+        IO_TYPE(D_I16|Q_DFP,  D_I16|Q_DFP,  D_I16|Q_DFP)
+        IO_TYPE(D_F16,  D_F16,  D_U8|Q_ASYM)
+        IO_TYPE(D_I8|Q_DFP,   D_F16,  D_I8|Q_DFP)
+        IO_TYPE(D_I8|Q_DFP,   D_F16,  D_F16)
+        IO_TYPE(D_U8|Q_ASYM,  D_F16,  D_U8|Q_ASYM)
+        IO_TYPE(D_U8|Q_ASYM,  D_F16,  D_F16)
+        IO_TYPE(D_I16|Q_DFP,  D_F16,  D_I16|Q_DFP)
+        IO_TYPE(D_I16|Q_DFP,  D_F16,  D_F16)
+        IO_TYPE(D_F16,  D_F16,  D_I16|Q_DFP)
+        IO_TYPE(D_F32,  D_F32,  D_F32)
+        IO_TYPE(D_I32,  D_I32,  D_I32)
+    END_IO_TYPE_DECL(MAXIMUM)
+    if(!VALIDATE_OP_IO_TYPES(MAXIMUM, self, inputs, self->input.num, outputs, self->output.num)) {
+        char* desc = generate_op_io_types_desc(inputs,
+                self->input.num, outputs, self->output.num);
+        VSILOGE("Inputs/Outputs data type not support: %s", desc);
+        destroy_op_io_types_desc(desc);
+        return FALSE;
+    }
+
+    return TRUE;
+} /* op_check() */
+
+static vsi_bool op_check_pow
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs
+    )
+{
+    /* check inputs outputs data type */
+    BEGIN_IO_TYPE_DECL(POW, 2, 1)
+        IO_TYPE(D_F16,  D_F16,  D_F16)
+        IO_TYPE(D_BF16, D_BF16, D_BF16)
+        IO_TYPE(D_F16,  D_F16,  D_U8|Q_ASYM)
+        IO_TYPE(D_F16,  D_U8|Q_ASYM,  D_F16)
+        IO_TYPE(D_F16,  D_U8|Q_ASYM,  D_U8|Q_ASYM)
+        IO_TYPE(D_F16,  D_F16,  D_I8|Q_DFP)
+        IO_TYPE(D_F16,  D_I8|Q_DFP,  D_F16)
+        IO_TYPE(D_F16,  D_I8|Q_DFP,  D_I8|Q_DFP)
+        IO_TYPE(D_F16,  D_F16,  D_I16|Q_DFP)
+        IO_TYPE(D_F16,  D_I16|Q_DFP,  D_F16)
+        IO_TYPE(D_F16,  D_I16|Q_DFP,  D_I16|Q_DFP)
+        IO_TYPE(D_U8|Q_ASYM,  D_F16,  D_F16)
+        IO_TYPE(D_U8|Q_ASYM,  D_F16,  D_U8|Q_ASYM)
+        IO_TYPE(D_U8|Q_ASYM,  D_U8|Q_ASYM,  D_U8|Q_ASYM)
+        IO_TYPE(D_U8|Q_ASYM,  D_U8|Q_ASYM,  D_F16)
+        IO_TYPE(D_I8|Q_DFP,  D_F16,  D_F16)
+        IO_TYPE(D_I8|Q_DFP,  D_F16,  D_I8|Q_DFP)
+        IO_TYPE(D_I8|Q_DFP,  D_I8|Q_DFP,  D_I8|Q_DFP)
+        IO_TYPE(D_I16|Q_DFP,  D_F16,  D_F16)
+        IO_TYPE(D_I16|Q_DFP,  D_F16,  D_I16|Q_DFP)
+        IO_TYPE(D_I16|Q_DFP,  D_I16|Q_DFP,  D_I16|Q_DFP)
+        IO_TYPE(D_F32,  D_F32,  D_F32)
+    END_IO_TYPE_DECL(POW)
+    if(!VALIDATE_OP_IO_TYPES(POW, self, inputs, self->input.num, outputs, self->output.num)) {
+        char* desc = generate_op_io_types_desc(inputs,
+                self->input.num, outputs, self->output.num);
+        VSILOGE("Inputs/Outputs data type not support: %s", desc);
+        destroy_op_io_types_desc(desc);
+        return FALSE;
+    }
+
+    return TRUE;
+} /* op_check() */
+
+
+static vsi_bool op_check_add
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs
+    )
+{
+    /* check inputs outputs data type */
+    BEGIN_IO_TYPE_DECL(ADD, 2, 1)
+        IO_TYPE(D_BF16, D_BF16, D_BF16)
+        IO_TYPE(D_F32,  D_F32,  D_BF16)
+        IO_TYPE(D_BF16, D_BF16, D_F32)
+        IO_TYPE(D_F16,  D_F16,  D_F16)
+        IO_TYPE(D_F16,  D_F16,  D_I16|Q_DFP)
+        IO_TYPE(D_F16,  D_F16,  D_I8|Q_DFP)
+        IO_TYPE(D_F16,  D_F16,  D_U8|Q_ASYM)
+        IO_TYPE(D_F16,  D_I16|Q_DFP,  D_F16)
+        IO_TYPE(D_F16,  D_I8|Q_DFP,   D_F16)
+        IO_TYPE(D_F16,  D_U8|Q_ASYM,  D_F16)
+        IO_TYPE(D_F16,  D_I16|Q_DFP,  D_I16|Q_DFP)
+        IO_TYPE(D_F16,  D_I8|Q_DFP,   D_I8|Q_DFP)
+        IO_TYPE(D_F16,  D_U8|Q_ASYM,  D_U8|Q_ASYM)
+        IO_TYPE(D_I16|Q_DFP,  D_F16,  D_F16)
+        IO_TYPE(D_I8|Q_DFP,   D_F16,  D_F16)
+        IO_TYPE(D_U8|Q_ASYM,  D_F16,  D_F16)
+        IO_TYPE(D_I16|Q_DFP,  D_F16,  D_I16|Q_DFP)
+        IO_TYPE(D_I8|Q_DFP,   D_F16,  D_I8|Q_DFP)
+        IO_TYPE(D_U8|Q_ASYM,  D_F16,  D_U8|Q_ASYM)
+        IO_TYPE(D_I8|Q_DFP,   D_I16|Q_DFP,  D_I16|Q_DFP)
+        IO_TYPE(D_I8|Q_DFP,   D_I16|Q_DFP,  D_I8|Q_DFP)
+        IO_TYPE(D_I8|Q_DFP,   D_I8|Q_DFP,   D_F16)
+        IO_TYPE(D_I8|Q_DFP,   D_I8|Q_DFP,   D_I16|Q_DFP)
+        IO_TYPE(D_I8|Q_DFP,   D_I8|Q_DFP,   D_I8|Q_DFP)
+        IO_TYPE(D_I8|Q_DFP,   D_I8|Q_DFP,   D_U8|Q_ASYM)
+        IO_TYPE(D_I16|Q_DFP,  D_I16|Q_DFP,  D_I16|Q_DFP)
+        IO_TYPE(D_I16|Q_DFP,  D_I16|Q_DFP,  D_F16)
+        IO_TYPE(D_U8|Q_ASYM,  D_U8|Q_ASYM,  D_U8|Q_ASYM)
+        IO_TYPE(D_U8|Q_ASYM,  D_U8|Q_ASYM,  D_F16)
+        IO_TYPE(D_U8|Q_ASYM,  D_I16|Q_DFP,  D_U8|Q_ASYM)
+        IO_TYPE(D_U8|Q_ASYM,  D_I16|Q_DFP,  D_F16)
+        IO_TYPE(D_I16|Q_DFP,  D_I8|Q_DFP,   D_F16)
+        IO_TYPE(D_I16|Q_DFP,  D_I8|Q_DFP,   D_I8|Q_DFP)
+        IO_TYPE(D_I16|Q_DFP,  D_U8|Q_ASYM,  D_F16)
+        IO_TYPE(D_I16|Q_DFP,  D_U8|Q_ASYM,  D_U8|Q_ASYM)
+        IO_TYPE(D_U8|Q_ASYM,  D_I32,  D_U8|Q_ASYM)
+        IO_TYPE(D_I8,  D_I8,  D_I8)
+        IO_TYPE(D_I8,  D_I8,  D_U8)
+        IO_TYPE(D_I8,  D_I8,  D_U8|Q_ASYM)
+        IO_TYPE(D_F32,  D_F32,  D_F32)
+        IO_TYPE(D_F32,  D_F32,  D_F16)
+        IO_TYPE(D_F32,  D_F16,  D_F32)
+        IO_TYPE(D_F32,  D_F16,  D_F16)
+        IO_TYPE(D_F16,  D_F32,  D_F32)
+        IO_TYPE(D_F16,  D_F32,  D_F16)
+        IO_TYPE(D_F16,  D_F16,  D_F32)
+        IO_TYPE(D_I32,  D_I32,  D_I32)
+        IO_TYPE(D_I32,  D_I32,  D_U8|Q_ASYM)
+        IO_TYPE(D_I32,  D_I32,  D_I16|Q_DFP)
+        IO_TYPE(D_I32,  D_I32,  D_I8|Q_DFP)
+    END_IO_TYPE_DECL(ADD)
+    if(!VALIDATE_OP_IO_TYPES(ADD, self, inputs, self->input.num, outputs, self->output.num)) {
+        char* desc = generate_op_io_types_desc(inputs,
+                self->input.num, outputs, self->output.num);
+        VSILOGE("Inputs/Outputs data type not support: %s", desc);
+        destroy_op_io_types_desc(desc);
+        return FALSE;
+    }
+
+    return TRUE;
+} /* op_check() */
+
+static vsi_bool op_check_sub
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs
+    )
+{
+    /* check inputs outputs data type */
+    BEGIN_IO_TYPE_DECL(SUBTRACT, 2, 1)
+        IO_TYPE(D_BF16, D_BF16, D_BF16)
+        IO_TYPE(D_F32,  D_F32,  D_BF16)
+        IO_TYPE(D_BF16, D_BF16, D_F32)
+        IO_TYPE(D_F16,  D_F16,  D_F16)
+        IO_TYPE(D_F16,  D_F16,  D_I16|Q_DFP)
+        IO_TYPE(D_F16,  D_F16,  D_I8|Q_DFP)
+        IO_TYPE(D_F16,  D_F16,  D_U8|Q_ASYM)
+        IO_TYPE(D_F16,  D_I16|Q_DFP,  D_F16)
+        IO_TYPE(D_F16,  D_I8|Q_DFP,   D_F16)
+        IO_TYPE(D_F16,  D_U8|Q_ASYM,  D_F16)
+        IO_TYPE(D_F16,  D_I16|Q_DFP,  D_I16|Q_DFP)
+        IO_TYPE(D_F16,  D_I8|Q_DFP,   D_I8|Q_DFP)
+        IO_TYPE(D_F16,  D_U8|Q_ASYM,  D_U8|Q_ASYM)
+        IO_TYPE(D_I16|Q_DFP,  D_F16,  D_F16)
+        IO_TYPE(D_I8|Q_DFP,   D_F16,  D_F16)
+        IO_TYPE(D_U8|Q_ASYM,  D_F16,  D_F16)
+        IO_TYPE(D_I16|Q_DFP,  D_F16,  D_I16|Q_DFP)
+        IO_TYPE(D_I8|Q_DFP,   D_F16,  D_I8|Q_DFP)
+        IO_TYPE(D_U8|Q_ASYM,  D_F16,  D_U8|Q_ASYM)
+        IO_TYPE(D_I8|Q_DFP,   D_I16|Q_DFP,  D_I16|Q_DFP)
+        IO_TYPE(D_I8|Q_DFP,   D_I16|Q_DFP,  D_I8|Q_DFP)
+        IO_TYPE(D_I8|Q_DFP,   D_I8|Q_DFP,   D_F16)
+        IO_TYPE(D_I8|Q_DFP,   D_I8|Q_DFP,   D_I16|Q_DFP)
+        IO_TYPE(D_I8|Q_DFP,   D_I8|Q_DFP,   D_I8|Q_DFP)
+        IO_TYPE(D_I8|Q_DFP,   D_I8|Q_DFP,   D_U8|Q_ASYM)
+        IO_TYPE(D_I16|Q_DFP,  D_I16|Q_DFP,  D_I16|Q_DFP)
+        IO_TYPE(D_I16|Q_DFP,  D_I16|Q_DFP,  D_F16)
+        IO_TYPE(D_U8|Q_ASYM,  D_U8|Q_ASYM,  D_U8|Q_ASYM)
+        IO_TYPE(D_U8|Q_ASYM,  D_U8|Q_ASYM,  D_F16)
+        IO_TYPE(D_U8|Q_ASYM,  D_I16|Q_DFP,  D_U8|Q_ASYM)
+        IO_TYPE(D_U8|Q_ASYM,  D_I16|Q_DFP,  D_F16)
+        IO_TYPE(D_F32,  D_F32,  D_F32)
+        IO_TYPE(D_F32,  D_F32,  D_F16)
+        IO_TYPE(D_F32,  D_F16,  D_F32)
+        IO_TYPE(D_F32,  D_F16,  D_F16)
+        IO_TYPE(D_F16,  D_F32,  D_F32)
+        IO_TYPE(D_F16,  D_F32,  D_F16)
+        IO_TYPE(D_F16,  D_F16,  D_F32)
+        IO_TYPE(D_I32,  D_I32,  D_I32)
+    END_IO_TYPE_DECL(SUBTRACT)
+    if(!VALIDATE_OP_IO_TYPES(SUBTRACT, self, inputs, self->input.num, outputs, self->output.num)) {
+        char* desc = generate_op_io_types_desc(inputs,
+                self->input.num, outputs, self->output.num);
+        VSILOGE("Inputs/Outputs data type not support: %s", desc);
+        destroy_op_io_types_desc(desc);
+        return FALSE;
+    }
+
+    return TRUE;
+} /* op_check() */
+
+
+
+
+static vsi_bool op_check_div
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs
+    )
+{
+    /* check inputs outputs data type */
+    BEGIN_IO_TYPE_DECL(DIVIDE, 2, 1)
+        IO_TYPE(D_BF16, D_BF16, D_BF16)
+        IO_TYPE(D_F16,  D_F16,  D_F16)
+        IO_TYPE(D_F16,  D_I8|Q_DFP,   D_I8|Q_DFP)
+        IO_TYPE(D_F16,  D_I8|Q_DFP,   D_F16)
+        IO_TYPE(D_F16,  D_F16,  D_I8|Q_DFP)
+        IO_TYPE(D_F16,  D_F16,  D_I16|Q_DFP)
+        IO_TYPE(D_F16,  D_F16,  D_U8|Q_ASYM)
+        IO_TYPE(D_U8|Q_ASYM,  D_U8|Q_ASYM,  D_U8|Q_ASYM)
+        IO_TYPE(D_U8|Q_ASYM,  D_U8|Q_ASYM,  D_F16)
+        IO_TYPE(D_U8|Q_ASYM,  D_F16,  D_U8|Q_ASYM)
+        IO_TYPE(D_U8|Q_ASYM,  D_F16,  D_F16)
+        IO_TYPE(D_U8|Q_ASYM,  D_I16|Q_DFP,  D_U8|Q_ASYM)
+        IO_TYPE(D_U8|Q_ASYM,  D_I16|Q_DFP,  D_I16|Q_DFP)
+        IO_TYPE(D_I8|Q_DFP,   D_I8|Q_DFP,   D_I8|Q_DFP)
+        IO_TYPE(D_I8|Q_DFP,   D_I8|Q_DFP,   D_F16)
+        IO_TYPE(D_I8|Q_DFP,   D_F16,  D_I8|Q_DFP)
+        IO_TYPE(D_I8|Q_DFP,   D_F16,  D_F16)
+        IO_TYPE(D_I16|Q_DFP,  D_I16|Q_DFP,  D_I16|Q_DFP)
+        IO_TYPE(D_I16|Q_DFP,  D_I16|Q_DFP,  D_F16)
+        IO_TYPE(D_I16|Q_DFP,  D_F16,  D_I16|Q_DFP)
+        IO_TYPE(D_I16|Q_DFP,  D_F16,  D_F16)
+        IO_TYPE(D_F32,  D_F32,  D_F32)
+        IO_TYPE(D_F32,  D_F32,  D_F16)
+        IO_TYPE(D_F32,  D_F16,  D_F32)
+        IO_TYPE(D_F32,  D_F16,  D_F16)
+        IO_TYPE(D_F16,  D_F32,  D_F32)
+        IO_TYPE(D_F16,  D_F32,  D_F16)
+        IO_TYPE(D_F16,  D_F16,  D_F32)
+        IO_TYPE(D_I32,  D_I32,  D_I32)
+    END_IO_TYPE_DECL(DIVIDE)
+    if(!VALIDATE_OP_IO_TYPES(DIVIDE, self, inputs, self->input.num, outputs, self->output.num)) {
+        char* desc = generate_op_io_types_desc(inputs,
+                self->input.num, outputs, self->output.num);
+        VSILOGE("Inputs/Outputs data type not support: %s", desc);
+        destroy_op_io_types_desc(desc);
+        return FALSE;
+    }
+
+    return TRUE;
+} /* op_check() */
+
+
+static vsi_bool op_check_mul
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs
+    )
+{
+    /* check inputs outputs data type */
+    BEGIN_IO_TYPE_DECL(MULTIPLY, 2, 1)
+        IO_TYPE(D_BF16, D_BF16, D_BF16)
+        IO_TYPE(D_F32,  D_F32,  D_BF16)
+        IO_TYPE(D_BF16, D_BF16, D_F32)
+        IO_TYPE(D_F16,  D_F16,  D_F16)
+        IO_TYPE(D_F16,  D_F16,  D_I16|Q_DFP)
+        IO_TYPE(D_F16,  D_F16,  D_I8|Q_DFP)
+        IO_TYPE(D_F16,  D_F16,  D_U8|Q_ASYM)
+        IO_TYPE(D_F16,  D_I16|Q_DFP,  D_F16)
+        IO_TYPE(D_F16,  D_I8|Q_DFP,   D_F16)
+        IO_TYPE(D_F16,  D_U8|Q_ASYM,  D_F16)
+        IO_TYPE(D_F16,  D_I16|Q_DFP,  D_I16|Q_DFP)
+        IO_TYPE(D_F16,  D_I8|Q_DFP,   D_I8|Q_DFP)
+        IO_TYPE(D_F16,  D_U8|Q_ASYM,  D_U8|Q_ASYM)
+        IO_TYPE(D_I16|Q_DFP,  D_F16,  D_F16)
+        IO_TYPE(D_I8|Q_DFP,   D_F16,  D_F16)
+        IO_TYPE(D_U8|Q_ASYM,  D_F16,  D_F16)
+        IO_TYPE(D_I16|Q_DFP,  D_F16,  D_I16|Q_DFP)
+        IO_TYPE(D_I8|Q_DFP,   D_F16,  D_I8|Q_DFP)
+        IO_TYPE(D_U8|Q_ASYM,  D_F16,  D_U8|Q_ASYM)
+        IO_TYPE(D_I8|Q_DFP,   D_I16|Q_DFP,  D_I16|Q_DFP)
+        IO_TYPE(D_I8|Q_DFP,   D_I16|Q_DFP,  D_I8|Q_DFP)
+        IO_TYPE(D_I8|Q_DFP,   D_I8|Q_DFP,   D_F16)
+        IO_TYPE(D_I8|Q_DFP,   D_I8|Q_DFP,   D_I8|Q_DFP)
+        IO_TYPE(D_I16|Q_DFP,  D_I16|Q_DFP,  D_I16|Q_DFP)
+        IO_TYPE(D_I16|Q_DFP,  D_I16|Q_DFP,  D_F16)
+        IO_TYPE(D_U8|Q_ASYM,  D_U8|Q_ASYM,  D_U8|Q_ASYM)
+        IO_TYPE(D_U8|Q_ASYM,  D_U8|Q_ASYM,  D_F16)
+        IO_TYPE(D_U8|Q_ASYM,  D_I16|Q_DFP,  D_U8|Q_ASYM)
+        IO_TYPE(D_U8|Q_ASYM,  D_I16|Q_DFP,  D_F16)
+        IO_TYPE(D_I16|Q_DFP,  D_I8|Q_DFP,   D_F16)
+        IO_TYPE(D_I16|Q_DFP,  D_I8|Q_DFP,   D_I8|Q_DFP)
+        IO_TYPE(D_I16|Q_DFP,  D_U8|Q_ASYM,  D_F16)
+        IO_TYPE(D_I16|Q_DFP,  D_U8|Q_ASYM,  D_U8|Q_ASYM)
+        IO_TYPE(D_F32,  D_F32,  D_F32)
+        IO_TYPE(D_F32,  D_F32,  D_F16)
+        IO_TYPE(D_F32,  D_F16,  D_F32)
+        IO_TYPE(D_F32,  D_F16,  D_F16)
+        IO_TYPE(D_F16,  D_F32,  D_F32)
+        IO_TYPE(D_F16,  D_F32,  D_F16)
+        IO_TYPE(D_F16,  D_F16,  D_F32)
+        IO_TYPE(D_I32,  D_I32,  D_I32)
+    END_IO_TYPE_DECL(MULTIPLY)
+    if(!VALIDATE_OP_IO_TYPES(MULTIPLY, self, inputs, self->input.num, outputs, self->output.num)) {
+        char* desc = generate_op_io_types_desc(inputs,
+                self->input.num, outputs, self->output.num);
+        VSILOGE("Inputs/Outputs data type not support: %s", desc);
+        destroy_op_io_types_desc(desc);
+        return FALSE;
+    }
+
+    return TRUE;
+} /* op_check() */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -197,7 +564,7 @@ extern "C" {
             { \
                 return _eltwise_op_compute( ""#kernel_name, self, inputs, outputs ); \
             } \
-DEF_OP_REG(name, NULL, op_compute_##kernel_name, vsi_nn_op_common_deinit, NULL, vsi_nn_op_eltwise_setup, NULL, 2, 1)
+DEF_OP_REG(name, NULL, op_compute_##kernel_name, vsi_nn_op_common_deinit, op_check_##kernel_name, vsi_nn_op_eltwise_setup, NULL, 2, 1)
 
 DEF_ELEMENT_WISE_OP( MINIMUM, minimum );
 DEF_ELEMENT_WISE_OP( MAXIMUM, maximum );

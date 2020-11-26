@@ -36,6 +36,7 @@
 #include "utils/vsi_nn_math.h"
 #include "kernel/vsi_nn_kernel.h"
 #include "kernel/vsi_nn_kernel_gpu_shape_optimize.h"
+#include "utils/vsi_nn_constraint_check.h"
 
 /*
  Declare number of input and output.
@@ -74,6 +75,26 @@ static vsi_bool op_check
 {
     /*TODO: Check tensor shapes. */
     vsi_nn_tile_param * p;
+
+    BEGIN_IO_TYPE_DECL(TILE, 1, 1)
+        IO_TYPE(D_I8|Q_DFP,  D_I8|Q_DFP)
+        IO_TYPE(D_U8|Q_ASYM, D_U8|Q_ASYM)
+        IO_TYPE(D_I16|Q_DFP, D_I16|Q_DFP)
+        IO_TYPE(D_U8|Q_ASYM, D_F16)
+        IO_TYPE(D_F16,  D_F16)
+        IO_TYPE(D_BF16, D_BF16)
+        IO_TYPE(D_I32,  D_I32)
+        IO_TYPE(D_U32,  D_U32)
+        IO_TYPE(D_F32,  D_F32)
+    END_IO_TYPE_DECL(TILE)
+    if(!VALIDATE_OP_IO_TYPES(TILE, self, inputs, self->input.num, outputs, self->output.num)) {
+        char* desc = generate_op_io_types_desc(inputs,
+                self->input.num, outputs, self->output.num);
+        VSILOGE("Inputs/Outputs data type not support: %s", desc);
+        destroy_op_io_types_desc(desc);
+        return FALSE;
+    }
+
     p = &(self->nn_param.tile);
 
     if (inputs[0]->attr.dim_num != p->multiples_num)

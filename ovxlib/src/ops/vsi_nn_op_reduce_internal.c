@@ -35,6 +35,7 @@
 #include "utils/vsi_nn_math.h"
 #include "kernel/vsi_nn_kernel.h"
 #include "kernel/vsi_nn_kernel_gpu_shape_optimize.h"
+#include "utils/vsi_nn_constraint_check.h"
 
 #define _INPUT_NUM          (1)
 #define _OUTPUT_NUM         (1)
@@ -261,6 +262,148 @@ static vsi_bool _reduce_internal_op_setup
 } /* op_setup() */
 
 
+static vsi_bool op_check_reduceall_internal
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs
+    )
+{
+    BEGIN_IO_TYPE_DECL(REDUCEALL_INTERNAL, 1, 1)
+        IO_TYPE(D_I8, D_I8)
+        IO_TYPE(D_BOOL8, D_BOOL8)
+    END_IO_TYPE_DECL(REDUCEALL_INTERNAL)
+    if(!VALIDATE_OP_IO_TYPES(REDUCEALL_INTERNAL, self, inputs, self->input.num, outputs, self->output.num)) {
+        char* desc = generate_op_io_types_desc(inputs,
+                self->input.num, outputs, self->output.num);
+        VSILOGE("Inputs/Outputs data type not support: %s", desc);
+        destroy_op_io_types_desc(desc);
+        return FALSE;
+    }
+
+    return TRUE;
+} /* op_check() */
+
+
+static vsi_bool op_check_reduceany_internal
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs
+    )
+{
+    BEGIN_IO_TYPE_DECL(REDUCEANY_INTERNAL, 1, 1)
+        IO_TYPE(D_I8, D_I8)
+        IO_TYPE(D_BOOL8, D_BOOL8)
+    END_IO_TYPE_DECL(REDUCEANY_INTERNAL)
+    if(!VALIDATE_OP_IO_TYPES(REDUCEANY_INTERNAL, self, inputs, self->input.num, outputs, self->output.num)) {
+        char* desc = generate_op_io_types_desc(inputs,
+                self->input.num, outputs, self->output.num);
+        VSILOGE("Inputs/Outputs data type not support: %s", desc);
+        destroy_op_io_types_desc(desc);
+        return FALSE;
+    }
+
+    return TRUE;
+} /* op_check() */
+
+
+static vsi_bool op_check_reducemax_internal
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs
+    )
+{
+    BEGIN_IO_TYPE_DECL(REDUCEMAX_INTERNAL, 1, 1)
+        IO_TYPE(D_F16,  D_U8|Q_ASYM)
+        IO_TYPE(D_F16,  D_I16|Q_DFP)
+        IO_TYPE(D_F16,  D_I8|Q_DFP)
+        IO_TYPE(D_F16,  D_F16)
+        IO_TYPE(D_F32,  D_F32)
+        IO_TYPE(D_I32,  D_I32)
+        IO_TYPE(D_U8|Q_ASYM,  D_U8|Q_ASYM)
+        IO_TYPE(D_U8|Q_ASYM,  D_F16)
+        IO_TYPE(D_I8|Q_DFP,   D_I8|Q_DFP)
+        IO_TYPE(D_I8|Q_DFP,   D_F16)
+        IO_TYPE(D_I16|Q_DFP,  D_I16|Q_DFP)
+        IO_TYPE(D_I16|Q_DFP,  D_F16)
+    END_IO_TYPE_DECL(REDUCEMAX_INTERNAL)
+    if(!VALIDATE_OP_IO_TYPES(REDUCEMAX_INTERNAL, self, inputs, self->input.num, outputs, self->output.num)) {
+        char* desc = generate_op_io_types_desc(inputs,
+                self->input.num, outputs, self->output.num);
+        VSILOGE("Inputs/Outputs data type not support: %s", desc);
+        destroy_op_io_types_desc(desc);
+        return FALSE;
+    }
+
+    return TRUE;
+} /* op_check() */
+
+static vsi_bool op_check_reducemin_internal
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs
+    )
+{
+    BEGIN_IO_TYPE_DECL(REDUCEMIN_INTERNAL, 1, 1)
+        IO_TYPE(D_F16,  D_U8|Q_ASYM)
+        IO_TYPE(D_F16,  D_I16|Q_DFP)
+        IO_TYPE(D_F16,  D_I8|Q_DFP)
+        IO_TYPE(D_F16,  D_F16)
+        IO_TYPE(D_F32,  D_F32)
+        IO_TYPE(D_I32,  D_I32)
+        IO_TYPE(D_U8|Q_ASYM,  D_U8|Q_ASYM)
+        IO_TYPE(D_U8|Q_ASYM,  D_F16)
+        IO_TYPE(D_I8|Q_DFP,   D_I8|Q_DFP)
+        IO_TYPE(D_I8|Q_DFP,   D_F16)
+        IO_TYPE(D_I16|Q_DFP,  D_I16|Q_DFP)
+        IO_TYPE(D_I16|Q_DFP,  D_F16)
+    END_IO_TYPE_DECL(REDUCEMIN_INTERNAL)
+    if(!VALIDATE_OP_IO_TYPES(REDUCEMIN_INTERNAL, self, inputs, self->input.num, outputs, self->output.num)) {
+        char* desc = generate_op_io_types_desc(inputs,
+                self->input.num, outputs, self->output.num);
+        VSILOGE("Inputs/Outputs data type not support: %s", desc);
+        destroy_op_io_types_desc(desc);
+        return FALSE;
+    }
+
+    return TRUE;
+} /* op_check() */
+
+static vsi_bool op_check_reduceprod_internal
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs
+    )
+{
+    BEGIN_IO_TYPE_DECL(REDUCEPROD_INTERNAL, 1, 1)
+        IO_TYPE(D_F16,  D_U8|Q_ASYM)
+        IO_TYPE(D_F16,  D_I16|Q_DFP)
+        IO_TYPE(D_F16,  D_I8|Q_DFP)
+        IO_TYPE(D_F16,  D_F16)
+        IO_TYPE(D_BF16, D_BF16)
+        IO_TYPE(D_F32,  D_F32)
+        IO_TYPE(D_I32,  D_I32)
+        IO_TYPE(D_U8|Q_ASYM,  D_U8|Q_ASYM)
+        IO_TYPE(D_U8|Q_ASYM,  D_F16)
+        IO_TYPE(D_I8|Q_DFP,   D_I8|Q_DFP)
+        IO_TYPE(D_I8|Q_DFP,   D_F16)
+        IO_TYPE(D_I16|Q_DFP,  D_I16|Q_DFP)
+        IO_TYPE(D_I16|Q_DFP,  D_F16)
+    END_IO_TYPE_DECL(REDUCEPROD_INTERNAL)
+    if(!VALIDATE_OP_IO_TYPES(REDUCEPROD_INTERNAL, self, inputs, self->input.num, outputs, self->output.num)) {
+        char* desc = generate_op_io_types_desc(inputs,
+                self->input.num, outputs, self->output.num);
+        VSILOGE("Inputs/Outputs data type not support: %s", desc);
+        destroy_op_io_types_desc(desc);
+        return FALSE;
+    }
+
+    return TRUE;
+} /* op_check() */
 
 #ifdef __cplusplus
 extern "C" {
@@ -291,7 +434,7 @@ DEF_OP_REG  \
     /* init       */ NULL, \
     /* compute    */ op_compute_##kernel_name, \
     /* deinit     */ vsi_nn_op_common_deinit, \
-    /* check      */ NULL, \
+    /* check      */ op_check_##kernel_name, \
     /* setup      */ op_setup_##kernel_name, \
     /* optimize   */ NULL, \
     /* input_num  */ 1, \

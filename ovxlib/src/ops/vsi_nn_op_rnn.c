@@ -32,6 +32,7 @@
 #include "vsi_nn_ops.h"
 #include "vsi_nn_tensor.h"
 #include "vsi_nn_tensor_util.h"
+#include "utils/vsi_nn_constraint_check.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -124,7 +125,26 @@ static vsi_bool op_check
         return TRUE;
     } while(0);
 
+    {
+        BEGIN_IO_TYPE_DECL(RNN, 5, 1)
+            IO_TYPE(D_F16,  D_F16, D_F16, D_F16, D_F16, D_F16)
+            IO_TYPE(D_F16,  D_F16, D_F16, D_F32, D_F16, D_F16)
+            IO_TYPE(D_F32,  D_F32, D_F32, D_F32, D_F32, D_F32)
+            IO_TYPE(D_U8|Q_ASYM,  D_U8|Q_ASYM, D_U8|Q_ASYM, D_U8|Q_ASYM, D_U8|Q_ASYM, D_U8|Q_ASYM)
+        END_IO_TYPE_DECL(RNN)
+        if(!VALIDATE_OP_IO_TYPES(RNN, self, inputs, self->input.num, outputs, self->output.num)) {
+            char* desc = generate_op_io_types_desc(inputs,
+                    self->input.num, outputs, self->output.num);
+            VSILOGE("Inputs/Outputs data type not support: %s", desc);
+            destroy_op_io_types_desc(desc);
+            return FALSE;
+        }
+    }
+
     VSILOGE("RNN check shape faild at Input[%d]", input_idx);
+
+
+
     return FALSE;
 } /* op_check() */
 

@@ -35,6 +35,7 @@
 #include "utils/vsi_nn_math.h"
 #include "kernel/vsi_nn_kernel.h"
 #include "kernel/vsi_nn_kernel_gpu_shape_optimize.h"
+#include "utils/vsi_nn_constraint_check.h"
 
 static vsi_status _log_softmax_op_compute
     (
@@ -131,6 +132,40 @@ static vsi_bool _log_softmax_op_setup
     return TRUE;
 } /* _log_softmax_op_setup() */
 
+static vsi_bool op_check
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs
+    )
+{
+    BEGIN_IO_TYPE_DECL(LOG_SOFTMAX, 1, 1)
+        IO_TYPE(D_F16,  D_U8|Q_ASYM)
+        IO_TYPE(D_F16,  D_I16|Q_DFP)
+        IO_TYPE(D_F16,  D_I8|Q_DFP)
+        IO_TYPE(D_F16,  D_F16)
+        IO_TYPE(D_F32,  D_F32)
+        IO_TYPE(D_BF16, D_F16)
+        IO_TYPE(D_BF16, D_F32)
+        IO_TYPE(D_BF16, D_BF16)
+        IO_TYPE(D_U8|Q_ASYM,  D_U8|Q_ASYM)
+        IO_TYPE(D_U8|Q_ASYM,  D_F16)
+        IO_TYPE(D_I8|Q_DFP,   D_I8|Q_DFP)
+        IO_TYPE(D_I8|Q_DFP,   D_F16)
+        IO_TYPE(D_I16|Q_DFP,  D_I16|Q_DFP)
+        IO_TYPE(D_I16|Q_DFP,  D_F16)
+    END_IO_TYPE_DECL(LOG_SOFTMAX)
+    if(!VALIDATE_OP_IO_TYPES(LOG_SOFTMAX, self, inputs, self->input.num, outputs, self->output.num)) {
+        char* desc = generate_op_io_types_desc(inputs,
+                self->input.num, outputs, self->output.num);
+        VSILOGE("Inputs/Outputs data type not support: %s", desc);
+        destroy_op_io_types_desc(desc);
+        return FALSE;
+    }
+
+    return TRUE;
+} /* op_check() */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -160,7 +195,7 @@ DEF_OP_REG  \
     /* init       */ NULL, \
     /* compute    */ op_compute_##kernel_name, \
     /* deinit     */ vsi_nn_op_common_deinit, \
-    /* check      */ NULL, \
+    /* check      */ op_check, \
     /* setup      */ op_setup_##kernel_name, \
     /* optimize   */ NULL, \
     /* input_num  */ 1, \

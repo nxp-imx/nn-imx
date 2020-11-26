@@ -33,6 +33,7 @@
 #include "vsi_nn_error.h"
 #include "utils/vsi_nn_util.h"
 #include "kernel/vsi_nn_kernel.h"
+#include "utils/vsi_nn_constraint_check.h"
 
 #define _INPUT_NUM          (2)
 #define _OUTPUT_NUM         (1)
@@ -94,6 +95,33 @@ static vsi_status op_compute
     return status;
 } /* op_compute() */
 
+static vsi_bool op_check
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs
+    )
+{
+    BEGIN_IO_TYPE_DECL(SCATTER_ND, 2, 1)
+        IO_TYPE(D_I32, D_I8|Q_DFP,   D_I8|Q_DFP)
+        IO_TYPE(D_I32, D_U8|Q_ASYM,  D_U8|Q_ASYM)
+        IO_TYPE(D_I32, D_I16|Q_DFP,  D_I16|Q_DFP)
+        IO_TYPE(D_I32, D_F16, D_F16)
+        IO_TYPE(D_I32, D_I32, D_I32)
+        IO_TYPE(D_I32, D_U32, D_U32)
+        IO_TYPE(D_I32, D_F32, D_F32)
+    END_IO_TYPE_DECL(SCATTER_ND)
+    if(!VALIDATE_OP_IO_TYPES(SCATTER_ND, self, inputs, self->input.num, outputs, self->output.num)) {
+        char* desc = generate_op_io_types_desc(inputs,
+                self->input.num, outputs, self->output.num);
+        VSILOGE("Inputs/Outputs data type not support: %s", desc);
+        destroy_op_io_types_desc(desc);
+        return FALSE;
+    }
+
+    return TRUE;
+} /* op_check() */
+
 static vsi_bool op_setup
     (
     vsi_nn_node_t * self,
@@ -142,7 +170,7 @@ DEF_OP_REG
     /* init       */ NULL,
     /* compute    */ op_compute,
     /* deinit     */ op_deinit,
-    /* check      */ NULL,
+    /* check      */ op_check,
     /* setup      */ op_setup,
     /* optimize   */ NULL,
     /* input_num  */ _INPUT_NUM,

@@ -30,6 +30,7 @@
 #include "vsi_nn_log.h"
 #include "vsi_nn_tensor_util.h"
 #include "vsi_nn_prv.h"
+#include "utils/vsi_nn_constraint_check.h"
 
 static vsi_status _create_local_tensor
     (
@@ -161,6 +162,23 @@ static vsi_bool op_check
         VSILOGE("SVDF input dimension should be 2");
         ret = FALSE;
     }
+
+    {
+        BEGIN_IO_TYPE_DECL(SVDF, 5, 2)
+            IO_TYPE(D_F16, D_F16, D_F16, D_F16, D_F16, D_F16, D_F16)
+            IO_TYPE(D_F16, D_F16, D_F16, D_F16, D_F32, D_F16, D_F16)
+            IO_TYPE(D_F32, D_F16, D_F16, D_F16, D_F32, D_F32, D_F16)
+            IO_TYPE(D_F32, D_F32, D_F32, D_F32, D_F32, D_F32, D_F32)
+        END_IO_TYPE_DECL(SVDF)
+        if(!VALIDATE_OP_IO_TYPES(SVDF, self, inputs, self->input.num, outputs, self->output.num)) {
+            char* desc = generate_op_io_types_desc(inputs,
+                    self->input.num, outputs, self->output.num);
+            VSILOGE("Inputs/Outputs data type not support: %s", desc);
+            destroy_op_io_types_desc(desc);
+            return FALSE;
+        }
+    }
+
     return ret;
 } /* op_check() */
 
