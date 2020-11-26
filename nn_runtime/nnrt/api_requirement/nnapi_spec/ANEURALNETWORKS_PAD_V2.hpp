@@ -48,8 +48,12 @@ MAKE_SPEC(pad_v2)
     .input_(nnrt::OperandType::TENSOR_FLOAT16)
     .pad_value_(nnrt::OperandType::FLOAT16));
 
-    OVERRIDE_SPEC(pad_v2, quant8_asymm)
+    OVERRIDE_SPEC(pad_v2, asymm_u8)
     .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM)
+    .pad_value_(nnrt::OperandType::INT32));
+
+    OVERRIDE_SPEC(pad_v2, asymm_int8)
+    .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM_SIGNED)
     .pad_value_(nnrt::OperandType::INT32));
 
 #undef ARG_NAMES

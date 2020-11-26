@@ -59,15 +59,20 @@ MAKE_SPEC(roi_align)
     .layout_(nnrt::OperandType::BOOL)
     );
 
-    OVERRIDE_SPEC(roi_align, 0)
+    OVERRIDE_SPEC(roi_align, fp16)
     .input_(nnrt::OperandType::TENSOR_FLOAT16)
     .roi_location_(nnrt::OperandType::TENSOR_FLOAT16)
     .height_ratio_(nnrt::OperandType::FLOAT16)
     .width_ratio_(nnrt::OperandType::FLOAT16)
     );
 
-    OVERRIDE_SPEC(roi_align, 1)
+    OVERRIDE_SPEC(roi_align, asymm_u8)
     .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM)
+    .roi_location_(nnrt::OperandType::TENSOR_QUANT16_ASYMM)
+    );
+
+    OVERRIDE_SPEC(roi_align, asymm_int8)
+    .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM_SIGNED)
     .roi_location_(nnrt::OperandType::TENSOR_QUANT16_ASYMM)
     );
 

@@ -510,6 +510,7 @@ OperationPtr NnApiInterpreter::map_CONV_2D(Model* model,
         conv2d->strides[1] = inputs[argList->ArgPos("stride_h")]->scalar.int32;
     } else {
         NNRT_LOGE_PRINT("convolution 2d argument list not support");
+        assert(false);
     }
 
     /* set default dilation value */
@@ -1415,6 +1416,7 @@ OperationPtr NnApiInterpreter::map_L2_NORMALIZATION(Model* model,
 
     } else {
         NNRT_LOGE_PRINT("L2 response argument list not support");
+        assert(false);
     }
     truncateOperationIOs(model, operation, 1, 1);
     return l2norm;
@@ -2457,6 +2459,7 @@ DECLARE_SAMPLE_OP(CAST, 1, 1, CastOperation)
             truncateOperationIOs(model, operation, 1, 1);                                       \
         } else {                                                                                \
             NNRT_LOGE_PRINT("Number of input parameter is not valid");                          \
+            assert(false);                                                                      \
         }                                                                                       \
         return op;                                                                              \
     }

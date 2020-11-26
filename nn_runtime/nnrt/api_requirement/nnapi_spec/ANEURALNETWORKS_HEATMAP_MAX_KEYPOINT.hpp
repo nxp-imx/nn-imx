@@ -48,8 +48,12 @@ MAKE_SPEC(heatmap_max_keypoint)
     .input0_(nnrt::OperandType::TENSOR_FLOAT16)
     .input1_(nnrt::OperandType::TENSOR_FLOAT16));
 
-    OVERRIDE_SPEC(heatmap_max_keypoint, quant8_asymm)
+    OVERRIDE_SPEC(heatmap_max_keypoint, asymm_u8)
     .input0_(nnrt::OperandType::TENSOR_QUANT8_ASYMM)
+    .input1_(nnrt::OperandType::TENSOR_QUANT16_ASYMM));
+
+    OVERRIDE_SPEC(heatmap_max_keypoint, asymm_int8)
+    .input0_(nnrt::OperandType::TENSOR_QUANT8_ASYMM_SIGNED)
     .input1_(nnrt::OperandType::TENSOR_QUANT16_ASYMM));
 
 #undef ARG_NAMES

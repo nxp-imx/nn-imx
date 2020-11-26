@@ -48,8 +48,11 @@ MAKE_SPEC(topk_v2)
     OVERRIDE_SPEC(topk_v2, int32)
     .input_(nnrt::OperandType::TENSOR_INT32));
 
-    OVERRIDE_SPEC(topk_v2, quant8_asymm)
+    OVERRIDE_SPEC(topk_v2, asymm_u8)
     .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM));
+
+    OVERRIDE_SPEC(topk_v2, asymm_int8)
+    .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM_SIGNED));
 
 #undef ARG_NAMES
 #undef ARGC

@@ -49,6 +49,8 @@ OVERRIDE_SPEC(base_signature, input_int32)
     .input_(nnrt::OperandType::TENSOR_INT32));
 OVERRIDE_SPEC(base_signature, input_quant8_asym)
     .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM));
+OVERRIDE_SPEC(base_signature, input_asymm_int8)
+    .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM_SIGNED));
 #undef ARG_NAMES
 #undef ARGC
 #undef OP_SPEC_NAME

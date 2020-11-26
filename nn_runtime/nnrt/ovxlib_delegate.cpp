@@ -598,6 +598,8 @@ int OvxlibDelegate::addNode(vsi_nn_op_t op,
         vsi_nn_tensor_attr_t attr;
         copy_tensor_attr(&attr, &tensor->attr);
         attr.vtl = (vsi_bool) true;
+        // Need to set dim_num = 0 to create virtual tensor in vsi_nn_AddTensor
+        attr.dim_num = 0;
         std::vector<vsi_nn_tensor_id_t> node_out_tensors(1);
         node_out_tensors[0] = vsi_nn_AddTensor(graph_, VSI_NN_TENSOR_ID_AUTO, &attr, nullptr);
 

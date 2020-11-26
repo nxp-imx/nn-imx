@@ -22,7 +22,9 @@ int ValidateQuantizedGraph::run(Model* model, bool* modified) {
             case OperationType::FULLY_CONNECTED:
             case OperationType::GROUPED_CONV_2D: {
                 std::vector<op::OperandPtr> inputs = model->getOperands(op->inputs());
-                if (inputs.size() > 2 && inputs[0]->type == OperandType::TENSOR_QUANT8_ASYMM &&
+                if (inputs.size() > 2 &&
+                    (inputs[0]->type == OperandType::TENSOR_QUANT8_ASYMM ||
+                     inputs[0]->type == OperandType::TENSOR_QUANT8_ASYMM_SIGNED) &&
                     inputs[2]->type == OperandType::TENSOR_INT32) {
                     inputs[2]->quant.scalar.scale =
                         inputs[0]->quant.scalar.scale * inputs[1]->quant.scalar.scale;

@@ -48,8 +48,11 @@ MAKE_SPEC(tile)
     OVERRIDE_SPEC(tile, int32)
     .input_(nnrt::OperandType::TENSOR_INT32));
 
-    OVERRIDE_SPEC(tile, quant8_asymm)
+    OVERRIDE_SPEC(tile, asymm_u8)
     .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM));
+
+    OVERRIDE_SPEC(tile, asymm_int8)
+    .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM_SIGNED));
 
 #undef ARG_NAMES
 #undef ARGC

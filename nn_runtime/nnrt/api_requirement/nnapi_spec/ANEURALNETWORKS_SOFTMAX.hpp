@@ -52,6 +52,10 @@ MAKE_SPEC(softmax)
     .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM)
     .beta_(nnrt::OperandType::FLOAT32));
 
+    OVERRIDE_SPEC(softmax, asymm_int8)
+    .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM_SIGNED)
+    .beta_(nnrt::OperandType::FLOAT32));
+
 #undef ARG_NAMES
 #undef ARGC
 #undef OP_SPEC_NAME

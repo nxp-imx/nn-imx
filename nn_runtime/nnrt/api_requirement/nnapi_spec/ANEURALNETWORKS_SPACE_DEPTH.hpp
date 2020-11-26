@@ -51,6 +51,9 @@ MAKE_SPEC(spaceDepth)
     OVERRIDE_SPEC(spaceDepth, asymm_u8)
     .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM));
 
+    OVERRIDE_SPEC(spaceDepth, asymm_int8)
+    .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM_SIGNED));
+
 #undef ARG_NAMES
 #undef ARGC
 #undef OP_SPEC_NAME
