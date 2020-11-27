@@ -453,8 +453,8 @@ bool NpuLayerSupport::IsConcatSupported(const std::vector<const TensorInfo*> inp
     ignore_unused(descriptor);
 
     bool supported = true;
-    std::array<DataType, 3> supportedTypes = {
-        DataType::Float32, DataType::QAsymmU8, DataType::Float16
+    std::array<DataType, 4> supportedTypes = {
+        DataType::Float32, DataType::QAsymmU8, DataType::Float16, DataType::QAsymmS8,
         // DataType::QSymmS16
     };
 
@@ -1275,8 +1275,8 @@ bool NpuLayerSupport::IsPooling2dSupported(const TensorInfo& input,
     bool supported = true;
 
     // Define supported output and inputs types.
-    std::array<DataType, 3> supportedTypes = {
-        DataType::Float32, DataType::QAsymmU8, DataType::Float16
+    std::array<DataType, 4> supportedTypes = {
+        DataType::Float32, DataType::QAsymmU8, DataType::Float16, DataType::QAsymmS8,
         // DataType::QSymmS16
     };
 
