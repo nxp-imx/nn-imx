@@ -92,6 +92,19 @@ void print_op_io_types
     const op_constraint_reg_type* op_constraint_reg
     );
 
+char* generate_op_io_types_desc
+    (
+    vsi_nn_tensor_t** inputs,
+    int inputs_num,
+    vsi_nn_tensor_t** outputs,
+    int outputs_num
+    );
+
+void destroy_op_io_types_desc
+    (
+    char* desc
+    );
+
 vsi_bool is_item_in_array
     (
     const void* item,

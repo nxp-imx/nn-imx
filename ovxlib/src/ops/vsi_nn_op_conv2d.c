@@ -167,7 +167,10 @@ static vsi_bool op_check
         END_IO_TYPE_DECL(CONV2D)
         ret = VALIDATE_OP_IO_TYPES(CONV2D, inputs, self->input.num, outputs, self->output.num);
         if(!ret) {
-            VSILOGE("Inputs/Outputs data type not support.");
+            char* desc = generate_op_io_types_desc(inputs,
+                    self->input.num, outputs, self->output.num);
+            VSILOGE("Inputs/Outputs data type not support: %s", desc);
+            destroy_op_io_types_desc(desc);
             return FALSE;
         }
 

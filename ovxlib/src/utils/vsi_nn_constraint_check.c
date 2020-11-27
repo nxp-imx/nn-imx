@@ -172,6 +172,70 @@ vsi_bool validate_op_io_types
     return matched;
 }
 
+char* generate_op_io_types_desc
+    (
+    vsi_nn_tensor_t** inputs,
+    int inputs_num,
+    vsi_nn_tensor_t** outputs,
+    int outputs_num
+    )
+{
+    int i = 0;
+    int total_sz = 0;
+    int used_sz = 0;
+    char* desc = NULL;
+
+    for(i = 0; i < inputs_num; i++) {
+        if(inputs[i]) {
+            total_sz += snprintf(NULL, 0, "%s %s, ",
+                    _get_qtype_name(inputs[i]->attr.dtype.qnt_type),
+                    _get_dtype_name(inputs[i]->attr.dtype.vx_type));
+        }
+    }
+    for(i = 0; i < outputs_num; i++) {
+        if(outputs[i]) {
+            total_sz += snprintf(NULL, 0, "%s %s, ",
+                    _get_qtype_name(outputs[i]->attr.dtype.qnt_type),
+                    _get_dtype_name(outputs[i]->attr.dtype.vx_type));
+        }
+    }
+
+    total_sz += 1; /* terminator */
+    desc = (char*)malloc(sizeof(char) * total_sz);
+    memset(desc, 0x00, sizeof(char) * total_sz);
+
+    for(i = 0; i < inputs_num; i++) {
+        if(inputs[i]) {
+            used_sz += snprintf(desc + used_sz, total_sz - used_sz, "%s %s, ",
+                    _get_qtype_name(inputs[i]->attr.dtype.qnt_type),
+                    _get_dtype_name(inputs[i]->attr.dtype.vx_type));
+        }
+    }
+    for(i = 0; i < outputs_num; i++) {
+        if(outputs[i]) {
+            used_sz += snprintf(desc + used_sz, total_sz - used_sz, "%s %s, ",
+                    _get_qtype_name(outputs[i]->attr.dtype.qnt_type),
+                    _get_dtype_name(outputs[i]->attr.dtype.vx_type));
+        }
+    }
+
+    if(used_sz >= 2) {
+        desc[used_sz - 2] = '\0';
+    }
+
+    return desc;
+}
+
+void destroy_op_io_types_desc
+    (
+    char* desc
+    )
+{
+    if(desc) {
+        free(desc);
+    }
+}
+
 void print_op_io_types
     (
     const char* name,
