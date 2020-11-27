@@ -214,7 +214,10 @@ static vsi_bool op_check
         }
 
         if(!ret) {
-            VSILOGE("Inputs/Outputs data type not support.");
+            char* desc = generate_op_io_types_desc(inputs,
+                    self->input.num, outputs, self->output.num);
+            VSILOGE("Inputs/Outputs data type not support: %s", desc);
+            vsi_nn_safe_free(desc);
             return FALSE;
         }
     }
