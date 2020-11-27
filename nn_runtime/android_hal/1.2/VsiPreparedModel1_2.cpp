@@ -125,8 +125,8 @@ Return<ErrorStatus> VsiPreparedModel::executeBase(const Request& request,
                                                   hidl_vec<OutputShape>& oOutputShapes,
                                                   Timing& oTiming) {
     Timing timing = kNoTiming;
-    time_point deviceStart;
-    deviceStart = now();
+    time_point driverStart;
+    driverStart = now();
 
     if (!validateRequest(request, model_)) {
         LOG(ERROR) << "invalid request";
@@ -175,7 +175,10 @@ Return<ErrorStatus> VsiPreparedModel::executeBase(const Request& request,
     }
 
     LOG(INFO) << "start compute";
+    time_point deviceStart, deviceEnd;
+    deviceStart = now();
     int error = native_exec_->compute();
+    deviceEnd = now();
 
     LOG(INFO) << "Finished compute";
     status = convertResultCodeToErrorStatus(error);
@@ -189,10 +192,10 @@ Return<ErrorStatus> VsiPreparedModel::executeBase(const Request& request,
         return status;
     }
 
-    time_point deviceEnd;
-    deviceEnd = now();
+    time_point driverEnd;
+    driverEnd = now();
     timing.timeOnDevice = uint64_t(microsecondsDuration(deviceEnd, deviceStart));
-    timing.timeInDriver = uint64_t(microsecondsDuration(deviceEnd, deviceStart));
+    timing.timeInDriver = uint64_t(microsecondsDuration(driverEnd, driverStart));
 
     LOG(INFO) << __FUNCTION__ << " time: " << toString(timing) << "micro-sec";
 
