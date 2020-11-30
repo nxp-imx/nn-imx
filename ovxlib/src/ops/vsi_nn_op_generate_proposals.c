@@ -249,7 +249,6 @@ static vsi_bool op_check
     vsi_nn_tensor_t ** outputs
     )
 {
-    /*TODO: Check tensor shapes. */
     return TRUE;
 } /* op_check() */
 

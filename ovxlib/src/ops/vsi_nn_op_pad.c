@@ -34,6 +34,7 @@
 #include "vsi_nn_log.h"
 #include "utils/vsi_nn_util.h"
 #include "utils/vsi_nn_math.h"
+#include "utils/vsi_nn_constraint_check.h"
 
 vsi_status vsi_nn_InitPadParameter
     (
@@ -158,6 +159,25 @@ static vsi_bool op_check
     vsi_nn_tensor_t ** outputs
     )
 {
+    BEGIN_IO_TYPE_DECL(PAD, 1, 1)
+        IO_TYPE(D_F32,  D_F32)
+        IO_TYPE(D_F32,  D_BF16)
+        IO_TYPE(D_BF16, D_F32)
+        IO_TYPE(D_BF16, D_BF16)
+        IO_TYPE(D_F16,  D_F16)
+        IO_TYPE(D_U8|Q_ASYM,  D_U8|Q_ASYM)
+        IO_TYPE(D_I16|Q_DFP,  D_I16|Q_DFP)
+        IO_TYPE(D_I8|Q_DFP,   D_I8|Q_DFP)
+    END_IO_TYPE_DECL(PAD)
+    if (!VALIDATE_OP_IO_TYPES(PAD, self, inputs, self->input.num, outputs, self->output.num))
+    {
+        char* desc = generate_op_io_types_desc(inputs,
+                self->input.num, outputs, self->output.num);
+        VSILOGE("Inputs/Outputs data type not support: %s", desc);
+        destroy_op_io_types_desc(desc);
+        return FALSE;
+    }
+
     if(self->nn_param.pad.dim_num != inputs[0]->attr.dim_num
         && self->nn_param.pad.dim_num != 0 )
     {

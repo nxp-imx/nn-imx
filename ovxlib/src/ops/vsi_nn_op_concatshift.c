@@ -34,6 +34,7 @@
 #include "vsi_nn_tensor_util.h"
 #include "utils/vsi_nn_util.h"
 #include "utils/vsi_nn_dtype_util.h"
+#include "utils/vsi_nn_constraint_check.h"
 
 static vsi_status op_compute
     (

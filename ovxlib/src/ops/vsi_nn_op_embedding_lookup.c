@@ -32,6 +32,8 @@
 #include "vsi_nn_prv.h"
 #include "vsi_nn_ops.h"
 #include "vsi_nn_tensor.h"
+#include "utils/vsi_nn_util.h"
+#include "utils/vsi_nn_constraint_check.h"
 
 static void _reshape_tensor
     (
@@ -83,7 +85,22 @@ static vsi_bool op_check
     vsi_nn_tensor_t ** outputs
     )
 {
-    /*TODO: Check tensor shapes. */
+    BEGIN_IO_TYPE_DECL(EMBEDDING_LOOKUP, 2, 1)
+        IO_TYPE(D_I32, D_F16,  D_F16)
+        IO_TYPE(D_I32, D_F32,  D_F32)
+        IO_TYPE(D_I32, D_I32,  D_I32)
+        IO_TYPE(D_I32, D_U8|Q_ASYM,  D_U8|Q_ASYM)
+    END_IO_TYPE_DECL(EMBEDDING_LOOKUP)
+
+    if (!VALIDATE_OP_IO_TYPES(EMBEDDING_LOOKUP, self, inputs, self->input.num, outputs, self->output.num))
+    {
+        char* desc = generate_op_io_types_desc(inputs,
+                self->input.num, outputs, self->output.num);
+        VSILOGE("Inputs/Outputs data type not support: %s", desc);
+        destroy_op_io_types_desc(desc);
+        return FALSE;
+    }
+
     return TRUE;
 } /* op_check() */
 

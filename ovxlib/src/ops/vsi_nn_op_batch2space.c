@@ -35,6 +35,7 @@
 #include "utils/vsi_nn_dtype_util.h"
 #include "utils/vsi_nn_math.h"
 #include "vsi_nn_test.h"
+#include "utils/vsi_nn_constraint_check.h"
 
 static vsi_status op_compute
     (
@@ -102,13 +103,32 @@ static vsi_bool op_check
     vsi_nn_tensor_t ** outputs
     )
 {
+    BEGIN_IO_TYPE_DECL(BATCH2SPACE, 1, 1)
+        IO_TYPE(D_F32,  D_F32)
+        IO_TYPE(D_F32,  D_BF16)
+        IO_TYPE(D_F16,  D_F16)
+        IO_TYPE(D_BF16, D_BF16)
+        IO_TYPE(D_BF16, D_F32)
+        IO_TYPE(D_U8|Q_ASYM,  D_U8|Q_ASYM)
+        IO_TYPE(D_I16|Q_DFP,  D_I16|Q_DFP)
+        IO_TYPE(D_I8|Q_DFP,   D_I8|Q_DFP)
+    END_IO_TYPE_DECL(BATCH2SPACE)
+    if (!VALIDATE_OP_IO_TYPES(BATCH2SPACE, self, inputs, self->input.num, outputs, self->output.num))
+    {
+        char* desc = generate_op_io_types_desc(inputs,
+                self->input.num, outputs, self->output.num);
+        VSILOGE("Inputs/Outputs data type not support: %s", desc);
+        destroy_op_io_types_desc(desc);
+        return FALSE;
+    }
+
     if (inputs[0]->attr.dim_num != 4)
     {
         VSILOGE("batch2space only support 4D");
         return FALSE;
     }
 
-    if(self->nn_param.batch2space.block_size[0] < 0
+    if (self->nn_param.batch2space.block_size[0] < 0
         || self->nn_param.batch2space.block_size[1] < 0)
     {
         VSILOGE("Block size can't be less than zero in batch to space");
