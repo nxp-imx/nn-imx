@@ -30,6 +30,7 @@
 #include "vsi_nn_tensor_util.h"
 #include "utils/vsi_nn_math.h"
 #include "utils/vsi_nn_util.h"
+#include "utils/vsi_nn_constraint_check.h"
 
 #define MAX_BATCH_COUNT   1024
 
@@ -178,7 +179,11 @@ static vsi_bool op_check
     )
 {
     //TODO: Check tensor shapes.
-    return TRUE;
+    vsi_bool ret = FALSE;
+
+    ret = vsi_nn_OpCheck(VSI_NN_OP_LRN, self, inputs, outputs);
+
+    return ret;
 } /* op_check() */
 
 #ifdef __cplusplus

@@ -35,6 +35,7 @@
 #include "vsi_nn_tensor.h"
 #include "vsi_nn_tensor_util.h"
 #include "client/vsi_nn_vxkernel.h"
+#include "utils/vsi_nn_constraint_check.h"
 
 #define _ARG_NUM            (14)
 #define _INPUT_NUM          (1)
@@ -604,6 +605,21 @@ static vsi_bool op_check
     vsi_nn_tensor_t ** outputs
     )
 {
+    BEGIN_IO_TYPE_DECL(IMAGEPROCESS, 1, 1)
+        IO_TYPE(D_U8,  D_F16)
+        IO_TYPE(D_U8,  D_U8|Q_ASYM)
+        IO_TYPE(D_U8,  D_I16|Q_DFP)
+        IO_TYPE(D_U8,  D_I8|Q_DFP)
+    END_IO_TYPE_DECL(IMAGEPROCESS)
+    if (!VALIDATE_OP_IO_TYPES(IMAGEPROCESS, self, inputs, self->input.num, outputs, self->output.num))
+    {
+        char* desc = generate_op_io_types_desc(inputs,
+                self->input.num, outputs, self->output.num);
+        VSILOGE("Inputs/Outputs data type not support: %s", desc);
+        destroy_op_io_types_desc(desc);
+        return FALSE;
+    }
+
     return TRUE;
 } /* op_check() */
 

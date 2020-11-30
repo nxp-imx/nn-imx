@@ -32,6 +32,7 @@
 #include "vsi_nn_log.h"
 #include "vsi_nn_tensor_util.h"
 #include "vsi_nn_internal_node.h"
+#include "utils/vsi_nn_constraint_check.h"
 
 static int32_t _get_input_num
     (

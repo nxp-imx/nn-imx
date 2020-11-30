@@ -31,6 +31,7 @@
 #include "vsi_nn_tensor_util.h"
 #include "utils/vsi_nn_dtype_util.h"
 #include "kernel/vsi_nn_kernel.h"
+#include "utils/vsi_nn_constraint_check.h"
 
 static vsi_status op_compute
     (
@@ -71,6 +72,46 @@ static vsi_bool op_check
     )
 {
     vsi_bool ret = FALSE;
+
+    BEGIN_IO_TYPE_DECL(CONV1D, 3, 1)
+        IO_TYPE(D_F16,  D_F16,  D_NONE, D_F16)
+        IO_TYPE(D_F16,  D_F16,  D_F32, D_F16)
+        IO_TYPE(D_F16,  D_F16,  D_F16, D_F16)
+        IO_TYPE(D_F32,  D_F32,  D_F32, D_F32)
+        IO_TYPE(D_F32,  D_F32,  D_F32, D_BF16)
+        IO_TYPE(D_F32,  D_F32,  D_NONE, D_F32)
+        IO_TYPE(D_I16|Q_DFP,  D_I16|Q_DFP,  D_NONE, D_I16|Q_DFP)
+        IO_TYPE(D_I16|Q_DFP,  D_I16|Q_DFP,  D_I32|Q_DFP, D_I16|Q_DFP)
+        IO_TYPE(D_I16|Q_DFP,  D_I16|Q_DFP,  D_I64|Q_DFP, D_I16|Q_DFP)
+        IO_TYPE(D_I16|Q_DFP,  D_I16|Q_DFP,  D_I16|Q_DFP, D_I16|Q_DFP)
+        IO_TYPE(D_I8|Q_DFP,  D_I8|Q_DFP,  D_NONE, D_I8|Q_DFP)
+        IO_TYPE(D_I8|Q_DFP,  D_I8|Q_DFP,  D_I32|Q_DFP, D_I8|Q_DFP)
+        IO_TYPE(D_U8|Q_ASYM, D_I8|Q_DFP,  D_I32|Q_DFP, D_U8|Q_ASYM)
+        IO_TYPE(D_U8|Q_ASYM, D_I8|Q_SYM_PC,  D_I32|Q_SYM_PC, D_U8|Q_ASYM)
+        IO_TYPE(D_U8|Q_ASYM, D_U8|Q_ASYM, D_NONE, D_U8|Q_ASYM)
+        IO_TYPE(D_U8|Q_ASYM, D_U8|Q_ASYM, D_I32|Q_ASYM, D_U8|Q_ASYM)
+        IO_TYPE(D_I8|Q_DFP,  D_I8|Q_DFP,  D_I32|Q_DFP, D_I16|Q_DFP)
+        IO_TYPE(D_I8|Q_DFP,  D_I8|Q_DFP,  D_I32|Q_DFP, D_U8|Q_ASYM)
+        IO_TYPE(D_I8|Q_DFP,  D_I8|Q_DFP,  D_I32|Q_DFP, D_F16)
+        IO_TYPE(D_U8|Q_ASYM, D_U8|Q_ASYM, D_I32|Q_ASYM, D_I8|Q_DFP)
+        IO_TYPE(D_U8|Q_ASYM, D_U8|Q_ASYM, D_I32|Q_ASYM, D_I16|Q_DFP)
+        IO_TYPE(D_U8|Q_ASYM, D_U8|Q_ASYM, D_I32|Q_ASYM, D_F16)
+        IO_TYPE(D_U8|Q_ASYM, D_U8|Q_ASYM, D_U8|Q_ASYM, D_U8|Q_ASYM)
+        IO_TYPE(D_U8|Q_ASYM, D_U8|Q_ASYM, D_U8|Q_ASYM, D_I8|Q_DFP)
+        IO_TYPE(D_U8|Q_ASYM, D_U8|Q_ASYM, D_U8|Q_ASYM, D_I16|Q_DFP)
+        IO_TYPE(D_U8|Q_ASYM, D_U8|Q_ASYM, D_U8|Q_ASYM, D_F16)
+        IO_TYPE(D_BF16,  D_BF16,  D_F32, D_BF16)
+        IO_TYPE(D_BF16,  D_BF16,  D_F32, D_F32)
+        IO_TYPE(D_BF16,  D_BF16,  D_NONE, D_BF16)
+    END_IO_TYPE_DECL(CONV1D)
+    if (!VALIDATE_OP_IO_TYPES(CONV1D, self, inputs, self->input.num, outputs, self->output.num))
+    {
+        char* desc = generate_op_io_types_desc(inputs,
+                self->input.num, outputs, self->output.num);
+        VSILOGE("Inputs/Outputs data type not support: %s", desc);
+        destroy_op_io_types_desc(desc);
+        return FALSE;
+    }
 
     /* Check fl and scale*/
     ret = vsi_nn_QuantCheck(inputs[0], inputs[1], inputs[2]);
