@@ -109,7 +109,7 @@ static vx_param_description_t kernel_param_def[] =
 };
 #define _EVIS_PARAM_NUM          _cnt_of_array(kernel_param_def)
 
-DEF_KERNEL_INITIALIZER(_minimum_initializer)
+DEF_KERNEL_INITIALIZER(_prelu_initializer)
     (
     vsi_nn_kernel_node_t node,
     const vsi_nn_kernel_node_param_t * param,
@@ -147,11 +147,11 @@ DEF_KERNEL_INITIALIZER(_minimum_initializer)
     status = vxQueryHardwareCaps(ctx, &hw_param, sizeof(vx_hardware_caps_params_t));
     CHECK_STATUS_FAIL_GOTO(status, final);
 
-    if(hw_param.evis1 == TRUE && hw_param.evis2 == FALSE)
+    if (hw_param.evis1 == TRUE && hw_param.evis2 == FALSE)
     {
         evis_version = 1;
     }
-    else if(hw_param.evis1 == FALSE && hw_param.evis2 == TRUE)
+    else if (hw_param.evis1 == FALSE && hw_param.evis2 == TRUE)
     {
         evis_version = 2;
     }
@@ -164,7 +164,7 @@ DEF_KERNEL_INITIALIZER(_minimum_initializer)
     CHECK_PTR_FAIL_GOTO( attr[2], "Create tensor attr buffer fail.", final );
 
     out_shape  = attr[2]->shape;
-    if( attr[0]->quant == VSI_NN_KERNEL_QUANT_DFP )
+    if ( attr[0]->quant == VSI_NN_KERNEL_QUANT_DFP )
     {
         in0_fl = (int8_t)attr[0]->dfp.fl;
         if (in0_fl >= 0)
@@ -176,19 +176,19 @@ DEF_KERNEL_INITIALIZER(_minimum_initializer)
             input_scale0 = (vx_float32) ((int64_t)1 << -in0_fl);
         }
     }
-    else if( attr[0]->quant == VSI_NN_KERNEL_QUANT_ASYMM )
+    else if ( attr[0]->quant == VSI_NN_KERNEL_QUANT_ASYMM )
     {
         inputZP0    = attr[0]->asymm.zero_point;
         input_scale0  = attr[0]->asymm.scale;
     }
 
-    if( attr[1]->quant == VSI_NN_KERNEL_QUANT_ASYMM )
+    if ( attr[1]->quant == VSI_NN_KERNEL_QUANT_ASYMM )
     {
         inputZP1 = attr[1]->asymm.zero_point;
         input_scale1  = attr[1]->asymm.scale;
     }
 
-    if( attr[2]->quant == VSI_NN_KERNEL_QUANT_DFP )
+    if ( attr[2]->quant == VSI_NN_KERNEL_QUANT_DFP )
     {
         out_fl = (int8_t)attr[2]->dfp.fl;
 
@@ -197,7 +197,7 @@ DEF_KERNEL_INITIALIZER(_minimum_initializer)
         else if (out_fl < 0)
             input_scale0 *= 1.0f / (vx_float32) ((int64_t)1 << -out_fl);
     }
-    else if( attr[2]->quant == VSI_NN_KERNEL_QUANT_ASYMM )
+    else if ( attr[2]->quant == VSI_NN_KERNEL_QUANT_ASYMM )
     {
         outputZP      = (float)attr[2]->asymm.zero_point;
         input_scale0   = input_scale0 / attr[2]->asymm.scale;
@@ -212,7 +212,7 @@ DEF_KERNEL_INITIALIZER(_minimum_initializer)
 
     pack_key = _PACK_SELECT_KEY( attr[0]->dtype, attr[2]->dtype, is_ge_fl, is_2d_img, evis_version );
 
-    if( attr[0]->dtype == I8 && attr[2]->dtype == I8 && is_ge_fl)
+    if ( attr[0]->dtype == I8 && attr[2]->dtype == I8 && is_ge_fl)
     {
         gpu_param.global_scale[0] = 16;
         gpu_param.global_scale[1] = 1;
@@ -258,6 +258,12 @@ DEF_KERNEL_INITIALIZER(_minimum_initializer)
                 0x00000000, 0x00000000, 0x00000000, 0x00000000,
                 0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
             }, GPU_DP_TYPE_16 };
+
+            if ( attr[0]->dtype == I16 )
+            {
+                uniPreluDFPLo_2x8b.data[7] = 0x00003000;
+                uniPreluDFPHi_2x8b.data[7] = 0x00003000;
+            }
 
             gpu_dp_inst_update_postshfit( &uniPreluDFPLo_2x8b, shift0 );
             gpu_dp_inst_update_postshfit( &uniPreluDFPHi_2x8b, shift0 );
@@ -505,7 +511,7 @@ final:
     }
 
     return status;
-} /* _minmum_initializer() */
+} /* _prelu_initializer() */
 
 static vsi_status _query_kernel
     (
@@ -545,7 +551,7 @@ static vsi_status _query_kernel
         snprintf( kernel->info.name, VX_MAX_KERNEL_NAME, "%s",  kernel_map[i].function_name );
         kernel->info.parameters = kernel_param_def;
         kernel->info.numParams = _cnt_of_array( kernel_param_def );
-        kernel->info.initialize = _minimum_initializer;
+        kernel->info.initialize = _prelu_initializer;
         vsi_nn_kernel_add_source( kernel, VSI_NN_GPU_SOURCE_FMT_CODE, 2,
                 "vsi_nn_kernel_header",
                 kernel_map[i].source_name );
