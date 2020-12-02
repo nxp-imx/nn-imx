@@ -29,6 +29,11 @@
 #include <list>
 #include <string>
 
+#ifdef __linux__
+#include <unistd.h>
+#include <sys/mman.h>
+#endif
+
 #include "nnrt/memory_pool.hpp"
 #include "nnrt/types.hpp"
 #include "nnrt/logging.hpp"
@@ -212,6 +217,28 @@ class Model {
         }
     }
 
+    int get_cache_handle() { return cache_handle_; }
+    int set_cache_handle(int handle) {
+        int status = -1;
+        cache_handle_ = 0;
+#ifdef __linux__
+        status = dup2(handle, cache_handle_);
+        if (status == -1) cache_handle_ = -1;
+#endif
+        return status;
+    }
+    int get_cache_size() { return cache_size_; }
+    void set_cache_size(int size) { cache_size_ = size; }
+    bool allocate_cache_memory(int size) {
+#ifdef __linux__
+        auto flag = (-1 == cache_handle_) ? (MAP_SHARED | MAP_ANONYMOUS) : (MAP_SHARED);
+        cache_memory_ = mmap(nullptr, size, PROT_READ, flag, cache_handle_, 0);
+        return (cache_memory_ == nullptr) ? false : true;
+#endif
+    return false;
+    }
+    const char* get_cache_memory() { return (const char*)cache_memory_; }
+
    private:
     uint32_t operand_unique_id_{0};
     uint32_t operation_unique_id_{0};
@@ -219,6 +246,11 @@ class Model {
     bool finalized_{false};
     bool compiled_{false};
     bool valid_{false};
+
+    int cache_handle_{-1};
+    int cache_size_{0};
+    void* cache_memory_{nullptr};
+
     std::string signature_;
     std::map<uint32_t, op::OperationPtr> operations_;
     std::map<uint32_t, op::OperandPtr> operands_;
