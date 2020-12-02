@@ -205,6 +205,7 @@ OvxlibDelegate::OvxlibDelegate(std::vector<ExecutionIOPtr> &inputPtr)
     REGISTER_OP(CAST);
     REGISTER_OP(QUANTIZED_16BIT_LSTM);
     REGISTER_OP(MATRIX_MUL);
+    REGISTER_OP(NBG);
 #undef REGISTER_OP
 }
 
@@ -372,6 +373,26 @@ int OvxlibDelegate::process(nnrt::Model* model, vsi_nn_context_t ctx) {
         NNRT_LOGW_PRINT("Setup graph failure.");
         return NNA_ERROR_CODE(BAD_DATA);
     }
+
+    if (enable_cache_ && model->get_cache_size() == 0 && model->get_cache_handle() != -1) {
+        NNRT_LOGD_PRINT("DownCacheGraph ...");
+        size_t size = 0;
+        void* nbg_buf = nullptr;
+        int length = -1;
+        vsi_status status = vsi_nn_GenerateNBG(graph_, NULL, &size);
+        if (status != VSI_SUCCESS) return NNA_ERROR_CODE(BAD_DATA);
+        nbg_buf = malloc(size);
+        if (nbg_buf == nullptr) return NNA_ERROR_CODE(BAD_DATA);
+        status = vsi_nn_GenerateNBG(graph_, nbg_buf, &size);
+        if (status != VSI_SUCCESS) {
+            free(nbg_buf);
+            return NNA_ERROR_CODE(BAD_DATA);
+        }
+        length = write(model->get_cache_handle(), nbg_buf, size);
+        free(nbg_buf);
+        if (length == -1) return NNA_ERROR_CODE(BAD_DATA);
+    }
+
     NNRT_LOGD_PRINT("Verify graph ...");
     vsi_status status = vsi_nn_VerifyGraph(graph_);
 
@@ -1954,6 +1975,17 @@ int OvxlibDelegate::addNode_MATRIX_MUL(Model* model, OperationPtr operation, uin
     err = addNode(VSI_NN_OP_MATRIXMUL, operation, &nodes, operation_index);
     nodes[0]->nn_param.matrixmul.transpose[0] = matmul->transpose[0];
     nodes[0]->nn_param.matrixmul.transpose[1] = matmul->transpose[1];
+    return err;
+}
+
+int OvxlibDelegate::addNode_NBG(Model* model, OperationPtr operation, uint32_t operation_index) {
+    (void)model;
+    int err = NNA_ERROR_CODE(NO_ERROR);
+    std::vector<vsi_nn_node_t*> nodes;
+    err = addNode(VSI_NN_OP_NBG, operation, &nodes, operation_index);
+
+    nodes[0]->nn_param.nbg.url = model->get_cache_memory();
+    nodes[0]->nn_param.nbg.type = VSI_NN_NBG_POINTER;
     return err;
 }
 

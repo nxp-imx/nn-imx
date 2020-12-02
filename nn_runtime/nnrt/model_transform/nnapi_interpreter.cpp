@@ -202,7 +202,7 @@ NnApiInterpreter::NnApiInterpreter() {
     REGISTER_OP(DATA_CONVERT);
     REGISTER_OP(CAST);
     REGISTER_OP(QUANTIZED_16BIT_LSTM);
-
+    REGISTER_OP(NBG);
 /*customer Op*/
 #undef REGISTER_OP
 }
@@ -2371,6 +2371,14 @@ OperationPtr NnApiInterpreter::map_SLICE(Model* model,
     new_op->starts.assign(starts, starts + inputs[1]->size());
     new_op->sizes.assign(sizes, sizes + inputs[2]->size());
     truncateOperationIOs(model, operation, 1, 1);
+    return new_op;
+}
+
+OperationPtr NnApiInterpreter::map_NBG(Model* model,
+                                                 OperationPtr operation,
+                                                 uint32_t operation_index) {
+    std::shared_ptr<NBGOperation> new_op = std::make_shared<NBGOperation>();
+    NNAPI_CHECK_PTR(new_op);
     return new_op;
 }
 

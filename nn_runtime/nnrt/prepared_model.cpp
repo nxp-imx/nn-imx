@@ -80,19 +80,35 @@ int PreparedModel::prepare()
         }
         model_->echo();
     }
-    // Build ovxlib graph
+    // Build ovxlib graph twice,
+    // if down graph failed, build the other graph with false enable_cache_.
     OvxlibDelegate delegate(inputs_);
     err = delegate.process(model_, context_.get());
-    tensor_mapping_ = delegate.getTensorMapping();
-    graph_ = delegate.throwGraph();
-    if (err != NNA_ERROR_CODE(NO_ERROR)) {
-        NNRT_LOGE_PRINT("Prepare graph fail.");
-        if( graph_ != nullptr) {
+    if (err == NNA_ERROR_CODE(NO_ERROR)) {
+        tensor_mapping_ = delegate.getTensorMapping();
+        graph_ = delegate.throwGraph();
+        return err;
+    } else {
+        if (graph_ != nullptr) {
             vsi_nn_ReleaseGraph(&graph_);
             graph_ = nullptr;
         }
+        OvxlibDelegate delegate_nocache(inputs_);
+        delegate_nocache.enable_cache(false);
+        err = delegate_nocache.process(model_, context_.get());
+        if (err == NNA_ERROR_CODE(NO_ERROR)) {
+            tensor_mapping_ = delegate_nocache.getTensorMapping();
+            graph_ = delegate_nocache.throwGraph();
+            return err;
+        } else {
+            NNRT_LOGE_PRINT("Prepare graph fail.");
+            if (graph_ != nullptr) {
+                vsi_nn_ReleaseGraph(&graph_);
+                graph_ = nullptr;
+            }
+            return err;
+        }
     }
-    return err;
 }
 
 int PreparedModel::execute()

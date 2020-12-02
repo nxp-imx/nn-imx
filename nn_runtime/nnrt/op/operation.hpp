@@ -692,6 +692,7 @@ DECLARE_OPERATION(Sin, SIN);
 DECLARE_OPERATION(AxisAlignedBBoxTransform, AXIS_ALIGNED_BBOX_TRANSFORM);
 DECLARE_OPERATION(Cast, CAST);
 DECLARE_OPERATION(Quantized16BitLstm, QUANTIZED_16BIT_LSTM);
+DECLARE_OPERATION(NBG, NBG);
 
 template <nnrt::OperationType kOpType>
 void ArgXXXOperation<kOpType>::handleLayoutInferenceOnInputs(

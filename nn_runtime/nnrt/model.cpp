@@ -60,6 +60,9 @@ Model::Model() : memory_pool_(*this)
 
 Model::~Model()
 {
+#ifdef __linux__
+    if (cache_memory_ != nullptr) munmap(cache_memory_, cache_size_);
+#endif
 }
 
 bool Model::isInput(uint32_t index)
