@@ -317,6 +317,9 @@ Return<ErrorStatus> VsiPreparedModel::initialize() {
     auto status = map_rtinfo_from_hidl_memory(model_.pools, const_buffer_);
     if (ErrorStatus::NONE != status) return status;
 
+    if(native_model_->get_cache_size() != 0 && native_model_->get_cache_handle() != -1){
+        return initializeCacheInternel();
+    }
     // add operand and set its value
     for (const auto& hal_operand : model_.operands) {
         uint32_t registered_idx = 0;
@@ -364,6 +367,42 @@ Return<ErrorStatus> VsiPreparedModel::initialize() {
     native_model_->identifyInputsAndOutputs(
         inputs.data(), inputs.size(), outputs.data(), outputs.size());
     return ErrorStatus::NONE;
+}
+
+Return<ErrorStatus> VsiPreparedModel::initializeCacheInternel() {
+    LOG(INFO) << "VsiPreparedModel::initializeCache()";
+
+    std::vector<uint32_t> inputs = model_.inputIndexes;
+    std::vector<uint32_t> outputs = model_.outputIndexes;
+
+    auto op = std::make_shared<nnrt::op::Operation>(nnrt::OperationType::NBG);
+    op->setInputs(inputs);
+    op->setOutputs(outputs);
+    op->setDataLayout(nnrt::DataLayout::NHWC);
+    uint32_t out_index = 0;
+    native_model_->addOperation(op, &out_index);
+
+    for (const auto& hal_operand : model_.operands) {
+        uint32_t registered_idx = 0;
+        auto ovx_operand = native_model_->addOperand(nullptr, &registered_idx);
+        if (inputs[0] == registered_idx || outputs[0] == registered_idx) {
+            auto status = construct_ovx_operand(ovx_operand, hal_operand);
+            if (ErrorStatus::NONE != status) {
+                LOG(INFO) << "Deivce do not support the operand type"
+                          << static_cast<int32_t>(hal_operand.type);
+                return status;
+            }
+            fill_operand_value(ovx_operand, hal_operand);
+        }
+    }
+    if (model_.relaxComputationFloat32toFloat16) native_model_->relax(true);
+
+    native_model_->finish();
+    native_model_->identifyInputsAndOutputs(
+        inputs.data(), inputs.size(), outputs.data(), outputs.size());
+    return native_model_->allocate_cache_memory(native_model_->get_cache_size())
+               ? ErrorStatus::NONE
+               : ErrorStatus::INVALID_ARGUMENT;
 }
 
 void VsiPreparedModel::update_operand_from_request(const std::vector<uint32_t>& indexes,

@@ -91,7 +91,7 @@ class VsiDevice : public HalPlatform::Device
     Return<void>
         getNumberOfCacheFilesNeeded(V1_2::IDevice::getNumberOfCacheFilesNeeded_cb _hidl_cb)override {
         // Set both numbers to be 0 for cache not supported.
-        _hidl_cb(ErrorStatus::NONE, /*numModelCache=*/0, /*numDataCache=*/0);
+        _hidl_cb(ErrorStatus::NONE, /*numModelCache=*/1, /*numDataCache=*/1);
         return Void();
     };
 #endif
@@ -117,6 +117,7 @@ class VsiDevice : public HalPlatform::Device
    protected:
     std::string name_;
    private:
+    const int kInvalidCacheHandle_ = -1;
         static void notify(const sp<V1_0::IPreparedModelCallback>& callback, const ErrorStatus& status,
                            const sp<VsiPreparedModel>& preparedModel) {
             callback->notify(status, preparedModel);
@@ -142,7 +143,8 @@ class VsiDevice : public HalPlatform::Device
         template <typename T_Model, typename T_IPreparedModelCallback>
         Return<ErrorStatus> prepareModelBase(const T_Model& model,
                                          ExecutionPreference preference,
-                                         const sp<T_IPreparedModelCallback>& callback){
+                                         const sp<T_IPreparedModelCallback>& callback,
+                                         int cacheHandle){
             if (VLOG_IS_ON(DRIVER)) {
                 VLOG(DRIVER) << "prepareModel";
                 logModelToInfo(model);
@@ -162,7 +164,7 @@ class VsiDevice : public HalPlatform::Device
                 return ErrorStatus::INVALID_ARGUMENT;
             }
 
-            sp<VsiPreparedModel> preparedModel = new VsiPreparedModel( HalPlatform::convertVersion(model), preference);
+            sp<VsiPreparedModel> preparedModel = new VsiPreparedModel( HalPlatform::convertVersion(model), preference, cacheHandle);
             std::thread(asyncPrepareModel<sp<T_IPreparedModelCallback>>, preparedModel, callback).detach();
 
             return ErrorStatus::NONE;

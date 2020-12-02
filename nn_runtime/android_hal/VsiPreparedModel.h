@@ -45,6 +45,21 @@ namespace vsi_driver {
 
 class VsiPreparedModel : public HalPlatform::PrepareModel {
    public:
+    VsiPreparedModel(const HalPlatform::Model& model, ExecutionPreference preference,int cacheHandle)
+        : model_(model), preference_(preference) {
+        native_model_ = std::make_shared<nnrt::Model>();
+        if(cacheHandle != -1){
+            int cache_size = 0;
+            cache_size = lseek(cacheHandle,0,SEEK_END);
+            native_model_->set_cache_size(cache_size);
+            lseek(cacheHandle,0,SEEK_SET);
+            int status = native_model_->set_cache_handle(cacheHandle);
+            if(status == -1){
+                LOG(ERROR) <<"VsiPrepareModel Set cache handle failed.";
+            }
+        }
+    }
+
     VsiPreparedModel(const HalPlatform::Model& model, ExecutionPreference preference)
         : model_(model), preference_(preference) {
         native_model_ = std::make_shared<nnrt::Model>();
@@ -54,6 +69,7 @@ class VsiPreparedModel : public HalPlatform::PrepareModel {
 
     /*map hidl model to ovxlib model and compliation*/
     Return<ErrorStatus> initialize();
+    Return<ErrorStatus> initializeCacheInternel();
     Return<ErrorStatus> execute(const Request& request,
                                 const sp<V1_0::IExecutionCallback>& callback) override;
 
