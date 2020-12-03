@@ -94,3 +94,4 @@ __kernel void gemm_F16##src1_type_name##to##src1_type_name(image2d_array_t input
                 VXC_MODIFIER(0, 3, 0,VXC_RM_TowardZero, 0)); \
 }
 GEMM_F16_QINT_TO_QINT(U8, vxc_uchar16)
+GEMM_F16_QINT_TO_QINT(I8, vxc_char16)
