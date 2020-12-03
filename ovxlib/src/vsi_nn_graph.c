@@ -1900,7 +1900,7 @@ vsi_nn_tensor_id_t vsi_nn_get_tensor_id
     return VSI_NN_TENSOR_ID_NA;
 } /* vsi_nn_get_tensor_id() */
 
-vsi_status vsi_nnSetGraphPriority
+vsi_status vsi_nn_SetGraphPriority
     (
     vsi_nn_graph_t* graph,
     uint32_t priority
