@@ -32,6 +32,7 @@
 #include "vsi_nn_tensor.h"
 #include "vsi_nn_log.h"
 #include "utils/vsi_nn_util.h"
+#include "utils/vsi_nn_math.h"
 
 typedef struct _node_io_signature_t {
     int count;
@@ -95,9 +96,8 @@ static node_io_signature_t* _get_op_signature
     node_io_signature_t* item = NULL;
 
     if((inputs_num + outputs_num) > reg_io_count) {
-        VSILOGE("Inputs/outputs count greater than registered inputs/outputs count: %d > %d",
+        VSILOGW("Inputs/outputs count greater than registered inputs/outputs count: %d > %d",
                 (inputs_num + outputs_num), reg_io_count);
-        return NULL;
     }
 
     item = malloc(sizeof(node_io_signature_t) + \
@@ -105,6 +105,7 @@ static node_io_signature_t* _get_op_signature
     item->count = inputs_num + outputs_num;
     memset(&item->types[0], 0x00, reg_io_count * sizeof(vsi_nn_type_e));
 
+    inputs_num = vsi_nn_min(inputs_num, op_constraint_reg->reg_input_num);
     for(i = 0; i < inputs_num; i++) {
         if(!inputs[i]) {
             item->types[i] = VSI_NN_TYPE_NONE \
@@ -114,6 +115,8 @@ static node_io_signature_t* _get_op_signature
         item->types[i] = inputs[i]->attr.dtype.vx_type \
             | inputs[i]->attr.dtype.qnt_type << Q_SHIFT;
     }
+
+    outputs_num = vsi_nn_min(outputs_num, op_constraint_reg->reg_output_num);
     for(i = 0; i < outputs_num; i++) {
         if(!outputs[i]) {
             item->types[op_constraint_reg->reg_input_num + i] = \
