@@ -3,7 +3,7 @@
     "toolchain": [
         {
             "name": "imx865",
-            "root": "/home/software/Linux/freescale/ToolChain/LF_v5.4.y-1.0.0_RC2/64/sysroots",
+            "root": "/home/software/Linux/freescale/L5447_64/sysroots",
             "sysroot": "/aarch64-poky-linux",
             "cmake": "toolchain-arm-imx865.cmake",
             "prefix": "aarch64-poky-linux",
@@ -16,7 +16,7 @@
         },
         {
             "name": "imx8qxp",
-            "root": "/home/software/Linux/freescale/ToolChain/LF_v5.4.y-1.0.0_RC2/64/sysroots",
+            "root": "/home/software/Linux/freescale/L5447_64/sysroots",
             "sysroot": "/aarch64-poky-linux",
             "cmake": "toolchain-arm-imx865.cmake",
             "prefix": "aarch64-poky-linux",
@@ -29,7 +29,7 @@
         },
         {
             "name": "imx8mscale",
-            "root": "/home/software/Linux/freescale/ToolChain/LF_v5.4.y-1.0.0_RC2/64/sysroots",
+            "root": "/home/software/Linux/freescale/L5447_64/sysroots",
             "sysroot": "/aarch64-poky-linux",
             "cmake": "toolchain-arm-imx865.cmake",
             "prefix": "aarch64-poky-linux",
@@ -42,7 +42,7 @@
         },
         {
             "name": "imx8qm",
-            "root": "/home/software/Linux/freescale/ToolChain/LF_v5.4.y-1.0.0_RC2/64/sysroots",
+            "root": "/home/software/Linux/freescale/L5447_64/sysroots",
             "sysroot": "/aarch64-poky-linux",
             "cmake": "toolchain-arm-imx865.cmake",
             "prefix": "aarch64-poky-linux",
@@ -55,7 +55,7 @@
         },
         {
             "name": "imx815",
-            "root": "/home/software/Linux/freescale/ToolChain/LF_v5.4.y-1.0.0_RC2/64/sysroots",
+            "root": "/home/software/Linux/freescale/L5447_64/sysroots",
             "sysroot": "/aarch64-poky-linux",
             "cmake": "toolchain-arm-imx865.cmake",
             "prefix": "aarch64-poky-linux",
@@ -68,7 +68,7 @@
         },
         {
             "name": "imx854",
-            "root": "/home/software/Linux/freescale/ToolChain/LF_v5.4.y-1.0.0_RC2/64/sysroots",
+            "root": "/home/software/Linux/freescale/L5447_64/sysroots",
             "sysroot": "/aarch64-poky-linux",
             "cmake": "toolchain-arm-imx865.cmake",
             "prefix": "aarch64-poky-linux",
