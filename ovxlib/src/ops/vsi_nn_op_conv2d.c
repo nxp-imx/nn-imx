@@ -141,6 +141,7 @@ static vsi_bool op_check
             IO_TYPE(D_I8|Q_SYM, D_I8|Q_SYM, D_I32|Q_SYM, D_I8|Q_SYM)
 
             IO_TYPE(D_U8|Q_ASYM, D_I8|Q_SYM_PC, D_I32|Q_SYM_PC, D_U8|Q_ASYM)
+            IO_TYPE(D_U8|Q_ASYM, D_U8|Q_SYM_PC, D_I32|Q_SYM_PC, D_U8|Q_ASYM)
 
             /* IO_TYPE(INPUT, WEIGHT, NULL, OUTPUT) */
             IO_TYPE(D_F32, D_F32, D_NONE, D_F32)
@@ -165,6 +166,7 @@ static vsi_bool op_check
             IO_TYPE(D_I8|Q_SYM, D_I8|Q_SYM, D_NONE, D_I8|Q_SYM)
 
             IO_TYPE(D_U8|Q_ASYM, D_I8|Q_SYM_PC, D_NONE, D_U8|Q_ASYM)
+            IO_TYPE(D_U8|Q_ASYM, D_U8|Q_SYM_PC, D_NONE, D_U8|Q_ASYM)
         END_IO_TYPE_DECL(CONV2D)
         ret = VALIDATE_OP_IO_TYPES(CONV2D, inputs, self->input.num, outputs, self->output.num);
         if(!ret) {
