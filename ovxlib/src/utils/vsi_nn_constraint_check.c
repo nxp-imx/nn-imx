@@ -105,7 +105,7 @@ static node_io_signature_t* _get_op_signature
     item->count = inputs_num + outputs_num;
     memset(&item->types[0], 0x00, reg_io_count * sizeof(vsi_nn_type_e));
 
-    inputs_num = vsi_nn_min(inputs_num, op_constraint_reg->reg_input_num);
+    inputs_num = vsi_nn_min(inputs_num, (int)op_constraint_reg->reg_input_num);
     for(i = 0; i < inputs_num; i++) {
         if(!inputs[i]) {
             item->types[i] = VSI_NN_TYPE_NONE \
@@ -116,7 +116,7 @@ static node_io_signature_t* _get_op_signature
             | inputs[i]->attr.dtype.qnt_type << Q_SHIFT;
     }
 
-    outputs_num = vsi_nn_min(outputs_num, op_constraint_reg->reg_output_num);
+    outputs_num = vsi_nn_min(outputs_num, (int)op_constraint_reg->reg_output_num);
     for(i = 0; i < outputs_num; i++) {
         if(!outputs[i]) {
             item->types[op_constraint_reg->reg_input_num + i] = \
