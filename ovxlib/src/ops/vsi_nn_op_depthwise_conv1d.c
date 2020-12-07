@@ -117,7 +117,7 @@ static vsi_bool op_setup
             VSI_NN_ROUND_FLOOR
             );
 
-        outputs[0]->attr.size[1] = inputs[1]->attr.size[1];
+        outputs[0]->attr.size[1] = inputs[1]->attr.size[2];
         outputs[0]->attr.size[2] = inputs[0]->attr.size[2];
         outputs[0]->attr.dim_num = inputs[0]->attr.dim_num;
     }
