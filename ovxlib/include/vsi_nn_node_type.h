@@ -158,6 +158,7 @@
 #include "ops/vsi_nn_op_squeeze.h"
 #include "ops/vsi_nn_op_expand_broadcast.h"
 #include "ops/vsi_nn_op_deconvolution1d.h"
+#include "ops/vsi_nn_op_interp.h"
 /* custom node head define define */
 #include "custom/vsi_nn_custom_node_type.h"
 
@@ -302,6 +303,7 @@ typedef union _vsi_nn_nn_param
     vsi_nn_squeeze_param            squeeze;
     vsi_nn_expand_broadcast_param   expand_broadcast;
     vsi_nn_deconvolution1d_param    deconvolution1d;
+    vsi_nn_interp_param             interp;
     uint8_t                         client_param[128];
 
     /* custom node data struct define */
