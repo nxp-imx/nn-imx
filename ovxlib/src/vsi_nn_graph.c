@@ -792,6 +792,14 @@ vsi_status vsi_nn_RunGraph
     return status;
 } /* vsi_nn_RunGraph() */
 
+vsi_status vsi_nn_GenerateNBG(
+    vsi_nn_graph_t * graph,
+    void * nbg_buffer,
+    size_t * size
+    )
+{
+    return (VX_SUCCESS == vxGenerateNBG( graph->g, nbg_buffer, size ))? VSI_SUCCESS : VSI_FAILURE;
+} /* vsi_nn_GenerateNBG() */
 
 vsi_status vsi_nn_AsyncRunGraph
     (
