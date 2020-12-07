@@ -241,6 +241,21 @@ OVXLIB_API vsi_status vsi_nn_RunGraph
     );
 
 /**
+ * Genearate NBG cache
+ * Genearate NBG cache
+ *
+ * @param[in] graph Graph handle
+ * @param[in] nbg buffer pointer
+ * @param[in] nbg buffer size
+ * @return VSI_SUCCESS on success, or appropriate error code otherwise
+ */
+OVXLIB_API vsi_status vsi_nn_GenerateNBG(
+    vsi_nn_graph_t * graph,
+    void * nbg_buffer,
+    size_t * size
+    );
+
+/**
  * Run graph in asynch way
  * Invoke the all nodes in graph.
  *
