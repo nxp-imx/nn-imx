@@ -608,6 +608,7 @@
     <ClInclude Include="include\ops\vsi_nn_op_tanh.h" />
     <ClInclude Include="include\ops\vsi_nn_op_tensor_add_mean_stddev_norm.h" />
     <ClInclude Include="include\ops\vsi_nn_op_deconvolution1d.h" />
+    <ClInclude Include="include\ops\vsi_nn_op_interp.h" />
     <ClInclude Include="include\ops\vsi_nn_op_tensorstackconcat.h" />
     <ClInclude Include="include\ops\vsi_nn_op_tile.h" />
     <ClInclude Include="include\ops\vsi_nn_op_topk.h" />
@@ -1619,6 +1620,9 @@
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_deconvolution1d.c">
       <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_deconvolution1d.o</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_interp.c" >
+      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_interp.o</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_variable.c">
       <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_variable.o</ObjectFileName>
