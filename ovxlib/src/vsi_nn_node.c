@@ -81,6 +81,7 @@ vsi_nn_node_t * vsi_nn_NewNode
             input_num * sizeof( vsi_nn_tensor_id_t ) );
         vsi_nn_InitTensorsId( node->input.tensors, input_num );
         node->attr.const_tensor_preload_type = VSI_NN_NODE_PRELOAD_NONE;
+        node->attr.enable_op_constraint_check = TRUE;
     }
 
     node->uid = VSI_NN_NODE_UID_NA;

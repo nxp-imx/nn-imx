@@ -96,7 +96,7 @@ static vsi_bool op_check
         IO_TYPE(D_I16|Q_DFP, D_I16|Q_DFP)
         IO_TYPE(D_I16|Q_DFP, D_F16)
     END_IO_TYPE_DECL(RELU)
-    if(!VALIDATE_OP_IO_TYPES(RELU, inputs, self->input.num, outputs, self->output.num)) {
+    if(!VALIDATE_OP_IO_TYPES(RELU, self, inputs, self->input.num, outputs, self->output.num)) {
         VSILOGE("Inputs/Outputs data type not support.");
         return FALSE;
     }

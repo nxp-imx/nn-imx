@@ -78,6 +78,7 @@ vsi_bool is_const_tensor
 
 vsi_bool validate_op_io_types
     (
+    vsi_nn_node_t* self,
     vsi_nn_tensor_t** inputs,
     int inputs_num,
     vsi_nn_tensor_t** outputs,
@@ -140,8 +141,8 @@ static const op_constraint_reg_type NAME##_REG = {  \
 DECL_OP_CONSTRAINT_REG(NAME);
 #endif
 
-#define VALIDATE_OP_IO_TYPES(NAME, INPUTS, INPUTS_NUM, OUTPUTS, OUTPUTS_NUM) \
-    validate_op_io_types(INPUTS, INPUTS_NUM, OUTPUTS, OUTPUTS_NUM, \
+#define VALIDATE_OP_IO_TYPES(NAME, SELF, INPUTS, INPUTS_NUM, OUTPUTS, OUTPUTS_NUM) \
+    validate_op_io_types(SELF, INPUTS, INPUTS_NUM, OUTPUTS, OUTPUTS_NUM, \
         &NAME##_REG, #NAME)
 
 #ifdef __cplusplus
