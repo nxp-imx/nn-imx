@@ -53,7 +53,8 @@ extern "C"{
 typedef struct _vsi_nn_node_attr_t
 {
     int32_t const_tensor_preload_type;
-    int32_t reserved[7];
+    int32_t enable_op_constraint_check;
+    int32_t reserved[6];
 } vsi_nn_node_attr_t;
 
 /** Node structure */

@@ -145,6 +145,7 @@ vsi_bool is_const_tensor
 
 vsi_bool validate_op_io_types
     (
+    vsi_nn_node_t* self,
     vsi_nn_tensor_t** inputs,
     int inputs_num,
     vsi_nn_tensor_t** outputs,
@@ -153,24 +154,30 @@ vsi_bool validate_op_io_types
     const char* name
     )
 {
-    uint32_t i = 0;
     vsi_bool matched = FALSE;
-    node_io_signature_t* sig = _get_op_signature(inputs, inputs_num,
-            outputs, outputs_num, op_constraint_reg);
 
-    VSILOGD("Validate [%s]", name);
-    if(sig && op_constraint_reg && op_constraint_reg->types) {
-        for(i = 0; i < op_constraint_reg->io_types_item_count; i++) {
-            const uint8_t* curr = ((const uint8_t*)op_constraint_reg->types) \
-                    + op_constraint_reg->io_types_item_size * i;
-            if(!memcmp(curr, sig->types, op_constraint_reg->io_types_item_size)) {
-                matched = TRUE;
-                break;
+    if(self && self->attr.enable_op_constraint_check) {
+        uint32_t i = 0;
+
+        node_io_signature_t* sig = _get_op_signature(inputs, inputs_num,
+                outputs, outputs_num, op_constraint_reg);
+
+        VSILOGD("Validate [%s]", name);
+        if(sig && op_constraint_reg && op_constraint_reg->types) {
+            for(i = 0; i < op_constraint_reg->io_types_item_count; i++) {
+                const uint8_t* curr = ((const uint8_t*)op_constraint_reg->types) \
+                        + op_constraint_reg->io_types_item_size * i;
+                if(!memcmp(curr, sig->types, op_constraint_reg->io_types_item_size)) {
+                    matched = TRUE;
+                    break;
+                }
             }
         }
-    }
 
-    vsi_nn_safe_free(sig);
+        vsi_nn_safe_free(sig);
+    } else {
+        matched = TRUE;
+    }
 
     return matched;
 }

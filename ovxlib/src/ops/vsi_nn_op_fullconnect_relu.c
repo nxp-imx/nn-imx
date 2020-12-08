@@ -166,7 +166,7 @@ static vsi_bool op_check
             IO_TYPE(D_F32, D_BF16, D_F32, D_F32)
             IO_TYPE(D_F32, D_BF16, D_F32, D_BF16)
         END_IO_TYPE_DECL(FCL_RELU)
-        ret = VALIDATE_OP_IO_TYPES(FCL_RELU, inputs, self->input.num, outputs, self->output.num);
+        ret = VALIDATE_OP_IO_TYPES(FCL_RELU, self, inputs, self->input.num, outputs, self->output.num);
 
         /* TP Support */
         if (!ret ) {
