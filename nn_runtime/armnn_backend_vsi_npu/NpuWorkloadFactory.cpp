@@ -68,8 +68,11 @@
 #include "workloads/NpuLogSoftmaxWorkload.hpp"
 #include "workloads/NpuSliceWorkload.hpp"
 
+#include <boost/core/ignore_unused.hpp>
+
 #include <iostream>
 
+using namespace boost;
 
 namespace armnn {
 
@@ -101,12 +104,15 @@ bool NpuWorkloadFactory::IsLayerSupported(const Layer& layer,
 
 std::unique_ptr<ITensorHandle> NpuWorkloadFactory::CreateTensorHandle(
     const TensorInfo& tensorInfo, const bool IsMemoryManaged) const {
+    ignore_unused(IsMemoryManaged);
     return CreateTensorHandle(tensorInfo, DataLayout::NHWC);
 }
 
 std::unique_ptr<ITensorHandle> NpuWorkloadFactory::CreateTensorHandle(
     const TensorInfo& tensorInfo, DataLayout dataLayout, const bool IsMemoryManaged) const {
     // TODO: add dataLayout for tensor
+    ignore_unused(dataLayout);
+    ignore_unused(IsMemoryManaged);
     return std::make_unique<NpuTensorHandler>(tensorInfo);
 }
 
@@ -405,6 +411,7 @@ std::unique_ptr<IWorkload> NpuWorkloadFactory::CreatePad(const PadQueueDescripto
 
 std::unique_ptr<IWorkload> NpuWorkloadFactory::CreateEqual(const EqualQueueDescriptor& descriptor,
                                                            const WorkloadInfo& info) const {
+    ignore_unused(descriptor);
     ComparisonQueueDescriptor comparisonDescriptor;
     comparisonDescriptor.m_Parameters.m_Operation = ComparisonOperation::Equal;
 
@@ -427,6 +434,7 @@ std::unique_ptr<IWorkload> NpuWorkloadFactory::CreateStridedSlice(
 
 std::unique_ptr<IWorkload> NpuWorkloadFactory::CreateGreater(
     const GreaterQueueDescriptor& descriptor, const WorkloadInfo& info) const {
+    ignore_unused(descriptor);
     ComparisonQueueDescriptor comparisonDescriptor;
     comparisonDescriptor.m_Parameters.m_Operation = ComparisonOperation::Greater;
 
@@ -440,6 +448,7 @@ std::unique_ptr<IWorkload> NpuWorkloadFactory::CreateDebug(const DebugQueueDescr
 
 std::unique_ptr<IWorkload> NpuWorkloadFactory::CreateRsqrt(const RsqrtQueueDescriptor& descriptor,
                                                            const WorkloadInfo& info) const {
+    ignore_unused(descriptor);
     ElementwiseUnaryQueueDescriptor elementwiseUnaryDescriptor;
     elementwiseUnaryDescriptor.m_Parameters.m_Operation = UnaryOperation::Rsqrt;
 
