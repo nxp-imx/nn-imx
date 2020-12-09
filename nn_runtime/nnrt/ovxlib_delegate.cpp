@@ -531,6 +531,7 @@ int OvxlibDelegate::addNode(vsi_nn_op_t op,
                                          uint32_t uid) -> vsi_nn_node_t* {
 
         vsi_nn_node_t* node = vsi_nn_AddNode(graph, op, input_num, output_num, nullptr);
+        node->attr.enable_op_constraint_check = false;
         if (nullptr == node) {
             err = NNA_ERROR_CODE(BAD_DATA);
         } else {
