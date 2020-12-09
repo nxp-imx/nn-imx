@@ -174,7 +174,7 @@ DEF_KERNEL_EXECUTOR(_compute)
                     input_h = h * height_scale;
                 }
                 h0 = (vx_int32)input_h;
-                h1 = vsi_nn_min(h0 + 1, input_height - 1);
+                h1 = input_h < 0 ? 0 : vsi_nn_min(h0 + 1, input_height - 1);
                 for (w = 0; w < output_width; w ++)
                 {
                     vx_float32 input_w;
@@ -189,7 +189,7 @@ DEF_KERNEL_EXECUTOR(_compute)
                         input_w = w * width_scale;
                     }
                     w0 = (vx_int32)input_w;
-                    w1 = vsi_nn_min(w0 + 1, (vx_int32)(input_width - 1));
+                    w1 = input_w < 0 ? 0 : vsi_nn_min(w0 + 1, (vx_int32)(input_width - 1));
                     index = input_base + h0 * input_width_orig + w0;
                     data00 = f32_in_buffer[0][index];
                     index = input_base + h0 * input_width_orig + w1;
