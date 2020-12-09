@@ -44,6 +44,7 @@ class NpuSplitterWorkload : public TNpuWorkload<SplitterQueueDescriptor, DataTyp
             dynamic_cast<NpuTensorHandler*>(descriptor.m_Inputs[0]);
         NpuTensorHandler* outputTensorHandle0 =
             dynamic_cast<NpuTensorHandler*>(descriptor.m_Outputs[0]);
+        m_Axis = 0;
         if (inputTensorHandle && outputTensorHandle0) {
             auto inputShape = inputTensorHandle->GetShape();
             auto output0Shape = outputTensorHandle0->GetShape();
@@ -58,8 +59,6 @@ class NpuSplitterWorkload : public TNpuWorkload<SplitterQueueDescriptor, DataTyp
                         break;
                     }
                 }
-            } else {
-                m_Axis = 0;
             }
         }
 

@@ -37,7 +37,9 @@
 #include <Optimizer.hpp>
 
 #include <boost/cast.hpp>
+#include <boost/core/ignore_unused.hpp>
 
+using namespace boost;
 
 namespace armnn
 {
@@ -51,6 +53,7 @@ const BackendId& NPUBackend::GetIdStatic()
 IBackendInternal::IWorkloadFactoryPtr NPUBackend::CreateWorkloadFactory(
     const IBackendInternal::IMemoryManagerSharedPtr& memoryManager) const
 {
+    ignore_unused(memoryManager);
     return std::make_unique<NpuWorkloadFactory>();
 }
 

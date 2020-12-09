@@ -27,7 +27,11 @@
 #include <string>
 #include <armnn/TypesUtils.hpp>
 
+#include <boost/core/ignore_unused.hpp>
+
 #include <iostream>
+
+using namespace boost;
 
 namespace armnn
 {
@@ -88,6 +92,7 @@ TensorShape NpuTensorHandler::GetShape() const
 
 void* NpuTensorHandler::Map(bool blocking)
 {
+    ignore_unused(blocking);
     getMemoryReady();
     if (callback) {
         if (m_ExternalMem) {
@@ -101,6 +106,7 @@ void* NpuTensorHandler::Map(bool blocking)
 
 const void* NpuTensorHandler::Map(bool blocking) const
 {
+    ignore_unused(blocking);
     getMemoryReady();
     if (callback) {
         if (m_ExternalMem) {
