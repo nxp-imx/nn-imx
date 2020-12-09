@@ -29341,6 +29341,73 @@ __kernel void resize_bilinear_U8toU8_DOWN\n\
 }\n\
 "; /* end of resize_bilinear_U8_vx*/
 
+static const char resize_bilinear_U8_UP_2X_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+_viv_uniform VXC_512Bits uniResize2xUp_4x8;\n\
+_viv_uniform VXC_512Bits uniResize2xUpRound_2x8;\n\
+_viv_uniform int out_height;\n\
+\n\
+__kernel void resize_bilinear_U8toU8_UP_2X_half\n\
+    (\n\
+    __read_only  image2d_array_t   input,\n\
+    __write_only image2d_array_t   output,\n\
+                             int   align_corners,\n\
+                             int   half_pixel_centers\n\
+    )\n\
+{\n\
+    int4 coord_out  =  (int4)(get_global_id(0), 0, get_global_id(1), 0);\n\
+    int4 coord_in   = (int4)(get_global_id(0), -1, get_global_id(1), 0);\n\
+    coord_in.x = (coord_out.x * 2 - 1) >> 2;\n\
+    coord_in.x  = coord_out.x == 0 ? -1 : coord_in.x;\n\
+\n\
+    vxc_uchar16 in0, in1, tmp, result;\n\
+    vxc_ushort8 result_s, round_s = 8;\n\
+\n\
+    int8 input_desc;\n\
+    _viv_asm(COPY, input_desc, input, sizeof(input_desc));\n\
+    int baseAddr = (int)coord_in.z * input_desc.s4 + input_desc.s0;\n\
+    _viv_asm(MOV, coord_in.w, baseAddr);\n\
+    VXC_OP4(img_load_3d, in0, input, coord_in.xyww, VXC_5BITOFFSET_XY(0, 0),\n\
+            VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_OP4(img_load_3d, in1, input, coord_in.xyww, VXC_5BITOFFSET_XY(0, 1),\n\
+            VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    int8 output_desc;\n\
+    _viv_asm(COPY, output_desc, output, sizeof(output_desc));\n\
+    baseAddr = (int)coord_out.z * output_desc.s4 + output_desc.s0;\n\
+    _viv_asm(MOV, coord_out.w, baseAddr);\n\
+\n\
+    while (coord_out.y < out_height)\n\
+    {\n\
+        VXC_DP4x8(result_s, in0, in1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniResize2xUp_4x8);\n\
+        VXC_DP2x8(result, result_s, round_s, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniResize2xUpRound_2x8);\n\
+        VXC_OP4_NoDest(img_store_3d, output, coord_out.xyww, result,\n\
+            VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0));\n\
+        coord_out.y++;\n\
+        VXC_OP4(img_load_3d, in0, input, coord_in.xyww, VXC_5BITOFFSET_XY(0, 2),\n\
+            VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
+        VXC_DP4x8(result_s, in0, in1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniResize2xUp_4x8);\n\
+        VXC_DP2x8(result, result_s, round_s, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniResize2xUpRound_2x8);\n\
+        VXC_OP4_NoDest(img_store_3d, output, coord_out.xyww, result,\n\
+            VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0));\n\
+        coord_out.y++;\n\
+        VXC_DP4x8(result_s, in1, in0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniResize2xUp_4x8);\n\
+        VXC_DP2x8(result, result_s, round_s, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniResize2xUpRound_2x8);\n\
+        VXC_OP4_NoDest(img_store_3d, output, coord_out.xyww, result,\n\
+            VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0));\n\
+        VXC_OP4(img_load_3d, in1, input, coord_in.xyww, VXC_5BITOFFSET_XY(0, 3),\n\
+            VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
+        coord_out.y++;\n\
+        VXC_DP4x8(result_s, in1, in0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniResize2xUp_4x8);\n\
+        VXC_DP2x8(result, result_s, round_s, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniResize2xUpRound_2x8);\n\
+        VXC_OP4_NoDest(img_store_3d, output, coord_out.xyww, result,\n\
+            VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0));\n\
+        coord_in.y += 2;\n\
+        coord_out.y++;\n\
+    }\n\
+}\n\
+"; /* end of resize_bilinear_U8_UP_2X_vx*/
+
 static const char resize_bilinear_U8_opt_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 #if (VX_VERSION==2)\n\
@@ -46356,6 +46423,7 @@ static const source_map_t evis_resource[] =
     {"resize_bilinear_I16_vx", resize_bilinear_I16_vx},
     {"resize_bilinear_I8_vx", resize_bilinear_I8_vx},
     {"resize_bilinear_U8_vx", resize_bilinear_U8_vx},
+    {"resize_bilinear_U8_UP_2X_vx", resize_bilinear_U8_UP_2X_vx},
     {"resize_bilinear_U8_opt_vx", resize_bilinear_U8_opt_vx},
     {"resize_nearest_vx", resize_nearest_vx},
     {"scatter_nd_vx", scatter_nd_vx},
