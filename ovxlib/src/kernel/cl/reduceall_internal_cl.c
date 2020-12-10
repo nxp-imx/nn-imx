@@ -207,7 +207,7 @@ static vsi_nn_kernel_node_t _setup
     )
 {
     vsi_status status = VSI_FAILURE;
-    vsi_nn_kernel_node_param_t node_params[_REDUCEALL_INTERNAL_PARAM_NUM];
+    vsi_nn_kernel_node_param_t node_params[_REDUCEALL_INTERNAL_PARAM_NUM] = {NULL};
     vsi_nn_kernel_node_t node = NULL;
     vsi_bool image_2d = FALSE;
     int32_t  axis = 0;

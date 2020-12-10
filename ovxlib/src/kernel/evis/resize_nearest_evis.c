@@ -509,7 +509,7 @@ static vsi_nn_kernel_node_t _setup
     )
 {
     vsi_status status = VSI_FAILURE;
-    vsi_nn_kernel_node_param_t node_params[_RESIZE_NEAREST_PARAM_NUM];
+    vsi_nn_kernel_node_param_t node_params[_RESIZE_NEAREST_PARAM_NUM] = {NULL};
     vsi_nn_kernel_node_t node = NULL;
     int32_t align_corners       = vsi_nn_kernel_param_get_int32( params, "align_corners" );
     int32_t half_pixel_centers  = vsi_nn_kernel_param_get_int32( params, "half_pixel_centers" );

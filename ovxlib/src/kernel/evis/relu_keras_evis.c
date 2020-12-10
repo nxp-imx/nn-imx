@@ -430,7 +430,7 @@ static vsi_nn_kernel_node_t _setup
     )
 {
     vsi_status status = VSI_FAILURE;
-    vsi_nn_kernel_node_param_t node_params[_RELU_KERAS_PARAM_NUM];
+    vsi_nn_kernel_node_param_t node_params[_RELU_KERAS_PARAM_NUM] = {NULL};
     vsi_nn_kernel_node_t node = NULL;
     vsi_bool image_2d = FALSE;
     float   alpha      = vsi_nn_kernel_param_get_float32( params, "alpha" );

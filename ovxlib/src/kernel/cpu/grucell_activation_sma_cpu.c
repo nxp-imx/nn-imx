@@ -157,7 +157,7 @@ static vsi_nn_kernel_node_t _setup
     )
 {
     vsi_status status = VSI_FAILURE;
-    vsi_nn_kernel_node_param_t node_params[_GRUCELL_ACTIVATION_SMA_PARAM_NUM];
+    vsi_nn_kernel_node_param_t node_params[_GRUCELL_ACTIVATION_SMA_PARAM_NUM] = {NULL};
     vsi_nn_kernel_node_t node = NULL;
 
     status = _query_kernel( kernel, inputs, outputs /* Add extra params */ );

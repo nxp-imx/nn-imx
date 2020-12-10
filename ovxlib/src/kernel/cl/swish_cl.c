@@ -272,7 +272,7 @@ static vsi_nn_kernel_node_t _setup
     )
 {
     vsi_status status = VSI_FAILURE;
-    vsi_nn_kernel_node_param_t node_params[_SWISH_PARAM_NUM];
+    vsi_nn_kernel_node_param_t node_params[_SWISH_PARAM_NUM] = {NULL};
     int32_t  shapes[2][VSI_NN_MAX_DIM_NUM] = {{0}};
     uint32_t new_rank = 0;
     vsi_bool image_2d = FALSE;

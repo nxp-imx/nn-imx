@@ -1438,7 +1438,7 @@ static vsi_nn_kernel_node_t _setup
     )
 {
     vsi_status status = VSI_FAILURE;
-    vsi_nn_kernel_node_param_t node_params[_LSTMUNIT_ACTIVATION_MAX_PARAM_NUM];
+    vsi_nn_kernel_node_param_t node_params[_LSTMUNIT_ACTIVATION_MAX_PARAM_NUM] = {NULL};
     vsi_nn_kernel_node_t node = NULL;
     vsi_nn_tensor_t* in_tensor[LSTMUNIT_ACT_INPUTS_COUNT] = {NULL};
     vsi_nn_tensor_t* out_tensor[LSTMUNIT_ACT_OUTUTS_COUNT] = {NULL};

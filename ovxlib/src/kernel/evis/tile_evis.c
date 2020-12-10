@@ -447,7 +447,7 @@ static vsi_nn_kernel_node_t _setup
     )
 {
     vsi_status status = VSI_FAILURE;
-    vsi_nn_kernel_node_param_t node_params[_EVIS_PARAM_NUM];
+    vsi_nn_kernel_node_param_t node_params[_EVIS_PARAM_NUM] = {NULL};
     vsi_bool image_2d = FALSE;
     vsi_nn_kernel_node_t node = NULL;
     vx_uint32 remainder = inputs[0]->attr.size[0] % 8;

@@ -239,7 +239,7 @@ static vsi_nn_kernel_node_t _setup
     )
 {
     vsi_status status = VSI_FAILURE;
-    vsi_nn_kernel_node_param_t node_params[_CLIP_PARAM_NUM];
+    vsi_nn_kernel_node_param_t node_params[_CLIP_PARAM_NUM] = {NULL};
     vsi_nn_kernel_node_t node = NULL;
     vsi_bool image_2d = FALSE;
     float    outputScale  = outputs[0]->attr.dtype.scale == 0.0f ? 1.0f : outputs[0]->attr.dtype.scale;

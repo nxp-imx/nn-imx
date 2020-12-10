@@ -290,7 +290,7 @@ static vsi_nn_kernel_node_t _setup
     )
 {
     vsi_status status = VSI_FAILURE;
-    vsi_nn_kernel_node_param_t node_params[_A_GRUCELL_ACTIVATION_SMA_PARAM_NUM];
+    vsi_nn_kernel_node_param_t node_params[_A_GRUCELL_ACTIVATION_SMA_PARAM_NUM] = {NULL};
     vsi_bool image_2d = FALSE;
     vsi_nn_kernel_node_t node = NULL;
     int32_t* shapes_in[_INPUT_NUM];

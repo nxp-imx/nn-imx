@@ -716,7 +716,7 @@ static vsi_nn_kernel_node_t _setup
     )
 {
     vsi_status status = VSI_FAILURE;
-    vsi_nn_kernel_node_param_t tmp_params[_EVIS_PARAM_NUM];
+    vsi_nn_kernel_node_param_t tmp_params[_EVIS_PARAM_NUM] = {NULL};
     vsi_bool image_2d = FALSE;
     vsi_nn_kernel_node_t node = NULL;
     vsi_nn_tensor_t* tmp_inputs[2] = { NULL };

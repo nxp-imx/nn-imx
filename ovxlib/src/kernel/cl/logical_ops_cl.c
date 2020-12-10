@@ -225,7 +225,7 @@ static vsi_nn_kernel_node_t _setup
     )
 {
     vsi_status status = VSI_FAILURE;
-    vsi_nn_kernel_node_param_t node_params[_LOGICAL_OPS_PARAM_NUM];
+    vsi_nn_kernel_node_param_t node_params[_LOGICAL_OPS_PARAM_NUM] = {NULL};
     vsi_bool image_2d = FALSE;
     vsi_nn_kernel_node_t node = NULL;
     uint32_t ops_type  = vsi_nn_kernel_param_get_int32( params, "ops_type" );

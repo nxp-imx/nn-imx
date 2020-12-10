@@ -182,7 +182,7 @@ static vsi_nn_kernel_node_t _setup
     )
 {
     vsi_status status = VSI_SUCCESS;
-    vsi_nn_kernel_node_param_t backend_params[_CPU_PARAM_NUM];
+    vsi_nn_kernel_node_param_t backend_params[_CPU_PARAM_NUM] = {NULL};
     vsi_nn_kernel_node_t node = NULL;
     int32_t is_per_channel_alpha = 0;
 

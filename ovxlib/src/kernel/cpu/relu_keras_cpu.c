@@ -194,7 +194,7 @@ static vsi_nn_kernel_node_t _setup
     )
 {
     vsi_status status = VSI_FAILURE;
-    vsi_nn_kernel_node_param_t node_params[_RELU_KERAS_PARAM_NUM];
+    vsi_nn_kernel_node_param_t node_params[_RELU_KERAS_PARAM_NUM] = {NULL};
     vsi_nn_kernel_node_t node = NULL;
     float     alpha      = vsi_nn_kernel_param_get_float32( params, "alpha" );
     float     max_value  = vsi_nn_kernel_param_get_float32( params, "max_value" );

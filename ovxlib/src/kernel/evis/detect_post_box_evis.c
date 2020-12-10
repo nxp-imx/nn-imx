@@ -297,7 +297,7 @@ static vsi_nn_kernel_node_t _setup
     )
 {
     vsi_status status = VSI_FAILURE;
-    vsi_nn_kernel_node_param_t node_params[_DETECT_POST_BOX_PARAM_NUM];
+    vsi_nn_kernel_node_param_t node_params[_DETECT_POST_BOX_PARAM_NUM] = {NULL};
     vsi_nn_kernel_node_t node = NULL;
     float   inv_scale_y  = vsi_nn_kernel_param_get_float32( params, "inv_scale_y" );
     float   inv_scale_x  = vsi_nn_kernel_param_get_float32( params, "inv_scale_x" );
