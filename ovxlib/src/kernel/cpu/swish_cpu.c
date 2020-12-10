@@ -239,7 +239,6 @@ static vsi_status _query_kernel
     /* Add extra params */
     )
 {
-    vsi_status status = VSI_FAILURE;
     snprintf( kernel->info.name, VX_MAX_KERNEL_NAME, "%s",  _KERNEL_NAME );
     if (VSI_NN_SWISH == swish_type)
     {
@@ -251,8 +250,8 @@ static vsi_status _query_kernel
     }
     kernel->info.parameters  = _swish_kernel_param_def;
     kernel->info.numParams   = _cnt_of_array( _swish_kernel_param_def );
-    //status = VSI_SUCCESS;
-    return status;
+
+    return VSI_SUCCESS;
 } /* _query_kernel() */
 
 
