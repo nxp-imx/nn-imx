@@ -226,6 +226,8 @@ static vsi_bool op_setup
         }
         curr->inputs[0]     = inputs[0];
         curr->outputs[0]    = outputs[0];
+
+        vsi_nn_internal_setup_node(self, curr);
     }
 
     return ret;
