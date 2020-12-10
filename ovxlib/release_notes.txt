@@ -1,3 +1,25 @@
+Release notes for Ovxlib 1.1.28
+
+New Features:
+    1. add ops: deconvolution1d
+    2. support Public Interface.
+    3. support op check.
+    4. support prepare_model with cache dir.
+Feature Refine:
+    1. optimize GRU for cudnn.
+    2. optimize gemm instructions.
+    3. support more type for tile.
+    4. add type constraint for ovxlib ops.
+    5. add vsi_memory_type setting for vsiCreateTensorFromHandle.
+    6. report warning when inputs/output count greater than registered.
+    7. add support type for conv2d, per channel conv2d, eltwise unary.
+    8. add procedure to set graph priority.
+Bug Fixing:
+    1. fix pool op output count issue.
+    2. fix log_softmax op crash issue.
+    3. fix depthwise_conv1d shape issue.
+    4. fix prelu dp instruction accumType issue.
+
 ############################################################################
 Release notes for Ovxlib 1.1.27
 
