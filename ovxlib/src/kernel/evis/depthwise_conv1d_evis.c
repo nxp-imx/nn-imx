@@ -702,7 +702,7 @@ static vsi_nn_kernel_node_t _setup
     )
 {
     vsi_status status = VSI_FAILURE;
-    vsi_nn_kernel_node_param_t node_params[_DEPTHWISE_CONV1D_PARAM_NUM];
+    vsi_nn_kernel_node_param_t node_params[_DEPTHWISE_CONV1D_PARAM_NUM] = {NULL};
     vsi_nn_kernel_node_t node = NULL;
     int32_t weight_pad_front[VSI_NN_MAX_DIM_NUM] = {0};
     int32_t weight_pad_end[VSI_NN_MAX_DIM_NUM] = {0};
@@ -714,6 +714,14 @@ static vsi_nn_kernel_node_t _setup
     int32_t pad_end  = vsi_nn_kernel_param_get_int32( params, "pad_end" );
     int32_t dilation   = vsi_nn_kernel_param_get_int32( params, "dilation" );
     _internal_kernel_size_e ks   = KN;
+
+    if (!((VSI_NN_TYPE_UINT8 == inputs[0]->attr.dtype.vx_type)
+       && (VSI_NN_TYPE_UINT8 == inputs[1]->attr.dtype.vx_type)
+       && (NULL == inputs[2] || VSI_NN_TYPE_INT32 == inputs[2]->attr.dtype.vx_type)
+       && (VSI_NN_TYPE_UINT8 == outputs[0]->attr.dtype.vx_type)))
+    {
+        return NULL;
+    }
 
     weight_pad_end[0] = gpu_align_np2_safe(inputs[1]->attr.size[0], 8) - inputs[1]->attr.size[0];
 

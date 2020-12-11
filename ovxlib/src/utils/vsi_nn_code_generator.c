@@ -117,8 +117,7 @@ static void _try_pack_tensor_data
             {
                 *p_sz = (uint64_t)bytes;
             }
-            free( data );
-            data = NULL;
+            vsi_nn_safe_free( data );
         }
     }
 } /* _pack_tensor_data() */
