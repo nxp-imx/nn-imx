@@ -178,12 +178,6 @@ static vsi_bool op_check
         }
 
         /* check parameters */
-        if(inputs[2]) {
-            if(is_const_tensor(inputs[1]) ^ is_const_tensor(inputs[2])) {
-                VSILOGE("Kernel and bias not satisfy constant rule.");
-                return FALSE;
-            }
-        }
         if(inputs[1]->attr.size[0] * inputs[1]->attr.size[1] > 6400) {
             VSILOGE("Kernel size should <= 6400.");
             return FALSE;
