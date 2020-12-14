@@ -103,9 +103,12 @@ void VsiOpCallbackInfoConv::SetupAttribute(nnrt::op::OperationPtr op,
     }
 
     // add stride
+    std::vector<int32_t> vstrides(2, 1);
     std::vector<int32_t> strides;
     status = vsi_npu::GetAttrs<int32_t>(attrs, "strides", strides, true).IsOK();
-    ORT_ENFORCE(status);
+    if (status) {
+        vstrides = std::move(strides);
+    }
 
     std::vector<int32_t> vdilations(2, 1);
     std::vector<int32_t> dilations;
@@ -121,7 +124,7 @@ void VsiOpCallbackInfoConv::SetupAttribute(nnrt::op::OperationPtr op,
     auto conv2d_ = std::dynamic_pointer_cast<nnrt::op::GroupedConv2DOperation>(op);
     conv2d_->groups = group;
     conv2d_->pad = std::move(vpads);
-    conv2d_->strides = std::move(strides);
+    conv2d_->strides = std::move(vstrides);
     conv2d_->dilations = std::move(vdilations);
     conv2d_->padType = pad_type;
     conv2d_->setDataLayout(nnrt::DataLayout::NCHW);

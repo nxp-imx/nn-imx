@@ -1,6 +1,6 @@
 ## Integration Guild
 
-ONNXRuntime base version: V1.1.2
+ONNXRuntime base version: V1.5.3
 *Precondition*
 > you should build libnnrt.so, libovxlib.so and other driver libraries before intergate vsi_npu execution provider
 
@@ -11,11 +11,9 @@ ONNXRuntime base version: V1.1.2
 export ONNX_RT_PATH=/path/to/onnx_runtime
 cp -r include/ $ONNX_RT_PATH/include/onnxruntime/core/providers/vsi_npu/
 cp -r src/ $ONNX_RT_PATH/onnxruntime/core/providers/vsi_npu/
-cp -r toolchain/ $ONNX_RT_PATH/
 cp -r patch/ $ONNX_RT_PATH/
 cd $ONNX_RT_PATH/
-git apply ./patch/0001-VSI_NPU-the-patch-for-ONNXRuntime-framework.patch
-git apply ./patch/0002-fix-bug-for-ONNXRuntime-v1.1.2.patch
+git apply ./patch/0001-VSI_NPU-the-patch-for-ONNXRuntime-v1.5.3.patch
 export NNRT_ROOT=/path/to/your/nn_runtime/root/dir
 export VIVANTE_SDK_DIR=/driver/root/build/sdk # driver build folder
 ```

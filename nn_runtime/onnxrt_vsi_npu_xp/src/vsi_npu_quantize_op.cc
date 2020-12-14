@@ -45,19 +45,30 @@ void VsiOpCallbackInfoDequantizeLinear::SetupIO(nnrt::op::OperationPtr op,
     std::vector<float> scales;
     std::vector<uint8_t> zps;
     model->GetInitializerAsParameters(input_defs[1], graph_viewer, scales);
-    model->GetInitializerAsParameters(input_defs[2], graph_viewer, zps);
+    auto tensor = model->GetModelPtr()->operand(input_operand_id);
+    if (input_defs.size() > 2) {
+        model->GetInitializerAsParameters(input_defs[2], graph_viewer, zps);
+    }
+    else {
+        tensor->quant.scalar.zeroPoint = 0;
+    }
+
     if (scales.size() == 0) {
         const int32_t kIndexScale = 1;
         const int32_t kIndexZeroPoint = 2;
-        std::vector<int32_t> compute_input_index({kIndexScale, kIndexZeroPoint});
+        std::vector<int32_t> compute_input_index({kIndexScale});
         auto compute_info = std::make_shared<VsiComputeInfo>();
         compute_info->operand_ids.push_back(input_operand_id);
-        compute_info->backup_names.push_back(*(input_defs[2]->Type()));
+        if (input_defs.size() > 2) {
+            compute_input_index.push_back(kIndexZeroPoint);
+            compute_info->backup_names.push_back(*(input_defs[2]->Type()));
+        }
         model->CollectComputeInfo(node, graph_viewer, compute_input_index, compute_info);
     } else {
-        auto tensor = model->GetModelPtr()->operand(input_operand_id);
         tensor->quant.scalar.scale = scales[0];
-        tensor->quant.scalar.zeroPoint = zps[0];
+        if (input_defs.size() > 2) {
+            tensor->quant.scalar.zeroPoint = zps[0];
+        }
     }
 }
 
@@ -83,14 +94,16 @@ Status VsiOpCallbackInfoDequantizeLinear::Compute(FunctionState state,
         const auto input_tensor_scale_value = (float*)ort.GetTensorData<void>(input_tensor_scale);
         tensor->quant.scalar.scale = *input_tensor_scale_value;
 
-        const OrtValue* input_tensor_zp =
-            ort.KernelContext_GetInput(context, compute_input_ids[kIndexZeroPoint]);
-        if(compute_info->backup_names[0] == "tensor(uint8)"){
-            const auto input_tensor_zp_value = (uint8_t*)(ort.GetTensorData<void>(input_tensor_zp));
-            tensor->quant.scalar.zeroPoint = *input_tensor_zp_value;
-        }else{
-            const auto input_tensor_zp_value = (int8_t*)(ort.GetTensorData<void>(input_tensor_zp));
-            tensor->quant.scalar.zeroPoint = *input_tensor_zp_value;
+        if (compute_input_ids.size() > 1) {
+            const OrtValue* input_tensor_zp =
+                ort.KernelContext_GetInput(context, compute_input_ids[kIndexZeroPoint]);
+            if(compute_info->backup_names[0] == "tensor(uint8)"){
+                const auto input_tensor_zp_value = (uint8_t*)(ort.GetTensorData<void>(input_tensor_zp));
+                tensor->quant.scalar.zeroPoint = *input_tensor_zp_value;
+            }else{
+                const auto input_tensor_zp_value = (int8_t*)(ort.GetTensorData<void>(input_tensor_zp));
+                tensor->quant.scalar.zeroPoint = *input_tensor_zp_value;
+            }
         }
     }
     return Status::OK();
@@ -121,19 +134,30 @@ void VsiOpCallbackInfoQuantizeLinear::SetupIO(nnrt::op::OperationPtr op,
     std::vector<float> scales;
     std::vector<uint8_t> zps;
     model->GetInitializerAsParameters(input_defs[1], graph_viewer, scales);
-    model->GetInitializerAsParameters(input_defs[2], graph_viewer, zps);
+    auto tensor = model->GetModelPtr()->operand(output_operand_id);
+    if (input_defs.size() > 2) {
+        model->GetInitializerAsParameters(input_defs[2], graph_viewer, zps);
+    }
+    else {
+        tensor->quant.scalar.zeroPoint = 0;
+    }
 
     if (scales.size() == 0) {
         const int32_t kIndexScale = 1;
         const int32_t kIndexZeroPoint = 2;
-        std::vector<int32_t> compute_input_index({kIndexScale, kIndexZeroPoint});
+        std::vector<int32_t> compute_input_index({kIndexScale});
         auto compute_info = std::make_shared<VsiComputeInfo>();
         compute_info->operand_ids.push_back(output_operand_id);
+        if (input_defs.size() > 2) {
+            compute_input_index.push_back(kIndexZeroPoint);
+            compute_info->backup_names.push_back(*(input_defs[2]->Type()));
+        }
         model->CollectComputeInfo(node, graph_viewer, compute_input_index, compute_info);
     } else {
-        auto tensor = model->GetModelPtr()->operand(output_operand_id);
         tensor->quant.scalar.scale = scales[0];
-        tensor->quant.scalar.zeroPoint = zps[0];
+        if (input_defs.size() > 2) {
+            tensor->quant.scalar.zeroPoint = zps[0];
+        }
     }
 }
 
@@ -147,6 +171,7 @@ Status VsiOpCallbackInfoQuantizeLinear::Compute(FunctionState state,
 
     auto compute_info = model->GetComputeInfo(node_index);
     if (compute_info != nullptr) {
+        auto tensor = local_model->operand(compute_info->operand_ids[0]);
         auto compute_input_ids = model->GetComputeInputIds(compute_info->compute_input_names);
 
         const int32_t kIndexScale = 0;
@@ -155,14 +180,19 @@ Status VsiOpCallbackInfoQuantizeLinear::Compute(FunctionState state,
         const OrtValue* input_tensor_scale =
             ort.KernelContext_GetInput(context, compute_input_ids[kIndexScale]);
         const auto input_tensor_scale_value = (float*)ort.GetTensorData<void>(input_tensor_scale);
-
-        const OrtValue* input_tensor_zp =
-            ort.KernelContext_GetInput(context, compute_input_ids[kIndexZeroPoint]);
-        const auto input_tensor_zp_value = (uint8_t*)ort.GetTensorData<void>(input_tensor_zp);
-
-        auto tensor = local_model->operand(compute_info->operand_ids[0]);
         tensor->quant.scalar.scale = *input_tensor_scale_value;
-        tensor->quant.scalar.zeroPoint = *input_tensor_zp_value;
+
+        if (compute_input_ids.size() > 1) {
+            const OrtValue* input_tensor_zp =
+                ort.KernelContext_GetInput(context, compute_input_ids[kIndexZeroPoint]);
+            if(compute_info->backup_names[0] == "tensor(uint8)"){
+                const auto input_tensor_zp_value = (uint8_t*)(ort.GetTensorData<void>(input_tensor_zp));
+                tensor->quant.scalar.zeroPoint = *input_tensor_zp_value;
+            }else{
+                const auto input_tensor_zp_value = (int8_t*)(ort.GetTensorData<void>(input_tensor_zp));
+                tensor->quant.scalar.zeroPoint = *input_tensor_zp_value;
+            }
+        }
     }
     return Status::OK();
 }
@@ -232,8 +262,12 @@ void VsiOpCallbackInfoConvInteger::Setup(const onnxruntime::Node* node,
         pad_type = vsi_npu::GetPadType(auto_pad);
     }
 
-    std::vector<int32_t> strides(2, 1);
+    std::vector<int32_t> vstrides(2, 1);
+    std::vector<int32_t> strides;
     status = vsi_npu::GetAttrs<int32_t>(attrs, "strides", strides, true).IsOK();
+    if (status) {
+        vstrides = std::move(strides);
+    }
 
     std::vector<int32_t> vdilations(2, 1);
     std::vector<int32_t> dilations;
@@ -249,7 +283,7 @@ void VsiOpCallbackInfoConvInteger::Setup(const onnxruntime::Node* node,
     op->dilations = std::move(vdilations);
     op->groups = group;
     op->padType = pad_type;
-    op->strides = std::move(strides);
+    op->strides = std::move(vstrides);
     op->setDataLayout(nnrt::DataLayout::NCHW);
     op->setVxParam(
         nnrt::OverflowPolicy::SATURATE, nnrt::RoundingPolicy::TO_ZERO, nnrt::Rounding::FLOOR);
@@ -303,6 +337,12 @@ Status VsiOpCallbackInfoConvInteger::Compute(FunctionState state,
 bool VsiOpCallbackInfoConvInteger::IsNodeSupported(const onnxruntime::GraphViewer& graph_viewer,
                                                    const Node* node,
                                                    std::string& reason) {
+    auto input_defs = node->InputDefs();
+    auto shape = vsi_npu::GetTensorShape(*input_defs[0]);
+    if (shape.NumDimensions() != 4) {
+        reason += "## Only support ConvInteger2D now.";
+        return false;
+    }
     return vsi_npu::CheckMainInputType(node, reason);
 }
 

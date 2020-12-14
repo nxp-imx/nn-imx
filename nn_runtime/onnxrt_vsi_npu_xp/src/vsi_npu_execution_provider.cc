@@ -25,6 +25,7 @@
 #include "core/graph/graph_utils.h"
 #include "vsi_npu_execution_provider.h"
 #include "vsi_npu_ort_interpreter.h"
+#include "core/framework/kernel_registry.h"
 
 using namespace ONNX_NAMESPACE;
 using namespace ::onnxruntime::logging;
@@ -35,26 +36,19 @@ constexpr const char* VSI_NPU = "VsiNpu";
 
 VsiNpuExecutionProvider::VsiNpuExecutionProvider(const VsiNpuExecutionProviderInfo& info)
     : IExecutionProvider{onnxruntime::kVsiNpuExecutionProvider}, device_id_(info.device_id) {
-    auto default_allocator_factory = [](int) {
-        auto memory_info =
-            onnxruntime::make_unique<OrtMemoryInfo>(VSI_NPU, OrtAllocatorType::OrtDeviceAllocator);
-        return onnxruntime::make_unique<CPUAllocator>(std::move(memory_info));
-    };
-
-    DeviceAllocatorRegistrationInfo default_memory_info{OrtMemTypeDefault,
-                                                        std::move(default_allocator_factory),
-                                                        std::numeric_limits<size_t>::max()};
+    AllocatorCreationInfo default_memory_info{
+        [](int) {
+            return onnxruntime::make_unique<CPUAllocator>(
+                OrtMemoryInfo(VSI_NPU, OrtAllocatorType::OrtDeviceAllocator));
+    }};
 
     InsertAllocator(CreateAllocator(default_memory_info));
 
-    auto cpu_allocator_factory = [](int) {
-        auto memory_info = onnxruntime::make_unique<OrtMemoryInfo>(
-            VSI_NPU, OrtAllocatorType::OrtDeviceAllocator, OrtDevice(), 0, OrtMemTypeCPUOutput);
-        return onnxruntime::make_unique<CPUAllocator>(std::move(memory_info));
-    };
-
-    DeviceAllocatorRegistrationInfo cpu_memory_info{
-        OrtMemTypeCPUOutput, std::move(cpu_allocator_factory), std::numeric_limits<size_t>::max()};
+    AllocatorCreationInfo cpu_memory_info{
+        [](int) {
+            return onnxruntime::make_unique<CPUAllocator>(
+                OrtMemoryInfo(VSI_NPU, OrtAllocatorType::OrtDeviceAllocator, OrtDevice(), 0, OrtMemTypeCPUOutput));
+    }};
 
     InsertAllocator(CreateAllocator(cpu_memory_info));
 }
@@ -145,7 +139,7 @@ static void AppendClusterToSubGraph(const std::vector<NodeIndex>& nodes,
 
     std::unique_ptr<IndexedSubGraph> sub_graph = onnxruntime::make_unique<IndexedSubGraph>();
     sub_graph->nodes = nodes;
-    sub_graph->SetMetaDef(meta_def);
+    sub_graph->SetMetaDef(std::move(meta_def));
     result.push_back(onnxruntime::make_unique<ComputeCapability>(std::move(sub_graph)));
 }
 

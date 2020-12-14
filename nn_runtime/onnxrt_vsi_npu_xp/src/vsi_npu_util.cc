@@ -159,6 +159,9 @@ TensorShape GetTensorShape(const onnxruntime::NodeArg& node_arg) {
             dims.push_back(dim.dim_value());
         }
     }
+    if (dims.size() == 0) {
+        dims.push_back(1);
+    }
     TensorShape ts = dims;
     return ts;
 }

@@ -26,6 +26,7 @@
 #include "core/framework/op_kernel.h"
 #include "core/framework/tensor_type_and_shape.h"
 #include "core/framework/tensorprotoutils.h"
+#include "core/session/onnxruntime_cxx_api.h"
 #include "nnrt/types.hpp"
 
 namespace onnxruntime {
