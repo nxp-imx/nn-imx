@@ -79,6 +79,9 @@ static vsi_bool op_check
         IO_TYPE(D_F32,  D_F16)
         IO_TYPE(D_F32,  D_BF16)
         IO_TYPE(D_BF16, D_F32)
+
+        /* HW 9.0 */
+        IO_TYPE(D_BF16,  D_BF16)
     END_IO_TYPE_DECL(REORG)
     if(!VALIDATE_OP_IO_TYPES(REORG, self, inputs, self->input.num, outputs, self->output.num)) {
         char* desc = generate_op_io_types_desc(inputs,

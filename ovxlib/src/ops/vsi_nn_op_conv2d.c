@@ -167,6 +167,10 @@ static vsi_bool op_check
 
             IO_TYPE(D_U8|Q_ASYM, D_I8|Q_SYM_PC, D_NONE, D_U8|Q_ASYM)
             IO_TYPE(D_U8|Q_ASYM, D_U8|Q_SYM_PC, D_NONE, D_U8|Q_ASYM)
+
+            /* HW 9.0 */
+            IO_TYPE(D_F32, D_BF16, D_F32, D_BF16)
+            IO_TYPE(D_F32, D_BF16, D_NONE, D_BF16)
         END_IO_TYPE_DECL(CONV2D)
         ret = VALIDATE_OP_IO_TYPES(CONV2D, self, inputs, self->input.num, outputs, self->output.num);
         if(!ret) {

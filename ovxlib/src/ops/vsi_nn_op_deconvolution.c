@@ -210,6 +210,10 @@ static vsi_bool op_check
         IO_TYPE(D_F32,  D_F32,  D_F32, D_F32)
         IO_TYPE(D_F32,  D_F32,  D_F32, D_BF16)
         IO_TYPE(D_F32,  D_F32,  D_NONE, D_F32)
+
+        /* HW 9.0 */
+        IO_TYPE(D_F32,  D_BF16,  D_F32, D_BF16)
+        IO_TYPE(D_F32,  D_BF16,  D_NONE, D_BF16)
     END_IO_TYPE_DECL(DECONVOLUTION)
     if (!VALIDATE_OP_IO_TYPES(DECONVOLUTION, self, inputs, self->input.num, outputs, self->output.num))
     {
