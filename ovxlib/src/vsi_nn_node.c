@@ -210,7 +210,7 @@ vsi_status vsi_nn_update_node_attr
 {
     vsi_status status = VSI_FAILURE;
 
-#if(defined(VX_PRELOAD_CONST_TENSOR_SUPPOR) && VX_PRELOAD_CONST_TENSOR_SUPPOR)
+#if(defined(VX_PRELOAD_CONST_TENSOR_SUPPORT) && VX_PRELOAD_CONST_TENSOR_SUPPORT)
     if(node)
     {
         /* some node don't have a `n`, skip it */

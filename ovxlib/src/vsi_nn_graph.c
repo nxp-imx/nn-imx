@@ -1854,7 +1854,7 @@ vsi_status vsi_nn_SetGraphPreloadSize
     vsi_status status;
     status = VSI_FAILURE;
 
-#if(defined(VX_PRELOAD_CONST_TENSOR_SUPPOR) && VX_PRELOAD_CONST_TENSOR_SUPPOR)
+#if(defined(VX_PRELOAD_CONST_TENSOR_SUPPORT) && VX_PRELOAD_CONST_TENSOR_SUPPORT)
     if(graph && graph->g)
     {
         switch(attr)
