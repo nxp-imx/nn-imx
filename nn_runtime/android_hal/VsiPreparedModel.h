@@ -54,6 +54,7 @@ class VsiPreparedModel : public HalPlatform::PrepareModel {
             native_model_->set_cache_size(cache_size);
             lseek(cacheHandle,0,SEEK_SET);
             int status = native_model_->set_cache_handle(cacheHandle);
+            status = native_model_->clear_if_handle_invalid();
             if(status == -1){
                 LOG(ERROR) <<"VsiPrepareModel Set cache handle failed.";
             }
