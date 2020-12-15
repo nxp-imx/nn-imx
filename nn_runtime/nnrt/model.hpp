@@ -229,6 +229,24 @@ class Model {
     }
     int get_cache_size() { return cache_size_; }
     void set_cache_size(int size) { cache_size_ = size; }
+
+    int clear_if_handle_invalid() {
+        int status = 0;
+        if (cache_handle_ == -1 || cache_size_ != 0) return status;
+#ifdef __linux__
+        int test_data = 0x5A5A5A5A;
+        size_t length = write(cache_handle_, &test_data, sizeof(test_data));
+        if (length != sizeof(test_data)) {
+            NNRT_LOGW_PRINT("Cache handle Failed to write");
+            cache_handle_ = -1;
+            status = -1;
+        } else {
+            lseek(cache_handle_, 0, SEEK_SET);
+        }
+#endif
+        return status;
+    }
+
     bool allocate_cache_memory(int size) {
 #ifdef __linux__
         auto flag = (-1 == cache_handle_) ? (MAP_SHARED | MAP_ANONYMOUS) : (MAP_SHARED);
