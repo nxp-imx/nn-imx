@@ -564,7 +564,8 @@ extern "C" {
             { \
                 return _eltwise_op_compute( ""#kernel_name, self, inputs, outputs ); \
             } \
-DEF_OP_REG(name, NULL, op_compute_##kernel_name, vsi_nn_op_common_deinit, op_check_##kernel_name, vsi_nn_op_eltwise_setup, NULL, 2, 1)
+DEF_OP_REG(name, NULL, op_compute_##kernel_name, vsi_nn_op_common_deinit, \
+                op_check_##kernel_name, vsi_nn_op_eltwise_setup, NULL, 2, 1)
 
 DEF_ELEMENT_WISE_OP( MINIMUM, minimum );
 DEF_ELEMENT_WISE_OP( MAXIMUM, maximum );
