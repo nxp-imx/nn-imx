@@ -218,32 +218,36 @@ class Model {
     }
 
     int get_cache_handle() { return cache_handle_; }
-    int set_cache_handle(int handle) {
-        int status = -1;
+
+    int get_cache_size() { return cache_size_; }
+
+    bool set_cache_handle(int handle) {
+        if (-1 == handle) return false;
+
+        bool status = false;
         cache_handle_ = 0;
 #ifdef __linux__
-        status = dup2(handle, cache_handle_);
-        if (status == -1) cache_handle_ = -1;
-#endif
-        return status;
-    }
-    int get_cache_size() { return cache_size_; }
-    void set_cache_size(int size) { cache_size_ = size; }
-
-    int clear_if_handle_invalid() {
-        int status = 0;
-        if (cache_handle_ == -1 || cache_size_ != 0) return status;
-#ifdef __linux__
+        bool is_writeable = false;
         int test_data = 0x5A5A5A5A;
-        size_t length = write(cache_handle_, &test_data, sizeof(test_data));
-        if (length != sizeof(test_data)) {
-            NNRT_LOGW_PRINT("Cache handle Failed to write");
-            cache_handle_ = -1;
-            status = -1;
+        cache_size_ = lseek(handle, 0, SEEK_END);
+        cache_size_ = cache_size_ > sizeof(test_data) ? cache_size_ : 0;
+        lseek(handle, 0, SEEK_SET);
+
+        if (cache_size_) {
+            status = (0 == dup2(handle, cache_handle_));
+            return status;
         } else {
-            lseek(cache_handle_, 0, SEEK_SET);
+            size_t length = write(cache_handle_, &test_data, sizeof(test_data));
+            is_writeable = (length == sizeof(test_data));
+            ftruncate(handle, 0);  // reset file content
+        }
+
+        if (is_writeable) {
+            status = (0 == dup2(handle, cache_handle_));
+            return status;
         }
 #endif
+        cache_handle_ = -1;
         return status;
     }
 
