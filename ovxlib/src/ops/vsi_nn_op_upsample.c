@@ -216,6 +216,9 @@ static vsi_bool op_check
         IO_TYPE(D_F32, D_U8,  D_U8|Q_ASYM)
         IO_TYPE(D_U8|Q_ASYM, D_U8,  D_F32)
         IO_TYPE(D_I32, D_U8,  D_I32)
+
+        /* HW 9.0 */
+        IO_TYPE(D_BF16,  D_U8,  D_BF16)
     END_IO_TYPE_DECL(UPSAMPLE)
     if(!VALIDATE_OP_IO_TYPES(UPSAMPLE, self, inputs, self->input.num, outputs, self->output.num)) {
         char* desc = generate_op_io_types_desc(inputs,
