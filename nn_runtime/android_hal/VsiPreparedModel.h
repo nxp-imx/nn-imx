@@ -37,6 +37,7 @@
 #include "VsiRTInfo.h"
 
 #include "Utils.h"
+#include <sys/system_properties.h>
 using android::sp;
 
 namespace android {
@@ -45,19 +46,19 @@ namespace vsi_driver {
 
 class VsiPreparedModel : public HalPlatform::PrepareModel {
    public:
-    VsiPreparedModel(const HalPlatform::Model& model, ExecutionPreference preference,int cacheHandle)
+    VsiPreparedModel(const HalPlatform::Model& model,
+                     ExecutionPreference preference,
+                     int cacheHandle)
         : model_(model), preference_(preference) {
         native_model_ = std::make_shared<nnrt::Model>();
-        if(cacheHandle != -1){
-            int cache_size = 0;
-            cache_size = lseek(cacheHandle,0,SEEK_END);
-            native_model_->set_cache_size(cache_size);
-            lseek(cacheHandle,0,SEEK_SET);
-            int status = native_model_->set_cache_handle(cacheHandle);
-            status = native_model_->clear_if_handle_invalid();
-            if(status == -1){
-                LOG(ERROR) <<"VsiPrepareModel Set cache handle failed.";
-            }
+        char env[100] = {0};
+        int npu_cache_model_level = 0;
+        int32_t read_env = __system_property_get("npu.cache.model", env);
+        if (read_env) {
+            npu_cache_model_level = atoi(env);
+        }
+        if (npu_cache_model_level && native_model_->set_cache_handle(cacheHandle)) {
+            LOG(INFO) << "Cache setup Success";
         }
     }
 
