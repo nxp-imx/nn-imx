@@ -230,7 +230,7 @@ class Model {
         bool is_writeable = false;
         int test_data = 0x5A5A5A5A;
         cache_size_ = lseek(handle, 0, SEEK_END);
-        cache_size_ = cache_size_ > sizeof(test_data) ? cache_size_ : 0;
+        cache_size_ = cache_size_ > static_cast<int>(sizeof(test_data)) ? cache_size_ : 0;
         lseek(handle, 0, SEEK_SET);
 
         if (cache_size_) {
