@@ -746,13 +746,24 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
         case OperationType::QUANTIZED_16BIT_LSTM:
         case OperationType::ROI_POOLING:
         case OperationType::TILE:
-
+            isSupport &= false;
+            break;
         // NNAPI 1.3 new op
 #if ANDROID_SDK_VERSION >= 30
+        case OperationType::HARD_SWISH: {
+            auto hard_swish =  std::make_unique<
+                op_validate::ActivationValidate<HalPlatform::Model, HalPlatform::Operation>>(
+                    model, operation);
+            return hard_swish->Validate(reason);
+        }
+        case OperationType::ELU: {
+            auto elu =  std::make_unique<
+                op_validate::EluValidate<HalPlatform::Model, HalPlatform::Operation>>(
+                    model, operation);
+            return elu->Validate(reason);
+        }
         case OperationType::IF:
         case OperationType::WHILE:
-        case OperationType::ELU:
-        case OperationType::HARD_SWISH:
         case OperationType::FILL:
         case OperationType::RANK:
             isSupport &= false;

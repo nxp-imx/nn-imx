@@ -75,4 +75,5 @@
 #include "StridedSliceValidate.hpp"
 #include "SqueezeValidate.hpp"
 #include "MeanValidate.hpp"
+#include "EluValidate.hpp"
 #endif

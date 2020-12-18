@@ -99,3 +99,4 @@ void NNapiLimitationRegister(const std::string& opName, const IArgList* arglist)
 #include "nnapi_support/ANEURALNETWORKS_STRIDED_SLICE.hpp"
 #include "nnapi_support/ANEURALNETWORKS_SQUEEZE.hpp"
 #include "nnapi_support/ANEURALNETWORKS_MEAN.hpp"
+#include "nnapi_support/ANEURALNETWORKS_ELU.hpp"

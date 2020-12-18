@@ -146,6 +146,10 @@ static nnrt::OperationType op_code_mapping(
             return nnrt::OperationType::TOPK;
         };
 #endif
+#if ANDROID_SDK_VERSION >= 30
+        MAP_OP(HARD_SWISH);
+        MAP_OP(ELU);
+#endif
 #undef MAP_OP
 
         default:
