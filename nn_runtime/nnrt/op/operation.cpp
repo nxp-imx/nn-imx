@@ -234,6 +234,10 @@ inline const char* get_operation_string(OperationType type) {
             return "log";
         case OperationType::GATHER:
             return "gather";
+        case OperationType::HARD_SWISH:
+            return "hard_swish";
+        case OperationType::ELU:
+            return "elu";
         default:
             return nullptr;
     }

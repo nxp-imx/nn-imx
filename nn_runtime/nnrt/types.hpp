@@ -202,6 +202,8 @@ enum class OperationType: uint32_t {
     CAST,
     QUANTIZED_16BIT_LSTM,
     NBG,
+    HARD_SWISH,
+    ELU,
 };
 
 enum class OperandType: uint8_t {

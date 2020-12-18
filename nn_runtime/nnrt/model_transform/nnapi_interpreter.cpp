@@ -203,6 +203,8 @@ NnApiInterpreter::NnApiInterpreter() {
     REGISTER_OP(CAST);
     REGISTER_OP(QUANTIZED_16BIT_LSTM);
     REGISTER_OP(NBG);
+    REGISTER_OP(HARD_SWISH);
+    REGISTER_OP(ELU);
 /*customer Op*/
 #undef REGISTER_OP
 }
@@ -2384,6 +2386,39 @@ OperationPtr NnApiInterpreter::map_NBG(Model* model,
     return new_op;
 }
 
+OperationPtr NnApiInterpreter::map_ELU(Model* model,
+                                               OperationPtr operation,
+                                               uint32_t operation_index) {
+    NNAPI_CHECK_IO_NUM(operation, 2, 1);
+    std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
+    auto argList = matchArgList(inputs, "EluOperation");
+    auto op_ptr = std::make_shared<EluOperation>();
+    if (argList) {
+        switch (inputs[argList->ArgPos("alpha")]->type) {
+            case OperandType::FLOAT16: {
+                half_float::half alpha;
+                memcpy(&alpha,
+                       &inputs[argList->ArgPos("alpha")]->scalar.float16,
+                       sizeof(half_float::half));
+                op_ptr->alpha = alpha;
+                break;
+            }
+            case OperandType::FLOAT32: {
+                op_ptr->alpha = inputs[argList->ArgPos("alpha")]->scalar.float32;
+                break;
+            }
+            default:
+                assert(false);
+                NNRT_LOGE_PRINT("EluOperation doesn't support given datatype");
+        }
+    } else {
+        NNRT_LOGE_PRINT("EluOperation argument list not support");
+        assert(false);
+    }
+    truncateOperationIOs(model, operation, 1, 1);
+    return op_ptr;
+}
+
 #define DECLARE_SAMPLE_OP(NAME, INPUT_NUM, OUTPUT_NUM, OPERATION_TYPE)    \
     OperationPtr NnApiInterpreter::map_##NAME(                            \
         Model* model, OperationPtr operation, uint32_t operation_index) { \
@@ -2429,6 +2464,7 @@ DECLARE_SAMPLE_OP(SIN, 1, 1, SinOperation)
 DECLARE_SAMPLE_OP(AXIS_ALIGNED_BBOX_TRANSFORM, 4, 1, AxisAlignedBBoxTransformOperation)
 DECLARE_SAMPLE_OP(DATA_CONVERT, 1, 1, DataConvertOperation)
 DECLARE_SAMPLE_OP(CAST, 1, 1, CastOperation)
+DECLARE_SAMPLE_OP(HARD_SWISH, 1, 1, HardSwishOperation)
 
 #undef DECLARE_SAMPLE_OP
 

@@ -87,3 +87,4 @@ void NNapiRequirementRegister(const std::string& opName, const IArgList* arglist
 #include "nnrt/api_requirement/nnapi_spec/ANEURALNETWORKS_GROUPED_CONV_2D.hpp"
 #include "nnrt/api_requirement/nnapi_spec/AANEURALNETWORKS_QUANTIZED_16BIT_LSTM.hpp"
 #include "nnrt/api_requirement/nnapi_spec/ANEURALNETWORKS_SPACE_BATCH.hpp"
+#include "nnrt/api_requirement/nnapi_spec/ANEURALNETWORKS_ELU.hpp"

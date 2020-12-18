@@ -206,6 +206,8 @@ OvxlibDelegate::OvxlibDelegate(std::vector<ExecutionIOPtr> &inputPtr)
     REGISTER_OP(QUANTIZED_16BIT_LSTM);
     REGISTER_OP(MATRIX_MUL);
     REGISTER_OP(NBG);
+    REGISTER_OP(HARD_SWISH);
+    REGISTER_OP(ELU);
 #undef REGISTER_OP
 }
 
@@ -1988,6 +1990,26 @@ int OvxlibDelegate::addNode_NBG(Model* model, OperationPtr operation, uint32_t o
 
     nodes[0]->nn_param.nbg.url = model->get_cache_memory();
     nodes[0]->nn_param.nbg.type = VSI_NN_NBG_POINTER;
+    return err;
+}
+
+int OvxlibDelegate::addNode_HARD_SWISH(Model* model, OperationPtr operation, uint32_t operation_index) {
+    (void)model;
+    int err = NNA_ERROR_CODE(NO_ERROR);
+    std::vector<vsi_nn_node_t*> nodes;
+    err = addNode(VSI_NN_OP_SWISH, operation, &nodes, operation_index);
+    nodes[0]->nn_param.swish.type = VSI_NN_HSWISH;
+    nodes[0]->nn_param.swish.beta = 1.0f;
+    return err;
+}
+
+int OvxlibDelegate::addNode_ELU(Model* model, OperationPtr operation, uint32_t operation_index) {
+    (void)model;
+    int err = NNA_ERROR_CODE(NO_ERROR);
+    std::vector<vsi_nn_node_t*> nodes;
+    err = addNode(VSI_NN_OP_ELU, operation, &nodes, operation_index);
+    EluOperation* elu = reinterpret_cast<EluOperation*>(operation.get());
+    nodes[0]->nn_param.elu.alpha = elu->alpha;
     return err;
 }
 
