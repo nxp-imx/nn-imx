@@ -3177,6 +3177,8 @@ __kernel void detect_post_box_U8_U8toF32(\n\
 
 static const char eltwise_unary_2d_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
+_viv_uniform float alpha;\n\
+\n\
 float4 eltwise_unary_sin(float4 x)\n\
 {\n\
     return native_sin(x);\n\
@@ -3201,7 +3203,7 @@ float4 eltwise_unary_log(float4 x)\n\
 float4 eltwise_unary_elu(float4 val)\n\
 {\n\
     float4 x = val * logE;\n\
-    x = exp2(x) - 1;\n\
+    x = exp2(x) * alpha - alpha;\n\
 \n\
     return val < 0 ? x : val;\n\
 }\n\
@@ -3255,7 +3257,8 @@ _viv_uniform VXC_512Bits uniDatatoFp32Part1_4x4;\n\
     __kernel void func_name##_##src_type_name##to##dst_type_name##_2D( \\\n\
     __read_only  image2d_array_t  input, \\\n\
     __write_only image2d_array_t  output, \\\n\
-                 int              type \\\n\
+                 int              type, \\\n\
+                 float            _alpha \\\n\
     ) \\\n\
 { \\\n\
     int2 coord = (int2)(get_global_id(0), get_global_id(1)); \\\n\
@@ -3371,7 +3374,8 @@ _viv_uniform VXC_512Bits uniExtractOddData_2x8;\n\
     __kernel void func_name##_BF16toBF16_2D( \\\n\
     __read_only  image2d_array_t  input, \\\n\
     __write_only image2d_array_t  output, \\\n\
-                 int              type \\\n\
+                 int              type, \\\n\
+                 float            _alpha \\\n\
     ) \\\n\
 { \\\n\
     int2 coord = (int2)(get_global_id(0), get_global_id(1)); \\\n\
@@ -3412,6 +3416,8 @@ ELTSISE_UNARY_BF16_2D(hard_sigmoid)\n\
 
 static const char eltwise_unary_3d_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
+_viv_uniform float alpha;\n\
+\n\
 float4 eltwise_unary_sin(float4 x)\n\
 {\n\
     return native_sin(x);\n\
@@ -3436,7 +3442,7 @@ float4 eltwise_unary_log(float4 x)\n\
 float4 eltwise_unary_elu(float4 val)\n\
 {\n\
     float4 x = val * logE;\n\
-    x = exp2(x) - 1;\n\
+    x = exp2(x) * alpha - alpha;\n\
 \n\
     return val < 0 ? x : val;\n\
 }\n\
@@ -3490,7 +3496,8 @@ _viv_uniform VXC_512Bits uniDatatoFp32Part1_4x4;\n\
 __kernel void func_name##_##src_type_name##to##dst_type_name( \\\n\
     __read_only  image2d_array_t  input, \\\n\
     __write_only image2d_array_t  output, \\\n\
-                 int              type \\\n\
+                 int              type, \\\n\
+                 float            _alpha \\\n\
     ) \\\n\
 { \\\n\
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
@@ -3604,7 +3611,8 @@ _viv_uniform VXC_512Bits uniExtractOddData_2x8;\n\
     __kernel void func_name##_BF16toBF16( \\\n\
     __read_only  image2d_array_t  input, \\\n\
     __write_only image2d_array_t  output, \\\n\
-                 int              type \\\n\
+                 int              type, \\\n\
+                 float            _alpha \\\n\
     ) \\\n\
 { \\\n\
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
@@ -36151,14 +36159,14 @@ static const char eltwise_ops_helper_cl[] = "#pragma OPENCL EXTENSION CL_VIV_asm
 "; /* end of eltwise_ops_helper_cl*/
 
 static const char eltwise_unary_cl[] = "\n\
-float4 eltwise_unary_sin(float4 x)\n\
+float4 eltwise_unary_sin(float4 x, float alpha)\n\
 {\n\
     return native_sin(x);\n\
 }\n\
 \n\
 #define logE        (1.44269502f)\n\
 #define twoLogE     (logE * 2.0f)\n\
-float4 eltwise_unary_exp(float4 x)\n\
+float4 eltwise_unary_exp(float4 x, float alpha)\n\
 {\n\
     x *= logE;\n\
     x = exp2(x);\n\
@@ -36166,33 +36174,33 @@ float4 eltwise_unary_exp(float4 x)\n\
 }\n\
 \n\
 #define rlogE    (0.693147182f)\n\
-float4 eltwise_unary_log(float4 x)\n\
+float4 eltwise_unary_log(float4 x, float alpha)\n\
 {\n\
     x = log2(x);\n\
     return x * rlogE;\n\
 }\n\
 \n\
-float4 eltwise_unary_elu(float4 val)\n\
+float4 eltwise_unary_elu(float4 val, float alpha)\n\
 {\n\
     float4 x = val * logE;\n\
-    x = exp2(x) - 1;\n\
+    x = exp2(x) * alpha - alpha;\n\
 \n\
     return val < 0 ? x : val;\n\
 }\n\
 \n\
-float4 eltwise_unary_neg(float4 x)\n\
+float4 eltwise_unary_neg(float4 x, float alpha)\n\
 {\n\
     return x * -1;\n\
 }\n\
 \n\
-float4 eltwise_unary_hard_sigmoid(float4 x)\n\
+float4 eltwise_unary_hard_sigmoid(float4 x, float alpha)\n\
 {\n\
     x = 0.2 * x + 0.5;\n\
     x = clamp(x, 0, 1);\n\
     return x;\n\
 }\n\
 \n\
-float4 _softrelu(float4 x)\n\
+float4 _softrelu(float4 x, float alpha)\n\
 {\n\
     x *= logE;\n\
     x = exp2(x);\n\
@@ -36201,7 +36209,7 @@ float4 _softrelu(float4 x)\n\
     return x * rlogE;\n\
 }\n\
 \n\
-float4 _tanh(float4 x)\n\
+float4 _tanh(float4 x, float alpha)\n\
 {\n\
     x *= -twoLogE;\n\
     x = 1 + exp2(x);\n\
@@ -36209,10 +36217,10 @@ float4 _tanh(float4 x)\n\
     return (2 * x - 1);\n\
 }\n\
 \n\
-float4 eltwise_unary_mish(float4 x)\n\
+float4 eltwise_unary_mish(float4 x, float alpha)\n\
 {\n\
-    float4 y = _softrelu(x);\n\
-    x = x * _tanh(y);\n\
+    float4 y = _softrelu(x, alpha);\n\
+    x = x * _tanh(y, alpha);\n\
     return x;\n\
 }\n\
 \n\
@@ -36224,14 +36232,15 @@ __kernel void func_name##_F32toF32 \\\n\
                  float           inputScale, \\\n\
                  float           inputTail, \\\n\
                  float           outputScale, \\\n\
-                 float           outputZP \\\n\
+                 float           outputZP, \\\n\
+                 float           alpha \\\n\
     ) \\\n\
 { \\\n\
     int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
  \\\n\
     float4 src = read_imagef(input, coord); \\\n\
  \\\n\
-    float4 dst = eltwise_unary_##func_name(src); \\\n\
+    float4 dst = eltwise_unary_##func_name(src, alpha); \\\n\
  \\\n\
     write_imagef(output, coord, dst); \\\n\
 }\n\
@@ -36251,14 +36260,15 @@ __kernel void func_name##_F32toF32_2D \\\n\
                  float     inputScale, \\\n\
                  float     inputTail, \\\n\
                  float     outputScale, \\\n\
-                 float     outputZP \\\n\
+                 float     outputZP, \\\n\
+                 float     alpha \\\n\
     ) \\\n\
 { \\\n\
     int2 coord =  (int2)(get_global_id(0), get_global_id(1)); \\\n\
  \\\n\
     float4 src = read_imagef(input, coord); \\\n\
  \\\n\
-    float4 dst = eltwise_unary_##func_name(src); \\\n\
+    float4 dst = eltwise_unary_##func_name(src, alpha); \\\n\
  \\\n\
     write_imagef(output, coord, dst); \\\n\
 }\n\
@@ -36278,7 +36288,8 @@ __kernel void func_name##_U8toU8 \\\n\
                  float           inputScale, \\\n\
                  float           inputTail, \\\n\
                  float           outputScale, \\\n\
-                 float           outputZP \\\n\
+                 float           outputZP, \\\n\
+                 float           alpha \\\n\
     ) \\\n\
 { \\\n\
     int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
@@ -36286,7 +36297,7 @@ __kernel void func_name##_U8toU8 \\\n\
     uint4 src = read_imageui(input, coord); \\\n\
     float4 data = convert_float4(src) * inputScale - inputTail; \\\n\
  \\\n\
-    data = eltwise_unary_##func_name(data); \\\n\
+    data = eltwise_unary_##func_name(data, alpha); \\\n\
     uint4 dst = convert_uint4(data * outputScale + outputZP); \\\n\
  \\\n\
     write_imageui(output, coord, dst); \\\n\
@@ -36307,7 +36318,8 @@ __kernel void func_name##_U8toU8_2D \\\n\
                  float     inputScale, \\\n\
                  float     inputTail, \\\n\
                  float     outputScale, \\\n\
-                 float     outputZP \\\n\
+                 float     outputZP, \\\n\
+                 float     alpha \\\n\
     ) \\\n\
 { \\\n\
     int2 coord =  (int2)(get_global_id(0), get_global_id(1)); \\\n\
@@ -36315,7 +36327,7 @@ __kernel void func_name##_U8toU8_2D \\\n\
     uint4 src = read_imageui(input, coord); \\\n\
     float4 data = convert_float4(src) * inputScale - inputTail; \\\n\
  \\\n\
-    data = eltwise_unary_##func_name(data); \\\n\
+    data = eltwise_unary_##func_name(data, alpha); \\\n\
     uint4 dst = convert_uint4(data * outputScale + outputZP); \\\n\
  \\\n\
     write_imageui(output, coord, dst); \\\n\
@@ -36336,7 +36348,8 @@ __kernel void neg_I32toI32\n\
                  float           inputScale,\n\
                  float           inputTail,\n\
                  float           outputScale,\n\
-                 float           outputZP\n\
+                 float           outputZP,\n\
+                 float           alpha\n\
     )\n\
 {\n\
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
@@ -36354,7 +36367,8 @@ __kernel void neg_I32toI32_2D\n\
                  float     inputScale,\n\
                  float     inputTail,\n\
                  float     outputScale,\n\
-                 float     outputZP\n\
+                 float     outputZP,\n\
+                 float     alpha\n\
     )\n\
 {\n\
     int2 coord =  (int2)(get_global_id(0), get_global_id(1));\n\
