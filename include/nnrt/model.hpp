@@ -29,6 +29,11 @@
 #include <list>
 #include <string>
 
+#ifdef __linux__
+#include <unistd.h>
+#include <sys/mman.h>
+#endif
+
 #include "nnrt/memory_pool.hpp"
 #include "nnrt/types.hpp"
 #include "nnrt/logging.hpp"
@@ -206,9 +211,55 @@ class Model {
     void remove_memory_reference(const mem_pool::shared_ref& ref) {
         if (!ref) return;
         auto it = std::find(mem_refs_.begin(), mem_refs_.end(), ref);
-        it->reset();
-        mem_refs_.erase(it);
+        if (it != mem_refs_.end()) {
+            it->reset();
+            mem_refs_.erase(it);
+        }
     }
+
+    int get_cache_handle() { return cache_handle_; }
+
+    int get_cache_size() { return cache_size_; }
+
+    bool set_cache_handle(int handle) {
+        if (-1 == handle) return false;
+
+        bool status = false;
+        cache_handle_ = 0;
+#ifdef __linux__
+        bool is_writeable = false;
+        int test_data = 0x5A5A5A5A;
+        cache_size_ = lseek(handle, 0, SEEK_END);
+        cache_size_ = cache_size_ > static_cast<int>(sizeof(test_data)) ? cache_size_ : 0;
+        lseek(handle, 0, SEEK_SET);
+
+        if (cache_size_) {
+            status = (0 == dup2(handle, cache_handle_));
+            return status;
+        } else {
+            size_t length = write(cache_handle_, &test_data, sizeof(test_data));
+            is_writeable = (length == sizeof(test_data));
+            ftruncate(handle, 0);  // reset file content
+        }
+
+        if (is_writeable) {
+            status = (0 == dup2(handle, cache_handle_));
+            return status;
+        }
+#endif
+        cache_handle_ = -1;
+        return status;
+    }
+
+    bool allocate_cache_memory(int size) {
+#ifdef __linux__
+        auto flag = (-1 == cache_handle_) ? (MAP_SHARED | MAP_ANONYMOUS) : (MAP_SHARED);
+        cache_memory_ = mmap(nullptr, size, PROT_READ, flag, cache_handle_, 0);
+        return (cache_memory_ == nullptr) ? false : true;
+#endif
+    return false;
+    }
+    const char* get_cache_memory() { return (const char*)cache_memory_; }
 
    private:
     uint32_t operand_unique_id_{0};
@@ -217,6 +268,11 @@ class Model {
     bool finalized_{false};
     bool compiled_{false};
     bool valid_{false};
+
+    int cache_handle_{-1};
+    int cache_size_{0};
+    void* cache_memory_{nullptr};
+
     std::string signature_;
     std::map<uint32_t, op::OperationPtr> operations_;
     std::map<uint32_t, op::OperandPtr> operands_;
