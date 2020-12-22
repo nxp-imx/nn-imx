@@ -1,10 +1,11 @@
-Release notes for Ovxlib 1.1.28
+Release notes for Ovxlib 1.1.29
 
 New Features:
     1. add ops: deconvolution1d
     2. support Public Interface.
     3. support op check.
     4. support prepare_model with cache dir.
+    5. add a scalar parameter for ELU op.
 Feature Refine:
     1. optimize GRU for cudnn.
     2. optimize gemm instructions.
