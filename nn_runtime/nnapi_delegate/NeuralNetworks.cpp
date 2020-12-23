@@ -22,6 +22,8 @@
 *
 *****************************************************************************/
 #include <memory>
+#include <cstring>
+#include <fcntl.h>
 
 #include "nnrt/event.hpp"
 #include "nnrt/compilation.hpp"
@@ -888,6 +890,30 @@ int ANeuralNetworksCompilation_createForDevices(ANeuralNetworksModel* model,
 int ANeuralNetworksCompilation_setCaching(ANeuralNetworksCompilation* compilation,
                                           const char* cacheDir,
                                           const uint8_t* token) {
+    if (cacheDir == nullptr || token == nullptr) return AERROR_CODE(UNEXPECTED_NULL);
+    char dir_tmp[2] = "/";
+    int cacheDir_length = strlen(cacheDir);
+    int cacheName_length = ANEURALNETWORKS_BYTE_SIZE_OF_CACHE_TOKEN * 2 + 1;
+    int isAddWord = (cacheDir[cacheDir_length - 1] == dir_tmp[0]) ? 0 : 1;
+
+    char cacheName[cacheName_length];
+    char cacheFullName[cacheName_length + cacheDir_length + isAddWord];
+
+    for (uint32_t i = 0; i < ANEURALNETWORKS_BYTE_SIZE_OF_CACHE_TOKEN; i++)
+    {
+        cacheName[i * 2] = 'A' + (token[i] & 0x0F);
+        cacheName[i * 2 + 1] = 'A' + (token[i] >> 4);
+    }
+    strcpy(cacheFullName, cacheDir);
+    if (isAddWord) strcat(cacheFullName, dir_tmp);
+    strcat(cacheFullName, cacheName);
+
+    int fd = open(cacheFullName, O_RDWR | O_CREAT, 0666);
+    Compilation *c = reinterpret_cast<Compilation *>(compilation);
+    nnrt::Model *m = c->getModel();
+    if (!m->set_cache_handle(fd) || !m->replace_model_with_nbg()){
+        return AERROR_CODE(UNEXPECTED_NULL);
+    }
     return AERROR_CODE(NO_ERROR);
 }
 
