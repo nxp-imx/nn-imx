@@ -261,6 +261,20 @@ class Model {
     }
     const char* get_cache_memory() { return (const char*)cache_memory_; }
 
+    bool replace_model_with_nbg()
+    {
+        if(cache_handle_ == -1 || cache_size_ == 0) return true;
+        operations_.clear();
+        operation_unique_id_ = 0;
+        const uint32_t *inputs = input_indexes_.data();
+        uint32_t input_size = input_indexes_.size();
+        const uint32_t *outputs = output_indexes_.data();
+        uint32_t output_size = output_indexes_.size();
+        uint32_t *out_index = nullptr;
+        addOperation(OperationType::NBG, inputs, input_size, outputs, output_size, out_index);
+        return allocate_cache_memory(cache_size_);
+    }
+
    private:
     uint32_t operand_unique_id_{0};
     uint32_t operation_unique_id_{0};
