@@ -22,12 +22,12 @@
 *
 *****************************************************************************/
 
-#ifndef __ANEURALNETWORKS_SQUEEZE_HPP__
-#define __ANEURALNETWORKS_SQUEEZE_HPP__
+#ifndef __ANEURALNETWORKS_MEAN_HPP__
+#define __ANEURALNETWORKS_MEAN_HPP__
 
 #include "hal_limitation/support_macros.hpp"
 // Input Spec
-#define OP_SPEC_NAME MeanInputs
+#define OP_SPEC_NAME MeanInput
 OP_SPEC_BEGIN()
 #define ARG_NAMES \
     (input, \
@@ -44,7 +44,7 @@ OP_SPEC_END()
 MAKE_SPEC(mean)
     .input_(nnrt::OperandType::TENSOR_FLOAT32)
     .reduce_dim_(nnrt::OperandType::TENSOR_INT32)
-    .scale_(nnrt::OperandType::TENSOR_INT32));
+    .scale_(nnrt::OperandType::INT32));
 
     OVERRIDE_SPEC(mean, fp16)
     .input_(nnrt::OperandType::TENSOR_FLOAT16));
@@ -60,7 +60,7 @@ MAKE_SPEC(mean)
 #undef OP_SPEC_NAME
 
 //Output Spec
-#define OP_SPEC_NAME MeanOutputs
+#define OP_SPEC_NAME MeanOutput
 OP_SPEC_BEGIN()
 #define ARG_NAMES         \
     (input,               \
