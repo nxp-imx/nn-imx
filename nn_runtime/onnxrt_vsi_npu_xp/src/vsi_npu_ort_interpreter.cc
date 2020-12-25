@@ -704,14 +704,6 @@ void VsiOpCallbackInfoUpsample::Setup(const Node* node,
         model->AddOperation(op, nullptr);
         compute_info->op = op;
     }
-
-    const auto* type_proto = input_defs[0]->TypeAsProto();
-    if (type_proto->tensor_type().elem_type() ==
-        ONNX_NAMESPACE::TensorProto_DataType::TensorProto_DataType_UINT8) {
-        auto tensor = model->GetModelPtr()->operand(input_operand_id);
-        tensor->quant.scalar.zeroPoint = 0;
-        tensor->quant.scalar.scale = 1.0f;
-    }
 }
 
 Status VsiOpCallbackInfoUpsample::Compute(FunctionState state,
