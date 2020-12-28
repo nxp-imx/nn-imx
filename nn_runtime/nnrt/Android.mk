@@ -87,7 +87,8 @@ LOCAL_CFLAGS :=  \
     -D'OVXLIB_API=__attribute__((visibility("default")))' \
     -Wno-unused-parameter\
     -Wno-implicit-fallthrough\
-    -frtti
+    -frtti\
+    -DANDROID_SDK_VERSION=$(PLATFORM_SDK_VERSION)
 
 IS_GIT:=$(shell cd $(NNRT_ROOT)/nnrt/;  git status  1>&2 > /dev/null; echo $$?)
 ifeq ($(IS_GIT),0)
