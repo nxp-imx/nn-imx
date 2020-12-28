@@ -779,7 +779,8 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
 
     // Overall check
     // TODO: if all of LSTM's inputs are constant, the result will fail.
-    std::vector<OperationType> whiteList = {OperationType::CONCATENATION, OperationType::LSTM};
+    std::vector<OperationType> whiteList = {
+        OperationType::CONCATENATION, OperationType::LSTM, OperationType::MUL};
 
     // do not support constant tensor as operation's Input except whiteList.
     if (std::find(whiteList.begin(), whiteList.end(), operation.type) == whiteList.end()) {
