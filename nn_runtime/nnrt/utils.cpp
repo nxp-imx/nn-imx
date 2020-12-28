@@ -310,6 +310,9 @@ int getEnv(std::string name, int& result) {
     int get_success = 0;
 #ifdef __ANDROID__
     char env[10] = {0};
+    #if ANDROID_SDK_VERSION >= 30
+        name = "vendor." + name;
+    #endif
     get_success = __system_property_get(name.c_str(), env);
     if (get_success) result = atoi(env);
 #else
