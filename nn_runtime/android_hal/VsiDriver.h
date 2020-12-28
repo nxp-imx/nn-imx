@@ -253,12 +253,7 @@ class VsiDriver : public VsiDevice {
                                             T_getSupportOperationsCallback cb) {
         LOG(INFO) << "getSupportedOperations";
         bool is_md5_matched = false;
-        int model_size_block_level = 0;
-        char env[100] = {0};
-        int32_t read_env = __system_property_get("MODEL_BLOCK_LEVEL", env);
-        if (read_env) {
-            model_size_block_level = atoi(env);
-        }
+        int model_size_block_level = getSystemPropertyAsInt("MODEL_BLOCK_LEVEL", 0);
 
         if (model_size_block_level < 0 || model_size_block_level > 4) {
             LOG(FATAL) << "MODEL_BLOCK_LEVEL should be any value of {0, 1, 2, 3} \n"

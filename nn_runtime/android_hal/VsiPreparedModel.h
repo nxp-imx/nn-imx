@@ -51,13 +51,9 @@ class VsiPreparedModel : public HalPlatform::PrepareModel {
                      int cacheHandle)
         : model_(model), preference_(preference) {
         native_model_ = std::make_shared<nnrt::Model>();
-        char env[100] = {0};
-        int npu_cache_model_level = 0;
-        int32_t read_env = __system_property_get("npu.cache.model", env);
-        if (read_env) {
-            npu_cache_model_level = atoi(env);
-        }
-        if (npu_cache_model_level && native_model_->set_cache_handle(cacheHandle)) {
+        int npu_cache_model = getSystemPropertyAsInt("npu.cache.model", 0);
+
+        if (npu_cache_model && native_model_->set_cache_handle(cacheHandle)) {
             LOG(INFO) << "Cache setup Success";
         }
     }

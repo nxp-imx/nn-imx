@@ -58,11 +58,10 @@ using OperationValidatePtr = std::unique_ptr<
 
 void VsiDriver::initalizeEnv() {
     disable_float_feature_ = 0;
-    char env[100] = {0};
-    int ireturn = __system_property_get("DISABLE_FLOAT_FEATURE", env);
-    if (ireturn) {
-        disable_float_feature_ = atoi(env);
-        if (disable_float_feature_) LOG(INFO) << "float-type model will not running on hal";
+
+    disable_float_feature_ = getSystemPropertyAsInt("DISABLE_FLOAT_FEATURE", 0);
+    if (disable_float_feature_) {
+        LOG(INFO) << "Disabled float datatype on NPU by request!";
     }
 }
 
@@ -939,6 +938,26 @@ bool VsiDriver::isWeightMd5Matched(const HalPlatform::Operation& operation,
         return false;
     }
     return false;
+}
+
+int getSystemPropertyAsInt(const char* prop_name, int default_value) {
+    char value[100];
+    if (getSystemProperty(prop_name, value)) {
+        return atoi(value);
+    } else {
+        return default_value;
+    }
+}
+
+int getSystemProperty(const char* prop_name, char* value) {
+    static const char* kPrefixForAndroidR = "vendor.";
+    std::string real_prop_name(prop_name);
+
+#if ANDROID_SDK_VERSION >= 30
+    real_prop_name = kPrefixForAndroidR + real_prop_name;
+#endif
+
+    return __system_property_get(real_prop_name.c_str(), value);
 }
 
 }  // namespace vsi_driver

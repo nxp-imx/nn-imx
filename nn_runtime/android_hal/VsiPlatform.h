@@ -147,6 +147,24 @@ using Request = HalPlatform::Request;
 using OperandLifeTime = HalPlatform::OperandLifeTime;
 using OperandType = HalPlatform::OperandType;
 using OperationType = HalPlatform::OperationType;
+
+/**
+    * @brief Get the System Property As Int
+    *
+    * @param prop_name
+    * @param default
+    * @return int
+    */
+int getSystemPropertyAsInt(const char* prop_name, int default_value = 0);
+
+/**
+    * @brief Get the System Property
+    *
+    * @param prop_name : INPUT
+    * @param value : OUTPUT
+    * @return int
+    */
+int getSystemProperty(const char* prop_name, char* value);
 }  // namespace vsi_driver
 }  // namespace nn
 }  // namespace android
