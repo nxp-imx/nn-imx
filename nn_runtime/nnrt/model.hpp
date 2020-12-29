@@ -229,9 +229,6 @@ class Model {
 
     bool set_cache_handle(int handle) {
         if (-1 == handle) return false;
-
-        printf("set_cache_handle(handle = %d)\n", handle);
-
         bool status = false;
 
 #ifdef __linux__
