@@ -59,8 +59,7 @@ Model::~Model() {
 #ifdef __linux__
     if (cache_memory_ != nullptr) munmap(cache_memory_, cache_size_);
     if (cache_handle_ != -1) {
-        auto r = close(cache_handle_);
-
+        close(cache_handle_);
         cache_handle_ = -1;
     }
 #endif
