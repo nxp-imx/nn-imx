@@ -831,7 +831,7 @@ int ANeuralNetworksCompilation_setCaching(ANeuralNetworksCompilation* compilatio
     if (cacheDir == nullptr || token == nullptr) return AERROR_CODE(UNEXPECTED_NULL);
     char dir_tmp[2] = "/";
     int cacheDir_length = strlen(cacheDir);
-    int cacheName_length = ANEURALNETWORKS_BYTE_SIZE_OF_CACHE_TOKEN * 2 + 1;
+    constexpr int cacheName_length = ANEURALNETWORKS_BYTE_SIZE_OF_CACHE_TOKEN * 2 + 1;
     int isAddWord = (cacheDir[cacheDir_length - 1] == dir_tmp[0]) ? 0 : 1;
 
     char cacheName[cacheName_length];
@@ -841,6 +841,7 @@ int ANeuralNetworksCompilation_setCaching(ANeuralNetworksCompilation* compilatio
         cacheName[i * 2] = 'A' + (token[i] & 0x0F);
         cacheName[i * 2 + 1] = 'A' + (token[i] >> 4);
     }
+    cacheName[cacheName_length - 1] = '\0';
     strcpy(cacheFullName, cacheDir);
     if (isAddWord) strcat(cacheFullName, dir_tmp);
     strcat(cacheFullName, cacheName);
