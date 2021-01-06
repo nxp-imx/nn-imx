@@ -217,7 +217,7 @@ REGISTER_CONV_OPENVX_KERNEL( conv1d )
         memcpy(&attr, &inputs[1]->attr, sizeof(vsi_nn_tensor_attr_t));
 
         attr.size[0] = 1;
-        for (i = 1; i < inputs[1]->attr.dim_num; i++)
+        for (i = 1; i <= inputs[1]->attr.dim_num; i++)
         {
             attr.size[i] = inputs[1]->attr.size[i - 1];
         }
