@@ -72,7 +72,7 @@ static vsi_status op_compute
         reshape_tensors[1] = inputs[1];
     }
 
-    if (inputs[2]->attr.dim_num == 1)
+    if (inputs[2] && inputs[2]->attr.dim_num == 1)
     {
         shape[0] = inputs[2]->attr.size[0];
         shape[1] = 1;
@@ -111,7 +111,7 @@ static vsi_status op_compute
         vsi_nn_ReleaseTensor( &reshape_tensors[1] );
     }
 
-    if (inputs[2]->attr.dim_num == 1)
+    if (inputs[2] && inputs[2]->attr.dim_num == 1)
     {
         vsi_nn_ReleaseTensor( &reshape_tensors[2] );
     }
