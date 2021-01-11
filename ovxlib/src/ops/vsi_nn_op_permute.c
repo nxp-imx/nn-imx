@@ -155,6 +155,7 @@ static vsi_bool op_check
     BEGIN_IO_TYPE_DECL(PERMUTE, 1, 1)
         IO_TYPE(D_F16,  D_F16)
         IO_TYPE(D_F16,  D_F32)
+        IO_TYPE(D_I16,  D_I16)
         IO_TYPE(D_I16|Q_DFP,  D_I16|Q_DFP)
         IO_TYPE(D_I8|Q_DFP,   D_I8|Q_DFP)
         IO_TYPE(D_U8|Q_ASYM,  D_U8|Q_ASYM)
