@@ -83,6 +83,16 @@ Return<void> VsiDriver::getCapabilities_1_3(V1_3::IDevice::getCapabilities_1_3_c
 
 Return<void> VsiDriver::getSupportedOperations_1_3(
     const V1_3::Model& model, V1_3::IDevice::getSupportedOperations_1_3_cb _hidl_cb) {
+    bool is_md5_matched = false;
+    int model_size_block_level = getSystemPropertyAsInt("MODEL_BLOCK_LEVEL", 0);
+    if (model_size_block_level < 0 || model_size_block_level > 4) {
+        LOG(FATAL) << "MODEL_BLOCK_LEVEL should be any value of {0, 1, 2, 3} \n"
+                      "block_level = 3: reject model with size L,M,S\n"
+                      "block_level = 2: reject model with size L,M\n"
+                      "block_level = 1: reject model with size L\n"
+                      "block_level = 0: don't reject model";
+    }
+
     if (!validateModel(model)) {
         LOG(ERROR) << __FUNCTION__;
         std::vector<bool> supported;
@@ -97,8 +107,18 @@ Return<void> VsiDriver::getSupportedOperations_1_3(
         std::string notSupportReason = "";
         for (size_t i = 0; i < count; i++) {
             const auto& operation = model.main.operations[i];
+            if (weight_md5_check || model_size_block_level) {
+                if ((is_md5_matched = isWeightMd5Matched(operation, model, model_size_block_level)))
+                    break;
+            }
             supported[i] = !IsOpBlocked(static_cast<int32_t>(operation.type)) &&
                             isSupportedOperation(operation, model, notSupportReason);
+        }
+        if (is_md5_matched) {
+            LOG(INFO) << "Weight MD5 matched, reject the whole model.";
+            for (size_t i = 0; i < count; ++i) {
+                supported[i] = false;
+            }
         }
         LOG(INFO) << notSupportReason;
         _hidl_cb(V1_3::ErrorStatus::NONE, supported);
