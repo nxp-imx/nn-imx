@@ -49,37 +49,6 @@ static vsi_status op_compute
 {
     vsi_status status = VSI_FAILURE;
     vsi_nn_kernel_param_t * param = NULL;
-    int32_t shape[VSI_NN_MAX_DIM_NUM] = { 0 };
-    int32_t new_rank = 2;
-    vsi_nn_tensor_t* reshape_tensors[3] = { NULL };
-    uint32_t i;
-
-    reshape_tensors[0] = inputs[0];
-
-    if (inputs[1]->attr.dtype.qnt_type != VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC)
-    {
-        shape[0] = inputs[1]->attr.size[0];
-        shape[1] = 1;
-        for (i = 1; i < inputs[1]->attr.dim_num; i++)
-        {
-            shape[1] *= inputs[1]->attr.size[i];
-        }
-        reshape_tensors[1] = vsi_nn_reshape_tensor( self->graph,
-                inputs[1], (uint32_t*)shape, new_rank );
-    }
-    else
-    {
-        reshape_tensors[1] = inputs[1];
-    }
-
-    if (inputs[2] && inputs[2]->attr.dim_num == 1)
-    {
-        shape[0] = inputs[2]->attr.size[0];
-        shape[1] = 1;
-        new_rank = 2;
-        reshape_tensors[2] = vsi_nn_reshape_tensor( self->graph,
-                inputs[2], (uint32_t*)shape, new_rank );
-    }
 
     param = vsi_nn_kernel_param_create();
 
@@ -100,20 +69,10 @@ static vsi_status op_compute
     vsi_nn_kernel_param_add_int32( param, "down_scale_size_rounding",
             self->vx_param.down_scale_size_rounding );
     self->n = (vx_node)vsi_nn_kernel_selector( self->graph, "depthwise_conv1d",
-            reshape_tensors, 3, outputs, 1, param );
+            inputs, 3, outputs, 1, param );
     if( self->n )
     {
         status = VSI_SUCCESS;
-    }
-
-    if (inputs[1]->attr.dtype.qnt_type != VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC)
-    {
-        vsi_nn_ReleaseTensor( &reshape_tensors[1] );
-    }
-
-    if (inputs[2] && inputs[2]->attr.dim_num == 1)
-    {
-        vsi_nn_ReleaseTensor( &reshape_tensors[2] );
     }
 
     vsi_nn_kernel_param_release( &param );
