@@ -47,8 +47,22 @@ class AveragePoolValidate : public OperationValidate<T_model, T_Operation> {
     AveragePoolValidate(const T_model& model, const T_Operation& operation)
         : OperationValidate<T_model, T_Operation>(model, operation) {}
     bool SignatureCheck(std::string& reason) override {
-        return ::hal::limitation::nnapi::match("AverageMaxPoolInput", this->InputArgTypes()) &&
-               ::hal::limitation::nnapi::match("AverageMaxPoolOutput", this->OutputArgTypes());
+        auto inputList = ::hal::limitation::nnapi::match("AverageMaxPoolInput", this->InputArgTypes());
+        auto outputList = ::hal::limitation::nnapi::match("AverageMaxPoolOutput", this->OutputArgTypes());
+        if (inputList && outputList) {
+            int32_t inputIndex = inputList->ArgPos("input");
+            auto model = this->ModelForRead();
+            auto operation = this->OperationForRead();
+            auto inputOperand = vsi_driver::GetHalOperand(model, operation.inputs[inputIndex]);
+            if (inputOperand.dimensions[0] > 1) {
+                reason += "reject AveragePool because not support input with multi batch\n";
+                return false;
+            }
+            return true;
+        } else {
+            reason += "reject AveragePool because not support the input data type\n";
+            return false;
+        }
     };
 };
 
