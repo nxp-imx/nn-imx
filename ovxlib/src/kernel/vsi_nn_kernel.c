@@ -1145,10 +1145,10 @@ vsi_nn_kernel_tensor_attr_t * vsi_nn_kernel_tensor_attr_create
         status = vxQueryTensor( (vx_tensor)tensor, VX_TENSOR_SCALE,
             &(attr->asymm.scale), sizeof(float));
         CHECK_STATUS( status );
-        // Reset scale to 1
-        if( (attr->asymm.scale - 0.f) < 1e-5 )
+        // Reset scale to 1e-8
+        if( (attr->asymm.scale - 0.f) < 1e-8 )
             {
-            attr->asymm.scale = 1.0f;
+            attr->asymm.scale = (float)1e-8;
             attr->asymm.zero_point = 0;
             }
         }
