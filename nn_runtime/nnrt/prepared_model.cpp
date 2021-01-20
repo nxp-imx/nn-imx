@@ -89,6 +89,7 @@ int PreparedModel::prepare()
         graph_ = delegate.throwGraph();
         return err;
     } else {
+        graph_ = delegate.throwGraph();
         if (graph_ != nullptr) {
             vsi_nn_ReleaseGraph(&graph_);
             graph_ = nullptr;
