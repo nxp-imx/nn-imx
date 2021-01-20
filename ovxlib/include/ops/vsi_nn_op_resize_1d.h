@@ -21,54 +21,24 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-/** @file */
-#ifndef _VSI_NN_VERSION_H_
-#define _VSI_NN_VERSION_H_
+
+#ifndef _VSI_NN_OP_RESIZE_1D_H
+#define _VSI_NN_OP_RESIZE_1D_H
 
 #include "vsi_nn_types.h"
 
-#if defined(__cplusplus)
-extern "C"{
+typedef struct _vsi_nn_resize_1d_param
+{
+    struct _resize_1d_local_data_t* local;
+    vsi_enum     type;
+    float        factor;
+    int32_t      size[2];
+    vsi_bool    align_corners;
+    vsi_bool    half_pixel_centers;
+} vsi_nn_resize_1d_param;
+
+_compiler_assert(offsetof(vsi_nn_resize_1d_param, local) == 0, \
+    vsi_nn_resize_1d_h );
+
 #endif
 
-#define VSI_NN_VERSION_MAJOR 1
-#define VSI_NN_VERSION_MINOR 1
-#define VSI_NN_VERSION_PATCH 30
-#define VSI_NN_VERSION \
-    (VSI_NN_VERSION_MAJOR * 10000 + VSI_NN_VERSION_MINOR * 100 + VSI_NN_VERSION_PATCH)
-
-/**
- * Ovxlib version check
- * Ovxlib will check the suitable version at compile time.
- * @note Ovxlib version should be always greater or equal to case version.
- */
-#define _version_assert _compiler_assert
-
-/**
- * Get ovxlib version
- * Get ovxlib version string.
- */
-OVXLIB_API const char *vsi_nn_GetVersion(void);
-
-/**
- * Get ovxlib version major
- * Get ovxlib version major, return integer value.
- */
-OVXLIB_API uint32_t vsi_nn_GetVersionMajor(void);
-
-/**
- * Get ovxlib version minor
- * Get ovxlib version minor, return integer value.
- */
-OVXLIB_API uint32_t vsi_nn_GetVersionMinor(void);
-
-/**
- * Get ovxlib version patch
- * Get ovxlib version patch, return integer value.
- */
-OVXLIB_API uint32_t vsi_nn_GetVersionPatch(void);
-
-#if defined(__cplusplus)
-}
-#endif
-#endif
