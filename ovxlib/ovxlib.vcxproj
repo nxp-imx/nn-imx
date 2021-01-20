@@ -633,6 +633,9 @@
     <ClInclude Include="include\ops\vsi_nn_op_tensor_add_mean_stddev_norm.h" />
     <ClInclude Include="include\ops\vsi_nn_op_deconvolution1d.h" />
     <ClInclude Include="include\ops\vsi_nn_op_interp.h" />
+    <ClInclude Include="include\ops\vsi_nn_op_resize_1d.h" />
+    <ClInclude Include="include\ops\vsi_nn_op_resize_1d_bilinear_internal.h" />
+    <ClInclude Include="include\ops\vsi_nn_op_resize_1d_nearest_internal.h" />
     <ClInclude Include="include\ops\vsi_nn_op_tensorstackconcat.h" />
     <ClInclude Include="include\ops\vsi_nn_op_tile.h" />
     <ClInclude Include="include\ops\vsi_nn_op_topk.h" />
@@ -707,6 +710,8 @@
     <ClCompile Include="src\kernel\cl\l2normalizescale_cl.c" />
     <ClCompile Include="src\kernel\cl\lstmunit_activation_cl.c" />
     <ClCompile Include="src\kernel\cl\relu_keras_cl.c" />
+    <ClCompile Include="src\kernel\cl\resize_1d_bilinear_cl.c" />
+    <ClCompile Include="src\kernel\cl\resize_1d_nearest_cl.c" />
     <ClCompile Include="src\kernel\cl\resize_bilinear_cl.c" />
     <ClCompile Include="src\kernel\cl\resize_nearest_cl.c" />
     <ClCompile Include="src\kernel\cpu\add_mean_std_norm_cpu.c" />
@@ -716,6 +721,8 @@
     <ClCompile Include="src\kernel\cpu\l2normalizescale_cpu.c" />
     <ClCompile Include="src\kernel\cpu\lstmunit_activation_cpu.c" />
     <ClCompile Include="src\kernel\cpu\relu_keras_cpu.c" />
+    <ClCompile Include="src\kernel\cpu\resize_1d_bilinear_cpu.c" />
+    <ClCompile Include="src\kernel\cpu\resize_1d_nearest_cpu.c" />
     <ClCompile Include="src\kernel\cpu\resize_bilinear_cpu.c" />
     <ClCompile Include="src\kernel\cpu\resize_nearest_cpu.c" />
     <ClCompile Include="src\kernel\evis\add_mean_std_norm_evis.c" />
@@ -725,6 +732,8 @@
     <ClCompile Include="src\kernel\evis\l2normalizescale_evis.c" />
     <ClCompile Include="src\kernel\evis\lstmunit_activation_evis.c" />
     <ClCompile Include="src\kernel\evis\relu_keras_evis.c" />
+    <ClCompile Include="src\kernel\evis\resize_1d_bilinear_evis.c" />
+    <ClCompile Include="src\kernel\evis\resize_1d_nearest_evis.c" />
     <ClCompile Include="src\kernel\evis\resize_bilinear_evis.c" />
     <ClCompile Include="src\kernel\evis\resize_nearest_evis.c" />
     <ClCompile Include="src\kernel\vx\clip_vx.c" />
@@ -1646,6 +1655,15 @@
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_interp.c">
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_resize_1d.c">
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_resize_1d_bilinear_internal.c">
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_resize_1d_nearest_internal.c">
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_variable.c">
