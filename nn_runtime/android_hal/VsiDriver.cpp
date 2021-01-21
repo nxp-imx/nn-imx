@@ -973,7 +973,7 @@ bool VsiDriver::isWeightMd5Matched(const HalPlatform::Operation& operation,
 }
 
 int getSystemPropertyAsInt(const char* prop_name, int default_value) {
-    char value[100];
+    char value[100] = {0};
     if (getSystemProperty(prop_name, value)) {
         return atoi(value);
     } else {
