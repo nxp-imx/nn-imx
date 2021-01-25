@@ -59,6 +59,7 @@ def update_vs_project(resources, vxcproj='ovxlib.vcxproj'):
                     e.text = '\n' + s_space * 3
                     e2 = ET.Element('ObjectFileName')
                     path = s.replace('src/','').replace('.c','.o')
+                    path = path[:path.rfind('\\')+1]
                     e2.text = '$(IntDir)\\' + path
                     e.append(e2)
                     fill_tail(e2, 3, True)

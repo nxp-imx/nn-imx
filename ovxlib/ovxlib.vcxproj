@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build" ToolsVersion="4.0">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
@@ -237,6 +237,8 @@
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <DisableSpecificWarnings>4996;4201;4127;4200;4152;4245;4100;4310;4204</DisableSpecificWarnings>
       <TreatWarningAsError>true</TreatWarningAsError>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <MinimalRebuild>false</MinimalRebuild>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -258,6 +260,8 @@
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <DisableSpecificWarnings>4996;4201;4127;4200;4152;4245;4100;4310;4204</DisableSpecificWarnings>
       <TreatWarningAsError>true</TreatWarningAsError>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <MinimalRebuild>false</MinimalRebuild>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -279,6 +283,8 @@
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <DisableSpecificWarnings>4996;4201;4127;4200;4152;4245;4100;4310;4204</DisableSpecificWarnings>
       <TreatWarningAsError>true</TreatWarningAsError>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <MinimalRebuild>false</MinimalRebuild>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -300,6 +306,8 @@
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <TreatWarningAsError>true</TreatWarningAsError>
       <DisableSpecificWarnings>4996;4201;4127;4200;4152;4245;4100;4310;4204</DisableSpecificWarnings>
+      <MinimalRebuild>false</MinimalRebuild>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -319,6 +327,8 @@
       <AdditionalIncludeDirectories>include;$(AQROOT)\sdk\inc;$(ProjectDir)\inc;</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WINDLL;_CRT_SECURE_NO_WARNINGS;VSI_CFG_NNAPI_0_4;OVXLIB_API=__declspec(dllexport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <MinimalRebuild>false</MinimalRebuild>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -338,6 +348,8 @@
       <AdditionalIncludeDirectories>include;$(AQROOT)\sdk\inc;$(ProjectDir)\inc;</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WINDLL;_CRT_SECURE_NO_WARNINGS;VSI_CFG_NNAPI_0_4;OVXLIB_API=__declspec(dllexport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <MinimalRebuild>false</MinimalRebuild>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -357,6 +369,8 @@
       <AdditionalIncludeDirectories>include;$(AQROOT)\sdk\inc;$(ProjectDir)\inc;</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WINDLL;_CRT_SECURE_NO_WARNINGS;VSI_CFG_NNAPI_0_3;OVXLIB_API=__declspec(dllexport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <MinimalRebuild>false</MinimalRebuild>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -376,6 +390,8 @@
       <AdditionalIncludeDirectories>include;$(AQROOT)\sdk\inc;$(ProjectDir)\inc;</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WINDLL;_CRT_SECURE_NO_WARNINGS;VSI_CFG_NNAPI_0_3;OVXLIB_API=__declspec(dllexport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <MinimalRebuild>false</MinimalRebuild>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -395,6 +411,8 @@
       <AdditionalIncludeDirectories>$(VIV_SDK_PATH)\include;$(SolutionDir)\include</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WINDLL;OVXLIB_API=__declspec(dllexport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <MinimalRebuild>false</MinimalRebuild>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -413,6 +431,8 @@
       <AdditionalIncludeDirectories>$(VIV_SDK_PATH)\include;$(SolutionDir)\include</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WINDLL;OVXLIB_API=__declspec(dllexport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <MinimalRebuild>false</MinimalRebuild>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -431,6 +451,8 @@
       <AdditionalIncludeDirectories>$(VIV_SDK_PATH)\include;$(SolutionDir)\include</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WINDLL;OVXLIB_API=__declspec(dllexport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <MinimalRebuild>false</MinimalRebuild>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -451,6 +473,8 @@
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <TreatWarningAsError>true</TreatWarningAsError>
       <DisableSpecificWarnings>4996;4201;4127;4200;4152;4245;4100;4310;4204</DisableSpecificWarnings>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <MinimalRebuild>false</MinimalRebuild>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -731,1009 +755,1009 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='NNApi0.4|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="src\client\vsi_nn_vxkernel.c">
-      <ObjectFileName>$(IntDir)\src\client\vsi_nn_vxkernel.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\client\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\cpu_backend\npuref_interface.c">
-      <ObjectFileName>$(IntDir)\src\cpu_backend\npuref_interface.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\cpu_backend\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\cpu_backend\vsi_nn_cpu_backend.c">
-      <ObjectFileName>$(IntDir)\src\cpu_backend\vsi_nn_cpu_backend.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\cpu_backend\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\cpu_backend\vsi_nn_cpu_backend_conv2d.c">
-      <ObjectFileName>$(IntDir)\src\cpu_backend\vsi_nn_cpu_backend_conv2d.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\cpu_backend\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\cpu_backend\vsi_nn_cpu_backend_deconv2d.c">
-      <ObjectFileName>$(IntDir)\src\cpu_backend\vsi_nn_cpu_backend_deconv2d.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\cpu_backend\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\custom\ops\kernel\vsi_nn_kernel_custom_softmax.c">
-      <ObjectFileName>$(IntDir)\src\custom\ops\kernel\vsi_nn_kernel_custom_softmax.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\custom\ops\kernel\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\custom\ops\vsi_nn_op_custom_softmax.c">
-      <ObjectFileName>$(IntDir)\src\custom\ops\vsi_nn_op_custom_softmax.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\custom\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\argmax_cl.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cl\argmax_cl.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\argmin_cl.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cl\argmin_cl.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\batchnorm_single_cl.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cl\batchnorm_single_cl.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\cast_cl.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cl\cast_cl.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\comparisons_cl.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cl\comparisons_cl.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\eltwise_unary_cl.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cl\eltwise_unary_cl.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\floordiv_cl.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cl\floordiv_cl.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\gather_cl.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cl\gather_cl.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\gather_nd_cl.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cl\gather_nd_cl.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\scatter_nd_cl.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cl\scatter_nd_cl.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\grucell_activation_cl.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cl\grucell_activation_cl.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\grucell_activation_sma_cl.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cl\grucell_activation_sma_cl.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\instance_normalization_cl.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cl\instance_normalization_cl.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\log_softmax_cl.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cl\log_softmax_cl.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\logical_not_cl.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cl\logical_not_cl.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\logical_ops_cl.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cl\logical_ops_cl.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\matrixmul_cl.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cl\matrixmul_cl.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\maximum_cl.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cl\maximum_cl.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\minimum_cl.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cl\minimum_cl.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\moments_cl.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cl\moments_cl.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\poolwithargmax_cl.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cl\poolwithargmax_cl.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\pow_cl.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cl\pow_cl.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\prelu_cl.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cl\prelu_cl.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\random_multinomial_cl.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cl\random_multinomial_cl.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\reduceall_internal_cl.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cl\reduceall_internal_cl.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\reduceany_internal_cl.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cl\reduceany_internal_cl.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\reducemax_internal_cl.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cl\reducemax_internal_cl.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\reducemin_internal_cl.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cl\reducemin_internal_cl.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\reduceprod_internal_cl.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cl\reduceprod_internal_cl.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\select_cl.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cl\select_cl.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\swish_cl.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cl\swish_cl.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\tile_cl.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cl\tile_cl.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\upsample_cl.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cl\upsample_cl.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\argmax_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\argmax_cpu.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\argmin_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\argmin_cpu.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\batchnorm_single_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\batchnorm_single_cpu.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\cast_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\cast_cpu.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\comparisons_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\comparisons_cpu.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\depth2space_internal_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\depth2space_internal_cpu.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\depthwise_conv1d_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\depthwise_conv1d_cpu.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\eltwise_unary_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\eltwise_unary_cpu.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\floordiv_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\floordiv_cpu.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\gather_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\gather_cpu.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\gather_nd_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\gather_nd_cpu.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\scatter_nd_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\scatter_nd_cpu.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\grucell_activation_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\grucell_activation_cpu.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\grucell_activation_sma_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\grucell_activation_sma_cpu.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\instance_normalization_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\instance_normalization_cpu.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\log_softmax_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\log_softmax_cpu.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\logical_not_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\logical_not_cpu.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\logical_ops_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\logical_ops_cpu.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\matrixmul_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\matrixmul_cpu.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\maximum_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\maximum_cpu.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\minimum_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\minimum_cpu.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\moments_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\moments_cpu.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\poolwithargmax_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\poolwithargmax_cpu.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\pow_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\pow_cpu.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\pre_process_yuv420_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\pre_process_yuv420_cpu.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\pre_process_yuv444_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\pre_process_yuv444_cpu.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\pre_process_nv12_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\pre_process_nv12_cpu.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\pre_process_gray_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\pre_process_gray_cpu.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\pre_process_rgb_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\pre_process_rgb_cpu.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\pre_process_bgra_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\pre_process_bgra_cpu.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\prelu_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\prelu_cpu.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\random_multinomial_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\random_multinomial_cpu.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\reduceall_internal_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\reduceall_internal_cpu.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\reduceany_internal_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\reduceany_internal_cpu.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\reducemax_internal_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\reducemax_internal_cpu.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\reducemin_internal_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\reducemin_internal_cpu.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\reduceprod_internal_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\reduceprod_internal_cpu.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\select_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\select_cpu.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\swish_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\swish_cpu.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\tile_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\tile_cpu.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\upsample_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\upsample_cpu.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\a_times_b_plus_c_evis.c">
-      <ObjectFileName>$(IntDir)\src\kernel\evis\a_times_b_plus_c_evis.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\argmax_evis.c">
-      <ObjectFileName>$(IntDir)\src\kernel\evis\argmax_evis.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\argmin_evis.c">
-      <ObjectFileName>$(IntDir)\src\kernel\evis\argmin_evis.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\batchnorm_single_evis.c">
-      <ObjectFileName>$(IntDir)\src\kernel\evis\batchnorm_single_evis.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\cast_evis.c">
-      <ObjectFileName>$(IntDir)\src\kernel\evis\cast_evis.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\comparisons_evis.c">
-      <ObjectFileName>$(IntDir)\src\kernel\evis\comparisons_evis.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\depth2space_internal_evis.c">
-      <ObjectFileName>$(IntDir)\src\kernel\evis\depth2space_internal_evis.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\depthwise_conv1d_evis.c">
-      <ObjectFileName>$(IntDir)\src\kernel\evis\depthwise_conv1d_evis.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\eltwise_unary_evis.c">
-      <ObjectFileName>$(IntDir)\src\kernel\evis\eltwise_unary_evis.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\floordiv_evis.c">
-      <ObjectFileName>$(IntDir)\src\kernel\evis\floordiv_evis.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\gather_evis.c">
-      <ObjectFileName>$(IntDir)\src\kernel\evis\gather_evis.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\gather_nd_evis.c">
-      <ObjectFileName>$(IntDir)\src\kernel\evis\gather_nd_evis.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\scatter_nd_evis.c">
-      <ObjectFileName>$(IntDir)\src\kernel\evis\scatter_nd_evis.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\grucell_activation_evis.c">
-      <ObjectFileName>$(IntDir)\src\kernel\evis\grucell_activation_evis.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\grucell_activation_sma_evis.c">
-      <ObjectFileName>$(IntDir)\src\kernel\evis\grucell_activation_sma_evis.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\instance_normalization_evis.c">
-      <ObjectFileName>$(IntDir)\src\kernel\evis\instance_normalization_evis.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\log_softmax_evis.c">
-      <ObjectFileName>$(IntDir)\src\kernel\evis\log_softmax_evis.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\logical_not_evis.c">
-      <ObjectFileName>$(IntDir)\src\kernel\evis\logical_not_evis.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\logical_ops_evis.c">
-      <ObjectFileName>$(IntDir)\src\kernel\evis\logical_ops_evis.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\matrixmul_evis.c">
-      <ObjectFileName>$(IntDir)\src\kernel\evis\matrixmul_evis.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\maximum_evis.c">
-      <ObjectFileName>$(IntDir)\src\kernel\evis\maximum_evis.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\minimum_evis.c">
-      <ObjectFileName>$(IntDir)\src\kernel\evis\minimum_evis.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\moments_evis.c">
-      <ObjectFileName>$(IntDir)\src\kernel\evis\moments_evis.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\poolwithargmax_evis.c">
-      <ObjectFileName>$(IntDir)\src\kernel\evis\poolwithargmax_evis.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\pow_evis.c">
-      <ObjectFileName>$(IntDir)\src\kernel\evis\pow_evis.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\pre_process_yuv420_evis.c">
-      <ObjectFileName>$(IntDir)\src\kernel\evis\pre_process_yuv420_evis.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\pre_process_yuv444_evis.c">
-      <ObjectFileName>$(IntDir)\src\kernel\evis\pre_process_yuv444_evis.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\pre_process_nv12_evis.c">
-      <ObjectFileName>$(IntDir)\src\kernel\evis\pre_process_nv12_evis.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\pre_process_gray_evis.c">
-      <ObjectFileName>$(IntDir)\src\kernel\evis\pre_process_gray_evis.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\pre_process_rgb_evis.c">
-      <ObjectFileName>$(IntDir)\src\kernel\evis\pre_process_rgb_evis.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\pre_process_bgra_evis.c">
-      <ObjectFileName>$(IntDir)\src\kernel\evis\pre_process_bgra_evis.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\prelu_evis.c">
-      <ObjectFileName>$(IntDir)\src\kernel\evis\prelu_evis.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\random_multinomial_evis.c">
-      <ObjectFileName>$(IntDir)\src\kernel\evis\random_multinomial_evis.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\reduceall_internal_evis.c">
-      <ObjectFileName>$(IntDir)\src\kernel\evis\reduceall_internal_evis.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\reduceany_internal_evis.c">
-      <ObjectFileName>$(IntDir)\src\kernel\evis\reduceany_internal_evis.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\reducemax_internal_evis.c">
-      <ObjectFileName>$(IntDir)\src\kernel\evis\reducemax_internal_evis.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\reducemin_internal_evis.c">
-      <ObjectFileName>$(IntDir)\src\kernel\evis\reducemin_internal_evis.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\reduceprod_internal_evis.c">
-      <ObjectFileName>$(IntDir)\src\kernel\evis\reduceprod_internal_evis.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\select_evis.c">
-      <ObjectFileName>$(IntDir)\src\kernel\evis\select_evis.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\swish_evis.c">
-      <ObjectFileName>$(IntDir)\src\kernel\evis\swish_evis.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\tile_evis.c">
-      <ObjectFileName>$(IntDir)\src\kernel\evis\tile_evis.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\upsample_evis.c">
-      <ObjectFileName>$(IntDir)\src\kernel\evis\upsample_evis.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\vsi_nn_gpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\vsi_nn_gpu.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\vsi_nn_kernel.c">
-      <ObjectFileName>$(IntDir)\src\kernel\vsi_nn_kernel.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\vsi_nn_kernel_backend.c">
-      <ObjectFileName>$(IntDir)\src\kernel\vsi_nn_kernel_backend.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\vsi_nn_kernel_eltwise.c">
-      <ObjectFileName>$(IntDir)\src\kernel\vsi_nn_kernel_eltwise.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\vsi_nn_kernel_gpu_shape_optimize.c">
-      <ObjectFileName>$(IntDir)\src\kernel\vsi_nn_kernel_gpu_shape_optimize.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\vsi_nn_kernel_node.c">
-      <ObjectFileName>$(IntDir)\src\kernel\vsi_nn_kernel_node.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\vsi_nn_kernel_param.c">
-      <ObjectFileName>$(IntDir)\src\kernel\vsi_nn_kernel_param.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\vsi_nn_kernel_selector.c">
-      <ObjectFileName>$(IntDir)\src\kernel\vsi_nn_kernel_selector.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\vsi_nn_kernel_util.c">
-      <ObjectFileName>$(IntDir)\src\kernel\vsi_nn_kernel_util.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\vx\a_times_b_plus_c_vx.c">
-      <ObjectFileName>$(IntDir)\src\kernel\vx\a_times_b_plus_c_vx.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\vx\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\vx\convolutional.c">
-      <ObjectFileName>$(IntDir)\src\kernel\vx\convolutional.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\vx\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\vx\eltwise_vx.c">
-      <ObjectFileName>$(IntDir)\src\kernel\vx\eltwise_vx.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\vx\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\vx\prelu_vx.c">
-      <ObjectFileName>$(IntDir)\src\kernel\vx\prelu_vx.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\kernel\vx\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_axis_aligned_bbox_transform.c">
-      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\vsi_nn_kernel_axis_aligned_bbox_transform.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_box_with_nms_limit.c">
-      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\vsi_nn_kernel_box_with_nms_limit.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_conv2d.c">
-      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\vsi_nn_kernel_conv2d.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_crop.c">
-      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\vsi_nn_kernel_crop.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_deconv2d.c">
-      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\vsi_nn_kernel_deconv2d.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_extra_ending.c">
-      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\vsi_nn_kernel_extra_ending.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_fullconnect2.c">
-      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\vsi_nn_kernel_fullconnect2.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_generate_proposals.c">
-      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\vsi_nn_kernel_generate_proposals.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_heatmap_max_keypoint.c">
-      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\vsi_nn_kernel_heatmap_max_keypoint.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_imageprocess.c">
-      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\vsi_nn_kernel_imageprocess.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_layernormalize.c">
-      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\vsi_nn_kernel_layernormalize.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_reduce.c">
-      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\vsi_nn_kernel_reduce.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_resize.c">
-      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\vsi_nn_kernel_resize.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_roi_align.c">
-      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\vsi_nn_kernel_roi_align.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_scale.c">
-      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\vsi_nn_kernel_scale.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_shufflechannel.c">
-      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\vsi_nn_kernel_shufflechannel.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_signalframe.c">
-      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\vsi_nn_kernel_signalframe.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_space2depth.c">
-      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\vsi_nn_kernel_space2depth.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_spatial_transformer.c">
-      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\vsi_nn_kernel_spatial_transformer.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_sync_host.c">
-      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\vsi_nn_kernel_sync_host.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_tensorstackconcat.c">
-      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\vsi_nn_kernel_tensorstackconcat.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_topk.c">
-      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\vsi_nn_kernel_topk.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\libnnext\vsi_nn_libnnext_resource.c">
-      <ObjectFileName>$(IntDir)\src\libnnext\vsi_nn_libnnext_resource.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\libnnext\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_a_times_b_plus_c.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_a_times_b_plus_c.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_abs.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_abs.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_addn.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_addn.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_argmaxmin.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_argmaxmin.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_axis_aligned_bbox_transform.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_axis_aligned_bbox_transform.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_batch2space.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_batch2space.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_batch_norm.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_batch_norm.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_batchnorm_single.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_batchnorm_single.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_bidirectional_sequence_lstm.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_bidirectional_sequence_lstm.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_bidirectional_sequence_rnn.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_bidirectional_sequence_rnn.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_box_with_nms_limit.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_box_with_nms_limit.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_cast.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_cast.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_clip.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_clip.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_common.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_common.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_concat.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_concat.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_concatshift.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_concatshift.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_conv1d.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_conv1d.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_conv2d.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_conv2d.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_conv_relu.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_conv_relu.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_conv_relu_pool.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_conv_relu_pool.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_crop.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_crop.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_dataconvert.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_dataconvert.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_deconvolution.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_deconvolution.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_depth2space.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_depth2space.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_depth2space_internal.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_depth2space_internal.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_depthwise_conv1d.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_depthwise_conv1d.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_detection_postprocess.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_detection_postprocess.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_dropout.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_dropout.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_eltwise.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_eltwise.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_eltwise_unary.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_eltwise_unary.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_embedding_lookup.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_embedding_lookup.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_extra_ending.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_extra_ending.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_floor.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_floor.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_floordiv.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_floordiv.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_fullconnect.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_fullconnect.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_fullconnect2.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_fullconnect2.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_fullconnect_relu.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_fullconnect_relu.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_gather.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_gather.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_gather_nd.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_gather_nd.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_scatter_nd.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_scatter_nd.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_generate_proposals.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_generate_proposals.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_grouped_conv2d.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_grouped_conv2d.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_gru_ovxlib.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_gru_ovxlib.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_grucell_activation_internal.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_grucell_activation_internal.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_grucell_activation_internal_sma.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_grucell_activation_internal_sma.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_grucell_ovxlib.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_grucell_ovxlib.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_hashtable_lookup.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_hashtable_lookup.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_heatmap_max_keypoint.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_heatmap_max_keypoint.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_imageprocess.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_imageprocess.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_instancenormalize.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_instancenormalize.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_l2_normalize.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_l2_normalize.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_l2normalizescale.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_l2normalizescale.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_layernormalize.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_layernormalize.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_leaky_relu.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_leaky_relu.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_linear.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_linear.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_log_softmax.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_log_softmax.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_logical_not.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_logical_not.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_logical_ops.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_logical_ops.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_lrn.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_lrn.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_lrn2.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_lrn2.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_lsh_projection.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_lsh_projection.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_lstm.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_lstm.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_lstm_ovxlib.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_lstm_ovxlib.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_lstmunit.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_lstmunit.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_lstmunit_activation.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_lstmunit_activation.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_lstmunit_ovxlib.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_lstmunit_ovxlib.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_matrixmul.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_matrixmul.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_moments.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_moments.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_nbg.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_nbg.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_noop.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_noop.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_pad.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_pad.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_permute.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_permute.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_pool.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_pool.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_poolwithargmax.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_poolwithargmax.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_post_process.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_post_process.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_pre_process.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_pre_process.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_pre_process_bgra.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_pre_process_bgra.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_pre_process_gray.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_pre_process_gray.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_pre_process_rgb.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_pre_process_rgb.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_pre_process_tensor.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_pre_process_tensor.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_pre_process_yuv420.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_pre_process_yuv420.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_pre_process_yuv444.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_pre_process_yuv444.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_pre_process_nv12.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_pre_process_nv12.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_prelu.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_prelu.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_proposal.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_proposal.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_quantized_16bit_lstm.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_quantized_16bit_lstm.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_random_multinomial.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_random_multinomial.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_reduce.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_reduce.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_reduce_internal.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_reduce_internal.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_reducesum_internal.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_reducesum_internal.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_relational_ops.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_relational_ops.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_relu.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_relu.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_relu1.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_relu1.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_relu6.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_relu6.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_relu_keras.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_relu_keras.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_relu_keras_internal.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_relu_keras_internal.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_relun.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_relun.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_reorg.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_reorg.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_reshape.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_reshape.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_resize.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_resize.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_resize_internal.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_resize_internal.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_resize_nearest_internal.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_resize_nearest_internal.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_reverse.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_reverse.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_rnn.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_rnn.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_rnncell_ovxlib.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_rnncell_ovxlib.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_roi_align.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_roi_align.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_roi_pool.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_roi_pool.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_rsqrt.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_rsqrt.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_scale.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_scale.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_select.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_select.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_shufflechannel.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_shufflechannel.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_sigmoid.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_sigmoid.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_signalframe.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_signalframe.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_slice.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_slice.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_softmax.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_softmax.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_softmax_internal.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_softmax_internal.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_softrelu.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_softrelu.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_space2batch.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_space2batch.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_space2depth.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_space2depth.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_spatial_transformer.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_spatial_transformer.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_split.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_split.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_sqrt.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_sqrt.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_square.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_square.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_squeeze.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_squeeze.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_stack.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_stack.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_strided_slice.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_strided_slice.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_svdf.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_svdf.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_swish.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_swish.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_sync_host.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_sync_host.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_tanh.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_tanh.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_tensor_add_mean_stddev_norm.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_tensor_add_mean_stddev_norm.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_tensorstackconcat.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_tensorstackconcat.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_tile.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_tile.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_topk.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_topk.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_unidirectional_sequence_rnn.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_unidirectional_sequence_rnn.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_unstack.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_unstack.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_upsample.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_upsample.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_deconvolution1d.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_deconvolution1d.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="src\ops\vsi_nn_op_interp.c" >
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_interp.o</ObjectFileName>
+    <ClCompile Include="src\ops\vsi_nn_op_interp.c">
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_variable.c">
-      <ObjectFileName>$(IntDir)\src\ops\vsi_nn_op_variable.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\post\vsi_nn_post_cmupose.c">
-      <ObjectFileName>$(IntDir)\src\post\vsi_nn_post_cmupose.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\post\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\post\vsi_nn_post_fasterrcnn.c">
-      <ObjectFileName>$(IntDir)\src\post\vsi_nn_post_fasterrcnn.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\post\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\pycc\vsi_pycc_interface.c">
-      <ObjectFileName>$(IntDir)\src\pycc\vsi_pycc_interface.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\pycc\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\quantization\vsi_nn_asymmetric_affine.c">
-      <ObjectFileName>$(IntDir)\src\quantization\vsi_nn_asymmetric_affine.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\quantization\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\quantization\vsi_nn_dynamic_fixed_point.c">
-      <ObjectFileName>$(IntDir)\src\quantization\vsi_nn_dynamic_fixed_point.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\quantization\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\quantization\vsi_nn_perchannel_symmetric_affine.c">
-      <ObjectFileName>$(IntDir)\src\quantization\vsi_nn_perchannel_symmetric_affine.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\quantization\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\utils\vsi_nn_binary_tree.c">
-      <ObjectFileName>$(IntDir)\src\utils\vsi_nn_binary_tree.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\utils\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\utils\vsi_nn_code_generator.c">
-      <ObjectFileName>$(IntDir)\src\utils\vsi_nn_code_generator.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\utils\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\utils\vsi_nn_dlfcn.c">
-      <ObjectFileName>$(IntDir)\src\utils\vsi_nn_dlfcn.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\utils\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\utils\vsi_nn_dtype.c">
-      <ObjectFileName>$(IntDir)\src\utils\vsi_nn_dtype.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\utils\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\utils\vsi_nn_dtype_util.c">
-      <ObjectFileName>$(IntDir)\src\utils\vsi_nn_dtype_util.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\utils\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\utils\vsi_nn_hashmap.c">
-      <ObjectFileName>$(IntDir)\src\utils\vsi_nn_hashmap.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\utils\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\utils\vsi_nn_limits.c">
-      <ObjectFileName>$(IntDir)\src\utils\vsi_nn_limits.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\utils\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\utils\vsi_nn_link_list.c">
-      <ObjectFileName>$(IntDir)\src\utils\vsi_nn_link_list.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\utils\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\utils\vsi_nn_map.c">
-      <ObjectFileName>$(IntDir)\src\utils\vsi_nn_map.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\utils\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\utils\vsi_nn_math.c">
-      <ObjectFileName>$(IntDir)\src\utils\vsi_nn_math.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\utils\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\utils\vsi_nn_shape_util.c">
-      <ObjectFileName>$(IntDir)\src\utils\vsi_nn_shape_util.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\utils\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\utils\vsi_nn_tensor_op.c">
-      <ObjectFileName>$(IntDir)\src\utils\vsi_nn_tensor_op.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\utils\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\utils\vsi_nn_util.c">
-      <ObjectFileName>$(IntDir)\src\utils\vsi_nn_util.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\utils\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\utils\vsi_nn_vdata.c">
-      <ObjectFileName>$(IntDir)\src\utils\vsi_nn_vdata.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\utils\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\utils\vsi_nn_constraint_check.c">
-      <ObjectFileName>$(IntDir)\src\utils\vsi_nn_constraint_check.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\utils\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\vsi_nn_client_op.c">
-      <ObjectFileName>$(IntDir)\src\vsi_nn_client_op.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\vsi_nn_context.c">
-      <ObjectFileName>$(IntDir)\src\vsi_nn_context.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\vsi_nn_daemon.c">
-      <ObjectFileName>$(IntDir)\src\vsi_nn_daemon.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\vsi_nn_graph.c">
-      <ObjectFileName>$(IntDir)\src\vsi_nn_graph.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\vsi_nn_graph_optimization.c">
-      <ObjectFileName>$(IntDir)\src\vsi_nn_graph_optimization.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\vsi_nn_internal_node.c">
-      <ObjectFileName>$(IntDir)\src\vsi_nn_internal_node.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\vsi_nn_log.c">
-      <ObjectFileName>$(IntDir)\src\vsi_nn_log.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\vsi_nn_node.c">
-      <ObjectFileName>$(IntDir)\src\vsi_nn_node.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\vsi_nn_node_attr_template.c">
-      <ObjectFileName>$(IntDir)\src\vsi_nn_node_attr_template.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\vsi_nn_ops.c">
-      <ObjectFileName>$(IntDir)\src\vsi_nn_ops.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\vsi_nn_pre_post_process.c">
-      <ObjectFileName>$(IntDir)\src\vsi_nn_pre_post_process.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\vsi_nn_rnn.c">
-      <ObjectFileName>$(IntDir)\src\vsi_nn_rnn.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\vsi_nn_rnn_helper.c">
-      <ObjectFileName>$(IntDir)\src\vsi_nn_rnn_helper.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\vsi_nn_tensor.c">
-      <ObjectFileName>$(IntDir)\src\vsi_nn_tensor.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\vsi_nn_version.c">
-      <ObjectFileName>$(IntDir)\src\vsi_nn_version.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\src\</ObjectFileName>
     </ClCompile>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
