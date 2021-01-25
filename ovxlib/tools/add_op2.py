@@ -30,9 +30,9 @@ def modify_ovxlib_vcxproj(lines, op_name):
         if line.find('vsi_nn_op_variable.c') != -1:
             s = '''\
     <ClCompile Include="src\\ops\\vsi_nn_op_%s.c" >\n\
-      <ObjectFileName>$(IntDir)\\src\\ops\\vsi_nn_op_%s.o</ObjectFileName>
+      <ObjectFileName>$(IntDir)\\src\\ops\\</ObjectFileName>
     </ClCompile>
-'''%(op_name.lower(), op_name.lower())
+'''%(op_name.lower())
             new_lines[index - 1] += s
             continue
     return new_lines
