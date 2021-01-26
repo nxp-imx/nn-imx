@@ -22,14 +22,14 @@
 *
 *****************************************************************************/
 
-#ifndef __ANEURALNETWORKS_TOPK_V2_HPP__
-#define __ANEURALNETWORKS_TOPK_V2_HPP__
+#ifndef __ANEURALNETWORKS_ELU_HPP__
+#define __ANEURALNETWORKS_ELU_HPP__
 
-#define OP_SPEC_NAME TopkV2Operation
+#define OP_SPEC_NAME EluOperation
 OP_SPEC_BEGIN()
-#define ARG_NAMES         \
-    (input,                 \
-     k)
+#define ARG_NAMES \
+    (input,               \
+     alpha)
 #define ARGC BOOST_PP_TUPLE_SIZE(ARG_NAMES)
 
 #define BOOST_PP_LOCAL_MACRO(n) OP_SPEC_ARG(BOOST_PP_TUPLE_ELEM(ARGC, n, ARG_NAMES))
@@ -38,21 +38,13 @@ OP_SPEC_BEGIN()
 OP_SPEC_END()
 
 // order of argument is important
-MAKE_SPEC(topk_v2)
+MAKE_SPEC(elu)
     .input_(nnrt::OperandType::TENSOR_FLOAT32)
-    .k_(nnrt::OperandType::INT32));
+    .alpha_(nnrt::OperandType::FLOAT32));
 
-    OVERRIDE_SPEC(topk_v2, float16)
-    .input_(nnrt::OperandType::TENSOR_FLOAT16));
-
-    OVERRIDE_SPEC(topk_v2, int32)
-    .input_(nnrt::OperandType::TENSOR_INT32));
-
-    OVERRIDE_SPEC(topk_v2, asymm_u8)
-    .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM));
-
-    OVERRIDE_SPEC(topk_v2, asymm_int8)
-    .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM_SIGNED));
+    OVERRIDE_SPEC(elu, float16)
+    .input_(nnrt::OperandType::TENSOR_FLOAT16)
+    .alpha_(nnrt::OperandType::FLOAT16));
 
 #undef ARG_NAMES
 #undef ARGC

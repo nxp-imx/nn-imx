@@ -45,11 +45,14 @@ MAKE_SPEC(channel_shuffle)
     .groups_(nnrt::OperandType::INT32)
     .axis_(nnrt::OperandType::INT32));
 
-    OVERRIDE_SPEC(channel_shuffle, 0)
+    OVERRIDE_SPEC(channel_shuffle, fp16)
     .input_(nnrt::OperandType::TENSOR_FLOAT16));
 
-    OVERRIDE_SPEC(channel_shuffle, 1)
+    OVERRIDE_SPEC(channel_shuffle, asymm_u8)
     .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM));
+
+    OVERRIDE_SPEC(channel_shuffle, asymm_int8)
+    .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM_SIGNED));
 
 #undef ARG_NAMES
 #undef ARGC

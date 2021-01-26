@@ -72,13 +72,23 @@ OVERRIDE_SPEC(explict_padding_base, in_float16)
     .kernel_(nnrt::OperandType::TENSOR_FLOAT16)
     .bias_(nnrt::OperandType::TENSOR_FLOAT16));
 
-OVERRIDE_SPEC(explict_padding_base, in_asysm_u8)
+OVERRIDE_SPEC(explict_padding_base, in_asymm_u8)
     .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM)
     .kernel_(nnrt::OperandType::TENSOR_QUANT8_ASYMM)
     .bias_(nnrt::OperandType::TENSOR_INT32));
 
-OVERRIDE_SPEC(explict_padding_base, perchan_quant)
+OVERRIDE_SPEC(explict_padding_base, in_asymm_int8)
+    .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM_SIGNED)
+    .kernel_(nnrt::OperandType::TENSOR_QUANT8_ASYMM_SIGNED)
+    .bias_(nnrt::OperandType::TENSOR_INT32));
+
+OVERRIDE_SPEC(explict_padding_base, perchan_quant_u8)
     .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM)
+    .kernel_(nnrt::OperandType::TENSOR_QUANT8_SYMM_PER_CHANNEL)
+    .bias_(nnrt::OperandType::TENSOR_INT32));
+
+OVERRIDE_SPEC(explict_padding_base, perchan_quant_int8)
+    .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM_SIGNED)
     .kernel_(nnrt::OperandType::TENSOR_QUANT8_SYMM_PER_CHANNEL)
     .bias_(nnrt::OperandType::TENSOR_INT32));
 
@@ -105,8 +115,18 @@ OVERRIDE_SPEC(implicit_padding_base, in_asysm_u8)
     .kernel_(nnrt::OperandType::TENSOR_QUANT8_ASYMM)
     .bias_(nnrt::OperandType::TENSOR_INT32));
 
-OVERRIDE_SPEC(implicit_padding_base, perchan_quant)
+OVERRIDE_SPEC(implicit_padding_base, in_asymm_int8)
+    .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM_SIGNED)
+    .kernel_(nnrt::OperandType::TENSOR_QUANT8_ASYMM_SIGNED)
+    .bias_(nnrt::OperandType::TENSOR_INT32));
+
+OVERRIDE_SPEC(implicit_padding_base, perchan_quant_u8)
     .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM)
+    .kernel_(nnrt::OperandType::TENSOR_QUANT8_SYMM_PER_CHANNEL)
+    .bias_(nnrt::OperandType::TENSOR_INT32));
+
+OVERRIDE_SPEC(implicit_padding_base, perchan_quant_int8)
+    .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM_SIGNED)
     .kernel_(nnrt::OperandType::TENSOR_QUANT8_SYMM_PER_CHANNEL)
     .bias_(nnrt::OperandType::TENSOR_INT32));
 

@@ -192,6 +192,8 @@ class NnApiInterpreter : public Interpreter
         REGISTER_OP(CAST);
         REGISTER_OP(QUANTIZED_16BIT_LSTM);
         REGISTER_OP(NBG);
+        REGISTER_OP(HARD_SWISH);
+        REGISTER_OP(ELU);
 #undef  REGISTER_OP
     private:
         inline DataLayout getDataLayout(bool isNCHW) {

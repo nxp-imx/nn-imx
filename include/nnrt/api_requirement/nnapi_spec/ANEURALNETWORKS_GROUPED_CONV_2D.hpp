@@ -68,9 +68,14 @@ MAKE_SPEC(explicit_padding_grouped_conv_2d)
     .kernel_(nnrt::OperandType::TENSOR_FLOAT16)
     .bias_(nnrt::OperandType::TENSOR_FLOAT16));
 
-    OVERRIDE_SPEC(explicit_padding_grouped_conv_2d, quant8)
+    OVERRIDE_SPEC(explicit_padding_grouped_conv_2d, asymm_u8)
     .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM)
     .kernel_(nnrt::OperandType::TENSOR_QUANT8_ASYMM)
+    .bias_(nnrt::OperandType::TENSOR_INT32));
+
+    OVERRIDE_SPEC(explicit_padding_grouped_conv_2d, asymm_int8)
+    .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM_SIGNED)
+    .kernel_(nnrt::OperandType::TENSOR_QUANT8_ASYMM_SIGNED)
     .bias_(nnrt::OperandType::TENSOR_INT32));
 
     // OVERRIDE_SPEC(explicit_padding_grouped_conv_2d, per_channel_quant8)
@@ -97,6 +102,11 @@ MAKE_SPEC(implicit_padding_grouped_conv_2d)
     OVERRIDE_SPEC(implicit_padding_grouped_conv_2d, quant8)
     .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM)
     .kernel_(nnrt::OperandType::TENSOR_QUANT8_ASYMM)
+    .bias_(nnrt::OperandType::TENSOR_INT32));
+
+    OVERRIDE_SPEC(implicit_padding_grouped_conv_2d, asymm_int8)
+    .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM_SIGNED)
+    .kernel_(nnrt::OperandType::TENSOR_QUANT8_ASYMM_SIGNED)
     .bias_(nnrt::OperandType::TENSOR_INT32));
 
     // OVERRIDE_SPEC(implicit_padding_grouped_conv_2d, per_channel_quant8)

@@ -52,11 +52,14 @@ MAKE_SPEC(height_width_base)
     .align_corners_(nnrt::OperandType::BOOL, OPTIONAL)
     .half_pixel_corners_(nnrt::OperandType::BOOL, OPTIONAL));
 
-    OVERRIDE_SPEC(height_width_base, 0)
+    OVERRIDE_SPEC(height_width_base, fp16)
     .input_(nnrt::OperandType::TENSOR_FLOAT16));
 
-    OVERRIDE_SPEC(height_width_base, 1)
+    OVERRIDE_SPEC(height_width_base, asymm_u8)
     .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM));
+
+    OVERRIDE_SPEC(height_width_base, asymm_int8)
+    .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM_SIGNED));
 
 MAKE_SPEC(scale_base)
     .input_(nnrt::OperandType::TENSOR_FLOAT32)
@@ -66,13 +69,16 @@ MAKE_SPEC(scale_base)
     .align_corners_(nnrt::OperandType::BOOL, OPTIONAL)
     .half_pixel_corners_(nnrt::OperandType::BOOL, OPTIONAL));
 
-    OVERRIDE_SPEC(scale_base, 0)
+    OVERRIDE_SPEC(scale_base, fp16)
     .input_(nnrt::OperandType::TENSOR_FLOAT16)
     .height_scale_(nnrt::OperandType::FLOAT16)
     .width_scale_(nnrt::OperandType::FLOAT16));
 
-    OVERRIDE_SPEC(scale_base, 1)
+    OVERRIDE_SPEC(scale_base, asymm_u8)
     .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM));
+
+    OVERRIDE_SPEC(scale_base, asymm_int8)
+    .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM_SIGNED));
 
 #undef ARG_NAMES
 #undef ARGC
