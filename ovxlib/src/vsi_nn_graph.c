@@ -588,11 +588,6 @@ vsi_status vsi_nn_SetupGraph
     vsi_status status;
     vsi_nn_node_id_t *sorted_nodes;
     vsi_nn_node_id_t *nodes_list;
-    uint32_t num_of_graph_inputs;
-    vx_reference *graph_inputs = NULL;
-    uint32_t num_of_graph_outputs;
-    vx_reference *graph_outputs = NULL;
-    vsi_nn_tensor_t *tensor;
     vsi_bool dirty = FALSE;
 
     status = VSI_FAILURE;
@@ -670,54 +665,9 @@ vsi_status vsi_nn_SetupGraph
     status = vsi_nn_TrySetupCompleteSignalNode( graph );
     TEST_CHECK_STATUS( status, final );
 
-    /* Explicitly set graph inputs and outputs */
-    num_of_graph_inputs = graph->input.num;
-    graph_inputs = (vx_reference *)malloc( num_of_graph_inputs * sizeof( vx_reference ) );
-    for( i = 0; i < num_of_graph_inputs; i++ )
-    {
-        tensor = vsi_nn_GetTensor( graph, graph->input.tensors[i] );
-        if (tensor)
-        {
-            graph_inputs[i] = (vx_reference)( tensor->t );
-        }
-        else
-        {
-            graph_inputs[i] = NULL;
-        }
-    }
-    num_of_graph_outputs = graph->output.num;
-    if( graph->complete_signal.exists )
-    {
-        num_of_graph_outputs += 1;
-    }
-    graph_outputs = (vx_reference *)malloc( num_of_graph_outputs * sizeof( vx_reference ) );
-    for( i = 0; i < num_of_graph_outputs; i++ )
-    {
-        tensor = vsi_nn_GetTensor( graph, graph->output.tensors[i] );
-        if (tensor)
-        {
-            graph_outputs[i] = (vx_reference)( tensor->t );
-        }
-        else
-        {
-            graph_outputs[i] = NULL;
-        }
-    }
-    if( graph->complete_signal.exists )
-    {
-        graph_outputs[num_of_graph_outputs - 1] = \
-                (vx_reference)graph->complete_signal.tensor->t;
-    }
-    status = vxIdentifyGraphInputsAndOutputs( graph->g,
-        num_of_graph_inputs,
-        graph_inputs,
-        num_of_graph_outputs,
-        graph_outputs );
-
-    if( VSI_SUCCESS != status )
-    {
-        goto final;
-    }
+    /* Setup binary graph inputs and outputs. */
+    status = vsi_nn_setup_binary_graph_inputs_outputs( graph );
+    TEST_CHECK_STATUS( status, final );
 
 final:
     if( NULL != sorted_nodes )
@@ -727,14 +677,6 @@ final:
     if ( NULL != nodes_list )
     {
         free( nodes_list );
-    }
-    if ( NULL != graph_inputs)
-    {
-        free( graph_inputs );
-    }
-    if ( NULL != graph_outputs)
-    {
-        free( graph_outputs );
     }
     return status;
 } /* vsi_nn_SetupGraph() */
@@ -1761,6 +1703,124 @@ final:
     }
     return status;
 } /* vsi_nn_TrySetupCompleteSignalNode() */
+
+
+/*
+ * Documented in vsi_nn_graph.h
+ */
+vsi_status vsi_nn_setup_binary_graph_inputs_outputs
+    (
+    vsi_nn_graph_t* graph
+    )
+{
+    uint32_t i,j;
+    vsi_status status;
+    uint32_t num_of_graph_inputs;
+    uint32_t num_of_graph_real_inputs;
+    vx_reference *graph_inputs = NULL;
+    uint32_t num_of_graph_outputs;
+    uint32_t num_of_graph_real_outputs;
+    vx_reference *graph_outputs = NULL;
+    vsi_nn_tensor_t *tensor;
+
+    num_of_graph_real_inputs = 0;
+    num_of_graph_real_outputs = 0;
+
+    /* Explicitly set graph inputs and outputs */
+    num_of_graph_inputs = graph->input.num;
+    for( i = 0; i < num_of_graph_inputs; i++ )
+    {
+        tensor = vsi_nn_GetTensor( graph, graph->input.tensors[i] );
+        if (tensor)
+        {
+            num_of_graph_real_inputs += 1;
+        }
+        else
+        {
+            ;//do nothing
+        }
+    }
+    graph_inputs = (vx_reference *)malloc( num_of_graph_real_inputs * sizeof( vx_reference ) );
+    for( i = 0, j = 0; i < num_of_graph_inputs; i++ )
+    {
+        tensor = vsi_nn_GetTensor( graph, graph->input.tensors[i] );
+        if (tensor)
+        {
+            if(j > num_of_graph_real_inputs -1)
+            {
+                status = VSI_FAILURE;
+                goto final;
+            }
+            graph_inputs[j++] = (vx_reference)( tensor->t );
+        }
+        else
+        {
+            ;//do nothing
+        }
+    }
+    num_of_graph_outputs = graph->output.num;
+    if( graph->complete_signal.exists )
+    {
+        num_of_graph_outputs += 1;
+    }
+    for( i = 0; i < num_of_graph_outputs; i++ )
+    {
+        tensor = vsi_nn_GetTensor( graph, graph->output.tensors[i] );
+        if (tensor)
+        {
+            num_of_graph_real_outputs += 1;
+        }
+        else
+        {
+            ;//do nothing
+        }
+    }
+    graph_outputs = (vx_reference *)malloc( num_of_graph_real_outputs * sizeof( vx_reference ) );
+    for( i = 0, j = 0; i < num_of_graph_outputs; i++ )
+    {
+        tensor = vsi_nn_GetTensor( graph, graph->output.tensors[i] );
+        if (tensor)
+        {
+            if(j > num_of_graph_real_outputs -1)
+            {
+                status = VSI_FAILURE;
+                goto final;
+            }
+            graph_outputs[j++] = (vx_reference)( tensor->t );
+        }
+        else
+        {
+            ;//do nothing
+        }
+    }
+    if( graph->complete_signal.exists )
+    {
+        graph_outputs[num_of_graph_real_outputs - 1] = \
+                (vx_reference)graph->complete_signal.tensor->t;
+    }
+
+    status = vxIdentifyGraphInputsAndOutputs( graph->g,
+        num_of_graph_real_inputs,
+        graph_inputs,
+        num_of_graph_real_outputs,
+        graph_outputs );
+
+    if( VSI_SUCCESS != status )
+    {
+        goto final;
+    }
+
+final:
+    if ( NULL != graph_inputs)
+    {
+        free( graph_inputs );
+    }
+    if ( NULL != graph_outputs)
+    {
+        free( graph_outputs );
+    }
+    return status;
+} /* vsi_nn_setup_binary_graph_inputs_outputs() */
 
 vsi_status vsi_nn_SetupRNNConnections
     (
