@@ -39,6 +39,7 @@ else
 CFLAGS += -fPIC
 DYNAMIC      := 1
 TARGET_NAME  = libnnrt.so.1.2.0
+TARGET_SONAME = libnnrt.so.1
 TARGET_LINKS  := libnnrt.so.1 libnnrt.so.1.2 libnnrt.so
 endif
 
