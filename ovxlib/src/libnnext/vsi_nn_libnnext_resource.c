@@ -3828,10 +3828,11 @@ __kernel void floordiv_BF16BF16toBF16_2D\n\
 static const char gather_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 _viv_uniform int indices_num;\n\
+_viv_uniform VXC_512Bits uniExtraCopyDpKeepinEvis_2x8;\n\
 \n\
 __kernel void gather_I8toI8(\n\
     __read_only image2d_t   input0,\n\
-    __read_only image2d_array_t   input1,\n\
+    __read_only image2d_t   input1,\n\
     __write_only image2d_t  output,\n\
     int block_size,\n\
     int block_num,\n\
@@ -3843,7 +3844,7 @@ __kernel void gather_I8toI8(\n\
     int gidz = get_global_id(2);  // block_num\n\
 \n\
     int4 coord_in = (int4)(gidy, 0, gidx, 0);\n\
-    int4 indice = read_imagei(input1, coord_in.xyyy);\n\
+    int4 indice = read_imagei(input1, coord_in.xy);\n\
     coord_in.w = gidz * axis_num + indice.x;\n\
 \n\
     vxc_char16 src;\n\
@@ -3855,7 +3856,7 @@ __kernel void gather_I8toI8(\n\
 \n\
 __kernel void gather_U8toU8(\n\
     __read_only image2d_t   input0,\n\
-    __read_only image2d_array_t   input1,\n\
+    __read_only image2d_t   input1,\n\
     __write_only image2d_t  output,\n\
     int block_size,\n\
     int block_num,\n\
@@ -3867,7 +3868,7 @@ __kernel void gather_U8toU8(\n\
     int gidz = get_global_id(2);  // block_num\n\
 \n\
     int4 coord_in = (int4)(gidy, 0, gidx, 0);\n\
-    int4 indice = read_imagei(input1, coord_in.xyyy);\n\
+    int4 indice = read_imagei(input1, coord_in.xy);\n\
     coord_in.w = gidz * axis_num + indice.x;\n\
 \n\
     vxc_uchar16 src;\n\
@@ -3879,7 +3880,7 @@ __kernel void gather_U8toU8(\n\
 \n\
 __kernel void gather_I16toI16(\n\
     __read_only image2d_t   input0,\n\
-    __read_only image2d_array_t   input1,\n\
+    __read_only image2d_t   input1,\n\
     __write_only image2d_t  output,\n\
     int block_size,\n\
     int block_num,\n\
@@ -3893,7 +3894,7 @@ __kernel void gather_I16toI16(\n\
     int4 coord_in = (int4)(gidy, 0, gidx, 0);\n\
 \n\
 \n\
-    int4 indice = read_imagei(input1, coord_in.xyyy);\n\
+    int4 indice = read_imagei(input1, coord_in.xy);\n\
     coord_in.w = gidz * axis_num + indice.x;\n\
 \n\
     vxc_short8 src;\n\
@@ -3905,7 +3906,7 @@ __kernel void gather_I16toI16(\n\
 \n\
 __kernel void gather_F16toF16(\n\
     __read_only image2d_t   input0,\n\
-    __read_only image2d_array_t   input1,\n\
+    __read_only image2d_t   input1,\n\
     __write_only image2d_t  output,\n\
     int block_size,\n\
     int block_num,\n\
@@ -3919,7 +3920,7 @@ __kernel void gather_F16toF16(\n\
     int4 coord_in = (int4)(gidy, 0, gidx, 0);\n\
 \n\
 \n\
-    int4 indice = read_imagei(input1, coord_in.xyyy);\n\
+    int4 indice = read_imagei(input1, coord_in.xy);\n\
     coord_in.w = gidz * axis_num + indice.x;\n\
 \n\
     vxc_short8 src;\n\
@@ -3927,6 +3928,110 @@ __kernel void gather_F16toF16(\n\
 \n\
     int2 coord = (int2)(gidx, gidz * indices_num + gidy);\n\
     VXC_WriteImage(output, coord, src, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+__kernel void gather_I8toI8_axis0(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int block_num,\n\
+    int axis_num\n\
+    )\n\
+{\n\
+    int2 coord = (int2)(get_global_id(0), get_global_id(1));\n\
+    int4 indices = read_imagei(input1, coord.xx);\n\
+    int2 coord_in = (int2)(indices.x, get_global_id(1));\n\
+\n\
+    vxc_char16 src, dst;\n\
+    VXC_ReadImage(src, input0, coord_in, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    indices.x = get_global_id(1);\n\
+    VXC_ReadImage(src, input0, indices.yx, 0, VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(src, input0, indices.zx, 0, VXC_MODIFIER(2, 2, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(src, input0, indices.wx, 0, VXC_MODIFIER(3, 3, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    VXC_DP2x8(dst, src, src, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),\n\
+                     uniExtraCopyDpKeepinEvis_2x8);\n\
+\n\
+    VXC_WriteImage(output, coord, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+__kernel void gather_U8toU8_axis0(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int block_num,\n\
+    int axis_num\n\
+    )\n\
+{\n\
+    int2 coord = (int2)(get_global_id(0), get_global_id(1));\n\
+    int4 indices = read_imagei(input1, coord.xx);\n\
+    int2 coord_in = (int2)(indices.x, get_global_id(1));\n\
+\n\
+    vxc_uchar16 src, dst;\n\
+    VXC_ReadImage(src, input0, coord_in, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    indices.x = get_global_id(1);\n\
+    VXC_ReadImage(src, input0, indices.yx, 0, VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(src, input0, indices.zx, 0, VXC_MODIFIER(2, 2, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(src, input0, indices.wx, 0, VXC_MODIFIER(3, 3, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    VXC_DP2x8(dst, src, src, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),\n\
+                     uniExtraCopyDpKeepinEvis_2x8);\n\
+\n\
+    VXC_WriteImage(output, coord, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+__kernel void gather_I16toI16_axis0(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int block_num,\n\
+    int axis_num\n\
+    )\n\
+{\n\
+    int2 coord = (int2)(get_global_id(0), get_global_id(1));\n\
+    int4 indices = read_imagei(input1, coord.xx);\n\
+    int2 coord_in = (int2)(indices.x, get_global_id(1));\n\
+\n\
+    vxc_short8 src, dst;\n\
+    VXC_ReadImage(src, input0, coord_in, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    indices.x = get_global_id(1);\n\
+    VXC_ReadImage(src, input0, indices.yx, 0, VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(src, input0, indices.zx, 0, VXC_MODIFIER(2, 2, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(src, input0, indices.wx, 0, VXC_MODIFIER(3, 3, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    VXC_DP2x8(dst, src, src, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),\n\
+                     uniExtraCopyDpKeepinEvis_2x8);\n\
+\n\
+    VXC_WriteImage(output, coord, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+__kernel void gather_F16toF16_axis0(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int block_num,\n\
+    int axis_num\n\
+    )\n\
+{\n\
+    int2 coord = (int2)(get_global_id(0), get_global_id(1));\n\
+    int4 indices = read_imagei(input1, coord.xx);\n\
+    int2 coord_in = (int2)(indices.x, get_global_id(1));\n\
+\n\
+    vxc_short8 src, dst;\n\
+    VXC_ReadImage(src, input0, coord_in, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    indices.x = get_global_id(1);\n\
+    VXC_ReadImage(src, input0, indices.yx, 0, VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(src, input0, indices.zx, 0, VXC_MODIFIER(2, 2, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(src, input0, indices.wx, 0, VXC_MODIFIER(3, 3, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    VXC_DP2x8(dst, src, src, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),\n\
+                     uniExtraCopyDpKeepinEvis_2x8);\n\
+\n\
+    VXC_WriteImage(output, coord, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
 }\n\
 "; /* end of gather_vx*/
 
@@ -3943,7 +4048,7 @@ _viv_uniform int2 multAndoutZP1;//[0:15] multiplier, [31:63] output zp\n\
 #define GATHER_8BITS_TO_F16(src0_type_name, read_type) \\\n\
 __kernel void gather_##src0_type_name##toF16( \\\n\
     __read_only image2d_t   input0, \\\n\
-    __read_only image2d_array_t   input1, \\\n\
+    __read_only image2d_t   input1, \\\n\
     __write_only image2d_t  output, \\\n\
     int block_size, \\\n\
     int block_num, \\\n\
@@ -3955,7 +4060,7 @@ __kernel void gather_##src0_type_name##toF16( \\\n\
     int gidz = get_global_id(2); \\\n\
  \\\n\
     int4 coord_in = (int4)(gidy, 0, gidx, 0); \\\n\
-    int4 indice = read_imagei(input1, coord_in.xyyy); \\\n\
+    int4 indice = read_imagei(input1, coord_in.xy); \\\n\
     coord_in.w = gidz * axis_num + indice.x; \\\n\
  \\\n\
     read_type src; \\\n\
@@ -3979,7 +4084,7 @@ GATHER_8BITS_TO_F16(I8, vxc_char16)\n\
 #define GATHER_F16_TO_QINT(src1_type_name, write_type) \\\n\
 __kernel void gather_F16to##src1_type_name( \\\n\
     __read_only image2d_t   input0, \\\n\
-    __read_only image2d_array_t   input1, \\\n\
+    __read_only image2d_t   input1, \\\n\
     __write_only image2d_t  output, \\\n\
     int block_size, \\\n\
     int block_num, \\\n\
@@ -3991,7 +4096,7 @@ __kernel void gather_F16to##src1_type_name( \\\n\
     int gidz = get_global_id(2); \\\n\
     int4 coord_in = (int4)(gidy, 0, gidx, 0); \\\n\
  \\\n\
-    int4 indice = read_imagei(input1, coord_in.xyyy); \\\n\
+    int4 indice = read_imagei(input1, coord_in.xy); \\\n\
     coord_in.w = gidz * axis_num + indice.x; \\\n\
  \\\n\
     vxc_short8 src; \\\n\
@@ -4011,7 +4116,7 @@ GATHER_F16_TO_QINT(I16, vxc_short8)\n\
 \n\
 __kernel void gather_I16toF16(\n\
     __read_only image2d_t   input0,\n\
-    __read_only image2d_array_t   input1,\n\
+    __read_only image2d_t   input1,\n\
     __write_only image2d_t  output,\n\
     int block_size,\n\
     int block_num,\n\
@@ -4023,7 +4128,7 @@ __kernel void gather_I16toF16(\n\
     int gidz = get_global_id(2);\n\
 \n\
     int4 coord_in = (int4)(gidy, 0, gidx, 0);\n\
-    int4 indice = read_imagei(input1, coord_in.xyyy);\n\
+    int4 indice = read_imagei(input1, coord_in.xy);\n\
     coord_in.w = gidz * axis_num + indice.x;\n\
 \n\
     vxc_short8 src;\n\
@@ -4040,6 +4145,100 @@ __kernel void gather_I16toF16(\n\
     _viv_asm(COPY, dst0, src0, 16);\n\
 \n\
     VXC_WriteImage(output, coord, dst0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+#define GATHER_8BITS_TO_F16_AXIS0(src0_type_name, read_type) \\\n\
+__kernel void gather_##src0_type_name##toF16_axis0( \\\n\
+    __read_only image2d_t   input0, \\\n\
+    __read_only image2d_t   input1, \\\n\
+    __write_only image2d_t  output, \\\n\
+    int block_size, \\\n\
+    int block_num, \\\n\
+    int axis_num \\\n\
+    ) \\\n\
+{ \\\n\
+    int2 coord = (int2)(get_global_id(0), get_global_id(1)); \\\n\
+    int4 indices = read_imagei(input1, coord.xx); \\\n\
+    int2 coord_in = (int2)(indices.x, get_global_id(1)); \\\n\
+ \\\n\
+    read_type src; \\\n\
+    VXC_ReadImage(src, input0, coord_in, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
+    indices.x = get_global_id(1); \\\n\
+    VXC_ReadImage(src, input0, indices.yx, 0, VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 0)); \\\n\
+    VXC_ReadImage(src, input0, indices.zx, 0, VXC_MODIFIER(2, 2, 0, VXC_RM_TowardZero, 0)); \\\n\
+    VXC_ReadImage(src, input0, indices.wx, 0, VXC_MODIFIER(3, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+    vxc_half8  src0; \\\n\
+    vxc_short8 dst0; \\\n\
+    vxc_ushort8 ms0; \\\n\
+    _viv_asm(COPY, ms0, multAndoutZP0, 16); \\\n\
+    VXC_DP2x8(src0,src,ms0, VXC_MODIFIER(0,7,0, VXC_RM_TowardZero,1), uniU8MulAndPostShift_0_Lo_2x8); \\\n\
+    _viv_asm(COPY, dst0, src0, 16); \\\n\
+    VXC_WriteImage(output, coord, dst0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+}\n\
+GATHER_8BITS_TO_F16_AXIS0(U8, vxc_uchar16)\n\
+GATHER_8BITS_TO_F16_AXIS0(I8, vxc_char16)\n\
+\n\
+#define GATHER_F16_TO_QINT_AXIS0(src1_type_name, write_type) \\\n\
+__kernel void gather_F16to##src1_type_name##_axis0( \\\n\
+    __read_only image2d_t   input0, \\\n\
+    __read_only image2d_t   input1, \\\n\
+    __write_only image2d_t  output, \\\n\
+    int block_size, \\\n\
+    int block_num, \\\n\
+    int axis_num \\\n\
+    ) \\\n\
+{ \\\n\
+    int2 coord = (int2)(get_global_id(0), get_global_id(1)); \\\n\
+    int4 indices = read_imagei(input1, coord.xx); \\\n\
+    int2 coord_in = (int2)(indices.x, get_global_id(1)); \\\n\
+ \\\n\
+    vxc_short8 src; \\\n\
+    VXC_ReadImage(src, input0, coord_in, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
+    indices.x = get_global_id(1); \\\n\
+    VXC_ReadImage(src, input0, indices.yx, 0, VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 0)); \\\n\
+    VXC_ReadImage(src, input0, indices.zx, 0, VXC_MODIFIER(2, 2, 0, VXC_RM_TowardZero, 0)); \\\n\
+    VXC_ReadImage(src, input0, indices.wx, 0, VXC_MODIFIER(3, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+    vxc_ushort8 mp1; \\\n\
+    _viv_asm(COPY, mp1, multAndoutZP1, 16); \\\n\
+    vxc_half8 data; \\\n\
+    write_type dst; \\\n\
+    _viv_asm(COPY, data, src, 16); \\\n\
+    VXC_DP2x8(dst,data,mp1,VXC_MODIFIER(0,7,0,VXC_RM_ToNearestEven, 1),uniConvertFp16toU8_2x8); \\\n\
+    VXC_WriteImage(output, coord, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+}\n\
+GATHER_F16_TO_QINT_AXIS0(U8, vxc_uchar16)\n\
+GATHER_F16_TO_QINT_AXIS0(I8, vxc_char16)\n\
+GATHER_F16_TO_QINT_AXIS0(I16, vxc_short8)\n\
+\n\
+__kernel void gather_I16toF16_axis0(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int block_num,\n\
+    int axis_num\n\
+    )\n\
+{\n\
+    int2 coord = (int2)(get_global_id(0), get_global_id(1));\n\
+    int4 indices = read_imagei(input1, coord.xx);\n\
+    int2 coord_in = (int2)(indices.x, get_global_id(1));\n\
+\n\
+    vxc_short8 src;\n\
+    VXC_ReadImage(src, input0, coord_in, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    indices.x = get_global_id(1);\n\
+    VXC_ReadImage(src, input0, indices.yx, 0, VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(src, input0, indices.zx, 0, VXC_MODIFIER(2, 2, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(src, input0, indices.wx, 0, VXC_MODIFIER(3, 3, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    vxc_half8  src0;\n\
+    vxc_short8 dst0;\n\
+    vxc_ushort8 ms0;\n\
+    _viv_asm(COPY, ms0, multAndoutZP0, 16);\n\
+    VXC_DP2x8(src0, src, ms0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1),\\\n\
+                uniU8MulAndPostShift_0_Lo_2x8);\n\
+    _viv_asm(COPY, dst0, src0, 16);\n\
+\n\
+    VXC_WriteImage(output, coord, dst0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
 }\n\
 "; /* end of gather_mix_vx*/
 
