@@ -273,7 +273,6 @@ cc_library(
         "src/kernel/vsi_nn_kernel_param.c",
         "src/kernel/vsi_nn_gpu.c",
         "src/kernel/vsi_nn_kernel_gpu_shape_optimize.c",
-        "src/libnnext/ops/kernel/vsi_nn_kernel_scale.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_space2depth.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_imageprocess.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_layernormalize.c",
