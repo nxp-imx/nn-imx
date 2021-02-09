@@ -24,6 +24,7 @@
 
 #include <stdint.h>
 #include "vsi_nn_tensor.h"
+#include "vsi_nn_tensor_util.h"
 #include "vsi_nn_error.h"
 #include "utils/vsi_nn_math.h"
 #include "kernel/vsi_nn_kernel_gpu_shape_optimize.h"
@@ -508,3 +509,39 @@ vsi_bool vsi_nn_kernel_optimize_tile_shape
 #undef _swap_size
     return ret;
 } /* vsi_nn_kernel_optimize_eltwise_shape() */
+
+vsi_bool vsi_nn_kernel_optimize_1d_tensor_shape
+    (
+    const int32_t* shape, const uint32_t rank,
+    int32_t* out_shape, uint32_t* out_rank
+    )
+{
+    memcpy(out_shape, shape, sizeof(int32_t) * rank);
+    *out_rank = vsi_nn_max(rank, 2);
+
+    out_shape[1] = rank == 1 ? 1 : out_shape[1];
+
+    return TRUE;
+}
+
+vsi_bool vsi_nn_kernel_optimize_nchw2xhw_shape
+    (
+    const int32_t* shape, const uint32_t rank,
+    int32_t* out_shape, uint32_t* out_rank
+    )
+{
+    uint32_t dim_num = 0;
+    uint32_t i = 0;
+
+    vsi_nn_kernel_optimize_1d_tensor_shape( shape,
+        rank, out_shape, &dim_num);
+
+    for (i = 3; i < dim_num; i++)
+    {
+        out_shape[2] *= out_shape[i];
+    }
+
+    *out_rank = vsi_nn_min(dim_num, 3);
+
+    return TRUE;
+}
