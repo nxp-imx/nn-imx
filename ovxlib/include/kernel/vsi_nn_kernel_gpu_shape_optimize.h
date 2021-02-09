@@ -59,4 +59,16 @@ vsi_bool vsi_nn_kernel_optimize_tile_shape
     int32_t* out_shape_output, uint32_t* out_rank_output
     );
 
+vsi_bool vsi_nn_kernel_optimize_1d_tensor_shape
+    (
+    const int32_t* shape, const uint32_t rank,
+    int32_t* out_shape, uint32_t* out_rank
+    );
+
+vsi_bool vsi_nn_kernel_optimize_nchw2xhw_shape
+    (
+    const int32_t* shape, const uint32_t rank,
+    int32_t* out_shape, uint32_t* out_rank
+    );
+
 #endif
