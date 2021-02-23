@@ -812,6 +812,9 @@
     <ClCompile Include="src\kernel\cl\instance_normalization_cl.c">
       <Filter>Source Files\kernel\cl</Filter>
     </ClCompile>
+    <ClCompile Include="src\kernel\cl\layer_normalization_cl.c">
+      <Filter>Source Files\kernel\cl</Filter>
+    </ClCompile>
     <ClCompile Include="src\kernel\cl\l2normalizescale_cl.c">
       <Filter>Source Files\kernel\cl</Filter>
     </ClCompile>
@@ -957,6 +960,9 @@
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\instance_normalization_cpu.c">
+      <Filter>Source Files\kernel\cpu</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\cpu\layer_normalization_cpu.c">
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\l2normalizescale_cpu.c">
@@ -1125,6 +1131,9 @@
       <Filter>Source Files\kernel\evis</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\instance_normalization_evis.c">
+      <Filter>Source Files\kernel\evis</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\evis\layer_normalization_evis.c">
       <Filter>Source Files\kernel\evis</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\l2normalizescale_evis.c">
@@ -1305,9 +1314,6 @@
       <Filter>Source Files\libnnext\ops\kernel</Filter>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_imageprocess.c">
-      <Filter>Source Files\libnnext\ops\kernel</Filter>
-    </ClCompile>
-    <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_layernormalize.c">
       <Filter>Source Files\libnnext\ops\kernel</Filter>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_signalframe.c">

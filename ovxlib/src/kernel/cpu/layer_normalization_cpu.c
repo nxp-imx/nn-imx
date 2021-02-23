@@ -47,9 +47,9 @@ __BEGIN_DECLS
 #define _CPU_OUTPUT_NUM         (1)
 #define _CPU_IO_NUM             (_CPU_INPUT_NUM + _CPU_OUTPUT_NUM)
 #define _CPU_PARAM_NUM          (_CPU_ARG_NUM + _CPU_IO_NUM)
-#define _KERNEL_NAME            CVIVANTE_NAMESPACE("cpu.instance_norm")
+#define _KERNEL_NAME            CVIVANTE_NAMESPACE("cpu.layer_norm")
 
-DEF_KERNEL_EXECUTOR(_instance_norm_exec)
+DEF_KERNEL_EXECUTOR(_layer_norm_exec)
     (
     vsi_nn_kernel_node_t node,
     const vsi_nn_kernel_node_param_t * param,
@@ -97,60 +97,56 @@ DEF_KERNEL_EXECUTOR(_instance_norm_exec)
     memset( buffer[3], 0, out_elements * sizeof(float) );
 
     {
-        uint32_t b = 0, c = 0, h = 0, w = 0;
-        uint32_t height = attr[0]->shape->data[1];
-        uint32_t width = attr[0]->shape->data[0];
-        uint32_t ch = attr[0]->shape->size > 2 ? attr[0]->shape->data[2] : 1;
-        uint32_t bh = attr[0]->shape->size > 3 ? attr[0]->shape->data[3] : 1;
+        uint32_t  axis_first = 0;
+        uint32_t  axis_num  = 1;
+        uint32_t  outerSize = 1;
+        uint32_t  axisSize  = 1;
+        uint32_t  innerSize = 1;
+        uint32_t  inner     = 0;
+        uint32_t  outer     = 0;
 
-        for (b = 0; b < bh; b++)
+        for (i = 0; i < (uint32_t)axis_first; i++)
         {
-            for (c = 0; c < ch; c++)
+            innerSize *= attr[0]->shape->data[i];
+        }
+
+        for(i = 0; i < (uint32_t)axis_num; i++)
+        {
+            axisSize *= attr[0]->shape->data[axis_first + i];
+        }
+
+        for (i = (uint32_t)axis_first + axis_num; i < attr[0]->shape->size; i++)
+        {
+            outerSize *= attr[0]->shape->data[i];
+        }
+
+        for ( outer = 0; outer < outerSize; ++outer)
+        {
+            for ( inner = 0; inner < innerSize; ++inner)
             {
-                uint32_t page = c * (height * width) + b * (height * width * ch);
                 float sum = .0f;
                 float sumsq = .0f;
                 float mean = .0f;
                 float vari = .0f;
-                float data = 0;
-                float scaleVal = buffer[2][c];
-                float biasVal = buffer[1][c];
 
-                for (h = 0; h < height; h++)
+                for (i = 0; i < (uint32_t)axisSize; ++i)
                 {
-                    uint32_t len = page + h * width;
-
-                    for (w = 0; w < width; w++)
-                    {
-                        uint32_t index = len + w;
-                        sum += buffer[0][index];
-                    }
+                    float value = buffer[0][(outer * axisSize + i) * innerSize + inner];
+                    sum += value;
+                    sumsq += (value * value);
                 }
-                mean = sum / (width * height);
-                for (h = 0; h < height; h++)
-                {
-                    uint32_t len = page + h * width;
-                    for (w = 0; w < width; w++)
-                    {
-                        uint32_t index = len + w;
-                        data = buffer[0][index] - mean;
-                        sumsq += data * data;
-                    }
-                }
-                vari = sumsq / (width * height);
+                mean = sum / (axisSize);
+                vari = sumsq / (axisSize) - mean * mean;
                 vari = (float)(1.0 / sqrtf(vari + eps));
-                for (h = 0; h < height; h++)
-                {
-                    uint32_t len = page + h * width;
-                    for (w = 0; w < width; w++)
-                    {
-                        float normVal = 0;
-                        uint32_t index = len + w;
-                        data = buffer[0][index] - mean;
 
-                        normVal = data * vari * scaleVal + biasVal;
-                        buffer[3][index] = normVal;
-                    }
+                for (i = 0; i < (uint32_t)axisSize; ++i)
+                {
+                    int idx = (outer * axisSize + i) * innerSize + inner;
+                    float data = buffer[0][idx] - mean;
+                    float scaleVal = buffer[2][idx];
+                    float biasVal = buffer[1][idx];
+                    float normVal = data * vari * scaleVal + biasVal;
+                    buffer[3][idx] = normVal;
                 }
             }
         }
@@ -163,21 +159,21 @@ DEF_KERNEL_EXECUTOR(_instance_norm_exec)
 final:
     for( i = 0; i < _CPU_IO_NUM; i ++ )
     {
-        if( buffer[i] )
+        if ( buffer[i] )
         {
             free( buffer[i] );
         }
     }
     for( i = 0; i < _CPU_IO_NUM; i ++ )
     {
-        if(attr[i]) { vsi_nn_kernel_tensor_attr_release( &attr[i] ); }
+        if (attr[i]) { vsi_nn_kernel_tensor_attr_release( &attr[i] ); }
     }
     return status;
-} /* _instance_norm_exec() */
+} /* _layer_norm_exec() */
 /*
  * Kernel params
  */
-static vx_param_description_t _instance_normalization_kernel_param_def[] =
+static vx_param_description_t _layer_normalization_kernel_param_def[] =
 {
     {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
@@ -186,15 +182,15 @@ static vx_param_description_t _instance_normalization_kernel_param_def[] =
     {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
     // Add kererl parameters here
 };
-#define _INSTANCE_NORMALIZATION_PARAM_NUM  _cnt_of_array( _instance_normalization_kernel_param_def )
+#define _LAYER_NORMALIZATION_PARAM_NUM  _cnt_of_array( _layer_normalization_kernel_param_def )
 
 static const vx_kernel_description_t _kernel_info =
 {
     KERNEL_ID_PLACEHOLDER,
     _KERNEL_NAME,
-    _instance_norm_exec,
-    _instance_normalization_kernel_param_def,
-    _cnt_of_array( _instance_normalization_kernel_param_def ),
+    _layer_norm_exec,
+    _layer_normalization_kernel_param_def,
+    _LAYER_NORMALIZATION_PARAM_NUM,
     vsi_nn_KernelValidator,
     NULL,
     NULL,
@@ -229,10 +225,10 @@ static vsi_nn_kernel_node_t _setup
     vsi_nn_kernel_node_t node = NULL;
 
     status = _query_kernel( inputs, outputs, kernel );
-    if( VSI_SUCCESS == status)
+    if ( VSI_SUCCESS == status)
     {
         node = vsi_nn_kernel_create_node( graph, kernel );
-        if( node )
+        if ( node )
         {
             float eps  = vsi_nn_kernel_param_get_float32( params, "eps" );
             /* Set inputs and outputs */
@@ -255,5 +251,5 @@ static vsi_nn_kernel_node_t _setup
 
 __END_DECLS
 
-REGISTER_BACKEND_CPU( instance_norm, _setup )
+REGISTER_BACKEND_CPU( layer_norm, _setup )
 

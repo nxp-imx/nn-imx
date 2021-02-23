@@ -274,7 +274,6 @@ cc_library(
         "src/kernel/vsi_nn_gpu.c",
         "src/kernel/vsi_nn_kernel_gpu_shape_optimize.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_imageprocess.c",
-        "src/libnnext/ops/kernel/vsi_nn_kernel_layernormalize.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_signalframe.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_tensorstackconcat.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_sync_host.c",
