@@ -1,37 +1,37 @@
 /****************************************************************************
-*
-*    Copyright (c) 2020 Vivante Corporation
-*
-*    Permission is hereby granted, free of charge, to any person obtaining a
-*    copy of this software and associated documentation files (the "Software"),
-*    to deal in the Software without restriction, including without limitation
-*    the rights to use, copy, modify, merge, publish, distribute, sublicense,
-*    and/or sell copies of the Software, and to permit persons to whom the
-*    Software is furnished to do so, subject to the following conditions:
-*
-*    The above copyright notice and this permission notice shall be included in
-*    all copies or substantial portions of the Software.
-*
-*    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-*    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-*    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-*    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-*    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-*    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-*    DEALINGS IN THE SOFTWARE.
-*
-*****************************************************************************/
+ *
+ *    Copyright (c) 2020 Vivante Corporation
+ *
+ *    Permission is hereby granted, free of charge, to any person obtaining a
+ *    copy of this software and associated documentation files (the "Software"),
+ *    to deal in the Software without restriction, including without limitation
+ *    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ *    and/or sell copies of the Software, and to permit persons to whom the
+ *    Software is furnished to do so, subject to the following conditions:
+ *
+ *    The above copyright notice and this permission notice shall be included in
+ *    all copies or substantial portions of the Software.
+ *
+ *    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ *    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ *    DEALINGS IN THE SOFTWARE.
+ *
+ *****************************************************************************/
+#include "nnrt/model_transform/nnapi_interpreter.hpp"
+
 #include <algorithm>
 #include <cassert>
 
+#include "nnrt/api_requirement/nnapi_requirement.hpp"
 #include "nnrt/error.hpp"
 #include "nnrt/logging.hpp"
 #include "nnrt/model.hpp"
 #include "nnrt/types.hpp"
 #include "nnrt/utils.hpp"
-
-#include "nnrt/api_requirement/nnapi_requirement.hpp"
-#include "nnrt/model_transform/nnapi_interpreter.hpp"
 
 namespace nnrt {
 
@@ -55,8 +55,10 @@ namespace nnrt {
         }                    \
     } while (0)
 
-void convertKenelLayout(std::shared_ptr<Operation> convOp, Model* model, OperationPtr operation,
-                                    api::requirement::MatchedArgumentPtr argList){
+void convertKenelLayout(std::shared_ptr<Operation> convOp,
+                        Model* model,
+                        OperationPtr operation,
+                        api::requirement::MatchedArgumentPtr argList) {
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
     // Transpose weight for nchw cases
     // for any layout conv, weight is always nhwc layout in nnapi, but for other framework,
@@ -73,19 +75,19 @@ void convertKenelLayout(std::shared_ptr<Operation> convOp, Model* model, Operati
         } else {
             // Insert permute layer for weight as input
             if (!operand_utils::InsertPermuteBeforeOperand(
-                model, operation, operation->inputs()[1], permVal)) {
-                    NNRT_LOGE_PRINT("%s: insert permute failed.", __FUNCTION__);
-                    assert(false);
+                    model, operation, operation->inputs()[1], permVal)) {
+                NNRT_LOGE_PRINT("%s: insert permute failed.", __FUNCTION__);
+                assert(false);
             }
         }
         // the channel dim has to be changed as filter's dim order change
         OperandPtr filterOperand = model->operand(operation->inputs()[1]);
-        if(nullptr != filterOperand){
+        if (nullptr != filterOperand) {
             filterOperand->quant.vec.channelDim =
                 nnrt::op::utils::axisMapTo(permVal, filterOperand->quant.vec.channelDim);
-            filterOperand->quant.vec.channelDim =
-                nnrt::op::utils::convertAxis(static_cast<int32_t>(filterOperand->quant.vec.channelDim),
-                                            static_cast<int32_t>(filterOperand->ndim()));
+            filterOperand->quant.vec.channelDim = nnrt::op::utils::convertAxis(
+                static_cast<int32_t>(filterOperand->quant.vec.channelDim),
+                static_cast<int32_t>(filterOperand->ndim()));
         }
     }
 }
@@ -471,6 +473,18 @@ OperationPtr NnApiInterpreter::map_CONV_2D(Model* model,
             conv2d->pad[2] = inputs[argList->ArgPos("explicit_pad_top")]->scalar.int32;
             conv2d->pad[3] = inputs[argList->ArgPos("explicit_pad_bottom")]->scalar.int32;
         }
+
+        if (inputs[1]->isUsed()) {
+            int32_t kernelIndex;
+            auto kernelOperand = model->cloneOperand(inputs[1], &kernelIndex);
+            if (inputs[1]->isConst()) {
+                model->setOperandValue(
+                    kernelIndex, inputs[1]->weak_mem_ref.lock()->address_, inputs[1]->bytes());
+            }
+            operation->replaceInputs(operation->inputs()[1], kernelIndex);
+            inputs[1] = kernelOperand;
+        }
+        inputs[1]->setUsed(true);
         /*that means the operand is shared by more than one operation, it is dangerous to
          * change its scale*/
         if (inputs[2]->isUsed()) {
@@ -485,7 +499,8 @@ OperationPtr NnApiInterpreter::map_CONV_2D(Model* model,
         }
         inputs[2]->setUsed(true);
         /*driver require that bias' type is the same as weight's*/
-        if( inputs[1]->type == OperandType::TENSOR_QUANT8_SYMM_PER_CHANNEL && inputs[2] != nullptr){
+        if (inputs[1]->type == OperandType::TENSOR_QUANT8_SYMM_PER_CHANNEL &&
+            inputs[2] != nullptr) {
             inputs[2]->quant.vec.scale.resize(inputs[1]->quant.vec.scale.size(), 0);
             inputs[2]->quant.vec.zeroPoint.resize(inputs[1]->quant.vec.scale.size(), 0);
             for (size_t i = 0; i < inputs[2]->quant.vec.scale.size(); i++) {
@@ -560,7 +575,8 @@ OperationPtr NnApiInterpreter::map_GROUPED_CONV_2D(Model* model,
         }
         inputs[2]->setUsed(true);
         /*driver require that bias' type is the same as weight's*/
-        if( inputs[1]->type == OperandType::TENSOR_QUANT8_SYMM_PER_CHANNEL && inputs[2] != nullptr){
+        if (inputs[1]->type == OperandType::TENSOR_QUANT8_SYMM_PER_CHANNEL &&
+            inputs[2] != nullptr) {
             inputs[2]->quant.vec.scale.resize(inputs[1]->quant.vec.scale.size(), 0);
             inputs[2]->quant.vec.zeroPoint.resize(inputs[1]->quant.vec.scale.size(), 0);
             for (size_t i = 0; i < inputs[2]->quant.vec.scale.size(); i++) {
@@ -608,6 +624,20 @@ OperationPtr NnApiInterpreter::map_DEPTHWISE_CONV_2D(Model* model,
             NNRT_LOGE("NNAPI_interpreter") << "Argument padding method not found";
         }
 
+        // assert(!inputs[1]->isUsed());
+
+        if (inputs[1]->isUsed()) {
+            int32_t kernelIndex;
+            auto kernelOperand = model->cloneOperand(inputs[1], &kernelIndex);
+            if (inputs[1]->isConst()) {
+                model->setOperandValue(
+                    kernelIndex, inputs[1]->weak_mem_ref.lock()->address_, inputs[1]->bytes());
+            }
+            operation->replaceInputs(operation->inputs()[1], kernelIndex);
+            inputs[1] = kernelOperand;
+        }
+        inputs[1]->setUsed(true);
+
         if (inputs[2]->isUsed()) {
             int32_t biasIndex;
             OperandPtr biasOp = model->cloneOperand(inputs[2], &biasIndex);
@@ -621,11 +651,13 @@ OperationPtr NnApiInterpreter::map_DEPTHWISE_CONV_2D(Model* model,
         inputs[2]->setUsed(true);
 
         /*driver require that bias' type is the same as weight's*/
-        if( inputs[1]->type == OperandType::TENSOR_QUANT8_SYMM_PER_CHANNEL && inputs[2] != nullptr){
+        if (inputs[1]->type == OperandType::TENSOR_QUANT8_SYMM_PER_CHANNEL &&
+            inputs[2] != nullptr) {
             inputs[2]->quant.vec.scale.resize(inputs[1]->quant.vec.scale.size(), 0);
             inputs[2]->quant.vec.zeroPoint.resize(inputs[1]->quant.vec.scale.size(), 0);
             for (size_t i = 0; i < inputs[2]->quant.vec.scale.size(); i++) {
-                inputs[2]->quant.vec.scale[i] = inputs[0]->quant.scalar.scale * inputs[1]->quant.vec.scale[i];
+                inputs[2]->quant.vec.scale[i] =
+                    inputs[0]->quant.scalar.scale * inputs[1]->quant.vec.scale[i];
             }
         }
         conv2d->strides[0] = inputs[argList->ArgPos("stride_w")]->scalar.int32;
@@ -758,7 +790,6 @@ OperationPtr NnApiInterpreter::map_EXPAND_DIMS(Model* model,
 OperationPtr NnApiInterpreter::map_SOFTMAX(Model* model,
                                            OperationPtr operation,
                                            uint32_t operation_index) {
-
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
     auto argList = matchArgList(inputs, "SoftmaxOperation");
     auto softmax = std::make_shared<SoftmaxOperation>();
@@ -941,8 +972,8 @@ OperationPtr NnApiInterpreter::map_PAD(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_PAD_V2(Model* model,
-                                       OperationPtr operation,
-                                       uint32_t operation_index) {
+                                          OperationPtr operation,
+                                          uint32_t operation_index) {
     NNAPI_CHECK_IO_NUM(operation, 3, 1);
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
     auto argList = matchArgList(inputs, "PadV2Operation");
@@ -967,7 +998,8 @@ OperationPtr NnApiInterpreter::map_PAD_V2(Model* model,
                 op->padValue = inputs[argList->ArgPos("pad_value")]->scalar.int32;
                 op->padFront.resize(inputRank);
                 op->padBack.resize(inputRank);
-                convert2DPadding(padding, inputs[paddingIds]->size(), op->padFront.data(), op->padBack.data());
+                convert2DPadding(
+                    padding, inputs[paddingIds]->size(), op->padFront.data(), op->padBack.data());
                 op->padMode = PadMode::CONSTANT;
                 break;
             }
@@ -1116,10 +1148,8 @@ OperationPtr NnApiInterpreter::map_SPACE_TO_BATCH_ND(Model* model,
         auto paddings = inputs[argList->ArgPos("padings")];
         auto outputOperand = model->getOperands(operation->outputs())[0];
         // No dynamic shape branch
-        if (!nnrt::operand_utils::IsDynamicShape(inputOperand) &&
-            blockSizeOp->isConst() &&
-            paddings->isConst() &&
-            !nnrt::operand_utils::IsDynamicShape(outputOperand)) {
+        if (!nnrt::operand_utils::IsDynamicShape(inputOperand) && blockSizeOp->isConst() &&
+            paddings->isConst() && !nnrt::operand_utils::IsDynamicShape(outputOperand)) {
             int32_t* buffer = model->getBuffer<int32_t>(blockSizeOp->weak_mem_ref.lock());
             sp_to_bp->blockSize.assign(buffer, buffer + blockSizeOp->size());
 
@@ -1169,8 +1199,7 @@ OperationPtr NnApiInterpreter::map_BATCH_TO_SPACE_ND(Model* model,
         auto blockSizeOp = inputs[argList->ArgPos("blockSize")];
         auto outputOperand = model->getOperands(operation->outputs())[0];
         // No dynamic shape branch
-        if (!nnrt::operand_utils::IsDynamicShape(inputOperand) &&
-            blockSizeOp->isConst() &&
+        if (!nnrt::operand_utils::IsDynamicShape(inputOperand) && blockSizeOp->isConst() &&
             !nnrt::operand_utils::IsDynamicShape(outputOperand)) {
             int32_t* buffer = model->getBuffer<int32_t>(blockSizeOp->weak_mem_ref.lock());
             bp_to_sp->blockSize.assign(buffer, buffer + blockSizeOp->size());
@@ -1479,9 +1508,9 @@ OperationPtr NnApiInterpreter::map_BIDIRECTIONAL_SEQUENCE_RNN(Model* model,
         op->mergeOutputs = inputs[argList->ArgPos("mergeOutputs")]->scalar.boolean;
         if (OperandType::TENSOR_FLOAT16 == inputs[argList->ArgPos("fw_input_bias")]->type) {
             if (!(operand_utils::InsertFp16ToFp32LayerBeforeOperand(
-                    model, operation, inputs[argList->ArgPos("fw_input_bias")]) &&
-                operand_utils::InsertFp16ToFp32LayerBeforeOperand(
-                    model, operation, inputs[argList->ArgPos("bw_input_bias")]))) {
+                      model, operation, inputs[argList->ArgPos("fw_input_bias")]) &&
+                  operand_utils::InsertFp16ToFp32LayerBeforeOperand(
+                      model, operation, inputs[argList->ArgPos("bw_input_bias")]))) {
                 NNRT_LOGE_PRINT("Insert Fp16ToFp32 Layer failed.");
                 assert(false);
             }
@@ -1541,8 +1570,8 @@ OperationPtr NnApiInterpreter::map_LSTM(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_QUANTIZED_16BIT_LSTM(Model* model,
-                                                               OperationPtr operation,
-                                                               uint32_t operation_index) {
+                                                        OperationPtr operation,
+                                                        uint32_t operation_index) {
     OperationPtr op = std::make_shared<Quantized16BitLstmOperation>();
     NNAPI_CHECK_PTR(op);
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
@@ -2364,8 +2393,8 @@ OperationPtr NnApiInterpreter::map_LOG_SOFTMAX(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_SLICE(Model* model,
-                                                 OperationPtr operation,
-                                                 uint32_t operation_index) {
+                                         OperationPtr operation,
+                                         uint32_t operation_index) {
     NNAPI_CHECK_IO_NUM(operation, 3, 1);
     std::shared_ptr<SliceOperation> new_op = std::make_shared<SliceOperation>();
     NNAPI_CHECK_PTR(new_op);
@@ -2379,16 +2408,16 @@ OperationPtr NnApiInterpreter::map_SLICE(Model* model,
 }
 
 OperationPtr NnApiInterpreter::map_NBG(Model* model,
-                                                 OperationPtr operation,
-                                                 uint32_t operation_index) {
+                                       OperationPtr operation,
+                                       uint32_t operation_index) {
     std::shared_ptr<NBGOperation> new_op = std::make_shared<NBGOperation>();
     NNAPI_CHECK_PTR(new_op);
     return new_op;
 }
 
 OperationPtr NnApiInterpreter::map_ELU(Model* model,
-                                               OperationPtr operation,
-                                               uint32_t operation_index) {
+                                       OperationPtr operation,
+                                       uint32_t operation_index) {
     NNAPI_CHECK_IO_NUM(operation, 2, 1);
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
     auto argList = matchArgList(inputs, "EluOperation");
@@ -2507,4 +2536,4 @@ DECLARE_REDUCTION_OP(REDUCE_MIN, ReduceMin)
 DECLARE_REDUCTION_OP(REDUCE_SUM, ReduceSum)
 DECLARE_REDUCTION_OP(REDUCE_PROD, ReduceProd)
 #undef DECLARE_REDUCTION_OP
-}
+}  // namespace nnrt
