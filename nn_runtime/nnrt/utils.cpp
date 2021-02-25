@@ -157,6 +157,7 @@ int GetTypeBytes(OperandType type)
             break;
         case OperandType::TENSOR_QUANT8_ASYMM:
         case OperandType::TENSOR_QUANT8_SYMM:
+        case OperandType::TENSOR_QUANT8_SYMM_PER_CHANNEL:
         case OperandType::INT8:
         case OperandType::UINT8:
             bytes = 1;
