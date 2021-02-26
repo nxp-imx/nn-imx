@@ -531,6 +531,9 @@
     <ClInclude Include="include\ops\vsi_nn_op_space2depth.h">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_space2depth_internal.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
     <ClInclude Include="include\ops\vsi_nn_op_spatial_transformer.h">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
@@ -884,6 +887,9 @@
     <ClCompile Include="src\kernel\cl\select_cl.c">
       <Filter>Source Files\kernel\cl</Filter>
     </ClCompile>
+    <ClCompile Include="src\kernel\cl\space2depth_internal_cl.c">
+      <Filter>Source Files\kernel\cl</Filter>
+    </ClCompile>
     <ClCompile Include="src\kernel\cl\swish_cl.c">
       <Filter>Source Files\kernel\cl</Filter>
     </ClCompile>
@@ -915,6 +921,9 @@
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\depth2space_internal_cpu.c">
+      <Filter>Source Files\kernel\cpu</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\cpu\space2depth_internal_cpu.c">
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\depthwise_conv1d_cpu.c">
@@ -1077,6 +1086,9 @@
       <Filter>Source Files\kernel\evis</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\depth2space_internal_evis.c">
+      <Filter>Source Files\kernel\evis</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\evis\space2depth_internal_evis.c">
       <Filter>Source Files\kernel\evis</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\depthwise_conv1d_evis.c">
@@ -1290,9 +1302,6 @@
       <Filter>Source Files\libnnext\ops\kernel</Filter>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_signalframe.c">
-      <Filter>Source Files\libnnext\ops\kernel</Filter>
-    </ClCompile>
-    <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_space2depth.c">
       <Filter>Source Files\libnnext\ops\kernel</Filter>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_spatial_transformer.c">
@@ -1683,6 +1692,9 @@
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_space2depth.c">
+      <Filter>Source Files\ops</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_space2depth_internal.c">
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_spatial_transformer.c">

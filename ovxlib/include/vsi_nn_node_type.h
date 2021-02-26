@@ -56,6 +56,7 @@
 #include "ops/vsi_nn_op_elu.h"
 #include "ops/vsi_nn_op_reverse.h"
 #include "ops/vsi_nn_op_space2depth.h"
+#include "ops/vsi_nn_op_space2depth_internal.h"
 #include "ops/vsi_nn_op_depth2space.h"
 #include "ops/vsi_nn_op_depth2space_internal.h"
 #include "ops/vsi_nn_op_maximum.h"
@@ -204,6 +205,7 @@ typedef union _vsi_nn_nn_param
     vsi_nn_elu_param                elu;
     vsi_nn_reverse_param            reverse;
     vsi_nn_space2depth_param        space2depth;
+    vsi_nn_space2depth_internal_param space2depth_internal;
     vsi_nn_depth2space_param        depth2space;
     vsi_nn_depth2space_internal_param depth2space_internal;
     vsi_nn_maximum_param            maximum;
