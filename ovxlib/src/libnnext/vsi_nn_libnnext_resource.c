@@ -30792,6 +30792,142 @@ __kernel void select_I8_U8_U8toU8_2D(\n\
 }\n\
 "; /* end of select_vx*/
 
+static const char space2depth_internal_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+_viv_uniform VXC_512Bits uniExtractEvenUint8Stride2_2x8;\n\
+_viv_uniform VXC_512Bits uniExtractOddUint8Stride2_2x8;\n\
+_viv_uniform VXC_512Bits uniExtractEvenFp16Stride2_4x4;\n\
+_viv_uniform VXC_512Bits uniExtractOddFp16Stride2_4x4;\n\
+\n\
+_viv_uniform int input_depth;\n\
+\n\
+#define SPACE2DEPTH_INTERNAL_QINT_TO_QINT(src0_type_name, src1_type_name, read_type) \\\n\
+__kernel void space2depth_internal_##src0_type_name##to##src1_type_name( \\\n\
+    image2d_array_t input, \\\n\
+    image2d_array_t output, \\\n\
+    int block_size_x, \\\n\
+    int block_size_y \\\n\
+    ) \\\n\
+{ \\\n\
+    int gidx = get_global_id(0); \\\n\
+    int gidy = get_global_id(1); \\\n\
+    int gidz = get_global_id(2); \\\n\
+    int4 coord = (int4)(gidx, gidy, gidz, 0); \\\n\
+    read_type src; \\\n\
+    VXC_ReadImage2DArray(src, input, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                    VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
+ \\\n\
+    ushort stride_x = (ushort)block_size_x; \\\n\
+    ushort stride_y = (ushort)block_size_y; \\\n\
+    ushort sidx = (ushort)gidx; \\\n\
+    ushort sidy = (ushort)gidy; \\\n\
+    ushort tmpX = sidx % stride_x; \\\n\
+    ushort tmpY = sidy % stride_y; \\\n\
+    int tmpId0 = tmpX; \\\n\
+    int tmpId1 = tmpY; \\\n\
+    int4 coord_out = (int4)((int)(sidx / stride_x), (int)(sidy / stride_y), 0, 0); \\\n\
+    coord_out.z = tmpId0 * input_depth + tmpId1 * block_size_x * input_depth + gidz; \\\n\
+    VXC_WriteImage2DArray(output, coord_out, src, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
+}\n\
+SPACE2DEPTH_INTERNAL_QINT_TO_QINT(U8, U8, vxc_uchar16)\n\
+SPACE2DEPTH_INTERNAL_QINT_TO_QINT(I8, I8, vxc_char16)\n\
+SPACE2DEPTH_INTERNAL_QINT_TO_QINT(I16, I16, vxc_short8)\n\
+\n\
+__kernel void space2depth_internal_F16toF16(\n\
+    image2d_array_t input,\n\
+    image2d_array_t output,\n\
+    int block_size_x,\n\
+    int block_size_y\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);\n\
+    int gidy = get_global_id(1);\n\
+    int gidz = get_global_id(2);\n\
+    int4 coord = (int4)(gidx, gidy, gidz, 0);\n\
+    vxc_short8 data, imgVal0;\n\
+    VXC_ReadImage2DArray(data, input, coord, VXC_5BITOFFSET_XY(0, 0),\n\
+                    VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    ushort stride_x = (ushort)block_size_x;\n\
+    ushort stride_y = (ushort)block_size_y;\n\
+    ushort sidx = (ushort)gidx;\n\
+    ushort sidy = (ushort)gidy;\n\
+    ushort tmpX = sidx % stride_x;\n\
+    ushort tmpY = sidy % stride_y;\n\
+    int tmpId0 = tmpX;\n\
+    int tmpId1 = tmpY;\n\
+    int4 coord_out = (int4)((int)(sidx / stride_x), (int)(sidy / stride_y), 0, 0);\n\
+    coord_out.z = tmpId0 * input_depth + tmpId1 * block_size_x * input_depth + gidz;\n\
+\n\
+    VXC_WriteImage2DArray(output, coord_out, data, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+#define SPACE2DEPTH_INTERNAL_QINT_TO_QINT_X2Y1(src0_type_name, src1_type_name, read_type, write_type) \\\n\
+__kernel void space2depth_internal_##src0_type_name##to##src1_type_name##_X2Y1( \\\n\
+    image2d_array_t input, \\\n\
+    image2d_array_t output, \\\n\
+    int block_size_x, \\\n\
+    int block_size_y \\\n\
+    ) \\\n\
+{ \\\n\
+    int gidx = get_global_id(0); \\\n\
+    int gidy = get_global_id(1); \\\n\
+    int gidz = get_global_id(2); \\\n\
+ \\\n\
+    int4 coord = (int4)(gidx, gidy, gidz, 0); \\\n\
+    int4 coord_out = (int4)(gidx >> 1, gidy, gidz, 0); \\\n\
+    int out_d1; \\\n\
+    read_type imageData; \\\n\
+    write_type  imgVal0, imgVal1; \\\n\
+ \\\n\
+    VXC_ReadImage2DArray(imageData, input, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                     VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
+ \\\n\
+    out_d1 = gidz + input_depth; \\\n\
+ \\\n\
+    VXC_DP2x8(imgVal0, imageData, imageData,\\\n\
+                VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniExtractEvenUint8Stride2_2x8); \\\n\
+    VXC_DP2x8(imgVal1, imageData, imageData,\\\n\
+                VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniExtractOddUint8Stride2_2x8); \\\n\
+    VXC_WriteImage2DArray(output, coord_out, imgVal0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    coord_out.z = out_d1; \\\n\
+    VXC_WriteImage2DArray(output, coord_out, imgVal1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+}\n\
+SPACE2DEPTH_INTERNAL_QINT_TO_QINT_X2Y1(U8, U8, vxc_uchar16, vxc_uchar16)\n\
+SPACE2DEPTH_INTERNAL_QINT_TO_QINT_X2Y1(I8, I8, vxc_char16, vxc_char16)\n\
+\n\
+#define SPACE2DEPTH_INTERNAL_16BITS_X2Y1(src0_type_name, src1_type_name, read_type, write_type) \\\n\
+__kernel void space2depth_internal_##src0_type_name##to##src1_type_name##_X2Y1( \\\n\
+    image2d_array_t input, \\\n\
+    image2d_array_t output, \\\n\
+    int block_size_x, \\\n\
+    int block_size_y \\\n\
+    ) \\\n\
+{ \\\n\
+    int gidx = get_global_id(0); \\\n\
+    int gidy = get_global_id(1); \\\n\
+    int gidz = get_global_id(2); \\\n\
+ \\\n\
+    int4 coord = (int4)(gidx, gidy, gidz, 0); \\\n\
+    int4 coord_out = (int4)(gidx >> 1, gidy, gidz, 0); \\\n\
+    int out_d1; \\\n\
+    read_type imageData; \\\n\
+    write_type  imgVal0, imgVal1; \\\n\
+ \\\n\
+    VXC_ReadImage2DArray(imageData, input, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                     VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    out_d1 = gidz + input_depth; \\\n\
+    VXC_DP4x4(imgVal0, imageData, imageData, \\\n\
+                 VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractEvenFp16Stride2_4x4); \\\n\
+    VXC_DP4x4(imgVal1, imageData, imageData, \\\n\
+                VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractOddFp16Stride2_4x4); \\\n\
+    VXC_WriteImage2DArray(output, coord_out, imgVal0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+    coord_out.z = out_d1; \\\n\
+    VXC_WriteImage2DArray(output, coord_out, imgVal1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+}\n\
+SPACE2DEPTH_INTERNAL_16BITS_X2Y1(I16, I16, vxc_short8, vxc_short8)\n\
+SPACE2DEPTH_INTERNAL_16BITS_X2Y1(F16, F16, vxc_short8, vxc_short8)"; /* end of space2depth_internal_vx*/
+
 static const char swish_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 _viv_uniform float logE;\n\
@@ -34681,49 +34817,6 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void vxcSignalFrame_ten
 }\n\
 #endif\n\
 "; /* end of vsi_nn_kernel_signalframe_vx*/
-
-static const char vsi_nn_kernel_space2depth_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
-\n\
-_viv_uniform VXC_512Bits uniExtractEvenFp16Stride2_4x4;\n\
-_viv_uniform VXC_512Bits uniExtractOddFp16Stride2_4x4;\n\
-_viv_uniform int input_depth;\n\
-\n\
-__kernel void vxcReorg2_fp16_fp16_sx2_sy1\n\
-    (\n\
-    image2d_array_t input,\n\
-    image2d_array_t output,\n\
-    int stridex,\n\
-    int stridey\n\
-    )\n\
-{\n\
-    int gidx = get_global_id(0);\n\
-    int gidy = get_global_id(1);\n\
-    int gidz = get_global_id(2);\n\
-\n\
-    int4 coord = (int4)(gidx, gidy, gidz, 0);\n\
-    int4 coord_out = (int4)(gidx >> 1, gidy, 0, 0);\n\
-    int out_d0, out_d1;\n\
-    vxc_short8 imageData;\n\
-    vxc_short8 imgVal0, imgVal1;\n\
-    //int tmpw = gidz / input_depth; \\n\\\n\
-    //int tmpz = gidz % input_depth; \\n\\\n\
-\n\
-    VXC_ReadImage2DArray(imageData, input, coord, VXC_5BITOFFSET_XY(0, 0),\n\
-        VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-    VXC_DP4x4(imgVal0, imageData, imageData, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\n\
-        uniExtractEvenFp16Stride2_4x4);\n\
-    VXC_DP4x4(imgVal1, imageData, imageData, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\n\
-        uniExtractOddFp16Stride2_4x4);\n\
-\n\
-    out_d0 = gidz * 2 * 1;\n\
-    out_d1 = out_d0 + 1;\n\
-\n\
-    coord_out.z = out_d0;\n\
-    VXC_WriteImage2DArray(output, coord_out, imgVal0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
-    coord_out.z = out_d1;\n\
-    VXC_WriteImage2DArray(output, coord_out, imgVal1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
-}\n\
-"; /* end of vsi_nn_kernel_space2depth_vx*/
 
 static const char vsi_nn_kernel_tensorstackconcat_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
@@ -46529,6 +46622,98 @@ __kernel void select_I8_F32_F32toF32_2D(\n\
 }\n\
 "; /* end of select_cl*/
 
+static const char space2depth_internal_cl[] = "\n\
+__kernel void space2depth_internal_F32toF32 (\n\
+        image2d_array_t    input,\n\
+        image2d_array_t    output,\n\
+        int block_size_x, int block_size_y,\n\
+        float  scaleInOut, float zpInOut)\n\
+{\n\
+    int x = get_global_id(0);\n\
+    int y = get_global_id(1);\n\
+    int z = get_global_id(2);\n\
+    int inDepth = get_image_array_size(input);\n\
+\n\
+    int4 coord = (int4)(x, y, z, 0);\n\
+    float4 data = {0.0};\n\
+    data = read_imagef(input, coord);\n\
+\n\
+    ushort blockSize_x = convert_ushort(block_size_x);\n\
+    ushort blockSize_y = convert_ushort(block_size_y);\n\
+    int4 coord_out = (int4)(convert_ushort(x)/blockSize_x, convert_ushort(y)/blockSize_y, 0, 0);\n\
+    coord_out.z = ((x - coord_out.x * block_size_x) + (y - coord_out.y * block_size_y) * block_size_x) * inDepth\n\
+                     + z;\n\
+    write_imagef(output, coord_out, data);\n\
+}\n\
+\n\
+__kernel void space2depth_internal_F32toF32_X2Y1 (\n\
+        image2d_array_t    input,\n\
+        image2d_array_t    output,\n\
+        int block_size_x, int block_size_y,\n\
+        float  scaleInOut, float zpInOut)\n\
+{\n\
+    int x = get_global_id(0);\n\
+    int y = get_global_id(1);\n\
+    int z = get_global_id(2);\n\
+    int inDepth = get_image_array_size(input);\n\
+\n\
+    int4 coord = (int4)(x, y, z, 0);\n\
+    float4 data = {0.0};\n\
+    data = read_imagef(input, coord);\n\
+\n\
+    int4 coord_out = (int4)(x >> 1, y, 0, 0);\n\
+    coord_out.z = (x & 1) * inDepth + z;\n\
+    write_imagef(output, coord_out, data);\n\
+}\n\
+\n\
+__kernel void space2depth_internal_U8toU8 (\n\
+        image2d_array_t    input,\n\
+        image2d_array_t    output,\n\
+        int block_size_x, int block_size_y,\n\
+        float  scaleInOut, float zpInOut)\n\
+{\n\
+    int x = get_global_id(0);\n\
+    int y = get_global_id(1);\n\
+    int z = get_global_id(2);\n\
+    int inDepth = get_image_array_size(input);\n\
+\n\
+    int4 coord = (int4)(x, y, z, 0);\n\
+    uint4 data = {0};\n\
+    data = read_imageui(input, coord);\n\
+\n\
+    ushort blockSize_x = convert_ushort(block_size_x);\n\
+    ushort blockSize_y = convert_ushort(block_size_y);\n\
+    int4 coord_out = (int4)(convert_ushort(x)/blockSize_x, convert_ushort(y)/blockSize_y, 0, 0);\n\
+    coord_out.z = ((x - coord_out.x * block_size_x) + (y - coord_out.y * block_size_y) * block_size_x) * inDepth\n\
+                    + z;\n\
+\n\
+    data.x = convert_uint(data.x * scaleInOut + zpInOut);\n\
+    write_imageui(output, coord_out, data);\n\
+}\n\
+\n\
+__kernel void space2depth_internal_U8toU8_X2Y1 (\n\
+        image2d_array_t    input,\n\
+        image2d_array_t    output,\n\
+        int block_size_x, int block_size_y,\n\
+        float  scaleInOut, float zpInOut)\n\
+{\n\
+    int x = get_global_id(0);\n\
+    int y = get_global_id(1);\n\
+    int z = get_global_id(2);\n\
+    int inDepth = get_image_array_size(input);\n\
+\n\
+    int4 coord = (int4)(x, y, z, 0);\n\
+    uint4 data = {0};\n\
+    data = read_imageui(input, coord);\n\
+\n\
+    int4 coord_out = (int4)(x >> 1, y, 0, 0);\n\
+    coord_out.z = (x & 1) * inDepth + z;\n\
+\n\
+    data.x = convert_uint(data.x * scaleInOut + zpInOut);\n\
+    write_imageui(output, coord_out, data);\n\
+}\n\
+"; /* end of space2depth_internal_cl*/
+
 static const char swish_cl[] = "float sigmoid_(float x, float logE)\n\
 {\n\
     x *= -logE;\n\
@@ -47119,6 +47304,7 @@ static const source_map_t evis_resource[] =
     {"scatter_nd_vx", scatter_nd_vx},
     {"scatter_nd_big_vx", scatter_nd_big_vx},
     {"select_vx", select_vx},
+    {"space2depth_internal_vx", space2depth_internal_vx},
     {"swish_vx", swish_vx},
     {"tile_vx", tile_vx},
     {"tile_mix_vx", tile_mix_vx},
@@ -47142,7 +47328,6 @@ static const source_map_t evis_resource[] =
     {"vsi_nn_kernel_layernormalize_U8_vx", vsi_nn_kernel_layernormalize_U8_vx},
     {"vsi_nn_kernel_roi_align_vx", vsi_nn_kernel_roi_align_vx},
     {"vsi_nn_kernel_signalframe_vx", vsi_nn_kernel_signalframe_vx},
-    {"vsi_nn_kernel_space2depth_vx", vsi_nn_kernel_space2depth_vx},
     {"vsi_nn_kernel_tensorstackconcat_vx", vsi_nn_kernel_tensorstackconcat_vx},
     {"vsi_nn_kernel_topk_vx", vsi_nn_kernel_topk_vx},
     {"vsi_nn_kernel_transform_gemm_vx", vsi_nn_kernel_transform_gemm_vx},
@@ -47243,6 +47428,7 @@ static const source_map_t cl_resource[] =
     {"roi_align_cl", roi_align_cl},
     {"scatter_nd_cl", scatter_nd_cl},
     {"select_cl", select_cl},
+    {"space2depth_internal_cl", space2depth_internal_cl},
     {"swish_cl", swish_cl},
     {"tile_cl", tile_cl},
     {"upsample_cl", upsample_cl},
