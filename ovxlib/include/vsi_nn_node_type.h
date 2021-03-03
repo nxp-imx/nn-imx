@@ -163,6 +163,7 @@
 #include "ops/vsi_nn_op_resize_1d.h"
 #include "ops/vsi_nn_op_resize_1d_bilinear_internal.h"
 #include "ops/vsi_nn_op_resize_1d_nearest_internal.h"
+#include "ops/vsi_nn_op_upsamplescale.h"
 /* custom node head define define */
 #include "custom/vsi_nn_custom_node_type.h"
 
@@ -312,6 +313,7 @@ typedef union _vsi_nn_nn_param
     vsi_nn_resize_1d_param          resize_1d;
     vsi_nn_resize_1d_bilinear_internal_param resize_1d_bilinear_internal;
     vsi_nn_resize_1d_nearest_internal_param resize_1d_nearest_internal;
+    vsi_nn_upsamplescale_param      upsamplescale;
     uint8_t                         client_param[128];
 
     /* custom node data struct define */

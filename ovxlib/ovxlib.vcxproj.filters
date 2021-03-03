@@ -579,6 +579,9 @@
     <ClInclude Include="include\ops\vsi_nn_op_upsample.h">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_upsamplescale.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
     <ClInclude Include="include\ops\vsi_nn_op_variable.h">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
@@ -1061,6 +1064,9 @@
     <ClCompile Include="src\kernel\cpu\upsample_cpu.c">
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
+    <ClCompile Include="src\kernel\cpu\upsamplescale_cpu.c">
+      <Filter>Source Files\kernel\cpu</Filter>
+    </ClCompile>
     <ClCompile Include="src\kernel\evis\a_times_b_plus_c_evis.c">
       <Filter>Source Files\kernel\evis</Filter>
     </ClCompile>
@@ -1223,6 +1229,9 @@
     <ClCompile Include="src\kernel\evis\upsample_evis.c">
       <Filter>Source Files\kernel\evis</Filter>
     </ClCompile>
+    <ClCompile Include="src\kernel\evis\upsamplescale_evis.c">
+      <Filter>Source Files\kernel\evis</Filter>
+    </ClCompile>
     <ClCompile Include="src\kernel\vsi_nn_gpu.c">
       <Filter>Source Files\kernel</Filter>
     </ClCompile>
@@ -1346,7 +1355,7 @@
     <ClCompile Include="src\ops\vsi_nn_op_bidirectional_sequence_lstm.c">
       <Filter>Source Files\ops</Filter>
     </ClCompile>
-  <ClCompile Include="src\ops\vsi_nn_op_bidirectional_sequence_rnn.c">
+    <ClCompile Include="src\ops\vsi_nn_op_bidirectional_sequence_rnn.c">
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_box_with_nms_limit.c">
@@ -1358,7 +1367,7 @@
     <ClCompile Include="src\ops\vsi_nn_op_clip.c">
       <Filter>Source Files\ops</Filter>
     </ClCompile>
-    <ClCompile Include="src\ops\vsi_nn_op_common.c">
+  <ClCompile Include="src\ops\vsi_nn_op_common.c">
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_concat.c">
@@ -1749,6 +1758,9 @@
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_upsample.c">
+      <Filter>Source Files\ops</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_upsamplescale.c">
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_variable.c">
