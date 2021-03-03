@@ -643,6 +643,7 @@
     <ClInclude Include="include\ops\vsi_nn_op_unidirectional_sequence_rnn.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_unstack.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_upsample.h"/>
+    <ClInclude Include="include\ops\vsi_nn_op_upsamplescale.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_variable.h"/>
     <ClInclude Include="include\platform\vsi_nn_pf_depth2space.h"/>
     <ClInclude Include="include\platform\vsi_nn_pf_softmax.h"/>
@@ -1047,6 +1048,9 @@
     <ClCompile Include="src\kernel\cpu\upsample_cpu.c">
       <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="src\kernel\cpu\upsamplescale_cpu.c">
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="src\kernel\evis\a_times_b_plus_c_evis.c">
       <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
@@ -1207,6 +1211,9 @@
       <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\upsample_evis.c">
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\kernel\evis\upsamplescale_evis.c">
       <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\vsi_nn_gpu.c">
@@ -1735,6 +1742,9 @@
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_upsample.c">
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_upsamplescale.c">
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_variable.c">
