@@ -218,7 +218,13 @@ __kernel void resize_bilinear_F16toF16_UP
     baseAddr = (int)coord_out.z * output_desc.s4 + output_desc.s0;
     _viv_asm(MOV, coord_out.w, baseAddr);
 
-    do
+    float4 left4;
+    float4 right4;
+    float4 top4;
+    float4 bottom4;
+
+    int loop = depth - 1;
+    while (coord_in.z < loop)
     {
         VXC_BitExtract(dst0, src0, src1, maskShift, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
         VXC_BitExtract(dst1, src2, src3, maskShift, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
@@ -237,11 +243,6 @@ __kernel void resize_bilinear_F16toF16_UP
                 VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
         coord_in.z ++;
 
-
-        float4 left4;
-        float4 right4;
-        float4 top4;
-        float4 bottom4;
         VXC_DP4x4(left4, top, top, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniFp16toFp32_left_4x4);
         VXC_DP4x4(right4, top, top, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniRightSubLeft_4x4);
         top4        = right4 * x_lerp + left4;
@@ -257,5 +258,25 @@ __kernel void resize_bilinear_F16toF16_UP
 
         VXC_OP4_NoDest(img_store_3d, output, coord_out.xyww, dst0, VXC_MODIFIER(0, 3, 0,VXC_RM_TowardZero, 0));
         coord_out.w += output_desc.s4;
-    } while (coord_in.z < depth);
+    }
+
+    VXC_BitExtract(dst0, src0, src1, maskShift, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+    VXC_BitExtract(dst1, src2, src3, maskShift, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+    _viv_asm(COPY, top, dst0, 16);
+    _viv_asm(COPY, bottom, dst1, 16);
+
+    VXC_DP4x4(left4, top, top, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniFp16toFp32_left_4x4);
+    VXC_DP4x4(right4, top, top, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniRightSubLeft_4x4);
+    top4        = right4 * x_lerp + left4;
+    VXC_DP4x4(left4, bottom, bottom, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniFp16toFp32_left_4x4);
+    VXC_DP4x4(right4, bottom, bottom, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniRightSubLeft_4x4);
+    bottom4      = right4 * x_lerp + left4;
+    bottom4     -= top4;
+    float4 dst4  = bottom4 * y_lerp + top4;
+    half4 tmp;
+    _viv_asm(CONV, tmp, dst4);
+    VXC_DP2x8(top, tmp, tmp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtactHalf8_2x8);
+    _viv_asm(COPY, dst0, top, 16);
+
+    VXC_OP4_NoDest(img_store_3d, output, coord_out.xyww, dst0, VXC_MODIFIER(0, 3, 0,VXC_RM_TowardZero, 0));
 }
