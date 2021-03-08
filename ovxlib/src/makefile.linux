@@ -12,10 +12,13 @@ CFLAGS += -Werror -fvisibility=hidden -D'OVXLIB_API=__attribute__((visibility("d
 
 ################################################################################
 # Supply necessary libraries.
-
 OVX_LIB ?= $(SDKTARGETSYSROOT)/usr/lib
 
-LIBS += -L$(OVX_LIB) -l OpenVX -l OpenVXU -l CLC -l VSC
+ifeq ($(USE_VXC_BINARY)$(USE_VSC_LITE),11)
+LIBS += -L$(OVX_LIB) -l OpenVX -l OpenVXU -l CLC -l VSC_Lite -lGAL
+else
+LIBS += -L$(OVX_LIB) -l OpenVX -l OpenVXU -l CLC -l VSC -lGAL
+endif
 LIBS += -L$(SDKTARGETSYSROOT)/usr/lib -lm -ldl
 
 #############################################################################
