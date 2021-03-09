@@ -71,7 +71,6 @@ static vsi_status op_compute
             &attr);
         TEST_CHECK_PTR(block_size_tensor, final);
 
-        self->nn_param.space2depth.local.block_size_tensor = block_size_tensor;
         param.block_size = REQUIRED_IO(block_size_tensor);
         param.type = VX_REORG_SPACE_TO_DEPTH;
 
@@ -210,11 +209,6 @@ static vsi_status op_deinit
     vsi_nn_node_t * self
     )
 {
-    if (self->nn_param.space2depth.local.block_size_tensor != NULL)
-    {
-        vsi_nn_ReleaseTensor(&(self->nn_param.space2depth.local.block_size_tensor));
-    }
-
     if (self->nn_param.space2depth.block_size[0] != self->nn_param.space2depth.block_size[1])
     {
         vsi_nn_internal_deinit_node_wksp(self);
