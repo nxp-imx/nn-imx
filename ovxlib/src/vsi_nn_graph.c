@@ -1541,33 +1541,46 @@ void vsi_nn_DumpGraphToJson
             for(j = 0; j < node->input.num; j++)
             {
                 tio = &tensor_ref[node->input.tensors[j]];
-                if(tio->input.num > 0)
+                if(NULL == vsi_nn_GetTensor(graph, node->input.tensors[j]))
                 {
-                    table = tio->input.table;
-
-                    /* tensor only 1 input node */
-                    in_node = vsi_nn_GetNode(graph, table[0].node);
                     if(j == node->input.num - 1)
                     {
-                        fprintf(fp, "\"@uid_%u:out%u\" ", in_node->uid, table[0].index);
+                        fprintf(fp, "\"not used\" ");
                     }
                     else
                     {
-                        fprintf(fp, "\"@uid_%u:out%u\", ", in_node->uid, table[0].index);
+                        fprintf(fp, "\"not used\", ");
                     }
                 }
                 else
                 {
-                    if(j == node->input.num - 1)
+                    if(tio->input.num > 0)
                     {
-                        fprintf(fp, "\"datainput_%u:out0\" ", j);
+                        table = tio->input.table;
+
+                        /* tensor only 1 input node */
+                        in_node = vsi_nn_GetNode(graph, table[0].node);
+                        if(j == node->input.num - 1)
+                        {
+                            fprintf(fp, "\"@uid_%u:out%u\" ", in_node->uid, table[0].index);
+                        }
+                        else
+                        {
+                            fprintf(fp, "\"@uid_%u:out%u\", ", in_node->uid, table[0].index);
+                        }
                     }
                     else
                     {
-                        fprintf(fp, "\"datainput_%u:out0\", ", j);
+                        if(j == node->input.num - 1)
+                        {
+                            fprintf(fp, "\"datainput_%u:out0\" ", j);
+                        }
+                        else
+                        {
+                            fprintf(fp, "\"datainput_%u:out0\", ", j);
+                        }
                     }
                 }
-
             }
 
             /* dump input shape */
@@ -1575,14 +1588,14 @@ void vsi_nn_DumpGraphToJson
             for(j = 0; j < node->input.num; j++)
             {
                 tensor = vsi_nn_GetTensor(graph, node->input.tensors[j]);
-                if(vsi_nn_ShapeToString( tensor->attr.size, tensor->attr.dim_num,
+                if(NULL != tensor && vsi_nn_ShapeToString( tensor->attr.size, tensor->attr.dim_num,
                     shape, _SHAPE_BUF_SIZE, TRUE ) > 0)
                 {
                     fprintf(fp, "[%s ]", shape);
                 }
                 else
                 {
-                    fprintf(fp, "[ - ]");
+                    fprintf(fp, "[]");
                 }
                 if(j < node->input.num - 1)
                 {
@@ -1609,14 +1622,14 @@ void vsi_nn_DumpGraphToJson
             for(j = 0; j < node->output.num; j++)
             {
                 tensor = vsi_nn_GetTensor(graph, node->output.tensors[j]);
-                if(vsi_nn_ShapeToString( tensor->attr.size, tensor->attr.dim_num,
+                if(NULL != tensor && vsi_nn_ShapeToString( tensor->attr.size, tensor->attr.dim_num,
                     shape, _SHAPE_BUF_SIZE, TRUE ) > 0)
                 {
                     fprintf(fp, "[%s ]", shape);
                 }
                 else
                 {
-                    fprintf(fp, "[ - ]");
+                    fprintf(fp, "[]");
                 }
                 if(j < node->output.num - 1)
                 {
