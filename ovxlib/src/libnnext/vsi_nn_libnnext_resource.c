@@ -24837,19 +24837,6 @@ _viv_uniform VXC_512Bits uniCalculateTmpB3rd_4x4;\n\
 _viv_uniform VXC_512Bits uniCalculateTmpB4th_4x4;\n\
 _viv_uniform VXC_512Bits uniCalculateB1st_4x4;\n\
 \n\
-_viv_uniform VXC_512Bits uniPackBG0_2x8;\n\
-_viv_uniform VXC_512Bits uniPackTmpAndR_2x8;\n\
-_viv_uniform VXC_512Bits uniPackRB0_2x8;\n\
-_viv_uniform VXC_512Bits uniPackTmp0AndG_2x8;\n\
-_viv_uniform VXC_512Bits uniPackGR1_2x8;\n\
-_viv_uniform VXC_512Bits uniPackTmp1AndB_2x8;\n\
-_viv_uniform VXC_512Bits uniPackBG1_2x8;\n\
-_viv_uniform VXC_512Bits uniPackTmp1AndR_2x8;\n\
-_viv_uniform VXC_512Bits uniPackRB2_2x8;\n\
-_viv_uniform VXC_512Bits uniPackTmp2AndG_2x8;\n\
-_viv_uniform VXC_512Bits uniPackGR2_2x8;\n\
-_viv_uniform VXC_512Bits uniPackTmp2AndB_2x8;\n\
-\n\
 _viv_uniform VXC_512Bits uniQuantU8toU8LoB_2x8;\n\
 _viv_uniform VXC_512Bits uniQuantU8toU8HiB_2x8;\n\
 _viv_uniform VXC_512Bits uniQuantU8toU8LoG_2x8;\n\
