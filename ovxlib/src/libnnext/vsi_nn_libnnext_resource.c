@@ -34494,7 +34494,7 @@ _viv_uniform float tail;\n\
     VXC_ReadImage2DArray(read_val, input, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
                 VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
     _viv_asm(COPY, src_val, read_val, 16); \\\n\
-    coord.xy <<= 1; \\\n\
+    coord.xy *= stride; \\\n\
     int8 output_desc; \\\n\
     _viv_asm(COPY, output_desc, output, sizeof(output_desc)); \\\n\
     int baseAddr = (int)coord.z * output_desc.s4 + output_desc.s0; \\\n\
