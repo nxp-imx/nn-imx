@@ -1,3 +1,16 @@
+############################################################################
+Release notes for Ovxlib 1.1.30
+
+New Features:
+    1. add ops: resize_1d, upsamplescale
+Feature Refine:
+    1. add new data type support for some ops.
+    2. squeeze NULL inputs/outputs for nbg
+    3. refine some ops: instancenorm, l2normalizescale, space2depth
+Bug Fixing:
+    1. fix bug of depthwiseconv1d, conv1d, batchnormalize, argmax.
+
+############################################################################
 Release notes for Ovxlib 1.1.29
 
 New Features:
