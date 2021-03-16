@@ -87,6 +87,11 @@ MAKE_SPEC(explicit_padding_transpose_conv_2d)
     .kernel_(nnrt::OperandType::TENSOR_QUANT8_SYMM_PER_CHANNEL)
     .bias_(nnrt::OperandType::TENSOR_INT32));
 
+    OVERRIDE_SPEC(explicit_padding_transpose_conv_2d, quant8_symma_android_R)
+    .input_(nnrt::OperandType::TENSOR_QUANT8_SYMM)
+    .kernel_(nnrt::OperandType::TENSOR_QUANT8_SYMM)
+    .bias_(nnrt::OperandType::TENSOR_INT32));
+
 MAKE_SPEC(implicit_padding_transpose_conv_2d)
     .input_(nnrt::OperandType::TENSOR_FLOAT32)
     .kernel_(nnrt::OperandType::TENSOR_FLOAT32)
@@ -121,6 +126,11 @@ MAKE_SPEC(implicit_padding_transpose_conv_2d)
     OVERRIDE_SPEC(implicit_padding_transpose_conv_2d, per_channel_quant8_int8)
     .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM_SIGNED)
     .kernel_(nnrt::OperandType::TENSOR_QUANT8_SYMM_PER_CHANNEL)
+    .bias_(nnrt::OperandType::TENSOR_INT32));
+
+    OVERRIDE_SPEC(implicit_padding_transpose_conv_2d, quant8_symma_android_R)
+    .input_(nnrt::OperandType::TENSOR_QUANT8_SYMM)
+    .kernel_(nnrt::OperandType::TENSOR_QUANT8_SYMM)
     .bias_(nnrt::OperandType::TENSOR_INT32));
 #undef ARG_NAMES
 #undef ARGC
