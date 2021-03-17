@@ -53,9 +53,8 @@ class TransposeConv2dValidate : public OperationValidate<T_model, T_Operation> {
                 return false;
             }
             auto kernelOperand = vsi_driver::GetHalOperand(model, operation.inputs[kernelIndex]);
-            if ((kernelOperand.dimensions[1] * kernelOperand.dimensions[2] > 6400) ||
-                (kernelOperand.dimensions[0] >= 650)) {
-                reason += "reject TRANSPOSE_CONV_2D because kernel size restriction\n";
+            if (kernelOperand.dimensions[1] * kernelOperand.dimensions[2] > 6400) {
+                reason += "reject TRANSPOSE_CONV_2D because kernel size > 6400\n";
                 return false;
             }
             return true;
