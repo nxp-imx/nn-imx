@@ -57,8 +57,25 @@ static vsi_status op_compute
     weight_attr.size[2] = weight_attr.size[1];
     weight_attr.size[1] = 1;
     weight_attr.dim_num = 4;
-    weight_tensor = vsi_nn_CreateTensor( self->graph, &weight_attr );
-    vsi_nn_ReshapeTensor( self->graph, inputs[1], weight_tensor, weight_attr.size, 4 );
+    if (inputs[1]->attr.dtype.qnt_type != VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC)
+    {
+        weight_tensor = vsi_nn_CreateTensor( self->graph, &weight_attr );
+        vsi_nn_ReshapeTensor( self->graph, inputs[1], weight_tensor, weight_attr.size, 4 );
+    }
+    else
+    {
+        uint8_t    * data = NULL;
+        data = vsi_nn_ConvertTensorToData( self->graph, inputs[1] );
+        if (NULL == data)
+        {
+            VSILOGE("Convert data fail.\n");
+            status = VSI_FAILURE;
+            return status;
+        }
+        weight_attr.dtype.channel_dim = inputs[1]->attr.dtype.channel_dim + 1;
+        weight_tensor = vsi_nn_CreateTensorFromData(self->graph, data, &weight_attr);
+        vsi_nn_safe_free( data );
+    }
 
 #ifdef VX_DECONVOLUTION_WEIGHT_LAYOUT_COMPATIBLE_KHRONOS
     if ( vsi_nn_compareVersion(self->graph, 1, 1, 21) == -1 && TRUE == weight_tensor->attr.is_const )
