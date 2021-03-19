@@ -90,7 +90,7 @@ __kernel void resize_bilinear_U8toU8_UP_opt
         coord_out.w += output_desc.s4;
 
         coord_out.z ++;
-    } while (coord_out.z < depth);
+    }
 
     VXC_BitExtract(top_bottom, src0, src0, maskShift, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
     VXC_BitExtract(top_bottom, src1, src1, maskShift, VXC_MODIFIER(8, 15, 0, VXC_RM_TowardZero, 0));

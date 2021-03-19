@@ -181,7 +181,7 @@ __kernel void resize_bilinear_U8toU8_UP
         VXC_DP2x8(top, dst, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), uniExtact8Bit_2x8);
         VXC_OP4_NoDest(img_store_3d, output, coord_out.xyww, top, VXC_MODIFIER(0, 3, 0,VXC_RM_TowardZero, 0));
         coord_out.w += output_desc.s4;
-    } while (coord_in.z < depth);
+    }
 
     VXC_BitExtract(top, src0, src0, maskShift, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
     VXC_BitExtract(bottom, src1, src1, maskShift, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
