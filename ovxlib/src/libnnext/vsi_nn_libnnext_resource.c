@@ -31822,7 +31822,7 @@ __kernel void resize_bilinear_U8toU8_UP\n\
         VXC_DP2x8(top, dst, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), uniExtact8Bit_2x8);\n\
         VXC_OP4_NoDest(img_store_3d, output, coord_out.xyww, top, VXC_MODIFIER(0, 3, 0,VXC_RM_TowardZero, 0));\n\
         coord_out.w += output_desc.s4;\n\
-    } while (coord_in.z < depth);\n\
+    }\n\
 \n\
     VXC_BitExtract(top, src0, src0, maskShift, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
     VXC_BitExtract(bottom, src1, src1, maskShift, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
@@ -32081,7 +32081,7 @@ __kernel void resize_bilinear_U8toU8_UP_opt\n\
         coord_out.w += output_desc.s4;\n\
 \n\
         coord_out.z ++;\n\
-    } while (coord_out.z < depth);\n\
+    }\n\
 \n\
     VXC_BitExtract(top_bottom, src0, src0, maskShift, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
     VXC_BitExtract(top_bottom, src1, src1, maskShift, VXC_MODIFIER(8, 15, 0, VXC_RM_TowardZero, 0));\n\
