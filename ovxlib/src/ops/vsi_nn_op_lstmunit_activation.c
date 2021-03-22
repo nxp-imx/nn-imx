@@ -153,8 +153,7 @@ static vsi_bool op_setup
             memcpy(&attr, &(inputs[LSTMUNIT_ACT_DATA_BI + i]->attr), sizeof(vsi_nn_tensor_attr_t));
             attr.size[1] = 1;
             attr.dim_num = 2;
-            t0 = vsi_nn_CreateTensor( self->graph, &attr );
-            vsi_nn_ReshapeTensor(self->graph, inputs[LSTMUNIT_ACT_DATA_BI + i], t0, attr.size, attr.dim_num);
+            t0 = vsi_nn_reshape_tensor(self->graph, inputs[LSTMUNIT_ACT_DATA_BI + i], attr.size, attr.dim_num);
 
             if( dst_dtype.vx_type != t0->attr.dtype.vx_type
                 && dst_dtype.qnt_type != t0->attr.dtype.qnt_type )
@@ -176,8 +175,7 @@ static vsi_bool op_setup
             memcpy(&attr, &(inputs[LSTMUNIT_ACT_LN_WI + i]->attr), sizeof(vsi_nn_tensor_attr_t));
             attr.size[1] = 1;
             attr.dim_num = 2;
-            t1 = vsi_nn_CreateTensor( self->graph, &attr );
-            vsi_nn_ReshapeTensor(self->graph, inputs[LSTMUNIT_ACT_LN_WI + i], t1, attr.size, attr.dim_num);
+            t1 = vsi_nn_reshape_tensor(self->graph, inputs[LSTMUNIT_ACT_LN_WI + i], attr.size, attr.dim_num);
 
             if( dst_dtype.vx_type != t1->attr.dtype.vx_type
                 && dst_dtype.qnt_type != t1->attr.dtype.qnt_type )

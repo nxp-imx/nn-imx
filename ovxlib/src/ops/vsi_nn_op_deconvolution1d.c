@@ -59,8 +59,7 @@ static vsi_status op_compute
     weight_attr.dim_num = 4;
     if (inputs[1]->attr.dtype.qnt_type != VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC)
     {
-        weight_tensor = vsi_nn_CreateTensor( self->graph, &weight_attr );
-        vsi_nn_ReshapeTensor( self->graph, inputs[1], weight_tensor, weight_attr.size, 4 );
+        weight_tensor = vsi_nn_reshape_tensor( self->graph, inputs[1], weight_attr.size, 4 );
     }
     else
     {
