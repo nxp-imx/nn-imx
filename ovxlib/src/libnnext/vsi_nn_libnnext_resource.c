@@ -32080,7 +32080,7 @@ __kernel void resize_bilinear_U8toU8_UP_opt\n\
                 VXC_MODIFIER(0, 3, 0,VXC_RM_TowardZero, 0));\n\
         coord_out.w += output_desc.s4;\n\
 \n\
-        coord_out.z ++;\n\
+        coord_in.z ++;\n\
     }\n\
 \n\
     VXC_BitExtract(top_bottom, src0, src0, maskShift, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
