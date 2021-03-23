@@ -60,6 +60,7 @@ int PreparedModel::prepare()
         transformations.add(new LayoutInference());
         transformations.add(new OptimizePermute());
         transformations.add(new ValidateQuantizedGraph());
+        transformations.add(new RemoveUnnecessaryOp());
 
         // relaxed mode
         if (model_->isRelaxed()) {

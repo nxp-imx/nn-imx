@@ -153,6 +153,10 @@ class Operand : public BaseOperand {
 
     void setUsed(bool flag) { is_used_ = flag; }
 
+    bool isNeedRemove() const { return need_remove_; }
+
+    void setNeedRemove(bool flag) { need_remove_ = flag; }
+
    private:
     uint32_t number_of_consumers_;
     std::vector<uint32_t> perm_;
@@ -160,6 +164,7 @@ class Operand : public BaseOperand {
     bool optional_null_ = false;
     bool is_graph_input_output_ = false;
     bool is_used_ = false;
+    bool need_remove_ = false;
 };
 
 }
