@@ -78,6 +78,9 @@
     <ClCompile Include="model_transform\align_broadcast_op.cpp">
       <Filter>Source Files\model_transform</Filter>
     </ClCompile>
+    <ClCompile Include="model_transform\remove_unnecessary_op.cpp">
+      <Filter>Source Files\model_transform</Filter>
+    </ClCompile>
     <ClCompile Include="model_transform\fp32tofp16.cpp">
       <Filter>Source Files\model_transform</Filter>
     </ClCompile>
