@@ -358,6 +358,8 @@ static vsi_bool op_check_add
         IO_TYPE(D_I8|Q_DFP,   D_I8|Q_DFP,   D_I8|Q_DFP)
         IO_TYPE(D_I8|Q_DFP,   D_I8|Q_DFP,   D_U8|Q_ASYM)
         IO_TYPE(D_I16|Q_DFP,  D_I16|Q_DFP,  D_I16|Q_DFP)
+        IO_TYPE(D_I16,        D_I16|Q_DFP,  D_I16|Q_DFP)
+        IO_TYPE(D_I16|Q_DFP,  D_I16,        D_I16|Q_DFP)
         IO_TYPE(D_I16|Q_DFP,  D_I16|Q_DFP,  D_F16)
         IO_TYPE(D_U8|Q_ASYM,  D_U8|Q_ASYM,  D_U8|Q_ASYM)
         IO_TYPE(D_U8|Q_ASYM,  D_U8|Q_ASYM,  D_F16)
@@ -379,6 +381,8 @@ static vsi_bool op_check_add
         IO_TYPE(D_F16,  D_F32,  D_F16)
         IO_TYPE(D_F16,  D_F16,  D_F32)
         IO_TYPE(D_I32,  D_I32,  D_I32)
+        IO_TYPE(D_I16,  D_I32,  D_I32)
+        IO_TYPE(D_I32,  D_I16,  D_I32)
         IO_TYPE(D_I32,  D_I32,  D_U8|Q_ASYM)
         IO_TYPE(D_I32,  D_I32,  D_I16|Q_DFP)
         IO_TYPE(D_I32,  D_I32,  D_I8|Q_DFP)
@@ -429,6 +433,8 @@ static vsi_bool op_check_sub
         IO_TYPE(D_I8|Q_DFP,   D_I8|Q_DFP,   D_I8|Q_DFP)
         IO_TYPE(D_I8|Q_DFP,   D_I8|Q_DFP,   D_U8|Q_ASYM)
         IO_TYPE(D_I16|Q_DFP,  D_I16|Q_DFP,  D_I16|Q_DFP)
+        IO_TYPE(D_I16,        D_I16|Q_DFP,  D_I16|Q_DFP)
+        IO_TYPE(D_I16|Q_DFP,  D_I16,        D_I16|Q_DFP)
         IO_TYPE(D_I16|Q_DFP,  D_I16|Q_DFP,  D_F16)
         IO_TYPE(D_U8|Q_ASYM,  D_U8|Q_ASYM,  D_U8|Q_ASYM)
         IO_TYPE(D_U8|Q_ASYM,  D_U8|Q_ASYM,  D_F16)
@@ -442,6 +448,8 @@ static vsi_bool op_check_sub
         IO_TYPE(D_F16,  D_F32,  D_F16)
         IO_TYPE(D_F16,  D_F16,  D_F32)
         IO_TYPE(D_I32,  D_I32,  D_I32)
+        IO_TYPE(D_I16,  D_I32,  D_I32)
+        IO_TYPE(D_I32,  D_I16,  D_I32)
     END_IO_TYPE_DECL(SUBTRACT)
     if(!VALIDATE_OP_IO_TYPES(SUBTRACT, self, inputs, self->input.num, outputs, self->output.num)) {
         char* desc = generate_op_io_types_desc(inputs,
@@ -484,6 +492,8 @@ static vsi_bool op_check_div
         IO_TYPE(D_I8|Q_DFP,   D_F16,  D_I8|Q_DFP)
         IO_TYPE(D_I8|Q_DFP,   D_F16,  D_F16)
         IO_TYPE(D_I16|Q_DFP,  D_I16|Q_DFP,  D_I16|Q_DFP)
+        IO_TYPE(D_I16,        D_I16|Q_DFP,  D_I16|Q_DFP)
+        IO_TYPE(D_I16|Q_DFP,  D_I16,        D_I16|Q_DFP)
         IO_TYPE(D_I16|Q_DFP,  D_I16|Q_DFP,  D_F16)
         IO_TYPE(D_I16|Q_DFP,  D_F16,  D_I16|Q_DFP)
         IO_TYPE(D_I16|Q_DFP,  D_F16,  D_F16)
@@ -495,6 +505,8 @@ static vsi_bool op_check_div
         IO_TYPE(D_F16,  D_F32,  D_F16)
         IO_TYPE(D_F16,  D_F16,  D_F32)
         IO_TYPE(D_I32,  D_I32,  D_I32)
+        IO_TYPE(D_I16,  D_I32,  D_I32)
+        IO_TYPE(D_I32,  D_I16,  D_I32)
     END_IO_TYPE_DECL(DIVIDE)
     if(!VALIDATE_OP_IO_TYPES(DIVIDE, self, inputs, self->input.num, outputs, self->output.num)) {
         char* desc = generate_op_io_types_desc(inputs,
@@ -541,6 +553,8 @@ static vsi_bool op_check_mul
         IO_TYPE(D_I8|Q_DFP,   D_I8|Q_DFP,   D_F16)
         IO_TYPE(D_I8|Q_DFP,   D_I8|Q_DFP,   D_I8|Q_DFP)
         IO_TYPE(D_I16|Q_DFP,  D_I16|Q_DFP,  D_I16|Q_DFP)
+        IO_TYPE(D_I16,        D_I16|Q_DFP,  D_I16|Q_DFP)
+        IO_TYPE(D_I16|Q_DFP,  D_I16,        D_I16|Q_DFP)
         IO_TYPE(D_I16|Q_DFP,  D_I16|Q_DFP,  D_F16)
         IO_TYPE(D_U8|Q_ASYM,  D_U8|Q_ASYM,  D_U8|Q_ASYM)
         IO_TYPE(D_U8|Q_ASYM,  D_U8|Q_ASYM,  D_F16)
@@ -558,6 +572,8 @@ static vsi_bool op_check_mul
         IO_TYPE(D_F16,  D_F32,  D_F16)
         IO_TYPE(D_F16,  D_F16,  D_F32)
         IO_TYPE(D_I32,  D_I32,  D_I32)
+        IO_TYPE(D_I16,  D_I32,  D_I32)
+        IO_TYPE(D_I32,  D_I16,  D_I32)
     END_IO_TYPE_DECL(MULTIPLY)
     if(!VALIDATE_OP_IO_TYPES(MULTIPLY, self, inputs, self->input.num, outputs, self->output.num)) {
         char* desc = generate_op_io_types_desc(inputs,
