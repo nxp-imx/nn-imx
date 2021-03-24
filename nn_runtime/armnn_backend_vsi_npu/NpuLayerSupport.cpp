@@ -77,7 +77,7 @@ inline armnn::Optional<armnn::DataType> GetBiasTypeFromWeightsType(
         case armnn::DataType::QSymmS16:
             return armnn::DataType::Signed32;
         default:
-            BOOST_ASSERT_MSG(false, "GetBiasTypeFromWeightsType(): Unsupported data type.");
+            ARMNN_ASSERT_MSG(false, "GetBiasTypeFromWeightsType(): Unsupported data type.");
     }
     return armnn::EmptyOptional();
 }
@@ -1090,7 +1090,7 @@ bool NpuLayerSupport::IsMeanSupported(const TensorInfo& input,
                                  .data());
     } else {
         auto outputDim =
-            input.GetNumDimensions() - boost::numeric_cast<unsigned int>(descriptor.m_Axis.size());
+            input.GetNumDimensions() - armnn::numeric_cast<unsigned int>(descriptor.m_Axis.size());
 
         if (outputDim > 0) {
             supported &= CheckSupportRule(

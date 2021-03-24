@@ -75,7 +75,7 @@ def build_prepare(env):
         env.armnn_dir + "/tests"]
     run_subprocess(args, cwd=env.armnn_dir, shell=True)
 
-    args = ["patch -p1<" + env.patch_dir + "/0001-VSI_NPU-the-patch-for-armnn-v20.08.patch"]
+    args = ["patch -p1<" + env.patch_dir + "/0001-VSI_NPU-the-patch-for-armnn-v21.02.patch"]
     run_subprocess(args, cwd=env.armnn_dir, shell=True)
 
 def build_boost(env):
@@ -201,6 +201,10 @@ def build_caffe_pb(env):
         {
             "origin": '# CPU_ONLY := 1',
             "replace": 'CPU_ONLY := 1',
+        },
+        {
+            "origin": '# USE_OPENCV := 0',
+            "replace": 'USE_OPENCV := 0',
         },
         {
             "origin": 'INCLUDE_DIRS := $(PYTHON_INCLUDE) /usr/local/include',

@@ -43,7 +43,7 @@ inline const TensorInfo& GetTensorInfo(const ITensorHandle* tensorHandle)
 {
     // We know that reference workloads use CpuTensorHandles only, so this cast is legitimate.
     const ConstCpuTensorHandle* cpuTensorHandle =
-        boost::polymorphic_downcast<const ConstCpuTensorHandle*>(tensorHandle);
+        PolymorphicDowncast<const ConstCpuTensorHandle*>(tensorHandle);
     return cpuTensorHandle->GetTensorInfo();
 }
 
@@ -52,7 +52,7 @@ inline const DataType* GetConstCpuData(const ITensorHandle* tensorHandle)
 {
     // We know that reference workloads use (Const)CpuTensorHandles only, so this cast is legitimate.
     const ConstCpuTensorHandle* cpuTensorHandle =
-        boost::polymorphic_downcast<const ConstCpuTensorHandle*>(tensorHandle);
+        PolymorphicDowncast<const ConstCpuTensorHandle*>(tensorHandle);
     return cpuTensorHandle->GetConstTensor<DataType>();
 }
 
@@ -60,7 +60,7 @@ template <typename DataType>
 inline DataType* GetCpuData(const ITensorHandle* tensorHandle)
 {
     // We know that reference workloads use CpuTensorHandles only, so this cast is legitimate.
-    const CpuTensorHandle* cpuTensorHandle = boost::polymorphic_downcast<const CpuTensorHandle*>(tensorHandle);
+    const CpuTensorHandle* cpuTensorHandle = PolymorphicDowncast<const CpuTensorHandle*>(tensorHandle);
     return cpuTensorHandle->GetTensor<DataType>();
 };
 
@@ -110,14 +110,14 @@ inline const uint8_t* GetConstCpuU8Data(const ITensorHandle* tensorHandle)
 {
     // We know that reference workloads use (Const)CpuTensorHandles only, so this cast is legitimate.
     const ConstCpuTensorHandle* cpuTensorHandle =
-        boost::polymorphic_downcast<const ConstCpuTensorHandle*>(tensorHandle);
+        PolymorphicDowncast<const ConstCpuTensorHandle*>(tensorHandle);
     return cpuTensorHandle->GetConstTensor<uint8_t>();
 };
 
 inline uint8_t* GetCpuU8Data(const ITensorHandle* tensorHandle)
 {
     // We know that reference workloads use CpuTensorHandles only, so this cast is legitimate.
-    const CpuTensorHandle* cpuTensorHandle = boost::polymorphic_downcast<const CpuTensorHandle*>(tensorHandle);
+    const CpuTensorHandle* cpuTensorHandle = PolymorphicDowncast<const CpuTensorHandle*>(tensorHandle);
     return cpuTensorHandle->GetTensor<uint8_t>();
 };
 

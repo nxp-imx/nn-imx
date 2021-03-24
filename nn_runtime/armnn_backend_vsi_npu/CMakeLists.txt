@@ -38,6 +38,8 @@ list(APPEND armnnNputBackend_sources
         NpuTensorAllocator.hpp
         NpuTensorHandler.cpp
         NpuTensorHandler.hpp
+        NpuTensorHandleFactory.cpp
+        NpuTensorHandleFactory.hpp
         NpuWorkloadFactory.cpp
         NpuWorkloadFactory.hpp
         NpuStaticRegistry.cpp

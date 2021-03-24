@@ -1,24 +1,24 @@
-From 7c2463e1c28d4f9f03f1fdb4afaafbbb2091ad21 Mon Sep 17 00:00:00 2001
-From: "jing.tang" <jing.tang@verisilicon.com>
-Date: Fri, 18 Sep 2020 16:27:02 +0800
-Subject: [PATCH] [NNRT-611] add vsi_npu backend patch to v20.08 base
+From c770fa44082ed021d92c0e5abf5df83b2d5a4554 Mon Sep 17 00:00:00 2001
+From: antkillerfarm <antkillerfarm@gmail.com>
+Date: Wed, 24 Mar 2021 14:12:37 +0800
+Subject: [PATCH] [VSI_NPU] the patch for armnn v21.02
 
-Change-Id: I7be21c9368f40b2db872f6529a6624a199a4516e
+Change-Id: I1896266fb4fb6852b6ba275deeec6584c696dc25
 ---
- CMakeLists.txt                                     | 10 ++-
- cmake/GlobalConfig.cmake                           | 38 ++++++++++-
- include/armnn/BackendId.hpp                        |  5 +-
- profiling/common/include/CommandHandlerFunctor.hpp |  2 +-
- .../test/layerTests/SoftmaxTestImpl.cpp            | 76 +++++++++++-----------
- src/profiling/IProfilingServiceStatus.hpp          |  2 +-
- src/profiling/PeriodicCounterCapture.hpp           |  2 +-
- 7 files changed, 90 insertions(+), 45 deletions(-)
+ CMakeLists.txt                                |  9 +++
+ cmake/GlobalConfig.cmake                      | 43 +++++++++--
+ include/armnn/BackendId.hpp                   |  5 +-
+ .../common/include/CommandHandlerFunctor.hpp  |  2 +-
+ .../test/layerTests/SoftmaxTestImpl.cpp       | 76 +++++++++----------
+ src/profiling/IProfilingServiceStatus.hpp     |  2 +-
+ src/profiling/PeriodicCounterCapture.hpp      |  2 +-
+ 7 files changed, 91 insertions(+), 48 deletions(-)
 
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 9c2f331..490e1e0 100644
+index 4e75c28da..25cd4f2ae 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -32,6 +32,11 @@ if (BUILD_TESTS)
+@@ -52,6 +52,11 @@ if (BUILD_TESTS)
      add_subdirectory(tests)
  endif()
  
@@ -30,30 +30,22 @@ index 9c2f331..490e1e0 100644
  # Include the additional cmake files in their own target so that they will appear nicely in IDEs
  add_custom_target(AdditionalCMakeFiles SOURCES ${additional_cmake_files})
  
-@@ -143,7 +148,7 @@ if(BUILD_TF_PARSER)
-         )
-     # The generated tensorflow protobuf .cc files are not warning clean and we can't fix them.
-     if(COMPILER_IS_GNU_LIKE)
--        set_source_files_properties(${TF_PROTOBUFS} PROPERTIES COMPILE_FLAGS "-Wno-unused-variable -Wno-unused-parameter -Wno-conversion -Wno-sign-conversion")
-+        set_source_files_properties(${TF_PROTOBUFS} PROPERTIES COMPILE_FLAGS "-Wno-unused-variable -Wno-unused-parameter -Wno-conversion -Wno-sign-conversion -Wno-deprecated-declarations")
-     endif()
- 
-     add_library_ex(armnnTfParser SHARED ${armnn_tf_parser_sources})
-@@ -608,6 +613,9 @@ target_link_libraries(armnn ${Boost_THREAD_LIBRARY}
- if(ARMCOMPUTENEON OR ARMCOMPUTECL)
+@@ -645,6 +650,10 @@ if(ARMCOMPUTENEON OR ARMCOMPUTECL)
      target_link_libraries(armnn ${ARMCOMPUTE_LIBRARIES})
  endif()
+ 
 +if(VSI_NPU)
 +    target_link_libraries(armnn ${VSINPU_LIBRARIES})
 +endif()
- 
++
  if(PROFILING_BACKEND_STREAMLINE AND (NOT ("${CMAKE_SYSTEM_NAME}" STREQUAL Android)))
      target_link_libraries(armnn pthread)
+ endif()
 diff --git a/cmake/GlobalConfig.cmake b/cmake/GlobalConfig.cmake
-index b093e5d..c615685 100644
+index 8a7c9a182..a5fd2b0dc 100644
 --- a/cmake/GlobalConfig.cmake
 +++ b/cmake/GlobalConfig.cmake
-@@ -69,7 +69,7 @@ endif()
+@@ -70,7 +70,7 @@ endif()
  # Compiler flags that are always set
  set(CMAKE_POSITION_INDEPENDENT_CODE ON)
  if(COMPILER_IS_GNU_LIKE)
@@ -62,33 +54,39 @@ index b093e5d..c615685 100644
  elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
  	# Disable C4996 (use of deprecated identifier) due to https://developercommunity.visualstudio.com/content/problem/252574/deprecated-compilation-warning-for-virtual-overrid.html
      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /MP /wd4996")
-@@ -123,6 +123,8 @@ endif()
+@@ -124,6 +124,8 @@ endif()
  
  set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules ${CMAKE_MODULE_PATH})
  
 +set(CMAKE_FIND_ROOT_PATH "${CMAKE_FIND_ROOT_PATH};${ARMNN_ROOT};${BOOST_ROOT}")
 +
- if (NOT BUILD_PIPE_ONLY)
-   # Boost
-   message(STATUS "Finding Boost")
-@@ -136,6 +138,8 @@ if (NOT BUILD_PIPE_ONLY)
-   find_package(Boost 1.59 REQUIRED COMPONENTS unit_test_framework filesystem system program_options)
-   include_directories(SYSTEM "${Boost_INCLUDE_DIRS}")
-   link_directories(${Boost_LIBRARY_DIRS})
-+  message(STATUS "Boost headers are located at: ${Boost_INCLUDE_DIRS}")
-+  message(STATUS "Boost library are located at: ${Boost_LIBRARY_DIRS}")
- endif()
+ include(CMakeFindDependencyMacro)
  
  if (NOT BUILD_PIPE_ONLY)
-@@ -209,6 +213,7 @@ endif()
+@@ -137,9 +139,11 @@ if (NOT BUILD_PIPE_ONLY)
+   endif()
+   if (BUILD_UNIT_TESTS)
+     add_definitions("-DBOOST_ALL_NO_LIB") # Turn off auto-linking as we specify the libs manually
+-    find_package(Boost 1.59 REQUIRED COMPONENTS unit_test_framework)
++    find_package(Boost 1.59 REQUIRED COMPONENTS unit_test_framework program_options)
+     include_directories(SYSTEM "${Boost_INCLUDE_DIRS}")
+     link_directories(${Boost_LIBRARY_DIRS})
++    message(STATUS "Boost headers are located at: ${Boost_INCLUDE_DIRS}")
++    message(STATUS "Boost library are located at: ${Boost_LIBRARY_DIRS}")
+   endif()
+ endif()
+ 
+@@ -217,16 +221,14 @@ endif()
  # Flatbuffers support for TF Lite and Armnn Serializer
  if(BUILD_TF_LITE_PARSER OR BUILD_ARMNN_SERIALIZER)
      # verify we have a valid flatbuffers include path
-+    set(CMAKE_FIND_ROOT_PATH "${CMAKE_FIND_ROOT_PATH};${FLATBUFFERS_ROOT}")
-     find_path(FLATBUFFERS_INCLUDE_PATH flatbuffers/flatbuffers.h
-               HINTS ${FLATBUFFERS_ROOT}/include /usr/local/include /usr/include)
+-    find_path(FLATBUFFERS_INCLUDE_PATH flatbuffers/flatbuffers.h
+-              HINTS ${FLATBUFFERS_ROOT}/include /usr/local/include /usr/include)
+-
++    set(FLATBUFFERS_INCLUDE_PATH "${FLATBUFFERS_ROOT}/include")
+     message(STATUS "Flatbuffers headers are located at: ${FLATBUFFERS_INCLUDE_PATH}")
  
-@@ -218,7 +223,7 @@ if(BUILD_TF_LITE_PARSER OR BUILD_ARMNN_SERIALIZER)
+     find_library(FLATBUFFERS_LIBRARY
                   NAMES libflatbuffers.a flatbuffers
                   HINTS ${FLATBUFFERS_ROOT}/lib /usr/local/lib /usr/lib)
  
@@ -97,7 +95,7 @@ index b093e5d..c615685 100644
  endif()
  
  # Flatbuffers schema support for TF Lite
-@@ -301,6 +306,35 @@ if(ARMCOMPUTENEON OR ARMCOMPUTECL)
+@@ -309,6 +311,35 @@ if(ARMCOMPUTENEON OR ARMCOMPUTECL)
      endif()
  endif()
  
@@ -134,7 +132,7 @@ index b093e5d..c615685 100644
  if(ARMCOMPUTENEON)
      # Add preprocessor definition for ARM Compute NEON
 diff --git a/include/armnn/BackendId.hpp b/include/armnn/BackendId.hpp
-index c94cd66..cb1e65f 100644
+index c94cd6666..cb1e65fd0 100644
 --- a/include/armnn/BackendId.hpp
 +++ b/include/armnn/BackendId.hpp
 @@ -26,7 +26,9 @@ enum class Compute
@@ -157,7 +155,7 @@ index c94cd66..cb1e65f 100644
      }
  }
 diff --git a/profiling/common/include/CommandHandlerFunctor.hpp b/profiling/common/include/CommandHandlerFunctor.hpp
-index 9827aa0..3abe259 100644
+index 9827aa05b..3abe259e9 100644
 --- a/profiling/common/include/CommandHandlerFunctor.hpp
 +++ b/profiling/common/include/CommandHandlerFunctor.hpp
 @@ -5,7 +5,7 @@
@@ -170,7 +168,7 @@ index 9827aa0..3abe259 100644
  
  namespace arm
 diff --git a/src/backends/backendsCommon/test/layerTests/SoftmaxTestImpl.cpp b/src/backends/backendsCommon/test/layerTests/SoftmaxTestImpl.cpp
-index 1ffb34f..9d82809 100644
+index c4cc91411..7f2e7da09 100644
 --- a/src/backends/backendsCommon/test/layerTests/SoftmaxTestImpl.cpp
 +++ b/src/backends/backendsCommon/test/layerTests/SoftmaxTestImpl.cpp
 @@ -173,8 +173,8 @@ LayerTestResult<T, 2> SimpleSoftmaxTestImpl(
@@ -196,7 +194,7 @@ index 1ffb34f..9d82809 100644
                  };
          break;
          }
-@@ -365,8 +365,8 @@ LayerTestResult<float,3> Simple3dAxisSoftmaxTest(
+@@ -371,8 +371,8 @@ LayerTestResult<float,3> Simple3dAxisSoftmaxTest(
  
                              0.087144312427294f, 0.087144312427294f, 0.032058600957022f, 0.032058600957022f,
                              0.032058600957022f,
@@ -207,7 +205,7 @@ index 1ffb34f..9d82809 100644
                      };
              break;
          }
-@@ -386,13 +386,13 @@ LayerTestResult<float,3> Simple3dAxisSoftmaxTest(
+@@ -392,13 +392,13 @@ LayerTestResult<float,3> Simple3dAxisSoftmaxTest(
                      {
                              0.643914213228014f, 0.643914213228014f, 0.236882800924671f, 0.236882800924671f,
                              0.087144312427294f,
@@ -225,7 +223,7 @@ index 1ffb34f..9d82809 100644
                      };
          break;
          }
-@@ -410,14 +410,14 @@ LayerTestResult<float,3> Simple3dAxisSoftmaxTest(
+@@ -416,14 +416,14 @@ LayerTestResult<float,3> Simple3dAxisSoftmaxTest(
              outputData =
                      {
                              0.643914213228014f, 0.236882800924671f, 0.087144312427294f, 0.032058600957022f,
@@ -244,7 +242,7 @@ index 1ffb34f..9d82809 100644
                      };
              break;
          }
-@@ -476,10 +476,10 @@ LayerTestResult<float,4> Simple4dAxisSoftmaxTest(
+@@ -484,10 +484,10 @@ LayerTestResult<float,4> Simple4dAxisSoftmaxTest(
                              0.032058600957022f,
                              0.032058600957022f, 0.032058600957022f, 0.032058600957022f, 0.032058600957022f,
                              0.032058600957022f,
@@ -259,7 +257,7 @@ index 1ffb34f..9d82809 100644
                      };
              break;
          }
-@@ -504,8 +504,8 @@ LayerTestResult<float,4> Simple4dAxisSoftmaxTest(
+@@ -512,8 +512,8 @@ LayerTestResult<float,4> Simple4dAxisSoftmaxTest(
                              0.087144312427294f,
                              0.087144312427294f, 0.087144312427294f, 0.032058600957022f, 0.032058600957022f,
                              0.032058600957022f,
@@ -270,7 +268,7 @@ index 1ffb34f..9d82809 100644
  
  
                              0.643914213228014f, 0.643914213228014f, 0.643914213228014f, 0.643914213228014f,
-@@ -514,8 +514,8 @@ LayerTestResult<float,4> Simple4dAxisSoftmaxTest(
+@@ -522,8 +522,8 @@ LayerTestResult<float,4> Simple4dAxisSoftmaxTest(
                              0.087144312427294f,
                              0.087144312427294f, 0.087144312427294f, 0.032058600957022f, 0.032058600957022f,
                              0.032058600957022f,
@@ -281,7 +279,7 @@ index 1ffb34f..9d82809 100644
                      };
              break;
          }
-@@ -536,21 +536,21 @@ LayerTestResult<float,4> Simple4dAxisSoftmaxTest(
+@@ -544,21 +544,21 @@ LayerTestResult<float,4> Simple4dAxisSoftmaxTest(
                  {
                          0.643914213228014f, 0.643914213228014f, 0.236882800924671f, 0.236882800924671f,
                          0.087144312427294f,
@@ -311,7 +309,7 @@ index 1ffb34f..9d82809 100644
                  };
          break;
          }
-@@ -570,22 +570,22 @@ LayerTestResult<float,4> Simple4dAxisSoftmaxTest(
+@@ -578,22 +578,22 @@ LayerTestResult<float,4> Simple4dAxisSoftmaxTest(
              outputData =
                      {
                              0.643914213228014f, 0.236882800924671f, 0.087144312427294f, 0.032058600957022f,
@@ -343,7 +341,7 @@ index 1ffb34f..9d82809 100644
              break;
          }
 diff --git a/src/profiling/IProfilingServiceStatus.hpp b/src/profiling/IProfilingServiceStatus.hpp
-index 45d4aac..a257492 100644
+index 45d4aac08..a25749264 100644
 --- a/src/profiling/IProfilingServiceStatus.hpp
 +++ b/src/profiling/IProfilingServiceStatus.hpp
 @@ -5,7 +5,7 @@
@@ -356,7 +354,7 @@ index 45d4aac..a257492 100644
  
  #include <cstdint>
 diff --git a/src/profiling/PeriodicCounterCapture.hpp b/src/profiling/PeriodicCounterCapture.hpp
-index ac084af..895731a 100644
+index ac084af3d..895731af6 100644
 --- a/src/profiling/PeriodicCounterCapture.hpp
 +++ b/src/profiling/PeriodicCounterCapture.hpp
 @@ -7,7 +7,7 @@
@@ -369,5 +367,5 @@ index ac084af..895731a 100644
  #include "ICounterValues.hpp"
  #include "CounterIdMap.hpp"
 -- 
-2.7.4
+2.25.1
 
