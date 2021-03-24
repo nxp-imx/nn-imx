@@ -227,65 +227,13 @@ class Model {
 
     int get_cache_size() { return cache_size_; }
 
-    bool set_cache_handle(int handle) {
-        if (-1 == handle) return false;
-        bool status = false;
+    bool set_cache_handle(int handle);
 
-#ifdef __linux__
-        if (cache_handle_ != -1) {
-            NNRT_LOGD_PRINT(
-                "Close previous model cache, it's safe because different compilation should have "
-                "some model structure\n");
-            close(cache_handle_);
-            cache_handle_ = -1;
-        }
+    bool allocate_cache_memory(int size);
 
-        auto is_writeable = [handle]() {
-            int test_data = 0x5A5A5A5A;
-            size_t length = write(handle, &test_data, sizeof(test_data));
-            lseek(handle, 0, SEEK_SET);
-            ftruncate(handle, 0);  // reset file content
-
-            return (length == sizeof(test_data));
-        };
-
-        cache_size_ = lseek(handle, 0, SEEK_END);
-        lseek(handle, 0, SEEK_SET);
-
-        if (cache_size_ || is_writeable()) {
-            cache_handle_ = dup(handle);
-            status = (cache_handle_ != -1);
-        } else {
-            NNRT_LOGD_PRINT("Set cache handle failed");
-            cache_handle_ = -1;
-            cache_size_ = 0;
-        }
-#endif
-        return status;
-    }
-
-    bool allocate_cache_memory(int size) {
-#ifdef __linux__
-        auto flag = (-1 == cache_handle_) ? (MAP_SHARED | MAP_ANONYMOUS) : (MAP_SHARED);
-        cache_memory_ = mmap(nullptr, size, PROT_READ, flag, cache_handle_, 0);
-        return (cache_memory_ == nullptr) ? false : true;
-#endif
-        return false;
-    }
     const char* get_cache_memory() { return (const char*)cache_memory_; }
 
-    bool replace_model_with_nbg() {
-        if (cache_handle_ == -1 || cache_size_ == 0) return true;
-        operations_.clear();
-        operation_unique_id_ = 0;
-        const uint32_t* inputs = input_indexes_.data();
-        uint32_t input_size = input_indexes_.size();
-        const uint32_t* outputs = output_indexes_.data();
-        uint32_t output_size = output_indexes_.size();
-        uint32_t* out_index = nullptr;
-        addOperation(OperationType::NBG, inputs, input_size, outputs, output_size, out_index);
-        return allocate_cache_memory(cache_size_);
-    }
+    bool replace_model_with_nbg();
 
    private:
     uint32_t operand_unique_id_{0};
