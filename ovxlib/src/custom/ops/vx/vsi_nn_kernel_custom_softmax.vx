@@ -34,6 +34,7 @@ __kernel void Softmax2VXC
    }
 
     float  fProbSum = 0.0f;
+    vxc_short8 dst;
     for (int i = 0; i < sf_size; i++)
     {
        vxc_char8 val;
@@ -47,7 +48,8 @@ __kernel void Softmax2VXC
        fProbSum += fOut;
        half hVal;
        _viv_asm(CONV,hVal,fOut);
-       VXC_WriteImage2DArray(output, coord_in, hVal, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));
+       _viv_asm(COPY,dst,hVal, 4);
+       VXC_WriteImage2DArray(output, coord_in, dst, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));
     }
 
     for (int i = 0; i < sf_size; i++)
@@ -63,7 +65,8 @@ __kernel void Softmax2VXC
        float fOut =fval/fProbSum;
        half hVal;
        _viv_asm(CONV,hVal,fOut);
-       VXC_WriteImage2DArray(output, coord_in, hVal, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));
+       _viv_asm(COPY,dst,hVal, 4);
+       VXC_WriteImage2DArray(output, coord_in, dst, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));
     }
 
 }
