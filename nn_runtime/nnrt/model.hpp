@@ -182,6 +182,8 @@ class Model {
 
     void removeOperand(uint32_t index);
 
+    void removeOperation(uint32_t index);
+
     int32_t updateOperand(uint32_t index, const op::OperandPtr operand_type);
 
     void echo();

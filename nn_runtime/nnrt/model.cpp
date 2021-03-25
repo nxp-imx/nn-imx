@@ -285,6 +285,10 @@ void Model::removeOperand(uint32_t index) {
     operands_.erase(index);
 }
 
+void Model::removeOperation(uint32_t index) {
+    operations_.erase(index);
+}
+
 bool Model::validate() {
     bool valid = true;
     for (auto it : operands_) {

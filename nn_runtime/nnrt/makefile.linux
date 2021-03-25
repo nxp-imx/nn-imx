@@ -63,6 +63,7 @@ OBJECTS += \
         $(OBJ_DIR)/layout_inference.o \
         $(OBJ_DIR)/align_broadcast_op.o \
         $(OBJ_DIR)/remove_unnecessary_op.o \
+        $(OBJ_DIR)/merge_data_convert_op.o \
         $(OBJ_DIR)/transformations.o \
         $(OBJ_DIR)/optimize_permute.o \
         $(OBJ_DIR)/fp32tofp16.o \
