@@ -54,6 +54,7 @@ cc_library(
         "model_transform/layout_inference.cpp",
         "model_transform/align_broadcast_op.cpp",
         "model_transform/remove_unnecessary_op.cpp",
+        "model_transform/merge_data_convert_op.cpp",
         "model_transform/transformations.cpp",
         "model_transform/optimize_permute.cpp",
         "model_transform/fp32tofp16.cpp",
