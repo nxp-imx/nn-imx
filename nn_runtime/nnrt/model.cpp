@@ -385,12 +385,14 @@ bool Model::replace_model_with_nbg() {
     operations_.clear();
     operation_unique_id_ = 0;
 
-    for (auto i = operands_.begin(); i != operands_.end(); ++i) {
+    for (auto i = operands_.begin(); i != operands_.end();) {
         if (std::find(input_indexes_.begin(), input_indexes_.end(), i->first) ==
                 input_indexes_.end() &&
             std::find(output_indexes_.begin(), output_indexes_.end(), i->first) ==
                 output_indexes_.end()) {
-            operands_.erase(i);
+            i = operands_.erase(i);
+        } else {
+            ++i;
         }
     }
 
