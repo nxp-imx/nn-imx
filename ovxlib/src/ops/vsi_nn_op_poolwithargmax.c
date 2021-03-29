@@ -258,17 +258,6 @@ static vsi_status op_deinit
     vsi_nn_node_t * self
     )
 {
-    uint32_t i;
-
-    for (i = 0; i < _VSI_NN_POOLWITHARGMAX_LOCAL_TENSOR_NUM; i++)
-    {
-        if (self->nn_param.pool.local.local_tensor[i] != NULL)
-        {
-            vxReleaseTensor(&(self->nn_param.pool.local.local_tensor[i]));
-            self->nn_param.pool.local.local_tensor[i] = NULL;
-        }
-    }
-
     vsi_nn_op_common_deinit(self);
 
     return VSI_SUCCESS;
