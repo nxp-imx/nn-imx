@@ -137,35 +137,41 @@ int Reshape(op::Operand* src, op::Operand* dst, std::vector<int>& shape)
     return NNA_ERROR_CODE(NO_ERROR);
 }
 
+int type_bytes_table[] = {
+    0,  // NONE = 0,
+    1,  // BOOL = 1,
+    1,  // INT8 = 2,
+    2,  // INT16 = 3,
+    4,  // INT32 = 4,
+    1,  // UINT8 = 5,
+    2,  // UINT16 = 6,
+    4,  // UINT32 = 7,
+    2,  // FLOAT16 = 8,
+    4,  // FLOAT32 = 9,
+    8,  // FLOAT64 = 10,
+    1,  // TENSOR_BOOL8 = 11,
+    2,  // TENSOR_INT16 = 12,
+    2,  // TENSOR_FLOAT16 = 13,
+    4,  // TENSOR_FLOAT32 = 14,
+    4,  // TENSOR_INT32 = 15,
+    1,  // TENSOR_QUANT8_ASYMM = 16,
+    1,  // TENSOR_QUANT8_ASYMM_SIGNED = 17,
+    1,  // TENSOR_QUANT8_SYMM = 18,
+    2,  // TENSOR_QUANT16_ASYMM = 19,
+    2,  // TENSOR_QUANT16_SYMM = 20,
+    4,  // TENSOR_QUANT32_SYMM = 21,
+    1,  // TENSOR_QUANT8_SYMM_PER_CHANNEL = 22,
+};
+
+const uint16_t count_of_type_bytes_table = sizeof(type_bytes_table) / sizeof(int);
+
+static_assert(count_of_type_bytes_table == (uint16_t)OperandType::COUNT,
+    "some types lack of bytes information.");
+
 int GetTypeBytes(OperandType type)
 {
-    int bytes = 0;
-    switch (type) {
-        case OperandType::TENSOR_FLOAT32:
-        case OperandType::TENSOR_INT32:
-        case OperandType::TENSOR_QUANT32_SYMM:
-        case OperandType::INT32:
-        case OperandType::UINT32:
-            bytes = 4;
-            break;
-        case OperandType::TENSOR_FLOAT16:
-        case OperandType::TENSOR_INT16:
-        case OperandType::FLOAT16:
-        case OperandType::INT16:
-        case OperandType::UINT16:
-            bytes = 2;
-            break;
-        case OperandType::TENSOR_QUANT8_ASYMM:
-        case OperandType::TENSOR_QUANT8_SYMM:
-        case OperandType::TENSOR_QUANT8_SYMM_PER_CHANNEL:
-        case OperandType::INT8:
-        case OperandType::UINT8:
-            bytes = 1;
-            break;
-        default:
-            break;
-    }
-    return bytes;
+    assert((uint8_t)type < count_of_type_bytes_table);
+    return type_bytes_table[(uint8_t)type];
 }
 
 uint16_t Fp32toFp16(float in) {
