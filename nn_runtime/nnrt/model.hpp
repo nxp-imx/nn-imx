@@ -28,6 +28,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <set>
 
 #ifdef __linux__
 #include <sys/mman.h>
@@ -44,6 +45,7 @@ class Operation;
 using OperationPtr = std::shared_ptr<Operation>;
 class Operand;
 using OperandPtr = std::shared_ptr<Operand>;
+using IndexByOperand = std::map<uint32_t /*operand id*/, std::vector<uint32_t> /*operation ids*/>;
 }  // namespace op
 
 class Model {
@@ -186,6 +188,8 @@ class Model {
 
     int32_t updateOperand(uint32_t index, const op::OperandPtr operand_type);
 
+    std::set<uint32_t> & getOperandToRemove() { return operands_to_remove_; };
+
     void echo();
 
     std::string signature() {
@@ -237,6 +241,9 @@ class Model {
 
     bool replace_model_with_nbg();
 
+    void get_index_by_operand(op::IndexByOperand& index_for_op_input,
+                              op::IndexByOperand& index_for_op_output);
+
    private:
     uint32_t operand_unique_id_{0};
     uint32_t operation_unique_id_{0};
@@ -257,6 +264,8 @@ class Model {
 
     mem_pool::Manager memory_pool_;
     std::list<mem_pool::shared_ref> mem_refs_;
+
+    std::set<uint32_t> operands_to_remove_;
 };
 
 using ModelPtr = std::shared_ptr<Model>;

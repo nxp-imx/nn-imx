@@ -82,13 +82,15 @@ namespace nnrt
         OperandPtr operand = inputs[small_input_idx];
 
         if (operand->isConst()) {
-            int32_t kernelIndex;
-            auto kernelOperand = model->cloneOperand(operand, &kernelIndex);
+            int32_t newIndex;
+            auto newOperand = model->cloneOperand(operand, &newIndex);
             model->setOperandValue(
-                kernelIndex, operand->weak_mem_ref.lock()->address_, operand->bytes());
-            operation->replaceInputs(operation->inputs()[small_input_idx], kernelIndex);
-            operand->setNeedRemove(true);
-            operand = kernelOperand;
+                newIndex, operand->weak_mem_ref.lock()->address_, operand->bytes());
+            auto oldIndex = operation->inputs()[small_input_idx];
+            model->getOperandToRemove().emplace(oldIndex);
+            operation->replaceInputs(oldIndex, newIndex);
+            //operand->setNeedRemove(true);
+            operand = newOperand;
             for (int32_t i = 0; i < dim; ++i) {
                 operand->dimensions.insert(operand->dimensions.begin(), 1);
             }

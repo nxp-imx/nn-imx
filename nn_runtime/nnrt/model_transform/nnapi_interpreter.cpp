@@ -238,7 +238,11 @@ int NnApiInterpreter::run(Model* model, bool* modified) {
 
     NNRT_LOGD_PRINT("Convert operation completed.");
     // Unique vector
-    for (uint32_t index : operands_to_remove_) {
+    op::IndexByOperand index_by_operand_for_op_input;
+    op::IndexByOperand index_by_operand_for_op_output;
+    model->get_index_by_operand(index_by_operand_for_op_input,
+                                index_by_operand_for_op_output);
+    for (uint32_t index : model->getOperandToRemove()) {
         // NNRT_LOGD_PRINT("Remove %d", index);
         if (model->isInput(index) || model->isOutput(index)) {
             NNRT_LOGW_PRINT(
@@ -246,7 +250,19 @@ int NnApiInterpreter::run(Model* model, bool* modified) {
 some operations may not support dynamic configure.",
                 index);
         } else {
-            model->removeOperand(index);
+            bool flag = true;
+            auto it = index_by_operand_for_op_input.find(index);
+            if (it != index_by_operand_for_op_input.end()) {
+                flag = false;
+            }
+            it = index_by_operand_for_op_output.find(index);
+            if (it != index_by_operand_for_op_output.end()) {
+                flag = false;
+            }
+
+            if (flag) {
+                model->removeOperand(index);
+            }
         }
     }
 
@@ -373,7 +389,10 @@ void NnApiInterpreter::fillIntArray(Model* model,
 }
 
 // remove scalar operand in [offset, offset+cnt)
-void NnApiInterpreter::removeScalarOperand(OperationPtr& op, size_t ofst, size_t cnt) {
+void NnApiInterpreter::removeScalarOperand(Model* model,
+                                           OperationPtr& op,
+                                           size_t ofst,
+                                           size_t cnt) {
     auto start = computeAxis(ofst, op->inputs().size() + 1);  // Map negative to positive
     auto& inputs = op->inputs();
     auto begin = inputs.begin();
@@ -381,7 +400,7 @@ void NnApiInterpreter::removeScalarOperand(OperationPtr& op, size_t ofst, size_t
     std::advance(begin, start);
     std::advance(end, start + cnt);
     for (auto i = begin; i != inputs.end() && i != end; ++i) {
-        operands_to_remove_.emplace(*i);
+        model->getOperandToRemove().emplace(*i);
     }
     inputs.erase(begin, end);
 }
@@ -394,10 +413,10 @@ void NnApiInterpreter::truncateOperationIOs(Model* model,
     input_num = computeAxis(input_num, operation->inputs().size() + 1);
     output_num = computeAxis(output_num, operation->outputs().size() + 1);
     for (int i = input_num; i < (int)operation->inputs().size(); ++i) {
-        operands_to_remove_.emplace(operation->input(i));
+        model->getOperandToRemove().emplace(operation->input(i));
     }
     for (int i = output_num; i < (int)operation->outputs().size(); ++i) {
-        operands_to_remove_.emplace(operation->output(i));
+        model->getOperandToRemove().emplace(operation->output(i));
     }
     operation->inputs().resize(input_num);
     operation->outputs().resize(output_num);
@@ -1547,7 +1566,7 @@ OperationPtr NnApiInterpreter::map_LSTM(Model* model,
             // new_op->projClip = inputs[argList->ArgPos("proj_clip")]->scalar.float16;
             new_op.reset();
         }
-        removeScalarOperand(operation, argList->ArgPos("activation"), 3);
+        removeScalarOperand(model, operation, argList->ArgPos("activation"), 3);
     }
 
     if (argList->ArgPos("weight_norm_input") != -1) {
@@ -1611,7 +1630,7 @@ OperationPtr NnApiInterpreter::map_UNIDIRECTIONAL_SEQUENCE_LSTM(Model* model,
                 assert(false);
             }
         }
-        removeScalarOperand(operation, argList->ArgPos("activation"), 4);
+        removeScalarOperand(model, operation, argList->ArgPos("activation"), 4);
     } else {
         NNRT_LOGE_PRINT("UnidirectionalSequenceLstm argument list not support");
         assert(false);
@@ -1670,7 +1689,7 @@ OperationPtr NnApiInterpreter::map_BIDIRECTIONAL_SEQUENCE_LSTM(Model* model,
                 }
             }
         }
-        removeScalarOperand(operation, argList->ArgPos("activation"), 5);
+        removeScalarOperand(model, operation, argList->ArgPos("activation"), 5);
     } else {
         NNRT_LOGE_PRINT("BidirectionalSequenceLstm argument list not support");
         assert(false);
