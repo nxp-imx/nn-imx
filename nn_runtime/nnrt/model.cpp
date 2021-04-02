@@ -180,6 +180,38 @@ int Model::getOperandIndex(op::OperandPtr operand) {
     return -1;
 }
 
+void Model::get_index_by_operand(op::IndexByOperand& index_for_op_input,
+                                 op::IndexByOperand& index_for_op_output) {
+    auto operations = this->operations();
+    for (auto it = operations.begin(); it != operations.end(); ++it) {
+        op::OperationPtr operation = it->second;
+        for (auto index : operation->inputs()) {
+            auto it1 = index_for_op_input.find(index);
+            if (it1 != index_for_op_input.end()) {
+                it1->second.push_back(it->first);
+            } else {
+                std::vector<uint32_t> operation_ids;
+                operation_ids.push_back(it->first);
+                index_for_op_input.insert(
+                    std::make_pair<uint32_t, std::vector<uint32_t>>(std::move(index),
+                                                                    std::move(operation_ids)));
+            }
+        }
+        for (auto index : operation->outputs()) {
+            auto it1 = index_for_op_output.find(index);
+            if (it1 != index_for_op_output.end()) {
+                it1->second.push_back(it->first);
+            } else {
+                std::vector<uint32_t> operation_ids;
+                operation_ids.push_back(it->first);
+                index_for_op_output.insert(
+                    std::make_pair<uint32_t, std::vector<uint32_t>>(std::move(index),
+                                                                    std::move(operation_ids)));
+            }
+        }
+    }
+}
+
 #if 0
 template<typename T>
 T* Model::getBuffer(DataLocation& location)

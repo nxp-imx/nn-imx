@@ -52,7 +52,7 @@ bool is_remove_all_data_convert_op(Model* model, uint32_t oprand_in, uint32_t op
 int MergeDataConvertOp::run(Model* model, bool* modified) {
     (void)modified;
     auto operations = model->operations();
-
+#if 0
     std::map<uint32_t /*operand id*/, std::vector<uint32_t> /*operation ids*/>
         index_by_operand_for_op_input;
     std::map<uint32_t /*operand id*/, std::vector<uint32_t> /*operation ids*/>
@@ -89,6 +89,11 @@ int MergeDataConvertOp::run(Model* model, bool* modified) {
             }
         }
     }
+#endif
+    op::IndexByOperand index_by_operand_for_op_input;
+    op::IndexByOperand index_by_operand_for_op_output;
+    model->get_index_by_operand(index_by_operand_for_op_input,
+                                index_by_operand_for_op_output);
 
     std::vector<uint32_t> data_convert_op_list;
     for (auto it = operations.begin(); it != operations.end(); ++it) {
