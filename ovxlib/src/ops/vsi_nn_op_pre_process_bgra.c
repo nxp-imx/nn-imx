@@ -88,6 +88,7 @@ static vsi_bool op_check
 {
     BEGIN_IO_TYPE_DECL(PRE_PROCESS_BGRA, 1, 1)
         IO_TYPE(D_U8|Q_ASYM,  D_U8|Q_ASYM)
+        IO_TYPE(D_U8,  D_U8|Q_ASYM)
     END_IO_TYPE_DECL(PRE_PROCESS_BGRA)
     if(!VALIDATE_OP_IO_TYPES(PRE_PROCESS_BGRA, self, inputs, self->input.num, outputs, self->output.num)) {
         char* desc = generate_op_io_types_desc(inputs,
