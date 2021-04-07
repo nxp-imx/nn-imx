@@ -25,20 +25,25 @@
 #ifndef _LOG_VALIDATE_HPP_
 #define _LOG_VALIDATE_HPP_
 
-#include "OperationValidate.hpp"
+#include "ElementWiseUnaryValidate.hpp"
 
 namespace android {
 namespace nn {
 namespace op_validate {
-template <typename T_model, typename T_Operation>
-class LogValidate : public OperationValidate<T_model, T_Operation> {
-   public:
-    LogValidate(const T_model& model, const T_Operation& operation)
-        : OperationValidate<T_model, T_Operation>(model, operation) {}
-    bool SignatureCheck(std::string& reason) override {
-        return ::hal::limitation::nnapi::match("LogInput", this->InputArgTypes()) &&
-               ::hal::limitation::nnapi::match("LogOutput", this->OutputArgTypes());
-    };
+
+template <typename T_Model, typename T_Operation>
+class LogValidate : public ElementWiseUnary<T_Model, T_Operation> {
+
+    using ElementWiseUnary<T_Model, T_Operation>::ElementWiseUnary;
+    std::string GetInputSig() override {
+        return std::string("LogInput");
+    }
+    std::string GetOutputSig() override {
+        return std::string("LogOutput");
+    }
+    std::string GetOpName() override {
+        return std::string("Log");
+    }
 };
 
 }  // end of op_validate
