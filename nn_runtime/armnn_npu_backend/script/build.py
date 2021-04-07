@@ -44,6 +44,10 @@ class Env():
         self.armnn_dir = root_dir + "/armnn-devenv/armnn"
         self.armnn_out_dir = self.out_dir + "/armnn"
         self.package_dir = self.out_dir + "/package"
+        if (args.parallel > multiprocessing.cpu_count()):
+            self.parallel = multiprocessing.cpu_count()
+        else:
+            self.parallel = args.parallel
 
 logging.basicConfig(format="%(asctime)s %(name)s [%(levelname)s] - %(message)s", level=logging.DEBUG)
 log = logging.getLogger("Build")
@@ -95,7 +99,7 @@ def build_boost(env):
         args.append("cxxflags="+ board["root"] + i)
     args.extend(["--with-filesystem", "--with-test", "--with-log", "--with-program_options",
         "--user-config=" + env.boost_out_dir + "/user-config.jam",
-        "-j{0}".format(multiprocessing.cpu_count())])
+        "-j{0}".format(env.parallel)])
 
     run_subprocess(args, cwd=env.boost_dir,
         env={"PATH": board["root"] + board["host"] + ":" + os.getenv("PATH", default="")})
@@ -110,7 +114,7 @@ def build_flatbuffers_host(env):
         env.flatbuffers_dir]
     run_subprocess(args, cwd=env.flatbuffers_host_dir)
 
-    args = ["make", "all", "install", "-j{0}".format(multiprocessing.cpu_count())]
+    args = ["make", "all", "install", "-j{0}".format(env.parallel)]
     run_subprocess(args, cwd=env.flatbuffers_host_dir)
 
 def build_flatbuffers_target(env):
@@ -126,7 +130,7 @@ def build_flatbuffers_target(env):
         env.flatbuffers_dir]
     run_subprocess(args, cwd=env.flatbuffers_target_dir, shell=True)
 
-    args = ["make", "all", "install", "-j{0}".format(multiprocessing.cpu_count())]
+    args = ["make", "all", "install", "-j{0}".format(env.parallel)]
     run_subprocess(args, cwd=env.flatbuffers_target_dir)
 
 def build_tflite_schema(env):
@@ -150,7 +154,7 @@ def build_protobuf_host(env):
     args = [env.protobuf_dir + "/configure", "--prefix=" + env.protobuf_host_dir + "/x86_pb_install"]
     run_subprocess(args, cwd=env.protobuf_host_dir)
 
-    args = ["make", "install", "-j{0}".format(multiprocessing.cpu_count())]
+    args = ["make", "install", "-j{0}".format(env.parallel)]
     run_subprocess(args, cwd=env.protobuf_host_dir)
 
 def build_protobuf_target(env):
@@ -179,7 +183,7 @@ def build_protobuf_target(env):
         "--with-protoc=" + env.protobuf_host_dir + "/x86_pb_install/bin/protoc"]
     run_subprocess(args, cwd=env.protobuf_target_dir, env=my_env)
 
-    args = ["make", "install", "-j{0}".format(multiprocessing.cpu_count())]
+    args = ["make", "install", "-j{0}".format(env.parallel)]
     run_subprocess(args, cwd=env.protobuf_target_dir, env=my_env)
 
 def build_tf_pb(env):
@@ -234,7 +238,7 @@ def build_caffe_pb(env):
         "LD_LIBRARY_PATH": env.protobuf_host_dir + "/x86_pb_install/lib/:" +
             os.getenv("LD_LIBRARY_PATH", default=""),
     }
-    args = ["make", "all", "-j{0}".format(multiprocessing.cpu_count())]
+    args = ["make", "all", "-j{0}".format(env.parallel)]
     run_subprocess(args, cwd=env.caffe_dir, env=my_env)
 
 def build_armnn(env):
@@ -271,7 +275,7 @@ def build_armnn(env):
         "-DCMAKE_TOOLCHAIN_FILE=" + env.toolchain_dir + "/" + board['cmake']]
     run_subprocess(args, cwd=env.armnn_out_dir, env=my_env)
 
-    args = ["make", "-j{0}".format(multiprocessing.cpu_count())]
+    args = ["make", "-j{0}".format(env.parallel)]
     run_subprocess(args, cwd=env.armnn_out_dir)
 
 def build_package(env):
@@ -318,6 +322,7 @@ def parse_arguments(board_list):
     parser.add_argument("--build_armnn", action='store_true', help="Build ArmNN library.")
     parser.add_argument("--build_package", action='store_true', help="Package all binary files.")
     parser.add_argument("--cmake_path", type=str, help="Cmake tool path.")
+    parser.add_argument("--parallel", type=int, default=1, help="Number of parallel build threads.")
     return parser.parse_args()
 
 def main():
