@@ -172,6 +172,7 @@ class OperationValidate {
             }
             for (auto dim : dims) {
                 if (dim == 0) {
+                    reason += "reject op because dim = 0(dynamic_shape)\n";
                     return false;
                 }
             }
