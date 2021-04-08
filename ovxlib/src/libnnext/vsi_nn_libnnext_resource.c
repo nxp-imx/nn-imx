@@ -4811,6 +4811,1350 @@ GATHER_ND_F16_TO_QINT_1D(I16, vxc_short8)\n\
 \n\
 "; /* end of gather_nd_mix_vx*/
 
+static const char group_normalization_f16_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+_viv_uniform int width;\n\
+_viv_uniform int height;\n\
+_viv_uniform VXC_512Bits UniFP16toFP32Lo4_dp4x4;\n\
+_viv_uniform VXC_512Bits uniConvertHalfToFp16_2x8;\n\
+_viv_uniform VXC_512Bits uniConvertInt32toUint8_2x8;\n\
+\n\
+_viv_uniform VXC_512Bits uniFp16SumSqr_dp8x2;\n\
+_viv_uniform VXC_512Bits uniConvertEndInt16Fp32_4x4;\n\
+\n\
+_viv_uniform float outputScale;\n\
+_viv_uniform int output_ZP;\n\
+\n\
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_sumsqr_F16(\n\
+    image2d_array_t input, image2d_array_t output, float eps, int is2D)\n\
+{\n\
+    int gidx = get_global_id(0) << 3;\n\
+    int lidx = get_local_id(0);\n\
+    int gidz = get_global_id(1);\n\
+    int4 coord = (int4)(gidx, 0, gidz, 0);\n\
+    vxc_short8 src0;\n\
+    vxc_half8 in_h;\n\
+    vxc_float4 sumsqr;\n\
+    vxc_float4 tmpSumSqr = (vxc_float4)(0);\n\
+\n\
+    __local float lcl_sum[16];\n\
+    __local float lcl_sqr[16];\n\
+\n\
+    int8 input_desc;\n\
+    _viv_asm(COPY, input_desc, input, sizeof(input_desc));\n\
+    int baseAddr_a = (int)get_global_id(1) * input_desc.s4 + input_desc.s0;\n\
+    _viv_asm(MOV, coord.z, baseAddr_a);\n\
+\n\
+    if(gidx < width)\n\
+    {\n\
+        for(coord.y = 0; coord.y < height;)\n\
+        {\n\
+            VXC_OP4(img_load_3d, src0, input, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                    VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+            coord.y++;\n\
+            _viv_asm(COPY, in_h, src0, 16);\n\
+            VXC_DP8x2(sumsqr, in_h, in_h, VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0),\\\n\
+                uniFp16SumSqr_dp8x2);\n\
+            tmpSumSqr += sumsqr;\n\
+        }\n\
+    }\n\
+\n\
+    lcl_sum[lidx] = tmpSumSqr.x;\n\
+    lcl_sqr[lidx] = tmpSumSqr.y;\n\
+    barrier(CLK_LOCAL_MEM_FENCE);\n\
+\n\
+    int4 coord_out = (int4)(get_group_id(0) << 2, gidz, 0, 0);\n\
+    if(lidx == 0)\n\
+    {\n\
+        float4 one = (float4)(1, 1, 1, 1);\n\
+        __local float4* tmp_sum = (__local float4*)lcl_sum;\n\
+        __local float4* tmp_sqr = (__local float4*)lcl_sqr;\n\
+\n\
+        float sum = 0;\n\
+        float sqr = 0;\n\
+        for(int i = 0; i < 4; i++)\n\
+        {\n\
+            //sum += lcl_sum[i];\n\
+            //sqr += lcl_sqr[i];\n\
+            sum += dot(tmp_sum[i], one);\n\
+            sqr += dot(tmp_sqr[i], one);\n\
+        }\n\
+\n\
+        float4 data = (float4)(sum, sqr, 0, 0);\n\
+        write_imagef(output, coord_out, data);\n\
+    }\n\
+}\n\
+\n\
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_sumsqr_F16_2D(\n\
+    image2d_array_t input, image2d_array_t output, float eps, int is2D)\n\
+{\n\
+    int gidx = get_global_id(0) << 3;\n\
+    int lidx = get_local_id(0);\n\
+\n\
+    int2 coord = (int2)(gidx, get_global_id(1));\n\
+    vxc_short8 src0;\n\
+    vxc_half8 in_h;\n\
+    vxc_float4 sumsqr = (vxc_float4)(0);\n\
+\n\
+    __local float lcl_sum[16];\n\
+    __local float lcl_sqr[16];\n\
+\n\
+    if(gidx < width)\n\
+    {\n\
+        VXC_ReadImage(src0, input, coord, VXC_5BITOFFSET_XY(0, 0),\n\
+                VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+        _viv_asm(COPY, in_h, src0, 16);\n\
+        VXC_DP8x2(sumsqr, in_h, in_h, VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0),\\\n\
+                uniFp16SumSqr_dp8x2);\n\
+    }\n\
+\n\
+    lcl_sum[lidx] = sumsqr.x;\n\
+    lcl_sqr[lidx] = sumsqr.y;\n\
+    barrier(CLK_LOCAL_MEM_FENCE);\n\
+\n\
+    int4 coord_out = (int4)(get_group_id(0) << 2, get_global_id(1), 0, 0);\n\
+    if(lidx == 0)\n\
+    {\n\
+        float4 one = (float4)(1, 1, 1, 1);\n\
+        __local float4* tmp_sum = (__local float4*)lcl_sum;\n\
+        __local float4* tmp_sqr = (__local float4*)lcl_sqr;\n\
+\n\
+        float sum = 0;\n\
+        float sqr = 0;\n\
+        for(int i = 0; i < 4; i++)\n\
+        {\n\
+            //sum += lcl_sum[i];\n\
+            //sqr += lcl_sqr[i];\n\
+            sum += dot(tmp_sum[i], one);\n\
+            sqr += dot(tmp_sqr[i], one);\n\
+        }\n\
+\n\
+        float4 data = (float4)(sum, sqr, 0, 0);\n\
+        write_imagef(output, coord_out, data);\n\
+    }\n\
+}\n\
+\n\
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_F16toF16(\n\
+    image2d_array_t input, image2d_t bias, image2d_t scale, image2d_t meanVari, image2d_array_t output,\n\
+    float eps, int is2D, float rSpaceOrg, int pStride)\n\
+{\n\
+    int gidy = get_global_id(1);\n\
+    int gidz = get_global_id(2);\n\
+    int4 coord = (int4)(get_global_id(0), gidy, gidz, 0);\n\
+    int4 coord_para = (int4)((convert_int(get_global_id(0) * rSpaceOrg) + gidy * pStride), gidz, 0, 0);\n\
+    vxc_short8 src0;\n\
+    vxc_short8 src1;\n\
+    vxc_half8 scale_h, in_h;\n\
+    float scale_vari, bias_val;\n\
+    vxc_float4 bias_f, scale_f;\n\
+\n\
+    vxc_float4 mean_vari = read_imagef(meanVari, coord_para.zy);\n\
+    VXC_ReadImage(src1, scale, coord_para.xy, VXC_5BITOFFSET_XY(0, 0),\\\n\
+            VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    bias_f = read_imagef(bias, coord_para.xy);\n\
+    VXC_ReadImage2DArray(src0, input, coord, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    _viv_asm(COPY, scale_h, src1, 16);\n\
+    VXC_DP4x4(scale_f, scale_h, scale_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), UniFP16toFP32Lo4_dp4x4);\n\
+\n\
+    scale_vari = scale_f.s0 * mean_vari.s1;\n\
+    vxc_float4  tmpData0, tmpData1;\n\
+    vxc_short8 outval;\n\
+    half4 tmpVal0, tmpVal1;\n\
+    bias_val = (bias_f.s0 - scale_vari * mean_vari.s0);\n\
+    vxc_half8 dst;\n\
+\n\
+    _viv_asm(COPY, in_h, src0, 16);\n\
+    VXC_DP4x4(tmpData0, in_h, in_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
+            UniFP16toFP32Lo4_dp4x4);\n\
+    VXC_DP4x4(tmpData1, in_h, in_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
+            uniConvertEndInt16Fp32_4x4);\n\
+\n\
+    vxc_float4 norm;\n\
+    norm = scale_vari * tmpData0 + bias_val;\n\
+    _viv_asm(CONV, tmpVal0, norm);\n\
+    norm = scale_vari * tmpData1 + bias_val;\n\
+    _viv_asm(CONV, tmpVal1, norm);\n\
+    VXC_DP2x8(dst, tmpVal0, tmpVal1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),\\\n\
+            uniConvertHalfToFp16_2x8);\n\
+    _viv_asm(COPY, outval, dst, 16);\n\
+    VXC_WriteImage2DArray(output, coord, outval, VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_F16toF16_2D(\n\
+    image2d_array_t input, image2d_t bias, image2d_t scale, image2d_t meanVari, image2d_array_t output,\n\
+    float eps, int is2D, float rSpaceOrg, int pStride)\n\
+{\n\
+    int gidz = get_global_id(1);\n\
+    int2 coord = (int2)(get_global_id(0), gidz);\n\
+    int4 coord_para = (int4)(convert_int(get_global_id(0) * rSpaceOrg), gidz, 0, 0);\n\
+    vxc_short8 src0;\n\
+    vxc_short8 src1;\n\
+    vxc_half8 scale_h, in_h;\n\
+    float scale_vari, bias_val;\n\
+    vxc_float4 bias_f, scale_f;\n\
+\n\
+    vxc_float4 mean_vari = read_imagef(meanVari, coord_para.zy);\n\
+    VXC_ReadImage(src1, scale, coord_para.xy, VXC_5BITOFFSET_XY(0, 0),\\\n\
+            VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    bias_f = read_imagef(bias, coord_para.xy);\n\
+    VXC_ReadImage(src0, input, coord.xy, VXC_5BITOFFSET_XY(0, 0),\\\n\
+            VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    _viv_asm(COPY, scale_h, src1, 16);\n\
+    VXC_DP4x4(scale_f, scale_h, scale_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), UniFP16toFP32Lo4_dp4x4);\n\
+\n\
+    scale_vari = scale_f.s0 * mean_vari.s1;\n\
+    vxc_float4  tmpData0, tmpData1;\n\
+    vxc_short8 outval;\n\
+    half4 tmpVal0, tmpVal1;\n\
+    bias_val = (bias_f.s0 - scale_vari * mean_vari.s0);\n\
+    vxc_half8 dst;\n\
+\n\
+    _viv_asm(COPY, in_h, src0, 16);\n\
+    VXC_DP4x4(tmpData0, in_h, in_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
+        UniFP16toFP32Lo4_dp4x4);\n\
+    VXC_DP4x4(tmpData1, in_h, in_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
+        uniConvertEndInt16Fp32_4x4);\n\
+    vxc_float4 norm;\n\
+    norm = scale_vari * tmpData0 + bias_val;\n\
+    _viv_asm(CONV, tmpVal0, norm);\n\
+    norm = scale_vari * tmpData1 + bias_val;\n\
+    _viv_asm(CONV, tmpVal1, norm);\n\
+    VXC_DP2x8(dst, tmpVal0, tmpVal1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),\\\n\
+        uniConvertHalfToFp16_2x8);\n\
+    _viv_asm(COPY, outval, dst, 16);\n\
+    VXC_WriteImage(output, coord.xy, outval, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_F16toU8(\n\
+    image2d_array_t input, image2d_t bias, image2d_t scale, image2d_t meanVari, image2d_array_t output,\n\
+    float eps, int is2D, float rSpaceOrg, int pStride)\n\
+{\n\
+    int gidy = get_global_id(1);\n\
+    int gidz = get_global_id(2);\n\
+    int4 coord = (int4)(get_global_id(0), gidy, gidz, 0);\n\
+    int4 coord_para = (int4)((convert_int(get_global_id(0) * rSpaceOrg) + gidy * pStride), gidz, 0, 0);\n\
+    vxc_short8 src0;\n\
+    vxc_short8 src1;\n\
+    vxc_half8 scale_h, in_h;\n\
+    float scale_vari, bias_val;\n\
+    vxc_float4 bias_f, scale_f;\n\
+\n\
+    vxc_float4 mean_vari = read_imagef(meanVari, coord_para.zy);\n\
+    VXC_ReadImage(src1, scale, coord_para.xy, VXC_5BITOFFSET_XY(0, 0),\\\n\
+            VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    bias_f = read_imagef(bias, coord_para.xy);\n\
+    VXC_ReadImage2DArray(src0, input, coord, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    _viv_asm(COPY, scale_h, src1, 16);\n\
+    VXC_DP4x4(scale_f, scale_h, scale_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), UniFP16toFP32Lo4_dp4x4);\n\
+\n\
+    scale_vari = scale_f.s0 * mean_vari.s1;\n\
+    vxc_float4  tmpData0, tmpData1;\n\
+    vxc_uchar16 outval;\n\
+    vxc_int4 tmpVal0, tmpVal1;\n\
+    float alpha = outputScale * scale_vari;\n\
+    bias_val = (bias_f.s0 - scale_vari * mean_vari.s0) * outputScale + output_ZP;\n\
+\n\
+    _viv_asm(COPY, in_h, src0, 16);\n\
+    VXC_DP4x4(tmpData0, in_h, in_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
+            UniFP16toFP32Lo4_dp4x4);\n\
+    VXC_DP4x4(tmpData1, in_h, in_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
+            uniConvertEndInt16Fp32_4x4);\n\
+\n\
+    vxc_float4 norm;\n\
+    norm = alpha * tmpData0 + bias_val;\n\
+    tmpVal0 = convert_int4_rte(norm);\n\
+    norm = alpha * tmpData1 + bias_val;\n\
+    tmpVal1 = convert_int4_rte(norm);\n\
+    VXC_DP2x8(outval, tmpVal0, tmpVal1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1),\\\n\
+            uniConvertInt32toUint8_2x8);\n\
+    VXC_WriteImage2DArray(output, coord, outval, VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_F16toU8_2D(\n\
+    image2d_array_t input, image2d_t bias, image2d_t scale, image2d_t meanVari, image2d_array_t output,\n\
+    float eps, int is2D, float rSpaceOrg, int pStride)\n\
+{\n\
+    int gidz = get_global_id(1);\n\
+    int2 coord = (int2)(get_global_id(0), gidz);\n\
+    int4 coord_para = (int4)(convert_int(get_global_id(0) * rSpaceOrg), gidz, 0, 0);\n\
+    vxc_short8 src0;\n\
+    vxc_short8 src1;\n\
+    vxc_half8 scale_h, in_h;\n\
+    float scale_vari, bias_val;\n\
+    vxc_float4 bias_f, scale_f;\n\
+\n\
+    vxc_float4 mean_vari = read_imagef(meanVari, coord_para.zy);\n\
+    VXC_ReadImage(src1, scale, coord_para.xy, VXC_5BITOFFSET_XY(0, 0),\\\n\
+            VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    bias_f = read_imagef(bias, coord_para.xy);\n\
+    VXC_ReadImage(src0, input, coord.xy, VXC_5BITOFFSET_XY(0, 0),\\\n\
+            VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    _viv_asm(COPY, scale_h, src1, 16);\n\
+    VXC_DP4x4(scale_f, scale_h, scale_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), UniFP16toFP32Lo4_dp4x4);\n\
+\n\
+    scale_vari = scale_f.s0 * mean_vari.s1;\n\
+    vxc_float4  tmpData0, tmpData1;\n\
+    vxc_uchar16 outval;\n\
+    vxc_int4 tmpVal0, tmpVal1;\n\
+    float alpha = outputScale * scale_vari;\n\
+    bias_val = (bias_f.s0 - scale_vari * mean_vari.s0) * outputScale + output_ZP;\n\
+\n\
+    _viv_asm(COPY, in_h, src0, 16);\n\
+    VXC_DP4x4(tmpData0, in_h, in_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
+            UniFP16toFP32Lo4_dp4x4);\n\
+    VXC_DP4x4(tmpData1, in_h, in_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
+            uniConvertEndInt16Fp32_4x4);\n\
+    vxc_float4 norm;\n\
+    norm = alpha * tmpData0 + bias_val;\n\
+    tmpVal0 = convert_int4_rte(norm);\n\
+    norm = alpha * tmpData1 + bias_val;\n\
+    tmpVal1 = convert_int4_rte(norm);\n\
+    VXC_DP2x8(outval, tmpVal0, tmpVal1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1),\\\n\
+            uniConvertInt32toUint8_2x8);\n\
+    VXC_WriteImage(output, coord.xy, outval, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+}"; /* end of group_normalization_f16_vx*/
+
+static const char group_normalization_i16_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+_viv_uniform int width;\n\
+_viv_uniform int height;\n\
+_viv_uniform VXC_512Bits UniFP16toFP32Lo4_dp4x4;\n\
+_viv_uniform VXC_512Bits uniConvertHalfToFp16_2x8;\n\
+\n\
+_viv_uniform float inFlScale_s2;\n\
+_viv_uniform float input_fl_scale;\n\
+_viv_uniform float inOut_fl_scale;\n\
+_viv_uniform float output_fl_scale;\n\
+\n\
+_viv_uniform VXC_512Bits uniInt16SumSqr_dp8x2;\n\
+_viv_uniform VXC_512Bits uniConvertInt16Fp32Fst_4x4;\n\
+_viv_uniform VXC_512Bits uniConvertInt16Fp32Secd_4x4;\n\
+_viv_uniform VXC_512Bits uniConvertInt32toInt16_2x8;\n\
+\n\
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_sumsqr_I16(\n\
+    image2d_array_t input,\n\
+    image2d_array_t output,\n\
+              float eps,\n\
+              int is2D)\n\
+{\n\
+    int gidx = get_global_id(0) << 3;\n\
+    int lidx = get_local_id(0);\n\
+    int gidz = get_global_id(1);\n\
+    int4 coord = (int4)(gidx, 0, gidz, 0);\n\
+    vxc_short8 src0;\n\
+    float sum = 0, sqr = 0;\n\
+    vxc_float4 sumsqr = (vxc_float4)(0);\n\
+    vxc_float4 tmpSumSqr = (vxc_float4)(0);\n\
+\n\
+    __local float lcl_sum[16];\n\
+    __local float lcl_sqr[16];\n\
+\n\
+    int8 input_desc;\n\
+    _viv_asm(COPY, input_desc, input, sizeof(input_desc));\n\
+    int baseAddr_a = (int)get_global_id(1) * input_desc.s4 + input_desc.s0;\n\
+    _viv_asm(MOV, coord.z, baseAddr_a);\n\
+    if(gidx < width)\n\
+    {\n\
+        for(coord.y = 0; coord.y < height;)\n\
+        {\n\
+            VXC_OP4(img_load_3d, src0, input, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                    VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+            coord.y++;\n\
+            VXC_DP8x2(sumsqr, src0, src0, VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0),\\\n\
+                uniInt16SumSqr_dp8x2);\n\
+            //tmpSumSqr += sumsqr;\n\
+            tmpSumSqr.x += sumsqr.x;\n\
+            sqr += (sumsqr.y * inFlScale_s2);\n\
+        }\n\
+        sum = tmpSumSqr.x * input_fl_scale;\n\
+        //sqr = tmpSumSqr.y * inFlScale_s2;\n\
+    }\n\
+\n\
+    lcl_sum[lidx] = sum;\n\
+    lcl_sqr[lidx] = sqr;\n\
+    barrier(CLK_LOCAL_MEM_FENCE);\n\
+\n\
+    int4 coord_out = (int4)(get_group_id(0) << 2, gidz, 0, 0);\n\
+    if(lidx == 0)\n\
+    {\n\
+        float4 one = (float4)(1, 1, 1, 1);\n\
+        __local float4* tmp_sum = (__local float4*)lcl_sum;\n\
+        __local float4* tmp_sqr = (__local float4*)lcl_sqr;\n\
+\n\
+        sum = 0; sqr = 0;\n\
+        for(int i = 0; i < 4; i++)\n\
+        {\n\
+            //sum += lcl_sum[i];\n\
+            //sqr += lcl_sqr[i];\n\
+            sum += dot(tmp_sum[i], one);\n\
+            sqr += dot(tmp_sqr[i], one);\n\
+        }\n\
+\n\
+        float4 data = (float4)(sum, sqr, 0, 0);\n\
+        write_imagef(output, coord_out, data);\n\
+    }\n\
+}\n\
+\n\
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_sumsqr_I16_2D(\n\
+    image2d_array_t input,\n\
+    image2d_array_t output,\n\
+              float eps,\n\
+              int is2D)\n\
+{\n\
+    int gidx = get_global_id(0) << 3;\n\
+    int lidx = get_local_id(0);\n\
+    int gidz = get_global_id(1);\n\
+\n\
+    int2 coord = (int2)(gidx, gidz);\n\
+    vxc_short8 src0;\n\
+    float sum = 0, sqr = 0;\n\
+    vxc_float4 sumsqr = (vxc_float4)(0);\n\
+\n\
+    __local float lcl_sum[16];\n\
+    __local float lcl_sqr[16];\n\
+\n\
+    if(gidx < width)\n\
+    {\n\
+        VXC_ReadImage(src0, input, coord.xy, VXC_5BITOFFSET_XY(0, 0),\n\
+                VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+        VXC_DP8x2(sumsqr, src0, src0, VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0),\\\n\
+                uniInt16SumSqr_dp8x2);\n\
+        sqr = sumsqr.y * inFlScale_s2;\n\
+        sum = sumsqr.x * input_fl_scale;\n\
+        //sqr = tmpSumSqr.y * inFlScale_s2;\n\
+    }\n\
+\n\
+    lcl_sum[lidx] = sum;\n\
+    lcl_sqr[lidx] = sqr;\n\
+    barrier(CLK_LOCAL_MEM_FENCE);\n\
+\n\
+    int4 coord_out = (int4)(get_group_id(0) << 2, gidz, 0, 0);\n\
+    if(lidx == 0)\n\
+    {\n\
+        float4 one = (float4)(1, 1, 1, 1);\n\
+        __local float4* tmp_sum = (__local float4*)lcl_sum;\n\
+        __local float4* tmp_sqr = (__local float4*)lcl_sqr;\n\
+\n\
+        sum = 0; sqr = 0;\n\
+        for(int i = 0; i < 4; i++)\n\
+        {\n\
+            //sum += lcl_sum[i];\n\
+            //sqr += lcl_sqr[i];\n\
+            sum += dot(tmp_sum[i], one);\n\
+            sqr += dot(tmp_sqr[i], one);\n\
+        }\n\
+\n\
+        float4 data = (float4)(sum, sqr, 0, 0);\n\
+        write_imagef(output, coord_out, data);\n\
+    }\n\
+}\n\
+\n\
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_I16toF16(\n\
+    image2d_array_t input,\n\
+    image2d_t bias,\n\
+    image2d_t scale,\n\
+    image2d_t meanVari,\n\
+    image2d_array_t output,\n\
+              float eps,\n\
+              int is2D,\n\
+              float rSpaceOrg, int pStride)\n\
+{\n\
+    int gidy = get_global_id(1);\n\
+    int gidz = get_global_id(2);\n\
+    int4 coord = (int4)(get_global_id(0), gidy, gidz, 0);\n\
+    int4 coord_para = (int4)((convert_int(get_global_id(0) * rSpaceOrg) + gidy * pStride), gidz, 0, 0);\n\
+    vxc_short8 src0;\n\
+    vxc_short8 src1;\n\
+    vxc_half8 scale_h;\n\
+    float scale_vari, bias_val;\n\
+    vxc_float4 bias_f, scale_f;\n\
+\n\
+    vxc_float4 mean_vari = read_imagef(meanVari, coord_para.zy);\n\
+    VXC_ReadImage(src1, scale, coord_para.xy, VXC_5BITOFFSET_XY(0, 0),\\\n\
+        VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    bias_f = read_imagef(bias, coord_para.xy);\n\
+    VXC_ReadImage2DArray(src0, input, coord, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    _viv_asm(COPY, scale_h, src1, 16);\n\
+    VXC_DP4x4(scale_f, scale_h, scale_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
+        UniFP16toFP32Lo4_dp4x4);\n\
+\n\
+    scale_vari = scale_f.s0 * mean_vari.s1;\n\
+    vxc_float4  tmpData0, tmpData1;\n\
+    vxc_short8 outval;\n\
+    half4 tmpVal0, tmpVal1;\n\
+    float alpha = input_fl_scale * scale_vari;\n\
+    bias_val = (bias_f.s0 - scale_vari * mean_vari.s0);\n\
+    vxc_half8 dst;\n\
+\n\
+    VXC_DP4x4(tmpData0, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
+        uniConvertInt16Fp32Fst_4x4);\n\
+    VXC_DP4x4(tmpData1, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
+        uniConvertInt16Fp32Secd_4x4);\n\
+\n\
+    vxc_float4 norm;\n\
+    norm = alpha * tmpData0 + bias_val;\n\
+    _viv_asm(CONV, tmpVal0, norm);\n\
+    norm = alpha * tmpData1 + bias_val;\n\
+    _viv_asm(CONV, tmpVal1, norm);\n\
+    VXC_DP2x8(dst, tmpVal0, tmpVal1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),\\\n\
+        uniConvertHalfToFp16_2x8);\n\
+    _viv_asm(COPY, outval, dst, 16);\n\
+    VXC_WriteImage2DArray(output, coord, outval, VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_I16toF16_2D(\n\
+    image2d_array_t input,\n\
+    image2d_t bias,\n\
+    image2d_t scale,\n\
+    image2d_t meanVari,\n\
+    image2d_array_t output,\n\
+              float eps,\n\
+              int is2D,\n\
+              float rSpaceOrg, int pStride)\n\
+{\n\
+    int gidz = get_global_id(1);\n\
+    int2 coord = (int2)(get_global_id(0), gidz);\n\
+    int4 coord_para = (int4)(convert_int(get_global_id(0) * rSpaceOrg), gidz, 0, 0);\n\
+    vxc_short8 src0;\n\
+    vxc_short8 src1;\n\
+    vxc_half8 scale_h;\n\
+    float scale_vari, bias_val;\n\
+    vxc_float4 bias_f, scale_f;\n\
+\n\
+    vxc_float4 mean_vari = read_imagef(meanVari, coord_para.zy);\n\
+    VXC_ReadImage(src1, scale, coord_para.xy, VXC_5BITOFFSET_XY(0, 0),\\\n\
+            VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    bias_f = read_imagef(bias, coord_para.xy);\n\
+    VXC_ReadImage(src0, input, coord.xy, VXC_5BITOFFSET_XY(0, 0),\\\n\
+            VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    _viv_asm(COPY, scale_h, src1, 16);\n\
+    VXC_DP4x4(scale_f, scale_h, scale_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
+            UniFP16toFP32Lo4_dp4x4);\n\
+\n\
+    scale_vari = scale_f.s0 * mean_vari.s1;\n\
+    vxc_float4  tmpData0, tmpData1;\n\
+    vxc_short8 outval;\n\
+    half4 tmpVal0, tmpVal1;\n\
+    float alpha = input_fl_scale * scale_vari;\n\
+    bias_val = (bias_f.s0 - scale_vari * mean_vari.s0);\n\
+    vxc_half8 dst;\n\
+\n\
+    VXC_DP4x4(tmpData0, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
+        uniConvertInt16Fp32Fst_4x4);\n\
+    VXC_DP4x4(tmpData1, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
+        uniConvertInt16Fp32Secd_4x4);\n\
+    vxc_float4 norm;\n\
+    norm = alpha * tmpData0 + bias_val;\n\
+    _viv_asm(CONV, tmpVal0, norm);\n\
+    norm = alpha * tmpData1 + bias_val;\n\
+    _viv_asm(CONV, tmpVal1, norm);\n\
+    VXC_DP2x8(dst, tmpVal0, tmpVal1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),\\\n\
+        uniConvertHalfToFp16_2x8);\n\
+    _viv_asm(COPY, outval, dst, 16);\n\
+    VXC_WriteImage(output, coord.xy, outval, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_I16toI16(\n\
+    image2d_array_t input,\n\
+    image2d_t bias,\n\
+    image2d_t scale,\n\
+    image2d_t meanVari,\n\
+    image2d_array_t output,\n\
+              float eps,\n\
+              int is2D,\n\
+              float rSpaceOrg, int pStride)\n\
+{\n\
+    int gidy = get_global_id(1);\n\
+    int gidz = get_global_id(2);\n\
+    int4 coord = (int4)(get_global_id(0), gidy, gidz, 0);\n\
+    int4 coord_para = (int4)((convert_int(get_global_id(0) * rSpaceOrg) + gidy * pStride), gidz, 0, 0);\n\
+    vxc_short8 src0, src2;\n\
+    vxc_short8 src1;\n\
+    vxc_half8 scale_h;\n\
+    float scale_vari, bias_val;\n\
+    vxc_float4 bias_f, scale_f;\n\
+\n\
+    vxc_float4 mean_vari = read_imagef(meanVari, coord_para.zy);\n\
+    VXC_ReadImage(src1, scale, coord_para.xy, VXC_5BITOFFSET_XY(0, 0),\\\n\
+            VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    bias_f = read_imagef(bias, coord_para.xy);\n\
+    VXC_ReadImage2DArray(src0, input, coord, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    _viv_asm(COPY, scale_h, src1, 16);\n\
+    VXC_DP4x4(scale_f, scale_h, scale_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), UniFP16toFP32Lo4_dp4x4);\n\
+\n\
+    scale_vari = scale_f.s0 * mean_vari.s1;\n\
+    vxc_int4 tmpVal0, tmpVal1;\n\
+    vxc_float4  tmpData0, tmpData1;\n\
+    float alpha = inOut_fl_scale * scale_vari;\n\
+    bias_val = (bias_f.s0 - scale_vari * mean_vari.s0) * output_fl_scale;\n\
+\n\
+    VXC_DP4x4(tmpData0, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
+        uniConvertInt16Fp32Fst_4x4);\n\
+    VXC_DP4x4(tmpData1, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
+        uniConvertInt16Fp32Secd_4x4);\n\
+    vxc_float4 norm;\n\
+    norm = tmpData0 * alpha + bias_val;\n\
+    tmpVal0 = convert_int4_rte(norm);\n\
+    norm = tmpData1 * alpha + bias_val;\n\
+    tmpVal1 = convert_int4_rte(norm);\n\
+    VXC_DP2x8(src2, tmpVal0, tmpVal1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1),\\\n\
+        uniConvertInt32toInt16_2x8);\n\
+    VXC_WriteImage2DArray(output, coord, src2, VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_I16toI16_2D(\n\
+    image2d_array_t input,\n\
+    image2d_t bias,\n\
+    image2d_t scale,\n\
+    image2d_t meanVari,\n\
+    image2d_array_t output,\n\
+              float eps,\n\
+              int is2D,\n\
+              float rSpaceOrg, int pStride)\n\
+{\n\
+    int gidz = get_global_id(1);\n\
+    int2 coord = (int2)(get_global_id(0), gidz);\n\
+    int4 coord_para = (int4)(convert_int(get_global_id(0) * rSpaceOrg), gidz, 0, 0);\n\
+    vxc_short8 src0, src2;\n\
+    vxc_short8 src1;\n\
+    vxc_half8 scale_h;\n\
+    float scale_vari, bias_val;\n\
+    vxc_float4 bias_f, scale_f;\n\
+\n\
+    vxc_float4 mean_vari = read_imagef(meanVari, coord_para.zy);\n\
+    VXC_ReadImage(src1, scale, coord_para.xy, VXC_5BITOFFSET_XY(0, 0),\\\n\
+            VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    bias_f = read_imagef(bias, coord_para.xy);\n\
+    VXC_ReadImage(src0, input, coord.xy, VXC_5BITOFFSET_XY(0, 0),\\\n\
+            VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    _viv_asm(COPY, scale_h, src1, 16);\n\
+    VXC_DP4x4(scale_f, scale_h, scale_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), UniFP16toFP32Lo4_dp4x4);\n\
+\n\
+    scale_vari = scale_f.s0 * mean_vari.s1;\n\
+    vxc_int4 tmpVal0, tmpVal1;\n\
+    vxc_float4  tmpData0, tmpData1;\n\
+    float alpha = inOut_fl_scale * scale_vari;\n\
+    bias_val = (bias_f.s0 - scale_vari * mean_vari.s0) * output_fl_scale;\n\
+\n\
+    VXC_DP4x4(tmpData0, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
+        uniConvertInt16Fp32Fst_4x4);\n\
+    VXC_DP4x4(tmpData1, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
+        uniConvertInt16Fp32Secd_4x4);\n\
+    vxc_float4 norm;\n\
+    norm = tmpData0 * alpha + bias_val;\n\
+    tmpVal0 = convert_int4_rte(norm);\n\
+    norm = tmpData1 * alpha + bias_val;\n\
+    tmpVal1 = convert_int4_rte(norm);\n\
+    VXC_DP2x8(src2, tmpVal0, tmpVal1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1),\\\n\
+            uniConvertInt32toInt16_2x8);\n\
+    VXC_WriteImage(output, coord.xy, src2, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+}"; /* end of group_normalization_i16_vx*/
+
+static const char group_normalization_i8_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+_viv_uniform int width;\n\
+_viv_uniform int height;\n\
+_viv_uniform VXC_512Bits UniFP16toFP32Lo4_dp4x4;\n\
+_viv_uniform VXC_512Bits uniConvertHalfToFp16_2x8;\n\
+_viv_uniform VXC_512Bits uniConvertInt32toUint8_2x8;\n\
+\n\
+_viv_uniform VXC_512Bits uniSumInt8_16x1;\n\
+_viv_uniform VXC_512Bits uniSqrSumInt8_16x1;\n\
+_viv_uniform float inFlScale_s2;\n\
+_viv_uniform float input_fl_scale;\n\
+\n\
+_viv_uniform VXC_512Bits uniConvertDirInt8Fp32_4x4;\n\
+_viv_uniform VXC_512Bits uniConvertEndInt8Fp32_4x4;\n\
+_viv_uniform VXC_512Bits uniConvertTrdInt8Fp32_4x4;\n\
+_viv_uniform VXC_512Bits uniConvertFthInt8Fp32_4x4;\n\
+\n\
+_viv_uniform float inOut_fl_scale;\n\
+_viv_uniform float output_fl_scale;\n\
+\n\
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_sumsqr_I8(\n\
+    image2d_array_t input, image2d_array_t output, float eps, int is2D)\n\
+{\n\
+    int gidx = get_global_id(0) << 4;\n\
+    int lidx = get_local_id(0);\n\
+    int gidz = get_global_id(1);\n\
+    int4 coord = (int4)(gidx, 0, gidz, 0);\n\
+    vxc_char16 src0;\n\
+    float sum = 0, sqr = 0;\n\
+    int tmpSum = 0, tmpSqr = 0, tmpSum1, tmpSqr1;\n\
+\n\
+    __local float lcl_sum[16];\n\
+    __local float lcl_sqr[16];\n\
+\n\
+    int8 input_desc;\n\
+    _viv_asm(COPY, input_desc, input, sizeof(input_desc));\n\
+    int baseAddr_a = (int)get_global_id(1) * input_desc.s4 + input_desc.s0;\n\
+    _viv_asm(MOV, coord.z, baseAddr_a);\n\
+\n\
+    if(gidx < width)\n\
+    {\n\
+        for(coord.y = 0; coord.y < height;)\n\
+        {\n\
+            VXC_OP4(img_load_3d, src0, input, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                    VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
+            coord.y++;\n\
+            VXC_DP16x1(tmpSum1, src0, src0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0), uniSumInt8_16x1);\n\
+            tmpSum += (tmpSum1);\n\
+            VXC_DP16x1(tmpSqr1, src0, src0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0), uniSqrSumInt8_16x1);\n\
+            tmpSqr += (tmpSqr1);\n\
+        }\n\
+        sqr = tmpSqr * inFlScale_s2;\n\
+        sum = tmpSum * input_fl_scale;\n\
+    }\n\
+    lcl_sum[lidx] = sum;\n\
+    lcl_sqr[lidx] = sqr;\n\
+    barrier(CLK_LOCAL_MEM_FENCE);\n\
+\n\
+    int4 coord_out = (int4)(get_group_id(0) << 2, gidz, 0, 0);\n\
+    if(lidx == 0)\n\
+    {\n\
+        float4 one = (float4)(1, 1, 1, 1);\n\
+        __local float4* tmp_sum = (__local float4*)lcl_sum;\n\
+        __local float4* tmp_sqr = (__local float4*)lcl_sqr;\n\
+\n\
+        sum = 0; sqr = 0;\n\
+        for(int i = 0; i < 4; i++)\n\
+        {\n\
+            sum += dot(tmp_sum[i], one);\n\
+            sqr += dot(tmp_sqr[i], one);\n\
+        }\n\
+\n\
+        float4 data = (float4)(sum, sqr, 0, 0);\n\
+        write_imagef(output, coord_out, data);\n\
+    }\n\
+}\n\
+\n\
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_sumsqr_I8_2D(\n\
+    image2d_array_t input, image2d_array_t output, float eps, int is2D)\n\
+{\n\
+    int gidx = get_global_id(0) << 4;\n\
+    int lidx = get_local_id(0);\n\
+    int gidz = get_global_id(1);\n\
+\n\
+    int2 coord = (int2)(gidx, gidz);\n\
+    vxc_char16 src0;\n\
+    float sum = 0, sqr = 0;\n\
+    int tmpSum1, tmpSqr1;\n\
+\n\
+    __local float lcl_sum[16];\n\
+    __local float lcl_sqr[16];\n\
+\n\
+    if(gidx < width)\n\
+    {\n\
+        VXC_ReadImage(src0, input, coord.xy, VXC_5BITOFFSET_XY(0, 0),\n\
+                VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
+        VXC_DP16x1(tmpSum1, src0, src0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0), uniSumInt8_16x1);\n\
+        VXC_DP16x1(tmpSqr1, src0, src0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0), uniSqrSumInt8_16x1);\n\
+        sqr = tmpSqr1 * inFlScale_s2;\n\
+        sum = tmpSum1 * input_fl_scale;\n\
+    }\n\
+\n\
+    lcl_sum[lidx] = sum;\n\
+    lcl_sqr[lidx] = sqr;\n\
+    barrier(CLK_LOCAL_MEM_FENCE);\n\
+\n\
+    int4 coord_out = (int4)(get_group_id(0) << 2, gidz, 0, 0);\n\
+    if(lidx == 0)\n\
+    {\n\
+        float4 one = (float4)(1, 1, 1, 1);\n\
+        __local float4* tmp_sum = (__local float4*)lcl_sum;\n\
+        __local float4* tmp_sqr = (__local float4*)lcl_sqr;\n\
+\n\
+        sum = 0; sqr = 0;\n\
+        for(int i = 0; i < 4; i++)\n\
+        {\n\
+            sum += dot(tmp_sum[i], one);\n\
+            sqr += dot(tmp_sqr[i], one);\n\
+        }\n\
+\n\
+        float4 data = (float4)(sum, sqr, 0, 0);\n\
+        write_imagef(output, coord_out, data);\n\
+    }\n\
+}\n\
+\n\
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_I8toF16(\n\
+    image2d_array_t input, image2d_t bias, image2d_t scale, image2d_t meanVari,\n\
+    image2d_array_t output, float eps, int is2D, float rSpaceOrg, int pStride)\n\
+{\n\
+    int gidy = get_global_id(1);\n\
+    int gidz = get_global_id(2);\n\
+    int4 coord = (int4)(get_global_id(0), gidy, gidz, 0);\n\
+    int4 coord_para = (int4)((convert_int(get_global_id(0) * rSpaceOrg) + gidy * pStride), gidz, 0, 0);\n\
+    vxc_char16 src0;\n\
+    vxc_short8 src1, outval;\n\
+    vxc_half8 scale_h, dst;\n\
+    float scale_vari, bias_val;\n\
+    vxc_float4 bias_f, scale_f;\n\
+\n\
+    vxc_float4 mean_vari = read_imagef(meanVari, coord_para.zy);\n\
+    VXC_ReadImage(src1, scale, coord_para.xy, VXC_5BITOFFSET_XY(0, 0),\\\n\
+            VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    bias_f = read_imagef(bias, coord_para.xy);\n\
+    VXC_ReadImage2DArray(src0, input, coord, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    _viv_asm(COPY, scale_h, src1, 16);\n\
+    VXC_DP4x4(scale_f, scale_h, scale_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), UniFP16toFP32Lo4_dp4x4);\n\
+\n\
+    scale_vari = scale_f.s0 * mean_vari.s1;\n\
+    vxc_float4  tmpData0, tmpData1, tmpData2, tmpData3, norm;\n\
+    half4 tmpVal0, tmpVal1;\n\
+    float alpha = input_fl_scale * scale_vari;\n\
+    bias_val = (bias_f.s0 - scale_vari * mean_vari.s0);\n\
+\n\
+    VXC_DP4x4(tmpData0, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertDirInt8Fp32_4x4);\n\
+    VXC_DP4x4(tmpData1, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertEndInt8Fp32_4x4);\n\
+    VXC_DP4x4(tmpData2, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertTrdInt8Fp32_4x4);\n\
+    VXC_DP4x4(tmpData3, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertFthInt8Fp32_4x4);\n\
+\n\
+    norm = alpha * tmpData0 + bias_val;\n\
+    _viv_asm(CONV, tmpVal0, norm);\n\
+    norm = alpha * tmpData1 + bias_val;\n\
+    _viv_asm(CONV, tmpVal1, norm);\n\
+    VXC_DP2x8(dst, tmpVal0, tmpVal1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvertHalfToFp16_2x8);\n\
+    _viv_asm(COPY, outval, dst, 16);\n\
+    VXC_WriteImage2DArray(output, coord, outval, VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0));\n\
+    coord.x += 8;\n\
+    norm = alpha * tmpData2 + bias_val;\n\
+    _viv_asm(CONV, tmpVal0, norm);\n\
+    norm = alpha * tmpData3 + bias_val;\n\
+    _viv_asm(CONV, tmpVal1, norm);\n\
+    VXC_DP2x8(dst, tmpVal0, tmpVal1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvertHalfToFp16_2x8);\n\
+    _viv_asm(COPY, outval, dst, 16);\n\
+    VXC_WriteImage2DArray(output, coord, outval, VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_I8toF16_2D(\n\
+    image2d_array_t input, image2d_t bias, image2d_t scale, image2d_t meanVari,\n\
+    image2d_array_t output, float eps, int is2D, float rSpaceOrg, int pStride)\n\
+{\n\
+    int gidz = get_global_id(1);\n\
+    int2 coord = (int2)(get_global_id(0), gidz);\n\
+    int4 coord_para = (int4)(convert_int(get_global_id(0) * rSpaceOrg), gidz, 0, 0);\n\
+    vxc_char16 src0;\n\
+    vxc_short8 src1, outval;\n\
+    vxc_half8 scale_h, dst;\n\
+    float scale_vari, bias_val;\n\
+    vxc_float4 bias_f, scale_f;\n\
+\n\
+    vxc_float4 mean_vari = read_imagef(meanVari, coord_para.zy);\n\
+    VXC_ReadImage(src1, scale, coord_para.xy, VXC_5BITOFFSET_XY(0, 0),\\\n\
+            VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    bias_f = read_imagef(bias, coord_para.xy);\n\
+    VXC_ReadImage(src0, input, coord.xy, VXC_5BITOFFSET_XY(0, 0),\\\n\
+            VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    _viv_asm(COPY, scale_h, src1, 16);\n\
+    VXC_DP4x4(scale_f, scale_h, scale_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), UniFP16toFP32Lo4_dp4x4);\n\
+\n\
+    scale_vari = scale_f.s0 * mean_vari.s1;\n\
+    vxc_float4  tmpData0, tmpData1, tmpData2, tmpData3, norm;\n\
+    half4 tmpVal0, tmpVal1;\n\
+    float alpha = input_fl_scale * scale_vari;\n\
+    bias_val = (bias_f.s0 - scale_vari * mean_vari.s0);\n\
+\n\
+    VXC_DP4x4(tmpData0, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertDirInt8Fp32_4x4);\n\
+    VXC_DP4x4(tmpData1, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertEndInt8Fp32_4x4);\n\
+    VXC_DP4x4(tmpData2, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertTrdInt8Fp32_4x4);\n\
+    VXC_DP4x4(tmpData3, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertFthInt8Fp32_4x4);\n\
+    norm = alpha * tmpData0 + bias_val;\n\
+    _viv_asm(CONV, tmpVal0, norm);\n\
+    norm = alpha * tmpData1 + bias_val;\n\
+    _viv_asm(CONV, tmpVal1, norm);\n\
+    VXC_DP2x8(dst, tmpVal0, tmpVal1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvertHalfToFp16_2x8);\n\
+    _viv_asm(COPY, outval, dst, 16);\n\
+    VXC_WriteImage(output, coord.xy, outval, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+    coord.x += 8;\n\
+    norm = alpha * tmpData2 + bias_val;\n\
+    _viv_asm(CONV, tmpVal0, norm);\n\
+    norm = alpha * tmpData3 + bias_val;\n\
+    _viv_asm(CONV, tmpVal1, norm);\n\
+    VXC_DP2x8(dst, tmpVal0, tmpVal1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvertHalfToFp16_2x8);\n\
+    _viv_asm(COPY, outval, dst, 16);\n\
+    VXC_WriteImage(output, coord.xy, outval, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_I8toI8(\n\
+    image2d_array_t input, image2d_t bias, image2d_t scale, image2d_t meanVari,\n\
+    image2d_array_t output, float eps, int is2D, float rSpaceOrg, int pStride)\n\
+{\n\
+    int gidy = get_global_id(1);\n\
+    int gidz = get_global_id(2);\n\
+    int4 coord = (int4)(get_global_id(0), gidy, gidz, 0);\n\
+    int4 coord_para = (int4)((convert_int(get_global_id(0) * rSpaceOrg) + gidy * pStride), gidz, 0, 0);\n\
+    vxc_char16 src0, src2;\n\
+    vxc_short8 src1;\n\
+    vxc_half8 scale_h;\n\
+    float scale_vari, bias_val;\n\
+    vxc_float4 bias_f, scale_f;\n\
+\n\
+    vxc_float4 mean_vari = read_imagef(meanVari, coord_para.zy);\n\
+    VXC_ReadImage(src1, scale, coord_para.xy, VXC_5BITOFFSET_XY(0, 0),\\\n\
+            VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    bias_f = read_imagef(bias, coord_para.xy);\n\
+    VXC_ReadImage2DArray(src0, input, coord, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    _viv_asm(COPY, scale_h, src1, 16);\n\
+    VXC_DP4x4(scale_f, scale_h, scale_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), UniFP16toFP32Lo4_dp4x4);\n\
+\n\
+    scale_vari = scale_f.s0 * mean_vari.s1;\n\
+    vxc_int4 tmpVal0, tmpVal1;\n\
+    vxc_float4  tmpData0, tmpData1, tmpData2, tmpData3, norm;\n\
+    float alpha = inOut_fl_scale * scale_vari;\n\
+    bias_val = (bias_f.s0 - scale_vari * mean_vari.s0) * output_fl_scale;\n\
+\n\
+    VXC_DP4x4(tmpData0, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertDirInt8Fp32_4x4);\n\
+    VXC_DP4x4(tmpData1, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertEndInt8Fp32_4x4);\n\
+    VXC_DP4x4(tmpData2, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertTrdInt8Fp32_4x4);\n\
+    VXC_DP4x4(tmpData3, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertFthInt8Fp32_4x4);\n\
+    norm = tmpData0 * alpha + bias_val;\n\
+    tmpVal0 = convert_int4_rte(norm);\n\
+    norm = tmpData1 * alpha + bias_val;\n\
+    tmpVal1 = convert_int4_rte(norm);\n\
+    VXC_DP2x8(src2, tmpVal0, tmpVal1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), uniConvertInt32toUint8_2x8);\n\
+    norm = tmpData2 * alpha + bias_val;\n\
+    tmpVal0 = convert_int4_rte(norm);\n\
+    norm = tmpData3 * alpha + bias_val;\n\
+    tmpVal1 = convert_int4_rte(norm);\n\
+    VXC_DP2x8(src2, tmpVal0, tmpVal1, VXC_MODIFIER(8, 15, 0, VXC_RM_TowardZero, 1), uniConvertInt32toUint8_2x8);\n\
+    VXC_WriteImage2DArray(output, coord, src2, VXC_MODIFIER(0, 15, 0,VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_I8toI8_2D(\n\
+    image2d_array_t input, image2d_t bias, image2d_t scale, image2d_t meanVari,\n\
+    image2d_array_t output, float eps, int is2D, float rSpaceOrg, int pStride)\n\
+{\n\
+    int gidz = get_global_id(1);\n\
+    int2 coord = (int2)(get_global_id(0), gidz);\n\
+    int4 coord_para = (int4)(convert_int(get_global_id(0) * rSpaceOrg), gidz, 0, 0);\n\
+    vxc_char16 src0, src2;\n\
+    vxc_short8 src1;\n\
+    vxc_half8 scale_h;\n\
+    float scale_vari, bias_val;\n\
+    vxc_float4 bias_f, scale_f;\n\
+\n\
+    vxc_float4 mean_vari = read_imagef(meanVari, coord_para.zy);\n\
+    VXC_ReadImage(src1, scale, coord_para.xy, VXC_5BITOFFSET_XY(0, 0),\\\n\
+            VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    bias_f = read_imagef(bias, coord_para.xy);\n\
+    VXC_ReadImage(src0, input, coord.xy, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    _viv_asm(COPY, scale_h, src1, 16);\n\
+    VXC_DP4x4(scale_f, scale_h, scale_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), UniFP16toFP32Lo4_dp4x4);\n\
+\n\
+    scale_vari = scale_f.s0 * mean_vari.s1;\n\
+    vxc_int4 tmpVal0, tmpVal1;\n\
+    vxc_float4  tmpData0, tmpData1, tmpData2, tmpData3, norm;\n\
+    float alpha = inOut_fl_scale * scale_vari;\n\
+    bias_val = (bias_f.s0 - scale_vari * mean_vari.s0) * output_fl_scale;\n\
+\n\
+    VXC_DP4x4(tmpData0, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertDirInt8Fp32_4x4);\n\
+    VXC_DP4x4(tmpData1, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertEndInt8Fp32_4x4);\n\
+    VXC_DP4x4(tmpData2, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertTrdInt8Fp32_4x4);\n\
+    VXC_DP4x4(tmpData3, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertFthInt8Fp32_4x4);\n\
+    norm = tmpData0 * alpha + bias_val;\n\
+    tmpVal0 = convert_int4_rte(norm);\n\
+    norm = tmpData1 * alpha + bias_val;\n\
+    tmpVal1 = convert_int4_rte(norm);\n\
+    VXC_DP2x8(src2, tmpVal0, tmpVal1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), uniConvertInt32toUint8_2x8);\n\
+    norm = tmpData2 * alpha + bias_val;\n\
+    tmpVal0 = convert_int4_rte(norm);\n\
+    norm = tmpData3 * alpha + bias_val;\n\
+    tmpVal1 = convert_int4_rte(norm);\n\
+    VXC_DP2x8(src2, tmpVal0, tmpVal1, VXC_MODIFIER(8, 15, 0, VXC_RM_TowardZero, 1), uniConvertInt32toUint8_2x8);\n\
+    VXC_WriteImage(output, coord.xy, src2, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+"; /* end of group_normalization_i8_vx*/
+
+static const char group_normalization_u8_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+_viv_uniform int width;\n\
+_viv_uniform int height;\n\
+_viv_uniform VXC_512Bits UniFP16toFP32Lo4_dp4x4;\n\
+_viv_uniform VXC_512Bits uniConvertInt32toUint8_2x8;\n\
+\n\
+_viv_uniform VXC_512Bits uniConvert1stUint8SubZpToFp32_4x4;\n\
+_viv_uniform VXC_512Bits uniConvert2ndUint8SubZpToFp32_4x4;\n\
+_viv_uniform VXC_512Bits uniConvert3rdUint8SubZpToFp32_4x4;\n\
+_viv_uniform VXC_512Bits uniConvert4thUint8SubZpToFp32_4x4;\n\
+_viv_uniform VXC_512Bits uniSumU8_16x1;\n\
+_viv_uniform VXC_512Bits uniSqrSum_16x1;\n\
+_viv_uniform float input_scale;\n\
+_viv_uniform int inputZP;\n\
+_viv_uniform int sumInZp;\n\
+_viv_uniform int tmpZp1;\n\
+_viv_uniform float e2InScale;\n\
+_viv_uniform float rowSumScale;\n\
+_viv_uniform float scale_inOut;\n\
+_viv_uniform float outputScale;\n\
+_viv_uniform int output_ZP;\n\
+\n\
+_viv_uniform VXC_512Bits uniResetFp32_4x4;\n\
+_viv_uniform int group_stride;\n\
+\n\
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_sumsqr_U8(\n\
+    image2d_array_t input, image2d_array_t output, float eps, int is2D)\n\
+{\n\
+    int gidx = get_global_id(0) << 4;\n\
+    int lidx = get_local_id(0);\n\
+    int gidz = get_global_id(1);\n\
+    int4 coord = (int4)(gidx, 0, gidz, 0);\n\
+    vxc_uchar16 src0;\n\
+    float sum = 0, sqr = 0;\n\
+    int tmpSum = 0, tmpSqr = 0, tmpSum1 = 0, tmpSqr1 = 0;\n\
+\n\
+    __local float lcl_sum[16];\n\
+    __local float lcl_sqr[16];\n\
+    int8 input_desc;\n\
+    _viv_asm(COPY, input_desc, input, sizeof(input_desc));\n\
+    int baseAddr_a = (int)get_global_id(1) * input_desc.s4 + input_desc.s0;\n\
+    _viv_asm(MOV, coord.z, baseAddr_a);\n\
+    if(gidx < width)\n\
+    {\n\
+        for(coord.y = 0; coord.y < height;)\n\
+        {\n\
+            VXC_OP4(img_load_3d, src0, input, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                    VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
+            coord.y++;\n\
+            VXC_DP16x1(tmpSum1, src0, src0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0), uniSumU8_16x1);\n\
+            tmpSum += (tmpSum1);\n\
+            VXC_DP16x1(tmpSqr1, src0, src0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0), uniSqrSum_16x1);\n\
+            tmpSqr += (tmpSqr1 + tmpZp1 * tmpSum1);\n\
+        }\n\
+        sqr += (tmpSqr * e2InScale + rowSumScale);\n\
+        sum = (tmpSum + sumInZp) * input_scale;\n\
+    }\n\
+    lcl_sum[lidx] = sum;\n\
+    lcl_sqr[lidx] = sqr;\n\
+    barrier(CLK_LOCAL_MEM_FENCE);\n\
+\n\
+    int4 coord_out = (int4)(get_group_id(0) << 2, gidz, 0, 0);\n\
+    if(lidx == 0)\n\
+    {\n\
+        float4 one = (float4)(1, 1, 1, 1);\n\
+        __local float4* tmp_sum = (__local float4*)lcl_sum;\n\
+        __local float4* tmp_sqr = (__local float4*)lcl_sqr;\n\
+        sum = 0; sqr = 0;\n\
+        for(int i = 0; i < 4; i++)\n\
+        {\n\
+            sum += dot(tmp_sum[i], one);\n\
+            sqr += dot(tmp_sqr[i], one);\n\
+        }\n\
+        float4 data = (float4)(sum, sqr, 0, 0);\n\
+        write_imagef(output, coord_out, data);\n\
+    }\n\
+}\n\
+\n\
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_sumsqr_U8_2D(\n\
+    image2d_array_t input, image2d_array_t output, float eps, int is2D)\n\
+{\n\
+    int gidx = get_global_id(0) << 4;\n\
+    int lidx = get_local_id(0);\n\
+\n\
+    int2 coord = (int2)(gidx, get_global_id(1));\n\
+    vxc_uchar16 src0;\n\
+    float sum = 0, sqr = 0;\n\
+    int tmpSqr, tmpSum1, tmpSqr1;\n\
+\n\
+    __local float lcl_sum[16];\n\
+    __local float lcl_sqr[16];\n\
+    if(gidx < width)\n\
+    {\n\
+        VXC_ReadImage(src0, input, coord, VXC_5BITOFFSET_XY(0, 0),\n\
+                             VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
+        VXC_DP16x1(tmpSum1, src0, src0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0), uniSumU8_16x1);\n\
+        VXC_DP16x1(tmpSqr1, src0, src0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0), uniSqrSum_16x1);\n\
+        tmpSqr = tmpSqr1 + tmpZp1 * tmpSum1;\n\
+        sqr = (tmpSqr * e2InScale + rowSumScale);\n\
+        sum = (tmpSum1 + sumInZp) * input_scale;\n\
+    }\n\
+    lcl_sum[lidx] = sum;\n\
+    lcl_sqr[lidx] = sqr;\n\
+    barrier(CLK_LOCAL_MEM_FENCE);\n\
+\n\
+    int4 coord_out = (int4)(get_group_id(0) << 2, get_global_id(1), 0, 0);\n\
+    if(lidx == 0)\n\
+    {\n\
+        float4 one = (float4)(1, 1, 1, 1);\n\
+        __local float4* tmp_sum = (__local float4*)lcl_sum;\n\
+        __local float4* tmp_sqr = (__local float4*)lcl_sqr;\n\
+        sum = 0; sqr = 0;\n\
+        for(int i = 0; i < 4; i++)\n\
+        {\n\
+            sum += dot(tmp_sum[i], one);\n\
+            sqr += dot(tmp_sqr[i], one);\n\
+        }\n\
+        float4 data = (float4)(sum, sqr, 0, 0);\n\
+        write_imagef(output, coord_out, data);\n\
+    }\n\
+}\n\
+\n\
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_meanvari(\n\
+    image2d_t input, image2d_t output, float eps, float group_ratio)\n\
+{\n\
+    int gidx = get_global_id(0);\n\
+    int lidx = get_local_id(0);\n\
+\n\
+    int2 coord = (int2)(gidx, get_global_id(1));\n\
+    vxc_uchar16 src0;\n\
+    float2 sum_sqr = (float2)(0);\n\
+    vxc_float4 mean_vari;\n\
+    VXC_DP4x4(mean_vari, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniResetFp32_4x4);\n\
+\n\
+    __local float2 lcl_data[16];\n\
+    __local float2 lcl_sum[4];\n\
+\n\
+    for(; coord.x < group_stride; coord.x += 64)\n\
+    {\n\
+        mean_vari += read_imagef(input, coord);\n\
+    }\n\
+    lcl_data[lidx] = mean_vari.xy;\n\
+    barrier(CLK_LOCAL_MEM_FENCE);\n\
+    if(lidx < 4)\n\
+    {\n\
+        float2 tmpSum = (float2)(0);\n\
+        for(int i = lidx; i < 16; i+=4)\n\
+        {\n\
+            tmpSum += lcl_data[i];\n\
+        }\n\
+        lcl_sum[lidx] = tmpSum;\n\
+    }\n\
+    barrier(CLK_LOCAL_MEM_FENCE);\n\
+    if(lidx == 0)\n\
+    {\n\
+        for(int i = 0; i < 4; i++)\n\
+        {\n\
+            sum_sqr += lcl_sum[i];\n\
+        }\n\
+        mean_vari.xy = sum_sqr * group_ratio;\n\
+        mean_vari.s1 = mean_vari.s1 - mean_vari.s0 * mean_vari.s0 + eps;\n\
+        mean_vari.s1 = rsqrt(mean_vari.s1);\n\
+\n\
+        coord.x = 0;\n\
+        write_imagef(output, coord, mean_vari);\n\
+    }\n\
+}\n\
+\n\
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_U8toU8(\n\
+    image2d_array_t input, image2d_t bias, image2d_t scale, image2d_t meanVari,\n\
+    image2d_array_t output, float eps, int is2D, float rSpaceOrg, int pStride)\n\
+{\n\
+    int gidy = get_global_id(1);\n\
+    int gidz = get_global_id(2);\n\
+    int4 coord = (int4)(get_global_id(0), gidy, gidz, 0);\n\
+    int4 coord_para = (int4)((convert_int(get_global_id(0) * rSpaceOrg) + gidy * pStride), gidz, 0, 0);\n\
+    vxc_uchar16 src0, src2;\n\
+    vxc_short8 src1;\n\
+    vxc_half8 scale_h;\n\
+    float scale_vari, bias_val;\n\
+    vxc_float4 bias_f, scale_f;\n\
+\n\
+    vxc_float4 mean_vari = read_imagef(meanVari, coord_para.zy);\n\
+    VXC_ReadImage(src1, scale, coord_para.xy, VXC_5BITOFFSET_XY(0, 0),\\\n\
+            VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    bias_f = read_imagef(bias, coord_para.xy);\n\
+    VXC_ReadImage2DArray(src0, input, coord, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    _viv_asm(COPY, scale_h, src1, 16);\n\
+    VXC_DP4x4(scale_f, scale_h, scale_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), UniFP16toFP32Lo4_dp4x4);\n\
+\n\
+    scale_vari = scale_f.s0 * mean_vari.s1;\n\
+    short zp = inputZP;\n\
+    vxc_int4 tmpVal0, tmpVal1;\n\
+    vxc_float4  tmpData0, tmpData1, tmpData2, tmpData3, norm;\n\
+    float alpha = scale_inOut * scale_vari;\n\
+    bias_val = (bias_f.s0 - scale_vari * mean_vari.s0) * outputScale + output_ZP;\n\
+\n\
+    VXC_DP4x4(tmpData0, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvert1stUint8SubZpToFp32_4x4);\n\
+    VXC_DP4x4(tmpData1, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvert2ndUint8SubZpToFp32_4x4);\n\
+    VXC_DP4x4(tmpData2, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvert3rdUint8SubZpToFp32_4x4);\n\
+    VXC_DP4x4(tmpData3, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvert4thUint8SubZpToFp32_4x4);\n\
+    norm = tmpData0 * alpha + bias_val;\n\
+    tmpVal0 = convert_int4_rte(norm);\n\
+    norm = tmpData1 * alpha + bias_val;\n\
+    tmpVal1 = convert_int4_rte(norm);\n\
+    VXC_DP2x8(src2, tmpVal0, tmpVal1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), uniConvertInt32toUint8_2x8);\n\
+    norm = tmpData2 * alpha + bias_val;\n\
+    tmpVal0 = convert_int4_rte(norm);\n\
+    norm = tmpData3 * alpha + bias_val;\n\
+    tmpVal1 = convert_int4_rte(norm);\n\
+    VXC_DP2x8(src2, tmpVal0, tmpVal1, VXC_MODIFIER(8, 15, 0, VXC_RM_TowardZero, 1), uniConvertInt32toUint8_2x8);\n\
+    VXC_WriteImage2DArray(output, coord, src2, VXC_MODIFIER(0, 15, 0,VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_U8toU8_2D(\n\
+    image2d_array_t input, image2d_t bias, image2d_t scale, image2d_t meanVari,\n\
+    image2d_array_t output, float eps, int is2D, float rSpaceOrg, int pStride)\n\
+{\n\
+    int gidz = get_global_id(1);\n\
+    int2 coord = (int2)(get_global_id(0), gidz);\n\
+    int4 coord_para = (int4)(convert_int(get_global_id(0) * rSpaceOrg), gidz, 0, 0);\n\
+    vxc_uchar16 src0, src2;\n\
+    vxc_short8 src1;\n\
+    vxc_half8 scale_h;\n\
+    float scale_vari, bias_val;\n\
+    vxc_float4 bias_f, scale_f;\n\
+\n\
+    vxc_float4 mean_vari = read_imagef(meanVari, coord_para.zy);\n\
+    VXC_ReadImage(src1, scale, coord_para.xy, VXC_5BITOFFSET_XY(0, 0),\\\n\
+            VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    bias_f = read_imagef(bias, coord_para.xy);\n\
+    VXC_ReadImage(src0, input, coord.xy, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    _viv_asm(COPY, scale_h, src1, 16);\n\
+    VXC_DP4x4(scale_f, scale_h, scale_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), UniFP16toFP32Lo4_dp4x4);\n\
+\n\
+    scale_vari = scale_f.s0 * mean_vari.s1;\n\
+    short zp = inputZP;\n\
+    vxc_int4 tmpVal0, tmpVal1;\n\
+    vxc_float4  tmpData0, tmpData1, tmpData2, tmpData3, norm;\n\
+    float alpha = scale_inOut * scale_vari;\n\
+    bias_val = (bias_f.s0 - scale_vari * mean_vari.s0) * outputScale + output_ZP;\n\
+\n\
+    VXC_DP4x4(tmpData0, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvert1stUint8SubZpToFp32_4x4);\n\
+    VXC_DP4x4(tmpData1, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvert2ndUint8SubZpToFp32_4x4);\n\
+    VXC_DP4x4(tmpData2, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvert3rdUint8SubZpToFp32_4x4);\n\
+    VXC_DP4x4(tmpData3, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvert4thUint8SubZpToFp32_4x4);\n\
+    norm = tmpData0 * alpha + bias_val;\n\
+    tmpVal0 = convert_int4_rte(norm);\n\
+    norm = tmpData1 * alpha + bias_val;\n\
+    tmpVal1 = convert_int4_rte(norm);\n\
+    VXC_DP2x8(src2, tmpVal0, tmpVal1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), uniConvertInt32toUint8_2x8);\n\
+    norm = tmpData2 * alpha + bias_val;\n\
+    tmpVal0 = convert_int4_rte(norm);\n\
+    norm = tmpData3 * alpha + bias_val;\n\
+    tmpVal1 = convert_int4_rte(norm);\n\
+    VXC_DP2x8(src2, tmpVal0, tmpVal1, VXC_MODIFIER(8, 15, 0, VXC_RM_TowardZero, 1), uniConvertInt32toUint8_2x8);\n\
+    VXC_WriteImage(output, coord.xy, src2, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
+}"; /* end of group_normalization_u8_vx*/
+
+static const char group_normalization_u8_f16_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+_viv_uniform int width;\n\
+_viv_uniform int height;\n\
+_viv_uniform VXC_512Bits UniFP16toFP32Lo4_dp4x4;\n\
+_viv_uniform VXC_512Bits uniConvertHalfToFp16_2x8;\n\
+\n\
+_viv_uniform VXC_512Bits uniConvert1stUint8SubZpToFp32_4x4;\n\
+_viv_uniform VXC_512Bits uniConvert2ndUint8SubZpToFp32_4x4;\n\
+_viv_uniform VXC_512Bits uniConvert3rdUint8SubZpToFp32_4x4;\n\
+_viv_uniform VXC_512Bits uniConvert4thUint8SubZpToFp32_4x4;\n\
+_viv_uniform float input_scale;\n\
+_viv_uniform int inputZP;\n\
+\n\
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_U8toF16(\n\
+    image2d_array_t input, image2d_t bias, image2d_t scale, image2d_t meanVari,\n\
+    image2d_array_t output, float eps, int is2D, float rSpaceOrg, int pStride)\n\
+{\n\
+    int gidy = get_global_id(1);\n\
+    int gidz = get_global_id(2);\n\
+    int4 coord = (int4)(get_global_id(0), gidy, gidz, 0);\n\
+    int4 coord_para = (int4)((convert_int(get_global_id(0) * rSpaceOrg) + gidy * pStride), gidz, 0, 0);\n\
+    vxc_uchar16 src0;\n\
+    vxc_short8 src1, outval;\n\
+    vxc_half8 scale_h, dst;\n\
+    float scale_vari, bias_val;\n\
+    vxc_float4 bias_f, scale_f;\n\
+\n\
+    vxc_float4 mean_vari = read_imagef(meanVari, coord_para.zy);\n\
+    VXC_ReadImage(src1, scale, coord_para.xy, VXC_5BITOFFSET_XY(0, 0),\\\n\
+            VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    bias_f = read_imagef(bias, coord_para.xy);\n\
+    VXC_ReadImage2DArray(src0, input, coord, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    _viv_asm(COPY, scale_h, src1, 16);\n\
+    VXC_DP4x4(scale_f, scale_h, scale_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), UniFP16toFP32Lo4_dp4x4);\n\
+\n\
+    scale_vari = scale_f.s0 * mean_vari.s1;\n\
+    short zp = inputZP;\n\
+    vxc_float4  tmpData0, tmpData1, tmpData2, tmpData3, norm;\n\
+    half4 tmpVal0, tmpVal1;\n\
+    float alpha = input_scale * scale_vari;\n\
+    bias_val = (bias_f.s0 - scale_vari * mean_vari.s0);\n\
+\n\
+    VXC_DP4x4(tmpData0, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvert1stUint8SubZpToFp32_4x4);\n\
+    VXC_DP4x4(tmpData1, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvert2ndUint8SubZpToFp32_4x4);\n\
+    VXC_DP4x4(tmpData2, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvert3rdUint8SubZpToFp32_4x4);\n\
+    VXC_DP4x4(tmpData3, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvert4thUint8SubZpToFp32_4x4);\n\
+    norm = alpha * tmpData0 + bias_val;\n\
+    _viv_asm(CONV, tmpVal0, norm);\n\
+    norm = alpha * tmpData1 + bias_val;\n\
+    _viv_asm(CONV, tmpVal1, norm);\n\
+    VXC_DP2x8(dst, tmpVal0, tmpVal1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvertHalfToFp16_2x8);\n\
+    _viv_asm(COPY, outval, dst, 16);\n\
+    VXC_WriteImage2DArray(output, coord, outval, VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0));\n\
+    coord.x += 8;\n\
+    norm = alpha * tmpData2 + bias_val;\n\
+    _viv_asm(CONV, tmpVal0, norm);\n\
+    norm = alpha * tmpData3 + bias_val;\n\
+    _viv_asm(CONV, tmpVal1, norm);\n\
+    VXC_DP2x8(dst, tmpVal0, tmpVal1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvertHalfToFp16_2x8);\n\
+    _viv_asm(COPY, outval, dst, 16);\n\
+    VXC_WriteImage2DArray(output, coord, outval, VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_U8toF16_2D(\n\
+    image2d_array_t input, image2d_t bias, image2d_t scale, image2d_t meanVari,\n\
+    image2d_array_t output, float eps, int is2D, float rSpaceOrg, int pStride)\n\
+{\n\
+    int gidz = get_global_id(1);\n\
+    int2 coord = (int2)(get_global_id(0), gidz);\n\
+    int4 coord_para = (int4)(convert_int(get_global_id(0) * rSpaceOrg), gidz, 0, 0);\n\
+    vxc_uchar16 src0;\n\
+    vxc_short8 src1, outval;\n\
+    vxc_half8 scale_h, dst;\n\
+    float scale_vari, bias_val;\n\
+    vxc_float4 bias_f, scale_f;\n\
+\n\
+    vxc_float4 mean_vari = read_imagef(meanVari, coord_para.zy);\n\
+    VXC_ReadImage(src1, scale, coord_para.xy, VXC_5BITOFFSET_XY(0, 0),\\\n\
+            VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    bias_f = read_imagef(bias, coord_para.xy);\n\
+    VXC_ReadImage(src0, input, coord.xy, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    _viv_asm(COPY, scale_h, src1, 16);\n\
+    VXC_DP4x4(scale_f, scale_h, scale_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), UniFP16toFP32Lo4_dp4x4);\n\
+\n\
+    scale_vari = scale_f.s0 * mean_vari.s1;\n\
+    short zp = inputZP;\n\
+    vxc_float4  tmpData0, tmpData1, tmpData2, tmpData3, norm;\n\
+    half4 tmpVal0, tmpVal1;\n\
+    float alpha = input_scale * scale_vari;\n\
+    bias_val = (bias_f.s0 - scale_vari * mean_vari.s0);\n\
+\n\
+    VXC_DP4x4(tmpData0, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvert1stUint8SubZpToFp32_4x4);\n\
+    VXC_DP4x4(tmpData1, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvert2ndUint8SubZpToFp32_4x4);\n\
+    VXC_DP4x4(tmpData2, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvert3rdUint8SubZpToFp32_4x4);\n\
+    VXC_DP4x4(tmpData3, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvert4thUint8SubZpToFp32_4x4);\n\
+    norm = alpha * tmpData0 + bias_val;\n\
+    _viv_asm(CONV, tmpVal0, norm);\n\
+    norm = alpha * tmpData1 + bias_val;\n\
+    _viv_asm(CONV, tmpVal1, norm);\n\
+    VXC_DP2x8(dst, tmpVal0, tmpVal1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvertHalfToFp16_2x8);\n\
+    _viv_asm(COPY, outval, dst, 16);\n\
+    VXC_WriteImage(output, coord.xy, outval, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+    coord.x += 8;\n\
+    norm = alpha * tmpData2 + bias_val;\n\
+    _viv_asm(CONV, tmpVal0, norm);\n\
+    norm = alpha * tmpData3 + bias_val;\n\
+    _viv_asm(CONV, tmpVal1, norm);\n\
+    VXC_DP2x8(dst, tmpVal0, tmpVal1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvertHalfToFp16_2x8);\n\
+    _viv_asm(COPY, outval, dst, 16);\n\
+    VXC_WriteImage(output, coord.xy, outval, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+"; /* end of group_normalization_u8_f16_vx*/
+
 static const char grucell_activation_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 #define logE     (1.44269502f)\n\
@@ -39156,6 +40500,825 @@ __kernel void gather_nd_F32toF32_3D(\n\
 }\n\
 "; /* end of gather_nd_3d_cl*/
 
+static const char group_normalization_f32_cl[] = "__kernel void group_norm_sumsqr_F32(\n\
+    __read_only image2d_array_t   input,\n\
+    __write_only image2d_t  output,\n\
+    float eps,\n\
+    int is2d,\n\
+    float input_zp,\n\
+    float input_scale,\n\
+    int width,\n\
+    int height\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);\n\
+    int gidz = get_global_id(1);\n\
+    int lidx = get_local_id(0);\n\
+\n\
+    int4 coord = (int4)(gidx, 0, gidz, 0);\n\
+    float4 data;\n\
+    float sum = 0, sqr = 0;\n\
+\n\
+    __local float lcl_sum[16];\n\
+    __local float lcl_sqr[16];\n\
+\n\
+    if(gidx < width)\n\
+    {\n\
+        for(coord.y = 0; coord.y < height;)\n\
+        {\n\
+            data = read_imagef(input, coord);\n\
+            coord.y++;\n\
+            sum += data.x;\n\
+            sqr += data.x * data.x;\n\
+        }\n\
+    }\n\
+    lcl_sum[lidx] = sum;\n\
+    lcl_sqr[lidx] = sqr;\n\
+    barrier(CLK_LOCAL_MEM_FENCE);\n\
+\n\
+    int4 coord_out = (int4)(get_group_id(0) << 2, gidz, 0, 0);\n\
+    if(lidx == 0)\n\
+    {\n\
+        float4 one = (float4)(1, 1, 1, 1);\n\
+        __local float4* tmp_sum = (__local float4*)lcl_sum;\n\
+        __local float4* tmp_sqr = (__local float4*)lcl_sqr;\n\
+\n\
+        sum = 0; sqr = 0;\n\
+        for(int i = 0; i < 4; i++)\n\
+        {\n\
+            sum += dot(tmp_sum[i], one);\n\
+            sqr += dot(tmp_sqr[i], one);\n\
+        }\n\
+\n\
+        float4 dst = (float4)(0);\n\
+        dst.x = sum;\n\
+        write_imagef(output, coord_out.xy, dst);\n\
+        coord_out.x++;\n\
+        dst.x = sqr;\n\
+        write_imagef(output, coord_out.xy, dst);\n\
+    }\n\
+}\n\
+\n\
+__kernel void group_norm_sumsqr_F32_2D(\n\
+    __read_only image2d_t   input,\n\
+    __write_only image2d_t  output,\n\
+    float eps,\n\
+    int is2d,\n\
+    float input_zp,\n\
+    float input_scale,\n\
+    int width,\n\
+    int height\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);\n\
+    int gidz = get_global_id(1);\n\
+    int lidx = get_local_id(0);\n\
+\n\
+    int2 coord = (int2)(gidx, gidz);\n\
+    float4 data;\n\
+    float sum = 0, sqr = 0;\n\
+\n\
+    __local float lcl_sum[16];\n\
+    __local float lcl_sqr[16];\n\
+\n\
+    if(gidx < width)\n\
+    {\n\
+        data = read_imagef(input, coord);\n\
+        sum = data.x;\n\
+        sqr = data.x * data.x;\n\
+    }\n\
+    lcl_sum[lidx] = sum;\n\
+    lcl_sqr[lidx] = sqr;\n\
+    barrier(CLK_LOCAL_MEM_FENCE);\n\
+\n\
+    int4 coord_out = (int4)(get_group_id(0) << 2, gidz, 0, 0);\n\
+    if(lidx == 0)\n\
+    {\n\
+        float4 one = (float4)(1, 1, 1, 1);\n\
+        __local float4* tmp_sum = (__local float4*)lcl_sum;\n\
+        __local float4* tmp_sqr = (__local float4*)lcl_sqr;\n\
+\n\
+        sum = 0; sqr = 0;\n\
+        for(int i = 0; i < 4; i++)\n\
+        {\n\
+            sum += dot(tmp_sum[i], one);\n\
+            sqr += dot(tmp_sqr[i], one);\n\
+        }\n\
+\n\
+        float4 dst = (float4)(0);\n\
+        dst.x = sum;\n\
+        write_imagef(output, coord_out.xy, dst);\n\
+        coord_out.x++;\n\
+        dst.x = sqr;\n\
+        write_imagef(output, coord_out.xy, dst);\n\
+    }\n\
+}\n\
+\n\
+__kernel void group_norm_meanvari(\n\
+    __read_only image2d_t   input,\n\
+    __write_only image2d_t  output,\n\
+    float eps,\n\
+    float group_ratio,\n\
+    int group_stride\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);\n\
+    int lidx = get_local_id(0);\n\
+    int2 coord = (int2)(gidx, get_global_id(1));\n\
+\n\
+    float2 sum_sqr = (float2)(0);\n\
+    float4 mean_vari = (float4)(0);\n\
+\n\
+    __local float2 lcl_data[16];\n\
+    __local float2 lcl_sum[4];\n\
+\n\
+    for(; coord.x < group_stride;)\n\
+    {\n\
+        mean_vari.x += read_imagef(input, coord).x;\n\
+        coord.x++;\n\
+        mean_vari.y += read_imagef(input, coord).x;\n\
+        coord.x+=63;\n\
+    }\n\
+    lcl_data[lidx] = mean_vari.xy;\n\
+    barrier(CLK_LOCAL_MEM_FENCE);\n\
+    if(lidx < 4)\n\
+    {\n\
+        float2 tmpSum = (float2)(0);\n\
+        for(int i = lidx; i < 16; i+=4)\n\
+        {\n\
+            tmpSum += lcl_data[i];\n\
+        }\n\
+        lcl_sum[lidx] = tmpSum;\n\
+    }\n\
+    barrier(CLK_LOCAL_MEM_FENCE);\n\
+    if(lidx == 0)\n\
+    {\n\
+        for(int i = 0; i < 4; i++)\n\
+        {\n\
+            sum_sqr += lcl_sum[i];\n\
+        }\n\
+        mean_vari.xy = sum_sqr * group_ratio;\n\
+        mean_vari.s1 = mean_vari.s1 - mean_vari.s0 * mean_vari.s0 + eps;\n\
+        mean_vari.s1 = rsqrt(mean_vari.s1);\n\
+\n\
+        coord.x = 0;\n\
+        write_imagef(output, coord, mean_vari);\n\
+        coord.x++;\n\
+        float4 data;\n\
+        data.x = mean_vari.y;\n\
+        write_imagef(output, coord, data);\n\
+    }\n\
+}\n\
+\n\
+__kernel void group_norm_F32toF32(\n\
+    __read_only image2d_array_t   input,\n\
+    __read_only image2d_t   bias,\n\
+    __read_only image2d_t   scale,\n\
+    __read_only image2d_t   meanVari,\n\
+    __write_only image2d_array_t  output,\n\
+    float eps,\n\
+    int is2d,\n\
+    float input_zp,\n\
+    float input_scale,\n\
+    float output_zp,\n\
+    float output_scale,\n\
+    float rSpaceOrg,\n\
+    int width,\n\
+    int height,\n\
+    int pStride\n\
+    )\n\
+{\n\
+    int gidy = get_global_id(1);\n\
+    int gidz = get_global_id(2);\n\
+    int4 coord = (int4)(get_global_id(0), gidy, gidz, 0);\n\
+    int4 coord_para = (int4)((convert_int(get_global_id(0) * rSpaceOrg) + gidy * pStride), gidz, 0, 1);\n\
+\n\
+    float4 gamma = read_imagef(scale, coord_para.xy);\n\
+    float4 beta  = read_imagef(bias, coord_para.xy);\n\
+    float4 mean_vari = read_imagef(meanVari, coord_para.zy);\n\
+    mean_vari.y = read_imagef(meanVari, coord_para.wy).x;\n\
+    float4 data = read_imagef(input, coord);\n\
+\n\
+    float scale_vari, bias_val;\n\
+\n\
+    scale_vari = gamma.s0 * mean_vari.s1;\n\
+    bias_val = (beta.s0 - scale_vari * mean_vari.s0);\n\
+\n\
+    float4 dst;\n\
+\n\
+    dst.x = data.x * scale_vari + bias_val;\n\
+    write_imagef(output, coord, dst);\n\
+}\n\
+\n\
+__kernel void group_norm_F32toF32_2D(\n\
+    __read_only image2d_t   input,\n\
+    __read_only image2d_t   bias,\n\
+    __read_only image2d_t   scale,\n\
+    __read_only image2d_t   meanVari,\n\
+    __write_only image2d_t  output,\n\
+    float eps,\n\
+    int is2d,\n\
+    float input_zp,\n\
+    float input_scale,\n\
+    float output_zp,\n\
+    float output_scale,\n\
+    float rSpaceOrg,\n\
+    int width,\n\
+    int height,\n\
+    int pStride\n\
+    )\n\
+{\n\
+    int gidz = get_global_id(1);\n\
+    int2 coord = (int2)(get_global_id(0), gidz);\n\
+    int4 coord_para = (int4)(convert_int(get_global_id(0) * rSpaceOrg), gidz, 0, 1);\n\
+\n\
+    float4 gamma = read_imagef(scale, coord_para.xy);\n\
+    float4 beta  = read_imagef(bias, coord_para.xy);\n\
+    float4 mean_vari = read_imagef(meanVari, coord_para.zy);\n\
+    mean_vari.y = read_imagef(meanVari, coord_para.wy).x;\n\
+    float4 data = read_imagef(input, coord);\n\
+\n\
+    float scale_vari, bias_val;\n\
+\n\
+    scale_vari = gamma.s0 * mean_vari.s1;\n\
+    bias_val = beta.s0 - scale_vari * mean_vari.s0;\n\
+\n\
+    float4 dst;\n\
+\n\
+    dst.x = data.x * scale_vari + bias_val;\n\
+    write_imagef(output, coord, dst);\n\
+}\n\
+"; /* end of group_normalization_f32_cl*/
+
+static const char group_normalization_i32_cl[] = "__kernel void group_norm_sumsqr_I32(\n\
+    __read_only image2d_array_t   input,\n\
+    __write_only image2d_t  output,\n\
+    float eps,\n\
+    int is2d,\n\
+    float input_zp,\n\
+    float input_scale,\n\
+    int width,\n\
+    int height\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);\n\
+    int gidz = get_global_id(1);\n\
+    int lidx = get_local_id(0);\n\
+\n\
+    int4 coord = (int4)(gidx, 0, gidz, 0);\n\
+    float4 data;\n\
+    float sum = 0, sqr = 0;\n\
+    float tmpSum = 0;\n\
+    float e2InScale = input_scale * input_scale;\n\
+\n\
+    __local float lcl_sum[16];\n\
+    __local float lcl_sqr[16];\n\
+\n\
+    if(gidx < width)\n\
+    {\n\
+        for(coord.y = 0; coord.y < height;)\n\
+        {\n\
+            data = convert_float4(read_imagei(input, coord));\n\
+            coord.y++;\n\
+            tmpSum += data.x;\n\
+            sqr += (data.x * data.x * e2InScale);\n\
+        }\n\
+        sum = tmpSum * input_scale;\n\
+    }\n\
+    lcl_sum[lidx] = sum;\n\
+    lcl_sqr[lidx] = sqr;\n\
+    barrier(CLK_LOCAL_MEM_FENCE);\n\
+\n\
+    int4 coord_out = (int4)(get_group_id(0) << 2, gidz, 0, 0);\n\
+    if(lidx == 0)\n\
+    {\n\
+        float4 one = (float4)(1, 1, 1, 1);\n\
+        __local float4* tmp_sum = (__local float4*)lcl_sum;\n\
+        __local float4* tmp_sqr = (__local float4*)lcl_sqr;\n\
+\n\
+        sum = 0; sqr = 0;\n\
+        for(int i = 0; i < 4; i++)\n\
+        {\n\
+            sum += dot(tmp_sum[i], one);\n\
+            sqr += dot(tmp_sqr[i], one);\n\
+        }\n\
+\n\
+        float4 dst = (float4)(0);\n\
+        dst.x = sum;\n\
+        write_imagef(output, coord_out.xy, dst);\n\
+        coord_out.x++;\n\
+        dst.x = sqr;\n\
+        write_imagef(output, coord_out.xy, dst);\n\
+    }\n\
+}\n\
+\n\
+__kernel void group_norm_sumsqr_I32_2D(\n\
+    __read_only image2d_t   input,\n\
+    __write_only image2d_t  output,\n\
+    float eps,\n\
+    int is2d,\n\
+    float input_zp,\n\
+    float input_scale,\n\
+    int width,\n\
+    int height\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);\n\
+    int gidz = get_global_id(1);\n\
+    int lidx = get_local_id(0);\n\
+\n\
+    int2 coord = (int2)(gidx, gidz);\n\
+    float4 data;\n\
+    float sum = 0, sqr = 0;\n\
+\n\
+    __local float lcl_sum[16];\n\
+    __local float lcl_sqr[16];\n\
+\n\
+    if(gidx < width)\n\
+    {\n\
+        data = convert_float4(read_imagei(input, coord));\n\
+        sum = data.x * input_scale;\n\
+        sqr = sum * sum;\n\
+    }\n\
+    lcl_sum[lidx] = sum;\n\
+    lcl_sqr[lidx] = sqr;\n\
+    barrier(CLK_LOCAL_MEM_FENCE);\n\
+\n\
+    int4 coord_out = (int4)(get_group_id(0) << 2, gidz, 0, 0);\n\
+    if(lidx == 0)\n\
+    {\n\
+        float4 one = (float4)(1, 1, 1, 1);\n\
+        __local float4* tmp_sum = (__local float4*)lcl_sum;\n\
+        __local float4* tmp_sqr = (__local float4*)lcl_sqr;\n\
+\n\
+        sum = 0; sqr = 0;\n\
+        for(int i = 0; i < 4; i++)\n\
+        {\n\
+            sum += dot(tmp_sum[i], one);\n\
+            sqr += dot(tmp_sqr[i], one);\n\
+        }\n\
+\n\
+        float4 dst = (float4)(0);\n\
+        dst.x = sum;\n\
+        write_imagef(output, coord_out.xy, dst);\n\
+        coord_out.x++;\n\
+        dst.x = sqr;\n\
+        write_imagef(output, coord_out.xy, dst);\n\
+    }\n\
+}\n\
+\n\
+__kernel void group_norm_I32toI32(\n\
+    __read_only image2d_array_t   input,\n\
+    __read_only image2d_t   bias,\n\
+    __read_only image2d_t   scale,\n\
+    __read_only image2d_t   meanVari,\n\
+    __write_only image2d_array_t  output,\n\
+    float eps,\n\
+    int is2d,\n\
+    float input_zp,\n\
+    float input_scale,\n\
+    float output_zp,\n\
+    float output_scale,\n\
+    float rSpaceOrg,\n\
+    int width,\n\
+    int height,\n\
+    int pStride\n\
+    )\n\
+{\n\
+    int gidy = get_global_id(1);\n\
+    int gidz = get_global_id(2);\n\
+    int4 coord = (int4)(get_global_id(0), gidy, gidz, 0);\n\
+    int4 coord_para = (int4)((convert_int(get_global_id(0) * rSpaceOrg) + gidy * pStride), gidz, 0, 1);\n\
+\n\
+    float4 gamma = read_imagef(scale, coord_para.xy);\n\
+    float4 beta  = read_imagef(bias, coord_para.xy);\n\
+    float4 mean_vari = read_imagef(meanVari, coord_para.zy);\n\
+    mean_vari.y = read_imagef(meanVari, coord_para.wy).x;\n\
+    float4 data = convert_float4(read_imagei(input, coord));\n\
+\n\
+    float scale_vari, bias_val;\n\
+\n\
+    scale_vari = gamma.s0 * mean_vari.s1;\n\
+    float alpha = input_scale * output_scale * scale_vari;\n\
+    bias_val = (beta.s0 - scale_vari * mean_vari.s0) * output_scale;\n\
+\n\
+    int4 dst;\n\
+    float4 norm;\n\
+    norm.x = data.x * alpha + bias_val;\n\
+    dst = convert_int4_rte(norm);\n\
+    write_imagei(output, coord, dst);\n\
+}\n\
+\n\
+__kernel void group_norm_I32toI32_2D(\n\
+    __read_only image2d_t   input,\n\
+    __read_only image2d_t   bias,\n\
+    __read_only image2d_t   scale,\n\
+    __read_only image2d_t   meanVari,\n\
+    __write_only image2d_t  output,\n\
+    float eps,\n\
+    int is2d,\n\
+    float input_zp,\n\
+    float input_scale,\n\
+    float output_zp,\n\
+    float output_scale,\n\
+    float rSpaceOrg,\n\
+    int width,\n\
+    int height,\n\
+    int pStride\n\
+    )\n\
+{\n\
+    int gidz = get_global_id(1);\n\
+    int2 coord = (int2)(get_global_id(0), gidz);\n\
+    int4 coord_para = (int4)(convert_int(get_global_id(0) * rSpaceOrg), gidz, 0, 1);\n\
+\n\
+    float4 gamma = read_imagef(scale, coord_para.xy);\n\
+    float4 beta  = read_imagef(bias, coord_para.xy);\n\
+    float4 mean_vari = read_imagef(meanVari, coord_para.zy);\n\
+    mean_vari.y = read_imagef(meanVari, coord_para.wy).x;\n\
+    float4 data = convert_float4(read_imagei(input, coord));\n\
+\n\
+    float scale_vari, bias_val;\n\
+\n\
+    scale_vari = gamma.s0 * mean_vari.s1;\n\
+    float alpha = input_scale * output_scale * scale_vari;\n\
+    bias_val = (beta.s0 - scale_vari * mean_vari.s0) * output_scale;\n\
+\n\
+    int4 dst;\n\
+    float4 norm;\n\
+    norm.x = data.x * alpha + bias_val;\n\
+    dst = convert_int4_rte(norm);\n\
+    write_imagei(output, coord, dst);\n\
+}\n\
+\n\
+__kernel void group_norm_I32toF32(\n\
+    __read_only image2d_array_t   input,\n\
+    __read_only image2d_t   bias,\n\
+    __read_only image2d_t   scale,\n\
+    __read_only image2d_t   meanVari,\n\
+    __write_only image2d_array_t  output,\n\
+    float eps,\n\
+    int is2d,\n\
+    float input_zp,\n\
+    float input_scale,\n\
+    float output_zp,\n\
+    float output_scale,\n\
+    float rSpaceOrg,\n\
+    int width,\n\
+    int height,\n\
+    int pStride\n\
+    )\n\
+{\n\
+    int gidy = get_global_id(1);\n\
+    int gidz = get_global_id(2);\n\
+    int4 coord = (int4)(get_global_id(0), gidy, gidz, 0);\n\
+    int4 coord_para = (int4)((convert_int(get_global_id(0) * rSpaceOrg) + gidy * pStride), gidz, 0, 1);\n\
+\n\
+    float4 gamma = read_imagef(scale, coord_para.xy);\n\
+    float4 beta  = read_imagef(bias, coord_para.xy);\n\
+    float4 mean_vari = read_imagef(meanVari, coord_para.zy);\n\
+    mean_vari.y = read_imagef(meanVari, coord_para.wy).x;\n\
+    float4 data = convert_float4(read_imagei(input, coord));\n\
+\n\
+    float scale_vari, bias_val;\n\
+\n\
+    scale_vari = gamma.s0 * mean_vari.s1;\n\
+    float alpha = input_scale * scale_vari;\n\
+    bias_val = (beta.s0 - scale_vari * mean_vari.s0);\n\
+\n\
+    float4 norm;\n\
+    norm.x = data.x * alpha + bias_val;\n\
+    write_imagef(output, coord, norm);\n\
+}\n\
+\n\
+__kernel void group_norm_I32toF32_2D(\n\
+    __read_only image2d_t   input,\n\
+    __read_only image2d_t   bias,\n\
+    __read_only image2d_t   scale,\n\
+    __read_only image2d_t   meanVari,\n\
+    __write_only image2d_t  output,\n\
+    float eps,\n\
+    int is2d,\n\
+    float input_zp,\n\
+    float input_scale,\n\
+    float output_zp,\n\
+    float output_scale,\n\
+    float rSpaceOrg,\n\
+    int width,\n\
+    int height,\n\
+    int pStride\n\
+    )\n\
+{\n\
+    int gidz = get_global_id(1);\n\
+    int2 coord = (int2)(get_global_id(0), gidz);\n\
+    int4 coord_para = (int4)(convert_int(get_global_id(0) * rSpaceOrg), gidz, 0, 1);\n\
+\n\
+    float4 gamma = read_imagef(scale, coord_para.xy);\n\
+    float4 beta  = read_imagef(bias, coord_para.xy);\n\
+    float4 mean_vari = read_imagef(meanVari, coord_para.zy);\n\
+    mean_vari.y = read_imagef(meanVari, coord_para.wy).x;\n\
+    float4 data = convert_float4(read_imagei(input, coord));\n\
+\n\
+    float scale_vari, bias_val;\n\
+\n\
+    scale_vari = gamma.s0 * mean_vari.s1;\n\
+    float alpha = input_scale * scale_vari;\n\
+    bias_val = beta.s0 - scale_vari * mean_vari.s0;\n\
+\n\
+    float4 norm;\n\
+    norm.x = data.x * alpha + bias_val;\n\
+    write_imagef(output, coord, norm);\n\
+}\n\
+"; /* end of group_normalization_i32_cl*/
+
+static const char group_normalization_u8_cl[] = "__kernel void group_norm_sumsqr_U8(\n\
+    __read_only image2d_array_t   input,\n\
+    __write_only image2d_t  output,\n\
+    float eps,\n\
+    int is2d,\n\
+    float input_zp,\n\
+    float input_scale,\n\
+    int width,\n\
+    int height\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);\n\
+    int gidz = get_global_id(1);\n\
+    int lidx = get_local_id(0);\n\
+\n\
+    int4 coord = (int4)(gidx, 0, gidz, 0);\n\
+    float4 data;\n\
+    float sum = 0, sqr = 0;\n\
+    float tmpSum = 0, tmpSqr = 0;\n\
+    float e2InScale = input_scale * input_scale;\n\
+\n\
+    __local float lcl_sum[16];\n\
+    __local float lcl_sqr[16];\n\
+\n\
+    if(gidx < width)\n\
+    {\n\
+        for(coord.y = 0; coord.y < height;)\n\
+        {\n\
+            data = convert_float4(read_imageui(input, coord));\n\
+            coord.y++;\n\
+            tmpSum += data.x;\n\
+            tmpSqr += data.x * data.x;\n\
+        }\n\
+        sqr = (tmpSqr - 2 * input_zp * tmpSum + height * input_zp * input_zp) * e2InScale;\n\
+        sum = (tmpSum - height * input_zp) * input_scale;\n\
+    }\n\
+    lcl_sum[lidx] = sum;\n\
+    lcl_sqr[lidx] = sqr;\n\
+    barrier(CLK_LOCAL_MEM_FENCE);\n\
+\n\
+    int4 coord_out = (int4)(get_group_id(0) << 2, gidz, 0, 0);\n\
+    if(lidx == 0)\n\
+    {\n\
+        float4 one = (float4)(1, 1, 1, 1);\n\
+        __local float4* tmp_sum = (__local float4*)lcl_sum;\n\
+        __local float4* tmp_sqr = (__local float4*)lcl_sqr;\n\
+\n\
+        sum = 0; sqr = 0;\n\
+        for(int i = 0; i < 4; i++)\n\
+        {\n\
+            sum += dot(tmp_sum[i], one);\n\
+            sqr += dot(tmp_sqr[i], one);\n\
+        }\n\
+\n\
+        float4 dst = (float4)(0);\n\
+        dst.x = sum;\n\
+        write_imagef(output, coord_out.xy, dst);\n\
+        coord_out.x++;\n\
+        dst.x = sqr;\n\
+        write_imagef(output, coord_out.xy, dst);\n\
+    }\n\
+}\n\
+\n\
+__kernel void group_norm_sumsqr_U8_2D(\n\
+    __read_only image2d_t   input,\n\
+    __write_only image2d_t  output,\n\
+    float eps,\n\
+    int is2d,\n\
+    float input_zp,\n\
+    float input_scale,\n\
+    int width,\n\
+    int height\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);\n\
+    int gidz = get_global_id(1);\n\
+    int lidx = get_local_id(0);\n\
+\n\
+    int2 coord = (int2)(gidx, gidz);\n\
+    float4 data;\n\
+    float sum = 0, sqr = 0;\n\
+\n\
+    __local float lcl_sum[16];\n\
+    __local float lcl_sqr[16];\n\
+\n\
+    if(gidx < width)\n\
+    {\n\
+        data = convert_float4(read_imageui(input, coord));\n\
+        sum = (data.x - input_zp) * input_scale;\n\
+        sqr = sum * sum;\n\
+    }\n\
+    lcl_sum[lidx] = sum;\n\
+    lcl_sqr[lidx] = sqr;\n\
+    barrier(CLK_LOCAL_MEM_FENCE);\n\
+\n\
+    int4 coord_out = (int4)(get_group_id(0) << 2, gidz, 0, 0);\n\
+    if(lidx == 0)\n\
+    {\n\
+        float4 one = (float4)(1, 1, 1, 1);\n\
+        __local float4* tmp_sum = (__local float4*)lcl_sum;\n\
+        __local float4* tmp_sqr = (__local float4*)lcl_sqr;\n\
+\n\
+        sum = 0; sqr = 0;\n\
+        for(int i = 0; i < 4; i++)\n\
+        {\n\
+            sum += dot(tmp_sum[i], one);\n\
+            sqr += dot(tmp_sqr[i], one);\n\
+        }\n\
+\n\
+        float4 dst = (float4)(0);\n\
+        dst.x = sum;\n\
+        write_imagef(output, coord_out.xy, dst);\n\
+        coord_out.x++;\n\
+        dst.x = sqr;\n\
+        write_imagef(output, coord_out.xy, dst);\n\
+    }\n\
+}\n\
+\n\
+__kernel void group_norm_U8toU8(\n\
+    __read_only image2d_array_t   input,\n\
+    __read_only image2d_t   bias,\n\
+    __read_only image2d_t   scale,\n\
+    __read_only image2d_t   meanVari,\n\
+    __write_only image2d_array_t  output,\n\
+    float eps,\n\
+    int is2d,\n\
+    float input_zp,\n\
+    float input_scale,\n\
+    float output_zp,\n\
+    float output_scale,\n\
+    float rSpaceOrg,\n\
+    int width,\n\
+    int height,\n\
+    int pStride\n\
+    )\n\
+{\n\
+    int gidy = get_global_id(1);\n\
+    int gidz = get_global_id(2);\n\
+    int4 coord = (int4)(get_global_id(0), gidy, gidz, 0);\n\
+    int4 coord_para = (int4)((convert_int(get_global_id(0) * rSpaceOrg) + gidy * pStride), gidz, 0, 1);\n\
+\n\
+    float4 gamma = read_imagef(scale, coord_para.xy);\n\
+    float4 beta  = read_imagef(bias, coord_para.xy);\n\
+    float4 mean_vari = read_imagef(meanVari, coord_para.zy);\n\
+    mean_vari.y = read_imagef(meanVari, coord_para.wy).x;\n\
+    float4 data = convert_float4(read_imageui(input, coord));\n\
+\n\
+    float scale_vari, bias_val;\n\
+    float scale_inOut = input_scale * output_scale;\n\
+\n\
+    scale_vari = gamma.s0 * mean_vari.s1;\n\
+    float alpha = scale_inOut * scale_vari;\n\
+    bias_val = (beta.s0 - scale_vari * mean_vari.s0) * output_scale + output_zp;\n\
+\n\
+    uint4 dst;\n\
+    data.x -= input_zp;\n\
+    float4 norm;\n\
+    norm.x = data.x * alpha + bias_val;\n\
+    dst = convert_uint4_rte(norm);\n\
+    write_imageui(output, coord, dst);\n\
+}\n\
+\n\
+__kernel void group_norm_U8toU8_2D(\n\
+    __read_only image2d_t   input,\n\
+    __read_only image2d_t   bias,\n\
+    __read_only image2d_t   scale,\n\
+    __read_only image2d_t   meanVari,\n\
+    __write_only image2d_t  output,\n\
+    float eps,\n\
+    int is2d,\n\
+    float input_zp,\n\
+    float input_scale,\n\
+    float output_zp,\n\
+    float output_scale,\n\
+    float rSpaceOrg,\n\
+    int width,\n\
+    int height,\n\
+    int pStride\n\
+    )\n\
+{\n\
+    int gidz = get_global_id(1);\n\
+    int2 coord = (int2)(get_global_id(0), gidz);\n\
+    int4 coord_para = (int4)(convert_int(get_global_id(0) * rSpaceOrg), gidz, 0, 1);\n\
+\n\
+    float4 gamma = read_imagef(scale, coord_para.xy);\n\
+    float4 beta  = read_imagef(bias, coord_para.xy);\n\
+    float4 mean_vari = read_imagef(meanVari, coord_para.zy);\n\
+    mean_vari.y = read_imagef(meanVari, coord_para.wy).x;\n\
+    float4 data = convert_float4(read_imageui(input, coord));\n\
+\n\
+    float scale_vari, bias_val;\n\
+    float scale_inOut = input_scale * output_scale;\n\
+\n\
+    scale_vari = gamma.s0 * mean_vari.s1;\n\
+    float alpha = scale_inOut * scale_vari;\n\
+    bias_val = (beta.s0 - scale_vari * mean_vari.s0) * output_scale + output_zp;\n\
+\n\
+    uint4 dst;\n\
+    data.x -= input_zp;\n\
+    float4 norm;\n\
+    norm.x = data.x * alpha + bias_val;\n\
+    dst = convert_uint4_rte(norm);\n\
+    write_imageui(output, coord, dst);\n\
+}\n\
+\n\
+__kernel void group_norm_U8toF32(\n\
+    __read_only image2d_array_t   input,\n\
+    __read_only image2d_t   bias,\n\
+    __read_only image2d_t   scale,\n\
+    __read_only image2d_t   meanVari,\n\
+    __write_only image2d_array_t  output,\n\
+    float eps,\n\
+    int is2d,\n\
+    float input_zp,\n\
+    float input_scale,\n\
+    float output_zp,\n\
+    float output_scale,\n\
+    float rSpaceOrg,\n\
+    int width,\n\
+    int height,\n\
+    int pStride\n\
+    )\n\
+{\n\
+    int gidy = get_global_id(1);\n\
+    int gidz = get_global_id(2);\n\
+    int4 coord = (int4)(get_global_id(0), gidy, gidz, 0);\n\
+    int4 coord_para = (int4)((convert_int(get_global_id(0) * rSpaceOrg) + gidy * pStride), gidz, 0, 1);\n\
+\n\
+    float4 gamma = read_imagef(scale, coord_para.xy);\n\
+    float4 beta  = read_imagef(bias, coord_para.xy);\n\
+    float4 mean_vari = read_imagef(meanVari, coord_para.zy);\n\
+    mean_vari.y = read_imagef(meanVari, coord_para.wy).x;\n\
+    float4 data = convert_float4(read_imageui(input, coord));\n\
+\n\
+    float scale_vari, bias_val;\n\
+    float scale_inOut = input_scale * output_scale;\n\
+\n\
+    scale_vari = gamma.s0 * mean_vari.s1;\n\
+    float alpha = scale_inOut * scale_vari;\n\
+    bias_val = (beta.s0 - scale_vari * mean_vari.s0) * output_scale + output_zp;\n\
+\n\
+    data.x -= input_zp;\n\
+    float4 norm;\n\
+    norm.x = data.x * alpha + bias_val;\n\
+    write_imagef(output, coord, norm);\n\
+}\n\
+\n\
+__kernel void group_norm_U8toF32_2D(\n\
+    __read_only image2d_t   input,\n\
+    __read_only image2d_t   bias,\n\
+    __read_only image2d_t   scale,\n\
+    __read_only image2d_t   meanVari,\n\
+    __write_only image2d_t  output,\n\
+    float eps,\n\
+    int is2d,\n\
+    float input_zp,\n\
+    float input_scale,\n\
+    float output_zp,\n\
+    float output_scale,\n\
+    float rSpaceOrg,\n\
+    int width,\n\
+    int height,\n\
+    int pStride\n\
+    )\n\
+{\n\
+    int gidz = get_global_id(1);\n\
+    int2 coord = (int2)(get_global_id(0), gidz);\n\
+    int4 coord_para = (int4)(convert_int(get_global_id(0) * rSpaceOrg), gidz, 0, 1);\n\
+\n\
+    float4 gamma = read_imagef(scale, coord_para.xy);\n\
+    float4 beta  = read_imagef(bias, coord_para.xy);\n\
+    float4 mean_vari = read_imagef(meanVari, coord_para.zy);\n\
+    mean_vari.y = read_imagef(meanVari, coord_para.wy).x;\n\
+    float4 data = convert_float4(read_imageui(input, coord));\n\
+\n\
+    float scale_vari, bias_val;\n\
+    float scale_inOut = input_scale * output_scale;\n\
+\n\
+    scale_vari = gamma.s0 * mean_vari.s1;\n\
+    float alpha = scale_inOut * scale_vari;\n\
+    bias_val = (beta.s0 - scale_vari * mean_vari.s0) * output_scale + output_zp;\n\
+\n\
+    data.x -= input_zp;\n\
+    float4 norm;\n\
+    norm.x = data.x * alpha + bias_val;\n\
+    write_imagef(output, coord, norm);\n\
+}\n\
+"; /* end of group_normalization_u8_cl*/
+
 static const char grucell_activation_cl[] = "__kernel void grucell_activation(\n\
     __read_only image2d_array_t   input,\n\
     __write_only image2d_array_t  output)\n\
@@ -49244,6 +51407,11 @@ static const source_map_t evis_resource[] =
     {"gather_nd_3d_vx", gather_nd_3d_vx},
     {"gather_nd_3d_mix_vx", gather_nd_3d_mix_vx},
     {"gather_nd_mix_vx", gather_nd_mix_vx},
+    {"group_normalization_f16_vx", group_normalization_f16_vx},
+    {"group_normalization_i16_vx", group_normalization_i16_vx},
+    {"group_normalization_i8_vx", group_normalization_i8_vx},
+    {"group_normalization_u8_vx", group_normalization_u8_vx},
+    {"group_normalization_u8_f16_vx", group_normalization_u8_f16_vx},
     {"grucell_activation_vx", grucell_activation_vx},
     {"grucell_activation_sma_vx", grucell_activation_sma_vx},
     {"grucell_cdnn_activation_vx", grucell_cdnn_activation_vx},
@@ -49433,6 +51601,9 @@ static const source_map_t cl_resource[] =
     {"gather_cl", gather_cl},
     {"gather_nd_cl", gather_nd_cl},
     {"gather_nd_3d_cl", gather_nd_3d_cl},
+    {"group_normalization_f32_cl", group_normalization_f32_cl},
+    {"group_normalization_i32_cl", group_normalization_i32_cl},
+    {"group_normalization_u8_cl", group_normalization_u8_cl},
     {"grucell_activation_cl", grucell_activation_cl},
     {"grucell_activation_sma_cl", grucell_activation_sma_cl},
     {"hswish_cl", hswish_cl},

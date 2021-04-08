@@ -51,7 +51,7 @@ static vsi_status op_compute
     vsi_status status = VSI_FAILURE;
     vsi_nn_kernel_param_t * param = NULL;
     vsi_nn_kernel_node_t    n = NULL;
-    float eps = self->nn_param.instancenorm.eps;
+    float eps = self->nn_param.layernorm.eps;
     uint32_t *input_size = inputs[0]->attr.size;
     uint32_t dims_num = inputs[0]->attr.dim_num;
     int32_t rs_flg = 0;
