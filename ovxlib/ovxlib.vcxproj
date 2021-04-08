@@ -553,6 +553,7 @@
     <ClInclude Include="include\ops\vsi_nn_op_heatmap_max_keypoint.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_imageprocess.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_instancenormalize.h"/>
+    <ClInclude Include="include\ops\vsi_nn_op_groupnormalize.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_interp.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_l2_normalize.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_l2normalizescale.h"/>
@@ -796,6 +797,9 @@
     <ClCompile Include="src\kernel\cl\instance_normalization_cl.c">
       <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="src\kernel\cl\group_normalization_cl.c">
+      <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="src\kernel\cl\layer_normalization_cl.c">
       <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
@@ -944,6 +948,9 @@
       <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\instance_normalization_cpu.c">
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\kernel\cpu\group_normalization_cpu.c">
       <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\layer_normalization_cpu.c">
@@ -1115,6 +1122,9 @@
       <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\instance_normalization_evis.c">
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\kernel\evis\group_normalization_evis.c">
       <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\layer_normalization_evis.c">
@@ -1469,6 +1479,9 @@
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_instancenormalize.c">
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_groupnormalize.c">
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_interp.c">
