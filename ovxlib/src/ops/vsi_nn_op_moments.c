@@ -37,7 +37,7 @@
 #define _INPUT_NUM    1
 #define _OUTPUT_NUM   2
 
-static vsi_status op_compute
+static vsi_status _op_compute
     (
     vsi_nn_node_t * self,
     vsi_nn_tensor_t ** inputs,
@@ -56,13 +56,13 @@ static vsi_status op_compute
     vsi_nn_kernel_param_add_buffer( param, "axis", axis, axis_num);
     vsi_nn_kernel_param_add_int32( param, "keep_dim", keep_dim);
     n = vsi_nn_kernel_selector( self->graph, "moments", inputs, _INPUT_NUM, outputs, _OUTPUT_NUM, param );
-    if( n != NULL )
+    if ( n != NULL )
     {
         self->n = (vx_node)n;
         status = VSI_SUCCESS;
     }
 
-    if(param != NULL)
+    if (param != NULL)
     {
         vsi_nn_kernel_param_release( &param );
     }
@@ -70,7 +70,7 @@ static vsi_status op_compute
     return status;
 } /* op_compute() */
 
-static vsi_bool op_check
+static vsi_bool _op_check
     (
     vsi_nn_node_t * self,
     vsi_nn_tensor_t ** inputs,
@@ -85,7 +85,7 @@ static vsi_bool op_check
         IO_TYPE(D_F32,   D_F32,  D_F32)
         IO_TYPE(D_I32,   D_F32,  D_F32)
     END_IO_TYPE_DECL(MOMENTS)
-    if(!VALIDATE_OP_IO_TYPES(MOMENTS, self, inputs, self->input.num, outputs, self->output.num)) {
+    if (!VALIDATE_OP_IO_TYPES(MOMENTS, self, inputs, self->input.num, outputs, self->output.num)) {
         char* desc = generate_op_io_types_desc(inputs,
                 self->input.num, outputs, self->output.num);
         VSILOGE("Inputs/Outputs data type not support: %s", desc);
@@ -96,7 +96,7 @@ static vsi_bool op_check
     return TRUE;
 } /* op_check() */
 
-static vsi_bool op_setup
+static vsi_bool _op_setup
     (
     vsi_nn_node_t * self,
     vsi_nn_tensor_t ** inputs,
@@ -106,24 +106,35 @@ static vsi_bool op_setup
     /* TODO: Add code to comput outputs' shape. */
     int32_t i = 0, j = 0;
     vsi_nn_moments_param * p = NULL;
+    int32_t* axis            = NULL;
+    int32_t  axis_num        = 0;
+    p = &(self->nn_param.moments);
+    axis = p->axis;
+    axis_num = p->axis_num;
 
-    if( VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num )
+    for(i = 0; i < axis_num; i++)
     {
-        int32_t* axis = NULL;
-        int32_t axis_num = 0;
-        p = &(self->nn_param.moments);
-        axis = p->axis;
+        if (axis[i] == 3 && inputs[0]->attr.size[3] == 1)
+        {
+            self->nn_param.moments.axis_num = axis_num - 1;
+            self->nn_param.moments.axis[i] = 0;
+            break;
+        }
+    }
+
+    if ( VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num )
+    {
         axis_num = p->axis_num;
 
         for(i = 0; i < axis_num; i++)
         {
-            if(axis[i] > 2)
+            if (axis[i] > 2)
             {
                 return FALSE;
             }
         }
 
-        if(p->keep_dim)
+        if (p->keep_dim)
         {
             outputs[0]->attr.dim_num = inputs[0]->attr.dim_num;
             outputs[1]->attr.dim_num = inputs[0]->attr.dim_num;
@@ -178,7 +189,7 @@ static vsi_bool op_setup
     return TRUE;
 } /* op_setup() */
 
-static vsi_status op_deinit
+static vsi_status _op_deinit
     (
     vsi_nn_node_t * self
     )
@@ -196,10 +207,10 @@ DEF_OP_REG
     (
     /* op_name    */ MOMENTS,
     /* init       */ NULL,
-    /* compute    */ op_compute,
-    /* deinit     */ op_deinit,
-    /* check      */ op_check,
-    /* setup      */ op_setup,
+    /* compute    */ _op_compute,
+    /* deinit     */ _op_deinit,
+    /* check      */ _op_check,
+    /* setup      */ _op_setup,
     /* optimize   */ NULL,
     /* input_num  */ _INPUT_NUM,
     /* output_num */ _OUTPUT_NUM
