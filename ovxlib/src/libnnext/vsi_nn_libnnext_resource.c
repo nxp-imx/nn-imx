@@ -24592,10 +24592,16 @@ _viv_uniform int r_order;\n\
 _viv_uniform int b_order;\n\
 _viv_uniform VXC_512Bits uniExtractRtoF32_part0_4x4;\n\
 _viv_uniform VXC_512Bits uniExtractRtoF32_part1_4x4;\n\
+_viv_uniform VXC_512Bits uniExtractRtoF32_part2_4x4;\n\
+_viv_uniform VXC_512Bits uniExtractRtoF32_part3_4x4;\n\
 _viv_uniform VXC_512Bits uniExtractGtoF32_part0_4x4;\n\
 _viv_uniform VXC_512Bits uniExtractGtoF32_part1_4x4;\n\
+_viv_uniform VXC_512Bits uniExtractGtoF32_part2_4x4;\n\
+_viv_uniform VXC_512Bits uniExtractGtoF32_part3_4x4;\n\
 _viv_uniform VXC_512Bits uniExtractBtoF32_part0_4x4;\n\
 _viv_uniform VXC_512Bits uniExtractBtoF32_part1_4x4;\n\
+_viv_uniform VXC_512Bits uniExtractBtoF32_part2_4x4;\n\
+_viv_uniform VXC_512Bits uniExtractBtoF32_part3_4x4;\n\
 _viv_uniform VXC_512Bits uniExtract8Data_2x8;\n\
 \n\
 #define IMAGE_PRE_PROCESS_COPY_16BITS(dst_name, dst_type, copy_type, convert_type) \\\n\
@@ -24617,13 +24623,14 @@ __kernel void pre_process_rgb_copy_U8to##dst_name \\\n\
 { \\\n\
     int2 coord      = (int2)(get_global_id(0) * 3, get_global_id(1)); \\\n\
  \\\n\
-    coord.xy += (int2) (*xOffset, *yOffset); \\\n\
+    coord.xy = coord.xy + (int2) (*xOffset * 3 + 16, *yOffset); \\\n\
     vxc_uchar16 src0, src1; \\\n\
     dst_type   dst0; \\\n\
     copy_type   dst; \\\n\
  \\\n\
-    VXC_ReadImage(src0, input, coord.xy, 0, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
-    VXC_ReadImage(src1, input, coord.xy, VXC_5BITOFFSET_XY(15, 0), \\\n\
+    VXC_ReadImage(src0, input, coord.xy, VXC_5BITOFFSET_XY(-16, 0), \\\n\
+        VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
+    VXC_ReadImage(src1, input, coord.xy, VXC_5BITOFFSET_XY(0, 0), \\\n\
         VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
  \\\n\
     f32Var *= outputScale; \\\n\
@@ -24634,7 +24641,7 @@ __kernel void pre_process_rgb_copy_U8to##dst_name \\\n\
     float4 tmp0, tmp1; \\\n\
     convert_type result0, result1; \\\n\
  \\\n\
-    VXC_DP4x4(tmp0, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractRtoF32_part0_4x4); \\\n\
+    VXC_DP4x4(tmp0, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractRtoF32_part0_4x4); \\\n\
     VXC_DP4x4(tmp1, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractRtoF32_part1_4x4); \\\n\
     tmp0 = tmp0 * paramData.w - paramData.x; \\\n\
     tmp1 = tmp1 * paramData.w - paramData.x; \\\n\
@@ -24645,7 +24652,7 @@ __kernel void pre_process_rgb_copy_U8to##dst_name \\\n\
     VXC_WriteImage2DArray(output, coord_out, dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
  \\\n\
     coord_out.z = 1; \\\n\
-    VXC_DP4x4(tmp0, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractGtoF32_part0_4x4); \\\n\
+    VXC_DP4x4(tmp0, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractGtoF32_part0_4x4); \\\n\
     VXC_DP4x4(tmp1, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractGtoF32_part1_4x4); \\\n\
     tmp0 = tmp0 * paramData.w - paramData.y; \\\n\
     tmp1 = tmp1 * paramData.w - paramData.y; \\\n\
@@ -24656,7 +24663,7 @@ __kernel void pre_process_rgb_copy_U8to##dst_name \\\n\
     VXC_WriteImage2DArray(output, coord_out, dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
  \\\n\
     coord_out.z = b_order; \\\n\
-    VXC_DP4x4(tmp0, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractBtoF32_part0_4x4); \\\n\
+    VXC_DP4x4(tmp0, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractBtoF32_part0_4x4); \\\n\
     VXC_DP4x4(tmp1, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractBtoF32_part1_4x4); \\\n\
     tmp0 = tmp0 * paramData.w - paramData.z; \\\n\
     tmp1 = tmp1 * paramData.w - paramData.z; \\\n\
@@ -24687,12 +24694,16 @@ __kernel void pre_process_rgb_copy_U8to##dst_name \\\n\
     ) \\\n\
 { \\\n\
     int2 coord      = (int2)(get_global_id(0) * 3, get_global_id(1)); \\\n\
-    coord.xy += (int2) (*xOffset, *yOffset); \\\n\
-    vxc_uchar16 src0, src1; \\\n\
+    coord.xy = coord.xy + (int2) (*xOffset * 3 + 16, *yOffset); \\\n\
+    vxc_uchar16 src0, src1, src2; \\\n\
     dst_type dst; \\\n\
  \\\n\
-    VXC_ReadImage(src0, input, coord.xy, 0, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
-    VXC_ReadImage(src1, input, coord.xy, VXC_5BITOFFSET_XY(15, 0), \\\n\
+    VXC_ReadImage(src0, input, coord.xy, VXC_5BITOFFSET_XY(-16, 0), \\\n\
+        VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
+    VXC_ReadImage(src1, input, coord.xy, VXC_5BITOFFSET_XY(0, 0), \\\n\
+        VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
+        coord.x += 16; \\\n\
+    VXC_ReadImage(src2, input, coord.xy, VXC_5BITOFFSET_XY(0, 0), \\\n\
         VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
  \\\n\
     f32Var *= outputScale; \\\n\
@@ -24703,35 +24714,55 @@ __kernel void pre_process_rgb_copy_U8to##dst_name \\\n\
     float4 tmp0, tmp1; \\\n\
     int4 result0, result1; \\\n\
  \\\n\
-    VXC_DP4x4(tmp0, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractRtoF32_part0_4x4); \\\n\
+    VXC_DP4x4(tmp0, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractRtoF32_part0_4x4); \\\n\
     VXC_DP4x4(tmp1, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractRtoF32_part1_4x4); \\\n\
     tmp0 = tmp0 * paramData.w - paramData.x; \\\n\
     tmp1 = tmp1 * paramData.w - paramData.x; \\\n\
     result0 = convert_int4_rte(tmp0); \\\n\
     result1 = convert_int4_rte(tmp1); \\\n\
     VXC_DP2x8(dst, result0, result1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtract8Data_2x8); \\\n\
-    VXC_WriteImage2DArray(output, coord_out, dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
- \\\n\
+    VXC_DP4x4(tmp0, src1, src2, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractRtoF32_part2_4x4); \\\n\
+    VXC_DP4x4(tmp1, src1, src2, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractRtoF32_part3_4x4); \\\n\
+    tmp0 = tmp0 * paramData.w - paramData.x; \\\n\
+    tmp1 = tmp1 * paramData.w - paramData.x; \\\n\
+    result0 = convert_int4_rte(tmp0); \\\n\
+    result1 = convert_int4_rte(tmp1); \\\n\
+    VXC_DP2x8(dst, result0, result1, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1), uniExtract8Data_2x8); \\\n\
+    VXC_WriteImage2DArray(output, coord_out, dst, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
  \\\n\
     coord_out.z = 1; \\\n\
-    VXC_DP4x4(tmp0, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractGtoF32_part0_4x4); \\\n\
+    VXC_DP4x4(tmp0, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractGtoF32_part0_4x4); \\\n\
     VXC_DP4x4(tmp1, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractGtoF32_part1_4x4); \\\n\
     tmp0 = tmp0 * paramData.w - paramData.y; \\\n\
     tmp1 = tmp1 * paramData.w - paramData.y; \\\n\
     result0 = convert_int4_rte(tmp0); \\\n\
     result1 = convert_int4_rte(tmp1); \\\n\
     VXC_DP2x8(dst, result0, result1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtract8Data_2x8); \\\n\
-    VXC_WriteImage2DArray(output, coord_out, dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    VXC_DP4x4(tmp0, src1, src2, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractGtoF32_part2_4x4); \\\n\
+    VXC_DP4x4(tmp1, src1, src2, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractGtoF32_part3_4x4); \\\n\
+    tmp0 = tmp0 * paramData.w - paramData.y; \\\n\
+    tmp1 = tmp1 * paramData.w - paramData.y; \\\n\
+    result0 = convert_int4_rte(tmp0); \\\n\
+    result1 = convert_int4_rte(tmp1); \\\n\
+    VXC_DP2x8(dst, result0, result1, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1), uniExtract8Data_2x8); \\\n\
+    VXC_WriteImage2DArray(output, coord_out, dst, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
  \\\n\
     coord_out.z = b_order; \\\n\
-    VXC_DP4x4(tmp0, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractBtoF32_part0_4x4); \\\n\
+    VXC_DP4x4(tmp0, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractBtoF32_part0_4x4); \\\n\
     VXC_DP4x4(tmp1, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractBtoF32_part1_4x4); \\\n\
     tmp0 = tmp0 * paramData.w - paramData.z; \\\n\
     tmp1 = tmp1 * paramData.w - paramData.z; \\\n\
     result0 = convert_int4_rte(tmp0); \\\n\
     result1 = convert_int4_rte(tmp1); \\\n\
     VXC_DP2x8(dst, result0, result1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtract8Data_2x8); \\\n\
-    VXC_WriteImage2DArray(output, coord_out, dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    VXC_DP4x4(tmp0, src1, src2, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractBtoF32_part2_4x4); \\\n\
+    VXC_DP4x4(tmp1, src1, src2, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractBtoF32_part3_4x4); \\\n\
+    tmp0 = tmp0 * paramData.w - paramData.z; \\\n\
+    tmp1 = tmp1 * paramData.w - paramData.z; \\\n\
+    result0 = convert_int4_rte(tmp0); \\\n\
+    result1 = convert_int4_rte(tmp1); \\\n\
+    VXC_DP2x8(dst, result0, result1, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1), uniExtract8Data_2x8); \\\n\
+    VXC_WriteImage2DArray(output, coord_out, dst, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
 }\n\
 IMAGE_PRE_PROCESS_COPY_8BITS(U8, vxc_uchar16)\n\
 IMAGE_PRE_PROCESS_COPY_8BITS(I8, vxc_char16)\n\
