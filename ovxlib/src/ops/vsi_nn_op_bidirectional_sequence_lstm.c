@@ -380,20 +380,22 @@ static vsi_bool op_setup
         vsi_nn_tensor_t* lstmcell_out2 = NULL;
 
         /* lstmcell output */
+        /* if merge_outputs is true, there will be only 1 output, so use the attr
+           of the fw for the bw, since they are always same as each other.*/
         vsi_nn_internal_init_tensor_attr(&attr,
-            &outputs[BI_LSTM_BW_OUTPUT_OUTPUT]->attr.dtype, use_virtual_tensor);
+            &outputs[BI_LSTM_FW_OUTPUT_OUTPUT]->attr.dtype, use_virtual_tensor);
         output_tensor = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
         lstmcell_out0 = output_tensor->t;
 
         /* lstmcell output h_state */
         vsi_nn_internal_init_tensor_attr(&attr,
-            &outputs[BI_LSTM_BW_OUTPUT_OUTPUT]->attr.dtype, use_virtual_tensor);
+            &outputs[BI_LSTM_FW_OUTPUT_OUTPUT]->attr.dtype, use_virtual_tensor);
         output_tensor = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
         lstmcell_out1 = output_tensor->t;
 
         /* lstmcell output c_state */
         vsi_nn_internal_init_tensor_attr(&attr,
-            &outputs[BI_LSTM_BW_OUTPUT_OUTPUT]->attr.dtype, use_virtual_tensor);
+            &outputs[BI_LSTM_FW_OUTPUT_OUTPUT]->attr.dtype, use_virtual_tensor);
         output_tensor = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
         lstmcell_out2 = output_tensor->t;
 
