@@ -1788,6 +1788,7 @@ OperationPtr NnApiInterpreter::map_DECONV_2D(Model* model,
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
     std::shared_ptr<Deconv2DOperation> deconv2d;
     auto argList = matchArgList(inputs, "TransposeConv2DOperation");
+
     if (argList) {
         if (argList->ArgPos("output_shape") != -1) {
             // TODO: We donot support this case,
@@ -1807,6 +1808,17 @@ OperationPtr NnApiInterpreter::map_DECONV_2D(Model* model,
         resetFusedType(model, operation, argList->ArgPos("fuse_code"));
         deconv2d->setDataLayout(getDataLayout(inputs[argList->ArgPos("layout")]->scalar.boolean));
         convertKenelLayout(deconv2d, model, operation, argList);
+
+        /*driver require that bias' type is the same as weight's*/
+        if (inputs[1]->type == OperandType::TENSOR_QUANT8_SYMM_PER_CHANNEL &&
+            inputs[2] != nullptr) {
+            inputs[2]->quant.vec.scale.resize(inputs[1]->quant.vec.scale.size(), 0);
+            inputs[2]->quant.vec.zeroPoint.resize(inputs[1]->quant.vec.scale.size(), 0);
+            for (size_t i = 0; i < inputs[2]->quant.vec.scale.size(); i++) {
+                inputs[2]->quant.vec.scale[i] =
+                    inputs[0]->quant.scalar.scale * inputs[1]->quant.vec.scale[i];
+            }
+        }
     } else {
         NNRT_LOGE_PRINT("Transpose conv2d argument list not support");
         assert(false);
