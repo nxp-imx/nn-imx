@@ -55,6 +55,7 @@ struct BaseOperand {
     QuantizationParams quant;
     union {
         bool boolean;
+        uint8_t u8;
         int32_t int32;
         uint32_t uint32;
         uint16_t float16;
