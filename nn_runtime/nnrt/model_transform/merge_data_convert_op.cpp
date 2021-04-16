@@ -33,7 +33,10 @@ using namespace nnrt::op;
 
 namespace nnrt {
 
-bool is_remove_all_data_convert_op(Model* model, uint32_t oprand_in, uint32_t oprand_out) {
+bool is_remove_all_data_convert_op(Model *model, uint32_t oprand_in,
+                                   uint32_t oprand_out,
+                                   op::IndexByOperand &index_for_op_input,
+                                   op::IndexByOperand &index_for_op_output) {
     OperandPtr oprand0 = model->operand(oprand_in);
     OperandPtr oprand1 = model->operand(oprand_out);
     std::vector<OperandType> type_table = {
@@ -42,8 +45,16 @@ bool is_remove_all_data_convert_op(Model* model, uint32_t oprand_in, uint32_t op
         OperandType::TENSOR_QUANT8_SYMM,
         OperandType::TENSOR_QUANT8_SYMM_PER_CHANNEL,
     };
-    if (std::find(type_table.begin(), type_table.end(), oprand0->type) != type_table.end() &&
-        std::find(type_table.begin(), type_table.end(), oprand1->type) != type_table.end()) {
+
+    if (index_for_op_input.find(oprand_in) != index_for_op_input.end()) {
+        if (index_for_op_input[oprand_in].size() > 1) {
+            return false;
+        }
+    }
+    if (std::find(type_table.begin(), type_table.end(), oprand0->type) !=
+            type_table.end() &&
+        std::find(type_table.begin(), type_table.end(), oprand1->type) !=
+            type_table.end()) {
         return true;
     }
     return false;
@@ -52,44 +63,7 @@ bool is_remove_all_data_convert_op(Model* model, uint32_t oprand_in, uint32_t op
 int MergeDataConvertOp::run(Model* model, bool* modified) {
     (void)modified;
     auto operations = model->operations();
-#if 0
-    std::map<uint32_t /*operand id*/, std::vector<uint32_t> /*operation ids*/>
-        index_by_operand_for_op_input;
-    std::map<uint32_t /*operand id*/, std::vector<uint32_t> /*operation ids*/>
-        index_by_operand_for_op_output;
 
-    for (auto it = operations.begin(); it != operations.end(); ++it) {
-        OperationPtr operation = it->second;
-        for (auto index : operation->inputs()) {
-            auto it1 = index_by_operand_for_op_input.find(index);
-            if (it1 != index_by_operand_for_op_input.end()) {
-                it1->second.push_back(it->first);
-            } else {
-                std::vector<uint32_t> operation_ids;
-                operation_ids.push_back(it->first);
-                index_by_operand_for_op_input.insert(
-                    std::make_pair<uint32_t, std::vector<uint32_t>>(std::move(index),
-                                                                    std::move(operation_ids)));
-            }
-        }
-    }
-
-    for (auto it = operations.begin(); it != operations.end(); ++it) {
-        OperationPtr operation = it->second;
-        for (auto index : operation->outputs()) {
-            auto it1 = index_by_operand_for_op_output.find(index);
-            if (it1 != index_by_operand_for_op_output.end()) {
-                it1->second.push_back(it->first);
-            } else {
-                std::vector<uint32_t> operation_ids;
-                operation_ids.push_back(it->first);
-                index_by_operand_for_op_output.insert(
-                    std::make_pair<uint32_t, std::vector<uint32_t>>(std::move(index),
-                                                                    std::move(operation_ids)));
-            }
-        }
-    }
-#endif
     op::IndexByOperand index_by_operand_for_op_input;
     op::IndexByOperand index_by_operand_for_op_output;
     model->get_index_by_operand(index_by_operand_for_op_input,
@@ -147,7 +121,9 @@ int MergeDataConvertOp::run(Model* model, bool* modified) {
         OperationPtr operation1 = operations[path[path.size() - 1]];
         auto oprand0 = operation0->inputs()[0];
         auto oprand1 = operation1->outputs()[0];
-        if (is_remove_all_data_convert_op(model, oprand0, oprand1)) {
+        if (is_remove_all_data_convert_op(model, oprand0, oprand1,
+                                          index_by_operand_for_op_input,
+                                          index_by_operand_for_op_output)) {
             auto oprand0_output = index_by_operand_for_op_output[oprand0];
             if (oprand0_output.size() > 0) {
                 path.insert(path.begin(), oprand0_output[0]);
