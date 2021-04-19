@@ -421,6 +421,7 @@ static _op_param_gen_t s_op_gen[] =
     /* UPSAMPLESCALE */         NULL,
     /* GROUPNORM */             NULL,
     /* ROUND */                 NULL,
+    /* CEIL */                  NULL,
 };
 _compiler_assert( _cnt_of_array(s_op_gen) == VSI_NN_OP_NUM, vsi_nn_code_generator_c );
 
