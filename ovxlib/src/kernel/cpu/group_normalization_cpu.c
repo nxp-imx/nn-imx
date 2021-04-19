@@ -102,7 +102,7 @@ DEF_KERNEL_EXECUTOR(_group_norm_exec)
     memset( buffer[3], 0, out_elements * sizeof(float) );
 
     {
-        uint32_t b = 0, c = 0, i = 0;
+        uint32_t b = 0, c = 0;
         uint32_t height = attr[0]->shape->data[1];
         uint32_t width = attr[0]->shape->data[0];
         uint32_t ch = attr[0]->shape->size > 2 ? attr[0]->shape->data[2] : 1;
