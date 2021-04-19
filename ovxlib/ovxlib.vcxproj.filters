@@ -746,6 +746,9 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\ops\vsi_nn_op_ceil.c">
+      <Filter>Source Files\ops</Filter>
+    </ClCompile>
     <ClCompile Include="src\client\vsi_nn_vxkernel.c">
       <Filter>Source Files\client</Filter>
     </ClCompile>

@@ -1766,6 +1766,9 @@
     <ClCompile Include="src\ops\vsi_nn_op_upsamplescale.c">
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_ceil.c" >
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_variable.c">
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
