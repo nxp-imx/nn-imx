@@ -34579,6 +34579,108 @@ __kernel void select_I8_U8_U8toU8_2D(\n\
 }\n\
 "; /* end of select_vx*/
 
+static const char sequence_mask_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+_viv_uniform VXC_512Bits UniFP16toFP32Lo4_dp4x4;\n\
+_viv_uniform VXC_512Bits uniConvert1stUint8SubZpToFp32_4x4;\n\
+_viv_uniform VXC_512Bits uniConvertInt32toUint8_2x8;\n\
+_viv_uniform float input_scale;\n\
+_viv_uniform int inputZP;\n\
+_viv_uniform int output_ZP;\n\
+_viv_uniform float outputVal1;\n\
+\n\
+#define SEQUENCE_MASK_QINT_TO_QINT_2D(src0_type_name, src1_type_name, read_type, write_type) \\\n\
+__kernel void sequence_mask_##src0_type_name##to##src1_type_name##_2D( \\\n\
+    image2d_t input, image2d_t output, int maxLen) \\\n\
+{ \\\n\
+    int gidx = get_global_id(0); \\\n\
+    int2 coord = (int2)(gidx, get_global_id(1)); \\\n\
+    read_type src0; \\\n\
+    VXC_ReadImage(src0, input, coord.yy, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
+    int4 outIdx = (int4)(gidx, gidx + 1, gidx + 2, gidx + 3); \\\n\
+    float4 tmpData; \\\n\
+    short zp = inputZP; \\\n\
+    VXC_DP4x4(tmpData, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), \\\n\
+                 uniConvert1stUint8SubZpToFp32_4x4); \\\n\
+    int index = convert_int_rte(tmpData.s0 * input_scale); \\\n\
+    int4 data; \\\n\
+    data = outIdx < index? convert_int_rte(outputVal1) : output_ZP; \\\n\
+    write_type dst; \\\n\
+    VXC_DP2x8(dst, data, data, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), uniConvertInt32toUint8_2x8); \\\n\
+    VXC_WriteImage(output, coord.xy, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+}\n\
+SEQUENCE_MASK_QINT_TO_QINT_2D(U8,  U8,  vxc_uchar16, vxc_uchar16)\n\
+SEQUENCE_MASK_QINT_TO_QINT_2D(I8,  I8,  vxc_char16,  vxc_char16)\n\
+SEQUENCE_MASK_QINT_TO_QINT_2D(I16, I16, vxc_short8,  vxc_short8)\n\
+\n\
+#define SEQUENCE_MASK_QINT_TO_QINT(src0_type_name, src1_type_name, read_type, write_type) \\\n\
+__kernel void sequence_mask_##src0_type_name##to##src1_type_name( \\\n\
+    image2d_t input, image2d_array_t output, int maxLen) \\\n\
+{ \\\n\
+    int gidx = get_global_id(0); \\\n\
+    int4 coord = (int4)(gidx, get_global_id(1), get_global_id(2), 0); \\\n\
+    read_type src0; \\\n\
+    VXC_ReadImage(src0, input, coord.yz, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
+    int4 outIdx = (int4)(gidx, gidx + 1, gidx + 2, gidx + 3); \\\n\
+    float4 tmpData; \\\n\
+    short zp = inputZP; \\\n\
+    VXC_DP4x4(tmpData, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), \\\n\
+                 uniConvert1stUint8SubZpToFp32_4x4); \\\n\
+    int index = convert_int_rte(tmpData.s0 * input_scale); \\\n\
+    int4 data; \\\n\
+    data = outIdx < index? convert_int_rte(outputVal1) : output_ZP; \\\n\
+    write_type dst; \\\n\
+    VXC_DP2x8(dst, data, data, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), uniConvertInt32toUint8_2x8); \\\n\
+    VXC_WriteImage2DArray(output, coord, data, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+}\n\
+SEQUENCE_MASK_QINT_TO_QINT(U8,  U8,  vxc_uchar16, vxc_uchar16)\n\
+SEQUENCE_MASK_QINT_TO_QINT(I8,  I8,  vxc_char16,  vxc_char16)\n\
+SEQUENCE_MASK_QINT_TO_QINT(I16, I16, vxc_short8,  vxc_short8)\n\
+\n\
+__kernel void sequence_mask_F16toF16_2D(\n\
+    image2d_t input, image2d_t output, int maxLen)\n\
+{\n\
+    int gidx = get_global_id(0);\n\
+    int2 coord = (int2)(gidx, get_global_id(1));\n\
+    vxc_short8 src0;\n\
+    vxc_half8 in_h;\n\
+    VXC_ReadImage(src0, input, coord.yy, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    int4 outIdx = (int4)(gidx, gidx + 1, gidx + 2, gidx + 3);\n\
+    _viv_asm(COPY, in_h, src0, 16);\n\
+    float4 tmpData;\n\
+    VXC_DP4x4(tmpData, in_h, in_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
+            UniFP16toFP32Lo4_dp4x4);\n\
+    int index = convert_int_rte(tmpData.x);\n\
+    int4 data;\n\
+    data = outIdx < index? convert_int_rte(outputVal1) : output_ZP;\n\
+    vxc_short8 dst;\n\
+    VXC_DP2x8(dst, data, data, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), uniConvertInt32toUint8_2x8);\n\
+    VXC_WriteImage(output, coord, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+__kernel void sequence_mask_F16toF16(\n\
+    image2d_t input, image2d_t output, int maxLen)\n\
+{\n\
+    int gidx = get_global_id(0);\n\
+    int4 coord = (int4)(gidx, get_global_id(1), get_global_id(2), 0);\n\
+    vxc_short8 src0;\n\
+    vxc_half8 in_h;\n\
+    VXC_ReadImage(src0, input, coord.yz, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    int4 outIdx = (int4)(gidx, gidx + 1, gidx + 2, gidx + 3);\n\
+    _viv_asm(COPY, in_h, src0, 16);\n\
+    float4 tmpData;\n\
+    VXC_DP4x4(tmpData, in_h, in_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
+            UniFP16toFP32Lo4_dp4x4);\n\
+    int index = convert_int_rte(tmpData.x);\n\
+    int4 data;\n\
+    data = outIdx < index? convert_int_rte(outputVal1) : output_ZP;\n\
+    vxc_short8 dst;\n\
+    VXC_DP2x8(dst, data, data, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), uniConvertInt32toUint8_2x8);\n\
+    VXC_WriteImage2DArray(output, coord, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+"; /* end of sequence_mask_vx*/
+
 static const char space2depth_internal_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 _viv_uniform VXC_512Bits uniExtractEvenUint8Stride2_2x8;\n\
@@ -51202,6 +51304,79 @@ __kernel void select_I8_F32_F32toF32_2D(\n\
 }\n\
 "; /* end of select_cl*/
 
+static const char sequence_mask_cl[] = "\n\
+__kernel void sequence_mask_I32toU8(\n\
+    image2d_t input, image2d_array_t output, int maxLen,\n\
+    float input_scale, float input_zpScale, float outputVal1, int output_ZP)\n\
+{\n\
+    int gidx = get_global_id(0);\n\
+    int4 coord = (int4)(gidx, get_global_id(1), get_global_id(2), 0);\n\
+    int4 index = read_imagei(input, coord.yz);\n\
+    uint4 data;\n\
+    data.x = gidx < index.x ? convert_uint_rte(outputVal1) : (uint)(output_ZP);\n\
+    write_imageui(output, coord, data);\n\
+}\n\
+\n\
+__kernel void sequence_mask_I32toU8_2D(\n\
+    image2d_t input, image2d_t output, int maxLen,\n\
+    float input_scale, float input_zpScale, float outputVal1, int output_ZP)\n\
+{\n\
+    int gidx = get_global_id(0);\n\
+    int2 coord = (int2)(gidx, get_global_id(1));\n\
+    int4 index = read_imagei(input, coord.yy);\n\
+    uint4 data;\n\
+    data.x = gidx < index.x ? convert_uint_rte(outputVal1) : (uint)(output_ZP);\n\
+    write_imageui(output, coord, data);\n\
+}\n\
+\n\
+__kernel void sequence_mask_I32toI32(\n\
+    image2d_t input, image2d_array_t output, int maxLen,\n\
+    float input_scale, float input_zpScale, float outputVal1, int output_ZP)\n\
+{\n\
+    int gidx = get_global_id(0);\n\
+    int4 coord = (int4)(gidx, get_global_id(1), get_global_id(2), 0);\n\
+    int4 index = read_imagei(input, coord.yz);\n\
+    int4 data;\n\
+    data = gidx < index.x ? (int4)(1) : (int4)(0);\n\
+    write_imagei(output, coord, data);\n\
+}\n\
+\n\
+__kernel void sequence_mask_I32toI32_2D(\n\
+    image2d_t input, image2d_t output, int maxLen,\n\
+    float input_scale, float input_zpScale, float outputVal1, int output_ZP)\n\
+{\n\
+    int gidx = get_global_id(0);\n\
+    int2 coord = (int2)(gidx, get_global_id(1));\n\
+    int4 index = read_imagei(input, coord.yy);\n\
+    int4 data;\n\
+    data = gidx < index.x ? (int4)(1) : (int4)(0);\n\
+    write_imagei(output, coord, data);\n\
+}\n\
+\n\
+__kernel void sequence_mask_I32toF32(\n\
+    image2d_t input, image2d_array_t output, int maxLen,\n\
+    float input_scale, float input_zpScale, float outputVal1, int output_ZP)\n\
+{\n\
+    int gidx = get_global_id(0);\n\
+    int4 coord = (int4)(gidx, get_global_id(1), get_global_id(2), 0);\n\
+    int4 index = read_imagei(input, coord.yz);\n\
+    float4 data;\n\
+    data = gidx < index.x ? (float4)(1.0f) : (float4)(0.0f);\n\
+    write_imagef(output, coord, data);\n\
+}\n\
+\n\
+__kernel void sequence_mask_I32toF32_2D(\n\
+    image2d_t input, image2d_t output, int maxLen,\n\
+    float input_scale, float input_zpScale, float outputVal1, int output_ZP)\n\
+{\n\
+    int gidx = get_global_id(0);\n\
+    int2 coord = (int2)(gidx, get_global_id(1));\n\
+    int4 index = read_imagei(input, coord.yy);\n\
+    float4 data;\n\
+    data = gidx < index.x ? (float4)(1.0f) : (float4)(0.0f);\n\
+    write_imagef(output, coord, data);\n\
+}"; /* end of sequence_mask_cl*/
+
 static const char space2depth_internal_cl[] = "\n\
 __kernel void space2depth_internal_F32toF32 (\n\
         image2d_array_t    input,\n\
@@ -51897,6 +52072,7 @@ static const source_map_t evis_resource[] =
     {"scatter_nd_vx", scatter_nd_vx},
     {"scatter_nd_big_vx", scatter_nd_big_vx},
     {"select_vx", select_vx},
+    {"sequence_mask_vx", sequence_mask_vx},
     {"space2depth_internal_vx", space2depth_internal_vx},
     {"swish_vx", swish_vx},
     {"tile_vx", tile_vx},
@@ -52025,6 +52201,7 @@ static const source_map_t cl_resource[] =
     {"roi_align_cl", roi_align_cl},
     {"scatter_nd_cl", scatter_nd_cl},
     {"select_cl", select_cl},
+    {"sequence_mask_cl", sequence_mask_cl},
     {"space2depth_internal_cl", space2depth_internal_cl},
     {"swish_cl", swish_cl},
     {"tile_cl", tile_cl},
