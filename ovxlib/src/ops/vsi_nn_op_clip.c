@@ -127,6 +127,7 @@ static vsi_bool op_check
         IO_TYPE(D_I8|Q_DFP,   D_F16)
         IO_TYPE(D_I16|Q_DFP,  D_I16|Q_DFP)
         IO_TYPE(D_I16|Q_DFP,  D_F16)
+        IO_TYPE(D_BF16,       D_BF16)
     END_IO_TYPE_DECL(CLIP)
     if(!VALIDATE_OP_IO_TYPES(CLIP, self, inputs, self->input.num, outputs, self->output.num)) {
         char* desc = generate_op_io_types_desc(inputs,
