@@ -25,7 +25,6 @@
 #define __OVXLIB_NNAPI_INTERPRETER_H__
 
 #include <vector>
-#include <set>
 #include "nnrt/model.hpp"
 #include "nnrt/op/public.hpp"
 #include "nnrt/interpreter.hpp"
@@ -79,7 +78,7 @@ class NnApiInterpreter : public Interpreter
             }
         }
 
-        void removeScalarOperand(OperationPtr& op, size_t ofst, size_t cnt);
+        void removeScalarOperand(Model* model, OperationPtr& op, size_t ofst, size_t cnt);
 
         void truncateOperationIOs(Model* model, OperationPtr operation,
                 int32_t input_num, int32_t output_num);
@@ -212,7 +211,6 @@ class NnApiInterpreter : public Interpreter
 
         typedef OperationPtr (NnApiInterpreter::*AddNodeFunc)(Model*, OperationPtr, uint32_t);
         std::map<OperationType, AddNodeFunc> op_container_;
-        std::set<uint32_t> operands_to_remove_;
 };
 };
 #endif
