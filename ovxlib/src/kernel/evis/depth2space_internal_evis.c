@@ -300,6 +300,7 @@ DEF_KERNEL_INITIALIZER(_depth2space_crd_initializer)
         case _PACK_SELECT_KEY( U8, U8):
         case _PACK_SELECT_KEY( I8, I8):
         case _PACK_SELECT_KEY( I16, I16):
+        case _PACK_SELECT_KEY( F16, F16):
             {
                 gpu_quantize_multiplier_16bit( (double)src0Scale / dstScale, &M0, &postShift);
                 multAndoutZP0[0] = (uint32_t)(M0);
