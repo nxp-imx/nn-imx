@@ -4561,7 +4561,10 @@ __kernel void gather_nd_I8toI8_1D(\n\
     int gidy = get_global_id(1);  // indices_num\n\
 \n\
     int4 coord = (int4)(0, gidy, gidx, 0);\n\
-    int4 indice = read_imagei(input1, coord.xy);\n\
+    Image img = create_image_from_image2d(input1, 4);\n\
+    uchar* indice_ptr = get_image_ptr_from_coord(img, coord.xy);\n\
+    int4 indice = ((int4 *)indice_ptr)[0];\n\
+\n\
     coord.w = indice.x;\n\
 \n\
     vxc_char16 src;\n\
@@ -4582,7 +4585,10 @@ __kernel void gather_nd_U8toU8_1D(\n\
     int gidy = get_global_id(1);  // indices_num\n\
 \n\
     int4 coord = (int4)(0, gidy, gidx, 0);\n\
-    int4 indice = read_imagei(input1, coord.xy);\n\
+    Image img = create_image_from_image2d(input1, 4);\n\
+    uchar* indice_ptr = get_image_ptr_from_coord(img, coord.xy);\n\
+    int4 indice = ((int4 *)indice_ptr)[0];\n\
+\n\
     coord.w = indice.x;\n\
 \n\
     vxc_uchar16 src;\n\
@@ -4602,7 +4608,10 @@ __kernel void gather_nd_I16toI16_1D(\n\
     int gidy = get_global_id(1);  // indices_num\n\
 \n\
     int4 coord = (int4)(0, gidy, gidx, 0);\n\
-    int4 indice = read_imagei(input1, coord.xy);\n\
+    Image img = create_image_from_image2d(input1, 4);\n\
+    uchar* indice_ptr = get_image_ptr_from_coord(img, coord.xy);\n\
+    int4 indice = ((int4 *)indice_ptr)[0];\n\
+\n\
     coord.w = indice.x;\n\
 \n\
     vxc_short8 src;\n\
@@ -4622,7 +4631,10 @@ __kernel void gather_nd_F16toF16_1D(\n\
     int gidy = get_global_id(1);  // indices_num\n\
 \n\
     int4 coord = (int4)(0, gidy, gidx, 0);\n\
-    int4 indice = read_imagei(input1, coord.xy);\n\
+    Image img = create_image_from_image2d(input1, 4);\n\
+    uchar* indice_ptr = get_image_ptr_from_coord(img, coord.xy);\n\
+    int4 indice = ((int4 *)indice_ptr)[0];\n\
+\n\
     coord.w = indice.x;\n\
 \n\
     vxc_short8 src;\n\
@@ -4645,7 +4657,10 @@ __kernel void gather_nd_I8toI8_2D(\n\
     int gidy = get_global_id(1);  // indices_num\n\
 \n\
     int4 coord = (int4)(0, gidy, gidx, 0);\n\
-    int4 indice = read_imagei(input1, coord.xy);\n\
+    Image img = create_image_from_image2d(input1, 4);\n\
+    uchar* indice_ptr = get_image_ptr_from_coord(img, coord.xy);\n\
+    int4 indice = ((int4 *)indice_ptr)[0];\n\
+\n\
     indice.x = indice.x * block_size + gidx;\n\
 \n\
     vxc_char16 src;\n\
@@ -4666,7 +4681,10 @@ __kernel void gather_nd_U8toU8_2D(\n\
     int gidy = get_global_id(1);  // indices_num\n\
 \n\
     int4 coord = (int4)(0, gidy, gidx, 0);\n\
-    int4 indice = read_imagei(input1, coord.xy);\n\
+    Image img = create_image_from_image2d(input1, 4);\n\
+    uchar* indice_ptr = get_image_ptr_from_coord(img, coord.xy);\n\
+    int4 indice = ((int4 *)indice_ptr)[0];\n\
+\n\
     indice.x = indice.x * block_size + gidx;\n\
 \n\
     vxc_uchar16 src;\n\
@@ -4686,7 +4704,10 @@ __kernel void gather_nd_I16toI16_2D(\n\
     int gidy = get_global_id(1);  // indices_num\n\
 \n\
     int4 coord = (int4)(0, gidy, gidx, 0);\n\
-    int4 indice = read_imagei(input1, coord.xy);\n\
+    Image img = create_image_from_image2d(input1, 4);\n\
+    uchar* indice_ptr = get_image_ptr_from_coord(img, coord.xy);\n\
+    int4 indice = ((int4 *)indice_ptr)[0];\n\
+\n\
     indice.x = indice.x * block_size + gidx;\n\
 \n\
     vxc_short8 src;\n\
@@ -4706,7 +4727,10 @@ __kernel void gather_nd_F16toF16_2D(\n\
     int gidy = get_global_id(1);  // indices_num\n\
 \n\
     int4 coord = (int4)(0, gidy, gidx, 0);\n\
-    int4 indice = read_imagei(input1, coord.xy);\n\
+    Image img = create_image_from_image2d(input1, 4);\n\
+    uchar* indice_ptr = get_image_ptr_from_coord(img, coord.xy);\n\
+    int4 indice = ((int4 *)indice_ptr)[0];\n\
+\n\
     indice.x = indice.x * block_size + gidx;\n\
 \n\
     vxc_short8 src;\n\
@@ -4743,7 +4767,10 @@ __kernel void gather_nd_##src0_type_name##toF16_2D( \\\n\
     int gidy = get_global_id(1); \\\n\
  \\\n\
     int4 coord = (int4)(0, gidy, gidx, 0); \\\n\
-    int4 indice = read_imagei(input1, coord.xy); \\\n\
+    Image img = create_image_from_image2d(input1, 4); \\\n\
+    uchar* indice_ptr = get_image_ptr_from_coord(img, coord.xy); \\\n\
+    int4 indice = ((int4 *)indice_ptr)[0]; \\\n\
+ \\\n\
     indice.x = indice.x * block_size + gidx; \\\n\
  \\\n\
     read_type src; \\\n\
@@ -4774,7 +4801,10 @@ __kernel void gather_nd_F16to##src1_type_name##_2D( \\\n\
     int gidy = get_global_id(1); \\\n\
  \\\n\
     int4 coord = (int4)(0, gidy, gidx, 0); \\\n\
-    int4 indice = read_imagei(input1, coord.xy); \\\n\
+    Image img = create_image_from_image2d(input1, 4); \\\n\
+    uchar* indice_ptr = get_image_ptr_from_coord(img, coord.xy); \\\n\
+    int4 indice = ((int4 *)indice_ptr)[0]; \\\n\
+ \\\n\
     indice.x = indice.x * block_size + gidx; \\\n\
  \\\n\
     vxc_short8 src; \\\n\
@@ -4807,7 +4837,10 @@ __kernel void gather_nd_I8toI8_3D(\n\
     int gidy = get_global_id(1);  // indices_num\n\
 \n\
     int4 coord = (int4)(0, gidy, gidx, 0);\n\
-    int4 indice = read_imagei(input1, coord.xy);\n\
+    Image img = create_image_from_image2d(input1, 4);\n\
+    uchar* indice_ptr = get_image_ptr_from_coord(img, coord.xy);\n\
+    int4 indice = ((int4 *)indice_ptr)[0];\n\
+\n\
     indice.x = indice.x * block_size + gidx;\n\
     indice.w = 0;\n\
 \n\
@@ -4829,7 +4862,11 @@ __kernel void gather_nd_U8toU8_3D(\n\
     int gidy = get_global_id(1);  // indices_num\n\
 \n\
     int4 coord = (int4)(0, gidy, gidx, 0);\n\
-    int4 indice = read_imagei(input1, coord.xy);\n\
+\n\
+    Image img = create_image_from_image2d(input1, 4);\n\
+    uchar* indice_ptr = get_image_ptr_from_coord(img, coord.xy);\n\
+    int4 indice = ((int4 *)indice_ptr)[0];\n\
+\n\
     indice.x = indice.x * block_size + gidx;\n\
     indice.w = 0;\n\
 \n\
@@ -4850,7 +4887,10 @@ __kernel void gather_nd_I16toI16_3D(\n\
     int gidy = get_global_id(1);  // indices_num\n\
 \n\
     int4 coord = (int4)(0, gidy, gidx, 0);\n\
-    int4 indice = read_imagei(input1, coord.xy);\n\
+    Image img = create_image_from_image2d(input1, 4);\n\
+    uchar* indice_ptr = get_image_ptr_from_coord(img, coord.xy);\n\
+    int4 indice = ((int4 *)indice_ptr)[0];\n\
+\n\
     indice.x = indice.x * block_size + gidx;\n\
     indice.w = 0;\n\
 \n\
@@ -4871,7 +4911,10 @@ __kernel void gather_nd_F16toF16_3D(\n\
     int gidy = get_global_id(1);  // indices_num\n\
 \n\
     int4 coord = (int4)(0, gidy, gidx, 0);\n\
-    int4 indice = read_imagei(input1, coord.xy);\n\
+    Image img = create_image_from_image2d(input1, 4);\n\
+    uchar* indice_ptr = get_image_ptr_from_coord(img, coord.xy);\n\
+    int4 indice = ((int4 *)indice_ptr)[0];\n\
+\n\
     indice.x = indice.x * block_size + gidx;\n\
     indice.w = 0;\n\
 \n\
@@ -4879,6 +4922,7 @@ __kernel void gather_nd_F16toF16_3D(\n\
     VXC_ReadImage2DArray(src, input0, indice, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
     VXC_WriteImage(output, coord.zy, src, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
 }\n\
+\n\
 "; /* end of gather_nd_3d_vx*/
 
 static const char gather_nd_3d_mix_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
@@ -4906,7 +4950,10 @@ __kernel void gather_nd_##src0_type_name##toF16_3D( \\\n\
     int gidy = get_global_id(1); \\\n\
  \\\n\
     int4 coord = (int4)(0, gidy, gidx, 0); \\\n\
-    int4 indice = read_imagei(input1, coord.xy); \\\n\
+    Image img = create_image_from_image2d(input1, 4); \\\n\
+    uchar* indice_ptr = get_image_ptr_from_coord(img, coord.xy); \\\n\
+    int4 indice = ((int4 *)indice_ptr)[0]; \\\n\
+ \\\n\
     indice.x = indice.x * block_size + gidx; \\\n\
     indice.w = 0; \\\n\
  \\\n\
@@ -4938,7 +4985,10 @@ __kernel void gather_nd_F16to##src1_type_name##_3D( \\\n\
     int gidy = get_global_id(1); \\\n\
  \\\n\
     int4 coord = (int4)(0, gidy, gidx, 0); \\\n\
-    int4 indice = read_imagei(input1, coord.xy); \\\n\
+    Image img = create_image_from_image2d(input1, 4); \\\n\
+    uchar* indice_ptr = get_image_ptr_from_coord(img, coord.xy); \\\n\
+    int4 indice = ((int4 *)indice_ptr)[0]; \\\n\
+ \\\n\
     indice.x = indice.x * block_size + gidx; \\\n\
     indice.w = 0; \\\n\
  \\\n\
@@ -4987,7 +5037,10 @@ __kernel void gather_nd_##src0_type_name##toF16_1D( \\\n\
     int gidy = get_global_id(1); \\\n\
  \\\n\
     int4 coord = (int4)(0, gidy, gidx, 0); \\\n\
-    int4 indice = read_imagei(input1, coord.xy); \\\n\
+    Image img = create_image_from_image2d(input1, 4); \\\n\
+    uchar* indice_ptr = get_image_ptr_from_coord(img, coord.xy); \\\n\
+    int4 indice = ((int4 *)indice_ptr)[0]; \\\n\
+ \\\n\
     coord.w = indice.x; \\\n\
  \\\n\
     read_type src; \\\n\
@@ -5018,7 +5071,10 @@ __kernel void gather_nd_F16to##src1_type_name##_1D( \\\n\
     int gidy = get_global_id(1); \\\n\
  \\\n\
     int4 coord = (int4)(0, gidy, gidx, 0); \\\n\
-    int4 indice = read_imagei(input1, coord.xy); \\\n\
+    Image img = create_image_from_image2d(input1, 4); \\\n\
+    uchar* indice_ptr = get_image_ptr_from_coord(img, coord.xy); \\\n\
+    int4 indice = ((int4 *)indice_ptr)[0]; \\\n\
+ \\\n\
     coord.w = indice.x; \\\n\
  \\\n\
     vxc_short8 src; \\\n\
@@ -36390,6 +36446,62 @@ static const char vsi_nn_kernel_header_vx[] = "/*\n\
  ============================================================================\n\
  */\n\
 #include \"cl_viv_vx_ext.h\"\n\
+\n\
+typedef struct Image\n\
+{\n\
+    __global uchar *ptr;\n\
+    int             stride_x;\n\
+    int             stride_y;\n\
+} Image;\n\
+\n\
+inline uchar* get_image_ptr_from_coord(Image img, int2 coord)\n\
+{\n\
+    return img.ptr + coord.x * img.stride_x + coord.y * img.stride_y;\n\
+}\n\
+\n\
+inline Image create_image_from_image2d(image2d_t input, int stride_x)\n\
+{\n\
+    int8 desc;\n\
+    _viv_asm(COPY, desc, input, sizeof(desc));\n\
+\n\
+    Image img =\n\
+    {\n\
+        .ptr                           = (uchar*)desc.s0,\n\
+        .stride_x                      = stride_x,\n\
+        .stride_y                      = desc.s1\n\
+    };\n\
+\n\
+    return img;\n\
+}\n\
+\n\
+typedef struct Tensor\n\
+{\n\
+    __global uchar *ptr;\n\
+    int             stride_x;\n\
+    int             stride_y;\n\
+    int             stride_z;\n\
+} Tensor;\n\
+\n\
+inline uchar* update_tensor_ptr_from_coord(Tensor t, int4 coord)\n\
+{\n\
+    return t.ptr + coord.x * t.stride_x + coord.y * t.stride_y + coord.z * t.stride_z;\n\
+}\n\
+\n\
+inline Tensor create_tensor_from_image2d_array(image2d_array_t input, int stride_x)\n\
+{\n\
+    int8 desc;\n\
+    _viv_asm(COPY, desc, input, sizeof(desc));\n\
+\n\
+    Tensor t =\n\
+    {\n\
+        .ptr                           = (uchar*)desc.s0,\n\
+        .stride_x                      = stride_x,\n\
+        .stride_y                      = desc.s1,\n\
+        .stride_z                      = desc.s4\n\
+    };\n\
+\n\
+    return t;\n\
+}\n\
 \n\
 #if (VX_VERSION==1)\n\
 #define VXC_DP2x8_b_(dst, src0, src1, src2, info, uniform)\\\n\
