@@ -2503,7 +2503,7 @@ OperationPtr NnApiInterpreter::map_PRELU(Model* model,
         auto element_size = operand_utils::GetTypeBytes(inputs[1]->type);
         auto operand_mem = inputs[1]->weak_mem_ref.lock();
         assert(operand_mem);
-        bool all_same = true;
+        bool all_same = false;
         float leaky_ratio = 0.1f;
 
         switch (inputs[1]->type) {
@@ -2540,9 +2540,7 @@ OperationPtr NnApiInterpreter::map_PRELU(Model* model,
             } break;
 
             default: {
-                NNRT_LOGE_PRINT("PRELU ratio data type is not defined");
-                assert(false);
-                return nullptr;
+                NNRT_LOGE_PRINT("Not implemented PRELU->LeakyRelu for dtype = %d", inputs[1]->type);
             }
         }
 
