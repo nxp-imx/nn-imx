@@ -35,7 +35,7 @@
 #include "utils/vsi_nn_constraint_check.h"
 
 #define _ARG_NUM            (1)
-#define _INPUT_NUM          (1)
+#define _INPUT_NUM          (2)
 #define _OUTPUT_NUM         (1)
 
 static vsi_status op_compute
@@ -53,7 +53,7 @@ static vsi_status op_compute
     param =vsi_nn_kernel_param_create();
 
     vsi_nn_kernel_param_add_int32( param, "max_len", max_len );
-    n = vsi_nn_kernel_selector( self->graph, "sequence_mask", inputs, 1, outputs, 1, param );
+    n = vsi_nn_kernel_selector( self->graph, "sequence_mask", inputs, 2, outputs, 1, param );
     if ( n != NULL )
     {
         self->n = (vx_node)n;
@@ -77,19 +77,19 @@ static vsi_bool op_check
 {
     vsi_nn_sequence_mask_param * p = NULL;
 
-    BEGIN_IO_TYPE_DECL(SEQUENCE_MASK, 1, 1)
-        IO_TYPE(D_U8|Q_ASYM,  D_U8|Q_ASYM)
-        IO_TYPE(D_I8|Q_DFP,   D_I8|Q_DFP)
-        IO_TYPE(D_I16|Q_DFP,  D_I16|Q_DFP)
-        IO_TYPE(D_U8,   D_U8)
-        IO_TYPE(D_I8,   D_I8)
-        IO_TYPE(D_I16,  D_I16)
-        IO_TYPE(D_F16,  D_F16)
-        IO_TYPE(D_I32,  D_U8|Q_ASYM)
-        IO_TYPE(D_I32,  D_BOOL8)
-        IO_TYPE(D_I32,  D_I32)
-        IO_TYPE(D_I32,  D_I32|Q_DFP)
-        IO_TYPE(D_I32,  D_F32)
+    BEGIN_IO_TYPE_DECL(SEQUENCE_MASK, 2, 1)
+        IO_TYPE(D_U8|Q_ASYM,  D_I32, D_U8|Q_ASYM)
+        IO_TYPE(D_I8|Q_DFP,   D_I32, D_I8|Q_DFP)
+        IO_TYPE(D_I16|Q_DFP,  D_I32, D_I16|Q_DFP)
+        IO_TYPE(D_U8,   D_I32, D_U8)
+        IO_TYPE(D_I8,   D_I32, D_I8)
+        IO_TYPE(D_I16,  D_I32, D_I16)
+        IO_TYPE(D_F16,  D_I32, D_F16)
+        IO_TYPE(D_I32,  D_I32, D_U8|Q_ASYM)
+        IO_TYPE(D_I32,  D_I32, D_BOOL8)
+        IO_TYPE(D_I32,  D_I32, D_I32)
+        IO_TYPE(D_I32,  D_I32, D_I32|Q_DFP)
+        IO_TYPE(D_I32,  D_I32, D_F32)
     END_IO_TYPE_DECL(SEQUENCE_MASK)
     if (!VALIDATE_OP_IO_TYPES(SEQUENCE_MASK, self, inputs, self->input.num, outputs, self->output.num)) {
         char* desc = generate_op_io_types_desc(inputs,
