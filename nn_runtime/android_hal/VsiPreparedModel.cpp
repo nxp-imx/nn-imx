@@ -428,7 +428,9 @@ Return<ErrorStatus> VsiPreparedModel::initializeCacheInternel() {
 #endif
         uint32_t registered_idx = 0;
         auto ovx_operand = native_model_->addOperand(nullptr, &registered_idx);
-        if (inputs[0] == registered_idx || outputs[0] == registered_idx) {
+        if (std::find(inputs.begin(), inputs.end(), registered_idx) != inputs.end() ||
+            std::find(outputs.begin(), outputs.end(), registered_idx) != outputs.end() )
+        {
             auto status = construct_ovx_operand(ovx_operand, hal_operand);
             if (ErrorStatus::NONE != status) {
                 LOG(INFO) << "Deivce do not support the operand type"
@@ -438,6 +440,7 @@ Return<ErrorStatus> VsiPreparedModel::initializeCacheInternel() {
             fill_operand_value(ovx_operand, hal_operand);
         }
     }
+
     if (model_.relaxComputationFloat32toFloat16) native_model_->relax(true);
 
     native_model_->finish();
