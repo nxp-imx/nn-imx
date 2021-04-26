@@ -197,18 +197,18 @@ static vsi_bool op_setup
         end[i] = inputs[0]->attr.size[i];
     }
     end[axis] = 0;
-    for(i = 0; i < num; i++)
+    for (i = 0; i < num; i++)
     {
-        int j;
+        int32_t j;
         start[axis] = end[axis];
-        if(slices_num == 0)
+        if (slices_num == 0)
             end[axis] += average;
         else
             end[axis] += slices[i];
 
         memcpy(&outputs[i]->attr.dtype, &inputs[0]->attr.dtype, sizeof(vsi_nn_dtype_t));
         outputs[i]->attr.dim_num = inputs[0]->attr.dim_num;
-        for(j = 0; j < VSI_NN_MAX_DIM_NUM; j++)
+        for (j = 0; j < VSI_NN_MAX_DIM_NUM; j++)
         {
             outputs[i]->attr.size[j] = inputs[0]->attr.size[j];
         }
@@ -225,6 +225,7 @@ static vsi_bool op_setup
         curr->node->nn_param.strided_slice.begin_mask = 0;
         curr->node->nn_param.strided_slice.end_mask = 0;
         curr->node->nn_param.strided_slice.shrink_axis_mask = 0;
+        curr->node->nn_param.strided_slice.new_axis_mask = 0;
         curr->inputs[0] = inputs[0];
         curr->outputs[0] = outputs[i];
         vsi_nn_internal_setup_node( self, curr );
