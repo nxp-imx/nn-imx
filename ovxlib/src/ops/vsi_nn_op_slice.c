@@ -90,7 +90,8 @@ static vsi_bool op_setup
     vsi_nn_slice_param * p;
     vsi_nn_internal_node_t* curr = NULL;
     uint32_t i;
-    if(self->nn_param.slice.dims == 0)
+
+    if (self->nn_param.slice.dims == 0)
     {
         self->nn_param.slice.dims = inputs[0]->attr.dim_num;
     }
@@ -98,7 +99,7 @@ static vsi_bool op_setup
     p = (vsi_nn_slice_param *)&(self->nn_param.slice);
     vsi_nn_internal_init_node_wksp( self );
 
-    if( VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num )
+    if ( VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num )
     {
         for(i = 0; i < p->dims; i++)
         {
@@ -124,6 +125,7 @@ static vsi_bool op_setup
     curr->node->nn_param.strided_slice.begin_mask = 0;
     curr->node->nn_param.strided_slice.end_mask = 0;
     curr->node->nn_param.strided_slice.shrink_axis_mask = 0;
+    curr->node->nn_param.strided_slice.new_axis_mask = 0;
     curr->inputs[0] = inputs[0];
     curr->outputs[0] = outputs[0];
     vsi_nn_internal_setup_node( self, curr );
