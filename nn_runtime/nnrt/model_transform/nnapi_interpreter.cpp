@@ -2479,96 +2479,6 @@ OperationPtr NnApiInterpreter::map_ELU(Model* model,
     return op_ptr;
 }
 
-template <typename T>
-bool all_element_is_same(const T* begin, const T* end) {
-    static_assert(!std::is_same<T, void>::value);
-    bool is_same = true;
-    for (auto cur = begin, next = cur + 1; is_same && (cur != end) && (next != end);
-         ++cur, ++next) {
-        is_same &= (*cur == *next);
-    }
-
-    return is_same;
-}
-
-OperationPtr NnApiInterpreter::map_PRELU(Model* model,
-                                         OperationPtr operation,
-                                         uint32_t operation_index) {
-    NNAPI_CHECK_IO_NUM(operation, 2, 1);
-
-    // if all ratio in each channel is equal, convert as LeakyRelu
-    std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
-
-    if (!inputs[1]->isNull()) {
-        auto element_size = operand_utils::GetTypeBytes(inputs[1]->type);
-        auto operand_mem = inputs[1]->weak_mem_ref.lock();
-        assert(operand_mem);
-        bool all_same = false;
-        float leaky_ratio = 0.1f;
-
-        switch (inputs[1]->type) {
-            case OperandType::TENSOR_FLOAT16: {
-                all_same = all_element_is_same<uint16_t>(
-                    reinterpret_cast<const uint16_t*>(operand_mem->address_),
-                    reinterpret_cast<const uint16_t*>(operand_mem->address_) +
-                        element_size * inputs[1]->size());
-                if (all_same) {
-                    half_float::half ratio_fp16;
-                    memcpy(&ratio_fp16, operand_mem->address_, sizeof(half_float::half));
-                    leaky_ratio = ratio_fp16;
-                }
-            } break;
-            case OperandType::TENSOR_FLOAT32: {
-                all_same = all_element_is_same<float>(
-                    reinterpret_cast<const float*>(operand_mem->address_),
-                    reinterpret_cast<const float*>(operand_mem->address_) +
-                        element_size * inputs[1]->size());
-                if (all_same) {
-                    leaky_ratio = *((float*)operand_mem->address_);
-                }
-            } break;
-            case OperandType::TENSOR_QUANT8_ASYMM: {
-                all_same = all_element_is_same<uint8_t>(
-                    reinterpret_cast<const uint8_t*>(operand_mem->address_),
-                    reinterpret_cast<const uint8_t*>(operand_mem->address_) +
-                        element_size * inputs[1]->size());
-                if (all_same) {
-                    leaky_ratio =
-                        (*(uint8_t*)operand_mem->address_ - inputs[1]->quant.scalar.zeroPoint) *
-                        inputs[1]->quant.scalar.scale;
-                }
-            } break;
-
-            default: {
-                NNRT_LOGE_PRINT("Not implemented PRELU->LeakyRelu for dtype = %d", inputs[1]->type);
-            }
-        }
-
-        if (all_same) {
-            // map as leakyRelu : performance reason
-            auto op = std::make_shared<LeakyReluOperation>();
-            if (op) {
-                op->setDataLayout(DataLayout::NHWC);
-                op->ratio = leaky_ratio;
-            } else {
-                NNRT_LOGE_PRINT("Can not allocate a LeakyRelut Operation");
-            }
-
-            truncateOperationIOs(model, operation, 1, 1);
-
-            NNRT_LOGD_PRINT("Redirect PRELU to LeakyRelu");
-            return op;
-        }
-    }
-
-    OperationPtr op = std::make_shared<PReluOperation>();
-    if (op)
-        op->setDataLayout(DataLayout::NHWC);
-    else
-        NNRT_LOGE_PRINT("Invalid operaton pointer");
-    return op;
-}
-
 #define DECLARE_SAMPLE_OP(NAME, INPUT_NUM, OUTPUT_NUM, OPERATION_TYPE)    \
     OperationPtr NnApiInterpreter::map_##NAME(                            \
         Model* model, OperationPtr operation, uint32_t operation_index) { \
@@ -2608,6 +2518,7 @@ DECLARE_SAMPLE_OP(LOG, 1, 1, LogOperation)
 DECLARE_SAMPLE_OP(LOGICAL_AND, 2, 1, LogicalAndOperation)
 DECLARE_SAMPLE_OP(LOGICAL_OR, 2, 1, LogicalOrOperation)
 DECLARE_SAMPLE_OP(LOGICAL_NOT, 1, 1, LogicalNotOperation)
+DECLARE_SAMPLE_OP(PRELU, 2, 1, PReluOperation)
 DECLARE_SAMPLE_OP(SELECT, 3, 1, SelectOperation)
 DECLARE_SAMPLE_OP(SIN, 1, 1, SinOperation)
 DECLARE_SAMPLE_OP(AXIS_ALIGNED_BBOX_TRANSFORM, 4, 1, AxisAlignedBBoxTransformOperation)
