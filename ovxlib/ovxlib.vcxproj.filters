@@ -770,10 +770,13 @@
     <ClCompile Include="src\cpu_backend\vsi_nn_cpu_backend_deconv2d.c">
       <Filter>Source Files\cpu_backend</Filter>
     </ClCompile>
-    <ClCompile Include="src\custom\ops\kernel\vsi_nn_kernel_custom_softmax.c">
+    <ClCompile Include="src\custom\ops\kernel\custom_softmax_cpu.c">
       <Filter>Source Files\custom\ops\kernel</Filter>
     </ClCompile>
-    <ClCompile Include="src\custom\ops\vsi_nn_op_custom_softmax.c">
+    <ClCompile Include="src\custom\ops\kernel\custom_softmax_evis.c">
+      <Filter>Source Files\custom\ops\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="src\custom\ops\op_custom_softmax.c">
       <Filter>Source Files\custom\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\add_mean_std_norm_cl.c">
