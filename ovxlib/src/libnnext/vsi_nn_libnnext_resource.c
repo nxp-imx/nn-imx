@@ -35553,6 +35553,43 @@ TILE_2D(I16, I16, 6, 5, vxc_short8)\n\
 TILE_2D(I16, I16, 7, 6, vxc_short8)\n\
 TILE_2D(I16, I16, 0, 7, vxc_short8)\n\
 \n\
+#define TILE_2D_1TON(name0, name1, type) \\\n\
+__kernel void tile_1toN_##name0##to##name1##_2D( \\\n\
+    __read_only image2d_array_t  input, \\\n\
+    __write_only image2d_array_t output, \\\n\
+                             int batchIn, \\\n\
+                             int depthIn, \\\n\
+                             int depthOut, \\\n\
+                             int multiples_0, \\\n\
+                             int multiples_1, \\\n\
+                             int multiples_2, \\\n\
+                             int multiples_3 \\\n\
+) \\\n\
+{ \\\n\
+    int2 coord = (int2)(get_global_id(0), get_global_id(1)); \\\n\
+    int width = get_image_width(input); \\\n\
+    int height = get_image_height(input); \\\n\
+    int output_width = get_image_width(output); \\\n\
+    int output_height = get_image_height(output); \\\n\
+    type src; \\\n\
+    VXC_ReadImage(src, input, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+ \\\n\
+    do \\\n\
+    { \\\n\
+        do \\\n\
+        { \\\n\
+            VXC_WriteImage(output, coord, src, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+            coord.x += 8; \\\n\
+        } while (coord.x < output_width); \\\n\
+        coord.x = 0; \\\n\
+        coord.y += height; \\\n\
+    } while (coord.y < output_height); \\\n\
+}\n\
+TILE_2D_1TON(U8,  U8, vxc_uchar8)\n\
+TILE_2D_1TON(I16, I16, vxc_short8)\n\
+\n\
+\n\
 \n\
 "; /* end of tile_vx*/
 
