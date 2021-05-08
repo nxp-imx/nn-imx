@@ -661,6 +661,13 @@ struct LogSoftmaxOperation : Operation {
     int32_t axis;
 };
 
+struct ClipOperation : Operation {
+    ClipOperation() : Operation(OperationType::CLIP) {}
+
+    float min{std::numeric_limits<float>::lowest()};
+    float max{std::numeric_limits<float>::max()};
+};
+
 #define DECLARE_OPERATION(name, type)                         \
     struct name##Operation : Operation {                      \
         name##Operation() : Operation(OperationType::type) {} \

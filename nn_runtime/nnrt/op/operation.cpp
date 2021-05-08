@@ -238,6 +238,8 @@ inline const char* get_operation_string(OperationType type) {
             return "hard_swish";
         case OperationType::ELU:
             return "elu";
+        case OperationType::CLIP:
+            return "clip";
         default:
             return nullptr;
     }
