@@ -208,6 +208,7 @@ OvxlibDelegate::OvxlibDelegate(std::vector<ExecutionIOPtr> &inputPtr)
     REGISTER_OP(NBG);
     REGISTER_OP(HARD_SWISH);
     REGISTER_OP(ELU);
+    REGISTER_OP(CLIP);
 #undef REGISTER_OP
 }
 
@@ -2010,6 +2011,17 @@ int OvxlibDelegate::addNode_ELU(Model* model, OperationPtr operation, uint32_t o
     err = addNode(VSI_NN_OP_ELU, operation, &nodes, operation_index);
     EluOperation* elu = reinterpret_cast<EluOperation*>(operation.get());
     nodes[0]->nn_param.elu.alpha = elu->alpha;
+    return err;
+}
+
+int OvxlibDelegate::addNode_CLIP(Model* model, OperationPtr operation, uint32_t operation_index) {
+    (void)model;
+    int err = NNA_ERROR_CODE(NO_ERROR);
+    std::vector<vsi_nn_node_t*> nodes;
+    err = addNode(VSI_NN_OP_CLIP, operation, &nodes, operation_index);
+    ClipOperation* clip = reinterpret_cast<ClipOperation*>(operation.get());
+    nodes[0]->nn_param.clip.min = clip->min;
+    nodes[0]->nn_param.clip.max = clip->max;
     return err;
 }
 
