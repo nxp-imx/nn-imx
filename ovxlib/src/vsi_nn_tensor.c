@@ -1075,6 +1075,11 @@ void vsi_nn_SaveTensorToTextByFp32
     }
 
     fp = fopen( filename, "w" );
+    if( NULL == fp )
+    {
+        VSILOGW( "Write file %s fail. Please check...", filename );
+        return;
+    }
     sz = vsi_nn_GetElementNum( tensor );
 
     ptr = data;
@@ -1160,6 +1165,11 @@ void vsi_nn_SaveDataToText
     }
 
     fp = fopen( filename, "w" );
+    if( NULL == fp )
+    {
+        VSILOGW( "Write file %s fail. Please check...", filename );
+        return;
+    }
     type_bytes = vsi_nn_GetTypeBytes( type );
 
     count = 0;
@@ -1212,6 +1222,11 @@ void vsi_nn_SaveTensorToBinary
     }
 
     fp = fopen( filename, "wb" );
+    if( NULL == fp )
+    {
+        VSILOGW( "Write file %s fail. Please check...", filename );
+        return;
+    }
     sz = vsi_nn_GetTypeBytes( tensor->attr.dtype.vx_type );
     for( i = 0; i < tensor->attr.dim_num; i ++ )
     {
