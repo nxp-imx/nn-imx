@@ -30797,7 +30797,7 @@ __kernel void preprocess_start_idx(image2d_t input, image2d_t output)\n\
     }\n\
     int4 accSum0, accSum1, accSum2, accSum3;\n\
 \n\
-    for(int i = 0; i < width; i += 256)\n\
+    for(int i = 0; i < width; i += 512)\n\
     {\n\
         int4 data0 = vload4(0, index_ptr + i);\n\
         int4 data1 = vload4(1, index_ptr + i);\n\
@@ -35071,6 +35071,8 @@ __kernel void sequence_mask_##src0_type_name##to##src1_type_name##_2D( \\\n\
 SEQUENCE_MASK_QINT_TO_QINT_2D(U8,  U8,  vxc_uchar16, vxc_uchar16)\n\
 SEQUENCE_MASK_QINT_TO_QINT_2D(I8,  I8,  vxc_char16,  vxc_char16)\n\
 SEQUENCE_MASK_QINT_TO_QINT_2D(I16, I16, vxc_short8,  vxc_short8)\n\
+SEQUENCE_MASK_QINT_TO_QINT_2D(I8,  U8,  vxc_char16,  vxc_uchar16)\n\
+SEQUENCE_MASK_QINT_TO_QINT_2D(I16, U8,  vxc_short8,  vxc_uchar16)\n\
 \n\
 #define SEQUENCE_MASK_QINT_TO_QINT(src0_type_name, src1_type_name, read_type, write_type) \\\n\
 __kernel void sequence_mask_##src0_type_name##to##src1_type_name( \\\n\
@@ -35095,6 +35097,8 @@ __kernel void sequence_mask_##src0_type_name##to##src1_type_name( \\\n\
 SEQUENCE_MASK_QINT_TO_QINT(U8,  U8,  vxc_uchar16, vxc_uchar16)\n\
 SEQUENCE_MASK_QINT_TO_QINT(I8,  I8,  vxc_char16,  vxc_char16)\n\
 SEQUENCE_MASK_QINT_TO_QINT(I16, I16, vxc_short8,  vxc_short8)\n\
+SEQUENCE_MASK_QINT_TO_QINT(I16, U8,  vxc_short8,  vxc_uchar16)\n\
+SEQUENCE_MASK_QINT_TO_QINT(I8,  U8,  vxc_char16,  vxc_uchar16)\n\
 \n\
 __kernel void sequence_mask_F16toF16_2D(\n\
     image2d_t input, image2d_t output, int maxLen)\n\
@@ -35110,11 +35114,13 @@ __kernel void sequence_mask_F16toF16_2D(\n\
     VXC_DP4x4(tmpData, in_h, in_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
             UniFP16toFP32Lo4_dp4x4);\n\
     int index = convert_int_rte(tmpData.x);\n\
-    int4 data;\n\
-    data = outIdx < index? convert_int_rte(outputVal1) : output_ZP;\n\
+    float4 data;\n\
+    data = outIdx < index? outputVal1 : convert_float(output_ZP);\n\
     vxc_short8 dst;\n\
-    VXC_DP2x8(dst, data, data, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), uniConvertInt32toUint8_2x8);\n\
-    VXC_WriteImage(output, coord, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+    half4 tmpVal;\n\
+    _viv_asm(CONV, tmpVal, data);\n\
+    _viv_asm(COPY, dst, tmpVal, 16);\n\
+    VXC_WriteImage(output, coord, dst.s0246, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
 }\n\
 \n\
 __kernel void sequence_mask_F16toF16(\n\
@@ -35131,9 +35137,53 @@ __kernel void sequence_mask_F16toF16(\n\
     VXC_DP4x4(tmpData, in_h, in_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
             UniFP16toFP32Lo4_dp4x4);\n\
     int index = convert_int_rte(tmpData.x);\n\
+    float4 data;\n\
+    data = outIdx < index? outputVal1 : convert_float(output_ZP);\n\
+    vxc_short8 dst;\n\
+    half4 tmpVal;\n\
+    _viv_asm(CONV, tmpVal, data);\n\
+    _viv_asm(COPY, dst, tmpVal, 16);\n\
+    VXC_WriteImage2DArray(output, coord.s0246, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+__kernel void sequence_mask_F16toU8_2D(\n\
+    image2d_t input, image2d_t output, int maxLen)\n\
+{\n\
+    int gidx = get_global_id(0);\n\
+    int2 coord = (int2)(gidx, get_global_id(1));\n\
+    vxc_short8 src0;\n\
+    vxc_half8 in_h;\n\
+    VXC_ReadImage(src0, input, coord.yy, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    int4 outIdx = (int4)(gidx, gidx + 1, gidx + 2, gidx + 3);\n\
+    _viv_asm(COPY, in_h, src0, 16);\n\
+    float4 tmpData;\n\
+    VXC_DP4x4(tmpData, in_h, in_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
+            UniFP16toFP32Lo4_dp4x4);\n\
+    int index = convert_int_rte(tmpData.x);\n\
     int4 data;\n\
     data = outIdx < index? convert_int_rte(outputVal1) : output_ZP;\n\
-    vxc_short8 dst;\n\
+    vxc_uchar16 dst;\n\
+    VXC_DP2x8(dst, data, data, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), uniConvertInt32toUint8_2x8);\n\
+    VXC_WriteImage(output, coord, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+__kernel void sequence_mask_F16toU8(\n\
+    image2d_t input, image2d_t output, int maxLen)\n\
+{\n\
+    int gidx = get_global_id(0);\n\
+    int4 coord = (int4)(gidx, get_global_id(1), get_global_id(2), 0);\n\
+    vxc_short8 src0;\n\
+    vxc_half8 in_h;\n\
+    VXC_ReadImage(src0, input, coord.yz, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    int4 outIdx = (int4)(gidx, gidx + 1, gidx + 2, gidx + 3);\n\
+    _viv_asm(COPY, in_h, src0, 16);\n\
+    float4 tmpData;\n\
+    VXC_DP4x4(tmpData, in_h, in_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
+            UniFP16toFP32Lo4_dp4x4);\n\
+    int index = convert_int_rte(tmpData.x);\n\
+    int4 data;\n\
+    data = outIdx < index? convert_int_rte(outputVal1) : output_ZP;\n\
+    vxc_uchar16 dst;\n\
     VXC_DP2x8(dst, data, data, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), uniConvertInt32toUint8_2x8);\n\
     VXC_WriteImage2DArray(output, coord, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
 }\n\
