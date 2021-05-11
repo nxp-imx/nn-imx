@@ -717,12 +717,13 @@ static vsi_nn_kernel_node_t _setup
     int32_t pad_front  = vsi_nn_kernel_param_get_int32( params, "pad_front" );
     int32_t pad_end  = vsi_nn_kernel_param_get_int32( params, "pad_end" );
     int32_t dilation   = vsi_nn_kernel_param_get_int32( params, "dilation" );
+    int32_t batch = inputs[0]->attr.size[2];
     _internal_kernel_size_e ks   = KN;
 
-    if (!((VSI_NN_TYPE_UINT8 == inputs[0]->attr.dtype.vx_type)
+    if ( (!((VSI_NN_TYPE_UINT8 == inputs[0]->attr.dtype.vx_type)
        && (VSI_NN_TYPE_UINT8 == inputs[1]->attr.dtype.vx_type)
        && (NULL == inputs[2] || VSI_NN_TYPE_INT32 == inputs[2]->attr.dtype.vx_type)
-       && (VSI_NN_TYPE_UINT8 == outputs[0]->attr.dtype.vx_type)))
+       && (VSI_NN_TYPE_UINT8 == outputs[0]->attr.dtype.vx_type))) || batch > 1)
     {
         return NULL;
     }
