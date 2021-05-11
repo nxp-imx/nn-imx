@@ -262,8 +262,6 @@ cc_library(
         "src/cpu_backend/vsi_nn_cpu_backend_deconv2d.c",
         "src/cpu_backend/vsi_nn_cpu_backend.c",
         "src/cpu_backend/npuref_interface.c",
-        "src/libnnext/ops/kernel/vsi_nn_kernel_conv2d.c",
-        "src/libnnext/ops/kernel/vsi_nn_kernel_deconv2d.c",
         "src/kernel/vsi_nn_kernel.c",
         "src/kernel/vsi_nn_kernel_util.c",
         "src/kernel/vsi_nn_kernel_backend.c",
@@ -281,9 +279,7 @@ cc_library(
         "src/libnnext/ops/kernel/vsi_nn_kernel_extra_ending.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_topk.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_heatmap_max_keypoint.c",
-        "src/libnnext/ops/kernel/vsi_nn_kernel_axis_aligned_bbox_transform.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_box_with_nms_limit.c",
-        "src/libnnext/ops/kernel/vsi_nn_kernel_generate_proposals.c",
         "src/libnnext/vsi_nn_libnnext_resource.c",
     ] + [":kernel_srcs"]
       + [":operation_srcs"]
