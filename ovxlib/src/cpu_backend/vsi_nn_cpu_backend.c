@@ -27,6 +27,7 @@
 #include "vsi_nn_ops.h"
 #include "vsi_nn_client_op.h"
 #include "utils/vsi_nn_util.h"
+#include "kernel/vsi_nn_kernel.h"
 #include "cpu_backend/vsi_nn_cpu_backend.h"
 #include "cpu_backend/npuref_interface.h"
 

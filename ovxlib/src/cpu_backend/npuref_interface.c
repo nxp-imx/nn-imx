@@ -35,6 +35,7 @@
 #include "utils/vsi_nn_util.h"
 #include "utils/vsi_nn_dtype_util.h"
 #include "utils/vsi_nn_dlfcn.h"
+#include "kernel/vsi_nn_kernel.h"
 
 typedef struct {
     void * lib_handle;
@@ -131,17 +132,18 @@ vsi_bool npuref_exists()
  * Documented in npuref_interface.h
  */
 void npuref_interface_quant_conv2d(
-    const void* input_buffer, const vsi_nn_tensor_attr_t* input_attr,
-    const void* kernel_buffer, const vsi_nn_tensor_attr_t* kernel_attr,
+    const void* input_buffer, const vsi_nn_kernel_tensor_attr_t* input_attr,
+    const void* kernel_buffer, const vsi_nn_kernel_tensor_attr_t* kernel_attr,
     const void* bias_buffer,
     const int* pad, const int* strides, const int* dilation,
-    const vsi_nn_tensor_attr_t* output_attr, void* output_buffer)
+    const vsi_nn_kernel_tensor_attr_t* output_attr, void* output_buffer)
 {
     npuref_impl()->conv2d_quant8(
-        input_attr->size, kernel_attr->size, output_attr->size,
-        input_attr->dtype.scale, kernel_attr->dtype.scale, output_attr->dtype.scale,
-        input_attr->dtype.zero_point, kernel_attr->dtype.zero_point,
-        output_attr->dtype.zero_point,
+        (uint32_t *)input_attr->shape->data, (uint32_t *)kernel_attr->shape->data,
+        (uint32_t *)output_attr->shape->data,
+        input_attr->asymm.scale, kernel_attr->asymm.scale, output_attr->asymm.scale,
+        input_attr->asymm.zero_point, kernel_attr->asymm.zero_point,
+        output_attr->asymm.zero_point,
         strides[1], strides[0],
         dilation[1], dilation[0],
         pad[2], pad[3], pad[0], pad[1],
@@ -152,22 +154,23 @@ void npuref_interface_quant_conv2d(
  * Documented in npuref_interface.h
  */
 void npuref_interface_quant_deconv2d(
-    const void* input_buffer, const vsi_nn_tensor_attr_t* input_attr,
-    const void* kernel_buffer, const vsi_nn_tensor_attr_t* kernel_attr,
+    const void* input_buffer, const vsi_nn_kernel_tensor_attr_t* input_attr,
+    const void* kernel_buffer, const vsi_nn_kernel_tensor_attr_t* kernel_attr,
     const void* bias_buffer,
     const int* pad, const int* strides, const int* dilation,
-    const vsi_nn_tensor_attr_t* output_attr, void* output_buffer)
+    const vsi_nn_kernel_tensor_attr_t* output_attr, void* output_buffer)
 {
     npuref_impl()->transpose_conv2d_quant8(
-        input_attr->size, kernel_attr->size, output_attr->size,
-        input_attr->dtype.scale, kernel_attr->dtype.scale, output_attr->dtype.scale,
-        input_attr->dtype.zero_point, kernel_attr->dtype.zero_point,
-        output_attr->dtype.zero_point,
+        (uint32_t *)input_attr->shape->data, (uint32_t *)kernel_attr->shape->data,
+        (uint32_t *)output_attr->shape->data,
+        input_attr->asymm.scale, kernel_attr->asymm.scale, output_attr->asymm.scale,
+        input_attr->asymm.zero_point, kernel_attr->asymm.zero_point,
+        output_attr->asymm.zero_point,
         strides[1], strides[0],
         dilation[1], dilation[0],
         pad[2], pad[3], pad[0], pad[1],
         input_buffer, kernel_buffer, bias_buffer, output_buffer);
-} /* npuref_interface_quant_conv2d() */
+} /* npuref_interface_quant_deconv2d() */
 
 void npuref_interface_quant_depthwise_conv2d(
     const void* input_buffer,
