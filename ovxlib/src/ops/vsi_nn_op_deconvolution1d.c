@@ -33,6 +33,7 @@
 #include "vsi_nn_tensor_util.h"
 #include "utils/vsi_nn_util.h"
 #include "vsi_nn_log.h"
+#include "utils/vsi_nn_dtype_util.h"
 #include "kernel/vsi_nn_kernel.h"
 
 #define COMPUTE_DECONV_SZ( in, ksize, pad_1, pad_2, stride, output_padding )\
@@ -134,8 +135,11 @@ static vsi_bool op_check
     vsi_nn_tensor_t ** outputs
     )
 {
-    //TODO: Check tensor shapes.
-    return TRUE;
+    vsi_bool ret = FALSE;
+
+    ret = vsi_nn_OpCheck(VSI_NN_OP_DECONVOLUTION, self, inputs, outputs);
+
+    return ret;
 } /* op_check() */
 
 static vsi_bool op_setup
