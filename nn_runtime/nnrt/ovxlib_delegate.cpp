@@ -1016,7 +1016,7 @@ int OvxlibDelegate::addNode_GROUPED_CONV_2D(Model* model,
         nodes[0]->nn_param.conv2d.pad[1] = conv2d->pad[1];
         nodes[0]->nn_param.conv2d.pad[2] = conv2d->pad[2];
         nodes[0]->nn_param.conv2d.pad[3] = conv2d->pad[3];
-        nodes[0]->nn_param.conv2d.multiplier = 1;
+        nodes[0]->nn_param.conv2d.multiplier = weight->dimensions[0] / conv2d->groups;
         nodes[0]->nn_param.conv2d.dilation[0] = conv2d->dilations[0];
         nodes[0]->nn_param.conv2d.dilation[1] = conv2d->dilations[1];
         nodes[0]->nn_param.conv2d.ksize[0] = weight->dimensions[3];
