@@ -1345,6 +1345,14 @@ OperationPtr NnApiInterpreter::map_RESIZE_NEAREST(Model* model,
             getDataLayout(inputs[argList->ArgPos("data_layout")]->scalar.boolean));
         auto inputOperand = inputs[argList->ArgPos("input")];
         auto outputOperand = model->getOperands(operation->outputs())[0];
+
+        resize->align_corners = (-1 != argList->ArgPos("align_corners")
+                                     ? inputs[argList->ArgPos("align_corners")]->scalar.boolean
+                                     : false);
+        resize->half_pixel_centers =
+            (-1 != argList->ArgPos("half_pixel_corners")
+                 ? inputs[argList->ArgPos("half_pixel_corners")]->scalar.boolean
+                 : false);
         // No dynamic shape branch
         if (!nnrt::operand_utils::IsDynamicShape(inputOperand) &&
             !nnrt::operand_utils::IsDynamicShape(outputOperand)) {

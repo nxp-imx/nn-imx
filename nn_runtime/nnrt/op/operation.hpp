@@ -400,7 +400,10 @@ struct ResizeBilinearOperation : Operation {
 };
 
 struct ResizeNearestNeighborOperation : Operation {
-    ResizeNearestNeighborOperation() : Operation(OperationType::RESIZE_NEAREST) {}
+    ResizeNearestNeighborOperation()
+        : Operation(OperationType::RESIZE_NEAREST),
+          align_corners(false),
+          half_pixel_centers(false) {}
 
     virtual void handleLayoutInferenceOnInputs(
         Model& model,
@@ -408,6 +411,9 @@ struct ResizeNearestNeighborOperation : Operation {
             out_permute_vectors) override;
     int32_t outputHeight;
     int32_t outputWidth;
+
+    bool align_corners;
+    bool half_pixel_centers;
 };
 
 struct MatrixMulOperation : Operation {
