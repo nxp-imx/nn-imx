@@ -706,6 +706,140 @@ bool VsiOpCallbackInfoUpsample::IsNodeSupported(const onnxruntime::GraphViewer& 
     return vsi_npu::CheckMainInputType(node, reason) && vsi_npu::CheckAllZeroDim(node, reason);
 }
 
+void VsiOpCallbackInfoResize::Setup(const Node* node,
+                                      ModelShellPtr& model,
+                                      const onnxruntime::GraphViewer* graph_viewer) {
+    auto input_defs = node->InputDefs();
+    std::vector<uint32_t> in_operand_ids;
+    uint32_t input_operand_id = model->AddOperand(input_defs[0], graph_viewer);
+    in_operand_ids.push_back(input_operand_id);
+
+    auto output_defs = node->OutputDefs();
+    std::vector<uint32_t> out_operand_ids;
+    uint32_t output_operand_id = model->AddOperand(output_defs[0], graph_viewer);
+    out_operand_ids.push_back(output_operand_id);
+
+    ProtoHelperNodeContext ctx(*node);
+    OpNodeProtoHelper<ProtoHelperNodeContext> attrs(&ctx);
+
+    std::string mode;
+    bool status = vsi_npu::GetAttr<std::string>(attrs, "mode", &mode).IsOK();
+    ORT_ENFORCE(status);
+
+    auto compute_info = std::make_shared<VsiComputeInfo>();
+    std::vector<float> scales;
+    model->GetInitializerAsParameters<float>(input_defs[1], graph_viewer, scales);
+    if (scales.size() == 0) {
+        const int32_t kIndexScale = 1;
+        std::vector<int32_t> attrs_index({kIndexScale});
+        compute_info->backup_names.push_back(mode);
+        model->CollectComputeInfo(node, graph_viewer, attrs_index, compute_info);
+    }
+
+    int32_t outputHeight = 0;
+    int32_t outputWidth = 0;
+    auto shape = vsi_npu::GetTensorShape(*(input_defs[0]));
+    const std::vector<int64_t>& dims = shape.GetDims();
+    if (scales.size() == 4) {
+        outputHeight = dims[2] * scales[2];
+        outputWidth = dims[3] * scales[3];
+    } else if (scales.size() == 2) {
+        outputHeight = dims[2] * scales[0];
+        outputWidth = dims[3] * scales[1];
+    } else {
+        outputHeight = dims[2];
+        outputWidth = dims[3];
+    }
+
+    if (mode == "nearest") {
+        auto op = std::make_shared<nnrt::op::ResizeNearestNeighborOperation>();
+        op->setInputs(in_operand_ids.data(), in_operand_ids.size());
+        op->setOutputs(out_operand_ids.data(), out_operand_ids.size());
+
+        op->outputHeight = outputHeight;
+        op->outputWidth = outputWidth;
+        op->align_corners = false;
+        op->half_pixel_centers = false;
+        model->AddOperation(op, nullptr);
+        compute_info->op = op;
+    } else if (mode == "linear") {
+        auto op = std::make_shared<nnrt::op::ResizeBilinearOperation>();
+        op->setInputs(in_operand_ids.data(), in_operand_ids.size());
+        op->setOutputs(out_operand_ids.data(), out_operand_ids.size());
+
+        op->outputHeight = outputHeight;
+        op->outputWidth = outputWidth;
+        op->align_corners = false;
+        op->half_pixel_centers = false;
+        model->AddOperation(op, nullptr);
+        compute_info->op = op;
+    }
+}
+
+Status VsiOpCallbackInfoResize::Compute(FunctionState state,
+                                          const OrtApi* api,
+                                          OrtKernelContext* context,
+                                          NodeIndex node_index) {
+    Ort::CustomOpApi ort{*api};
+    ModelShell* model = reinterpret_cast<ModelShell*>(state);
+    auto compute_info = model->GetComputeInfo(node_index);
+    if (compute_info == nullptr) return Status::OK();
+
+    auto attributes_input_ids = model->GetComputeInputIds(compute_info->compute_input_names);
+
+    const OrtValue* input_tensor_scale =
+        ort.KernelContext_GetInput(context, attributes_input_ids[0]);
+    const auto input_tensor_scale_value = (float*)ort.GetTensorData<void>(input_tensor_scale);
+
+    std::string mode = compute_info->backup_names[0];
+    auto op = compute_info->op;
+    if (mode == "nearest") {
+        auto resize = std::dynamic_pointer_cast<nnrt::op::ResizeNearestNeighborOperation>(op);
+        resize->outputHeight *= input_tensor_scale_value[2];
+        resize->outputWidth *= input_tensor_scale_value[3];
+    } else if (mode == "linear") {
+        auto resize = std::dynamic_pointer_cast<nnrt::op::ResizeBilinearOperation>(op);
+        resize->outputHeight *= input_tensor_scale_value[2];
+        resize->outputWidth *= input_tensor_scale_value[3];
+    }
+
+    return Status::OK();
+}
+
+bool VsiOpCallbackInfoResize::IsNodeSupported(const onnxruntime::GraphViewer& graph_viewer,
+                                                const Node* node,
+                                                std::string& reason) {
+    auto input_defs = node->InputDefs();
+    auto output_defs = node->OutputDefs();
+    ModelShellPtr model = std::make_shared<ModelShell>();
+    std::vector<float> scales;
+    model->GetInitializerAsParameters<float>(input_defs[1], &graph_viewer, scales);
+
+    if (scales.size() != 4 && scales.size() != 2) return false;
+    if (scales.size() == 4 && (scales[0] != 1 || scales[1] != 1)) return false;
+    if (!(vsi_npu::CheckMainInputType(node, reason) &&
+          vsi_npu::CheckAllZeroDim(node, reason))) return false;
+    float scale_h = 1.0, scale_w = 1.0;
+    float scale_h0 = 1.0, scale_w0 = 1.0;
+    auto input_shape = vsi_npu::GetTensorShape(*input_defs[0]);
+    auto output_shape = vsi_npu::GetTensorShape(*output_defs[0]);
+    if (scales.size() == 4) {
+        scale_h = scales[2];
+        scale_w = scales[3];
+        scale_h0 = (float)(output_shape[2]) / input_shape[2];
+        scale_w0 = (float)(output_shape[3]) / input_shape[3];
+    } else { // scales.size() == 2
+        scale_h = scales[0];
+        scale_w = scales[1];
+        scale_h0 = (float)(output_shape[0]) / input_shape[0];
+        scale_w0 = (float)(output_shape[1]) / input_shape[1];
+    }
+
+    if (fabs(scale_h - scale_h0) > 1e-6 || fabs(scale_w - scale_w0) > 1e-6) return false;
+
+    return true;
+}
+
 #define REGISTER_OP(name)                               \
     std::pair<std::string, std::shared_ptr<VsiOpInfo>>( \
         #name, std::dynamic_pointer_cast<VsiOpInfo>(std::make_shared<VsiOpInfo##name>()))
@@ -747,6 +881,8 @@ std::map<std::string, std::shared_ptr<VsiOpInfo>> vsi_npu_supported_ops = {
     REGISTER_OP(Exp),
     REGISTER_OP(ArgMax),
     REGISTER_OP(ReduceMean),
+    REGISTER_OP(Clip),
+    REGISTER_OP(Resize),
 };
 
 bool VsiSupported(const std::string& opName) {
