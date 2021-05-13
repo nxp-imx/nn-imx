@@ -383,7 +383,10 @@ struct PadV2Operation : Operation {
 };
 
 struct ResizeBilinearOperation : Operation {
-    ResizeBilinearOperation() : Operation(OperationType::RESIZE_BILINEAR) {}
+    ResizeBilinearOperation()
+        : Operation(OperationType::RESIZE_BILINEAR),
+          align_corners(false),
+          half_pixel_centers(false) {}
 
     virtual void handleLayoutInferenceOnInputs(
         Model& model,
@@ -391,6 +394,9 @@ struct ResizeBilinearOperation : Operation {
             out_permute_vectors) override;
     int32_t outputHeight;
     int32_t outputWidth;
+
+    bool align_corners;
+    bool half_pixel_centers;
 };
 
 struct ResizeNearestNeighborOperation : Operation {

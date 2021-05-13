@@ -1266,6 +1266,14 @@ OperationPtr NnApiInterpreter::map_RESIZE_BILINEAR(Model* model,
         }
         auto inputOperand = inputs[argList->ArgPos("input")];
         auto outputOperand = model->getOperands(operation->outputs())[0];
+
+        resize->align_corners = (-1 != argList->ArgPos("align_corners")
+                                     ? inputs[argList->ArgPos("align_corners")]->scalar.boolean
+                                     : false);
+        resize->half_pixel_centers =
+            (-1 != argList->ArgPos("half_pixel_corners")
+                 ? inputs[argList->ArgPos("half_pixel_corners")]->scalar.boolean
+                 : false);
         // No dynamic shape branch
         if (!nnrt::operand_utils::IsDynamicShape(inputOperand) &&
             !nnrt::operand_utils::IsDynamicShape(outputOperand)) {
@@ -1305,7 +1313,7 @@ OperationPtr NnApiInterpreter::map_RESIZE_BILINEAR(Model* model,
                 }
             }
         } else {
-            // TODO: support dynamic input tensor shape
+            // support dynamic input tensor shape
             NNRT_LOGE_PRINT("Dynamic shape not support");
             assert(false);
         }
