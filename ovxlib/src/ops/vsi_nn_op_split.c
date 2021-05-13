@@ -224,7 +224,6 @@ static vsi_bool op_setup
         else
             end[axis] += slices[i];
 
-        memcpy(&outputs[i]->attr.dtype, &inputs[0]->attr.dtype, sizeof(vsi_nn_dtype_t));
         outputs[i]->attr.dim_num = inputs[0]->attr.dim_num;
         for (j = 0; j < VSI_NN_MAX_DIM_NUM; j++)
         {
