@@ -173,6 +173,17 @@ class VsiOpCallbackInfoUpsample : public VsiOpCallbackInfo {
     bool IsNodeSupported(const onnxruntime::GraphViewer&, const Node*, std::string&) override;
 };
 
+class VsiOpCallbackInfoResize : public VsiOpCallbackInfo {
+   public:
+    VsiOpCallbackInfoResize(){version_end_ = 10;};
+    void Setup(const Node*, ModelShellPtr&, const onnxruntime::GraphViewer*) override;
+    Status Compute(FunctionState state,
+                   const OrtApi* api,
+                   OrtKernelContext* context,
+                   NodeIndex node_index) override;
+    bool IsNodeSupported(const onnxruntime::GraphViewer&, const Node*, std::string&) override;
+};
+
 #define MAP_OP_COMMON(name)                                                                    \
     class VsiOpInfo##name : public VsiOpInfo {                                                 \
        public:                                                                                 \
@@ -183,5 +194,6 @@ MAP_OP_COMMON(Conv)
 MAP_OP_COMMON(Softmax)
 MAP_OP_COMMON(Gemm)
 MAP_OP_COMMON(Upsample)
+MAP_OP_COMMON(Resize)
 
 }  // namespace onnxruntime
