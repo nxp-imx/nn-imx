@@ -1438,7 +1438,8 @@ int OvxlibDelegate::addNode_RESIZE_BILINEAR(Model* model,
     nodes[0]->nn_param.resize.type = VSI_NN_INTERPOLATION_BILINEAR;
     nodes[0]->nn_param.resize.size[0] = resize->outputWidth;
     nodes[0]->nn_param.resize.size[1] = resize->outputHeight;
-    // TODO: Suppor factor
+    nodes[0]->nn_param.resize.align_corners = resize->align_corners;
+    nodes[0]->nn_param.resize.half_pixel_centers = resize->half_pixel_centers;
     return err;
 }
 
