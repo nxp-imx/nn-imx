@@ -307,7 +307,7 @@ static vsi_bool op_setup
     p->local->use_cifg = ( NULL == inputs[LSTMUNIT_INPUT_WEIGHT_I2I] );
     p->local->use_layer_norm = ( NULL != inputs[LSTMUNIT_INPUT_LAYERNORM_F] );
     p->local->use_projection = ( NULL != inputs[LSTMUNIT_INPUT_WEIGHT_PROJ] );
-    p->local->use_projection_bias = FALSE;//NULL != inputs[19];
+    p->local->use_projection_bias = ( NULL != inputs[LSTMUNIT_INPUT_BIAS_PROJ] );
     p->local->multi_batch = ( inputs[LSTMUNIT_INPUT_INPUT]->attr.size[1] > 1 );
     p->local->use_peephole = ( NULL != inputs[LSTMUNIT_INPUT_WEIGHT_C2O] );
     ifco_start_index = p->local->use_cifg ? 1 : 0;
