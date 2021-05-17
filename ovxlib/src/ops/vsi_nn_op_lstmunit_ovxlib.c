@@ -621,8 +621,6 @@ static vsi_bool op_setup
         curr->inputs[1] = inputs[LSTMUNIT_INPUT_WEIGHT_PROJ];
         curr->inputs[2] = zero_bias_tensor;
 
-        tmp_tensor = output_tensor;
-
         /* Save output to h_state first and copy to output */
         if( p->local->use_hybrid && p->local->use_projection_bias )
         {
@@ -635,6 +633,8 @@ static vsi_bool op_setup
         {
             curr->outputs[0] = outputs[LSTMUNIT_OUTPUT_H_STATE];
         }
+
+        tmp_tensor = output_tensor;
 
         vsi_nn_internal_setup_node(self, curr);
 
