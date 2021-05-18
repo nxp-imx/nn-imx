@@ -257,6 +257,7 @@ class OvxlibDelegate
         REGISTER_OP(NBG);
         REGISTER_OP(HARD_SWISH);
         REGISTER_OP(ELU);
+        REGISTER_OP(CLIP);
 #undef  REGISTER_OP
 
     private:
