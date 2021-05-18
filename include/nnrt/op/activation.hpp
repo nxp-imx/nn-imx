@@ -67,6 +67,7 @@ using RSqrtOperation = ActivationOperation<OperationType::RSQRT>;
 using SquareOperation = ActivationOperation<OperationType::SQUARE>;
 using LinearOperation = ActivationOperation<OperationType::LINEAR>;
 using HardSwishOperation = ActivationOperation<OperationType::HARD_SWISH>;
+using PReluOperation = ActivationOperation<OperationType::PRELU>;
 
 }
 }

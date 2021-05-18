@@ -204,6 +204,7 @@ enum class OperationType: uint32_t {
     NBG,
     HARD_SWISH,
     ELU,
+    CLIP,
 };
 
 enum class OperandType: uint8_t {
