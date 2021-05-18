@@ -35354,7 +35354,7 @@ __kernel void sequence_mask_F16toF16(\n\
     half4 tmpVal;\n\
     _viv_asm(CONV, tmpVal, data);\n\
     _viv_asm(COPY, dst, tmpVal, 16);\n\
-    VXC_WriteImage2DArray(output, coord.s0246, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_WriteImage2DArray(output, coord, dst.s0246, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
 }\n\
 \n\
 __kernel void sequence_mask_F16toU8_2D(\n\

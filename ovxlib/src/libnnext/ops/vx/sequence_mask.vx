@@ -103,7 +103,7 @@ __kernel void sequence_mask_F16toF16(
     half4 tmpVal;
     _viv_asm(CONV, tmpVal, data);
     _viv_asm(COPY, dst, tmpVal, 16);
-    VXC_WriteImage2DArray(output, coord.s0246, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));
+    VXC_WriteImage2DArray(output, coord, dst.s0246, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));
 }
 
 __kernel void sequence_mask_F16toU8_2D(
