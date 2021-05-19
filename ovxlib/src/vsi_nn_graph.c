@@ -1369,7 +1369,7 @@ void vsi_nn_DumpGraphNodeOutputsEx
 #define _SHAPE_BUF_SZ   (64)
     char shape[_SHAPE_BUF_SZ] = { 0 };
     char filename[_MAX_TENSOR_NAME_SZ] = { 0 };
-    char filename_prefix[_SHAPE_BUF_SZ] = { 0 };
+    char filename_prefix[_SHAPE_BUF_SZ + 1] = { 0 };
     const char * op_name;
     uint32_t i;
     uint32_t o;
