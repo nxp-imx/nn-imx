@@ -277,7 +277,6 @@ cc_library(
         "src/libnnext/ops/kernel/vsi_nn_kernel_sync_host.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_spatial_transformer.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_extra_ending.c",
-        "src/libnnext/ops/kernel/vsi_nn_kernel_topk.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_heatmap_max_keypoint.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_box_with_nms_limit.c",
         "src/libnnext/vsi_nn_libnnext_resource.c",
