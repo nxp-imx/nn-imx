@@ -37321,7 +37321,7 @@ typedef struct Tensor\n\
     int             stride_z;\n\
 } Tensor;\n\
 \n\
-inline uchar* update_tensor_ptr_from_coord(Tensor t, int4 coord)\n\
+inline uchar* create_tensor_ptr_from_coord(Tensor t, int4 coord)\n\
 {\n\
     return t.ptr + coord.x * t.stride_x + coord.y * t.stride_y + coord.z * t.stride_z;\n\
 }\n\
@@ -39307,16 +39307,6 @@ __kernel void vxcTensorStackConcat8Bits(\n\
     coord.x += 16;\n\
     VXC_WriteImage2DArray(output, coord, src1, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
 }"; /* end of vsi_nn_kernel_tensorstackconcat_vx*/
-
-static const char vsi_nn_kernel_topk_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
-\n\
-__kernel void vxcTopk(\n\
-    __read_only image2d_array_t   input,\n\
-    __write_only image2d_array_t  output)\n\
-{\n\
-\n\
-}\n\
-"; /* end of vsi_nn_kernel_topk_vx*/
 
 static const char vsi_nn_kernel_transform_gemm_vx[] = "/*\n\
  ============================================================================\n\
@@ -53013,7 +53003,6 @@ static const source_map_t evis_resource[] =
     {"vsi_nn_kernel_roi_align_vx", vsi_nn_kernel_roi_align_vx},
     {"vsi_nn_kernel_signalframe_vx", vsi_nn_kernel_signalframe_vx},
     {"vsi_nn_kernel_tensorstackconcat_vx", vsi_nn_kernel_tensorstackconcat_vx},
-    {"vsi_nn_kernel_topk_vx", vsi_nn_kernel_topk_vx},
     {"vsi_nn_kernel_transform_gemm_vx", vsi_nn_kernel_transform_gemm_vx},
     {"vsi_nn_kernel_transform_interp_vx", vsi_nn_kernel_transform_interp_vx},
     {"vsi_nn_kernel_transform_setupThres_vx", vsi_nn_kernel_transform_setupThres_vx},
