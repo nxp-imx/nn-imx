@@ -50,6 +50,44 @@ __kernel void floordiv_I32I32toI32_2D(
     write_imagei(output, coord, dst);
 }
 
+__kernel void floordiv_I32I32toU8(
+    __read_only  image2d_array_t  input,
+    __read_only  image2d_array_t  input1,
+    __write_only image2d_array_t  output,
+                 float            input0Scale,
+                 float            input0Tail,
+                 float            input1Scale,
+                 float            input1Tail,
+                 float            outputScale,
+                 float            outputTail )
+{
+    int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);
+    int4 src0;
+    int4 src1;
+    readImage2DArray(src0, input, coord);
+    readImage2DArray(src1, input1, coord);
+    uint4 dst  = convert_uint4(floor(convert_float4(src0) / convert_float4(src1)) * outputScale + outputTail);
+    write_imageui(output, coord, dst);
+}
+
+__kernel void floordiv_I32I32toU8_2D(
+    __read_only  image2d_t  input,
+    __read_only  image2d_t  input1,
+    __write_only image2d_t  output,
+                 float      input0Scale,
+                 float      input0Tail,
+                 float      input1Scale,
+                 float      input1Tail,
+                 float      outputScale,
+                 float      outputTail )
+{
+    int2 coord =  (int2)(get_global_id(0), get_global_id(1));
+    int4 src0 = read_imagei(input, coord);
+    int4 src1 = read_imagei(input1, coord);
+    uint4 dst  = convert_uint4(floor(convert_float4(src0) / convert_float4(src1)) * outputScale + outputTail);
+    write_imageui(output, coord, dst);
+}
+
 __kernel void floordiv_U8U8toU8(
     __read_only  image2d_array_t  input,
     __read_only  image2d_array_t  input1,
