@@ -282,6 +282,18 @@ void VsiOpCallbackInfoSoftmax::AddReshapeOp(const onnxruntime::Node* node,
 bool VsiOpCallbackInfoSoftmax::IsNodeSupported(const onnxruntime::GraphViewer& graph_viewer,
                                                const Node* node,
                                                std::string& reason) {
+    auto version_map = graph_viewer.DomainToVersionMap();
+    auto version = version_map[node->Domain()];
+    if (version >= 13) {
+        ProtoHelperNodeContext ctx(*node);
+        OpNodeProtoHelper<ProtoHelperNodeContext> attrs(&ctx);
+        auto input_defs = node->InputDefs();
+        auto shape = vsi_npu::GetTensorShape(*input_defs[0]);
+        const std::vector<int64_t>& dims = shape.GetDims();
+        int32_t axis = 1;
+        vsi_npu::GetAttr<int32_t>(attrs, "axis", &axis).IsOK();
+        if (dims.size() == 3 && axis == 1) return false;
+    }
     return VsiOpCallbackInfo::IsNodeSupported(graph_viewer, node, reason);
 }
 
