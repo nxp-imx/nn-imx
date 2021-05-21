@@ -11,10 +11,7 @@ _viv_uniform VXC_512Bits uniFp16SumSqr_dp8x2;
 _viv_uniform VXC_512Bits uniConvertEndInt16Fp32_4x4;
 
 __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_meanvari_F16(
-    image2d_array_t input,
-    image2d_array_t output,
-              float eps,
-              int rsFlg)
+    image2d_array_t input, image2d_array_t output, float eps, int rsFlg)
 {
     int gidx = get_global_id(0) << 3;
     int lidx = get_local_id(0);
@@ -74,10 +71,7 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_mean
 }
 
 __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_meanvari_F16_2D(
-    image2d_array_t input,
-    image2d_array_t output,
-              float eps,
-              int rsFlg)
+    image2d_array_t input, image2d_array_t output, float eps, int rsFlg)
 {
     int gidx = get_global_id(0) << 3;
     int lidx = get_local_id(0);
@@ -135,13 +129,8 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_mean
 }
 
 __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_F16toF16(
-    image2d_array_t input,
-    image2d_array_t bias,
-    image2d_array_t scale,
-    image2d_t meanVari,
-    image2d_array_t output,
-              float eps,
-              int rsFlg)
+    image2d_array_t input, image2d_array_t bias, image2d_array_t scale, image2d_t meanVari,
+    image2d_array_t output, float eps, int rsFlg)
 {
     int gidz = get_global_id(1);
     int4 coord = (int4)(get_global_id(0), 0, gidz, 0);
@@ -208,13 +197,8 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_F16t
 }
 
 __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_F16toF16_2D(
-    image2d_array_t input,
-    image2d_array_t bias,
-    image2d_array_t scale,
-    image2d_t meanVari,
-    image2d_array_t output,
-              float eps,
-              int rsFlg)
+    image2d_array_t input, image2d_array_t bias, image2d_array_t scale, image2d_t meanVari,
+    image2d_array_t output, float eps, int rsFlg)
 {
     int gidz = get_global_id(1);
     int gidy = gidz * height;

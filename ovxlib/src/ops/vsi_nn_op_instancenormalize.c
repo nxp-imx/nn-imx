@@ -211,6 +211,7 @@ static vsi_bool op_check
 {
     BEGIN_IO_TYPE_DECL(INSTANCE_NORM, 3, 1)
         IO_TYPE(D_F16,  D_F32,  D_F16,  D_F16)
+        IO_TYPE(D_F16,  D_F32,  D_F32,  D_F16)
         IO_TYPE(D_F16,  D_F16,  D_F16,  D_F16)
         IO_TYPE(D_F32,  D_F32,  D_F16,  D_F32)
         IO_TYPE(D_F32,  D_F16,  D_F16,  D_F32)
@@ -219,10 +220,13 @@ static vsi_bool op_check
         IO_TYPE(D_I32,  D_F32,  D_F16,  D_F32)
         IO_TYPE(D_I8|Q_DFP,   D_F32,  D_F16,  D_F16)
         IO_TYPE(D_I8|Q_DFP,   D_F32,  D_F16,  D_I8|Q_DFP)
+        IO_TYPE(D_I8|Q_DFP,   D_F32,  D_F32,  D_I8|Q_DFP)
         IO_TYPE(D_U8|Q_ASYM,  D_F32,  D_F16,  D_F16)
         IO_TYPE(D_U8|Q_ASYM,  D_F32,  D_F16,  D_U8|Q_ASYM)
+        IO_TYPE(D_U8|Q_ASYM,  D_F32,  D_F32,  D_U8|Q_ASYM)
         IO_TYPE(D_I16|Q_DFP,  D_F32,  D_F16,  D_F16)
         IO_TYPE(D_I16|Q_DFP,  D_F32,  D_F16,  D_I16|Q_DFP)
+        IO_TYPE(D_I16|Q_DFP,  D_F32,  D_F32,  D_I16|Q_DFP)
     END_IO_TYPE_DECL(INSTANCE_NORM)
     if (!VALIDATE_OP_IO_TYPES(INSTANCE_NORM, self, inputs, self->input.num, outputs, self->output.num))
     {
