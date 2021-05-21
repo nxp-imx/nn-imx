@@ -41361,6 +41361,52 @@ __kernel void floordiv_U8U8toU8_2D(\n\
     uint4 dst  = convert_uint4(out);\n\
     write_imageui(output, coord, dst);\n\
 }\n\
+\n\
+__kernel void floordiv_U8I32toU8(\n\
+    __read_only  image2d_array_t  input,\n\
+    __read_only  image2d_array_t  input1,\n\
+    __write_only image2d_array_t  output,\n\
+                 float            input0Scale,\n\
+                 float            input0Tail,\n\
+                 float            input1Scale,\n\
+                 float            input1Tail,\n\
+                 float            outputScale,\n\
+                 float            outputTail )\n\
+{\n\
+    int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+    uint4 src0;\n\
+    int4 src1;\n\
+    float4 in0, in1, out;\n\
+    readImage2DArray(src0, input, coord);\n\
+    readImage2DArray(src1, input1, coord);\n\
+    in0 = convert_float4(src0) * input0Scale + input0Tail;\n\
+    in1 = convert_float4(src1);\n\
+    out = floor(in0 / in1) * outputScale + outputTail;\n\
+    uint4 dst = convert_uint4(out);\n\
+    write_imageui(output, coord, dst);\n\
+}\n\
+\n\
+__kernel void floordiv_U8I32toU8_2D(\n\
+    __read_only  image2d_t  input,\n\
+    __read_only  image2d_t  input1,\n\
+    __write_only image2d_t  output,\n\
+                 float      input0Scale,\n\
+                 float      input0Tail,\n\
+                 float      input1Scale,\n\
+                 float      input1Tail,\n\
+                 float      outputScale,\n\
+                 float      outputTail )\n\
+{\n\
+    int2 coord =  (int2)(get_global_id(0), get_global_id(1));\n\
+    uint4 src0 = read_imageui(input, coord);\n\
+    int4 src1 = read_imagei(input1, coord);\n\
+    float4 in0, in1, out;\n\
+    in0 = convert_float4(src0) * input0Scale + input0Tail;\n\
+    in1 = convert_float4(src1);\n\
+    out = floor(in0 / in1) * outputScale + outputTail;\n\
+    uint4 dst = convert_uint4(out);\n\
+    write_imageui(output, coord, dst);\n\
+}\n\
 "; /* end of floordiv_cl*/
 
 static const char gather_cl[] = "__kernel void gather_U8toU8(\n\

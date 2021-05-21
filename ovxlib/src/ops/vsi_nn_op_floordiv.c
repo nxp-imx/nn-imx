@@ -68,7 +68,6 @@ static vsi_status op_compute
 
     if( ret )
     {
-
         reshape_tensors[0] = vsi_nn_reshape_tensor( self->graph,
                 inputs[0], (uint32_t*)shapes[0], new_rank );
         reshape_tensors[1] = vsi_nn_reshape_tensor( self->graph,
@@ -113,6 +112,7 @@ static vsi_bool op_check
         IO_TYPE(D_I8|Q_DFP,  D_I8|Q_DFP,  D_F16)
         IO_TYPE(D_I16|Q_DFP, D_I16|Q_DFP, D_I16|Q_DFP)
         IO_TYPE(D_I16|Q_DFP, D_I16|Q_DFP, D_F16)
+        IO_TYPE(D_U8|Q_ASYM, D_I32,       D_U8|Q_ASYM)
     END_IO_TYPE_DECL(FLOORDIV)
     if(!VALIDATE_OP_IO_TYPES(FLOORDIV, self, inputs, self->input.num, outputs, self->output.num)) {
         char* desc = generate_op_io_types_desc(inputs,
@@ -190,4 +190,3 @@ DEF_OP_REG
 #ifdef __cplusplus
 }
 #endif
-
