@@ -70,11 +70,13 @@ static const _kernel_map_type _floordiv_kernel_map[] =
     FLOORDIV_KERNELS( I32, I32, I32 )
     FLOORDIV_KERNELS( I32, I32, U8 )
     FLOORDIV_KERNELS( U8,  U8,  U8 )
+    FLOORDIV_KERNELS( U8,  I32, U8 )
 
     FLOORDIV_KERNELS_2D( F32, F32, F32 )
     FLOORDIV_KERNELS_2D( I32, I32, I32 )
     FLOORDIV_KERNELS_2D( I32, I32, U8 )
     FLOORDIV_KERNELS_2D( U8,  U8,  U8 )
+    FLOORDIV_KERNELS_2D( U8,  I32, U8 )
 };
 
 
@@ -313,4 +315,3 @@ static vsi_nn_kernel_node_t _setup
 __END_DECLS
 
 REGISTER_BACKEND_CL( floordiv, _setup )
-
