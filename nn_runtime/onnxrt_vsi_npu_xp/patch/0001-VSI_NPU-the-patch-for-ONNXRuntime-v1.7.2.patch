@@ -1,4 +1,4 @@
-From 0db470b7d80f1c4a1c96d828a3e7a6f3b790a6d7 Mon Sep 17 00:00:00 2001
+From b8936c6e32fe62e5cd6e4cca7ac1d5e3e1bc6ff7 Mon Sep 17 00:00:00 2001
 From: "jing.tang" <jing.tang@verisilicon.com>
 Date: Fri, 30 Apr 2021 18:02:16 +0800
 Subject: [PATCH] [VSI_NPU] the patch for ONNXRuntime-v1.7.2
@@ -6,28 +6,29 @@ Subject: [PATCH] [VSI_NPU] the patch for ONNXRuntime-v1.7.2
 ---
  cmake/CMakeLists.txt                          |   5 ++
  cmake/onnxruntime.cmake                       |   1 +
- cmake/onnxruntime_providers.cmake             |  24 +++++++++
+ cmake/onnxruntime_providers.cmake             |  24 ++++++++
  cmake/onnxruntime_unittests.cmake             |   8 +++
- .../CXX_Api_Sample.cpp                        |   3 ++
- .../onnxruntime/core/framework/tensor_shape.h |   6 +++
+ .../CXX_Api_Sample.cpp                        |   3 +
+ .../onnxruntime/core/framework/tensor_shape.h |   6 ++
  include/onnxruntime/core/graph/constants.h    |   1 +
  .../core/framework/ort_value_name_idx_map.h   |  14 ++++-
  onnxruntime/core/framework/session_state.cc   |  14 ++++-
  onnxruntime/core/framework/utils.cc           |   1 +
  onnxruntime/core/session/inference_session.cc |  14 ++++-
- onnxruntime/test/onnx/dataitem_request.cc     |  18 +++++--
- onnxruntime/test/onnx/main.cc                 |  28 ++++++++--
+ onnxruntime/test/onnx/dataitem_request.cc     |  18 +++++-
+ onnxruntime/test/onnx/main.cc                 |  28 ++++++++-
  .../test/perftest/command_args_parser.cc      |   2 +
- onnxruntime/test/perftest/ort_test_session.cc |   6 +++
+ onnxruntime/test/perftest/ort_test_session.cc |   6 ++
  .../providers/cpu/nn/batch_norm_op_test.cc    |   4 ++
- .../test/providers/provider_test_utils.cc     |  51 ++++++++++++++++++
+ .../cpu/tensor/quantize_linear_test.cc        |  14 ++---
+ .../test/providers/provider_test_utils.cc     |  53 +++++++++++++++++-
  .../{test_data_0_input.pb => input_0.pb}      | Bin
  .../{test_data_0_output.pb => output_0.pb}    | Bin
- onnxruntime/test/util/default_providers.cc    |   9 ++++
+ onnxruntime/test/util/default_providers.cc    |   9 +++
  .../test/util/include/default_providers.h     |   1 +
- onnxruntime/test/util/include/providers.h     |   3 ++
+ onnxruntime/test/util/include/providers.h     |   3 +
  tools/ci_build/build.py                       |  32 +++++++----
- 23 files changed, 225 insertions(+), 20 deletions(-)
+ 24 files changed, 233 insertions(+), 28 deletions(-)
  rename onnxruntime/test/testdata/squeezenet/test_data_set_0/{test_data_0_input.pb => input_0.pb} (100%)
  rename onnxruntime/test/testdata/squeezenet/test_data_set_0/{test_data_0_output.pb => output_0.pb} (100%)
 
@@ -431,8 +432,75 @@ index faf4c604b..1ab07184f 100644
    // OpenVINO: Disabled due to software limitations
    #if defined(OPENVINO_CONFIG_GPU_FP32) || defined(OPENVINO_CONFIG_GPU_FP16) || defined(OPENVINO_CONFIG_MYRIAD) || defined(OPENVINO_CONFIG_VAD_M) || defined(OPENVINO_CONFIG_CPU_FP32)
      excluded_eps.insert(kOpenVINOExecutionProvider);
+diff --git a/onnxruntime/test/providers/cpu/tensor/quantize_linear_test.cc b/onnxruntime/test/providers/cpu/tensor/quantize_linear_test.cc
+index 716b7240d..4e3b6c9ab 100644
+--- a/onnxruntime/test/providers/cpu/tensor/quantize_linear_test.cc
++++ b/onnxruntime/test/providers/cpu/tensor/quantize_linear_test.cc
+@@ -116,7 +116,7 @@ TEST(DequantizeLinearOpTest, Per_Channel_Axis_Default) {
+ 
+                          42, 42, -7, 7,
+                          21, 21, -7, 28});
+-  test.Run();
++  test.Run(OpTester::ExpectResult::kExpectSuccess, "", {kVsiNpuExecutionProvider});
+ }
+ 
+ // 1d zero & scale with uint8 broadcast axis 0
+@@ -140,7 +140,7 @@ TEST(DequantizeLinearOpTest, Per_Channel_Axis_0) {
+                         {0, 1, 2, 3,
+                          0, 2, 4, 6,
+                          0, 40, 80, 120});
+-  test.Run();
++  test.Run(OpTester::ExpectResult::kExpectSuccess, "", {kVsiNpuExecutionProvider});
+ }
+ 
+ // 1d zero & scale with int8 broadcast axis 1
+@@ -158,7 +158,7 @@ TEST(DequantizeLinearOpTest, Per_Channel_Axis_1_int8) {
+                         {0, 22, 88, 264,
+                          0, 24, 96, 288,
+                          0, 40, 160, 480});
+-  test.Run();
++  test.Run(OpTester::ExpectResult::kExpectSuccess, "", {kVsiNpuExecutionProvider});
+ }
+ 
+ // 1d zero & scale with int32 broadcast axis 1
+@@ -200,7 +200,7 @@ TEST(DequantizeLinearOpTest, Per_Channel_Neg_2) {
+                         {0, 1, 2, 3,
+                          0, 2, 4, 6,
+                          0, 40, 80, 120});
+-  test.Run();
++  test.Run(OpTester::ExpectResult::kExpectSuccess, "", {kVsiNpuExecutionProvider});
+ }
+ 
+ // quantize with scalar zero point and scale
+@@ -296,7 +296,7 @@ TEST(QuantizeLinearOpTest, Per_Channel_Axis_Default) {
+                           {64, 101, 127, 177,
+                            65, 100, 128, 182,
+                            66, 102, 128, 187});
+-  test.Run();
++  test.Run(OpTester::ExpectResult::kExpectSuccess, "", {kVsiNpuExecutionProvider});
+ }
+ 
+ TEST(QuantizeLinearOpTest, Per_Channel_Axis_0) {
+@@ -313,7 +313,7 @@ TEST(QuantizeLinearOpTest, Per_Channel_Axis_0) {
+                           {0, 2, 3, 255,
+                            0, 1, 2, 255,
+                            0, 0, 1, 250});
+-  test.Run();
++  test.Run(OpTester::ExpectResult::kExpectSuccess, "", {kVsiNpuExecutionProvider});
+ }
+ 
+ // quantize with per-channel and negative axis (-2 resolves to axis 0)
+@@ -331,7 +331,7 @@ TEST(QuantizeLinearOpTest, Per_Channel_Axis_neg) {
+                           {0, 2, 3, 255,
+                            0, 1, 2, 255,
+                            0, 0, 1, 250});
+-  test.Run();
++  test.Run(OpTester::ExpectResult::kExpectSuccess, "", {kVsiNpuExecutionProvider});
+ }
+ 
+ }  // namespace test
 diff --git a/onnxruntime/test/providers/provider_test_utils.cc b/onnxruntime/test/providers/provider_test_utils.cc
-index 38d3eb416..e7d5b34bd 100644
+index 38d3eb416..68974963f 100644
 --- a/onnxruntime/test/providers/provider_test_utils.cc
 +++ b/onnxruntime/test/providers/provider_test_utils.cc
 @@ -68,6 +68,53 @@ void Check(const OpTester::Data& expected_data, const Tensor& output_tensor,
@@ -480,7 +548,7 @@ index 38d3eb416..e7d5b34bd 100644
 +    }
 +  } else {
 +    for (int i = 0; i < size; ++i) {
-+      EXPECT_EQ(expected[i], output[i]) << "i:" << i
++      EXPECT_NEAR(expected[i], output[i], 1) << "i:" << i
 +                                        << ", provider_type: " << provider_type;
 +    }
 +  }
@@ -489,6 +557,15 @@ index 38d3eb416..e7d5b34bd 100644
  template <>
  void Check<uint8_t>(const OpTester::Data& expected_data,
                      const Tensor& output_tensor,
+@@ -109,7 +156,7 @@ void Check<uint8_t>(const OpTester::Data& expected_data,
+     }
+   } else {
+     for (int i = 0; i < size; ++i) {
+-      EXPECT_EQ(expected[i], output[i]) << "i:" << i
++      EXPECT_NEAR(expected[i], output[i], 1) << "i:" << i
+                                         << ", provider_type: " << provider_type;
+     }
+   }
 @@ -789,6 +836,7 @@ void OpTester::Run(
      // Run the model
      static const std::string all_provider_types[] = {
