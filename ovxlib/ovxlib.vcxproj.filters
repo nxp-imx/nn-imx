@@ -905,6 +905,9 @@
     <ClCompile Include="src\kernel\cl\sequence_mask_cl.c">
       <Filter>Source Files\kernel\cl</Filter>
     </ClCompile>
+    <ClCompile Include="src\kernel\cl\slice_cl.c">
+      <Filter>Source Files\kernel\cl</Filter>
+    </ClCompile>
     <ClCompile Include="src\kernel\cl\space2depth_internal_cl.c">
       <Filter>Source Files\kernel\cl</Filter>
     </ClCompile>
@@ -1091,6 +1094,9 @@
     <ClCompile Include="src\kernel\cpu\sequence_mask_cpu.c">
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
+    <ClCompile Include="src\kernel\cpu\slice_cpu.c">
+      <Filter>Source Files\kernel\cpu</Filter>
+    </ClCompile>
     <ClCompile Include="src\kernel\cpu\space2depth_internal_cpu.c">
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
@@ -1271,6 +1277,9 @@
     <ClCompile Include="src\kernel\evis\sequence_mask_evis.c">
       <Filter>Source Files\kernel\evis</Filter>
     </ClCompile>
+    <ClCompile Include="src\kernel\evis\slice_evis.c">
+      <Filter>Source Files\kernel\evis</Filter>
+    </ClCompile>
     <ClCompile Include="src\kernel\evis\space2depth_internal_evis.c">
       <Filter>Source Files\kernel\evis</Filter>
     </ClCompile>
@@ -1355,7 +1364,7 @@
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_spatial_transformer.c">
       <Filter>Source Files\libnnext\ops\kernel</Filter>
     </ClCompile>
-    <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_sync_host.c">
+  <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_sync_host.c">
       <Filter>Source Files\libnnext\ops\kernel</Filter>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_tensorstackconcat.c">
@@ -1364,7 +1373,7 @@
     <ClCompile Include="src\libnnext\vsi_nn_libnnext_resource.c">
       <Filter>Source Files\libnnext</Filter>
     </ClCompile>
-  <ClCompile Include="src\ops\vsi_nn_op_a_times_b_plus_c.c">
+    <ClCompile Include="src\ops\vsi_nn_op_a_times_b_plus_c.c">
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_abs.c">
