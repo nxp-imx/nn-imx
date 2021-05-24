@@ -797,6 +797,9 @@
     <ClCompile Include="src\kernel\cl\eltwise_unary_cl.c">
       <Filter>Source Files\kernel\cl</Filter>
     </ClCompile>
+    <ClCompile Include="src\kernel\cl\erf_cl.c">
+      <Filter>Source Files\kernel\cl</Filter>
+    </ClCompile>
     <ClCompile Include="src\kernel\cl\floordiv_cl.c">
       <Filter>Source Files\kernel\cl</Filter>
     </ClCompile>
@@ -963,6 +966,9 @@
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\eltwise_unary_cpu.c">
+      <Filter>Source Files\kernel\cpu</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\cpu\erf_cpu.c">
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\floordiv_cpu.c">
@@ -1154,6 +1160,9 @@
     <ClCompile Include="src\kernel\evis\eltwise_unary_evis.c">
       <Filter>Source Files\kernel\evis</Filter>
     </ClCompile>
+    <ClCompile Include="src\kernel\evis\erf_evis.c">
+      <Filter>Source Files\kernel\evis</Filter>
+    </ClCompile>
     <ClCompile Include="src\kernel\evis\floordiv_evis.c">
       <Filter>Source Files\kernel\evis</Filter>
     </ClCompile>
@@ -1337,6 +1346,9 @@
     <ClCompile Include="src\kernel\vx\eltwise_vx.c">
       <Filter>Source Files\kernel\vx</Filter>
     </ClCompile>
+    <ClCompile Include="src\kernel\vx\erf_vx.c">
+      <Filter>Source Files\kernel\vx</Filter>
+    </ClCompile>
     <ClCompile Include="src\kernel\vx\prelu_vx.c">
       <Filter>Source Files\kernel\vx</Filter>
     </ClCompile>
@@ -1352,7 +1364,7 @@
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_extra_ending.c">
       <Filter>Source Files\libnnext\ops\kernel</Filter>
     </ClCompile>
-    <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_heatmap_max_keypoint.c">
+  <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_heatmap_max_keypoint.c">
       <Filter>Source Files\libnnext\ops\kernel</Filter>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_imageprocess.c">
@@ -1364,7 +1376,7 @@
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_spatial_transformer.c">
       <Filter>Source Files\libnnext\ops\kernel</Filter>
     </ClCompile>
-  <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_sync_host.c">
+    <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_sync_host.c">
       <Filter>Source Files\libnnext\ops\kernel</Filter>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_tensorstackconcat.c">
@@ -1470,6 +1482,9 @@
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_embedding_lookup.c">
+      <Filter>Source Files\ops</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_erf.c">
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_expand_broadcast.c">

@@ -3955,6 +3955,181 @@ ELTSISE_UNARY_BF16(hard_sigmoid)\n\
 //ROUND\n\
 ELTSISE_UNARY_BF16(round)"; /* end of eltwise_unary_3d_vx*/
 
+static const char erf_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+#define MUL2_RSQRTPI    (1.1283791670955126f)\n\
+float eltwise_unary_erf(float x)\n\
+{\n\
+    float res = 0;\n\
+    float tmp = x;\n\
+    float factorial = 1;\n\
+    float x_pow = x;\n\
+    float one = 1.0f;\n\
+    float n = 1;\n\
+\n\
+    while (fabs(tmp) > 1e-5)\n\
+    {\n\
+        res += tmp;\n\
+\n\
+        factorial *= n;\n\
+        one *= -1;\n\
+        x_pow *= x * x;\n\
+        tmp = one / factorial * x_pow / ( 2 * n + 1);\n\
+\n\
+        n += 1.0f;\n\
+    }\n\
+    return res * MUL2_RSQRTPI;\n\
+}\n\
+\n\
+_viv_uniform float inputScale;\n\
+_viv_uniform float inputTail;\n\
+_viv_uniform float outputScale;\n\
+_viv_uniform float outputZP;\n\
+_viv_uniform VXC_512Bits uniExtract8Data_2x8;\n\
+_viv_uniform VXC_512Bits uniDatatoFp32Part0_4x4;\n\
+\n\
+#define ELTSISE_UNARY_2D(func_name, src_type_name, dst_type_name, src_type, \\\n\
+        src_copy_type, convert_type, dst_type, dst_copy_type) \\\n\
+    __kernel void func_name##_##src_type_name##to##dst_type_name##_2D( \\\n\
+    __read_only  image2d_array_t  input, \\\n\
+    __write_only image2d_array_t  output \\\n\
+    ) \\\n\
+{ \\\n\
+    int2 coord = (int2)(get_global_id(0), get_global_id(1)); \\\n\
+    src_type      src0; \\\n\
+    src_copy_type src1; \\\n\
+    VXC_ReadImage(src0, input, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    _viv_asm(COPY, src1, src0, 16); \\\n\
+ \\\n\
+    float4 vecA; \\\n\
+    VXC_DP4x4(vecA, src1, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDatatoFp32Part0_4x4); \\\n\
+    vecA = vecA * inputScale + inputTail; \\\n\
+    vecA.x = eltwise_unary_##func_name(vecA.x); \\\n\
+    vecA.y = eltwise_unary_##func_name(vecA.y); \\\n\
+    vecA.z = eltwise_unary_##func_name(vecA.z); \\\n\
+    vecA.w = eltwise_unary_##func_name(vecA.w); \\\n\
+    vecA = vecA * outputScale + outputZP; \\\n\
+ \\\n\
+    convert_type dst0; \\\n\
+    _viv_asm(CONV_RTE, dst0, vecA); \\\n\
+    dst_type dst2; \\\n\
+    VXC_DP2x8(dst2, dst0, dst0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), uniExtract8Data_2x8); \\\n\
+    dst_copy_type dst; \\\n\
+    _viv_asm(COPY, dst, dst2, 16); \\\n\
+    VXC_WriteImage(output, coord, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+}\n\
+//ERF\n\
+ELTSISE_UNARY_2D(erf, F16, F16, vxc_short8, vxc_half8,  half4, vxc_half8,  vxc_short8)\n\
+ELTSISE_UNARY_2D(erf, F16, I8,  vxc_short8, vxc_half8,  int4,  vxc_char8,  vxc_char8)\n\
+ELTSISE_UNARY_2D(erf, F16, U8,  vxc_short8, vxc_half8,  int4,  vxc_uchar8, vxc_uchar8)\n\
+ELTSISE_UNARY_2D(erf, F16, I16, vxc_short8, vxc_half8,  int4,  vxc_short8, vxc_short8)\n\
+ELTSISE_UNARY_2D(erf, I8,  I8,  vxc_char8,  vxc_char8,  int4,  vxc_char8,  vxc_char8)\n\
+ELTSISE_UNARY_2D(erf, I8,  F16, vxc_char8,  vxc_char8,  half4, vxc_half8,  vxc_short8)\n\
+ELTSISE_UNARY_2D(erf, U8,  U8,  vxc_uchar8, vxc_uchar8, int4,  vxc_uchar8, vxc_uchar8)\n\
+ELTSISE_UNARY_2D(erf, U8,  F16, vxc_uchar8, vxc_uchar8, half4, vxc_half8,  vxc_short8)\n\
+ELTSISE_UNARY_2D(erf, I16, I16, vxc_short8, vxc_short8, int4,  vxc_short8, vxc_short8)\n\
+ELTSISE_UNARY_2D(erf, I16, F16, vxc_short8, vxc_short8, half4, vxc_half8,  vxc_short8)\n\
+\n\
+\n\
+_viv_uniform VXC_512Bits uniConvBF16toF32_Part0_2x8;\n\
+_viv_uniform VXC_512Bits uniExtractOddData_2x8;\n\
+\n\
+#define ELTSISE_UNARY_BF16_2D(func_name) \\\n\
+    __kernel void func_name##_BF16toBF16_2D( \\\n\
+    __read_only  image2d_array_t  input, \\\n\
+    __write_only image2d_array_t  output \\\n\
+    ) \\\n\
+{ \\\n\
+    int2 coord = (int2)(get_global_id(0), get_global_id(1)); \\\n\
+    vxc_ushort8   src0, src1, dst; \\\n\
+    VXC_ReadImage(src0, input, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+ \\\n\
+    float4 vecA; \\\n\
+    vxc_short8 zero = (vxc_short8)(0, 0, 0, 0, 0, 0, 0, 0); \\\n\
+    VXC_DP2x8(src1, src0, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvBF16toF32_Part0_2x8); \\\n\
+    _viv_asm(COPY, vecA, src1, 16); \\\n\
+    vecA.x = eltwise_unary_##func_name(vecA.x); \\\n\
+    vecA.y = eltwise_unary_##func_name(vecA.y); \\\n\
+    vecA.z = eltwise_unary_##func_name(vecA.z); \\\n\
+    vecA.w = eltwise_unary_##func_name(vecA.w); \\\n\
+ \\\n\
+    _viv_asm(COPY, src0, vecA, 16); \\\n\
+ \\\n\
+    VXC_DP2x8(dst, src0, src0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniExtractOddData_2x8); \\\n\
+    VXC_WriteImage(output, coord, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+}\n\
+//EXP\n\
+ELTSISE_UNARY_BF16_2D(erf)\n\
+\n\
+#define ELTSISE_UNARY_3D(func_name, src_type_name, dst_type_name, src_type, \\\n\
+    src_copy_type, convert_type, dst_type, dst_copy_type) \\\n\
+__kernel void func_name##_##src_type_name##to##dst_type_name( \\\n\
+__read_only  image2d_array_t  input, \\\n\
+__write_only image2d_array_t  output \\\n\
+) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
+    src_type      src0; \\\n\
+    src_copy_type src1; \\\n\
+    VXC_ReadImage2DArray(src0, input, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    _viv_asm(COPY, src1, src0, 16); \\\n\
+ \\\n\
+    float4 vecA; \\\n\
+    VXC_DP4x4(vecA, src1, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDatatoFp32Part0_4x4); \\\n\
+    vecA = vecA * inputScale + inputTail; \\\n\
+    vecA.x = eltwise_unary_##func_name(vecA.x); \\\n\
+    vecA.y = eltwise_unary_##func_name(vecA.y); \\\n\
+    vecA.z = eltwise_unary_##func_name(vecA.z); \\\n\
+    vecA.w = eltwise_unary_##func_name(vecA.w); \\\n\
+    vecA = vecA * outputScale + outputZP; \\\n\
+ \\\n\
+    convert_type dst0; \\\n\
+    _viv_asm(CONV_RTE, dst0, vecA); \\\n\
+    dst_type dst2; \\\n\
+    VXC_DP2x8(dst2, dst0, dst0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), uniExtract8Data_2x8); \\\n\
+    dst_copy_type dst; \\\n\
+    _viv_asm(COPY, dst, dst2, 16); \\\n\
+    VXC_WriteImage2DArray(output, coord, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+}\n\
+//ERF\n\
+ELTSISE_UNARY_3D(erf, F16, F16, vxc_short8, vxc_half8,  half4, vxc_half8,  vxc_short8)\n\
+ELTSISE_UNARY_3D(erf, F16, I8,  vxc_short8, vxc_half8,  int4,  vxc_char8,  vxc_char8)\n\
+ELTSISE_UNARY_3D(erf, F16, U8,  vxc_short8, vxc_half8,  int4,  vxc_uchar8, vxc_uchar8)\n\
+ELTSISE_UNARY_3D(erf, F16, I16, vxc_short8, vxc_half8,  int4,  vxc_short8, vxc_short8)\n\
+ELTSISE_UNARY_3D(erf, I8,  I8,  vxc_char8,  vxc_char8,  int4,  vxc_char8,  vxc_char8)\n\
+ELTSISE_UNARY_3D(erf, I8,  F16, vxc_char8,  vxc_char8,  half4, vxc_half8,  vxc_short8)\n\
+ELTSISE_UNARY_3D(erf, U8,  U8,  vxc_uchar8, vxc_uchar8, int4,  vxc_uchar8, vxc_uchar8)\n\
+ELTSISE_UNARY_3D(erf, U8,  F16, vxc_uchar8, vxc_uchar8, half4, vxc_half8,  vxc_short8)\n\
+ELTSISE_UNARY_3D(erf, I16, I16, vxc_short8, vxc_short8, int4,  vxc_short8, vxc_short8)\n\
+ELTSISE_UNARY_3D(erf, I16, F16, vxc_short8, vxc_short8, half4, vxc_half8,  vxc_short8)\n\
+\n\
+#define ELTSISE_UNARY_BF16_3D(func_name) \\\n\
+    __kernel void func_name##_BF16toBF16( \\\n\
+    __read_only  image2d_array_t  input, \\\n\
+    __write_only image2d_array_t  output \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
+    vxc_ushort8   src0, src1, dst; \\\n\
+    VXC_ReadImage2DArray(src0, input, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+ \\\n\
+    float4 vecA; \\\n\
+    vxc_short8 zero = (vxc_short8)(0, 0, 0, 0, 0, 0, 0, 0); \\\n\
+    VXC_DP2x8(src1, src0, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvBF16toF32_Part0_2x8); \\\n\
+    _viv_asm(COPY, vecA, src1, 16); \\\n\
+    vecA.x = eltwise_unary_##func_name(vecA.x); \\\n\
+    vecA.y = eltwise_unary_##func_name(vecA.y); \\\n\
+    vecA.z = eltwise_unary_##func_name(vecA.z); \\\n\
+    vecA.w = eltwise_unary_##func_name(vecA.w); \\\n\
+ \\\n\
+    _viv_asm(COPY, src0, vecA, 16); \\\n\
+ \\\n\
+    VXC_DP2x8(dst, src0, src0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniExtractOddData_2x8); \\\n\
+    VXC_WriteImage2DArray(output, coord, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+}\n\
+//ERF\n\
+ELTSISE_UNARY_BF16_3D(erf)"; /* end of erf_vx*/
+
 static const char floordiv_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 _viv_uniform VXC_512Bits uniConvertInt32toUint8_2x8;\n\
@@ -41937,6 +42112,121 @@ __kernel void neg_I32toI32_2D\n\
 }\n\
 "; /* end of eltwise_unary_cl*/
 
+static const char erf_cl[] = "#define MUL2_RSQRTPI    (1.1283791670955126f)\n\
+float eltwise_unary_erf(float x)\n\
+{\n\
+    float res = 0;\n\
+    float tmp = x;\n\
+    float factorial = 1;\n\
+    float x_pow = x;\n\
+    float one = 1.0f;\n\
+    float n = 1;\n\
+\n\
+    while (fabs(tmp) > 1e-5)\n\
+    {\n\
+        res += tmp;\n\
+\n\
+        factorial *= n;\n\
+        one *= -1;\n\
+        x_pow *= x * x;\n\
+        tmp = one / factorial * x_pow / ( 2 * n + 1);\n\
+\n\
+        n += 1.0f;\n\
+    }\n\
+    return res * MUL2_RSQRTPI;\n\
+}\n\
+\n\
+#define ELTWISE_UNARY_F32(func_name) \\\n\
+__kernel void func_name##_F32toF32 \\\n\
+    ( \\\n\
+    __read_only  image2d_array_t input, \\\n\
+    __write_only image2d_array_t output, \\\n\
+                 float           inputScale, \\\n\
+                 float           inputTail, \\\n\
+                 float           outputScale, \\\n\
+                 float           outputZP \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
+ \\\n\
+    float4 src = read_imagef(input, coord); \\\n\
+ \\\n\
+    float4 dst = 0; \\\n\
+    dst.x = eltwise_unary_##func_name(src.x); \\\n\
+ \\\n\
+    write_imagef(output, coord, dst); \\\n\
+}\n\
+ELTWISE_UNARY_F32(erf)\n\
+\n\
+#define ELTWISE_UNARY_F32_2D(func_name) \\\n\
+__kernel void func_name##_F32toF32_2D \\\n\
+    ( \\\n\
+    __read_only  image2d_t input, \\\n\
+    __write_only image2d_t output, \\\n\
+                 float     inputScale, \\\n\
+                 float     inputTail, \\\n\
+                 float     outputScale, \\\n\
+                 float     outputZP \\\n\
+    ) \\\n\
+{ \\\n\
+    int2 coord =  (int2)(get_global_id(0), get_global_id(1)); \\\n\
+ \\\n\
+    float4 src = read_imagef(input, coord); \\\n\
+ \\\n\
+    float4 dst = 0; \\\n\
+    dst.x = eltwise_unary_##func_name(src.x); \\\n\
+ \\\n\
+    write_imagef(output, coord, dst); \\\n\
+}\n\
+ELTWISE_UNARY_F32_2D(erf)\n\
+\n\
+#define ELTWISE_UNARY_U8(func_name) \\\n\
+__kernel void func_name##_U8toU8 \\\n\
+    ( \\\n\
+    __read_only  image2d_array_t input, \\\n\
+    __write_only image2d_array_t output, \\\n\
+                 float           inputScale, \\\n\
+                 float           inputTail, \\\n\
+                 float           outputScale, \\\n\
+                 float           outputZP \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
+ \\\n\
+    uint4 src = read_imageui(input, coord); \\\n\
+    float4 data = convert_float4(src) * inputScale - inputTail; \\\n\
+ \\\n\
+    data.x = eltwise_unary_##func_name(data.x); \\\n\
+    uint4 dst = convert_uint4(data * outputScale + outputZP); \\\n\
+ \\\n\
+    write_imageui(output, coord, dst); \\\n\
+}\n\
+ELTWISE_UNARY_U8(erf)\n\
+\n\
+#define ELTWISE_UNARY_U8_2D(func_name) \\\n\
+__kernel void func_name##_U8toU8_2D \\\n\
+    ( \\\n\
+    __read_only  image2d_t input, \\\n\
+    __write_only image2d_t output, \\\n\
+                 float     inputScale, \\\n\
+                 float     inputTail, \\\n\
+                 float     outputScale, \\\n\
+                 float     outputZP \\\n\
+    ) \\\n\
+{ \\\n\
+    int2 coord =  (int2)(get_global_id(0), get_global_id(1)); \\\n\
+ \\\n\
+    uint4 src = read_imageui(input, coord); \\\n\
+    float4 data = convert_float4(src) * inputScale - inputTail; \\\n\
+ \\\n\
+    data.x = eltwise_unary_##func_name(data.x); \\\n\
+    uint4 dst = convert_uint4(data * outputScale + outputZP); \\\n\
+ \\\n\
+    write_imageui(output, coord, dst); \\\n\
+}\n\
+ELTWISE_UNARY_U8_2D(erf)\n\
+"; /* end of erf_cl*/
+
 static const char floordiv_cl[] = "__kernel void floordiv_F32F32toF32(\n\
     __read_only  image2d_array_t  input,\n\
     __read_only  image2d_array_t  input1,\n\
@@ -53765,6 +54055,7 @@ static const source_map_t evis_resource[] =
     {"detect_post_box_vx", detect_post_box_vx},
     {"eltwise_unary_2d_vx", eltwise_unary_2d_vx},
     {"eltwise_unary_3d_vx", eltwise_unary_3d_vx},
+    {"erf_vx", erf_vx},
     {"floordiv_vx", floordiv_vx},
     {"gather_vx", gather_vx},
     {"gather_mix_vx", gather_mix_vx},
@@ -53967,6 +54258,7 @@ static const source_map_t cl_resource[] =
     {"detect_post_box_cl", detect_post_box_cl},
     {"eltwise_ops_helper_cl", eltwise_ops_helper_cl},
     {"eltwise_unary_cl", eltwise_unary_cl},
+    {"erf_cl", erf_cl},
     {"floordiv_cl", floordiv_cl},
     {"gather_cl", gather_cl},
     {"gather_nd_cl", gather_nd_cl},
