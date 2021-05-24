@@ -95,6 +95,14 @@ static vsi_bool op_setup
         {
             outputs[0]->attr.size[i] = inputs[0]->attr.size[i];
         }
+    }
+
+    if( VSI_NN_DIM_AUTO == outputs[1]->attr.dim_num )
+    {
+        vsi_nn_topk_param * p;
+
+        p = &(self->nn_param.topk);
+
         outputs[1]->attr.dim_num = inputs[0]->attr.dim_num;
         outputs[1]->attr.size[0] = p->k;
         for (i = 1; i < inputs[0]->attr.dim_num; i++)
@@ -102,6 +110,7 @@ static vsi_bool op_setup
             outputs[1]->attr.size[i] = inputs[0]->attr.size[i];
         }
     }
+
     return TRUE;
 } /* op_setup() */
 
