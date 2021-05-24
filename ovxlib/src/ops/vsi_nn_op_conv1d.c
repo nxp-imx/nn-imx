@@ -53,8 +53,18 @@ static vsi_status op_compute
     vsi_nn_kernel_param_add_int32( param, "rounding_policy", self->vx_param.rounding_policy );
     vsi_nn_kernel_param_add_int32( param,
             "down_scale_size_rounding", self->vx_param.down_scale_size_rounding );
-    self->n = (vx_node)vsi_nn_kernel_selector( self->graph, "conv1d",
+    if( self->nn_param.conv1d.multiplier > 0 )
+    {
+        vsi_nn_kernel_param_add_int32( param, "multiplier",
+                self->nn_param.conv1d.multiplier );
+        self->n = (vx_node)vsi_nn_kernel_selector( self->graph, "depthwise_conv1d",
             inputs, 3, outputs, 1, param );
+    }
+    else
+    {
+        self->n = (vx_node)vsi_nn_kernel_selector( self->graph, "conv1d",
+            inputs, 3, outputs, 1, param );
+    }
 
     if( self->n )
     {
