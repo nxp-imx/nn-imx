@@ -216,7 +216,7 @@ def main(argv):
 
     evis_embedded_paths = ['src/libnnext/ops/vx/']
     evis_custom_paths = ['src/libnnext/ops/vx/',
-                    'src/custom/ops/kernel/vx/']
+                    'src/custom/ops/kernel/evis/']
     cl_embedded_paths = ['src/libnnext/ops/cl/']
     cl_custom_paths = ['src/libnnext/ops/cl/',
                     'src/custom/ops/kernel/cl/']
