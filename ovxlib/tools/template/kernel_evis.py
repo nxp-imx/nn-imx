@@ -18,29 +18,28 @@ static vsi_status _query_kernel
     const _kernel_map_type * kernel_map = _%KERNEL_NAME%_kernel_map;
     size_t kernel_map_size              = _cnt_of_array( _%KERNEL_NAME%_kernel_map );
     vx_param_description_t * param_def  = _%KERNEL_NAME%_kernel_param_def;
-    size_t param_def_size               = _cnt_of_array( _%KERNEL_NAME%_kernel_param_def );
     vx_kernel_initialize_f  initializer = _%KERNEL_NAME%_initializer;
 
     uint32_t key;
-    int i;
+    uint32_t i;
 
     in_dtype  = vsi_nn_kernel_map_dtype( inputs[0]->attr.dtype.vx_type );
     out_dtype = vsi_nn_kernel_map_dtype( outputs[0]->attr.dtype.vx_type );
 
     key = %upper(KERNEL_NAME)%_HASH_KEY( in_dtype, out_dtype );
 
-    for( i = 0; i < kernel_map_size; i ++ )
+    for ( i = 0; i < (uint32_t)kernel_map_size; i ++ )
     {
-        if( kernel_map[i].key == key )
+        if ( kernel_map[i].key == key )
         {
             break;
         }
     }
-    if( i < kernel_map_size )
+    if ( i < (uint32_t)kernel_map_size )
     {
         snprintf( kernel->info.name, VX_MAX_KERNEL_NAME, "%s",  kernel_map[i].function_name );
         kernel->info.parameters  = param_def;
-        kernel->info.numParams   = param_def_size;
+        kernel->info.numParams   = _cnt_of_array( _%KERNEL_NAME%_kernel_param_def );
         kernel->info.initialize  = initializer;
         // Register code source
         vsi_nn_kernel_add_source( kernel, VSI_NN_GPU_SOURCE_FMT_CODE, 2,
