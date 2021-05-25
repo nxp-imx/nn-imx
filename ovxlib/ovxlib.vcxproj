@@ -573,6 +573,7 @@
     <ClInclude Include="include\ops\vsi_nn_op_multiply.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_nbg.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_neg.h"/>
+    <ClInclude Include="include\ops\vsi_nn_op_one_hot.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_pad.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_permute.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_pool.h"/>
@@ -832,6 +833,9 @@
     <ClCompile Include="src\kernel\cl\moments_cl.c">
       <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="src\kernel\cl\one_hot_cl.c">
+      <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="src\kernel\cl\poolwithargmax_cl.c">
       <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
@@ -1004,6 +1008,9 @@
       <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\moments_cpu.c">
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\kernel\cpu\one_hot_cpu.c">
       <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\poolwithargmax_cpu.c">
@@ -1193,6 +1200,9 @@
       <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\moments_evis.c">
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\kernel\evis\one_hot_evis.c">
       <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\poolwithargmax_evis.c">
@@ -1592,6 +1602,9 @@
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_noop.c">
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_one_hot.c">
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_pad.c">

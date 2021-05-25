@@ -368,7 +368,7 @@ static vsi_nn_kernel_node_t _setup
     )
 {
     vsi_status status = VSI_FAILURE;
-    vsi_nn_kernel_node_param_t node_params[_ERF_PARAM_NUM];
+    vsi_nn_kernel_node_param_t node_params[_ERF_PARAM_NUM] = {NULL};
     vsi_nn_kernel_node_t node = NULL;
     vsi_nn_tensor_t* rs_tensors[2] = { NULL };
     int32_t shape[VSI_NN_MAX_DIM_NUM] = { 0 };

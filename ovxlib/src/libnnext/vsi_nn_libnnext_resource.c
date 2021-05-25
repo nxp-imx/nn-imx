@@ -23774,6 +23774,213 @@ __kernel void moments_axis2_F16toF16(\n\
     VXC_WriteImage(output_vari, coord_out, dst.s4567, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
 }"; /* end of moments_axis2_vx*/
 
+static const char one_hot_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+_viv_uniform VXC_512Bits uniDataConvert_0_4x4;\n\
+_viv_uniform VXC_512Bits uniDataConvert_1_4x4;\n\
+_viv_uniform VXC_512Bits uniExtract8Data_2x8;\n\
+_viv_uniform int depth;\n\
+#define ONE_HOT_SH_IMPL(name0, name1, src_type, copy_type, dst_type) \\\n\
+__kernel void one_hot_##name0##to##name1 \\\n\
+    ( \\\n\
+    __read_only  image2d_array_t input, \\\n\
+    __write_only image2d_array_t output, \\\n\
+                 int             suffix_sz, \\\n\
+                 int             on_val, \\\n\
+                 int             off_val \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord =  (int4)(get_global_id(0), get_global_id(1), 0, 0); \\\n\
+ \\\n\
+    copy_type src; \\\n\
+    src_type  val; \\\n\
+ \\\n\
+    VXC_ReadImage(val, input, coord.xy, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    _viv_asm(COPY, src, val, 16); \\\n\
+ \\\n\
+    int4 data0, data1; \\\n\
+    VXC_DP4x4(data0, src, src, \\\n\
+         VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataConvert_0_4x4); \\\n\
+    VXC_DP4x4(data1, src, src, \\\n\
+         VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataConvert_1_4x4); \\\n\
+ \\\n\
+    do \\\n\
+    { \\\n\
+        int4 d0 = data0 == coord.zzzz ? on_val : off_val; \\\n\
+        int4 d1 = data1 == coord.zzzz ? on_val : off_val; \\\n\
+ \\\n\
+        dst_type dst; \\\n\
+        VXC_DP2x8(dst, d0, d1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniExtract8Data_2x8); \\\n\
+ \\\n\
+        VXC_WriteImage2DArray(output, coord.xzyw, dst, VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0)); \\\n\
+ \\\n\
+        coord.z ++; \\\n\
+    } while (coord.z < depth); \\\n\
+}\n\
+ONE_HOT_SH_IMPL(F16, F16, vxc_ushort8, vxc_half8,  vxc_ushort8)\n\
+ONE_HOT_SH_IMPL(F16, I16, vxc_ushort8, vxc_half8,  vxc_ushort8)\n\
+ONE_HOT_SH_IMPL(F16, I8,  vxc_ushort8, vxc_half8,  vxc_uchar8)\n\
+ONE_HOT_SH_IMPL(F16, U8,  vxc_ushort8, vxc_half8,  vxc_uchar8)\n\
+ONE_HOT_SH_IMPL(I16, F16, vxc_short8,  vxc_short8, vxc_ushort8)\n\
+ONE_HOT_SH_IMPL(I16, I16, vxc_short8,  vxc_short8, vxc_ushort8)\n\
+ONE_HOT_SH_IMPL(I8,  F16, vxc_char8,   vxc_char8,  vxc_ushort8)\n\
+ONE_HOT_SH_IMPL(I8,  I8,  vxc_char8,   vxc_char8,  vxc_uchar8)\n\
+\n\
+#define ONE_HOT_SH_IMPL_2D(name0, name1, src_type, copy_type, dst_type) \\\n\
+__kernel void one_hot_##name0##to##name1##_2D \\\n\
+    ( \\\n\
+    __read_only  image2d_array_t input, \\\n\
+    __write_only image2d_array_t output, \\\n\
+                 int             suffix_sz, \\\n\
+                 int             on_val, \\\n\
+                 int             off_val \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord =  (int4)(get_global_id(0), 0, get_global_id(0), get_global_id(0)); \\\n\
+ \\\n\
+    copy_type src; \\\n\
+    src_type  val; \\\n\
+ \\\n\
+    VXC_ReadImage(val, input, coord.xy, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    _viv_asm(COPY, src, val, 16); \\\n\
+ \\\n\
+    int4 data, data0, data1; \\\n\
+    VXC_DP4x4(data, src, src, \\\n\
+         VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataConvert_0_4x4); \\\n\
+    int4 d4 = (int4)(0, 1, 2, 3); \\\n\
+ \\\n\
+    do \\\n\
+    { \\\n\
+        coord.zw = coord.xx + (int2)(0, 1); \\\n\
+        dst_type dst; \\\n\
+        data0 = data.xxxx == d4 ? on_val : off_val; \\\n\
+        data1 = data.yyyy == d4 ? on_val : off_val; \\\n\
+ \\\n\
+        VXC_DP2x8(dst, data0, data1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniExtract8Data_2x8); \\\n\
+ \\\n\
+        VXC_WriteImage(output, coord.yz, dst, VXC_MODIFIER(0, 3, 0,VXC_RM_TowardZero, 0)); \\\n\
+        VXC_WriteImage(output, coord.yw, dst, VXC_MODIFIER(4, 7, 0,VXC_RM_TowardZero, 0)); \\\n\
+        coord.zw = coord.zw + (int2)(2, 2); \\\n\
+ \\\n\
+        data0 = data.zzzz == d4 ? on_val : off_val; \\\n\
+        data1 = data.wwww == d4 ? on_val : off_val; \\\n\
+ \\\n\
+        VXC_DP2x8(dst, data0, data1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniExtract8Data_2x8); \\\n\
+ \\\n\
+        VXC_WriteImage(output, coord.yz, dst, VXC_MODIFIER(0, 3, 0,VXC_RM_TowardZero, 0)); \\\n\
+        VXC_WriteImage(output, coord.yw, dst, VXC_MODIFIER(4, 7, 0,VXC_RM_TowardZero, 0)); \\\n\
+        d4 += 4; \\\n\
+        coord.y += 4; \\\n\
+    } while (coord.y < depth); \\\n\
+}\n\
+ONE_HOT_SH_IMPL_2D(F16, F16, vxc_ushort8, vxc_half8,  vxc_ushort8)\n\
+ONE_HOT_SH_IMPL_2D(F16, I16, vxc_ushort8, vxc_half8,  vxc_ushort8)\n\
+ONE_HOT_SH_IMPL_2D(F16, I8,  vxc_ushort8, vxc_half8,  vxc_uchar8)\n\
+ONE_HOT_SH_IMPL_2D(F16, U8,  vxc_ushort8, vxc_half8,  vxc_uchar8)\n\
+ONE_HOT_SH_IMPL_2D(I16, F16, vxc_short8,  vxc_short8, vxc_ushort8)\n\
+ONE_HOT_SH_IMPL_2D(I16, I16, vxc_short8,  vxc_short8, vxc_ushort8)\n\
+ONE_HOT_SH_IMPL_2D(I8,  F16, vxc_char8,   vxc_char8,  vxc_ushort8)\n\
+ONE_HOT_SH_IMPL_2D(I8,  I8,  vxc_char8,   vxc_char8,  vxc_uchar8)\n\
+\n\
+_viv_uniform float input_scale;\n\
+_viv_uniform float input_tail;\n\
+#define ONE_HOT_ASYM_SH_IMPL(name0, name1, src_type, copy_type, dst_type) \\\n\
+__kernel void one_hot_##name0##to##name1 \\\n\
+    ( \\\n\
+    __read_only  image2d_array_t input, \\\n\
+    __write_only image2d_array_t output, \\\n\
+                 int             suffix_sz, \\\n\
+                 int             on_val, \\\n\
+                 int             off_val \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord =  (int4)(get_global_id(0), get_global_id(1), 0, 0); \\\n\
+ \\\n\
+    copy_type src; \\\n\
+    src_type  val; \\\n\
+ \\\n\
+    VXC_ReadImage(val, input, coord.xy, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    _viv_asm(COPY, src, val, 16); \\\n\
+ \\\n\
+    int4 data0, data1; \\\n\
+    float4 v0, v1; \\\n\
+    VXC_DP4x4(v0, src, src, \\\n\
+         VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataConvert_0_4x4); \\\n\
+    VXC_DP4x4(v1, src, src, \\\n\
+         VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataConvert_1_4x4); \\\n\
+ \\\n\
+    data0 = convert_int4(v0 * input_scale + input_tail); \\\n\
+    data1 = convert_int4(v1 * input_scale + input_tail); \\\n\
+    do \\\n\
+    { \\\n\
+        int4 d0 = data0 == coord.zzzz ? on_val : off_val; \\\n\
+        int4 d1 = data1 == coord.zzzz ? on_val : off_val; \\\n\
+ \\\n\
+        dst_type dst; \\\n\
+        VXC_DP2x8(dst, d0, d1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniExtract8Data_2x8); \\\n\
+ \\\n\
+        VXC_WriteImage2DArray(output, coord.xzyw, dst, VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0)); \\\n\
+ \\\n\
+        coord.z ++; \\\n\
+    } while (coord.z < depth); \\\n\
+}\n\
+ONE_HOT_ASYM_SH_IMPL(U8,  F16, vxc_uchar8,  vxc_uchar8, vxc_ushort8)\n\
+ONE_HOT_ASYM_SH_IMPL(U8,  U8,  vxc_uchar8,  vxc_uchar8, vxc_uchar8)\n\
+\n\
+#define ONE_HOT_ASYM_SH_IMPL_2D(name0, name1, src_type, copy_type, dst_type) \\\n\
+__kernel void one_hot_##name0##to##name1##_2D \\\n\
+    ( \\\n\
+    __read_only  image2d_array_t input, \\\n\
+    __write_only image2d_array_t output, \\\n\
+                 int             suffix_sz, \\\n\
+                 int             on_val, \\\n\
+                 int             off_val \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord =  (int4)(get_global_id(0), 0, get_global_id(0), get_global_id(0)); \\\n\
+ \\\n\
+    copy_type src; \\\n\
+    src_type  val; \\\n\
+ \\\n\
+    VXC_ReadImage(val, input, coord.xy, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    _viv_asm(COPY, src, val, 16); \\\n\
+ \\\n\
+    int4 data, data0, data1; \\\n\
+    float4 v0; \\\n\
+    VXC_DP4x4(v0, src, src, \\\n\
+         VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataConvert_0_4x4); \\\n\
+    int4 d4 = (int4)(0, 1, 2, 3); \\\n\
+    data = convert_int4(v0 * input_scale + input_tail); \\\n\
+ \\\n\
+    do \\\n\
+    { \\\n\
+        coord.zw = coord.xx + (int2)(0, 1); \\\n\
+        dst_type dst; \\\n\
+        data0 = data.xxxx == d4 ? on_val : off_val; \\\n\
+        data1 = data.yyyy == d4 ? on_val : off_val; \\\n\
+ \\\n\
+        VXC_DP2x8(dst, data0, data1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniExtract8Data_2x8); \\\n\
+ \\\n\
+        VXC_WriteImage(output, coord.yz, dst, VXC_MODIFIER(0, 3, 0,VXC_RM_TowardZero, 0)); \\\n\
+        VXC_WriteImage(output, coord.yw, dst, VXC_MODIFIER(4, 7, 0,VXC_RM_TowardZero, 0)); \\\n\
+        coord.zw = coord.zw + (int2)(2, 2); \\\n\
+ \\\n\
+        data0 = data.zzzz == d4 ? on_val : off_val; \\\n\
+        data1 = data.wwww == d4 ? on_val : off_val; \\\n\
+ \\\n\
+        VXC_DP2x8(dst, data0, data1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniExtract8Data_2x8); \\\n\
+ \\\n\
+        VXC_WriteImage(output, coord.yz, dst, VXC_MODIFIER(0, 3, 0,VXC_RM_TowardZero, 0)); \\\n\
+        VXC_WriteImage(output, coord.yw, dst, VXC_MODIFIER(4, 7, 0,VXC_RM_TowardZero, 0)); \\\n\
+        d4 += 4; \\\n\
+        coord.y += 4; \\\n\
+    } while (coord.y < depth); \\\n\
+}\n\
+ONE_HOT_ASYM_SH_IMPL_2D(U8,  F16, vxc_uchar8,  vxc_uchar8, vxc_ushort8)\n\
+ONE_HOT_ASYM_SH_IMPL_2D(U8,  U8,  vxc_uchar8,  vxc_uchar8, vxc_uchar8)\n\
+\n\
+"; /* end of one_hot_vx*/
+
 static const char poolwithargmax_F16_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 //-------------------max pooling with argmax---------------\n\
@@ -50848,6 +51055,138 @@ __kernel void moments_axis2_I32toF32(\n\
     write_imagef(output_vari, coord_out, vari);\n\
 }"; /* end of moments_axis2_cl*/
 
+static const char one_hot_cl[] = "__kernel void one_hot_F32toF32\n\
+    (\n\
+        __read_only  image2d_t       input,\n\
+        __write_only image2d_array_t output,\n\
+                     int             depth,\n\
+                     float           on_value,\n\
+                     float           off_value,\n\
+                     float           inputScale,\n\
+                     float           inputTail\n\
+    )\n\
+{\n\
+    int4 coord =  (int4)(get_global_id(0), get_global_id(1), 0, 0);\n\
+\n\
+    float4 val = read_imagef(input, coord.xy);\n\
+\n\
+    do\n\
+    {\n\
+        float4 dst;\n\
+        dst.x = convert_int(val.x) == coord.z ? on_value : off_value;\n\
+\n\
+        write_imagef(output, coord.xzyw, dst.xxxx);\n\
+\n\
+        coord.z ++;\n\
+    } while (coord.z < depth);\n\
+}\n\
+\n\
+__kernel void one_hot_I32toI32\n\
+    (\n\
+        __read_only  image2d_t       input,\n\
+        __write_only image2d_array_t output,\n\
+                     int             depth,\n\
+                     int             on_value,\n\
+                     int             off_value,\n\
+                     float           inputScale,\n\
+                     float           inputTail\n\
+    )\n\
+{\n\
+    int4 coord =  (int4)(get_global_id(0), get_global_id(1), 0, 0);\n\
+\n\
+    int4 val = read_imagei(input, coord.xy);\n\
+\n\
+    do\n\
+    {\n\
+        int4 dst;\n\
+        dst.x = val.x == coord.z ? on_value : off_value;\n\
+\n\
+        write_imagei(output, coord.xzyw, dst.xxxx);\n\
+\n\
+        coord.z ++;\n\
+    } while (coord.z < depth);\n\
+}\n\
+\n\
+__kernel void one_hot_I32toU8\n\
+    (\n\
+        __read_only  image2d_t       input,\n\
+        __write_only image2d_array_t output,\n\
+                     int             depth,\n\
+                     uint            on_value,\n\
+                     uint            off_value,\n\
+                     float           inputScale,\n\
+                     float           inputTail\n\
+    )\n\
+{\n\
+    int4 coord =  (int4)(get_global_id(0), get_global_id(1), 0, 0);\n\
+\n\
+    int4 val = read_imagei(input, coord.xy);\n\
+    do\n\
+    {\n\
+        uint4 dst;\n\
+        dst.x = val.x == coord.z ? on_value : off_value;\n\
+\n\
+        write_imageui(output, coord.xzyw, dst.xxxx);\n\
+\n\
+        coord.z ++;\n\
+    } while (coord.z < depth);\n\
+}\n\
+\n\
+__kernel void one_hot_I32toF32\n\
+    (\n\
+        __read_only  image2d_t       input,\n\
+        __write_only image2d_array_t output,\n\
+                     int             depth,\n\
+                     float           on_value,\n\
+                     float           off_value,\n\
+                     float           inputScale,\n\
+                     float           inputTail\n\
+    )\n\
+{\n\
+    int4 coord =  (int4)(get_global_id(0), get_global_id(1), 0, 0);\n\
+\n\
+    int4 val = read_imagei(input, coord.xy);\n\
+\n\
+    do\n\
+    {\n\
+        float4 dst;\n\
+        dst.x = val.x == coord.z ? on_value : off_value;\n\
+\n\
+        write_imagef(output, coord.xzyw, dst.xxxx);\n\
+\n\
+        coord.z ++;\n\
+    } while (coord.z < depth);\n\
+}\n\
+\n\
+__kernel void one_hot_U8toU8\n\
+    (\n\
+        __read_only  image2d_t       input,\n\
+        __write_only image2d_array_t output,\n\
+                     int             depth,\n\
+                     uint            on_value,\n\
+                     uint            off_value,\n\
+                     float           inputScale,\n\
+                     float           inputTail\n\
+    )\n\
+{\n\
+    int4 coord =  (int4)(get_global_id(0), get_global_id(1), 0, 0);\n\
+\n\
+    uint4 src = read_imageui(input, coord.xy);\n\
+\n\
+    int  val = convert_int(convert_float(src.x) * inputScale - inputTail);\n\
+\n\
+    do\n\
+    {\n\
+        uint4 dst;\n\
+        dst.x = val == coord.z ? on_value : off_value;\n\
+\n\
+        write_imageui(output, coord.xzyw, dst.xxxx);\n\
+\n\
+        coord.z ++;\n\
+    } while (coord.z < depth);\n\
+}\n\
+"; /* end of one_hot_cl*/
+
 static const char poolwithargmax_cl[] = "\n\
 #define POOLWITHARGMAX_PROCESS(data_type, read_fun, write_fun0, write_fun1) \\\n\
     data_type src  = 0; \\\n\
@@ -54942,6 +55281,7 @@ static const source_map_t evis_resource[] =
     {"moments_axis012_vx", moments_axis012_vx},
     {"moments_axis1_vx", moments_axis1_vx},
     {"moments_axis2_vx", moments_axis2_vx},
+    {"one_hot_vx", one_hot_vx},
     {"poolwithargmax_F16_vx", poolwithargmax_F16_vx},
     {"poolwithargmax_I16_vx", poolwithargmax_I16_vx},
     {"poolwithargmax_I8_vx", poolwithargmax_I8_vx},
@@ -55111,6 +55451,7 @@ static const source_map_t cl_resource[] =
     {"moments_axis012_cl", moments_axis012_cl},
     {"moments_axis1_cl", moments_axis1_cl},
     {"moments_axis2_cl", moments_axis2_cl},
+    {"one_hot_cl", one_hot_cl},
     {"poolwithargmax_cl", poolwithargmax_cl},
     {"pow_cl", pow_cl},
     {"prelu_cl", prelu_cl},
