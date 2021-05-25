@@ -30,7 +30,7 @@
 #include "vsi_nn_platform.h"
 #include "vsi_nn_prv.h"
 #include "vsi_nn_log.h"
-#include "client/vsi_nn_vxkernel.h"
+#include "libnnext/vsi_nn_vxkernel.h"
 #include "kernel/vsi_nn_kernel.h"
 #include "libnnext/vsi_nn_libnnext_resource.h"
 #if VSI_USE_VXC_BINARY
@@ -308,7 +308,8 @@ static vsi_status vsi_nn_RegisterBinKernel
     context = graph->ctx;
     evis = context->config.evis.ver;
 
-    program_ptr = vsi_nn_VxBinResourceGetResource(kernel_info->resource_name[kernel_info->resource_num - 1], &program_len);
+    program_ptr = vsi_nn_VxBinResourceGetResource(
+            kernel_info->resource_name[kernel_info->resource_num - 1], &program_len);
     program = vxCreateProgramWithBinary(ctx, (const vx_uint8 *)program_ptr, program_len);
 
     status = vxGetStatus((vx_reference)program);

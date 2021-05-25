@@ -25,7 +25,7 @@
 #include <stdlib.h>
 
 #include "vsi_nn_log.h"
-#include "client/vsi_nn_vxkernel.h"
+#include "libnnext/vsi_nn_vxkernel.h"
 #include "kernel/vsi_nn_kernel.h"
 #include "ops/vsi_nn_op_deconvolution.h"
 
