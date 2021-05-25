@@ -77,7 +77,9 @@ filegroup(
     name = "custom_srcs",
     srcs = glob([
         "src/custom/ops/*.c",
-        "src/custom/ops/kernel/*.c",
+        "src/custom/ops/kernel/evis/*.c",
+        "src/custom/ops/kernel/cl/*.c",
+        "src/custom/ops/kernel/cpu/*.c",
     ])
 )
 

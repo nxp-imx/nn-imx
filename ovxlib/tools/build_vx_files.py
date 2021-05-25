@@ -216,10 +216,10 @@ def main(argv):
 
     evis_embedded_paths = ['src/libnnext/ops/vx/']
     evis_custom_paths = ['src/libnnext/ops/vx/',
-                    'src/custom/ops/vx/']
+                    'src/custom/ops/kernel/vx/']
     cl_embedded_paths = ['src/libnnext/ops/cl/']
     cl_custom_paths = ['src/libnnext/ops/cl/',
-                    'src/custom/ops/cl/']
+                    'src/custom/ops/kernel/cl/']
 
     if (args.type == 'custom'):
         build_resource(root_dir, evis_custom_paths, cl_custom_paths)

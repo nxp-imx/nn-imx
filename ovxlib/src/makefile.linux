@@ -136,8 +136,14 @@ SRCS += ${notdir ${wildcard kernel/vx/*.c}}
 vpath %.c custom/ops
 SRCS += ${notdir ${wildcard custom/ops/*.c}}
 
-vpath %.c custom/ops/kernel
-SRCS += ${notdir ${wildcard custom/ops/kernel/*.c}}
+vpath %.c custom/ops/kernel/evis
+SRCS += ${notdir ${wildcard custom/ops/kernel/evis/*.c}}
+
+vpath %.c custom/ops/kernel/cl
+SRCS += ${notdir ${wildcard custom/ops/kernel/cl/*.c}}
+
+vpath %.c custom/ops/kernel/cpu
+SRCS += ${notdir ${wildcard custom/ops/kernel/cpu/*.c}}
 
 OBJECTS +=  ${patsubst %.c, $(OBJ_DIR)/%.o, $(SRCS)}
 
