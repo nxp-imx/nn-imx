@@ -13,9 +13,6 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Header Files\client">
-      <UniqueIdentifier>{7bd31a43-4b50-37d0-9de8-1fff82e67ddc}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\cpu_backend">
       <UniqueIdentifier>{934dce2e-54fa-396b-9121-19d6a6cdafe5}</UniqueIdentifier>
     </Filter>
@@ -51,9 +48,6 @@
     </Filter>
     <Filter Include="Header Files\utils">
       <UniqueIdentifier>{344debad-b465-359f-ad3f-75daa7735b13}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\client">
-      <UniqueIdentifier>{5bcb9ccf-91fe-38db-b451-243e44bfe1f5}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\cpu_backend">
       <UniqueIdentifier>{7c56ad9f-b1ad-32c5-906c-4c7fc9b7e160}</UniqueIdentifier>
@@ -126,8 +120,8 @@
     <Text Include="ReadMe.txt"/>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\client\vsi_nn_vxkernel.h">
-      <Filter>Header Files\client</Filter>
+    <ClInclude Include="include\libnnext\vsi_nn_vxkernel.h">
+      <Filter>Header Files\libnnext</Filter>
     </ClInclude>
     <ClInclude Include="include\cpu_backend\npuref_interface.h">
       <Filter>Header Files\cpu_backend</Filter>
@@ -749,8 +743,8 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\client\vsi_nn_vxkernel.c">
-      <Filter>Source Files\client</Filter>
+    <ClCompile Include="src\libnnext\vsi_nn_vxkernel.c">
+      <Filter>Source Files\libnnext</Filter>
     </ClCompile>
     <ClCompile Include="src\cpu_backend\npuref_interface.c">
       <Filter>Source Files\cpu_backend</Filter>

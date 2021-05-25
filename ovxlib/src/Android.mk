@@ -32,9 +32,6 @@ LOCAL_SRC_FILES :=     \
             vsi_nn_pre_post_process.c
 
 
-LOCAL_SRC_FILES +=     \
-            client/vsi_nn_vxkernel.c
-
 LOCAL_SRC_FILES +=      \
              utils/vsi_nn_code_generator.c   \
              utils/vsi_nn_binary_tree.c   \
@@ -74,7 +71,8 @@ LOCAL_SRC_FILES +=      \
             cpu_backend/npuref_interface.c
 
 
-LOCAL_SRC_FILES += libnnext/vsi_nn_libnnext_resource.c
+LOCAL_SRC_FILES += libnnext/vsi_nn_libnnext_resource.c \
+                   libnnext/vsi_nn_vxkernel.c
 
 LOCAL_SRC_FILES += platform/nnapi0.4/vsi_nn_pf_softmax.c   \
                    platform/nnapi0.4/vsi_nn_pf_depth2space.c    \

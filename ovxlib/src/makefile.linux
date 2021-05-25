@@ -65,9 +65,6 @@ OBJECTS =   $(OBJ_DIR)/vsi_nn_context.o \
             $(OBJ_DIR)/vsi_nn_graph_optimization.o \
             $(OBJ_DIR)/vsi_nn_pre_post_process.o
 
-vpath %.c client
-OBJECTS +=   $(OBJ_DIR)/vsi_nn_vxkernel.o
-
 vpath %.c utils
 OBJECTS +=   $(OBJ_DIR)/vsi_nn_code_generator.o   \
              $(OBJ_DIR)/vsi_nn_binary_tree.o   \
@@ -98,7 +95,8 @@ OBJECTS +=      $(OBJ_DIR)/vsi_nn_post_fasterrcnn.o \
                 $(OBJ_DIR)/vsi_nn_post_cmupose.o
 
 vpath %.c libnnext
-OBJECTS += $(OBJ_DIR)/vsi_nn_libnnext_resource.o
+OBJECTS += $(OBJ_DIR)/vsi_nn_libnnext_resource.o \
+			$(OBJ_DIR)/vsi_nn_vxkernel.o
 
 ifeq ("$(OVXLIB_CONFIG)", "VSI_CFG_NNAPI_0_3")
 vpath %.c platform/nnapi0.3

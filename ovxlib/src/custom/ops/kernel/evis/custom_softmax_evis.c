@@ -34,7 +34,7 @@
 #include "utils/vsi_nn_util.h"
 #include "utils/vsi_nn_dtype_util.h"
 #include "kernel/vsi_nn_kernel.h"
-#include "client/vsi_nn_vxkernel.h"
+#include "libnnext/vsi_nn_vxkernel.h"
 //#include "libnnext/vx_lib_nnext.h"
 
 #define _CPU_ARG_NUM            (1)
