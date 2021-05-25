@@ -65,10 +65,10 @@ static vsi_nn_kernel_node_t _setup
      * int * buffer = (int*)vsi_nn_kernel_param_get_buffer( param, "padding", &buffer_size );
      */
     status = _query_kernel( kernel, inputs, outputs /* Add extra params */ );
-    if( VSI_SUCCESS == status)
+    if ( VSI_SUCCESS == status)
     {
         node = vsi_nn_kernel_create_node( graph, kernel );
-        if( node )
+        if ( node )
         {
             /* Set inputs and outputs */
             vsi_nn_kernel_node_pack_io( node_params, _%upper(KERNEL_NAME)%_PARAM_NUM,
