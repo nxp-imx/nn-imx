@@ -4515,6 +4515,127 @@ __kernel void gather_F16toF16_axis0(\n\
 }\n\
 "; /* end of gather_vx*/
 
+static const char gather_array_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+_viv_uniform int indices_num;\n\
+_viv_uniform VXC_512Bits uniExtraCopyDpKeepinEvis_2x8;\n\
+\n\
+__kernel void gather_I8toI8_array(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int block_num,\n\
+    int axis_num\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // indices_num\n\
+    int gidz = get_global_id(2);  // block_num\n\
+\n\
+    int4 coord_in = (int4)(gidy, 0, gidx, 0);\n\
+    int4 indice = read_imagei(input1, coord_in.xy);\n\
+    coord_in.w = gidz * axis_num + indice.x;\n\
+\n\
+    Image img1 = create_image_from_image2d(input0, 1);\n\
+    Image img2 = create_image_from_image2d(output, 1);\n\
+    uchar* input_ptr = get_image_ptr_from_coord(img1, coord_in.zw);\n\
+    __global vxc_char16* data_ptr = (__global vxc_char16*)input_ptr;\n\
+    vxc_char16 src = data_ptr[0];\n\
+    int2 coord = (int2)(gidx, gidz * indices_num + gidy);\n\
+    uchar* output_ptr = get_image_ptr_from_coord(img2, coord);\n\
+    __global vxc_char16* dst_ptr = (__global vxc_char16*)output_ptr;\n\
+    dst_ptr[0] = src;\n\
+}\n\
+\n\
+__kernel void gather_U8toU8_array(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int block_num,\n\
+    int axis_num\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // indices_num\n\
+    int gidz = get_global_id(2);  // block_num\n\
+\n\
+    int4 coord_in = (int4)(gidy, 0, gidx, 0);\n\
+    int4 indice = read_imagei(input1, coord_in.xy);\n\
+    coord_in.w = gidz * axis_num + indice.x;\n\
+\n\
+    Image img1 = create_image_from_image2d(input0, 1);\n\
+    Image img2 = create_image_from_image2d(output, 1);\n\
+    uchar* input_ptr = get_image_ptr_from_coord(img1, coord_in.zw);\n\
+    __global vxc_uchar16* data_ptr = (__global vxc_uchar16*)input_ptr;\n\
+    vxc_uchar16 src = data_ptr[0];\n\
+    int2 coord = (int2)(gidx, gidz * indices_num + gidy);\n\
+    uchar* output_ptr = get_image_ptr_from_coord(img2, coord);\n\
+    __global vxc_uchar16* dst_ptr = (__global vxc_uchar16*)output_ptr;\n\
+    dst_ptr[0] = src;\n\
+}\n\
+\n\
+__kernel void gather_I16toI16_array(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int block_num,\n\
+    int axis_num\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // indices_num\n\
+    int gidz = get_global_id(2);  // block_num\n\
+\n\
+    int4 coord_in = (int4)(gidy, 0, gidx, 0);\n\
+\n\
+\n\
+    int4 indice = read_imagei(input1, coord_in.xy);\n\
+    coord_in.w = gidz * axis_num + indice.x;\n\
+\n\
+    Image img1 = create_image_from_image2d(input0, 2);\n\
+    Image img2 = create_image_from_image2d(output, 2);\n\
+    uchar* input_ptr = get_image_ptr_from_coord(img1, coord_in.zw);\n\
+    __global vxc_short8* data_ptr = (__global vxc_short8*)input_ptr;\n\
+    vxc_short8 src = data_ptr[0];\n\
+    int2 coord = (int2)(gidx, gidz * indices_num + gidy);\n\
+    uchar* output_ptr = get_image_ptr_from_coord(img2, coord);\n\
+    __global vxc_short8* dst_ptr = (__global vxc_short8*)output_ptr;\n\
+    dst_ptr[0] = src;\n\
+}\n\
+\n\
+__kernel void gather_F16toF16_array(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int block_num,\n\
+    int axis_num\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // indices_num\n\
+    int gidz = get_global_id(2);  // block_num\n\
+\n\
+    int4 coord_in = (int4)(gidy, 0, gidx, 0);\n\
+\n\
+    int4 indice = read_imagei(input1, coord_in.xy);\n\
+    coord_in.w = gidz * axis_num + indice.x;\n\
+\n\
+    Image img1 = create_image_from_image2d(input0, 2);\n\
+    Image img2 = create_image_from_image2d(output, 2);\n\
+    uchar* input_ptr = get_image_ptr_from_coord(img1, coord_in.zw);\n\
+    __global vxc_short8* data_ptr = (__global vxc_short8*)input_ptr;\n\
+    vxc_short8 src = data_ptr[0];\n\
+    int2 coord = (int2)(gidx, gidz * indices_num + gidy);\n\
+    uchar* output_ptr = get_image_ptr_from_coord(img2, coord);\n\
+    __global vxc_short8* dst_ptr = (__global vxc_short8*)output_ptr;\n\
+    dst_ptr[0] = src;\n\
+}\n\
+"; /* end of gather_array_vx*/
+
 static const char gather_mix_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 _viv_uniform int indices_num;\n\
@@ -54058,6 +54179,7 @@ static const source_map_t evis_resource[] =
     {"erf_vx", erf_vx},
     {"floordiv_vx", floordiv_vx},
     {"gather_vx", gather_vx},
+    {"gather_array_vx", gather_array_vx},
     {"gather_mix_vx", gather_mix_vx},
     {"gather_nd_vx", gather_nd_vx},
     {"gather_nd_2d_vx", gather_nd_2d_vx},
