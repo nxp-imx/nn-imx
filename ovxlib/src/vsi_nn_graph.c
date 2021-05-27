@@ -41,7 +41,7 @@
 #include "utils/vsi_nn_map.h"
 #include "vsi_nn_graph_optimization.h"
 
-static vsi_status _set_reference_name
+static vsi_status _set_reference_node_name
     (
     vsi_nn_graph_t *graph,
     vsi_nn_node_t *node
@@ -49,10 +49,7 @@ static vsi_status _set_reference_name
 {
 #define _NODE_ID_LEN 64
     vsi_status status;
-    vsi_nn_tensor_t *tensor;
-    uint32_t i;
     char name[_NODE_ID_LEN];
-
     if(NULL == node || NULL == graph)
     {
         return VSI_FAILURE;
@@ -66,6 +63,28 @@ static vsi_status _set_reference_name
         status = vxSetReferenceName((vx_reference)node->n, name);
     }
     TEST_CHECK_STATUS(status, final);
+
+final:
+    return status;
+} /* _set_reference_node_name() */
+
+static vsi_status _set_reference_tensor_name
+    (
+    vsi_nn_graph_t *graph,
+    vsi_nn_node_t *node
+    )
+{
+#define _NODE_ID_LEN 64
+    vsi_status status;
+    vsi_nn_tensor_t *tensor;
+    uint32_t i;
+    char name[_NODE_ID_LEN];
+    if(NULL == node || NULL == graph)
+    {
+        return VSI_FAILURE;
+    }
+
+    status = VSI_SUCCESS;
     for(i = 0; i < node->output.num; i++)
     {
         memset(name, 0, sizeof(char) * _NODE_ID_LEN);
@@ -80,7 +99,7 @@ static vsi_status _set_reference_name
 
 final:
     return status;
-} /* _set_reference_name() */
+} /* _set_reference_tensor_name() */
 
 static vsi_status _check_swapped_tensors
     (
@@ -345,6 +364,12 @@ static vsi_status compute_node
                 continue;
             vsi_nn_TensorReinit( graph, outputs[j] );
         }
+        status = _set_reference_tensor_name(graph, node);
+        if( VSI_SUCCESS != status )
+        {
+            VSILOGW("Set reference node[%d] %s output tensor name fail",
+                node_id, vsi_nn_OpGetName(node->op));
+        }
 
         /* Create vx node */
         VSILOGD("Instance node[%d] \"%s\" ...", node_id, vsi_nn_OpGetName(node->op));
@@ -354,7 +379,7 @@ static vsi_status compute_node
             VSILOGE( "Create node[%d] %s fail", node_id, vsi_nn_OpGetName(node->op));
             break;
         }
-        status = _set_reference_name(graph, node);
+        status = _set_reference_node_name(graph, node);
         if( VSI_SUCCESS != status )
         {
             VSILOGW("Set reference name fail");
