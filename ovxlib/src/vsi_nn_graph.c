@@ -557,6 +557,18 @@ void vsi_nn_ReleaseGraph
     ptr = *graph;
     if( NULL != graph && NULL != * graph )
     {
+        if( NULL != ptr->nodes )
+        {
+            for( i = 0; i < ptr->node_num; i++ )
+            {
+                vsi_nn_RemoveNode( *graph, (vsi_nn_node_id_t)i );
+            }
+            free( (*graph)->node_table );
+        }
+        if( NULL != ptr->g )
+        {
+            vxReleaseGraph( &ptr->g );
+        }
         if( NULL != ptr->tensors )
         {
             for( i = 0; i < ptr->tensor_num; i++ )
@@ -570,14 +582,6 @@ void vsi_nn_ReleaseGraph
         {
             vsi_nn_ReleaseTensor( &ptr->complete_signal.tensor );
         }
-        if( NULL != ptr->nodes )
-        {
-            for( i = 0; i < ptr->node_num; i++ )
-            {
-                vsi_nn_RemoveNode( *graph, (vsi_nn_node_id_t)i );
-            }
-            free( (*graph)->node_table );
-        }
         if( NULL != ptr->input.tensors )
         {
             free( ptr->input.tensors );
@@ -589,10 +593,6 @@ void vsi_nn_ReleaseGraph
         if( NULL != ptr->rnn_wksp )
         {
             vsi_nn_rnn_DeinitWksp( ptr );
-        }
-        if( NULL != ptr->g )
-        {
-            vxReleaseGraph( &ptr->g );
         }
         free( ptr );
         *graph = NULL;
