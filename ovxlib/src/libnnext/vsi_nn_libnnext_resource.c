@@ -4634,7 +4634,44 @@ __kernel void gather_F16toF16_array(\n\
     __global vxc_short8* dst_ptr = (__global vxc_short8*)output_ptr;\n\
     dst_ptr[0] = src;\n\
 }\n\
-"; /* end of gather_array_vx*/
+\n\
+#define GATHER_AXIS0_ARRAY(src0_type_name, read_type, data_type, write_type) \\\n\
+__kernel void gather_##src0_type_name##to##src0_type_name##_axis0_array( \\\n\
+    __read_only image2d_t   input0, \\\n\
+    __read_only image2d_t   input1, \\\n\
+    __write_only image2d_t  output, \\\n\
+    int block_size, \\\n\
+    int block_num, \\\n\
+    int axis_num \\\n\
+    ) \\\n\
+{ \\\n\
+    Image img0 = create_image_from_image2d(input0, 1); \\\n\
+    Image img1 = create_image_from_image2d(input1, 4); \\\n\
+    Image img2 = create_image_from_image2d(output, 1); \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), 0, 0); \\\n\
+    uchar* index_ptr = get_image_ptr_from_coord(img1, coord.xz); \\\n\
+    __global int* index = (__global int*)index_ptr; \\\n\
+    int4 indices = vload4(0, index); \\\n\
+ \\\n\
+    read_type src, dst; \\\n\
+ \\\n\
+    uchar* input_ptr = get_image_ptr_from_coord(img0, coord.zy); \\\n\
+    uchar* output_ptr = get_image_ptr_from_coord(img2, coord.xy); \\\n\
+    __global data_type* data_ptr = (__global data_type*)input_ptr; \\\n\
+    __global write_type* out_ptr = (__global write_type*)output_ptr; \\\n\
+    src.s0 = data_ptr[indices.x]; \\\n\
+    src.s1 = data_ptr[indices.y]; \\\n\
+    src.s2 = data_ptr[indices.z]; \\\n\
+    src.s3 = data_ptr[indices.w]; \\\n\
+ \\\n\
+    VXC_DP2x8(dst, src, src, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), \\\n\
+                     uniExtraCopyDpKeepinEvis_2x8); \\\n\
+    out_ptr[0] = dst.s0123; \\\n\
+}\n\
+GATHER_AXIS0_ARRAY(U8, vxc_uchar16, uchar, vxc_uchar4)\n\
+GATHER_AXIS0_ARRAY(I8, vxc_char16,  char, vxc_char4)\n\
+GATHER_AXIS0_ARRAY(I16, vxc_short8, short, vxc_short4)\n\
+GATHER_AXIS0_ARRAY(F16, vxc_short8, short, vxc_short4)"; /* end of gather_array_vx*/
 
 static const char gather_mix_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
