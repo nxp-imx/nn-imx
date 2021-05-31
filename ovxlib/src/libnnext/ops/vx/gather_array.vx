@@ -117,3 +117,41 @@ __kernel void gather_F16toF16_array(
     __global vxc_short8* dst_ptr = (__global vxc_short8*)output_ptr;
     dst_ptr[0] = src;
 }
+
+#define GATHER_AXIS0_ARRAY(src0_type_name, read_type, data_type, write_type) \
+__kernel void gather_##src0_type_name##to##src0_type_name##_axis0_array( \
+    __read_only image2d_t   input0, \
+    __read_only image2d_t   input1, \
+    __write_only image2d_t  output, \
+    int block_size, \
+    int block_num, \
+    int axis_num \
+    ) \
+{ \
+    Image img0 = create_image_from_image2d(input0, 1); \
+    Image img1 = create_image_from_image2d(input1, 4); \
+    Image img2 = create_image_from_image2d(output, 1); \
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), 0, 0); \
+    uchar* index_ptr = get_image_ptr_from_coord(img1, coord.xz); \
+    __global int* index = (__global int*)index_ptr; \
+    int4 indices = vload4(0, index); \
+ \
+    read_type src, dst; \
+ \
+    uchar* input_ptr = get_image_ptr_from_coord(img0, coord.zy); \
+    uchar* output_ptr = get_image_ptr_from_coord(img2, coord.xy); \
+    __global data_type* data_ptr = (__global data_type*)input_ptr; \
+    __global write_type* out_ptr = (__global write_type*)output_ptr; \
+    src.s0 = data_ptr[indices.x]; \
+    src.s1 = data_ptr[indices.y]; \
+    src.s2 = data_ptr[indices.z]; \
+    src.s3 = data_ptr[indices.w]; \
+ \
+    VXC_DP2x8(dst, src, src, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), \
+                     uniExtraCopyDpKeepinEvis_2x8); \
+    out_ptr[0] = dst.s0123; \
+}
+GATHER_AXIS0_ARRAY(U8, vxc_uchar16, uchar, vxc_uchar4)
+GATHER_AXIS0_ARRAY(I8, vxc_char16,  char, vxc_char4)
+GATHER_AXIS0_ARRAY(I16, vxc_short8, short, vxc_short4)
+GATHER_AXIS0_ARRAY(F16, vxc_short8, short, vxc_short4)
