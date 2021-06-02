@@ -218,6 +218,7 @@ static vsi_bool op_check
         IO_TYPE(D_F32,  D_F32,  D_F32,  D_F32)
         IO_TYPE(D_I32,  D_F32,  D_F16,  D_I32)
         IO_TYPE(D_I32,  D_F32,  D_F16,  D_F32)
+        IO_TYPE(D_BF16, D_F32,  D_F32,  D_BF16)
         IO_TYPE(D_I8|Q_DFP,   D_F32,  D_F16,  D_F16)
         IO_TYPE(D_I8|Q_DFP,   D_F32,  D_F16,  D_I8|Q_DFP)
         IO_TYPE(D_I8|Q_DFP,   D_F32,  D_F32,  D_I8|Q_DFP)

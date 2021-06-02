@@ -56,6 +56,7 @@ typedef enum
 #define KERNEL_SOURCE_5    "instance_normalization_u8_f16"
 #define KERNEL_SOURCE_6    "instance_normalization_scale_f32"
 #define KERNEL_SOURCE_7    "instance_normalization_scale_f32_f16"
+#define KERNEL_SOURCE_8    "instance_normalization_scale_f32_bf16"
 
 #define HASH_INSTANCENORM_MEAN_VARI_SH_KERNEL_NAME(SRC0_TYPE) \
     CVIVANTE_NAMESPACE("evis.instance_norm_meanvari_"#SRC0_TYPE)
@@ -132,6 +133,8 @@ static const _kernel_map_type _instancenorm_mean_vari_kernel_map[] =
     TENSOR_INSTANCENORM_MEAN_VARI_KERNELS_2D( I16, F32, KERNEL_SOURCE_3 )
     TENSOR_INSTANCENORM_MEAN_VARI_KERNELS( F16, F32, KERNEL_SOURCE_4 )
     TENSOR_INSTANCENORM_MEAN_VARI_KERNELS_2D( F16, F32, KERNEL_SOURCE_4 )
+    TENSOR_INSTANCENORM_MEAN_VARI_KERNELS( BF16, F32, KERNEL_SOURCE_8 )
+    TENSOR_INSTANCENORM_MEAN_VARI_KERNELS_2D( BF16, F32, KERNEL_SOURCE_8 )
 };
 
 static const _kernel_map_type _instancenorm_kernel_map[] =
@@ -166,6 +169,9 @@ static const _kernel_map_type _instancenorm_kernel_map[] =
 
     TENSOR_INSTANCENORM_SCALE_KERNELS( F16, F16, KERNEL_SOURCE_7 )
     TENSOR_INSTANCENORM_SCALE_KERNELS_2D( F16, F16, KERNEL_SOURCE_7 )
+
+    TENSOR_INSTANCENORM_SCALE_KERNELS( BF16, BF16, KERNEL_SOURCE_8 )
+    TENSOR_INSTANCENORM_SCALE_KERNELS_2D( BF16, BF16, KERNEL_SOURCE_8 )
 };
 
 /*
@@ -285,7 +291,7 @@ DEF_KERNEL_INITIALIZER(_instancenorm_mean_vari_initializer)
     {
         shaderParam.global_size[0]   = (width + 255) / 256 * 16;
     }
-    else if (attr[0]->dtype == I16 || attr[0]->dtype == F16)
+    else if (attr[0]->dtype == I16 || attr[0]->dtype == F16 || attr[0]->dtype == BF16)
     {
         shaderParam.global_size[0]   = (width + 127) / 128 * 16;
     }
@@ -379,6 +385,32 @@ DEF_KERNEL_INITIALIZER(_instancenorm_mean_vari_initializer)
             0x3c003c00, 0x3c003c00, 0x3c003c00, 0x3c003c00, 0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
         }, GPU_DP_TYPE_16 };
         status = vsi_nn_kernel_gpu_add_param(node, "uniFp16SumSqr_dp8x2", &uniFp16SumSqr_dp8x2);
+        CHECK_STATUS_FAIL_GOTO(status, OnError );
+    }
+    else if (attr[0]->dtype == BF16)
+    {
+        gpu_dp_inst_t uniConvBF16toF32_Part0_2x8 = {{
+                0x11111111, // TCfg
+                0x01010101, // ASelt
+                0x01050004, 0x03070206, // ABin
+                0x22222222, // BSelt
+                0x00000000, 0x00000000, // BBin
+                0x00000600, // AccumType, ConstantType, and PostShift
+                0x00000001, 0x00000001, 0x00000001, 0x00000001,
+                0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
+        }, GPU_DP_TYPE_16};
+        gpu_dp_inst_t uniConvBF16toF32_Part1_2x8 = {{
+                0x11111111, // TCfg
+                0x01010101, // ASelt
+                0x05050404, 0x07070606, // ABin
+                0x22222222, // BSelt
+                0x00000000, 0x00000000, // BBin
+                0x00000600, // AccumType, ConstantType, and PostShift
+                0x00000001, 0x00000001, 0x00000001, 0x00000001,
+                0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
+        }, GPU_DP_TYPE_16};
+        status = vsi_nn_kernel_gpu_add_param(node, "uniConvBF16toF32_Part0_2x8", &uniConvBF16toF32_Part0_2x8);
+        status |= vsi_nn_kernel_gpu_add_param(node, "uniConvBF16toF32_Part1_2x8", &uniConvBF16toF32_Part1_2x8);
         CHECK_STATUS_FAIL_GOTO(status, OnError );
     }
 
@@ -494,7 +526,7 @@ DEF_KERNEL_INITIALIZER(_instancenorm_initializer)
     group_num = (width + 255) / 256;
 
     shaderParam.global_scale[0]  = 16;
-    if (attr[0]->dtype == I16 || attr[0]->dtype == F16)
+    if (attr[0]->dtype == I16 || attr[0]->dtype == F16 || attr[0]->dtype == BF16)
     {
         shaderParam.global_scale[0]  = 8;
         group_num = (width + 127) / 128;
@@ -657,6 +689,37 @@ DEF_KERNEL_INITIALIZER(_instancenorm_initializer)
             0x00003c00, 0x00003c00, 0x00003c00, 0x00003c00, 0x00003c00, 0x00003c00, 0x00003c00, 0x00003c00 // Constant
         }, GPU_DP_TYPE_16 };
 
+        gpu_dp_inst_t uniConvBF16toF32_Part0_2x8 = {{
+            0x11111111, // TCfg
+            0x01010101, // ASelt
+            0x01050004, 0x03070206, // ABin
+            0x22222222, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000600, // AccumType, ConstantType, and PostShift
+            0x00000001, 0x00000001, 0x00000001, 0x00000001,
+            0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
+        }, GPU_DP_TYPE_16};
+        gpu_dp_inst_t uniConvBF16toF32_Part1_2x8 = {{
+            0x11111111, // TCfg
+            0x01010101, // ASelt
+            0x05050404, 0x07070606, // ABin
+            0x22222222, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000600, // AccumType, ConstantType, and PostShift
+            0x00000001, 0x00000001, 0x00000001, 0x00000001,
+            0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
+        }, GPU_DP_TYPE_16};
+        gpu_dp_inst_t uniExtractOddData_2x8 = {{
+            0x11111111, // TCfg
+            0x11110000, // ASelt
+            0x07050301, 0x07050301, // ABin
+            0x22222222, // BSelt
+            0x00000000, 0x00000000, // BBin
+            0x00000600, // AccumType, ConstantType, and PostShift
+            0x00000001, 0x00000001, 0x00000001, 0x00000001,
+            0x00000001, 0x00000001, 0x00000001, 0x00000001 // Constant
+        }, GPU_DP_TYPE_16};
+
         uint32_t pack_key      = 0;
 #define _PACK_SELECT_KEY( IN0_TYPE, IN1_TYPE, OUT_TYPE )    \
         (IN0_TYPE | (IN1_TYPE << 8) | (OUT_TYPE << 16))
@@ -799,6 +862,17 @@ DEF_KERNEL_INITIALIZER(_instancenorm_initializer)
                         &uniConvertHalfToFp16_2x8);
                     status |= vsi_nn_kernel_gpu_add_param(node, "UniFP16toFP32Lo4_dp4x4",
                         &UniFP16toFP32Lo4_dp4x4);
+                    CHECK_STATUS_FAIL_GOTO(status, OnError );
+                }
+                break;
+            case _PACK_SELECT_KEY( BF16, F32, BF16 ):
+                {
+                    status  = vsi_nn_kernel_gpu_add_param( node,
+                                "uniConvBF16toF32_Part0_2x8", &uniConvBF16toF32_Part0_2x8 );
+                    status |= vsi_nn_kernel_gpu_add_param( node,
+                                "uniConvBF16toF32_Part1_2x8", &uniConvBF16toF32_Part1_2x8 );
+                    status |= vsi_nn_kernel_gpu_add_param( node,
+                                "uniExtractOddData_2x8", &uniExtractOddData_2x8 );
                     CHECK_STATUS_FAIL_GOTO(status, OnError );
                 }
                 break;
