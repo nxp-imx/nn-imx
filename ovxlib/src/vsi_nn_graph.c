@@ -482,6 +482,22 @@ static vsi_status setup_node
             status = VSI_FAILURE;
             break;
         }
+        if(!vsi_nn_IsGraphFastMode(graph))
+        {
+            uint32_t j = 0;
+            for(j = 0; j < node->input.num; j++)
+            {
+                if(inputs[j]->attr.dtype.vx_type != VSI_NN_TYPE_FLOAT32)
+                    continue;
+                vsi_nn_SetTensorAttr(inputs[j], VSI_NN_TENSOR_ATTR_HIGH_PRECISION);
+            }
+            for(j = 0; j < node->output.num; j++)
+            {
+                if(outputs[j]->attr.dtype.vx_type != VSI_NN_TYPE_FLOAT32)
+                    continue;
+                vsi_nn_SetTensorAttr(outputs[j], VSI_NN_TENSOR_ATTR_HIGH_PRECISION);
+            }
+        }
     }
 
 final:
@@ -532,6 +548,7 @@ vsi_nn_graph_t * vsi_nn_CreateGraph
             graph->rnn_wksp = NULL;
             graph->node_table = (vsi_nn_map_t *)malloc( sizeof( vsi_nn_map_t ) );
             graph->tensor_table = (vsi_nn_map_t *)malloc( sizeof( vsi_nn_map_t ) );
+            graph->isAllowFastMode = TRUE;
             vsi_nn_MapInit( graph->node_table );
             vsi_nn_MapInit( graph->tensor_table );
         }
@@ -2022,4 +2039,30 @@ vsi_status vsi_nn_SetGraphPriority
     VSILOGE("Current driver not support graph priority.");
 #endif
     return status;
+}
+
+vsi_status vsi_nn_SetGraphFastMode
+    (
+    vsi_nn_graph_t* graph,
+    vsi_bool fastmode
+    )
+{
+    vsi_status status = VSI_SUCCESS;
+    if(graph)
+    {
+        graph->isAllowFastMode = fastmode;
+    }
+    else
+    {
+        status = VSI_FAILURE;
+    }
+    return status;
+}
+
+vsi_bool vsi_nn_IsGraphFastMode
+    (
+    const vsi_nn_graph_t* graph
+    )
+{
+    return NULL == graph ? FALSE : graph->isAllowFastMode;
 }
