@@ -43,7 +43,11 @@
 #include <sys/system_properties.h>
 
 #if ANDROID_SDK_VERSION >= 30
+#if ANDROID_SDK_VERSION > 30
+#include "HalBufferTracker.h"
+#else
 #include "BufferTracker.h"
+#endif
 #endif
 
 using android::sp;
@@ -75,9 +79,9 @@ class VsiFencedExecutionCallback : public IFencedExecutionCallback {
         : kTimingSinceLaunch(timingSinceLaunch),
           kTimingAfterFence(timingAfterFence),
           kErrorStatus(error) {}
-    hal::Return<void> getExecutionInfo(getExecutionInfo_cb callback) override {
+    Return<void> getExecutionInfo(getExecutionInfo_cb callback) override {
         callback(kErrorStatus, kTimingSinceLaunch, kTimingAfterFence);
-        return hal::Void();
+        return Void();
     }
 
    private:

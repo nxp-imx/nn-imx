@@ -39,7 +39,11 @@ namespace android {
 namespace nn {
 namespace vsi_driver {
 
+#if ANDROID_SDK_VERSION >= 30
+extern std::shared_ptr<HalBufferTracker> kBufferTracker;
+#else
 extern std::shared_ptr<BufferTracker> kBufferTracker;
+#endif
 
 Return<V1_3::ErrorStatus> VsiPreparedModel::mapRtinfoFromRequest(
         const V1_3::Request& request, std::vector<VsiRTInfo>& rtInfos) {
@@ -62,7 +66,11 @@ Return<V1_3::ErrorStatus> VsiPreparedModel::mapRtinfoFromRequest(
                     LOG(ERROR) << "Get token buffer failed.";
                     return V1_3::ErrorStatus::INVALID_ARGUMENT;
                 }
+                #if ANDROID_SDK_VERSION >= 30
+                auto status = convertToV1_3(buffer_wrapper->validateRequest(i, uncheckedConvert(request), this));
+                #else
                 auto status = buffer_wrapper->validateRequest(i, request, this);
+                #endif
                 if (V1_3::ErrorStatus::NONE != status) {
                     LOG(ERROR) << "Validate request failed.";
                     return status;
@@ -203,12 +211,12 @@ Return<V1_3::ErrorStatus> VsiPreparedModel::executeBase_1_3(const V1_3::Request&
     return V1_3::ErrorStatus::NONE;
 }
 
-hal::Return<hal::V1_3::ErrorStatus> VsiPreparedModel::execute_1_3(
-    const hal::V1_3::Request& request,
-    hal::MeasureTiming measure,
-    const hal::OptionalTimePoint& deadline,
-    const hal::OptionalTimeoutDuration& loopTimeoutDuration,
-    const sp<hal::V1_3::IExecutionCallback>& callback) {
+Return<V1_3::ErrorStatus> VsiPreparedModel::execute_1_3(
+    const V1_3::Request& request,
+    MeasureTiming measure,
+    const OptionalTimePoint& deadline,
+    const OptionalTimeoutDuration& loopTimeoutDuration,
+    const sp<V1_3::IExecutionCallback>& callback) {
     V1_3::ErrorStatus status;
     hidl_vec<OutputShape> outputShapes;
     Timing timing;
@@ -226,10 +234,10 @@ hal::Return<hal::V1_3::ErrorStatus> VsiPreparedModel::execute_1_3(
 };
 
 Return<void> VsiPreparedModel::executeSynchronously_1_3(
-    const hal::V1_3::Request& request,
-    hal::MeasureTiming measure,
-    const hal::OptionalTimePoint& deadline,
-    const hal::OptionalTimeoutDuration& loopTimeoutDuration,
+    const V1_3::Request& request,
+    MeasureTiming measure,
+    const OptionalTimePoint& deadline,
+    const OptionalTimeoutDuration& loopTimeoutDuration,
     executeSynchronously_1_3_cb cb) {
     V1_3::ErrorStatus status;
     Timing timing;
@@ -247,12 +255,12 @@ Return<void> VsiPreparedModel::executeSynchronously_1_3(
 }
 
 Return<void> VsiPreparedModel::executeFenced(
-    const hal::Request& request,
-    const hal::hidl_vec<hal::hidl_handle>& wait_for,
-    hal::MeasureTiming measure,
-    const hal::OptionalTimePoint& deadline,
-    const hal::OptionalTimeoutDuration& loopTimeoutDuration,
-    const hal::OptionalTimeoutDuration& duration,
+    const V1_3::Request& request,
+    const hidl_vec<hidl_handle>& wait_for,
+    MeasureTiming measure,
+    const OptionalTimePoint& deadline,
+    const OptionalTimeoutDuration& loopTimeoutDuration,
+    const OptionalTimeoutDuration& duration,
     executeFenced_cb cb) {
     V1_3::ErrorStatus status;
     hidl_vec<OutputShape> outputShapes;

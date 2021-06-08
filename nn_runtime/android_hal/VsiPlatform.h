@@ -182,24 +182,6 @@ using Model = HalPlatform::Model;
 using OperandType = HalPlatform::OperandType;
 using OperationType = HalPlatform::OperationType;
 
-/**
-    * @brief Get the System Property As Int
-    *
-    * @param prop_name
-    * @param default
-    * @return int
-    */
-int getSystemPropertyAsInt(const char* prop_name, int default_value = 0);
-
-/**
-    * @brief Get the System Property
-    *
-    * @param prop_name : INPUT
-    * @param value : OUTPUT
-    * @return int
-    */
-int getSystemProperty(const char* prop_name, char* value);
-
 inline static auto& GetHalOperand(const Model& model, uint32_t index) {
 #if ANDROID_SDK_VERSION < 30
     return model.operands[index];
@@ -207,6 +189,48 @@ inline static auto& GetHalOperand(const Model& model, uint32_t index) {
     return model.main.operands[index];
 #endif
 }
+
+
+#if ANDROID_SDK_VERSION >= 30
+using Timing = V1_2::Timing;
+using OutputShape = V1_2::OutputShape;
+using IFencedExecutionCallback = V1_3::IFencedExecutionCallback;
+using OptionalTimeoutDuration = V1_3::OptionalTimeoutDuration;
+using MeasureTiming = V1_2::MeasureTiming;
+using ExecutionPreference = V1_1::ExecutionPreference;
+using OptionalTimePoint = V1_3::OptionalTimePoint;
+using RequestArgument = V1_0::RequestArgument;
+using Priority = V1_3::Priority;
+using CacheToken = HalCacheToken;
+using DeviceStatus = V1_0::DeviceStatus;
+using IBuffer = V1_3::IBuffer;
+using PerformanceInfo = V1_0::PerformanceInfo;
+
+using android::hardware::hidl_vec;
+using android::hardware::hidl_handle;
+using android::hardware::hidl_array;
+using android::hardware::Return;
+using android::hardware::Void;
+#endif
+
+
+/**
+ * @brief Get the System Property As Int
+ *
+ * @param prop_name
+ * @param default
+ * @return int
+ */
+int getSystemPropertyAsInt(const char* prop_name, int default_value = 0);
+
+/**
+ * @brief Get the System Property
+ *
+ * @param prop_name : INPUT
+ * @param value : OUTPUT
+ * @return int
+ */
+int getSystemProperty(const char* prop_name, char* value);
 
 }  // namespace vsi_driver
 }  // namespace nn

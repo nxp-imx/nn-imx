@@ -38,7 +38,11 @@
 #include "VsiPreparedModel.h"
 
 #if ANDROID_SDK_VERSION >= 30
+#if ANDROID_SDK_VERSION > 30
+#include "HalBufferTracker.h"
+#else
 #include "BufferTracker.h"
+#endif
 #endif
 
 using android::sp;
@@ -104,9 +108,9 @@ class VsiDevice : public HalPlatform::Device
 #if ANDROID_SDK_VERSION >= 30
     Return<V1_3::ErrorStatus> prepareModel_1_3(
             const V1_3::Model& model, ExecutionPreference preference,
-            hal::Priority priority, const OptionalTimePoint& deadline,
+            Priority priority, const OptionalTimePoint& deadline,
             const hidl_vec<hidl_handle>& modelCache,
-            const hidl_vec<hidl_handle>& dataCache, const CacheToken& token,
+            const hidl_vec<hidl_handle>& dataCache, const HalCacheToken& token,
             const sp<V1_3::IPreparedModelCallback>& callback);
 
     Return<V1_3::ErrorStatus> prepareModelFromCache_1_3(

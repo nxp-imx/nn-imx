@@ -30,7 +30,11 @@ namespace nn {
 namespace vsi_driver {
 
 Return<V1_3::ErrorStatus> VsiBuffer::copyTo(const hidl_memory& dst) {
+    #if ANDROID_SDK_VERSION >= 30
+    const auto dstPool = RunTimePoolInfo::createFromMemory(uncheckedConvert(dst));
+    #else
     const auto dstPool = RunTimePoolInfo::createFromHidlMemory(dst);
+    #endif
     if (!dstPool.has_value()) {
         LOG(ERROR) << "VsiBuffer::copyTo -- unable to map dst memory.";
         return V1_3::ErrorStatus::GENERAL_FAILURE;
@@ -52,9 +56,17 @@ Return<V1_3::ErrorStatus> VsiBuffer::copyTo(const hidl_memory& dst) {
 
 static V1_3::ErrorStatus CopyFromImpl(const hidl_memory& src,
                                     const hidl_vec<uint32_t>& dimensions,
+#if ANDROID_SDK_VERSION >= 30
+                                    const std::shared_ptr<HalManagedBuffer>& bufferWrapper) {
+#else
                                     const std::shared_ptr<ManagedBuffer>& bufferWrapper) {
+#endif
     CHECK(bufferWrapper != nullptr);
+    #if ANDROID_SDK_VERSION >= 30
+    const auto srcPool = RunTimePoolInfo::createFromMemory(uncheckedConvert(src));
+    #else
     const auto srcPool = RunTimePoolInfo::createFromHidlMemory(src);
+    #endif
     if (!srcPool.has_value()) {
         LOG(ERROR) << "VsiBuffer::copyFrom -- unable to map src memory.";
         return V1_3::ErrorStatus::GENERAL_FAILURE;
