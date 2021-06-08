@@ -11441,8 +11441,6 @@ __kernel void layer_norm_U8F32toU8(\n\
     {\n\
         VXC_OP4(img_load_3d, src0, input, coord.xyzz, VXC_5BITOFFSET_XY(0, 0), \\\n\
                     VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
-        bias_ptr += coord.x;\n\
-        scale_ptr += coord.x;\n\
         bias_f0 = vload4(0, bias_ptr);\n\
         bias_f1 = vload4(1, bias_ptr);\n\
         bias_f2 = vload4(2, bias_ptr);\n\
@@ -11451,6 +11449,8 @@ __kernel void layer_norm_U8F32toU8(\n\
         scale_f1 = vload4(1, scale_ptr);\n\
         scale_f2 = vload4(2, scale_ptr);\n\
         scale_f3 = vload4(3, scale_ptr);\n\
+        bias_ptr += 16;\n\
+        scale_ptr += 16;\n\
 \n\
         VXC_DP4x4(tmpData0, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
             uniConvert1stUint8SubZpToFp32_4x4);\n\
@@ -11540,12 +11540,12 @@ __kernel void layer_norm_I16F32toI16(\n\
     {\n\
         VXC_OP4(img_load_3d, src0, input, coord.xyzz, VXC_5BITOFFSET_XY(0, 0), \\\n\
                     VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-        bias_ptr += coord.x;\n\
-        scale_ptr += coord.x;\n\
         bias_f0 = vload4(0, bias_ptr);\n\
         bias_f1 = vload4(1, bias_ptr);\n\
         scale_f0 = vload4(0, scale_ptr);\n\
         scale_f1 = vload4(1, scale_ptr);\n\
+        bias_ptr += 8;\n\
+        scale_ptr += 8;\n\
 \n\
         VXC_DP4x4(tmpData0, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
                 uniConvert1stUint8SubZpToFp32_4x4);\n\
@@ -11695,8 +11695,6 @@ __kernel void layer_norm_U8F32toU8_2D(\n\
     {\n\
         VXC_ReadImage(src0, input, coord.xy, VXC_5BITOFFSET_XY(0, 0),\\\n\
             VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
-        bias_ptr += coord.x;\n\
-        scale_ptr += coord.x;\n\
         bias_f0 = vload4(0, bias_ptr);\n\
         bias_f1 = vload4(1, bias_ptr);\n\
         bias_f2 = vload4(2, bias_ptr);\n\
@@ -11705,6 +11703,8 @@ __kernel void layer_norm_U8F32toU8_2D(\n\
         scale_f1 = vload4(1, scale_ptr);\n\
         scale_f2 = vload4(2, scale_ptr);\n\
         scale_f3 = vload4(3, scale_ptr);\n\
+        bias_ptr += 16;\n\
+        scale_ptr += 16;\n\
 \n\
         VXC_DP4x4(tmpData0, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
             uniConvert1stUint8SubZpToFp32_4x4);\n\
@@ -11779,12 +11779,12 @@ __kernel void layer_norm_I16F32toI16_2D(\n\
     {\n\
         VXC_ReadImage(src0, input, coord.xy, VXC_5BITOFFSET_XY(0, 0),\\\n\
                     VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-        bias_ptr += coord.x;\n\
-        scale_ptr += coord.x;\n\
         bias_f0 = vload4(0, bias_ptr);\n\
         bias_f1 = vload4(1, bias_ptr);\n\
         scale_f0 = vload4(0, scale_ptr);\n\
         scale_f1 = vload4(1, scale_ptr);\n\
+        bias_ptr += 8;\n\
+        scale_ptr += 8;\n\
 \n\
         VXC_DP4x4(tmpData0, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
                 uniConvert1stUint8SubZpToFp32_4x4);\n\
@@ -11866,12 +11866,12 @@ __kernel void layer_norm_BF16F32toBF16(\n\
     {\n\
         VXC_OP4(img_load_3d, src0, input, coord.xyzz, VXC_5BITOFFSET_XY(0, 0), \\\n\
                     VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-        bias_ptr += coord.x;\n\
-        scale_ptr += coord.x;\n\
         bias_f0 = vload4(0, bias_ptr);\n\
         bias_f1 = vload4(1, bias_ptr);\n\
         scale_f0 = vload4(0, scale_ptr);\n\
         scale_f1 = vload4(1, scale_ptr);\n\
+        bias_ptr += 8;\n\
+        scale_ptr += 8;\n\
 \n\
         VXC_DP2x8(src1, src0, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),\n\
                      uniConvBF16toF32_Part0_2x8);\n\
@@ -11938,12 +11938,12 @@ __kernel void layer_norm_BF16F32toBF16_2D(\n\
     {\n\
         VXC_ReadImage(src0, input, coord.xy, VXC_5BITOFFSET_XY(0, 0),\\\n\
             VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-        bias_ptr += coord.x;\n\
-        scale_ptr += coord.x;\n\
         bias_f0 = vload4(0, bias_ptr);\n\
         bias_f1 = vload4(1, bias_ptr);\n\
         scale_f0 = vload4(0, scale_ptr);\n\
         scale_f1 = vload4(1, scale_ptr);\n\
+        bias_ptr += 8;\n\
+        scale_ptr += 8;\n\
 \n\
         VXC_DP2x8(src1, src0, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),\n\
                      uniConvBF16toF32_Part0_2x8);\n\
