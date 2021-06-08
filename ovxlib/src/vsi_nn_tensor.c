@@ -575,17 +575,16 @@ vsi_nn_tensor_t * vsi_nn_CreateTensorWithDefault
         data = (uint8_t *)malloc( size );
         if( data )
         {
-            uint32_t i = 0;
+            uint32_t i = 0, j = 0;
             uint32_t elements = size / stride[0];
-            vsi_status status = VSI_SUCCESS;
+            vsi_status status = VSI_FAILURE;
 
-            for( i = 0; i < elements; i ++ )
+            status = vsi_nn_Float32ToDtype( defualt_value, &data[0], &t->attr.dtype );
+            for( i = 1; i < elements; i ++ )
             {
-                status = vsi_nn_Float32ToDtype( defualt_value, &data[stride[0] * i], &t->attr.dtype );
-                if( VSI_FAILURE == status )
+                for(j=0;j<stride[0];j++)
                 {
-                    VSILOGE("Convert default_value to dtype fail");
-                    break;
+                    data[stride[0] * i + j] = data[j];
                 }
             }
 
@@ -621,16 +620,14 @@ vsi_status vsi_nn_FillTensorWithValue
         data = (uint8_t *)malloc( size );
         if( data )
         {
-            uint32_t i = 0;
+            uint32_t i = 0, j = 0;
             uint32_t elements = size / stride[0];
-
-            for( i = 0; i < elements; i ++ )
+            status = vsi_nn_Float32ToDtype( value, &data[0], &tensor->attr.dtype );
+            for( i = 1; i < elements; i ++ )
             {
-                status = vsi_nn_Float32ToDtype( value, &data[stride[0] * i], &tensor->attr.dtype );
-                if( VSI_FAILURE == status )
+                for(j=0;j<stride[0];j++)
                 {
-                    VSILOGE("Convert value to dtype fail");
-                    break;
+                    data[stride[0] * i + j] = data[j];
                 }
             }
 
