@@ -59,12 +59,12 @@ __kernel void layer_norm_BF16F32toBF16(
     {
         VXC_OP4(img_load_3d, src0, input, coord.xyzz, VXC_5BITOFFSET_XY(0, 0), \
                     VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
-        bias_ptr += coord.x;
-        scale_ptr += coord.x;
         bias_f0 = vload4(0, bias_ptr);
         bias_f1 = vload4(1, bias_ptr);
         scale_f0 = vload4(0, scale_ptr);
         scale_f1 = vload4(1, scale_ptr);
+        bias_ptr += 8;
+        scale_ptr += 8;
 
         VXC_DP2x8(src1, src0, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),
                      uniConvBF16toF32_Part0_2x8);
@@ -131,12 +131,12 @@ __kernel void layer_norm_BF16F32toBF16_2D(
     {
         VXC_ReadImage(src0, input, coord.xy, VXC_5BITOFFSET_XY(0, 0),\
             VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
-        bias_ptr += coord.x;
-        scale_ptr += coord.x;
         bias_f0 = vload4(0, bias_ptr);
         bias_f1 = vload4(1, bias_ptr);
         scale_f0 = vload4(0, scale_ptr);
         scale_f1 = vload4(1, scale_ptr);
+        bias_ptr += 8;
+        scale_ptr += 8;
 
         VXC_DP2x8(src1, src0, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),
                      uniConvBF16toF32_Part0_2x8);

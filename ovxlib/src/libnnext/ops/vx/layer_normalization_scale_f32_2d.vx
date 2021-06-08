@@ -126,8 +126,6 @@ __kernel void layer_norm_U8F32toU8_2D(
     {
         VXC_ReadImage(src0, input, coord.xy, VXC_5BITOFFSET_XY(0, 0),\
             VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));
-        bias_ptr += coord.x;
-        scale_ptr += coord.x;
         bias_f0 = vload4(0, bias_ptr);
         bias_f1 = vload4(1, bias_ptr);
         bias_f2 = vload4(2, bias_ptr);
@@ -136,6 +134,8 @@ __kernel void layer_norm_U8F32toU8_2D(
         scale_f1 = vload4(1, scale_ptr);
         scale_f2 = vload4(2, scale_ptr);
         scale_f3 = vload4(3, scale_ptr);
+        bias_ptr += 16;
+        scale_ptr += 16;
 
         VXC_DP4x4(tmpData0, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\
             uniConvert1stUint8SubZpToFp32_4x4);
@@ -210,12 +210,12 @@ __kernel void layer_norm_I16F32toI16_2D(
     {
         VXC_ReadImage(src0, input, coord.xy, VXC_5BITOFFSET_XY(0, 0),\
                     VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
-        bias_ptr += coord.x;
-        scale_ptr += coord.x;
         bias_f0 = vload4(0, bias_ptr);
         bias_f1 = vload4(1, bias_ptr);
         scale_f0 = vload4(0, scale_ptr);
         scale_f1 = vload4(1, scale_ptr);
+        bias_ptr += 8;
+        scale_ptr += 8;
 
         VXC_DP4x4(tmpData0, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\
                 uniConvert1stUint8SubZpToFp32_4x4);
