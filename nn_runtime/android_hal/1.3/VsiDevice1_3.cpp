@@ -36,12 +36,16 @@ namespace android {
 namespace nn {
 namespace vsi_driver {
 
+#if ANDROID_SDK_VERSION >= 30
+std::shared_ptr<HalBufferTracker> kBufferTracker = HalBufferTracker::create();
+#else
 std::shared_ptr<BufferTracker> kBufferTracker = BufferTracker::create();
+#endif
 
 Return<V1_3::ErrorStatus> VsiDevice::prepareModel_1_3(
     const V1_3::Model& model,
     ExecutionPreference preference,
-    hal::Priority priority,
+    Priority priority,
     const OptionalTimePoint& deadline,
     const hidl_vec<hidl_handle>& modelCache,
     const hidl_vec<hidl_handle>& dataCache,
@@ -83,7 +87,7 @@ Return<V1_3::ErrorStatus> VsiDevice::prepareModel_1_3(
     }
 
     sp<VsiPreparedModel> preparedModel = new VsiPreparedModel(model, preference, handle);
-    std::thread(asyncPrepareModel_1_3<sp<IPreparedModelCallback>>, preparedModel, callback)
+    std::thread(asyncPrepareModel_1_3<sp<V1_3::IPreparedModelCallback>>, preparedModel, callback)
         .detach();
 
     return V1_3::ErrorStatus::NONE;
@@ -106,7 +110,11 @@ Return<void> VsiDevice::allocate(const V1_3::BufferDesc& desc,
     constexpr uint32_t kInvalidBufferToken = 0;
 
     VLOG(DRIVER) << "VsiDevice::allocate";
+#if ANDROID_SDK_VERSION >= 30
+    std::set<HalPreparedModelRole> roles;
+#else
     std::set<PreparedModelRole> roles;
+#endif
     V1_3::Operand operand;
     auto getModel = [](const sp<V1_3::IPreparedModel>& preparedModel) -> const V1_3::Model* {
         const auto* vsiPreparedModel = castToVsiPreparedModel(preparedModel);
@@ -138,7 +146,11 @@ Return<void> VsiDevice::allocate(const V1_3::BufferDesc& desc,
         return Void();
     }
 
+    #if ANDROID_SDK_VERSION >= 30
+    auto bufferWrapper = HalManagedBuffer::create(size, std::move(roles), uncheckedConvert(operand));
+    #else
     auto bufferWrapper = ManagedBuffer::create(size, std::move(roles), std::move(operand));
+    #endif
     if (bufferWrapper == nullptr) {
         LOG(ERROR) << "VsiDevice::allocate -- not enough memory.";
         cb(V1_3::ErrorStatus::GENERAL_FAILURE, nullptr, kInvalidBufferToken);
