@@ -580,14 +580,20 @@ vsi_nn_tensor_t * vsi_nn_CreateTensorWithDefault
             vsi_status status = VSI_FAILURE;
 
             status = vsi_nn_Float32ToDtype( defualt_value, &data[0], &t->attr.dtype );
-            for( i = 1; i < elements; i ++ )
+            if(stride[0] == 1)
             {
-                for(j=0;j<stride[0];j++)
+                 memset(data, data[0], size);
+            }
+            else
+            {
+                for( i = 1; i < elements; i ++ )
                 {
-                    data[stride[0] * i + j] = data[j];
+                    for(j=0;j<stride[0];j++)
+                    {
+                        data[stride[0] * i + j] = data[j];
+                    }
                 }
             }
-
             status = vsi_nn_CopyDataToTensor( graph, t, data );
             free( data );
             data = NULL;
@@ -623,14 +629,21 @@ vsi_status vsi_nn_FillTensorWithValue
             uint32_t i = 0, j = 0;
             uint32_t elements = size / stride[0];
             status = vsi_nn_Float32ToDtype( value, &data[0], &tensor->attr.dtype );
-            for( i = 1; i < elements; i ++ )
+
+            if(stride[0] == 1)
             {
-                for(j=0;j<stride[0];j++)
+                 memset(data, data[0], size);
+            }
+            else
+            {
+                for( i = 1; i < elements; i ++ )
                 {
-                    data[stride[0] * i + j] = data[j];
+                    for(j=0;j<stride[0];j++)
+                    {
+                        data[stride[0] * i + j] = data[j];
+                    }
                 }
             }
-
             status = vsi_nn_CopyDataToTensor( graph, tensor, data );
             free( data );
             data = NULL;
