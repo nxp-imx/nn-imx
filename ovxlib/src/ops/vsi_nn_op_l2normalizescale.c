@@ -84,7 +84,8 @@ static vsi_nn_tensor_t* _expand_scale_tensor
     attr.size[0] = scale_size_out;
     attr.size[1] = 1;
     attr.dim_num = 2;
-    attr.dtype.vx_type = scale->attr.dtype.vx_type;
+    out_dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
+    attr.dtype.vx_type = VSI_NN_TYPE_FLOAT16;
     attr.vtl = FALSE;
     scale_tensor = vsi_nn_CreateTensor(graph, &attr);
     out_dtype          = scale->attr.dtype;
@@ -265,10 +266,10 @@ static vsi_status op_compute
     shapes[1][2] = 1;
     shapes[1][3] = 1;
     scale_size = shapes[0][new_axis];
-    is_expand_scale = (vx_bool)((size < scale_size) && (TRUE == inputs[1]->attr.is_const));
+    is_expand_scale = (vx_bool)(TRUE == inputs[1]->attr.is_const);
     vsi_nn_kernel_param_add_int32( param, "axis",  new_axis );
 
-    if( ret )
+    if ( ret )
     {
         reshape_tensors[0] = vsi_nn_reshape_tensor( self->graph,
                 inputs[0], (uint32_t*)shapes[0], rank_in );
@@ -312,14 +313,19 @@ static vsi_bool op_check
 {
     BEGIN_IO_TYPE_DECL(L2NORMALIZESCALE, _INPUT_NUM, _OUTPUT_NUM)
         IO_TYPE(D_F16,  D_F16,  D_F16)
+        IO_TYPE(D_F16,  D_F32,  D_F16)
         IO_TYPE(D_BF16, D_BF16, D_BF16)
         IO_TYPE(D_BF16, D_F32,  D_BF16)
-        IO_TYPE(D_I8|Q_DFP, D_F16, D_I8|Q_DFP)
-        IO_TYPE(D_I8|Q_DFP, D_F16, D_F16)
+        IO_TYPE(D_I8|Q_DFP,  D_F16, D_I8|Q_DFP)
+        IO_TYPE(D_I8|Q_DFP,  D_F16, D_F16)
+        IO_TYPE(D_I8|Q_DFP,  D_F32, D_I8|Q_DFP)
+        IO_TYPE(D_I8|Q_DFP,  D_F32, D_F16)
         IO_TYPE(D_U8|Q_ASYM, D_F16, D_U8|Q_ASYM)
         IO_TYPE(D_U8|Q_ASYM, D_F16, D_F16)
         IO_TYPE(D_I16|Q_DFP, D_F16, D_I16|Q_DFP)
         IO_TYPE(D_I16|Q_DFP, D_F16, D_F16)
+        IO_TYPE(D_I16|Q_DFP, D_F32, D_I16|Q_DFP)
+        IO_TYPE(D_I16|Q_DFP, D_F32, D_F16)
         IO_TYPE(D_F32, D_F32, D_F32)
         IO_TYPE(D_U8|Q_ASYM, D_F32, D_U8|Q_ASYM)
     END_IO_TYPE_DECL(L2NORMALIZESCALE)
