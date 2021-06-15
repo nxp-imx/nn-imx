@@ -36,7 +36,7 @@ namespace android {
 namespace nn {
 namespace vsi_driver {
 
-#if ANDROID_SDK_VERSION >= 30
+#if ANDROID_SDK_VERSION >= 31
 std::shared_ptr<HalBufferTracker> kBufferTracker = HalBufferTracker::create();
 #else
 std::shared_ptr<BufferTracker> kBufferTracker = BufferTracker::create();
@@ -110,7 +110,7 @@ Return<void> VsiDevice::allocate(const V1_3::BufferDesc& desc,
     constexpr uint32_t kInvalidBufferToken = 0;
 
     VLOG(DRIVER) << "VsiDevice::allocate";
-#if ANDROID_SDK_VERSION >= 30
+#if ANDROID_SDK_VERSION >= 31
     std::set<HalPreparedModelRole> roles;
 #else
     std::set<PreparedModelRole> roles;
@@ -146,7 +146,7 @@ Return<void> VsiDevice::allocate(const V1_3::BufferDesc& desc,
         return Void();
     }
 
-    #if ANDROID_SDK_VERSION >= 30
+    #if ANDROID_SDK_VERSION >= 31
     auto bufferWrapper = HalManagedBuffer::create(size, std::move(roles), uncheckedConvert(operand));
     #else
     auto bufferWrapper = ManagedBuffer::create(size, std::move(roles), std::move(operand));
