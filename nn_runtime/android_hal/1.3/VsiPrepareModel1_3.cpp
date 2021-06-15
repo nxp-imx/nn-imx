@@ -39,7 +39,7 @@ namespace android {
 namespace nn {
 namespace vsi_driver {
 
-#if ANDROID_SDK_VERSION >= 30
+#if ANDROID_SDK_VERSION >= 31
 extern std::shared_ptr<HalBufferTracker> kBufferTracker;
 #else
 extern std::shared_ptr<BufferTracker> kBufferTracker;
@@ -66,7 +66,7 @@ Return<V1_3::ErrorStatus> VsiPreparedModel::mapRtinfoFromRequest(
                     LOG(ERROR) << "Get token buffer failed.";
                     return V1_3::ErrorStatus::INVALID_ARGUMENT;
                 }
-                #if ANDROID_SDK_VERSION >= 30
+                #if ANDROID_SDK_VERSION >= 31
                 auto status = convertToV1_3(buffer_wrapper->validateRequest(i, uncheckedConvert(request), this));
                 #else
                 auto status = buffer_wrapper->validateRequest(i, request, this);

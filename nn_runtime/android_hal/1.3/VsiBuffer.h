@@ -34,7 +34,7 @@ namespace vsi_driver {
 // Manages the data buffer for an operand.
 class VsiBuffer : public IBuffer {
    public:
-    #if ANDROID_SDK_VERSION >= 30
+    #if ANDROID_SDK_VERSION >= 31
     VsiBuffer(std::shared_ptr<HalManagedBuffer> buffer, std::unique_ptr<HalBufferTracker::Token> token)
     #else
     VsiBuffer(std::shared_ptr<ManagedBuffer> buffer, std::unique_ptr<BufferTracker::Token> token)
@@ -48,7 +48,7 @@ class VsiBuffer : public IBuffer {
                                            const hidl_vec<uint32_t>& dimensions) override;
 
    private:
-    #if ANDROID_SDK_VERSION >= 30
+    #if ANDROID_SDK_VERSION >= 31
     const std::shared_ptr<HalManagedBuffer> kBuffer;
     const std::unique_ptr<HalBufferTracker::Token> kToken;
     #else

@@ -30,7 +30,7 @@ namespace nn {
 namespace vsi_driver {
 
 Return<V1_3::ErrorStatus> VsiBuffer::copyTo(const hidl_memory& dst) {
-    #if ANDROID_SDK_VERSION >= 30
+    #if ANDROID_SDK_VERSION >= 31
     const auto dstPool = RunTimePoolInfo::createFromMemory(uncheckedConvert(dst));
     #else
     const auto dstPool = RunTimePoolInfo::createFromHidlMemory(dst);
@@ -56,13 +56,13 @@ Return<V1_3::ErrorStatus> VsiBuffer::copyTo(const hidl_memory& dst) {
 
 static V1_3::ErrorStatus CopyFromImpl(const hidl_memory& src,
                                     const hidl_vec<uint32_t>& dimensions,
-#if ANDROID_SDK_VERSION >= 30
+#if ANDROID_SDK_VERSION >= 31
                                     const std::shared_ptr<HalManagedBuffer>& bufferWrapper) {
 #else
                                     const std::shared_ptr<ManagedBuffer>& bufferWrapper) {
 #endif
     CHECK(bufferWrapper != nullptr);
-    #if ANDROID_SDK_VERSION >= 30
+    #if ANDROID_SDK_VERSION >= 31
     const auto srcPool = RunTimePoolInfo::createFromMemory(uncheckedConvert(src));
     #else
     const auto srcPool = RunTimePoolInfo::createFromHidlMemory(src);
