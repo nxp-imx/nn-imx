@@ -191,7 +191,7 @@ inline static auto& GetHalOperand(const Model& model, uint32_t index) {
 }
 
 
-#if ANDROID_SDK_VERSION >= 30
+#if ANDROID_SDK_VERSION >= 31
 using Timing = V1_2::Timing;
 using OutputShape = V1_2::OutputShape;
 using IFencedExecutionCallback = V1_3::IFencedExecutionCallback;
