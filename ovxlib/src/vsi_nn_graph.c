@@ -487,15 +487,17 @@ static vsi_status setup_node
             uint32_t j = 0;
             for(j = 0; j < node->input.num; j++)
             {
-                if(inputs[j]->attr.dtype.vx_type != VSI_NN_TYPE_FLOAT32)
-                    continue;
-                vsi_nn_SetTensorAttr(inputs[j], VSI_NN_TENSOR_ATTR_HIGH_PRECISION);
+                if(inputs[j] != NULL && inputs[j]->attr.dtype.vx_type == VSI_NN_TYPE_FLOAT32)
+                {
+                    vsi_nn_SetTensorAttr(inputs[j], VSI_NN_TENSOR_ATTR_HIGH_PRECISION);
+                }
             }
             for(j = 0; j < node->output.num; j++)
             {
-                if(outputs[j]->attr.dtype.vx_type != VSI_NN_TYPE_FLOAT32)
-                    continue;
-                vsi_nn_SetTensorAttr(outputs[j], VSI_NN_TENSOR_ATTR_HIGH_PRECISION);
+                if(outputs[j] != NULL && outputs[j]->attr.dtype.vx_type == VSI_NN_TYPE_FLOAT32)
+                {
+                    vsi_nn_SetTensorAttr(outputs[j], VSI_NN_TENSOR_ATTR_HIGH_PRECISION);
+                }
             }
         }
     }
