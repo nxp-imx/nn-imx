@@ -502,6 +502,8 @@ struct QuantizeWorkloadItem {
 
 static const std::vector<QuantizeWorkloadItem> quantize_workload_table = {
     CREATE_QUANTIZE_WORKLOAD_ITEM(Float32, QAsymmU8),
+    CREATE_QUANTIZE_WORKLOAD_ITEM(Float32, QAsymmS8),
+    CREATE_QUANTIZE_WORKLOAD_ITEM(QAsymmU8, QAsymmU8),
     CREATE_QUANTIZE_WORKLOAD_ITEM(QAsymmU8, QAsymmS8),
     CREATE_QUANTIZE_WORKLOAD_ITEM(QAsymmS8, QAsymmU8),
     CREATE_QUANTIZE_WORKLOAD_ITEM(QAsymmS8, QAsymmS8),

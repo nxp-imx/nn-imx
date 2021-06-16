@@ -51,21 +51,10 @@ class NpuTensorCopyWorkload : public TNpuWorkload<ParentDescriptor, DataTypes...
                            outOperandIds.data());
     }
 };
+
 using NpuDequantizeUint8Workload = NpuTensorCopyWorkload<
         DequantizeQueueDescriptor, nnrt::OperationType::DATA_CONVERT,
         armnn::DataType::QAsymmU8, armnn::DataType::Float32>;
-
-using NpuQuantizeFloat32ToQAsymmU8Workload = NpuTensorCopyWorkload<
-        QuantizeQueueDescriptor, nnrt::OperationType::DATA_CONVERT,
-        armnn::DataType::Float32, armnn::DataType::QAsymmU8>;
-
-using NpuQuantizeQAsymmU8ToQAsymmS8Workload = NpuTensorCopyWorkload<
-        QuantizeQueueDescriptor, nnrt::OperationType::DATA_CONVERT,
-        armnn::DataType::QAsymmU8, armnn::DataType::QAsymmS8>;
-
-using NpuQuantizeQAsymmS8ToQAsymmU8Workload = NpuTensorCopyWorkload<
-        QuantizeQueueDescriptor, nnrt::OperationType::DATA_CONVERT,
-        armnn::DataType::QAsymmS8, armnn::DataType::QAsymmU8>;
 
 using NpuFp32ToFp16Workload = NpuTensorCopyWorkload<
         ConvertFp32ToFp16QueueDescriptor, nnrt::OperationType::DATA_CONVERT,
