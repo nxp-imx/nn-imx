@@ -45,7 +45,7 @@
 #define _INPUT_NUM          (1)
 #define _OUTPUT_NUM         (1)
 
-static vsi_bool _is_same_quant
+static vsi_bool _is_dataconvert_op
     (
     vsi_nn_node_t   * self,
     vsi_nn_tensor_t ** inputs,
@@ -56,6 +56,13 @@ static vsi_bool _is_same_quant
 
     dtype = &inputs[0]->attr.dtype;
     _dtype = &outputs[0]->attr.dtype;
+
+    if ( dtype->qnt_type == VSI_NN_QNT_TYPE_NONE &&
+        _dtype->qnt_type == VSI_NN_QNT_TYPE_NONE &&
+        vsi_nn_OpCheck(VSI_NN_OP_DATACONVERT, self, inputs, outputs) )
+    {
+        return TRUE;
+    }
 
     if (vsi_nn_DtypeCompare(dtype, _dtype) == FALSE)
     {
@@ -74,7 +81,7 @@ static vsi_status op_compute
 {
     vsi_status status = VSI_FAILURE;
 
-    if ( _is_same_quant(self, inputs, outputs))
+    if ( _is_dataconvert_op(self, inputs, outputs) )
     {
 
         vsi_nn_internal_compute_node( self );
@@ -157,6 +164,9 @@ static vsi_bool op_check
         IO_TYPE(D_I16,        D_I8|Q_DFP)
         IO_TYPE(D_I16,        D_U8|Q_ASYM)
         IO_TYPE(D_I16,        D_BOOL8)
+        IO_TYPE(D_I16,        D_I32)
+        IO_TYPE(D_I16,        D_U32)
+        IO_TYPE(D_I16,        D_F32)
         IO_TYPE(D_I8|Q_DFP,   D_F16)
         IO_TYPE(D_I8|Q_DFP,   D_I16|Q_DFP)
         IO_TYPE(D_I8|Q_DFP,   D_U8|Q_ASYM)
@@ -165,6 +175,9 @@ static vsi_bool op_check
         IO_TYPE(D_I8,         D_I16|Q_DFP)
         IO_TYPE(D_I8,         D_U8|Q_ASYM)
         IO_TYPE(D_I8,         D_BOOL8)
+        IO_TYPE(D_I8,         D_I32)
+        IO_TYPE(D_I8,         D_U32)
+        IO_TYPE(D_I8,         D_F32)
         IO_TYPE(D_U8|Q_ASYM,  D_F16)
         IO_TYPE(D_U8|Q_ASYM,  D_I16|Q_DFP)
         IO_TYPE(D_U8|Q_ASYM,  D_I8|Q_DFP)
@@ -173,6 +186,9 @@ static vsi_bool op_check
         IO_TYPE(D_U8,         D_I16|Q_DFP)
         IO_TYPE(D_U8,         D_I8|Q_DFP)
         IO_TYPE(D_U8,         D_BOOL8)
+        IO_TYPE(D_U8,         D_I32)
+        IO_TYPE(D_U8,         D_U32)
+        IO_TYPE(D_U8,         D_F32)
         IO_TYPE(D_F32,        D_I16|Q_DFP)
         IO_TYPE(D_F32,        D_I8|Q_DFP)
         IO_TYPE(D_F32,        D_U8|Q_ASYM)
@@ -224,7 +240,7 @@ static vsi_status op_optimize
 
     status = VSI_SUCCESS;
 
-    if ( _is_same_quant(self, inputs, outputs))
+    if ( _is_dataconvert_op(self, inputs, outputs) )
     {
         vsi_nn_internal_optimize_node( self, direction );
     }
@@ -248,7 +264,7 @@ static vsi_bool op_setup
     }
     ret = vsi_nn_op_common_setup(self, inputs, outputs);
 
-    if ( _is_same_quant(self, inputs, outputs) )
+    if (  _is_dataconvert_op(self, inputs, outputs) )
     {
         vsi_nn_internal_node_t* curr = NULL;
         curr = vsi_nn_internal_new_node(self, VSI_NN_OP_DATACONVERT, 1, 1);
