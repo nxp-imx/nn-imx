@@ -245,6 +245,21 @@ struct IsInputDimsSupported : public Rule {
     }
 };
 
+struct IsPadDescriptorSupported : public Rule {
+    IsPadDescriptorSupported(const PadDescriptor& descriptor) {
+        m_Res = false;
+        // only support pad on W/H for 4D tensor
+        if (descriptor.m_PadList.size() == 4) {
+            if (descriptor.m_PadList[0].first == 0 &&
+                descriptor.m_PadList[0].second == 0 &&
+                descriptor.m_PadList[3].first == 0 &&
+                descriptor.m_PadList[3].second == 0) {
+                m_Res = true;
+            }
+        }
+    }
+};
+
 struct IsUint8UnbiasedConvolution : public Rule {
     IsUint8UnbiasedConvolution(const Convolution2dDescriptor& descriptor, const TensorInfo& info) {
         m_Res = (info.GetDataType() == DataType::QAsymmU8 && !descriptor.m_BiasEnabled);
@@ -1258,7 +1273,7 @@ bool NpuLayerSupport::IsPadSupported(const TensorInfo& input,
     ignore_unused(output);
 
     supported &= CheckSupportRule(
-        IsInputDimsSupported(input), reasonIfUnsupported, "Npu pad: input dimension not support.");
+        IsPadDescriptorSupported(descriptor), reasonIfUnsupported, "Npu pad: input dimension not support.");
     supported &= IsSupportedForDataTypeRef(
         reasonIfUnsupported, input.GetDataType(), &TrueFunc<>, &TrueFunc<>);
     supported &= (descriptor.m_PadValue - 0.0f) < 1e-5;
