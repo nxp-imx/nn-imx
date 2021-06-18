@@ -25,17 +25,25 @@
 #define __OVXLIB_PREPARED_MODEL_H__
 
 #include <vector>
-#include "vsi_nn_pub.h"
+
 #include "nnrt/model.hpp"
 #include "nnrt/interpreter.hpp"
 #include "nnrt/shared_context.hpp"
-#include "nnrt/ovxlib_delegate.hpp"
+
+extern "C" {
+struct _vsi_nn_graph;
+typedef struct _vsi_nn_graph vsi_nn_graph_t;
+}
 
 namespace nnrt
 {
 class PreparedModel;
 
 using PreparedModelPtr = std::shared_ptr<PreparedModel>;
+
+struct ExecutionIO;
+
+using ExecutionIOPtr = std::shared_ptr<ExecutionIO>;
 
 class PreparedModel
 {
@@ -67,17 +75,18 @@ class PreparedModel
 
     private:
         // disable copy constructor
-        PreparedModel(const PreparedModel&) = default;
+        PreparedModel(const PreparedModel&) = delete;
         PreparedModel(PreparedModel&&) = default;
-        PreparedModel& operator=(const PreparedModel&) = default;
+        PreparedModel& operator=(const PreparedModel&) = delete;
 
     private:
         vsi_nn_graph_t* graph_{nullptr};
         Model* model_{nullptr};
-        std::map<uint32_t, vsi_nn_tensor_id_t> tensor_mapping_;
         Interpreter* interpreter_;
-        SharedContextPtr context_;
-        std::vector<ExecutionIOPtr> inputs_;
+
+        // Implementation details
+        struct Private;
+        std::unique_ptr<Private> d;
 };
 }
 

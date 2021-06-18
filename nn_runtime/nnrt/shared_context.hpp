@@ -26,6 +26,7 @@
 
 #include <memory>
 
-using SharedContextPtr = std::shared_ptr<std::pointer_traits<vsi_nn_context_t>::element_type>;
+struct _vsi_nn_context_t;
+using SharedContextPtr = std::shared_ptr<std::pointer_traits<_vsi_nn_context_t *>::element_type>;
 
 #endif

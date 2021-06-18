@@ -25,6 +25,9 @@
 #include "nnrt/error.hpp"
 #include "nnrt/execution.hpp"
 #include "nnrt/execution_task.hpp"
+#include "nnrt/shared_context.hpp"
+#include "nnrt/ovxlib_delegate.hpp"
+#include "nnrt/prepared_model.hpp"
 
 namespace nnrt
 {

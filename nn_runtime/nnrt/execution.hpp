@@ -28,14 +28,19 @@
 #include <vector>
 #include <memory>
 #include "nnrt/model.hpp"
-#include "nnrt/compilation.hpp"
-#include "nnrt/prepared_model.hpp"
 #include "nnrt/event.hpp"
 
 #include "nnrt/op/public.hpp"
 
 namespace nnrt
 {
+
+struct ExecutionIO;
+
+using ExecutionIOPtr = std::shared_ptr<ExecutionIO>;
+
+class Compilation;
+
 class Execution
 {
     public:
@@ -92,22 +97,11 @@ class Execution
 
         int getOutputOperandDimensions(uint32_t index, uint32_t* dimensions);
 
-        const std::vector<ExecutionIOPtr> &inputs() const { return inputs_; }
+        const std::vector<ExecutionIOPtr> &inputs() const;
     private:
-        /**
-         * Private interface to check if current is running.
-         * @note This API is NOT thread safe.
-         */
-        inline bool isRunning() {
-            return (event_ && event_->state() == Event::IN_PROCESS);
-        }
-
-        std::vector<ExecutionIOPtr> inputs_;
-        std::vector<ExecutionIOPtr> outputs_;
-        SharedContextPtr ovx_context_;
-        Compilation* compilation_;
-        std::mutex mutex_;
-        EventPtr event_;
+        // Implementation details
+        struct Private;
+        std::unique_ptr<Private> d;
 };
 
 using ExecUniquePtr = std::unique_ptr<Execution>;
