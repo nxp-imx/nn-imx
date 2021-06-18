@@ -770,18 +770,27 @@ static vsi_nn_kernel_node_t _setup
 
     status = _query_kernel( kernel, temp_tensor, outputs, dilation, ks);
 
-    if( VSI_SUCCESS == status)
+    if ( VSI_SUCCESS == status)
     {
         node = vsi_nn_kernel_create_node( graph, kernel );
-        if( node )
+        if ( node )
         {
-            if( pad_front != 0 && pad_end != 0)
+            if ( pad_front != 0 && pad_end != 0)
             {
                 // Set default border mode.
                 vx_border_t border;
                 border.mode = VX_BORDER_CONSTANT;
-                border.constant_value.U8 = 0;
-                border.constant_value.U16 = 0;
+                if (VSI_NN_TYPE_UINT8 == inputs[0]->attr.dtype.vx_type &&
+                    VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC == inputs[0]->attr.dtype.qnt_type)
+                {
+                    border.constant_value.U8 = (uint8_t)inputs[0]->attr.dtype.zero_point;
+                }
+                else
+                {
+                    border.constant_value.U8 = 0;
+                    border.constant_value.U16 = 0;
+                }
+
                 status |= vxSetNodeAttribute( (vx_node)node, VX_NODE_BORDER, &border, sizeof(border) );
             }
 
