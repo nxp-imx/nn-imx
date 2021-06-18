@@ -26,12 +26,15 @@
 
 #include <queue>
 #include <mutex>
-#include "nnrt/prepared_model.hpp"
 #include "nnrt/execution.hpp"
 #include "nnrt/event.hpp"
 
 namespace nnrt
 {
+
+class PreparedModel;
+
+using PreparedModelPtr = std::shared_ptr<PreparedModel>;
 
 enum TaskType {
     GRAPH_TASK,

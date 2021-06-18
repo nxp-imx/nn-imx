@@ -21,10 +21,13 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#include <fstream>
 #include "dump_json_model.hpp"
-#include "nnrt/model.hpp"
+
+#include <fstream>
 #include <sstream>
+
+#include "nnrt/model.hpp"
+#include "nnrt/execution_io.hpp"
 
 #if defined(__ANDROID__)
 #include <android/log.h>

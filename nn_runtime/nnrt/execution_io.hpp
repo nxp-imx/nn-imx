@@ -1,4 +1,3 @@
-
 /****************************************************************************
 *
 *    Copyright (c) 2020 Vivante Corporation
@@ -24,6 +23,11 @@
 *****************************************************************************/
 #ifndef __EXECUTION_IO_HPP__
 #define __EXECUTION_IO_HPP__
+
+#include <assert.h>
+
+#include "vsi_nn_pub.h"
+#include "nnrt/op/operand.hpp"
 
 namespace nnrt
 {

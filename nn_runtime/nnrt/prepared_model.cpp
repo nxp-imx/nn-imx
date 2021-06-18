@@ -26,17 +26,27 @@
 #include "nnrt/error.hpp"
 #include "nnrt/execution_io.hpp"
 #include "nnrt/model_transform/transformations.hpp"
+#include "nnrt/ovxlib_delegate.hpp"
 
 namespace nnrt
 {
+
+struct PreparedModel::Private {
+    std::map<uint32_t, vsi_nn_tensor_id_t> tensor_mapping_;
+    SharedContextPtr context_;
+    std::vector<ExecutionIOPtr> inputs_;
+};
+
 PreparedModel::PreparedModel(Model* model,
         SharedContextPtr context, const std::vector<ExecutionIOPtr> &inputs,
         Interpreter* interpreter)
     : model_(model)
     , interpreter_(interpreter)
-    , context_(context)
-    , inputs_(inputs)
-{}
+    , d(new Private)
+{
+    d->context_ = context;
+    d->inputs_ = inputs;
+}
 
 PreparedModel::~PreparedModel()
 {
@@ -83,10 +93,10 @@ int PreparedModel::prepare()
     }
     // Build ovxlib graph twice,
     // if down graph failed, build the other graph with false enable_cache_.
-    OvxlibDelegate delegate(inputs_);
-    err = delegate.process(model_, context_.get());
+    OvxlibDelegate delegate(d->inputs_);
+    err = delegate.process(model_, d->context_.get());
     if (err == NNA_ERROR_CODE(NO_ERROR)) {
-        tensor_mapping_ = delegate.getTensorMapping();
+        d->tensor_mapping_ = delegate.getTensorMapping();
         graph_ = delegate.throwGraph();
         return err;
     } else {
@@ -95,11 +105,11 @@ int PreparedModel::prepare()
             vsi_nn_ReleaseGraph(&graph_);
             graph_ = nullptr;
         }
-        OvxlibDelegate delegate_nocache(inputs_);
+        OvxlibDelegate delegate_nocache(d->inputs_);
         delegate_nocache.enable_cache(false);
-        err = delegate_nocache.process(model_, context_.get());
+        err = delegate_nocache.process(model_, d->context_.get());
         if (err == NNA_ERROR_CODE(NO_ERROR)) {
-            tensor_mapping_ = delegate_nocache.getTensorMapping();
+            d->tensor_mapping_ = delegate_nocache.getTensorMapping();
             graph_ = delegate_nocache.throwGraph();
             return err;
         } else {
