@@ -1,4 +1,24 @@
 ############################################################################
+Release notes for Ovxlib 1.1.32
+
+New Features:
+    1. add ops:
+       pool1d, group_norm, round, ceil, sequence_mask, repeat, erf, one_hot,
+       nonmaxsuppression(NMS), grouped_conv1d
+
+Feature Refine:
+    1. add new data type support for some ops.
+    2. refine ops:
+       moments, pre_process ops, depth2space, strided_slice, slice, conv1d,
+       layer_norm, l2normscale, gru, grouped_conv2d
+    3. optimize performance of creating NORM_TENSOR
+
+Bug Fixing:
+    1. fix bug for ops:
+       instancenorm, deconv1d, resize_bilinear, split, lstmunit, topk, gather,
+       prelu, scatter_nd
+
+############################################################################
 Release notes for Ovxlib 1.1.30
 
 New Features:
