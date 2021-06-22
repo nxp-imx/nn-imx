@@ -1820,24 +1820,21 @@ __kernel void batch_norm_##name0##_F16_F16_F32_F32to##name1##_brdcst1( \\\n\
     _viv_asm(COPY, mean, _mean, 16); \\\n\
     VXC_ReadImage2DArray(_var, Variance, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
     _viv_asm(COPY, var, _var, 16); \\\n\
-    float4 gamma0 = read_imagef(Gamma, coord); \\\n\
-    coord.x += 4; \\\n\
-    float4 gamma1 = read_imagef(Gamma, coord); \\\n\
-    coord.x -= 4; \\\n\
+    float4 gamma = read_imagef(Gamma, coord); \\\n\
     float4 beta = read_imagef(Beta, coord); \\\n\
  \\\n\
     float4 src0, src1, m, v; \\\n\
     VXC_DP4x4(src0, src, src, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 1), uniDatatoF32_0_4x4); \\\n\
     VXC_DP4x4(m, mean, mean, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 1), uniDatatoF32_0_4x4); \\\n\
     VXC_DP4x4(v, var, var, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 1), uniDatatoF32_0_4x4); \\\n\
-    gamma0 = gamma0 * rsqrt(v + eps); \\\n\
+    float4 gamma0 = gamma.xxxx * rsqrt(v + eps); \\\n\
     src0 = src0 * input_scale + input_tail; \\\n\
     src0 = (src0 - m) * gamma0 + beta.xxxx; \\\n\
     src0 = src0 * output_scale + output_zp; \\\n\
     VXC_DP4x4(src1, src, src, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 1), uniDatatoF32_1_4x4); \\\n\
     VXC_DP4x4(m, mean, mean, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 1), uniDatatoF32_1_4x4); \\\n\
     VXC_DP4x4(v, var, var, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 1), uniDatatoF32_1_4x4); \\\n\
-    gamma1 = gamma1 * rsqrt(v + eps); \\\n\
+    float4 gamma1 = gamma.xxxx * rsqrt(v + eps); \\\n\
     src1 = src1 * input_scale + input_tail; \\\n\
     src1 = (src1 - m) * gamma1 + beta.xxxx; \\\n\
     src1 = src1 * output_scale + output_zp; \\\n\
@@ -1885,22 +1882,21 @@ __kernel void batch_norm_##name0##_F16_F16_F32_F32to##name1##_brdcst1_2D( \\\n\
     _viv_asm(COPY, mean, _mean, 16); \\\n\
     VXC_ReadImage(_var, Variance, coord.xy, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
     _viv_asm(COPY, var, _var, 16); \\\n\
-    float4 gamma0 = read_imagef(Gamma, coord.xy); \\\n\
-    float4 gamma1 = read_imagef(Gamma, coord.zy); \\\n\
+    float4 gamma = read_imagef(Gamma, coord.xy); \\\n\
     float4 beta = read_imagef(Beta, coord.xy); \\\n\
  \\\n\
     float4 src0, src1, m, v; \\\n\
     VXC_DP4x4(src0, src, src, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 1), uniDatatoF32_0_4x4); \\\n\
     VXC_DP4x4(m, mean, mean, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 1), uniDatatoF32_0_4x4); \\\n\
     VXC_DP4x4(v, var, var, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 1), uniDatatoF32_0_4x4); \\\n\
-    gamma0 = gamma0 * rsqrt(v + eps); \\\n\
+    float4 gamma0 = gamma.xxxx * rsqrt(v + eps); \\\n\
     src0 = src0 * input_scale + input_tail; \\\n\
     src0 = (src0 - m) * gamma0 + beta.xxxx; \\\n\
     src0 = src0 * output_scale + output_zp; \\\n\
     VXC_DP4x4(src1, src, src, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 1), uniDatatoF32_1_4x4); \\\n\
     VXC_DP4x4(m, mean, mean, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 1), uniDatatoF32_1_4x4); \\\n\
     VXC_DP4x4(v, var, var, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 1), uniDatatoF32_1_4x4); \\\n\
-    gamma1 = gamma1 * rsqrt(v + eps); \\\n\
+    float4 gamma1 = gamma.xxxx * rsqrt(v + eps); \\\n\
     src1 = src1 * input_scale + input_tail; \\\n\
     src1 = (src1 - m) * gamma1 + beta.xxxx; \\\n\
     src1 = src1 * output_scale + output_zp; \\\n\
