@@ -153,9 +153,6 @@
     <ClInclude Include="include\libnnext\vsi_nn_libnnext_resource.h">
       <Filter>Header Files\libnnext</Filter>
     </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_grouped_conv1d.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
     <ClInclude Include="include\libnnext\vsi_nn_vxkernel.h">
       <Filter>Header Files\libnnext</Filter>
     </ClInclude>
@@ -277,6 +274,9 @@
       <Filter>Header Files\ops</Filter>
     </ClInclude>
     <ClInclude Include="include\ops\vsi_nn_op_generate_proposals.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_grouped_conv1d.h">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
     <ClInclude Include="include\ops\vsi_nn_op_grouped_conv2d.h">
@@ -956,10 +956,10 @@
     <ClCompile Include="src\kernel\cpu\comparisons_cpu.c">
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
-    <ClCompile Include="src\kernel\cpu\cpu_backend_conv2d_cpu.c">
+    <ClCompile Include="src\kernel\cpu\conv1d_ovxlib_cpu.c">
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
-    <ClCompile Include="src\kernel\cpu\conv1d_ovxlib_cpu.c">
+    <ClCompile Include="src\kernel\cpu\cpu_backend_conv2d_cpu.c">
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\cpu_backend_deconv2d_cpu.c">
@@ -1125,6 +1125,9 @@
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\swish_cpu.c">
+      <Filter>Source Files\kernel\cpu</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\cpu\sync_host_cpu.c">
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\tile_cpu.c">
@@ -1379,13 +1382,13 @@
     <ClCompile Include="src\kernel\vx\relu_keras_vx.c">
       <Filter>Source Files\kernel\vx</Filter>
     </ClCompile>
-    <ClCompile Include="src\kernel\vx\swish_vx.c">
+  <ClCompile Include="src\kernel\vx\swish_vx.c">
       <Filter>Source Files\kernel\vx</Filter>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_box_with_nms_limit.c">
       <Filter>Source Files\libnnext\ops\kernel</Filter>
     </ClCompile>
-  <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_extra_ending.c">
+    <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_extra_ending.c">
       <Filter>Source Files\libnnext\ops\kernel</Filter>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_heatmap_max_keypoint.c">
@@ -1400,17 +1403,11 @@
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_spatial_transformer.c">
       <Filter>Source Files\libnnext\ops\kernel</Filter>
     </ClCompile>
-    <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_sync_host.c">
-      <Filter>Source Files\libnnext\ops\kernel</Filter>
-    </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_tensorstackconcat.c">
       <Filter>Source Files\libnnext\ops\kernel</Filter>
     </ClCompile>
     <ClCompile Include="src\libnnext\vsi_nn_libnnext_resource.c">
       <Filter>Source Files\libnnext</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ops\vsi_nn_op_grouped_conv1d.c">
-      <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\libnnext\vsi_nn_vxkernel.c">
       <Filter>Source Files\libnnext</Filter>
@@ -1545,6 +1542,9 @@
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_generate_proposals.c">
+      <Filter>Source Files\ops</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_grouped_conv1d.c">
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_grouped_conv2d.c">

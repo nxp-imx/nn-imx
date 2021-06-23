@@ -542,6 +542,7 @@
     <ClInclude Include="include\ops\vsi_nn_op_fullconnect.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_gather.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_generate_proposals.h"/>
+    <ClInclude Include="include\ops\vsi_nn_op_grouped_conv1d.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_grouped_conv2d.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_groupnormalize.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_gru_ovxlib.h"/>
@@ -639,7 +640,6 @@
     <ClInclude Include="include\ops\vsi_nn_op_swish.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_tanh.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_tensor_add_mean_stddev_norm.h"/>
-    <ClInclude Include="include\ops\vsi_nn_op_grouped_conv1d.h" />
     <ClInclude Include="include\ops\vsi_nn_op_tensorstackconcat.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_tile.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_topk.h"/>
@@ -934,6 +934,9 @@
     <ClCompile Include="src\kernel\cpu\comparisons_cpu.c">
       <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="src\kernel\cpu\conv1d_ovxlib_cpu.c">
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="src\kernel\cpu\cpu_backend_conv2d_cpu.c">
       <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
@@ -941,9 +944,6 @@
       <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\depth2space_internal_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="src\kernel\cpu\conv1d_ovxlib_cpu.c" >
       <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\depthwise_conv1d_cpu.c">
@@ -1103,6 +1103,9 @@
       <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\swish_cpu.c">
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\kernel\cpu\sync_host_cpu.c">
       <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\tile_cpu.c">
@@ -1378,9 +1381,6 @@
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_spatial_transformer.c">
       <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_sync_host.c">
-      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_tensorstackconcat.c">
       <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\</ObjectFileName>
     </ClCompile>
@@ -1520,6 +1520,9 @@
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_generate_proposals.c">
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_grouped_conv1d.c">
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_grouped_conv2d.c">
@@ -1844,9 +1847,6 @@
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_upsamplescale.c">
-      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="src\ops\vsi_nn_op_grouped_conv1d.c" >
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_variable.c">

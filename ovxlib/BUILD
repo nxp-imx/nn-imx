@@ -275,7 +275,6 @@ cc_library(
         "src/libnnext/ops/kernel/vsi_nn_kernel_imageprocess.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_signalframe.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_tensorstackconcat.c",
-        "src/libnnext/ops/kernel/vsi_nn_kernel_sync_host.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_spatial_transformer.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_extra_ending.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_heatmap_max_keypoint.c",
