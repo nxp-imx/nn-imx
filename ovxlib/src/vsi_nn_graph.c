@@ -482,24 +482,6 @@ static vsi_status setup_node
             status = VSI_FAILURE;
             break;
         }
-        if(!vsi_nn_IsGraphFastMode(graph))
-        {
-            uint32_t j = 0;
-            for(j = 0; j < node->input.num; j++)
-            {
-                if(inputs[j] != NULL && inputs[j]->attr.dtype.vx_type == VSI_NN_TYPE_FLOAT32)
-                {
-                    vsi_nn_SetTensorAttr(inputs[j], VSI_NN_TENSOR_ATTR_HIGH_PRECISION);
-                }
-            }
-            for(j = 0; j < node->output.num; j++)
-            {
-                if(outputs[j] != NULL && outputs[j]->attr.dtype.vx_type == VSI_NN_TYPE_FLOAT32)
-                {
-                    vsi_nn_SetTensorAttr(outputs[j], VSI_NN_TENSOR_ATTR_HIGH_PRECISION);
-                }
-            }
-        }
     }
 
 final:
@@ -508,6 +490,65 @@ final:
     return status;
 } /* setup_node() */
 
+static vsi_status set_graph_precision
+    (
+    vsi_nn_graph_t * graph,
+    vsi_nn_node_id_t *node_list
+    )
+{
+    uint32_t i, j;
+    vsi_status status;
+    vsi_nn_tensor_t **inputs;
+    vsi_nn_tensor_t **outputs;
+    vsi_nn_node_id_t node_id;
+    vsi_nn_node_t   *node;
+
+    status = VSI_SUCCESS;
+    inputs = allocate_io_buffer(graph);
+    outputs = allocate_io_buffer(graph);
+    if(NULL == inputs || NULL == outputs)
+    {
+        VSILOGE("allocate io buffer fail");
+        status =  VSI_FAILURE;
+        goto final;
+    }
+
+    if(vsi_nn_IsGraphFastMode(graph))
+    {
+        goto final;
+    }
+    for( i = 0; i < graph->node_num; i++ )
+    {
+        node_id = node_list[i];
+        memset( inputs, 0, graph->max_node_io * sizeof( vsi_nn_tensor_t * ) );
+        memset( outputs, 0, graph->max_node_io * sizeof( vsi_nn_tensor_t * ) );
+        /* Get inputs, outputs. */
+        node = vsi_nn_GetNode( graph, node_id );
+        vsi_nn_GetTensors( graph, node->input.tensors,
+            node->input.num, inputs );
+        vsi_nn_GetTensors( graph, node->output.tensors,
+            node->output.num, outputs );
+
+        for(j = 0; j < node->input.num; j++)
+        {
+            if(inputs[j] != NULL && inputs[j]->attr.dtype.vx_type == VSI_NN_TYPE_FLOAT32)
+            {
+                vsi_nn_SetTensorAttr(inputs[j], VSI_NN_TENSOR_ATTR_HIGH_PRECISION);
+            }
+        }
+        for(j = 0; j < node->output.num; j++)
+        {
+            if(outputs[j] != NULL && outputs[j]->attr.dtype.vx_type == VSI_NN_TYPE_FLOAT32)
+            {
+                vsi_nn_SetTensorAttr(outputs[j], VSI_NN_TENSOR_ATTR_HIGH_PRECISION);
+            }
+        }
+    }
+final:
+    free_io_buffer(inputs);
+    free_io_buffer(outputs);
+    return status;
+}
 vsi_nn_graph_t * vsi_nn_CreateGraph
     (
     vsi_nn_context_t ctx,
@@ -705,6 +746,12 @@ vsi_status vsi_nn_SetupGraph
         goto final;
     }
 
+    /* Set all of tensor attribute in graph to high precision */
+    status = set_graph_precision(graph, nodes_list);
+    if(VSI_SUCCESS != status)
+    {
+        goto final;
+    }
     /* Try setup graph complete signal node. */
     status = vsi_nn_TrySetupCompleteSignalNode( graph );
     TEST_CHECK_STATUS( status, final );
