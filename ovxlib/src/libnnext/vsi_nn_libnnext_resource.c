@@ -38405,6 +38405,71 @@ __kernel void swish_BF16toBF16_2D(\n\
 }\n\
 "; /* end of swish_vx*/
 
+static const char tensorstackconcat_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+__kernel void tensorstackconcat_16bits\n\
+    (\n\
+    __read_only  image2d_array_t input,\n\
+    __read_only  image2d_t       index,\n\
+    __write_only image2d_array_t output\n\
+    )\n\
+{\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+    vxc_short8 src0;\n\
+    VXC_ReadImage2DArray(src0, input, coord, VXC_5BITOFFSET_XY(0, 0),\\\n\
+        VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+    coord.w = 0;\n\
+    coord.y = read_imagei(index, coord.ww).x;\n\
+    VXC_WriteImage2DArray(output, coord, src0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+__kernel void tensorstackconcat_8bits\n\
+    (\n\
+    __read_only  image2d_array_t input,\n\
+    __read_only  image2d_t       index,\n\
+    __write_only image2d_array_t output\n\
+    )\n\
+{\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+    int idx = coord.x;\n\
+    vxc_char16 src0, src1;\n\
+    VXC_ReadImage2DArray(src0, input, coord, VXC_5BITOFFSET_XY(0, 0),\\\n\
+        VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
+    coord.y = read_imagei(index, coord.ww).x;\n\
+    VXC_WriteImage2DArray(output, coord, src0, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+__kernel void tensorstackconcat_16bits_2D\n\
+    (\n\
+    __read_only  image2d_array_t input,\n\
+    __read_only  image2d_t       index,\n\
+    __write_only image2d_array_t output\n\
+    )\n\
+{\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+    vxc_short8 src0;\n\
+    VXC_ReadImage(src0, input, coord.xy, VXC_5BITOFFSET_XY(0, 0),\\\n\
+        VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+    coord.y = read_imagei(index, coord.ww).x;\n\
+    VXC_WriteImage(output, coord.xy, src0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+__kernel void tensorstackconcat_8bits_2D\n\
+    (\n\
+    __read_only  image2d_array_t input,\n\
+    __read_only  image2d_t       index,\n\
+    __write_only image2d_array_t output\n\
+    )\n\
+{\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+    int idx = coord.x;\n\
+    vxc_char16 src0, src1;\n\
+    VXC_ReadImage(src0, input, coord.xy, VXC_5BITOFFSET_XY(0, 0),\\\n\
+        VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
+    coord.y = read_imagei(index, coord.ww).x;\n\
+    VXC_WriteImage(output, coord.xy, src0, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
+}"; /* end of tensorstackconcat_vx*/
+
 static const char tile_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 _viv_uniform int lastWorkItem;\n\
@@ -41987,49 +42052,6 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void vxcSignalFrame_ten
 }\n\
 #endif\n\
 "; /* end of vsi_nn_kernel_signalframe_vx*/
-
-static const char vsi_nn_kernel_tensorstackconcat_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
-\n\
-/*******************tensorstackconcat 16BITs********************/\n\
-__kernel void vxcTensorStackConcat(\n\
-    image2d_array_t input,\n\
-    image2d_t index,\n\
-    image2d_array_t output)\n\
-{\n\
-    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
-    vxc_short8 src0, src1;\n\
-    VXC_ReadImage2DArray(src0, input, coord, VXC_5BITOFFSET_XY(0, 0),\\\n\
-        VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-    VXC_ReadImage2DArray(src1, input, coord, VXC_5BITOFFSET_XY(8, 0),\\\n\
-        VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-    coord.w = 0;\n\
-    coord.y = read_imagei(index, coord.ww).x;\n\
-    VXC_WriteImage2DArray(output, coord, src0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-    coord.x += 8;\n\
-    VXC_WriteImage2DArray(output, coord, src1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-}\n\
-\n\
-/**************tensorstackconcat 8BITs***************************/\n\
-__kernel void vxcTensorStackConcat8Bits(\n\
-    image2d_array_t input,\n\
-    image2d_t index,\n\
-    image2d_array_t output)\n\
-{\n\
-    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
-    int idx = coord.x;\n\
-    vxc_char16 src0, src1;\n\
-    VXC_ReadImage2DArray(src0, input, coord, VXC_5BITOFFSET_XY(0, 0),\\\n\
-        VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
-    coord.x += 16;\n\
-    VXC_ReadImage2DArray(src1, input, coord, VXC_5BITOFFSET_XY(0, 0),\\\n\
-        VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
-    coord.x = idx;\n\
-    coord.w = 0;\n\
-    coord.y = read_imagei(index, coord.ww).x;\n\
-    VXC_WriteImage2DArray(output, coord, src0, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
-    coord.x += 16;\n\
-    VXC_WriteImage2DArray(output, coord, src1, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
-}"; /* end of vsi_nn_kernel_tensorstackconcat_vx*/
 
 static const char vsi_nn_kernel_transform_gemm_vx[] = "/*\n\
  ============================================================================\n\
@@ -56251,6 +56273,7 @@ static const source_map_t evis_resource[] =
     {"slice_vx", slice_vx},
     {"space2depth_internal_vx", space2depth_internal_vx},
     {"swish_vx", swish_vx},
+    {"tensorstackconcat_vx", tensorstackconcat_vx},
     {"tile_vx", tile_vx},
     {"tile_mix_vx", tile_mix_vx},
     {"upsample_F16_vx", upsample_F16_vx},
@@ -56271,7 +56294,6 @@ static const source_map_t evis_resource[] =
     {"vsi_nn_kernel_imageprocess_5_vx", vsi_nn_kernel_imageprocess_5_vx},
     {"vsi_nn_kernel_roi_align_vx", vsi_nn_kernel_roi_align_vx},
     {"vsi_nn_kernel_signalframe_vx", vsi_nn_kernel_signalframe_vx},
-    {"vsi_nn_kernel_tensorstackconcat_vx", vsi_nn_kernel_tensorstackconcat_vx},
     {"vsi_nn_kernel_transform_gemm_vx", vsi_nn_kernel_transform_gemm_vx},
     {"vsi_nn_kernel_transform_interp_vx", vsi_nn_kernel_transform_interp_vx},
     {"vsi_nn_kernel_transform_setupThres_vx", vsi_nn_kernel_transform_setupThres_vx},
