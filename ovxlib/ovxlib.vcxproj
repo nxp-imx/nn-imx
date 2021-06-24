@@ -1108,6 +1108,9 @@
     <ClCompile Include="src\kernel\cpu\sync_host_cpu.c">
       <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="src\kernel\cpu\tensorstackconcat_cpu.c">
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="src\kernel\cpu\tile_cpu.c">
       <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
@@ -1300,6 +1303,9 @@
     <ClCompile Include="src\kernel\evis\swish_evis.c">
       <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="src\kernel\evis\tensorstackconcat_evis.c">
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="src\kernel\evis\tile_evis.c">
       <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
@@ -1379,9 +1385,6 @@
       <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_spatial_transformer.c">
-      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_tensorstackconcat.c">
       <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\libnnext\vsi_nn_libnnext_resource.c">
