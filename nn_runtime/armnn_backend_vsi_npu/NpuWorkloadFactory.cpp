@@ -523,7 +523,12 @@ std::unique_ptr<IWorkload> NpuWorkloadFactory::CreateQuantize(const QuantizeQueu
 
 std::unique_ptr<IWorkload> NpuWorkloadFactory::CreateDequantize(const DequantizeQueueDescriptor& descriptor,
                                                                 const WorkloadInfo& info) const {
-    return MakeWorkload<NullWorkload, NullWorkload, NpuDequantizeUint8Workload>(descriptor, info);
+    return armnn::MakeWorkloadHelper<NullWorkload,
+                                     NullWorkload,
+                                     NpuDequantizeUint8Workload,
+                                     NullWorkload,
+                                     NullWorkload,
+                                     NpuDequantizeInt8Workload>(descriptor, info);
 }
 
 std::unique_ptr<IWorkload> NpuWorkloadFactory::CreatePrelu(const PreluQueueDescriptor& descriptor,
