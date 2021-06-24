@@ -56,6 +56,10 @@ using NpuDequantizeUint8Workload = NpuTensorCopyWorkload<
         DequantizeQueueDescriptor, nnrt::OperationType::DATA_CONVERT,
         armnn::DataType::QAsymmU8, armnn::DataType::Float32>;
 
+using NpuDequantizeInt8Workload = NpuTensorCopyWorkload<
+        DequantizeQueueDescriptor, nnrt::OperationType::DATA_CONVERT,
+        armnn::DataType::QAsymmS8, armnn::DataType::Float32>;
+
 using NpuFp32ToFp16Workload = NpuTensorCopyWorkload<
         ConvertFp32ToFp16QueueDescriptor, nnrt::OperationType::DATA_CONVERT,
         armnn::DataType::Float32, armnn::DataType::Float16>;

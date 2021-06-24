@@ -665,8 +665,8 @@ bool NpuLayerSupport::IsDequantizeSupported(const TensorInfo& input,
                                             Optional<std::string&> reasonIfUnsupported) const {
     bool supported = true;
 
-    std::array<DataType, 1> supportedInputTypes = {DataType::QAsymmU8,
-        //DataType::QSymmS16
+    std::array<DataType, 2> supportedInputTypes = {
+        DataType::QAsymmU8, DataType::QAsymmS8, //DataType::QSymmS16
     };
 
     supported &= CheckSupportRule(TypeAnyOf(input, supportedInputTypes),
