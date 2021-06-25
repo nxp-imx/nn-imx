@@ -109,7 +109,7 @@ DEF_KERNEL_EXECUTOR(_compute)
 
     for (c = 0; c < depth; c++)
     {
-        for (y = 0; y < height; i++)
+        for (y = 0; y < height; y++)
         {
             for (x = 0; x < width; x++)
             {
