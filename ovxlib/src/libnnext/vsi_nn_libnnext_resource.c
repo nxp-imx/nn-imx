@@ -37599,6 +37599,430 @@ SCATTER_ND_QINT_BIG(I8,  vxc_char8, char)\n\
 SCATTER_ND_QINT_BIG(I16, vxc_short8, short)\n\
 "; /* end of scatter_nd_big_vx*/
 
+static const char scatter_nd_update_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+_viv_uniform VXC_512Bits uniAccumulateSum_2x8;\n\
+_viv_uniform VXC_512Bits uniU8MulAndPostShift_0_Lo_2x8;\n\
+_viv_uniform VXC_512Bits uniU8MulAndPostShift_1_Lo_2x8;\n\
+_viv_uniform int index_num;\n\
+_viv_uniform int offset_idx;\n\
+_viv_uniform int offsetX;\n\
+_viv_uniform int offsetY;\n\
+_viv_uniform int offsetZ;\n\
+_viv_uniform int offsetW;\n\
+_viv_uniform int2 multAndoutZP0;\n\
+_viv_uniform int2 multAndoutZP1;//[0:15] multiplier, [31:63] output zp\n\
+\n\
+_viv_uniform VXC_512Bits uniConvBF16toF32_Part0_2x8;\n\
+_viv_uniform VXC_512Bits uniConvBF16toF32_Part1_2x8;\n\
+_viv_uniform VXC_512Bits uniExtractOddData_2x8;\n\
+\n\
+__kernel void scatter_nd_update_F16F16toF16(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __read_only image2d_t   input2,\n\
+    image2d_array_t  output,\n\
+    int width,\n\
+    int area,\n\
+    int vol,\n\
+    int coord_dim\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);\n\
+    int gidy = get_global_id(1);\n\
+    int cnt = 0;\n\
+\n\
+    vxc_short8 tmpVal = (vxc_short8)(0, 0, 0, 0, 0, 0, 0, 0);\n\
+    vxc_half8 sum;\n\
+    _viv_asm(COPY, sum, tmpVal, 16);\n\
+    Image img1 = create_image_from_image2d(input1, 4);\n\
+    __global int* index_ptr = (__global int*)img1.ptr;\n\
+    for(int i = 0; i < index_num; i++)\n\
+    {\n\
+        //int4 indice = read_imagei(input1, (int2)(0, i));\n\
+        int4 indice = vload4(0, index_ptr + offset_idx);\n\
+        index_ptr += coord_dim;\n\
+        int idx = indice.x * offsetX + indice.y * offsetY + indice.z * offsetZ + indice.w * offsetW;\n\
+        if(gidy == idx)\n\
+        {\n\
+            vxc_half8 src;\n\
+            VXC_ReadImage(tmpVal, input2, (int2)(gidx, i), 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+            cnt++;\n\
+            _viv_asm(COPY, src, tmpVal, 16);\n\
+            VXC_DP2x8(sum, sum, src, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniAccumulateSum_2x8);\n\
+        }\n\
+    }\n\
+    _viv_asm(COPY, tmpVal, sum, 16);\n\
+    int2 coord = (int2)(gidx, gidy);\n\
+    if(cnt == 0)\n\
+    {\n\
+        VXC_ReadImage(tmpVal, input0, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+    }\n\
+    VXC_WriteImage(output, coord, tmpVal, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+#define SCATTER_ND_UPDATE_QINT(src0_type_name, src2_type_name, out_type_name, data_type) \\\n\
+__kernel void scatter_nd_update_##src0_type_name##src2_type_name##to##out_type_name##( \\\n\
+    __read_only image2d_t   input0, \\\n\
+    __read_only image2d_t   input1, \\\n\
+    __read_only image2d_t   input2, \\\n\
+    image2d_array_t  output, \\\n\
+    int width, \\\n\
+    int area, \\\n\
+    int vol, \\\n\
+    int coord_dim \\\n\
+    ) \\\n\
+{ \\\n\
+    int gidx = get_global_id(0);  \\\n\
+    int gidy = get_global_id(1); \\\n\
+    int cnt = 0; \\\n\
+ \\\n\
+    data_type sum = (data_type)(0, 0, 0, 0, 0, 0, 0, 0); \\\n\
+    Image img1 = create_image_from_image2d(input1, 4); \\\n\
+    __global int* index_ptr = (__global int*)img1.ptr; \\\n\
+    for(int i = 0; i < index_num; i++) \\\n\
+    { \\\n\
+        int4 indice = vload4(0, index_ptr + offset_idx); \\\n\
+        index_ptr += coord_dim; \\\n\
+        int idx = indice.x * offsetX + indice.y * offsetY + indice.z * offsetZ + indice.w * offsetW; \\\n\
+        if(gidy == idx) \\\n\
+        { \\\n\
+            data_type src; \\\n\
+            VXC_ReadImage(src, input2, (int2)(gidx, i), 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+            cnt++; \\\n\
+            VXC_DP2x8(sum, sum, src, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniAccumulateSum_2x8); \\\n\
+        } \\\n\
+    } \\\n\
+    int2 coord = (int2)(gidx, gidy); \\\n\
+    vxc_ushort8 ms0; \\\n\
+    data_type dst; \\\n\
+    if(cnt == 0) \\\n\
+    { \\\n\
+        VXC_ReadImage(sum, input0, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+        _viv_asm(COPY, ms0, multAndoutZP0, 16); \\\n\
+        VXC_DP2x8(dst, sum, ms0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), \\\n\
+                    uniU8MulAndPostShift_0_Lo_2x8); \\\n\
+        VXC_WriteImage(output, coord, dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    } \\\n\
+    else \\\n\
+    { \\\n\
+        _viv_asm(COPY, ms0, multAndoutZP1, 16); \\\n\
+        VXC_DP2x8(dst, sum, ms0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), \\\n\
+                    uniU8MulAndPostShift_1_Lo_2x8); \\\n\
+        VXC_WriteImage(output, coord, dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    } \\\n\
+}\n\
+SCATTER_ND_UPDATE_QINT(U8,  U8,  U8,  vxc_uchar8)\n\
+SCATTER_ND_UPDATE_QINT(I8,  I8,  I8,  vxc_char8)\n\
+SCATTER_ND_UPDATE_QINT(I16, I16, I16, vxc_short8)\n\
+\n\
+__kernel void scatter_nd_update_U8U8toF16(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __read_only image2d_t   input2,\n\
+    image2d_array_t  output,\n\
+    int width,\n\
+    int area,\n\
+    int vol,\n\
+    int coord_dim\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);\n\
+    int gidy = get_global_id(1);\n\
+    int cnt = 0;\n\
+\n\
+    vxc_short8 sum = (vxc_short8)(0, 0, 0, 0, 0, 0, 0, 0);\n\
+    vxc_uchar8 src;\n\
+    Image img1 = create_image_from_image2d(input1, 4);\n\
+    __global int* index_ptr = (__global int*)img1.ptr;\n\
+    for(int i = 0; i < index_num; i++)\n\
+    {\n\
+        int4 indice = vload4(0, index_ptr + offset_idx);\n\
+        index_ptr += coord_dim;\n\
+        int idx = indice.x * offsetX + indice.y * offsetY + indice.z * offsetZ + indice.w * offsetW;\n\
+        if(gidy == idx)\n\
+        {\n\
+            VXC_ReadImage(src, input2, (int2)(gidx, i), 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+            cnt++;\n\
+            VXC_DP2x8(sum, sum, src, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniAccumulateSum_2x8);\n\
+        }\n\
+    }\n\
+    int2 coord = (int2)(gidx, gidy);\n\
+    vxc_ushort8 ms0;\n\
+    vxc_half8 tmpDst;\n\
+    vxc_short8 dst;\n\
+    if(cnt == 0)\n\
+    {\n\
+        VXC_ReadImage(src, input0, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+        _viv_asm(COPY, ms0, multAndoutZP0, 16);\n\
+        VXC_DP2x8(tmpDst, src, ms0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1),\n\
+                    uniU8MulAndPostShift_0_Lo_2x8);\n\
+        _viv_asm(COPY, dst, tmpDst, 16);\n\
+        VXC_WriteImage(output, coord, dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+    }\n\
+    else\n\
+    {\n\
+        _viv_asm(COPY, ms0, multAndoutZP1, 16);\n\
+        VXC_DP2x8(tmpDst, sum, ms0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1),\n\
+                    uniU8MulAndPostShift_1_Lo_2x8);\n\
+        _viv_asm(COPY, dst, tmpDst, 16);\n\
+        VXC_WriteImage(output, coord, dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+    }\n\
+}\n\
+\n\
+__kernel void scatter_nd_update_BF16BF16toBF16(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __read_only image2d_t   input2,\n\
+    image2d_array_t  output,\n\
+    int width,\n\
+    int area,\n\
+    int vol,\n\
+    int coord_dim\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);\n\
+    int gidy = get_global_id(1);\n\
+    int cnt = 0;\n\
+\n\
+    vxc_short8 zero = (vxc_short8)(0, 0, 0, 0, 0, 0, 0, 0);\n\
+    vxc_ushort8 src0, src1, src2;\n\
+    float4 srcA, srcB;\n\
+    float4 sum0 = (float4)(0);\n\
+    float4 sum1 = sum0;\n\
+\n\
+    Image img1 = create_image_from_image2d(input1, 4);\n\
+    __global int* index_ptr = (__global int*)img1.ptr;\n\
+    for(int i = 0; i < index_num; i++)\n\
+    {\n\
+        //int4 indice = read_imagei(input1, (int2)(0, i));\n\
+        int4 indice = vload4(0, index_ptr + offset_idx);\n\
+        index_ptr += coord_dim;\n\
+        int idx = indice.x * offsetX + indice.y * offsetY + indice.z * offsetZ + indice.w * offsetW;\n\
+        if(gidy == idx)\n\
+        {\n\
+            VXC_ReadImage(src0, input2, (int2)(gidx, i), 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+            cnt++;\n\
+            VXC_DP2x8(src1, src0, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),\n\
+                        uniConvBF16toF32_Part0_2x8);\n\
+            VXC_DP2x8(src2, src0, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),\n\
+                         uniConvBF16toF32_Part1_2x8);\n\
+            _viv_asm(COPY, srcA, src1, 16);\n\
+            _viv_asm(COPY, srcB, src2, 16);\n\
+            sum0 += srcA;\n\
+            sum1 += srcB;\n\
+        }\n\
+    }\n\
+    int2 coord = (int2)(gidx, gidy);\n\
+    if(cnt == 0)\n\
+    {\n\
+        VXC_ReadImage(src2, input0, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+        VXC_WriteImage(output, coord, src2, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+    }\n\
+    else\n\
+    {\n\
+        _viv_asm(COPY, src0, sum0, 16);\n\
+        _viv_asm(COPY, src1, sum1, 16);\n\
+        VXC_DP2x8(src2, src0, src1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniExtractOddData_2x8);\n\
+        VXC_WriteImage(output, coord, src2, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+    }\n\
+}"; /* end of scatter_nd_update_vx*/
+
+static const char scatter_nd_update_big_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+_viv_uniform VXC_512Bits uniAccumulateSum_2x8;\n\
+_viv_uniform VXC_512Bits uniU8MulAndPostShift_0_Lo_2x8;\n\
+_viv_uniform VXC_512Bits uniU8MulAndPostShift_1_Lo_2x8;\n\
+_viv_uniform VXC_512Bits uniConvert1stFp16ToFp32_4x4;\n\
+_viv_uniform int index_num;\n\
+_viv_uniform int update_width;\n\
+_viv_uniform int output_width;\n\
+_viv_uniform int2 multAndoutZP0;\n\
+_viv_uniform int2 multAndoutZP1;//[0:15] multiplier, [31:63] output zp\n\
+\n\
+_viv_uniform int offsetX;\n\
+_viv_uniform int offsetY;\n\
+_viv_uniform int offsetZ;\n\
+_viv_uniform int offsetW;\n\
+_viv_uniform int offset_idx;\n\
+\n\
+__kernel void scatter_nd_update_F16F16toF16_big(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __read_only image2d_t   input2,\n\
+    image2d_t  output,\n\
+    int width,\n\
+    int area,\n\
+    int vol,\n\
+    int coord_dim\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);\n\
+    int gidy = get_global_id(1);\n\
+    int cnt = 0;\n\
+\n\
+    vxc_short8 tmpVal = (vxc_short8)(0, 0, 0, 0, 0, 0, 0, 0);\n\
+    vxc_half8 sum;\n\
+    _viv_asm(COPY, sum, tmpVal, 16);\n\
+    Image img1 = create_image_from_image2d(input1, 4);\n\
+    Image img2 = create_image_from_image2d(input2, 2);\n\
+    Image img3 = create_image_from_image2d(output, 2);\n\
+\n\
+    __global int* index_ptr = (__global int*)img1.ptr;\n\
+    __global short* update_ptr = (__global short*)img2.ptr;\n\
+    __global short* output_ptr = (__global short*)img3.ptr;\n\
+    for(int i = 0; i < index_num; i++)\n\
+    {\n\
+        int4 indice = vload4(0, index_ptr + offset_idx);\n\
+        index_ptr += coord_dim;\n\
+\n\
+        int idx = indice.x * offsetX + indice.y * offsetY + indice.z * offsetZ + indice.w * offsetW;\n\
+        if(gidy == idx)\n\
+        {\n\
+            vxc_half8 src;\n\
+            short tmpData = update_ptr[i * update_width + gidx];\n\
+            cnt++;\n\
+            _viv_asm(COPY, src, tmpData, 4);\n\
+            VXC_DP2x8(sum, sum, src, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniAccumulateSum_2x8);\n\
+        }\n\
+    }\n\
+    short dst;\n\
+    _viv_asm(COPY, dst, sum, 4);\n\
+    int loc = gidy * output_width+ gidx;\n\
+    if(cnt == 0)\n\
+    {\n\
+        Image img0 = create_image_from_image2d(input0, 2);\n\
+        __global short* ref_ptr = (__global short*)img0.ptr;\n\
+        dst = ref_ptr[loc];\n\
+    }\n\
+    output_ptr[loc] = dst;\n\
+}\n\
+\n\
+#define SCATTER_ND_UPDATE_QINT_BIG(src0_type, src2_type, data_type, ptr_type, element_size) \\\n\
+__kernel void scatter_nd_update_##src0_type##src2_type##to##src0_type##_big( \\\n\
+    __read_only image2d_t   input0, \\\n\
+    __read_only image2d_t   input1, \\\n\
+    __read_only image2d_t   input2, \\\n\
+    image2d_t  output, \\\n\
+    int width, \\\n\
+    int area, \\\n\
+    int vol, \\\n\
+    int coord_dim \\\n\
+    ) \\\n\
+{ \\\n\
+    int gidx = get_global_id(0);  \\\n\
+    int gidy = get_global_id(1); \\\n\
+    int cnt = 0; \\\n\
+ \\\n\
+    data_type sum = (data_type)(0, 0, 0, 0, 0, 0, 0, 0); \\\n\
+    Image img1 = create_image_from_image2d(input1, 4); \\\n\
+    Image img2 = create_image_from_image2d(input2, element_size); \\\n\
+    Image img3 = create_image_from_image2d(output, element_size); \\\n\
+    __global int* index_ptr = (__global int*)img1.ptr; \\\n\
+    __global ptr_type* update_ptr = (__global ptr_type*)img2.ptr; \\\n\
+    __global ptr_type* output_ptr = (__global ptr_type*)img3.ptr; \\\n\
+    data_type src; \\\n\
+    for(int i = 0; i < index_num; i++) \\\n\
+    { \\\n\
+        int4 indice = vload4(0, index_ptr + offset_idx); \\\n\
+        index_ptr += coord_dim; \\\n\
+        int idx = indice.x * offsetX + indice.y * offsetY + indice.z * offsetZ + indice.w * offsetW; \\\n\
+        if(gidy == idx) \\\n\
+        { \\\n\
+            ptr_type tmpData = update_ptr[i * update_width + gidx]; \\\n\
+            cnt++; \\\n\
+            _viv_asm(COPY, src, tmpData, 4); \\\n\
+            VXC_DP2x8(sum, sum, src, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniAccumulateSum_2x8); \\\n\
+        } \\\n\
+    } \\\n\
+    int loc = gidy * output_width+ gidx; \\\n\
+    vxc_ushort8 ms0; \\\n\
+    data_type dst; \\\n\
+    if(cnt == 0) \\\n\
+    { \\\n\
+        Image img0 = create_image_from_image2d(input0, element_size); \\\n\
+        __global ptr_type* ref_ptr = (__global ptr_type*)img0.ptr; \\\n\
+        ptr_type tmpData = ref_ptr[loc]; \\\n\
+        _viv_asm(COPY, ms0, multAndoutZP0, 16); \\\n\
+        _viv_asm(COPY, src, tmpData, 4); \\\n\
+        VXC_DP2x8(dst, src, ms0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), \\\n\
+                    uniU8MulAndPostShift_0_Lo_2x8); \\\n\
+        output_ptr[loc] = dst.x; \\\n\
+    } \\\n\
+    else \\\n\
+    { \\\n\
+        _viv_asm(COPY, ms0, multAndoutZP1, 16); \\\n\
+        VXC_DP2x8(dst, sum, ms0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), \\\n\
+                    uniU8MulAndPostShift_1_Lo_2x8); \\\n\
+        output_ptr[loc] = dst.x; \\\n\
+    } \\\n\
+}\n\
+SCATTER_ND_UPDATE_QINT_BIG(U8,  U8,  vxc_uchar8, uchar, 1)\n\
+SCATTER_ND_UPDATE_QINT_BIG(I8,  I8,  vxc_char8,  char,  1)\n\
+SCATTER_ND_UPDATE_QINT_BIG(I16, I16, vxc_short8, short, 2)\n\
+\n\
+__kernel void scatter_nd_update_U8U8toF16_big(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __read_only image2d_t   input2,\n\
+    image2d_t  output,\n\
+    int width,\n\
+    int area,\n\
+    int vol,\n\
+    int coord_dim\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);\n\
+    int gidy = get_global_id(1);\n\
+    int cnt = 0;\n\
+\n\
+    vxc_short8 sum = (vxc_short8)(0, 0, 0, 0, 0, 0, 0, 0);\n\
+    Image img1 = create_image_from_image2d(input1, 4);\n\
+    Image img2 = create_image_from_image2d(input2, 1);\n\
+    Image img3 = create_image_from_image2d(output, 2);\n\
+    __global int* index_ptr = (__global int*)img1.ptr;\n\
+    __global uchar* update_ptr = (__global uchar*)img2.ptr;\n\
+    __global short* output_ptr = (__global short*)img3.ptr;\n\
+    vxc_uchar8 src;\n\
+    for(int i = 0; i < index_num; i++)\n\
+    {\n\
+        int4 indice = vload4(0, index_ptr + offset_idx);\n\
+        index_ptr += coord_dim;\n\
+        int idx = indice.x * offsetX + indice.y * offsetY + indice.z * offsetZ + indice.w * offsetW;\n\
+        if(gidy == idx)\n\
+        {\n\
+            uchar tmpData = update_ptr[i * update_width + gidx];\n\
+            cnt++;\n\
+            _viv_asm(COPY, src, tmpData, 4);\n\
+            VXC_DP2x8(sum, sum, src, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniAccumulateSum_2x8);\n\
+        }\n\
+    }\n\
+    int loc = gidy * output_width+ gidx;\n\
+    vxc_ushort8 ms0;\n\
+    vxc_half8 tmpDst;\n\
+    vxc_short8 dst;\n\
+    if(cnt == 0)\n\
+    {\n\
+        Image img0 = create_image_from_image2d(input0, 1);\n\
+        __global uchar* ref_ptr = (__global uchar*)img0.ptr;\n\
+        uchar tmpData = ref_ptr[loc];\n\
+        _viv_asm(COPY, ms0, multAndoutZP0, 16);\n\
+        _viv_asm(COPY, src, tmpData, 4);\n\
+        VXC_DP2x8(tmpDst, src, ms0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1),\n\
+                    uniU8MulAndPostShift_0_Lo_2x8);\n\
+        _viv_asm(COPY, dst, tmpDst, 16);\n\
+        output_ptr[loc] = dst.x;\n\
+    }\n\
+    else\n\
+    {\n\
+        _viv_asm(COPY, ms0, multAndoutZP1, 16);\n\
+        VXC_DP2x8(tmpDst, sum, ms0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1),\n\
+                    uniU8MulAndPostShift_1_Lo_2x8);\n\
+        _viv_asm(COPY, dst, tmpDst, 16);\n\
+        output_ptr[loc] = dst.x;\n\
+    }\n\
+}"; /* end of scatter_nd_update_big_vx*/
+
 static const char select_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 _viv_uniform VXC_512Bits uniConvConditiontoDst_2x8;\n\
@@ -55221,6 +55645,53 @@ __kernel void scatter_nd_F32toF32_3D(\n\
     write_imagef(output, (int2)(gidx, gidy), sum);\n\
 }"; /* end of scatter_nd_cl*/
 
+static const char scatter_nd_update_cl[] = "\n\
+#define SCATTER_ND_UPDATE(src0_type, data_type, read_func, write_func) \\\n\
+__kernel void scatter_nd_update_##src0_type##src0_type##to##src0_type( \\\n\
+    __read_only image2d_t   input0, \\\n\
+    __read_only image2d_t   input1, \\\n\
+    __read_only image2d_t   input2, \\\n\
+    __write_only image2d_t  output, \\\n\
+    int offsetX, \\\n\
+    int offsetY, \\\n\
+    int offsetZ, \\\n\
+    int offsetW, \\\n\
+    int offset_idx, \\\n\
+    int coord_dim, \\\n\
+    int index_num \\\n\
+    ) \\\n\
+{ \\\n\
+    int gidx = get_global_id(0); \\\n\
+    int gidy = get_global_id(1); \\\n\
+    int cnt = 0; \\\n\
+ \\\n\
+    data_type sum = (data_type)(0, 0, 0, 0); \\\n\
+    Image img1 = create_image_from_image2d(input1, 4); \\\n\
+    __global int* index_ptr = (__global int*)img1.ptr; \\\n\
+    for(int i = 0; i < index_num; i++) \\\n\
+    { \\\n\
+        int4 indice = vload4(0, index_ptr + offset_idx); \\\n\
+        index_ptr += coord_dim; \\\n\
+        int idx = indice.x * offsetX + indice.y * offsetY + indice.z * offsetZ + indice.w * offsetW; \\\n\
+        if(gidy == idx) \\\n\
+        { \\\n\
+            data_type data = read_func(input2, (int2)(gidx, i)); \\\n\
+            cnt++; \\\n\
+            sum += data; \\\n\
+        } \\\n\
+    } \\\n\
+    int2 coord = (int2)(gidx, gidy); \\\n\
+    if(cnt == 0) \\\n\
+    { \\\n\
+        sum = read_func(input0, coord); \\\n\
+    } \\\n\
+    write_func(output, coord, sum); \\\n\
+}\n\
+SCATTER_ND_UPDATE(U32,  uint4,  read_imageui, write_imageui)\n\
+SCATTER_ND_UPDATE(I32,  int4,   read_imagei,  write_imagei)\n\
+SCATTER_ND_UPDATE(F32,  float4, read_imagef,  write_imagef)\n\
+"; /* end of scatter_nd_update_cl*/
+
 static const char select_cl[] = "__kernel void select_I8_U8_U8toU8(\n\
     __read_only  image2d_array_t  condition,\n\
     __read_only  image2d_array_t  input0,\n\
@@ -56270,6 +56741,8 @@ static const source_map_t evis_resource[] =
     {"resize_nearest_vx", resize_nearest_vx},
     {"scatter_nd_vx", scatter_nd_vx},
     {"scatter_nd_big_vx", scatter_nd_big_vx},
+    {"scatter_nd_update_vx", scatter_nd_update_vx},
+    {"scatter_nd_update_big_vx", scatter_nd_update_big_vx},
     {"select_vx", select_vx},
     {"sequence_mask_vx", sequence_mask_vx},
     {"slice_vx", slice_vx},
@@ -56400,6 +56873,7 @@ static const source_map_t cl_resource[] =
     {"resize_nearest_cl", resize_nearest_cl},
     {"roi_align_cl", roi_align_cl},
     {"scatter_nd_cl", scatter_nd_cl},
+    {"scatter_nd_update_cl", scatter_nd_update_cl},
     {"select_cl", select_cl},
     {"sequence_mask_cl", sequence_mask_cl},
     {"slice_cl", slice_cl},
