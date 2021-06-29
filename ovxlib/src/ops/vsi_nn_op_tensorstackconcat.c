@@ -97,7 +97,7 @@ static vsi_status op_compute
 {
     vsi_status status = VSI_FAILURE;
     vsi_nn_tensor_t* reshape_tensors[3] = { NULL };
-    int32_t shape[3][VSI_NN_MAX_DIM_NUM] = { 0 };
+    int32_t shape[3][VSI_NN_MAX_DIM_NUM] = { { 0 } };
     uint32_t rank[3] = {0};
 
     _get_stackconcat_shape(
