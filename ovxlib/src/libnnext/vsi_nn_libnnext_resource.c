@@ -4545,8 +4545,9 @@ ELTSISE_UNARY_BF16(round)"; /* end of eltwise_unary_3d_vx*/
 static const char erf_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 #define MUL2_RSQRTPI    (1.1283791670955126f)\n\
-float eltwise_unary_erf(float x)\n\
+float eltwise_unary_erf(float _x)\n\
 {\n\
+    float x = clamp(_x, -2, 2);\n\
     float res = 0;\n\
     float tmp = x;\n\
     float factorial = 1;\n\
@@ -44029,8 +44030,9 @@ __kernel void neg_I32toI32_2D\n\
 "; /* end of eltwise_unary_cl*/
 
 static const char erf_cl[] = "#define MUL2_RSQRTPI    (1.1283791670955126f)\n\
-float eltwise_unary_erf(float x)\n\
+float eltwise_unary_erf(float _x)\n\
 {\n\
+    float x = clamp(_x, -2, 2);\n\
     float res = 0;\n\
     float tmp = x;\n\
     float factorial = 1;\n\
