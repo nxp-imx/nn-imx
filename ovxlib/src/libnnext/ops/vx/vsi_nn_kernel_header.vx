@@ -44,7 +44,7 @@ typedef struct Tensor
     int             stride_z;
 } Tensor;
 
-inline uchar* create_tensor_ptr_from_coord(Tensor t, int4 coord)
+inline uchar* get_tensor_ptr_from_coord(Tensor t, int4 coord)
 {
     return t.ptr + coord.x * t.stride_x + coord.y * t.stride_y + coord.z * t.stride_z;
 }
