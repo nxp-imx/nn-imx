@@ -2803,14 +2803,6 @@ __kernel void conv1d_U8U8I32toU8_K1024_SMALL(\n\
     VXC_WriteImage(output, coord.wy, result, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
 }\n\
 \n\
-inline uchar* get_image2D_array_ptr(image2d_array_t  input)\n\
-{\n\
-    int8 desc;\n\
-    _viv_asm(COPY, desc, input, sizeof(desc));\n\
-    uchar *src_ptr = (uchar*)desc.s0;\n\
-    return src_ptr;\n\
-}\n\
-\n\
 __kernel void conv1d_U8U8I32toU8_K1024_LARGE(\n\
      __read_only image2d_array_t   input,\n\
      __read_only image2d_array_t   weight,\n\
@@ -2832,9 +2824,11 @@ __kernel void conv1d_U8U8I32toU8_K1024_LARGE(\n\
     vxc_short8 w_zp = (short)weight_ZP;\n\
     vxc_uchar16 input_val = 0, weight_val = 0;\n\
     int temp = 0, i, j;\n\
-    uchar *src_ptr_base = (uchar *)get_image2D_array_ptr(input);\n\
+    Tensor src_tensor = create_image_from_image2d(input, 1);\n\
+    uchar *src_ptr_base = (uchar *)src_image.ptr;\n\
     uchar *src_ptr;\n\
-    uchar *dst_ptr = (uchar *)get_image2D_array_ptr(output);\n\
+    Tensor dst_tensor = create_image_from_image2d(output, 1);\n\
+    uchar *dst_ptr = (uchar *)dst_tensor.ptr;\n\
 \n\
     temp = read_imagei(bias, coord.yz).x;\n\
     sum0 = convert_float(temp);\n\
@@ -2842,7 +2836,7 @@ __kernel void conv1d_U8U8I32toU8_K1024_LARGE(\n\
 \n\
     for (i = 0; i < input_height; i++)\n\
     {\n\
-        src_ptr = src_ptr_base + (coord.x + coord.z * input_width);\n\
+        src_ptr = src_ptr_base + (coord.x + coord.z * src_image.stride_x);\n\
         for (j = 0; j < kernel_cnt_x16; j++)\n\
         {\n\
             VXC_ReadImage2DArray(weight_val, weight, coord_w, VXC_5BITOFFSET_XY(0, 0), \\\n\
@@ -2881,7 +2875,7 @@ __kernel void conv1d_U8U8I32toU8_K1024_LARGE(\n\
     _viv_asm(CONV_SAT_RTE, result1, sum1);\n\
     vxc_uchar8 result;\n\
     VXC_DP2x8(result, result0, result1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniSumOrderUchar_2x8);\n\
-    dst_ptr = dst_ptr + (coord.w + coord.y * output_width);\n\
+    dst_ptr = dst_ptr + (coord.w + coord.y * dst_tensor.stride_x);\n\
     VXC_Vstore8(dst_ptr, 0, result);\n\
 }\n\
 \n\
@@ -10626,14 +10620,6 @@ do \\\n\
 VXC_OP3_NoDest(vstore3, Pointer, byteOffset, Data); } \\\n\
 while(0)\n\
 \n\
-inline uchar* get_image2D_array_ptr(image2d_array_t  input)\n\
-{\n\
-    int8 desc;\n\
-    _viv_asm(COPY, desc, input, sizeof(desc));\n\
-    uchar *src_ptr = (uchar*)desc.s0;\n\
-    return src_ptr;\n\
-}\n\
-\n\
 #define L2NORMSCALE_SWITCH_PROCESS(case_value, vec_val, ZpValue) \\\n\
                 switch (case_value) \\\n\
                 { \\\n\
@@ -10724,8 +10710,10 @@ _viv_uniform int inputZP;\n\
 \n\
 #define L2NORMSCALE_MUL_AXIS0_PROCESS(dst_type, convert_type, output_type, copy_type) \\\n\
     vxc_float4 rsqrt0;\\\n\
-    dst_type  *dst_ptr = (dst_type *)get_image2D_array_ptr(output); \\\n\
-    short *scale_ptr = (short *)get_image2D_array_ptr(scale); \\\n\
+    Image dst_img = create_image_from_image2d(output, 1); \\\n\
+    dst_type  *dst_ptr = (dst_type *)dst_img.ptr; \\\n\
+    Image s_img = create_image_from_image2d(scale, 2); \\\n\
+    short *scale_ptr = (short *)s_img.ptr; \\\n\
     vxc_float4 vec0, vec1;\\\n\
     convert_type dst0, dst1;\\\n\
     vxc_short8 scale_s16;\\\n\
@@ -10808,15 +10796,16 @@ _viv_uniform int inputZP;\n\
 __kernel __attribute__((reqd_work_group_size(16, 1, 1))) \\\n\
      void l2normalizescale_axis0_##in0_name##_##in1_name##to##out_name##_2D \\\n\
     (\\\n\
-    __read_only  image2d_array_t input,\\\n\
-    __read_only  image2d_array_t scale,\\\n\
-    __write_only image2d_array_t output,\\\n\
+    __read_only  image2d_t input,\\\n\
+    __read_only  image2d_t scale,\\\n\
+    __write_only image2d_t output,\\\n\
     int axis\\\n\
     )\\\n\
 { \\\n\
     int lidx = get_local_id(0); \\\n\
     int offset  = get_global_id(0); \\\n\
-    read_type *src_ptr_base = (read_type *)get_image2D_array_ptr(input); \\\n\
+    Image src_img = create_image_from_image2d(input, 1); \\\n\
+    read_type *src_ptr_base = (read_type *)src_img.ptr; \\\n\
     read_type *src_ptr; \\\n\
     read_type2 src0, src1; \\\n\
     src_type   val0, val1; \\\n\
@@ -10887,7 +10876,8 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) \\\n\
 { \\\n\
     int lidx = get_local_id(0); \\\n\
     int offset  = get_global_id(0); \\\n\
-    uchar *src_ptr_base = (uchar *)get_image2D_array_ptr(input); \\\n\
+    Image src_img = create_image_from_image2d(input, 1);\n\
+    uchar *src_ptr_base = (uchar *)src_img.ptr; \\\n\
     uchar *src_ptr; \\\n\
     vxc_uchar8 src0, src1; \\\n\
     vxc_uchar8   val0, val1; \\\n\
@@ -31054,15 +31044,6 @@ _viv_uniform int iter;\n\
 _viv_uniform int stride;\n\
 _viv_uniform float re_rand_max;\n\
 \n\
-inline uchar* get_image2D_array_ptr(image2d_array_t  input)\n\
-{\n\
-    int8 desc;\n\
-    _viv_asm(COPY, desc, input, sizeof(desc));\n\
-    uchar *src_ptr = (uchar*)desc.s0;\n\
-\n\
-    return src_ptr;\n\
-}\n\
-\n\
 uint4 _philox4x32bumpkey(uint4 key)\n\
 {\n\
     uint4 mask = (uint4)((uint)0x9E3779B9, (uint)0xBB67AE85, 0, 0);\n\
@@ -31118,15 +31099,16 @@ uint4 philox4x32_R_10(uint4 ctr, uint4 key)\n\
 }\n\
 \n\
 __kernel void random_seed(\n\
-    __read_only  image2d_array_t  seeds,\n\
-    __write_only image2d_array_t  output)\n\
+    __read_only  image2d_t  seeds,\n\
+    __write_only image2d_t  output)\n\
 {\n\
     int gidx = get_global_id(0);\n\
     int gidy = get_global_id(1);\n\
     int4 coord = (int4)(gidx << 1, gidy, 0, 0);\n\
 \n\
     int width = get_image_width(seeds);\n\
-    __global uint* seeds_ptr = (__global uint*)get_image2D_array_ptr(seeds);\n\
+    Image s_img = create_image_from_image2d(seeds, 4);\n\
+    __global uint* seeds_ptr = (__global uint*)s_img.ptr;\n\
     seeds_ptr = seeds_ptr + coord.x + coord.y * width;\n\
     uint4 key = vload4(0, seeds_ptr);\n\
 \n\
@@ -31134,8 +31116,9 @@ __kernel void random_seed(\n\
     float4 result = 0;\n\
 \n\
     width = get_image_width(output);\n\
+    Image o_img = create_image_from_image2d(output, 4);\n\
     coord.x = gidx * stride + width * coord.y;\n\
-    __global float* output_ptr = (__global float*)get_image2D_array_ptr(output);\n\
+    __global float* output_ptr = (__global float*)o_img.ptr;\n\
     output_ptr += coord.x;\n\
 \n\
     for(int i = 0; i < iter; i++)\n\
@@ -31157,8 +31140,8 @@ float4 eltwise_unary_exp(float4 x)\n\
 // x dim = 1\n\
 __kernel void random_multinomial_cdf_F16\n\
     (\n\
-    __read_only  image2d_array_t   input,\n\
-    __write_only image2d_array_t  output\n\
+    __read_only  image2d_t  input,\n\
+    __write_only image2d_t  output\n\
     )\n\
 {\n\
     int gidx = get_global_id(0);\n\
@@ -31173,7 +31156,8 @@ __kernel void random_multinomial_cdf_F16\n\
 \n\
     int class_max_stride = get_image_width(input);\n\
     int offset = gidy * class_max_stride;\n\
-    __global float* output_ptr = (__global float*)get_image2D_array_ptr(output);\n\
+    Image o_img = create_image_from_image2d(output, 4);\n\
+    __global float* output_ptr = (__global float*)o_img.ptr;\n\
     __global float* cdfPtr = output_ptr + offset;\n\
 \n\
     VXC_ReadImage(maxData, input, coord, VXC_5BITOFFSET_XY(0, 0),\\\n\
@@ -31216,8 +31200,8 @@ __kernel void random_multinomial_cdf_F16\n\
 \n\
 __kernel void random_multinomial_cdf_F32\n\
     (\n\
-    __read_only  image2d_array_t input,\n\
-    __write_only image2d_array_t output\n\
+    __read_only  image2d_t input,\n\
+    __write_only image2d_t output\n\
     )\n\
 {\n\
     int gidx = get_global_id(0);\n\
@@ -31233,11 +31217,13 @@ __kernel void random_multinomial_cdf_F32\n\
     int class_max_stride = get_image_width(input);\n\
     float tmp = 0;\n\
     int offset = gidy * class_max_stride;\n\
-    __global float* output_ptr = (__global float*)get_image2D_array_ptr(output);\n\
+    Image o_img = create_image_from_image2d(output, 4);\n\
+    __global float* output_ptr = (__global float*)o_img.ptr;\n\
     __global float* cdfPtr = output_ptr + offset;\n\
 \n\
     int width = get_image_width(input);\n\
-    __global float* input_ptr = (__global float*)get_image2D_array_ptr(input);\n\
+    Image i_img = create_image_from_image2d(input, 4);\n\
+    __global float* input_ptr = (__global float*)i_img.ptr;\n\
     input_ptr = input_ptr + coord.x + coord.y * width;\n\
 \n\
     float4 maxVal = vload4(0, input_ptr);\n\
@@ -31281,10 +31267,10 @@ uint upper_bound(float* a, int n, float x)\n\
 // one thread calculate 4\n\
 __kernel void random_multinomial\n\
     (\n\
-    __read_only image2d_array_t   randoms,\n\
-    __read_only image2d_array_t   cdfs,\n\
-   __write_only image2d_array_t   output,\n\
-                int               class_size\n\
+    __read_only image2d_t   randoms,\n\
+    __read_only image2d_t   cdfs,\n\
+   __write_only image2d_t   output,\n\
+                int         class_size\n\
     )\n\
 {\n\
     int gidx = get_global_id(0);\n\
@@ -31293,17 +31279,20 @@ __kernel void random_multinomial\n\
 \n\
     int class_max_stride = get_image_width(cdfs);\n\
     int offset = gidy * class_max_stride;\n\
-    __global float* cdf_ptr = (__global float*)get_image2D_array_ptr(cdfs);\n\
+    Image cdf_img = create_image_from_image2d(cdfs, 4);\n\
+    __global float* cdf_ptr = (__global float*)cdf_img.ptr;\n\
     __global float* cdfPtr = cdf_ptr + offset;\n\
 \n\
     int width = get_image_width(randoms);\n\
     offset = coord.x + coord.y * width;\n\
-    __global float* randoms_ptr = (__global float*)get_image2D_array_ptr(randoms);\n\
+    Image r_img = create_image_from_image2d(randoms, 4);\n\
+    __global float* randoms_ptr = (__global float*)r_img.ptr;\n\
     randoms_ptr = randoms_ptr + offset;\n\
 \n\
     width = get_image_width(output);\n\
     offset = coord.x + coord.y * width;\n\
-    __global uint* output_ptr = (__global uint*)get_image2D_array_ptr(output);\n\
+    Image o_img = create_image_from_image2d(output, 4);\n\
+    __global uint* output_ptr = (__global uint*)o_img.ptr;\n\
     output_ptr = output_ptr + offset;\n\
 \n\
     float4 ran = vload4(0, randoms_ptr);\n\
@@ -37504,15 +37493,6 @@ _viv_uniform int offsetX;\n\
 _viv_uniform int offsetY;\n\
 _viv_uniform int offsetZ;\n\
 \n\
-inline uchar* get_image2D_array_ptr(image2d_t  input)\n\
-{\n\
-    int8 desc;\n\
-    _viv_asm(COPY, desc, input, sizeof(desc));\n\
-    uchar *src_ptr = (uchar*)desc.s0;\n\
-\n\
-    return src_ptr;\n\
-}\n\
-\n\
 __kernel void scatter_nd_F16toF16_big(\n\
     __read_only image2d_t   input0,\n\
     __read_only image2d_t   input1,\n\
@@ -37528,9 +37508,12 @@ __kernel void scatter_nd_F16toF16_big(\n\
     vxc_short8 tmpVal = (vxc_short8)(0, 0, 0, 0, 0, 0, 0, 0);\n\
     vxc_half8 sum;\n\
     _viv_asm(COPY, sum, tmpVal, 16);\n\
-    __global int* index_ptr = (__global int*)get_image2D_array_ptr(input0);\n\
-    __global short* update_ptr = (__global short*)get_image2D_array_ptr(input1);\n\
-    __global short* output_ptr = (__global short*)get_image2D_array_ptr(output);\n\
+    Image i0_img = create_image_from_image2d(input0, 4);\n\
+    __global int* index_ptr = (__global int*)i0_img.ptr;\n\
+    Image i1_img = create_image_from_image2d(input1, 2);\n\
+    __global short* update_ptr = (__global short*)i1_img.ptr;\n\
+    Image o_img = create_image_from_image2d(output, 2);\n\
+    __global short* output_ptr = (__global short*)o_img.ptr;\n\
     for(int i = 0; i < index_num; i++)\n\
     {\n\
         int4 indice = vload4(0, index_ptr + i * coord_dim);\n\
@@ -37564,9 +37547,12 @@ __kernel void scatter_nd_##src0_type_name##to##src0_type_name##_big( \\\n\
     int firstFlg = 1; \\\n\
  \\\n\
     data_type sum = (data_type)(0, 0, 0, 0, 0, 0, 0, 0); \\\n\
-    __global int* index_ptr = (__global int*)get_image2D_array_ptr(input0); \\\n\
-    __global ptr_type* update_ptr = (__global ptr_type*)get_image2D_array_ptr(input1); \\\n\
-    __global ptr_type* output_ptr = (__global ptr_type*)get_image2D_array_ptr(output); \\\n\
+    Image i0_img = create_image_from_image2d(input0, 2); \\\n\
+    __global int* index_ptr = (__global int*)i0_img.ptr; \\\n\
+    Image i1_img = create_image_from_image2d(input1, 2); \\\n\
+    __global ptr_type* update_ptr = (__global ptr_type*)i1_img.ptr; \\\n\
+    Image o_img = create_image_from_image2d(output, 2); \\\n\
+    __global ptr_type* output_ptr = (__global ptr_type*)o_img.ptr; \\\n\
     for(int i = 0; i < index_num; i++) \\\n\
     { \\\n\
         int4 indice = vload4(0, index_ptr + i * coord_dim); \\\n\
@@ -40534,7 +40520,7 @@ typedef struct Tensor\n\
     int             stride_z;\n\
 } Tensor;\n\
 \n\
-inline uchar* create_tensor_ptr_from_coord(Tensor t, int4 coord)\n\
+inline uchar* get_tensor_ptr_from_coord(Tensor t, int4 coord)\n\
 {\n\
     return t.ptr + coord.x * t.stride_x + coord.y * t.stride_y + coord.z * t.stride_z;\n\
 }\n\
@@ -43677,6 +43663,12 @@ __kernel void argmin_axis2_I32toI32_2D\n\
 "; /* end of argmin_axis2_cl*/
 
 static const char batchnorm_single_cl[] = "\n\
+#define READ_IMAGEF_ARRAY2D(dest, tensor, coord) \\\n\
+    do { \\\n\
+        int depth = get_image_array_size(tensor); \\\n\
+        _viv_asm(CLAMP0MAX, coord_in0.z, coord_in0.z, in0_depth - 1); \\\n\
+        dest = read_imagef(tensor, coord); \\\n\
+       } while(0)\n\
 __kernel void batch_norm_F32toF32\n\
     (\n\
     __read_only  image2d_array_t input,\n\
@@ -43695,11 +43687,11 @@ __kernel void batch_norm_F32toF32\n\
     int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
 \n\
     float4 src, mean, var, gamma, beta;\n\
-    readImage2DArray(src, input, coord);\n\
-    readImage2DArray(mean, Mean, coord);\n\
-    readImage2DArray(var, Variance, coord);\n\
-    readImage2DArray(gamma, Gamma, coord);\n\
-    readImage2DArray(beta, Beta, coord);\n\
+    READ_IMAGEF_2DARRAY(src, input, coord);\n\
+    READ_IMAGEF_2DARRAY(mean, Mean, coord);\n\
+    READ_IMAGEF_2DARRAY(var, Variance, coord);\n\
+    READ_IMAGEF_2DARRAY(gamma, Gamma, coord);\n\
+    READ_IMAGEF_2DARRAY(beta, Beta, coord);\n\
 \n\
     float4 dst;\n\
     src.x = src.x - mean.x;\n\
@@ -43759,11 +43751,11 @@ __kernel void batch_norm_U8toU8\n\
 \n\
     uint4 data;\n\
     float4 src, mean, var, gamma, beta;\n\
-    readImage2DArray(data, input, coord);\n\
-    readImage2DArray(mean, Mean, coord);\n\
-    readImage2DArray(var, Variance, coord);\n\
-    readImage2DArray(gamma, Gamma, coord);\n\
-    readImage2DArray(beta, Beta, coord);\n\
+    READ_IMAGEF_2DARRAY(data, input, coord);\n\
+    READ_IMAGEF_2DARRAY(mean, Mean, coord);\n\
+    READ_IMAGEF_2DARRAY(var, Variance, coord);\n\
+    READ_IMAGEF_2DARRAY(gamma, Gamma, coord);\n\
+    READ_IMAGEF_2DARRAY(beta, Beta, coord);\n\
 \n\
     src = convert_float4(data) * input_scale - input_tail;\n\
     src.x = src.x - mean.x;\n\
@@ -44171,7 +44163,7 @@ typedef struct Tensor\n\
     int             stride_z;\n\
 } Tensor;\n\
 \n\
-inline uchar* create_tensor_ptr_from_coord(Tensor t, int4 coord)\n\
+inline uchar* get_tensor_ptr_from_coord(Tensor t, int4 coord)\n\
 {\n\
     return t.ptr + coord.x * t.stride_x + coord.y * t.stride_y + coord.z * t.stride_z;\n\
 }\n\
@@ -44192,35 +44184,29 @@ inline Tensor create_tensor_from_image2d_array(image2d_array_t input, int stride
     return t;\n\
 }\n\
 \n\
-#define readImage2DArray(Dest, Image, Coord)         \\\n\
-    do {                                                       \\\n\
-       int8 desc;                                              \\\n\
-       _viv_asm(COPY, desc, Image, sizeof(desc));              \\\n\
-       _viv_asm(CLAMP0MAX, (Coord).w, (Coord).z, desc.s5 - 1); \\\n\
-       int baseAddr =  (int)(Coord).w * desc.s4 + desc.s0;     \\\n\
-       _viv_asm(MOV, (Coord).w, baseAddr);                     \\\n\
-       _viv_asm(IMAGE_READ_3D, Dest, Image, (Coord).xyww);     \\\n\
-    } while (0)\n\
+#define READ_IMAGEF_2DARRAY(dest, tensor, coord) \\\n\
+    do { \\\n\
+        int depth = get_image_array_size(tensor); \\\n\
+        int4 coord_in = coord; \\\n\
+        _viv_asm(CLAMP0MAX, coord_in.z, coord_in.z, depth - 1); \\\n\
+        dest = read_imagef(tensor, coord_in); \\\n\
+       } while(0)\n\
 \n\
-#define writeImage2DArray(Image, Coord, Color)                 \\\n\
-    do {                                                       \\\n\
-       int8 desc;                                              \\\n\
-       _viv_asm(COPY, desc, Image, sizeof(desc));              \\\n\
-       _viv_asm(CLAMP0MAX, (Coord).w, (Coord).z, desc.s5 - 1); \\\n\
-       int baseAddr =  (int)(Coord).w * desc.s4 + desc.s0;     \\\n\
-       _viv_asm(MOV, (Coord).w, baseAddr);                     \\\n\
-       _viv_asm(IMAGE_WRITE_3D, Color, Image, (Coord).xyww);   \\\n\
-    } while (0)\n\
+#define READ_IMAGEI_2DARRAY(dest, tensor, coord) \\\n\
+    do { \\\n\
+        int depth = get_image_array_size(tensor); \\\n\
+        int4 coord_in = coord; \\\n\
+        _viv_asm(CLAMP0MAX, coord_in.z, coord_in.z, depth - 1); \\\n\
+        dest = read_imagei(tensor, coord_in); \\\n\
+       } while(0)\n\
 \n\
-#define readImage(Dest, Image, Coord)               \\\n\
-    do {                                            \\\n\
-       _viv_asm(IMAGE_READ, Dest, Image, Coord);    \\\n\
-    } while (0)\n\
-\n\
-#define writeImage(Image, Coord, Color)             \\\n\
-    do {                                            \\\n\
-       _viv_asm(IMAGE_WRITE, Color, Image, Coord);   \\\n\
-    } while (0)\n\
+#define READ_IMAGEUI_2DARRAY(dest, tensor, coord) \\\n\
+    do { \\\n\
+        int depth = get_image_array_size(tensor); \\\n\
+        int4 coord_in = coord; \\\n\
+        _viv_asm(CLAMP0MAX, coord_in.z, coord_in.z, depth - 1); \\\n\
+        dest = read_imageui(tensor, coord_in); \\\n\
+       } while(0)\n\
 "; /* end of eltwise_ops_helper_cl*/
 
 static const char eltwise_unary_cl[] = "\n\
@@ -44577,8 +44563,8 @@ static const char floordiv_cl[] = "__kernel void floordiv_F32F32toF32(\n\
     int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
     float4 src0;\n\
     float4 src1;\n\
-    readImage2DArray(src0, input, coord);\n\
-    readImage2DArray(src1, input1, coord);\n\
+    READ_IMAGEF_2DARRAY(src0, input, coord);\n\
+    READ_IMAGEF_2DARRAY(src1, input1, coord);\n\
     float4 dst  = floor(src0 / src1);\n\
     write_imagef(output, coord, dst);\n\
 }\n\
@@ -44603,8 +44589,8 @@ __kernel void floordiv_I32I32toI32(\n\
     int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
     int4 src0;\n\
     int4 src1;\n\
-    readImage2DArray(src0, input, coord);\n\
-    readImage2DArray(src1, input1, coord);\n\
+    READ_IMAGEI_2DARRAY(src0, input, coord);\n\
+    READ_IMAGEI_2DARRAY(src1, input1, coord);\n\
     int4 dst  = convert_int4(floor(convert_float4(src0) / convert_float4(src1)));\n\
     write_imagei(output, coord, dst);\n\
 }\n\
@@ -44635,8 +44621,8 @@ __kernel void floordiv_I32I32toU8(\n\
     int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
     int4 src0;\n\
     int4 src1;\n\
-    readImage2DArray(src0, input, coord);\n\
-    readImage2DArray(src1, input1, coord);\n\
+    READ_IMAGEI_2DARRAY(src0, input, coord);\n\
+    READ_IMAGEI_2DARRAY(src1, input1, coord);\n\
     uint4 dst  = convert_uint4(floor(convert_float4(src0) / convert_float4(src1)) * outputScale + outputTail);\n\
     write_imageui(output, coord, dst);\n\
 }\n\
@@ -44673,8 +44659,8 @@ __kernel void floordiv_U8U8toU8(\n\
     int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
     uint4 src0, src1;\n\
     float4 in0, in1, out;\n\
-    readImage2DArray(src0, input, coord);\n\
-    readImage2DArray(src1, input1, coord);\n\
+    READ_IMAGEUI_2DARRAY(src0, input, coord);\n\
+    READ_IMAGEUI_2DARRAY(src1, input1, coord);\n\
     in0 = convert_float4(src0) * input0Scale + input0Tail;\n\
     in1 = convert_float4(src1) * input1Scale + input1Tail;\n\
     out = floor(in0 / in1) * outputScale + outputTail;\n\
@@ -44719,8 +44705,8 @@ __kernel void floordiv_U8I32toU8(\n\
     uint4 src0;\n\
     int4 src1;\n\
     float4 in0, in1, out;\n\
-    readImage2DArray(src0, input, coord);\n\
-    readImage2DArray(src1, input1, coord);\n\
+    READ_IMAGEUI_2DARRAY(src0, input, coord);\n\
+    READ_IMAGEI_2DARRAY(src1, input1, coord);\n\
     in0 = convert_float4(src0) * input0Scale + input0Tail;\n\
     in1 = convert_float4(src1);\n\
     out = floor(in0 / in1) * outputScale + outputTail;\n\
@@ -48130,8 +48116,8 @@ __kernel void logical_##name##_I8toI8( \\\n\
     int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
     int4 src0; \\\n\
     int4 src1; \\\n\
-    readImage2DArray(src0, input, coord); \\\n\
-    readImage2DArray(src1, input1, coord); \\\n\
+    READ_IMAGEI_2DARRAY(src0, input, coord); \\\n\
+    READ_IMAGEI_2DARRAY(src1, input1, coord); \\\n\
     int4 dst  = (lgc_op2(src0))lgc_op(lgc_op2(src1)); \\\n\
     dst.x = dst.x & 1; \\\n\
     write_imagei(output, coord, dst); \\\n\
@@ -51389,8 +51375,8 @@ static const char maximum_cl[] = "__kernel void maximum_FP32FP32toFP32\n\
 \n\
     float4 src0;\n\
     float4 src1;\n\
-    readImage2DArray(src0, input0, coord);\n\
-    readImage2DArray(src1, input1, coord);\n\
+    READ_IMAGEF_2DARRAY(src0, input0, coord);\n\
+    READ_IMAGEF_2DARRAY(src1, input1, coord);\n\
 \n\
     float4 dst = src0 > src1 ? src0 : src1;\n\
 \n\
@@ -51437,8 +51423,8 @@ __kernel void maximum_U8U8toU8\n\
 \n\
     uint4 src0;\n\
     uint4 src1;\n\
-    readImage2DArray(src0, input0, coord);\n\
-    readImage2DArray(src1, input1, coord);\n\
+    READ_IMAGEUI_2DARRAY(src0, input0, coord);\n\
+    READ_IMAGEUI_2DARRAY(src1, input1, coord);\n\
 \n\
     float4 data0 = convert_float4(src0) * input0Scale - input0Tail;\n\
     float4 data1 = convert_float4(src1) * input1Scale - input1Tail;\n\
@@ -51492,8 +51478,8 @@ __kernel void maximum_I32I32toI32\n\
 \n\
     int4 src0;\n\
     int4 src1;\n\
-    readImage2DArray(src0, input0, coord);\n\
-    readImage2DArray(src1, input1, coord);\n\
+    READ_IMAGEI_2DARRAY(src0, input0, coord);\n\
+    READ_IMAGEI_2DARRAY(src1, input1, coord);\n\
 \n\
     int4 dst = src0 > src1 ? src0 : src1;\n\
 \n\
@@ -51542,8 +51528,8 @@ static const char minimum_cl[] = "__kernel void minimum_FP32FP32toFP32\n\
 \n\
     float4 src0;\n\
     float4 src1;\n\
-    readImage2DArray(src0, input0, coord);\n\
-    readImage2DArray(src1, input1, coord);\n\
+    READ_IMAGEF_2DARRAY(src0, input0, coord);\n\
+    READ_IMAGEF_2DARRAY(src1, input1, coord);\n\
 \n\
     float4 dst = src0 < src1 ? src0 : src1;\n\
 \n\
@@ -51590,8 +51576,8 @@ __kernel void minimum_U8U8toU8\n\
 \n\
     uint4 src0;\n\
     uint4 src1;\n\
-    readImage2DArray(src0, input0, coord);\n\
-    readImage2DArray(src1, input1, coord);\n\
+    READ_IMAGEUI_2DARRAY(src0, input0, coord);\n\
+    READ_IMAGEUI_2DARRAY(src1, input1, coord);\n\
 \n\
     float4 data0 = convert_float4(src0) * input0Scale - input0Tail;\n\
     float4 data1 = convert_float4(src1) * input1Scale - input1Tail;\n\
@@ -51645,8 +51631,8 @@ __kernel void minimum_I32I32toI32\n\
 \n\
     int4 src0;\n\
     int4 src1;\n\
-    readImage2DArray(src0, input0, coord);\n\
-    readImage2DArray(src1, input1, coord);\n\
+    READ_IMAGEI_2DARRAY(src0, input0, coord);\n\
+    READ_IMAGEI_2DARRAY(src1, input1, coord);\n\
 \n\
     int4 dst = src0 < src1 ? src0 : src1;\n\
 \n\
@@ -52791,8 +52777,8 @@ static const char pow_cl[] = "__kernel void pow_FP32FP32toFP32\n\
 \n\
     float4 src0, src1;\n\
     float4 dst;\n\
-    readImage2DArray(src0, input0, coord);\n\
-    readImage2DArray(src1, input1, coord);\n\
+    READ_IMAGEF_2DARRAY(src0, input0, coord);\n\
+    READ_IMAGEF_2DARRAY(src1, input1, coord);\n\
 \n\
     float4  s0 = sign(src0);\n\
     int4 t0 = convert_int4(src1) & 1;\n\
@@ -52843,8 +52829,8 @@ static const char prelu_cl[] = "__kernel void prelu_FP32FP32toFP32\n\
 \n\
     float4 src0;\n\
     float4 src1;\n\
-    readImage2DArray(src0, input0, coord);\n\
-    readImage2DArray(src1, input1, coord);\n\
+    READ_IMAGEF_2DARRAY(src0, input0, coord);\n\
+    READ_IMAGEF_2DARRAY(src1, input1, coord);\n\
 \n\
     float4 maxData = src0 >= 0 ? src0 : 0;\n\
     float4 minData = src0 < 0 ? src0 : 0;\n\
@@ -52895,8 +52881,8 @@ __kernel void prelu_U8U8toU8\n\
 \n\
     uint4 src0;\n\
     uint4 src1;\n\
-    readImage2DArray(src0, input0, coord);\n\
-    readImage2DArray(src1, input1, coord);\n\
+    READ_IMAGEUI_2DARRAY(src0, input0, coord);\n\
+    READ_IMAGEUI_2DARRAY(src1, input1, coord);\n\
 \n\
     float4 data0 = convert_float4(src0) * input0Scale - input0Tail;\n\
     float4 data1 = convert_float4(src1) * input1Scale - input1Tail;\n\
@@ -52958,8 +52944,8 @@ __kernel void prelu_I32I32toI32\n\
 \n\
     int4 src0;\n\
     int4 src1;\n\
-    readImage2DArray(src0, input0, coord);\n\
-    readImage2DArray(src1, input1, coord);\n\
+    READ_IMAGEI_2DARRAY(src0, input0, coord);\n\
+    READ_IMAGEI_2DARRAY(src1, input1, coord);\n\
 \n\
     float4 data0 = convert_float4(src0) * input0Scale - input0Tail;\n\
     float4 data1 = convert_float4(src1) * input1Scale - input1Tail;\n\
@@ -53006,15 +52992,6 @@ __kernel void prelu_I32I32toI32_2D\n\
 "; /* end of prelu_cl*/
 
 static const char random_multinomial_cl[] = "#pragma OPENCL EXTENSION CL_VIV_asm : enable\n\
-\n\
-inline uchar* get_image2D_array_ptr(image2d_array_t  input)\n\
-{\n\
-    int8 desc;\n\
-    _viv_asm(COPY, desc, input, sizeof(desc));\n\
-    uchar *src_ptr = (uchar*)desc.s0;\n\
-\n\
-    return src_ptr;\n\
-}\n\
 \n\
 uint4 _philox4x32bumpkey(uint4 key)\n\
 {\n\
@@ -53068,14 +53045,16 @@ __kernel void random_seed(\n\
                  float            re_rand_max\n\
     )\n\
 {\n\
-    __global uint* seeds_ptr = (__global uint*)get_image2D_array_ptr(seeds);\n\
+    Tensor s_tensor = create_tensor_from_image2d_array(seeds, 4);\n\
+    __global uint* seeds_ptr = (__global uint*)s_tensor.ptr;\n\
     seeds_ptr = seeds_ptr;\n\
     uint4 key = vload4(0, seeds_ptr);\n\
 \n\
     uint4 ctr = (uint4)(0);\n\
     float4 result = 0;\n\
 \n\
-    __global float* output_ptr = (__global float*)get_image2D_array_ptr(output);\n\
+    Tensor o_tensor = create_tensor_from_image2d_array(output, 4);\n\
+    __global float* output_ptr = (__global float*)o_tensor.ptr;\n\
 \n\
     for(int i = 0; i < iter; i++)\n\
     {\n\
@@ -53159,17 +53138,20 @@ __kernel void random_multinomial\n\
     int class_size = get_image_width(cdfs);\n\
 \n\
     int offset = gidy * class_size;\n\
-    __global float* cdf_ptr = (__global float*)get_image2D_array_ptr(cdfs);\n\
+    Tensor cdf_tensor = create_tensor_from_image2d_array(cdfs, 4);\n\
+    __global float* cdf_ptr = (__global uint*)cdf_tensor.ptr;\n\
     __global float* cdfPtr = cdf_ptr + offset;\n\
 \n\
     int width = get_image_width(randoms);\n\
     offset = coord.x + coord.y * width;\n\
-    __global float* randoms_ptr = (__global float*)get_image2D_array_ptr(randoms);\n\
+    Tensor r_tensor = create_tensor_from_image2d_array(randoms, 4);\n\
+    __global float* randoms_ptr = (__global float*)r_tensor.ptr;\n\
     randoms_ptr = randoms_ptr + offset;\n\
 \n\
     width = get_image_width(output);\n\
     offset = coord.x + coord.y * width;\n\
-    __global uint* output_ptr = (__global uint*)get_image2D_array_ptr(output);\n\
+    Tensor o_tensor = create_tensor_from_image2d_array(output, 4);\n\
+    __global uint* output_ptr = (__global uint*)o_tensor.ptr;\n\
     output_ptr = output_ptr + offset;\n\
 \n\
     float4 ran = vload4(0, randoms_ptr);\n\
@@ -54566,8 +54548,8 @@ __kernel void func_name##_F32F32toBOOL8 \\\n\
  \\\n\
     float4 src0; \\\n\
     float4 src1; \\\n\
-    readImage2DArray(src0, input0, coord); \\\n\
-    readImage2DArray(src1, input1, coord); \\\n\
+    READ_IMAGEF_2DARRAY(src0, input0, coord); \\\n\
+    READ_IMAGEF_2DARRAY(src1, input1, coord); \\\n\
  \\\n\
     int4 dst = (src0)comp_op(src1); \\\n\
     dst &= 1; \\\n\
@@ -54626,8 +54608,8 @@ __kernel void func_name##_U32U32toBOOL8 \\\n\
  \\\n\
     uint4 data0; \\\n\
     uint4 data1; \\\n\
-    readImage2DArray(data0, input0, coord); \\\n\
-    readImage2DArray(data1, input1, coord); \\\n\
+    READ_IMAGEUI_2DARRAY(data0, input0, coord); \\\n\
+    READ_IMAGEUI_2DARRAY(data1, input1, coord); \\\n\
  \\\n\
     float4 src0 = convert_float4(data0) * input0Scale - input0Tail; \\\n\
     float4 src1 = convert_float4(data1) * input1Scale - input1Tail; \\\n\
@@ -54690,8 +54672,8 @@ __kernel void func_name##_I32I32toBOOL8 \\\n\
  \\\n\
     int4 src0; \\\n\
     int4 src1; \\\n\
-    readImage2DArray(src0, input0, coord); \\\n\
-    readImage2DArray(src1, input1, coord); \\\n\
+    READ_IMAGEI_2DARRAY(src0, input0, coord); \\\n\
+    READ_IMAGEI_2DARRAY(src1, input1, coord); \\\n\
  \\\n\
     int4 dst = (src0)comp_op(src1); \\\n\
     dst &= 1; \\\n\
@@ -55706,9 +55688,9 @@ static const char select_cl[] = "__kernel void select_I8_U8_U8toU8(\n\
     int4  value;\n\
     uint4 src0, src1, src, dst;\n\
     float inputScale, inputTail;\n\
-    readImage2DArray(value, condition, coord);\n\
-    readImage2DArray(src0, input0, coord);\n\
-    readImage2DArray(src1, input1, coord);\n\
+    READ_IMAGEI_2DARRAY(value, condition, coord);\n\
+    READ_IMAGEF_2DARRAY(src0, input0, coord);\n\
+    READ_IMAGEF_2DARRAY(src1, input1, coord);\n\
     src   = (value != 0 ? src0 : src1);\n\
     inputScale = (value.x != 0 ? input0Scale : input1Scale);\n\
     inputTail  = (value.x != 0 ? input0Tail  : input1Tail);\n\
@@ -55750,9 +55732,9 @@ __kernel void select_I8_I32_I32toI32(\n\
     int4 coord  = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
     int4  value;\n\
     int4 src0, src1, dst;\n\
-    readImage2DArray(value, condition, coord);\n\
-    readImage2DArray(src0, input0, coord);\n\
-    readImage2DArray(src1, input1, coord);\n\
+    READ_IMAGEI_2DARRAY(value, condition, coord);\n\
+    READ_IMAGEI_2DARRAY(src0, input0, coord);\n\
+    READ_IMAGEI_2DARRAY(src1, input1, coord);\n\
     dst   = (value != 0 ? src0 : src1);\n\
     write_imagei(output, coord, dst);\n\
 }\n\
@@ -55788,9 +55770,9 @@ __kernel void select_I8_F32_F32toF32(\n\
     int4 coord  = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
     int4  value;\n\
     float4 src0, src1, dst;\n\
-    readImage2DArray(value, condition, coord);\n\
-    readImage2DArray(src0, input0, coord);\n\
-    readImage2DArray(src1, input1, coord);\n\
+    READ_IMAGEI_2DARRAY(value, condition, coord);\n\
+    READ_IMAGEF_2DARRAY(src0, input0, coord);\n\
+    READ_IMAGEF_2DARRAY(src1, input1, coord);\n\
     dst   = (value != 0 ? src0 : src1);\n\
     write_imagef(output, coord, dst);\n\
 }\n\
@@ -56245,7 +56227,7 @@ __kernel void swish_I32toI32_2D(\n\
 "; /* end of swish_cl*/
 
 static const char tile_cl[] = "\n\
-#define TILE_3D(name0, name1, data_type, write_image_func) \\\n\
+#define TILE_3D(name0, name1, data_type, read_image_func, write_image_func) \\\n\
 __kernel void tile_##name0##to##name1 \\\n\
     ( \\\n\
     __read_only  image2d_array_t input, \\\n\
@@ -56265,7 +56247,7 @@ __kernel void tile_##name0##to##name1 \\\n\
     int height = get_image_height(input); \\\n\
  \\\n\
     data_type src; \\\n\
-    readImage2DArray(src, input, coord); \\\n\
+    read_image_func(src, input, coord); \\\n\
  \\\n\
     int batch_id = (short)coord.z / (short)depthIn; \\\n\
     coord.z = (short)coord.z % (short)depthIn; \\\n\
@@ -56292,11 +56274,11 @@ __kernel void tile_##name0##to##name1 \\\n\
         } \\\n\
     } \\\n\
 }\n\
-TILE_3D(I32, I32, int4,   write_imagei)\n\
-TILE_3D(U32, U32, uint4,  write_imageui)\n\
-TILE_3D(F32, F32, float4, write_imagef)\n\
+TILE_3D(I32, I32, int4,   READ_IMAGEI_2DARRAY,  write_imagei)\n\
+TILE_3D(U32, U32, uint4,  READ_IMAGEUI_2DARRAY, write_imageui)\n\
+TILE_3D(F32, F32, float4, READ_IMAGEF_2DARRAY,  write_imagef)\n\
 \n\
-#define TILE_2D(name0, name1, data_type) \\\n\
+#define TILE_2D(name0, name1, data_type, read_image_func, write_image_func) \\\n\
 __kernel void tile_##name0##to##name1##_2D \\\n\
     ( \\\n\
     __read_only  image2d_t input, \\\n\
@@ -56317,22 +56299,22 @@ __kernel void tile_##name0##to##name1##_2D \\\n\
     int output_height = get_image_height(output); \\\n\
  \\\n\
     data_type src; \\\n\
-    readImage(src, input, coord); \\\n\
+    read_image_func(src, input, coord); \\\n\
  \\\n\
     do \\\n\
     { \\\n\
         do \\\n\
         { \\\n\
-            writeImage(output, coord, src); \\\n\
+            write_image_func(output, coord, src); \\\n\
             coord.x += width; \\\n\
         } while (coord.x < output_width); \\\n\
         coord.x = get_global_id(0); \\\n\
         coord.y += height; \\\n\
     } while (coord.y < output_height); \\\n\
 }\n\
-TILE_2D(I32, I32, int4)\n\
-TILE_2D(U32, U32, uint4)\n\
-TILE_2D(F32, F32, float4)\n\
+TILE_2D(I32, I32, int4,   read_imagei,  write_imagei)\n\
+TILE_2D(U32, U32, uint4,  read_imageui, write_imageui)\n\
+TILE_2D(F32, F32, float4, read_imagef,  write_imagef)\n\
 \n\
 \n\
 \n\
