@@ -116,7 +116,7 @@ __kernel void conv1d_U8U8I32toU8_K1024_LARGE(
 
     for (i = 0; i < input_height; i++)
     {
-        src_ptr = src_ptr_base + (coord.x + coord.z * src_image.stride_x);
+        src_ptr = src_ptr_base + (coord.x + coord.z * src_image.stride_y);
         for (j = 0; j < kernel_cnt_x16; j++)
         {
             VXC_ReadImage2DArray(weight_val, weight, coord_w, VXC_5BITOFFSET_XY(0, 0), \
@@ -155,7 +155,7 @@ __kernel void conv1d_U8U8I32toU8_K1024_LARGE(
     _viv_asm(CONV_SAT_RTE, result1, sum1);
     vxc_uchar8 result;
     VXC_DP2x8(result, result0, result1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniSumOrderUchar_2x8);
-    dst_ptr = dst_ptr + (coord.w + coord.y * dst_tensor.stride_x);
+    dst_ptr = dst_ptr + (coord.w + coord.y * dst_tensor.stride_y);
     VXC_Vstore8(dst_ptr, 0, result);
 }
 
