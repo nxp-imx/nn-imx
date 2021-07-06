@@ -49,8 +49,8 @@ __kernel void layer_norm_F16F32toF16(
     vari += eps;
     vari = rsqrt(vari);
     vxc_float4 bias_f, scale_f, in_f;
-    __global float* bias_ptr = (__global float*)get_image_ptr_from_coord(img1, coord.ww);
-    __global float* scale_ptr = (__global float*)get_image_ptr_from_coord(img2, coord.ww);
+    __global float* bias_ptr = (__global float*)get_image_ptr_from_coord(img1, (int2)(0, 0));
+    __global float* scale_ptr = (__global float*)get_image_ptr_from_coord(img2, (int2)(0, 0));
     for(coord.x = 0; coord.x < width; coord.x += 4)
     {
         VXC_OP4(img_load_3d, src0, input, coord, VXC_5BITOFFSET_XY(0, 0), \
@@ -142,8 +142,8 @@ __kernel void layer_norm_U8F32toU8(
 
     Image img1 = create_image_from_image2d(bias, 4);
     Image img2 = create_image_from_image2d(scale, 4);
-    __global float* bias_ptr = (__global float*)get_image_ptr_from_coord(img1, coord.ww);
-    __global float* scale_ptr = (__global float*)get_image_ptr_from_coord(img2, coord.ww);
+    __global float* bias_ptr = (__global float*)get_image_ptr_from_coord(img1, (int2)(0, 0));
+    __global float* scale_ptr = (__global float*)get_image_ptr_from_coord(img2, (int2)(0, 0));
     for(coord.x = 0; coord.x < width; coord.x += 16)
     {
         VXC_OP4(img_load_3d, src0, input, coord, VXC_5BITOFFSET_XY(0, 0), \
