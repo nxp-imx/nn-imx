@@ -385,7 +385,6 @@ static vsi_status vx_op_compute_gemm
     vsi_nn_tensor_attr_t out_attr;
     int16_t *out_buffer = NULL;
     uint32_t output_H = 0, output_W = 0;
-    float   *buf = NULL;
 
     memcpy( &out_attr, &(outputs[0]->attr), sizeof(vsi_nn_tensor_attr_t) );
     output_W = out_attr.size[0];
@@ -402,12 +401,7 @@ static vsi_status vx_op_compute_gemm
     {
         goto OnError;
     }
-    /* Copy tensor to buffer, and convert bufer to float32 format */
-    buf = vsi_nn_ConvertTensorToFloat32Data(self->graph, inputs[1]);
-    if (buf == NULL)
-    {
-        goto OnError;
-    }
+
     memset( params, 0, sizeof( vx_reference * ) * 3 );
 
     size[0] = inputs[0]->attr.size[0] * inputs[0]->attr.size[1];
@@ -647,6 +641,8 @@ static vsi_status op_compute
     {
         status = op_compute_list[kernel_info.init_index]( self, tmp_output_tensor, &output_t );
     }
+
+final:
     if (tmp_output_tensor[0])
     {
         vsi_nn_ReleaseTensor( &tmp_output_tensor[0] );
@@ -678,7 +674,6 @@ static vsi_status op_compute
         output_t = NULL;
     }
 
-final:
     if (kernel_info.resource_name)
     {
         free(kernel_info.resource_name);
