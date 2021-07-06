@@ -9972,7 +9972,7 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_BF16
     Image img3 = create_image_from_image2d(meanVari, 4);\n\
     __global float* bias_ptr = (__global float*)img1.ptr;\n\
     __global float* scal_ptr = (__global float*)img2.ptr;\n\
-    __global uchar* sumVari_ptr = (__global uchar*)get_image_ptr_from_coord(img3, coord.wz);\n\
+    __global uchar* sumVari_ptr = (__global uchar*)get_image_ptr_from_coord(img3, (int2)(0, gidz));\n\
     __global float4* vari_ptr = (__global float4*)sumVari_ptr;\n\
 \n\
     float bval = bias_ptr[gidz];\n\
@@ -10108,7 +10108,7 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_F16F
     Image img3 = create_image_from_image2d(meanVari, 4);\n\
     __global float* bias_ptr = (__global float*)img1.ptr;\n\
     __global float* scal_ptr = (__global float*)img2.ptr;\n\
-    __global uchar* sumVari_ptr = (__global uchar*)get_image_ptr_from_coord(img3, coord.wz);\n\
+    __global uchar* sumVari_ptr = (__global uchar*)get_image_ptr_from_coord(img3, (int2)(0, gidz));\n\
     __global float4* vari_ptr = (__global float4*)sumVari_ptr;\n\
 \n\
     float bval = bias_ptr[gidz];\n\
@@ -11941,8 +11941,8 @@ __kernel void layer_norm_F16F32toF16(\n\
     vari += eps;\n\
     vari = rsqrt(vari);\n\
     vxc_float4 bias_f, scale_f, in_f;\n\
-    __global float* bias_ptr = (__global float*)get_image_ptr_from_coord(img1, coord.ww);\n\
-    __global float* scale_ptr = (__global float*)get_image_ptr_from_coord(img2, coord.ww);\n\
+    __global float* bias_ptr = (__global float*)get_image_ptr_from_coord(img1, (int2)(0, 0));\n\
+    __global float* scale_ptr = (__global float*)get_image_ptr_from_coord(img2, (int2)(0, 0));\n\
     for(coord.x = 0; coord.x < width; coord.x += 4)\n\
     {\n\
         VXC_OP4(img_load_3d, src0, input, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
@@ -12034,8 +12034,8 @@ __kernel void layer_norm_U8F32toU8(\n\
 \n\
     Image img1 = create_image_from_image2d(bias, 4);\n\
     Image img2 = create_image_from_image2d(scale, 4);\n\
-    __global float* bias_ptr = (__global float*)get_image_ptr_from_coord(img1, coord.ww);\n\
-    __global float* scale_ptr = (__global float*)get_image_ptr_from_coord(img2, coord.ww);\n\
+    __global float* bias_ptr = (__global float*)get_image_ptr_from_coord(img1, (int2)(0, 0));\n\
+    __global float* scale_ptr = (__global float*)get_image_ptr_from_coord(img2, (int2)(0, 0));\n\
     for(coord.x = 0; coord.x < width; coord.x += 16)\n\
     {\n\
         VXC_OP4(img_load_3d, src0, input, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
@@ -12459,8 +12459,8 @@ __kernel void layer_norm_BF16F32toBF16(\n\
     vari += eps;\n\
     vari = rsqrt(vari);\n\
     vxc_float4 bias_f0, bias_f1, scale_f0, scale_f1;\n\
-    __global float* bias_ptr = (__global float*)get_image_ptr_from_coord(img1, coord.ww);\n\
-    __global float* scale_ptr = (__global float*)get_image_ptr_from_coord(img2, coord.ww);\n\
+    __global float* bias_ptr = (__global float*)get_image_ptr_from_coord(img1, (int2)(0, 0));\n\
+    __global float* scale_ptr = (__global float*)get_image_ptr_from_coord(img2, (int2)(0, 0));\n\
 \n\
     for(coord.x = 0; coord.x < width; coord.x += 8)\n\
     {\n\

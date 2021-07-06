@@ -52,8 +52,8 @@ __kernel void layer_norm_BF16F32toBF16(
     vari += eps;
     vari = rsqrt(vari);
     vxc_float4 bias_f0, bias_f1, scale_f0, scale_f1;
-    __global float* bias_ptr = (__global float*)get_image_ptr_from_coord(img1, coord.ww);
-    __global float* scale_ptr = (__global float*)get_image_ptr_from_coord(img2, coord.ww);
+    __global float* bias_ptr = (__global float*)get_image_ptr_from_coord(img1, (int2)(0, 0));
+    __global float* scale_ptr = (__global float*)get_image_ptr_from_coord(img2, (int2)(0, 0));
 
     for(coord.x = 0; coord.x < width; coord.x += 8)
     {
