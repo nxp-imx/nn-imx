@@ -24689,6 +24689,430 @@ __kernel void moments_axis2_F16toF16(\n\
     VXC_WriteImage(output_vari, coord_out, dst.s4567, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
 }"; /* end of moments_axis2_vx*/
 
+static const char moments_u8_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+_viv_uniform int width;\n\
+_viv_uniform int height;\n\
+_viv_uniform int channel;\n\
+_viv_uniform float dimRatio;\n\
+\n\
+_viv_uniform VXC_512Bits uniSumU8_16x1;\n\
+_viv_uniform VXC_512Bits uniSqrSum_16x1;\n\
+_viv_uniform float input_scale;\n\
+_viv_uniform int inputZP;\n\
+_viv_uniform int sumInZp;\n\
+_viv_uniform int tmpZp1;\n\
+_viv_uniform float e2InScale;\n\
+_viv_uniform float rowSumScale;\n\
+_viv_uniform float4 output_ZP;\n\
+_viv_uniform float4 outputScale;\n\
+_viv_uniform float output_ZP0;\n\
+_viv_uniform float outputScale0;\n\
+_viv_uniform float output_ZP1;\n\
+_viv_uniform float outputScale1;\n\
+_viv_uniform VXC_512Bits uniConvertInt32toUint8_2x8;\n\
+_viv_uniform VXC_512Bits uniConvert1stUint8SubZpToFp32_4x4;\n\
+\n\
+#define MOMENTS_AXIS0_QINT_U8(src0_type_name, read0_type) \\\n\
+__kernel void moments_axis0_##src0_type_name##toU8( \\\n\
+    image2d_array_t input, image2d_t output_mean, image2d_t output_vari, \\\n\
+    int axis, int axis_num) \\\n\
+{ \\\n\
+    int gidy = get_global_id(0); \\\n\
+    int gidz = get_global_id(1); \\\n\
+    int4 coord = (int4)(0, gidy, gidz, gidz); \\\n\
+    read0_type src0; \\\n\
+    float sum = 0, sqr = 0; \\\n\
+    int tmpSum = 0, tmpSqr = 0; \\\n\
+    int4 tmpSum0, tmpSqr0; \\\n\
+    int8 inputA_desc; \\\n\
+    _viv_asm(COPY, inputA_desc, input, sizeof(inputA_desc)); \\\n\
+    int baseAddr_a = (int)gidz * inputA_desc.s4 + inputA_desc.s0; \\\n\
+    _viv_asm(MOV, coord.z, baseAddr_a); \\\n\
+ \\\n\
+    for(coord.x = 0; coord.x < width; coord.x += 16) \\\n\
+    { \\\n\
+        VXC_OP4(img_load_3d, src0, input, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                    VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
+        VXC_DP16x1(tmpSum0, src0, src0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0), uniSumU8_16x1); \\\n\
+        VXC_DP16x1(tmpSqr0, src0, src0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0), uniSqrSum_16x1); \\\n\
+        tmpSum += (tmpSum0.x); \\\n\
+        tmpSqr += (tmpSqr0.x + tmpZp1 * tmpSum0.x); \\\n\
+    } \\\n\
+    sqr = (convert_float(tmpSqr) * e2InScale + rowSumScale); \\\n\
+    sum = convert_float(tmpSum + sumInZp) * input_scale; \\\n\
+    vxc_float4 mean_vari0 = (vxc_float4)(sum, sqr, 0, 0); \\\n\
+    mean_vari0 *= dimRatio; \\\n\
+    mean_vari0.s1 = mean_vari0.s1 - mean_vari0.s0 * mean_vari0.s0; \\\n\
+    int2 coord_out = (int2)(gidy, gidz); \\\n\
+    vxc_int4 tmpData = convert_int4_rte(mean_vari0 * outputScale + output_ZP); \\\n\
+    VXC_DP2x8(src0, tmpData, tmpData, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1),\\\n\
+            uniConvertInt32toUint8_2x8); \\\n\
+    VXC_WriteImage(output_mean, coord_out, src0.s0123, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
+    VXC_WriteImage(output_vari, coord_out, src0.s1023, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
+}\n\
+MOMENTS_AXIS0_QINT_U8(U8, vxc_uchar16)\n\
+\n\
+#define MOMENTS_AXIS0_QINT_U8_2D(src0_type_name, read0_type) \\\n\
+__kernel void moments_axis0_##src0_type_name##toU8_2D( \\\n\
+    image2d_t input, image2d_t output_mean, image2d_t output_vari, \\\n\
+    int axis, int axis_num) \\\n\
+{ \\\n\
+    int gidy = get_global_id(0); \\\n\
+    int2 coord = (int2)(0, gidy); \\\n\
+    read0_type src0; \\\n\
+    float sum = 0, sqr = 0; \\\n\
+    int tmpSum = 0, tmpSqr = 0; \\\n\
+    int4 tmpSum0, tmpSqr0; \\\n\
+ \\\n\
+    for(coord.x = 0; coord.x < width; coord.x += 16) \\\n\
+    { \\\n\
+        VXC_ReadImage(src0, input, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
+        VXC_DP16x1(tmpSum0, src0, src0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0), uniSumU8_16x1); \\\n\
+        VXC_DP16x1(tmpSqr0, src0, src0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0), uniSqrSum_16x1); \\\n\
+        tmpSum += (tmpSum0.x); \\\n\
+        tmpSqr += (tmpSqr0.x + tmpZp1 * tmpSum0.x); \\\n\
+    } \\\n\
+    sqr = (convert_float(tmpSqr) * e2InScale + rowSumScale); \\\n\
+    sum = convert_float(tmpSum + sumInZp) * input_scale; \\\n\
+    vxc_float4 mean_vari0 = (vxc_float4)(sum, sqr, 0, 0); \\\n\
+    mean_vari0 *= dimRatio; \\\n\
+    mean_vari0.s1 = mean_vari0.s1 - mean_vari0.s0 * mean_vari0.s0; \\\n\
+    int2 coord_out = (int2)(gidy, 0); \\\n\
+    vxc_int4 tmpData = convert_int4_rte(mean_vari0 * outputScale + output_ZP); \\\n\
+    VXC_DP2x8(src0, tmpData, tmpData, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1),\\\n\
+        uniConvertInt32toUint8_2x8); \\\n\
+    VXC_WriteImage(output_mean, coord_out, src0.s0123, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
+    VXC_WriteImage(output_vari, coord_out, src0.s1023, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
+}\n\
+MOMENTS_AXIS0_QINT_U8_2D(U8, vxc_uchar16)\n\
+\n\
+#define MOMENTS_AXIS01_QINT_U8(src0_type_name, read0_type) \\\n\
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void moments_axis01_##src0_type_name##toU8( \\\n\
+    image2d_array_t input, image2d_t output_mean, image2d_t output_vari, \\\n\
+    int axis, int axis_num) \\\n\
+{ \\\n\
+    int gidx = get_global_id(0) << 4; \\\n\
+    int lidx = get_local_id(0); \\\n\
+    int gidz = get_global_id(1); \\\n\
+    int4 coord = (int4)(gidx, 0, gidz, gidz); \\\n\
+    read0_type src0; \\\n\
+    float sum = 0, sqr = 0; \\\n\
+ \\\n\
+    __local float lcl_sum[16]; \\\n\
+    __local float lcl_sqr[16]; \\\n\
+    int8 inputA_desc; \\\n\
+    _viv_asm(COPY, inputA_desc, input, sizeof(inputA_desc)); \\\n\
+    int baseAddr_a = (int)gidz * inputA_desc.s4 + inputA_desc.s0; \\\n\
+    _viv_asm(MOV, coord.z, baseAddr_a); \\\n\
+ \\\n\
+    for(coord.x = gidx; coord.x < width; coord.x += 256) \\\n\
+    { \\\n\
+        int tmpSum = 0, tmpSqr = 0, tmpSum1, tmpSqr1; \\\n\
+        for(coord.y = 0; coord.y < height;) \\\n\
+        { \\\n\
+            VXC_OP4(img_load_3d, src0, input, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                    VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
+            coord.y++; \\\n\
+            VXC_DP16x1(tmpSum1, src0, src0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0), uniSumU8_16x1); \\\n\
+            tmpSum += (tmpSum1); \\\n\
+            VXC_DP16x1(tmpSqr1, src0, src0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0), uniSqrSum_16x1); \\\n\
+            tmpSqr += (tmpSqr1 + tmpZp1 * tmpSum1); \\\n\
+        } \\\n\
+        sqr += (tmpSqr * e2InScale + rowSumScale); \\\n\
+        sum += (tmpSum + sumInZp) * input_scale; \\\n\
+    } \\\n\
+    lcl_sum[lidx] = sum; \\\n\
+    lcl_sqr[lidx] = sqr; \\\n\
+    barrier(CLK_LOCAL_MEM_FENCE); \\\n\
+    int2 coord_out = (int2)(gidz, 0); \\\n\
+    if(lidx == 0) \\\n\
+    { \\\n\
+        float4 one = (float4)(1, 1, 1, 1); \\\n\
+        __local float4* tmp_sum = (__local float4*)lcl_sum; \\\n\
+        __local float4* tmp_sqr = (__local float4*)lcl_sqr; \\\n\
+ \\\n\
+        sum = (0); \\\n\
+        sqr = (0); \\\n\
+        for(int i = 0; i < 4; i++) \\\n\
+        { \\\n\
+            sum += dot(tmp_sum[i], one); \\\n\
+            sqr += dot(tmp_sqr[i], one); \\\n\
+        } \\\n\
+        float4 meanVari; \\\n\
+        meanVari.x = sum * dimRatio; \\\n\
+        meanVari.y = sqr * dimRatio - meanVari.x * meanVari.x; \\\n\
+        vxc_int4 tmpData = convert_int4_rte(meanVari * outputScale + output_ZP); \\\n\
+        VXC_DP2x8(src0, tmpData, tmpData, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1),\\\n\
+                uniConvertInt32toUint8_2x8); \\\n\
+        VXC_WriteImage(output_mean, coord_out, src0.s0123, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
+        VXC_WriteImage(output_vari, coord_out, src0.s1023, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
+    } \\\n\
+}\n\
+MOMENTS_AXIS01_QINT_U8(U8, vxc_uchar16)\n\
+\n\
+#define MOMENTS_AXIS01_QINT_U8_2D(src0_type_name, read0_type) \\\n\
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void moments_axis01_##src0_type_name##toU8_2D( \\\n\
+    image2d_t input, image2d_t output_mean, image2d_t output_vari, \\\n\
+    int axis, int axis_num) \\\n\
+{ \\\n\
+    int gidx = get_global_id(0) << 4; \\\n\
+    int lidx = get_local_id(0); \\\n\
+    int2 coord = (int2)(gidx, 0); \\\n\
+    read0_type src0; \\\n\
+    float sum = 0, sqr = 0; \\\n\
+    __local float lcl_sum[16]; \\\n\
+    __local float lcl_sqr[16]; \\\n\
+    for(coord.x = gidx; coord.x < width; coord.x += 256) \\\n\
+    { \\\n\
+        int tmpSum = 0, tmpSqr = 0, tmpSum1, tmpSqr1; \\\n\
+        for(coord.y = 0; coord.y < height;) \\\n\
+        { \\\n\
+            VXC_ReadImage(src0, input, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                    VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
+            coord.y++; \\\n\
+            VXC_DP16x1(tmpSum1, src0, src0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0), uniSumU8_16x1); \\\n\
+            tmpSum += (tmpSum1); \\\n\
+            VXC_DP16x1(tmpSqr1, src0, src0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0), uniSqrSum_16x1); \\\n\
+            tmpSqr += (tmpSqr1 + tmpZp1 * tmpSum1); \\\n\
+        } \\\n\
+        sqr += (tmpSqr * e2InScale + rowSumScale); \\\n\
+        sum += (tmpSum + sumInZp) * input_scale; \\\n\
+    } \\\n\
+    lcl_sum[lidx] = sum; \\\n\
+    lcl_sqr[lidx] = sqr; \\\n\
+    barrier(CLK_LOCAL_MEM_FENCE); \\\n\
+    int2 coord_out = (int2)(0, 0); \\\n\
+    if(lidx == 0) \\\n\
+    { \\\n\
+        float4 one = (float4)(1, 1, 1, 1); \\\n\
+        __local float4* tmp_sum = (__local float4*)lcl_sum; \\\n\
+        __local float4* tmp_sqr = (__local float4*)lcl_sqr; \\\n\
+        sum = (0); sqr = (0); \\\n\
+        for(int i = 0; i < 4; i++) \\\n\
+        { \\\n\
+            sum += dot(tmp_sum[i], one); \\\n\
+            sqr += dot(tmp_sqr[i], one); \\\n\
+        } \\\n\
+        float4 meanVari; \\\n\
+        meanVari.x = sum * dimRatio; \\\n\
+        meanVari.y = sqr * dimRatio - meanVari.x * meanVari.x; \\\n\
+        vxc_int4 tmpData = convert_int4_rte(meanVari * outputScale + output_ZP); \\\n\
+        VXC_DP2x8(src0, tmpData, tmpData, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1),\\\n\
+                uniConvertInt32toUint8_2x8); \\\n\
+        VXC_WriteImage(output_mean, coord_out, src0.s0123, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
+        VXC_WriteImage(output_vari, coord_out, src0.s1023, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
+    } \\\n\
+}\n\
+MOMENTS_AXIS01_QINT_U8_2D(U8, vxc_uchar16)\n\
+\n\
+#define MOMENTS_AXIS1_QINT_U8(src0_type_name, read0_type) \\\n\
+__kernel void moments_axis1_##src0_type_name##toU8( \\\n\
+    image2d_array_t input, image2d_t output_mean, image2d_t output_vari, \\\n\
+    int axis, int axis_num) \\\n\
+{ \\\n\
+    int gidx = get_global_id(0); \\\n\
+    int gidz = get_global_id(1); \\\n\
+    int4 coord = (int4)(gidx, 0, gidz, gidz); \\\n\
+    read0_type src0; \\\n\
+    float4 sum = 0, sqr = 0; \\\n\
+    short zp = inputZP;\\\n\
+    float4 tmpData0;\\\n\
+ \\\n\
+    int8 inputA_desc; \\\n\
+    _viv_asm(COPY, inputA_desc, input, sizeof(inputA_desc)); \\\n\
+    int baseAddr_a = (int)gidz * inputA_desc.s4 + inputA_desc.s0; \\\n\
+    _viv_asm(MOV, coord.z, baseAddr_a); \\\n\
+    VXC_OP4(img_load_3d, src0, input, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+    for(coord.y = 1; coord.y < height; ) \\\n\
+    { \\\n\
+        VXC_DP4x4(tmpData0, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
+                uniConvert1stUint8SubZpToFp32_4x4); \\\n\
+        VXC_OP4(img_load_3d, src0, input, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+        coord.y++; \\\n\
+        sum += (tmpData0); \\\n\
+        sqr += (tmpData0 * tmpData0); \\\n\
+    } \\\n\
+    VXC_DP4x4(tmpData0, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
+            uniConvert1stUint8SubZpToFp32_4x4); \\\n\
+    sum += (tmpData0); \\\n\
+    sqr += (tmpData0 * tmpData0); \\\n\
+    sum *= input_scale; \\\n\
+    sqr *= e2InScale; \\\n\
+ \\\n\
+    float4 mean = sum * dimRatio; \\\n\
+    float4 vari = sqr * dimRatio; \\\n\
+    vari = vari - mean * mean; \\\n\
+    vxc_int4 tmpVal0 = convert_int4_rte(mean * outputScale0 + output_ZP0); \\\n\
+    vxc_int4 tmpVal1 = convert_int4_rte(vari * outputScale1 + output_ZP1); \\\n\
+    VXC_DP2x8(src0, tmpVal0, tmpVal1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1),\\\n\
+                uniConvertInt32toUint8_2x8); \\\n\
+    int2 coord_out = (int2)(gidx, gidz); \\\n\
+    VXC_WriteImage(output_mean, coord_out, src0.s0123, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+    VXC_WriteImage(output_vari, coord_out, src0.s4567, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+}\n\
+MOMENTS_AXIS1_QINT_U8(U8, vxc_uchar16)\n\
+\n\
+#define MOMENTS_AXIS1_QINT_U8_2D(src0_type_name, read0_type) \\\n\
+__kernel void moments_axis1_##src0_type_name##toU8_2D( \\\n\
+    image2d_t input, image2d_t output_mean, image2d_t output_vari, \\\n\
+    int axis, int axis_num) \\\n\
+{ \\\n\
+    int gidx = get_global_id(0); \\\n\
+    int2 coord = (int2)(gidx, 0); \\\n\
+    read0_type src0; \\\n\
+    float4 sum = 0, sqr = 0; \\\n\
+    short zp = inputZP;\\\n\
+    float4 tmpData0;\\\n\
+    VXC_ReadImage(src0, input, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
+            VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+ \\\n\
+    for (coord.y = 1; coord.y < height; ) \\\n\
+    { \\\n\
+        VXC_DP4x4(tmpData0, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
+                uniConvert1stUint8SubZpToFp32_4x4); \\\n\
+        VXC_ReadImage(src0, input, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+        coord.y++; \\\n\
+        sum += (tmpData0); \\\n\
+        sqr += (tmpData0 * tmpData0); \\\n\
+    } \\\n\
+    VXC_DP4x4(tmpData0, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
+           uniConvert1stUint8SubZpToFp32_4x4); \\\n\
+    sum += (tmpData0); \\\n\
+    sqr += (tmpData0 * tmpData0); \\\n\
+    sum *= input_scale; \\\n\
+    sqr *= e2InScale; \\\n\
+ \\\n\
+    float4 mean = sum * dimRatio; \\\n\
+    float4 vari = sqr * dimRatio - mean * mean; \\\n\
+    vxc_int4 tmpVal0 = convert_int4_rte(mean * outputScale0 + output_ZP0); \\\n\
+    vxc_int4 tmpVal1 = convert_int4_rte(vari * outputScale1 + output_ZP1); \\\n\
+    VXC_DP2x8(src0, tmpVal0, tmpVal1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1),\\\n\
+                uniConvertInt32toUint8_2x8); \\\n\
+    int2 coord_out = (int2)(gidx, 0); \\\n\
+    VXC_WriteImage(output_mean, coord_out, src0.s0123, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+    VXC_WriteImage(output_vari, coord_out, src0.s4567, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+}\n\
+MOMENTS_AXIS1_QINT_U8_2D(U8, vxc_uchar16)\n\
+\n\
+#define MOMENTS_AXIS2_QINT_U8(src0_type_name, read0_type) \\\n\
+__kernel void moments_axis2_##src0_type_name##toU8( \\\n\
+    image2d_array_t input, image2d_t output_mean, image2d_t output_vari, \\\n\
+    int axis, int axis_num) \\\n\
+{ \\\n\
+    int gidx = get_global_id(0); \\\n\
+    int gidy = get_global_id(1); \\\n\
+    int4 coord = (int4)(gidx, gidy, 0, 0); \\\n\
+    read0_type src0; \\\n\
+    float4 sum = 0, sqr = 0; \\\n\
+    short zp = inputZP;\\\n\
+    float4 tmpData0;\\\n\
+ \\\n\
+    for(coord.z = 0; coord.z < channel; coord.z++) \\\n\
+    { \\\n\
+        VXC_ReadImage2DArray(src0, input, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+        VXC_DP4x4(tmpData0, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
+                uniConvert1stUint8SubZpToFp32_4x4); \\\n\
+        sum += (tmpData0); \\\n\
+        sqr += (tmpData0 * tmpData0); \\\n\
+    } \\\n\
+    sum *= input_scale; \\\n\
+    sqr *= e2InScale; \\\n\
+ \\\n\
+    float4 mean = sum * dimRatio; \\\n\
+    float4 vari = sqr * dimRatio - mean * mean; \\\n\
+    vxc_int4 tmpVal0 = convert_int4_rte(mean * outputScale0 + output_ZP0); \\\n\
+    vxc_int4 tmpVal1 = convert_int4_rte(vari * outputScale1 + output_ZP1); \\\n\
+    VXC_DP2x8(src0, tmpVal0, tmpVal1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1),\\\n\
+                uniConvertInt32toUint8_2x8); \\\n\
+    int2 coord_out = (int2)(gidx, gidy); \\\n\
+    VXC_WriteImage(output_mean, coord_out, src0.s0123, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+    VXC_WriteImage(output_vari, coord_out, src0.s4567, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+}\n\
+MOMENTS_AXIS2_QINT_U8(U8, vxc_uchar16)\n\
+"; /* end of moments_u8_vx*/
+
+static const char moments_u8_axis012_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+_viv_uniform int width;\n\
+_viv_uniform int height;\n\
+_viv_uniform int channel;\n\
+_viv_uniform float dimRatio;\n\
+\n\
+_viv_uniform VXC_512Bits uniSumU8_16x1;\n\
+_viv_uniform VXC_512Bits uniSqrSum_16x1;\n\
+_viv_uniform float input_scale;\n\
+_viv_uniform int sumInZp;\n\
+_viv_uniform int tmpZp1;\n\
+_viv_uniform float e2InScale;\n\
+_viv_uniform float rowSumScale;\n\
+_viv_uniform float4 output_ZP;\n\
+_viv_uniform float4 outputScale;\n\
+_viv_uniform VXC_512Bits uniConvertInt32toUint8_2x8;\n\
+\n\
+#define MOMENTS_AXIS012_QINT_U8(src0_type_name, read0_type) \\\n\
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void moments_axis012_##src0_type_name##toU8( \\\n\
+    image2d_array_t input, image2d_t output_mean, image2d_t output_vari, \\\n\
+    int axis, int axis_num) \\\n\
+{ \\\n\
+    int gidx = get_global_id(0) << 4; \\\n\
+    int lidx = get_local_id(0); \\\n\
+    int4 coord = (int4)(gidx, 0, 0, 0); \\\n\
+    read0_type src0; \\\n\
+    float sum = 0, sqr = 0; \\\n\
+    __local float lcl_sum[16]; \\\n\
+    __local float lcl_sqr[16]; \\\n\
+    for(coord.z = 0; coord.z < channel; coord.z++) \\\n\
+    { \\\n\
+        for(coord.x = gidx; coord.x < width; coord.x += 256) \\\n\
+        { \\\n\
+            int tmpSum = 0, tmpSqr = 0, tmpSum1, tmpSqr1; \\\n\
+            for(coord.y = 0; coord.y < height;) \\\n\
+            { \\\n\
+                VXC_ReadImage2DArray(src0, input, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                    VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
+                coord.y++; \\\n\
+                VXC_DP16x1(tmpSum1, src0, src0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0), uniSumU8_16x1); \\\n\
+                tmpSum += (tmpSum1); \\\n\
+                VXC_DP16x1(tmpSqr1, src0, src0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0), uniSqrSum_16x1); \\\n\
+                tmpSqr += (tmpSqr1 + tmpZp1 * tmpSum1); \\\n\
+            } \\\n\
+            sqr += (tmpSqr * e2InScale + rowSumScale); \\\n\
+            sum += (tmpSum + sumInZp) * input_scale; \\\n\
+        } \\\n\
+    } \\\n\
+    lcl_sum[lidx] = sum; \\\n\
+    lcl_sqr[lidx] = sqr; \\\n\
+    barrier(CLK_LOCAL_MEM_FENCE); \\\n\
+    int2 coord_out = (int2)(0, 0); \\\n\
+    if(lidx == 0) \\\n\
+    { \\\n\
+        float4 one = (float4)(1, 1, 1, 1); \\\n\
+        __local float4* tmp_sum = (__local float4*)lcl_sum; \\\n\
+        __local float4* tmp_sqr = (__local float4*)lcl_sqr; \\\n\
+        sum = (0); sqr = (0); \\\n\
+        for(int i = 0; i < 4; i++) \\\n\
+        { \\\n\
+            sum += dot(tmp_sum[i], one); \\\n\
+            sqr += dot(tmp_sqr[i], one); \\\n\
+        } \\\n\
+        float4 meanVari; \\\n\
+        meanVari.x = sum * dimRatio; \\\n\
+        meanVari.y = sqr * dimRatio - meanVari.x * meanVari.x; \\\n\
+        vxc_int4 tmpData = convert_int4_rte(meanVari * outputScale + output_ZP); \\\n\
+        VXC_DP2x8(src0, tmpData, tmpData, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1),\\\n\
+                uniConvertInt32toUint8_2x8); \\\n\
+        VXC_WriteImage(output_mean, coord_out, src0.s0123, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
+        VXC_WriteImage(output_vari, coord_out, src0.s1023, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
+    } \\\n\
+}\n\
+MOMENTS_AXIS012_QINT_U8(U8, vxc_uchar16)"; /* end of moments_u8_axis012_vx*/
+
 static const char one_hot_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 _viv_uniform VXC_512Bits uniDataConvert_0_4x4;\n\
@@ -56681,6 +57105,8 @@ static const source_map_t evis_resource[] =
     {"moments_axis012_vx", moments_axis012_vx},
     {"moments_axis1_vx", moments_axis1_vx},
     {"moments_axis2_vx", moments_axis2_vx},
+    {"moments_u8_vx", moments_u8_vx},
+    {"moments_u8_axis012_vx", moments_u8_axis012_vx},
     {"one_hot_vx", one_hot_vx},
     {"poolwithargmax_F16_vx", poolwithargmax_F16_vx},
     {"poolwithargmax_I16_vx", poolwithargmax_I16_vx},
