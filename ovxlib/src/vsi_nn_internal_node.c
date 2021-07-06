@@ -159,7 +159,8 @@ vsi_nn_internal_tensor_t* vsi_nn_internal_create_zero_bias_tensor
     (
     vsi_nn_node_t* node,
     vsi_nn_tensor_attr_t* input_attr,
-    vsi_nn_tensor_attr_t* weight_attr
+    vsi_nn_tensor_attr_t* weight_attr,
+    vsi_bool use_virtual_tensor
     )
 {
     vsi_nn_tensor_attr_t attr;
@@ -171,8 +172,8 @@ vsi_nn_internal_tensor_t* vsi_nn_internal_create_zero_bias_tensor
     /* create zero bias for NN/TP */
     attr.size[0] = weight_attr->size[1];
     attr.dim_num = 1;
-    attr.vtl = FALSE;
-    attr.is_const = TRUE;
+    attr.vtl = use_virtual_tensor;
+    attr.is_const = !use_virtual_tensor;
 
     if(input_attr->dtype.qnt_type != VSI_NN_QNT_TYPE_NONE &&
         input_attr->dtype.qnt_type != weight_attr->dtype.qnt_type)
