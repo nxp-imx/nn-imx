@@ -4111,6 +4111,56 @@ float4 eltwise_unary_round(float4 x)\n\
     return convert_float4(convert_int4_rte(x));\n\
 }\n\
 \n\
+#define MUL2_RSQRTPI    (1.1283791670955126f)\n\
+float erf_eval(float x)\n\
+{\n\
+    float res = 0;\n\
+    float tmp = x;\n\
+    float factorial = 1;\n\
+    float x_pow = x;\n\
+    float one = 1.0f;\n\
+    float n = 1;\n\
+\n\
+    if (x <= -3)\n\
+        return -1;\n\
+    else if(x >= 3)\n\
+        return 1;\n\
+\n\
+    while (fabs(tmp) > 1e-5)\n\
+    {\n\
+        res += tmp;\n\
+\n\
+        factorial *= n;\n\
+        one *= -1;\n\
+        x_pow *= x * x;\n\
+        tmp = one / factorial * x_pow / ( 2 * n + 1);\n\
+\n\
+        n += 1.0f;\n\
+    }\n\
+    return res * MUL2_RSQRTPI;\n\
+}\n\
+#define RSQRT2      (0.70710678118654752440084436210485f)\n\
+float4 eltwise_unary_gelu(float4 x)\n\
+{\n\
+    float4 erf, data;\n\
+    data = x * RSQRT2;\n\
+    erf.x = erf_eval(data.x);\n\
+    erf.y = erf_eval(data.y);\n\
+    erf.z = erf_eval(data.z);\n\
+    erf.w = erf_eval(data.w);\n\
+    x = 0.5f * x * (1 + erf);\n\
+\n\
+    return x;\n\
+}\n\
+\n\
+#define SQRT_2_RCP_PI  0.7978845834732056f\n\
+float4 eltwise_unary_hard_gelu(float4 x)\n\
+{\n\
+    float4 cdf = 0.5f + 0.5f * _tanh(SQRT_2_RCP_PI *\n\
+                        (x + 0.044715f * x * x * x));\n\
+    return x * cdf;\n\
+}\n\
+\n\
 _viv_uniform float inputScale;\n\
 _viv_uniform float inputTail;\n\
 _viv_uniform float outputScale;\n\
@@ -4242,6 +4292,28 @@ ELTSISE_UNARY_2D(round, U8,  U8,  vxc_uchar8, vxc_uchar8, int4,  vxc_uchar8, vxc
 ELTSISE_UNARY_2D(round, U8,  F16, vxc_uchar8, vxc_uchar8, half4, vxc_half8,  vxc_short8)\n\
 ELTSISE_UNARY_2D(round, I16, I16, vxc_short8, vxc_short8, int4,  vxc_short8, vxc_short8)\n\
 ELTSISE_UNARY_2D(round, I16, F16, vxc_short8, vxc_short8, half4, vxc_half8,  vxc_short8)\n\
+//GELU\n\
+ELTSISE_UNARY_2D(gelu, F16, F16, vxc_short8, vxc_half8,  half4, vxc_half8,  vxc_short8)\n\
+ELTSISE_UNARY_2D(gelu, F16, I8,  vxc_short8, vxc_half8,  int4,  vxc_char8,  vxc_char8)\n\
+ELTSISE_UNARY_2D(gelu, F16, U8,  vxc_short8, vxc_half8,  int4,  vxc_uchar8, vxc_uchar8)\n\
+ELTSISE_UNARY_2D(gelu, F16, I16, vxc_short8, vxc_half8,  int4,  vxc_short8, vxc_short8)\n\
+ELTSISE_UNARY_2D(gelu, I8,  I8,  vxc_char8,  vxc_char8,  int4,  vxc_char8,  vxc_char8)\n\
+ELTSISE_UNARY_2D(gelu, I8,  F16, vxc_char8,  vxc_char8,  half4, vxc_half8,  vxc_short8)\n\
+ELTSISE_UNARY_2D(gelu, U8,  U8,  vxc_uchar8, vxc_uchar8, int4,  vxc_uchar8, vxc_uchar8)\n\
+ELTSISE_UNARY_2D(gelu, U8,  F16, vxc_uchar8, vxc_uchar8, half4, vxc_half8,  vxc_short8)\n\
+ELTSISE_UNARY_2D(gelu, I16, I16, vxc_short8, vxc_short8, int4,  vxc_short8, vxc_short8)\n\
+ELTSISE_UNARY_2D(gelu, I16, F16, vxc_short8, vxc_short8, half4, vxc_half8,  vxc_short8)\n\
+//HARD_GELU\n\
+ELTSISE_UNARY_2D(hard_gelu, F16, F16, vxc_short8, vxc_half8,  half4, vxc_half8,  vxc_short8)\n\
+ELTSISE_UNARY_2D(hard_gelu, F16, I8,  vxc_short8, vxc_half8,  int4,  vxc_char8,  vxc_char8)\n\
+ELTSISE_UNARY_2D(hard_gelu, F16, U8,  vxc_short8, vxc_half8,  int4,  vxc_uchar8, vxc_uchar8)\n\
+ELTSISE_UNARY_2D(hard_gelu, F16, I16, vxc_short8, vxc_half8,  int4,  vxc_short8, vxc_short8)\n\
+ELTSISE_UNARY_2D(hard_gelu, I8,  I8,  vxc_char8,  vxc_char8,  int4,  vxc_char8,  vxc_char8)\n\
+ELTSISE_UNARY_2D(hard_gelu, I8,  F16, vxc_char8,  vxc_char8,  half4, vxc_half8,  vxc_short8)\n\
+ELTSISE_UNARY_2D(hard_gelu, U8,  U8,  vxc_uchar8, vxc_uchar8, int4,  vxc_uchar8, vxc_uchar8)\n\
+ELTSISE_UNARY_2D(hard_gelu, U8,  F16, vxc_uchar8, vxc_uchar8, half4, vxc_half8,  vxc_short8)\n\
+ELTSISE_UNARY_2D(hard_gelu, I16, I16, vxc_short8, vxc_short8, int4,  vxc_short8, vxc_short8)\n\
+ELTSISE_UNARY_2D(hard_gelu, I16, F16, vxc_short8, vxc_short8, half4, vxc_half8,  vxc_short8)\n\
 \n\
 _viv_uniform VXC_512Bits uniConvBF16toF32_Part0_2x8;\n\
 _viv_uniform VXC_512Bits uniConvBF16toF32_Part1_2x8;\n\
@@ -4291,6 +4363,10 @@ ELTSISE_UNARY_BF16_2D(mish)\n\
 ELTSISE_UNARY_BF16_2D(hard_sigmoid)\n\
 //ROUND\n\
 ELTSISE_UNARY_BF16_2D(round)\n\
+//GELU\n\
+ELTSISE_UNARY_BF16_2D(gelu)\n\
+//HARD_GELU\n\
+ELTSISE_UNARY_BF16_2D(hard_gelu)\n\
 "; /* end of eltwise_unary_2d_vx*/
 
 static const char eltwise_unary_3d_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
@@ -4365,6 +4441,56 @@ float4 eltwise_unary_mish(float4 x)\n\
 float4 eltwise_unary_round(float4 x)\n\
 {\n\
     return convert_float4(convert_int4_rte(x));\n\
+}\n\
+\n\
+#define MUL2_RSQRTPI    (1.1283791670955126f)\n\
+float erf_eval(float x)\n\
+{\n\
+    float res = 0;\n\
+    float tmp = x;\n\
+    float factorial = 1;\n\
+    float x_pow = x;\n\
+    float one = 1.0f;\n\
+    float n = 1;\n\
+\n\
+    if (x <= -3)\n\
+        return -1;\n\
+    else if(x >= 3)\n\
+        return 1;\n\
+\n\
+    while (fabs(tmp) > 1e-5)\n\
+    {\n\
+        res += tmp;\n\
+\n\
+        factorial *= n;\n\
+        one *= -1;\n\
+        x_pow *= x * x;\n\
+        tmp = one / factorial * x_pow / ( 2 * n + 1);\n\
+\n\
+        n += 1.0f;\n\
+    }\n\
+    return res * MUL2_RSQRTPI;\n\
+}\n\
+#define RSQRT2      (0.70710678118654752440084436210485f)\n\
+float4 eltwise_unary_gelu(float4 x)\n\
+{\n\
+    float4 erf, data;\n\
+    data = x * RSQRT2;\n\
+    erf.x = erf_eval(data.x);\n\
+    erf.y = erf_eval(data.y);\n\
+    erf.z = erf_eval(data.z);\n\
+    erf.w = erf_eval(data.w);\n\
+    x = 0.5f * x * (1 + erf);\n\
+\n\
+    return x;\n\
+}\n\
+\n\
+#define SQRT_2_RCP_PI  0.7978845834732056f\n\
+float4 eltwise_unary_hard_gelu(float4 x)\n\
+{\n\
+    float4 cdf = 0.5f + 0.5f * _tanh(SQRT_2_RCP_PI *\n\
+                        (x + 0.044715f * x * x * x));\n\
+    return x * cdf;\n\
 }\n\
 \n\
 _viv_uniform float inputScale;\n\
@@ -4498,6 +4624,28 @@ ELTSISE_UNARY_3D(round, U8,  U8,  vxc_uchar8, vxc_uchar8, int4,  vxc_uchar8, vxc
 ELTSISE_UNARY_3D(round, U8,  F16, vxc_uchar8, vxc_uchar8, half4, vxc_half8,  vxc_short8)\n\
 ELTSISE_UNARY_3D(round, I16, I16, vxc_short8, vxc_short8, int4,  vxc_short8, vxc_short8)\n\
 ELTSISE_UNARY_3D(round, I16, F16, vxc_short8, vxc_short8, half4, vxc_half8,  vxc_short8)\n\
+//GELU\n\
+ELTSISE_UNARY_3D(gelu, F16, F16, vxc_short8, vxc_half8,  half4, vxc_half8,  vxc_short8)\n\
+ELTSISE_UNARY_3D(gelu, F16, I8,  vxc_short8, vxc_half8,  int4,  vxc_char8,  vxc_char8)\n\
+ELTSISE_UNARY_3D(gelu, F16, U8,  vxc_short8, vxc_half8,  int4,  vxc_uchar8, vxc_uchar8)\n\
+ELTSISE_UNARY_3D(gelu, F16, I16, vxc_short8, vxc_half8,  int4,  vxc_short8, vxc_short8)\n\
+ELTSISE_UNARY_3D(gelu, I8,  I8,  vxc_char8,  vxc_char8,  int4,  vxc_char8,  vxc_char8)\n\
+ELTSISE_UNARY_3D(gelu, I8,  F16, vxc_char8,  vxc_char8,  half4, vxc_half8,  vxc_short8)\n\
+ELTSISE_UNARY_3D(gelu, U8,  U8,  vxc_uchar8, vxc_uchar8, int4,  vxc_uchar8, vxc_uchar8)\n\
+ELTSISE_UNARY_3D(gelu, U8,  F16, vxc_uchar8, vxc_uchar8, half4, vxc_half8,  vxc_short8)\n\
+ELTSISE_UNARY_3D(gelu, I16, I16, vxc_short8, vxc_short8, int4,  vxc_short8, vxc_short8)\n\
+ELTSISE_UNARY_3D(gelu, I16, F16, vxc_short8, vxc_short8, half4, vxc_half8,  vxc_short8)\n\
+//HARD_GELU\n\
+ELTSISE_UNARY_3D(hard_gelu, F16, F16, vxc_short8, vxc_half8,  half4, vxc_half8,  vxc_short8)\n\
+ELTSISE_UNARY_3D(hard_gelu, F16, I8,  vxc_short8, vxc_half8,  int4,  vxc_char8,  vxc_char8)\n\
+ELTSISE_UNARY_3D(hard_gelu, F16, U8,  vxc_short8, vxc_half8,  int4,  vxc_uchar8, vxc_uchar8)\n\
+ELTSISE_UNARY_3D(hard_gelu, F16, I16, vxc_short8, vxc_half8,  int4,  vxc_short8, vxc_short8)\n\
+ELTSISE_UNARY_3D(hard_gelu, I8,  I8,  vxc_char8,  vxc_char8,  int4,  vxc_char8,  vxc_char8)\n\
+ELTSISE_UNARY_3D(hard_gelu, I8,  F16, vxc_char8,  vxc_char8,  half4, vxc_half8,  vxc_short8)\n\
+ELTSISE_UNARY_3D(hard_gelu, U8,  U8,  vxc_uchar8, vxc_uchar8, int4,  vxc_uchar8, vxc_uchar8)\n\
+ELTSISE_UNARY_3D(hard_gelu, U8,  F16, vxc_uchar8, vxc_uchar8, half4, vxc_half8,  vxc_short8)\n\
+ELTSISE_UNARY_3D(hard_gelu, I16, I16, vxc_short8, vxc_short8, int4,  vxc_short8, vxc_short8)\n\
+ELTSISE_UNARY_3D(hard_gelu, I16, F16, vxc_short8, vxc_short8, half4, vxc_half8,  vxc_short8)\n\
 \n\
 _viv_uniform VXC_512Bits uniConvBF16toF32_Part0_2x8;\n\
 _viv_uniform VXC_512Bits uniConvBF16toF32_Part1_2x8;\n\
@@ -4545,7 +4693,11 @@ ELTSISE_UNARY_BF16(mish)\n\
 //HARD_SIGMOID\n\
 ELTSISE_UNARY_BF16(hard_sigmoid)\n\
 //ROUND\n\
-ELTSISE_UNARY_BF16(round)"; /* end of eltwise_unary_3d_vx*/
+ELTSISE_UNARY_BF16(round)\n\
+//GELU\n\
+ELTSISE_UNARY_BF16(gelu)\n\
+//HARD_GELU\n\
+ELTSISE_UNARY_BF16(hard_gelu)"; /* end of eltwise_unary_3d_vx*/
 
 static const char erf_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
@@ -44748,14 +44900,14 @@ inline Tensor create_tensor_from_image2d_array(image2d_array_t input, int stride
 "; /* end of eltwise_ops_helper_cl*/
 
 static const char eltwise_unary_cl[] = "\n\
-float4 eltwise_unary_sin(float4 x, float alpha)\n\
+float eltwise_unary_sin(float x, float alpha)\n\
 {\n\
     return native_sin(x);\n\
 }\n\
 \n\
 #define logE        (1.44269502f)\n\
 #define twoLogE     (logE * 2.0f)\n\
-float4 eltwise_unary_exp(float4 x, float alpha)\n\
+float eltwise_unary_exp(float x, float alpha)\n\
 {\n\
     x *= logE;\n\
     x = exp2(x);\n\
@@ -44763,33 +44915,33 @@ float4 eltwise_unary_exp(float4 x, float alpha)\n\
 }\n\
 \n\
 #define rlogE    (0.693147182f)\n\
-float4 eltwise_unary_log(float4 x, float alpha)\n\
+float eltwise_unary_log(float x, float alpha)\n\
 {\n\
     x = log2(x);\n\
     return x * rlogE;\n\
 }\n\
 \n\
-float4 eltwise_unary_elu(float4 val, float alpha)\n\
+float eltwise_unary_elu(float val, float alpha)\n\
 {\n\
-    float4 x = val * logE;\n\
+    float x = val * logE;\n\
     x = exp2(x) * alpha - alpha;\n\
 \n\
     return val < 0 ? x : val;\n\
 }\n\
 \n\
-float4 eltwise_unary_neg(float4 x, float alpha)\n\
+float eltwise_unary_neg(float x, float alpha)\n\
 {\n\
     return x * -1;\n\
 }\n\
 \n\
-float4 eltwise_unary_hard_sigmoid(float4 x, float alpha)\n\
+float eltwise_unary_hard_sigmoid(float x, float alpha)\n\
 {\n\
     x = 0.2 * x + 0.5;\n\
     x = clamp(x, 0, 1);\n\
     return x;\n\
 }\n\
 \n\
-float4 _softrelu(float4 x, float alpha)\n\
+float _softrelu(float x, float alpha)\n\
 {\n\
     x *= logE;\n\
     x = exp2(x);\n\
@@ -44798,7 +44950,7 @@ float4 _softrelu(float4 x, float alpha)\n\
     return x * rlogE;\n\
 }\n\
 \n\
-float4 _tanh(float4 x, float alpha)\n\
+float _tanh(float x, float alpha)\n\
 {\n\
     x *= -twoLogE;\n\
     x = 1 + exp2(x);\n\
@@ -44806,16 +44958,60 @@ float4 _tanh(float4 x, float alpha)\n\
     return (2 * x - 1);\n\
 }\n\
 \n\
-float4 eltwise_unary_mish(float4 x, float alpha)\n\
+float eltwise_unary_mish(float x, float alpha)\n\
 {\n\
-    float4 y = _softrelu(x, alpha);\n\
+    float y = _softrelu(x, alpha);\n\
     x = x * _tanh(y, alpha);\n\
     return x;\n\
 }\n\
 \n\
-float4 eltwise_unary_round(float4 x, float alpha)\n\
+float eltwise_unary_round(float x, float alpha)\n\
 {\n\
-    return convert_float4(convert_int4_rte(x));\n\
+    return convert_float(convert_int_rte(x));\n\
+}\n\
+\n\
+#define MUL2_RSQRTPI    (1.1283791670955126f)\n\
+float erf_eval(float x)\n\
+{\n\
+    float res = 0;\n\
+    float tmp = x;\n\
+    float factorial = 1;\n\
+    float x_pow = x;\n\
+    float one = 1.0f;\n\
+    float n = 1;\n\
+\n\
+    if (x <= -3)\n\
+        return -1;\n\
+    else if (x >= 3)\n\
+        return 1;\n\
+\n\
+    while (fabs(tmp) > 1e-5)\n\
+    {\n\
+        res += tmp;\n\
+\n\
+        factorial *= n;\n\
+        one *= -1;\n\
+        x_pow *= x * x;\n\
+        tmp = one / factorial * x_pow / ( 2 * n + 1);\n\
+\n\
+        n += 1.0f;\n\
+    }\n\
+    return res * MUL2_RSQRTPI;\n\
+}\n\
+#define RSQRT2      (0.70710678118654752440084436210485f)\n\
+float eltwise_unary_gelu(float x, float alpha)\n\
+{\n\
+    x = 0.5f * x * (1 + erf_eval(x * RSQRT2));\n\
+\n\
+    return x;\n\
+}\n\
+\n\
+#define SQRT_2_RCP_PI  0.7978845834732056f\n\
+float eltwise_unary_hard_gelu(float x, float alpha)\n\
+{\n\
+    float cdf = 0.5f + 0.5f * _tanh(SQRT_2_RCP_PI *\n\
+                        (x + 0.044715f * x * x * x), 0);\n\
+    return x * cdf;\n\
 }\n\
 \n\
 #define ELTWISE_UNARY_F32(func_name) \\\n\
@@ -44834,9 +45030,10 @@ __kernel void func_name##_F32toF32 \\\n\
  \\\n\
     float4 src = read_imagef(input, coord); \\\n\
  \\\n\
-    float4 dst = eltwise_unary_##func_name(src, alpha); \\\n\
+    float4 dst = 0; \\\n\
+    dst.x = eltwise_unary_##func_name(src.x, alpha); \\\n\
  \\\n\
-    write_imagef(output, coord, dst); \\\n\
+    write_imagef(output, coord, dst.xxxx); \\\n\
 }\n\
 ELTWISE_UNARY_F32(sin)\n\
 ELTWISE_UNARY_F32(exp)\n\
@@ -44846,6 +45043,8 @@ ELTWISE_UNARY_F32(neg)\n\
 ELTWISE_UNARY_F32(mish)\n\
 ELTWISE_UNARY_F32(hard_sigmoid)\n\
 ELTWISE_UNARY_F32(round)\n\
+ELTWISE_UNARY_F32(gelu)\n\
+ELTWISE_UNARY_F32(hard_gelu)\n\
 \n\
 #define ELTWISE_UNARY_F32_2D(func_name) \\\n\
 __kernel void func_name##_F32toF32_2D \\\n\
@@ -44863,9 +45062,10 @@ __kernel void func_name##_F32toF32_2D \\\n\
  \\\n\
     float4 src = read_imagef(input, coord); \\\n\
  \\\n\
-    float4 dst = eltwise_unary_##func_name(src, alpha); \\\n\
+    float4 dst = 0; \\\n\
+    dst.x = eltwise_unary_##func_name(src.x, alpha); \\\n\
  \\\n\
-    write_imagef(output, coord, dst); \\\n\
+    write_imagef(output, coord, dst.xxxx); \\\n\
 }\n\
 ELTWISE_UNARY_F32_2D(sin)\n\
 ELTWISE_UNARY_F32_2D(exp)\n\
@@ -44875,6 +45075,8 @@ ELTWISE_UNARY_F32_2D(neg)\n\
 ELTWISE_UNARY_F32_2D(mish)\n\
 ELTWISE_UNARY_F32_2D(hard_sigmoid)\n\
 ELTWISE_UNARY_F32_2D(round)\n\
+ELTWISE_UNARY_F32_2D(gelu)\n\
+ELTWISE_UNARY_F32_2D(hard_gelu)\n\
 \n\
 #define ELTWISE_UNARY_U8(func_name) \\\n\
 __kernel void func_name##_U8toU8 \\\n\
@@ -44893,7 +45095,7 @@ __kernel void func_name##_U8toU8 \\\n\
     uint4 src = read_imageui(input, coord); \\\n\
     float4 data = convert_float4(src) * inputScale - inputTail; \\\n\
  \\\n\
-    data = eltwise_unary_##func_name(data, alpha); \\\n\
+    data.x = eltwise_unary_##func_name(data.x, alpha); \\\n\
     uint4 dst = convert_uint4(data * outputScale + outputZP); \\\n\
  \\\n\
     write_imageui(output, coord, dst); \\\n\
@@ -44906,6 +45108,8 @@ ELTWISE_UNARY_U8(neg)\n\
 ELTWISE_UNARY_U8(mish)\n\
 ELTWISE_UNARY_U8(hard_sigmoid)\n\
 ELTWISE_UNARY_U8(round)\n\
+ELTWISE_UNARY_U8(gelu)\n\
+ELTWISE_UNARY_U8(hard_gelu)\n\
 \n\
 #define ELTWISE_UNARY_U8_2D(func_name) \\\n\
 __kernel void func_name##_U8toU8_2D \\\n\
@@ -44924,7 +45128,7 @@ __kernel void func_name##_U8toU8_2D \\\n\
     uint4 src = read_imageui(input, coord); \\\n\
     float4 data = convert_float4(src) * inputScale - inputTail; \\\n\
  \\\n\
-    data = eltwise_unary_##func_name(data, alpha); \\\n\
+    data.x = eltwise_unary_##func_name(data.x, alpha); \\\n\
     uint4 dst = convert_uint4(data * outputScale + outputZP); \\\n\
  \\\n\
     write_imageui(output, coord, dst); \\\n\
@@ -44937,6 +45141,8 @@ ELTWISE_UNARY_U8_2D(neg)\n\
 ELTWISE_UNARY_U8_2D(mish)\n\
 ELTWISE_UNARY_U8_2D(hard_sigmoid)\n\
 ELTWISE_UNARY_U8_2D(round)\n\
+ELTWISE_UNARY_U8_2D(gelu)\n\
+ELTWISE_UNARY_U8_2D(hard_gelu)\n\
 \n\
 __kernel void neg_I32toI32\n\
     (\n\

@@ -541,6 +541,7 @@
     <ClInclude Include="include\ops\vsi_nn_op_floordiv.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_fullconnect.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_gather.h"/>
+    <ClInclude Include="include\ops\vsi_nn_op_gelu.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_generate_proposals.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_grouped_conv1d.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_grouped_conv2d.h"/>
