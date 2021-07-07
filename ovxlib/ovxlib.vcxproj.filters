@@ -273,6 +273,9 @@
     <ClInclude Include="include\ops\vsi_nn_op_gather.h">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_gelu.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
     <ClInclude Include="include\ops\vsi_nn_op_generate_proposals.h">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
@@ -1397,10 +1400,10 @@
     <ClCompile Include="src\kernel\vx\eltwise_vx.c">
       <Filter>Source Files\kernel\vx</Filter>
     </ClCompile>
-    <ClCompile Include="src\kernel\vx\erf_vx.c">
+  <ClCompile Include="src\kernel\vx\erf_vx.c">
       <Filter>Source Files\kernel\vx</Filter>
     </ClCompile>
-  <ClCompile Include="src\kernel\vx\prelu_vx.c">
+    <ClCompile Include="src\kernel\vx\prelu_vx.c">
       <Filter>Source Files\kernel\vx</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\vx\relu_keras_vx.c">
