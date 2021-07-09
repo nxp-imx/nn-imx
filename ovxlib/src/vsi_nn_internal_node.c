@@ -367,20 +367,19 @@ vsi_nn_internal_node_t* vsi_nn_internal_get_node_by_uid
     int uid
     )
 {
-    vsi_nn_internal_node_t* head = NULL;
     vsi_nn_internal_node_t* curr = NULL;
 
     if( node && node->internal_node_wksp )
     {
-        head = WKSP(node)->nodes;
-        while( NULL != head )
+        curr = WKSP(node)->nodes;
+        while( NULL != curr )
         {
-            curr = (vsi_nn_internal_node_t *)vsi_nn_LinkListPopStart(
-                (vsi_nn_link_list_t **)&head );
             if( curr->node->uid == (uint32_t)uid )
             {
                 return curr;
             }
+
+            curr = (vsi_nn_internal_node_t *)vsi_nn_LinkListNext( (vsi_nn_link_list_t *)curr );
         }
     }
 
