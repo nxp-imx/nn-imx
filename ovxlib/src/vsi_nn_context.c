@@ -70,6 +70,46 @@ final:
     return status;
 }
 
+int32_t vsi_nn_getEnv(const char* name, char** env_s) {
+    int32_t ret = 0;
+    *env_s = getenv(name);
+    if (*env_s) {
+        ret = TRUE;
+    }
+    return ret;
+}
+
+static vsi_status vsi_nn_initOptions
+    (
+    vsi_nn_runtime_option_t *options
+    )
+{
+    char* env_s = NULL;
+
+    env_s = NULL;
+    options->enable_shader = 1;
+    if (vsi_nn_getEnv("VIV_VX_ENABLE_SHADER", &env_s) && env_s)
+    {
+        options->enable_shader = atoi(env_s);
+    }
+
+    env_s = NULL;
+    options->enable_opcheck = 1;
+    if (vsi_nn_getEnv("VSI_NN_ENABLE_OPCHECK", &env_s) && env_s)
+    {
+        options->enable_opcheck = atoi(env_s);
+    }
+
+    env_s = NULL;
+    options->enable_concat_optimize = 1;
+    if (vsi_nn_getEnv("VSI_NN_ENABLE_CONCAT_OPTIMIZE", &env_s) && env_s)
+    {
+        options->enable_concat_optimize = atoi(env_s);
+    }
+
+    return VSI_SUCCESS;
+}
+
 vsi_nn_context_t vsi_nn_CreateContext
     ( void )
 {
@@ -96,6 +136,12 @@ vsi_nn_context_t vsi_nn_CreateContext
         return NULL;
     }
 
+    if (vsi_nn_initOptions(&context->options) != VSI_SUCCESS)
+    {
+        vsi_nn_ReleaseContext(&context);
+        return NULL;
+    }
+
     return context;
 } /* vsi_nn_CreateContext() */
 
@@ -113,4 +159,3 @@ void vsi_nn_ReleaseContext
         *ctx = NULL;
     }
 } /* vsi_nn_ReleaseContext() */
-
