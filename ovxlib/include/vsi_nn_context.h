@@ -65,6 +65,13 @@ typedef struct _vsi_nn_hw_config_t
 #endif
 } vsi_nn_hw_config_t;
 
+typedef struct _vsi_nn_runtime_option_t
+{
+    int32_t enable_shader;
+    int32_t enable_opcheck;
+    int32_t enable_concat_optimize;
+} vsi_nn_runtime_option_t;
+
 /**
  * Ovxlib NN runtime context.
  */
@@ -72,6 +79,7 @@ typedef struct _vsi_nn_context_t
 {
     vx_context c;
     vsi_nn_hw_config_t config;
+    vsi_nn_runtime_option_t options;
 } *vsi_nn_context_t;
 
 /**
