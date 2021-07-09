@@ -1109,6 +1109,9 @@
     <ClCompile Include="src\kernel\cpu\space2depth_internal_cpu.c">
       <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="src\kernel\cpu\spatial_transformer_cpu.c">
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="src\kernel\cpu\swish_cpu.c">
       <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
@@ -1310,6 +1313,9 @@
     <ClCompile Include="src\kernel\evis\space2depth_internal_evis.c">
       <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="src\kernel\evis\spatial_transformer_evis.c">
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="src\kernel\evis\swish_evis.c">
       <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
@@ -1392,9 +1398,6 @@
       <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_signalframe.c">
-      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_spatial_transformer.c">
       <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\libnnext\vsi_nn_libnnext_resource.c">

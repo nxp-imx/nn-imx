@@ -6020,6 +6020,193 @@ GATHER_ND_F16_TO_QINT_1D(I16, vxc_short8)\n\
 \n\
 "; /* end of gather_nd_mix_vx*/
 
+static const char get_matrix_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+_viv_uniform float4 theta_1;\n\
+_viv_uniform float4 theta_2;\n\
+_viv_uniform float4 scale;\n\
+_viv_uniform float input_scale;\n\
+_viv_uniform float input_tail;\n\
+\n\
+#define GET_MATRIX_SH_IMPL(name0, in_type, read_func) \\\n\
+__kernel void get_matrix_##name0##toF32 \\\n\
+    ( \\\n\
+    __read_only  image2d_t input, \\\n\
+    __write_only image2d_t output, \\\n\
+                 int       has_theta_1_1,  \\\n\
+                 int       has_theta_1_2,  \\\n\
+                 int       has_theta_1_3,  \\\n\
+                 int       has_theta_2_1,  \\\n\
+                 int       has_theta_2_2,  \\\n\
+                 int       has_theta_2_3,  \\\n\
+                 float     theta_1_1,  \\\n\
+                 float     theta_1_2,  \\\n\
+                 float     theta_1_3,  \\\n\
+                 float     theta_2_1,  \\\n\
+                 float     theta_2_2,  \\\n\
+                 float     theta_2_3,  \\\n\
+                 float     i_width, \\\n\
+                 float     i_height, \\\n\
+                 float     o_width, \\\n\
+                 float     o_height \\\n\
+    ) \\\n\
+{ \\\n\
+    int2 coord =  (int2)(0, get_global_id(1)); \\\n\
+    float4 matrix0, matrix1; \\\n\
+    float4 theta1, theta2; \\\n\
+    _viv_asm(COPY, theta1, theta_1, 16); \\\n\
+    _viv_asm(COPY, theta2, theta_2, 16); \\\n\
+ \\\n\
+    if (has_theta_1_1 == 0) \\\n\
+    { \\\n\
+        in_type data = read_func(input, coord); \\\n\
+        coord.x ++; \\\n\
+        theta1.x = convert_float(data.x) * input_scale + input_tail; \\\n\
+    } \\\n\
+ \\\n\
+    if (has_theta_1_2 == 0) \\\n\
+    { \\\n\
+        in_type data = read_func(input, coord); \\\n\
+        coord.x ++; \\\n\
+        theta1.y = convert_float(data.x) * input_scale + input_tail; \\\n\
+    } \\\n\
+ \\\n\
+    if (has_theta_1_3 == 0) \\\n\
+    { \\\n\
+        in_type data = read_func(input, coord); \\\n\
+        coord.x ++; \\\n\
+        theta1.z = convert_float(data.x) * input_scale + input_tail; \\\n\
+    } \\\n\
+ \\\n\
+    if (has_theta_2_1 == 0) \\\n\
+    { \\\n\
+        in_type data = read_func(input, coord); \\\n\
+        coord.x ++; \\\n\
+        theta2.x = convert_float(data.x) * input_scale + input_tail; \\\n\
+    } \\\n\
+ \\\n\
+    if (has_theta_2_2 == 0) \\\n\
+    { \\\n\
+        in_type data = read_func(input, coord); \\\n\
+        coord.x ++; \\\n\
+        theta2.y = convert_float(data.x) * input_scale + input_tail; \\\n\
+    } \\\n\
+ \\\n\
+    if (has_theta_2_3 == 0) \\\n\
+    { \\\n\
+        in_type data = read_func(input, coord); \\\n\
+        coord.x ++; \\\n\
+        theta2.z = convert_float(data.x) * input_scale + input_tail; \\\n\
+    } \\\n\
+ \\\n\
+    matrix0.x = theta2.y * scale.x; \\\n\
+    matrix0.z = theta2.x * scale.z; \\\n\
+    matrix1.x = ( theta2.z - theta2.y - theta2.x + 1) * i_width * 0.5f; \\\n\
+    matrix0.y = theta1.y * scale.w; \\\n\
+    matrix0.w = theta1.x * scale.y; \\\n\
+    matrix1.y = ( theta1.z - theta1.y - theta1.x + 1) * i_height * 0.5f; \\\n\
+    matrix1.zw = 2.0f * matrix0.xy; \\\n\
+ \\\n\
+    coord.x = 0; \\\n\
+    vxc_ushort8 dst; \\\n\
+    _viv_asm(COPY, dst, matrix0, 16); \\\n\
+    VXC_WriteImage(output, coord, dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    _viv_asm(COPY, dst, matrix1, 16); \\\n\
+    coord.x = 8; \\\n\
+    VXC_WriteImage(output, coord, dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+}\n\
+GET_MATRIX_SH_IMPL(I16, int4,  read_imagei)\n\
+GET_MATRIX_SH_IMPL(I8,  int4,  read_imagei)\n\
+GET_MATRIX_SH_IMPL(U8,  uint4, read_imageui)\n\
+\n\
+__kernel void get_matrix_F16toF32\n\
+    (\n\
+    __read_only  image2d_t input,\n\
+    __write_only image2d_t output,\n\
+                 int       has_theta_1_1,\n\
+                 int       has_theta_1_2,\n\
+                 int       has_theta_1_3,\n\
+                 int       has_theta_2_1,\n\
+                 int       has_theta_2_2,\n\
+                 int       has_theta_2_3,\n\
+                 float     theta_1_1,\n\
+                 float     theta_1_2,\n\
+                 float     theta_1_3,\n\
+                 float     theta_2_1,\n\
+                 float     theta_2_2,\n\
+                 float     theta_2_3,\n\
+                 float     i_width,\n\
+                 float     i_height,\n\
+                 float     o_width,\n\
+                 float     o_height\n\
+    )\n\
+{\n\
+    int2 coord =  (int2)(0, get_global_id(1));\n\
+    float4 matrix0, matrix1;\n\
+    float4 theta1, theta2;\n\
+    _viv_asm(COPY, theta1, theta_1, 16);\n\
+    _viv_asm(COPY, theta2, theta_2, 16);\n\
+\n\
+    if (has_theta_1_1 == 0)\n\
+    {\n\
+        float4 data = read_imagef(input, coord);\n\
+        coord.x ++;\n\
+        theta1.x = data.x;\n\
+    }\n\
+\n\
+    if (has_theta_1_2 == 0)\n\
+    {\n\
+        float4 data = read_imagef(input, coord);\n\
+        coord.x ++;\n\
+        theta1.y = data.x;\n\
+    }\n\
+\n\
+    if (has_theta_1_3 == 0)\n\
+    {\n\
+        float4 data = read_imagef(input, coord);\n\
+        coord.x ++;\n\
+        theta1.z = data.x;\n\
+    }\n\
+\n\
+    if (has_theta_2_1 == 0)\n\
+    {\n\
+        float4 data = read_imagef(input, coord);\n\
+        coord.x ++;\n\
+        theta2.x = data.x;\n\
+    }\n\
+\n\
+    if (has_theta_2_2 == 0)\n\
+    {\n\
+        float4 data = read_imagef(input, coord);\n\
+        coord.x ++;\n\
+        theta2.y = data.x;\n\
+    }\n\
+\n\
+    if (has_theta_2_3 == 0)\n\
+    {\n\
+        float4 data = read_imagef(input, coord);\n\
+        coord.x ++;\n\
+        theta2.z = data.x;\n\
+    }\n\
+\n\
+    matrix0.x = theta2.y * scale.x;\n\
+    matrix0.z = theta2.x * scale.z;\n\
+    matrix1.x = ( theta2.z - theta2.y - theta2.x + 1) * i_width * 0.5f;\n\
+    matrix0.y = theta1.y * scale.w;\n\
+    matrix0.w = theta1.x * scale.y;\n\
+    matrix1.y = ( theta1.z - theta1.y - theta1.x + 1) * i_height * 0.5f;\n\
+    matrix1.zw = 2.0f * matrix0.xy;\n\
+\n\
+    coord.x = 0;\n\
+    vxc_ushort8 dst;\n\
+    _viv_asm(COPY, dst, matrix0, 16);\n\
+    VXC_WriteImage(output, coord, dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+    _viv_asm(COPY, dst, matrix1, 16);\n\
+    coord.x = 8;\n\
+    VXC_WriteImage(output, coord, dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+"; /* end of get_matrix_vx*/
+
 static const char group_normalization_f16_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 _viv_uniform int width;\n\
@@ -42926,207 +43113,96 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void vxcSignalFrame_ten
 #endif\n\
 "; /* end of vsi_nn_kernel_signalframe_vx*/
 
-static const char vsi_nn_kernel_transform_gemm_vx[] = "/*\n\
- ============================================================================\n\
- Name        : gemm.vx\n\
- Author      : Sam\n\
- Version     :\n\
- Copyright   : Your copyright notice\n\
- Description :\n\
- ============================================================================\n\
- */\n\
-#include \"cl_viv_vx_ext.h\"\n\
+static const char warp_affine_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
-_viv_uniform VXC_512Bits uniGemm3x3_4x4;\n\
-__kernel void vxcTransform_Gemm_F16toF16\n\
-    (\n\
-    __read_only     image2d_array_t thetaTensor,\n\
-    __read_only     image2d_array_t gridTensor,\n\
-    __write_only    image2d_array_t coordinates\n\
-    )\n\
-{\n\
-    int4 coord    = (int4)(0, get_global_id(0), get_global_id(1), 0);\n\
-\n\
-    vxc_short8 vec0, vec1, vec2;\n\
-    vxc_half8  src0, src1, src2, dst;\n\
-\n\
-    VXC_ReadImage(vec0,thetaTensor,coord.xx,VXC_5BITOFFSET_XY(0,0),VXC_MODIFIER(0,5, 0, VXC_RM_TowardZero, 0));\n\
-    _viv_asm(COPY, src0, vec0, 16);\n\
-    VXC_ReadImage(vec1,gridTensor,coord.yz,VXC_5BITOFFSET_XY(0,0),VXC_MODIFIER(0,5,0, VXC_RM_TowardZero, 0));\n\
-    _viv_asm(COPY, src1, vec1, 16);\n\
-    VXC_ReadImage(vec2,gridTensor,coord.yz,VXC_5BITOFFSET_XY(6,0),VXC_MODIFIER(0,5,0, VXC_RM_TowardZero, 0));\n\
-    _viv_asm(COPY, src2, vec2, 16);\n\
-\n\
-    coord.y = (int)((short)coord.y / (short)3) * 2;\n\
-\n\
-    VXC_DP4x4(dst, src1, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniGemm3x3_4x4);\n\
-    VXC_DP4x4(dst, src2, src0, VXC_MODIFIER(4, 7, 0, VXC_RM_TowardZero, 0), uniGemm3x3_4x4);\n\
-\n\
-    _viv_asm(COPY, vec0, dst, 16);\n\
-    VXC_WriteImage(coordinates, coord.yz, vec0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+_viv_uniform VXC_512Bits uniConvertDatatoF32_0_4x4;\n\
+_viv_uniform VXC_512Bits uniConvertDatatoF32_1_4x4;\n\
+_viv_uniform VXC_512Bits uniExtract8Data_2x8;\n\
+_viv_uniform float input_scale;\n\
+_viv_uniform float input_tail;\n\
+_viv_uniform float output_scale;\n\
+_viv_uniform float output_zp;\n\
+#define WARP_AFFINE_SH_IMPL(name0, name1, src_type, src_copy_type, convert_type, dst_type, dst_copy_type) \\\n\
+__kernel void warp_affine_##name0##to##name1 \\\n\
+    ( \\\n\
+    __read_only  image2d_array_t input, \\\n\
+    __read_only  image2d_t       matrix, \\\n\
+    __write_only image2d_array_t output \\\n\
+    ) \\\n\
+{ \\\n\
+    int4   coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), get_global_id(2)); \\\n\
+    int4   coord_in = (int4)(get_global_id(0), get_global_id(1), get_global_id(0) + 1, get_global_id(1)); \\\n\
+ \\\n\
+    float4 coord_f = convert_float4(coord_in); \\\n\
+ \\\n\
+    int2 m_coord = (int2)(0, 0); \\\n\
+    vxc_ushort8 m0, m1; \\\n\
+    VXC_ReadImage(m0, matrix, m_coord, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    VXC_ReadImage(m1, matrix, m_coord, VXC_5BITOFFSET_XY(8, 0), VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    float4 matrix0, matrix1; \\\n\
+    _viv_asm(COPY, matrix0, m0, 16); \\\n\
+    _viv_asm(COPY, matrix1, m1, 16); \\\n\
+ \\\n\
+    coord_f = coord_f.xxzz * matrix0.xyxy + coord_f.yyww * matrix0.zwzw + matrix1.xyxy; \\\n\
+ \\\n\
+    coord_in = convert_int4(coord_f < 0 ? coord_f - 2 : coord_f); \\\n\
+ \\\n\
+    int4 coord_in0 = (int4)(coord_in.xy, coord.zw); \\\n\
+    int8 input_desc; \\\n\
+    _viv_asm(COPY, input_desc, input, sizeof(input_desc)); \\\n\
+    int baseAddr = (int)coord_in0.z * input_desc.s4 + input_desc.s0; \\\n\
+    _viv_asm(MOV, coord_in0.z, baseAddr); \\\n\
+ \\\n\
+    src_type v0, v1; \\\n\
+    src_copy_type top, bot; \\\n\
+    VXC_OP4(img_load_3d, v0, input, coord_in0, VXC_5BITOFFSET_XY(0, 0), \\\n\
+            VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0)); \\\n\
+    VXC_OP4(img_load_3d, v1, input, coord_in0, VXC_5BITOFFSET_XY(0, 1), \\\n\
+            VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0)); \\\n\
+    coord_in0.xy = coord_in.zw; \\\n\
+    VXC_OP4(img_load_3d, v0, input, coord_in0, VXC_5BITOFFSET_XY(0, 0), \\\n\
+            VXC_MODIFIER(2, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+    VXC_OP4(img_load_3d, v1, input, coord_in0, VXC_5BITOFFSET_XY(0, 1), \\\n\
+            VXC_MODIFIER(2, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+    _viv_asm(COPY, top, v0, 16); \\\n\
+    _viv_asm(COPY, bot, v1, 16); \\\n\
+ \\\n\
+    float4 lerp       = coord_f - floor(coord_f); \\\n\
+    float4 minus_lerp = 1.0f - lerp; \\\n\
+    float4 coef0          = (float4)( minus_lerp.x * minus_lerp.y, lerp.x * minus_lerp.y, \\\n\
+                                      minus_lerp.x * lerp.y,       lerp.x * lerp.y); \\\n\
+ \\\n\
+    float4 coef1          = (float4)( minus_lerp.z * minus_lerp.w, lerp.z * minus_lerp.w, \\\n\
+                               minus_lerp.z * lerp.w,       lerp.z * lerp.w); \\\n\
+ \\\n\
+    float4 data0, data1, result = 0; \\\n\
+    VXC_DP4x4(data0, top, bot, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertDatatoF32_0_4x4); \\\n\
+    VXC_DP4x4(data1, top, bot, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertDatatoF32_1_4x4); \\\n\
+ \\\n\
+    data0 = data0 * input_scale + input_tail; \\\n\
+    data1 = data1 * input_scale + input_tail; \\\n\
+    result.x = dot(data0, coef0); \\\n\
+    result.y = dot(data1, coef1); \\\n\
+    result.xy = result.xy * output_scale + output_zp; \\\n\
+    convert_type dst0; \\\n\
+    _viv_asm(CONV_RTE, dst0, result); \\\n\
+    dst_type dst1; \\\n\
+    VXC_DP2x8(dst1, dst0, dst0, VXC_MODIFIER(0, 1, 0, VXC_RM_ToNearestEven, 1), uniExtract8Data_2x8); \\\n\
+    dst_copy_type dst; \\\n\
+    _viv_asm(COPY, dst, dst1, 8); \\\n\
+    VXC_WriteImage2DArray(output, coord, dst, VXC_MODIFIER(0, 1, 0,VXC_RM_TowardZero, 0)); \\\n\
 }\n\
-"; /* end of vsi_nn_kernel_transform_gemm_vx*/
-
-static const char vsi_nn_kernel_transform_interp_vx[] = "/*\n\
- ============================================================================\n\
- Name        : minimum.vx\n\
- Author      : Sam\n\
- Version     :\n\
- Copyright   : Your copyright notice\n\
- Description :\n\
- ============================================================================\n\
- */\n\
-#include \"cl_viv_vx_ext.h\"\n\
-\n\
-_viv_uniform VXC_512Bits uniGetDXY_4x4;\n\
-_viv_uniform VXC_512Bits uniConvertF16toF32_4x4;\n\
-_viv_uniform int2 packedWH2;\n\
-_viv_uniform int  packedWH;\n\
-__kernel void vxcTransform_InterP_F16toF16_2D\n\
-    (\n\
-    __read_only     image2d_array_t input0,\n\
-    __read_only     image2d_array_t input1,\n\
-    __write_only    image2d_array_t output\n\
-    )\n\
-{\n\
-    int2 coord  =  (int2)(get_global_id(0), get_global_id(1));\n\
-\n\
-    vxc_short8 vec0;\n\
-    vxc_half8  pxy;\n\
-    vxc_float4 dxy4;\n\
-    vxc_int4   pos4;\n\
-    short dst = 0;\n\
-\n\
-    VXC_ReadImage(vec0, input1, coord.xy, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0));\n\
-    _viv_asm(COPY, pxy, vec0, 4);\n\
-\n\
-    coord.x >>= 1;\n\
-    vxc_short2 packedWH_16B;\n\
-    _viv_asm(COPY, packedWH_16B, packedWH, 4);\n\
-    VXC_DP4x4(dxy4, pxy, packedWH_16B, VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0), uniGetDXY_4x4);\n\
-    dxy4.zw = floor(dxy4.xy);\n\
-    pos4.xy = convert_int2(dxy4.zw);\n\
-    pos4.zw = convert_int2(ceil(dxy4.xy));\n\
-\n\
-    vxc_short8 vec1;\n\
-    vxc_half8  src0, src1;\n\
-    VXC_ReadImage(vec0, input0, pos4.xy, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0));\n\
-    _viv_asm(COPY, src0, vec0, 8);\n\
-    VXC_ReadImage(vec1, input0, pos4.xw, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0));\n\
-    _viv_asm(COPY, src1, vec1, 8);\n\
-\n\
-    float2 xyLerp        = dxy4.xy - dxy4.zw;\n\
-    float2 oneSub_xyLerp = 1.0f - xyLerp;\n\
-    float4 coef          = (float4)(oneSub_xyLerp.x * oneSub_xyLerp.y, xyLerp.x * oneSub_xyLerp.y,\n\
-                                    oneSub_xyLerp.x * xyLerp.y, xyLerp.x * xyLerp.y);\n\
-    float4  data;\n\
-\n\
-    VXC_DP4x4(data, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertF16toF32_4x4);\n\
-\n\
-    data.x = dot(data, coef);\n\
-\n\
-    half tmp;\n\
-    _viv_asm(CONV, tmp, data);\n\
-    _viv_asm(COPY, dst, tmp, 4);\n\
-\n\
-    VXC_WriteImage(output, coord, dst, VXC_MODIFIER(0, 0, 0,VXC_RM_TowardZero, 0));\n\
-}\n\
-\n\
-_viv_uniform int depth;\n\
-__kernel void vxcTransform_InterP_F16toF16\n\
-    (\n\
-    __read_only     image2d_array_t input0,\n\
-    __read_only     image2d_array_t input1,\n\
-    __write_only    image2d_array_t output\n\
-    )\n\
-{\n\
-    int4 coord  =  (int4)(get_global_id(0), get_global_id(1), 0, 0);\n\
-\n\
-    vxc_short8 vec0;\n\
-    vxc_half8  pxy;\n\
-    vxc_float4 dxy4;\n\
-    vxc_int4   pos4;\n\
-    short dst = 0;\n\
-\n\
-    VXC_ReadImage(vec0, input1, coord.xy, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0));\n\
-    _viv_asm(COPY, pxy, vec0, 4);\n\
-\n\
-    coord.x >>= 1;\n\
-    vxc_short2 packedWH_16B;\n\
-    _viv_asm(COPY, packedWH_16B, packedWH, 4);\n\
-    VXC_DP4x4(dxy4, pxy, packedWH_16B, VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0), uniGetDXY_4x4);\n\
-    dxy4.zw = floor(dxy4.xy);\n\
-    pos4.xy = convert_int2(dxy4.zw);\n\
-    pos4.zw = convert_int2(ceil(dxy4.xy));\n\
-\n\
-\n\
-    float2 xyLerp        = dxy4.xy - dxy4.zw;\n\
-    float2 oneSub_xyLerp = 1.0f - xyLerp;\n\
-    float4 coef          = (float4)(oneSub_xyLerp.x * oneSub_xyLerp.y, xyLerp.x * oneSub_xyLerp.y,\n\
-                                    oneSub_xyLerp.x * xyLerp.y, xyLerp.x * xyLerp.y);\n\
-\n\
-    int4 coord_ = (int4)(pos4.x, pos4.y, 0, 0);\n\
-    do\n\
-    {\n\
-        vxc_short8 vec1;\n\
-        vxc_half8  src0, src1;\n\
-        VXC_ReadImage2DArray(vec0,input0,coord_,VXC_5BITOFFSET_XY(0,0),VXC_MODIFIER(0,1,0, VXC_RM_TowardZero, 0));\n\
-        _viv_asm(COPY, src0, vec0, 8);\n\
-        VXC_ReadImage2DArray(vec1,input0,coord_,VXC_5BITOFFSET_XY(0,1),VXC_MODIFIER(0,1,0, VXC_RM_TowardZero, 0));\n\
-        _viv_asm(COPY, src1, vec1, 8);\n\
-\n\
-        coord_.z ++;\n\
-        float4  data;\n\
-        VXC_DP4x4(data, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertF16toF32_4x4);\n\
-\n\
-        data.x = dot(data, coef);\n\
-\n\
-        half tmp;\n\
-        _viv_asm(CONV, tmp, data);\n\
-        _viv_asm(COPY, dst, tmp, 4);\n\
-\n\
-\n\
-        VXC_WriteImage2DArray(output, coord, dst, VXC_MODIFIER(0, 0, 0,VXC_RM_TowardZero, 0));\n\
-        coord.z ++;\n\
-\n\
-    } while (coord.z < depth);\n\
-}\n\
-\n\
-"; /* end of vsi_nn_kernel_transform_interp_vx*/
-
-static const char vsi_nn_kernel_transform_setupThres_vx[] = "/*\n\
- ============================================================================\n\
- Name        : gemm.vx\n\
- Author      : Sam\n\
- Version     :\n\
- Copyright   : Your copyright notice\n\
- Description :\n\
- ============================================================================\n\
- */\n\
-#include \"cl_viv_vx_ext.h\"\n\
-\n\
-_viv_uniform int4 extract_packed;\n\
-__kernel void vxcTransform_setupThres_F16toF16\n\
-    (\n\
-    __read_only     image2d_array_t initTensor,\n\
-    __read_only     image2d_array_t inputFC,\n\
-     global int*     thresFlag,\n\
-    __write_only    image2d_array_t thres\n\
-    )\n\
-{\n\
-    int2 coord    = (int2)(0, 0);\n\
-\n\
-    vxc_ushort8 src0, src1, dst;\n\
-\n\
-    int flag = *thresFlag;\n\
-    VXC_ReadImage(src0, initTensor, coord, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 5, 0, VXC_RM_TowardZero, 0));\n\
-    VXC_ReadImage(src1, inputFC, coord, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 5, 0, VXC_RM_TowardZero, 0));\n\
-\n\
-    VXC_BitExtract(dst, src0, src1, extract_packed, VXC_MODIFIER(0, 5, 0, VXC_RM_TowardZero, 0));\n\
-\n\
-    VXC_WriteImage(thres, coord, dst, VXC_MODIFIER(0, 5, 0, VXC_RM_TowardZero, 0));\n\
-}\n\
-"; /* end of vsi_nn_kernel_transform_setupThres_vx*/
+WARP_AFFINE_SH_IMPL(F16, F16, vxc_short8, vxc_half8,  half4, vxc_half8,  vxc_short8)\n\
+WARP_AFFINE_SH_IMPL(F16, I8,  vxc_short8, vxc_half8,  int4,  vxc_char8,  vxc_char8)\n\
+WARP_AFFINE_SH_IMPL(F16, U8,  vxc_short8, vxc_half8,  int4,  vxc_uchar8, vxc_uchar8)\n\
+WARP_AFFINE_SH_IMPL(F16, I16, vxc_short8, vxc_half8,  int4,  vxc_short8, vxc_short8)\n\
+WARP_AFFINE_SH_IMPL(I8,  I8,  vxc_char8,  vxc_char8,  int4,  vxc_char8,  vxc_char8)\n\
+WARP_AFFINE_SH_IMPL(I8,  F16, vxc_char8,  vxc_char8,  half4, vxc_half8,  vxc_short8)\n\
+WARP_AFFINE_SH_IMPL(U8,  U8,  vxc_uchar8, vxc_uchar8, int4,  vxc_uchar8, vxc_uchar8)\n\
+WARP_AFFINE_SH_IMPL(U8,  F16, vxc_uchar8, vxc_uchar8, half4, vxc_half8,  vxc_short8)\n\
+WARP_AFFINE_SH_IMPL(I16, I16, vxc_short8, vxc_short8, int4,  vxc_short8, vxc_short8)\n\
+WARP_AFFINE_SH_IMPL(I16, F16, vxc_short8, vxc_short8, half4, vxc_half8,  vxc_short8)\n\
+"; /* end of warp_affine_vx*/
 
 
 
@@ -57034,6 +57110,7 @@ static const source_map_t evis_resource[] =
     {"gather_nd_3d_vx", gather_nd_3d_vx},
     {"gather_nd_3d_mix_vx", gather_nd_3d_mix_vx},
     {"gather_nd_mix_vx", gather_nd_mix_vx},
+    {"get_matrix_vx", get_matrix_vx},
     {"group_normalization_f16_vx", group_normalization_f16_vx},
     {"group_normalization_i16_vx", group_normalization_i16_vx},
     {"group_normalization_i8_vx", group_normalization_i8_vx},
@@ -57215,9 +57292,7 @@ static const source_map_t evis_resource[] =
     {"vsi_nn_kernel_imageprocess_5_vx", vsi_nn_kernel_imageprocess_5_vx},
     {"vsi_nn_kernel_roi_align_vx", vsi_nn_kernel_roi_align_vx},
     {"vsi_nn_kernel_signalframe_vx", vsi_nn_kernel_signalframe_vx},
-    {"vsi_nn_kernel_transform_gemm_vx", vsi_nn_kernel_transform_gemm_vx},
-    {"vsi_nn_kernel_transform_interp_vx", vsi_nn_kernel_transform_interp_vx},
-    {"vsi_nn_kernel_transform_setupThres_vx", vsi_nn_kernel_transform_setupThres_vx},
+    {"warp_affine_vx", warp_affine_vx},
 };
 
 static const source_map_t cl_resource[] =
