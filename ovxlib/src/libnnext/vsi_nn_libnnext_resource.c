@@ -1820,8 +1820,14 @@ __kernel void batch_norm_##name0##_F16_F16_F32_F32to##name1##_brdcst1( \\\n\
     _viv_asm(COPY, mean, _mean, 16); \\\n\
     VXC_ReadImage2DArray(_var, Variance, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
     _viv_asm(COPY, var, _var, 16); \\\n\
-    float4 gamma = read_imagef(Gamma, coord); \\\n\
-    float4 beta = read_imagef(Beta, coord); \\\n\
+    int4 coord_in = coord; \\\n\
+    int depth = get_image_array_size(Gamma); \\\n\
+    _viv_asm(CLAMP0MAX, coord_in.z, coord_in.z, depth - 1); \\\n\
+    float4 gamma = read_imagef(Gamma, coord_in); \\\n\
+    coord_in.z = coord.z; \\\n\
+    depth = get_image_array_size(Beta); \\\n\
+    _viv_asm(CLAMP0MAX, coord_in.z, coord_in.z, depth - 1); \\\n\
+    float4 beta = read_imagef(Beta, coord_in); \\\n\
  \\\n\
     float4 src0, src1, m, v; \\\n\
     VXC_DP4x4(src0, src, src, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 1), uniDatatoF32_0_4x4); \\\n\
@@ -1944,12 +1950,18 @@ __kernel void batch_norm_##name0##_F16_F16_F32_F32to##name1##_brdcst0( \\\n\
     _viv_asm(COPY, mean, _mean, 16); \\\n\
     VXC_ReadImage2DArray(_var, Variance, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
     _viv_asm(COPY, var, _var, 16); \\\n\
-    float4 gamma0 = read_imagef(Gamma, coord); \\\n\
-    float4 beta0 = read_imagef(Beta, coord); \\\n\
-    coord.x += 4; \\\n\
-    float4 gamma1 = read_imagef(Gamma, coord); \\\n\
-    float4 beta1 = read_imagef(Beta, coord); \\\n\
-    coord.x -= 4; \\\n\
+    int4 coord_in0 = coord; \\\n\
+    int depth = get_image_array_size(Gamma); \\\n\
+    _viv_asm(CLAMP0MAX, coord_in0.z, coord_in0.z, depth - 1); \\\n\
+    float4 gamma0 = read_imagef(Gamma, coord_in0); \\\n\
+    int4 coord_in1 = coord; \\\n\
+    depth = get_image_array_size(Beta); \\\n\
+    _viv_asm(CLAMP0MAX, coord_in1.z, coord_in1.z, depth - 1); \\\n\
+    float4 beta0 = read_imagef(Beta, coord_in1); \\\n\
+    coord_in0.x += 4; \\\n\
+    coord_in1.x += 4; \\\n\
+    float4 gamma1 = read_imagef(Gamma, coord_in0); \\\n\
+    float4 beta1 = read_imagef(Beta, coord_in1); \\\n\
  \\\n\
     float4 src0, src1, m, v; \\\n\
     VXC_DP4x4(src0, src, src, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 1), uniDatatoF32_0_4x4); \\\n\
@@ -2050,7 +2062,6 @@ BATCH_NORM_SH_IMPL_AXIS1_2D(U8,  U8,  vxc_uchar16, vxc_uchar16, int4,  vxc_uchar
 BATCH_NORM_SH_IMPL_AXIS1_2D(U8,  F16, vxc_uchar16, vxc_uchar16, half4, vxc_half8,   vxc_ushort8)\n\
 BATCH_NORM_SH_IMPL_AXIS1_2D(I8,  I8,  vxc_char16,  vxc_char16,  int4,  vxc_char16,  vxc_char16)\n\
 BATCH_NORM_SH_IMPL_AXIS1_2D(I8,  F16, vxc_char16,  vxc_char16,  half4, vxc_half8,   vxc_ushort8)\n\
-\n\
 "; /* end of batchnorm_single_f32_vx*/
 
 static const char cast_vx[] = "\n\
