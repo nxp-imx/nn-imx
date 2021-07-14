@@ -63,6 +63,7 @@ typedef struct _vsi_nn_hw_config_t
 #if VX_HARDWARE_CAPS_PARAMS_EXT_SUPPORT
     uint32_t subGroupSize;
 #endif
+    uint32_t use_40bits_va;
 } vsi_nn_hw_config_t;
 
 typedef struct _vsi_nn_runtime_option_t

@@ -444,14 +444,15 @@ static vsi_status _gpu_register
         if( VSI_NN_KERNEL_TYPE_EVIS == kernel->type )
         {
             cost_bytes = snprintf( cmd, MAX_BUILDPROGRAM_LEN,
-                    "-cl-viv-vx-extension -D VX_VERSION=2" );
+                    "-cl-viv-vx-extension -D VX_VERSION=2 -D USE_40BITS_VA=%d",
+                    context->config.use_40bits_va );
         }
     }
     else
     {
         cost_bytes = snprintf( cmd, MAX_BUILDPROGRAM_LEN,
-                "-cl-viv-vx-extension -D VX_VERSION=%d",
-                context->config.evis.ver );
+                "-cl-viv-vx-extension -D VX_VERSION=%d -D USE_40BITS_VA=%d",
+                context->config.evis.ver, context->config.use_40bits_va );
     }
     // Pack build option
     if( kernel->gpu.sources[active_fmt].build_option.data )

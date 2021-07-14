@@ -51,7 +51,12 @@ static vsi_status query_hardware_caps
 
 #if VX_HARDWARE_CAPS_PARAMS_EXT_SUPPORT
     context->config.subGroupSize = paramExt.subGroupSize;
+#if VX_VA40_EXT_SUPPORT
+    context->config.use_40bits_va = paramExt.supportVA40;
 #endif
+
+#endif
+
     if(param.evis1 == TRUE && param.evis2 == FALSE)
     {
         context->config.evis.ver = VSI_NN_HW_EVIS_1;
