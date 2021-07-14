@@ -104,9 +104,11 @@ static vsi_bool op_check
 {
     BEGIN_IO_TYPE_DECL(SCATTER_ND_UPDATE, 3, 1)
         IO_TYPE(D_I8|Q_DFP,  D_I32, D_I8|Q_DFP,   D_I8|Q_DFP)
+        IO_TYPE(D_I8|Q_DFP,  D_I32, D_I8|Q_DFP,   D_F16)
         IO_TYPE(D_U8|Q_ASYM, D_I32, D_U8|Q_ASYM,  D_U8|Q_ASYM)
         IO_TYPE(D_U8|Q_ASYM, D_I32, D_U8|Q_ASYM,  D_F16)
         IO_TYPE(D_I16|Q_DFP, D_I32, D_I16|Q_DFP,  D_I16|Q_DFP)
+        IO_TYPE(D_I16|Q_DFP, D_I32, D_I16|Q_DFP,  D_F16)
         IO_TYPE(D_F16, D_I32, D_F16, D_F16)
         IO_TYPE(D_BF16, D_I32, D_BF16, D_BF16)
         IO_TYPE(D_I32, D_I32, D_I32, D_I32)
