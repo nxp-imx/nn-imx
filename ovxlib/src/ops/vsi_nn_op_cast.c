@@ -58,8 +58,10 @@ static vsi_bool _is_dataconvert_op
     _dtype = &outputs[0]->attr.dtype;
 
     if ( dtype->qnt_type == VSI_NN_QNT_TYPE_NONE &&
-        _dtype->qnt_type == VSI_NN_QNT_TYPE_NONE &&
-        vsi_nn_OpCheck(VSI_NN_OP_DATACONVERT, self, inputs, outputs) )
+         dtype->vx_type != VSI_NN_TYPE_FLOAT32 &&
+         dtype->vx_type != VSI_NN_TYPE_FLOAT16 &&
+         _dtype->qnt_type == VSI_NN_QNT_TYPE_NONE &&
+         vsi_nn_OpCheck(VSI_NN_OP_DATACONVERT, self, inputs, outputs) )
     {
         return TRUE;
     }
@@ -83,7 +85,6 @@ static vsi_status op_compute
 
     if ( _is_dataconvert_op(self, inputs, outputs) )
     {
-
         vsi_nn_internal_compute_node( self );
         status = VSI_SUCCESS;
     }
@@ -320,4 +321,3 @@ DEF_OP_REG
     );
 
 __END_DECLS
-
