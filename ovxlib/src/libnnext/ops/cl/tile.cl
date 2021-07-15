@@ -70,8 +70,7 @@ __kernel void tile_##name0##to##name1##_2D \
     int output_width = get_image_width(output); \
     int output_height = get_image_height(output); \
  \
-    data_type src; \
-    read_image_func(src, input, coord); \
+    data_type src = read_image_func(input, coord); \
  \
     do \
     { \
