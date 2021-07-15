@@ -57042,8 +57042,7 @@ __kernel void tile_##name0##to##name1##_2D \\\n\
     int output_width = get_image_width(output); \\\n\
     int output_height = get_image_height(output); \\\n\
  \\\n\
-    data_type src; \\\n\
-    read_image_func(src, input, coord); \\\n\
+    data_type src = read_image_func(input, coord); \\\n\
  \\\n\
     do \\\n\
     { \\\n\
