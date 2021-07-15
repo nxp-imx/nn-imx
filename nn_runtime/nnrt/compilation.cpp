@@ -37,6 +37,7 @@ namespace nnrt
 {
 
 extern SharedContextPtr global_ovx_context;
+extern std::mutex gc_mutex;
 
 struct Compilation::Private {
     uint32_t prepared_model_cache_size_{1};
@@ -59,6 +60,7 @@ Compilation::~Compilation()
     }
     d->prepared_models_.clear();
     d->context_.reset();
+    std::lock_guard<std::mutex> lock(gc_mutex);
     if (global_ovx_context.use_count() == 1) {
         global_ovx_context.reset();
     }

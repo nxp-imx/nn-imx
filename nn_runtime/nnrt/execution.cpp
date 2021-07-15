@@ -48,6 +48,7 @@ namespace nnrt
  * Driver only support one context in a thread.
  */
 SharedContextPtr global_ovx_context;
+std::mutex gc_mutex;
 
 struct ContextDeleter {
     void operator()(vsi_nn_context_t ctx) {
@@ -90,6 +91,7 @@ Execution::Execution(Compilation* compilation)
         ExecutionIOPtr io = std::make_shared<ExecutionIO>(operand);
         d->outputs_.push_back(io);
     }
+    std::lock_guard<std::mutex> lock(gc_mutex);
     if (!global_ovx_context) {
         global_ovx_context.reset(vsi_nn_CreateContext(), ContextDeleter());
     }
