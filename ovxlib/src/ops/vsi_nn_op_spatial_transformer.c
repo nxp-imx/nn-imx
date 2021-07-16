@@ -67,6 +67,7 @@ static vsi_status op_compute
     vsi_nn_kernel_param_add_float32( param, "theta_2_1",  p->theta_2_1 );
     vsi_nn_kernel_param_add_float32( param, "theta_2_2",  p->theta_2_2 );
     vsi_nn_kernel_param_add_float32( param, "theta_2_3",  p->theta_2_3 );
+    vsi_nn_kernel_param_add_int32( param, "align_corners",  p->align_corners );
 
     self->n = (vx_node)vsi_nn_kernel_selector( self->graph,
         "spatial_transformer",
@@ -167,6 +168,18 @@ static vsi_bool op_setup
     return TRUE;
 } /* op_setup() */
 
+static vsi_status op_init
+    (
+    vsi_nn_node_t * self
+    )
+{
+    vsi_status status = VSI_SUCCESS;
+
+    self->nn_param.spatial_transformer.align_corners = FALSE;
+
+    return status;
+} /* op_init() */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -174,7 +187,7 @@ extern "C" {
 DEF_OP_REG
     (
     /* op_name    */ SPATIAL_TRANSFORMER,
-    /* init       */ NULL,
+    /* init       */ op_init,
     /* compute    */ op_compute,
     /* deinit     */ vsi_nn_op_common_deinit,
     /* check      */ op_check,

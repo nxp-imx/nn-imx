@@ -493,11 +493,22 @@ static vsi_nn_kernel_node_t _setup
     float theta_2_1  = vsi_nn_kernel_param_get_float32( params, "theta_2_1" );
     float theta_2_2  = vsi_nn_kernel_param_get_float32( params, "theta_2_2" );
     float theta_2_3  = vsi_nn_kernel_param_get_float32( params, "theta_2_3" );
+    int32_t align_corners  = vsi_nn_kernel_param_get_int32( params, "align_corners" );
     float input_w    = (float)inputs[0]->attr.size[0];
     float input_h    = (float)inputs[0]->attr.size[1];
-    float output_w    = (float)outputs[0]->attr.size[0];
-    float output_h    = (float)outputs[0]->attr.size[1];
+    float output_w   = (float)outputs[0]->attr.size[0];
+    float output_h   = (float)outputs[0]->attr.size[1];
     int32_t i = 0;
+
+    if (align_corners && output_w > 1)
+    {
+        output_w = output_w - 1;
+    }
+
+    if (align_corners && output_h > 1)
+    {
+        output_h = output_h - 1;
+    }
 
     // Check if gpu can support the size
     if( !vsi_nn_kernel_gpu_check_shape(
@@ -628,4 +639,3 @@ final:
 __END_DECLS
 
 REGISTER_BACKEND_EVIS( spatial_transformer, _setup )
-
