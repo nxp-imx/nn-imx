@@ -67,6 +67,7 @@ static vx_param_description_t _spatial_transformer_kernel_param_def[] =
     {VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
 };
 #define _SPATIAL_TRANSFORMER_PARAM_NUM  _cnt_of_array( _spatial_transformer_kernel_param_def )
 #define HAS_THETA_1_1   (3)
@@ -81,6 +82,7 @@ static vx_param_description_t _spatial_transformer_kernel_param_def[] =
 #define THETA_2_1       (12)
 #define THETA_2_2       (13)
 #define THETA_2_3       (14)
+#define ALIGN_CORNERS   (15)
 
 static void _transform_affine(int32_t dst_x, int32_t dst_y, const float m[], float *src_x, float *src_y)
 {
@@ -144,6 +146,7 @@ DEF_KERNEL_EXECUTOR(_compute)
     int32_t  input_width = 1;
     int32_t  rank = 0;
     int32_t  index = 0;
+    int32_t  align_corners = 0;
     float    theta[6] = {0};
 
     /* prepare data */
@@ -178,6 +181,7 @@ DEF_KERNEL_EXECUTOR(_compute)
     status |= vsi_nn_kernel_scalar_read_float32((vsi_nn_kernel_scalar_t)param[THETA_2_1], &theta[3]);
     status |= vsi_nn_kernel_scalar_read_float32((vsi_nn_kernel_scalar_t)param[THETA_2_2], &theta[4]);
     status |= vsi_nn_kernel_scalar_read_float32((vsi_nn_kernel_scalar_t)param[THETA_2_3], &theta[5]);
+    status |= vsi_nn_kernel_scalar_read_int32((vsi_nn_kernel_scalar_t)param[ALIGN_CORNERS], &align_corners);
     CHECK_STATUS_FAIL_GOTO( status, final );
 
     rank = (int32_t)out_attr[0]->shape->size;
@@ -204,6 +208,16 @@ DEF_KERNEL_EXECUTOR(_compute)
                 theta[i] = f32_in_buffer[1][b * in_attr[1]->shape->data[0] + j];
                 j ++;
             }
+        }
+
+        if (align_corners && w > 1)
+        {
+            w = w - 1;
+        }
+
+        if (align_corners && h > 1)
+        {
+            h = h - 1;
         }
 
         matrix_m[0] = theta[4] * _w / w;
@@ -326,6 +340,7 @@ static vsi_nn_kernel_node_t _setup
     float theta_2_1  = vsi_nn_kernel_param_get_float32( params, "theta_2_1" );
     float theta_2_2  = vsi_nn_kernel_param_get_float32( params, "theta_2_2" );
     float theta_2_3  = vsi_nn_kernel_param_get_float32( params, "theta_2_3" );
+    int32_t align_corners  = vsi_nn_kernel_param_get_int32( params, "align_corners" );
 
     status = _query_kernel( kernel, inputs, outputs );
     if ( VSI_SUCCESS == status)
@@ -348,6 +363,7 @@ static vsi_nn_kernel_node_t _setup
             node_params[THETA_2_1] = vsi_nn_kernel_scalar_create( graph, F32, &theta_2_1 );
             node_params[THETA_2_2] = vsi_nn_kernel_scalar_create( graph, F32, &theta_2_2 );
             node_params[THETA_2_3] = vsi_nn_kernel_scalar_create( graph, F32, &theta_2_3 );
+            node_params[ALIGN_CORNERS] = vsi_nn_kernel_scalar_create( graph, I32, &align_corners );
             /* Pass parameters to node. */
             status  = vsi_nn_kernel_node_pass_param( node, node_params, _SPATIAL_TRANSFORMER_PARAM_NUM );
             vsi_nn_kernel_scalar_release( &node_params[HAS_THETA_1_1] );
@@ -362,6 +378,7 @@ static vsi_nn_kernel_node_t _setup
             vsi_nn_kernel_scalar_release( &node_params[THETA_2_1] );
             vsi_nn_kernel_scalar_release( &node_params[THETA_2_2] );
             vsi_nn_kernel_scalar_release( &node_params[THETA_2_3] );
+            vsi_nn_kernel_scalar_release( &node_params[ALIGN_CORNERS] );
         }
     }
     return node;
