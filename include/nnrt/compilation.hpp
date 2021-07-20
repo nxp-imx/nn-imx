@@ -24,15 +24,22 @@
 #ifndef __OVXLIB_COMPILATION_H__
 #define __OVXLIB_COMPILATION_H__
 
-#include <mutex>
-#include "vsi_nn_pub.h"
 #include "nnrt/interpreter.hpp"
-#include "nnrt/prepared_model.hpp"
 #include "nnrt/shared_context.hpp"
+
+#include <vector>
 
 namespace nnrt
 {
 class Model;
+
+class PreparedModel;
+
+using PreparedModelPtr = std::shared_ptr<PreparedModel>;
+
+struct ExecutionIO;
+
+using ExecutionIOPtr = std::shared_ptr<ExecutionIO>;
 
 class Compilation
 {
@@ -59,19 +66,19 @@ class Compilation
                                       SharedContextPtr& ovx_context);
 
        private:
-        Compilation(const Compilation&) = default;
-        Compilation(Compilation&&) = default;
-        Compilation& operator=(const Compilation&) = default;
+        Compilation(const Compilation&) = delete;
+        Compilation(Compilation&&) = delete;
+        Compilation& operator=(const Compilation&) = delete;
 
        private:
         void cachePreparedModel(PreparedModelPtr& model);
 
         Model* model_;
         Interpreter* interpreter_;  //!< default interpreter_ set as NNapi interperter
-        uint32_t prepared_model_cache_size_;
-        std::map<std::string, PreparedModelPtr> prepared_models_;
-        std::mutex cache_mutex_;
-        SharedContextPtr context_;
+
+        // Implementation details
+        struct Private;
+        std::unique_ptr<Private> d;
 };
 
 using CompilerUniquePtr = std::unique_ptr<Compilation>;
