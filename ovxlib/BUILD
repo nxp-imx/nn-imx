@@ -273,7 +273,6 @@ cc_library(
         "src/kernel/vsi_nn_gpu.c",
         "src/kernel/vsi_nn_kernel_gpu_shape_optimize.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_imageprocess.c",
-        "src/libnnext/ops/kernel/vsi_nn_kernel_signalframe.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_extra_ending.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_heatmap_max_keypoint.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_box_with_nms_limit.c",

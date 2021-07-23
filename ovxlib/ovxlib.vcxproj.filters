@@ -926,6 +926,9 @@
     <ClCompile Include="src\kernel\cl\sequence_mask_cl.c">
       <Filter>Source Files\kernel\cl</Filter>
     </ClCompile>
+    <ClCompile Include="src\kernel\cl\signal_frame_cl.c">
+      <Filter>Source Files\kernel\cl</Filter>
+    </ClCompile>
     <ClCompile Include="src\kernel\cl\slice_cl.c">
       <Filter>Source Files\kernel\cl</Filter>
     </ClCompile>
@@ -1128,6 +1131,9 @@
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\sequence_mask_cpu.c">
+      <Filter>Source Files\kernel\cpu</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\cpu\signal_frame_cpu.c">
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\slice_cpu.c">
@@ -1334,6 +1340,9 @@
     <ClCompile Include="src\kernel\evis\sequence_mask_evis.c">
       <Filter>Source Files\kernel\evis</Filter>
     </ClCompile>
+    <ClCompile Include="src\kernel\evis\signal_frame_evis.c">
+      <Filter>Source Files\kernel\evis</Filter>
+    </ClCompile>
     <ClCompile Include="src\kernel\evis\slice_evis.c">
       <Filter>Source Files\kernel\evis</Filter>
     </ClCompile>
@@ -1385,13 +1394,13 @@
     <ClCompile Include="src\kernel\vsi_nn_kernel_util.c">
       <Filter>Source Files\kernel</Filter>
     </ClCompile>
-    <ClCompile Include="src\kernel\vx\a_times_b_plus_c_vx.c">
+  <ClCompile Include="src\kernel\vx\a_times_b_plus_c_vx.c">
       <Filter>Source Files\kernel\vx</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\vx\clip_vx.c">
       <Filter>Source Files\kernel\vx</Filter>
     </ClCompile>
-  <ClCompile Include="src\kernel\vx\convolutional.c">
+    <ClCompile Include="src\kernel\vx\convolutional.c">
       <Filter>Source Files\kernel\vx</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\vx\eltwise_unary_vx.c">
@@ -1400,7 +1409,7 @@
     <ClCompile Include="src\kernel\vx\eltwise_vx.c">
       <Filter>Source Files\kernel\vx</Filter>
     </ClCompile>
-  <ClCompile Include="src\kernel\vx\erf_vx.c">
+    <ClCompile Include="src\kernel\vx\erf_vx.c">
       <Filter>Source Files\kernel\vx</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\vx\prelu_vx.c">
@@ -1422,9 +1431,6 @@
       <Filter>Source Files\libnnext\ops\kernel</Filter>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_imageprocess.c">
-      <Filter>Source Files\libnnext\ops\kernel</Filter>
-    </ClCompile>
-    <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_signalframe.c">
       <Filter>Source Files\libnnext\ops\kernel</Filter>
     </ClCompile>
     <ClCompile Include="src\libnnext\vsi_nn_libnnext_resource.c">
@@ -1814,7 +1820,7 @@
     <ClCompile Include="src\ops\vsi_nn_op_sigmoid.c">
       <Filter>Source Files\ops</Filter>
     </ClCompile>
-    <ClCompile Include="src\ops\vsi_nn_op_signalframe.c">
+    <ClCompile Include="src\ops\vsi_nn_op_signal_frame.c">
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_slice.c">

@@ -39163,6 +39163,53 @@ __kernel void sequence_mask_F16toU8(\n\
 \n\
 "; /* end of sequence_mask_vx*/
 
+static const char signal_frame_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+#define SIGNAL_FRAME_8BITS_SH_IMPL(type) \\\n\
+__kernel void signal_frame_##type##to##type \\\n\
+    ( \\\n\
+    __read_only  image2d_array_t input, \\\n\
+    __write_only image2d_array_t output, \\\n\
+                 int             frame_step \\\n\
+    ) \\\n\
+{ \\\n\
+    int inner = get_global_id(0); \\\n\
+    int length_k = get_global_id(1); \\\n\
+    int frames_id = get_global_id(2); \\\n\
+ \\\n\
+    int4 coord = (int4)(inner, length_k, frames_id, frames_id); \\\n\
+    int2 coord_in = (int2)(inner, frames_id * frame_step + length_k); \\\n\
+ \\\n\
+    vxc_uchar16 src; \\\n\
+    VXC_ReadImage(src, input, coord_in, 0, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
+    VXC_WriteImage2DArray(output, coord, src, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
+}\n\
+SIGNAL_FRAME_8BITS_SH_IMPL(U8)\n\
+SIGNAL_FRAME_8BITS_SH_IMPL(I8)\n\
+\n\
+#define SIGNAL_FRAME_16BITS_SH_IMPL(type) \\\n\
+__kernel void signal_frame_##type##to##type \\\n\
+    ( \\\n\
+    __read_only  image2d_array_t input, \\\n\
+    __write_only image2d_array_t output, \\\n\
+                 int             frame_step \\\n\
+    ) \\\n\
+{ \\\n\
+    int inner = get_global_id(0); \\\n\
+    int length_k = get_global_id(1); \\\n\
+    int frames_id = get_global_id(2); \\\n\
+ \\\n\
+    int4 coord = (int4)(inner, length_k, frames_id, frames_id); \\\n\
+    int2 coord_in = (int2)(inner, frames_id * frame_step + length_k); \\\n\
+ \\\n\
+    vxc_short8 src; \\\n\
+    VXC_ReadImage(src, input, coord_in, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    VXC_WriteImage2DArray(output, coord, src, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+}\n\
+SIGNAL_FRAME_16BITS_SH_IMPL(I16)\n\
+SIGNAL_FRAME_16BITS_SH_IMPL(F16)\n\
+SIGNAL_FRAME_16BITS_SH_IMPL(BF16)"; /* end of signal_frame_vx*/
+
 static const char slice_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 #define SLICE_SAMLEFL_SH_IMPL(name, data_type, end_bin) \\\n\
@@ -43072,286 +43119,6 @@ __kernel void vxcRoi_align(\n\
 \n\
 }\n\
 "; /* end of vsi_nn_kernel_roi_align_vx*/
-
-static const char vsi_nn_kernel_signalframe_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
-\n\
-_viv_uniform int input_width;\n\
-_viv_uniform int input_height;\n\
-_viv_uniform int input_channel;\n\
-_viv_uniform int output_channel;\n\
-\n\
-\n\
-__kernel __attribute__((reqd_work_group_size(8, 1, 1))) void vxcSignalFrame_width(\n\
-    image2d_array_t input,\n\
-    image2d_array_t output,\n\
-                int frame_length,\n\
-                int step,\n\
-                int pad_end,\n\
-                int pad,\n\
-                int axis)\n\
-{\n\
-    int gidx = get_global_id(0);\n\
-    int gidy = get_global_id(1);\n\
-    int gidz = get_global_id(2);\n\
-    int outChn = gidz * input_height + gidy;\n\
-    int4 coord = (int4)(0, gidy, gidz, 0);\n\
-    int4 coord_out = (int4)(0, 0, outChn, 0);\n\
-\n\
-    int endcoord = (pad_end == 0) ? (input_width - frame_length + 1) : (input_width);\n\
-    int iter = frame_length / 8;\n\
-    int res = frame_length % 8;\n\
-    vxc_short8 src0;\n\
-\n\
-    for(int i = 0; i < endcoord; i += step)\n\
-    {\n\
-        coord.x = i;\n\
-        for(int j = 0; j < iter; j++)\n\
-        {\n\
-            coord_out.x = j << 3;\n\
-            coord.x = i + (j << 3);\n\
-            VXC_ReadImage2DArray(src0, input, coord, VXC_5BITOFFSET_XY(0, 0),\n\
-                VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-            VXC_WriteImage2DArray(output, coord_out, src0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-        }\n\
-        coord.x = i + (iter << 3);\n\
-        coord_out.x = (iter << 3);\n\
-        for(int j = 0; j < res; j++)\n\
-        {\n\
-            VXC_ReadImage2DArray(src0, input, coord, VXC_5BITOFFSET_XY(0, 0),\n\
-                VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
-            VXC_WriteImage2DArray(output, coord_out, src0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
-            coord_out.x++;\n\
-            coord.x++;\n\
-        }\n\
-\n\
-        coord_out.y++;\n\
-    }\n\
-}\n\
-\n\
-__kernel __attribute__((reqd_work_group_size(8, 1, 1))) void vxcSignalFrame_height(\n\
-    image2d_array_t input,\n\
-    image2d_array_t output,\n\
-                int frame_length,\n\
-                int step,\n\
-                int pad_end,\n\
-                int pad,\n\
-                int axis)\n\
-{\n\
-    int gidx = get_global_id(0);\n\
-    int gidy = get_global_id(1);\n\
-    int gidz = get_global_id(2);\n\
-    int outChn = gidz * output_channel + (gidy / step);\n\
-    int4 coord = (int4)(gidx, gidy, gidz, 0);\n\
-    int4 coord_out = (int4)(gidx, 0, outChn, 0);\n\
-    vxc_short8 src0;\n\
-\n\
-    for(int i = 0; i < frame_length; i++)\n\
-    {\n\
-        coord.y = gidy + i;\n\
-        coord_out.y = i;\n\
-        VXC_ReadImage2DArray(src0, input, coord, VXC_5BITOFFSET_XY(0, 0),\\\n\
-            VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-        VXC_WriteImage2DArray(output, coord_out, src0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-    }\n\
-}\n\
-\n\
-__kernel __attribute__((reqd_work_group_size(8, 1, 1))) void vxcSignalFrame_channel(\n\
-    image2d_array_t input,\n\
-    image2d_array_t output,\n\
-                int frame_length,\n\
-                int step,\n\
-                int pad_end,\n\
-                int pad,\n\
-                int axis)\n\
-{\n\
-    int gidx = get_global_id(0);\n\
-    int gidy = get_global_id(1);\n\
-    int gidz = get_global_id(2);\n\
-    int outChn = (gidz / step) * frame_length;\n\
-    int4 coord = (int4)(gidx, gidy, gidz, 0);\n\
-    int4 coord_out = (int4)(gidx, gidy, outChn, 0);\n\
-    vxc_short8 src0;\n\
-\n\
-    for(int i = 0; i < frame_length; i++)\n\
-    {\n\
-        coord.z = gidz + i;\n\
-        coord_out.z = outChn + i;\n\
-        if(coord.z < input_channel)\n\
-        {\n\
-            VXC_ReadImage2DArray(src0, input, coord, VXC_5BITOFFSET_XY(0, 0),\n\
-                VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-        }\n\
-        else\n\
-        {\n\
-            src0 = (vxc_short8)(0);\n\
-        }\n\
-        VXC_WriteImage2DArray(output, coord_out, src0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-    }\n\
-}\n\
-\n\
-__kernel __attribute__((reqd_work_group_size(8, 1, 1))) void vxcSignalFrame_width_8bit(\n\
-    image2d_array_t input,\n\
-    image2d_array_t output,\n\
-                int frame_length,\n\
-                int step,\n\
-                int pad_end,\n\
-                int pad,\n\
-                int axis)\n\
-{\n\
-    int gidx = get_global_id(0);\n\
-    int gidy = get_global_id(1);\n\
-    int gidz = get_global_id(2);\n\
-    int outChn = gidz * input_height + gidy;\n\
-    int4 coord = (int4)(0, gidy, gidz, 0);\n\
-    int4 coord_out = (int4)(0, 0, outChn, 0);\n\
-\n\
-    int endcoord = (pad_end == 0) ? (input_width - frame_length + 1) : (input_width);\n\
-    int iter = frame_length / 8;\n\
-    int res = frame_length % 8;\n\
-    vxc_char8 src0;\n\
-\n\
-    for(int i = 0; i < endcoord; i += step)\n\
-    {\n\
-        coord.x = i;\n\
-        for(int j = 0; j < iter; j++)\n\
-        {\n\
-            coord_out.x = j << 3;\n\
-            coord.x = i + (j << 3);\n\
-            VXC_ReadImage2DArray(src0, input, coord, VXC_5BITOFFSET_XY(0, 0),\n\
-                VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-            VXC_WriteImage2DArray(output, coord_out, src0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-        }\n\
-        coord.x = i + (iter << 3);\n\
-        coord_out.x = (iter << 3);\n\
-        for(int j = 0; j < res; j++)\n\
-        {\n\
-            VXC_ReadImage2DArray(src0, input, coord, VXC_5BITOFFSET_XY(0, 0),\n\
-                VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
-            VXC_WriteImage2DArray(output, coord_out, src0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
-            coord_out.x++;\n\
-            coord.x++;\n\
-        }\n\
-\n\
-        coord_out.y++;\n\
-    }\n\
-}\n\
-\n\
-__kernel __attribute__((reqd_work_group_size(8, 1, 1))) void vxcSignalFrame_height_8bit(\n\
-    image2d_array_t input,\n\
-    image2d_array_t output,\n\
-                int frame_length,\n\
-                int step,\n\
-                int pad_end,\n\
-                int pad,\n\
-                int axis)\n\
-{\n\
-    int gidx = get_global_id(0);\n\
-    int gidy = get_global_id(1);\n\
-    int gidz = get_global_id(2);\n\
-    int outChn = gidz * output_channel + (gidy / step);\n\
-    int4 coord = (int4)(gidx, gidy, gidz, 0);\n\
-    int4 coord_out = (int4)(gidx, 0, outChn, 0);\n\
-    vxc_char8 src0;\n\
-\n\
-    for(int i = 0; i < frame_length; i++)\n\
-    {\n\
-        coord.y = gidy + i;\n\
-        coord_out.y = i;\n\
-        VXC_ReadImage2DArray(src0, input, coord, VXC_5BITOFFSET_XY(0, 0),\\\n\
-            VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-        VXC_WriteImage2DArray(output, coord_out, src0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-    }\n\
-}\n\
-\n\
-__kernel __attribute__((reqd_work_group_size(8, 1, 1))) void vxcSignalFrame_channel_8bit(\n\
-    image2d_array_t input,\n\
-    image2d_array_t output,\n\
-                int frame_length,\n\
-                int step,\n\
-                int pad_end,\n\
-                int pad,\n\
-                int axis)\n\
-{\n\
-    int gidx = get_global_id(0);\n\
-    int gidy = get_global_id(1);\n\
-    int gidz = get_global_id(2);\n\
-    int outChn = (gidz / step) * frame_length;\n\
-    int4 coord = (int4)(gidx, gidy, gidz, 0);\n\
-    int4 coord_out = (int4)(gidx, gidy, outChn, 0);\n\
-    vxc_char8 src0;\n\
-\n\
-    for(int i = 0; i < frame_length; i++)\n\
-    {\n\
-        coord.z = gidz + i;\n\
-        coord_out.z = outChn + i;\n\
-        if(coord.z < input_channel)\n\
-        {\n\
-            VXC_ReadImage2DArray(src0, input, coord, VXC_5BITOFFSET_XY(0, 0),\n\
-                VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-        }\n\
-        else\n\
-        {\n\
-            src0 = (vxc_char8)(0);\n\
-        }\n\
-        VXC_WriteImage2DArray(output, coord_out, src0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-    }\n\
-}\n\
-\n\
-#if 0\n\
-__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void vxcSignalFrame_tensor(\n\
-    image2d_array_t input,\n\
-    image2d_array_t output,\n\
-    image2d_array_t frame_length,\n\
-    image2d_array_t steps,\n\
-    image2d_array_t pad_end,\n\
-    image2d_array_t pad,\n\
-    image2d_array_t axis)\n\
-{\n\
-    int gidx = get_global_id(0);\n\
-    int gidy = get_global_id(1);\n\
-    int gidz = get_global_id(2);\n\
-    int outChn = gidz * input_height + gidy;\n\
-    int4 coord = (int4)(0, gidy, gidz, 0);\n\
-    int4 coord_out = (int4)(0, 0, outChn, 0);\n\
-    int4 coord_para = (int4)(0, 0, 0, 0);\n\
-\n\
-    int4 size = read_imagei(frame_length, coord_para);\n\
-    int4 step = read_imagei(steps, coord_para);\n\
-    int4 pe = read_imagei(pad_end, coord_para);\n\
-    int4 pd = read_imagei(pad, coord_para);\n\
-    int len = input_width + (pe.x ? pd : 0);\n\
-    int endcoord = len - size.x + 1;\n\
-    int iter = size.x / 8;\n\
-    int res = size.x % 8;\n\
-    vxc_short8 src0;\n\
-\n\
-    for(int i = 0; i < endcoord; i += step.x)\n\
-    {\n\
-        coord.x = i;\n\
-        for(int j = 0; j < iter; j++)\n\
-        {\n\
-            coord_out.x = j << 3;\n\
-            coord.x += (j << 3);\n\
-            VXC_ReadImage2DArray(src0, input, coord, VXC_5BITOFFSET_XY(0, 0),\n\
-                VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-            VXC_WriteImage2DArray(output, coord_out, src0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-        }\n\
-        coord.x = i + (iter << 3);\n\
-        coord_out.x = (iter << 3);\n\
-        for(int j = 0; j < res; j++)\n\
-        {\n\
-            VXC_ReadImage2DArray(src0, input, coord, VXC_5BITOFFSET_XY(0, 0),\n\
-                VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
-            VXC_WriteImage2DArray(output, coord_out, src0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
-            coord_out.x++;\n\
-            coord.x++;\n\
-        }\n\
-\n\
-        coord_out.y++;\n\
-    }\n\
-}\n\
-#endif\n\
-"; /* end of vsi_nn_kernel_signalframe_vx*/
 
 static const char warp_affine_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
@@ -56722,6 +56489,29 @@ __kernel void sequence_mask_I32toF32_2D(\n\
     write_imagef(output, coord, data);\n\
 }"; /* end of sequence_mask_cl*/
 
+static const char signal_frame_cl[] = "\n\
+#define SIGNAL_FRAME_SH_IMPL(type, data_type, read_imagefunc, write_imagefunc) \\\n\
+__kernel void signal_frame_##type##to##type \\\n\
+    ( \\\n\
+    __read_only  image2d_t       input, \\\n\
+    __write_only image2d_array_t output, \\\n\
+                 int             frame_step \\\n\
+    ) \\\n\
+{ \\\n\
+    int inner = get_global_id(0); \\\n\
+    int length_k = get_global_id(1); \\\n\
+    int frames_id = get_global_id(2); \\\n\
+ \\\n\
+    int4 coord = (int4)(inner, length_k, frames_id, frames_id); \\\n\
+    int2 coord_in = (int2)(inner, frames_id * frame_step + length_k); \\\n\
+ \\\n\
+    data_type src = read_imagefunc(input, coord_in); \\\n\
+    write_imagefunc(output, coord, src); \\\n\
+}\n\
+SIGNAL_FRAME_SH_IMPL(F32, float4, read_imagef,  write_imagef)\n\
+SIGNAL_FRAME_SH_IMPL(U8,  uint4,  read_imageui, write_imageui)\n\
+"; /* end of signal_frame_cl*/
+
 static const char slice_cl[] = "__kernel void slice_F32_I32toF32\n\
     (\n\
     __read_only  image2d_array_t input0,\n\
@@ -57583,6 +57373,7 @@ static const source_map_t evis_resource[] =
     {"scatter_nd_update_big_vx", scatter_nd_update_big_vx},
     {"select_vx", select_vx},
     {"sequence_mask_vx", sequence_mask_vx},
+    {"signal_frame_vx", signal_frame_vx},
     {"slice_vx", slice_vx},
     {"space2depth_internal_vx", space2depth_internal_vx},
     {"swish_vx", swish_vx},
@@ -57606,7 +57397,6 @@ static const source_map_t evis_resource[] =
     {"vsi_nn_kernel_imageprocess_4_vx", vsi_nn_kernel_imageprocess_4_vx},
     {"vsi_nn_kernel_imageprocess_5_vx", vsi_nn_kernel_imageprocess_5_vx},
     {"vsi_nn_kernel_roi_align_vx", vsi_nn_kernel_roi_align_vx},
-    {"vsi_nn_kernel_signalframe_vx", vsi_nn_kernel_signalframe_vx},
     {"warp_affine_vx", warp_affine_vx},
 };
 
@@ -57712,6 +57502,7 @@ static const source_map_t cl_resource[] =
     {"scatter_nd_update_cl", scatter_nd_update_cl},
     {"select_cl", select_cl},
     {"sequence_mask_cl", sequence_mask_cl},
+    {"signal_frame_cl", signal_frame_cl},
     {"slice_cl", slice_cl},
     {"space2depth_internal_cl", space2depth_internal_cl},
     {"swish_cl", swish_cl},
