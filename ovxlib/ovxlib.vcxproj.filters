@@ -959,6 +959,9 @@
     <ClCompile Include="src\kernel\cpu\batchnorm_single_cpu.c">
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
+    <ClCompile Include="src\kernel\cpu\box_with_nms_limit_cpu.c">
+      <Filter>Source Files\kernel\cpu</Filter>
+    </ClCompile>
     <ClCompile Include="src\kernel\cpu\cast_cpu.c">
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
@@ -1420,9 +1423,6 @@
     </ClCompile>
     <ClCompile Include="src\kernel\vx\swish_vx.c">
       <Filter>Source Files\kernel\vx</Filter>
-    </ClCompile>
-    <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_box_with_nms_limit.c">
-      <Filter>Source Files\libnnext\ops\kernel</Filter>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_extra_ending.c">
       <Filter>Source Files\libnnext\ops\kernel</Filter>

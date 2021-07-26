@@ -41324,16 +41324,6 @@ UPSAMPLE_SCALETO16B_FUN(I16, F16,  vxc_short8,  vxc_short8,  vxc_half8,  vxc_sho
 UPSAMPLE_SCALETO16B_FUN(I16, I16,  vxc_short8,  vxc_short8,  vxc_short8, vxc_short8)\n\
 "; /* end of upsamplescale_k2_vx*/
 
-static const char vsi_nn_kernel_box_with_nms_limit_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
-\n\
-__kernel void vxcBox_with_nms_limit(\n\
-    __read_only image2d_array_t   input,\n\
-    __write_only image2d_array_t  output)\n\
-{\n\
-\n\
-}\n\
-"; /* end of vsi_nn_kernel_box_with_nms_limit_vx*/
-
 static const char vsi_nn_kernel_detection_postprocess_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 __kernel void vxcDetection_postprocess(\n\
@@ -57386,7 +57376,6 @@ static const source_map_t evis_resource[] =
     {"upsample_U8_vx", upsample_U8_vx},
     {"upsamplescale_vx", upsamplescale_vx},
     {"upsamplescale_k2_vx", upsamplescale_k2_vx},
-    {"vsi_nn_kernel_box_with_nms_limit_vx", vsi_nn_kernel_box_with_nms_limit_vx},
     {"vsi_nn_kernel_detection_postprocess_vx", vsi_nn_kernel_detection_postprocess_vx},
     {"vsi_nn_kernel_extra_ending_vx", vsi_nn_kernel_extra_ending_vx},
     {"vsi_nn_kernel_header_vx", vsi_nn_kernel_header_vx},

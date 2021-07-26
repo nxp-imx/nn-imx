@@ -275,7 +275,6 @@ cc_library(
         "src/libnnext/ops/kernel/vsi_nn_kernel_imageprocess.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_extra_ending.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_heatmap_max_keypoint.c",
-        "src/libnnext/ops/kernel/vsi_nn_kernel_box_with_nms_limit.c",
         "src/libnnext/vsi_nn_libnnext_resource.c",
         "src/libnnext/vsi_nn_vxkernel.c",
     ] + [":kernel_srcs"]
