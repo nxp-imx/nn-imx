@@ -993,6 +993,9 @@
     <ClCompile Include="src\kernel\cpu\grucell_activation_sma_cpu.c">
       <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="src\kernel\cpu\heatmap_max_keypoint_cpu.c">
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="src\kernel\cpu\instance_normalization_cpu.c">
       <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
@@ -1399,9 +1402,6 @@
       <ObjectFileName>$(IntDir)\src\kernel\vx\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_extra_ending.c">
-      <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_heatmap_max_keypoint.c">
       <ObjectFileName>$(IntDir)\src\libnnext\ops\kernel\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_imageprocess.c">
