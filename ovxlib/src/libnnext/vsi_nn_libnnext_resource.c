@@ -41656,16 +41656,6 @@ do\\\n\
 #endif\n\
 "; /* end of vsi_nn_kernel_header_vx*/
 
-static const char vsi_nn_kernel_heatmap_max_keypoint_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
-\n\
-__kernel void vxcHeatmap_max_keypoint(\n\
-    __read_only image2d_array_t   input,\n\
-    __write_only image2d_array_t  output)\n\
-{\n\
-\n\
-}\n\
-"; /* end of vsi_nn_kernel_heatmap_max_keypoint_vx*/
-
 static const char vsi_nn_kernel_imageprocess_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 _viv_uniform VXC_512Bits uniVecShift10;\n\
@@ -57379,7 +57369,6 @@ static const source_map_t evis_resource[] =
     {"vsi_nn_kernel_detection_postprocess_vx", vsi_nn_kernel_detection_postprocess_vx},
     {"vsi_nn_kernel_extra_ending_vx", vsi_nn_kernel_extra_ending_vx},
     {"vsi_nn_kernel_header_vx", vsi_nn_kernel_header_vx},
-    {"vsi_nn_kernel_heatmap_max_keypoint_vx", vsi_nn_kernel_heatmap_max_keypoint_vx},
     {"vsi_nn_kernel_imageprocess_vx", vsi_nn_kernel_imageprocess_vx},
     {"vsi_nn_kernel_imageprocess_2_vx", vsi_nn_kernel_imageprocess_2_vx},
     {"vsi_nn_kernel_imageprocess_3_vx", vsi_nn_kernel_imageprocess_3_vx},

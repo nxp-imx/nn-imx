@@ -1019,6 +1019,9 @@
     <ClCompile Include="src\kernel\cpu\grucell_activation_sma_cpu.c">
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
+    <ClCompile Include="src\kernel\cpu\heatmap_max_keypoint_cpu.c">
+      <Filter>Source Files\kernel\cpu</Filter>
+    </ClCompile>
     <ClCompile Include="src\kernel\cpu\instance_normalization_cpu.c">
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
@@ -1425,9 +1428,6 @@
       <Filter>Source Files\kernel\vx</Filter>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_extra_ending.c">
-      <Filter>Source Files\libnnext\ops\kernel</Filter>
-    </ClCompile>
-    <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_heatmap_max_keypoint.c">
       <Filter>Source Files\libnnext\ops\kernel</Filter>
     </ClCompile>
     <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_imageprocess.c">
