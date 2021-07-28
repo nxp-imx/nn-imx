@@ -4875,6 +4875,73 @@ ELTSISE_UNARY_3D(erf, I16, F16, vxc_short8, vxc_short8, half4, vxc_half8,  vxc_s
 //ERF\n\
 ELTSISE_UNARY_BF16_3D(erf)"; /* end of erf_vx*/
 
+static const char extra_ending_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+__kernel void extra_ending_I16\n\
+    (\n\
+    __read_only image2d_array_t   input0,\n\
+    __read_only image2d_array_t   input,\n\
+    __write_only image2d_array_t  output\n\
+    )\n\
+{\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+\n\
+    vxc_short8 data;\n\
+    VXC_ReadImage2DArray(data, input, coord, VXC_5BITOFFSET_XY(0, 0),\\\n\
+        VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    VXC_WriteImage2DArray(output, coord, data, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+__kernel void extra_ending_F16\n\
+    (\n\
+    __read_only image2d_array_t   input0,\n\
+    __read_only image2d_array_t   input,\n\
+    __write_only image2d_array_t  output\n\
+    )\n\
+{\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+\n\
+    vxc_short8 data;\n\
+    VXC_ReadImage2DArray(data, input, coord, VXC_5BITOFFSET_XY(0, 0),\\\n\
+        VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    VXC_WriteImage2DArray(output, coord, data, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+__kernel void extra_ending_I8\n\
+    (\n\
+    __read_only image2d_array_t   input0,\n\
+    __read_only image2d_array_t   input,\n\
+    __write_only image2d_array_t  output\n\
+    )\n\
+{\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+\n\
+    vxc_char8 data;\n\
+    VXC_ReadImage2DArray(data, input, coord, VXC_5BITOFFSET_XY(0, 0),\\\n\
+        VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    VXC_WriteImage2DArray(output, coord, data, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+__kernel void extra_ending_U8\n\
+    (\n\
+    __read_only image2d_array_t   input0,\n\
+    __read_only image2d_array_t   input,\n\
+    __write_only image2d_array_t  output\n\
+    )\n\
+{\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+\n\
+    vxc_uchar8 data;\n\
+    VXC_ReadImage2DArray(data, input, coord, VXC_5BITOFFSET_XY(0, 0),\\\n\
+        VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    VXC_WriteImage2DArray(output, coord, data, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+"; /* end of extra_ending_vx*/
+
 static const char floordiv_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 _viv_uniform VXC_512Bits uniConvertInt32toUint8_2x8;\n\
@@ -41324,61 +41391,6 @@ UPSAMPLE_SCALETO16B_FUN(I16, F16,  vxc_short8,  vxc_short8,  vxc_half8,  vxc_sho
 UPSAMPLE_SCALETO16B_FUN(I16, I16,  vxc_short8,  vxc_short8,  vxc_short8, vxc_short8)\n\
 "; /* end of upsamplescale_k2_vx*/
 
-static const char vsi_nn_kernel_detection_postprocess_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
-\n\
-__kernel void vxcDetection_postprocess(\n\
-    __read_only image2d_array_t   input,\n\
-    __write_only image2d_array_t  output)\n\
-{\n\
-\n\
-}\n\
-"; /* end of vsi_nn_kernel_detection_postprocess_vx*/
-
-static const char vsi_nn_kernel_extra_ending_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
-\n\
-__kernel void vxcExtra_ending_i16(\n\
-    __read_only image2d_array_t   input0,\n\
-    __read_only image2d_array_t   input,\n\
-    __write_only image2d_array_t  output)\n\
-{\n\
-    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
-\n\
-    vxc_short8 data;\n\
-    VXC_ReadImage2DArray(data, input, coord, VXC_5BITOFFSET_XY(0, 0),\\\n\
-        VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-\n\
-    VXC_WriteImage2DArray(output, coord, data, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-}\n\
-\n\
-__kernel void vxcExtra_ending_i8(\n\
-    __read_only image2d_array_t   input0,\n\
-    __read_only image2d_array_t   input,\n\
-    __write_only image2d_array_t  output)\n\
-{\n\
-    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
-\n\
-    vxc_char8 data;\n\
-    VXC_ReadImage2DArray(data, input, coord, VXC_5BITOFFSET_XY(0, 0),\\\n\
-        VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-\n\
-    VXC_WriteImage2DArray(output, coord, data, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-}\n\
-\n\
-__kernel void vxcExtra_ending_u8(\n\
-    __read_only image2d_array_t   input0,\n\
-    __read_only image2d_array_t   input,\n\
-    __write_only image2d_array_t  output)\n\
-{\n\
-    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
-\n\
-    vxc_uchar8 data;\n\
-    VXC_ReadImage2DArray(data, input, coord, VXC_5BITOFFSET_XY(0, 0),\\\n\
-        VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-\n\
-    VXC_WriteImage2DArray(output, coord, data, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-}\n\
-"; /* end of vsi_nn_kernel_extra_ending_vx*/
-
 static const char vsi_nn_kernel_header_vx[] = "/*\n\
  ============================================================================\n\
  Name        : libNNExt.vx\n\
@@ -43089,16 +43101,6 @@ __kernel void GrayScaletoTensor_UInt8\n\
     VXC_WriteImage(output, coord_out, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
 }\n\
 "; /* end of vsi_nn_kernel_imageprocess_5_vx*/
-
-static const char vsi_nn_kernel_roi_align_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
-\n\
-__kernel void vxcRoi_align(\n\
-    __read_only image2d_array_t   input,\n\
-    __write_only image2d_array_t  output)\n\
-{\n\
-\n\
-}\n\
-"; /* end of vsi_nn_kernel_roi_align_vx*/
 
 static const char warp_affine_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
@@ -57184,6 +57186,7 @@ static const source_map_t evis_resource[] =
     {"eltwise_unary_2d_vx", eltwise_unary_2d_vx},
     {"eltwise_unary_3d_vx", eltwise_unary_3d_vx},
     {"erf_vx", erf_vx},
+    {"extra_ending_vx", extra_ending_vx},
     {"floordiv_vx", floordiv_vx},
     {"gather_vx", gather_vx},
     {"gather_array_vx", gather_array_vx},
@@ -57366,15 +57369,12 @@ static const source_map_t evis_resource[] =
     {"upsample_U8_vx", upsample_U8_vx},
     {"upsamplescale_vx", upsamplescale_vx},
     {"upsamplescale_k2_vx", upsamplescale_k2_vx},
-    {"vsi_nn_kernel_detection_postprocess_vx", vsi_nn_kernel_detection_postprocess_vx},
-    {"vsi_nn_kernel_extra_ending_vx", vsi_nn_kernel_extra_ending_vx},
     {"vsi_nn_kernel_header_vx", vsi_nn_kernel_header_vx},
     {"vsi_nn_kernel_imageprocess_vx", vsi_nn_kernel_imageprocess_vx},
     {"vsi_nn_kernel_imageprocess_2_vx", vsi_nn_kernel_imageprocess_2_vx},
     {"vsi_nn_kernel_imageprocess_3_vx", vsi_nn_kernel_imageprocess_3_vx},
     {"vsi_nn_kernel_imageprocess_4_vx", vsi_nn_kernel_imageprocess_4_vx},
     {"vsi_nn_kernel_imageprocess_5_vx", vsi_nn_kernel_imageprocess_5_vx},
-    {"vsi_nn_kernel_roi_align_vx", vsi_nn_kernel_roi_align_vx},
     {"warp_affine_vx", warp_affine_vx},
 };
 
