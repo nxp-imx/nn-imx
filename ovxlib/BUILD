@@ -273,7 +273,6 @@ cc_library(
         "src/kernel/vsi_nn_gpu.c",
         "src/kernel/vsi_nn_kernel_gpu_shape_optimize.c",
         "src/libnnext/ops/kernel/vsi_nn_kernel_imageprocess.c",
-        "src/libnnext/ops/kernel/vsi_nn_kernel_extra_ending.c",
         "src/libnnext/vsi_nn_libnnext_resource.c",
         "src/libnnext/vsi_nn_vxkernel.c",
     ] + [":kernel_srcs"]
