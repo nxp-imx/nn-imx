@@ -85,11 +85,14 @@ Return<void> VsiDriver::getSupportedOperations_1_3(
     const V1_3::Model& model, V1_3::IDevice::getSupportedOperations_1_3_cb _hidl_cb) {
     bool is_md5_matched = false;
     int model_size_block_level = getSystemPropertyAsInt("MODEL_BLOCK_LEVEL", 0);
-    if (model_size_block_level < 0 || model_size_block_level > 4) {
-        LOG(FATAL) << "MODEL_BLOCK_LEVEL should be any value of {0, 1, 2, 3} \n"
-                      "block_level = 3: reject model with size L,M,S\n"
-                      "block_level = 2: reject model with size L,M\n"
-                      "block_level = 1: reject model with size L\n"
+    if (model_size_block_level < 0 || model_size_block_level > 7) {
+        LOG(FATAL) << "MODEL_BLOCK_LEVEL should be any value of {0, 1, 2, 3, 4, 5, 6} \n"
+                      "block_level = 6: reject model with size XXL,XL,L,M,S,XS\n"
+                      "block_level = 5: reject model with size XXL,XL,L,M,S\n"
+                      "block_level = 4: reject model with size XXL,XL,L,M\n"
+                      "block_level = 3: reject model with size XXL,XL,L\n"
+                      "block_level = 2: reject model with size XXL,XL\n"
+                      "block_level = 1: reject model with size XXL\n"
                       "block_level = 0: don't reject model";
     }
 
@@ -108,8 +111,8 @@ Return<void> VsiDriver::getSupportedOperations_1_3(
         for (size_t i = 0; i < count; i++) {
             const auto& operation = model.main.operations[i];
             if (weight_md5_check || model_size_block_level) {
-                if ((is_md5_matched = isWeightMd5Matched(operation, model, model_size_block_level)))
-                    break;
+                is_md5_matched = isWeightMd5Matched(operation, model, model_size_block_level);
+                if (is_md5_matched) break;
             }
             supported[i] = !IsOpBlocked(static_cast<int32_t>(operation.type)) &&
                             isSupportedOperation(operation, model, notSupportReason);
