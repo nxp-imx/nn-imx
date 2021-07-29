@@ -866,58 +866,79 @@ bool VsiDriver::isWeightMd5Matched(const HalPlatform::Operation& operation,
                                    const HalPlatform::Model& model,
                                    int block_level) {
     std::vector<std::string> block_list;
+    std::copy(model_size::D.begin(), model_size::D.end(), std::back_inserter(block_list));
     if (block_level >= 1) {
-        std::copy(model_size::L.begin(), model_size::L.end(), std::back_inserter(block_list));
+        std::copy(model_size::XXL.begin(), model_size::XXL.end(), std::back_inserter(block_list));
     }
 
     if (block_level >= 2) {
+        std::copy(model_size::XL.begin(), model_size::XL.end(), std::back_inserter(block_list));
+    }
+
+    if (block_level >= 3) {
+        std::copy(model_size::L.begin(), model_size::L.end(), std::back_inserter(block_list));
+    }
+
+    if (block_level >= 4) {
         std::copy(model_size::M.begin(), model_size::M.end(), std::back_inserter(block_list));
     }
 
-    if (block_level == 3) {
+    if (block_level >= 5) {
         std::copy(model_size::S.begin(), model_size::S.end(), std::back_inserter(block_list));
     }
 
-    if (!block_list.empty() && OperationType::CONV_2D == operation.type) {
+    if (block_level == 6) {
+        std::copy(model_size::XS.begin(), model_size::XS.end(), std::back_inserter(block_list));
+    }
+
+    if (!block_list.empty() &&
+    (OperationType::CONV_2D == operation.type ||
+     OperationType::FULLY_CONNECTED == operation.type)) {
         auto& weight = GetHalOperand(model, operation.inputs[1]);
         if (!isConstantTensor(weight)) return false;
         auto& shape = weight.dimensions;
-        // vgg_quant vgg_float srgan_quant srgan_float dped_float
+        // vgg_quant vgg_float srgan_quant srgan_float dped_float crnn_float dped_float/quant
         decltype(weight.dimensions) match_shape_0 = {64, 3, 3, 64};
         // icnet_float inception_v3_float/quant inception_face_float/quant mobilenet_v2_float/quant
+        // deeplab_v3_plus_float/quant inceptin_v4
         decltype(weight.dimensions) match_shape_1 = {32, 3, 3, 3};
         // srcnn
         decltype(weight.dimensions) match_shape_2 = {64, 9, 9, 3};
         // unet
-        decltype(weight.dimensions) match_shape_3 = {4, 4, 4, 12};
+        decltype(weight.dimensions) match_shape_3 = {16, 3, 3, 16};
         // mobilenet v1 0.25 128
-        decltype(weight.dimensions) mbv1_128 = {1001, 1, 1, 256};
+        decltype(weight.dimensions) match_shape_4 = {1001, 1, 1, 256};
         // mobilenet v1 0.5 160
-        decltype(weight.dimensions) mbv1_160 = {1001, 1, 1, 512};
+        decltype(weight.dimensions) match_shape_5 = {1001, 1, 1, 512};
         // mobilenet v1_0.75_192
-        decltype(weight.dimensions) mbv1_192 = {1001, 1, 1, 768};
-        // mobilenet_v1_1.0_224
-        decltype(weight.dimensions) mbv1_224 = {1001, 1, 1, 1024};
+        decltype(weight.dimensions) match_shape_6 = {1001, 1, 1, 768};
+        // mobilenet_v1_1.0_224 inception_v1_quant inception_v2_quant
+        decltype(weight.dimensions) match_shape_7 = {1001, 1, 1, 1024};
         // mobilenet_v2_0.75_192
-        decltype(weight.dimensions) mbv2_192 = {1001, 1, 1, 1280};
+        decltype(weight.dimensions) match_shape_8 = {1001, 1, 1, 1280};
+        // ssd_mobilenet_v2_fpnlite_320x320_coco17_quant
+        decltype(weight.dimensions) match_shape_9 = {96, 1, 1, 16};
+        // lstm_float
+        decltype(weight.dimensions) match_shape_10 = {2048, 1012};
 
         std::list<decltype(weight.dimensions)>
             shape_filter;  // Match shape first to save cost on md5 caculation
         shape_filter.push_back(match_shape_0);
         shape_filter.push_back(match_shape_1);
         shape_filter.push_back(match_shape_2);
-        shape_filter.push_back(match_shape_2);
-        shape_filter.push_back(mbv1_128);
-        shape_filter.push_back(mbv1_160);
-        shape_filter.push_back(mbv1_192);
-        shape_filter.push_back(mbv1_224);
-        shape_filter.push_back(mbv2_192);
+        shape_filter.push_back(match_shape_3);
+        shape_filter.push_back(match_shape_4);
+        shape_filter.push_back(match_shape_5);
+        shape_filter.push_back(match_shape_6);
+        shape_filter.push_back(match_shape_7);
+        shape_filter.push_back(match_shape_8);
+        shape_filter.push_back(match_shape_9);
+        shape_filter.push_back(match_shape_10);
 
         bool shape_matched = std::any_of(
             shape_filter.begin(),
             shape_filter.end(),
             [&shape](const decltype(weight.dimensions)& elem) { return shape == elem; });
-
         if (shape_matched) {
             struct VsiRTInfo rt;
             const char* weight_data =
@@ -931,41 +952,6 @@ bool VsiDriver::isWeightMd5Matched(const HalPlatform::Operation& operation,
                 // LOG(INFO) << "Debug"<< shape[0] <<"," << shape[1] << "," << shape[2] <<","<<
                 // shape[3] << " , md5 = " << md5;
             }
-        }
-
-        // Special shape check
-        // mobilenet_v2
-        decltype(weight.dimensions) special_shape_0 = {192, 1, 1, 32};
-        // srcnn
-        decltype(weight.dimensions) special_shape_1 = {32, 5, 5, 64};
-        // inception_face
-        decltype(weight.dimensions) special_shape_2 = {192, 1, 1, 1792};
-        // vgg
-        decltype(weight.dimensions) special_shape_3 = {64, 3, 3, 64};
-
-        std::list<decltype(weight.dimensions)> special_shape_list;
-
-        if (block_level >= 1) {
-            special_shape_list.push_back(special_shape_1);
-            special_shape_list.push_back(special_shape_2);
-            special_shape_list.push_back(special_shape_3);
-        }
-
-        // if (block_level >= 2) {}
-
-        if (block_level == 3) {
-            // mbv2 is small size
-            special_shape_list.push_back(special_shape_0);
-        }
-
-        bool hit_special_shape = std::any_of(
-            special_shape_list.begin(),
-            special_shape_list.end(),
-            [&shape](const decltype(weight.dimensions)& item) { return shape == item; });
-
-        if (hit_special_shape) {
-            LOG(INFO) << "Spectial shape matched";
-            return true;
         }
         return false;
     }
