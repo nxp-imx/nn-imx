@@ -85,12 +85,6 @@
     <Filter Include="Source Files\libnnext">
       <UniqueIdentifier>{b0613120-6fee-38b7-b550-d9e91b8e6114}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\libnnext\ops">
-      <UniqueIdentifier>{6b9a368a-20e9-3f73-b84e-4807e30974b1}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\libnnext\ops\kernel">
-      <UniqueIdentifier>{e39905bd-df1e-3c01-9675-9e77662ade74}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\ops">
       <UniqueIdentifier>{b818c19c-513c-311f-8a9d-6713121e00cf}</UniqueIdentifier>
     </Filter>
@@ -1432,9 +1426,6 @@
     </ClCompile>
     <ClCompile Include="src\kernel\vx\swish_vx.c">
       <Filter>Source Files\kernel\vx</Filter>
-    </ClCompile>
-    <ClCompile Include="src\libnnext\ops\kernel\vsi_nn_kernel_imageprocess.c">
-      <Filter>Source Files\libnnext\ops\kernel</Filter>
     </ClCompile>
     <ClCompile Include="src\libnnext\vsi_nn_libnnext_resource.c">
       <Filter>Source Files\libnnext</Filter>
