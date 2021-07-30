@@ -105,6 +105,7 @@ static vsi_bool setup_op_shapes
         attr.dim_num = VSI_NN_DIM_AUTO;
         memcpy( &attr.dtype, &outputs[LSTM_OUTPUT_OUTPUT]->attr.dtype, sizeof( attr.dtype ) );
         attr.vtl = use_virtual_tensor;
+        attr.is_const = FALSE;
         output_tensor = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
         outputs[LSTM_OUTPUT_H_STATE] = output_tensor->t;
     }
@@ -113,8 +114,10 @@ static vsi_bool setup_op_shapes
     {
         memset( attr.size, 0, VSI_NN_MAX_DIM_NUM * sizeof(uint32_t));
         attr.dim_num = VSI_NN_DIM_AUTO;
-        memcpy( &attr.dtype, &inputs[LSTM_INPUT_C_STATE]->attr.dtype, sizeof( attr.dtype ) );
+        attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
+        attr.dtype.vx_type = VSI_NN_TYPE_FLOAT16;
         attr.vtl = use_virtual_tensor;
+        attr.is_const = FALSE;
         output_tensor = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
         outputs[LSTM_OUTPUT_C_STATE] = output_tensor->t;
     }
@@ -237,11 +240,11 @@ static vsi_bool op_setup
 
     /* split input tensor */
     split_output_tensors = (vsi_nn_tensor_t **)malloc(time_step * \
-        sizeof(vsi_nn_tensor_t **));
-    memset( split_output_tensors, 0x00, time_step * sizeof(vsi_nn_tensor_t **));
+        sizeof(vsi_nn_tensor_t *));
+    memset( split_output_tensors, 0x00, time_step * sizeof(vsi_nn_tensor_t *));
     lstmunit_reshape_output_tensors = (vsi_nn_tensor_t **)malloc(time_step * \
-        sizeof(vsi_nn_tensor_t **));
-    memset( lstmunit_reshape_output_tensors, 0x00, time_step * sizeof(vsi_nn_tensor_t **));
+        sizeof(vsi_nn_tensor_t *));
+    memset( lstmunit_reshape_output_tensors, 0x00, time_step * sizeof(vsi_nn_tensor_t *));
 
     vsi_nn_rnn_split_input_tensor(self, input_tensor,
         split_output_tensors, time_step, use_virtual_tensor);

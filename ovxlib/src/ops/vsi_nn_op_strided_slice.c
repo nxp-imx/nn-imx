@@ -673,7 +673,7 @@ static vsi_status op_optimize
     is_same_quant_type = _is_same_quant(inputs, outputs);
     if( NULL != outputs[0]->t || is_same_quant_type == FALSE)
     {
-        VSILOGW( "stride slice copy tensor.");
+        VSILOGI( "stride slice copy tensor.");
         // Copy old tensor values to the new address.
         status = copy_tensor_to_view( self, in_view_tensor, outputs[0]);
         if( VSI_FAILURE == status )

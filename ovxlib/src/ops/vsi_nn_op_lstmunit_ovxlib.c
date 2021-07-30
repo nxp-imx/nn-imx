@@ -64,7 +64,7 @@ static vsi_nn_internal_tensor_t* create_tp_fc
     if( !bias || p->local->use_layer_norm || p->local->use_hybrid )
     {
         /* create zero bias for NN/TP */
-        tensor1 = vsi_nn_internal_create_zero_bias_tensor(self, &input->attr, &weight->attr, FALSE);
+        tensor1 = vsi_nn_internal_create_zero_bias_tensor(self, &input->attr, &weight->attr, VSI_NN_OP_FCL, FALSE);
         tensor = tensor1->t;
     }
 
@@ -110,7 +110,8 @@ static vsi_nn_internal_tensor_t* create_nn_fc
     if( !bias || p->local->use_layer_norm || p->local->use_hybrid )
     {
         /* create zero bias for NN/TP */
-        tensor1 = vsi_nn_internal_create_zero_bias_tensor(self, &input->attr, &weight->attr, FALSE);
+        tensor1 = vsi_nn_internal_create_zero_bias_tensor(
+            self, &input->attr, &weight->attr, VSI_NN_OP_FCL, FALSE);
         tensor = tensor1->t;
     }
 
@@ -607,7 +608,7 @@ static vsi_bool op_setup
         {
             vsi_bool use_virtual_tensor = inputs[LSTMUNIT_INPUT_BIAS_PROJ]->attr.vtl;
             input_tensor = vsi_nn_internal_create_zero_bias_tensor(self, &output_tensor->t->attr,
-                &inputs[LSTMUNIT_INPUT_WEIGHT_PROJ]->attr, FALSE);
+                &inputs[LSTMUNIT_INPUT_WEIGHT_PROJ]->attr, VSI_NN_OP_FCL, FALSE);
             zero_bias_tensor = input_tensor->t;
 
             if (use_virtual_tensor)
@@ -626,7 +627,7 @@ static vsi_bool op_setup
         else if ( p->local->use_hybrid || !p->local->use_projection_bias )
         {
             input_tensor = vsi_nn_internal_create_zero_bias_tensor(self, &output_tensor->t->attr,
-                &inputs[LSTMUNIT_INPUT_WEIGHT_PROJ]->attr, FALSE);
+                &inputs[LSTMUNIT_INPUT_WEIGHT_PROJ]->attr, VSI_NN_OP_FCL, FALSE);
             zero_bias_tensor = input_tensor->t;
         }
         else
