@@ -160,6 +160,7 @@ vsi_nn_internal_tensor_t* vsi_nn_internal_create_zero_bias_tensor
     vsi_nn_node_t* node,
     vsi_nn_tensor_attr_t* input_attr,
     vsi_nn_tensor_attr_t* weight_attr,
+    vsi_nn_op_t op,
     vsi_bool use_virtual_tensor
     )
 {
@@ -170,7 +171,25 @@ vsi_nn_internal_tensor_t* vsi_nn_internal_create_zero_bias_tensor
     memset(&attr, 0x0, sizeof(vsi_nn_tensor_attr_t));
 
     /* create zero bias for NN/TP */
-    attr.size[0] = weight_attr->size[1];
+    switch(op)
+    {
+        case VSI_NN_OP_FCL:
+        case VSI_NN_OP_FCL2:
+        case VSI_NN_OP_FCL_RELU:
+            attr.size[0] = weight_attr->size[1];
+            break;
+        case VSI_NN_OP_CONV2D:
+        case VSI_NN_OP_CONV_RELU:
+        case VSI_NN_OP_CONV_RELU_POOL:
+        case VSI_NN_OP_GROUPED_CONV2D:
+            attr.size[0] = weight_attr->size[3];
+            break;
+        default:
+            attr.size[0] = weight_attr->size[1]; // default is FC
+            VSILOGW("Ovxlib only auto fill bias for conv2d and fc, but current op is %s\n",
+                vsi_nn_OpGetName(op));
+            break;
+    }
     attr.dim_num = 1;
     attr.vtl = use_virtual_tensor;
     attr.is_const = !use_virtual_tensor;
