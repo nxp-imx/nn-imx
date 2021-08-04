@@ -608,6 +608,41 @@ vsi_bool vsi_nn_internal_setup_node
     return retn;
 } /* vsi_nn_internal_setup_node() */
 
+static vsi_status _set_reference_tensor_name
+    (
+    vsi_nn_graph_t *graph,
+    vsi_nn_node_t* node,
+    vsi_nn_node_t* sub_node,
+    vsi_nn_tensor_t ** outputs
+    )
+{
+#define _NODE_ID_LEN 64
+    vsi_status status;
+    vsi_nn_tensor_t *tensor;
+    uint32_t i;
+    char name[_NODE_ID_LEN];
+    if (NULL == node || NULL == graph)
+    {
+        return VSI_FAILURE;
+    }
+
+    status = VSI_SUCCESS;
+    for (i = 0; i < sub_node->output.num; i++)
+    {
+        memset(name, 0, sizeof(char) * _NODE_ID_LEN);
+        snprintf(name, sizeof(char) * _NODE_ID_LEN, "uid_%u_sub_uid_%u_out_%u", node->uid, sub_node->uid, i);
+        tensor = outputs[i];
+        if (tensor && tensor->t)
+        {
+            status = vxSetReferenceName((vx_reference)tensor->t, name);
+            TEST_CHECK_STATUS(status, final);
+        }
+    }
+
+final:
+    return status;
+} /* _set_reference_tensor_name() */
+
 vsi_status vsi_nn_internal_compute_node
     (
     vsi_nn_node_t* node
@@ -629,6 +664,13 @@ vsi_status vsi_nn_internal_compute_node
 
         VSILOGD("Compute node uid[%u] sub_uid[%u] op[%s]",
             node->uid, curr->node->uid, vsi_nn_OpGetName(curr->node->op));
+
+        status = _set_reference_tensor_name(node->graph, node, curr->node, curr->outputs);
+        if ( VSI_SUCCESS != status )
+        {
+            VSILOGW("Set reference node[%d] sub_uid[%u] %s output tensor name fail",
+                node->uid, curr->node->uid, vsi_nn_OpGetName(curr->node->op));
+        }
         status = vsi_nn_OpCompute( curr->node->op, curr->node, curr->inputs, curr->outputs );
         if( VSI_SUCCESS != status )
         {
