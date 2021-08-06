@@ -1867,7 +1867,7 @@ vsi_nn_tensor_rel_t *vsi_nn_CreateTensorRelevance
     vsi_nn_tensor_rel_t *tensor_ref;
     vsi_nn_node_t *node;
 
-#define _MAX_TENSOR_IO 32
+#define _MAX_TENSOR_IO 128
     max_io = _MAX_TENSOR_IO;
     tensor_num = graph->tensor_num;
     tensor_ref = _init_tensor_rel_buffer(graph, max_io);
