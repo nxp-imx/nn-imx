@@ -12987,7 +12987,6 @@ static const char layer_normalization_u8_f16_vx[] = "#include \"cl_viv_vx_ext.h\
 /*****************************layernorm uint8 to fp16****************************/\n\
 _viv_uniform int width;\n\
 _viv_uniform float dimRatio;\n\
-_viv_uniform VXC_512Bits UniFP16toFP32Lo4_dp4x4;\n\
 _viv_uniform VXC_512Bits uniConvert1stUint8SubZpToFp32_4x4;\n\
 _viv_uniform VXC_512Bits uniConvert2ndUint8SubZpToFp32_4x4;\n\
 _viv_uniform VXC_512Bits uniConvert3rdUint8SubZpToFp32_4x4;\n\
@@ -13000,7 +12999,6 @@ _viv_uniform int sumInZp;\n\
 _viv_uniform int tmpZp1;\n\
 _viv_uniform int tmpZp2;\n\
 _viv_uniform float e2InScale;\n\
-_viv_uniform VXC_512Bits uniConvertSecFp16Fp32_4x4;\n\
 _viv_uniform VXC_512Bits UniPackFP16even_2x8;\n\
 \n\
 __kernel void layer_norm_U8toF16(\n\
@@ -13057,22 +13055,15 @@ __kernel void layer_norm_U8toF16(\n\
     {\n\
         VXC_OP4(img_load_3d, src0, input, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
                     VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
-        VXC_ReadImage(src1, scale, coord.xw, VXC_5BITOFFSET_XY(0, 0),\\\n\
-                    VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
         coord_bias.x = coord.x;\n\
-        _viv_asm(COPY, scale_h, src1, 16);\n\
-        VXC_DP4x4(scale_f0, scale_h, scale_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
-            UniFP16toFP32Lo4_dp4x4);\n\
-        VXC_DP4x4(scale_f1, scale_h, scale_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
-            uniConvertSecFp16Fp32_4x4);\n\
+\n\
+        scale_f0 = read_imagef(scale, coord_bias);\n\
         bias_f0 = read_imagef(bias, coord_bias);\n\
         coord_bias.x += 4;\n\
+        scale_f1 = read_imagef(scale, coord_bias);\n\
         bias_f1 = read_imagef(bias, coord_bias);\n\
         coord_bias.x += 4;\n\
 \n\
-        VXC_ReadImage(src1, scale, coord.xw, VXC_5BITOFFSET_XY(8, 0),\\\n\
-                    VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-        _viv_asm(COPY, scale_h, src1, 16);\n\
         VXC_DP4x4(tmpData0, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
             uniConvert1stUint8SubZpToFp32_4x4);\n\
         VXC_DP4x4(tmpData1, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
@@ -13089,17 +13080,18 @@ __kernel void layer_norm_U8toF16(\n\
         vxc_float4 norm;\n\
         tmpData0 -= mean;\n\
         norm = scale_f0 * vari * tmpData0 + bias_f0;\n\
+\n\
+        scale_f0 = read_imagef(scale, coord_bias);\n\
         bias_f0 = read_imagef(bias, coord_bias);\n\
-        VXC_DP4x4(scale_f0, scale_h, scale_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
-            UniFP16toFP32Lo4_dp4x4);\n\
         coord_bias.x += 4;\n\
         _viv_asm(CONV, tmpVal0, norm);\n\
 \n\
         tmpData1 -= mean;\n\
         norm = scale_f1 * vari * tmpData1 + bias_f1;\n\
+\n\
+        scale_f1 = read_imagef(scale, coord_bias);\n\
         bias_f1 = read_imagef(bias, coord_bias);\n\
-        VXC_DP4x4(scale_f1, scale_h, scale_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
-            uniConvertSecFp16Fp32_4x4);\n\
+\n\
         _viv_asm(CONV, tmpVal1, norm);\n\
         VXC_DP2x8(dst, tmpVal0, tmpVal1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),\\\n\
             UniPackFP16even_2x8);\n\
@@ -13171,21 +13163,14 @@ __kernel void layer_norm_U8toF16_2D(\n\
         coord_bias.x = coord.x;\n\
         VXC_ReadImage(src0, input, coord.xy, VXC_5BITOFFSET_XY(0, 0),\\\n\
             VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
-        VXC_ReadImage(src1, scale, coord.xw, VXC_5BITOFFSET_XY(0, 0),\\\n\
-            VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-        _viv_asm(COPY, scale_h, src1, 16);\n\
-        VXC_DP4x4(scale_f0, scale_h, scale_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
-            UniFP16toFP32Lo4_dp4x4);\n\
-        VXC_DP4x4(scale_f1, scale_h, scale_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
-            uniConvertSecFp16Fp32_4x4);\n\
+\n\
+        scale_f0 = read_imagef(scale, coord_bias);\n\
         bias_f0 = read_imagef(bias, coord_bias);\n\
         coord_bias.x += 4;\n\
+        scale_f1 = read_imagef(scale, coord_bias);\n\
         bias_f1 = read_imagef(bias, coord_bias);\n\
         coord_bias.x += 4;\n\
 \n\
-        VXC_ReadImage(src1, scale, coord.xw, VXC_5BITOFFSET_XY(8, 0),\\\n\
-            VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
-        _viv_asm(COPY, scale_h, src1, 16);\n\
         VXC_DP4x4(tmpData0, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
             uniConvert1stUint8SubZpToFp32_4x4);\n\
         VXC_DP4x4(tmpData1, src0, zp, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
@@ -13202,17 +13187,19 @@ __kernel void layer_norm_U8toF16_2D(\n\
         vxc_float4 norm;\n\
         tmpData0 -= mean;\n\
         norm = scale_f0 * vari * tmpData0 + bias_f0;\n\
+\n\
+        scale_f0 = read_imagef(scale, coord_bias);\n\
         bias_f0 = read_imagef(bias, coord_bias);\n\
-        VXC_DP4x4(scale_f0, scale_h, scale_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
-            UniFP16toFP32Lo4_dp4x4);\n\
+\n\
         coord_bias.x += 4;\n\
         _viv_asm(CONV, tmpVal0, norm);\n\
 \n\
         tmpData1 -= mean;\n\
         norm = scale_f1 * vari * tmpData1 + bias_f1;\n\
+\n\
+        scale_f1 = read_imagef(scale, coord_bias);\n\
         bias_f1 = read_imagef(bias, coord_bias);\n\
-        VXC_DP4x4(scale_f1, scale_h, scale_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
-            uniConvertSecFp16Fp32_4x4);\n\
+\n\
         _viv_asm(CONV, tmpVal1, norm);\n\
         VXC_DP2x8(dst, tmpVal0, tmpVal1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),\\\n\
             UniPackFP16even_2x8);\n\
