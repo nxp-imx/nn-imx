@@ -22,7 +22,6 @@
 *
 *****************************************************************************/
 
-
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -64,7 +63,6 @@ __BEGIN_DECLS
 #define KERNEL_SOURCE_9    "layer_normalization_scale_f32_2d"
 #define KERNEL_SOURCE_10   "layer_normalization_scale_f32_bf16"
 
-
 #define HASH_LAYERNORM_SH_KERNEL_NAME(SRC0_TYPE, DST_TYPE) \
     CVIVANTE_NAMESPACE("evis.layer_norm_"#SRC0_TYPE"to"#DST_TYPE)
 
@@ -81,13 +79,13 @@ __BEGIN_DECLS
 #define HASH_LAYERNORM_KEY(_input0_type, _input2_type, _output_type, _reshape_flag) \
     ((_input0_type << 24) | (_input2_type << 16) | (_output_type << 8) | _reshape_flag)
 
-#define TENSOR_LAYERNORM_KERNELS(IN0_TYPE, OUT_TYPE, SOURCE) \
-    { HASH_LAYERNORM_KEY(IN0_TYPE, F16, OUT_TYPE, LAYERNORM_KERNEL), \
+#define TENSOR_LAYERNORM_KERNELS(IN0_TYPE, SCALE_TYPE, OUT_TYPE, SOURCE) \
+    { HASH_LAYERNORM_KEY(IN0_TYPE, SCALE_TYPE, OUT_TYPE, LAYERNORM_KERNEL), \
         HASH_LAYERNORM_SH_KERNEL_NAME(IN0_TYPE, OUT_TYPE), \
         SOURCE },
 
-#define TENSOR_LAYERNORM_KERNELS_2D(IN0_TYPE, OUT_TYPE, SOURCE) \
-    { HASH_LAYERNORM_KEY(IN0_TYPE, F16, OUT_TYPE, LAYERNORM_2D_KERNEL), \
+#define TENSOR_LAYERNORM_KERNELS_2D(IN0_TYPE, SCALE_TYPE, OUT_TYPE, SOURCE) \
+    { HASH_LAYERNORM_KEY(IN0_TYPE, SCALE_TYPE, OUT_TYPE, LAYERNORM_2D_KERNEL), \
         HASH_LAYERNORM_SH_KERNEL_2D_NAME(IN0_TYPE, OUT_TYPE), \
         SOURCE },
 
@@ -144,17 +142,19 @@ typedef struct
 static const _kernel_map_type _layernorm_kernel_map[] =
 {
     // Register kernel here
-    TENSOR_LAYERNORM_KERNELS( U8, U8, KERNEL_SOURCE_1 )
-    TENSOR_LAYERNORM_KERNELS_2D( U8, U8, KERNEL_SOURCE_2 )
-    TENSOR_LAYERNORM_KERNELS( U8, F16, KERNEL_SOURCE_3 )
-    TENSOR_LAYERNORM_KERNELS_2D( U8, F16, KERNEL_SOURCE_3 )
+    TENSOR_LAYERNORM_KERNELS( U8, F16, U8, KERNEL_SOURCE_1 )
+    TENSOR_LAYERNORM_KERNELS_2D( U8, F16, U8, KERNEL_SOURCE_2 )
+    TENSOR_LAYERNORM_KERNELS( U8, F16, F16, KERNEL_SOURCE_3 )
+    TENSOR_LAYERNORM_KERNELS_2D( U8, F16, F16, KERNEL_SOURCE_3 )
+    TENSOR_LAYERNORM_KERNELS( U8, F32, F16, KERNEL_SOURCE_3 )
+    TENSOR_LAYERNORM_KERNELS_2D( U8, F32, F16, KERNEL_SOURCE_3 )
 
-    TENSOR_LAYERNORM_KERNELS( F16, F16, KERNEL_SOURCE_1 )
-    TENSOR_LAYERNORM_KERNELS_2D( F16, F16, KERNEL_SOURCE_2 )
-    TENSOR_LAYERNORM_KERNELS( F16, U8, KERNEL_SOURCE_1 )
-    TENSOR_LAYERNORM_KERNELS_2D( F16, U8, KERNEL_SOURCE_2 )
-    TENSOR_LAYERNORM_KERNELS( I16, I16, KERNEL_SOURCE_6 )
-    TENSOR_LAYERNORM_KERNELS_2D( I16, I16, KERNEL_SOURCE_6 )
+    TENSOR_LAYERNORM_KERNELS( F16, F16, F16, KERNEL_SOURCE_1 )
+    TENSOR_LAYERNORM_KERNELS_2D( F16, F16, F16, KERNEL_SOURCE_2 )
+    TENSOR_LAYERNORM_KERNELS( F16, F16, U8, KERNEL_SOURCE_1 )
+    TENSOR_LAYERNORM_KERNELS_2D( F16, F16, U8, KERNEL_SOURCE_2 )
+    TENSOR_LAYERNORM_KERNELS( I16, F16, I16, KERNEL_SOURCE_6 )
+    TENSOR_LAYERNORM_KERNELS_2D( I16, F16, I16, KERNEL_SOURCE_6 )
 
     TENSOR_LAYERNORM_SCALE_KERNELS( U8, U8, KERNEL_SOURCE_8 )
     TENSOR_LAYERNORM_SCALE_KERNELS_2D( U8, U8, KERNEL_SOURCE_9 )
@@ -497,6 +497,7 @@ DEF_KERNEL_INITIALIZER(_layernorm_initializer)
         switch( pack_key )
         {
             case _PACK_SELECT_KEY( U8, F16, F16 ):
+            case _PACK_SELECT_KEY( U8, F32, F16 ):
                 {
                     status = vsi_nn_kernel_gpu_add_param(node, "UniPackFP16even_2x8",
                         &UniPackFP16even_2x8);
@@ -510,10 +511,6 @@ DEF_KERNEL_INITIALIZER(_layernorm_initializer)
                         &uniConvert3rdUint8SubZpToFp32_4x4);
                     status |= vsi_nn_kernel_gpu_add_param(node, "uniConvert4thUint8SubZpToFp32_4x4",
                         &uniConvert4thUint8SubZpToFp32_4x4);
-                    status |= vsi_nn_kernel_gpu_add_param(node, "uniConvertSecFp16Fp32_4x4",
-                        &uniConvertSecFp16Fp32_4x4);
-                    status |= vsi_nn_kernel_gpu_add_param(node, "UniFP16toFP32Lo4_dp4x4",
-                        &UniFP16toFP32Lo4_dp4x4);
                     status |= vsi_nn_kernel_gpu_add_param(node, "e2InScale", &e2InScale);
                     status |= vsi_nn_kernel_gpu_add_param(node, "inputZP", &input_zp);
                     status |= vsi_nn_kernel_gpu_add_param(node, "input_scale", &scaleIn);
@@ -1169,7 +1166,6 @@ static vsi_status _query_kernel_wh
                 _sumsqr_kernel_map[i].source_name );
     }
 
-
     key = HASH_LAYERNORM_KEY( input0_dtype, input2_dtype, output_dtype, is2D_wh );
 
     for( i = 0; i < _cnt_of_array(_sumsqr_kernel_map); i ++ )
@@ -1379,7 +1375,6 @@ final:
     return node;
 }
 
-
 static vsi_nn_kernel_node_t _setup
     (
     vsi_nn_graph_t              * graph,
@@ -1533,4 +1528,3 @@ final:
 __END_DECLS
 
 REGISTER_BACKEND_EVIS( layer_norm, _setup )
-
