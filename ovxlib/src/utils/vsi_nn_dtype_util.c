@@ -138,7 +138,6 @@ uint16_t vsi_nn_Fp32ToBFp16
     return fp32_to_bfp16(in);
 } /* vsi_nn_Fp32ToFp16() */
 
-
 vsi_status vsi_nn_IntegerConvert
     (
     const void *    src,
@@ -357,8 +356,9 @@ vsi_bool vsi_nn_QuantCheck
     weight_qnt_type = weight->attr.dtype.qnt_type;
     weight_dtype = weight->attr.dtype.vx_type;
 
-    //do not check quant parammeters if types of input/weight is hybrid combinaton
-    if(input_dtype != weight_dtype || input_qnt_type != weight_qnt_type)
+    //do not check quant parammeters if types of input/weight/bias is hybrid combinaton
+    if( input_dtype != weight_dtype || input_qnt_type != weight_qnt_type ||
+        (bias && bias->attr.dtype.qnt_type != input_qnt_type) )
     {
         return ret;
     }
@@ -568,4 +568,3 @@ final:
     }
     return status;
 } /* vsi_nn_vxConvertFloat32DataToTensor() */
-
