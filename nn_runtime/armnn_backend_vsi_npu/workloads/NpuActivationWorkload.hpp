@@ -93,7 +93,7 @@ class NpuActivationWorkload : public TNpuWorkload<ActivationQueueDescriptor, Dat
                         nnrt::OperationType::RELU6, inSize, inPtr, outSize, outPtr);
 
                 } else {
-                    std::cout << "Unsupported BoundedReLU.";
+                    ARMNN_LOG(error) << "Unsupported BoundedReLu.\n";
                     return;
                 }
                 break;
@@ -126,7 +126,7 @@ class NpuActivationWorkload : public TNpuWorkload<ActivationQueueDescriptor, Dat
                 }
                 break;
             default:
-                std::cout << "Unsupported Activation Function.";
+                ARMNN_LOG(error) << "Unsupported ActivationFunction.\n";
                 return;
         }
     }

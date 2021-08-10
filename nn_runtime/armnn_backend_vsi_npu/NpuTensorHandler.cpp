@@ -26,6 +26,7 @@
 
 #include <string>
 #include <armnn/TypesUtils.hpp>
+#include <armnn/Logging.hpp>
 
 #include <boost/core/ignore_unused.hpp>
 
@@ -156,17 +157,16 @@ void NpuTensorHandler::getMemoryReady() const {
         if (nullptr == m_ExternalMem) {
             m_Memory.reset(new uint8_t[m_TensorInfo.GetNumBytes()]);
             // Keep this track random caculation error issue
-            std::cout << ", size = " << m_TensorInfo.GetNumBytes();
+            ARMNN_LOG(debug) << "size = " << m_TensorInfo.GetNumBytes() << "\n";
         }
         return;
     }
 
     // For middle tensor handler
     if (m_Memory) {
-        // "Warm-Start NN execution"
         if (!m_ModelShell) {
+            ARMNN_LOG(error) << "Model prepare failed (1): check previous log for error log.\n";
             assert(false);
-            std::cout << "Model prepare failed: check previous log for error log";
             return;
         }
         auto inputs_handle = m_ModelShell->GetFinalModelPtr()->second.first;
@@ -175,7 +175,7 @@ void NpuTensorHandler::getMemoryReady() const {
                          [](NpuTensorHandler* handle) { return handle->dirty_flag; })) {
             return;
         }
-        std::cout << "Warm-Start NN execution";
+        ARMNN_LOG(debug) << "Warm-Start NN execution (1).\n";
         for (auto& inputHandle : inputs_handle) {
             inputHandle->dirty_flag = false;
         }
@@ -185,20 +185,17 @@ void NpuTensorHandler::getMemoryReady() const {
 
     // Rest code for output handler
     if (m_ExternalMem) {
-        // "Warm-Start NN execution"
         if (!m_ModelShell) {
             auto mergedModel = adaption::utils::MergeModels(m_ModelStack);
             m_ModelShell.reset(new ModelShell(std::move(mergedModel)));
             if (!m_ModelShell) {
+                ARMNN_LOG(error) << "Model prepare failed (2): check previous log for error log.\n";
                 assert(false);
-                std::cout
-                    << "Model prepare failed: check previous log for error log";
                 return;
             }
         }
 
-        std::cout << "Warm-Start NN execution" ;
-
+        ARMNN_LOG(debug) << "Warm-Start NN execution (2).\n";
         m_ModelShell->Execute();
         return;
     }

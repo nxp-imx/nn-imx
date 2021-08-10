@@ -344,7 +344,7 @@ class TNpuWorkload : public Base_t<QueueDescriptor, DataTypes...>{
         nnrt::op::OperationPtr op =
             m_LocalModel->addOperation(opType, inOperands, numIn, outOperands, numOut, &index);
         if (!op) {
-            std::cout << "Out of memory.";
+            ARMNN_LOG(error) << "Out of memory.\n";
         }
 
         // op->setOperandLayout(); TODO: setup layout

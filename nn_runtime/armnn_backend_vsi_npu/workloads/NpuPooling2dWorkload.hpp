@@ -150,7 +150,7 @@ class NpuPooling2dWorkload : public TNpuWorkload<Pooling2dQueueDescriptor, DataT
             case armnn::PoolingAlgorithm::L2:
                 return nnrt::OperationType::L2_POOL_2D;
             default:
-                std::cout << "Pooling type not support.";
+                ARMNN_LOG(error) << "Unsupported PoolingAlgorithm.\n";
                 break;
         }
 

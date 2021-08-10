@@ -83,9 +83,9 @@ class NpuElementwiseUnarytWorkload
                 break;
             }
             default:
-                std::cout << "Not support ElementwiseUnaryOperation.";
+                ARMNN_LOG(error) << "Unsupported UnaryOperation.\n";
                 assert(false);
-
+                break;
         }
 
     }
