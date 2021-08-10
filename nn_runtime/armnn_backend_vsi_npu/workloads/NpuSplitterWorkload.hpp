@@ -49,7 +49,9 @@ class NpuSplitterWorkload : public TNpuWorkload<SplitterQueueDescriptor, DataTyp
             auto inputShape = inputTensorHandle->GetShape();
             auto output0Shape = outputTensorHandle0->GetShape();
             if (inputShape.GetNumDimensions() != output0Shape.GetNumDimensions()) {
-                std::cout << "Input and output dimension are mismatched.";
+                ARMNN_LOG(error) << "Mismatching input and output dimensions ("
+                                 << inputShape.GetNumDimensions()
+                                 << " != " << output0Shape.GetNumDimensions() << ").\n";
                 assert(false);
             }
             if (descriptor.m_Outputs.size() > 1) {

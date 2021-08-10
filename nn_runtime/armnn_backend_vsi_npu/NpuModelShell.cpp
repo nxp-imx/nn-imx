@@ -26,6 +26,8 @@
 #include "NpuTensorHandler.hpp"
 #include "arm_nn_interpreter.hpp"
 
+#include <armnn/Logging.hpp>
+
 #include <algorithm>
 #include <set>
 #include <type_traits>
@@ -244,8 +246,8 @@ void ModelShell::Execute() {
     auto errCode = m_ExecutionPtr->compute();
 
     if (0 != errCode){
+        ARMNN_LOG(error) << "Execution Model failed.\n";
         assert(false);
-        std::cout << "Execution Model failed";
     }
 }
 }

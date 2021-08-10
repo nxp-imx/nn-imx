@@ -100,8 +100,9 @@ class NpuComparisonWorkload : public TNpuWorkload<ComparisonQueueDescriptor, Dat
                 break;
             }
             default:
-                std::cout << "Not support ComparisonOperation.";
+                ARMNN_LOG(error) << "Unsupported ComparisonOperation.\n";
                 assert(false);
+                break;
         }
     }
 };

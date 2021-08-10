@@ -82,8 +82,9 @@ class NpuArgMinMaxWorkload : public TNpuWorkload<ArgMinMaxQueueDescriptor, DataT
                 break;
             }
             default:
-                std::cout << "Not support ArgMinMaxFunction." << std::endl;
+                ARMNN_LOG(error) << "Unsupported ArgMinMaxFunction.\n";
                 assert(false);
+                break;
         }
     }
 
