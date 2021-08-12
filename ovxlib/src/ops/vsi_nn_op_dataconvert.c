@@ -41,7 +41,6 @@ static vsi_status op_compute
     vsi_nn_tensor_t ** outputs
     )
 {
-
     if (self->nn_param.dataconvert.lcl_data->use_reshape == FALSE
         && inputs[0]->t != NULL && outputs[0]->t != NULL)
     {
@@ -159,7 +158,6 @@ static vsi_status op_deinit
 {
     if(self->nn_param.dataconvert.lcl_data)
     {
-
         free(self->nn_param.dataconvert.lcl_data);
         self->nn_param.dataconvert.lcl_data = NULL;
     }
@@ -288,6 +286,17 @@ static vsi_bool op_check
         IO_TYPE(D_U32,        D_U16)
         IO_TYPE(D_U32,        D_U8|Q_ASYM)
         IO_TYPE(D_U32,        D_U8)
+
+        /* HW 9.0.1 */
+        IO_TYPE(D_I8|Q_DFP,   D_BF16)
+        IO_TYPE(D_I8|Q_DFP,   D_F32)
+        IO_TYPE(D_U8|Q_ASYM,  D_BF16)
+        IO_TYPE(D_U8|Q_ASYM,  D_F32)
+        IO_TYPE(D_I16|Q_DFP,  D_I8|Q_DFP)
+        IO_TYPE(D_I16|Q_DFP,  D_U8|Q_ASYM)
+        IO_TYPE(D_I16|Q_DFP,  D_BF16)
+        IO_TYPE(D_I16|Q_DFP,  D_F32)
+        IO_TYPE(D_F16,        D_F32)
     END_IO_TYPE_DECL(DATACONVERT)
     if (!VALIDATE_OP_IO_TYPES(DATACONVERT, self, inputs, self->input.num, outputs, self->output.num))
     {
@@ -320,4 +329,3 @@ DEF_OP_REG
 #ifdef __cplusplus
 }
 #endif
-
