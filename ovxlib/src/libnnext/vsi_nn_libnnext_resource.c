@@ -54844,8 +54844,8 @@ static const char select_cl[] = "__kernel void select_I8_U8_U8toU8(\n\
     uint4 src0, src1, src, dst;\n\
     float inputScale, inputTail;\n\
     READ_IMAGEI_2DARRAY(value, condition, coord);\n\
-    READ_IMAGEF_2DARRAY(src0, input0, coord);\n\
-    READ_IMAGEF_2DARRAY(src1, input1, coord);\n\
+    READ_IMAGEUI_2DARRAY(src0, input0, coord);\n\
+    READ_IMAGEUI_2DARRAY(src1, input1, coord);\n\
     src   = (value != 0 ? src0 : src1);\n\
     inputScale = (value.x != 0 ? input0Scale : input1Scale);\n\
     inputTail  = (value.x != 0 ? input0Tail  : input1Tail);\n\
