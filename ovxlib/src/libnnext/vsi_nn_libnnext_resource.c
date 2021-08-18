@@ -41405,18 +41405,17 @@ inline Image create_image_from_image2d(image2d_t input, int stride_x)\n\
 {\n\
     int8 desc;\n\
     _viv_asm(COPY, desc, input, sizeof(desc));\n\
+    uint address = as_uint(desc.s0);\n\
 \n\
 #if (USE_40BITS_VA==0)\n\
-    uint address = as_uint(desc.s0);\n\
     int stride_y = desc.s1;\n\
 #else\n\
-    ulong address = as_ulong(desc.s05);\n\
     int stride_y = desc.s6;\n\
 #endif\n\
 \n\
     Image img =\n\
     {\n\
-        .ptr                           = (uchar*)address,\n\
+        .ptr                           = (uchar*)(uintptr_t)address,\n\
         .stride_x                      = stride_x,\n\
         .stride_y                      = stride_y\n\
     };\n\
@@ -41450,14 +41449,14 @@ inline Tensor create_tensor_from_image2d_array(image2d_array_t input, int stride
     int16 desc;\n\
     _viv_asm(COPY, desc, input, sizeof(desc));\n\
 \n\
-    ulong address = as_ulong(desc.s05);\n\
+    uint address = as_uint(desc.s0);\n\
     int stride_y = desc.s6;\n\
     int stride_z = desc.sa;\n\
 #endif\n\
 \n\
     Tensor t =\n\
     {\n\
-        .ptr                           = (uchar*)address,\n\
+        .ptr                           = (uchar*)(uintptr_t)address,\n\
         .stride_x                      = stride_x,\n\
         .stride_y                      = stride_y,\n\
         .stride_z                      = stride_z\n\
@@ -43224,18 +43223,17 @@ inline Image create_image_from_image2d(image2d_t input, int stride_x)\n\
 {\n\
     int8 desc;\n\
     _viv_asm(COPY, desc, input, sizeof(desc));\n\
+    uint address = as_uint(desc.s0);\n\
 \n\
 #if (USE_40BITS_VA==0)\n\
-    uint address = as_uint(desc.s0);\n\
     int stride_y = desc.s1;\n\
 #else\n\
-    ulong address = as_ulong(desc.s05);\n\
     int stride_y = desc.s6;\n\
 #endif\n\
 \n\
     Image img =\n\
     {\n\
-        .ptr                           = (uchar*)address,\n\
+        .ptr                           = (uchar*)(uintptr_t)address,\n\
         .stride_x                      = stride_x,\n\
         .stride_y                      = stride_y\n\
     };\n\
@@ -43269,14 +43267,14 @@ inline Tensor create_tensor_from_image2d_array(image2d_array_t input, int stride
     int16 desc;\n\
     _viv_asm(COPY, desc, input, sizeof(desc));\n\
 \n\
-    ulong address = as_ulong(desc.s05);\n\
+    uint address = as_uint(desc.s0);\n\
     int stride_y = desc.s6;\n\
     int stride_z = desc.sa;\n\
 #endif\n\
 \n\
     Tensor t =\n\
     {\n\
-        .ptr                           = (uchar*)address,\n\
+        .ptr                           = (uchar*)(uintptr_t)address,\n\
         .stride_x                      = stride_x,\n\
         .stride_y                      = stride_y,\n\
         .stride_z                      = stride_z\n\

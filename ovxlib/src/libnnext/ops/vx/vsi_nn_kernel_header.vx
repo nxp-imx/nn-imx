@@ -25,18 +25,17 @@ inline Image create_image_from_image2d(image2d_t input, int stride_x)
 {
     int8 desc;
     _viv_asm(COPY, desc, input, sizeof(desc));
+    uint address = as_uint(desc.s0);
 
 #if (USE_40BITS_VA==0)
-    uint address = as_uint(desc.s0);
     int stride_y = desc.s1;
 #else
-    ulong address = as_ulong(desc.s05);
     int stride_y = desc.s6;
 #endif
 
     Image img =
     {
-        .ptr                           = (uchar*)address,
+        .ptr                           = (uchar*)(uintptr_t)address,
         .stride_x                      = stride_x,
         .stride_y                      = stride_y
     };
@@ -70,14 +69,14 @@ inline Tensor create_tensor_from_image2d_array(image2d_array_t input, int stride
     int16 desc;
     _viv_asm(COPY, desc, input, sizeof(desc));
 
-    ulong address = as_ulong(desc.s05);
+    uint address = as_uint(desc.s0);
     int stride_y = desc.s6;
     int stride_z = desc.sa;
 #endif
 
     Tensor t =
     {
-        .ptr                           = (uchar*)address,
+        .ptr                           = (uchar*)(uintptr_t)address,
         .stride_x                      = stride_x,
         .stride_y                      = stride_y,
         .stride_z                      = stride_z
