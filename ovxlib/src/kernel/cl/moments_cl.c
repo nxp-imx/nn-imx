@@ -98,24 +98,19 @@ typedef struct
 static const _kernel_map_type moments_map[] =
 {
     // Register kernel here
-    TENSOR_MOMENTS_KERNELS(U8,  F16, 0,        KERNEL_SOURCE_1)
-    TENSOR_MOMENTS_KERNELS(F16, F16, 0,        KERNEL_SOURCE_1)
+    TENSOR_MOMENTS_KERNELS(U8,  F32, 0,        KERNEL_SOURCE_1)
     TENSOR_MOMENTS_KERNELS(F32, F32, 0,        KERNEL_SOURCE_1)
     TENSOR_MOMENTS_KERNELS(I32, F32, 0,        KERNEL_SOURCE_1)
-    TENSOR_MOMENTS_KERNELS(U8,  F16, 1,        KERNEL_SOURCE_2)
-    TENSOR_MOMENTS_KERNELS(F16, F16, 1,        KERNEL_SOURCE_2)
+    TENSOR_MOMENTS_KERNELS(U8,  F32, 1,        KERNEL_SOURCE_2)
     TENSOR_MOMENTS_KERNELS(F32, F32, 1,        KERNEL_SOURCE_2)
     TENSOR_MOMENTS_KERNELS(I32, F32, 1,        KERNEL_SOURCE_2)
-    TENSOR_MOMENTS_KERNELS(U8,  F16, 2,        KERNEL_SOURCE_3)
-    TENSOR_MOMENTS_KERNELS(F16, F16, 2,        KERNEL_SOURCE_3)
+    TENSOR_MOMENTS_KERNELS(U8,  F32, 2,        KERNEL_SOURCE_3)
     TENSOR_MOMENTS_KERNELS(F32, F32, 2,        KERNEL_SOURCE_3)
     TENSOR_MOMENTS_KERNELS(I32, F32, 2,        KERNEL_SOURCE_3)
-    TENSOR_MOMENTS_TWO_AXIS_KERNELS(U8,  F16, 0, 1,         KERNEL_SOURCE_4)
-    TENSOR_MOMENTS_TWO_AXIS_KERNELS(F16, F16, 0, 1,         KERNEL_SOURCE_4)
+    TENSOR_MOMENTS_TWO_AXIS_KERNELS(U8,  F32, 0, 1,         KERNEL_SOURCE_4)
     TENSOR_MOMENTS_TWO_AXIS_KERNELS(F32, F32, 0, 1,         KERNEL_SOURCE_4)
     TENSOR_MOMENTS_TWO_AXIS_KERNELS(I32, F32, 0, 1,         KERNEL_SOURCE_4)
-    TENSOR_MOMENTS_THREE_AXIS_KERNELS(U8,  F16, 0, 1, 2,    KERNEL_SOURCE_5)
-    TENSOR_MOMENTS_THREE_AXIS_KERNELS(F16, F16, 0, 1, 2,    KERNEL_SOURCE_5)
+    TENSOR_MOMENTS_THREE_AXIS_KERNELS(U8,  F32, 0, 1, 2,    KERNEL_SOURCE_5)
     TENSOR_MOMENTS_THREE_AXIS_KERNELS(F32, F32, 0, 1, 2,    KERNEL_SOURCE_5)
     TENSOR_MOMENTS_THREE_AXIS_KERNELS(I32, F32, 0, 1, 2,    KERNEL_SOURCE_5)
 };
@@ -311,6 +306,15 @@ static vsi_status _query_kernel
     input0_dtype = vsi_nn_kernel_map_dtype( inputs[0]->attr.dtype.vx_type );
     output_dtype = vsi_nn_kernel_map_dtype( outputs[0]->attr.dtype.vx_type );
 
+    if (input0_dtype == I8 || input0_dtype == I16)
+    {
+        input0_dtype = I32;
+    }
+    else if (input0_dtype == F16)
+    {
+        input0_dtype = F32;
+    }
+    output_dtype = output_dtype == F16 ? F32 : output_dtype;
     key = HASH_MOMENTS_KEY( input0_dtype, output_dtype, axis_num, axis[0], axis[1], axis[2], rs_flg );
 
     for( i = 0; i < _cnt_of_array(moments_map); i ++ )
@@ -521,4 +525,3 @@ static vsi_nn_kernel_node_t _setup
 __END_DECLS
 
 REGISTER_BACKEND_CL( moments, _setup )
-

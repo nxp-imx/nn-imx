@@ -165,12 +165,20 @@ static vsi_bool op_check
         IO_TYPE(D_U8|Q_ASYM, D_F16, D_F16, D_F32, D_F32, D_U8|Q_ASYM)
         IO_TYPE(D_U8|Q_ASYM, D_F16, D_F16, D_F32, D_F32, D_F16)
         IO_TYPE(D_I8|Q_DFP,  D_F16, D_F16, D_F32, D_F32, D_I8|Q_DFP)
+        IO_TYPE(D_I8|Q_DFP,  D_F32, D_F32, D_F32, D_F32, D_I8|Q_DFP)
         IO_TYPE(D_I8|Q_DFP,  D_F16, D_F16, D_F32, D_F32, D_F16)
+        IO_TYPE(D_I8|Q_DFP,  D_F32, D_F32, D_F32, D_F32, D_F16)
         IO_TYPE(D_I16|Q_DFP, D_F16, D_F16, D_F32, D_F32, D_I16|Q_DFP)
-        IO_TYPE(D_I16|Q_DFP, D_F16, D_F16, D_F32, D_F32, D_F16)
+        IO_TYPE(D_I16|Q_DFP, D_F32, D_F32, D_F32, D_F32, D_I16|Q_DFP)
+        IO_TYPE(D_I16|Q_DFP, D_F32, D_F32, D_F32, D_F32, D_F16)
         IO_TYPE(D_F32,       D_F32, D_F32, D_F32, D_F32, D_F32)
         IO_TYPE(D_F16,       D_F32, D_F32, D_F32, D_F32, D_F16)
         IO_TYPE(D_U8|Q_ASYM, D_F32, D_F32, D_F32, D_F32, D_U8|Q_ASYM)
+        IO_TYPE(D_U8|Q_ASYM, D_F32, D_F32, D_F32, D_F32, D_F16)
+        IO_TYPE(D_F16,       D_F32, D_F32, D_F32, D_F32, D_F16)
+        IO_TYPE(D_F16,       D_F32, D_F32, D_F32, D_F32, D_U8|Q_ASYM)
+        IO_TYPE(D_F16,       D_F32, D_F32, D_F32, D_F32, D_I16|Q_DFP)
+        IO_TYPE(D_F16,       D_F32, D_F32, D_F32, D_F32, D_I8|Q_DFP)
     END_IO_TYPE_DECL(BATCHNORM_SINGLE)
     if(!VALIDATE_OP_IO_TYPES(BATCHNORM_SINGLE, self, inputs, self->input.num, outputs, self->output.num)) {
         char* desc = generate_op_io_types_desc(inputs,
@@ -234,4 +242,3 @@ DEF_OP_REG
     );
 
 __END_DECLS
-
