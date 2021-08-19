@@ -1,4 +1,4 @@
-__kernel void moments_axis1_U8toF16(
+__kernel void moments_axis1_U8toF32(
     __read_only image2d_array_t   input,
     __write_only image2d_t  output_mean,
     __write_only image2d_t  output_vari,
@@ -70,7 +70,6 @@ __kernel void moments_axis1_##src0_type_name##to##src0_type_name( \
     write_imagef(output_mean, coord_out, mean); \
     write_imagef(output_vari, coord_out, vari); \
 }
-MOMENTS_AXIS1_F(F16)
 MOMENTS_AXIS1_F(F32)
 
 __kernel void moments_axis1_I32toF32(
@@ -98,13 +97,13 @@ __kernel void moments_axis1_I32toF32(
     {
         data = read_imagei(input, coord0).x;
         coord0.y++;
-        sum += (data);
-        sqr += (data * data);
+        sum = sum + data;
+        sqr = sqr + data * data;
     }
 
     float4 mean, vari;
-    mean.x = sum * dimRatio;
-    vari.x = sqr * dimRatio;
+    mean.x = sum * dimRatio * input_scale;
+    vari.x = sqr * dimRatio * input_scale * input_scale;
     vari.x = vari.x - mean.x * mean.x;
 
     int2 coord_out = (int2)(gidx, gidz);
