@@ -156,7 +156,7 @@ static vsi_bool _get_stride_slice_start_stop_stride
             stop[i] = start[i] + 1;
         }
 
-        if (p->end_mask & (1 << i))
+        if (params->end_mask & (1 << i))
         {
             stop[i] = get_slice_mask_stop_value(stride[i], inputs[0]->attr.size[i]);
         }
@@ -561,6 +561,7 @@ static vsi_bool op_setup
     if ( VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num )
     {
         int32_t idx = 0;
+        uint32_t shape[VSI_NN_MAX_DIM_NUM] = {0};
 
         for (i = 0; i < inputs[0]->attr.dim_num; i++)
         {
@@ -591,7 +592,7 @@ static vsi_bool op_setup
             {
                 output_size++;
             }
-            outputs[0]->attr.size[i] = output_size;
+            shape[i] = output_size;
         }
         outputs[0]->attr.dim_num = 0;
         for (idx = 0, i = 0; i < inputs[0]->attr.dim_num + params->num_add_axis; i++)
@@ -611,7 +612,7 @@ static vsi_bool op_setup
             }
 
             outputs[0]->attr.size[outputs[0]->
-                attr.dim_num] = outputs[0]->attr.size[idx ++];
+                attr.dim_num] = shape[idx ++];
 
             outputs[0]->attr.dim_num++;
         }
@@ -867,4 +868,3 @@ DEF_OP_REG
 #ifdef __cplusplus
 }
 #endif
-
