@@ -18,6 +18,6 @@ $(MAIN_MODULE):
 .PHONY: clean
 clean:
 	@echo "remove *.so and *.o"
-	@rm *.so
-	@cd $(NNRT);rm *.o
-	@cd $(NNAPI_DELEGATE);rm *.o	
+	@rm -f *.so
+	@cd $(NNRT);rm -f *.o
+	@cd $(NNAPI_DELEGATE);rm -f *.o	
