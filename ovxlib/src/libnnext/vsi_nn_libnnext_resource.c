@@ -41403,18 +41403,18 @@ inline uchar* get_image_ptr_from_coord(Image img, int2 coord)\n\
 \n\
 inline Image create_image_from_image2d(image2d_t input, int stride_x)\n\
 {\n\
+    int stride_y;\n\
 #if (USE_40BITS_VA==0)\n\
     int8 desc;\n\
 #else\n\
-    int16 desc;\n\
+    int8 desc;\n\
+    _viv_asm(GET_IMAGE_STRIDE, stride_y, input);\n\
 #endif\n\
     _viv_asm(COPY, desc, input, sizeof(desc));\n\
     uint address = as_uint(desc.s0);\n\
 \n\
 #if (USE_40BITS_VA==0)\n\
-    int stride_y = desc.s1;\n\
-#else\n\
-    int stride_y = desc.sa;\n\
+    stride_y = desc.s1;\n\
 #endif\n\
 \n\
     Image img =\n\
@@ -41442,28 +41442,23 @@ inline uchar* get_tensor_ptr_from_coord(Tensor t, int4 coord)\n\
 \n\
 inline Tensor create_tensor_from_image2d_array(image2d_array_t input, int stride_x)\n\
 {\n\
-#if (USE_40BITS_VA==0)\n\
     int8 desc;\n\
-    _viv_asm(COPY, desc, input, sizeof(desc));\n\
-\n\
-    uint address = as_uint(desc.s0);\n\
-    int stride_y = desc.s1;\n\
-    int stride_z = desc.s4;\n\
+    int2 strides;\n\
+#if (USE_40BITS_VA==0)\n\
+    strides.x = desc.s1;\n\
+    strides.y = desc.s4;\n\
 #else\n\
-    int16 desc;\n\
-    _viv_asm(COPY, desc, input, sizeof(desc));\n\
-\n\
-    uint address = as_uint(desc.s0);\n\
-    int stride_y = desc.sa;\n\
-    int stride_z = desc.se;\n\
+    _viv_asm(GET_IMAGE_STRIDE, strides, input);\n\
 #endif\n\
+    _viv_asm(COPY, desc, input, sizeof(desc));\n\
+    uint address = as_uint(desc.s0);\n\
 \n\
     Tensor t =\n\
     {\n\
         .ptr                           = (uchar*)(uintptr_t)address,\n\
         .stride_x                      = stride_x,\n\
-        .stride_y                      = stride_y,\n\
-        .stride_z                      = stride_z\n\
+        .stride_y                      = strides.x,\n\
+        .stride_z                      = strides.y\n\
     };\n\
 \n\
     return t;\n\
@@ -43305,18 +43300,18 @@ inline uchar* get_image_ptr_from_coord(Image img, int2 coord)\n\
 \n\
 inline Image create_image_from_image2d(image2d_t input, int stride_x)\n\
 {\n\
+    int stride_y;\n\
 #if (USE_40BITS_VA==0)\n\
     int8 desc;\n\
 #else\n\
-    int16 desc;\n\
+    int8 desc;\n\
+    _viv_asm(GET_IMAGE_STRIDE, stride_y, input);\n\
 #endif\n\
     _viv_asm(COPY, desc, input, sizeof(desc));\n\
     uint address = as_uint(desc.s0);\n\
 \n\
 #if (USE_40BITS_VA==0)\n\
-    int stride_y = desc.s1;\n\
-#else\n\
-    int stride_y = desc.sa;\n\
+    stride_y = desc.s1;\n\
 #endif\n\
 \n\
     Image img =\n\
@@ -43344,28 +43339,23 @@ inline uchar* get_tensor_ptr_from_coord(Tensor t, int4 coord)\n\
 \n\
 inline Tensor create_tensor_from_image2d_array(image2d_array_t input, int stride_x)\n\
 {\n\
-#if (USE_40BITS_VA==0)\n\
     int8 desc;\n\
-    _viv_asm(COPY, desc, input, sizeof(desc));\n\
-\n\
-    uint address = as_uint(desc.s0);\n\
-    int stride_y = desc.s1;\n\
-    int stride_z = desc.s4;\n\
+    int2 strides;\n\
+#if (USE_40BITS_VA==0)\n\
+    strides.x = desc.s1;\n\
+    strides.y = desc.s4;\n\
 #else\n\
-    int16 desc;\n\
-    _viv_asm(COPY, desc, input, sizeof(desc));\n\
-\n\
-    uint address = as_uint(desc.s0);\n\
-    int stride_y = desc.sa;\n\
-    int stride_z = desc.se;\n\
+    _viv_asm(GET_IMAGE_STRIDE, strides, input);\n\
 #endif\n\
+    _viv_asm(COPY, desc, input, sizeof(desc));\n\
+    uint address = as_uint(desc.s0);\n\
 \n\
     Tensor t =\n\
     {\n\
         .ptr                           = (uchar*)(uintptr_t)address,\n\
         .stride_x                      = stride_x,\n\
-        .stride_y                      = stride_y,\n\
-        .stride_z                      = stride_z\n\
+        .stride_y                      = strides.x,\n\
+        .stride_z                      = strides.y\n\
     };\n\
 \n\
     return t;\n\
