@@ -1125,11 +1125,11 @@ static vsi_nn_kernel_node_t _setup
             CHECK_STATUS(status);
             vsi_nn_kernel_scalar_release( &tmp_params[3] );
             vsi_nn_kernel_scalar_release( &tmp_params[4] );
-            vsi_nn_kernel_tensor_release( &tmp_params[5] );
-            vsi_nn_kernel_tensor_release( &tmp_params[6] );
-            vsi_nn_kernel_tensor_release( &tmp_params[7] );
-            vsi_nn_kernel_tensor_release( &tmp_params[8] );
-            vsi_nn_kernel_tensor_release( &tmp_params[9] );
+            vsi_nn_kernel_scalar_release( &tmp_params[5] );
+            vsi_nn_kernel_scalar_release( &tmp_params[6] );
+            vsi_nn_kernel_scalar_release( &tmp_params[7] );
+            vsi_nn_kernel_scalar_release( &tmp_params[8] );
+            vsi_nn_kernel_scalar_release( &tmp_params[9] );
             {
                 // Set default border mode.
                 vx_border_t border;
@@ -1166,4 +1166,3 @@ static vsi_nn_kernel_node_t _setup
 __END_DECLS
 
 REGISTER_BACKEND_EVIS( matrixmul, _setup )
-
