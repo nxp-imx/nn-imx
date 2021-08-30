@@ -58,6 +58,8 @@ extern "C"{
 #if defined(_MSC_VER)
 #include <BaseTsd.h>
 typedef SSIZE_T ssize_t;
+#else
+#include <sys/types.h>
 #endif
 
 /** Enumuration type */
