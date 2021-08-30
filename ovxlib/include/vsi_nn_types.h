@@ -37,6 +37,29 @@ extern "C"{
 #define inline __inline
 #endif
 
+#if (defined(_MSC_VER) || defined(__MINGW32))
+    #ifdef VSI_40BIT_VA_SUPPORT
+        #define VSI_SIZE_T_SPECIFIER "Iu"
+        #define VSI_SSIZE_T_SPECIFIER "Id"
+    #else
+        #define VSI_SIZE_T_SPECIFIER "u"
+        #define VSI_SSIZE_T_SPECIFIER "d"
+    #endif
+#else
+    #ifdef VSI_40BIT_VA_SUPPORT
+        #define VSI_SIZE_T_SPECIFIER "zu"
+        #define VSI_SSIZE_T_SPECIFIER "zd"
+    #else
+        #define VSI_SIZE_T_SPECIFIER "u"
+        #define VSI_SSIZE_T_SPECIFIER "d"
+    #endif
+#endif
+
+#if defined(_MSC_VER)
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+#endif
+
 /** Enumuration type */
 typedef int32_t  vsi_enum;
 /** Status type */
@@ -47,6 +70,14 @@ typedef int32_t   vsi_bool;
 typedef uint16_t vsi_float16;
 /** Truncate float16 */
 typedef uint16_t vsi_bfloat16;
+/** Tensor size */
+#ifdef VSI_40BIT_VA_SUPPORT
+typedef size_t vsi_size_t;
+typedef ssize_t vsi_ssize_t;
+#else
+typedef uint32_t vsi_size_t;
+typedef int32_t vsi_ssize_t;
+#endif
 
 #ifndef TRUE
 #define TRUE 1
