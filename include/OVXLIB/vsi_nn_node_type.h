@@ -167,6 +167,13 @@
 #include "ops/vsi_nn_op_groupnormalize.h"
 #include "ops/vsi_nn_op_sequence_mask.h"
 #include "ops/vsi_nn_op_repeat.h"
+#include "ops/vsi_nn_op_one_hot.h"
+#include "ops/vsi_nn_op_nms.h"
+#include "ops/vsi_nn_op_grouped_conv1d.h"
+#include "ops/vsi_nn_op_scatter_nd_update.h"
+#include "ops/vsi_nn_op_gelu.h"
+#include "ops/vsi_nn_op_conv2d_lstm.h"
+#include "ops/vsi_nn_op_conv2d_lstm_cell.h"
 /* custom node head define define */
 #include "custom/vsi_nn_custom_node_type.h"
 
@@ -320,6 +327,13 @@ typedef union _vsi_nn_nn_param
     vsi_nn_groupnormalize_param     groupnorm;
     vsi_nn_sequence_mask_param      sequence_mask;
     vsi_nn_repeat_param             repeat;
+    vsi_nn_one_hot_param            one_hot;
+    vsi_nn_nms_param                nms;
+    vsi_nn_grouped_conv1d_param     grouped_conv1d;
+    vsi_nn_scatter_nd_update_param  scatter_nd_update;
+    vsi_nn_gelu_param               gelu;
+    vsi_nn_conv2d_lstm_param        conv2d_lstm;
+    vsi_nn_conv2d_lstm_cell_param   conv2d_lstm_cell;
     uint8_t                         client_param[128];
 
     /* custom node data struct define */
