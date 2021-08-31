@@ -22,7 +22,6 @@
 *
 *****************************************************************************/
 
-
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -74,7 +73,6 @@ static const _kernel_map_type _l2normalizescale_kernel_map[] =
     HASH_L2NORMALIZESCALE_KERNELS_2D( 1, I16, F16, I16 )
     HASH_L2NORMALIZESCALE_KERNELS_2D( 1, I16, F16, F16 )
 };
-
 
 /*
  * Kernel params
@@ -169,7 +167,6 @@ DEF_KERNEL_INITIALIZER(_l2normalizescale_initializer)
         outputZP     = output_attr->asymm.zero_point;
         outputScale  = 1.0f / output_attr->asymm.scale;
     }
-
 
     r_inputScale = 1.0f / inputScale;
 
@@ -325,7 +322,6 @@ DEF_KERNEL_INITIALIZER(_l2normalizescale_initializer)
             else if(U8 == input_dtype)
             {
                 status |= vsi_nn_kernel_gpu_add_param( node, "r_inputScale", &r_inputScale);
-                status |= vsi_nn_kernel_gpu_add_param( node, "inputZP", &inputZP);
                 status |= vsi_nn_kernel_gpu_add_param( node, "uniUInt8SquareLo_4x4", &uniUInt8SquareLo_4x4);
                 status |= vsi_nn_kernel_gpu_add_param( node, "uniUInt8SquareHi_4x4", &uniUInt8SquareHi_4x4);
             }
@@ -448,10 +444,7 @@ final:
     if (output_attr) vsi_nn_kernel_tensor_attr_release( &output_attr );
 
     return status;
-
 } /* _l2normalizescale_initializer() */
-
-
 
 /*
  * Query kernel
@@ -508,7 +501,6 @@ static vsi_status _query_kernel
     }
     return status;
 } /* _query_kernel() */
-
 
 static vsi_nn_kernel_node_t _setup
     (
@@ -573,4 +565,3 @@ static vsi_nn_kernel_node_t _setup
 __END_DECLS
 
 REGISTER_BACKEND_EVIS( l2normalizescale, _setup )
-
