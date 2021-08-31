@@ -21,54 +21,56 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-/** @file */
-#ifndef _VSI_NN_VERSION_H_
-#define _VSI_NN_VERSION_H_
+#ifndef _VSI_NN_OP_CONV2D_LSTM_H
+#define _VSI_NN_OP_CONV2D_LSTM_H
 
 #include "vsi_nn_types.h"
 
-#if defined(__cplusplus)
-extern "C"{
-#endif
+enum
+{
+    CONV2D_LSTM_IN_INPUT        = 0,
+    CONV2D_LSTM_IN_H_STATE      = 1,
+    CONV2D_LSTM_IN_C_STATE      = 2,
 
-#define VSI_NN_VERSION_MAJOR 1
-#define VSI_NN_VERSION_MINOR 1
-#define VSI_NN_VERSION_PATCH 33
-#define VSI_NN_VERSION \
-    (VSI_NN_VERSION_MAJOR * 10000 + VSI_NN_VERSION_MINOR * 100 + VSI_NN_VERSION_PATCH)
+    CONV2D_LSTM_IN_KERNEL_I2I   = 3,
+    CONV2D_LSTM_IN_KERNEL_I2F   = 4,
+    CONV2D_LSTM_IN_KERNEL_I2C   = 5,
+    CONV2D_LSTM_IN_KERNEL_I2O   = 6,
 
-/**
- * Ovxlib version check
- * Ovxlib will check the suitable version at compile time.
- * @note Ovxlib version should be always greater or equal to case version.
- */
-#define _version_assert _compiler_assert
+    CONV2D_LSTM_IN_KERNEL_R2I   = 7,
+    CONV2D_LSTM_IN_KERNEL_R2F   = 8,
+    CONV2D_LSTM_IN_KERNEL_R2C   = 9,
+    CONV2D_LSTM_IN_KERNEL_R2O   = 10,
 
-/**
- * Get ovxlib version
- * Get ovxlib version string.
- */
-OVXLIB_API const char *vsi_nn_GetVersion(void);
+    CONV2D_LSTM_IN_BIAS_I       = 11,
+    CONV2D_LSTM_IN_BIAS_F       = 12,
+    CONV2D_LSTM_IN_BIAS_C       = 13,
+    CONV2D_LSTM_IN_BIAS_O       = 14,
 
-/**
- * Get ovxlib version major
- * Get ovxlib version major, return integer value.
- */
-OVXLIB_API uint32_t vsi_nn_GetVersionMajor(void);
+    CONV2D_LSTM_IN_CNT,
 
-/**
- * Get ovxlib version minor
- * Get ovxlib version minor, return integer value.
- */
-OVXLIB_API uint32_t vsi_nn_GetVersionMinor(void);
+    CONV2D_LSTM_OUT_OUTPUT      = 0,
+    CONV2D_LSTM_OUT_H_STATE     = 1,
+    CONV2D_LSTM_OUT_C_STATE     = 2,
 
-/**
- * Get ovxlib version patch
- * Get ovxlib version patch, return integer value.
- */
-OVXLIB_API uint32_t vsi_nn_GetVersionPatch(void);
+    CONV2D_LSTM_OUT_CNT
+};
 
-#if defined(__cplusplus)
-}
-#endif
+typedef struct _vsi_nn_conv2d_lstm_local
+{
+    void * ptr;
+} vsi_nn_conv2d_lstm_local;
+
+typedef struct _vsi_nn_conv2d_lstm_param
+{
+    vsi_nn_conv2d_lstm_local * local;
+
+    vsi_nn_activation_e activation;
+    vsi_nn_activation_e recurrent_activation;
+    vsi_nn_con2d_lstm_dataformat data_format;
+    vsi_bool return_sequences;
+    uint32_t filters;
+    vsi_nn_conv2d_param conv2d;
+} vsi_nn_conv2d_lstm_param;
+
 #endif

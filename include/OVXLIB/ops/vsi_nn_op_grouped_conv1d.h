@@ -21,54 +21,35 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-/** @file */
-#ifndef _VSI_NN_VERSION_H_
-#define _VSI_NN_VERSION_H_
+
+#ifndef _VSI_NN_OP_GROUPED_CONV1D_H
+#define _VSI_NN_OP_GROUPED_CONV1D_H
 
 #include "vsi_nn_types.h"
 
-#if defined(__cplusplus)
-extern "C"{
+typedef struct _grouped_conv1d_local_data_t {
+    vsi_nn_tensor_t* input;
+    vsi_nn_tensor_t* weight;
+    vsi_nn_tensor_t* output;
+
+} grouped_conv1d_local_data_t;
+
+typedef struct _vsi_nn_grouped_conv1d_param
+{
+    grouped_conv1d_local_data_t *local;
+
+    uint32_t     ksize;
+    uint32_t     stride;
+    /* Pad left, right, top, bottom */
+    uint32_t     pad[2];
+    /* Pad type default value shall be AUTO */
+    vsi_nn_pad_e pad_type;
+    uint32_t     weights;
+    uint32_t     group;
+    uint32_t     dilation;
+    int32_t      multiplier;
+} vsi_nn_grouped_conv1d_param;
+
+
 #endif
 
-#define VSI_NN_VERSION_MAJOR 1
-#define VSI_NN_VERSION_MINOR 1
-#define VSI_NN_VERSION_PATCH 33
-#define VSI_NN_VERSION \
-    (VSI_NN_VERSION_MAJOR * 10000 + VSI_NN_VERSION_MINOR * 100 + VSI_NN_VERSION_PATCH)
-
-/**
- * Ovxlib version check
- * Ovxlib will check the suitable version at compile time.
- * @note Ovxlib version should be always greater or equal to case version.
- */
-#define _version_assert _compiler_assert
-
-/**
- * Get ovxlib version
- * Get ovxlib version string.
- */
-OVXLIB_API const char *vsi_nn_GetVersion(void);
-
-/**
- * Get ovxlib version major
- * Get ovxlib version major, return integer value.
- */
-OVXLIB_API uint32_t vsi_nn_GetVersionMajor(void);
-
-/**
- * Get ovxlib version minor
- * Get ovxlib version minor, return integer value.
- */
-OVXLIB_API uint32_t vsi_nn_GetVersionMinor(void);
-
-/**
- * Get ovxlib version patch
- * Get ovxlib version patch, return integer value.
- */
-OVXLIB_API uint32_t vsi_nn_GetVersionPatch(void);
-
-#if defined(__cplusplus)
-}
-#endif
-#endif

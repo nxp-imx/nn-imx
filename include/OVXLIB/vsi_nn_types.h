@@ -180,6 +180,12 @@ typedef enum _vsi_nn_node_attr_preload_type_e
     VSI_NN_NODE_PRELOAD_AXISRAM
 } vsi_nn_node_attr_preload_type_e;
 
+typedef enum _vsi_nn_con2d_lstm_dataformat
+{
+    CONV2D_LSTM_CHANNELS_LAST,
+    CONV2D_LSTM_CHANNELS_FIRST
+} vsi_nn_con2d_lstm_dataformat;
+
 /** Deprecated */
 typedef uint32_t vsi_nn_size_t;
 
