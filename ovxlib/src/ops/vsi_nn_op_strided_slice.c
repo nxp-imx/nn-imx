@@ -426,11 +426,54 @@ static vsi_bool op_check
     vsi_nn_tensor_t ** outputs
     )
 {
-    vsi_bool ret = FALSE;
+    BEGIN_IO_TYPE_DECL(STRIDED_SLICE, 1, 1)
+        IO_TYPE(D_F16,          D_F16)
+        IO_TYPE(D_F16,          D_I8|Q_DFP)
+        IO_TYPE(D_F16,          D_I16|Q_DFP)
+        IO_TYPE(D_F16,          D_U8|Q_ASYM)
+        IO_TYPE(D_I8|Q_DFP,     D_F16)
+        IO_TYPE(D_I16|Q_DFP,    D_F16)
+        IO_TYPE(D_U8|Q_ASYM,    D_F16)
+        IO_TYPE(D_I8|Q_DFP,     D_I8|Q_DFP)
+        IO_TYPE(D_I16|Q_DFP,    D_I16|Q_DFP)
+        IO_TYPE(D_U8|Q_ASYM,    D_U8|Q_ASYM)
+        IO_TYPE(D_F32,          D_F32)
+        IO_TYPE(D_BF16,         D_BF16)
+        IO_TYPE(D_F32,          D_BF16)
+        IO_TYPE(D_BF16,         D_F32)
+        IO_TYPE(D_I32,          D_I32)
 
-    ret = vsi_nn_OpCheck(VSI_NN_OP_RSQRT, self, inputs, outputs);
+        /* HW 9.0.1 */
+        IO_TYPE(D_U8|Q_ASYM,    D_I8|Q_DFP)
+        IO_TYPE(D_U8|Q_ASYM,    D_I16|Q_DFP)
+        IO_TYPE(D_U8|Q_ASYM,    D_BF16)
+        IO_TYPE(D_U8|Q_ASYM,    D_F32)
+        IO_TYPE(D_U8|Q_ASYM,    D_I8|Q_DFP)
 
-    return ret;
+        IO_TYPE(D_I8|Q_DFP,     D_U8|Q_ASYM)
+        IO_TYPE(D_I8|Q_DFP,     D_I16|Q_DFP)
+        IO_TYPE(D_I8|Q_DFP,     D_BF16)
+        IO_TYPE(D_I8|Q_DFP,     D_F32)
+
+        IO_TYPE(D_I16|Q_DFP,    D_U8|Q_ASYM)
+        IO_TYPE(D_I16|Q_DFP,    D_I8|Q_DFP)
+        IO_TYPE(D_I16|Q_DFP,    D_BF16)
+        IO_TYPE(D_I16|Q_DFP,    D_F32)
+
+        IO_TYPE(D_F16,          D_BF16)
+        IO_TYPE(D_F16,          D_F32)
+
+    END_IO_TYPE_DECL(STRIDED_SLICE)
+    if (!VALIDATE_OP_IO_TYPES(STRIDED_SLICE, self, inputs, self->input.num, outputs, self->output.num))
+    {
+        char* desc = generate_op_io_types_desc(inputs,
+                self->input.num, outputs, self->output.num);
+        VSILOGE("Inputs/Outputs data type not support: %s", desc);
+        destroy_op_io_types_desc(desc);
+        return FALSE;
+    }
+
+    return TRUE;
 } /* op_check() */
 
 static vsi_bool _build_strided_slice_params(vsi_nn_strided_slice_param * op_params, int32_t input_dims)
