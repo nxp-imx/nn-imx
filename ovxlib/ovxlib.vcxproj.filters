@@ -282,6 +282,15 @@
     <ClInclude Include="include\ops\vsi_nn_op_groupnormalize.h">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_gru.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_grucell.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_grucell_activation.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
     <ClInclude Include="include\ops\vsi_nn_op_gru_ovxlib.h">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
@@ -1581,6 +1590,15 @@
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_groupnormalize.c">
+      <Filter>Source Files\ops</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_gru.c">
+      <Filter>Source Files\ops</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_grucell.c">
+      <Filter>Source Files\ops</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_grucell_activation.c">
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_gru_ovxlib.c">

@@ -546,6 +546,9 @@
     <ClInclude Include="include\ops\vsi_nn_op_grouped_conv1d.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_grouped_conv2d.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_groupnormalize.h"/>
+    <ClInclude Include="include\ops\vsi_nn_op_gru.h"/>
+    <ClInclude Include="include\ops\vsi_nn_op_grucell.h"/>
+    <ClInclude Include="include\ops\vsi_nn_op_grucell_activation.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_gru_ovxlib.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_grucell_activation_internal.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_grucell_activation_internal_sma.h"/>
@@ -1557,6 +1560,15 @@
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_groupnormalize.c">
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_gru.c">
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_grucell.c">
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_grucell_activation.c">
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_gru_ovxlib.c">
