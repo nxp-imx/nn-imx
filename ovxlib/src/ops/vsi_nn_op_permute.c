@@ -230,7 +230,7 @@ static vsi_status op_optimize
     )
 {
     vsi_status     status;
-    uint32_t shape[VSI_NN_MAX_DIM_NUM];
+    vsi_size_t shape[VSI_NN_MAX_DIM_NUM];
     uint32_t i = 0;
 
     status = VSI_SUCCESS;
@@ -253,8 +253,13 @@ static vsi_status op_optimize
     {
         if(NULL == inputs[0]->t && NULL != outputs[0]->t)
         {
+#ifdef VSI_40BIT_VA_SUPPORT
             inputs[0]->t = vxReshapeTensor( outputs[0]->t,
-                (int32_t *)inputs[0]->attr.size, inputs[0]->attr.dim_num );
+                inputs[0]->attr.size, inputs[0]->attr.dim_num );
+#else
+            inputs[0]->t = vxReshapeTensor( outputs[0]->t,
+                (int32_t*)inputs[0]->attr.size, inputs[0]->attr.dim_num );
+#endif
             if( inputs[0]->t == NULL )
             {
                 status = VSI_FAILURE;
@@ -268,7 +273,7 @@ static vsi_status op_optimize
         {
             vsi_bool ret;
             ret = vsi_nn_ReshapeTensor( self->graph, inputs[0], outputs[0],
-                shape, self->nn_param.permute.dim_num );
+                shape, (vsi_size_t)self->nn_param.permute.dim_num );
             if( ret == FALSE )
             {
                 status = VSI_FAILURE;

@@ -56,8 +56,8 @@ static vsi_nn_internal_node_t* vsi_nn_internal_create_node
     (
     vsi_nn_graph_t* graph,
     vsi_nn_op_t op,
-    uint32_t input_num,
-    uint32_t output_num
+    vsi_size_t input_num,
+    vsi_size_t output_num
     )
 {
     vsi_nn_internal_node_t* node = NULL;
@@ -441,7 +441,7 @@ void vsi_nn_internal_init_tensor_attr
 {
     memset(attr, 0x00, sizeof(vsi_nn_tensor_attr_t));
 
-    //memset(attr->size, 0, VSI_NN_MAX_DIM_NUM * sizeof(uint32_t));
+    //memset(attr->size, 0, VSI_NN_MAX_DIM_NUM * sizeof(vsi_size_t));
     attr->dim_num = VSI_NN_DIM_AUTO;
     attr->vtl = use_virtual_tensor;
     attr->is_const = FALSE;
@@ -464,8 +464,8 @@ vsi_nn_internal_node_t* vsi_nn_internal_new_node
     (
     vsi_nn_node_t* node,
     vsi_nn_op_t op,
-    uint32_t input_num,
-    uint32_t output_num
+    vsi_size_t input_num,
+    vsi_size_t output_num
     )
 {
     vsi_nn_internal_node_t* inode = NULL;

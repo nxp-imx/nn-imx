@@ -37,8 +37,8 @@ static void _create_yuv_norm_tensors
     vsi_nn_tensor_id_t* yuv_tensors
     )
 {
-    int w = 0;
-    int h = 0;
+    vsi_size_t w = 0;
+    vsi_size_t h = 0;
     vsi_nn_tensor_attr_t y_input_attr;
     vsi_nn_tensor_attr_t uv_input_attr;
 
@@ -133,12 +133,12 @@ static void _set_preproc_node_rect_params
     {
         node->nn_param.pre_process.rect.left = 0;
         node->nn_param.pre_process.rect.top = 0;
-        node->nn_param.pre_process.rect.width = attr.size[0];
-        node->nn_param.pre_process.rect.height = attr.size[1];
+        node->nn_param.pre_process.rect.width = (uint32_t)attr.size[0];
+        node->nn_param.pre_process.rect.height = (uint32_t)attr.size[1];
         if(*source_layout == VSI_NN_SOURCE_LAYOUT_NHWC)
         {
-            node->nn_param.pre_process.rect.width = attr.size[1];
-            node->nn_param.pre_process.rect.height = attr.size[2];
+            node->nn_param.pre_process.rect.width = (uint32_t)attr.size[1];
+            node->nn_param.pre_process.rect.height = (uint32_t)attr.size[2];
         }
     }
 } /* _set_preproc_node_rect_params() */
@@ -177,9 +177,14 @@ static void _set_preproc_node_out_attr
     vsi_nn_preprocess_source_layout_e* source_layout
     )
 {
+    uint32_t i, size[sizeof(org_norm_tensor->attr.size)/sizeof(org_norm_tensor->attr.size[0])] = {0};
+    for(i = 0; i < sizeof(org_norm_tensor->attr.size)/sizeof(org_norm_tensor->attr.size[0]); i++)
+    {
+        size[i] = (uint32_t)org_norm_tensor->attr.size[i];
+    }
     node->nn_param.pre_process.dim_num = org_norm_tensor->attr.dim_num;
     node->nn_param.pre_process.output_attr.dim_num = org_norm_tensor->attr.dim_num;
-    node->nn_param.pre_process.output_attr.size = org_norm_tensor->attr.size;
+    node->nn_param.pre_process.output_attr.size = size;
     if(image_resize != NULL)
     {
         node->nn_param.pre_process.output_attr.size[0]  = image_resize->w;

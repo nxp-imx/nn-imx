@@ -197,9 +197,9 @@ DEF_KERNEL_EXECUTOR(_compute)
     float *f32_out_buffer[_OUTPUT_NUM] = {NULL};
     vsi_nn_kernel_tensor_attr_t *in_attr[_INPUT_NUM];
     vsi_nn_kernel_tensor_attr_t *out_attr[_OUTPUT_NUM];
-    size_t   out_stride_size[_OUTPUT_NUM][VSI_NN_MAX_DIM_NUM] = {{1}};
-    size_t   out_elements[_OUTPUT_NUM] = {0};
-    size_t   out_bytes[_OUTPUT_NUM] = {0};
+    vsi_size_t   out_stride_size[_OUTPUT_NUM][VSI_NN_MAX_DIM_NUM] = {{1}};
+    vsi_size_t   out_elements[_OUTPUT_NUM] = {0};
+    vsi_size_t   out_bytes[_OUTPUT_NUM] = {0};
     uint32_t  i;
     float heightStride;
     float widthStride;
@@ -245,22 +245,22 @@ DEF_KERNEL_EXECUTOR(_compute)
     {
         uint32_t h, w, a, b, j;
         const uint32_t kRoiDim = 4;
-        uint32_t numBatches = in_attr[0]->shape->data[3];
-        uint32_t height = in_attr[0]->shape->data[2];
-        uint32_t width = in_attr[0]->shape->data[1];
-        uint32_t numAnchors = in_attr[0]->shape->data[0];
-        uint32_t imageInfoLength = in_attr[3]->shape->data[0];
+        vsi_size_t numBatches = in_attr[0]->shape->data[3];
+        vsi_size_t height = in_attr[0]->shape->data[2];
+        vsi_size_t width = in_attr[0]->shape->data[1];
+        vsi_size_t numAnchors = in_attr[0]->shape->data[0];
+        vsi_size_t imageInfoLength = in_attr[3]->shape->data[0];
 
-        uint32_t batchSize = height * width * numAnchors;
-        uint32_t roiBufferSize = batchSize * kRoiDim;
+        vsi_size_t batchSize = height * width * numAnchors;
+        vsi_size_t roiBufferSize = batchSize * kRoiDim;
 
         float * roiBuffer = (float*)malloc(roiBufferSize * sizeof(float));
         float * roiTransformedBuffer = (float*)malloc(roiBufferSize * sizeof(float));
         uint32_t* select = (uint32_t*)malloc(batchSize * sizeof(uint32_t));
         uint32_t index = 0;
-        uint32_t scores_index = 0;
-        uint32_t bboxDeltas_index = 0;
-        uint32_t imageInfo_index = 0;
+        vsi_size_t scores_index = 0;
+        vsi_size_t bboxDeltas_index = 0;
+        vsi_size_t imageInfo_index = 0;
         uint32_t scores_out_index = 0;
         uint32_t roi_out_index = 0;
 
@@ -289,8 +289,8 @@ DEF_KERNEL_EXECUTOR(_compute)
         {
             const uint32_t roiLength = 4;
 
-            uint32_t numRois = batchSize;
-            uint32_t roiIndex;
+            vsi_size_t numRois = batchSize;
+            vsi_size_t roiIndex;
             uint32_t select_len;
             int32_t numDetections = 0;
             for (roiIndex = 0; roiIndex < numRois; roiIndex++)
@@ -308,7 +308,7 @@ DEF_KERNEL_EXECUTOR(_compute)
                     vsi_nn_box_encoding_center roi_ctr;
                     vsi_nn_box_encoding_corner roiAfter;
                     vsi_nn_box_encoding_corner cliped;
-                    uint32_t idx = bboxDeltas_index + roiIndex * roiLength;
+                    vsi_size_t idx = bboxDeltas_index + roiIndex * roiLength;
                     roi_ctr.w = (float)(exp(f32_in_buffer[1][idx + 2]) * roiBefore.w);
                     roi_ctr.h = (float)(exp(f32_in_buffer[1][idx + 3]) * roiBefore.h);
                     roi_ctr.x = roiBefore.x + f32_in_buffer[1][idx] * roiBefore.w;
@@ -326,12 +326,12 @@ DEF_KERNEL_EXECUTOR(_compute)
             }
 
             // Find the top preNmsTopN scores.
-            _iota((int32_t*)select, batchSize, 0);
-            select_len = batchSize;
+            _iota((int32_t*)select, (uint32_t)batchSize, 0);
+            select_len = (uint32_t)batchSize;
             if(preNmsTopN > 0 && preNmsTopN < (int32_t)batchSize)
             {
                 sort_element_by_score(&(f32_in_buffer[0][scores_index]),
-                    select, batchSize);
+                    select, (uint32_t)batchSize);
                 select_len = preNmsTopN;
             }
 

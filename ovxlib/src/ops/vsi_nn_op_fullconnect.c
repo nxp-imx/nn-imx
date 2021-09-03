@@ -46,9 +46,9 @@ static vsi_status op_compute
     vsi_status status;
     uint32_t axis;
     uint32_t i = 0;
-    uint32_t num_fc = 1, num_no_fc = 1;
+    vsi_size_t num_fc = 1, num_no_fc = 1;
     uint32_t num_of_intput_dims = 0;
-    int32_t input_size[VSI_NN_MAX_DIM_NUM] = {0};
+    vsi_size_t input_size[VSI_NN_MAX_DIM_NUM] = {0};
     uint32_t dims = 0;
     vx_tensor input = NULL;
     vx_tensor output = NULL;
@@ -57,7 +57,7 @@ static vsi_status op_compute
 
     status = VSI_FAILURE;
 
-    memcpy(input_size, inputs[0]->attr.size, sizeof(uint32_t) * VSI_NN_MAX_DIM_NUM);
+    memcpy(input_size, inputs[0]->attr.size, sizeof(vsi_size_t) * VSI_NN_MAX_DIM_NUM);
     num_of_intput_dims = inputs[0]->attr.dim_num;
     axis = inputs[0]->attr.dim_num - 2;
 
@@ -73,7 +73,11 @@ static vsi_status op_compute
     input_size[0] = num_fc;
     input_size[1] = num_no_fc;
     dims= 2;
+#ifdef VSI_40BIT_VA_SUPPORT
     input = vxReshapeTensor(inputs[0]->t, input_size, dims);
+#else
+    input = vxReshapeTensor(inputs[0]->t, (vx_int32*)input_size, dims);
+#endif
 
     weight = inputs[1]->t;
 
@@ -313,8 +317,8 @@ static vsi_bool op_setup
     )
 {
     uint32_t dim_num;
-    uint32_t perm[4] = { 0 };
-    uint32_t as_shape[4] = { 0 };
+    vsi_size_t perm[4] = { 0 };
+    vsi_size_t as_shape[4] = { 0 };
 
 #ifdef VX_CONVERT_POLICY_WRAP_ENABLE
     if ( vsi_nn_compareVersion(self->graph, 1, 1, 21) == -1 )

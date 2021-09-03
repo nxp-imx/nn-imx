@@ -48,7 +48,7 @@ static vsi_nn_internal_tensor_t * reshape_cell_out
     vsi_nn_internal_node_t* curr = NULL;
     vsi_nn_tensor_attr_t attr;
     vsi_nn_internal_tensor_t* output_tensor = NULL;
-    uint32_t* reshape_cell_size = NULL;
+    vsi_size_t* reshape_cell_size = NULL;
 
     memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
 
@@ -57,8 +57,8 @@ static vsi_nn_internal_tensor_t * reshape_cell_out
 
     /* reshape cell_out [w,h,c,n] to [w,h,c,1,n] */
     curr = vsi_nn_internal_new_node( self, VSI_NN_OP_RESHAPE, 0, 0 );
-    reshape_cell_size = (uint32_t *)vsi_nn_internal_new_node_param(curr,
-        VSI_NN_MAX_DIM_NUM * sizeof(uint32_t));
+    reshape_cell_size = vsi_nn_internal_new_node_param(curr,
+        VSI_NN_MAX_DIM_NUM * sizeof(vsi_size_t));
     reshape_cell_size[0] = cell_out->attr.size[0];
     reshape_cell_size[1] = cell_out->attr.size[1];
     reshape_cell_size[2] = cell_out->attr.size[2];
@@ -83,7 +83,7 @@ static vsi_nn_internal_tensor_t * reshape_split_out
     vsi_nn_internal_node_t* curr = NULL;
     vsi_nn_tensor_attr_t attr;
     vsi_nn_internal_tensor_t* output_tensor = NULL;
-    uint32_t *reshape_split_size = NULL;
+    vsi_size_t *reshape_split_size = NULL;
 
     memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
     vsi_nn_internal_init_tensor_attr(&attr, &split_out->attr.dtype, TRUE);
@@ -91,8 +91,8 @@ static vsi_nn_internal_tensor_t * reshape_split_out
 
     /* reshape [w,h,c,t,n] to [w,h,c,n] */
     curr = vsi_nn_internal_new_node( self, VSI_NN_OP_RESHAPE, 0, 0 );
-    reshape_split_size = (uint32_t *)vsi_nn_internal_new_node_param(curr,
-        VSI_NN_MAX_DIM_NUM * sizeof(uint32_t));
+    reshape_split_size = vsi_nn_internal_new_node_param(curr,
+        VSI_NN_MAX_DIM_NUM * sizeof(vsi_size_t));
     reshape_split_size[0] = split_out->attr.size[0];
     reshape_split_size[1] = split_out->attr.size[1];
     reshape_split_size[2] = split_out->attr.size[2];
@@ -148,11 +148,11 @@ static void trans_output_tensor
     vsi_nn_tensor_t ** outputs
     )
 {
-    uint32_t perm[VSI_NN_MAX_DIM_NUM], ID;
+    vsi_size_t perm[VSI_NN_MAX_DIM_NUM], ID;
     vsi_nn_conv2d_lstm_param * p = &self->nn_param.conv2d_lstm;
 
     ID = 0;
-    memset(perm, 0, sizeof(uint32_t) * VSI_NN_MAX_DIM_NUM);
+    memset(perm, 0, sizeof(vsi_size_t) * VSI_NN_MAX_DIM_NUM);
 
     // out1,out2 [w,h,c,n] --> [c,w,h,n]
     perm[0] = 2;
@@ -189,11 +189,11 @@ static void trans_input_tensor
     vsi_nn_tensor_t ** trans_inputs
     )
 {
-    uint32_t perm[VSI_NN_MAX_DIM_NUM];
+    vsi_size_t perm[VSI_NN_MAX_DIM_NUM];
     vsi_nn_internal_tensor_t * tmp_tensor = NULL;
     vsi_nn_conv2d_lstm_param * p = &self->nn_param.conv2d_lstm;
 
-    memset(perm, 0, sizeof(uint32_t) * VSI_NN_MAX_DIM_NUM);
+    memset(perm, 0, sizeof(vsi_size_t) * VSI_NN_MAX_DIM_NUM);
     if(p->data_format == CONV2D_LSTM_CHANNELS_LAST)
     {
         // [c,w,h,t,n] --> [w,h,c,t,n]
@@ -229,18 +229,18 @@ static void create_state_tensor
     vsi_nn_node_t * self,
     vsi_nn_tensor_t ** inputs,
     vsi_nn_tensor_t ** outputs,
-    uint32_t w_out,
-    uint32_t h_out,
-    uint32_t out_channel
+    vsi_size_t w_out,
+    vsi_size_t h_out,
+    vsi_size_t out_channel
     )
 {
-    uint32_t samples, state_shape[4];
+    vsi_size_t samples, state_shape[4];
     vsi_nn_tensor_attr_t attr;
     vsi_nn_internal_tensor_t * tensor = NULL;
     vsi_nn_conv2d_lstm_param * p = &self->nn_param.conv2d_lstm;
 
     samples = inputs[CONV2D_LSTM_IN_INPUT]->attr.size[4];
-    memset(state_shape, 0, sizeof(uint32_t) * 4);
+    memset(state_shape, 0, sizeof(vsi_size_t) * 4);
     memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
 
     if(p->data_format == CONV2D_LSTM_CHANNELS_LAST)
@@ -261,7 +261,7 @@ static void create_state_tensor
     if(NULL == inputs[CONV2D_LSTM_IN_H_STATE])
     {
         attr.dim_num = 4;
-        memcpy(attr.size, state_shape, sizeof(uint32_t) * attr.dim_num);
+        memcpy(attr.size, state_shape, sizeof(vsi_size_t) * attr.dim_num);
         memcpy(&attr.dtype, &outputs[CONV2D_LSTM_OUT_OUTPUT]->attr.dtype, sizeof( attr.dtype ));
         attr.vtl = FALSE;
         attr.is_const = TRUE;
@@ -273,7 +273,7 @@ static void create_state_tensor
     if(NULL == inputs[CONV2D_LSTM_IN_C_STATE])
     {
         attr.dim_num = 4;
-        memcpy(attr.size, state_shape, sizeof(uint32_t) * attr.dim_num);
+        memcpy(attr.size, state_shape, sizeof(vsi_size_t) * attr.dim_num);
         attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
         attr.dtype.vx_type = VSI_NN_TYPE_FLOAT16;
         attr.vtl = FALSE;
@@ -285,7 +285,7 @@ static void create_state_tensor
 
     if(NULL == outputs[CONV2D_LSTM_OUT_H_STATE])
     {
-        memset( attr.size, 0, VSI_NN_MAX_DIM_NUM * sizeof(uint32_t));
+        memset( attr.size, 0, VSI_NN_MAX_DIM_NUM * sizeof(vsi_size_t));
         attr.dim_num = VSI_NN_DIM_AUTO;
         memcpy( &attr.dtype, &outputs[CONV2D_LSTM_OUT_OUTPUT]->attr.dtype, sizeof( attr.dtype ) );
         attr.vtl = TRUE;
@@ -296,7 +296,7 @@ static void create_state_tensor
 
     if(NULL == outputs[CONV2D_LSTM_OUT_C_STATE])
     {
-        memset( attr.size, 0, VSI_NN_MAX_DIM_NUM * sizeof(uint32_t));
+        memset( attr.size, 0, VSI_NN_MAX_DIM_NUM * sizeof(vsi_size_t));
         attr.dim_num = VSI_NN_DIM_AUTO;
         attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
         attr.dtype.vx_type = VSI_NN_TYPE_FLOAT16;
@@ -315,12 +315,14 @@ static vsi_bool setup_op_shapes
     )
 {
     vsi_nn_tensor_attr_t attr;
-    uint32_t w_out, h_out, samples, timestep, out_channel;
-    uint32_t conv_in_shape[4];
+    vsi_size_t w_out, h_out, samples, timestep, out_channel;
+    vsi_size_t conv_in_shape[4];
     vsi_nn_conv2d_lstm_param * p = &self->nn_param.conv2d_lstm;
+    vsi_size_t ksize[sizeof(p->conv2d.ksize)/sizeof(p->conv2d.ksize[0])];
+    vsi_size_t i, pad[sizeof(p->conv2d.pad)/sizeof(p->conv2d.pad[0])] = {0};
 
     memset(&attr, 0, sizeof(attr));
-    memset(conv_in_shape, 0, sizeof(uint32_t) * 4);
+    memset(conv_in_shape, 0, sizeof(vsi_size_t) * 4);
     w_out = 0;
     h_out = 0;
     timestep = inputs[CONV2D_LSTM_IN_INPUT]->attr.size[3];
@@ -345,14 +347,31 @@ static vsi_bool setup_op_shapes
         conv_in_shape[3] = inputs[CONV2D_LSTM_IN_INPUT]->attr.size[4];
     }
 
+    for(i = 0; i < sizeof(p->conv2d.ksize)/sizeof(p->conv2d.ksize[0]); i++)
+    {
+        ksize[i] = self->nn_param.conv2d.ksize[i];
+    }
+    for(i = 0; i < sizeof(p->conv2d.pad)/sizeof(p->conv2d.pad[0]); i++)
+    {
+        pad[i] = self->nn_param.conv2d.pad[i];
+    }
+
     vsi_nn_compute_padding(
         conv_in_shape,
-        p->conv2d.ksize,
+        ksize,
         p->conv2d.stride,
         p->conv2d.dilation,
         p->conv2d.pad_type,
-        p->conv2d.pad
+        pad
     );
+    for(i = 0; i < sizeof(p->conv2d.ksize)/sizeof(p->conv2d.ksize[0]); i++)
+    {
+        self->nn_param.conv2d.ksize[i] = (uint32_t)ksize[i];
+    }
+    for(i = 0; i < sizeof(p->conv2d.pad)/sizeof(p->conv2d.pad[0]); i++)
+    {
+        self->nn_param.conv2d.pad[i] = (uint32_t)pad[i];
+    }
     w_out = vsi_nn_ComputeFilterSize(
         conv_in_shape[0],
         p->conv2d.ksize[0],
@@ -474,7 +493,7 @@ static vsi_bool op_setup
     vsi_nn_tensor_t ** outputs
     )
 {
-    uint32_t i, timestep, perm[VSI_NN_MAX_DIM_NUM];
+    vsi_size_t i, timestep, perm[VSI_NN_MAX_DIM_NUM];
     vsi_nn_tensor_t * trans_inputs[3] = { NULL };
     vsi_nn_tensor_t * conv2dlstm_outputs[3] = { NULL };
     vsi_nn_tensor_attr_t attr;
@@ -486,7 +505,7 @@ static vsi_bool op_setup
     vsi_nn_internal_node_t* curr = NULL;
 
     memset(&attr, 0, sizeof(attr));
-    memset(perm, 0, sizeof(uint32_t) * VSI_NN_MAX_DIM_NUM);
+    memset(perm, 0, sizeof(vsi_size_t) * VSI_NN_MAX_DIM_NUM);
     timestep = inputs[CONV2D_LSTM_IN_INPUT]->attr.size[3];
 
     vsi_nn_internal_init_node_wksp( self );
@@ -501,7 +520,7 @@ static vsi_bool op_setup
     memset(conv2dlstm_step_outputs, 0, sizeof(vsi_nn_tensor_t *) * timestep);
 
     /* split input tensor by time-step */
-    split_input_tensor(self, trans_inputs[CONV2D_LSTM_IN_INPUT], split_outputs, timestep);
+    split_input_tensor(self, trans_inputs[CONV2D_LSTM_IN_INPUT], split_outputs, (uint32_t)timestep);
 
     cell_out0 = cell_out1 = cell_out2 = NULL;
     step_h_state = trans_inputs[CONV2D_LSTM_IN_H_STATE];
@@ -596,7 +615,7 @@ static vsi_bool op_setup
             conv2dlstm_outputs[CONV2D_LSTM_OUT_OUTPUT] = outputs[CONV2D_LSTM_OUT_OUTPUT];
         }
         /* concat all step's output0 data on dimension t --- cell out0 shape: [w,h,c,t,n] */
-        curr = vsi_nn_internal_new_node( self, VSI_NN_OP_CONCAT, timestep, 1 );
+        curr = vsi_nn_internal_new_node( self, VSI_NN_OP_CONCAT, (uint32_t)timestep, 1 );
         curr->node->nn_param.concat.axis = 3;
         for(i = 0; i < timestep; i++)
         {

@@ -87,7 +87,7 @@ static vsi_bool op_setup
     {
         outputs[0]->attr.dim_num = inputs[0]->attr.dim_num;
         memcpy( outputs[0]->attr.size, inputs[0]->attr.size,
-            VSI_NN_MAX_DIM_NUM * sizeof( uint32_t ) );
+            VSI_NN_MAX_DIM_NUM * sizeof(vsi_size_t) );
 
         outputs[0]->attr.size[0] = inputs[0]->attr.size[0] / stride;
         outputs[0]->attr.size[1] = inputs[0]->attr.size[1] / stride;
