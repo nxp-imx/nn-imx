@@ -109,7 +109,7 @@ DEF_KERNEL_INITIALIZER(_l2normalizescale_initializer)
     int32_t     axis                           = 0;
     vsi_nn_kernel_tensor_attr_t *input_attr    = NULL;
     vsi_nn_kernel_tensor_attr_t *output_attr   = NULL;
-    vsi_int_array_t * output_shape             = NULL;
+    vsi_size_array_t * output_shape             = NULL;
     vsi_nn_kernel_dtype_e input_dtype          = F16;
     vsi_nn_kernel_dtype_e output_dtype         = F16;
     int32_t   input_fl      = 0;
@@ -300,7 +300,7 @@ DEF_KERNEL_INITIALIZER(_l2normalizescale_initializer)
 
         if (1 == axis)
         {
-            int32_t L2NorS_depth = output_shape->data[1];
+            int32_t L2NorS_depth = (int32_t)(output_shape->data[1]);
             status = vsi_nn_kernel_gpu_add_param( node, "L2NorS_depth",  &L2NorS_depth);
             if(F16 == input_dtype)
             {
@@ -330,9 +330,9 @@ DEF_KERNEL_INITIALIZER(_l2normalizescale_initializer)
         else if (0 == axis)
         {
             int32_t inputWidth, inputWidthCount, inputWidthRemain256;
-            inputWidth          = output_shape->data[0];
-            inputWidthRemain256 = output_shape->data[0] % 256;
-            inputWidthCount     = output_shape->data[0] / 256;
+            inputWidth          = (int32_t)(output_shape->data[0]);
+            inputWidthRemain256 = (int32_t)(output_shape->data[0] % 256);
+            inputWidthCount     = (int32_t)(output_shape->data[0] / 256);
             vsi_nn_kernel_gpu_add_param( node, "inputWidth", &inputWidth);
             vsi_nn_kernel_gpu_add_param( node, "inputWidthRemain256", &inputWidthRemain256);
             vsi_nn_kernel_gpu_add_param( node, "inputWidthCount", &inputWidthCount);
@@ -521,9 +521,9 @@ static vsi_nn_kernel_node_t _setup
 
     axis = vsi_nn_kernel_param_get_int32(params, "axis");
 
-    if( !vsi_nn_kernel_gpu_check_shape( (int32_t*)inputs[0]->attr.size,
+    if( !vsi_nn_kernel_gpu_check_shape( inputs[0]->attr.size,
                 inputs[0]->attr.dim_num )
-     || !vsi_nn_kernel_gpu_check_shape( (int32_t*)outputs[0]->attr.size,
+     || !vsi_nn_kernel_gpu_check_shape( outputs[0]->attr.size,
                 outputs[0]->attr.dim_num )
      || axis > 2)
     {

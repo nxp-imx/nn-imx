@@ -68,6 +68,7 @@ extern "C" {
         }
 DEFINE_ARRAY_TYPE( int, int32_t )
 DEFINE_ARRAY_TYPE( float, float )
+DEFINE_ARRAY_TYPE( size, vsi_size_t )
 
 #undef DEFINE_ARRAY_TYPE
 
@@ -75,9 +76,9 @@ OVXLIB_API void vsi_nn_Transpose
     (
     uint8_t  * dst,
     uint8_t  * data,
-    uint32_t * shape,
-    uint32_t   dim_num,
-    uint32_t * perm,
+    vsi_size_t * shape,
+    vsi_size_t   dim_num,
+    vsi_size_t * perm,
     vsi_nn_type_e type
     );
 
@@ -85,38 +86,38 @@ OVXLIB_API void vsi_nn_Permute
     (
     uint8_t  * dst,
     uint8_t  * data,
-    uint32_t * shape,
-    uint32_t   dim_num,
-    uint32_t * perm,
+    vsi_size_t * shape,
+    vsi_size_t   dim_num,
+    vsi_size_t * perm,
     vsi_nn_type_e type
     );
 
 OVXLIB_API void vsi_nn_SqueezeShape
     (
-    uint32_t * shape,
-    uint32_t * dim_num
+    vsi_size_t * shape,
+    vsi_size_t * dim_num
     );
 
-OVXLIB_API uint32_t vsi_nn_ShapeProduct
+OVXLIB_API vsi_size_t vsi_nn_ShapeProduct
     (
-    uint32_t * shape,
-    uint32_t   dim_num
+    vsi_size_t * shape,
+    vsi_size_t   dim_num
     );
 
 //shape: row first <--> column first
 OVXLIB_API void vsi_nn_InvertShape
     (
-    uint32_t * in,
-    uint32_t   dim_num,
-    uint32_t * out
+    vsi_size_t * in,
+    vsi_size_t   dim_num,
+    vsi_size_t * out
     );
 
 //Permute shape: row first <--> column first
 OVXLIB_API void vsi_nn_InvertPermuteShape
     (
-    uint32_t * in,
-    uint32_t   dim_num,
-    uint32_t * out
+    vsi_size_t * in,
+    vsi_size_t   dim_num,
+    vsi_size_t * out
     );
 
 OVXLIB_API double vsi_nn_Rint

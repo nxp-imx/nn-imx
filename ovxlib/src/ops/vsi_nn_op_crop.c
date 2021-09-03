@@ -57,8 +57,8 @@ static vsi_status op_compute
     vsi_nn_tensor_t *end_dims_tensor = NULL;
     vsi_nn_tensor_t *stride_dims_tensor = NULL;
     vsi_nn_tensor_attr_t attr;
-    int32_t start[VSI_NN_MAX_DIM_NUM] = {0};
-    int32_t end[VSI_NN_MAX_DIM_NUM] = {0};
+    vsi_size_t start[VSI_NN_MAX_DIM_NUM] = {0};
+    vsi_size_t end[VSI_NN_MAX_DIM_NUM] = {0};
     int32_t stride[VSI_NN_MAX_DIM_NUM] = {0};
     uint32_t i;
 

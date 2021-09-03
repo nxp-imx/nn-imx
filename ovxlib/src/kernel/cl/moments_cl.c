@@ -155,13 +155,13 @@ static int32_t set_constant_border
 static int32_t get_moments_output_reshape_size
     (
     vsi_nn_tensor_t ** outputs,
-    int32_t sizes[VSI_NN_MAX_DIM_NUM],
+    vsi_size_t sizes[VSI_NN_MAX_DIM_NUM],
     int32_t* axis,
     int32_t axis_num
     )
 {
     uint32_t out_dims_num = outputs[0]->attr.dim_num;
-    uint32_t *output_size = outputs[0]->attr.size;
+    vsi_size_t *output_size = outputs[0]->attr.size;
     uint32_t i = 0;
     int32_t out_rs_flg = 0;
 
@@ -212,10 +212,10 @@ DEF_KERNEL_INITIALIZER(_moments_initializer)
         };
 
     vsi_nn_kernel_tensor_attr_t * attr[1] = { NULL };
-    vsi_int_array_t * input_shape = NULL;
-    int32_t width = 0;
-    int32_t height = 0;
-    int32_t chn = 0;
+    vsi_size_array_t * input_shape = NULL;
+    vsi_ssize_t width = 0;
+    vsi_ssize_t height = 0;
+    vsi_ssize_t chn = 0;
     int32_t axis = 0;
     int32_t axis_num = 1;
 
@@ -357,8 +357,8 @@ static vsi_nn_kernel_node_t _setup
     vsi_status status = VSI_FAILURE;
     vsi_nn_kernel_node_param_t node_params[_MOMENTS_PARAM_NUM] = { NULL };
     vsi_nn_kernel_node_t node = NULL;
-    int32_t  out_shape[VSI_NN_MAX_DIM_NUM] = {0};
-    int32_t  shape[VSI_NN_MAX_DIM_NUM] = {0};
+    vsi_size_t  out_shape[VSI_NN_MAX_DIM_NUM] = {0};
+    vsi_size_t  shape[VSI_NN_MAX_DIM_NUM] = {0};
     int32_t  out_rs_flg = 0;
     int32_t axis_num  = 0;
     size_t axis_num_temp = 0;
@@ -369,9 +369,9 @@ static vsi_nn_kernel_node_t _setup
     vsi_nn_kernel_scalar_t scalar_list[INTERNAL_MOMENTS_SCALAR_NUM] = {NULL};
     vsi_nn_kernel_tensor_t reshape_tensors[3] = { NULL };
 
-    int32_t width = inputs[0]->attr.size[0];
-    int32_t height = inputs[0]->attr.size[1];
-    int32_t chn = inputs[0]->attr.size[2];
+    vsi_size_t width = inputs[0]->attr.size[0];
+    vsi_size_t height = inputs[0]->attr.size[1];
+    vsi_size_t chn = inputs[0]->attr.size[2];
     int32_t input_zp = inputs[0]->attr.dtype.zero_point;
     float input_scale = inputs[0]->attr.dtype.scale;
     float dim_ratio = (float)1.0 / (float)(width * height);
@@ -412,7 +412,7 @@ static vsi_nn_kernel_node_t _setup
         dim_ratio = (float)1.0 / (float)(width * height * chn);
     }
 
-    if ( !vsi_nn_kernel_gpu_check_shape( (int32_t*)outputs[0]->attr.size,
+    if ( !vsi_nn_kernel_gpu_check_shape( outputs[0]->attr.size,
                 outputs[0]->attr.dim_num ) )
     {
         return NULL;

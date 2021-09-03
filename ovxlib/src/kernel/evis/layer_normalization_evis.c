@@ -244,7 +244,7 @@ DEF_KERNEL_INITIALIZER(_layernorm_initializer)
         {0, 0, 0}}; // globalWorkSize: image size in thread
 
     vsi_nn_kernel_tensor_attr_t* attr[3] = {NULL, NULL};
-    vsi_int_array_t * input_shape = NULL;
+    vsi_size_array_t * input_shape = NULL;
     float scaleIn = 1;
     float scaleOut = 1;
     float output_zp = 0;
@@ -311,9 +311,9 @@ DEF_KERNEL_INITIALIZER(_layernorm_initializer)
         output_zp = 0.0f;
     }
 
-    width = input_shape->data[0];
-    height = input_shape->data[1];
-    chn = (input_shape->size <= 2) ? 1 : input_shape->data[2];
+    width = (int32_t)(input_shape->data[0]);
+    height = (int32_t)(input_shape->data[1]);
+    chn = (int32_t)((input_shape->size <= 2) ? 1 : input_shape->data[2]);
 
     iter = ((width + 15) / 16) * 16;
     sumInZp = input_zp * iter * (-1);
@@ -685,7 +685,7 @@ DEF_KERNEL_INITIALIZER(_sumsqr_initializer)
         {0, 0, 0}}; // globalWorkSize: image size in thread
 
     vsi_nn_kernel_tensor_attr_t* attr[2] = {NULL, NULL};
-    vsi_int_array_t * input_shape = NULL;
+    vsi_size_array_t * input_shape = NULL;
     float scaleIn = 1.0f;
     int32_t input_zp = 0;
     vx_uint32 iter = 0;
@@ -723,9 +723,9 @@ DEF_KERNEL_INITIALIZER(_sumsqr_initializer)
         input_zp = 0;
     }
 
-    width = input_shape->data[0];
-    height = input_shape->data[1];
-    chn = attr[1]->shape->data[1];
+    width = (int32_t)(input_shape->data[0]);
+    height = (int32_t)(input_shape->data[1]);
+    chn = (int32_t)(attr[1]->shape->data[1]);
     iter = height * 16;
 
     e2InScale = scaleIn * scaleIn;
@@ -853,7 +853,7 @@ DEF_KERNEL_INITIALIZER(_layernorm_wh_initializer)
         {0, 0, 0}}; // globalWorkSize: image size in thread
 
     vsi_nn_kernel_tensor_attr_t* attr[3] = {NULL, NULL};
-    vsi_int_array_t * input_shape = NULL;
+    vsi_size_array_t * input_shape = NULL;
     float scaleIn = 1.0f;
     float scaleOut = 1.0f;
     float output_zp = 0;
@@ -907,10 +907,10 @@ DEF_KERNEL_INITIALIZER(_layernorm_wh_initializer)
         output_zp = 0;
     }
 
-    width = input_shape->data[0];
-    height = input_shape->data[1];
-    chn = attr[1]->shape->data[1];
-    height_chn_org = (input_shape->size > 2 ? input_shape->data[2] : 1) / chn;
+    width = (int32_t)(input_shape->data[0]);
+    height = (int32_t)(input_shape->data[1]);
+    chn = (int32_t)(attr[1]->shape->data[1]);
+    height_chn_org = (int32_t)((input_shape->size > 2 ? input_shape->data[2] : 1) / chn);
 
     dimRatio = (float)(1.0 / (width * height));
 
@@ -1219,10 +1219,10 @@ static vsi_nn_kernel_node_t _setup_wh
     int32_t axis[VSI_NN_MAX_DIM_NUM] = {0};
     int32_t axis_num  = 1;
     int32_t new_axis[VSI_NN_MAX_DIM_NUM] = {0};
-    int32_t new_shape[2][VSI_NN_MAX_DIM_NUM] = {{ 1, 1, 1, 1 }};
+    vsi_size_t new_shape[2][VSI_NN_MAX_DIM_NUM] = {{ 1, 1, 1, 1 }};
     uint32_t axis_size = 0;
     uint32_t rank_in = 0, rank_para = 0;
-    uint32_t outer_size = 1;
+    vsi_size_t outer_size = 1;
     uint32_t i = 0;
 
     for(i = 1; i < inputs[0]->attr.dim_num; i++)
@@ -1231,7 +1231,7 @@ static vsi_nn_kernel_node_t _setup_wh
     }
 
     status = vsi_nn_kernel_optimize_tensor_shape(
-        (int32_t *)inputs[0]->attr.size, inputs[0]->attr.dim_num,
+        inputs[0]->attr.size, inputs[0]->attr.dim_num,
         axis, axis_num, new_shape[0], &rank_in, new_axis, &axis_size);
     if ( status == FALSE || axis_size > 2)
     {
@@ -1239,7 +1239,7 @@ static vsi_nn_kernel_node_t _setup_wh
     }
 
     status = vsi_nn_kernel_optimize_tensor_shape(
-        (int32_t *)inputs[1]->attr.size, inputs[1]->attr.dim_num,
+        inputs[1]->attr.size, inputs[1]->attr.dim_num,
         axis, axis_num, new_shape[1], &rank_para, new_axis, &axis_size);
     if ( status == FALSE || axis_size > 2)
     {
@@ -1391,7 +1391,7 @@ static vsi_nn_kernel_node_t _setup
     vsi_nn_kernel_node_t node = NULL;
     vsi_nn_kernel_tensor_t rs_input = NULL, rs_output = NULL, rs_gamma = NULL, rs_beta = NULL;
     float eps  = vsi_nn_kernel_param_get_float32( params, "eps" );
-    uint32_t *input_size = inputs[0]->attr.size;
+    vsi_size_t *input_size = inputs[0]->attr.size;
     uint32_t dims_num = inputs[0]->attr.dim_num;
     int32_t rs_flg = 0;
     int32_t optFlg = 0;
@@ -1417,7 +1417,7 @@ static vsi_nn_kernel_node_t _setup
 
     if (rs_flg)
     {
-        int32_t  shape[VSI_NN_MAX_DIM_NUM] = {0};
+        vsi_size_t  shape[VSI_NN_MAX_DIM_NUM] = {0};
         shape[0] = inputs[0]->attr.size[0];
         shape[1] = inputs[0]->attr.size[1] * inputs[0]->attr.size[2];
         shape[2] = 1;
@@ -1432,7 +1432,7 @@ static vsi_nn_kernel_node_t _setup
     }
     if (inputs[1]->attr.dim_num < 2)
     {
-        int32_t  shape[VSI_NN_MAX_DIM_NUM] = {0};
+        vsi_size_t  shape[VSI_NN_MAX_DIM_NUM] = {0};
         shape[0] = inputs[1]->attr.size[0];
         shape[1] = 1;
         shape[2] = 1;
@@ -1441,7 +1441,7 @@ static vsi_nn_kernel_node_t _setup
     }
     if (inputs[2]->attr.dim_num < 2)
     {
-        int32_t  shape[VSI_NN_MAX_DIM_NUM] = {0};
+        vsi_size_t  shape[VSI_NN_MAX_DIM_NUM] = {0};
         shape[0] = inputs[2]->attr.size[0];
         shape[1] = 1;
         shape[2] = 1;

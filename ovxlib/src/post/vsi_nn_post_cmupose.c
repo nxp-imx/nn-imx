@@ -148,7 +148,8 @@ static vsi_status _cmupose_init_heatmap_avg
     float **heatmap_avg
     )
 {
-    uint32_t w,h,sz,channel;
+    uint32_t w,h,channel;
+    vsi_size_t sz;
 
     if(NULL == config || NULL == heatmap_avg)
     {
@@ -172,7 +173,8 @@ static vsi_status _cmupose_init_paf_avg
     float **paf_avg
     )
 {
-    uint32_t w,h,sz,channel;
+    uint32_t w,h,channel;
+    vsi_size_t sz;
 
     if(NULL == config || NULL == paf_avg)
     {
@@ -541,7 +543,8 @@ static vsi_status gaussian_filter
     int32_t ksz;
     uint32_t w,h,i;
 
-    uint32_t sz,szf,szwf,szhf;
+    uint32_t szwf,szhf;
+    vsi_size_t sz,szf;
 
     kernel = NULL, ksz = 0;
     kernel = create_gaussian_kernel(sigma, &ksz);
@@ -1547,13 +1550,14 @@ static vsi_nn_peaks_t **_compute_all_peaks
     )
 {
     uint32_t i, part, loop;
-    uint32_t width,height,sz;
+    uint32_t width,height;
+    vsi_size_t sz, j;
     float *map_ori = NULL, *map = NULL;
     float *pheatmap_avg = NULL, *pmap_ori = NULL;
     float *map_left = NULL, *map_right = NULL, *map_up = NULL, *map_down = NULL;
     vsi_nn_peaks_t **all_peaks = NULL;
 
-    uint32_t szf;
+    vsi_size_t szf;
 
     if(NULL == heatmap_avg || NULL == peak_conter)
     {
@@ -1584,7 +1588,7 @@ static vsi_nn_peaks_t **_compute_all_peaks
 
         pheatmap_avg = heatmap_avg + part;
         pmap_ori = map_ori;
-        for(i=0; i<sz; i++)
+        for(j=0; j<sz; j++)
         {
             *pmap_ori = *pheatmap_avg;
             pmap_ori += 1;
@@ -1644,14 +1648,14 @@ static void _fill_heatmap_avg
     uint32_t net_out_c,width,height,channel;
     uint32_t i,j,index_net_out,index_buffer;
     float *buffer = NULL;
-    uint32_t sz,szf,channelf;
+    vsi_size_t sz,szf,channelf;
     uint32_t stride_h_nc,stride_h_c;
 
     // shape = [width][height][channel]
     uint32_t size1[3] = {0};
     uint32_t size2[3] = {0};
-    size1[0] = config->inputs.net_out->attr.size[1];
-    size1[1] = config->inputs.net_out->attr.size[0];
+    size1[0] = (uint32_t)config->inputs.net_out->attr.size[1];
+    size1[1] = (uint32_t)config->inputs.net_out->attr.size[0];
     size1[2] = 19;
 
     size2[0] = config->image.height;
@@ -1694,16 +1698,16 @@ static void _fill_paf_avg
     )
 {
     uint32_t net_out_c,width,height,channel;
-    uint32_t i,j,index_net_out,index_buffer;
+    vsi_size_t i,j,index_net_out,index_buffer;
     float *buffer = NULL;
 
-    uint32_t sz,szf,cf,stride_h_nc,stride_h_c;
+    vsi_size_t sz,szf,cf,stride_h_nc,stride_h_c;
 
     //[width, height, channel]
     uint32_t size1[3] = {0};
     uint32_t size2[3] = {0};
-    size1[0] = config->inputs.net_out->attr.size[1];
-    size1[1] = config->inputs.net_out->attr.size[0];
+    size1[0] = (uint32_t)config->inputs.net_out->attr.size[1];
+    size1[1] = (uint32_t)config->inputs.net_out->attr.size[0];
     size1[2] = 38;
 
     size2[0] = config->image.height;
@@ -1847,7 +1851,7 @@ static float *_get_net_out_data
     )
 {
     vsi_nn_tensor_t tensor,*net_out;
-    uint32_t perm[3] = {1,2,0};
+    vsi_size_t perm[3] = {1,2,0};
     float *buffer;
     vsi_bool ret = FALSE;
 
@@ -1910,9 +1914,9 @@ static vsi_status _auto_fill_cmupose
 
     // fill image
     net_in = vsi_nn_GetTensor(graph, graph->input.tensors[0]);
-    cmupose_config->image.width = net_in->attr.size[0];
-    cmupose_config->image.height = net_in->attr.size[1];
-    cmupose_config->image.channel = net_in->attr.size[2];
+    cmupose_config->image.width = (uint32_t)net_in->attr.size[0];
+    cmupose_config->image.height = (uint32_t)net_in->attr.size[1];
+    cmupose_config->image.channel = (uint32_t)net_in->attr.size[2];
 
     // fill param
     cmupose_config->param.scale_search.size = default_scale_search;

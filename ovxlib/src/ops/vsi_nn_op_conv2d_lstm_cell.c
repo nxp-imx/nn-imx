@@ -46,9 +46,10 @@ static vsi_nn_internal_tensor_t * reshape_tensor_to_act
     )
 {
     vsi_nn_internal_tensor_t * reshape_out = NULL;
-    uint32_t i,sz,dim,reshaped_size[2];
+    vsi_size_t i,dim,reshaped_size[2];
+    vsi_size_t sz;
 
-    memset(reshaped_size, 0, sizeof(uint32_t) * 2);
+    memset(reshaped_size, 0, sizeof(vsi_size_t) * 2);
     dim = 2;
     sz = 1;
     for(i = 0; i < tensor->attr.dim_num - 1; i++)
@@ -184,20 +185,39 @@ static vsi_bool setup_op_shapes
 {
     vsi_bool ret = TRUE;
     vsi_nn_conv2d_lstm_cell_param *p = &self->nn_param.conv2d_lstm_cell;
-    uint32_t w_out, h_out, samples, out_channel;
+    vsi_size_t w_out, h_out, samples, out_channel;
+    vsi_size_t ksize[sizeof(p->conv2d.ksize)/sizeof(p->conv2d.ksize[0])];
+    vsi_size_t i, pad[sizeof(p->conv2d.pad)/sizeof(p->conv2d.pad[0])] = {0};
 
     w_out = 0;
     h_out = 0;
+    for( i = 0; i < sizeof(p->conv2d.ksize) / sizeof(p->conv2d.ksize[0]); i++ )
+    {
+        ksize[i] = (vsi_size_t)p->conv2d.ksize[i];
+    }
     samples = inputs[CONV2D_LSTM_CELL_IN_INPUT]->attr.size[3];
     out_channel = p->filters;
+    for(i = 0; i < sizeof(p->conv2d.pad)/sizeof(p->conv2d.pad[0]); i++)
+    {
+        pad[i] = self->nn_param.conv2d.pad[i];
+    }
+
     vsi_nn_compute_padding(
         inputs[CONV2D_LSTM_CELL_IN_INPUT]->attr.size,
-        p->conv2d.ksize,
+        ksize,
         p->conv2d.stride,
         p->conv2d.dilation,
         p->conv2d.pad_type,
-        p->conv2d.pad
+        pad
     );
+    for(i = 0; i < sizeof(p->conv2d.ksize)/sizeof(p->conv2d.ksize[0]); i++)
+    {
+        self->nn_param.conv2d.ksize[i] = (uint32_t)ksize[i];
+    }
+    for(i = 0; i < sizeof(p->conv2d.pad)/sizeof(p->conv2d.pad[0]); i++)
+    {
+        self->nn_param.conv2d.pad[i] = (uint32_t)pad[i];
+    }
 
     w_out = vsi_nn_ComputeFilterSize(
         inputs[CONV2D_LSTM_CELL_IN_INPUT]->attr.size[0],
@@ -231,7 +251,7 @@ static vsi_bool setup_op_shapes
     if(VSI_NN_DIM_AUTO == outputs[CONV2D_LSTM_CELL_OUT_H_STATE]->attr.dim_num)
     {
         memcpy(outputs[CONV2D_LSTM_CELL_OUT_H_STATE]->attr.size, outputs[CONV2D_LSTM_CELL_OUT_OUTPUT]->attr.size,
-            sizeof(uint32_t) * VSI_NN_MAX_DIM_NUM);
+            sizeof(vsi_size_t) * VSI_NN_MAX_DIM_NUM);
         outputs[CONV2D_LSTM_CELL_OUT_H_STATE]->attr.dim_num = outputs[CONV2D_LSTM_CELL_OUT_OUTPUT]->attr.dim_num;
     }
 
@@ -239,7 +259,7 @@ static vsi_bool setup_op_shapes
     if(VSI_NN_DIM_AUTO == outputs[CONV2D_LSTM_CELL_OUT_C_STATE]->attr.dim_num)
     {
         memcpy(outputs[CONV2D_LSTM_CELL_OUT_C_STATE]->attr.size, outputs[CONV2D_LSTM_CELL_OUT_OUTPUT]->attr.size,
-            sizeof(uint32_t) * VSI_NN_MAX_DIM_NUM);
+            sizeof(vsi_size_t) * VSI_NN_MAX_DIM_NUM);
         outputs[CONV2D_LSTM_CELL_OUT_C_STATE]->attr.dim_num = outputs[CONV2D_LSTM_CELL_OUT_OUTPUT]->attr.dim_num;
     }
 

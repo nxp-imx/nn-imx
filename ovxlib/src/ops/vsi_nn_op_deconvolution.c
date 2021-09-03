@@ -379,8 +379,8 @@ static vsi_bool op_setup
     )
 {
     vsi_nn_deconv_param *nn_param;
-    uint32_t perm[] = { 3, 2, 0, 1 };
-    uint32_t perm1[] = { 0, 1, 3, 2 };
+    vsi_size_t perm[] = { 3, 2, 0, 1 };
+    vsi_size_t perm1[] = { 0, 1, 3, 2 };
 
     /* TODO: Driver should handle this,
     * Check transpose
@@ -422,8 +422,8 @@ static vsi_bool op_setup
 
     nn_param->group = ( 0 == nn_param->group ) ? 1 : nn_param->group;
 
-    nn_param->ksize[0] = inputs[1]->attr.size[0];
-    nn_param->ksize[1] = inputs[1]->attr.size[1];
+    nn_param->ksize[0] = (uint32_t)inputs[1]->attr.size[0];
+    nn_param->ksize[1] = (uint32_t)inputs[1]->attr.size[1];
 
     if( VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num )
     {

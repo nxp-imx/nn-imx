@@ -144,7 +144,7 @@ static vsi_status _fill_fasterrcnn_param
             memcpy(&param->iminfo, &node->nn_param.proposal.im_info,
                     sizeof(vsi_nn_proposal_im_info));
             tensor = vsi_nn_GetTensor(graph,node->output.tensors[0]);
-            param->rois_num = tensor->attr.size[1];
+            param->rois_num = (uint32_t)tensor->attr.size[1];
         }
     }
 
@@ -191,8 +191,8 @@ static vsi_status _fill_fasterrcnn_inputs
         /* cls  [21,rois] */
         /* rois [5,rois] */
         tensor = vsi_nn_GetTensor(graph, graph->output.tensors[i]);
-        size[0] = tensor->attr.size[0];
-        size[1] = tensor->attr.size[1];
+        size[0] = (uint32_t)tensor->attr.size[0];
+        size[1] = (uint32_t)tensor->attr.size[1];
         dim = tensor->attr.dim_num;
         if(dim == 2 && size[1] == rois_num)
         {

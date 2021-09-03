@@ -104,8 +104,13 @@ static vsi_status op_optimize
     {
         if(NULL == inputs[0]->t && NULL != outputs[0]->t)
         {
+#ifdef VSI_40BIT_VA_SUPPORT
             inputs[0]->t = vxReshapeTensor(outputs[0]->t,
-                (int32_t *)inputs[0]->attr.size, inputs[0]->attr.dim_num);
+                inputs[0]->attr.size, inputs[0]->attr.dim_num);
+#else
+            inputs[0]->t = vxReshapeTensor(outputs[0]->t,
+                (vx_int32*)inputs[0]->attr.size, inputs[0]->attr.dim_num);
+#endif
             if( inputs[0]->t == NULL )
             {
                 VSILOGE("Call vxReshapeTensor fail");
@@ -118,8 +123,13 @@ static vsi_status op_optimize
     {
         if(NULL == outputs[0]->t && NULL != inputs[0]->t)
         {
+#ifdef VSI_40BIT_VA_SUPPORT
             outputs[0]->t = vxReshapeTensor(inputs[0]->t,
-                (int32_t *)outputs[0]->attr.size, outputs[0]->attr.dim_num);
+                outputs[0]->attr.size, outputs[0]->attr.dim_num);
+#else
+            outputs[0]->t = vxReshapeTensor(inputs[0]->t,
+                (vx_int32*)outputs[0]->attr.size, outputs[0]->attr.dim_num);
+#endif
             if( outputs[0]->t == NULL )
             {
                 VSILOGE("Call vxReshapeTensor fail");
