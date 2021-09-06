@@ -335,9 +335,9 @@ static vsi_bool op_setup
 {
     vsi_nn_conv2d_param *nn_param;
     vsi_size_t perm[] = { 3, 2, 0, 1 };
-    vsi_size_t i, pad[sizeof(self->nn_param.conv2d.pad)/sizeof(self->nn_param.conv2d.pad[0])] = {0};
+    vsi_size_t i, pad[_cnt_of_array(self->nn_param.conv2d.pad)] = {0};
 
-    for(i = 0; i < sizeof(self->nn_param.conv2d.pad)/sizeof(self->nn_param.conv2d.pad[0]); i++)
+    for(i = 0; i < _cnt_of_array(self->nn_param.conv2d.pad); i++)
     {
         pad[i] = self->nn_param.conv2d.pad[i];
     }
@@ -368,7 +368,7 @@ static vsi_bool op_setup
         self->nn_param.conv2d.pad_type,
         pad
     );
-    for(i = 0; i < sizeof(self->nn_param.conv2d.pad)/sizeof(self->nn_param.conv2d.pad[0]); i++)
+    for(i = 0; i < _cnt_of_array(self->nn_param.conv2d.pad); i++)
     {
         self->nn_param.conv2d.pad[i] = (uint32_t)pad[i];
     }

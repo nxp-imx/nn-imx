@@ -186,18 +186,18 @@ static vsi_bool setup_op_shapes
     vsi_bool ret = TRUE;
     vsi_nn_conv2d_lstm_cell_param *p = &self->nn_param.conv2d_lstm_cell;
     vsi_size_t w_out, h_out, samples, out_channel;
-    vsi_size_t ksize[sizeof(p->conv2d.ksize)/sizeof(p->conv2d.ksize[0])];
-    vsi_size_t i, pad[sizeof(p->conv2d.pad)/sizeof(p->conv2d.pad[0])] = {0};
+    vsi_size_t ksize[_cnt_of_array(p->conv2d.ksize)];
+    vsi_size_t i, pad[_cnt_of_array(p->conv2d.pad)] = {0};
 
     w_out = 0;
     h_out = 0;
-    for( i = 0; i < sizeof(p->conv2d.ksize) / sizeof(p->conv2d.ksize[0]); i++ )
+    for( i = 0; i < _cnt_of_array(p->conv2d.ksize); i++ )
     {
         ksize[i] = (vsi_size_t)p->conv2d.ksize[i];
     }
     samples = inputs[CONV2D_LSTM_CELL_IN_INPUT]->attr.size[3];
     out_channel = p->filters;
-    for(i = 0; i < sizeof(p->conv2d.pad)/sizeof(p->conv2d.pad[0]); i++)
+    for(i = 0; i < _cnt_of_array(p->conv2d.pad); i++)
     {
         pad[i] = self->nn_param.conv2d.pad[i];
     }
@@ -210,11 +210,11 @@ static vsi_bool setup_op_shapes
         p->conv2d.pad_type,
         pad
     );
-    for(i = 0; i < sizeof(p->conv2d.ksize)/sizeof(p->conv2d.ksize[0]); i++)
+    for(i = 0; i < _cnt_of_array(p->conv2d.ksize); i++)
     {
         self->nn_param.conv2d.ksize[i] = (uint32_t)ksize[i];
     }
-    for(i = 0; i < sizeof(p->conv2d.pad)/sizeof(p->conv2d.pad[0]); i++)
+    for(i = 0; i < _cnt_of_array(p->conv2d.pad); i++)
     {
         self->nn_param.conv2d.pad[i] = (uint32_t)pad[i];
     }

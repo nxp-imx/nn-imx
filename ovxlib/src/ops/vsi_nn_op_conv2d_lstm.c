@@ -318,8 +318,8 @@ static vsi_bool setup_op_shapes
     vsi_size_t w_out, h_out, samples, timestep, out_channel;
     vsi_size_t conv_in_shape[4];
     vsi_nn_conv2d_lstm_param * p = &self->nn_param.conv2d_lstm;
-    vsi_size_t ksize[sizeof(p->conv2d.ksize)/sizeof(p->conv2d.ksize[0])];
-    vsi_size_t i, pad[sizeof(p->conv2d.pad)/sizeof(p->conv2d.pad[0])] = {0};
+    vsi_size_t ksize[_cnt_of_array(p->conv2d.ksize)];
+    vsi_size_t i, pad[_cnt_of_array(p->conv2d.pad)] = {0};
 
     memset(&attr, 0, sizeof(attr));
     memset(conv_in_shape, 0, sizeof(vsi_size_t) * 4);
@@ -347,11 +347,11 @@ static vsi_bool setup_op_shapes
         conv_in_shape[3] = inputs[CONV2D_LSTM_IN_INPUT]->attr.size[4];
     }
 
-    for(i = 0; i < sizeof(p->conv2d.ksize)/sizeof(p->conv2d.ksize[0]); i++)
+    for(i = 0; i < _cnt_of_array(p->conv2d.ksize); i++)
     {
         ksize[i] = self->nn_param.conv2d.ksize[i];
     }
-    for(i = 0; i < sizeof(p->conv2d.pad)/sizeof(p->conv2d.pad[0]); i++)
+    for(i = 0; i < _cnt_of_array(p->conv2d.pad); i++)
     {
         pad[i] = self->nn_param.conv2d.pad[i];
     }
@@ -364,11 +364,11 @@ static vsi_bool setup_op_shapes
         p->conv2d.pad_type,
         pad
     );
-    for(i = 0; i < sizeof(p->conv2d.ksize)/sizeof(p->conv2d.ksize[0]); i++)
+    for(i = 0; i < _cnt_of_array(p->conv2d.ksize); i++)
     {
         self->nn_param.conv2d.ksize[i] = (uint32_t)ksize[i];
     }
-    for(i = 0; i < sizeof(p->conv2d.pad)/sizeof(p->conv2d.pad[0]); i++)
+    for(i = 0; i < _cnt_of_array(p->conv2d.pad); i++)
     {
         self->nn_param.conv2d.pad[i] = (uint32_t)pad[i];
     }

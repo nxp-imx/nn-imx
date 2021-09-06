@@ -244,14 +244,14 @@ static vsi_bool op_setup
     )
 {
     vsi_bool ret = TRUE;
-    vsi_size_t ksize[sizeof(self->nn_param.pool.ksize)/sizeof(self->nn_param.pool.ksize[0])] = {0};
+    vsi_size_t ksize[_cnt_of_array(self->nn_param.pool.ksize)] = {0};
     vsi_size_t i = 0;
-    vsi_size_t pad[sizeof(self->nn_param.pool.pad)/sizeof(self->nn_param.pool.pad[0])] = {0};
-    for(i = 0; i < sizeof(self->nn_param.pool.ksize)/sizeof(self->nn_param.pool.ksize[0]); i++)
+    vsi_size_t pad[_cnt_of_array(self->nn_param.pool.pad)] = {0};
+    for(i = 0; i < _cnt_of_array(self->nn_param.pool.ksize); i++)
     {
         ksize[i] = self->nn_param.pool.ksize[i];
     }
-    for(i = 0; i < sizeof(self->nn_param.pool.pad)/sizeof(self->nn_param.pool.pad[0]); i++)
+    for(i = 0; i < _cnt_of_array(self->nn_param.pool.pad); i++)
     {
         pad[i] = self->nn_param.pool.pad[i];
     }
@@ -264,11 +264,11 @@ static vsi_bool op_setup
         self->nn_param.pool.pad_type,
         pad
     );
-    for(i = 0; i < sizeof(self->nn_param.pool.ksize)/sizeof(self->nn_param.pool.ksize[0]); i++)
+    for(i = 0; i < _cnt_of_array(self->nn_param.pool.ksize); i++)
     {
         self->nn_param.pool.ksize[i] = (uint32_t)ksize[i];
     }
-    for(i = 0; i < sizeof(self->nn_param.pool.pad)/sizeof(self->nn_param.pool.pad[0]); i++)
+    for(i = 0; i < _cnt_of_array(self->nn_param.pool.pad); i++)
     {
         self->nn_param.pool.pad[i] = (uint32_t)pad[i];
     }

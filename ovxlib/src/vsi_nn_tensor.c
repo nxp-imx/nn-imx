@@ -309,11 +309,6 @@ static vsi_bool _init_tensor
     vx_tensor_create_params_t params;
     float * scales = NULL;
     int32_t * null_zp = NULL;
-    uint32_t i, size_32bit[sizeof(tensor->attr.size)/sizeof(tensor->attr.size[0])] = {0};
-    for(i = 0; i < sizeof(tensor->attr.size)/sizeof(tensor->attr.size[0]); i++)
-    {
-        size_32bit[i] = (uint32_t)tensor->attr.size[i];
-    }
     ret = TRUE;
 
     memset( &params, 0, sizeof( vx_tensor_create_params_t ) );
@@ -409,8 +404,13 @@ static vsi_bool _init_tensor
                     tensor->attr.size, stride_size, (vsi_size_t)tensor->attr.dim_num);
 #else
                 {
-                    uint32_t i, stride_size_32bit[sizeof(stride_size)/sizeof(stride_size[0])] = {0};
-                    for(i = 0; i < sizeof(stride_size)/sizeof(stride_size[0]); i++)
+                    uint32_t i, size_32bit[_cnt_of_array(tensor->attr.size)] = {0};
+                    uint32_t stride_size_32bit[_cnt_of_array(stride_size)] = {0};
+                    for(i = 0; i < _cnt_of_array(tensor->attr.size); i++)
+                    {
+                        size_32bit[i] = (uint32_t)tensor->attr.size[i];
+                    }
+                    for(i = 0; i < _cnt_of_array(stride_size); i++)
                     {
                         stride_size_32bit[i] = (uint32_t)stride_size[i];
                     }
@@ -1648,7 +1648,7 @@ void vsi_nn_PermuteTensor
         dst_shape[i] = shape_ptr[perm[i]];
     }
     vsi_nn_Permute( dst, buf, shape_ptr, dim_num, perm, tensor->attr.dtype.vx_type );
-    memcpy(tensor->attr.size, dst_shape, sizeof(dst_shape)/sizeof(dst_shape[0]));
+    memcpy(tensor->attr.size, dst_shape, _cnt_of_array(dst_shape));
 #ifdef VSI_40BIT_VA_SUPPORT
     tensor->t = vxReshapeTensor(tensor->t, tensor->attr.size, tensor->attr.dim_num);
 #else

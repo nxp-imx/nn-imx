@@ -177,8 +177,8 @@ static void _set_preproc_node_out_attr
     vsi_nn_preprocess_source_layout_e* source_layout
     )
 {
-    uint32_t i, size[sizeof(org_norm_tensor->attr.size)/sizeof(org_norm_tensor->attr.size[0])] = {0};
-    for(i = 0; i < sizeof(org_norm_tensor->attr.size)/sizeof(org_norm_tensor->attr.size[0]); i++)
+    uint32_t i, size[_cnt_of_array(org_norm_tensor->attr.size)] = {0};
+    for(i = 0; i < _cnt_of_array(org_norm_tensor->attr.size); i++)
     {
         size[i] = (uint32_t)org_norm_tensor->attr.size[i];
     }
