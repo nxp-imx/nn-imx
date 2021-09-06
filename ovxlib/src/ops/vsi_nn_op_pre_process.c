@@ -301,7 +301,7 @@ static vsi_bool op_setup
             vsi_nn_internal_tensor_t* tmp_outputs[3] = { NULL };
             vsi_nn_tensor_attr_t attr;
             float mean[3] = {0};
-            uint32_t size_32bit[VSI_NN_MAX_DIM_NUM] = {0};
+            vsi_size_t size_32bit[VSI_NN_MAX_DIM_NUM] = {0};
 
             memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
 
@@ -325,7 +325,7 @@ static vsi_bool op_setup
             output_tensor_group[2] = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
             for(i = 0; i < VSI_NN_MAX_DIM_NUM; i++)
             {
-                size_32bit[i] = (uint32_t)attr.size[i];
+                size_32bit[i] = attr.size[i];
             }
 
             if (p->reverse_channel)
