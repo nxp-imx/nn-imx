@@ -598,13 +598,13 @@ static vx_tensor _create_const_raw_tensor
 #else
                 {
                     vsi_size_t i;
-                    uint32_t size_32bit[sizeof(attr.size)/sizeof(attr.size[0])] = {0};
-                    uint32_t stride_size_32bit[sizeof(stride_size)/sizeof(stride_size[0])] = {0};
-                    for(i = 0; i < sizeof(attr.size)/sizeof(attr.size[0]); i++)
+                    uint32_t size_32bit[_cnt_of_array(attr.size)] = {0};
+                    uint32_t stride_size_32bit[_cnt_of_array(stride_size)] = {0};
+                    for(i = 0; i < _cnt_of_array(attr.size); i++)
                     {
                         size_32bit[i] = (uint32_t)attr.size[i];
                     }
-                    for(i = 0; i < sizeof(stride_size)/sizeof(stride_size[0]); i++)
+                    for(i = 0; i < _cnt_of_array(stride_size); i++)
                     {
                         stride_size_32bit[i] = (uint32_t)stride_size[i];
                     }

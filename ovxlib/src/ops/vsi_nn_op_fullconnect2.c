@@ -59,9 +59,6 @@ static vsi_status op_compute
     vsi_size_t output_size[VSI_NN_MAX_DIM_NUM] = {0};
     vsi_size_t weights_size[VSI_NN_MAX_DIM_NUM] = {0};
     vsi_size_t bias_size[VSI_NN_MAX_DIM_NUM] = {0};
-    int32_t input_size_32bit[VSI_NN_MAX_DIM_NUM] = {0};
-    int32_t weight_size_32bit[VSI_NN_MAX_DIM_NUM] = {0};
-    int32_t bias_size_32bit[VSI_NN_MAX_DIM_NUM] = {0};
     vsi_size_t ofm = 0;
     vsi_size_t dims = 0;
     vx_tensor input = NULL;
@@ -98,27 +95,33 @@ static vsi_status op_compute
     input_size[0] = num_fc;
     input_size[1] = num_no_fc;
     dims= 2;
-    for(i = 0; i < VSI_NN_MAX_DIM_NUM; i++)
-    {
-        input_size_32bit[i] =  (int32_t)input_size[i];
-    }
 #ifdef VSI_40BIT_VA_SUPPORT
     input = vxReshapeTensor(inputs[0]->t, input_size, dims);
 #else
-    input = vxReshapeTensor(inputs[0]->t, input_size_32bit, (uint32_t)dims);
+    {
+        int32_t input_size_32bit[VSI_NN_MAX_DIM_NUM] = {0};
+        for(i = 0; i < VSI_NN_MAX_DIM_NUM; i++)
+        {
+            input_size_32bit[i] =  (int32_t)input_size[i];
+        }
+        input = vxReshapeTensor(inputs[0]->t, input_size_32bit, (uint32_t)dims);
+    }
 #endif
 
     weights_size[0] = num_fc;
     weights_size[1] = ofm;
     dims= 2;
-    for(i = 0; i < VSI_NN_MAX_DIM_NUM; i++)
-    {
-        weight_size_32bit[i] = (int32_t)weight_size_32bit[i];
-    }
 #ifdef VSI_40BIT_VA_SUPPORT
     weight = vxReshapeTensor(inputs[1]->t, weights_size, dims);
 #else
-    weight = vxReshapeTensor(inputs[1]->t, weight_size_32bit, (uint32_t)dims);
+    {
+        int32_t weight_size_32bit[VSI_NN_MAX_DIM_NUM] = {0};
+        for(i = 0; i < VSI_NN_MAX_DIM_NUM; i++)
+        {
+            weight_size_32bit[i] = (int32_t)weight_size_32bit[i];
+        }
+        weight = vxReshapeTensor(inputs[1]->t, weight_size_32bit, (uint32_t)dims);
+    }
 #endif
 
     if( inputs[2] != NULL )
@@ -126,14 +129,17 @@ static vsi_status op_compute
         bias_size[0] = ofm;
         bias_size[1] = 1;
         dims= 2;
-        for(i = 0; i < VSI_NN_MAX_DIM_NUM; i++)
-        {
-            bias_size_32bit[i] =  (int32_t)bias_size[i];
-        }
 #ifdef VSI_40BIT_VA_SUPPORT
         bias = vxReshapeTensor(inputs[2]->t, bias_size, dims);
 #else
-        bias = vxReshapeTensor(inputs[2]->t, bias_size_32bit, (uint32_t)dims);
+        {
+            int32_t bias_size_32bit[VSI_NN_MAX_DIM_NUM] = {0};
+            for(i = 0; i < VSI_NN_MAX_DIM_NUM; i++)
+            {
+                bias_size_32bit[i] =  (int32_t)bias_size[i];
+            }
+            bias = vxReshapeTensor(inputs[2]->t, bias_size_32bit, (uint32_t)dims);
+        }
 #endif
     }
 
