@@ -118,7 +118,6 @@ DEF_KERNEL_EXECUTOR(_pre_process_nv12_exec)
     {
         int32_t dx, dy, dz;
         int32_t src_width = (int32_t)attr[0]->shape->data[0];
-        int32_t src_height = (int32_t)attr[0]->shape->data[1];
         int32_t dst_width = (int32_t)(trans ? attr[2]->shape->data[1] : attr[2]->shape->data[0]);
         int32_t dst_height = (int32_t)(trans ? attr[2]->shape->data[2] : attr[2]->shape->data[1]);
         int32_t stride = (int32_t)(dst_width * dst_height);
@@ -132,9 +131,10 @@ DEF_KERNEL_EXECUTOR(_pre_process_nv12_exec)
         float* src_y_slice = NULL;
         float* src_uv_yScanline = NULL;
 
-
-        uint32_t xrIntFloat_16 = (src_width << 16) / dst_width + 1;
-        uint32_t yrIntFloat_16 = (src_height << 16) / dst_height + 1;
+        uint32_t roi_width = (xRatio * dst_width) >> 15;
+        uint32_t roi_height = (yRatio * dst_height) >> 15;
+        uint32_t xrIntFloat_16 = (roi_width << 16) / dst_width + 1;
+        uint32_t yrIntFloat_16 = (roi_height << 16) / dst_height + 1;
         uint32_t srcy = 0, srcx = 0;
 
         if(attr[2]->dtype == I8)
