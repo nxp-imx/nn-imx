@@ -1648,7 +1648,7 @@ void vsi_nn_PermuteTensor
         dst_shape[i] = shape_ptr[perm[i]];
     }
     vsi_nn_Permute( dst, buf, shape_ptr, dim_num, perm, tensor->attr.dtype.vx_type );
-    memcpy(tensor->attr.size, dst_shape, _cnt_of_array(dst_shape));
+    memcpy(tensor->attr.size, dst_shape, sizeof(dst_shape));
 #ifdef VSI_40BIT_VA_SUPPORT
     tensor->t = vxReshapeTensor(tensor->t, tensor->attr.size, tensor->attr.dim_num);
 #else
