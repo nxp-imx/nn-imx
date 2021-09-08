@@ -74,7 +74,7 @@ REGISTER_BATCH_GEMM_OPENVX_KERNEL( matrixmul )
 
     if( NULL == node )
     {
-        VSILOGE("Call vxBatchGemmNode fail.");
+        VSILOGW("Call vxBatchGemmNode fail.");
         goto OnError;
     }
 
