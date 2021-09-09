@@ -95,12 +95,12 @@ __kernel void moments_axis0_I32toF32(
     int gidz = get_global_id(1);
 
     int4 coord0 = (int4)(0, gidy, gidz, 0);
-    int data;
-    int sum = 0, sqr = 0;
+    float data;
+    float sum = 0, sqr = 0;
 
     for(coord0.x = 0; coord0.x < width;)
     {
-        data = read_imagei(input, coord0).x;
+        data = convert_float(read_imagei(input, coord0).x);
         coord0.x++;
 
         sum = sum + data;
