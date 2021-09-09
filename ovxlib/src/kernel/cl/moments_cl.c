@@ -453,6 +453,7 @@ static vsi_nn_kernel_node_t _setup
         if ( node )
         {
             uint32_t index = 0;
+            int32_t constant_value = 0;
             /* Pass parameters to node. */
             if (reshape_tensors[0])
             {
@@ -492,7 +493,12 @@ static vsi_nn_kernel_node_t _setup
                 vsi_nn_kernel_tensor_release( &node_params[1] );
                 vsi_nn_kernel_tensor_release( &node_params[2] );
             }
-            status = set_constant_border(node, inputs[0]->attr.dtype.zero_point);
+
+            if (inputs[0]->attr.dtype.qnt_type == VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC)
+            {
+                constant_value = inputs[0]->attr.dtype.zero_point;
+            }
+            status = set_constant_border(node, constant_value);
             CHECK_STATUS(status);
         }
     }

@@ -50992,12 +50992,12 @@ __kernel void moments_axis0_I32toF32(\n\
     int gidz = get_global_id(1);\n\
 \n\
     int4 coord0 = (int4)(0, gidy, gidz, 0);\n\
-    int data;\n\
-    int sum = 0, sqr = 0;\n\
+    float data;\n\
+    float sum = 0, sqr = 0;\n\
 \n\
     for(coord0.x = 0; coord0.x < width;)\n\
     {\n\
-        data = read_imagei(input, coord0).x;\n\
+        data = convert_float(read_imagei(input, coord0).x);\n\
         coord0.x++;\n\
 \n\
         sum = sum + data;\n\
@@ -51141,7 +51141,7 @@ __kernel void moments_axis01_I32toF32(\n\
     int lidx = get_local_id(0);\n\
 \n\
     int4 coord = (int4)(gidx, 0, gidz, 0);\n\
-    int4 data;\n\
+    float4 data;\n\
     float sum = 0, sqr = 0;\n\
     float e2InScale = input_scale * input_scale;\n\
 \n\
@@ -51150,10 +51150,10 @@ __kernel void moments_axis01_I32toF32(\n\
 \n\
     for(coord.x = gidx; coord.x < width; coord.x += 16)\n\
     {\n\
-        int tmpSum = 0, tmpSqr = 0;\n\
+        float tmpSum = 0, tmpSqr = 0;\n\
         for(coord.y = 0; coord.y < height;)\n\
         {\n\
-            data = read_imagei(input, coord);\n\
+            data = convert_float4(read_imagei(input, coord));\n\
             coord.y++;\n\
 \n\
             tmpSum = tmpSum + data.x;\n\
@@ -51463,12 +51463,12 @@ __kernel void moments_axis1_I32toF32(\n\
     int gidz = get_global_id(1);\n\
 \n\
     int4 coord0 = (int4)(gidx, 0, gidz, 0);\n\
-    int data;\n\
-    int sum = 0, sqr = 0;\n\
+    float data;\n\
+    float sum = 0, sqr = 0;\n\
 \n\
     for(coord0.y = 0; coord0.y < height;)\n\
     {\n\
-        data = read_imagei(input, coord0).x;\n\
+        data = convert_float(read_imagei(input, coord0).x);\n\
         coord0.y++;\n\
         sum = sum + data;\n\
         sqr = sqr + data * data;\n\
@@ -51588,13 +51588,14 @@ __kernel void moments_axis2_I32toF32(\n\
     int gidy = get_global_id(1);\n\
 \n\
     int4 coord0 = (int4)(gidx, gidy, 0, 0);\n\
-    int data;\n\
-    int sum = 0, sqr = 0;\n\
+    float data;\n\
+    float sum = 0, sqr = 0;\n\
 \n\
     for(coord0.z = 0; coord0.z < chn;)\n\
     {\n\
-        data = read_imagei(input, coord0).x;\n\
+        data = convert_float(read_imagei(input, coord0).x);\n\
         coord0.z++;\n\
+\n\
 \n\
         sum = sum + data;\n\
         sqr = sqr + data * data;\n\
