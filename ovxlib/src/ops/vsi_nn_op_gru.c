@@ -59,19 +59,6 @@ static void create_state_tensor
 
     memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
 
-    if(NULL == inputs[GRU_IN_H_STATE])
-    {
-        attr.dim_num = 2;
-        attr.size[0] = hidden_size;
-        attr.size[1] = batch_size;
-        memcpy(&attr.dtype, &outputs[GRU_OUT_OUTPUT]->attr.dtype, sizeof( attr.dtype ));
-        attr.vtl = FALSE;
-        attr.is_const = TRUE;
-
-        tensor = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
-        inputs[GRU_IN_H_STATE] = tensor->t;
-    }
-
     if(NULL == outputs[GRU_OUT_H_STATE])
     {
         memset( attr.size, 0, VSI_NN_MAX_DIM_NUM * sizeof(attr.size[0]));
@@ -82,6 +69,20 @@ static void create_state_tensor
         tensor = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
         outputs[GRU_OUT_H_STATE] = tensor->t;
     }
+
+    if(NULL == inputs[GRU_IN_H_STATE])
+    {
+        attr.dim_num = 2;
+        attr.size[0] = hidden_size;
+        attr.size[1] = batch_size;
+        memcpy(&attr.dtype, &outputs[GRU_OUT_H_STATE]->attr.dtype, sizeof( attr.dtype ));
+        attr.vtl = FALSE;
+        attr.is_const = TRUE;
+
+        tensor = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
+        inputs[GRU_IN_H_STATE] = tensor->t;
+    }
+
 } /* create_state_tensor() */
 
 static vsi_bool setup_op_shapes
