@@ -521,6 +521,8 @@
     <ClInclude Include="include\ops\vsi_nn_op_concatshift.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_conv1d.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_conv2d.h"/>
+    <ClInclude Include="include\ops\vsi_nn_op_conv2d_lstm.h"/>
+    <ClInclude Include="include\ops\vsi_nn_op_conv2d_lstm_cell.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_conv_relu.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_crop.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_dataconvert.h"/>
@@ -547,9 +549,9 @@
     <ClInclude Include="include\ops\vsi_nn_op_grouped_conv2d.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_groupnormalize.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_gru.h"/>
+    <ClInclude Include="include\ops\vsi_nn_op_gru_ovxlib.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_grucell.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_grucell_activation.h"/>
-    <ClInclude Include="include\ops\vsi_nn_op_gru_ovxlib.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_grucell_activation_internal.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_grucell_activation_internal_sma.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_grucell_ovxlib.h"/>
@@ -569,8 +571,6 @@
     <ClInclude Include="include\ops\vsi_nn_op_lsh_projection.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_lstm.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_lstm_ovxlib.h"/>
-    <ClInclude Include="include\ops\vsi_nn_op_conv2d_lstm.h"/>
-    <ClInclude Include="include\ops\vsi_nn_op_conv2d_lstm_cell.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_lstmunit.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_lstmunit_activation.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_lstmunit_ovxlib.h"/>
@@ -1403,16 +1403,19 @@
     <ClCompile Include="src\kernel\vx\erf_vx.c">
       <ObjectFileName>$(IntDir)\src\kernel\vx\</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="src\kernel\vx\matrixmul_vx.c">
+      <ObjectFileName>$(IntDir)\src\kernel\vx\</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="src\kernel\vx\prelu_vx.c">
       <ObjectFileName>$(IntDir)\src\kernel\vx\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\vx\relu_keras_vx.c">
       <ObjectFileName>$(IntDir)\src\kernel\vx\</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="src\kernel\vx\swish_vx.c">
+    <ClCompile Include="src\kernel\vx\square_vx.c">
       <ObjectFileName>$(IntDir)\src\kernel\vx\</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="src\kernel\vx\matrixmul_vx.c">
+    <ClCompile Include="src\kernel\vx\swish_vx.c">
       <ObjectFileName>$(IntDir)\src\kernel\vx\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\libnnext\vsi_nn_libnnext_resource.c">
@@ -1476,6 +1479,12 @@
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_conv2d.c">
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_conv2d_lstm.c">
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_conv2d_lstm_cell.c">
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_conv_relu.c">
@@ -1565,13 +1574,13 @@
     <ClCompile Include="src\ops\vsi_nn_op_gru.c">
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_gru_ovxlib.c">
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_grucell.c">
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_grucell_activation.c">
-      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="src\ops\vsi_nn_op_gru_ovxlib.c">
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_grucell_activation_internal.c">
@@ -1635,12 +1644,6 @@
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_lstm_ovxlib.c">
-      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="src\ops\vsi_nn_op_conv2d_lstm.c">
-      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="src\ops\vsi_nn_op_conv2d_lstm_cell.c">
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_lstmunit.c">
