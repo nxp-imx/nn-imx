@@ -207,6 +207,12 @@
     <ClInclude Include="include\ops\vsi_nn_op_conv2d.h">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_conv2d_lstm.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_conv2d_lstm_cell.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
     <ClInclude Include="include\ops\vsi_nn_op_conv_relu.h">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
@@ -285,13 +291,13 @@
     <ClInclude Include="include\ops\vsi_nn_op_gru.h">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_gru_ovxlib.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
     <ClInclude Include="include\ops\vsi_nn_op_grucell.h">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
     <ClInclude Include="include\ops\vsi_nn_op_grucell_activation.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_gru_ovxlib.h">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
     <ClInclude Include="include\ops\vsi_nn_op_grucell_activation_internal.h">
@@ -349,12 +355,6 @@
       <Filter>Header Files\ops</Filter>
     </ClInclude>
     <ClInclude Include="include\ops\vsi_nn_op_lstm_ovxlib.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_conv2d_lstm.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_conv2d_lstm_cell.h">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
     <ClInclude Include="include\ops\vsi_nn_op_lstmunit.h">
@@ -1403,7 +1403,7 @@
     <ClCompile Include="src\kernel\vsi_nn_kernel_gpu_shape_optimize.c">
       <Filter>Source Files\kernel</Filter>
     </ClCompile>
-  <ClCompile Include="src\kernel\vsi_nn_kernel_node.c">
+    <ClCompile Include="src\kernel\vsi_nn_kernel_node.c">
       <Filter>Source Files\kernel</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\vsi_nn_kernel_param.c">
@@ -1418,7 +1418,7 @@
     <ClCompile Include="src\kernel\vx\a_times_b_plus_c_vx.c">
       <Filter>Source Files\kernel\vx</Filter>
     </ClCompile>
-    <ClCompile Include="src\kernel\vx\clip_vx.c">
+  <ClCompile Include="src\kernel\vx\clip_vx.c">
       <Filter>Source Files\kernel\vx</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\vx\convolutional.c">
@@ -1433,16 +1433,19 @@
     <ClCompile Include="src\kernel\vx\erf_vx.c">
       <Filter>Source Files\kernel\vx</Filter>
     </ClCompile>
+    <ClCompile Include="src\kernel\vx\matrixmul_vx.c">
+      <Filter>Source Files\kernel\vx</Filter>
+    </ClCompile>
     <ClCompile Include="src\kernel\vx\prelu_vx.c">
       <Filter>Source Files\kernel\vx</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\vx\relu_keras_vx.c">
       <Filter>Source Files\kernel\vx</Filter>
     </ClCompile>
-    <ClCompile Include="src\kernel\vx\swish_vx.c">
+    <ClCompile Include="src\kernel\vx\square_vx.c">
       <Filter>Source Files\kernel\vx</Filter>
     </ClCompile>
-    <ClCompile Include="src\kernel\vx\matrixmul_vx.c">
+    <ClCompile Include="src\kernel\vx\swish_vx.c">
       <Filter>Source Files\kernel\vx</Filter>
     </ClCompile>
     <ClCompile Include="src\libnnext\vsi_nn_libnnext_resource.c">
@@ -1506,6 +1509,12 @@
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_conv2d.c">
+      <Filter>Source Files\ops</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_conv2d_lstm.c">
+      <Filter>Source Files\ops</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_conv2d_lstm_cell.c">
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_conv_relu.c">
@@ -1595,13 +1604,13 @@
     <ClCompile Include="src\ops\vsi_nn_op_gru.c">
       <Filter>Source Files\ops</Filter>
     </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_gru_ovxlib.c">
+      <Filter>Source Files\ops</Filter>
+    </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_grucell.c">
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_grucell_activation.c">
-      <Filter>Source Files\ops</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ops\vsi_nn_op_gru_ovxlib.c">
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_grucell_activation_internal.c">
@@ -1665,12 +1674,6 @@
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_lstm_ovxlib.c">
-      <Filter>Source Files\ops</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ops\vsi_nn_op_conv2d_lstm.c">
-      <Filter>Source Files\ops</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ops\vsi_nn_op_conv2d_lstm_cell.c">
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_lstmunit.c">
