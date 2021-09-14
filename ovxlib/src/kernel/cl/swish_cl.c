@@ -299,10 +299,8 @@ static vsi_nn_kernel_node_t _setup
 
     if( ret )
     {
-        node_params[0] = vsi_nn_reshape_tensor( graph,
-                inputs[0], shape, new_rank );
-        node_params[1] = vsi_nn_reshape_tensor( graph,
-                outputs[0], shape, new_rank );
+        node_params[0] = vsi_nn_kernel_tensor_reshape( inputs[0]->t, shape, new_rank );
+        node_params[1] = vsi_nn_kernel_tensor_reshape( outputs[0]->t, shape, new_rank );
     }
 
     if( !vsi_nn_kernel_gpu_check_shape( shape, new_rank ) )
