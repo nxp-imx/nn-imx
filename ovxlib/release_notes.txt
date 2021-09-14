@@ -1,4 +1,25 @@
 ############################################################################
+Release notes for Ovxlib 1.1.34
+
+New Features:
+    1. add ops:
+       scatter_nd_update, gelu, conv2d_lstm, conv2d_lstm_ceil, gru, gruceil
+
+Feature Refine:
+    1. add new data type support for some ops.
+    2. refine ops:
+       moments, cast, prelu, spatial_transformer, signal_frame
+    3. refine ovxlib tensor shape/size data type to vsi_size_t to support 40Bit VA
+       and upgrade version to 1.1.34
+
+Bug Fixing:
+    1. fix bug for ops:
+       batchnorm_single, tensorstackconcat, erf, reduce, conv1d, nms,
+       lstmunit_ovxlib, instancenorm_scale, layernorm_scale,
+    2. fix preprocess inputs connection issue
+    3. fix some memory leak issue
+
+############################################################################
 Release notes for Ovxlib 1.1.32
 
 New Features:
