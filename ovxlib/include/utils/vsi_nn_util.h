@@ -299,7 +299,7 @@ typedef uint32_t(*comp_func)(void* data, int32_t left, int32_t right);
  * @param[in] recursively execute vsi_nn_partition.
  * @param[out] the sorted index of data.
  */
-OVXLIB_API int32_t vsi_nn_partition
+int32_t vsi_nn_partition
     (
         void* data,
         int32_t left,
