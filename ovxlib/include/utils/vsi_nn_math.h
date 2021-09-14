@@ -132,7 +132,7 @@ OVXLIB_API double vsi_nn_Rint
 * @param[in] the low uint32_t of the seed.
 * @param[in] the high uint32_t of the seed.
 */
-OVXLIB_API void vsi_nn_random_init_for_philox_4x32_10
+void vsi_nn_random_init_for_philox_4x32_10
     (
     uint32_t low,
     uint32_t high
@@ -145,7 +145,7 @@ OVXLIB_API void vsi_nn_random_init_for_philox_4x32_10
 * @param[out] the buffer for RNG output.
 * @param[in] the number of generated random numbers.
 */
-OVXLIB_API void vsi_nn_random_generate_by_philox_4x32_10
+void vsi_nn_random_generate_by_philox_4x32_10
     (
     uint32_t *random_buf,
     uint32_t len
@@ -159,7 +159,7 @@ OVXLIB_API void vsi_nn_random_generate_by_philox_4x32_10
 * @param[out] the buffer for uniform float in [0, 1).
 * @param[in] the number of random numbers.
 */
-OVXLIB_API void vsi_nn_random_uniform_transform
+void vsi_nn_random_uniform_transform
     (
     uint32_t *random_buf,
     float *uniform_buf,
