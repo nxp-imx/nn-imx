@@ -710,9 +710,17 @@ vsi_bool vsi_nn_CheckFilePath
     return FALSE;
 } /* vsi_nn_CheckFilePath() */
 
+/*
+ * AlignedBuffer is figured as bellow:
+ * | margin start at raw_addr | aligned_header | begin_guard  |
+ *  data start at align_addr | end_guard |
+*/
+#define BEGIN_GUARD_SIZE 64
+#define END_GUARD_SIZE 64
 typedef struct
 {
     uint8_t* raw_addr;
+    uint8_t begin_guard[BEGIN_GUARD_SIZE];
 } aligned_header;
 
 uint8_t * vsi_nn_MallocAlignedBuffer
@@ -729,7 +737,8 @@ uint8_t * vsi_nn_MallocAlignedBuffer
     uint8_t* align_addr;
     aligned_header* header;
 
-    sz = sizeof(aligned_header) + mem_size + align_start_size + align_block_size;
+    sz = sizeof(aligned_header) + mem_size +
+        align_start_size + align_block_size + END_GUARD_SIZE;
     raw_addr = (uint8_t *)malloc( sz * sizeof( uint8_t ) );
     memset(raw_addr, 0, sizeof( uint8_t ) * sz);
     p = raw_addr + sizeof(aligned_header);
