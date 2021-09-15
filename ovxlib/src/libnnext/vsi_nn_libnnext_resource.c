@@ -50926,8 +50926,8 @@ static const char moments_axis0_cl[] = "__kernel void moments_axis0_U8toF32(\n\
             tmpSum += (data);\n\
             tmpSqr += (data * data);\n\
         }\n\
-        sqr = convert_float(tmpSqr - 2 * input_zp * tmpSum + width * input_zp * input_zp) * e2InScale;\n\
-        sum = convert_float(tmpSum - width * input_zp) * input_scale;\n\
+        sqr = convert_float(as_int(tmpSqr - 2 * input_zp * tmpSum + width * input_zp * input_zp)) * e2InScale;\n\
+        sum = convert_float(as_int(tmpSum - width * input_zp)) * input_scale;\n\
     }\n\
     float4 mean, vari;\n\
     mean.x = sum * dimRatio;\n\
@@ -51396,8 +51396,8 @@ static const char moments_axis1_cl[] = "__kernel void moments_axis1_U8toF32(\n\
             tmpSum += (data);\n\
             tmpSqr += (data * data);\n\
         }\n\
-        sqr = convert_float(tmpSqr - 2 * input_zp * tmpSum + height * input_zp * input_zp) * e2InScale;\n\
-        sum = convert_float(tmpSum - height * input_zp) * input_scale;\n\
+        sqr = convert_float(as_int(tmpSqr - 2 * input_zp * tmpSum + height * input_zp * input_zp)) * e2InScale;\n\
+        sum = convert_float(as_int(tmpSum - height * input_zp)) * input_scale;\n\
     }\n\
 \n\
     float4 mean, vari;\n\
@@ -51515,7 +51515,7 @@ static const char moments_axis2_cl[] = "__kernel void moments_axis2_U8toF32(\n\
             tmpSum += (data);\n\
             tmpSqr += (data * data);\n\
         }\n\
-        sqr = (tmpSqr - 2 * input_zp * tmpSum + chn * input_zp * input_zp) * e2InScale;\n\
+        sqr = as_int(tmpSqr - 2 * input_zp * tmpSum + chn * input_zp * input_zp) * e2InScale;\n\
         sum = tmpSum * input_scale;\n\
     }\n\
 \n\
