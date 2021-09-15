@@ -29,7 +29,7 @@ __kernel void moments_axis2_U8toF32(
             tmpSum += (data);
             tmpSqr += (data * data);
         }
-        sqr = (tmpSqr - 2 * input_zp * tmpSum + chn * input_zp * input_zp) * e2InScale;
+        sqr = as_int(tmpSqr - 2 * input_zp * tmpSum + chn * input_zp * input_zp) * e2InScale;
         sum = tmpSum * input_scale;
     }
 

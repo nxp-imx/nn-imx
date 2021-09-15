@@ -23,8 +23,8 @@ __kernel void moments_axis1_U8toF32(
             tmpSum += (data);
             tmpSqr += (data * data);
         }
-        sqr = convert_float(tmpSqr - 2 * input_zp * tmpSum + height * input_zp * input_zp) * e2InScale;
-        sum = convert_float(tmpSum - height * input_zp) * input_scale;
+        sqr = convert_float(as_int(tmpSqr - 2 * input_zp * tmpSum + height * input_zp * input_zp)) * e2InScale;
+        sum = convert_float(as_int(tmpSum - height * input_zp)) * input_scale;
     }
 
     float4 mean, vari;
