@@ -89,6 +89,8 @@ typedef uint32_t vsi_size_t;
 typedef int32_t vsi_ssize_t;
 #endif
 
+#define VSI_SIZE_T
+
 #ifndef TRUE
 #define TRUE 1
 #endif
