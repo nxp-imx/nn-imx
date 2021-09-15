@@ -169,6 +169,7 @@ static vsi_bool op_check
         IO_TYPE(D_F32,  D_F16)
         IO_TYPE(D_BF16, D_F32)
         IO_TYPE(D_BF16, D_BF16)
+        IO_TYPE(D_I32,  D_I32)
     END_IO_TYPE_DECL(PERMUTE)
     if (!VALIDATE_OP_IO_TYPES(PERMUTE, self, inputs, self->input.num, outputs, self->output.num))
     {
