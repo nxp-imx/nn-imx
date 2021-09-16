@@ -54,18 +54,13 @@ static vsi_nn_internal_tensor_t* create_tp_fc
 {
     vsi_nn_lstmunit_ovxlib_param* p = &self->nn_param.lstmunit_ovxlib;
     vsi_nn_tensor_attr_t attr;
-    vsi_nn_tensor_t* tensor = NULL;
-    vsi_nn_internal_tensor_t* tensor1 = NULL;
     vsi_nn_internal_tensor_t* tensor2 = NULL;
     vsi_nn_internal_node_t* tmp_inode = NULL;
 
     memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
-    tensor = bias;
     if( !bias || p->local->use_layer_norm || p->local->use_hybrid )
     {
-        /* create zero bias for NN/TP */
-        tensor1 = vsi_nn_internal_create_zero_bias_tensor(self, &input->attr, &weight->attr, VSI_NN_OP_FCL, FALSE);
-        tensor = tensor1->t;
+        bias = NULL;
     }
 
     vsi_nn_internal_init_tensor_attr(&attr, output_dtype, use_virtual_tensor);
@@ -77,7 +72,7 @@ static vsi_nn_internal_tensor_t* create_tp_fc
 
     tmp_inode->inputs[0] = input;
     tmp_inode->inputs[1] = weight;
-    tmp_inode->inputs[2] = tensor;
+    tmp_inode->inputs[2] = bias;
     tmp_inode->outputs[0] = tensor2->t;
     vsi_nn_internal_setup_node(self, tmp_inode);
 
@@ -98,21 +93,15 @@ static vsi_nn_internal_tensor_t* create_nn_fc
 {
     vsi_nn_lstmunit_ovxlib_param* p = &self->nn_param.lstmunit_ovxlib;
     vsi_nn_tensor_attr_t attr;
-    vsi_nn_tensor_t* tensor = NULL;
-    vsi_nn_internal_tensor_t* tensor1 = NULL;
     vsi_nn_internal_tensor_t* tensor2 = NULL;
     vsi_nn_internal_tensor_t* reshaped_weight_tensor = NULL;
     vsi_size_t reshaped_weight_shape[VSI_NN_MAX_DIM_NUM] = { 0 };
     vsi_nn_internal_node_t* tmp_inode = NULL;
 
     memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
-    tensor = bias;
     if( !bias || p->local->use_layer_norm || p->local->use_hybrid )
     {
-        /* create zero bias for NN/TP */
-        tensor1 = vsi_nn_internal_create_zero_bias_tensor(
-            self, &input->attr, &weight->attr, VSI_NN_OP_FCL, FALSE);
-        tensor = tensor1->t;
+        bias = NULL;
     }
 
     vsi_nn_internal_init_tensor_attr(&attr, output_dtype, use_virtual_tensor);
@@ -149,7 +138,7 @@ static vsi_nn_internal_tensor_t* create_nn_fc
 
     tmp_inode->inputs[0] = input;
     tmp_inode->inputs[1] = reshaped_weight_tensor->t;
-    tmp_inode->inputs[2] = tensor;
+    tmp_inode->inputs[2] = bias;
     tmp_inode->outputs[0] = tensor2->t;
     vsi_nn_internal_setup_node(self, tmp_inode);
 
