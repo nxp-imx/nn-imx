@@ -21,64 +21,32 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#ifndef _VSI_NN_OP_PRE_PROCESS_H
-#define _VSI_NN_OP_PRE_PROCESS_H
+#ifndef _VSI_NN_OP_GRUCELL_ACTIVATION_H
+#define _VSI_NN_OP_GRUCELL_ACTIVATION_H
 
 #include "vsi_nn_types.h"
-#include "vsi_nn_pre_post_process.h"
 
-typedef  vsi_nn_preprocess_source_format_e vsi_nn_pre_process_type_e;
+enum {
+    GRUCELL_ACT_IN_H_STATE    = 0,
+    GRUCELL_ACT_IN_INPUT_FC_H = 1,
+    GRUCELL_ACT_IN_H_T        = 2,
+    GRUCELL_ACT_IN_Z_T        = 3,
 
-enum
-{
-    PRE_PROCESS_INPUT0 = 0,
+    GRUCELL_ACT_IN_CNT,
 
-    PRE_PROCESS_INPUT1,
-    PRE_PROCESS_INPUT2,
+    GRUCELL_ACT_OUT_OUTPUT    = 0,
+    GRUCELL_ACT_OUT_H_STATE   = 1,
 
-    PRE_PROCESS_INPUT_CNT,
-
-    PRE_PROCESS_OUTPUT = 0,
-
-    PRE_PROCESS_OUTPUT_CNT
+    GRUCELL_ACT_OUT_CNT
 };
 
-#define _VSI_NN_PRE_PROCESS_LOCAL_TENSOR_NUM 10
-typedef struct _vsi_nn_pre_process_lcl_data
+typedef struct _vsi_nn_grucell_activation_param
 {
-    vsi_nn_tensor_t *local_tensor[_VSI_NN_PRE_PROCESS_LOCAL_TENSOR_NUM];
-} vsi_nn_pre_process_lcl_data;
+    struct _vsi_nn_grucell_activation_local * local;
 
-typedef struct _vsi_nn_pre_process_param
-{
-    struct
-    {
-        uint32_t left;
-        uint32_t top;
-        uint32_t width;
-        uint32_t height;
-    } rect;
+    vsi_nn_activation_e activation;
+} vsi_nn_grucell_activation_param;
+_compiler_assert(offsetof(vsi_nn_grucell_activation_param, local) == 0, \
+                 vsi_nn_grucell_activation_h );
 
-    struct
-    {
-        vsi_size_t   *size;
-        uint32_t   dim_num;
-    } output_attr;
-
-    uint32_t * perm;
-    uint32_t   dim_num;
-
-    struct
-    {
-        float   mean[3];
-        float   scale;
-    } norm;
-
-    vsi_bool reverse_channel;
-
-    vsi_nn_pre_process_type_e type;
-
-    vsi_nn_pre_process_lcl_data *local;
-} vsi_nn_pre_process_param;
 #endif
-

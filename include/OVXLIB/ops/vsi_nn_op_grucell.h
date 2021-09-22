@@ -21,64 +21,64 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#ifndef _VSI_NN_OP_PRE_PROCESS_H
-#define _VSI_NN_OP_PRE_PROCESS_H
+#ifndef _VSI_NN_OP_GRUCELL_H
+#define _VSI_NN_OP_GRUCELL_H
 
 #include "vsi_nn_types.h"
-#include "vsi_nn_pre_post_process.h"
-
-typedef  vsi_nn_preprocess_source_format_e vsi_nn_pre_process_type_e;
 
 enum
 {
-    PRE_PROCESS_INPUT0 = 0,
+    GRUCELL_GATES_Z = 0,
+    GRUCELL_GATES_R = 1,
+    GRUCELL_GATES_H = 2,
 
-    PRE_PROCESS_INPUT1,
-    PRE_PROCESS_INPUT2,
-
-    PRE_PROCESS_INPUT_CNT,
-
-    PRE_PROCESS_OUTPUT = 0,
-
-    PRE_PROCESS_OUTPUT_CNT
+    GRUCELL_GATE_CNT
 };
 
-#define _VSI_NN_PRE_PROCESS_LOCAL_TENSOR_NUM 10
-typedef struct _vsi_nn_pre_process_lcl_data
+/* Define the inputs and outputs for GRUCell */
+enum
 {
-    vsi_nn_tensor_t *local_tensor[_VSI_NN_PRE_PROCESS_LOCAL_TENSOR_NUM];
-} vsi_nn_pre_process_lcl_data;
+    GRUCELL_IN_INPUT        = 0,
+    GRUCELL_IN_H_STATE      = 1,
 
-typedef struct _vsi_nn_pre_process_param
+    /* input kernel */
+    GRUCELL_IN_KERNEL_I2Z   = 2,
+    GRUCELL_IN_KERNEL_I2R   = 3,
+    GRUCELL_IN_KERNEL_I2H   = 4,
+
+    /* recurrent kernel */
+    GRUCELL_IN_KERNEL_R2Z   = 5,
+    GRUCELL_IN_KERNEL_R2R   = 6,
+    GRUCELL_IN_KERNEL_R2H   = 7,
+
+    /* input bias */
+    GRUCELL_IN_BIAS_I2Z     = 8,
+    GRUCELL_IN_BIAS_I2R     = 9,
+    GRUCELL_IN_BIAS_I2H     = 10,
+
+    /* recurrent bias */
+    GRUCELL_IN_BIAS_R2Z     = 11,
+    GRUCELL_IN_BIAS_R2R     = 12,
+    GRUCELL_IN_BIAS_R2H     = 13,
+
+    GRUCELL_IN_CNT,
+
+    GRUCELL_OUT_OUTPUT      = 0,
+    GRUCELL_OUT_H_STATE     = 1,
+
+    GRUCELL_OUT_CNT
+};
+
+typedef struct _vsi_nn_grucell_param
 {
-    struct
-    {
-        uint32_t left;
-        uint32_t top;
-        uint32_t width;
-        uint32_t height;
-    } rect;
+    struct _vsi_nn_grucell_local * local;
 
-    struct
-    {
-        vsi_size_t   *size;
-        uint32_t   dim_num;
-    } output_attr;
+    uint32_t num_units;
+    vsi_nn_activation_e activation;
+    vsi_nn_activation_e recurrent_activation;
+    vsi_bool reset_after;
+} vsi_nn_grucell_param;
+_compiler_assert(offsetof(vsi_nn_grucell_param, local) == 0, \
+                 vsi_nn_conv1d_h );
 
-    uint32_t * perm;
-    uint32_t   dim_num;
-
-    struct
-    {
-        float   mean[3];
-        float   scale;
-    } norm;
-
-    vsi_bool reverse_channel;
-
-    vsi_nn_pre_process_type_e type;
-
-    vsi_nn_pre_process_lcl_data *local;
-} vsi_nn_pre_process_param;
 #endif
-
