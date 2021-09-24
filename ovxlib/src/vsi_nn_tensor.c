@@ -1251,6 +1251,7 @@ void vsi_nn_SaveTensorToBinary
     fp = fopen( filename, "wb" );
     if( NULL == fp )
     {
+        vsi_nn_safe_free( data );
         VSILOGW( "Write file %s fail. Please check...", filename );
         return;
     }
