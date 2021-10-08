@@ -187,12 +187,20 @@ static vsi_status _query_kernel
 
     if (F16 == in0_dtype)
     {
-        in0_dtype  = F32;
+        in0_dtype = F32;
+    }
+    else if (I16 == in0_dtype)
+    {
+        in0_dtype = I32;
     }
 
     if (F16 == in1_dtype)
     {
-        in1_dtype  = F32;
+        in1_dtype = F32;
+    }
+    else if (I16 == in1_dtype)
+    {
+        in1_dtype = I32;
     }
 
     if (F16 == out_dtype)
