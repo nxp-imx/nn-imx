@@ -1,37 +1,36 @@
 /****************************************************************************
-*
-*    Copyright (c) 2019 Vivante Corporation
-*
-*    Permission is hereby granted, free of charge, to any person obtaining a
-*    copy of this software and associated documentation files (the "Software"),
-*    to deal in the Software without restriction, including without limitation
-*    the rights to use, copy, modify, merge, publish, distribute, sublicense,
-*    and/or sell copies of the Software, and to permit persons to whom the
-*    Software is furnished to do so, subject to the following conditions:
-*
-*    The above copyright notice and this permission notice shall be included in
-*    all copies or substantial portions of the Software.
-*
-*    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-*    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-*    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-*    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-*    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-*    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-*    DEALINGS IN THE SOFTWARE.
-*
-*****************************************************************************/
+ *
+ *    Copyright (c) 2019 Vivante Corporation
+ *
+ *    Permission is hereby granted, free of charge, to any person obtaining a
+ *    copy of this software and associated documentation files (the "Software"),
+ *    to deal in the Software without restriction, including without limitation
+ *    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ *    and/or sell copies of the Software, and to permit persons to whom the
+ *    Software is furnished to do so, subject to the following conditions:
+ *
+ *    The above copyright notice and this permission notice shall be included in
+ *    all copies or substantial portions of the Software.
+ *
+ *    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ *    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ *    DEALINGS IN THE SOFTWARE.
+ *
+ *****************************************************************************/
 
 #pragma once
 
-#include <backendsCommon/CpuTensorHandle.hpp>
+#include <armnnUtils/FloatingPointConverter.hpp>
+#include <backendsCommon/TensorHandle.hpp>
 #include <backendsCommon/Workload.hpp>
 #include <backendsCommon/WorkloadData.hpp>
-#include <iostream>
-#include <armnnUtils/FloatingPointConverter.hpp>
-#include "TNpuWorkloads.hpp"
 
 #include "FakeBiasSelector.hpp"
+#include "TNpuWorkloads.hpp"
 
 namespace armnn {
 
@@ -70,13 +69,17 @@ class NpuConvolution2dWorkload : public TNpuWorkload<Convolution2dQueueDescripto
         // Add filter operand
         const TensorShape& weightShape = m_Weight->GetShape();
         TensorInfo weightInfo = m_Weight->GetTensorInfo();
-        // assert(m_DataLayout == armnn::DataLayout::NHWC);
 
         if (weightInfo.HasPerAxisQuantization()) {
-            // weight format in ArmNN: [O, H, W, I]
-            // weight format in OpenVX: [W, H, I, O]
-            // So (QuantizationDim in ArmNN == 0) equals (QuantizationDim in OpenVX == 3)
-            const unsigned int kWeightQuantizationDim4OpenVX = 3;
+            // convolution weight out channel in armnn is according to data layout,
+            // depthwiseconvolution weight([1, H, W, O]) out channel in armnn is const 3 if layout
+            // in ArmNN is [N, C, H, W], weight will be [O, I, H, W], there is no convert operation
+            // in nnrt, dim=3 if layout in ArmNN is [N, H, W, C], weight will be [O, H, W, I], there
+            // are some convert operation in nnrt(permVal=[0, 3, 1, 2]), dim=0
+            unsigned int kWeightQuantizationDim4OpenVX = 0;
+            if (m_DataLayout == armnn::DataLayout::NCHW) {
+                kWeightQuantizationDim4OpenVX = 3;
+            }
             weightInfo.SetQuantizationDim(
                 armnn::Optional<unsigned int>(kWeightQuantizationDim4OpenVX));
         }
@@ -90,11 +93,11 @@ class NpuConvolution2dWorkload : public TNpuWorkload<Convolution2dQueueDescripto
             const TensorShape biasShape = m_Bias->GetShape();
             if (biasInfo.GetDataType() == DataType::Float16) {
                 biasInfo.SetDataType(DataType::Float32);
-                m_Fp32BiasData.reset(new float[biasInfo.GetNumElements()]);
+                m_Fp32BiasData.resize(biasInfo.GetNumElements());
                 armnnUtils::FloatingPointConverter::ConvertFloat16To32(
-                    m_Bias->GetTensor<Half>(), biasInfo.GetNumElements(), m_Fp32BiasData.get());
+                    m_Bias->GetTensor<Half>(), biasInfo.GetNumElements(), m_Fp32BiasData.data());
                 inputIds[2] =
-                    this->AddOperandAndSetValue(biasInfo, biasShape, m_Fp32BiasData.get());
+                    this->AddOperandAndSetValue(biasInfo, biasShape, m_Fp32BiasData.data());
             } else {
                 inputIds[2] =
                     this->AddOperandAndSetValue(biasInfo, biasShape, m_Bias->GetTensor<void>());
@@ -159,7 +162,6 @@ class NpuConvolution2dWorkload : public TNpuWorkload<Convolution2dQueueDescripto
                 // outputPtr->SetOperandId(outputIds[i]);
             }
         }
-
         this->AddOperation(nnrt::OperationType::CONV_2D, 11, inputIds, outputSize, outputIds);
     }
 
@@ -175,7 +177,7 @@ class NpuConvolution2dWorkload : public TNpuWorkload<Convolution2dQueueDescripto
     armnn::DataLayout m_DataLayout;
 
     std::vector<typename FakeBias::type> m_FakeBiasData;  //!< workaround: bias required by shader
-    mutable boost::scoped_array<float> m_Fp32BiasData;
+    mutable std::vector<float> m_Fp32BiasData;
 };
 using NpuConvolution2dFloat32Workload = NpuConvolution2dWorkload<armnn::DataType::Float32>;
 using NpuConvolution2dFloat16Workload = NpuConvolution2dWorkload<armnn::DataType::Float16>;

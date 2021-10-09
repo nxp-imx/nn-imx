@@ -22,11 +22,9 @@
 *
 *****************************************************************************/
 
-#include <boost/test/unit_test.hpp>
-
 #include "NpuWorkloadFactoryHelper.hpp"
 
-#include <test/TensorHelpers.hpp>
+#include "NpuWorkloadFactory.hpp"
 #include <test/UnitTests.hpp>
 
 // #include <backendsCommon/test/DetectionPostProcessLayerTestImpl.hpp>
@@ -37,12 +35,11 @@
 // #include <backendsCommon/test/PermuteTestImpl.hpp>
 // #include <backendsCommon/test/TransposeConvolution2dTestImpl.hpp>
 
+TEST_SUITE("VSI_NPU")
+{
 using namespace armnn;
 
 using FactoryType = NpuWorkloadFactory;
-
-BOOST_AUTO_TEST_SUITE(VSI_Backend)
-
 // ============================================================================
 // UNIT tests
 
@@ -1845,4 +1842,4 @@ ARMNN_AUTO_TEST_CASE_WITH_THF(MultiChannelTransposeConvolution2dUint8Nhwc,
 // ARMNN_AUTO_TEST_CASE_WITH_THF(StackOutput5D,        StackOutput5DFloat32Test)
 // ARMNN_AUTO_TEST_CASE_WITH_THF(StackFloat16,         StackFloat16Test)
 
-BOOST_AUTO_TEST_SUITE_END()
+}

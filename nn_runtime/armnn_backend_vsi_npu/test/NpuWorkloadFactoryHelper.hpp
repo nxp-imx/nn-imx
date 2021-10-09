@@ -30,9 +30,7 @@
 #include "NpuWorkloadFactory.hpp"
 #include "NpuTensorHandleFactory.hpp"
 
-#include <boost/core/ignore_unused.hpp>
-
-using namespace boost;
+#include <armnn/utility/IgnoreUnused.hpp>
 
 namespace
 {
@@ -49,7 +47,7 @@ struct WorkloadFactoryHelper<armnn::NpuWorkloadFactory>
     static armnn::NpuWorkloadFactory GetFactory(
         const armnn::IBackendInternal::IMemoryManagerSharedPtr& memoryManager)
     {
-        ignore_unused(memoryManager);
+        IgnoreUnused(memoryManager);
         return armnn::NpuWorkloadFactory();
     }
 

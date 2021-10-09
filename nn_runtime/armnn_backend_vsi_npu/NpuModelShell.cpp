@@ -192,9 +192,14 @@ FinalModelPtr MergeModels(const ModelStack& modelStack) {
 
     std::vector<uint32_t> inputIds;
     for (auto& in : modelInputTensors) {
-        inputTensors.push_back(in);
-        inputIds.push_back(addedOperands.find(in)->second);
+        auto operand = model->operand(addedOperands.find(in)->second);
+        if (!operand->isConst()) {
+            // constant operand can never be input of graph
+            inputTensors.push_back(in);
+            inputIds.push_back(addedOperands.find(in)->second);
+        }
     }
+
     std::vector<uint32_t> outputIds;
     for (auto& out : modelOutputTensors) {
         outputTensors.push_back(out);

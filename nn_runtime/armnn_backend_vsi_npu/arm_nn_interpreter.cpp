@@ -32,9 +32,8 @@
 
 #include "arm_nn_interpreter.hpp"
 
-#include <boost/core/ignore_unused.hpp>
+#include <armnn/utility/IgnoreUnused.hpp>
 
-using namespace boost;
 using namespace nnrt;
 using namespace nnrt::op;
 
@@ -354,7 +353,7 @@ void Armnn_Interpreter::truncateOperationIOs(Model* model,
                                             OperationPtr operation,
                                             int32_t input_num,
                                             int32_t output_num) {
-    ignore_unused(model);
+    IgnoreUnused(model);
     // Size - 1 = axis
     input_num = computeAxis(input_num, operation->inputs().size() + 1);
     output_num = computeAxis(output_num, operation->outputs().size() + 1);
@@ -371,8 +370,8 @@ void Armnn_Interpreter::truncateOperationIOs(Model* model,
 #define DECLARE_SAMPLE_OP(NAME, INPUT_NUM, OUTPUT_NUM, OPERATION_TYPE)    \
     OperationPtr Armnn_Interpreter::map_##NAME(                            \
         Model* model, OperationPtr operation, uint32_t operation_index) { \
-        ignore_unused(model);                                             \
-        ignore_unused(operation_index);                                   \
+        IgnoreUnused(model);                                             \
+        IgnoreUnused(operation_index);                                   \
         NNAPI_CHECK_IO_NUM(operation, INPUT_NUM, OUTPUT_NUM);             \
         return std::make_shared<OPERATION_TYPE>();                        \
     }
@@ -380,7 +379,7 @@ void Armnn_Interpreter::truncateOperationIOs(Model* model,
 OperationPtr Armnn_Interpreter::map_ADD(Model* model,
                                        OperationPtr operation,
                                        uint32_t operation_index) {
-    ignore_unused(operation_index);
+    IgnoreUnused(operation_index);
     NNAPI_CHECK_IO_NUM(operation, 2, 1);
     truncateOperationIOs(model, operation, 2, 1);
     return std::make_shared<AddOperation>();
@@ -389,7 +388,7 @@ OperationPtr Armnn_Interpreter::map_ADD(Model* model,
 OperationPtr Armnn_Interpreter::map_SUB(Model* model,
                                        OperationPtr operation,
                                        uint32_t operation_index) {
-    ignore_unused(operation_index);
+    IgnoreUnused(operation_index);
     NNAPI_CHECK_IO_NUM(operation, 2, 1);
     truncateOperationIOs(model, operation, 2, 1);
     return std::make_shared<SubOperation>();
@@ -398,7 +397,7 @@ OperationPtr Armnn_Interpreter::map_SUB(Model* model,
 OperationPtr Armnn_Interpreter::map_DIV(Model* model,
                                        OperationPtr operation,
                                        uint32_t operation_index) {
-    ignore_unused(operation_index);
+    IgnoreUnused(operation_index);
     NNAPI_CHECK_IO_NUM(operation, 2, 1);
     std::shared_ptr<DivOperation> div = std::make_shared<DivOperation>();
     div->setVxParam(OverflowPolicy::SATURATE, RoundingPolicy::RTNE, Rounding::RTNE);
@@ -409,7 +408,7 @@ OperationPtr Armnn_Interpreter::map_DIV(Model* model,
 OperationPtr Armnn_Interpreter::map_CONCATENATION(Model* model,
                                                  OperationPtr operation,
                                                  uint32_t operation_index) {
-    ignore_unused(operation_index);
+    IgnoreUnused(operation_index);
     NNAPI_CHECK_IO_NUM(operation, -1, 1);
     std::shared_ptr<ConcatOperation> concat = std::make_shared<ConcatOperation>();
     NNAPI_CHECK_PTR(concat);
@@ -422,7 +421,7 @@ OperationPtr Armnn_Interpreter::map_CONCATENATION(Model* model,
 OperationPtr Armnn_Interpreter::map_CONV_2D(Model* model,
                                            OperationPtr operation,
                                            uint32_t operation_index) {
-    ignore_unused(operation_index);
+    IgnoreUnused(operation_index);
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
     std::shared_ptr<Conv2DOperation> conv2d = std::make_shared<Conv2DOperation>();
     NNAPI_CHECK_PTR(conv2d);
@@ -453,7 +452,7 @@ OperationPtr Armnn_Interpreter::map_CONV_2D(Model* model,
 OperationPtr Armnn_Interpreter::map_DECONV_2D(Model* model,
                                              OperationPtr operation,
                                              uint32_t operation_index) {
-    ignore_unused(operation_index);
+    IgnoreUnused(operation_index);
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
     std::shared_ptr<Deconv2DOperation> deconv2d = std::make_shared<Deconv2DOperation>();
     NNAPI_CHECK_PTR(deconv2d);
@@ -473,7 +472,7 @@ OperationPtr Armnn_Interpreter::map_DECONV_2D(Model* model,
 OperationPtr Armnn_Interpreter::map_DEPTHWISE_CONV_2D(Model* model,
                                                      OperationPtr operation,
                                                      uint32_t operation_index) {
-    ignore_unused(operation_index);
+    IgnoreUnused(operation_index);
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
     std::shared_ptr<DepthwiseConv2DOperation> conv2d = std::make_shared<DepthwiseConv2DOperation>();
     NNAPI_CHECK_PTR(conv2d);
@@ -496,6 +495,24 @@ OperationPtr Armnn_Interpreter::map_DEPTHWISE_CONV_2D(Model* model,
         conv2d->multiplier = inputs[6]->scalar.int32;
         resetFusedType(model, operation, 7);
     }
+    if (DataLayout::NCHW == conv2d->getDataLayout()) {
+        std::vector<uint32_t> permVal = {0, 3, 1, 2};
+        if (!operand_utils::InsertPermuteBeforeOperand(
+                model, operation, operation->inputs()[1], permVal)) {
+            NNRT_LOGE_PRINT("%s: insert permute failed.", __FUNCTION__);
+            assert(false);
+        }
+        // the channel dim has to be changed as filter's dim order change
+        OperandPtr filterOperand = model->operand(operation->inputs()[1]);
+        if (nullptr != filterOperand) {
+            filterOperand->quant.vec.channelDim =
+                nnrt::op::utils::axisMapTo(permVal, filterOperand->quant.vec.channelDim);
+            filterOperand->quant.vec.channelDim = nnrt::op::utils::convertAxis(
+                static_cast<int32_t>(filterOperand->quant.vec.channelDim),
+                static_cast<int32_t>(filterOperand->ndim()));
+        }
+    }
+
     conv2d->setVxParam(OverflowPolicy::SATURATE, RoundingPolicy::TO_ZERO, Rounding::FLOOR);
     truncateOperationIOs(model, operation, 3, 1);
     return std::dynamic_pointer_cast<Operation>(conv2d);
@@ -504,8 +521,8 @@ OperationPtr Armnn_Interpreter::map_DEPTHWISE_CONV_2D(Model* model,
 OperationPtr Armnn_Interpreter::map_RELU(Model* model,
                                         OperationPtr operation,
                                         uint32_t operation_index) {
-    ignore_unused(model);
-    ignore_unused(operation_index);
+    IgnoreUnused(model);
+    IgnoreUnused(operation_index);
     NNAPI_CHECK_IO_NUM(operation, 1, 1);
     return std::make_shared<ReluOperation>();
 }
@@ -513,7 +530,7 @@ OperationPtr Armnn_Interpreter::map_RELU(Model* model,
 OperationPtr Armnn_Interpreter::map_FULLY_CONNECTED(Model* model,
                                                    OperationPtr operation,
                                                    uint32_t operation_index) {
-    ignore_unused(operation_index);
+    IgnoreUnused(operation_index);
     NNAPI_CHECK_IO_NUM(operation, 4, 1);
     std::shared_ptr<FullyConnectedOperation> fc = std::make_shared<FullyConnectedOperation>();
     NNAPI_CHECK_PTR(fc);
@@ -532,7 +549,7 @@ OperationPtr Armnn_Interpreter::map_FULLY_CONNECTED(Model* model,
 OperationPtr Armnn_Interpreter::map_RESHAPE(Model* model,
                                            OperationPtr operation,
                                            uint32_t operation_index) {
-    ignore_unused(operation_index);
+    IgnoreUnused(operation_index);
     NNAPI_CHECK_IO_NUM(operation, 2, 1);
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
     std::shared_ptr<ReshapeOperation> reshape = std::make_shared<ReshapeOperation>();
@@ -552,7 +569,7 @@ OperationPtr Armnn_Interpreter::map_RESHAPE(Model* model,
 OperationPtr Armnn_Interpreter::map_SOFTMAX(Model* model,
                                            OperationPtr operation,
                                            uint32_t operation_index) {
-    ignore_unused(operation_index);
+    IgnoreUnused(operation_index);
     NNAPI_CHECK_IO_NUM(operation, 3, 1);
     std::shared_ptr<SoftmaxOperation> softmax = std::make_shared<SoftmaxOperation>();
     NNAPI_CHECK_PTR(softmax);
@@ -566,20 +583,24 @@ OperationPtr Armnn_Interpreter::map_SOFTMAX(Model* model,
 OperationPtr Armnn_Interpreter::map_TRANSPOSE(Model* model,
                                              OperationPtr operation,
                                              uint32_t operation_index) {
-    ignore_unused(operation_index);
-    NNAPI_CHECK_IO_NUM(operation, 2, 1);
-    std::shared_ptr<PermuteOperation> permute = std::make_shared<PermuteOperation>();
-    NNAPI_CHECK_PTR(permute);
-    std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
-    fillIntArray(model, operation, permute->perm, 1, false, false);
-    truncateOperationIOs(model, operation, 1, 1);
-    return std::dynamic_pointer_cast<Operation>(permute);
+    if (operation->inputs().size() == 2) {
+        IgnoreUnused(operation_index);
+        // NNAPI_CHECK_IO_NUM(operation, 2, 1);
+        std::shared_ptr<PermuteOperation> permute = std::make_shared<PermuteOperation>();
+        NNAPI_CHECK_PTR(permute);
+        std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
+        fillIntArray(model, operation, permute->perm, 1, false, false);
+        truncateOperationIOs(model, operation, 1, 1);
+        return std::dynamic_pointer_cast<Operation>(permute);
+    } else {
+        return operation;
+    }
 }
 
 OperationPtr Armnn_Interpreter::map_AVERAGE_POOL_2D(Model* model,
                                                    OperationPtr operation,
                                                    uint32_t operation_index) {
-    ignore_unused(operation_index);
+    IgnoreUnused(operation_index);
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
     std::shared_ptr<AveragePool2DOperation> pool = std::make_shared<AveragePool2DOperation>();
     NNAPI_CHECK_PTR(pool);
@@ -607,7 +628,7 @@ OperationPtr Armnn_Interpreter::map_AVERAGE_POOL_2D(Model* model,
 OperationPtr Armnn_Interpreter::map_MAX_POOL_2D(Model* model,
                                                OperationPtr operation,
                                                uint32_t operation_index) {
-    ignore_unused(operation_index);
+    IgnoreUnused(operation_index);
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
     std::shared_ptr<MaxPool2DOperation> pool = std::make_shared<MaxPool2DOperation>();
     NNAPI_CHECK_PTR(pool);
@@ -634,7 +655,7 @@ OperationPtr Armnn_Interpreter::map_MAX_POOL_2D(Model* model,
 OperationPtr Armnn_Interpreter::map_SQUEEZE(Model* model,
                                            OperationPtr operation,
                                            uint32_t operation_index) {
-    ignore_unused(operation_index);
+    IgnoreUnused(operation_index);
     NNAPI_CHECK_IO_NUM(operation, 2, 1);
     std::shared_ptr<SqueezeOperation> squeeze = std::make_shared<SqueezeOperation>();
     NNAPI_CHECK_PTR(squeeze);
@@ -652,7 +673,7 @@ OperationPtr Armnn_Interpreter::map_SQUEEZE(Model* model,
 OperationPtr Armnn_Interpreter::map_PAD(Model* model,
                                        OperationPtr operation,
                                        uint32_t operation_index) {
-    ignore_unused(operation_index);
+    IgnoreUnused(operation_index);
     std::shared_ptr<PadOperation> pad = std::make_shared<PadOperation>();
     NNAPI_CHECK_PTR(pad);
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
@@ -671,7 +692,7 @@ OperationPtr Armnn_Interpreter::map_PAD(Model* model,
 OperationPtr Armnn_Interpreter::map_MUL(Model* model,
                                        OperationPtr operation,
                                        uint32_t operation_index) {
-    ignore_unused(operation_index);
+    IgnoreUnused(operation_index);
     NNAPI_CHECK_IO_NUM(operation, 2, 1);
     std::shared_ptr<MulOperation> mul = std::make_shared<MulOperation>();
     NNAPI_CHECK_PTR(mul);
@@ -683,7 +704,7 @@ OperationPtr Armnn_Interpreter::map_MUL(Model* model,
 OperationPtr Armnn_Interpreter::map_MEAN(Model* model,
                                         OperationPtr operation,
                                         uint32_t operation_index) {
-    ignore_unused(operation_index);
+    IgnoreUnused(operation_index);
     NNAPI_CHECK_IO_NUM(operation, 3, 1);
     std::shared_ptr<ReduceMeanOperation> mean = std::make_shared<ReduceMeanOperation>();
     NNAPI_CHECK_PTR(mean);
@@ -702,7 +723,7 @@ OperationPtr Armnn_Interpreter::map_MEAN(Model* model,
 OperationPtr Armnn_Interpreter::map_SPACE_TO_DEPTH(Model* model,
                                                   OperationPtr operation,
                                                   uint32_t operation_index) {
-    ignore_unused(operation_index);
+    IgnoreUnused(operation_index);
     NNAPI_CHECK_IO_NUM(operation, 3, 1);
     std::shared_ptr<SpaceToDepthOperation> sp_to_dp = std::make_shared<SpaceToDepthOperation>();
     NNAPI_CHECK_PTR(sp_to_dp);
@@ -717,7 +738,7 @@ OperationPtr Armnn_Interpreter::map_SPACE_TO_DEPTH(Model* model,
 OperationPtr Armnn_Interpreter::map_DEPTH_TO_SPACE(Model* model,
                                                   OperationPtr operation,
                                                   uint32_t operation_index) {
-    ignore_unused(operation_index);
+    IgnoreUnused(operation_index);
     NNAPI_CHECK_IO_NUM(operation, 3, 1);
     std::shared_ptr<DepthToSpaceOperation> dp_to_sp = std::make_shared<DepthToSpaceOperation>();
     NNAPI_CHECK_PTR(dp_to_sp);
@@ -731,7 +752,7 @@ OperationPtr Armnn_Interpreter::map_DEPTH_TO_SPACE(Model* model,
 OperationPtr Armnn_Interpreter::map_SPACE_TO_BATCH_ND(Model* model,
                                                      OperationPtr operation,
                                                      uint32_t operation_index) {
-    ignore_unused(operation_index);
+    IgnoreUnused(operation_index);
     NNAPI_CHECK_IO_NUM(operation, 4, 1);
     std::shared_ptr<SpaceToBatchNDOperation> sp_to_bp = std::make_shared<SpaceToBatchNDOperation>();
     NNAPI_CHECK_PTR(sp_to_bp);
@@ -756,7 +777,7 @@ OperationPtr Armnn_Interpreter::map_SPACE_TO_BATCH_ND(Model* model,
 OperationPtr Armnn_Interpreter::map_BATCH_TO_SPACE_ND(Model* model,
                                                      OperationPtr operation,
                                                      uint32_t operation_index) {
-    ignore_unused(operation_index);
+    IgnoreUnused(operation_index);
     NNAPI_CHECK_IO_NUM(operation, 3, 1);
     std::shared_ptr<BatchToSpaceNDOperation> bp_to_sp = std::make_shared<BatchToSpaceNDOperation>();
     NNAPI_CHECK_PTR(bp_to_sp);
@@ -776,7 +797,7 @@ OperationPtr Armnn_Interpreter::map_BATCH_TO_SPACE_ND(Model* model,
 OperationPtr Armnn_Interpreter::map_RESIZE_BILINEAR(Model* model,
                                                    OperationPtr operation,
                                                    uint32_t operation_index) {
-    ignore_unused(operation_index);
+    IgnoreUnused(operation_index);
     NNAPI_CHECK_IO_NUM(operation, 4, 1);
     std::shared_ptr<ResizeBilinearOperation> resize = std::make_shared<ResizeBilinearOperation>();
     NNAPI_CHECK_PTR(resize);
@@ -791,7 +812,7 @@ OperationPtr Armnn_Interpreter::map_RESIZE_BILINEAR(Model* model,
 OperationPtr Armnn_Interpreter::map_RESIZE_NEAREST_NEIGHBOR(Model* model,
                                                             OperationPtr operation,
                                                             uint32_t operation_index) {
-    ignore_unused(operation_index);
+    IgnoreUnused(operation_index);
     NNAPI_CHECK_IO_NUM(operation, 4, 1);
     std::shared_ptr<ResizeNearestNeighborOperation> resize =
         std::make_shared<ResizeNearestNeighborOperation>();
@@ -807,7 +828,7 @@ OperationPtr Armnn_Interpreter::map_RESIZE_NEAREST_NEIGHBOR(Model* model,
 OperationPtr Armnn_Interpreter::map_LOCAL_RESPONSE_NORMALIZATION(Model* model,
                                                                 OperationPtr operation,
                                                                 uint32_t operation_index) {
-    ignore_unused(operation_index);
+    IgnoreUnused(operation_index);
     NNAPI_CHECK_IO_NUM(operation, 8, 1);
     std::shared_ptr<LocalResponseNormOperation> lrn =
         std::make_shared<LocalResponseNormOperation>();
@@ -832,7 +853,7 @@ OperationPtr Armnn_Interpreter::map_LOCAL_RESPONSE_NORMALIZATION(Model* model,
 OperationPtr Armnn_Interpreter::map_RNN(Model* model,
                                        OperationPtr operation,
                                        uint32_t operation_index) {
-    ignore_unused(operation_index);
+    IgnoreUnused(operation_index);
     NNAPI_CHECK_IO_NUM(operation, 6, 2);
     std::shared_ptr<RnnOperation> rnn = std::shared_ptr<RnnOperation>();
     auto inputs = model->getOperands(operation->inputs());
@@ -846,7 +867,7 @@ OperationPtr Armnn_Interpreter::map_RNN(Model* model,
 OperationPtr Armnn_Interpreter::map_LSTM(Model* model,
                                         OperationPtr operation,
                                         uint32_t operation_index) {
-    ignore_unused(operation_index);
+    IgnoreUnused(operation_index);
     std::shared_ptr<LstmUnitOperation> new_op = std::make_shared<LstmUnitOperation>();
     NNAPI_CHECK_PTR(new_op);
 
@@ -876,7 +897,7 @@ OperationPtr Armnn_Interpreter::map_LSTM(Model* model,
 OperationPtr Armnn_Interpreter::map_SVDF(Model* model,
                                         OperationPtr operation,
                                         uint32_t operation_index) {
-    ignore_unused(operation_index);
+    IgnoreUnused(operation_index);
     NNAPI_CHECK_IO_NUM(operation, 7, 2);
     std::shared_ptr<SvdfOperation> new_op = std::make_shared<SvdfOperation>();
     NNAPI_CHECK_PTR(new_op);
@@ -890,7 +911,7 @@ OperationPtr Armnn_Interpreter::map_SVDF(Model* model,
 OperationPtr Armnn_Interpreter::map_LSH_PROJECTION(Model* model,
                                                   OperationPtr operation,
                                                   uint32_t operation_index) {
-    ignore_unused(operation_index);
+    IgnoreUnused(operation_index);
     NNAPI_CHECK_IO_NUM(operation, 4, 1);
     std::shared_ptr<LshProjectionOperation> new_op = std::make_shared<LshProjectionOperation>();
     NNAPI_CHECK_PTR(new_op);
@@ -903,7 +924,7 @@ OperationPtr Armnn_Interpreter::map_LSH_PROJECTION(Model* model,
 OperationPtr Armnn_Interpreter::map_L2_POOL_2D(Model* model,
                                               OperationPtr operation,
                                               uint32_t operation_index) {
-    ignore_unused(operation_index);
+    IgnoreUnused(operation_index);
     std::shared_ptr<L2Pool2DOperation> pool = std::make_shared<L2Pool2DOperation>();
     NNAPI_CHECK_PTR(pool);
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
@@ -931,7 +952,7 @@ OperationPtr Armnn_Interpreter::map_L2_POOL_2D(Model* model,
 OperationPtr Armnn_Interpreter::map_STRIDED_SLICE(Model* model,
                                                  OperationPtr operation,
                                                  uint32_t operation_index) {
-    ignore_unused(operation_index);
+    IgnoreUnused(operation_index);
     NNAPI_CHECK_IO_NUM(operation, 8, 1);
     std::shared_ptr<StridedSliceOperation> new_op = std::make_shared<StridedSliceOperation>();
     NNAPI_CHECK_PTR(new_op);
@@ -953,7 +974,7 @@ OperationPtr Armnn_Interpreter::map_STRIDED_SLICE(Model* model,
 OperationPtr Armnn_Interpreter::map_BATCH_NORM(Model* model,
                                               OperationPtr operation,
                                               uint32_t operation_index) {
-    ignore_unused(operation_index);
+    IgnoreUnused(operation_index);
     NNAPI_CHECK_IO_NUM(operation, 7, 1);
 
     std::shared_ptr<BatchNormalization> new_op = std::make_shared<BatchNormalization>();
@@ -970,7 +991,7 @@ OperationPtr Armnn_Interpreter::map_BATCH_NORM(Model* model,
 OperationPtr Armnn_Interpreter::map_L2_NORMALIZATION(Model* model,
                                                     OperationPtr operation,
                                                     uint32_t operation_index) {
-    ignore_unused(operation_index);
+    IgnoreUnused(operation_index);
     NNAPI_CHECK_IO_NUM(operation, 2, 1);
 
     std::shared_ptr<L2NormOperation> l2_norm = std::make_shared<L2NormOperation>();
@@ -991,7 +1012,7 @@ OperationPtr Armnn_Interpreter::map_L2_NORMALIZATION(Model* model,
 OperationPtr Armnn_Interpreter::map_TANH(Model* model,
                                         OperationPtr operation,
                                         uint32_t operation_index) {
-    ignore_unused(operation_index);
+    IgnoreUnused(operation_index);
     NNAPI_CHECK_IO_NUM(operation, 3, 1);
 
     std::shared_ptr<TanhOperation> tanh = std::make_shared<TanhOperation>();
@@ -1008,7 +1029,7 @@ OperationPtr Armnn_Interpreter::map_TANH(Model* model,
 OperationPtr Armnn_Interpreter::map_LEAKY_RELU(Model* model,
                                               OperationPtr operation,
                                               uint32_t operation_index) {
-    ignore_unused(operation_index);
+    IgnoreUnused(operation_index);
     NNAPI_CHECK_IO_NUM(operation, 2, 1);
 
     std::shared_ptr<LeakyReluOperation> leaky_relu = std::make_shared<LeakyReluOperation>();
@@ -1024,7 +1045,7 @@ OperationPtr Armnn_Interpreter::map_LEAKY_RELU(Model* model,
 OperationPtr Armnn_Interpreter::map_SPLIT(Model* model,
                                           OperationPtr operation,
                                           uint32_t operation_index) {
-    ignore_unused(operation_index);
+    IgnoreUnused(operation_index);
     std::shared_ptr<SplitOperation> op = std::make_shared<SplitOperation>();
     NNAPI_CHECK_PTR(op);
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
@@ -1040,7 +1061,7 @@ OperationPtr Armnn_Interpreter::map_SPLIT(Model* model,
 OperationPtr Armnn_Interpreter::map_GATHER(Model* model,
                                           OperationPtr operation,
                                           uint32_t operation_index) {
-    ignore_unused(operation_index);
+    IgnoreUnused(operation_index);
     NNAPI_CHECK_IO_NUM(operation, 2, 1);
     // ARMNN no axis
     std::shared_ptr<GatherOperation> op = std::make_shared<GatherOperation>();
@@ -1054,7 +1075,7 @@ OperationPtr Armnn_Interpreter::map_GATHER(Model* model,
 OperationPtr Armnn_Interpreter::map_INSTANCE_NORMALIZATION(Model* model,
                                               OperationPtr operation,
                                               uint32_t operation_index) {
-    ignore_unused(operation_index);
+    IgnoreUnused(operation_index);
     NNAPI_CHECK_IO_NUM(operation, 5, 1);
     std::vector<OperandPtr> inputs = model->getOperands(operation->inputs());
     OperationPtr op;
@@ -1156,7 +1177,7 @@ OperationPtr Armnn_Interpreter::map_INSTANCE_NORMALIZATION(Model* model,
 OperationPtr Armnn_Interpreter::map_DETECTION_POSTPROCESSING(Model* model,
                                                             OperationPtr operation,
                                                             uint32_t operation_index) {
-    ignore_unused(operation_index);
+    IgnoreUnused(operation_index);
     std::shared_ptr<DetectionPostprocessingOperation> op =
         std::make_shared<DetectionPostprocessingOperation>();
     NNAPI_CHECK_PTR(op);
@@ -1181,7 +1202,7 @@ OperationPtr Armnn_Interpreter::map_DETECTION_POSTPROCESSING(Model* model,
 OperationPtr Armnn_Interpreter::map_ARGMAX(Model* model,
                                            OperationPtr operation,
                                            uint32_t operation_index) {
-    ignore_unused(operation_index);
+    IgnoreUnused(operation_index);
     NNAPI_CHECK_IO_NUM(operation, 2, 1);
     std::shared_ptr<ArgmaxOperation> op = std::make_shared<ArgmaxOperation>();
     NNAPI_CHECK_PTR(op);
@@ -1194,7 +1215,7 @@ OperationPtr Armnn_Interpreter::map_ARGMAX(Model* model,
 OperationPtr Armnn_Interpreter::map_ARGMIN(Model* model,
                                            OperationPtr operation,
                                            uint32_t operation_index) {
-    ignore_unused(operation_index);
+    IgnoreUnused(operation_index);
     NNAPI_CHECK_IO_NUM(operation, 2, 1);
     std::shared_ptr<ArgminOperation> op = std::make_shared<ArgminOperation>();
     NNAPI_CHECK_PTR(op);
@@ -1207,7 +1228,7 @@ OperationPtr Armnn_Interpreter::map_ARGMIN(Model* model,
 OperationPtr Armnn_Interpreter::map_LOG_SOFTMAX(Model* model,
                                            OperationPtr operation,
                                            uint32_t operation_index) {
-    ignore_unused(operation_index);
+    IgnoreUnused(operation_index);
     NNAPI_CHECK_IO_NUM(operation, 3, 1);
     std::shared_ptr<LogSoftmaxOperation> logSoftmax = std::make_shared<LogSoftmaxOperation>();
     NNAPI_CHECK_PTR(logSoftmax);
@@ -1221,7 +1242,7 @@ OperationPtr Armnn_Interpreter::map_LOG_SOFTMAX(Model* model,
 OperationPtr Armnn_Interpreter::map_SLICE(Model* model,
                                                  OperationPtr operation,
                                                  uint32_t operation_index) {
-    ignore_unused(operation_index);
+    IgnoreUnused(operation_index);
     NNAPI_CHECK_IO_NUM(operation, 3, 1);
     std::shared_ptr<SliceOperation> new_op = std::make_shared<SliceOperation>();
     NNAPI_CHECK_PTR(new_op);

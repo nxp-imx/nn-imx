@@ -24,10 +24,9 @@
 
 #pragma once
 
-#include <backendsCommon/CpuTensorHandle.hpp>
+#include <backendsCommon/TensorHandle.hpp>
 #include <backendsCommon/Workload.hpp>
 #include <backendsCommon/WorkloadData.hpp>
-#include <iostream>
 #include "TNpuWorkloads.hpp"
 
 namespace armnn {
@@ -50,4 +49,5 @@ class NpuConstantWorkload : public TNpuWorkload<ConstantQueueDescriptor, DataTyp
 using NpuConstantFloat32Workload = NpuConstantWorkload<armnn::DataType::Float32>;
 using NpuConstantFloat16Workload = NpuConstantWorkload<armnn::DataType::Float16>;
 using NpuConstantUint8Workload = NpuConstantWorkload<armnn::DataType::QAsymmU8>;
+using NpuConstantInt32Workload = NpuConstantWorkload<armnn::DataType::Signed32>;
 }  // namespace armnn

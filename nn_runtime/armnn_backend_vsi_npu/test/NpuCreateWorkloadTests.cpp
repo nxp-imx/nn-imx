@@ -24,7 +24,7 @@
 
 #include <test/CreateWorkload.hpp>
 #include <NpuWorkloadFactory.hpp>
-#include <backendsCommon/CpuTensorHandle.hpp>
+#include <backendsCommon/TensorHandle.hpp>
 
 #include "workloads/NpuActivationWorkload.hpp"
 #include "workloads/NpuBatchNormalizationWorkload.hpp"
@@ -39,6 +39,8 @@
 #include "workloads/NpuSoftmaxWorkload.hpp"
 #include "workloads/NpuDepthWiseConvolution2dWorkload.hpp"
 
+#include <doctest/doctest.h>
+
 using FactoryType = NpuWorkloadFactory;
 
 namespace {
@@ -51,8 +53,8 @@ void CheckInputOutput(std::unique_ptr<Workload> workload,
     auto inputHandle = PolymorphicDowncast<NpuTensorHandler*>(queueDescriptor.m_Inputs[0]);
     auto outputHandle =
         PolymorphicDowncast<NpuTensorHandler*>(queueDescriptor.m_Outputs[0]);
-    BOOST_TEST((inputHandle->GetTensorInfo() == inputInfo));
-    BOOST_TEST((outputHandle->GetTensorInfo() == outputInfo));
+    CHECK((inputHandle->GetTensorInfo() == inputInfo));
+    CHECK((outputHandle->GetTensorInfo() == outputInfo));
 }
 
 template <typename Workload>
@@ -65,14 +67,14 @@ void CheckInputsOutput(std::unique_ptr<Workload> workload,
     auto inputHandle1 = PolymorphicDowncast<NpuTensorHandler*>(queueDescriptor.m_Inputs[1]);
     auto outputHandle =
         PolymorphicDowncast<NpuTensorHandler*>(queueDescriptor.m_Outputs[0]);
-    BOOST_TEST((inputHandle0->GetTensorInfo() == inputInfo0));
-    BOOST_TEST((inputHandle1->GetTensorInfo() == inputInfo1));
-    BOOST_TEST((outputHandle->GetTensorInfo() == outputInfo));
+    CHECK((inputHandle0->GetTensorInfo() == inputInfo0));
+    CHECK((inputHandle1->GetTensorInfo() == inputInfo1));
+    CHECK((outputHandle->GetTensorInfo() == outputInfo));
 }
 }
 
-BOOST_AUTO_TEST_SUITE(VSI_Backend)
-
+TEST_SUITE("VSINPU_CreateWorkload")
+{
 template <typename ActivationWorkloadType, armnn::DataType DataType>
 static void NpuCreateActivationWorkloadTest() {
     Graph graph;
@@ -84,11 +86,11 @@ static void NpuCreateActivationWorkloadTest() {
         std::move(workload), TensorInfo({1, 1}, DataType), TensorInfo({1, 1}, DataType));
 }
 
-BOOST_AUTO_TEST_CASE(CreateActivationFloat32Workload) {
+TEST_CASE("CreateActivationFloat32Workload") {
     NpuCreateActivationWorkloadTest<NpuActivationFloat32Workload, armnn::DataType::Float32>();
 }
 
-BOOST_AUTO_TEST_CASE(CreateActivationUint8Workload) {
+TEST_CASE("CreateActivationUint8Workload") {
     NpuCreateActivationWorkloadTest<NpuActivationUint8Workload, armnn::DataType::QAsymmU8>();
 }
 
@@ -109,21 +111,21 @@ static void NpuCreateElementwiseWorkloadTest() {
                       TensorInfo({2, 3}, DataType));
 }
 
-BOOST_AUTO_TEST_CASE(CreateAdditionFloatWorkload) {
+TEST_CASE("CreateAdditionFloatWorkload") {
     NpuCreateElementwiseWorkloadTest<NpuAdditionFloat32Workload,
                                      AdditionQueueDescriptor,
                                      AdditionLayer,
                                      armnn::DataType::Float32>();
 }
 
-BOOST_AUTO_TEST_CASE(CreateAdditionUint8Workload) {
+TEST_CASE("CreateAdditionUint8Workload") {
     NpuCreateElementwiseWorkloadTest<NpuAdditionUint8Workload,
                                      AdditionQueueDescriptor,
                                      AdditionLayer,
                                      armnn::DataType::QAsymmU8>();
 }
 
-// BOOST_AUTO_TEST_CASE(CreateAdditionInt16Workload)
+// TEST_CASE("CreateAdditionInt16Workload")
 // {
 //     RefCreateElementwiseWorkloadTest<RefAdditionWorkload,
 //         AdditionQueueDescriptor,
@@ -131,21 +133,21 @@ BOOST_AUTO_TEST_CASE(CreateAdditionUint8Workload) {
 //         armnn::DataType::QSymmS16>();
 // }
 
-BOOST_AUTO_TEST_CASE(CreateSubtractionFloatWorkload) {
+TEST_CASE("CreateSubtractionFloatWorkload") {
     NpuCreateElementwiseWorkloadTest<NpuSubtractionFloat32Workload,
                                      SubtractionQueueDescriptor,
                                      SubtractionLayer,
                                      armnn::DataType::Float32>();
 }
 
-BOOST_AUTO_TEST_CASE(CreateSubtractionUint8Workload) {
+TEST_CASE("CreateSubtractionUint8Workload") {
     NpuCreateElementwiseWorkloadTest<NpuSubtractionUint8Workload,
                                      SubtractionQueueDescriptor,
                                      SubtractionLayer,
                                      armnn::DataType::QAsymmU8>();
 }
 
-// BOOST_AUTO_TEST_CASE(CreateSubtractionInt16Workload)
+// TEST_CASE("CreateSubtractionInt16Workload")
 // {
 //     RefCreateElementwiseWorkloadTest<RefSubtractionWorkload,
 //         SubtractionQueueDescriptor,
@@ -153,21 +155,21 @@ BOOST_AUTO_TEST_CASE(CreateSubtractionUint8Workload) {
 //         armnn::DataType::QSymmS16>();
 // }
 
-BOOST_AUTO_TEST_CASE(CreateMultiplicationFloatWorkload) {
+TEST_CASE("CreateMultiplicationFloatWorkload") {
     NpuCreateElementwiseWorkloadTest<NpuMultiplicationFloat32Workload,
                                      MultiplicationQueueDescriptor,
                                      MultiplicationLayer,
                                      armnn::DataType::Float32>();
 }
 
-BOOST_AUTO_TEST_CASE(CreateMultiplicationUint8Workload) {
+TEST_CASE("CreateMultiplicationUint8Workload") {
     NpuCreateElementwiseWorkloadTest<NpuMultiplicationUint8Workload,
                                      MultiplicationQueueDescriptor,
                                      MultiplicationLayer,
                                      armnn::DataType::QAsymmU8>();
 }
 
-// BOOST_AUTO_TEST_CASE(CreateMultiplicationInt16Workload)
+// TEST_CASE("CreateMultiplicationInt16Workload")
 // {
 //     RefCreateElementwiseWorkloadTest<RefMultiplicationWorkload,
 //         MultiplicationQueueDescriptor,
@@ -175,21 +177,21 @@ BOOST_AUTO_TEST_CASE(CreateMultiplicationUint8Workload) {
 //         armnn::DataType::QSymmS16>();
 // }
 
-BOOST_AUTO_TEST_CASE(CreateDivisionFloatWorkload) {
+TEST_CASE("CreateDivisionFloatWorkload") {
     NpuCreateElementwiseWorkloadTest<NpuDivisionFloat32Workload,
                                      DivisionQueueDescriptor,
                                      DivisionLayer,
                                      armnn::DataType::Float32>();
 }
 
-BOOST_AUTO_TEST_CASE(CreateDivisionUint8Workload) {
+TEST_CASE("CreateDivisionUint8Workload") {
     NpuCreateElementwiseWorkloadTest<NpuDivisionUint8Workload,
                                      DivisionQueueDescriptor,
                                      DivisionLayer,
                                      armnn::DataType::QAsymmU8>();
 }
 
-// BOOST_AUTO_TEST_CASE(CreateDivisionInt16Workload)
+// TEST_CASE("CreateDivisionInt16Workload")
 // {
 //     RefCreateElementwiseWorkloadTest<RefDivisionWorkload,
 //         DivisionQueueDescriptor,
@@ -225,41 +227,41 @@ static void NpuCreateBatchNormalizationWorkloadTest(DataLayout dataLayout) {
         std::move(workload), TensorInfo(inputShape, DataType), TensorInfo(outputShape, DataType));
 }
 
-BOOST_AUTO_TEST_CASE(CreateBatchNormalizationFloat32Workload) {
+TEST_CASE("CreateBatchNormalizationFloat32Workload") {
     NpuCreateBatchNormalizationWorkloadTest<NpuBatchNormalizationFloat32Workload,
                                             armnn::DataType::Float32>(DataLayout::NCHW);
 }
 
-BOOST_AUTO_TEST_CASE(CreateBatchNormalizationFloat32WorkloadNhwc) {
+TEST_CASE("CreateBatchNormalizationFloat32WorkloadNhwc") {
     NpuCreateBatchNormalizationWorkloadTest<NpuBatchNormalizationFloat32Workload,
                                             armnn::DataType::Float32>(DataLayout::NHWC);
 }
 
-BOOST_AUTO_TEST_CASE(CreateBatchNormalizationUint8Workload) {
+TEST_CASE("CreateBatchNormalizationUint8Workload") {
     NpuCreateBatchNormalizationWorkloadTest<NpuBatchNormalizationUint8Workload,
                                             armnn::DataType::QAsymmU8>(DataLayout::NCHW);
 }
 
-BOOST_AUTO_TEST_CASE(CreateBatchNormalizationUint8WorkloadNhwc) {
+TEST_CASE("CreateBatchNormalizationUint8WorkloadNhwc") {
     NpuCreateBatchNormalizationWorkloadTest<NpuBatchNormalizationUint8Workload,
                                             armnn::DataType::QAsymmU8>(DataLayout::NHWC);
 }
 
-// BOOST_AUTO_TEST_CASE(CreateBatchNormalizationInt16Workload)
+// TEST_CASE("CreateBatchNormalizationInt16Workload")
 // {
 //     RefCreateBatchNormalizationWorkloadTest<RefBatchNormalizationWorkload,
 //     armnn::DataType::QSymmS16>
 //             (DataLayout::NCHW);
 // }
 
-// BOOST_AUTO_TEST_CASE(CreateBatchNormalizationInt16WorkloadNhwc)
+// TEST_CASE("CreateBatchNormalizationInt16WorkloadNhwc")
 // {
 //     RefCreateBatchNormalizationWorkloadTest<RefBatchNormalizationWorkload,
 //     armnn::DataType::QSymmS16>
 //             (DataLayout::NHWC);
 // }
 
-// BOOST_AUTO_TEST_CASE(CreateConvertFp16ToFp32Float32Workload)
+// TEST_CASE("CreateConvertFp16ToFp32Float32Workload")
 // {
 //     Graph                graph;
 //     NpuWorkloadFactory factory;
@@ -272,7 +274,7 @@ BOOST_AUTO_TEST_CASE(CreateBatchNormalizationUint8WorkloadNhwc) {
 //         3}, DataType::Float32));
 // }
 
-// BOOST_AUTO_TEST_CASE(CreateConvertFp32ToFp16Float16Workload)
+// TEST_CASE("CreateConvertFp32ToFp16Float16Workload")
 // {
 //     Graph                graph;
 //     NpuWorkloadFactory factory;
@@ -306,11 +308,11 @@ static void NpuCreateConvolution2dWorkloadTest(DataLayout dataLayout = DataLayou
                      TensorInfo(outputShape, DataType::Float32));
 }
 
-BOOST_AUTO_TEST_CASE(CreateConvolution2dFloatNchwWorkload) {
+TEST_CASE("CreateConvolution2dFloatNchwWorkload") {
     NpuCreateConvolution2dWorkloadTest(DataLayout::NCHW);
 }
 
-BOOST_AUTO_TEST_CASE(CreateConvolution2dFloatNhwcWorkload) {
+TEST_CASE("CreateConvolution2dFloatNhwcWorkload") {
     NpuCreateConvolution2dWorkloadTest(DataLayout::NHWC);
 }
 
@@ -339,7 +341,7 @@ static void NpuCreateDepthwiseConvolutionWorkloadTest(DataLayout dataLayout)
                      TensorInfo(outputShape, DataType::Float32));
 }
 
-BOOST_AUTO_TEST_CASE(CreateDepthwiseConvolutionFloat32NhwcWorkload)
+TEST_CASE("CreateDepthwiseConvolutionFloat32NhwcWorkload")
 {
     NpuCreateDepthwiseConvolutionWorkloadTest(DataLayout::NHWC);
 }
@@ -361,18 +363,18 @@ static void NpuCreateFullyConnectedWorkloadTest()
         TensorInfo({ 3, 7 }, DataType, outputQScale));
 }
 
-BOOST_AUTO_TEST_CASE(CreateFullyConnectedWorkloadFloat32)
+TEST_CASE("CreateFullyConnectedWorkloadFloat32")
 {
     NpuCreateFullyConnectedWorkloadTest<NpuFullyConnectedFloat32Workload, armnn::DataType::Float32>();
 }
 
-BOOST_AUTO_TEST_CASE(CreateFullyConnectedWorkloadQAsymmU8)
+TEST_CASE("CreateFullyConnectedWorkloadQAsymmU8")
 {
     NpuCreateFullyConnectedWorkloadTest<NpuFullyConnectedUint8Workload,
     armnn::DataType::QAsymmU8>();
 }
 
-// BOOST_AUTO_TEST_CASE(CreateFullyConnectedWorkloadQuantisedAsymm16)
+// TEST_CASE("CreateFullyConnectedWorkloadQuantisedAsymm16")
 // {
 //     RefCreateFullyConnectedWorkloadTest<RefFullyConnectedWorkload,
 //     armnn::DataType::QSymmS16>();
@@ -408,37 +410,37 @@ static void NpuCreateNormalizationWorkloadTest(DataLayout dataLayout)
     TensorInfo(outputShape, DataType));
 }
 
-BOOST_AUTO_TEST_CASE(CreateRefNormalizationFloat32NchwWorkload)
+TEST_CASE("CreateRefNormalizationFloat32NchwWorkload")
 {
     NpuCreateNormalizationWorkloadTest<NpuNormalizationFloat32Workload,
     armnn::DataType::Float32>(DataLayout::NCHW);
 }
 
-BOOST_AUTO_TEST_CASE(CreateRefNormalizationFloat32NhwcWorkload)
+TEST_CASE("CreateRefNormalizationFloat32NhwcWorkload")
 {
     NpuCreateNormalizationWorkloadTest<NpuNormalizationFloat32Workload,
     armnn::DataType::Float32>(DataLayout::NHWC);
 }
 
-BOOST_AUTO_TEST_CASE(CreateRefNormalizationUint8NchwWorkload)
+TEST_CASE("CreateRefNormalizationUint8NchwWorkload")
 {
     NpuCreateNormalizationWorkloadTest<NpuNormalizationUint8Workload,
     armnn::DataType::QAsymmU8>(DataLayout::NCHW);
 }
 
-BOOST_AUTO_TEST_CASE(CreateRefNormalizationUint8NhwcWorkload)
+TEST_CASE("CreateRefNormalizationUint8NhwcWorkload")
 {
     NpuCreateNormalizationWorkloadTest<NpuNormalizationUint8Workload,
     armnn::DataType::QAsymmU8>(DataLayout::NHWC);
 }
 
-// BOOST_AUTO_TEST_CASE(CreateRefNormalizationInt16NchwWorkload)
+// TEST_CASE("CreateRefNormalizationInt16NchwWorkload")
 // {
 //     RefCreateNormalizationWorkloadTest<RefNormalizationWorkload,
 //     armnn::DataType::QSymmS16>(DataLayout::NCHW);
 // }
 
-// BOOST_AUTO_TEST_CASE(CreateRefNormalizationInt16NhwcWorkload)
+// TEST_CASE("CreateRefNormalizationInt16NhwcWorkload")
 // {
 //     RefCreateNormalizationWorkloadTest<RefNormalizationWorkload,
 //     armnn::DataType::QSymmS16>(DataLayout::NHWC);
@@ -474,37 +476,37 @@ static void NpuCreatePooling2dWorkloadTest(DataLayout dataLayout)
                      TensorInfo(outputShape, DataType));
 }
 
-BOOST_AUTO_TEST_CASE(CreatePooling2dFloat32Workload)
+TEST_CASE("CreatePooling2dFloat32Workload")
 {
     NpuCreatePooling2dWorkloadTest<NpuPooling2dFloat32Workload,
     armnn::DataType::Float32>(DataLayout::NCHW);
 }
 
-BOOST_AUTO_TEST_CASE(CreatePooling2dFloat32NhwcWorkload)
+TEST_CASE("CreatePooling2dFloat32NhwcWorkload")
 {
     NpuCreatePooling2dWorkloadTest<NpuPooling2dFloat32Workload,
     armnn::DataType::Float32>(DataLayout::NHWC);
 }
 
-BOOST_AUTO_TEST_CASE(CreatePooling2dUint8Workload)
+TEST_CASE("CreatePooling2dUint8Workload")
 {
     NpuCreatePooling2dWorkloadTest<NpuPooling2dUint8Workload,
     armnn::DataType::QAsymmU8>(DataLayout::NCHW);
 }
 
-BOOST_AUTO_TEST_CASE(CreatePooling2dUint8NhwcWorkload)
+TEST_CASE("CreatePooling2dUint8NhwcWorkload")
 {
     NpuCreatePooling2dWorkloadTest<NpuPooling2dUint8Workload,
     armnn::DataType::QAsymmU8>(DataLayout::NHWC);
 }
 
-// BOOST_AUTO_TEST_CASE(CreatePooling2dInt16Workload)
+// TEST_CASE("CreatePooling2dInt16Workload")
 // {
 //     RefCreatePooling2dWorkloadTest<RefPooling2dWorkload,
 //     armnn::DataType::QSymmS16>(DataLayout::NCHW);
 // }
 
-// BOOST_AUTO_TEST_CASE(CreatePooling2dInt16NhwcWorkload)
+// TEST_CASE("CreatePooling2dInt16NhwcWorkload")
 // {
 //     RefCreatePooling2dWorkloadTest<RefPooling2dWorkload,
 //     armnn::DataType::QSymmS16>(DataLayout::NHWC);
@@ -536,17 +538,17 @@ static void NpuCreateSoftmaxWorkloadTest()
         tensorInfo);
 }
 
-BOOST_AUTO_TEST_CASE(CreateSoftmaxFloat32Workload)
+TEST_CASE("CreateSoftmaxFloat32Workload")
 {
     NpuCreateSoftmaxWorkloadTest<NpuSoftmaxFloat32Workload, armnn::DataType::Float32>();
 }
 
-BOOST_AUTO_TEST_CASE(CreateSoftmaxQAsymmU8Workload)
+TEST_CASE("CreateSoftmaxQAsymmU8Workload")
 {
     NpuCreateSoftmaxWorkloadTest<NpuSoftmaxUint8Workload, armnn::DataType::QAsymmU8>();
 }
 
-// BOOST_AUTO_TEST_CASE(CreateSoftmaxQSymmS16Workload)
+// TEST_CASE("CreateSoftmaxQSymmS16Workload")
 // {
 //     RefCreateSoftmaxWorkloadTest<RefSoftmaxWorkload, armnn::DataType::QSymmS16>();
 // }
@@ -562,27 +564,27 @@ BOOST_AUTO_TEST_CASE(CreateSoftmaxQAsymmU8Workload)
 //     SplitterQueueDescriptor queueDescriptor = workload->GetData();
 //     auto inputHandle =
 //     PolymorphicDowncast<ConstCpuTensorHandle*>(queueDescriptor.m_Inputs[0]);
-//     BOOST_TEST((inputHandle->GetTensorInfo() == TensorInfo({ 5, 7, 7 }, DataType)));
+//     CHECK((inputHandle->GetTensorInfo() == TensorInfo({ 5, 7, 7 }, DataType)));
 
 //     auto outputHandle0 =
 //     PolymorphicDowncast<CpuTensorHandle*>(queueDescriptor.m_Outputs[0]);
-//     BOOST_TEST((outputHandle0->GetTensorInfo() == TensorInfo({ 1, 7, 7 }, DataType)));
+//     CHECK((outputHandle0->GetTensorInfo() == TensorInfo({ 1, 7, 7 }, DataType)));
 
 //     auto outputHandle1 =
 //     PolymorphicDowncast<CpuTensorHandle*>(queueDescriptor.m_Outputs[1]);
-//     BOOST_TEST((outputHandle1->GetTensorInfo() == TensorInfo({ 2, 7, 7 }, DataType)));
+//     CHECK((outputHandle1->GetTensorInfo() == TensorInfo({ 2, 7, 7 }, DataType)));
 
 //     auto outputHandle2 =
 //     PolymorphicDowncast<CpuTensorHandle*>(queueDescriptor.m_Outputs[2]);
-//     BOOST_TEST((outputHandle2->GetTensorInfo() == TensorInfo({ 2, 7, 7 }, DataType)));
+//     CHECK((outputHandle2->GetTensorInfo() == TensorInfo({ 2, 7, 7 }, DataType)));
 // }
 
-// BOOST_AUTO_TEST_CASE(CreateSplitterFloat32Workload)
+// TEST_CASE("CreateSplitterFloat32Workload")
 // {
 //     RefCreateSplitterWorkloadTest<RefSplitterWorkload, armnn::DataType::Float32>();
 // }
 
-// BOOST_AUTO_TEST_CASE(CreateSplitterUint8Workload)
+// TEST_CASE("CreateSplitterUint8Workload")
 // {
 //     RefCreateSplitterWorkloadTest<RefSplitterWorkload, armnn::DataType::QAsymmU8>();
 // }
@@ -617,23 +619,23 @@ BOOST_AUTO_TEST_CASE(CreateSoftmaxQAsymmU8Workload)
 //     armnn::CpuTensorHandle* mIn1 =
 //     dynamic_cast<armnn::CpuTensorHandle*>(wlConcat->GetData().m_Inputs[1]);
 
-//     BOOST_TEST(sOut0);
-//     BOOST_TEST(sOut1);
-//     BOOST_TEST(mIn0);
-//     BOOST_TEST(mIn1);
+//     CHECK(sOut0);
+//     CHECK(sOut1);
+//     CHECK(mIn0);
+//     CHECK(mIn1);
 
 //     bool validDataPointers = (sOut0 == mIn1) && (sOut1 == mIn0);
 
-//     BOOST_TEST(validDataPointers);
+//     CHECK(validDataPointers);
 // }
 
-// BOOST_AUTO_TEST_CASE(CreateSplitterConcatFloat32)
+// TEST_CASE("CreateSplitterConcatFloat32")
 // {
 //     RefCreateSplitterConcatWorkloadTest<RefSplitterWorkload, RefConcatWorkload,
 //     DataType::Float32>();
 // }
 
-// BOOST_AUTO_TEST_CASE(CreateSplitterConcatUint8)
+// TEST_CASE("CreateSplitterConcatUint8")
 // {
 //     RefCreateSplitterConcatWorkloadTest<RefSplitterWorkload, RefConcatWorkload,
 //     DataType::QAsymmU8>();
@@ -673,26 +675,26 @@ BOOST_AUTO_TEST_CASE(CreateSoftmaxQAsymmU8Workload)
 //     armnn::CpuTensorHandle* activ1_1Im =
 //     dynamic_cast<armnn::CpuTensorHandle*>(wlActiv1_1->GetData().m_Inputs[0]);
 
-//     BOOST_TEST(sOut0);
-//     BOOST_TEST(sOut1);
-//     BOOST_TEST(activ0_0Im);
-//     BOOST_TEST(activ0_1Im);
-//     BOOST_TEST(activ1_0Im);
-//     BOOST_TEST(activ1_1Im);
+//     CHECK(sOut0);
+//     CHECK(sOut1);
+//     CHECK(activ0_0Im);
+//     CHECK(activ0_1Im);
+//     CHECK(activ1_0Im);
+//     CHECK(activ1_1Im);
 
 //     bool validDataPointers = (sOut0 == activ0_0Im) && (sOut0 == activ0_1Im) &&
 //                              (sOut1 == activ1_0Im) && (sOut1 == activ1_1Im);
 
-//     BOOST_TEST(validDataPointers);
+//     CHECK(validDataPointers);
 // }
 
-// BOOST_AUTO_TEST_CASE(CreateSingleOutputMultipleInputsFloat32)
+// TEST_CASE("CreateSingleOutputMultipleInputsFloat32")
 // {
 //     RefCreateSingleOutputMultipleInputsTest<RefSplitterWorkload, RefActivationWorkload,
 //         armnn::DataType::Float32>();
 // }
 
-// BOOST_AUTO_TEST_CASE(CreateSingleOutputMultipleInputsUint8)
+// TEST_CASE("CreateSingleOutputMultipleInputsUint8")
 // {
 //     RefCreateSingleOutputMultipleInputsTest<RefSplitterWorkload, RefActivationWorkload,
 //         armnn::DataType::QAsymmU8>();
@@ -728,25 +730,25 @@ BOOST_AUTO_TEST_CASE(CreateSoftmaxQAsymmU8Workload)
 //                      TensorInfo(outputShape, DataType));
 // }
 
-// BOOST_AUTO_TEST_CASE(CreateResizeBilinearFloat32)
+// TEST_CASE("CreateResizeBilinearFloat32")
 // {
 //     RefCreateResizeBilinearTest<RefResizeBilinearWorkload,
 //     armnn::DataType::Float32>(DataLayout::NCHW);
 // }
 
-// BOOST_AUTO_TEST_CASE(CreateResizeBilinearUint8)
+// TEST_CASE("CreateResizeBilinearUint8")
 // {
 //     RefCreateResizeBilinearTest<RefResizeBilinearWorkload,
 //     armnn::DataType::QAsymmU8>(DataLayout::NCHW);
 // }
 
-// BOOST_AUTO_TEST_CASE(CreateResizeBilinearQuantisedAsymm16)
+// TEST_CASE("CreateResizeBilinearQuantisedAsymm16")
 // {
 //     RefCreateResizeBilinearTest<RefResizeBilinearWorkload,
 //     armnn::DataType::QSymmS16>(DataLayout::NCHW);
 // }
 
-// BOOST_AUTO_TEST_CASE(CreateResizeBilinearFloat32Nhwc)
+// TEST_CASE("CreateResizeBilinearFloat32Nhwc")
 // {
 //     RefCreateResizeBilinearTest<RefResizeBilinearWorkload,
 //     armnn::DataType::Float32>(DataLayout::NHWC);
@@ -767,17 +769,17 @@ BOOST_AUTO_TEST_CASE(CreateSoftmaxQAsymmU8Workload)
 
 // }
 
-// BOOST_AUTO_TEST_CASE(CreateRsqrtFloat32)
+// TEST_CASE("CreateRsqrtFloat32")
 // {
 //     NpuCreateRsqrtTest<NpuRsqrtFloat32Workload, armnn::DataType::Float32>();
 // }
 
-// BOOST_AUTO_TEST_CASE(CreateRsqrtUint8)
+// TEST_CASE("CreateRsqrtUint8")
 // {
 //     NpuCreateRsqrtTest<NpuRsqrtUint8Workload, armnn::DataType::QAsymmU8>();
 // }
 
-// BOOST_AUTO_TEST_CASE(CreateRsqrtQsymm16)
+// TEST_CASE("CreateRsqrtQsymm16")
 // {
 //     RefCreateRsqrtTest<RefRsqrtWorkload, armnn::DataType::QSymmS16>();
 // }
@@ -813,37 +815,37 @@ static void NpuCreateL2NormalizationTest(DataLayout dataLayout)
     TensorInfo(outputShape, DataType));
 }
 
-BOOST_AUTO_TEST_CASE(CreateL2NormalizationFloat32)
+TEST_CASE("CreateL2NormalizationFloat32")
 {
     NpuCreateL2NormalizationTest<NpuL2NormalizationFloat32Workload,
     armnn::DataType::Float32>(DataLayout::NCHW);
 }
 
-BOOST_AUTO_TEST_CASE(CreateL2NormalizationFloat32Nhwc)
+TEST_CASE("CreateL2NormalizationFloat32Nhwc")
 {
     NpuCreateL2NormalizationTest<NpuL2NormalizationFloat32Workload,
     armnn::DataType::Float32>(DataLayout::NHWC);
 }
 
-BOOST_AUTO_TEST_CASE(CreateL2NormalizationUint8)
+TEST_CASE("CreateL2NormalizationUint8")
 {
     NpuCreateL2NormalizationTest<NpuL2NormalizationUint8Workload,
     armnn::DataType::QAsymmU8>(DataLayout::NCHW);
 }
 
-BOOST_AUTO_TEST_CASE(CreateL2NormalizationUint8Nhwc)
+TEST_CASE("CreateL2NormalizationUint8Nhwc")
 {
     NpuCreateL2NormalizationTest<NpuL2NormalizationUint8Workload,
     armnn::DataType::QAsymmU8>(DataLayout::NHWC);
 }
 
-// BOOST_AUTO_TEST_CASE(CreateL2NormalizationInt16)
+// TEST_CASE("CreateL2NormalizationInt16")
 // {
 //     RefCreateL2NormalizationTest<RefL2NormalizationWorkload,
 //     armnn::DataType::QSymmS16>(DataLayout::NCHW);
 // }
 
-// BOOST_AUTO_TEST_CASE(CreateL2NormalizationInt16Nhwc)
+// TEST_CASE("CreateL2NormalizationInt16Nhwc")
 // {
 //     RefCreateL2NormalizationTest<RefL2NormalizationWorkload,
 //     armnn::DataType::QSymmS16>(DataLayout::NHWC);
@@ -864,17 +866,17 @@ static void NpuCreateReshapeWorkloadTest()
         TensorInfo({ 1, 4 }, DataType));
 }
 
-BOOST_AUTO_TEST_CASE(CreateReshapeWorkloadFloat32)
+TEST_CASE("CreateReshapeWorkloadFloat32")
 {
     NpuCreateReshapeWorkloadTest<NpuReshapeFloat32Workload, armnn::DataType::Float32>();
 }
 
-BOOST_AUTO_TEST_CASE(CreateReshapeWorkloadQAsymmU8)
+TEST_CASE("CreateReshapeWorkloadQAsymmU8")
 {
     NpuCreateReshapeWorkloadTest<NpuReshapeUint8Workload, armnn::DataType::QAsymmU8>();
 }
 
-// BOOST_AUTO_TEST_CASE(CreateReshapeWorkloadQSymmS16)
+// TEST_CASE("CreateReshapeWorkloadQSymmS16")
 // {
 //     RefCreateReshapeWorkloadTest<RefReshapeWorkload, armnn::DataType::QSymmS16>();
 // }
@@ -894,51 +896,51 @@ static void NpuCreateConcatWorkloadTest(const armnn::TensorShape& outputShape,
                       TensorInfo(outputShape, DataType));
 }
 
-BOOST_AUTO_TEST_CASE(CreateConcatDim0Float32Workload)
+TEST_CASE("CreateConcatDim0Float32Workload")
 {
     NpuCreateConcatWorkloadTest<NpuConcatFloat32Workload, armnn::DataType::Float32>({ 4, 3, 2, 5 }, 0);
 }
 
-BOOST_AUTO_TEST_CASE(CreateConcatDim0Uint8Workload)
+TEST_CASE("CreateConcatDim0Uint8Workload")
 {
     NpuCreateConcatWorkloadTest<NpuConcatUint8Workload, armnn::DataType::QAsymmU8>({ 4, 3, 2, 5
     }, 0);
 }
 
-// BOOST_AUTO_TEST_CASE(CreateConcatDim0Uint16Workload)
+// TEST_CASE("CreateConcatDim0Uint16Workload")
 // {
 //     RefCreateConcatWorkloadTest<RefConcatWorkload, armnn::DataType::QSymmS16>({ 4, 3, 2, 5
 //     }, 0);
 // }
 
-BOOST_AUTO_TEST_CASE(CreateConcatDim1Float32Workload)
+TEST_CASE("CreateConcatDim1Float32Workload")
 {
     NpuCreateConcatWorkloadTest<NpuConcatFloat32Workload, armnn::DataType::Float32>({ 2, 6, 2, 5 }, 1);
 }
 
-BOOST_AUTO_TEST_CASE(CreateConcatDim1Uint8Workload)
+TEST_CASE("CreateConcatDim1Uint8Workload")
 {
     NpuCreateConcatWorkloadTest<NpuConcatUint8Workload, armnn::DataType::QAsymmU8>({ 2, 6, 2, 5
     }, 1);
 }
 
-BOOST_AUTO_TEST_CASE(CreateConcatDim2Float32Workload)
+TEST_CASE("CreateConcatDim2Float32Workload")
 {
     NpuCreateConcatWorkloadTest<NpuConcatFloat32Workload, armnn::DataType::Float32>({ 2, 3, 4, 5 }, 2);
 }
 
-BOOST_AUTO_TEST_CASE(CreateConcatDim2Uint8Workload)
+TEST_CASE("CreateConcatDim2Uint8Workload")
 {
     NpuCreateConcatWorkloadTest<NpuConcatUint8Workload, armnn::DataType::QAsymmU8>({ 2, 3, 4, 5
     }, 2);
 }
 
-BOOST_AUTO_TEST_CASE(CreateConcatDim3Float32Workload)
+TEST_CASE("CreateConcatDim3Float32Workload")
 {
     NpuCreateConcatWorkloadTest<NpuConcatFloat32Workload, armnn::DataType::Float32>({ 2, 3, 2, 10 }, 3);
 }
 
-BOOST_AUTO_TEST_CASE(CreateConcatDim3Uint8Workload)
+TEST_CASE("CreateConcatDim3Uint8Workload")
 {
     NpuCreateConcatWorkloadTest<NpuConcatUint8Workload, armnn::DataType::QAsymmU8>({ 2, 3, 2,
     10 }, 3);
@@ -956,28 +958,28 @@ BOOST_AUTO_TEST_CASE(CreateConcatDim3Uint8Workload)
 //     auto queueDescriptor = workload->GetData();
 //     auto outputHandle =
 //     PolymorphicDowncast<CpuTensorHandle*>(queueDescriptor.m_Outputs[0]);
-//     BOOST_TEST((outputHandle->GetTensorInfo() == TensorInfo(outputShape, DataType)));
+//     CHECK((outputHandle->GetTensorInfo() == TensorInfo(outputShape, DataType)));
 // }
 
-// BOOST_AUTO_TEST_CASE(CreateConstantUint8Workload)
+// TEST_CASE("CreateConstantUint8Workload")
 // {
 //     RefCreateConstantWorkloadTest<RefConstantWorkload, armnn::DataType::QAsymmU8>({ 2, 3,
 //     2, 10 });
 // }
 
-// BOOST_AUTO_TEST_CASE(CreateConstantInt16Workload)
+// TEST_CASE("CreateConstantInt16Workload")
 // {
 //     RefCreateConstantWorkloadTest<RefConstantWorkload, armnn::DataType::QSymmS16>({ 2, 3,
 //     2, 10 });
 // }
 
-// BOOST_AUTO_TEST_CASE(CreateConstantFloat32Workload)
+// TEST_CASE("CreateConstantFloat32Workload")
 // {
 //     RefCreateConstantWorkloadTest<RefConstantWorkload, armnn::DataType::Float32>({ 2, 3, 2, 10
 //     });
 // }
 
-// BOOST_AUTO_TEST_CASE(CreateConstantSigned32Workload)
+// TEST_CASE("CreateConstantSigned32Workload")
 // {
 //     RefCreateConstantWorkloadTest<RefConstantWorkload, armnn::DataType::Signed32>({ 2, 3, 2, 10
 //     });
@@ -995,22 +997,21 @@ BOOST_AUTO_TEST_CASE(CreateConcatDim3Uint8Workload)
 //     auto queueDescriptor = workload->GetData();
 //     auto outputHandle =
 //     PolymorphicDowncast<CpuTensorHandle*>(queueDescriptor.m_Outputs[0]);
-//     BOOST_TEST((outputHandle->GetTensorInfo() == TensorInfo(outputShape, DataType)));
+//     CHECK((outputHandle->GetTensorInfo() == TensorInfo(outputShape, DataType)));
 // }
 
-// BOOST_AUTO_TEST_CASE(CreatePreluFloat32Workload)
+// TEST_CASE("CreatePreluFloat32Workload")
 // {
 //     NpuCreatePreluWorkloadTest<armnn::DataType::Float32>({ 5, 4, 3, 2 });
 // }
 
-// BOOST_AUTO_TEST_CASE(CreatePreluUint8Workload)
+// TEST_CASE("CreatePreluUint8Workload")
 // {
 //     NpuCreatePreluWorkloadTest<armnn::DataType::QAsymmU8>({ 5, 4, 3, 2 });
 // }
 
-// BOOST_AUTO_TEST_CASE(CreatePreluInt16Workload)
+// TEST_CASE("CreatePreluInt16Workload")
 // {
 //     RefCreatePreluWorkloadTest<armnn::DataType::QSymmS16>({ 5, 4, 3, 2 });
 // }
-
-BOOST_AUTO_TEST_SUITE_END()
+}

@@ -33,13 +33,11 @@
 #include <armnn/BackendRegistry.hpp>
 #include <backendsCommon/test/WorkloadTestUtils.hpp>
 
-#include <boost/core/ignore_unused.hpp>
+#include <armnn/utility/IgnoreUnused.hpp>
 
 #include <algorithm>
 #include <array>
 #include <vector>
-
-using namespace boost;
 
 namespace armnn {
 
@@ -118,7 +116,7 @@ struct Rule {
 
 template <typename T>
 bool AllTypesAreEqualImpl(T t) {
-    ignore_unused(t);
+    IgnoreUnused(t);
     return true;
 }
 
@@ -409,7 +407,7 @@ bool NpuLayerSupport::IsBatchNormalizationSupported(
     const TensorInfo& gamma,
     const BatchNormalizationDescriptor& descriptor,
     Optional<std::string&> reasonIfUnsupported) const {
-    ignore_unused(descriptor);
+    IgnoreUnused(descriptor);
 
     std::array<DataType, 3> supportedTypes = {
         DataType::Float32, DataType::QAsymmU8, DataType::Float16
@@ -453,7 +451,7 @@ bool NpuLayerSupport::IsBatchToSpaceNdSupported(const TensorInfo& input,
                                                 const TensorInfo& output,
                                                 const BatchToSpaceNdDescriptor& descriptor,
                                                 Optional<std::string&> reasonIfUnsupported) const {
-    ignore_unused(descriptor);
+    IgnoreUnused(descriptor);
     bool support = true;
     support &= IsSupportedForDataTypeRef(
         reasonIfUnsupported, input.GetDataType(), &TrueFunc<>, &TrueFunc<>);
@@ -466,7 +464,7 @@ bool NpuLayerSupport::IsConcatSupported(const std::vector<const TensorInfo*> inp
                                         const TensorInfo& output,
                                         const ConcatDescriptor& descriptor,
                                         Optional<std::string&> reasonIfUnsupported) const {
-    ignore_unused(descriptor);
+    IgnoreUnused(descriptor);
 
     bool supported = true;
     std::array<DataType, 4> supportedTypes = {
@@ -492,9 +490,10 @@ bool NpuLayerSupport::IsConcatSupported(const std::vector<const TensorInfo*> inp
 
 bool NpuLayerSupport::IsConstantSupported(const TensorInfo& output,
                                           Optional<std::string&> reasonIfUnsupported) const {
-    std::array<DataType, 3> supportedTypes = {DataType::Float32,
+    std::array<DataType, 4> supportedTypes = {DataType::Float32,
                                               DataType::Float16,
-                                              DataType::QAsymmU8};
+                                              DataType::QAsymmU8,
+                                              DataType::Signed32};
 
     return CheckSupportRule(TypeAnyOf(output, supportedTypes),
                                      reasonIfUnsupported,
@@ -593,7 +592,7 @@ bool NpuLayerSupport::IsConvolution2dSupported(const TensorInfo& input,
                                       reasonIfUnsupported,
                                       "Npu convolution2d: biases is not a supported type.");
     }
-    ignore_unused(descriptor);
+    IgnoreUnused(descriptor);
 
     return supported;
 }
@@ -601,9 +600,9 @@ bool NpuLayerSupport::IsConvolution2dSupported(const TensorInfo& input,
 bool NpuLayerSupport::IsDebugSupported(const TensorInfo& input,
                                        const TensorInfo& output,
                                        Optional<std::string&> reasonIfUnsupported) const {
-    ignore_unused(input);
-    ignore_unused(output);
-    ignore_unused(reasonIfUnsupported);
+    IgnoreUnused(input);
+    IgnoreUnused(output);
+    IgnoreUnused(reasonIfUnsupported);
     return false;
 }
 
@@ -656,7 +655,7 @@ bool NpuLayerSupport::IsDepthwiseConvolutionSupported(
                              reasonIfUnsupported,
                              "Npu DepthwiseConvolution2d: biases is not a supported type.");
     }
-    ignore_unused(descriptor);
+    IgnoreUnused(descriptor);
     return supported;
 }
 
@@ -699,7 +698,7 @@ bool NpuLayerSupport::IsDetectionPostProcessSupported(
     const TensorInfo& numDetections,
     const DetectionPostProcessDescriptor& descriptor,
     Optional<std::string&> reasonIfUnsupported) const {
-    boost::ignore_unused(
+    IgnoreUnused(
         anchors, detectionBoxes, detectionClasses, detectionScores, numDetections, descriptor);
 
     bool supported = true;
@@ -783,7 +782,7 @@ bool NpuLayerSupport::IsFakeQuantizationSupported(
     const TensorInfo& input,
     const FakeQuantizationDescriptor& descriptor,
     Optional<std::string&> reasonIfUnsupported) const {
-    ignore_unused(descriptor);
+    IgnoreUnused(descriptor);
     return false && IsSupportedForDataTypeRef(
                         reasonIfUnsupported, input.GetDataType(), &TrueFunc<>, &FalseFuncU8<>);
 }
@@ -791,7 +790,7 @@ bool NpuLayerSupport::IsFakeQuantizationSupported(
 bool NpuLayerSupport::IsFloorSupported(const TensorInfo& input,
                                        const TensorInfo& output,
                                        Optional<std::string&> reasonIfUnsupported) const {
-    ignore_unused(output);
+    IgnoreUnused(output);
     bool supported = false;
 
     std::array<DataType, 2> supportedTypes = {DataType::Float32, DataType::QSymmS16};
@@ -867,8 +866,8 @@ bool NpuLayerSupport::IsGatherSupported(const armnn::TensorInfo& input0,
                                         const armnn::TensorInfo& input1,
                                         const armnn::TensorInfo& output,
                                         armnn::Optional<std::string&> reasonIfUnsupported) const {
-    ignore_unused(input1);
-    ignore_unused(output);
+    IgnoreUnused(input1);
+    IgnoreUnused(output);
     return IsSupportedForDataTypeRef(
         reasonIfUnsupported, input0.GetDataType(), &TrueFunc<>, &TrueFunc<>);
 }
@@ -886,8 +885,8 @@ bool NpuLayerSupport::IsGreaterSupported(const TensorInfo& input0,
 
 bool NpuLayerSupport::IsInputSupported(const TensorInfo& input,
                                        Optional<std::string&> reasonIfUnsupported) const {
-    ignore_unused(input);
-    ignore_unused(reasonIfUnsupported);
+    IgnoreUnused(input);
+    IgnoreUnused(reasonIfUnsupported);
     return true;
 }
 
@@ -895,7 +894,7 @@ bool NpuLayerSupport::IsL2NormalizationSupported(const TensorInfo& input,
                                                  const TensorInfo& output,
                                                  const L2NormalizationDescriptor& descriptor,
                                                  Optional<std::string&> reasonIfUnsupported) const {
-    ignore_unused(descriptor);
+    IgnoreUnused(descriptor);
     // Define supported types
     std::array<DataType, 3> supportedTypes = {
         DataType::Float32, DataType::QAsymmU8, DataType::Float16};
@@ -933,16 +932,16 @@ bool NpuLayerSupport::IsLstmSupported(const TensorInfo& input,
                          Optional<std::string&> reasonIfUnsupported) const {
     bool supported = true;
     // TODO: {Sven} check data type matched
-    ignore_unused(input);
-    ignore_unused(outputStateIn);
-    ignore_unused(cellStateIn);
-    ignore_unused(scratchBuffer);
-    ignore_unused(outputStateOut);
-    ignore_unused(cellStateOut);
-    ignore_unused(output);
-    ignore_unused(descriptor);
-    ignore_unused(paramsInfo);
-    ignore_unused(reasonIfUnsupported);
+    IgnoreUnused(input);
+    IgnoreUnused(outputStateIn);
+    IgnoreUnused(cellStateIn);
+    IgnoreUnused(scratchBuffer);
+    IgnoreUnused(outputStateOut);
+    IgnoreUnused(cellStateOut);
+    IgnoreUnused(output);
+    IgnoreUnused(descriptor);
+    IgnoreUnused(paramsInfo);
+    IgnoreUnused(reasonIfUnsupported);
     return supported;
     }
 // bool NpuLayerSupport::IsLstmSupported(const TensorInfo& input,
@@ -971,24 +970,24 @@ bool NpuLayerSupport::IsLstmSupported(const TensorInfo& input,
 //                                       const TensorInfo* cellToForgetWeights,
 //                                       const TensorInfo* cellToOutputWeights,
 //                                       Optional<std::string&> reasonIfUnsupported) const {
-//     ignore_unused(descriptor);
-//     ignore_unused(inputToForgetWeights);
-//     ignore_unused(inputToCellWeights);
-//     ignore_unused(inputToOutputWeights);
-//     ignore_unused(recurrentToForgetWeights);
-//     ignore_unused(recurrentToCellWeights);
-//     ignore_unused(recurrentToOutputWeights);
-//     ignore_unused(forgetGateBias);
-//     ignore_unused(cellBias);
-//     ignore_unused(outputGateBias);
-//     ignore_unused(inputToInputWeights);
-//     ignore_unused(recurrentToInputWeights);
-//     ignore_unused(cellToInputWeights);
-//     ignore_unused(inputGateBias);
-//     ignore_unused(projectionWeights);
-//     ignore_unused(projectionBias);
-//     ignore_unused(cellToForgetWeights);
-//     ignore_unused(cellToOutputWeights);
+//     IgnoreUnused(descriptor);
+//     IgnoreUnused(inputToForgetWeights);
+//     IgnoreUnused(inputToCellWeights);
+//     IgnoreUnused(inputToOutputWeights);
+//     IgnoreUnused(recurrentToForgetWeights);
+//     IgnoreUnused(recurrentToCellWeights);
+//     IgnoreUnused(recurrentToOutputWeights);
+//     IgnoreUnused(forgetGateBias);
+//     IgnoreUnused(cellBias);
+//     IgnoreUnused(outputGateBias);
+//     IgnoreUnused(inputToInputWeights);
+//     IgnoreUnused(recurrentToInputWeights);
+//     IgnoreUnused(cellToInputWeights);
+//     IgnoreUnused(inputGateBias);
+//     IgnoreUnused(projectionWeights);
+//     IgnoreUnused(projectionBias);
+//     IgnoreUnused(cellToForgetWeights);
+//     IgnoreUnused(cellToOutputWeights);
 
 //     bool supported = true;
 
@@ -1137,7 +1136,7 @@ bool NpuLayerSupport::IsMergerSupported(const std::vector<const TensorInfo*> inp
 bool NpuLayerSupport::IsMemCopySupported(const TensorInfo& input,
                                          const TensorInfo& output,
                                          Optional<std::string&> reasonIfUnsupported) const {
-    ignore_unused(output);
+    IgnoreUnused(output);
     return IsSupportedForDataTypeGeneric(reasonIfUnsupported,
                                                   input.GetDataType(),
                                                   &TrueFunc<>,
@@ -1260,8 +1259,8 @@ bool NpuLayerSupport::IsNormalizationSupported(const TensorInfo& input,
 
 bool NpuLayerSupport::IsOutputSupported(const TensorInfo& output,
                                         Optional<std::string&> reasonIfUnsupported) const {
-    ignore_unused(output);
-    ignore_unused(reasonIfUnsupported);
+    IgnoreUnused(output);
+    IgnoreUnused(reasonIfUnsupported);
     return true;
 }
 
@@ -1270,7 +1269,7 @@ bool NpuLayerSupport::IsPadSupported(const TensorInfo& input,
                                      const PadDescriptor& descriptor,
                                      Optional<std::string&> reasonIfUnsupported) const {
     bool supported = true;
-    ignore_unused(output);
+    IgnoreUnused(output);
 
     supported &= CheckSupportRule(
         IsPadDescriptorSupported(descriptor), reasonIfUnsupported, "Npu pad: input dimension not support.");
@@ -1284,8 +1283,8 @@ bool NpuLayerSupport::IsPermuteSupported(const TensorInfo& input,
                                          const TensorInfo& output,
                                          const PermuteDescriptor& descriptor,
                                          Optional<std::string&> reasonIfUnsupported) const {
-    ignore_unused(output);
-    ignore_unused(descriptor);
+    IgnoreUnused(output);
+    IgnoreUnused(descriptor);
     return IsSupportedForDataTypeRef(
         reasonIfUnsupported, input.GetDataType(), &TrueFunc<>, &TrueFunc<>);
 }
@@ -1293,9 +1292,9 @@ bool NpuLayerSupport::IsPermuteSupported(const TensorInfo& input,
 bool NpuLayerSupport::IsPreCompiledSupported(const TensorInfo& input,
                                              const PreCompiledDescriptor& descriptor,
                                              Optional<std::string&> reasonIfUnsupported) const {
-    ignore_unused(input);
-    ignore_unused(descriptor);
-    ignore_unused(reasonIfUnsupported);
+    IgnoreUnused(input);
+    IgnoreUnused(descriptor);
+    IgnoreUnused(reasonIfUnsupported);
     return false;
 }
 
@@ -1303,7 +1302,7 @@ bool NpuLayerSupport::IsPooling2dSupported(const TensorInfo& input,
                                            const TensorInfo& output,
                                            const Pooling2dDescriptor& descriptor,
                                            Optional<std::string&> reasonIfUnsupported) const {
-    ignore_unused(descriptor);
+    IgnoreUnused(descriptor);
     bool supported = true;
 
     // Define supported output and inputs types.
@@ -1362,8 +1361,8 @@ bool NpuLayerSupport::IsReshapeSupported(const TensorInfo& input,
                                          const TensorInfo& output,
                                          const ReshapeDescriptor& descriptor,
                                          Optional<std::string&> reasonIfUnsupported) const {
-    ignore_unused(output);
-    ignore_unused(descriptor);
+    IgnoreUnused(output);
+    IgnoreUnused(descriptor);
     // Define supported output types.
     std::array<DataType, 3> supportedOutputTypes = {
         DataType::Float32,
@@ -1382,7 +1381,7 @@ bool NpuLayerSupport::IsResizeSupported(const TensorInfo& input,
                                         const ResizeDescriptor& descriptor,
                                         Optional<std::string&> reasonIfUnsupported) const
 {
-    ignore_unused(descriptor);
+    IgnoreUnused(descriptor);
     bool supported = true;
     std::array<DataType,3> supportedTypes =
     {
@@ -1456,7 +1455,7 @@ bool NpuLayerSupport::IsSoftmaxSupported(const TensorInfo& input,
                                          const TensorInfo& output,
                                          const SoftmaxDescriptor& descriptor,
                                          Optional<std::string&> reasonIfUnsupported) const {
-    ignore_unused(output);
+    IgnoreUnused(output);
     bool supported = true;
     std::array<DataType, 4> supportedTypes = {
         DataType::Float32, DataType::QAsymmU8, DataType::Float16, DataType::QAsymmS8,
@@ -1488,7 +1487,7 @@ bool NpuLayerSupport::IsSpaceToBatchNdSupported(const TensorInfo& input,
                                                 const TensorInfo& output,
                                                 const SpaceToBatchNdDescriptor& descriptor,
                                                 Optional<std::string&> reasonIfUnsupported) const {
-    ignore_unused(descriptor);
+    IgnoreUnused(descriptor);
     bool supported = true;
     std::array<DataType, 3> supportedTypes = {
         DataType::Float32, DataType::QAsymmU8, DataType::Float16};
@@ -1516,7 +1515,7 @@ bool NpuLayerSupport::IsSpaceToDepthSupported(const TensorInfo& input,
                                               const TensorInfo& output,
                                               const SpaceToDepthDescriptor& descriptor,
                                               Optional<std::string&> reasonIfUnsupported) const {
-    ignore_unused(descriptor);
+    IgnoreUnused(descriptor);
     bool supported = true;
 
     std::array<DataType, 3> supportedTypes = {
@@ -1543,8 +1542,8 @@ bool NpuLayerSupport::IsSplitterSupported(
     const std::vector<std::reference_wrapper<TensorInfo>>& outputs,
     const ViewsDescriptor& descriptor,
     Optional<std::string&> reasonIfUnsupported) const {
-    ignore_unused(outputs);
-    ignore_unused(descriptor);
+    IgnoreUnused(outputs);
+    IgnoreUnused(descriptor);
     bool supported = true;
     std::array<DataType, 3> supportedTypes = {
         DataType::Float32, DataType::QAsymmU8, DataType::Float16};
@@ -1561,8 +1560,8 @@ bool NpuLayerSupport::IsStridedSliceSupported(const TensorInfo& input,
                                               const StridedSliceDescriptor& descriptor,
                                               Optional<std::string&> reasonIfUnsupported) const {
     bool supported = true;
-    ignore_unused(output);
-    ignore_unused(descriptor);
+    IgnoreUnused(output);
+    IgnoreUnused(descriptor);
     supported &= IsSupportedForDataTypeRef(
         reasonIfUnsupported, input.GetDataType(), &TrueFunc<>, &TrueFunc<>);
     // TODO: Support the two params.
@@ -1684,7 +1683,7 @@ bool NpuLayerSupport::IsTransposeConvolution2dSupported(const TensorInfo& input,
                 reasonIfUnsupported,
                 "Npu transpose_convolution2d: biases is not a supported type.");
     }
-    ignore_unused(descriptor);
+    IgnoreUnused(descriptor);
 
     return supported;
 }
@@ -1695,7 +1694,7 @@ bool NpuLayerSupport::IsComparisonSupported(const TensorInfo& input0,
                                             const ComparisonDescriptor& descriptor,
                                             Optional<std::string&> reasonIfUnsupported) const
 {
-    boost::ignore_unused(descriptor);
+    IgnoreUnused(descriptor);
 
     std::array<DataType, 3> supportedInputTypes =
     {
@@ -1722,7 +1721,7 @@ bool NpuLayerSupport::IsDepthToSpaceSupported(const TensorInfo& input,
                                               const DepthToSpaceDescriptor& descriptor,
                                               Optional<std::string&> reasonIfUnsupported) const
 {
-    ignore_unused(descriptor);
+    IgnoreUnused(descriptor);
     bool supported = true;
 
     std::array<DataType,3> supportedTypes =
@@ -1749,7 +1748,7 @@ bool NpuLayerSupport::IsInstanceNormalizationSupported(const TensorInfo& input,
                                                        const InstanceNormalizationDescriptor& descriptor,
                                                        Optional<std::string&> reasonIfUnsupported) const
 {
-    ignore_unused(descriptor);
+    IgnoreUnused(descriptor);
     // Define supported types
     std::array<DataType, 2> supportedTypes =
         {
@@ -1779,7 +1778,7 @@ bool NpuLayerSupport::IsArgMinMaxSupported(const armnn::TensorInfo &input, const
                                            const armnn::ArgMinMaxDescriptor &descriptor,
                                            armnn::Optional<std::string &> reasonIfUnsupported) const
 {
-    ignore_unused(descriptor);
+    IgnoreUnused(descriptor);
 
     std::array<DataType, 4> supportedTypes =
     {
@@ -1804,7 +1803,7 @@ bool NpuLayerSupport::IsLogSoftmaxSupported(const TensorInfo& input,
                                             const LogSoftmaxDescriptor& descriptor,
                                             Optional<std::string&> reasonIfUnsupported) const
 {
-    ignore_unused(descriptor);
+    IgnoreUnused(descriptor);
 
     std::array<DataType, 3> supportedTypes =
     {
@@ -1831,7 +1830,7 @@ bool NpuLayerSupport::IsSliceSupported(const TensorInfo& input,
                                        const SliceDescriptor& descriptor,
                                        Optional<std::string&> reasonIfUnsupported) const
 {
-    boost::ignore_unused(descriptor);
+    IgnoreUnused(descriptor);
     bool supported = true;
 
     std::array<DataType, 3> supportedTypes =

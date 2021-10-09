@@ -28,11 +28,9 @@
 #include <armnn/TypesUtils.hpp>
 #include <armnn/Logging.hpp>
 
-#include <boost/core/ignore_unused.hpp>
+#include <armnn/utility/IgnoreUnused.hpp>
 
 #include <iostream>
-
-using namespace boost;
 
 namespace armnn
 {
@@ -71,9 +69,9 @@ void NpuTensorHandler::CopyOutTo(void* memory) const {
         std::memcpy(memory, m_ExternalMem, m_TensorInfo.GetNumBytes());
     } else {
         if (callback) {
-            callback(static_cast<void*>(m_Memory.get()), m_TensorInfo.GetNumBytes());
+            callback(static_cast<void*>(m_Memory.data()), m_TensorInfo.GetNumBytes());
         }
-        std::memcpy(memory, m_Memory.get(), m_TensorInfo.GetNumBytes());
+        std::memcpy(memory, m_Memory.data(), m_TensorInfo.GetNumBytes());
     }
 }
 
@@ -82,7 +80,7 @@ void NpuTensorHandler::CopyInFrom(const void* memory) {
     if (m_ExternalMem) {
         std::memcpy(m_ExternalMem, memory, m_TensorInfo.GetNumBytes());
     } else {
-        std::memcpy(m_Memory.get(), memory, m_TensorInfo.GetNumBytes());
+        std::memcpy(m_Memory.data(), memory, m_TensorInfo.GetNumBytes());
     }
 }
 
@@ -93,38 +91,38 @@ TensorShape NpuTensorHandler::GetShape() const
 
 void* NpuTensorHandler::Map(bool blocking)
 {
-    ignore_unused(blocking);
+    IgnoreUnused(blocking);
     getMemoryReady();
     if (callback) {
         if (m_ExternalMem) {
             callback(m_ExternalMem, m_TensorInfo.GetNumBytes());
         } else {
-            callback(static_cast<void*>(m_Memory.get()), m_TensorInfo.GetNumBytes());
+            callback(static_cast<void*>(m_Memory.data()), m_TensorInfo.GetNumBytes());
         }
     }
-    return m_ExternalMem ? m_ExternalMem : static_cast<void*>(m_Memory.get());
+    return m_ExternalMem ? m_ExternalMem : static_cast<void*>(m_Memory.data());
 }
 
 const void* NpuTensorHandler::Map(bool blocking) const
 {
-    ignore_unused(blocking);
+    IgnoreUnused(blocking);
     getMemoryReady();
     if (callback) {
         if (m_ExternalMem) {
             callback(m_ExternalMem, m_TensorInfo.GetNumBytes());
         } else {
-            callback(static_cast<void*>(m_Memory.get()), m_TensorInfo.GetNumBytes());
+            callback(static_cast<void*>(m_Memory.data()), m_TensorInfo.GetNumBytes());
         }
     }
-    return m_ExternalMem ? m_ExternalMem : static_cast<const void*>(m_Memory.get());
+    return m_ExternalMem ? m_ExternalMem : static_cast<const void*>(m_Memory.data());
 }
 
 void* NpuTensorHandler::GetMemArea()
 {
     if (callback) {
-        callback(static_cast<void*>(m_Memory.get()), m_TensorInfo.GetNumBytes());
+        callback(static_cast<void*>(m_Memory.data()), m_TensorInfo.GetNumBytes());
     }
-    return m_Memory.get();
+    return m_Memory.data();
 }
 
 void NpuTensorHandler::Unmap() const
@@ -150,22 +148,21 @@ void NpuTensorHandler::getMemoryReady() const {
         //                         |
         //                      output
         // Start computing from right branch
-        if (m_Memory) {
+        if (m_Memory.size()) {
             this->dirty_flag = true;
         }
-        if (m_ExternalMem || m_Memory) return;
+        if (m_ExternalMem || m_Memory.size()) return;
         if (nullptr == m_ExternalMem) {
-            m_Memory.reset(new uint8_t[m_TensorInfo.GetNumBytes()]);
+            m_Memory.resize(m_TensorInfo.GetNumBytes());
             // Keep this track random caculation error issue
-            ARMNN_LOG(debug) << "size = " << m_TensorInfo.GetNumBytes() << "\n";
+            //ARMNN_LOG(debug) << "size = " << m_TensorInfo.GetNumBytes() << "\n";
         }
         return;
     }
-
     // For middle tensor handler
-    if (m_Memory) {
+    if (m_Memory.size()) {
         if (!m_ModelShell) {
-            ARMNN_LOG(error) << "Model prepare failed (1): check previous log for error log.\n";
+            //ARMNN_LOG(error) << "Model prepare failed (1): check previous log for error log.\n";
             assert(false);
             return;
         }
@@ -175,7 +172,7 @@ void NpuTensorHandler::getMemoryReady() const {
                          [](NpuTensorHandler* handle) { return handle->dirty_flag; })) {
             return;
         }
-        ARMNN_LOG(debug) << "Warm-Start NN execution (1).\n";
+        //ARMNN_LOG(debug) << "Warm-Start NN execution (1).\n";
         for (auto& inputHandle : inputs_handle) {
             inputHandle->dirty_flag = false;
         }
@@ -189,18 +186,17 @@ void NpuTensorHandler::getMemoryReady() const {
             auto mergedModel = adaption::utils::MergeModels(m_ModelStack);
             m_ModelShell.reset(new ModelShell(std::move(mergedModel)));
             if (!m_ModelShell) {
-                ARMNN_LOG(error) << "Model prepare failed (2): check previous log for error log.\n";
+                //ARMNN_LOG(error) << "Model prepare failed (2): check previous log for error log.\n";
                 assert(false);
                 return;
             }
         }
-
-        ARMNN_LOG(debug) << "Warm-Start NN execution (2).\n";
+        //ARMNN_LOG(debug) << "Warm-Start NN execution (2).\n";
         m_ModelShell->Execute();
         return;
     }
 
-    m_Memory.reset(new uint8_t[m_TensorInfo.GetNumBytes()]);
+    m_Memory.resize(m_TensorInfo.GetNumBytes());
 
     auto mergedModel = adaption::utils::MergeModels(m_ModelStack);
 
@@ -208,12 +204,11 @@ void NpuTensorHandler::getMemoryReady() const {
     // usually, the last accessed output is the "last hope"
     bool IAmLastHope = true;
     for (auto& outputHandle : mergedModel->second.second) {
-        if (outputHandle != this && !outputHandle->m_Memory) {
+        if (outputHandle != this && !outputHandle->m_Memory.size()) {
             outputHandle->Map(true); // recursive call for all output
             IAmLastHope = false;
         }
     }
-
     if (IAmLastHope){ // Only execute model while access last output tensor
         m_ModelShell.reset(new ModelShell(std::move(mergedModel)));
         // finalModel ready to run

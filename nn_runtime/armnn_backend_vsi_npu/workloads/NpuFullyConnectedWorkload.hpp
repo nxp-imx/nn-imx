@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include <backendsCommon/CpuTensorHandle.hpp>
+#include <backendsCommon/TensorHandle.hpp>
 #include <backendsCommon/Workload.hpp>
 #include <backendsCommon/WorkloadData.hpp>
 #include <armnnUtils/FloatingPointConverter.hpp>
@@ -77,23 +77,23 @@ class NpuFullyConnectedFloatWorkload
                 this->AddOperandAndSetValue(weightInfo, weightShape, m_Weight->GetTensor<void>());
         } else {
             // Transpose weight
-            m_TransposedWeight.reset(new uint8_t[weightInfo.GetNumBytes()]);
+            m_TransposedWeight.resize(weightInfo.GetNumBytes());
             if (weightInfo.GetDataType() == DataType::QAsymmU8) {
                 TransposeWeight<uint8_t>((uint8_t*)m_Weight->GetTensor<void>(),
-                                         (uint8_t*)m_TransposedWeight.get(),
+                                         (uint8_t*)m_TransposedWeight.data(),
                                          weightShape);
             } else if (weightInfo.GetDataType() == DataType::Float32) {
                 TransposeWeight<float>((float*)m_Weight->GetTensor<void>(),
-                                       (float*)m_TransposedWeight.get(),
+                                       (float*)m_TransposedWeight.data(),
                                        weightShape);
             } else if (weightInfo.GetDataType() == DataType::Float16) {
                 TransposeWeight<uint16_t>((uint16_t*)m_Weight->GetTensor<void>(),
-                                          (uint16_t*)m_TransposedWeight.get(),
+                                          (uint16_t*)m_TransposedWeight.data(),
                                           weightShape);
             }
             std::swap(weightShape[0], weightShape[1]);
             weightOperandId =
-                this->AddOperandAndSetValue(weightInfo, weightShape, m_TransposedWeight.get());
+                this->AddOperandAndSetValue(weightInfo, weightShape, m_TransposedWeight.data());
         }
 
         // Add bias operand
@@ -104,11 +104,11 @@ class NpuFullyConnectedFloatWorkload
             const TensorShape biasShape = m_Bias->GetShape();
             if (biasInfo.GetDataType() == DataType::Float16) {
                 biasInfo.SetDataType(DataType::Float32);
-                m_Fp32BiasData.reset(new float[biasInfo.GetNumElements()]);
+                m_Fp32BiasData.resize(biasInfo.GetNumElements());
                 armnnUtils::FloatingPointConverter::ConvertFloat16To32(
-                    m_Bias->GetTensor<Half>(), biasInfo.GetNumElements(), m_Fp32BiasData.get());
+                    m_Bias->GetTensor<Half>(), biasInfo.GetNumElements(), m_Fp32BiasData.data());
                 biasOperandId =
-                    this->AddOperandAndSetValue(biasInfo, biasShape, m_Fp32BiasData.get());
+                    this->AddOperandAndSetValue(biasInfo, biasShape, m_Fp32BiasData.data());
             } else {
                 biasOperandId =
                     this->AddOperandAndSetValue(biasInfo, biasShape, m_Bias->GetTensor<void>());
@@ -160,8 +160,8 @@ class NpuFullyConnectedFloatWorkload
    private:
     std::unique_ptr<ScopedCpuTensorHandle> m_Weight;
     std::unique_ptr<ScopedCpuTensorHandle> m_Bias;
-    mutable boost::scoped_array<uint8_t> m_TransposedWeight;
-    mutable boost::scoped_array<float> m_Fp32BiasData;
+    mutable std::vector<uint8_t> m_TransposedWeight;
+    mutable std::vector<float> m_Fp32BiasData;
     std::vector<typename FakeBias::type> m_FakeBiasData;  //!< workaround: bias required by shader
 };
 using NpuFullyConnectedFloat32Workload = NpuFullyConnectedFloatWorkload<armnn::DataType::Float32>;

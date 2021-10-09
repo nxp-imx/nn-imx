@@ -24,13 +24,11 @@
 
 #pragma once
 
-#include <backendsCommon/CpuTensorHandle.hpp>
+#include <backendsCommon/TensorHandle.hpp>
 
 #include <armnn/Tensor.hpp>
 #include <armnn/Types.hpp>
 #include <Half.hpp>
-
-#include <boost/polymorphic_cast.hpp>
 
 namespace armnn
 {

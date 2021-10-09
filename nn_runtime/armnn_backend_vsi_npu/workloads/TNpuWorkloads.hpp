@@ -1,40 +1,38 @@
 /****************************************************************************
-*
-*    Copyright (c) 2019 Vivante Corporation
-*
-*    Permission is hereby granted, free of charge, to any person obtaining a
-*    copy of this software and associated documentation files (the "Software"),
-*    to deal in the Software without restriction, including without limitation
-*    the rights to use, copy, modify, merge, publish, distribute, sublicense,
-*    and/or sell copies of the Software, and to permit persons to whom the
-*    Software is furnished to do so, subject to the following conditions:
-*
-*    The above copyright notice and this permission notice shall be included in
-*    all copies or substantial portions of the Software.
-*
-*    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-*    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-*    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-*    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-*    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-*    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-*    DEALINGS IN THE SOFTWARE.
-*
-*****************************************************************************/
+ *
+ *    Copyright (c) 2019 Vivante Corporation
+ *
+ *    Permission is hereby granted, free of charge, to any person obtaining a
+ *    copy of this software and associated documentation files (the "Software"),
+ *    to deal in the Software without restriction, including without limitation
+ *    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ *    and/or sell copies of the Software, and to permit persons to whom the
+ *    Software is furnished to do so, subject to the following conditions:
+ *
+ *    The above copyright notice and this permission notice shall be included in
+ *    all copies or substantial portions of the Software.
+ *
+ *    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ *    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ *    DEALINGS IN THE SOFTWARE.
+ *
+ *****************************************************************************/
 
 #pragma once
-
-#include "NpuBackend.hpp"
-#include "NpuTensorHandler.hpp"
 
 #include <backendsCommon/Workload.hpp>
 #include <backendsCommon/WorkloadData.hpp>
 #include <backendsCommon/WorkloadInfo.hpp>
-
-#include "NpuModelShell.hpp"
-
 #include <iostream>
 #include <type_traits>
+
+#include "NpuBackend.hpp"
+#include "NpuModelShell.hpp"
+#include "NpuTensorHandler.hpp"
 
 namespace armnn {
 namespace vnn_helper {
@@ -115,19 +113,21 @@ struct At_impl_<0, size, FirstDType, DataTypes...> {
 
 template <uint32_t idx, armnn::DataType... DataTypes>
 struct At_ {
-    static constexpr armnn::DataType value = At_impl_<idx, sizeof...(DataTypes), DataTypes...>::value;
+    static constexpr armnn::DataType value =
+        At_impl_<idx, sizeof...(DataTypes), DataTypes...>::value;
 };
-}
+}  // namespace vnn_helper
 
 template <typename QueueDescriptor, armnn::DataType... DataTypes>
-using NpuBaseWorkload = vnn_helper::If_t<sizeof...(DataTypes) == 2,
-                                         MultiTypedWorkload<QueueDescriptor,
-                                                            vnn_helper::At_<0, DataTypes...>::value,
-                                                            vnn_helper::At_<1, DataTypes...>::value>,
-                                         TypedWorkload<QueueDescriptor, DataTypes...>>;
+using NpuBaseWorkload =
+    vnn_helper::If_t<sizeof...(DataTypes) == 2,
+                     MultiTypedWorkload<QueueDescriptor,
+                                        vnn_helper::At_<0, DataTypes...>::value,
+                                        vnn_helper::At_<1, DataTypes...>::value>,
+                     BaseWorkload<QueueDescriptor>>;
 
 template <typename QueueDescriptor, armnn::DataType... DataTypes>
-struct Base{
+struct Base {
     using type = NpuBaseWorkload<QueueDescriptor, DataTypes...>;
 };
 
@@ -135,7 +135,7 @@ template <typename QueueDescriptor, armnn::DataType... DataTypes>
 using Base_t = typename Base<QueueDescriptor, DataTypes...>::type;
 
 template <typename QueueDescriptor, armnn::DataType... DataTypes>
-class TNpuWorkload : public Base_t<QueueDescriptor, DataTypes...>{
+class TNpuWorkload : public Base_t<QueueDescriptor, DataTypes...> {
    public:
     explicit TNpuWorkload(const QueueDescriptor& descriptor, const WorkloadInfo& info)
         : Base_t<QueueDescriptor, DataTypes...>(descriptor, info) {
@@ -162,7 +162,6 @@ class TNpuWorkload : public Base_t<QueueDescriptor, DataTypes...>{
     }
 
     void Execute() const override {
-
         // Our workload don't need executed repeatly, we just need construct final model
         // which deployed to our backend. But, if armnn also need support dynamic graph
         // we need re-eval every workload each inference and construct final model accordingly
@@ -186,14 +185,15 @@ class TNpuWorkload : public Base_t<QueueDescriptor, DataTypes...>{
             curModelStack.insert(local_model);
 
             for (NpuTensorHandler* inputHandle : m_InputsHandler) {
-                std::copy(inputHandle->ModelStack().begin(), inputHandle->ModelStack().end(),
-                std::inserter(curModelStack, curModelStack.end()));
+                std::copy(inputHandle->ModelStack().begin(),
+                          inputHandle->ModelStack().end(),
+                          std::inserter(curModelStack, curModelStack.end()));
             }
         }
     }
 
    protected:
-    nnrt::OperandType convertToOperandType(DataType dtype) {
+    nnrt::OperandType convertToOperandType(DataType dtype, bool is_perchannel = false) {
         nnrt::OperandType type = nnrt::OperandType::NONE;
         switch (dtype) {
             case DataType::Float32:
@@ -209,7 +209,8 @@ class TNpuWorkload : public Base_t<QueueDescriptor, DataTypes...>{
                 type = nnrt::OperandType::TENSOR_QUANT8_ASYMM_SIGNED;
                 break;
             case DataType::QSymmS8:
-                type = nnrt::OperandType::TENSOR_QUANT8_SYMM;
+                type = is_perchannel ? nnrt::OperandType::TENSOR_QUANT8_SYMM_PER_CHANNEL
+                                     : nnrt::OperandType::TENSOR_QUANT8_SYMM;
                 break;
             case DataType::Signed32:
                 type = nnrt::OperandType::TENSOR_INT32;
@@ -249,7 +250,12 @@ class TNpuWorkload : public Base_t<QueueDescriptor, DataTypes...>{
         nnrt::op::OperandPtr operand = m_LocalModel->addOperand(nullptr, &operandId);
         {
             auto dataType = info.GetDataType();
-            operand->type = convertToOperandType(dataType);
+            // convert weight operand to perchannel
+            if (info.HasPerAxisQuantization() && shape.GetNumDimensions() > 1) {
+                operand->type = convertToOperandType(dataType, true);
+            } else {
+                operand->type = convertToOperandType(dataType);
+            }
             if (floatToInt) {
                 operand->type = convertToOperandType(DataType::Signed32);
             }
@@ -289,7 +295,8 @@ class TNpuWorkload : public Base_t<QueueDescriptor, DataTypes...>{
     std::vector<uint32_t> AddOperandWithTensorHandle(const std::vector<ITensorHandle*>& tensors) {
         std::vector<uint32_t> operandIds;
         for (uint32_t i = 0; i < tensors.size(); i++) {
-            const NpuTensorHandler* tensorHandle = dynamic_cast<const NpuTensorHandler*>(tensors[i]);
+            const NpuTensorHandler* tensorHandle =
+                dynamic_cast<const NpuTensorHandler*>(tensors[i]);
             uint32_t operandId = AddOperandWithTensorHandle(tensorHandle);
             operandIds.push_back(operandId);
         }
@@ -322,7 +329,8 @@ class TNpuWorkload : public Base_t<QueueDescriptor, DataTypes...>{
     uint32_t AddOperandWithTensorHandle(const NpuTensorHandler* tensor) {
         uint32_t operandId;
         if (tensor != nullptr) {
-            operandId = this->AddOperandAndSetValue(tensor->GetTensorInfo(), tensor->GetShape(), nullptr);
+            operandId =
+                this->AddOperandAndSetValue(tensor->GetTensorInfo(), tensor->GetShape(), nullptr);
         } else {
             operandId = AddNullOperand();
         }

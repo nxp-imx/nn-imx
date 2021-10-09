@@ -27,7 +27,6 @@
 #include <functional>
 #include <armnn/Tensor.hpp>
 #include <backendsCommon/ITensorHandle.hpp>
-#include <boost/scoped_array.hpp>
 
 // TODO: include proper one
 #include "NpuModelShell.hpp"
@@ -39,7 +38,6 @@ class NpuTensorHandler : public ITensorHandle {
     NpuTensorHandler(const TensorInfo& info)
         : m_OperandId(0xFFFFFFFF),
           m_TensorInfo(info),
-          m_Memory(nullptr),
           m_ExternalMem(nullptr){}
 
     ~NpuTensorHandler() {}
@@ -78,7 +76,7 @@ class NpuTensorHandler : public ITensorHandle {
     unsigned int GetOperandId() const { return m_OperandId; }
 
     // None-Inheriented Interface for Backend internal purpose
-    bool HasMemory() const { return m_Memory ? true : false; }
+    bool HasMemory() const { return m_Memory.size() ? true : false; }
 
     const adaption::ModelStack& ModelStack() { return m_ModelStack; }
 
@@ -88,8 +86,8 @@ class NpuTensorHandler : public ITensorHandle {
         if (m_ExternalMem) {
             return m_ExternalMem;
         } else {
-            assert(m_Memory);
-            return m_Memory.get();
+            assert(m_Memory.size());
+            return m_Memory.data();
         }
     }
 
@@ -127,7 +125,7 @@ class NpuTensorHandler : public ITensorHandle {
    private:
     uint32_t m_OperandId;
     TensorInfo m_TensorInfo;
-    mutable boost::scoped_array<uint8_t> m_Memory;
+    mutable std::vector<uint8_t> m_Memory;
     void* m_ExternalMem;
     mutable bool dirty_flag = false;
 

@@ -26,17 +26,15 @@
 #include <layers/ConvertFp32ToFp16Layer.hpp>
 #include <test/TensorHelpers.hpp>
 
-#include <backendsCommon/CpuTensorHandle.hpp>
+#include <backendsCommon/TensorHandle.hpp>
 #include <backendsCommon/test/IsLayerSupportedTestImpl.hpp>
 #include <backendsCommon/test/LayerTests.hpp>
-
-#include <boost/algorithm/string/trim.hpp>
-#include <boost/test/unit_test.hpp>
-
-#include <string>
-
 #include "NpuLayerSupport.hpp"
 #include "NpuWorkloadFactory.hpp"
+
+#include <doctest/doctest.h>
+
+#include <string>
 
 namespace {
 
@@ -47,12 +45,12 @@ bool LayerTypeMatchesTest() {
 
 }  // anonymous namespace
 
-BOOST_AUTO_TEST_SUITE(VSI_Backend)
+TEST_SUITE("NpuLayerSupported"){
 
-BOOST_AUTO_TEST_CASE(IsLayerSupportedLayerTypeMatches) {
+TEST_CASE("IsLayerSupportedLayerTypeMatches") {
     LayerTypeMatchesTest();
 }
-BOOST_AUTO_TEST_CASE(IsLayerSupportedNpuAddition) {
+TEST_CASE("IsLayerSupportedNpuAddition") {
     armnn::TensorShape shape0 = {1, 1, 3, 4};
     armnn::TensorShape shape1 = {4};
     armnn::TensorShape outShape = {1, 1, 3, 4};
@@ -62,7 +60,7 @@ BOOST_AUTO_TEST_CASE(IsLayerSupportedNpuAddition) {
 
     armnn::NpuLayerSupport supportChecker;
     std::string reasonNotSupported;
-    BOOST_CHECK(supportChecker.IsAdditionSupported(in0, in1, out, reasonNotSupported));
+    CHECK(supportChecker.IsAdditionSupported(in0, in1, out, reasonNotSupported));
 }
 
 // BOOST_AUTO_TEST_CASE(IsLayerSupportedFloat16Reference) {
@@ -80,7 +78,7 @@ BOOST_AUTO_TEST_CASE(IsLayerSupportedNpuAddition) {
 //     IsLayerSupportedTests<armnn::NpuWorkloadFactory, armnn::DataType::QAsymmU8>(&factory);
 // }
 
-BOOST_AUTO_TEST_CASE(IsConvertFp16ToFp32SupportedNpu) {
+TEST_CASE("IsConvertFp16ToFp32SupportedNpu") {
     std::string reasonIfUnsupported;
 
     bool result = IsConvertLayerSupportedTests<armnn::NpuWorkloadFactory,
@@ -88,10 +86,10 @@ BOOST_AUTO_TEST_CASE(IsConvertFp16ToFp32SupportedNpu) {
                                                armnn::DataType::Float16,
                                                armnn::DataType::Float32>(reasonIfUnsupported);
 
-    BOOST_CHECK(result);
+    CHECK(result);
 }
 
-BOOST_AUTO_TEST_CASE(IsConvertFp16ToFp32SupportedFp32InputNpu) {
+TEST_CASE("IsConvertFp16ToFp32SupportedFp32InputNpu") {
     std::string reasonIfUnsupported;
 
     bool result = IsConvertLayerSupportedTests<armnn::NpuWorkloadFactory,
@@ -99,11 +97,11 @@ BOOST_AUTO_TEST_CASE(IsConvertFp16ToFp32SupportedFp32InputNpu) {
                                                armnn::DataType::Float32,
                                                armnn::DataType::Float32>(reasonIfUnsupported);
 
-    BOOST_CHECK(!result);
-    BOOST_CHECK_EQUAL(reasonIfUnsupported, "Layer is not supported with float32 data type input");
+    CHECK(!result);
+    CHECK_EQ(reasonIfUnsupported, "Layer is not supported with float32 data type input");
 }
 
-BOOST_AUTO_TEST_CASE(IsConvertFp16ToFp32SupportedFp16OutputNpu) {
+TEST_CASE("IsConvertFp16ToFp32SupportedFp16OutputNpu") {
     std::string reasonIfUnsupported;
 
     bool result = IsConvertLayerSupportedTests<armnn::NpuWorkloadFactory,
@@ -111,11 +109,11 @@ BOOST_AUTO_TEST_CASE(IsConvertFp16ToFp32SupportedFp16OutputNpu) {
                                                armnn::DataType::Float16,
                                                armnn::DataType::Float16>(reasonIfUnsupported);
 
-    BOOST_CHECK(!result);
-    BOOST_CHECK_EQUAL(reasonIfUnsupported, "Layer is not supported with float16 data type output");
+    CHECK(!result);
+    CHECK_EQ(reasonIfUnsupported, "Layer is not supported with float16 data type output");
 }
 
-BOOST_AUTO_TEST_CASE(IsConvertFp32ToFp16SupportedNpu) {
+TEST_CASE("IsConvertFp32ToFp16SupportedNpu") {
     std::string reasonIfUnsupported;
 
     bool result = IsConvertLayerSupportedTests<armnn::NpuWorkloadFactory,
@@ -123,10 +121,10 @@ BOOST_AUTO_TEST_CASE(IsConvertFp32ToFp16SupportedNpu) {
                                                armnn::DataType::Float32,
                                                armnn::DataType::Float16>(reasonIfUnsupported);
 
-    BOOST_CHECK(result);
+    CHECK(result);
 }
 
-BOOST_AUTO_TEST_CASE(IsConvertFp32ToFp16SupportedFp16InputNpu) {
+TEST_CASE("IsConvertFp32ToFp16SupportedFp16InputNpu") {
     std::string reasonIfUnsupported;
 
     bool result = IsConvertLayerSupportedTests<armnn::NpuWorkloadFactory,
@@ -134,11 +132,11 @@ BOOST_AUTO_TEST_CASE(IsConvertFp32ToFp16SupportedFp16InputNpu) {
                                                armnn::DataType::Float16,
                                                armnn::DataType::Float16>(reasonIfUnsupported);
 
-    BOOST_CHECK(!result);
-    BOOST_CHECK_EQUAL(reasonIfUnsupported, "Layer is not supported with float16 data type input");
+    CHECK(!result);
+    CHECK_EQ(reasonIfUnsupported, "Layer is not supported with float16 data type input");
 }
 
-BOOST_AUTO_TEST_CASE(IsConvertFp32ToFp16SupportedFp32OutputNpu) {
+TEST_CASE("IsConvertFp32ToFp16SupportedFp32OutputNpu") {
     std::string reasonIfUnsupported;
 
     bool result = IsConvertLayerSupportedTests<armnn::NpuWorkloadFactory,
@@ -146,33 +144,32 @@ BOOST_AUTO_TEST_CASE(IsConvertFp32ToFp16SupportedFp32OutputNpu) {
                                                armnn::DataType::Float32,
                                                armnn::DataType::Float32>(reasonIfUnsupported);
 
-    BOOST_CHECK(!result);
-    BOOST_CHECK_EQUAL(reasonIfUnsupported, "Layer is not supported with float32 data type output");
+    CHECK(!result);
+    CHECK_EQ(reasonIfUnsupported, "Layer is not supported with float32 data type output");
 }
 
-BOOST_AUTO_TEST_CASE(IsLayerSupportedMeanDimensionsNpu) {
+TEST_CASE("IsLayerSupportedMeanDimensionsNpu") {
     std::string reasonIfUnsupported;
 
     bool result = IsMeanLayerSupportedTests<armnn::NpuWorkloadFactory,
                                             armnn::DataType::Float32,
                                             armnn::DataType::Float32>(reasonIfUnsupported);
 
-    BOOST_CHECK(result);
+    CHECK(result);
 }
 
-BOOST_AUTO_TEST_CASE(IsLayerNotSupportedMeanDimensionsNpu) {
+TEST_CASE("IsLayerNotSupportedMeanDimensionsNpu") {
     std::string reasonIfUnsupported;
 
     bool result = IsMeanLayerNotSupportedTests<armnn::NpuWorkloadFactory,
                                                armnn::DataType::Float32,
                                                armnn::DataType::Float32>(reasonIfUnsupported);
 
-    BOOST_CHECK(!result);
+    CHECK(!result);
 
-    boost::algorithm::trim(reasonIfUnsupported);
-    BOOST_CHECK_EQUAL(reasonIfUnsupported,
-                      "Npu Mean: Expected 4 dimensions but got 2 dimensions instead, for the "
-                      "'output' tensor.");
+    CHECK(reasonIfUnsupported.find(
+        "Npu Mean: Expected 4 dimensions but got 2 dimensions instead, for the 'output' tensor.")
+        != std::string::npos);
 }
 
-BOOST_AUTO_TEST_SUITE_END()
+}

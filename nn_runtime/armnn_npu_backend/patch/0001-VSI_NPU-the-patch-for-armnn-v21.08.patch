@@ -1,0 +1,330 @@
+From 004410dec283bb7d89643573a752492e0ea4bda6 Mon Sep 17 00:00:00 2001
+From: "xiang.zhang" <xiang.zhang@verisilicon.com>
+Date: Sat, 9 Oct 2021 15:42:49 +0800
+Subject: [PATCH 1/1] VSI_NPU the patch for armnn v21.08
+
+Signed-off-by: xiang.zhang <xiang.zhang@verisilicon.com>
+---
+ CMakeLists.txt                                |  9 +++
+ cmake/GlobalConfig.cmake                      | 39 ++++++++--
+ include/armnn/BackendId.hpp                   |  5 +-
+ .../RedirectMembersToConstantInputs.hpp       |  2 +-
+ .../test/layerTests/SoftmaxTestImpl.cpp       | 76 +++++++++----------
+ 5 files changed, 86 insertions(+), 45 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 2b0c95254..7816a75d5 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -52,6 +52,11 @@ if (BUILD_TESTS)
+     add_subdirectory(tests)
+ endif()
+ 
++# include verisilicon modified models
++if (BUILD_VSI_TESTS)
++    add_subdirectory(tests/model)
++endif()
++
+ # Include the additional cmake files in their own target so that they will appear nicely in IDEs
+ add_custom_target(AdditionalCMakeFiles SOURCES ${additional_cmake_files})
+ 
+@@ -556,6 +561,10 @@ if(ARMCOMPUTENEON OR ARMCOMPUTECL)
+     target_link_libraries(armnn ${ARMCOMPUTE_LIBRARIES})
+ endif()
+ 
++if(VSI_NPU)
++    target_link_libraries(armnn ${VSINPU_LIBRARIES})
++endif()
++
+ if(PROFILING_BACKEND_STREAMLINE AND (NOT ("${CMAKE_SYSTEM_NAME}" STREQUAL Android)))
+     target_link_libraries(armnn ${CMAKE_THREAD_LIBS_INIT})
+ endif()
+diff --git a/cmake/GlobalConfig.cmake b/cmake/GlobalConfig.cmake
+index cad22022b..2a4c4b8c7 100644
+--- a/cmake/GlobalConfig.cmake
++++ b/cmake/GlobalConfig.cmake
+@@ -66,7 +66,7 @@ endif()
+ # Compiler flags that are always set
+ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+ if(COMPILER_IS_GNU_LIKE)
+-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -Wextra -Werror -Wold-style-cast -Wno-missing-braces -Wconversion -Wsign-conversion")
++    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -Wextra -Werror -Wold-style-cast -Wno-missing-braces -Wconversion -Wsign-conversion -Wno-deprecated-declarations -Wno-unused-parameter")
+ elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
+ 	# Disable C4996 (use of deprecated identifier) due to https://developercommunity.visualstudio.com/content/problem/252574/deprecated-compilation-warning-for-virtual-overrid.html
+     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /MP /wd4996")
+@@ -121,6 +121,8 @@ endif()
+ 
+ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules ${CMAKE_MODULE_PATH})
+ 
++set(CMAKE_FIND_ROOT_PATH "${CMAKE_FIND_ROOT_PATH};${ARMNN_ROOT};${BOOST_ROOT}")
++
+ include(CMakeFindDependencyMacro)
+ 
+ if (NOT BUILD_PIPE_ONLY)
+@@ -174,16 +176,14 @@ endif()
+ # Flatbuffers support for TF Lite and Armnn Serializer
+ if(BUILD_TF_LITE_PARSER OR BUILD_ARMNN_SERIALIZER)
+     # verify we have a valid flatbuffers include path
+-    find_path(FLATBUFFERS_INCLUDE_PATH flatbuffers/flatbuffers.h
+-              HINTS ${FLATBUFFERS_ROOT}/include /usr/local/include /usr/include)
+-
++    set(FLATBUFFERS_INCLUDE_PATH "${FLATBUFFERS_ROOT}/include")
+     message(STATUS "Flatbuffers headers are located at: ${FLATBUFFERS_INCLUDE_PATH}")
+ 
+     find_library(FLATBUFFERS_LIBRARY
+                  NAMES libflatbuffers.a flatbuffers
+                  HINTS ${FLATBUFFERS_ROOT}/lib /usr/local/lib /usr/lib)
+ 
+-    message(STATUS "Flatbuffers library located at: ${FLATBUFFERS_LIBRARY}")
++    message(STATUS "Flatbuffers library are located at: ${FLATBUFFERS_LIBRARY}")
+ endif()
+ 
+ # Flatbuffers schema support for TF Lite
+@@ -266,6 +266,35 @@ if(ARMCOMPUTENEON OR ARMCOMPUTECL)
+     endif()
+ endif()
+ 
++# ARM Compute NPU backend
++if(VSI_NPU)
++    # Add preprocessor definition for ARM Compute NPU
++    add_definitions(-DARMCOMPUTENPU_ENABLED)
++    if(NOT DEFINED ENV{OVXLIB_DIR})
++        message(FATAL_ERROR "please set ENV: OVXLIB_DIR")
++    else()
++        set(OVXLIB_DIR $ENV{OVXLIB_DIR})
++        set(OVXLIB_LIB ${OVXLIB_DIR}/lib)
++    endif()
++
++    if(NOT DEFINED ENV{NNRT_ROOT})
++        message(FATAL_ERROR "please set ENV: NNRT_ROOT")
++    else()
++        set(NNRT_ROOT $ENV{NNRT_ROOT})
++        set(NNRT_LIB ${NNRT_ROOT}/nnrt/lib)
++    endif()
++
++    if(NOT DEFINED ENV{VIVANTE_SDK_DIR})
++        message(FATAL_ERROR "please set ENV: VIVANTE_SDK_DIR")
++    else()
++        set(VIVANTE_SDK_ROOT $ENV{VIVANTE_SDK_DIR})
++        set(VIVANTE_SDK_LIB $ENV{VIVANTE_SDK_DIR}/drivers)
++    endif()
++
++    link_libraries(-L${NNRT_LIB} -L${OVXLIB_LIB} -L${VIVANTE_SDK_LIB})
++    set(VSINPU_LIBRARIES ovxlib nnrt)
++endif()
++
+ # ARM Compute NEON backend
+ if(ARMCOMPUTENEON)
+     # Add preprocessor definition for ARM Compute NEON
+diff --git a/include/armnn/BackendId.hpp b/include/armnn/BackendId.hpp
+index c94cd6666..cb1e65fd0 100644
+--- a/include/armnn/BackendId.hpp
++++ b/include/armnn/BackendId.hpp
+@@ -26,7 +26,9 @@ enum class Compute
+     /// CPU Execution: NEON: ArmCompute
+     CpuAcc    = 2,
+     /// GPU Execution: OpenCL: ArmCompute
+-    GpuAcc    = 3
++    GpuAcc    = 3,
++    /// VSI NPU Execution: VSI PreCompiled kernels
++    VsiNpu    = 4,
+ };
+ 
+ /// Deprecated function that will be removed together with
+@@ -38,6 +40,7 @@ constexpr char const* GetComputeDeviceAsCString(Compute compute)
+         case armnn::Compute::CpuRef: return "CpuRef";
+         case armnn::Compute::CpuAcc: return "CpuAcc";
+         case armnn::Compute::GpuAcc: return "GpuAcc";
++        case armnn::Compute::VsiNpu: return "VsiNpu";
+         default:                     return "Unknown";
+     }
+ }
+diff --git a/src/armnn/optimizations/RedirectMembersToConstantInputs.hpp b/src/armnn/optimizations/RedirectMembersToConstantInputs.hpp
+index 5bf5ae546..d5fc562f7 100644
+--- a/src/armnn/optimizations/RedirectMembersToConstantInputs.hpp
++++ b/src/armnn/optimizations/RedirectMembersToConstantInputs.hpp
+@@ -5,7 +5,7 @@
+ 
+ #pragma once
+ 
+-#include "IgnoreUnused.hpp"
++#include <armnn/utility/IgnoreUnused.hpp>
+ #include "Optimization.hpp"
+ 
+ #include <armnn/utility/PolymorphicDowncast.hpp>
+diff --git a/src/backends/backendsCommon/test/layerTests/SoftmaxTestImpl.cpp b/src/backends/backendsCommon/test/layerTests/SoftmaxTestImpl.cpp
+index 375bdaa13..68ad0810a 100644
+--- a/src/backends/backendsCommon/test/layerTests/SoftmaxTestImpl.cpp
++++ b/src/backends/backendsCommon/test/layerTests/SoftmaxTestImpl.cpp
+@@ -173,8 +173,8 @@ LayerTestResult<T, 2> SimpleSoftmaxTestImpl(
+                 {
+                         0.643914213228014f, 0.643914213228014f, 0.236882800924671f, 0.236882800924671f,
+                         0.087144312427294f,
+-                        0.087144312427294f, 0.032058600957022f, 0.032058600957022f, 7.246299848982885e-08f,
+-                        7.246299848982885e-08f
++                        0.087144312427294f, 0.032058600957022f, 0.032058600957022f, 0.0f,
++                        0.0f
+                 };
+         break;
+         }
+@@ -191,9 +191,9 @@ LayerTestResult<T, 2> SimpleSoftmaxTestImpl(
+         outputData =
+                 {
+                         0.643914213228014f, 0.236882800924671f, 0.087144312427294f, 0.032058600957022f,
+-                        7.246299848982885e-08f,
++                        0.0f,
+                         0.643914213228014f, 0.236882800924671f, 0.087144312427294f, 0.032058600957022f,
+-                        7.246299848982885e-08f
++                        0.0f
+                 };
+         break;
+         }
+@@ -374,8 +374,8 @@ LayerTestResult<float,3> Simple3dAxisSoftmaxTest(
+ 
+                             0.087144312427294f, 0.087144312427294f, 0.032058600957022f, 0.032058600957022f,
+                             0.032058600957022f,
+-                            0.032058600957022f, 7.246299848982885e-08f, 7.246299848982885e-08f, 7.246299848982885e-08f,
+-                            7.246299848982885e-08f
++                            0.032058600957022f, 0.0f, 0.0f, 0.0f,
++                            0.0f
+                     };
+             break;
+         }
+@@ -395,13 +395,13 @@ LayerTestResult<float,3> Simple3dAxisSoftmaxTest(
+                     {
+                             0.643914213228014f, 0.643914213228014f, 0.236882800924671f, 0.236882800924671f,
+                             0.087144312427294f,
+-                            0.087144312427294f, 0.032058600957022f, 0.032058600957022f, 7.246299848982885e-08f,
+-                            7.246299848982885e-08f,
++                            0.087144312427294f, 0.032058600957022f, 0.032058600957022f, 0.0f,
++                            0.0f,
+ 
+                             0.643914213228014f, 0.643914213228014f, 0.236882800924671f, 0.236882800924671f,
+                             0.087144312427294f,
+-                            0.087144312427294f, 0.032058600957022f, 0.032058600957022f, 7.246299848982885e-08f,
+-                            7.246299848982885e-08f
++                            0.087144312427294f, 0.032058600957022f, 0.032058600957022f, 0.0f,
++                            0.0f
+                     };
+         break;
+         }
+@@ -419,14 +419,14 @@ LayerTestResult<float,3> Simple3dAxisSoftmaxTest(
+             outputData =
+                     {
+                             0.643914213228014f, 0.236882800924671f, 0.087144312427294f, 0.032058600957022f,
+-                            7.246299848982885e-08f,
++                            0.0f,
+                             0.643914213228014f, 0.236882800924671f, 0.087144312427294f, 0.032058600957022f,
+-                            7.246299848982885e-08f,
++                            0.0f,
+ 
+                             0.643914213228014f, 0.236882800924671f, 0.087144312427294f, 0.032058600957022f,
+-                            7.246299848982885e-08f,
++                            0.0f,
+                             0.643914213228014f, 0.236882800924671f, 0.087144312427294f, 0.032058600957022f,
+-                            7.246299848982885e-08f
++                            0.0f
+                     };
+             break;
+         }
+@@ -487,10 +487,10 @@ LayerTestResult<float,4> Simple4dAxisSoftmaxTest(
+                             0.032058600957022f,
+                             0.032058600957022f, 0.032058600957022f, 0.032058600957022f, 0.032058600957022f,
+                             0.032058600957022f,
+-                            0.032058600957022f, 0.032058600957022f, 7.246299848982885e-08f, 7.246299848982885e-08f,
+-                            7.246299848982885e-08f,
+-                            7.246299848982885e-08f, 7.246299848982885e-08f, 7.246299848982885e-08f,
+-                            7.246299848982885e-08f, 7.246299848982885e-08f
++                            0.032058600957022f, 0.032058600957022f, 0.0f, 0.0f,
++                            0.0f,
++                            0.0f, 0.0f, 0.0f,
++                            0.0f, 0.0f
+                     };
+             break;
+         }
+@@ -515,8 +515,8 @@ LayerTestResult<float,4> Simple4dAxisSoftmaxTest(
+                             0.087144312427294f,
+                             0.087144312427294f, 0.087144312427294f, 0.032058600957022f, 0.032058600957022f,
+                             0.032058600957022f,
+-                            0.032058600957022f, 7.246299848982885e-08f, 7.246299848982885e-08f, 7.246299848982885e-08f,
+-                            7.246299848982885e-08f,
++                            0.032058600957022f, 0.0f, 0.0f, 0.0f,
++                            0.0f,
+ 
+ 
+                             0.643914213228014f, 0.643914213228014f, 0.643914213228014f, 0.643914213228014f,
+@@ -525,8 +525,8 @@ LayerTestResult<float,4> Simple4dAxisSoftmaxTest(
+                             0.087144312427294f,
+                             0.087144312427294f, 0.087144312427294f, 0.032058600957022f, 0.032058600957022f,
+                             0.032058600957022f,
+-                            0.032058600957022f, 7.246299848982885e-08f, 7.246299848982885e-08f, 7.246299848982885e-08f,
+-                            7.246299848982885e-08f
++                            0.032058600957022f, 0.0f, 0.0f, 0.0f,
++                            0.0f
+                     };
+             break;
+         }
+@@ -547,21 +547,21 @@ LayerTestResult<float,4> Simple4dAxisSoftmaxTest(
+                 {
+                         0.643914213228014f, 0.643914213228014f, 0.236882800924671f, 0.236882800924671f,
+                         0.087144312427294f,
+-                        0.087144312427294f, 0.032058600957022f, 0.032058600957022f, 7.246299848982885e-08f,
+-                        7.246299848982885e-08f,
++                        0.087144312427294f, 0.032058600957022f, 0.032058600957022f, 0.0f,
++                        0.0f,
+                         0.643914213228014f, 0.643914213228014f, 0.236882800924671f, 0.236882800924671f,
+                         0.087144312427294f,
+-                        0.087144312427294f, 0.032058600957022f, 0.032058600957022f, 7.246299848982885e-08f,
+-                        7.246299848982885e-08f,
++                        0.087144312427294f, 0.032058600957022f, 0.032058600957022f, 0.0f,
++                        0.0f,
+ 
+                         0.643914213228014f, 0.643914213228014f, 0.236882800924671f, 0.236882800924671f,
+                         0.087144312427294f,
+-                        0.087144312427294f, 0.032058600957022f, 0.032058600957022f, 7.246299848982885e-08f,
+-                        7.246299848982885e-08f,
++                        0.087144312427294f, 0.032058600957022f, 0.032058600957022f, 0.0f,
++                        0.0f,
+                         0.643914213228014f, 0.643914213228014f, 0.236882800924671f, 0.236882800924671f,
+                         0.087144312427294f,
+-                        0.087144312427294f, 0.032058600957022f, 0.032058600957022f, 7.246299848982885e-08f,
+-                        7.246299848982885e-08f
++                        0.087144312427294f, 0.032058600957022f, 0.032058600957022f, 0.0f,
++                        0.0f
+                 };
+         break;
+         }
+@@ -581,22 +581,22 @@ LayerTestResult<float,4> Simple4dAxisSoftmaxTest(
+             outputData =
+                     {
+                             0.643914213228014f, 0.236882800924671f, 0.087144312427294f, 0.032058600957022f,
+-                            7.246299848982885e-08f,
++                            0.0f,
+                             0.643914213228014f, 0.236882800924671f, 0.087144312427294f, 0.032058600957022f,
+-                            7.246299848982885e-08f,
++                            0.0f,
+                             0.643914213228014f, 0.236882800924671f, 0.087144312427294f, 0.032058600957022f,
+-                            7.246299848982885e-08f,
++                            0.0f,
+                             0.643914213228014f, 0.236882800924671f, 0.087144312427294f, 0.032058600957022f,
+-                            7.246299848982885e-08f,
++                            0.0f,
+ 
+                             0.643914213228014f, 0.236882800924671f, 0.087144312427294f, 0.032058600957022f,
+-                            7.246299848982885e-08f,
++                            0.0f,
+                             0.643914213228014f, 0.236882800924671f, 0.087144312427294f, 0.032058600957022f,
+-                            7.246299848982885e-08f,
++                            0.0f,
+                             0.643914213228014f, 0.236882800924671f, 0.087144312427294f, 0.032058600957022f,
+-                            7.246299848982885e-08f,
++                            0.0f,
+                             0.643914213228014f, 0.236882800924671f, 0.087144312427294f, 0.032058600957022f,
+-                            7.246299848982885e-08f
++                            0.0f
+                     };
+             break;
+         }
+-- 
+2.26.2
+

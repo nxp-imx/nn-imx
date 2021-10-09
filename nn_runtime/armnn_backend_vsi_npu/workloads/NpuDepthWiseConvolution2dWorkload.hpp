@@ -1,38 +1,37 @@
 /****************************************************************************
-*
-*    Copyright (c) 2019 Vivante Corporation
-*
-*    Permission is hereby granted, free of charge, to any person obtaining a
-*    copy of this software and associated documentation files (the "Software"),
-*    to deal in the Software without restriction, including without limitation
-*    the rights to use, copy, modify, merge, publish, distribute, sublicense,
-*    and/or sell copies of the Software, and to permit persons to whom the
-*    Software is furnished to do so, subject to the following conditions:
-*
-*    The above copyright notice and this permission notice shall be included in
-*    all copies or substantial portions of the Software.
-*
-*    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-*    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-*    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-*    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-*    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-*    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-*    DEALINGS IN THE SOFTWARE.
-*
-*****************************************************************************/
+ *
+ *    Copyright (c) 2019 Vivante Corporation
+ *
+ *    Permission is hereby granted, free of charge, to any person obtaining a
+ *    copy of this software and associated documentation files (the "Software"),
+ *    to deal in the Software without restriction, including without limitation
+ *    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ *    and/or sell copies of the Software, and to permit persons to whom the
+ *    Software is furnished to do so, subject to the following conditions:
+ *
+ *    The above copyright notice and this permission notice shall be included in
+ *    all copies or substantial portions of the Software.
+ *
+ *    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ *    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ *    DEALINGS IN THE SOFTWARE.
+ *
+ *****************************************************************************/
 
 #pragma once
 
 #include <armnnUtils/FloatingPointConverter.hpp>
-#include <backendsCommon/CpuTensorHandle.hpp>
+#include <armnnUtils/Permute.hpp>
+#include <backendsCommon/TensorHandle.hpp>
 #include <backendsCommon/Workload.hpp>
 #include <backendsCommon/WorkloadData.hpp>
-#include <iostream>
-#include <armnnUtils/Permute.hpp>
-#include "TNpuWorkloads.hpp"
 
 #include "FakeBiasSelector.hpp"
+#include "TNpuWorkloads.hpp"
 
 namespace armnn {
 
@@ -60,8 +59,7 @@ class NpuDepthWiseConvolution2dWorkload
           m_StrideY(descriptor.m_Parameters.m_StrideY),
           m_DilationX(descriptor.m_Parameters.m_DilationX),
           m_DilationY(descriptor.m_Parameters.m_DilationY),
-          m_DataLayout(descriptor.m_Parameters.m_DataLayout)
-          {
+          m_DataLayout(descriptor.m_Parameters.m_DataLayout) {
         // Add inputs operand
         std::vector<uint32_t> inOperandIds;
 
@@ -79,76 +77,16 @@ class NpuDepthWiseConvolution2dWorkload
         TensorShape weightShape = m_Weight->GetShape();
         TensorInfo weightInfo = m_Weight->GetTensorInfo();
 
-        // 1. Driver needs the [1, N*C, H, W] format of weight and chooses the filter
-        //    as the order of batch0-channel0, batch0-channel1, batch1-channel0
-        //    batch1-channel1 ... So we need to permute weight data from NCHW to CNHW and reshape
-        //    weight shape to [1, N*C, H, W]
-        // 2. Weight is always NCHW in armnn, we need to permute weight data from NCHW to NHWC,
-        //    because all constant operand will be permuted from NHWC to NCHW
-        if (m_DataLayout == armnn::DataLayout::NHWC) {
-            uint32_t dataTypeSize = GetDataTypeSize(weightInfo.GetDataType());
-            // swap N and C
-            std::swap(weightShape[0], weightShape[1]);
-            // NCHW->CNHW
-            const armnn::PermutationVector NCHWToCNHW = {1, 0, 2, 3};
-            boost::scoped_array<uint8_t> temp;
-            temp.reset(new uint8_t[weightInfo.GetNumBytes()]);
-            armnnUtils::Permute(
-                weightShape, NCHWToCNHW, m_Weight->GetTensor<void>(), temp.get(), dataTypeSize);
-
-            // convert shape from [C, N, H, W] to [1, C*N, H, W]
-            weightShape[1] = weightShape[0] * weightShape[1];
-            weightShape[0] = 1;
-
-            // permute from [1, H, W, C*N] to [1, C*N, H, W]
-            std::swap(weightShape[1], weightShape[2]);
-            std::swap(weightShape[2], weightShape[3]);
-            const armnn::PermutationVector NCHWToNHWC = {0, 3, 1, 2};
-
-            m_KernelData.reset(new uint8_t[weightInfo.GetNumBytes()]);
-            armnnUtils::Permute(
-                weightShape, NCHWToNHWC, temp.get(), m_KernelData.get(), dataTypeSize);
-
-            if (weightInfo.HasPerAxisQuantization()) {
-                // weight format in ArmNN: [1, C*N, H, W]
-                // weight format in OpenVX: [W, H, C*N, 1]
-                // So QuantizationDim must be 2.
-                const unsigned int kWeightQuantizationDim4OpenVX = 2;
-                weightInfo.SetQuantizationDim(
-                    armnn::Optional<unsigned int>(kWeightQuantizationDim4OpenVX));
-            }
-            inOperandIds.push_back(
-                this->AddOperandAndSetValue(weightInfo, weightShape, m_KernelData.get()));
-        } else {
-            // swap N and C
-            std::swap(weightShape[0], weightShape[1]);
-
-            // NCHW->CNHW
-            const armnn::PermutationVector NCHWToCNHW = {1, 0, 2, 3};
-
-            uint32_t dataTypeSize = GetDataTypeSize(weightInfo.GetDataType());
-            m_KernelData.reset(new uint8_t[weightInfo.GetNumBytes()]);
-            armnnUtils::Permute(weightShape,
-                                NCHWToCNHW,
-                                m_Weight->GetTensor<void>(),
-                                m_KernelData.get(),
-                                dataTypeSize);
-
-            // convert shape to [1, N*C, H, W]
-            weightShape[1] = weightShape[0] * weightShape[1];
-            weightShape[0] = 1;
-
-            if (weightInfo.HasPerAxisQuantization()) {
-                // weight format in ArmNN: [1, C*N, H, W]
-                // weight format in OpenVX: [W, H, C*N, 1]
-                // So QuantizationDim must be 2.
-                const unsigned int kWeightQuantizationDim4OpenVX = 2;
-                weightInfo.SetQuantizationDim(
-                    armnn::Optional<unsigned int>(kWeightQuantizationDim4OpenVX));
-            }
-            inOperandIds.push_back(
-                this->AddOperandAndSetValue(weightInfo, weightShape, m_KernelData.get()));
+        if (weightInfo.HasPerAxisQuantization()) {
+            // weight format in         ArmNN: [1, H, W, O]. channelDim = 3.
+            //                                 {0, 3, 1, 2}
+            // finally, weight format in NNRT: [1, O, H, W], channelDim = 1
+            //                           OVX : [W, H, O, 1], channelDim = 2
+            const unsigned int kChannelDimInArmnn = 3;
+            weightInfo.SetQuantizationDim(armnn::Optional<unsigned int>(kChannelDimInArmnn));
         }
+        inOperandIds.push_back(
+            this->AddOperandAndSetValue(weightInfo, weightShape, m_Weight->GetTensor<void>()));
 
         // Add bias operand
         if (m_Bias) {
@@ -156,11 +94,11 @@ class NpuDepthWiseConvolution2dWorkload
             const TensorShape biasShape = m_Bias->GetShape();
             if (biasInfo.GetDataType() == DataType::Float16) {
                 biasInfo.SetDataType(DataType::Float32);
-                m_Fp32BiasData.reset(new float[biasInfo.GetNumElements()]);
+                m_Fp32BiasData.resize(biasInfo.GetNumElements());
                 armnnUtils::FloatingPointConverter::ConvertFloat16To32(
-                    m_Bias->GetTensor<Half>(), biasInfo.GetNumElements(), m_Fp32BiasData.get());
+                    m_Bias->GetTensor<Half>(), biasInfo.GetNumElements(), m_Fp32BiasData.data());
                 inOperandIds.push_back(
-                    this->AddOperandAndSetValue(biasInfo, biasShape, m_Fp32BiasData.get()));
+                    this->AddOperandAndSetValue(biasInfo, biasShape, m_Fp32BiasData.data()));
             } else {
                 inOperandIds.push_back(
                     this->AddOperandAndSetValue(biasInfo, biasShape, m_Bias->GetTensor<void>()));
@@ -168,11 +106,7 @@ class NpuDepthWiseConvolution2dWorkload
         } else {
             TensorShape biasShape(1);
             TensorInfo biasInfo(biasShape, FakeBias::value);
-            if (m_DataLayout == armnn::DataLayout::NCHW) {
-                biasShape[0] = weightShape[1];  // Channels
-            } else {
-                biasShape[0] = weightShape[3];  // Channels
-            }
+            biasShape[0] = weightShape[3];  // Channels
 
             m_FakeBiasData.resize(biasShape[0]);
             biasInfo.SetShape(biasShape);
@@ -271,10 +205,10 @@ class NpuDepthWiseConvolution2dWorkload
     uint32_t m_DilationX;
     uint32_t m_DilationY;
     armnn::DataLayout m_DataLayout;
-    mutable boost::scoped_array<uint8_t> m_KernelData;
+    mutable std::vector<uint8_t> m_KernelData;
 
     std::vector<typename FakeBias::type> m_FakeBiasData;  //!< workaround: bias required by shader
-    mutable boost::scoped_array<float> m_Fp32BiasData;
+    mutable std::vector<float> m_Fp32BiasData;
 };
 using NpuDepthWiseConvolution2dFloat32Workload =
     NpuDepthWiseConvolution2dWorkload<armnn::DataType::Float32>;

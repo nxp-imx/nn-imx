@@ -31,24 +31,23 @@
 #include <backendsCommon/test/GatherEndToEndTestImpl.hpp>
 #include <backendsCommon/test/SplitterEndToEndTestImpl.hpp>
 
-#include <boost/test/execution_monitor.hpp>
-#include <boost/test/unit_test.hpp>
+#include <doctest/doctest.h>
 
-BOOST_AUTO_TEST_SUITE(VSI_Backend)
+TEST_SUITE("NpuEndToEnd")
+{
+std::vector<armnn::BackendId> npuDefaultBackends = {armnn::Compute::VsiNpu, armnn::Compute::CpuRef};
 
-std::vector<armnn::BackendId> defaultBackends = {armnn::Compute::VsiNpu, armnn::Compute::CpuRef};
-
-BOOST_AUTO_TEST_CASE(ConstantUsage_Npu_Float32) {
-    BOOST_TEST(ConstantUsageFloat32Test(defaultBackends));
+TEST_CASE("ConstantUsage_Npu_Float32") {
+    CHECK(ConstantUsageFloat32Test(npuDefaultBackends));
 }
 
 // Not support zero_point < 0
-// BOOST_AUTO_TEST_CASE(ConstantUsage_Npu_Uint8)
+// TEST_CASE(ConstantUsage_Npu_Uint8)
 // {
-//     BOOST_TEST(ConstantUsageUint8Test(defaultBackends));
+//     CHECK(ConstantUsageUint8Test(npuDefaultBackends));
 // }
 
-BOOST_AUTO_TEST_CASE(Unsigned8) {
+TEST_CASE("Unsigned8") {
     using namespace armnn;
 
     // Create runtime in which test will run
@@ -77,12 +76,12 @@ BOOST_AUTO_TEST_CASE(Unsigned8) {
     softmax->GetOutputSlot(0).SetTensorInfo(outputTensorInfo);
 
     // optimize the network
-    IOptimizedNetworkPtr optNet = Optimize(*net, defaultBackends, runtime->GetDeviceSpec());
+    IOptimizedNetworkPtr optNet = Optimize(*net, npuDefaultBackends, runtime->GetDeviceSpec());
 
     // Loads it into the runtime.
     NetworkId netId;
     auto error = runtime->LoadNetwork(netId, std::move(optNet));
-    BOOST_TEST(error == Status::Success);
+    CHECK(error == Status::Success);
 
     // Creates structures for input & output.
     std::vector<uint8_t> inputData{
@@ -103,14 +102,14 @@ BOOST_AUTO_TEST_CASE(Unsigned8) {
     runtime->EnqueueWorkload(netId, inputTensors, outputTensors);
 
     // Checks the results.
-    BOOST_TEST(outputData[0] == 0);
-    BOOST_TEST(outputData[1] == 0);
-    BOOST_TEST(outputData[2] == 0);
-    BOOST_TEST(outputData[3] == 255);  // softmax has been saturated.
-    BOOST_TEST(outputData[4] == 0);
+    CHECK(outputData[0] == 0);
+    CHECK(outputData[1] == 0);
+    CHECK(outputData[2] == 0);
+    CHECK(outputData[3] == 255);  // softmax has been saturated.
+    CHECK(outputData[4] == 0);
 }
 
-BOOST_AUTO_TEST_CASE(TrivialAdd) {
+TEST_CASE("TrivialAdd") {
     // This test was designed to match "AddTwo" in android nn/runtime/test/TestTrivialModel.cpp.
 
     using namespace armnn;
@@ -138,7 +137,7 @@ BOOST_AUTO_TEST_CASE(TrivialAdd) {
     add->GetOutputSlot(0).SetTensorInfo(tensorInfo);
 
     // optimize the network
-    IOptimizedNetworkPtr optNet = Optimize(*net, defaultBackends, runtime->GetDeviceSpec());
+    IOptimizedNetworkPtr optNet = Optimize(*net, npuDefaultBackends, runtime->GetDeviceSpec());
 
     // Loads it into the runtime.
     NetworkId netId;
@@ -160,21 +159,21 @@ BOOST_AUTO_TEST_CASE(TrivialAdd) {
     runtime->EnqueueWorkload(netId, inputTensors, outputTensors);
 
     // Checks the results
-    BOOST_TEST(outputData[0] == 101);
-    BOOST_TEST(outputData[1] == 202);
-    BOOST_TEST(outputData[2] == 303);
-    BOOST_TEST(outputData[3] == 404);
-    BOOST_TEST(outputData[4] == 505);
-    BOOST_TEST(outputData[5] == 606);
-    BOOST_TEST(outputData[6] == 707);
-    BOOST_TEST(outputData[7] == 808);
-    BOOST_TEST(outputData[8] == 909);
-    BOOST_TEST(outputData[9] == 1010);
-    BOOST_TEST(outputData[10] == 1111);
-    BOOST_TEST(outputData[11] == 1212);
+    CHECK(outputData[0] == 101);
+    CHECK(outputData[1] == 202);
+    CHECK(outputData[2] == 303);
+    CHECK(outputData[3] == 404);
+    CHECK(outputData[4] == 505);
+    CHECK(outputData[5] == 606);
+    CHECK(outputData[6] == 707);
+    CHECK(outputData[7] == 808);
+    CHECK(outputData[8] == 909);
+    CHECK(outputData[9] == 1010);
+    CHECK(outputData[10] == 1111);
+    CHECK(outputData[11] == 1212);
 }
 
-BOOST_AUTO_TEST_CASE(MultipleOutputs) {
+TEST_CASE("MultipleOutputs") {
     using namespace armnn;
 
     // Create runtime in which test will run
@@ -226,7 +225,7 @@ BOOST_AUTO_TEST_CASE(MultipleOutputs) {
     activation3->GetOutputSlot(0).SetTensorInfo(tensorInfo);
 
     // optimize the network
-    IOptimizedNetworkPtr optNet = Optimize(*net, defaultBackends, runtime->GetDeviceSpec());
+    IOptimizedNetworkPtr optNet = Optimize(*net, npuDefaultBackends, runtime->GetDeviceSpec());
 
     // Loads it into the runtime.
     NetworkId netId;
@@ -251,15 +250,15 @@ BOOST_AUTO_TEST_CASE(MultipleOutputs) {
     runtime->EnqueueWorkload(netId, inputTensors, outputTensors);
 
     // Checks the results.
-    BOOST_TEST(output1Data ==
+    CHECK(output1Data ==
                std::vector<float>({1.f, 1.f, 1.f, 1.f, 1.f, 0.f, -1.f, -1.f, 1.f, 1.f}));  // ReLu1
-    BOOST_TEST(output2Data ==
+    CHECK(output2Data ==
                std::vector<float>({3.f, 5.f, 2.f, 3.f, 6.f, 0.f, 0.f, 0.f, 3.f, 3.f}));  // ReLu6
-    BOOST_TEST(output3Data ==
+    CHECK(output3Data ==
                std::vector<float>({3.f, 5.f, 2.f, 3.f, 5.f, 2.f, 2.f, 2.f, 3.f, 3.f}));  // [2, 5]
 }
 
-BOOST_AUTO_TEST_CASE(TrivialMin) {
+TEST_CASE("TrivialMin") {
     using namespace armnn;
 
     // Create runtime in which test will run
@@ -285,7 +284,7 @@ BOOST_AUTO_TEST_CASE(TrivialMin) {
     min->GetOutputSlot(0).SetTensorInfo(tensorInfo);
 
     // optimize the network
-    IOptimizedNetworkPtr optNet = Optimize(*net, defaultBackends, runtime->GetDeviceSpec());
+    IOptimizedNetworkPtr optNet = Optimize(*net, npuDefaultBackends, runtime->GetDeviceSpec());
 
     // Loads it into the runtime.
     NetworkId netId;
@@ -306,81 +305,61 @@ BOOST_AUTO_TEST_CASE(TrivialMin) {
     runtime->EnqueueWorkload(netId, inputTensors, outputTensors);
 
     // Checks the results
-    BOOST_TEST(outputData[0] == 1);
-    BOOST_TEST(outputData[1] == 1);
-    BOOST_TEST(outputData[2] == 3);
-    BOOST_TEST(outputData[3] == 2);
+    CHECK(outputData[0] == 1);
+    CHECK(outputData[1] == 1);
+    CHECK(outputData[2] == 3);
+    CHECK(outputData[3] == 2);
 }
 
-BOOST_AUTO_TEST_CASE(NpuConcatEndToEndDim0Test) {
-    ConcatDim0EndToEnd<armnn::DataType::Float32>(defaultBackends);
+TEST_CASE("NpuConcatEndToEndDim0Test") {
+    ConcatDim0EndToEnd<armnn::DataType::Float32>(npuDefaultBackends);
 }
 
-BOOST_AUTO_TEST_CASE(NpuConcatEndToEndDim0Uint8Test) {
-    ConcatDim0EndToEnd<armnn::DataType::QAsymmU8>(defaultBackends);
+TEST_CASE("NpuConcatEndToEndDim0Uint8Test") {
+    ConcatDim0EndToEnd<armnn::DataType::QAsymmU8>(npuDefaultBackends);
 }
 
-BOOST_AUTO_TEST_CASE(NpuConcatEndToEndDim1Test) {
-    ConcatDim1EndToEnd<armnn::DataType::Float32>(defaultBackends);
+TEST_CASE("NpuConcatEndToEndDim1Test") {
+    ConcatDim1EndToEnd<armnn::DataType::Float32>(npuDefaultBackends);
 }
 
-BOOST_AUTO_TEST_CASE(NpuConcatEndToEndDim1Uint8Test) {
-    ConcatDim1EndToEnd<armnn::DataType::QAsymmU8>(defaultBackends);
+TEST_CASE("NpuConcatEndToEndDim1Uint8Test") {
+    ConcatDim1EndToEnd<armnn::DataType::QAsymmU8>(npuDefaultBackends);
 }
 
-BOOST_AUTO_TEST_CASE(NpuConcatEndToEndDim2Test) {
-    ConcatDim2EndToEnd<armnn::DataType::Float32>(defaultBackends);
+TEST_CASE("NpuConcatEndToEndDim2Test") {
+    ConcatDim2EndToEnd<armnn::DataType::Float32>(npuDefaultBackends);
 }
 
-BOOST_AUTO_TEST_CASE(NpuConcatEndToEndDim2Uint8Test) {
-    ConcatDim2EndToEnd<armnn::DataType::QAsymmU8>(defaultBackends);
+TEST_CASE("NpuConcatEndToEndDim2Uint8Test") {
+    ConcatDim2EndToEnd<armnn::DataType::QAsymmU8>(npuDefaultBackends);
 }
 
-BOOST_AUTO_TEST_CASE(NpuConcatEndToEndDim3Test) {
-    ConcatDim3EndToEnd<armnn::DataType::Float32>(defaultBackends);
+TEST_CASE("NpuConcatEndToEndDim3Test") {
+    ConcatDim3EndToEnd<armnn::DataType::Float32>(npuDefaultBackends);
 }
 
-BOOST_AUTO_TEST_CASE(NpuConcatEndToEndDim3Uint8Test) {
-    ConcatDim3EndToEnd<armnn::DataType::QAsymmU8>(defaultBackends);
+TEST_CASE("NpuConcatEndToEndDim3Uint8Test") {
+    ConcatDim3EndToEnd<armnn::DataType::QAsymmU8>(npuDefaultBackends);
 }
 
-// BOOST_AUTO_TEST_CASE(RefGatherFloatTest)
-// {
-//     GatherEndToEnd<armnn::DataType::Float32>(defaultBackends);
+TEST_CASE("DequantizeEndToEndSimpleTest") {
+    DequantizeEndToEndSimple<armnn::DataType::QAsymmU8>(npuDefaultBackends);
+}
+
+TEST_CASE("DequantizeEndToEndOffsetTest") {
+    DequantizeEndToEndOffset<armnn::DataType::QAsymmU8>(npuDefaultBackends);
+}
+
+// TEST_CASE(DequantizeEndToEndSimpleInt16Test) {
+//     DequantizeEndToEndSimple<armnn::DataType::QSymmS16>(npuDefaultBackends);
 // }
 
-// BOOST_AUTO_TEST_CASE(RefGatherUint8Test)
-// {
-//     GatherEndToEnd<armnn::DataType::QAsymmU8>(defaultBackends);
+// TEST_CASE(DequantizeEndToEndOffsetInt16Test) {
+//     DequantizeEndToEndOffset<armnn::DataType::QSymmS16>(npuDefaultBackends);
 // }
 
-// BOOST_AUTO_TEST_CASE(RefGatherMultiDimFloatTest)
-// {
-//     GatherMultiDimEndToEnd<armnn::DataType::Float32>(defaultBackends);
-// }
-
-// BOOST_AUTO_TEST_CASE(RefGatherMultiDimUint8Test)
-// {
-//     GatherMultiDimEndToEnd<armnn::DataType::QAsymmU8>(defaultBackends);
-// }
-
-BOOST_AUTO_TEST_CASE(DequantizeEndToEndSimpleTest) {
-    DequantizeEndToEndSimple<armnn::DataType::QAsymmU8>(defaultBackends);
-}
-
-BOOST_AUTO_TEST_CASE(DequantizeEndToEndOffsetTest) {
-    DequantizeEndToEndOffset<armnn::DataType::QAsymmU8>(defaultBackends);
-}
-
-// BOOST_AUTO_TEST_CASE(DequantizeEndToEndSimpleInt16Test) {
-//     DequantizeEndToEndSimple<armnn::DataType::QSymmS16>(defaultBackends);
-// }
-
-// BOOST_AUTO_TEST_CASE(DequantizeEndToEndOffsetInt16Test) {
-//     DequantizeEndToEndOffset<armnn::DataType::QSymmS16>(defaultBackends);
-// }
-
-// BOOST_AUTO_TEST_CASE(RefDetectionPostProcessRegularNmsTest) {
+// TEST_CASE(RefDetectionPostProcessRegularNmsTest) {
 //     std::vector<float> boxEncodings({0.0f, 0.0f,  0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
 //                                      0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
 //                                      0.0f, 1.0f,  0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f});
@@ -413,7 +392,7 @@ BOOST_AUTO_TEST_CASE(DequantizeEndToEndOffsetTest) {
     //                                 0.5f, 0.5f,  1.0f, 1.0f, 0.5f, 10.5f,  1.0f, 1.0f,
     //                                 0.5f, 10.5f, 1.0f, 1.0f, 0.5f, 100.5f, 1.0f, 1.0f});
     //     DetectionPostProcessRegularNmsEndToEnd<armnn::DataType::Float32>(
-    //         defaultBackends, boxEncodings, scores, anchors);
+    //         npuDefaultBackends, boxEncodings, scores, anchors);
     // }
 
 inline void QuantizeData(uint8_t* quant, const float* dequant, const TensorInfo& info) {
@@ -423,7 +402,7 @@ inline void QuantizeData(uint8_t* quant, const float* dequant, const TensorInfo&
     }
 }
 
-// BOOST_AUTO_TEST_CASE(RefDetectionPostProcessRegularNmsUint8Test) {
+// TEST_CASE(RefDetectionPostProcessRegularNmsUint8Test) {
 //     armnn::TensorInfo boxEncodingsInfo({1, 6, 4}, armnn::DataType::Float32);
 //     armnn::TensorInfo scoresInfo({1, 6, 3}, armnn::DataType::Float32);
 //     armnn::TensorInfo anchorsInfo({6, 4}, armnn::DataType::Float32);
@@ -467,10 +446,10 @@ inline void QuantizeData(uint8_t* quant, const float* dequant, const TensorInfo&
 //     QuantizeData(qScores.data(), scores.data(), scoresInfo);
 //     QuantizeData(qAnchors.data(), anchors.data(), anchorsInfo);
 //     DetectionPostProcessRegularNmsEndToEnd<armnn::DataType::QAsymmU8>(
-//         defaultBackends, qBoxEncodings, qScores, qAnchors, 1.0f, 1, 0.01f, 0, 0.5f, 0);
+//         npuDefaultBackends, qBoxEncodings, qScores, qAnchors, 1.0f, 1, 0.01f, 0, 0.5f, 0);
 // }
 
-// BOOST_AUTO_TEST_CASE(RefDetectionPostProcessFastNmsTest) {
+// TEST_CASE(RefDetectionPostProcessFastNmsTest) {
 //     std::vector<float> boxEncodings({0.0f, 0.0f,  0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
 //                                      0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
 //                                      0.0f, 1.0f,  0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f});
@@ -496,10 +475,10 @@ inline void QuantizeData(uint8_t* quant, const float* dequant, const TensorInfo&
 //                                 0.5f, 0.5f,  1.0f, 1.0f, 0.5f, 10.5f,  1.0f, 1.0f,
 //                                 0.5f, 10.5f, 1.0f, 1.0f, 0.5f, 100.5f, 1.0f, 1.0f});
 //     DetectionPostProcessFastNmsEndToEnd<armnn::DataType::Float32>(
-//         defaultBackends, boxEncodings, scores, anchors);
+//         npuDefaultBackends, boxEncodings, scores, anchors);
 // }
 
-// BOOST_AUTO_TEST_CASE(RefDetectionPostProcessFastNmsUint8Test) {
+// TEST_CASE(RefDetectionPostProcessFastNmsUint8Test) {
 //     armnn::TensorInfo boxEncodingsInfo({1, 6, 4}, armnn::DataType::Float32);
 //     armnn::TensorInfo scoresInfo({1, 6, 3}, armnn::DataType::Float32);
 //     armnn::TensorInfo anchorsInfo({6, 4}, armnn::DataType::Float32);
@@ -543,107 +522,107 @@ inline void QuantizeData(uint8_t* quant, const float* dequant, const TensorInfo&
 //     QuantizeData(qScores.data(), scores.data(), scoresInfo);
 //     QuantizeData(qAnchors.data(), anchors.data(), anchorsInfo);
 //     DetectionPostProcessFastNmsEndToEnd<armnn::DataType::QAsymmU8>(
-//         defaultBackends, qBoxEncodings, qScores, qAnchors, 1.0f, 1, 0.01f, 0, 0.5f, 0);
+//         npuDefaultBackends, qBoxEncodings, qScores, qAnchors, 1.0f, 1, 0.01f, 0, 0.5f, 0);
 // }
 
-// BOOST_AUTO_TEST_CASE(RefSplitter1dEndToEndTest)
+// TEST_CASE(RefSplitter1dEndToEndTest)
 // {
-//     Splitter1dEndToEnd<armnn::DataType::Float32>(defaultBackends);
+//     Splitter1dEndToEnd<armnn::DataType::Float32>(npuDefaultBackends);
 // }
 
-// BOOST_AUTO_TEST_CASE(RefSplitter1dEndToEndUint8Test)
+// TEST_CASE(RefSplitter1dEndToEndUint8Test)
 // {
-//     Splitter1dEndToEnd<armnn::DataType::QAsymmU8>(defaultBackends);
+//     Splitter1dEndToEnd<armnn::DataType::QAsymmU8>(npuDefaultBackends);
 // }
 
-// BOOST_AUTO_TEST_CASE(RefSplitter2dDim0EndToEndTest)
+// TEST_CASE(RefSplitter2dDim0EndToEndTest)
 // {
-//     Splitter2dDim0EndToEnd<armnn::DataType::Float32>(defaultBackends);
+//     Splitter2dDim0EndToEnd<armnn::DataType::Float32>(npuDefaultBackends);
 // }
 
-// BOOST_AUTO_TEST_CASE(RefSplitter2dDim1EndToEndTest)
+// TEST_CASE(RefSplitter2dDim1EndToEndTest)
 // {
-//     Splitter2dDim1EndToEnd<armnn::DataType::Float32>(defaultBackends);
+//     Splitter2dDim1EndToEnd<armnn::DataType::Float32>(npuDefaultBackends);
 // }
 
-// BOOST_AUTO_TEST_CASE(RefSplitter2dDim0EndToEndUint8Test)
+// TEST_CASE(RefSplitter2dDim0EndToEndUint8Test)
 // {
-//     Splitter2dDim0EndToEnd<armnn::DataType::QAsymmU8>(defaultBackends);
+//     Splitter2dDim0EndToEnd<armnn::DataType::QAsymmU8>(npuDefaultBackends);
 // }
 
-// BOOST_AUTO_TEST_CASE(RefSplitter2dDim1EndToEndUint8Test)
+// TEST_CASE(RefSplitter2dDim1EndToEndUint8Test)
 // {
-//     Splitter2dDim1EndToEnd<armnn::DataType::QAsymmU8>(defaultBackends);
+//     Splitter2dDim1EndToEnd<armnn::DataType::QAsymmU8>(npuDefaultBackends);
 // }
 
-// BOOST_AUTO_TEST_CASE(RefSplitter3dDim0EndToEndTest)
+// TEST_CASE(RefSplitter3dDim0EndToEndTest)
 // {
-//     Splitter3dDim0EndToEnd<armnn::DataType::Float32>(defaultBackends);
+//     Splitter3dDim0EndToEnd<armnn::DataType::Float32>(npuDefaultBackends);
 // }
 
-// BOOST_AUTO_TEST_CASE(RefSplitter3dDim1EndToEndTest)
+// TEST_CASE(RefSplitter3dDim1EndToEndTest)
 // {
-//     Splitter3dDim1EndToEnd<armnn::DataType::Float32>(defaultBackends);
+//     Splitter3dDim1EndToEnd<armnn::DataType::Float32>(npuDefaultBackends);
 // }
 
-// BOOST_AUTO_TEST_CASE(RefSplitter3dDim2EndToEndTest)
+// TEST_CASE(RefSplitter3dDim2EndToEndTest)
 // {
-//     Splitter3dDim2EndToEnd<armnn::DataType::Float32>(defaultBackends);
+//     Splitter3dDim2EndToEnd<armnn::DataType::Float32>(npuDefaultBackends);
 // }
 
-// BOOST_AUTO_TEST_CASE(RefSplitter3dDim0EndToEndUint8Test)
+// TEST_CASE(RefSplitter3dDim0EndToEndUint8Test)
 // {
-//     Splitter3dDim0EndToEnd<armnn::DataType::QAsymmU8>(defaultBackends);
+//     Splitter3dDim0EndToEnd<armnn::DataType::QAsymmU8>(npuDefaultBackends);
 // }
 
-// BOOST_AUTO_TEST_CASE(RefSplitter3dDim1EndToEndUint8Test)
+// TEST_CASE(RefSplitter3dDim1EndToEndUint8Test)
 // {
-//     Splitter3dDim1EndToEnd<armnn::DataType::QAsymmU8>(defaultBackends);
+//     Splitter3dDim1EndToEnd<armnn::DataType::QAsymmU8>(npuDefaultBackends);
 // }
 
-// BOOST_AUTO_TEST_CASE(RefSplitter3dDim2EndToEndUint8Test)
+// TEST_CASE(RefSplitter3dDim2EndToEndUint8Test)
 // {
-//     Splitter3dDim2EndToEnd<armnn::DataType::QAsymmU8>(defaultBackends);
+//     Splitter3dDim2EndToEnd<armnn::DataType::QAsymmU8>(npuDefaultBackends);
 // }
 
-// BOOST_AUTO_TEST_CASE(RefSplitter4dDim0EndToEndTest)
+// TEST_CASE(RefSplitter4dDim0EndToEndTest)
 // {
-//     Splitter4dDim0EndToEnd<armnn::DataType::Float32>(defaultBackends);
+//     Splitter4dDim0EndToEnd<armnn::DataType::Float32>(npuDefaultBackends);
 // }
 
-// BOOST_AUTO_TEST_CASE(RefSplitter4dDim1EndToEndTest)
+// TEST_CASE(RefSplitter4dDim1EndToEndTest)
 // {
-//     Splitter4dDim1EndToEnd<armnn::DataType::Float32>(defaultBackends);
+//     Splitter4dDim1EndToEnd<armnn::DataType::Float32>(npuDefaultBackends);
 // }
 
-// BOOST_AUTO_TEST_CASE(RefSplitter4dDim2EndToEndTest)
+// TEST_CASE(RefSplitter4dDim2EndToEndTest)
 // {
-//     Splitter4dDim2EndToEnd<armnn::DataType::Float32>(defaultBackends);
+//     Splitter4dDim2EndToEnd<armnn::DataType::Float32>(npuDefaultBackends);
 // }
 
-// BOOST_AUTO_TEST_CASE(RefSplitter4dDim3EndToEndTest)
+// TEST_CASE(RefSplitter4dDim3EndToEndTest)
 // {
-//     Splitter4dDim3EndToEnd<armnn::DataType::Float32>(defaultBackends);
+//     Splitter4dDim3EndToEnd<armnn::DataType::Float32>(npuDefaultBackends);
 // }
 
-// BOOST_AUTO_TEST_CASE(RefSplitter4dDim0EndToEndUint8Test)
+// TEST_CASE(RefSplitter4dDim0EndToEndUint8Test)
 // {
-//     Splitter4dDim0EndToEnd<armnn::DataType::QAsymmU8>(defaultBackends);
+//     Splitter4dDim0EndToEnd<armnn::DataType::QAsymmU8>(npuDefaultBackends);
 // }
 
-// BOOST_AUTO_TEST_CASE(RefSplitter4dDim1EndToEndUint8Test)
+// TEST_CASE(RefSplitter4dDim1EndToEndUint8Test)
 // {
-//     Splitter4dDim1EndToEnd<armnn::DataType::QAsymmU8>(defaultBackends);
+//     Splitter4dDim1EndToEnd<armnn::DataType::QAsymmU8>(npuDefaultBackends);
 // }
 
-// BOOST_AUTO_TEST_CASE(RefSplitter4dDim2EndToEndUint8Test)
+// TEST_CASE(RefSplitter4dDim2EndToEndUint8Test)
 // {
-//     Splitter4dDim2EndToEnd<armnn::DataType::QAsymmU8>(defaultBackends);
+//     Splitter4dDim2EndToEnd<armnn::DataType::QAsymmU8>(npuDefaultBackends);
 // }
 
-// BOOST_AUTO_TEST_CASE(RefSplitter4dDim3EndToEndUint8Test)
+// TEST_CASE(RefSplitter4dDim3EndToEndUint8Test)
 // {
-//     Splitter4dDim3EndToEnd<armnn::DataType::QAsymmU8>(defaultBackends);
+//     Splitter4dDim3EndToEnd<armnn::DataType::QAsymmU8>(npuDefaultBackends);
 // }
 
-BOOST_AUTO_TEST_SUITE_END()
+}

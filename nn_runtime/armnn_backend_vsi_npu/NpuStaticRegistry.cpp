@@ -35,8 +35,6 @@
 
 #include <Optimizer.hpp>
 
-#include <boost/cast.hpp>
-
 namespace armnn {
 static BackendRegistry::StaticRegistryInitializer g_RegisterHelper{
     BackendRegistryInstance(), NPUBackend::GetIdStatic(), []() {

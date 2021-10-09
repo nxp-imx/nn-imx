@@ -88,6 +88,7 @@ target_include_directories(armnnNpuBackend PRIVATE ${PROJECT_SOURCE_DIR}/src/arm
 target_include_directories(armnnNpuBackend PRIVATE ${PROJECT_SOURCE_DIR}/src/backends)
 target_include_directories(armnnNpuBackend PRIVATE ${PROJECT_SOURCE_DIR}/src/backends/vsi_npu)
 target_include_directories(armnnNpuBackend PRIVATE ${PROJECT_SOURCE_DIR}/src/profiling)
+target_include_directories(armnnNpuBackend PRIVATE ${PROJECT_SOURCE_DIR}/profiling/common/include)
 
 add_subdirectory(workloads)
 
