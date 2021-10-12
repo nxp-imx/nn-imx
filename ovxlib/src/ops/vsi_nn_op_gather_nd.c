@@ -58,7 +58,7 @@ static vsi_status op_compute
     {
         coord_dim = inputs[1]->attr.size[0];
     }
-    if( coord_dim > 3 )
+    if( coord_dim > 4 || (coord_dim > 3 && input_size[3] != 1))
     {
         CHECK_STATUS(status);
         return status;

@@ -116,6 +116,7 @@ static vsi_bool op_check
         IO_TYPE(D_I16|Q_DFP,    D_I32,          D_U8|Q_ASYM)
         IO_TYPE(D_I32,          D_I16|Q_DFP,    D_U8|Q_ASYM)
         IO_TYPE(D_I16|Q_DFP,    D_I16|Q_DFP,    D_U8|Q_ASYM)
+        IO_TYPE(D_I16,          D_I32,          D_I32)
     END_IO_TYPE_DECL(FLOORDIV)
     if (!VALIDATE_OP_IO_TYPES(FLOORDIV, self, inputs, self->input.num, outputs, self->output.num))
     {
