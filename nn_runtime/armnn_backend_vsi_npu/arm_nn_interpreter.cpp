@@ -497,7 +497,15 @@ OperationPtr Armnn_Interpreter::map_DEPTHWISE_CONV_2D(Model* model,
     }
     if (DataLayout::NCHW == conv2d->getDataLayout()) {
         std::vector<uint32_t> permVal = {0, 3, 1, 2};
-        if (!operand_utils::InsertPermuteBeforeOperand(
+
+        auto kernelIdx = 1;
+        if (inputs[kernelIdx]->isConst()) {
+            // Set permute flag. Do transepose in ovxlib delegate
+            inputs[kernelIdx]->setPerm(permVal);
+            inputs[kernelIdx]->dimensions =
+                conv2d->dimensionTrans(inputs[kernelIdx]->dimensions, permVal);
+        }
+        else if (!operand_utils::InsertPermuteBeforeOperand(
                 model, operation, operation->inputs()[1], permVal)) {
             NNRT_LOGE_PRINT("%s: insert permute failed.", __FUNCTION__);
             assert(false);
