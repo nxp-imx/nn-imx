@@ -55,13 +55,8 @@ static vsi_status op_compute
             inputs[0]->attr.size[inputs[0]->attr.dim_num - 1];
         input_size[1] = inputs[0]->attr.size[inputs[0]->attr.dim_num - 1];
         dims= 2;
-#ifdef VSI_40BIT_VA_SUPPORT
-        input = vxReshapeTensor(inputs[0]->t, input_size, dims);
-        output = vxReshapeTensor(outputs[0]->t, input_size, dims);
-#else
-        input = vxReshapeTensor(inputs[0]->t, (vx_int32*)input_size, (vx_uint32)dims);
-        output = vxReshapeTensor(outputs[0]->t, (vx_int32*)input_size, (vx_uint32)dims);
-#endif
+        input = vsi_nn_safe_reshape_tensor(inputs[0]->t, (void*)input_size, (vsi_size_t)dims, sizeof(input_size[0]));
+        output = vsi_nn_safe_reshape_tensor(outputs[0]->t, (void*)input_size, (vsi_size_t)dims, sizeof(input_size[0]));
         input0 = input;
         output0 = output;
     }

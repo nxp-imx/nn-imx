@@ -399,6 +399,14 @@ OVXLIB_API void vsi_nn_TransposeTensor
     vsi_size_t       * as_shape
     );
 
+vx_tensor vsi_nn_safe_reshape_tensor
+    (
+    vx_tensor         tensor,
+    void            * num_of_dims,
+    vsi_size_t        sizes,
+    vsi_size_t        size_of_shape_element
+    );
+
 OVXLIB_API void vsi_nn_PermuteTensor
     (
     vsi_nn_graph_t  * graph,

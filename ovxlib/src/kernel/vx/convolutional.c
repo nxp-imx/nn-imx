@@ -149,11 +149,7 @@ static vx_tensor _expand_tensor_dim
     {
         new_shape[cnt] = 1;
     }
-#ifdef VSI_40BIT_VA_SUPPORT
-    return vxReshapeTensor( tensor, (vsi_size_t*)new_shape, rank + 1 );
-#else
-    return vxReshapeTensor( tensor, (int32_t*)new_shape, (uint32_t)(rank + 1) );
-#endif
+    return vsi_nn_safe_reshape_tensor( tensor, (void*)new_shape, (vsi_size_t)(rank + 1) , sizeof(new_shape[0]));
 
 } /* _expand_tensor_dim() */
 
@@ -293,11 +289,8 @@ REGISTER_CONV_OPENVX_KERNEL( depthwise_conv1d )
             new_w_shape[2] *= inputs[1]->attr.size[i];
         }
         new_w_shape[3] = 1;
-#ifdef VSI_40BIT_VA_SUPPORT
-        temp_tensors[1] = vxReshapeTensor( inputs[1]->t, new_w_shape, new_w_rank );
-#else
-        temp_tensors[1] = vxReshapeTensor( inputs[1]->t, (vx_int32*)new_w_shape, (vx_uint32)new_w_rank );
-#endif
+        temp_tensors[1] = vsi_nn_safe_reshape_tensor( inputs[1]->t,
+            (void*)new_w_shape, (vsi_size_t)new_w_rank, sizeof(new_w_shape[0]) );
 
         CHECK_PTR_FAIL_GOTO( temp_tensors[1], "Expand kernel dim fail.", final );
     }

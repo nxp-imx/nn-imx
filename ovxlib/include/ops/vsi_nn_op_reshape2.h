@@ -21,8 +21,9 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#ifndef _VSI_NN_OP_RESHAPE_H
-#define _VSI_NN_OP_RESHAPE_H
+
+#ifndef _VSI_NN_OP_RESHAPE2_H
+#define _VSI_NN_OP_RESHAPE2_H
 
 #include "vsi_nn_types.h"
 
@@ -30,23 +31,23 @@
 extern "C" {
 #endif
 
-typedef struct _vsi_nn_reshape_lcl_data
+typedef struct _vsi_nn_reshape2_local_data
 {
     vsi_bool initialized;
-} vsi_nn_reshape_lcl_data;
+} vsi_nn_reshape2_local_data;
 
-typedef struct _vsi_nn_reshape_param
+typedef struct _vsi_nn_reshape2_param
 {
-    const uint32_t * size;
+    vsi_nn_reshape2_local_data* local;
+    // Add parameters here
+    const vsi_size_t * size;
     uint32_t dim_num;
-
-    /* reshape layer local data structure */
-    vsi_nn_reshape_lcl_data local;
-} vsi_nn_reshape_param;
+} vsi_nn_reshape2_param;
+_compiler_assert(offsetof(vsi_nn_reshape2_param, local) == 0, \
+    vsi_nn_reshape2_h );
 
 #ifdef __cplusplus
 }
 #endif
 
 #endif
-

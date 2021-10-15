@@ -21,6 +21,8 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
+
+
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -48,7 +50,7 @@ static vsi_status op_compute
     * when input and output are initialized.
     */
     if(inputs[0]->t != NULL && outputs[0]->t != NULL &&
-        self->nn_param.reshape.local.initialized == FALSE)
+        self->nn_param.reshape2.local->initialized == FALSE)
     {
         self->n = vxTensorCopyNode(self->graph->g,
             inputs[0]->t, outputs[0]->t);
@@ -73,6 +75,38 @@ static vsi_bool op_check
     return TRUE;
 } /* op_check() */
 
+static vsi_status op_init
+    (
+    vsi_nn_node_t * self
+    )
+{
+    vsi_status status = VSI_SUCCESS;
+    self->nn_param.reshape2.local   =
+    (vsi_nn_reshape2_local_data *)malloc(sizeof(vsi_nn_reshape2_local_data));
+    if (NULL == self->nn_param.reshape2.local)
+    {
+        return  VX_ERROR_NO_MEMORY;
+    }
+    memset(self->nn_param.reshape2.local, 0, sizeof(vsi_nn_reshape2_local_data));
+    return status;
+} /* op_init() */
+
+static vsi_status op_deinit
+    (
+    vsi_nn_node_t * self
+    )
+{
+    if (self->nn_param.reshape2.local != NULL)
+    {
+        free(self->nn_param.reshape2.local);
+        self->nn_param.reshape2.local = NULL;
+    }
+
+    vsi_nn_op_common_deinit(self);
+
+    return VSI_SUCCESS;
+} /* op_deinit() */
+
 static vsi_bool op_setup
     (
     vsi_nn_node_t * self,
@@ -84,15 +118,12 @@ static vsi_bool op_setup
     if( VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num )
     {
         vsi_size_t shape[VSI_NN_MAX_DIM_NUM] = {0};
-        uint32_t i = 0;
-        for(i = 0; i < self->nn_param.reshape.dim_num; i++)
-        {
-            shape[i] = (vsi_size_t)self->nn_param.reshape.size[i];
-        }
+        memcpy(shape, self->nn_param.reshape2.size,
+            sizeof(vsi_size_t) * self->nn_param.reshape2.dim_num);
         ret = vsi_nn_CalcReshapeTensor(inputs[0],
             outputs[0],
             shape,
-            self->nn_param.reshape.dim_num);
+            self->nn_param.reshape2.dim_num);
     }
 
     return ret;
@@ -111,7 +142,7 @@ static vsi_status op_optimize
 
     status = VSI_SUCCESS;
     ret = TRUE;
-    if(self->nn_param.reshape.local.initialized == FALSE)
+    if(self->nn_param.reshape2.local->initialized == FALSE)
     {
         VSILOGD("Optimize %s, uid %u", vsi_nn_OpGetName(self->op), self->uid);
         if( direction == VSI_NN_OPTIMIZE_BACKWARD )
@@ -125,26 +156,20 @@ static vsi_status op_optimize
                 {
                     status = VSI_FAILURE;
                 }
-                self->nn_param.reshape.local.initialized = TRUE;
+                self->nn_param.reshape2.local->initialized = TRUE;
             }
         }
         else
         {
             if(NULL == outputs[0]->t)
             {
-                vsi_size_t shape[VSI_NN_MAX_DIM_NUM] = {0};
-                uint32_t i = 0;
-                for(i = 0; i < self->nn_param.reshape.dim_num; i++)
-                {
-                    shape[i] = (vsi_size_t)self->nn_param.reshape.size[i];
-                }
                 ret = vsi_nn_ReshapeTensor( self->graph, inputs[0], outputs[0],
-                    shape, self->nn_param.reshape.dim_num );
+                    self->nn_param.reshape2.size, self->nn_param.reshape2.dim_num );
                 if( ret == FALSE )
                 {
                     status = VSI_FAILURE;
                 }
-                self->nn_param.reshape.local.initialized = TRUE;
+                self->nn_param.reshape2.local->initialized = TRUE;
             }
         }
     }
@@ -158,10 +183,10 @@ extern "C" {
 /* Registrar */
 DEF_OP_REG
     (
-    /* op_name    */ RESHAPE,
-    /* init       */ NULL,
+    /* op_name    */ RESHAPE2,
+    /* init       */ op_init,
     /* compute    */ op_compute,
-    /* deinit     */ vsi_nn_op_common_deinit,
+    /* deinit     */ op_deinit,
     /* check      */ op_check,
     /* setup      */ op_setup,
     /* optimize   */ op_optimize,
