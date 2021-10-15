@@ -26,6 +26,9 @@
 
 #include "vsi_nn_types.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct _vsi_nn_resize_in_lcl_data
 {
@@ -41,5 +44,8 @@ typedef struct _vsi_nn_resize_internal_param
     float        factor;
 } vsi_nn_resize_internal_param;
 
+#ifdef __cplusplus
+}
 #endif
 
+#endif

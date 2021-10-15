@@ -26,6 +26,10 @@
 
 #include "vsi_nn_types.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 enum {
     GRUCELL_ACT_IN_H_STATE    = 0,
     GRUCELL_ACT_IN_INPUT_FC_H = 1,
@@ -48,5 +52,9 @@ typedef struct _vsi_nn_grucell_activation_param
 } vsi_nn_grucell_activation_param;
 _compiler_assert(offsetof(vsi_nn_grucell_activation_param, local) == 0, \
                  vsi_nn_grucell_activation_h );
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
