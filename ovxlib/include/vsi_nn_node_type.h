@@ -177,6 +177,7 @@
 #include "ops/vsi_nn_op_gru.h"
 #include "ops/vsi_nn_op_grucell.h"
 #include "ops/vsi_nn_op_grucell_activation.h"
+#include "ops/vsi_nn_op_reshape2.h"
 /* custom node head define define */
 #include "custom/vsi_nn_custom_node_type.h"
 
@@ -340,6 +341,7 @@ typedef union _vsi_nn_nn_param
     vsi_nn_gru_param                gru;
     vsi_nn_grucell_param            grucell;
     vsi_nn_grucell_activation_param grucell_activation;
+    vsi_nn_reshape2_param           reshape2;
     uint8_t                         client_param[128];
 
     /* custom node data struct define */

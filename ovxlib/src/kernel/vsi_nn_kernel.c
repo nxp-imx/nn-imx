@@ -34,6 +34,7 @@
 #include "vsi_nn_error.h"
 #include "kernel/vsi_nn_kernel.h"
 #include "utils/vsi_nn_math.h"
+#include "vsi_nn_tensor_util.h"
 
 #include "libnnext/vsi_nn_libnnext_resource.h"
 #if VSI_USE_VXC_BINARY
@@ -709,11 +710,8 @@ vsi_nn_kernel_tensor_t vsi_nn_kernel_tensor_reshape
     vsi_size_t rank
     )
 {
-#ifdef VSI_40BIT_VA_SUPPORT
-    return (vsi_nn_kernel_tensor_t)vxReshapeTensor((vx_tensor)tensor, shape, rank);
-#else
-    return (vsi_nn_kernel_tensor_t)vxReshapeTensor((vx_tensor)tensor, (vx_int32*)shape, (vx_uint32)rank);
-#endif
+    return (vsi_nn_kernel_tensor_t)vsi_nn_safe_reshape_tensor((vx_tensor)tensor,
+            (void*)shape, (vsi_size_t)rank, sizeof(shape[0]));
 } /* vsi_nn_kernel_tensor_reshape() */
 
 void vsi_nn_kernel_tensor_release

@@ -1516,18 +1516,7 @@ vsi_bool vsi_nn_ReshapeTensor
     }
 
     /* Create reshape tensor */
-#ifdef VSI_40BIT_VA_SUPPORT
-    output->t = vxReshapeTensor( input->t, new_shape, dim_num );
-#else
-    {
-        uint32_t i, new_shape_32bit[VSI_NN_MAX_DIM_NUM] = {0};
-        for(i = 0; i < VSI_NN_MAX_DIM_NUM; i++)
-        {
-            new_shape_32bit[i] = (uint32_t)new_shape[i];
-        }
-        output->t = vxReshapeTensor( input->t, (int32_t *)new_shape_32bit, (uint32_t)dim_num );
-    }
-#endif
+    output->t = vsi_nn_safe_reshape_tensor( input->t, (void*)new_shape, (vsi_size_t)dim_num, sizeof(new_shape[0]) );
     if( NULL == output->t )
     {
         ret = FALSE;
@@ -1597,6 +1586,55 @@ void vsi_nn_TransposeTensor
     free( dst );
 } /* vsi_nn_TransposeTensor() */
 
+vx_tensor vsi_nn_safe_reshape_tensor
+    (
+    vx_tensor         tensor,
+    void            * num_of_dims,
+    vsi_size_t        sizes,
+    vsi_size_t        size_of_shape_element
+    )
+{
+    if(sizeof(vx_size) == size_of_shape_element)
+    {
+        vx_size* num_of_dims_vxsize = (vx_size*)num_of_dims;
+        #ifdef VSI_40BIT_VA_SUPPORT
+            return vxReshapeTensor( tensor, num_of_dims_vxsize, (vx_size)sizes );
+        #else
+            {
+                int32_t new_shape_int32[VSI_NN_MAX_DIM_NUM] = { 0 };
+                vsi_size_t i = 0;
+                for(i = 0; i < VSI_NN_MAX_DIM_NUM; i++)
+                {
+                    new_shape_int32[i] = (int32_t)num_of_dims_vxsize[i];
+                }
+                return vxReshapeTensor( tensor, new_shape_int32, (uint32_t)sizes );
+            }
+        #endif
+    }
+    else if(sizeof(int32_t) == size_of_shape_element)
+    {
+        int32_t* num_of_dims_int32 = (int32_t*)num_of_dims;
+        #ifdef VSI_40BIT_VA_SUPPORT
+            {
+                vx_size new_shape_vxsize[VSI_NN_MAX_DIM_NUM] = { 0 };
+                vsi_size_t i = 0;
+                for(i = 0; i < VSI_NN_MAX_DIM_NUM; i++)
+                {
+                    new_shape_vxsize[i] = (vx_size)num_of_dims_int32[i];
+                }
+                return vxReshapeTensor( tensor, new_shape_vxsize, (vx_size)sizes );
+            }
+        #else
+            return vxReshapeTensor( tensor, num_of_dims_int32, (uint32_t)sizes );
+        #endif
+    }
+    else
+    {
+        VSILOGE("couldn't handle tensor shape element with length of %"VSI_SIZE_T_SPECIFIER"", size_of_shape_element);
+        return NULL;
+    }
+} /* vsi_nn_safe_reshape_tensor() */
+
 void vsi_nn_PermuteTensor
     (
     vsi_nn_graph_t  * graph,
@@ -1650,11 +1688,8 @@ void vsi_nn_PermuteTensor
     }
     vsi_nn_Permute( dst, buf, shape_ptr, dim_num, perm, tensor->attr.dtype.vx_type );
     memcpy(tensor->attr.size, dst_shape, sizeof(dst_shape));
-#ifdef VSI_40BIT_VA_SUPPORT
-    tensor->t = vxReshapeTensor(tensor->t, tensor->attr.size, tensor->attr.dim_num);
-#else
-    tensor->t = vxReshapeTensor(tensor->t, (int32_t*)tensor->attr.size, tensor->attr.dim_num);
-#endif
+    tensor->t = vsi_nn_safe_reshape_tensor(tensor->t, (void*)tensor->attr.size,
+        (vsi_size_t)tensor->attr.dim_num, sizeof(tensor->attr.size[0]));
     status = vsi_nn_CopyDataToTensor( graph, tensor, dst );
     if( VSI_SUCCESS != status )
     {
