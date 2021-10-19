@@ -1077,7 +1077,8 @@ static vsi_nn_kernel_node_t _setup
     attr.vtl = TRUE;
     attr.size[0] = ((shape[0] + 255) / 256) * 4;
     if ( inputs[0]->attr.dtype.vx_type == VSI_NN_TYPE_INT16
-        || inputs[0]->attr.dtype.vx_type == VSI_NN_TYPE_FLOAT16)
+        || inputs[0]->attr.dtype.vx_type == VSI_NN_TYPE_FLOAT16
+        || inputs[0]->attr.dtype.vx_type == VSI_NN_TYPE_BFLOAT16)
     {
         attr.size[0] = ((shape[0] + 127) / 128) * 4;
     }
