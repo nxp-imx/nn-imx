@@ -555,6 +555,7 @@
     <ClInclude Include="include\ops\vsi_nn_op_grucell_activation_internal.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_grucell_activation_internal_sma.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_grucell_ovxlib.h"/>
+    <ClInclude Include="include\ops\vsi_nn_op_hard_sigmoid.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_heatmap_max_keypoint.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_imageprocess.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_instancenormalize.h"/>
@@ -613,6 +614,7 @@
     <ClInclude Include="include\ops\vsi_nn_op_reorg.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_repeat.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_reshape.h"/>
+    <ClInclude Include="include\ops\vsi_nn_op_reshape2.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_resize.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_resize_1d.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_resize_1d_bilinear_internal.h"/>
@@ -647,7 +649,6 @@
     <ClInclude Include="include\ops\vsi_nn_op_swish.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_tanh.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_tensor_add_mean_stddev_norm.h"/>
-    <ClInclude Include="include\ops\vsi_nn_op_reshape2.h" />
     <ClInclude Include="include\ops\vsi_nn_op_tensorstackconcat.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_tile.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_topk.h"/>
@@ -1764,6 +1765,9 @@
     <ClCompile Include="src\ops\vsi_nn_op_reshape.c">
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_reshape2.c">
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_resize.c">
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
@@ -1900,9 +1904,6 @@
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_upsamplescale.c">
-      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="src\ops\vsi_nn_op_reshape2.c" >
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_variable.c">

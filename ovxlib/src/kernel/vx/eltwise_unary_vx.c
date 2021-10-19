@@ -38,42 +38,52 @@ typedef struct _sort_lut_s
     float val;
 } sort_lut;
 
-static float exp_eval(float val, float alpha)
+typedef struct _vsi_nn_lut_param_s
+{
+    float alpha;
+    float beta;
+} vsi_nn_lut_param;
+
+static float exp_eval(float val, vsi_nn_lut_param lut_param)
 {
     return expf(val);
 }
 
-static float log_eval(float data, float alpha)
+static float log_eval(float data, vsi_nn_lut_param lut_param)
 {
     return logf(data);
 }
 
-static float elu_eval(float data, float alpha)
+static float elu_eval(float data, vsi_nn_lut_param lut_param)
 {
+    float alpha = lut_param.alpha;
     return data >=0 ? data : expf(data) * alpha - alpha;
 }
 
-static float neg_eval(float data, float alpha)
+static float neg_eval(float data, vsi_nn_lut_param lut_param)
 {
     return data * -1.0f;
 }
 
-static float hsigmoid_eval(float data, float alpha)
+static float hsigmoid_eval(float data, vsi_nn_lut_param lut_param)
 {
-    data = (float)(0.2 * data + 0.5);
+    float alpha = lut_param.alpha;
+    float beta = lut_param.beta;
+
+    data = (float)(alpha * data + beta);
     data = vsi_nn_clamp(data, 0, 1);
 
     return data;
 }
 
-static float soft_plus_eval(float data, float alpha)
+static float soft_plus_eval(float data, vsi_nn_lut_param lut_param)
 {
-    return log_eval(exp_eval(data, alpha) + 1, alpha);
+    return log_eval(exp_eval(data, lut_param) + 1, lut_param);
 }
 
-static float mish_eval(float data, float alpha)
+static float mish_eval(float data, vsi_nn_lut_param lut_param)
 {
-    data = (float)(data * tanh(soft_plus_eval(data, alpha)));
+    data = (float)(data * tanh(soft_plus_eval(data, lut_param)));
 
     return data;
 }
@@ -114,7 +124,7 @@ static float erf_eval(float x)
     return res;
 }
 
-static float gelu_eval(float data, float alpha)
+static float gelu_eval(float data, vsi_nn_lut_param lut_param)
 {
     data = (float)(0.5f * data * (1 + erf_eval(data / (float)sqrt(2.0f))));
 
@@ -123,7 +133,7 @@ static float gelu_eval(float data, float alpha)
 
 
 #define VSI_SQRT_2_RCP_PI  0.7978845834732056f
-static float hgelu_eval(float data, float alpha)
+static float hgelu_eval(float data, vsi_nn_lut_param lut_param)
 {
     float cdf = (float)(0.5f * (1.0f + tanh((VSI_SQRT_2_RCP_PI *
         (data + 0.044715f * data * data * data)))));
@@ -149,7 +159,14 @@ static int32_t _lut_comparator(const void *pa, const void *pb)
     return 0;
 }
 
-static void _set_unary_table_lookup(float func(float, float), float *index, float *value, float alpha)
+static void _set_unary_table_lookup
+    (
+    float func(float,
+    vsi_nn_lut_param),
+    float *index,
+    float *value,
+    vsi_nn_lut_param lut_param
+    )
 {
 #define VSI_NN_MAX_LUT_SIZE     (1024)
 #define FLT16_MAX               (57344)
@@ -161,25 +178,25 @@ static void _set_unary_table_lookup(float func(float, float), float *index, floa
     {
         int16_t val = (int16_t)(i << 6);
         lut[i].index = fp16_to_fp32(val);
-        lut[i].val = func(lut[i].index, alpha);
+        lut[i].val = func(lut[i].index, lut_param);
     }
 
     for (i = 0x0; i < 0x10; i++)
     {
         lut[i].index = 0;
-        lut[i].val = func(lut[i].index, alpha);
+        lut[i].val = func(lut[i].index, lut_param);
     }
 
     for (i = 0x1F0; i < 0x200; i++)
     {
         lut[i].index = FLT16_MAX;
-        lut[i].val = func(lut[i].index, alpha);
+        lut[i].val = func(lut[i].index, lut_param);
     }
 
     for (i = 0x3F0; i < 0x400; i++)
     {
         lut[i].index = FLT16_MIN;
-        lut[i].val = func(lut[i].index, alpha);
+        lut[i].val = func(lut[i].index, lut_param);
     }
 
     qsort(lut, VSI_NN_MAX_LUT_SIZE, sizeof(sort_lut), _lut_comparator);
@@ -207,14 +224,16 @@ static vsi_nn_kernel_node_t _setup
     size_t                        output_num,
     const vsi_nn_kernel_param_t * params,
     vsi_nn_kernel_t             * kernel,
-    float                      func(float, float)
+    float                      func(float, vsi_nn_lut_param)
     )
 {
 #ifdef VX_USER_LOOKUP_TABLE_SUPPORT
     vx_lut lut1 = NULL;
     vx_lut lut2 = NULL;
     vx_node node = NULL;
+    vsi_nn_lut_param lut_param;
     float alpha = vsi_nn_kernel_param_get_float32( params, "alpha" );
+    float beta = vsi_nn_kernel_param_get_float32( params, "beta" );
     float index[1024] = {0};
     float value[1024] = {0};
 
@@ -224,7 +243,10 @@ static vsi_nn_kernel_node_t _setup
         return NULL;
     }
 
-    _set_unary_table_lookup(func, index, value, alpha);
+    lut_param.alpha = alpha;
+    lut_param.beta = beta;
+
+    _set_unary_table_lookup(func, index, value, lut_param);
 
     lut1 = vxCreateLUT( graph->ctx->c, VX_TYPE_FLOAT32, 1024);
     lut2 = vxCreateLUT( graph->ctx->c, VX_TYPE_FLOAT32, 1024);
@@ -289,4 +311,3 @@ REGISTER_ELTWISE_UNARY_OPENVX_KERNEL( gelu,         gelu_eval )
 REGISTER_ELTWISE_UNARY_OPENVX_KERNEL( hard_gelu,    hgelu_eval )
 
 #undef REGISTER_ELTWISE_UNARY_OPENVX_KERNEL
-
