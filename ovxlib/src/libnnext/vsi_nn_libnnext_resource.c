@@ -4040,6 +4040,7 @@ __kernel void detect_post_box_U8_U8toF32(\n\
 static const char eltwise_unary_2d_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 _viv_uniform float alpha;\n\
+_viv_uniform float beta;\n\
 \n\
 float4 eltwise_unary_sin(float4 x)\n\
 {\n\
@@ -4077,7 +4078,7 @@ float4 eltwise_unary_neg(float4 x)\n\
 \n\
 float4 eltwise_unary_hard_sigmoid(float4 x)\n\
 {\n\
-    x = 0.2 * x + 0.5;\n\
+    x = alpha * x + beta;\n\
     x = clamp(x, 0, 1);\n\
     return x;\n\
 }\n\
@@ -4175,7 +4176,8 @@ _viv_uniform VXC_512Bits uniDatatoFp32Part1_4x4;\n\
     __read_only  image2d_array_t  input, \\\n\
     __write_only image2d_array_t  output, \\\n\
                  int              type, \\\n\
-                 float            _alpha \\\n\
+                 float            _alpha, \\\n\
+                 float            _beta \\\n\
     ) \\\n\
 { \\\n\
     int2 coord = (int2)(get_global_id(0), get_global_id(1)); \\\n\
@@ -4324,7 +4326,8 @@ _viv_uniform VXC_512Bits uniExtractOddData_2x8;\n\
     __read_only  image2d_array_t  input, \\\n\
     __write_only image2d_array_t  output, \\\n\
                  int              type, \\\n\
-                 float            _alpha \\\n\
+                 float            _alpha, \\\n\
+                 float            _beta \\\n\
     ) \\\n\
 { \\\n\
     int2 coord = (int2)(get_global_id(0), get_global_id(1)); \\\n\
@@ -4372,6 +4375,7 @@ ELTSISE_UNARY_BF16_2D(hard_gelu)\n\
 static const char eltwise_unary_3d_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 _viv_uniform float alpha;\n\
+_viv_uniform float beta;\n\
 \n\
 float4 eltwise_unary_sin(float4 x)\n\
 {\n\
@@ -4409,7 +4413,7 @@ float4 eltwise_unary_neg(float4 x)\n\
 \n\
 float4 eltwise_unary_hard_sigmoid(float4 x)\n\
 {\n\
-    x = 0.2 * x + 0.5;\n\
+    x = alpha * x + beta;\n\
     x = clamp(x, 0, 1);\n\
     return x;\n\
 }\n\
@@ -4507,7 +4511,8 @@ __kernel void func_name##_##src_type_name##to##dst_type_name( \\\n\
     __read_only  image2d_array_t  input, \\\n\
     __write_only image2d_array_t  output, \\\n\
                  int              type, \\\n\
-                 float            _alpha \\\n\
+                 float            _alpha, \\\n\
+                 float            _beta \\\n\
     ) \\\n\
 { \\\n\
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
@@ -4655,7 +4660,8 @@ _viv_uniform VXC_512Bits uniExtractOddData_2x8;\n\
     __read_only  image2d_array_t  input, \\\n\
     __write_only image2d_array_t  output, \\\n\
                  int              type, \\\n\
-                 float            _alpha \\\n\
+                 float            _alpha, \\\n\
+                 float            _beta \\\n\
     ) \\\n\
 { \\\n\
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
@@ -43386,15 +43392,14 @@ inline Tensor create_tensor_from_image2d_array(image2d_array_t input, int stride
        } while(0)\n\
 "; /* end of eltwise_ops_helper_cl*/
 
-static const char eltwise_unary_cl[] = "\n\
-float eltwise_unary_sin(float x, float alpha)\n\
+static const char eltwise_unary_cl[] = "float eltwise_unary_sin(float x, float alpha, float beta)\n\
 {\n\
     return native_sin(x);\n\
 }\n\
 \n\
 #define logE        (1.44269502f)\n\
 #define twoLogE     (logE * 2.0f)\n\
-float eltwise_unary_exp(float x, float alpha)\n\
+float eltwise_unary_exp(float x, float alpha, float beta)\n\
 {\n\
     x *= logE;\n\
     x = exp2(x);\n\
@@ -43402,13 +43407,13 @@ float eltwise_unary_exp(float x, float alpha)\n\
 }\n\
 \n\
 #define rlogE    (0.693147182f)\n\
-float eltwise_unary_log(float x, float alpha)\n\
+float eltwise_unary_log(float x, float alpha, float beta)\n\
 {\n\
     x = log2(x);\n\
     return x * rlogE;\n\
 }\n\
 \n\
-float eltwise_unary_elu(float val, float alpha)\n\
+float eltwise_unary_elu(float val, float alpha, float beta)\n\
 {\n\
     float x = val * logE;\n\
     x = exp2(x) * alpha - alpha;\n\
@@ -43416,14 +43421,14 @@ float eltwise_unary_elu(float val, float alpha)\n\
     return val < 0 ? x : val;\n\
 }\n\
 \n\
-float eltwise_unary_neg(float x, float alpha)\n\
+float eltwise_unary_neg(float x, float alpha, float beta)\n\
 {\n\
     return x * -1;\n\
 }\n\
 \n\
-float eltwise_unary_hard_sigmoid(float x, float alpha)\n\
+float eltwise_unary_hard_sigmoid(float x, float alpha, float beta)\n\
 {\n\
-    x = 0.2 * x + 0.5;\n\
+    x = alpha * x + beta;\n\
     x = clamp(x, 0, 1);\n\
     return x;\n\
 }\n\
@@ -43445,14 +43450,14 @@ float _tanh(float x, float alpha)\n\
     return (2 * x - 1);\n\
 }\n\
 \n\
-float eltwise_unary_mish(float x, float alpha)\n\
+float eltwise_unary_mish(float x, float alpha, float beta)\n\
 {\n\
     float y = _softrelu(x, alpha);\n\
     x = x * _tanh(y, alpha);\n\
     return x;\n\
 }\n\
 \n\
-float eltwise_unary_round(float x, float alpha)\n\
+float eltwise_unary_round(float x, float alpha, float beta)\n\
 {\n\
     return convert_float(convert_int_rte(x));\n\
 }\n\
@@ -43486,7 +43491,7 @@ float erf_eval(float x)\n\
     return res * MUL2_RSQRTPI;\n\
 }\n\
 #define RSQRT2      (0.70710678118654752440084436210485f)\n\
-float eltwise_unary_gelu(float x, float alpha)\n\
+float eltwise_unary_gelu(float x, float alpha, float beta)\n\
 {\n\
     x = 0.5f * x * (1 + erf_eval(x * RSQRT2));\n\
 \n\
@@ -43494,7 +43499,7 @@ float eltwise_unary_gelu(float x, float alpha)\n\
 }\n\
 \n\
 #define SQRT_2_RCP_PI  0.7978845834732056f\n\
-float eltwise_unary_hard_gelu(float x, float alpha)\n\
+float eltwise_unary_hard_gelu(float x, float alpha, float beta)\n\
 {\n\
     float cdf = 0.5f + 0.5f * _tanh(SQRT_2_RCP_PI *\n\
                         (x + 0.044715f * x * x * x), 0);\n\
@@ -43510,7 +43515,8 @@ __kernel void func_name##_F32toF32 \\\n\
                  float           inputTail, \\\n\
                  float           outputScale, \\\n\
                  float           outputZP, \\\n\
-                 float           alpha \\\n\
+                 float           alpha, \\\n\
+                 float           beta \\\n\
     ) \\\n\
 { \\\n\
     int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
@@ -43518,7 +43524,7 @@ __kernel void func_name##_F32toF32 \\\n\
     float4 src = read_imagef(input, coord); \\\n\
  \\\n\
     float4 dst = 0; \\\n\
-    dst.x = eltwise_unary_##func_name(src.x, alpha); \\\n\
+    dst.x = eltwise_unary_##func_name(src.x, alpha, beta); \\\n\
  \\\n\
     write_imagef(output, coord, dst.xxxx); \\\n\
 }\n\
@@ -43542,7 +43548,8 @@ __kernel void func_name##_F32toF32_2D \\\n\
                  float     inputTail, \\\n\
                  float     outputScale, \\\n\
                  float     outputZP, \\\n\
-                 float     alpha \\\n\
+                 float     alpha, \\\n\
+                 float           beta \\\n\
     ) \\\n\
 { \\\n\
     int2 coord =  (int2)(get_global_id(0), get_global_id(1)); \\\n\
@@ -43550,7 +43557,7 @@ __kernel void func_name##_F32toF32_2D \\\n\
     float4 src = read_imagef(input, coord); \\\n\
  \\\n\
     float4 dst = 0; \\\n\
-    dst.x = eltwise_unary_##func_name(src.x, alpha); \\\n\
+    dst.x = eltwise_unary_##func_name(src.x, alpha, beta); \\\n\
  \\\n\
     write_imagef(output, coord, dst.xxxx); \\\n\
 }\n\
@@ -43574,7 +43581,8 @@ __kernel void func_name##_U8toU8 \\\n\
                  float           inputTail, \\\n\
                  float           outputScale, \\\n\
                  float           outputZP, \\\n\
-                 float           alpha \\\n\
+                 float           alpha, \\\n\
+                 float           beta \\\n\
     ) \\\n\
 { \\\n\
     int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
@@ -43582,7 +43590,7 @@ __kernel void func_name##_U8toU8 \\\n\
     uint4 src = read_imageui(input, coord); \\\n\
     float4 data = convert_float4(src) * inputScale - inputTail; \\\n\
  \\\n\
-    data.x = eltwise_unary_##func_name(data.x, alpha); \\\n\
+    data.x = eltwise_unary_##func_name(data.x, alpha, beta); \\\n\
     uint4 dst = convert_uint4(data * outputScale + outputZP); \\\n\
  \\\n\
     write_imageui(output, coord, dst); \\\n\
@@ -43607,7 +43615,8 @@ __kernel void func_name##_U8toU8_2D \\\n\
                  float     inputTail, \\\n\
                  float     outputScale, \\\n\
                  float     outputZP, \\\n\
-                 float     alpha \\\n\
+                 float     alpha, \\\n\
+                 float     beta \\\n\
     ) \\\n\
 { \\\n\
     int2 coord =  (int2)(get_global_id(0), get_global_id(1)); \\\n\
@@ -43615,7 +43624,7 @@ __kernel void func_name##_U8toU8_2D \\\n\
     uint4 src = read_imageui(input, coord); \\\n\
     float4 data = convert_float4(src) * inputScale - inputTail; \\\n\
  \\\n\
-    data.x = eltwise_unary_##func_name(data.x, alpha); \\\n\
+    data.x = eltwise_unary_##func_name(data.x, alpha, beta); \\\n\
     uint4 dst = convert_uint4(data * outputScale + outputZP); \\\n\
  \\\n\
     write_imageui(output, coord, dst); \\\n\
@@ -43639,7 +43648,8 @@ __kernel void neg_I32toI32\n\
                  float           inputTail,\n\
                  float           outputScale,\n\
                  float           outputZP,\n\
-                 float           alpha\n\
+                 float           alpha,\n\
+                 float           beta\n\
     )\n\
 {\n\
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
@@ -43658,7 +43668,8 @@ __kernel void neg_I32toI32_2D\n\
                  float     inputTail,\n\
                  float     outputScale,\n\
                  float     outputZP,\n\
-                 float     alpha\n\
+                 float     alpha,\n\
+                 float     beta\n\
     )\n\
 {\n\
     int2 coord =  (int2)(get_global_id(0), get_global_id(1));\n\
