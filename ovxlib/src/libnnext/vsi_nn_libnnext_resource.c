@@ -37921,6 +37921,211 @@ __kernel void resize_bilinear_U8toU8_UP_opt\n\
 \n\
 #endif"; /* end of resize_bilinear_U8_opt_vx*/
 
+static const char resize_bilinear_nhwc_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+_viv_uniform VXC_512Bits uniResize_x2_nhwc2_0_4x8;\n\
+_viv_uniform VXC_512Bits uniResize_x2_nhwc2_1_4x8;\n\
+_viv_uniform int out_height;\n\
+\n\
+__kernel void resize_bilinear_nhwc_U8toU8_2x_upsample_half_pixel_centers\n\
+    (\n\
+    __read_only  image2d_array_t   input,\n\
+    __write_only image2d_array_t   output,\n\
+                             int   align_corners,\n\
+                             int   half_pixel_centers\n\
+    )\n\
+{\n\
+    int4 coord_out  =  (int4)(get_global_id(0), get_global_id(1), get_global_id(1), 0);\n\
+    int4 coord_in   = (int4)(get_global_id(0), get_global_id(1), get_global_id(1), 0);\n\
+    coord_in.x = ((coord_out.x * 2 - 1) >> 2) - 1;\n\
+    coord_in.y = ((coord_out.y * 2 - 1) >> 2);\n\
+    coord_in.x  = coord_out.x == 0 ? -2 : coord_in.x;\n\
+    coord_in.y  = coord_out.y == 0 ? -1 : coord_in.y;\n\
+\n\
+    vxc_uchar16 in0, in1, in2, in3, result;\n\
+\n\
+    VXC_ReadImage(in0, input, coord_in.xy, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(in1, input, coord_in.xy, VXC_5BITOFFSET_XY(0, 1), VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(in2, input, coord_in.xy, VXC_5BITOFFSET_XY(0, 2), VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(in3, input, coord_in.xy, VXC_5BITOFFSET_XY(0, 3), VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_DP4x8(result, in0, in1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniResize_x2_nhwc2_0_4x8);\n\
+    VXC_DP4x8(result, in0, in1, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1), uniResize_x2_nhwc2_1_4x8);\n\
+    VXC_WriteImage(output, coord_out, result, VXC_MODIFIER(0, 15, 0,VXC_RM_TowardZero, 0));\n\
+    coord_out.y++;\n\
+    VXC_DP4x8(result, in2, in1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniResize_x2_nhwc2_0_4x8);\n\
+    VXC_DP4x8(result, in2, in1, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1), uniResize_x2_nhwc2_1_4x8);\n\
+    VXC_WriteImage(output, coord_out.xy, result, VXC_MODIFIER(0, 15, 0,VXC_RM_TowardZero, 0));\n\
+    coord_out.y++;\n\
+    VXC_DP4x8(result, in1, in2, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniResize_x2_nhwc2_0_4x8);\n\
+    VXC_DP4x8(result, in1, in2, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1), uniResize_x2_nhwc2_1_4x8);\n\
+    VXC_WriteImage(output, coord_out.xy, result, VXC_MODIFIER(0, 15, 0,VXC_RM_TowardZero, 0));\n\
+    coord_out.y++;\n\
+    VXC_DP4x8(result, in3, in2, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniResize_x2_nhwc2_0_4x8);\n\
+    VXC_DP4x8(result, in3, in2, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1), uniResize_x2_nhwc2_1_4x8);\n\
+    VXC_WriteImage(output, coord_out.xy, result, VXC_MODIFIER(0, 15, 0,VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+_viv_uniform VXC_512Bits uniResize_x3_nhwc2_l00_2x8;\n\
+_viv_uniform VXC_512Bits uniResize_x3_nhwc2_l01_2x8;\n\
+_viv_uniform VXC_512Bits uniResize_x3_nhwc2_l02_2x8;\n\
+_viv_uniform VXC_512Bits uniResize_x3_nhwc2_l03_2x8;\n\
+_viv_uniform VXC_512Bits uniResize_x3_nhwc2_l10_4x4;\n\
+_viv_uniform VXC_512Bits uniResize_x3_nhwc2_l11_4x4;\n\
+_viv_uniform VXC_512Bits uniResize_x3_nhwc2_l12_4x4;\n\
+_viv_uniform VXC_512Bits uniResize_x3_nhwc2_l13_4x4;\n\
+_viv_uniform VXC_512Bits uniResize_x3_nhwc2_l14_4x4;\n\
+_viv_uniform VXC_512Bits uniResize_x3_nhwc2_l15_4x4;\n\
+_viv_uniform VXC_512Bits uniResize_x3_nhwc2_l16_4x4;\n\
+_viv_uniform VXC_512Bits uniResize_x3_nhwc2_l17_4x4;\n\
+__kernel void resize_bilinear_nhwc_U8toU8_3x_upsample_half_pixel_centers\n\
+    (\n\
+    __read_only  image2d_array_t   input,\n\
+    __write_only image2d_array_t   output,\n\
+                             int   align_corners,\n\
+                             int   half_pixel_centers\n\
+    )\n\
+{\n\
+    int4 coord_out  =  (int4)(get_global_id(0), get_global_id(1), get_global_id(0), get_global_id(1));\n\
+    int4 coord_in   = (int4)(get_global_id(0), get_global_id(1), 0, 0);\n\
+    coord_in.x = (short)(coord_out.x - 1) / (short)6  * 2;\n\
+    coord_in.x  = coord_out.x == 0 ? -2 : coord_in.x;\n\
+    coord_in.y = (short)(coord_out.y * 2 - 1) / (short)6;\n\
+    coord_in.y  = coord_out.y == 0 ? -1 : coord_in.y;\n\
+\n\
+    vxc_uchar16 in0, in1, in2, in3, dst0, dst1, dst2;\n\
+\n\
+    VXC_ReadImage(in0, input, coord_in.xy, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(in1, input, coord_in.xy, VXC_5BITOFFSET_XY(0, 1), VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(in2, input, coord_in.xy, VXC_5BITOFFSET_XY(0, 2), VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(in3, input, coord_in.xy, VXC_5BITOFFSET_XY(0, 3), VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    coord_out.zw = coord_out.xy + (int2)(16, 1);\n\
+\n\
+    VXC_DP4x4(dst0, in1, in0, VXC_MODIFIER(0,   3, 0, VXC_RM_ToNearestEven, 1), uniResize_x3_nhwc2_l10_4x4);\n\
+    VXC_DP4x4(dst0, in1, in0, VXC_MODIFIER(4,   7, 0, VXC_RM_ToNearestEven, 1), uniResize_x3_nhwc2_l11_4x4);\n\
+    VXC_DP4x4(dst0, in1, in0, VXC_MODIFIER(8,  11, 0, VXC_RM_ToNearestEven, 1), uniResize_x3_nhwc2_l12_4x4);\n\
+    VXC_DP4x4(dst0, in1, in0, VXC_MODIFIER(12, 15, 0, VXC_RM_ToNearestEven, 1), uniResize_x3_nhwc2_l13_4x4);\n\
+    VXC_DP4x4(dst1, in1, in0, VXC_MODIFIER(0,   3, 0, VXC_RM_ToNearestEven, 1), uniResize_x3_nhwc2_l14_4x4);\n\
+    VXC_DP4x4(dst1, in1, in0, VXC_MODIFIER(4,   7, 0, VXC_RM_ToNearestEven, 1), uniResize_x3_nhwc2_l15_4x4);\n\
+    VXC_DP4x4(dst1, in1, in0, VXC_MODIFIER(8,  11, 0, VXC_RM_ToNearestEven, 1), uniResize_x3_nhwc2_l16_4x4);\n\
+    VXC_DP4x4(dst1, in1, in0, VXC_MODIFIER(12, 15, 0, VXC_RM_ToNearestEven, 1), uniResize_x3_nhwc2_l17_4x4);\n\
+\n\
+    VXC_WriteImage(output, coord_out.xy, dst0, VXC_MODIFIER(0, 15, 0,VXC_RM_TowardZero, 0));\n\
+    VXC_WriteImage(output, coord_out.zy, dst1, VXC_MODIFIER(0, 13, 0,VXC_RM_TowardZero, 0));\n\
+\n\
+    VXC_DP2x8(dst0, in1, in1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1),   uniResize_x3_nhwc2_l00_2x8);\n\
+    VXC_DP2x8(dst0, in1, in1, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1),  uniResize_x3_nhwc2_l01_2x8);\n\
+    VXC_DP2x8(dst1, in1, in1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1),   uniResize_x3_nhwc2_l02_2x8);\n\
+    VXC_DP2x8(dst1, in1, in1, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1),  uniResize_x3_nhwc2_l03_2x8);\n\
+    VXC_WriteImage(output, coord_out.xw, dst0, VXC_MODIFIER(0, 15, 0,VXC_RM_TowardZero, 0));\n\
+    VXC_WriteImage(output, coord_out.zw, dst1, VXC_MODIFIER(0, 13, 0,VXC_RM_TowardZero, 0));\n\
+    coord_out.yw += 2;\n\
+\n\
+    VXC_DP4x4(dst0, in1, in2, VXC_MODIFIER(0,   3, 0, VXC_RM_ToNearestEven, 1), uniResize_x3_nhwc2_l10_4x4);\n\
+    VXC_DP4x4(dst0, in1, in2, VXC_MODIFIER(4,   7, 0, VXC_RM_ToNearestEven, 1), uniResize_x3_nhwc2_l11_4x4);\n\
+    VXC_DP4x4(dst0, in1, in2, VXC_MODIFIER(8,  11, 0, VXC_RM_ToNearestEven, 1), uniResize_x3_nhwc2_l12_4x4);\n\
+    VXC_DP4x4(dst0, in1, in2, VXC_MODIFIER(12, 15, 0, VXC_RM_ToNearestEven, 1), uniResize_x3_nhwc2_l13_4x4);\n\
+    VXC_DP4x4(dst1, in1, in2, VXC_MODIFIER(0,   3, 0, VXC_RM_ToNearestEven, 1), uniResize_x3_nhwc2_l14_4x4);\n\
+    VXC_DP4x4(dst1, in1, in2, VXC_MODIFIER(4,   7, 0, VXC_RM_ToNearestEven, 1), uniResize_x3_nhwc2_l15_4x4);\n\
+    VXC_DP4x4(dst1, in1, in2, VXC_MODIFIER(8,  11, 0, VXC_RM_ToNearestEven, 1), uniResize_x3_nhwc2_l16_4x4);\n\
+    VXC_DP4x4(dst1, in1, in2, VXC_MODIFIER(12, 15, 0, VXC_RM_ToNearestEven, 1), uniResize_x3_nhwc2_l17_4x4);\n\
+    VXC_WriteImage(output, coord_out.xy, dst0, VXC_MODIFIER(0, 15, 0,VXC_RM_TowardZero, 0));\n\
+    VXC_WriteImage(output, coord_out.zy, dst1, VXC_MODIFIER(0, 13, 0,VXC_RM_TowardZero, 0));\n\
+\n\
+    VXC_DP4x4(dst0, in2, in1, VXC_MODIFIER(0,   3, 0, VXC_RM_ToNearestEven, 1), uniResize_x3_nhwc2_l10_4x4);\n\
+    VXC_DP4x4(dst0, in2, in1, VXC_MODIFIER(4,   7, 0, VXC_RM_ToNearestEven, 1), uniResize_x3_nhwc2_l11_4x4);\n\
+    VXC_DP4x4(dst0, in2, in1, VXC_MODIFIER(8,  11, 0, VXC_RM_ToNearestEven, 1), uniResize_x3_nhwc2_l12_4x4);\n\
+    VXC_DP4x4(dst0, in2, in1, VXC_MODIFIER(12, 15, 0, VXC_RM_ToNearestEven, 1), uniResize_x3_nhwc2_l13_4x4);\n\
+    VXC_DP4x4(dst1, in2, in1, VXC_MODIFIER(0,   3, 0, VXC_RM_ToNearestEven, 1), uniResize_x3_nhwc2_l14_4x4);\n\
+    VXC_DP4x4(dst1, in2, in1, VXC_MODIFIER(4,   7, 0, VXC_RM_ToNearestEven, 1), uniResize_x3_nhwc2_l15_4x4);\n\
+    VXC_DP4x4(dst1, in2, in1, VXC_MODIFIER(8,  11, 0, VXC_RM_ToNearestEven, 1), uniResize_x3_nhwc2_l16_4x4);\n\
+    VXC_DP4x4(dst1, in2, in1, VXC_MODIFIER(12, 15, 0, VXC_RM_ToNearestEven, 1), uniResize_x3_nhwc2_l17_4x4);\n\
+    VXC_WriteImage(output, coord_out.xw, dst0, VXC_MODIFIER(0, 15, 0,VXC_RM_TowardZero, 0));\n\
+    VXC_WriteImage(output, coord_out.zw, dst1, VXC_MODIFIER(0, 13, 0,VXC_RM_TowardZero, 0));\n\
+    coord_out.yw += 2;\n\
+\n\
+    VXC_DP2x8(dst0, in2, in2, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1),   uniResize_x3_nhwc2_l00_2x8);\n\
+    VXC_DP2x8(dst0, in2, in2, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1),  uniResize_x3_nhwc2_l01_2x8);\n\
+    VXC_DP2x8(dst1, in2, in2, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1),   uniResize_x3_nhwc2_l02_2x8);\n\
+    VXC_DP2x8(dst1, in2, in2, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1),  uniResize_x3_nhwc2_l03_2x8);\n\
+    VXC_WriteImage(output, coord_out.xy, dst0, VXC_MODIFIER(0, 15, 0,VXC_RM_TowardZero, 0));\n\
+    VXC_WriteImage(output, coord_out.zy, dst1, VXC_MODIFIER(0, 13, 0,VXC_RM_TowardZero, 0));\n\
+\n\
+    VXC_DP4x4(dst0, in2, in3, VXC_MODIFIER(0,   3, 0, VXC_RM_ToNearestEven, 1), uniResize_x3_nhwc2_l10_4x4);\n\
+    VXC_DP4x4(dst0, in2, in3, VXC_MODIFIER(4,   7, 0, VXC_RM_ToNearestEven, 1), uniResize_x3_nhwc2_l11_4x4);\n\
+    VXC_DP4x4(dst0, in2, in3, VXC_MODIFIER(8,  11, 0, VXC_RM_ToNearestEven, 1), uniResize_x3_nhwc2_l12_4x4);\n\
+    VXC_DP4x4(dst0, in2, in3, VXC_MODIFIER(12, 15, 0, VXC_RM_ToNearestEven, 1), uniResize_x3_nhwc2_l13_4x4);\n\
+    VXC_DP4x4(dst1, in2, in3, VXC_MODIFIER(0,   3, 0, VXC_RM_ToNearestEven, 1), uniResize_x3_nhwc2_l14_4x4);\n\
+    VXC_DP4x4(dst1, in2, in3, VXC_MODIFIER(4,   7, 0, VXC_RM_ToNearestEven, 1), uniResize_x3_nhwc2_l15_4x4);\n\
+    VXC_DP4x4(dst1, in2, in3, VXC_MODIFIER(8,  11, 0, VXC_RM_ToNearestEven, 1), uniResize_x3_nhwc2_l16_4x4);\n\
+    VXC_DP4x4(dst1, in2, in3, VXC_MODIFIER(12, 15, 0, VXC_RM_ToNearestEven, 1), uniResize_x3_nhwc2_l17_4x4);\n\
+    VXC_WriteImage(output, coord_out.xw, dst0, VXC_MODIFIER(0, 15, 0,VXC_RM_TowardZero, 0));\n\
+    VXC_WriteImage(output, coord_out.zw, dst1, VXC_MODIFIER(0, 13, 0,VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+_viv_uniform VXC_512Bits uniResize_x4_nhwc2_l00_4x8;\n\
+_viv_uniform VXC_512Bits uniResize_x4_nhwc2_l01_4x8;\n\
+_viv_uniform VXC_512Bits uniResize_x4_nhwc2_l10_4x8;\n\
+_viv_uniform VXC_512Bits uniResize_x4_nhwc2_l11_4x8;\n\
+__kernel void resize_bilinear_nhwc_U8toU8_4x_upsample_half_pixel_centers\n\
+    (\n\
+    __read_only  image2d_array_t   input,\n\
+    __write_only image2d_array_t   output,\n\
+                             int   align_corners,\n\
+                             int   half_pixel_centers\n\
+     )\n\
+{\n\
+    int4 coord_out  =  (int4)(get_global_id(0), get_global_id(1), get_global_id(1), get_global_id(1));\n\
+    int4 coord_in   = (int4)(get_global_id(0), -1, 0, 0);\n\
+    coord_in.x = ((coord_out.x - 3) >> 3) * 2;\n\
+    coord_in.y = (coord_out.y * 2 - 3) >> 3;\n\
+    coord_in.x  = coord_out.x == 0 ? -2 : coord_in.x;\n\
+    coord_in.y  = coord_out.y == 0 ? -1 : coord_in.y;\n\
+\n\
+    vxc_uchar16 in0, in1, in2, in3, dst0, dst1;\n\
+\n\
+    VXC_ReadImage(in0, input, coord_in.xy, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(in1, input, coord_in.xy, VXC_5BITOFFSET_XY(0, 1), VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(in2, input, coord_in.xy, VXC_5BITOFFSET_XY(0, 2), VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(in3, input, coord_in.xy, VXC_5BITOFFSET_XY(0, 3), VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    coord_out.zw = coord_out.yy + (int2)(1, 2);\n\
+\n\
+    VXC_DP4x8(dst0, in0, in1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniResize_x4_nhwc2_l00_4x8);\n\
+    VXC_DP4x8(dst0, in0, in1, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1), uniResize_x4_nhwc2_l01_4x8);\n\
+    VXC_DP4x8(dst1, in0, in1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniResize_x4_nhwc2_l10_4x8);\n\
+    VXC_DP4x8(dst1, in0, in1, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1), uniResize_x4_nhwc2_l11_4x8);\n\
+    VXC_WriteImage(output, coord_out.xy, dst0, VXC_MODIFIER(0, 15, 0,VXC_RM_TowardZero, 0));\n\
+    VXC_WriteImage(output, coord_out.xz, dst1, VXC_MODIFIER(0, 15, 0,VXC_RM_TowardZero, 0));\n\
+\n\
+    coord_out.yz = coord_out.yz + (int2)(3, 3);\n\
+\n\
+    VXC_DP4x8(dst0, in2, in1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniResize_x4_nhwc2_l10_4x8);\n\
+    VXC_DP4x8(dst0, in2, in1, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1), uniResize_x4_nhwc2_l11_4x8);\n\
+    VXC_DP4x8(dst1, in2, in1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1),  uniResize_x4_nhwc2_l00_4x8);\n\
+    VXC_DP4x8(dst1, in2, in1, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1), uniResize_x4_nhwc2_l01_4x8);\n\
+    VXC_WriteImage(output, coord_out.xw, dst0, VXC_MODIFIER(0, 15, 0,VXC_RM_TowardZero, 0));\n\
+    VXC_WriteImage(output, coord_out.xy, dst1, VXC_MODIFIER(0, 15, 0,VXC_RM_TowardZero, 0));\n\
+\n\
+    coord_out.yw = coord_out.yw + (int2)(3, 3);\n\
+\n\
+    VXC_DP4x8(dst0, in1, in2, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniResize_x4_nhwc2_l00_4x8);\n\
+    VXC_DP4x8(dst0, in1, in2, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1), uniResize_x4_nhwc2_l01_4x8);\n\
+    VXC_DP4x8(dst1, in1, in2, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1),  uniResize_x4_nhwc2_l10_4x8);\n\
+    VXC_DP4x8(dst1, in1, in2, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1), uniResize_x4_nhwc2_l11_4x8);\n\
+    VXC_WriteImage(output, coord_out.xz, dst0, VXC_MODIFIER(0, 15, 0,VXC_RM_TowardZero, 0));\n\
+    VXC_WriteImage(output, coord_out.xw, dst1, VXC_MODIFIER(0, 15, 0,VXC_RM_TowardZero, 0));\n\
+\n\
+    coord_out.zw = coord_out.zw + (int2)(3, 3);\n\
+\n\
+    VXC_DP4x8(dst0, in3, in2, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniResize_x4_nhwc2_l10_4x8);\n\
+    VXC_DP4x8(dst0, in3, in2, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1), uniResize_x4_nhwc2_l11_4x8);\n\
+    VXC_DP4x8(dst1, in3, in2, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1),  uniResize_x4_nhwc2_l00_4x8);\n\
+    VXC_DP4x8(dst1, in3, in2, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1), uniResize_x4_nhwc2_l01_4x8);\n\
+    VXC_WriteImage(output, coord_out.xy, dst0, VXC_MODIFIER(0, 15, 0,VXC_RM_TowardZero, 0));\n\
+    VXC_WriteImage(output, coord_out.xz, dst1, VXC_MODIFIER(0, 15, 0,VXC_RM_TowardZero, 0));\n\
+}"; /* end of resize_bilinear_nhwc_vx*/
+
 static const char resize_nearest_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 _viv_uniform VXC_512Bits uniMultiplyAndPostShift_2x8;\n\
@@ -56006,6 +56211,7 @@ static const source_map_t evis_resource[] =
     {"resize_bilinear_U8_vx", resize_bilinear_U8_vx},
     {"resize_bilinear_U8_half_pixel_centers_vx", resize_bilinear_U8_half_pixel_centers_vx},
     {"resize_bilinear_U8_opt_vx", resize_bilinear_U8_opt_vx},
+    {"resize_bilinear_nhwc_vx", resize_bilinear_nhwc_vx},
     {"resize_nearest_vx", resize_nearest_vx},
     {"scatter_nd_vx", scatter_nd_vx},
     {"scatter_nd_big_vx", scatter_nd_big_vx},
