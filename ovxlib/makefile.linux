@@ -25,12 +25,33 @@
 #
 ##############################################################################
 
-
 ######################################################
+
+ifeq ($(USE_IDE_LIB),1)
+# IDE.
+
+LIBS    := src
+MODULES        := $(LIBS)
+MAIN_MODULE    := $(LIBS)
+.PHONY: all clean install $(MODULES)
+
+all: $(MAIN_MODULE)
+
+clean: all
+clean: V_TARGET := clean
+
+install: all
+install: V_TARGET := install
+
+$(MODULES):
+	@test ! -d $@ || $(MAKE) --makefile=makefile.linux --directory=$@ $(V_TARGET)
+
+else
+##############################################################################
+# SDK.
 # Include global difinitions.
 
-#include $(AQROOT)/makefile.linux.def
-
+include $(AQROOT)/makefile.linux.def
 ######################################################
 # Components of the project.
 
@@ -43,6 +64,8 @@ MODULES        := $(LIBS)
 MAIN_MODULE    := $(LIBS)
 
 ######################################################
+
 # Include the common makefile.
 
 include $(AQROOT)/common.node
+endif
