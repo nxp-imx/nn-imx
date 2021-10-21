@@ -14,8 +14,9 @@ load("//:workspace.bzl", "driver_archive")
 
 driver_archive(
     name = "VIV_SDK",
-    url = "http://192.168.32.219/downloads/drivers/archives/dev246370/dev246370_6.4.x_x86_64-linux-vSimulator.tgz",
-    sha256 = "c86df9fb320a3506cc5cfac19470741b08e142f06b721b5afcfe535e89b9645d",
+    url = "http://192.168.32.219/downloads/drivers/archives/dev320970.5.4505_p6.4.x_dev/"+
+    "dev320970.5.4505_p6.4.x_dev_x86_64-linux-vSimulator.tgz",
+    sha256 = "e20a2312d86eb25780e124357886220230fb13e1490a87155e228f763d979aa8",
     build_file = "@//:viv_sdk.BUILD",
     local_driver_path_tag = "VIV_SDK_DIR",
 )
