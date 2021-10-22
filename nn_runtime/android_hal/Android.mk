@@ -123,7 +123,7 @@ ifeq ($(shell expr $(PLATFORM_SDK_VERSION) "==" 29),1)
 LOCAL_INIT_RC := VsiDriver1_2.rc
 LOCAL_VINTF_FRAGMENTS := android.hardware.neuralnetworks@1.2-service-vsi-npu-server.xml
 else
-ifeq ($(shell expr $(PLATFORM_SDK_VERSION) "==" 30),1)
+ifeq ($(shell expr $(PLATFORM_SDK_VERSION) ">=" 30),1)
 LOCAL_INIT_RC := VsiDriver1_3.rc
 LOCAL_VINTF_FRAGMENTS := android.hardware.neuralnetworks@1.3-service-vsi-npu-server.xml
 endif   # 30
