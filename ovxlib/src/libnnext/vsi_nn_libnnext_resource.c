@@ -39904,11 +39904,15 @@ __kernel void tile_remain##name2##_##name0##to##name1( \\\n\
                 { \\\n\
                     coord_out.x = coord.x + x * width; \\\n\
                     if (isLastItem) \\\n\
+                    { \\\n\
                         VXC_WriteImage2DArray(output, coord_out, src, \\\n\
                             VXC_MODIFIER(0, remainder, 0, VXC_RM_TowardZero, 0)); \\\n\
+                    } \\\n\
                     else \\\n\
+                    { \\\n\
                         VXC_WriteImage2DArray(output, coord_out, src, \\\n\
                             VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+                    } \\\n\
                 } \\\n\
             } \\\n\
         } \\\n\
@@ -39961,9 +39965,13 @@ __kernel void tile_remain##name2##_##name0##to##name1##_2D( \\\n\
         do \\\n\
         { \\\n\
             if (isLastItem) \\\n\
+            { \\\n\
                 VXC_WriteImage(output, coord, src, VXC_MODIFIER(0, remainder, 0, VXC_RM_TowardZero, 0)); \\\n\
+            } \\\n\
             else \\\n\
+            { \\\n\
                 VXC_WriteImage(output, coord, src, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+            } \\\n\
             coord.x += width; \\\n\
         } while (coord.x < output_width); \\\n\
         coord.x = get_global_id(0); \\\n\
@@ -40023,9 +40031,6 @@ __kernel void tile_1toN_##name0##to##name1##_2D( \\\n\
 }\n\
 TILE_2D_1TON(U8,  U8, vxc_uchar8)\n\
 TILE_2D_1TON(I16, I16, vxc_short8)\n\
-\n\
-\n\
-\n\
 "; /* end of tile_vx*/
 
 static const char tile_mix_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
@@ -40087,11 +40092,15 @@ __kernel void tile_remain##name2##_##name0##to##name1( \\\n\
                 { \\\n\
                     coord_out.x = coord.x + x * width; \\\n\
                     if (isLastItem) \\\n\
+                    { \\\n\
                         VXC_WriteImage2DArray(output, coord_out, dst, \\\n\
                             VXC_MODIFIER(0, remainder, 0, VXC_RM_TowardZero, 0)); \\\n\
+                    } \\\n\
                     else \\\n\
+                    { \\\n\
                         VXC_WriteImage2DArray(output, coord_out, dst, \\\n\
                             VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+                    } \\\n\
                 } \\\n\
             } \\\n\
         } \\\n\
@@ -40144,9 +40153,13 @@ __kernel void tile_remain##name2##_##name0##to##name1##_2D( \\\n\
         do \\\n\
         { \\\n\
             if (isLastItem) \\\n\
+            { \\\n\
                 VXC_WriteImage(output, coord, dst, VXC_MODIFIER(0, remainder, 0, VXC_RM_TowardZero, 0)); \\\n\
+            } \\\n\
             else \\\n\
+            { \\\n\
                 VXC_WriteImage(output, coord, dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+            } \\\n\
             coord.x += width; \\\n\
         } while (coord.x < output_width); \\\n\
         coord.x = get_global_id(0); \\\n\
