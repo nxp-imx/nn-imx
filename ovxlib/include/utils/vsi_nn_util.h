@@ -54,6 +54,8 @@ extern "C" {
 #define FOREACH_ARGS(_args, _next, _arg_type) \
     while(((_arg_type)((size_t)END_OF_VARIADIC_ARGUMENTS)) != (_next = va_arg(_args, _arg_type)))
 
+#define BITS_PER_BYTE 8
+
 /*-------------------------------------------
                   Functions
 -------------------------------------------*/
@@ -242,6 +244,17 @@ OVXLIB_API const char* vsi_nn_DescribeStatus
     vsi_status status
     );
 
+OVXLIB_API vsi_status vsi_nn_ReconstructTensorData
+    (
+    vsi_nn_tensor_t * tensor,
+    uint8_t   * src,
+    vsi_size_t src_size,
+    uint8_t * dest,
+    vsi_size_t dest_size,
+    vsi_nn_type_e type
+    );
+
+
 vsi_size_t vsi_nn_compute_filter_shape
     (
     vsi_nn_pad_e padding_type,
@@ -365,6 +378,7 @@ int32_t vsi_nn_get_tensor_zero_point
     (
     vsi_nn_tensor_t * tensor
     );
+
 #ifdef __cplusplus
 }
 #endif

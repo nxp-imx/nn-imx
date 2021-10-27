@@ -329,6 +329,23 @@ uint32_t vsi_nn_TypeGetBytes
     return type_get_bytes( type );
 } /* vsi_nn_TypeGetBytes() */
 
+uint32_t vsi_nn_TypeGetBytesExt
+    (
+    const vsi_nn_type_e type
+    )
+{
+    uint32_t bits_num = 0;
+    bits_num = vsi_nn_TypeGetBits(type);
+    if(bits_num < BITS_PER_BYTE)
+    {
+        return 1;
+    }
+    else
+    {
+        return bits_num / BITS_PER_BYTE;
+    }
+}
+
 /*
 * Deprecated: use vsi_nn_TypeGetBytes() insteatd.
 */
@@ -339,6 +356,14 @@ uint32_t vsi_nn_GetTypeBytes
 {
     return type_get_bytes( type );
 } /* vsi_nn_GetTypeBytes() */
+
+uint32_t vsi_nn_TypeGetBits
+    (
+    const vsi_nn_type_e type
+    )
+{
+    return type_get_bits(type);
+} /* vsi_nn_GetTypeBits() */
 
 vsi_bool vsi_nn_QuantCheck
     (
