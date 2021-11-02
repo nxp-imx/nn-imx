@@ -261,7 +261,7 @@ Return<void> VsiPreparedModel::executeFenced(
     const OptionalTimePoint& deadline,
     const OptionalTimeoutDuration& loopTimeoutDuration,
     const OptionalTimeoutDuration& duration,
-    executeFenced_cb cb) {
+    hardware::neuralnetworks::V1_3::IPreparedModel::executeFenced_cb cb) {
     V1_3::ErrorStatus status;
     hidl_vec<OutputShape> outputShapes;
     Timing timing;

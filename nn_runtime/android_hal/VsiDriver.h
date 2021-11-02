@@ -169,6 +169,16 @@ class VsiDriver : public VsiDevice {
     Return<void> getCapabilities_1_2(V1_2::IDevice::getCapabilities_1_2_cb _hidl_cb) ;
     Return<void> getSupportedOperations_1_2( const V1_2::Model& model,
                                                    V1_2::IDevice::getSupportedOperations_1_2_cb cb) ;
+
+    static uint16_t findExtensionOperation(const HalPlatform::Operation& operation) {
+        int32_t operationType = static_cast<int32_t>(operation.type);
+        const uint8_t kLowBitsType = static_cast<uint8_t>(V1_2::Model::ExtensionTypeEncoding::LOW_BITS_TYPE);
+        const uint32_t kTypeWithinExtensionMask = (1 << kLowBitsType) - 1;
+        uint16_t extensionSupportMask = static_cast<int32_t>(operationType) >> kLowBitsType;
+        uint16_t typeWithinExtension = static_cast<int32_t>(operationType) & kTypeWithinExtensionMask;
+        if (extensionSupportMask != 0) return typeWithinExtension;
+        return 0;
+    };
 #endif
 
 #if ANDROID_SDK_VERSION >= 30

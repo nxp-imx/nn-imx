@@ -110,7 +110,11 @@ class VsiDevice : public HalPlatform::Device
             const V1_3::Model& model, ExecutionPreference preference,
             Priority priority, const OptionalTimePoint& deadline,
             const hidl_vec<hidl_handle>& modelCache,
+#if ANDROID_SDK_VERSION >= 31
+            const hidl_vec<hidl_handle>& dataCache, const HalCacheToken& token,
+#else
             const hidl_vec<hidl_handle>& dataCache, const CacheToken& token,
+#endif
             const sp<V1_3::IPreparedModelCallback>& callback);
 
     Return<V1_3::ErrorStatus> prepareModelFromCache_1_3(

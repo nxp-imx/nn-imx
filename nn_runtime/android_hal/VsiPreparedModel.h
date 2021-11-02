@@ -155,7 +155,7 @@ class VsiPreparedModel : public HalPlatform::PrepareModel {
                                const OptionalTimePoint& deadline,
                                const OptionalTimeoutDuration& loopTimeoutDuration,
                                const OptionalTimeoutDuration& duration,
-                               executeFenced_cb cb) override;
+                               hardware::neuralnetworks::V1_3::IPreparedModel::executeFenced_cb cb) override;
 
     const HalPlatform::Model* getModel() const { return &model_; }
 #endif
