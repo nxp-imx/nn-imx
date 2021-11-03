@@ -320,10 +320,10 @@ static vsi_nn_kernel_node_t _setup
     vsi_size_t new_rank = 0;
     vsi_bool ret;
 
-    float inputScale = inputs[0]->attr.dtype.scale;
-    float inputTail = (float)inputs[0]->attr.dtype.zero_point * inputScale;
-    float outputScale = outputs[0]->attr.dtype.scale;
-    float outputZP = (float)outputs[0]->attr.dtype.zero_point + 0.5f;
+    float inputScale = vsi_nn_get_tensor_scale(inputs[0]);
+    float inputTail = (float)vsi_nn_get_tensor_zero_point(inputs[0]) * inputScale;
+    float outputScale = vsi_nn_get_tensor_scale(outputs[0]);
+    float outputZP = (float)vsi_nn_get_tensor_zero_point(outputs[0]) + 0.5f;
     float alpha = vsi_nn_kernel_param_get_float32( params, "alpha" );
     float beta = vsi_nn_kernel_param_get_float32( params, "beta" );
 
