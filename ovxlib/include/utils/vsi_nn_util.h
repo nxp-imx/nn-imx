@@ -345,6 +345,16 @@ vsi_bool vsi_nn_is_same_type
     vsi_nn_tensor_t * src,
     vsi_nn_tensor_t * dst
     );
+
+float vsi_nn_get_tensor_scale
+    (
+    vsi_nn_tensor_t * tensor
+    );
+
+int32_t vsi_nn_get_tensor_zero_point
+    (
+    vsi_nn_tensor_t * tensor
+    );
 #ifdef __cplusplus
 }
 #endif
