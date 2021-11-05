@@ -70,10 +70,10 @@ vsi_status _copy_tensor
     }
 
     total_bytes = vsi_nn_kernel_tensor_attr_get_bytes( attr );
-    if( total_bytes != (vsi_size_t)buffer_size )
+    if( total_bytes != buffer_size )
     {
-        VSILOGE("Read buffer size mismatch %"VSI_SIZE_T_SPECIFIER" vs %"VSI_SIZE_T_SPECIFIER"",
-            total_bytes, (vsi_size_t)buffer_size);
+        VSILOGE("Read buffer size mismatch %"SIZE_T_SPECIFIER" vs %"SIZE_T_SPECIFIER"",
+            total_bytes, buffer_size);
         goto final;
     }
 
@@ -413,7 +413,6 @@ static void _convert_tensor_attr_to_vx_tensor_param
     memset( p, 0, sizeof( vx_tensor_create_params_t ) );
 
     p->num_of_dims = (uint32_t)attr->shape->size;
-    p->sizes = attr->shape->data;
 #define MAP_TYPE( var, src_type, dst_type ) \
     case src_type: \
         var = dst_type; \
@@ -479,8 +478,27 @@ vsi_nn_kernel_tensor_t vsi_nn_kernel_tensor_create
 {
     vsi_nn_kernel_tensor_t tensor = NULL;
     vx_tensor_create_params_t params;
+    vx_size size_vxsize[VSI_NN_MAX_DIM_NUM] = {0};
+    vx_uint32 size_u32[VSI_NN_MAX_DIM_NUM] = {0};
+    size_t i = 0;
 
     _convert_tensor_attr_to_vx_tensor_param( &params, attr );
+    //convert attr->shape->data to correct data type
+    for(i = 0; i < VSI_NN_MAX_DIM_NUM; i++)
+    {
+        size_vxsize[i] = (vx_size)attr->shape->data[i];
+    }
+    for(i = 0; i < VSI_NN_MAX_DIM_NUM; i++)
+    {
+        size_u32[i] = (vx_uint32)attr->shape->data[i];
+    }
+#if VX_VA40_EXT_SUPPORT
+    params.sizes = size_vxsize;
+    (void)size_u32;
+#else
+    params.sizes = size_u32;
+    (void)size_vxsize;
+#endif
     if( is_virtual )
     {
         tensor = (vsi_nn_kernel_tensor_t)vxCreateVirtualTensor2(

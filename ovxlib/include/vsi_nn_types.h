@@ -37,10 +37,6 @@ extern "C"{
 #define inline __inline
 #endif
 
-#if VX_VA40_EXT_SUPPORT
-#define VSI_40BIT_VA_SUPPORT
-#endif
-
 #if (defined(_MSC_VER) || defined(__MINGW32))
     #define SIZE_T_SPECIFIER "Iu"
     #define SSIZE_T_SPECIFIER "Id"

@@ -111,7 +111,7 @@ static void _try_pack_tensor_data
             cnt = fwrite( data, (size_t)bytes, 1, s_dfile_hndl );
             if( cnt != 1 )
             {
-                VSILOGW( "Write tensor bytes(%"VSI_SIZE_T_SPECIFIER"/%d)", (vsi_size_t)cnt, 1 );
+                VSILOGW( "Write tensor bytes(%"SIZE_T_SPECIFIER"/%d)", cnt, 1 );
             }
             if( cnt > 0 )
             {
