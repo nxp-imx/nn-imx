@@ -521,10 +521,27 @@ static vx_tensor _create_const_raw_tensor
     vx_tensor_create_params_t params;
     float * scales = NULL;
     int32_t * zeroPoints = NULL;
+    vx_size size_vxsize[VSI_NN_MAX_DIM_NUM] = {0};
+    vx_uint32 size_u32[VSI_NN_MAX_DIM_NUM] = {0};
+    size_t i = 0;
 
     memset( &params, 0, sizeof( vx_tensor_create_params_t ) );
     params.num_of_dims = attr.dim_num;
-    params.sizes = attr.size;
+    for(i = 0; i < VSI_NN_MAX_DIM_NUM; i++)
+    {
+        size_vxsize[i] = (vx_size)attr.size[i];
+    }
+    for(i = 0; i < VSI_NN_MAX_DIM_NUM; i++)
+    {
+        size_u32[i] = (vx_uint32)attr.size[i];
+    }
+#if VX_VA40_EXT_SUPPORT
+    params.sizes = size_vxsize;
+    (void)size_u32;
+#else
+    params.sizes = size_u32;
+    (void)size_vxsize;
+#endif
     params.data_format = (vsi_enum)attr.dtype.vx_type;
     params.quant_format = (vsi_enum)attr.dtype.qnt_type;
     switch( attr.dtype.qnt_type )
@@ -592,12 +609,23 @@ static vx_tensor _create_const_raw_tensor
             }
             if( data )
             {
-#ifdef VSI_40BIT_VA_SUPPORT
-                addr = vxCreateTensorAddressing(graph->ctx->c,
-                    attr.size, stride_size, (vsi_size_t)attr.dim_num);
+#if VX_VA40_EXT_SUPPORT
+                {
+                    vx_size size[_cnt_of_array(attr.size)] = {0};
+                    vx_size stride_size_vxsize[_cnt_of_array(stride_size)] = {0};
+                    for(i = 0; i < _cnt_of_array(attr.size); i++)
+                    {
+                        size[i] = (vx_size)attr.size[i];
+                    }
+                    for(i = 0; i < _cnt_of_array(stride_size); i++)
+                    {
+                        stride_size[i] = (vx_size)stride_size[i];
+                    }
+                    addr = vxCreateTensorAddressing(graph->ctx->c,
+                        size, stride_size_vxsize, (vx_size)attr.dim_num);
+                }
 #else
                 {
-                    vsi_size_t i;
                     uint32_t size_32bit[_cnt_of_array(attr.size)] = {0};
                     uint32_t stride_size_32bit[_cnt_of_array(stride_size)] = {0};
                     for(i = 0; i < _cnt_of_array(attr.size); i++)
