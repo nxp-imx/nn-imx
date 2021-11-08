@@ -179,6 +179,7 @@
 #include "ops/vsi_nn_op_grucell_activation.h"
 #include "ops/vsi_nn_op_reshape2.h"
 #include "ops/vsi_nn_op_hard_sigmoid.h"
+#include "ops/vsi_nn_op_conv3d.h"
 /* custom node head define define */
 #include "custom/vsi_nn_custom_node_type.h"
 
@@ -344,6 +345,7 @@ typedef union _vsi_nn_nn_param
     vsi_nn_grucell_activation_param grucell_activation;
     vsi_nn_reshape2_param           reshape2;
     vsi_nn_hard_sigmoid_param       hard_sigmoid;
+    vsi_nn_conv3d_param             conv3d;
     uint8_t                         client_param[128];
 
     /* custom node data struct define */

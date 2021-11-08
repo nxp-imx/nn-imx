@@ -1489,6 +1489,9 @@
     <ClCompile Include="src\ops\vsi_nn_op_conv2d.c">
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_conv3d.c">
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_conv2d_lstm.c">
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
