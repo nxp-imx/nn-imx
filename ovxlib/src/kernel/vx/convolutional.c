@@ -120,6 +120,67 @@ static vsi_bool _build_vx_deconv2d_param
     return TRUE;
 } /* _build_vx_deconv2d_param() */
 
+#if VX_CONV_3D_API_SUPPORT
+static vsi_bool _build_vx_conv3d_param
+    (
+    vx_nn_convolution_3d_params_t * param,
+    int32_t stride_d, int32_t stride_h, int32_t stride_w,
+    int32_t pad_d_front, int32_t pad_d_end,
+    int32_t pad_h_front, int32_t pad_h_end,
+    int32_t pad_w_front, int32_t pad_w_end,
+    int32_t dilation_d, int32_t dilation_h, int32_t dilation_w,
+    int32_t multiplier,
+    vsi_enum overflow_policy, vsi_enum rounding_policy,
+    vsi_enum down_scale_size_rounding
+    )
+{
+    VSI_ASSERT( stride_d > 0 );
+    VSI_ASSERT( stride_h > 0 );
+    VSI_ASSERT( stride_w > 0 );
+    VSI_ASSERT( pad_d_front >= 0 );
+    VSI_ASSERT( pad_d_end >= 0 );
+    VSI_ASSERT( pad_h_front >= 0 );
+    VSI_ASSERT( pad_h_end >= 0 );
+    VSI_ASSERT( pad_w_front >= 0 );
+    VSI_ASSERT( pad_w_end >= 0 );
+    VSI_ASSERT( dilation_d >= 0 );
+    VSI_ASSERT( dilation_h >= 0 );
+    VSI_ASSERT( dilation_w >= 0 );
+    VSI_ASSERT( multiplier >= 0 );
+
+    param->padding_d_front  = (uint32_t)pad_d_front;
+    param->padding_d_rear   = (uint32_t)pad_d_end;
+    param->padding_h_top    = (uint32_t)pad_h_front;
+    param->padding_h_bottom = (uint32_t)pad_h_end;
+    param->padding_w_left   = (uint32_t)pad_w_front;
+    param->padding_w_right  = (uint32_t)pad_w_end;
+
+    if( dilation_d > 0 )
+    {
+        param->dilation_d = (uint32_t)(dilation_d - 1);
+    }
+    if( dilation_h > 0 )
+    {
+        param->dilation_h = (uint32_t)(dilation_h - 1);
+    }
+    if( dilation_w > 0 )
+    {
+        param->dilation_w = (uint32_t)(dilation_w - 1);
+    }
+
+    param->overflow_policy = (vx_enum)overflow_policy;
+    param->rounding_policy = (vx_enum)rounding_policy;
+    param->down_scale_size_rounding = (vx_enum)down_scale_size_rounding;
+    param->depth_multiplier = multiplier;
+
+    param->stride_w = (uint32_t)stride_w;
+    param->stride_h = (uint32_t)stride_h;
+    param->stride_d = (uint32_t)stride_d;
+
+    return TRUE;
+} /* _build_vx_conv2d_param() */
+#endif
+
 static vx_tensor _expand_tensor_dim
     ( vx_tensor tensor, vsi_ssize_t * shape, size_t rank, vsi_ssize_t expand_dim )
 {
@@ -150,7 +211,6 @@ static vx_tensor _expand_tensor_dim
         new_shape[cnt] = 1;
     }
     return vsi_nn_safe_reshape_tensor( tensor, (void*)new_shape, (vsi_size_t)(rank + 1) , sizeof(new_shape[0]));
-
 } /* _expand_tensor_dim() */
 
 
@@ -176,7 +236,6 @@ static vx_tensor _expand_tensor_dim
         const vsi_nn_kernel_param_t * params, \
         vsi_nn_kernel_t             * kernel \
         )
-
 
 REGISTER_CONV_OPENVX_KERNEL( conv1d )
 {
@@ -478,5 +537,42 @@ final:
     }
     return (vsi_nn_kernel_node_t)node;
 } /* deconvolution1d*/
+
+REGISTER_CONV_OPENVX_KERNEL( conv3d )
+{
+    vx_node node = NULL;
+#if VX_CONV_3D_API_SUPPORT
+    vx_nn_convolution_3d_params_t vxparam;
+    memset(&vxparam, 0, sizeof(vxparam));
+
+    _build_vx_conv3d_param(
+            &vxparam,
+            vsi_nn_kernel_param_get_int32(params, "stride_d"),
+            vsi_nn_kernel_param_get_int32(params, "stride_h"),
+            vsi_nn_kernel_param_get_int32(params, "stride_w"),
+            vsi_nn_kernel_param_get_int32(params, "pad_front"),
+            vsi_nn_kernel_param_get_int32(params, "pad_end"),
+            vsi_nn_kernel_param_get_int32(params, "pad_top"),
+            vsi_nn_kernel_param_get_int32(params, "pad_bottom"),
+            vsi_nn_kernel_param_get_int32(params, "pad_left"),
+            vsi_nn_kernel_param_get_int32(params, "pad_right"),
+            vsi_nn_kernel_param_get_int32(params, "dilation_d"),
+            vsi_nn_kernel_param_get_int32(params, "dilation_h"),
+            vsi_nn_kernel_param_get_int32(params, "dilation_w"),
+            vsi_nn_kernel_param_get_int32(params, "depth_multiplier"),
+            vsi_nn_kernel_param_get_int32(params, "overflow_policy"),
+            vsi_nn_kernel_param_get_int32(params, "rounding_policy"),
+            vsi_nn_kernel_param_get_int32(params, "down_scale_size_rounding")
+            );
+
+    node = vxConv3dLayer( graph->g,
+        inputs[0]->t, inputs[1]->t, inputs[2] ? inputs[2]->t : NULL,
+        &vxparam,
+        sizeof( vxparam),
+        outputs[0]->t
+        );
+#endif
+    return (vsi_nn_kernel_node_t)node;
+} /* depthwise_conv2d*/
 
 #undef REGISTER_CONV_OPENVX_KERNEL
