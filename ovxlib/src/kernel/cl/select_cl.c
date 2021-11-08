@@ -242,10 +242,10 @@ static vsi_nn_kernel_node_t _setup
     vsi_nn_kernel_node_t node = NULL;
     float   outputScale  = vsi_nn_get_tensor_scale(outputs[0]);
     float   outputZP     = (float)vsi_nn_get_tensor_zero_point(outputs[0]);
-    float   input0Scale  = vsi_nn_get_tensor_scale(inputs[0]);
-    float   input0Tail   = (float)vsi_nn_get_tensor_zero_point(inputs[0]);
-    float   input1Scale  = vsi_nn_get_tensor_scale(inputs[1]);
-    float   input1Tail   = (float)vsi_nn_get_tensor_zero_point(inputs[1]);
+    float   input0Scale  = vsi_nn_get_tensor_scale(inputs[1]);
+    float   input0Tail   = (float)vsi_nn_get_tensor_zero_point(inputs[1]);
+    float   input1Scale  = vsi_nn_get_tensor_scale(inputs[2]);
+    float   input1Tail   = (float)vsi_nn_get_tensor_zero_point(inputs[2]);
 
     input0Scale = input0Scale / outputScale;
     input1Scale = input1Scale / outputScale;
