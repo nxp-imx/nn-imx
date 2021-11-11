@@ -261,6 +261,16 @@ void vsi_nn_compute_padding
     vsi_size_t   * out_pad
     );
 
+void vsi_nn_compute_padding_3d
+    (
+    const vsi_size_t   in_shape[3],
+    const vsi_size_t   ksize[3],
+    const uint32_t     stride[3],
+    const uint32_t     dilation[3],
+    const vsi_nn_pad_e pad_type,
+    vsi_size_t   out_pad[6]
+    );
+
 void vsi_nn_compute_padding_conv1d
     (
     vsi_size_t   * in_shape,

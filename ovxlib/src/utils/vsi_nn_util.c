@@ -188,7 +188,6 @@ vsi_size_t vsi_nn_GetStrideSize
     vsi_size_t            * stride
     )
 {
-
     if( NULL == attr || NULL == stride )
     {
         return 0;
@@ -380,6 +379,26 @@ vsi_size_t vsi_nn_compute_filter_shape
     }
 } /* vsi_nn_compute_filter_shape() */
 
+void vsi_nn_compute_padding_per_axis
+    (
+    vsi_size_t   in_shape,
+    vsi_size_t   ksize,
+    uint32_t     stride,
+    uint32_t     dilation,
+    vsi_nn_pad_e pad_type,
+    vsi_size_t   out_pad[2]
+    )
+{
+    vsi_size_t out_size;
+    vsi_size_t total_pads;
+    if(dilation == 0)  dilation = 1;
+    out_size = vsi_nn_compute_filter_shape(pad_type, in_shape, ksize, stride, dilation);
+    total_pads = _compute_padding(in_shape, ksize, stride, dilation, out_size);
+
+    out_pad[0] = total_pads / 2;
+    out_pad[1] = total_pads - out_pad[0];
+}
+
 void vsi_nn_compute_padding
     (
     vsi_size_t   * in_shape,
@@ -390,8 +409,6 @@ void vsi_nn_compute_padding
     vsi_size_t   * out_pad
     )
 {
-    vsi_size_t out_w, out_h;
-    vsi_size_t pad_w, pad_h;
     uint32_t dilation_w, dilation_h;
     if (NULL == in_shape || NULL == ksize
         || NULL == stride || NULL == out_pad)
@@ -413,15 +430,47 @@ void vsi_nn_compute_padding
         dilation_h = dilation[1];
     }
 
-    out_w = vsi_nn_compute_filter_shape(pad_type, in_shape[0], ksize[0], stride[0], dilation_w);
-    out_h = vsi_nn_compute_filter_shape(pad_type, in_shape[1], ksize[1], stride[1], dilation_h);
-    pad_w = _compute_padding(in_shape[0], ksize[0], stride[0], dilation_w, out_w);
-    pad_h = _compute_padding(in_shape[1], ksize[1], stride[1], dilation_h, out_h);
-    out_pad[0] = pad_w / 2;
-    out_pad[1] = pad_w - out_pad[0];
-    out_pad[2] = pad_h / 2;
-    out_pad[3] = pad_h - out_pad[2];
+    vsi_nn_compute_padding_per_axis(in_shape[0], ksize[0], stride[0], dilation_w, pad_type, out_pad);
+    vsi_nn_compute_padding_per_axis(in_shape[1], ksize[1], stride[1], dilation_h, pad_type, out_pad + 2);
 } /* vsi_nn_compute_padding() */
+
+void vsi_nn_compute_padding_3d
+    (
+    const vsi_size_t   in_shape[3],
+    const vsi_size_t   ksize[3],
+    const uint32_t     stride[3],
+    const uint32_t     dilation[3],
+    const vsi_nn_pad_e pad_type,
+    vsi_size_t   out_pad[6]
+    )
+{
+    uint32_t dilation_w, dilation_h, dilation_d;
+    if (NULL == in_shape || NULL == ksize
+        || NULL == stride || NULL == out_pad)
+    {
+        return;
+    }
+    if (pad_type == VSI_NN_PAD_AUTO)
+    {
+        return;
+    }
+    if (NULL == dilation || (dilation[0] == 0 && dilation[1] == 0 && dilation[2] == 0))
+    {
+        dilation_w = 1;
+        dilation_h = 1;
+        dilation_d = 1;
+    }
+    else
+    {
+        dilation_w = dilation[0];
+        dilation_h = dilation[1];
+        dilation_d = dilation[2];
+    }
+
+    vsi_nn_compute_padding_per_axis(in_shape[0], ksize[0], stride[0], dilation_w, pad_type, out_pad);
+    vsi_nn_compute_padding_per_axis(in_shape[1], ksize[1], stride[1], dilation_h, pad_type, out_pad + 2);
+    vsi_nn_compute_padding_per_axis(in_shape[2], ksize[2], stride[2], dilation_d, pad_type, out_pad + 4);
+}
 
 void vsi_nn_ComputePadWithPadType
     (
