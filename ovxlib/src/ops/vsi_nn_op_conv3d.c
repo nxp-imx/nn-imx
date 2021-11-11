@@ -288,7 +288,7 @@ static vsi_bool op_setup
 
     nn_param = &self->nn_param.conv3d;
 
-    vsi_nn_compute_padding(
+    vsi_nn_compute_padding_3d(
         inputs[0]->attr.size,
         inputs[1]->attr.size,
         (uint32_t *)self->nn_param.conv3d.stride,
