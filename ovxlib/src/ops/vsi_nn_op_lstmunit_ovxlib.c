@@ -633,17 +633,7 @@ static vsi_bool op_setup
         curr->inputs[2] = zero_bias_tensor;
 
         /* Save output to h_state first and copy to output */
-        if( p->local->use_hybrid && p->local->use_projection_bias )
-        {
-            vsi_nn_internal_init_tensor_attr(&attr,
-                &outputs[LSTMUNIT_OUTPUT_H_STATE]->attr.dtype, use_virtual_tensor);
-            output_tensor = vsi_nn_internal_new_tensor(self, &attr, 0.0f);
-            curr->outputs[0] = output_tensor->t;
-        }
-        else
-        {
-            curr->outputs[0] = outputs[LSTMUNIT_OUTPUT_H_STATE];
-        }
+        curr->outputs[0] = outputs[LSTMUNIT_OUTPUT_H_STATE];
 
         vsi_nn_internal_setup_node(self, curr);
 
