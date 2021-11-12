@@ -55,6 +55,67 @@ namespace nnrt {
         }                    \
     } while (0)
 
+void padFromImplicitToExplicitForDeconv2d(const std::vector<uint32_t>& input_shape,
+                                          const std::vector<uint32_t>& filter_shape,
+                                          const std::vector<int32_t>& output_shape,
+                                          std::shared_ptr<Deconv2DOperation> deconv2d) {
+    auto layout = deconv2d->getDataLayout();
+    auto pad_type = deconv2d->padType;
+    int32_t input_width = 0;
+    int32_t input_height = 0;
+    int32_t filter_width = 0;
+    int32_t filter_height = 0;
+    int32_t output_width = 0;
+    int32_t output_height = 0;
+    assert(input_shape.size() != 4);
+    switch (layout)
+    {
+    case DataLayout::NCHW:
+        input_width = input_shape[3];
+        filter_width = filter_shape[3];
+        output_width = output_shape[3];
+        input_height = input_shape[2];
+        filter_height = filter_shape[2];
+        output_height = output_shape[2];
+        break;
+    case DataLayout::NHWC:
+        input_width = input_shape[2];
+        filter_width = filter_shape[2];
+        output_width = output_shape[2];
+        input_height = input_shape[1];
+        filter_height = filter_shape[1];
+        output_height = output_shape[1];
+        break;
+    case DataLayout::WHCN:
+        input_width = input_shape[0];
+        filter_width = filter_shape[0];
+        output_width = output_shape[0];
+        input_height = input_shape[1];
+        filter_height = filter_shape[1];
+        output_height = output_shape[1];
+        break;
+    default:
+        NNRT_LOGE_PRINT("Unexpected data layout.");
+        assert(false);
+    }
+    if (pad_type == PadType::SAME) {
+        int32_t width_strides = deconv2d->strides[0];
+        int32_t height_strides = deconv2d->strides[1];
+        int32_t witdh_padding = std::max(0, (input_width - 1) * width_strides + filter_width - output_width);
+        int32_t height_padding = std::max(0,(input_height - 1) * height_strides + filter_height - output_height);
+
+        deconv2d->pad[0] = witdh_padding / 2;
+        deconv2d->pad[1] = witdh_padding - deconv2d->pad[0];
+        deconv2d->pad[2] = height_padding / 2;
+        deconv2d->pad[3] = height_padding - deconv2d->pad[2];
+
+    } else {
+        deconv2d->pad[0] = 0;
+        deconv2d->pad[1] = 0;
+        deconv2d->pad[2] = 0;
+        deconv2d->pad[3] = 0;
+    }
+}
 void convertKenelLayout(std::shared_ptr<Operation> convOp,
                         Model* model,
                         OperationPtr operation,
@@ -1806,25 +1867,42 @@ OperationPtr NnApiInterpreter::map_DECONV_2D(Model* model,
     auto argList = matchArgList(inputs, "TransposeConv2DOperation");
 
     if (argList) {
-        if (argList->ArgPos("output_shape") != -1) {
-            // TODO: We donot support this case,
-            // It needs shape inference to convert padType to pad
-            // op->padType = mapPadtype(inputs[argList->ArgPos("impilicit_pad")]->scalar.int32);
-            NNRT_LOGE_PRINT("Transpose conv2d doesn't support implicit padding.");
-            return nullptr;
-        }
         deconv2d = std::make_shared<Deconv2DOperation>();
         NNAPI_CHECK_PTR(deconv2d);
-        deconv2d->pad[0] = inputs[argList->ArgPos("pad_left")]->scalar.int32;
-        deconv2d->pad[1] = inputs[argList->ArgPos("pad_right")]->scalar.int32;
-        deconv2d->pad[2] = inputs[argList->ArgPos("pad_top")]->scalar.int32;
-        deconv2d->pad[3] = inputs[argList->ArgPos("pad_bottom")]->scalar.int32;
+        deconv2d->setDataLayout(getDataLayout(inputs[argList->ArgPos("layout")]->scalar.boolean));
         deconv2d->strides[0] = inputs[argList->ArgPos("stride_w")]->scalar.int32;
         deconv2d->strides[1] = inputs[argList->ArgPos("stride_h")]->scalar.int32;
         resetFusedType(model, operation, argList->ArgPos("fuse_code"));
-        deconv2d->setDataLayout(getDataLayout(inputs[argList->ArgPos("layout")]->scalar.boolean));
         convertKenelLayout(deconv2d, model, operation, argList);
+        if (argList->ArgPos("output_shape") != -1) {
+            deconv2d->padType = mapPadType(inputs[argList->ArgPos("implicit_pad")]->scalar.int32);
+            auto input_shape = inputs[argList->ArgPos("input")]->dimensions;
+            auto filter_shape = model->operand(operation->inputs()[1])->dimensions;
+            auto output_shape_rank = inputs[argList->ArgPos("output_shape")]->dimensions;
+            auto memref = inputs[argList->ArgPos("output_shape")]->weak_mem_ref.lock();
+            std::vector<int32_t> output_shape;
+            if (memref)
+            {
+                std::transform(static_cast<const int32_t *>(memref->address_),
+                    static_cast<const int32_t *>(memref->address_) + output_shape_rank[0],
+                    std::back_inserter(output_shape), [](int32_t v)
+                    {
+                        NNRT_LOGD_PRINT("%d, ", v);
+                        return v;
+                    });
+            }else {
+                assert(false);
+                NNRT_LOGE_PRINT("Error !!!");
+                return nullptr;
+            }
 
+            padFromImplicitToExplicitForDeconv2d(input_shape, filter_shape, output_shape, deconv2d);
+        } else {
+            deconv2d->pad[0] = inputs[argList->ArgPos("pad_left")]->scalar.int32;
+            deconv2d->pad[1] = inputs[argList->ArgPos("pad_right")]->scalar.int32;
+            deconv2d->pad[2] = inputs[argList->ArgPos("pad_top")]->scalar.int32;
+            deconv2d->pad[3] = inputs[argList->ArgPos("pad_bottom")]->scalar.int32;
+        }
         /*driver require that bias' type is the same as weight's*/
         if (inputs[1]->type == OperandType::TENSOR_QUANT8_SYMM_PER_CHANNEL &&
             inputs[2] != nullptr) {
@@ -1838,6 +1916,7 @@ OperationPtr NnApiInterpreter::map_DECONV_2D(Model* model,
     } else {
         NNRT_LOGE_PRINT("Transpose conv2d argument list not support");
         assert(false);
+        return nullptr;
     }
 
     /* set default dilation value */
