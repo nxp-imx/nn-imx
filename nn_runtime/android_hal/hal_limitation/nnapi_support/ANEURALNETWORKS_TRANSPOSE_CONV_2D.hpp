@@ -86,31 +86,31 @@ MAKE_SPEC(explicit_padding_transpose_conv_2d)
     // .bias_(nnrt::OperandType::TENSOR_INT32));
 
 // Note: not support implicit padding cases
-// MAKE_SPEC(implicit_padding_transpose_conv_2d)
-//     .input_(nnrt::OperandType::TENSOR_FLOAT32)
-//     .kernel_(nnrt::OperandType::TENSOR_FLOAT32)
-//     .bias_(nnrt::OperandType::TENSOR_FLOAT32)
-//     .output_shape_(nnrt::OperandType::TENSOR_INT32)
-//     .implicit_pad_(nnrt::OperandType::INT32)
-//     .stride_w_(nnrt::OperandType::INT32)
-//     .stride_h_(nnrt::OperandType::INT32)
-//     .fuse_code_(nnrt::OperandType::INT32)
-//     .layout_(nnrt::OperandType::BOOL));
+MAKE_SPEC(implicit_padding_transpose_conv_2d)
+    .input_(nnrt::OperandType::TENSOR_FLOAT32)
+    .kernel_(nnrt::OperandType::TENSOR_FLOAT32)
+    .bias_(nnrt::OperandType::TENSOR_FLOAT32)
+    .output_shape_(nnrt::OperandType::TENSOR_INT32)
+    .implicit_pad_(nnrt::OperandType::INT32)
+    .stride_w_(nnrt::OperandType::INT32)
+    .stride_h_(nnrt::OperandType::INT32)
+    .fuse_code_(nnrt::OperandType::INT32)
+    .layout_(nnrt::OperandType::BOOL));
 
-//     OVERRIDE_SPEC(implicit_padding_transpose_conv_2d, float16)
-//     .input_(nnrt::OperandType::TENSOR_FLOAT16)
-//     .kernel_(nnrt::OperandType::TENSOR_FLOAT16)
-//     .bias_(nnrt::OperandType::TENSOR_FLOAT16));
+    OVERRIDE_SPEC(implicit_padding_transpose_conv_2d, float16)
+    .input_(nnrt::OperandType::TENSOR_FLOAT16)
+    .kernel_(nnrt::OperandType::TENSOR_FLOAT16)
+    .bias_(nnrt::OperandType::TENSOR_FLOAT16));
 
-//     OVERRIDE_SPEC(implicit_padding_transpose_conv_2d, quant8)
-//     .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM)
-//     .kernel_(nnrt::OperandType::TENSOR_QUANT8_ASYMM)
-//     .bias_(nnrt::OperandType::TENSOR_INT32));
+    OVERRIDE_SPEC(implicit_padding_transpose_conv_2d, quant8)
+    .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM)
+    .kernel_(nnrt::OperandType::TENSOR_QUANT8_ASYMM)
+    .bias_(nnrt::OperandType::TENSOR_INT32));
 
-//     // OVERRIDE_SPEC(implicit_padding_transpose_conv_2d, per_channel_quant8)
-//     // .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM)
-//     // .kernel_(nnrt::OperandType::TENSOR_QUANT8_SYMM_PER_CHANNEL)
-//     // .bias_(nnrt::OperandType::TENSOR_INT32));
+    // OVERRIDE_SPEC(implicit_padding_transpose_conv_2d, per_channel_quant8)
+    // .input_(nnrt::OperandType::TENSOR_QUANT8_ASYMM)
+    // .kernel_(nnrt::OperandType::TENSOR_QUANT8_SYMM_PER_CHANNEL)
+    // .bias_(nnrt::OperandType::TENSOR_INT32));
 #undef ARG_NAMES
 #undef ARGC
 #undef OP_SPEC_NAME
