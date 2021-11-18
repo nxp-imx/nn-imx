@@ -42524,13 +42524,13 @@ inline Tensor create_tensor_from_image2d_array(image2d_array_t input, int stride
 {\n\
     int8 desc;\n\
     int2 strides;\n\
+    _viv_asm(COPY, desc, input, sizeof(desc));\n\
 #if (USE_40BITS_VA==0)\n\
     strides.x = desc.s1;\n\
     strides.y = desc.s4;\n\
 #else\n\
     _viv_asm(GET_IMAGE_STRIDE, strides, input);\n\
 #endif\n\
-    _viv_asm(COPY, desc, input, sizeof(desc));\n\
     uint address = as_uint(desc.s0);\n\
 \n\
     Tensor t =\n\
@@ -44421,13 +44421,14 @@ inline Tensor create_tensor_from_image2d_array(image2d_array_t input, int stride
 {\n\
     int8 desc;\n\
     int2 strides;\n\
+    _viv_asm(COPY, desc, input, sizeof(desc));\n\
+\n\
 #if (USE_40BITS_VA==0)\n\
     strides.x = desc.s1;\n\
     strides.y = desc.s4;\n\
 #else\n\
     _viv_asm(GET_IMAGE_STRIDE, strides, input);\n\
 #endif\n\
-    _viv_asm(COPY, desc, input, sizeof(desc));\n\
     uint address = as_uint(desc.s0);\n\
 \n\
     Tensor t =\n\
