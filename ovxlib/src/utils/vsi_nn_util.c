@@ -1210,15 +1210,7 @@ vsi_status vsi_nn_ReconstructTensorData
                 low = src[i];
                 i++;
             }
-            if( high >> 4 == 15)
-            {
-                high = high >> 4;
-            }
-            if( low >> 4 == 15)
-            {
-                low = low >> 4;
-            }
-            dest[j] = high << 4 | low;
+            dest[j] = (high << 4) | (low & 0xF);
             j++;
         }
     }
