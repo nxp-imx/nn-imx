@@ -233,6 +233,7 @@ vsi_size_t vsi_nn_GetStrideSizeBySize
             stride[i] = size[i-1] * stride[i-1];
             total_bytes *= size[i];
         }
+        total_bytes *= size[1];
     }
     else
     {
@@ -241,8 +242,9 @@ vsi_size_t vsi_nn_GetStrideSizeBySize
             stride[i] = size[i - 1] * stride[i - 1];
             total_bytes *= size[i];
         }
+        total_bytes *= size[0];
     }
-    total_bytes *= size[0];
+
     for( i = dim_num; i < VSI_NN_MAX_DIM_NUM; i ++ )
     {
         stride[i] = total_bytes;
