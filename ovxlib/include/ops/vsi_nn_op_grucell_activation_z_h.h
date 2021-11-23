@@ -21,8 +21,9 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#ifndef _VSI_NN_OP_GRUCELL_ACTIVATION_H
-#define _VSI_NN_OP_GRUCELL_ACTIVATION_H
+
+#ifndef _VSI_NN_OP_GRUCELL_ACTIVATION_Z_H_H
+#define _VSI_NN_OP_GRUCELL_ACTIVATION_Z_H_H
 
 #include "vsi_nn_types.h"
 
@@ -31,31 +32,29 @@ extern "C" {
 #endif
 
 enum {
-    GRUCELL_ACT_H_STATE = 0,
-    GRUCELL_ACT_I_FC_Z  = 1,
-    GRUCELL_ACT_I_FC_R  = 2,
-    GRUCELL_ACT_I_FC_H  = 3,
-    GRUCELL_ACT_H_FC_Z  = 4,
-    GRUCELL_ACT_H_FC_R  = 5,
-    GRUCELL_ACT_H_FC_H  = 6,
+    GRUCELL_ACT_Z_H_HSTATE = 0,
+    GRUCELL_ACT_Z_H_I_FC_Z  = 1,
+    GRUCELL_ACT_Z_H_I_FC_H  = 2,
+    GRUCELL_ACT_Z_H_H_FC_Z  = 3,
+    GRUCELL_ACT_Z_H_H_FC_H  = 4,
 
-    GRUCELL_ACT_IN_CNT,
+    GRUCELL_ACT_Z_H_IN_CNT,
 
-    GRUCELL_ACT_OUT_OUTPUT    = 0,
-    GRUCELL_ACT_OUT_H_STATE   = 1,
+    GRUCELL_ACT_Z_H_OUT_OUTPUT = 0,
+    GRUCELL_ACT_Z_H_OUT_HSTATE = 1,
 
-    GRUCELL_ACT_OUT_CNT
+    GRUCELL_ACT_Z_H_OUT_CNT
 };
 
-typedef struct _vsi_nn_grucell_activation_param
+typedef struct _vsi_nn_grucell_activation_z_h_param
 {
-    struct _vsi_nn_grucell_activation_local * local;
-
+    struct _grucell_activation_z_h_local_data_t* local;
+    // Add parameters here
     vsi_nn_activation_e activation;
     vsi_nn_activation_e recurrent_activation;
-} vsi_nn_grucell_activation_param;
-_compiler_assert(offsetof(vsi_nn_grucell_activation_param, local) == 0, \
-                 vsi_nn_grucell_activation_h );
+} vsi_nn_grucell_activation_z_h_param;
+_compiler_assert(offsetof(vsi_nn_grucell_activation_z_h_param, local) == 0, \
+    vsi_nn_grucell_activation_z_h_h );
 
 #ifdef __cplusplus
 }
