@@ -321,6 +321,12 @@
     <ClInclude Include="include\ops\vsi_nn_op_grucell_activation_internal_sma.h">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_grucell_activation_z_h.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_grucell_h_times_activation_r.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
     <ClInclude Include="include\ops\vsi_nn_op_grucell_ovxlib.h">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
@@ -860,6 +866,15 @@
     <ClCompile Include="src\kernel\cl\grucell_activation_sma_cl.c">
       <Filter>Source Files\kernel\cl</Filter>
     </ClCompile>
+    <ClCompile Include="src\kernel\cl\grucell_activation_z_h_cl.c">
+      <Filter>Source Files\kernel\cl</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\cl\grucell_h_times_activation_r_cl.c">
+      <Filter>Source Files\kernel\cl</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\cl\grucell_reset_after_activation_cl.c">
+      <Filter>Source Files\kernel\cl</Filter>
+    </ClCompile>
     <ClCompile Include="src\kernel\cl\instance_normalization_cl.c">
       <Filter>Source Files\kernel\cl</Filter>
     </ClCompile>
@@ -1050,6 +1065,15 @@
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\grucell_activation_sma_cpu.c">
+      <Filter>Source Files\kernel\cpu</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\cpu\grucell_activation_z_h_cpu.c">
+      <Filter>Source Files\kernel\cpu</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\cpu\grucell_h_times_activation_r_cpu.c">
+      <Filter>Source Files\kernel\cpu</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\cpu\grucell_reset_after_activation_cpu.c">
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\heatmap_max_keypoint_cpu.c">
@@ -1274,6 +1298,15 @@
     <ClCompile Include="src\kernel\evis\grucell_activation_sma_evis.c">
       <Filter>Source Files\kernel\evis</Filter>
     </ClCompile>
+    <ClCompile Include="src\kernel\evis\grucell_activation_z_h_evis.c">
+      <Filter>Source Files\kernel\evis</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\evis\grucell_h_times_activation_r_evis.c">
+      <Filter>Source Files\kernel\evis</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\evis\grucell_reset_after_activation_evis.c">
+      <Filter>Source Files\kernel\evis</Filter>
+    </ClCompile>
     <ClCompile Include="src\kernel\evis\instance_normalization_evis.c">
       <Filter>Source Files\kernel\evis</Filter>
     </ClCompile>
@@ -1436,7 +1469,7 @@
     <ClCompile Include="src\kernel\sp\maximum_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
-    <ClCompile Include="src\kernel\sp\minimum_sp.c">
+  <ClCompile Include="src\kernel\sp\minimum_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\sp\softmax_sp.c">
@@ -1457,7 +1490,7 @@
     <ClCompile Include="src\kernel\vsi_nn_kernel_gpu_shape_optimize.c">
       <Filter>Source Files\kernel</Filter>
     </ClCompile>
-  <ClCompile Include="src\kernel\vsi_nn_kernel_node.c">
+    <ClCompile Include="src\kernel\vsi_nn_kernel_node.c">
       <Filter>Source Files\kernel</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\vsi_nn_kernel_param.c">
@@ -1484,7 +1517,7 @@
     <ClCompile Include="src\kernel\vx\clip_vx.c">
       <Filter>Source Files\kernel\vx</Filter>
     </ClCompile>
-  <ClCompile Include="src\kernel\vx\convolutional.c">
+    <ClCompile Include="src\kernel\vx\convolutional.c">
       <Filter>Source Files\kernel\vx</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\vx\eltwise_unary_vx.c">
@@ -1689,6 +1722,12 @@
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_grucell_activation_internal_sma.c">
+      <Filter>Source Files\ops</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_grucell_activation_z_h.c">
+      <Filter>Source Files\ops</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_grucell_h_times_activation_r.c">
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_grucell_ovxlib.c">

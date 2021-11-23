@@ -8679,6 +8679,134 @@ __kernel void grucell_activation_sma_F16_F16_F16toF16_2D\n\
 \n\
 "; /* end of grucell_activation_sma_vx*/
 
+static const char grucell_activation_z_h_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+#define logE        (1.44269502f)\n\
+#define twoLogE     (logE * 2.0f)\n\
+\n\
+float4 sigmoid_func(float4 x)\n\
+{\n\
+    x *= -logE;\n\
+    x = 1.0f + exp2(x);\n\
+    return 1.0f / x;\n\
+}\n\
+float4 hard_sigmoid(float4 x)\n\
+{\n\
+    x = 0.2 * x + 0.5;\n\
+    x = clamp(x, 0, 1);\n\
+    return x;\n\
+}\n\
+float4 tanh_func(float4 x)\n\
+{\n\
+    x *= -twoLogE;\n\
+    x = 1 + exp2(x);\n\
+    x = 1.0f / x;\n\
+    return 2 * x - 1;\n\
+}\n\
+\n\
+_viv_uniform VXC_512Bits uniF16PlusF16_0_4x4;\n\
+_viv_uniform VXC_512Bits uniF16PlusF16_1_4x4;\n\
+_viv_uniform VXC_512Bits uniConvertF16_0_4x4;\n\
+_viv_uniform VXC_512Bits uniConvertF16_1_4x4;\n\
+_viv_uniform VXC_512Bits uniExtract8Data_2x8;\n\
+\n\
+#define GRUCELL_F16_F16TOF16(act_name, act_func) \\\n\
+__kernel void grucell_activation_z_h_F16_F16toF16_##act_name( \\\n\
+    __read_only  image2d_t hstate_in, \\\n\
+    __read_only  image2d_t input_z_conv, \\\n\
+    __read_only  image2d_t input_h_conv, \\\n\
+    __read_only  image2d_t hstate_z_conv, \\\n\
+    __read_only  image2d_t hstate_h_conv, \\\n\
+    __write_only image2d_t output, \\\n\
+    __write_only image2d_t hstate_out \\\n\
+    ) \\\n\
+{ \\\n\
+    int2 coord_in = (int2)(get_global_id(0), get_global_id(1)); \\\n\
+    vxc_short8 v0, v1, v2, v3, v4, v5, v6; \\\n\
+    vxc_half8 src0, src1, src2, src3, src4, src5, src6; \\\n\
+    VXC_ReadImage(v2, hstate_h_conv, coord_in, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    _viv_asm(COPY, src2, v2, 16); \\\n\
+    VXC_ReadImage(v4, input_h_conv, coord_in, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    _viv_asm(COPY, src4, v4, 16); \\\n\
+    VXC_ReadImage(v5, input_z_conv, coord_in, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    _viv_asm(COPY, src5, v5, 16); \\\n\
+    VXC_ReadImage(v6, hstate_z_conv, coord_in, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    _viv_asm(COPY, src6, v6, 16); \\\n\
+    VXC_ReadImage(v3, hstate_in, coord_in, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    _viv_asm(COPY, src3, v3, 16); \\\n\
+ \\\n\
+    float4 h; \\\n\
+    VXC_DP4x4(h, src2, src4, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniF16PlusF16_0_4x4); \\\n\
+    float4 z; \\\n\
+    VXC_DP4x4(z, src5, src6, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniF16PlusF16_0_4x4); \\\n\
+    z = act_func(z); \\\n\
+    h = tanh_func(h); \\\n\
+    float4 h_tm; \\\n\
+    VXC_DP4x4(h_tm, src3, src3, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertF16_0_4x4); \\\n\
+    float4 result = (1 - z) * h + z * h_tm; \\\n\
+    half4 dst0; \\\n\
+    _viv_asm(CONV_RTE, dst0, result); \\\n\
+    vxc_half4 dst1; \\\n\
+    VXC_DP2x8(dst1, dst0, dst0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 1), uniExtract8Data_2x8); \\\n\
+    vxc_short4 dst; \\\n\
+    _viv_asm(COPY, dst, dst1, 8); \\\n\
+    VXC_WriteImage(output, coord_in, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+    VXC_WriteImage(hstate_out, coord_in, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+}\n\
+GRUCELL_F16_F16TOF16(SIGMOID, sigmoid_func)\n\
+\n\
+_viv_uniform float hstate_in_scale;\n\
+_viv_uniform float hstate_in_tail;\n\
+_viv_uniform float output_scale;\n\
+_viv_uniform float output_zp;\n\
+#define GRUCELL_QNT_F16TO_QNT(name0, name1, act_name, act_func, src0_type, dst_type) \\\n\
+__kernel void grucell_activation_z_h_##name0##_F16to##name1##_##act_name( \\\n\
+    __read_only  image2d_t hstate_in, \\\n\
+    __read_only  image2d_t input_z_conv, \\\n\
+    __read_only  image2d_t input_h_conv, \\\n\
+    __read_only  image2d_t hstate_z_conv, \\\n\
+    __read_only  image2d_t hstate_h_conv, \\\n\
+    __write_only image2d_t output, \\\n\
+    __write_only image2d_t hstate_out \\\n\
+    ) \\\n\
+{ \\\n\
+    int2 coord_in = (int2)(get_global_id(0), get_global_id(1)); \\\n\
+    src0_type src3; \\\n\
+    vxc_short8 v0, v1, v2, v3, v4, v5, v6; \\\n\
+    vxc_half8 src0, src1, src2, src4, src5, src6; \\\n\
+    VXC_ReadImage(v2, hstate_h_conv, coord_in, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    _viv_asm(COPY, src2, v2, 16); \\\n\
+    VXC_ReadImage(v4, input_h_conv, coord_in, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    _viv_asm(COPY, src4, v4, 16); \\\n\
+    VXC_ReadImage(v5, input_z_conv, coord_in, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    _viv_asm(COPY, src5, v5, 16); \\\n\
+    VXC_ReadImage(v6, hstate_z_conv, coord_in, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    _viv_asm(COPY, src6, v6, 16); \\\n\
+    VXC_ReadImage(src3, hstate_in, coord_in, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+ \\\n\
+    float4 h; \\\n\
+    VXC_DP4x4(h, src2, src4, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniF16PlusF16_0_4x4); \\\n\
+    float4 z; \\\n\
+    VXC_DP4x4(z, src5, src6, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniF16PlusF16_0_4x4); \\\n\
+    z = act_func(z); \\\n\
+    h = tanh_func(h); \\\n\
+    float4 h_tm; \\\n\
+    VXC_DP4x4(h_tm, src3, src3, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertF16_0_4x4); \\\n\
+    h_tm = h_tm * hstate_in_scale + hstate_in_tail; \\\n\
+    float4 result = (1 - z) * h + z * h_tm; \\\n\
+    result = result * output_scale + output_zp; \\\n\
+    int4 dst0; \\\n\
+    _viv_asm(CONV_RTE, dst0, result); \\\n\
+    dst_type dst; \\\n\
+    VXC_DP2x8(dst, dst0, dst0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 1), uniExtract8Data_2x8); \\\n\
+    VXC_WriteImage(output, coord_in, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+    VXC_WriteImage(hstate_out, coord_in, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+}\n\
+GRUCELL_QNT_F16TO_QNT(U8,  U8,  SIGMOID, sigmoid_func, vxc_uchar8, vxc_uchar8)\n\
+GRUCELL_QNT_F16TO_QNT(I8,  I8,  SIGMOID, sigmoid_func, vxc_char8,  vxc_char8)\n\
+GRUCELL_QNT_F16TO_QNT(I16, I16, SIGMOID, sigmoid_func, vxc_short8, vxc_short8)\n\
+"; /* end of grucell_activation_z_h_vx*/
+
 static const char grucell_cdnn_activation_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 #define logE     (1.44269502f)\n\
@@ -9468,6 +9596,254 @@ __kernel void grucell_activation_cdnn_U8_U8_U8_to_U8\n\
 }\n\
 \n\
 "; /* end of grucell_cdnn_activation_u8_vx*/
+
+static const char grucell_h_times_activation_r_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+#define logE        (1.44269502f)\n\
+#define twoLogE     (logE * 2.0f)\n\
+\n\
+float4 sigmoid_func(float4 x)\n\
+{\n\
+    x *= -logE;\n\
+    x = 1.0f + exp2(x);\n\
+    return 1.0f / x;\n\
+}\n\
+float4 hard_sigmoid(float4 x)\n\
+{\n\
+    x = 0.2 * x + 0.5;\n\
+    x = clamp(x, 0, 1);\n\
+    return x;\n\
+}\n\
+\n\
+_viv_uniform VXC_512Bits uniF16PlusF16_0_4x4;\n\
+_viv_uniform VXC_512Bits uniF16PlusF16_1_4x4;\n\
+_viv_uniform VXC_512Bits uniConvertF16_0_4x4;\n\
+_viv_uniform VXC_512Bits uniConvertF16_1_4x4;\n\
+_viv_uniform VXC_512Bits uniExtract8Data_2x8;\n\
+\n\
+#define GRUCELL_F16_F16TOF16(act_name, act_func) \\\n\
+__kernel void grucell_h_times_activation_r_F16_F16toF16_##act_name( \\\n\
+    __read_only  image2d_t hstate_in, \\\n\
+    __read_only  image2d_t input_r_conv, \\\n\
+    __read_only  image2d_t hstate_r_conv, \\\n\
+    __write_only image2d_t output \\\n\
+    ) \\\n\
+{ \\\n\
+    int2 coord_in = (int2)(get_global_id(0), get_global_id(1)); \\\n\
+    vxc_short8 v0, v1, v2, v3, v4, v5, v6; \\\n\
+    vxc_half8 src0, src1, src2, src3, src4, src5, src6; \\\n\
+    VXC_ReadImage(v0, input_r_conv, coord_in, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    _viv_asm(COPY, src0, v0, 16); \\\n\
+    VXC_ReadImage(v1, hstate_r_conv, coord_in, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    _viv_asm(COPY, src1, v1, 16); \\\n\
+    VXC_ReadImage(v3, hstate_in, coord_in, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    _viv_asm(COPY, src3, v3, 16); \\\n\
+ \\\n\
+    float4 r; \\\n\
+    VXC_DP4x4(r, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniF16PlusF16_0_4x4); \\\n\
+    r = act_func(r); \\\n\
+    float4 h_tm; \\\n\
+    VXC_DP4x4(h_tm, src3, src3, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertF16_0_4x4); \\\n\
+    float4 result = r * h_tm; \\\n\
+    half4 dst0; \\\n\
+    _viv_asm(CONV_RTE, dst0, result); \\\n\
+    vxc_half4 dst1; \\\n\
+    VXC_DP2x8(dst1, dst0, dst0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 1), uniExtract8Data_2x8); \\\n\
+    vxc_short4 dst; \\\n\
+    _viv_asm(COPY, dst, dst1, 8); \\\n\
+    VXC_WriteImage(output, coord_in, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+}\n\
+GRUCELL_F16_F16TOF16(SIGMOID, sigmoid_func)\n\
+\n\
+_viv_uniform float hstate_in_scale;\n\
+_viv_uniform float hstate_in_tail;\n\
+#define GRUCELL_QNT_F16TO_F16(name0, act_name, act_func, src0_type) \\\n\
+__kernel void grucell_h_times_activation_r_##name0##_F16toF16_##act_name( \\\n\
+    __read_only  image2d_t hstate_in, \\\n\
+    __read_only  image2d_t input_r_conv, \\\n\
+    __read_only  image2d_t hstate_r_conv, \\\n\
+    __write_only image2d_t output \\\n\
+    ) \\\n\
+{ \\\n\
+    int2 coord_in = (int2)(get_global_id(0), get_global_id(1)); \\\n\
+    src0_type src3; \\\n\
+    vxc_short8 v0, v1, v2, v3, v4, v5, v6; \\\n\
+    vxc_half8 src0, src1, src2, src4, src5, src6; \\\n\
+    VXC_ReadImage(v0, input_r_conv, coord_in, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    _viv_asm(COPY, src0, v0, 16); \\\n\
+    VXC_ReadImage(v1, hstate_r_conv, coord_in, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    _viv_asm(COPY, src1, v1, 16); \\\n\
+    VXC_ReadImage(src3, hstate_in, coord_in, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+ \\\n\
+    float4 r; \\\n\
+    VXC_DP4x4(r, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniF16PlusF16_0_4x4); \\\n\
+    r = act_func(r); \\\n\
+    float4 h_tm; \\\n\
+    VXC_DP4x4(h_tm, src3, src3, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertF16_0_4x4); \\\n\
+    h_tm = h_tm * hstate_in_scale + hstate_in_tail; \\\n\
+    float4 result = r * h_tm; \\\n\
+    half4 dst0; \\\n\
+    _viv_asm(CONV_RTE, dst0, result); \\\n\
+    vxc_half8 dst1; \\\n\
+    VXC_DP2x8(dst1, dst0, dst0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 1), uniExtract8Data_2x8); \\\n\
+    vxc_short4 dst; \\\n\
+    _viv_asm(COPY, dst, dst1, 8); \\\n\
+    VXC_WriteImage(output, coord_in, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+}\n\
+GRUCELL_QNT_F16TO_F16(U8,  SIGMOID, sigmoid_func, vxc_uchar8)\n\
+GRUCELL_QNT_F16TO_F16(I8,  SIGMOID, sigmoid_func, vxc_char8)\n\
+GRUCELL_QNT_F16TO_F16(I16, SIGMOID, sigmoid_func, vxc_short8)\n\
+"; /* end of grucell_h_times_activation_r_vx*/
+
+static const char grucell_reset_after_activation_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+#define logE        (1.44269502f)\n\
+#define twoLogE     (logE * 2.0f)\n\
+\n\
+float4 sigmoid_func(float4 x)\n\
+{\n\
+    x *= -logE;\n\
+    x = 1.0f + exp2(x);\n\
+    return 1.0f / x;\n\
+}\n\
+float4 hard_sigmoid(float4 x)\n\
+{\n\
+    x = 0.2 * x + 0.5;\n\
+    x = clamp(x, 0, 1);\n\
+    return x;\n\
+}\n\
+float4 tanh_func(float4 x)\n\
+{\n\
+    x *= -twoLogE;\n\
+    x = 1 + exp2(x);\n\
+    x = 1.0f / x;\n\
+    return 2 * x - 1;\n\
+}\n\
+\n\
+_viv_uniform VXC_512Bits uniF16PlusF16_0_4x4;\n\
+_viv_uniform VXC_512Bits uniF16PlusF16_1_4x4;\n\
+_viv_uniform VXC_512Bits uniConvertF16_0_4x4;\n\
+_viv_uniform VXC_512Bits uniConvertF16_1_4x4;\n\
+_viv_uniform VXC_512Bits uniExtract8Data_2x8;\n\
+\n\
+#define GRUCELL_F16_F16TOF16(act_name, act_func) \\\n\
+__kernel void grucell_reset_after_activation_F16_F16toF16_##act_name( \\\n\
+    __read_only  image2d_t hstate_in, \\\n\
+    __read_only  image2d_t input_z_conv, \\\n\
+    __read_only  image2d_t input_r_conv, \\\n\
+    __read_only  image2d_t input_h_conv, \\\n\
+    __read_only  image2d_t hstate_z_conv, \\\n\
+    __read_only  image2d_t hstate_r_conv, \\\n\
+    __read_only  image2d_t hstate_h_conv, \\\n\
+    __write_only image2d_t output, \\\n\
+    __write_only image2d_t hstate_out \\\n\
+    ) \\\n\
+{ \\\n\
+    int2 coord_in = (int2)(get_global_id(0), get_global_id(1)); \\\n\
+    vxc_short8 v0, v1, v2, v3, v4, v5, v6; \\\n\
+    vxc_half8 src0, src1, src2, src3, src4, src5, src6; \\\n\
+    VXC_ReadImage(v0, input_r_conv, coord_in, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    _viv_asm(COPY, src0, v0, 16); \\\n\
+    VXC_ReadImage(v1, hstate_r_conv, coord_in, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    _viv_asm(COPY, src1, v1, 16); \\\n\
+    VXC_ReadImage(v2, hstate_h_conv, coord_in, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    _viv_asm(COPY, src2, v2, 16); \\\n\
+    VXC_ReadImage(v4, input_h_conv, coord_in, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    _viv_asm(COPY, src4, v4, 16); \\\n\
+    VXC_ReadImage(v5, input_z_conv, coord_in, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    _viv_asm(COPY, src5, v5, 16); \\\n\
+    VXC_ReadImage(v6, hstate_z_conv, coord_in, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    _viv_asm(COPY, src6, v6, 16); \\\n\
+    VXC_ReadImage(v3, hstate_in, coord_in, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    _viv_asm(COPY, src3, v3, 16); \\\n\
+ \\\n\
+    float4 r; \\\n\
+    VXC_DP4x4(r, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniF16PlusF16_0_4x4); \\\n\
+    r = act_func(r); \\\n\
+    float4 h0, h1; \\\n\
+    VXC_DP4x4(h1, src2, src2, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertF16_0_4x4); \\\n\
+    VXC_DP4x4(h0, src4, src4, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertF16_0_4x4); \\\n\
+    float4 h = h0 + r * h1; \\\n\
+    float4 z; \\\n\
+    VXC_DP4x4(z, src5, src6, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniF16PlusF16_0_4x4); \\\n\
+    z = act_func(z); \\\n\
+    h = tanh_func(h); \\\n\
+    float4 h_tm; \\\n\
+    VXC_DP4x4(h_tm, src3, src3, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertF16_0_4x4); \\\n\
+    float4 result = (1 - z) * h + z * h_tm; \\\n\
+    half4 dst0; \\\n\
+    _viv_asm(CONV_RTE, dst0, result); \\\n\
+    vxc_half4 dst1; \\\n\
+    VXC_DP2x8(dst1, dst0, dst0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 1), uniExtract8Data_2x8); \\\n\
+    vxc_short4 dst; \\\n\
+    _viv_asm(COPY, dst, dst1, 8); \\\n\
+    VXC_WriteImage(output, coord_in, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+    VXC_WriteImage(hstate_out, coord_in, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+}\n\
+GRUCELL_F16_F16TOF16(SIGMOID, sigmoid_func)\n\
+\n\
+_viv_uniform float hstate_in_scale;\n\
+_viv_uniform float hstate_in_tail;\n\
+_viv_uniform float output_scale;\n\
+_viv_uniform float output_zp;\n\
+#define GRUCELL_QNT_F16TO_QNT(name0, name1, act_name, act_func, src0_type, dst_type) \\\n\
+__kernel void grucell_reset_after_activation_##name0##_F16to##name1##_##act_name( \\\n\
+    __read_only  image2d_t hstate_in, \\\n\
+    __read_only  image2d_t input_z_conv, \\\n\
+    __read_only  image2d_t input_r_conv, \\\n\
+    __read_only  image2d_t input_h_conv, \\\n\
+    __read_only  image2d_t hstate_z_conv, \\\n\
+    __read_only  image2d_t hstate_r_conv, \\\n\
+    __read_only  image2d_t hstate_h_conv, \\\n\
+    __write_only image2d_t output, \\\n\
+    __write_only image2d_t hstate_out \\\n\
+    ) \\\n\
+{ \\\n\
+    int2 coord_in = (int2)(get_global_id(0), get_global_id(1)); \\\n\
+    src0_type src3; \\\n\
+    vxc_short8 v0, v1, v2, v3, v4, v5, v6; \\\n\
+    vxc_half8 src0, src1, src2, src4, src5, src6; \\\n\
+    VXC_ReadImage(v0, input_r_conv, coord_in, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    _viv_asm(COPY, src0, v0, 16); \\\n\
+    VXC_ReadImage(v1, hstate_r_conv, coord_in, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    _viv_asm(COPY, src1, v1, 16); \\\n\
+    VXC_ReadImage(v2, hstate_h_conv, coord_in, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    _viv_asm(COPY, src2, v2, 16); \\\n\
+    VXC_ReadImage(v4, input_h_conv, coord_in, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    _viv_asm(COPY, src4, v4, 16); \\\n\
+    VXC_ReadImage(v5, input_z_conv, coord_in, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    _viv_asm(COPY, src5, v5, 16); \\\n\
+    VXC_ReadImage(v6, hstate_z_conv, coord_in, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    _viv_asm(COPY, src6, v6, 16); \\\n\
+    VXC_ReadImage(src3, hstate_in, coord_in, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+ \\\n\
+    float4 r; \\\n\
+    VXC_DP4x4(r, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniF16PlusF16_0_4x4); \\\n\
+    r = act_func(r); \\\n\
+    float4 h0, h1; \\\n\
+    VXC_DP4x4(h1, src2, src2, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertF16_0_4x4); \\\n\
+    VXC_DP4x4(h0, src4, src4, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertF16_0_4x4); \\\n\
+    float4 h = h0 + r * h1; \\\n\
+    float4 z; \\\n\
+    VXC_DP4x4(z, src5, src6, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniF16PlusF16_0_4x4); \\\n\
+    z = act_func(z); \\\n\
+    h = tanh_func(h); \\\n\
+    float4 h_tm; \\\n\
+    VXC_DP4x4(h_tm, src3, src3, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertF16_0_4x4); \\\n\
+    h_tm = h_tm * hstate_in_scale + hstate_in_tail; \\\n\
+    float4 result = (1 - z) * h + z * h_tm; \\\n\
+    result = result * output_scale + output_zp; \\\n\
+    int4 dst0; \\\n\
+    _viv_asm(CONV_RTE, dst0, result); \\\n\
+    dst_type dst; \\\n\
+    VXC_DP2x8(dst, dst0, dst0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 1), uniExtract8Data_2x8); \\\n\
+    VXC_WriteImage(output, coord_in, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+    VXC_WriteImage(hstate_out, coord_in, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+}\n\
+GRUCELL_QNT_F16TO_QNT(U8,  U8,  SIGMOID, sigmoid_func, vxc_uchar8, vxc_uchar8)\n\
+GRUCELL_QNT_F16TO_QNT(I8,  I8,  SIGMOID, sigmoid_func, vxc_char8,  vxc_char8)\n\
+GRUCELL_QNT_F16TO_QNT(I16, I16, SIGMOID, sigmoid_func, vxc_short8, vxc_short8)\n\
+"; /* end of grucell_reset_after_activation_vx*/
 
 static const char hswish_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
@@ -46317,6 +46693,363 @@ static const char grucell_activation_sma_cl[] = "__kernel void grucell_activatio
 }\n\
 "; /* end of grucell_activation_sma_cl*/
 
+static const char grucell_activation_z_h_cl[] = "#define logE        (1.44269502f)\n\
+#define twoLogE     (logE * 2.0f)\n\
+\n\
+float sigmoid(float x)\n\
+{\n\
+    x *= -logE;\n\
+    x = 1 + exp2(x);\n\
+    return 1 / x;\n\
+}\n\
+float hard_sigmoid(float x)\n\
+{\n\
+    x = 0.2 * x + 0.5;\n\
+    x = clamp(x, 0, 1);\n\
+    return x;\n\
+}\n\
+float tanh_func(float x)\n\
+{\n\
+    x *= -twoLogE;\n\
+    x = 1 + exp2(x);\n\
+    x = 1 / x;\n\
+    return 2 * x - 1;\n\
+}\n\
+\n\
+\n\
+#define GRUCELL_ACTIVATION_U8_F32_U8(act_name, act_func) \\\n\
+__kernel void grucell_activation_z_h_U8_F32toU8_##act_name( \\\n\
+    __read_only  image2d_t        hstate_in, \\\n\
+    __read_only  image2d_t        input_z_conv, \\\n\
+    __read_only  image2d_t        input_h_conv, \\\n\
+    __read_only  image2d_t        hstate_z_conv, \\\n\
+    __read_only  image2d_t        hstate_h_conv, \\\n\
+    __write_only image2d_t        output, \\\n\
+    __write_only image2d_t        hstate_out, \\\n\
+    float input_scale, float input_tail, float output_scale, float output_zp) \\\n\
+{ \\\n\
+    int2 coord_in = (int2)(get_global_id(0), get_global_id(1)); \\\n\
+    float4  src0, src1, src2, src3; \\\n\
+    float4 data_i_t, data_f_t, data_g_t, data_o_t, data_c_t; \\\n\
+    float4 h_tm = convert_float4(read_imageui(hstate_in, coord_in.xy)); \\\n\
+    float4 h1 = read_imagef(hstate_h_conv, coord_in.xy); \\\n\
+    float4 h0 = read_imagef(input_h_conv, coord_in.xy); \\\n\
+    float4 z0 = read_imagef(input_z_conv, coord_in.xy); \\\n\
+    float4 z1 = read_imagef(hstate_z_conv, coord_in.xy); \\\n\
+ \\\n\
+    h_tm = h_tm * input_scale + input_tail; \\\n\
+    float4 h = h0 + h1; \\\n\
+    float4 z = z0 + z1; \\\n\
+    z.x = act_func(z.x); \\\n\
+    h = tanh_func(h.x); \\\n\
+    float4 dst = (1 - z ) * h + z * h_tm; \\\n\
+    dst = dst * output_scale + output_zp; \\\n\
+    uint4 result = convert_uint4_sat_rte(dst); \\\n\
+    write_imageui(output, coord_in.xy, result); \\\n\
+    write_imageui(hstate_out, coord_in.xy, result); \\\n\
+}\n\
+GRUCELL_ACTIVATION_U8_F32_U8(SIGMOID, sigmoid)\n\
+//GRUCELL_ACTIVATION_U8_F32_U8(HARD_SIGMOID, hard_sigmoid)\n\
+\n\
+#define GRUCELL_ACTIVATION_F32_F32_F32(act_name, act_func) \\\n\
+__kernel void grucell_activation_z_h_F32_F32toF32_##act_name( \\\n\
+    __read_only  image2d_t        hstate_in, \\\n\
+    __read_only  image2d_t        input_z_conv, \\\n\
+    __read_only  image2d_t        input_h_conv, \\\n\
+    __read_only  image2d_t        hstate_z_conv, \\\n\
+    __read_only  image2d_t        hstate_h_conv, \\\n\
+    __write_only image2d_t        output, \\\n\
+    __write_only image2d_t        hstate_out, \\\n\
+    float input_scale, float input_tail, float output_scale, float output_zp) \\\n\
+{ \\\n\
+    int2 coord_in = (int2)(get_global_id(0), get_global_id(1)); \\\n\
+    float4  src0, src1, src2, src3; \\\n\
+    float4 data_i_t, data_f_t, data_g_t, data_o_t, data_c_t; \\\n\
+    float4 h1 = read_imagef(hstate_h_conv, coord_in.xy); \\\n\
+    float4 h0 = read_imagef(input_h_conv, coord_in.xy); \\\n\
+    float4 z0 = read_imagef(input_z_conv, coord_in.xy); \\\n\
+    float4 z1 = read_imagef(hstate_z_conv, coord_in.xy); \\\n\
+    float4 h_tm = read_imagef(hstate_in, coord_in.xy); \\\n\
+ \\\n\
+    float4 h = h0 + h1; \\\n\
+    float4 z = z0 + z1; \\\n\
+    z.x = act_func(z.x); \\\n\
+    h = tanh_func(h.x); \\\n\
+    float4 dst = (1 - z ) * h + z * h_tm; \\\n\
+    write_imagef(output, coord_in.xy, dst); \\\n\
+    write_imagef(hstate_out, coord_in.xy, dst); \\\n\
+}\n\
+\n\
+GRUCELL_ACTIVATION_F32_F32_F32(SIGMOID, sigmoid)\n\
+//GRUCELL_ACTIVATION_U8_F32_U8(HARD_SIGMOID, hard_sigmoid)\n\
+\n\
+#define GRUCELL_ACTIVATION_I32_F32_I32(act_name, act_func) \\\n\
+__kernel void grucell_activation_z_h_I32_F32toI32_##act_name( \\\n\
+    __read_only  image2d_t        hstate_in, \\\n\
+    __read_only  image2d_t        input_z_conv, \\\n\
+    __read_only  image2d_t        input_h_conv, \\\n\
+    __read_only  image2d_t        hstate_z_conv, \\\n\
+    __read_only  image2d_t        hstate_h_conv, \\\n\
+    __write_only image2d_t        output, \\\n\
+    __write_only image2d_t        hstate_out, \\\n\
+    float input_scale, float input_tail, float output_scale, float output_zp) \\\n\
+{ \\\n\
+    int2 coord_in = (int2)(get_global_id(0), get_global_id(1)); \\\n\
+    float4  src0, src1, src2, src3; \\\n\
+    float4 data_i_t, data_f_t, data_g_t, data_o_t, data_c_t; \\\n\
+    float4 h_tm = convert_float4(read_imagei(hstate_in, coord_in.xy)); \\\n\
+    float4 h1 = read_imagef(hstate_h_conv, coord_in.xy); \\\n\
+    float4 h0 = read_imagef(input_h_conv, coord_in.xy); \\\n\
+    float4 z0 = read_imagef(input_z_conv, coord_in.xy); \\\n\
+    float4 z1 = read_imagef(hstate_z_conv, coord_in.xy); \\\n\
+ \\\n\
+    h_tm = h_tm * input_scale + input_tail; \\\n\
+    float4 h = h0 + h1; \\\n\
+    float4 z = z0 + z1; \\\n\
+    z.x = act_func(z.x); \\\n\
+    h = tanh_func(h.x); \\\n\
+    float4 dst = (1 - z ) * h + z * h_tm; \\\n\
+    dst = dst * output_scale + output_zp; \\\n\
+    int4 result = convert_int4_sat_rte(dst); \\\n\
+    write_imagei(output, coord_in.xy, result); \\\n\
+    write_imagei(hstate_out, coord_in.xy, result); \\\n\
+}\n\
+GRUCELL_ACTIVATION_I32_F32_I32(SIGMOID, sigmoid)\n\
+//GRUCELL_ACTIVATION_U8_F32_U8(HARD_SIGMOID, hard_sigmoid)"; /* end of grucell_activation_z_h_cl*/
+
+static const char grucell_h_times_activation_r_cl[] = "#define logE        (1.44269502f)\n\
+#define twoLogE     (logE * 2.0f)\n\
+\n\
+float sigmoid(float x)\n\
+{\n\
+    x *= -logE;\n\
+    x = 1 + exp2(x);\n\
+    return 1 / x;\n\
+}\n\
+float hard_sigmoid(float x)\n\
+{\n\
+    x = 0.2 * x + 0.5;\n\
+    x = clamp(x, 0, 1);\n\
+    return x;\n\
+}\n\
+\n\
+#define GRUCELL_H_TIMES_R_U8_F32_F32(act_name, act_func) \\\n\
+__kernel void grucell_h_times_activation_r_U8_F32toF32_##act_name( \\\n\
+    __read_only  image2d_t        hstate_in, \\\n\
+    __read_only  image2d_t        input_r_conv, \\\n\
+    __read_only  image2d_t        hstate_r_conv, \\\n\
+    __write_only image2d_t        output, \\\n\
+    float input_scale, float input_tail) \\\n\
+{ \\\n\
+    int2 coord_in = (int2)(get_global_id(0), get_global_id(1)); \\\n\
+    float4  src0, src1, src2, src3; \\\n\
+    float4 data_i_t, data_f_t, data_g_t, data_o_t, data_c_t; \\\n\
+    float4 r0 = read_imagef(input_r_conv, coord_in.xy); \\\n\
+    float4 r1 = read_imagef(hstate_r_conv, coord_in.xy); \\\n\
+    float4 h_tm = convert_float4(read_imageui(hstate_in, coord_in.xy)); \\\n\
+ \\\n\
+    float4 r = r0 + r1; \\\n\
+    r.x = act_func(r.x); \\\n\
+    h_tm = h_tm * input_scale + input_tail; \\\n\
+    float4 r_times_h = r * h_tm; \\\n\
+    write_imagef(output, coord_in.xy, r_times_h); \\\n\
+}\n\
+GRUCELL_H_TIMES_R_U8_F32_F32(SIGMOID, sigmoid)\n\
+//GRUCELL_H_TIMES_R_U8_F32_F32(HARD_SIGMOID, hard_sigmoid)\n\
+\n\
+#define GRUCELL_H_TIMES_R_F32_F32_F32(act_name, act_func) \\\n\
+__kernel void grucell_h_times_activation_r_F32_F32toF32_##act_name( \\\n\
+    __read_only  image2d_t hstate_in, \\\n\
+    __read_only  image2d_t input_r_conv, \\\n\
+    __read_only  image2d_t hstate_r_conv, \\\n\
+    __write_only image2d_t output, \\\n\
+    float input_scale, float input_tail) \\\n\
+{ \\\n\
+    int2 coord_in = (int2)(get_global_id(0), get_global_id(1)); \\\n\
+    float4  src0, src1, src2, src3; \\\n\
+    float4 data_i_t, data_f_t, data_g_t, data_o_t, data_c_t; \\\n\
+    float4 r0 = read_imagef(input_r_conv, coord_in.xy); \\\n\
+    float4 r1 = read_imagef(hstate_r_conv, coord_in.xy); \\\n\
+    float4 h_tm = read_imagef(hstate_in, coord_in.xy); \\\n\
+ \\\n\
+    float4 r = r0 + r1; \\\n\
+    r.x = act_func(r.x); \\\n\
+    float4 r_times_h = r * h_tm; \\\n\
+    write_imagef(output, coord_in.xy, r_times_h); \\\n\
+}\n\
+\n\
+GRUCELL_H_TIMES_R_F32_F32_F32(SIGMOID, sigmoid)\n\
+//GRUCELL_H_TIMES_R_F32_F32_F32(HARD_SIGMOID, hard_sigmoid)\n\
+\n\
+#define GRUCELL_H_TIMES_R_I32_F32_F32(act_name, act_func) \\\n\
+__kernel void grucell_h_times_activation_r_I32_F32toI32_##act_name( \\\n\
+    __read_only  image2d_t        hstate_in, \\\n\
+    __read_only  image2d_t        input_r_conv, \\\n\
+    __read_only  image2d_t        hstate_r_conv, \\\n\
+    __write_only image2d_t        output, \\\n\
+    float input_scale, float input_tail) \\\n\
+{ \\\n\
+    int2 coord_in = (int2)(get_global_id(0), get_global_id(1)); \\\n\
+    float4  src0, src1, src2, src3; \\\n\
+    float4 data_i_t, data_f_t, data_g_t, data_o_t, data_c_t; \\\n\
+    float4 r0 = read_imagef(input_r_conv, coord_in.xy); \\\n\
+    float4 r1 = read_imagef(hstate_r_conv, coord_in.xy); \\\n\
+    float4 h_tm = convert_float4(read_imagei(hstate_in, coord_in.xy)); \\\n\
+ \\\n\
+    float4 r = r0 + r1; \\\n\
+    r.x = act_func(r.x); \\\n\
+    h_tm = h_tm * input_scale + input_tail; \\\n\
+    float4 r_times_h = r * h_tm; \\\n\
+    write_imagef(output, coord_in.xy, r_times_h); \\\n\
+}\n\
+GRUCELL_H_TIMES_R_I32_F32_F32(SIGMOID, sigmoid)\n\
+//GRUCELL_H_TIMES_R_I32_F32_F32(HARD_SIGMOID, hard_sigmoid)"; /* end of grucell_h_times_activation_r_cl*/
+
+static const char grucell_reset_after_activation_cl[] = "#define logE        (1.44269502f)\n\
+#define twoLogE     (logE * 2.0f)\n\
+\n\
+float sigmoid(float x)\n\
+{\n\
+    x *= -logE;\n\
+    x = 1 + exp2(x);\n\
+    return 1 / x;\n\
+}\n\
+float hard_sigmoid(float x)\n\
+{\n\
+    x = 0.2 * x + 0.5;\n\
+    x = clamp(x, 0, 1);\n\
+    return x;\n\
+}\n\
+float tanh_func(float x)\n\
+{\n\
+    x *= -twoLogE;\n\
+    x = 1 + exp2(x);\n\
+    x = 1 / x;\n\
+    return 2 * x - 1;\n\
+}\n\
+\n\
+\n\
+#define GRUCELL_ACTIVATION_U8_F32_U8(act_name, act_func) \\\n\
+__kernel void grucell_reset_after_activation_U8_F32toU8_##act_name( \\\n\
+    __read_only  image2d_t        hstate_in, \\\n\
+    __read_only  image2d_t        input_z_conv, \\\n\
+    __read_only  image2d_t        input_r_conv, \\\n\
+    __read_only  image2d_t        input_h_conv, \\\n\
+    __read_only  image2d_t        hstate_z_conv, \\\n\
+    __read_only  image2d_t        hstate_r_conv, \\\n\
+    __read_only  image2d_t        hstate_h_conv, \\\n\
+    __write_only image2d_t        output, \\\n\
+    __write_only image2d_t        hstate_out, \\\n\
+    float input_scale, float input_tail, float output_scale, float output_zp) \\\n\
+{ \\\n\
+    int2 coord_in = (int2)(get_global_id(0), get_global_id(1)); \\\n\
+    float4  src0, src1, src2, src3; \\\n\
+    float4 data_i_t, data_f_t, data_g_t, data_o_t, data_c_t; \\\n\
+    float4 r0 = read_imagef(input_r_conv, coord_in.xy); \\\n\
+    float4 r1 = read_imagef(hstate_r_conv, coord_in.xy); \\\n\
+    float4 h1 = read_imagef(hstate_h_conv, coord_in.xy); \\\n\
+    float4 h_tm = convert_float4(read_imageui(hstate_in, coord_in.xy)); \\\n\
+    float4 h0 = read_imagef(input_h_conv, coord_in.xy); \\\n\
+    float4 z0 = read_imagef(input_z_conv, coord_in.xy); \\\n\
+    float4 z1 = read_imagef(hstate_z_conv, coord_in.xy); \\\n\
+ \\\n\
+    float4 r = r0 + r1; \\\n\
+    r.x = act_func(r.x); \\\n\
+    h_tm = h_tm * input_scale + input_tail; \\\n\
+    float4 r_times_h = r * h1; \\\n\
+    float4 h = h0 + r_times_h; \\\n\
+    float4 z = z0 + z1; \\\n\
+    z.x = act_func(z.x); \\\n\
+    h = tanh_func(h.x); \\\n\
+    float4 dst = (1 - z ) * h + z * h_tm; \\\n\
+    dst = dst * output_scale + output_zp; \\\n\
+    uint4 result = convert_uint4_sat_rte(dst); \\\n\
+    write_imageui(output, coord_in.xy, result); \\\n\
+    write_imageui(hstate_out, coord_in.xy, result); \\\n\
+}\n\
+GRUCELL_ACTIVATION_U8_F32_U8(SIGMOID, sigmoid)\n\
+//GRUCELL_ACTIVATION_U8_F32_U8(HARD_SIGMOID, hard_sigmoid)\n\
+\n\
+#define GRUCELL_ACTIVATION_F32_F32_F32(act_name, act_func) \\\n\
+__kernel void grucell_reset_after_activation_F32_F32toF32_##act_name( \\\n\
+    __read_only  image2d_t        hstate_in, \\\n\
+    __read_only  image2d_t        input_z_conv, \\\n\
+    __read_only  image2d_t        input_r_conv, \\\n\
+    __read_only  image2d_t        input_h_conv, \\\n\
+    __read_only  image2d_t        hstate_z_conv, \\\n\
+    __read_only  image2d_t        hstate_r_conv, \\\n\
+    __read_only  image2d_t        hstate_h_conv, \\\n\
+    __write_only image2d_t        output, \\\n\
+    __write_only image2d_t        hstate_out, \\\n\
+    float input_scale, float input_tail, float output_scale, float output_zp) \\\n\
+{ \\\n\
+    int2 coord_in = (int2)(get_global_id(0), get_global_id(1)); \\\n\
+    float4  src0, src1, src2, src3; \\\n\
+    float4 data_i_t, data_f_t, data_g_t, data_o_t, data_c_t; \\\n\
+    float4 r0 = read_imagef(input_r_conv, coord_in.xy); \\\n\
+    float4 r1 = read_imagef(hstate_r_conv, coord_in.xy); \\\n\
+    float4 h1 = read_imagef(hstate_h_conv, coord_in.xy); \\\n\
+    float4 h_tm = read_imagef(hstate_in, coord_in.xy); \\\n\
+    float4 h0 = read_imagef(input_h_conv, coord_in.xy); \\\n\
+    float4 z0 = read_imagef(input_z_conv, coord_in.xy); \\\n\
+    float4 z1 = read_imagef(hstate_z_conv, coord_in.xy); \\\n\
+ \\\n\
+    float4 r = r0 + r1; \\\n\
+    r.x = act_func(r.x); \\\n\
+    float4 r_times_h = r * h1; \\\n\
+    float4 h = h0 + r_times_h; \\\n\
+    float4 z = z0 + z1; \\\n\
+    z.x = act_func(z.x); \\\n\
+    h = tanh_func(h.x); \\\n\
+    float4 dst = (1 - z ) * h + z * h_tm; \\\n\
+    write_imagef(output, coord_in.xy, dst); \\\n\
+    write_imagef(hstate_out, coord_in.xy, dst); \\\n\
+}\n\
+\n\
+GRUCELL_ACTIVATION_F32_F32_F32(SIGMOID, sigmoid)\n\
+//GRUCELL_ACTIVATION_U8_F32_U8(HARD_SIGMOID, hard_sigmoid)\n\
+\n\
+#define GRUCELL_ACTIVATION_I32_F32_I32(act_name, act_func) \\\n\
+__kernel void grucell_reset_after_activation_I32_F32toI32_##act_name( \\\n\
+    __read_only  image2d_t        hstate_in, \\\n\
+    __read_only  image2d_t        input_z_conv, \\\n\
+    __read_only  image2d_t        input_r_conv, \\\n\
+    __read_only  image2d_t        input_h_conv, \\\n\
+    __read_only  image2d_t        hstate_z_conv, \\\n\
+    __read_only  image2d_t        hstate_r_conv, \\\n\
+    __read_only  image2d_t        hstate_h_conv, \\\n\
+    __write_only image2d_t        output, \\\n\
+    __write_only image2d_t        hstate_out, \\\n\
+    float input_scale, float input_tail, float output_scale, float output_zp) \\\n\
+{ \\\n\
+    int2 coord_in = (int2)(get_global_id(0), get_global_id(1)); \\\n\
+    float4  src0, src1, src2, src3; \\\n\
+    float4 data_i_t, data_f_t, data_g_t, data_o_t, data_c_t; \\\n\
+    float4 r0 = read_imagef(input_r_conv, coord_in.xy); \\\n\
+    float4 r1 = read_imagef(hstate_r_conv, coord_in.xy); \\\n\
+    float4 h1 = read_imagef(hstate_h_conv, coord_in.xy); \\\n\
+    float4 h_tm = convert_float4(read_imagei(hstate_in, coord_in.xy)); \\\n\
+    float4 h0 = read_imagef(input_h_conv, coord_in.xy); \\\n\
+    float4 z0 = read_imagef(input_z_conv, coord_in.xy); \\\n\
+    float4 z1 = read_imagef(hstate_z_conv, coord_in.xy); \\\n\
+ \\\n\
+    float4 r = r0 + r1; \\\n\
+    r.x = act_func(r.x); \\\n\
+    h_tm = h_tm * input_scale + input_tail; \\\n\
+    float4 r_times_h = r * h1; \\\n\
+    float4 h = h0 + r_times_h; \\\n\
+    float4 z = z0 + z1; \\\n\
+    z.x = act_func(z.x); \\\n\
+    h = tanh_func(h.x); \\\n\
+    float4 dst = (1 - z ) * h + z * h_tm; \\\n\
+    dst = dst * output_scale + output_zp; \\\n\
+    int4 result = convert_int4_sat_rte(dst); \\\n\
+    write_imagei(output, coord_in.xy, result); \\\n\
+    write_imagei(hstate_out, coord_in.xy, result); \\\n\
+}\n\
+GRUCELL_ACTIVATION_I32_F32_I32(SIGMOID, sigmoid)\n\
+//GRUCELL_ACTIVATION_U8_F32_U8(HARD_SIGMOID, hard_sigmoid)"; /* end of grucell_reset_after_activation_cl*/
+
 static const char hswish_cl[] = "#define HSWISH_F32_F32_PROCESS() \\\n\
     float4 src, tmp, dst; \\\n\
     src   = read_imagef(input, coord); \\\n\
@@ -56999,8 +57732,11 @@ static const source_map_t evis_resource[] =
     {"group_normalization_u8_f16_vx", group_normalization_u8_f16_vx},
     {"grucell_activation_vx", grucell_activation_vx},
     {"grucell_activation_sma_vx", grucell_activation_sma_vx},
+    {"grucell_activation_z_h_vx", grucell_activation_z_h_vx},
     {"grucell_cdnn_activation_vx", grucell_cdnn_activation_vx},
     {"grucell_cdnn_activation_u8_vx", grucell_cdnn_activation_u8_vx},
+    {"grucell_h_times_activation_r_vx", grucell_h_times_activation_r_vx},
+    {"grucell_reset_after_activation_vx", grucell_reset_after_activation_vx},
     {"hswish_vx", hswish_vx},
     {"instance_normalization_f16_vx", instance_normalization_f16_vx},
     {"instance_normalization_i16_vx", instance_normalization_i16_vx},
@@ -57195,6 +57931,9 @@ static const source_map_t cl_resource[] =
     {"group_normalization_u8_cl", group_normalization_u8_cl},
     {"grucell_activation_cl", grucell_activation_cl},
     {"grucell_activation_sma_cl", grucell_activation_sma_cl},
+    {"grucell_activation_z_h_cl", grucell_activation_z_h_cl},
+    {"grucell_h_times_activation_r_cl", grucell_h_times_activation_r_cl},
+    {"grucell_reset_after_activation_cl", grucell_reset_after_activation_cl},
     {"hswish_cl", hswish_cl},
     {"instance_normalization_f16_cl", instance_normalization_f16_cl},
     {"instance_normalization_f32_cl", instance_normalization_f32_cl},

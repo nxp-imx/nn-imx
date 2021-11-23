@@ -561,6 +561,8 @@
     <ClInclude Include="include\ops\vsi_nn_op_grucell_activation.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_grucell_activation_internal.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_grucell_activation_internal_sma.h"/>
+    <ClInclude Include="include\ops\vsi_nn_op_grucell_activation_z_h.h"/>
+    <ClInclude Include="include\ops\vsi_nn_op_grucell_h_times_activation_r.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_grucell_ovxlib.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_hard_sigmoid.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_heatmap_max_keypoint.h"/>
@@ -818,6 +820,15 @@
     <ClCompile Include="src\kernel\cl\grucell_activation_sma_cl.c">
       <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="src\kernel\cl\grucell_activation_z_h_cl.c">
+      <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\kernel\cl\grucell_h_times_activation_r_cl.c">
+      <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\kernel\cl\grucell_reset_after_activation_cl.c">
+      <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="src\kernel\cl\instance_normalization_cl.c">
       <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
@@ -1008,6 +1019,15 @@
       <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\grucell_activation_sma_cpu.c">
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\kernel\cpu\grucell_activation_z_h_cpu.c">
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\kernel\cpu\grucell_h_times_activation_r_cpu.c">
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\kernel\cpu\grucell_reset_after_activation_cpu.c">
       <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\heatmap_max_keypoint_cpu.c">
@@ -1230,6 +1250,15 @@
       <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\grucell_activation_sma_evis.c">
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\kernel\evis\grucell_activation_z_h_evis.c">
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\kernel\evis\grucell_h_times_activation_r_evis.c">
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\kernel\evis\grucell_reset_after_activation_evis.c">
       <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\instance_normalization_evis.c">
@@ -1647,6 +1676,12 @@
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_grucell_activation_internal_sma.c">
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_grucell_activation_z_h.c">
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_grucell_h_times_activation_r.c">
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_grucell_ovxlib.c">
