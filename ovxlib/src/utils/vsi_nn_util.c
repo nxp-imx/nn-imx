@@ -1216,7 +1216,7 @@ vsi_status vsi_nn_ReconstructTensorData
             j++;
         }
     }
-    else
+    else if(src_size < dest_size)
     {
         for( i = 0 ; i < src_size; i++)
         {
@@ -1251,6 +1251,13 @@ vsi_status vsi_nn_ReconstructTensorData
                 dest[j+1] = high;
                 j += 2;
             }
+        }
+    }
+    else
+    {
+        for(i = 0; i < src_size; i++)
+        {
+            dest[i] = src[i];
         }
     }
     return status;
