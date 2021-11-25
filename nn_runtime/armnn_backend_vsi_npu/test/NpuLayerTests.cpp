@@ -1826,12 +1826,12 @@ ARMNN_AUTO_TEST_CASE_WITH_THF(MultiChannelTransposeConvolution2dUint8Nhwc,
 //                      DataType::Signed32>,
 //                      DataLayout::NCHW)
 
-// ARMNN_AUTO_TEST_CASE_WITH_THF(TransposeConvolution2dPerAxisQuantTestNchw,
-//                      TransposeConvolution2dPerAxisQuantTest,
-//                      DataLayout::NCHW);
-// ARMNN_AUTO_TEST_CASE_WITH_THF(TransposeConvolution2dPerAxisQuantTestNhwc,
-//                      TransposeConvolution2dPerAxisQuantTest,
-//                      DataLayout::NHWC);
+ARMNN_AUTO_TEST_CASE_WITH_THF(TransposeConvolution2dPerAxisQuantTestNchw,
+                     TransposeConvolution2dPerAxisQuantTest,
+                     DataLayout::NCHW);
+ARMNN_AUTO_TEST_CASE_WITH_THF(TransposeConvolution2dPerAxisQuantTestNhwc,
+                     TransposeConvolution2dPerAxisQuantTest,
+                     DataLayout::NHWC);
 
 // // Stack
 // ARMNN_AUTO_TEST_CASE_WITH_THF(Stack0Axis,           StackAxis0Float32Test)

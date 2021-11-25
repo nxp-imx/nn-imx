@@ -53,8 +53,17 @@ class NpuTransposeConvolution2dWorkload : public TNpuWorkload<TransposeConvoluti
         inputIds.resize(10);
 
         // Add filter operand
+        TensorInfo weightInfo = m_Weight->GetTensorInfo();
+        if (weightInfo.HasPerAxisQuantization()) {
+            unsigned int kWeightQuantizationDim4OpenVX = 0;
+            if (m_DataLayout == armnn::DataLayout::NCHW) {
+                kWeightQuantizationDim4OpenVX = 3;
+            }
+            weightInfo.SetQuantizationDim(
+                armnn::Optional<unsigned int>(kWeightQuantizationDim4OpenVX));
+        }
         inputIds[1] = this->AddOperandAndSetValue(
-            m_Weight->GetTensorInfo(),
+            weightInfo,
             m_Weight->GetShape(),
             m_Weight->GetTensor<void>());
 
