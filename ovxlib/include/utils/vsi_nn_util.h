@@ -244,16 +244,20 @@ OVXLIB_API const char* vsi_nn_DescribeStatus
     vsi_status status
     );
 
-OVXLIB_API vsi_status vsi_nn_ReconstructTensorData
+OVXLIB_API vsi_status vsi_nn_Pack4bitData
     (
     vsi_nn_tensor_t * tensor,
     uint8_t   * src,
-    vsi_size_t src_size,
-    uint8_t * dest,
-    vsi_size_t dest_size,
-    vsi_nn_type_e type
+    uint8_t * dest
     );
 
+OVXLIB_API vsi_status vsi_nn_Unpack4bitData
+    (
+    vsi_nn_tensor_t * tensor,
+    uint8_t   * src,
+    uint8_t * dest,
+    vsi_nn_type_e type
+    );
 
 vsi_size_t vsi_nn_compute_filter_shape
     (

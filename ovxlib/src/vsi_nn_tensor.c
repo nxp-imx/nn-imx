@@ -980,7 +980,7 @@ uint8_t * vsi_nn_ConvertTensorToData
     {
         vsi_size_t dest_size = vsi_nn_GetElementNum(tensor);
         new_data = (uint8_t*)malloc(dest_size);
-        status = vsi_nn_ReconstructTensorData(tensor, data, buf_sz, new_data, dest_size, tensor->attr.dtype.vx_type);
+        status = vsi_nn_Unpack4bitData(tensor, data, new_data, tensor->attr.dtype.vx_type);
         if(data)
         {
             free(data);
@@ -1392,12 +1392,10 @@ vsi_status vsi_nn_CopyDataToTensor
             tensor->attr.dtype.vx_type == VSI_NN_TYPE_UINT4 )
         {
             uint8_t* new_data = NULL;
-            vsi_size_t src_size = vsi_nn_ShapeProduct( tensor->attr.size, tensor->attr.dim_num );
             vsi_size_t dest_size = vsi_nn_GetTensorSize( tensor->attr.size, tensor->attr.dim_num,
                                                          tensor->attr.dtype.vx_type);
             new_data = (uint8_t*)malloc( dest_size );
-            status = vsi_nn_ReconstructTensorData( tensor, (uint8_t*)data, src_size, new_data,
-                                                   dest_size, tensor->attr.dtype.vx_type );
+            status = vsi_nn_Pack4bitData(tensor, (uint8_t*)data, new_data);
             status = vsi_nn_copy_tensor_patch( tensor->t, &tensor->attr, new_data, VX_WRITE_ONLY );
             if( new_data )
             {
@@ -2296,7 +2294,7 @@ vsi_status vsi_nn_copy_tensor_veiw_patch
         addr->num_of_dims = (vx_uint32)attr->dim_num;
         for(i = 0; i < dim; i++)
         {
-            strides[i] = (vx_size)stride[i];
+            strides[i] = (vx_size)vstride[i];
             dim_sizes[i] = (vx_size)attr->size[i];
         }
         addr->strides = strides;
