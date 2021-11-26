@@ -1180,13 +1180,44 @@ int32_t vsi_nn_get_tensor_zero_point
     return zero_point;
 }
 
-vsi_status vsi_nn_ReconstructTensorData
+vsi_status vsi_nn_Pack4bitData
     (
     vsi_nn_tensor_t * tensor,
     uint8_t   * src,
-    vsi_size_t src_size,
+    uint8_t * dest
+    )
+{
+    vsi_status status;
+    uint32_t i = 0, j = 0;
+    uint8_t high = 0, low = 0;
+    vsi_size_t src_size;
+
+    status = VSI_SUCCESS;
+    src_size = vsi_nn_GetElementNum( tensor );
+    for( i = 0; i < src_size; i++ )
+    {
+        if( (i+1) % tensor->attr.size[0] == 0)
+        {
+            high = 0;
+            low = src[i];
+        }
+        else
+        {
+            high = src[i+1];
+            low = src[i];
+            i++;
+        }
+        dest[j] = (high << 4) | (low & 0xF);
+        j++;
+    }
+    return status;
+} /* vsi_nn_Pack4bitData() */
+
+vsi_status vsi_nn_Unpack4bitData
+    (
+    vsi_nn_tensor_t * tensor,
+    uint8_t   * src,
     uint8_t * dest,
-    vsi_size_t dest_size,
     vsi_nn_type_e type
     )
 {
@@ -1194,71 +1225,53 @@ vsi_status vsi_nn_ReconstructTensorData
     uint32_t i = 0, j = 0;
     uint8_t high = 0, low = 0;
     vsi_size_t stride[VSI_NN_MAX_DIM_NUM] = {0};
+    vsi_size_t src_size;
 
     status = VSI_SUCCESS;
-    vsi_nn_GetStrideSize(&tensor->attr, stride);
-    if(src_size > dest_size)
+    src_size = vsi_nn_GetStrideSize(&tensor->attr, stride);
+    for( i = 0 ; i < src_size; i++)
     {
-        for( i = 0; i < src_size; i++ )
+        high = src[i] >> 4;
+        low = src[i] & 0x0F;
+        if( type == VSI_NN_TYPE_INT4 )
         {
-            if( (i+1) % tensor->attr.size[0] == 0)
+            if( high > 7)
             {
-                high = 0;
-                low = src[i];
+                high = high | 0xF0;
             }
-            else
+            if( low > 7)
             {
-                high = src[i+1];
-                low = src[i];
-                i++;
+                low = low | 0xF0;
             }
-            dest[j] = (high << 4) | (low & 0xF);
-            j++;
         }
-    }
-    else if(src_size < dest_size)
-    {
-        for( i = 0 ; i < src_size; i++)
+        if( tensor->attr.size[0] % stride[1] == 0 )
         {
-            if(tensor->attr.size[0] % stride[1] != 0 && (i+1) % stride[1] ==0 )
+            if( tensor->attr.size[0] == 1 )
             {
-                dest[j] = src[i] & 0x0F;
-                if ( type == VSI_NN_TYPE_INT4)
-                {
-                    if( (src[i] & 0x0F) > 7)
-                    {
-                        dest[j] = src[i] | 0xF0;
-                    }
-                }
+                dest[j] = low;
                 j++;
             }
             else
             {
-                high = src[i] >> 4;
-                low = src[i] & 0x0F;
-                if( type == VSI_NN_TYPE_INT4 )
-                {
-                    if( high > 7)
-                    {
-                        high = high | 0xF0;
-                    }
-                    if( low > 7)
-                    {
-                        low = low | 0xF0;
-                    }
-                }
+                dest[j] = low;
+                dest[j+1] = high;
+                j += 2;
+            }
+        }
+        else
+        {
+            if( (i+1) % stride[1] == 0 )
+            {
+                dest[j] = low;
+                j++;
+            }
+            else
+            {
                 dest[j] = low;
                 dest[j+1] = high;
                 j += 2;
             }
         }
     }
-    else
-    {
-        for(i = 0; i < src_size; i++)
-        {
-            dest[i] = src[i];
-        }
-    }
     return status;
-} /* vsi_nn_ReconstructTensorData() */
+} /* vsi_nn_Unpack4bitData() */
