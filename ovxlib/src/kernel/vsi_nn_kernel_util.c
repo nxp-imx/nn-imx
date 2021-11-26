@@ -486,11 +486,11 @@ vsi_nn_kernel_tensor_t vsi_nn_kernel_tensor_create
     //convert attr->shape->data to correct data type
     for(i = 0; i < VSI_NN_MAX_DIM_NUM; i++)
     {
-        size_vxsize[i] = (vx_size)attr->shape->data[i];
+        size_vxsize[i] = -1 == attr->shape->data[i] ? -1 : (vx_size)attr->shape->data[i];
     }
     for(i = 0; i < VSI_NN_MAX_DIM_NUM; i++)
     {
-        size_u32[i] = (vx_uint32)attr->shape->data[i];
+        size_u32[i] = -1 == attr->shape->data[i] ? -1 : (vx_uint32)attr->shape->data[i];
     }
 #if VX_VA40_EXT_SUPPORT
     params.sizes = size_vxsize;
