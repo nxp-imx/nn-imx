@@ -3,17 +3,17 @@
   <ItemGroup>
     <Filter Include="Source Files">
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+      <Extensions>cpp;c;cc;cxx;c++;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
     <Filter Include="Header Files">
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
     <Filter Include="Resource Files">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Header Files\cpu_backend">
+  <Filter Include="Header Files\cpu_backend">
       <UniqueIdentifier>{934dce2e-54fa-396b-9121-19d6a6cdafe5}</UniqueIdentifier>
     </Filter>
     <Filter Include="Header Files\custom">
@@ -110,671 +110,6 @@
       <UniqueIdentifier>{28374633-e4c5-3557-9da2-dd71e103460c}</UniqueIdentifier>
     </Filter>
     </ItemGroup>
-  <ItemGroup>
-    <Text Include="ReadMe.txt"/>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="include\cpu_backend\npuref_interface.h">
-      <Filter>Header Files\cpu_backend</Filter>
-    </ClInclude>
-    <ClInclude Include="include\cpu_backend\vsi_nn_cpu_backend.h">
-      <Filter>Header Files\cpu_backend</Filter>
-    </ClInclude>
-    <ClInclude Include="include\custom\ops\vsi_nn_op_custom_softmax.h">
-      <Filter>Header Files\custom\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\custom\vsi_nn_custom_node_type.h">
-      <Filter>Header Files\custom</Filter>
-    </ClInclude>
-    <ClInclude Include="include\kernel\vsi_nn_gpu.h">
-      <Filter>Header Files\kernel</Filter>
-    </ClInclude>
-    <ClInclude Include="include\kernel\vsi_nn_gpu_config.h">
-      <Filter>Header Files\kernel</Filter>
-    </ClInclude>
-    <ClInclude Include="include\kernel\vsi_nn_kernel.h">
-      <Filter>Header Files\kernel</Filter>
-    </ClInclude>
-    <ClInclude Include="include\kernel\vsi_nn_kernel_eltwise.h">
-      <Filter>Header Files\kernel</Filter>
-    </ClInclude>
-    <ClInclude Include="include\kernel\vsi_nn_kernel_gpu_shape_optimize.h">
-      <Filter>Header Files\kernel</Filter>
-    </ClInclude>
-    <ClInclude Include="include\kernel\vsi_nn_kernel_node.h">
-      <Filter>Header Files\kernel</Filter>
-    </ClInclude>
-    <ClInclude Include="include\libnnext\vsi_nn_libnnext_resource.h">
-      <Filter>Header Files\libnnext</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_conv3d.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\libnnext\vsi_nn_vxkernel.h">
-      <Filter>Header Files\libnnext</Filter>
-    </ClInclude>
-    <ClInclude Include="include\libnnext\vx_bin\vxc_binaries.h">
-      <Filter>Header Files\libnnext\vx_bin</Filter>
-    </ClInclude>
-    <ClInclude Include="include\libnnext\vx_lib_nnext.h">
-      <Filter>Header Files\libnnext</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_activations.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_addn.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_argmax.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_argmin.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_axis_aligned_bbox_transform.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_batch2space.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_batch_norm.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_batchnorm_single.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_bidirectional_sequence_lstm.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_bidirectional_sequence_rnn.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_box_with_nms_limit.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_cast.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_clip.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_concat.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_concatshift.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_conv1d.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_conv2d.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_conv2d_lstm.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_conv2d_lstm_cell.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_conv_relu.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_crop.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_dataconvert.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_deconvolution.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_deconvolution1d.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_depth2space.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_depth2space_internal.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_depthwise_conv1d.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_detection_postprocess.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_divide.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_dropout.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_elu.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_embedding_lookup.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_exp.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_expand_broadcast.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_extra_ending.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_floor.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_floordiv.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_fullconnect.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_gather.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_gelu.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_generate_proposals.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_grouped_conv1d.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_grouped_conv2d.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_groupnormalize.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_gru.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_gru_ovxlib.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_grucell.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_grucell_activation.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_grucell_activation_internal.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_grucell_activation_internal_sma.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_grucell_ovxlib.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_hard_sigmoid.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_heatmap_max_keypoint.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_imageprocess.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_instancenormalize.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_interp.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_l2_normalize.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_l2normalizescale.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_layernormalize.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_linear.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_log.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_log_softmax.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_logical_not.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_logical_ops.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_lrn.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_lsh_projection.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_lstm.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_lstm_ovxlib.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_lstmunit.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_lstmunit_activation.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_lstmunit_ovxlib.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_matrixmul.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_maximum.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_moments.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_multiply.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_nbg.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_neg.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_nms.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_one_hot.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_pad.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_permute.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_pool.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_post_process.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_pow.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_pre_process.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_pre_process_bgra.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_pre_process_gray.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_pre_process_nv12.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_pre_process_rgb.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_pre_process_tensor.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_pre_process_yuv420.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_pre_process_yuv444.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_prelu.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_proposal.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_quantized_16bit_lstm.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_random_multinomial.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_reduce.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_reduceall_internal.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_reduceany_internal.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_reducemax_internal.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_reducemin_internal.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_reduceprod_internal.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_reducesum_internal.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_relational_ops.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_relu_keras.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_relu_keras_internal.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_relun.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_reorg.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_repeat.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_reshape.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_reshape2.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_resize.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_resize_1d.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_resize_1d_bilinear_internal.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_resize_1d_nearest_internal.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_resize_internal.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_resize_nearest_internal.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_reverse.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_rnn.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_rnncell_ovxlib.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_roi_align.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_roi_pool.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_scale.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_scatter_nd.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_scatter_nd_update.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_select.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_sequence_mask.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_shufflechannel.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_signalframe.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_sin.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_slice.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_softmax.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_softmax_internal.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_space2batch.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_space2depth.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_space2depth_internal.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_spatial_transformer.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_split.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_squeeze.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_stack.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_strided_slice.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_svdf.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_swish.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_tanh.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_tensor_add_mean_stddev_norm.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_tensorstackconcat.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_tile.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_topk.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_unidirectional_sequence_rnn.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_unstack.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_upsample.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_upsamplescale.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_variable.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\platform\vsi_nn_pf_depth2space.h">
-      <Filter>Header Files\platform</Filter>
-    </ClInclude>
-    <ClInclude Include="include\platform\vsi_nn_pf_softmax.h">
-      <Filter>Header Files\platform</Filter>
-    </ClInclude>
-    <ClInclude Include="include\post\vsi_nn_post_cmupose.h">
-      <Filter>Header Files\post</Filter>
-    </ClInclude>
-    <ClInclude Include="include\post\vsi_nn_post_fasterrcnn.h">
-      <Filter>Header Files\post</Filter>
-    </ClInclude>
-    <ClInclude Include="include\pycc\vsi_pycc_interface.h">
-      <Filter>Header Files\pycc</Filter>
-    </ClInclude>
-    <ClInclude Include="include\quantization\vsi_nn_asymmetric_affine.h">
-      <Filter>Header Files\quantization</Filter>
-    </ClInclude>
-    <ClInclude Include="include\quantization\vsi_nn_dynamic_fixed_point.h">
-      <Filter>Header Files\quantization</Filter>
-    </ClInclude>
-    <ClInclude Include="include\quantization\vsi_nn_perchannel_symmetric_affine.h">
-      <Filter>Header Files\quantization</Filter>
-    </ClInclude>
-    <ClInclude Include="include\utils\vsi_nn_binary_tree.h">
-      <Filter>Header Files\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="include\utils\vsi_nn_code_generator.h">
-      <Filter>Header Files\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="include\utils\vsi_nn_constraint_check.h">
-      <Filter>Header Files\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="include\utils\vsi_nn_dlfcn.h">
-      <Filter>Header Files\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="include\utils\vsi_nn_dtype_util.h">
-      <Filter>Header Files\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="include\utils\vsi_nn_dtype_util_prv.h">
-      <Filter>Header Files\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="include\utils\vsi_nn_hashmap.h">
-      <Filter>Header Files\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="include\utils\vsi_nn_limits.h">
-      <Filter>Header Files\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="include\utils\vsi_nn_link_list.h">
-      <Filter>Header Files\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="include\utils\vsi_nn_map.h">
-      <Filter>Header Files\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="include\utils\vsi_nn_math.h">
-      <Filter>Header Files\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="include\utils\vsi_nn_shape_util.h">
-      <Filter>Header Files\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="include\utils\vsi_nn_tensor_op.h">
-      <Filter>Header Files\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="include\utils\vsi_nn_util.h">
-      <Filter>Header Files\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="include\utils\vsi_nn_vdata.h">
-      <Filter>Header Files\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="include\vsi_nn_assert.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\vsi_nn_client_op.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\vsi_nn_compatibility.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\vsi_nn_context.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\vsi_nn_daemon.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\vsi_nn_error.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\vsi_nn_feature.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\vsi_nn_feature_config.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\vsi_nn_graph.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\vsi_nn_graph_optimization.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\vsi_nn_internal_node.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\vsi_nn_log.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\vsi_nn_node.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\vsi_nn_node_attr_template.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\vsi_nn_node_type.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\vsi_nn_ops.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\vsi_nn_platform.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\vsi_nn_post.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\vsi_nn_pre_post_process.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\vsi_nn_prv.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\vsi_nn_pub.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\vsi_nn_rnn.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\vsi_nn_rnn_helper.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\vsi_nn_rnn_prv.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\vsi_nn_tensor.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\vsi_nn_tensor_util.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\vsi_nn_test.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\vsi_nn_types.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\vsi_nn_version.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-  </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\cpu_backend\npuref_interface.c">
       <Filter>Source Files\cpu_backend</Filter>
@@ -1433,13 +768,13 @@
     <ClCompile Include="src\kernel\vx\a_times_b_plus_c_vx.c">
       <Filter>Source Files\kernel\vx</Filter>
     </ClCompile>
-  <ClCompile Include="src\kernel\vx\clip_vx.c">
+    <ClCompile Include="src\kernel\vx\clip_vx.c">
       <Filter>Source Files\kernel\vx</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\vx\convolutional.c">
       <Filter>Source Files\kernel\vx</Filter>
     </ClCompile>
-    <ClCompile Include="src\kernel\vx\eltwise_unary_vx.c">
+  <ClCompile Include="src\kernel\vx\eltwise_unary_vx.c">
       <Filter>Source Files\kernel\vx</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\vx\eltwise_vx.c">
@@ -1465,9 +800,6 @@
     </ClCompile>
     <ClCompile Include="src\libnnext\vsi_nn_libnnext_resource.c">
       <Filter>Source Files\libnnext</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ops\vsi_nn_op_conv3d.c">
-      <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\libnnext\vsi_nn_vxkernel.c">
       <Filter>Source Files\libnnext</Filter>
@@ -1533,6 +865,9 @@
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_conv2d_lstm_cell.c">
+      <Filter>Source Files\ops</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_conv3d.c">
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_conv_relu.c">
@@ -1710,6 +1045,9 @@
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_nbg.c">
+      <Filter>Source Files\ops</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_new_op.c">
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_nms.c">
@@ -2074,11 +1412,676 @@
     </ClCompile>
     </ItemGroup>
   <ItemGroup>
-    <None Include="include\custom\custom_node_type.def">
+    <ClInclude Include="include\cpu_backend\npuref_interface.h">
+      <Filter>Header Files\cpu_backend</Filter>
+    </ClInclude>
+    <ClInclude Include="include\cpu_backend\vsi_nn_cpu_backend.h">
+      <Filter>Header Files\cpu_backend</Filter>
+    </ClInclude>
+    <ClInclude Include="include\custom\ops\vsi_nn_op_custom_softmax.h">
+      <Filter>Header Files\custom\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\custom\vsi_nn_custom_node_type.h">
       <Filter>Header Files\custom</Filter>
+    </ClInclude>
+    <ClInclude Include="include\kernel\vsi_nn_gpu.h">
+      <Filter>Header Files\kernel</Filter>
+    </ClInclude>
+    <ClInclude Include="include\kernel\vsi_nn_gpu_config.h">
+      <Filter>Header Files\kernel</Filter>
+    </ClInclude>
+    <ClInclude Include="include\kernel\vsi_nn_kernel.h">
+      <Filter>Header Files\kernel</Filter>
+    </ClInclude>
+    <ClInclude Include="include\kernel\vsi_nn_kernel_eltwise.h">
+      <Filter>Header Files\kernel</Filter>
+    </ClInclude>
+    <ClInclude Include="include\kernel\vsi_nn_kernel_gpu_shape_optimize.h">
+      <Filter>Header Files\kernel</Filter>
+    </ClInclude>
+    <ClInclude Include="include\kernel\vsi_nn_kernel_node.h">
+      <Filter>Header Files\kernel</Filter>
+    </ClInclude>
+    <ClInclude Include="include\libnnext\vsi_nn_libnnext_resource.h">
+      <Filter>Header Files\libnnext</Filter>
+    </ClInclude>
+    <ClInclude Include="include\libnnext\vsi_nn_vxkernel.h">
+      <Filter>Header Files\libnnext</Filter>
+    </ClInclude>
+    <ClInclude Include="include\libnnext\vx_bin\vxc_binaries.h">
+      <Filter>Header Files\libnnext\vx_bin</Filter>
+    </ClInclude>
+    <ClInclude Include="include\libnnext\vx_lib_nnext.h">
+      <Filter>Header Files\libnnext</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_activations.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_addn.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_argmax.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_argmin.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_axis_aligned_bbox_transform.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_batch2space.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_batch_norm.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_batchnorm_single.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_bidirectional_sequence_lstm.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_bidirectional_sequence_rnn.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_box_with_nms_limit.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_cast.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_clip.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_concat.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_concatshift.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_conv1d.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_conv2d.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_conv2d_lstm.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_conv2d_lstm_cell.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_conv3d.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_conv_relu.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_crop.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_dataconvert.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_deconvolution.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_deconvolution1d.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_depth2space.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_depth2space_internal.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_depthwise_conv1d.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_detection_postprocess.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_divide.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_dropout.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_elu.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_embedding_lookup.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_exp.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_expand_broadcast.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_extra_ending.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_floor.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_floordiv.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_fullconnect.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_gather.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_gelu.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_generate_proposals.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_grouped_conv1d.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_grouped_conv2d.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_groupnormalize.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_gru.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_gru_ovxlib.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_grucell.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_grucell_activation.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_grucell_activation_internal.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_grucell_activation_internal_sma.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_grucell_ovxlib.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_hard_sigmoid.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_heatmap_max_keypoint.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_imageprocess.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_instancenormalize.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_interp.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_l2_normalize.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_l2normalizescale.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_layernormalize.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_linear.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_log.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_log_softmax.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_logical_not.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_logical_ops.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_lrn.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_lsh_projection.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_lstm.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_lstm_ovxlib.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_lstmunit.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_lstmunit_activation.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_lstmunit_ovxlib.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_matrixmul.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_maximum.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_moments.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_multiply.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_nbg.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_neg.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_new_op.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_nms.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_one_hot.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_pad.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_permute.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_pool.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_post_process.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_pow.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_pre_process.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_pre_process_bgra.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_pre_process_gray.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_pre_process_nv12.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_pre_process_rgb.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_pre_process_tensor.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_pre_process_yuv420.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_pre_process_yuv444.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_prelu.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_proposal.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_quantized_16bit_lstm.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_random_multinomial.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_reduce.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_reduceall_internal.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_reduceany_internal.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_reducemax_internal.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_reducemin_internal.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_reduceprod_internal.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_reducesum_internal.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_relational_ops.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_relu_keras.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_relu_keras_internal.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_relun.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_reorg.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_repeat.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_reshape.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_reshape2.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_resize.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_resize_1d.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_resize_1d_bilinear_internal.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_resize_1d_nearest_internal.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_resize_internal.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_resize_nearest_internal.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_reverse.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_rnn.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_rnncell_ovxlib.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_roi_align.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_roi_pool.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_scale.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_scatter_nd.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_scatter_nd_update.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_select.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_sequence_mask.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_shufflechannel.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_signalframe.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_sin.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_slice.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_softmax.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_softmax_internal.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_space2batch.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_space2depth.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_space2depth_internal.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_spatial_transformer.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_split.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_squeeze.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_stack.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_strided_slice.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_svdf.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_swish.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_tanh.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_tensor_add_mean_stddev_norm.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_tensorstackconcat.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_tile.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_topk.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_unidirectional_sequence_rnn.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_unstack.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_upsample.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_upsamplescale.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_variable.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\platform\vsi_nn_pf_depth2space.h">
+      <Filter>Header Files\platform</Filter>
+    </ClInclude>
+    <ClInclude Include="include\platform\vsi_nn_pf_softmax.h">
+      <Filter>Header Files\platform</Filter>
+    </ClInclude>
+    <ClInclude Include="include\post\vsi_nn_post_cmupose.h">
+      <Filter>Header Files\post</Filter>
+    </ClInclude>
+    <ClInclude Include="include\post\vsi_nn_post_fasterrcnn.h">
+      <Filter>Header Files\post</Filter>
+    </ClInclude>
+    <ClInclude Include="include\pycc\vsi_pycc_interface.h">
+      <Filter>Header Files\pycc</Filter>
+    </ClInclude>
+    <ClInclude Include="include\quantization\vsi_nn_asymmetric_affine.h">
+      <Filter>Header Files\quantization</Filter>
+    </ClInclude>
+    <ClInclude Include="include\quantization\vsi_nn_dynamic_fixed_point.h">
+      <Filter>Header Files\quantization</Filter>
+    </ClInclude>
+    <ClInclude Include="include\quantization\vsi_nn_perchannel_symmetric_affine.h">
+      <Filter>Header Files\quantization</Filter>
+    </ClInclude>
+    <ClInclude Include="include\utils\vsi_nn_binary_tree.h">
+      <Filter>Header Files\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="include\utils\vsi_nn_code_generator.h">
+      <Filter>Header Files\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="include\utils\vsi_nn_constraint_check.h">
+      <Filter>Header Files\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="include\utils\vsi_nn_dlfcn.h">
+      <Filter>Header Files\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="include\utils\vsi_nn_dtype_util.h">
+      <Filter>Header Files\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="include\utils\vsi_nn_dtype_util_prv.h">
+      <Filter>Header Files\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="include\utils\vsi_nn_hashmap.h">
+      <Filter>Header Files\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="include\utils\vsi_nn_limits.h">
+      <Filter>Header Files\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="include\utils\vsi_nn_link_list.h">
+      <Filter>Header Files\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="include\utils\vsi_nn_map.h">
+      <Filter>Header Files\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="include\utils\vsi_nn_math.h">
+      <Filter>Header Files\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="include\utils\vsi_nn_shape_util.h">
+      <Filter>Header Files\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="include\utils\vsi_nn_tensor_op.h">
+      <Filter>Header Files\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="include\utils\vsi_nn_util.h">
+      <Filter>Header Files\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="include\utils\vsi_nn_vdata.h">
+      <Filter>Header Files\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="include\vsi_nn_assert.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\vsi_nn_client_op.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\vsi_nn_compatibility.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\vsi_nn_context.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\vsi_nn_daemon.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\vsi_nn_error.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\vsi_nn_feature.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\vsi_nn_feature_config.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\vsi_nn_graph.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\vsi_nn_graph_optimization.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\vsi_nn_internal_node.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\vsi_nn_log.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\vsi_nn_node.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\vsi_nn_node_attr_template.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\vsi_nn_node_type.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\vsi_nn_ops.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\vsi_nn_platform.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\vsi_nn_post.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\vsi_nn_pre_post_process.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\vsi_nn_prv.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\vsi_nn_pub.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\vsi_nn_rnn.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\vsi_nn_rnn_helper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\vsi_nn_rnn_prv.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\vsi_nn_tensor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\vsi_nn_tensor_util.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\vsi_nn_test.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\vsi_nn_types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\vsi_nn_version.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="include\custom\custom_node_type.def">
+      <Filter>Source Files</Filter>
     </None>
     <None Include="include\custom\custom_ops.def">
-      <Filter>Header Files\custom</Filter>
+      <Filter>Source Files</Filter>
     </None>
     <None Include="include\internal\internal_ops.def">
       <Filter>Source Files</Filter>
@@ -2086,5 +2089,8 @@
     <None Include="include\interface\ops.def">
       <Filter>Source Files</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="ReadMe.txt"/>
   </ItemGroup>
 </Project>
