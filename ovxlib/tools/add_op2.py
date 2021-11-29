@@ -87,8 +87,8 @@ modify_file_list = [
     {'file': '../include/interface/ops.def', 'func': modify_ops_def},
     {'file': '../ovxlib.vcxproj', 'func': modify_ovxlib_vcxproj},
     {'file': '../ovxlib.vcxproj.filters', 'func': modify_ovxlib_vcxproj_filters},
-    {'file': '../ovxlib.2019.vcxproj', 'func': modify_ovxlib_vcxproj}
-    {'file': '../ovxlib.2019.vcxproj.filters', 'func': modify_ovxlib_vcxproj_filters},
+    {'file': '../ovxlib.2012.vcxproj', 'func': modify_ovxlib_vcxproj},
+    {'file': '../ovxlib.2012.vcxproj.filters', 'func': modify_ovxlib_vcxproj_filters},
     {'file': '../include/vsi_nn_node_type.h', 'func': modify_vsi_nn_node_type_h},
     {'file': '../src/utils/vsi_nn_code_generator.c', 'func': modify_vsi_nn_code_generator_c},
 ]
@@ -97,8 +97,8 @@ modify_list_for_internal = [
     {'file': '../include/internal/internal_ops.def', 'func': modify_ops_def},
     {'file': '../ovxlib.vcxproj', 'func': modify_ovxlib_vcxproj},
     {'file': '../ovxlib.vcxproj.filters', 'func': modify_ovxlib_vcxproj_filters},
-    {'file': '../ovxlib.2019.vcxproj', 'func': modify_ovxlib_vcxproj},
-    {'file': '../ovxlib.2019.vcxproj.filters', 'func': modify_ovxlib_vcxproj_filters},
+    {'file': '../ovxlib.2012.vcxproj', 'func': modify_ovxlib_vcxproj},
+    {'file': '../ovxlib.2012.vcxproj.filters', 'func': modify_ovxlib_vcxproj_filters},
     {'file': '../include/vsi_nn_node_type.h', 'func': modify_vsi_nn_node_type_h},
     #{'file': '../src/utils/vsi_nn_code_generator.c', 'func': modify_vsi_nn_code_generator_c},
 ]
