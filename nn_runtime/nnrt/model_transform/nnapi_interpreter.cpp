@@ -68,6 +68,7 @@ void padFromImplicitToExplicitForDeconv2d(const std::vector<uint32_t>& input_sha
     int32_t output_width = 0;
     int32_t output_height = 0;
     assert(input_shape.size() != 4);
+
     switch (layout)
     {
     case DataLayout::NCHW:
@@ -101,14 +102,13 @@ void padFromImplicitToExplicitForDeconv2d(const std::vector<uint32_t>& input_sha
     if (pad_type == PadType::SAME) {
         int32_t width_strides = deconv2d->strides[0];
         int32_t height_strides = deconv2d->strides[1];
-        int32_t witdh_padding = std::max(0, (input_width - 1) * width_strides + filter_width - output_width);
-        int32_t height_padding = std::max(0,(input_height - 1) * height_strides + filter_height - output_height);
+        int32_t witdh_padding = (input_width - 1) * width_strides + filter_width - output_width;
+        int32_t height_padding = (input_height - 1) * height_strides + filter_height - output_height;
 
         deconv2d->pad[0] = witdh_padding / 2;
         deconv2d->pad[1] = witdh_padding - deconv2d->pad[0];
         deconv2d->pad[2] = height_padding / 2;
         deconv2d->pad[3] = height_padding - deconv2d->pad[2];
-
     } else {
         deconv2d->pad[0] = 0;
         deconv2d->pad[1] = 0;
