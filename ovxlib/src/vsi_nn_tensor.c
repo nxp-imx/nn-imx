@@ -324,7 +324,7 @@ static vsi_bool _init_tensor
     {
         size_u32[i] = -1 == tensor->attr.size[i] ? -1 : (vx_uint32)tensor->attr.size[i];
     }
-#if VX_VA40_EXT_SUPPORT
+#ifdef VSI_40BIT_VA_SUPPORT
     params.sizes = size_vxsize;
     (void)size_u32;
 #else
@@ -416,7 +416,7 @@ static vsi_bool _init_tensor
             }
             if( data )
             {
-#if VX_VA40_EXT_SUPPORT
+#ifdef VSI_40BIT_VA_SUPPORT
                 {
                     vx_size size_vxsize[_cnt_of_array(tensor->attr.size)] = {0};
                     vx_size stride_size_vxsize[_cnt_of_array(stride_size)] = {0};
@@ -1678,7 +1678,7 @@ vx_tensor vsi_nn_safe_reshape_tensor
     if(sizeof(vx_size) == size_of_shape_element)
     {
         vx_size* num_of_dims_vxsize = (vx_size*)num_of_dims;
-        #if VX_VA40_EXT_SUPPORT
+        #ifdef VSI_40BIT_VA_SUPPORT
             return vxReshapeTensor( tensor, num_of_dims_vxsize, (vx_size)sizes );
         #else
             {
@@ -1695,7 +1695,7 @@ vx_tensor vsi_nn_safe_reshape_tensor
     else if(sizeof(int32_t) == size_of_shape_element)
     {
         int32_t* num_of_dims_int32 = (int32_t*)num_of_dims;
-        #if VX_VA40_EXT_SUPPORT
+        #ifdef VSI_40BIT_VA_SUPPORT
             {
                 vx_size new_shape_vxsize[VSI_NN_MAX_DIM_NUM] = { 0 };
                 vsi_size_t i = 0;

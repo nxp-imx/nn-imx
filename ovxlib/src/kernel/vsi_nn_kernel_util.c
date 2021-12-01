@@ -492,7 +492,7 @@ vsi_nn_kernel_tensor_t vsi_nn_kernel_tensor_create
     {
         size_u32[i] = -1 == attr->shape->data[i] ? -1 : (vx_uint32)attr->shape->data[i];
     }
-#if VX_VA40_EXT_SUPPORT
+#ifdef VSI_40BIT_VA_SUPPORT
     params.sizes = size_vxsize;
     (void)size_u32;
 #else

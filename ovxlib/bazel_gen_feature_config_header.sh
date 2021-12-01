@@ -30,10 +30,13 @@ echo /*****Auto generated header file, Please DO NOT modify manually!*****/
 echo "#ifndef _VSI_NN_FEATURE_CONFIG_H"
 echo "#define _VSI_NN_FEATURE_CONFIG_H"
 echo ""
+IFS_old=$IFS
+IFS=$'\n'
 for line in `cat $FEATURE_CONFIG_FILE`
 do
-    echo "#define $line"
+    echo "$line"
 done
+IFS=$IFS_old
 echo ""
 echo "#endif"
 #Generate feature config header to bazel  successfully."
