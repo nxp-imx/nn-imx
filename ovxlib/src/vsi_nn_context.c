@@ -51,7 +51,7 @@ static vsi_status query_hardware_caps
 
 #if VX_HARDWARE_CAPS_PARAMS_EXT_SUPPORT
     context->config.subGroupSize = paramExt.subGroupSize;
-#if VX_VA40_EXT_SUPPORT
+#ifdef VSI_40BIT_VA_SUPPORT
     context->config.use_40bits_va = paramExt.supportVA40;
 #endif
 

@@ -267,7 +267,7 @@ static vsi_bool op_setup
         opt.num_of_output_dims = outputs[0]->attr.dim_num;
         p_opt = &opt;
 
-#if VX_VA40_EXT_SUPPORT
+#ifdef VSI_40BIT_VA_SUPPORT
         {
             vx_size size_input0[VSI_NN_MAX_DIM_NUM];
             vx_size size_output0[VSI_NN_MAX_DIM_NUM];

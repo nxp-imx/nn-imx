@@ -535,7 +535,7 @@ static vx_tensor _create_const_raw_tensor
     {
         size_u32[i] = -1 == attr.size[i] ? -1 : (vx_uint32)attr.size[i];
     }
-#if VX_VA40_EXT_SUPPORT
+#ifdef VSI_40BIT_VA_SUPPORT
     params.sizes = size_vxsize;
     (void)size_u32;
 #else
@@ -609,7 +609,7 @@ static vx_tensor _create_const_raw_tensor
             }
             if( data )
             {
-#if VX_VA40_EXT_SUPPORT
+#ifdef VSI_40BIT_VA_SUPPORT
                 {
                     vx_size size[_cnt_of_array(attr.size)] = {0};
                     vx_size stride_size_vxsize[_cnt_of_array(stride_size)] = {0};

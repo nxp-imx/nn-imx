@@ -315,7 +315,7 @@ genrule(
     name = "vsi_cfg_feature_header",
     srcs = [":vsi_feature_config_file"],
     outs = ["include/vsi_nn_feature_config.h"],
-    cmd = "./$(location bazel_gen_feature_config_header.sh) $(location :vsi_feature_config_file)> \"$@\"",
+    cmd = "bash $(location bazel_gen_feature_config_header.sh) $(location :vsi_feature_config_file)> \"$@\"",
     tools = ["bazel_gen_feature_config_header.sh"],
 )
 

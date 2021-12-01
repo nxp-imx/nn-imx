@@ -50,10 +50,13 @@ echo /*****Auto generated header file, Please DO NOT modify manually!*****/>> $F
 echo "#ifndef _VSI_NN_FEATURE_CONFIG_H">> $FEATURE_CONFIG_HEADER_FILE
 echo "#define _VSI_NN_FEATURE_CONFIG_H">> $FEATURE_CONFIG_HEADER_FILE
 echo "">> $FEATURE_CONFIG_HEADER_FILE
+IFS_old=$IFS
+IFS=$'\n'
 for line in `cat $FEATURE_CONFIG_FILE`
 do
-    echo "#define $line">> $FEATURE_CONFIG_HEADER_FILE
+    echo "$line">> $FEATURE_CONFIG_HEADER_FILE
 done
+IFS=$IFS_old
 echo "">> $FEATURE_CONFIG_HEADER_FILE
 echo "#endif">> $FEATURE_CONFIG_HEADER_FILE
 echo "Generate feature config header to $FEATURE_CONFIG_HEADER_FILE successfully."

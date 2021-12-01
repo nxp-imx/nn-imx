@@ -214,7 +214,7 @@ static vsi_status op_optimize
             p_opt = &opt;
         }
 
-#if VX_VA40_EXT_SUPPORT
+#ifdef VSI_40BIT_VA_SUPPORT
         {
             vx_size size_input0[VSI_NN_MAX_DIM_NUM];
             vx_size size_pconv_out[VSI_NN_MAX_DIM_NUM];
