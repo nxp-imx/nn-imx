@@ -51,7 +51,7 @@ ECHO #ifndef _VSI_NN_FEATURE_CONFIG_H>> "%TMP_FILE%"
 ECHO #define _VSI_NN_FEATURE_CONFIG_H>> "%TMP_FILE%"
 ECHO.>> "%TMP_FILE%"
 FOR /f "delims=" %%i in (%FEATURE_CONFIG_SRC%) do (
-    ECHO #define %%i>> "%TMP_FILE%"
+    ECHO %%i>> "%TMP_FILE%"
 )
 ECHO.>> "%TMP_FILE%"
 ECHO #endif>> "%TMP_FILE%"
