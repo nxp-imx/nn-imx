@@ -524,6 +524,7 @@
     <ClInclude Include="include\ops\vsi_nn_op_conv2d.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_conv2d_lstm.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_conv2d_lstm_cell.h"/>
+    <ClInclude Include="include\ops\vsi_nn_op_conv3d.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_conv_relu.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_crop.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_dataconvert.h"/>
@@ -1490,13 +1491,13 @@
     <ClCompile Include="src\ops\vsi_nn_op_conv2d.c">
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="src\ops\vsi_nn_op_conv3d.c">
-      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_conv2d_lstm.c">
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_conv2d_lstm_cell.c">
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_conv3d.c">
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_conv_relu.c">

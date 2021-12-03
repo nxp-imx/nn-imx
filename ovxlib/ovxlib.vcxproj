@@ -585,7 +585,6 @@
     <ClInclude Include="include\ops\vsi_nn_op_multiply.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_nbg.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_neg.h"/>
-    <ClInclude Include="include\ops\vsi_nn_op_new_op.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_nms.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_one_hot.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_pad.h"/>
@@ -1678,9 +1677,6 @@
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_nbg.c">
-      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="src\ops\vsi_nn_op_new_op.c">
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_nms.c">
