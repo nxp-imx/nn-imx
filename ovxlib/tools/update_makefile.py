@@ -22,8 +22,8 @@ def build_data():
     source = sorted(find_files(source_folder, ".*\.c$"))
     return (header, source)
 
-def update_vs_project(resources, vxcproj='ovxlib.vcxproj'):
-    vxcproj_filters = vxcproj + '.filters'
+def update_vs_project(resources, vcxproj='ovxlib.vcxproj'):
+    vcxproj_filters = vcxproj + '.filters'
     s_space = '  '
     def fill_tail(e, space=2, last=False):
         e.tail = '\n' + s_space*space if not last else '\n' + s_space*(space-1)
@@ -64,13 +64,13 @@ def update_vs_project(resources, vxcproj='ovxlib.vcxproj'):
                     e.append(e2)
                     fill_tail(e2, 3, True)
 
-        vsproj.write("ovxlib.vcxproj",
+        vsproj.write(vcxproj,
                 pretty_print=True,encoding='utf-8',xml_declaration=True)
 
-    def update_filters(resources, vxcproj_filters):
+    def update_filters(resources, vcxproj_filters):
         header,source = resources
         ns = {'ns': 'http://schemas.microsoft.com/developer/msbuild/2003'}
-        vsproj = ET.parse(vxcproj_filters, ET.XMLParser(ns_clean=True))
+        vsproj = ET.parse(vcxproj_filters, ET.XMLParser(ns_clean=True))
         root = vsproj.getroot()
         # build dir
         folders = list()
@@ -152,15 +152,16 @@ def update_vs_project(resources, vxcproj='ovxlib.vcxproj'):
                     fill_tail(e2, 3, True)
                 continue
 
-        vsproj.write("ovxlib.vcxproj.filters",
+        vsproj.write(vcxproj_filters,
                 pretty_print=True,encoding='utf-8',xml_declaration=True)
-    update_prj(copy.deepcopy(resources), vxcproj)
-    update_filters(copy.deepcopy(resources), vxcproj_filters)
+    update_prj(copy.deepcopy(resources), vcxproj)
+    update_filters(copy.deepcopy(resources), vcxproj_filters)
 
 
 
 
 if __name__ == '__main__':
     resources = build_data()
-    update_vs_project(resources)
+    update_vs_project(resources, "ovxlib.vcxproj")
+    update_vs_project(resources, "ovxlib.2012.vcxproj")
 
