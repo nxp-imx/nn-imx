@@ -148,8 +148,10 @@ typedef struct vsi_nn_tensor_attr
 #ifdef VX_CREATE_TENSOR_SUPPORT_PHYSICAL
     vsi_memory_type_e vsi_memory_type;
 #endif
+#if VX_STREAM_PROCESSOR_SUPPORT
+    vsi_bool     is_dummy;
+#endif
 } vsi_nn_tensor_attr_t;
-
 
 /**
  * Tensor structure
@@ -202,4 +204,3 @@ typedef struct _vsi_nn_tensor_rel
 #endif
 
 #endif
-

@@ -373,6 +373,13 @@ vsi_bool vsi_nn_is_same_type
     vsi_nn_tensor_t * dst
     );
 
+vsi_bool vsi_nn_is_broadcast_operaton
+    (
+    vsi_nn_tensor_t            ** inputs,
+    size_t                        input_num,
+    vsi_nn_tensor_t            *  output
+    );
+
 float vsi_nn_get_tensor_scale
     (
     vsi_nn_tensor_t * tensor
@@ -381,6 +388,13 @@ float vsi_nn_get_tensor_scale
 int32_t vsi_nn_get_tensor_zero_point
     (
     vsi_nn_tensor_t * tensor
+    );
+
+void vsi_nn_get_tensor_clamp_min_max
+    (
+    vsi_nn_tensor_t * input,
+    float *clampMin,
+    float *clampMax
     );
 
 #ifdef __cplusplus

@@ -501,6 +501,9 @@
     <ClInclude Include="include\kernel\vsi_nn_kernel_eltwise.h"/>
     <ClInclude Include="include\kernel\vsi_nn_kernel_gpu_shape_optimize.h"/>
     <ClInclude Include="include\kernel\vsi_nn_kernel_node.h"/>
+    <ClInclude Include="include\kernel\vsi_nn_sp_lut.h"/>
+    <ClInclude Include="include\kernel\vsi_nn_sp_unit_operation.h"/>
+    <ClInclude Include="include\kernel\vsi_nn_spinst.h"/>
     <ClInclude Include="include\libnnext\vsi_nn_libnnext_resource.h"/>
     <ClInclude Include="include\libnnext\vsi_nn_vxkernel.h"/>
     <ClInclude Include="include\libnnext\vx_bin\vxc_binaries.h"/>
@@ -1368,6 +1371,33 @@
     <ClCompile Include="src\kernel\evis\upsamplescale_evis.c">
       <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="src\kernel\sp\eltwise_sp.c">
+      <ObjectFileName>$(IntDir)\src\kernel\sp\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\kernel\sp\eltwise_unary_sp.c">
+      <ObjectFileName>$(IntDir)\src\kernel\sp\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\kernel\sp\instance_normalization_sp.c">
+      <ObjectFileName>$(IntDir)\src\kernel\sp\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\kernel\sp\l2_normalize_sp.c">
+      <ObjectFileName>$(IntDir)\src\kernel\sp\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\kernel\sp\layer_normalization_sp.c">
+      <ObjectFileName>$(IntDir)\src\kernel\sp\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\kernel\sp\lstmunit_activation_sp.c">
+      <ObjectFileName>$(IntDir)\src\kernel\sp\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\kernel\sp\maximum_sp.c">
+      <ObjectFileName>$(IntDir)\src\kernel\sp\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\kernel\sp\minimum_sp.c">
+      <ObjectFileName>$(IntDir)\src\kernel\sp\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\kernel\sp\softmax_sp.c">
+      <ObjectFileName>$(IntDir)\src\kernel\sp\</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="src\kernel\vsi_nn_gpu.c">
       <ObjectFileName>$(IntDir)\src\kernel\</ObjectFileName>
     </ClCompile>
@@ -1395,6 +1425,15 @@
     <ClCompile Include="src\kernel\vsi_nn_kernel_util.c">
       <ObjectFileName>$(IntDir)\src\kernel\</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="src\kernel\vsi_nn_sp_lut.c">
+      <ObjectFileName>$(IntDir)\src\kernel\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\kernel\vsi_nn_sp_unit_operation.c">
+      <ObjectFileName>$(IntDir)\src\kernel\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\kernel\vsi_nn_spinst.c">
+      <ObjectFileName>$(IntDir)\src\kernel\</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="src\kernel\vx\a_times_b_plus_c_vx.c">
       <ObjectFileName>$(IntDir)\src\kernel\vx\</ObjectFileName>
     </ClCompile>
@@ -1413,6 +1452,9 @@
     <ClCompile Include="src\kernel\vx\erf_vx.c">
       <ObjectFileName>$(IntDir)\src\kernel\vx\</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="src\kernel\vx\l2_normalize_vx.c">
+      <ObjectFileName>$(IntDir)\src\kernel\vx\</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="src\kernel\vx\matrixmul_vx.c">
       <ObjectFileName>$(IntDir)\src\kernel\vx\</ObjectFileName>
     </ClCompile>
@@ -1420,6 +1462,9 @@
       <ObjectFileName>$(IntDir)\src\kernel\vx\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\vx\relu_keras_vx.c">
+      <ObjectFileName>$(IntDir)\src\kernel\vx\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\kernel\vx\softmax_vx.c">
       <ObjectFileName>$(IntDir)\src\kernel\vx\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\vx\square_vx.c">

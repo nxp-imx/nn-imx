@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2020 Vivante Corporation
+*    Copyright (c) 2021 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -21,34 +21,49 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#ifndef _VSI_NN_OP_SOFTMAX_INTERNAL_H
-#define _VSI_NN_OP_SOFTMAX_INTERNAL_H
 
-#include "vsi_nn_types.h"
-#include "vsi_nn_platform.h"
-#include "utils/vsi_nn_link_list.h"
+#ifndef _VSI_NN_SP_LUT_H
+#define _VSI_NN_SP_LUT_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#if VX_STREAM_PROCESSOR_SUPPORT
 
-typedef struct _vsi_nn_softmax_internal_lcl_data
+#include <stdint.h>
+#include "kernel/vsi_nn_spinst.h"
+
+__BEGIN_DECLS
+
+#define VSI_NN_SP_LUT_MAX_SIZE  (1024)
+
+typedef struct _vsi_nn_sp_lut_
 {
-    vsi_nn_link_list_t link_list;
-    vx_node            node;
-    vx_tensor          src_tensor;
-    vx_tensor          dst_tensor;
-} vsi_nn_softmax_internal_lcl_data;
+    float index;
+    float val;
+} vsi_nn_sp_lut_t;
 
-typedef struct _vsi_nn_softmax_internal_param
+typedef int32_t vsi_nn_sp_activation_e; enum
 {
-    vsi_nn_softmax_internal_lcl_data *data;
-    float beta;
-    int32_t axis;
-} vsi_nn_softmax_internal_param;
+    VSI_NN_SP_ACT_NONE             = 0,
+    VSI_NN_SP_ACT_LINEAR_EXP       = 1,
+    VSI_NN_SP_ACT_LINEAR_RSQRT     = 2,
+    VSI_NN_SP_ACT_LINEAR_SIGMOID   = 3,
+    VSI_NN_SP_ACT_RCP              = 4,
+};
 
-#ifdef __cplusplus
-}
+typedef struct  _vsi_nn_sp_lut_params
+{
+    vsi_nn_sp_activation_e act_type;
+    float params[16];
+} vsi_nn_sp_lut_params;
+
+OVXLIB_API vsi_status vsi_nn_sp_lut
+    (
+    vx_lut index_lut,
+    vx_lut output_lut,
+    vsi_nn_sp_lut_params *param
+    );
+
+__END_DECLS
+
 #endif
 
 #endif

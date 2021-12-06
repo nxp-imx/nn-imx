@@ -48,18 +48,29 @@ static vsi_status op_compute
     *If reshape is un-initialized, we need add a tensorcopy
     * when input and output are initialized.
     */
-    if(inputs[0]->t != NULL && outputs[0]->t != NULL &&
+    if (inputs[0]->t != NULL && outputs[0]->t != NULL &&
         self->nn_param.reshape.local.initialized == FALSE)
     {
+        vsi_status status = VSI_SUCCESS;
+        vsi_nn_tensor_t *tmp_tensor = NULL;
+
+        tmp_tensor = vsi_nn_reshape_tensor( self->graph,
+            outputs[0], inputs[0]->attr.size, inputs[0]->attr.dim_num );
+
         self->n = vxTensorCopyNode(self->graph->g,
-            inputs[0]->t, outputs[0]->t);
-        if(NULL == self->n)
+            inputs[0]->t, tmp_tensor->t);
+        if (NULL == self->n)
         {
             VSILOGE( "Create vxTensorCopyNode fail." );
-            return VSI_FAILURE;
+            status = VSI_FAILURE;
         }
         VSILOGD("Create a copy node for reshape");
+
+        vsi_safe_release_tensor(tmp_tensor);
+
+        return status;
     }
+
     return VSI_SUCCESS;
 } /* op_compute() */
 

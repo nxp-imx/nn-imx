@@ -670,7 +670,6 @@ vsi_nn_kernel_node_t  vsi_nn_kernel_create_node
     return (vsi_nn_kernel_node_t)node;
 } /* vsi_nn_kernel_create_node() */
 
-
 vsi_status vsi_nn_kernel_node_set_border
     (vsi_nn_kernel_node_t node,
     vx_border_t* border)
@@ -923,6 +922,7 @@ vsi_nn_kernel_node_t vsi_nn_kernel_selector
     else
     {
         vsi_nn_kernel_pirority_t default_pirority[] = {
+            { VSI_NN_KERNEL_TYPE_SP,    5 },
             { VSI_NN_KERNEL_TYPE_EVIS,  4 },
             { VSI_NN_KERNEL_TYPE_CL,    3 },
             { VSI_NN_KERNEL_TYPE_VX,    2 },
@@ -943,20 +943,28 @@ vsi_nn_kernel_node_t vsi_nn_kernel_selector
         {
             type = selector.pirority[i].kernel_type;
 
-            //Skip evis and cl when disable shader
+            /* Skip evis and cl when disable shader */
             if ( (type == VSI_NN_KERNEL_TYPE_EVIS || type == VSI_NN_KERNEL_TYPE_CL)
                 && _check_shader_support(graph) == FALSE)
             {
                 continue;
             }
-            // Skip evis if not support
+            /* Skip evis if not support */
             if( type == VSI_NN_KERNEL_TYPE_EVIS
                     && graph->ctx->config.evis.ver == VSI_NN_HW_EVIS_NONE )
             {
                 continue;
             }
+
+            /* Skip StreamProcesor if not support */
+            if( type == VSI_NN_KERNEL_TYPE_SP
+                && !graph->ctx->config.support_stream_processor )
+            {
+                continue;
+            }
+
             kernel_func = backend->setup[type];
-            // Skip no kernel func
+            /* Skip no kernel func */
             if( NULL == kernel_func )
             {
                 continue;
@@ -965,7 +973,7 @@ vsi_nn_kernel_node_t vsi_nn_kernel_selector
             kernel->unique_id = KERNEL_ID_OVXLIB_START + backend->unique_id;
             node = kernel_func( graph, inputs, input_num,
                     outputs, output_num, params, kernel );
-            // If node created, break the loop
+            /* If node created, break the loop */
             if( node )
             {
                 VSILOGD("Instance %s node with kernel \"%s\" ",
