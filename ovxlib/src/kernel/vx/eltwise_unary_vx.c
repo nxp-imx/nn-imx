@@ -131,7 +131,6 @@ static float gelu_eval(float data, vsi_nn_lut_param lut_param)
     return data;
 }
 
-
 #define VSI_SQRT_2_RCP_PI  0.7978845834732056f
 static float hgelu_eval(float data, vsi_nn_lut_param lut_param)
 {
@@ -284,7 +283,7 @@ OnError:
 #endif
 } /* _setup() */
 
-#define REGISTER_ELTWISE_UNARY_OPENVX_KERNEL(KERNEL_NAME, UNARY_FUNC) \
+#define REGISTER_ELTWISE_UNARY_LUT_OPENVX_KERNEL(KERNEL_NAME, UNARY_FUNC) \
     static vsi_nn_kernel_node_t _##KERNEL_NAME##_setup \
         ( \
         vsi_nn_graph_t              * graph, \
@@ -301,13 +300,133 @@ OnError:
     } \
     REGISTER_BACKEND_OPENVX( KERNEL_NAME, _##KERNEL_NAME##_setup )
 
-REGISTER_ELTWISE_UNARY_OPENVX_KERNEL( mish,         mish_eval )
-//REGISTER_ELTWISE_UNARY_OPENVX_KERNEL( exp,          exp_eval )
-REGISTER_ELTWISE_UNARY_OPENVX_KERNEL( log,          log_eval )
-REGISTER_ELTWISE_UNARY_OPENVX_KERNEL( elu,          elu_eval )
-REGISTER_ELTWISE_UNARY_OPENVX_KERNEL( neg,          neg_eval )
-REGISTER_ELTWISE_UNARY_OPENVX_KERNEL( hard_sigmoid, hsigmoid_eval )
-REGISTER_ELTWISE_UNARY_OPENVX_KERNEL( gelu,         gelu_eval )
-REGISTER_ELTWISE_UNARY_OPENVX_KERNEL( hard_gelu,    hgelu_eval )
+REGISTER_ELTWISE_UNARY_LUT_OPENVX_KERNEL( mish,         mish_eval )
+//REGISTER_ELTWISE_UNARY_LUT_OPENVX_KERNEL( exp,          exp_eval )
+REGISTER_ELTWISE_UNARY_LUT_OPENVX_KERNEL( log,          log_eval )
+REGISTER_ELTWISE_UNARY_LUT_OPENVX_KERNEL( elu,          elu_eval )
+REGISTER_ELTWISE_UNARY_LUT_OPENVX_KERNEL( neg,          neg_eval )
+REGISTER_ELTWISE_UNARY_LUT_OPENVX_KERNEL( hard_sigmoid, hsigmoid_eval )
+REGISTER_ELTWISE_UNARY_LUT_OPENVX_KERNEL( gelu,         gelu_eval )
+REGISTER_ELTWISE_UNARY_LUT_OPENVX_KERNEL( hard_gelu,    hgelu_eval )
+
+#undef REGISTER_ELTWISE_UNARY_LUT_OPENVX_KERNEL
+
+#define REGISTER_ELTWISE_UNARY_OPENVX_KERNEL( kernel_name )   \
+    static vsi_nn_kernel_node_t _##kernel_name##setup \
+        ( \
+        vsi_nn_graph_t              * graph, \
+        vsi_nn_tensor_t            ** inputs, \
+        size_t                        input_num, \
+        vsi_nn_tensor_t            ** outputs, \
+        size_t                        output_num,\
+        const vsi_nn_kernel_param_t * params, \
+        vsi_nn_kernel_t             * kernel \
+        ); \
+    REGISTER_BACKEND_OPENVX( kernel_name, _##kernel_name##setup ) \
+    static vsi_nn_kernel_node_t _##kernel_name##setup \
+        ( \
+        vsi_nn_graph_t              * graph, \
+        vsi_nn_tensor_t            ** inputs, \
+        size_t                        input_num, \
+        vsi_nn_tensor_t            ** outputs, \
+        size_t                        output_num,\
+        const vsi_nn_kernel_param_t * params, \
+        vsi_nn_kernel_t             * kernel \
+        )
+
+REGISTER_ELTWISE_UNARY_OPENVX_KERNEL( abs )
+{
+    vx_node node = NULL;
+    vsi_size_t input_size[VSI_NN_MAX_DIM_NUM] = {0};
+    uint32_t dims = 0;
+    vx_tensor input = NULL, input0 = NULL;
+    vx_tensor output = NULL, output0 = NULL;
+
+    if (inputs[0]->attr.dim_num > 4)
+    {
+        input_size[0] = vsi_nn_GetElementNum(inputs[0]) /
+            inputs[0]->attr.size[inputs[0]->attr.dim_num - 1];
+        input_size[1] = inputs[0]->attr.size[inputs[0]->attr.dim_num - 1];
+        dims = 2;
+#ifdef VSI_40BIT_VA_SUPPORT
+        input = vxReshapeTensor(inputs[0]->t, input_size, dims);
+        output = vxReshapeTensor(outputs[0]->t, input_size, dims);
+#else
+        input = vxReshapeTensor(inputs[0]->t, (vx_int32*)input_size, (vx_uint32)dims);
+        output = vxReshapeTensor(outputs[0]->t, (vx_int32*)input_size, (vx_uint32)dims);
+#endif
+        input0 = input;
+        output0 = output;
+    }
+    else
+    {
+        input0 = inputs[0]->t;
+        output0 = outputs[0]->t;
+    }
+
+    node = vxLeakyReluLayer(
+        graph->g,
+        input0,
+        -1,
+        output0
+        );
+
+    if (input)  vxReleaseTensor(&input);
+    if (output) vxReleaseTensor(&output);
+
+    return (vsi_nn_kernel_node_t)node;
+} /* abs() */
+
+REGISTER_ELTWISE_UNARY_OPENVX_KERNEL( linear )
+{
+    vx_node node = NULL;
+    float a_v = vsi_nn_kernel_param_get_float32( params, "a_v" );
+    float b_v = vsi_nn_kernel_param_get_float32( params, "b_v" );
+
+    node = vxActivationLayer(
+        graph->g,
+        inputs[0]->t,
+        VX_CONVOLUTIONAL_NETWORK_ACTIVATION_LINEAR,
+        a_v,
+        b_v,
+        outputs[0]->t
+        );
+
+    return (vsi_nn_kernel_node_t)node;
+} /* linear() */
+
+REGISTER_ELTWISE_UNARY_OPENVX_KERNEL( sigmoid )
+{
+    vx_node node = NULL;
+
+    node = vxActivationLayer(
+        graph->g,
+        inputs[0]->t,
+        VX_CONVOLUTIONAL_NETWORK_ACTIVATION_LOGISTIC,
+        0,
+        0,
+        outputs[0]->t
+        );
+
+    return (vsi_nn_kernel_node_t)node;
+} /* sigmoid() */
+
+REGISTER_ELTWISE_UNARY_OPENVX_KERNEL( tanh )
+{
+    vx_node node = NULL;
+    float scale_a = vsi_nn_kernel_param_get_float32( params, "scale_a" );
+    float scale_b = vsi_nn_kernel_param_get_float32( params, "scale_b" );
+
+    node = vxActivationLayer(
+        graph->g,
+        inputs[0]->t,
+        VX_CONVOLUTIONAL_NETWORK_ACTIVATION_HYPERBOLIC_TAN,
+        scale_a,
+        scale_b,
+        outputs[0]->t
+        );
+
+    return (vsi_nn_kernel_node_t)node;
+} /* tanh() */
 
 #undef REGISTER_ELTWISE_UNARY_OPENVX_KERNEL

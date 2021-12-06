@@ -84,7 +84,6 @@ vsi_bool vsi_nn_rnn_find_best_kernel_size
             }
             kernel_w = 1;
         }
-
     }
 
     VSILOGD("Use kernel_h: %d, kernel_w: %d to convert FC", kernel_h, kernel_w);
@@ -694,7 +693,7 @@ void vsi_nn_rnn_data_check_aligned
         vsi_size_t tensor_size = vsi_nn_GetTensorSize( input[i]->attr.size,
             input[i]->attr.dim_num, input[i]->attr.dtype.vx_type );
 
-        if( ofst & 0x3f )
+        if( ofst & 0x3f && !self->graph->ctx->config.support_stream_processor)
         {
             vsi_nn_internal_init_tensor_attr(&attr, &input[i]->attr.dtype, use_virtual_tensor);
             output_tensor = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
@@ -918,7 +917,6 @@ vsi_nn_internal_tensor_t* vsi_nn_rnn_create_reshape
     vsi_bool use_virtual_tensor
     )
 {
-
     vsi_nn_internal_node_t* curr = NULL;
     vsi_nn_internal_tensor_t* tensor0 = NULL;
     vsi_size_t* reshape_in_size = NULL;

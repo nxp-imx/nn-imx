@@ -130,7 +130,7 @@ static vsi_status op_compute
         }
     }
 
-    param =vsi_nn_kernel_param_create();
+    param = vsi_nn_kernel_param_create();
     vsi_nn_kernel_param_add_float32( param, "eps", eps );
     vsi_nn_kernel_param_add_int32( param, "reshape_flg", rs_flg );
     n = vsi_nn_kernel_selector( self->graph, "instance_norm",
@@ -320,4 +320,3 @@ DEF_OP_REG
 #ifdef __cplusplus
 }
 #endif
-

@@ -79,6 +79,9 @@
     <Filter Include="Source Files\kernel\evis">
       <UniqueIdentifier>{5db43f95-fba9-33e6-85f3-70dd975a833d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\kernel\sp">
+      <UniqueIdentifier>{c39c5ddb-6003-34b5-bfab-5261cc692675}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source Files\kernel\vx">
       <UniqueIdentifier>{535624bd-7a06-3e48-a5ec-bcbc574b0d17}</UniqueIdentifier>
     </Filter>
@@ -142,6 +145,15 @@
       <Filter>Header Files\kernel</Filter>
     </ClInclude>
     <ClInclude Include="include\kernel\vsi_nn_kernel_node.h">
+      <Filter>Header Files\kernel</Filter>
+    </ClInclude>
+    <ClInclude Include="include\kernel\vsi_nn_sp_lut.h">
+      <Filter>Header Files\kernel</Filter>
+    </ClInclude>
+    <ClInclude Include="include\kernel\vsi_nn_sp_unit_operation.h">
+      <Filter>Header Files\kernel</Filter>
+    </ClInclude>
+    <ClInclude Include="include\kernel\vsi_nn_spinst.h">
       <Filter>Header Files\kernel</Filter>
     </ClInclude>
     <ClInclude Include="include\libnnext\vsi_nn_libnnext_resource.h">
@@ -1403,6 +1415,33 @@
     <ClCompile Include="src\kernel\evis\upsamplescale_evis.c">
       <Filter>Source Files\kernel\evis</Filter>
     </ClCompile>
+    <ClCompile Include="src\kernel\sp\eltwise_sp.c">
+      <Filter>Source Files\kernel\sp</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\sp\eltwise_unary_sp.c">
+      <Filter>Source Files\kernel\sp</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\sp\instance_normalization_sp.c">
+      <Filter>Source Files\kernel\sp</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\sp\l2_normalize_sp.c">
+      <Filter>Source Files\kernel\sp</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\sp\layer_normalization_sp.c">
+      <Filter>Source Files\kernel\sp</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\sp\lstmunit_activation_sp.c">
+      <Filter>Source Files\kernel\sp</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\sp\maximum_sp.c">
+      <Filter>Source Files\kernel\sp</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\sp\minimum_sp.c">
+      <Filter>Source Files\kernel\sp</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\sp\softmax_sp.c">
+      <Filter>Source Files\kernel\sp</Filter>
+    </ClCompile>
     <ClCompile Include="src\kernel\vsi_nn_gpu.c">
       <Filter>Source Files\kernel</Filter>
     </ClCompile>
@@ -1418,7 +1457,7 @@
     <ClCompile Include="src\kernel\vsi_nn_kernel_gpu_shape_optimize.c">
       <Filter>Source Files\kernel</Filter>
     </ClCompile>
-    <ClCompile Include="src\kernel\vsi_nn_kernel_node.c">
+  <ClCompile Include="src\kernel\vsi_nn_kernel_node.c">
       <Filter>Source Files\kernel</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\vsi_nn_kernel_param.c">
@@ -1428,6 +1467,15 @@
       <Filter>Source Files\kernel</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\vsi_nn_kernel_util.c">
+      <Filter>Source Files\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\vsi_nn_sp_lut.c">
+      <Filter>Source Files\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\vsi_nn_sp_unit_operation.c">
+      <Filter>Source Files\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\vsi_nn_spinst.c">
       <Filter>Source Files\kernel</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\vx\a_times_b_plus_c_vx.c">
@@ -1448,6 +1496,9 @@
     <ClCompile Include="src\kernel\vx\erf_vx.c">
       <Filter>Source Files\kernel\vx</Filter>
     </ClCompile>
+    <ClCompile Include="src\kernel\vx\l2_normalize_vx.c">
+      <Filter>Source Files\kernel\vx</Filter>
+    </ClCompile>
     <ClCompile Include="src\kernel\vx\matrixmul_vx.c">
       <Filter>Source Files\kernel\vx</Filter>
     </ClCompile>
@@ -1455,6 +1506,9 @@
       <Filter>Source Files\kernel\vx</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\vx\relu_keras_vx.c">
+      <Filter>Source Files\kernel\vx</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\vx\softmax_vx.c">
       <Filter>Source Files\kernel\vx</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\vx\square_vx.c">

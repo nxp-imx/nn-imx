@@ -353,7 +353,6 @@ void vsi_nn_UpdateTensorDims
     }
 } /* vsi_nn_UpdateTensorDims() */
 
-
 vsi_size_t vsi_nn_ComputeFilterSize
     (
     vsi_size_t   i_size,
@@ -1129,6 +1128,34 @@ vsi_bool vsi_nn_is_same_type
     return (vsi_nn_is_same_data_type(src, dst) && vsi_nn_is_same_quant_type(src, dst));
 }
 
+vsi_bool vsi_nn_is_broadcast_operaton
+    (
+    vsi_nn_tensor_t            ** inputs,
+    size_t                        input_num,
+    vsi_nn_tensor_t            *  output
+    )
+{
+    vsi_size_t out_rank = output->attr.dim_num;
+    vsi_size_t i = 0;
+
+    for (i = 0; i < out_rank; i++)
+    {
+        size_t j = 0;
+        vsi_size_t dst_size = output->attr.size[i];
+
+        for (j = 0; j < input_num; j++)
+        {
+            vsi_size_t src_size = i < inputs[j]->attr.dim_num  ? inputs[j]->attr.size[i] : 1;
+
+            if (dst_size != src_size)
+            {
+                return TRUE;
+            }
+        }
+    }
+    return FALSE;
+}
+
 float vsi_nn_get_tensor_scale
     (
     vsi_nn_tensor_t * tensor
@@ -1178,6 +1205,46 @@ int32_t vsi_nn_get_tensor_zero_point
     }
 
     return zero_point;
+}
+
+void vsi_nn_get_tensor_clamp_min_max
+    (
+    vsi_nn_tensor_t * input,
+    float *clampMin,
+    float *clampMax
+    )
+{
+    float zero_point = (float)vsi_nn_get_tensor_zero_point(input);
+    vsi_nn_type_e vx_type = input->attr.dtype.vx_type;
+
+    if (vx_type == VSI_NN_TYPE_UINT8)
+    {
+        *clampMin = - zero_point;
+        *clampMax = 255 - zero_point;
+    }
+    else if (vx_type == VSI_NN_TYPE_INT8)
+    {
+        *clampMin = -128 - zero_point;
+        *clampMax = 127 - zero_point;
+    }
+    else if (vx_type == VSI_NN_TYPE_INT16)
+    {
+        *clampMin = -32768 - zero_point;
+        *clampMax = 32767 - zero_point;
+    }
+    else if (vx_type == VSI_NN_TYPE_UINT16)
+    {
+        *clampMin = - zero_point;
+        *clampMax = 65535 - zero_point;
+    }
+    else
+    {
+        uint32_t f32_min = 0xff800000;
+        uint32_t f32_max = 0x7f800000;
+
+        *clampMin = *(float*)&f32_min;
+        *clampMax = *(float*)&f32_max;
+    }
 }
 
 vsi_status vsi_nn_Pack4bitData

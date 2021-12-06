@@ -376,6 +376,13 @@ static vsi_bool _init_tensor
         vxReleaseWeightsBiasesParameter( &tensor->wb );
     }
 
+#if VX_STREAM_PROCESSOR_SUPPORT
+    if ( TRUE == tensor->attr.is_dummy )
+    {
+        tensor->t = vxCreateDummyTensor( graph->ctx->c,
+            (vsi_size_t)tensor->attr.dim_num, tensor->attr.size, (vsi_enum)tensor->attr.dtype.vx_type );
+    } else
+#endif
     if( TRUE == tensor->attr.is_created_from_handle )
     {
         vx_tensor_addressing addr;
@@ -2614,4 +2621,49 @@ vsi_bool vsi_nn_ConvertTensor
     vsi_nn_safe_free( dst_buf );
 
     return ret;
+}
+
+vsi_nn_tensor_t * vsi_nn_dropout_tensor
+    (
+    vsi_nn_graph_t  * graph,
+    vsi_nn_tensor_t * input,
+    float             rate
+    )
+{
+    vsi_nn_tensor_t *output = NULL;
+    vsi_size_t size = 0;
+    vsi_size_t i = 0;
+    float* data   = NULL;
+
+    if (NULL == input || NULL == graph)
+    {
+        return NULL;
+    }
+
+    output = vsi_nn_CreateTensor(graph, &input->attr);
+    if ( !output )
+    {
+        VSILOGE("create tensor failed.");
+        goto final;
+    }
+
+    data = vsi_nn_ConvertTensorToFloat32Data(graph, input);
+    if (NULL == data)
+    {
+        goto final;
+    }
+
+    size = vsi_nn_vxGetTensorElementNum(&input->attr);
+
+    for (i = 0; i < size; i++)
+    {
+        data[i] = data[i] * rate;
+    }
+
+    vsi_nn_CopyRawDataToTensor( graph, (uint8_t *)data, &input->attr.dtype, output );
+
+final:
+    vsi_nn_safe_free(data);
+
+    return output;
 }

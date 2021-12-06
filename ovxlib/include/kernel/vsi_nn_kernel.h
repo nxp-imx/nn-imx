@@ -48,6 +48,7 @@ typedef enum
     VSI_NN_KERNEL_TYPE_EVIS,
     VSI_NN_KERNEL_TYPE_CL,
     VSI_NN_KERNEL_TYPE_VX,
+    VSI_NN_KERNEL_TYPE_SP,
     VSI_NN_KERNEL_TYPE_NUM,
     VSI_NN_KERNEL_TYPE_NONE = VSI_NN_KERNEL_TYPE_NUM
 } vsi_nn_kernel_type_e;
@@ -303,6 +304,8 @@ const void * vsi_nn_kernel_param_get_const_buffer
     REGISTER_KERNEL_BACKEND(operation, CPU, func)
 #define REGISTER_BACKEND_OPENVX(operation, func) \
     REGISTER_KERNEL_BACKEND(operation, VX, func)
+#define REGISTER_BACKEND_STREAM_PROCESSOR(operation, func) \
+    REGISTER_KERNEL_BACKEND(operation, SP, func)
 
 #define DEF_KERNEL_BASE_CALLBACK( NAME )  \
     static vsi_status NAME##_impl( vsi_nn_kernel_node_t node, \
@@ -903,6 +906,8 @@ static inline const char* vsi_nn_kernel_type_str
         return "CL";
     case VSI_NN_KERNEL_TYPE_VX:
         return "OPENVX";
+    case VSI_NN_KERNEL_TYPE_SP:
+        return "STERAM_PROCESSOR";
     default:
         break;
     }
