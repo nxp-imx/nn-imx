@@ -47,6 +47,14 @@ class TransposeConv2dValidate : public OperationValidate<T_model, T_Operation> {
                 reason += "reject TRANSPOSE_CONV_2D because input and kernel share the same tensor\n";
                 return false;
             }
+
+            auto kernelOperandIndex = operation.inputs[kernelIndex];
+            auto biasOperandIndex = operation.inputs[inputList->ArgPos("bias")];
+            if ( !((this->IsConstantTensor(kernelOperandIndex)) && (this->IsConstantTensor(biasOperandIndex))) ) {
+                reason += "reject transpose conv 2d because not meet constant kernel/bias requirement";
+                return false;
+            }
+
             auto inputOperand = vsi_driver::GetHalOperand(model, operation.inputs[inputIndex]);
             if (inputOperand.dimensions[0] > 1 && inputOperand.type == OperandType::TENSOR_FLOAT32) {
                 reason += "reject TRANSPOSE_CONV_2D because not support input with multi batch\n";
