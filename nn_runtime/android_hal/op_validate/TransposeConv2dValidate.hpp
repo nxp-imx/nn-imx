@@ -56,8 +56,8 @@ class TransposeConv2dValidate : public OperationValidate<T_model, T_Operation> {
             }
 
             auto inputOperand = vsi_driver::GetHalOperand(model, operation.inputs[inputIndex]);
-            if (inputOperand.dimensions[0] > 1 && inputOperand.type == OperandType::TENSOR_FLOAT32) {
-                reason += "reject TRANSPOSE_CONV_2D because not support input with multi batch\n";
+            if (inputOperand.dimensions[0] > 1) {
+                reason += "reject TRANSPOSE_CONV_2D because if multi batch\n";
                 return false;
             }
             auto kernelOperand = vsi_driver::GetHalOperand(model, operation.inputs[kernelIndex]);
