@@ -456,7 +456,7 @@ REGISTER_CONV_OPENVX_KERNEL( conv2d )
         inputs[0]->t, inputs[1]->t, inputs[2] ? inputs[2]->t : NULL,
         (vx_nn_convolution_params_t *)&vxparam,
         sizeof( vx_nn_convolution_params_ext2_t ),
-        outputs[2]->t
+        outputs[0]->t
         );
 
     return (vsi_nn_kernel_node_t)node;
@@ -487,7 +487,7 @@ REGISTER_CONV_OPENVX_KERNEL( depthwise_conv2d )
         inputs[0]->t, inputs[1]->t, inputs[2] ? inputs[2]->t : NULL,
         (vx_nn_convolution_params_t *)&vxparam,
         sizeof( vx_nn_convolution_params_ext2_t ),
-        outputs[2]->t
+        outputs[0]->t
         );
 
     return (vsi_nn_kernel_node_t)node;
