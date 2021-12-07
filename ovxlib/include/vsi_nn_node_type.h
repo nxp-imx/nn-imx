@@ -184,6 +184,7 @@
 #include "ops/vsi_nn_op_grucell_activation_z_h.h"
 #include "ops/vsi_nn_op_deconv3d.h"
 #include "ops/vsi_nn_op_reduce_mean_internal.h"
+#include "ops/vsi_nn_op_pad2.h"
 /* custom node head define define */
 #include "custom/vsi_nn_custom_node_type.h"
 
@@ -354,6 +355,7 @@ typedef union _vsi_nn_nn_param
     vsi_nn_grucell_activation_z_h_param grucell_activation_z_h;
     vsi_nn_deconv3d_param           deconv3d;
     vsi_nn_reduce_mean_internal_param reduce_mean_internal;
+    vsi_nn_pad2_param               pad2;
     uint8_t                         client_param[128];
 
     /* custom node data struct define */

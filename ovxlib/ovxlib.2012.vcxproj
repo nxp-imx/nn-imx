@@ -596,6 +596,7 @@
     <ClInclude Include="include\ops\vsi_nn_op_nms.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_one_hot.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_pad.h"/>
+    <ClInclude Include="include\ops\vsi_nn_op_pad2.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_permute.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_pool.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_post_process.h"/>
@@ -1508,6 +1509,9 @@
     <ClCompile Include="src\kernel\vx\matrixmul_vx.c">
       <ObjectFileName>$(IntDir)\src\kernel\vx\</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="src\kernel\vx\pad2_vx.c">
+      <ObjectFileName>$(IntDir)\src\kernel\vx\</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="src\kernel\vx\prelu_vx.c">
       <ObjectFileName>$(IntDir)\src\kernel\vx\</ObjectFileName>
     </ClCompile>
@@ -1788,6 +1792,9 @@
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_pad.c">
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_pad2.c">
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_permute.c">
