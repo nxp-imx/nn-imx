@@ -24,7 +24,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-
 #include "vsi_nn_types.h"
 #include "vsi_nn_platform.h"
 #include "vsi_nn_log.h"
@@ -216,9 +215,10 @@ static vsi_bool op_setup_default
 
     memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
     attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
-    if (inputs[GRUCELL_IN_H_STATE]->attr.dtype.vx_type == VSI_NN_TYPE_FLOAT32)
+    if (inputs[GRUCELL_IN_H_STATE]->attr.dtype.vx_type == VSI_NN_TYPE_FLOAT32 ||
+        self->graph->ctx->config.support_stream_processor)
     {
-        attr.dtype.vx_type = inputs[GRUCELL_IN_H_STATE]->attr.dtype.vx_type;
+        attr.dtype.vx_type = VSI_NN_TYPE_FLOAT32;
     }
     else
     {
@@ -228,7 +228,6 @@ static vsi_bool op_setup_default
     attr.vtl = TRUE;
     attr.is_const = FALSE;
     h_times_r = vsi_nn_internal_new_tensor(self, &attr, 0.0f);
-
 
     curr = vsi_nn_internal_new_node( self, VSI_NN_OP_GRUCELL_H_TIMES_ACTIVATION_R, 3, 1 );
     curr->node->nn_param.grucell_h_times_activation_r.recurrent_activation = p->recurrent_activation;

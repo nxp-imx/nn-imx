@@ -1454,6 +1454,12 @@
     <ClCompile Include="src\kernel\sp\eltwise_unary_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
+    <ClCompile Include="src\kernel\sp\grucell_activation_z_h_sp.c">
+      <Filter>Source Files\kernel\sp</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\sp\grucell_h_times_activation_r_sp.c">
+      <Filter>Source Files\kernel\sp</Filter>
+    </ClCompile>
     <ClCompile Include="src\kernel\sp\instance_normalization_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
@@ -1463,13 +1469,13 @@
     <ClCompile Include="src\kernel\sp\layer_normalization_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
-    <ClCompile Include="src\kernel\sp\lstmunit_activation_sp.c">
+  <ClCompile Include="src\kernel\sp\lstmunit_activation_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\sp\maximum_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
-  <ClCompile Include="src\kernel\sp\minimum_sp.c">
+    <ClCompile Include="src\kernel\sp\minimum_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\sp\softmax_sp.c">

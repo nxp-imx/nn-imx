@@ -103,37 +103,22 @@ vsi_nn_kernel_node_t vsi_nn_sp_add_node
     clamp_min = clamp_min * scale0;
     clamp_max = clamp_max * scale0;
 
-    if (input0_scale == 1.0f && input1_scale == 1.0f && const2 == 0 && _is_float_tensor(input0))
-    {
-        /* loop inst0: out = r1 + r2 || r1 = in0 */
-        status  = vsi_nn_sp_add(&sp_insts_param[0], VSI_NN_SP_SR1, VSI_NN_SP_SR2, VSI_NN_SP_SROUT);
-        status |= vsi_nn_sp_move(&sp_insts_param[0], VSI_NN_SP_SRIN, VSI_NN_SP_SR1);
-        /* loop inst1: r2 = in1 */
-        status |= vsi_nn_sp_move(&sp_insts_param[1], VSI_NN_SP_SRIN, VSI_NN_SP_SR2);
-        CHECK_STATUS_FAIL_GOTO(status, final );
+    /* loop inst0: r1 = clamp(in * r3, r7, r6) || r2 = r1 + r2 */
+    status  = vsi_nn_sp_mul_clamp(&sp_insts_param[0], VSI_NN_SP_SRIN, VSI_NN_SP_SR3, VSI_NN_SP_SR1);
+    status |= vsi_nn_sp_add(&sp_insts_param[0], VSI_NN_SP_SR1, VSI_NN_SP_SR2, VSI_NN_SP_SR2);
+    /* loop inst1: r2 = in * r4 || out = r2 + r5 */
+    status |= vsi_nn_sp_mul(&sp_insts_param[1], VSI_NN_SP_SRIN, VSI_NN_SP_SR4, VSI_NN_SP_SR2);
+    status |= vsi_nn_sp_add(&sp_insts_param[1], VSI_NN_SP_SR2, VSI_NN_SP_SR5, VSI_NN_SP_SROUT);
+    CHECK_STATUS_FAIL_GOTO(status, final );
 
-        attr.ignored_leading_outputs = 2;
-        attr.flush_cycle_num = 3;
-    }
-    else
-    {
-        /* loop inst0: r1 = clamp(in * r3, r7, r6) || r2 = r1 + r2 */
-        status  = vsi_nn_sp_mul_clamp(&sp_insts_param[0], VSI_NN_SP_SRIN, VSI_NN_SP_SR3, VSI_NN_SP_SR1);
-        status |= vsi_nn_sp_add(&sp_insts_param[0], VSI_NN_SP_SR1, VSI_NN_SP_SR2, VSI_NN_SP_SR2);
-        /* loop inst1: r2 = in * r4 || out = r2 + r5 */
-        status |= vsi_nn_sp_mul(&sp_insts_param[1], VSI_NN_SP_SRIN, VSI_NN_SP_SR4, VSI_NN_SP_SR2);
-        status |= vsi_nn_sp_add(&sp_insts_param[1], VSI_NN_SP_SR2, VSI_NN_SP_SR5, VSI_NN_SP_SROUT);
-        CHECK_STATUS_FAIL_GOTO(status, final );
+    attr.ignored_leading_outputs = 3;
+    attr.flush_cycle_num = 6;
 
-        attr.ignored_leading_outputs = 3;
-        attr.flush_cycle_num = 6;
-
-        VSI_NN_SP_ATTR_SET_CONST_TO_SR3(attr, scale0);
-        VSI_NN_SP_ATTR_SET_CONST_TO_SR4(attr, scale1);
-        VSI_NN_SP_ATTR_SET_CONST_TO_SR5_LOW_PRECISION(attr, const2);
-        VSI_NN_SP_ATTR_SET_CONST_TO_SR6(attr, clamp_max);
-        VSI_NN_SP_ATTR_SET_CONST_TO_SR7(attr, clamp_min);
-    }
+    VSI_NN_SP_ATTR_SET_CONST_TO_SR3(attr, scale0);
+    VSI_NN_SP_ATTR_SET_CONST_TO_SR4(attr, scale1);
+    VSI_NN_SP_ATTR_SET_CONST_TO_SR5_LOW_PRECISION(attr, const2);
+    VSI_NN_SP_ATTR_SET_CONST_TO_SR6(attr, clamp_max);
+    VSI_NN_SP_ATTR_SET_CONST_TO_SR7(attr, clamp_min);
 
     attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_XYMERGE;
     attr.input_setup = VSI_NN_SP_INPUT_SETUP_INTERLEAVE_TWO_INPUT;
@@ -207,37 +192,23 @@ vsi_nn_kernel_node_t vsi_nn_sp_sub_node
     clamp_min = clamp_min * scale0;
     clamp_max = clamp_max * scale0;
 
-    if (input0_scale == 1.0f && input1_scale == 1.0f && const2 == 0)
-    {
-        /* loop inst0: out = r1 - r2 || r1 = in0 */
-        status  = vsi_nn_sp_sub(&sp_insts_param[0], VSI_NN_SP_SR1, VSI_NN_SP_SR2, VSI_NN_SP_SROUT);
-        status |= vsi_nn_sp_move(&sp_insts_param[0], VSI_NN_SP_SRIN, VSI_NN_SP_SR1);
-        /* loop inst1: r2 = in1 */
-        status |= vsi_nn_sp_move(&sp_insts_param[1], VSI_NN_SP_SRIN, VSI_NN_SP_SR2);
-        CHECK_STATUS_FAIL_GOTO(status, final );
+    /* output = in * const0 - (in1 * const1 + const2) */
+    /* loop inst0: r1 = clamp(in * r3, r7, r6) || r2 = r1 - r2 */
+    status  = vsi_nn_sp_mul_clamp(&sp_insts_param[0], VSI_NN_SP_SRIN, VSI_NN_SP_SR3, VSI_NN_SP_SR1);
+    status |= vsi_nn_sp_sub(&sp_insts_param[0], VSI_NN_SP_SR1, VSI_NN_SP_SR2, VSI_NN_SP_SR2);
+    /* loop inst1: r2 = in * r4 || out = r2 - r5 */
+    status |= vsi_nn_sp_mul(&sp_insts_param[1], VSI_NN_SP_SRIN, VSI_NN_SP_SR4, VSI_NN_SP_SR2);
+    status |= vsi_nn_sp_sub(&sp_insts_param[1], VSI_NN_SP_SR2, VSI_NN_SP_SR5, VSI_NN_SP_SROUT);
+    CHECK_STATUS_FAIL_GOTO(status, final );
 
-        attr.ignored_leading_outputs = 2;
-        attr.flush_cycle_num = 3;
-    }
-    else
-    {
-        /* loop inst0: r1 = clamp(in * r3, r7, r6) || r2 = r1 - r2 */
-        status  = vsi_nn_sp_mul_clamp(&sp_insts_param[0], VSI_NN_SP_SRIN, VSI_NN_SP_SR3, VSI_NN_SP_SR1);
-        status |= vsi_nn_sp_sub(&sp_insts_param[0], VSI_NN_SP_SR1, VSI_NN_SP_SR2, VSI_NN_SP_SR2);
-        /* loop inst1: r2 = in * r4 || out = r2 - r5 */
-        status |= vsi_nn_sp_mul(&sp_insts_param[1], VSI_NN_SP_SRIN, VSI_NN_SP_SR4, VSI_NN_SP_SR2);
-        status |= vsi_nn_sp_add(&sp_insts_param[1], VSI_NN_SP_SR2, VSI_NN_SP_SR5, VSI_NN_SP_SROUT);
-        CHECK_STATUS_FAIL_GOTO(status, final );
+    attr.ignored_leading_outputs = 3;
+    attr.flush_cycle_num = 6;
 
-        attr.ignored_leading_outputs = 3;
-        attr.flush_cycle_num = 6;
-
-        VSI_NN_SP_ATTR_SET_CONST_TO_SR3(attr, scale0);
-        VSI_NN_SP_ATTR_SET_CONST_TO_SR4(attr, scale1);
-        VSI_NN_SP_ATTR_SET_CONST_TO_SR5_LOW_PRECISION(attr, const2);
-        VSI_NN_SP_ATTR_SET_CONST_TO_SR6(attr, clamp_max);
-        VSI_NN_SP_ATTR_SET_CONST_TO_SR7(attr, clamp_min);
-    }
+    VSI_NN_SP_ATTR_SET_CONST_TO_SR3(attr, scale0);
+    VSI_NN_SP_ATTR_SET_CONST_TO_SR4(attr, scale1);
+    VSI_NN_SP_ATTR_SET_CONST_TO_SR5_LOW_PRECISION(attr, const2);
+    VSI_NN_SP_ATTR_SET_CONST_TO_SR6(attr, clamp_max);
+    VSI_NN_SP_ATTR_SET_CONST_TO_SR7(attr, clamp_min);
 
     attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_XYMERGE;
     attr.input_setup = VSI_NN_SP_INPUT_SETUP_INTERLEAVE_TWO_INPUT;

@@ -332,7 +332,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_instance_norm_node
     memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
     memset(&attr, 0, sizeof(vsi_nn_spinst_attr_t));
 
-    /* loop inst0: out = in * v12 || r1 = r1 + v11 */
+    /* loop inst0: r1 = in * v12 || out = r1 + v11 */
     status  = vsi_nn_sp_mul(&sp_insts_param[0], VSI_NN_SP_SRIN, VSI_NN_SP_VR12, VSI_NN_SP_SR1);
     status |= vsi_nn_sp_add(&sp_insts_param[0], VSI_NN_SP_SR1, VSI_NN_SP_VR11, VSI_NN_SP_SROUT);
     CHECK_STATUS_FAIL_GOTO(status, final );
