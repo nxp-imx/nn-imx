@@ -22,7 +22,6 @@
 *
 *****************************************************************************/
 
-
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -75,7 +74,6 @@ static const _kernel_map_type _grucell_activation_z_h_kernel_map[] =
     PACK_KERNEL_MAP( F16, F16, F16, SIGMOID ),
 };
 
-
 /*
  * Kernel params
  */
@@ -121,7 +119,6 @@ DEF_KERNEL_INITIALIZER(_grucell_activation_z_h_initializer)
     vsi_nn_kernel_tensor_attr_t* output_attr[2]                 = {NULL};
 #define _PACK_SELECT_KEY( hstate_type, fc_type, output_type )    \
         (hstate_type | (fc_type << 8) | (output_type << 16))
-
 
     output = (vsi_nn_kernel_tensor_t)param[GRUCELL_ACT_Z_H_IN_CNT + GRUCELL_ACT_Z_H_OUT_OUTPUT];
     hstate_out = (vsi_nn_kernel_tensor_t)param[GRUCELL_ACT_Z_H_IN_CNT + GRUCELL_ACT_Z_H_OUT_HSTATE];
@@ -309,9 +306,9 @@ static vsi_status _query_kernel
     uint32_t key;
     uint32_t i;
 
-    hstate_dtype  = vsi_nn_kernel_map_dtype( inputs[GRUCELL_ACT_H_STATE]->attr.dtype.vx_type );
-    fc_dtype  = vsi_nn_kernel_map_dtype( inputs[GRUCELL_ACT_I_FC_Z]->attr.dtype.vx_type );
-    out_dtype = vsi_nn_kernel_map_dtype( outputs[GRUCELL_ACT_OUT_OUTPUT]->attr.dtype.vx_type );
+    hstate_dtype  = vsi_nn_kernel_map_dtype( inputs[GRUCELL_ACT_Z_H_HSTATE]->attr.dtype.vx_type );
+    fc_dtype  = vsi_nn_kernel_map_dtype( inputs[GRUCELL_ACT_Z_H_I_FC_Z]->attr.dtype.vx_type );
+    out_dtype = vsi_nn_kernel_map_dtype( outputs[GRUCELL_ACT_Z_H_OUT_OUTPUT]->attr.dtype.vx_type );
 
     key = GRUCELL_ACTIVATION_Z_H_HASH_KEY( hstate_dtype, fc_dtype, out_dtype, recurrent_activation );
 
@@ -340,7 +337,6 @@ static vsi_status _query_kernel
 
     return status;
 } /* _query_kernel() */
-
 
 static vsi_nn_kernel_node_t _setup
     (

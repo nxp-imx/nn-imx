@@ -240,19 +240,19 @@ vsi_nn_kernel_node_t vsi_nn_sp_add_sigmoid_node
     memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
     memset(&attr, 0, sizeof(vsi_nn_spinst_attr_t));
 
-    /* loop inst0: r5 = pwlMul() || r2 = pwlAdd() || r8 = in*/
-    status  = vsi_nn_sp_mul(&sp_insts_param[0], VSI_NN_SP_PWLMUL, VSI_NN_SP_PWLMUL, VSI_NN_SP_SR5);
-    status |= vsi_nn_sp_sub(&sp_insts_param[0], VSI_NN_SP_PWLADD, VSI_NN_SP_PWLADD, VSI_NN_SP_SR2);
-    status |= vsi_nn_sp_move(&sp_insts_param[0], VSI_NN_SP_SRIN, VSI_NN_SP_SR8);
-    /* loop inst1: r9 = in * r7 || v11/v12 = r4 + r6 || r1 = r3 */
-    status |= vsi_nn_sp_mul(&sp_insts_param[1], VSI_NN_SP_SRIN, VSI_NN_SP_SR7, VSI_NN_SP_SR9);
-    status |= vsi_nn_sp_add(&sp_insts_param[1], VSI_NN_SP_SR4, VSI_NN_SP_SR6, dst_vr);
-    status |= vsi_nn_sp_move(&sp_insts_param[1], VSI_NN_SP_SR1, VSI_NN_SP_SR3);
-    /* loop inst2: r1 = pwlSetup(r10) || r6 = r5 * r2 || r10 = r8 + r9 || r4 = r3*/
-    status |= vsi_nn_sp_pwl_sigmoid(&sp_insts_param[2], VSI_NN_SP_SR10, VSI_NN_SP_SR1);
-    status |= vsi_nn_sp_mul(&sp_insts_param[2], VSI_NN_SP_SR5, VSI_NN_SP_SR2, VSI_NN_SP_SR6);
-    status |= vsi_nn_sp_add(&sp_insts_param[2], VSI_NN_SP_SR8, VSI_NN_SP_SR9, VSI_NN_SP_SR10);
-    status |= vsi_nn_sp_move(&sp_insts_param[2], VSI_NN_SP_SR3, VSI_NN_SP_SR4);
+    /* loop inst0: r8 = in * r3 || v11/v12 = r4 + r6 || r7 = r1 */
+    status  = vsi_nn_sp_mul(&sp_insts_param[0], VSI_NN_SP_SRIN, VSI_NN_SP_SR3, VSI_NN_SP_SR8);
+    status |= vsi_nn_sp_add(&sp_insts_param[0], VSI_NN_SP_SR4, VSI_NN_SP_SR6, dst_vr);
+    status |= vsi_nn_sp_move(&sp_insts_param[0], VSI_NN_SP_SR1, VSI_NN_SP_SR7);
+    /* loop inst1: r1 = pwl_sigmoid(r10) || r6 = r5 * r2 || r10 = r8 + r9 || r9 = in*/
+    status |= vsi_nn_sp_pwl_sigmoid(&sp_insts_param[1], VSI_NN_SP_SR10, VSI_NN_SP_SR1);
+    status |= vsi_nn_sp_mul(&sp_insts_param[1], VSI_NN_SP_SR5, VSI_NN_SP_SR2, VSI_NN_SP_SR6);
+    status |= vsi_nn_sp_add(&sp_insts_param[1], VSI_NN_SP_SR8, VSI_NN_SP_SR9, VSI_NN_SP_SR10);
+    status |= vsi_nn_sp_move(&sp_insts_param[1], VSI_NN_SP_SRIN, VSI_NN_SP_SR9);
+    /* loop inst2: r5 = pwlMul() || r2 = pwlAdd() || r7 = r4*/
+    status |= vsi_nn_sp_mul(&sp_insts_param[2], VSI_NN_SP_PWLMUL, VSI_NN_SP_PWLMUL, VSI_NN_SP_SR5);
+    status |= vsi_nn_sp_sub(&sp_insts_param[2], VSI_NN_SP_PWLADD, VSI_NN_SP_PWLADD, VSI_NN_SP_SR2);
+    status |= vsi_nn_sp_move(&sp_insts_param[2], VSI_NN_SP_SR4, VSI_NN_SP_SR7);
     CHECK_STATUS_FAIL_GOTO(status, final );
 
     attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_YZMERGE;
@@ -260,8 +260,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_add_sigmoid_node
     attr.input_setup = VSI_NN_SP_INPUT_SETUP_INTERLEAVE_TWO_INPUT;
     attr.prog_init_instr_num = spInitInstsNum;
     attr.prog_loop_instr_num = spLoopInstsNum;
-    attr.flush_cycle_num = 21;
-    VSI_NN_SP_ATTR_SET_CONST_TO_SR7(attr, 1.0f);
+    attr.flush_cycle_num = 20;
+    VSI_NN_SP_ATTR_SET_CONST_TO_SR3(attr, 1.0f);
     if (dst_vr == VSI_NN_SP_VR11)
     {
         attr.ignored_leading_v11_wr = 7;
@@ -280,7 +280,96 @@ vsi_nn_kernel_node_t vsi_nn_sp_add_sigmoid_node
     CHECK_STATUS_FAIL_GOTO(status, final );
 
     inputs_tensor[0] = input0->t;
-    inputs_tensor[1] = input0->t;
+    inputs_tensor[1] = input1->t;
+    outputs_tensor[0] = dummy_output->t;
+
+    node = vxStreamProcessorNode(
+        graph->g,
+        inputs_tensor,
+        input_count,
+        outputs_tensor,
+        output_count,
+        spinst->sp,
+        NULL);
+
+final:
+    if (spinst)
+    {
+        vsi_nn_release_spinst(&spinst);
+    }
+
+    return (vsi_nn_kernel_node_t)node;
+}
+
+vsi_nn_kernel_node_t vsi_nn_sp_add_tanh_node
+    (
+        vsi_nn_graph_t  * graph,
+        vsi_nn_tensor_t * input0,
+        vsi_nn_tensor_t * input1,
+        vsi_nn_tensor_t * dummy_output,
+        uint8_t           dst_vr
+    )
+{
+    const int32_t spInitInstsNum = 0;
+    const int32_t spLoopInstsNum = 3;
+    const int32_t spInstsNum = spInitInstsNum + spLoopInstsNum;
+
+    const uint32_t input_count = 2;
+    const uint32_t output_count = 1;
+    vx_tensor inputs_tensor[2] = {NULL};
+    vx_tensor outputs_tensor[1] = {NULL};
+    vx_node node = NULL;
+
+    vsi_nn_spinst_t *spinst = NULL;
+    vsi_nn_spinst_inst_param sp_insts_param[5];
+    vsi_nn_spinst_attr_t attr;
+
+    vsi_status status = VSI_FAILURE;
+
+    memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
+    memset(&attr, 0, sizeof(vsi_nn_spinst_attr_t));
+
+    /* loop inst0: r8 = in * r3 || v11/v12 = r4 + r6 || r7 = r1 */
+    status  = vsi_nn_sp_mul(&sp_insts_param[0], VSI_NN_SP_SRIN, VSI_NN_SP_SR3, VSI_NN_SP_SR8);
+    status |= vsi_nn_sp_add(&sp_insts_param[0], VSI_NN_SP_SR4, VSI_NN_SP_SR6, dst_vr);
+    status |= vsi_nn_sp_move(&sp_insts_param[0], VSI_NN_SP_SR1, VSI_NN_SP_SR7);
+    /* loop inst1: r1 = pwl_tanh(r10) || r6 = r5 * r2 || r10 = r8 + r9 || r9 = in*/
+    status |= vsi_nn_sp_pwl_tanh(&sp_insts_param[1], VSI_NN_SP_SR10, VSI_NN_SP_SR1);
+    status |= vsi_nn_sp_mul(&sp_insts_param[1], VSI_NN_SP_SR5, VSI_NN_SP_SR2, VSI_NN_SP_SR6);
+    status |= vsi_nn_sp_add(&sp_insts_param[1], VSI_NN_SP_SR8, VSI_NN_SP_SR9, VSI_NN_SP_SR10);
+    status |= vsi_nn_sp_move(&sp_insts_param[1], VSI_NN_SP_SRIN, VSI_NN_SP_SR9);
+    /* loop inst2: r5 = pwlMul() || r2 = pwlAdd() || r7 = r4*/
+    status |= vsi_nn_sp_mul(&sp_insts_param[2], VSI_NN_SP_PWLMUL, VSI_NN_SP_PWLMUL, VSI_NN_SP_SR5);
+    status |= vsi_nn_sp_sub(&sp_insts_param[2], VSI_NN_SP_PWLADD, VSI_NN_SP_PWLADD, VSI_NN_SP_SR2);
+    status |= vsi_nn_sp_move(&sp_insts_param[2], VSI_NN_SP_SR4, VSI_NN_SP_SR7);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
+    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_YZMERGE;
+
+    attr.input_setup = VSI_NN_SP_INPUT_SETUP_INTERLEAVE_TWO_INPUT;
+    attr.prog_init_instr_num = spInitInstsNum;
+    attr.prog_loop_instr_num = spLoopInstsNum;
+    attr.flush_cycle_num = 20;
+    VSI_NN_SP_ATTR_SET_CONST_TO_SR3(attr, 1.0f);
+    if (dst_vr == VSI_NN_SP_VR11)
+    {
+        attr.ignored_leading_v11_wr = 7;
+        attr.v11_reset_at_start = VX_SP_ATTRIBUTE_V_RESET_AT_START_RESET;
+    }
+    else
+    {
+        attr.ignored_leading_v12_wr = 7;
+        attr.v12_reset_at_start = VX_SP_ATTRIBUTE_V_RESET_AT_START_RESET;
+    }
+
+    spinst = vsi_nn_create_spinst(graph);
+    CHECK_PTR_FAIL_GOTO( spinst, "Create spInst fail.", final );
+    status  = vsi_nn_add_spinst_insts(spinst, sp_insts_param, spInstsNum);
+    status |= vsi_nn_set_spinst_attr(spinst, attr);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
+    inputs_tensor[0] = input0->t;
+    inputs_tensor[1] = input1->t;
     outputs_tensor[0] = dummy_output->t;
 
     node = vxStreamProcessorNode(
@@ -505,7 +594,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_get_float_output_node
     /* loop inst0: r1 = pwlSetup(v12) || r2 = pwlMul * pwlMul || r3 = pwlAdd + pwlAdd */
     status  = vsi_nn_sp_pwl_tanh(&sp_insts_param[0], VSI_NN_SP_VR12, VSI_NN_SP_SR1);
     status |= vsi_nn_sp_mul(&sp_insts_param[0], VSI_NN_SP_PWLMUL, VSI_NN_SP_PWLMUL, VSI_NN_SP_SR2);
-    status |= vsi_nn_sp_add(&sp_insts_param[0], VSI_NN_SP_PWLADD, VSI_NN_SP_PWLADD, VSI_NN_SP_SR3);
+    status |= vsi_nn_sp_sub(&sp_insts_param[0], VSI_NN_SP_PWLADD, VSI_NN_SP_PWLADD, VSI_NN_SP_SR3);
     /* loop inst1: r5 = r2 * r3 || r6 = r5 + r4 */
     status |= vsi_nn_sp_mul(&sp_insts_param[1], VSI_NN_SP_SR2, VSI_NN_SP_SR3, VSI_NN_SP_SR5);
     status |= vsi_nn_sp_add(&sp_insts_param[1], VSI_NN_SP_SR5, VSI_NN_SP_SR4, VSI_NN_SP_SR6);

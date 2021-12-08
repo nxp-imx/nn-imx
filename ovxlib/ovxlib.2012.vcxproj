@@ -1406,6 +1406,12 @@
     <ClCompile Include="src\kernel\sp\eltwise_unary_sp.c">
       <ObjectFileName>$(IntDir)\src\kernel\sp\</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="src\kernel\sp\grucell_activation_z_h_sp.c">
+      <ObjectFileName>$(IntDir)\src\kernel\sp\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\kernel\sp\grucell_h_times_activation_r_sp.c">
+      <ObjectFileName>$(IntDir)\src\kernel\sp\</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="src\kernel\sp\instance_normalization_sp.c">
       <ObjectFileName>$(IntDir)\src\kernel\sp\</ObjectFileName>
     </ClCompile>
