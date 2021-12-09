@@ -52,18 +52,6 @@ static const struct {
     HASH_ELTWISE_OP_SUPPORT_TYPE(I8,  U8),
 };
 
-static vsi_bool _is_float_tensor(vsi_nn_tensor_t * input)
-{
-    if ( input->attr.dtype.vx_type == VSI_NN_TYPE_FLOAT16 ||
-         input->attr.dtype.vx_type == VSI_NN_TYPE_BFLOAT16 ||
-         input->attr.dtype.vx_type == VSI_NN_TYPE_FLOAT32 )
-    {
-        return TRUE;
-    }
-
-    return FALSE;
-}
-
 vsi_nn_kernel_node_t vsi_nn_sp_add_node
     (
         vsi_nn_graph_t              * graph,
