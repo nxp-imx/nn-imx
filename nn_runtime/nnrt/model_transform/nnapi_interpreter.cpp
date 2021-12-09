@@ -67,7 +67,6 @@ void padFromImplicitToExplicitForDeconv2d(const std::vector<uint32_t>& input_sha
     int32_t filter_height = 0;
     int32_t output_width = 0;
     int32_t output_height = 0;
-    assert(input_shape.size() != 4);
 
     switch (layout)
     {
