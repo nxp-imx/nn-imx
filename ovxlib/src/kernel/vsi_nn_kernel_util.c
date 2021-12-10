@@ -164,6 +164,11 @@ vsi_status vsi_nn_kernel_copy_tensor_patch
     for (i = 0; i < VSI_NN_MAX_DIM_NUM; i++)
     {
         end[i] = attr->shape->data[i];
+        if ( attr->dtype != I4 && attr->dtype != U4 )
+        {
+            size_t type_bytes = vsi_nn_kernel_dtype_get_bytes( attr->dtype );
+            stride[i] = stride[i] * (vsi_size_t)type_bytes;
+        }
     }
 
     switch( accessor )
@@ -367,18 +372,20 @@ vsi_status vsi_nn_kernel_tensor_write_from_float
         goto final;
     }
 
+    if ( attr->dtype == I4 || attr->dtype == U4 )
+    {
+        vsi_size_t sz = 0;
+        sz = vsi_nn_kernel_tensor_attr_get_size( attr );
+        internal_buffer0 = malloc( sz );
+    }
+    else
+    {
+        internal_buffer0 = malloc( bytes );
+        internal_buffer = internal_buffer0;
+    }
+
     if( attr->dtype != F32 )
     {
-        if ( attr->dtype == I4 || attr->dtype == U4 )
-        {
-            vsi_size_t sz = 0;
-            sz = vsi_nn_kernel_tensor_attr_get_size( attr );
-            internal_buffer0 = malloc( sz );
-        }
-        else
-        {
-            internal_buffer0 = malloc( bytes );
-        }
         CHECK_PTR_FAIL_GOTO( internal_buffer0, "Create buffer fail.", final );
         if ( vsi_nn_kernel_tensor_attr_is_quantized( attr ) )
         {
@@ -417,10 +424,6 @@ vsi_status vsi_nn_kernel_tensor_write_from_float
                 internal_buffer = malloc( bytes );
                 status = vsi_nn_kernel_pack_4bit_data(attr, (uint8_t*)internal_buffer0, (uint8_t*)internal_buffer);
             }
-            else
-            {
-                internal_buffer = internal_buffer0;
-            }
         }
         else
         {
@@ -439,7 +442,10 @@ final:
     {
         vsi_nn_kernel_tensor_attr_release( &internal_attr );
     }
-    vsi_nn_safe_free(internal_buffer0);
+    if ( attr->dtype == I4 || attr->dtype == U4 )
+    {
+        vsi_nn_safe_free(internal_buffer0);
+    }
     vsi_nn_safe_free(internal_buffer);
 
     return status;
