@@ -88,52 +88,52 @@ static const std::vector<std::string> XL = {
 static const std::vector<std::string> L = {
     // crnn_float
     "B1BFA06C99E929CCAF7835A4CFA10E87",
-};
-static const std::vector<std::string> M = {
     // mobilenet_v3_float
     "30BE5212884AC51654CC27EB735E1074",
     // srcnn_float
     "14EE8F7B5C4492159470CBD66CFE545A",
 };
-static const std::vector<std::string> S = {
+static const std::vector<std::string> M = {
     // mobilenet_v2_float
     "7A6457A8F3BB2A1EEA9AFAA9110733D2",
-    // ssd_mobilenet_v2_coco_quant
-    "B4146FC276859FAFFCE68FF52B1FAF66",
     // lstm_float
     "7C387225B0395150054B2606467D264C",
     // mobilenet_v1_0.25_128: 1001x1x1x256
     "D1A49E737E8C59700DC98FB4B0056BD0",
-    // mobilenet_v1_0.25_128_quant: 1001x1x1x256
-    "4310747F8368C75264E89AD2B75699C2",
     // mobilenet_v1_0.5_160
     "F40F00A93B0BFF0971430644493641F8",
-    // mobilenet_v1_0.5_160_quant
-    "C6406F6AB18BD32E2A8C07A8FB366C40",
     // mobilenet_v1_0.75_192
     "07A1A75E2F3FDB7415367B2B6A5D44D6",
-    // mobilenet_v1_0.75_192_quant
-    "74A952AF6354845236115920BD62D711",
     // mobilenet_v1_1.0_224
     "6A3834EE93D674E7A016C19464FA5514",
     // mobilenet_v2_0.75_192
     "DAAC1E40DD63B67003671E8E63B7338F",
 };
-static const std::vector<std::string> XS = {
-    // srgan_quant
-    "7242EE970D48CA8AE2638579EF31CC4F",
+static const std::vector<std::string> M = {
     // vgg_quant
     "98355ABE3A91B0984C414D71B9A707CC",
     // pynet_quant
     "B9CD20A2DE17D5781F4E396385DF0326",
+    // srgan_quant
+    "7242EE970D48CA8AE2638579EF31CC4F",
+    // unet_quant
+    "A9700F507EF8B50D90FDFA3973333DD4",
+};
+static const std::vector<std::string> XS = {
+    // mobilenet_v1_0.75_192_quant
+    "74A952AF6354845236115920BD62D711",
+    // mobilenet_v1_0.5_160_quant
+    "C6406F6AB18BD32E2A8C07A8FB366C40",
+    // mobilenet_v1_0.25_128_quant: 1001x1x1x256
+    "4310747F8368C75264E89AD2B75699C2",
+    // ssd_mobilenet_v2_coco_quant
+    "B4146FC276859FAFFCE68FF52B1FAF66",
     // dped_quant
     "0C5D588678EEE63B96132A004473B1D1",
     // inception_v4_299_quant
     "8B4DEA7E17A4B928D6D5B4BAD7D89F12",
     // tf_arcface_100_v1_quant
     "E512A03678E81DD73E20EE26CDEECDE6",
-    // unet_quant
-    "A9700F507EF8B50D90FDFA3973333DD4",
     // inception_v3_quant
     "97934CD9778FEA2B0E015485129F0E25",
     // inception_v2_224_quant
@@ -146,12 +146,13 @@ static const std::vector<std::string> XS = {
     "22B06D17F4DF7D71CCA0C6A421232006",
     // mobilenet_v2_b4_quant
     "1C4903CAD7FDD5827B6E01FD588237AA",
-     // mobilenet_v3_quant
+    // mobilenet_v3_quant
     "E7864733CDAEDF35A0FA6E442264DC0D",
     // mobilenet_v1_1.0_224_quant
     "AAD0A219FB32747A68F6FEAC20126B47",
 };
 }  // namespace model_size
+
 class VsiDriver : public VsiDevice {
    public:
     VsiDriver() : VsiDevice("vsi-npu") { initalizeEnv(); }
