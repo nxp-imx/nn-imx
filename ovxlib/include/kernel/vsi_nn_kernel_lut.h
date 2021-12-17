@@ -22,48 +22,54 @@
 *
 *****************************************************************************/
 
-#ifndef _VSI_NN_SP_LUT_H
-#define _VSI_NN_SP_LUT_H
-
-#if VX_STREAM_PROCESSOR_SUPPORT
+#ifndef _VSI_NN_KERNEL_LUT_H
+#define _VSI_NN_KERNEL_LUT_H
 
 #include <stdint.h>
-#include "kernel/vsi_nn_spinst.h"
 
 __BEGIN_DECLS
 
-#define VSI_NN_SP_LUT_MAX_SIZE  (1024)
+typedef int32_t vsi_nn_kernel_lut_act_e; enum
+{
+    VSI_NN_KERNEL_LUT_NONE             = 0,
+    VSI_NN_KERNEL_LUT_MISH             = 1,
+    VSI_NN_KERNEL_LUT_LOG              = 2,
+    VSI_NN_KERNEL_LUT_EXP              = 3,
+    VSI_NN_KERNEL_LUT_ELU              = 4,
+    VSI_NN_KERNEL_LUT_NEG              = 5,
+    VSI_NN_KERNEL_LUT_HSIGMOID         = 6,
+    VSI_NN_KERNEL_LUT_SOFT_PLUS        = 7,
+    VSI_NN_KERNEL_LUT_ERF              = 8,
+    VSI_NN_KERNEL_LUT_GELU             = 9,
+    VSI_NN_KERNEL_LUT_HGELU            = 10,
+    VSI_NN_KERNEL_LUT_RELU_KERAS       = 11,
+    VSI_NN_KERNEL_LUT_CLIP             = 12,
+    VSI_NN_KERNEL_LUT_SQUARE           = 13,
+};
 
-typedef struct _vsi_nn_sp_lut_
+#define VSI_NN_KERNEL_LUT_MAX_SIZE  (1024)
+#define VSI_NN_KERNEL_LUT_FP16_MAX  (57344)
+#define VSI_NN_KERNEL_LUT_FP16_MIN  (-57344)
+
+typedef struct _vsi_nn_kernel_lut_
 {
     float index;
     float val;
-} vsi_nn_sp_lut_t;
+} vsi_nn_kernel_lut_t;
 
-typedef int32_t vsi_nn_sp_activation_e; enum
+typedef struct  _vsi_nn_kernel_lut_params
 {
-    VSI_NN_SP_ACT_NONE             = 0,
-    VSI_NN_SP_ACT_LINEAR_EXP       = 1,
-    VSI_NN_SP_ACT_LINEAR_RSQRT     = 2,
-    VSI_NN_SP_ACT_LINEAR_SIGMOID   = 3,
-    VSI_NN_SP_ACT_RCP              = 4,
-};
-
-typedef struct  _vsi_nn_sp_lut_params
-{
-    vsi_nn_sp_activation_e act_type;
+    vsi_enum act_type;
     float params[16];
-} vsi_nn_sp_lut_params;
+} vsi_nn_kernel_lut_params;
 
-vsi_status vsi_nn_sp_lut
+vsi_status vsi_nn_kernel_lut
     (
     vx_lut index_lut,
     vx_lut output_lut,
-    vsi_nn_sp_lut_params *param
+    vsi_nn_kernel_lut_params *param
     );
 
 __END_DECLS
-
-#endif
 
 #endif

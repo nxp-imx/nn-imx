@@ -88,6 +88,7 @@ LOCAL_SRC_FILES += kernel/vsi_nn_kernel.c \
                    kernel/vsi_nn_kernel_node.c \
                    kernel/vsi_nn_kernel_param.c \
                    kernel/vsi_nn_kernel_gpu_shape_optimize.c \
+                   kernel/vsi_nn_kernel_lut.c \
                    kernel/vsi_nn_spinst.c \
                    kernel/vsi_nn_sp_unit_operation.c \
                    kernel/vsi_nn_sp_lut.c \

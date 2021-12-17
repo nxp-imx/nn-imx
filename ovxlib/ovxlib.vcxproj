@@ -502,6 +502,7 @@
     <ClInclude Include="include\kernel\vsi_nn_kernel.h"/>
     <ClInclude Include="include\kernel\vsi_nn_kernel_eltwise.h"/>
     <ClInclude Include="include\kernel\vsi_nn_kernel_gpu_shape_optimize.h"/>
+    <ClInclude Include="include\kernel\vsi_nn_kernel_lut.h"/>
     <ClInclude Include="include\kernel\vsi_nn_kernel_node.h"/>
     <ClInclude Include="include\kernel\vsi_nn_sp_lut.h"/>
     <ClInclude Include="include\kernel\vsi_nn_sp_unit_operation.h"/>
@@ -1453,6 +1454,9 @@
     <ClCompile Include="src\kernel\vsi_nn_kernel_gpu_shape_optimize.c">
       <ObjectFileName>$(IntDir)\src\kernel\</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="src\kernel\vsi_nn_kernel_lut.c">
+      <ObjectFileName>$(IntDir)\src\kernel\</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="src\kernel\vsi_nn_kernel_node.c">
       <ObjectFileName>$(IntDir)\src\kernel\</ObjectFileName>
     </ClCompile>
@@ -1477,9 +1481,6 @@
     <ClCompile Include="src\kernel\vx\a_times_b_plus_c_vx.c">
       <ObjectFileName>$(IntDir)\src\kernel\vx\</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="src\kernel\vx\clip_vx.c">
-      <ObjectFileName>$(IntDir)\src\kernel\vx\</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="src\kernel\vx\convolutional.c">
       <ObjectFileName>$(IntDir)\src\kernel\vx\</ObjectFileName>
     </ClCompile>
@@ -1489,9 +1490,6 @@
     <ClCompile Include="src\kernel\vx\eltwise_vx.c">
       <ObjectFileName>$(IntDir)\src\kernel\vx\</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="src\kernel\vx\erf_vx.c">
-      <ObjectFileName>$(IntDir)\src\kernel\vx\</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="src\kernel\vx\l2_normalize_vx.c">
       <ObjectFileName>$(IntDir)\src\kernel\vx\</ObjectFileName>
     </ClCompile>
@@ -1499,9 +1497,6 @@
       <ObjectFileName>$(IntDir)\src\kernel\vx\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\vx\prelu_vx.c">
-      <ObjectFileName>$(IntDir)\src\kernel\vx\</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="src\kernel\vx\relu_keras_vx.c">
       <ObjectFileName>$(IntDir)\src\kernel\vx\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\vx\softmax_vx.c">
