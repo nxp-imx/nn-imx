@@ -44,6 +44,7 @@ filegroup(
         "src/kernel/evis/*.c",
         "src/kernel/cpu/*.c",
         "src/kernel/vx/*.c",
+        "src/kernel/sp/*.c",
     ])
 )
 
@@ -80,6 +81,7 @@ filegroup(
         "src/custom/ops/kernel/evis/*.c",
         "src/custom/ops/kernel/cl/*.c",
         "src/custom/ops/kernel/cpu/*.c",
+        "src/custom/ops/kernel/sp/*.c",
     ])
 )
 
@@ -199,6 +201,10 @@ cc_library(
         "include/kernel/vsi_nn_kernel_eltwise.h",
         "include/kernel/vsi_nn_kernel_node.h",
         "include/kernel/vsi_nn_kernel_gpu_shape_optimize.h",
+        "include/kernel/vsi_nn_kernel_lut.h",
+        "include/kernel/vsi_nn_sp_lut.h",
+        "include/kernel/vsi_nn_sp_unit_operation.h",
+        "include/kernel/vsi_nn_spinst.h",
         "include/vsi_nn_error.h",
 
         # libnnext
@@ -270,6 +276,10 @@ cc_library(
         "src/kernel/vsi_nn_kernel_selector.c",
         "src/kernel/vsi_nn_kernel_node.c",
         "src/kernel/vsi_nn_kernel_param.c",
+        "src/kernel/vsi_nn_kernel_lut.c",
+        "src/kernel/vsi_nn_sp_lut.c",
+        "src/kernel/vsi_nn_sp_unit_operation.c",
+        "src/kernel/vsi_nn_spinst.c",
         "src/kernel/vsi_nn_gpu.c",
         "src/kernel/vsi_nn_kernel_gpu_shape_optimize.c",
         "src/libnnext/vsi_nn_libnnext_resource.c",

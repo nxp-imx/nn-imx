@@ -238,7 +238,7 @@ typedef enum
  *
  * @return VSI_SUCCESS on success, or error core otherwise.
  */
-OVXLIB_API vsi_status vsi_nn_sp_nop
+vsi_status vsi_nn_sp_nop
     (
     vsi_nn_spinst_inst_param *one_inst
     );
@@ -252,7 +252,7 @@ OVXLIB_API vsi_status vsi_nn_sp_nop
  * @param[in] dst  a unit output
  * @return VSI_SUCCESS on success, or error core otherwise.
  */
-OVXLIB_API vsi_status vsi_nn_sp_add
+vsi_status vsi_nn_sp_add
     (
     vsi_nn_spinst_inst_param *one_inst,
     uint8_t src0,
@@ -269,7 +269,7 @@ OVXLIB_API vsi_status vsi_nn_sp_add
  * @param[in] dst  a unit output
  * @return VSI_SUCCESS on success, or error core otherwise.
  */
-OVXLIB_API vsi_status vsi_nn_sp_sub
+vsi_status vsi_nn_sp_sub
     (
     vsi_nn_spinst_inst_param *one_inst,
     uint8_t src0,
@@ -284,7 +284,7 @@ OVXLIB_API vsi_status vsi_nn_sp_sub
  * @param[in] src0 a unit input
  * @return VSI_SUCCESS on success, or error core otherwise.
  */
-OVXLIB_API vsi_status vsi_nn_sp_fa_nop
+vsi_status vsi_nn_sp_fa_nop
     (
     vsi_nn_spinst_inst_param *one_inst,
     uint8_t src0
@@ -299,7 +299,7 @@ OVXLIB_API vsi_status vsi_nn_sp_fa_nop
  * @param[in] dst  a unit output
  * @return VSI_SUCCESS on success, or error core otherwise.
  */
-OVXLIB_API vsi_status vsi_nn_sp_mul
+vsi_status vsi_nn_sp_mul
     (
     vsi_nn_spinst_inst_param *one_inst,
     uint8_t src0,
@@ -316,7 +316,7 @@ OVXLIB_API vsi_status vsi_nn_sp_mul
  * @param[in] dst  a unit output
  * @return VSI_SUCCESS on success, or error core otherwise.
  */
-OVXLIB_API vsi_status vsi_nn_sp_mul_clamp
+vsi_status vsi_nn_sp_mul_clamp
     (
     vsi_nn_spinst_inst_param *one_inst,
     uint8_t src0,
@@ -332,7 +332,7 @@ OVXLIB_API vsi_status vsi_nn_sp_mul_clamp
  * @param[in] dst  a unit output
  * @return VSI_SUCCESS on success, or error core otherwise.
  */
-OVXLIB_API vsi_status vsi_nn_sp_move
+vsi_status vsi_nn_sp_move
     (
     vsi_nn_spinst_inst_param *one_inst,
     uint8_t src1,
@@ -348,7 +348,7 @@ OVXLIB_API vsi_status vsi_nn_sp_move
  * @param[in] dst  a unit output
  * @return VSI_SUCCESS on success, or error core otherwise.
  */
-OVXLIB_API vsi_status vsi_nn_sp_move_sel0
+vsi_status vsi_nn_sp_move_sel0
     (
     vsi_nn_spinst_inst_param *one_inst,
     uint8_t src0,
@@ -365,7 +365,7 @@ OVXLIB_API vsi_status vsi_nn_sp_move_sel0
  * @param[in] dst  a unit output
  * @return VSI_SUCCESS on success, or error core otherwise.
  */
-OVXLIB_API vsi_status vsi_nn_sp_move_sel1
+vsi_status vsi_nn_sp_move_sel1
     (
     vsi_nn_spinst_inst_param *one_inst,
     uint8_t src0,
@@ -381,7 +381,7 @@ OVXLIB_API vsi_status vsi_nn_sp_move_sel1
  * @param[in] dst  a unit output
  * @return VSI_SUCCESS on success, or error core otherwise.
  */
-OVXLIB_API vsi_status vsi_nn_sp_move_constant
+vsi_status vsi_nn_sp_move_constant
     (
     vsi_nn_spinst_inst_param *one_inst,
     float constant,
@@ -396,7 +396,7 @@ OVXLIB_API vsi_status vsi_nn_sp_move_constant
  * @param[in] dst  a unit output
  * @return VSI_SUCCESS on success, or error core otherwise.
  */
-OVXLIB_API vsi_status vsi_nn_sp_abs
+vsi_status vsi_nn_sp_abs
     (
     vsi_nn_spinst_inst_param *one_inst,
     uint8_t src1,
@@ -411,7 +411,7 @@ OVXLIB_API vsi_status vsi_nn_sp_abs
  * @param[in] dst  a unit output
  * @return VSI_SUCCESS on success, or error core otherwise.
  */
-OVXLIB_API vsi_status vsi_nn_sp_pwl_setup0
+vsi_status vsi_nn_sp_pwl_setup0
     (
     vsi_nn_spinst_inst_param *one_inst,
     uint8_t src0,
@@ -426,7 +426,7 @@ OVXLIB_API vsi_status vsi_nn_sp_pwl_setup0
  * @param[in] dst  a unit output
  * @return VSI_SUCCESS on success, or error core otherwise.
  */
-OVXLIB_API vsi_status vsi_nn_sp_pwl_sigmoid
+vsi_status vsi_nn_sp_pwl_sigmoid
     (
     vsi_nn_spinst_inst_param *one_inst,
     uint8_t src0,
@@ -441,7 +441,7 @@ OVXLIB_API vsi_status vsi_nn_sp_pwl_sigmoid
  * @param[in] dst  a unit output
  * @return VSI_SUCCESS on success, or error core otherwise.
  */
-OVXLIB_API vsi_status vsi_nn_sp_pwl_tanh
+vsi_status vsi_nn_sp_pwl_tanh
     (
     vsi_nn_spinst_inst_param *one_inst,
     uint8_t src0,

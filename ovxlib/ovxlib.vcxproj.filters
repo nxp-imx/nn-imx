@@ -789,10 +789,10 @@
     <ClCompile Include="src\kernel\sp\l2_normalize_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
-  <ClCompile Include="src\kernel\sp\layer_normalization_sp.c">
+    <ClCompile Include="src\kernel\sp\layer_normalization_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
-    <ClCompile Include="src\kernel\sp\lstmunit_activation_sp.c">
+  <ClCompile Include="src\kernel\sp\lstmunit_activation_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\sp\maximum_sp.c">
@@ -819,6 +819,9 @@
     <ClCompile Include="src\kernel\vsi_nn_kernel_gpu_shape_optimize.c">
       <Filter>Source Files\kernel</Filter>
     </ClCompile>
+    <ClCompile Include="src\kernel\vsi_nn_kernel_lut.c">
+      <Filter>Source Files\kernel</Filter>
+    </ClCompile>
     <ClCompile Include="src\kernel\vsi_nn_kernel_node.c">
       <Filter>Source Files\kernel</Filter>
     </ClCompile>
@@ -843,9 +846,6 @@
     <ClCompile Include="src\kernel\vx\a_times_b_plus_c_vx.c">
       <Filter>Source Files\kernel\vx</Filter>
     </ClCompile>
-    <ClCompile Include="src\kernel\vx\clip_vx.c">
-      <Filter>Source Files\kernel\vx</Filter>
-    </ClCompile>
     <ClCompile Include="src\kernel\vx\convolutional.c">
       <Filter>Source Files\kernel\vx</Filter>
     </ClCompile>
@@ -855,9 +855,6 @@
     <ClCompile Include="src\kernel\vx\eltwise_vx.c">
       <Filter>Source Files\kernel\vx</Filter>
     </ClCompile>
-    <ClCompile Include="src\kernel\vx\erf_vx.c">
-      <Filter>Source Files\kernel\vx</Filter>
-    </ClCompile>
     <ClCompile Include="src\kernel\vx\l2_normalize_vx.c">
       <Filter>Source Files\kernel\vx</Filter>
     </ClCompile>
@@ -865,9 +862,6 @@
       <Filter>Source Files\kernel\vx</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\vx\prelu_vx.c">
-      <Filter>Source Files\kernel\vx</Filter>
-    </ClCompile>
-    <ClCompile Include="src\kernel\vx\relu_keras_vx.c">
       <Filter>Source Files\kernel\vx</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\vx\softmax_vx.c">
@@ -1521,6 +1515,9 @@
       <Filter>Header Files\kernel</Filter>
     </ClInclude>
     <ClInclude Include="include\kernel\vsi_nn_kernel_gpu_shape_optimize.h">
+      <Filter>Header Files\kernel</Filter>
+    </ClInclude>
+    <ClInclude Include="include\kernel\vsi_nn_kernel_lut.h">
       <Filter>Header Files\kernel</Filter>
     </ClInclude>
     <ClInclude Include="include\kernel\vsi_nn_kernel_node.h">
