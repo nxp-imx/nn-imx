@@ -109,7 +109,7 @@ static const std::vector<std::string> M = {
     // mobilenet_v2_0.75_192
     "DAAC1E40DD63B67003671E8E63B7338F",
 };
-static const std::vector<std::string> M = {
+static const std::vector<std::string> S = {
     // vgg_quant
     "98355ABE3A91B0984C414D71B9A707CC",
     // pynet_quant
