@@ -246,11 +246,11 @@ REGISTER_CONV_OPENVX_KERNEL( conv1d )
 
     _build_vx_conv2d_param(
             &vxparam,
-            vsi_nn_kernel_param_get_int32(params, "stride"), 1,
+            1, vsi_nn_kernel_param_get_int32(params, "stride"),
+            0, 0,
             vsi_nn_kernel_param_get_int32(params, "pad_front"),
             vsi_nn_kernel_param_get_int32(params, "pad_end"),
-            0,0,
-            vsi_nn_kernel_param_get_int32(params, "dilation"), 1,
+            1, vsi_nn_kernel_param_get_int32(params, "dilation"),
             0,
             vsi_nn_kernel_param_get_int32(params, "overflow_policy"),
             vsi_nn_kernel_param_get_int32(params, "rounding_policy"),
@@ -258,12 +258,12 @@ REGISTER_CONV_OPENVX_KERNEL( conv1d )
             );
 
     temp_tensors[0] = _expand_tensor_dim( inputs[0]->t,
-            (vsi_ssize_t*)inputs[0]->attr.size, inputs[0]->attr.dim_num, 0 );
+            (vsi_ssize_t*)inputs[0]->attr.size, inputs[0]->attr.dim_num, 1 );
     CHECK_PTR_FAIL_GOTO( temp_tensors[0], "Expand input dim fail.", final );
     if (inputs[1]->attr.dtype.qnt_type != VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC)
     {
         temp_tensors[1] = _expand_tensor_dim( inputs[1]->t,
-                (vsi_ssize_t*)inputs[1]->attr.size, inputs[1]->attr.dim_num, 0 );
+                (vsi_ssize_t*)inputs[1]->attr.size, inputs[1]->attr.dim_num, 1 );
         CHECK_PTR_FAIL_GOTO( temp_tensors[1], "Expand kernel dim fail.", final );
     }
     else
@@ -277,8 +277,9 @@ REGISTER_CONV_OPENVX_KERNEL( conv1d )
 
         memcpy(&attr, &inputs[1]->attr, sizeof(vsi_nn_tensor_attr_t));
 
-        attr.size[0] = 1;
-        for (i = 1; i <= inputs[1]->attr.dim_num; i++)
+        attr.size[0] =  inputs[1]->attr.size[0];
+        attr.size[1] =  1;
+        for (i = 2; i <= inputs[1]->attr.dim_num; i++)
         {
             attr.size[i] = inputs[1]->attr.size[i - 1];
         }
@@ -290,7 +291,7 @@ REGISTER_CONV_OPENVX_KERNEL( conv1d )
     }
 
     temp_tensors[2] = _expand_tensor_dim( outputs[0]->t,
-            (vsi_ssize_t*)outputs[0]->attr.size, outputs[0]->attr.dim_num, 0 );
+            (vsi_ssize_t*)outputs[0]->attr.size, outputs[0]->attr.dim_num, 1 );
     CHECK_PTR_FAIL_GOTO( temp_tensors[2], "Expand output dim fail.", final );
 
     node = vxConvolutionLayer( graph->g,
@@ -321,11 +322,11 @@ REGISTER_CONV_OPENVX_KERNEL( depthwise_conv1d )
 
     _build_vx_conv2d_param(
             &vxparam,
-            vsi_nn_kernel_param_get_int32(params, "stride"), 1,
+            1, vsi_nn_kernel_param_get_int32(params, "stride"),
+            0, 0,
             vsi_nn_kernel_param_get_int32(params, "pad_front"),
             vsi_nn_kernel_param_get_int32(params, "pad_end"),
-            0,0,
-            vsi_nn_kernel_param_get_int32(params, "dilation"), 1,
+            1, vsi_nn_kernel_param_get_int32(params, "dilation"),
             vsi_nn_kernel_param_get_int32(params, "multiplier"),
             vsi_nn_kernel_param_get_int32(params, "overflow_policy"),
             vsi_nn_kernel_param_get_int32(params, "rounding_policy"),
@@ -333,15 +334,15 @@ REGISTER_CONV_OPENVX_KERNEL( depthwise_conv1d )
             );
 
     temp_tensors[0] = _expand_tensor_dim( inputs[0]->t,
-            (vsi_ssize_t*)inputs[0]->attr.size, inputs[0]->attr.dim_num, 0 );
+            (vsi_ssize_t*)inputs[0]->attr.size, inputs[0]->attr.dim_num, 1 );
     CHECK_PTR_FAIL_GOTO( temp_tensors[0], "Expand input dim fail.", final );
 
     if (inputs[1]->attr.dtype.qnt_type != VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC)
     {
         vsi_size_t new_w_shape[VSI_NN_MAX_DIM_NUM] = { 0 };
         uint32_t new_w_rank = 4;
-        new_w_shape[0] = 1;
-        new_w_shape[1] = inputs[1]->attr.size[0];
+        new_w_shape[0] = inputs[1]->attr.size[0];
+        new_w_shape[1] = 1;
         new_w_shape[2] = 1;
         for (i = 1; i < (int32_t)(inputs[1]->attr.dim_num); i++)
         {
@@ -364,8 +365,8 @@ REGISTER_CONV_OPENVX_KERNEL( depthwise_conv1d )
 
         memcpy(&attr, &inputs[1]->attr, sizeof(vsi_nn_tensor_attr_t));
 
-        attr.size[0] = 1;
-        attr.size[1] = inputs[1]->attr.size[0];
+        attr.size[0] = inputs[1]->attr.size[0];
+        attr.size[1] = 1;
         attr.size[2] = 1;
         for (i = 1; i < inputs[1]->attr.dim_num; i++)
         {
@@ -381,7 +382,7 @@ REGISTER_CONV_OPENVX_KERNEL( depthwise_conv1d )
     }
 
     temp_tensors[2] = _expand_tensor_dim( outputs[0]->t,
-            (vsi_ssize_t*)outputs[0]->attr.size, outputs[0]->attr.dim_num, 0 );
+            (vsi_ssize_t*)outputs[0]->attr.size, outputs[0]->attr.dim_num, 1 );
     CHECK_PTR_FAIL_GOTO( temp_tensors[2], "Expand output dim fail.", final );
 
     if( need_explicit_padding )
