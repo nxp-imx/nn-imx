@@ -1403,6 +1403,9 @@
     <ClCompile Include="src\kernel\evis\upsamplescale_evis.c">
       <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="src\kernel\sp\batch_norm_sp.c">
+      <ObjectFileName>$(IntDir)\src\kernel\sp\</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="src\kernel\sp\eltwise_sp.c">
       <ObjectFileName>$(IntDir)\src\kernel\sp\</ObjectFileName>
     </ClCompile>
@@ -1479,6 +1482,9 @@
       <ObjectFileName>$(IntDir)\src\kernel\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\vx\a_times_b_plus_c_vx.c">
+      <ObjectFileName>$(IntDir)\src\kernel\vx\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\kernel\vx\batch_norm_vx.c">
       <ObjectFileName>$(IntDir)\src\kernel\vx\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\vx\convolutional.c">
