@@ -172,8 +172,8 @@ static vsi_status op_optimize
     /*
         insert a reshape node before and after 3D instance_norm
     */
-    shape[0] = 1;
-    shape[1] = inputs[0]->attr.size[0];
+    shape[0] = inputs[0]->attr.size[0];
+    shape[1] = 1;
     shape[2] = inputs[0]->attr.size[1];
     shape[3] = inputs[0]->attr.size[2];
     dim = 4;
