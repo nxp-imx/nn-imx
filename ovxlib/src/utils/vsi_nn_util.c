@@ -1080,7 +1080,7 @@ vsi_bool vsi_nn_is_same_quant_type(
                 result = TRUE;
             }
             break;
-
+        case VSI_NN_QNT_TYPE_AFFINE_SYMMETRIC:
         case VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC:
             if (src->attr.dtype.scale == dst->attr.dtype.scale &&
                 src->attr.dtype.zero_point == dst->attr.dtype.zero_point)
@@ -1178,6 +1178,7 @@ float vsi_nn_get_tensor_scale
             }
         }
             break;
+        case VSI_NN_QNT_TYPE_AFFINE_SYMMETRIC:
         case VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC:
             scale = tensor->attr.dtype.scale;
             break;
@@ -1197,6 +1198,7 @@ int32_t vsi_nn_get_tensor_zero_point
 
     switch (tensor->attr.dtype.qnt_type)
     {
+        case VSI_NN_QNT_TYPE_AFFINE_SYMMETRIC:
         case VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC:
             zero_point = tensor->attr.dtype.zero_point;
             break;

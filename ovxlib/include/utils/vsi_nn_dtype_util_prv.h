@@ -442,6 +442,7 @@ static inline vsi_status dtype_to_float32
             case VSI_NN_QNT_TYPE_DFP:
                 *dst = dfp_to_fp32( src_value, src_dtype->fl, src_dtype->vx_type );
                 break;
+            case VSI_NN_QNT_TYPE_AFFINE_SYMMETRIC:
             case VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC:
                 *dst = affine_to_fp32( src_value,
                     src_dtype->scale, src_dtype->zero_point, src_dtype->vx_type );
@@ -493,6 +494,7 @@ static inline vsi_status float32_to_dtype
             case VSI_NN_QNT_TYPE_DFP:
                 dst_value = fp32_to_dfp( src, dst_dtype->fl, dst_dtype->vx_type );
                 break;
+            case VSI_NN_QNT_TYPE_AFFINE_SYMMETRIC:
             case VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC:
                 dst_value = fp32_to_affine( src,
                     dst_dtype->scale, dst_dtype->zero_point, dst_dtype->vx_type );

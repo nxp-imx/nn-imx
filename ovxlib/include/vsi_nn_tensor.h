@@ -71,15 +71,17 @@ typedef enum
 typedef enum
 {
     /** none quantized */
-    VSI_NN_QNT_TYPE_NONE = 0,
+    VSI_NN_QNT_TYPE_NONE = 0x0,
     /** dynamic fixed point */
-    VSI_NN_QNT_TYPE_DFP = VX_QUANT_DYNAMIC_FIXED_POINT,
+    VSI_NN_QNT_TYPE_DFP = 0x1,
     /** affine asymmetric */
-    VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC = VX_QUANT_AFFINE_SCALE,
+    VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC = 0x2,
     /** affine perchannel symmetric */
-    VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC = 0x3,/*VX_QUANT_AFFINE_SCALE_PER_CHANNEL*/
+    VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC = 0x3,
     /** affine symmetric */
-    VSI_NN_QNT_TYPE_AFFINE_SYMMETRIC = VX_QUANT_AFFINE_SCALE,
+    VSI_NN_QNT_TYPE_AFFINE_SYMMETRIC = 0x4,
+    /** affine perchannel asymmetric */
+    VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_ASYMMETRIC = 0x5,
     /** undefined type */
     VSI_NN_QNT_TYPE_NA = 0xff,
 } vsi_nn_qnt_type_e;
