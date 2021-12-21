@@ -411,6 +411,7 @@ vsi_bool vsi_nn_QuantCheck
                 bias->attr.dtype.fl);
         }
         break;
+    case VSI_NN_QNT_TYPE_AFFINE_SYMMETRIC:
     case VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC:
     if (weight->attr.dtype.qnt_type == VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC)
     {
@@ -462,7 +463,8 @@ vsi_bool vsi_nn_DtypeCompare
             return FALSE;
         }
     }
-    else if(dtype0->qnt_type == VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC)
+    else if( dtype0->qnt_type == VSI_NN_QNT_TYPE_AFFINE_SYMMETRIC ||
+             dtype0->qnt_type == VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC )
     {
         const float diff = (float)1e-5;
         if(dtype0->zero_point != dtype1->zero_point)

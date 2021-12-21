@@ -25,6 +25,7 @@
 #include <string.h>
 #include <stdarg.h>
 
+#include "vsi_nn_platform.h"
 #include "vsi_nn_prv.h"
 #include "vsi_nn_log.h"
 #include "vsi_nn_graph.h"
@@ -126,6 +127,14 @@ static void print_tensor
         count = snprintf( &ext_attr[0], _EXT_ATTR_BUF_SZ,
             "SYM PERCHANNEL axis=%d, count=%d",
             tensor->attr.dtype.channel_dim, tensor->attr.dtype.scale_dim );
+        ext_attr[count] = 0;
+        break;
+    case VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_ASYMMETRIC:
+        count = snprintf(&ext_attr[0],
+                         _EXT_ATTR_BUF_SZ,
+                         "ASYM PERCHANNEL axis=%d, count=%d",
+                         tensor->attr.dtype.channel_dim,
+                         tensor->attr.dtype.scale_dim);
         ext_attr[count] = 0;
         break;
 #endif
@@ -308,6 +317,7 @@ static vsi_bool _init_tensor
     vsi_bool ret;
     vx_tensor_create_params_t params;
     float * scales = NULL;
+    int32_t * zeroPoints = NULL;
     int32_t * null_zp = NULL;
     vx_size size_vxsize[VSI_NN_MAX_DIM_NUM] = {0};
     vx_uint32 size_u32[VSI_NN_MAX_DIM_NUM] = {0};
@@ -332,18 +342,25 @@ static vsi_bool _init_tensor
     (void)size_vxsize;
 #endif
     params.data_format = (vsi_enum)tensor->attr.dtype.vx_type;
-    params.quant_format = (vsi_enum)tensor->attr.dtype.qnt_type;
     switch( tensor->attr.dtype.qnt_type )
     {
     case VSI_NN_QNT_TYPE_DFP:
+        params.quant_format = (vsi_enum)VX_QUANT_DYNAMIC_FIXED_POINT;
         params.quant_data.dfp.fixed_point_pos = (uint8_t)tensor->attr.dtype.fl;
         break;
+    case VSI_NN_QNT_TYPE_AFFINE_SYMMETRIC:
     case VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC:
+        params.quant_format = (vsi_enum)VX_QUANT_AFFINE_SCALE;
         params.quant_data.affine.scale = tensor->attr.dtype.scale;
         params.quant_data.affine.zeroPoint = (int32_t)tensor->attr.dtype.zero_point;
         break;
     case VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC:
 #ifdef VSI_PERCHANNEL_QUANTIZATION_SUPPORT
+        #ifdef VX_QUANT_AFFINE_SCALE_PER_CHANNEL
+            params.quant_format = (vsi_enum)VX_QUANT_AFFINE_SCALE_PER_CHANNEL;
+        #else
+            params.quant_format = (vsi_enum)VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC;
+        #endif
         // This is a hack that driver doesn't support const scales
         scales = (float*)malloc(sizeof(float) * tensor->attr.dtype.scale_dim);
         memcpy(scales, tensor->attr.dtype.scales, tensor->attr.dtype.scale_dim * sizeof(float));
@@ -362,6 +379,35 @@ static vsi_bool _init_tensor
         break;
 #else
     VSILOGE( "can't support qnt_type VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC." );
+#endif
+    case VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_ASYMMETRIC:
+#ifdef VSI_PERCHANNEL_QUANTIZATION_SUPPORT
+        #ifdef VX_QUANT_AFFINE_SCALE_PER_CHANNEL
+            params.quant_format = (vsi_enum)VX_QUANT_AFFINE_SCALE_PER_CHANNEL;
+        #else
+            params.quant_format = (vsi_enum)VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC;
+        #endif
+        // This is a hack that driver doesn't support const scales
+        scales = (float*)malloc(sizeof(float) * tensor->attr.dtype.scale_dim);
+        memcpy(scales,
+               tensor->attr.dtype.scales,
+               tensor->attr.dtype.scale_dim * sizeof(float));
+        zeroPoints = (int32_t*)malloc(sizeof(int32_t) * tensor->attr.dtype.zero_points_dim);
+        memcpy(zeroPoints,
+               tensor->attr.dtype.zero_points,
+               tensor->attr.dtype.zero_points_dim * sizeof(int32_t));
+        params.quant_data.affinePerChannel.channelDim =
+            tensor->attr.dtype.channel_dim;
+        params.quant_data.affinePerChannel.scaleCount =
+            tensor->attr.dtype.scale_dim;
+        params.quant_data.affinePerChannel.scales = scales;
+        params.quant_data.affinePerChannel.zeroPoint = zeroPoints;
+        params.quant_data.affinePerChannel.zeroPointCount = tensor->attr.dtype.zero_points_dim;
+        break;
+#else
+        VSILOGE(
+            "can't support qnt_type "
+            "VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_ASYMMETRIC.");
 #endif
     default:
         break;
@@ -412,6 +458,10 @@ static vsi_bool _init_tensor
                     if( scales )
                     {
                         free(scales);
+                    }
+                    if( zeroPoints )
+                    {
+                        free(zeroPoints);
                     }
                     if(null_zp)
                     {
@@ -516,6 +566,10 @@ static vsi_bool _init_tensor
     if( scales )
     {
         free(scales);
+    }
+    if (zeroPoints)
+    {
+        free(zeroPoints);
     }
     if(null_zp)
     {
@@ -999,7 +1053,6 @@ uint8_t * vsi_nn_ConvertTensorToData
     {
         return data;
     }
-
 } /* vsi_nn_ConvertTensorToData() */
 
 /*
@@ -1101,6 +1154,7 @@ uint8_t * vsi_nn_ConvertRawTensorToData2
         status = vxQueryTensor(tensor, VX_TENSOR_FIXED_POINT_POS,
             &(attr->dtype.fl), sizeof(int8_t));
         break;
+    case VSI_NN_QNT_TYPE_AFFINE_SYMMETRIC:
     case VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC:
         status = vxQueryTensor(tensor, VX_TENSOR_ZERO_POINT,
             &(attr->dtype.zero_point), sizeof(int32_t));
@@ -2178,6 +2232,7 @@ vsi_status vsi_nn_vxGetTensorAttr
             &(attr->dtype.fl), sizeof(int8_t));
         TEST_CHECK_STATUS( status, final );
         break;
+    case VSI_NN_QNT_TYPE_AFFINE_SYMMETRIC:
     case VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC:
         status = vxQueryTensor(tensor, VX_TENSOR_ZERO_POINT,
             &(attr->dtype.zero_point), sizeof(int32_t));
