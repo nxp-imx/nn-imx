@@ -1,4 +1,26 @@
 ############################################################################
+Release notes for Ovxlib 1.1.37
+
+New Features:
+    1. add 'reshape2' to handle 40bit vitural adress app reshape
+    2. Add limited support 'conv3d', depth dimension do not support dilation and pad
+
+Feature Refine:
+    1. add new data type support for 'floordiv'
+    2. refine 'hard_sigmoid' to support parameter 'alpha' and 'beta'
+
+Bug Fixing:
+    1. fix gather_nd crash issue when coordinate is 4D
+    2. fix instance_normalization bfloat16 crash issue
+    3. fix 'gather' couldn't get correct result issue
+    4. fix 'group_normalization' crash issue
+    5. fix 'scatter_nd_update' crash issue
+    6. fix 'reducemax','reducemin','reduceprod' could get correct issue
+    7. fix crash issue when runing 40bit VA case with shape contains -1
+    8. fix 'gather_nd' crash issue
+    9. fix 'matrixmul' crash issue when the input tensor is 1D
+
+############################################################################
 Release notes for Ovxlib 1.1.34
 
 New Features:
