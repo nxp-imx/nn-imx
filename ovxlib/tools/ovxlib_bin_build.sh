@@ -29,27 +29,12 @@ export GPU_CONFIG_FILE=$AQROOT/compiler/vclcompiler/viv_gpu.config
 
 function init()
 {
-    chmod +x ./build5x.sh
-    cd $AQROOT
-    if [ "$BUILD_TOOL" = "x86_x64_gcc" ]; then
-        ./build5x.sh -lxts ${BUILD_CONFIG} XAQ2 X86_NO_KERNEL FBVDK > $AQROOT/setenv
-    fi
-
-    if [ "$BUILD_TOOL" = "x86_gcc" ]; then
-        ./build5x.sh -lxts ${BUILD_CONFIG} XAQ2 i386_NO_KERNEL FBVDK > $AQROOT/setenv
-    fi
-
-    if [ ! -e "$AQROOT/setenv" ]; then
-        echo "ERROR: not support this build tool: $BUILD_TOOL"
-        exit 1
-    fi
-
     echo "== check GPU config file ..."
     GPU_CONFIG_FILE=$AQROOT/compiler/vclcompiler/viv_gpu.config
     if [ "$GPU_CONFIG" = "default" ]; then
         GPU_CONFIG_FILE=$AQROOT/compiler/vclcompiler/viv_gpu.config
     else
-        GPU_CONFIG_FILE=$AQROOT/compiler/vclcompiler/viv_${GPU_CONFIG}.config
+        GPU_CONFIG_FILE=$(ls $AQROOT/compiler/vclcompiler/*${GPU_CONFIG}.config)
     fi
     if [ ! -e $GPU_CONFIG_FILE ]; then
         echo "ERROR: missing GPU config file: $GPU_CONFIG_FILE"
@@ -70,7 +55,20 @@ function check_vcCompiler()
         cd $AQROOT
         . ./setenv
         export CFLAGS="-w ${CFLAGS}"
-        $cc -j4 install || exit 1
+
+        test -e "$AQARCH/reg" || exit $?
+        cd $AQARCH/reg
+        $cc || exit $?
+
+        local depends=(hal/user hal/user/arch hal/os/linux/user compiler/libVSC compiler/libCLC)
+        for p in ${depends[*]}
+        do
+            if [ -e "$AQROOT/$p" ]; then
+                cd $AQROOT/$p
+                $cc install || exit $?
+            fi
+        done
+
         cd $AQROOT/compiler/vclcompiler/source
         $cc install || exit 1
         cp -fv $SDK_DIR/samples/vclcompiler/vcCompiler $AQROOT
@@ -79,55 +77,18 @@ function check_vcCompiler()
     fi
 }
 
-function cleanup()
-{
-
-   if [ -e $AQROOT/setenv ]; then
-       cd $AQROOT
-       . ./setenv
-       cd $AQROOT/compiler/vclcompiler/source
-       $cc clean
-       cd $AQROOT
-       $cc clean
-       if [ -e "$AQROOT/sdk/include" ]; then
-           rm -rf $AQROOT/sdk/include
-       fi
-       cd $AQROOT/driver/khronos/libOpenVX/kernelBinaries/nnvxcBinaries/nnvxc_kernels
-       rm -f *.gcPGM *.vxgcSL
-   fi
-}
-
 function convert_vxc_shader()
 {
     echo "== convert VXC shader to header files ..."
     if [ ! -e "$AQROOT/sdk/include" ]; then
        cd $AQROOT/sdk; ln -s inc include
     fi
-    cd $OVXLIB/src/libnnext/ops/vx
+
     VX_BIN_PATH=$OVXLIB/include/libnnext/vx_bin
     if [ ! -e "$VX_BIN_PATH" ]; then
        mkdir -p $VX_BIN_PATH
     fi
-
-    rm -f *.gcPGM *.vxgcSL vxc_*.h $VX_BIN_PATH/*.h
-
-    #echo python $AQROOT/tools/bin/ExactVXC.py -i $AQROOT/driver/khronos/libOpenVX/driver/src/gc_vx_layer.c
-    #python $AQROOT/tools/bin/ExactVXC.py -i gc_vx_layer.c || exit 1
-
-    #echo python $AQROOT/tools/bin/myExtract.py gc_vx_layer.c "$GPU_CONFIG" || exit 1
-    #python $AQROOT/tools/bin/myExtract.py gc_vx_layer.c "$GPU_CONFIG" || exit 1
-
-    echo "== generating $VX_BIN_PATH/vxc_binaries.h ..."
-
-    for vxFile in `ls *.vx | sed "s/\.vx//"`
-    do
-        if [ "${vxFile}" != "vsi_nn_kernel_header" ]; then
-            echo $AQROOT/vcCompiler -f${GPU_CONFIG_FILE} -O0 -allkernel -o${vxFile} -m vsi_nn_kernel_header.vx ${vxFile}.vx
-            $AQROOT/vcCompiler -f${GPU_CONFIG_FILE} -O0 -allkernel -o${vxFile} -m vsi_nn_kernel_header.vx ${vxFile}.vx || exit 1
-            echo "python $AQROOT/tools/bin/ConvertPGMToH.py -i ${vxFile}_all.gcPGM -o $VX_BIN_PATH/vxc_bin_${vxFile}.h"
-            python $AQROOT/tools/bin/ConvertPGMToH.py -i ${vxFile}_all.gcPGM -o $VX_BIN_PATH/vxc_bin_${vxFile}.h || exit 1
-        fi
-    done
+    rm -f $VX_BIN_PATH/*.h
 
     (
 cat<<EOF
@@ -163,12 +124,71 @@ cat<<EOF
 EOF
     )>$VX_BIN_PATH/vxc_binaries.h
 
+    cd $OVXLIB/src/libnnext/ops/vx
+    rm -f *.gcPGM *.vxgcSL
+
+    #echo python $AQROOT/tools/bin/ExactVXC.py -i $AQROOT/driver/khronos/libOpenVX/driver/src/gc_vx_layer.c
+    #python $AQROOT/tools/bin/ExactVXC.py -i gc_vx_layer.c || exit 1
+
+    #echo python $AQROOT/tools/bin/myExtract.py gc_vx_layer.c "$GPU_CONFIG" || exit 1
+    #python $AQROOT/tools/bin/myExtract.py gc_vx_layer.c "$GPU_CONFIG" || exit 1
+
+    echo "== generating $VX_BIN_PATH/vxc_binaries.h ..."
+
     for vxFile in `ls *.vx | sed "s/\.vx//"`
     do
+    {
         if [ "${vxFile}" != "vsi_nn_kernel_header" ]; then
-            echo "#include \"vxc_bin_${vxFile}.h\"" >> $VX_BIN_PATH/vxc_binaries.h
+            echo $AQROOT/vcCompiler -f${GPU_CONFIG_FILE} -allkernel -cl-viv-gcsl-driver-image \
+              -o${vxFile}_vx -m vsi_nn_kernel_header.vx ${vxFile}.vx
+            $AQROOT/vcCompiler -f${GPU_CONFIG_FILE} -allkernel -cl-viv-gcsl-driver-image \
+              -o${vxFile}_vx -m vsi_nn_kernel_header.vx ${vxFile}.vx || exit 1
+            echo "python $AQROOT/tools/bin/ConvertPGMToH.py -i ${vxFile}_vx_all.gcPGM \
+              -o $VX_BIN_PATH/vxc_bin_${vxFile}_vx.h"
+            python $AQROOT/tools/bin/ConvertPGMToH.py -i ${vxFile}_vx_all.gcPGM \
+              -o $VX_BIN_PATH/vxc_bin_${vxFile}_vx.h || exit 1
+            echo "#include \"vxc_bin_${vxFile}_vx.h\"" >> $VX_BIN_PATH/vxc_binaries.h
         fi
+    } &
     done
+
+    wait
+
+    python $AQROOT/tools/bin/ExtractVXCBins.py $OVXLIB/src/libnnext/ops/vx
+    echo "== convert VXC shader to header files: success!"
+    echo "== convert VXC shader to header files: success!"
+    echo "== convert VXC shader to header files: success!"
+    rm -f *.gcPGM *.vxgcSL _binary_interface.c _binary_interface.h
+
+    cd $OVXLIB/src/libnnext/ops/cl
+    rm -f *.gcPGM *.vxgcSL *.clgcSL
+
+    for vxFile in `ls *.cl | sed "s/\.cl//"`
+    do
+    {
+        if [ "${vxFile}" != "eltwise_ops_helper" ]; then
+            cp ${vxFile}.cl ${vxFile}.vx
+            echo $AQROOT/vcCompiler -f${GPU_CONFIG_FILE} -allkernel -cl-viv-gcsl-driver-image \
+              -o${vxFile}_cl -m eltwise_ops_helper.cl ${vxFile}.vx
+            $AQROOT/vcCompiler -f${GPU_CONFIG_FILE} -allkernel -cl-viv-gcsl-driver-image \
+              -o${vxFile}_cl -m eltwise_ops_helper.cl ${vxFile}.vx || exit 1
+            echo "python $AQROOT/tools/bin/ConvertPGMToH.py -i ${vxFile}_cl_all.gcPGM \
+              -o $VX_BIN_PATH/vxc_bin_${vxFile}_cl.h"
+            python $AQROOT/tools/bin/ConvertPGMToH.py -i ${vxFile}_cl_all.gcPGM \
+              -o $VX_BIN_PATH/vxc_bin_${vxFile}_cl.h || exit 1
+            echo "#include \"vxc_bin_${vxFile}_cl.h\"" >> $VX_BIN_PATH/vxc_binaries.h
+            rm ${vxFile}.vx
+        fi
+    } &
+    done
+
+    wait
+
+    python $AQROOT/tools/bin/ExtractVXCBins.py $OVXLIB/src/libnnext/ops/cl
+    echo "== convert CL shader to header files: success!"
+    echo "== convert CL shader to header files: success!"
+    echo "== convert CL shader to header files: success!"
+    rm -f *.gcPGM *.vxgcSL *.clgcSL _binary_interface.c _binary_interface.h
 
     (
 cat<<EOF
@@ -184,16 +204,18 @@ typedef struct _vsi_nn_vx_bin_resource_item_type
     uint32_t len;
 } vsi_nn_vx_bin_resource_item_type;
 
-const vsi_nn_vx_bin_resource_item_type vx_bin_resource_items[] =
+const vsi_nn_vx_bin_resource_item_type vx_bin_resource_items_vx[] =
 {
 EOF
     )>>$VX_BIN_PATH/vxc_binaries.h
 
+    cd $OVXLIB/src/libnnext/ops/vx
     for vxFile in `ls *.vx | sed "s/\.vx//"`
     do
         vxFileUpper=`echo ${vxFile} | tr 'a-z' 'A-Z'`
         if [ "${vxFile}" != "vsi_nn_kernel_header" ]; then
-            echo "    {\"${vxFile}\", vxcBin${vxFile}, VXC_BIN_${vxFileUpper}_LEN}," >> $VX_BIN_PATH/vxc_binaries.h
+            echo "    {\"${vxFile}_vx\", vxcBin${vxFile}_vx, VXC_BIN_${vxFileUpper}_VX_LEN}," \
+            >> $VX_BIN_PATH/vxc_binaries.h
         fi
     done
 
@@ -201,28 +223,39 @@ EOF
 cat<<EOF
 };
 
-const int vx_bin_resource_items_cnt = _cnt_of_array(vx_bin_resource_items);
+const int vx_bin_resource_items_vx_cnt = _cnt_of_array(vx_bin_resource_items_vx);
+
+const vsi_nn_vx_bin_resource_item_type vx_bin_resource_items_cl[] =
+{
+EOF
+    )>>$VX_BIN_PATH/vxc_binaries.h
+
+
+    cd $OVXLIB/src/libnnext/ops/cl
+    for vxFile in `ls *.cl | sed "s/\.cl//"`
+    do
+        vxFileUpper=`echo ${vxFile} | tr 'a-z' 'A-Z'`
+        if [ "${vxFile}" != "eltwise_ops_helper" ]; then
+            echo "    {\"${vxFile}_cl\", vxcBin${vxFile}_cl, VXC_BIN_${vxFileUpper}_CL_LEN}," \
+            >> $VX_BIN_PATH/vxc_binaries.h
+        fi
+    done
+    (
+cat<<EOF
+};
+
+const int vx_bin_resource_items_cl_cnt = _cnt_of_array(vx_bin_resource_items_cl);
 
 #endif
 EOF
     )>>$VX_BIN_PATH/vxc_binaries.h
 
-    echo
-
-    #python $AQROOT/tools/bin/ExtractVXCBins.py $OVXLIB/src/libnnext/ops/vx
-    echo "== convert VXC shader to header files: success!"
-    echo "== convert VXC shader to header files: success!"
-    echo "== convert VXC shader to header files: success!"
     exit 0
 }
 
-if [ -z $MORE ] || [ "$MORE" != "clean" ]; then
-    init
-    check_vcCompiler
-    export VIVANTE_SDK_DIR=$AQROOT/sdk
-    convert_vxc_shader
-else
-    cleanup
-fi
+init
+check_vcCompiler
+export VIVANTE_SDK_DIR=$AQROOT/sdk
+convert_vxc_shader
 
 exit 0
