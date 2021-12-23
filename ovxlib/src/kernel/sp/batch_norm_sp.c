@@ -54,7 +54,7 @@ static vsi_status vsi_nn_get_bn_weight_bias
     float* f32_out_buffer[2]  = {NULL};
     vsi_size_t i = 0;
     vsi_size_t element_count = vsi_nn_vxGetTensorElementNum(&inputs[0]->attr);
-    vsi_size_t batch = input_element_count / element_count;
+    vsi_size_t batch = axis == 0 ? input_element_count / element_count : 1;
 
     for (i = 0; i < 4; i++)
     {
@@ -91,7 +91,7 @@ static vsi_status vsi_nn_get_bn_weight_bias
         f32_out_buffer[1][i] = b;
     }
 
-    for (i = 0; i < batch; i++)
+    for (i = 1; i < batch; i++)
     {
         float *dst0_ptr = f32_out_buffer[0] + element_count * i;
         float *dst1_ptr = f32_out_buffer[1] + element_count * i;
