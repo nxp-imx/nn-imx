@@ -242,7 +242,7 @@ REGISTER_CONV_OPENVX_KERNEL( conv1d )
     vx_node node = NULL;
     vx_nn_convolution_params_ext2_t vxparam;
     vx_tensor temp_tensors[3] = { NULL };
-    int i;
+    uint32_t i = 0;
 
     _build_vx_conv2d_param(
             &vxparam,
@@ -270,7 +270,6 @@ REGISTER_CONV_OPENVX_KERNEL( conv1d )
     {
         uint8_t    * data = NULL;
         vsi_nn_tensor_attr_t attr;
-        uint32_t i;
 
         data = vsi_nn_ConvertTensorToData( graph, inputs[1] );
         CHECK_PTR_FAIL_GOTO( data, "Convert data fail.", final );
@@ -317,7 +316,7 @@ REGISTER_CONV_OPENVX_KERNEL( depthwise_conv1d )
     vx_node node = NULL;
     vx_nn_convolution_params_ext2_t vxparam;
     vx_tensor temp_tensors[3] = { NULL };
-    int32_t i;
+    uint32_t i = 0;
     vsi_bool need_explicit_padding = FALSE;
 
     _build_vx_conv2d_param(
@@ -344,7 +343,7 @@ REGISTER_CONV_OPENVX_KERNEL( depthwise_conv1d )
         new_w_shape[0] = inputs[1]->attr.size[0];
         new_w_shape[1] = 1;
         new_w_shape[2] = 1;
-        for (i = 1; i < (int32_t)(inputs[1]->attr.dim_num); i++)
+        for (i = 1; i < inputs[1]->attr.dim_num; i++)
         {
             new_w_shape[2] *= inputs[1]->attr.size[i];
         }
@@ -358,7 +357,6 @@ REGISTER_CONV_OPENVX_KERNEL( depthwise_conv1d )
     {
         uint8_t    * data = NULL;
         vsi_nn_tensor_attr_t attr;
-        uint32_t i;
 
         data = vsi_nn_ConvertTensorToData( graph, inputs[1] );
         CHECK_PTR_FAIL_GOTO( data, "Convert data fail.", final );
