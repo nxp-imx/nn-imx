@@ -39,7 +39,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_moments_sums_node
     (
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input,
-        vsi_nn_tensor_t             * output
+        vsi_nn_tensor_t             * output0,
+        vsi_nn_tensor_t             * output1
     )
 {
     const int32_t spInitInstsNum = 1;
@@ -47,9 +48,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_moments_sums_node
     const int32_t spInstsNum = spInitInstsNum + spLoopInstsNum;
 
     const uint32_t input_count = 1;
-    const uint32_t output_count = 1;
+    const uint32_t output_count = 2;
     vx_tensor inputs_tensor[1] = {NULL};
-    vx_tensor outputs_tensor[1] = {NULL};
+    vx_tensor outputs_tensor[2] = {NULL};
     vx_node node = NULL;
 
     vsi_nn_spinst_t *spinst = NULL;
@@ -94,7 +95,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_moments_sums_node
     CHECK_STATUS_FAIL_GOTO(status, final );
 
     inputs_tensor[0] = input->t;
-    outputs_tensor[0] = output->t;
+    outputs_tensor[0] = output0->t;
+    outputs_tensor[1] = output1->t;
     node = vxStreamProcessorNode(
         graph->g,
         inputs_tensor,
@@ -116,8 +118,10 @@ final:
 vsi_nn_kernel_node_t vsi_nn_sp_moments_means_node
     (
         vsi_nn_graph_t  * graph,
-        vsi_nn_tensor_t * input,
-        vsi_nn_tensor_t * output,
+        vsi_nn_tensor_t * input0,
+        vsi_nn_tensor_t * input1,
+        vsi_nn_tensor_t * output0,
+        vsi_nn_tensor_t * output1,
         float             inv_m,
         float             const_a,
         float             s,
@@ -128,10 +132,10 @@ vsi_nn_kernel_node_t vsi_nn_sp_moments_means_node
     const int32_t spLoopInstsNum = 5;
     const int32_t spInstsNum = spInitInstsNum + spLoopInstsNum;
 
-    const uint32_t input_count = 1;
-    const uint32_t output_count = 1;
-    vx_tensor inputs_tensor[1] = {NULL};
-    vx_tensor outputs_tensor[1] = {NULL};
+    const uint32_t input_count = 2;
+    const uint32_t output_count = 2;
+    vx_tensor inputs_tensor[2] = {NULL};
+    vx_tensor outputs_tensor[2] = {NULL};
     vx_node node = NULL;
 
     vsi_nn_spinst_t *spinst = NULL;
@@ -186,8 +190,10 @@ vsi_nn_kernel_node_t vsi_nn_sp_moments_means_node
     status |= vsi_nn_set_spinst_attr(spinst, attr);
     CHECK_STATUS_FAIL_GOTO(status, final );
 
-    inputs_tensor[0] = input->t;
-    outputs_tensor[0] = output->t;
+    inputs_tensor[0] = input0->t;
+    inputs_tensor[1] = input1->t;
+    outputs_tensor[0] = output0->t;
+    outputs_tensor[1] = output1->t;
 
     vx_lut_params.lut_function = VX_NN_ACTIVATION_CUSTOM;
     vx_lut_params.in_lut = vxCreateLUT( graph->ctx->c, VX_TYPE_FLOAT32, VSI_NN_SP_LUT_MAX_SIZE);
@@ -232,17 +238,20 @@ vsi_nn_kernel_node_t vsi_nn_sp_instance_norm_alpha_beta_node
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * beta,
         vsi_nn_tensor_t             * alpha,
-        vsi_nn_tensor_t             * output
+        vsi_nn_tensor_t             * dummy0,
+        vsi_nn_tensor_t             * dummy1,
+        vsi_nn_tensor_t             * output0,
+        vsi_nn_tensor_t             * output1
     )
 {
     const int32_t spInitInstsNum = 1;
     const int32_t spLoopInstsNum = 2;
     const int32_t spInstsNum = spInitInstsNum + spLoopInstsNum;
 
-    const uint32_t input_count = 2;
-    const uint32_t output_count = 1;
-    vx_tensor inputs_tensor[2] = {NULL};
-    vx_tensor outputs_tensor[1] = {NULL};
+    const uint32_t input_count = 4;
+    const uint32_t output_count = 2;
+    vx_tensor inputs_tensor[4] = {NULL};
+    vx_tensor outputs_tensor[2] = {NULL};
     vx_node node = NULL;
 
     vsi_nn_spinst_t *spinst = NULL;
@@ -287,7 +296,10 @@ vsi_nn_kernel_node_t vsi_nn_sp_instance_norm_alpha_beta_node
 
     inputs_tensor[0] = beta->t;
     inputs_tensor[1] = alpha->t;
-    outputs_tensor[0] = output->t;
+    inputs_tensor[2] = dummy0->t;
+    inputs_tensor[3] = dummy1->t;
+    outputs_tensor[0] = output0->t;
+    outputs_tensor[1] = output1->t;
     node = vxStreamProcessorNode(
         graph->g,
         inputs_tensor,
@@ -310,16 +322,17 @@ vsi_nn_kernel_node_t vsi_nn_sp_instance_norm_node
     (
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input,
-        vsi_nn_tensor_t             * dummy_tensor,
+        vsi_nn_tensor_t             * dummy0_tensor,
+        vsi_nn_tensor_t             * dummy1_tensor,
         vsi_nn_tensor_t             * output
     )
 {
     const int32_t spLoopInstsNum = 1;
     const int32_t spInstsNum = spLoopInstsNum;
 
-    const uint32_t input_count = 2;
+    const uint32_t input_count = 3;
     const uint32_t output_count = 1;
-    vx_tensor inputs_tensor[2] = {NULL};
+    vx_tensor inputs_tensor[3] = {NULL};
     vx_tensor outputs_tensor[1] = {NULL};
     vx_node node = NULL;
 
@@ -355,7 +368,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_instance_norm_node
     CHECK_STATUS_FAIL_GOTO(status, final );
 
     inputs_tensor[0] = input->t;
-    inputs_tensor[1] = dummy_tensor->t;
+    inputs_tensor[1] = dummy0_tensor->t;
+    inputs_tensor[2] = dummy1_tensor->t;
     outputs_tensor[0] = output->t;
     node = vxStreamProcessorNode(
         graph->g,
@@ -404,7 +418,7 @@ REGISTER_INSTANCE_NORM_STREAM_PROCESSOR_KERNEL( instance_norm )
     vsi_nn_tensor_attr_t attr;
     vsi_nn_tensor_t * reshape_tensors[2] = {NULL};
     vsi_size_t shape[VSI_NN_MAX_DIM_NUM] = { 0 };
-    vsi_nn_tensor_t * dummy_tensor[3] = {NULL};
+    vsi_nn_tensor_t * dummy_tensor[6] = {NULL};
     vsi_nn_tensor_t * gamma = NULL;
     vsi_nn_tensor_t * beta = NULL;
     float output_scale = 1.0f / vsi_nn_get_tensor_scale(outputs[0]);
@@ -426,31 +440,42 @@ REGISTER_INSTANCE_NORM_STREAM_PROCESSOR_KERNEL( instance_norm )
     CHECK_PTR_FAIL_GOTO( dummy_tensor[1], "Create dummy_tensor fail.", final );
     dummy_tensor[2] = vsi_nn_CreateTensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( dummy_tensor[2], "Create dummy_tensor fail.", final );
+    dummy_tensor[3] = vsi_nn_CreateTensor( graph, &attr );
+    CHECK_PTR_FAIL_GOTO( dummy_tensor[3], "Create dummy_tensor fail.", final );
+    dummy_tensor[4] = vsi_nn_CreateTensor( graph, &attr );
+    CHECK_PTR_FAIL_GOTO( dummy_tensor[4], "Create dummy_tensor fail.", final );
+    dummy_tensor[5] = vsi_nn_CreateTensor( graph, &attr );
+    CHECK_PTR_FAIL_GOTO( dummy_tensor[5], "Create dummy_tensor fail.", final );
 
     gamma = vsi_nn_dropout_tensor(graph, inputs[2], output_scale);
     beta = vsi_nn_dropout_tensor(graph, inputs[1], output_scale);
 
-    shape[0] = outputs[0]->attr.size[2];
+    shape[0] = 1;
     shape[1] = 1;
-    shape[2] = 1;
+    shape[2] = outputs[0]->attr.size[2];
     reshape_tensors[0] = vsi_nn_reshape_tensor( graph,
                 beta, shape, 3 );
     reshape_tensors[1] = vsi_nn_reshape_tensor( graph,
                 gamma, shape, 3 );
 
-    node = vsi_nn_sp_moments_sums_node(graph, inputs[0], dummy_tensor[0]);
+    node = vsi_nn_sp_moments_sums_node(graph, inputs[0], dummy_tensor[0], dummy_tensor[1]);
     CHECK_PTR_FAIL_GOTO( node, "Create sp_instance_norm_sums  fail.", final );
-    node = vsi_nn_sp_moments_means_node(graph, dummy_tensor[0], dummy_tensor[1], inv_m, const_a, s, eps);
+    node = vsi_nn_sp_moments_means_node(graph, dummy_tensor[0], dummy_tensor[1],
+        dummy_tensor[2], dummy_tensor[3], inv_m, const_a, s, eps);
     CHECK_PTR_FAIL_GOTO( node, "Create sp_instance_norm_means  fail.", final );
-    node = vsi_nn_sp_instance_norm_alpha_beta_node(graph, reshape_tensors[0], reshape_tensors[1], dummy_tensor[2]);
+    node = vsi_nn_sp_instance_norm_alpha_beta_node(graph, reshape_tensors[0], reshape_tensors[1],
+        dummy_tensor[2], dummy_tensor[3], dummy_tensor[4], dummy_tensor[5]);
     CHECK_PTR_FAIL_GOTO( node, "Create sp_instance_norm_alpha_beta  fail.", final );
-    node = vsi_nn_sp_instance_norm_node(graph, inputs[0], dummy_tensor[2], outputs[0]);
+    node = vsi_nn_sp_instance_norm_node(graph, inputs[0], dummy_tensor[4], dummy_tensor[5], outputs[0]);
     CHECK_PTR_FAIL_GOTO( node, "Create sp_instance_norm  fail.", final );
 
 final:
     vsi_safe_release_tensor(dummy_tensor[0]);
     vsi_safe_release_tensor(dummy_tensor[1]);
     vsi_safe_release_tensor(dummy_tensor[2]);
+    vsi_safe_release_tensor(dummy_tensor[3]);
+    vsi_safe_release_tensor(dummy_tensor[4]);
+    vsi_safe_release_tensor(dummy_tensor[5]);
     vsi_safe_release_tensor(gamma);
     vsi_safe_release_tensor(beta);
     vsi_safe_release_tensor(reshape_tensors[0]);

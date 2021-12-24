@@ -1463,6 +1463,9 @@
     <ClCompile Include="src\kernel\sp\eltwise_unary_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
+    <ClCompile Include="src\kernel\sp\group_norm_sp.c">
+      <Filter>Source Files\kernel\sp</Filter>
+    </ClCompile>
     <ClCompile Include="src\kernel\sp\grucell_activation_z_h_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
@@ -1475,10 +1478,10 @@
     <ClCompile Include="src\kernel\sp\instance_normalization_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
-    <ClCompile Include="src\kernel\sp\l2_normalize_sp.c">
+  <ClCompile Include="src\kernel\sp\l2_normalize_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
-  <ClCompile Include="src\kernel\sp\layer_normalization_sp.c">
+    <ClCompile Include="src\kernel\sp\layer_normalization_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\sp\lstmunit_activation_sp.c">
