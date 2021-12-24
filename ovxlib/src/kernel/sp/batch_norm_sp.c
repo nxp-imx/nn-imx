@@ -487,7 +487,7 @@ REGISTER_BATCH_NORM_STREAM_PROCESSOR_KERNEL( batch_norm )
         node = vsi_nn_sp_bn_mov_weight_bias_node(graph, weight, bias, dummy_tensor[0], dummy_tensor[1]);
         CHECK_PTR_FAIL_GOTO( node, "Create mov_weight_bias fail.", final );
         node = vsi_nn_sp_bn_in_times_v11_plus_v12_node(graph, inputs[0], dummy_tensor[0], dummy_tensor[1], outputs[0]);
-        CHECK_PTR_FAIL_GOTO( node, "Create mov_weight_bias fail.", final );
+        CHECK_PTR_FAIL_GOTO( node, "Create in_times_v11_plus_v12 fail.", final );
     }
     else
     {
