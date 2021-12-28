@@ -22,41 +22,25 @@
 *
 *****************************************************************************/
 
-#ifndef _VSI_NN_OP_REDUCE_H
-#define _VSI_NN_OP_REDUCE_H
+#ifndef _VSI_NN_OP_REDUCE_MEAN_INTERNAL_H
+#define _VSI_NN_OP_REDUCE_MEAN_INTERNAL_H
 
-#include "vsi_nn_platform.h"
+#include "vsi_nn_types.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef vx_uint32 vsi_nn_reduce_t; enum
+typedef struct _vsi_nn_reduce_mean_internal_param
 {
-    VSI_NN_REDUCE_MEAN = 1,
-    VSI_NN_REDUCE_MAX,
-    VSI_NN_REDUCE_MIN,
-    VSI_NN_REDUCE_SUM,
-    VSI_NN_REDUCE_ALL,
-    VSI_NN_REDUCE_ANY,
-    VSI_NN_REDUCE_PROD,
-};
-
-typedef struct _vsi_nn_reduce_lcl_data_t
-{
-    vsi_nn_tensor_t *axis_tensor;
-} vsi_nn_reduce_lcl_data_t;
-
-typedef struct _vsi_nn_reduce_param
-{
-    /* local data must be the first. */
-    vsi_nn_reduce_lcl_data_t local;
-    vsi_enum     type;
-    const int32_t *axis;
+    struct _reduce_mean_internal_local_data_t* local;
+    // Add parameters here
+    vx_int32    *axis;
     vx_uint32   axis_num;
-    vx_bool     keep_dim;
-    struct _vsi_nn_reduce_lcl2_data_t* local2;
-} vsi_nn_reduce_param;
+    float       scale;
+} vsi_nn_reduce_mean_internal_param;
+_compiler_assert(offsetof(vsi_nn_reduce_mean_internal_param, local) == 0, \
+    vsi_nn_reduce_mean_internal_h );
 
 #ifdef __cplusplus
 }
