@@ -132,10 +132,10 @@
     <ClCompile Include="src\custom\ops\kernel\evis\custom_softmax_evis.c">
       <Filter>Source Files\custom\ops\kernel\evis</Filter>
     </ClCompile>
-    <ClCompile Include="src\custom\ops\op_custom_softmax.c">
+    <ClCompile Include="src\custom\ops\op_custom_ainr_denoise_postprocess.c">
       <Filter>Source Files\custom\ops</Filter>
     </ClCompile>
-    <ClCompile Include="src\custom\ops\op_custome_ainr_denoise_postprocess.c">
+    <ClCompile Include="src\custom\ops\op_custom_softmax.c">
       <Filter>Source Files\custom\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\add_mean_std_norm_cl.c">
@@ -795,19 +795,22 @@
     <ClCompile Include="src\kernel\sp\instance_normalization_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
-  <ClCompile Include="src\kernel\sp\l2_normalize_sp.c">
+    <ClCompile Include="src\kernel\sp\l2_normalize_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\sp\layer_normalization_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
-    <ClCompile Include="src\kernel\sp\lstmunit_activation_sp.c">
+  <ClCompile Include="src\kernel\sp\lstmunit_activation_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\sp\maximum_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\sp\minimum_sp.c">
+      <Filter>Source Files\kernel\sp</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\sp\reduce_mean_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\sp\softmax_sp.c">
@@ -888,9 +891,6 @@
     <ClCompile Include="src\libnnext\vsi_nn_libnnext_resource.c">
       <Filter>Source Files\libnnext</Filter>
     </ClCompile>
-    <ClCompile Include="src\ops\vsi_nn_op_deconv3d.c">
-      <Filter>Source Files\ops</Filter>
-    </ClCompile>
     <ClCompile Include="src\libnnext\vsi_nn_vxkernel.c">
       <Filter>Source Files\libnnext</Filter>
     </ClCompile>
@@ -970,6 +970,9 @@
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_dataconvert.c">
+      <Filter>Source Files\ops</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_deconv3d.c">
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_deconvolution.c">
@@ -1207,6 +1210,9 @@
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_reduce_internal.c">
+      <Filter>Source Files\ops</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_reduce_mean_internal.c">
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_reducesum_internal.c">
@@ -1553,9 +1559,6 @@
     <ClInclude Include="include\libnnext\vsi_nn_libnnext_resource.h">
       <Filter>Header Files\libnnext</Filter>
     </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_deconv3d.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
     <ClInclude Include="include\libnnext\vsi_nn_vxkernel.h">
       <Filter>Header Files\libnnext</Filter>
     </ClInclude>
@@ -1632,6 +1635,9 @@
       <Filter>Header Files\ops</Filter>
     </ClInclude>
     <ClInclude Include="include\ops\vsi_nn_op_dataconvert.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_deconv3d.h">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
     <ClInclude Include="include\ops\vsi_nn_op_deconvolution.h">
@@ -1863,6 +1869,9 @@
       <Filter>Header Files\ops</Filter>
     </ClInclude>
     <ClInclude Include="include\ops\vsi_nn_op_reduce.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_reduce_mean_internal.h">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
     <ClInclude Include="include\ops\vsi_nn_op_reduceall_internal.h">
