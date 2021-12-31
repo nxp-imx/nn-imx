@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='UTF-8'?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build" ToolsVersion="4.0">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
@@ -494,6 +494,7 @@
     <ClInclude Include="include\cpu_backend\npuref_interface.h"/>
     <ClInclude Include="include\cpu_backend\vsi_nn_cpu_backend.h"/>
     <ClInclude Include="include\custom\ops\vsi_nn_op_custom_softmax.h"/>
+    <ClInclude Include="include\custom\ops\vsi_nn_op_custom_ainr_denoise_postprocess.h"/>
     <ClInclude Include="include\custom\vsi_nn_custom_node_type.h"/>
     <ClInclude Include="include\kernel\vsi_nn_gpu.h"/>
     <ClInclude Include="include\kernel\vsi_nn_gpu_config.h"/>
@@ -657,7 +658,7 @@
     <ClInclude Include="include\ops\vsi_nn_op_swish.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_tanh.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_tensor_add_mean_stddev_norm.h"/>
-    <ClInclude Include="include\ops\vsi_nn_op_deconv3d.h" />
+    <ClInclude Include="include\ops\vsi_nn_op_deconv3d.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_tensorstackconcat.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_tile.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_topk.h"/>
@@ -767,6 +768,9 @@
       <ObjectFileName>$(IntDir)\src\custom\ops\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\custom\ops\op_custom_softmax.c">
+      <ObjectFileName>$(IntDir)\src\custom\ops\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\custom\ops\op_custom_ainr_denoise_postprocess.c">
       <ObjectFileName>$(IntDir)\src\custom\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\add_mean_std_norm_cl.c">
@@ -2011,7 +2015,7 @@
     <ClCompile Include="src\ops\vsi_nn_op_upsamplescale.c">
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="src\ops\vsi_nn_op_deconv3d.c" >
+    <ClCompile Include="src\ops\vsi_nn_op_deconv3d.c">
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_variable.c">
@@ -2125,7 +2129,7 @@
     <ClCompile Include="src\vsi_nn_version.c">
       <ObjectFileName>$(IntDir)\src\</ObjectFileName>
     </ClCompile>
-    </ItemGroup>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets"/>
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

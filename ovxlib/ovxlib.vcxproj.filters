@@ -135,6 +135,9 @@
     <ClCompile Include="src\custom\ops\op_custom_softmax.c">
       <Filter>Source Files\custom\ops</Filter>
     </ClCompile>
+    <ClCompile Include="src\custom\ops\op_custome_ainr_denoise_postprocess.c">
+      <Filter>Source Files\custom\ops</Filter>
+    </ClCompile>
     <ClCompile Include="src\kernel\cl\add_mean_std_norm_cl.c">
       <Filter>Source Files\kernel\cl</Filter>
     </ClCompile>
@@ -1507,6 +1510,9 @@
     </ClInclude>
     <ClInclude Include="include\cpu_backend\vsi_nn_cpu_backend.h">
       <Filter>Header Files\cpu_backend</Filter>
+    </ClInclude>
+    <ClInclude Include="include\custom\ops\vsi_nn_op_custom_ainr_denoise_postprocess.h">
+      <Filter>Header Files\custom\ops</Filter>
     </ClInclude>
     <ClInclude Include="include\custom\ops\vsi_nn_op_custom_softmax.h">
       <Filter>Header Files\custom\ops</Filter>

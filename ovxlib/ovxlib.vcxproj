@@ -495,6 +495,7 @@
   <ItemGroup>
     <ClInclude Include="include\cpu_backend\npuref_interface.h"/>
     <ClInclude Include="include\cpu_backend\vsi_nn_cpu_backend.h"/>
+    <ClInclude Include="include\custom\ops\vsi_nn_op_custom_ainr_denoise_postprocess.h" />
     <ClInclude Include="include\custom\ops\vsi_nn_op_custom_softmax.h"/>
     <ClInclude Include="include\custom\vsi_nn_custom_node_type.h"/>
     <ClInclude Include="include\kernel\vsi_nn_gpu.h"/>
@@ -769,6 +770,9 @@
       <ObjectFileName>$(IntDir)\src\custom\ops\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\custom\ops\op_custom_softmax.c">
+      <ObjectFileName>$(IntDir)\src\custom\ops\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\custom\ops\op_custom_ainr_denoise_postprocess.c" >
       <ObjectFileName>$(IntDir)\src\custom\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\add_mean_std_norm_cl.c">

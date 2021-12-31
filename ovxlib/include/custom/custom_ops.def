@@ -2,3 +2,4 @@
    Add custom ops to the end.
 */
 DEF_OP(CUSTOM_SOFTMAX)
+DEF_OP(CUSTOM_AINR_DENOISE_POSTPROCESS)
