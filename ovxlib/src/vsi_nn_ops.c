@@ -87,6 +87,17 @@ static const char * vsi_nn_internal_ops_name[] =
 };
 #undef DEF_OP
 
+#define MAX_CLIENT_NUM 65535
+static const char* client_name[MAX_CLIENT_NUM] = {};
+
+vsi_bool _is_external_ops(vsi_nn_op_t op) {
+    vsi_bool ret = FALSE;
+    if (op <  0) {
+        ret = TRUE;
+    }
+    return ret;
+}
+
 vsi_bool _is_custom_ops
     (
     vsi_nn_op_t op
@@ -357,15 +368,43 @@ vsi_bool vsi_nn_OpRegisterOvxInit
     return ret;
 } /* vsi_nn_OpRegisterClientCompute() */
 
+vsi_bool vsi_nn_OpRegisterExternalOvxInit
+    (
+    vsi_nn_op_t op,
+    const char* kernel_name,
+    vsi_nn_op_proc_t* proc
+    ){
+    const vsi_nn_op_proc_t * proc_ori;
+    vsi_bool ret;
+
+    ret = FALSE;
+    vsi_nn_OpRegisterClient( op, proc );
+    proc_ori = vsi_nn_OpGetProc( op );
+
+    if( NULL != proc_ori )
+    {
+        memcpy((void*)proc_ori, proc, sizeof( vsi_nn_op_proc_t ) );
+    }
+    client_name[0 - op] = kernel_name;
+    return ret;
+
+}
+
 const char * vsi_nn_OpGetName
     (
     vsi_nn_op_t op
     )
 {
     const char * name;
-    if( op < VSI_NN_OP_NUM )
+    if(_is_external_ops(op)){
+        name = client_name[0 - op];
+    }
+    else if( op < VSI_NN_OP_NUM )
     {
         name = vsi_nn_ops_name[op];
+    }
+    else if (_is_external_ops(op)){
+        name = client_name[0 - op];
     }
     else if(_is_custom_ops(op))
     {
