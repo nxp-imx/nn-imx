@@ -402,7 +402,7 @@ REGISTER_L2_NORMALIZE_STREAM_PROCESSOR_KERNEL( l2_norm )
     vsi_size_t shape[VSI_NN_MAX_DIM_NUM] = { 0 };
     vsi_nn_tensor_t * dummy_tensor[2] = {NULL};
     vsi_nn_tensor_t * trans_tensor[2] = {NULL};
-    uint32_t perm[2][VSI_NN_MAX_DIM_NUM] = {0};
+    uint32_t perm[2][VSI_NN_MAX_DIM_NUM] = {{0}};
     uint32_t axis = vsi_nn_kernel_param_get_int32( params, "axis" );
     uint32_t i = 0, index = 1;
 
@@ -502,7 +502,7 @@ REGISTER_L2_NORMALIZE_STREAM_PROCESSOR_KERNEL( l2normalizescale )
     vsi_size_t shape[VSI_NN_MAX_DIM_NUM] = { 0 };
     vsi_nn_tensor_t * dummy_tensor[2] = {NULL};
     vsi_nn_tensor_t * trans_tensor[2] = {NULL};
-    uint32_t perm[2][VSI_NN_MAX_DIM_NUM] = {0};
+    uint32_t perm[2][VSI_NN_MAX_DIM_NUM] = {{0}};
     uint32_t axis = vsi_nn_kernel_param_get_int32( params, "axis" );
     uint32_t i = 0, index = 1;
 
