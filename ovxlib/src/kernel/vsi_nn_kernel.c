@@ -104,6 +104,14 @@ static void _kernel_clear_source
 
 static vsi_bool _check_shader_support(vsi_nn_graph_t* graph);
 
+static vsi_bool vsi_nn_kernel_is_asymmtric_int8
+    (
+    vsi_nn_tensor_t** inputs,
+    size_t input_num,
+    vsi_nn_tensor_t** outputs,
+    size_t output_num
+    );
+
 static vsi_status VX_CALLBACK _kernel_validator
     (
     vx_node node,
@@ -987,7 +995,8 @@ vsi_nn_kernel_node_t vsi_nn_kernel_selector
 
             /* Skip evis and cl when disable shader */
             if ( (type == VSI_NN_KERNEL_TYPE_EVIS || type == VSI_NN_KERNEL_TYPE_CL)
-                && _check_shader_support(graph) == FALSE)
+                && ( _check_shader_support(graph) == FALSE ||
+                vsi_nn_kernel_is_asymmtric_int8(inputs, input_num, outputs, output_num) ) )
             {
                 continue;
             }
@@ -1288,6 +1297,41 @@ static vsi_bool _check_shader_support(vsi_nn_graph_t* graph)
     if (enableShader >= 1)
     {
         return TRUE;
+    }
+
+    return FALSE;
+}
+
+static vsi_bool vsi_nn_kernel_is_asymmtric_int8
+    (
+    vsi_nn_tensor_t** inputs,
+    size_t input_num,
+    vsi_nn_tensor_t** outputs,
+    size_t output_num
+    )
+{
+    size_t i = 0;
+
+    for (i = 0; i < input_num; i++)
+    {
+        if ( inputs[i] &&
+             inputs[i]->attr.dtype.vx_type == VSI_NN_TYPE_INT8 &&
+             inputs[i]->attr.dtype.qnt_type == VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC
+           )
+        {
+            return TRUE;
+        }
+    }
+
+    for (i = 0; i < output_num; i++)
+    {
+        if ( outputs[i] &&
+             outputs[i]->attr.dtype.vx_type == VSI_NN_TYPE_INT8 &&
+             outputs[i]->attr.dtype.qnt_type == VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC
+           )
+        {
+            return TRUE;
+        }
     }
 
     return FALSE;
