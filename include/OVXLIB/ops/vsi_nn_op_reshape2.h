@@ -21,8 +21,9 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#ifndef _VSI_NN_OP_RELU_KERAS_H
-#define _VSI_NN_OP_RELU_KERAS_H
+
+#ifndef _VSI_NN_OP_RESHAPE2_H
+#define _VSI_NN_OP_RESHAPE2_H
 
 #include "vsi_nn_types.h"
 
@@ -30,12 +31,20 @@
 extern "C" {
 #endif
 
-typedef struct _vsi_nn_relu_keras_param
+typedef struct _vsi_nn_reshape2_local_data
 {
-    float     alpha;
-    float     max_value;
-    float     threshold;
-} vsi_nn_relu_keras_param;
+    vsi_bool initialized;
+} vsi_nn_reshape2_local_data;
+
+typedef struct _vsi_nn_reshape2_param
+{
+    vsi_nn_reshape2_local_data* local;
+    // Add parameters here
+    const vsi_size_t * size;
+    uint32_t dim_num;
+} vsi_nn_reshape2_param;
+_compiler_assert(offsetof(vsi_nn_reshape2_param, local) == 0, \
+    vsi_nn_reshape2_h );
 
 #ifdef __cplusplus
 }

@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2020 Vivante Corporation
+*    Copyright (c) 2021 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -21,24 +21,49 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#ifndef _VSI_NN_OP_RELU_KERAS_H
-#define _VSI_NN_OP_RELU_KERAS_H
 
-#include "vsi_nn_types.h"
+#ifndef _VSI_NN_SP_LUT_H
+#define _VSI_NN_SP_LUT_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#if VX_STREAM_PROCESSOR_SUPPORT
 
-typedef struct _vsi_nn_relu_keras_param
+#include <stdint.h>
+#include "kernel/vsi_nn_spinst.h"
+
+__BEGIN_DECLS
+
+#define VSI_NN_SP_LUT_MAX_SIZE  (1024)
+
+typedef struct _vsi_nn_sp_lut_
 {
-    float     alpha;
-    float     max_value;
-    float     threshold;
-} vsi_nn_relu_keras_param;
+    float index;
+    float val;
+} vsi_nn_sp_lut_t;
 
-#ifdef __cplusplus
-}
+typedef int32_t vsi_nn_sp_activation_e; enum
+{
+    VSI_NN_SP_ACT_NONE             = 0,
+    VSI_NN_SP_ACT_LINEAR_EXP       = 1,
+    VSI_NN_SP_ACT_LINEAR_RSQRT     = 2,
+    VSI_NN_SP_ACT_LINEAR_SIGMOID   = 3,
+    VSI_NN_SP_ACT_RCP              = 4,
+};
+
+typedef struct  _vsi_nn_sp_lut_params
+{
+    vsi_nn_sp_activation_e act_type;
+    float params[16];
+} vsi_nn_sp_lut_params;
+
+vsi_status vsi_nn_sp_lut
+    (
+    vx_lut index_lut,
+    vx_lut output_lut,
+    vsi_nn_sp_lut_params *param
+    );
+
+__END_DECLS
+
 #endif
 
 #endif
