@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2020 Vivante Corporation
+*    Copyright (c) 2021 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -21,44 +21,55 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#ifndef _VSI_NN_OP_POST_PROCESS_H
-#define _VSI_NN_OP_POST_PROCESS_H
 
-#include "vsi_nn_types.h"
+#ifndef _VSI_NN_KERNEL_LUT_H
+#define _VSI_NN_KERNEL_LUT_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <stdint.h>
 
-enum
+__BEGIN_DECLS
+
+typedef int32_t vsi_nn_kernel_lut_act_e; enum
 {
-    POST_PROCESS_INPUT = 0,
-
-    POST_PROCESS_INPUT_CNT,
-
-    POST_PROCESS_OUTPUT = 0,
-
-    POST_PROCESS_OUTPUT_CNT
+    VSI_NN_KERNEL_LUT_NONE             = 0,
+    VSI_NN_KERNEL_LUT_MISH             = 1,
+    VSI_NN_KERNEL_LUT_LOG              = 2,
+    VSI_NN_KERNEL_LUT_EXP              = 3,
+    VSI_NN_KERNEL_LUT_ELU              = 4,
+    VSI_NN_KERNEL_LUT_NEG              = 5,
+    VSI_NN_KERNEL_LUT_HSIGMOID         = 6,
+    VSI_NN_KERNEL_LUT_SOFT_PLUS        = 7,
+    VSI_NN_KERNEL_LUT_ERF              = 8,
+    VSI_NN_KERNEL_LUT_GELU             = 9,
+    VSI_NN_KERNEL_LUT_HGELU            = 10,
+    VSI_NN_KERNEL_LUT_RELU_KERAS       = 11,
+    VSI_NN_KERNEL_LUT_CLIP             = 12,
+    VSI_NN_KERNEL_LUT_SQUARE           = 13,
 };
 
-typedef struct _vsi_nn_post_process_lcl_data
+#define VSI_NN_KERNEL_LUT_MAX_SIZE  (1024)
+#define VSI_NN_KERNEL_LUT_FP16_MAX  (57344)
+#define VSI_NN_KERNEL_LUT_FP16_MIN  (-57344)
+
+typedef struct _vsi_nn_kernel_lut_
 {
-    vsi_bool initialized;
-    vsi_bool enable_data_conv;
-    vsi_bool enable_perm;
-} vsi_nn_post_process_lcl_data;
+    float index;
+    float val;
+} vsi_nn_kernel_lut_t;
 
-typedef struct _vsi_nn_post_process_param
+typedef struct  _vsi_nn_kernel_lut_params
 {
-    uint32_t * perm;
-    uint32_t   dim_num;
+    vsi_enum act_type;
+    float params[16];
+} vsi_nn_kernel_lut_params;
 
-    /* post process layer local data structure */
-    vsi_nn_post_process_lcl_data local;
-} vsi_nn_post_process_param;
+vsi_status vsi_nn_kernel_lut
+    (
+    vx_lut index_lut,
+    vx_lut output_lut,
+    vsi_nn_kernel_lut_params *param
+    );
 
-#ifdef __cplusplus
-}
-#endif
+__END_DECLS
 
 #endif

@@ -21,8 +21,9 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#ifndef _VSI_NN_OP_RELU_KERAS_H
-#define _VSI_NN_OP_RELU_KERAS_H
+
+#ifndef _VSI_NN_OP_CONV3D_H
+#define _VSI_NN_OP_CONV3D_H
 
 #include "vsi_nn_types.h"
 
@@ -30,12 +31,25 @@
 extern "C" {
 #endif
 
-typedef struct _vsi_nn_relu_keras_param
+typedef struct _vsi_nn_conv3d_param
 {
-    float     alpha;
-    float     max_value;
-    float     threshold;
-} vsi_nn_relu_keras_param;
+    struct _conv3d_local_data_t* local;
+    // Add parameters here
+    /*w, h, d*/
+    int32_t     ksize[3];
+    int32_t     stride[3];
+    int32_t     dilation[3];
+
+    /* Pad left, right, top, bottom, front, rear*/
+    int32_t     pad[6];
+    /* Pad type default value shall be AUTO */
+    vsi_nn_pad_e pad_type;
+    int32_t     weights;
+
+    int32_t      multiplier;
+} vsi_nn_conv3d_param;
+_compiler_assert(offsetof(vsi_nn_conv3d_param, local) == 0, \
+    vsi_nn_conv3d_h );
 
 #ifdef __cplusplus
 }

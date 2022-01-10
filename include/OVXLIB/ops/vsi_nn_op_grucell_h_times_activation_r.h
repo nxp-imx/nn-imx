@@ -21,8 +21,9 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#ifndef _VSI_NN_OP_RELU_KERAS_H
-#define _VSI_NN_OP_RELU_KERAS_H
+
+#ifndef _VSI_NN_OP_GRUCELL_H_TIMES_ACTIVATION_R_H
+#define _VSI_NN_OP_GRUCELL_H_TIMES_ACTIVATION_R_H
 
 #include "vsi_nn_types.h"
 
@@ -30,12 +31,14 @@
 extern "C" {
 #endif
 
-typedef struct _vsi_nn_relu_keras_param
+typedef struct _vsi_nn_grucell_h_times_activation_r_param
 {
-    float     alpha;
-    float     max_value;
-    float     threshold;
-} vsi_nn_relu_keras_param;
+    struct _grucell_h_times_activation_r_local_data_t* local;
+
+    vsi_nn_activation_e recurrent_activation;
+} vsi_nn_grucell_h_times_activation_r_param;
+_compiler_assert(offsetof(vsi_nn_grucell_h_times_activation_r_param, local) == 0, \
+    vsi_nn_grucell_h_times_activation_r_h );
 
 #ifdef __cplusplus
 }

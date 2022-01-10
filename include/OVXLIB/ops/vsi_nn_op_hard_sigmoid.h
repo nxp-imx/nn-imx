@@ -21,8 +21,9 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#ifndef _VSI_NN_OP_RELU_KERAS_H
-#define _VSI_NN_OP_RELU_KERAS_H
+
+#ifndef _VSI_NN_OP_HARD_SIGMOID_H
+#define _VSI_NN_OP_HARD_SIGMOID_H
 
 #include "vsi_nn_types.h"
 
@@ -30,12 +31,13 @@
 extern "C" {
 #endif
 
-typedef struct _vsi_nn_relu_keras_param
+typedef struct _vsi_nn_hard_sigmoid_param
 {
-    float     alpha;
-    float     max_value;
-    float     threshold;
-} vsi_nn_relu_keras_param;
+    void* local;
+    // Add parameters here
+    float alpha;
+    float beta;
+} vsi_nn_hard_sigmoid_param;
 
 #ifdef __cplusplus
 }
