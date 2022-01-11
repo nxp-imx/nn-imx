@@ -17,7 +17,6 @@ $(MAIN_MODULE):
 
 .PHONY: clean
 clean:
-	@echo "remove *.so and *.o"
-	@rm -f *.so
-	@cd $(NNRT);rm -f *.o
-	@cd $(NNAPI_DELEGATE);rm -f *.o	
+	@echo "remove *so* and .o files"
+	@rm -f *so*
+	@rm -rf nn_runtime/nnapi_delegate/bin_r/ nn_runtime/nnrt/bin_r/ ovxlib/src/bin_r/
