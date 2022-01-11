@@ -20,6 +20,10 @@ def modify_ops_def(lines, op_name):
     lines.append('DEF_OP(' + op_name.upper() + ')\n')
     return lines
 
+def modify_custom_node_type_def(lines, op_name):
+    lines.append('DEF_NODE_TYPE(' + op_name.lower() + ')\n')
+    return lines
+
 def modify_ovxlib_vcxproj(lines, op_name):
     new_lines = lines.copy()
     for index, line in enumerate(lines):
@@ -70,6 +74,17 @@ def modify_vsi_nn_node_type_h(lines, op_name):
             new_lines[index - 1] += s
     return new_lines
 
+def modify_vsi_nn_custom_node_type_h(lines, op_name):
+    new_lines = lines.copy()
+    s = '#include "custom/ops/vsi_nn_op_%s.h"\n'%op_name.lower()
+    for index, line in enumerate(lines):
+        if line.find('#endif') != -1:
+            for i in range(index, 0, -1):
+                if lines[i].find('#include') != -1:
+                    new_lines[i] += s
+                    break
+    return new_lines
+
 def modify_vsi_nn_code_generator_c(lines, op_name):
     new_lines = lines.copy()
     flag = False
@@ -81,6 +96,44 @@ def modify_vsi_nn_code_generator_c(lines, op_name):
             s = '    /* %s */%sNULL,\n'%(op_name.upper(), blank)
             new_lines[index - 1] += s
             break
+    return new_lines
+
+def modify_ovxlib_custom_vcxproj(lines, op_name):
+    new_lines = lines.copy()
+    for index, line in enumerate(lines):
+        if line.find('vsi_nn_op_custom_softmax.h') != -1:
+            s = '    <ClInclude Include="include\\custom\\ops\\vsi_nn_op_%s.h" />\n'%op_name.lower()
+            new_lines[index - 1] += s
+            continue
+        if line.find('op_custom_softmax.c') != -1:
+            s = '''\
+    <ClCompile Include="src\\custom\\ops\\vsi_nn_op_%s.c" >\n\
+      <ObjectFileName>$(IntDir)\\src\\custom\\ops\\</ObjectFileName>
+    </ClCompile>
+'''%(op_name.lower())
+            new_lines[index - 1] += s
+            continue
+    return new_lines
+
+def modify_ovxlib_custom_vcxproj_filters(lines, op_name):
+    new_lines = lines.copy()
+    for index, line in enumerate(lines):
+        if line.find('vsi_nn_op_custom_softmax.h') != -1:
+            s = '''\
+    <ClInclude Include="include\\custom\\ops\\vsi_nn_op_%s.h">
+      <Filter>Header Files\\custom\\ops</Filter>
+    </ClInclude>
+'''%op_name.lower()
+            new_lines[index - 1] += s
+            continue
+        if line.find('op_custom_softmax.c') != -1:
+            s = '''\
+    <ClCompile Include="src\\custom\\ops\\vsi_nn_op_%s.c">
+      <Filter>Source Files\\custom\\ops</Filter>
+    </ClCompile>
+'''%op_name.lower()
+            new_lines[index - 1] += s
+            continue
     return new_lines
 
 modify_file_list = [
@@ -100,6 +153,17 @@ modify_list_for_internal = [
     {'file': '../ovxlib.2012.vcxproj', 'func': modify_ovxlib_vcxproj},
     {'file': '../ovxlib.2012.vcxproj.filters', 'func': modify_ovxlib_vcxproj_filters},
     {'file': '../include/vsi_nn_node_type.h', 'func': modify_vsi_nn_node_type_h},
+    #{'file': '../src/utils/vsi_nn_code_generator.c', 'func': modify_vsi_nn_code_generator_c},
+]
+
+modify_list_for_custom = [
+    {'file': '../include/custom/custom_ops.def', 'func': modify_ops_def},
+    {'file': '../include/custom/custom_node_type.def', 'func': modify_custom_node_type_def},
+    {'file': '../ovxlib.vcxproj', 'func': modify_ovxlib_custom_vcxproj},
+    {'file': '../ovxlib.vcxproj.filters', 'func': modify_ovxlib_custom_vcxproj_filters},
+    {'file': '../ovxlib.2012.vcxproj', 'func': modify_ovxlib_custom_vcxproj},
+    {'file': '../ovxlib.2012.vcxproj.filters', 'func': modify_ovxlib_custom_vcxproj_filters},
+    {'file': '../include/custom/vsi_nn_custom_node_type.h', 'func': modify_vsi_nn_custom_node_type_h},
     #{'file': '../src/utils/vsi_nn_code_generator.c', 'func': modify_vsi_nn_code_generator_c},
 ]
 
@@ -143,10 +207,16 @@ def main(op_name):
     header = load_main_template(op_name, 'operation_header.tmpl')
     src_fname = 'vsi_nn_op_%s.c'%(op_name)
     hdr_fname = 'vsi_nn_op_%s.h'%(op_name)
-    gen_source(os.path.join(root, '..', 'src', 'ops', src_fname), source, license)
-    gen_source(os.path.join(root, '..', 'include', 'ops', hdr_fname), header, license)
+    if (args.type == 'custom'):
+        gen_source(os.path.join(root, '..', 'src', 'custom', 'ops', src_fname), source, license)
+        gen_source(os.path.join(root, '..', 'include', 'custom', 'ops', hdr_fname), header, license)
+    else:
+        gen_source(os.path.join(root, '..', 'src', 'ops', src_fname), source, license)
+        gen_source(os.path.join(root, '..', 'include', 'ops', hdr_fname), header, license)
     if (args.type == 'internal'):
         modify_file(modify_list_for_internal, op_name)
+    elif (args.type == 'custom'):
+        modify_file(modify_list_for_custom, op_name)
     else:
         modify_file(modify_file_list, op_name)
 
@@ -154,9 +224,7 @@ if __name__ == "__main__":
     options = ArgumentParser(description='Add an operation into ovxlib')
     options.add_argument('--type',
                          default='embedded',
-                         help='embedded/internal')
+                         help='embedded/internal/custom')
     options.add_argument('op_name', help='Name for the operation')
     args = options.parse_args()
     main(args.op_name)
-
-
