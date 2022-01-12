@@ -21,13 +21,29 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#ifndef _VSI_NN_CUSTOM_NODE_TYPE_H_
-#define _VSI_NN_CUSTOM_NODE_TYPE_H_
-/*
-    custom op head files
-*/
-#include "custom/ops/vsi_nn_op_custom_softmax.h"
-#include "custom/ops/vsi_nn_op_custom_ainr_denoise_postprocess.h"
-#include "custom/ops/vsi_nn_op_custom_warp_affine.h"
+
+#ifndef _VSI_NN_OP_CUSTOM_WARP_AFFINE_H
+#define _VSI_NN_OP_CUSTOM_WARP_AFFINE_H
+
+#include "vsi_nn_types.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef struct _vsi_nn_custom_warp_affine_param
+{
+    struct _custom_warp_affine_local_data_t* local;
+    // Add parameters here
+    const float *matrix;
+    vsi_enum type;
+    int32_t size[2];
+} vsi_nn_custom_warp_affine_param;
+_compiler_assert(offsetof(vsi_nn_custom_warp_affine_param, local) == 0, \
+    vsi_nn_custom_warp_affine_h );
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
