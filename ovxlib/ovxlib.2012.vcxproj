@@ -496,6 +496,7 @@
     <ClInclude Include="include\custom\ops\vsi_nn_op_custom_ainr_denoise_postprocess.h"/>
     <ClInclude Include="include\custom\ops\vsi_nn_op_custom_softmax.h"/>
     <ClInclude Include="include\custom\ops\vsi_nn_op_custom_warp_affine.h"/>
+    <ClInclude Include="include\custom\ops\vsi_nn_op_custom_warp_perspective.h"/>
     <ClInclude Include="include\custom\vsi_nn_custom_node_type.h"/>
     <ClInclude Include="include\kernel\vsi_nn_gpu.h"/>
     <ClInclude Include="include\kernel\vsi_nn_gpu_config.h"/>
@@ -769,10 +770,16 @@
     <ClCompile Include="src\custom\ops\kernel\cpu\custom_warp_affine_cpu.c">
       <ObjectFileName>$(IntDir)\src\custom\ops\kernel\cpu\</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="src\custom\ops\kernel\cpu\custom_warp_perspective_cpu.c">
+      <ObjectFileName>$(IntDir)\src\custom\ops\kernel\cpu\</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="src\custom\ops\kernel\evis\custom_softmax_evis.c">
       <ObjectFileName>$(IntDir)\src\custom\ops\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\custom\ops\kernel\evis\custom_warp_affine_evis.c">
+      <ObjectFileName>$(IntDir)\src\custom\ops\kernel\evis\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\custom\ops\kernel\evis\custom_warp_perspective_evis.c">
       <ObjectFileName>$(IntDir)\src\custom\ops\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\custom\ops\op_custom_ainr_denoise_postprocess.c">
@@ -782,6 +789,9 @@
       <ObjectFileName>$(IntDir)\src\custom\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\custom\ops\vsi_nn_op_custom_warp_affine.c">
+      <ObjectFileName>$(IntDir)\src\custom\ops\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\custom\ops\vsi_nn_op_custom_warp_perspective.c">
       <ObjectFileName>$(IntDir)\src\custom\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\add_mean_std_norm_cl.c">

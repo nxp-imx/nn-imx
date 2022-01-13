@@ -3319,6 +3319,403 @@ __kernel void custom_warp_affine_bilinear_U8toU8\n\
 }\n\
 "; /* end of custom_warp_affine_vx*/
 
+static const char custom_warp_perspective_vx[] = "#pragma OPENCL EXTENSION cl_viv_vx_extension : enable\n\
+\n\
+#include \"cl_viv_vx_ext.h\"\n\
+\n\
+_viv_uniform float4 matrix0;\n\
+_viv_uniform float4 matrix1;\n\
+_viv_uniform float4 matrix2;\n\
+_viv_uniform float4 matrix4;\n\
+__kernel void custom_warp_perspective_nearest_neighbor_U8toU8_2D\n\
+(\n\
+    __read_only  image2d_array_t input,\n\
+    __write_only image2d_array_t output,\n\
+                 float           _m0,\n\
+                 float           _m1,\n\
+                 float           _m2,\n\
+                 float           _m3,\n\
+                 float           _m4,\n\
+                 float           _m5,\n\
+                 float           _m6,\n\
+                 float           _m7,\n\
+                 float           _m8\n\
+)\n\
+{\n\
+    int2   coord = (int2)(get_global_id(0), get_global_id(1));\n\
+    int4   coord_in = (int4)(get_global_id(0), get_global_id(1), get_global_id(0) + 1, get_global_id(1));\n\
+\n\
+    float4 coord_f0 = convert_float4(coord_in);\n\
+\n\
+    float4 z0 = coord_f0.xzxz * matrix1.zzzz + coord_f0.y * matrix1.wwww + matrix2.xxxx;\n\
+    z0.zw = z0.zw + 2 * matrix1.z;\n\
+    float4 z1 = z0 + 4 * matrix1.z;\n\
+\n\
+    z0 = 1.0f / z0;\n\
+    z1 = 1.0f / z1;\n\
+\n\
+    coord_f0 = coord_f0.xxzz * matrix0.xyxy + coord_f0.yyww * matrix0.zwzw + matrix1.xyxy;\n\
+    float4 coord_f = coord_f0 * z0.xxyy;\n\
+\n\
+    coord_in = convert_int4(coord_f);\n\
+\n\
+    vxc_uchar16 dst;\n\
+    VXC_ReadImage(dst, input, coord_in.xy, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(dst, input, coord_in.zw, 0, VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 0));\n\
+    coord_f0 = coord_f0.zwzw + matrix4;\n\
+    coord_f = coord_f0 * z0.zzww;\n\
+    coord_in = convert_int4(coord_f);\n\
+    VXC_ReadImage(dst, input, coord_in.xy, 0, VXC_MODIFIER(2, 2, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(dst, input, coord_in.zw, 0, VXC_MODIFIER(3, 3, 0, VXC_RM_TowardZero, 0));\n\
+    coord_f0 = coord_f0.zwzw + matrix4;\n\
+    coord_f = coord_f0 * z1.xxyy;\n\
+    coord_in = convert_int4(coord_f);\n\
+    VXC_ReadImage(dst, input, coord_in.xy, 0, VXC_MODIFIER(4, 4, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(dst, input, coord_in.zw, 0, VXC_MODIFIER(5, 5, 0, VXC_RM_TowardZero, 0));\n\
+    coord_f0 = coord_f0.zwzw + matrix4;\n\
+    coord_f = coord_f0 * z1.zzww;\n\
+    coord_in = convert_int4(coord_f);\n\
+    VXC_ReadImage(dst, input, coord_in.xy, 0, VXC_MODIFIER(6, 6, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(dst, input, coord_in.zw, 0, VXC_MODIFIER(7, 7, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+\n\
+    VXC_WriteImage(output, coord, dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+__kernel void custom_warp_perspective_bilinear_U8toU8_2D\n\
+(\n\
+    __read_only  image2d_array_t input,\n\
+    __write_only image2d_array_t output,\n\
+                 float           _m0,\n\
+                 float           _m1,\n\
+                 float           _m2,\n\
+                 float           _m3,\n\
+                 float           _m4,\n\
+                 float           _m5,\n\
+                 float           _m6,\n\
+                 float           _m7,\n\
+                 float           _m8\n\
+)\n\
+{\n\
+    int2   coord = (int2)(get_global_id(0), get_global_id(1));\n\
+    int4   coord_in = (int4)(get_global_id(0), get_global_id(1), get_global_id(0) + 1, get_global_id(1));\n\
+\n\
+    float4 coord_f0 = convert_float4(coord_in);\n\
+\n\
+    float4 z0 = coord_f0.xzxz * matrix1.zzzz + coord_f0.y * matrix1.wwww + matrix2.xxxx;\n\
+    z0.zw = z0.zw + 2 * matrix1.z;\n\
+    float4 z1 = z0 + 4 * matrix1.z;\n\
+\n\
+    z0 = 1.0f / z0;\n\
+    z1 = 1.0f / z1;\n\
+\n\
+    coord_f0 = coord_f0.xxzz * matrix0.xyxy + coord_f0.yyww * matrix0.zwzw + matrix1.xyxy;\n\
+    float4 coord_f = coord_f0 * z0.xxyy;\n\
+\n\
+    coord_in = convert_int4(floor(coord_f));\n\
+\n\
+    vxc_uchar16 src0, src1, dst;\n\
+    VXC_ReadImage(src0, input, coord_in.xy, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(src1, input, coord_in.xy, VXC_5BITOFFSET_XY(0, 1), VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0));\n\
+#if (VX_VERSION==1)\n\
+    VXC_BiLinear(dst, src0, src1, coord_f.xy, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+#else\n\
+    VXC_Lerp(src0, src0, src1, coord_f.y, VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0));\n\
+    src1.s0 = src0.s1;\n\
+    VXC_Lerp(dst, src0, src1, coord_f.x, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+#endif\n\
+\n\
+    VXC_ReadImage(src0, input, coord_in.zw, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(src1, input, coord_in.zw, VXC_5BITOFFSET_XY(0, 1), VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0));\n\
+#if (VX_VERSION==1)\n\
+    VXC_BiLinear(dst, src0, src1, coord_f.zw, VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 0));\n\
+#else\n\
+    VXC_Lerp(src0, src0, src1, coord_f.w, VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0));\n\
+    src1.s0 = src0.s1;\n\
+    VXC_Lerp(dst, src0, src1, coord_f.z, VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 0));\n\
+#endif\n\
+\n\
+    coord_f0 = coord_f0.zwzw + matrix4;\n\
+    coord_f = coord_f0 * z0.zzww;\n\
+    coord_in = convert_int4(floor(coord_f));\n\
+    VXC_ReadImage(src0, input, coord_in.xy, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(src1, input, coord_in.xy, VXC_5BITOFFSET_XY(0, 1), VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0));\n\
+#if (VX_VERSION==1)\n\
+    VXC_BiLinear(dst, src0, src1, coord_f.xy, VXC_MODIFIER(2, 2, 0, VXC_RM_TowardZero, 0));\n\
+#else\n\
+    VXC_Lerp(src0, src0, src1, coord_f.y, VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0));\n\
+    src1.s0 = src0.s1;\n\
+    VXC_Lerp(dst, src0, src1, coord_f.x, VXC_MODIFIER(2, 2, 0, VXC_RM_TowardZero, 0));\n\
+#endif\n\
+\n\
+    VXC_ReadImage(src0, input, coord_in.zw, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(src1, input, coord_in.zw, VXC_5BITOFFSET_XY(0, 1), VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0));\n\
+#if (VX_VERSION==1)\n\
+    VXC_BiLinear(dst, src0, src1, coord_f.zw, VXC_MODIFIER(3, 3, 0, VXC_RM_TowardZero, 0));\n\
+#else\n\
+    VXC_Lerp(src0, src0, src1, coord_f.w, VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0));\n\
+    src1.s0 = src0.s1;\n\
+    VXC_Lerp(dst, src0, src1, coord_f.z, VXC_MODIFIER(3, 3, 0, VXC_RM_TowardZero, 0));\n\
+#endif\n\
+\n\
+    coord_f0 = coord_f0.zwzw + matrix4;\n\
+    coord_f = coord_f0 * z1.xxyy;\n\
+    coord_in = convert_int4(floor(coord_f));\n\
+    VXC_ReadImage(src0, input, coord_in.xy, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(src1, input, coord_in.xy, VXC_5BITOFFSET_XY(0, 1), VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0));\n\
+#if (VX_VERSION==1)\n\
+    VXC_BiLinear(dst, src0, src1, coord_f.xy, VXC_MODIFIER(4, 4, 0, VXC_RM_TowardZero, 0));\n\
+#else\n\
+    VXC_Lerp(src0, src0, src1, coord_f.y, VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0));\n\
+    src1.s0 = src0.s1;\n\
+    VXC_Lerp(dst, src0, src1, coord_f.x, VXC_MODIFIER(4, 4, 0, VXC_RM_TowardZero, 0));\n\
+#endif\n\
+\n\
+    VXC_ReadImage(src0, input, coord_in.zw, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(src1, input, coord_in.zw, VXC_5BITOFFSET_XY(0, 1), VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0));\n\
+#if (VX_VERSION==1)\n\
+    VXC_BiLinear(dst, src0, src1, coord_f.zw, VXC_MODIFIER(5, 5, 0, VXC_RM_TowardZero, 0));\n\
+#else\n\
+    VXC_Lerp(src0, src0, src1, coord_f.w, VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0));\n\
+    src1.s0 = src0.s1;\n\
+    VXC_Lerp(dst, src0, src1, coord_f.z, VXC_MODIFIER(5, 5, 0, VXC_RM_TowardZero, 0));\n\
+#endif\n\
+\n\
+    coord_f0 = coord_f0.zwzw + matrix4;\n\
+    coord_f = coord_f0 * z1.zzww;\n\
+    coord_in = convert_int4(floor(coord_f));\n\
+    VXC_ReadImage(src0, input, coord_in.xy, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(src1, input, coord_in.xy, VXC_5BITOFFSET_XY(0, 1), VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0));\n\
+#if (VX_VERSION==1)\n\
+    VXC_BiLinear(dst, src0, src1, coord_f.xy, VXC_MODIFIER(6, 6, 0, VXC_RM_TowardZero, 0));\n\
+#else\n\
+    VXC_Lerp(src0, src0, src1, coord_f.y, VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0));\n\
+    src1.s0 = src0.s1;\n\
+    VXC_Lerp(dst, src0, src1, coord_f.x, VXC_MODIFIER(6, 6, 0, VXC_RM_TowardZero, 0));\n\
+#endif\n\
+\n\
+    VXC_ReadImage(src0, input, coord_in.zw, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(src1, input, coord_in.zw, VXC_5BITOFFSET_XY(0, 1), VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0));\n\
+#if (VX_VERSION==1)\n\
+    VXC_BiLinear(dst, src0, src1, coord_f.zw, VXC_MODIFIER(7, 7, 0, VXC_RM_TowardZero, 0));\n\
+#else\n\
+    VXC_Lerp(src0, src0, src1, coord_f.w, VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0));\n\
+    src1.s0 = src0.s1;\n\
+    VXC_Lerp(dst, src0, src1, coord_f.z, VXC_MODIFIER(7, 7, 0, VXC_RM_TowardZero, 0));\n\
+#endif\n\
+\n\
+    VXC_WriteImage(output, coord, dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+#define IMAGE_LOAD_3D(dst, xoffset, yoffset, start, end) \\\n\
+    VXC_OP4(img_load_3d, dst, input, coord_input.xywz, VXC_5BITOFFSET_XY(xoffset, yoffset), \\\n\
+        VXC_MODIFIER(start, end, 0, VXC_RM_TowardZero, 0));\n\
+__kernel void custom_warp_perspective_nearest_neighbor_U8toU8\n\
+(\n\
+    __read_only  image2d_array_t input,\n\
+    __write_only image2d_array_t output,\n\
+                 float           _m0,\n\
+                 float           _m1,\n\
+                 float           _m2,\n\
+                 float           _m3,\n\
+                 float           _m4,\n\
+                 float           _m5,\n\
+                 float           _m6,\n\
+                 float           _m7,\n\
+                 float           _m8\n\
+)\n\
+{\n\
+    int4   coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), get_global_id(2));\n\
+    int4   coord_in = (int4)(get_global_id(0), get_global_id(1), get_global_id(0) + 1, get_global_id(1));\n\
+\n\
+    float4 coord_f0 = convert_float4(coord_in);\n\
+\n\
+    float4 z0 = coord_f0.xzxz * matrix1.zzzz + coord_f0.y * matrix1.wwww + matrix2.xxxx;\n\
+    z0.zw = z0.zw + 2 * matrix1.z;\n\
+    float4 z1 = z0 + 4 * matrix1.z;\n\
+\n\
+    z0 = 1.0f / z0;\n\
+    z1 = 1.0f / z1;\n\
+\n\
+    coord_f0 = coord_f0.xxzz * matrix0.xyxy + coord_f0.yyww * matrix0.zwzw + matrix1.xyxy;\n\
+    float4 coord_f = coord_f0 * z0.xxyy;\n\
+\n\
+    coord_in = convert_int4(coord_f);\n\
+\n\
+    int4 coord_input = (int4)(coord_in.xy, get_global_id(2), get_global_id(2));\n\
+    int8 input_desc;\n\
+    _viv_asm(COPY, input_desc, input, sizeof(input_desc));\n\
+    int baseAddr = (int)coord_input.z * input_desc.s4 + input_desc.s0;\n\
+    _viv_asm(MOV, coord_input.w, baseAddr);\n\
+\n\
+    vxc_uchar16 dst;\n\
+    IMAGE_LOAD_3D(dst, 0, 0, 0, 0)\n\
+    coord_input.xy = coord_in.zw;\n\
+    IMAGE_LOAD_3D(dst, 0, 0, 1, 1)\n\
+    coord_f0 = coord_f0.zwzw + matrix4;\n\
+    coord_f = coord_f0 * z0.zzww;\n\
+    coord_in = convert_int4(coord_f);\n\
+    coord_input.xy = coord_in.xy;\n\
+    IMAGE_LOAD_3D(dst, 0, 0, 2, 2)\n\
+    coord_input.xy = coord_in.zw;\n\
+    IMAGE_LOAD_3D(dst, 0, 0, 3, 3)\n\
+    coord_f0 = coord_f0.zwzw + matrix4;\n\
+    coord_f = coord_f0 * z1.xxyy;\n\
+    coord_in = convert_int4(coord_f);\n\
+    coord_input.xy = coord_in.xy;\n\
+    IMAGE_LOAD_3D(dst, 0, 0, 4, 4)\n\
+    coord_input.xy = coord_in.zw;\n\
+    IMAGE_LOAD_3D(dst, 0, 0, 5, 5)\n\
+    coord_f0 = coord_f0.zwzw + matrix4;\n\
+    coord_f = coord_f0 * z1.zzww;\n\
+    coord_in = convert_int4(coord_f);\n\
+    coord_input.xy = coord_in.xy;\n\
+    IMAGE_LOAD_3D(dst, 0, 0, 6, 6)\n\
+    coord_input.xy = coord_in.zw;\n\
+    IMAGE_LOAD_3D(dst, 0, 0, 7, 7)\n\
+\n\
+    VXC_WriteImage2DArray(output, coord, dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+__kernel void custom_warp_perspective_bilinear_U8toU8\n\
+(\n\
+    __read_only  image2d_array_t input,\n\
+    __write_only image2d_array_t output,\n\
+                 float           _m0,\n\
+                 float           _m1,\n\
+                 float           _m2,\n\
+                 float           _m3,\n\
+                 float           _m4,\n\
+                 float           _m5,\n\
+                 float           _m6,\n\
+                 float           _m7,\n\
+                 float           _m8\n\
+)\n\
+{\n\
+    int4   coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), get_global_id(2));\n\
+    int4   coord_in = (int4)(get_global_id(0), get_global_id(1), get_global_id(0) + 1, get_global_id(1));\n\
+\n\
+    float4 coord_f0 = convert_float4(coord_in);\n\
+\n\
+    float4 z0 = coord_f0.xzxz * matrix1.zzzz + coord_f0.y * matrix1.wwww + matrix2.xxxx;\n\
+    z0.zw = z0.zw + 2 * matrix1.z;\n\
+    float4 z1 = z0 + 4 * matrix1.z;\n\
+\n\
+    z0 = 1.0f / z0;\n\
+    z1 = 1.0f / z1;\n\
+\n\
+    coord_f0 = coord_f0.xxzz * matrix0.xyxy + coord_f0.yyww * matrix0.zwzw + matrix1.xyxy;\n\
+    float4 coord_f = coord_f0 * z0.xxyy;\n\
+\n\
+    coord_in = convert_int4(floor(coord_f));\n\
+\n\
+    int4 coord_input = (int4)(coord_in.xy, get_global_id(2), get_global_id(2));\n\
+    int8 input_desc;\n\
+    _viv_asm(COPY, input_desc, input, sizeof(input_desc));\n\
+    int baseAddr = (int)coord_input.z * input_desc.s4 + input_desc.s0;\n\
+    _viv_asm(MOV, coord_input.w, baseAddr);\n\
+\n\
+    vxc_uchar16 src0, src1, dst;\n\
+    IMAGE_LOAD_3D(src0, 0, 0, 0, 1)\n\
+    IMAGE_LOAD_3D(src1, 0, 1, 0, 1)\n\
+#if (VX_VERSION==1)\n\
+    VXC_BiLinear(dst, src0, src1, coord_f.xy, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+#else\n\
+    VXC_Lerp(src0, src0, src1, coord_f.y, VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0));\n\
+    src1.s0 = src0.s1;\n\
+    VXC_Lerp(dst, src0, src1, coord_f.x, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+#endif\n\
+\n\
+    coord_input.xy = coord_in.zw;\n\
+    IMAGE_LOAD_3D(src0, 0, 0, 0, 1)\n\
+    IMAGE_LOAD_3D(src1, 0, 1, 0, 1)\n\
+#if (VX_VERSION==1)\n\
+    VXC_BiLinear(dst, src0, src1, coord_f.zw, VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 0));\n\
+#else\n\
+    VXC_Lerp(src0, src0, src1, coord_f.w, VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0));\n\
+    src1.s0 = src0.s1;\n\
+    VXC_Lerp(dst, src0, src1, coord_f.z, VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 0));\n\
+#endif\n\
+\n\
+    coord_f0 = coord_f0.zwzw + matrix4;\n\
+    coord_f = coord_f0 * z0.zzww;\n\
+    coord_in = convert_int4(floor(coord_f));\n\
+    coord_input.xy = coord_in.xy;\n\
+    IMAGE_LOAD_3D(src0, 0, 0, 0, 1)\n\
+    IMAGE_LOAD_3D(src1, 0, 1, 0, 1)\n\
+#if (VX_VERSION==1)\n\
+    VXC_BiLinear(dst, src0, src1, coord_f.xy, VXC_MODIFIER(2, 2, 0, VXC_RM_TowardZero, 0));\n\
+#else\n\
+    VXC_Lerp(src0, src0, src1, coord_f.y, VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0));\n\
+    src1.s0 = src0.s1;\n\
+    VXC_Lerp(dst, src0, src1, coord_f.x, VXC_MODIFIER(2, 2, 0, VXC_RM_TowardZero, 0));\n\
+#endif\n\
+\n\
+    coord_input.xy = coord_in.zw;\n\
+    IMAGE_LOAD_3D(src0, 0, 0, 0, 1)\n\
+    IMAGE_LOAD_3D(src1, 0, 1, 0, 1)\n\
+#if (VX_VERSION==1)\n\
+    VXC_BiLinear(dst, src0, src1, coord_f.zw, VXC_MODIFIER(3, 3, 0, VXC_RM_TowardZero, 0));\n\
+#else\n\
+    VXC_Lerp(src0, src0, src1, coord_f.w, VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0));\n\
+    src1.s0 = src0.s1;\n\
+    VXC_Lerp(dst, src0, src1, coord_f.z, VXC_MODIFIER(3, 3, 0, VXC_RM_TowardZero, 0));\n\
+#endif\n\
+\n\
+    coord_f0 = coord_f0.zwzw + matrix4;\n\
+    coord_f = coord_f0 * z1.xxyy;\n\
+    coord_in = convert_int4(floor(coord_f));\n\
+    coord_input.xy = coord_in.xy;\n\
+    IMAGE_LOAD_3D(src0, 0, 0, 0, 1)\n\
+    IMAGE_LOAD_3D(src1, 0, 1, 0, 1)\n\
+#if (VX_VERSION==1)\n\
+    VXC_BiLinear(dst, src0, src1, coord_f.xy, VXC_MODIFIER(4, 4, 0, VXC_RM_TowardZero, 0));\n\
+#else\n\
+    VXC_Lerp(src0, src0, src1, coord_f.y, VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0));\n\
+    src1.s0 = src0.s1;\n\
+    VXC_Lerp(dst, src0, src1, coord_f.x, VXC_MODIFIER(4, 4, 0, VXC_RM_TowardZero, 0));\n\
+#endif\n\
+\n\
+    coord_input.xy = coord_in.zw;\n\
+    IMAGE_LOAD_3D(src0, 0, 0, 0, 1)\n\
+    IMAGE_LOAD_3D(src1, 0, 1, 0, 1)\n\
+#if (VX_VERSION==1)\n\
+    VXC_BiLinear(dst, src0, src1, coord_f.zw, VXC_MODIFIER(5, 5, 0, VXC_RM_TowardZero, 0));\n\
+#else\n\
+    VXC_Lerp(src0, src0, src1, coord_f.w, VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0));\n\
+    src1.s0 = src0.s1;\n\
+    VXC_Lerp(dst, src0, src1, coord_f.z, VXC_MODIFIER(5, 5, 0, VXC_RM_TowardZero, 0));\n\
+#endif\n\
+\n\
+    coord_f0 = coord_f0.zwzw + matrix4;\n\
+    coord_f = coord_f0 * z1.zzww;\n\
+    coord_in = convert_int4(floor(coord_f));\n\
+    coord_input.xy = coord_in.xy;\n\
+    IMAGE_LOAD_3D(src0, 0, 0, 0, 1)\n\
+    IMAGE_LOAD_3D(src1, 0, 1, 0, 1)\n\
+#if (VX_VERSION==1)\n\
+    VXC_BiLinear(dst, src0, src1, coord_f.xy, VXC_MODIFIER(6, 6, 0, VXC_RM_TowardZero, 0));\n\
+#else\n\
+    VXC_Lerp(src0, src0, src1, coord_f.y, VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0));\n\
+    src1.s0 = src0.s1;\n\
+    VXC_Lerp(dst, src0, src1, coord_f.x, VXC_MODIFIER(6, 6, 0, VXC_RM_TowardZero, 0));\n\
+#endif\n\
+\n\
+    coord_input.xy = coord_in.zw;\n\
+    IMAGE_LOAD_3D(src0, 0, 0, 0, 1)\n\
+    IMAGE_LOAD_3D(src1, 0, 1, 0, 1)\n\
+#if (VX_VERSION==1)\n\
+    VXC_BiLinear(dst, src0, src1, coord_f.zw, VXC_MODIFIER(7, 7, 0, VXC_RM_TowardZero, 0));\n\
+#else\n\
+    VXC_Lerp(src0, src0, src1, coord_f.w, VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0));\n\
+    src1.s0 = src0.s1;\n\
+    VXC_Lerp(dst, src0, src1, coord_f.z, VXC_MODIFIER(7, 7, 0, VXC_RM_TowardZero, 0));\n\
+#endif\n\
+\n\
+    VXC_WriteImage2DArray(output, coord, dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+"; /* end of custom_warp_perspective_vx*/
+
 static const char depth2space_crd_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 _viv_uniform int2 multAndoutZP0;//[0:15] multiplier, [31:63] output zp\n\
@@ -58362,6 +58759,7 @@ static const source_map_t evis_resource[] =
     {"conv1d_ovxlib_k1024_vx", conv1d_ovxlib_k1024_vx},
     {"custom_softmax_vx", custom_softmax_vx},
     {"custom_warp_affine_vx", custom_warp_affine_vx},
+    {"custom_warp_perspective_vx", custom_warp_perspective_vx},
     {"depth2space_crd_vx", depth2space_crd_vx},
     {"depthwise_conv1d_src0_vx", depthwise_conv1d_src0_vx},
     {"depthwise_conv1d_src1_vx", depthwise_conv1d_src1_vx},

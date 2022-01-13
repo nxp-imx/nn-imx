@@ -132,6 +132,9 @@
     <ClInclude Include="include\custom\ops\vsi_nn_op_custom_warp_affine.h">
       <Filter>Header Files\custom\ops</Filter>
     </ClInclude>
+    <ClInclude Include="include\custom\ops\vsi_nn_op_custom_warp_perspective.h">
+      <Filter>Header Files\custom\ops</Filter>
+    </ClInclude>
     <ClInclude Include="include\custom\vsi_nn_custom_node_type.h">
       <Filter>Header Files\custom</Filter>
     </ClInclude>
@@ -827,10 +830,16 @@
     <ClCompile Include="src\custom\ops\kernel\cpu\custom_warp_affine_cpu.c">
       <Filter>Source Files\custom\ops\kernel\cpu</Filter>
     </ClCompile>
+    <ClCompile Include="src\custom\ops\kernel\cpu\custom_warp_perspective_cpu.c">
+      <Filter>Source Files\custom\ops\kernel\cpu</Filter>
+    </ClCompile>
     <ClCompile Include="src\custom\ops\kernel\evis\custom_softmax_evis.c">
       <Filter>Source Files\custom\ops\kernel\evis</Filter>
     </ClCompile>
     <ClCompile Include="src\custom\ops\kernel\evis\custom_warp_affine_evis.c">
+      <Filter>Source Files\custom\ops\kernel\evis</Filter>
+    </ClCompile>
+    <ClCompile Include="src\custom\ops\kernel\evis\custom_warp_perspective_evis.c">
       <Filter>Source Files\custom\ops\kernel\evis</Filter>
     </ClCompile>
     <ClCompile Include="src\custom\ops\op_custom_ainr_denoise_postprocess.c">
@@ -840,6 +849,9 @@
       <Filter>Source Files\custom\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\custom\ops\vsi_nn_op_custom_warp_affine.c">
+      <Filter>Source Files\custom\ops</Filter>
+    </ClCompile>
+    <ClCompile Include="src\custom\ops\vsi_nn_op_custom_warp_perspective.c">
       <Filter>Source Files\custom\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\add_mean_std_norm_cl.c">
@@ -1493,13 +1505,13 @@
     <ClCompile Include="src\kernel\sp\grucell_h_times_activation_r_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
-    <ClCompile Include="src\kernel\sp\grucell_reset_after_activation_sp.c">
+  <ClCompile Include="src\kernel\sp\grucell_reset_after_activation_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\sp\instance_normalization_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
-  <ClCompile Include="src\kernel\sp\l2_normalize_sp.c">
+    <ClCompile Include="src\kernel\sp\l2_normalize_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\sp\layer_normalization_sp.c">
