@@ -88,7 +88,7 @@ static const char * vsi_nn_internal_ops_name[] =
 #undef DEF_OP
 
 #define MAX_CLIENT_NUM 65535
-static const char* client_name[MAX_CLIENT_NUM] = {};
+static const char* client_name[MAX_CLIENT_NUM];
 
 vsi_bool _is_external_ops(vsi_nn_op_t op) {
     vsi_bool ret = FALSE;

@@ -1182,9 +1182,9 @@ vsi_nn_node_t * vsi_nn_AddExternalNode
 {
     vsi_nn_node_t * node;
     vsi_nn_node_id_t id;
-    op = op;
+    vsi_nn_op_proc_t * node_proc;
 
-    vsi_nn_op_proc_t * node_proc = (vsi_nn_op_proc_t*)proc;
+    node_proc = (vsi_nn_op_proc_t*)proc;
 
     if( NULL == graph )
     {
