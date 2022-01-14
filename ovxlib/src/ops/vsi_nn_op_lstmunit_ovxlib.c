@@ -619,19 +619,32 @@ static vsi_bool op_setup
                 /* range: 0 ~ 1 */
                 attr.dtype.scale = (float)0.003921568859368563;
                 attr.dtype.zero_point = -128;
+                if (p->local->use_projection_bias &&
+                    inputs[LSTMUNIT_INPUT_BIAS_PROJ]->attr.dtype.qnt_type == VSI_NN_QNT_TYPE_AFFINE_SYMMETRIC)
+                {
+                    /* re-compute bias scale */
+                    inputs[LSTMUNIT_INPUT_BIAS_PROJ]->attr.dtype.scale =
+                        attr.dtype.scale * inputs[LSTMUNIT_INPUT_WEIGHT_PROJ]->attr.dtype.scale;
+                }
             }
             else if (p->recurrent_activation == VSI_NN_ACT_TANH)
             {
                 /* range: -1 ~ 1 */
                 attr.dtype.scale = (float)0.00784313725490196;
                 attr.dtype.zero_point = 0;
+                if (p->local->use_projection_bias &&
+                    inputs[LSTMUNIT_INPUT_BIAS_PROJ]->attr.dtype.qnt_type == VSI_NN_QNT_TYPE_AFFINE_SYMMETRIC)
+                {
+                    /* re-compute bias scale */
+                    inputs[LSTMUNIT_INPUT_BIAS_PROJ]->attr.dtype.scale =
+                        attr.dtype.scale * inputs[LSTMUNIT_INPUT_WEIGHT_PROJ]->attr.dtype.scale;
+                }
             }
             else
             {
                 attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
                 attr.dtype.vx_type = VSI_NN_TYPE_FLOAT16;
             }
-
         }
         else
         {
