@@ -1,10 +1,10 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ovxlib", "ovxlib.vcxproj", "{53428C86-5294-4143-80E1-33140A45BF82}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ovxlib", "ovxlib.2012.vcxproj", "{53428C86-5294-4143-80E1-33140A45BF82}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "jpeg", "third-party\jpeg-9b\jpeg.vcxproj", "{D9873405-2CD5-49FE-8FE3-188357003E9D}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "jpeg", "third-party\jpeg-9b\jpeg.2012.vcxproj", "{D9873405-2CD5-49FE-8FE3-188357003E9D}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lenet", "test\lenet\lenet.vcxproj", "{D9873405-2CD5-49FE-8FE3-188357003E9E}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lenet", "test\lenet\lenet.2012.vcxproj", "{D9873405-2CD5-49FE-8FE3-188357003E9E}"
 	ProjectSection(ProjectDependencies) = postProject
 		{D9873405-2CD5-49FE-8FE3-188357003E9D} = {D9873405-2CD5-49FE-8FE3-188357003E9D}
 		{53428C86-5294-4143-80E1-33140A45BF82} = {53428C86-5294-4143-80E1-33140A45BF82}
