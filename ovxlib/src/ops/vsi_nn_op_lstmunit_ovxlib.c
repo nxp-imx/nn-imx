@@ -275,6 +275,7 @@ static vsi_bool op_setup
     vsi_nn_internal_tensor_t* add_tensor = NULL;
     vsi_nn_internal_tensor_t* input_tensor = NULL;
     vsi_nn_internal_tensor_t* output_tensor = NULL;
+    vsi_nn_internal_tensor_t* dc_tensor = NULL;
     vsi_nn_internal_tensor_t* recurrent_input_tensor = NULL;
     vsi_nn_internal_tensor_t* input_fc_outputs[LSTMUNIT_IFCO_GATE_COUNT] = { NULL };
     vsi_nn_internal_tensor_t* aux_input_fc_outputs[LSTMUNIT_IFCO_GATE_COUNT] = { NULL };
@@ -613,12 +614,12 @@ static vsi_bool op_setup
                  inputs[LSTMUNIT_INPUT_WEIGHT_PROJ]->attr.dtype.qnt_type == VSI_NN_QNT_TYPE_AFFINE_SYMMETRIC)
         {
             attr.dtype.qnt_type = VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC;
-            attr.dtype.vx_type = VSI_NN_TYPE_INT8;
+            attr.dtype.vx_type = VSI_NN_TYPE_UINT8;
             if (p->recurrent_activation == VSI_NN_ACT_SIGMOID || p->recurrent_activation == VSI_NN_ACT_HARD_SIGMOID)
             {
                 /* range: 0 ~ 1 */
                 attr.dtype.scale = (float)0.003921568859368563;
-                attr.dtype.zero_point = -128;
+                attr.dtype.zero_point = 0;
                 if (p->local->use_projection_bias &&
                     inputs[LSTMUNIT_INPUT_BIAS_PROJ]->attr.dtype.qnt_type == VSI_NN_QNT_TYPE_AFFINE_SYMMETRIC)
                 {
@@ -668,6 +669,54 @@ static vsi_bool op_setup
 
     if( p->local->use_projection )
     {
+        vsi_nn_tensor_t *prj_input = NULL;
+
+        if (inputs[LSTMUNIT_INPUT_WEIGHT_PROJ]->attr.dtype.vx_type == VSI_NN_TYPE_INT8 &&
+            inputs[LSTMUNIT_INPUT_WEIGHT_PROJ]->attr.dtype.qnt_type == VSI_NN_QNT_TYPE_AFFINE_SYMMETRIC)
+        {
+            attr.dtype.qnt_type = VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC;
+            attr.dtype.vx_type = VSI_NN_TYPE_INT8;
+            if (p->recurrent_activation == VSI_NN_ACT_SIGMOID || p->recurrent_activation == VSI_NN_ACT_HARD_SIGMOID)
+            {
+                /* range: 0 ~ 1 */
+                attr.dtype.scale = (float)0.003921568859368563;
+                attr.dtype.zero_point = -128;
+                if (p->local->use_projection_bias &&
+                    inputs[LSTMUNIT_INPUT_BIAS_PROJ]->attr.dtype.qnt_type == VSI_NN_QNT_TYPE_AFFINE_SYMMETRIC)
+                {
+                    /* re-compute bias scale */
+                    inputs[LSTMUNIT_INPUT_BIAS_PROJ]->attr.dtype.scale =
+                        attr.dtype.scale * inputs[LSTMUNIT_INPUT_WEIGHT_PROJ]->attr.dtype.scale;
+                }
+            }
+            else if (p->recurrent_activation == VSI_NN_ACT_TANH)
+            {
+                /* range: -1 ~ 1 */
+                attr.dtype.scale = (float)0.00784313725490196;
+                attr.dtype.zero_point = 0;
+                if (p->local->use_projection_bias &&
+                    inputs[LSTMUNIT_INPUT_BIAS_PROJ]->attr.dtype.qnt_type == VSI_NN_QNT_TYPE_AFFINE_SYMMETRIC)
+                {
+                    /* re-compute bias scale */
+                    inputs[LSTMUNIT_INPUT_BIAS_PROJ]->attr.dtype.scale =
+                        attr.dtype.scale * inputs[LSTMUNIT_INPUT_WEIGHT_PROJ]->attr.dtype.scale;
+                }
+            }
+            curr = vsi_nn_internal_new_node( self, VSI_NN_OP_DATACONVERT, 0, 0 );
+            dc_tensor = vsi_nn_internal_new_tensor(self, &attr, 0.0f);
+            curr->inputs[0] = output_tensor->t;
+            curr->outputs[0] = dc_tensor->t;
+
+            vsi_nn_internal_setup_node(self, curr);
+
+            prj_input = dc_tensor->t;
+        }
+        else
+        {
+            prj_input = output_tensor->t;
+        }
+
+
         if ( p->local->use_hybrid && p->local->use_projection_bias )
         {
             use_virtual_tensor = inputs[LSTMUNIT_INPUT_BIAS_PROJ]->attr.vtl;
@@ -703,7 +752,7 @@ static vsi_bool op_setup
         curr->node->nn_param.fcl.axis = 0;
         curr->node->nn_param.fcl.weights = (uint32_t)inputs[LSTMUNIT_INPUT_WEIGHT_PROJ]->attr.size[1];
 
-        curr->inputs[0] = output_tensor->t;
+        curr->inputs[0] = prj_input;
         curr->inputs[1] = inputs[LSTMUNIT_INPUT_WEIGHT_PROJ];
         curr->inputs[2] = zero_bias_tensor;
 
