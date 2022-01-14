@@ -1358,6 +1358,8 @@ void vsi_nn_SaveTensorToBinary
     FILE            * fp;
     vsi_size_t         sz;
     uint32_t         i;
+    uint8_t        * packed_data = NULL;
+    vsi_size_t     packed_size;
 
     if( NULL == graph || NULL == tensor || NULL == filename )
     {
@@ -1365,6 +1367,7 @@ void vsi_nn_SaveTensorToBinary
     }
 
     data = vsi_nn_ConvertTensorToData( graph, tensor );
+
     if( NULL == data )
     {
         VSILOGE( "Convert data fail." );
@@ -1379,11 +1382,28 @@ void vsi_nn_SaveTensorToBinary
         return;
     }
     sz = (vsi_size_t)vsi_nn_GetTypeBytes( tensor->attr.dtype.vx_type );
-    for( i = 0; i < tensor->attr.dim_num; i ++ )
+    if( tensor->attr.dtype.vx_type == VSI_NN_TYPE_INT4 ||
+        tensor->attr.dtype.vx_type == VSI_NN_TYPE_UINT4 )
     {
-        sz *= tensor->attr.size[i];
+        packed_size = vsi_nn_GetTensorSize( tensor->attr.size, tensor->attr.dim_num,
+                                                         tensor->attr.dtype.vx_type);
+        packed_data = (uint8_t*)malloc(packed_size);
+        vsi_nn_Pack4bitData(tensor, data, packed_data);
+        fwrite( packed_data, packed_size, 1, fp );
+        if( packed_data )
+        {
+            free(packed_data);
+            packed_data = NULL;
+        }
     }
-    fwrite( data, sz, 1, fp );
+    else
+    {
+        for( i = 0; i < tensor->attr.dim_num; i ++ )
+        {
+            sz *= tensor->attr.size[i];
+        }
+        fwrite( data, sz, 1, fp );
+    }
     fclose( fp );
     vsi_nn_safe_free( data );
 } /* vsi_nn_SaveTensorToBinary() */
