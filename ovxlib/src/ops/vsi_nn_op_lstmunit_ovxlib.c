@@ -601,14 +601,37 @@ static vsi_bool op_setup
         attr.vtl = use_virtual_tensor;
         attr.is_const = FALSE;
 
-        if( p->local->multi_batch &&
-            inputs[LSTMUNIT_INPUT_WEIGHT_PROJ]->attr.dtype.vx_type == VSI_NN_TYPE_UINT8)
+        if(inputs[LSTMUNIT_INPUT_WEIGHT_PROJ]->attr.dtype.vx_type == VSI_NN_TYPE_UINT8)
         {
             /* projection FC on NN requires quantized input */
             attr.dtype.scale = (float)0.007866097716834601;
             attr.dtype.zero_point = 128;
             attr.dtype.qnt_type = VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC;
             attr.dtype.vx_type = VSI_NN_TYPE_UINT8;
+        }
+        else if (inputs[LSTMUNIT_INPUT_WEIGHT_PROJ]->attr.dtype.vx_type == VSI_NN_TYPE_INT8 &&
+                 inputs[LSTMUNIT_INPUT_WEIGHT_PROJ]->attr.dtype.qnt_type == VSI_NN_QNT_TYPE_AFFINE_SYMMETRIC)
+        {
+            attr.dtype.qnt_type = VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC;
+            attr.dtype.vx_type = VSI_NN_TYPE_INT8;
+            if (p->recurrent_activation == VSI_NN_ACT_SIGMOID || p->recurrent_activation == VSI_NN_ACT_HARD_SIGMOID)
+            {
+                /* range: 0 ~ 1 */
+                attr.dtype.scale = (float)0.003921568859368563;
+                attr.dtype.zero_point = -128;
+            }
+            else if (p->recurrent_activation == VSI_NN_ACT_TANH)
+            {
+                /* range: -1 ~ 1 */
+                attr.dtype.scale = (float)0.00784313725490196;
+                attr.dtype.zero_point = 0;
+            }
+            else
+            {
+                attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
+                attr.dtype.vx_type = VSI_NN_TYPE_FLOAT16;
+            }
+
         }
         else
         {
