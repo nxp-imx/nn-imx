@@ -475,18 +475,18 @@ static vsi_bool _init_tensor
             {
 #ifdef VSI_40BIT_VA_SUPPORT
                 {
-                    vx_size size_vxsize[_cnt_of_array(tensor->attr.size)] = {0};
+                    vx_size size_vxsize2[_cnt_of_array(tensor->attr.size)] = {0};
                     vx_size stride_size_vxsize[_cnt_of_array(stride_size)] = {0};
                     for(i = 0; i < _cnt_of_array(tensor->attr.size); i++)
                     {
-                        size_vxsize[i] = -1 == tensor->attr.size[i] ? -1 : (vx_size)tensor->attr.size[i];
+                        size_vxsize2[i] = -1 == tensor->attr.size[i] ? -1 : (vx_size)tensor->attr.size[i];
                     }
                     for(i = 0; i < _cnt_of_array(stride_size); i++)
                     {
                         stride_size_vxsize[i] = -1 == stride_size[i] ? -1 : (vx_size)stride_size[i];
                     }
                     addr = vxCreateTensorAddressing(graph->ctx->c,
-                        size_vxsize, stride_size_vxsize, (vx_size)tensor->attr.dim_num);
+                        size_vxsize2, stride_size_vxsize, (vx_size)tensor->attr.dim_num);
                 }
 #else
                 {

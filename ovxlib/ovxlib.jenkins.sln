@@ -1,13 +1,15 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ovxlib", "ovxlib.vcxproj", "{53428C86-5294-4143-80E1-33140A45BF82}"
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30204.135
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ovxlib", "ovxlib.vcxproj", "{3F943DEF-F8A2-4699-8E60-AA81BB22CCD1}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "jpeg", "third-party\jpeg-9b\jpeg.vcxproj", "{D9873405-2CD5-49FE-8FE3-188357003E9D}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "jpeg", "third-party\jpeg-9b\jpeg.vcxproj", "{41F413C2-EA77-493C-83CF-3764C31C33BB}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lenet", "test\lenet\lenet.vcxproj", "{D9873405-2CD5-49FE-8FE3-188357003E9E}"
 	ProjectSection(ProjectDependencies) = postProject
-		{D9873405-2CD5-49FE-8FE3-188357003E9D} = {D9873405-2CD5-49FE-8FE3-188357003E9D}
-		{53428C86-5294-4143-80E1-33140A45BF82} = {53428C86-5294-4143-80E1-33140A45BF82}
+		{41F413C2-EA77-493C-83CF-3764C31C33BB} = {41F413C2-EA77-493C-83CF-3764C31C33BB}
+		{3F943DEF-F8A2-4699-8E60-AA81BB22CCD1} = {3F943DEF-F8A2-4699-8E60-AA81BB22CCD1}
 	EndProjectSection
 EndProject
 Global
@@ -22,36 +24,36 @@ Global
 		Release_dynamic|x64 = Release_dynamic|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{53428C86-5294-4143-80E1-33140A45BF82}.Debug|Win32.ActiveCfg = Debug|Win32
-		{53428C86-5294-4143-80E1-33140A45BF82}.Debug|Win32.Build.0 = Debug|Win32
-		{53428C86-5294-4143-80E1-33140A45BF82}.Debug|x64.ActiveCfg = Jenkins-Debug|x64
-		{53428C86-5294-4143-80E1-33140A45BF82}.Debug|x64.Build.0 = Jenkins-Debug|x64
-		{53428C86-5294-4143-80E1-33140A45BF82}.Jenkins-Debug|Win32.ActiveCfg = Jenkins-Debug|Win32
-		{53428C86-5294-4143-80E1-33140A45BF82}.Jenkins-Debug|Win32.Build.0 = Jenkins-Debug|Win32
-		{53428C86-5294-4143-80E1-33140A45BF82}.Jenkins-Debug|x64.ActiveCfg = Jenkins-Debug|x64
-		{53428C86-5294-4143-80E1-33140A45BF82}.Jenkins-Debug|x64.Build.0 = Jenkins-Debug|x64
-		{53428C86-5294-4143-80E1-33140A45BF82}.Jenkins-Debug-NNApi0.4|Win32.ActiveCfg = Jenkins-Debug-NNApi0.4|Win32
-		{53428C86-5294-4143-80E1-33140A45BF82}.Jenkins-Debug-NNApi0.4|Win32.Build.0 = Jenkins-Debug-NNApi0.4|Win32
-		{53428C86-5294-4143-80E1-33140A45BF82}.Jenkins-Debug-NNApi0.4|x64.ActiveCfg = Jenkins-Debug-NNApi0.4|x64
-		{53428C86-5294-4143-80E1-33140A45BF82}.Jenkins-Debug-NNApi0.4|x64.Build.0 = Jenkins-Debug-NNApi0.4|x64
-		{53428C86-5294-4143-80E1-33140A45BF82}.Release_dynamic|Win32.ActiveCfg = Release_dynamic|Win32
-		{53428C86-5294-4143-80E1-33140A45BF82}.Release_dynamic|Win32.Build.0 = Release_dynamic|Win32
-		{53428C86-5294-4143-80E1-33140A45BF82}.Release_dynamic|x64.ActiveCfg = Release_dynamic|x64
-		{53428C86-5294-4143-80E1-33140A45BF82}.Release_dynamic|x64.Build.0 = Release_dynamic|x64
-		{D9873405-2CD5-49FE-8FE3-188357003E9D}.Debug|Win32.ActiveCfg = Debug|Win32
-		{D9873405-2CD5-49FE-8FE3-188357003E9D}.Debug|Win32.Build.0 = Debug|Win32
-		{D9873405-2CD5-49FE-8FE3-188357003E9D}.Debug|x64.ActiveCfg = Debug|x64
-		{D9873405-2CD5-49FE-8FE3-188357003E9D}.Debug|x64.Build.0 = Debug|x64
-		{D9873405-2CD5-49FE-8FE3-188357003E9D}.Jenkins-Debug|Win32.ActiveCfg = Jenkins-Debug|Win32
-		{D9873405-2CD5-49FE-8FE3-188357003E9D}.Jenkins-Debug|Win32.Build.0 = Jenkins-Debug|Win32
-		{D9873405-2CD5-49FE-8FE3-188357003E9D}.Jenkins-Debug|x64.ActiveCfg = Jenkins-Debug|Win32
-		{D9873405-2CD5-49FE-8FE3-188357003E9D}.Jenkins-Debug-NNApi0.4|Win32.ActiveCfg = Jenkins-Debug-NNApi0.4|Win32
-		{D9873405-2CD5-49FE-8FE3-188357003E9D}.Jenkins-Debug-NNApi0.4|Win32.Build.0 = Jenkins-Debug-NNApi0.4|Win32
-		{D9873405-2CD5-49FE-8FE3-188357003E9D}.Jenkins-Debug-NNApi0.4|x64.ActiveCfg = Jenkins-Debug-NNApi0.4|Win32
-		{D9873405-2CD5-49FE-8FE3-188357003E9D}.Release_dynamic|Win32.ActiveCfg = Release_dynamic|Win32
-		{D9873405-2CD5-49FE-8FE3-188357003E9D}.Release_dynamic|Win32.Build.0 = Release_dynamic|Win32
-		{D9873405-2CD5-49FE-8FE3-188357003E9D}.Release_dynamic|x64.ActiveCfg = Release_dynamic|x64
-		{D9873405-2CD5-49FE-8FE3-188357003E9D}.Release_dynamic|x64.Build.0 = Release_dynamic|x64
+		{3F943DEF-F8A2-4699-8E60-AA81BB22CCD1}.Debug|Win32.ActiveCfg = Debug|Win32
+		{3F943DEF-F8A2-4699-8E60-AA81BB22CCD1}.Debug|Win32.Build.0 = Debug|Win32
+		{3F943DEF-F8A2-4699-8E60-AA81BB22CCD1}.Debug|x64.ActiveCfg = Jenkins-Debug|x64
+		{3F943DEF-F8A2-4699-8E60-AA81BB22CCD1}.Debug|x64.Build.0 = Jenkins-Debug|x64
+		{3F943DEF-F8A2-4699-8E60-AA81BB22CCD1}.Jenkins-Debug|Win32.ActiveCfg = Jenkins-Debug|Win32
+		{3F943DEF-F8A2-4699-8E60-AA81BB22CCD1}.Jenkins-Debug|Win32.Build.0 = Jenkins-Debug|Win32
+		{3F943DEF-F8A2-4699-8E60-AA81BB22CCD1}.Jenkins-Debug|x64.ActiveCfg = Jenkins-Debug|x64
+		{3F943DEF-F8A2-4699-8E60-AA81BB22CCD1}.Jenkins-Debug|x64.Build.0 = Jenkins-Debug|x64
+		{3F943DEF-F8A2-4699-8E60-AA81BB22CCD1}.Jenkins-Debug-NNApi0.4|Win32.ActiveCfg = Jenkins-Debug-NNApi0.4|Win32
+		{3F943DEF-F8A2-4699-8E60-AA81BB22CCD1}.Jenkins-Debug-NNApi0.4|Win32.Build.0 = Jenkins-Debug-NNApi0.4|Win32
+		{3F943DEF-F8A2-4699-8E60-AA81BB22CCD1}.Jenkins-Debug-NNApi0.4|x64.ActiveCfg = Jenkins-Debug-NNApi0.4|x64
+		{3F943DEF-F8A2-4699-8E60-AA81BB22CCD1}.Jenkins-Debug-NNApi0.4|x64.Build.0 = Jenkins-Debug-NNApi0.4|x64
+		{3F943DEF-F8A2-4699-8E60-AA81BB22CCD1}.Release_dynamic|Win32.ActiveCfg = Release_dynamic|Win32
+		{3F943DEF-F8A2-4699-8E60-AA81BB22CCD1}.Release_dynamic|Win32.Build.0 = Release_dynamic|Win32
+		{3F943DEF-F8A2-4699-8E60-AA81BB22CCD1}.Release_dynamic|x64.ActiveCfg = Release_dynamic|x64
+		{3F943DEF-F8A2-4699-8E60-AA81BB22CCD1}.Release_dynamic|x64.Build.0 = Release_dynamic|x64
+		{41F413C2-EA77-493C-83CF-3764C31C33BB}.Debug|Win32.ActiveCfg = Debug|Win32
+		{41F413C2-EA77-493C-83CF-3764C31C33BB}.Debug|Win32.Build.0 = Debug|Win32
+		{41F413C2-EA77-493C-83CF-3764C31C33BB}.Debug|x64.ActiveCfg = Debug|x64
+		{41F413C2-EA77-493C-83CF-3764C31C33BB}.Debug|x64.Build.0 = Debug|x64
+		{41F413C2-EA77-493C-83CF-3764C31C33BB}.Jenkins-Debug|Win32.ActiveCfg = Jenkins-Debug|Win32
+		{41F413C2-EA77-493C-83CF-3764C31C33BB}.Jenkins-Debug|Win32.Build.0 = Jenkins-Debug|Win32
+		{41F413C2-EA77-493C-83CF-3764C31C33BB}.Jenkins-Debug|x64.ActiveCfg = Jenkins-Debug|Win32
+		{41F413C2-EA77-493C-83CF-3764C31C33BB}.Jenkins-Debug-NNApi0.4|Win32.ActiveCfg = Jenkins-Debug-NNApi0.4|Win32
+		{41F413C2-EA77-493C-83CF-3764C31C33BB}.Jenkins-Debug-NNApi0.4|Win32.Build.0 = Jenkins-Debug-NNApi0.4|Win32
+		{41F413C2-EA77-493C-83CF-3764C31C33BB}.Jenkins-Debug-NNApi0.4|x64.ActiveCfg = Jenkins-Debug-NNApi0.4|Win32
+		{41F413C2-EA77-493C-83CF-3764C31C33BB}.Release_dynamic|Win32.ActiveCfg = Release_dynamic|Win32
+		{41F413C2-EA77-493C-83CF-3764C31C33BB}.Release_dynamic|Win32.Build.0 = Release_dynamic|Win32
+		{41F413C2-EA77-493C-83CF-3764C31C33BB}.Release_dynamic|x64.ActiveCfg = Release_dynamic|x64
+		{41F413C2-EA77-493C-83CF-3764C31C33BB}.Release_dynamic|x64.Build.0 = Release_dynamic|x64
 		{D9873405-2CD5-49FE-8FE3-188357003E9E}.Debug|Win32.ActiveCfg = Debug|Win32
 		{D9873405-2CD5-49FE-8FE3-188357003E9E}.Debug|Win32.Build.0 = Debug|Win32
 		{D9873405-2CD5-49FE-8FE3-188357003E9E}.Debug|x64.ActiveCfg = Debug|x64
@@ -69,5 +71,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {9FA3B66C-4A8A-4353-BDD2-C66A736D10DF}
 	EndGlobalSection
 EndGlobal
