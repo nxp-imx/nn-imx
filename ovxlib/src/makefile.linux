@@ -221,7 +221,8 @@ TARGET_NAME  = libovxlib.a
 else
 CFLAGS += -fPIC
 DYNAMIC      := 1
-TARGET_NAME  = libovxlib.so
+TARGET_NAME  = libovxlib.so.1.1.0
+TARGET_LINKS  := libovxlib.so.1 libovxlib.so
 endif
 
 ifneq ("$(OVXLIB_CONFIG)", "")
