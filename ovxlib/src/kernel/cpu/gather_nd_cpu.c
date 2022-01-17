@@ -105,7 +105,7 @@ DEF_KERNEL_EXECUTOR(_gather_nd_exec)
         vsi_ssize_t stride[4] = {block_size, 0, 0, 0};
         for(i = 1; i < coord_stride; ++i)
         {
-            stride[i] = stride[i - 1] * attr[0]->shape->data[i];
+            stride[i] = stride[i - 1] * attr[0]->shape->data[i - 1];
         }
 
         for(i = 0; i < indices_num; i++)
