@@ -55,15 +55,6 @@ vpath %.c libnnext
 OBJECTS += $(OBJ_DIR)/vsi_nn_libnnext_resource.o \
 			$(OBJ_DIR)/vsi_nn_vxkernel.o
 
-ifeq ("$(OVXLIB_CONFIG)", "VSI_CFG_NNAPI_0_3")
-vpath %.c platform/nnapi0.3
-OBJECTS += $(OBJ_DIR)/vsi_nn_pf_softmax.o
-else
-vpath %.c platform/nnapi0.4
-OBJECTS += $(OBJ_DIR)/vsi_nn_pf_softmax.o
-OBJECTS += $(OBJ_DIR)/vsi_nn_pf_depth2space.o
-endif
-
 vpath %.c cpu_backend
 SRCS += ${notdir ${wildcard cpu_backend/*.c}}
 
@@ -119,7 +110,7 @@ INCLUDES=-I. -I$(VIVANTE_SDK_DIR)/include/ \
  -I$(VIVANTE_SDK_DIR)/include/VX \
  -I../include/ops -I../include/utils -I../include/inference \
  -I../include/client -I../include -I../include/libnnext \
- -I../include/platform -I../include/cpu_backend
+ -I../include/cpu_backend
 
 ifeq (1,$(DEBUG))
 CFLAGS+=-g
@@ -197,7 +188,7 @@ OVX_INC ?= $(SDKTARGETSYSROOT)/usr/include
 INCLUDE += -I $(OVX_INC)
 INCLUDE += -I../include/ops -I../include/utils -I../include/inference
 INCLUDE += -I../include/client -I../include -I../include/libnnext
-INCLUDE += -I../include/platform -I../include/cpu_backend
+INCLUDE += -I../include/cpu_backend
 
 CFLAGS += $(INCLUDE)
 CFLAGS += -Wall -Wextra -Wno-unused-parameter -Wno-sign-compare -Werror -Wno-strict-aliasing
