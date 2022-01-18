@@ -74,12 +74,6 @@ LOCAL_SRC_FILES +=      \
 LOCAL_SRC_FILES += libnnext/vsi_nn_libnnext_resource.c \
                    libnnext/vsi_nn_vxkernel.c
 
-LOCAL_SRC_FILES += platform/nnapi0.4/vsi_nn_pf_softmax.c   \
-                   platform/nnapi0.4/vsi_nn_pf_depth2space.c    \
-
-
-#LOCAL_SRC_FILES +=      platform/nnapi0.3/vsi_nn_pf_softmax.c   \
-
 LOCAL_SRC_FILES += kernel/vsi_nn_kernel.c \
                    kernel/vsi_nn_kernel_util.c \
                    kernel/vsi_nn_kernel_backend.c \
@@ -130,7 +124,6 @@ LOCAL_C_INCLUDES += \
     $(LOCAL_PATH)/../include/ops \
     $(LOCAL_PATH)/../include/utils \
     $(LOCAL_PATH)/../include/infernce \
-    $(LOCAL_PATH)/../include/platform \
     $(LOCAL_PATH)/../include/client \
     $(LOCAL_PATH)/../include/cpu_backend \
     $(LOCAL_PATH)/../include/libnnext

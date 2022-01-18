@@ -670,8 +670,6 @@
     <ClInclude Include="include\ops\vsi_nn_op_upsample.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_upsamplescale.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_variable.h"/>
-    <ClInclude Include="include\platform\vsi_nn_pf_depth2space.h"/>
-    <ClInclude Include="include\platform\vsi_nn_pf_softmax.h"/>
     <ClInclude Include="include\post\vsi_nn_post_cmupose.h"/>
     <ClInclude Include="include\post\vsi_nn_post_fasterrcnn.h"/>
     <ClInclude Include="include\pycc\vsi_pycc_interface.h"/>
@@ -730,28 +728,6 @@
     <None Include="include\interface\ops.def"/>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\platform\nnapi0.4\vsi_nn_pf_softmax.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Jenkins-Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Jenkins-Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='NNApi0.3|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='NNApi0.3|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="src\platform\nnapi0.4\vsi_nn_pf_depth2space.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Jenkins-Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Jenkins-Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='NNApi0.3|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='NNApi0.3|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="src\platform\nnapi0.3\vsi_nn_pf_softmax.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Jenkins-Debug-NNApi0.4|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Jenkins-Debug-NNApi0.4|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_dynamic|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_dynamic|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='NNApi0.4|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='NNApi0.4|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="src\cpu_backend\npuref_interface.c">
       <ObjectFileName>$(IntDir)\src\cpu_backend\</ObjectFileName>
     </ClCompile>

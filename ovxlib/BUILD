@@ -21,14 +21,6 @@ filegroup(
 )
 
 filegroup(
-    name = "nnapi_0_3_hdrs",
-    srcs = [
-        "include/platform/vsi_nn_pf_softmax.h",
-        "include/platform/vsi_nn_pf_depth2space.h",
-    ],
-)
-
-filegroup(
     name = "kernel_hdrs",
     srcs = glob([
         "include/kernel/cl/*.h",
@@ -83,29 +75,6 @@ filegroup(
         "src/custom/ops/kernel/cpu/*.c",
         "src/custom/ops/kernel/sp/*.c",
     ])
-)
-
-filegroup(
-    name = "nnapi_0_3_srcs",
-    srcs = [
-        "src/platform/nnapi0.3/vsi_nn_pf_softmax.c",
-    ],
-)
-
-filegroup(
-    name = "nnapi_0_4_hdrs",
-    srcs = [
-        "include/platform/vsi_nn_pf_softmax.h",
-        "include/platform/vsi_nn_pf_depth2space.h",
-    ],
-)
-
-filegroup(
-    name = "nnapi_0_4_srcs",
-    srcs = [
-        "src/platform/nnapi0.4/vsi_nn_pf_softmax.c",
-        "src/platform/nnapi0.4/vsi_nn_pf_depth2space.c",
-    ],
 )
 
 cc_binary(
@@ -220,11 +189,7 @@ cc_library(
       + [":custom_hdrs"]
       + [
         "include/vsi_nn_platform.h",
-    ] + select({
-        "//conditions:default": [":nnapi_0_4_hdrs"],
-        ":nnapi_0_3": [":nnapi_0_3_hdrs"],
-        ":nnapi_0_4": [":nnapi_0_4_hdrs"],
-    }) + [
+    ] + [
     "vsi_cfg_feature_header"
     ]
     ,
@@ -286,32 +251,8 @@ cc_library(
         "src/libnnext/vsi_nn_vxkernel.c",
     ] + [":kernel_srcs"]
       + [":operation_srcs"]
-      + [":custom_srcs"]
-      + select({
-        "//conditions:default": [":nnapi_0_4_srcs"],
-        ":nnapi_0_3": ["nnapi_0_3_srcs"],
-        ":nnapi_0_4": ["nnapi_0_4_srcs"],
-        }),
-    defines = select({
-        "//conditions:default": ["VSI_CFG_NNAPI_0_4"],
-        ":nnapi_0_3": ["VSI_CFG_NNAPI_0_3"],
-        ":nnapi_0_4": ["VSI_CFG_NNAPI_0_4"],
-    }),
+      + [":custom_srcs"],
     deps = ["@VIV_SDK//:VIV_SDK_INC", "@VIV_SDK//:VIV_SDK_LIB"]
-)
-
-config_setting(
-    name = "nnapi_0_3",
-    define_values = {
-        "OVXLIB_CONFIG": "VSI_CFG_NNAPI_0_3",
-    },
-)
-
-config_setting(
-    name = "nnapi_0_4",
-    define_values = {
-        "OVXLIB_CONFIG": "VSI_CFG_NNAPI_0_4",
-    },
 )
 
 filegroup(
@@ -337,4 +278,3 @@ config_setting(
     },
     visibility = ["//visibility:public"],
 )
-

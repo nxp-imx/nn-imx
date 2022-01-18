@@ -32,11 +32,48 @@
 #include "vsi_nn_ops.h"
 #include "vsi_nn_tensor.h"
 #include "vsi_nn_log.h"
-#include "platform/vsi_nn_pf_depth2space.h"
 #include "vsi_nn_tensor_util.h"
 #include "utils/vsi_nn_util.h"
 #include "vsi_nn_internal_node.h"
 #include "utils/vsi_nn_math.h"
+
+static vsi_status vsi_nn_depth2space_compute
+    (
+    vsi_nn_node_t * self,
+    vsi_nn_tensor_t ** inputs,
+    vsi_nn_tensor_t ** outputs
+    )
+{
+    vsi_status status;
+    vsi_nn_tensor_t *block_size_tensor = NULL;
+    vx_nn_reorg_params_t param;
+
+    status = VSI_FAILURE;
+    memset(&param, 0, sizeof(vx_nn_reorg_params_t));
+
+    block_size_tensor = vsi_nn_VariableToTensor(self,
+        (uint8_t *)&self->nn_param.depth2space.block_size,
+        VSI_NN_TYPE_INT32);
+    if( NULL == block_size_tensor )
+    {
+        VSILOGE("Create block_size_tensor fail.(depth2space)");
+        return VSI_FAILURE;
+    }
+    self->nn_param.depth2space.local.block_size_tensor = block_size_tensor;
+    param.block_size = REQUIRED_IO(block_size_tensor);
+    param.type = VX_REORG_DEPTH_TO_SPACE;
+
+    self->n = vxReorgLayer2( self->graph->g,
+        inputs[0]->t,
+        &param,
+        sizeof(vx_nn_reorg_params_t),
+        outputs[0]->t);
+    if( NULL != self->n )
+    {
+        status = VSI_SUCCESS;
+    }
+    return status;
+} /* vsi_nn_depth2space_compute() */
 
 static vsi_status op_compute
     (
