@@ -861,7 +861,6 @@ vsi_nn_kernel_node_t  vsi_nn_kernel_create_node
     status = vxGetStatus( (vx_reference)obj );
     if (VSI_SUCCESS != status)
     {
-        fprintf(stderr, "\n"); // TODO: This is a hack for driver msg
         /* Register kernel */
         status = vsi_nn_kernel_register( graph, kernel );
         if( VSI_SUCCESS != status )
