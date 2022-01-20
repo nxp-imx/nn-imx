@@ -239,9 +239,9 @@ static vsi_bool op_setup
             nn_param->stride[2],
             nn_param->output_padding[2]
         );
-        if(self->nn_param.deconv.weights > 0)
+        if(self->nn_param.deconv3d.weights > 0)
         {
-            outputs[0]->attr.size[3] = self->nn_param.deconv.weights;
+            outputs[0]->attr.size[3] = self->nn_param.deconv3d.weights;
         }
         else
         {
