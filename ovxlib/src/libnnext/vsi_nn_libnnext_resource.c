@@ -46100,6 +46100,45 @@ CAST_TO_BOOL_FUN_2D(U32, uint4,  read_imageui)\n\
 \n\
 "; /* end of cast_cl*/
 
+static const char clip_BF16_cl[] = "#pragma OPENCL EXTENSION CL_VIV_asm : enable\n\
+\n\
+__kernel void clip_BF16toBF16(\n\
+    __read_only  image2d_array_t  input,\n\
+    __write_only image2d_array_t  output,\n\
+                           float  minData,\n\
+                           float  maxData)\n\
+{\n\
+    int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+    uint4 src0 = read_imageui(input, coord);\n\
+    src0 = src0 << 16;\n\
+    float4 src;\n\
+    _viv_asm(COPY, src, src0, 16);\n\
+    float4 dst0 = clamp(src, minData, maxData);\n\
+    uint4 dst;\n\
+    _viv_asm(COPY, dst, dst0, 16);\n\
+    dst = dst >> 16;\n\
+    write_imageui(output, coord, dst);\n\
+}\n\
+\n\
+__kernel void clip_BF16toBF16_2D(\n\
+    __read_only  image2d_t  input,\n\
+    __write_only image2d_t  output,\n\
+                     float  minData,\n\
+                     float  maxData)\n\
+{\n\
+    int2 coord =  (int2)(get_global_id(0), get_global_id(1));\n\
+    uint4 src0 = read_imageui(input, coord);\n\
+    src0 = src0 << 16;\n\
+    float4 src;\n\
+    _viv_asm(COPY, src, src0, 16);\n\
+    float4 dst0 = clamp(src, minData, maxData);\n\
+    uint4 dst;\n\
+    _viv_asm(COPY, dst, dst0, 16);\n\
+    dst = dst >> 16;\n\
+    write_imageui(output, coord, dst);\n\
+}\n\
+"; /* end of clip_BF16_cl*/
+
 static const char clip_F32_cl[] = "__kernel void clip_F32toF32(\n\
     __read_only  image2d_array_t  input,\n\
     __write_only image2d_array_t  output,\n\
@@ -59583,6 +59622,7 @@ static const source_map_t cl_resource[] =
     {"argmin_axis2_cl", argmin_axis2_cl},
     {"batchnorm_single_cl", batchnorm_single_cl},
     {"cast_cl", cast_cl},
+    {"clip_BF16_cl", clip_BF16_cl},
     {"clip_F32_cl", clip_F32_cl},
     {"clip_U8_cl", clip_U8_cl},
     {"detect_post_box_cl", detect_post_box_cl},
