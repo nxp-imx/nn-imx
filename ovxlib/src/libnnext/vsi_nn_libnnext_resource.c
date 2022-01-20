@@ -28367,7 +28367,94 @@ __kernel void one_hot_##name0##to##name1##_2D \\\n\
 ONE_HOT_ASYM_SH_IMPL_2D(U8,  F16, vxc_uchar8,  vxc_uchar8, vxc_ushort8)\n\
 ONE_HOT_ASYM_SH_IMPL_2D(U8,  U8,  vxc_uchar8,  vxc_uchar8, vxc_uchar8)\n\
 \n\
-"; /* end of one_hot_vx*/
+_viv_uniform VXC_512Bits uniConvBF16toF32_Part0_2x8;\n\
+_viv_uniform VXC_512Bits uniConvBF16toF32_Part1_2x8;\n\
+__kernel void one_hot_BF16toBF16\n\
+    (\n\
+    __read_only  image2d_array_t input,\n\
+    __write_only image2d_array_t output,\n\
+                 int             suffix_sz,\n\
+                 int             on_val,\n\
+                 int             off_val\n\
+    )\n\
+{\n\
+    int4 coord =  (int4)(get_global_id(0), 0, get_global_id(0), get_global_id(0));\n\
+\n\
+    vxc_ushort8 src0, src1;\n\
+    vxc_ushort8 val;\n\
+    vxc_ushort8 zero = (vxc_ushort8)(0, 0, 0, 0, 0, 0, 0, 0);\n\
+\n\
+    VXC_ReadImage(val, input, coord.xy, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    float4 vec0, vec1;\n\
+    VXC_DP2x8(src0, val, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvBF16toF32_Part0_2x8);\n\
+    _viv_asm(COPY, vec0, src0, 16);\n\
+    VXC_DP2x8(src1, val, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvBF16toF32_Part1_2x8);\n\
+    _viv_asm(COPY, vec1, src1, 16);\n\
+    int4 data0 = convert_int4(vec0);\n\
+    int4 data1 = convert_int4(vec1);\n\
+\n\
+    do\n\
+    {\n\
+        int4 d0 = data0 == coord.zzzz ? on_val : off_val;\n\
+        int4 d1 = data1 == coord.zzzz ? on_val : off_val;\n\
+\n\
+        vxc_short8 dst;\n\
+        VXC_DP2x8(dst, d0, d1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniExtract8Data_2x8);\n\
+\n\
+        VXC_WriteImage2DArray(output, coord.xzyw, dst, VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0));\n\
+\n\
+        coord.z ++;\n\
+    } while (coord.z < depth);\n\
+}\n\
+\n\
+__kernel void one_hot_BF16toBF16_2D\n\
+    (\n\
+    __read_only  image2d_array_t input,\n\
+    __write_only image2d_array_t output,\n\
+                 int             suffix_sz,\n\
+                 int             on_val,\n\
+                 int             off_val\n\
+    )\n\
+{\n\
+    int4 coord =  (int4)(get_global_id(0), get_global_id(1), 0, 0);\n\
+\n\
+    vxc_ushort8 src0, src1;\n\
+    vxc_ushort8 val;\n\
+    vxc_ushort8 zero = (vxc_ushort8)(0, 0, 0, 0, 0, 0, 0, 0);\n\
+\n\
+    VXC_ReadImage(val, input, coord.xy, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    float4 vec0;\n\
+    VXC_DP2x8(src0, val, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvBF16toF32_Part0_2x8);\n\
+    _viv_asm(COPY, vec0, src0, 16);\n\
+    int4 data = convert_int4(vec0);\n\
+    int4 data0, data1;\n\
+    int4 d4 = (int4)(0, 1, 2, 3);\n\
+    do\n\
+    {\n\
+        coord.zw = coord.xx + (int2)(0, 1);\n\
+        vxc_short8 dst;\n\
+        data0 = data.xxxx == d4 ? on_val : off_val;\n\
+        data1 = data.yyyy == d4 ? on_val : off_val;\n\
+\n\
+        VXC_DP2x8(dst, data0, data1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniExtract8Data_2x8);\n\
+\n\
+        VXC_WriteImage(output, coord.yz, dst, VXC_MODIFIER(0, 3, 0,VXC_RM_TowardZero, 0));\n\
+        VXC_WriteImage(output, coord.yw, dst, VXC_MODIFIER(4, 7, 0,VXC_RM_TowardZero, 0));\n\
+        coord.zw = coord.zw + (int2)(2, 2);\n\
+\n\
+        data0 = data.zzzz == d4 ? on_val : off_val;\n\
+        data1 = data.wwww == d4 ? on_val : off_val;\n\
+\n\
+        VXC_DP2x8(dst, data0, data1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniExtract8Data_2x8);\n\
+\n\
+        VXC_WriteImage(output, coord.yz, dst, VXC_MODIFIER(0, 3, 0,VXC_RM_TowardZero, 0));\n\
+        VXC_WriteImage(output, coord.yw, dst, VXC_MODIFIER(4, 7, 0,VXC_RM_TowardZero, 0));\n\
+        d4 += 4;\n\
+        coord.y += 4;\n\
+    } while (coord.y < depth);\n\
+}"; /* end of one_hot_vx*/
 
 static const char poolwithargmax_F16_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
