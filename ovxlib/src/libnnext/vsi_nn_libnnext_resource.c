@@ -46978,10 +46978,18 @@ __kernel void func_name##_U8toU8_2D \\\n\
 ELTWISE_UNARY_U8_2D(erf)\n\
 "; /* end of erf_cl*/
 
-static const char floordiv_cl[] = "__kernel void floordiv_F32F32toF32(\n\
+static const char floordiv_cl[] = "__kernel void floordiv_F32F32toF32\n\
+    (\n\
     __read_only  image2d_array_t  input,\n\
     __read_only  image2d_array_t  input1,\n\
-    __write_only image2d_array_t  output)\n\
+    __write_only image2d_array_t  output,\n\
+                 float            input0Scale,\n\
+                 float            input0Tail,\n\
+                 float            input1Scale,\n\
+                 float            input1Tail,\n\
+                 float            outputScale,\n\
+                 float            outputTail\n\
+     )\n\
 {\n\
     int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
     float4 src0;\n\
@@ -46992,10 +47000,18 @@ static const char floordiv_cl[] = "__kernel void floordiv_F32F32toF32(\n\
     write_imagef(output, coord, dst);\n\
 }\n\
 \n\
-__kernel void floordiv_F32F32toF32_2D(\n\
-    __read_only  image2d_t  input,\n\
-    __read_only  image2d_t  input1,\n\
-    __write_only image2d_t  output)\n\
+__kernel void floordiv_F32F32toF32_2D\n\
+    (\n\
+    __read_only  image2d_t input,\n\
+    __read_only  image2d_t input1,\n\
+    __write_only image2d_t output,\n\
+                 float     input0Scale,\n\
+                 float     input0Tail,\n\
+                 float     input1Scale,\n\
+                 float     input1Tail,\n\
+                 float     outputScale,\n\
+                 float     outputTail\n\
+     )\n\
 {\n\
     int2 coord =  (int2)(get_global_id(0), get_global_id(1));\n\
     float4 src0 = read_imagef(input, coord);\n\
@@ -47004,33 +47020,8 @@ __kernel void floordiv_F32F32toF32_2D(\n\
     write_imagef(output, coord, dst);\n\
 }\n\
 \n\
-__kernel void floordiv_I32I32toI32(\n\
-    __read_only  image2d_array_t  input,\n\
-    __read_only  image2d_array_t  input1,\n\
-    __write_only image2d_array_t  output)\n\
-{\n\
-    int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
-    int4 src0;\n\
-    int4 src1;\n\
-    READ_IMAGEI_2DARRAY(src0, input, coord);\n\
-    READ_IMAGEI_2DARRAY(src1, input1, coord);\n\
-    int4 dst  = convert_int4(floor(convert_float4(src0) / convert_float4(src1)));\n\
-    write_imagei(output, coord, dst);\n\
-}\n\
-\n\
-__kernel void floordiv_I32I32toI32_2D(\n\
-    __read_only  image2d_t  input,\n\
-    __read_only  image2d_t  input1,\n\
-    __write_only image2d_t  output)\n\
-{\n\
-    int2 coord =  (int2)(get_global_id(0), get_global_id(1));\n\
-    int4 src0 = read_imagei(input, coord);\n\
-    int4 src1 = read_imagei(input1, coord);\n\
-    int4 dst  = convert_int4(floor(convert_float4(src0) / convert_float4(src1)));\n\
-    write_imagei(output, coord, dst);\n\
-}\n\
-\n\
-__kernel void floordiv_I32I32toU8(\n\
+__kernel void floordiv_I32I32toI32\n\
+    (\n\
     __read_only  image2d_array_t  input,\n\
     __read_only  image2d_array_t  input1,\n\
     __write_only image2d_array_t  output,\n\
@@ -47039,7 +47030,56 @@ __kernel void floordiv_I32I32toU8(\n\
                  float            input1Scale,\n\
                  float            input1Tail,\n\
                  float            outputScale,\n\
-                 float            outputTail )\n\
+                 float            outputTail\n\
+     )\n\
+{\n\
+    int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+    int4 src0;\n\
+    int4 src1;\n\
+    READ_IMAGEI_2DARRAY(src0, input, coord);\n\
+    READ_IMAGEI_2DARRAY(src1, input1, coord);\n\
+    float4 in0 = convert_float4(src0) * input0Scale + input0Tail;\n\
+    float4 in1 = convert_float4(src1) * input1Scale + input1Tail;\n\
+    float4 out = floor(in0 / in1) * outputScale + outputTail;\n\
+    int4 dst  = convert_int4(out);\n\
+    write_imagei(output, coord, dst);\n\
+}\n\
+\n\
+__kernel void floordiv_I32I32toI32_2D\n\
+    (\n\
+    __read_only  image2d_t input,\n\
+    __read_only  image2d_t input1,\n\
+    __write_only image2d_t output,\n\
+                 float     input0Scale,\n\
+                 float     input0Tail,\n\
+                 float     input1Scale,\n\
+                 float     input1Tail,\n\
+                 float     outputScale,\n\
+                 float     outputTail\n\
+     )\n\
+{\n\
+    int2 coord =  (int2)(get_global_id(0), get_global_id(1));\n\
+    int4 src0 = read_imagei(input, coord);\n\
+    int4 src1 = read_imagei(input1, coord);\n\
+    float4 in0 = convert_float4(src0) * input0Scale + input0Tail;\n\
+    float4 in1 = convert_float4(src1) * input1Scale + input1Tail;\n\
+    float4 out = floor(in0 / in1) * outputScale + outputTail;\n\
+    int4 dst  = convert_int4(out);\n\
+    write_imagei(output, coord, dst);\n\
+}\n\
+\n\
+__kernel void floordiv_I32I32toU8\n\
+    (\n\
+    __read_only  image2d_array_t  input,\n\
+    __read_only  image2d_array_t  input1,\n\
+    __write_only image2d_array_t  output,\n\
+                 float            input0Scale,\n\
+                 float            input0Tail,\n\
+                 float            input1Scale,\n\
+                 float            input1Tail,\n\
+                 float            outputScale,\n\
+                 float            outputTail\n\
+     )\n\
 {\n\
     int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
     int4 src0;\n\
@@ -47053,16 +47093,18 @@ __kernel void floordiv_I32I32toU8(\n\
     write_imageui(output, coord, dst);\n\
 }\n\
 \n\
-__kernel void floordiv_I32I32toU8_2D(\n\
-    __read_only  image2d_t  input,\n\
-    __read_only  image2d_t  input1,\n\
-    __write_only image2d_t  output,\n\
-                 float      input0Scale,\n\
-                 float      input0Tail,\n\
-                 float      input1Scale,\n\
-                 float      input1Tail,\n\
-                 float      outputScale,\n\
-                 float      outputTail )\n\
+__kernel void floordiv_I32I32toU8_2D\n\
+    (\n\
+    __read_only  image2d_t input,\n\
+    __read_only  image2d_t input1,\n\
+    __write_only image2d_t output,\n\
+                 float     input0Scale,\n\
+                 float     input0Tail,\n\
+                 float     input1Scale,\n\
+                 float     input1Tail,\n\
+                 float     outputScale,\n\
+                 float     outputTail\n\
+     )\n\
 {\n\
     int2 coord =  (int2)(get_global_id(0), get_global_id(1));\n\
     int4 src0 = read_imagei(input, coord);\n\
@@ -47074,7 +47116,8 @@ __kernel void floordiv_I32I32toU8_2D(\n\
     write_imageui(output, coord, dst);\n\
 }\n\
 \n\
-__kernel void floordiv_U8U8toU8(\n\
+__kernel void floordiv_U8U8toU8\n\
+    (\n\
     __read_only  image2d_array_t  input,\n\
     __read_only  image2d_array_t  input1,\n\
     __write_only image2d_array_t  output,\n\
@@ -47083,7 +47126,8 @@ __kernel void floordiv_U8U8toU8(\n\
                  float            input1Scale,\n\
                  float            input1Tail,\n\
                  float            outputScale,\n\
-                 float            outputTail )\n\
+                 float            outputTail\n\
+     )\n\
 {\n\
     int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
     uint4 src0, src1;\n\
@@ -47097,16 +47141,18 @@ __kernel void floordiv_U8U8toU8(\n\
     write_imageui(output, coord, dst);\n\
 }\n\
 \n\
-__kernel void floordiv_U8U8toU8_2D(\n\
-    __read_only  image2d_t  input,\n\
-    __read_only  image2d_t  input1,\n\
-    __write_only image2d_t  output,\n\
-                 float      input0Scale,\n\
-                 float      input0Tail,\n\
-                 float      input1Scale,\n\
-                 float      input1Tail,\n\
-                 float      outputScale,\n\
-                 float      outputTail )\n\
+__kernel void floordiv_U8U8toU8_2D\n\
+    (\n\
+    __read_only  image2d_t input,\n\
+    __read_only  image2d_t input1,\n\
+    __write_only image2d_t output,\n\
+                 float     input0Scale,\n\
+                 float     input0Tail,\n\
+                 float     input1Scale,\n\
+                 float     input1Tail,\n\
+                 float     outputScale,\n\
+                 float     outputTail\n\
+     )\n\
 {\n\
     int2 coord =  (int2)(get_global_id(0), get_global_id(1));\n\
     uint4 src0 = read_imageui(input, coord);\n\
@@ -47119,7 +47165,8 @@ __kernel void floordiv_U8U8toU8_2D(\n\
     write_imageui(output, coord, dst);\n\
 }\n\
 \n\
-__kernel void floordiv_U8I32toU8(\n\
+__kernel void floordiv_U8I32toU8\n\
+    (\n\
     __read_only  image2d_array_t  input,\n\
     __read_only  image2d_array_t  input1,\n\
     __write_only image2d_array_t  output,\n\
@@ -47128,7 +47175,8 @@ __kernel void floordiv_U8I32toU8(\n\
                  float            input1Scale,\n\
                  float            input1Tail,\n\
                  float            outputScale,\n\
-                 float            outputTail )\n\
+                 float            outputTail\n\
+     )\n\
 {\n\
     int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
     uint4 src0;\n\
@@ -47143,16 +47191,18 @@ __kernel void floordiv_U8I32toU8(\n\
     write_imageui(output, coord, dst);\n\
 }\n\
 \n\
-__kernel void floordiv_U8I32toU8_2D(\n\
-    __read_only  image2d_t  input,\n\
-    __read_only  image2d_t  input1,\n\
-    __write_only image2d_t  output,\n\
-                 float      input0Scale,\n\
-                 float      input0Tail,\n\
-                 float      input1Scale,\n\
-                 float      input1Tail,\n\
-                 float      outputScale,\n\
-                 float      outputTail )\n\
+__kernel void floordiv_U8I32toU8_2D\n\
+    (\n\
+    __read_only  image2d_t input,\n\
+    __read_only  image2d_t input1,\n\
+    __write_only image2d_t output,\n\
+                 float     input0Scale,\n\
+                 float     input0Tail,\n\
+                 float     input1Scale,\n\
+                 float     input1Tail,\n\
+                 float     outputScale,\n\
+                 float     outputTail\n\
+     )\n\
 {\n\
     int2 coord =  (int2)(get_global_id(0), get_global_id(1));\n\
     uint4 src0 = read_imageui(input, coord);\n\
