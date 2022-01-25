@@ -872,6 +872,9 @@
     <ClCompile Include="src\kernel\cl\erf_cl.c">
       <Filter>Source Files\kernel\cl</Filter>
     </ClCompile>
+	<ClCompile Include="src\kernel\cl\depth2space_internal_cl.c">
+      <Filter>Source Files\kernel\cl</Filter>
+    </ClCompile>
     <ClCompile Include="src\kernel\cl\floordiv_cl.c">
       <Filter>Source Files\kernel\cl</Filter>
     </ClCompile>
