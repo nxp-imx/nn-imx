@@ -4871,6 +4871,11 @@ float4 eltwise_unary_sin(float4 x)\n\
     return native_sin(x);\n\
 }\n\
 \n\
+float4 eltwise_unary_cos(float4 x)\n\
+{\n\
+    return native_cos(x);\n\
+}\n\
+\n\
 #define logE        (1.44269502f)\n\
 #define twoLogE     (logE * 2.0f)\n\
 float4 eltwise_unary_exp(float4 x)\n\
@@ -5052,6 +5057,17 @@ ELTSISE_UNARY_2D(sin, U8,  U8,  vxc_uchar8, vxc_uchar8, int4,  vxc_uchar8, vxc_u
 ELTSISE_UNARY_2D(sin, U8,  F16, vxc_uchar8, vxc_uchar8, half4, vxc_half8,  vxc_short8)\n\
 ELTSISE_UNARY_2D(sin, I16, I16, vxc_short8, vxc_short8, int4,  vxc_short8, vxc_short8)\n\
 ELTSISE_UNARY_2D(sin, I16, F16, vxc_short8, vxc_short8, half4, vxc_half8,  vxc_short8)\n\
+//COS\n\
+ELTSISE_UNARY_2D(cos, F16, F16, vxc_short8, vxc_half8,  half4, vxc_half8,  vxc_short8)\n\
+ELTSISE_UNARY_2D(cos, F16, I8,  vxc_short8, vxc_half8,  int4,  vxc_char8,  vxc_char8)\n\
+ELTSISE_UNARY_2D(cos, F16, U8,  vxc_short8, vxc_half8,  int4,  vxc_uchar8, vxc_uchar8)\n\
+ELTSISE_UNARY_2D(cos, F16, I16, vxc_short8, vxc_half8,  int4,  vxc_short8, vxc_short8)\n\
+ELTSISE_UNARY_2D(cos, I8,  I8,  vxc_char8,  vxc_char8,  int4,  vxc_char8,  vxc_char8)\n\
+ELTSISE_UNARY_2D(cos, I8,  F16, vxc_char8,  vxc_char8,  half4, vxc_half8,  vxc_short8)\n\
+ELTSISE_UNARY_2D(cos, U8,  U8,  vxc_uchar8, vxc_uchar8, int4,  vxc_uchar8, vxc_uchar8)\n\
+ELTSISE_UNARY_2D(cos, U8,  F16, vxc_uchar8, vxc_uchar8, half4, vxc_half8,  vxc_short8)\n\
+ELTSISE_UNARY_2D(cos, I16, I16, vxc_short8, vxc_short8, int4,  vxc_short8, vxc_short8)\n\
+ELTSISE_UNARY_2D(cos, I16, F16, vxc_short8, vxc_short8, half4, vxc_half8,  vxc_short8)\n\
 //LOG\n\
 ELTSISE_UNARY_2D(log, F16, F16, vxc_short8, vxc_half8,  half4, vxc_half8,  vxc_short8)\n\
 ELTSISE_UNARY_2D(log, F16, I8,  vxc_short8, vxc_half8,  int4,  vxc_char8,  vxc_char8)\n\
@@ -5178,6 +5194,8 @@ _viv_uniform VXC_512Bits uniExtractOddData_2x8;\n\
 ELTSISE_UNARY_BF16_2D(exp)\n\
 //SIN\n\
 ELTSISE_UNARY_BF16_2D(sin)\n\
+//COS\n\
+ELTSISE_UNARY_BF16_2D(cos)\n\
 //LOG\n\
 ELTSISE_UNARY_BF16_2D(log)\n\
 //ELU\n\
@@ -5204,6 +5222,11 @@ _viv_uniform float beta;\n\
 float4 eltwise_unary_sin(float4 x)\n\
 {\n\
     return native_sin(x);\n\
+}\n\
+\n\
+float4 eltwise_unary_cos(float4 x)\n\
+{\n\
+    return native_cos(x);\n\
 }\n\
 \n\
 #define logE        (1.44269502f)\n\
@@ -5387,6 +5410,17 @@ ELTSISE_UNARY_3D(sin, U8,  U8,  vxc_uchar8, vxc_uchar8, int4,  vxc_uchar8, vxc_u
 ELTSISE_UNARY_3D(sin, U8,  F16, vxc_uchar8, vxc_uchar8, half4, vxc_half8,  vxc_short8)\n\
 ELTSISE_UNARY_3D(sin, I16, I16, vxc_short8, vxc_short8, int4,  vxc_short8, vxc_short8)\n\
 ELTSISE_UNARY_3D(sin, I16, F16, vxc_short8, vxc_short8, half4, vxc_half8,  vxc_short8)\n\
+//COS\n\
+ELTSISE_UNARY_3D(cos, F16, F16, vxc_short8, vxc_half8,  half4, vxc_half8,  vxc_short8)\n\
+ELTSISE_UNARY_3D(cos, F16, I8,  vxc_short8, vxc_half8,  int4,  vxc_char8,  vxc_char8)\n\
+ELTSISE_UNARY_3D(cos, F16, U8,  vxc_short8, vxc_half8,  int4,  vxc_uchar8, vxc_uchar8)\n\
+ELTSISE_UNARY_3D(cos, F16, I16, vxc_short8, vxc_half8,  int4,  vxc_short8, vxc_short8)\n\
+ELTSISE_UNARY_3D(cos, I8,  I8,  vxc_char8,  vxc_char8,  int4,  vxc_char8,  vxc_char8)\n\
+ELTSISE_UNARY_3D(cos, I8,  F16, vxc_char8,  vxc_char8,  half4, vxc_half8,  vxc_short8)\n\
+ELTSISE_UNARY_3D(cos, U8,  U8,  vxc_uchar8, vxc_uchar8, int4,  vxc_uchar8, vxc_uchar8)\n\
+ELTSISE_UNARY_3D(cos, U8,  F16, vxc_uchar8, vxc_uchar8, half4, vxc_half8,  vxc_short8)\n\
+ELTSISE_UNARY_3D(cos, I16, I16, vxc_short8, vxc_short8, int4,  vxc_short8, vxc_short8)\n\
+ELTSISE_UNARY_3D(cos, I16, F16, vxc_short8, vxc_short8, half4, vxc_half8,  vxc_short8)\n\
 //LOG\n\
 ELTSISE_UNARY_3D(log, F16, F16, vxc_short8, vxc_half8,  half4, vxc_half8,  vxc_short8)\n\
 ELTSISE_UNARY_3D(log, F16, I8,  vxc_short8, vxc_half8,  int4,  vxc_char8,  vxc_char8)\n\
@@ -5512,6 +5546,8 @@ _viv_uniform VXC_512Bits uniExtractOddData_2x8;\n\
 ELTSISE_UNARY_BF16(exp)\n\
 //SIN\n\
 ELTSISE_UNARY_BF16(sin)\n\
+//COS\n\
+ELTSISE_UNARY_BF16(cos)\n\
 //LOG\n\
 ELTSISE_UNARY_BF16(log)\n\
 //ELU\n\
@@ -46578,6 +46614,11 @@ static const char eltwise_unary_cl[] = "float eltwise_unary_sin(float x, float a
     return native_sin(x);\n\
 }\n\
 \n\
+float eltwise_unary_cos(float x, float alpha, float beta)\n\
+{\n\
+    return native_cos(x);\n\
+}\n\
+\n\
 #define logE        (1.44269502f)\n\
 #define twoLogE     (logE * 2.0f)\n\
 float eltwise_unary_exp(float x, float alpha, float beta)\n\
@@ -46710,6 +46751,7 @@ __kernel void func_name##_F32toF32 \\\n\
     write_imagef(output, coord, dst.xxxx); \\\n\
 }\n\
 ELTWISE_UNARY_F32(sin)\n\
+ELTWISE_UNARY_F32(cos)\n\
 ELTWISE_UNARY_F32(exp)\n\
 ELTWISE_UNARY_F32(log)\n\
 ELTWISE_UNARY_F32(elu)\n\
@@ -46743,6 +46785,7 @@ __kernel void func_name##_F32toF32_2D \\\n\
     write_imagef(output, coord, dst.xxxx); \\\n\
 }\n\
 ELTWISE_UNARY_F32_2D(sin)\n\
+ELTWISE_UNARY_F32_2D(cos)\n\
 ELTWISE_UNARY_F32_2D(exp)\n\
 ELTWISE_UNARY_F32_2D(log)\n\
 ELTWISE_UNARY_F32_2D(elu)\n\
@@ -46777,6 +46820,7 @@ __kernel void func_name##_U8toU8 \\\n\
     write_imageui(output, coord, dst); \\\n\
 }\n\
 ELTWISE_UNARY_U8(sin)\n\
+ELTWISE_UNARY_U8(cos)\n\
 ELTWISE_UNARY_U8(exp)\n\
 ELTWISE_UNARY_U8(log)\n\
 ELTWISE_UNARY_U8(elu)\n\
@@ -46811,6 +46855,7 @@ __kernel void func_name##_U8toU8_2D \\\n\
     write_imageui(output, coord, dst); \\\n\
 }\n\
 ELTWISE_UNARY_U8_2D(sin)\n\
+ELTWISE_UNARY_U8_2D(cos)\n\
 ELTWISE_UNARY_U8_2D(exp)\n\
 ELTWISE_UNARY_U8_2D(log)\n\
 ELTWISE_UNARY_U8_2D(elu)\n\
