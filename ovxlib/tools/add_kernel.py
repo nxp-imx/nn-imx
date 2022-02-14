@@ -35,7 +35,7 @@ def gen_context(context, kernel_name, tmpl, name):
            .replace('%KERNEL_NAME%', kernel_name)
     return gen_ctx
 
-def gen_source(context, kernel_name, tmpl, name, root_directory):
+def gen_source(context, kernel_name, tmpl, name, root_directory, vxc_directory):
     gen_ctx = gen_context(context, kernel_name, tmpl, name)
     fname = '%s_%s.c'%(kernel_name, name.lower())
     type_path = os.path.join(root_directory, name.lower())
@@ -52,7 +52,7 @@ def gen_source(context, kernel_name, tmpl, name, root_directory):
 
     if code_ctx is not None:
         code_ctx = code_ctx.replace('%KERNEL_NAME%', kernel_name)
-        path = os.path.join(type_path, fname)
+        path = os.path.join(vxc_directory, fname)
         with open(path, 'w') as f:
             f.write(code_ctx)
 
@@ -75,9 +75,11 @@ def main(kernel_name, is_custom):
         root_directory = os.path.join(root, '..', 'src', 'custom', 'ops', 'kernel')
     else:
         root_directory = os.path.join(root, '..', 'src', 'kernel')
-    gen_source(context, kernel_name, tevis, 'EVIS', root_directory)
-    gen_source(context, kernel_name, tgpu, 'CL', root_directory)
-    gen_source(context, kernel_name, tcpu, 'CPU', root_directory)
+    evis_root_directory = os.path.join(root, '..', 'src', 'libnnext', 'ops', 'vx')
+    cl_root_directory = os.path.join(root, '..', 'src', 'libnnext', 'ops', 'cl')
+    gen_source(context, kernel_name, tevis, 'EVIS', root_directory, evis_root_directory)
+    gen_source(context, kernel_name, tgpu, 'CL', root_directory, cl_root_directory)
+    gen_source(context, kernel_name, tcpu, 'CPU', root_directory, cl_root_directory)
 
 if __name__ == "__main__":
     options = ArgumentParser(description='Add a kernel into ovxlib')
