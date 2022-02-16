@@ -140,7 +140,7 @@ struct Hal<29> {
 
 #if ANDROID_SDK_VERSION >= 30
 template <>
-struct Hal<ANDROID_SDK_VERSION> {
+struct Hal<30> {
     using Device = V1_3::IDevice;
     using PrepareModel = V1_3::IPreparedModel;
     using Operand = V1_3::Operand;
