@@ -356,7 +356,7 @@ typedef union _vsi_nn_nn_param
     vsi_nn_deconv3d_param           deconv3d;
     vsi_nn_reduce_mean_internal_param reduce_mean_internal;
     vsi_nn_pad2_param               pad2;
-    uint8_t                         client_param[128];
+    void*                         client_param;
 
     /* custom node data struct define */
 #define DEF_NODE_TYPE( NAME ) vsi_nn_##NAME##_param NAME;
