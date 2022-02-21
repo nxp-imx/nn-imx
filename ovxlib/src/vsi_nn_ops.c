@@ -370,19 +370,14 @@ vsi_bool vsi_nn_OpRegisterExternalOvxInit
     (
     vsi_nn_op_t op,
     const char* kernel_name,
-    vsi_nn_op_proc_t * proc
-    ){
-    const vsi_nn_op_proc_t* proc_ori;
+    vsi_nn_op_proc_t* proc
+    )
+{
     vsi_bool ret;
 
     ret = FALSE;
     if (vsi_nn_OpRegisterClient(op, proc) &&
         vsi_nn_OpAddClientName(op, kernel_name)) {
-        proc_ori = vsi_nn_OpGetProc(op);
-
-        if (NULL != proc_ori) {
-            memcpy((void*)proc_ori, proc, sizeof(vsi_nn_op_proc_t));
-        }
         ret = TRUE;
     }
     return ret;
