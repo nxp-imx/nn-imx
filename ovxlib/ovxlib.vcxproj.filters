@@ -165,6 +165,9 @@
     <ClCompile Include="src\kernel\cl\comparisons_cl.c">
       <Filter>Source Files\kernel\cl</Filter>
     </ClCompile>
+    <ClCompile Include="src\kernel\cl\depth2space_internal_cl.c">
+      <Filter>Source Files\kernel\cl</Filter>
+    </ClCompile>
     <ClCompile Include="src\kernel\cl\detect_post_box_cl.c">
       <Filter>Source Files\kernel\cl</Filter>
     </ClCompile>
@@ -175,9 +178,6 @@
       <Filter>Source Files\kernel\cl</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\erf_cl.c">
-      <Filter>Source Files\kernel\cl</Filter>
-    </ClCompile>
-	<ClCompile Include="src\kernel\cl\depth2space_internal_cl.c">
       <Filter>Source Files\kernel\cl</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\floordiv_cl.c">
@@ -316,6 +316,9 @@
       <Filter>Source Files\kernel\cl</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\tile_cl.c">
+      <Filter>Source Files\kernel\cl</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\cl\topk_cl.c">
       <Filter>Source Files\kernel\cl</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\upsample_cl.c">
@@ -789,13 +792,13 @@
     <ClCompile Include="src\kernel\sp\eltwise_unary_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
-    <ClCompile Include="src\kernel\sp\group_norm_sp.c">
+  <ClCompile Include="src\kernel\sp\group_norm_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\sp\grucell_activation_z_h_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
-  <ClCompile Include="src\kernel\sp\grucell_h_times_activation_r_sp.c">
+    <ClCompile Include="src\kernel\sp\grucell_h_times_activation_r_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\sp\grucell_reset_after_activation_sp.c">
