@@ -60498,6 +60498,259 @@ TILE_2D(F32, F32, float4, read_imagef,  write_imagef)\n\
 \n\
 "; /* end of tile_cl*/
 
+static const char topk_cl[] = "#define TOPK_F32(LOCAL_SIZE0, STAGES) \\\n\
+__kernel __attribute__((reqd_work_group_size(LOCAL_SIZE0, 1, 1))) void topk_stage##STAGES##_F32toF32_I32 \\\n\
+ ( \\\n\
+  __read_only  image2d_t input, \\\n\
+  __write_only image2d_t output, \\\n\
+  __write_only image2d_t indices, \\\n\
+               int       num_stages, \\\n\
+               int       width \\\n\
+  ) \\\n\
+ { \\\n\
+    uint local_id = get_local_id(0); \\\n\
+    uint work_group_size = get_local_size(0); \\\n\
+    uint offset = 0; \\\n\
+ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(0), get_global_id(1)); \\\n\
+ \\\n\
+    __local float local_data[128]; \\\n\
+    __local uint local_indices[128]; \\\n\
+ \\\n\
+    float left = read_imagef(input, coord.xy).x; \\\n\
+    coord.z += work_group_size; \\\n\
+    float data = read_imagef(input, coord.zy).x; \\\n\
+    float right = coord.z < width ? data : -2147483647.0f; \\\n\
+ \\\n\
+    local_data[local_id] = left; \\\n\
+    local_indices[local_id] = local_id; \\\n\
+    local_data[local_id + work_group_size] = right; \\\n\
+    local_indices[local_id + work_group_size] = local_id + work_group_size; \\\n\
+ \\\n\
+    barrier(CLK_LOCAL_MEM_FENCE); \\\n\
+ \\\n\
+    for (uint stage = 0; stage < num_stages + 1; ++stage) \\\n\
+    { \\\n\
+        uint signo = (local_id >> stage) & 1; \\\n\
+ \\\n\
+        for (uint passOfStage = 0; passOfStage < stage + 1; ++passOfStage) \\\n\
+        { \\\n\
+            uint postShift = (stage - passOfStage); \\\n\
+            uint pairDistance = 1 << postShift; \\\n\
+ \\\n\
+            uint left_id = ( (local_id >> postShift) << (postShift + 1)) + (local_id & (pairDistance - 1)); \\\n\
+            uint right_id = left_id + pairDistance; \\\n\
+ \\\n\
+            uint left_idx = local_indices[left_id]; \\\n\
+            uint right_idx = local_indices[right_id]; \\\n\
+ \\\n\
+            float left_elem = local_data[left_id]; \\\n\
+            float right_elem = local_data[right_id]; \\\n\
+ \\\n\
+            if ((left_elem < right_elem) ^ signo) \\\n\
+            { \\\n\
+                local_data[left_id] = right_elem; \\\n\
+                local_data[right_id] = left_elem; \\\n\
+ \\\n\
+                local_indices[left_id] = right_idx; \\\n\
+                local_indices[right_id] = left_idx; \\\n\
+            } \\\n\
+ \\\n\
+            barrier(CLK_LOCAL_MEM_FENCE); \\\n\
+        } \\\n\
+    } \\\n\
+ \\\n\
+    float4 dst; \\\n\
+    dst.x = local_data[local_id]; \\\n\
+    dst.y = local_data[local_id + work_group_size]; \\\n\
+ \\\n\
+    write_imagef(output, coord.xy, dst.xxxx); \\\n\
+    write_imagef(output, coord.zy, dst.yyyy); \\\n\
+ \\\n\
+    int4 index; \\\n\
+    index.x = ((int*)local_indices)[local_id]; \\\n\
+    index.y = ((int*)local_indices)[local_id + work_group_size]; \\\n\
+ \\\n\
+    write_imagei(indices, coord.xy, index.xxxx); \\\n\
+    write_imagei(indices, coord.zy, index.yyyy); \\\n\
+ }\n\
+TOPK_F32(1 << 0, 0)\n\
+TOPK_F32(1 << 1, 1)\n\
+TOPK_F32(1 << 2, 2)\n\
+TOPK_F32(1 << 3, 3)\n\
+TOPK_F32(1 << 4, 4)\n\
+TOPK_F32(1 << 5, 5)\n\
+TOPK_F32(1 << 6, 6)\n\
+\n\
+#define TOPK_U32(LOCAL_SIZE0, STAGES) \\\n\
+__kernel __attribute__((reqd_work_group_size(LOCAL_SIZE0, 1, 1))) void topk_stage##STAGES##_U32toU32_I32 \\\n\
+ ( \\\n\
+  __read_only  image2d_t input, \\\n\
+  __write_only image2d_t output, \\\n\
+  __write_only image2d_t indices, \\\n\
+               int       num_stages, \\\n\
+               int       width \\\n\
+  ) \\\n\
+ { \\\n\
+    uint local_id = get_local_id(0); \\\n\
+    uint work_group_size = get_local_size(0); \\\n\
+    uint offset = 0; \\\n\
+ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(0), get_global_id(1)); \\\n\
+ \\\n\
+    __local uint local_data[128]; \\\n\
+    __local uint local_indices[128]; \\\n\
+ \\\n\
+    uint left = read_imageui(input, coord.xy).x; \\\n\
+    coord.z += work_group_size; \\\n\
+    uint data = read_imageui(input, coord.zy).x; \\\n\
+    uint right = coord.z < width ? data : 0; \\\n\
+ \\\n\
+    local_data[local_id] = left; \\\n\
+    local_indices[local_id] = local_id; \\\n\
+    local_data[local_id + work_group_size] = right; \\\n\
+    local_indices[local_id + work_group_size] = local_id + work_group_size; \\\n\
+ \\\n\
+    barrier(CLK_LOCAL_MEM_FENCE); \\\n\
+ \\\n\
+    for (uint stage = 0; stage < num_stages + 1; ++stage) \\\n\
+    { \\\n\
+        uint signo = (local_id >> stage) & 1; \\\n\
+ \\\n\
+        for (uint passOfStage = 0; passOfStage < stage + 1; ++passOfStage) \\\n\
+        { \\\n\
+            uint postShift = (stage - passOfStage); \\\n\
+            uint pairDistance = 1 << postShift; \\\n\
+ \\\n\
+            uint left_id = ( (local_id >> postShift) << (postShift + 1)) + (local_id & (pairDistance - 1)); \\\n\
+            uint right_id = left_id + pairDistance; \\\n\
+ \\\n\
+            uint left_idx = local_indices[left_id]; \\\n\
+            uint right_idx = local_indices[right_id]; \\\n\
+ \\\n\
+            uint left_elem = local_data[left_id]; \\\n\
+            uint right_elem = local_data[right_id]; \\\n\
+ \\\n\
+            if ((left_elem < right_elem) ^ signo) \\\n\
+            { \\\n\
+                local_data[left_id] = right_elem; \\\n\
+                local_data[right_id] = left_elem; \\\n\
+ \\\n\
+                local_indices[left_id] = right_idx; \\\n\
+                local_indices[right_id] = left_idx; \\\n\
+            } \\\n\
+ \\\n\
+            barrier(CLK_LOCAL_MEM_FENCE); \\\n\
+        } \\\n\
+    } \\\n\
+ \\\n\
+    uint4 dst; \\\n\
+    dst.x = local_data[local_id]; \\\n\
+    dst.y = local_data[local_id + work_group_size]; \\\n\
+ \\\n\
+    write_imageui(output, coord.xy, dst.xxxx); \\\n\
+    write_imageui(output, coord.zy, dst.yyyy); \\\n\
+ \\\n\
+    int4 index; \\\n\
+    index.x = ((int*)local_indices)[local_id]; \\\n\
+    index.y = ((int*)local_indices)[local_id + work_group_size]; \\\n\
+ \\\n\
+    write_imagei(indices, coord.xy, index.xxxx); \\\n\
+    write_imagei(indices, coord.zy, index.yyyy); \\\n\
+ }\n\
+TOPK_U32(1 << 0, 0)\n\
+TOPK_U32(1 << 1, 1)\n\
+TOPK_U32(1 << 2, 2)\n\
+TOPK_U32(1 << 3, 3)\n\
+TOPK_U32(1 << 4, 4)\n\
+TOPK_U32(1 << 5, 5)\n\
+TOPK_U32(1 << 6, 6)\n\
+\n\
+#define TOPK_I32(LOCAL_SIZE0, STAGES) \\\n\
+__kernel __attribute__((reqd_work_group_size(LOCAL_SIZE0, 1, 1))) void topk_stage##STAGES##_I32toI32_I32 \\\n\
+ ( \\\n\
+  __read_only  image2d_t input, \\\n\
+  __write_only image2d_t output, \\\n\
+  __write_only image2d_t indices, \\\n\
+               int       num_stages, \\\n\
+               int       width \\\n\
+  ) \\\n\
+ { \\\n\
+    int local_id = get_local_id(0); \\\n\
+    int work_group_size = get_local_size(0); \\\n\
+    int offset = 0; \\\n\
+ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(0), get_global_id(1)); \\\n\
+ \\\n\
+    __local int local_data[128]; \\\n\
+    __local int local_indices[128]; \\\n\
+ \\\n\
+    int left = read_imagei(input, coord.xy).x; \\\n\
+    coord.z += work_group_size; \\\n\
+    int data = read_imagei(input, coord.zy).x; \\\n\
+    int right = coord.z < width ? data : -2147483647; \\\n\
+ \\\n\
+    local_data[local_id] = left; \\\n\
+    local_indices[local_id] = local_id; \\\n\
+    local_data[local_id + work_group_size] = right; \\\n\
+    local_indices[local_id + work_group_size] = local_id + work_group_size; \\\n\
+ \\\n\
+    barrier(CLK_LOCAL_MEM_FENCE); \\\n\
+ \\\n\
+    for (int stage = 0; stage < num_stages + 1; ++stage) \\\n\
+    { \\\n\
+        int signo = (local_id >> stage) & 1; \\\n\
+ \\\n\
+        for (int passOfStage = 0; passOfStage < stage + 1; ++passOfStage) \\\n\
+        { \\\n\
+            int postShift = (stage - passOfStage); \\\n\
+            int pairDistance = 1 << postShift; \\\n\
+ \\\n\
+            int left_id = ( (local_id >> postShift) << (postShift + 1)) + (local_id & (pairDistance - 1)); \\\n\
+            int right_id = left_id + pairDistance; \\\n\
+ \\\n\
+            int left_idx = local_indices[left_id]; \\\n\
+            int right_idx = local_indices[right_id]; \\\n\
+ \\\n\
+            int left_elem = local_data[left_id]; \\\n\
+            int right_elem = local_data[right_id]; \\\n\
+ \\\n\
+            if ((left_elem < right_elem) ^ signo) \\\n\
+            { \\\n\
+                local_data[left_id] = right_elem; \\\n\
+                local_data[right_id] = left_elem; \\\n\
+ \\\n\
+                local_indices[left_id] = right_idx; \\\n\
+                local_indices[right_id] = left_idx; \\\n\
+            } \\\n\
+ \\\n\
+            barrier(CLK_LOCAL_MEM_FENCE); \\\n\
+        } \\\n\
+    } \\\n\
+ \\\n\
+    int4 dst; \\\n\
+    dst.x = local_data[local_id]; \\\n\
+    dst.y = local_data[local_id + work_group_size]; \\\n\
+ \\\n\
+    write_imagei(output, coord.xy, dst.xxxx); \\\n\
+    write_imagei(output, coord.zy, dst.yyyy); \\\n\
+ \\\n\
+    int4 index; \\\n\
+    index.x = ((int*)local_indices)[local_id]; \\\n\
+    index.y = ((int*)local_indices)[local_id + work_group_size]; \\\n\
+ \\\n\
+    write_imagei(indices, coord.xy, index.xxxx); \\\n\
+    write_imagei(indices, coord.zy, index.yyyy); \\\n\
+ }\n\
+TOPK_I32(1 << 0, 0)\n\
+TOPK_I32(1 << 1, 1)\n\
+TOPK_I32(1 << 2, 2)\n\
+TOPK_I32(1 << 3, 3)\n\
+TOPK_I32(1 << 4, 4)\n\
+TOPK_I32(1 << 5, 5)\n\
+TOPK_I32(1 << 6, 6)\n\
+"; /* end of topk_cl*/
+
 static const char upsample_cl[] = "\n\
 #define UPSAMPLE_PROCESS(data_type, read_fun, write_fun) \\\n\
     data_type src  = 0; \\\n\
@@ -61054,6 +61307,7 @@ static const source_map_t cl_resource[] =
     {"space2depth_internal_cl", space2depth_internal_cl},
     {"swish_cl", swish_cl},
     {"tile_cl", tile_cl},
+    {"topk_cl", topk_cl},
     {"upsample_cl", upsample_cl},
 };
 
