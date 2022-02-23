@@ -37,6 +37,8 @@
 #include "vsi_nn_prv.h"
 #include "vsi_nn_log.h"
 
+VSI_NN_SUPPRESS_DEPRECATED_BEGIN
+
 static vsi_status op_compute
     (
     vsi_nn_node_t * self,
@@ -188,4 +190,5 @@ DEF_OP_REG
     );
 #ifdef __cplusplus
 }
+VSI_NN_SUPPRESS_DEPRECATED_END
 #endif

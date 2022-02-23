@@ -27,6 +27,7 @@
 
 #include "vsi_nn_types.h"
 #include "vsi_nn_assert.h"
+#include "utils/vsi_nn_util.h"
 #include "ops/vsi_nn_op_activations.h"
 #include "ops/vsi_nn_op_batch_norm.h"
 #include "ops/vsi_nn_op_multiply.h"
@@ -210,7 +211,7 @@ typedef union _vsi_nn_nn_param
     vsi_nn_multiply_param           multiply;
     vsi_nn_proposal_param           proposal;
     vsi_nn_deconv_param             deconv;
-    vsi_nn_reshape_param            reshape;
+    vsi_nn_reshape_param            VSI_NN_DEPRECATED(reshape, "Replace with reshape2");
     vsi_nn_permute_param            permute;
     vsi_nn_upsample_param           upsample;
     vsi_nn_resize_param             resize;
