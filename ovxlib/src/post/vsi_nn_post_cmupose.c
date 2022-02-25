@@ -59,7 +59,7 @@ static void savetxt(char *filename, float *buffer, uint32_t sz)
     uint32_t count,i;
 
     count = 0;
-    fp = fopen( filename, "w" );
+    fp = vsi_nn_fopen( filename, "w" );
     for( i = 0; i < sz; i ++ )
     {
         count += snprintf( (char *)&buf[count], _MAX_BUFFER_SZ - count,

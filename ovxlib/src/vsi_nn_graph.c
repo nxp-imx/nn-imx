@@ -657,7 +657,6 @@ void vsi_nn_ReleaseGraph
         free( ptr );
         *graph = NULL;
     }
-
 } /* vsi_nn_ReleaseGraph() */
 
 /*
@@ -1310,7 +1309,6 @@ vsi_bool vsi_nn_SetGraphOutputs
     }
 
     return ret;
-
 } /* vsi_nn_SetGraphOutputs() */
 
 vsi_nn_node_id_t * vsi_nn_SortGraphNode
@@ -1566,10 +1564,10 @@ void vsi_nn_DumpGraphNodeOutputsEx
 
     if( NULL != prefix )
     {
-        strncpy(filename_prefix, prefix, _SHAPE_BUF_SZ);
+        vsi_nn_strncpy(filename_prefix, prefix, _SHAPE_BUF_SZ);
         filename_prefix[_SHAPE_BUF_SZ - 1] = '\0';
 
-        strncat(filename_prefix, "_", _SHAPE_BUF_SZ - 1);
+        vsi_nn_strncat(filename_prefix, "_", _SHAPE_BUF_SZ - 1);
         filename_prefix[_SHAPE_BUF_SZ - 1] = '\0';
     }
 
@@ -1670,7 +1668,7 @@ void vsi_nn_DumpGraphToJson
         return ;
     }
 
-    fp = fopen("graph.json", "w+");
+    fp = vsi_nn_fopen("graph.json", "w+");
     if(NULL == fp)
     {
         VSILOGE("Create dump file fail");

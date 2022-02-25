@@ -54,7 +54,7 @@ static void _try_open_file
         VSILOGW( "File handle is not NULL." );
         fclose( *fp );
     }
-    *fp = fopen( file_path, mode );
+    *fp = vsi_nn_fopen( file_path, mode );
     if( NULL == *fp )
     {
         VSILOGE( "Open file %s fail.", file_path );
@@ -560,4 +560,3 @@ void vsi_nn_GenGraphCCode
     _try_close_file( &s_dfile_hndl );
     _try_close_file( &s_net_file_hndl );
 } /* vsi_nn_GenGraphCCode() */
-
