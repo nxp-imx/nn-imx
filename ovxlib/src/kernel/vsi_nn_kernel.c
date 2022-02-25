@@ -312,7 +312,7 @@ static char* _load_source_code_from_file
     size_t read_bytes;
     source = NULL;
     //TODO: Pack new name
-    fp = fopen( source_name, "rb" );
+    fp = vsi_nn_fopen( source_name, "rb" );
     if( NULL == fp )
     {
         VSILOGE("Open program file %s fail.", source_name);

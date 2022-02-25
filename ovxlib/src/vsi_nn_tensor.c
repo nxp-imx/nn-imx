@@ -139,7 +139,7 @@ static void print_tensor
         break;
 #endif
     default:
-        strncpy(ext_attr, "NONE", _EXT_ATTR_BUF_SZ);
+        vsi_nn_strncpy(ext_attr, "NONE", _EXT_ATTR_BUF_SZ);
         break;
     }
 
@@ -1224,7 +1224,7 @@ void vsi_nn_SaveTensorToTextByFp32
         return;
     }
 
-    fp = fopen( filename, "w" );
+    fp = vsi_nn_fopen( filename, "w" );
     if( NULL == fp )
     {
         VSILOGW( "Write file %s fail. Please check...", filename );
@@ -1313,7 +1313,7 @@ void vsi_nn_SaveDataToText
         return;
     }
 
-    fp = fopen( filename, "w" );
+    fp = vsi_nn_fopen( filename, "w" );
     if( NULL == fp )
     {
         VSILOGW( "Write file %s fail. Please check...", filename );
@@ -1374,7 +1374,7 @@ void vsi_nn_SaveTensorToBinary
         return;
     }
 
-    fp = fopen( filename, "wb" );
+    fp = vsi_nn_fopen( filename, "wb" );
     if( NULL == fp )
     {
         vsi_nn_safe_free( data );

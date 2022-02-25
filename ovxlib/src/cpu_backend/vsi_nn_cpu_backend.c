@@ -92,7 +92,8 @@ vsi_bool vsi_nn_UnregisterCpuBackendPos
 vsi_bool vsi_nn_CpuBackendEnabled()
 {
     vsi_bool ret = FALSE;
-    char* str = getenv("VSI_NN_ENABLE_CPU_BACKEND");
+
+    char* str = vsi_nn_getenv("VSI_NN_ENABLE_CPU_BACKEND");
     if( str )
     {
         ret = (vsi_bool)atoi( str );

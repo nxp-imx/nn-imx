@@ -86,7 +86,7 @@ final:
 
 int32_t vsi_nn_getEnv(const char* name, char** env_s) {
     int32_t ret = 0;
-    *env_s = getenv(name);
+    *env_s = vsi_nn_getenv(name);
     if (*env_s) {
         ret = TRUE;
     }
