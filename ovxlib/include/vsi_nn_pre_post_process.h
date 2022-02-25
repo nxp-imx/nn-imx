@@ -236,6 +236,13 @@ OVXLIB_API vsi_status vsi_nn_AddGraphPostProcess
     uint32_t count
     );
 
+OVXLIB_API vsi_status vsi_nn_AddBinaryGraphInputsWithCropParam
+    (
+        vsi_nn_graph_t* graph,
+        vsi_nn_node_id_t* enable_nodes,
+        uint32_t enable_nodes_count
+    );
+
 #ifdef __cplusplus
 }
 #endif
