@@ -369,12 +369,14 @@ static vsi_bool _init_tensor
         params.quant_data.affinePerChannel.scales = scales;
         params.quant_data.affinePerChannel.zeroPoint = NULL;
         params.quant_data.affinePerChannel.zeroPointCount = 0;
-        // TODO: This is a hack since driver will access a NULL pointer and cause a crash.
-        // Remove me in the future.
         {
+            // Low-level driver only support asymmetric. Application doesn't provide zp information if
+            // it's symmetric quantized tensor. Fake a zp information filled with zero to meet low-level's
+            // requirement
             null_zp = (int32_t*)malloc(sizeof(int32_t) * tensor->attr.dtype.scale_dim);
             memset(null_zp, 0, sizeof(int32_t) * tensor->attr.dtype.scale_dim);
             params.quant_data.affinePerChannel.zeroPoint = null_zp;
+            params.quant_data.affinePerChannel.zeroPointCount= tensor->attr.dtype.scale_dim;
         }
         break;
 #else
