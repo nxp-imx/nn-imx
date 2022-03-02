@@ -1123,8 +1123,14 @@ int OvxlibDelegate::addNode_RESHAPE(Model* model,
     std::vector<vsi_nn_node_t*> nodes;
     err = addNode(VSI_NN_OP_RESHAPE, operation, &nodes, operation_index);
     int32_t* shape = addParamPool(reshape->shape, true);
+#if defined(_VSI_NN_OP_RESHAPE2_H)
+    static_assert( sizeof(vsi_size_t) == 4, "NNRT don't compitable with VIP with 40bitVA");
+    nodes[0]->nn_param.reshape2.size = reinterpret_cast<vsi_size_t*>(shape);
+    nodes[0]->nn_param.reshape2.dim_num = reshape->shape.size();
+#else
     nodes[0]->nn_param.reshape.size = reinterpret_cast<uint32_t*>(shape);
     nodes[0]->nn_param.reshape.dim_num = reshape->shape.size();
+#endif
     return err;
 }
 
