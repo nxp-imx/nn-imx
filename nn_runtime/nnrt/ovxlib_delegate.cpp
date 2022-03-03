@@ -1121,7 +1121,11 @@ int OvxlibDelegate::addNode_RESHAPE(Model* model,
     int err = NNA_ERROR_CODE(NO_ERROR);
     ReshapeOperation* reshape = reinterpret_cast<ReshapeOperation*>(operation.get());
     std::vector<vsi_nn_node_t*> nodes;
+#if defined(_VSI_NN_OP_RESHAPE2_H)
+    err = addNode(VSI_NN_OP_RESHAPE2, operation, &nodes, operation_index);
+#else
     err = addNode(VSI_NN_OP_RESHAPE, operation, &nodes, operation_index);
+#endif
     int32_t* shape = addParamPool(reshape->shape, true);
 #if defined(_VSI_NN_OP_RESHAPE2_H)
     static_assert( sizeof(vsi_size_t) == 4, "NNRT don't compitable with VIP with 40bitVA");
