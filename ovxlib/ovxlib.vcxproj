@@ -608,6 +608,7 @@
     <ClInclude Include="include\ops\vsi_nn_op_pre_process_gray.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_pre_process_nv12.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_pre_process_rgb.h"/>
+    <ClInclude Include="include\ops\vsi_nn_op_pre_process_rgb888_planar.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_pre_process_tensor.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_pre_process_yuv420.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_pre_process_yuv444.h"/>
@@ -1097,6 +1098,9 @@
     <ClCompile Include="src\kernel\cpu\pre_process_nv12_cpu.c">
       <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="src\kernel\cpu\pre_process_rgb888_planar_cpu.c">
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="src\kernel\cpu\pre_process_rgb_cpu.c">
       <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
@@ -1320,6 +1324,9 @@
       <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\pre_process_nv12_evis.c">
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\kernel\evis\pre_process_rgb888_planar_evis.c">
       <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\pre_process_rgb_evis.c">
@@ -1830,6 +1837,9 @@
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_pre_process_rgb.c">
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_pre_process_rgb888_planar.c">
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_pre_process_tensor.c">
