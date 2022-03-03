@@ -68,7 +68,7 @@ def modify_vsi_nn_node_type_h(lines, op_name):
         if line.find('/* custom node head define define */') != -1:
             s = '#include "ops/vsi_nn_op_%s.h"\n'%op_name.lower()
             new_lines[index - 1] += s
-        if line.find('client_param[128]') != -1:
+        if line.find('client_param') != -1:
             blank = get_blank(op_name, 19)
             s = '    vsi_nn_%s_param%s%s;\n'%(op_name.lower(), blank, op_name.lower())
             new_lines[index - 1] += s
