@@ -205,6 +205,14 @@ static inline double vsi_rint
     return inter;
 } /* vsi_rint() */
 
+/**
+* Computes an approximation of the error function.
+* This is the same approximation used by Eigen.
+*
+* @param[in] the value for input float.
+*/
+float vsi_nn_erf_impl(float x);
+
 #ifdef __cplusplus
 }
 #endif
