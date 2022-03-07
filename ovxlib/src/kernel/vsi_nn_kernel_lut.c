@@ -105,7 +105,38 @@ static float mish_eval(float data)
 
 static float erf_eval(float x)
 {
-    return vsi_nn_erf_impl(x);
+    float res = 0;
+    float tmp = x;
+    float factorial = 1; /*n!*/
+    float x_pow = x;
+    int32_t one = 1;
+    int32_t n = 1;
+
+    if (x <= -3)
+    {
+        return -1;
+    }
+    else if (x >= 3)
+    {
+        return 1;
+    }
+
+    while (vsi_abs(tmp) > 1e-5)
+    {
+        res += tmp;
+
+        factorial *= n;
+        one *= -1;
+        x_pow *= x * x;
+        tmp = one / factorial * x_pow / ( 2 * n + 1);
+
+        n ++;
+    }
+#define VSI_MUL2_RSQRTPI    (1.1283791670955126f)
+
+    res *= VSI_MUL2_RSQRTPI;
+
+    return res;
 }
 
 static float gelu_eval(float data)
