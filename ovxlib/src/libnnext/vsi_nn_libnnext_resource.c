@@ -6139,27 +6139,26 @@ __kernel void floordiv_##src0_name##src1_name##to##dst_name \\\n\
 TENSOR_FLOORDIV(F16, F16, F16, half4, vxc_short8, vxc_short8,\\\n\
                 vxc_half8, CONV, 1, 0, 1, 0, 1, 0)\n\
 TENSOR_FLOORDIV(F16, F16, I16, short4, vxc_short8, vxc_short8,\\\n\
-               vxc_half8, CONV_SAT_RTE, 1, 0, 1, 0, out_scale, 0)\n\
+               vxc_half8, CONV_SAT_RTE, 1, 0, 1, 0, out_scale, out_zp)\n\
 TENSOR_FLOORDIV(F16, F16, I8,  char4, vxc_char8, vxc_short8,\\\n\
-                vxc_half8, CONV_SAT_RTE, 1, 0, 1, 0, out_scale, 0)\n\
+                vxc_half8, CONV_SAT_RTE, 1, 0, 1, 0, out_scale, out_zp)\n\
 TENSOR_FLOORDIV(F16, F16, U8,  uchar4, vxc_uchar8, vxc_short8,\\\n\
                vxc_half8, CONV_SAT_RTE, 1, 0, 1, 0, out_scale, out_zp)\n\
 \n\
 TENSOR_FLOORDIV(I16, I16, I16, short4, vxc_short8, vxc_short8,\\\n\
-                vxc_short8, CONV_SAT_RTE, in_scale0, 0, in_scale1, 0, out_scale, 0)\n\
+                vxc_short8, CONV_SAT_RTE, in_scale0, in0Tail, in_scale1, in1Tail, out_scale, out_zp)\n\
 TENSOR_FLOORDIV(I16, I16, F16, half4, vxc_short8, vxc_short8,\\\n\
-                vxc_short8, CONV, in_scale0, 0, in_scale1, 0, 1, 0)\n\
+                vxc_short8, CONV, in_scale0, in0Tail, in_scale1, in1Tail, 1, 0)\n\
 \n\
 TENSOR_FLOORDIV(I8, I8, I8, char4, vxc_char8, vxc_char16,\\\n\
-                vxc_char16, CONV_SAT_RTE, in_scale0, 0, in_scale1, 0, out_scale, 0)\n\
+                vxc_char16, CONV_SAT_RTE, in_scale0, in0Tail, in_scale1, in1Tail, out_scale, out_zp)\n\
 TENSOR_FLOORDIV(I8, I8, F16, half4, vxc_short8, vxc_char16,\\\n\
-                vxc_char16, CONV, in_scale0, 0, in_scale1, 0, 1, 0)\n\
+                vxc_char16, CONV, in_scale0, in0Tail, in_scale1, in1Tail, 1, 0)\n\
 \n\
 TENSOR_FLOORDIV(U8, U8, U8,  uchar4, vxc_uchar8, vxc_uchar16,\\\n\
                 vxc_uchar16, CONV_SAT_RTE, in_scale0, in0Tail, in_scale1, in1Tail, out_scale, out_zp)\n\
 TENSOR_FLOORDIV(U8, U8, F16, half4, vxc_short8, vxc_uchar16,\\\n\
                 vxc_uchar16, CONV, in_scale0, in0Tail, in_scale1, in1Tail, 1, 0)\n\
-\n\
 \n\
 \n\
 #define TENSOR_FLOORDIV_2D(src0_name, src1_name, dst_name, dst_type, save_type, read_type, copy_type, \\\n\
@@ -6180,21 +6179,21 @@ __kernel void floordiv_##src0_name##src1_name##to##dst_name##_2D \\\n\
 TENSOR_FLOORDIV_2D(F16, F16, F16, half4, vxc_short8, vxc_short8,\\\n\
                 vxc_half8, CONV, 1, 0, 1, 0, 1, 0)\n\
 TENSOR_FLOORDIV_2D(F16, F16, I16, short4, vxc_short8, vxc_short8,\\\n\
-               vxc_half8, CONV_SAT_RTE, 1, 0, 1, 0, out_scale, 0)\n\
+               vxc_half8, CONV_SAT_RTE, 1, 0, 1, 0, out_scale, out_zp)\n\
 TENSOR_FLOORDIV_2D(F16, F16, I8,  char4, vxc_char8, vxc_short8,\\\n\
-                vxc_half8, CONV_SAT_RTE, 1, 0, 1, 0, out_scale, 0)\n\
+                vxc_half8, CONV_SAT_RTE, 1, 0, 1, 0, out_scale, out_zp)\n\
 TENSOR_FLOORDIV_2D(F16, F16, U8,  uchar4, vxc_uchar8, vxc_short8,\\\n\
                vxc_half8, CONV_SAT_RTE, 1, 0, 1, 0, out_scale, out_zp)\n\
 \n\
 TENSOR_FLOORDIV_2D(I16, I16, I16, short4, vxc_short8, vxc_short8,\\\n\
-                vxc_short8, CONV_SAT_RTE, in_scale0, 0, in_scale1, 0, out_scale, 0)\n\
+                vxc_short8, CONV_SAT_RTE, in_scale0, in0Tail, in_scale1, in1Tail, out_scale, out_zp)\n\
 TENSOR_FLOORDIV_2D(I16, I16, F16, half4, vxc_short8, vxc_short8,\\\n\
-                vxc_short8, CONV, in_scale0, 0, in_scale1, 0, 1, 0)\n\
+                vxc_short8, CONV, in_scale0, in0Tail, in_scale1, in1Tail, 1, 0)\n\
 \n\
 TENSOR_FLOORDIV_2D(I8, I8, I8, char4, vxc_char8, vxc_char16,\\\n\
-                vxc_char16, CONV_SAT_RTE, in_scale0, 0, in_scale1, 0, out_scale, 0)\n\
+                vxc_char16, CONV_SAT_RTE, in_scale0, in0Tail, in_scale1, in1Tail, out_scale, out_zp)\n\
 TENSOR_FLOORDIV_2D(I8, I8, F16, half4, vxc_short8, vxc_char16,\\\n\
-                vxc_char16, CONV, in_scale0, 0, in_scale1, 0, 1, 0)\n\
+                vxc_char16, CONV, in_scale0, in0Tail, in_scale1, in1Tail, 1, 0)\n\
 \n\
 TENSOR_FLOORDIV_2D(U8, U8, U8,  uchar4, vxc_uchar8, vxc_uchar16,\\\n\
                 vxc_uchar16, CONV_SAT_RTE, in_scale0, in0Tail, in_scale1, in1Tail, out_scale, out_zp)\n\
