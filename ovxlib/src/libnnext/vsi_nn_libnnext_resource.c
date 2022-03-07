@@ -4982,14 +4982,14 @@ float4 eltwise_unary_round(float4 x)\n\
     return convert_float4(convert_int4_rte(x));\n\
 }\n\
 \n\
-float evaluate_polynomial_alpha(float x2)\n\
+float4 evaluate_polynomial_alpha(float4 x2)\n\
 {\n\
     float4 alpha0 = (float4){-2.72614225801306e-10f, 2.77068142495902e-08f,\n\
                             -2.10102402082508e-06f, -5.69250639462346e-05f};\n\
     float4 alpha1 = (float4){-7.34990630326855e-04f, -2.95459980854025e-03f,\n\
                             -1.60960333262415e-02f, 0};\n\
 \n\
-    float poly = alpha0.x * x2 + alpha0.y;\n\
+    float4 poly = alpha0.x * x2 + alpha0.y;\n\
     poly = poly * x2 + alpha0.z;\n\
     poly = poly * x2 + alpha0.w;\n\
     poly = poly * x2 + alpha1.x;\n\
@@ -4999,13 +4999,13 @@ float evaluate_polynomial_alpha(float x2)\n\
     return poly;\n\
 }\n\
 \n\
-float evaluate_polynomial_beta(float x2)\n\
+float4 evaluate_polynomial_beta(float4 x2)\n\
 {\n\
     float4 beta0 = (float4){-1.45660718464996e-05f, -2.13374055278905e-04f,\n\
                             -1.68282697438203e-03f, -7.37332916720468e-03f};\n\
     float4 beta1 = (float4){-1.42647390514189e-02f, 0, 0, 0};\n\
 \n\
-    float poly = beta0.x * x2 + beta0.y;\n\
+    float4 poly = beta0.x * x2 + beta0.y;\n\
     poly = poly * x2 + beta0.z;\n\
     poly = poly * x2 + beta0.w;\n\
     poly = poly * x2 + beta1.x;\n\
@@ -5013,10 +5013,10 @@ float evaluate_polynomial_beta(float x2)\n\
     return 1.0f / poly;\n\
 }\n\
 \n\
-float erf_eval(float _x)\n\
+float4 erf_eval(float4 _x)\n\
 {\n\
-    float x = clamp(_x, -4, 4);\n\
-    float x2 = x * x;\n\
+    float4 x = clamp(_x, -4, 4);\n\
+    float4 x2 = x * x;\n\
 \n\
     return x * evaluate_polynomial_alpha(x2) * evaluate_polynomial_beta(x2);\n\
 }\n\
@@ -5026,10 +5026,7 @@ float4 eltwise_unary_gelu(float4 x)\n\
 {\n\
     float4 erf, data;\n\
     data = x * RSQRT2;\n\
-    erf.x = erf_eval(data.x);\n\
-    erf.y = erf_eval(data.y);\n\
-    erf.z = erf_eval(data.z);\n\
-    erf.w = erf_eval(data.w);\n\
+    erf = erf_eval(data);\n\
     x = 0.5f * x * (1 + erf);\n\
 \n\
     return x;\n\
@@ -5435,14 +5432,14 @@ float4 eltwise_unary_round(float4 x)\n\
     return convert_float4(convert_int4_rte(x));\n\
 }\n\
 \n\
-float evaluate_polynomial_alpha(float x2)\n\
+float4 evaluate_polynomial_alpha(float4 x2)\n\
 {\n\
     float4 alpha0 = (float4){-2.72614225801306e-10f, 2.77068142495902e-08f,\n\
                             -2.10102402082508e-06f, -5.69250639462346e-05f};\n\
     float4 alpha1 = (float4){-7.34990630326855e-04f, -2.95459980854025e-03f,\n\
                             -1.60960333262415e-02f, 0};\n\
 \n\
-    float poly = alpha0.x * x2 + alpha0.y;\n\
+    float4 poly = alpha0.x * x2 + alpha0.y;\n\
     poly = poly * x2 + alpha0.z;\n\
     poly = poly * x2 + alpha0.w;\n\
     poly = poly * x2 + alpha1.x;\n\
@@ -5452,13 +5449,13 @@ float evaluate_polynomial_alpha(float x2)\n\
     return poly;\n\
 }\n\
 \n\
-float evaluate_polynomial_beta(float x2)\n\
+float4 evaluate_polynomial_beta(float4 x2)\n\
 {\n\
     float4 beta0 = (float4){-1.45660718464996e-05f, -2.13374055278905e-04f,\n\
                             -1.68282697438203e-03f, -7.37332916720468e-03f};\n\
     float4 beta1 = (float4){-1.42647390514189e-02f, 0, 0, 0};\n\
 \n\
-    float poly = beta0.x * x2 + beta0.y;\n\
+    float4 poly = beta0.x * x2 + beta0.y;\n\
     poly = poly * x2 + beta0.z;\n\
     poly = poly * x2 + beta0.w;\n\
     poly = poly * x2 + beta1.x;\n\
@@ -5466,10 +5463,10 @@ float evaluate_polynomial_beta(float x2)\n\
     return 1.0f / poly;\n\
 }\n\
 \n\
-float erf_eval(float _x)\n\
+float4 erf_eval(float4 _x)\n\
 {\n\
-    float x = clamp(_x, -4, 4);\n\
-    float x2 = x * x;\n\
+    float4 x = clamp(_x, -4, 4);\n\
+    float4 x2 = x * x;\n\
 \n\
     return x * evaluate_polynomial_alpha(x2) * evaluate_polynomial_beta(x2);\n\
 }\n\
@@ -5479,10 +5476,7 @@ float4 eltwise_unary_gelu(float4 x)\n\
 {\n\
     float4 erf, data;\n\
     data = x * RSQRT2;\n\
-    erf.x = erf_eval(data.x);\n\
-    erf.y = erf_eval(data.y);\n\
-    erf.z = erf_eval(data.z);\n\
-    erf.w = erf_eval(data.w);\n\
+    erf = erf_eval(data);\n\
     x = 0.5f * x * (1 + erf);\n\
 \n\
     return x;\n\
@@ -5842,14 +5836,14 @@ ELTSISE_UNARY_BF16(neg)\n\
 
 static const char erf_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
-float evaluate_polynomial_alpha(float x2)\n\
+float4 evaluate_polynomial_alpha(float4 x2)\n\
 {\n\
     float4 alpha0 = (float4){-2.72614225801306e-10f, 2.77068142495902e-08f,\n\
                             -2.10102402082508e-06f, -5.69250639462346e-05f};\n\
     float4 alpha1 = (float4){-7.34990630326855e-04f, -2.95459980854025e-03f,\n\
                             -1.60960333262415e-02f, 0};\n\
 \n\
-    float poly = alpha0.x * x2 + alpha0.y;\n\
+    float4 poly = alpha0.x * x2 + alpha0.y;\n\
     poly = poly * x2 + alpha0.z;\n\
     poly = poly * x2 + alpha0.w;\n\
     poly = poly * x2 + alpha1.x;\n\
@@ -5859,13 +5853,13 @@ float evaluate_polynomial_alpha(float x2)\n\
     return poly;\n\
 }\n\
 \n\
-float evaluate_polynomial_beta(float x2)\n\
+float4 evaluate_polynomial_beta(float4 x2)\n\
 {\n\
     float4 beta0 = (float4){-1.45660718464996e-05f, -2.13374055278905e-04f,\n\
                             -1.68282697438203e-03f, -7.37332916720468e-03f};\n\
     float4 beta1 = (float4){-1.42647390514189e-02f, 0, 0, 0};\n\
 \n\
-    float poly = beta0.x * x2 + beta0.y;\n\
+    float4 poly = beta0.x * x2 + beta0.y;\n\
     poly = poly * x2 + beta0.z;\n\
     poly = poly * x2 + beta0.w;\n\
     poly = poly * x2 + beta1.x;\n\
@@ -5873,10 +5867,10 @@ float evaluate_polynomial_beta(float x2)\n\
     return 1.0f / poly;\n\
 }\n\
 \n\
-float eltwise_unary_erf(float _x)\n\
+float4 eltwise_unary_erf(float4 _x)\n\
 {\n\
-    float x = clamp(_x, -4, 4);\n\
-    float x2 = x * x;\n\
+    float4 x = clamp(_x, -4, 4);\n\
+    float4 x2 = x * x;\n\
 \n\
     return x * evaluate_polynomial_alpha(x2) * evaluate_polynomial_beta(x2);\n\
 }\n\
@@ -5904,10 +5898,7 @@ _viv_uniform VXC_512Bits uniDatatoFp32Part0_4x4;\n\
     float4 vecA; \\\n\
     VXC_DP4x4(vecA, src1, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDatatoFp32Part0_4x4); \\\n\
     vecA = vecA * inputScale + inputTail; \\\n\
-    vecA.x = eltwise_unary_##func_name(vecA.x); \\\n\
-    vecA.y = eltwise_unary_##func_name(vecA.y); \\\n\
-    vecA.z = eltwise_unary_##func_name(vecA.z); \\\n\
-    vecA.w = eltwise_unary_##func_name(vecA.w); \\\n\
+    vecA = eltwise_unary_##func_name(vecA); \\\n\
     vecA = vecA * outputScale + outputZP; \\\n\
  \\\n\
     convert_type dst0; \\\n\
@@ -5948,10 +5939,7 @@ _viv_uniform VXC_512Bits uniExtractOddData_2x8;\n\
     vxc_short8 zero = (vxc_short8)(0, 0, 0, 0, 0, 0, 0, 0); \\\n\
     VXC_DP2x8(src1, src0, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvBF16toF32_Part0_2x8); \\\n\
     _viv_asm(COPY, vecA, src1, 16); \\\n\
-    vecA.x = eltwise_unary_##func_name(vecA.x); \\\n\
-    vecA.y = eltwise_unary_##func_name(vecA.y); \\\n\
-    vecA.z = eltwise_unary_##func_name(vecA.z); \\\n\
-    vecA.w = eltwise_unary_##func_name(vecA.w); \\\n\
+    vecA = eltwise_unary_##func_name(vecA); \\\n\
  \\\n\
     _viv_asm(COPY, src0, vecA, 16); \\\n\
  \\\n\
@@ -5977,10 +5965,7 @@ __write_only image2d_array_t  output \\\n\
     float4 vecA; \\\n\
     VXC_DP4x4(vecA, src1, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDatatoFp32Part0_4x4); \\\n\
     vecA = vecA * inputScale + inputTail; \\\n\
-    vecA.x = eltwise_unary_##func_name(vecA.x); \\\n\
-    vecA.y = eltwise_unary_##func_name(vecA.y); \\\n\
-    vecA.z = eltwise_unary_##func_name(vecA.z); \\\n\
-    vecA.w = eltwise_unary_##func_name(vecA.w); \\\n\
+    vecA = eltwise_unary_##func_name(vecA); \\\n\
     vecA = vecA * outputScale + outputZP; \\\n\
  \\\n\
     convert_type dst0; \\\n\
@@ -6017,10 +6002,7 @@ ELTSISE_UNARY_3D(erf, I16, F16, vxc_short8, vxc_short8, half4, vxc_half8,  vxc_s
     vxc_short8 zero = (vxc_short8)(0, 0, 0, 0, 0, 0, 0, 0); \\\n\
     VXC_DP2x8(src1, src0, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvBF16toF32_Part0_2x8); \\\n\
     _viv_asm(COPY, vecA, src1, 16); \\\n\
-    vecA.x = eltwise_unary_##func_name(vecA.x); \\\n\
-    vecA.y = eltwise_unary_##func_name(vecA.y); \\\n\
-    vecA.z = eltwise_unary_##func_name(vecA.z); \\\n\
-    vecA.w = eltwise_unary_##func_name(vecA.w); \\\n\
+    vecA = eltwise_unary_##func_name(vecA); \\\n\
  \\\n\
     _viv_asm(COPY, src0, vecA, 16); \\\n\
  \\\n\
