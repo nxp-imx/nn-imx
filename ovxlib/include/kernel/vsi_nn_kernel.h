@@ -355,7 +355,7 @@ vsi_status vsi_nn_kernel_pirority_set
     size_t pirority_size
     );
 
-vsi_nn_kernel_t * vsi_nn_kernel_create
+OVXLIB_API vsi_nn_kernel_t * vsi_nn_kernel_create
     (
     vsi_nn_kernel_type_e type
     );
@@ -371,7 +371,7 @@ void vsi_nn_kernel_release
     vsi_nn_kernel_t ** kernel
     );
 
-void vsi_nn_kernel_add_source
+OVXLIB_API void vsi_nn_kernel_add_source
     (
     vsi_nn_kernel_t * kernel,
     vsi_nn_gpu_source_fmt_e fmt,
@@ -379,7 +379,7 @@ void vsi_nn_kernel_add_source
     ...
     );
 
-void vsi_nn_kernel_add_build_option
+OVXLIB_API void vsi_nn_kernel_add_build_option
     (
     vsi_nn_kernel_t * kernel,
     const char * option
@@ -404,7 +404,7 @@ vsi_nn_kernel_tensor_t vsi_nn_kernel_tensor_reshape
     vsi_size_t rank
     );
 
-vsi_status vsi_nn_kernel_node_pass_param
+OVXLIB_API vsi_status vsi_nn_kernel_node_pass_param
     (
     vsi_nn_kernel_node_t node,
     vsi_nn_kernel_node_param_t * params,
@@ -640,7 +640,7 @@ vsi_nn_kernel_node_t  vsi_nn_kernel_create_node
     vsi_nn_kernel_t * kernel
     );
 
-vsi_nn_kernel_node_t  vsi_nn_kernel_create_node_ext
+OVXLIB_API vsi_nn_kernel_node_t  vsi_nn_kernel_create_node_ext
     (
     vsi_nn_graph_t * graph,
     vsi_nn_kernel_t * kernel,
@@ -651,7 +651,7 @@ vsi_status vsi_nn_kernel_node_set_border
     (vsi_nn_kernel_node_t node,
     vx_border_t* border);
 
-vsi_nn_kernel_scalar_t vsi_nn_kernel_scalar_create
+OVXLIB_API vsi_nn_kernel_scalar_t vsi_nn_kernel_scalar_create
     (
     vsi_nn_graph_t * graph,
     vsi_nn_kernel_dtype_e dtype,
@@ -744,7 +744,7 @@ vsi_status vsi_nn_kernel_gpu_add_param
     void * data
     );
 
-vsi_status vsi_nn_kernel_gpu_config
+OVXLIB_API vsi_status vsi_nn_kernel_gpu_config
     (
     vsi_nn_kernel_node_t node,
     const gpu_param_t * gpu_param
