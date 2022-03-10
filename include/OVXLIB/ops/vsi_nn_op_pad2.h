@@ -21,14 +21,30 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#ifndef _VSI_NN_CUSTOM_NODE_TYPE_H_
-#define _VSI_NN_CUSTOM_NODE_TYPE_H_
-/*
-    custom op head files
-*/
-#include "custom/ops/vsi_nn_op_custom_softmax.h"
-#include "custom/ops/vsi_nn_op_custom_ainr_denoise_postprocess.h"
-#include "custom/ops/vsi_nn_op_custom_warp_affine.h"
-#include "custom/ops/vsi_nn_op_custom_warp_perspective.h"
+
+#ifndef _VSI_NN_OP_PAD2_H
+#define _VSI_NN_OP_PAD2_H
+
+#include "vsi_nn_types.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef struct _vsi_nn_pad2_param
+{
+    struct _pad2_local_data_t* local;
+    const uint32_t * front_size;
+    const uint32_t * back_size;
+    uint8_t dim_num;
+    float const_val;
+    vsi_nn_pad_mode_e mode;
+} vsi_nn_pad2_param;
+_compiler_assert(offsetof(vsi_nn_pad2_param, local) == 0, \
+    vsi_nn_pad2_h );
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

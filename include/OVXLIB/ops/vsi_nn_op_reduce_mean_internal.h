@@ -21,14 +21,29 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#ifndef _VSI_NN_CUSTOM_NODE_TYPE_H_
-#define _VSI_NN_CUSTOM_NODE_TYPE_H_
-/*
-    custom op head files
-*/
-#include "custom/ops/vsi_nn_op_custom_softmax.h"
-#include "custom/ops/vsi_nn_op_custom_ainr_denoise_postprocess.h"
-#include "custom/ops/vsi_nn_op_custom_warp_affine.h"
-#include "custom/ops/vsi_nn_op_custom_warp_perspective.h"
+
+#ifndef _VSI_NN_OP_REDUCE_MEAN_INTERNAL_H
+#define _VSI_NN_OP_REDUCE_MEAN_INTERNAL_H
+
+#include "vsi_nn_types.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef struct _vsi_nn_reduce_mean_internal_param
+{
+    struct _reduce_mean_internal_local_data_t* local;
+    // Add parameters here
+    vx_int32    *axis;
+    vx_uint32   axis_num;
+    float       scale;
+} vsi_nn_reduce_mean_internal_param;
+_compiler_assert(offsetof(vsi_nn_reduce_mean_internal_param, local) == 0, \
+    vsi_nn_reduce_mean_internal_h );
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
