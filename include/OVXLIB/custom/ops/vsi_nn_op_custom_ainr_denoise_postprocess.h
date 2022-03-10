@@ -21,14 +21,27 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#ifndef _VSI_NN_CUSTOM_NODE_TYPE_H_
-#define _VSI_NN_CUSTOM_NODE_TYPE_H_
-/*
-    custom op head files
-*/
-#include "custom/ops/vsi_nn_op_custom_softmax.h"
-#include "custom/ops/vsi_nn_op_custom_ainr_denoise_postprocess.h"
-#include "custom/ops/vsi_nn_op_custom_warp_affine.h"
-#include "custom/ops/vsi_nn_op_custom_warp_perspective.h"
+
+#ifndef _VSI_NN_OP_CUSTOM_AINR_DENOISE_POSTPROCESS_H
+#define _VSI_NN_OP_CUSTOM_AINR_DENOISE_POSTPROCESS_H
+
+#include "vsi_nn_types.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef struct _vsi_nn_custom_ainr_denoise_postprocess_param
+{
+    struct _ainr_denoise_postprocess_local_data_t* local;
+    // Add parameters here
+} vsi_nn_custom_ainr_denoise_postprocess_param;
+_compiler_assert(offsetof(vsi_nn_custom_ainr_denoise_postprocess_param, local) == 0, \
+    vsi_nn_custom_ainr_denoise_postprocess_h );
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
+
