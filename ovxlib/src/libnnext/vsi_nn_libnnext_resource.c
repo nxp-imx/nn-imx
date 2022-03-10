@@ -56061,12 +56061,13 @@ __kernel void one_hot_I32toI32\n\
 {\n\
     int4 coord =  (int4)(get_global_id(0), get_global_id(1), 0, 0);\n\
 \n\
-    int4 val = read_imagei(input, coord.xy);\n\
+    int4 src = read_imagei(input, coord.xy);\n\
 \n\
+    int  val = convert_int(convert_float(src.x) * inputScale - inputTail);\n\
     do\n\
     {\n\
         int4 dst;\n\
-        dst.x = val.x == coord.z ? on_value : off_value;\n\
+        dst.x = val == coord.z ? on_value : off_value;\n\
 \n\
         write_imagei(output, coord.xzyw, dst.xxxx);\n\
 \n\
@@ -56087,11 +56088,13 @@ __kernel void one_hot_I32toU8\n\
 {\n\
     int4 coord =  (int4)(get_global_id(0), get_global_id(1), 0, 0);\n\
 \n\
-    int4 val = read_imagei(input, coord.xy);\n\
+    int4 src = read_imagei(input, coord.xy);\n\
+\n\
+    int  val = convert_int(convert_float(src.x) * inputScale - inputTail);\n\
     do\n\
     {\n\
         uint4 dst;\n\
-        dst.x = val.x == coord.z ? on_value : off_value;\n\
+        dst.x = val == coord.z ? on_value : off_value;\n\
 \n\
         write_imageui(output, coord.xzyw, dst.xxxx);\n\
 \n\
@@ -56112,12 +56115,13 @@ __kernel void one_hot_I32toF32\n\
 {\n\
     int4 coord =  (int4)(get_global_id(0), get_global_id(1), 0, 0);\n\
 \n\
-    int4 val = read_imagei(input, coord.xy);\n\
+    int4 src = read_imagei(input, coord.xy);\n\
 \n\
+    int  val = convert_int(convert_float(src.x) * inputScale - inputTail);\n\
     do\n\
     {\n\
         float4 dst;\n\
-        dst.x = val.x == coord.z ? on_value : off_value;\n\
+        dst.x = val == coord.z ? on_value : off_value;\n\
 \n\
         write_imagef(output, coord.xzyw, dst.xxxx);\n\
 \n\
