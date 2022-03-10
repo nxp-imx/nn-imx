@@ -151,7 +151,7 @@ DEF_KERNEL_INITIALIZER(_one_hot_initializer)
 
     if (VSI_NN_KERNEL_QUANT_DFP == attr[0]->quant)
     {
-        srcFixPointPos   = attr[0]->dfp.fl;
+        srcFixPointPos = attr[0]->dfp.fl;
     }
     else if (VSI_NN_KERNEL_QUANT_ASYMM == attr[0]->quant)
     {
@@ -361,6 +361,13 @@ static vsi_status _query_kernel
     in_dtype  = vsi_nn_kernel_map_dtype( inputs[0]->attr.dtype.vx_type );
     out_dtype = vsi_nn_kernel_map_dtype( outputs[0]->attr.dtype.vx_type );
 
+    if ( ( in_dtype == I8 || in_dtype == I16 ) &&
+         ( inputs[0]->attr.dtype.qnt_type != VSI_NN_QNT_TYPE_DFP &&
+           inputs[0]->attr.dtype.qnt_type != VSI_NN_QNT_TYPE_NONE ) )
+    {
+        return VSI_FAILURE;
+    }
+
     key = ONE_HOT_HASH_KEY( in_dtype, out_dtype, image_2d );
 
     for ( i = 0; i < (uint32_t)kernel_map_size; i ++ )
@@ -504,4 +511,3 @@ final:
 __END_DECLS
 
 REGISTER_BACKEND_EVIS( one_hot, _setup )
-
