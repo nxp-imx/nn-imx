@@ -6858,6 +6858,161 @@ __kernel void gather_batch_F16toF16_axis0(\n\
 }\n\
 "; /* end of gather_batch_vx*/
 
+static const char gather_elements_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+_viv_uniform int axis_size;\n\
+\n\
+#define GATHER_ELEMENTS_AXIS0_2D(name, data_type) \\\n\
+__kernel void gather_elements_axis0_##name##_I32to##name##_2D \\\n\
+    ( \\\n\
+    __read_only  image2d_t input0, \\\n\
+    __read_only  image2d_t input1, \\\n\
+    __write_only image2d_t output, \\\n\
+                 int       axis \\\n\
+    ) \\\n\
+{ \\\n\
+    int2 coord = (int2)(get_global_id(0), get_global_id(1)); \\\n\
+ \\\n\
+    Image img = create_image_from_image2d(input1, 4); \\\n\
+    uchar* indice_ptr = get_image_ptr_from_coord(img, coord.xy); \\\n\
+    int4 indice = ((int4 *)indice_ptr)[0]; \\\n\
+    int4 indice1 = indice + axis_size; \\\n\
+    indice = indice < 0 ? indice1 : indice; \\\n\
+ \\\n\
+    data_type src; \\\n\
+    VXC_ReadImage(src, input0, (int2)(indice.x, coord.y), 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
+    VXC_ReadImage(src, input0, (int2)(indice.y, coord.y), 0, VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 0)); \\\n\
+    VXC_ReadImage(src, input0, (int2)(indice.z, coord.y), 0, VXC_MODIFIER(2, 2, 0, VXC_RM_TowardZero, 0)); \\\n\
+    VXC_ReadImage(src, input0, (int2)(indice.w, coord.y), 0, VXC_MODIFIER(3, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+ \\\n\
+    VXC_WriteImage(output, coord, src, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+}\n\
+GATHER_ELEMENTS_AXIS0_2D(F16, vxc_short4)\n\
+GATHER_ELEMENTS_AXIS0_2D(I16, vxc_short4)\n\
+GATHER_ELEMENTS_AXIS0_2D(I8,  vxc_char4)\n\
+GATHER_ELEMENTS_AXIS0_2D(U8,  vxc_uchar4)\n\
+\n\
+#define GATHER_ELEMENTS_AXIS0(name, data_type) \\\n\
+__kernel void gather_elements_axis0_##name##_I32to##name \\\n\
+    ( \\\n\
+    __read_only  image2d_array_t input0, \\\n\
+    __read_only  image2d_array_t input1, \\\n\
+    __write_only image2d_array_t output, \\\n\
+                 int             axis \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), get_global_id(2)); \\\n\
+ \\\n\
+    Tensor img = create_tensor_from_image2d_array(input1, 4); \\\n\
+    uchar* indice_ptr = get_tensor_ptr_from_coord(img, coord); \\\n\
+    int4 indice = ((int4 *)indice_ptr)[0]; \\\n\
+    int4 indice1 = indice + axis_size; \\\n\
+    indice = indice < 0 ? indice1 : indice; \\\n\
+ \\\n\
+    data_type src; \\\n\
+    int4 coord_in = coord; \\\n\
+    coord_in.x = indice.x; \\\n\
+    VXC_ReadImage2DArray(src, input0, coord_in, 0, \\\n\
+                VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
+    coord_in.x = indice.y; \\\n\
+    VXC_ReadImage2DArray(src, input0, coord_in, 0, \\\n\
+                VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 0)); \\\n\
+    coord_in.x = indice.z; \\\n\
+    VXC_ReadImage2DArray(src, input0, coord_in, 0, \\\n\
+                VXC_MODIFIER(2, 2, 0, VXC_RM_TowardZero, 0)); \\\n\
+    coord_in.x = indice.w; \\\n\
+    VXC_ReadImage2DArray(src, input0, coord_in, 0, \\\n\
+                VXC_MODIFIER(3, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+ \\\n\
+    VXC_WriteImage2DArray(output, coord, src, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+}\n\
+GATHER_ELEMENTS_AXIS0(F16, vxc_short4)\n\
+GATHER_ELEMENTS_AXIS0(I16, vxc_short4)\n\
+GATHER_ELEMENTS_AXIS0(I8,  vxc_char4)\n\
+GATHER_ELEMENTS_AXIS0(U8,  vxc_uchar4)\n\
+\n\
+#define GATHER_ELEMENTS_AXIS1_2D(name, data_type) \\\n\
+__kernel void gather_elements_axis1_##name##_I32to##name##_2D \\\n\
+    ( \\\n\
+    __read_only  image2d_t input0, \\\n\
+    __read_only  image2d_t input1, \\\n\
+    __write_only image2d_t output, \\\n\
+                 int       axis \\\n\
+    ) \\\n\
+{ \\\n\
+    int2 coord = (int2)(get_global_id(0), get_global_id(1)); \\\n\
+ \\\n\
+    int index = read_imagei(input1, coord).x; \\\n\
+    int index1 = index + axis_size; \\\n\
+    index = index < 0 ? index1 : index; \\\n\
+ \\\n\
+    data_type src; \\\n\
+    VXC_ReadImage(src, input0, (int2)(coord.x, index), 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
+ \\\n\
+    VXC_WriteImage(output, coord, src, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
+}\n\
+GATHER_ELEMENTS_AXIS1_2D(F16, vxc_short4)\n\
+GATHER_ELEMENTS_AXIS1_2D(I16, vxc_short4)\n\
+GATHER_ELEMENTS_AXIS1_2D(I8,  vxc_char4)\n\
+GATHER_ELEMENTS_AXIS1_2D(U8,  vxc_uchar4)\n\
+\n\
+#define GATHER_ELEMENTS_AXIS1(name, data_type) \\\n\
+__kernel void gather_elements_axis1_##name##_I32to##name \\\n\
+    ( \\\n\
+    __read_only  image2d_array_t input0, \\\n\
+    __read_only  image2d_array_t input1, \\\n\
+    __write_only image2d_array_t output, \\\n\
+                 int             axis \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), get_global_id(2)); \\\n\
+ \\\n\
+    int index = read_imagei(input1, coord).x; \\\n\
+    int index1 = index + axis_size; \\\n\
+    index = index < 0 ? index1 : index; \\\n\
+ \\\n\
+    data_type src; \\\n\
+    int4 coord_in = coord; \\\n\
+    coord_in.y = index; \\\n\
+    VXC_ReadImage2DArray(src, input0, coord_in, 0, \\\n\
+                VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
+ \\\n\
+    VXC_WriteImage2DArray(output, coord, src, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
+}\n\
+GATHER_ELEMENTS_AXIS1(F16, vxc_short4)\n\
+GATHER_ELEMENTS_AXIS1(I16, vxc_short4)\n\
+GATHER_ELEMENTS_AXIS1(I8,  vxc_char4)\n\
+GATHER_ELEMENTS_AXIS1(U8,  vxc_uchar4)\n\
+\n\
+#define GATHER_ELEMENTS_AXIS2(name, data_type) \\\n\
+__kernel void gather_elements_axis2_##name##_I32to##name \\\n\
+    ( \\\n\
+    __read_only  image2d_array_t input0, \\\n\
+    __read_only  image2d_array_t input1, \\\n\
+    __write_only image2d_array_t output, \\\n\
+                 int             axis \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), get_global_id(2)); \\\n\
+ \\\n\
+    int index = read_imagei(input1, coord).x; \\\n\
+    int index1 = index + axis_size; \\\n\
+    index = index < 0 ? index1 : index; \\\n\
+ \\\n\
+    data_type src; \\\n\
+    int4 coord_in = coord; \\\n\
+    coord_in.z = index; \\\n\
+    VXC_ReadImage2DArray(src, input0, coord_in, 0, \\\n\
+                VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
+ \\\n\
+    VXC_WriteImage2DArray(output, coord, src, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
+}\n\
+GATHER_ELEMENTS_AXIS2(F16, vxc_short4)\n\
+GATHER_ELEMENTS_AXIS2(I16, vxc_short4)\n\
+GATHER_ELEMENTS_AXIS2(I8,  vxc_char4)\n\
+GATHER_ELEMENTS_AXIS2(U8,  vxc_uchar4)\n\
+"; /* end of gather_elements_vx*/
+
 static const char gather_mix_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 _viv_uniform int indices_num;\n\
@@ -45409,15 +45564,7 @@ UPSAMPLE_SCALETO16B_FUN(I16, F16,  vxc_short8,  vxc_short8,  vxc_half8,  vxc_sho
 UPSAMPLE_SCALETO16B_FUN(I16, I16,  vxc_short8,  vxc_short8,  vxc_short8, vxc_short8)\n\
 "; /* end of upsamplescale_k2_vx*/
 
-static const char vsi_nn_kernel_header_vx[] = "/*\n\
- ============================================================================\n\
- Name        : libNNExt.vx\n\
- Author      : VSI\n\
- Version     :\n\
- Copyright   : Your copyright notice\n\
- Description :\n\
- ============================================================================\n\
- */\n\
+static const char vsi_nn_kernel_header_vx[] = "\n\
 #pragma OPENCL EXTENSION cl_viv_vx_extension : enable\n\
 \n\
 typedef struct Image\n\
@@ -48378,6 +48525,143 @@ __kernel void gather_batch_F32toF32(\n\
     }\n\
 }\n\
 "; /* end of gather_batch_cl*/
+
+static const char gather_elements_cl[] = "\n\
+#define GATHER_ELEMENTS_AXIS0_2D(name, data_type, read_func, write_func, conv_func) \\\n\
+__kernel void gather_elements_axis0_##name##_I32to##name##_2D \\\n\
+    ( \\\n\
+    __read_only  image2d_t input0, \\\n\
+    __read_only  image2d_t input1, \\\n\
+    __write_only image2d_t output, \\\n\
+                 float     input_scale, \\\n\
+                 float     input_tail, \\\n\
+                 int       axis_size \\\n\
+    ) \\\n\
+{ \\\n\
+    int2 coord = (int2)(get_global_id(0), get_global_id(1)); \\\n\
+ \\\n\
+    int index = read_imagei(input1, coord).x; \\\n\
+    int index1 = index + axis_size; \\\n\
+    index = index < 0 ? index1 : index; \\\n\
+ \\\n\
+    data_type data = read_func(input0, (int2)(index, coord.y)); \\\n\
+    float4 dst = convert_float4(data) * input_scale + input_tail; \\\n\
+    data = conv_func(dst); \\\n\
+ \\\n\
+    write_func(output, coord, data); \\\n\
+}\n\
+GATHER_ELEMENTS_AXIS0_2D(F32, float4, read_imagef,  write_imagef,  convert_float4)\n\
+GATHER_ELEMENTS_AXIS0_2D(I32, int4,   read_imagei,  write_imagei,  convert_int4_rte)\n\
+GATHER_ELEMENTS_AXIS0_2D(U32, uint4,  read_imageui, write_imageui, convert_uint4_rte)\n\
+\n\
+#define GATHER_ELEMENTS_AXIS0(name, data_type, read_func, write_func, conv_func) \\\n\
+__kernel void gather_elements_axis0_##name##_I32to##name \\\n\
+    ( \\\n\
+    __read_only  image2d_array_t input0, \\\n\
+    __read_only  image2d_array_t input1, \\\n\
+    __write_only image2d_array_t output, \\\n\
+                 float           input_scale, \\\n\
+                 float           input_tail, \\\n\
+                 int             axis_size \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), get_global_id(2)); \\\n\
+ \\\n\
+    int index = read_imagei(input1, coord).x; \\\n\
+    int index1 = index + axis_size; \\\n\
+    index = index < 0 ? index1 : index; \\\n\
+ \\\n\
+    data_type data = read_func(input0, (int4)(index, coord.yzz)); \\\n\
+    float4 dst = convert_float4(data) * input_scale + input_tail; \\\n\
+    data = conv_func(dst); \\\n\
+ \\\n\
+    write_func(output, coord, data); \\\n\
+}\n\
+GATHER_ELEMENTS_AXIS0(F32, float4, read_imagef,  write_imagef,  convert_float4)\n\
+GATHER_ELEMENTS_AXIS0(I32, int4,   read_imagei,  write_imagei,  convert_int4_rte)\n\
+GATHER_ELEMENTS_AXIS0(U32, uint4,  read_imageui, write_imageui, convert_uint4_rte)\n\
+\n\
+#define GATHER_ELEMENTS_AXIS1_2D(name, data_type, read_func, write_func, conv_func) \\\n\
+__kernel void gather_elements_axis1_##name##_I32to##name##_2D \\\n\
+    ( \\\n\
+    __read_only  image2d_t input0, \\\n\
+    __read_only  image2d_t input1, \\\n\
+    __write_only image2d_t output, \\\n\
+                 float     input_scale, \\\n\
+                 float     input_tail, \\\n\
+                 int       axis_size \\\n\
+    ) \\\n\
+{ \\\n\
+    int2 coord = (int2)(get_global_id(0), get_global_id(1)); \\\n\
+ \\\n\
+    int index = read_imagei(input1, coord).x; \\\n\
+    int index1 = index + axis_size; \\\n\
+    index = index < 0 ? index1 : index; \\\n\
+ \\\n\
+    data_type data = read_func(input0, (int2)(coord.x, index)); \\\n\
+    float4 dst = convert_float4(data) * input_scale + input_tail; \\\n\
+    data = conv_func(dst); \\\n\
+ \\\n\
+    write_func(output, coord, data); \\\n\
+}\n\
+GATHER_ELEMENTS_AXIS1_2D(F32, float4, read_imagef,  write_imagef,  convert_float4)\n\
+GATHER_ELEMENTS_AXIS1_2D(I32, int4,   read_imagei,  write_imagei,  convert_int4_rte)\n\
+GATHER_ELEMENTS_AXIS1_2D(U32, uint4,  read_imageui, write_imageui, convert_uint4_rte)\n\
+\n\
+#define GATHER_ELEMENTS_AXIS1(name, data_type, read_func, write_func, conv_func) \\\n\
+__kernel void gather_elements_axis1_##name##_I32to##name \\\n\
+    ( \\\n\
+    __read_only  image2d_array_t input0, \\\n\
+    __read_only  image2d_array_t input1, \\\n\
+    __write_only image2d_array_t output, \\\n\
+                 float           input_scale, \\\n\
+                 float           input_tail, \\\n\
+                 int             axis_size \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), get_global_id(2)); \\\n\
+ \\\n\
+    int index = read_imagei(input1, coord).x; \\\n\
+    int index1 = index + axis_size; \\\n\
+    index = index < 0 ? index1 : index; \\\n\
+ \\\n\
+    data_type data = read_func(input0, (int4)(coord.x, index, coord.zz)); \\\n\
+    float4 dst = convert_float4(data) * input_scale + input_tail; \\\n\
+    data = conv_func(dst); \\\n\
+ \\\n\
+    write_func(output, coord, data); \\\n\
+}\n\
+GATHER_ELEMENTS_AXIS1(F32, float4, read_imagef,  write_imagef,  convert_float4)\n\
+GATHER_ELEMENTS_AXIS1(I32, int4,   read_imagei,  write_imagei,  convert_int4_rte)\n\
+GATHER_ELEMENTS_AXIS1(U32, uint4,  read_imageui, write_imageui, convert_uint4_rte)\n\
+\n\
+#define GATHER_ELEMENTS_AXIS2(name, data_type, read_func, write_func, conv_func) \\\n\
+__kernel void gather_elements_axis2_##name##_I32to##name \\\n\
+    ( \\\n\
+    __read_only  image2d_array_t input0, \\\n\
+    __read_only  image2d_array_t input1, \\\n\
+    __write_only image2d_array_t output, \\\n\
+                 float           input_scale, \\\n\
+                 float           input_tail, \\\n\
+                 int             axis_size \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), get_global_id(2)); \\\n\
+ \\\n\
+    int index = read_imagei(input1, coord).x; \\\n\
+    int index1 = index + axis_size; \\\n\
+    index = index < 0 ? index1 : index; \\\n\
+ \\\n\
+    data_type data = read_func(input0, (int4)(coord.xy, index, coord.z)); \\\n\
+    float4 dst = convert_float4(data) * input_scale + input_tail; \\\n\
+    data = conv_func(dst); \\\n\
+ \\\n\
+    write_func(output, coord, data); \\\n\
+}\n\
+GATHER_ELEMENTS_AXIS2(F32, float4, read_imagef,  write_imagef,  convert_float4)\n\
+GATHER_ELEMENTS_AXIS2(I32, int4,   read_imagei,  write_imagei,  convert_int4_rte)\n\
+GATHER_ELEMENTS_AXIS2(U32, uint4,  read_imageui, write_imageui, convert_uint4_rte)\n\
+"; /* end of gather_elements_cl*/
 
 static const char gather_nd_cl[] = "__kernel void gather_nd_U8toU8_1D(\n\
     __read_only image2d_t   input0,\n\
@@ -61100,6 +61384,7 @@ static const source_map_t evis_resource[] =
     {"gather_vx", gather_vx},
     {"gather_array_vx", gather_array_vx},
     {"gather_batch_vx", gather_batch_vx},
+    {"gather_elements_vx", gather_elements_vx},
     {"gather_mix_vx", gather_mix_vx},
     {"gather_mix_batch_vx", gather_mix_batch_vx},
     {"gather_nd_vx", gather_nd_vx},
@@ -61317,6 +61602,7 @@ static const source_map_t cl_resource[] =
     {"floordiv_cl", floordiv_cl},
     {"gather_cl", gather_cl},
     {"gather_batch_cl", gather_batch_cl},
+    {"gather_elements_cl", gather_elements_cl},
     {"gather_nd_cl", gather_nd_cl},
     {"gather_nd_3d_cl", gather_nd_3d_cl},
     {"group_normalization_f32_cl", group_normalization_f32_cl},
