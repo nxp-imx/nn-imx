@@ -291,6 +291,9 @@
     <ClInclude Include="include\ops\vsi_nn_op_gather.h">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_gather_elements.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
     <ClInclude Include="include\ops\vsi_nn_op_gelu.h">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
@@ -884,6 +887,9 @@
     <ClCompile Include="src\kernel\cl\gather_cl.c">
       <Filter>Source Files\kernel\cl</Filter>
     </ClCompile>
+    <ClCompile Include="src\kernel\cl\gather_elements_cl.c">
+      <Filter>Source Files\kernel\cl</Filter>
+    </ClCompile>
     <ClCompile Include="src\kernel\cl\gather_nd_cl.c">
       <Filter>Source Files\kernel\cl</Filter>
     </ClCompile>
@@ -1083,6 +1089,9 @@
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\gather_cpu.c">
+      <Filter>Source Files\kernel\cpu</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\cpu\gather_elements_cpu.c">
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\gather_nd_cpu.c">
@@ -1319,6 +1328,9 @@
     <ClCompile Include="src\kernel\evis\floordiv_evis.c">
       <Filter>Source Files\kernel\evis</Filter>
     </ClCompile>
+    <ClCompile Include="src\kernel\evis\gather_elements_evis.c">
+      <Filter>Source Files\kernel\evis</Filter>
+    </ClCompile>
     <ClCompile Include="src\kernel\evis\gather_evis.c">
       <Filter>Source Files\kernel\evis</Filter>
     </ClCompile>
@@ -1490,7 +1502,7 @@
     <ClCompile Include="src\kernel\sp\batch_norm_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
-    <ClCompile Include="src\kernel\sp\eltwise_sp.c">
+  <ClCompile Include="src\kernel\sp\eltwise_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
   <ClCompile Include="src\kernel\sp\eltwise_unary_sp.c">
@@ -1749,6 +1761,9 @@
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_gather.c">
+      <Filter>Source Files\ops</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_gather_elements.c">
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_gather_nd.c">

@@ -553,6 +553,7 @@
     <ClInclude Include="include\ops\vsi_nn_op_floordiv.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_fullconnect.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_gather.h"/>
+    <ClInclude Include="include\ops\vsi_nn_op_gather_elements.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_gelu.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_generate_proposals.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_grouped_conv1d.h"/>
@@ -814,6 +815,9 @@
     <ClCompile Include="src\kernel\cl\gather_cl.c">
       <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="src\kernel\cl\gather_elements_cl.c">
+      <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="src\kernel\cl\gather_nd_cl.c">
       <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
@@ -1013,6 +1017,9 @@
       <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\gather_cpu.c">
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\kernel\cpu\gather_elements_cpu.c">
       <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\gather_nd_cpu.c">
@@ -1247,6 +1254,9 @@
       <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\floordiv_evis.c">
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\kernel\evis\gather_elements_evis.c">
       <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\gather_evis.c">
@@ -1679,6 +1689,9 @@
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_gather.c">
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_gather_elements.c">
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_gather_nd.c">
