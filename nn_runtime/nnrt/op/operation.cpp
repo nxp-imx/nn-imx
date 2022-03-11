@@ -806,7 +806,8 @@ void StridedSliceOperation::handleLayoutInferenceOnInputs(
         input_permute_cache_.cached_permutes_[inputs()[0]];
     CHECK_NULL_PTR(permuteVector);
 
-    if (inputOperand->ndim() != 4) {
+    if (inputOperand->ndim() != 4
+    || (inputOperand->ndim() != outputOperand->ndim())) {
         Operation::handleLayoutInferenceOnInputs(model, next_permute_vectors);
         auto reversePermVec = permuteVector->reverse();
         return;
