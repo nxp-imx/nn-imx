@@ -25877,14 +25877,13 @@ MINIMUM_QUANT_2D_IMPL(F16F16toI16, vxc_half8,   vxc_short8,  vxc_short8)\n\
 
 static const char minimum_1_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
-\n\
 _viv_uniform int2 multAndoutZP0;//[0:15] multiplier, [31:63] output zp\n\
 _viv_uniform int2 multAndoutZP1;//[0:15] multiplier, [31:63] output zp\n\
 _viv_uniform VXC_512Bits uniU8MulAndPostShift0_Lo_2x8;\n\
 _viv_uniform VXC_512Bits uniU8MulAndPostShift1_Lo_2x8;\n\
 \n\
-#define MAXIMUM_F16TOQUANT_IMPL(name, src0_type, copy_type, dst_type) \\\n\
-__kernel void maximum_##name \\\n\
+#define MINIMUM_F16TOQUANT_IMPL(name, src0_type, copy_type, dst_type) \\\n\
+__kernel void minimum_##name \\\n\
     ( \\\n\
     __read_only  image2d_array_t input0, \\\n\
     __read_only  image2d_array_t input1, \\\n\
@@ -25914,15 +25913,15 @@ __kernel void maximum_##name \\\n\
  \\\n\
     VXC_WriteImage2DArray(output, coord, dst, VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0)); \\\n\
 }\n\
-MAXIMUM_F16TOQUANT_IMPL(U8F16toU8,   vxc_uchar16, vxc_uchar16, vxc_uchar8)\n\
-MAXIMUM_F16TOQUANT_IMPL(I8F16toI8,   vxc_char16,  vxc_char16,  vxc_char8)\n\
-MAXIMUM_F16TOQUANT_IMPL(I16F16toI16, vxc_short8,  vxc_short8,  vxc_short8)\n\
-MAXIMUM_F16TOQUANT_IMPL(F16F16toI16, vxc_half8,   vxc_short8,  vxc_short8)\n\
-MAXIMUM_F16TOQUANT_IMPL(F16F16toI8,  vxc_half8,   vxc_short8,  vxc_char8)\n\
-MAXIMUM_F16TOQUANT_IMPL(F16F16toU8,  vxc_half8,   vxc_short8,  vxc_uchar8)\n\
+MINIMUM_F16TOQUANT_IMPL(U8F16toU8,   vxc_uchar16, vxc_uchar16, vxc_uchar8)\n\
+MINIMUM_F16TOQUANT_IMPL(I8F16toI8,   vxc_char16,  vxc_char16,  vxc_char8)\n\
+MINIMUM_F16TOQUANT_IMPL(I16F16toI16, vxc_short8,  vxc_short8,  vxc_short8)\n\
+MINIMUM_F16TOQUANT_IMPL(F16F16toI16, vxc_half8,   vxc_short8,  vxc_short8)\n\
+MINIMUM_F16TOQUANT_IMPL(F16F16toI8,  vxc_half8,   vxc_short8,  vxc_char8)\n\
+MINIMUM_F16TOQUANT_IMPL(F16F16toU8,  vxc_half8,   vxc_short8,  vxc_uchar8)\n\
 \n\
-#define MAXIMUM_F16TOQUANT_2D_IMPL(name, src0_type, copy_type, dst_type) \\\n\
-__kernel void maximum_##name##_2D \\\n\
+#define MINIMUM_F16TOQUANT_2D_IMPL(name, src0_type, copy_type, dst_type) \\\n\
+__kernel void minimum_##name##_2D \\\n\
     ( \\\n\
     __read_only  image2d_array_t input0, \\\n\
     __read_only  image2d_array_t input1, \\\n\
@@ -25952,15 +25951,15 @@ __kernel void maximum_##name##_2D \\\n\
  \\\n\
     VXC_WriteImage(output, coord, dst, VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0)); \\\n\
 }\n\
-MAXIMUM_F16TOQUANT_2D_IMPL(U8F16toU8,   vxc_uchar16, vxc_uchar16, vxc_uchar8)\n\
-MAXIMUM_F16TOQUANT_2D_IMPL(I8F16toI8,   vxc_char16,  vxc_char16,  vxc_char8)\n\
-MAXIMUM_F16TOQUANT_2D_IMPL(I16F16toI16, vxc_short8,  vxc_short8,  vxc_short8)\n\
-MAXIMUM_F16TOQUANT_2D_IMPL(F16F16toI16, vxc_half8,   vxc_short8,  vxc_short8)\n\
-MAXIMUM_F16TOQUANT_2D_IMPL(F16F16toI8,  vxc_half8,   vxc_short8,  vxc_char8)\n\
-MAXIMUM_F16TOQUANT_2D_IMPL(F16F16toU8,  vxc_half8,   vxc_short8,  vxc_uchar8)\n\
+MINIMUM_F16TOQUANT_2D_IMPL(U8F16toU8,   vxc_uchar16, vxc_uchar16, vxc_uchar8)\n\
+MINIMUM_F16TOQUANT_2D_IMPL(I8F16toI8,   vxc_char16,  vxc_char16,  vxc_char8)\n\
+MINIMUM_F16TOQUANT_2D_IMPL(I16F16toI16, vxc_short8,  vxc_short8,  vxc_short8)\n\
+MINIMUM_F16TOQUANT_2D_IMPL(F16F16toI16, vxc_half8,   vxc_short8,  vxc_short8)\n\
+MINIMUM_F16TOQUANT_2D_IMPL(F16F16toI8,  vxc_half8,   vxc_short8,  vxc_char8)\n\
+MINIMUM_F16TOQUANT_2D_IMPL(F16F16toU8,  vxc_half8,   vxc_short8,  vxc_uchar8)\n\
 \n\
-#define MAXIMUM_QUANT_F16TOF16_IMPL(name, src_type) \\\n\
-__kernel void maximum_##name \\\n\
+#define MINIMUM_QUANT_F16TOF16_IMPL(name, src_type) \\\n\
+__kernel void minimum_##name \\\n\
     ( \\\n\
     __read_only  image2d_array_t input0, \\\n\
     __read_only  image2d_array_t input1, \\\n\
@@ -25986,12 +25985,12 @@ __kernel void maximum_##name \\\n\
  \\\n\
     VXC_WriteImage2DArray(output, coord, dst, VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0)); \\\n\
 }\n\
-MAXIMUM_QUANT_F16TOF16_IMPL(U8F16toF16,  vxc_uchar16)\n\
-MAXIMUM_QUANT_F16TOF16_IMPL(I8F16toF16,  vxc_char16)\n\
-MAXIMUM_QUANT_F16TOF16_IMPL(I16F16toF16, vxc_short8)\n\
+MINIMUM_QUANT_F16TOF16_IMPL(U8F16toF16,  vxc_uchar16)\n\
+MINIMUM_QUANT_F16TOF16_IMPL(I8F16toF16,  vxc_char16)\n\
+MINIMUM_QUANT_F16TOF16_IMPL(I16F16toF16, vxc_short8)\n\
 \n\
-#define MAXIMUM_QUANT_F16TOF16_2D_IMPL(name, src_type) \\\n\
-__kernel void maximum_##name##_2D \\\n\
+#define MINIMUM_QUANT_F16TOF16_2D_IMPL(name, src_type) \\\n\
+__kernel void minimum_##name##_2D \\\n\
     ( \\\n\
     __read_only  image2d_array_t input0, \\\n\
     __read_only  image2d_array_t input1, \\\n\
@@ -26017,12 +26016,12 @@ __kernel void maximum_##name##_2D \\\n\
  \\\n\
     VXC_WriteImage(output, coord, dst, VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0)); \\\n\
 }\n\
-MAXIMUM_QUANT_F16TOF16_2D_IMPL(U8F16toF16,  vxc_uchar16)\n\
-MAXIMUM_QUANT_F16TOF16_2D_IMPL(I8F16toF16,  vxc_char16)\n\
-MAXIMUM_QUANT_F16TOF16_2D_IMPL(I16F16toF16, vxc_short8)\n\
+MINIMUM_QUANT_F16TOF16_2D_IMPL(U8F16toF16,  vxc_uchar16)\n\
+MINIMUM_QUANT_F16TOF16_2D_IMPL(I8F16toF16,  vxc_char16)\n\
+MINIMUM_QUANT_F16TOF16_2D_IMPL(I16F16toF16, vxc_short8)\n\
 \n\
-#define MAXIMUM_QUANTTOF16_IMPL(name, src_type) \\\n\
-__kernel void maximum_##name \\\n\
+#define MINIMUM_QUANTTOF16_IMPL(name, src_type) \\\n\
+__kernel void minimum_##name \\\n\
     ( \\\n\
     __read_only  image2d_array_t input0, \\\n\
     __read_only  image2d_array_t input1, \\\n\
@@ -26050,12 +26049,12 @@ __kernel void maximum_##name \\\n\
  \\\n\
     VXC_WriteImage2DArray(output, coord, dst, VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0)); \\\n\
 }\n\
-MAXIMUM_QUANTTOF16_IMPL(U8U8toF16,   vxc_uchar16)\n\
-MAXIMUM_QUANTTOF16_IMPL(I8I8toF16,   vxc_char16)\n\
-MAXIMUM_QUANTTOF16_IMPL(I16I16toF16, vxc_short8)\n\
+MINIMUM_QUANTTOF16_IMPL(U8U8toF16,   vxc_uchar16)\n\
+MINIMUM_QUANTTOF16_IMPL(I8I8toF16,   vxc_char16)\n\
+MINIMUM_QUANTTOF16_IMPL(I16I16toF16, vxc_short8)\n\
 \n\
-#define MAXIMUM_QUANTTOF16_2D_IMPL(name, src_type) \\\n\
-__kernel void maximum_##name##_2D \\\n\
+#define MINIMUM_QUANTTOF16_2D_IMPL(name, src_type) \\\n\
+__kernel void minimum_##name##_2D \\\n\
     ( \\\n\
     __read_only  image2d_array_t input0, \\\n\
     __read_only  image2d_array_t input1, \\\n\
@@ -26083,9 +26082,9 @@ __kernel void maximum_##name##_2D \\\n\
  \\\n\
     VXC_WriteImage(output, coord, dst, VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0)); \\\n\
 }\n\
-MAXIMUM_QUANTTOF16_2D_IMPL(U8U8toF16,   vxc_uchar16)\n\
-MAXIMUM_QUANTTOF16_2D_IMPL(I8I8toF16,   vxc_char16)\n\
-MAXIMUM_QUANTTOF16_2D_IMPL(I16I16toF16, vxc_short8)"; /* end of minimum_1_vx*/
+MINIMUM_QUANTTOF16_2D_IMPL(U8U8toF16,   vxc_uchar16)\n\
+MINIMUM_QUANTTOF16_2D_IMPL(I8I8toF16,   vxc_char16)\n\
+MINIMUM_QUANTTOF16_2D_IMPL(I16I16toF16, vxc_short8)"; /* end of minimum_1_vx*/
 
 static const char moments_axis0_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
@@ -57066,14 +57065,6 @@ __kernel void pow_FP32FP32toFP32_2D\n\
 }\n\
 "; /* end of pow_cl*/
 
-static const char pre_process_rgb888_planar_cl[] = "__kernel void pre_process_rgb888_planar(\n\
-    __read_only image2d_array_t   input,\n\
-    __write_only image2d_array_t  output)\n\
-{\n\
-\n\
-}\n\
-"; /* end of pre_process_rgb888_planar_cl*/
-
 static const char prelu_cl[] = "__kernel void prelu_FP32FP32toFP32\n\
     (\n\
     __read_only  image2d_array_t    input0,\n\
@@ -61383,7 +61374,6 @@ static const source_map_t cl_resource[] =
     {"one_hot_cl", one_hot_cl},
     {"poolwithargmax_cl", poolwithargmax_cl},
     {"pow_cl", pow_cl},
-    {"pre_process_rgb888_planar_cl", pre_process_rgb888_planar_cl},
     {"prelu_cl", prelu_cl},
     {"random_multinomial_cl", random_multinomial_cl},
     {"reduceall_internal_axis0_cl", reduceall_internal_axis0_cl},
