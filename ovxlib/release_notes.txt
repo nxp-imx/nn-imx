@@ -1,4 +1,24 @@
 ############################################################################
+Release notes for Ovxlib 1.1.42
+
+New Features:
+    1. add 'deconv3d', 'cos', 'gather_elements'
+    2. add 'pad2' to support padding float32 constant value
+
+Feature Refine:
+    1. refine instance_norm operation to support rank greater than 4
+    2. support more data type for 'maximum', 'minimum', 'dataconvert',
+       'one_hot', 'floordiv', 'erf', 'l2normalizescale'
+    3. support bfloat16 data type for 'moments', 'logical*', 'scatter_nd',
+       'matrixmul', 'depth2space'
+    4. optimize performance of op 'erf'
+    5. refine pre_process node to support IMAGE_RGB888_PLANAR_SEP
+
+Bug Fixing:
+    1. fix pre_process node set crop parameter issue
+    2. fix save 4bit binary output file issue
+
+############################################################################
 Release notes for Ovxlib 1.1.37
 
 New Features:
