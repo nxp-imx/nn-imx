@@ -646,6 +646,7 @@
     <ClInclude Include="include\ops\vsi_nn_op_scatter_nd.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_scatter_nd_update.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_select.h"/>
+    <ClInclude Include="include\ops\vsi_nn_op_selu.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_sequence_mask.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_shufflechannel.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_signalframe.h"/>

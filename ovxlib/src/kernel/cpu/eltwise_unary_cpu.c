@@ -42,13 +42,13 @@ typedef enum
     UNARY_COS,
     UNARY_EXP,
     UNARY_LOG,
-    UNARY_ELU,
     UNARY_NEG,
     UNARY_HSIGMOID,
     UNARY_MISH,
     UNARY_ROUND,
     UNARY_GELU,
     UNARY_HGELU,
+    UNARY_SELU,
 } unary_type_e;
 
 
@@ -77,11 +77,6 @@ static float cos_eval(float data)
 static float log_eval(float data)
 {
     return logf(data);
-}
-
-static float elu_eval(float data, float alpha)
-{
-    return data >=0 ? data : expf(data) * alpha - alpha;
 }
 
 static float neg_eval(float data)
@@ -130,6 +125,15 @@ static float hgelu_eval(float data)
         (data + 0.044715f * data * data * data)))));
 
     return data * cdf;
+}
+
+static float selu_eval(float data, float alpha, float gamma)
+{
+    float y0 = alpha * gamma * expf(data) - alpha * gamma;
+    float y1 = gamma * data;
+    float y = data <= 0 ? y0 : y1;
+
+    return y;
 }
 
 DEF_KERNEL_EXECUTOR(_eltwise_unary_exec)
@@ -190,9 +194,6 @@ DEF_KERNEL_EXECUTOR(_eltwise_unary_exec)
         case UNARY_LOG:
             data = log_eval(data);
             break;
-        case UNARY_ELU:
-            data = elu_eval(data, alpha);
-            break;
         case UNARY_NEG:
             data = neg_eval(data);
             break;
@@ -210,6 +211,9 @@ DEF_KERNEL_EXECUTOR(_eltwise_unary_exec)
             break;
         case UNARY_HGELU:
             data = hgelu_eval(data);
+            break;
+        case UNARY_SELU:
+            data = selu_eval(data, alpha, beta);
             break;
         default:
             break;
@@ -337,10 +341,10 @@ REGISTER_ELTWISE_UNARY_BACKEND_CPU( sin,          UNARY_SIN )
 REGISTER_ELTWISE_UNARY_BACKEND_CPU( cos,          UNARY_COS )
 REGISTER_ELTWISE_UNARY_BACKEND_CPU( exp,          UNARY_EXP )
 REGISTER_ELTWISE_UNARY_BACKEND_CPU( log,          UNARY_LOG )
-REGISTER_ELTWISE_UNARY_BACKEND_CPU( elu,          UNARY_ELU )
 REGISTER_ELTWISE_UNARY_BACKEND_CPU( neg,          UNARY_NEG )
 REGISTER_ELTWISE_UNARY_BACKEND_CPU( hard_sigmoid, UNARY_HSIGMOID )
 REGISTER_ELTWISE_UNARY_BACKEND_CPU( mish,         UNARY_MISH )
 REGISTER_ELTWISE_UNARY_BACKEND_CPU( round,        UNARY_ROUND )
 REGISTER_ELTWISE_UNARY_BACKEND_CPU( gelu,         UNARY_GELU )
 REGISTER_ELTWISE_UNARY_BACKEND_CPU( hard_gelu,    UNARY_HGELU )
+REGISTER_ELTWISE_UNARY_BACKEND_CPU( selu,         UNARY_SELU )
