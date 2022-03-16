@@ -826,7 +826,8 @@ vsi_status vsi_nn_AddBinaryGraphInputsWithCropParam
                     if (node->op == VSI_NN_OP_PRE_PROCESS && node->nn_param.pre_process.type !=
                             VSI_NN_SOURCE_FORMAT_TENSOR)
                     {
-                        if(node->nn_param.pre_process.type == VSI_NN_SOURCE_FORMAT_IMAGE_RGB888_PLANAR)
+                        if(node->nn_param.pre_process.type == VSI_NN_SOURCE_FORMAT_IMAGE_RGB888_PLANAR ||
+                            node->nn_param.pre_process.type == VSI_NN_SOURCE_FORMAT_IMAGE_RGB888_PLANAR_SEP)
                         {
                             /* 2 additional input tensors and 4 paramter scalar*/
                             num_of_graph_real_inputs += 6;
