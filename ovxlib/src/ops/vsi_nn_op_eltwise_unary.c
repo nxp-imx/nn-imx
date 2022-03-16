@@ -58,6 +58,12 @@ static vsi_status _eltwise_unary_op_compute
     if (strcmp(kernel_name, "elu") == 0)
     {
         alpha = self->nn_param.elu.alpha;
+        beta = 1.0f;
+    }
+    else if (strcmp(kernel_name, "selu") == 0)
+    {
+        alpha = self->nn_param.selu.alpha;
+        beta = self->nn_param.selu.gamma;
     }
     else
     {
@@ -73,6 +79,11 @@ static vsi_status _eltwise_unary_op_compute
     {
         self->n = (vx_node)vsi_nn_kernel_selector( self->graph,
                     "hard_gelu", inputs, 1, outputs, 1, param );
+    }
+    else if (strcmp(kernel_name, "elu") == 0 )
+    {
+        self->n = (vx_node)vsi_nn_kernel_selector( self->graph,
+                    "selu", inputs, 1, outputs, 1, param );
     }
     else
     {
@@ -192,6 +203,11 @@ static vsi_status _eltwise_unary_op_init
         self->nn_param.hard_sigmoid.alpha = 0.2f;
         self->nn_param.hard_sigmoid.beta = 0.5f;
     }
+    else if (strcmp(kernel_name, "selu") == 0)
+    {
+        self->nn_param.selu.alpha = 1.67326319217681884765625f;
+        self->nn_param.selu.gamma = 1.05070102214813232421875f;
+    }
 
     return VSI_SUCCESS;
 } /* op_init() */
@@ -230,6 +246,7 @@ DEF_ELEMENT_WISE_UNARY_OP( HARD_SIGMOID, hard_sigmoid );
 DEF_ELEMENT_WISE_UNARY_OP( MISH, mish );
 DEF_ELEMENT_WISE_UNARY_OP( ROUND, round );
 DEF_ELEMENT_WISE_UNARY_OP( GELU, gelu );
+DEF_ELEMENT_WISE_UNARY_OP( SELU, selu );
 
 #undef DEF_ELEMENT_UNARY_WISE_OP
 

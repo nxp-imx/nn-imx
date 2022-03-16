@@ -1,3 +1,4 @@
+
 float eltwise_unary_sin(float x, float alpha, float beta)
 {
     return native_sin(x);
@@ -22,14 +23,6 @@ float eltwise_unary_log(float x, float alpha, float beta)
 {
     x = log2(x);
     return x * rlogE;
-}
-
-float eltwise_unary_elu(float val, float alpha, float beta)
-{
-    float x = val * logE;
-    x = exp2(x) * alpha - alpha;
-
-    return val < 0 ? x : val;
 }
 
 float eltwise_unary_neg(float x, float alpha, float beta)
@@ -128,6 +121,14 @@ float eltwise_unary_hard_gelu(float x, float alpha, float beta)
     return x * cdf;
 }
 
+float eltwise_unary_selu(float val, float alpha_times_gamma, float gamma)
+{
+    float x = val * logE;
+    x = exp2(x) * alpha_times_gamma - alpha_times_gamma;
+
+    return val < 0 ? x : val * gamma;
+}
+
 #define ELTWISE_UNARY_F32(func_name) \
 __kernel void func_name##_F32toF32 \
     ( \
@@ -154,47 +155,13 @@ ELTWISE_UNARY_F32(sin)
 ELTWISE_UNARY_F32(cos)
 ELTWISE_UNARY_F32(exp)
 ELTWISE_UNARY_F32(log)
-ELTWISE_UNARY_F32(elu)
 ELTWISE_UNARY_F32(neg)
 ELTWISE_UNARY_F32(mish)
 ELTWISE_UNARY_F32(hard_sigmoid)
 ELTWISE_UNARY_F32(round)
 ELTWISE_UNARY_F32(gelu)
 ELTWISE_UNARY_F32(hard_gelu)
-
-#define ELTWISE_UNARY_F32_2D(func_name) \
-__kernel void func_name##_F32toF32_2D \
-    ( \
-    __read_only  image2d_t input, \
-    __write_only image2d_t output, \
-                 float     inputScale, \
-                 float     inputTail, \
-                 float     outputScale, \
-                 float     outputZP, \
-                 float     alpha, \
-                 float           beta \
-    ) \
-{ \
-    int2 coord =  (int2)(get_global_id(0), get_global_id(1)); \
- \
-    float4 src = read_imagef(input, coord); \
- \
-    float4 dst = 0; \
-    dst.x = eltwise_unary_##func_name(src.x, alpha, beta); \
- \
-    write_imagef(output, coord, dst.xxxx); \
-}
-ELTWISE_UNARY_F32_2D(sin)
-ELTWISE_UNARY_F32_2D(cos)
-ELTWISE_UNARY_F32_2D(exp)
-ELTWISE_UNARY_F32_2D(log)
-ELTWISE_UNARY_F32_2D(elu)
-ELTWISE_UNARY_F32_2D(neg)
-ELTWISE_UNARY_F32_2D(mish)
-ELTWISE_UNARY_F32_2D(hard_sigmoid)
-ELTWISE_UNARY_F32_2D(round)
-ELTWISE_UNARY_F32_2D(gelu)
-ELTWISE_UNARY_F32_2D(hard_gelu)
+ELTWISE_UNARY_F32(selu)
 
 #define ELTWISE_UNARY_U8(func_name) \
 __kernel void func_name##_U8toU8 \
@@ -223,48 +190,13 @@ ELTWISE_UNARY_U8(sin)
 ELTWISE_UNARY_U8(cos)
 ELTWISE_UNARY_U8(exp)
 ELTWISE_UNARY_U8(log)
-ELTWISE_UNARY_U8(elu)
 ELTWISE_UNARY_U8(neg)
 ELTWISE_UNARY_U8(mish)
 ELTWISE_UNARY_U8(hard_sigmoid)
 ELTWISE_UNARY_U8(round)
 ELTWISE_UNARY_U8(gelu)
 ELTWISE_UNARY_U8(hard_gelu)
-
-#define ELTWISE_UNARY_U8_2D(func_name) \
-__kernel void func_name##_U8toU8_2D \
-    ( \
-    __read_only  image2d_t input, \
-    __write_only image2d_t output, \
-                 float     inputScale, \
-                 float     inputTail, \
-                 float     outputScale, \
-                 float     outputZP, \
-                 float     alpha, \
-                 float     beta \
-    ) \
-{ \
-    int2 coord =  (int2)(get_global_id(0), get_global_id(1)); \
- \
-    uint4 src = read_imageui(input, coord); \
-    float4 data = convert_float4(src) * inputScale - inputTail; \
- \
-    data.x = eltwise_unary_##func_name(data.x, alpha, beta); \
-    uint4 dst = convert_uint4(data * outputScale + outputZP); \
- \
-    write_imageui(output, coord, dst); \
-}
-ELTWISE_UNARY_U8_2D(sin)
-ELTWISE_UNARY_U8_2D(cos)
-ELTWISE_UNARY_U8_2D(exp)
-ELTWISE_UNARY_U8_2D(log)
-ELTWISE_UNARY_U8_2D(elu)
-ELTWISE_UNARY_U8_2D(neg)
-ELTWISE_UNARY_U8_2D(mish)
-ELTWISE_UNARY_U8_2D(hard_sigmoid)
-ELTWISE_UNARY_U8_2D(round)
-ELTWISE_UNARY_U8_2D(gelu)
-ELTWISE_UNARY_U8_2D(hard_gelu)
+ELTWISE_UNARY_U8(selu)
 
 __kernel void neg_I32toI32
     (
@@ -279,26 +211,6 @@ __kernel void neg_I32toI32
     )
 {
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);
-    int4 src = read_imagei(input, coord);
-
-    int4 dst = -src;
-
-    write_imagei(output, coord, dst);
-}
-
-__kernel void neg_I32toI32_2D
-    (
-    __read_only  image2d_t input,
-    __write_only image2d_t output,
-                 float     inputScale,
-                 float     inputTail,
-                 float     outputScale,
-                 float     outputZP,
-                 float     alpha,
-                 float     beta
-    )
-{
-    int2 coord =  (int2)(get_global_id(0), get_global_id(1));
     int4 src = read_imagei(input, coord);
 
     int4 dst = -src;

@@ -5216,17 +5216,17 @@ float4 eltwise_unary_log(float4 x)\n\
     return x * rlogE;\n\
 }\n\
 \n\
-float4 eltwise_unary_elu(float4 val)\n\
+float4 eltwise_unary_neg(float4 x)\n\
+{\n\
+    return x * -1;\n\
+}\n\
+\n\
+float4 eltwise_unary_selu(float4 val)\n\
 {\n\
     float4 x = val * logE;\n\
     x = exp2(x) * alpha - alpha;\n\
 \n\
-    return val < 0 ? x : val;\n\
-}\n\
-\n\
-float4 eltwise_unary_neg(float4 x)\n\
-{\n\
-    return x * -1;\n\
+    return val < 0 ? x : val * beta;\n\
 }\n\
 \n\
 _viv_uniform float inputScale;\n\
@@ -5317,17 +5317,17 @@ ELTSISE_UNARY_2D(log, U8,  U8,  vxc_uchar8, vxc_uchar8, int4,  vxc_uchar8, vxc_u
 ELTSISE_UNARY_2D(log, U8,  F16, vxc_uchar8, vxc_uchar8, half4, vxc_half8,  vxc_short8)\n\
 ELTSISE_UNARY_2D(log, I16, I16, vxc_short8, vxc_short8, int4,  vxc_short8, vxc_short8)\n\
 ELTSISE_UNARY_2D(log, I16, F16, vxc_short8, vxc_short8, half4, vxc_half8,  vxc_short8)\n\
-//ELU\n\
-ELTSISE_UNARY_2D(elu, F16, F16, vxc_short8, vxc_half8,  half4, vxc_half8,  vxc_short8)\n\
-ELTSISE_UNARY_2D(elu, F16, I8,  vxc_short8, vxc_half8,  int4,  vxc_char8,  vxc_char8)\n\
-ELTSISE_UNARY_2D(elu, F16, U8,  vxc_short8, vxc_half8,  int4,  vxc_uchar8, vxc_uchar8)\n\
-ELTSISE_UNARY_2D(elu, F16, I16, vxc_short8, vxc_half8,  int4,  vxc_short8, vxc_short8)\n\
-ELTSISE_UNARY_2D(elu, I8,  I8,  vxc_char8,  vxc_char8,  int4,  vxc_char8,  vxc_char8)\n\
-ELTSISE_UNARY_2D(elu, I8,  F16, vxc_char8,  vxc_char8,  half4, vxc_half8,  vxc_short8)\n\
-ELTSISE_UNARY_2D(elu, U8,  U8,  vxc_uchar8, vxc_uchar8, int4,  vxc_uchar8, vxc_uchar8)\n\
-ELTSISE_UNARY_2D(elu, U8,  F16, vxc_uchar8, vxc_uchar8, half4, vxc_half8,  vxc_short8)\n\
-ELTSISE_UNARY_2D(elu, I16, I16, vxc_short8, vxc_short8, int4,  vxc_short8, vxc_short8)\n\
-ELTSISE_UNARY_2D(elu, I16, F16, vxc_short8, vxc_short8, half4, vxc_half8,  vxc_short8)\n\
+//SELU\n\
+ELTSISE_UNARY_2D(selu, F16, F16, vxc_short8, vxc_half8,  half4, vxc_half8,  vxc_short8)\n\
+ELTSISE_UNARY_2D(selu, F16, I8,  vxc_short8, vxc_half8,  int4,  vxc_char8,  vxc_char8)\n\
+ELTSISE_UNARY_2D(selu, F16, U8,  vxc_short8, vxc_half8,  int4,  vxc_uchar8, vxc_uchar8)\n\
+ELTSISE_UNARY_2D(selu, F16, I16, vxc_short8, vxc_half8,  int4,  vxc_short8, vxc_short8)\n\
+ELTSISE_UNARY_2D(selu, I8,  I8,  vxc_char8,  vxc_char8,  int4,  vxc_char8,  vxc_char8)\n\
+ELTSISE_UNARY_2D(selu, I8,  F16, vxc_char8,  vxc_char8,  half4, vxc_half8,  vxc_short8)\n\
+ELTSISE_UNARY_2D(selu, U8,  U8,  vxc_uchar8, vxc_uchar8, int4,  vxc_uchar8, vxc_uchar8)\n\
+ELTSISE_UNARY_2D(selu, U8,  F16, vxc_uchar8, vxc_uchar8, half4, vxc_half8,  vxc_short8)\n\
+ELTSISE_UNARY_2D(selu, I16, I16, vxc_short8, vxc_short8, int4,  vxc_short8, vxc_short8)\n\
+ELTSISE_UNARY_2D(selu, I16, F16, vxc_short8, vxc_short8, half4, vxc_half8,  vxc_short8)\n\
 //NEG\n\
 ELTSISE_UNARY_2D(neg, F16, F16, vxc_short8, vxc_half8,  half4, vxc_half8,  vxc_short8)\n\
 ELTSISE_UNARY_2D(neg, F16, I8,  vxc_short8, vxc_half8,  int4,  vxc_char8,  vxc_char8)\n\
@@ -5381,8 +5381,8 @@ ELTSISE_UNARY_BF16_2D(sin)\n\
 ELTSISE_UNARY_BF16_2D(cos)\n\
 //LOG\n\
 ELTSISE_UNARY_BF16_2D(log)\n\
-//ELU\n\
-ELTSISE_UNARY_BF16_2D(elu)\n\
+//SELU\n\
+ELTSISE_UNARY_BF16_2D(selu)\n\
 //NEG\n\
 ELTSISE_UNARY_BF16_2D(neg)\n\
 "; /* end of eltwise_unary_2d_1_vx*/
@@ -5664,17 +5664,17 @@ float4 eltwise_unary_log(float4 x)\n\
     return x * rlogE;\n\
 }\n\
 \n\
-float4 eltwise_unary_elu(float4 val)\n\
+float4 eltwise_unary_neg(float4 x)\n\
+{\n\
+    return x * -1;\n\
+}\n\
+\n\
+float4 eltwise_unary_selu(float4 val)\n\
 {\n\
     float4 x = val * logE;\n\
     x = exp2(x) * alpha - alpha;\n\
 \n\
-    return val < 0 ? x : val;\n\
-}\n\
-\n\
-float4 eltwise_unary_neg(float4 x)\n\
-{\n\
-    return x * -1;\n\
+    return val < 0 ? x : val * beta;\n\
 }\n\
 \n\
 _viv_uniform float inputScale;\n\
@@ -5765,17 +5765,17 @@ ELTSISE_UNARY_3D(log, U8,  U8,  vxc_uchar8, vxc_uchar8, int4,  vxc_uchar8, vxc_u
 ELTSISE_UNARY_3D(log, U8,  F16, vxc_uchar8, vxc_uchar8, half4, vxc_half8,  vxc_short8)\n\
 ELTSISE_UNARY_3D(log, I16, I16, vxc_short8, vxc_short8, int4,  vxc_short8, vxc_short8)\n\
 ELTSISE_UNARY_3D(log, I16, F16, vxc_short8, vxc_short8, half4, vxc_half8,  vxc_short8)\n\
-//ELU\n\
-ELTSISE_UNARY_3D(elu, F16, F16, vxc_short8, vxc_half8,  half4, vxc_half8,  vxc_short8)\n\
-ELTSISE_UNARY_3D(elu, F16, I8,  vxc_short8, vxc_half8,  int4,  vxc_char8,  vxc_char8)\n\
-ELTSISE_UNARY_3D(elu, F16, U8,  vxc_short8, vxc_half8,  int4,  vxc_uchar8, vxc_uchar8)\n\
-ELTSISE_UNARY_3D(elu, F16, I16, vxc_short8, vxc_half8,  int4,  vxc_short8, vxc_short8)\n\
-ELTSISE_UNARY_3D(elu, I8,  I8,  vxc_char8,  vxc_char8,  int4,  vxc_char8,  vxc_char8)\n\
-ELTSISE_UNARY_3D(elu, I8,  F16, vxc_char8,  vxc_char8,  half4, vxc_half8,  vxc_short8)\n\
-ELTSISE_UNARY_3D(elu, U8,  U8,  vxc_uchar8, vxc_uchar8, int4,  vxc_uchar8, vxc_uchar8)\n\
-ELTSISE_UNARY_3D(elu, U8,  F16, vxc_uchar8, vxc_uchar8, half4, vxc_half8,  vxc_short8)\n\
-ELTSISE_UNARY_3D(elu, I16, I16, vxc_short8, vxc_short8, int4,  vxc_short8, vxc_short8)\n\
-ELTSISE_UNARY_3D(elu, I16, F16, vxc_short8, vxc_short8, half4, vxc_half8,  vxc_short8)\n\
+//SELU\n\
+ELTSISE_UNARY_3D(selu, F16, F16, vxc_short8, vxc_half8,  half4, vxc_half8,  vxc_short8)\n\
+ELTSISE_UNARY_3D(selu, F16, I8,  vxc_short8, vxc_half8,  int4,  vxc_char8,  vxc_char8)\n\
+ELTSISE_UNARY_3D(selu, F16, U8,  vxc_short8, vxc_half8,  int4,  vxc_uchar8, vxc_uchar8)\n\
+ELTSISE_UNARY_3D(selu, F16, I16, vxc_short8, vxc_half8,  int4,  vxc_short8, vxc_short8)\n\
+ELTSISE_UNARY_3D(selu, I8,  I8,  vxc_char8,  vxc_char8,  int4,  vxc_char8,  vxc_char8)\n\
+ELTSISE_UNARY_3D(selu, I8,  F16, vxc_char8,  vxc_char8,  half4, vxc_half8,  vxc_short8)\n\
+ELTSISE_UNARY_3D(selu, U8,  U8,  vxc_uchar8, vxc_uchar8, int4,  vxc_uchar8, vxc_uchar8)\n\
+ELTSISE_UNARY_3D(selu, U8,  F16, vxc_uchar8, vxc_uchar8, half4, vxc_half8,  vxc_short8)\n\
+ELTSISE_UNARY_3D(selu, I16, I16, vxc_short8, vxc_short8, int4,  vxc_short8, vxc_short8)\n\
+ELTSISE_UNARY_3D(selu, I16, F16, vxc_short8, vxc_short8, half4, vxc_half8,  vxc_short8)\n\
 //NEG\n\
 ELTSISE_UNARY_3D(neg, F16, F16, vxc_short8, vxc_half8,  half4, vxc_half8,  vxc_short8)\n\
 ELTSISE_UNARY_3D(neg, F16, I8,  vxc_short8, vxc_half8,  int4,  vxc_char8,  vxc_char8)\n\
@@ -5828,8 +5828,8 @@ ELTSISE_UNARY_BF16(sin)\n\
 ELTSISE_UNARY_BF16(cos)\n\
 //LOG\n\
 ELTSISE_UNARY_BF16(log)\n\
-//ELU\n\
-ELTSISE_UNARY_BF16(elu)\n\
+//SELU\n\
+ELTSISE_UNARY_BF16(selu)\n\
 //NEG\n\
 ELTSISE_UNARY_BF16(neg)\n\
 "; /* end of eltwise_unary_3d_1_vx*/
@@ -47635,7 +47635,8 @@ inline Tensor create_tensor_from_image2d_array(image2d_array_t input, int stride
        } while(0)\n\
 "; /* end of eltwise_ops_helper_cl*/
 
-static const char eltwise_unary_cl[] = "float eltwise_unary_sin(float x, float alpha, float beta)\n\
+static const char eltwise_unary_0_cl[] = "\n\
+float eltwise_unary_sin(float x, float alpha, float beta)\n\
 {\n\
     return native_sin(x);\n\
 }\n\
@@ -47659,14 +47660,6 @@ float eltwise_unary_log(float x, float alpha, float beta)\n\
 {\n\
     x = log2(x);\n\
     return x * rlogE;\n\
-}\n\
-\n\
-float eltwise_unary_elu(float val, float alpha, float beta)\n\
-{\n\
-    float x = val * logE;\n\
-    x = exp2(x) * alpha - alpha;\n\
-\n\
-    return val < 0 ? x : val;\n\
 }\n\
 \n\
 float eltwise_unary_neg(float x, float alpha, float beta)\n\
@@ -47765,39 +47758,13 @@ float eltwise_unary_hard_gelu(float x, float alpha, float beta)\n\
     return x * cdf;\n\
 }\n\
 \n\
-#define ELTWISE_UNARY_F32(func_name) \\\n\
-__kernel void func_name##_F32toF32 \\\n\
-    ( \\\n\
-    __read_only  image2d_array_t input, \\\n\
-    __write_only image2d_array_t output, \\\n\
-                 float           inputScale, \\\n\
-                 float           inputTail, \\\n\
-                 float           outputScale, \\\n\
-                 float           outputZP, \\\n\
-                 float           alpha, \\\n\
-                 float           beta \\\n\
-    ) \\\n\
-{ \\\n\
-    int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
- \\\n\
-    float4 src = read_imagef(input, coord); \\\n\
- \\\n\
-    float4 dst = 0; \\\n\
-    dst.x = eltwise_unary_##func_name(src.x, alpha, beta); \\\n\
- \\\n\
-    write_imagef(output, coord, dst.xxxx); \\\n\
+float eltwise_unary_selu(float val, float alpha_times_gamma, float gamma)\n\
+{\n\
+    float x = val * logE;\n\
+    x = exp2(x) * alpha_times_gamma - alpha_times_gamma;\n\
+\n\
+    return val <= 0 ? x : val * gamma;\n\
 }\n\
-ELTWISE_UNARY_F32(sin)\n\
-ELTWISE_UNARY_F32(cos)\n\
-ELTWISE_UNARY_F32(exp)\n\
-ELTWISE_UNARY_F32(log)\n\
-ELTWISE_UNARY_F32(elu)\n\
-ELTWISE_UNARY_F32(neg)\n\
-ELTWISE_UNARY_F32(mish)\n\
-ELTWISE_UNARY_F32(hard_sigmoid)\n\
-ELTWISE_UNARY_F32(round)\n\
-ELTWISE_UNARY_F32(gelu)\n\
-ELTWISE_UNARY_F32(hard_gelu)\n\
 \n\
 #define ELTWISE_UNARY_F32_2D(func_name) \\\n\
 __kernel void func_name##_F32toF32_2D \\\n\
@@ -47825,48 +47792,13 @@ ELTWISE_UNARY_F32_2D(sin)\n\
 ELTWISE_UNARY_F32_2D(cos)\n\
 ELTWISE_UNARY_F32_2D(exp)\n\
 ELTWISE_UNARY_F32_2D(log)\n\
-ELTWISE_UNARY_F32_2D(elu)\n\
 ELTWISE_UNARY_F32_2D(neg)\n\
 ELTWISE_UNARY_F32_2D(mish)\n\
 ELTWISE_UNARY_F32_2D(hard_sigmoid)\n\
 ELTWISE_UNARY_F32_2D(round)\n\
 ELTWISE_UNARY_F32_2D(gelu)\n\
 ELTWISE_UNARY_F32_2D(hard_gelu)\n\
-\n\
-#define ELTWISE_UNARY_U8(func_name) \\\n\
-__kernel void func_name##_U8toU8 \\\n\
-    ( \\\n\
-    __read_only  image2d_array_t input, \\\n\
-    __write_only image2d_array_t output, \\\n\
-                 float           inputScale, \\\n\
-                 float           inputTail, \\\n\
-                 float           outputScale, \\\n\
-                 float           outputZP, \\\n\
-                 float           alpha, \\\n\
-                 float           beta \\\n\
-    ) \\\n\
-{ \\\n\
-    int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
- \\\n\
-    uint4 src = read_imageui(input, coord); \\\n\
-    float4 data = convert_float4(src) * inputScale - inputTail; \\\n\
- \\\n\
-    data.x = eltwise_unary_##func_name(data.x, alpha, beta); \\\n\
-    uint4 dst = convert_uint4(data * outputScale + outputZP); \\\n\
- \\\n\
-    write_imageui(output, coord, dst); \\\n\
-}\n\
-ELTWISE_UNARY_U8(sin)\n\
-ELTWISE_UNARY_U8(cos)\n\
-ELTWISE_UNARY_U8(exp)\n\
-ELTWISE_UNARY_U8(log)\n\
-ELTWISE_UNARY_U8(elu)\n\
-ELTWISE_UNARY_U8(neg)\n\
-ELTWISE_UNARY_U8(mish)\n\
-ELTWISE_UNARY_U8(hard_sigmoid)\n\
-ELTWISE_UNARY_U8(round)\n\
-ELTWISE_UNARY_U8(gelu)\n\
-ELTWISE_UNARY_U8(hard_gelu)\n\
+ELTWISE_UNARY_F32_2D(selu)\n\
 \n\
 #define ELTWISE_UNARY_U8_2D(func_name) \\\n\
 __kernel void func_name##_U8toU8_2D \\\n\
@@ -47895,33 +47827,13 @@ ELTWISE_UNARY_U8_2D(sin)\n\
 ELTWISE_UNARY_U8_2D(cos)\n\
 ELTWISE_UNARY_U8_2D(exp)\n\
 ELTWISE_UNARY_U8_2D(log)\n\
-ELTWISE_UNARY_U8_2D(elu)\n\
 ELTWISE_UNARY_U8_2D(neg)\n\
 ELTWISE_UNARY_U8_2D(mish)\n\
 ELTWISE_UNARY_U8_2D(hard_sigmoid)\n\
 ELTWISE_UNARY_U8_2D(round)\n\
 ELTWISE_UNARY_U8_2D(gelu)\n\
 ELTWISE_UNARY_U8_2D(hard_gelu)\n\
-\n\
-__kernel void neg_I32toI32\n\
-    (\n\
-    __read_only  image2d_array_t input,\n\
-    __write_only image2d_array_t output,\n\
-                 float           inputScale,\n\
-                 float           inputTail,\n\
-                 float           outputScale,\n\
-                 float           outputZP,\n\
-                 float           alpha,\n\
-                 float           beta\n\
-    )\n\
-{\n\
-    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
-    int4 src = read_imagei(input, coord);\n\
-\n\
-    int4 dst = -src;\n\
-\n\
-    write_imagei(output, coord, dst);\n\
-}\n\
+ELTWISE_UNARY_U8_2D(selu)\n\
 \n\
 __kernel void neg_I32toI32_2D\n\
     (\n\
@@ -47942,7 +47854,228 @@ __kernel void neg_I32toI32_2D\n\
 \n\
     write_imagei(output, coord, dst);\n\
 }\n\
-"; /* end of eltwise_unary_cl*/
+"; /* end of eltwise_unary_0_cl*/
+
+static const char eltwise_unary_1_cl[] = "\n\
+float eltwise_unary_sin(float x, float alpha, float beta)\n\
+{\n\
+    return native_sin(x);\n\
+}\n\
+\n\
+float eltwise_unary_cos(float x, float alpha, float beta)\n\
+{\n\
+    return native_cos(x);\n\
+}\n\
+\n\
+#define logE        (1.44269502f)\n\
+#define twoLogE     (logE * 2.0f)\n\
+float eltwise_unary_exp(float x, float alpha, float beta)\n\
+{\n\
+    x *= logE;\n\
+    x = exp2(x);\n\
+    return x;\n\
+}\n\
+\n\
+#define rlogE    (0.693147182f)\n\
+float eltwise_unary_log(float x, float alpha, float beta)\n\
+{\n\
+    x = log2(x);\n\
+    return x * rlogE;\n\
+}\n\
+\n\
+float eltwise_unary_neg(float x, float alpha, float beta)\n\
+{\n\
+    return x * -1;\n\
+}\n\
+\n\
+float eltwise_unary_hard_sigmoid(float x, float alpha, float beta)\n\
+{\n\
+    x = alpha * x + beta;\n\
+    x = clamp(x, 0, 1);\n\
+    return x;\n\
+}\n\
+\n\
+float _softrelu(float x, float alpha)\n\
+{\n\
+    x *= logE;\n\
+    x = exp2(x);\n\
+    x += 1;\n\
+    x = log2(x);\n\
+    return x * rlogE;\n\
+}\n\
+\n\
+float _tanh(float x, float alpha)\n\
+{\n\
+    x *= -twoLogE;\n\
+    x = 1 + exp2(x);\n\
+    x = 1 / x;\n\
+    return (2 * x - 1);\n\
+}\n\
+\n\
+float eltwise_unary_mish(float x, float alpha, float beta)\n\
+{\n\
+    float y = _softrelu(x, alpha);\n\
+    x = x * _tanh(y, alpha);\n\
+    return x;\n\
+}\n\
+\n\
+float eltwise_unary_round(float x, float alpha, float beta)\n\
+{\n\
+    return convert_float(convert_int_rte(x));\n\
+}\n\
+\n\
+float evaluate_polynomial_alpha(float x2)\n\
+{\n\
+    float4 alpha0 = (float4){-2.72614225801306e-10f, 2.77068142495902e-08f,\n\
+                            -2.10102402082508e-06f, -5.69250639462346e-05f};\n\
+    float4 alpha1 = (float4){-7.34990630326855e-04f, -2.95459980854025e-03f,\n\
+                            -1.60960333262415e-02f, 0};\n\
+\n\
+    float poly = alpha0.x * x2 + alpha0.y;\n\
+    poly = poly * x2 + alpha0.z;\n\
+    poly = poly * x2 + alpha0.w;\n\
+    poly = poly * x2 + alpha1.x;\n\
+    poly = poly * x2 + alpha1.y;\n\
+    poly = poly * x2 + alpha1.z;\n\
+\n\
+    return poly;\n\
+}\n\
+\n\
+float evaluate_polynomial_beta(float x2)\n\
+{\n\
+    float4 beta0 = (float4){-1.45660718464996e-05f, -2.13374055278905e-04f,\n\
+                            -1.68282697438203e-03f, -7.37332916720468e-03f};\n\
+    float4 beta1 = (float4){-1.42647390514189e-02f, 0, 0, 0};\n\
+\n\
+    float poly = beta0.x * x2 + beta0.y;\n\
+    poly = poly * x2 + beta0.z;\n\
+    poly = poly * x2 + beta0.w;\n\
+    poly = poly * x2 + beta1.x;\n\
+\n\
+    return 1.0f / poly;\n\
+}\n\
+\n\
+float erf_eval(float _x)\n\
+{\n\
+    float x = clamp(_x, -4, 4);\n\
+    float x2 = x * x;\n\
+\n\
+    return x * evaluate_polynomial_alpha(x2) * evaluate_polynomial_beta(x2);\n\
+}\n\
+\n\
+#define RSQRT2      (0.70710678118654752440084436210485f)\n\
+float eltwise_unary_gelu(float x, float alpha, float beta)\n\
+{\n\
+    x = 0.5f * x * (1 + erf_eval(x * RSQRT2));\n\
+\n\
+    return x;\n\
+}\n\
+\n\
+#define SQRT_2_RCP_PI  0.7978845834732056f\n\
+float eltwise_unary_hard_gelu(float x, float alpha, float beta)\n\
+{\n\
+    float cdf = 0.5f + 0.5f * _tanh(SQRT_2_RCP_PI *\n\
+                        (x + 0.044715f * x * x * x), 0);\n\
+    return x * cdf;\n\
+}\n\
+\n\
+float eltwise_unary_selu(float val, float alpha_times_gamma, float gamma)\n\
+{\n\
+    float x = val * logE;\n\
+    x = exp2(x) * alpha_times_gamma - alpha_times_gamma;\n\
+\n\
+    return val < 0 ? x : val * gamma;\n\
+}\n\
+\n\
+#define ELTWISE_UNARY_F32(func_name) \\\n\
+__kernel void func_name##_F32toF32 \\\n\
+    ( \\\n\
+    __read_only  image2d_array_t input, \\\n\
+    __write_only image2d_array_t output, \\\n\
+                 float           inputScale, \\\n\
+                 float           inputTail, \\\n\
+                 float           outputScale, \\\n\
+                 float           outputZP, \\\n\
+                 float           alpha, \\\n\
+                 float           beta \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
+ \\\n\
+    float4 src = read_imagef(input, coord); \\\n\
+ \\\n\
+    float4 dst = 0; \\\n\
+    dst.x = eltwise_unary_##func_name(src.x, alpha, beta); \\\n\
+ \\\n\
+    write_imagef(output, coord, dst.xxxx); \\\n\
+}\n\
+ELTWISE_UNARY_F32(sin)\n\
+ELTWISE_UNARY_F32(cos)\n\
+ELTWISE_UNARY_F32(exp)\n\
+ELTWISE_UNARY_F32(log)\n\
+ELTWISE_UNARY_F32(neg)\n\
+ELTWISE_UNARY_F32(mish)\n\
+ELTWISE_UNARY_F32(hard_sigmoid)\n\
+ELTWISE_UNARY_F32(round)\n\
+ELTWISE_UNARY_F32(gelu)\n\
+ELTWISE_UNARY_F32(hard_gelu)\n\
+ELTWISE_UNARY_F32(selu)\n\
+\n\
+#define ELTWISE_UNARY_U8(func_name) \\\n\
+__kernel void func_name##_U8toU8 \\\n\
+    ( \\\n\
+    __read_only  image2d_array_t input, \\\n\
+    __write_only image2d_array_t output, \\\n\
+                 float           inputScale, \\\n\
+                 float           inputTail, \\\n\
+                 float           outputScale, \\\n\
+                 float           outputZP, \\\n\
+                 float           alpha, \\\n\
+                 float           beta \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
+ \\\n\
+    uint4 src = read_imageui(input, coord); \\\n\
+    float4 data = convert_float4(src) * inputScale - inputTail; \\\n\
+ \\\n\
+    data.x = eltwise_unary_##func_name(data.x, alpha, beta); \\\n\
+    uint4 dst = convert_uint4(data * outputScale + outputZP); \\\n\
+ \\\n\
+    write_imageui(output, coord, dst); \\\n\
+}\n\
+ELTWISE_UNARY_U8(sin)\n\
+ELTWISE_UNARY_U8(cos)\n\
+ELTWISE_UNARY_U8(exp)\n\
+ELTWISE_UNARY_U8(log)\n\
+ELTWISE_UNARY_U8(neg)\n\
+ELTWISE_UNARY_U8(mish)\n\
+ELTWISE_UNARY_U8(hard_sigmoid)\n\
+ELTWISE_UNARY_U8(round)\n\
+ELTWISE_UNARY_U8(gelu)\n\
+ELTWISE_UNARY_U8(hard_gelu)\n\
+ELTWISE_UNARY_U8(selu)\n\
+\n\
+__kernel void neg_I32toI32\n\
+    (\n\
+    __read_only  image2d_array_t input,\n\
+    __write_only image2d_array_t output,\n\
+                 float           inputScale,\n\
+                 float           inputTail,\n\
+                 float           outputScale,\n\
+                 float           outputZP,\n\
+                 float           alpha,\n\
+                 float           beta\n\
+    )\n\
+{\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+    int4 src = read_imagei(input, coord);\n\
+\n\
+    int4 dst = -src;\n\
+\n\
+    write_imagei(output, coord, dst);\n\
+}\n\
+"; /* end of eltwise_unary_1_cl*/
 
 static const char erf_cl[] = "float evaluate_polynomial_alpha(float x2)\n\
 {\n\
@@ -61609,7 +61742,8 @@ static const source_map_t cl_resource[] =
     {"depth2space_crd_cl", depth2space_crd_cl},
     {"detect_post_box_cl", detect_post_box_cl},
     {"eltwise_ops_helper_cl", eltwise_ops_helper_cl},
-    {"eltwise_unary_cl", eltwise_unary_cl},
+    {"eltwise_unary_0_cl", eltwise_unary_0_cl},
+    {"eltwise_unary_1_cl", eltwise_unary_1_cl},
     {"erf_cl", erf_cl},
     {"floordiv_cl", floordiv_cl},
     {"gather_cl", gather_cl},

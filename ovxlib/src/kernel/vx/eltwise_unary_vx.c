@@ -65,7 +65,7 @@ static vsi_nn_kernel_node_t _setup
         lut_param.params[0] = vsi_nn_kernel_param_get_float32( params, "min_value" );
         lut_param.params[1] = vsi_nn_kernel_param_get_float32( params, "max_value" );
     }
-    else if (lut_type == VSI_NN_KERNEL_LUT_ELU || lut_type == VSI_NN_KERNEL_LUT_HSIGMOID)
+    else if (lut_type == VSI_NN_KERNEL_LUT_SELU || lut_type == VSI_NN_KERNEL_LUT_HSIGMOID)
     {
         lut_param.params[0] = vsi_nn_kernel_param_get_float32( params, "alpha" );
         lut_param.params[1] = vsi_nn_kernel_param_get_float32( params, "beta" );
@@ -133,7 +133,7 @@ final:
 REGISTER_ELTWISE_UNARY_LUT_OPENVX_KERNEL( mish,         VSI_NN_KERNEL_LUT_MISH )
 //REGISTER_ELTWISE_UNARY_LUT_OPENVX_KERNEL( exp,          VSI_NN_KERNEL_LUT_EXP )
 REGISTER_ELTWISE_UNARY_LUT_OPENVX_KERNEL( log,          VSI_NN_KERNEL_LUT_LOG )
-REGISTER_ELTWISE_UNARY_LUT_OPENVX_KERNEL( elu,          VSI_NN_KERNEL_LUT_ELU )
+REGISTER_ELTWISE_UNARY_LUT_OPENVX_KERNEL( selu,         VSI_NN_KERNEL_LUT_SELU )
 REGISTER_ELTWISE_UNARY_LUT_OPENVX_KERNEL( neg,          VSI_NN_KERNEL_LUT_NEG )
 REGISTER_ELTWISE_UNARY_LUT_OPENVX_KERNEL( hard_sigmoid, VSI_NN_KERNEL_LUT_HSIGMOID )
 REGISTER_ELTWISE_UNARY_LUT_OPENVX_KERNEL( gelu,         VSI_NN_KERNEL_LUT_GELU )

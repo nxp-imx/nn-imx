@@ -570,6 +570,9 @@
     <ClInclude Include="include\ops\vsi_nn_op_select.h">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_selu.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
     <ClInclude Include="include\ops\vsi_nn_op_sequence_mask.h">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
@@ -1505,7 +1508,7 @@
   <ClCompile Include="src\kernel\sp\eltwise_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
-  <ClCompile Include="src\kernel\sp\eltwise_unary_sp.c">
+    <ClCompile Include="src\kernel\sp\eltwise_unary_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\sp\group_norm_sp.c">

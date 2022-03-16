@@ -69,10 +69,11 @@ static float log_eval(float data)
     return logf(data);
 }
 
-static float elu_eval(float data, vsi_nn_kernel_lut_params *lut_param)
+static float selu_eval(float data, vsi_nn_kernel_lut_params *lut_param)
 {
     float alpha = lut_param->params[0];
-    return data >=0 ? data : expf(data) * alpha - alpha;
+    float gamma = lut_param->params[1];
+    return data >=0 ? data * gamma : expf(data) * alpha * gamma - alpha * gamma;
 }
 
 static float neg_eval(float data)
@@ -196,8 +197,8 @@ static float vsi_nn_kernel_lut_activation(float data, vsi_nn_kernel_lut_params *
         result =  exp_eval(data);
         break;
         break;
-    case VSI_NN_KERNEL_LUT_ELU:
-        result =  elu_eval(data, lut_param);
+    case VSI_NN_KERNEL_LUT_SELU:
+        result =  selu_eval(data, lut_param);
         break;
         break;
     case VSI_NN_KERNEL_LUT_NEG:
