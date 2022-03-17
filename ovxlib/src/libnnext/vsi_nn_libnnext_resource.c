@@ -28376,14 +28376,17 @@ __kernel void one_hot_##name0##to##name1 \\\n\
         coord.z ++; \\\n\
     } while (coord.z < depth); \\\n\
 }\n\
-ONE_HOT_SH_IMPL(F16, F16, vxc_ushort8, vxc_half8,  vxc_ushort8)\n\
-ONE_HOT_SH_IMPL(F16, I16, vxc_ushort8, vxc_half8,  vxc_ushort8)\n\
-ONE_HOT_SH_IMPL(F16, I8,  vxc_ushort8, vxc_half8,  vxc_uchar8)\n\
-ONE_HOT_SH_IMPL(F16, U8,  vxc_ushort8, vxc_half8,  vxc_uchar8)\n\
-ONE_HOT_SH_IMPL(I16, F16, vxc_short8,  vxc_short8, vxc_ushort8)\n\
-ONE_HOT_SH_IMPL(I16, I16, vxc_short8,  vxc_short8, vxc_ushort8)\n\
-ONE_HOT_SH_IMPL(I8,  F16, vxc_char8,   vxc_char8,  vxc_ushort8)\n\
-ONE_HOT_SH_IMPL(I8,  I8,  vxc_char8,   vxc_char8,  vxc_uchar8)\n\
+ONE_HOT_SH_IMPL(F16, F16,  vxc_ushort8, vxc_half8,  vxc_ushort8)\n\
+ONE_HOT_SH_IMPL(F16, I16,  vxc_ushort8, vxc_half8,  vxc_ushort8)\n\
+ONE_HOT_SH_IMPL(F16, I8,   vxc_ushort8, vxc_half8,  vxc_uchar8)\n\
+ONE_HOT_SH_IMPL(F16, U8,   vxc_ushort8, vxc_half8,  vxc_uchar8)\n\
+ONE_HOT_SH_IMPL(I16, F16,  vxc_short8,  vxc_short8, vxc_ushort8)\n\
+ONE_HOT_SH_IMPL(I16, I16,  vxc_short8,  vxc_short8, vxc_ushort8)\n\
+ONE_HOT_SH_IMPL(I16, BI16, vxc_short8,  vxc_short8, vxc_ushort8)\n\
+ONE_HOT_SH_IMPL(I16, I8,   vxc_short8,  vxc_short8, vxc_uchar8)\n\
+ONE_HOT_SH_IMPL(I16, U8,   vxc_short8,  vxc_short8, vxc_uchar8)\n\
+ONE_HOT_SH_IMPL(I8,  F16,  vxc_char8,   vxc_char8,  vxc_ushort8)\n\
+ONE_HOT_SH_IMPL(I8,  I8,   vxc_char8,   vxc_char8,  vxc_uchar8)\n\
 \n\
 #define ONE_HOT_SH_IMPL_2D(name0, name1, src_type, copy_type, dst_type) \\\n\
 __kernel void one_hot_##name0##to##name1##_2D \\\n\
@@ -28432,14 +28435,17 @@ __kernel void one_hot_##name0##to##name1##_2D \\\n\
         coord.y += 4; \\\n\
     } while (coord.y < depth); \\\n\
 }\n\
-ONE_HOT_SH_IMPL_2D(F16, F16, vxc_ushort8, vxc_half8,  vxc_ushort8)\n\
-ONE_HOT_SH_IMPL_2D(F16, I16, vxc_ushort8, vxc_half8,  vxc_ushort8)\n\
-ONE_HOT_SH_IMPL_2D(F16, I8,  vxc_ushort8, vxc_half8,  vxc_uchar8)\n\
-ONE_HOT_SH_IMPL_2D(F16, U8,  vxc_ushort8, vxc_half8,  vxc_uchar8)\n\
-ONE_HOT_SH_IMPL_2D(I16, F16, vxc_short8,  vxc_short8, vxc_ushort8)\n\
-ONE_HOT_SH_IMPL_2D(I16, I16, vxc_short8,  vxc_short8, vxc_ushort8)\n\
-ONE_HOT_SH_IMPL_2D(I8,  F16, vxc_char8,   vxc_char8,  vxc_ushort8)\n\
-ONE_HOT_SH_IMPL_2D(I8,  I8,  vxc_char8,   vxc_char8,  vxc_uchar8)\n\
+ONE_HOT_SH_IMPL_2D(F16, F16,  vxc_ushort8, vxc_half8,  vxc_ushort8)\n\
+ONE_HOT_SH_IMPL_2D(F16, I16,  vxc_ushort8, vxc_half8,  vxc_ushort8)\n\
+ONE_HOT_SH_IMPL_2D(F16, I8,   vxc_ushort8, vxc_half8,  vxc_uchar8)\n\
+ONE_HOT_SH_IMPL_2D(F16, U8,   vxc_ushort8, vxc_half8,  vxc_uchar8)\n\
+ONE_HOT_SH_IMPL_2D(I16, F16,  vxc_short8,  vxc_short8, vxc_ushort8)\n\
+ONE_HOT_SH_IMPL_2D(I16, I16,  vxc_short8,  vxc_short8, vxc_ushort8)\n\
+ONE_HOT_SH_IMPL_2D(I16, BI16, vxc_short8,  vxc_short8, vxc_ushort8)\n\
+ONE_HOT_SH_IMPL_2D(I16, I8,   vxc_short8,  vxc_short8, vxc_uchar8)\n\
+ONE_HOT_SH_IMPL_2D(I16, U8,   vxc_short8,  vxc_short8, vxc_uchar8)\n\
+ONE_HOT_SH_IMPL_2D(I8,  F16,  vxc_char8,   vxc_char8,  vxc_ushort8)\n\
+ONE_HOT_SH_IMPL_2D(I8,  I8,   vxc_char8,   vxc_char8,  vxc_uchar8)\n\
 \n\
 _viv_uniform float input_scale;\n\
 _viv_uniform float input_tail;\n\
@@ -28483,8 +28489,11 @@ __kernel void one_hot_##name0##to##name1 \\\n\
         coord.z ++; \\\n\
     } while (coord.z < depth); \\\n\
 }\n\
-ONE_HOT_ASYM_SH_IMPL(U8,  F16, vxc_uchar8,  vxc_uchar8, vxc_ushort8)\n\
-ONE_HOT_ASYM_SH_IMPL(U8,  U8,  vxc_uchar8,  vxc_uchar8, vxc_uchar8)\n\
+ONE_HOT_ASYM_SH_IMPL(U8, F16,  vxc_uchar8,  vxc_uchar8, vxc_ushort8)\n\
+ONE_HOT_ASYM_SH_IMPL(U8, U8,   vxc_uchar8,  vxc_uchar8, vxc_uchar8)\n\
+ONE_HOT_ASYM_SH_IMPL(U8, I8,   vxc_uchar8,  vxc_uchar8, vxc_uchar8)\n\
+ONE_HOT_ASYM_SH_IMPL(U8, I16,  vxc_uchar8,  vxc_uchar8, vxc_ushort8)\n\
+ONE_HOT_ASYM_SH_IMPL(U8, BI16, vxc_uchar8,  vxc_uchar8, vxc_ushort8)\n\
 \n\
 #define ONE_HOT_ASYM_SH_IMPL_2D(name0, name1, src_type, copy_type, dst_type) \\\n\
 __kernel void one_hot_##name0##to##name1##_2D \\\n\
@@ -28535,8 +28544,11 @@ __kernel void one_hot_##name0##to##name1##_2D \\\n\
         coord.y += 4; \\\n\
     } while (coord.y < depth); \\\n\
 }\n\
-ONE_HOT_ASYM_SH_IMPL_2D(U8,  F16, vxc_uchar8,  vxc_uchar8, vxc_ushort8)\n\
-ONE_HOT_ASYM_SH_IMPL_2D(U8,  U8,  vxc_uchar8,  vxc_uchar8, vxc_uchar8)\n\
+ONE_HOT_ASYM_SH_IMPL_2D(U8, F16,  vxc_uchar8,  vxc_uchar8, vxc_ushort8)\n\
+ONE_HOT_ASYM_SH_IMPL_2D(U8, U8,   vxc_uchar8,  vxc_uchar8, vxc_uchar8)\n\
+ONE_HOT_ASYM_SH_IMPL_2D(U8, I8,   vxc_uchar8,  vxc_uchar8, vxc_uchar8)\n\
+ONE_HOT_ASYM_SH_IMPL_2D(U8, I16,  vxc_uchar8,  vxc_uchar8, vxc_ushort8)\n\
+ONE_HOT_ASYM_SH_IMPL_2D(U8, BI16, vxc_uchar8,  vxc_uchar8, vxc_ushort8)\n\
 \n\
 _viv_uniform VXC_512Bits uniConvBF16toF32_Part0_2x8;\n\
 _viv_uniform VXC_512Bits uniConvBF16toF32_Part1_2x8;\n\

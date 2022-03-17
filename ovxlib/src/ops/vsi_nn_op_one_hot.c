@@ -22,7 +22,6 @@
 *
 *****************************************************************************/
 
-
 #include <string.h>
 #include <stdlib.h>
 
@@ -95,20 +94,39 @@ static vsi_bool op_check
         IO_TYPE(D_I32,          D_F16)
         IO_TYPE(D_I32,          D_U8|Q_ASYM)
         IO_TYPE(D_I32,          D_I8|Q_DFP)
+        IO_TYPE(D_I32,          D_I8|Q_ASYM)
+        IO_TYPE(D_I32,          D_I8|Q_SYM)
         IO_TYPE(D_I32,          D_I16|Q_DFP)
+        IO_TYPE(D_I32,          D_I16|Q_ASYM)
+        IO_TYPE(D_I32,          D_I16|Q_SYM)
         IO_TYPE(D_I32,          D_I32)
+        IO_TYPE(D_U8|Q_ASYM,    D_I8|Q_SYM)
+        IO_TYPE(D_U8|Q_ASYM,    D_I16|Q_SYM)
+        IO_TYPE(D_U8|Q_ASYM,    D_I8|Q_DFP)
+        IO_TYPE(D_U8|Q_ASYM,    D_I16|Q_DFP)
+        IO_TYPE(D_U8|Q_ASYM,    D_I8|Q_ASYM)
+        IO_TYPE(D_U8|Q_ASYM,    D_I16|Q_ASYM)
         IO_TYPE(D_U8|Q_ASYM,    D_U8|Q_ASYM)
         IO_TYPE(D_U8|Q_ASYM,    D_F16)
+        IO_TYPE(D_U8|Q_ASYM,    D_BF16)
         IO_TYPE(D_I8|Q_ASYM,    D_I8|Q_ASYM)
         IO_TYPE(D_I8|Q_ASYM,    D_F16)
         IO_TYPE(D_I8|Q_DFP,     D_I8|Q_DFP)
         IO_TYPE(D_I8|Q_DFP,     D_F16)
+        IO_TYPE(D_I16|Q_DFP,    D_I8|Q_DFP)
+        IO_TYPE(D_I16|Q_DFP,    D_U8|Q_ASYM)
         IO_TYPE(D_I16|Q_DFP,    D_I16|Q_DFP)
         IO_TYPE(D_I16|Q_DFP,    D_F16)
+        IO_TYPE(D_I16|Q_DFP,    D_F32)
+        IO_TYPE(D_I16|Q_DFP,    D_BF16)
+        IO_TYPE(D_I16|Q_ASYM,   D_I8|Q_ASYM)
+        IO_TYPE(D_I16|Q_ASYM,   D_U8|Q_ASYM)
         IO_TYPE(D_I16|Q_ASYM,   D_I16|Q_ASYM)
+        IO_TYPE(D_I16|Q_SYM,    D_I8|Q_SYM)
         IO_TYPE(D_I16|Q_ASYM,   D_F16)
+        IO_TYPE(D_I16|Q_ASYM,   D_F32)
+        IO_TYPE(D_I16|Q_SYM,    D_U8|Q_ASYM)
         IO_TYPE(D_I16|Q_SYM,    D_I16|Q_SYM)
-        IO_TYPE(D_I16|Q_SYM,    D_F16)
         IO_TYPE(D_I8|Q_SYM,     D_I8|Q_SYM)
         IO_TYPE(D_I8|Q_SYM,     D_F16)
         IO_TYPE(D_BF16,         D_BF16)

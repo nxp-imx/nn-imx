@@ -22,7 +22,6 @@
 *
 *****************************************************************************/
 
-
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -68,31 +67,42 @@ typedef struct
 static const _kernel_map_type _one_hot_kernel_map[] =
 {
     // Register kernel here
+    PACK_ONE_HOT_KERNEL_3D( U8,   I8 ),
     PACK_ONE_HOT_KERNEL_3D( U8,   U8 ),
     PACK_ONE_HOT_KERNEL_3D( U8,   F16 ),
+    PACK_ONE_HOT_KERNEL_3D( U8,   I16 ),
+    PACK_ONE_HOT_KERNEL_3D( U8,   BF16 ),
     PACK_ONE_HOT_KERNEL_3D( I8,   I8 ),
     PACK_ONE_HOT_KERNEL_3D( I8,   F16 ),
+    PACK_ONE_HOT_KERNEL_3D( I16,  I8 ),
+    PACK_ONE_HOT_KERNEL_3D( I16,  U8 ),
     PACK_ONE_HOT_KERNEL_3D( I16,  I16 ),
     PACK_ONE_HOT_KERNEL_3D( I16,  F16 ),
+    PACK_ONE_HOT_KERNEL_3D( I16,  BF16 ),
     PACK_ONE_HOT_KERNEL_3D( F16,  F16 ),
     PACK_ONE_HOT_KERNEL_3D( F16,  I16 ),
     PACK_ONE_HOT_KERNEL_3D( F16,  U8 ),
     PACK_ONE_HOT_KERNEL_3D( F16,  I8 ),
     PACK_ONE_HOT_KERNEL_3D( BF16, BF16 ),
 
+    PACK_ONE_HOT_KERNEL_2D( U8,   I8 ),
     PACK_ONE_HOT_KERNEL_2D( U8,   U8 ),
     PACK_ONE_HOT_KERNEL_2D( U8,   F16 ),
+    PACK_ONE_HOT_KERNEL_2D( U8,   I16 ),
+    PACK_ONE_HOT_KERNEL_2D( U8,   BF16 ),
     PACK_ONE_HOT_KERNEL_2D( I8,   I8 ),
     PACK_ONE_HOT_KERNEL_2D( I8,   F16 ),
+    PACK_ONE_HOT_KERNEL_2D( I16,  U8 ),
+    PACK_ONE_HOT_KERNEL_2D( I16,  I16 ),
     PACK_ONE_HOT_KERNEL_2D( I16,  I16 ),
     PACK_ONE_HOT_KERNEL_2D( I16,  F16 ),
+    PACK_ONE_HOT_KERNEL_2D( I16,  BF16 ),
     PACK_ONE_HOT_KERNEL_2D( F16,  F16 ),
     PACK_ONE_HOT_KERNEL_2D( F16,  I16 ),
     PACK_ONE_HOT_KERNEL_2D( F16,  U8 ),
     PACK_ONE_HOT_KERNEL_2D( F16,  I8 ),
     PACK_ONE_HOT_KERNEL_2D( BF16, BF16 ),
 };
-
 
 /*
  * Kernel params
@@ -335,7 +345,6 @@ final:
     return status;
 } /* _one_hot_initializer() */
 
-
 /*
  * Query kernel
  */
@@ -395,7 +404,6 @@ static vsi_status _query_kernel
 
     return status;
 } /* _query_kernel() */
-
 
 static vsi_nn_kernel_node_t _setup
     (
