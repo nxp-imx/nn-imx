@@ -2,7 +2,7 @@
 Release notes for Ovxlib 1.1.42
 
 New Features:
-    1. add 'deconv3d', 'cos', 'gather_elements'
+    1. add 'cos', 'gather_elements'
     2. add 'pad2' to support padding float32 constant value
 
 Feature Refine:
