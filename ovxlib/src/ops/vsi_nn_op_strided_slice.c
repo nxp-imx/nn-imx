@@ -833,7 +833,7 @@ static vsi_status op_init
 
     params->begin_dims =
         (int32_t *)malloc(sizeof(int32_t) * VSI_NN_MAX_DIM_NUM);
-    if (NULL == lcl2_data->begin_dims)
+    if (NULL == params->begin_dims)
     {
         return  VX_ERROR_NO_MEMORY;
     }

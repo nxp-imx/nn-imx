@@ -213,6 +213,10 @@ uint32_t vsi_pycc_VdataCreate
 
     /* Create node. */
     node = vsi_nn_AppendNode( graph, pycc_params->op, NULL );
+    if ( NULL == node )
+    {
+        goto fail;
+    }
     vsi_nn_apply_node_attr_template( node );
 
     switch( pycc_params->op )
@@ -302,4 +306,3 @@ fail:
 
     return (uint32_t)stream_size;
 } /* vsi_pycc_VdataCreate() */
-

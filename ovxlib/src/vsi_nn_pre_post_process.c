@@ -452,6 +452,7 @@ vsi_status vsi_nn_add_single_preproc_node
     uint32_t idx =0;
 
     org_norm_tensor = vsi_nn_GetTensor(graph, org_input);
+    TEST_CHECK_PTR(org_norm_tensor, final);
 
     /* Get preprocess configurations*/
     for(idx = 0; idx < proc_count; idx++)
@@ -614,9 +615,11 @@ vsi_status vsi_nn_add_single_postproc_node
     vsi_status status = VSI_SUCCESS;
 
     org_norm_tensor = vsi_nn_GetTensor(graph, graph->output.tensors[output_idx]);
+    TEST_CHECK_PTR( org_norm_tensor, final );
 
     /*Create postprocess node*/
     node = vsi_nn_AddNode(graph, VSI_NN_OP_POST_PROCESS, 1, 1, NULL);
+    TEST_CHECK_PTR( node, final );
     node->uid = (uint32_t)(VSI_NN_POSTPROC_NODE_UID_BASE) + output_idx;
 
     /* Get postprocess condigurations */
@@ -660,6 +663,7 @@ vsi_status vsi_nn_add_single_postproc_node
     if(nodes_count != 0)
     {
         consume_nodes = (vsi_nn_node_t**)malloc(sizeof(vsi_nn_node_t*)*nodes_count);
+        TEST_CHECK_PTR( consume_nodes, final );
         vsi_nn_get_tensor_consumers(graph, graph->output.tensors[output_idx], consume_nodes, NULL);
         for(i = 0; i < nodes_count; i++)
             {
@@ -712,16 +716,19 @@ vsi_status vsi_nn_AddGraphPreProcess
     vsi_nn_tensor_id_t* graph_inputs=NULL;
 
     graph_inputs = (vsi_nn_tensor_id_t*)malloc(sizeof(vsi_nn_tensor_id_t)*graph->input.num);
+    TEST_CHECK_PTR( graph_inputs, final );
     _get_org_graph_inputs(graph, graph_inputs);
     input = graph_inputs[input_idx];
     vsi_nn_get_tensor_consumers(graph, input, NULL, &nodes_count);
     if(nodes_count != 0)
     {
         nodes = (vsi_nn_node_t**)malloc(sizeof(vsi_nn_node_t*)*nodes_count);
+        TEST_CHECK_PTR( nodes, final );
         vsi_nn_get_tensor_consumers(graph, input, nodes, NULL);
         status = vsi_nn_add_single_preproc_node(graph, input_idx, input, nodes, nodes_count, preprocess, count);
     }
 
+final:
     if(nodes)
     {
         free(nodes);
@@ -767,7 +774,7 @@ vsi_status vsi_nn_AddBinaryGraphInputsWithCropParam
 )
 {
     uint32_t i, j, k, idx, p;
-    vsi_status status;
+    vsi_status status = VSI_FAILURE;
     uint32_t num_of_graph_inputs;
     uint32_t num_of_graph_real_inputs;
     vx_reference* graph_inputs = NULL;
@@ -786,6 +793,7 @@ vsi_status vsi_nn_AddBinaryGraphInputsWithCropParam
     /* Explicitly set graph inputs and outputs */
     num_of_graph_inputs = graph->input.num;
     processed_node_id_list = (vsi_nn_node_id_t*)malloc(num_of_graph_inputs * sizeof(vsi_nn_node_id_t));
+    TEST_CHECK_PTR( processed_node_id_list, final );
     memset(processed_node_id_list, 0, num_of_graph_inputs * sizeof(vsi_nn_node_id_t));
     processed_idx = 0;
     for (i = 0; i < num_of_graph_inputs; i++)
@@ -800,6 +808,7 @@ vsi_status vsi_nn_AddBinaryGraphInputsWithCropParam
         if (nodes_count != 0)
         {
             nodes = (vsi_nn_node_t**)malloc(sizeof(vsi_nn_node_t*) * nodes_count);
+            TEST_CHECK_PTR( nodes, final );
             vsi_nn_get_tensor_consumers(graph, graph->input.tensors[i], nodes, NULL);
             for (j = 0; j < nodes_count; j++)
             {
@@ -840,10 +849,10 @@ vsi_status vsi_nn_AddBinaryGraphInputsWithCropParam
                 }
             }
         }
-
     }
 
     graph_inputs = (vx_reference*)malloc(num_of_graph_real_inputs * sizeof(vx_reference));
+    TEST_CHECK_PTR( graph_inputs, final );
     memset(processed_node_id_list,  0, num_of_graph_inputs * sizeof(vsi_nn_node_id_t));
     processed_idx = 0;
     for (i = 0, j=0; i < num_of_graph_inputs; i++)
@@ -856,6 +865,7 @@ vsi_status vsi_nn_AddBinaryGraphInputsWithCropParam
         if (nodes_count != 0)
         {
             nodes = (vsi_nn_node_t**)malloc(sizeof(vsi_nn_node_t*) * nodes_count);
+            TEST_CHECK_PTR( nodes, final );
             vsi_nn_get_tensor_consumers(graph, graph->input.tensors[i], nodes, NULL);
             for (k = 0; k < nodes_count; k++)
             {
@@ -974,6 +984,7 @@ vsi_status vsi_nn_AddBinaryGraphInputsWithCropParam
         }
     }
     graph_outputs = (vx_reference*)malloc(num_of_graph_real_outputs * sizeof(vx_reference));
+    TEST_CHECK_PTR( graph_outputs, final );
     for (i = 0, j = 0; i < num_of_graph_outputs; i++)
     {
         tensor = vsi_nn_GetTensor(graph, graph->output.tensors[i]);

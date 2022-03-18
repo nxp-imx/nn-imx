@@ -1230,7 +1230,7 @@ void vsi_nn_SaveTensorToTextByFp32
     if( NULL == fp )
     {
         VSILOGW( "Write file %s fail. Please check...", filename );
-        return;
+        goto final;
     }
     sz = vsi_nn_GetElementNum( tensor );
     ptr = data;
@@ -1251,6 +1251,8 @@ void vsi_nn_SaveTensorToTextByFp32
     }
     fwrite( buf, count, 1, fp );
     fclose( fp );
+
+final:
     vsi_nn_safe_free( data );
 } /* vsi_nn_SaveTensorToTextByFp32() */
 
@@ -1381,7 +1383,7 @@ void vsi_nn_SaveTensorToBinary
     {
         vsi_nn_safe_free( data );
         VSILOGW( "Write file %s fail. Please check...", filename );
-        return;
+        goto final;
     }
     sz = (vsi_size_t)vsi_nn_GetTypeBytes( tensor->attr.dtype.vx_type );
     if( tensor->attr.dtype.vx_type == VSI_NN_TYPE_INT4 ||
@@ -1407,6 +1409,7 @@ void vsi_nn_SaveTensorToBinary
         fwrite( data, sz, 1, fp );
     }
     fclose( fp );
+final:
     vsi_nn_safe_free( data );
 } /* vsi_nn_SaveTensorToBinary() */
 
@@ -2375,6 +2378,11 @@ vsi_status vsi_nn_copy_tensor_veiw_patch
         vx_trensor_addressing addr = NULL;
         vx_size dim_sizes[VSI_NN_MAX_DIM_NUM], strides[VSI_NN_MAX_DIM_NUM];
         addr = (vx_trensor_addressing)malloc(sizeof(vx_tensorpatch_addressing_t));
+        if( NULL == addr )
+        {
+            VSILOGE("Call malloc fail");
+            return status;
+        }
         addr->num_of_dims = (vx_uint32)attr->dim_num;
         for(i = 0; i < dim; i++)
         {
@@ -2570,6 +2578,7 @@ vsi_nn_tensor_t* vsi_nn_ConcatTensor_impl
     va_end(args);
 
     tensors = (vsi_nn_tensor_t**)malloc(sizeof(vsi_nn_tensor_t*) * tensor_count);
+    TEST_CHECK_PTR( tensors, final );
     tensor_count = 0;
     va_start(args, axis);
 
@@ -2581,6 +2590,7 @@ vsi_nn_tensor_t* vsi_nn_ConcatTensor_impl
 
     next = vsi_nn_Concat(graph, tensors, tensor_count, axis);
 
+final:
     vsi_nn_safe_free(tensors);
 
     return next;
@@ -2606,6 +2616,7 @@ vsi_nn_tensor_t* vsi_nn_ConstTensorAdd_impl
     va_end(args);
 
     tensors = (vsi_nn_tensor_t**)malloc(sizeof(vsi_nn_tensor_t*) * tensor_count);
+    TEST_CHECK_PTR( tensors, final );
     tensor_count = 0;
     va_start(args, output_attr);
     FOREACH_ARGS(args, next, vsi_nn_tensor_t*)
@@ -2616,6 +2627,7 @@ vsi_nn_tensor_t* vsi_nn_ConstTensorAdd_impl
 
     next = vsi_nn_TensorAdd(graph, tensors, tensor_count, output_attr);
 
+final:
     vsi_nn_safe_free(tensors);
 
     return next;
