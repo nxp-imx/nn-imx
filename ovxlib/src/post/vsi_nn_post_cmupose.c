@@ -37,6 +37,7 @@
 #include "utils/vsi_nn_dtype_util.h"
 #include "utils/vsi_nn_util.h"
 #include "post/vsi_nn_post_cmupose.h"
+#include "vsi_nn_error.h"
 
 static const int32_t limbSeq[19][2] = {{2,3},   {2,6},   {3,4},  {4,5},   {6,7},
                                        {7,8},   {2,9},   {9,10}, {10,11}, {2,12},
@@ -120,6 +121,7 @@ static vsi_status _cmupose_init_multiplier
 {
     uint32_t i,num;
     uint32_t boxsize,width;
+    vsi_status status = VSI_FAILURE;
 
     if(NULL == config || NULL == multiplier)
     {
@@ -128,6 +130,8 @@ static vsi_status _cmupose_init_multiplier
 
     num = config->param.scale_search.num;
     multiplier->size = (float *)malloc(num * sizeof(float));
+    CHECK_PTR_FAIL_GOTO( multiplier->size, "Create buffer fail.", final );
+    status = VSI_SUCCESS;
     multiplier->num = num;
 
     boxsize = config->model.boxsize;
@@ -139,7 +143,9 @@ static vsi_status _cmupose_init_multiplier
         multiplier->size[i] = x * boxsize / width;
     }
 
-    return VSI_SUCCESS;
+final:
+
+    return status;
 }
 
 static vsi_status _cmupose_init_heatmap_avg
@@ -150,6 +156,7 @@ static vsi_status _cmupose_init_heatmap_avg
 {
     uint32_t w,h,channel;
     vsi_size_t sz;
+    vsi_status status = VSI_FAILURE;
 
     if(NULL == config || NULL == heatmap_avg)
     {
@@ -162,9 +169,12 @@ static vsi_status _cmupose_init_heatmap_avg
     h = config->image.height;
     sz = channel * w * h;
     *heatmap_avg = (float *)malloc(sizeof(float) * sz);
+    CHECK_PTR_FAIL_GOTO( *heatmap_avg, "Create buffer fail.", final );
+    status = VSI_SUCCESS;
     memset(*heatmap_avg, 0, sizeof(float) * sz);
+final:
 
-    return VSI_SUCCESS;
+    return status;
 }
 
 static vsi_status _cmupose_init_paf_avg
@@ -175,6 +185,7 @@ static vsi_status _cmupose_init_paf_avg
 {
     uint32_t w,h,channel;
     vsi_size_t sz;
+    vsi_status status = VSI_FAILURE;
 
     if(NULL == config || NULL == paf_avg)
     {
@@ -187,9 +198,13 @@ static vsi_status _cmupose_init_paf_avg
     h = config->image.height;
     sz = channel * w * h;
     *paf_avg = (float *)malloc(sizeof(float) * sz);
+    CHECK_PTR_FAIL_GOTO( *paf_avg, "Create buffer fail.", final );
+    status = VSI_SUCCESS;
     memset(*paf_avg, 0, sizeof(float) * sz);
 
-    return VSI_SUCCESS;
+final:
+
+    return status;
 }
 
 static void _cmupose_deinit
@@ -397,6 +412,7 @@ static double *create_gaussian_kernel
 
     ksz = vsi_nn_max(1, ((int32_t)(4.0 * sigma + 1.0 - 1e-8))) * 2 + 1;
     kernel = (double *)malloc(sizeof(double) * ksz);
+    CHECK_PTR_FAIL_GOTO( kernel, "Create buffer fail.", final );
     memset(kernel, 0, sizeof(double) * ksz);
 
     if(ksz == 25)
@@ -460,6 +476,7 @@ static void _convolve_same
     pad_input_sizef = sizeof(float) * pad_input_size;
     input_sizef = input_size * sizeof(float);
     pad_input = (float *)malloc(pad_input_sizef);
+    CHECK_PTR_FAIL_GOTO( pad_input, "Create buffer fail.", final );
     memset(pad_input, 0, pad_input_sizef);
     memcpy(pad_input + pad, input, input_sizef);
 
@@ -481,7 +498,8 @@ static void _convolve_same
         output[i] = (float)sum;
     }
 
-    if(pad_input)free(pad_input);
+final:
+    vsi_nn_safe_free(pad_input);
 }
 
 static void get_cols
@@ -537,9 +555,9 @@ static vsi_status gaussian_filter
     float *output
     )
 {
-    double *kernel;
-    float *temp,*rows,*cols;
-    float *conv_buffer;
+    double *kernel = NULL;
+    float *temp = NULL,*rows = NULL,*cols = NULL;
+    float *conv_buffer = NULL, *conv_buffer1 = NULL;
     int32_t ksz;
     uint32_t w,h,i;
 
@@ -548,7 +566,7 @@ static vsi_status gaussian_filter
 
     kernel = NULL, ksz = 0;
     kernel = create_gaussian_kernel(sigma, &ksz);
-    //savetxt("sheldon/kx.txt", (float *)kernel, ksz);
+    CHECK_PTR_FAIL_GOTO( kernel, "Create buffer fail.", final );
 
     w = config->image.width;
     h = config->image.height;
@@ -557,33 +575,37 @@ static vsi_status gaussian_filter
     szwf = sizeof(float) * w;
     szhf = sizeof(float) * h;
     temp = (float *)malloc(szf);
+    CHECK_PTR_FAIL_GOTO( temp, "Create buffer fail.", final );
     memset(temp, 0, szf);
 
     rows = NULL;
     conv_buffer = (float *)malloc(szwf);
+    CHECK_PTR_FAIL_GOTO( conv_buffer, "Create buffer fail.", final );
     for(i=0; i<h; i++)
     {
         rows = inputs + i * w;
         _convolve_same(rows, w, kernel, ksz, conv_buffer);
         memcpy(temp + i * w, conv_buffer, szwf);
     }
-    if(conv_buffer)free(conv_buffer);
-    //savetxt("sheldon/out1.txt", temp, sz);
 
-    conv_buffer = (float *)malloc(szhf);
+    conv_buffer1 = (float *)malloc(szhf);
+    CHECK_PTR_FAIL_GOTO( conv_buffer1, "Create buffer fail.", final );
     cols = (float *)malloc(szhf);
+    CHECK_PTR_FAIL_GOTO( cols, "Create buffer fail.", final );
     for(i=0; i<w; i++)
     {
         get_cols(temp, h, w, i, cols);
-        _convolve_same(cols, h, kernel, ksz, conv_buffer);
-        set_cols(output, conv_buffer, h, w, i);
+        _convolve_same(cols, h, kernel, ksz, conv_buffer1);
+        set_cols(output, conv_buffer1, h, w, i);
     }
-    if(cols)free(cols);
-    if(conv_buffer)free(conv_buffer);
-    //savetxt("sheldon/out2.txt", output, sz);
 
-    if(kernel)free(kernel);
-    if(temp)free(temp);
+final:
+    vsi_nn_safe_free(cols);
+    vsi_nn_safe_free(conv_buffer);
+    vsi_nn_safe_free(conv_buffer1);
+    vsi_nn_safe_free(kernel);
+    vsi_nn_safe_free(temp);
+
     return VSI_SUCCESS;
 }
 
@@ -621,6 +643,7 @@ static vsi_nn_peaks_t *_compute_peaks
             {
                 peak = (vsi_nn_peaks_t *)
                     vsi_nn_LinkListNewNode(sizeof(vsi_nn_peaks_t), _init_peak);
+                CHECK_PTR_FAIL_GOTO( peak, "get point fail.", final );
                 score = map_ori[i * width + j];
 
                 peak->peak.id = peak_id;
@@ -644,6 +667,7 @@ static vsi_nn_peaks_t *_compute_peaks
         }
     }
 
+final:
     return peak_list;
 }
 
@@ -1042,6 +1066,7 @@ static vsi_nn_connection_t *_get_connection
             _get_peak_data(candA, candidate_data.i, &candA_data);
             connection = (vsi_nn_connection_t *)
                 vsi_nn_LinkListNewNode(sizeof(vsi_nn_connection_t), _init_connection);
+            CHECK_PTR_FAIL_GOTO( connection, "get point fail.", final );
 
             connection->data.i = candidate_data.i;
             connection->data.j = candidate_data.j;
@@ -1086,6 +1111,7 @@ static vsi_nn_connection_t *_get_connection
     }
     #endif
 
+final:
     return connection_list;
 }
 
@@ -1105,6 +1131,7 @@ static vsi_nn_peaks_data_t *_get_peak_candidate
         return NULL;
     }
     candidate = (vsi_nn_peaks_data_t *)malloc(sizeof(vsi_nn_peaks_data_t) * peak_counter);
+    CHECK_PTR_FAIL_GOTO( candidate, "Create buffer fail.", final );
 
     iter = candidate;
     for(i=0,j=0; i< all_peaks_num; i++,j++)
@@ -1118,6 +1145,7 @@ static vsi_nn_peaks_data_t *_get_peak_candidate
         }
     }
 
+final:
     return candidate;
 }
 
@@ -1244,9 +1272,9 @@ static vsi_nn_subset_t *_compute_subset
     uint32_t i,j,k,n,num;
     uint32_t mapIdx_len,indexA,indexB;
     vsi_bool ret;
-    vsi_nn_connection_t *connection_k;
-    vsi_nn_subset_t *subset_list,*subset;
-    uint32_t *deleteIdx;
+    vsi_nn_connection_t *connection_k = NULL;
+    vsi_nn_subset_t *subset_list = NULL, *subset = NULL;
+    uint32_t *deleteIdx = NULL;
 
     if(NULL == all_connection ||
        NULL == candidate ||
@@ -1304,6 +1332,7 @@ static vsi_nn_subset_t *_compute_subset
                     j = subset_idx[0];
                     sig_subset= (vsi_nn_subset_t *)
                         vsi_nn_LinkListGetIndexNode((vsi_nn_link_list_t *)subset_list, j);
+                    CHECK_PTR_FAIL_GOTO( sig_subset, "get point fail.", final );
                     if(sig_subset->data.idx[indexB] != partBs[i])
                     {
                         int32_t ii = partBs[i];
@@ -1321,8 +1350,11 @@ static vsi_nn_subset_t *_compute_subset
                     int32_t j2 = subset_idx[1];
                     vsi_nn_subset_t *j1_subset = (vsi_nn_subset_t *)
                         vsi_nn_LinkListGetIndexNode((vsi_nn_link_list_t *)subset_list, j1);
-                    vsi_nn_subset_t *j2_subset = (vsi_nn_subset_t *)
+                    vsi_nn_subset_t *j2_subset = NULL;
+                    CHECK_PTR_FAIL_GOTO( j1_subset, "get point fail.", final );
+                    j2_subset = (vsi_nn_subset_t *)
                         vsi_nn_LinkListGetIndexNode((vsi_nn_link_list_t *)subset_list, j2);
+                    CHECK_PTR_FAIL_GOTO( j2_subset, "get point fail.", final );
                     if(_need_merge(j1_subset, j2_subset) == FALSE)
                     {
                         uint32_t ii;
@@ -1363,6 +1395,7 @@ static vsi_nn_subset_t *_compute_subset
                     float s1 = 0.f, s2 = 0.f;
                     sig_connect = (vsi_nn_connection_t *)
                         vsi_nn_LinkListGetIndexNode((vsi_nn_link_list_t *)connection_k, i);
+                    CHECK_PTR_FAIL_GOTO( sig_connect, "get point fail.", final );
                     t1 = sig_connect->data.x;
                     t2 = sig_connect->data.y;
                     s1 = candidate[t1].score;
@@ -1396,6 +1429,7 @@ static vsi_nn_subset_t *_compute_subset
     } /* end for(k=0; k<mapIdx_len; k++) */
 
     deleteIdx = (uint32_t *)malloc(sizeof(uint32_t) * num);
+    CHECK_PTR_FAIL_GOTO( deleteIdx, "Create buffer fail.", final );
     memset(deleteIdx, -1, sizeof(uint32_t) * num);
 
     subset = subset_list;
@@ -1433,6 +1467,7 @@ static vsi_nn_subset_t *_compute_subset
     }
     #endif
 
+final:
     if(deleteIdx)free(deleteIdx);
     return subset_list;
 }
@@ -1448,12 +1483,12 @@ static vsi_nn_connection_t **_compute_all_connetion
 {
     uint32_t k;
     float *score_mid;
-    vsi_nn_peaks_t *candA,*candB;
+    vsi_nn_peaks_t *candA = NULL, *candB = NULL;
     uint32_t nA,nB;
     uint32_t height,width,score_mid_depth;
     vsi_nn_con_candidate_t *con_candidate_list;
-    vsi_nn_connection_t **connection_all;
-    int32_t *special_k;
+    vsi_nn_connection_t **connection_all = NULL;
+    int32_t *special_k = NULL;
     uint32_t mapIdx_len,candidate_sum,connection_sum;
 
     mapIdx_len = _cnt_of_array(mapIdx);
@@ -1462,8 +1497,10 @@ static vsi_nn_connection_t **_compute_all_connetion
     score_mid_depth = 2;
 
     score_mid = (float *)malloc(sizeof(float) * height * width * score_mid_depth);
+    CHECK_PTR_FAIL_GOTO( score_mid, "Create buffer fail.", final );
     connection_all = (vsi_nn_connection_t **)malloc(sizeof(vsi_nn_connection_t *) * mapIdx_len);
     special_k = (int32_t *)malloc(sizeof(int32_t) * mapIdx_len);
+    CHECK_PTR_FAIL_GOTO( special_k, "Create buffer fail.", final );
 
     memset(connection_all, 0, sizeof(vsi_nn_connection_t *) * mapIdx_len);
     memset(special_k, -1, sizeof(int32_t) * mapIdx_len);
@@ -1537,7 +1574,8 @@ static vsi_nn_connection_t **_compute_all_connetion
     *connection_list_num = mapIdx_len;
     *special = special_k;
 
-    if(score_mid)free(score_mid);
+final:
+    vsi_nn_safe_free(score_mid);
     return connection_all;
 }
 
@@ -1569,14 +1607,21 @@ static vsi_nn_peaks_t **_compute_all_peaks
     sz = width * height;
     szf = sizeof(float) * sz;
     map_ori   = (float *)malloc(szf);
+    CHECK_PTR_FAIL_GOTO( map_ori, "Create buffer fail.", final );
     map       = (float *)malloc(szf);
+    CHECK_PTR_FAIL_GOTO( map, "Create buffer fail.", final );
     map_left  = (float *)malloc(szf);
+    CHECK_PTR_FAIL_GOTO( map_left, "Create buffer fail.", final );
     map_right = (float *)malloc(szf);
+    CHECK_PTR_FAIL_GOTO( map_right, "Create buffer fail.", final );
     map_up    = (float *)malloc(szf);
+    CHECK_PTR_FAIL_GOTO( map_up, "Create buffer fail.", final );
     map_down  = (float *)malloc(szf);
+    CHECK_PTR_FAIL_GOTO( map_down, "Create buffer fail.", final );
 
     loop = 19 -1; // why?
     all_peaks = (vsi_nn_peaks_t **)malloc(sizeof(vsi_nn_peaks_t *) * loop);
+    CHECK_PTR_FAIL_GOTO( all_peaks, "Create buffer fail.", final );
     memset(all_peaks, 0, sizeof(vsi_nn_peaks_t *) * loop);
     peak_id = 0;
 
@@ -1629,12 +1674,13 @@ static vsi_nn_peaks_t **_compute_all_peaks
     *peak_list_num = loop;
     *peak_conter = peak_id;
 
-    if(map)free(map);
-    if(map_ori)free(map_ori);
-    if(map_left)free(map_left);
-    if(map_right)free(map_right);
-    if(map_up)free(map_up);
-    if(map_down)free(map_down);
+final:
+    vsi_nn_safe_free(map);
+    vsi_nn_safe_free(map_ori);
+    vsi_nn_safe_free(map_left);
+    vsi_nn_safe_free(map_right);
+    vsi_nn_safe_free(map_up);
+    vsi_nn_safe_free(map_down);
     return all_peaks;
 }
 
@@ -1670,6 +1716,7 @@ static void _fill_heatmap_avg
     szf = sizeof(float) * sz;
     channelf = channel*sizeof(float);
     buffer = (float *)malloc(szf);
+    CHECK_PTR_FAIL_GOTO( buffer, "Create buffer fail.", final );
     memset(buffer, 0, szf);
 
     stride_h_nc = height * net_out_c;
@@ -1687,7 +1734,8 @@ static void _fill_heatmap_avg
     resize_nearest(buffer, size1, heatmap_avg, size2);
     //savetxt("sheldon/heatmap_avg.txt", heatmap_avg, config->image.height*config->image.width*19);
 
-    if(buffer)free(buffer);
+final:
+    vsi_nn_safe_free(buffer);
 }
 
 static void _fill_paf_avg
@@ -1722,6 +1770,7 @@ static void _fill_paf_avg
     szf = sizeof(float) * sz;
     cf = channel*sizeof(float);
     buffer = (float *)malloc(szf);
+    CHECK_PTR_FAIL_GOTO( buffer, "Create buffer fail.", final );
     memset(buffer, 0, szf);
 
     stride_h_nc = height * net_out_c;
@@ -1739,7 +1788,8 @@ static void _fill_paf_avg
     resize_nearest(buffer, size1, paf_avg, size2);
     //savetxt("sheldon/paf_avg.txt", paf_avg, config->image.width*config->image.height*38);
 
-    if(buffer)free(buffer);
+final:
+    vsi_nn_safe_free(buffer);
 }
 
 vsi_status vsi_nn_CMUPose_Post_Process
@@ -1914,6 +1964,7 @@ static vsi_status _auto_fill_cmupose
 
     // fill image
     net_in = vsi_nn_GetTensor(graph, graph->input.tensors[0]);
+    CHECK_PTR_FAIL_GOTO( net_in, "Create tensor fail.", final );
     cmupose_config->image.width = (uint32_t)net_in->attr.size[0];
     cmupose_config->image.height = (uint32_t)net_in->attr.size[1];
     cmupose_config->image.channel = (uint32_t)net_in->attr.size[2];
@@ -1932,6 +1983,8 @@ static vsi_status _auto_fill_cmupose
     cmupose_config->model.padValue = 128;
 
     status = VSI_SUCCESS;
+
+final:
     return status;
 }
 

@@ -37,6 +37,7 @@
 #include "utils/vsi_nn_dtype_util.h"
 #include "utils/vsi_nn_util.h"
 #include "post/vsi_nn_post_fasterrcnn.h"
+#include "vsi_nn_error.h"
 
 /*
     faster-rcnn default image classes -- 21
@@ -191,6 +192,7 @@ static vsi_status _fill_fasterrcnn_inputs
         /* cls  [21,rois] */
         /* rois [5,rois] */
         tensor = vsi_nn_GetTensor(graph, graph->output.tensors[i]);
+        CHECK_PTR_FAIL_GOTO( tensor, "get tensor fail.", final );
         size[0] = (uint32_t)tensor->attr.size[0];
         size[1] = (uint32_t)tensor->attr.size[1];
         dim = tensor->attr.dim_num;
@@ -213,6 +215,7 @@ static vsi_status _fill_fasterrcnn_inputs
         }
     }
 
+final:
     if(inputs->rois == NULL ||
        inputs->cls == NULL ||
        inputs->bbox == NULL)
@@ -256,10 +259,11 @@ static vsi_status _bbox_transform_inv
     float **boxes
     )
 {
-    float *pred_boxes,*ppred;
+    float *pred_boxes = NULL, *ppred = NULL;
     float *proi,*pbbox;
     uint32_t i,j,rois_num,bbox_num,class_num;
     float img_w,img_h;
+    vsi_status status = VSI_FAILURE;
 
     float w,h,ctr_x,ctr_y;
     float dx,dy,dw,dh;
@@ -271,6 +275,8 @@ static vsi_status _bbox_transform_inv
     class_num = param->classes_num;
     bbox_num = class_num * 4;
     pred_boxes = (float *)malloc(sizeof(float) * rois_num * bbox_num);
+    CHECK_PTR_FAIL_GOTO( pred_boxes, "Create buffer fail.", final );
+    status = VSI_SUCCESS;
 
     proi = rois;
     pbbox = bbox;
@@ -319,7 +325,8 @@ static vsi_status _bbox_transform_inv
 
     *boxes = pred_boxes;
 
-    return VSI_SUCCESS;
+final:
+    return status;
 }
 
 static float detection_box_iou
@@ -367,6 +374,7 @@ static void detection_box_nms
     uint32_t *is_dead = NULL;
 
     is_dead = (uint32_t *)malloc(sizeof(uint32_t) * rois_num);
+    CHECK_PTR_FAIL_GOTO( is_dead, "Create buffer fail.", final );
     memset(is_dead, 0, sizeof(uint32_t) * rois_num);
 
     for(i = 0; i < rois_num; i++)
@@ -396,7 +404,8 @@ static void detection_box_nms
     }
     *num = j;
 
-    if(is_dead)free(is_dead);
+final:
+    vsi_nn_safe_free(is_dead);
 }
 
 static void detection_box_qsort
@@ -466,7 +475,6 @@ static void detection_box_qsort
     {
         detection_box_qsort(box, right + 1, end);
     }
-
 }
 
 static void _init_box(vsi_nn_link_list_t *node)

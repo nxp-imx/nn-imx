@@ -56,6 +56,7 @@ extern "C" {
     static inline vsi_##NAME##_array_t * vsi_##NAME##_array_create( size_t size ) { \
         vsi_##NAME##_array_t * array = (vsi_##NAME##_array_t *)malloc( \
                 sizeof(vsi_##NAME##_array_t) + sizeof(TYPE) * size ); \
+        if (array == NULL) return NULL; \
         array->size = size; \
         return array; \
     } \

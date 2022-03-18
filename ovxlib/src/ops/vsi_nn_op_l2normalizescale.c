@@ -39,6 +39,7 @@
 #include "kernel/vsi_nn_kernel_gpu_shape_optimize.h"
 #include "utils/vsi_nn_constraint_check.h"
 #include "utils/vsi_nn_dtype_util.h"
+#include "vsi_nn_error.h"
 
 #define _INPUT_NUM          (2)
 #define _OUTPUT_NUM         (1)
@@ -62,6 +63,7 @@ static vsi_nn_tensor_t* _expand_scale_tensor
     vsi_nn_dtype_t   out_dtype;
 
     f32_out_buffer= (float *)malloc(scale_size_out * sizeof(float));
+    CHECK_PTR_FAIL_GOTO( f32_out_buffer, "Create buffer fail.", final );
     memset(f32_out_buffer, 0, scale_size_out * sizeof(float));
     f32_in_buffer = vsi_nn_ConvertTensorToFloat32Data(graph, scale);
     if (NULL == f32_in_buffer)
@@ -87,6 +89,7 @@ static vsi_nn_tensor_t* _expand_scale_tensor
     attr.dtype.vx_type = VSI_NN_TYPE_FLOAT16;
     attr.vtl = FALSE;
     scale_tensor = vsi_nn_CreateTensor(graph, &attr);
+    CHECK_PTR_FAIL_GOTO( scale_tensor, "Create tensor fail.", final );
     out_dtype          = scale->attr.dtype;
     out_dtype.vx_type  = VSI_NN_TYPE_FLOAT32;
     out_dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
@@ -94,7 +97,6 @@ static vsi_nn_tensor_t* _expand_scale_tensor
           (uint8_t*)f32_out_buffer, &out_dtype, scale_tensor);
     if (VSI_SUCCESS != status)
     {
-        scale_tensor = NULL;
         goto final;
     }
 
