@@ -60,6 +60,10 @@ static vsi_status _eltwise_unary_op_compute
         alpha = self->nn_param.elu.alpha;
         beta = 1.0f;
     }
+    else if (strcmp(kernel_name, "celu") == 0)
+    {
+        alpha = self->nn_param.celu.alpha;
+    }
     else if (strcmp(kernel_name, "selu") == 0)
     {
         alpha = self->nn_param.selu.alpha;
@@ -247,6 +251,7 @@ DEF_ELEMENT_WISE_UNARY_OP( MISH, mish );
 DEF_ELEMENT_WISE_UNARY_OP( ROUND, round );
 DEF_ELEMENT_WISE_UNARY_OP( GELU, gelu );
 DEF_ELEMENT_WISE_UNARY_OP( SELU, selu );
+DEF_ELEMENT_WISE_UNARY_OP( CELU, celu );
 
 #undef DEF_ELEMENT_UNARY_WISE_OP
 

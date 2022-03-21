@@ -51,7 +51,8 @@ typedef enum
     UNARY_ROUND,
     UNARY_GELU,
     UNARY_HGELU,
-    UNARY_SELU
+    UNARY_SELU,
+    UNARY_CELU,
 } unary_type_e;
 
 /*
@@ -92,6 +93,7 @@ typedef enum
 #define GELU_OPERATION          gelu
 #define HGELU_OPERATION         hard_gelu
 #define SELU_OPERATION          selu
+#define CELU_OPERATION          celu
 
 static const struct {
         uint32_t key;
@@ -110,6 +112,7 @@ static const struct {
     TENSOR_UNARY_KERNELS_3D(GELU_OPERATION,     UNARY_GELU,     F32, F32)
     TENSOR_UNARY_KERNELS_3D(HGELU_OPERATION,    UNARY_HGELU,    F32, F32)
     TENSOR_UNARY_KERNELS_3D(SELU_OPERATION,     UNARY_SELU,     F32, F32)
+    TENSOR_UNARY_KERNELS_3D(CELU_OPERATION,     UNARY_CELU,     F32, F32)
 
     TENSOR_UNARY_KERNELS_2D(SIN_OPERATION,      UNARY_SIN,      F32, F32)
     TENSOR_UNARY_KERNELS_2D(COS_OPERATION,      UNARY_COS,      F32, F32)
@@ -122,6 +125,7 @@ static const struct {
     TENSOR_UNARY_KERNELS_2D(GELU_OPERATION,     UNARY_GELU,     F32, F32)
     TENSOR_UNARY_KERNELS_2D(HGELU_OPERATION,    UNARY_HGELU,    F32, F32)
     TENSOR_UNARY_KERNELS_2D(SELU_OPERATION,     UNARY_SELU,     F32, F32)
+    TENSOR_UNARY_KERNELS_2D(CELU_OPERATION,     UNARY_CELU,     F32, F32)
 
     TENSOR_UNARY_KERNELS_3D(SIN_OPERATION,      UNARY_SIN,      U8,  U8)
     TENSOR_UNARY_KERNELS_3D(COS_OPERATION,      UNARY_COS,      U8,  U8)
@@ -134,6 +138,7 @@ static const struct {
     TENSOR_UNARY_KERNELS_3D(GELU_OPERATION,     UNARY_GELU,     U8,  U8)
     TENSOR_UNARY_KERNELS_3D(HGELU_OPERATION,    UNARY_HGELU,    U8,  U8)
     TENSOR_UNARY_KERNELS_3D(SELU_OPERATION,     UNARY_SELU,     U8,  U8)
+    TENSOR_UNARY_KERNELS_3D(CELU_OPERATION,     UNARY_CELU,     U8,  U8)
 
     TENSOR_UNARY_KERNELS_2D(SIN_OPERATION,      UNARY_SIN,      U8,  U8)
     TENSOR_UNARY_KERNELS_2D(COS_OPERATION,      UNARY_COS,      U8,  U8)
@@ -146,6 +151,7 @@ static const struct {
     TENSOR_UNARY_KERNELS_2D(GELU_OPERATION,     UNARY_GELU,     U8,  U8)
     TENSOR_UNARY_KERNELS_2D(HGELU_OPERATION,    UNARY_HGELU,    U8,  U8)
     TENSOR_UNARY_KERNELS_2D(SELU_OPERATION,     UNARY_SELU,     U8,  U8)
+    TENSOR_UNARY_KERNELS_2D(CELU_OPERATION,     UNARY_CELU,     U8,  U8)
 
     TENSOR_UNARY_KERNELS_3D(NEG_OPERATION, UNARY_NEG, I32,  I32)
 
@@ -163,6 +169,7 @@ static const struct {
 #undef GELU_OPERATION
 #undef HGELU_OPERATION
 #undef SELU_OPERATION
+#undef CELU_OPERATION
 /*
  * Kernel params
  */
@@ -324,6 +331,10 @@ static vsi_nn_kernel_node_t _setup
     {
         alpha = alpha * beta;
     }
+    else if (unary_type == UNARY_CELU)
+    {
+        beta = 1.0f / alpha;
+    }
 
     ret = vsi_nn_kernel_optimize_element_shape(
             inputs[0]->attr.size, inputs[0]->attr.dim_num,
@@ -446,4 +457,5 @@ REGISTER_ELTWISE_UNARY_BACKEND_CL( round,        UNARY_ROUND )
 REGISTER_ELTWISE_UNARY_BACKEND_CL( gelu,         UNARY_GELU )
 REGISTER_ELTWISE_UNARY_BACKEND_CL( hard_gelu,    UNARY_HGELU )
 REGISTER_ELTWISE_UNARY_BACKEND_CL( selu,         UNARY_SELU )
+REGISTER_ELTWISE_UNARY_BACKEND_CL( celu,         UNARY_CELU )
 __END_DECLS

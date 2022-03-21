@@ -70,6 +70,10 @@ static vsi_nn_kernel_node_t _setup
         lut_param.params[0] = vsi_nn_kernel_param_get_float32( params, "alpha" );
         lut_param.params[1] = vsi_nn_kernel_param_get_float32( params, "beta" );
     }
+    else if (lut_type == VSI_NN_KERNEL_LUT_CELU)
+    {
+        lut_param.params[0] = vsi_nn_kernel_param_get_float32( params, "alpha" );
+    }
 
     if ( inputs[0]->attr.dtype.vx_type == VSI_NN_TYPE_INT32   ||
          outputs[0]->attr.dtype.vx_type == VSI_NN_TYPE_INT32  )
@@ -141,6 +145,7 @@ REGISTER_ELTWISE_UNARY_LUT_OPENVX_KERNEL( hard_gelu,    VSI_NN_KERNEL_LUT_HGELU 
 REGISTER_ELTWISE_UNARY_LUT_OPENVX_KERNEL( erf,          VSI_NN_KERNEL_LUT_ERF )
 REGISTER_ELTWISE_UNARY_LUT_OPENVX_KERNEL( relu_keras,   VSI_NN_KERNEL_LUT_RELU_KERAS )
 REGISTER_ELTWISE_UNARY_LUT_OPENVX_KERNEL( clip,         VSI_NN_KERNEL_LUT_CLIP )
+REGISTER_ELTWISE_UNARY_LUT_OPENVX_KERNEL( celu,         VSI_NN_KERNEL_LUT_CELU )
 
 #undef REGISTER_ELTWISE_UNARY_LUT_OPENVX_KERNEL
 

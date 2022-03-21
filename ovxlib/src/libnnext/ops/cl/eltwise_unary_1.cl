@@ -1,4 +1,3 @@
-
 float eltwise_unary_sin(float x, float alpha, float beta)
 {
     return native_sin(x);
@@ -129,6 +128,14 @@ float eltwise_unary_selu(float val, float alpha_times_gamma, float gamma)
     return val < 0 ? x : val * gamma;
 }
 
+float eltwise_unary_celu(float val, float alpha, float rcp_alpha)
+{
+    float x = val * logE * rcp_alpha;
+    x = exp2(x) * alpha - alpha;
+
+    return val < 0 ? x : val;
+}
+
 #define ELTWISE_UNARY_F32(func_name) \
 __kernel void func_name##_F32toF32 \
     ( \
@@ -162,6 +169,7 @@ ELTWISE_UNARY_F32(round)
 ELTWISE_UNARY_F32(gelu)
 ELTWISE_UNARY_F32(hard_gelu)
 ELTWISE_UNARY_F32(selu)
+ELTWISE_UNARY_F32(celu)
 
 #define ELTWISE_UNARY_U8(func_name) \
 __kernel void func_name##_U8toU8 \
@@ -197,6 +205,7 @@ ELTWISE_UNARY_U8(round)
 ELTWISE_UNARY_U8(gelu)
 ELTWISE_UNARY_U8(hard_gelu)
 ELTWISE_UNARY_U8(selu)
+ELTWISE_UNARY_U8(celu)
 
 __kernel void neg_I32toI32
     (

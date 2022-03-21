@@ -526,6 +526,7 @@
     <ClInclude Include="include\ops\vsi_nn_op_bidirectional_sequence_rnn.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_box_with_nms_limit.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_cast.h"/>
+    <ClInclude Include="include\ops\vsi_nn_op_celu.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_clip.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_concat.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_concatshift.h"/>
