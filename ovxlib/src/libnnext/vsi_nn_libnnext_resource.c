@@ -5229,6 +5229,14 @@ float4 eltwise_unary_selu(float4 val)\n\
     return val < 0 ? x : val * beta;\n\
 }\n\
 \n\
+float4 eltwise_unary_celu(float4 val)\n\
+{\n\
+    float4 x = val * logE * beta;\n\
+    x = exp2(x) * alpha - alpha;\n\
+\n\
+    return val < 0 ? x : val;\n\
+}\n\
+\n\
 _viv_uniform float inputScale;\n\
 _viv_uniform float inputTail;\n\
 _viv_uniform float outputScale;\n\
@@ -5339,6 +5347,17 @@ ELTSISE_UNARY_2D(neg, U8,  U8,  vxc_uchar8, vxc_uchar8, int4,  vxc_uchar8, vxc_u
 ELTSISE_UNARY_2D(neg, U8,  F16, vxc_uchar8, vxc_uchar8, half4, vxc_half8,  vxc_short8)\n\
 ELTSISE_UNARY_2D(neg, I16, I16, vxc_short8, vxc_short8, int4,  vxc_short8, vxc_short8)\n\
 ELTSISE_UNARY_2D(neg, I16, F16, vxc_short8, vxc_short8, half4, vxc_half8,  vxc_short8)\n\
+//CELU\n\
+ELTSISE_UNARY_2D(celu, F16, F16, vxc_short8, vxc_half8,  half4, vxc_half8,  vxc_short8)\n\
+ELTSISE_UNARY_2D(celu, F16, I8,  vxc_short8, vxc_half8,  int4,  vxc_char8,  vxc_char8)\n\
+ELTSISE_UNARY_2D(celu, F16, U8,  vxc_short8, vxc_half8,  int4,  vxc_uchar8, vxc_uchar8)\n\
+ELTSISE_UNARY_2D(celu, F16, I16, vxc_short8, vxc_half8,  int4,  vxc_short8, vxc_short8)\n\
+ELTSISE_UNARY_2D(celu, I8,  I8,  vxc_char8,  vxc_char8,  int4,  vxc_char8,  vxc_char8)\n\
+ELTSISE_UNARY_2D(celu, I8,  F16, vxc_char8,  vxc_char8,  half4, vxc_half8,  vxc_short8)\n\
+ELTSISE_UNARY_2D(celu, U8,  U8,  vxc_uchar8, vxc_uchar8, int4,  vxc_uchar8, vxc_uchar8)\n\
+ELTSISE_UNARY_2D(celu, U8,  F16, vxc_uchar8, vxc_uchar8, half4, vxc_half8,  vxc_short8)\n\
+ELTSISE_UNARY_2D(celu, I16, I16, vxc_short8, vxc_short8, int4,  vxc_short8, vxc_short8)\n\
+ELTSISE_UNARY_2D(celu, I16, F16, vxc_short8, vxc_short8, half4, vxc_half8,  vxc_short8)\n\
 \n\
 _viv_uniform VXC_512Bits uniConvBF16toF32_Part0_2x8;\n\
 _viv_uniform VXC_512Bits uniConvBF16toF32_Part1_2x8;\n\
@@ -5385,6 +5404,8 @@ ELTSISE_UNARY_BF16_2D(log)\n\
 ELTSISE_UNARY_BF16_2D(selu)\n\
 //NEG\n\
 ELTSISE_UNARY_BF16_2D(neg)\n\
+//CELU\n\
+ELTSISE_UNARY_BF16_2D(celu)\n\
 "; /* end of eltwise_unary_2d_1_vx*/
 
 static const char eltwise_unary_3d_0_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
@@ -5677,6 +5698,14 @@ float4 eltwise_unary_selu(float4 val)\n\
     return val < 0 ? x : val * beta;\n\
 }\n\
 \n\
+float4 eltwise_unary_celu(float4 val)\n\
+{\n\
+    float4 x = val * logE * beta;\n\
+    x = exp2(x) * alpha - alpha;\n\
+\n\
+    return val < 0 ? x : val;\n\
+}\n\
+\n\
 _viv_uniform float inputScale;\n\
 _viv_uniform float inputTail;\n\
 _viv_uniform float outputScale;\n\
@@ -5787,6 +5816,17 @@ ELTSISE_UNARY_3D(neg, U8,  U8,  vxc_uchar8, vxc_uchar8, int4,  vxc_uchar8, vxc_u
 ELTSISE_UNARY_3D(neg, U8,  F16, vxc_uchar8, vxc_uchar8, half4, vxc_half8,  vxc_short8)\n\
 ELTSISE_UNARY_3D(neg, I16, I16, vxc_short8, vxc_short8, int4,  vxc_short8, vxc_short8)\n\
 ELTSISE_UNARY_3D(neg, I16, F16, vxc_short8, vxc_short8, half4, vxc_half8,  vxc_short8)\n\
+//CELU\n\
+ELTSISE_UNARY_3D(celu, F16, F16, vxc_short8, vxc_half8,  half4, vxc_half8,  vxc_short8)\n\
+ELTSISE_UNARY_3D(celu, F16, I8,  vxc_short8, vxc_half8,  int4,  vxc_char8,  vxc_char8)\n\
+ELTSISE_UNARY_3D(celu, F16, U8,  vxc_short8, vxc_half8,  int4,  vxc_uchar8, vxc_uchar8)\n\
+ELTSISE_UNARY_3D(celu, F16, I16, vxc_short8, vxc_half8,  int4,  vxc_short8, vxc_short8)\n\
+ELTSISE_UNARY_3D(celu, I8,  I8,  vxc_char8,  vxc_char8,  int4,  vxc_char8,  vxc_char8)\n\
+ELTSISE_UNARY_3D(celu, I8,  F16, vxc_char8,  vxc_char8,  half4, vxc_half8,  vxc_short8)\n\
+ELTSISE_UNARY_3D(celu, U8,  U8,  vxc_uchar8, vxc_uchar8, int4,  vxc_uchar8, vxc_uchar8)\n\
+ELTSISE_UNARY_3D(celu, U8,  F16, vxc_uchar8, vxc_uchar8, half4, vxc_half8,  vxc_short8)\n\
+ELTSISE_UNARY_3D(celu, I16, I16, vxc_short8, vxc_short8, int4,  vxc_short8, vxc_short8)\n\
+ELTSISE_UNARY_3D(celu, I16, F16, vxc_short8, vxc_short8, half4, vxc_half8,  vxc_short8)\n\
 \n\
 _viv_uniform VXC_512Bits uniConvBF16toF32_Part0_2x8;\n\
 _viv_uniform VXC_512Bits uniConvBF16toF32_Part1_2x8;\n\
@@ -5832,6 +5872,8 @@ ELTSISE_UNARY_BF16(log)\n\
 ELTSISE_UNARY_BF16(selu)\n\
 //NEG\n\
 ELTSISE_UNARY_BF16(neg)\n\
+//CELU\n\
+ELTSISE_UNARY_BF16(selu)\n\
 "; /* end of eltwise_unary_3d_1_vx*/
 
 static const char erf_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
@@ -47635,8 +47677,7 @@ inline Tensor create_tensor_from_image2d_array(image2d_array_t input, int stride
        } while(0)\n\
 "; /* end of eltwise_ops_helper_cl*/
 
-static const char eltwise_unary_0_cl[] = "\n\
-float eltwise_unary_sin(float x, float alpha, float beta)\n\
+static const char eltwise_unary_0_cl[] = "float eltwise_unary_sin(float x, float alpha, float beta)\n\
 {\n\
     return native_sin(x);\n\
 }\n\
@@ -47766,6 +47807,14 @@ float eltwise_unary_selu(float val, float alpha_times_gamma, float gamma)\n\
     return val <= 0 ? x : val * gamma;\n\
 }\n\
 \n\
+float eltwise_unary_celu(float val, float alpha, float rcp_alpha)\n\
+{\n\
+    float x = val * logE * rcp_alpha;\n\
+    x = exp2(x) * alpha - alpha;\n\
+\n\
+    return val < 0 ? x : val;\n\
+}\n\
+\n\
 #define ELTWISE_UNARY_F32_2D(func_name) \\\n\
 __kernel void func_name##_F32toF32_2D \\\n\
     ( \\\n\
@@ -47799,6 +47848,7 @@ ELTWISE_UNARY_F32_2D(round)\n\
 ELTWISE_UNARY_F32_2D(gelu)\n\
 ELTWISE_UNARY_F32_2D(hard_gelu)\n\
 ELTWISE_UNARY_F32_2D(selu)\n\
+ELTWISE_UNARY_F32_2D(celu)\n\
 \n\
 #define ELTWISE_UNARY_U8_2D(func_name) \\\n\
 __kernel void func_name##_U8toU8_2D \\\n\
@@ -47834,6 +47884,7 @@ ELTWISE_UNARY_U8_2D(round)\n\
 ELTWISE_UNARY_U8_2D(gelu)\n\
 ELTWISE_UNARY_U8_2D(hard_gelu)\n\
 ELTWISE_UNARY_U8_2D(selu)\n\
+ELTWISE_UNARY_U8_2D(celu)\n\
 \n\
 __kernel void neg_I32toI32_2D\n\
     (\n\
@@ -47856,8 +47907,7 @@ __kernel void neg_I32toI32_2D\n\
 }\n\
 "; /* end of eltwise_unary_0_cl*/
 
-static const char eltwise_unary_1_cl[] = "\n\
-float eltwise_unary_sin(float x, float alpha, float beta)\n\
+static const char eltwise_unary_1_cl[] = "float eltwise_unary_sin(float x, float alpha, float beta)\n\
 {\n\
     return native_sin(x);\n\
 }\n\
@@ -47987,6 +48037,14 @@ float eltwise_unary_selu(float val, float alpha_times_gamma, float gamma)\n\
     return val < 0 ? x : val * gamma;\n\
 }\n\
 \n\
+float eltwise_unary_celu(float val, float alpha, float rcp_alpha)\n\
+{\n\
+    float x = val * logE * rcp_alpha;\n\
+    x = exp2(x) * alpha - alpha;\n\
+\n\
+    return val < 0 ? x : val;\n\
+}\n\
+\n\
 #define ELTWISE_UNARY_F32(func_name) \\\n\
 __kernel void func_name##_F32toF32 \\\n\
     ( \\\n\
@@ -48020,6 +48078,7 @@ ELTWISE_UNARY_F32(round)\n\
 ELTWISE_UNARY_F32(gelu)\n\
 ELTWISE_UNARY_F32(hard_gelu)\n\
 ELTWISE_UNARY_F32(selu)\n\
+ELTWISE_UNARY_F32(celu)\n\
 \n\
 #define ELTWISE_UNARY_U8(func_name) \\\n\
 __kernel void func_name##_U8toU8 \\\n\
@@ -48055,6 +48114,7 @@ ELTWISE_UNARY_U8(round)\n\
 ELTWISE_UNARY_U8(gelu)\n\
 ELTWISE_UNARY_U8(hard_gelu)\n\
 ELTWISE_UNARY_U8(selu)\n\
+ELTWISE_UNARY_U8(celu)\n\
 \n\
 __kernel void neg_I32toI32\n\
     (\n\

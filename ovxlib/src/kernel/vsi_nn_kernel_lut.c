@@ -180,6 +180,15 @@ static float square_eval(float x)
     return x * x;
 }
 
+static float celu_eval(float x, vsi_nn_kernel_lut_params *lut_param)
+{
+    float alpha = lut_param->params[0];
+    float positive = vsi_nn_max(0, x);
+    float negative = vsi_nn_min(alpha * (expf(x / alpha) - 1), 0);
+
+    return positive + negative;
+}
+
 static float vsi_nn_kernel_lut_activation(float data, vsi_nn_kernel_lut_params *lut_param)
 {
     float result = 0;
@@ -232,6 +241,9 @@ static float vsi_nn_kernel_lut_activation(float data, vsi_nn_kernel_lut_params *
         break;
     case VSI_NN_KERNEL_LUT_SQUARE:
         result =  square_eval(data);
+        break;
+    case VSI_NN_KERNEL_LUT_CELU:
+        result =  celu_eval(data, lut_param);
         break;
     default:
         VSILOGE( "unsupported activation function:%d", lut_param->act_type );

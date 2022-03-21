@@ -42,6 +42,14 @@ float4 eltwise_unary_selu(float4 val)
     return val < 0 ? x : val * beta;
 }
 
+float4 eltwise_unary_celu(float4 val)
+{
+    float4 x = val * logE * beta;
+    x = exp2(x) * alpha - alpha;
+
+    return val < 0 ? x : val;
+}
+
 _viv_uniform float inputScale;
 _viv_uniform float inputTail;
 _viv_uniform float outputScale;
@@ -152,6 +160,17 @@ ELTSISE_UNARY_3D(neg, U8,  U8,  vxc_uchar8, vxc_uchar8, int4,  vxc_uchar8, vxc_u
 ELTSISE_UNARY_3D(neg, U8,  F16, vxc_uchar8, vxc_uchar8, half4, vxc_half8,  vxc_short8)
 ELTSISE_UNARY_3D(neg, I16, I16, vxc_short8, vxc_short8, int4,  vxc_short8, vxc_short8)
 ELTSISE_UNARY_3D(neg, I16, F16, vxc_short8, vxc_short8, half4, vxc_half8,  vxc_short8)
+//CELU
+ELTSISE_UNARY_3D(celu, F16, F16, vxc_short8, vxc_half8,  half4, vxc_half8,  vxc_short8)
+ELTSISE_UNARY_3D(celu, F16, I8,  vxc_short8, vxc_half8,  int4,  vxc_char8,  vxc_char8)
+ELTSISE_UNARY_3D(celu, F16, U8,  vxc_short8, vxc_half8,  int4,  vxc_uchar8, vxc_uchar8)
+ELTSISE_UNARY_3D(celu, F16, I16, vxc_short8, vxc_half8,  int4,  vxc_short8, vxc_short8)
+ELTSISE_UNARY_3D(celu, I8,  I8,  vxc_char8,  vxc_char8,  int4,  vxc_char8,  vxc_char8)
+ELTSISE_UNARY_3D(celu, I8,  F16, vxc_char8,  vxc_char8,  half4, vxc_half8,  vxc_short8)
+ELTSISE_UNARY_3D(celu, U8,  U8,  vxc_uchar8, vxc_uchar8, int4,  vxc_uchar8, vxc_uchar8)
+ELTSISE_UNARY_3D(celu, U8,  F16, vxc_uchar8, vxc_uchar8, half4, vxc_half8,  vxc_short8)
+ELTSISE_UNARY_3D(celu, I16, I16, vxc_short8, vxc_short8, int4,  vxc_short8, vxc_short8)
+ELTSISE_UNARY_3D(celu, I16, F16, vxc_short8, vxc_short8, half4, vxc_half8,  vxc_short8)
 
 _viv_uniform VXC_512Bits uniConvBF16toF32_Part0_2x8;
 _viv_uniform VXC_512Bits uniConvBF16toF32_Part1_2x8;
@@ -197,3 +216,5 @@ ELTSISE_UNARY_BF16(log)
 ELTSISE_UNARY_BF16(selu)
 //NEG
 ELTSISE_UNARY_BF16(neg)
+//CELU
+ELTSISE_UNARY_BF16(selu)

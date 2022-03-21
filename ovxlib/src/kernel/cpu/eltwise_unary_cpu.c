@@ -49,6 +49,7 @@ typedef enum
     UNARY_GELU,
     UNARY_HGELU,
     UNARY_SELU,
+    UNARY_CELU,
 } unary_type_e;
 
 
@@ -136,6 +137,14 @@ static float selu_eval(float data, float alpha, float gamma)
     return y;
 }
 
+static float celu_eval(float x, float alpha)
+{
+    float positive = vsi_nn_max(0, x);
+    float negative = vsi_nn_min(alpha * (expf(x / alpha) - 1), 0);
+
+    return positive + negative;
+}
+
 DEF_KERNEL_EXECUTOR(_eltwise_unary_exec)
     (
     vsi_nn_kernel_node_t node,
@@ -214,6 +223,9 @@ DEF_KERNEL_EXECUTOR(_eltwise_unary_exec)
             break;
         case UNARY_SELU:
             data = selu_eval(data, alpha, beta);
+            break;
+        case UNARY_CELU:
+            data = celu_eval(data, alpha);
             break;
         default:
             break;
@@ -348,3 +360,4 @@ REGISTER_ELTWISE_UNARY_BACKEND_CPU( round,        UNARY_ROUND )
 REGISTER_ELTWISE_UNARY_BACKEND_CPU( gelu,         UNARY_GELU )
 REGISTER_ELTWISE_UNARY_BACKEND_CPU( hard_gelu,    UNARY_HGELU )
 REGISTER_ELTWISE_UNARY_BACKEND_CPU( selu,         UNARY_SELU )
+REGISTER_ELTWISE_UNARY_BACKEND_CPU( celu,         UNARY_CELU )
