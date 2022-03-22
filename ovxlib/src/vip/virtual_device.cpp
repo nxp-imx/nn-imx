@@ -71,13 +71,13 @@ bool Device::ThreadExit(){
     return true;
 }
 
-bool Device::GraphSubmit(const std::shared_ptr<vsi_nn_graph_t>& graph, func_t func, data_t data){
+bool Device::GraphSubmit(vsi_nn_graph_t* graph, func_t func, data_t data){
     bool status = false;
     status = graphqueue_->Submit(graph, func, data);
     return status;
 }
 
-bool Device::GraphRemove(const std::shared_ptr<vsi_nn_graph_t>& graph){
+bool Device::GraphRemove(const vsi_nn_graph_t* graph){
     return graphqueue_->Remove(graph);
 }
 
@@ -102,12 +102,12 @@ void Device::WaitThreadIdle(){
 Worker::Worker(){
 }
 
-void Worker::RunGraph(const std::shared_ptr<vsi_nn_graph_t>& graph){
-    vsi_nn_RunGraph(graph.get());
+void Worker::RunGraph(const vsi_nn_graph_t* graph){
+    vsi_nn_RunGraph(graph);
 }
 
 void Worker::Handle(const QueueItem& item){
-    std::shared_ptr<vsi_nn_graph_t> graph = item.graph;
+    vsi_nn_graph_t* graph = item.graph;
     func_t func = item.func;
     data_t data = item.data;
     if (graph != NULL){
@@ -152,7 +152,7 @@ void GraphQueue::Notify(){
     cv_.notify_one();
 }
 
-bool GraphQueue::Submit(const std::shared_ptr<vsi_nn_graph_t>& graph, func_t func, data_t data){
+bool GraphQueue::Submit(vsi_nn_graph_t* graph, func_t func, data_t data){
     queue_mtx_.lock();
     QueueItem item;
     item.graph = graph;
@@ -184,7 +184,7 @@ QueueItem GraphQueue::Fetch(){
         return item;
 }
 
-bool GraphQueue::Remove(const std::shared_ptr<vsi_nn_graph_t>& graph){
+bool GraphQueue::Remove(const vsi_nn_graph_t* graph){
     queue_mtx_.lock();
     std::size_t idx=0;
     bool exist=false;
@@ -221,11 +221,11 @@ uint32_t IDevice::Id() const{
     return device_->Id();
 }
 
-bool IDevice::GraphSubmit(const std::shared_ptr<vsi_nn_graph_t>& graph, func_t func, data_t data){
+bool IDevice::GraphSubmit(vsi_nn_graph_t* graph, func_t func, data_t data){
     return device_->GraphSubmit(graph, func, data);
 }
 
-bool IDevice::GraphRemove(const std::shared_ptr<vsi_nn_graph_t>& graph){
+bool IDevice::GraphRemove(const vsi_nn_graph_t* graph){
     return device_->GraphRemove(graph);
 }
 
