@@ -49,7 +49,7 @@ enum the_state {
 using func_t = std::function<bool (const void*)>;
 using data_t = const void*;
 typedef struct _Queueitem{
-    std::shared_ptr<vsi_nn_graph_t> graph;
+    vsi_nn_graph_t* graph;
     func_t func;
     data_t data;
     size_t id;
@@ -60,8 +60,8 @@ class GraphQueue{
         GraphQueue();
         ~GraphQueue(){};
         void Show();
-        bool Submit(const std::shared_ptr<vsi_nn_graph_t>& graph, func_t func, data_t data);
-        bool Remove(const std::shared_ptr<vsi_nn_graph_t>& graph);
+        bool Submit(vsi_nn_graph_t* graph, func_t func, data_t data);
+        bool Remove(const vsi_nn_graph_t* graph);
         QueueItem Fetch();
         bool Empty() const;
         void Notify();
@@ -78,7 +78,7 @@ class Worker{
         Worker();
         ~Worker(){};
         void Handle(const QueueItem& item);
-        void RunGraph(const std::shared_ptr<vsi_nn_graph_t>& graph);
+        void RunGraph(const vsi_nn_graph_t* graph);
     protected:
 };
 
@@ -91,8 +91,8 @@ class Device {
         void StatusInit();
         bool ThreadExit();
         void HandleQueue();
-        bool GraphSubmit(const std::shared_ptr<vsi_nn_graph_t>& graph, func_t func, data_t data);
-        bool GraphRemove(const std::shared_ptr<vsi_nn_graph_t>& graph);
+        bool GraphSubmit(vsi_nn_graph_t* graph, func_t func, data_t data);
+        bool GraphRemove(const vsi_nn_graph_t* graph);
         bool DeviceExit();
         bool ThreadIdle();
         void WaitThreadIdle();

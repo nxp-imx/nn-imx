@@ -41,8 +41,8 @@ class IDevice {
         IDevice(uint32_t id);
         ~IDevice();
         uint32_t Id() const;
-        bool GraphSubmit(const std::shared_ptr<vsi_nn_graph_t>& graph, func_t func, data_t data);
-        bool GraphRemove(const std::shared_ptr<vsi_nn_graph_t>& graph);
+        bool GraphSubmit(vsi_nn_graph_t* graph, func_t func, data_t data);
+        bool GraphRemove(const vsi_nn_graph_t* graph);
         bool ThreadExit();
         bool ThreadIdle();
         void WaitThreadIdle();
