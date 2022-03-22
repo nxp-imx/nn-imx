@@ -47274,11 +47274,17 @@ CAST_TO_BOOL_FUN_2D(U32, uint4,  read_imageui)\n\
 
 static const char clip_BF16_cl[] = "#pragma OPENCL EXTENSION CL_VIV_asm : enable\n\
 \n\
-__kernel void clip_BF16toBF16(\n\
-    __read_only  image2d_array_t  input,\n\
-    __write_only image2d_array_t  output,\n\
-                           float  minData,\n\
-                           float  maxData)\n\
+__kernel void clip_BF16toBF16\n\
+    (\n\
+    __read_only  image2d_array_t input,\n\
+    __write_only image2d_array_t output,\n\
+                           float minData,\n\
+                           float maxData,\n\
+                           float inputScale,\n\
+                           float inputTail,\n\
+                           float outputScale,\n\
+                           float outputZP\n\
+    )\n\
 {\n\
     int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
     uint4 src0 = read_imageui(input, coord);\n\
@@ -47292,11 +47298,17 @@ __kernel void clip_BF16toBF16(\n\
     write_imageui(output, coord, dst);\n\
 }\n\
 \n\
-__kernel void clip_BF16toBF16_2D(\n\
-    __read_only  image2d_t  input,\n\
-    __write_only image2d_t  output,\n\
-                     float  minData,\n\
-                     float  maxData)\n\
+__kernel void clip_BF16toBF16_2D\n\
+    (\n\
+    __read_only  image2d_t input,\n\
+    __write_only image2d_t output,\n\
+                     float minData,\n\
+                     float maxData,\n\
+                     float inputScale,\n\
+                     float inputTail,\n\
+                     float outputScale,\n\
+                     float outputZP\n\
+    )\n\
 {\n\
     int2 coord =  (int2)(get_global_id(0), get_global_id(1));\n\
     uint4 src0 = read_imageui(input, coord);\n\
@@ -47311,71 +47323,193 @@ __kernel void clip_BF16toBF16_2D(\n\
 }\n\
 "; /* end of clip_BF16_cl*/
 
-static const char clip_F32_cl[] = "__kernel void clip_F32toF32(\n\
-    __read_only  image2d_array_t  input,\n\
-    __write_only image2d_array_t  output,\n\
-                           float  minData,\n\
-                           float  maxData)\n\
-{\n\
-    int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
-    float4 src = read_imagef(input, coord);\n\
-    float4 dst = src > minData ? src : minData;\n\
-    dst = dst < maxData ? dst : maxData;\n\
-    write_imagef(output, coord, dst);\n\
-}\n\
-\n\
-__kernel void clip_F32toF32_2D(\n\
-    __read_only  image2d_t  input,\n\
-    __write_only image2d_t  output,\n\
-                     float  minData,\n\
-                     float  maxData)\n\
-{\n\
-    int2 coord =  (int2)(get_global_id(0), get_global_id(1));\n\
-    float4 src = read_imagef(input, coord);\n\
-    float4 dst = src > minData ? src : minData;\n\
-    dst = dst < maxData ? dst : maxData;\n\
-    write_imagef(output, coord, dst);\n\
-}\n\
-\n\
-__kernel void clip_F32toU8(\n\
-    __read_only  image2d_array_t  input,\n\
-    __write_only image2d_array_t  output,\n\
-                           float  minData,\n\
-                           float  maxData,\n\
+static const char clip_F32_cl[] = "__kernel void clip_F32toF32\n\
+    (\n\
+    __read_only  image2d_array_t input,\n\
+    __write_only image2d_array_t output,\n\
+                           float minData,\n\
+                           float maxData,\n\
                            float inputScale,\n\
                            float inputTail,\n\
                            float outputScale,\n\
                            float outputZP\n\
-                           )\n\
+    )\n\
 {\n\
     int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
     float4 src = read_imagef(input, coord);\n\
-    float4 result = src > minData ? src : minData;\n\
-    result = result < maxData ? result : maxData;\n\
-    uint4 dst = convert_uint4_rte(result * outputScale + outputZP);\n\
-    write_imageui(output, coord, dst);\n\
+    float4 dst = clamp(src, minData, maxData);\n\
+    write_imagef(output, coord, dst);\n\
 }\n\
 \n\
-__kernel void clip_F32toU8_2D(\n\
-    __read_only  image2d_t  input,\n\
-    __write_only image2d_t  output,\n\
-                     float  minData,\n\
-                     float  maxData,\n\
+__kernel void clip_F32toF32_2D\n\
+    (\n\
+    __read_only  image2d_t input,\n\
+    __write_only image2d_t output,\n\
+                     float minData,\n\
+                     float maxData,\n\
                      float inputScale,\n\
                      float inputTail,\n\
                      float outputScale,\n\
                      float outputZP\n\
-                     )\n\
+    )\n\
 {\n\
     int2 coord =  (int2)(get_global_id(0), get_global_id(1));\n\
     float4 src = read_imagef(input, coord);\n\
-    float4 result = src > minData ? src : minData;\n\
-    result = result < maxData ? result : maxData;\n\
+    float4 dst = clamp(src, minData, maxData);\n\
+    write_imagef(output, coord, dst);\n\
+}\n\
+\n\
+__kernel void clip_F32toU8\n\
+    (\n\
+    __read_only  image2d_array_t input,\n\
+    __write_only image2d_array_t output,\n\
+                           float minData,\n\
+                           float maxData,\n\
+                           float inputScale,\n\
+                           float inputTail,\n\
+                           float outputScale,\n\
+                           float outputZP\n\
+    )\n\
+{\n\
+    int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+    float4 src = read_imagef(input, coord);\n\
+    float4 result = clamp(src, minData, maxData);\n\
     uint4 dst = convert_uint4_rte(result * outputScale + outputZP);\n\
     write_imageui(output, coord, dst);\n\
 }\n\
 \n\
+__kernel void clip_F32toU8_2D\n\
+    (\n\
+    __read_only  image2d_t input,\n\
+    __write_only image2d_t output,\n\
+                     float minData,\n\
+                     float maxData,\n\
+                     float inputScale,\n\
+                     float inputTail,\n\
+                     float outputScale,\n\
+                     float outputZP\n\
+    )\n\
+{\n\
+    int2 coord =  (int2)(get_global_id(0), get_global_id(1));\n\
+    float4 src = read_imagef(input, coord);\n\
+    float4 result = clamp(src, minData, maxData);\n\
+    uint4 dst = convert_uint4_rte(result * outputScale + outputZP);\n\
+    write_imageui(output, coord, dst);\n\
+}\n\
+\n\
+__kernel void clip_F32toI32\n\
+    (\n\
+    __read_only  image2d_array_t input,\n\
+    __write_only image2d_array_t output,\n\
+                           float minData,\n\
+                           float maxData,\n\
+                           float inputScale,\n\
+                           float inputTail,\n\
+                           float outputScale,\n\
+                           float outputZP\n\
+    )\n\
+{\n\
+    int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+    float4 src = read_imagef(input, coord);\n\
+    float4 result = clamp(src, minData, maxData);\n\
+    int4 dst = convert_int4_rte(result * outputScale + outputZP);\n\
+    write_imagei(output, coord, dst);\n\
+}\n\
+\n\
+__kernel void clip_F32toI32_2D\n\
+    (\n\
+    __read_only  image2d_t input,\n\
+    __write_only image2d_t output,\n\
+                     float minData,\n\
+                     float maxData,\n\
+                     float inputScale,\n\
+                     float inputTail,\n\
+                     float outputScale,\n\
+                     float outputZP\n\
+    )\n\
+{\n\
+    int2 coord =  (int2)(get_global_id(0), get_global_id(1));\n\
+    float4 src = read_imagef(input, coord);\n\
+    float4 result = clamp(src, minData, maxData);\n\
+    int4 dst = convert_int4_rte(result * outputScale + outputZP);\n\
+    write_imagei(output, coord, dst);\n\
+}\n\
 "; /* end of clip_F32_cl*/
+
+static const char clip_I32_cl[] = "__kernel void clip_I32toI32\n\
+    (\n\
+    __read_only  image2d_array_t input,\n\
+    __write_only image2d_array_t output,\n\
+                           float minData,\n\
+                           float maxData,\n\
+                           float inputScale,\n\
+                           float inputTail,\n\
+                           float outputScale,\n\
+                           float outputZP\n\
+     )\n\
+{\n\
+    int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+    float4 src = convert_float4(read_imagei(input, coord)) * inputScale + inputTail;\n\
+    float4 result = clamp(src, minData, maxData);\n\
+    int4 dst = convert_int4_rte(result * outputScale + outputZP);\n\
+    write_imagei(output, coord, dst);\n\
+}\n\
+\n\
+__kernel void clip_I32toI32_2D\n\
+    (\n\
+    __read_only  image2d_t input,\n\
+    __write_only image2d_t output,\n\
+                     float minData,\n\
+                     float maxData,\n\
+                     float inputScale,\n\
+                     float inputTail,\n\
+                     float outputScale,\n\
+                     float outputZP\n\
+    )\n\
+{\n\
+    int2 coord =  (int2)(get_global_id(0), get_global_id(1));\n\
+    float4 src = convert_float4(read_imagei(input, coord)) * inputScale + inputTail;\n\
+    float4 result = clamp(src, minData, maxData);\n\
+    int4 dst = convert_int4_rte(result * outputScale + outputZP);\n\
+    write_imagei(output, coord, dst);\n\
+}\n\
+\n\
+__kernel void clip_I32toF32\n\
+    (\n\
+    __read_only  image2d_array_t input,\n\
+    __write_only image2d_array_t output,\n\
+                           float minData,\n\
+                           float maxData,\n\
+                           float inputScale,\n\
+                           float inputTail,\n\
+                           float outputScale,\n\
+                           float outputZP\n\
+    )\n\
+{\n\
+    int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+    float4 src = convert_float4(read_imagei(input, coord)) * inputScale + inputTail;\n\
+    float4 dst = clamp(src, minData, maxData);\n\
+    write_imagef(output, coord, dst);\n\
+}\n\
+\n\
+__kernel void clip_I32toF32_2D\n\
+    (\n\
+    __read_only  image2d_t input,\n\
+    __write_only image2d_t output,\n\
+                     float minData,\n\
+                     float maxData,\n\
+                     float inputScale,\n\
+                     float inputTail,\n\
+                     float outputScale,\n\
+                     float outputZP\n\
+    )\n\
+{\n\
+    int2 coord =  (int2)(get_global_id(0), get_global_id(1));\n\
+    float4 src = convert_float4(read_imagei(input, coord)) * inputScale + inputTail;\n\
+    float4 dst = clamp(src, minData, maxData);\n\
+    write_imagef(output, coord, dst);\n\
+}\n\
+"; /* end of clip_I32_cl*/
 
 static const char clip_U8_cl[] = "__kernel void clip_U8toU8(\n\
     __read_only  image2d_array_t  input,\n\
@@ -61798,6 +61932,7 @@ static const source_map_t cl_resource[] =
     {"cast_cl", cast_cl},
     {"clip_BF16_cl", clip_BF16_cl},
     {"clip_F32_cl", clip_F32_cl},
+    {"clip_I32_cl", clip_I32_cl},
     {"clip_U8_cl", clip_U8_cl},
     {"depth2space_crd_cl", depth2space_crd_cl},
     {"detect_post_box_cl", detect_post_box_cl},
