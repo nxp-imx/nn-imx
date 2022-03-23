@@ -130,6 +130,8 @@ typedef struct
     int32_t* begin;
     /** Crop size for each dim */
     int32_t* size;
+    /** Image dim */
+    int32_t dim;
 }vsi_nn_preprocess_crop_t;
 
 /**
