@@ -56318,8 +56318,8 @@ static const char moments_axis0_cl[] = "__kernel void moments_axis0_U8toF32(\n\
         {\n\
             data = read_imageui(input, coord0).x;\n\
             coord0.x++;\n\
-            tmpSum += (data);\n\
-            tmpSqr += (data * data);\n\
+            tmpSum = tmpSum + data;\n\
+            tmpSqr = tmpSqr + data * data;\n\
         }\n\
         sqr = convert_float(as_int(tmpSqr - 2 * input_zp * tmpSum + width * input_zp * input_zp)) * e2InScale;\n\
         sum = convert_float(as_int(tmpSum - width * input_zp)) * input_scale;\n\
@@ -56392,7 +56392,7 @@ __kernel void moments_axis0_I32toF32(\n\
 \n\
     for(coord0.x = 0; coord0.x < width;)\n\
     {\n\
-        data = convert_float(read_imagei(input, coord0).x);\n\
+        data = convert_float(read_imagei(input, coord0).x - input_zp);\n\
         coord0.x++;\n\
 \n\
         sum = sum + data;\n\
@@ -56476,8 +56476,8 @@ static const char moments_axis01_cl[] = "__kernel void moments_axis01_U8toF32(\n
         {\n\
             data = read_imageui(input, coord);\n\
             coord.y++;\n\
-            tmpSum += data.x;\n\
-            tmpSqr += data.x * data.x;\n\
+            tmpSum = tmpSum + data.x;\n\
+            tmpSqr = tmpSqr + data.x * data.x;\n\
         }\n\
         sqr += (tmpSqr - 2 * input_zp * tmpSum + height * input_zp * input_zp) * e2InScale;\n\
         sum += (tmpSum - height * input_zp) * input_scale;\n\
@@ -56713,8 +56713,8 @@ static const char moments_axis012_cl[] = "__kernel void moments_axis012_U8toF32(
             {\n\
                 data = read_imageui(input, coord);\n\
                 coord.y++;\n\
-                tmpSum += data.x;\n\
-                tmpSqr += data.x * data.x;\n\
+                tmpSum = tmpSum + data.x;\n\
+                tmpSqr = tmpSqr + data.x * data.x;\n\
             }\n\
             sqr += (tmpSqr - 2 * input_zp * tmpSum + height * input_zp * input_zp) * e2InScale;\n\
             sum += (tmpSum - height * input_zp) * input_scale;\n\
@@ -56951,8 +56951,8 @@ static const char moments_axis1_cl[] = "__kernel void moments_axis1_U8toF32(\n\
         {\n\
             data = read_imageui(input, coord0).x;\n\
             coord0.y++;\n\
-            tmpSum += (data);\n\
-            tmpSqr += (data * data);\n\
+            tmpSum = tmpSum + data;\n\
+            tmpSqr = tmpSqr + data * data;\n\
         }\n\
         sqr = convert_float(as_int(tmpSqr - 2 * input_zp * tmpSum + height * input_zp * input_zp)) * e2InScale;\n\
         sum = convert_float(as_int(tmpSum - height * input_zp)) * input_scale;\n\
@@ -57026,7 +57026,7 @@ __kernel void moments_axis1_I32toF32(\n\
 \n\
     for(coord0.y = 0; coord0.y < height;)\n\
     {\n\
-        data = convert_float(read_imagei(input, coord0).x);\n\
+        data = convert_float(read_imagei(input, coord0).x - input_zp);\n\
         coord0.y++;\n\
         sum = sum + data;\n\
         sqr = sqr + data * data;\n\
@@ -57111,8 +57111,8 @@ static const char moments_axis2_cl[] = "__kernel void moments_axis2_U8toF32(\n\
         {\n\
             data = read_imageui(input, coord0).x;\n\
             coord0.z++;\n\
-            tmpSum += (data);\n\
-            tmpSqr += (data * data);\n\
+            tmpSum = tmpSum + data;\n\
+            tmpSqr = tmpSqr + data * data;\n\
         }\n\
         sqr = as_int(tmpSqr - 2 * input_zp * tmpSum + chn * input_zp * input_zp) * e2InScale;\n\
         sum = tmpSum * input_scale;\n\
@@ -57192,7 +57192,7 @@ __kernel void moments_axis2_I32toF32(\n\
 \n\
     for(coord0.z = 0; coord0.z < chn;)\n\
     {\n\
-        data = convert_float(read_imagei(input, coord0).x);\n\
+        data = convert_float(read_imagei(input, coord0).x - input_zp);\n\
         coord0.z++;\n\
 \n\
 \n\
