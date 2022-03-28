@@ -41765,6 +41765,102 @@ __kernel void resize_bilinear_U8toU8_UP_opt\n\
 \n\
 #endif"; /* end of resize_bilinear_U8_opt_vx*/
 
+static const char resize_bilinear_align_corners_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+_viv_uniform VXC_512Bits uniBilinear_8x_l10_4x8;\n\
+_viv_uniform VXC_512Bits uniBilinear_8x_l11_4x8;\n\
+_viv_uniform VXC_512Bits uniBilinear_8x_l20_4x8;\n\
+_viv_uniform VXC_512Bits uniBilinear_8x_l21_4x8;\n\
+_viv_uniform VXC_512Bits uniBilinear_8x_l30_4x8;\n\
+_viv_uniform VXC_512Bits uniBilinear_8x_l31_4x8;\n\
+_viv_uniform VXC_512Bits uniBilinear_8x_l40_4x8;\n\
+_viv_uniform VXC_512Bits uniBilinear_8x_l41_4x8;\n\
+__kernel void resize_bilinear_U8toU8_SAME_8x_upsample_align_corners\n\
+    (\n\
+    __read_only  image2d_array_t   input,\n\
+    __write_only image2d_array_t   output,\n\
+                             int   align_corners,\n\
+                             int   half_pixel_centers\n\
+    )\n\
+{\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), get_global_id(2));\n\
+\n\
+\n\
+    vxc_uchar16 in0, in1, dst;\n\
+\n\
+    int8 input_desc;\n\
+    _viv_asm(COPY, input_desc, input, sizeof(input_desc));\n\
+    int baseAddr = (int)coord.z * input_desc.s4 + input_desc.s0;\n\
+    _viv_asm(MOV, coord.w, baseAddr);\n\
+    VXC_OP4(img_load_3d, in0, input, coord.xywz, VXC_5BITOFFSET_XY(0, 0),\n\
+            VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_OP4(img_load_3d, in1, input, coord.xywz, VXC_5BITOFFSET_XY(0, 1),\n\
+            VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
+    coord.xy = coord.xy << 3;\n\
+\n\
+    int8 output_desc;\n\
+    _viv_asm(COPY, output_desc, output, sizeof(output_desc));\n\
+    baseAddr = (int)coord.z * output_desc.s4 + output_desc.s0;\n\
+    _viv_asm(MOV, coord.w, baseAddr);\n\
+\n\
+\n\
+    VXC_DP4x8(dst, in0, in0, VXC_MODIFIER(0, 7,  0, VXC_RM_ToNearestEven, 1), uniBilinear_8x_l10_4x8);\n\
+    VXC_DP4x8(dst, in0, in0, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1), uniBilinear_8x_l11_4x8);\n\
+\n\
+    VXC_OP4_NoDest(img_store_3d, output, coord.xywz, dst,\n\
+        VXC_MODIFIER(0, 15, 0,VXC_RM_TowardZero, 0));\n\
+    coord.y ++;\n\
+\n\
+    VXC_DP4x8(dst, in0, in1, VXC_MODIFIER(0, 7,  0, VXC_RM_ToNearestEven, 1), uniBilinear_8x_l10_4x8);\n\
+    VXC_DP4x8(dst, in0, in1, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1), uniBilinear_8x_l11_4x8);\n\
+\n\
+    VXC_OP4_NoDest(img_store_3d, output, coord.xywz, dst,\n\
+        VXC_MODIFIER(0, 15, 0,VXC_RM_TowardZero, 0));\n\
+    coord.y ++;\n\
+\n\
+    VXC_DP4x8(dst, in0, in1, VXC_MODIFIER(0, 7,  0, VXC_RM_ToNearestEven, 1), uniBilinear_8x_l20_4x8);\n\
+    VXC_DP4x8(dst, in0, in1, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1), uniBilinear_8x_l21_4x8);\n\
+\n\
+    VXC_OP4_NoDest(img_store_3d, output, coord.xywz, dst,\n\
+        VXC_MODIFIER(0, 15, 0,VXC_RM_TowardZero, 0));\n\
+    coord.y ++;\n\
+\n\
+    VXC_DP4x8(dst, in0, in1, VXC_MODIFIER(0, 7,  0, VXC_RM_ToNearestEven, 1), uniBilinear_8x_l30_4x8);\n\
+    VXC_DP4x8(dst, in0, in1, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1), uniBilinear_8x_l31_4x8);\n\
+\n\
+    VXC_OP4_NoDest(img_store_3d, output, coord.xywz, dst,\n\
+        VXC_MODIFIER(0, 15, 0,VXC_RM_TowardZero, 0));\n\
+    coord.y ++;\n\
+\n\
+    VXC_DP4x8(dst, in0, in1, VXC_MODIFIER(0, 7,  0, VXC_RM_ToNearestEven, 1), uniBilinear_8x_l40_4x8);\n\
+    VXC_DP4x8(dst, in0, in1, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1), uniBilinear_8x_l41_4x8);\n\
+\n\
+    VXC_OP4_NoDest(img_store_3d, output, coord.xywz, dst,\n\
+        VXC_MODIFIER(0, 15, 0,VXC_RM_TowardZero, 0));\n\
+    coord.y ++;\n\
+\n\
+    VXC_DP4x8(dst, in1, in0, VXC_MODIFIER(0, 7,  0, VXC_RM_ToNearestEven, 1), uniBilinear_8x_l30_4x8);\n\
+    VXC_DP4x8(dst, in1, in0, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1), uniBilinear_8x_l31_4x8);\n\
+\n\
+    VXC_OP4_NoDest(img_store_3d, output, coord.xywz, dst,\n\
+        VXC_MODIFIER(0, 15, 0,VXC_RM_TowardZero, 0));\n\
+    coord.y ++;\n\
+\n\
+    VXC_DP4x8(dst, in1, in0, VXC_MODIFIER(0, 7,  0, VXC_RM_ToNearestEven, 1), uniBilinear_8x_l20_4x8);\n\
+    VXC_DP4x8(dst, in1, in0, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1), uniBilinear_8x_l21_4x8);\n\
+\n\
+    VXC_OP4_NoDest(img_store_3d, output, coord.xywz, dst,\n\
+        VXC_MODIFIER(0, 15, 0,VXC_RM_TowardZero, 0));\n\
+    coord.y ++;\n\
+\n\
+    VXC_DP4x8(dst, in1, in0, VXC_MODIFIER(0, 7,  0, VXC_RM_ToNearestEven, 1), uniBilinear_8x_l10_4x8);\n\
+    VXC_DP4x8(dst, in1, in0, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1), uniBilinear_8x_l11_4x8);\n\
+\n\
+    VXC_OP4_NoDest(img_store_3d, output, coord.xywz, dst,\n\
+        VXC_MODIFIER(0, 15, 0,VXC_RM_TowardZero, 0));\n\
+}\n\
+"; /* end of resize_bilinear_align_corners_vx*/
+
 static const char resize_bilinear_nhwc_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 _viv_uniform VXC_512Bits uniResize_x2_nhwc2_0_4x8;\n\
@@ -61893,6 +61989,7 @@ static const source_map_t evis_resource[] =
     {"resize_bilinear_U8_half_pixel_centers_1_vx", resize_bilinear_U8_half_pixel_centers_1_vx},
     {"resize_bilinear_U8_half_pixel_centers_2_vx", resize_bilinear_U8_half_pixel_centers_2_vx},
     {"resize_bilinear_U8_opt_vx", resize_bilinear_U8_opt_vx},
+    {"resize_bilinear_align_corners_vx", resize_bilinear_align_corners_vx},
     {"resize_bilinear_nhwc_vx", resize_bilinear_nhwc_vx},
     {"resize_nearest_vx", resize_nearest_vx},
     {"scatter_nd_vx", scatter_nd_vx},
