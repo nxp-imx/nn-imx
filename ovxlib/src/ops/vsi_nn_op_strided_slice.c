@@ -297,7 +297,7 @@ static vsi_status op_compute
             dst_tensor = p->dst_tensor ? p->dst_tensor : outputs[0]->t;
             p->cp_node = vxTensorCopyNode(self->graph->g,
                     p->src_tensor, dst_tensor );
-            if( NULL == p->cp_node )
+            if ( NULL == p->cp_node )
             {
                 VSILOGE( "Create vxTensorCopyNode fail." );
                 status = VSI_FAILURE;
@@ -322,7 +322,7 @@ static vsi_status op_compute
             self->graph,
             (uint8_t *)start_dims,
             &attr);
-        if( NULL == begin_dims_tensor )
+        if ( NULL == begin_dims_tensor )
         {
             VSILOGE("Create begin_dims_tensor fail.(strided_slice)");
             return VSI_FAILURE;
@@ -341,7 +341,7 @@ static vsi_status op_compute
             self->graph,
             (uint8_t *)stop_dims,
             &attr);
-        if( NULL == end_dims_tensor )
+        if ( NULL == end_dims_tensor )
         {
             VSILOGE("Create end_dims_tensor fail.(strided_slice)");
             return VSI_FAILURE;
@@ -360,7 +360,7 @@ static vsi_status op_compute
             self->graph,
             (uint8_t *)stride_dims,
             &attr);
-        if( NULL == stride_dims_tensor )
+        if ( NULL == stride_dims_tensor )
         {
             VSILOGE("Create stride_dims_tensor fail.(strided_slice)");
             return VSI_FAILURE;
@@ -396,7 +396,7 @@ static vsi_status op_compute
         }
 
         output_tensor = vsi_nn_reshape_tensor(self->graph, outputs[0], sizes, dims);
-        if( NULL == output_tensor )
+        if ( NULL == output_tensor )
         {
             VSILOGE("Create output_tensor fail.(strided_slice)");
             return VSI_FAILURE;
@@ -415,7 +415,7 @@ static vsi_status op_compute
             vsi_nn_ReleaseTensor(&output_tensor);
         }
 
-        if( NULL != self->n )
+        if ( NULL != self->n )
         {
             status = VSI_SUCCESS;
         }
@@ -438,6 +438,8 @@ static vsi_bool op_check
         IO_TYPE(D_I8|Q_DFP,     D_F16)
         IO_TYPE(D_I16|Q_DFP,    D_F16)
         IO_TYPE(D_U8|Q_ASYM,    D_F16)
+        IO_TYPE(D_I8|Q_DFP,     D_I8|Q_DFP)
+        IO_TYPE(D_I8|Q_ASYM,    D_I8|Q_ASYM)
         IO_TYPE(D_I8|Q_DFP,     D_I8|Q_DFP)
         IO_TYPE(D_I16|Q_DFP,    D_I16|Q_DFP)
         IO_TYPE(D_U8|Q_ASYM,    D_U8|Q_ASYM)
@@ -470,7 +472,7 @@ static vsi_bool op_check
         IO_TYPE(D_U8|Q_ASYM,    D_I32|Q_ASYM)
 
     END_IO_TYPE_DECL(STRIDED_SLICE)
-    if (!VALIDATE_OP_IO_TYPES(STRIDED_SLICE, self, inputs, self->input.num, outputs, self->output.num))
+    if (!VALIDATE_OP_IO_TYPES(STRIDED_SLICE, self, inputs, 1, outputs, self->output.num))
     {
         char* desc = generate_op_io_types_desc(inputs,
                 self->input.num, outputs, self->output.num);
@@ -745,7 +747,7 @@ static vsi_status op_optimize
 
     VSILOGD("Optimize %s, uid %u", vsi_nn_OpGetName(self->op), self->uid);
 
-    if( NULL == inputs[0]->t )
+    if ( NULL == inputs[0]->t )
     {
         vsi_nn_TensorReinit( self->graph, inputs[0] );
     }
@@ -754,7 +756,7 @@ static vsi_status op_optimize
     memcpy( start, (vsi_size_t*)start_dims, sizeof(vsi_size_t) * VSI_NN_MAX_DIM_NUM );
     memcpy( end, (vsi_size_t*)stop_dims, sizeof(vsi_size_t) * VSI_NN_MAX_DIM_NUM );
     in_view_tensor = vsi_nn_CreateViewTensor(self->graph, start, end, inputs[0]);
-    if( NULL == in_view_tensor )
+    if ( NULL == in_view_tensor )
     {
         VSILOGE( "Create tensor %d from view fail.", i );
         status = VSI_FAILURE;
@@ -764,12 +766,12 @@ static vsi_status op_optimize
     self->nn_param.strided_slice.lcl2_data->is_optimized = TRUE;
 
     is_same_quant_type = _is_same_quant(inputs, outputs);
-    if( NULL != outputs[0]->t || is_same_quant_type == FALSE)
+    if ( NULL != outputs[0]->t || is_same_quant_type == FALSE)
     {
         VSILOGI( "stride slice copy tensor.");
         // Copy old tensor values to the new address.
         status = copy_tensor_to_view( self, in_view_tensor, outputs[0]);
-        if( VSI_FAILURE == status )
+        if ( VSI_FAILURE == status )
         {
             goto OnError;
         }
