@@ -453,7 +453,7 @@ Return<ErrorStatus> VsiPreparedModel::initializeCacheInternel() {
 
 void VsiPreparedModel::update_operand_from_request(const std::vector<uint32_t>& indexes,
                                                    const hidl_vec<RequestArgument>& arguments) {
-    nnAssert(indexes.size() == arguments.size());
+    CHECK(indexes.size() == arguments.size());
     auto ovx_operands = native_model_->getOperands(indexes);
     for (size_t i = 0; i < indexes.size(); i++) {
         const RequestArgument& request_arg = arguments[i];
@@ -476,7 +476,7 @@ Return<ErrorStatus> VsiPreparedModel::update_pool_info_from_request(
     const hidl_vec<RequestArgument>& arguments,
     IO flag,
     std::vector<OutputShape>& outputShapes) {
-    nnAssert(indexes.size() == arguments.size());
+    CHECK(indexes.size() == arguments.size());
     auto ovx_operands = native_model_->getOperands(indexes);
     for (size_t i = 0; i < indexes.size(); i++) {
         const RequestArgument& request_arg = arguments[i];
@@ -489,7 +489,7 @@ Return<ErrorStatus> VsiPreparedModel::update_pool_info_from_request(
         } else {
             auto location = request_arg.location;
             auto poolIndex = location.poolIndex;
-            nnAssert(poolIndex < request.pools.size());
+            CHECK(poolIndex < request.pools.size());
 
             if (flag == IO::OUTPUT) {
                 outputShapes[i].dimensions = ovx_operand->dimensions;
