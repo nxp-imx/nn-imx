@@ -22546,6 +22546,7 @@ __kernel void gemm_BF16BF16toBF16(image2d_array_t inputA,\n\
         sum3 += (tempA3.x * tempB0 + tempA3.y * tempB1 + tempA3.z * tempB2 + tempA3.w * tempB3);\n\
     }\n\
     coord_b.y = gidy;\n\
+    coord_b.z = get_global_id(2);\n\
     _viv_asm(COPY, output_desc, output, sizeof(output_desc));\n\
     int baseAddr = (int)get_global_id(2) * output_desc.s4 + output_desc.s0;\n\
     _viv_asm(MOV, coord_b.w, baseAddr);\n\
@@ -22623,6 +22624,7 @@ __kernel void gemm_transa_BF16BF16toBF16(\n\
         sum3 = (sum3 + tempA0.w * tempB0);\n\
     }\n\
     coord_b.y = gidy;\n\
+    coord_b.z = get_global_id(2);\n\
     _viv_asm(COPY, output_desc, output, sizeof(output_desc));\n\
     int baseAddr = (int)get_global_id(2) * output_desc.s4 + output_desc.s0;\n\
     _viv_asm(MOV, coord_b.w, baseAddr);\n\
@@ -22657,7 +22659,7 @@ __kernel void gemm_transb_BF16BF16toBF16(image2d_array_t inputA,\n\
                                     int adjointB,\n\
                         uint M, uint K, uint N)\n\
 {\n\
-    int4 coord_out = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+    int4 coord_out = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), get_global_id(2));\n\
     int4 coord_a = (int4)(0, coord_out.y, (ac2zero ? 0 : get_global_id(2)), 0);\n\
     int4 coord_b = (int4)(0, coord_out.x, (bc2zero ? 0 : get_global_id(2)), 0);\n\
 \n\
@@ -22826,6 +22828,7 @@ __kernel void gemm_F16F16toF16(image2d_array_t inputA,\n\
         sum3 += (tempA3);\n\
     }\n\
     coord_b.y = gidy;\n\
+    coord_b.z = get_global_id(2);\n\
     _viv_asm(COPY, output_desc, output, sizeof(output_desc));\n\
     int baseAddr = (int)get_global_id(2) * output_desc.s4 + output_desc.s0;\n\
     _viv_asm(MOV, coord_b.w, baseAddr);\n\
@@ -22914,6 +22917,7 @@ __kernel void gemm_F16F16toF16(image2d_array_t inputA,\n\
         sum3 += (tempA3 + tempB3);\n\
     }\n\
     coord_b.y = gidy;\n\
+    coord_b.z = get_global_id(2);\n\
     _viv_asm(COPY, output_desc, output, sizeof(output_desc));\n\
     int baseAddr = (int)get_global_id(2) * output_desc.s4 + output_desc.s0;\n\
     _viv_asm(MOV, coord_b.w, baseAddr);\n\
@@ -22988,7 +22992,7 @@ __kernel void gemm_F32F32toF32(\n\
         sum2 += (tempA2.x * tempB0 + tempA2.y * tempB1 + tempA2.z * tempB2 + tempA2.w * tempB3);\n\
         sum3 += (tempA3.x * tempB0 + tempA3.y * tempB1 + tempA3.z * tempB2 + tempA3.w * tempB3);\n\
     }\n\
-    coord_b = (int4)(gidx, gidy, get_global_id(2), 0);\n\
+    coord_b = (int4)(gidx, gidy, get_global_id(2), get_global_id(2));\n\
     write_imagef(output, coord_b, sum0);\n\
     coord_b.y++;\n\
     write_imagef(output, coord_b, sum1);\n\
@@ -23083,6 +23087,7 @@ __kernel void gemm_F16F16to##dst_type_name( \\\n\
     vxc_int4 tmpOut0, tmpOut1; \\\n\
     write_type outC; \\\n\
     coord_b.y = gidy; \\\n\
+    coord_b.z = get_global_id(2); \\\n\
     _viv_asm(COPY, output_desc, output, sizeof(output_desc)); \\\n\
     int baseAddr = (int)get_global_id(2) * output_desc.s4 + output_desc.s0; \\\n\
     _viv_asm(MOV, coord_b.w, baseAddr); \\\n\
@@ -23172,6 +23177,7 @@ __kernel void gemm_F16F16to##dst_type_name( \\\n\
     vxc_int4 tmpOut0, tmpOut1; \\\n\
     write_type outC; \\\n\
     coord_b.y = gidy; \\\n\
+    coord_b.z = get_global_id(2); \\\n\
     _viv_asm(COPY, output_desc, output, sizeof(output_desc)); \\\n\
     int baseAddr = (int)get_global_id(2) * output_desc.s4 + output_desc.s0; \\\n\
     _viv_asm(MOV, coord_b.w, baseAddr); \\\n\
@@ -23282,6 +23288,7 @@ __kernel void gemm_F16##src1_type_name##toI16(image2d_array_t inputA, \\\n\
     } \\\n\
     vxc_int4 tmpOut0, tmpOut1; \\\n\
     coord_b.y = gidy; \\\n\
+    coord_b.z = get_global_id(2); \\\n\
     _viv_asm(COPY, output_desc, output, sizeof(output_desc)); \\\n\
     int baseAddr = (int)get_global_id(2) * output_desc.s4 + output_desc.s0; \\\n\
     _viv_asm(MOV, coord_b.w, baseAddr); \\\n\
@@ -23370,6 +23377,7 @@ __kernel void gemm_F16##src1_type_name##toI16(image2d_array_t inputA, \\\n\
     } \\\n\
     vxc_int4 tmpOut0, tmpOut1; \\\n\
     coord_b.y = gidy; \\\n\
+    coord_b.z = get_global_id(2); \\\n\
     _viv_asm(COPY, output_desc, output, sizeof(output_desc)); \\\n\
     int baseAddr = (int)get_global_id(2) * output_desc.s4 + output_desc.s0; \\\n\
     _viv_asm(MOV, coord_b.w, baseAddr); \\\n\
@@ -23475,6 +23483,7 @@ __kernel void gemm_F16##src1_type_name##toF16(image2d_array_t inputA, \\\n\
     sum2 *= input1Scale; \\\n\
     sum3 *= input1Scale; \\\n\
     coord_b.y = gidy; \\\n\
+    coord_b.z = get_global_id(2); \\\n\
     _viv_asm(COPY, output_desc, output, sizeof(output_desc)); \\\n\
     int baseAddr = (int)get_global_id(2) * output_desc.s4 + output_desc.s0; \\\n\
     _viv_asm(MOV, coord_b.w, baseAddr); \\\n\
@@ -23571,6 +23580,7 @@ __kernel void gemm_F16##src1_type_name##toF16(image2d_array_t inputA, \\\n\
         sum3 = (sum3 + tempA3.x * tempB0 + tempA3.y * tempB1 + tempA3.z * tempB2 + tempA3.w * tempB3); \\\n\
     } \\\n\
     coord_b.y = gidy; \\\n\
+    coord_b.z = get_global_id(2); \\\n\
     _viv_asm(COPY, output_desc, output, sizeof(output_desc)); \\\n\
     int baseAddr = (int)get_global_id(2) * output_desc.s4 + output_desc.s0; \\\n\
     _viv_asm(MOV, coord_b.w, baseAddr); \\\n\
@@ -23669,6 +23679,7 @@ __kernel void gemm_F16##src1_type_name##to##src1_type_name(image2d_array_t input
     } \\\n\
     vxc_int4 tmpOut0, tmpOut1; \\\n\
     coord_b.y = gidy; \\\n\
+    coord_b.z = get_global_id(2); \\\n\
     _viv_asm(COPY, output_desc, output, sizeof(output_desc)); \\\n\
     int baseAddr = (int)get_global_id(2) * output_desc.s4 + output_desc.s0; \\\n\
     _viv_asm(MOV, coord_b.w, baseAddr); \\\n\
@@ -23777,6 +23788,7 @@ __kernel void gemm_##src0_type_name##src0_type_name##to##src0_type_name( \\\n\
     } \\\n\
     vxc_int4 tmpOut0, tmpOut1; \\\n\
     coord_b.y = gidy; \\\n\
+    coord_b.z = get_global_id(2); \\\n\
     _viv_asm(COPY, output_desc, output, sizeof(output_desc)); \\\n\
     int baseAddr = (int)get_global_id(2) * output_desc.s4 + output_desc.s0; \\\n\
     _viv_asm(MOV, coord_b.w, baseAddr); \\\n\
@@ -23868,6 +23880,7 @@ __kernel void gemm_transa_##src0_type_name##src1_type_name##to##dst_type_name( \
     } \\\n\
     vxc_int4 tmpOut0, tmpOut1; \\\n\
     coord_b.y = gidy; \\\n\
+    coord_b.z = get_global_id(2); \\\n\
     _viv_asm(COPY, output_desc, output, sizeof(output_desc)); \\\n\
     int baseAddr = (int)get_global_id(2) * output_desc.s4 + output_desc.s0; \\\n\
     _viv_asm(MOV, coord_b.w, baseAddr); \\\n\
@@ -23953,6 +23966,7 @@ __kernel void gemm_transa_##src0_type_name##F16to##src0_type_name( \\\n\
     } \\\n\
     vxc_int4 tmpOut0, tmpOut1; \\\n\
     coord_b.y = gidy; \\\n\
+    coord_b.z = get_global_id(2); \\\n\
     _viv_asm(COPY, output_desc, output, sizeof(output_desc)); \\\n\
     int baseAddr = (int)get_global_id(2) * output_desc.s4 + output_desc.s0; \\\n\
     _viv_asm(MOV, coord_b.w, baseAddr); \\\n\
@@ -24035,6 +24049,7 @@ __kernel void gemm_transa_F16F16toF16(\n\
         sum3 = (sum3 + tempA0.w * tempB0);\n\
     }\n\
     coord_b.y = gidy;\n\
+    coord_b.z = get_global_id(2);\n\
     _viv_asm(COPY, output_desc, output, sizeof(output_desc));\n\
     int baseAddr = (int)get_global_id(2) * output_desc.s4 + output_desc.s0;\n\
     _viv_asm(MOV, coord_b.w, baseAddr);\n\
@@ -24060,7 +24075,8 @@ __kernel void gemm_transa_F16F16toF16(\n\
     _viv_asm(COPY, outC, valC, 16);\n\
     VXC_OP4_NoDest(img_store_3d, output, coord_b.xywz, outC.s0246, \\\n\
                 VXC_MODIFIER(0, 3, 0,VXC_RM_TowardZero, 0));\n\
-}"; /* end of matrixmul_transA_vx*/
+}\n\
+"; /* end of matrixmul_transA_vx*/
 
 static const char matrixmul_transB_f16_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
@@ -24079,7 +24095,7 @@ __kernel void gemm_transb_F16F16toF16(image2d_array_t inputA,\n\
                                     int adjointB,\n\
                         uint M, uint K, uint N)\n\
 {\n\
-    int4 coord_out = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+    int4 coord_out = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), get_global_id(2));\n\
     int4 coord_a = (int4)(0, coord_out.y, (ac2zero ? 0 : get_global_id(2)), 0);\n\
     int4 coord_b = (int4)(0, coord_out.x, (bc2zero ? 0 : get_global_id(2)), 0);\n\
 \n\
@@ -24336,7 +24352,7 @@ __kernel void gemm_transb_F16U8toU8(image2d_array_t inputA,\n\
                                     int adjointB,\n\
                         uint M, uint K, uint N)\n\
 {\n\
-    int4 coord_out = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+    int4 coord_out = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), get_global_id(2));\n\
     int4 coord_a = (int4)(0, coord_out.y, (ac2zero ? 0 : get_global_id(2)), 0);\n\
     int4 coord_b = (int4)(0, coord_out.x, (bc2zero ? 0 : get_global_id(2)), 0);\n\
 \n\
@@ -24470,7 +24486,7 @@ __kernel void gemm_transb_U8U8toF16(image2d_array_t inputA,\n\
                                     int adjointB,\n\
                         uint M, uint K, uint N)\n\
 {\n\
-    int4 coord_out = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+    int4 coord_out = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), get_global_id(2));\n\
     int4 coord_a = (int4)(0, coord_out.y, (ac2zero ? 0 : get_global_id(2)), 0);\n\
     int4 coord_b = (int4)(0, coord_out.x, (bc2zero ? 0 : get_global_id(2)), 0);\n\
 \n\
@@ -24605,7 +24621,7 @@ __kernel void gemm_transb_U8U8toU8(image2d_array_t inputA,\n\
                                     int adjointB,\n\
                         uint M, uint K, uint N)\n\
 {\n\
-    int4 coord_out = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+    int4 coord_out = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), get_global_id(2));\n\
     int4 coord_a = (int4)(0, coord_out.y, (ac2zero ? 0 : get_global_id(2)), 0);\n\
     int4 coord_b = (int4)(0, coord_out.x, (bc2zero ? 0 : get_global_id(2)), 0);\n\
 \n\
@@ -24799,6 +24815,7 @@ __kernel void gemm_##src0_type_name##src0_type_name##to##src0_type_name( \\\n\
     } \\\n\
     vxc_int4 tmpOut0, tmpOut1; \\\n\
     coord_b.y = get_global_id(1); \\\n\
+    coord_b.z = get_global_id(2); \\\n\
     _viv_asm(COPY, output_desc, output, sizeof(output_desc)); \\\n\
     int baseAddr = (int)get_global_id(2) * output_desc.s4 + output_desc.s0; \\\n\
     _viv_asm(MOV, coord_b.w, baseAddr); \\\n\
@@ -24911,6 +24928,7 @@ __kernel void gemm_##src0_type_name##F16toF16( \\\n\
     sum2 *= input0Scale; \\\n\
     sum3 *= input0Scale; \\\n\
     coord_b.y = gidy; \\\n\
+    coord_b.z = get_global_id(2); \\\n\
     _viv_asm(COPY, output_desc, output, sizeof(output_desc)); \\\n\
     int baseAddr = (int)gidz * output_desc.s4 + output_desc.s0; \\\n\
     _viv_asm(MOV, coord_b.w, baseAddr);  \\\n\
@@ -25016,6 +25034,7 @@ __kernel void gemm_##src0_type_name##F16toF16( \\\n\
     sum2 *= input0Scale; \\\n\
     sum3 *= input0Scale; \\\n\
     coord_b.y = gidy; \\\n\
+    coord_b.z = get_global_id(2); \\\n\
     _viv_asm(COPY, output_desc, output, sizeof(output_desc)); \\\n\
     int baseAddr = (int)gidz * output_desc.s4 + output_desc.s0; \\\n\
     _viv_asm(MOV, coord_b.w, baseAddr);  \\\n\
@@ -25127,6 +25146,7 @@ __kernel void gemm_##src0_type_name##F16to##src0_type_name( \\\n\
     } \\\n\
     vxc_int4 tmpOut0, tmpOut1; \\\n\
     coord_b.y = gidy; \\\n\
+    coord_b.z = get_global_id(2); \\\n\
     _viv_asm(COPY, output_desc, output, sizeof(output_desc)); \\\n\
     int baseAddr = (int)get_global_id(2) * output_desc.s4 + output_desc.s0; \\\n\
     _viv_asm(MOV, coord_b.w, baseAddr); \\\n\
@@ -25225,6 +25245,7 @@ __kernel void gemm_##src0_type_name##F16to##src0_type_name( \\\n\
     } \\\n\
     vxc_int4 tmpOut0, tmpOut1; \\\n\
     coord_b.y = gidy; \\\n\
+    coord_b.z = get_global_id(2); \\\n\
     _viv_asm(COPY, output_desc, output, sizeof(output_desc)); \\\n\
     int baseAddr = (int)get_global_id(2) * output_desc.s4 + output_desc.s0; \\\n\
     _viv_asm(MOV, coord_b.w, baseAddr); \\\n\
@@ -25341,6 +25362,7 @@ __kernel void gemm_##src0_type_name##src0_type_name##toF16( \\\n\
     sum2 *= input01Scale; \\\n\
     sum3 *= input01Scale; \\\n\
     coord_b.y = gidy; \\\n\
+    coord_b.z = get_global_id(2); \\\n\
     _viv_asm(COPY, output_desc, output, sizeof(output_desc)); \\\n\
     int baseAddr = (int)get_global_id(2) * output_desc.s4 + output_desc.s0; \\\n\
     _viv_asm(MOV, coord_b.w, baseAddr); \\\n\
@@ -25442,6 +25464,7 @@ __kernel void gemm_##src0_type_name##src0_type_name##toF16( \\\n\
         sum3 = (sum3 + tempA3.x * tempB0 + tempA3.y * tempB1 + tempA3.z * tempB2 + tempA3.w * tempB3); \\\n\
     } \\\n\
     coord_b.y = gidy; \\\n\
+    coord_b.z = get_global_id(2); \\\n\
     _viv_asm(COPY, output_desc, output, sizeof(output_desc)); \\\n\
     int baseAddr = (int)get_global_id(2) * output_desc.s4 + output_desc.s0; \\\n\
     _viv_asm(MOV, coord_b.w, baseAddr); \\\n\
