@@ -80,7 +80,7 @@ static vsi_bool caculate_reshape_size(uint32_t* dim_value,
                                       vsi_size_t* re_sizes, vsi_size_t* re_sizes2,
                                       vx_int32 *resolved_dim, vx_int32 resolved_dim_count)
 {
-#define VSI_NN_MAX_IMAGE_WIDTH  (65536)
+#define VSI_NN_MAX_IMAGE_WIDTH  GPU_TENSOR_MAX_WIDTH
     vsi_bool enable_reshape = TRUE;
     vsi_size_t size_count = 1;
     uint32_t i = 0;
