@@ -222,7 +222,7 @@ static vsi_status get_gather_tensor_reshape_size
     uint32_t i = 0;
     vsi_size_t elementCnt = 1;
     vsi_size_t outerCnt = 1;
-#define VSI_NN_MAX_IMAGE_WIDTH  (65536)
+#define VSI_NN_MAX_IMAGE_WIDTH  GPU_TENSOR_MAX_WIDTH
 
     for(i = 0; i < dims_num - batch_dims; ++i)
     {
@@ -751,7 +751,7 @@ static vsi_nn_kernel_node_t _setup
     vsi_nn_kernel_t             * kernel
     )
 {
-#define VSI_NN_MAX_BLOCK_SIZE  (65536)
+#define VSI_NN_MAX_BLOCK_SIZE  GPU_TENSOR_MAX_WIDTH
     vsi_status status = VSI_FAILURE;
     vsi_nn_kernel_node_param_t tmp_params[_GATHER_PARAM_NUM] = { NULL };
     vsi_nn_kernel_node_t node = NULL;
