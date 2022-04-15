@@ -795,12 +795,6 @@ static vsi_nn_kernel_node_t _setup
     reshape_tensors[2] = vsi_nn_reshape_tensor( graph,
         outputs[0], shapes[2], rs_dim );
 
-    if ( !vsi_nn_kernel_gpu_check_shape( outputs[0]->attr.size,
-                outputs[0]->attr.dim_num ) )
-    {
-        return NULL;
-    }
-
     status = _query_kernel( inputs, outputs, kernel, params, axis0_flg, is_array, is_batch);
     if ( VSI_SUCCESS == status)
     {
