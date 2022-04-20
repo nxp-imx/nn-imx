@@ -60,7 +60,7 @@ vsi_bool vsi_nn_rnn_find_best_kernel_size
         /* try NxN */
         if( !multi_batch )
         {
-            #if( !defined( _WIN32 ) )
+            #if( !(defined(_MSC_VER) || defined(_WIN32) || defined(__MINGW32)) )
             /* try NxN conv */
             kernel_h = 8;
             while( input_size % (kernel_h * kernel_h) != 0 )
