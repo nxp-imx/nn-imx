@@ -31,7 +31,7 @@
 #include "kernel/vsi_nn_kernel.h"
 
 #define DEF_DTYPE_CONVERT_NORMAL(SRC_NAME, SRC_DTYPE, DST_NAME, DST_DTYPE) \
-static inline void _convert_##SRC_NAME##_to_##DST_NAME \
+static VSI_INLINE_API void _convert_##SRC_NAME##_to_##DST_NAME \
         ( \
         const SRC_DTYPE * buffer, \
         size_t size, \
@@ -60,7 +60,7 @@ DEF_DTYPE_CONVERT_NORMAL( float, float, uint32, uint32_t )
 DEF_DTYPE_CONVERT_NORMAL( float, float, uint16, uint16_t )
 #undef DEF_DTYPE_CONVERT_NORMAL
 
-static inline void _convert_float16_to_float
+static VSI_INLINE_API void _convert_float16_to_float
     (
     const vsi_float16 * buffer,
     size_t size,
@@ -74,7 +74,7 @@ static inline void _convert_float16_to_float
     }
 } /* _convert_float16_to_float */
 
-static inline void _convert_float_to_float16
+static VSI_INLINE_API void _convert_float_to_float16
     (
     const float * buffer,
     size_t size,
@@ -88,7 +88,7 @@ static inline void _convert_float_to_float16
     }
 } /* _convert_float_to_float16 */
 
-static inline void _convert_bfloat16_to_float
+static VSI_INLINE_API void _convert_bfloat16_to_float
     (
     const vsi_bfloat16 * buffer,
     size_t size,
@@ -102,7 +102,7 @@ static inline void _convert_bfloat16_to_float
     }
 } /* _convert_bfloat16_to_float */
 
-static inline void _convert_float_to_bfloat16
+static VSI_INLINE_API void _convert_float_to_bfloat16
     (
     const float * buffer,
     size_t size,

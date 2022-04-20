@@ -381,7 +381,7 @@ int32_t vsi_nn_partition
  * @param[in]  num Number of tensors.
  * @param[out] out_tensors Ordered tensors
  * */
-static inline void vsi_nn_reorder_tensor
+static VSI_INLINE_API void vsi_nn_reorder_tensor
     (
     vsi_nn_tensor_t** tensors,
     const int32_t* order,
