@@ -92,7 +92,7 @@ static npuref_impl_t* npuref_load()
 {
     void* libnpuref = NULL;
     char* dl_error;
-#if defined(_WIN32)
+#if (defined(_MSC_VER) || defined(_WIN32) || defined(__MINGW32))
     const char* libname = "libnpureference.dll";
 #else
     const char* libname = "libnpureference.so";

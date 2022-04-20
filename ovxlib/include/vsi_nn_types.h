@@ -33,11 +33,11 @@
 extern "C"{
 #endif
 
-#ifdef _WIN32
+#if (defined(_MSC_VER) || defined(_WIN32) || defined(__MINGW32))
 #define inline __inline
 #endif
 
-#if (defined(_MSC_VER) || defined(__MINGW32))
+#if (defined(_MSC_VER) || defined(_WIN32) || defined(__MINGW32))
     #define SIZE_T_SPECIFIER "Iu"
     #define SSIZE_T_SPECIFIER "Id"
     #ifdef VSI_40BIT_VA_SUPPORT
@@ -59,7 +59,7 @@ extern "C"{
     #endif
 #endif
 
-#if defined(_MSC_VER)
+#if (defined(_MSC_VER) || defined(_WIN32) || defined(__MINGW32))
 #include <BaseTsd.h>
 typedef SSIZE_T ssize_t;
 #else

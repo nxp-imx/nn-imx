@@ -1,7 +1,7 @@
 #include "vsi_nn_log.h"
 #include "utils/vsi_nn_dlfcn.h"
 
-#if defined(_WIN32)
+#if (defined(_MSC_VER) || defined(_WIN32) || defined(__MINGW32))
 void * vsi_nn_dlopen( const char *file, int mode )
 {
     return NULL;

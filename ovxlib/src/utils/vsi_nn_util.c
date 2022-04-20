@@ -28,7 +28,7 @@
 #include <math.h>
 #include <fcntl.h>
 
-#ifdef _WIN32
+#if (defined(_MSC_VER) || defined(_WIN32) || defined(__MINGW32))
 #include <io.h>
 #include <direct.h>
 #else
@@ -112,7 +112,7 @@ char* vsi_nn_strncpy
     )
 {
     char* ret = NULL;
-    #ifdef _MSC_VER
+    #if (defined(_MSC_VER) || defined(_WIN32) || defined(__MINGW32))
         strncpy_s(dest, count, source, _TRUNCATE);
     #else
         strncpy(dest, source, count);
@@ -128,7 +128,7 @@ char* vsi_nn_strncat
     )
 {
     char* ret = NULL;
-    #ifdef _MSC_VER
+    #if (defined(_MSC_VER) || defined(_WIN32) || defined(__MINGW32))
         strncat_s(dest, count, source, _TRUNCATE);
         ret = dest;
     #else
@@ -143,7 +143,7 @@ char* vsi_nn_getenv
     )
 {
     char* var = NULL;
-    #ifdef _MSC_VER
+    #if (defined(_MSC_VER) || defined(_WIN32) || defined(__MINGW32))
         size_t var_size = 0;
         _dupenv_s(&var, &var_size, var_name);
     #else
@@ -159,7 +159,7 @@ FILE* vsi_nn_fopen
     )
 {
     FILE * file = NULL;
-    #ifdef _MSC_VER
+    #if (defined(_MSC_VER) || defined(_WIN32) || defined(__MINGW32))
         fopen_s(&file, file_name, mode);
     #else
         file = fopen(file_name, mode);
@@ -795,7 +795,7 @@ int32_t vsi_nn_Access
         return -1;
     }
 
-#ifdef _WIN32
+#if (defined(_MSC_VER) || defined(_WIN32) || defined(__MINGW32))
     return _access(path, mode);
 #else
     return access(path, mode);
@@ -813,7 +813,7 @@ int32_t vsi_nn_Mkdir
         return -1;
     }
 
-#ifdef _WIN32
+#if (defined(_MSC_VER) || defined(_WIN32) || defined(__MINGW32))
     return _mkdir(path);
 #else
     return mkdir(path, mode);
