@@ -34,7 +34,9 @@ extern "C"{
 #endif
 
 #if (defined(_MSC_VER) || defined(_WIN32) || defined(__MINGW32))
-#define inline __inline
+#define VSI_INLINE_API __inline
+#else
+#define VSI_INLINE_API inline
 #endif
 
 #if (defined(_MSC_VER) || defined(_WIN32) || defined(__MINGW32))
