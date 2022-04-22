@@ -517,6 +517,12 @@ static vsi_bool op_check_add
         IO_TYPE(D_F32,          D_BF16,         D_BF16)
         IO_TYPE(D_F32,          D_BF16,         F32)
 
+        /* HW 9.1.1 */
+        IO_TYPE(D_U4|Q_ASYM,    D_U4|Q_ASYM,    D_U4|Q_ASYM)
+        IO_TYPE(D_U4|Q_SYM,     D_U4|Q_SYM,     D_U4|Q_SYM)
+        IO_TYPE(D_I4|Q_ASYM,    D_I4|Q_ASYM,    D_I4|Q_ASYM)
+        IO_TYPE(D_I4|Q_SYM,     D_I4|Q_SYM,     D_I4|Q_SYM)
+
     END_IO_TYPE_DECL(ADD)
     if (!VALIDATE_OP_IO_TYPES(ADD, self, inputs, self->input.num, outputs, self->output.num)) {
         char* desc = generate_op_io_types_desc(inputs,
@@ -740,6 +746,12 @@ static vsi_bool op_check_mul
         IO_TYPE(D_F32,          D_BF16,         D_F16)
         IO_TYPE(D_F32,          D_BF16,         D_BF16)
         IO_TYPE(D_F32,          D_BF16,         F32)
+
+        /* HW 9.1.1 */
+        IO_TYPE(D_U4|Q_ASYM,    D_U4|Q_ASYM,    D_U4|Q_ASYM)
+        IO_TYPE(D_U4|Q_SYM,     D_U4|Q_SYM,     D_U4|Q_SYM)
+        IO_TYPE(D_I4|Q_ASYM,    D_I4|Q_ASYM,    D_I4|Q_ASYM)
+        IO_TYPE(D_I4|Q_SYM,     D_I4|Q_SYM,     D_I4|Q_SYM)
 
     END_IO_TYPE_DECL(MULTIPLY)
     if (!VALIDATE_OP_IO_TYPES(MULTIPLY, self, inputs, self->input.num, outputs, self->output.num)) {

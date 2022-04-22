@@ -95,7 +95,6 @@ static vsi_status op_compute
     }
 } /* op_compute() */
 
-
 static vsi_bool op_check
     (
     vsi_nn_node_t * self,
@@ -131,6 +130,13 @@ static vsi_bool op_check
 
         /* HW 9.0 */
         IO_TYPE(D_BF16, D_BF16)
+
+        /* HW 9.1.1 */
+        IO_TYPE(D_U4|Q_ASYM,    D_U4|Q_ASYM)
+        IO_TYPE(D_U4|Q_SYM,     D_U4|Q_SYM)
+        IO_TYPE(D_I4|Q_ASYM,    D_I4|Q_ASYM)
+        IO_TYPE(D_I4|Q_SYM,     D_I4|Q_SYM)
+
     END_IO_TYPE_DECL(REVERSE)
     if(!VALIDATE_OP_IO_TYPES(REVERSE, self, inputs, self->input.num, outputs, self->output.num)) {
         char* desc = generate_op_io_types_desc(inputs,

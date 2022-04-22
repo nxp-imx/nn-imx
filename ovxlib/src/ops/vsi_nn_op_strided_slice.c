@@ -471,6 +471,12 @@ static vsi_bool op_check
         IO_TYPE(D_F16,          D_F32)
         IO_TYPE(D_U8|Q_ASYM,    D_I32|Q_ASYM)
 
+        /* HW 9.1.1 */
+        IO_TYPE(D_U4|Q_ASYM,    D_U4|Q_ASYM)
+        IO_TYPE(D_U4|Q_SYM,     D_U4|Q_SYM)
+        IO_TYPE(D_I4|Q_ASYM,    D_I4|Q_ASYM)
+        IO_TYPE(D_I4|Q_SYM,     D_I4|Q_SYM)
+
     END_IO_TYPE_DECL(STRIDED_SLICE)
     if (!VALIDATE_OP_IO_TYPES(STRIDED_SLICE, self, inputs, 1, outputs, self->output.num))
     {
