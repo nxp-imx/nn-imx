@@ -22,7 +22,6 @@
 *
 *****************************************************************************/
 
-
 #include <string.h>
 #include <stdlib.h>
 
@@ -169,6 +168,13 @@ static vsi_bool op_check
         IO_TYPE(D_I8|Q_ASYM,    D_I8|Q_ASYM)
         IO_TYPE(D_I8|Q_SYM,     D_I8|Q_SYM)
         IO_TYPE(D_I32,          D_I32)
+
+        /* HW 9.1.1 */
+        IO_TYPE(D_U4|Q_ASYM,    D_U4|Q_ASYM)
+        IO_TYPE(D_U4|Q_SYM,     D_U4|Q_SYM)
+        IO_TYPE(D_I4|Q_ASYM,    D_I4|Q_ASYM)
+        IO_TYPE(D_I4|Q_SYM,     D_I4|Q_SYM)
+
     END_IO_TYPE_DECL(PAD2)
     if (!VALIDATE_OP_IO_TYPES(PAD2, self, inputs, self->input.num, outputs, self->output.num))
     {

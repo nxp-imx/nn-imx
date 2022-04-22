@@ -106,6 +106,12 @@ static vsi_bool op_check
         IO_TYPE(D_F16,          D_BF16)
         IO_TYPE(D_F16,          D_F32)
 
+        /* HW 9.1.1 */
+        IO_TYPE(D_U4|Q_ASYM,    D_U4|Q_ASYM)
+        IO_TYPE(D_U4|Q_SYM,     D_U4|Q_SYM)
+        IO_TYPE(D_I4|Q_ASYM,    D_I4|Q_ASYM)
+        IO_TYPE(D_I4|Q_SYM,     D_I4|Q_SYM)
+
     END_IO_TYPE_DECL(RSQRT)
     if(!VALIDATE_OP_IO_TYPES(RSQRT, self, inputs, self->input.num, outputs, self->output.num)) {
         char* desc = generate_op_io_types_desc(inputs,
