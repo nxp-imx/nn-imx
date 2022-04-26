@@ -190,6 +190,7 @@
 #include "ops/vsi_nn_op_gather_elements.h"
 #include "ops/vsi_nn_op_selu.h"
 #include "ops/vsi_nn_op_celu.h"
+#include "ops/vsi_nn_op_max_pool3d.h"
 /* custom node head define define */
 #include "custom/vsi_nn_custom_node_type.h"
 
@@ -365,6 +366,7 @@ typedef union _vsi_nn_nn_param
     vsi_nn_gather_elements_param    gather_elements;
     vsi_nn_selu_param               selu;
     vsi_nn_celu_param               celu;
+    vsi_nn_max_pool3d_param         max_pool3d;
     void*                         client_param;
 
     /* custom node data struct define */
