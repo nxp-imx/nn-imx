@@ -185,7 +185,6 @@ static vsi_status op_optimize
     return VSI_SUCCESS;
 } /* op_optimize() */
 
-
 static vsi_bool op_check
     (
     vsi_nn_node_t * self,
@@ -220,6 +219,9 @@ static vsi_bool op_check
 
         IO_TYPE(D_I16|Q_DFP, D_I16|Q_DFP)
         IO_TYPE(D_I16|Q_DFP, D_F16)
+
+        /* HW 9.1.1 */
+        IO_TYPE(D_I8|Q_SYM, D_I8|Q_SYM)
     END_IO_TYPE_DECL(POOL)
     if(!VALIDATE_OP_IO_TYPES(POOL, self, inputs, self->input.num, outputs, self->output.num)) {
         char* desc = generate_op_io_types_desc(inputs,
@@ -408,4 +410,3 @@ DEF_OP_REG
 #ifdef __cplusplus
 }
 #endif
-
