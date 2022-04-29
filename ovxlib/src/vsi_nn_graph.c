@@ -1875,7 +1875,6 @@ final:
     return status;
 } /* vsi_nn_TrySetupCompleteSignalNode() */
 
-
 /*
  * Documented in vsi_nn_graph.h
  */
@@ -1884,7 +1883,7 @@ vsi_status vsi_nn_setup_binary_graph_inputs_outputs
     vsi_nn_graph_t* graph
     )
 {
-    uint32_t i,j;
+    uint32_t i,j,k,idx, p;
     vsi_status status = VSI_FAILURE;
     uint32_t num_of_graph_inputs;
     uint32_t num_of_graph_real_inputs;
@@ -1911,6 +1910,36 @@ vsi_status vsi_nn_setup_binary_graph_inputs_outputs
             ;//do nothing
         }
     }
+    /*update inputs for nbg node  who has crop scalar parameter as inputs*/
+    /*update inputs for rgb888planar preproc node*/
+    for (i = 0; i < graph->node_num; i++)
+    {
+        vsi_nn_node_t* node = vsi_nn_GetNode(graph, i);
+        uint32_t numParams = 0;
+        if (node->op == VSI_NN_OP_NBG)
+        {
+            status = vxQueryNode(
+                node->n, VX_NODE_PARAMETERS, &numParams, sizeof(numParams));
+            for (j = 0; j < numParams; j++)
+            {
+                vx_parameter param = 0;
+                vx_enum type = 0;
+                param = vxGetParameterByIndex(node->n, j);
+                status = vxQueryParameter(param, VX_PARAMETER_TYPE, &type, sizeof(vx_enum));
+                if (type == VX_TYPE_SCALAR)
+                {
+                    num_of_graph_real_inputs++;
+                }
+            }
+        }
+        if (node->op == VSI_NN_OP_PRE_PROCESS &&
+            node->nn_param.pre_process.type ==
+                VSI_NN_SOURCE_FORMAT_IMAGE_RGB888_PLANAR)
+        {
+            /*two addtional inputs*/
+            num_of_graph_real_inputs += 2;
+        }
+    }
     graph_inputs = (vx_reference *)malloc( num_of_graph_real_inputs * sizeof( vx_reference ) );
     CHECK_PTR_FAIL_GOTO( graph_inputs, "Create buffer fail.", final );
     for( i = 0, j = 0; i < num_of_graph_inputs; i++ )
@@ -1924,6 +1953,77 @@ vsi_status vsi_nn_setup_binary_graph_inputs_outputs
                 goto final;
             }
             graph_inputs[j++] = (vx_reference)( tensor->t );
+            for (k = 0; k < graph->node_num; k++)
+            {
+                vsi_nn_node_t* node = vsi_nn_GetNode(graph, k);
+                uint32_t numParams = 0;
+                status = vxQueryNode(node->n, VX_NODE_PARAMETERS, &numParams, sizeof(numParams));
+                if (node->op == VSI_NN_OP_NBG)
+                {
+                    vx_parameter param = 0;
+                    vx_reference ref = 0;
+                    vx_enum type = 0;
+                    uint32_t scalar_index = 0;
+                    for (idx = 0; idx < numParams; idx++)
+                    {
+                        param = vxGetParameterByIndex(node->n, idx);
+                        vxQueryParameter(param, VX_PARAMETER_TYPE, &type, sizeof(vx_enum));
+                        if (type == VX_TYPE_TENSOR)
+                        {
+                            vxQueryParameter(param,
+                                             VX_PARAMETER_REF,
+                                             &ref,
+                                             sizeof(vx_reference));
+
+                            if (ref == (vx_reference)tensor->t)
+                            {
+                                scalar_index = idx + 1;
+                                break;
+                            }
+                        }
+                    }
+                    param = vxGetParameterByIndex(node->n, scalar_index);
+                    status = vxQueryParameter(param,
+                                                VX_PARAMETER_TYPE,
+                                                &type,
+                                                sizeof(vx_enum));
+                    if (type != VX_TYPE_SCALAR)
+                    {
+                        break;
+                    }
+                    for (p = scalar_index; p < scalar_index+4; p++)
+                    {
+                        param = vxGetParameterByIndex(node->n, p);
+                        status = vxQueryParameter(param,
+                                                    VX_PARAMETER_TYPE,
+                                                    &type,
+                                                    sizeof(vx_enum));
+                        if (type == VX_TYPE_SCALAR)
+                        {
+                            vxQueryParameter(param,
+                                                VX_PARAMETER_REF,
+                                                &ref,
+                                                sizeof(vx_reference));
+                            graph_inputs[j++] = ref;
+                        }
+                    }
+
+                }
+                else if (node->op == VSI_NN_OP_PRE_PROCESS &&
+                    node->nn_param.pre_process.type ==
+                        VSI_NN_SOURCE_FORMAT_IMAGE_RGB888_PLANAR &&
+                           node->input.tensors[0] == graph->input.tensors[i])
+                {
+                    vsi_nn_tensor_attr_t attr = tensor->attr;
+                    j--;
+                    attr.size[2] = 1;
+                    /*a hack for view tensor size issue*/
+                    for (idx = 0; idx < 3; idx++)
+                    {
+                        graph_inputs[j++] = (vx_reference)vsi_nn_CreateTensor(graph, &attr)->t;
+                    }
+                }
+            }
         }
         else
         {
