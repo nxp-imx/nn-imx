@@ -22,7 +22,6 @@
 *
 *****************************************************************************/
 
-
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -210,7 +209,6 @@ final:
     return status;
 } /* _topk_odd_even_sort_initializer() */
 
-
 /*
  * Query kernel
  */
@@ -349,7 +347,6 @@ static vsi_status _query_odd_even_sort_kernel
     return status;
 } /* _query_kernel() */
 
-
 static vsi_nn_kernel_node_t _setup
     (
     vsi_nn_graph_t              * graph,
@@ -413,7 +410,7 @@ static vsi_nn_kernel_node_t _setup
         memcpy( &attr, &(rs_tensors[0]->attr), sizeof(vsi_nn_tensor_attr_t) );
         rs_tensors[1] = vsi_nn_CreateTensor( graph, &attr );
         attr.dtype.vx_type = VSI_NN_TYPE_INT32;
-        attr.dtype.qnt_type = VSI_NN_KERNEL_QUANT_NONE;
+        attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
         rs_tensors[2] = vsi_nn_CreateTensor( graph, &attr );
 
         rs_tensors[3] = vsi_nn_reshape_tensor( graph,
