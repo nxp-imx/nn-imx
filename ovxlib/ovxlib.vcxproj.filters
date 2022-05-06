@@ -46,6 +46,9 @@
     <Filter Include="Header Files\utils">
       <UniqueIdentifier>{344debad-b465-359f-ad3f-75daa7735b13}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\vip">
+      <UniqueIdentifier>{b29a2c7d-9d91-3e41-b0e1-3b59e3fee3a5}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source Files\cpu_backend">
       <UniqueIdentifier>{7c56ad9f-b1ad-32c5-906c-4c7fc9b7e160}</UniqueIdentifier>
     </Filter>
@@ -804,7 +807,7 @@
     <ClCompile Include="src\kernel\sp\eltwise_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
-  <ClCompile Include="src\kernel\sp\eltwise_unary_sp.c">
+    <ClCompile Include="src\kernel\sp\eltwise_unary_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\sp\group_norm_sp.c">
@@ -813,7 +816,7 @@
     <ClCompile Include="src\kernel\sp\grucell_activation_z_h_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
-    <ClCompile Include="src\kernel\sp\grucell_h_times_activation_r_sp.c">
+  <ClCompile Include="src\kernel\sp\grucell_h_times_activation_r_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\sp\grucell_reset_after_activation_sp.c">
@@ -920,9 +923,6 @@
     </ClCompile>
     <ClCompile Include="src\libnnext\vsi_nn_libnnext_resource.c">
       <Filter>Source Files\libnnext</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ops\vsi_nn_op_max_pool3d.c">
-      <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\libnnext\vsi_nn_vxkernel.c">
       <Filter>Source Files\libnnext</Filter>
@@ -1174,6 +1174,9 @@
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_matrixmul.c">
+      <Filter>Source Files\ops</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_max_pool3d.c">
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_moments.c">
@@ -1598,9 +1601,6 @@
     <ClInclude Include="include\libnnext\vsi_nn_libnnext_resource.h">
       <Filter>Header Files\libnnext</Filter>
     </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_max_pool3d.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
     <ClInclude Include="include\libnnext\vsi_nn_vxkernel.h">
       <Filter>Header Files\libnnext</Filter>
     </ClInclude>
@@ -1844,6 +1844,9 @@
     <ClInclude Include="include\ops\vsi_nn_op_matrixmul.h">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_max_pool3d.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
     <ClInclude Include="include\ops\vsi_nn_op_maximum.h">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
@@ -1920,6 +1923,9 @@
       <Filter>Header Files\ops</Filter>
     </ClInclude>
     <ClInclude Include="include\ops\vsi_nn_op_random_multinomial.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_rcp.h">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
     <ClInclude Include="include\ops\vsi_nn_op_reduce.h">
@@ -2161,6 +2167,9 @@
     </ClInclude>
     <ClInclude Include="include\utils\vsi_nn_vdata.h">
       <Filter>Header Files\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="include\vip\virtual_device.h">
+      <Filter>Header Files\vip</Filter>
     </ClInclude>
     <ClInclude Include="include\vsi_nn_assert.h">
       <Filter>Header Files</Filter>
