@@ -122,7 +122,9 @@ static vsi_status op_optimize
     vsi_status status;
 
     status = VSI_SUCCESS;
-
+#ifdef VX_REMOVE_RESHAPE_SUPPORT
+    self->nn_param.reshape.local.initialized = FALSE;
+#else
     if ( vsi_nn_DtypeCompare(&inputs[0]->attr.dtype, &outputs[0]->attr.dtype) == FALSE)
     {
         return status;
@@ -162,7 +164,7 @@ static vsi_status op_optimize
             self->nn_param.reshape.local.initialized = TRUE;
         }
     }
-
+#endif
     return status;
 } /* op_optimize() */
 
