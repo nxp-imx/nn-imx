@@ -194,6 +194,10 @@ static float rcp_eval(float x)
     return 1.0f / x;
 }
 
+static float sign_eval(float x)
+{
+    return x > 0 ? 1.0f : x < 0 ? -1.0f : 0;
+}
 
 static float vsi_nn_kernel_lut_activation(float data, vsi_nn_kernel_lut_params *lut_param)
 {
@@ -253,6 +257,9 @@ static float vsi_nn_kernel_lut_activation(float data, vsi_nn_kernel_lut_params *
         break;
     case VSI_NN_KERNEL_LUT_RCP:
         result =  rcp_eval(data);
+        break;
+    case VSI_NN_KERNEL_LUT_SIGN:
+        result =  sign_eval(data);
         break;
     default:
         VSILOGE( "unsupported activation function:%d", lut_param->act_type );

@@ -192,6 +192,7 @@
 #include "ops/vsi_nn_op_celu.h"
 #include "ops/vsi_nn_op_max_pool3d.h"
 #include "ops/vsi_nn_op_rcp.h"
+#include "ops/vsi_nn_op_sign.h"
 /* custom node head define define */
 #include "custom/vsi_nn_custom_node_type.h"
 
@@ -369,6 +370,7 @@ typedef union _vsi_nn_nn_param
     vsi_nn_celu_param               celu;
     vsi_nn_max_pool3d_param         max_pool3d;
     vsi_nn_rcp_param                rcp;
+    vsi_nn_sign_param               sign;
     void*                         client_param;
 
     /* custom node data struct define */
