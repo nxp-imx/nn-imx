@@ -654,6 +654,7 @@
     <ClInclude Include="include\ops\vsi_nn_op_selu.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_sequence_mask.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_shufflechannel.h"/>
+    <ClInclude Include="include\ops\vsi_nn_op_sign.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_signalframe.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_sin.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_slice.h"/>

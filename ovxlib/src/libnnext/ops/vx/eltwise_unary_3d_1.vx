@@ -55,6 +55,11 @@ float4 eltwise_unary_rcp(float4 val)
     return 1.0f / val;
 }
 
+float4 eltwise_unary_sign(float4 val)
+{
+    return sign(val);
+}
+
 _viv_uniform float inputScale;
 _viv_uniform float inputTail;
 _viv_uniform float outputScale;
@@ -161,3 +166,5 @@ ADD_ELTSISE_UNARY_3D(neg)
 ADD_ELTSISE_UNARY_3D(celu)
 //RCP
 ADD_ELTSISE_UNARY_3D(rcp)
+//SIGN
+ADD_ELTSISE_UNARY_3D(sign)
