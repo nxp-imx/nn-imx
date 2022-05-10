@@ -235,8 +235,6 @@ static vsi_status op_optimize
     )
 {
     vsi_status     status;
-    vsi_size_t shape[VSI_NN_MAX_DIM_NUM];
-    uint32_t i = 0;
 
     status = VSI_SUCCESS;
 
@@ -248,11 +246,6 @@ static vsi_status op_optimize
     }
 
     VSILOGD("Optimize %s, uid %u", vsi_nn_OpGetName(self->op), self->uid);
-
-    for (i = 0; i < self->nn_param.permute.dim_num; i++)
-    {
-        shape[i] = inputs[0]->attr.size[self->nn_param.permute.perm[i]];
-    }
 
     if ( direction == VSI_NN_OPTIMIZE_BACKWARD )
     {
@@ -271,10 +264,15 @@ static vsi_status op_optimize
     {
         if (NULL == outputs[0]->t)
         {
-            vsi_bool ret;
-            ret = vsi_nn_ReshapeTensor( self->graph, inputs[0], outputs[0],
-                shape, (vsi_size_t)self->nn_param.permute.dim_num );
-            if ( ret == FALSE )
+            if ( NULL == inputs[0]->t )
+            {
+                vsi_nn_TensorReinit( self->graph, inputs[0] );
+            }
+
+            outputs[0]->t = vsi_nn_safe_reshape_tensor( inputs[0]->t,
+                (void*)outputs[0]->attr.size, (vsi_size_t)outputs[0]->attr.dim_num,
+                sizeof(outputs[0]->attr.size[0]) );
+            if ( outputs[0]->t == NULL )
             {
                 status = VSI_FAILURE;
             }
