@@ -55,6 +55,7 @@ typedef enum
     UNARY_CELU,
     UNARY_RCP,
     UNARY_SIGN,
+    UNARY_SOFTSIGN,
 } unary_type_e;
 
 /*
@@ -98,6 +99,7 @@ typedef enum
 #define CELU_OPERATION          celu
 #define RCP_OPERATION           rcp
 #define SIGN_OPERATION          sign
+#define SOFTSIGN_OPERATION      softsign
 
 #define ADD_UNARY_SH_KERNELS(name, source) \
     TENSOR_UNARY_KERNELS_3D(name##_OPERATION, UNARY_##name, BF16, BF16, source##_3D) \
@@ -139,6 +141,7 @@ static const struct {
     ADD_UNARY_SH_KERNELS(NEG,       KERNEL_SOURCE1)
     ADD_UNARY_SH_KERNELS(RCP,       KERNEL_SOURCE1)
     ADD_UNARY_SH_KERNELS(SIGN,      KERNEL_SOURCE1)
+    ADD_UNARY_SH_KERNELS(SOFTSIGN,  KERNEL_SOURCE1)
 
     ADD_UNARY_SH_KERNELS(HSIGMOID,  KERNEL_SOURCE0)
     ADD_UNARY_SH_KERNELS(MISH,      KERNEL_SOURCE0)
@@ -161,6 +164,7 @@ static const struct {
 #undef CELU_OPERATION
 #undef RCP_OPERATION
 #undef SIGN_OPERATION
+#undef SOFTSIGN_OPERATION
 /*
  * Kernel params
  */
@@ -294,6 +298,7 @@ DEF_KERNEL_INITIALIZER(_eltwise_unary_initializer)
         case _PACK_SELECT_KEY( UNARY_CELU, BF16, BF16 ):
         case _PACK_SELECT_KEY( UNARY_RCP, BF16, BF16 ):
         case _PACK_SELECT_KEY( UNARY_SIGN, BF16, BF16 ):
+        case _PACK_SELECT_KEY( UNARY_SOFTSIGN, BF16, BF16 ):
         {
             gpu_dp_inst_t uniConvBF16toF32_Part0_2x8 = {{
                 0x11111111, // TCfg
@@ -602,5 +607,6 @@ REGISTER_ELTWISE_UNARY_BACKEND_EVIS( selu, UNARY_SELU )
 REGISTER_ELTWISE_UNARY_BACKEND_EVIS( celu, UNARY_CELU )
 REGISTER_ELTWISE_UNARY_BACKEND_EVIS( rcp, UNARY_RCP )
 REGISTER_ELTWISE_UNARY_BACKEND_EVIS( sign, UNARY_SIGN )
+REGISTER_ELTWISE_UNARY_BACKEND_EVIS( softsign, UNARY_SOFTSIGN )
 
 __END_DECLS

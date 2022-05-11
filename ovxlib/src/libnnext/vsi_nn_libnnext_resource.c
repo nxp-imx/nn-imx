@@ -5247,6 +5247,12 @@ float4 eltwise_unary_sign(float4 val)\n\
     return sign(val);\n\
 }\n\
 \n\
+float4 eltwise_unary_softsign(float4 val)\n\
+{\n\
+    float4 _rcp = 1.0f / (1.0f + fabs(val));\n\
+    return val * _rcp;\n\
+}\n\
+\n\
 _viv_uniform float inputScale;\n\
 _viv_uniform float inputTail;\n\
 _viv_uniform float outputScale;\n\
@@ -5355,7 +5361,9 @@ ADD_ELTSISE_UNARY_2D(celu)\n\
 //RCP\n\
 ADD_ELTSISE_UNARY_2D(rcp)\n\
 //SIGN\n\
-ADD_ELTSISE_UNARY_2D(sign)"; /* end of eltwise_unary_2d_1_vx*/
+ADD_ELTSISE_UNARY_2D(sign)\n\
+//SOFTSIGN\n\
+ADD_ELTSISE_UNARY_2D(softsign)"; /* end of eltwise_unary_2d_1_vx*/
 
 static const char eltwise_unary_3d_0_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
@@ -5665,6 +5673,12 @@ float4 eltwise_unary_sign(float4 val)\n\
     return sign(val);\n\
 }\n\
 \n\
+float4 eltwise_unary_softsign(float4 val)\n\
+{\n\
+    float4 _rcp = 1.0f / (1.0f + fabs(val));\n\
+    return val * _rcp;\n\
+}\n\
+\n\
 _viv_uniform float inputScale;\n\
 _viv_uniform float inputTail;\n\
 _viv_uniform float outputScale;\n\
@@ -5773,6 +5787,8 @@ ADD_ELTSISE_UNARY_3D(celu)\n\
 ADD_ELTSISE_UNARY_3D(rcp)\n\
 //SIGN\n\
 ADD_ELTSISE_UNARY_3D(sign)\n\
+//SOFTSIGN\n\
+ADD_ELTSISE_UNARY_3D(softsign)\n\
 "; /* end of eltwise_unary_3d_1_vx*/
 
 static const char erf_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
@@ -46831,6 +46847,11 @@ float eltwise_unary_sign(float val, float alpha, float rcp_alpha)\n\
     return sign(val);\n\
 }\n\
 \n\
+float eltwise_unary_softsign(float val, float alpha, float rcp_alpha)\n\
+{\n\
+    return val / (1.0f + fabs(val));\n\
+}\n\
+\n\
 #define ELTWISE_UNARY_F32_2D(func_name) \\\n\
 __kernel void func_name##_F32toF32_2D \\\n\
     ( \\\n\
@@ -46867,6 +46888,7 @@ ELTWISE_UNARY_F32_2D(selu)\n\
 ELTWISE_UNARY_F32_2D(celu)\n\
 ELTWISE_UNARY_F32_2D(rcp)\n\
 ELTWISE_UNARY_F32_2D(sign)\n\
+ELTWISE_UNARY_F32_2D(softsign)\n\
 \n\
 #define ELTWISE_UNARY_U8_2D(func_name) \\\n\
 __kernel void func_name##_U8toU8_2D \\\n\
@@ -46905,6 +46927,7 @@ ELTWISE_UNARY_U8_2D(selu)\n\
 ELTWISE_UNARY_U8_2D(celu)\n\
 ELTWISE_UNARY_U8_2D(rcp)\n\
 ELTWISE_UNARY_U8_2D(sign)\n\
+ELTWISE_UNARY_U8_2D(softsign)\n\
 \n\
 __kernel void neg_I32toI32_2D\n\
     (\n\
@@ -47075,6 +47098,11 @@ float eltwise_unary_sign(float val, float alpha, float rcp_alpha)\n\
     return sign(val);\n\
 }\n\
 \n\
+float eltwise_unary_softsign(float val, float alpha, float rcp_alpha)\n\
+{\n\
+    return val / (1.0f + fabs(val));\n\
+}\n\
+\n\
 #define ELTWISE_UNARY_F32(func_name) \\\n\
 __kernel void func_name##_F32toF32 \\\n\
     ( \\\n\
@@ -47111,6 +47139,7 @@ ELTWISE_UNARY_F32(selu)\n\
 ELTWISE_UNARY_F32(celu)\n\
 ELTWISE_UNARY_F32(rcp)\n\
 ELTWISE_UNARY_F32(sign)\n\
+ELTWISE_UNARY_F32(softsign)\n\
 \n\
 #define ELTWISE_UNARY_U8(func_name) \\\n\
 __kernel void func_name##_U8toU8 \\\n\
@@ -47149,6 +47178,7 @@ ELTWISE_UNARY_U8(selu)\n\
 ELTWISE_UNARY_U8(celu)\n\
 ELTWISE_UNARY_U8(rcp)\n\
 ELTWISE_UNARY_U8(sign)\n\
+ELTWISE_UNARY_U8(softsign)\n\
 \n\
 __kernel void neg_I32toI32\n\
     (\n\

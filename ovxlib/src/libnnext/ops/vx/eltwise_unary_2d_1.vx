@@ -60,6 +60,12 @@ float4 eltwise_unary_sign(float4 val)
     return sign(val);
 }
 
+float4 eltwise_unary_softsign(float4 val)
+{
+    float4 _rcp = 1.0f / (1.0f + fabs(val));
+    return val * _rcp;
+}
+
 _viv_uniform float inputScale;
 _viv_uniform float inputTail;
 _viv_uniform float outputScale;
@@ -169,3 +175,5 @@ ADD_ELTSISE_UNARY_2D(celu)
 ADD_ELTSISE_UNARY_2D(rcp)
 //SIGN
 ADD_ELTSISE_UNARY_2D(sign)
+//SOFTSIGN
+ADD_ELTSISE_UNARY_2D(softsign)
