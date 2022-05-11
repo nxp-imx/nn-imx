@@ -55,6 +55,7 @@ typedef enum
     UNARY_CELU,
     UNARY_RCP,
     UNARY_SIGN,
+    UNARY_SOFTSIGN,
 } unary_type_e;
 
 /*
@@ -98,6 +99,7 @@ typedef enum
 #define CELU_OPERATION          celu
 #define RCP_OPERATION           rcp
 #define SIGN_OPERATION          sign
+#define SOFTSIGN_OPERATION      softsign
 
 #define ADD_UNARY_SH_KERNELS(name, src_type, dst_type) \
     TENSOR_UNARY_KERNELS_3D(name##_OPERATION, UNARY_##name, src_type, dst_type) \
@@ -123,6 +125,7 @@ static const struct {
     ADD_UNARY_SH_KERNELS(CELU,     F32, F32)
     ADD_UNARY_SH_KERNELS(RCP,      F32, F32)
     ADD_UNARY_SH_KERNELS(SIGN,     F32, F32)
+    ADD_UNARY_SH_KERNELS(SOFTSIGN, F32, F32)
 
     ADD_UNARY_SH_KERNELS(SIN,      U8,  U8)
     ADD_UNARY_SH_KERNELS(COS,      U8,  U8)
@@ -138,6 +141,7 @@ static const struct {
     ADD_UNARY_SH_KERNELS(CELU,     U8,  U8)
     ADD_UNARY_SH_KERNELS(RCP,      U8,  U8)
     ADD_UNARY_SH_KERNELS(SIGN,     U8,  U8)
+    ADD_UNARY_SH_KERNELS(SOFTSIGN, U8,  U8)
 
     ADD_UNARY_SH_KERNELS(NEG,      I32, I32)
 };
@@ -156,6 +160,7 @@ static const struct {
 #undef CELU_OPERATION
 #undef RCP_OPERATION
 #undef SIGN_OPERATION
+#undef SOFTSIGN_OPERATION
 /*
  * Kernel params
  */
@@ -446,5 +451,6 @@ REGISTER_ELTWISE_UNARY_BACKEND_CL( selu,         UNARY_SELU )
 REGISTER_ELTWISE_UNARY_BACKEND_CL( celu,         UNARY_CELU )
 REGISTER_ELTWISE_UNARY_BACKEND_CL( rcp,          UNARY_RCP )
 REGISTER_ELTWISE_UNARY_BACKEND_CL( sign,         UNARY_SIGN )
+REGISTER_ELTWISE_UNARY_BACKEND_CL( softsign,     UNARY_SOFTSIGN )
 
 __END_DECLS

@@ -658,6 +658,7 @@
     <ClInclude Include="include\ops\vsi_nn_op_slice.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_softmax.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_softmax_internal.h"/>
+    <ClInclude Include="include\ops\vsi_nn_op_softsign.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_space2batch.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_space2depth.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_space2depth_internal.h"/>
