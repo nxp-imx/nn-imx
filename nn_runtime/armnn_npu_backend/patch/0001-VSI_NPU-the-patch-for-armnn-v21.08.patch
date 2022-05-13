@@ -1,16 +1,16 @@
-From 004410dec283bb7d89643573a752492e0ea4bda6 Mon Sep 17 00:00:00 2001
-From: "xiang.zhang" <xiang.zhang@verisilicon.com>
-Date: Sat, 9 Oct 2021 15:42:49 +0800
-Subject: [PATCH 1/1] VSI_NPU the patch for armnn v21.08
+From ce1c32833bf1b08bd1dba6d0dee7972b55aff90c Mon Sep 17 00:00:00 2001
+From: "jing.tang" <jing.tang@verisilicon.com>
+Date: Fri, 13 May 2022 11:03:00 +0800
+Subject: [PATCH] [VSI_NPU] the patch for armnn v21.08
 
-Signed-off-by: xiang.zhang <xiang.zhang@verisilicon.com>
 ---
  CMakeLists.txt                                |  9 +++
  cmake/GlobalConfig.cmake                      | 39 ++++++++--
  include/armnn/BackendId.hpp                   |  5 +-
  .../RedirectMembersToConstantInputs.hpp       |  2 +-
  .../test/layerTests/SoftmaxTestImpl.cpp       | 76 +++++++++----------
- 5 files changed, 86 insertions(+), 45 deletions(-)
+ third-party/doctest/doctest.h                 |  4 +
+ 6 files changed, 90 insertions(+), 45 deletions(-)
 
 diff --git a/CMakeLists.txt b/CMakeLists.txt
 index 2b0c95254..7816a75d5 100644
@@ -325,6 +325,22 @@ index 375bdaa13..68ad0810a 100644
                      };
              break;
          }
+diff --git a/third-party/doctest/doctest.h b/third-party/doctest/doctest.h
+index 944469828..95a6f23cf 100644
+--- a/third-party/doctest/doctest.h
++++ b/third-party/doctest/doctest.h
+@@ -4029,7 +4029,11 @@ namespace {
+         static bool             isSet;
+         static struct sigaction oldSigActions[DOCTEST_COUNTOF(signalDefs)];
+         static stack_t          oldSigStack;
++#if defined(__GLIBC__) && __GLIBC_MINOR__ >= 34
++        static char             altStackMem[4 * _SC_SIGSTKSZ];
++#else
+         static char             altStackMem[4 * SIGSTKSZ];
++#endif
+ 
+         static void handleSignal(int sig) {
+             const char* name = "<unknown signal>";
 -- 
-2.26.2
+2.25.1
 
