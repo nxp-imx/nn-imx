@@ -1,4 +1,4 @@
-From ce1c32833bf1b08bd1dba6d0dee7972b55aff90c Mon Sep 17 00:00:00 2001
+From ceefbe8f284864567de76657a9f0af62bbf42498 Mon Sep 17 00:00:00 2001
 From: "jing.tang" <jing.tang@verisilicon.com>
 Date: Fri, 13 May 2022 11:03:00 +0800
 Subject: [PATCH] [VSI_NPU] the patch for armnn v21.08
@@ -9,8 +9,8 @@ Subject: [PATCH] [VSI_NPU] the patch for armnn v21.08
  include/armnn/BackendId.hpp                   |  5 +-
  .../RedirectMembersToConstantInputs.hpp       |  2 +-
  .../test/layerTests/SoftmaxTestImpl.cpp       | 76 +++++++++----------
- third-party/doctest/doctest.h                 |  4 +
- 6 files changed, 90 insertions(+), 45 deletions(-)
+ third-party/doctest/doctest.h                 | 20 +++--
+ 6 files changed, 101 insertions(+), 50 deletions(-)
 
 diff --git a/CMakeLists.txt b/CMakeLists.txt
 index 2b0c95254..7816a75d5 100644
@@ -326,21 +326,55 @@ index 375bdaa13..68ad0810a 100644
              break;
          }
 diff --git a/third-party/doctest/doctest.h b/third-party/doctest/doctest.h
-index 944469828..95a6f23cf 100644
+index 944469828..f11d913fc 100644
 --- a/third-party/doctest/doctest.h
 +++ b/third-party/doctest/doctest.h
-@@ -4029,7 +4029,11 @@ namespace {
+@@ -4029,7 +4029,8 @@ namespace {
          static bool             isSet;
          static struct sigaction oldSigActions[DOCTEST_COUNTOF(signalDefs)];
          static stack_t          oldSigStack;
-+#if defined(__GLIBC__) && __GLIBC_MINOR__ >= 34
-+        static char             altStackMem[4 * _SC_SIGSTKSZ];
-+#else
-         static char             altStackMem[4 * SIGSTKSZ];
-+#endif
+-        static char             altStackMem[4 * SIGSTKSZ];
++        static size_t           altStackSize;
++        static char*            altStackMem;
  
          static void handleSignal(int sig) {
              const char* name = "<unknown signal>";
+@@ -4045,11 +4046,19 @@ namespace {
+             raise(sig);
+         }
+ 
++        static void allocateAltStackMem() {
++            altStackMem = new char[altStackSize];
++        }
++
++        static void freeAltStackMem() {
++            delete[] altStackMem;
++        }
++
+         FatalConditionHandler() {
+             isSet = true;
+             stack_t sigStack;
+             sigStack.ss_sp    = altStackMem;
+-            sigStack.ss_size  = sizeof(altStackMem);
++            sigStack.ss_size  = altStackSize;
+             sigStack.ss_flags = 0;
+             sigaltstack(&sigStack, &oldSigStack);
+             struct sigaction sa = {};
+@@ -4074,10 +4083,11 @@ namespace {
+         }
+     };
+ 
+-    bool             FatalConditionHandler::isSet                                      = false;
++    bool             FatalConditionHandler::isSet = false;
+     struct sigaction FatalConditionHandler::oldSigActions[DOCTEST_COUNTOF(signalDefs)] = {};
+-    stack_t          FatalConditionHandler::oldSigStack                                = {};
+-    char             FatalConditionHandler::altStackMem[]                              = {};
++    stack_t          FatalConditionHandler::oldSigStack = {};
++    size_t           FatalConditionHandler::altStackSize = 4 * SIGSTKSZ;
++    char*            FatalConditionHandler::altStackMem = nullptr;
+ 
+ #endif // DOCTEST_PLATFORM_WINDOWS
+ #endif // DOCTEST_CONFIG_POSIX_SIGNALS || DOCTEST_CONFIG_WINDOWS_SEH
 -- 
 2.25.1
 
