@@ -933,17 +933,6 @@ vsi_status vsi_nn_AddBinaryGraphInputsWithCropParam
                                                      sizeof(vx_reference));
                                     if (type == VX_TYPE_TENSOR)
                                     {
-                                        /* hack for this type view tensor size */
-                                        if (node->op == VSI_NN_OP_PRE_PROCESS &&
-                                            node->nn_param.pre_process.type ==
-                                                VSI_NN_SOURCE_FORMAT_IMAGE_RGB888_PLANAR)
-                                        {
-                                            vsi_nn_tensor_attr_t attr = tensor->attr;
-                                            vsi_nn_tensor_id_t tensor_id;
-                                            attr.size[2] = 1;
-                                            tensor_id = vsi_nn_AddTensor(graph, VSI_NN_TENSOR_ID_AUTO, &attr, NULL);
-                                            ref = (vx_reference)vsi_nn_GetTensor(graph, tensor_id)->t;
-                                        }
                                         graph_inputs[j++] = ref;
                                     }
                                     else if (type == VX_TYPE_SCALAR)

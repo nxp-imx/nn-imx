@@ -2014,13 +2014,28 @@ vsi_status vsi_nn_setup_binary_graph_inputs_outputs
                         VSI_NN_SOURCE_FORMAT_IMAGE_RGB888_PLANAR &&
                            node->input.tensors[0] == graph->input.tensors[i])
                 {
-                    vsi_nn_tensor_attr_t attr = tensor->attr;
+                    vx_parameter param = 0;
+                    vx_reference ref = 0;
+                    vx_enum type = 0;
+                    vx_enum direction = 0;
                     j--;
-                    attr.size[2] = 1;
-                    /*a hack for view tensor size issue*/
-                    for (idx = 0; idx < 3; idx++)
+                    for (idx = 0; idx < numParams; idx++)
                     {
-                        graph_inputs[j++] = (vx_reference)vsi_nn_CreateTensor(graph, &attr)->t;
+                        param = vxGetParameterByIndex(node->n, idx);
+                        vxQueryParameter(
+                            param, VX_PARAMETER_TYPE, &type, sizeof(vx_enum));
+                        status = vxQueryParameter(param,
+                                                  VX_PARAMETER_DIRECTION,
+                                                  &direction,
+                                                  sizeof(vx_enum));
+                        status = vxQueryParameter(param,
+                                                   VX_PARAMETER_REF,
+                                                   &ref,
+                                                   sizeof(vx_reference));
+                        if (direction == VX_INPUT && type == VX_TYPE_TENSOR)
+                        {
+                            graph_inputs[j++] = ref;
+                        }
                     }
                 }
             }
