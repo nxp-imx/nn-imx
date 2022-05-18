@@ -225,6 +225,21 @@ static vsi_status op_compute
         vsi_nn_tensor_t *mean_tmp_tensor = NULL;
         vsi_nn_tensor_t *reshaped_input1 = self->nn_param.reduce.local2->reshaped_input1;
         vsi_nn_tensor_t *reshaped_output1 = self->nn_param.reduce.local2->reshaped_output1;
+        char tensor_name[128];
+
+        memset(tensor_name, 0, sizeof(tensor_name));
+        snprintf(tensor_name,
+                 sizeof(tensor_name),
+                 "uid_%u_reshape_out_0",
+                 self->uid);
+        if (reshaped_output1 && vxSetReferenceName(
+                (vx_reference)reshaped_output1->t, tensor_name) == VSI_FAILURE)
+        {
+            VSILOGW("Set uid %u reduce reshaped output name fail",
+                    self->uid);
+            return VSI_FAILURE;
+        }
+
 
         resolved_dim_count = self->nn_param.reduce.local2->axes_num;
 
