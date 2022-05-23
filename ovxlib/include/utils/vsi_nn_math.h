@@ -42,6 +42,8 @@ extern "C" {
 #define vsi_clamp(x, min, max)      vsi_nn_clamp(x, min, max)
 #define vsi_rtne(x)                 vsi_rint(x)
 
+#define VSI_NN_INT32_MAX            (0x7FFFFFFF)
+
 #define VSI_NN_FLOAT32_INF          (0x7F800000)
 #define VSI_NN_FLOAT32_NAN          (0x7FC00000)
 #define VSI_NN_FLOAT64_INF          (0x7FF0000000000000)
