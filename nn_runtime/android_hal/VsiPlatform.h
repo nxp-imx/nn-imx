@@ -140,43 +140,7 @@ struct Hal<29> {
 
 #if ANDROID_SDK_VERSION >= 30
 template <>
-struct Hal<30> {
-    using Device = V1_3::IDevice;
-    using PrepareModel = V1_3::IPreparedModel;
-    using Operand = V1_3::Operand;
-    using OperandType = V1_3::OperandType;
-    using Operation = V1_3::Operation;
-    using OperationType = V1_3::OperationType;
-    using Model = V1_3::Model;
-    using OperandLifeTime = V1_3::OperandLifeTime;
-    using ErrorStatus = V1_0::ErrorStatus;
-    using Request = V1_0::Request;
-
-    template <typename T_type>
-    static auto inline convertVersion(const T_type& variable) {
-        return android::nn::convertToV1_3(variable);
-    }
-
-    template <typename T_type>
-    static auto inline convertToV1_0(const T_type& variable) {
-        return android::nn::convertToV1_0(variable);
-    }
-
-    template <typename T_type>
-    static auto inline convertToV1_2(T_type& variable) {
-        return android::nn::convertToV1_2(variable);
-    }
-
-    template <typename T_type>
-    static bool inline validatePool(const T_type& hidl_pool) {
-        return android::nn::validatePool(hidl_pool);
-    }
-};
-#endif
-
-#if ANDROID_SDK_VERSION >= 31
-template <>
-struct Hal<31> {
+struct Hal<ANDROID_SDK_VERSION> {
     using Device = V1_3::IDevice;
     using PrepareModel = V1_3::IPreparedModel;
     using Operand = V1_3::Operand;
