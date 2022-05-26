@@ -61029,7 +61029,7 @@ static const char roi_align_cl[] = "inline float roi_align_1x1\n\
 \n\
 \n\
 #define EPS_GRID 0.00001f\n\
-__kernel void roi_align_F32toF32\n\
+__kernel void roi_align_F32_F32toF32\n\
 (\n\
     __read_only  image2d_array_t  input,\n\
     __read_only  image2d_t        rois,\n\
@@ -61088,6 +61088,128 @@ __kernel void roi_align_F32toF32\n\
                        kz);\n\
 \n\
         write_imagef(output, (int4)(px, py, kz1, 0), interp);\n\
+    }\n\
+}\n\
+\n\
+inline float roi_align_1x1_U8toF32\n\
+(\n\
+    __read_only image2d_array_t  input,\n\
+                float            input_scale,\n\
+                float            input_tail,\n\
+                float2           region_start,\n\
+                float2           region_end,\n\
+                float2           bin_size,\n\
+                int2             grid_size,\n\
+                float2           rcp_of_grid_size,\n\
+                int              pz\n\
+)\n\
+{\n\
+    float sum = 0;\n\
+\n\
+    for(int iy = 0; iy < grid_size.y; ++iy)\n\
+    {\n\
+        for(int ix = 0; ix < grid_size.x; ++ix)\n\
+        {\n\
+            float2 ixy = (float2)(ix + 0.5f, iy + 0.5f);\n\
+            float2 pos = region_start + ixy * bin_size * rcp_of_grid_size;\n\
+\n\
+            int2 xy_low  = convert_int2(pos);\n\
+            int2 xy_high = xy_low + 1;\n\
+\n\
+            float ly = pos.y - xy_low.y;\n\
+            float lx = pos.x - xy_low.x;\n\
+            float hy = 1.0f - ly;\n\
+            float hx = 1.0f - lx;\n\
+\n\
+            float w1 = hy * hx;\n\
+            float w2 = hy * lx;\n\
+            float w3 = ly * hx;\n\
+            float w4 = ly * lx;\n\
+\n\
+            uint4 data;\n\
+            data.x = read_imageui(input, (int4)(xy_low.x, xy_low.y, pz, 0)).x;\n\
+            data.y = read_imageui(input, (int4)(xy_high.x, xy_low.y, pz, 0)).x;\n\
+            data.z = read_imageui(input, (int4)(xy_low.x, xy_high.y, pz, 0)).x;\n\
+            data.w = read_imageui(input, (int4)(xy_high.x, xy_high.y, pz, 0)).x;\n\
+\n\
+            float4 value = convert_float4(data) * input_scale + input_tail;\n\
+\n\
+            sum = sum + w1 * value.x + w2 * value.y + w3 * value.z + w4 * value.w;\n\
+        }\n\
+    }\n\
+\n\
+    return (float)(sum * rcp_of_grid_size.x * rcp_of_grid_size.y);\n\
+}\n\
+\n\
+__kernel void roi_align_U8_U16toU8\n\
+(\n\
+    __read_only  image2d_array_t input,\n\
+    __read_only  image2d_t       rois,\n\
+    __read_only  image2d_t       n_rois,\n\
+    __write_only image2d_array_t output,\n\
+                 float           input_scale,\n\
+                 float           input_tail,\n\
+                 float           output_scale,\n\
+                 float           output_zp,\n\
+                 float           spatial_x_scale,\n\
+                 float           spatial_y_scale,\n\
+                 float           in_width,\n\
+                 float           in_height,\n\
+                 float           rcp_of_out_width,\n\
+                 float           rcp_of_out_height,\n\
+                 float           sampling_x_ratio,\n\
+                 float           sampling_y_ratio,\n\
+                 int             depth\n\
+)\n\
+{\n\
+    int px = get_global_id(0);\n\
+    int py = get_global_id(1);\n\
+    int pw = get_global_id(2);\n\
+\n\
+    int roi_batch = read_imagei(n_rois, (int2)(pw, 0)).x;\n\
+    float4 roi_x = convert_float4(read_imageui(rois, (int2)(0, pw)));\n\
+    float4 roi_y = convert_float4(read_imageui(rois, (int2)(1, pw)));\n\
+    float4 roi_z = convert_float4(read_imageui(rois, (int2)(2, pw)));\n\
+    float4 roi_w = convert_float4(read_imageui(rois, (int2)(3, pw)));\n\
+    float4 roi = (float4)(roi_x.x, roi_y.x, roi_z.x, roi_w.x);\n\
+\n\
+    float4 roi_anchor = roi * (float4)(spatial_x_scale, spatial_y_scale, spatial_x_scale, spatial_y_scale);\n\
+    float2 roi_dims = fmax(roi_anchor.zw - roi_anchor.xy, 1.0f);\n\
+\n\
+    float2 spatial_indx     = (float2)(px, py);\n\
+    float2 pooled_dims      = (float2)(rcp_of_out_width, rcp_of_out_height);\n\
+    float2 max_spatial_dims = (float2)(in_width, in_height);\n\
+\n\
+    float2 bin_size     = roi_dims * pooled_dims;\n\
+    float2 region_start = spatial_indx * bin_size + roi_anchor.xy;\n\
+    float2 region_end   = region_start + bin_size;\n\
+\n\
+    float2 roi_bin_grid = (float2)(sampling_x_ratio, sampling_y_ratio);\n\
+\n\
+    roi_bin_grid = roi_bin_grid == 0 ? ceil(bin_size - EPS_GRID) : roi_bin_grid;\n\
+\n\
+    int kz = roi_batch * depth;\n\
+    float2 rcp_of_grid_size = 1.0f / roi_bin_grid;\n\
+    int2 grid_size_xy = convert_int2(roi_bin_grid);\n\
+    float4 interp;\n\
+    int kz1 = pw * depth;\n\
+    for (int pz = 0; pz < depth; pz ++, kz ++, kz1 ++)\n\
+    {\n\
+        interp.x = roi_align_1x1_U8toF32( input,\n\
+                       input_scale,\n\
+                       input_tail,\n\
+                       region_start,\n\
+                       region_end,\n\
+                       bin_size,\n\
+                       grid_size_xy,\n\
+                       rcp_of_grid_size,\n\
+                       kz);\n\
+\n\
+        uint4 dst;\n\
+        interp.x = interp.x * output_scale + output_zp;\n\
+        interp.x = interp.x < 255 ? interp.x : 255;\n\
+        dst.x = convert_uint_rte(interp.x);\n\
+        write_imageui(output, (int4)(px, py, kz1, 0), dst.xxxx);\n\
     }\n\
 }"; /* end of roi_align_cl*/
 
