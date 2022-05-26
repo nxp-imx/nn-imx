@@ -75,10 +75,22 @@ static const _kernel_map_type _select_kernel_map[] =
     PACK_KERNEL_MAP(I8, U8,  U8,  U8),
     PACK_KERNEL_MAP(I8, I16, I16, I16),
     PACK_KERNEL_MAP(I8, F16, F16, F16),
+    PACK_KERNEL_MAP(I8, F16, U8,  F16),
+    PACK_KERNEL_MAP(I8, U8,  F16, F16),
+    PACK_KERNEL_MAP(I8, F16, I8,  F16),
+    PACK_KERNEL_MAP(I8, I8,  F16, F16),
+    PACK_KERNEL_MAP(I8, F16, I16, F16),
+    PACK_KERNEL_MAP(I8, I16, F16, F16),
     PACK_KERNEL_MAP_2D(I8, I8,  I8,  I8),
     PACK_KERNEL_MAP_2D(I8, U8,  U8,  U8),
     PACK_KERNEL_MAP_2D(I8, I16, I16, I16),
     PACK_KERNEL_MAP_2D(I8, F16, F16, F16),
+    PACK_KERNEL_MAP_2D(I8, U8,  F16, F16),
+    PACK_KERNEL_MAP_2D(I8, F16, U8,  F16),
+    PACK_KERNEL_MAP_2D(I8, F16, I8,  F16),
+    PACK_KERNEL_MAP_2D(I8, I8,  F16, F16),
+    PACK_KERNEL_MAP_2D(I8, F16, I16, F16),
+    PACK_KERNEL_MAP_2D(I8, I16, F16, F16),
 };
 
 /*
@@ -142,7 +154,7 @@ DEF_KERNEL_INITIALIZER(_select_initializer)
     output_attr  = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)output);
     CHECK_PTR_FAIL_GOTO( output_attr, "vsi_nn_kernel_tensor_attr_create fail.", final );
 
-    if( input0_attr->quant == VSI_NN_KERNEL_QUANT_DFP )
+    if ( input0_attr->quant == VSI_NN_KERNEL_QUANT_DFP )
     {
         input0_fl = input0_attr->dfp.fl;
         if (input0_fl > 0)
@@ -154,13 +166,13 @@ DEF_KERNEL_INITIALIZER(_select_initializer)
             input0Scale = (float)((int64_t)1 << -input0_fl);
         }
     }
-    else if( input0_attr->quant == VSI_NN_KERNEL_QUANT_ASYMM )
+    else if ( input0_attr->quant == VSI_NN_KERNEL_QUANT_ASYMM )
     {
         input0Scale = input0_attr->asymm.scale;
         input0Zp    = input0_attr->asymm.zero_point;
     }
 
-    if( input1_attr->quant == VSI_NN_KERNEL_QUANT_DFP )
+    if ( input1_attr->quant == VSI_NN_KERNEL_QUANT_DFP )
     {
         input1_fl = input1_attr->dfp.fl;
         if (input1_fl > 0)
@@ -172,13 +184,13 @@ DEF_KERNEL_INITIALIZER(_select_initializer)
             input1Scale = (float)((int64_t)1 << -input1_fl);
         }
     }
-    else if( input1_attr->quant == VSI_NN_KERNEL_QUANT_ASYMM )
+    else if ( input1_attr->quant == VSI_NN_KERNEL_QUANT_ASYMM )
     {
         input1Scale = input1_attr->asymm.scale;
         input1Zp    = input1_attr->asymm.zero_point;
     }
 
-    if( output_attr->quant == VSI_NN_KERNEL_QUANT_DFP )
+    if ( output_attr->quant == VSI_NN_KERNEL_QUANT_DFP )
     {
         output_fl = output_attr->dfp.fl;
         if (output_fl > 0)
@@ -190,7 +202,7 @@ DEF_KERNEL_INITIALIZER(_select_initializer)
             outputScale = (float)((int64_t)1 << -output_fl);
         }
     }
-    else if( output_attr->quant == VSI_NN_KERNEL_QUANT_ASYMM )
+    else if ( output_attr->quant == VSI_NN_KERNEL_QUANT_ASYMM )
     {
         outputScale = output_attr->asymm.scale;
         outputZP    = output_attr->asymm.zero_point;
@@ -203,13 +215,10 @@ DEF_KERNEL_INITIALIZER(_select_initializer)
 
     output_shape  = output_attr->shape;
     gpu_param.dim = output_shape->size < 3 ? 2 : 3;
-    gpu_param.global_offset[0] = 0;
-    gpu_param.global_offset[1] = 0;
-    gpu_param.global_offset[2] = 0;
+
     gpu_param.global_scale[0]  = 8;
     gpu_param.global_scale[1]  = 1;
     gpu_param.global_scale[2]  = 1;
-
     gpu_param.global_size[0]   = gpu_align_p2((output_shape->data[0] + gpu_param.global_scale[0] - 1)
                                              / gpu_param.global_scale[0], 4);
     gpu_param.global_size[1]   = (output_shape->data[1] + gpu_param.global_scale[1] - 1)
@@ -240,6 +249,12 @@ DEF_KERNEL_INITIALIZER(_select_initializer)
         case _PACK_SELECT_KEY( I8,  I8,  I8 ):
         case _PACK_SELECT_KEY( I16, I16, I16 ):
         case _PACK_SELECT_KEY( U8,  U8,  U8 ):
+        case _PACK_SELECT_KEY( I8,  F16, F16 ):
+        case _PACK_SELECT_KEY( U8,  F16, F16 ):
+        case _PACK_SELECT_KEY( I16, F16, F16 ):
+        case _PACK_SELECT_KEY( F16, U8,  F16 ):
+        case _PACK_SELECT_KEY( F16, I8,  F16 ):
+        case _PACK_SELECT_KEY( F16, I16, F16 ):
         {
             uint32_t multAndoutZP0[2] = {0};
             uint32_t multAndoutZP1[2] = {0};

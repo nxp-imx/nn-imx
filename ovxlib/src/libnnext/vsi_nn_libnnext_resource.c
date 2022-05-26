@@ -42829,6 +42829,72 @@ __kernel void select_I8_F16_F16toF16_2D(\n\
     int2 coord = (int2)(get_global_id(0), get_global_id(1));\n\
     SELECT_HALF(VXC_ReadImage, VXC_WriteImage)\n\
 }\n\
+\n\
+#define SELECT_HYBRIDTOF16(src0_type, copy0_type, src1_type, copy1_type, read_fun, write_fun) \\\n\
+    vxc_short8 src0, src1, dst, value; \\\n\
+    vxc_half8 value0, value1; \\\n\
+    src0_type r0; \\\n\
+    src1_type r1; \\\n\
+    copy0_type v0; \\\n\
+    copy1_type v1; \\\n\
+    vxc_char8 value_tmp; \\\n\
+    vxc_ushort8 mp0, mp1; \\\n\
+    _viv_asm(COPY, mp0, multAndoutZP0, 16); \\\n\
+    _viv_asm(COPY, mp1, multAndoutZP1, 16); \\\n\
+    read_fun(src0, input0, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    _viv_asm(COPY, v0, src0, 16); \\\n\
+    read_fun(src1, input1, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    _viv_asm(COPY, v1, src1, 16); \\\n\
+    VXC_DP2x8(value0, v0, mp0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),\\\n\
+             uniU8MulAndPostShift0_Lo_2x8); \\\n\
+    _viv_asm(COPY, src0, value0, 16); \\\n\
+    VXC_DP2x8(value1, v1, mp1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),\\\n\
+             uniU8MulAndPostShift1_Lo_2x8); \\\n\
+    _viv_asm(COPY, src1, value1, 16); \\\n\
+    read_fun(value_tmp, condition, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    VXC_DP2x8(value, value_tmp, value_tmp,\\\n\
+             VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvConditiontoDst_2x8); \\\n\
+    dst = (value != 0 ? src0 : src1); \\\n\
+    write_fun(output, coord, dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+#define SELECT_HYBRID_TOF16_FUN(name, src0_type, copy0_type, src1_type, copy1_type) \\\n\
+__kernel void select_##name( \\\n\
+    __read_only  image2d_array_t   condition, \\\n\
+    __read_only  image2d_array_t   input0, \\\n\
+    __read_only  image2d_array_t   input1, \\\n\
+    __write_only image2d_array_t   output) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
+    SELECT_HYBRIDTOF16(src0_type, copy0_type, src1_type, copy1_type, \\\n\
+            VXC_ReadImage2DArray, VXC_WriteImage2DArray) \\\n\
+}\n\
+SELECT_HYBRID_TOF16_FUN(I8_F16_U8toF16,  vxc_short8,  vxc_half8,   vxc_uchar16, vxc_uchar16)\n\
+SELECT_HYBRID_TOF16_FUN(I8_U8_F16toF16,  vxc_uchar16, vxc_uchar16, vxc_short8,  vxc_half8)\n\
+SELECT_HYBRID_TOF16_FUN(I8_F16_I8toF16,  vxc_short8,  vxc_half8,   vxc_char16,  vxc_char16)\n\
+SELECT_HYBRID_TOF16_FUN(I8_I8_F16toF16,  vxc_char16,  vxc_char16,  vxc_short8,  vxc_half8)\n\
+SELECT_HYBRID_TOF16_FUN(I8_F16_I16toF16, vxc_short8,  vxc_half8,   vxc_short8,  vxc_short8)\n\
+SELECT_HYBRID_TOF16_FUN(I8_I16_F16toF16, vxc_short8,  vxc_short8,  vxc_short8,  vxc_half8)\n\
+\n\
+#define SELECT_HYBRID_TOF16_FUN_2D(name, src0_type, copy0_type, src1_type, copy1_type) \\\n\
+__kernel void select_##name( \\\n\
+    __read_only  image2d_array_t   condition, \\\n\
+    __read_only  image2d_array_t   input0, \\\n\
+    __read_only  image2d_array_t   input1, \\\n\
+    __write_only image2d_array_t   output) \\\n\
+{ \\\n\
+    int2 coord = (int2)(get_global_id(0), get_global_id(1)); \\\n\
+    SELECT_HYBRIDTOF16(src0_type, copy0_type, src1_type, copy1_type, \\\n\
+            VXC_ReadImage, VXC_WriteImage) \\\n\
+}\n\
+SELECT_HYBRID_TOF16_FUN_2D(I8_F16_U8toF16_2D,  vxc_short8,  vxc_half8,   vxc_uchar16, vxc_uchar16)\n\
+SELECT_HYBRID_TOF16_FUN_2D(I8_U8_F16toF16_2D,  vxc_uchar16, vxc_uchar16, vxc_short8,  vxc_half8)\n\
+SELECT_HYBRID_TOF16_FUN_2D(I8_F16_I8toF16_2D,  vxc_short8,  vxc_half8,   vxc_char16,  vxc_char16)\n\
+SELECT_HYBRID_TOF16_FUN_2D(I8_I8_F16toF16_2D,  vxc_char16,  vxc_char16,  vxc_short8,  vxc_half8)\n\
+SELECT_HYBRID_TOF16_FUN_2D(I8_F16_I16toF16_2D, vxc_short8,  vxc_half8,   vxc_short8,  vxc_short8)\n\
+SELECT_HYBRID_TOF16_FUN_2D(I8_I16_F16toF16_2D, vxc_short8,  vxc_short8,  vxc_short8,  vxc_half8)\n\
 "; /* end of select_vx*/
 
 static const char sequence_mask_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
