@@ -1930,6 +1930,11 @@ vsi_status vsi_nn_setup_binary_graph_inputs_outputs
                 {
                     num_of_graph_real_inputs++;
                 }
+                if (param != NULL)
+                {
+                    vxReleaseParameter(&param);
+                    param = NULL;
+                }
             }
         }
         if (node->op == VSI_NN_OP_PRE_PROCESS &&
@@ -1977,8 +1982,20 @@ vsi_status vsi_nn_setup_binary_graph_inputs_outputs
 
                             if (ref == (vx_reference)tensor->t)
                             {
+                                vxReleaseReference(&ref);
                                 scalar_index = idx + 1;
                                 break;
+                            }
+
+                            if (ref != NULL)
+                            {
+                                vxReleaseReference(&ref);
+                            }
+
+                            if (param != NULL)
+                            {
+                                vxReleaseParameter(&param);
+                                param = NULL;
                             }
                         }
                     }
@@ -1987,6 +2004,11 @@ vsi_status vsi_nn_setup_binary_graph_inputs_outputs
                                                 VX_PARAMETER_TYPE,
                                                 &type,
                                                 sizeof(vx_enum));
+                    if (param != NULL)
+                    {
+                        vxReleaseParameter(&param);
+                        param = NULL;
+                    }
                     if (type != VX_TYPE_SCALAR)
                     {
                         break;
@@ -2005,6 +2027,11 @@ vsi_status vsi_nn_setup_binary_graph_inputs_outputs
                                                 &ref,
                                                 sizeof(vx_reference));
                             graph_inputs[j++] = ref;
+                            vxReleaseReference(&ref);
+                        }
+                        if (param != NULL)
+                        {
+                            vxReleaseParameter(&param);
                         }
                     }
 
@@ -2035,6 +2062,16 @@ vsi_status vsi_nn_setup_binary_graph_inputs_outputs
                         if (direction == VX_INPUT && type == VX_TYPE_TENSOR)
                         {
                             graph_inputs[j++] = ref;
+                        }
+
+                        if (param != NULL)
+                        {
+                            vxReleaseParameter(&param);
+                        }
+
+                        if (ref != NULL)
+                        {
+                            vxReleaseReference(&ref);
                         }
                     }
                 }
