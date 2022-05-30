@@ -1128,59 +1128,67 @@ vsi_bool vsi_nn_is_same_quant_type(
     vsi_nn_tensor_t * dst
     )
 {
-    vx_bool result = FALSE;
+    vsi_nn_dtype_t *src_dtype = NULL, *dst_dtype = NULL;
 
-    if (src->attr.dtype.vx_type == dst->attr.dtype.vx_type)
+    src_dtype = &src->attr.dtype;
+    dst_dtype = &dst->attr.dtype;
+
+    if (src_dtype->qnt_type != dst_dtype->qnt_type)
     {
-        switch (src->attr.dtype.qnt_type)
-        {
-        case VSI_NN_QNT_TYPE_NONE:
-            result = TRUE;
-            break;
+        return FALSE;
+    }
 
+    switch (src_dtype->qnt_type)
+    {
         case VSI_NN_QNT_TYPE_DFP:
-            if (src->attr.dtype.fl == dst->attr.dtype.fl)
+            if (src_dtype->fl != dst_dtype->fl)
             {
-                result = TRUE;
+                return FALSE;
             }
             break;
         case VSI_NN_QNT_TYPE_AFFINE_SYMMETRIC:
         case VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC:
-            if (src->attr.dtype.scale == dst->attr.dtype.scale &&
-                src->attr.dtype.zero_point == dst->attr.dtype.zero_point)
+        {
+            const float diff = (float)1e-5;
+            if (src_dtype->zero_point != dst_dtype->zero_point)
             {
-                result = TRUE;
+                return FALSE;
+            }
+            if (vsi_nn_float_compare(src_dtype->scale, dst_dtype->scale, diff)
+                == FALSE)
+            {
+                return FALSE;
             }
             break;
-
+        }
         case VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC:
+        case VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_ASYMMETRIC:
+        {
+            const float diff = (float)1e-5;
+            int32_t i = 0;
+            int32_t scale_cnt0 = src_dtype->scale_dim;
+            int32_t scale_cnt1 = dst_dtype->scale_dim;
+
+            if (scale_cnt0 == scale_cnt1)
             {
-                int32_t i = 0;
-                int32_t scale_cnt0 = src->attr.dtype.scale_dim;
-                int32_t scale_cnt1 = dst->attr.dtype.scale_dim;
-
-                if (scale_cnt0 == scale_cnt1)
+                const float* src_scale_ptr = src_dtype->scales;
+                const float* dst_scale_ptr = dst_dtype->scales;
+                for (i = 0; i < scale_cnt0; i++)
                 {
-                    const float *src_scale_ptr = src->attr.dtype.scales;
-                    const float *dst_scale_ptr = dst->attr.dtype.scales;
-                    for (i = 0; i < scale_cnt0; i++)
+                    if (vsi_nn_float_compare(
+                            src_scale_ptr[i], dst_scale_ptr[i], diff) == FALSE)
                     {
-                        if (src_scale_ptr[i] != dst_scale_ptr[i])
-                            break;
+                        return FALSE;
                     }
-
-                    if (i == scale_cnt0)
-                        result = TRUE;
                 }
             }
             break;
-
+        }
         default:
             break;
-        }
     }
 
-    return result;
+    return TRUE;
 }
 
 vsi_bool vsi_nn_is_same_type
