@@ -61048,19 +61048,23 @@ static const char roi_align_cl[] = "inline float roi_align_1x1\n\
 #define EPS_GRID 0.00001f\n\
 __kernel void roi_align_F32_F32toF32\n\
 (\n\
-    __read_only  image2d_array_t  input,\n\
-    __read_only  image2d_t        rois,\n\
-    __read_only  image2d_t        n_rois,\n\
-    __write_only image2d_array_t  output,\n\
-                           float  spatial_x_scale,\n\
-                           float  spatial_y_scale,\n\
-                           float  in_width,\n\
-                           float  in_height,\n\
-                           float  rcp_of_out_width,\n\
-                           float  rcp_of_out_height,\n\
-                           float  sampling_x_ratio,\n\
-                           float  sampling_y_ratio,\n\
-                           int    depth\n\
+    __read_only  image2d_array_t input,\n\
+    __read_only  image2d_t       rois,\n\
+    __read_only  image2d_t       n_rois,\n\
+    __write_only image2d_array_t output,\n\
+                 float           input_scale,\n\
+                 float           input_tail,\n\
+                 float           output_scale,\n\
+                 float           output_zp,\n\
+                 float           spatial_x_scale,\n\
+                 float           spatial_y_scale,\n\
+                 float           in_width,\n\
+                 float           in_height,\n\
+                 float           rcp_of_out_width,\n\
+                 float           rcp_of_out_height,\n\
+                 float           sampling_x_ratio,\n\
+                 float           sampling_y_ratio,\n\
+                 int             depth\n\
 )\n\
 {\n\
     int px = get_global_id(0);\n\

@@ -47,19 +47,23 @@ inline float roi_align_1x1
 #define EPS_GRID 0.00001f
 __kernel void roi_align_F32_F32toF32
 (
-    __read_only  image2d_array_t  input,
-    __read_only  image2d_t        rois,
-    __read_only  image2d_t        n_rois,
-    __write_only image2d_array_t  output,
-                           float  spatial_x_scale,
-                           float  spatial_y_scale,
-                           float  in_width,
-                           float  in_height,
-                           float  rcp_of_out_width,
-                           float  rcp_of_out_height,
-                           float  sampling_x_ratio,
-                           float  sampling_y_ratio,
-                           int    depth
+    __read_only  image2d_array_t input,
+    __read_only  image2d_t       rois,
+    __read_only  image2d_t       n_rois,
+    __write_only image2d_array_t output,
+                 float           input_scale,
+                 float           input_tail,
+                 float           output_scale,
+                 float           output_zp,
+                 float           spatial_x_scale,
+                 float           spatial_y_scale,
+                 float           in_width,
+                 float           in_height,
+                 float           rcp_of_out_width,
+                 float           rcp_of_out_height,
+                 float           sampling_x_ratio,
+                 float           sampling_y_ratio,
+                 int             depth
 )
 {
     int px = get_global_id(0);
