@@ -27092,6 +27092,192 @@ MINIMUM_QUANTTOF16_2D_IMPL(U8U8toF16,   vxc_uchar16)\n\
 MINIMUM_QUANTTOF16_2D_IMPL(I8I8toF16,   vxc_char16)\n\
 MINIMUM_QUANTTOF16_2D_IMPL(I16I16toF16, vxc_short8)"; /* end of minimum_1_vx*/
 
+static const char mod_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+_viv_uniform VXC_512Bits uniConvertInt32toUint8_2x8;\n\
+_viv_uniform VXC_512Bits uniConvertFstToFp32_4x4;\n\
+_viv_uniform VXC_512Bits uniConvertSecToFp32_4x4;\n\
+\n\
+_viv_uniform float in_scale0;\n\
+_viv_uniform float in_scale1;\n\
+_viv_uniform float out_scale;\n\
+_viv_uniform float in0Tail;\n\
+_viv_uniform float in1Tail;\n\
+_viv_uniform float out_zp;\n\
+\n\
+#define MOD_PROCESS(dst_type, save_type, read_type, copy_type, conv_mode, IN0_SCALE, IN0_TAIL,\\\n\
+                      IN1_SCALE, IN1_TAIL, OUT_SCALE, OUT_OFFSET, read_fun, write_fun) \\\n\
+    save_type data; \\\n\
+    read_type read_data0, read_data1; \\\n\
+    copy_type tmpData0, tmpData1; \\\n\
+    vxc_float4 in0Val1, in0Val2, in1Val1, in1Val2; \\\n\
+    vxc_float4 tmpVal1, tmpVal2; \\\n\
+    dst_type tmpOut1, tmpOut2; \\\n\
+    read_fun(read_data0, input0, coord, VXC_5BITOFFSET_XY(0,0), \\\n\
+    VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    _viv_asm(COPY, tmpData0, read_data0, 16); \\\n\
+    read_fun(read_data1, input1, coord, VXC_5BITOFFSET_XY(0,0), \\\n\
+    VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    _viv_asm(COPY, tmpData1, read_data1, 16); \\\n\
+    VXC_DP4x4(in0Val1, tmpData0, tmpData0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertFstToFp32_4x4); \\\n\
+    VXC_DP4x4(in0Val2, tmpData0, tmpData0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecToFp32_4x4); \\\n\
+    VXC_DP4x4(in1Val1, tmpData1, tmpData1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertFstToFp32_4x4); \\\n\
+    VXC_DP4x4(in1Val2, tmpData1, tmpData1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertSecToFp32_4x4); \\\n\
+    in0Val1 = in0Val1 * IN0_SCALE + IN0_TAIL; \\\n\
+    in0Val2 = in0Val2 * IN0_SCALE + IN0_TAIL; \\\n\
+    in1Val1 = in1Val1 * IN1_SCALE + IN1_TAIL; \\\n\
+    in1Val2 = in1Val2 * IN1_SCALE + IN1_TAIL; \\\n\
+    if (ifmod) \\\n\
+    { \\\n\
+    tmpVal1 = fmod(in0Val1, in1Val1) * OUT_SCALE + OUT_OFFSET; \\\n\
+    tmpVal2 = fmod(in0Val2, in1Val2) * OUT_SCALE + OUT_OFFSET; \\\n\
+    } \\\n\
+    else \\\n\
+    { \\\n\
+    tmpVal1 = (in0Val1 - in1Val1 * floor(in0Val1 / in1Val1)) * OUT_SCALE + OUT_OFFSET; \\\n\
+    tmpVal2 = (in0Val2 - in1Val2 * floor(in0Val2 / in1Val2)) * OUT_SCALE + OUT_OFFSET; \\\n\
+    } \\\n\
+    _viv_asm(conv_mode, tmpOut1, tmpVal1); \\\n\
+    _viv_asm(conv_mode, tmpOut2, tmpVal2); \\\n\
+    VXC_DP2x8(data, tmpOut1, tmpOut2, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvertInt32toUint8_2x8); \\\n\
+    write_fun(output, coord, data, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+\n\
+#define TENSOR_MOD(src0_name, src1_name, dst_name, dst_type, save_type, read_type, copy_type, \\\n\
+                    conv_mode, IN0_SCALE, IN0_TAIL, IN1_SCALE, IN1_TAIL, OUT_SCALE, OUT_OFFSET) \\\n\
+__kernel void mod_##src0_name##src1_name##to##dst_name \\\n\
+    ( \\\n\
+    image2d_array_t input0, \\\n\
+    image2d_array_t input1, \\\n\
+    image2d_array_t output, \\\n\
+    int             ifmod\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
+    MOD_PROCESS(dst_type, save_type, read_type, copy_type, conv_mode, IN0_SCALE, IN0_TAIL,\\\n\
+                  IN1_SCALE, IN1_TAIL, OUT_SCALE, OUT_OFFSET, VXC_ReadImage2DArray, VXC_WriteImage2DArray); \\\n\
+}\n\
+\n\
+\n\
+TENSOR_MOD(F16, F16, F16, half4, vxc_short8, vxc_short8,\\\n\
+                vxc_half8, CONV, 1, 0, 1, 0, 1, 0)\n\
+TENSOR_MOD(F16, F16, I16, short4, vxc_short8, vxc_short8,\\\n\
+               vxc_half8, CONV_SAT_RTE, 1, 0, 1, 0, out_scale, out_zp)\n\
+TENSOR_MOD(F16, F16, I8,  char4, vxc_char8, vxc_short8,\\\n\
+                vxc_half8, CONV_SAT_RTE, 1, 0, 1, 0, out_scale, out_zp)\n\
+TENSOR_MOD(F16, F16, U8,  uchar4, vxc_uchar8, vxc_short8,\\\n\
+               vxc_half8, CONV_SAT_RTE, 1, 0, 1, 0, out_scale, out_zp)\n\
+\n\
+TENSOR_MOD(I16, I16, I16, short4, vxc_short8, vxc_short8,\\\n\
+                vxc_short8, CONV_SAT_RTE, in_scale0, in0Tail, in_scale1, in1Tail, out_scale, out_zp)\n\
+TENSOR_MOD(I16, I16, F16, half4, vxc_short8, vxc_short8,\\\n\
+                vxc_short8, CONV, in_scale0, in0Tail, in_scale1, in1Tail, 1, 0)\n\
+\n\
+TENSOR_MOD(I8, I8, I8, char4, vxc_char8, vxc_char16,\\\n\
+                vxc_char16, CONV_SAT_RTE, in_scale0, in0Tail, in_scale1, in1Tail, out_scale, out_zp)\n\
+TENSOR_MOD(I8, I8, F16, half4, vxc_short8, vxc_char16,\\\n\
+                vxc_char16, CONV, in_scale0, in0Tail, in_scale1, in1Tail, 1, 0)\n\
+\n\
+TENSOR_MOD(U8, U8, U8,  uchar4, vxc_uchar8, vxc_uchar16,\\\n\
+                vxc_uchar16, CONV_SAT_RTE, in_scale0, in0Tail, in_scale1, in1Tail, out_scale, out_zp)\n\
+TENSOR_MOD(U8, U8, F16, half4, vxc_short8, vxc_uchar16,\\\n\
+                vxc_uchar16, CONV, in_scale0, in0Tail, in_scale1, in1Tail, 1, 0)\n\
+\n\
+\n\
+#define TENSOR_MOD_2D(src0_name, src1_name, dst_name, dst_type, save_type, read_type, copy_type, \\\n\
+    conv_mode, IN0_SCALE, IN0_TAIL, IN1_SCALE, IN1_TAIL, OUT_SCALE, OUT_OFFSET) \\\n\
+__kernel void mod_##src0_name##src1_name##to##dst_name##_2D \\\n\
+    ( \\\n\
+    image2d_array_t input0, \\\n\
+    image2d_array_t input1, \\\n\
+    image2d_array_t output, \\\n\
+    int             ifmod\n\
+    ) \\\n\
+{ \\\n\
+    int2 coord = (int2)(get_global_id(0), get_global_id(1)); \\\n\
+    MOD_PROCESS(dst_type, save_type, read_type, copy_type, conv_mode, IN0_SCALE, IN0_TAIL,\\\n\
+                  IN1_SCALE, IN1_TAIL, OUT_SCALE, OUT_OFFSET, VXC_ReadImage, VXC_WriteImage); \\\n\
+}\n\
+\n\
+\n\
+TENSOR_MOD_2D(F16, F16, F16, half4, vxc_short8, vxc_short8,\\\n\
+                vxc_half8, CONV, 1, 0, 1, 0, 1, 0)\n\
+TENSOR_MOD_2D(F16, F16, I16, short4, vxc_short8, vxc_short8,\\\n\
+               vxc_half8, CONV_SAT_RTE, 1, 0, 1, 0, out_scale, out_zp)\n\
+TENSOR_MOD_2D(F16, F16, I8,  char4, vxc_char8, vxc_short8,\\\n\
+                vxc_half8, CONV_SAT_RTE, 1, 0, 1, 0, out_scale, out_zp)\n\
+TENSOR_MOD_2D(F16, F16, U8,  uchar4, vxc_uchar8, vxc_short8,\\\n\
+               vxc_half8, CONV_SAT_RTE, 1, 0, 1, 0, out_scale, out_zp)\n\
+\n\
+TENSOR_MOD_2D(I16, I16, I16, short4, vxc_short8, vxc_short8,\\\n\
+                vxc_short8, CONV_SAT_RTE, in_scale0, in0Tail, in_scale1, in1Tail, out_scale, out_zp)\n\
+TENSOR_MOD_2D(I16, I16, F16, half4, vxc_short8, vxc_short8,\\\n\
+                vxc_short8, CONV, in_scale0, in0Tail, in_scale1, in1Tail, 1, 0)\n\
+\n\
+TENSOR_MOD_2D(I8, I8, I8, char4, vxc_char8, vxc_char16,\\\n\
+                vxc_char16, CONV_SAT_RTE, in_scale0, in0Tail, in_scale1, in1Tail, out_scale, out_zp)\n\
+TENSOR_MOD_2D(I8, I8, F16, half4, vxc_short8, vxc_char16,\\\n\
+                vxc_char16, CONV, in_scale0, in0Tail, in_scale1, in1Tail, 1, 0)\n\
+\n\
+TENSOR_MOD_2D(U8, U8, U8,  uchar4, vxc_uchar8, vxc_uchar16,\\\n\
+                vxc_uchar16, CONV_SAT_RTE, in_scale0, in0Tail, in_scale1, in1Tail, out_scale, out_zp)\n\
+TENSOR_MOD_2D(U8, U8, F16, half4, vxc_short8, vxc_uchar16,\\\n\
+                vxc_uchar16, CONV, in_scale0, in0Tail, in_scale1, in1Tail, 1, 0)\n\
+\n\
+\n\
+_viv_uniform VXC_512Bits uniConvBF16toF32_Part0_2x8;\n\
+_viv_uniform VXC_512Bits uniConvBF16toF32_Part1_2x8;\n\
+_viv_uniform VXC_512Bits uniExtractOddData_2x8;\n\
+\n\
+#define MOD_BF16_PROCESS(read_fun, write_fun) \\\n\
+    vxc_short8 read_data0, read_data1, vec0; \\\n\
+    vxc_float4 in0Val1, in0Val2, in1Val1, in1Val2; \\\n\
+    vxc_float4 tmpVal1, tmpVal2; \\\n\
+    vxc_ushort8 dst0, dst1; \\\n\
+    vxc_ushort8 vect; \\\n\
+    vxc_short8 zero = (vxc_short8)(0, 0, 0, 0, 0, 0, 0, 0); \\\n\
+    read_fun(read_data0, input0, coord, VXC_5BITOFFSET_XY(0,0), \\\n\
+    VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    VXC_DP2x8(vec0, read_data0, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvBF16toF32_Part0_2x8); \\\n\
+    _viv_asm(COPY, in0Val1, vec0, 16); \\\n\
+    VXC_DP2x8(vec0, read_data0, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvBF16toF32_Part1_2x8); \\\n\
+    _viv_asm(COPY, in0Val2, vec0, 16); \\\n\
+    read_fun(read_data1, input1, coord, VXC_5BITOFFSET_XY(0,0), \\\n\
+    VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    VXC_DP2x8(vec0, read_data1, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvBF16toF32_Part0_2x8); \\\n\
+    _viv_asm(COPY, in1Val1, vec0, 16); \\\n\
+    VXC_DP2x8(vec0, read_data1, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvBF16toF32_Part1_2x8); \\\n\
+    _viv_asm(COPY, in1Val2, vec0, 16); \\\n\
+    tmpVal1 = fmod(in0Val1, in1Val1); \\\n\
+    tmpVal2 = fmod(in0Val2, in1Val2); \\\n\
+    _viv_asm(COPY, dst0, tmpVal1, 16); \\\n\
+    _viv_asm(COPY, dst1, tmpVal2, 16); \\\n\
+    VXC_DP2x8(vect, dst0, dst1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniExtractOddData_2x8); \\\n\
+    write_fun(output, coord, vect, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+__kernel void mod_BF16BF16toBF16\n\
+    (\n\
+    image2d_array_t input0,\n\
+    image2d_array_t input1,\n\
+    image2d_array_t output,\n\
+    int             ifmod\n\
+    )\n\
+{\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+    MOD_BF16_PROCESS(VXC_ReadImage2DArray, VXC_WriteImage2DArray);\n\
+}\n\
+\n\
+__kernel void mod_BF16BF16toBF16_2D\n\
+    (\n\
+    image2d_array_t input0,\n\
+    image2d_array_t input1,\n\
+    image2d_array_t output,\n\
+    int             ifmod\n\
+    )\n\
+{\n\
+    int2 coord = (int2)(get_global_id(0), get_global_id(1));\n\
+    MOD_BF16_PROCESS(VXC_ReadImage, VXC_WriteImage);\n\
+}"; /* end of mod_vx*/
+
 static const char moments_axis0_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 _viv_uniform int width;\n\
@@ -57135,6 +57321,314 @@ __kernel void minimum_I32I32toI32_2D\n\
 }\n\
 "; /* end of minimum_cl*/
 
+static const char mod_cl[] = "__kernel void mod_F32F32toF32\n\
+    (\n\
+    __read_only  image2d_array_t  input,\n\
+    __read_only  image2d_array_t  input1,\n\
+    __write_only image2d_array_t  output,\n\
+                 int              ifmod,\n\
+                 float            input0Scale,\n\
+                 float            input0Tail,\n\
+                 float            input1Scale,\n\
+                 float            input1Tail,\n\
+                 float            outputScale,\n\
+                 float            outputTail\n\
+     )\n\
+{\n\
+    int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+    float4 src0;\n\
+    float4 src1;\n\
+    READ_IMAGEF_2DARRAY(src0, input, coord);\n\
+    READ_IMAGEF_2DARRAY(src1, input1, coord);\n\
+    float4 dst  = fmod(src0, src1);\n\
+    write_imagef(output, coord, dst);\n\
+}\n\
+\n\
+__kernel void mod_F32F32toF32_2D\n\
+    (\n\
+    __read_only  image2d_t input,\n\
+    __read_only  image2d_t input1,\n\
+    __write_only image2d_t output,\n\
+                 int       ifmod,\n\
+                 float     input0Scale,\n\
+                 float     input0Tail,\n\
+                 float     input1Scale,\n\
+                 float     input1Tail,\n\
+                 float     outputScale,\n\
+                 float     outputTail\n\
+     )\n\
+{\n\
+    int2 coord =  (int2)(get_global_id(0), get_global_id(1));\n\
+    float4 src0 = read_imagef(input, coord);\n\
+    float4 src1 = read_imagef(input1, coord);\n\
+    float4 dst  = fmod(src0, src1);\n\
+    write_imagef(output, coord, dst);\n\
+}\n\
+\n\
+__kernel void mod_I32I32toI32\n\
+    (\n\
+    __read_only  image2d_array_t  input,\n\
+    __read_only  image2d_array_t  input1,\n\
+    __write_only image2d_array_t  output,\n\
+                 int              ifmod,\n\
+                 float            input0Scale,\n\
+                 float            input0Tail,\n\
+                 float            input1Scale,\n\
+                 float            input1Tail,\n\
+                 float            outputScale,\n\
+                 float            outputTail\n\
+     )\n\
+{\n\
+    int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+    int4 src0;\n\
+    int4 src1;\n\
+    READ_IMAGEI_2DARRAY(src0, input, coord);\n\
+    READ_IMAGEI_2DARRAY(src1, input1, coord);\n\
+    float4 in0 = convert_float4(src0) * input0Scale + input0Tail;\n\
+    float4 in1 = convert_float4(src1) * input1Scale + input1Tail;\n\
+    float4 out;\n\
+    if (ifmod)\n\
+    {\n\
+        out = fmod(in0, in1) * outputScale + outputTail;\n\
+    }\n\
+    else\n\
+    {\n\
+        out = (in0 - in1 * floor(in0 / in1)) * outputScale + outputTail;\n\
+    }\n\
+    int4 dst = convert_int4(out);\n\
+    write_imagei(output, coord, dst);\n\
+}\n\
+\n\
+__kernel void mod_I32I32toI32_2D\n\
+    (\n\
+    __read_only  image2d_t input,\n\
+    __read_only  image2d_t input1,\n\
+    __write_only image2d_t output,\n\
+                 int       ifmod,\n\
+                 float     input0Scale,\n\
+                 float     input0Tail,\n\
+                 float     input1Scale,\n\
+                 float     input1Tail,\n\
+                 float     outputScale,\n\
+                 float     outputTail\n\
+     )\n\
+{\n\
+    int2 coord =  (int2)(get_global_id(0), get_global_id(1));\n\
+    int4 src0 = read_imagei(input, coord);\n\
+    int4 src1 = read_imagei(input1, coord);\n\
+    float4 in0 = convert_float4(src0) * input0Scale + input0Tail;\n\
+    float4 in1 = convert_float4(src1) * input1Scale + input1Tail;\n\
+    float4 out;\n\
+    if (ifmod)\n\
+    {\n\
+        out = fmod(in0, in1) * outputScale + outputTail;\n\
+    }\n\
+    else\n\
+    {\n\
+        out = (in0 - in1 * floor(in0 / in1)) * outputScale + outputTail;\n\
+    }\n\
+    int4 dst = convert_int4(out);\n\
+    write_imagei(output, coord, dst);\n\
+}\n\
+\n\
+__kernel void mod_I32I32toU8\n\
+    (\n\
+    __read_only  image2d_array_t  input,\n\
+    __read_only  image2d_array_t  input1,\n\
+    __write_only image2d_array_t  output,\n\
+                 int              ifmod,\n\
+                 float            input0Scale,\n\
+                 float            input0Tail,\n\
+                 float            input1Scale,\n\
+                 float            input1Tail,\n\
+                 float            outputScale,\n\
+                 float            outputTail\n\
+     )\n\
+{\n\
+    int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+    int4 src0;\n\
+    int4 src1;\n\
+    READ_IMAGEI_2DARRAY(src0, input, coord);\n\
+    READ_IMAGEI_2DARRAY(src1, input1, coord);\n\
+    float4 in0 = convert_float4(src0) * input0Scale + input0Tail;\n\
+    float4 in1 = convert_float4(src1) * input1Scale + input1Tail;\n\
+    float4 out;\n\
+    if (ifmod)\n\
+    {\n\
+        out = fmod(in0, in1) * outputScale + outputTail;\n\
+    }\n\
+    else\n\
+    {\n\
+        out = (in0 - in1 * floor(in0 / in1)) * outputScale + outputTail;\n\
+    }\n\
+    uint4 dst = convert_uint4(out);\n\
+    write_imageui(output, coord, dst);\n\
+}\n\
+\n\
+__kernel void mod_I32I32toU8_2D\n\
+    (\n\
+    __read_only  image2d_t input,\n\
+    __read_only  image2d_t input1,\n\
+    __write_only image2d_t output,\n\
+                 int       ifmod,\n\
+                 float     input0Scale,\n\
+                 float     input0Tail,\n\
+                 float     input1Scale,\n\
+                 float     input1Tail,\n\
+                 float     outputScale,\n\
+                 float     outputTail\n\
+     )\n\
+{\n\
+    int2 coord =  (int2)(get_global_id(0), get_global_id(1));\n\
+    int4 src0 = read_imagei(input, coord);\n\
+    int4 src1 = read_imagei(input1, coord);\n\
+    float4 in0 = convert_float4(src0) * input0Scale + input0Tail;\n\
+    float4 in1 = convert_float4(src1) * input1Scale + input1Tail;\n\
+    float4 out;\n\
+    if (ifmod)\n\
+    {\n\
+        out = fmod(in0, in1) * outputScale + outputTail;\n\
+    }\n\
+    else\n\
+    {\n\
+        out = (in0 - in1 * floor(in0 / in1)) * outputScale + outputTail;\n\
+    }\n\
+    uint4 dst = convert_uint4(out);\n\
+    write_imageui(output, coord, dst);\n\
+}\n\
+\n\
+__kernel void mod_U8U8toU8\n\
+    (\n\
+    __read_only  image2d_array_t  input,\n\
+    __read_only  image2d_array_t  input1,\n\
+    __write_only image2d_array_t  output,\n\
+                 int              ifmod,\n\
+                 float            input0Scale,\n\
+                 float            input0Tail,\n\
+                 float            input1Scale,\n\
+                 float            input1Tail,\n\
+                 float            outputScale,\n\
+                 float            outputTail\n\
+     )\n\
+{\n\
+    int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+    uint4 src0, src1;\n\
+    float4 in0, in1, out;\n\
+    READ_IMAGEUI_2DARRAY(src0, input, coord);\n\
+    READ_IMAGEUI_2DARRAY(src1, input1, coord);\n\
+    in0 = convert_float4(src0) * input0Scale + input0Tail;\n\
+    in1 = convert_float4(src1) * input1Scale + input1Tail;\n\
+    if (ifmod)\n\
+    {\n\
+        out = fmod(in0, in1) * outputScale + outputTail;\n\
+    }\n\
+    else\n\
+    {\n\
+        out = (in0 - in1 * floor(in0 / in1)) * outputScale + outputTail;\n\
+    }\n\
+    uint4 dst  = convert_uint4(out);\n\
+    write_imageui(output, coord, dst);\n\
+}\n\
+\n\
+__kernel void mod_U8U8toU8_2D\n\
+    (\n\
+    __read_only  image2d_t input,\n\
+    __read_only  image2d_t input1,\n\
+    __write_only image2d_t output,\n\
+                 int       ifmod,\n\
+                 float     input0Scale,\n\
+                 float     input0Tail,\n\
+                 float     input1Scale,\n\
+                 float     input1Tail,\n\
+                 float     outputScale,\n\
+                 float     outputTail\n\
+     )\n\
+{\n\
+    int2 coord =  (int2)(get_global_id(0), get_global_id(1));\n\
+    uint4 src0 = read_imageui(input, coord);\n\
+    uint4 src1 = read_imageui(input1, coord);\n\
+    float4 in0, in1, out;\n\
+    in0 = convert_float4(src0) * input0Scale + input0Tail;\n\
+    in1 = convert_float4(src1) * input1Scale + input1Tail;\n\
+    if (ifmod)\n\
+    {\n\
+        out = fmod(in0, in1) * outputScale + outputTail;\n\
+    }\n\
+    else\n\
+    {\n\
+        out = (in0 - in1 * floor(in0 / in1)) * outputScale + outputTail;\n\
+    }\n\
+    uint4 dst  = convert_uint4(out);\n\
+    write_imageui(output, coord, dst);\n\
+}\n\
+\n\
+__kernel void mod_U8I32toU8\n\
+    (\n\
+    __read_only  image2d_array_t  input,\n\
+    __read_only  image2d_array_t  input1,\n\
+    __write_only image2d_array_t  output,\n\
+                 int              ifmod,\n\
+                 float            input0Scale,\n\
+                 float            input0Tail,\n\
+                 float            input1Scale,\n\
+                 float            input1Tail,\n\
+                 float            outputScale,\n\
+                 float            outputTail\n\
+     )\n\
+{\n\
+    int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+    uint4 src0;\n\
+    int4 src1;\n\
+    float4 in0, in1, out;\n\
+    READ_IMAGEUI_2DARRAY(src0, input, coord);\n\
+    READ_IMAGEI_2DARRAY(src1, input1, coord);\n\
+    in0 = convert_float4(src0) * input0Scale + input0Tail;\n\
+    in1 = convert_float4(src1);\n\
+    if (ifmod)\n\
+    {\n\
+        out = fmod(in0, in1) * outputScale + outputTail;\n\
+    }\n\
+    else\n\
+    {\n\
+        out = (in0 - in1 * floor(in0 / in1)) * outputScale + outputTail;\n\
+    }\n\
+    uint4 dst = convert_uint4(out);\n\
+    write_imageui(output, coord, dst);\n\
+}\n\
+\n\
+__kernel void mod_U8I32toU8_2D\n\
+    (\n\
+    __read_only  image2d_t input,\n\
+    __read_only  image2d_t input1,\n\
+    __write_only image2d_t output,\n\
+                 int       ifmod,\n\
+                 float     input0Scale,\n\
+                 float     input0Tail,\n\
+                 float     input1Scale,\n\
+                 float     input1Tail,\n\
+                 float     outputScale,\n\
+                 float     outputTail\n\
+     )\n\
+{\n\
+    int2 coord =  (int2)(get_global_id(0), get_global_id(1));\n\
+    uint4 src0 = read_imageui(input, coord);\n\
+    int4 src1 = read_imagei(input1, coord);\n\
+    float4 in0, in1, out;\n\
+    in0 = convert_float4(src0) * input0Scale + input0Tail;\n\
+    in1 = convert_float4(src1);\n\
+    if (ifmod)\n\
+    {\n\
+        out = fmod(in0, in1) * outputScale + outputTail;\n\
+    }\n\
+    else\n\
+    {\n\
+        out = (in0 - in1 * floor(in0 / in1)) * outputScale + outputTail;\n\
+    }\n\
+    uint4 dst = convert_uint4(out);\n\
+    write_imageui(output, coord, dst);\n\
+}\n\
+"; /* end of mod_cl*/
+
 static const char moments_axis0_cl[] = "__kernel void moments_axis0_U8toF32(\n\
     __read_only image2d_array_t   input,\n\
     __write_only image2d_t  output_mean,\n\
@@ -63118,6 +63612,7 @@ static const source_map_t evis_resource[] =
     {"maximum_1_vx", maximum_1_vx},
     {"minimum_0_vx", minimum_0_vx},
     {"minimum_1_vx", minimum_1_vx},
+    {"mod_vx", mod_vx},
     {"moments_axis0_vx", moments_axis0_vx},
     {"moments_axis01_vx", moments_axis01_vx},
     {"moments_axis012_vx", moments_axis012_vx},
@@ -63297,6 +63792,7 @@ static const source_map_t cl_resource[] =
     {"maxpoolwithargmax_cl", maxpoolwithargmax_cl},
     {"maxpoolwithargmax_2d_cl", maxpoolwithargmax_2d_cl},
     {"minimum_cl", minimum_cl},
+    {"mod_cl", mod_cl},
     {"moments_axis0_cl", moments_axis0_cl},
     {"moments_axis01_cl", moments_axis01_cl},
     {"moments_axis012_cl", moments_axis012_cl},
