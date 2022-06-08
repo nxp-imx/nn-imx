@@ -92,6 +92,13 @@ static vsi_bool op_check
         IO_TYPE(D_I16|Q_DFP,   D_I16|Q_DFP)
         IO_TYPE(D_I16|Q_ASYM,  D_I16|Q_ASYM)
         IO_TYPE(D_I16|Q_SYM,   D_I16|Q_SYM)
+        IO_TYPE(D_F16,         D_U8|Q_ASYM)
+        IO_TYPE(D_F16,         D_I8|Q_DFP)
+        IO_TYPE(D_F16,         D_I8|Q_ASYM)
+        IO_TYPE(D_F16,         D_I8|Q_SYM)
+        IO_TYPE(D_F16,         D_I16|Q_DFP)
+        IO_TYPE(D_F16,         D_I16|Q_ASYM)
+        IO_TYPE(D_F16,         D_I16|Q_SYM)
     END_IO_TYPE_DECL(CUMSUM)
     if (!VALIDATE_OP_IO_TYPES(CUMSUM, self, inputs, self->input.num, outputs, self->output.num))
     {

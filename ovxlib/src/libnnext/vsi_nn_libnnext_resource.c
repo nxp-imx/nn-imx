@@ -1589,6 +1589,303 @@ TENSOR_ARGMIN_AXIS2_8BITS_2D(U8,  I16, vxc_uchar8, vxc_short8)\n\
 TENSOR_ARGMIN_AXIS2_8BITS_2D(U8,  U8,  vxc_uchar8, vxc_uchar8)\n\
 "; /* end of argmin_axis2_vx*/
 
+static const char batchnorm_grad_f16_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+_viv_uniform int width;\n\
+_viv_uniform int height;\n\
+_viv_uniform float dimRatio;\n\
+_viv_uniform int group_num;\n\
+_viv_uniform VXC_512Bits UniFP16toFP32Lo4_dp4x4;\n\
+_viv_uniform VXC_512Bits uniConvertHalfToFp16_2x8;\n\
+\n\
+_viv_uniform VXC_512Bits uniFp16SumSqr_dp8x2;\n\
+_viv_uniform VXC_512Bits uniConvertEndInt16Fp32_4x4;\n\
+\n\
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void batchnorm_grad_mean_F16(\n\
+    image2d_array_t input, image2d_array_t output, float eps, int rsFlg)\n\
+{\n\
+    int lidx = get_local_id(0);\n\
+    int4 coord = (int4)(lidx << 3, get_global_id(1), get_global_id(2), get_global_id(2));\n\
+    vxc_short8 src0;\n\
+    vxc_half8 in_h;\n\
+    vxc_float4 tmpSum;\n\
+    vxc_float4 sum0 = (vxc_float4)(0);\n\
+\n\
+    __local float lcl_sum[16];\n\
+\n\
+    for(coord.z = 0; coord.z < channel; coord.z++)\n\
+    {\n\
+        for(coord.y = 0; coord.y < height; coord.y++)\n\
+        {\n\
+            for(coord.x = lidx << 3; coord.x < width;)\n\
+            {\n\
+                VXC_ReadImage2DArray(src0, input, coord, VXC_5BITOFFSET_XY(0, 0),\n\
+                        VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+                coord.x += 128;\n\
+                _viv_asm(COPY, in_h, src0, 16);\n\
+\n\
+                VXC_DP8x2(tmpSum, in_h, in_h, VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0),\\\n\
+                        uniFp16SumSqr_dp8x2);\n\
+                sum0 += tmpSum;\n\
+            }\n\
+        }\n\
+    }\n\
+    lcl_sum[lidx] = sum0.x;\n\
+    barrier(CLK_LOCAL_MEM_FENCE);\n\
+\n\
+    int4 coord_out = (int4)(0, 0, 0, 0);\n\
+    if(lidx == 0)\n\
+    {\n\
+        float4 one = (float4)(1, 1, 1, 1);\n\
+        __local float4* tmp_sum = (__local float4*)lcl_sum;\n\
+\n\
+        float sum = 0;\n\
+        for(int i = 0; i < 4; i++)\n\
+        {\n\
+            sum += dot(tmp_sum[i], one);\n\
+        }\n\
+\n\
+        float4 data = (float4)(sum * dimRatio, 0, 0, 0);\n\
+        write_imagef(output, coord_out, data);\n\
+    }\n\
+}\n\
+\n\
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void batchnorm_grad_mean_F16_2D(\n\
+    image2d_t input, image2d_t output, float eps, int rsFlg)\n\
+{\n\
+    int lidx = get_local_id(0);\n\
+    int2 coord = (int2)(lidx << 3, get_global_id(1));\n\
+    vxc_short8 src0;\n\
+    vxc_half8 in_h;\n\
+    vxc_float4 tmpSum;\n\
+    vxc_float4 sum0 = (vxc_float4)(0);\n\
+\n\
+    __local float lcl_sum[16];\n\
+\n\
+    for(coord.y = 0; coord.y < height; coord.y++)\n\
+    {\n\
+        for(coord.x = lidx << 3; coord.x < width;)\n\
+        {\n\
+            VXC_ReadImage(src0, input, coord, VXC_5BITOFFSET_XY(0, 0),\n\
+                    VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+            coord.x += 128;\n\
+            _viv_asm(COPY, in_h, src0, 16);\n\
+\n\
+            VXC_DP8x2(tmpSum, in_h, in_h, VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0),\\\n\
+                    uniFp16SumSqr_dp8x2);\n\
+            sum0 += tmpSum;\n\
+        }\n\
+    }\n\
+    lcl_sum[lidx] = sum0.x;\n\
+    barrier(CLK_LOCAL_MEM_FENCE);\n\
+\n\
+    int2 coord_out = (int2)(0, 0);\n\
+    if(lidx == 0)\n\
+    {\n\
+        float4 one = (float4)(1, 1, 1, 1);\n\
+        __local float4* tmp_sum = (__local float4*)lcl_sum;\n\
+\n\
+        float sum = 0;\n\
+        for(int i = 0; i < 4; i++)\n\
+        {\n\
+            sum += dot(tmp_sum[i], one);\n\
+        }\n\
+\n\
+        float4 data = (float4)(sum * dimRatio, 0, 0, 0);\n\
+        write_imagef(output, coord_out, data);\n\
+    }\n\
+}\n\
+\n\
+\n\
+\n\
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_meanvari_F16_2D(\n\
+    image2d_array_t input, image2d_array_t output, float eps, int rsFlg)\n\
+{\n\
+    int gidx = get_global_id(0) << 3;\n\
+    int lidx = get_local_id(0);\n\
+    int gidz = get_global_id(1);\n\
+    int gidy = gidz * height;\n\
+\n\
+    int2 coord = (int2)(gidx, gidy);\n\
+    vxc_short8 src0;\n\
+    vxc_half8 in_h;\n\
+    vxc_float4 sumsqr;\n\
+    vxc_float4 tmpSumSqr = (vxc_float4)(0);\n\
+\n\
+    __local float lcl_sum[16];\n\
+    __local float lcl_sqr[16];\n\
+\n\
+    int endH = gidy + height;\n\
+    if(gidx < width)\n\
+    {\n\
+        for(; coord.y < endH;)\n\
+        {\n\
+            VXC_ReadImage(src0, input, coord, VXC_5BITOFFSET_XY(0, 0),\n\
+                VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+            coord.y++;\n\
+            _viv_asm(COPY, in_h, src0, 16);\n\
+            VXC_DP8x2(sumsqr, in_h, in_h, VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0),\\\n\
+                uniFp16SumSqr_dp8x2);\n\
+            tmpSumSqr += sumsqr;\n\
+        }\n\
+    }\n\
+\n\
+    lcl_sum[lidx] = tmpSumSqr.x;\n\
+    lcl_sqr[lidx] = tmpSumSqr.y;\n\
+    barrier(CLK_LOCAL_MEM_FENCE);\n\
+\n\
+    int4 coord_out = (int4)(get_group_id(0) << 2, gidz, 0, 0);\n\
+    if(lidx == 0)\n\
+    {\n\
+        float4 one = (float4)(1, 1, 1, 1);\n\
+        __local float4* tmp_sum = (__local float4*)lcl_sum;\n\
+        __local float4* tmp_sqr = (__local float4*)lcl_sqr;\n\
+\n\
+        float sum = 0;\n\
+        float sqr = 0;\n\
+        for(int i = 0; i < 4; i++)\n\
+        {\n\
+            //sum += lcl_sum[i];\n\
+            //sqr += lcl_sqr[i];\n\
+            sum += dot(tmp_sum[i], one);\n\
+            sqr += dot(tmp_sqr[i], one);\n\
+        }\n\
+\n\
+        float4 data = (float4)(sum, sqr, 0, 0);\n\
+        write_imagef(output, coord_out, data);\n\
+    }\n\
+}\n\
+\n\
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_F16toF16(\n\
+    image2d_array_t input, image2d_array_t bias, image2d_array_t scale, image2d_t meanVari,\n\
+    image2d_array_t output, float eps, int rsFlg)\n\
+{\n\
+    int gidz = get_global_id(1);\n\
+    int4 coord = (int4)(get_global_id(0), 0, gidz, gidz);\n\
+    int4 coord_in = (int4)(get_global_id(0), 0, gidz, gidz);\n\
+    int4 coord_para = (int4)(gidz, 0, 0, 0);\n\
+    vxc_short8 src0;\n\
+    vxc_short8 src1;\n\
+    vxc_half8 scale_h, in_h;\n\
+    float scale_vari, bias_val;\n\
+    vxc_float4 bias_f, scale_f, mean_vari = (vxc_float4)(0);\n\
+\n\
+    VXC_ReadImage(src1, scale, coord_para.xy, VXC_5BITOFFSET_XY(0, 0),\\\n\
+        VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    _viv_asm(COPY, scale_h, src1, 16);\n\
+    VXC_DP4x4(scale_f, scale_h, scale_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), UniFP16toFP32Lo4_dp4x4);\n\
+    bias_f = read_imagef(bias, coord_para);\n\
+\n\
+    for(int i = 0; i < group_num; i++)\n\
+    {\n\
+        mean_vari += read_imagef(meanVari, coord_para.yx);\n\
+        coord_para.y += 4;\n\
+    }\n\
+    mean_vari *= dimRatio;\n\
+    mean_vari.s1 = mean_vari.s1 - mean_vari.s0 * mean_vari.s0 + eps;\n\
+    mean_vari.s1 = rsqrt(mean_vari.s1);\n\
+\n\
+    scale_vari = scale_f.s0 * mean_vari.s1;\n\
+    vxc_float4  tmpData0, tmpData1;\n\
+    vxc_short8 outval;\n\
+    half4 tmpVal0, tmpVal1;\n\
+    bias_val = (bias_f.s0 - scale_vari * mean_vari.s0);\n\
+    vxc_half8 dst;\n\
+\n\
+    int8 input_desc, output_desc;\n\
+    _viv_asm(COPY, input_desc, input, sizeof(input_desc));\n\
+    int baseAddr_a = (int)get_global_id(1) * input_desc.s4 + input_desc.s0;\n\
+    _viv_asm(MOV, coord_in.z, baseAddr_a);\n\
+\n\
+    _viv_asm(COPY, output_desc, output, sizeof(output_desc));\n\
+    int baseAddr = (int)get_global_id(1) * output_desc.s4 + output_desc.s0;\n\
+    _viv_asm(MOV, coord.z, baseAddr);\n\
+\n\
+    for(coord.y = 0; coord.y < height; coord.y++)\n\
+    {\n\
+    VXC_OP4(img_load_3d, src0, input, coord_in, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                    VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+    _viv_asm(COPY, in_h, src0, 16);\n\
+\n\
+    coord_in.y ++;\n\
+\n\
+    VXC_DP4x4(tmpData0, in_h, in_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
+        UniFP16toFP32Lo4_dp4x4);\n\
+    VXC_DP4x4(tmpData1, in_h, in_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
+        uniConvertEndInt16Fp32_4x4);\n\
+\n\
+    vxc_float4 norm;\n\
+    norm = scale_vari * tmpData0 + bias_val;\n\
+    _viv_asm(CONV, tmpVal0, norm);\n\
+    norm = scale_vari * tmpData1 + bias_val;\n\
+    _viv_asm(CONV, tmpVal1, norm);\n\
+    VXC_DP2x8(dst, tmpVal0, tmpVal1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),\\\n\
+        uniConvertHalfToFp16_2x8);\n\
+    _viv_asm(COPY, outval, dst, 16);\n\
+    VXC_OP4_NoDest(img_store_3d, output, coord, outval, \\\n\
+                    VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0));\n\
+    }\n\
+}\n\
+\n\
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_F16toF16_2D(\n\
+    image2d_array_t input, image2d_array_t bias, image2d_array_t scale, image2d_t meanVari,\n\
+    image2d_array_t output, float eps, int rsFlg)\n\
+{\n\
+    int gidz = get_global_id(1);\n\
+    int gidy = gidz * height;\n\
+    int4 coord = (int4)(get_global_id(0), gidy, 0, 0);\n\
+    int4 coord_para = (int4)(gidz, 0, 0, 0);\n\
+    int endH = gidy + height;\n\
+    vxc_short8 src0;\n\
+    vxc_short8 src1;\n\
+    vxc_half8 scale_h, in_h;\n\
+    float scale_vari, bias_val;\n\
+    vxc_float4 bias_f, scale_f, mean_vari = (vxc_float4)(0);\n\
+\n\
+    VXC_ReadImage(src1, scale, coord_para.xy, VXC_5BITOFFSET_XY(0, 0),\\\n\
+        VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    _viv_asm(COPY, scale_h, src1, 16);\n\
+    VXC_DP4x4(scale_f, scale_h, scale_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), UniFP16toFP32Lo4_dp4x4);\n\
+    bias_f = read_imagef(bias, coord_para);\n\
+\n\
+    for(int i = 0; i < group_num; i++)\n\
+    {\n\
+        mean_vari += read_imagef(meanVari, coord_para.yx);\n\
+        coord_para.y += 4;\n\
+    }\n\
+    mean_vari *= dimRatio;\n\
+    mean_vari.s1 = mean_vari.s1 - mean_vari.s0 * mean_vari.s0 + eps;\n\
+    mean_vari.s1 = rsqrt(mean_vari.s1);\n\
+\n\
+    scale_vari = scale_f.s0 * mean_vari.s1;\n\
+    vxc_float4  tmpData0, tmpData1;\n\
+    vxc_short8 outval;\n\
+    half4 tmpVal0, tmpVal1;\n\
+    bias_val = (bias_f.s0 - scale_vari * mean_vari.s0);\n\
+    vxc_half8 dst;\n\
+\n\
+    for(; coord.y < endH; coord.y++)\n\
+    {\n\
+    VXC_ReadImage(src0, input, coord.xy, VXC_5BITOFFSET_XY(0, 0),\\\n\
+        VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+    _viv_asm(COPY, in_h, src0, 16);\n\
+\n\
+    VXC_DP4x4(tmpData0, in_h, in_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
+        UniFP16toFP32Lo4_dp4x4);\n\
+    VXC_DP4x4(tmpData1, in_h, in_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
+        uniConvertEndInt16Fp32_4x4);\n\
+    vxc_float4 norm;\n\
+    norm = scale_vari * tmpData0 + bias_val;\n\
+    _viv_asm(CONV, tmpVal0, norm);\n\
+    norm = scale_vari * tmpData1 + bias_val;\n\
+    _viv_asm(CONV, tmpVal1, norm);\n\
+    VXC_DP2x8(dst, tmpVal0, tmpVal1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),\\\n\
+        uniConvertHalfToFp16_2x8);\n\
+    _viv_asm(COPY, outval, dst, 16);\n\
+    VXC_WriteImage(output, coord.xy, outval, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+    }\n\
+}"; /* end of batchnorm_grad_f16_vx*/
+
 static const char batchnorm_single_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 _viv_uniform VXC_512Bits uniDatatoF32_0_4x4;\n\
@@ -3626,6 +3923,186 @@ __kernel void cumsum_BF16toBF16_axis0_2D(\n\
     }\n\
 }\n\
 "; /* end of cumsum_bf16_vx*/
+
+static const char cumsum_f16_u8_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+_viv_uniform VXC_512Bits uniAccSumVertF16toF16_2x8;\n\
+_viv_uniform VXC_512Bits uniSumHorzF16toF16A_4x4;\n\
+_viv_uniform VXC_512Bits uniSumHorzF16toF16B_4x4;\n\
+_viv_uniform VXC_512Bits uniSumHorzF16toF16C_2x8;\n\
+_viv_uniform VXC_512Bits uniAccSumHorzF16toF16_2x8;\n\
+\n\
+_viv_uniform VXC_512Bits uniSetZeroF16_2x8;\n\
+\n\
+_viv_uniform int width;\n\
+_viv_uniform int height;\n\
+_viv_uniform int channel;\n\
+\n\
+_viv_uniform int2 multAndoutZP0;//[0:15] multiplier, [31:63] output zp\n\
+_viv_uniform VXC_512Bits uniU8MulAndPostShift_0_Lo_2x8;\n\
+\n\
+#define CUMSUM_F16TOQINT_AXIS2(out_name, src_type, dst_type) \\\n\
+__kernel void cumsum_F16to##out_name##_axis2( \\\n\
+    __read_only image2d_array_t   input, \\\n\
+    __write_only image2d_array_t  output, \\\n\
+    int axis, int exclusive, int rev \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
+ \\\n\
+    vxc_short8 src; \\\n\
+    dst_type dst; \\\n\
+    vxc_half8 data, sum; \\\n\
+    VXC_DP2x8(sum, sum, sum, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniSetZeroF16_2x8); \\\n\
+    vxc_ushort8 ms0; \\\n\
+    _viv_asm(COPY, ms0, multAndoutZP0, 16); \\\n\
+    for(coord.z = 0; coord.z < channel; coord.z++) \\\n\
+    { \\\n\
+        VXC_ReadImage2DArray(src, input, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+        _viv_asm(COPY, data, src, 16); \\\n\
+ \\\n\
+        VXC_DP2x8(sum, data, sum, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniAccSumVertF16toF16_2x8); \\\n\
+        VXC_DP2x8(dst, sum, ms0, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), \\\n\
+                uniU8MulAndPostShift_0_Lo_2x8); \\\n\
+        VXC_WriteImage2DArray(output, coord, dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    } \\\n\
+}\n\
+CUMSUM_F16TOQINT_AXIS2(I8,  vxc_half8, vxc_char16)\n\
+CUMSUM_F16TOQINT_AXIS2(I16, vxc_half8, vxc_short8)\n\
+CUMSUM_F16TOQINT_AXIS2(U8,  vxc_half8, vxc_uchar16)\n\
+\n\
+\n\
+#define CUMSUM_F16TOQINT_AXIS1(out_name, src_type, dst_type) \\\n\
+__kernel void cumsum_F16to##out_name##_axis1( \\\n\
+    __read_only image2d_array_t   input, \\\n\
+    __write_only image2d_array_t  output, \\\n\
+    int axis, int exclusive, int rev \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
+ \\\n\
+    vxc_short8 src; \\\n\
+    dst_type dst; \\\n\
+    vxc_half8 data, sum; \\\n\
+    VXC_DP2x8(sum, sum, sum, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniSetZeroF16_2x8); \\\n\
+    vxc_ushort8 ms0; \\\n\
+    _viv_asm(COPY, ms0, multAndoutZP0, 16); \\\n\
+    for(coord.y = 0; coord.y < height; coord.y++) \\\n\
+    { \\\n\
+        VXC_ReadImage2DArray(src, input, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+        _viv_asm(COPY, data, src, 16); \\\n\
+ \\\n\
+        VXC_DP2x8(sum, data, sum, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniAccSumVertF16toF16_2x8); \\\n\
+        VXC_DP2x8(dst, sum, ms0, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), \\\n\
+                uniU8MulAndPostShift_0_Lo_2x8); \\\n\
+        VXC_WriteImage2DArray(output, coord, dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    } \\\n\
+}\n\
+CUMSUM_F16TOQINT_AXIS1(I8,  vxc_half8, vxc_char16)\n\
+CUMSUM_F16TOQINT_AXIS1(I16, vxc_half8, vxc_short8)\n\
+CUMSUM_F16TOQINT_AXIS1(U8,  vxc_half8, vxc_uchar16)\n\
+\n\
+#define CUMSUM_F16TOQINT_AXIS0(out_name, src_type, dst_type) \\\n\
+__kernel void cumsum_F16to##out_name##_axis0( \\\n\
+    __read_only image2d_array_t   input, \\\n\
+    __write_only image2d_array_t  output, \\\n\
+    int axis, int exclusive, int rev \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
+ \\\n\
+    vxc_short8 src; \\\n\
+    dst_type dst; \\\n\
+    vxc_half8 data, tmpsum, sum; \\\n\
+    VXC_DP2x8(sum, sum, sum, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniSetZeroF16_2x8); \\\n\
+    vxc_ushort8 ms0; \\\n\
+    _viv_asm(COPY, ms0, multAndoutZP0, 16); \\\n\
+    for(; coord.x < width; coord.x += 8) \\\n\
+    { \\\n\
+        VXC_ReadImage2DArray(src, input, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+        _viv_asm(COPY, data, src, 16); \\\n\
+ \\\n\
+        VXC_DP4x4(tmpsum, data, data, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniSumHorzF16toF16A_4x4); \\\n\
+        VXC_DP4x4(tmpsum, data, data, VXC_MODIFIER(4, 7, 0, VXC_RM_TowardZero, 0), uniSumHorzF16toF16B_4x4); \\\n\
+        VXC_DP2x8(tmpsum, tmpsum, tmpsum, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniSumHorzF16toF16C_2x8); \\\n\
+        VXC_DP2x8(sum, tmpsum, sum, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniAccSumHorzF16toF16_2x8); \\\n\
+        VXC_DP2x8(dst, sum, ms0, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), \\\n\
+                uniU8MulAndPostShift_0_Lo_2x8); \\\n\
+        VXC_WriteImage2DArray(output, coord, dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    } \\\n\
+}\n\
+CUMSUM_F16TOQINT_AXIS0(I8,  vxc_half8, vxc_char16)\n\
+CUMSUM_F16TOQINT_AXIS0(I16, vxc_half8, vxc_short8)\n\
+CUMSUM_F16TOQINT_AXIS0(U8,  vxc_half8, vxc_uchar16)\n\
+\n\
+#define CUMSUM_F16TOQINT_AXIS1_2D(out_name, src_type, dst_type) \\\n\
+__kernel void cumsum_F16to##out_name##_axis1_2D( \\\n\
+    __read_only image2d_t   input, \\\n\
+    __write_only image2d_t  output, \\\n\
+    int axis, int exclusive, int rev \\\n\
+    ) \\\n\
+{ \\\n\
+    int2 coord = (int2)(get_global_id(0), 0); \\\n\
+ \\\n\
+    vxc_short8 src; \\\n\
+    dst_type dst; \\\n\
+    vxc_half8 data, sum; \\\n\
+    VXC_DP2x8(sum, sum, sum, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniSetZeroF16_2x8); \\\n\
+    vxc_ushort8 ms0; \\\n\
+    _viv_asm(COPY, ms0, multAndoutZP0, 16); \\\n\
+    for(; coord.y < height; coord.y++) \\\n\
+    { \\\n\
+        VXC_ReadImage(src, input, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+        _viv_asm(COPY, data, src, 16); \\\n\
+ \\\n\
+        VXC_DP2x8(sum, data, sum, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),\\\n\
+                uniAccSumVertF16toF16_2x8); \\\n\
+        VXC_DP2x8(dst, sum, ms0, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), \\\n\
+                uniU8MulAndPostShift_0_Lo_2x8); \\\n\
+        VXC_WriteImage(output, coord, dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    } \\\n\
+}\n\
+CUMSUM_F16TOQINT_AXIS1_2D(I8,  vxc_half8, vxc_char16)\n\
+CUMSUM_F16TOQINT_AXIS1_2D(I16, vxc_half8, vxc_short8)\n\
+CUMSUM_F16TOQINT_AXIS1_2D(U8,  vxc_half8, vxc_uchar16)\n\
+\n\
+#define CUMSUM_F16TOQINT_AXIS0_2D(out_name, src_type, dst_type) \\\n\
+__kernel void cumsum_F16to##out_name##_axis0_2D( \\\n\
+    __read_only image2d_t   input, \\\n\
+    __write_only image2d_t  output, \\\n\
+    int axis, int exclusive, int rev \\\n\
+    ) \\\n\
+{ \\\n\
+    int2 coord = (int2)(get_global_id(0), get_global_id(1)); \\\n\
+ \\\n\
+    vxc_short8 src; \\\n\
+    dst_type dst; \\\n\
+    vxc_half8 data, tmpsum, sum; \\\n\
+    VXC_DP2x8(sum, sum, sum, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniSetZeroF16_2x8); \\\n\
+    vxc_ushort8 ms0; \\\n\
+    _viv_asm(COPY, ms0, multAndoutZP0, 16); \\\n\
+    for(; coord.x < width; coord.x += 8) \\\n\
+    { \\\n\
+        VXC_ReadImage(src, input, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+        _viv_asm(COPY, data, src, 16); \\\n\
+ \\\n\
+        VXC_DP4x4(tmpsum, data, data, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\\\n\
+                uniSumHorzF16toF16A_4x4); \\\n\
+        VXC_DP4x4(tmpsum, data, data, VXC_MODIFIER(4, 7, 0, VXC_RM_TowardZero, 0),\\\n\
+                uniSumHorzF16toF16B_4x4); \\\n\
+        VXC_DP2x8(tmpsum, tmpsum, tmpsum, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),\\\n\
+                uniSumHorzF16toF16C_2x8); \\\n\
+        VXC_DP2x8(sum, tmpsum, sum, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),\\\n\
+                uniAccSumHorzF16toF16_2x8); \\\n\
+        VXC_DP2x8(dst, sum, ms0, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), \\\n\
+                uniU8MulAndPostShift_0_Lo_2x8); \\\n\
+        VXC_WriteImage(output, coord, dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    } \\\n\
+}\n\
+CUMSUM_F16TOQINT_AXIS0_2D(I8,  vxc_half8, vxc_char16)\n\
+CUMSUM_F16TOQINT_AXIS0_2D(I16, vxc_half8, vxc_short8)\n\
+CUMSUM_F16TOQINT_AXIS0_2D(U8,  vxc_half8, vxc_uchar16)\n\
+"; /* end of cumsum_f16_u8_vx*/
 
 static const char custom_softmax_vx[] = "/*\n\
  ============================================================================\n\
@@ -25984,7 +26461,7 @@ _viv_uniform float out_zp;\n\
     in0Val2 = in0Val2 * IN0_SCALE + IN0_TAIL; \\\n\
     in1Val1 = in1Val1 * IN1_SCALE + IN1_TAIL; \\\n\
     in1Val2 = in1Val2 * IN1_SCALE + IN1_TAIL; \\\n\
-    if (ifmod) \\\n\
+    if (isfmod) \\\n\
     { \\\n\
     tmpVal1 = fmod(in0Val1, in1Val1) * OUT_SCALE + OUT_OFFSET; \\\n\
     tmpVal2 = fmod(in0Val2, in1Val2) * OUT_SCALE + OUT_OFFSET; \\\n\
@@ -25996,7 +26473,7 @@ _viv_uniform float out_zp;\n\
     } \\\n\
     _viv_asm(conv_mode, tmpOut1, tmpVal1); \\\n\
     _viv_asm(conv_mode, tmpOut2, tmpVal2); \\\n\
-    VXC_DP2x8(data, tmpOut1, tmpOut2, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvertInt32toUint8_2x8); \\\n\
+    VXC_DP2x8(data, tmpOut1, tmpOut2, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), uniConvertInt32toUint8_2x8); \\\n\
     write_fun(output, coord, data, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
 \n\
 #define TENSOR_MOD(src0_name, src1_name, dst_name, dst_type, save_type, read_type, copy_type, \\\n\
@@ -26006,7 +26483,7 @@ __kernel void mod_##src0_name##src1_name##to##dst_name \\\n\
     image2d_array_t input0, \\\n\
     image2d_array_t input1, \\\n\
     image2d_array_t output, \\\n\
-    int             ifmod\n\
+    int             isfmod\n\
     ) \\\n\
 { \\\n\
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
@@ -26018,24 +26495,24 @@ __kernel void mod_##src0_name##src1_name##to##dst_name \\\n\
 TENSOR_MOD(F16, F16, F16, half4, vxc_short8, vxc_short8,\\\n\
                 vxc_half8, CONV, 1, 0, 1, 0, 1, 0)\n\
 TENSOR_MOD(F16, F16, I16, short4, vxc_short8, vxc_short8,\\\n\
-               vxc_half8, CONV_SAT_RTE, 1, 0, 1, 0, out_scale, out_zp)\n\
+               vxc_half8, CONV_SAT, 1, 0, 1, 0, out_scale, out_zp)\n\
 TENSOR_MOD(F16, F16, I8,  char4, vxc_char8, vxc_short8,\\\n\
-                vxc_half8, CONV_SAT_RTE, 1, 0, 1, 0, out_scale, out_zp)\n\
+                vxc_half8, CONV_SAT, 1, 0, 1, 0, out_scale, out_zp)\n\
 TENSOR_MOD(F16, F16, U8,  uchar4, vxc_uchar8, vxc_short8,\\\n\
-               vxc_half8, CONV_SAT_RTE, 1, 0, 1, 0, out_scale, out_zp)\n\
+               vxc_half8, CONV_SAT, 1, 0, 1, 0, out_scale, out_zp)\n\
 \n\
 TENSOR_MOD(I16, I16, I16, short4, vxc_short8, vxc_short8,\\\n\
-                vxc_short8, CONV_SAT_RTE, in_scale0, in0Tail, in_scale1, in1Tail, out_scale, out_zp)\n\
+                vxc_short8, CONV_SAT, in_scale0, in0Tail, in_scale1, in1Tail, out_scale, out_zp)\n\
 TENSOR_MOD(I16, I16, F16, half4, vxc_short8, vxc_short8,\\\n\
                 vxc_short8, CONV, in_scale0, in0Tail, in_scale1, in1Tail, 1, 0)\n\
 \n\
 TENSOR_MOD(I8, I8, I8, char4, vxc_char8, vxc_char16,\\\n\
-                vxc_char16, CONV_SAT_RTE, in_scale0, in0Tail, in_scale1, in1Tail, out_scale, out_zp)\n\
+                vxc_char16, CONV_SAT, in_scale0, in0Tail, in_scale1, in1Tail, out_scale, out_zp)\n\
 TENSOR_MOD(I8, I8, F16, half4, vxc_short8, vxc_char16,\\\n\
                 vxc_char16, CONV, in_scale0, in0Tail, in_scale1, in1Tail, 1, 0)\n\
 \n\
 TENSOR_MOD(U8, U8, U8,  uchar4, vxc_uchar8, vxc_uchar16,\\\n\
-                vxc_uchar16, CONV_SAT_RTE, in_scale0, in0Tail, in_scale1, in1Tail, out_scale, out_zp)\n\
+                vxc_uchar16, CONV_SAT, in_scale0, in0Tail, in_scale1, in1Tail, out_scale, out_zp)\n\
 TENSOR_MOD(U8, U8, F16, half4, vxc_short8, vxc_uchar16,\\\n\
                 vxc_uchar16, CONV, in_scale0, in0Tail, in_scale1, in1Tail, 1, 0)\n\
 \n\
@@ -26047,7 +26524,7 @@ __kernel void mod_##src0_name##src1_name##to##dst_name##_2D \\\n\
     image2d_array_t input0, \\\n\
     image2d_array_t input1, \\\n\
     image2d_array_t output, \\\n\
-    int             ifmod\n\
+    int             isfmod\n\
     ) \\\n\
 { \\\n\
     int2 coord = (int2)(get_global_id(0), get_global_id(1)); \\\n\
@@ -26059,24 +26536,24 @@ __kernel void mod_##src0_name##src1_name##to##dst_name##_2D \\\n\
 TENSOR_MOD_2D(F16, F16, F16, half4, vxc_short8, vxc_short8,\\\n\
                 vxc_half8, CONV, 1, 0, 1, 0, 1, 0)\n\
 TENSOR_MOD_2D(F16, F16, I16, short4, vxc_short8, vxc_short8,\\\n\
-               vxc_half8, CONV_SAT_RTE, 1, 0, 1, 0, out_scale, out_zp)\n\
+               vxc_half8, CONV_SAT, 1, 0, 1, 0, out_scale, out_zp)\n\
 TENSOR_MOD_2D(F16, F16, I8,  char4, vxc_char8, vxc_short8,\\\n\
-                vxc_half8, CONV_SAT_RTE, 1, 0, 1, 0, out_scale, out_zp)\n\
+                vxc_half8, CONV_SAT, 1, 0, 1, 0, out_scale, out_zp)\n\
 TENSOR_MOD_2D(F16, F16, U8,  uchar4, vxc_uchar8, vxc_short8,\\\n\
-               vxc_half8, CONV_SAT_RTE, 1, 0, 1, 0, out_scale, out_zp)\n\
+               vxc_half8, CONV_SAT, 1, 0, 1, 0, out_scale, out_zp)\n\
 \n\
 TENSOR_MOD_2D(I16, I16, I16, short4, vxc_short8, vxc_short8,\\\n\
-                vxc_short8, CONV_SAT_RTE, in_scale0, in0Tail, in_scale1, in1Tail, out_scale, out_zp)\n\
+                vxc_short8, CONV_SAT, in_scale0, in0Tail, in_scale1, in1Tail, out_scale, out_zp)\n\
 TENSOR_MOD_2D(I16, I16, F16, half4, vxc_short8, vxc_short8,\\\n\
                 vxc_short8, CONV, in_scale0, in0Tail, in_scale1, in1Tail, 1, 0)\n\
 \n\
 TENSOR_MOD_2D(I8, I8, I8, char4, vxc_char8, vxc_char16,\\\n\
-                vxc_char16, CONV_SAT_RTE, in_scale0, in0Tail, in_scale1, in1Tail, out_scale, out_zp)\n\
+                vxc_char16, CONV_SAT, in_scale0, in0Tail, in_scale1, in1Tail, out_scale, out_zp)\n\
 TENSOR_MOD_2D(I8, I8, F16, half4, vxc_short8, vxc_char16,\\\n\
                 vxc_char16, CONV, in_scale0, in0Tail, in_scale1, in1Tail, 1, 0)\n\
 \n\
 TENSOR_MOD_2D(U8, U8, U8,  uchar4, vxc_uchar8, vxc_uchar16,\\\n\
-                vxc_uchar16, CONV_SAT_RTE, in_scale0, in0Tail, in_scale1, in1Tail, out_scale, out_zp)\n\
+                vxc_uchar16, CONV_SAT, in_scale0, in0Tail, in_scale1, in1Tail, out_scale, out_zp)\n\
 TENSOR_MOD_2D(U8, U8, F16, half4, vxc_short8, vxc_uchar16,\\\n\
                 vxc_uchar16, CONV, in_scale0, in0Tail, in_scale1, in1Tail, 1, 0)\n\
 \n\
@@ -26094,21 +26571,21 @@ _viv_uniform VXC_512Bits uniExtractOddData_2x8;\n\
     vxc_short8 zero = (vxc_short8)(0, 0, 0, 0, 0, 0, 0, 0); \\\n\
     read_fun(read_data0, input0, coord, VXC_5BITOFFSET_XY(0,0), \\\n\
     VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
-    VXC_DP2x8(vec0, read_data0, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvBF16toF32_Part0_2x8); \\\n\
+    VXC_DP2x8(vec0, read_data0, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), uniConvBF16toF32_Part0_2x8); \\\n\
     _viv_asm(COPY, in0Val1, vec0, 16); \\\n\
-    VXC_DP2x8(vec0, read_data0, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvBF16toF32_Part1_2x8); \\\n\
+    VXC_DP2x8(vec0, read_data0, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), uniConvBF16toF32_Part1_2x8); \\\n\
     _viv_asm(COPY, in0Val2, vec0, 16); \\\n\
     read_fun(read_data1, input1, coord, VXC_5BITOFFSET_XY(0,0), \\\n\
     VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
-    VXC_DP2x8(vec0, read_data1, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvBF16toF32_Part0_2x8); \\\n\
+    VXC_DP2x8(vec0, read_data1, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), uniConvBF16toF32_Part0_2x8); \\\n\
     _viv_asm(COPY, in1Val1, vec0, 16); \\\n\
-    VXC_DP2x8(vec0, read_data1, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvBF16toF32_Part1_2x8); \\\n\
+    VXC_DP2x8(vec0, read_data1, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), uniConvBF16toF32_Part1_2x8); \\\n\
     _viv_asm(COPY, in1Val2, vec0, 16); \\\n\
     tmpVal1 = fmod(in0Val1, in1Val1); \\\n\
     tmpVal2 = fmod(in0Val2, in1Val2); \\\n\
     _viv_asm(COPY, dst0, tmpVal1, 16); \\\n\
     _viv_asm(COPY, dst1, tmpVal2, 16); \\\n\
-    VXC_DP2x8(vect, dst0, dst1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniExtractOddData_2x8); \\\n\
+    VXC_DP2x8(vect, dst0, dst1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), uniExtractOddData_2x8); \\\n\
     write_fun(output, coord, vect, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
 \n\
 __kernel void mod_BF16BF16toBF16\n\
@@ -26116,7 +26593,7 @@ __kernel void mod_BF16BF16toBF16\n\
     image2d_array_t input0,\n\
     image2d_array_t input1,\n\
     image2d_array_t output,\n\
-    int             ifmod\n\
+    int             isfmod\n\
     )\n\
 {\n\
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
@@ -26128,7 +26605,7 @@ __kernel void mod_BF16BF16toBF16_2D\n\
     image2d_array_t input0,\n\
     image2d_array_t input1,\n\
     image2d_array_t output,\n\
-    int             ifmod\n\
+    int             isfmod\n\
     )\n\
 {\n\
     int2 coord = (int2)(get_global_id(0), get_global_id(1));\n\
@@ -56183,7 +56660,7 @@ static const char mod_cl[] = "__kernel void mod_F32F32toF32\n\
     __read_only  image2d_array_t  input,\n\
     __read_only  image2d_array_t  input1,\n\
     __write_only image2d_array_t  output,\n\
-                 int              ifmod,\n\
+                 int              isfmod,\n\
                  float            input0Scale,\n\
                  float            input0Tail,\n\
                  float            input1Scale,\n\
@@ -56206,7 +56683,7 @@ __kernel void mod_F32F32toF32_2D\n\
     __read_only  image2d_t input,\n\
     __read_only  image2d_t input1,\n\
     __write_only image2d_t output,\n\
-                 int       ifmod,\n\
+                 int       isfmod,\n\
                  float     input0Scale,\n\
                  float     input0Tail,\n\
                  float     input1Scale,\n\
@@ -56227,7 +56704,7 @@ __kernel void mod_I32I32toI32\n\
     __read_only  image2d_array_t  input,\n\
     __read_only  image2d_array_t  input1,\n\
     __write_only image2d_array_t  output,\n\
-                 int              ifmod,\n\
+                 int              isfmod,\n\
                  float            input0Scale,\n\
                  float            input0Tail,\n\
                  float            input1Scale,\n\
@@ -56244,7 +56721,7 @@ __kernel void mod_I32I32toI32\n\
     float4 in0 = convert_float4(src0) * input0Scale + input0Tail;\n\
     float4 in1 = convert_float4(src1) * input1Scale + input1Tail;\n\
     float4 out;\n\
-    if (ifmod)\n\
+    if (isfmod)\n\
     {\n\
         out = fmod(in0, in1) * outputScale + outputTail;\n\
     }\n\
@@ -56261,7 +56738,7 @@ __kernel void mod_I32I32toI32_2D\n\
     __read_only  image2d_t input,\n\
     __read_only  image2d_t input1,\n\
     __write_only image2d_t output,\n\
-                 int       ifmod,\n\
+                 int       isfmod,\n\
                  float     input0Scale,\n\
                  float     input0Tail,\n\
                  float     input1Scale,\n\
@@ -56276,7 +56753,7 @@ __kernel void mod_I32I32toI32_2D\n\
     float4 in0 = convert_float4(src0) * input0Scale + input0Tail;\n\
     float4 in1 = convert_float4(src1) * input1Scale + input1Tail;\n\
     float4 out;\n\
-    if (ifmod)\n\
+    if (isfmod)\n\
     {\n\
         out = fmod(in0, in1) * outputScale + outputTail;\n\
     }\n\
@@ -56293,7 +56770,7 @@ __kernel void mod_I32I32toU8\n\
     __read_only  image2d_array_t  input,\n\
     __read_only  image2d_array_t  input1,\n\
     __write_only image2d_array_t  output,\n\
-                 int              ifmod,\n\
+                 int              isfmod,\n\
                  float            input0Scale,\n\
                  float            input0Tail,\n\
                  float            input1Scale,\n\
@@ -56310,7 +56787,7 @@ __kernel void mod_I32I32toU8\n\
     float4 in0 = convert_float4(src0) * input0Scale + input0Tail;\n\
     float4 in1 = convert_float4(src1) * input1Scale + input1Tail;\n\
     float4 out;\n\
-    if (ifmod)\n\
+    if (isfmod)\n\
     {\n\
         out = fmod(in0, in1) * outputScale + outputTail;\n\
     }\n\
@@ -56327,7 +56804,7 @@ __kernel void mod_I32I32toU8_2D\n\
     __read_only  image2d_t input,\n\
     __read_only  image2d_t input1,\n\
     __write_only image2d_t output,\n\
-                 int       ifmod,\n\
+                 int       isfmod,\n\
                  float     input0Scale,\n\
                  float     input0Tail,\n\
                  float     input1Scale,\n\
@@ -56342,7 +56819,7 @@ __kernel void mod_I32I32toU8_2D\n\
     float4 in0 = convert_float4(src0) * input0Scale + input0Tail;\n\
     float4 in1 = convert_float4(src1) * input1Scale + input1Tail;\n\
     float4 out;\n\
-    if (ifmod)\n\
+    if (isfmod)\n\
     {\n\
         out = fmod(in0, in1) * outputScale + outputTail;\n\
     }\n\
@@ -56359,7 +56836,7 @@ __kernel void mod_U8U8toU8\n\
     __read_only  image2d_array_t  input,\n\
     __read_only  image2d_array_t  input1,\n\
     __write_only image2d_array_t  output,\n\
-                 int              ifmod,\n\
+                 int              isfmod,\n\
                  float            input0Scale,\n\
                  float            input0Tail,\n\
                  float            input1Scale,\n\
@@ -56375,7 +56852,7 @@ __kernel void mod_U8U8toU8\n\
     READ_IMAGEUI_2DARRAY(src1, input1, coord);\n\
     in0 = convert_float4(src0) * input0Scale + input0Tail;\n\
     in1 = convert_float4(src1) * input1Scale + input1Tail;\n\
-    if (ifmod)\n\
+    if (isfmod)\n\
     {\n\
         out = fmod(in0, in1) * outputScale + outputTail;\n\
     }\n\
@@ -56392,7 +56869,7 @@ __kernel void mod_U8U8toU8_2D\n\
     __read_only  image2d_t input,\n\
     __read_only  image2d_t input1,\n\
     __write_only image2d_t output,\n\
-                 int       ifmod,\n\
+                 int       isfmod,\n\
                  float     input0Scale,\n\
                  float     input0Tail,\n\
                  float     input1Scale,\n\
@@ -56407,7 +56884,7 @@ __kernel void mod_U8U8toU8_2D\n\
     float4 in0, in1, out;\n\
     in0 = convert_float4(src0) * input0Scale + input0Tail;\n\
     in1 = convert_float4(src1) * input1Scale + input1Tail;\n\
-    if (ifmod)\n\
+    if (isfmod)\n\
     {\n\
         out = fmod(in0, in1) * outputScale + outputTail;\n\
     }\n\
@@ -56424,7 +56901,7 @@ __kernel void mod_U8I32toU8\n\
     __read_only  image2d_array_t  input,\n\
     __read_only  image2d_array_t  input1,\n\
     __write_only image2d_array_t  output,\n\
-                 int              ifmod,\n\
+                 int              isfmod,\n\
                  float            input0Scale,\n\
                  float            input0Tail,\n\
                  float            input1Scale,\n\
@@ -56441,7 +56918,7 @@ __kernel void mod_U8I32toU8\n\
     READ_IMAGEI_2DARRAY(src1, input1, coord);\n\
     in0 = convert_float4(src0) * input0Scale + input0Tail;\n\
     in1 = convert_float4(src1);\n\
-    if (ifmod)\n\
+    if (isfmod)\n\
     {\n\
         out = fmod(in0, in1) * outputScale + outputTail;\n\
     }\n\
@@ -56458,7 +56935,7 @@ __kernel void mod_U8I32toU8_2D\n\
     __read_only  image2d_t input,\n\
     __read_only  image2d_t input1,\n\
     __write_only image2d_t output,\n\
-                 int       ifmod,\n\
+                 int       isfmod,\n\
                  float     input0Scale,\n\
                  float     input0Tail,\n\
                  float     input1Scale,\n\
@@ -56473,7 +56950,7 @@ __kernel void mod_U8I32toU8_2D\n\
     float4 in0, in1, out;\n\
     in0 = convert_float4(src0) * input0Scale + input0Tail;\n\
     in1 = convert_float4(src1);\n\
-    if (ifmod)\n\
+    if (isfmod)\n\
     {\n\
         out = fmod(in0, in1) * outputScale + outputTail;\n\
     }\n\
@@ -62345,6 +62822,7 @@ static const source_map_t evis_resource[] =
     {"argmin_axis0_vx", argmin_axis0_vx},
     {"argmin_axis1_vx", argmin_axis1_vx},
     {"argmin_axis2_vx", argmin_axis2_vx},
+    {"batchnorm_grad_f16_vx", batchnorm_grad_f16_vx},
     {"batchnorm_single_vx", batchnorm_single_vx},
     {"batchnorm_single_f32_vx", batchnorm_single_f32_vx},
     {"cast_vx", cast_vx},
@@ -62357,6 +62835,7 @@ static const source_map_t evis_resource[] =
     {"cumsum_vx", cumsum_vx},
     {"cumsum_2d_vx", cumsum_2d_vx},
     {"cumsum_bf16_vx", cumsum_bf16_vx},
+    {"cumsum_f16_u8_vx", cumsum_f16_u8_vx},
     {"custom_softmax_vx", custom_softmax_vx},
     {"custom_warp_affine_vx", custom_warp_affine_vx},
     {"custom_warp_perspective_vx", custom_warp_perspective_vx},
