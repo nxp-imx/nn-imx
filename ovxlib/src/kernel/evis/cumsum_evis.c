@@ -46,6 +46,7 @@ __BEGIN_DECLS
 #define KERNEL_SOURCE_1    "cumsum"
 #define KERNEL_SOURCE_2    "cumsum_2d"
 #define KERNEL_SOURCE_3    "cumsum_bf16"
+#define KERNEL_SOURCE_4    "cumsum_f16_u8"
 
 // Add kernel hashtable here
 #define HASH_CUMSUM_HASH_KEY(AXIS, IN_DTYPE, OUT_DTYPE, _image_2d) \
@@ -92,6 +93,21 @@ static const struct {
     HASH_CUMSUM_KERNELS_2D(1, I16,  I16,  KERNEL_SOURCE_2)
     HASH_CUMSUM_KERNELS_2D(1, F16,  F16,  KERNEL_SOURCE_2)
     HASH_CUMSUM_KERNELS_2D(1, BF16, BF16, KERNEL_SOURCE_3)
+    HASH_CUMSUM_KERNELS(0, F16,  U8,  KERNEL_SOURCE_4)
+    HASH_CUMSUM_KERNELS(0, F16,  I8,  KERNEL_SOURCE_4)
+    HASH_CUMSUM_KERNELS(0, F16,  I16, KERNEL_SOURCE_4)
+    HASH_CUMSUM_KERNELS(1, F16,  U8,  KERNEL_SOURCE_4)
+    HASH_CUMSUM_KERNELS(1, F16,  I8,  KERNEL_SOURCE_4)
+    HASH_CUMSUM_KERNELS(1, F16,  I16, KERNEL_SOURCE_4)
+    HASH_CUMSUM_KERNELS(2, F16,  U8,  KERNEL_SOURCE_4)
+    HASH_CUMSUM_KERNELS(2, F16,  I8,  KERNEL_SOURCE_4)
+    HASH_CUMSUM_KERNELS(2, F16,  I16, KERNEL_SOURCE_4)
+    HASH_CUMSUM_KERNELS_2D(0, F16,  U8,  KERNEL_SOURCE_4)
+    HASH_CUMSUM_KERNELS_2D(0, F16,  I8,  KERNEL_SOURCE_4)
+    HASH_CUMSUM_KERNELS_2D(0, F16,  I16, KERNEL_SOURCE_4)
+    HASH_CUMSUM_KERNELS_2D(1, F16,  U8,  KERNEL_SOURCE_4)
+    HASH_CUMSUM_KERNELS_2D(1, F16,  I8,  KERNEL_SOURCE_4)
+    HASH_CUMSUM_KERNELS_2D(1, F16,  I16, KERNEL_SOURCE_4)
 };
 
 /*
@@ -237,6 +253,20 @@ DEF_KERNEL_INITIALIZER(_cumsum_initializer)
     pack_key = _PACK_SELECT_KEY( attr[0]->dtype, attr[1]->dtype, axis, dim);
 
     {
+        uint16_t M0               = 0;
+        int32_t  postShift        = 0;
+        uint32_t multAndoutZP0[2] = {0};
+        gpu_dp_inst_t uniU8MulAndPostShift_0_Lo_2x8 = {{
+                0xdddddddd, // TCfg
+                0x44444444, // ASelt
+                0x13121110, 0x17161514, // ABin
+                0x11111111, // BSelt
+                0x00000000, 0x00000000, // BBin
+                0x00002600, // AccumType, ConstantType, and PostShift
+                0x00000000, 0x00000000, 0x00000000, 0x00000000,
+                0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
+        }, GPU_DP_TYPE_16 };
+
         gpu_dp_inst_t uniAccSumVertF16toF16_2x8 = {{
             0x55555555, // TCfg
             0x44444444, // ASelt
@@ -430,6 +460,11 @@ DEF_KERNEL_INITIALIZER(_cumsum_initializer)
             0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
         }, GPU_DP_TYPE_16};
 
+        gpu_quantize_multiplier_16bit( (double)input_scale * output_scale, &M0, &postShift);
+        multAndoutZP0[0] = (uint32_t)(M0);
+        multAndoutZP0[1] = (uint32_t)((attr[1]->asymm.zero_point << postShift) - input_zp * M0);
+        gpu_dp_inst_update_postshfit( &uniU8MulAndPostShift_0_Lo_2x8, postShift );
+
         status = vsi_nn_kernel_gpu_add_param(node, "width", &width);
         status |= vsi_nn_kernel_gpu_add_param(node, "height", &height);
         CHECK_STATUS_FAIL_GOTO(status, OnError );
@@ -550,6 +585,42 @@ DEF_KERNEL_INITIALIZER(_cumsum_initializer)
                     node, "uniConvBF16toF32_Part1_2x8", &uniConvBF16toF32_Part1_2x8);
                 status |= vsi_nn_kernel_gpu_add_param(
                     node, "uniExtractOddData_2x8", &uniExtractOddData_2x8);
+                CHECK_STATUS_FAIL_GOTO(status, OnError );
+            }
+            break;
+        case _PACK_SELECT_KEY( F16, U8,  0, 2):
+        case _PACK_SELECT_KEY( F16, U8,  1, 2):
+        case _PACK_SELECT_KEY( F16, U8,  0, 3):
+        case _PACK_SELECT_KEY( F16, U8,  1, 3):
+        case _PACK_SELECT_KEY( F16, U8,  2, 3):
+        case _PACK_SELECT_KEY( F16, I8,  0, 2):
+        case _PACK_SELECT_KEY( F16, I8,  1, 2):
+        case _PACK_SELECT_KEY( F16, I8,  0, 3):
+        case _PACK_SELECT_KEY( F16, I8,  1, 3):
+        case _PACK_SELECT_KEY( F16, I8,  2, 3):
+        case _PACK_SELECT_KEY( F16, I16, 0, 2):
+        case _PACK_SELECT_KEY( F16, I16, 1, 2):
+        case _PACK_SELECT_KEY( F16, I16, 0, 3):
+        case _PACK_SELECT_KEY( F16, I16, 1, 3):
+        case _PACK_SELECT_KEY( F16, I16, 2, 3):
+            {
+                status = vsi_nn_kernel_gpu_add_param(node, "channel", &channel);
+                status |= vsi_nn_kernel_gpu_add_param(
+                    node, "uniAccSumVertF16toF16_2x8", &uniAccSumVertF16toF16_2x8);
+                status |= vsi_nn_kernel_gpu_add_param(
+                    node, "uniSumHorzF16toF16A_4x4", &uniSumHorzF16toF16A_4x4);
+                status |= vsi_nn_kernel_gpu_add_param(
+                    node, "uniSumHorzF16toF16B_4x4", &uniSumHorzF16toF16B_4x4);
+                status |= vsi_nn_kernel_gpu_add_param(
+                    node, "uniSumHorzF16toF16C_2x8", &uniSumHorzF16toF16C_2x8);
+                status |= vsi_nn_kernel_gpu_add_param(
+                    node, "uniAccSumHorzF16toF16_2x8", &uniAccSumHorzF16toF16_2x8);
+                status |= vsi_nn_kernel_gpu_add_param(
+                    node, "uniU8MulAndPostShift_0_Lo_2x8", &uniU8MulAndPostShift_0_Lo_2x8);
+                status |= vsi_nn_kernel_gpu_add_param(
+                    node, "multAndoutZP0", &multAndoutZP0);
+                status |= vsi_nn_kernel_gpu_add_param(
+                    node, "uniSetZeroF16_2x8", &uniSetZeroF16_2x8);
                 CHECK_STATUS_FAIL_GOTO(status, OnError );
             }
             break;
