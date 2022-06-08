@@ -828,7 +828,7 @@
     <ClCompile Include="src\kernel\sp\batch_norm_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
-    <ClCompile Include="src\kernel\sp\eltwise_sp.c">
+  <ClCompile Include="src\kernel\sp\eltwise_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\sp\eltwise_unary_sp.c">
@@ -846,7 +846,7 @@
     <ClCompile Include="src\kernel\sp\grucell_reset_after_activation_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
-  <ClCompile Include="src\kernel\sp\instance_normalization_sp.c">
+    <ClCompile Include="src\kernel\sp\instance_normalization_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\sp\l2_normalize_sp.c">
@@ -936,6 +936,9 @@
     <ClCompile Include="src\kernel\vx\prelu_vx.c">
       <Filter>Source Files\kernel\vx</Filter>
     </ClCompile>
+    <ClCompile Include="src\kernel\vx\resize_vx.c">
+      <Filter>Source Files\kernel\vx</Filter>
+    </ClCompile>
     <ClCompile Include="src\kernel\vx\softmax_vx.c">
       <Filter>Source Files\kernel\vx</Filter>
     </ClCompile>
@@ -947,9 +950,6 @@
     </ClCompile>
     <ClCompile Include="src\libnnext\vsi_nn_libnnext_resource.c">
       <Filter>Source Files\libnnext</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ops\vsi_nn_op_mod.c">
-      <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\libnnext\vsi_nn_vxkernel.c">
       <Filter>Source Files\libnnext</Filter>
@@ -1210,6 +1210,9 @@
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_maxpoolwithargmax.c">
+      <Filter>Source Files\ops</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_mod.c">
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_moments.c">

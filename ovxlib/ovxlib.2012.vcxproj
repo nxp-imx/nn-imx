@@ -593,6 +593,7 @@
     <ClInclude Include="include\ops\vsi_nn_op_matrixmul.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_max_pool3d.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_maximum.h"/>
+    <ClInclude Include="include\ops\vsi_nn_op_mod.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_moments.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_multiply.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_nbg.h"/>
@@ -672,7 +673,6 @@
     <ClInclude Include="include\ops\vsi_nn_op_swish.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_tanh.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_tensor_add_mean_stddev_norm.h"/>
-    <ClInclude Include="include\ops\vsi_nn_op_mod.h" />
     <ClInclude Include="include\ops\vsi_nn_op_tensorstackconcat.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_tile.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_topk.h"/>
@@ -1571,6 +1571,9 @@
     <ClCompile Include="src\kernel\vx\prelu_vx.c">
       <ObjectFileName>$(IntDir)\src\kernel\vx\</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="src\kernel\vx\resize_vx.c">
+      <ObjectFileName>$(IntDir)\src\kernel\vx\</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="src\kernel\vx\softmax_vx.c">
       <ObjectFileName>$(IntDir)\src\kernel\vx\</ObjectFileName>
     </ClCompile>
@@ -1844,6 +1847,9 @@
     <ClCompile Include="src\ops\vsi_nn_op_maxpoolwithargmax.c">
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_mod.c">
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_moments.c">
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
@@ -2097,9 +2103,6 @@
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_upsamplescale.c">
-      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="src\ops\vsi_nn_op_mod.c" >
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_variable.c">
