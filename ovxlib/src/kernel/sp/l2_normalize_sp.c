@@ -66,6 +66,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_l2_norm_sum_node
 
     attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_YZMERGE;
     attr.input_setup = VSI_NN_SP_INPUT_SETUP_SINGLE_INPUT;
+    attr.output_collapse_x = VSI_NN_SP_ATTR_OUTPUT_COLLAPSE_ENABLED;
 
     attr.prog_loop_instr_num = spLoopInstsNum;
     attr.ignored_leading_outputs = 0;
