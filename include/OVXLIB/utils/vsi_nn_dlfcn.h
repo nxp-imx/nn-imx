@@ -1,7 +1,7 @@
 #ifndef __VSI_NN_DLFCN_H
 #define __VSI_NN_DLFCN_H
 
-#if defined(_WIN32)
+#if (defined(_MSC_VER) || defined(_WIN32) || defined(__MINGW32))
 #define  RTLD_LAZY   0
 #define  RTLD_NOW    0
 

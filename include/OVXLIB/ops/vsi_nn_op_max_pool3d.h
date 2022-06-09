@@ -21,31 +21,35 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#ifndef _VSI_NN_PLATFORM_H
-#define _VSI_NN_PLATFORM_H
 
-#include "vsi_nn_feature_config.h"
+#ifndef _VSI_NN_OP_MAX_POOL3D_H
+#define _VSI_NN_OP_MAX_POOL3D_H
 
-#ifdef VSI_40BIT_VA_SUPPORT
-#ifdef VX_VA40_EXT_SUPPORT
-#undef VX_VA40_EXT_SUPPORT
-#endif
-#define VX_VA40_EXT_SUPPORT 1
+#include "vsi_nn_types.h"
+
+#ifdef __cplusplus
+extern "C" {
 #endif
 
-#include <VX/vx_khr_cnn.h>
-#include <VX/vx_helper.h>
-#include <VX/vx_ext_program.h>
-#include <VX/vx_api.h>
-#include <VX/vx_compatibility.h>
-#include <VX/vx_khr_import_kernel.h>
-#if defined(VX_KHR_COMPATIBILITY) && (0x1==VX_KHR_COMPATIBILITY)
-#include <VX/vx_khr_compatible.h>
-#endif
+typedef struct _vsi_nn_max_pool3d_param
+{
+    struct _max_pool3d_local_data_t* local;
+    // Add parameters here
 
-/*
-    This is a compatibility head file for backward compatibility OpenVX 1.1 spec
-*/
-#include "vsi_nn_compatibility.h"
+    /* round_type is used to calculate the output shape */
+    vsi_nn_round_type_e round_type;
+    uint32_t     ksize[3];
+    uint32_t     stride[3];
+    /* Pad left, right, top, bottom */
+    uint32_t     pad[6];
+    /* Pad type default value shall be AUTO */
+    vsi_nn_pad_e pad_type;
+} vsi_nn_max_pool3d_param;
+_compiler_assert(offsetof(vsi_nn_max_pool3d_param, local) == 0, \
+    vsi_nn_max_pool3d_h );
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
