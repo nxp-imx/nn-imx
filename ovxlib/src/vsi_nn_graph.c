@@ -1911,7 +1911,6 @@ vsi_status vsi_nn_setup_binary_graph_inputs_outputs
         }
     }
     /*update inputs for nbg node  who has crop scalar parameter as inputs*/
-    /*update inputs for rgb888planar preproc node*/
     for (i = 0; i < graph->node_num; i++)
     {
         vsi_nn_node_t* node = vsi_nn_GetNode(graph, i);
@@ -1936,13 +1935,6 @@ vsi_status vsi_nn_setup_binary_graph_inputs_outputs
                     param = NULL;
                 }
             }
-        }
-        if (node->op == VSI_NN_OP_PRE_PROCESS &&
-            node->nn_param.pre_process.type ==
-                VSI_NN_SOURCE_FORMAT_IMAGE_RGB888_PLANAR)
-        {
-            /*two addtional inputs*/
-            num_of_graph_real_inputs += 2;
         }
     }
     graph_inputs = (vx_reference *)malloc( num_of_graph_real_inputs * sizeof( vx_reference ) );
@@ -2035,45 +2027,6 @@ vsi_status vsi_nn_setup_binary_graph_inputs_outputs
                         }
                     }
 
-                }
-                else if (node->op == VSI_NN_OP_PRE_PROCESS &&
-                    node->nn_param.pre_process.type ==
-                        VSI_NN_SOURCE_FORMAT_IMAGE_RGB888_PLANAR &&
-                           node->input.tensors[0] == graph->input.tensors[i])
-                {
-                    vx_parameter param = 0;
-                    vx_reference ref = 0;
-                    vx_enum type = 0;
-                    vx_enum direction = 0;
-                    j--;
-                    for (idx = 0; idx < numParams; idx++)
-                    {
-                        param = vxGetParameterByIndex(node->n, idx);
-                        vxQueryParameter(
-                            param, VX_PARAMETER_TYPE, &type, sizeof(vx_enum));
-                        status = vxQueryParameter(param,
-                                                  VX_PARAMETER_DIRECTION,
-                                                  &direction,
-                                                  sizeof(vx_enum));
-                        status = vxQueryParameter(param,
-                                                   VX_PARAMETER_REF,
-                                                   &ref,
-                                                   sizeof(vx_reference));
-                        if (direction == VX_INPUT && type == VX_TYPE_TENSOR)
-                        {
-                            graph_inputs[j++] = ref;
-                        }
-
-                        if (param != NULL)
-                        {
-                            vxReleaseParameter(&param);
-                        }
-
-                        if (ref != NULL)
-                        {
-                            vxReleaseReference(&ref);
-                        }
-                    }
                 }
             }
         }
