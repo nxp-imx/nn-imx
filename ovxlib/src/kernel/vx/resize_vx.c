@@ -69,13 +69,36 @@ static vsi_nn_kernel_node_t _setup
     int32_t align_corners       = vsi_nn_kernel_param_get_int32( params, "align_corners" );
     int32_t half_pixel_centers  = vsi_nn_kernel_param_get_int32( params, "half_pixel_centers" );
     int32_t type  = vsi_nn_kernel_param_get_int32( params, "type" );
-    vx_nn_scale_params_t param;
 
+#ifdef VX_SCALE_EXTRA_PARAMETER_SUPPORT
+    vx_nn_scale_params_ext_t param;
+    param.align_corners = align_corners;
+    param.half_pixel_centers = half_pixel_centers;
+    switch (type)
+    {
+        case VSI_NN_INTERPOLATION_NEAREST_NEIGHBOR:
+            param.base.type = VX_INTERPOLATION_NEAREST_NEIGHBOR;
+            break;
+        case VSI_NN_INTERPOLATION_BILINEAR:
+            param.base.type = VX_INTERPOLATION_BILINEAR;
+            break;
+        case VSI_NN_INTERPOLATION_AREA:
+            param.base.type = VX_INTERPOLATION_AREA;
+            break;
+        default:
+            param.base.type = VX_INTERPOLATION_NEAREST_NEIGHBOR;
+    }
+    node = vxTensorScaleNode( graph->g,
+                              inputs[0]->t,
+                              (vx_nn_scale_params)(&param),
+                              sizeof(vx_nn_scale_params_ext_t),
+                              outputs[0]->t );
+#else
+    vx_nn_scale_params_t param;
     if (align_corners || half_pixel_centers)
     {
         return NULL;
     }
-
     switch (type)
     {
         case VSI_NN_INTERPOLATION_NEAREST_NEIGHBOR:
@@ -97,9 +120,10 @@ static vsi_nn_kernel_node_t _setup
                               &param,
                               sizeof(param),
                               outputs[0]->t );
+#endif
     if ( NULL == node )
     {
-        VSILOGE("Call vxTensorScaleNode fail.(resize)");
+        VSILOGI("Call vxTensorScaleNode fail.(resize)");
     }
 
     return (vsi_nn_kernel_node_t)node;
