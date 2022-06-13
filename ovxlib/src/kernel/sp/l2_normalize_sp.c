@@ -108,7 +108,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_l2_norm_rsqrt_node
     (
         vsi_nn_graph_t  * graph,
         vsi_nn_tensor_t * input,
-        vsi_nn_tensor_t * output
+        vsi_nn_tensor_t * output,
+        float             scale
     )
 {
     const int32_t spLoopInstsNum = 2;
@@ -171,6 +172,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_l2_norm_rsqrt_node
     sp_lut_params.act_type = VSI_NN_SP_ACT_LINEAR_RSQRT;
     sp_lut_params.params[0] = 1;
     sp_lut_params.params[1] = epsilon;
+    sp_lut_params.params[2] = scale;
     vsi_nn_sp_lut(vx_lut_params.in_lut, vx_lut_params.out_lut, &sp_lut_params);
 
     node = vxStreamProcessorNode(
@@ -406,6 +408,7 @@ REGISTER_L2_NORMALIZE_STREAM_PROCESSOR_KERNEL( l2_norm )
     uint32_t perm[2][VSI_NN_MAX_DIM_NUM] = {{0}};
     uint32_t axis = vsi_nn_kernel_param_get_int32( params, "axis" );
     uint32_t i = 0, index = 1;
+    float scale = 1.0f / vsi_nn_get_tensor_scale(outputs[0]);
 
     perm[0][0] = axis;
     shape[0] = inputs[0]->attr.size[axis];
@@ -468,7 +471,7 @@ REGISTER_L2_NORMALIZE_STREAM_PROCESSOR_KERNEL( l2_norm )
 
     node = vsi_nn_sp_l2_norm_sum_node(graph, trans_tensor[0], dummy_tensor[0]);
     CHECK_PTR_FAIL_GOTO( node, "Create sp_l2_norm_sum node fail.", final );
-    node = vsi_nn_sp_l2_norm_rsqrt_node(graph, dummy_tensor[0], dummy_tensor[1]);
+    node = vsi_nn_sp_l2_norm_rsqrt_node(graph, dummy_tensor[0], dummy_tensor[1], scale);
     CHECK_PTR_FAIL_GOTO( node, "Create sp_l2_norm_rsqrt fail.", final );
     node = vsi_nn_sp_l2_norm_times_node(graph, trans_tensor[0], dummy_tensor[1], trans_tensor[1]);
     CHECK_PTR_FAIL_GOTO( node, "Create sp_l2_norm_times fail.", final );

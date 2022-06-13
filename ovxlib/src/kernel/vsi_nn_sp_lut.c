@@ -217,7 +217,7 @@ vsi_status vsi_nn_sp_fill_linear_exp_lut
     uint32_t baseF24 = 0;
     uint32_t i = 0;
     float  baseF32 = 0;
-    vsi_bool aluPwlSignSupport = TRUE;
+    vsi_bool aluPwlSignSupport = FALSE;
     float max = 0, min = 0;
     vsi_nn_kernel_dtype_e dtype = F32;
 
@@ -273,6 +273,7 @@ vsi_status vsi_nn_sp_fill_linear_rsqrt_lut
     uint32_t expBits,
     float a,
     float b,
+    float scale,
     float *index,
     float *value
     )
@@ -281,7 +282,7 @@ vsi_status vsi_nn_sp_fill_linear_rsqrt_lut
     uint32_t   baseF24 = 0;
     uint32_t i = 0;
     float  baseF32 = 0;
-    vsi_bool aluPwlSignSupport = TRUE;
+    vsi_bool aluPwlSignSupport = FALSE;
     float max = 0, min = 0;
     vsi_nn_kernel_dtype_e dtype = F32;
 
@@ -293,6 +294,12 @@ vsi_status vsi_nn_sp_fill_linear_rsqrt_lut
         baseF32 = 0;
 
         baseF24 = _get_baseF24(base, expBits, aluPwlSignSupport);
+
+        if (((baseF24 >> 15) & 0xFF) == 0xFF)
+            baseF24 = (baseF24 & 0x800000) | 0x7F7FFF;
+
+        if (((baseF24 >> 15) & 0xFF) == 0x0)
+            baseF24 = (baseF24 & 0x800000);
 
         baseF32 = _SE8M15toF32(baseF24);
 
@@ -316,7 +323,7 @@ vsi_status vsi_nn_sp_fill_linear_rsqrt_lut
         }
         else
         {
-            lut[base].val = 1.0f / sqrtf(a * baseF32 + b);
+            lut[base].val = scale / sqrtf(a * baseF32 + b);
         }
     }
 
@@ -470,7 +477,7 @@ vsi_status vsi_nn_sp_lut
         {
             uint32_t expBits = 4;
             vsi_nn_sp_fill_linear_rsqrt_lut(lut, expBits,
-                param->params[0], param->params[1], index, value);
+                param->params[0], param->params[1], param->params[2], index, value);
         }
         break;
         case VSI_NN_SP_ACT_LINEAR_SIGMOID:

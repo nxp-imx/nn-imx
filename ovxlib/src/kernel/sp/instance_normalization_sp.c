@@ -202,6 +202,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_moments_means_node
     sp_lut_params.act_type = VSI_NN_SP_ACT_LINEAR_RSQRT;
     sp_lut_params.params[0] = s;
     sp_lut_params.params[1] = eps;
+    sp_lut_params.params[2] = 1.0f;
     vsi_nn_sp_lut(vx_lut_params.in_lut, vx_lut_params.out_lut, &sp_lut_params);
 
     node = vxStreamProcessorNode(
