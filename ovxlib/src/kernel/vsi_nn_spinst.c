@@ -195,6 +195,13 @@ vsi_status vsi_nn_set_spinst_attr
             constant_data[4]);
     }
 
+    status |= vxSetAttributeToSPINST(spinst->sp, VSI_NN_SP_ATTRIBUTE_SPLIT_AXIS,
+        attrs.split_axis);
+    status |= vxSetAttributeToSPINST(spinst->sp, VSI_NN_SP_ATTRIBUTE_SPLIT_MAX_SIZE,
+        attrs.split_max_vector_depth);
+    status |= vxSetAttributeToSPINST(spinst->sp, VSI_NN_SP_ATTRIBUTE_TILEX_EQUAL_IMGX,
+        attrs.split_tilex_equal_imgx);
+
     return status;
 } /* vsi_nn_set_spinst_attr() */
 
