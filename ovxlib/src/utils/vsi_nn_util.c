@@ -1228,6 +1228,67 @@ vsi_bool vsi_nn_is_broadcast_operaton
     return FALSE;
 }
 
+vsi_bool vsi_nn_is_broadcast_axes_operaton
+    (
+    vsi_nn_tensor_t            ** inputs,
+    size_t                        input_num,
+    vsi_nn_tensor_t            *  output,
+    int32_t                    *  axis,
+    int32_t                       axis_num
+    )
+{
+    vsi_size_t out_rank = output->attr.dim_num;
+    vsi_size_t i = 0;
+
+    if (vsi_nn_is_broadcast_operaton(inputs, input_num, output) == FALSE)
+    {
+        return FALSE;
+    }
+
+    for (i = 0; i < out_rank; i++)
+    {
+        size_t j = 0;
+        int32_t k = 0;
+        vsi_size_t src0_size = i < inputs[0]->attr.dim_num  ?
+                        inputs[0]->attr.size[i] : 1;
+
+        for (k = 0; k < axis_num; k++)
+        {
+            if (axis[k] == (int32_t)i)
+            {
+                for (j = 1; j < input_num; j++)
+                {
+                    vsi_size_t src_size = i < inputs[j]->attr.dim_num  ?
+                        inputs[j]->attr.size[i] : 1;
+
+                    if (src0_size == src_size)
+                    {
+                        return FALSE;
+                    }
+                }
+
+                break;
+            }
+        }
+
+        if (axis[k] == (int32_t)i)
+        {
+            continue;
+        }
+
+        for (j = 1; j < input_num; j++)
+        {
+            vsi_size_t src_size = i < inputs[j]->attr.dim_num  ? inputs[j]->attr.size[i] : 1;
+
+            if (src0_size != src_size)
+            {
+                return FALSE;
+            }
+        }
+    }
+    return TRUE;
+}
+
 float vsi_nn_get_tensor_scale
     (
     vsi_nn_tensor_t * tensor
