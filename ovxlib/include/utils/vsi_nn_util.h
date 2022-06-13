@@ -417,6 +417,15 @@ vsi_bool vsi_nn_is_broadcast_operaton
     vsi_nn_tensor_t            *  output
     );
 
+vsi_bool vsi_nn_is_broadcast_axes_operaton
+    (
+    vsi_nn_tensor_t            ** inputs,
+    size_t                        input_num,
+    vsi_nn_tensor_t            *  output,
+    int32_t                    *  axis,
+    int32_t                       axis_num
+    );
+
 float vsi_nn_get_tensor_scale
     (
     vsi_nn_tensor_t * tensor
