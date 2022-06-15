@@ -68,17 +68,16 @@ vsi_nn_kernel_node_t vsi_nn_sp_minimum_node
     memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
     memset(&attr, 0, sizeof(vsi_nn_spinst_attr_t));
 
-    /* loop inst0: r1 = in0 * r3 || r10 = r2 + r5 || out = r7 > 0 ? r9 : r10 */
-    status  = vsi_nn_sp_mul(&sp_insts_param[0], VSI_NN_SP_SRIN, VSI_NN_SP_SR3, VSI_NN_SP_SR1);
-    status |= vsi_nn_sp_add(&sp_insts_param[0], VSI_NN_SP_SR2, VSI_NN_SP_SR5, VSI_NN_SP_SR10);
-    status |= vsi_nn_sp_move_sel0(&sp_insts_param[0], VSI_NN_SP_SR7, VSI_NN_SP_SR9, VSI_NN_SP_SROUT);
-    /* loop inst1: v11 = in1 * r4 || r2 = v11 + r6 || r8 = r1 */
+    /* loop inst0: v12 = in0 * r3 || r2 = v11 + r6 || r10 = r2 */
+    status  = vsi_nn_sp_mul(&sp_insts_param[0], VSI_NN_SP_SRIN, VSI_NN_SP_SR3, VSI_NN_SP_VR12);
+    status |= vsi_nn_sp_add(&sp_insts_param[0], VSI_NN_SP_VR11, VSI_NN_SP_SR6, VSI_NN_SP_SR2);
+    status |= vsi_nn_sp_move(&sp_insts_param[0], VSI_NN_SP_SR2, VSI_NN_SP_SR10);
+    /* loop inst1: v11 = in1 * r4 || r7 = r2 - v12 || r9 = v12 */
     status |= vsi_nn_sp_mul(&sp_insts_param[1], VSI_NN_SP_SRIN, VSI_NN_SP_SR4, VSI_NN_SP_VR11);
-    status |= vsi_nn_sp_add(&sp_insts_param[1], VSI_NN_SP_VR11, VSI_NN_SP_SR6, VSI_NN_SP_SR2);
-    status |= vsi_nn_sp_move(&sp_insts_param[1], VSI_NN_SP_SR1, VSI_NN_SP_SR8);
-    /* loop inst1: r7 = r2 - r8 || r9 = r8 */
-    status |= vsi_nn_sp_sub(&sp_insts_param[2], VSI_NN_SP_SR2, VSI_NN_SP_SR8, VSI_NN_SP_SR7);
-    status |= vsi_nn_sp_move(&sp_insts_param[2], VSI_NN_SP_SR8, VSI_NN_SP_SR9);
+    status |= vsi_nn_sp_sub(&sp_insts_param[1], VSI_NN_SP_SR2, VSI_NN_SP_VR12, VSI_NN_SP_SR7);
+    status |= vsi_nn_sp_move(&sp_insts_param[1], VSI_NN_SP_VR12, VSI_NN_SP_SR9);
+    /* loop inst2: out = r7 > 0 ? r9 : r10 */
+    status |= vsi_nn_sp_move_sel0(&sp_insts_param[2], VSI_NN_SP_SR7, VSI_NN_SP_SR9, VSI_NN_SP_SROUT);
     CHECK_STATUS_FAIL_GOTO(status, final );
 
     attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_XYMERGE;
@@ -86,10 +85,13 @@ vsi_nn_kernel_node_t vsi_nn_sp_minimum_node
     attr.prog_init_instr_num = spInitInstsNum;
     attr.prog_loop_instr_num = spLoopInstsNum;
     attr.ignored_leading_outputs = 4;
-    attr.flush_cycle_num = 11;
+    attr.flush_cycle_num = 13;
     attr.v11_reset_at_start = VSI_NN_SP_V_RESET_AT_START_RESET;
-    attr.ignored_leading_v11_rd = 1;
+    attr.ignored_leading_v11_rd = 2;
     attr.ignored_leading_v11_wr = 0;
+    attr.v12_reset_at_start = VSI_NN_SP_V_RESET_AT_START_RESET;
+    attr.ignored_leading_v12_rd = 3;
+    attr.ignored_leading_v12_wr = 0;
 
     VSI_NN_SP_ATTR_SET_CONST_TO_SR3(attr, scale0);
     VSI_NN_SP_ATTR_SET_CONST_TO_SR4(attr, scale1);
