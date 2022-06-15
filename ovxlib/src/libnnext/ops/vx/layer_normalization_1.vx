@@ -235,6 +235,8 @@ __kernel void layer_norm_axis0_##name( \
         bias_f1 = vload4(1, bias_ptr); \
         scale_f0 = vload4(0, scale_ptr); \
         scale_f1 = vload4(1, scale_ptr); \
+        bias_ptr += 8; \
+        scale_ptr += 8; \
  \
         CONV2F32(tmpData0, src0, 0); \
         CONV2F32(tmpData1, src0, 1); \
@@ -310,6 +312,8 @@ __kernel void layer_norm_axis0_##name##_2D( \
         bias_f1 = vload4(1, bias_ptr); \
         scale_f0 = vload4(0, scale_ptr); \
         scale_f1 = vload4(1, scale_ptr); \
+        bias_ptr += 8; \
+        scale_ptr += 8; \
  \
         CONV2F32(tmpData0, src0, 0); \
         CONV2F32(tmpData1, src0, 1); \
