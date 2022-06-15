@@ -14896,6 +14896,8 @@ __kernel void layer_norm_axis0_##name( \\\n\
         bias_f1 = vload4(1, bias_ptr); \\\n\
         scale_f0 = vload4(0, scale_ptr); \\\n\
         scale_f1 = vload4(1, scale_ptr); \\\n\
+        bias_ptr += 8; \\\n\
+        scale_ptr += 8; \\\n\
  \\\n\
         CONV2F32(tmpData0, src0, 0); \\\n\
         CONV2F32(tmpData1, src0, 1); \\\n\
@@ -14971,6 +14973,8 @@ __kernel void layer_norm_axis0_##name##_2D( \\\n\
         bias_f1 = vload4(1, bias_ptr); \\\n\
         scale_f0 = vload4(0, scale_ptr); \\\n\
         scale_f1 = vload4(1, scale_ptr); \\\n\
+        bias_ptr += 8; \\\n\
+        scale_ptr += 8; \\\n\
  \\\n\
         CONV2F32(tmpData0, src0, 0); \\\n\
         CONV2F32(tmpData1, src0, 1); \\\n\
@@ -15091,6 +15095,8 @@ __kernel void layer_norm_axis0_##name( \\\n\
         norm = scale_f1 * sums.y * tmpData1 + bias_f1; \\\n\
         bias_f1 = vload4(3, bias_ptr); \\\n\
         scale_f1 = vload4(3, scale_ptr); \\\n\
+        bias_ptr += 16; \\\n\
+        scale_ptr += 16; \\\n\
         tmpVal1 = convert_int4_rte(norm * output_scale + output_zp); \\\n\
         VXC_DP2x8(dst, tmpVal0, tmpVal1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), \\\n\
             uniExtract8Data_2x8); \\\n\
@@ -15173,6 +15179,8 @@ __kernel void layer_norm_axis0_##name##_2D( \\\n\
  \\\n\
         bias_f1 = vload4(3, bias_ptr); \\\n\
         scale_f1 = vload4(3, scale_ptr); \\\n\
+        bias_ptr += 16; \\\n\
+        scale_ptr += 16; \\\n\
         tmpVal1 = convert_int4_rte(norm * output_scale + output_zp); \\\n\
         VXC_DP2x8(dst, tmpVal0, tmpVal1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), \\\n\
             uniExtract8Data_2x8); \\\n\
@@ -15266,6 +15274,8 @@ __kernel void layer_norm_axis0_##name( \\\n\
  \\\n\
         bias_f1 = vload4(3, bias_ptr); \\\n\
         scale_f1 = vload4(3, scale_ptr); \\\n\
+        bias_ptr += 16; \\\n\
+        scale_ptr += 16; \\\n\
         _viv_asm(CONV, tmpVal1, norm); \\\n\
         VXC_DP2x8(result, tmpVal0, tmpVal1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), \\\n\
             uniExtract8Data_2x8); \\\n\
@@ -15337,6 +15347,8 @@ __kernel void layer_norm_axis0_##name##_2D( \\\n\
         bias_f1 = vload4(1, bias_ptr); \\\n\
         scale_f0 = vload4(0, scale_ptr); \\\n\
         scale_f1 = vload4(1, scale_ptr); \\\n\
+        bias_ptr += 8; \\\n\
+        scale_ptr += 8; \\\n\
  \\\n\
         CONV2F32(tmpData0, src0, 0); \\\n\
         CONV2F32(tmpData1, src0, 1); \\\n\
