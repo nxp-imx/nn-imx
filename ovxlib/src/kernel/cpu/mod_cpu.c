@@ -198,13 +198,12 @@ static vsi_status _query_kernel
     vsi_nn_tensor_t * const * const outputs
     )
 {
-    vsi_status status = VSI_FAILURE;
     snprintf( kernel->info.name, VX_MAX_KERNEL_NAME, "%s",  _KERNEL_NAME );
     kernel->info.function    = _compute;
     kernel->info.parameters  = _mod_kernel_param_def;
     kernel->info.numParams   = _cnt_of_array( _mod_kernel_param_def );
-    //status = VSI_SUCCESS;
-    return status;
+
+    return VSI_SUCCESS;
 } /* _query_kernel() */
 
 

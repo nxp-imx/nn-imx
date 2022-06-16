@@ -23501,7 +23501,7 @@ __kernel void mod_##src0_name##src1_name##to##dst_name \\\n\
     image2d_array_t input0, \\\n\
     image2d_array_t input1, \\\n\
     image2d_array_t output, \\\n\
-    int             isfmod\n\
+    int             isfmod \\\n\
     ) \\\n\
 { \\\n\
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
@@ -23542,7 +23542,7 @@ __kernel void mod_##src0_name##src1_name##to##dst_name##_2D \\\n\
     image2d_array_t input0, \\\n\
     image2d_array_t input1, \\\n\
     image2d_array_t output, \\\n\
-    int             isfmod\n\
+    int             isfmod \\\n\
     ) \\\n\
 { \\\n\
     int2 coord = (int2)(get_global_id(0), get_global_id(1)); \\\n\
