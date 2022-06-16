@@ -1,4 +1,25 @@
 ############################################################################
+Release notes for Ovxlib 1.1.49
+
+New Features:
+    1. add 'celu', 'selu', 'max_pool3d', 'rcp', 'sign', 'softsign',
+       'cumsum', 'maxpoolwithargmax', 'mod'
+
+Feature Refine:
+    1. refine instance_norm operation to support rank greater than 4
+    2. support more data type for 'conv2d', 'gather*', 'clip',
+       'add', 'mul', 'div', 'pad', 'rsqrt', 'pool', 'floor',
+       'ceil', 'reverse', 'sotfmax', 'deconvolution1d', 'group_norm'
+    3. refine topk to support input size more than 128
+
+Bug Fixing:
+    1. fix strided_slice shape inference issue
+    2. fix matrixmul precision issue
+    3. fix permute array memeory copy issue
+    4. fix poolwithargmax operation shape inference issue
+    5. fix precision issue for pre-process operations
+
+############################################################################
 Release notes for Ovxlib 1.1.42
 
 New Features:
