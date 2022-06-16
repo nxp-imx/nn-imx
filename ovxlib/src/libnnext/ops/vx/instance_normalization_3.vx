@@ -2,16 +2,13 @@
 
 _viv_uniform int width;
 _viv_uniform int height;
-_viv_uniform float dimRatio;
+_viv_uniform float inv_multiplier;
 _viv_uniform int group_num;
 _viv_uniform VXC_512Bits uniConvBF16toF32_Part0_2x8;
 _viv_uniform VXC_512Bits uniConvBF16toF32_Part1_2x8;
 _viv_uniform VXC_512Bits uniExtractOddData_2x8;
 
-constant vxc_short8 zero = (vxc_short8)(0, 0, 0, 0, 0, 0, 0, 0);
-constant float4 one = (float4)(1.0, 1.0, 1.0, 1.0);
-
-__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_meanvari_BF16(
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_sums_BF16(
     image2d_array_t input, image2d_array_t output, float eps, int rsFlg)
 {
     int gidx = get_global_id(0) << 3;
@@ -20,8 +17,9 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_mean
     int4 coord = (int4)(gidx, 0, gidz, gidz);
     vxc_short8 src0, src1, src2;
     float4 srcA, srcB;
-    vxc_float sum = 0, sqr = 0;
-
+    float sum = 0, sqr = 0;
+    float4 one = (float4)(1.0, 1.0, 1.0, 1.0);
+    vxc_short8 zero = (vxc_short8)(0, 0, 0, 0, 0, 0, 0, 0);
     __local float lcl_sum[16];
     __local float lcl_sqr[16];
 
@@ -71,7 +69,7 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_mean
     }
 }
 
-__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_meanvari_BF16_2D(
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_sums_BF16_2D(
     image2d_array_t input, image2d_array_t output, float eps, int rsFlg)
 {
     int gidx = get_global_id(0) << 3;
@@ -82,7 +80,9 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_mean
     int2 coord = (int2)(gidx, gidy);
     vxc_short8 src0, src1, src2;
     float4 srcA, srcB;
-    vxc_float sum = 0, sqr = 0;
+    float sum = 0, sqr = 0;
+    float4 one = (float4)(1.0, 1.0, 1.0, 1.0);
+    vxc_short8 zero = (vxc_short8)(0, 0, 0, 0, 0, 0, 0, 0);
 
     __local float lcl_sum[16];
     __local float lcl_sqr[16];
@@ -129,7 +129,7 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_mean
     }
 }
 
-__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_BF16F32toBF16(
+__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_BF16_F32toBF16(
     image2d_array_t input, image2d_t bias, image2d_t scale, image2d_t meanVari,
     image2d_array_t output, float eps, int rsFlg)
 {
@@ -138,30 +138,26 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_BF16
     int4 coord_in = (int4)(get_global_id(0), 0, gidz, gidz);
     vxc_short8 src0, src1, src2;
     float scale_vari, bias_val;
-    vxc_float4 mean_vari = (vxc_float4)(0);
+    float4 mean_vari = (float4)(0);
 
-    Image img1 = create_image_from_image2d(bias, 4);
-    Image img2 = create_image_from_image2d(scale, 4);
     Image img3 = create_image_from_image2d(meanVari, 4);
-    __global float* bias_ptr = (__global float*)img1.ptr;
-    __global float* scal_ptr = (__global float*)img2.ptr;
     __global uchar* sumVari_ptr = (__global uchar*)get_image_ptr_from_coord(img3, (int2)(0, gidz));
     __global float4* vari_ptr = (__global float4*)sumVari_ptr;
 
-    float bval = bias_ptr[gidz];
-    float sval = scal_ptr[gidz];
+    float sval = read_imagef(scale, coord.yz).x;
+    float bval = read_imagef(bias, coord.yz).x;
 
     for(int i = 0; i < group_num; i++)
     {
         mean_vari += vari_ptr[i];
     }
 
-    mean_vari *= dimRatio;
+    mean_vari *= inv_multiplier;
     mean_vari.s1 = mean_vari.s1 - mean_vari.s0 * mean_vari.s0 + eps;
     mean_vari.s1 = rsqrt(mean_vari.s1);
 
     scale_vari = sval * mean_vari.s1;
-    vxc_float4  tmpData0, tmpData1;
+    float4  tmpData0, tmpData1;
     bias_val = (bval - scale_vari * mean_vari.s0);
 
     int8 input_desc, output_desc;
@@ -185,7 +181,7 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_BF16
     _viv_asm(COPY, tmpData0, src1, 16);
     _viv_asm(COPY, tmpData1, src2, 16);
 
-    vxc_float4 norm;
+    float4 norm;
     norm = scale_vari * tmpData0 + bias_val;
     _viv_asm(COPY, src0, norm, 16);
     norm = scale_vari * tmpData1 + bias_val;
@@ -207,30 +203,26 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_BF16
     int endH = gidy + height;
     vxc_short8 src0, src1, src2;
     float scale_vari, bias_val;
-    vxc_float4 mean_vari = (vxc_float4)(0);
+    float4 mean_vari = (float4)(0);
 
-    Image img1 = create_image_from_image2d(bias, 4);
-    Image img2 = create_image_from_image2d(scale, 4);
     Image img3 = create_image_from_image2d(meanVari, 4);
-    __global float* bias_ptr = (__global float*)img1.ptr;
-    __global float* scal_ptr = (__global float*)img2.ptr;
     __global uchar* sumVari_ptr = (__global uchar*)get_image_ptr_from_coord(img3, coord_para.yx);
     __global float4* vari_ptr = (__global float4*)sumVari_ptr;
 
-    float bval = bias_ptr[gidz];
-    float sval = scal_ptr[gidz];
+    float sval = read_imagef(scale, coord_para.yx).x;
+    float bval = read_imagef(bias, coord_para.yx).x;
 
     for(int i = 0; i < group_num; i++)
     {
         mean_vari += vari_ptr[i];
     }
 
-    mean_vari *= dimRatio;
+    mean_vari *= inv_multiplier;
     mean_vari.s1 = mean_vari.s1 - mean_vari.s0 * mean_vari.s0 + eps;
     mean_vari.s1 = rsqrt(mean_vari.s1);
 
     scale_vari = sval * mean_vari.s1;
-    vxc_float4  tmpData0, tmpData1;
+    float4  tmpData0, tmpData1;
     bias_val = (bval - scale_vari * mean_vari.s0);
 
     for(; coord.y < endH; coord.y++)
@@ -244,7 +236,7 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_BF16
     _viv_asm(COPY, tmpData0, src1, 16);
     _viv_asm(COPY, tmpData1, src2, 16);
 
-    vxc_float4 norm;
+    float4 norm;
     norm = scale_vari * tmpData0 + bias_val;
     _viv_asm(COPY, src0, norm, 16);
     norm = scale_vari * tmpData1 + bias_val;
