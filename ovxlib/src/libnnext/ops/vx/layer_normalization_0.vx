@@ -113,7 +113,7 @@ __kernel void layer_norm_axis0_##name( \
 LAYER_NORM_8BITS_IMPL(U8_F16toU8, vxc_uchar16)
 LAYER_NORM_8BITS_IMPL(I8_F16toI8, vxc_char16)
 
-#define LAYER_NORM_SUMS_2D()
+#define LAYER_NORM_SUMS_2D() \
     uint2 _sums = 0, sum_x_x2; \
  \
     for (coord.x = 0; coord.x < width; ) \
@@ -287,7 +287,7 @@ __kernel void layer_norm_axis0_##name( \
         VXC_DP2x8(result, tmpVal0, tmpVal1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), \
             uniExtract8Data_2x8); \
         _viv_asm(COPY, dst, result, 16); \
-        coord_out.x = coord.x;
+        coord_out.x = coord.x; \
         VXC_OP4_NoDest(img_store_3d, output, coord_out, dst, \
                 VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0)); \
  \
