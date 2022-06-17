@@ -455,7 +455,9 @@ DEF_KERNEL_INITIALIZER(_layernorm_initializer)
             case _PACK_SELECT_KEY( I16, F32, I16 ):
             case _PACK_SELECT_KEY( F16, F16, I16 ):
             case _PACK_SELECT_KEY( F16, F32, I16 ):
+            case _PACK_SELECT_KEY( F16, F16, U8 ):
             case _PACK_SELECT_KEY( F16, F32, U8 ):
+            case _PACK_SELECT_KEY( F16, F16, I8 ):
             case _PACK_SELECT_KEY( F16, F32, I8 ):
                 {
                     if (attr[2]->dtype == F16)

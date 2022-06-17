@@ -745,6 +745,7 @@ static vsi_nn_kernel_node_t _setup
     in0_dtype = vsi_nn_kernel_map_dtype( reshape_tensor[0]->attr.dtype.vx_type );
     in1_dtype = vsi_nn_kernel_map_dtype( inputs[2]->attr.dtype.vx_type );
     out_dtype = vsi_nn_kernel_map_dtype( reshape_tensor[1]->attr.dtype.vx_type );
+    in1_dtype = in1_dtype == F16 ? F32 : in1_dtype;
 
     hashkeys[MEAN_VARI_INDEX]= HASH_INSTANCENORM_SUMS_KEY( in0_dtype, F32, reshape_flg );
     hashkey = HASH_INSTANCENORM_KEY( in0_dtype, in1_dtype, out_dtype, reshape_flg );
