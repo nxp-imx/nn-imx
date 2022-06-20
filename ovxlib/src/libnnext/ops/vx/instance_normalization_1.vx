@@ -4,6 +4,8 @@ _viv_uniform int width;
 _viv_uniform int height;
 _viv_uniform float inv_multiplier;
 _viv_uniform int group_num;
+_viv_uniform float input_scale;
+_viv_uniform float input_zp;
 _viv_uniform VXC_512Bits uniExtract8Data_2x8;
 
 _viv_uniform VXC_512Bits uniDataToFP32_0_4x4;
@@ -42,8 +44,9 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_##na
     scale_vari = scale_f.s0 * mean_vari.s1; \
     float4  tmpData0, tmpData1, tmpData2, tmpData3, norm; \
     half4 tmpVal0, tmpVal1; \
-    float alpha = scale_vari; \
+    float alpha = scale_vari * input_scale; \
     bias_val = (bias_f.s0 - scale_vari * mean_vari.s0); \
+    bias_val = bias_val - input_zp * alpha; \
  \
     coord_para = coord; \
     int8 input_desc, output_desc; \
@@ -118,8 +121,9 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_##na
     scale_vari = scale_f.s0 * mean_vari.s1; \
     float4  tmpData0, tmpData1, tmpData2, tmpData3, norm; \
     half4 tmpVal0, tmpVal1; \
-    float alpha = scale_vari; \
+    float alpha = scale_vari * input_scale; \
     bias_val = (bias_f.s0 - scale_vari * mean_vari.s0); \
+    bias_val = bias_val - input_zp * alpha; \
     for(; coord.y < endH;) \
     { \
     VXC_ReadImage(src0, input, coord.xy, 0, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \
