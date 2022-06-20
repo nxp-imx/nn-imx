@@ -7,6 +7,12 @@ _viv_uniform int group_num;
 
 _viv_uniform VXC_512Bits uniExtract8Data_2x8;
 _viv_uniform VXC_512Bits uniSum_X_X2_16x2;
+_viv_uniform float input_scale;
+_viv_uniform float input_scale2;
+_viv_uniform float input_zp;
+_viv_uniform float sum_x_tail;
+_viv_uniform float sum_x2_tail0;
+_viv_uniform float sum_x2_tail1;
 _viv_uniform float output_scale;
 _viv_uniform float output_zp;
 
@@ -45,6 +51,8 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_sums
             sums = sums + sum_x_x2; \
         } \
         sums_f32 = convert_float2(sums); \
+        sums_f32.y = sums_f32.y * input_scale2 + sum_x2_tail0 + sum_x2_tail1 * sums_f32.x; \
+        sums_f32.x = sums_f32.x * input_scale + sum_x_tail; \
     } \
     lcl_sum[lidx] = sums_f32.x; \
     lcl_sqr[lidx] = sums_f32.y; \
@@ -82,7 +90,8 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_sums
  \
     int2 coord = (int2)(gidx, gidy); \
     src_type src0; \
-    float2 sums = 0, sum_x_x2; \
+    float2 sums_f32 = 0; \
+    int2 sums = 0, sum_x_x2; \
     int endH = gidy + height; \
  \
     __local float lcl_sum[16]; \
@@ -98,9 +107,12 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_sums
             VXC_DP16x1(sum_x_x2, src0, src0, VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 0), uniSumX2_16x1); \
             sums = sums + sum_x_x2; \
         } \
+        sums_f32 = convert_float2(sums); \
+        sums_f32.y = sums_f32.y * input_scale2 + sum_x2_tail0 + sum_x2_tail1 * sums_f32.x; \
+        sums_f32.x = sums_f32.x * input_scale + sum_x_tail; \
     } \
-    lcl_sum[lidx] = sums.x; \
-    lcl_sqr[lidx] = sums.y; \
+    lcl_sum[lidx] = sums_f32.x; \
+    lcl_sqr[lidx] = sums_f32.y; \
     barrier(CLK_LOCAL_MEM_FENCE); \
  \
     int4 coord_out = (int4)(get_group_id(0) << 2, gidz, 0, 0); \
@@ -158,8 +170,9 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_##na
     scale_vari = scale_f.s0 * mean_vari.s1; \
     vxc_int4 tmpVal0, tmpVal1; \
     float4  tmpData0, tmpData1, tmpData2, tmpData3, norm; \
-    float alpha = output_scale * scale_vari; \
+    float alpha = input_scale * output_scale * scale_vari; \
     bias_val = (bias_f.s0 - scale_vari * mean_vari.s0) * output_scale + output_zp; \
+    bias_val = bias_val - input_zp * alpha; \
  \
     int8 input_desc, output_desc; \
     _viv_asm(COPY, input_desc, input, sizeof(input_desc)); \
@@ -227,8 +240,9 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_##na
     scale_vari = scale_f.s0 * mean_vari.s1; \
     vxc_int4 tmpVal0, tmpVal1; \
     float4  tmpData0, tmpData1, tmpData2, tmpData3, norm; \
-    float alpha = output_scale * scale_vari; \
+    float alpha = input_scale * output_scale * scale_vari; \
     bias_val = (bias_f.s0 - scale_vari * mean_vari.s0) * output_scale + output_zp; \
+    bias_val = bias_val - input_zp * alpha; \
  \
     for(; coord.y < endH; coord.y++) \
     { \
