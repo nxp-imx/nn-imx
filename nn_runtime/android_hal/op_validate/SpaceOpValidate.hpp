@@ -46,7 +46,7 @@ namespace op_validate {
                 reason += "reject " + opname + " because input is constant\n";
                 result = false;
             }
-            if(!opValidate->IsInput(blockSize)){
+            if(opValidate->IsInput(blockSize)){
                 reason += "reject " + opname + " because blocksize is input\n";
                 result = false;
             }
