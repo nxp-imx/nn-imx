@@ -22456,6 +22456,7 @@ _viv_uniform int bc2zero;\n\
 _viv_uniform VXC_512Bits uniGemmU8U8toFp32Block4_4x4;\n\
 _viv_uniform VXC_512Bits uniGemmU8U8MulZptoFp32_8x4;\n\
 _viv_uniform float input01Scale;\n\
+_viv_uniform float mulKIn0In1Zp;\n\
 \n\
 #define GEMM_QINT_TO_F16(src0_type_name, read_type) \\\n\
 __kernel void gemm_##src0_type_name##src0_type_name##toF16( \\\n\
@@ -22469,10 +22470,8 @@ __kernel void gemm_##src0_type_name##src0_type_name##toF16( \\\n\
  \\\n\
     int4 coord_a = (int4)(0, gidy, (ac2zero ? 0 : get_global_id(2)), 0); \\\n\
     int4 coord_b = (int4)(get_global_id(0), 0, (bc2zero ? 0 : get_global_id(2)), 0); \\\n\
-    vxc_float4 sum0 = (vxc_float4)(0); \\\n\
-    vxc_float4 sum1 = (vxc_float4)(0); \\\n\
-    vxc_float4 sum2 = (vxc_float4)(0); \\\n\
-    vxc_float4 sum3 = (vxc_float4)(0); \\\n\
+    vxc_float4 sum0 = (vxc_float4)(mulKIn0In1Zp, mulKIn0In1Zp, mulKIn0In1Zp, mulKIn0In1Zp); \\\n\
+    vxc_float4 sum1 = sum0, sum2 = sum0, sum3 = sum0; \\\n\
  \\\n\
     int8 inputA_desc, inputB_desc, output_desc; \\\n\
     _viv_asm(COPY, inputA_desc, inputA, sizeof(inputA_desc)); \\\n\
