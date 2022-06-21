@@ -411,7 +411,13 @@ static vsi_nn_kernel_node_t _setup
     }
 
     image_2d = (outputs[0]->attr.dim_num == 2 || outputs[0]->attr.size[2] == 1);
-
+    if (vsi_nn_kernel_map_dtype(inputs[0]->attr.dtype.vx_type) == F16 ||
+        vsi_nn_kernel_map_dtype(inputs[1]->attr.dtype.vx_type) == F16 ||
+        vsi_nn_kernel_map_dtype(inputs[0]->attr.dtype.vx_type) == BF16 ||
+        vsi_nn_kernel_map_dtype(inputs[1]->attr.dtype.vx_type) == BF16)
+    {
+        isfmod = 1;
+    }
     status = _query_kernel( kernel, inputs, outputs, image_2d);
     if (VSI_SUCCESS == status)
     {
