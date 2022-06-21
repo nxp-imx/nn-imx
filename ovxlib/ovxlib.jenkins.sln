@@ -26,8 +26,8 @@ Global
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{3F943DEF-F8A2-4699-8E60-AA81BB22CCD1}.Debug|Win32.ActiveCfg = Debug|Win32
 		{3F943DEF-F8A2-4699-8E60-AA81BB22CCD1}.Debug|Win32.Build.0 = Debug|Win32
-		{3F943DEF-F8A2-4699-8E60-AA81BB22CCD1}.Debug|x64.ActiveCfg = Jenkins-Debug|x64
-		{3F943DEF-F8A2-4699-8E60-AA81BB22CCD1}.Debug|x64.Build.0 = Jenkins-Debug|x64
+		{3F943DEF-F8A2-4699-8E60-AA81BB22CCD1}.Debug|x64.ActiveCfg = Debug|x64
+		{3F943DEF-F8A2-4699-8E60-AA81BB22CCD1}.Debug|x64.Build.0 = Debug|x64
 		{3F943DEF-F8A2-4699-8E60-AA81BB22CCD1}.Jenkins-Debug|Win32.ActiveCfg = Jenkins-Debug|Win32
 		{3F943DEF-F8A2-4699-8E60-AA81BB22CCD1}.Jenkins-Debug|Win32.Build.0 = Jenkins-Debug|Win32
 		{3F943DEF-F8A2-4699-8E60-AA81BB22CCD1}.Jenkins-Debug|x64.ActiveCfg = Jenkins-Debug|x64
