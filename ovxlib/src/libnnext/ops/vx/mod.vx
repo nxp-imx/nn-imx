@@ -67,24 +67,24 @@ __kernel void mod_##src0_name##src1_name##to##dst_name \
 TENSOR_MOD(F16, F16, F16, half4, vxc_short8, vxc_short8,\
                 vxc_half8, CONV, 1, 0, 1, 0, 1, 0)
 TENSOR_MOD(F16, F16, I16, short4, vxc_short8, vxc_short8,\
-               vxc_half8, CONV_SAT, 1, 0, 1, 0, out_scale, out_zp)
+               vxc_half8, CONV_RTE, 1, 0, 1, 0, out_scale, out_zp)
 TENSOR_MOD(F16, F16, I8,  char4, vxc_char8, vxc_short8,\
-                vxc_half8, CONV_SAT, 1, 0, 1, 0, out_scale, out_zp)
+                vxc_half8, CONV_RTE, 1, 0, 1, 0, out_scale, out_zp)
 TENSOR_MOD(F16, F16, U8,  uchar4, vxc_uchar8, vxc_short8,\
-               vxc_half8, CONV_SAT, 1, 0, 1, 0, out_scale, out_zp)
+               vxc_half8, CONV_RTE, 1, 0, 1, 0, out_scale, out_zp)
 
 TENSOR_MOD(I16, I16, I16, short4, vxc_short8, vxc_short8,\
-                vxc_short8, CONV_SAT, in_scale0, in0Tail, in_scale1, in1Tail, out_scale, out_zp)
+                vxc_short8, CONV_RTE, in_scale0, in0Tail, in_scale1, in1Tail, out_scale, out_zp)
 TENSOR_MOD(I16, I16, F16, half4, vxc_short8, vxc_short8,\
                 vxc_short8, CONV, in_scale0, in0Tail, in_scale1, in1Tail, 1, 0)
 
 TENSOR_MOD(I8, I8, I8, char4, vxc_char8, vxc_char16,\
-                vxc_char16, CONV_SAT, in_scale0, in0Tail, in_scale1, in1Tail, out_scale, out_zp)
+                vxc_char16, CONV_RTE, in_scale0, in0Tail, in_scale1, in1Tail, out_scale, out_zp)
 TENSOR_MOD(I8, I8, F16, half4, vxc_short8, vxc_char16,\
                 vxc_char16, CONV, in_scale0, in0Tail, in_scale1, in1Tail, 1, 0)
 
 TENSOR_MOD(U8, U8, U8,  uchar4, vxc_uchar8, vxc_uchar16,\
-                vxc_uchar16, CONV_SAT, in_scale0, in0Tail, in_scale1, in1Tail, out_scale, out_zp)
+                vxc_uchar16, CONV_RTE, in_scale0, in0Tail, in_scale1, in1Tail, out_scale, out_zp)
 TENSOR_MOD(U8, U8, F16, half4, vxc_short8, vxc_uchar16,\
                 vxc_uchar16, CONV, in_scale0, in0Tail, in_scale1, in1Tail, 1, 0)
 
@@ -108,24 +108,24 @@ __kernel void mod_##src0_name##src1_name##to##dst_name##_2D \
 TENSOR_MOD_2D(F16, F16, F16, half4, vxc_short8, vxc_short8,\
                 vxc_half8, CONV, 1, 0, 1, 0, 1, 0)
 TENSOR_MOD_2D(F16, F16, I16, short4, vxc_short8, vxc_short8,\
-               vxc_half8, CONV_SAT, 1, 0, 1, 0, out_scale, out_zp)
+               vxc_half8, CONV_RTE, 1, 0, 1, 0, out_scale, out_zp)
 TENSOR_MOD_2D(F16, F16, I8,  char4, vxc_char8, vxc_short8,\
-                vxc_half8, CONV_SAT, 1, 0, 1, 0, out_scale, out_zp)
+                vxc_half8, CONV_RTE, 1, 0, 1, 0, out_scale, out_zp)
 TENSOR_MOD_2D(F16, F16, U8,  uchar4, vxc_uchar8, vxc_short8,\
-               vxc_half8, CONV_SAT, 1, 0, 1, 0, out_scale, out_zp)
+               vxc_half8, CONV_RTE, 1, 0, 1, 0, out_scale, out_zp)
 
 TENSOR_MOD_2D(I16, I16, I16, short4, vxc_short8, vxc_short8,\
-                vxc_short8, CONV_SAT, in_scale0, in0Tail, in_scale1, in1Tail, out_scale, out_zp)
+                vxc_short8, CONV_RTE, in_scale0, in0Tail, in_scale1, in1Tail, out_scale, out_zp)
 TENSOR_MOD_2D(I16, I16, F16, half4, vxc_short8, vxc_short8,\
                 vxc_short8, CONV, in_scale0, in0Tail, in_scale1, in1Tail, 1, 0)
 
 TENSOR_MOD_2D(I8, I8, I8, char4, vxc_char8, vxc_char16,\
-                vxc_char16, CONV_SAT, in_scale0, in0Tail, in_scale1, in1Tail, out_scale, out_zp)
+                vxc_char16, CONV_RTE, in_scale0, in0Tail, in_scale1, in1Tail, out_scale, out_zp)
 TENSOR_MOD_2D(I8, I8, F16, half4, vxc_short8, vxc_char16,\
                 vxc_char16, CONV, in_scale0, in0Tail, in_scale1, in1Tail, 1, 0)
 
 TENSOR_MOD_2D(U8, U8, U8,  uchar4, vxc_uchar8, vxc_uchar16,\
-                vxc_uchar16, CONV_SAT, in_scale0, in0Tail, in_scale1, in1Tail, out_scale, out_zp)
+                vxc_uchar16, CONV_RTE, in_scale0, in0Tail, in_scale1, in1Tail, out_scale, out_zp)
 TENSOR_MOD_2D(U8, U8, F16, half4, vxc_short8, vxc_uchar16,\
                 vxc_uchar16, CONV, in_scale0, in0Tail, in_scale1, in1Tail, 1, 0)
 
@@ -143,21 +143,21 @@ _viv_uniform VXC_512Bits uniExtractOddData_2x8;
     vxc_short8 zero = (vxc_short8)(0, 0, 0, 0, 0, 0, 0, 0); \
     read_fun(read_data0, input0, coord, VXC_5BITOFFSET_XY(0,0), \
     VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \
-    VXC_DP2x8(vec0, read_data0, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), uniConvBF16toF32_Part0_2x8); \
+    VXC_DP2x8(vec0, read_data0, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvBF16toF32_Part0_2x8); \
     _viv_asm(COPY, in0Val1, vec0, 16); \
-    VXC_DP2x8(vec0, read_data0, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), uniConvBF16toF32_Part1_2x8); \
+    VXC_DP2x8(vec0, read_data0, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvBF16toF32_Part1_2x8); \
     _viv_asm(COPY, in0Val2, vec0, 16); \
     read_fun(read_data1, input1, coord, VXC_5BITOFFSET_XY(0,0), \
     VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \
-    VXC_DP2x8(vec0, read_data1, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), uniConvBF16toF32_Part0_2x8); \
+    VXC_DP2x8(vec0, read_data1, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvBF16toF32_Part0_2x8); \
     _viv_asm(COPY, in1Val1, vec0, 16); \
-    VXC_DP2x8(vec0, read_data1, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), uniConvBF16toF32_Part1_2x8); \
+    VXC_DP2x8(vec0, read_data1, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvBF16toF32_Part1_2x8); \
     _viv_asm(COPY, in1Val2, vec0, 16); \
     tmpVal1 = fmod(in0Val1, in1Val1); \
     tmpVal2 = fmod(in0Val2, in1Val2); \
     _viv_asm(COPY, dst0, tmpVal1, 16); \
     _viv_asm(COPY, dst1, tmpVal2, 16); \
-    VXC_DP2x8(vect, dst0, dst1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), uniExtractOddData_2x8); \
+    VXC_DP2x8(vect, dst0, dst1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniExtractOddData_2x8); \
     write_fun(output, coord, vect, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
 
 __kernel void mod_BF16BF16toBF16
