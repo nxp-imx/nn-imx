@@ -1,5 +1,5 @@
 ############################################################################
-Release notes for Ovxlib 1.1.49
+Release notes for Ovxlib 1.1.50
 
 New Features:
     1. add 'celu', 'selu', 'max_pool3d', 'rcp', 'sign', 'softsign',
