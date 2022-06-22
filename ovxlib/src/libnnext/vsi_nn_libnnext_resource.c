@@ -8994,9 +8994,15 @@ static const char group_normalization_0_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 _viv_uniform int width;\n\
 _viv_uniform int height;\n\
 _viv_uniform VXC_512Bits uniExtract8Data_2x8;\n\
-_viv_uniform VXC_512Bits uniSum_X_X2_16x2;\n\
 _viv_uniform float output_scale;\n\
 _viv_uniform float output_zp;\n\
+\n\
+_viv_uniform float input_scale;\n\
+_viv_uniform float input_scale2;\n\
+_viv_uniform float input_zp;\n\
+_viv_uniform float sum_x_tail;\n\
+_viv_uniform float sum_x2_tail0;\n\
+_viv_uniform float sum_x2_tail1;\n\
 \n\
 _viv_uniform VXC_512Bits uniSumX_16x1;\n\
 _viv_uniform VXC_512Bits uniSumX2_16x1;\n\
@@ -9027,14 +9033,15 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_sums_##
     { \\\n\
         for(coord.y = 0; coord.y < height;) \\\n\
         { \\\n\
-            VXC_OP4(img_load_3d, src0, input, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
-                    VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
+            VXC_OP4(img_load_3d, src0, input, coord, 0, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
             coord.y++; \\\n\
             VXC_DP16x1(sum_x_x2, src0, src0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0), uniSumX_16x1); \\\n\
             VXC_DP16x1(sum_x_x2, src0, src0, VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 0), uniSumX2_16x1); \\\n\
             sums = sums + sum_x_x2; \\\n\
         } \\\n\
         sums_f32 = convert_float2(sums); \\\n\
+        sums_f32.y = sums_f32.y * input_scale2 + sum_x2_tail0 + sum_x2_tail1 * sums_f32.x; \\\n\
+        sums_f32.x = sums_f32.x * input_scale + sum_x_tail; \\\n\
     } \\\n\
     lcl_sum[lidx] = sums_f32.x; \\\n\
     lcl_sqr[lidx] = sums_f32.y; \\\n\
@@ -9070,17 +9077,17 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_sums_##
  \\\n\
     int2 coord = (int2)(gidx, get_global_id(1)); \\\n\
     src_type src0; \\\n\
-    float2 sums = 0, sum_x_x2; \\\n\
+    float2 sums = 0; \\\n\
  \\\n\
     __local float lcl_sum[16]; \\\n\
     __local float lcl_sqr[16]; \\\n\
     if(gidx < width) \\\n\
     { \\\n\
-        VXC_ReadImage(src0, input, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
-                             VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
-        VXC_DP16x1(sum_x_x2, src0, src0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0), uniSumX_16x1); \\\n\
-        VXC_DP16x1(sum_x_x2, src0, src0, VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 0), uniSumX2_16x1); \\\n\
-        sums = sums + sum_x_x2; \\\n\
+        VXC_ReadImage(src0, input, coord, 0, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
+        VXC_DP16x1(sums, src0, src0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0), uniSumX_16x1); \\\n\
+        VXC_DP16x1(sums, src0, src0, VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 0), uniSumX2_16x1); \\\n\
+        sums.y = sums.y * input_scale2 + sum_x2_tail0 + sum_x2_tail1 * sums.x; \\\n\
+        sums.x = sums.x * input_scale + sum_x_tail; \\\n\
     } \\\n\
     lcl_sum[lidx] = sums.x; \\\n\
     lcl_sqr[lidx] = sums.y; \\\n\
@@ -9114,7 +9121,7 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_means(\
     int2 coord = (int2)(gidx, get_global_id(1));\n\
     vxc_uchar16 src0 = 1;\n\
     float2 sum_sqr = (float2)(0);\n\
-    vxc_float4 mean_vari;\n\
+    float4 mean_vari;\n\
     VXC_DP4x4(mean_vari, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniResetFp32_4x4);\n\
 \n\
     __local float2 lcl_data[16];\n\
@@ -9155,6 +9162,12 @@ _viv_uniform VXC_512Bits uniDataToFP32_0_4x4;\n\
 _viv_uniform VXC_512Bits uniDataToFP32_1_4x4;\n\
 _viv_uniform VXC_512Bits uniDataToFP32_2_4x4;\n\
 _viv_uniform VXC_512Bits uniDataToFP32_3_4x4;\n\
+#define CONVERT_INPUT_TO_F32() \\\n\
+VXC_DP4x4(tmpData0, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_0_4x4); \\\n\
+VXC_DP4x4(tmpData1, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_1_4x4); \\\n\
+VXC_DP4x4(tmpData2, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_2_4x4); \\\n\
+VXC_DP4x4(tmpData3, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_3_4x4);\n\
+\n\
 #define GROUP_NORM_8BITS_IMPL(name, src_type, dst_type) \\\n\
 __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_##name( \\\n\
     __read_only  image2d_array_t input, \\\n\
@@ -9173,9 +9186,9 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_##name(
     vxc_short8 src1; \\\n\
     vxc_half8 scale_h; \\\n\
     float scale_vari, bias_val; \\\n\
-    vxc_float4 bias_f, scale_f; \\\n\
+    float4 bias_f, scale_f; \\\n\
  \\\n\
-    vxc_float4 mean_vari = read_imagef(meanVari, coord_para.zy); \\\n\
+    float4 mean_vari = read_imagef(meanVari, coord_para.zy); \\\n\
     VXC_ReadImage(src1, scale, coord_para.xy, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
     bias_f = read_imagef(bias, coord_para.xy); \\\n\
     VXC_ReadImage2DArray(src0, input, coord, 0, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
@@ -9185,14 +9198,12 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_##name(
  \\\n\
     scale_vari = scale_f.s0 * mean_vari.s1; \\\n\
     vxc_int4 tmpVal0, tmpVal1; \\\n\
-    vxc_float4  tmpData0, tmpData1, tmpData2, tmpData3, norm; \\\n\
-    float alpha = output_scale * scale_vari; \\\n\
+    float4  tmpData0, tmpData1, tmpData2, tmpData3, norm; \\\n\
+    float alpha = input_scale * output_scale * scale_vari; \\\n\
     bias_val = (bias_f.s0 - scale_vari * mean_vari.s0) * output_scale + output_zp; \\\n\
+    bias_val = bias_val - input_zp * alpha; \\\n\
  \\\n\
-    VXC_DP4x4(tmpData0, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_0_4x4); \\\n\
-    VXC_DP4x4(tmpData1, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_1_4x4); \\\n\
-    VXC_DP4x4(tmpData2, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_2_4x4); \\\n\
-    VXC_DP4x4(tmpData3, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_3_4x4); \\\n\
+    CONVERT_INPUT_TO_F32() \\\n\
     norm = tmpData0 * alpha + bias_val; \\\n\
     tmpVal0 = convert_int4_rte(norm); \\\n\
     norm = tmpData1 * alpha + bias_val; \\\n\
@@ -9225,9 +9236,9 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_##name#
     vxc_short8 src1; \\\n\
     vxc_half8 scale_h; \\\n\
     float scale_vari, bias_val; \\\n\
-    vxc_float4 bias_f, scale_f; \\\n\
+    float4 bias_f, scale_f; \\\n\
  \\\n\
-    vxc_float4 mean_vari = read_imagef(meanVari, coord_para.zy); \\\n\
+    float4 mean_vari = read_imagef(meanVari, coord_para.zy); \\\n\
     VXC_ReadImage(src1, scale, coord_para.xy, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
     bias_f = read_imagef(bias, coord_para.xy); \\\n\
     VXC_ReadImage(src0, input, coord.xy, 0, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
@@ -9237,14 +9248,12 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_##name#
  \\\n\
     scale_vari = scale_f.s0 * mean_vari.s1; \\\n\
     vxc_int4 tmpVal0, tmpVal1; \\\n\
-    vxc_float4  tmpData0, tmpData1, tmpData2, tmpData3, norm; \\\n\
-    float alpha = output_scale * scale_vari; \\\n\
+    float4  tmpData0, tmpData1, tmpData2, tmpData3, norm; \\\n\
+    float alpha = input_scale * output_scale * scale_vari; \\\n\
     bias_val = (bias_f.s0 - scale_vari * mean_vari.s0) * output_scale + output_zp; \\\n\
+    bias_val = bias_val - input_zp * alpha; \\\n\
  \\\n\
-    VXC_DP4x4(tmpData0, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_0_4x4); \\\n\
-    VXC_DP4x4(tmpData1, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_1_4x4); \\\n\
-    VXC_DP4x4(tmpData2, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_2_4x4); \\\n\
-    VXC_DP4x4(tmpData3, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_3_4x4); \\\n\
+    CONVERT_INPUT_TO_F32() \\\n\
     norm = tmpData0 * alpha + bias_val; \\\n\
     tmpVal0 = convert_int4_rte(norm); \\\n\
     norm = tmpData1 * alpha + bias_val; \\\n\
@@ -9276,23 +9285,21 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_##name(
     src_type src0; \\\n\
     dst_type dst; \\\n\
     float scale_vari, bias_val; \\\n\
-    vxc_float4 bias_f, scale_f; \\\n\
+    float4 bias_f, scale_f; \\\n\
  \\\n\
-    vxc_float4 mean_vari = read_imagef(meanVari, coord_para.zy); \\\n\
+    float4 mean_vari = read_imagef(meanVari, coord_para.zy); \\\n\
     bias_f = read_imagef(bias, coord_para.xy); \\\n\
     scale_f = read_imagef(scale, coord_para.xy); \\\n\
     VXC_ReadImage2DArray(src0, input, coord, 0, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
  \\\n\
     scale_vari = scale_f.s0 * mean_vari.s1; \\\n\
     vxc_int4 tmpVal0, tmpVal1; \\\n\
-    vxc_float4  tmpData0, tmpData1, tmpData2, tmpData3, norm; \\\n\
-    float alpha = output_scale * scale_vari; \\\n\
+    float4  tmpData0, tmpData1, tmpData2, tmpData3, norm; \\\n\
+    float alpha = input_scale * output_scale * scale_vari; \\\n\
     bias_val = (bias_f.s0 - scale_vari * mean_vari.s0) * output_scale + output_zp; \\\n\
+    bias_val = bias_val - input_zp * alpha; \\\n\
  \\\n\
-    VXC_DP4x4(tmpData0, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_0_4x4); \\\n\
-    VXC_DP4x4(tmpData1, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_1_4x4); \\\n\
-    VXC_DP4x4(tmpData2, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_2_4x4); \\\n\
-    VXC_DP4x4(tmpData3, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_3_4x4); \\\n\
+    CONVERT_INPUT_TO_F32() \\\n\
     norm = tmpData0 * alpha + bias_val; \\\n\
     tmpVal0 = convert_int4_rte(norm); \\\n\
     norm = tmpData1 * alpha + bias_val; \\\n\
@@ -9323,23 +9330,21 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_##name#
     src_type src0; \\\n\
     dst_type dst; \\\n\
     float scale_vari, bias_val; \\\n\
-    vxc_float4 bias_f, scale_f; \\\n\
+    float4 bias_f, scale_f; \\\n\
  \\\n\
-    vxc_float4 mean_vari = read_imagef(meanVari, coord_para.zy); \\\n\
+    float4 mean_vari = read_imagef(meanVari, coord_para.zy); \\\n\
     bias_f = read_imagef(bias, coord_para.xy); \\\n\
     scale_f = read_imagef(scale, coord_para.xy); \\\n\
     VXC_ReadImage(src0, input, coord.xy, 0, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
  \\\n\
     scale_vari = scale_f.s0 * mean_vari.s1; \\\n\
     vxc_int4 tmpVal0, tmpVal1; \\\n\
-    vxc_float4  tmpData0, tmpData1, tmpData2, tmpData3, norm; \\\n\
-    float alpha = output_scale * scale_vari; \\\n\
+    float4  tmpData0, tmpData1, tmpData2, tmpData3, norm; \\\n\
+    float alpha = input_scale * output_scale * scale_vari; \\\n\
     bias_val = (bias_f.s0 - scale_vari * mean_vari.s0) * output_scale + output_zp; \\\n\
+    bias_val = bias_val - input_zp * alpha; \\\n\
  \\\n\
-    VXC_DP4x4(tmpData0, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_0_4x4); \\\n\
-    VXC_DP4x4(tmpData1, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_1_4x4); \\\n\
-    VXC_DP4x4(tmpData2, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_2_4x4); \\\n\
-    VXC_DP4x4(tmpData3, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_3_4x4); \\\n\
+    CONVERT_INPUT_TO_F32() \\\n\
     norm = tmpData0 * alpha + bias_val; \\\n\
     tmpVal0 = convert_int4_rte(norm); \\\n\
     norm = tmpData1 * alpha + bias_val; \\\n\
@@ -9365,7 +9370,8 @@ _viv_uniform VXC_512Bits uniDataToFP32_0_4x4;\n\
 _viv_uniform VXC_512Bits uniDataToFP32_1_4x4;\n\
 _viv_uniform VXC_512Bits uniDataToFP32_2_4x4;\n\
 _viv_uniform VXC_512Bits uniDataToFP32_3_4x4;\n\
-\n\
+_viv_uniform float input_scale;\n\
+_viv_uniform float input_zp;\n\
 \n\
 #define GROUP_NORM_8BITSTOF16_IMPL(name, src_type) \\\n\
 __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_##name( \\\n\
@@ -9397,8 +9403,9 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_##name(
     scale_vari = scale_f.s0 * mean_vari.s1; \\\n\
     vxc_float4  tmpData0, tmpData1, tmpData2, tmpData3, norm; \\\n\
     half4 tmpVal0, tmpVal1; \\\n\
-    float alpha = scale_vari; \\\n\
+    float alpha = scale_vari * input_scale; \\\n\
     bias_val = (bias_f.s0 - scale_vari * mean_vari.s0); \\\n\
+    bias_val = bias_val - input_zp * alpha; \\\n\
  \\\n\
     VXC_DP4x4(tmpData0, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_0_4x4); \\\n\
     VXC_DP4x4(tmpData1, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_1_4x4); \\\n\
@@ -9454,7 +9461,9 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_##name#
     vxc_float4  tmpData0, tmpData1, tmpData2, tmpData3, norm; \\\n\
     half4 tmpVal0, tmpVal1; \\\n\
     float alpha = scale_vari; \\\n\
+    float alpha = scale_vari * input_scale; \\\n\
     bias_val = (bias_f.s0 - scale_vari * mean_vari.s0); \\\n\
+    bias_val = bias_val - input_zp * alpha; \\\n\
  \\\n\
     VXC_DP4x4(tmpData0, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_0_4x4); \\\n\
     VXC_DP4x4(tmpData1, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_1_4x4); \\\n\
@@ -9506,8 +9515,9 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_##name(
     scale_vari = scale_f.s0 * mean_vari.s1; \\\n\
     vxc_float4  tmpData0, tmpData1, tmpData2, tmpData3, norm; \\\n\
     half4 tmpVal0, tmpVal1; \\\n\
-    float alpha = scale_vari; \\\n\
+    float alpha = scale_vari * input_scale; \\\n\
     bias_val = (bias_f.s0 - scale_vari * mean_vari.s0); \\\n\
+    bias_val = bias_val - input_zp * alpha; \\\n\
  \\\n\
     VXC_DP4x4(tmpData0, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_0_4x4); \\\n\
     VXC_DP4x4(tmpData1, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_1_4x4); \\\n\
@@ -9558,8 +9568,9 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_##name#
     scale_vari = scale_f.s0 * mean_vari.s1; \\\n\
     vxc_float4  tmpData0, tmpData1, tmpData2, tmpData3, norm; \\\n\
     half4 tmpVal0, tmpVal1; \\\n\
-    float alpha = scale_vari; \\\n\
+    float alpha = scale_vari * input_scale; \\\n\
     bias_val = (bias_f.s0 - scale_vari * mean_vari.s0); \\\n\
+    bias_val = bias_val - input_zp * alpha; \\\n\
  \\\n\
     VXC_DP4x4(tmpData0, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_0_4x4); \\\n\
     VXC_DP4x4(tmpData1, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_1_4x4); \\\n\
@@ -9593,6 +9604,12 @@ _viv_uniform VXC_512Bits uniDataToFP32_0_4x4;\n\
 _viv_uniform VXC_512Bits uniDataToFP32_1_4x4;\n\
 _viv_uniform VXC_512Bits uniExtract8Data_2x8;\n\
 _viv_uniform VXC_512Bits uniSum_X_X2_8x2;\n\
+_viv_uniform float input_scale;\n\
+_viv_uniform float input_scale2;\n\
+_viv_uniform float input_zp;\n\
+_viv_uniform float sum_x_tail;\n\
+_viv_uniform float sum_x2_tail0;\n\
+_viv_uniform float sum_x2_tail1;\n\
 \n\
 _viv_uniform float output_scale;\n\
 _viv_uniform float output_zp;\n\
@@ -9630,6 +9647,8 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_sums_##
             VXC_DP8x2(sumsqr, in_h, in_h, VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0), uniSum_X_X2_8x2); \\\n\
             tmpSumSqr += sumsqr; \\\n\
         } \\\n\
+        tmpSumSqr.y = tmpSumSqr.y * input_scale2 + sum_x2_tail0 + sum_x2_tail1 * tmpSumSqr.x; \\\n\
+        tmpSumSqr.x = tmpSumSqr.x * input_scale + sum_x_tail; \\\n\
     } \\\n\
  \\\n\
     lcl_sum[lidx] = tmpSumSqr.x; \\\n\
@@ -9680,6 +9699,8 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_sums_##
         VXC_ReadImage(src0, input, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
         _viv_asm(COPY, in_h, src0, 16); \\\n\
         VXC_DP8x2(sumsqr, in_h, in_h, VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0), uniSum_X_X2_8x2); \\\n\
+        sumsqr.y = sumsqr.y * input_scale2 + sum_x2_tail0 + sum_x2_tail1 * sumsqr.x; \\\n\
+        sumsqr.x = sumsqr.x * input_scale + sum_x_tail; \\\n\
     } \\\n\
  \\\n\
     lcl_sum[lidx] = sumsqr.x; \\\n\
@@ -9740,8 +9761,9 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_##name(
     float4  tmpData0, tmpData1; \\\n\
     copy_type outval; \\\n\
     conv_type tmpVal0, tmpVal1; \\\n\
-    float alpha = output_scale * scale_vari; \\\n\
+    float alpha = input_scale * output_scale * scale_vari; \\\n\
     bias_val = (bias_f.s0 - scale_vari * mean_vari.s0) * output_scale + output_zp; \\\n\
+    bias_val = bias_val - input_zp * alpha; \\\n\
     dst_type dst; \\\n\
  \\\n\
     _viv_asm(COPY, in_h, src0, 16); \\\n\
@@ -9796,7 +9818,8 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_##name#
     copy_type outval; \\\n\
     conv_type tmpVal0, tmpVal1; \\\n\
     float alpha = output_scale * scale_vari; \\\n\
-    bias_val = (bias_f.s0 - scale_vari * mean_vari.s0) * output_scale + output_zp; \\\n\
+    bias_val = input_scale * (bias_f.s0 - scale_vari * mean_vari.s0) * output_scale + output_zp; \\\n\
+    bias_val = bias_val - input_zp * alpha; \\\n\
     dst_type dst; \\\n\
  \\\n\
     _viv_asm(COPY, in_h, src0, 16); \\\n\
@@ -9845,8 +9868,9 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_##name(
     float4  tmpData0, tmpData1; \\\n\
     copy_type outval; \\\n\
     conv_type tmpVal0, tmpVal1; \\\n\
-    float alpha = output_scale * scale_vari; \\\n\
+    float alpha = input_scale * output_scale * scale_vari; \\\n\
     bias_val = (bias_f.s0 - scale_vari * mean_vari.s0) * output_scale + output_zp; \\\n\
+    bias_val = bias_val - input_zp * alpha; \\\n\
     dst_type dst; \\\n\
  \\\n\
     _viv_asm(COPY, in_h, src0, 16); \\\n\
@@ -9895,8 +9919,9 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_##name#
     float4  tmpData0, tmpData1; \\\n\
     copy_type outval; \\\n\
     conv_type tmpVal0, tmpVal1; \\\n\
-    float alpha = output_scale * scale_vari; \\\n\
+    float alpha = input_scale * output_scale * scale_vari; \\\n\
     bias_val = (bias_f.s0 - scale_vari * mean_vari.s0) * output_scale + output_zp; \\\n\
+    bias_val = bias_val - input_zp * alpha; \\\n\
     dst_type dst; \\\n\
  \\\n\
     _viv_asm(COPY, in_h, src0, 16); \\\n\

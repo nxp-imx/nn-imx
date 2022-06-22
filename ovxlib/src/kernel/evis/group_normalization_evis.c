@@ -35,6 +35,7 @@
 #include "utils/vsi_nn_util.h"
 #include "kernel/vsi_nn_kernel.h"
 #include "kernel/vsi_nn_kernel_gpu_shape_optimize.h"
+#include "utils/vsi_nn_dtype_util.h"
 
 __BEGIN_DECLS
 
@@ -237,6 +238,13 @@ DEF_KERNEL_INITIALIZER(_groupnorm_sums_initializer)
     int32_t width = 0;
     int32_t height = 0;
     int32_t chn = 0;
+    float input_scale = 1;
+    float input_scale2 = 1;
+    float input_zp = 1;
+    float sum_x_tail = 1;
+    float sum_x2_tail0 = 1;
+    float sum_x2_tail1 = 1;
+    float work_item_pixels = 1;
 
     attr[0] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[0] );
     CHECK_PTR_FAIL_GOTO( attr[0], "Create tensor attr buffer fail.", OnError );
@@ -247,6 +255,9 @@ DEF_KERNEL_INITIALIZER(_groupnorm_sums_initializer)
     CHECK_STATUS_FAIL_GOTO(status, OnError );
 
     input_shape = attr[0]->shape;
+    input_scale = attr[0]->scale;
+    input_scale2 = input_scale * input_scale;
+    input_zp    = (float)attr[0]->zero_point;
     width = (int32_t)(input_shape->data[0]);
     height = (int32_t)(input_shape->data[1]);
     chn = (int32_t)(attr[1]->shape->data[1]);
@@ -254,6 +265,12 @@ DEF_KERNEL_INITIALIZER(_groupnorm_sums_initializer)
     {
         height = 1;
     }
+
+    work_item_pixels = (float)height * 16;
+
+    sum_x_tail = -work_item_pixels * input_zp * input_scale;
+    sum_x2_tail0 = work_item_pixels * input_zp * input_zp * input_scale2;
+    sum_x2_tail1 = -2 * input_zp * input_scale2;
 
     shaderParam.global_scale[0]  = 1;
     shaderParam.global_scale[1]  = 1;
@@ -298,6 +315,11 @@ DEF_KERNEL_INITIALIZER(_groupnorm_sums_initializer)
         }, GPU_DP_TYPE_16 };
         status  = vsi_nn_kernel_gpu_add_param(node, "uniSumX_16x1", &uniSumX_16x1);
         status |= vsi_nn_kernel_gpu_add_param(node, "uniSumX2_16x1", &uniSumX2_16x1);
+        status |= vsi_nn_kernel_gpu_add_param(node, "input_scale", &input_scale);
+        status |= vsi_nn_kernel_gpu_add_param(node, "input_scale2", &input_scale2);
+        status |= vsi_nn_kernel_gpu_add_param(node, "sum_x_tail", &sum_x_tail);
+        status |= vsi_nn_kernel_gpu_add_param(node, "sum_x2_tail0", &sum_x2_tail0);
+        status |= vsi_nn_kernel_gpu_add_param(node, "sum_x2_tail1", &sum_x2_tail1);
         CHECK_STATUS_FAIL_GOTO(status, OnError );
     }
     else if (attr[0]->dtype == I16 || attr[0]->dtype == F16)
@@ -313,6 +335,11 @@ DEF_KERNEL_INITIALIZER(_groupnorm_sums_initializer)
             0x00000000, 0x00000000, 0x00000000, 0x00000000 // Constant
         }, GPU_DP_TYPE_16 };
         status  = vsi_nn_kernel_gpu_add_param(node, "uniSum_X_X2_8x2", &uniSum_X_X2_8x2);
+        status |= vsi_nn_kernel_gpu_add_param(node, "input_scale", &input_scale);
+        status |= vsi_nn_kernel_gpu_add_param(node, "input_scale2", &input_scale2);
+        status |= vsi_nn_kernel_gpu_add_param(node, "sum_x_tail", &sum_x_tail);
+        status |= vsi_nn_kernel_gpu_add_param(node, "sum_x2_tail0", &sum_x2_tail0);
+        status |= vsi_nn_kernel_gpu_add_param(node, "sum_x2_tail1", &sum_x2_tail1);
         CHECK_STATUS_FAIL_GOTO(status, OnError );
     }
 
@@ -416,6 +443,8 @@ DEF_KERNEL_INITIALIZER(_groupnorm_initializer)
 
     vsi_nn_kernel_tensor_attr_t* attr[4] = {NULL, NULL, NULL, NULL};
     vsi_size_array_t * input_shape = NULL;
+    float input_scale = 1;
+    float input_zp = 0;
     float output_scale = 1.0f;
     float output_zp = 0;
     int32_t height = 0, width = 0, chn = 0;
@@ -434,6 +463,8 @@ DEF_KERNEL_INITIALIZER(_groupnorm_initializer)
     CHECK_STATUS_FAIL_GOTO(status, OnError );
 
     input_shape  = attr[0]->shape;
+    input_scale  = attr[0]->scale;
+    input_zp = (float)attr[0]->zero_point;
     output_scale = 1.0f / attr[2]->scale;
     output_zp = (float)attr[2]->zero_point;
 
@@ -555,6 +586,8 @@ DEF_KERNEL_INITIALIZER(_groupnorm_initializer)
                         status = vsi_nn_kernel_gpu_add_param(node, "uniExtract8Data_2x8",
                             &uniExtractInteger_2x8);
                     }
+                    status |= vsi_nn_kernel_gpu_add_param(node, "input_scale", &input_scale);
+                    status |= vsi_nn_kernel_gpu_add_param(node, "input_zp", &input_zp);
                     status |= vsi_nn_kernel_gpu_add_param(node, "uniDataToFP32_0_4x4",
                         &uniDataToFP32_0_4x4);
                     status |= vsi_nn_kernel_gpu_add_param(node, "uniDataToFP32_1_4x4",
@@ -588,6 +621,8 @@ DEF_KERNEL_INITIALIZER(_groupnorm_initializer)
                         status = vsi_nn_kernel_gpu_add_param(node, "uniExtract8Data_2x8",
                             &uniExtractInteger_2x8);
                     }
+                    status |= vsi_nn_kernel_gpu_add_param(node, "input_scale", &input_scale);
+                    status |= vsi_nn_kernel_gpu_add_param(node, "input_zp", &input_zp);
                     status |= vsi_nn_kernel_gpu_add_param(node, "uniDataToFP32_0_4x4",
                         &uniDataToFP32_0_4x4);
                     status |= vsi_nn_kernel_gpu_add_param(node, "uniDataToFP32_1_4x4",
@@ -736,9 +771,7 @@ static vsi_nn_kernel_node_t _setup
     uint32_t hashkey = 0;
     int32_t i = 0;
     float rSpaceOrg = 1.0f / (inputs[0]->attr.size[0] * inputs[0]->attr.size[1]);
-    float input_scale = vsi_nn_get_tensor_scale(inputs[0]);
-    float eps = vsi_nn_kernel_param_get_float32(params, "eps") /
-                (input_scale * input_scale);
+    float eps = vsi_nn_kernel_param_get_float32(params, "eps");
     int32_t group_num = vsi_nn_kernel_param_get_int32( params, "group_num" );
     vsi_size_t group_size = inputs[0]->attr.size[2] / group_num;
     float group_ratio = 1.0f / (inputs[0]->attr.size[0] * inputs[0]->attr.size[1] * group_size);
@@ -750,7 +783,7 @@ static vsi_nn_kernel_node_t _setup
         return NULL;
     }
 
-    status =  vsi_nn_kernel_optimize_group_norm_shape( (const vsi_size_t*)inputs[0]->attr.size,
+    status = vsi_nn_kernel_optimize_group_norm_shape( (const vsi_size_t*)inputs[0]->attr.size,
         inputs[0]->attr.dim_num, group_num, 0, new_shape);
     if ( VSI_SUCCESS != status )
     {
@@ -829,7 +862,7 @@ static vsi_nn_kernel_node_t _setup
             // Set default border mode.
             vx_border_t border;
             border.mode = VX_BORDER_CONSTANT;
-            border.constant_value.U16 = 0;
+            vsi_nn_Float32ToDtype(0, (uint8_t*)&border.constant_value.U32, &inputs[0]->attr.dtype);
             status = vxSetNodeAttribute( (vx_node)tmp_node, VX_NODE_BORDER, &border, sizeof(border) );
             CHECK_STATUS(status);
         }
@@ -888,14 +921,6 @@ static vsi_nn_kernel_node_t _setup
         vsi_nn_kernel_scalar_release( &node_params[6] );
         vsi_nn_kernel_scalar_release( &node_params[7] );
         vsi_nn_kernel_scalar_release( &node_params[8] );
-        {
-            // Set default border mode.
-            vx_border_t border;
-            border.mode = VX_BORDER_CONSTANT;
-            border.constant_value.U16 = 0;
-            status = vxSetNodeAttribute( (vx_node)node, VX_NODE_BORDER, &border, sizeof(border) );
-            CHECK_STATUS(status);
-        }
     }
 
     /* Pass parameters to node. */

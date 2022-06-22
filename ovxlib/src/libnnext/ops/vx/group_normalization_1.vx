@@ -7,7 +7,8 @@ _viv_uniform VXC_512Bits uniDataToFP32_0_4x4;
 _viv_uniform VXC_512Bits uniDataToFP32_1_4x4;
 _viv_uniform VXC_512Bits uniDataToFP32_2_4x4;
 _viv_uniform VXC_512Bits uniDataToFP32_3_4x4;
-
+_viv_uniform float input_scale;
+_viv_uniform float input_zp;
 
 #define GROUP_NORM_8BITSTOF16_IMPL(name, src_type) \
 __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_##name( \
@@ -39,8 +40,9 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_##name(
     scale_vari = scale_f.s0 * mean_vari.s1; \
     vxc_float4  tmpData0, tmpData1, tmpData2, tmpData3, norm; \
     half4 tmpVal0, tmpVal1; \
-    float alpha = scale_vari; \
+    float alpha = scale_vari * input_scale; \
     bias_val = (bias_f.s0 - scale_vari * mean_vari.s0); \
+    bias_val = bias_val - input_zp * alpha; \
  \
     VXC_DP4x4(tmpData0, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_0_4x4); \
     VXC_DP4x4(tmpData1, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_1_4x4); \
@@ -96,7 +98,9 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_##name#
     vxc_float4  tmpData0, tmpData1, tmpData2, tmpData3, norm; \
     half4 tmpVal0, tmpVal1; \
     float alpha = scale_vari; \
+    float alpha = scale_vari * input_scale; \
     bias_val = (bias_f.s0 - scale_vari * mean_vari.s0); \
+    bias_val = bias_val - input_zp * alpha; \
  \
     VXC_DP4x4(tmpData0, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_0_4x4); \
     VXC_DP4x4(tmpData1, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_1_4x4); \
@@ -148,8 +152,9 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_##name(
     scale_vari = scale_f.s0 * mean_vari.s1; \
     vxc_float4  tmpData0, tmpData1, tmpData2, tmpData3, norm; \
     half4 tmpVal0, tmpVal1; \
-    float alpha = scale_vari; \
+    float alpha = scale_vari * input_scale; \
     bias_val = (bias_f.s0 - scale_vari * mean_vari.s0); \
+    bias_val = bias_val - input_zp * alpha; \
  \
     VXC_DP4x4(tmpData0, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_0_4x4); \
     VXC_DP4x4(tmpData1, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_1_4x4); \
@@ -200,8 +205,9 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_##name#
     scale_vari = scale_f.s0 * mean_vari.s1; \
     vxc_float4  tmpData0, tmpData1, tmpData2, tmpData3, norm; \
     half4 tmpVal0, tmpVal1; \
-    float alpha = scale_vari; \
+    float alpha = scale_vari * input_scale; \
     bias_val = (bias_f.s0 - scale_vari * mean_vari.s0); \
+    bias_val = bias_val - input_zp * alpha; \
  \
     VXC_DP4x4(tmpData0, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_0_4x4); \
     VXC_DP4x4(tmpData1, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_1_4x4); \
