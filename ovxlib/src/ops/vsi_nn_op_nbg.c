@@ -64,35 +64,28 @@ static void _set_io_index
     idx = 0;
     for (i = 0; i < self->input.num; i++)
     {
-        uint32_t numParams=0, scalar_index=0;
+        uint32_t scalar_index=0;
         vx_parameter param = 0;
         vx_enum type = 0;
+
         vxSetParameterByIndex(self->n, idx++, (vx_reference)inputs[i]->t);
-        vxQueryNode(self->n, VX_NODE_PARAMETERS, &numParams, sizeof(numParams));
-        for (j = 0; j < numParams; j++)
-        {
-            vx_reference ref = 0;
-            param = vxGetParameterByIndex(self->n, j);
-            vxQueryParameter(param, VX_PARAMETER_TYPE, &type, sizeof(vx_enum));
-            if (type == VX_TYPE_TENSOR)
-            {
-                vxQueryParameter(param, VX_PARAMETER_REF, &ref, sizeof(vx_reference));
-                if (ref == (vx_reference)inputs[i]->t)
-                {
-                    scalar_index = j + 1;
-                    break;
-                }
-            }
-        }
+        scalar_index = idx;
         param = vxGetParameterByIndex(self->n, scalar_index);
         vxQueryParameter(param, VX_PARAMETER_TYPE, &type, sizeof(vx_enum));
+        if (param != NULL)
+        {
+            vxReleaseParameter(&param);
+            param = NULL;
+
+        }
         if (type != VX_TYPE_SCALAR)
         {
             continue;
         }
         else
         {
-            /* 4 crop scalar parameters input*/
+
+            /* 4 crop scalar parameters input */
             for (j = scalar_index; j < scalar_index + 4; j++)
             {
                 vx_enum data_type = 0;
@@ -106,6 +99,12 @@ static void _set_io_index
                     vx_scalar scalar = vxCreateScalar(self->graph->ctx->c, VX_TYPE_INT32, 0);
                     ref = (vx_reference)scalar;
                     vxSetParameterByIndex(self->n, idx++, ref);
+                    vxReleaseReference(&ref);
+                }
+                if (param != NULL)
+                {
+                    vxReleaseParameter(&param);
+                    param = NULL;
                 }
             }
         }

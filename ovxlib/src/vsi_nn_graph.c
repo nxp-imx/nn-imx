@@ -1883,7 +1883,7 @@ vsi_status vsi_nn_setup_binary_graph_inputs_outputs
     vsi_nn_graph_t* graph
     )
 {
-    uint32_t i,j,k,idx, p;
+    uint32_t i,j,k,p;
     vsi_status status = VSI_FAILURE;
     uint32_t num_of_graph_inputs;
     uint32_t num_of_graph_real_inputs;
@@ -1953,44 +1953,12 @@ vsi_status vsi_nn_setup_binary_graph_inputs_outputs
             for (k = 0; k < graph->node_num; k++)
             {
                 vsi_nn_node_t* node = vsi_nn_GetNode(graph, k);
-                uint32_t numParams = 0;
-                status = vxQueryNode(node->n, VX_NODE_PARAMETERS, &numParams, sizeof(numParams));
                 if (node->op == VSI_NN_OP_NBG)
                 {
                     vx_parameter param = 0;
                     vx_reference ref = 0;
                     vx_enum type = 0;
-                    uint32_t scalar_index = 0;
-                    for (idx = 0; idx < numParams; idx++)
-                    {
-                        param = vxGetParameterByIndex(node->n, idx);
-                        vxQueryParameter(param, VX_PARAMETER_TYPE, &type, sizeof(vx_enum));
-                        if (type == VX_TYPE_TENSOR)
-                        {
-                            vxQueryParameter(param,
-                                             VX_PARAMETER_REF,
-                                             &ref,
-                                             sizeof(vx_reference));
-
-                            if (ref == (vx_reference)tensor->t)
-                            {
-                                vxReleaseReference(&ref);
-                                scalar_index = idx + 1;
-                                break;
-                            }
-
-                            if (ref != NULL)
-                            {
-                                vxReleaseReference(&ref);
-                            }
-
-                            if (param != NULL)
-                            {
-                                vxReleaseParameter(&param);
-                                param = NULL;
-                            }
-                        }
-                    }
+                    uint32_t scalar_index = j;
                     param = vxGetParameterByIndex(node->n, scalar_index);
                     status = vxQueryParameter(param,
                                                 VX_PARAMETER_TYPE,
@@ -2026,7 +1994,6 @@ vsi_status vsi_nn_setup_binary_graph_inputs_outputs
                             vxReleaseParameter(&param);
                         }
                     }
-
                 }
             }
         }
