@@ -451,8 +451,7 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
             return sinValidate->Validate(reason);
         }
 
-        case OperationType::RESIZE_BILINEAR:
-        case OperationType::RESIZE_NEAREST_NEIGHBOR: {
+        case OperationType::RESIZE_BILINEAR: {
             OperationValidatePtr resizeValidate = std::make_unique<
                 op_validate::ResizeValidate<HalPlatform::Model, HalPlatform::Operation>>(model,
                                                                                          operation);
@@ -766,6 +765,7 @@ bool VsiDriver::isSupportedOperation(const HalPlatform::Operation& operation,
         case OperationType::WHILE:
         case OperationType::FILL:
         case OperationType::RANK:
+        case OperationType::RESIZE_NEAREST_NEIGHBOR:
             isSupport &= false;
             break;
 # endif
