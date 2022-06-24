@@ -156,3 +156,44 @@ SELECT_HYBRID_TOF16_FUN_2D(I8_F16_I8toF16_2D,  vxc_short8,  vxc_half8,   vxc_cha
 SELECT_HYBRID_TOF16_FUN_2D(I8_I8_F16toF16_2D,  vxc_char16,  vxc_char16,  vxc_short8,  vxc_half8)
 SELECT_HYBRID_TOF16_FUN_2D(I8_F16_I16toF16_2D, vxc_short8,  vxc_half8,   vxc_short8,  vxc_short8)
 SELECT_HYBRID_TOF16_FUN_2D(I8_I16_F16toF16_2D, vxc_short8,  vxc_short8,  vxc_short8,  vxc_half8)
+
+#define SELECT_HALF_TO_QINT(read_fun, write_fun, dst_type) \
+    vxc_short8 src0, src1, tmp_dst, value; \
+    vxc_half8 data; \
+    dst_type dst; \
+    vxc_char8 value_tmp; \
+    read_fun(src0, input0, coord, VXC_5BITOFFSET_XY(0, 0), \
+                VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \
+    read_fun(src1, input1, coord, VXC_5BITOFFSET_XY(0, 0), \
+                VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \
+    read_fun(value_tmp, condition, coord, VXC_5BITOFFSET_XY(0, 0), \
+                VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \
+    VXC_DP2x8(value, value_tmp, value_tmp,\
+             VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvConditiontoDst_2x8); \
+    tmp_dst = (value != 0 ? src0 : src1); \
+    _viv_asm(COPY, data, tmp_dst, 16); \
+    vxc_ushort8 mp0; \
+    _viv_asm(COPY, mp0, multAndoutZP0, 16); \
+    VXC_DP2x8(dst, data, mp0, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), \
+            uniU8MulAndPostShift0_Lo_2x8); \
+    write_fun(output, coord, dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));
+
+__kernel void select_I8_F16_F16toU8(
+    __read_only  image2d_array_t   condition,
+    __read_only  image2d_array_t   input0,
+    __read_only  image2d_array_t   input1,
+    __write_only image2d_array_t   output)
+{
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);
+    SELECT_HALF_TO_QINT(VXC_ReadImage2DArray, VXC_WriteImage2DArray, vxc_uchar16)
+}
+
+__kernel void select_I8_F16_F16toU8_2D(
+    __read_only  image2d_array_t   condition,
+    __read_only  image2d_array_t   input0,
+    __read_only  image2d_array_t   input1,
+    __write_only image2d_array_t   output)
+{
+    int2 coord = (int2)(get_global_id(0), get_global_id(1));
+    SELECT_HALF_TO_QINT(VXC_ReadImage, VXC_WriteImage, vxc_uchar16)
+}

@@ -40148,6 +40148,47 @@ SELECT_HYBRID_TOF16_FUN_2D(I8_F16_I8toF16_2D,  vxc_short8,  vxc_half8,   vxc_cha
 SELECT_HYBRID_TOF16_FUN_2D(I8_I8_F16toF16_2D,  vxc_char16,  vxc_char16,  vxc_short8,  vxc_half8)\n\
 SELECT_HYBRID_TOF16_FUN_2D(I8_F16_I16toF16_2D, vxc_short8,  vxc_half8,   vxc_short8,  vxc_short8)\n\
 SELECT_HYBRID_TOF16_FUN_2D(I8_I16_F16toF16_2D, vxc_short8,  vxc_short8,  vxc_short8,  vxc_half8)\n\
+\n\
+#define SELECT_HALF_TO_QINT(read_fun, write_fun, dst_type) \\\n\
+    vxc_short8 src0, src1, tmp_dst, value; \\\n\
+    vxc_half8 data; \\\n\
+    dst_type dst; \\\n\
+    vxc_char8 value_tmp; \\\n\
+    read_fun(src0, input0, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    read_fun(src1, input1, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    read_fun(value_tmp, condition, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    VXC_DP2x8(value, value_tmp, value_tmp,\\\n\
+             VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvConditiontoDst_2x8); \\\n\
+    tmp_dst = (value != 0 ? src0 : src1); \\\n\
+    _viv_asm(COPY, data, tmp_dst, 16); \\\n\
+    vxc_ushort8 mp0; \\\n\
+    _viv_asm(COPY, mp0, multAndoutZP0, 16); \\\n\
+    VXC_DP2x8(dst, data, mp0, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), \\\n\
+            uniU8MulAndPostShift0_Lo_2x8); \\\n\
+    write_fun(output, coord, dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+__kernel void select_I8_F16_F16toU8(\n\
+    __read_only  image2d_array_t   condition,\n\
+    __read_only  image2d_array_t   input0,\n\
+    __read_only  image2d_array_t   input1,\n\
+    __write_only image2d_array_t   output)\n\
+{\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+    SELECT_HALF_TO_QINT(VXC_ReadImage2DArray, VXC_WriteImage2DArray, vxc_uchar16)\n\
+}\n\
+\n\
+__kernel void select_I8_F16_F16toU8_2D(\n\
+    __read_only  image2d_array_t   condition,\n\
+    __read_only  image2d_array_t   input0,\n\
+    __read_only  image2d_array_t   input1,\n\
+    __write_only image2d_array_t   output)\n\
+{\n\
+    int2 coord = (int2)(get_global_id(0), get_global_id(1));\n\
+    SELECT_HALF_TO_QINT(VXC_ReadImage, VXC_WriteImage, vxc_uchar16)\n\
+}\n\
 "; /* end of select_vx*/
 
 static const char sequence_mask_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
