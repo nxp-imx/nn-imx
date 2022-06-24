@@ -81,6 +81,7 @@ static const _kernel_map_type _select_kernel_map[] =
     PACK_KERNEL_MAP(I8, I8,  F16, F16),
     PACK_KERNEL_MAP(I8, F16, I16, F16),
     PACK_KERNEL_MAP(I8, I16, F16, F16),
+    PACK_KERNEL_MAP(I8, F16, F16, U8),
     PACK_KERNEL_MAP_2D(I8, I8,  I8,  I8),
     PACK_KERNEL_MAP_2D(I8, U8,  U8,  U8),
     PACK_KERNEL_MAP_2D(I8, I16, I16, I16),
@@ -91,6 +92,7 @@ static const _kernel_map_type _select_kernel_map[] =
     PACK_KERNEL_MAP_2D(I8, I8,  F16, F16),
     PACK_KERNEL_MAP_2D(I8, F16, I16, F16),
     PACK_KERNEL_MAP_2D(I8, I16, F16, F16),
+    PACK_KERNEL_MAP_2D(I8, F16, F16, U8),
 };
 
 /*
@@ -255,6 +257,7 @@ DEF_KERNEL_INITIALIZER(_select_initializer)
         case _PACK_SELECT_KEY( F16, U8,  F16 ):
         case _PACK_SELECT_KEY( F16, I8,  F16 ):
         case _PACK_SELECT_KEY( F16, I16, F16 ):
+        case _PACK_SELECT_KEY( F16, F16, U8 ):
         {
             uint32_t multAndoutZP0[2] = {0};
             uint32_t multAndoutZP1[2] = {0};
