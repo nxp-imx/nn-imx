@@ -60,7 +60,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_grucell_r_times_h_node
     vsi_status status = VSI_FAILURE;
 
     memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
-    memset(&attr, 0, sizeof(vsi_nn_spinst_attr_t));
+    vsi_nn_init_spinst_attr(&attr);
 
     /* loop inst0: r1 = pwlSetup(In) || r5 = pwlMul() || r2 = pwlAdd() */
     status  = vsi_nn_sp_pwl_sigmoid(&sp_insts_param[0], VSI_NN_SP_SRIN, VSI_NN_SP_SR1);
@@ -144,7 +144,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_grucell_r_times_h_qnt_node
     vsi_status status = VSI_FAILURE;
 
     memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
-    memset(&attr, 0, sizeof(vsi_nn_spinst_attr_t));
+    vsi_nn_init_spinst_attr(&attr);
     /* loop inst0: r1 = pwlSetup(In) || out = v11 * r9 || v11 = r8 + r7 || v12 = r1 */
     status  = vsi_nn_sp_pwl_sigmoid(&sp_insts_param[0], VSI_NN_SP_SRIN, VSI_NN_SP_SR1);
     status |= vsi_nn_sp_mul(&sp_insts_param[0], VSI_NN_SP_VR11, VSI_NN_SP_SR9, VSI_NN_SP_SROUT);

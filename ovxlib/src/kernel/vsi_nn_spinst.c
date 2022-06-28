@@ -162,6 +162,8 @@ vsi_status vsi_nn_set_spinst_attr
         attrs.sum_engine_num_ch_minus_one);
     status |= vxSetAttributeToSPINST(spinst->sp, VSI_NN_SP_ATTRIBUTE_SUM_ENGINE_2D_ACCUM_STORAGE,
         attrs.sum_engine_2d_accum_storeage);
+    status |= vxSetAttributeToSPINST(spinst->sp, VSI_NN_SP_ATTRIBUTE_NUM_OF_ELEMENTS_PER_LOOP_PER_INPUT,
+        attrs.num_of_elements_per_loop_per_input);
 
     constant_data[0] = *(uint32_t *)&attrs.init_r3;
     constant_data[1] = *(uint32_t *)&attrs.init_r4;
@@ -246,5 +248,16 @@ vsi_status vsi_nn_add_spinst_insts
 
     return status;
 } /* vsi_nn_add_spinst_insts() */
+
+void vsi_nn_init_spinst_attr
+    (
+    vsi_nn_spinst_attr_t * attrs
+    )
+{
+    memset(attrs, 0, sizeof(vsi_nn_spinst_attr_t));
+
+    /*default per loop to process one input or output pixel*/
+    attrs->num_of_elements_per_loop_per_input = 1;
+} /* vsi_nn_init_spinst_attr() */
 
 #endif

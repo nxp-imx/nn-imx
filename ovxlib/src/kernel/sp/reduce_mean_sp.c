@@ -63,7 +63,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_sum_node
     vsi_nn_get_tensor_clamp_min_max(input, &clamp_min, &clamp_max);
 
     memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
-    memset(&attr, 0, sizeof(vsi_nn_spinst_attr_t));
+    vsi_nn_init_spinst_attr(&attr);
 
     /* loop inst0: acc = clamp(in * r3, r6, r7) */
     status = vsi_nn_sp_mul_clamp(&sp_insts_param[0], VSI_NN_SP_SRIN, VSI_NN_SP_SR3, VSI_NN_SP_ACC);
@@ -147,7 +147,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_v11_times_scale_node
     vsi_status status = VSI_FAILURE;
 
     memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
-    memset(&attr, 0, sizeof(vsi_nn_spinst_attr_t));
+    vsi_nn_init_spinst_attr(&attr);
 
     /* loop inst0: out = v11 * r3 */
     status = vsi_nn_sp_mul(&sp_insts_param[0], VSI_NN_SP_VR11, VSI_NN_SP_SR3, VSI_NN_SP_SROUT);

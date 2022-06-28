@@ -85,7 +85,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_add_node
     float clamp_max = 0;
 
     memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
-    memset(&attr, 0, sizeof(vsi_nn_spinst_attr_t));
+    vsi_nn_init_spinst_attr(&attr);
 
     vsi_nn_get_tensor_clamp_min_max(input0, &clamp_min, &clamp_max);
     clamp_min = clamp_min * scale0;
@@ -174,7 +174,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_sub_node
     float clamp_max = 0;
 
     memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
-    memset(&attr, 0, sizeof(vsi_nn_spinst_attr_t));
+    vsi_nn_init_spinst_attr(&attr);
 
     vsi_nn_get_tensor_clamp_min_max(input0, &clamp_min, &clamp_max);
     clamp_min = clamp_min * scale0;
@@ -268,7 +268,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_mul_node
     float clamp_max = 0;
 
     memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
-    memset(&attr, 0, sizeof(vsi_nn_spinst_attr_t));
+    vsi_nn_init_spinst_attr(&attr);
 
     vsi_nn_get_tensor_clamp_min_max(input0, &clamp_min, &clamp_max);
     clamp_min = clamp_min * scale0;
@@ -353,7 +353,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_preload_node
     float clamp_max = 0;
 
     memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
-    memset(&attr, 0, sizeof(vsi_nn_spinst_attr_t));
+    vsi_nn_init_spinst_attr(&attr);
 
     vsi_nn_get_tensor_clamp_min_max(input, &clamp_min, &clamp_max);
     clamp_min = clamp_min * input_scale;
@@ -439,7 +439,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_mul_per_channel_node
     float clamp_max = 0;
 
     memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
-    memset(&attr, 0, sizeof(vsi_nn_spinst_attr_t));
+    vsi_nn_init_spinst_attr(&attr);
 
     vsi_nn_get_tensor_clamp_min_max(input0, &clamp_min, &clamp_max);
     clamp_min = clamp_min * scale0;
