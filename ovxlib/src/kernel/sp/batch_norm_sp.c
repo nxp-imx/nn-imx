@@ -155,7 +155,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_bn_mov_weight_bias_node
     vsi_status status = VSI_FAILURE;
 
     memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
-    memset(&attr, 0, sizeof(vsi_nn_spinst_attr_t));
+    vsi_nn_init_spinst_attr(&attr);
 
     /* loop inst0: v11 = in*/
     status  = vsi_nn_sp_move(&sp_insts_param[0], VSI_NN_SP_SRIN, VSI_NN_SP_VR11);
@@ -232,7 +232,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_bn_in_times_v11_plus_v12_node
     vsi_status status = VSI_FAILURE;
 
     memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
-    memset(&attr, 0, sizeof(vsi_nn_spinst_attr_t));
+    vsi_nn_init_spinst_attr(&attr);
 
     /* loop inst0: r1 = in * v11 || out = r1 + v12 */
     status  = vsi_nn_sp_mul(&sp_insts_param[0], VSI_NN_SP_SRIN, VSI_NN_SP_VR11, VSI_NN_SP_SR1);
@@ -306,7 +306,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_bn_a_times_b_to_v11_node
     vsi_nn_get_tensor_clamp_min_max(input, &clamp_min, &clamp_max);
 
     memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
-    memset(&attr, 0, sizeof(vsi_nn_spinst_attr_t));
+    vsi_nn_init_spinst_attr(&attr);
 
     /* loop inst0: v12 = clamp(in * r3, r6, r7) */
     status  = vsi_nn_sp_mul_clamp(&sp_insts_param[0], VSI_NN_SP_SRIN, VSI_NN_SP_SR3, VSI_NN_SP_VR12);
@@ -384,7 +384,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_bn_a_plus_v11_node
     vsi_status status = VSI_FAILURE;
 
     memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
-    memset(&attr, 0, sizeof(vsi_nn_spinst_attr_t));
+    vsi_nn_init_spinst_attr(&attr);
 
     /* loop inst0: out = in + v11 */
     status  = vsi_nn_sp_add(&sp_insts_param[0], VSI_NN_SP_SRIN, VSI_NN_SP_VR11, VSI_NN_SP_SROUT);

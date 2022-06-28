@@ -59,7 +59,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_sigmoid_node
     vsi_status status = VSI_FAILURE;
 
     memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
-    memset(&attr, 0, sizeof(vsi_nn_spinst_attr_t));
+    vsi_nn_init_spinst_attr(&attr);
 
     /* loop inst0: r1 = pwlSetup(in) || r6 = r5 * r2 || vector = r4 + r6 || r3 = r1*/
     status  = vsi_nn_sp_pwl_sigmoid(&sp_insts_param[0], VSI_NN_SP_SRIN, VSI_NN_SP_SR1);
@@ -141,7 +141,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_linear_sigmoid_node
     vsi_status status = VSI_FAILURE;
 
     memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
-    memset(&attr, 0, sizeof(vsi_nn_spinst_attr_t));
+    vsi_nn_init_spinst_attr(&attr);
     memset(&sp_lut_params, 0, sizeof(vsi_nn_sp_lut_params));
     memset(&vx_lut_params, 0, sizeof(vx_lut_params_s));
 
@@ -238,7 +238,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_add_sigmoid_node
     vsi_status status = VSI_FAILURE;
 
     memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
-    memset(&attr, 0, sizeof(vsi_nn_spinst_attr_t));
+    vsi_nn_init_spinst_attr(&attr);
 
     /* loop inst0: r8 = in * r3 || v11/v12 = r4 + r6 || r7 = r1 */
     status  = vsi_nn_sp_mul(&sp_insts_param[0], VSI_NN_SP_SRIN, VSI_NN_SP_SR3, VSI_NN_SP_SR8);
@@ -327,7 +327,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_add_tanh_node
     vsi_status status = VSI_FAILURE;
 
     memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
-    memset(&attr, 0, sizeof(vsi_nn_spinst_attr_t));
+    vsi_nn_init_spinst_attr(&attr);
 
     /* loop inst0: r8 = in * r3 || v11/v12 = r4 + r6 || r7 = r1 */
     status  = vsi_nn_sp_mul(&sp_insts_param[0], VSI_NN_SP_SRIN, VSI_NN_SP_SR3, VSI_NN_SP_SR8);
@@ -416,7 +416,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_add_sigmoid_ext_node
     vsi_status status = VSI_FAILURE;
 
     memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
-    memset(&attr, 0, sizeof(vsi_nn_spinst_attr_t));
+    vsi_nn_init_spinst_attr(&attr);
 
     /* loop inst0: r1 = pwlSetup(r10) || v12 = r4 + r6 || r8 = in*/
     status |= vsi_nn_sp_pwl_sigmoid(&sp_insts_param[0], VSI_NN_SP_SR10, VSI_NN_SP_SR1);
@@ -499,7 +499,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_get_cell_status_node
     vsi_status status = VSI_FAILURE;
 
     memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
-    memset(&attr, 0, sizeof(vsi_nn_spinst_attr_t));
+    vsi_nn_init_spinst_attr(&attr);
 
     /* init inst0: r10 = 0 */
     status  = vsi_nn_sp_move_constant(&sp_insts_param[0], 0, VSI_NN_SP_SR10);
@@ -589,7 +589,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_get_float_output_node
     vsi_status status = VSI_FAILURE;
 
     memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
-    memset(&attr, 0, sizeof(vsi_nn_spinst_attr_t));
+    vsi_nn_init_spinst_attr(&attr);
 
     /* loop inst0: r1 = pwlSetup(v12) || r2 = pwlMul * pwlMul || r3 = pwlAdd + pwlAdd */
     status  = vsi_nn_sp_pwl_tanh(&sp_insts_param[0], VSI_NN_SP_VR12, VSI_NN_SP_SR1);
@@ -667,7 +667,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_get_quantized_output_node
     vsi_status status = VSI_FAILURE;
 
     memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
-    memset(&attr, 0, sizeof(vsi_nn_spinst_attr_t));
+    vsi_nn_init_spinst_attr(&attr);
 
     /* loop inst0: r1 = pwlSetup(v12) || r2 = pwlMul * pwlMul || r3 = pwlAdd - pwlAdd */
     status  = vsi_nn_sp_pwl_tanh(&sp_insts_param[0], VSI_NN_SP_VR12, VSI_NN_SP_SR1);
@@ -774,7 +774,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_cifg_linear_sigmoid_node
     vsi_status status = VSI_FAILURE;
 
     memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
-    memset(&attr, 0, sizeof(vsi_nn_spinst_attr_t));
+    vsi_nn_init_spinst_attr(&attr);
     memset(&sp_lut_params, 0, sizeof(vsi_nn_sp_lut_params));
     memset(&vx_lut_params, 0, sizeof(vx_lut_params_s));
 
