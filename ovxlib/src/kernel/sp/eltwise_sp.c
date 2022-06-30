@@ -342,6 +342,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_preload_node
     vx_tensor inputs_tensor[2] = {NULL};
     vx_tensor outputs_tensor[1] = {NULL};
     vx_node node = NULL;
+    int32_t max_vector_depth = graph->ctx->config.sp_vector_depth /
+        graph->ctx->config.sp_exec_count;
 
     vsi_nn_spinst_t *spinst = NULL;
     vsi_nn_spinst_inst_param sp_insts_param[2];
@@ -372,6 +374,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_preload_node
     attr.v11_reset_at_start = VSI_NN_SP_V_RESET_AT_START_RESET;
     attr.ignored_leading_v11_rd = 0;
     attr.ignored_leading_v11_wr = 0;
+
+    attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_Z;
+    attr.split_max_vector_depth = max_vector_depth;
 
     VSI_NN_SP_ATTR_SET_CONST_TO_SR3(attr, input_scale);
     VSI_NN_SP_ATTR_SET_CONST_TO_SR6(attr, clamp_max);
@@ -426,6 +431,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_mul_per_channel_node
     vx_tensor inputs_tensor[2] = {NULL};
     vx_tensor outputs_tensor[1] = {NULL};
     vx_node node = NULL;
+    int32_t max_vector_depth = graph->ctx->config.sp_vector_depth /
+        graph->ctx->config.sp_exec_count;
 
     vsi_nn_spinst_t *spinst = NULL;
     vsi_nn_spinst_inst_param sp_insts_param[2];
@@ -462,6 +469,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_mul_per_channel_node
     attr.ignored_leading_v11_wr = 0;
     attr.ignored_leading_v12_rd = 2;
     attr.ignored_leading_v12_wr = 0;
+
+    attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_Z;
+    attr.split_max_vector_depth = max_vector_depth;
 
     VSI_NN_SP_ATTR_SET_CONST_TO_SR3(attr, scale0);
     VSI_NN_SP_ATTR_SET_CONST_TO_SR6(attr, clamp_max);
