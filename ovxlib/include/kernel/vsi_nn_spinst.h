@@ -230,6 +230,18 @@ vsi_nn_spinst_t * vsi_nn_create_spinst
     );
 
 /**
+ * Create a new spinst
+ *
+ * @param[in] context Context handle
+ *
+ * @return spinst handle on success, or NULL otherwise.
+ */
+vsi_nn_spinst_t * vsi_nn_create_spinst_by_context
+    (
+    vx_context      context
+    );
+
+/**
  * Release spinst
  * Relase current spinst and set the handle to NULL.
  *

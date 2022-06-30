@@ -52,6 +52,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_softmax_exp_node
     vx_tensor inputs_tensor[1] = {NULL};
     vx_tensor outputs_tensor[2] = {NULL};
     vx_node node = NULL;
+    int32_t max_vector_depth = graph->ctx->config.sp_vector_depth /
+        graph->ctx->config.sp_exec_count;
 
     vsi_nn_spinst_t *spinst = NULL;
     vsi_nn_spinst_inst_param sp_insts_param[2];
@@ -91,6 +93,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_softmax_exp_node
     attr.sum_engine_num_ch_minus_one = VSI_NN_SP_SUM_ENGINE_NUM_CH_ONE_CH;
     attr.sum_engine_2d_accum_storeage = VSI_NN_SP_ACCM_STOREAGE_DIFFERENT;
     attr.v11_reset_at_start = VSI_NN_SP_V_RESET_AT_START_RESET;
+
+    attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_YZ;
+    attr.split_max_vector_depth = max_vector_depth;
 
     spinst = vsi_nn_create_spinst(graph);
     CHECK_PTR_FAIL_GOTO( spinst, "Create spInst fail.", final );
@@ -155,6 +160,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_softmax_rcp_node
     vx_tensor inputs_tensor[1] = {NULL};
     vx_tensor outputs_tensor[1] = {NULL};
     vx_node node = NULL;
+    int32_t max_vector_depth = graph->ctx->config.sp_vector_depth /
+        graph->ctx->config.sp_exec_count;
 
     vsi_nn_spinst_t *spinst = NULL;
     vsi_nn_spinst_inst_param sp_insts_param[2];
@@ -189,6 +196,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_softmax_rcp_node
     attr.ignored_leading_v11_rd = 0;
     attr.flush_cycle_num = 10;
     attr.ch0_post_redistribute = VSI_NN_SP_CH_POST_REDISTRIBUTE_VECTOR_GATHER;
+
+    attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_YZ;
+    attr.split_max_vector_depth = max_vector_depth;
 
     spinst = vsi_nn_create_spinst(graph);
     CHECK_PTR_FAIL_GOTO( spinst, "Create spInst fail.", final );
@@ -251,6 +261,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_softmax_times_node
     vx_tensor inputs_tensor[2] = {NULL};
     vx_tensor outputs_tensor[1] = {NULL};
     vx_node node = NULL;
+    int32_t max_vector_depth = graph->ctx->config.sp_vector_depth /
+        graph->ctx->config.sp_exec_count;
 
     vsi_nn_spinst_t *spinst = NULL;
     vsi_nn_spinst_inst_param sp_insts_param[1];
@@ -272,6 +284,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_softmax_times_node
     attr.ignored_leading_v11_rd = 0;
     attr.flush_cycle_num = 0;
     attr.v11_push_pop_config = VSI_NN_SP_PUSH_POP_EVERY_ROW;
+
+    attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_YZ;
+    attr.split_max_vector_depth = max_vector_depth;
 
     spinst = vsi_nn_create_spinst(graph);
     CHECK_PTR_FAIL_GOTO( spinst, "Create spInst fail.", final );

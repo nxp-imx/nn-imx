@@ -35,12 +35,12 @@
 
 static vsi_nn_spinst_t * _create_spinst
     (
-    vsi_nn_graph_t       * graph
+    vx_context      context
     )
 {
     vsi_nn_spinst_t * spinst = NULL;
 
-    if ( NULL == graph || NULL == graph->g )
+    if ( NULL == context  )
     {
         return spinst;
     }
@@ -50,7 +50,7 @@ static vsi_nn_spinst_t * _create_spinst
     if ( NULL != spinst )
     {
         memset( spinst, 0, sizeof( vsi_nn_spinst_t ) );
-        spinst->sp = vxCreateSPINST(graph->ctx->c);
+        spinst->sp = vxCreateSPINST(context);
         if ( NULL == spinst->sp )
         {
             VSILOGE( "Create vx spinst fail." );
@@ -67,8 +67,21 @@ vsi_nn_spinst_t * vsi_nn_create_spinst
     vsi_nn_graph_t       * graph
     )
 {
-    return _create_spinst(graph);
+    if ( NULL == graph )
+    {
+        return NULL;
+    }
+
+    return _create_spinst(graph->ctx->c);
 } /* vsi_nn_create_spinst() */
+
+vsi_nn_spinst_t * vsi_nn_create_spinst_by_context
+    (
+    vx_context      context
+    )
+{
+    return _create_spinst(context);
+} /* vsi_nn_create_spinst_by_context() */
 
 void vsi_nn_release_spinst
     (
