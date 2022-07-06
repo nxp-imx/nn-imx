@@ -189,9 +189,6 @@ vsi_nn_kernel_node_t vsi_nn_sp_sub_node
     status |= vsi_nn_sp_sub(&sp_insts_param[1], VSI_NN_SP_SR2, VSI_NN_SP_SR5, VSI_NN_SP_SROUT);
     CHECK_STATUS_FAIL_GOTO(status, final );
 
-    attr.ignored_leading_outputs = 3;
-    attr.flush_cycle_num = 6;
-
     VSI_NN_SP_ATTR_SET_CONST_TO_SR3(attr, scale0);
     VSI_NN_SP_ATTR_SET_CONST_TO_SR4(attr, scale1);
     VSI_NN_SP_ATTR_SET_CONST_TO_SR5_LOW_PRECISION(attr, const2);
@@ -203,8 +200,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_sub_node
 
     attr.prog_init_instr_num = spInitInstsNum;
     attr.prog_loop_instr_num = spLoopInstsNum;
-    attr.ignored_leading_outputs = 2;
-    attr.flush_cycle_num = 3;
+    attr.ignored_leading_outputs = 3;
+    attr.flush_cycle_num = 6;
 
     spinst = vsi_nn_create_spinst(graph);
     CHECK_PTR_FAIL_GOTO( spinst, "Create spInst fail.", final );
