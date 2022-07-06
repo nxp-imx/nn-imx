@@ -41,7 +41,7 @@ static vsi_status op_compute
     vsi_nn_tensor_t ** outputs
     )
 {
-    vsi_status status = VSI_FAILURE;
+    vsi_status status = VSI_SUCCESS;
     float top = self->nn_param.relun.relu_clamp_top;
     float bottom = self->nn_param.relun.relu_clamp_bottom;
     vsi_nn_kernel_node_t n = NULL;
