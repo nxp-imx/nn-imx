@@ -656,6 +656,89 @@ final:
     return (vsi_nn_kernel_node_t)node;
 }
 
+vsi_nn_kernel_node_t vsi_nn_sp_cast_node
+    (
+        vsi_nn_graph_t              * graph,
+        vsi_nn_tensor_t             * input,
+        vsi_nn_tensor_t             * output
+    )
+{
+    const int32_t spInitInstsNum = 0;
+    const int32_t spLoopInstsNum = 2;
+    const int32_t spInstsNum = spInitInstsNum + spLoopInstsNum;
+
+    const uint32_t input_count = 1;
+    const uint32_t output_count = 1;
+    vx_tensor inputs_tensor[1] = {NULL};
+    vx_tensor outputs_tensor[1] = {NULL};
+    vx_node node = NULL;
+
+    vsi_nn_spinst_t *spinst = NULL;
+    vsi_nn_spinst_inst_param sp_insts_param[2];
+    vsi_nn_spinst_attr_t attr;
+
+    float input_scale = 1;
+    float input_zp = (float)vsi_nn_get_tensor_zero_point(input);
+    float output_zp = (float)vsi_nn_get_tensor_zero_point(output);
+    float clamp_min = 0;
+    float clamp_max = 0;
+
+    vsi_status status = VSI_FAILURE;
+
+    memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
+    vsi_nn_init_spinst_attr(&attr);
+
+    vsi_nn_get_tensor_clamp_min_max(input, &clamp_min, &clamp_max);
+    clamp_min = clamp_min + input_zp;
+    clamp_max = clamp_max + input_zp;
+
+    /* loop inst0: r1 = in + const1 */
+    status  = vsi_nn_sp_add(&sp_insts_param[0], VSI_NN_SP_SRIN, VSI_NN_SP_SR4, VSI_NN_SP_SR1);
+    /* loop inst1: r2 = clamp(in * r3, r6, r7) | out = r2 - const2 */
+    status |= vsi_nn_sp_mul_clamp(&sp_insts_param[1], VSI_NN_SP_SR1, VSI_NN_SP_SR3, VSI_NN_SP_SR2);
+    status |= vsi_nn_sp_sub(&sp_insts_param[1], VSI_NN_SP_SR2, VSI_NN_SP_SR5, VSI_NN_SP_SROUT);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
+    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_XYMERGE;
+    attr.input_setup = VSI_NN_SP_INPUT_SETUP_SINGLE_INPUT;
+
+    attr.prog_init_instr_num = spInitInstsNum;
+    attr.prog_loop_instr_num = spLoopInstsNum;
+    attr.ignored_leading_outputs = 3;
+    attr.flush_cycle_num = 7;
+
+    VSI_NN_SP_ATTR_SET_CONST_TO_SR3(attr, input_scale);
+    VSI_NN_SP_ATTR_SET_CONST_TO_SR4(attr, input_zp);
+    VSI_NN_SP_ATTR_SET_CONST_TO_SR5_LOW_PRECISION(attr, output_zp);
+    VSI_NN_SP_ATTR_SET_CONST_TO_SR6(attr, clamp_max);
+    VSI_NN_SP_ATTR_SET_CONST_TO_SR7(attr, clamp_min);
+
+    spinst = vsi_nn_create_spinst(graph);
+    CHECK_PTR_FAIL_GOTO( spinst, "Create spInst fail.", final );
+    status  = vsi_nn_add_spinst_insts(spinst, sp_insts_param, spInstsNum);
+    status |= vsi_nn_set_spinst_attr(spinst, attr);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
+    inputs_tensor[0] = input->t;
+    outputs_tensor[0] = output->t;
+    node = vxStreamProcessorNode(
+        graph->g,
+        inputs_tensor,
+        input_count,
+        outputs_tensor,
+        output_count,
+        spinst->sp,
+        NULL);
+
+final:
+    if (spinst)
+    {
+        vsi_nn_release_spinst(&spinst);
+    }
+
+    return (vsi_nn_kernel_node_t)node;
+}
+
 #define REGISTER_ELTWISE_UNARY_STREAM_PROCESSOR_KERNEL( kernel_name )   \
     static vsi_nn_kernel_node_t _##kernel_name##setup \
         ( \
@@ -764,7 +847,7 @@ REGISTER_ELTWISE_UNARY_STREAM_PROCESSOR_KERNEL( neg )
     vsi_nn_kernel_node_t node = NULL;
 
     node = vsi_nn_sp_neg_node(graph, inputs[0], outputs[0]);
-    CHECK_PTR_FAIL_GOTO( node, "Create sp_square node fail.", final );
+    CHECK_PTR_FAIL_GOTO( node, "Create sp_neg node fail.", final );
 
 final:
 
@@ -778,7 +861,19 @@ REGISTER_ELTWISE_UNARY_STREAM_PROCESSOR_KERNEL( clip )
     float   max_value  = vsi_nn_kernel_param_get_float32( params, "max_value" );
 
     node = vsi_nn_sp_clip_node(graph, inputs[0], outputs[0], min_value, max_value);
-    CHECK_PTR_FAIL_GOTO( node, "Create sp_square node fail.", final );
+    CHECK_PTR_FAIL_GOTO( node, "Create sp_clip node fail.", final );
+
+final:
+
+    return node;
+} /* clip() */
+
+REGISTER_ELTWISE_UNARY_STREAM_PROCESSOR_KERNEL( cast )
+{
+    vsi_nn_kernel_node_t node = NULL;
+
+    node = vsi_nn_sp_cast_node(graph, inputs[0], outputs[0]);
+    CHECK_PTR_FAIL_GOTO( node, "Create sp_cast node fail.", final );
 
 final:
 
