@@ -206,9 +206,10 @@ extern "C"{
 /** Operation attributes */
 typedef union _vsi_nn_nn_param
 {
+    vsi_nn_conv2d_param        conv2d;
     struct
     {
-        vsi_nn_conv2d_param         conv2d;
+        vsi_nn_conv2d_param_deprecate         conv2d_deprecate;
         vsi_nn_pool_param           pool;
     };
     vsi_nn_fcl_param                fcl;

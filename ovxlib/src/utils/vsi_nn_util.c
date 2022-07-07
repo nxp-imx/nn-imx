@@ -201,6 +201,33 @@ static vsi_size_t _compute_padding
     return vsi_nn_max(padding, 0);
 } /* _compute_padding() */
 
+int32_t vsi_nn_get_vx_pad_mode
+    (
+    vsi_nn_pad_mode_e mode
+    )
+{
+    int32_t pad_mode = 0;
+    switch (mode) {
+        case VSI_NN_PAD_MODE_CONSTANT:
+            pad_mode = VX_PAD_CONSTANT;
+            break;
+        case VSI_NN_PAD_MODE_REPLICATE:
+            pad_mode = VX_PAD_REPLICATE;
+            break;
+        case VSI_NN_PAD_MODE_SYMMETRIC:
+            pad_mode = VX_PAD_MIRROR_SYMMETRIC;
+            break;
+        case VSI_NN_PAD_MODE_REFLECT:
+            pad_mode = VX_PAD_MIRROR_REFLECT;
+            break;
+        default:
+            VSILOGE("Wrong pad_mode value");
+            break;
+    }
+
+    return pad_mode;
+}
+
 uint8_t * vsi_nn_LoadBinaryData
     (
     const char * filename,
