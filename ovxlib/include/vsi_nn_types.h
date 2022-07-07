@@ -111,6 +111,14 @@ typedef enum
     VSI_NN_PAD_SAME
 } vsi_nn_pad_e;
 
+/** Pad mode enum */
+typedef enum {
+    VSI_NN_PAD_MODE_CONSTANT,
+    VSI_NN_PAD_MODE_REPLICATE,
+    VSI_NN_PAD_MODE_SYMMETRIC,
+    VSI_NN_PAD_MODE_REFLECT,
+} vsi_nn_pad_mode_e;
+
 /**
  * @deprecated  Platform enum
  * @see vsi_nn_dim_fmt_e

@@ -468,6 +468,11 @@ FILE* vsi_nn_fopen
     const char * mode
     );
 
+int32_t vsi_nn_get_vx_pad_mode
+    (
+    vsi_nn_pad_mode_e mode
+    );
+
 #ifdef __cplusplus
 }
 #endif
