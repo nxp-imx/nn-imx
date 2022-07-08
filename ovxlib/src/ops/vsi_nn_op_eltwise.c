@@ -67,7 +67,8 @@ static vsi_status _eltwise_op_compute
       || strcmp(kernel_name, "add") == 0
       || strcmp(kernel_name, "mul") == 0
       || (strcmp(kernel_name, "maximum") == 0 && ctx->config.support_stream_processor)
-      || (strcmp(kernel_name, "minimum") == 0 && ctx->config.support_stream_processor))
+      || (strcmp(kernel_name, "minimum") == 0 && ctx->config.support_stream_processor)
+      || (strcmp(kernel_name, "div") == 0 && ctx->config.support_stream_processor))
     {
         doShapeOptimized = FALSE;
 
