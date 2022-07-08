@@ -118,6 +118,13 @@ static void _kernel_clear_source
 
 static vsi_bool _check_shader_support(vsi_nn_graph_t* graph);
 
+static vsi_bool _check_stream_process_support
+    (
+    vsi_nn_graph_t* graph,
+    vsi_nn_tensor_t** inputs,
+    size_t input_num
+    );
+
 static vsi_bool vsi_nn_kernel_is_asymmtric_int8
     (
     vsi_nn_tensor_t** inputs,
@@ -1234,8 +1241,8 @@ vsi_nn_kernel_node_t vsi_nn_kernel_selector
             }
 
             /* Skip StreamProcesor if not support */
-            if( type == VSI_NN_KERNEL_TYPE_SP
-                && !graph->ctx->config.support_stream_processor )
+            if( type == VSI_NN_KERNEL_TYPE_SP &&
+                _check_stream_process_support(graph, inputs, input_num) == FALSE )
             {
                 continue;
             }
@@ -1694,4 +1701,30 @@ static vsi_bool vsi_nn_kernel_is_asymmtric_int8
     }
 
     return FALSE;
+}
+
+static vsi_bool _check_stream_process_support
+    (
+    vsi_nn_graph_t* graph,
+    vsi_nn_tensor_t** inputs,
+    size_t input_num
+    )
+{
+    if ( graph->ctx->config.support_stream_processor == 0 )
+    {
+        return FALSE;
+    }
+
+    if ( graph->ctx->config.sp_exec_count == 0 )
+    {
+        return FALSE;
+    }
+
+    if (inputs && input_num > 0 &&
+        inputs[0]->attr.dtype.vx_type == VSI_NN_TYPE_INT32)
+    {
+        return FALSE;
+    }
+
+    return TRUE;
 }
