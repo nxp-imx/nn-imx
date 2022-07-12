@@ -46,23 +46,23 @@ OP_SPEC_BEGIN()
 OP_SPEC_END()
 
 // order of argument is important
-MAKE_SPEC(unidirectional_sequence_rnn)
-    .input_(nnrt::OperandType::TENSOR_FLOAT32)
-    .weights_(nnrt::OperandType::TENSOR_FLOAT32)
-    .recurrent_weights_(nnrt::OperandType::TENSOR_FLOAT32)
-    .bias_(nnrt::OperandType::TENSOR_FLOAT32)
-    .hidden_state_(nnrt::OperandType::TENSOR_FLOAT32)
-    .activation_(nnrt::OperandType::INT32)
-    .timeMajor_(nnrt::OperandType::INT32)
-    );
-
-    OVERRIDE_SPEC(unidirectional_sequence_rnn, float16)
-    .input_(nnrt::OperandType::TENSOR_FLOAT16)
-    .weights_(nnrt::OperandType::TENSOR_FLOAT16)
-    .recurrent_weights_(nnrt::OperandType::TENSOR_FLOAT16)
-    .bias_(nnrt::OperandType::TENSOR_FLOAT16)
-    .hidden_state_(nnrt::OperandType::TENSOR_FLOAT16)
-    );
+// MAKE_SPEC(unidirectional_sequence_rnn)
+//     .input_(nnrt::OperandType::TENSOR_FLOAT32)
+//     .weights_(nnrt::OperandType::TENSOR_FLOAT32)
+//     .recurrent_weights_(nnrt::OperandType::TENSOR_FLOAT32)
+//     .bias_(nnrt::OperandType::TENSOR_FLOAT32)
+//     .hidden_state_(nnrt::OperandType::TENSOR_FLOAT32)
+//     .activation_(nnrt::OperandType::INT32)
+//     .timeMajor_(nnrt::OperandType::INT32)
+//     );
+//
+//     OVERRIDE_SPEC(unidirectional_sequence_rnn, float16)
+//     .input_(nnrt::OperandType::TENSOR_FLOAT16)
+//     .weights_(nnrt::OperandType::TENSOR_FLOAT16)
+//     .recurrent_weights_(nnrt::OperandType::TENSOR_FLOAT16)
+//     .bias_(nnrt::OperandType::TENSOR_FLOAT16)
+//     .hidden_state_(nnrt::OperandType::TENSOR_FLOAT16)
+//     );
 
 #undef ARG_NAMES
 #undef ARGC
@@ -82,9 +82,9 @@ OP_SPEC_BEGIN()
 OP_SPEC_END()
 
 // order of argument is important
-MAKE_SPEC(output)
-    .input_(nnrt::OperandType::TENSOR_FLOAT16)
-    .output_(nnrt::OperandType::TENSOR_FLOAT16));
+// MAKE_SPEC(output)
+//     .input_(nnrt::OperandType::TENSOR_FLOAT16)
+//     .output_(nnrt::OperandType::TENSOR_FLOAT16));
 
 // Float32 not support temporarily due to accuracy issue
 // OVERRIDE_SPEC(output, float32)
