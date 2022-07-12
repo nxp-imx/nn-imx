@@ -43,56 +43,106 @@ vsi_nn_spinst_t * vsi_nn_sp_moments_axis1_inst
     )
 {
     vsi_status status = VSI_FAILURE;
-    const int32_t spInitInstsNum = 2;
-    const int32_t spLoopInstsNum = fifo_depth > 2 ? 3 : 4;
+    const int32_t spInitInstsNum = 3;
+    const int32_t spLoopInstsNum = fifo_depth == 2 ? 4 : 3;
+    const int32_t spCompleteInstsNum = fifo_depth == 1 ? 3 : 0;
     const int32_t spInstsNum = spInitInstsNum + spLoopInstsNum;
 
     vsi_nn_spinst_t *spinst = NULL;
-    vsi_nn_spinst_inst_param sp_insts_param[6];
+    vsi_nn_spinst_inst_param sp_insts_param[9];
     vsi_nn_spinst_attr_t attr;
 
     memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
     vsi_nn_init_spinst_attr(&attr);
 
-    /* init inst0: r3 = r1 - r1 | r2 = 0 */
-    status  = vsi_nn_sp_sub(&sp_insts_param[0], VSI_NN_SP_SR1, VSI_NN_SP_SR1, VSI_NN_SP_SR3);
-    status |= vsi_nn_sp_move_constant(&sp_insts_param[0], 0, VSI_NN_SP_SR2);
-    /* init inst1: r4 = 0 */
-    status |= vsi_nn_sp_move_constant(&sp_insts_param[1], 0, VSI_NN_SP_SR4);
-    CHECK_STATUS_FAIL_GOTO(status, final );
-
-    if (fifo_depth > 2)
+    if (fifo_depth == 1)
     {
-        /* loop inst0: r5 = r1 * r1 | out = r2 + r1 || r1 = in */
-        status  = vsi_nn_sp_mul(&sp_insts_param[2], VSI_NN_SP_SR1, VSI_NN_SP_SR1, VSI_NN_SP_SR5);
-        status |= vsi_nn_sp_add(&sp_insts_param[2], VSI_NN_SP_SR2, VSI_NN_SP_SR1, VSI_NN_SP_SROUT);
-        status |= vsi_nn_sp_move(&sp_insts_param[2], VSI_NN_SP_SRIN, VSI_NN_SP_SR1);
-        /* loop inst1: v11 = r1 + r3 | r3 = v11 */
+        /* init inst0: r3 = 0 */
+        status = vsi_nn_sp_move_constant(&sp_insts_param[0], 0, VSI_NN_SP_SR3);
+        /* init inst1: r1 = 0 */
+        status |= vsi_nn_sp_move_constant(&sp_insts_param[1], 0, VSI_NN_SP_SR1);
+        /* init inst2: r4 = 0 */
+        status |= vsi_nn_sp_move_constant(&sp_insts_param[2], 0, VSI_NN_SP_SR4);
+        CHECK_STATUS_FAIL_GOTO(status, final );
+
+        /* loop inst0: r5 = r1 * r1 || r1 = in */
+        status  = vsi_nn_sp_mul(&sp_insts_param[3], VSI_NN_SP_SR1, VSI_NN_SP_SR1, VSI_NN_SP_SR5);
+        status |= vsi_nn_sp_move(&sp_insts_param[3], VSI_NN_SP_SRIN, VSI_NN_SP_SR1);
+        /* loop inst1: r3 = r3 + r1 || out = r1 */
+        status |= vsi_nn_sp_add(&sp_insts_param[4], VSI_NN_SP_SR3, VSI_NN_SP_SR1, VSI_NN_SP_SR3);
+        status |= vsi_nn_sp_move(&sp_insts_param[4], VSI_NN_SP_SR1, VSI_NN_SP_SROUT);
+        /* loop inst2: r5 = r5 + r4 */
+        status |= vsi_nn_sp_add(&sp_insts_param[5], VSI_NN_SP_SR5, VSI_NN_SP_SR4, VSI_NN_SP_SR5);
+        CHECK_STATUS_FAIL_GOTO(status, final );
+
+        /* complete inst0: v11 = r3 */
+        status  = vsi_nn_sp_move(&sp_insts_param[6], VSI_NN_SP_SR3, VSI_NN_SP_VR11);
+        /* complete inst1: r3 = r3 + r1 || out = r1 */
+        status |= vsi_nn_sp_nop(&sp_insts_param[7]);
+        /* complete inst2: v12 = r4 */
+        status  = vsi_nn_sp_move(&sp_insts_param[8], VSI_NN_SP_SR4, VSI_NN_SP_VR12);
+        CHECK_STATUS_FAIL_GOTO(status, final );
+
+        attr.flush_cycle_num = 8;
+    }
+    else if (fifo_depth == 2)
+    {
+        /* init inst0: r3 = 0 */
+        status = vsi_nn_sp_move_constant(&sp_insts_param[0], 0, VSI_NN_SP_SR3);
+        /* init inst1: r2 = 1 */
+        status |= vsi_nn_sp_move_constant(&sp_insts_param[1], 1, VSI_NN_SP_SR2);
+        /* init inst2: r4 = 0 */
+        status |= vsi_nn_sp_move_constant(&sp_insts_param[2], 0, VSI_NN_SP_SR4);
+        CHECK_STATUS_FAIL_GOTO(status, final );
+
+        /* loop inst0: out = r2 * r1 || v11 = r1 + r3 |  r1 = in */
+        status  = vsi_nn_sp_mul(&sp_insts_param[3], VSI_NN_SP_SR2, VSI_NN_SP_SR1, VSI_NN_SP_SROUT);
         status |= vsi_nn_sp_add(&sp_insts_param[3], VSI_NN_SP_SR1, VSI_NN_SP_SR3, VSI_NN_SP_VR11);
-        status |= vsi_nn_sp_move(&sp_insts_param[3], VSI_NN_SP_VR11, VSI_NN_SP_SR3);
-        /* loop inst2: v12 = r4 + r5 | r4 = v12 */
+        status |= vsi_nn_sp_move(&sp_insts_param[3], VSI_NN_SP_SRIN, VSI_NN_SP_SR1);
+        /* loop inst1: v12 = r4 + r5 | r3 = v11 */
         status |= vsi_nn_sp_add(&sp_insts_param[4], VSI_NN_SP_SR4, VSI_NN_SP_SR5, VSI_NN_SP_VR12);
-        status |= vsi_nn_sp_move(&sp_insts_param[4], VSI_NN_SP_VR12, VSI_NN_SP_SR4);
+        status |= vsi_nn_sp_move(&sp_insts_param[4], VSI_NN_SP_VR11, VSI_NN_SP_SR3);
+        /* loop inst2: r4 = v12 */
+        status |= vsi_nn_sp_move(&sp_insts_param[5], VSI_NN_SP_VR12, VSI_NN_SP_SR4);
+        /* loop inst3: r5 = r1 * r1 */
+        status |= vsi_nn_sp_mul(&sp_insts_param[6], VSI_NN_SP_SR1, VSI_NN_SP_SR1, VSI_NN_SP_SR5);
         CHECK_STATUS_FAIL_GOTO(status, final );
 
         attr.flush_cycle_num = 5;
+
+        attr.ignored_leading_v11_rd = fifo_depth;
+        attr.ignored_leading_v12_rd = fifo_depth;
+        attr.ignored_leading_v11_wr = 1;
+        attr.ignored_leading_v12_wr = 1;
     }
     else
     {
-        /* loop inst0: out = r2 + r1 || r1 = in */
-        status = vsi_nn_sp_add(&sp_insts_param[2], VSI_NN_SP_SR2, VSI_NN_SP_SR1, VSI_NN_SP_SROUT);
-        status |= vsi_nn_sp_move(&sp_insts_param[2], VSI_NN_SP_SRIN, VSI_NN_SP_SR1);
-        /* loop inst1: v11 = r1 + r3 | r3 = v11 */
-        status |= vsi_nn_sp_move(&sp_insts_param[3], VSI_NN_SP_VR11, VSI_NN_SP_SR3);
-        /* loop inst2: v11 = r1 + r3 | r4 = v12 */
-        status |= vsi_nn_sp_add(&sp_insts_param[4], VSI_NN_SP_SR1, VSI_NN_SP_SR3, VSI_NN_SP_VR11);
-        status |= vsi_nn_sp_move(&sp_insts_param[4], VSI_NN_SP_VR12, VSI_NN_SP_SR4);
-        /* loop inst3: r5 = r1 * r1 | v12 = r4 + r5  */
-        status |= vsi_nn_sp_mul(&sp_insts_param[5], VSI_NN_SP_SR1, VSI_NN_SP_SR1, VSI_NN_SP_SR5);
-        status |= vsi_nn_sp_add(&sp_insts_param[5], VSI_NN_SP_SR4, VSI_NN_SP_SR5, VSI_NN_SP_VR12);
+        /* init inst0: r3 = 0 */
+        status = vsi_nn_sp_move_constant(&sp_insts_param[0], 0, VSI_NN_SP_SR3);
+        /* init inst1: r2 = 0 */
+        status |= vsi_nn_sp_move_constant(&sp_insts_param[1], 0, VSI_NN_SP_SR2);
+        /* init inst2: r4 = 0 */
+        status |= vsi_nn_sp_move_constant(&sp_insts_param[2], 0, VSI_NN_SP_SR4);
         CHECK_STATUS_FAIL_GOTO(status, final );
 
-        attr.flush_cycle_num = 7;
+        /* loop inst0: r5 = r1 * r1 | out = r2 + r1 || r1 = in */
+        status  = vsi_nn_sp_mul(&sp_insts_param[3], VSI_NN_SP_SR1, VSI_NN_SP_SR1, VSI_NN_SP_SR5);
+        status |= vsi_nn_sp_add(&sp_insts_param[3], VSI_NN_SP_SR2, VSI_NN_SP_SR1, VSI_NN_SP_SROUT);
+        status |= vsi_nn_sp_move(&sp_insts_param[3], VSI_NN_SP_SRIN, VSI_NN_SP_SR1);
+        /* loop inst1: v11 = r1 + r3 | r3 = v11 */
+        status |= vsi_nn_sp_add(&sp_insts_param[4], VSI_NN_SP_SR1, VSI_NN_SP_SR3, VSI_NN_SP_VR11);
+        status |= vsi_nn_sp_move(&sp_insts_param[4], VSI_NN_SP_VR11, VSI_NN_SP_SR3);
+        /* loop inst2: v12 = r4 + r5 | r4 = v12 */
+        status |= vsi_nn_sp_add(&sp_insts_param[5], VSI_NN_SP_SR4, VSI_NN_SP_SR5, VSI_NN_SP_VR12);
+        status |= vsi_nn_sp_move(&sp_insts_param[5], VSI_NN_SP_VR12, VSI_NN_SP_SR4);
+        CHECK_STATUS_FAIL_GOTO(status, final );
+
+        attr.ignored_leading_v11_rd = fifo_depth;
+        attr.ignored_leading_v12_rd = fifo_depth;
+        attr.ignored_leading_v11_wr = 1;
+        attr.ignored_leading_v12_wr = 1;
+
+        attr.flush_cycle_num = 5;
     }
 
     attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_YZMERGE;
@@ -100,13 +150,10 @@ vsi_nn_spinst_t * vsi_nn_sp_moments_axis1_inst
 
     attr.prog_init_instr_num = spInitInstsNum;
     attr.prog_loop_instr_num = spLoopInstsNum;
+    attr.prog_complete_instr_num = spCompleteInstsNum;
     attr.ignored_leading_outputs = 1;
     attr.v11_reset_at_start = VSI_NN_SP_V_RESET_AT_START_RESET;
     attr.v12_reset_at_start = VSI_NN_SP_V_RESET_AT_START_RESET;
-    attr.ignored_leading_v11_rd = fifo_depth;
-    attr.ignored_leading_v12_rd = fifo_depth;
-    attr.ignored_leading_v11_wr = 1;
-    attr.ignored_leading_v12_wr = 1;
 
     attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_X;
     attr.split_tilex_equal_imgx = TRUE;
