@@ -2268,7 +2268,9 @@ vsi_status vsi_nn_CopyTensorViaGraphs
     vsi_size_t i;
 
     src_tensor = vsi_nn_GetTensor(src_graph, src_tensor_id);
+    TEST_CHECK_PTR(src_tensor, final);
     dst_tensor = vsi_nn_GetTensor(dst_graph, dst_tensor_id);
+    TEST_CHECK_PTR(dst_tensor, final);
 
     /* Check shape and dtype */
     if(src_tensor->attr.dim_num != dst_tensor->attr.dim_num)

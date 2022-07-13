@@ -86,13 +86,15 @@ static vsi_bool op_setup
     )
 {
     vsi_bool ret = TRUE;
-    int32_t axis = self->nn_param.layernorm.axis;
+    int32_t axis = 0;
     vsi_nn_internal_node_t* curr = NULL;
 
     if ( NULL == self )
     {
         return FALSE;
     }
+
+    axis = self->nn_param.layernorm.axis;
 
     vsi_nn_internal_init_node_wksp( self );
 
