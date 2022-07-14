@@ -186,6 +186,23 @@ static VSI_INLINE_API void type_get_range
     }
 } /* type_get_range() */
 
+static VSI_INLINE_API vsi_bool fp32_is_inf
+    (
+        float val
+    )
+{
+    uint32_t u_value = *(uint32_t*)&val;
+
+    if ((u_value & (uint32_t)VSI_NN_INT32_MAX) == (uint32_t)VSI_NN_FLOAT32_INF)
+    {
+        return TRUE;
+    }
+    else
+    {
+        return FALSE;
+    }
+}
+
 static VSI_INLINE_API int32_t fp32_to_affine
     (
     const float  in,
@@ -200,6 +217,13 @@ static VSI_INLINE_API int32_t fp32_to_affine
     type_get_range( type, &max_range, &min_range );
     data = (int32_t)(vsi_rint( in / scale ) + zero_point );
     data = vsi_nn_max( (int32_t)min_range, vsi_nn_min( (int32_t)max_range , data ) );
+
+    if (fp32_is_inf(in) != 0)
+    {
+        uint32_t sign = (*(uint32_t*)&in) >> 31;
+        data = sign == 1 ? (int32_t)min_range : (int32_t)max_range;
+    }
+
     return data;
 } /* fp32_to_affine() */
 
@@ -237,6 +261,13 @@ static VSI_INLINE_API int32_t fp32_to_dfp
     }
     data = vsi_nn_min( data, (int32_t)max_range );
     data = vsi_nn_max( data, (int32_t)min_range );
+
+    if (fp32_is_inf(in) != 0)
+    {
+        uint32_t sign = (*(uint32_t*)&in) >> 31;
+        data = sign == 1 ? (int32_t)min_range : (int32_t) max_range;
+    }
+
     return data;
 } /* fp32_to_dfp() */
 

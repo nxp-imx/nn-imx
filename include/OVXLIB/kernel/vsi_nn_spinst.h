@@ -59,6 +59,20 @@ __BEGIN_DECLS
 #define VSI_NN_SP_ATTR_SET_CONST_TO_SR7(attr, data) \
     attr.init_r7 = data; \
     attr.load_const_bits.load_const_sr7 = 1
+
+/**
+ * stream processor split axis attribute
+ */
+typedef enum
+{
+    VSI_SP_ATTR_SPLIT_ON_AXIS_X     = VX_SP_ATTRIBUTE_SPLIT_ON_AXIS_X,
+    VSI_SP_ATTR_SPLIT_ON_AXIS_Y     = VX_SP_ATTRIBUTE_SPLIT_ON_AXIS_Y,
+    VSI_SP_ATTR_SPLIT_ON_AXIS_Z     = VX_SP_ATTRIBUTE_SPLIT_ON_AXIS_Z,
+    VSI_SP_ATTR_SPLIT_ON_AXIS_XY    = VX_SP_ATTRIBUTE_SPLIT_ON_AXIS_XY,
+    VSI_SP_ATTR_SPLIT_ON_AXIS_YZ    = VX_SP_ATTRIBUTE_SPLIT_ON_AXIS_YZ,
+    VSI_SP_ATTR_SPLIT_ON_AXIS_XYZ   = VX_SP_ATTRIBUTE_SPLIT_ON_AXIS_XYZ,
+}vsi_sp_attr_split_axis_e;;
+
 /**
  * spinst attribute
  */
@@ -94,6 +108,9 @@ typedef struct _vsi_nn_spinst_attr
     uint32_t sum_engine_control;
     uint32_t sum_engine_num_ch_minus_one;
     uint32_t sum_engine_2d_accum_storeage;
+    uint32_t split_axis;
+    uint32_t split_max_vector_depth;
+    vsi_bool split_tilex_equal_imgx;
 
     float init_r3;
     float init_r4;
@@ -162,6 +179,10 @@ typedef enum
     VSI_NN_SP_ATTRIBUTE_CONST2                      = VX_SP_ATTRIBUTE_CONST2,
     VSI_NN_SP_ATTRIBUTE_CONST3                      = VX_SP_ATTRIBUTE_CONST3,
     VSI_NN_SP_ATTRIBUTE_CONST4                      = VX_SP_ATTRIBUTE_CONST4,
+
+    VSI_NN_SP_ATTRIBUTE_SPLIT_AXIS                  = VX_SP_ATTRIBUTE_SPLIT_AXIS,
+    VSI_NN_SP_ATTRIBUTE_SPLIT_MAX_SIZE              = VX_SP_ATTRIBUTE_SPLIT_MAX_SIZE,
+    VSI_NN_SP_ATTRIBUTE_TILEX_EQUAL_IMGX            = VX_SP_ATTRIBUTE_SPLIT_TILEX_EQUAL_INIMAGEX,
 
     VSI_NN_SP_ATTRIBUTE_COUNT                       = VX_SP_ATTRIBUTE_TOTAL_COUNT,
 } vsi_nn_sp_attribute_e;
