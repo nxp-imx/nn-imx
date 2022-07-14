@@ -156,6 +156,8 @@ typedef struct
         vsi_nn_kernel_quant_asymm_t asymm;
         vsi_nn_kernel_quant_asymm_perchannel_t asymm_v;
     };
+    float scale;
+    int32_t zero_point;
 } vsi_nn_kernel_tensor_attr_t;
 
 typedef struct
