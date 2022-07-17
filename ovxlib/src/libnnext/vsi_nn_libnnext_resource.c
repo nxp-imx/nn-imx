@@ -11438,20 +11438,14 @@ __kernel void hswish_BF16toBF16_2D(\n\
 static const char instance_normalization_0_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 _viv_uniform int width;\n\
-_viv_uniform int height;\n\
-_viv_uniform float inv_multiplier;\n\
-_viv_uniform int group_num;\n\
 \n\
 _viv_uniform VXC_512Bits uniExtract8Data_2x8;\n\
 _viv_uniform VXC_512Bits uniSum_X_X2_16x2;\n\
 _viv_uniform float input_scale;\n\
 _viv_uniform float input_scale2;\n\
-_viv_uniform float input_zp;\n\
 _viv_uniform float sum_x_tail;\n\
 _viv_uniform float sum_x2_tail0;\n\
 _viv_uniform float sum_x2_tail1;\n\
-_viv_uniform float output_scale;\n\
-_viv_uniform float output_zp;\n\
 \n\
 _viv_uniform VXC_512Bits uniSumX_16x1;\n\
 _viv_uniform VXC_512Bits uniSumX2_16x1;\n\
@@ -11460,7 +11454,7 @@ _viv_uniform VXC_512Bits uniSumX2_16x1;\n\
 __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_sums_##name( \\\n\
     __read_only  image2d_array_t input, \\\n\
     __write_only image2d_array_t output, \\\n\
-                 float eps, int rs_flag) \\\n\
+                 float eps, int height) \\\n\
 { \\\n\
     int gidx = get_global_id(0) << 4; \\\n\
     int lidx = get_local_id(0); \\\n\
@@ -11518,7 +11512,7 @@ INSTANCE_NORM_SUMS_8BITS_IMPL(I8, vxc_char16)\n\
 __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_sums_##name##_2D( \\\n\
     __read_only  image2d_array_t input, \\\n\
     __write_only image2d_array_t output, \\\n\
-                 float eps, int rs_flag) \\\n\
+                 float eps, int height) \\\n\
 { \\\n\
     int gidx = get_global_id(0) << 4; \\\n\
     int lidx = get_local_id(0); \\\n\
@@ -11571,18 +11565,62 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_sums
 INSTANCE_NORM_SUMS_8BITS_IMPL_2D(U8, vxc_uchar16)\n\
 INSTANCE_NORM_SUMS_8BITS_IMPL_2D(I8, vxc_char16)\n\
 \n\
+__kernel void instance_norm_means\n\
+(\n\
+    __read_only  image2d_t sums,\n\
+    __read_only  image2d_t bias,\n\
+    __read_only  image2d_t scale,\n\
+    __write_only image2d_t means,\n\
+                 float     eps,\n\
+                 float     in_time_out_scale,\n\
+                 float     input_zp,\n\
+                 float     output_scale,\n\
+                 float     output_zp,\n\
+                 float     inv_multiplier,\n\
+                 int       group_num\n\
+)\n\
+{\n\
+    int2 coord = (int2)(get_global_id(0), get_global_id(1));\n\
+\n\
+    Image sums_img = create_image_from_image2d(sums, 4);\n\
+    float4 *sums_ptr = (float4 *)get_image_ptr_from_coord(sums_img, coord);\n\
+\n\
+    float alpha = read_imagef(scale, coord).x;\n\
+    float beta = read_imagef(bias, coord).x;\n\
+\n\
+    float4 mean_var = sums_ptr[0];\n\
+    for(int i = 1; i < group_num;)\n\
+    {\n\
+        mean_var += sums_ptr[i];\n\
+        i ++;\n\
+    }\n\
+\n\
+    mean_var *= inv_multiplier;\n\
+    mean_var.s1 = mean_var.s1 - mean_var.s0 * mean_var.s0 + eps;\n\
+    mean_var.s1 = rsqrt(mean_var.s1);\n\
+\n\
+    alpha = alpha * mean_var.y;\n\
+\n\
+    float4 dst;\n\
+    dst.x = in_time_out_scale * alpha;\n\
+    beta = (beta - alpha * mean_var.x) * output_scale + output_zp;\n\
+    dst.y = beta - input_zp * dst.x;\n\
+\n\
+    Image means_img = create_image_from_image2d(means, 4);\n\
+    float4 *means_ptr = (float4 *)get_image_ptr_from_coord(means_img, coord);\n\
+    means_ptr[0] = dst.xyxy;\n\
+}\n\
+\n\
 _viv_uniform VXC_512Bits uniDataToFP32_0_4x4;\n\
 _viv_uniform VXC_512Bits uniDataToFP32_1_4x4;\n\
 _viv_uniform VXC_512Bits uniDataToFP32_2_4x4;\n\
 _viv_uniform VXC_512Bits uniDataToFP32_3_4x4;\n\
 #define INSTANCE_NORM_8BITS_IMPL(name, src_type, dst_type) \\\n\
-__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_##name( \\\n\
+__kernel void instance_norm_##name( \\\n\
     __read_only  image2d_array_t input, \\\n\
-    __read_only  image2d_t       bias, \\\n\
-    __read_only  image2d_t       scale, \\\n\
-    __read_only  image2d_t       meanVari, \\\n\
+    __read_only  image2d_t       means, \\\n\
     __write_only image2d_array_t output, \\\n\
-                 float eps, int rs_flag) \\\n\
+                 int height) \\\n\
 { \\\n\
     int gidz = get_global_id(1); \\\n\
     int4 coord = (int4)(get_global_id(0), 0, gidz, gidz); \\\n\
@@ -11590,26 +11628,11 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_##na
     int2 coord_para = (int2)(0, gidz); \\\n\
     src_type src0; \\\n\
     dst_type dst; \\\n\
-    float scale_vari, bias_val; \\\n\
-    float4 bias_f, scale_f, mean_vari = (float4)(0); \\\n\
+    float4 coef; \\\n\
  \\\n\
-    scale_f = read_imagef(scale, coord_para); \\\n\
-    bias_f = read_imagef(bias, coord_para); \\\n\
-    for(int i = 0; i < group_num; i++) \\\n\
-    { \\\n\
-        mean_vari += read_imagef(meanVari, coord_para); \\\n\
-        coord_para.x += 4; \\\n\
-    } \\\n\
-    mean_vari *= inv_multiplier; \\\n\
-    mean_vari.s1 = mean_vari.s1 - mean_vari.s0 * mean_vari.s0 + eps; \\\n\
-    mean_vari.s1 = rsqrt(mean_vari.s1); \\\n\
- \\\n\
-    scale_vari = scale_f.s0 * mean_vari.s1; \\\n\
-    vxc_int4 tmpVal0, tmpVal1; \\\n\
+    coef = read_imagef(means, coord_para); \\\n\
+    int4 tmpVal0, tmpVal1; \\\n\
     float4  tmpData0, tmpData1, tmpData2, tmpData3, norm; \\\n\
-    float alpha = input_scale * output_scale * scale_vari; \\\n\
-    bias_val = (bias_f.s0 - scale_vari * mean_vari.s0) * output_scale + output_zp; \\\n\
-    bias_val = bias_val - input_zp * alpha; \\\n\
  \\\n\
     int8 input_desc, output_desc; \\\n\
     _viv_asm(COPY, input_desc, input, sizeof(input_desc)); \\\n\
@@ -11628,14 +11651,14 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_##na
     VXC_DP4x4(tmpData1, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_1_4x4); \\\n\
     VXC_DP4x4(tmpData2, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_2_4x4); \\\n\
     VXC_DP4x4(tmpData3, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_3_4x4); \\\n\
-    norm = tmpData0 * alpha + bias_val; \\\n\
+    norm = tmpData0 * coef.x + coef.y; \\\n\
     tmpVal0 = convert_int4_rte(norm); \\\n\
-    norm = tmpData1 * alpha + bias_val; \\\n\
+    norm = tmpData1 * coef.x + coef.y; \\\n\
     tmpVal1 = convert_int4_rte(norm); \\\n\
     VXC_DP2x8(dst, tmpVal0, tmpVal1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), uniExtract8Data_2x8); \\\n\
-    norm = tmpData2 * alpha + bias_val; \\\n\
+    norm = tmpData2 * coef.x + coef.y; \\\n\
     tmpVal0 = convert_int4_rte(norm); \\\n\
-    norm = tmpData3 * alpha + bias_val; \\\n\
+    norm = tmpData3 * coef.x + coef.y; \\\n\
     tmpVal1 = convert_int4_rte(norm); \\\n\
     VXC_DP2x8(dst, tmpVal0, tmpVal1, VXC_MODIFIER(8, 15, 0, VXC_RM_TowardZero, 1), uniExtract8Data_2x8); \\\n\
     VXC_OP4_NoDest(img_store_3d, output, coord, dst, VXC_MODIFIER(0, 15, 0,VXC_RM_TowardZero, 0)); \\\n\
@@ -11645,60 +11668,46 @@ INSTANCE_NORM_8BITS_IMPL(U8_F32toU8, vxc_uchar16, vxc_uchar16)\n\
 INSTANCE_NORM_8BITS_IMPL(I8_F32toI8, vxc_char16,  vxc_char16)\n\
 \n\
 #define INSTANCE_NORM_8BITS_IMPL_2D(name, src_type, dst_type) \\\n\
-__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_##name##_2D( \\\n\
+__kernel void instance_norm_##name##_2D( \\\n\
     __read_only  image2d_array_t input, \\\n\
-    __read_only  image2d_t       bias, \\\n\
-    __read_only  image2d_t       scale, \\\n\
-    __read_only  image2d_t       meanVari, \\\n\
+    __read_only  image2d_t       means, \\\n\
     __write_only image2d_array_t output, \\\n\
-                 float eps, int rs_flag) \\\n\
+                 int height) \\\n\
 { \\\n\
     int gidz = get_global_id(1); \\\n\
     int gidy = gidz * height; \\\n\
-    int2 coord = (int2)(get_global_id(0), gidy); \\\n\
+    int4 coord; \\\n\
     int2 coord_para = (int2)(0, gidz); \\\n\
     int endH = gidy + height; \\\n\
     src_type src0; \\\n\
     dst_type dst; \\\n\
-    float scale_vari, bias_val; \\\n\
-    float4 bias_f, scale_f, mean_vari = (float4)(0); \\\n\
+    float4 coef; \\\n\
  \\\n\
-    scale_f = read_imagef(scale, coord_para); \\\n\
-    bias_f = read_imagef(bias, coord_para); \\\n\
-    for(int i = 0; i < group_num; i++) \\\n\
-    { \\\n\
-        mean_vari += read_imagef(meanVari, coord_para); \\\n\
-        coord_para.x += 4; \\\n\
-    } \\\n\
-    mean_vari *= inv_multiplier; \\\n\
-    mean_vari.s1 = mean_vari.s1 - mean_vari.s0 * mean_vari.s0 + eps; \\\n\
-    mean_vari.s1 = rsqrt(mean_vari.s1); \\\n\
- \\\n\
-    scale_vari = scale_f.s0 * mean_vari.s1; \\\n\
-    vxc_int4 tmpVal0, tmpVal1; \\\n\
+    coef = read_imagef(means, coord_para); \\\n\
+    int4 tmpVal0, tmpVal1; \\\n\
     float4  tmpData0, tmpData1, tmpData2, tmpData3, norm; \\\n\
-    float alpha = input_scale * output_scale * scale_vari; \\\n\
-    bias_val = (bias_f.s0 - scale_vari * mean_vari.s0) * output_scale + output_zp; \\\n\
-    bias_val = bias_val - input_zp * alpha; \\\n\
  \\\n\
-    for(; coord.y < endH; coord.y++) \\\n\
+    coord = (int4)(get_global_id(0), gidy, gidy - 1, gidy - 1); \\\n\
+ \\\n\
+    for(; coord.y < endH; ) \\\n\
     { \\\n\
-    VXC_ReadImage(src0, input, coord, 0, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
+    VXC_ReadImage(src0, input, coord.xy, 0, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
+    coord.yz++; \\\n\
     VXC_DP4x4(tmpData0, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_0_4x4); \\\n\
     VXC_DP4x4(tmpData1, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_1_4x4); \\\n\
     VXC_DP4x4(tmpData2, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_2_4x4); \\\n\
     VXC_DP4x4(tmpData3, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_3_4x4); \\\n\
-    norm = tmpData0 * alpha + bias_val; \\\n\
+    norm = tmpData0 * coef.x + coef.y; \\\n\
     tmpVal0 = convert_int4_rte(norm); \\\n\
-    norm = tmpData1 * alpha + bias_val; \\\n\
+    norm = tmpData1 * coef.x + coef.y; \\\n\
     tmpVal1 = convert_int4_rte(norm); \\\n\
     VXC_DP2x8(dst, tmpVal0, tmpVal1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), uniExtract8Data_2x8); \\\n\
-    norm = tmpData2 * alpha + bias_val; \\\n\
+    norm = tmpData2 * coef.x + coef.y; \\\n\
     tmpVal0 = convert_int4_rte(norm); \\\n\
-    norm = tmpData3 * alpha + bias_val; \\\n\
+    norm = tmpData3 * coef.x + coef.y; \\\n\
     tmpVal1 = convert_int4_rte(norm); \\\n\
     VXC_DP2x8(dst, tmpVal0, tmpVal1, VXC_MODIFIER(8, 15, 0, VXC_RM_TowardZero, 1), uniExtract8Data_2x8); \\\n\
-    VXC_WriteImage(output, coord, dst, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
+    VXC_WriteImage(output, coord.xz, dst, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
     } \\\n\
 }\n\
 INSTANCE_NORM_8BITS_IMPL_2D(U8_F32toU8, vxc_uchar16, vxc_uchar16)\n\
@@ -11706,12 +11715,6 @@ INSTANCE_NORM_8BITS_IMPL_2D(I8_F32toI8, vxc_char16,  vxc_char16)"; /* end of ins
 
 static const char instance_normalization_1_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
-_viv_uniform int width;\n\
-_viv_uniform int height;\n\
-_viv_uniform float inv_multiplier;\n\
-_viv_uniform int group_num;\n\
-_viv_uniform float input_scale;\n\
-_viv_uniform float input_zp;\n\
 _viv_uniform VXC_512Bits uniExtract8Data_2x8;\n\
 \n\
 _viv_uniform VXC_512Bits uniDataToFP32_0_4x4;\n\
@@ -11720,13 +11723,11 @@ _viv_uniform VXC_512Bits uniDataToFP32_2_4x4;\n\
 _viv_uniform VXC_512Bits uniDataToFP32_3_4x4;\n\
 \n\
 #define INSTANCE_NORM_8_TO_F16_IMPL(name, src_type) \\\n\
-__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_##name( \\\n\
+__kernel void instance_norm_##name( \\\n\
     __read_only  image2d_array_t input, \\\n\
-    __read_only  image2d_t       bias, \\\n\
-    __read_only  image2d_t       scale, \\\n\
-    __read_only  image2d_t       meanVari, \\\n\
+    __read_only  image2d_t       means, \\\n\
     __write_only image2d_array_t output, \\\n\
-                 float eps, int rs_flag) \\\n\
+                 int height) \\\n\
 { \\\n\
     int gidz = get_global_id(1); \\\n\
     int4 coord = (int4)(get_global_id(0), 0, gidz, gidz); \\\n\
@@ -11734,25 +11735,11 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_##na
     src_type src0; \\\n\
     vxc_short8 outval; \\\n\
     vxc_half8 dst; \\\n\
-    float scale_vari, bias_val; \\\n\
-    float4 bias_f, scale_f, mean_vari = (float4)(0); \\\n\
+    float4 coef; \\\n\
  \\\n\
-    scale_f = read_imagef(scale, coord_para.xy); \\\n\
-    bias_f = read_imagef(bias, coord_para.xy); \\\n\
-    for(int i = 0; i < group_num; i++) \\\n\
-    { \\\n\
-        mean_vari += read_imagef(meanVari, coord_para.xy); \\\n\
-        coord_para.x += 4; \\\n\
-    } \\\n\
-    mean_vari *= inv_multiplier; \\\n\
-    mean_vari.s1 = mean_vari.s1 - mean_vari.s0 * mean_vari.s0 + eps; \\\n\
-    mean_vari.s1 = rsqrt(mean_vari.s1); \\\n\
-    scale_vari = scale_f.s0 * mean_vari.s1; \\\n\
+    coef = read_imagef(means, coord_para.xy); \\\n\
     float4  tmpData0, tmpData1, tmpData2, tmpData3, norm; \\\n\
     half4 tmpVal0, tmpVal1; \\\n\
-    float alpha = scale_vari * input_scale; \\\n\
-    bias_val = (bias_f.s0 - scale_vari * mean_vari.s0); \\\n\
-    bias_val = bias_val - input_zp * alpha; \\\n\
  \\\n\
     coord_para = coord; \\\n\
     int8 input_desc, output_desc; \\\n\
@@ -11773,17 +11760,17 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_##na
     VXC_DP4x4(tmpData1, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_1_4x4); \\\n\
     VXC_DP4x4(tmpData2, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_2_4x4); \\\n\
     VXC_DP4x4(tmpData3, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_3_4x4); \\\n\
-    norm = alpha * tmpData0 + bias_val; \\\n\
+    norm = tmpData0 * coef.x + coef.y; \\\n\
     _viv_asm(CONV, tmpVal0, norm); \\\n\
-    norm = alpha * tmpData1 + bias_val; \\\n\
+    norm = tmpData1 * coef.x + coef.y; \\\n\
     _viv_asm(CONV, tmpVal1, norm); \\\n\
     VXC_DP2x8(dst, tmpVal0, tmpVal1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniExtract8Data_2x8); \\\n\
     _viv_asm(COPY, outval, dst, 16); \\\n\
     VXC_OP4_NoDest(img_store_3d, output, coord_para, outval, VXC_MODIFIER(0, 7, 0,VXC_RM_TowardZero, 0)); \\\n\
     coord_para.x += 8; \\\n\
-    norm = alpha * tmpData2 + bias_val; \\\n\
+    norm = tmpData2 * coef.x + coef.y; \\\n\
     _viv_asm(CONV, tmpVal0, norm); \\\n\
-    norm = alpha * tmpData3 + bias_val; \\\n\
+    norm = tmpData3 * coef.x + coef.y; \\\n\
     _viv_asm(CONV, tmpVal1, norm); \\\n\
     VXC_DP2x8(dst, tmpVal0, tmpVal1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniExtract8Data_2x8); \\\n\
     _viv_asm(COPY, outval, dst, 16); \\\n\
@@ -11794,13 +11781,11 @@ INSTANCE_NORM_8_TO_F16_IMPL(U8_F32toF16, vxc_uchar16)\n\
 INSTANCE_NORM_8_TO_F16_IMPL(I8_F32toF16, vxc_char16)\n\
 \n\
 #define INSTANCE_NORM_8_TO_F16_IMPL_2D(name, src_type) \\\n\
-__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_##name##_2D( \\\n\
+__kernel void instance_norm_##name##_2D( \\\n\
     __read_only  image2d_array_t input, \\\n\
-    __read_only  image2d_t       bias, \\\n\
-    __read_only  image2d_t       scale, \\\n\
-    __read_only  image2d_t       meanVari, \\\n\
+    __read_only  image2d_t       means, \\\n\
     __write_only image2d_array_t output, \\\n\
-                 float eps, int rs_flag) \\\n\
+                 int height) \\\n\
 { \\\n\
     int gidz = get_global_id(1); \\\n\
     int gidy = gidz * height; \\\n\
@@ -11810,26 +11795,11 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_##na
     src_type src0; \\\n\
     vxc_short8 outval; \\\n\
     vxc_half8 dst; \\\n\
-    float scale_vari, bias_val; \\\n\
-    float4 bias_f, scale_f, mean_vari = (float4)(0); \\\n\
+    float4 coef; \\\n\
  \\\n\
-    scale_f = read_imagef(scale, coord_para.xy); \\\n\
-    bias_f = read_imagef(bias, coord_para.xy); \\\n\
-    for(int i = 0; i < group_num; i++) \\\n\
-    { \\\n\
-        mean_vari += read_imagef(meanVari, coord_para.xy); \\\n\
-        coord_para.x += 4; \\\n\
-    } \\\n\
-    mean_vari *= inv_multiplier; \\\n\
-    mean_vari.s1 = mean_vari.s1 - mean_vari.s0 * mean_vari.s0 + eps; \\\n\
-    mean_vari.s1 = rsqrt(mean_vari.s1); \\\n\
- \\\n\
-    scale_vari = scale_f.s0 * mean_vari.s1; \\\n\
+    coef = read_imagef(means, coord_para.xy); \\\n\
     float4  tmpData0, tmpData1, tmpData2, tmpData3, norm; \\\n\
     half4 tmpVal0, tmpVal1; \\\n\
-    float alpha = scale_vari * input_scale; \\\n\
-    bias_val = (bias_f.s0 - scale_vari * mean_vari.s0); \\\n\
-    bias_val = bias_val - input_zp * alpha; \\\n\
     for(; coord.y < endH;) \\\n\
     { \\\n\
     VXC_ReadImage(src0, input, coord.xy, 0, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
@@ -11839,17 +11809,17 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_##na
     VXC_DP4x4(tmpData1, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_1_4x4); \\\n\
     VXC_DP4x4(tmpData2, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_2_4x4); \\\n\
     VXC_DP4x4(tmpData3, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_3_4x4); \\\n\
-    norm = alpha * tmpData0 + bias_val; \\\n\
+    norm = tmpData0 * coef.x + coef.y; \\\n\
     _viv_asm(CONV, tmpVal0, norm); \\\n\
-    norm = alpha * tmpData1 + bias_val; \\\n\
+    norm = tmpData1 * coef.x + coef.y; \\\n\
     _viv_asm(CONV, tmpVal1, norm); \\\n\
     VXC_DP2x8(dst, tmpVal0, tmpVal1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniExtract8Data_2x8); \\\n\
     _viv_asm(COPY, outval, dst, 16); \\\n\
     VXC_WriteImage(output, coord_para.xy, outval, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
     coord_para.x += 8; \\\n\
-    norm = alpha * tmpData2 + bias_val; \\\n\
+    norm = tmpData2 * coef.x + coef.y; \\\n\
     _viv_asm(CONV, tmpVal0, norm); \\\n\
-    norm = alpha * tmpData3 + bias_val; \\\n\
+    norm = tmpData3 * coef.x + coef.y; \\\n\
     _viv_asm(CONV, tmpVal1, norm); \\\n\
     VXC_DP2x8(dst, tmpVal0, tmpVal1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniExtract8Data_2x8); \\\n\
     _viv_asm(COPY, outval, dst, 16); \\\n\
@@ -11863,28 +11833,21 @@ INSTANCE_NORM_8_TO_F16_IMPL_2D(I8_F32toF16, vxc_char16)\n\
 static const char instance_normalization_2_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 _viv_uniform int width;\n\
-_viv_uniform int height;\n\
-_viv_uniform float inv_multiplier;\n\
-_viv_uniform int group_num;\n\
 _viv_uniform VXC_512Bits uniDataToFP32_0_4x4;\n\
 _viv_uniform VXC_512Bits uniDataToFP32_1_4x4;\n\
 _viv_uniform VXC_512Bits uniExtract8Data_2x8;\n\
 _viv_uniform VXC_512Bits uniSum_X_X2_8x2;\n\
 _viv_uniform float input_scale;\n\
 _viv_uniform float input_scale2;\n\
-_viv_uniform float input_zp;\n\
 _viv_uniform float sum_x_tail;\n\
 _viv_uniform float sum_x2_tail0;\n\
 _viv_uniform float sum_x2_tail1;\n\
-\n\
-_viv_uniform float output_scale;\n\
-_viv_uniform float output_zp;\n\
 \n\
 #define INSTANCE_NORM_SUMS_16BITS_IMPL(name, src_type) \\\n\
 __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_sums_##name( \\\n\
     __read_only  image2d_array_t input, \\\n\
     __write_only image2d_array_t output, \\\n\
-                 float eps, int rs_flag) \\\n\
+                 float eps, int height) \\\n\
 { \\\n\
     int gidx = get_global_id(0) << 3; \\\n\
     int lidx = get_local_id(0); \\\n\
@@ -11949,7 +11912,7 @@ INSTANCE_NORM_SUMS_16BITS_IMPL(I16, vxc_short8)\n\
 __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_sums_##name##_2D( \\\n\
     __read_only  image2d_array_t input, \\\n\
     __write_only image2d_array_t output, \\\n\
-                 float eps, int rs_flag) \\\n\
+                 float eps, int height) \\\n\
 { \\\n\
     int gidx = get_global_id(0) << 3; \\\n\
     int lidx = get_local_id(0); \\\n\
@@ -12008,13 +11971,11 @@ INSTANCE_NORM_SUMS_16BITS_IMPL_2D(F16, vxc_half8)\n\
 INSTANCE_NORM_SUMS_16BITS_IMPL_2D(I16, vxc_short8)\n\
 \n\
 #define INSTANCE_NORM_16BITS_IMPL(name, src_type, dst_type, copy_type, conv_type) \\\n\
-__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_##name( \\\n\
+__kernel void instance_norm_##name( \\\n\
     __read_only  image2d_array_t input, \\\n\
-    __read_only  image2d_t       bias, \\\n\
-    __read_only  image2d_t       scale, \\\n\
-    __read_only  image2d_t       meanVari, \\\n\
+    __read_only  image2d_t       means, \\\n\
     __write_only image2d_array_t output, \\\n\
-                 float eps, int rs_flag) \\\n\
+                 int height) \\\n\
 { \\\n\
     int gidz = get_global_id(1); \\\n\
     int4 coord = (int4)(get_global_id(0), 0, gidz, gidz); \\\n\
@@ -12022,28 +11983,13 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_##na
     int4 coord_para = (int4)(0, gidz, 0, 0); \\\n\
     vxc_short8 src0; \\\n\
     src_type in_h; \\\n\
-    float scale_vari, bias_val; \\\n\
-    float4 bias_f, scale_f, mean_vari = (float4)(0); \\\n\
+    float4 coef; \\\n\
  \\\n\
-    scale_f = read_imagef(scale, coord_para.xy); \\\n\
-    bias_f = read_imagef(bias, coord_para.xy); \\\n\
+    coef = read_imagef(means, coord_para.xy); \\\n\
  \\\n\
-    for(int i = 0; i < group_num; i++) \\\n\
-    { \\\n\
-        mean_vari += read_imagef(meanVari, coord_para.xy); \\\n\
-        coord_para.x += 4; \\\n\
-    } \\\n\
-    mean_vari *= inv_multiplier; \\\n\
-    mean_vari.s1 = mean_vari.s1 - mean_vari.s0 * mean_vari.s0 + eps; \\\n\
-    mean_vari.s1 = rsqrt(mean_vari.s1); \\\n\
- \\\n\
-    scale_vari = scale_f.s0 * mean_vari.s1; \\\n\
-    float alpha = input_scale * output_scale * scale_vari; \\\n\
     float4  tmpData0, tmpData1; \\\n\
     copy_type outval; \\\n\
     conv_type tmpVal0, tmpVal1; \\\n\
-    bias_val = (bias_f.s0 - scale_vari * mean_vari.s0) * output_scale + output_zp; \\\n\
-    bias_val = bias_val - input_zp * alpha; \\\n\
     dst_type dst; \\\n\
  \\\n\
     int8 input_desc, output_desc; \\\n\
@@ -12066,9 +12012,9 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_##na
     VXC_DP4x4(tmpData1, in_h, in_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_1_4x4); \\\n\
  \\\n\
     float4 norm; \\\n\
-    norm = alpha * tmpData0 + bias_val; \\\n\
+    norm = tmpData0 * coef.x + coef.y; \\\n\
     _viv_asm(CONV_RTE, tmpVal0, norm); \\\n\
-    norm = alpha * tmpData1 + bias_val; \\\n\
+    norm = tmpData1 * coef.x + coef.y; \\\n\
     _viv_asm(CONV_RTE, tmpVal1, norm); \\\n\
     VXC_DP2x8(dst, tmpVal0, tmpVal1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniExtract8Data_2x8); \\\n\
     _viv_asm(COPY, outval, dst, 16); \\\n\
@@ -12083,13 +12029,11 @@ INSTANCE_NORM_16BITS_IMPL(I16_F32toI16, vxc_short8, vxc_short8, vxc_short8, int4
 INSTANCE_NORM_16BITS_IMPL(I16_F32toF16, vxc_short8, vxc_half8,  vxc_short8, half4)\n\
 \n\
 #define INSTANCE_NORM_16BITS_IMPL_2D(name, src_type, dst_type, copy_type, conv_type) \\\n\
-__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_##name##_2D( \\\n\
+__kernel void instance_norm_##name##_2D( \\\n\
     __read_only  image2d_array_t input, \\\n\
-    __read_only  image2d_t       bias, \\\n\
-    __read_only  image2d_t       scale, \\\n\
-    __read_only  image2d_t       meanVari, \\\n\
+    __read_only  image2d_t       means, \\\n\
     __write_only image2d_array_t output, \\\n\
-                 float eps, int rs_flag) \\\n\
+                 int height) \\\n\
 { \\\n\
     int gidz = get_global_id(1); \\\n\
     int gidy = gidz * height; \\\n\
@@ -12098,28 +12042,13 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_##na
     int endH = gidy + height; \\\n\
     vxc_short8 src0; \\\n\
     src_type in_h; \\\n\
-    float scale_vari, bias_val; \\\n\
-    float4 bias_f, scale_f, mean_vari = (float4)(0); \\\n\
+    float4 coef; \\\n\
  \\\n\
-    scale_f = read_imagef(scale, coord_para.xy); \\\n\
-    bias_f = read_imagef(bias, coord_para.xy); \\\n\
+    coef = read_imagef(means, coord_para.xy); \\\n\
  \\\n\
-    for(int i = 0; i < group_num; i++) \\\n\
-    { \\\n\
-        mean_vari += read_imagef(meanVari, coord_para.xy); \\\n\
-        coord_para.x += 4; \\\n\
-    } \\\n\
-    mean_vari *= inv_multiplier; \\\n\
-    mean_vari.s1 = mean_vari.s1 - mean_vari.s0 * mean_vari.s0 + eps; \\\n\
-    mean_vari.s1 = rsqrt(mean_vari.s1); \\\n\
- \\\n\
-    scale_vari = scale_f.s0 * mean_vari.s1; \\\n\
-    float alpha = input_scale * output_scale * scale_vari; \\\n\
     float4  tmpData0, tmpData1; \\\n\
     copy_type outval; \\\n\
     conv_type tmpVal0, tmpVal1; \\\n\
-    bias_val = (bias_f.s0 - scale_vari * mean_vari.s0) * output_scale + output_zp; \\\n\
-    bias_val = bias_val - input_zp * alpha; \\\n\
     dst_type dst; \\\n\
  \\\n\
     for(; coord.y < endH; coord.y++) \\\n\
@@ -12130,9 +12059,9 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_##na
     VXC_DP4x4(tmpData0, in_h, in_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_0_4x4); \\\n\
     VXC_DP4x4(tmpData1, in_h, in_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDataToFP32_1_4x4); \\\n\
     float4 norm; \\\n\
-    norm = alpha * tmpData0 + bias_val; \\\n\
+    norm = tmpData0 * coef.x + coef.y; \\\n\
     _viv_asm(CONV, tmpVal0, norm); \\\n\
-    norm = alpha * tmpData1 + bias_val; \\\n\
+    norm = tmpData1 * coef.x + coef.y; \\\n\
     _viv_asm(CONV, tmpVal1, norm); \\\n\
     VXC_DP2x8(dst, tmpVal0, tmpVal1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniExtract8Data_2x8); \\\n\
     _viv_asm(COPY, outval, dst, 16); \\\n\
@@ -12150,15 +12079,13 @@ INSTANCE_NORM_16BITS_IMPL_2D(I16_F32toF16, vxc_short8, vxc_half8,  vxc_short8, h
 static const char instance_normalization_3_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 _viv_uniform int width;\n\
-_viv_uniform int height;\n\
-_viv_uniform float inv_multiplier;\n\
-_viv_uniform int group_num;\n\
+\n\
 _viv_uniform VXC_512Bits uniConvBF16toF32_Part0_2x8;\n\
 _viv_uniform VXC_512Bits uniConvBF16toF32_Part1_2x8;\n\
 _viv_uniform VXC_512Bits uniExtractOddData_2x8;\n\
 \n\
 __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_sums_BF16(\n\
-    image2d_array_t input, image2d_array_t output, float eps, int rsFlg)\n\
+    image2d_array_t input, image2d_array_t output, float eps, int height)\n\
 {\n\
     int gidx = get_global_id(0) << 3;\n\
     int lidx = get_local_id(0);\n\
@@ -12219,7 +12146,7 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_sums
 }\n\
 \n\
 __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_sums_BF16_2D(\n\
-    image2d_array_t input, image2d_array_t output, float eps, int rsFlg)\n\
+    image2d_array_t input, image2d_array_t output, float eps, int height)\n\
 {\n\
     int gidx = get_global_id(0) << 3;\n\
     int lidx = get_local_id(0);\n\
@@ -12278,36 +12205,21 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_sums
     }\n\
 }\n\
 \n\
-__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_BF16_F32toBF16(\n\
-    image2d_array_t input, image2d_t bias, image2d_t scale, image2d_t meanVari,\n\
-    image2d_array_t output, float eps, int rsFlg)\n\
+__kernel void instance_norm_BF16_F32toBF16(\n\
+    __read_only  image2d_array_t input,\n\
+    __read_only  image2d_t       means,\n\
+    __write_only image2d_array_t output,\n\
+                 int height)\n\
 {\n\
     int gidz = get_global_id(1);\n\
     int4 coord = (int4)(get_global_id(0), 0, gidz, gidz);\n\
     int4 coord_in = (int4)(get_global_id(0), 0, gidz, gidz);\n\
     vxc_short8 src0, src1, src2;\n\
-    float scale_vari, bias_val;\n\
-    float4 mean_vari = (float4)(0);\n\
+    float4 coef;\n\
 \n\
-    Image img3 = create_image_from_image2d(meanVari, 4);\n\
-    __global uchar* sumVari_ptr = (__global uchar*)get_image_ptr_from_coord(img3, (int2)(0, gidz));\n\
-    __global float4* vari_ptr = (__global float4*)sumVari_ptr;\n\
+    coef = read_imagef(means, coord.yz);\n\
 \n\
-    float sval = read_imagef(scale, coord.yz).x;\n\
-    float bval = read_imagef(bias, coord.yz).x;\n\
-\n\
-    for(int i = 0; i < group_num; i++)\n\
-    {\n\
-        mean_vari += vari_ptr[i];\n\
-    }\n\
-\n\
-    mean_vari *= inv_multiplier;\n\
-    mean_vari.s1 = mean_vari.s1 - mean_vari.s0 * mean_vari.s0 + eps;\n\
-    mean_vari.s1 = rsqrt(mean_vari.s1);\n\
-\n\
-    scale_vari = sval * mean_vari.s1;\n\
     float4  tmpData0, tmpData1;\n\
-    bias_val = (bval - scale_vari * mean_vari.s0);\n\
 \n\
     int8 input_desc, output_desc;\n\
     _viv_asm(COPY, input_desc, input, sizeof(input_desc));\n\
@@ -12320,6 +12232,7 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_BF16
 \n\
     for(coord.y = 0; coord.y < height; coord.y++)\n\
     {\n\
+    vxc_short8 zero = (vxc_short8)(0, 0, 0, 0, 0, 0, 0, 0);\n\
     VXC_OP4(img_load_3d, src0, input, coord_in, VXC_5BITOFFSET_XY(0, 0), \\\n\
                     VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
     coord_in.y ++;\n\
@@ -12331,9 +12244,9 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_BF16
     _viv_asm(COPY, tmpData1, src2, 16);\n\
 \n\
     float4 norm;\n\
-    norm = scale_vari * tmpData0 + bias_val;\n\
+    norm = tmpData0 * coef.x + coef.y;\n\
     _viv_asm(COPY, src0, norm, 16);\n\
-    norm = scale_vari * tmpData1 + bias_val;\n\
+    norm = tmpData1 * coef.x + coef.y;\n\
     _viv_asm(COPY, src1, norm, 16);\n\
     VXC_DP2x8(src2, src0, src1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniExtractOddData_2x8);\n\
     VXC_OP4_NoDest(img_store_3d, output, coord, src2, \\\n\
@@ -12341,41 +12254,27 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_BF16
     }\n\
 }\n\
 \n\
-__kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_BF16F32toBF16_2D(\n\
-    image2d_array_t input, image2d_t bias, image2d_t scale, image2d_t meanVari,\n\
-    image2d_array_t output, float eps, int rsFlg)\n\
+__kernel void instance_norm_BF16_F32toBF16_2D(\n\
+    __read_only  image2d_array_t input,\n\
+    __read_only  image2d_t       means,\n\
+    __write_only image2d_array_t output,\n\
+                 int height)\n\
 {\n\
     int gidz = get_global_id(1);\n\
     int gidy = gidz * height;\n\
     int2 coord = (int2)(get_global_id(0), gidy);\n\
-    int2 coord_para = (int2)(gidz, 0);\n\
+    int2 coord_para = (int2)(0, gidz);\n\
     int endH = gidy + height;\n\
     vxc_short8 src0, src1, src2;\n\
-    float scale_vari, bias_val;\n\
-    float4 mean_vari = (float4)(0);\n\
+    float4 coef;\n\
 \n\
-    Image img3 = create_image_from_image2d(meanVari, 4);\n\
-    __global uchar* sumVari_ptr = (__global uchar*)get_image_ptr_from_coord(img3, coord_para.yx);\n\
-    __global float4* vari_ptr = (__global float4*)sumVari_ptr;\n\
+    coef = read_imagef(means, coord_para);\n\
 \n\
-    float sval = read_imagef(scale, coord_para.yx).x;\n\
-    float bval = read_imagef(bias, coord_para.yx).x;\n\
-\n\
-    for(int i = 0; i < group_num; i++)\n\
-    {\n\
-        mean_vari += vari_ptr[i];\n\
-    }\n\
-\n\
-    mean_vari *= inv_multiplier;\n\
-    mean_vari.s1 = mean_vari.s1 - mean_vari.s0 * mean_vari.s0 + eps;\n\
-    mean_vari.s1 = rsqrt(mean_vari.s1);\n\
-\n\
-    scale_vari = sval * mean_vari.s1;\n\
     float4  tmpData0, tmpData1;\n\
-    bias_val = (bval - scale_vari * mean_vari.s0);\n\
 \n\
     for(; coord.y < endH; coord.y++)\n\
     {\n\
+    vxc_short8 zero = (vxc_short8)(0, 0, 0, 0, 0, 0, 0, 0);\n\
     VXC_ReadImage(src0, input, coord.xy, VXC_5BITOFFSET_XY(0, 0),\\\n\
         VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
     VXC_DP2x8(src1, src0, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),\n\
@@ -12386,9 +12285,9 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void instance_norm_BF16
     _viv_asm(COPY, tmpData1, src2, 16);\n\
 \n\
     float4 norm;\n\
-    norm = scale_vari * tmpData0 + bias_val;\n\
+    norm = tmpData0 * coef.x + coef.y;\n\
     _viv_asm(COPY, src0, norm, 16);\n\
-    norm = scale_vari * tmpData1 + bias_val;\n\
+    norm = tmpData1 * coef.x + coef.y;\n\
     _viv_asm(COPY, src1, norm, 16);\n\
     VXC_DP2x8(src2, src0, src1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniExtractOddData_2x8);\n\
     VXC_WriteImage(output, coord.xy, src2, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
