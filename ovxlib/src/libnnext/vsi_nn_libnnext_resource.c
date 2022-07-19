@@ -9461,7 +9461,7 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_##name#
     vxc_float4  tmpData0, tmpData1, tmpData2, tmpData3, norm; \\\n\
     half4 tmpVal0, tmpVal1; \\\n\
     float alpha = scale_vari; \\\n\
-    float alpha = scale_vari * input_scale; \\\n\
+    alpha = scale_vari * input_scale; \\\n\
     bias_val = (bias_f.s0 - scale_vari * mean_vari.s0); \\\n\
     bias_val = bias_val - input_zp * alpha; \\\n\
  \\\n\
@@ -12446,7 +12446,7 @@ _viv_uniform int inputZP;\n\
                     VXC_Vstore3(dst_ptr, 0, dst.s012); \\\n\
                 break; \\\n\
                 case 4: \\\n\
-                    VXC_Vstore4(dst_ptr, 0, dst.0123); \\\n\
+                    VXC_Vstore4(dst_ptr, 0, dst.s0123); \\\n\
                 break; \\\n\
                 case 5: \\\n\
                     VXC_Vstore2(dst_ptr, 0, dst.s01); \\\n\
@@ -12461,7 +12461,7 @@ _viv_uniform int inputZP;\n\
                     VXC_Vstore3(dst_ptr, 0, dst.s012); \\\n\
                 break; \\\n\
                 case 7: \\\n\
-                    VXC_Vstore4(dst_ptr, 0, dst.0123); \\\n\
+                    VXC_Vstore4(dst_ptr, 0, dst.s0123); \\\n\
                      dst.s012 = dst.s456; \\\n\
                     dst_ptr += 4; \\\n\
                     VXC_Vstore3(dst_ptr, 0, dst.s012); \\\n\
