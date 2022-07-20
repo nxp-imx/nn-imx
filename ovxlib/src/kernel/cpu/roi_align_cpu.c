@@ -107,25 +107,42 @@ static float _roi_align_1x1(float *input_ptr,
                 float x = region_start_x + ((float)ix + 0.5f) * bin_size_x / (float)(grid_size_x);
 
                 // Interpolation in the [0,0] [0,1] [1,0] [1,1] square
-                const int32_t y_low  = (int32_t)y;
-                const int32_t x_low  = (int32_t)x;
+                const int32_t y_low  = vsi_nn_min((int32_t)y, height - 1);
+                const int32_t x_low  = vsi_nn_min((int32_t)x, width - 1);
                 const int32_t y_high = vsi_nn_min(y_low + 1, height - 1);
                 const int32_t x_high = vsi_nn_min(x_low + 1, width - 1);
 
-                const float ly = y - y_low;
-                const float lx = x - x_low;
-                const float hy = 1.0f - ly;
-                const float hx = 1.0f - lx;
+                float ly = y - y_low;
+                float lx = x - x_low;
+                float hy = 1.0f - ly;
+                float hx = 1.0f - lx;
 
-                const float w1 = hy * hx;
-                const float w2 = hy * lx;
-                const float w3 = ly * hx;
-                const float w4 = ly * lx;
+                float w1 = hy * hx;
+                float w2 = hy * lx;
+                float w3 = ly * hx;
+                float w4 = ly * lx;
 
                 const float data1 = *(input_ptr + y_low * width + x_low);
                 const float data2 = *(input_ptr + y_low * width + x_high);
                 const float data3 = *(input_ptr + y_high * width + x_low);
                 const float data4 = *(input_ptr + y_high * width + x_high);
+
+                /* onnx: inverse elements are out of feature map boundary */
+                if (x > width || x < -1 || y > height || y < -1)
+                    continue;
+
+                x = x_low >= width - 1 ? x_low : x;
+                y = y_low >= height - 1 ? y_low : y;
+
+                ly = y - y_low;
+                lx = x - x_low;
+                hy = 1.0f - ly;
+                hx = 1.0f - lx;
+
+                w1 = hy * hx;
+                w2 = hy * lx;
+                w3 = ly * hx;
+                w4 = ly * lx;
 
                 avg += w1 * data1 + w2 * data2 + w3 * data3 + w4 * data4;
             }
