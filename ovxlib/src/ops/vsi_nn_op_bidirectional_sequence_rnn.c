@@ -339,6 +339,32 @@ static vsi_bool op_setup
         output_tensor = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
         rnncell_out1 = output_tensor->t;
 
+        if (reshape_output_tensors[time_step - 1 - i]->attr.dtype.vx_type == VSI_NN_TYPE_FLOAT32 &&
+            inputs[BI_RNN_BW_INPUT_WEIGHT_I]->attr.dtype.vx_type == VSI_NN_TYPE_FLOAT32 &&
+            curr_param->internal_dtype[RNNCELL_QUANTIZE_PARAM_I].qnt_type == VSI_NN_QNT_TYPE_NONE &&
+            curr_param->internal_dtype[RNNCELL_QUANTIZE_PARAM_I].vx_type == VSI_NN_TYPE_NONE)
+        {
+            curr_param->internal_dtype[RNNCELL_QUANTIZE_PARAM_I].vx_type = VSI_NN_TYPE_FLOAT32;
+        }
+
+        if (last_step_h_state_fw &&
+            last_step_h_state_fw->attr.dtype.vx_type == VSI_NN_TYPE_FLOAT32 &&
+            inputs[BI_RNN_BW_INPUT_WEIGHT_H]->attr.dtype.vx_type == VSI_NN_TYPE_FLOAT32 &&
+            curr_param->internal_dtype[RNNCELL_QUANTIZE_PARAM_H].qnt_type == VSI_NN_QNT_TYPE_NONE &&
+            curr_param->internal_dtype[RNNCELL_QUANTIZE_PARAM_H].vx_type == VSI_NN_TYPE_NONE)
+        {
+            curr_param->internal_dtype[RNNCELL_QUANTIZE_PARAM_H].vx_type = VSI_NN_TYPE_FLOAT32;
+        }
+
+        if (has_aux_input&&
+            aux_reshape_output_tensors[time_step - 1 - i]->attr.dtype.vx_type == VSI_NN_TYPE_FLOAT32 &&
+            inputs[BI_RNN_BW_AUX_INPUT_WEIGHT]->attr.dtype.vx_type == VSI_NN_TYPE_FLOAT32 &&
+            curr_param->internal_dtype[RNNCELL_QUANTIZE_PARAM_AUX].qnt_type == VSI_NN_QNT_TYPE_NONE &&
+            curr_param->internal_dtype[RNNCELL_QUANTIZE_PARAM_AUX].vx_type == VSI_NN_TYPE_NONE)
+        {
+            curr_param->internal_dtype[RNNCELL_QUANTIZE_PARAM_AUX].vx_type = VSI_NN_TYPE_FLOAT32;
+        }
+
         curr = vsi_nn_internal_new_node( self, VSI_NN_OP_RNNCELL_OVXLIB, 0, 0 );
         curr->node->nn_param.rnncell_ovxlib.activation = curr_param->activation;
         memcpy( curr->node->nn_param.rnncell_ovxlib.internal_dtype,
@@ -395,11 +421,37 @@ static vsi_bool op_setup
         output_tensor = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
         rnncell_out1 = output_tensor->t;
 
+        if (reshape_output_tensors[time_step - 1 - i]->attr.dtype.vx_type == VSI_NN_TYPE_FLOAT32 &&
+            inputs[BI_RNN_BW_INPUT_WEIGHT_I]->attr.dtype.vx_type == VSI_NN_TYPE_FLOAT32 &&
+            curr_param->internal_dtype[RNNCELL_QUANTIZE_PARAM_I].qnt_type == VSI_NN_QNT_TYPE_NONE &&
+            curr_param->internal_dtype[RNNCELL_QUANTIZE_PARAM_I].vx_type == VSI_NN_TYPE_NONE)
+        {
+            curr_param->internal_dtype[RNNCELL_QUANTIZE_PARAM_I].vx_type = VSI_NN_TYPE_FLOAT32;
+        }
+
+        if (last_step_h_state_bw &&
+            last_step_h_state_bw->attr.dtype.vx_type == VSI_NN_TYPE_FLOAT32 &&
+            inputs[BI_RNN_BW_INPUT_WEIGHT_H]->attr.dtype.vx_type == VSI_NN_TYPE_FLOAT32 &&
+            curr_param->internal_dtype[RNNCELL_QUANTIZE_PARAM_H].qnt_type == VSI_NN_QNT_TYPE_NONE &&
+            curr_param->internal_dtype[RNNCELL_QUANTIZE_PARAM_H].vx_type == VSI_NN_TYPE_NONE)
+        {
+            curr_param->internal_dtype[RNNCELL_QUANTIZE_PARAM_H].vx_type = VSI_NN_TYPE_FLOAT32;
+        }
+
+        if (has_aux_input&&
+            aux_reshape_output_tensors[time_step - 1 - i]->attr.dtype.vx_type == VSI_NN_TYPE_FLOAT32 &&
+            inputs[BI_RNN_BW_AUX_INPUT_WEIGHT]->attr.dtype.vx_type == VSI_NN_TYPE_FLOAT32 &&
+            curr_param->internal_dtype[RNNCELL_QUANTIZE_PARAM_AUX].qnt_type == VSI_NN_QNT_TYPE_NONE &&
+            curr_param->internal_dtype[RNNCELL_QUANTIZE_PARAM_AUX].vx_type == VSI_NN_TYPE_NONE)
+        {
+            curr_param->internal_dtype[RNNCELL_QUANTIZE_PARAM_AUX].vx_type = VSI_NN_TYPE_FLOAT32;
+        }
+
         curr = vsi_nn_internal_new_node( self, VSI_NN_OP_RNNCELL_OVXLIB, 0, 0 );
         curr->node->nn_param.rnncell_ovxlib.activation = curr_param->activation;
         memcpy( curr->node->nn_param.rnncell_ovxlib.internal_dtype,
-            &(curr_param->internal_dtype[RNNCELL_QUANTIZE_PARAM_COUNT]),
-            sizeof(vsi_nn_dtype_t) * RNNCELL_QUANTIZE_PARAM_COUNT);
+                curr_param->internal_dtype,
+                sizeof(vsi_nn_dtype_t) * RNNCELL_QUANTIZE_PARAM_COUNT);
         curr->inputs[RNNCELL_INPUT_INPUT] = reshape_output_tensors[time_step - 1 - i];
         curr->inputs[RNNCELL_INPUT_H_STATE] = last_step_h_state_bw;
 
