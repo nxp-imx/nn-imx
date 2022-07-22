@@ -58204,52 +58204,45 @@ inline float roi_align_1x1\n\
 {\n\
     float sum = 0;\n\
 \n\
-    if ((region_end.x <= region_start.x) || (region_end.y <= region_start.y))\n\
+    for(int iy = 0; iy < grid_size.y; ++iy)\n\
     {\n\
-        return sum;\n\
-    }\n\
-    else\n\
-    {\n\
-        for(int iy = 0; iy < grid_size.y; ++iy)\n\
+        for(int ix = 0; ix < grid_size.x; ++ix)\n\
         {\n\
-            for(int ix = 0; ix < grid_size.x; ++ix)\n\
+            float2 ixy = (float2)(ix + 0.5f, iy + 0.5f);\n\
+            float2 pos = region_start + ixy * bin_size * rcp_of_grid_size;\n\
+\n\
+            int2 xy_low  = convert_int2(pos);\n\
+            int2 xy_high = xy_low + 1;\n\
+\n\
+            if (xy_low.x > max_spatial_dims.x || max_spatial_dims.x < -1 ||\n\
+                xy_low.y > max_spatial_dims.y || max_spatial_dims.y < -1 )\n\
             {\n\
-                float2 ixy = (float2)(ix + 0.5f, iy + 0.5f);\n\
-                float2 pos = region_start + ixy * bin_size * rcp_of_grid_size;\n\
-\n\
-                int2 xy_low  = convert_int2(pos);\n\
-                int2 xy_high = xy_low + 1;\n\
-\n\
-                if (xy_low.x > max_spatial_dims.x || max_spatial_dims.x < -1 ||\n\
-                    xy_low.y > max_spatial_dims.y || max_spatial_dims.y < -1 )\n\
-                {\n\
-                    break;\n\
-                }\n\
-\n\
-                float2 lxy = pos - floor(pos);\n\
-                float2 zero = 0;\n\
-\n\
-                lxy = xy_low >= max_spatial_dims.z ? 0.0 : lxy;\n\
-\n\
-                float hy = 1.0f - lxy.y;\n\
-                float hx = 1.0f - lxy.x;\n\
-\n\
-                float w1 = hy * hx;\n\
-                float w2 = lxy.x - lxy.x * lxy.y;\n\
-                float w3 = lxy.y - lxy.x * lxy.y;\n\
-                float w4 = lxy.y * lxy.x;\n\
-\n\
-                float data1 = read_imagef(input, (int4)(xy_low.x, xy_low.y, pz, 0)).x;\n\
-                float data2 = read_imagef(input, (int4)(xy_high.x, xy_low.y, pz, 0)).x;\n\
-                float data3 = read_imagef(input, (int4)(xy_low.x, xy_high.y, pz, 0)).x;\n\
-                float data4 = read_imagef(input, (int4)(xy_high.x, xy_high.y, pz, 0)).x;\n\
-\n\
-                sum = sum + w1 * data1 + w2 * data2 + w3 * data3 + w4 * data4;\n\
+                continue;\n\
             }\n\
-        }\n\
 \n\
-        return (float)(sum * rcp_of_grid_size.x * rcp_of_grid_size.y);\n\
-    } \n\
+            float2 lxy = pos - floor(pos);\n\
+            float2 zero = 0;\n\
+\n\
+            lxy = xy_low >= max_spatial_dims.zw ? 0.0 : lxy;\n\
+\n\
+            float hy = 1.0f - lxy.y;\n\
+            float hx = 1.0f - lxy.x;\n\
+\n\
+            float w1 = hy * hx;\n\
+            float w2 = lxy.x - lxy.x * lxy.y;\n\
+            float w3 = lxy.y - lxy.x * lxy.y;\n\
+            float w4 = lxy.y * lxy.x;\n\
+\n\
+            float data1 = read_imagef(input, (int4)(xy_low.x, xy_low.y, pz, 0)).x;\n\
+            float data2 = read_imagef(input, (int4)(xy_high.x, xy_low.y, pz, 0)).x;\n\
+            float data3 = read_imagef(input, (int4)(xy_low.x, xy_high.y, pz, 0)).x;\n\
+            float data4 = read_imagef(input, (int4)(xy_high.x, xy_high.y, pz, 0)).x;\n\
+\n\
+            sum = sum + w1 * data1 + w2 * data2 + w3 * data3 + w4 * data4;\n\
+        }\n\
+    }\n\
+\n\
+    return (float)(sum * rcp_of_grid_size.x * rcp_of_grid_size.y);\n\
 }\n\
 \n\
 #define EPS_GRID 0.00001f\n\
@@ -58301,9 +58294,6 @@ __kernel void roi_align_F32_F32toF32\n\
     float2 bin_size     = roi_dims * pooled_dims;\n\
     float2 region_start = spatial_indx * bin_size + roi_anchor.xy;\n\
     float2 region_end   = region_start + bin_size;\n\
-\n\
-    region_start = region_start >= max_limiatation ? max_limiatation :  region_start;\n\
-    region_end = region_end >= max_limiatation ? max_limiatation :  region_end;\n\
 \n\
     float2 roi_bin_grid = (float2)(sampling_x_ratio, sampling_y_ratio);\n\
 \n\
@@ -58363,55 +58353,49 @@ inline float roi_align_1x1_U8toF32\n\
 {\n\
     float sum = 0;\n\
 \n\
-    if ((region_end.x <= region_start.x) || (region_end.y <= region_start.y))\n\
+    for(int iy = 0; iy < grid_size.y; ++iy)\n\
     {\n\
-        return sum;\n\
-    }\n\
-    else\n\
-    {\n\
-        for(int iy = 0; iy < grid_size.y; ++iy)\n\
+        for(int ix = 0; ix < grid_size.x; ++ix)\n\
         {\n\
-            for(int ix = 0; ix < grid_size.x; ++ix)\n\
+            float2 ixy = (float2)(ix + 0.5f, iy + 0.5f);\n\
+            float2 pos = region_start + ixy * bin_size * rcp_of_grid_size;\n\
+    \n\
+            int2 xy_low  = convert_int2(pos);\n\
+            int2 xy_high = xy_low + 1;\n\
+    \n\
+            float2 lxy = pos - floor(pos);\n\
+            float2 zero = 0;\n\
+    \n\
+            if (xy_low.x > max_spatial_dims.x || max_spatial_dims.x < -1 ||\n\
+                xy_low.y > max_spatial_dims.y || max_spatial_dims.y < -1 )\n\
             {\n\
-                float2 ixy = (float2)(ix + 0.5f, iy + 0.5f);\n\
-                float2 pos = region_start + ixy * bin_size * rcp_of_grid_size;\n\
-\n\
-                int2 xy_low  = convert_int2(pos);\n\
-                int2 xy_high = xy_low + 1;\n\
-\n\
-                float2 lxy = pos - floor(pos);\n\
-                float2 zero = 0;\n\
-\n\
-                if (xy_low.x > max_spatial_dims.x || max_spatial_dims.x < -1 ||\n\
-                    xy_low.y > max_spatial_dims.y || max_spatial_dims.y < -1 )\n\
-                {\n\
-                    continue;\n\
-                }\n\
-\n\
-                lxy = xy_low >= max_spatial_dims.z ? 0.0 : lxy;\n\
-\n\
-                float hy = 1.0f - lxy.y;\n\
-                float hx = 1.0f - lxy.x;\n\
-\n\
-                float w1 = hy * hx;\n\
-                float w2 = lxy.x - lxy.x * lxy.y;\n\
-                float w3 = lxy.y - lxy.x * lxy.y;\n\
-                float w4 = lxy.y * lxy.x;\n\
-\n\
-                uint4 data;\n\
-                data.x = read_imageui(input, (int4)(xy_low.x, xy_low.y, pz, 0)).x;\n\
-                data.y = read_imageui(input, (int4)(xy_high.x, xy_low.y, pz, 0)).x;\n\
-                data.z = read_imageui(input, (int4)(xy_low.x, xy_high.y, pz, 0)).x;\n\
-                data.w = read_imageui(input, (int4)(xy_high.x, xy_high.y, pz, 0)).x;\n\
-\n\
-                float4 value = convert_float4(data) * input_scale + input_tail;\n\
-\n\
-                sum = sum + w1 * value.x + w2 * value.y + w3 * value.z + w4 * value.w;\n\
+                continue;\n\
             }\n\
+    \n\
+            lxy = xy_low >= max_spatial_dims.zw ? 0.0 : lxy;\n\
+    \n\
+            float hy = 1.0f - lxy.y;\n\
+            float hx = 1.0f - lxy.x;\n\
+    \n\
+            float w1 = hy * hx;\n\
+            float w2 = lxy.x - lxy.x * lxy.y;\n\
+            float w3 = lxy.y - lxy.x * lxy.y;\n\
+            float w4 = lxy.y * lxy.x;\n\
+    \n\
+            uint4 data;\n\
+            data.x = read_imageui(input, (int4)(xy_low.x, xy_low.y, pz, 0)).x;\n\
+            data.y = read_imageui(input, (int4)(xy_high.x, xy_low.y, pz, 0)).x;\n\
+            data.z = read_imageui(input, (int4)(xy_low.x, xy_high.y, pz, 0)).x;\n\
+            data.w = read_imageui(input, (int4)(xy_high.x, xy_high.y, pz, 0)).x;\n\
+    \n\
+            float4 value = convert_float4(data) * input_scale + input_tail;\n\
+    \n\
+            sum = sum + w1 * value.x + w2 * value.y + w3 * value.z + w4 * value.w;\n\
         }\n\
-\n\
-        return (float)(sum * rcp_of_grid_size.x * rcp_of_grid_size.y);\n\
     }\n\
+    \n\
+    return (float)(sum * rcp_of_grid_size.x * rcp_of_grid_size.y);\n\
+\n\
 }\n\
 \n\
 __kernel void roi_align_U8_U16toU8\n\
@@ -58460,9 +58444,6 @@ __kernel void roi_align_U8_U16toU8\n\
     float2 bin_size     = roi_dims * pooled_dims;\n\
     float2 region_start = spatial_indx * bin_size + roi_anchor.xy;\n\
     float2 region_end   = region_start + bin_size;\n\
-\n\
-    region_start = region_start >= max_limiatation ? max_limiatation :  region_start;\n\
-    region_end = region_end >= max_limiatation ? max_limiatation :  region_end;\n\
 \n\
     float2 roi_bin_grid = (float2)(sampling_x_ratio, sampling_y_ratio);\n\
 \n\

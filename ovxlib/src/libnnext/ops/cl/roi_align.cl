@@ -13,52 +13,45 @@ inline float roi_align_1x1
 {
     float sum = 0;
 
-    if ((region_end.x <= region_start.x) || (region_end.y <= region_start.y))
+    for(int iy = 0; iy < grid_size.y; ++iy)
     {
-        return sum;
-    }
-    else
-    {
-        for(int iy = 0; iy < grid_size.y; ++iy)
+        for(int ix = 0; ix < grid_size.x; ++ix)
         {
-            for(int ix = 0; ix < grid_size.x; ++ix)
+            float2 ixy = (float2)(ix + 0.5f, iy + 0.5f);
+            float2 pos = region_start + ixy * bin_size * rcp_of_grid_size;
+
+            int2 xy_low  = convert_int2(pos);
+            int2 xy_high = xy_low + 1;
+
+            if (xy_low.x > max_spatial_dims.x || max_spatial_dims.x < -1 ||
+                xy_low.y > max_spatial_dims.y || max_spatial_dims.y < -1 )
             {
-                float2 ixy = (float2)(ix + 0.5f, iy + 0.5f);
-                float2 pos = region_start + ixy * bin_size * rcp_of_grid_size;
-
-                int2 xy_low  = convert_int2(pos);
-                int2 xy_high = xy_low + 1;
-
-                if (xy_low.x > max_spatial_dims.x || max_spatial_dims.x < -1 ||
-                    xy_low.y > max_spatial_dims.y || max_spatial_dims.y < -1 )
-                {
-                    break;
-                }
-
-                float2 lxy = pos - floor(pos);
-                float2 zero = 0;
-
-                lxy = xy_low >= max_spatial_dims.z ? 0.0 : lxy;
-
-                float hy = 1.0f - lxy.y;
-                float hx = 1.0f - lxy.x;
-
-                float w1 = hy * hx;
-                float w2 = lxy.x - lxy.x * lxy.y;
-                float w3 = lxy.y - lxy.x * lxy.y;
-                float w4 = lxy.y * lxy.x;
-
-                float data1 = read_imagef(input, (int4)(xy_low.x, xy_low.y, pz, 0)).x;
-                float data2 = read_imagef(input, (int4)(xy_high.x, xy_low.y, pz, 0)).x;
-                float data3 = read_imagef(input, (int4)(xy_low.x, xy_high.y, pz, 0)).x;
-                float data4 = read_imagef(input, (int4)(xy_high.x, xy_high.y, pz, 0)).x;
-
-                sum = sum + w1 * data1 + w2 * data2 + w3 * data3 + w4 * data4;
+                continue;
             }
-        }
 
-        return (float)(sum * rcp_of_grid_size.x * rcp_of_grid_size.y);
-    } 
+            float2 lxy = pos - floor(pos);
+            float2 zero = 0;
+
+            lxy = xy_low >= max_spatial_dims.zw ? 0.0 : lxy;
+
+            float hy = 1.0f - lxy.y;
+            float hx = 1.0f - lxy.x;
+
+            float w1 = hy * hx;
+            float w2 = lxy.x - lxy.x * lxy.y;
+            float w3 = lxy.y - lxy.x * lxy.y;
+            float w4 = lxy.y * lxy.x;
+
+            float data1 = read_imagef(input, (int4)(xy_low.x, xy_low.y, pz, 0)).x;
+            float data2 = read_imagef(input, (int4)(xy_high.x, xy_low.y, pz, 0)).x;
+            float data3 = read_imagef(input, (int4)(xy_low.x, xy_high.y, pz, 0)).x;
+            float data4 = read_imagef(input, (int4)(xy_high.x, xy_high.y, pz, 0)).x;
+
+            sum = sum + w1 * data1 + w2 * data2 + w3 * data3 + w4 * data4;
+        }
+    }
+
+    return (float)(sum * rcp_of_grid_size.x * rcp_of_grid_size.y);
 }
 
 #define EPS_GRID 0.00001f
@@ -110,9 +103,6 @@ __kernel void roi_align_F32_F32toF32
     float2 bin_size     = roi_dims * pooled_dims;
     float2 region_start = spatial_indx * bin_size + roi_anchor.xy;
     float2 region_end   = region_start + bin_size;
-
-    region_start = region_start >= max_limiatation ? max_limiatation :  region_start;
-    region_end = region_end >= max_limiatation ? max_limiatation :  region_end;
 
     float2 roi_bin_grid = (float2)(sampling_x_ratio, sampling_y_ratio);
 
@@ -172,55 +162,49 @@ inline float roi_align_1x1_U8toF32
 {
     float sum = 0;
 
-    if ((region_end.x <= region_start.x) || (region_end.y <= region_start.y))
+    for(int iy = 0; iy < grid_size.y; ++iy)
     {
-        return sum;
-    }
-    else
-    {
-        for(int iy = 0; iy < grid_size.y; ++iy)
+        for(int ix = 0; ix < grid_size.x; ++ix)
         {
-            for(int ix = 0; ix < grid_size.x; ++ix)
+            float2 ixy = (float2)(ix + 0.5f, iy + 0.5f);
+            float2 pos = region_start + ixy * bin_size * rcp_of_grid_size;
+    
+            int2 xy_low  = convert_int2(pos);
+            int2 xy_high = xy_low + 1;
+    
+            float2 lxy = pos - floor(pos);
+            float2 zero = 0;
+    
+            if (xy_low.x > max_spatial_dims.x || max_spatial_dims.x < -1 ||
+                xy_low.y > max_spatial_dims.y || max_spatial_dims.y < -1 )
             {
-                float2 ixy = (float2)(ix + 0.5f, iy + 0.5f);
-                float2 pos = region_start + ixy * bin_size * rcp_of_grid_size;
-
-                int2 xy_low  = convert_int2(pos);
-                int2 xy_high = xy_low + 1;
-
-                float2 lxy = pos - floor(pos);
-                float2 zero = 0;
-
-                if (xy_low.x > max_spatial_dims.x || max_spatial_dims.x < -1 ||
-                    xy_low.y > max_spatial_dims.y || max_spatial_dims.y < -1 )
-                {
-                    continue;
-                }
-
-                lxy = xy_low >= max_spatial_dims.z ? 0.0 : lxy;
-
-                float hy = 1.0f - lxy.y;
-                float hx = 1.0f - lxy.x;
-
-                float w1 = hy * hx;
-                float w2 = lxy.x - lxy.x * lxy.y;
-                float w3 = lxy.y - lxy.x * lxy.y;
-                float w4 = lxy.y * lxy.x;
-
-                uint4 data;
-                data.x = read_imageui(input, (int4)(xy_low.x, xy_low.y, pz, 0)).x;
-                data.y = read_imageui(input, (int4)(xy_high.x, xy_low.y, pz, 0)).x;
-                data.z = read_imageui(input, (int4)(xy_low.x, xy_high.y, pz, 0)).x;
-                data.w = read_imageui(input, (int4)(xy_high.x, xy_high.y, pz, 0)).x;
-
-                float4 value = convert_float4(data) * input_scale + input_tail;
-
-                sum = sum + w1 * value.x + w2 * value.y + w3 * value.z + w4 * value.w;
+                continue;
             }
+    
+            lxy = xy_low >= max_spatial_dims.zw ? 0.0 : lxy;
+    
+            float hy = 1.0f - lxy.y;
+            float hx = 1.0f - lxy.x;
+    
+            float w1 = hy * hx;
+            float w2 = lxy.x - lxy.x * lxy.y;
+            float w3 = lxy.y - lxy.x * lxy.y;
+            float w4 = lxy.y * lxy.x;
+    
+            uint4 data;
+            data.x = read_imageui(input, (int4)(xy_low.x, xy_low.y, pz, 0)).x;
+            data.y = read_imageui(input, (int4)(xy_high.x, xy_low.y, pz, 0)).x;
+            data.z = read_imageui(input, (int4)(xy_low.x, xy_high.y, pz, 0)).x;
+            data.w = read_imageui(input, (int4)(xy_high.x, xy_high.y, pz, 0)).x;
+    
+            float4 value = convert_float4(data) * input_scale + input_tail;
+    
+            sum = sum + w1 * value.x + w2 * value.y + w3 * value.z + w4 * value.w;
         }
-
-        return (float)(sum * rcp_of_grid_size.x * rcp_of_grid_size.y);
     }
+    
+    return (float)(sum * rcp_of_grid_size.x * rcp_of_grid_size.y);
+
 }
 
 __kernel void roi_align_U8_U16toU8
@@ -269,9 +253,6 @@ __kernel void roi_align_U8_U16toU8
     float2 bin_size     = roi_dims * pooled_dims;
     float2 region_start = spatial_indx * bin_size + roi_anchor.xy;
     float2 region_end   = region_start + bin_size;
-
-    region_start = region_start >= max_limiatation ? max_limiatation :  region_start;
-    region_end = region_end >= max_limiatation ? max_limiatation :  region_end;
 
     float2 roi_bin_grid = (float2)(sampling_x_ratio, sampling_y_ratio);
 
