@@ -50,6 +50,10 @@ static const struct {
     HASH_ELTWISE_OP_SUPPORT_TYPE(U8,  I8),
     HASH_ELTWISE_OP_SUPPORT_TYPE(I8,  I8),
     HASH_ELTWISE_OP_SUPPORT_TYPE(I8,  U8),
+    HASH_ELTWISE_OP_SUPPORT_TYPE(U4,  U4),
+    HASH_ELTWISE_OP_SUPPORT_TYPE(U4,  I4),
+    HASH_ELTWISE_OP_SUPPORT_TYPE(I4,  I4),
+    HASH_ELTWISE_OP_SUPPORT_TYPE(I4,  U4),
 };
 
 vsi_nn_kernel_node_t vsi_nn_sp_add_node
@@ -60,7 +64,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_add_node
         vsi_nn_tensor_t             * output
     )
 {
-    const int32_t spInitInstsNum = 0;
+    const int32_t spInitInstsNum = 1;
     const int32_t spLoopInstsNum = 2;
     const int32_t spInstsNum = spInitInstsNum + spLoopInstsNum;
 
@@ -71,7 +75,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_add_node
     vx_node node = NULL;
 
     vsi_nn_spinst_t *spinst = NULL;
-    vsi_nn_spinst_inst_param sp_insts_param[2];
+    vsi_nn_spinst_inst_param sp_insts_param[3];
     vsi_nn_spinst_attr_t attr;
 
     vsi_status status = VSI_FAILURE;
@@ -91,12 +95,14 @@ vsi_nn_kernel_node_t vsi_nn_sp_add_node
     clamp_min = clamp_min * scale0;
     clamp_max = clamp_max * scale0;
 
+    /* init inst0: r5 = const2 */
+    status  = vsi_nn_sp_move_constant(&sp_insts_param[0], const2, VSI_NN_SP_SR5);
     /* loop inst0: r1 = clamp(in * r3, r7, r6) || r2 = r1 + r2 */
-    status  = vsi_nn_sp_mul_clamp(&sp_insts_param[0], VSI_NN_SP_SRIN, VSI_NN_SP_SR3, VSI_NN_SP_SR1);
-    status |= vsi_nn_sp_add(&sp_insts_param[0], VSI_NN_SP_SR1, VSI_NN_SP_SR2, VSI_NN_SP_SR2);
+    status |= vsi_nn_sp_mul_clamp(&sp_insts_param[1], VSI_NN_SP_SRIN, VSI_NN_SP_SR3, VSI_NN_SP_SR1);
+    status |= vsi_nn_sp_add(&sp_insts_param[1], VSI_NN_SP_SR1, VSI_NN_SP_SR2, VSI_NN_SP_SR2);
     /* loop inst1: r2 = in * r4 || out = r2 + r5 */
-    status |= vsi_nn_sp_mul(&sp_insts_param[1], VSI_NN_SP_SRIN, VSI_NN_SP_SR4, VSI_NN_SP_SR2);
-    status |= vsi_nn_sp_add(&sp_insts_param[1], VSI_NN_SP_SR2, VSI_NN_SP_SR5, VSI_NN_SP_SROUT);
+    status |= vsi_nn_sp_mul(&sp_insts_param[2], VSI_NN_SP_SRIN, VSI_NN_SP_SR4, VSI_NN_SP_SR2);
+    status |= vsi_nn_sp_add(&sp_insts_param[2], VSI_NN_SP_SR2, VSI_NN_SP_SR5, VSI_NN_SP_SROUT);
     CHECK_STATUS_FAIL_GOTO(status, final );
 
     attr.ignored_leading_outputs = 3;
@@ -104,7 +110,6 @@ vsi_nn_kernel_node_t vsi_nn_sp_add_node
 
     VSI_NN_SP_ATTR_SET_CONST_TO_SR3(attr, scale0);
     VSI_NN_SP_ATTR_SET_CONST_TO_SR4(attr, scale1);
-    VSI_NN_SP_ATTR_SET_CONST_TO_SR5_LOW_PRECISION(attr, const2);
     VSI_NN_SP_ATTR_SET_CONST_TO_SR6(attr, clamp_max);
     VSI_NN_SP_ATTR_SET_CONST_TO_SR7(attr, clamp_min);
 
@@ -149,7 +154,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_sub_node
         vsi_nn_tensor_t             * output
     )
 {
-    const int32_t spInitInstsNum = 0;
+    const int32_t spInitInstsNum = 1;
     const int32_t spLoopInstsNum = 2;
     const int32_t spInstsNum = spInitInstsNum + spLoopInstsNum;
 
@@ -160,7 +165,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_sub_node
     vx_node node = NULL;
 
     vsi_nn_spinst_t *spinst = NULL;
-    vsi_nn_spinst_inst_param sp_insts_param[2];
+    vsi_nn_spinst_inst_param sp_insts_param[3];
     vsi_nn_spinst_attr_t attr;
 
     vsi_status status = VSI_FAILURE;
@@ -181,17 +186,18 @@ vsi_nn_kernel_node_t vsi_nn_sp_sub_node
     clamp_max = clamp_max * scale0;
 
     /* output = in * const0 - (in1 * const1 + const2) */
+    /* init inst0: r5 = const2 */
+    status  = vsi_nn_sp_move_constant(&sp_insts_param[0], const2, VSI_NN_SP_SR5);
     /* loop inst0: r1 = clamp(in * r3, r7, r6) || r2 = r1 - r2 */
-    status  = vsi_nn_sp_mul_clamp(&sp_insts_param[0], VSI_NN_SP_SRIN, VSI_NN_SP_SR3, VSI_NN_SP_SR1);
-    status |= vsi_nn_sp_sub(&sp_insts_param[0], VSI_NN_SP_SR1, VSI_NN_SP_SR2, VSI_NN_SP_SR2);
+    status |= vsi_nn_sp_mul_clamp(&sp_insts_param[1], VSI_NN_SP_SRIN, VSI_NN_SP_SR3, VSI_NN_SP_SR1);
+    status |= vsi_nn_sp_sub(&sp_insts_param[1], VSI_NN_SP_SR1, VSI_NN_SP_SR2, VSI_NN_SP_SR2);
     /* loop inst1: r2 = in * r4 || out = r2 - r5 */
-    status |= vsi_nn_sp_mul(&sp_insts_param[1], VSI_NN_SP_SRIN, VSI_NN_SP_SR4, VSI_NN_SP_SR2);
-    status |= vsi_nn_sp_sub(&sp_insts_param[1], VSI_NN_SP_SR2, VSI_NN_SP_SR5, VSI_NN_SP_SROUT);
+    status |= vsi_nn_sp_mul(&sp_insts_param[2], VSI_NN_SP_SRIN, VSI_NN_SP_SR4, VSI_NN_SP_SR2);
+    status |= vsi_nn_sp_sub(&sp_insts_param[2], VSI_NN_SP_SR2, VSI_NN_SP_SR5, VSI_NN_SP_SROUT);
     CHECK_STATUS_FAIL_GOTO(status, final );
 
     VSI_NN_SP_ATTR_SET_CONST_TO_SR3(attr, scale0);
     VSI_NN_SP_ATTR_SET_CONST_TO_SR4(attr, scale1);
-    VSI_NN_SP_ATTR_SET_CONST_TO_SR5_LOW_PRECISION(attr, const2);
     VSI_NN_SP_ATTR_SET_CONST_TO_SR6(attr, clamp_max);
     VSI_NN_SP_ATTR_SET_CONST_TO_SR7(attr, clamp_min);
 
@@ -681,10 +687,18 @@ vsi_bool vsi_nn_sp_nn_alu_support_types
 
 REGISTER_ELTWISE_STREAM_PROCESSOR_KERNEL( add )
 {
+#define SE4M9_MAX_VALUE     (511.5)
+#define SE4M9_MIN_VALUE     (-511.5)
+
+    float input1_scale = vsi_nn_get_tensor_scale(inputs[1]);
+    float output_scale = vsi_nn_get_tensor_scale(outputs[0]);
+    float scale1 = input1_scale / output_scale;
+    float const2 = -scale1 * (float)vsi_nn_get_tensor_zero_point(inputs[1]);
     vsi_nn_kernel_node_t node = NULL;
 
-    if (vsi_nn_is_broadcast_operaton(inputs, input_num, outputs[0]) ||
-        vsi_nn_sp_nn_alu_support_types(inputs[0], inputs[1], outputs[0]))
+    if ( vsi_nn_is_broadcast_operaton(inputs, input_num, outputs[0]) ||
+        ( vsi_nn_sp_nn_alu_support_types(inputs[0], inputs[1], outputs[0]) &&
+            const2 <= SE4M9_MAX_VALUE && const2 >= SE4M9_MIN_VALUE ) )
     {
         return NULL;
     }
@@ -699,10 +713,15 @@ final:
 
 REGISTER_ELTWISE_STREAM_PROCESSOR_KERNEL( sub )
 {
+    float input1_scale = vsi_nn_get_tensor_scale(inputs[1]);
+    float output_scale = vsi_nn_get_tensor_scale(outputs[0]);
+    float scale1 = input1_scale / output_scale;
+    float const2 = -scale1 * (float)vsi_nn_get_tensor_zero_point(inputs[1]);
     vsi_nn_kernel_node_t node = NULL;
 
-    if (vsi_nn_is_broadcast_operaton(inputs, input_num, outputs[0]) ||
-        vsi_nn_sp_nn_alu_support_types(inputs[0], inputs[1], outputs[0]))
+    if ( vsi_nn_is_broadcast_operaton(inputs, input_num, outputs[0]) ||
+        ( vsi_nn_sp_nn_alu_support_types(inputs[0], inputs[1], outputs[0]) &&
+            const2 <= SE4M9_MAX_VALUE && const2 >= SE4M9_MIN_VALUE ) )
     {
         return NULL;
     }
