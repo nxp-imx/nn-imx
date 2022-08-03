@@ -53442,7 +53442,7 @@ __kernel void maximum_I32I32toI32\n\
     float4 data0 = convert_float4(src0) * input0Scale - input0Tail;\n\
     float4 data1 = convert_float4(src1) * input1Scale - input1Tail;\n\
     float4 data = data0 > data1 ? data0 : data1;\n\
-    int4 dst = convert_int4(data * outputScale + outputZP);\n\
+    int4 dst = convert_int4_rte(data * outputScale + outputZP);\n\
 \n\
     write_imagei(output, coord, dst);\n\
 }\n\
@@ -53468,7 +53468,7 @@ __kernel void maximum_I32I32toI32_2D\n\
     float4 data0 = convert_float4(src0) * input0Scale - input0Tail;\n\
     float4 data1 = convert_float4(src1) * input1Scale - input1Tail;\n\
     float4 data = data0 > data1 ? data0 : data1;\n\
-    int4 dst = convert_int4(data * outputScale + outputZP);\n\
+    int4 dst = convert_int4_rte(data * outputScale + outputZP);\n\
 \n\
     write_imagei(output, coord, dst);\n\
 }\n\
@@ -53985,7 +53985,7 @@ __kernel void minimum_I32I32toI32\n\
     float4 data0 = convert_float4(src0) * input0Scale - input0Tail;\n\
     float4 data1 = convert_float4(src1) * input1Scale - input1Tail;\n\
     float4 data = data0 < data1 ? data0 : data1;\n\
-    int4 dst = convert_int4(data * outputScale + outputZP);\n\
+    int4 dst = convert_int4_rte(data * outputScale + outputZP);\n\
 \n\
     write_imagei(output, coord, dst);\n\
 }\n\
@@ -54011,7 +54011,7 @@ __kernel void minimum_I32I32toI32_2D\n\
     float4 data0 = convert_float4(src0) * input0Scale - input0Tail;\n\
     float4 data1 = convert_float4(src1) * input1Scale - input1Tail;\n\
     float4 data = data0 < data1 ? data0 : data1;\n\
-    int4 dst = convert_int4(data * outputScale + outputZP);\n\
+    int4 dst = convert_int4_rte(data * outputScale + outputZP);\n\
 \n\
     write_imagei(output, coord, dst);\n\
 }\n\
