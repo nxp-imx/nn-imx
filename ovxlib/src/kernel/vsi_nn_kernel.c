@@ -35,6 +35,7 @@
 #include "kernel/vsi_nn_kernel.h"
 #include "utils/vsi_nn_math.h"
 #include "vsi_nn_tensor_util.h"
+#include "utils/vsi_nn_dtype_util.h"
 
 #include "libnnext/vsi_nn_libnnext_resource.h"
 #if VSI_USE_VXC_BINARY
@@ -125,7 +126,7 @@ static vsi_bool _check_stream_process_support
     size_t input_num
     );
 
-static vsi_bool vsi_nn_kernel_is_asymmtric_int8
+static vsi_bool vsi_nn_kernel_is_supported_types
     (
     vsi_nn_tensor_t** inputs,
     size_t input_num,
@@ -1229,7 +1230,7 @@ vsi_nn_kernel_node_t vsi_nn_kernel_selector
             /* Skip evis and cl when disable shader */
             if ( (type == VSI_NN_KERNEL_TYPE_EVIS || type == VSI_NN_KERNEL_TYPE_CL)
                 && ( _check_shader_support(graph) == FALSE ||
-                vsi_nn_kernel_is_asymmtric_int8(inputs, input_num, outputs, output_num) ) )
+                vsi_nn_kernel_is_supported_types(inputs, input_num, outputs, output_num) ) )
             {
                 continue;
             }
@@ -1668,7 +1669,7 @@ static vsi_bool _check_shader_support(vsi_nn_graph_t* graph)
     return FALSE;
 }
 
-static vsi_bool vsi_nn_kernel_is_asymmtric_int8
+static vsi_bool vsi_nn_kernel_is_supported_types
     (
     vsi_nn_tensor_t** inputs,
     size_t input_num,
@@ -1681,8 +1682,9 @@ static vsi_bool vsi_nn_kernel_is_asymmtric_int8
     for (i = 0; i < input_num; i++)
     {
         if ( inputs[i] &&
-             inputs[i]->attr.dtype.vx_type == VSI_NN_TYPE_INT8 &&
-             inputs[i]->attr.dtype.qnt_type == VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC
+             ( ( inputs[i]->attr.dtype.vx_type == VSI_NN_TYPE_INT8 &&
+               inputs[i]->attr.dtype.qnt_type == VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC ) ||
+               vsi_nn_TypeGetBits(inputs[i]->attr.dtype.vx_type) == 4 )
            )
         {
             return TRUE;
@@ -1692,8 +1694,9 @@ static vsi_bool vsi_nn_kernel_is_asymmtric_int8
     for (i = 0; i < output_num; i++)
     {
         if ( outputs[i] &&
-             outputs[i]->attr.dtype.vx_type == VSI_NN_TYPE_INT8 &&
-             outputs[i]->attr.dtype.qnt_type == VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC
+             ( ( outputs[i]->attr.dtype.vx_type == VSI_NN_TYPE_INT8 &&
+               outputs[i]->attr.dtype.qnt_type == VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC ) ||
+              vsi_nn_TypeGetBits(outputs[i]->attr.dtype.vx_type) == 4 )
            )
         {
             return TRUE;
