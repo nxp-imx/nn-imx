@@ -120,6 +120,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_a_minus_v11_times_v12_node
     attr.v11_push_pop_config = VSI_NN_SP_PUSH_POP_EVERY_ROW;
     attr.v12_push_pop_config = VSI_NN_SP_PUSH_POP_EVERY_ROW;
 
+    attr.num_of_v12_rd_in_flush_cycle = 3;
+    attr.num_of_v12_wr_in_flush_cycle = 0;
+
     attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_Z;
     attr.split_max_vector_depth = max_vector_depth;
 

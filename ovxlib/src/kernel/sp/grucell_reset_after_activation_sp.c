@@ -80,7 +80,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_r_times_h1_plus_h0_act_node
     status |= vsi_nn_sp_move(&sp_insts_param[3], VSI_NN_SP_SR1, VSI_NN_SP_SR9);
     CHECK_STATUS_FAIL_GOTO(status, final );
 
-    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_YZMERGE;
+    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_XYMERGE;
 
     attr.input_setup = VSI_NN_SP_INPUT_SETUP_INTERLEAVE_TWO_INPUT;
     attr.prog_init_instr_num = spInitInstsNum;
@@ -89,6 +89,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_r_times_h1_plus_h0_act_node
     attr.ignored_leading_v11_rd = 0;
     attr.ignored_leading_v12_wr = 4;
     attr.v12_reset_at_start = VX_SP_ATTRIBUTE_V_RESET_AT_START_RESET;
+
+    attr.num_of_v12_rd_in_flush_cycle = 0;
+    attr.num_of_v12_wr_in_flush_cycle = 4;
 
     attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_XYZ;
     attr.split_max_vector_depth = max_vector_depth;

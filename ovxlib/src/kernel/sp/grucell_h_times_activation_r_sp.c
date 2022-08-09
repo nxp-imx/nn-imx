@@ -75,7 +75,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_grucell_r_times_h_node
     status |= vsi_nn_sp_move(&sp_insts_param[2], VSI_NN_SP_SR1, VSI_NN_SP_VR12);
     CHECK_STATUS_FAIL_GOTO(status, final );
 
-    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_YZMERGE;
+    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_XYMERGE;
 
     attr.input_setup = VSI_NN_SP_INPUT_SETUP_INTERLEAVE_TWO_INPUT;
     attr.prog_init_instr_num = spInitInstsNum;
@@ -88,6 +88,11 @@ vsi_nn_kernel_node_t vsi_nn_sp_grucell_r_times_h_node
     attr.ignored_leading_v12_rd = 3;
     attr.v11_reset_at_start = VX_SP_ATTRIBUTE_V_RESET_AT_START_RESET;
     attr.v12_reset_at_start = VX_SP_ATTRIBUTE_V_RESET_AT_START_RESET;
+
+    attr.num_of_v11_rd_in_flush_cycle = 5;
+    attr.num_of_v11_wr_in_flush_cycle = 0;
+    attr.num_of_v12_rd_in_flush_cycle = 3;
+    attr.num_of_v12_wr_in_flush_cycle = 2;
 
     spinst = vsi_nn_create_spinst(graph);
     CHECK_PTR_FAIL_GOTO( spinst, "Create spInst fail.", final );
@@ -159,7 +164,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_grucell_r_times_h_qnt_node
     status |= vsi_nn_sp_mul(&sp_insts_param[3], VSI_NN_SP_PWLMUL, VSI_NN_SP_PWLMUL, VSI_NN_SP_SR5);
     status |= vsi_nn_sp_sub(&sp_insts_param[3], VSI_NN_SP_PWLADD, VSI_NN_SP_PWLADD, VSI_NN_SP_SR2);
 
-    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_YZMERGE;
+    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_XYMERGE;
 
     attr.input_setup = VSI_NN_SP_INPUT_SETUP_INTERLEAVE_TWO_INPUT;
     attr.prog_init_instr_num = spInitInstsNum;
@@ -172,6 +177,11 @@ vsi_nn_kernel_node_t vsi_nn_sp_grucell_r_times_h_qnt_node
     attr.ignored_leading_v12_rd = 2;
     attr.v11_reset_at_start = VX_SP_ATTRIBUTE_V_RESET_AT_START_RESET;
     attr.v12_reset_at_start = VX_SP_ATTRIBUTE_V_RESET_AT_START_RESET;
+
+    attr.num_of_v11_rd_in_flush_cycle = 3;
+    attr.num_of_v11_wr_in_flush_cycle = 1;
+    attr.num_of_v12_rd_in_flush_cycle = 2;
+    attr.num_of_v12_wr_in_flush_cycle = 1;
 
     VSI_NN_SP_ATTR_SET_CONST_TO_SR4(attr, hstate_scale);
     VSI_NN_SP_ATTR_SET_CONST_TO_SR7(attr, const2);

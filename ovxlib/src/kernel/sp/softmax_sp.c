@@ -197,6 +197,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_softmax_rcp_node
     attr.flush_cycle_num = 10;
     attr.ch0_post_redistribute = VSI_NN_SP_CH_POST_REDISTRIBUTE_VECTOR_GATHER;
 
+    attr.num_of_v11_wr_in_flush_cycle = 5;
+
     attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_YZ;
     attr.split_max_vector_depth = max_vector_depth;
 

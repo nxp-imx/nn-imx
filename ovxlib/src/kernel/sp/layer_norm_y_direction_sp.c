@@ -114,6 +114,11 @@ vsi_nn_spinst_t * vsi_nn_sp_moments_axis1_inst
         attr.ignored_leading_v12_rd = fifo_depth;
         attr.ignored_leading_v11_wr = 1;
         attr.ignored_leading_v12_wr = 1;
+
+        attr.num_of_v11_rd_in_flush_cycle = 1;
+        attr.num_of_v12_rd_in_flush_cycle = 1;
+        attr.num_of_v11_wr_in_flush_cycle = 1;
+        attr.num_of_v12_wr_in_flush_cycle = 2;
     }
     else
     {
@@ -141,6 +146,11 @@ vsi_nn_spinst_t * vsi_nn_sp_moments_axis1_inst
         attr.ignored_leading_v12_rd = fifo_depth;
         attr.ignored_leading_v11_wr = 1;
         attr.ignored_leading_v12_wr = 1;
+
+        attr.num_of_v11_rd_in_flush_cycle = 1;
+        attr.num_of_v12_rd_in_flush_cycle = 1;
+        attr.num_of_v11_wr_in_flush_cycle = 2;
+        attr.num_of_v12_wr_in_flush_cycle = 2;
 
         attr.flush_cycle_num = 5;
     }
@@ -323,6 +333,11 @@ vsi_nn_kernel_node_t vsi_nn_sp_ln_means_axis1_node
     attr.ignored_leading_v11_rd = 0;
     attr.flush_cycle_num = 17;
 
+    attr.num_of_v11_rd_in_flush_cycle = 0;
+    attr.num_of_v12_rd_in_flush_cycle = 1;
+    attr.num_of_v11_wr_in_flush_cycle = 1;
+    attr.num_of_v12_wr_in_flush_cycle = 4;
+
     attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_X;
     attr.split_tilex_equal_imgx = TRUE;
     attr.split_max_vector_depth = max_vector_depth;
@@ -384,11 +399,11 @@ vsi_nn_spinst_t * vsi_nn_sp_layer_norm_axis1_inst
 {
     vsi_status status = VSI_FAILURE;
     const int32_t spInitInstsNum = 0;
-    const int32_t spLoopInstsNum = fifo_depth > 3 ? 2 : 5;
+    const int32_t spLoopInstsNum = fifo_depth > 3 ? 2 : 4;
     const int32_t spInstsNum = spInitInstsNum + spLoopInstsNum;
 
     vsi_nn_spinst_t *spinst = NULL;
-    vsi_nn_spinst_inst_param sp_insts_param[5];
+    vsi_nn_spinst_inst_param sp_insts_param[4];
     vsi_nn_spinst_attr_t attr;
 
     memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
@@ -407,6 +422,11 @@ vsi_nn_spinst_t * vsi_nn_sp_layer_norm_axis1_inst
         attr.flush_cycle_num = 3;
         attr.ignored_leading_v12_rd = 1;
         attr.ignored_leading_v12_wr = 1;
+
+        attr.num_of_v11_rd_in_flush_cycle = 0;
+        attr.num_of_v12_rd_in_flush_cycle = 2;
+        attr.num_of_v11_wr_in_flush_cycle = 0;
+        attr.num_of_v12_wr_in_flush_cycle = 2;
     }
     else
     {
@@ -422,13 +442,16 @@ vsi_nn_spinst_t * vsi_nn_sp_layer_norm_axis1_inst
         status |= vsi_nn_sp_move(&sp_insts_param[3], VSI_NN_SP_VR12, VSI_NN_SP_VR12);
         /* loop inst4: nop */
         status |= vsi_nn_sp_nop(&sp_insts_param[4]);
-        /* loop inst5: nop */
-        status |= vsi_nn_sp_nop(&sp_insts_param[5]);
         CHECK_STATUS_FAIL_GOTO(status, final );
 
         attr.flush_cycle_num = 4;
         attr.ignored_leading_v12_rd = 0;
         attr.ignored_leading_v12_wr = 0;
+
+        attr.num_of_v11_rd_in_flush_cycle = 0;
+        attr.num_of_v12_rd_in_flush_cycle = 1;
+        attr.num_of_v11_wr_in_flush_cycle = 0;
+        attr.num_of_v12_wr_in_flush_cycle = 1;
     }
 
     attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_YZMERGE;
@@ -661,6 +684,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_in_times_v11_plus_v12_node
     attr.flush_cycle_num = 3;
     attr.v11_push_pop_config = VSI_NN_SP_PUSH_POP_EVERY_ROW;
     attr.v12_push_pop_config = VSI_NN_SP_PUSH_POP_EVERY_ROW;
+
+    attr.num_of_v11_rd_in_flush_cycle = 0;
+    attr.num_of_v12_rd_in_flush_cycle = 3;
 
     attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_YZ;
     attr.split_max_vector_depth = max_vector_depth;

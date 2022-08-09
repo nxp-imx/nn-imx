@@ -217,6 +217,15 @@ vsi_status vsi_nn_set_spinst_attr
     status |= vxSetAttributeToSPINST(spinst->sp, VSI_NN_SP_ATTRIBUTE_TILEX_EQUAL_IMGX,
         attrs.split_tilex_equal_imgx);
 
+    status |= vxSetAttributeToSPINST(spinst->sp, VSI_NN_SP_ATTRIBUTE_NUM_OF_V11_RD_IN_FLUSH_CYCLE,
+        attrs.num_of_v11_rd_in_flush_cycle);
+    status |= vxSetAttributeToSPINST(spinst->sp, VSI_NN_SP_ATTRIBUTE_NUM_OF_V12_RD_IN_FLUSH_CYCLE,
+        attrs.num_of_v12_rd_in_flush_cycle);
+    status |= vxSetAttributeToSPINST(spinst->sp, VSI_NN_SP_ATTRIBUTE_NUM_OF_V11_WR_IN_FLUSH_CYCLE,
+        attrs.num_of_v11_wr_in_flush_cycle);
+    status |= vxSetAttributeToSPINST(spinst->sp, VSI_NN_SP_ATTRIBUTE_NUM_OF_V12_WR_IN_FLUSH_CYCLE,
+        attrs.num_of_v12_wr_in_flush_cycle);
+
     return status;
 } /* vsi_nn_set_spinst_attr() */
 

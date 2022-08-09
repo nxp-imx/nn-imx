@@ -96,7 +96,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_grucell_activation_z_h_node
     status |= vsi_nn_sp_mul(&sp_insts_param[2], VSI_NN_SP_SR7, VSI_NN_SP_SR4, VSI_NN_SP_SROUT);
     CHECK_STATUS_FAIL_GOTO(status, final );
 
-    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_YZMERGE;
+    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_XYMERGE;
 
     attr.input_setup = VSI_NN_SP_INPUT_SETUP_SINGLE_INPUT;
     attr.prog_init_instr_num = spInitInstsNum;
@@ -105,6 +105,11 @@ vsi_nn_kernel_node_t vsi_nn_sp_grucell_activation_z_h_node
     attr.ignored_leading_outputs = 4;
     attr.ignored_leading_v11_rd = 2;
     attr.ignored_leading_v12_rd = 1;
+
+    attr.num_of_v11_rd_in_flush_cycle = 3;
+    attr.num_of_v11_wr_in_flush_cycle = 0;
+    attr.num_of_v12_rd_in_flush_cycle = 1;
+    attr.num_of_v12_wr_in_flush_cycle = 0;
 
     attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_XYZ;
     attr.split_max_vector_depth = max_vector_depth;

@@ -1202,7 +1202,7 @@ DEF_KERNEL_INITIALIZER(_bilinear_align_corners_opt_initializer)
 
     if ((U8 == input_dtype) && (_is_same_quant(input_attr, output_attr)))
     {
-        is_8x_align_corners = (scale_factor[0] == scale_factor[1]) && (scale_factor[0] = 0.125f);
+        is_8x_align_corners = (scale_factor[0] == scale_factor[1]) && (scale_factor[0] == 0.125f);
     }
 
     if (is_8x_align_corners)

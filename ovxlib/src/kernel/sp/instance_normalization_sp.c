@@ -191,6 +191,11 @@ vsi_nn_kernel_node_t vsi_nn_sp_moments_means_node
     attr.ignored_leading_v11_rd = 0;
     attr.flush_cycle_num = 17;
 
+    attr.num_of_v11_rd_in_flush_cycle = 0;
+    attr.num_of_v12_rd_in_flush_cycle = 1;
+    attr.num_of_v11_wr_in_flush_cycle = 1;
+    attr.num_of_v12_wr_in_flush_cycle = 4;
+
     attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_Z;
     attr.split_max_vector_depth = max_vector_depth;
 
@@ -301,6 +306,11 @@ vsi_nn_kernel_node_t vsi_nn_sp_instance_norm_alpha_beta_node
     attr.ch0_post_redistribute = VSI_NN_SP_CH_POST_REDISTRIBUTE_VECTOR_GATHER;
     attr.ch1_post_redistribute = VSI_NN_SP_CH_POST_REDISTRIBUTE_VECTOR_GATHER;
 
+    attr.num_of_v11_rd_in_flush_cycle = 2;
+    attr.num_of_v12_rd_in_flush_cycle = 0;
+    attr.num_of_v11_wr_in_flush_cycle = 3;
+    attr.num_of_v12_wr_in_flush_cycle = 2;
+
     attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_Z;
     attr.split_max_vector_depth = max_vector_depth;
 
@@ -378,6 +388,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_instance_norm_node
     attr.flush_cycle_num = 3;
     attr.v11_push_pop_config = VSI_NN_SP_PUSH_POP_EVERY_ROW;
     attr.v12_push_pop_config = VSI_NN_SP_PUSH_POP_EVERY_ROW;
+
+    attr.num_of_v11_rd_in_flush_cycle = 3;
+    attr.num_of_v11_wr_in_flush_cycle = 0;
 
     attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_Z;
     attr.split_max_vector_depth = max_vector_depth;
