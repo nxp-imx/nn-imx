@@ -194,6 +194,11 @@ vsi_nn_kernel_node_t vsi_nn_sp_layer_norm_means_node
     attr.ignored_leading_v11_rd = 0;
     attr.flush_cycle_num = 17;
 
+    attr.num_of_v11_rd_in_flush_cycle = 0;
+    attr.num_of_v12_rd_in_flush_cycle = 1;
+    attr.num_of_v11_wr_in_flush_cycle = 1;
+    attr.num_of_v12_wr_in_flush_cycle = 4;
+
     attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_YZ;
     attr.split_max_vector_depth = max_vector_depth;
 
@@ -289,7 +294,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_layer_norm_scale_node
     attr.ignored_leading_outputs = 2;
     attr.ignored_leading_v11_rd = 0;
     attr.ignored_leading_v12_rd = 0;
-    attr.flush_cycle_num = 4;
+    attr.flush_cycle_num = 3;
     attr.v11_push_pop_config = VSI_NN_SP_PUSH_POP_EVERY_ROW;
     attr.v12_push_pop_config = VSI_NN_SP_PUSH_POP_EVERY_ROW;
 

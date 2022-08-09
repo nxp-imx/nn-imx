@@ -162,6 +162,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_hard_swish_node
     attr.ignored_leading_v11_rd = 5;
     attr.ignored_leading_v11_wr = 1;
 
+    attr.num_of_v11_rd_in_flush_cycle = 3;
+    attr.num_of_v11_wr_in_flush_cycle = 2;
+
     VSI_NN_SP_ATTR_SET_CONST_TO_SR3(attr, scale * input_scale / 6.0f);
     VSI_NN_SP_ATTR_SET_CONST_TO_SR6(attr, 0.5f * scale);
     VSI_NN_SP_ATTR_SET_CONST_TO_SR7(attr, -0.5f * scale);
@@ -233,7 +236,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_exp_node
     status |= vsi_nn_sp_move(&sp_insts_param[1], VSI_NN_SP_SR3, VSI_NN_SP_SR4);
     CHECK_STATUS_FAIL_GOTO(status, final );
 
-    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_YZMERGE;
+    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_XYMERGE;
     attr.input_setup = VSI_NN_SP_INPUT_SETUP_SINGLE_INPUT;
 
     attr.prog_loop_instr_num = spLoopInstsNum;

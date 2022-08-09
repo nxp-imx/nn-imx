@@ -293,6 +293,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_mul_node
     attr.ignored_leading_v11_rd = 2;
     attr.ignored_leading_v11_wr = 0;
 
+    attr.num_of_v11_rd_in_flush_cycle = 2;
+
     VSI_NN_SP_ATTR_SET_CONST_TO_SR3(attr, scale0);
     VSI_NN_SP_ATTR_SET_CONST_TO_SR4(attr, const1);
     VSI_NN_SP_ATTR_SET_CONST_TO_SR6(attr, clamp_max);
@@ -396,6 +398,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_div_node
     attr.v11_reset_at_start = VSI_NN_SP_V_RESET_AT_START_RESET;
     attr.ignored_leading_v11_rd = 4;
     attr.ignored_leading_v11_wr = 0;
+
+    attr.num_of_v11_rd_in_flush_cycle = 3;
 
     VSI_NN_SP_ATTR_SET_CONST_TO_SR3(attr, scale0);
     VSI_NN_SP_ATTR_SET_CONST_TO_SR4(attr, const1);
@@ -596,6 +600,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_mul_per_channel_node
     attr.ignored_leading_v12_rd = 2;
     attr.ignored_leading_v12_wr = 0;
 
+    attr.num_of_v11_rd_in_flush_cycle = 3;
+    attr.num_of_v12_rd_in_flush_cycle = 3;
+
     attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_Z;
     attr.split_max_vector_depth = max_vector_depth;
 
@@ -761,7 +768,7 @@ REGISTER_ELTWISE_STREAM_PROCESSOR_KERNEL( mul )
     rounding_policy = vsi_nn_kernel_param_get_int32(params, "rounding_policy");
 
     if ( ( is_broadcast || vsi_nn_sp_nn_alu_support_types(inputs[0], inputs[1], outputs[0]) )
-        && !is_per_channel )
+        /*&& !is_per_channel*/ )
     {
         return NULL;
     }

@@ -163,6 +163,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_l2_norm_rsqrt_node
     attr.flush_cycle_num = 10;
     attr.ch0_post_redistribute = VSI_NN_SP_CH_POST_REDISTRIBUTE_VECTOR_GATHER;
 
+    attr.num_of_v11_rd_in_flush_cycle = 0;
+    attr.num_of_v11_wr_in_flush_cycle = 5;
+
     attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_YZ;
     attr.split_max_vector_depth = max_vector_depth;
 
@@ -343,6 +346,11 @@ vsi_nn_kernel_node_t vsi_nn_sp_l2_norm_rsqrt_scale_node
     attr.flush_cycle_num = 15;
     attr.v12_reset_at_start = VSI_NN_SP_V_RESET_AT_START_RESET;
     attr.ch0_post_redistribute = VSI_NN_SP_CH_POST_REDISTRIBUTE_VECTOR_GATHER;
+
+    attr.num_of_v11_rd_in_flush_cycle = 0;
+    attr.num_of_v11_wr_in_flush_cycle = 5;
+    attr.num_of_v12_rd_in_flush_cycle = 5;
+    attr.num_of_v12_wr_in_flush_cycle = 0;
 
     attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_YZ;
     attr.split_max_vector_depth = max_vector_depth;

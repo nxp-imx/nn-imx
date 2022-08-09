@@ -112,6 +112,10 @@ typedef struct _vsi_nn_spinst_attr
     uint32_t split_axis;
     uint32_t split_max_vector_depth;
     vsi_bool split_tilex_equal_imgx;
+    uint32_t num_of_v11_rd_in_flush_cycle;
+    uint32_t num_of_v12_rd_in_flush_cycle;
+    uint32_t num_of_v11_wr_in_flush_cycle;
+    uint32_t num_of_v12_wr_in_flush_cycle;
 
     float init_r3;
     float init_r4;
@@ -185,6 +189,11 @@ typedef enum
     VSI_NN_SP_ATTRIBUTE_SPLIT_AXIS                  = VX_SP_ATTRIBUTE_SPLIT_AXIS,
     VSI_NN_SP_ATTRIBUTE_SPLIT_MAX_SIZE              = VX_SP_ATTRIBUTE_SPLIT_MAX_SIZE,
     VSI_NN_SP_ATTRIBUTE_TILEX_EQUAL_IMGX            = VX_SP_ATTRIBUTE_SPLIT_TILEX_EQUAL_INIMAGEX,
+
+    VSI_NN_SP_ATTRIBUTE_NUM_OF_V11_RD_IN_FLUSH_CYCLE = VX_SP_ATTRIBUTE_NUM_OF_V11_RD_IN_FLUSH_CYCLE,
+    VSI_NN_SP_ATTRIBUTE_NUM_OF_V12_RD_IN_FLUSH_CYCLE = VX_SP_ATTRIBUTE_NUM_OF_V12_RD_IN_FLUSH_CYCLE,
+    VSI_NN_SP_ATTRIBUTE_NUM_OF_V11_WR_IN_FLUSH_CYCLE = VX_SP_ATTRIBUTE_NUM_OF_V11_WR_IN_FLUSH_CYCLE,
+    VSI_NN_SP_ATTRIBUTE_NUM_OF_V12_WR_IN_FLUSH_CYCLE = VX_SP_ATTRIBUTE_NUM_OF_V12_WR_IN_FLUSH_CYCLE,
 
     VSI_NN_SP_ATTRIBUTE_COUNT                       = VX_SP_ATTRIBUTE_TOTAL_COUNT,
 } vsi_nn_sp_attribute_e;

@@ -93,6 +93,11 @@ vsi_nn_kernel_node_t vsi_nn_sp_maximum_node
     attr.ignored_leading_v12_rd = 3;
     attr.ignored_leading_v12_wr = 0;
 
+    attr.num_of_v11_rd_in_flush_cycle = 2;
+    attr.num_of_v11_wr_in_flush_cycle = 0;
+    attr.num_of_v12_rd_in_flush_cycle = 3;
+    attr.num_of_v12_wr_in_flush_cycle = 0;
+
     VSI_NN_SP_ATTR_SET_CONST_TO_SR3(attr, scale0);
     VSI_NN_SP_ATTR_SET_CONST_TO_SR4(attr, scale1);
     VSI_NN_SP_ATTR_SET_CONST_TO_SR5_LOW_PRECISION(attr, 0);

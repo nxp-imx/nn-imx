@@ -254,6 +254,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_bn_in_times_v11_plus_v12_node
     attr.v11_push_pop_config = VSI_NN_SP_PUSH_POP_EVERY_ROW;
     attr.v12_push_pop_config = VSI_NN_SP_PUSH_POP_EVERY_ROW;
 
+    attr.num_of_v11_rd_in_flush_cycle = 0;
+    attr.num_of_v12_rd_in_flush_cycle = 3;
+
     attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_Z;
     attr.split_max_vector_depth = max_vector_depth;
 
@@ -333,6 +336,11 @@ vsi_nn_kernel_node_t vsi_nn_sp_bn_a_times_b_to_v11_node
     attr.ignored_leading_v12_wr = 0;
     attr.v11_reset_at_start = VSI_NN_SP_V_RESET_AT_START_RESET;
     attr.v12_reset_at_start = VSI_NN_SP_V_RESET_AT_START_RESET;
+
+    attr.num_of_v11_rd_in_flush_cycle = 0;
+    attr.num_of_v12_rd_in_flush_cycle = 2;
+    attr.num_of_v11_wr_in_flush_cycle = 2;
+    attr.num_of_v12_wr_in_flush_cycle = 0;
 
     VSI_NN_SP_ATTR_SET_CONST_TO_SR3(attr, 1.0f);
     VSI_NN_SP_ATTR_SET_CONST_TO_SR6(attr, clamp_max);

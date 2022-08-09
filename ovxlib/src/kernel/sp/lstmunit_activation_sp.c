@@ -73,7 +73,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_sigmoid_node
     status |= vsi_nn_sp_move(&sp_insts_param[1], VSI_NN_SP_SR3, VSI_NN_SP_SR4);
     CHECK_STATUS_FAIL_GOTO(status, final );
 
-    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_YZMERGE;
+    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_XYMERGE;
 
     attr.input_setup = VSI_NN_SP_INPUT_SETUP_SINGLE_INPUT;
     attr.prog_loop_instr_num = spLoopInstsNum;
@@ -82,11 +82,15 @@ vsi_nn_kernel_node_t vsi_nn_sp_sigmoid_node
     {
         attr.ignored_leading_v11_wr = 5;
         attr.v11_reset_at_start = VX_SP_ATTRIBUTE_V_RESET_AT_START_RESET;
+
+        attr.num_of_v11_wr_in_flush_cycle = 5;
     }
     else
     {
         attr.ignored_leading_v12_wr = 5;
         attr.v12_reset_at_start = VX_SP_ATTRIBUTE_V_RESET_AT_START_RESET;
+
+        attr.num_of_v12_wr_in_flush_cycle = 5;
     }
 
     attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_XYZ;
@@ -161,7 +165,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_linear_sigmoid_node
     status |= vsi_nn_sp_move(&sp_insts_param[1], VSI_NN_SP_SR3, VSI_NN_SP_SR4);
     CHECK_STATUS_FAIL_GOTO(status, final );
 
-    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_YZMERGE;
+    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_XYMERGE;
 
     attr.input_setup = VSI_NN_SP_INPUT_SETUP_SINGLE_INPUT;
     attr.prog_loop_instr_num = spLoopInstsNum;
@@ -169,6 +173,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_linear_sigmoid_node
     attr.ignored_leading_v12_rd = 0;
     attr.flush_cycle_num = 10;
     attr.v12_reset_at_start = VX_SP_ATTRIBUTE_V_RESET_AT_START_RESET;
+
+    attr.num_of_v12_wr_in_flush_cycle = 5;
 
     attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_XYZ;
     attr.split_max_vector_depth = max_vector_depth;
@@ -264,7 +270,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_add_sigmoid_node
     status |= vsi_nn_sp_move(&sp_insts_param[2], VSI_NN_SP_SR4, VSI_NN_SP_SR7);
     CHECK_STATUS_FAIL_GOTO(status, final );
 
-    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_YZMERGE;
+    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_XYMERGE;
 
     attr.input_setup = VSI_NN_SP_INPUT_SETUP_INTERLEAVE_TWO_INPUT;
     attr.prog_init_instr_num = spInitInstsNum;
@@ -275,11 +281,15 @@ vsi_nn_kernel_node_t vsi_nn_sp_add_sigmoid_node
     {
         attr.ignored_leading_v11_wr = 7;
         attr.v11_reset_at_start = VX_SP_ATTRIBUTE_V_RESET_AT_START_RESET;
+
+        attr.num_of_v11_wr_in_flush_cycle = 7;
     }
     else
     {
         attr.ignored_leading_v12_wr = 7;
         attr.v12_reset_at_start = VX_SP_ATTRIBUTE_V_RESET_AT_START_RESET;
+
+        attr.num_of_v12_wr_in_flush_cycle = 7;
     }
 
     attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_XYZ;
@@ -357,7 +367,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_add_tanh_node
     status |= vsi_nn_sp_move(&sp_insts_param[2], VSI_NN_SP_SR4, VSI_NN_SP_SR7);
     CHECK_STATUS_FAIL_GOTO(status, final );
 
-    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_YZMERGE;
+    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_XYMERGE;
 
     attr.input_setup = VSI_NN_SP_INPUT_SETUP_INTERLEAVE_TWO_INPUT;
     attr.prog_init_instr_num = spInitInstsNum;
@@ -368,11 +378,15 @@ vsi_nn_kernel_node_t vsi_nn_sp_add_tanh_node
     {
         attr.ignored_leading_v11_wr = 7;
         attr.v11_reset_at_start = VX_SP_ATTRIBUTE_V_RESET_AT_START_RESET;
+
+        attr.num_of_v11_wr_in_flush_cycle = 7;
     }
     else
     {
         attr.ignored_leading_v12_wr = 7;
         attr.v12_reset_at_start = VX_SP_ATTRIBUTE_V_RESET_AT_START_RESET;
+
+        attr.num_of_v12_wr_in_flush_cycle = 7;
     }
 
     attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_XYZ;
@@ -450,7 +464,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_add_sigmoid_ext_node
     status |= vsi_nn_sp_sub(&sp_insts_param[3], VSI_NN_SP_PWLADD, VSI_NN_SP_PWLADD, VSI_NN_SP_SR2);
     CHECK_STATUS_FAIL_GOTO(status, final );
 
-    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_YZMERGE;
+    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_XYMERGE;
 
     attr.input_setup = VSI_NN_SP_INPUT_SETUP_INTERLEAVE_TWO_INPUT;
     attr.prog_init_instr_num = spInitInstsNum;
@@ -458,6 +472,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_add_sigmoid_ext_node
     attr.flush_cycle_num = 18;
     attr.ignored_leading_v12_wr = 5;
     attr.v12_reset_at_start = VX_SP_ATTRIBUTE_V_RESET_AT_START_RESET;
+
+    attr.num_of_v12_wr_in_flush_cycle = 5;
 
     attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_XYZ;
     attr.split_max_vector_depth = max_vector_depth;
@@ -538,13 +554,13 @@ vsi_nn_kernel_node_t vsi_nn_sp_get_cell_status_node
     status |= vsi_nn_sp_mul(&sp_insts_param[3], VSI_NN_SP_SR1, VSI_NN_SP_SR2, VSI_NN_SP_SR3);
     status |= vsi_nn_sp_add(&sp_insts_param[3], VSI_NN_SP_SR3, VSI_NN_SP_SR4, VSI_NN_SP_SR5);
     status |= vsi_nn_sp_move(&sp_insts_param[3], VSI_NN_SP_SRIN, VSI_NN_SP_SR6);
-    /* loop inst2: r8 = pwlMul * pwlMul || r2 = pwlAdd + pwlAdd || r8 = r7 */
+    /* loop inst3: r8 = pwlMul * pwlMul || r2 = pwlAdd + pwlAdd || r8 = r7 */
     status |= vsi_nn_sp_mul(&sp_insts_param[4], VSI_NN_SP_PWLMUL, VSI_NN_SP_PWLMUL, VSI_NN_SP_SR8);
     status |= vsi_nn_sp_sub(&sp_insts_param[4], VSI_NN_SP_PWLADD, VSI_NN_SP_PWLADD, VSI_NN_SP_SR2);
     status |= vsi_nn_sp_move(&sp_insts_param[4], VSI_NN_SP_SR7, VSI_NN_SP_SR8);
     CHECK_STATUS_FAIL_GOTO(status, final );
 
-    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_YZMERGE;
+    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_XYMERGE;
 
     attr.input_setup = VSI_NN_SP_INPUT_SETUP_INTERLEAVE_TWO_INPUT;
     attr.prog_init_instr_num = spInitInstsNum;
@@ -554,6 +570,11 @@ vsi_nn_kernel_node_t vsi_nn_sp_get_cell_status_node
     attr.ignored_leading_v12_rd = 2;
     attr.ignored_leading_v12_wr = 5;
     attr.flush_cycle_num = 19;
+
+    attr.num_of_v11_rd_in_flush_cycle = 3;
+    attr.num_of_v11_wr_in_flush_cycle = 0;
+    attr.num_of_v12_rd_in_flush_cycle = 2;
+    attr.num_of_v12_wr_in_flush_cycle = 5;
 
     attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_XYZ;
     attr.split_max_vector_depth = max_vector_depth;
@@ -629,7 +650,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_get_float_output_node
     status |= vsi_nn_sp_move(&sp_insts_param[2], VSI_NN_SP_SR1, VSI_NN_SP_SR4);
     CHECK_STATUS_FAIL_GOTO(status, final );
 
-    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_YZMERGE;
+    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_XYMERGE;
 
     attr.input_setup = VSI_NN_SP_INPUT_SETUP_V11;
     attr.prog_init_instr_num = spInitInstsNum;
@@ -714,7 +735,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_get_quantized_output_node
 
     CHECK_STATUS_FAIL_GOTO(status, final );
 
-    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_YZMERGE;
+    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_XYMERGE;
 
     attr.input_setup = VSI_NN_SP_INPUT_SETUP_V11;
     attr.prog_init_instr_num = spInitInstsNum;
@@ -829,7 +850,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_cifg_linear_sigmoid_node
     status |= vsi_nn_sp_move(&sp_insts_param[3], VSI_NN_SP_SR3, VSI_NN_SP_SR4);
     CHECK_STATUS_FAIL_GOTO(status, final );
 
-    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_YZMERGE;
+    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_XYMERGE;
 
     attr.input_setup = VSI_NN_SP_INPUT_SETUP_SINGLE_INPUT;
     attr.prog_loop_instr_num = spLoopInstsNum;
@@ -838,6 +859,11 @@ vsi_nn_kernel_node_t vsi_nn_sp_cifg_linear_sigmoid_node
     attr.flush_cycle_num = 16;
     attr.v11_reset_at_start = VX_SP_ATTRIBUTE_V_RESET_AT_START_RESET;
     attr.v12_reset_at_start = VX_SP_ATTRIBUTE_V_RESET_AT_START_RESET;
+
+    attr.num_of_v11_rd_in_flush_cycle = 0;
+    attr.num_of_v11_wr_in_flush_cycle = 6;
+    attr.num_of_v12_rd_in_flush_cycle = 0;
+    attr.num_of_v12_wr_in_flush_cycle = 5;
 
     attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_XYZ;
     attr.split_max_vector_depth = max_vector_depth;
@@ -947,7 +973,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_lstm_add_node
     VSI_NN_SP_ATTR_SET_CONST_TO_SR6(attr, clamp_max);
     VSI_NN_SP_ATTR_SET_CONST_TO_SR7(attr, clamp_min);
 
-    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_YZMERGE;
+    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_XYMERGE;
     attr.input_setup = VSI_NN_SP_INPUT_SETUP_INTERLEAVE_TWO_INPUT;
 
     attr.prog_init_instr_num = spInitInstsNum;
