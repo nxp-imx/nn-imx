@@ -1681,11 +1681,7 @@ static vsi_bool vsi_nn_kernel_is_supported_types
 
     for (i = 0; i < input_num; i++)
     {
-        if ( inputs[i] &&
-             ( ( inputs[i]->attr.dtype.vx_type == VSI_NN_TYPE_INT8 &&
-               inputs[i]->attr.dtype.qnt_type == VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC ) ||
-               vsi_nn_TypeGetBits(inputs[i]->attr.dtype.vx_type) == 4 )
-           )
+        if ( inputs[i] && vsi_nn_TypeGetBits(inputs[i]->attr.dtype.vx_type) == 4 )
         {
             return TRUE;
         }
@@ -1693,11 +1689,7 @@ static vsi_bool vsi_nn_kernel_is_supported_types
 
     for (i = 0; i < output_num; i++)
     {
-        if ( outputs[i] &&
-             ( ( outputs[i]->attr.dtype.vx_type == VSI_NN_TYPE_INT8 &&
-               outputs[i]->attr.dtype.qnt_type == VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC ) ||
-              vsi_nn_TypeGetBits(outputs[i]->attr.dtype.vx_type) == 4 )
-           )
+        if ( outputs[i] && vsi_nn_TypeGetBits(outputs[i]->attr.dtype.vx_type) == 4 )
         {
             return TRUE;
         }
