@@ -99,6 +99,11 @@ SRCS += ${notdir ${wildcard custom/ops/kernel/sp/*.c}}
 
 OBJECTS +=  ${patsubst %.c, $(OBJ_DIR)/%.o, $(SRCS)}
 
+ifeq ($(USE_VIP_DEVICE),1)
+vpath %.cpp vip
+OBJECTS += $(OBJ_DIR)/virtual_device.o
+endif
+
 ################################################################################
 ifeq ($(USE_IDE_LIB),1)
 # IDE.
@@ -165,6 +170,16 @@ install: $(TARGET_OUTPUT)
 ################################################################################
 
 LDFLAGS += -Wall -shared -Wl,-soname,$(TARGET_NAME) -Wl,-z,defs -fPIC
+
+ifeq ($(USE_VIP_DEVICE),1)
+LDFLAGS += -pthread
+LIBS += -lstdc++
+INCLUDE += -I../include/vip
+$(OBJ_DIR)/virtual_device.o: virtual_device.cpp
+	@echo "  COMPILE $(abspath $<)"
+	@mkdir -p $(OBJ_DIR)
+	@$(CXX) -c -std=c++14 -pthread $(CFLAGS) -o $@ $<
+endif
 
 $(TARGET_OUTPUT): $(OBJECTS)
 	@echo "  LINK    \033[1m$(notdir $@)\033[0m"
@@ -237,6 +252,16 @@ endif
 
 ################################################################################
 # Include the common makefile.
+
+ifeq ($(USE_VIP_DEVICE),1)
+LDFLAGS += -pthread
+LIBS += -lstdc++
+INCLUDE += -I../include/vip
+$(OBJ_DIR)/virtual_device.o: virtual_device.cpp
+	@echo "  COMPILE $(abspath $<)"
+	@mkdir -p $(OBJ_DIR)
+	@$(CXX) -c -std=c++14 -pthread $(CFLAGS) -o $@ $<
+endif
 
 include $(AQROOT)/common.target
 endif
