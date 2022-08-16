@@ -269,6 +269,9 @@ REGISTER_GRUCELL_ACTIVATION_STREAM_PROCESSOR_KERNEL( grucell_h_times_activation_
     gate_r = vsi_nn_CreateTensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( gate_r, "Create tensor fail.", final );
 
+    node = vsi_nn_sp_add_node(graph, inputs[1], inputs[2], gate_r);
+    CHECK_PTR_FAIL_GOTO( node, "Create grucell activation sp add node fail.", final );
+
     if (hstate_scale == 1 && const2 == 0)
     {
         node = vsi_nn_sp_grucell_r_times_h_node(graph, gate_r, inputs[0], outputs[0]);
@@ -277,7 +280,7 @@ REGISTER_GRUCELL_ACTIVATION_STREAM_PROCESSOR_KERNEL( grucell_h_times_activation_
     {
         node = vsi_nn_sp_grucell_r_times_h_qnt_node(graph, gate_r, inputs[0], outputs[0]);
     }
-    CHECK_PTR_FAIL_GOTO( node, "Create grucell activation sp add node fail.", final );
+    CHECK_PTR_FAIL_GOTO( node, "Create grucell activation sp r_times_h node fail.", final );
 
 final:
     vsi_safe_release_tensor(gate_r);

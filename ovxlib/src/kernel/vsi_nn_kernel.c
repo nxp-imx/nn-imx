@@ -126,7 +126,7 @@ static vsi_bool _check_stream_process_support
     size_t input_num
     );
 
-static vsi_bool vsi_nn_kernel_is_supported_types
+vsi_bool vsi_nn_kernel_is_supported_types
     (
     vsi_nn_tensor_t** inputs,
     size_t input_num,
@@ -1230,7 +1230,7 @@ vsi_nn_kernel_node_t vsi_nn_kernel_selector
             /* Skip evis and cl when disable shader */
             if ( (type == VSI_NN_KERNEL_TYPE_EVIS || type == VSI_NN_KERNEL_TYPE_CL)
                 && ( _check_shader_support(graph) == FALSE ||
-                vsi_nn_kernel_is_supported_types(inputs, input_num, outputs, output_num) ) )
+                vsi_nn_kernel_is_supported_types(inputs, input_num, outputs, output_num) == FALSE ) )
             {
                 continue;
             }
@@ -1669,7 +1669,7 @@ static vsi_bool _check_shader_support(vsi_nn_graph_t* graph)
     return FALSE;
 }
 
-static vsi_bool vsi_nn_kernel_is_supported_types
+vsi_bool vsi_nn_kernel_is_supported_types
     (
     vsi_nn_tensor_t** inputs,
     size_t input_num,
@@ -1683,7 +1683,7 @@ static vsi_bool vsi_nn_kernel_is_supported_types
     {
         if ( inputs[i] && vsi_nn_TypeGetBits(inputs[i]->attr.dtype.vx_type) == 4 )
         {
-            return TRUE;
+            return FALSE;
         }
     }
 
@@ -1691,11 +1691,11 @@ static vsi_bool vsi_nn_kernel_is_supported_types
     {
         if ( outputs[i] && vsi_nn_TypeGetBits(outputs[i]->attr.dtype.vx_type) == 4 )
         {
-            return TRUE;
+            return FALSE;
         }
     }
 
-    return FALSE;
+    return TRUE;
 }
 
 static vsi_bool _check_stream_process_support
