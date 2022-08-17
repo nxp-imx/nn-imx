@@ -45,6 +45,8 @@ static const char* _get_dtype_name(vsi_nn_type_e type)
     switch(type)
     {
         case D_NONE: return "Optional";
+        case D_I4: return "INT4";
+        case D_U4: return "UINT4";
         case D_I8: return "INT8";
         case D_I16: return "INT16";
         case D_I32: return "INT32";
@@ -73,6 +75,7 @@ static const char* _get_qtype_name(vsi_nn_qnt_type_e type)
         case VSI_NN_QNT_TYPE_NONE: return "";
         case VSI_NN_QNT_TYPE_DFP: return "DFP";
         case VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC: return "ASYM";
+        case VSI_NN_QNT_TYPE_AFFINE_SYMMETRIC: return "SYM";
         case VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC: return "SYMM PC";
         default:
             VSILOGE("Unknown quant type: %d\n", type);
