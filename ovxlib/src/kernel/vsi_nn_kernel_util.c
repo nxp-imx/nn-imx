@@ -841,3 +841,4 @@ vsi_status vsi_nn_set_sp_kernel_name
 
     return status;
 }
+

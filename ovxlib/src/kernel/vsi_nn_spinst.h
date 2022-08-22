@@ -74,6 +74,19 @@ typedef enum
 }vsi_sp_attr_split_axis_e;
 
 /**
+ * stream processor reshape attribute
+ */
+typedef enum
+{
+    VSI_SP_ATTR_SPLIT_CHW2CHW = VX_SP_ATTRIBUTE_RESHAPE_CHW2CHW,
+    VSI_SP_ATTR_SPLIT_CHW2WHC = VX_SP_ATTRIBUTE_RESHAPE_CHW2WHC,
+    VSI_SP_ATTR_SPLIT_CHW2WCH = VX_SP_ATTRIBUTE_RESHAPE_CHW2WCH,
+    VSI_SP_ATTR_SPLIT_CHW2HWC = VX_SP_ATTRIBUTE_RESHAPE_CHW2HWC,
+    VSI_SP_ATTR_SPLIT_CHW2HCW = VX_SP_ATTRIBUTE_RESHAPE_CHW2HCW,
+    VSI_SP_ATTR_SPLIT_CHW2CWH = VX_SP_ATTRIBUTE_RESHAPE_CHW2CWH,
+}vsi_sp_attr_reshape_e;
+
+/**
  * spinst attribute
  */
 typedef struct _vsi_nn_spinst_attr
@@ -117,6 +130,21 @@ typedef struct _vsi_nn_spinst_attr
     uint32_t num_of_v12_rd_in_flush_cycle;
     uint32_t num_of_v11_wr_in_flush_cycle;
     uint32_t num_of_v12_wr_in_flush_cycle;
+    vsi_bool support_merge_with_pcq_conv2d;
+    vsi_bool update_const0_to_pcq_coef_tensor;
+    union
+    {
+        uint32_t reshape_array;
+        struct
+        {
+            uint32_t input0_reshape : 6;
+            uint32_t input1_reshape : 6;
+            uint32_t input2_reshape : 6;
+            uint32_t input3_reshape : 6;
+            uint32_t output_reshape : 6;
+            uint32_t reserved : 2;
+        };
+    };
 
     float init_r3;
     float init_r4;
@@ -191,6 +219,9 @@ typedef enum
     VSI_NN_SP_ATTRIBUTE_SPLIT_AXIS                  = VX_SP_ATTRIBUTE_SPLIT_AXIS,
     VSI_NN_SP_ATTRIBUTE_SPLIT_MAX_SIZE              = VX_SP_ATTRIBUTE_SPLIT_MAX_SIZE,
     VSI_NN_SP_ATTRIBUTE_TILEX_EQUAL_IMGX            = VX_SP_ATTRIBUTE_SPLIT_TILEX_EQUAL_INIMAGEX,
+    VSI_NN_SP_ATTRIBUTE_MERGE_PCQ_CONVSP            = VX_SP_ATTRIBUTE_MERGE_PCQ_CONVSP,
+    VSI_NN_SP_ATTRIBUTE_UPDATE_CONST0_TO_PCQ_COEF_TENSOR            = VX_SP_ATTRIBUTE_UPDATE_CONST0_TO_PCQ_COEF_TENSOR,
+    VSI_NN_SP_ATTRIBUTE_RESHAPE_ARRAY               = VX_SP_ATTRIBUTE_RESHAPE_ARRAY,
 
     VSI_NN_SP_ATTRIBUTE_NUM_OF_V11_RD_IN_FLUSH_CYCLE = VX_SP_ATTRIBUTE_NUM_OF_V11_RD_IN_FLUSH_CYCLE,
     VSI_NN_SP_ATTRIBUTE_NUM_OF_V12_RD_IN_FLUSH_CYCLE = VX_SP_ATTRIBUTE_NUM_OF_V12_RD_IN_FLUSH_CYCLE,

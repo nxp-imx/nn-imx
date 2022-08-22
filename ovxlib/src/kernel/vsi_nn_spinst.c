@@ -221,6 +221,13 @@ vsi_status vsi_nn_set_spinst_attr
     status |= vxSetAttributeToSPINST(spinst->sp, VSI_NN_SP_ATTRIBUTE_TILEX_EQUAL_IMGX,
         attrs.split_tilex_equal_imgx);
 
+    status |= vxSetAttributeToSPINST(spinst->sp, VSI_NN_SP_ATTRIBUTE_MERGE_PCQ_CONVSP,
+        attrs.support_merge_with_pcq_conv2d);
+    status |= vxSetAttributeToSPINST(spinst->sp, VSI_NN_SP_ATTRIBUTE_UPDATE_CONST0_TO_PCQ_COEF_TENSOR,
+        attrs.update_const0_to_pcq_coef_tensor);
+    status |= vxSetAttributeToSPINST(spinst->sp, VSI_NN_SP_ATTRIBUTE_RESHAPE_ARRAY,
+        attrs.reshape_array);
+
     status |= vxSetAttributeToSPINST(spinst->sp, VSI_NN_SP_ATTRIBUTE_NUM_OF_V11_RD_IN_FLUSH_CYCLE,
         attrs.num_of_v11_rd_in_flush_cycle);
     status |= vxSetAttributeToSPINST(spinst->sp, VSI_NN_SP_ATTRIBUTE_NUM_OF_V12_RD_IN_FLUSH_CYCLE,
