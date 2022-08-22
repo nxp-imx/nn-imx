@@ -186,6 +186,10 @@ vsi_nn_kernel_node_t vsi_nn_sp_bn_mov_weight_bias_node
     attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_Z;
     attr.split_max_vector_depth = max_vector_depth;
 
+    attr.input0_reshape = VX_SP_ATTRIBUTE_RESHAPE_CHW2HWC;
+    attr.input1_reshape = VX_SP_ATTRIBUTE_RESHAPE_CHW2HWC;
+    attr.output_reshape = VX_SP_ATTRIBUTE_RESHAPE_CHW2HWC;
+
     spinst = vsi_nn_create_spinst(graph);
     CHECK_PTR_FAIL_GOTO( spinst, "Create spInst fail.", final );
     status  = vsi_nn_add_spinst_insts(spinst, sp_insts_param, spInstsNum);

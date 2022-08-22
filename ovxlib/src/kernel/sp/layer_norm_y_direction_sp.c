@@ -178,7 +178,7 @@ final:
     return spinst;
 }
 
-DEF_SP_KERNEL_QUERY(moements_axis1_query)
+DEF_SP_KERNEL_QUERY(moments_axis1_query)
     (
     vsi_nn_kernel_node_t        node
     )
@@ -322,7 +322,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_moments_axis1_node
 
     if (node)
     {
-        vxAssignNodeQueryCallback(node, moements_axis1_query);
+        vxAssignNodeQueryCallback(node, moments_axis1_query);
     }
 
     status = vsi_nn_set_sp_kernel_name(node, kernel_name);
@@ -692,6 +692,10 @@ vsi_nn_kernel_node_t vsi_nn_sp_load_weight_bias_node
 
     attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_YZ;
     attr.split_max_vector_depth = max_vector_depth;
+
+    attr.input0_reshape = VX_SP_ATTRIBUTE_RESHAPE_CHW2HWC;
+    attr.input1_reshape = VX_SP_ATTRIBUTE_RESHAPE_CHW2HWC;
+    attr.output_reshape = VX_SP_ATTRIBUTE_RESHAPE_CHW2HWC;
 
     spinst = vsi_nn_create_spinst(graph);
     CHECK_PTR_FAIL_GOTO( spinst, "Create spInst fail.", final );

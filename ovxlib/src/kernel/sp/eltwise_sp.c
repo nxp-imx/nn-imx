@@ -573,6 +573,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_preload_node
     attr.prog_init_instr_num = spInitInstsNum;
     attr.prog_loop_instr_num = spLoopInstsNum;
 
+    attr.input0_reshape = VX_SP_ATTRIBUTE_RESHAPE_CHW2HWC;
+    attr.output_reshape = VX_SP_ATTRIBUTE_RESHAPE_CHW2HWC;
+
     spinst = vsi_nn_create_spinst(graph);
     CHECK_PTR_FAIL_GOTO( spinst, "Create spInst fail.", final );
     status  = vsi_nn_add_spinst_insts(spinst, sp_insts_param, spInstsNum);
