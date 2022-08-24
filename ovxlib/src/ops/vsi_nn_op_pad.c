@@ -138,6 +138,7 @@ static vsi_status op_compute
     vsi_status status;
     vx_nn_pad_params_t p;
     vsi_nn_tensor_t *convert_tensor = NULL;
+    vsi_bool release_intermediate_tensor = TRUE;
 
     status = VSI_FAILURE;
     if (VSI_SUCCESS != vsi_nn_InitPadParameter(self, &p))
@@ -164,8 +165,8 @@ static vsi_status op_compute
     }
     else
     {
-        convert_tensor = vsi_nn_reshape_tensor( self->graph,
-            inputs[0], inputs[0]->attr.size, inputs[0]->attr.dim_num );
+        convert_tensor = inputs[0];
+        release_intermediate_tensor = FALSE;
     }
     self->n = vxTensorPadNode(
         self->graph->g,
@@ -182,7 +183,10 @@ static vsi_status op_compute
 
 final:
     vsi_nn_DeinitPadParameter(&p);
-    vsi_safe_release_tensor(convert_tensor);
+    if (release_intermediate_tensor)
+    {
+        vsi_safe_release_tensor(convert_tensor);
+    }
 
     return status;
 } /* op_compute() */
