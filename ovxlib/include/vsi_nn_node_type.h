@@ -196,6 +196,7 @@
 #include "ops/vsi_nn_op_softsign.h"
 #include "ops/vsi_nn_op_cumsum.h"
 #include "ops/vsi_nn_op_mod.h"
+#include "ops/vsi_nn_op_lppool.h"
 /* custom node head define define */
 #include "custom/vsi_nn_custom_node_type.h"
 
@@ -378,6 +379,7 @@ typedef union _vsi_nn_nn_param
     vsi_nn_softsign_param           softsign;
     vsi_nn_cumsum_param             cumsum;
     vsi_nn_mod_param                mod;
+    vsi_nn_lppool_param             lppool;
     void*                         client_param;
 
     /* custom node data struct define */
