@@ -134,6 +134,13 @@ static vsi_status vsi_nn_initOptions
         options->enable_asymi8_to_u8 = atoi(env_s);
     }
 
+    env_s = NULL;
+    options->enable_dataconvert_optimize = 1;
+    if (vsi_nn_getEnv("VSI_NN_ENABLE_DATACONVERT_OPTIMIZE", &env_s) && env_s)
+    {
+        options->enable_dataconvert_optimize = atoi(env_s);
+    }
+
     return VSI_SUCCESS;
 }
 
