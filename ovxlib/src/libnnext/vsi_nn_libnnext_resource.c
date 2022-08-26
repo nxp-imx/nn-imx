@@ -39241,15 +39241,15 @@ _viv_uniform int2 multAndoutZP1;//[0:15] multiplier, [31:63] output zp\n\
     vxc_ushort8 mp0, mp1; \\\n\
     _viv_asm(COPY, mp0, multAndoutZP0, 16); \\\n\
     _viv_asm(COPY, mp1, multAndoutZP1, 16); \\\n\
-    read_fun(src0, input0, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
+    read_fun(src0, input0, coord, 0, \\\n\
                 VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
-    read_fun(src1, input1, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
+    read_fun(src1, input1, coord, 0, \\\n\
                 VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
     VXC_DP2x8(src0, src0, mp0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),\\\n\
              uniU8MulAndPostShift0_Lo_2x8); \\\n\
     VXC_DP2x8(src1, src1, mp1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),\\\n\
              uniU8MulAndPostShift1_Lo_2x8); \\\n\
-    read_fun(value_tmp, condition, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
+    read_fun(value_tmp, condition, coord, 0, \\\n\
                 VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
     VXC_DP2x8(value, value_tmp, value_tmp,\\\n\
              VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvConditiontoDst_2x8); \\\n\
@@ -39289,11 +39289,11 @@ SELECT_INT_FUN_2D(I8, I16, I16, vxc_short8)\n\
 #define SELECT_HALF(read_fun, write_fun) \\\n\
     vxc_short8 src0, src1, dst, value; \\\n\
     vxc_char8 value_tmp; \\\n\
-    read_fun(src0, input0, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
+    read_fun(src0, input0, coord, 0, \\\n\
                 VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
-    read_fun(src1, input1, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
+    read_fun(src1, input1, coord, 0, \\\n\
                 VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
-    read_fun(value_tmp, condition, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
+    read_fun(value_tmp, condition, coord, 0, \\\n\
                 VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
     VXC_DP2x8(value, value_tmp, value_tmp,\\\n\
              VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvConditiontoDst_2x8); \\\n\
@@ -39320,37 +39320,36 @@ __kernel void select_I8_F16_F16toF16_2D(\n\
     SELECT_HALF(VXC_ReadImage, VXC_WriteImage)\n\
 }\n\
 \n\
-#define SELECT_HYBRIDTOF16(src0_type, copy0_type, src1_type, copy1_type, read_fun, write_fun) \\\n\
-    vxc_short8 src0, src1, dst, value; \\\n\
-    vxc_half8 value0, value1; \\\n\
-    src0_type r0; \\\n\
-    src1_type r1; \\\n\
+#define SELECT_HYBRID(src0_type, copy0_type, src1_type, copy1_type, dst_type, save_type, read_fun, write_fun) \\\n\
+    save_type dst, value; \\\n\
+    save_type dst0, dst1; \\\n\
+    dst_type value0, value1; \\\n\
+    src0_type src0; \\\n\
+    src1_type src1; \\\n\
     copy0_type v0; \\\n\
     copy1_type v1; \\\n\
     vxc_char8 value_tmp; \\\n\
     vxc_ushort8 mp0, mp1; \\\n\
     _viv_asm(COPY, mp0, multAndoutZP0, 16); \\\n\
     _viv_asm(COPY, mp1, multAndoutZP1, 16); \\\n\
-    read_fun(src0, input0, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
-                VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    read_fun(src0, input0, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
     _viv_asm(COPY, v0, src0, 16); \\\n\
-    read_fun(src1, input1, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
-                VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    read_fun(src1, input1, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
     _viv_asm(COPY, v1, src1, 16); \\\n\
     VXC_DP2x8(value0, v0, mp0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),\\\n\
              uniU8MulAndPostShift0_Lo_2x8); \\\n\
-    _viv_asm(COPY, src0, value0, 16); \\\n\
+    _viv_asm(COPY, dst0, value0, 16); \\\n\
     VXC_DP2x8(value1, v1, mp1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0),\\\n\
              uniU8MulAndPostShift1_Lo_2x8); \\\n\
-    _viv_asm(COPY, src1, value1, 16); \\\n\
-    read_fun(value_tmp, condition, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
+    _viv_asm(COPY, dst1, value1, 16); \\\n\
+    read_fun(value_tmp, condition, coord, 0, \\\n\
                 VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
     VXC_DP2x8(value, value_tmp, value_tmp,\\\n\
              VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvConditiontoDst_2x8); \\\n\
-    dst = (value != 0 ? src0 : src1); \\\n\
+    dst = (value != 0 ? dst0 : dst1); \\\n\
     write_fun(output, coord, dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
 \n\
-#define SELECT_HYBRID_TOF16_FUN(name, src0_type, copy0_type, src1_type, copy1_type) \\\n\
+#define SELECT_HYBRID_FUN(name, src0_type, copy0_type, src1_type, copy1_type, dst_type, save_type) \\\n\
 __kernel void select_##name( \\\n\
     __read_only  image2d_array_t   condition, \\\n\
     __read_only  image2d_array_t   input0, \\\n\
@@ -39358,44 +39357,62 @@ __kernel void select_##name( \\\n\
     __write_only image2d_array_t   output) \\\n\
 { \\\n\
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
-    SELECT_HYBRIDTOF16(src0_type, copy0_type, src1_type, copy1_type, \\\n\
+    SELECT_HYBRID(src0_type, copy0_type, src1_type, copy1_type, dst_type, save_type,\\\n\
             VXC_ReadImage2DArray, VXC_WriteImage2DArray) \\\n\
 }\n\
-SELECT_HYBRID_TOF16_FUN(I8_F16_U8toF16,  vxc_short8,  vxc_half8,   vxc_uchar16, vxc_uchar16)\n\
-SELECT_HYBRID_TOF16_FUN(I8_U8_F16toF16,  vxc_uchar16, vxc_uchar16, vxc_short8,  vxc_half8)\n\
-SELECT_HYBRID_TOF16_FUN(I8_F16_I8toF16,  vxc_short8,  vxc_half8,   vxc_char16,  vxc_char16)\n\
-SELECT_HYBRID_TOF16_FUN(I8_I8_F16toF16,  vxc_char16,  vxc_char16,  vxc_short8,  vxc_half8)\n\
-SELECT_HYBRID_TOF16_FUN(I8_F16_I16toF16, vxc_short8,  vxc_half8,   vxc_short8,  vxc_short8)\n\
-SELECT_HYBRID_TOF16_FUN(I8_I16_F16toF16, vxc_short8,  vxc_short8,  vxc_short8,  vxc_half8)\n\
+SELECT_HYBRID_FUN(I8_F16_U8toF16,  vxc_short8,  vxc_half8,   vxc_uchar16, vxc_uchar16, vxc_half8,  vxc_short8)\n\
+SELECT_HYBRID_FUN(I8_U8_F16toF16,  vxc_uchar16, vxc_uchar16, vxc_short8,  vxc_half8,   vxc_half8,  vxc_short8)\n\
+SELECT_HYBRID_FUN(I8_F16_I8toF16,  vxc_short8,  vxc_half8,   vxc_char16,  vxc_char16,  vxc_half8,  vxc_short8)\n\
+SELECT_HYBRID_FUN(I8_I8_F16toF16,  vxc_char16,  vxc_char16,  vxc_short8,  vxc_half8,   vxc_half8,  vxc_short8)\n\
+SELECT_HYBRID_FUN(I8_F16_I16toF16, vxc_short8,  vxc_half8,   vxc_short8,  vxc_short8,  vxc_half8,  vxc_short8)\n\
+SELECT_HYBRID_FUN(I8_I16_F16toF16, vxc_short8,  vxc_short8,  vxc_short8,  vxc_half8,   vxc_half8,  vxc_short8)\n\
+SELECT_HYBRID_FUN(I8_F16_U8toU8,   vxc_short8,  vxc_half8,   vxc_uchar16, vxc_uchar16, vxc_uchar8, vxc_uchar8)\n\
+SELECT_HYBRID_FUN(I8_U8_F16toU8,   vxc_uchar16, vxc_uchar16, vxc_short8,  vxc_half8,   vxc_uchar8, vxc_uchar8)\n\
+SELECT_HYBRID_FUN(I8_F16_I8toI8,   vxc_short8,  vxc_half8,   vxc_char16,  vxc_char16,  vxc_char8,  vxc_char8)\n\
+SELECT_HYBRID_FUN(I8_I8_F16toI8,   vxc_char16,  vxc_char16,  vxc_short8,  vxc_half8,   vxc_char8,  vxc_char8)\n\
+SELECT_HYBRID_FUN(I8_F16_I16toI16, vxc_short8,  vxc_half8,   vxc_short8,  vxc_short8,  vxc_short8, vxc_short8)\n\
+SELECT_HYBRID_FUN(I8_I16_F16toI16, vxc_short8,  vxc_short8,  vxc_short8,  vxc_half8,   vxc_short8, vxc_short8)\n\
+SELECT_HYBRID_FUN(I8_U8_U8toF16,   vxc_uchar8,  vxc_uchar8,  vxc_uchar8,  vxc_uchar8,  vxc_half8,  vxc_short8)\n\
+SELECT_HYBRID_FUN(I8_I8_I8toF16,   vxc_char8,   vxc_char8,   vxc_char8,   vxc_char8,   vxc_half8,  vxc_short8)\n\
+SELECT_HYBRID_FUN(I8_I16_I16toF16, vxc_short8,  vxc_short8,  vxc_short8,  vxc_short8,  vxc_half8,  vxc_short8)\n\
 \n\
-#define SELECT_HYBRID_TOF16_FUN_2D(name, src0_type, copy0_type, src1_type, copy1_type) \\\n\
-__kernel void select_##name( \\\n\
+#define SELECT_HYBRID_FUN_2D(name, src0_type, copy0_type, src1_type, copy1_type, dst_type, save_type) \\\n\
+__kernel void select_##name##_2D( \\\n\
     __read_only  image2d_array_t   condition, \\\n\
     __read_only  image2d_array_t   input0, \\\n\
     __read_only  image2d_array_t   input1, \\\n\
     __write_only image2d_array_t   output) \\\n\
 { \\\n\
     int2 coord = (int2)(get_global_id(0), get_global_id(1)); \\\n\
-    SELECT_HYBRIDTOF16(src0_type, copy0_type, src1_type, copy1_type, \\\n\
+    SELECT_HYBRID(src0_type, copy0_type, src1_type, copy1_type, dst_type, save_type, \\\n\
             VXC_ReadImage, VXC_WriteImage) \\\n\
 }\n\
-SELECT_HYBRID_TOF16_FUN_2D(I8_F16_U8toF16_2D,  vxc_short8,  vxc_half8,   vxc_uchar16, vxc_uchar16)\n\
-SELECT_HYBRID_TOF16_FUN_2D(I8_U8_F16toF16_2D,  vxc_uchar16, vxc_uchar16, vxc_short8,  vxc_half8)\n\
-SELECT_HYBRID_TOF16_FUN_2D(I8_F16_I8toF16_2D,  vxc_short8,  vxc_half8,   vxc_char16,  vxc_char16)\n\
-SELECT_HYBRID_TOF16_FUN_2D(I8_I8_F16toF16_2D,  vxc_char16,  vxc_char16,  vxc_short8,  vxc_half8)\n\
-SELECT_HYBRID_TOF16_FUN_2D(I8_F16_I16toF16_2D, vxc_short8,  vxc_half8,   vxc_short8,  vxc_short8)\n\
-SELECT_HYBRID_TOF16_FUN_2D(I8_I16_F16toF16_2D, vxc_short8,  vxc_short8,  vxc_short8,  vxc_half8)\n\
+SELECT_HYBRID_FUN_2D(I8_F16_U8toF16,  vxc_short8,  vxc_half8,   vxc_uchar16, vxc_uchar16, vxc_half8, vxc_short8)\n\
+SELECT_HYBRID_FUN_2D(I8_U8_F16toF16,  vxc_uchar16, vxc_uchar16, vxc_short8,  vxc_half8,   vxc_half8, vxc_short8)\n\
+SELECT_HYBRID_FUN_2D(I8_F16_I8toF16,  vxc_short8,  vxc_half8,   vxc_char16,  vxc_char16,  vxc_half8, vxc_short8)\n\
+SELECT_HYBRID_FUN_2D(I8_I8_F16toF16,  vxc_char16,  vxc_char16,  vxc_short8,  vxc_half8,   vxc_half8, vxc_short8)\n\
+SELECT_HYBRID_FUN_2D(I8_F16_I16toF16, vxc_short8,  vxc_half8,   vxc_short8,  vxc_short8,  vxc_half8, vxc_short8)\n\
+SELECT_HYBRID_FUN_2D(I8_I16_F16toF16, vxc_short8,  vxc_short8,  vxc_short8,  vxc_half8,   vxc_half8, vxc_short8)\n\
+SELECT_HYBRID_FUN_2D(I8_F16_U8toU8,   vxc_short8,  vxc_half8,   vxc_uchar16, vxc_uchar16, vxc_uchar8, vxc_uchar8)\n\
+SELECT_HYBRID_FUN_2D(I8_U8_F16toU8,   vxc_uchar16, vxc_uchar16, vxc_short8,  vxc_half8,   vxc_uchar8, vxc_uchar8)\n\
+SELECT_HYBRID_FUN_2D(I8_F16_I8toI8,   vxc_short8,  vxc_half8,   vxc_char16,  vxc_char16,  vxc_char8,  vxc_char8)\n\
+SELECT_HYBRID_FUN_2D(I8_I8_F16toI8,   vxc_char16,  vxc_char16,  vxc_short8,  vxc_half8,   vxc_char8,  vxc_char8)\n\
+SELECT_HYBRID_FUN_2D(I8_F16_I16toI16, vxc_short8,  vxc_half8,   vxc_short8,  vxc_short8,  vxc_short8, vxc_short8)\n\
+SELECT_HYBRID_FUN_2D(I8_I16_F16toI16, vxc_short8,  vxc_short8,  vxc_short8,  vxc_half8,   vxc_short8, vxc_short8)\n\
+SELECT_HYBRID_FUN_2D(I8_U8_U8toF16,   vxc_uchar8,  vxc_uchar8,  vxc_uchar8,  vxc_uchar8,  vxc_half8,  vxc_short8)\n\
+SELECT_HYBRID_FUN_2D(I8_I8_I8toF16,   vxc_char8,   vxc_char8,   vxc_char8,   vxc_char8,   vxc_half8,  vxc_short8)\n\
+SELECT_HYBRID_FUN_2D(I8_I16_I16toF16, vxc_short8,  vxc_short8,  vxc_short8,  vxc_short8,  vxc_half8,  vxc_short8)\n\
 \n\
 #define SELECT_HALF_TO_QINT(read_fun, write_fun, dst_type) \\\n\
     vxc_short8 src0, src1, tmp_dst, value; \\\n\
     vxc_half8 data; \\\n\
     dst_type dst; \\\n\
     vxc_char8 value_tmp; \\\n\
-    read_fun(src0, input0, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
+    read_fun(src0, input0, coord, 0, \\\n\
                 VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
-    read_fun(src1, input1, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
+    read_fun(src1, input1, coord, 0, \\\n\
                 VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
-    read_fun(value_tmp, condition, coord, VXC_5BITOFFSET_XY(0, 0), \\\n\
+    read_fun(value_tmp, condition, coord, 0, \\\n\
                 VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
     VXC_DP2x8(value, value_tmp, value_tmp,\\\n\
              VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvConditiontoDst_2x8); \\\n\
@@ -57830,8 +57847,13 @@ static const char scatter_nd_cl[] = "__kernel void scatter_nd_U32toU32_1D(\n\
     int gidy = get_global_id(1);  // indices_num\n\
 \n\
     uint4 sum = (uint4)(0, 0, 0, 0);\n\
+\n\
+    int stride_x = 4;\n\
+    Image indice_img = create_image_from_image2d(input0, stride_x);\n\
+\n\
     for(int i = 0; i < index_num; i++)\n\
     {\n\
+        int indice_ = get_image_ptr_from_coord(indice_img, (int2)(0, i));\n\
         int4 indice = read_imagei(input0, (int2)(0, i));\n\
         if(gidy == indice.x)\n\
         {\n\
