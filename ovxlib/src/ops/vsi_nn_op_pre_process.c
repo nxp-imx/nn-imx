@@ -94,6 +94,7 @@ static vsi_bool op_setup
          p->type == VSI_NN_SOURCE_FORMAT_IMAGE_NV12          ||
          p->type == VSI_NN_SOURCE_FORMAT_IMAGE_RGB           ||
          p->type == VSI_NN_SOURCE_FORMAT_IMAGE_BGRA          ||
+         p->type == VSI_NN_SOURCE_FORMAT_IMAGE_GRAY          ||
          p->type == VSI_NN_SOURCE_FORMAT_IMAGE_RGB888_PLANAR ||
          p->type == VSI_NN_SOURCE_FORMAT_IMAGE_RGB888_PLANAR_SEP
         )
@@ -160,7 +161,14 @@ static vsi_bool op_setup
             curr->node->nn_param.pre_process_gray.output_attr.dim_num = p->output_attr.dim_num;
 
             curr->inputs[0] = inputs[PRE_PROCESS_INPUT0];
-            curr->outputs[0] = outputs[PRE_PROCESS_OUTPUT];
+            if (layout == VSI_NN_DEST_LAYOUT_NHWC)
+            {
+                curr->outputs[0] = preprocess_tensor->t;
+            }
+            else
+            {
+                curr->outputs[0] = outputs[PRE_PROCESS_OUTPUT];
+            }
 
             vsi_nn_internal_setup_node(self, curr);
         }
@@ -483,6 +491,7 @@ static vsi_bool op_setup
          p->type == VSI_NN_SOURCE_FORMAT_IMAGE_NV12          ||
          p->type == VSI_NN_SOURCE_FORMAT_IMAGE_RGB           ||
          p->type == VSI_NN_SOURCE_FORMAT_IMAGE_BGRA          ||
+         p->type == VSI_NN_SOURCE_FORMAT_IMAGE_GRAY          ||
          p->type == VSI_NN_SOURCE_FORMAT_IMAGE_RGB888_PLANAR ||
          p->type == VSI_NN_SOURCE_FORMAT_IMAGE_RGB888_PLANAR_SEP
         )
