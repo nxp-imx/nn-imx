@@ -1829,7 +1829,7 @@ vsi_status vsi_nn_CMUPose_Post_Process
     status = _cmupose_init(config, &multiplier, &heatmap_avg, &paf_avg);
     if(VSI_SUCCESS != status)
     {
-        goto final;
+        return status;
     }
 
     _fill_heatmap_avg(net_out, config, heatmap_avg);
@@ -1887,7 +1887,8 @@ vsi_status vsi_nn_CMUPose_Post_Process
     *peak_candidate_out = peak_candidate;
     *peak_candidate_num_out = peak_counter;
     status = VSI_SUCCESS;
-final:
+
+    _cmupose_deinit(&multiplier, heatmap_avg, paf_avg);
     _release_all_connection(all_connection, connection_list_num);
     if(special_k)free(special_k);
     return status;
