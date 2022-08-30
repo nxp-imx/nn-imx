@@ -91,7 +91,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_r_times_h1_plus_h0_act_node
     attr.v12_reset_at_start = VX_SP_ATTRIBUTE_V_RESET_AT_START_RESET;
 
     attr.num_of_v12_rd_in_flush_cycle = 0;
-    attr.num_of_v12_wr_in_flush_cycle = 4;
+    attr.num_of_v12_wr_in_flush_cycle = 5;
 
     attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_XYZ;
     attr.split_max_vector_depth = max_vector_depth;
