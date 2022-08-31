@@ -37,21 +37,6 @@
 #include "vsi_nn_error.h"
 #include "utils/vsi_nn_constraint_check.h"
 
-static vsi_bool _is_space2batch3d
-    (
-    vsi_nn_node_t * self,
-    vsi_nn_tensor_t ** inputs
-    )
-{
-    if (3 == inputs[0]->attr.dim_num)
-    {
-        return TRUE;
-    } else
-    {
-        return FALSE;
-    }
-}
-
 static vsi_status op_compute
     (
     vsi_nn_node_t * self,
@@ -70,7 +55,7 @@ static vsi_status op_compute
     int32_t block_size[2] = {1, 1};
 
     block_size[0] = self->nn_param.space2batch.block_size[0];
-    if (_is_space2batch3d(self, inputs))
+    if (vsi_nn_is_3d_tensor(inputs[0]))
     {
         vsi_size_t shape[2][VSI_NN_MAX_DIM_NUM] = {{1}};
         memcpy(shape[0], inputs[0]->attr.size, sizeof(shape[0]));
@@ -187,11 +172,11 @@ static vsi_bool op_setup
     vsi_nn_space2batch_param * p;
     p = (vsi_nn_space2batch_param *)&(self->nn_param.space2batch);
 
-    if( VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num )
+    if ( VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num )
     {
         outputs[0]->attr.dim_num = inputs[0]->attr.dim_num;
 
-        if (_is_space2batch3d(self, inputs))
+        if (vsi_nn_is_3d_tensor(inputs[0]))
         {
             outputs[0]->attr.size[2] =
                 inputs[0]->attr.size[2] * p->block_size[0];
