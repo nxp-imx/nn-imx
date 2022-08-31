@@ -1513,3 +1513,18 @@ vsi_status vsi_nn_Unpack4bitData
     }
     return status;
 } /* vsi_nn_Unpack4bitData() */
+
+vsi_bool vsi_nn_is_3d_tensor
+    (
+    vsi_nn_tensor_t * tensor
+    )
+{
+    if (3 == tensor->attr.dim_num)
+    {
+        return TRUE;
+    }
+    else
+    {
+        return FALSE;
+    }
+}
