@@ -57951,6 +57951,894 @@ __kernel void roi_align_U8_U16toU8\n\
     }\n\
 }"; /* end of roi_align_cl*/
 
+static const char scatter_elements_cl[] = "\n\
+#define SCATTER_ELEMENTS_AXIS0_32BITS_IMPL(name, dtype) \\\n\
+__kernel void scatter_elements_axis0_##name \\\n\
+    ( \\\n\
+    __read_only  image2d_t ref, \\\n\
+    __read_only  image2d_t indices, \\\n\
+    __read_only  image2d_t update, \\\n\
+    __write_only image2d_t output, \\\n\
+                 int       axis, \\\n\
+                 int       reduction, \\\n\
+                 float     ref_scale, \\\n\
+                 float     ref_tail, \\\n\
+                 float     update_scale, \\\n\
+                 float     update_tail, \\\n\
+                 float     output_zp, \\\n\
+                 int       inner_size, \\\n\
+                 int       axis_size, \\\n\
+                 int       outer_size \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(0), 0); \\\n\
+ \\\n\
+    Image ref_i = create_image_from_image2d(ref, 4); \\\n\
+    Image update_i = create_image_from_image2d(update, 4); \\\n\
+    Image indices_i = create_image_from_image2d(indices, 4); \\\n\
+    Image output_i = create_image_from_image2d(output, 4); \\\n\
+ \\\n\
+    dtype *ref_ptr = (dtype *)get_image_ptr_from_coord(ref_i, coord.xy); \\\n\
+    dtype *output_ptr = (dtype *)get_image_ptr_from_coord(output_i, coord.xy); \\\n\
+    dtype data = ref_ptr[0]; \\\n\
+    if (coord.y < outer_size) \\\n\
+    { \\\n\
+        dtype *update_ptr = (dtype *)get_image_ptr_from_coord(update_i, coord.wy); \\\n\
+        int *indices_ptr = (int *)get_image_ptr_from_coord(indices_i, coord.wy); \\\n\
+        for(int x = 0; x < axis_size; x ++) \\\n\
+        { \\\n\
+            int offset = indices_ptr[x]; \\\n\
+            if (offset == coord.x) \\\n\
+            { \\\n\
+                data = update_ptr[x]; \\\n\
+                break; \\\n\
+            } \\\n\
+        } \\\n\
+    } \\\n\
+ \\\n\
+    output_ptr[0] = data; \\\n\
+}\n\
+SCATTER_ELEMENTS_AXIS0_32BITS_IMPL(F32_I32_F32toF32, float)\n\
+SCATTER_ELEMENTS_AXIS0_32BITS_IMPL(I32_I32_I32toI32, int)\n\
+\n\
+#define SCATTER_ELEMENTS_AXIS0_16BITS_IMPL(name, dtype, conv_func) \\\n\
+__kernel void scatter_elements_axis0_##name \\\n\
+    ( \\\n\
+    __read_only  image2d_t ref, \\\n\
+    __read_only  image2d_t indices, \\\n\
+    __read_only  image2d_t update, \\\n\
+    __write_only image2d_t output, \\\n\
+                 int       axis, \\\n\
+                 int       reduction, \\\n\
+                 float     ref_scale, \\\n\
+                 float     ref_tail, \\\n\
+                 float     update_scale, \\\n\
+                 float     update_tail, \\\n\
+                 float     output_zp, \\\n\
+                 int       inner_size, \\\n\
+                 int       axis_size, \\\n\
+                 int       outer_size \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(0), 0); \\\n\
+ \\\n\
+    Image ref_i = create_image_from_image2d(ref, 2); \\\n\
+    Image update_i = create_image_from_image2d(update, 2); \\\n\
+    Image indices_i = create_image_from_image2d(indices, 4); \\\n\
+    Image output_i = create_image_from_image2d(output, 2); \\\n\
+ \\\n\
+    dtype *ref_ptr = (dtype *)get_image_ptr_from_coord(ref_i, coord.xy); \\\n\
+    dtype *output_ptr = (dtype *)get_image_ptr_from_coord(output_i, coord.xy); \\\n\
+    dtype data = conv_func(convert_float(ref_ptr[0]) * ref_scale + ref_tail + output_zp); \\\n\
+    if (coord.y < outer_size) \\\n\
+    { \\\n\
+        dtype *update_ptr = (dtype *)get_image_ptr_from_coord(update_i, coord.wy); \\\n\
+        int *indices_ptr = (int *)get_image_ptr_from_coord(indices_i, coord.wy); \\\n\
+        for(int x = 0; x < axis_size; x ++) \\\n\
+        { \\\n\
+            int offset = indices_ptr[x]; \\\n\
+            if (offset == coord.x) \\\n\
+            { \\\n\
+                data = conv_func(convert_float(update_ptr[x]) * update_scale + update_tail + output_zp); \\\n\
+                break; \\\n\
+            } \\\n\
+        } \\\n\
+    } \\\n\
+ \\\n\
+    output_ptr[0] = data; \\\n\
+}\n\
+SCATTER_ELEMENTS_AXIS0_16BITS_IMPL(I16_I32_I16toI16,    short,  convert_short_rte)\n\
+SCATTER_ELEMENTS_AXIS0_16BITS_IMPL(F16_I32_F16toF16,    short,  convert_short)\n\
+SCATTER_ELEMENTS_AXIS0_16BITS_IMPL(BF16_I32_BF16toBF16, ushort, convert_ushort)\n\
+\n\
+#define SCATTER_ELEMENTS_AXIS0_8BITS_IMPL(name, dtype, conv_func) \\\n\
+__kernel void scatter_elements_axis0_##name \\\n\
+    ( \\\n\
+    __read_only  image2d_t ref, \\\n\
+    __read_only  image2d_t indices, \\\n\
+    __read_only  image2d_t update, \\\n\
+    __write_only image2d_t output, \\\n\
+                 int       axis, \\\n\
+                 int       reduction, \\\n\
+                 float     ref_scale, \\\n\
+                 float     ref_tail, \\\n\
+                 float     update_scale, \\\n\
+                 float     update_tail, \\\n\
+                 float     output_zp, \\\n\
+                 int       inner_size, \\\n\
+                 int       axis_size, \\\n\
+                 int       outer_size \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(0), 0); \\\n\
+ \\\n\
+    Image ref_i = create_image_from_image2d(ref, 1); \\\n\
+    Image update_i = create_image_from_image2d(update, 1); \\\n\
+    Image indices_i = create_image_from_image2d(indices, 4); \\\n\
+    Image output_i = create_image_from_image2d(output, 1); \\\n\
+ \\\n\
+    dtype *ref_ptr = (dtype *)get_image_ptr_from_coord(ref_i, coord.xy); \\\n\
+    dtype *output_ptr = (dtype *)get_image_ptr_from_coord(output_i, coord.xy); \\\n\
+    dtype data = conv_func(convert_float(ref_ptr[0]) * ref_scale + ref_tail + output_zp); \\\n\
+    if (coord.y < outer_size) \\\n\
+    { \\\n\
+        dtype *update_ptr = (dtype *)get_image_ptr_from_coord(update_i, coord.wy); \\\n\
+        int *indices_ptr = (int *)get_image_ptr_from_coord(indices_i, coord.wy); \\\n\
+        for(int x = 0; x < axis_size; x ++) \\\n\
+        { \\\n\
+            int offset = indices_ptr[x]; \\\n\
+            if (offset == coord.x) \\\n\
+            { \\\n\
+                data = conv_func(convert_float(update_ptr[x]) * update_scale + update_tail + output_zp); \\\n\
+                break; \\\n\
+            } \\\n\
+        } \\\n\
+    } \\\n\
+ \\\n\
+    output_ptr[0] = data; \\\n\
+}\n\
+SCATTER_ELEMENTS_AXIS0_8BITS_IMPL(U8_I32_U8toU8, uchar, convert_uchar_rte)\n\
+SCATTER_ELEMENTS_AXIS0_8BITS_IMPL(I8_I32_I8toI8, char,  convert_char)\n\
+\n\
+#define SCATTER_ELEMENTS_AXIS1_32BITS_IMPL(name, dtype) \\\n\
+__kernel void scatter_elements_axis1_##name \\\n\
+    ( \\\n\
+    __read_only  image2d_array_t ref, \\\n\
+    __read_only  image2d_array_t indices, \\\n\
+    __read_only  image2d_array_t update, \\\n\
+    __write_only image2d_array_t output, \\\n\
+                 int             axis, \\\n\
+                 int             reduction, \\\n\
+                 float           ref_scale, \\\n\
+                 float           ref_tail, \\\n\
+                 float           update_scale, \\\n\
+                 float           update_tail, \\\n\
+                 float           output_zp, \\\n\
+                 int             inner_size, \\\n\
+                 int             axis_size, \\\n\
+                 int             outer_size \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
+ \\\n\
+    Tensor ref_i = create_tensor_from_image2d_array(ref, 4); \\\n\
+    Tensor update_i = create_tensor_from_image2d_array(update, 4); \\\n\
+    Tensor indices_i = create_tensor_from_image2d_array(indices, 4); \\\n\
+    Tensor output_i = create_tensor_from_image2d_array(output, 4); \\\n\
+ \\\n\
+    dtype *ref_ptr = (dtype *)get_tensor_ptr_from_coord(ref_i, coord); \\\n\
+    dtype *output_ptr = (dtype *)get_tensor_ptr_from_coord(output_i, coord); \\\n\
+    dtype data = ref_ptr[0]; \\\n\
+    if (coord.x < inner_size && coord.z < outer_size) \\\n\
+    { \\\n\
+        dtype *update_ptr = (dtype *)get_tensor_ptr_from_coord(update_i, coord.xwzw); \\\n\
+        int *indices_ptr = (int *)get_tensor_ptr_from_coord(indices_i, coord.xwzw); \\\n\
+        for(int y = 0; y < axis_size; y ++) \\\n\
+        { \\\n\
+            int offset = indices_ptr[y * inner_size]; \\\n\
+            if (offset == coord.y) \\\n\
+            { \\\n\
+                data = update_ptr[y * inner_size]; \\\n\
+                break; \\\n\
+            } \\\n\
+        } \\\n\
+    } \\\n\
+ \\\n\
+    output_ptr[0] = data; \\\n\
+}\n\
+SCATTER_ELEMENTS_AXIS1_32BITS_IMPL(F32_I32_F32toF32, float)\n\
+SCATTER_ELEMENTS_AXIS1_32BITS_IMPL(I32_I32_I32toI32, int)\n\
+\n\
+#define SCATTER_ELEMENTS_AXIS1_16BITS_IMPL(name, dtype, conv_func) \\\n\
+__kernel void scatter_elements_axis1_##name \\\n\
+    ( \\\n\
+    __read_only  image2d_array_t ref, \\\n\
+    __read_only  image2d_array_t indices, \\\n\
+    __read_only  image2d_array_t update, \\\n\
+    __write_only image2d_array_t output, \\\n\
+                 int             axis, \\\n\
+                 int             reduction, \\\n\
+                 float           ref_scale, \\\n\
+                 float           ref_tail, \\\n\
+                 float           update_scale, \\\n\
+                 float           update_tail, \\\n\
+                 float           output_zp, \\\n\
+                 int             inner_size, \\\n\
+                 int             axis_size, \\\n\
+                 int             outer_size \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
+ \\\n\
+    Tensor ref_i = create_tensor_from_image2d_array(ref, 2); \\\n\
+    Tensor update_i = create_tensor_from_image2d_array(update, 2); \\\n\
+    Tensor indices_i = create_tensor_from_image2d_array(indices, 4); \\\n\
+    Tensor output_i = create_tensor_from_image2d_array(output, 2); \\\n\
+ \\\n\
+    dtype *ref_ptr = (dtype *)get_tensor_ptr_from_coord(ref_i, coord); \\\n\
+    dtype *output_ptr = (dtype *)get_tensor_ptr_from_coord(output_i, coord); \\\n\
+    dtype data = conv_func(convert_float(ref_ptr[0]) * ref_scale + ref_tail + output_zp); \\\n\
+    if (coord.x < inner_size && coord.z < outer_size) \\\n\
+    { \\\n\
+        dtype *update_ptr = (dtype *)get_tensor_ptr_from_coord(update_i, coord.xwzw); \\\n\
+        int *indices_ptr = (int *)get_tensor_ptr_from_coord(indices_i, coord.xwzw); \\\n\
+        for(int y = 0; y < axis_size; y ++) \\\n\
+        { \\\n\
+            int offset = indices_ptr[y * inner_size]; \\\n\
+            if (offset == coord.y) \\\n\
+            { \\\n\
+                data = conv_func(convert_float(update_ptr[y * inner_size]) \\\n\
+                            * update_scale + update_tail + output_zp); \\\n\
+                break; \\\n\
+            } \\\n\
+        } \\\n\
+    } \\\n\
+ \\\n\
+    output_ptr[0] = data; \\\n\
+}\n\
+SCATTER_ELEMENTS_AXIS1_16BITS_IMPL(I16_I32_I16toI16,    short,  convert_short_rte)\n\
+SCATTER_ELEMENTS_AXIS1_16BITS_IMPL(F16_I32_F16toF16,    short,  convert_short)\n\
+SCATTER_ELEMENTS_AXIS1_16BITS_IMPL(BF16_I32_BF16toBF16, ushort, convert_ushort)\n\
+\n\
+#define SCATTER_ELEMENTS_AXIS1_8BITS_IMPL(name, dtype, conv_func) \\\n\
+__kernel void scatter_elements_axis1_##name \\\n\
+    ( \\\n\
+    __read_only  image2d_array_t ref, \\\n\
+    __read_only  image2d_array_t indices, \\\n\
+    __read_only  image2d_array_t update, \\\n\
+    __write_only image2d_array_t output, \\\n\
+                 int             axis, \\\n\
+                 int             reduction, \\\n\
+                 float           ref_scale, \\\n\
+                 float           ref_tail, \\\n\
+                 float           update_scale, \\\n\
+                 float           update_tail, \\\n\
+                 float           output_zp, \\\n\
+                 int             inner_size, \\\n\
+                 int             axis_size, \\\n\
+                 int             outer_size \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
+ \\\n\
+    Tensor ref_i = create_tensor_from_image2d_array(ref, 1); \\\n\
+    Tensor update_i = create_tensor_from_image2d_array(update, 1); \\\n\
+    Tensor indices_i = create_tensor_from_image2d_array(indices, 4); \\\n\
+    Tensor output_i = create_tensor_from_image2d_array(output, 1); \\\n\
+ \\\n\
+    dtype *ref_ptr = (dtype *)get_tensor_ptr_from_coord(ref_i, coord); \\\n\
+    dtype *output_ptr = (dtype *)get_tensor_ptr_from_coord(output_i, coord); \\\n\
+    dtype data = conv_func(convert_float(ref_ptr[0]) * ref_scale + ref_tail + output_zp); \\\n\
+    if (coord.x < inner_size && coord.z < outer_size) \\\n\
+    { \\\n\
+        dtype *update_ptr = (dtype *)get_tensor_ptr_from_coord(update_i, coord.xwzw); \\\n\
+        int *indices_ptr = (int *)get_tensor_ptr_from_coord(indices_i, coord.xwzw); \\\n\
+        for(int y = 0; y < axis_size; y ++) \\\n\
+        { \\\n\
+            int offset = indices_ptr[y * inner_size]; \\\n\
+            if (offset == coord.y) \\\n\
+            { \\\n\
+                data = conv_func(convert_float(update_ptr[y * inner_size]) \\\n\
+                                * update_scale + update_tail + output_zp); \\\n\
+                break; \\\n\
+            } \\\n\
+        } \\\n\
+    } \\\n\
+ \\\n\
+    output_ptr[0] = data; \\\n\
+}\n\
+SCATTER_ELEMENTS_AXIS1_8BITS_IMPL(U8_I32_U8toU8, uchar, convert_uchar_rte)\n\
+SCATTER_ELEMENTS_AXIS1_8BITS_IMPL(I8_I32_I8toI8, char,  convert_char)\n\
+"; /* end of scatter_elements_cl*/
+
+static const char scatter_elements_add_cl[] = "\n\
+#define SE_ADD_AXIS0_32BITS_IMPL(name, dtype) \\\n\
+__kernel void scatter_elements_add_axis0_##name \\\n\
+    ( \\\n\
+    __read_only  image2d_t ref, \\\n\
+    __read_only  image2d_t indices, \\\n\
+    __read_only  image2d_t update, \\\n\
+    __write_only image2d_t output, \\\n\
+                 int       axis, \\\n\
+                 int       reduction, \\\n\
+                 float     ref_scale, \\\n\
+                 float     ref_tail, \\\n\
+                 float     update_scale, \\\n\
+                 float     update_tail, \\\n\
+                 float     output_zp, \\\n\
+                 int       inner_size, \\\n\
+                 int       axis_size, \\\n\
+                 int       outer_size \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(0), 0); \\\n\
+ \\\n\
+    Image ref_i = create_image_from_image2d(ref, 4); \\\n\
+    Image update_i = create_image_from_image2d(update, 4); \\\n\
+    Image indices_i = create_image_from_image2d(indices, 4); \\\n\
+    Image output_i = create_image_from_image2d(output, 4); \\\n\
+ \\\n\
+    dtype *ref_ptr = (dtype *)get_image_ptr_from_coord(ref_i, coord.xy); \\\n\
+    dtype *output_ptr = (dtype *)get_image_ptr_from_coord(output_i, coord.xy); \\\n\
+    dtype data = ref_ptr[0]; \\\n\
+    if (coord.y < outer_size) \\\n\
+    { \\\n\
+        dtype *update_ptr = (dtype *)get_image_ptr_from_coord(update_i, coord.wy); \\\n\
+        int *indices_ptr = (int *)get_image_ptr_from_coord(indices_i, coord.wy); \\\n\
+        for(int x = 0; x < axis_size; x ++) \\\n\
+        { \\\n\
+            int offset = indices_ptr[x]; \\\n\
+            if (offset == coord.x) \\\n\
+            { \\\n\
+                data += update_ptr[x]; \\\n\
+            } \\\n\
+        } \\\n\
+    } \\\n\
+ \\\n\
+    output_ptr[0] = data; \\\n\
+}\n\
+SE_ADD_AXIS0_32BITS_IMPL(F32_I32_F32toF32, float)\n\
+SE_ADD_AXIS0_32BITS_IMPL(I32_I32_I32toI32, int)\n\
+\n\
+#define SE_ADD_AXIS0_16BITS_IMPL(name, dtype, conv_func) \\\n\
+__kernel void scatter_elements_add_axis0_##name \\\n\
+    ( \\\n\
+    __read_only  image2d_t ref, \\\n\
+    __read_only  image2d_t indices, \\\n\
+    __read_only  image2d_t update, \\\n\
+    __write_only image2d_t output, \\\n\
+                 int       axis, \\\n\
+                 int       reduction, \\\n\
+                 float     ref_scale, \\\n\
+                 float     ref_tail, \\\n\
+                 float     update_scale, \\\n\
+                 float     update_tail, \\\n\
+                 float     output_zp, \\\n\
+                 int       inner_size, \\\n\
+                 int       axis_size, \\\n\
+                 int       outer_size \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(0), 0); \\\n\
+ \\\n\
+    Image ref_i = create_image_from_image2d(ref, 2); \\\n\
+    Image update_i = create_image_from_image2d(update, 2); \\\n\
+    Image indices_i = create_image_from_image2d(indices, 4); \\\n\
+    Image output_i = create_image_from_image2d(output, 2); \\\n\
+ \\\n\
+    dtype *ref_ptr = (dtype *)get_image_ptr_from_coord(ref_i, coord.xy); \\\n\
+    dtype *output_ptr = (dtype *)get_image_ptr_from_coord(output_i, coord.xy); \\\n\
+    dtype data = conv_func(convert_float(ref_ptr[0]) * ref_scale + ref_tail + output_zp); \\\n\
+    if (coord.y < outer_size) \\\n\
+    { \\\n\
+        dtype *update_ptr = (dtype *)get_image_ptr_from_coord(update_i, coord.wy); \\\n\
+        int *indices_ptr = (int *)get_image_ptr_from_coord(indices_i, coord.wy); \\\n\
+        for(int x = 0; x < axis_size; x ++) \\\n\
+        { \\\n\
+            int offset = indices_ptr[x]; \\\n\
+            if (offset == coord.x) \\\n\
+            { \\\n\
+                data += conv_func(convert_float(update_ptr[x]) * update_scale + update_tail + output_zp); \\\n\
+            } \\\n\
+        } \\\n\
+    } \\\n\
+ \\\n\
+    output_ptr[0] = data; \\\n\
+}\n\
+SE_ADD_AXIS0_16BITS_IMPL(I16_I32_I16toI16,    short,  convert_short_rte)\n\
+SE_ADD_AXIS0_16BITS_IMPL(F16_I32_F16toF16,    short,  convert_short)\n\
+SE_ADD_AXIS0_16BITS_IMPL(BF16_I32_BF16toBF16, ushort, convert_ushort)\n\
+\n\
+#define SE_ADD_AXIS0_8BITS_IMPL(name, dtype, conv_func) \\\n\
+__kernel void scatter_elements_add_axis0_##name \\\n\
+    ( \\\n\
+    __read_only  image2d_t ref, \\\n\
+    __read_only  image2d_t indices, \\\n\
+    __read_only  image2d_t update, \\\n\
+    __write_only image2d_t output, \\\n\
+                 int       axis, \\\n\
+                 int       reduction, \\\n\
+                 float     ref_scale, \\\n\
+                 float     ref_tail, \\\n\
+                 float     update_scale, \\\n\
+                 float     update_tail, \\\n\
+                 float     output_zp, \\\n\
+                 int       inner_size, \\\n\
+                 int       axis_size, \\\n\
+                 int       outer_size \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(0), 0); \\\n\
+ \\\n\
+    Image ref_i = create_image_from_image2d(ref, 1); \\\n\
+    Image update_i = create_image_from_image2d(update, 1); \\\n\
+    Image indices_i = create_image_from_image2d(indices, 4); \\\n\
+    Image output_i = create_image_from_image2d(output, 1); \\\n\
+ \\\n\
+    dtype *ref_ptr = (dtype *)get_image_ptr_from_coord(ref_i, coord.xy); \\\n\
+    dtype *output_ptr = (dtype *)get_image_ptr_from_coord(output_i, coord.xy); \\\n\
+    dtype data = conv_func(convert_float(ref_ptr[0]) * ref_scale + ref_tail + output_zp); \\\n\
+    if (coord.y < outer_size) \\\n\
+    { \\\n\
+        dtype *update_ptr = (dtype *)get_image_ptr_from_coord(update_i, coord.wy); \\\n\
+        int *indices_ptr = (int *)get_image_ptr_from_coord(indices_i, coord.wy); \\\n\
+        for(int x = 0; x < axis_size; x ++) \\\n\
+        { \\\n\
+            int offset = indices_ptr[x]; \\\n\
+            if (offset == coord.x) \\\n\
+            { \\\n\
+                data += conv_func(convert_float(update_ptr[x]) * update_scale + update_tail + output_zp); \\\n\
+            } \\\n\
+        } \\\n\
+    } \\\n\
+ \\\n\
+    output_ptr[0] = data; \\\n\
+}\n\
+SE_ADD_AXIS0_8BITS_IMPL(U8_I32_U8toU8, uchar, convert_uchar_rte)\n\
+SE_ADD_AXIS0_8BITS_IMPL(I8_I32_I8toI8, char,  convert_char)\n\
+\n\
+#define SE_ADD_AXIS1_32BITS_IMPL(name, dtype) \\\n\
+__kernel void scatter_elements_add_axis1_##name \\\n\
+    ( \\\n\
+    __read_only  image2d_array_t ref, \\\n\
+    __read_only  image2d_array_t indices, \\\n\
+    __read_only  image2d_array_t update, \\\n\
+    __write_only image2d_array_t output, \\\n\
+                 int             axis, \\\n\
+                 int             reduction, \\\n\
+                 float           ref_scale, \\\n\
+                 float           ref_tail, \\\n\
+                 float           update_scale, \\\n\
+                 float           update_tail, \\\n\
+                 float           output_zp, \\\n\
+                 int             inner_size, \\\n\
+                 int             axis_size, \\\n\
+                 int             outer_size \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
+ \\\n\
+    Tensor ref_i = create_tensor_from_image2d_array(ref, 4); \\\n\
+    Tensor update_i = create_tensor_from_image2d_array(update, 4); \\\n\
+    Tensor indices_i = create_tensor_from_image2d_array(indices, 4); \\\n\
+    Tensor output_i = create_tensor_from_image2d_array(output, 4); \\\n\
+ \\\n\
+    dtype *ref_ptr = (dtype *)get_tensor_ptr_from_coord(ref_i, coord); \\\n\
+    dtype *output_ptr = (dtype *)get_tensor_ptr_from_coord(output_i, coord); \\\n\
+    dtype data = ref_ptr[0]; \\\n\
+    if (coord.x < inner_size && coord.z < outer_size) \\\n\
+    { \\\n\
+        dtype *update_ptr = (dtype *)get_tensor_ptr_from_coord(update_i, coord.xwzw); \\\n\
+        int *indices_ptr = (int *)get_tensor_ptr_from_coord(indices_i, coord.xwzw); \\\n\
+        for(int y = 0; y < axis_size; y ++) \\\n\
+        { \\\n\
+            int offset = indices_ptr[y * inner_size]; \\\n\
+            if (offset == coord.y) \\\n\
+            { \\\n\
+                data += update_ptr[y * inner_size]; \\\n\
+            } \\\n\
+        } \\\n\
+    } \\\n\
+ \\\n\
+    output_ptr[0] = data; \\\n\
+}\n\
+SE_ADD_AXIS1_32BITS_IMPL(F32_I32_F32toF32, float)\n\
+SE_ADD_AXIS1_32BITS_IMPL(I32_I32_I32toI32, int)\n\
+\n\
+#define SE_ADD_AXIS1_16BITS_IMPL(name, dtype, conv_func) \\\n\
+__kernel void scatter_elements_add_axis1_##name \\\n\
+    ( \\\n\
+    __read_only  image2d_array_t ref, \\\n\
+    __read_only  image2d_array_t indices, \\\n\
+    __read_only  image2d_array_t update, \\\n\
+    __write_only image2d_array_t output, \\\n\
+                 int             axis, \\\n\
+                 int             reduction, \\\n\
+                 float           ref_scale, \\\n\
+                 float           ref_tail, \\\n\
+                 float           update_scale, \\\n\
+                 float           update_tail, \\\n\
+                 float           output_zp, \\\n\
+                 int             inner_size, \\\n\
+                 int             axis_size, \\\n\
+                 int             outer_size \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
+ \\\n\
+    Tensor ref_i = create_tensor_from_image2d_array(ref, 2); \\\n\
+    Tensor update_i = create_tensor_from_image2d_array(update, 2); \\\n\
+    Tensor indices_i = create_tensor_from_image2d_array(indices, 4); \\\n\
+    Tensor output_i = create_tensor_from_image2d_array(output, 2); \\\n\
+ \\\n\
+    dtype *ref_ptr = (dtype *)get_tensor_ptr_from_coord(ref_i, coord); \\\n\
+    dtype *output_ptr = (dtype *)get_tensor_ptr_from_coord(output_i, coord); \\\n\
+    dtype data = conv_func(convert_float(ref_ptr[0]) * ref_scale + ref_tail + output_zp); \\\n\
+    if (coord.x < inner_size && coord.z < outer_size) \\\n\
+    { \\\n\
+        dtype *update_ptr = (dtype *)get_tensor_ptr_from_coord(update_i, coord.xwzw); \\\n\
+        int *indices_ptr = (int *)get_tensor_ptr_from_coord(indices_i, coord.xwzw); \\\n\
+        for(int y = 0; y < axis_size; y ++) \\\n\
+        { \\\n\
+            int offset = indices_ptr[y * inner_size]; \\\n\
+            if (offset == coord.y) \\\n\
+            { \\\n\
+                data += conv_func(convert_float(update_ptr[y * inner_size]) \\\n\
+                            * update_scale + update_tail + output_zp); \\\n\
+            } \\\n\
+        } \\\n\
+    } \\\n\
+ \\\n\
+    output_ptr[0] = data; \\\n\
+}\n\
+SE_ADD_AXIS1_16BITS_IMPL(I16_I32_I16toI16,    short,  convert_short_rte)\n\
+SE_ADD_AXIS1_16BITS_IMPL(F16_I32_F16toF16,    short,  convert_short)\n\
+SE_ADD_AXIS1_16BITS_IMPL(BF16_I32_BF16toBF16, ushort, convert_ushort)\n\
+\n\
+#define SE_ADD_AXIS1_8BITS_IMPL(name, dtype, conv_func) \\\n\
+__kernel void scatter_elements_add_axis1_##name \\\n\
+    ( \\\n\
+    __read_only  image2d_array_t ref, \\\n\
+    __read_only  image2d_array_t indices, \\\n\
+    __read_only  image2d_array_t update, \\\n\
+    __write_only image2d_array_t output, \\\n\
+                 int             axis, \\\n\
+                 int             reduction, \\\n\
+                 float           ref_scale, \\\n\
+                 float           ref_tail, \\\n\
+                 float           update_scale, \\\n\
+                 float           update_tail, \\\n\
+                 float           output_zp, \\\n\
+                 int             inner_size, \\\n\
+                 int             axis_size, \\\n\
+                 int             outer_size \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
+ \\\n\
+    Tensor ref_i = create_tensor_from_image2d_array(ref, 1); \\\n\
+    Tensor update_i = create_tensor_from_image2d_array(update, 1); \\\n\
+    Tensor indices_i = create_tensor_from_image2d_array(indices, 4); \\\n\
+    Tensor output_i = create_tensor_from_image2d_array(output, 1); \\\n\
+ \\\n\
+    dtype *ref_ptr = (dtype *)get_tensor_ptr_from_coord(ref_i, coord); \\\n\
+    dtype *output_ptr = (dtype *)get_tensor_ptr_from_coord(output_i, coord); \\\n\
+    dtype data = conv_func(convert_float(ref_ptr[0]) * ref_scale + ref_tail + output_zp); \\\n\
+    if (coord.x < inner_size && coord.z < outer_size) \\\n\
+    { \\\n\
+        dtype *update_ptr = (dtype *)get_tensor_ptr_from_coord(update_i, coord.xwzw); \\\n\
+        int *indices_ptr = (int *)get_tensor_ptr_from_coord(indices_i, coord.xwzw); \\\n\
+        for(int y = 0; y < axis_size; y ++) \\\n\
+        { \\\n\
+            int offset = indices_ptr[y * inner_size]; \\\n\
+            if (offset == coord.y) \\\n\
+            { \\\n\
+                data += conv_func(convert_float(update_ptr[y * inner_size]) \\\n\
+                                * update_scale + update_tail + output_zp); \\\n\
+            } \\\n\
+        } \\\n\
+    } \\\n\
+ \\\n\
+    output_ptr[0] = data; \\\n\
+}\n\
+SE_ADD_AXIS1_8BITS_IMPL(U8_I32_U8toU8, uchar, convert_uchar_rte)\n\
+SE_ADD_AXIS1_8BITS_IMPL(I8_I32_I8toI8, char,  convert_char)\n\
+"; /* end of scatter_elements_add_cl*/
+
+static const char scatter_elements_mul_cl[] = "\n\
+#define SE_MUL_AXIS0_32BITS_IMPL(name, dtype) \\\n\
+__kernel void scatter_elements_mul_axis0_##name \\\n\
+    ( \\\n\
+    __read_only  image2d_t ref, \\\n\
+    __read_only  image2d_t indices, \\\n\
+    __read_only  image2d_t update, \\\n\
+    __write_only image2d_t output, \\\n\
+                 int       axis, \\\n\
+                 int       reduction, \\\n\
+                 float     ref_scale, \\\n\
+                 float     ref_tail, \\\n\
+                 float     update_scale, \\\n\
+                 float     update_tail, \\\n\
+                 float     output_zp, \\\n\
+                 int       inner_size, \\\n\
+                 int       axis_size, \\\n\
+                 int       outer_size \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(0), 0); \\\n\
+ \\\n\
+    Image ref_i = create_image_from_image2d(ref, 4); \\\n\
+    Image update_i = create_image_from_image2d(update, 4); \\\n\
+    Image indices_i = create_image_from_image2d(indices, 4); \\\n\
+    Image output_i = create_image_from_image2d(output, 4); \\\n\
+ \\\n\
+    dtype *ref_ptr = (dtype *)get_image_ptr_from_coord(ref_i, coord.xy); \\\n\
+    dtype *output_ptr = (dtype *)get_image_ptr_from_coord(output_i, coord.xy); \\\n\
+    dtype data = ref_ptr[0]; \\\n\
+    if (coord.y < outer_size) \\\n\
+    { \\\n\
+        dtype *update_ptr = (dtype *)get_image_ptr_from_coord(update_i, coord.wy); \\\n\
+        int *indices_ptr = (int *)get_image_ptr_from_coord(indices_i, coord.wy); \\\n\
+        for(int x = 0; x < axis_size; x ++) \\\n\
+        { \\\n\
+            int offset = indices_ptr[x]; \\\n\
+            if (offset == coord.x) \\\n\
+            { \\\n\
+                data *= update_ptr[x]; \\\n\
+            } \\\n\
+        } \\\n\
+    } \\\n\
+ \\\n\
+    output_ptr[0] = data; \\\n\
+}\n\
+SE_MUL_AXIS0_32BITS_IMPL(F32_I32_F32toF32, float)\n\
+SE_MUL_AXIS0_32BITS_IMPL(I32_I32_I32toI32, int)\n\
+\n\
+#define SE_MUL_AXIS0_16BITS_IMPL(name, dtype, conv_func) \\\n\
+__kernel void scatter_elements_mul_axis0_##name \\\n\
+    ( \\\n\
+    __read_only  image2d_t ref, \\\n\
+    __read_only  image2d_t indices, \\\n\
+    __read_only  image2d_t update, \\\n\
+    __write_only image2d_t output, \\\n\
+                 int       axis, \\\n\
+                 int       reduction, \\\n\
+                 float     ref_scale, \\\n\
+                 float     ref_tail, \\\n\
+                 float     update_scale, \\\n\
+                 float     update_tail, \\\n\
+                 float     output_zp, \\\n\
+                 int       inner_size, \\\n\
+                 int       axis_size, \\\n\
+                 int       outer_size \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(0), 0); \\\n\
+ \\\n\
+    Image ref_i = create_image_from_image2d(ref, 2); \\\n\
+    Image update_i = create_image_from_image2d(update, 2); \\\n\
+    Image indices_i = create_image_from_image2d(indices, 4); \\\n\
+    Image output_i = create_image_from_image2d(output, 2); \\\n\
+ \\\n\
+    dtype *ref_ptr = (dtype *)get_image_ptr_from_coord(ref_i, coord.xy); \\\n\
+    dtype *output_ptr = (dtype *)get_image_ptr_from_coord(output_i, coord.xy); \\\n\
+    dtype data = conv_func(convert_float(ref_ptr[0]) * ref_scale + ref_tail + output_zp); \\\n\
+    if (coord.y < outer_size) \\\n\
+    { \\\n\
+        dtype *update_ptr = (dtype *)get_image_ptr_from_coord(update_i, coord.wy); \\\n\
+        int *indices_ptr = (int *)get_image_ptr_from_coord(indices_i, coord.wy); \\\n\
+        for(int x = 0; x < axis_size; x ++) \\\n\
+        { \\\n\
+            int offset = indices_ptr[x]; \\\n\
+            if (offset == coord.x) \\\n\
+            { \\\n\
+                data *= conv_func(convert_float(update_ptr[x]) * update_scale + update_tail + output_zp); \\\n\
+            } \\\n\
+        } \\\n\
+    } \\\n\
+ \\\n\
+    output_ptr[0] = data; \\\n\
+}\n\
+SE_MUL_AXIS0_16BITS_IMPL(I16_I32_I16toI16,    short,  convert_short_rte)\n\
+SE_MUL_AXIS0_16BITS_IMPL(F16_I32_F16toF16,    short,  convert_short)\n\
+SE_MUL_AXIS0_16BITS_IMPL(BF16_I32_BF16toBF16, ushort, convert_ushort)\n\
+\n\
+#define SE_MUL_AXIS0_8BITS_IMPL(name, dtype, conv_func) \\\n\
+__kernel void scatter_elements_mul_axis0_##name \\\n\
+    ( \\\n\
+    __read_only  image2d_t ref, \\\n\
+    __read_only  image2d_t indices, \\\n\
+    __read_only  image2d_t update, \\\n\
+    __write_only image2d_t output, \\\n\
+                 int       axis, \\\n\
+                 int       reduction, \\\n\
+                 float     ref_scale, \\\n\
+                 float     ref_tail, \\\n\
+                 float     update_scale, \\\n\
+                 float     update_tail, \\\n\
+                 float     output_zp, \\\n\
+                 int       inner_size, \\\n\
+                 int       axis_size, \\\n\
+                 int       outer_size \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(0), 0); \\\n\
+ \\\n\
+    Image ref_i = create_image_from_image2d(ref, 1); \\\n\
+    Image update_i = create_image_from_image2d(update, 1); \\\n\
+    Image indices_i = create_image_from_image2d(indices, 4); \\\n\
+    Image output_i = create_image_from_image2d(output, 1); \\\n\
+ \\\n\
+    dtype *ref_ptr = (dtype *)get_image_ptr_from_coord(ref_i, coord.xy); \\\n\
+    dtype *output_ptr = (dtype *)get_image_ptr_from_coord(output_i, coord.xy); \\\n\
+    dtype data = conv_func(convert_float(ref_ptr[0]) * ref_scale + ref_tail + output_zp); \\\n\
+    if (coord.y < outer_size) \\\n\
+    { \\\n\
+        dtype *update_ptr = (dtype *)get_image_ptr_from_coord(update_i, coord.wy); \\\n\
+        int *indices_ptr = (int *)get_image_ptr_from_coord(indices_i, coord.wy); \\\n\
+        for(int x = 0; x < axis_size; x ++) \\\n\
+        { \\\n\
+            int offset = indices_ptr[x]; \\\n\
+            if (offset == coord.x) \\\n\
+            { \\\n\
+                data *= conv_func(convert_float(update_ptr[x]) * update_scale + update_tail + output_zp); \\\n\
+            } \\\n\
+        } \\\n\
+    } \\\n\
+ \\\n\
+    output_ptr[0] = data; \\\n\
+}\n\
+SE_MUL_AXIS0_8BITS_IMPL(U8_I32_U8toU8, uchar, convert_uchar_rte)\n\
+SE_MUL_AXIS0_8BITS_IMPL(I8_I32_I8toI8, char,  convert_char)\n\
+\n\
+#define SE_MUL_AXIS1_32BITS_IMPL(name, dtype) \\\n\
+__kernel void scatter_elements_mul_axis1_##name \\\n\
+    ( \\\n\
+    __read_only  image2d_array_t ref, \\\n\
+    __read_only  image2d_array_t indices, \\\n\
+    __read_only  image2d_array_t update, \\\n\
+    __write_only image2d_array_t output, \\\n\
+                 int             axis, \\\n\
+                 int             reduction, \\\n\
+                 float           ref_scale, \\\n\
+                 float           ref_tail, \\\n\
+                 float           update_scale, \\\n\
+                 float           update_tail, \\\n\
+                 float           output_zp, \\\n\
+                 int             inner_size, \\\n\
+                 int             axis_size, \\\n\
+                 int             outer_size \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
+ \\\n\
+    Tensor ref_i = create_tensor_from_image2d_array(ref, 4); \\\n\
+    Tensor update_i = create_tensor_from_image2d_array(update, 4); \\\n\
+    Tensor indices_i = create_tensor_from_image2d_array(indices, 4); \\\n\
+    Tensor output_i = create_tensor_from_image2d_array(output, 4); \\\n\
+ \\\n\
+    dtype *ref_ptr = (dtype *)get_tensor_ptr_from_coord(ref_i, coord); \\\n\
+    dtype *output_ptr = (dtype *)get_tensor_ptr_from_coord(output_i, coord); \\\n\
+    dtype data = ref_ptr[0]; \\\n\
+    if (coord.x < inner_size && coord.z < outer_size) \\\n\
+    { \\\n\
+        dtype *update_ptr = (dtype *)get_tensor_ptr_from_coord(update_i, coord.xwzw); \\\n\
+        int *indices_ptr = (int *)get_tensor_ptr_from_coord(indices_i, coord.xwzw); \\\n\
+        for(int y = 0; y < axis_size; y ++) \\\n\
+        { \\\n\
+            int offset = indices_ptr[y * inner_size]; \\\n\
+            if (offset == coord.y) \\\n\
+            { \\\n\
+                data *= update_ptr[y * inner_size]; \\\n\
+            } \\\n\
+        } \\\n\
+    } \\\n\
+ \\\n\
+    output_ptr[0] = data; \\\n\
+}\n\
+SE_MUL_AXIS1_32BITS_IMPL(F32_I32_F32toF32, float)\n\
+SE_MUL_AXIS1_32BITS_IMPL(I32_I32_I32toI32, int)\n\
+\n\
+#define SE_MUL_AXIS1_16BITS_IMPL(name, dtype, conv_func) \\\n\
+__kernel void scatter_elements_mul_axis1_##name \\\n\
+    ( \\\n\
+    __read_only  image2d_array_t ref, \\\n\
+    __read_only  image2d_array_t indices, \\\n\
+    __read_only  image2d_array_t update, \\\n\
+    __write_only image2d_array_t output, \\\n\
+                 int             axis, \\\n\
+                 int             reduction, \\\n\
+                 float           ref_scale, \\\n\
+                 float           ref_tail, \\\n\
+                 float           update_scale, \\\n\
+                 float           update_tail, \\\n\
+                 float           output_zp, \\\n\
+                 int             inner_size, \\\n\
+                 int             axis_size, \\\n\
+                 int             outer_size \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
+ \\\n\
+    Tensor ref_i = create_tensor_from_image2d_array(ref, 2); \\\n\
+    Tensor update_i = create_tensor_from_image2d_array(update, 2); \\\n\
+    Tensor indices_i = create_tensor_from_image2d_array(indices, 4); \\\n\
+    Tensor output_i = create_tensor_from_image2d_array(output, 2); \\\n\
+ \\\n\
+    dtype *ref_ptr = (dtype *)get_tensor_ptr_from_coord(ref_i, coord); \\\n\
+    dtype *output_ptr = (dtype *)get_tensor_ptr_from_coord(output_i, coord); \\\n\
+    dtype data = conv_func(convert_float(ref_ptr[0]) * ref_scale + ref_tail + output_zp); \\\n\
+    if (coord.x < inner_size && coord.z < outer_size) \\\n\
+    { \\\n\
+        dtype *update_ptr = (dtype *)get_tensor_ptr_from_coord(update_i, coord.xwzw); \\\n\
+        int *indices_ptr = (int *)get_tensor_ptr_from_coord(indices_i, coord.xwzw); \\\n\
+        for(int y = 0; y < axis_size; y ++) \\\n\
+        { \\\n\
+            int offset = indices_ptr[y * inner_size]; \\\n\
+            if (offset == coord.y) \\\n\
+            { \\\n\
+                data *= conv_func(convert_float(update_ptr[y * inner_size]) \\\n\
+                            * update_scale + update_tail + output_zp); \\\n\
+            } \\\n\
+        } \\\n\
+    } \\\n\
+ \\\n\
+    output_ptr[0] = data; \\\n\
+}\n\
+SE_MUL_AXIS1_16BITS_IMPL(I16_I32_I16toI16,    short,  convert_short_rte)\n\
+SE_MUL_AXIS1_16BITS_IMPL(F16_I32_F16toF16,    short,  convert_short)\n\
+SE_MUL_AXIS1_16BITS_IMPL(BF16_I32_BF16toBF16, ushort, convert_ushort)\n\
+\n\
+#define SE_MUL_AXIS1_8BITS_IMPL(name, dtype, conv_func) \\\n\
+__kernel void scatter_elements_mul_axis1_##name \\\n\
+    ( \\\n\
+    __read_only  image2d_array_t ref, \\\n\
+    __read_only  image2d_array_t indices, \\\n\
+    __read_only  image2d_array_t update, \\\n\
+    __write_only image2d_array_t output, \\\n\
+                 int             axis, \\\n\
+                 int             reduction, \\\n\
+                 float           ref_scale, \\\n\
+                 float           ref_tail, \\\n\
+                 float           update_scale, \\\n\
+                 float           update_tail, \\\n\
+                 float           output_zp, \\\n\
+                 int             inner_size, \\\n\
+                 int             axis_size, \\\n\
+                 int             outer_size \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
+ \\\n\
+    Tensor ref_i = create_tensor_from_image2d_array(ref, 1); \\\n\
+    Tensor update_i = create_tensor_from_image2d_array(update, 1); \\\n\
+    Tensor indices_i = create_tensor_from_image2d_array(indices, 4); \\\n\
+    Tensor output_i = create_tensor_from_image2d_array(output, 1); \\\n\
+ \\\n\
+    dtype *ref_ptr = (dtype *)get_tensor_ptr_from_coord(ref_i, coord); \\\n\
+    dtype *output_ptr = (dtype *)get_tensor_ptr_from_coord(output_i, coord); \\\n\
+    dtype data = conv_func(convert_float(ref_ptr[0]) * ref_scale + ref_tail + output_zp); \\\n\
+    if (coord.x < inner_size && coord.z < outer_size) \\\n\
+    { \\\n\
+        dtype *update_ptr = (dtype *)get_tensor_ptr_from_coord(update_i, coord.xwzw); \\\n\
+        int *indices_ptr = (int *)get_tensor_ptr_from_coord(indices_i, coord.xwzw); \\\n\
+        for(int y = 0; y < axis_size; y ++) \\\n\
+        { \\\n\
+            int offset = indices_ptr[y * inner_size]; \\\n\
+            if (offset == coord.y) \\\n\
+            { \\\n\
+                data *= conv_func(convert_float(update_ptr[y * inner_size]) \\\n\
+                                * update_scale + update_tail + output_zp); \\\n\
+            } \\\n\
+        } \\\n\
+    } \\\n\
+ \\\n\
+    output_ptr[0] = data; \\\n\
+}\n\
+SE_MUL_AXIS1_8BITS_IMPL(U8_I32_U8toU8, uchar, convert_uchar_rte)\n\
+SE_MUL_AXIS1_8BITS_IMPL(I8_I32_I8toI8, char,  convert_char)\n\
+"; /* end of scatter_elements_mul_cl*/
+
 static const char scatter_nd_cl[] = "__kernel void scatter_nd_U32toU32_1D(\n\
     __read_only image2d_t   input0,\n\
     __read_only image2d_t   input1,\n\
@@ -60040,6 +60928,9 @@ static const source_map_t cl_resource[] =
     {"resize_bilinear_cl", resize_bilinear_cl},
     {"resize_nearest_cl", resize_nearest_cl},
     {"roi_align_cl", roi_align_cl},
+    {"scatter_elements_cl", scatter_elements_cl},
+    {"scatter_elements_add_cl", scatter_elements_add_cl},
+    {"scatter_elements_mul_cl", scatter_elements_mul_cl},
     {"scatter_nd_cl", scatter_nd_cl},
     {"scatter_nd_update_cl", scatter_nd_update_cl},
     {"select_cl", select_cl},

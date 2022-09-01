@@ -111,6 +111,14 @@ typedef enum
     VSI_NN_PAD_SAME
 } vsi_nn_pad_e;
 
+/** reduce type enum */
+typedef enum
+{
+    VSI_NN_REDUCTION_TYPE_NONE,
+    VSI_NN_REDUCTION_TYPE_ADD,
+    VSI_NN_REDUCTION_TYPE_MUL
+} vsi_nn_reduction_type_e;
+
 /** Pad mode enum */
 typedef enum {
     VSI_NN_PAD_MODE_CONSTANT,
