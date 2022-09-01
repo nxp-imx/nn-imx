@@ -650,6 +650,7 @@
     <ClInclude Include="include\ops\vsi_nn_op_roi_align.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_roi_pool.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_scale.h"/>
+    <ClInclude Include="include\ops\vsi_nn_op_scatter_elements.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_scatter_nd.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_scatter_nd_update.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_select.h"/>
@@ -947,6 +948,9 @@
     <ClCompile Include="src\kernel\cl\roi_align_cl.c">
       <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="src\kernel\cl\scatter_elements_cl.c">
+      <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="src\kernel\cl\scatter_nd_cl.c">
       <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
@@ -1194,6 +1198,9 @@
       <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\roi_align_cpu.c">
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\kernel\cpu\scatter_elements_cpu.c">
       <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\scatter_nd_cpu.c">
@@ -2016,6 +2023,9 @@
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_scale.c">
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_scatter_elements.c">
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_scatter_nd.c">
