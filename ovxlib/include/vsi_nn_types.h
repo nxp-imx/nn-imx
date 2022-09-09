@@ -251,6 +251,12 @@ typedef enum _vsi_nn_con2d_lstm_dataformat
     CONV2D_LSTM_CHANNELS_FIRST
 } vsi_nn_con2d_lstm_dataformat;
 
+typedef enum _vsi_nn_yuv_type
+{
+    VSI_NN_YUV_TYPE_YUYV422,
+    VSI_NN_YUV_TYPE_UYUV422
+}vsi_nn_yuv_type;
+
 /** Deprecated */
 typedef uint32_t vsi_nn_size_t;
 
