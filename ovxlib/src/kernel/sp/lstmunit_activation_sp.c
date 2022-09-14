@@ -652,13 +652,16 @@ vsi_nn_kernel_node_t vsi_nn_sp_get_float_output_node
 
     attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_XYMERGE;
 
-    attr.input_setup = VSI_NN_SP_INPUT_SETUP_V11;
+    attr.input_setup = VSI_NN_SP_INPUT_SETUP_V12;
     attr.prog_init_instr_num = spInitInstsNum;
     attr.prog_loop_instr_num = spLoopInstsNum;
     attr.ignored_leading_outputs = 4;
     attr.ignored_leading_v11_rd = 4;
     attr.ignored_leading_v12_rd = 0;
-    attr.flush_cycle_num = 0;
+    attr.flush_cycle_num = 14;
+
+    attr.num_of_v11_rd_in_flush_cycle = 5;
+    attr.num_of_v11_wr_in_flush_cycle = 0;
 
     attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_XYZ;
     attr.split_max_vector_depth = max_vector_depth;
@@ -737,13 +740,15 @@ vsi_nn_kernel_node_t vsi_nn_sp_get_quantized_output_node
 
     attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_XYMERGE;
 
-    attr.input_setup = VSI_NN_SP_INPUT_SETUP_V11;
+    attr.input_setup = VSI_NN_SP_INPUT_SETUP_V12;
     attr.prog_init_instr_num = spInitInstsNum;
     attr.prog_loop_instr_num = spLoopInstsNum;
     attr.ignored_leading_outputs = 3;
     attr.ignored_leading_v11_rd = 2;
     attr.ignored_leading_v12_rd = 0;
-    attr.flush_cycle_num = 3;
+    attr.flush_cycle_num = 13;
+    attr.num_of_v11_rd_in_flush_cycle = 3;
+    attr.num_of_v11_wr_in_flush_cycle = 0;
 
     attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_XYZ;
     attr.split_max_vector_depth = max_vector_depth;

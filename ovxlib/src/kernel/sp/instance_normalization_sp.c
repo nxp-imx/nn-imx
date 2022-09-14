@@ -83,7 +83,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_moments_sums_node
     attr.ignored_leading_acc_out = 3;
     attr.flush_cycle_num = 4;
     attr.accelerator_input_select = VSI_NN_SP_ACCELERATOR_IN_FROM_ACCEL;
-    attr.sum_engine_reset = VSI_NN_SP_SUM_ENGINE_RESET_RESET;
+    attr.sum_engine_reset = VSI_NN_SP_SUM_ENGINE_RESET_START_FROM_ZERO;
     attr.sum_engine_control = VSI_NN_SP_ACCUM_2D;
     attr.sum_engine_num_ch_minus_one = VSI_NN_SP_SUM_ENGINE_NUM_CH_TWO_CH;
     attr.sum_engine_2d_accum_storeage = VSI_NN_SP_ACCM_STOREAGE_DIFFERENT;

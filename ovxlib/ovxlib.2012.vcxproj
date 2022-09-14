@@ -583,6 +583,7 @@
     <ClInclude Include="include\ops\vsi_nn_op_log_softmax.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_logical_not.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_logical_ops.h"/>
+    <ClInclude Include="include\ops\vsi_nn_op_lppool.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_lrn.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_lsh_projection.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_lstm.h"/>
@@ -614,6 +615,7 @@
     <ClInclude Include="include\ops\vsi_nn_op_pre_process_rgb888_planar.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_pre_process_tensor.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_pre_process_yuv420.h"/>
+    <ClInclude Include="include\ops\vsi_nn_op_pre_process_yuv422.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_pre_process_yuv444.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_prelu.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_proposal.h"/>
@@ -674,8 +676,6 @@
     <ClInclude Include="include\ops\vsi_nn_op_swish.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_tanh.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_tensor_add_mean_stddev_norm.h"/>
-    <ClInclude Include="include\ops\vsi_nn_op_lppool.h" />
-    <ClInclude Include="include\ops\vsi_nn_op_pre_process_yuv422.h" />
     <ClInclude Include="include\ops\vsi_nn_op_tensorstackconcat.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_tile.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_topk.h"/>
@@ -1529,6 +1529,9 @@
     <ClCompile Include="src\kernel\sp\softmax_sp.c">
       <ObjectFileName>$(IntDir)\src\kernel\sp\</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="src\kernel\sp\softmax_z_direction_sp.c">
+      <ObjectFileName>$(IntDir)\src\kernel\sp\</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="src\kernel\vsi_nn_gpu.c">
       <ObjectFileName>$(IntDir)\src\kernel\</ObjectFileName>
     </ClCompile>
@@ -1838,6 +1841,9 @@
     <ClCompile Include="src\ops\vsi_nn_op_logical_ops.c">
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_lppool.c">
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_lrn.c">
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
@@ -1929,6 +1935,9 @@
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_pre_process_yuv420.c">
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_pre_process_yuv422.c">
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_pre_process_yuv444.c">
@@ -2130,12 +2139,6 @@
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_upsamplescale.c">
-      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="src\ops\vsi_nn_op_lppool.c" >
-      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="src\ops\vsi_nn_op_pre_process_yuv422.c" >
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_variable.c">

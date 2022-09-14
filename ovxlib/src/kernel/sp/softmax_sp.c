@@ -88,7 +88,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_softmax_exp_node
     attr.ignored_leading_outputs = 5;
     attr.flush_cycle_num = 10;
     attr.accelerator_input_select = VSI_NN_SP_ACCELERATOR_IN_FROM_OUTPUT;
-    attr.sum_engine_reset = VSI_NN_SP_SUM_ENGINE_RESET_RESET;
+    attr.sum_engine_reset = VSI_NN_SP_SUM_ENGINE_RESET_START_FROM_ZERO;
     attr.sum_engine_control = VSI_NN_SP_ACCUM_2D;
     attr.sum_engine_num_ch_minus_one = VSI_NN_SP_SUM_ENGINE_NUM_CH_ONE_CH;
     attr.sum_engine_2d_accum_storeage = VSI_NN_SP_ACCM_STOREAGE_DIFFERENT;
@@ -188,7 +188,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_softmax_rcp_node
     status |= vsi_nn_sp_move(&sp_insts_param[1], VSI_NN_SP_SR3, VSI_NN_SP_SR4);
     CHECK_STATUS_FAIL_GOTO(status, final );
 
-    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_XYMERGE;
+    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_YZMERGE;
 
     attr.input_setup = VSI_NN_SP_INPUT_SETUP_V11;
     attr.prog_loop_instr_num = spLoopInstsNum;
@@ -317,30 +317,63 @@ final:
     return (vsi_nn_kernel_node_t)node;
 }
 
-#define REGISTER_SOFTMAX_STREAM_PROCESSOR_KERNEL( kernel_name )   \
-    static vsi_nn_kernel_node_t _##kernel_name##setup \
-        ( \
-        vsi_nn_graph_t              * graph, \
-        vsi_nn_tensor_t            ** inputs, \
-        size_t                        input_num, \
-        vsi_nn_tensor_t            ** outputs, \
-        size_t                        output_num,\
-        const vsi_nn_kernel_param_t * params, \
-        vsi_nn_kernel_t             * kernel \
-        ); \
-    REGISTER_BACKEND_STREAM_PROCESSOR( kernel_name, _##kernel_name##setup ) \
-    static vsi_nn_kernel_node_t _##kernel_name##setup \
-        ( \
-        vsi_nn_graph_t              * graph, \
-        vsi_nn_tensor_t            ** inputs, \
-        size_t                        input_num, \
-        vsi_nn_tensor_t            ** outputs, \
-        size_t                        output_num,\
-        const vsi_nn_kernel_param_t * params, \
-        vsi_nn_kernel_t             * kernel \
-        )
+vsi_nn_kernel_node_t softmax_x_direction
+    (
+    vsi_nn_graph_t              * graph,
+    vsi_nn_tensor_t            ** inputs,
+    vsi_nn_tensor_t            ** outputs,
+    const vsi_nn_kernel_param_t * params
+    )
+{
+    vsi_nn_kernel_node_t node = NULL;
+    vsi_nn_tensor_attr_t attr;
+    vsi_nn_tensor_t * dummy_tensor[2] = {NULL};
+    vsi_nn_tensor_t * output_tensor[1] = {NULL};
+    int32_t axis = 0;
+    float beta = vsi_nn_kernel_param_get_float32( params, "beta" );
 
-REGISTER_SOFTMAX_STREAM_PROCESSOR_KERNEL( softmax )
+    memcpy( &attr, &outputs[0]->attr, sizeof(vsi_nn_tensor_attr_t) );
+    attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
+    attr.dtype.vx_type = VSI_NN_TYPE_FLOAT32;
+    attr.is_const = FALSE;
+    attr.vtl = TRUE;
+    attr.is_dummy = TRUE;
+    attr.size[axis] = 1;
+    dummy_tensor[0] = vsi_nn_CreateTensor( graph, &attr );
+    CHECK_PTR_FAIL_GOTO( dummy_tensor[0], "Create dummy_tensor fail.", final );
+    dummy_tensor[1] = vsi_nn_CreateTensor( graph, &attr );
+    CHECK_PTR_FAIL_GOTO( dummy_tensor[1], "Create dummy_tensor fail.", final );
+
+    memcpy( &attr, &outputs[0]->attr, sizeof(vsi_nn_tensor_attr_t) );
+    attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
+    attr.dtype.vx_type = VSI_NN_TYPE_FLOAT32;
+    attr.is_const = FALSE;
+    attr.vtl = TRUE;
+    output_tensor[0] = vsi_nn_CreateTensor( graph, &attr );
+    CHECK_PTR_FAIL_GOTO( output_tensor[0], "Create tensor fail.", final );
+
+    node = vsi_nn_sp_softmax_exp_node(graph, inputs[0], output_tensor[0], dummy_tensor[0], beta);
+    CHECK_PTR_FAIL_GOTO( node, "Create sp softmax node fail.", final );
+    node = vsi_nn_sp_softmax_rcp_node(graph, dummy_tensor[0], dummy_tensor[1]);
+    CHECK_PTR_FAIL_GOTO( node, "Create sp_softmax_rcp fail.", final );
+    node = vsi_nn_sp_softmax_times_node(graph, output_tensor[0], dummy_tensor[1], outputs[0]);
+    CHECK_PTR_FAIL_GOTO( node, "Create softmax_times fail.", final );
+
+final:
+    vsi_safe_release_tensor(dummy_tensor[0]);
+    vsi_safe_release_tensor(dummy_tensor[1]);
+    vsi_safe_release_tensor(output_tensor[0]);
+
+    return node;
+} /* softmax_x_direction() */
+
+vsi_nn_kernel_node_t softmax_y_direction
+    (
+    vsi_nn_graph_t              * graph,
+    vsi_nn_tensor_t            ** inputs,
+    vsi_nn_tensor_t            ** outputs,
+    const vsi_nn_kernel_param_t * params
+    )
 {
     vsi_nn_kernel_node_t node = NULL;
     vsi_nn_tensor_attr_t attr;
@@ -348,57 +381,36 @@ REGISTER_SOFTMAX_STREAM_PROCESSOR_KERNEL( softmax )
     vsi_size_t shape[VSI_NN_MAX_DIM_NUM] = { 0 };
     vsi_nn_tensor_t * dummy_tensor[2] = {NULL};
     vsi_nn_tensor_t * trans_tensor[2] = {NULL};
-    uint32_t perm[2][VSI_NN_MAX_DIM_NUM] = {0};
+    uint32_t perm[2][VSI_NN_MAX_DIM_NUM] = {{1, 0, 2, 3, 4, 5, 6, 7}, {1, 0, 2, 3, 4, 5, 6, 7}};
     float beta = vsi_nn_kernel_param_get_float32( params, "beta" );
-    uint32_t axis = vsi_nn_kernel_param_get_int32( params, "axis" );
-    uint32_t i = 0, index = 1;
+    uint32_t i = 0;
 
-    perm[0][0] = axis;
-    shape[0] = inputs[0]->attr.size[axis];
     for ( i = 0; i < inputs[0]->attr.dim_num; i++)
     {
-        if (i != axis)
-        {
-            perm[0][index] = i;
-            perm[1][i] = i < axis ? i + 1 : i;
-            shape[index] = inputs[0]->attr.size[i];
-            index ++;
-        }
-        else
-        {
-            perm[1][i] = 0;
-        }
+        shape[i] = inputs[0]->attr.size[perm[0][i]];
     }
 
-    if (axis != 0)
-    {
-        memcpy( &attr, &inputs[0]->attr, sizeof(vsi_nn_tensor_attr_t) );
-        memcpy( attr.size, shape, sizeof(shape) );
-        attr.is_const = FALSE;
-        attr.vtl = TRUE;
-        trans_tensor[0] = vsi_nn_CreateTensor( graph, &attr );
+    memcpy( &attr, &inputs[0]->attr, sizeof(vsi_nn_tensor_attr_t) );
+    memcpy( attr.size, shape, sizeof(shape) );
+    attr.is_const = FALSE;
+    attr.vtl = TRUE;
+    trans_tensor[0] = vsi_nn_CreateTensor( graph, &attr );
 
-        memcpy( &attr, &outputs[0]->attr, sizeof(vsi_nn_tensor_attr_t) );
-        memcpy( attr.size, shape, sizeof(shape) );
-        attr.is_const = FALSE;
-        attr.vtl = TRUE;
-        trans_tensor[1] = vsi_nn_CreateTensor( graph, &attr );
+    memcpy( &attr, &outputs[0]->attr, sizeof(vsi_nn_tensor_attr_t) );
+    memcpy( attr.size, shape, sizeof(shape) );
+    attr.is_const = FALSE;
+    attr.vtl = TRUE;
+    trans_tensor[1] = vsi_nn_CreateTensor( graph, &attr );
 
-        node = vxTensorPermuteNode
-            (
-            graph->g,
-            inputs[0]->t,
-            trans_tensor[0]->t,
-            perm[0],
-            inputs[0]->attr.dim_num
-            );
-        CHECK_PTR_FAIL_GOTO( node, "Create vxTensorPermuteNode fail.", final );
-    }
-    else
-    {
-        trans_tensor[0] = inputs[0];
-        trans_tensor[1] = outputs[0];
-    }
+    node = vxTensorPermuteNode
+        (
+        graph->g,
+        inputs[0]->t,
+        trans_tensor[0]->t,
+        perm[0],
+        inputs[0]->attr.dim_num
+        );
+    CHECK_PTR_FAIL_GOTO( node, "Create vxTensorPermuteNode fail.", final );
 
     memcpy( &attr, &trans_tensor[0]->attr, sizeof(vsi_nn_tensor_attr_t) );
     attr.dtype.vx_type = VSI_NN_TYPE_FLOAT32;
@@ -425,26 +437,74 @@ REGISTER_SOFTMAX_STREAM_PROCESSOR_KERNEL( softmax )
     CHECK_PTR_FAIL_GOTO( node, "Create sp_softmax_rcp fail.", final );
     node = vsi_nn_sp_softmax_times_node(graph, exp_output, dummy_tensor[1], trans_tensor[1]);
     CHECK_PTR_FAIL_GOTO( node, "Create softmax_times fail.", final );
-    if (axis != 0)
-    {
-        node = vxTensorPermuteNode
-            (
-            graph->g,
-            trans_tensor[1]->t,
-            outputs[0]->t,
-            perm[1],
-            outputs[0]->attr.dim_num
-            );
-        CHECK_PTR_FAIL_GOTO( node, "Create vxTensorPermuteNode fail.", final );
-    }
+
+    node = vxTensorPermuteNode
+        (
+        graph->g,
+        trans_tensor[1]->t,
+        outputs[0]->t,
+        perm[1],
+        outputs[0]->attr.dim_num
+        );
+    CHECK_PTR_FAIL_GOTO( node, "Create vxTensorPermuteNode fail.", final );
+
 final:
     vsi_safe_release_tensor(dummy_tensor[0]);
     vsi_safe_release_tensor(dummy_tensor[1]);
     vsi_safe_release_tensor(exp_output);
-    if (axis != 0)
+    vsi_safe_release_tensor(trans_tensor[0]);
+    vsi_safe_release_tensor(trans_tensor[1]);
+
+    return node;
+} /* softmax_y_direction() */
+
+vsi_nn_kernel_node_t softmax_z_direction
+    (
+    vsi_nn_graph_t              * graph,
+    vsi_nn_tensor_t            ** inputs,
+    vsi_nn_tensor_t            ** outputs,
+    const vsi_nn_kernel_param_t * params
+    );
+
+#define REGISTER_SOFTMAX_STREAM_PROCESSOR_KERNEL( kernel_name )   \
+    static vsi_nn_kernel_node_t _##kernel_name##setup \
+        ( \
+        vsi_nn_graph_t              * graph, \
+        vsi_nn_tensor_t            ** inputs, \
+        size_t                        input_num, \
+        vsi_nn_tensor_t            ** outputs, \
+        size_t                        output_num,\
+        const vsi_nn_kernel_param_t * params, \
+        vsi_nn_kernel_t             * kernel \
+        ); \
+    REGISTER_BACKEND_STREAM_PROCESSOR( kernel_name, _##kernel_name##setup ) \
+    static vsi_nn_kernel_node_t _##kernel_name##setup \
+        ( \
+        vsi_nn_graph_t              * graph, \
+        vsi_nn_tensor_t            ** inputs, \
+        size_t                        input_num, \
+        vsi_nn_tensor_t            ** outputs, \
+        size_t                        output_num,\
+        const vsi_nn_kernel_param_t * params, \
+        vsi_nn_kernel_t             * kernel \
+        )
+
+REGISTER_SOFTMAX_STREAM_PROCESSOR_KERNEL( softmax )
+{
+    vsi_nn_kernel_node_t node = NULL;
+    uint32_t axis = vsi_nn_kernel_param_get_int32( params, "axis" );
+
+    if (axis == 0)
     {
-        vsi_safe_release_tensor(trans_tensor[0]);
-        vsi_safe_release_tensor(trans_tensor[1]);
+        node = softmax_x_direction(graph, inputs, outputs, params);
+    }
+    else if (axis == 1)
+    {
+        node = softmax_y_direction(graph, inputs, outputs, params);
+    }
+    else if (axis == 2)
+    {
+        node = softmax_z_direction(graph, inputs, outputs, params);
     }
 
     return node;

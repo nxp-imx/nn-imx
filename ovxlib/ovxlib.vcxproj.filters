@@ -837,13 +837,13 @@
     <ClCompile Include="src\kernel\evis\tile_evis.c">
       <Filter>Source Files\kernel\evis</Filter>
     </ClCompile>
-    <ClCompile Include="src\kernel\evis\upsample_evis.c">
+  <ClCompile Include="src\kernel\evis\upsample_evis.c">
       <Filter>Source Files\kernel\evis</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\upsamplescale_evis.c">
       <Filter>Source Files\kernel\evis</Filter>
     </ClCompile>
-  <ClCompile Include="src\kernel\sp\batch_norm_sp.c">
+    <ClCompile Include="src\kernel\sp\batch_norm_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\sp\eltwise_sp.c">
@@ -889,6 +889,9 @@
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\sp\softmax_sp.c">
+      <Filter>Source Files\kernel\sp</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\sp\softmax_z_direction_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\vsi_nn_gpu.c">
@@ -971,12 +974,6 @@
     </ClCompile>
     <ClCompile Include="src\libnnext\vsi_nn_libnnext_resource.c">
       <Filter>Source Files\libnnext</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ops\vsi_nn_op_lppool.c">
-      <Filter>Source Files\ops</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ops\vsi_nn_op_pre_process_yuv422.c">
-      <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\libnnext\vsi_nn_vxkernel.c">
       <Filter>Source Files\libnnext</Filter>
@@ -1206,6 +1203,9 @@
     <ClCompile Include="src\ops\vsi_nn_op_logical_ops.c">
       <Filter>Source Files\ops</Filter>
     </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_lppool.c">
+      <Filter>Source Files\ops</Filter>
+    </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_lrn.c">
       <Filter>Source Files\ops</Filter>
     </ClCompile>
@@ -1297,6 +1297,9 @@
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_pre_process_yuv420.c">
+      <Filter>Source Files\ops</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_pre_process_yuv422.c">
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_pre_process_yuv444.c">
@@ -1667,12 +1670,6 @@
     <ClInclude Include="include\libnnext\vsi_nn_libnnext_resource.h">
       <Filter>Header Files\libnnext</Filter>
     </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_lppool.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_pre_process_yuv422.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
     <ClInclude Include="include\libnnext\vsi_nn_vxkernel.h">
       <Filter>Header Files\libnnext</Filter>
     </ClInclude>
@@ -1895,6 +1892,9 @@
     <ClInclude Include="include\ops\vsi_nn_op_logical_ops.h">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_lppool.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
     <ClInclude Include="include\ops\vsi_nn_op_lrn.h">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
@@ -1986,6 +1986,9 @@
       <Filter>Header Files\ops</Filter>
     </ClInclude>
     <ClInclude Include="include\ops\vsi_nn_op_pre_process_yuv420.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_pre_process_yuv422.h">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
     <ClInclude Include="include\ops\vsi_nn_op_pre_process_yuv444.h">
