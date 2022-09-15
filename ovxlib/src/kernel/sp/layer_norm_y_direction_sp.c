@@ -49,7 +49,7 @@ vsi_nn_spinst_t * vsi_nn_sp_moments_axis1_inst
     const int32_t spInstsNum = spInitInstsNum + spLoopInstsNum + spCompleteInstsNum;
 
     vsi_nn_spinst_t *spinst = NULL;
-    vsi_nn_spinst_inst_param sp_insts_param[9];
+    vsi_nn_spinst_inst_param sp_insts_param[11];
     vsi_nn_spinst_attr_t attr;
 
     memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
@@ -401,11 +401,11 @@ vsi_nn_spinst_t * vsi_nn_sp_layer_norm_axis1_inst
 {
     vsi_status status = VSI_FAILURE;
     const int32_t spInitInstsNum = 0;
-    const int32_t spLoopInstsNum = fifo_depth > 3 ? 2 : 4;
+    const int32_t spLoopInstsNum = fifo_depth > 3 ? 2 : 5;
     const int32_t spInstsNum = spInitInstsNum + spLoopInstsNum;
 
     vsi_nn_spinst_t *spinst = NULL;
-    vsi_nn_spinst_inst_param sp_insts_param[4];
+    vsi_nn_spinst_inst_param sp_insts_param[5];
     vsi_nn_spinst_attr_t attr;
 
     memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
