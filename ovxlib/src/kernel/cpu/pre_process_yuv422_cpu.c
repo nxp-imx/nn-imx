@@ -216,12 +216,12 @@ DEF_KERNEL_EXECUTOR(_pre_process_yuv422_exec)
                     {
                         if (yuv422_type == 1)
                         {
-                            tmpY0 = src_y_slice[srcx];
+                            tmpY0 = src_y_slice[srcx + 1];
                             tmpU0 = src_y_slice[(srcx / 4) * 4];
                             tmpV0 = src_y_slice[(srcx / 4) * 4 + 2];
                             srcx = (((uint32_t)(dx + 1) * xrIntFloat_16) >> 16) + xOffset;
                             srcx = srcx * 2;
-                            tmpY1 = src_y_slice[srcx];
+                            tmpY1 = src_y_slice[srcx + 1];
                             tmpU1 = src_y_slice[(srcx / 4) * 4];
                             tmpV1 = src_y_slice[(srcx / 4) * 4 + 2];
                         }

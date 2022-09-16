@@ -540,6 +540,8 @@ static vsi_bool op_setup
     }
 
     if ( p->type == VSI_NN_SOURCE_FORMAT_IMAGE_YUV420        ||
+         p->type == VSI_NN_SOURCE_FORMAT_IMAGE_YUYV422       ||
+         p->type == VSI_NN_SOURCE_FORMAT_IMAGE_UYVY422       ||
          p->type == VSI_NN_SOURCE_FORMAT_IMAGE_YUV444        ||
          p->type == VSI_NN_SOURCE_FORMAT_IMAGE_NV12          ||
          p->type == VSI_NN_SOURCE_FORMAT_IMAGE_RGB           ||
