@@ -2139,6 +2139,184 @@ BATCH_NORM_SH_IMPL_AXIS1_2D(I8,  I8,  vxc_char16,  vxc_char16,  int4,  vxc_char1
 BATCH_NORM_SH_IMPL_AXIS1_2D(I8,  F16, vxc_char16,  vxc_char16,  half4, vxc_half8,   vxc_ushort8)\n\
 "; /* end of batchnorm_single_f32_vx*/
 
+static const char bucketize_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+_viv_uniform VXC_512Bits uniDataConvert_0_4x4;\n\
+_viv_uniform VXC_512Bits uniDataConvert_1_4x4;\n\
+_viv_uniform int boundaries_size_x8;\n\
+_viv_uniform int boundaries_size;\n\
+\n\
+#define BUCKETIZE_16BITS_SH_IMPL(name, copy_type) \\\n\
+__kernel void bucketize_right_##name \\\n\
+    ( \\\n\
+    __read_only  image2d_t input, \\\n\
+    __read_only  image2d_t boundaries, \\\n\
+    __write_only image2d_t output \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), 0, 0); \\\n\
+ \\\n\
+    vxc_short8 data0, data1; \\\n\
+    copy_type src0, src1, dst0, dst1; \\\n\
+    vxc_ushort8 v0, v1, v2, v3, result = 0; \\\n\
+    VXC_ReadImage(data0, input, coord.xy, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    _viv_asm(COPY, src0, data0, 16); \\\n\
+ \\\n\
+    for (; coord.z < boundaries_size_x8; ) \\\n\
+    { \\\n\
+        VXC_ReadImage(data1, boundaries, coord.zw, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+        _viv_asm(COPY, src1, data1.s00000000, 16); \\\n\
+        coord.z += 8; \\\n\
+ \\\n\
+        VXC_Clamp(dst0, src0, src1, src0, VXC_MODIFIER_CLAMP(0, 7, 0, 1)); \\\n\
+        _viv_asm(COPY, v0, dst0, 16); \\\n\
+        v2 = sub_sat(v0, 0xFFFE); \\\n\
+        _viv_asm(COPY, src1, data1.s11111111, 16); \\\n\
+        VXC_Clamp(dst1, src0, src1, src0, VXC_MODIFIER_CLAMP(0, 7, 0, 1)); \\\n\
+        _viv_asm(COPY, v1, dst1, 16); \\\n\
+        v3 = sub_sat(v1, 0xFFFE); \\\n\
+ \\\n\
+        result = result + v2 + v3; \\\n\
+ \\\n\
+        _viv_asm(COPY, src1, data1.s22222222, 16); \\\n\
+        VXC_Clamp(dst0, src0, src1, src0, VXC_MODIFIER_CLAMP(0, 7, 0, 1)); \\\n\
+        _viv_asm(COPY, v0, dst0, 16); \\\n\
+        v2 = sub_sat(v0, 0xFFFE); \\\n\
+        _viv_asm(COPY, src1, data1.s33333333, 16); \\\n\
+        VXC_Clamp(dst1, src0, src1, src0, VXC_MODIFIER_CLAMP(0, 7, 0, 1)); \\\n\
+        _viv_asm(COPY, v1, dst1, 16); \\\n\
+        v3 = sub_sat(v1, 0xFFFE); \\\n\
+ \\\n\
+        result = result + v2 + v3; \\\n\
+ \\\n\
+        _viv_asm(COPY, src1, data1.s44444444, 16); \\\n\
+        VXC_Clamp(dst0, src0, src1, src0, VXC_MODIFIER_CLAMP(0, 7, 0, 1)); \\\n\
+        _viv_asm(COPY, v0, dst0, 16); \\\n\
+        v2 = sub_sat(v0, 0xFFFE); \\\n\
+        _viv_asm(COPY, src1, data1.s55555555, 16); \\\n\
+        VXC_Clamp(dst1, src0, src1, src0, VXC_MODIFIER_CLAMP(0, 7, 0, 1)); \\\n\
+        _viv_asm(COPY, v1, dst1, 16); \\\n\
+        v3 = sub_sat(v1, 0xFFFE); \\\n\
+ \\\n\
+        result = result + v2 + v3; \\\n\
+ \\\n\
+        _viv_asm(COPY, src1, data1.s66666666, 16); \\\n\
+        VXC_Clamp(dst0, src0, src1, src0, VXC_MODIFIER_CLAMP(0, 7, 0, 1)); \\\n\
+        _viv_asm(COPY, v0, dst0, 16); \\\n\
+        v2 = sub_sat(v0, 0xFFFE); \\\n\
+        _viv_asm(COPY, src1, data1.s77777777, 16); \\\n\
+        VXC_Clamp(dst1, src0, src1, src0, VXC_MODIFIER_CLAMP(0, 7, 0, 1)); \\\n\
+        _viv_asm(COPY, v1, dst1, 16); \\\n\
+        v3 = sub_sat(v1, 0xFFFE); \\\n\
+ \\\n\
+        result = result + v2 + v3; \\\n\
+    } \\\n\
+ \\\n\
+    for (; coord.z < boundaries_size; ) \\\n\
+    { \\\n\
+        VXC_ReadImage(data1, boundaries, coord.zw, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+        _viv_asm(COPY, src1, data1.s00000000, 16); \\\n\
+        coord.z ++; \\\n\
+ \\\n\
+        VXC_Clamp(dst0, src0, src1, src0, VXC_MODIFIER_CLAMP(0, 7, 0, 1)); \\\n\
+        _viv_asm(COPY, v0, dst0, 16); \\\n\
+        v2 = sub_sat(v0, 0xFFFE); \\\n\
+ \\\n\
+        result = result + v2; \\\n\
+    } \\\n\
+ \\\n\
+    int4 d0, d1; \\\n\
+    VXC_DP4x4(d0, result, result, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 0), uniDataConvert_0_4x4); \\\n\
+    VXC_DP4x4(d1, result, result, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 0), uniDataConvert_1_4x4); \\\n\
+    coord.z = coord.x + 4; \\\n\
+ \\\n\
+    write_imagei(output, coord.xy, d0); \\\n\
+    write_imagei(output, coord.zy, d1); \\\n\
+}\n\
+BUCKETIZE_16BITS_SH_IMPL(F16_F16toI32_2D, vxc_half8)\n\
+BUCKETIZE_16BITS_SH_IMPL(I16_I16toI32_2D, vxc_short8)\n\
+\n\
+#define BUCKETIZE_8BITS_SH_IMPL(name, src_type) \\\n\
+__kernel void bucketize_right_U8_U8toI32_2D \\\n\
+    ( \\\n\
+    __read_only  image2d_t input, \\\n\
+    __read_only  image2d_t boundaries, \\\n\
+    __write_only image2d_t output \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), 0, 0); \\\n\
+ \\\n\
+    src_type src0, src1, src2; \\\n\
+    vxc_uchar8 dst0, dst1; \\\n\
+    VXC_ReadImage(src0, input, coord.xy, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+    VXC_ReadImage(src1, boundaries, coord.zw, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+ \\\n\
+    for (; coord.z < boundaries_size_x8; ) \\\n\
+    { \\\n\
+        VXC_ReadImage(src1, boundaries, coord.zw, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+        coord.z += 8; \\\n\
+ \\\n\
+        VXC_Clamp(src2, src0, src1.s00000000, src0, VXC_MODIFIER_CLAMP(0, 7, 0, 1)); \\\n\
+        _viv_asm(COPY, dst0, src2, 8); \\\n\
+        dst0 = sub_sat(dst0, 0xFE); \\\n\
+        VXC_Clamp(src2, src0, src1.s11111111, src0, VXC_MODIFIER_CLAMP(0, 7, 0, 1)); \\\n\
+        _viv_asm(COPY, dst1, src2, 8); \\\n\
+        dst1 = sub_sat(dst1, 0xFE); \\\n\
+ \\\n\
+        result = result + dst0 + dst1; \\\n\
+ \\\n\
+        VXC_Clamp(src2, src0, src1.s22222222, src0, VXC_MODIFIER_CLAMP(0, 7, 0, 1)); \\\n\
+        _viv_asm(COPY, dst0, src2, 8); \\\n\
+        dst0 = sub_sat(dst0, 0xFE); \\\n\
+        VXC_Clamp(src2, src0, src1.s33333333, src0, VXC_MODIFIER_CLAMP(0, 7, 0, 1)); \\\n\
+        _viv_asm(COPY, dst1, src2, 8); \\\n\
+        dst1 = sub_sat(dst1, 0xFE); \\\n\
+ \\\n\
+        result = result + dst0 + dst1; \\\n\
+ \\\n\
+        VXC_Clamp(src2, src0, src1.s44444444, src0, VXC_MODIFIER_CLAMP(0, 7, 0, 1)); \\\n\
+        _viv_asm(COPY, dst0, src2, 8); \\\n\
+        dst0 = sub_sat(dst0, 0xFE); \\\n\
+        VXC_Clamp(src2, src0, src1.s55555555, src0, VXC_MODIFIER_CLAMP(0, 7, 0, 1)); \\\n\
+        _viv_asm(COPY, dst1, src2, 8); \\\n\
+        dst1 = sub_sat(dst1, 0xFE); \\\n\
+ \\\n\
+        result = result + dst0 + dst1; \\\n\
+ \\\n\
+        VXC_Clamp(src2, src0, src1.s66666666, src0, VXC_MODIFIER_CLAMP(0, 7, 0, 1)); \\\n\
+        _viv_asm(COPY, dst0, src2, 8); \\\n\
+        dst0 = sub_sat(dst0, 0xFE); \\\n\
+        VXC_Clamp(src2, src0, src1.s77777777, src0, VXC_MODIFIER_CLAMP(0, 7, 0, 1)); \\\n\
+        _viv_asm(COPY, dst1, src2, 8); \\\n\
+        dst1 = sub_sat(dst1, 0xFE); \\\n\
+ \\\n\
+        result = result + dst0 + dst1; \\\n\
+    } \\\n\
+ \\\n\
+    for (; coord.z < boundaries_size; ) \\\n\
+    { \\\n\
+        VXC_ReadImage(src1, boundaries, coord.zw, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+        coord.z ++; \\\n\
+ \\\n\
+        VXC_Clamp(src2, src0, src1.s00000000, src0, VXC_MODIFIER_CLAMP(0, 7, 0, 1)); \\\n\
+        _viv_asm(COPY, dst0, src2, 8); \\\n\
+        dst0 = sub_sat(dst0, 0xFE); \\\n\
+ \\\n\
+        result = result + dst0; \\\n\
+    } \\\n\
+ \\\n\
+    int4 d0, d1; \\\n\
+    VXC_DP4x4(d0, result, result, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 0), uniDataConvert_0_4x4); \\\n\
+    VXC_DP4x4(d1, result, result, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 0), uniDataConvert_1_4x4); \\\n\
+    coord.z = coord.x + 4; \\\n\
+ \\\n\
+    write_imagei(output, coord.xy, d0); \\\n\
+    write_imagei(output, coord.zy, d1); \\\n\
+}\n\
+BUCKETIZE_16BITS_SH_IMPL(U8_U8toI32_2D, vxc_uchar8)\n\
+BUCKETIZE_16BITS_SH_IMPL(I8_I8toI32_2D, vxc_char8)\n\
+"; /* end of bucketize_vx*/
+
 static const char cast_vx[] = "\n\
 #include \"cl_viv_vx_ext.h\"\n\
 \n\
@@ -43578,6 +43756,289 @@ __kernel void batch_norm_I32to##TYPE##_2D \\\n\
 BATCH_NORM_I32_SH_IMPL_2D(I32)\n\
 BATCH_NORM_I32_SH_IMPL_2D(F32)"; /* end of batchnorm_single_cl*/
 
+static const char bucketize_cl[] = "#pragma OPENCL EXTENSION CL_VIV_asm : enable\n\
+\n\
+#define BUCKETIZE_F32_2D_SH_IMPL(name, comp_op) \\\n\
+__kernel void bucketize_##name \\\n\
+    ( \\\n\
+    __read_only  image2d_t input, \\\n\
+    __read_only  image2d_t boundaries, \\\n\
+    __write_only image2d_t output, \\\n\
+                 int       boundaries_size, \\\n\
+                 float     input0_scale, \\\n\
+                 float     input0_tail, \\\n\
+                 float     input1_scale, \\\n\
+                 float     input1_tail \\\n\
+    ) \\\n\
+{ \\\n\
+    int2 coord = (int2)(get_global_id(0), get_global_id(1)); \\\n\
+ \\\n\
+    float4 src0 = read_imagef(input, coord); \\\n\
+ \\\n\
+    int2 pos = 0; \\\n\
+    do \\\n\
+    { \\\n\
+        float4 src1 = read_imagef(boundaries, pos); \\\n\
+        if ((src0.x) comp_op (src1.x)) \\\n\
+        { \\\n\
+            break; \\\n\
+        } \\\n\
+        pos.x ++; \\\n\
+    } while(pos.x < boundaries_size); \\\n\
+ \\\n\
+    write_imagei(output, coord, pos.xxxx); \\\n\
+}\n\
+BUCKETIZE_F32_2D_SH_IMPL(F32_F32toI32_2D,       <=)\n\
+BUCKETIZE_F32_2D_SH_IMPL(right_F32_F32toI32_2D, <)\n\
+\n\
+#define BUCKETIZE_F32_SH_IMPL(name, comp_op) \\\n\
+__kernel void bucketize_##name \\\n\
+    ( \\\n\
+    __read_only  image2d_array_t input, \\\n\
+    __read_only  image2d_t       boundaries, \\\n\
+    __write_only image2d_array_t output, \\\n\
+                 int             boundaries_size, \\\n\
+                 float           input0_scale, \\\n\
+                 float           input0_tail, \\\n\
+                 float           input1_scale, \\\n\
+                 float           input1_tail \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
+ \\\n\
+    float4 src0 = read_imagef(input, coord); \\\n\
+ \\\n\
+    int2 pos = 0; \\\n\
+    do \\\n\
+    { \\\n\
+        float4 src1 = read_imagef(boundaries, pos); \\\n\
+        if ((src0.x) comp_op (src1.x)) \\\n\
+        { \\\n\
+            break; \\\n\
+        } \\\n\
+        pos.x ++; \\\n\
+    } while(pos.x < boundaries_size); \\\n\
+ \\\n\
+    write_imagei(output, coord, pos.xxxx); \\\n\
+}\n\
+BUCKETIZE_F32_SH_IMPL(F32_F32toI32,       <=)\n\
+BUCKETIZE_F32_SH_IMPL(right_F32_F32toI32, <)\n\
+\n\
+#define BUCKETIZE_I32_2D_SH_IMPL(name, comp_op) \\\n\
+__kernel void bucketize_##name \\\n\
+    ( \\\n\
+    __read_only  image2d_t input, \\\n\
+    __read_only  image2d_t boundaries, \\\n\
+    __write_only image2d_t output, \\\n\
+                 int       boundaries_size, \\\n\
+                 float     input0_scale, \\\n\
+                 float     input0_tail, \\\n\
+                 float     input1_scale, \\\n\
+                 float     input1_tail \\\n\
+    ) \\\n\
+{ \\\n\
+    int2 coord = (int2)(get_global_id(0), get_global_id(1)); \\\n\
+ \\\n\
+    float4 src0 = convert_float4(read_imagei(input, coord)); \\\n\
+ \\\n\
+    int2 pos = 0; \\\n\
+    src0 = src0 * input0_scale + input0_tail; \\\n\
+    do \\\n\
+    { \\\n\
+        float4 src1 = convert_float4(read_imagei(boundaries, pos)); \\\n\
+        src1 = src1 * input1_scale + input1_tail; \\\n\
+        if ((src0.x) comp_op (src1.x)) \\\n\
+        { \\\n\
+            break; \\\n\
+        } \\\n\
+        pos.x ++; \\\n\
+    } while(pos.x < boundaries_size); \\\n\
+ \\\n\
+    write_imagei(output, coord, pos.xxxx); \\\n\
+}\n\
+BUCKETIZE_I32_2D_SH_IMPL(I32_I32toI32_2D,       <=)\n\
+BUCKETIZE_I32_2D_SH_IMPL(right_I32_I32toI32_2D, <)\n\
+\n\
+#define BUCKETIZE_I32_SH_IMPL(name, comp_op) \\\n\
+__kernel void bucketize_##name \\\n\
+    ( \\\n\
+    __read_only  image2d_array_t input, \\\n\
+    __read_only  image2d_t       boundaries, \\\n\
+    __write_only image2d_array_t output, \\\n\
+                 int             boundaries_size, \\\n\
+                 float           input0_scale, \\\n\
+                 float           input0_tail, \\\n\
+                 float           input1_scale, \\\n\
+                 float           input1_tail \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
+ \\\n\
+    int4 data = read_imagei(input, coord); \\\n\
+    float4 src0 = convert_float4(data) * input0_scale + input0_tail; \\\n\
+ \\\n\
+    int2 pos = 0; \\\n\
+    do \\\n\
+    { \\\n\
+        float4 src1 = convert_float4(read_imagei(boundaries, pos)); \\\n\
+        src1 = src1 * input1_scale + input1_tail; \\\n\
+        if ((src0.x) comp_op (src1.x)) \\\n\
+        { \\\n\
+            break; \\\n\
+        } \\\n\
+        pos.x ++; \\\n\
+    } while(pos.x < boundaries_size); \\\n\
+ \\\n\
+    write_imagei(output, coord, pos.xxxx); \\\n\
+}\n\
+BUCKETIZE_I32_SH_IMPL(I32_I32toI32,       <=)\n\
+BUCKETIZE_I32_SH_IMPL(right_I32_I32toI32, <)\n\
+\n\
+#define BUCKETIZE_U32_2D_SH_IMPL(name, comp_op) \\\n\
+__kernel void bucketize_##name \\\n\
+    ( \\\n\
+    __read_only  image2d_t input, \\\n\
+    __read_only  image2d_t boundaries, \\\n\
+    __write_only image2d_t output, \\\n\
+                 int       boundaries_size, \\\n\
+                 float     input0_scale, \\\n\
+                 float     input0_tail, \\\n\
+                 float     input1_scale, \\\n\
+                 float     input1_tail \\\n\
+    ) \\\n\
+{ \\\n\
+    int2 coord = (int2)(get_global_id(0), get_global_id(1)); \\\n\
+ \\\n\
+    float4 src0 = convert_float4(read_imageui(input, coord)); \\\n\
+ \\\n\
+    int2 pos = 0; \\\n\
+    src0 = src0 * input0_scale + input0_tail; \\\n\
+    do \\\n\
+    { \\\n\
+        float4 src1 = convert_float4(read_imageui(boundaries, pos)); \\\n\
+        src1 = src1 * input1_scale + input1_tail; \\\n\
+        if ((src0.x) comp_op (src1.x)) \\\n\
+        { \\\n\
+            break; \\\n\
+        } \\\n\
+        pos.x ++; \\\n\
+    } while(pos.x < boundaries_size); \\\n\
+ \\\n\
+    write_imagei(output, coord, pos.xxxx); \\\n\
+}\n\
+BUCKETIZE_U32_2D_SH_IMPL(U32_U32toI32_2D,       <=)\n\
+BUCKETIZE_U32_2D_SH_IMPL(right_U32_U32toI32_2D, <)\n\
+\n\
+#define BUCKETIZE_U32_SH_IMPL(name, comp_op) \\\n\
+__kernel void bucketize_##name \\\n\
+    ( \\\n\
+    __read_only  image2d_array_t input, \\\n\
+    __read_only  image2d_t       boundaries, \\\n\
+    __write_only image2d_array_t output, \\\n\
+                 int             boundaries_size, \\\n\
+                 float           input0_scale, \\\n\
+                 float           input0_tail, \\\n\
+                 float           input1_scale, \\\n\
+                 float           input1_tail \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
+ \\\n\
+    uint4 data = read_imageui(input, coord); \\\n\
+    float4 src0 = convert_float4(data) * input0_scale + input0_tail; \\\n\
+ \\\n\
+    int2 pos = 0; \\\n\
+    do \\\n\
+    { \\\n\
+        float4 src1 = convert_float4(read_imageui(boundaries, pos)); \\\n\
+        src1 = src1 * input1_scale + input1_tail; \\\n\
+        if ((src0.x) comp_op (src1.x)) \\\n\
+        { \\\n\
+            break; \\\n\
+        } \\\n\
+        pos.x ++; \\\n\
+    } while(pos.x < boundaries_size); \\\n\
+ \\\n\
+    write_imagei(output, coord, pos.xxxx); \\\n\
+}\n\
+BUCKETIZE_U32_SH_IMPL(U32_U32toI32,       <=)\n\
+BUCKETIZE_U32_SH_IMPL(right_U32_U32toI32, <)\n\
+\n\
+#define BUCKETIZE_BF16_2D_SH_IMPL(name, comp_op) \\\n\
+__kernel void bucketize_##name \\\n\
+    ( \\\n\
+    __read_only  image2d_t input, \\\n\
+    __read_only  image2d_t boundaries, \\\n\
+    __write_only image2d_t output, \\\n\
+                 int       boundaries_size, \\\n\
+                 float     input0_scale, \\\n\
+                 float     input0_tail, \\\n\
+                 float     input1_scale, \\\n\
+                 float     input1_tail \\\n\
+    ) \\\n\
+{ \\\n\
+    int2 coord = (int2)(get_global_id(0), get_global_id(1)); \\\n\
+ \\\n\
+    uint4 data0 = read_imageui(input, coord) << 16; \\\n\
+    float4 src0; \\\n\
+    _viv_asm(COPY, src0, data0, 16); \\\n\
+ \\\n\
+    int2 pos = 0; \\\n\
+    do \\\n\
+    { \\\n\
+        uint4 data1 = read_imageui(boundaries, pos) << 16; \\\n\
+        float4 src1; \\\n\
+        _viv_asm(COPY, src1, data1, 16); \\\n\
+        if ((src0.x) comp_op (src1.x)) \\\n\
+        { \\\n\
+            break; \\\n\
+        } \\\n\
+        pos.x ++; \\\n\
+    } while(pos.x < boundaries_size); \\\n\
+ \\\n\
+    write_imagei(output, coord, pos.xxxx); \\\n\
+}\n\
+BUCKETIZE_BF16_2D_SH_IMPL(BF16_BF16toI32_2D,       <=)\n\
+BUCKETIZE_BF16_2D_SH_IMPL(right_BF16_BF16toI32_2D, <)\n\
+\n\
+#define BUCKETIZE_BF16_SH_IMPL(name, comp_op) \\\n\
+__kernel void bucketize_##name \\\n\
+    ( \\\n\
+    __read_only  image2d_array_t input, \\\n\
+    __read_only  image2d_t       boundaries, \\\n\
+    __write_only image2d_array_t output, \\\n\
+                 int             boundaries_size, \\\n\
+                 float           input0_scale, \\\n\
+                 float           input0_tail, \\\n\
+                 float           input1_scale, \\\n\
+                 float           input1_tail \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
+ \\\n\
+    uint4 data0 = read_imageui(input, coord) << 16; \\\n\
+    float4 src0; \\\n\
+    _viv_asm(COPY, src0, data0, 16); \\\n\
+ \\\n\
+    int2 pos = 0; \\\n\
+    do \\\n\
+    { \\\n\
+        uint4 data1 = read_imageui(boundaries, pos) << 16; \\\n\
+        float4 src1; \\\n\
+        _viv_asm(COPY, src1, data1, 16); \\\n\
+        if ((src0.x) comp_op (src1.x)) \\\n\
+        { \\\n\
+            break; \\\n\
+        } \\\n\
+        pos.x ++; \\\n\
+    } while(pos.x < boundaries_size); \\\n\
+ \\\n\
+    write_imagei(output, coord, pos.xxxx); \\\n\
+}\n\
+BUCKETIZE_BF16_SH_IMPL(BF16_BF16toI32,       <=)\n\
+BUCKETIZE_BF16_SH_IMPL(right_BF16_BF16toI32, <)\n\
+"; /* end of bucketize_cl*/
+
 static const char cast_cl[] = "\n\
 #define CAST_FUN(src_name, dst_name, src_type, dst_type, conv_fun, read_fun, write_fun) \\\n\
 __kernel void cast_##src_name##to##dst_name( \\\n\
@@ -59076,13 +59537,8 @@ static const char scatter_nd_cl[] = "__kernel void scatter_nd_U32toU32_1D(\n\
     int gidy = get_global_id(1);  // indices_num\n\
 \n\
     uint4 sum = (uint4)(0, 0, 0, 0);\n\
-\n\
-    int stride_x = 4;\n\
-    Image indice_img = create_image_from_image2d(input0, stride_x);\n\
-\n\
     for(int i = 0; i < index_num; i++)\n\
     {\n\
-        int indice_ = get_image_ptr_from_coord(indice_img, (int2)(0, i));\n\
         int4 indice = read_imagei(input0, (int2)(0, i));\n\
         if(gidy == indice.x)\n\
         {\n\
@@ -60830,6 +61286,7 @@ static const source_map_t evis_resource[] =
     {"argmin_axis2_vx", argmin_axis2_vx},
     {"batchnorm_single_vx", batchnorm_single_vx},
     {"batchnorm_single_f32_vx", batchnorm_single_f32_vx},
+    {"bucketize_vx", bucketize_vx},
     {"cast_vx", cast_vx},
     {"clip_F16_vx", clip_F16_vx},
     {"clip_I16_vx", clip_I16_vx},
@@ -61052,6 +61509,7 @@ static const source_map_t cl_resource[] =
     {"argmin_axis1_cl", argmin_axis1_cl},
     {"argmin_axis2_cl", argmin_axis2_cl},
     {"batchnorm_single_cl", batchnorm_single_cl},
+    {"bucketize_cl", bucketize_cl},
     {"cast_cl", cast_cl},
     {"clip_BF16_cl", clip_BF16_cl},
     {"clip_F32_cl", clip_F32_cl},

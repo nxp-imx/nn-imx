@@ -159,6 +159,9 @@
     <ClCompile Include="src\kernel\cl\batchnorm_single_cl.c">
       <Filter>Source Files\kernel\cl</Filter>
     </ClCompile>
+    <ClCompile Include="src\kernel\cl\bucketize_cl.c">
+      <Filter>Source Files\kernel\cl</Filter>
+    </ClCompile>
     <ClCompile Include="src\kernel\cl\cast_cl.c">
       <Filter>Source Files\kernel\cl</Filter>
     </ClCompile>
@@ -361,6 +364,9 @@
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\box_with_nms_limit_cpu.c">
+      <Filter>Source Files\kernel\cpu</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\cpu\bucketize_cpu.c">
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\cast_cpu.c">
@@ -627,6 +633,9 @@
     <ClCompile Include="src\kernel\evis\batchnorm_single_evis.c">
       <Filter>Source Files\kernel\evis</Filter>
     </ClCompile>
+    <ClCompile Include="src\kernel\evis\bucketize_evis.c">
+      <Filter>Source Files\kernel\evis</Filter>
+    </ClCompile>
     <ClCompile Include="src\kernel\evis\cast_evis.c">
       <Filter>Source Files\kernel\evis</Filter>
     </ClCompile>
@@ -831,13 +840,13 @@
     <ClCompile Include="src\kernel\evis\swish_evis.c">
       <Filter>Source Files\kernel\evis</Filter>
     </ClCompile>
-    <ClCompile Include="src\kernel\evis\tensorstackconcat_evis.c">
+  <ClCompile Include="src\kernel\evis\tensorstackconcat_evis.c">
       <Filter>Source Files\kernel\evis</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\tile_evis.c">
       <Filter>Source Files\kernel\evis</Filter>
     </ClCompile>
-  <ClCompile Include="src\kernel\evis\upsample_evis.c">
+    <ClCompile Include="src\kernel\evis\upsample_evis.c">
       <Filter>Source Files\kernel\evis</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\upsamplescale_evis.c">
@@ -1009,6 +1018,9 @@
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_box_with_nms_limit.c">
+      <Filter>Source Files\ops</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_bucketize.c">
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_cast.c">
@@ -1710,6 +1722,9 @@
       <Filter>Header Files\ops</Filter>
     </ClInclude>
     <ClInclude Include="include\ops\vsi_nn_op_box_with_nms_limit.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_bucketize.h">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
     <ClInclude Include="include\ops\vsi_nn_op_cast.h">

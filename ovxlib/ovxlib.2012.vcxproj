@@ -523,6 +523,7 @@
     <ClInclude Include="include\ops\vsi_nn_op_bidirectional_sequence_lstm.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_bidirectional_sequence_rnn.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_box_with_nms_limit.h"/>
+    <ClInclude Include="include\ops\vsi_nn_op_bucketize.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_cast.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_celu.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_clip.h"/>
@@ -797,6 +798,9 @@
     <ClCompile Include="src\kernel\cl\batchnorm_single_cl.c">
       <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="src\kernel\cl\bucketize_cl.c">
+      <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="src\kernel\cl\cast_cl.c">
       <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
@@ -999,6 +1003,9 @@
       <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\box_with_nms_limit_cpu.c">
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\kernel\cpu\bucketize_cpu.c">
       <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\cast_cpu.c">
@@ -1263,6 +1270,9 @@
       <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\batchnorm_single_evis.c">
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\kernel\evis\bucketize_evis.c">
       <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\cast_evis.c">
@@ -1647,6 +1657,9 @@
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_box_with_nms_limit.c">
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_bucketize.c">
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_cast.c">
