@@ -39,8 +39,8 @@ __kernel void pre_process_yuv422_copy_##name \
     int sy = gidy + (*yOffset); \
     int sx = gidx + (*xOffset * 2); \
  \
-    vxc_uchar16 YUV; \
-    vxc_char16 tmpYUV; \
+    vxc_uchar8 YUV; \
+    vxc_short8 tmpYUV; \
  \
     VXC_ReadImage(YUV, input, (int2)(sx,sy), 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \
  \
