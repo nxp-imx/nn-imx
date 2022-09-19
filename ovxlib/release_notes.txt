@@ -1,4 +1,29 @@
 ############################################################################
+Release notes for Ovxlib 1.1.57
+
+New Features:
+    1. Add 'slice', 'lppool', 'scatter_elements', 'pre_process_yuv422',
+       'bucketize'
+
+Feature Refine:
+    1. Refine implementaion of unibidirectional_sequence_rnn
+    2. Support more data type for 'roi_pool', 'conv2d', 'pre_process_nv12',
+       'pre_process_yuv420', 'matrixmul'
+    3. Refine implementaion of instance_norm
+    4. Support pad_mode for convolution relative layers
+    5. Refine implementaion of bidirectional_sequence_rnn
+    6. Support 3D tensor for space2depth
+
+Bug Fixing:
+    1. Fix some memory leak issue
+    2. Fix group_norm accuracy issue
+    3. Fix nncts bilinear.half_pixel_centers failed issue
+    4. Fix relun crash issue
+    5. Fix tile operation parameter setting issue
+    6. Fix roi_align boundary interpolation incorrect issue
+    7. Fix pad performance issue
+
+############################################################################
 Release notes for Ovxlib 1.1.50
 
 New Features:
