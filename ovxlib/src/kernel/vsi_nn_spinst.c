@@ -281,7 +281,7 @@ void vsi_nn_init_spinst_attr
 
     /*default per loop to process one input or output pixel*/
     attrs->num_of_elements_per_loop_per_input = 1;
-    attrs->sum_engine_control = VSI_NN_SP_ACCUM_2D;
+    attrs->accelerator_input_select = VSI_NN_SP_ACCELERATOR_IN_FROM_ACCEL;
 } /* vsi_nn_init_spinst_attr() */
 
 #endif
