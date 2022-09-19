@@ -108,6 +108,7 @@ typedef struct _vsi_nn_spinst_attr
     uint32_t sum_engine_control;
     uint32_t sum_engine_num_ch_minus_one;
     uint32_t sum_engine_2d_accum_storeage;
+    uint32_t num_of_elements_per_loop_per_input;
     uint32_t split_axis;
     uint32_t split_max_vector_depth;
     vsi_bool split_tilex_equal_imgx;
@@ -173,6 +174,7 @@ typedef enum
     VSI_NN_SP_ATTRIBUTE_SUM_ENGINE_CONTROL          = VX_SP_ATTRIBUTE_SUM_ENGINE_CONTROL,
     VSI_NN_SP_ATTRIBUTE_SUM_ENGINE_NUM_CH_MINUS_ONE = VX_SP_ATTRIBUTE_SUM_ENGINE_NUM_CH_MINUS_ONE,
     VSI_NN_SP_ATTRIBUTE_SUM_ENGINE_2D_ACCUM_STORAGE = VX_SP_ATTRIBUTE_SUM_ENGINE_2D_ACCUM_STORAGE,
+    VSI_NN_SP_ATTRIBUTE_NUM_OF_ELEMENTS_PER_LOOP_PER_INPUT = VX_SP_ATTRIBUTE_NUM_OF_ELEMENTS_PER_LOOP_PER_INPUT,
 
     VSI_NN_SP_ATTRIBUTE_CONST0                      = VX_SP_ATTRIBUTE_CONST0,
     VSI_NN_SP_ATTRIBUTE_CONST1                      = VX_SP_ATTRIBUTE_CONST1,
@@ -225,6 +227,18 @@ typedef struct _vsi_nn_spinst_inst_param
 vsi_nn_spinst_t * vsi_nn_create_spinst
     (
     vsi_nn_graph_t       * graph
+    );
+
+/**
+ * Create a new spinst
+ *
+ * @param[in] context Context handle
+ *
+ * @return spinst handle on success, or NULL otherwise.
+ */
+vsi_nn_spinst_t * vsi_nn_create_spinst_by_context
+    (
+    vx_context      context
     );
 
 /**
@@ -286,6 +300,11 @@ vsi_status vsi_nn_add_spinst_insts
     vsi_nn_spinst_t * spinst,
     vsi_nn_spinst_inst_param *insts,
     int32_t insts_count
+    );
+
+void vsi_nn_init_spinst_attr
+    (
+    vsi_nn_spinst_attr_t * attrs
     );
 
 __END_DECLS
