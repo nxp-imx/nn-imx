@@ -2237,7 +2237,7 @@ BUCKETIZE_16BITS_SH_IMPL(F16_F16toI32_2D, vxc_half8)\n\
 BUCKETIZE_16BITS_SH_IMPL(I16_I16toI32_2D, vxc_short8)\n\
 \n\
 #define BUCKETIZE_8BITS_SH_IMPL(name, src_type) \\\n\
-__kernel void bucketize_right_U8_U8toI32_2D \\\n\
+__kernel void bucketize_right_##name \\\n\
     ( \\\n\
     __read_only  image2d_t input, \\\n\
     __read_only  image2d_t boundaries, \\\n\
@@ -2247,7 +2247,7 @@ __kernel void bucketize_right_U8_U8toI32_2D \\\n\
     int4 coord = (int4)(get_global_id(0), get_global_id(1), 0, 0); \\\n\
  \\\n\
     src_type src0, src1, src2; \\\n\
-    vxc_uchar8 dst0, dst1; \\\n\
+    vxc_uchar8 dst0, dst1, result = 0; \\\n\
     VXC_ReadImage(src0, input, coord.xy, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
     VXC_ReadImage(src1, boundaries, coord.zw, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
  \\\n\
@@ -2313,8 +2313,8 @@ __kernel void bucketize_right_U8_U8toI32_2D \\\n\
     write_imagei(output, coord.xy, d0); \\\n\
     write_imagei(output, coord.zy, d1); \\\n\
 }\n\
-BUCKETIZE_16BITS_SH_IMPL(U8_U8toI32_2D, vxc_uchar8)\n\
-BUCKETIZE_16BITS_SH_IMPL(I8_I8toI32_2D, vxc_char8)\n\
+BUCKETIZE_8BITS_SH_IMPL(U8_U8toI32_2D, vxc_uchar8)\n\
+BUCKETIZE_8BITS_SH_IMPL(I8_I8toI32_2D, vxc_char8)\n\
 "; /* end of bucketize_vx*/
 
 static const char cast_vx[] = "\n\
