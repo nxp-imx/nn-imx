@@ -30,6 +30,7 @@
 #include "vsi_nn_error.h"
 #include "utils/vsi_nn_math.h"
 #include "kernel/vsi_nn_spinst.h"
+#include "kernel/vsi_nn_sp_unit_operation.h"
 
 #if VX_STREAM_PROCESSOR_SUPPORT
 
@@ -280,6 +281,7 @@ void vsi_nn_init_spinst_attr
 
     /*default per loop to process one input or output pixel*/
     attrs->num_of_elements_per_loop_per_input = 1;
+    attrs->sum_engine_control = VSI_NN_SP_ACCUM_2D;
 } /* vsi_nn_init_spinst_attr() */
 
 #endif
