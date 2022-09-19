@@ -2,35 +2,30 @@
 
 ## Good News
 
-Now! You can use tools/add_op.py to generate Customer Layer's stub codes in ovxlib.
+Now! You can use tools/add_op2.py to generate Customer Layer's stub codes in ovxlib.
 
-`python3 add_op.py --type <type> [--prefix <prefix>] [--without--kernel] op_name1 ...`
+`python3 add_op2.py --type <type> op_name1 ...`
 
 `--type` option:
 
  - embedded: add embedded layer into ovxlib.These ops are in /src/ops/, which is maintained by Vivante to support the ops that are not in OpenVX Spec.
  - custom: add custom layer into ovxlib. These ops are in /src/custom/ops. Customer can put their own ops in there.
 
-`--without--kernel` option:
-
-If you want to add a new op, which call OpenVX API directly and no kernel is needed, you can set this flag.
-
-`--prefix` option:
-
-Set the prefix only for the custom op.
+`python3 add_op2.py --type <type> op_name1 ...`
 
 ## Introduction
 
 Generally, Acuity Tools can generate Customer Layer's stub codes in App, when it meet unknown layer. But sometimes you will want to add customer layer to ovxlib, so it can be used as a built-in layer.
 
 One Customer Layer includes these files:(For example, we add foo op as a customer layer)
- - src/ops/vsi_nn_op_foo.c & include/ops/vsi_nn_op_foo.h
- - src/libnnext/ops/kernel/vsi_nn_kernel_foo.c & include/libnnext/vx_lib_nnext.h
- - src/libnnext/ops/vx/vsi_nn_kernel_foo.vx (shader kernel needed)
+ - src/custom/ops/vsi_nn_op_foo.c & include/custom/ops/vsi_nn_op_foo.h
+ - src/custom/ops/kernel/evis/custom_foo_cpu.c
+ - src/custom/ops/kernel/evis/custom_foo_evis.c
+ - src/libnnext/ops/vx/foo.vx (shader kernel needed)
 
-If you want to add CPU kernel to ovxlib, you can reference the code of fullconnect2 op.
+If you want to add CPU kernel to ovxlib, you can reference the code of clip op.
 
-If you want to add Shader kernel to ovxlib, you can reference the code of prelu op.
+If you want to add Shader kernel to ovxlib, you can reference the code of clip op.
 
 ## Step 1
 
@@ -44,7 +39,7 @@ Add these new foo op files to project files:
 
 ## Step 2
 
-Add `DEF_OP(FOO)` to the end of include/interface/ops.def.
+Add `DEF_OP(FOO)` to the end of include/custom/custom_ops.def.
 
 Add new item for foo op in array:
  - src/utils/vsi_nn_code_generator.c: s_op_gen[]
@@ -52,27 +47,23 @@ Add new item for foo op in array:
 
 ## Key Points
 
-### src/ops/vsi_nn_op_foo.c: op_setup
+### src/custom/ops/vsi_nn_op_foo.c: op_setup
 
 Compute the ouput tensor's shape.
 
-### src/libnnext/ops/kernel/vsi_nn_kernel_foo.c: VxFooKernel
+### src/custom/ops/kernel/cpu/custom_foo_cpu.c: _foo_exec
 
 The CPU implement of foo op.
 
-### include\vsi_nn_node_type.h: vsi_nn_nn_param_t
+### include/custom/custom_node_type.h:DEF_NODE_TYPE(foo)
 
-If foo op have some parameters, DO NOT forget add vsi_nn_foo_param into vsi_nn_nn_param_t.
+If foo op have some parameters, DO NOT forget add DEF_NODE_TYPE(foo).
 
 ## Add Shader Kernel
 
-### src/libnnext/ops/kernel/vsi_nn_kernel_foo.c: kernel_info
+### src/custom/ops/kernel/evis/custom_foo_evis.c: _foo_initializer
 
-We use kernel_info struct to input the information of kernel to the OpenVX driver.
- - resource_name: MUST BE SAME to the shader file name. For example, `src/libnnext/ops/vx/vsi_nn_kernel_foo.vx` its resource_name is `vsi_nn_kernel_foo`.
- - type: `VX_KERNEL_TYPE_CPU`(CPU Kernel), `VX_KERNEL_TYPE_VX`(Shader Kernel), `VX_KERNEL_TYPE_BIN`(Binary Kernel)
- - init_index: the index of init functions. The init of CPU kernel or Shader kernel can be different.
- - kernel_index: the index of kernel array. In src/libnnext/ops/kernel/vsi_nn_kernel_foo.c, we can define many kernels(both CPU and Shader) for foo op. These kernels are collected in vx_kernel_FOO_list.
+We use _foo_initializer function to set the information of kernel to the OpenVX driver.
 
 ### tools/build_vx_files.py
 
