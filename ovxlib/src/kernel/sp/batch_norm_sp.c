@@ -135,7 +135,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_bn_mov_weight_bias_node
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * weight,
         vsi_nn_tensor_t             * bias,
-        vsi_nn_tensor_t             * dummy_output
+        vsi_nn_tensor_t             * dummy_output0,
+        vsi_nn_tensor_t             * dummy_output1
     )
 {
     const int32_t spLoopInstsNum = 2;
@@ -190,7 +191,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_bn_mov_weight_bias_node
 
     inputs_tensor[0] = weight->t;
     inputs_tensor[1] = bias->t;
-    outputs_tensor[0] = dummy_output->t;
+    outputs_tensor[0] = dummy_output0->t;
+    outputs_tensor[1] = dummy_output1->t;
 
     node = vxStreamProcessorNode(
         graph->g,
@@ -214,7 +216,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_bn_in_times_v11_plus_v12_node
     (
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input,
-        vsi_nn_tensor_t             * dummy_tensor,
+        vsi_nn_tensor_t             * dummy_tensor0,
+        vsi_nn_tensor_t             * dummy_tensor1,
         vsi_nn_tensor_t             * output
     )
 {
@@ -267,7 +270,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_bn_in_times_v11_plus_v12_node
     CHECK_STATUS_FAIL_GOTO(status, final );
 
     inputs_tensor[0] = input->t;
-    inputs_tensor[1] = dummy_tensor->t;
+    inputs_tensor[1] = dummy_tensor0->t;
+    inputs_tensor[2] = dummy_tensor1->t;
     outputs_tensor[0] = output->t;
     node = vxStreamProcessorNode(
         graph->g,
@@ -490,15 +494,17 @@ REGISTER_BATCH_NORM_STREAM_PROCESSOR_KERNEL( batch_norm )
     attr.dim_num = axis == 0 ? 2 : 3;
     dummy_tensor[0] = vsi_nn_CreateTensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( dummy_tensor[0], "Create dummy_tensor fail.", final );
+    dummy_tensor[1] = vsi_nn_CreateTensor( graph, &attr );
+    CHECK_PTR_FAIL_GOTO( dummy_tensor[1], "Create dummy_tensor fail.", final );
 
     status = vsi_nn_get_bn_weight_bias(graph, &inputs[1], eps, input_scale, output_scale,
         axis, input_element_count, &weight, &bias);
     CHECK_STATUS_FAIL_GOTO( status, final );
     if (axis == 2)
     {
-        node = vsi_nn_sp_bn_mov_weight_bias_node(graph, weight, bias, dummy_tensor[0]);
+        node = vsi_nn_sp_bn_mov_weight_bias_node(graph, weight, bias, dummy_tensor[0], dummy_tensor[1]);
         CHECK_PTR_FAIL_GOTO( node, "Create mov_weight_bias fail.", final );
-        node = vsi_nn_sp_bn_in_times_v11_plus_v12_node(graph, inputs[0], dummy_tensor[0], outputs[0]);
+        node = vsi_nn_sp_bn_in_times_v11_plus_v12_node(graph, inputs[0], dummy_tensor[0], dummy_tensor[1], outputs[0]);
         CHECK_PTR_FAIL_GOTO( node, "Create in_times_v11_plus_v12 fail.", final );
     }
     else
