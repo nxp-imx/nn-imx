@@ -639,7 +639,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_rcp_node
     /* loop inst1: r6 = r5 * r2 | r7 = r4 + r6 | r4 = r8 */
     status |= vsi_nn_sp_mul(&sp_insts_param[1], VSI_NN_SP_SR5, VSI_NN_SP_SR2, VSI_NN_SP_SR6);
     status |= vsi_nn_sp_add(&sp_insts_param[1], VSI_NN_SP_SR4, VSI_NN_SP_SR6, VSI_NN_SP_SR7);
-    status |= vsi_nn_sp_move(&sp_insts_param[1], VSI_NN_SP_SR4, VSI_NN_SP_SR8);
+    status |= vsi_nn_sp_move(&sp_insts_param[1], VSI_NN_SP_SR8, VSI_NN_SP_SR4);
     /* loop inst1: v12 = r7 * r3 */
     status |= vsi_nn_sp_mul(&sp_insts_param[2], VSI_NN_SP_SR7, VSI_NN_SP_SR3, VSI_NN_SP_VR12);
     CHECK_STATUS_FAIL_GOTO(status, final );

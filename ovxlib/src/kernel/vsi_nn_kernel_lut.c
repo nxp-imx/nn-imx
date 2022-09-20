@@ -236,34 +236,26 @@ static float vsi_nn_kernel_lut_activation(float data, vsi_nn_kernel_lut_params *
     case VSI_NN_KERNEL_LUT_LOG:
         result =  log_eval(data);
         break;
-        break;
     case VSI_NN_KERNEL_LUT_EXP:
         result =  exp_eval(data);
-        break;
         break;
     case VSI_NN_KERNEL_LUT_SELU:
         result =  selu_eval(data, lut_param);
         break;
-        break;
     case VSI_NN_KERNEL_LUT_NEG:
         result =  neg_eval(data);
-        break;
         break;
     case VSI_NN_KERNEL_LUT_HSIGMOID:
         result =  hsigmoid_eval(data, lut_param);
         break;
-        break;
     case VSI_NN_KERNEL_LUT_SOFT_PLUS:
         result =  soft_plus_eval(data);
-        break;
         break;
     case VSI_NN_KERNEL_LUT_ERF:
         result =  erf_eval(data);
         break;
-        break;
     case VSI_NN_KERNEL_LUT_GELU:
         result =  gelu_eval(data);
-        break;
         break;
     case VSI_NN_KERNEL_LUT_HGELU:
         result =  hgelu_eval(data);
