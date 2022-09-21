@@ -202,7 +202,17 @@ typedef enum
 {
     VSI_NN_SP_SUM_ENGINE_RESET_NONE  = VX_SP_ATTRIBUTE_SUM_ENGINE_RESET_NONE,
     VSI_NN_SP_SUM_ENGINE_RESET_START_FROM_ZERO = VX_SP_ATTRIBUTE_SUM_ENGINE_RESET_RESET,
+    VSI_NN_SP_SUM_ENGINE_RESET_START_FROM_MINIMUM = VX_SP_ATTRIBUTE_SUM_ENGINE_RESET_RESET,
 } vsi_nn_sp_sum_engine_reset_e;
+
+/**
+ * stream processor sum engine operation select
+ */
+typedef enum
+{
+    VSI_NN_SP_SUM_OP    /*= VX_SP_ATTRIBUTE_SUM_ENGINE_SUM_OP*/,
+    VSI_NN_SP_MAX_OP    /*= VX_SP_ATTRIBUTE_SUM_ENGINE_MAX_OP*/
+} vsi_nn_sp_sum_engine_op_select_e;
 
 /**
  * stream processor vector reset
