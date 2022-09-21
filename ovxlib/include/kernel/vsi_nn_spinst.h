@@ -108,6 +108,7 @@ typedef struct _vsi_nn_spinst_attr
     uint32_t sum_engine_control;
     uint32_t sum_engine_num_ch_minus_one;
     uint32_t sum_engine_2d_accum_storeage;
+    uint32_t sum_engine_op_select;
     uint32_t num_of_elements_per_loop_per_input;
     uint32_t split_axis;
     uint32_t split_max_vector_depth;
@@ -178,6 +179,7 @@ typedef enum
     VSI_NN_SP_ATTRIBUTE_SUM_ENGINE_CONTROL          = VX_SP_ATTRIBUTE_SUM_ENGINE_CONTROL,
     VSI_NN_SP_ATTRIBUTE_SUM_ENGINE_NUM_CH_MINUS_ONE = VX_SP_ATTRIBUTE_SUM_ENGINE_NUM_CH_MINUS_ONE,
     VSI_NN_SP_ATTRIBUTE_SUM_ENGINE_2D_ACCUM_STORAGE = VX_SP_ATTRIBUTE_SUM_ENGINE_2D_ACCUM_STORAGE,
+    VSI_NN_SP_ATTRIBUTE_SUM_ENGINE_OP_SELECT        = VX_SP_ATTRIBUTE_SUM_ENGINE_OP_SELECT,
     VSI_NN_SP_ATTRIBUTE_NUM_OF_ELEMENTS_PER_LOOP_PER_INPUT = VX_SP_ATTRIBUTE_NUM_OF_ELEMENTS_PER_LOOP_PER_INPUT,
 
     VSI_NN_SP_ATTRIBUTE_CONST0                      = VX_SP_ATTRIBUTE_CONST0,

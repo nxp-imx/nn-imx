@@ -176,6 +176,9 @@ vsi_status vsi_nn_set_spinst_attr
         attrs.sum_engine_num_ch_minus_one);
     status |= vxSetAttributeToSPINST(spinst->sp, VSI_NN_SP_ATTRIBUTE_SUM_ENGINE_2D_ACCUM_STORAGE,
         attrs.sum_engine_2d_accum_storeage);
+
+    status |= vxSetAttributeToSPINST(spinst->sp, VSI_NN_SP_ATTRIBUTE_SUM_ENGINE_OP_SELECT,
+        attrs.sum_engine_op_select);
     status |= vxSetAttributeToSPINST(spinst->sp, VSI_NN_SP_ATTRIBUTE_NUM_OF_ELEMENTS_PER_LOOP_PER_INPUT,
         attrs.num_of_elements_per_loop_per_input);
 

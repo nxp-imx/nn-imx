@@ -35,17 +35,17 @@
 
 #if (VX_STREAM_PROCESSOR_SUPPORT)
 
-vsi_nn_kernel_node_t vsi_nn_sp_softmax_exp_node
+vsi_nn_kernel_node_t vsi_nn_sp_softmax_max_node
     (
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input,
-        vsi_nn_tensor_t             * exp_output,
-        vsi_nn_tensor_t             * dummy_output,
-        float                         beta
+        vsi_nn_tensor_t             * output0,
+        vsi_nn_tensor_t             * output1
     )
 {
-    const int32_t spLoopInstsNum = 2;
-    const int32_t spInstsNum = spLoopInstsNum;
+    const int32_t spInitInstsNum = 0;
+    const int32_t spLoopInstsNum = 1;
+    const int32_t spInstsNum = spInitInstsNum + spLoopInstsNum;
 
     const uint32_t input_count = 1;
     const uint32_t output_count = 2;
@@ -56,7 +56,171 @@ vsi_nn_kernel_node_t vsi_nn_sp_softmax_exp_node
         graph->ctx->config.sp_exec_count;
 
     vsi_nn_spinst_t *spinst = NULL;
-    vsi_nn_spinst_inst_param sp_insts_param[2];
+    vsi_nn_spinst_inst_param sp_insts_param[1];
+    vsi_nn_spinst_attr_t attr;
+    float input_scale = vsi_nn_get_tensor_scale(input);
+    float scale0 = input_scale;
+    float clamp_min = 0;
+    float clamp_max = 0;
+
+    vsi_status status = VSI_FAILURE;
+
+    memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
+    vsi_nn_init_spinst_attr(&attr);
+
+    vsi_nn_get_tensor_clamp_min_max(input, &clamp_min, &clamp_max);
+    clamp_min = clamp_min * scale0;
+    clamp_max = clamp_max * scale0;
+
+    /* loop inst0: r1 = clamp(r3 * in, r6, r7) | out = r1 */
+    status  = vsi_nn_sp_mul_clamp(&sp_insts_param[0], VSI_NN_SP_SR3, VSI_NN_SP_SRIN, VSI_NN_SP_SR1);
+    status |= vsi_nn_sp_move(&sp_insts_param[0], VSI_NN_SP_SR1, VSI_NN_SP_SROUT);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
+    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_YZMERGE;
+    attr.input_setup = VSI_NN_SP_INPUT_SETUP_SINGLE_INPUT;
+
+    attr.prog_init_instr_num = spInitInstsNum;
+    attr.prog_loop_instr_num = spLoopInstsNum;
+    attr.ignored_leading_outputs = 3;
+    attr.flush_cycle_num = 3;
+    attr.accelerator_input_select = VSI_NN_SP_ACCELERATOR_IN_FROM_OUTPUT;
+    attr.sum_engine_reset = VSI_NN_SP_SUM_ENGINE_RESET_START_FROM_MINIMUM;
+    attr.sum_engine_control = VSI_NN_SP_ACCUM_2D;
+    attr.sum_engine_num_ch_minus_one = VSI_NN_SP_SUM_ENGINE_NUM_CH_ONE_CH;
+    attr.sum_engine_2d_accum_storeage = VSI_NN_SP_ACCM_STOREAGE_DIFFERENT;
+    attr.sum_engine_op_select = VSI_NN_SP_MAX_OP;
+    attr.v11_reset_at_start = VSI_NN_SP_V_RESET_AT_START_RESET;
+
+    attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_YZ;
+    attr.split_max_vector_depth = max_vector_depth;
+
+    VSI_NN_SP_ATTR_SET_CONST_TO_SR3(attr, input_scale);
+    VSI_NN_SP_ATTR_SET_CONST_TO_SR6(attr, clamp_max);
+    VSI_NN_SP_ATTR_SET_CONST_TO_SR7(attr, clamp_min);
+
+    spinst = vsi_nn_create_spinst(graph);
+    CHECK_PTR_FAIL_GOTO( spinst, "Create spInst fail.", final );
+    status  = vsi_nn_add_spinst_insts(spinst, sp_insts_param, spInstsNum);
+    status |= vsi_nn_set_spinst_attr(spinst, attr);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
+    inputs_tensor[0] = input->t;
+    outputs_tensor[0] = output0->t;
+    outputs_tensor[1] = output1->t;
+
+    node = vxStreamProcessorNode(
+        graph->g,
+        inputs_tensor,
+        input_count,
+        outputs_tensor,
+        output_count,
+        spinst->sp,
+        NULL);
+
+final:
+    if (spinst)
+    {
+        vsi_nn_release_spinst(&spinst);
+    }
+
+    return (vsi_nn_kernel_node_t)node;
+}
+
+vsi_nn_kernel_node_t vsi_nn_sp_softmax_move_node
+    (
+        vsi_nn_graph_t              * graph,
+        vsi_nn_tensor_t             * input,
+        vsi_nn_tensor_t             * output
+    )
+{
+    const int32_t spInitInstsNum = 0;
+    const int32_t spLoopInstsNum = 1;
+    const int32_t spInstsNum = spInitInstsNum + spLoopInstsNum;
+
+    const uint32_t input_count = 1;
+    const uint32_t output_count = 1;
+    vx_tensor inputs_tensor[1] = {NULL};
+    vx_tensor outputs_tensor[1] = {NULL};
+    vx_node node = NULL;
+    int32_t max_vector_depth = graph->ctx->config.sp_vector_depth /
+        graph->ctx->config.sp_exec_count;
+
+    vsi_nn_spinst_t *spinst = NULL;
+    vsi_nn_spinst_inst_param sp_insts_param[1];
+    vsi_nn_spinst_attr_t attr;
+
+    vsi_status status = VSI_FAILURE;
+
+    memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
+    vsi_nn_init_spinst_attr(&attr);
+
+    /* loop inst0: v12 = v11 */
+    status = vsi_nn_sp_move(&sp_insts_param[0], VSI_NN_SP_VR11, VSI_NN_SP_VR12);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
+    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_YZMERGE;
+    attr.input_setup = VSI_NN_SP_INPUT_SETUP_V11;
+
+    attr.prog_init_instr_num = spInitInstsNum;
+    attr.prog_loop_instr_num = spLoopInstsNum;
+    attr.ignored_leading_outputs = 0;
+    attr.flush_cycle_num = 0;
+    attr.ch0_post_redistribute = VSI_NN_SP_CH_POST_REDISTRIBUTE_VECTOR_GATHER;
+
+    attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_YZ;
+    attr.split_max_vector_depth = max_vector_depth;
+
+    spinst = vsi_nn_create_spinst(graph);
+    CHECK_PTR_FAIL_GOTO( spinst, "Create spInst fail.", final );
+    status  = vsi_nn_add_spinst_insts(spinst, sp_insts_param, spInstsNum);
+    status |= vsi_nn_set_spinst_attr(spinst, attr);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
+    inputs_tensor[0] = input->t;
+    outputs_tensor[0] = output->t;
+
+    node = vxStreamProcessorNode(
+        graph->g,
+        inputs_tensor,
+        input_count,
+        outputs_tensor,
+        output_count,
+        spinst->sp,
+        NULL);
+
+final:
+    if (spinst)
+    {
+        vsi_nn_release_spinst(&spinst);
+    }
+
+    return (vsi_nn_kernel_node_t)node;
+}
+
+vsi_nn_kernel_node_t vsi_nn_sp_softmax_exp_node
+    (
+        vsi_nn_graph_t              * graph,
+        vsi_nn_tensor_t             * input0,
+        vsi_nn_tensor_t             * input1,
+        vsi_nn_tensor_t             * output0,
+        vsi_nn_tensor_t             * output1,
+        float                         beta
+    )
+{
+    const int32_t spLoopInstsNum = 3;
+    const int32_t spInstsNum = spLoopInstsNum;
+
+    const uint32_t input_count = 2;
+    const uint32_t output_count = 2;
+    vx_tensor inputs_tensor[2] = {NULL};
+    vx_tensor outputs_tensor[2] = {NULL};
+    vx_node node = NULL;
+    int32_t max_vector_depth = graph->ctx->config.sp_vector_depth /
+        graph->ctx->config.sp_exec_count;
+
+    vsi_nn_spinst_t *spinst = NULL;
+    vsi_nn_spinst_inst_param sp_insts_param[3];
     vsi_nn_spinst_attr_t attr;
 
     vsi_nn_sp_lut_params sp_lut_params;
@@ -69,30 +233,32 @@ vsi_nn_kernel_node_t vsi_nn_sp_softmax_exp_node
     memset(&sp_lut_params, 0, sizeof(vsi_nn_sp_lut_params));
     memset(&vx_lut_params, 0, sizeof(vx_lut_params_s));
 
-    /* loop inst0: r1 = pwlSetup(r0) || r6 = r5 * r2 || r0 = r4 + r6 || r3 = r1*/
-    status  = vsi_nn_sp_pwl_setup0(&sp_insts_param[0], VSI_NN_SP_SRIN, VSI_NN_SP_SR1);
-    status |= vsi_nn_sp_mul(&sp_insts_param[0], VSI_NN_SP_SR2, VSI_NN_SP_SR5, VSI_NN_SP_SR6);
-    status |= vsi_nn_sp_add(&sp_insts_param[0], VSI_NN_SP_SR4, VSI_NN_SP_SR6, VSI_NN_SP_SROUT);
-    status |= vsi_nn_sp_move(&sp_insts_param[0], VSI_NN_SP_SR1, VSI_NN_SP_SR3);
-    /* loop inst1: r5 = pwlMult() || r2 = pwlAdd() || r4 = r3*/
+    /* loop inst0: r8 = in - v12 | r6 = r1 */
+    status  = vsi_nn_sp_sub(&sp_insts_param[0], VSI_NN_SP_SRIN, VSI_NN_SP_VR12, VSI_NN_SP_SR8);
+    status |= vsi_nn_sp_move(&sp_insts_param[0], VSI_NN_SP_SR1, VSI_NN_SP_SR6);
+    /* loop inst1: r1 = pwlSetup(r8) | r5 = pwlMult() | r3 = pwlAdd() | r10 = r6 */
+    status |= vsi_nn_sp_pwl_setup0(&sp_insts_param[1], VSI_NN_SP_SR8, VSI_NN_SP_SR1);
     status |= vsi_nn_sp_mul(&sp_insts_param[1], VSI_NN_SP_PWLMUL, VSI_NN_SP_PWLMUL, VSI_NN_SP_SR5);
-    status |= vsi_nn_sp_sub(&sp_insts_param[1], VSI_NN_SP_PWLADD, VSI_NN_SP_PWLADD, VSI_NN_SP_SR2);
-    status |= vsi_nn_sp_move(&sp_insts_param[1], VSI_NN_SP_SR3, VSI_NN_SP_SR4);
+    status |= vsi_nn_sp_sub(&sp_insts_param[1], VSI_NN_SP_PWLADD, VSI_NN_SP_PWLADD, VSI_NN_SP_SR3);
+    status |= vsi_nn_sp_move(&sp_insts_param[1], VSI_NN_SP_SR6, VSI_NN_SP_SR10);
+    /* loop inst2: r9 = r5 * r3 | out = r9 + r10 */
+    status |= vsi_nn_sp_mul(&sp_insts_param[2], VSI_NN_SP_SR5, VSI_NN_SP_SR3, VSI_NN_SP_SR9);
+    status |= vsi_nn_sp_add(&sp_insts_param[2], VSI_NN_SP_SR9, VSI_NN_SP_SR10, VSI_NN_SP_SROUT);
     CHECK_STATUS_FAIL_GOTO(status, final );
 
     attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_YZMERGE;
     attr.input_setup = VSI_NN_SP_INPUT_SETUP_SINGLE_INPUT;
-    attr.output_collapse_x = VSI_NN_SP_ATTR_OUTPUT_COLLAPSE_ENABLED;
 
     attr.prog_loop_instr_num = spLoopInstsNum;
-    attr.ignored_leading_outputs = 5;
-    attr.flush_cycle_num = 10;
+    attr.ignored_leading_outputs = 4;
+    attr.flush_cycle_num = 14;
     attr.accelerator_input_select = VSI_NN_SP_ACCELERATOR_IN_FROM_OUTPUT;
     attr.sum_engine_reset = VSI_NN_SP_SUM_ENGINE_RESET_START_FROM_ZERO;
     attr.sum_engine_control = VSI_NN_SP_ACCUM_2D;
     attr.sum_engine_num_ch_minus_one = VSI_NN_SP_SUM_ENGINE_NUM_CH_ONE_CH;
     attr.sum_engine_2d_accum_storeage = VSI_NN_SP_ACCM_STOREAGE_DIFFERENT;
     attr.v11_reset_at_start = VSI_NN_SP_V_RESET_AT_START_RESET;
+    attr.v12_push_pop_config = VSI_NN_SP_PUSH_POP_EVERY_ROW;
 
     attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_YZ;
     attr.split_max_vector_depth = max_vector_depth;
@@ -103,9 +269,10 @@ vsi_nn_kernel_node_t vsi_nn_sp_softmax_exp_node
     status |= vsi_nn_set_spinst_attr(spinst, attr);
     CHECK_STATUS_FAIL_GOTO(status, final );
 
-    inputs_tensor[0] = input->t;
-    outputs_tensor[0] = exp_output->t;
-    outputs_tensor[1] = dummy_output->t;
+    inputs_tensor[0] = input0->t;
+    inputs_tensor[1] = input1->t;
+    outputs_tensor[0] = output0->t;
+    outputs_tensor[1] = output1->t;
 
     vx_lut_params.lut_function = VX_NN_ACTIVATION_CUSTOM;
     vx_lut_params.in_lut = vxCreateLUT( graph->ctx->c, VX_TYPE_FLOAT32, VSI_NN_SP_LUT_MAX_SIZE);
@@ -149,10 +316,11 @@ vsi_nn_kernel_node_t vsi_nn_sp_softmax_rcp_node
     (
         vsi_nn_graph_t  * graph,
         vsi_nn_tensor_t * input,
-        vsi_nn_tensor_t * output
+        vsi_nn_tensor_t * output,
+        float             output_scale
     )
 {
-    const int32_t spLoopInstsNum = 2;
+    const int32_t spLoopInstsNum = output_scale == 1 ? 2 : 3;
     const int32_t spInstsNum = spLoopInstsNum;
 
     const uint32_t input_count = 1;
@@ -164,7 +332,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_softmax_rcp_node
         graph->ctx->config.sp_exec_count;
 
     vsi_nn_spinst_t *spinst = NULL;
-    vsi_nn_spinst_inst_param sp_insts_param[2];
+    vsi_nn_spinst_inst_param sp_insts_param[3];
     vsi_nn_spinst_attr_t attr;
 
     vsi_nn_sp_lut_params sp_lut_params;
@@ -177,30 +345,52 @@ vsi_nn_kernel_node_t vsi_nn_sp_softmax_rcp_node
     memset(&sp_lut_params, 0, sizeof(vsi_nn_sp_lut_params));
     memset(&vx_lut_params, 0, sizeof(vx_lut_params_s));
 
-    /* loop inst0: r1 = pwlSetup(v11) || r6 = r5 * r2 || v11 = r4 + r6 || r3 = r1*/
-    status  = vsi_nn_sp_pwl_setup0(&sp_insts_param[0], VSI_NN_SP_VR11, VSI_NN_SP_SR1);
-    status |= vsi_nn_sp_mul(&sp_insts_param[0], VSI_NN_SP_SR5, VSI_NN_SP_SR2, VSI_NN_SP_SR6);
-    status |= vsi_nn_sp_add(&sp_insts_param[0], VSI_NN_SP_SR4, VSI_NN_SP_SR6, VSI_NN_SP_VR11);
-    status |= vsi_nn_sp_move(&sp_insts_param[0], VSI_NN_SP_SR1, VSI_NN_SP_SR3);
-    /* loop inst1: r5 = pwlMul() || r2 = pwlAdd() || r4 = r3*/
-    status |= vsi_nn_sp_mul(&sp_insts_param[1], VSI_NN_SP_PWLMUL, VSI_NN_SP_PWLMUL, VSI_NN_SP_SR5);
-    status |= vsi_nn_sp_sub(&sp_insts_param[1], VSI_NN_SP_PWLADD, VSI_NN_SP_PWLADD, VSI_NN_SP_SR2);
-    status |= vsi_nn_sp_move(&sp_insts_param[1], VSI_NN_SP_SR3, VSI_NN_SP_SR4);
-    CHECK_STATUS_FAIL_GOTO(status, final );
+    if (output_scale == 1.0f)
+    {
+        /* loop inst0: r1 = pwlSetup(v11) | r6 = r5 * r2 | v11 = r4 + r6 | r3 = r1 */
+        status  = vsi_nn_sp_pwl_setup0(&sp_insts_param[0], VSI_NN_SP_VR11, VSI_NN_SP_SR1);
+        status |= vsi_nn_sp_mul(&sp_insts_param[0], VSI_NN_SP_SR5, VSI_NN_SP_SR2, VSI_NN_SP_SR6);
+        status |= vsi_nn_sp_add(&sp_insts_param[0], VSI_NN_SP_SR4, VSI_NN_SP_SR6, VSI_NN_SP_VR11);
+        status |= vsi_nn_sp_move(&sp_insts_param[0], VSI_NN_SP_SR1, VSI_NN_SP_SR3);
+        /* loop inst1: r5 = pwlMul() | r2 = pwlAdd() | r4 = r3*/
+        status |= vsi_nn_sp_mul(&sp_insts_param[1], VSI_NN_SP_PWLMUL, VSI_NN_SP_PWLMUL, VSI_NN_SP_SR5);
+        status |= vsi_nn_sp_sub(&sp_insts_param[1], VSI_NN_SP_PWLADD, VSI_NN_SP_PWLADD, VSI_NN_SP_SR2);
+        status |= vsi_nn_sp_move(&sp_insts_param[1], VSI_NN_SP_SR3, VSI_NN_SP_SR4);
+        CHECK_STATUS_FAIL_GOTO(status, final );
+
+        attr.ignored_leading_v11_wr = 5;
+        attr.flush_cycle_num = 10;
+    }
+    else
+    {
+        /* loop inst0: r1 = pwlSetup(v11) | r5 = pwlMul() | r2 = pwlAdd() | r8 = r1 */
+        status  = vsi_nn_sp_pwl_setup0(&sp_insts_param[0], VSI_NN_SP_VR11, VSI_NN_SP_SR1);
+        status |= vsi_nn_sp_mul(&sp_insts_param[0], VSI_NN_SP_PWLMUL, VSI_NN_SP_PWLMUL, VSI_NN_SP_SR5);
+        status |= vsi_nn_sp_sub(&sp_insts_param[0], VSI_NN_SP_PWLADD, VSI_NN_SP_PWLADD, VSI_NN_SP_SR2);
+        status |= vsi_nn_sp_move(&sp_insts_param[0], VSI_NN_SP_SR1, VSI_NN_SP_SR8);
+        /* loop inst1: r6 = r5 * r2 | r7 = r4 + r6 | r4 = r8 */
+        status |= vsi_nn_sp_mul(&sp_insts_param[1], VSI_NN_SP_SR5, VSI_NN_SP_SR2, VSI_NN_SP_SR6);
+        status |= vsi_nn_sp_add(&sp_insts_param[1], VSI_NN_SP_SR4, VSI_NN_SP_SR6, VSI_NN_SP_SR7);
+        status |= vsi_nn_sp_move(&sp_insts_param[1], VSI_NN_SP_SR8, VSI_NN_SP_SR4);
+        /* loop inst2: v11 = r7 * r3 */
+        status |= vsi_nn_sp_mul(&sp_insts_param[2], VSI_NN_SP_SR7, VSI_NN_SP_SR3, VSI_NN_SP_VR11);
+        CHECK_STATUS_FAIL_GOTO(status, final );
+
+        attr.ignored_leading_v11_wr = 4;
+        attr.flush_cycle_num = 14;
+    }
 
     attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_YZMERGE;
-
     attr.input_setup = VSI_NN_SP_INPUT_SETUP_V11;
     attr.prog_loop_instr_num = spLoopInstsNum;
-    attr.ignored_leading_v11_wr = 5;
-    attr.ignored_leading_v11_rd = 0;
-    attr.flush_cycle_num = 10;
     attr.ch0_post_redistribute = VSI_NN_SP_CH_POST_REDISTRIBUTE_VECTOR_GATHER;
 
     attr.num_of_v11_wr_in_flush_cycle = 5;
 
     attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_YZ;
     attr.split_max_vector_depth = max_vector_depth;
+
+    VSI_NN_SP_ATTR_SET_CONST_TO_SR3(attr, 1.0f / output_scale);
 
     spinst = vsi_nn_create_spinst(graph);
     CHECK_PTR_FAIL_GOTO( spinst, "Create spInst fail.", final );
@@ -327,9 +517,10 @@ vsi_nn_kernel_node_t softmax_x_direction
 {
     vsi_nn_kernel_node_t node = NULL;
     vsi_nn_tensor_attr_t attr;
-    vsi_nn_tensor_t * dummy_tensor[2] = {NULL};
-    vsi_nn_tensor_t * output_tensor[1] = {NULL};
+    vsi_nn_tensor_t * dummy_tensor[4] = {NULL};
+    vsi_nn_tensor_t * output_tensor[2] = {NULL};
     int32_t axis = 0;
+    float output_scale = vsi_nn_get_tensor_scale(outputs[0]);
     float beta = vsi_nn_kernel_param_get_float32( params, "beta" );
 
     memcpy( &attr, &outputs[0]->attr, sizeof(vsi_nn_tensor_attr_t) );
@@ -343,6 +534,10 @@ vsi_nn_kernel_node_t softmax_x_direction
     CHECK_PTR_FAIL_GOTO( dummy_tensor[0], "Create dummy_tensor fail.", final );
     dummy_tensor[1] = vsi_nn_CreateTensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( dummy_tensor[1], "Create dummy_tensor fail.", final );
+    dummy_tensor[2] = vsi_nn_CreateTensor( graph, &attr );
+    CHECK_PTR_FAIL_GOTO( dummy_tensor[2], "Create dummy_tensor fail.", final );
+    dummy_tensor[3] = vsi_nn_CreateTensor( graph, &attr );
+    CHECK_PTR_FAIL_GOTO( dummy_tensor[3], "Create dummy_tensor fail.", final );
 
     memcpy( &attr, &outputs[0]->attr, sizeof(vsi_nn_tensor_attr_t) );
     attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
@@ -351,18 +546,29 @@ vsi_nn_kernel_node_t softmax_x_direction
     attr.vtl = TRUE;
     output_tensor[0] = vsi_nn_CreateTensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( output_tensor[0], "Create tensor fail.", final );
+    output_tensor[1] = vsi_nn_CreateTensor( graph, &attr );
+    CHECK_PTR_FAIL_GOTO( output_tensor[1], "Create tensor fail.", final );
 
-    node = vsi_nn_sp_softmax_exp_node(graph, inputs[0], output_tensor[0], dummy_tensor[0], beta);
+    node = vsi_nn_sp_softmax_max_node(graph, inputs[0], output_tensor[0], dummy_tensor[0]);
     CHECK_PTR_FAIL_GOTO( node, "Create sp softmax node fail.", final );
-    node = vsi_nn_sp_softmax_rcp_node(graph, dummy_tensor[0], dummy_tensor[1]);
+    node = vsi_nn_sp_softmax_move_node(graph, dummy_tensor[0], dummy_tensor[1]);
+    CHECK_PTR_FAIL_GOTO( node, "Create sp softmax node fail.", final );
+
+    node = vsi_nn_sp_softmax_exp_node(graph, output_tensor[0], dummy_tensor[1],
+                        output_tensor[1], dummy_tensor[2], beta);
+    CHECK_PTR_FAIL_GOTO( node, "Create sp softmax node fail.", final );
+    node = vsi_nn_sp_softmax_rcp_node(graph, dummy_tensor[2], dummy_tensor[3], output_scale);
     CHECK_PTR_FAIL_GOTO( node, "Create sp_softmax_rcp fail.", final );
-    node = vsi_nn_sp_softmax_times_node(graph, output_tensor[0], dummy_tensor[1], outputs[0]);
+    node = vsi_nn_sp_softmax_times_node(graph, output_tensor[1], dummy_tensor[3], outputs[0]);
     CHECK_PTR_FAIL_GOTO( node, "Create softmax_times fail.", final );
 
 final:
     vsi_safe_release_tensor(dummy_tensor[0]);
     vsi_safe_release_tensor(dummy_tensor[1]);
+    vsi_safe_release_tensor(dummy_tensor[2]);
+    vsi_safe_release_tensor(dummy_tensor[3]);
     vsi_safe_release_tensor(output_tensor[0]);
+    vsi_safe_release_tensor(output_tensor[1]);
 
     return node;
 } /* softmax_x_direction() */
@@ -377,12 +583,9 @@ vsi_nn_kernel_node_t softmax_y_direction
 {
     vsi_nn_kernel_node_t node = NULL;
     vsi_nn_tensor_attr_t attr;
-    vsi_nn_tensor_t * exp_output = NULL;
     vsi_size_t shape[VSI_NN_MAX_DIM_NUM] = { 0 };
-    vsi_nn_tensor_t * dummy_tensor[2] = {NULL};
     vsi_nn_tensor_t * trans_tensor[2] = {NULL};
     uint32_t perm[2][VSI_NN_MAX_DIM_NUM] = {{1, 0, 2, 3, 4, 5, 6, 7}, {1, 0, 2, 3, 4, 5, 6, 7}};
-    float beta = vsi_nn_kernel_param_get_float32( params, "beta" );
     uint32_t i = 0;
 
     for ( i = 0; i < inputs[0]->attr.dim_num; i++)
@@ -412,31 +615,7 @@ vsi_nn_kernel_node_t softmax_y_direction
         );
     CHECK_PTR_FAIL_GOTO( node, "Create vxTensorPermuteNode fail.", final );
 
-    memcpy( &attr, &trans_tensor[0]->attr, sizeof(vsi_nn_tensor_attr_t) );
-    attr.dtype.vx_type = VSI_NN_TYPE_FLOAT32;
-    attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
-    attr.is_const = FALSE;
-    attr.vtl = TRUE;
-    attr.is_dummy = TRUE;
-    attr.size[0] = 1;
-    dummy_tensor[0] = vsi_nn_CreateTensor( graph, &attr );
-    CHECK_PTR_FAIL_GOTO( dummy_tensor[0], "Create dummy_tensor fail.", final );
-    dummy_tensor[1] = vsi_nn_CreateTensor( graph, &attr );
-    CHECK_PTR_FAIL_GOTO( dummy_tensor[1], "Create dummy_tensor fail.", final );
-
-    memcpy( &attr, &trans_tensor[0]->attr, sizeof(vsi_nn_tensor_attr_t) );
-    attr.dtype.vx_type = VSI_NN_TYPE_FLOAT32;
-    attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
-    attr.is_const = FALSE;
-    attr.vtl = TRUE;
-    exp_output = vsi_nn_CreateTensor( graph, &attr );
-
-    node = vsi_nn_sp_softmax_exp_node(graph, trans_tensor[0], exp_output, dummy_tensor[0], beta);
-    CHECK_PTR_FAIL_GOTO( node, "Create sp softmax node fail.", final );
-    node = vsi_nn_sp_softmax_rcp_node(graph, dummy_tensor[0], dummy_tensor[1]);
-    CHECK_PTR_FAIL_GOTO( node, "Create sp_softmax_rcp fail.", final );
-    node = vsi_nn_sp_softmax_times_node(graph, exp_output, dummy_tensor[1], trans_tensor[1]);
-    CHECK_PTR_FAIL_GOTO( node, "Create softmax_times fail.", final );
+    softmax_x_direction(graph, trans_tensor, &trans_tensor[1], params);
 
     node = vxTensorPermuteNode
         (
@@ -449,9 +628,6 @@ vsi_nn_kernel_node_t softmax_y_direction
     CHECK_PTR_FAIL_GOTO( node, "Create vxTensorPermuteNode fail.", final );
 
 final:
-    vsi_safe_release_tensor(dummy_tensor[0]);
-    vsi_safe_release_tensor(dummy_tensor[1]);
-    vsi_safe_release_tensor(exp_output);
     vsi_safe_release_tensor(trans_tensor[0]);
     vsi_safe_release_tensor(trans_tensor[1]);
 
