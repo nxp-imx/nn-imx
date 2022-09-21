@@ -654,7 +654,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_rcp_node
 
     attr.num_of_v12_wr_in_flush_cycle = 5;
 
-    attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_YZ;
+    attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_XY;
     attr.split_max_vector_depth = max_vector_depth;
 
     VSI_NN_SP_ATTR_SET_CONST_TO_SR3(attr, 1.0f / output_scale);
