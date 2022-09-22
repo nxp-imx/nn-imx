@@ -679,6 +679,7 @@
     <ClInclude Include="include\ops\vsi_nn_op_swish.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_tanh.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_tensor_add_mean_stddev_norm.h"/>
+    <ClInclude Include="include\ops\vsi_nn_op_globallppool.h" />
     <ClInclude Include="include\ops\vsi_nn_op_tensorstackconcat.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_tile.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_topk.h"/>
@@ -840,6 +841,9 @@
       <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\gather_nd_cl.c">
+      <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\kernel\cl\globallppool_cl.c">
       <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\group_normalization_cl.c">
@@ -1065,6 +1069,9 @@
       <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\generate_proposals_cpu.c">
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\kernel\cpu\globallppool_cpu.c">
       <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\group_normalization_cpu.c">
@@ -2154,6 +2161,9 @@
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_upsamplescale.c">
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_globallppool.c" >
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_variable.c">
