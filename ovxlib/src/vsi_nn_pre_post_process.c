@@ -289,6 +289,21 @@ static void _set_preproc_node_input_attr
             input_attr->size[2] = 1;
         }
     }
+    if (*source_format == VSI_NN_SOURCE_FORMAT_IMAGE_YUYV422 ||
+        *source_format == VSI_NN_SOURCE_FORMAT_IMAGE_UYVY422)
+    {
+        if(*source_layout == VSI_NN_SOURCE_LAYOUT_NHWC)
+        {
+            input_attr->size[0] = 2*input_attr->size[1];
+            input_attr->size[1] = input_attr->size[2];
+            input_attr->size[2] = 1;
+        }
+        else
+        {
+            input_attr->size[0] = 2*input_attr->size[0];
+            input_attr->size[2] = 1;
+        }
+    }
 } /*_set_preproc_node_input_attr() */
 
 static void _set_preproc_node_output_attr
