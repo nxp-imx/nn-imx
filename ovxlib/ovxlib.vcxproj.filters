@@ -1838,6 +1838,9 @@
     <ClInclude Include="include\ops\vsi_nn_op_gather_elements.h">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_gather_nd.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
     <ClInclude Include="include\ops\vsi_nn_op_gelu.h">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
