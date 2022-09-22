@@ -201,6 +201,9 @@
     <ClCompile Include="src\kernel\cl\gather_nd_cl.c">
       <Filter>Source Files\kernel\cl</Filter>
     </ClCompile>
+    <ClCompile Include="src\kernel\cl\globallppool_cl.c">
+      <Filter>Source Files\kernel\cl</Filter>
+    </ClCompile>
     <ClCompile Include="src\kernel\cl\group_normalization_cl.c">
       <Filter>Source Files\kernel\cl</Filter>
     </ClCompile>
@@ -424,6 +427,9 @@
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\generate_proposals_cpu.c">
+      <Filter>Source Files\kernel\cpu</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\cpu\globallppool_cpu.c">
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\group_normalization_cpu.c">
@@ -983,6 +989,9 @@
     </ClCompile>
     <ClCompile Include="src\libnnext\vsi_nn_libnnext_resource.c">
       <Filter>Source Files\libnnext</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_globallppool.c">
+      <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\libnnext\vsi_nn_vxkernel.c">
       <Filter>Source Files\libnnext</Filter>
@@ -1681,6 +1690,9 @@
     </ClInclude>
     <ClInclude Include="include\libnnext\vsi_nn_libnnext_resource.h">
       <Filter>Header Files\libnnext</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_globallppool.h">
+      <Filter>Header Files\ops</Filter>
     </ClInclude>
     <ClInclude Include="include\libnnext\vsi_nn_vxkernel.h">
       <Filter>Header Files\libnnext</Filter>

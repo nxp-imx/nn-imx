@@ -47082,6 +47082,97 @@ __kernel void gather_nd_F32toF32_3D(\n\
 }\n\
 "; /* end of gather_nd_3d_cl*/
 
+static const char globallppool_cl[] = "\n\
+#define GLOBALLPPOOL_PROCESS(src_type, dst_type, readimage_type, conv_mode, writeimage_type) \\\n\
+    int gidx = get_global_id(0); \\\n\
+    int4 coord_out = (int4)(0, 0, gidx, 0); \\\n\
+    int4 coord_in  = coord_out; \\\n\
+    int h, w; \\\n\
+    float sum_of_pow = 0; \\\n\
+    dst_type out_data = (dst_type)(0); \\\n\
+    src_type in_data; \\\n\
+    float in_f32, out_f32; \\\n\
+    for (h = 0; h < height; h++) \\\n\
+    { \\\n\
+        for (w = 0; w < width; w++) \\\n\
+        { \\\n\
+            coord_in.xy = (int2)(w, h); \\\n\
+            in_data = readimage_type(input, coord_in).x; \\\n\
+            in_f32 = convert_float(in_data) * inputScale + inputTail; \\\n\
+            sum_of_pow += pow(fabs(in_f32),p); \\\n\
+        } \\\n\
+    } \\\n\
+    out_f32 = pow(sum_of_pow, 1.0f / p) * outputScale + outputTail; \\\n\
+    out_data.x = conv_mode(out_f32); \\\n\
+    writeimage_type(output, coord_out, out_data); \\\n\
+\n\
+#define TENSOR_GLOBALLPPOOL(src_name, dst_name, src_type, dst_type, readimage_type, conv_mode, writeimage_type) \\\n\
+__kernel void globallppool_##src_name##to##dst_name ( \\\n\
+    __read_only image2d_array_t   input, \\\n\
+    __write_only image2d_array_t  output, \\\n\
+                 int              p, \\\n\
+                 int              width, \\\n\
+                 int              height, \\\n\
+                 float            inputScale, \\\n\
+                 float            inputTail, \\\n\
+                 float            outputScale, \\\n\
+                 float            outputTail) \\\n\
+{ \\\n\
+    GLOBALLPPOOL_PROCESS(src_type, dst_type, readimage_type, conv_mode, writeimage_type); \\\n\
+}\n\
+\n\
+TENSOR_GLOBALLPPOOL(F32, F32, float, float4, read_imagef, convert_float, write_imagef)\n\
+TENSOR_GLOBALLPPOOL(F32, U32, float, uint4,  read_imagef, convert_uint,  write_imageui)\n\
+TENSOR_GLOBALLPPOOL(F32, I32, float, int4,   read_imagef, convert_int,   write_imagei)\n\
+\n\
+TENSOR_GLOBALLPPOOL(U32, U32, uint, uint4,  read_imageui, convert_uint,  write_imageui)\n\
+TENSOR_GLOBALLPPOOL(U32, F32, uint, float4, read_imageui, convert_float, write_imagef)\n\
+TENSOR_GLOBALLPPOOL(U32, I32, uint, int4,   read_imageui, convert_int,   write_imagei)\n\
+\n\
+TENSOR_GLOBALLPPOOL(I32, I32, int, int4,    read_imagei, convert_int,   write_imagei)\n\
+TENSOR_GLOBALLPPOOL(I32, F32, int, float4, read_imagei, convert_float, write_imagef)\n\
+TENSOR_GLOBALLPPOOL(I32, U32, int, uint4,  read_imagei, convert_uint,  write_imageui)\n\
+\n\
+__kernel void globallppool_BF16toBF16(\n\
+    __read_only image2d_array_t   input,\n\
+    __write_only image2d_array_t  output,\n\
+                 int              p,\n\
+                 int              width,\n\
+                 int              height,\n\
+                 float            inputScale,\n\
+                 float            inputTail,\n\
+                 float            outputScale,\n\
+                 float            outputTail)\n\
+{\n\
+    int gidx = get_global_id(0);\n\
+    int4 coord_out = (int4)(1, 1, gidx , 0);\n\
+    int4 coord_in  = coord_out;\n\
+    int h, w;\n\
+    float sum_of_pow = 0;\n\
+    float out_data_f32 = 0;\n\
+    uint4 dst = (uint4)(0);\n\
+    float4 data_f32 = (float4)(0);\n\
+    uint4 data;\n\
+\n\
+    for (h = 0; h < height; h++)\n\
+    {\n\
+        for (w = 0; w < width; w++)\n\
+        {\n\
+            coord_in.xy = (int2)(w, h);\n\
+            data = read_imageui(input, coord_in);\n\
+            data = data << 16;\n\
+            _viv_asm(COPY, data_f32, data, 16);\n\
+            sum_of_pow += pow(abs(data_f32.x),p);\n\
+        }\n\
+    }\n\
+    out_data_f32 = pow(sum_of_pow, 1.0f / p);\n\
+    _viv_asm(COPY, dst, out_data_f32, 4);\n\
+    dst.x = dst.x >> 16;\n\
+    write_imageui(output, coord_out, dst);\n\
+}\n\
+\n\
+"; /* end of globallppool_cl*/
+
 static const char group_normalization_f32_cl[] = "__kernel void group_norm_sumsqr_F32(\n\
     __read_only image2d_array_t   input,\n\
     __write_only image2d_t  output,\n\
@@ -61670,6 +61761,7 @@ static const source_map_t cl_resource[] =
     {"gather_elements_cl", gather_elements_cl},
     {"gather_nd_cl", gather_nd_cl},
     {"gather_nd_3d_cl", gather_nd_3d_cl},
+    {"globallppool_cl", globallppool_cl},
     {"group_normalization_f32_cl", group_normalization_f32_cl},
     {"group_normalization_i32_cl", group_normalization_i32_cl},
     {"group_normalization_u8_cl", group_normalization_u8_cl},
