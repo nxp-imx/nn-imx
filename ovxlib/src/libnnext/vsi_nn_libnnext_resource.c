@@ -8895,6 +8895,202 @@ GATHER_ND_F16_TO_QINT_3D(I16, vxc_short8)\n\
 \n\
 "; /* end of gather_nd_3d_mix_vx*/
 
+static const char gather_nd_batch_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+__kernel void gather_nd_batch_I8toI8_1D(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int coord_dim\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // batch\n\
+\n\
+    int4 coord = (int4)(gidx, gidy, 0, 0);\n\
+    Image img = create_image_from_image2d(input1, 4);\n\
+    uchar* indice_ptr = get_image_ptr_from_coord(img, coord.wy);\n\
+    int4 indice = ((int4 *)indice_ptr)[0];\n\
+\n\
+    coord.z = indice.x * block_size + gidx;\n\
+\n\
+    vxc_char16 src;\n\
+    VXC_ReadImage(src, input0, coord.zy, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    VXC_WriteImage(output, coord.xy, src, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+__kernel void gather_nd_batch_U8toU8_1D(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int coord_dim\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // batch num\n\
+\n\
+    int4 coord = (int4)(gidx, gidy, 0, 0);\n\
+    Image img = create_image_from_image2d(input1, 4);\n\
+    uchar* indice_ptr = get_image_ptr_from_coord(img, coord.wy);\n\
+    int4 indice = ((int4 *)indice_ptr)[0];\n\
+\n\
+    coord.z = indice.x * block_size + gidx;\n\
+\n\
+    vxc_uchar16 src;\n\
+    VXC_ReadImage(src, input0, coord.zy, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_WriteImage(output, coord.xy, src, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+__kernel void gather_nd_batch_I16toI16_1D(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int coord_dim\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // batch num\n\
+\n\
+    int4 coord = (int4)(gidx, gidy, 0, 0);\n\
+    Image img = create_image_from_image2d(input1, 4);\n\
+    uchar* indice_ptr = get_image_ptr_from_coord(img, coord.wy);\n\
+    int4 indice = ((int4 *)indice_ptr)[0];\n\
+\n\
+    coord.z = indice.x * block_size + gidx;\n\
+\n\
+    vxc_short8 src;\n\
+    VXC_ReadImage(src, input0, coord.zy, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_WriteImage(output, coord.xy, src, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+__kernel void gather_nd_batch_F16toF16_1D(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int coord_dim\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // batch num\n\
+\n\
+    int4 coord = (int4)(gidx, gidy, 0, 0);\n\
+    Image img = create_image_from_image2d(input1, 4);\n\
+    uchar* indice_ptr = get_image_ptr_from_coord(img, coord.wy);\n\
+    int4 indice = ((int4 *)indice_ptr)[0];\n\
+\n\
+    coord.z = indice.x * block_size + gidx;\n\
+\n\
+    vxc_short8 src;\n\
+    VXC_ReadImage(src, input0, coord.zy, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_WriteImage(output, coord.xy, src, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+"; /* end of gather_nd_batch_vx*/
+
+static const char gather_nd_batch_2d_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+__kernel void gather_nd_batch_I8toI8_2D(\n\
+    __read_only image2d_array_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int coord_dim\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // batch num\n\
+\n\
+    int4 coord = (int4)(gidx, 0, gidy, 0);\n\
+    Image img = create_image_from_image2d(input1, 4);\n\
+    uchar* indice_ptr = get_image_ptr_from_coord(img, coord.wz);\n\
+    int4 indice = ((int4 *)indice_ptr)[0];\n\
+\n\
+    indice.x = indice.x * block_size + gidx;\n\
+    indice.zw = coord.zw;\n\
+\n\
+    vxc_char16 src;\n\
+    VXC_ReadImage2DArray(src, input0, indice, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    VXC_WriteImage(output, coord.xz, src, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+__kernel void gather_nd_U8toU8_2D(\n\
+    __read_only image2d_array_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int coord_dim\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // batch num\n\
+\n\
+    int4 coord = (int4)(gidx, 0, gidy, 0);\n\
+    Image img = create_image_from_image2d(input1, 4);\n\
+    uchar* indice_ptr = get_image_ptr_from_coord(img, coord.wz);\n\
+    int4 indice = ((int4 *)indice_ptr)[0];\n\
+\n\
+    indice.x = indice.x * block_size + gidx;\n\
+    indice.zw = coord.zw;\n\
+\n\
+    vxc_uchar16 src;\n\
+    VXC_ReadImage2DArray(src, input0, indice, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_WriteImage(output, coord.xz, src, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+__kernel void gather_nd_I16toI16_2D(\n\
+    __read_only image2d_array_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int coord_dim\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // batch num\n\
+\n\
+    int4 coord = (int4)(gidx, 0, gidy, 0);\n\
+    Image img = create_image_from_image2d(input1, 4);\n\
+    uchar* indice_ptr = get_image_ptr_from_coord(img, coord.wz);\n\
+    int4 indice = ((int4 *)indice_ptr)[0];\n\
+\n\
+    indice.x = indice.x * block_size + gidx;\n\
+    indice.zw = coord.zw;\n\
+\n\
+    vxc_short8 src;\n\
+    VXC_ReadImage2DArray(src, input0, indice, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_WriteImage(output, coord.xz, src, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+\n\
+__kernel void gather_nd_F16toF16_2D(\n\
+    __read_only image2d_array_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int coord_dim\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // batch num\n\
+\n\
+    int4 coord = (int4)(gidx, 0, gidy, 0);\n\
+    Image img = create_image_from_image2d(input1, 4);\n\
+    uchar* indice_ptr = get_image_ptr_from_coord(img, coord.wz);\n\
+    int4 indice = ((int4 *)indice_ptr)[0];\n\
+\n\
+    indice.x = indice.x * block_size + gidx;\n\
+    indice.zw = coord.zw;\n\
+\n\
+    vxc_short8 src;\n\
+    VXC_ReadImage2DArray(src, input0, indice, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_WriteImage(output, coord.xz, src, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+"; /* end of gather_nd_batch_2d_vx*/
+
 static const char gather_nd_mix_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 _viv_uniform VXC_512Bits uniConvertInt8toFp16_2x8;\n\
@@ -47082,6 +47278,132 @@ __kernel void gather_nd_F32toF32_3D(\n\
 }\n\
 "; /* end of gather_nd_3d_cl*/
 
+static const char gather_nd_batch_cl[] = "__kernel void gather_nd_batch_U8toU8_1D(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int coord_dim\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // batch_num\n\
+\n\
+    int4 coord = (int4)(gidx, gidy, 0, 0);\n\
+    int4 indice = read_imagei(input1, coord.wy);\n\
+    coord.z = indice.x * block_size + gidx;\n\
+\n\
+    uint4 data = read_imageui(input0, coord.zy);\n\
+    write_imageui(output, coord.xy, data);\n\
+}\n\
+\n\
+__kernel void gather_nd_batch_F16toF16_1D(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int coord_dim\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // batch_num\n\
+\n\
+    int4 coord = (int4)(gidx, gidy, 0, 0);\n\
+    int4 indice = read_imagei(input1, coord.wy);\n\
+    coord.z = indice.x * block_size + gidx;\n\
+\n\
+    float4 data = read_imagef(input0, coord.zy);\n\
+    write_imagef(output, coord.xy, data);\n\
+}\n\
+\n\
+__kernel void gather_nd_batch_I8toI8_1D(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int coord_dim\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // batch_num\n\
+\n\
+    int4 coord = (int4)(gidx, gidy, 0, 0);\n\
+    int4 indice = read_imagei(input1, coord.wy);\n\
+    coord.z = indice.x * block_size + gidx;\n\
+\n\
+    int4 data = read_imagei(input0, coord.zy);\n\
+    write_imagei(output, coord.xy, data);\n\
+}\n\
+\n\
+//2D\n\
+__kernel void gather_nd_batch_U8toU8_2D(\n\
+    __read_only image2d_array_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int coord_dim\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // batch_num\n\
+\n\
+    int4 coord = (int4)(0, gidy, gidx, 1);\n\
+    int4 indice = read_imagei(input1, coord.xy);\n\
+    int4 indice1 = read_imagei(input1, coord.wy);\n\
+    indice.x = indice.x * block_size + gidx;\n\
+    indice.y = indice1.x;\n\
+    indice.zw = coord.yx;\n\
+\n\
+    uint4 data = read_imageui(input0, indice);\n\
+    write_imageui(output, coord.zy, data);\n\
+}\n\
+\n\
+__kernel void gather_nd_batch_F16toF16_2D(\n\
+    __read_only image2d_array_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int coord_dim\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // batch_num\n\
+\n\
+    int4 coord = (int4)(0, gidy, gidx, 1);\n\
+    int4 indice = read_imagei(input1, coord.xy);\n\
+    int4 indice1 = read_imagei(input1, coord.wy);\n\
+    indice.x = indice.x * block_size + gidx;\n\
+    indice.y = indice1.x;\n\
+    indice.zw = coord.yx;\n\
+\n\
+    float4 data = read_imagef(input0, indice);\n\
+    write_imagef(output, coord.zy, data);\n\
+}\n\
+\n\
+__kernel void gather_nd_batch_I8toI8_2D(\n\
+    __read_only image2d_array_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int coord_dim\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // batch_num\n\
+\n\
+    int4 coord = (int4)(0, gidy, gidx, 1);\n\
+    int4 indice = read_imagei(input1, coord.xy);\n\
+    int4 indice1 = read_imagei(input1, coord.wy);\n\
+    indice.x = indice.x * block_size + gidx;\n\
+    indice.y = indice1.x;\n\
+    indice.y = indice1.x;\n\
+    indice.zw = coord.yx;\n\
+\n\
+    int4 data = read_imagei(input0, indice);\n\
+    write_imagei(output, coord.zy, data);\n\
+}\n\
+"; /* end of gather_nd_batch_cl*/
+
 static const char globallppool_cl[] = "\n\
 #define GLOBALLPPOOL_PROCESS(src_type, dst_type, readimage_type, conv_mode, writeimage_type) \\\n\
     int gidx = get_global_id(0); \\\n\
@@ -61557,6 +61879,8 @@ static const source_map_t evis_resource[] =
     {"gather_nd_2d_mix_vx", gather_nd_2d_mix_vx},
     {"gather_nd_3d_vx", gather_nd_3d_vx},
     {"gather_nd_3d_mix_vx", gather_nd_3d_mix_vx},
+    {"gather_nd_batch_vx", gather_nd_batch_vx},
+    {"gather_nd_batch_2d_vx", gather_nd_batch_2d_vx},
     {"gather_nd_mix_vx", gather_nd_mix_vx},
     {"get_matrix_vx", get_matrix_vx},
     {"group_normalization_0_vx", group_normalization_0_vx},
@@ -61761,6 +62085,7 @@ static const source_map_t cl_resource[] =
     {"gather_elements_cl", gather_elements_cl},
     {"gather_nd_cl", gather_nd_cl},
     {"gather_nd_3d_cl", gather_nd_3d_cl},
+    {"gather_nd_batch_cl", gather_nd_batch_cl},
     {"globallppool_cl", globallppool_cl},
     {"group_normalization_f32_cl", group_normalization_f32_cl},
     {"group_normalization_i32_cl", group_normalization_i32_cl},

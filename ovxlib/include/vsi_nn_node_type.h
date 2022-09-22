@@ -201,6 +201,7 @@
 #include "ops/vsi_nn_op_pre_process_yuv422.h"
 #include "ops/vsi_nn_op_bucketize.h"
 #include "ops/vsi_nn_op_globallppool.h"
+#include "ops/vsi_nn_op_gather_nd.h"
 /* custom node head define define */
 #include "custom/vsi_nn_custom_node_type.h"
 
@@ -388,6 +389,7 @@ typedef union _vsi_nn_nn_param
     vsi_nn_pre_process_yuv422_param pre_process_yuv422;
     vsi_nn_bucketize_param          bucketize;
     vsi_nn_globallppool_param       globallppool;
+    vsi_nn_gather_nd_param          gather_nd;
     void*                         client_param;
 
     /* custom node data struct define */
