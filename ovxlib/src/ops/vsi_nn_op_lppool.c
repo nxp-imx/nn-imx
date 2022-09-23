@@ -78,11 +78,6 @@ static vsi_status op_compute
     shapes[1][1] = outputs[0]->attr.size[1];
     shapes[1][2] = outputs[0]->attr.size[2];
 
-    if (p == 0)
-    {
-        p = 2;
-    }
-
     for (i = 3; i < inputs[0]->attr.dim_num; i++)
     {
         shapes[0][2] = shapes[0][2] * inputs[0]->attr.size[i];
@@ -233,6 +228,16 @@ static vsi_bool op_setup
     return TRUE;
 } /* op_setup() */
 
+static vsi_status op_init
+    (
+    vsi_nn_node_t * self
+    )
+{
+    vsi_status status = VSI_SUCCESS;
+    self->nn_param.lppool.p = 2;
+
+    return status;
+} /* op_init() */
 
 __BEGIN_DECLS
 
@@ -240,7 +245,7 @@ __BEGIN_DECLS
 DEF_OP_REG
     (
     /* op_name    */ LPPOOL,
-    /* init       */ NULL,
+    /* init       */ op_init,
     /* compute    */ op_compute,
     /* deinit     */ vsi_nn_op_common_deinit,
     /* check      */ op_check,
