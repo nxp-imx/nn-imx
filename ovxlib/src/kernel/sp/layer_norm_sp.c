@@ -498,7 +498,9 @@ vsi_nn_kernel_node_t layer_norm_x_direction
     float s = inv_m * inv_m;
     float const_a = (float)(outputs[0]->attr.size[0]);
 
-    memcpy( &attr, &outputs[0]->attr, sizeof(vsi_nn_tensor_attr_t) );
+    memset( &attr, 0, sizeof(attr) );
+    memcpy( attr.size, outputs[0]->attr.size, sizeof(attr.size) );
+    attr.dim_num = outputs[0]->attr.dim_num;
     attr.dtype.vx_type = VSI_NN_TYPE_FLOAT32;
     attr.is_const = FALSE;
     attr.vtl = TRUE;
@@ -511,7 +513,7 @@ vsi_nn_kernel_node_t layer_norm_x_direction
     dummy_tensor[2] = vsi_nn_CreateTensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( dummy_tensor[2], "Create dummy_tensor fail.", final );
 
-    memcpy( &attr, &outputs[0]->attr, sizeof(vsi_nn_tensor_attr_t) );
+    memcpy( attr.size, outputs[0]->attr.size, sizeof(attr.size) );
     attr.dtype.vx_type = VSI_NN_TYPE_FLOAT32;
     attr.is_const = TRUE;
     attr.vtl = FALSE;
