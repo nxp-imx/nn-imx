@@ -17,6 +17,7 @@ _viv_uniform VXC_512Bits uniConvertYUV422toR_4x4;
 
 _viv_uniform VXC_512Bits uniExtract8Data_2x8;
 _viv_uniform VXC_512Bits uniExtractUVtoCharSub128_2x8;
+_viv_uniform VXC_512Bits uniExtractYtoShortSub16_4x4;
 
 #define uyvy422 1
 
@@ -49,8 +50,9 @@ __kernel void pre_process_yuv422_scale_##name \
  \
     vxc_uchar4 Y; \
     vxc_uchar8 UV; \
+    vxc_short4 tmpY; \
     vxc_char8 tmpUV; \
-    short tmpVal = 128; \
+    short tmpVal = 16; \
     int y_offset = 0; \
     int u_offset = 1; \
     int v_offset = 3; \
@@ -91,14 +93,16 @@ __kernel void pre_process_yuv422_scale_##name \
     VXC_ReadImage2DArray(UV, input, coord_V, 0, VXC_MODIFIER(6, 6, 0, VXC_RM_TowardZero, 0)); \
     coord_V.x = sx.w; \
     VXC_ReadImage2DArray(UV, input, coord_V, 0, VXC_MODIFIER(7, 7, 0, VXC_RM_TowardZero, 0)); \
+    VXC_DP4x4(tmpY, Y, tmpVal, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractYtoShortSub16_4x4); \
+    tmpVal = 128; \
     VXC_DP2x8(tmpUV, UV, tmpVal, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniExtractUVtoCharSub128_2x8); \
     vxc_uchar4 dst_test; \
     VXC_DP2x8(dst_test, dx, dx, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 0), uniExtract8Data_2x8); \
 \
     float4 tmpDstB, tmpDstG, tmpDstR; \
-    VXC_DP4x4(tmpDstB, Y, tmpUV, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertYUV422toB_4x4); \
-    VXC_DP4x4(tmpDstG, Y, tmpUV, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertYUV422toG_4x4); \
-    VXC_DP4x4(tmpDstR, Y, tmpUV, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertYUV422toR_4x4); \
+    VXC_DP4x4(tmpDstB, tmpY, tmpUV, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertYUV422toB_4x4); \
+    VXC_DP4x4(tmpDstG, tmpY, tmpUV, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertYUV422toG_4x4); \
+    VXC_DP4x4(tmpDstR, tmpY, tmpUV, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertYUV422toR_4x4); \
  \
     conv_type result; \
     dst_type dst0; \

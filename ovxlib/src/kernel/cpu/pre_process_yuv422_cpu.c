@@ -243,13 +243,13 @@ DEF_KERNEL_EXECUTOR(_pre_process_yuv422_exec)
                     D1 = (tmpU1 - 128);
                     E1 = (tmpV1 - 128);
 
-                    B0 = (float)vsi_clamp((tmpY0 + (1.7790 * D0)), min, max);
-                    G0 = (float)vsi_clamp((tmpY0 - 0.3455 * D0 - 0.7169 * E0), min, max);
-                    R0 = (float)vsi_clamp((tmpY0 + 1.4065 * E0), min, max);
+                    B0 = (float)vsi_clamp((1.164*(tmpY0 - 16) + 2.017 * D0), min, max);
+                    G0 = (float)vsi_clamp((1.164*(tmpY0 - 16) - 0.392 * D0 - 0.813 * E0), min, max);
+                    R0 = (float)vsi_clamp((1.164*(tmpY0 - 16) + 1.596 * E0), min, max);
 
-                    B1 = (float)vsi_clamp((tmpY1 + (1.7790 * D1)), min, max);
-                    G1 = (float)vsi_clamp((tmpY1 - 0.3455 * D1 - 0.7169 * E1), min, max);
-                    R1 = (float)vsi_clamp((tmpY1 + 1.4065 * E1), min, max);
+                    B1 = (float)vsi_clamp((1.164*(tmpY1 - 16) + 2.017 * D1), min, max);
+                    G1 = (float)vsi_clamp((1.164*(tmpY1 - 16) - 0.392 * D1 - 0.813 * E1), min, max);
+                    R1 = (float)vsi_clamp((1.164*(tmpY1 - 16) + 1.596 * E1), min, max);
 
                     output_index = dx + dy * dst_width;
 
