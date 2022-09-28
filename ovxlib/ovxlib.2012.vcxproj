@@ -560,6 +560,7 @@
     <ClInclude Include="include\ops\vsi_nn_op_gather_nd.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_gelu.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_generate_proposals.h"/>
+    <ClInclude Include="include\ops\vsi_nn_op_globallppool.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_grouped_conv1d.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_grouped_conv2d.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_groupnormalize.h"/>
@@ -678,7 +679,6 @@
     <ClInclude Include="include\ops\vsi_nn_op_swish.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_tanh.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_tensor_add_mean_stddev_norm.h"/>
-    <ClInclude Include="include\ops\vsi_nn_op_globallppool.h" />
     <ClInclude Include="include\ops\vsi_nn_op_tensorstackconcat.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_tile.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_topk.h"/>
@@ -1526,6 +1526,9 @@
     <ClCompile Include="src\kernel\sp\l2_normalize_sp.c">
       <ObjectFileName>$(IntDir)\src\kernel\sp\</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="src\kernel\sp\l2_normalize_z_direction_sp.c">
+      <ObjectFileName>$(IntDir)\src\kernel\sp\</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="src\kernel\sp\layer_norm_sp.c">
       <ObjectFileName>$(IntDir)\src\kernel\sp\</ObjectFileName>
     </ClCompile>
@@ -1785,6 +1788,9 @@
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_generate_proposals.c">
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_globallppool.c">
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_grouped_conv1d.c">
@@ -2160,9 +2166,6 @@
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_upsamplescale.c">
-      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="src\ops\vsi_nn_op_globallppool.c" >
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_variable.c">

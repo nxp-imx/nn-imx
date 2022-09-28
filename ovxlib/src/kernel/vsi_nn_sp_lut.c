@@ -60,6 +60,8 @@ vsi_status vsi_nn_sp_lut
         return VSI_FAILURE;
     }
 
+    memset(&lut_param, 0, sizeof(lut_param));
+
     switch (param->act_type)
     {
         case VSI_NN_SP_ACT_LINEAR_EXP:
@@ -72,6 +74,7 @@ vsi_status vsi_nn_sp_lut
         case VSI_NN_SP_ACT_LINEAR_RSQRT:
         {
             lut_param.act_type = VSI_NN_KERNEL_LUT_LINEAR_RSQRT;
+            lut_param.pwl_sign_remove_support = param->pwl_sign_remove_support;
             lut_param.params[0] = param->params[0];
             lut_param.params[1] = param->params[1];
             lut_param.params[2] = param->params[2];

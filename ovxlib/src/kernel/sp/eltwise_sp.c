@@ -36,26 +36,6 @@
 #if (VX_STREAM_PROCESSOR_SUPPORT)
 __BEGIN_DECLS
 
-#define HASH_SUB_ADD_ALU_SUPPORT_KEY(IN0_TYPE, IN1_TYPE) \
-    ( IN0_TYPE | (IN1_TYPE << 8) )
-
-#define HASH_ELTWISE_OP_SUPPORT_TYPE( IN0_TYPE, IN1_TYPE ) \
-    { HASH_SUB_ADD_ALU_SUPPORT_KEY(IN0_TYPE, IN1_TYPE) }
-
-static const struct {
-        uint32_t key;
-    } eltwise_alu_kernel_map[] =
-{
-    HASH_ELTWISE_OP_SUPPORT_TYPE(U8,  U8),
-    HASH_ELTWISE_OP_SUPPORT_TYPE(U8,  I8),
-    HASH_ELTWISE_OP_SUPPORT_TYPE(I8,  I8),
-    HASH_ELTWISE_OP_SUPPORT_TYPE(I8,  U8),
-    HASH_ELTWISE_OP_SUPPORT_TYPE(U4,  U4),
-    HASH_ELTWISE_OP_SUPPORT_TYPE(U4,  I4),
-    HASH_ELTWISE_OP_SUPPORT_TYPE(I4,  I4),
-    HASH_ELTWISE_OP_SUPPORT_TYPE(I4,  U4),
-};
-
 vsi_nn_kernel_node_t vsi_nn_sp_add_node
     (
         vsi_nn_graph_t              * graph,
@@ -650,20 +630,32 @@ vsi_bool vsi_nn_sp_nn_alu_support_types
 {
     vsi_nn_kernel_dtype_e in0_dtype;
     vsi_nn_kernel_dtype_e in1_dtype;
-    uint32_t key = 0;
-    int32_t i = 0;
 
     in0_dtype = vsi_nn_kernel_map_dtype( input0->attr.dtype.vx_type );
     in1_dtype = vsi_nn_kernel_map_dtype( input1->attr.dtype.vx_type );
 
-    key = HASH_SUB_ADD_ALU_SUPPORT_KEY(in0_dtype, in1_dtype);
-
-    for ( i = 0; i < _cnt_of_array(eltwise_alu_kernel_map); i ++ )
+    switch ( in0_dtype )
     {
-        if ( eltwise_alu_kernel_map[i].key == key )
-        {
-            return TRUE;
-        }
+    case I4:
+    case U4:
+    case I8:
+    case U8:
+    case I16:
+        return TRUE;
+    default:
+        break;
+    }
+
+    switch ( in1_dtype )
+    {
+    case I4:
+    case U4:
+    case I8:
+    case U8:
+    case I16:
+        return TRUE;
+    default:
+        break;
     }
 
     return FALSE;

@@ -315,11 +315,18 @@ vsi_status vsi_nn_kernel_lut
 
     lut = (vsi_nn_kernel_lut_t *)calloc(VSI_NN_KERNEL_LUT_MAX_SIZE, sizeof(vsi_nn_kernel_lut_t));
     CHECK_PTR_FAIL_GOTO( lut, "Create LUT buffer fail.", final );
+    memset(lut, 0, sizeof(vsi_nn_kernel_lut_t) * VSI_NN_KERNEL_LUT_MAX_SIZE);
 
     for ( i = 0; i < VSI_NN_KERNEL_LUT_MAX_SIZE; i++)
     {
         int16_t val = (int16_t)(i << 6);
-        lut[i].index = fp16_to_fp32(val);
+        float fidx = fp16_to_fp32(val);
+        if (param->pwl_sign_remove_support && fidx < 0)
+        {
+            fidx = 0;
+        }
+
+        lut[i].index = fidx;
         lut[i].val = vsi_nn_kernel_lut_activation(lut[i].index, param);
     }
 
@@ -337,7 +344,15 @@ vsi_status vsi_nn_kernel_lut
 
     for (i = 0x3F0; i < 0x400; i++)
     {
-        lut[i].index = VSI_NN_KERNEL_LUT_FP16_MIN;
+        if (param->pwl_sign_remove_support)
+        {
+            lut[i].index = 0;
+        }
+        else
+        {
+            lut[i].index = VSI_NN_KERNEL_LUT_FP16_MIN;
+        }
+
         lut[i].val = vsi_nn_kernel_lut_activation(lut[i].index, param);
     }
 
