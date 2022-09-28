@@ -52,6 +52,7 @@ typedef int32_t vsi_nn_sp_activation_e; enum
 typedef struct  _vsi_nn_sp_lut_params
 {
     vsi_nn_sp_activation_e act_type;
+    vsi_bool pwl_sign_remove_support;
     float params[16];
 } vsi_nn_sp_lut_params;
 
