@@ -578,7 +578,7 @@ static vx_tensor _create_const_raw_tensor
 
     if( TRUE == attr.is_created_from_handle )
     {
-        vx_tensor_addressing addr;
+        vx_tensor_addressing addr = NULL;
         vsi_size_t stride_size[VSI_NN_MAX_DIM_NUM];
         vsi_size_t buf_sz;
 
@@ -653,7 +653,15 @@ static vx_tensor _create_const_raw_tensor
                     addr, data, VX_MEMORY_TYPE_HOST);
 #endif
                 //memset(data, 0x5A, buf_sz);
-                vxReleaseTensorAddressing( &addr );
+                if (addr)
+                {
+                    vxReleaseTensorAddressing( &addr );
+                }
+                if ( NULL == tensor )
+                {
+                    VSILOGE( "Create vx tensor fail." );
+                    goto final;
+                }
                 vxFlushHandle( (vx_reference)tensor );
             }
         }
@@ -668,6 +676,8 @@ static vx_tensor _create_const_raw_tensor
         tensor = vxCreateVirtualTensor2( graph->g,
             &params, sizeof( vx_tensor_create_params_t ) );
     }
+
+final:
     if( NULL == tensor )
     {
         VSILOGE( "Create vx tensor fail." );
