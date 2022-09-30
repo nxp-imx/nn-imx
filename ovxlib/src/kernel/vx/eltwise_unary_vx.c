@@ -53,6 +53,8 @@ static vsi_nn_kernel_node_t _setup
     vsi_status status = VSI_FAILURE;
     vsi_nn_kernel_lut_params lut_param;
 
+    memset(&lut_param, 0, sizeof(lut_param));
+
     lut_param.act_type = lut_type;
     if (lut_type == VSI_NN_KERNEL_LUT_RELU_KERAS)
     {
