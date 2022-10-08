@@ -861,6 +861,9 @@
     <ClCompile Include="src\kernel\sp\batch_norm_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
+    <ClCompile Include="src\kernel\sp\comparisons_sp.c">
+      <Filter>Source Files\kernel\sp</Filter>
+    </ClCompile>
     <ClCompile Include="src\kernel\sp\eltwise_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
