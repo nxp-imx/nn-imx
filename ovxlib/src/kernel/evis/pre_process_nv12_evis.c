@@ -346,8 +346,8 @@ DEF_KERNEL_INITIALIZER(_pre_process_nv12_initializer)
     CHECK_STATUS_FAIL_GOTO(status, OnError );
 
     out_shape  = attr[1]->shape;
-    output_scale = 1.0f / attr[0]->scale;
-    output_zp = (float)attr[0]->zero_point;
+    output_scale = 1.0f / attr[1]->scale;
+    output_zp = (float)attr[1]->zero_point;
     width      = (uint32_t)(out_shape->data[0]);
     height     = (uint32_t)(out_shape->data[1]);
 
