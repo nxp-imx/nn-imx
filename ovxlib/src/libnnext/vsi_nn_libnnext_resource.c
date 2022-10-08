@@ -28256,7 +28256,8 @@ __kernel void pre_process_nv12_copy_##name \\\n\
                  float           bMean, \\\n\
                  float           var, \\\n\
                  int             reverse_channel, \\\n\
-                 int             trans \\\n\
+                 int             trans, \\\n\
+                 int             nv_type \\\n\
     ) \\\n\
 { \\\n\
     int gidx = get_global_id(0); \\\n\
@@ -28271,6 +28272,11 @@ __kernel void pre_process_nv12_copy_##name \\\n\
  \\\n\
     VXC_ReadImage(Y, y_img, (int2)(sx,sy), 0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
     VXC_ReadImage(UV, uv_img,(int2)(uvX,uvY), 0,VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+  \\\n\
+    if (nv_type == 1) \\\n\
+    { \\\n\
+        UV.s0123 = UV.s1032; \\\n\
+    } \\\n\
  \\\n\
     vxc_char16 tmpUV; \\\n\
     short tmpVal = 128; \\\n\
@@ -28352,7 +28358,8 @@ __kernel void pre_process_nv12_scale_##name##_gq \\\n\
                  float           bMean, \\\n\
                  float           var, \\\n\
                  int             reverse_channel, \\\n\
-                 int             trans \\\n\
+                 int             trans, \\\n\
+                 int             nv_type \\\n\
     ) \\\n\
 { \\\n\
     uint4 gidx = get_global_id(0); \\\n\
@@ -28371,6 +28378,11 @@ __kernel void pre_process_nv12_scale_##name##_gq \\\n\
     int2 coord_uv = (int2)(uvX.x, uvY); \\\n\
     VXC_ReadImage(Y, y_img, coord, 0, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
     VXC_ReadImage(UV, uv_img,coord_uv, 0,VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
+ \\\n\
+    if (nv_type == 1) \\\n\
+    { \\\n\
+        UV.s0123456789abcdef = UV.s1032547698badcfe; \\\n\
+    } \\\n\
  \\\n\
     vxc_uchar16 maskShift = {8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8}; \\\n\
     vxc_uchar16 maskShiftUv = {8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8}; \\\n\
@@ -28442,7 +28454,8 @@ __kernel void pre_process_nv12_scale_##name \\\n\
                  float           bMean, \\\n\
                  float           var, \\\n\
                  int             reverse_channel, \\\n\
-                 int             trans \\\n\
+                 int             trans, \\\n\
+                 int             nv_type \\\n\
     ) \\\n\
 { \\\n\
     uint4 gidx = get_global_id(0); \\\n\
@@ -28475,6 +28488,11 @@ __kernel void pre_process_nv12_scale_##name \\\n\
     VXC_ReadImage(UV, uv_img,coord_uv, 0,VXC_MODIFIER(4, 5, 0, VXC_RM_TowardZero, 0)); \\\n\
     coord_uv.x = uvX.w; \\\n\
     VXC_ReadImage(UV, uv_img,coord_uv, 0,VXC_MODIFIER(6, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
+ \\\n\
+    if (nv_type == 1) \\\n\
+    { \\\n\
+        UV.s01234567 = UV.s10325476; \\\n\
+    } \\\n\
  \\\n\
     vxc_char16 tmpUV; \\\n\
     short tmpVal = 128; \\\n\
