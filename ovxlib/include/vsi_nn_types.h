@@ -257,6 +257,12 @@ typedef enum _vsi_nn_yuv_type
     VSI_NN_YUV_TYPE_UYUV422
 }vsi_nn_yuv_type;
 
+typedef enum _vsi_nn_nv_type
+{
+    VSI_NN_YUV_TYPE_NV12,
+    VSI_NN_YUV_TYPE_NV21
+}vsi_nn_nv_type;
+
 /** Deprecated */
 typedef uint32_t vsi_nn_size_t;
 
