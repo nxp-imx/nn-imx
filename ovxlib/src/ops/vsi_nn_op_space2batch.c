@@ -110,12 +110,12 @@ static vsi_status op_compute
     param.base.type = VX_REORG_SPACE_TO_BATCH_ND;
 
     self->n = vxReorgLayer2( self->graph->g,
-        inputs[0]->t,
+        input_tensor->t,
         (vx_nn_reorg_params_t *)&param,
         sizeof(vx_nn_reorg_params_ext_t),
-        outputs[0]->t);
+        output_tensor->t);
 
-    if( NULL != self->n )
+    if ( NULL != self->n )
     {
         status = VSI_SUCCESS;
     }
