@@ -78,7 +78,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_greater_node
     status  = vsi_nn_sp_move_constant(&sp_insts_param[0], const2, VSI_NN_SP_SR5);
     /* init inst1: r9 = 1 */
     status |= vsi_nn_sp_move_constant(&sp_insts_param[1], 1, VSI_NN_SP_SR9);
-    /* init inst1: r10 = 0 */
+    /* init inst2: r10 = 0 */
     status |= vsi_nn_sp_move_constant(&sp_insts_param[2], 0, VSI_NN_SP_SR10);
     /* loop inst0: r1 = clamp(in * r3, r7, r6) | r8 = r1 - r2 | out = r8 ? r9 : r10 */
     status |= vsi_nn_sp_mul_clamp(&sp_insts_param[3], VSI_NN_SP_SRIN, VSI_NN_SP_SR3, VSI_NN_SP_SR1);
@@ -172,7 +172,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_greater_equal_node
     status  = vsi_nn_sp_move_constant(&sp_insts_param[0], const2, VSI_NN_SP_SR5);
     /* init inst1: r9 = 0 */
     status |= vsi_nn_sp_move_constant(&sp_insts_param[1], 0, VSI_NN_SP_SR9);
-    /* init inst1: r10 = 1 */
+    /* init inst2: r10 = 1 */
     status |= vsi_nn_sp_move_constant(&sp_insts_param[2], 1, VSI_NN_SP_SR10);
     /* loop inst0: r1 = clamp(in * r3, r7, r6) | r8 = r2 - r1 | out = r8 ? r9 : r10 */
     status |= vsi_nn_sp_mul_clamp(&sp_insts_param[3], VSI_NN_SP_SRIN, VSI_NN_SP_SR3, VSI_NN_SP_SR1);
@@ -266,7 +266,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_not_equal_node
     status  = vsi_nn_sp_move_constant(&sp_insts_param[0], const2, VSI_NN_SP_SR5);
     /* init inst1: r9 = 1 */
     status |= vsi_nn_sp_move_constant(&sp_insts_param[1], 1, VSI_NN_SP_SR9);
-    /* init inst1: r10 = 0 */
+    /* init inst2: r10 = 0 */
     status |= vsi_nn_sp_move_constant(&sp_insts_param[2], 0, VSI_NN_SP_SR10);
     /* loop inst0: v11 = clamp(in * r3, r7, r6) | r8 = r2 - r5 | r1 = abs(r8) */
     status |= vsi_nn_sp_mul_clamp(&sp_insts_param[3], VSI_NN_SP_SRIN, VSI_NN_SP_SR3, VSI_NN_SP_VR11);
@@ -364,7 +364,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_equal_node
     status  = vsi_nn_sp_move_constant(&sp_insts_param[0], const2, VSI_NN_SP_SR5);
     /* init inst1: r9 = 0 */
     status |= vsi_nn_sp_move_constant(&sp_insts_param[1], 0, VSI_NN_SP_SR9);
-    /* init inst1: r10 = 1 */
+    /* init inst2: r10 = 1 */
     status |= vsi_nn_sp_move_constant(&sp_insts_param[2], 1, VSI_NN_SP_SR10);
     /* loop inst0: v11 = clamp(in * r3, r7, r6) | r8 = r2 - r5 | r1 = abs(r8) */
     status |= vsi_nn_sp_mul_clamp(&sp_insts_param[3], VSI_NN_SP_SRIN, VSI_NN_SP_SR3, VSI_NN_SP_VR11);
@@ -482,7 +482,7 @@ REGISTER_COMPARISONS_STREAM_PROCESSOR_KERNEL( relational_ops )
 final:
 
     return node;
-} /* add() */
+} /* relational_ops() */
 
 
 __END_DECLS
