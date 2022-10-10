@@ -1538,6 +1538,9 @@
     <ClCompile Include="src\kernel\sp\layer_norm_y_direction_sp.c">
       <ObjectFileName>$(IntDir)\src\kernel\sp\</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="src\kernel\sp\logical_sp.c">
+      <ObjectFileName>$(IntDir)\src\kernel\sp\</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="src\kernel\sp\lstmunit_activation_sp.c">
       <ObjectFileName>$(IntDir)\src\kernel\sp\</ObjectFileName>
     </ClCompile>
