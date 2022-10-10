@@ -140,8 +140,8 @@ static vsi_bool op_setup
     curr->node->nn_param.grouped_conv2d.dilation[0] = 1;
     curr->node->nn_param.grouped_conv2d.dilation[1] = p->dilation;
     curr->node->nn_param.grouped_conv2d.pad[0] = 0;
-    curr->node->nn_param.grouped_conv2d.pad[1] = p->pad[0];
-    curr->node->nn_param.grouped_conv2d.pad[2] = 0;
+    curr->node->nn_param.grouped_conv2d.pad[1] = 0;
+    curr->node->nn_param.grouped_conv2d.pad[2] = p->pad[0];
     curr->node->nn_param.grouped_conv2d.pad[3] = p->pad[1];
     curr->node->nn_param.grouped_conv2d.stride[0] = 1;
     curr->node->nn_param.grouped_conv2d.stride[1] = p->stride;

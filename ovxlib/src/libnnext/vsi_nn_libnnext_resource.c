@@ -35127,6 +35127,7 @@ __kernel void resize_1d_bilinear_BF16toBF16_DOWN\n\
         coord_in.x = left_x_idx.w;\n\
         VXC_OP4(img_load_3d, top, input, coord_in.xywz, VXC_5BITOFFSET_XY(0, 0),\n\
             VXC_MODIFIER(6, 7, 0, VXC_RM_TowardZero, 0));\n\
+        coord_in.x = left_x_idx.x;\n\
 \n\
         vxc_ushort8 src;\n\
         float4 left4;\n\
@@ -35423,6 +35424,7 @@ __kernel void resize_1d_bilinear_F16toF16_DOWN\n\
         coord_in.x = left_x_idx.w;\n\
         VXC_OP4(img_load_3d, src, input, coord_in.xywz, VXC_5BITOFFSET_XY(0, 0),\n\
             VXC_MODIFIER(6, 7, 0, VXC_RM_TowardZero, 0));\n\
+        coord_in.x = left_x_idx.x;\n\
 \n\
         _viv_asm(COPY, src_half, src, 16);\n\
 \n\
@@ -35488,6 +35490,7 @@ __kernel void resize_1d_bilinear_F16toU8_DOWN\n\
         coord_in.x = left_x_idx.w;\n\
         VXC_OP4(img_load_3d, src, input, coord_in.xywz, VXC_5BITOFFSET_XY(0, 0),\n\
             VXC_MODIFIER(6, 7, 0, VXC_RM_TowardZero, 0));\n\
+        coord_in.x = left_x_idx.x;\n\
 \n\
         _viv_asm(COPY, src_half, src, 16);\n\
 \n\
@@ -35710,6 +35713,7 @@ __kernel void resize_1d_bilinear_I16toI16_DOWN\n\
         coord_in.x = left_x_idx.w;\n\
         VXC_OP4(img_load_3d, src, input, coord_in.xywz, VXC_5BITOFFSET_XY(0, 0),\n\
             VXC_MODIFIER(6, 7, 0, VXC_RM_TowardZero, 0));\n\
+        coord_in.x = left_x_idx.x;\n\
 \n\
         VXC_DP4x4(left4, src, src, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertDFP2FP32_left_4x4);\n\
         VXC_DP4x4(right4, src, src, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertDFP2FP32_right_4x4);\n\
@@ -35860,6 +35864,7 @@ __kernel void resize_1d_bilinear_I8toI8_DOWN\n\
         coord_in.x = left_x_idx.w;\n\
         VXC_OP4(img_load_3d, src, input, coord_in.xywz, VXC_5BITOFFSET_XY(0, 0),\n\
             VXC_MODIFIER(6, 7, 0, VXC_RM_TowardZero, 0));\n\
+        coord_in.x = left_x_idx.x;\n\
 \n\
         VXC_DP4x4(left4, src, src, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertDFP2FP32_left_4x4);\n\
         VXC_DP4x4(right4, src, src, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertDFP2FP32_right_4x4);\n\
@@ -35908,11 +35913,15 @@ __kernel void resize_1d_bilinear_U8toF16_DOWN\n\
     float4 in_x        = (convert_float4(coord_x) + half_pixel_value) * scale_x - half_pixel_value;\n\
     float4 left_x_f    = floor(in_x);\n\
     float4 x_lerp      = in_x - left_x_f;\n\
+    float4 one_minus_lerp = 1 - x_lerp;\n\
     int4   left_x_idx  = convert_int4(left_x_f);\n\
     vxc_uchar16 src;\n\
     int4 coord_in = (int4)(left_x_idx.x, coord_out.y, coord_out.z, 0);\n\
     float4 left4;\n\
     float4 right4;\n\
+\n\
+    x_lerp = x_lerp * uint8Scale;\n\
+    one_minus_lerp = one_minus_lerp * uint8Scale;\n\
 \n\
     int8 input_desc;\n\
     _viv_asm(COPY, input_desc, input, sizeof(input_desc));\n\
@@ -35925,7 +35934,6 @@ __kernel void resize_1d_bilinear_U8toF16_DOWN\n\
     _viv_asm(COPY, output_desc, output, sizeof(output_desc));\n\
     baseAddr = (int)coord_out.z * output_desc.s4 + output_desc.s0;\n\
     _viv_asm(MOV, coord_out.w, baseAddr);\n\
-\n\
 \n\
     do\n\
     {\n\
@@ -35940,12 +35948,11 @@ __kernel void resize_1d_bilinear_U8toF16_DOWN\n\
         coord_in.x = left_x_idx.w;\n\
         VXC_OP4(img_load_3d, src, input, coord_in.xywz, VXC_5BITOFFSET_XY(0, 0),\n\
             VXC_MODIFIER(6, 7, 0, VXC_RM_TowardZero, 0));\n\
+        coord_in.x = left_x_idx.x;\n\
 \n\
         VXC_DP4x4(left4, src, inputZP, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniU8SubZPtoFp32_left_4x4);\n\
         VXC_DP4x4(right4, src, inputZP, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniU8SubZPtoFp32_right_4x4);\n\
-        right4      -= left4;\n\
-        float4 dst4  = right4 * x_lerp + left4;\n\
-        dst4 *=  uint8Scale;\n\
+        float4 dst4  = right4 * x_lerp + left4 * one_minus_lerp;\n\
         half4 dst;\n\
         _viv_asm(CONV, dst, dst4);\n\
         vxc_short8 dst_short;\n\
@@ -35975,7 +35982,6 @@ __kernel void resize_1d_bilinear_U8toU8_UP\n\
     int4   left_x_idx  = convert_int4(left_x_f);\n\
     float4 right_x_f   = ceil(in_x);\n\
     int4   right_x_idx = convert_int4(right_x_f);\n\
-\n\
 \n\
     vxc_uchar16 src0, src1;\n\
 \n\
@@ -36042,6 +36048,7 @@ __kernel void resize_1d_bilinear_U8toU8_DOWN\n\
     float4 in_x        = (convert_float4(coord_x) + half_pixel_value) * scale_x - half_pixel_value;\n\
     float4 left_x_f    = floor(in_x);\n\
     float4 x_lerp      = in_x - left_x_f;\n\
+    float4 one_minus_lerp = 1 - x_lerp;\n\
     int4   left_x_idx  = convert_int4(left_x_f);\n\
     vxc_uchar16 src;\n\
     int4 coord_in = (int4)(left_x_idx.x, coord_out.y, coord_out.z, 0);\n\
@@ -36060,6 +36067,8 @@ __kernel void resize_1d_bilinear_U8toU8_DOWN\n\
     baseAddr = (int)coord_out.z * output_desc.s4 + output_desc.s0;\n\
     _viv_asm(MOV, coord_out.w, baseAddr);\n\
 \n\
+    x_lerp = x_lerp * uint8Scale;\n\
+    one_minus_lerp = one_minus_lerp * uint8Scale;\n\
 \n\
     do\n\
     {\n\
@@ -36074,12 +36083,11 @@ __kernel void resize_1d_bilinear_U8toU8_DOWN\n\
         coord_in.x = left_x_idx.w;\n\
         VXC_OP4(img_load_3d, src, input, coord_in.xywz, VXC_5BITOFFSET_XY(0, 0),\n\
             VXC_MODIFIER(6, 7, 0, VXC_RM_TowardZero, 0));\n\
+        coord_in.x = left_x_idx.x;\n\
 \n\
         VXC_DP4x4(left4, src, inputZP, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniU8SubZPtoFp32_left_4x4);\n\
         VXC_DP4x4(right4, src, inputZP, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniU8SubZPtoFp32_right_4x4);\n\
-        right4      -= left4;\n\
-        float4 dst4  = right4 * x_lerp + left4;\n\
-        dst4         = dst4 * uint8Scale + output_ZP;\n\
+        float4 dst4  = right4 * x_lerp + left4 * one_minus_lerp + output_ZP;\n\
         int4 dst     = convert_int4_rte(dst4);\n\
 \n\
         VXC_DP2x8(result, dst, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), uniExtact8Bit_2x8);\n\
