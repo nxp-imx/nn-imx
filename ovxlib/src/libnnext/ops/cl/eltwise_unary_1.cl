@@ -228,6 +228,44 @@ ELTWISE_UNARY_U8(rcp)
 ELTWISE_UNARY_U8(sign)
 ELTWISE_UNARY_U8(softsign)
 
+#define ELTWISE_UNARY_U8toF32(func_name) \
+__kernel void func_name##_U8toF32 \
+    ( \
+    __read_only  image2d_array_t input, \
+    __write_only image2d_array_t output, \
+                 float           inputScale, \
+                 float           inputTail, \
+                 float           outputScale, \
+                 float           outputZP, \
+                 float           alpha, \
+                 float           beta \
+    ) \
+{ \
+    int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \
+ \
+    uint4 src = read_imageui(input, coord); \
+    float4 dst = convert_float4(src) * inputScale - inputTail; \
+ \
+    dst.x = eltwise_unary_##func_name(dst.x, alpha, beta); \
+ \
+    write_imagef(output, coord, dst); \
+}
+ELTWISE_UNARY_U8toF32(sin)
+ELTWISE_UNARY_U8toF32(cos)
+ELTWISE_UNARY_U8toF32(exp)
+ELTWISE_UNARY_U8toF32(log)
+ELTWISE_UNARY_U8toF32(neg)
+ELTWISE_UNARY_U8toF32(mish)
+ELTWISE_UNARY_U8toF32(hard_sigmoid)
+ELTWISE_UNARY_U8toF32(round)
+ELTWISE_UNARY_U8toF32(gelu)
+ELTWISE_UNARY_U8toF32(hard_gelu)
+ELTWISE_UNARY_U8toF32(selu)
+ELTWISE_UNARY_U8toF32(celu)
+ELTWISE_UNARY_U8toF32(rcp)
+ELTWISE_UNARY_U8toF32(sign)
+ELTWISE_UNARY_U8toF32(softsign)
+
 __kernel void neg_I32toI32
     (
     __read_only  image2d_array_t input,
