@@ -1657,7 +1657,7 @@ void vsi_nn_DumpGraphToJson
     )
 {
 #define _SHAPE_BUF_SIZE 64
-    uint32_t i,j;
+    uint32_t i, j, data_input_count = 0;
     FILE *fp;
     vsi_nn_tensor_rel_t *tensor_ref, *tio;
     vsi_nn_tensor_rel_table_t *table;
@@ -1686,6 +1686,15 @@ void vsi_nn_DumpGraphToJson
     }
 
     fprintf(fp, "{\n");
+
+    /* dump meta data */
+    fprintf(fp, "\t\"MetaData\":{\n");
+    fprintf(fp, "\t\t\"Name\": \"Ovxlib_Debug_Graph\",\n");
+    fprintf(fp, "\t\t\"AcuityVersion\": \"UNKNOWN\",\n");
+    fprintf(fp, "\t\t\"Platform\": \"UNKNOWN\",\n");
+    fprintf(fp, "\t\t\"Org_Platform\": \"UNKNOWN\"\n");
+    fprintf(fp, "\t},\n");
+
     fprintf(fp, "\t\"Layers\":{\n");
     for(i = 0; i < graph->node_num; i++)
     {
@@ -1702,6 +1711,7 @@ void vsi_nn_DumpGraphToJson
                 tio = &tensor_ref[node->input.tensors[j]];
                 if(NULL == vsi_nn_GetTensor(graph, node->input.tensors[j]))
                 {
+                    /* this path may cause netron display abnormally */
                     if(j == node->input.num - 1)
                     {
                         fprintf(fp, "\"not used\" ");
@@ -1732,12 +1742,13 @@ void vsi_nn_DumpGraphToJson
                     {
                         if(j == node->input.num - 1)
                         {
-                            fprintf(fp, "\"datainput_%u:out0\" ", j);
+                            fprintf(fp, "\"@data_input_uid_%u:out0\" ", graph->node_num + data_input_count + 1);
                         }
                         else
                         {
-                            fprintf(fp, "\"datainput_%u:out0\", ", j);
+                            fprintf(fp, "\"@data_input_uid_%u:out0\", ", graph->node_num + data_input_count + 1);
                         }
+                        data_input_count += 1;
                     }
                 }
             }
@@ -1797,13 +1808,44 @@ void vsi_nn_DumpGraphToJson
             }
             fprintf(fp, " ]\n\t\t}");
 
-            if(i != graph->node_num - 1)
+            if(i != graph->node_num - 1 || data_input_count > 0)
             {
                 fprintf(fp, ",");
             }
             fprintf(fp, "\n");
         }
     }
+
+    /* dump all norm_tensor and const tensor into json as input layer */
+    for (i = 0; i < data_input_count; i++)
+    {
+        fprintf(fp, "\t\t\"data_input_uid_%u\":{\n\t\t\t\"op\": \"%s\",\n",
+            graph->node_num + i + 1, "DATA_INPUT");
+
+        /* dump inputs */
+        fprintf(fp, "\t\t\t\"inputs\": [ ");
+
+        /* dump input shape */
+        fprintf(fp, "],\n\t\t\t\"inut_shape\": [ ");
+        fprintf(fp, "[%s ]", "");
+
+        /* dump output */
+        fprintf(fp, " ],\n\t\t\t\"outputs\": [ ");
+        fprintf(fp, "\"out%u\" ", 0);
+
+        //output shape
+        fprintf(fp, "],\n\t\t\t\"output_shape\": [ ");
+        fprintf(fp, "[%s ]", "");
+
+        fprintf(fp, " ]\n\t\t}");
+
+        if (i != data_input_count - 1)
+        {
+            fprintf(fp, ",");
+        }
+        fprintf(fp, "\n");
+    }
+
     fprintf(fp, "\t}\n}\n");
 
     vsi_nn_ReleaseTensorRelevance(graph, tensor_ref);
