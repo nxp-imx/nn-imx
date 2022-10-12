@@ -143,6 +143,22 @@ static const struct {
     ADD_UNARY_SH_KERNELS(SIGN,     U8,  U8)
     ADD_UNARY_SH_KERNELS(SOFTSIGN, U8,  U8)
 
+    ADD_UNARY_SH_KERNELS(SIN,      U8,  F32)
+    ADD_UNARY_SH_KERNELS(COS,      U8,  F32)
+    ADD_UNARY_SH_KERNELS(EXP,      U8,  F32)
+    ADD_UNARY_SH_KERNELS(LOG,      U8,  F32)
+    ADD_UNARY_SH_KERNELS(NEG,      U8,  F32)
+    ADD_UNARY_SH_KERNELS(HSIGMOID, U8,  F32)
+    ADD_UNARY_SH_KERNELS(MISH,     U8,  F32)
+    ADD_UNARY_SH_KERNELS(ROUND,    U8,  F32)
+    ADD_UNARY_SH_KERNELS(GELU,     U8,  F32)
+    ADD_UNARY_SH_KERNELS(HGELU,    U8,  F32)
+    ADD_UNARY_SH_KERNELS(SELU,     U8,  F32)
+    ADD_UNARY_SH_KERNELS(CELU,     U8,  F32)
+    ADD_UNARY_SH_KERNELS(RCP,      U8,  F32)
+    ADD_UNARY_SH_KERNELS(SIGN,     U8,  F32)
+    ADD_UNARY_SH_KERNELS(SOFTSIGN, U8,  F32)
+
     ADD_UNARY_SH_KERNELS(NEG,      I32, I32)
 };
 
@@ -261,6 +277,10 @@ static vsi_status _query_kernel
     case _PACK_SELECT_KEY(F32, F32):
     case _PACK_SELECT_KEY(F16, F16):
         key = HASH_UNARY_KEY( type, F32, F32, image_2d );
+        break;
+    case _PACK_SELECT_KEY(U8, F32):
+    case _PACK_SELECT_KEY(U8, F16):
+        key = HASH_UNARY_KEY( type, U8, F32, image_2d );
         break;
     default:
         key = HASH_UNARY_KEY( type, input_dtype, output_dtype, image_2d );
