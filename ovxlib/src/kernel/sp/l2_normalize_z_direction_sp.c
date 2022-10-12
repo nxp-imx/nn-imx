@@ -44,7 +44,7 @@ vsi_nn_spinst_t * vsi_nn_sp_l2norm_z_direction_square_inst
 {
     vsi_status status = VSI_FAILURE;
     const int32_t spInitInstsNum = fifo_depth > 1 ? 0 : 2;
-    const int32_t spLoopInstsNum = fifo_depth > 4 ? 2 : fifo_depth > 1 ? 4 : 2;
+    const int32_t spLoopInstsNum = fifo_depth > 3 ? 2 : fifo_depth > 1 ? 4 : 2;
     const int32_t spCompleteInstsNum = fifo_depth > 1 ? 0 : 3;
     const int32_t spInstsNum = spInitInstsNum + spLoopInstsNum + spCompleteInstsNum;
     vsi_nn_spinst_t *spinst = NULL;
@@ -54,25 +54,26 @@ vsi_nn_spinst_t * vsi_nn_sp_l2norm_z_direction_square_inst
     memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
     vsi_nn_init_spinst_attr(&attr);
 
-    if (fifo_depth > 4)
+    if (fifo_depth > 3)
     {
-        /* loop inst0: r1 = clamp(r3 * in, r6, r7) | r5 = v11 */
+        /* loop inst0: r1 = clamp(r3 * in, r6, r7) | v11 = r4 + r5 | r5 = v11 */
         status  = vsi_nn_sp_mul_clamp(&sp_insts_param[0], VSI_NN_SP_SR3, VSI_NN_SP_SRIN, VSI_NN_SP_SR1);
+        status |= vsi_nn_sp_add(&sp_insts_param[0], VSI_NN_SP_SR4, VSI_NN_SP_SR5, VSI_NN_SP_VR11);
         status |= vsi_nn_sp_move(&sp_insts_param[0], VSI_NN_SP_VR11, VSI_NN_SP_SR5);
-        /* loop inst1: r4 = r1 * r1 | v11 = r4 + r5 | out = r1 */
+        /* loop inst1: r4 = r1 * r1 | r6 = r1 + r5 | out = r1 */
         status |= vsi_nn_sp_mul(&sp_insts_param[1], VSI_NN_SP_SR1, VSI_NN_SP_SR1, VSI_NN_SP_SR4);
-        status |= vsi_nn_sp_add(&sp_insts_param[1], VSI_NN_SP_SR4, VSI_NN_SP_SR5, VSI_NN_SP_VR11);
+        status |= vsi_nn_sp_add(&sp_insts_param[1], VSI_NN_SP_SR1, VSI_NN_SP_SR5, VSI_NN_SP_SR6);
         status |= vsi_nn_sp_move(&sp_insts_param[1], VSI_NN_SP_SR1, VSI_NN_SP_SROUT);
         CHECK_STATUS_FAIL_GOTO(status, final );
 
-        attr.flush_cycle_num = 7;
+        attr.flush_cycle_num = 6;
 
-        attr.ignored_leading_outputs = 1;
-        attr.ignored_leading_v11_rd = fifo_depth + 2;
+        attr.ignored_leading_outputs = 3;
+        attr.ignored_leading_v11_rd = fifo_depth + 1;
         attr.ignored_leading_v11_wr = 3;
 
         attr.num_of_v11_rd_in_flush_cycle = 2;
-        attr.num_of_v11_wr_in_flush_cycle = 4;
+        attr.num_of_v11_wr_in_flush_cycle = 3;
     }
     else if (fifo_depth > 1)
     {
@@ -220,12 +221,13 @@ vsi_nn_kernel_node_t vsi_nn_sp_l2norm_z_direction_square_node
     clamp_min = clamp_min * input_scale;
     clamp_max = clamp_max * input_scale;
 
-    /* loop inst0: r1 = clamp(r3 * in, r6, r7) | r5 = v11 */
+    /* loop inst0: r1 = clamp(r3 * in, r6, r7) | v11 = r4 + r5 | r5 = v11 */
     status  = vsi_nn_sp_mul_clamp(&sp_insts_param[0], VSI_NN_SP_SR3, VSI_NN_SP_SRIN, VSI_NN_SP_SR1);
+    status |= vsi_nn_sp_add(&sp_insts_param[0], VSI_NN_SP_SR4, VSI_NN_SP_SR5, VSI_NN_SP_VR11);
     status |= vsi_nn_sp_move(&sp_insts_param[0], VSI_NN_SP_VR11, VSI_NN_SP_SR5);
-    /* loop inst1: r4 = r1 * r1 | v11 = r4 + r5 | out = r1 */
+    /* loop inst1: r4 = r1 * r1 | r6 = r1 + r5 | out = r1 */
     status |= vsi_nn_sp_mul(&sp_insts_param[1], VSI_NN_SP_SR1, VSI_NN_SP_SR1, VSI_NN_SP_SR4);
-    status |= vsi_nn_sp_add(&sp_insts_param[1], VSI_NN_SP_SR4, VSI_NN_SP_SR5, VSI_NN_SP_VR11);
+    status |= vsi_nn_sp_add(&sp_insts_param[1], VSI_NN_SP_SR1, VSI_NN_SP_SR5, VSI_NN_SP_SR6);
     status |= vsi_nn_sp_move(&sp_insts_param[1], VSI_NN_SP_SR1, VSI_NN_SP_SROUT);
     CHECK_STATUS_FAIL_GOTO(status, final );
 
@@ -242,12 +244,12 @@ vsi_nn_kernel_node_t vsi_nn_sp_l2norm_z_direction_square_node
 
     attr.flush_cycle_num = 6;
 
-    attr.ignored_leading_outputs = 1;
+    attr.ignored_leading_outputs = 3;
     attr.ignored_leading_v11_rd = 5;
     attr.ignored_leading_v11_wr = 1;
 
-    attr.num_of_v11_rd_in_flush_cycle = 1;
-    attr.num_of_v11_wr_in_flush_cycle = 2;
+    attr.num_of_v11_rd_in_flush_cycle = 2;
+    attr.num_of_v11_wr_in_flush_cycle = 3;
 
     VSI_NN_SP_ATTR_SET_CONST_TO_SR3(attr, input_scale);
     VSI_NN_SP_ATTR_SET_CONST_TO_SR4(attr, 0);
