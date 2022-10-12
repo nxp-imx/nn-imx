@@ -56,12 +56,14 @@ static vsi_status op_compute
     uint32_t new_rank = 0;
     int32_t  i        = 0;
     vsi_bool ret = FALSE;
-    vsi_nn_context_t ctx = self->graph->ctx;
+    vsi_nn_context_t ctx = NULL;
 
     if ( NULL == self )
     {
         return VSI_FAILURE;
     }
+
+    ctx = self->graph->ctx;
 
     for (i = 0; i < _IO_NUM; i++)
     {
