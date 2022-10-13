@@ -287,7 +287,7 @@ static vsi_nn_kernel_node_t _setup
         {
             /* Pass parameters to node. */
             vsi_nn_kernel_node_pack_io( node_params, _LOGICAL_OPS_PARAM_NUM,
-                    inputs, input_num, outputs, output_num );
+                    reshape_tensors, input_num, &reshape_tensors[2], output_num );
             status  = vsi_nn_kernel_node_pass_param( node, node_params, _LOGICAL_OPS_PARAM_NUM );
         }
     }
