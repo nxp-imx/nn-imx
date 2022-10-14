@@ -35,6 +35,7 @@
 #include "vsi_nn_log.h"
 #include "libnnext/vsi_nn_vxkernel.h"
 #include "vsi_nn_internal_node.h"
+#include "utils/vsi_nn_dtype_util.h"
 #include "kernel/vsi_nn_kernel_gpu_shape_optimize.h"
 
 #define _ARG_NUM            (6)
@@ -153,6 +154,7 @@ static vsi_bool _check_is_sp_supported_type
     (
     vsi_nn_node_t * self,
     vsi_nn_tensor_t * input,
+    vsi_nn_tensor_t * output,
     vsi_enum type
     )
 {
@@ -173,9 +175,11 @@ static vsi_bool _check_is_sp_supported_type
         return FALSE;
     }
 
-    if (   (VSI_NN_TYPE_FLOAT64 == input->attr.dtype.vx_type)
-        || (VSI_NN_TYPE_UINT32  == input->attr.dtype.vx_type)
-        || (VSI_NN_TYPE_UINT64  == input->attr.dtype.vx_type)
+    if ( (VSI_NN_TYPE_FLOAT64 == input->attr.dtype.vx_type) ||
+         (VSI_NN_TYPE_UINT32  == input->attr.dtype.vx_type) ||
+         (VSI_NN_TYPE_UINT64  == input->attr.dtype.vx_type) ||
+         (vsi_nn_TypeGetBits(input->attr.dtype.vx_type) == 4) ||
+         (vsi_nn_TypeGetBits(output->attr.dtype.vx_type) == 4)
         )
     {
         return FALSE;
@@ -1199,7 +1203,7 @@ static vsi_bool op_setup
             outputs[0], shape, new_rank );
     self->nn_param.reduce.local2->reshaped_output1 = reshape_out_t[0];
 
-    if (_check_is_sp_supported_type(self, reshape_in_t[0], self->nn_param.reduce.type))
+    if (_check_is_sp_supported_type(self, reshape_in_t[0], reshape_out_t[0], self->nn_param.reduce.type))
     {
         self->nn_param.reduce.local2->use_internal_node = TRUE;
         ret = op_set_sp_reduce_internal(self, reshape_in_t, reshape_out_t, self->nn_param.reduce.type);
