@@ -34,6 +34,7 @@
 #include "nnrt/model.hpp"
 #include "nnrt/op/public.hpp"
 #include "nnrt/version.hpp"
+#include "nnrt/file_map_memory.hpp"
 
 #ifdef __linux__
 #include <unistd.h>
@@ -259,8 +260,13 @@ int Model::setOperandValueFromMemory(op::OperandPtr operand,
                                      const Memory* memory,
                                      size_t offset,
                                      size_t length) {
-    mem_refs_.push_back(memory_pool_.add_reference(memory, offset, length));
-    operand->weak_mem_ref = mem_refs_.back();
+    if (operand->isTensor()) {
+        mem_refs_.push_back(memory_pool_.add_reference(memory, offset, length));
+        operand->weak_mem_ref = mem_refs_.back();
+    } else {
+        assert(length <= sizeof(operand->scalar));
+        memcpy(&operand->scalar, memory->data(offset), length);
+    }
     return NNA_ERROR_CODE(NO_ERROR);
 }
 int Model::setOperandValueFromMemory(uint32_t operand_index,
