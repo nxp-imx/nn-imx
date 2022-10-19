@@ -47,7 +47,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_moments_axis0_node
     (
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input,
-        vsi_nn_tensor_t             * output
+        vsi_nn_tensor_t             * output,
+        char                        * kernel_name
     )
 {
     const int32_t spInitInstsNum = 1;
@@ -116,6 +117,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_moments_axis0_node
         spinst->sp,
         NULL);
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
 final:
     if (spinst)
     {
@@ -133,7 +137,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_layer_norm_means_node
         float             inv_m,
         float             const_a,
         float             s,
-        float             eps
+        float             eps,
+        char            * kernel_name
     )
 {
     const int32_t spInitInstsNum = 2;
@@ -230,6 +235,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_layer_norm_means_node
         spinst->sp,
         &vx_lut_params);
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
 final:
     if (spinst)
     {
@@ -256,7 +264,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_layer_norm_scale_node
         vsi_nn_tensor_t             * input,
         vsi_nn_tensor_t             * alpha,
         vsi_nn_tensor_t             * dummy_tensor,
-        vsi_nn_tensor_t             * output
+        vsi_nn_tensor_t             * output,
+        char                        * kernel_name
     )
 {
     const int32_t spLoopInstsNum = 2;
@@ -320,6 +329,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_layer_norm_scale_node
         spinst->sp,
         NULL);
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
 final:
     if (spinst)
     {
@@ -334,7 +346,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_ln_add_node
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input0,
         vsi_nn_tensor_t             * input1,
-        vsi_nn_tensor_t             * output
+        vsi_nn_tensor_t             * output,
+        char                        * kernel_name
     )
 {
     const int32_t spInitInstsNum = 0;
@@ -414,6 +427,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_ln_add_node
         spinst->sp,
         NULL);
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
 final:
     if (spinst)
     {
@@ -425,10 +441,10 @@ final:
 
 vsi_nn_tensor_t * vsi_nn_pad_layer_norm_const_tensor
     (
-    vsi_nn_graph_t  * graph,
-    vsi_nn_tensor_t * input,
-    vsi_nn_tensor_attr_t attr,
-    float             rate
+        vsi_nn_graph_t              * graph,
+        vsi_nn_tensor_t             * input,
+        vsi_nn_tensor_attr_t        attr,
+        float                       rate
     )
 {
     vsi_nn_tensor_t *output = NULL;
@@ -525,13 +541,14 @@ vsi_nn_kernel_node_t layer_norm_x_direction
     attr.vtl = TRUE;
     norm_tensor = vsi_nn_CreateTensor( graph, &attr );
 
-    node = vsi_nn_sp_moments_axis0_node(graph, inputs[0], dummy_tensor[0]);
+    node = vsi_nn_sp_moments_axis0_node(graph, inputs[0], dummy_tensor[0], "layernorm_0");
     CHECK_PTR_FAIL_GOTO( node, "Create sp_moments_axis0 fail.", final );
-    node = vsi_nn_sp_layer_norm_means_node(graph, dummy_tensor[0], dummy_tensor[1], inv_m, const_a, s, eps);
+    node = vsi_nn_sp_layer_norm_means_node(graph, dummy_tensor[0], dummy_tensor[1],
+                                            inv_m, const_a, s, eps, "layernorm_1");
     CHECK_PTR_FAIL_GOTO( node, "Create sp_moments_norm_means  fail.", final );
-    node = vsi_nn_sp_layer_norm_scale_node(graph, inputs[0], gamma, dummy_tensor[1], norm_tensor);
+    node = vsi_nn_sp_layer_norm_scale_node(graph, inputs[0], gamma, dummy_tensor[1], norm_tensor, "layernorm_2");
     CHECK_PTR_FAIL_GOTO( node, "Create sp_layer_norm  fail.", final );
-    node = vsi_nn_sp_ln_add_node(graph, norm_tensor, beta, outputs[0]);
+    node = vsi_nn_sp_ln_add_node(graph, norm_tensor, beta, outputs[0], "layernorm_3");
     CHECK_PTR_FAIL_GOTO( node, "Create sp_add_norm  fail.", final );
 final:
     vsi_safe_release_tensor(dummy_tensor[0]);

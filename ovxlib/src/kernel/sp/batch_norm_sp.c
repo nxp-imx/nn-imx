@@ -136,7 +136,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_bn_mov_weight_bias_node
         vsi_nn_tensor_t             * weight,
         vsi_nn_tensor_t             * bias,
         vsi_nn_tensor_t             * dummy_output0,
-        vsi_nn_tensor_t             * dummy_output1
+        vsi_nn_tensor_t             * dummy_output1,
+        char                        * kernel_name
     )
 {
     const int32_t spLoopInstsNum = 2;
@@ -203,6 +204,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_bn_mov_weight_bias_node
         spinst->sp,
         NULL);
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
 final:
     if (spinst)
     {
@@ -218,7 +221,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_bn_in_times_v11_plus_v12_node
         vsi_nn_tensor_t             * input,
         vsi_nn_tensor_t             * dummy_tensor0,
         vsi_nn_tensor_t             * dummy_tensor1,
-        vsi_nn_tensor_t             * output
+        vsi_nn_tensor_t             * output,
+        char                        * kernel_name
     )
 {
     const int32_t spLoopInstsNum = 1;
@@ -282,6 +286,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_bn_in_times_v11_plus_v12_node
         spinst->sp,
         NULL);
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
 final:
     if (spinst)
     {
@@ -296,7 +303,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_bn_a_times_b_to_v11_node
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input,
         vsi_nn_tensor_t             * weight,
-        vsi_nn_tensor_t             * dummy_output
+        vsi_nn_tensor_t             * dummy_output,
+        char                        * kernel_name
     )
 {
     const int32_t spLoopInstsNum = 2;
@@ -369,6 +377,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_bn_a_times_b_to_v11_node
         spinst->sp,
         NULL);
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
 final:
     if (spinst)
     {
@@ -383,7 +394,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_bn_a_plus_v11_node
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input,
         vsi_nn_tensor_t             * dummy_tensor,
-        vsi_nn_tensor_t             * output
+        vsi_nn_tensor_t             * output,
+        char                        * kernel_name
     )
 {
     const int32_t spLoopInstsNum = 1;
@@ -433,6 +445,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_bn_a_plus_v11_node
         output_count,
         spinst->sp,
         NULL);
+
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
 
 final:
     if (spinst)
@@ -502,16 +517,18 @@ REGISTER_BATCH_NORM_STREAM_PROCESSOR_KERNEL( batch_norm )
     CHECK_STATUS_FAIL_GOTO( status, final );
     if (axis == 2)
     {
-        node = vsi_nn_sp_bn_mov_weight_bias_node(graph, weight, bias, dummy_tensor[0], dummy_tensor[1]);
+        node = vsi_nn_sp_bn_mov_weight_bias_node(graph, weight, bias,
+            dummy_tensor[0], dummy_tensor[1], "batchnorm_0");
         CHECK_PTR_FAIL_GOTO( node, "Create mov_weight_bias fail.", final );
-        node = vsi_nn_sp_bn_in_times_v11_plus_v12_node(graph, inputs[0], dummy_tensor[0], dummy_tensor[1], outputs[0]);
+        node = vsi_nn_sp_bn_in_times_v11_plus_v12_node(graph, inputs[0], dummy_tensor[0],
+            dummy_tensor[1], outputs[0], "batchnorm_1");
         CHECK_PTR_FAIL_GOTO( node, "Create in_times_v11_plus_v12 fail.", final );
     }
     else
     {
-        node = vsi_nn_sp_bn_a_times_b_to_v11_node(graph, inputs[0], weight, dummy_tensor[0]);
+        node = vsi_nn_sp_bn_a_times_b_to_v11_node(graph, inputs[0], weight, dummy_tensor[0], "batchnorm_0");
         CHECK_PTR_FAIL_GOTO( node, "Create a_times_b_to_v11 fail.", final );
-        node = vsi_nn_sp_bn_a_plus_v11_node(graph, bias, dummy_tensor[0], outputs[0]);
+        node = vsi_nn_sp_bn_a_plus_v11_node(graph, bias, dummy_tensor[0], outputs[0], "batchnorm_1");
         CHECK_PTR_FAIL_GOTO( node, "Create a_plus_v11 fail.", final );
     }
 final:

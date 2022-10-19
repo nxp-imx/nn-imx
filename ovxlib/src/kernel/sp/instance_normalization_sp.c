@@ -40,7 +40,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_moments_sums_node
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input,
         vsi_nn_tensor_t             * output0,
-        vsi_nn_tensor_t             * output1
+        vsi_nn_tensor_t             * output1,
+        char                        * kernel_name
     )
 {
     const int32_t spInitInstsNum = 1;
@@ -111,6 +112,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_moments_sums_node
         spinst->sp,
         NULL);
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
 final:
     if (spinst)
     {
@@ -130,7 +134,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_moments_means_node
         float             inv_m,
         float             const_a,
         float             s,
-        float             eps
+        float             eps,
+        char            * kernel_name
     )
 {
     const int32_t spInitInstsNum = 2;
@@ -229,6 +234,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_moments_means_node
         spinst->sp,
         &vx_lut_params);
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
 final:
     if (spinst)
     {
@@ -257,7 +265,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_instance_norm_alpha_beta_node
         vsi_nn_tensor_t             * dummy0,
         vsi_nn_tensor_t             * dummy1,
         vsi_nn_tensor_t             * output0,
-        vsi_nn_tensor_t             * output1
+        vsi_nn_tensor_t             * output1,
+        char                        * kernel_name
     )
 {
     const int32_t spInitInstsNum = 1;
@@ -335,6 +344,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_instance_norm_alpha_beta_node
         spinst->sp,
         NULL);
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
 final:
     if (spinst)
     {
@@ -350,7 +362,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_instance_norm_node
         vsi_nn_tensor_t             * input,
         vsi_nn_tensor_t             * dummy0_tensor,
         vsi_nn_tensor_t             * dummy1_tensor,
-        vsi_nn_tensor_t             * output
+        vsi_nn_tensor_t             * output,
+        char                        * kernel_name
     )
 {
     const int32_t spLoopInstsNum = 1;
@@ -413,6 +426,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_instance_norm_node
         output_count,
         spinst->sp,
         NULL);
+
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
 
 final:
     if (spinst)
@@ -492,15 +508,16 @@ REGISTER_INSTANCE_NORM_STREAM_PROCESSOR_KERNEL( instance_norm )
     reshape_tensors[1] = vsi_nn_reshape_tensor( graph,
                 gamma, shape, 3 );
 
-    node = vsi_nn_sp_moments_sums_node(graph, inputs[0], dummy_tensor[0], dummy_tensor[1]);
+    node = vsi_nn_sp_moments_sums_node(graph, inputs[0], dummy_tensor[0], dummy_tensor[1], "instancenorm_0");
     CHECK_PTR_FAIL_GOTO( node, "Create sp_instance_norm_sums  fail.", final );
     node = vsi_nn_sp_moments_means_node(graph, dummy_tensor[0], dummy_tensor[1],
-        dummy_tensor[2], dummy_tensor[3], inv_m, const_a, s, eps);
+        dummy_tensor[2], dummy_tensor[3], inv_m, const_a, s, eps, "instancenorm_1");
     CHECK_PTR_FAIL_GOTO( node, "Create sp_instance_norm_means  fail.", final );
     node = vsi_nn_sp_instance_norm_alpha_beta_node(graph, reshape_tensors[0], reshape_tensors[1],
-        dummy_tensor[2], dummy_tensor[3], dummy_tensor[4], dummy_tensor[5]);
+        dummy_tensor[2], dummy_tensor[3], dummy_tensor[4], dummy_tensor[5], "instancenorm_2");
     CHECK_PTR_FAIL_GOTO( node, "Create sp_instance_norm_alpha_beta  fail.", final );
-    node = vsi_nn_sp_instance_norm_node(graph, inputs[0], dummy_tensor[4], dummy_tensor[5], outputs[0]);
+    node = vsi_nn_sp_instance_norm_node(graph, inputs[0], dummy_tensor[4],
+        dummy_tensor[5], outputs[0], "instancenorm_3");
     CHECK_PTR_FAIL_GOTO( node, "Create sp_instance_norm  fail.", final );
 
 final:

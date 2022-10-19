@@ -40,7 +40,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_grucell_r_times_h_node
         vsi_nn_graph_t  * graph,
         vsi_nn_tensor_t * input0,
         vsi_nn_tensor_t * input1,
-        vsi_nn_tensor_t * output
+        vsi_nn_tensor_t * output,
+        char            * kernel_name
     )
 {
     const int32_t spInitInstsNum = 0;
@@ -113,6 +114,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_grucell_r_times_h_node
         spinst->sp,
         NULL);
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
 final:
     if (spinst)
     {
@@ -127,7 +131,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_grucell_r_times_h_qnt_node
         vsi_nn_graph_t  * graph,
         vsi_nn_tensor_t * input0,
         vsi_nn_tensor_t * input1,
-        vsi_nn_tensor_t * output
+        vsi_nn_tensor_t * output,
+        char            * kernel_name
     )
 {
     const int32_t spInitInstsNum = 0;
@@ -205,6 +210,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_grucell_r_times_h_qnt_node
         spinst->sp,
         NULL);
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
 final:
     if (spinst)
     {
@@ -219,7 +227,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_add_node
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input0,
         vsi_nn_tensor_t             * input1,
-        vsi_nn_tensor_t             * output
+        vsi_nn_tensor_t             * output,
+        char                        * kernel_name
     );
 
 #define REGISTER_GRUCELL_ACTIVATION_STREAM_PROCESSOR_KERNEL( kernel_name )   \
@@ -269,21 +278,24 @@ REGISTER_GRUCELL_ACTIVATION_STREAM_PROCESSOR_KERNEL( grucell_h_times_activation_
     gate_r = vsi_nn_CreateTensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( gate_r, "Create tensor fail.", final );
 
-    node = vsi_nn_sp_add_node(graph, inputs[1], inputs[2], gate_r);
+    node = vsi_nn_sp_add_node(graph, inputs[1], inputs[2], gate_r, "grucell_h_times_activation_r_0");
     CHECK_PTR_FAIL_GOTO( node, "Create grucell activation sp add node fail.", final );
 
     if (hstate_scale == 1 && const2 == 0)
     {
-        node = vsi_nn_sp_grucell_r_times_h_node(graph, gate_r, inputs[0], outputs[0]);
+        node = vsi_nn_sp_grucell_r_times_h_node(graph, gate_r, inputs[0], outputs[0],
+            "grucell_h_times_activation_r_1");
     }
     else
     {
-        node = vsi_nn_sp_grucell_r_times_h_qnt_node(graph, gate_r, inputs[0], outputs[0]);
+        node = vsi_nn_sp_grucell_r_times_h_qnt_node(graph, gate_r, inputs[0], outputs[0],
+            "grucell_h_times_activation_r_1");
     }
     CHECK_PTR_FAIL_GOTO( node, "Create grucell activation sp r_times_h node fail.", final );
 
 final:
     vsi_safe_release_tensor(gate_r);
+
     return node;
 } /* grucell_h_times_activation_r() */
 

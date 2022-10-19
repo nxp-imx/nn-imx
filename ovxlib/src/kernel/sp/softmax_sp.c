@@ -40,7 +40,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_softmax_max_node
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input,
         vsi_nn_tensor_t             * output0,
-        vsi_nn_tensor_t             * output1
+        vsi_nn_tensor_t             * output1,
+        char                        * kernel_name
     )
 {
     const int32_t spInitInstsNum = 0;
@@ -118,6 +119,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_softmax_max_node
         spinst->sp,
         NULL);
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
 final:
     if (spinst)
     {
@@ -131,7 +135,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_softmax_move_node
     (
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input,
-        vsi_nn_tensor_t             * output
+        vsi_nn_tensor_t             * output,
+        char                        * kernel_name
     )
 {
     const int32_t spInitInstsNum = 0;
@@ -189,6 +194,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_softmax_move_node
         spinst->sp,
         NULL);
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
 final:
     if (spinst)
     {
@@ -205,7 +213,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_softmax_exp_node
         vsi_nn_tensor_t             * input1,
         vsi_nn_tensor_t             * output0,
         vsi_nn_tensor_t             * output1,
-        float                         beta
+        float                         beta,
+        char                        * kernel_name
     )
 {
     const int32_t spLoopInstsNum = 3;
@@ -292,6 +301,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_softmax_exp_node
         spinst->sp,
         &vx_lut_params);
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
 final:
     if (spinst)
     {
@@ -314,10 +326,11 @@ final:
 
 vsi_nn_kernel_node_t vsi_nn_sp_softmax_rcp_node
     (
-        vsi_nn_graph_t  * graph,
-        vsi_nn_tensor_t * input,
-        vsi_nn_tensor_t * output,
-        float             output_scale
+        vsi_nn_graph_t              * graph,
+        vsi_nn_tensor_t             * input,
+        vsi_nn_tensor_t             * output,
+        float                         output_scale,
+        char                        * kernel_name
     )
 {
     const int32_t spLoopInstsNum = output_scale == 1 ? 2 : 3;
@@ -417,6 +430,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_softmax_rcp_node
         spinst->sp,
         &vx_lut_params);
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
 final:
     if (spinst)
     {
@@ -442,7 +458,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_softmax_times_node
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * exp_input,
         vsi_nn_tensor_t             * dummy_input,
-        vsi_nn_tensor_t             * output
+        vsi_nn_tensor_t             * output,
+        char                        * kernel_name
     )
 {
     const int32_t spLoopInstsNum = 1;
@@ -498,6 +515,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_softmax_times_node
         spinst->sp,
         NULL);
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
 final:
     if (spinst)
     {
@@ -549,17 +569,17 @@ vsi_nn_kernel_node_t softmax_x_direction
     output_tensor[1] = vsi_nn_CreateTensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( output_tensor[1], "Create tensor fail.", final );
 
-    node = vsi_nn_sp_softmax_max_node(graph, inputs[0], output_tensor[0], dummy_tensor[0]);
+    node = vsi_nn_sp_softmax_max_node(graph, inputs[0], output_tensor[0], dummy_tensor[0], "softmax_0");
     CHECK_PTR_FAIL_GOTO( node, "Create sp softmax node fail.", final );
-    node = vsi_nn_sp_softmax_move_node(graph, dummy_tensor[0], dummy_tensor[1]);
+    node = vsi_nn_sp_softmax_move_node(graph, dummy_tensor[0], dummy_tensor[1], "softmax_1");
     CHECK_PTR_FAIL_GOTO( node, "Create sp softmax node fail.", final );
 
     node = vsi_nn_sp_softmax_exp_node(graph, output_tensor[0], dummy_tensor[1],
-                        output_tensor[1], dummy_tensor[2], beta);
+                        output_tensor[1], dummy_tensor[2], beta, "softmax_2");
     CHECK_PTR_FAIL_GOTO( node, "Create sp softmax node fail.", final );
-    node = vsi_nn_sp_softmax_rcp_node(graph, dummy_tensor[2], dummy_tensor[3], output_scale);
+    node = vsi_nn_sp_softmax_rcp_node(graph, dummy_tensor[2], dummy_tensor[3], output_scale, "softmax_3");
     CHECK_PTR_FAIL_GOTO( node, "Create sp_softmax_rcp fail.", final );
-    node = vsi_nn_sp_softmax_times_node(graph, output_tensor[1], dummy_tensor[3], outputs[0]);
+    node = vsi_nn_sp_softmax_times_node(graph, output_tensor[1], dummy_tensor[3], outputs[0], "softmax_4");
     CHECK_PTR_FAIL_GOTO( node, "Create softmax_times fail.", final );
 
 final:

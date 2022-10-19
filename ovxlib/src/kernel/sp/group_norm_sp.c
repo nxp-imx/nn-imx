@@ -41,7 +41,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_moments_sums_node
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input,
         vsi_nn_tensor_t             * output0,
-        vsi_nn_tensor_t             * output1
+        vsi_nn_tensor_t             * output1,
+        char                        * kernel_name
     );
 
 vsi_nn_kernel_node_t vsi_nn_sp_moments_means_node
@@ -54,7 +55,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_moments_means_node
         float             inv_m,
         float             const_a,
         float             s,
-        float             eps
+        float             eps,
+        char                        * kernel_name
     );
 
 vsi_nn_kernel_node_t vsi_nn_sp_bn_mov_weight_bias_node
@@ -63,7 +65,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_bn_mov_weight_bias_node
         vsi_nn_tensor_t             * weight,
         vsi_nn_tensor_t             * bias,
         vsi_nn_tensor_t             * dummy_output0,
-        vsi_nn_tensor_t             * dummy_output1
+        vsi_nn_tensor_t             * dummy_output1,
+        char                        * kernel_name
     );
 
 vsi_nn_kernel_node_t vsi_nn_sp_bn_in_times_v11_plus_v12_node
@@ -72,7 +75,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_bn_in_times_v11_plus_v12_node
         vsi_nn_tensor_t             * input,
         vsi_nn_tensor_t             * dummy_tensor0,
         vsi_nn_tensor_t             * dummy_tensor1,
-        vsi_nn_tensor_t             * output
+        vsi_nn_tensor_t             * output,
+        char                        * kernel_name
     );
 
 vsi_nn_kernel_node_t vsi_nn_sp_a_minus_v11_times_v12_node
@@ -81,7 +85,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_a_minus_v11_times_v12_node
         vsi_nn_tensor_t             * input,
         vsi_nn_tensor_t             * dummy0_tensor,
         vsi_nn_tensor_t             * dummy1_tensor,
-        vsi_nn_tensor_t             * output
+        vsi_nn_tensor_t             * output,
+        char                        * kernel_name
     )
 {
     const int32_t spLoopInstsNum = 1;
@@ -144,6 +149,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_a_minus_v11_times_v12_node
         output_count,
         spinst->sp,
         NULL);
+
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
 
 final:
     if (spinst)
@@ -237,18 +245,18 @@ REGISTER_GROUP_NORM_STREAM_PROCESSOR_KERNEL( group_norm )
     gamma = vsi_nn_dropout_tensor(graph, reshape_tensors[3], output_scale);
     beta = vsi_nn_dropout_tensor(graph, reshape_tensors[2], output_scale);
 
-    node = vsi_nn_sp_moments_sums_node(graph, reshape_tensors[0], dummy_tensor[0], dummy_tensor[1]);
+    node = vsi_nn_sp_moments_sums_node(graph, reshape_tensors[0], dummy_tensor[0], dummy_tensor[1], "groupnorm_0");
     CHECK_PTR_FAIL_GOTO( node, "Create moments_sums fail.", final );
     node = vsi_nn_sp_moments_means_node(graph, dummy_tensor[0], dummy_tensor[1],
-        dummy_tensor[2], dummy_tensor[3], inv_m, const_a, s, eps);
+        dummy_tensor[2], dummy_tensor[3], inv_m, const_a, s, eps, "groupnorm_1");
     CHECK_PTR_FAIL_GOTO( node, "Create moments_means fail.", final );
     node = vsi_nn_sp_a_minus_v11_times_v12_node(graph, reshape_tensors[0], dummy_tensor[2], dummy_tensor[3],
-        norm_tensor);
+        norm_tensor, "groupnorm_2");
     CHECK_PTR_FAIL_GOTO( node, "Create a_minus_v11_times_v12 fail.", final );
-    node = vsi_nn_sp_bn_mov_weight_bias_node(graph, gamma, beta, dummy_tensor[4], dummy_tensor[5]);
+    node = vsi_nn_sp_bn_mov_weight_bias_node(graph, gamma, beta, dummy_tensor[4], dummy_tensor[5], "groupnorm_3");
     CHECK_PTR_FAIL_GOTO( node, "Create mov_weight_bias fail.", final );
     node = vsi_nn_sp_bn_in_times_v11_plus_v12_node(graph, reshape_tensors[1], dummy_tensor[4],
-        dummy_tensor[5], outputs[0]);
+        dummy_tensor[5], outputs[0], "groupnorm_4");
     CHECK_PTR_FAIL_GOTO( node, "Create in_times_v11_plus_v12 fail.", final );
 
 final:

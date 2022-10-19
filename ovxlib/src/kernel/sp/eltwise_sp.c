@@ -41,7 +41,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_add_node
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input0,
         vsi_nn_tensor_t             * input1,
-        vsi_nn_tensor_t             * output
+        vsi_nn_tensor_t             * output,
+        char                        * kernel_name
     )
 {
     const int32_t spInitInstsNum = 1;
@@ -131,7 +132,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_sub_node
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input0,
         vsi_nn_tensor_t             * input1,
-        vsi_nn_tensor_t             * output
+        vsi_nn_tensor_t             * output,
+        char                        * kernel_name
     )
 {
     const int32_t spInitInstsNum = 1;
@@ -223,8 +225,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_mul_node
         vsi_nn_tensor_t             * input1,
         vsi_nn_tensor_t             * output,
         float                         scale,
-        vsi_enum                      overflow_policy,
-        vsi_enum                      rounding_policy
+        char                        * kernel_name
     )
 {
     const int32_t spInitInstsNum = 0;
@@ -314,7 +315,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_rcp_to_v11_node
     (
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input,
-        vsi_nn_tensor_t             * output
+        vsi_nn_tensor_t             * output,
+        char                        * kernel_name
     )
 {
     const int32_t spInitInstsNum = 0;
@@ -392,6 +394,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_rcp_to_v11_node
         spinst->sp,
         &vx_lut_params);
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
 final:
     if (spinst)
     {
@@ -419,7 +424,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_mul_times_v11_node
         vsi_nn_tensor_t             * input0,
         vsi_nn_tensor_t             * input1,
         vsi_nn_tensor_t             * output,
-        float                         scale
+        float                         scale,
+        char                        * kernel_name
     )
 {
     const int32_t spInitInstsNum = 0;
@@ -492,6 +498,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_mul_times_v11_node
         spinst->sp,
         NULL);
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
 final:
     if (spinst)
     {
@@ -506,7 +515,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_preload_node
     (
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input,
-        vsi_nn_tensor_t             * output
+        vsi_nn_tensor_t             * output,
+        char                        * kernel_name
     )
 {
     const int32_t spInitInstsNum = 0;
@@ -594,8 +604,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_mul_per_channel_node
         vsi_nn_tensor_t             * input1,
         vsi_nn_tensor_t             * output,
         float                         scale,
-        vsi_enum                      overflow_policy,
-        vsi_enum                      rounding_policy
+        char                        * kernel_name
     )
 {
     const int32_t spInitInstsNum = 0;
@@ -692,7 +701,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_select_a_node
         vsi_nn_tensor_t             * input0,
         vsi_nn_tensor_t             * input1,
         vsi_nn_tensor_t             * output,
-        float                         output_scale
+        float                         output_scale,
+        char                        * kernel_name
     )
 {
     const int32_t spInitInstsNum = 0;
@@ -776,7 +786,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_select_b_node
         vsi_nn_tensor_t             * input0,
         vsi_nn_tensor_t             * input1,
         vsi_nn_tensor_t             * output,
-        float                         output_scale
+        float                         output_scale,
+        char                        * kernel_name
     )
 {
     const int32_t spInitInstsNum = 0;
@@ -859,7 +870,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_select_add_node
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input0,
         vsi_nn_tensor_t             * input1,
-        vsi_nn_tensor_t             * output
+        vsi_nn_tensor_t             * output,
+        char                        * kernel_name
     )
 {
     const int32_t spInitInstsNum = 0;
@@ -1009,7 +1021,7 @@ REGISTER_ELTWISE_STREAM_PROCESSOR_KERNEL( add )
         return NULL;
     }
 
-    node = vsi_nn_sp_add_node(graph, inputs[0], inputs[1], outputs[0]);
+    node = vsi_nn_sp_add_node(graph, inputs[0], inputs[1], outputs[0], "tensoradd");
     CHECK_PTR_FAIL_GOTO( node, "Create sp_add node fail.", final );
 
 final:
@@ -1032,7 +1044,7 @@ REGISTER_ELTWISE_STREAM_PROCESSOR_KERNEL( sub )
         return NULL;
     }
 
-    node = vsi_nn_sp_sub_node(graph, inputs[0], inputs[1], outputs[0]);
+    node = vsi_nn_sp_sub_node(graph, inputs[0], inputs[1], outputs[0], "tensorsub");
     CHECK_PTR_FAIL_GOTO( node, "Create sp_sub node fail.", final );
 
 final:
@@ -1049,7 +1061,7 @@ REGISTER_ELTWISE_STREAM_PROCESSOR_KERNEL( mul )
     int32_t axis_num = 2;
     vsi_nn_tensor_t *temp_tensor = NULL;
     vsi_nn_tensor_t * dummy_tensor = NULL;
-    vsi_enum overflow_policy, rounding_policy;
+    vsi_enum overflow_policy;
     vsi_bool is_broadcast = vsi_nn_is_broadcast_operaton(inputs, input_num, outputs[0]);
     vsi_bool is_broadcast_axis01 = vsi_nn_is_broadcast_axes_operaton(inputs, input_num, outputs[0], axis, axis_num);
     vsi_ssize_t input0_slice_size = inputs[0]->attr.size[0] * inputs[0]->attr.size[1];
@@ -1064,9 +1076,10 @@ REGISTER_ELTWISE_STREAM_PROCESSOR_KERNEL( mul )
 
     scale = vsi_nn_kernel_param_get_float32(params, "scale");
     overflow_policy = vsi_nn_kernel_param_get_int32(params, "overflow_policy");
-    rounding_policy = vsi_nn_kernel_param_get_int32(params, "rounding_policy");
 
-    if ( ( is_broadcast || vsi_nn_sp_nn_alu_support_types(inputs[0], inputs[1], outputs[0]) )
+    if ( is_broadcast ||
+         vsi_nn_sp_nn_alu_support_types(inputs[0], inputs[1], outputs[0]) ||
+         VX_CONVERT_POLICY_WRAP == overflow_policy
         /*&& !is_per_channel*/ )
     {
         return NULL;
@@ -1088,17 +1101,17 @@ REGISTER_ELTWISE_STREAM_PROCESSOR_KERNEL( mul )
         dummy_tensor = vsi_nn_CreateTensor( graph, &attr );
         CHECK_PTR_FAIL_GOTO( dummy_tensor, "Create dummy_tensor fail.", final );
 
-        node = vsi_nn_sp_preload_node(graph, inputs[1], dummy_tensor);
+        node = vsi_nn_sp_preload_node(graph, inputs[1], dummy_tensor, "tensormul_0");
         CHECK_PTR_FAIL_GOTO( node, "Create sp_preload node fail.", final );
 
         node = vsi_nn_sp_mul_per_channel_node(graph, inputs[0], dummy_tensor, outputs[0],
-            scale, overflow_policy, rounding_policy);
+            scale, "tensormul_1");
         CHECK_PTR_FAIL_GOTO( node, "Create sp_mul_per_channel node fail.", final );
     }
     else
     {
         node = vsi_nn_sp_mul_node(graph, inputs[0], inputs[1], outputs[0],
-            scale, overflow_policy, rounding_policy);
+            scale, "tensormul");
         CHECK_PTR_FAIL_GOTO( node, "Create sp_mul node fail.", final );
     }
 
@@ -1131,9 +1144,9 @@ REGISTER_ELTWISE_STREAM_PROCESSOR_KERNEL( div )
     output_tensor[0] = vsi_nn_CreateTensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( output_tensor[0], "Create tensor fail.", final );
 
-    node = vsi_nn_sp_rcp_to_v11_node(graph, inputs[1], output_tensor[0]);
+    node = vsi_nn_sp_rcp_to_v11_node(graph, inputs[1], output_tensor[0], "tensordiv_0");
     CHECK_PTR_FAIL_GOTO( node, "Create sp_div node fail.", final );
-    node = vsi_nn_sp_mul_times_v11_node(graph, inputs[0], output_tensor[0], outputs[0], scale);
+    node = vsi_nn_sp_mul_times_v11_node(graph, inputs[0], output_tensor[0], outputs[0], scale, "tensordiv_1");
     CHECK_PTR_FAIL_GOTO( node, "Create sp_div node fail.", final );
 
 final:
@@ -1164,11 +1177,11 @@ REGISTER_ELTWISE_STREAM_PROCESSOR_KERNEL( select )
     output_tensor[1] = vsi_nn_CreateTensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( output_tensor[1], "Create tensor fail.", final );
 
-    node = vsi_nn_sp_select_a_node(graph, inputs[1], inputs[0], output_tensor[0], output_scale);
+    node = vsi_nn_sp_select_a_node(graph, inputs[1], inputs[0], output_tensor[0], output_scale, "select_0");
     CHECK_PTR_FAIL_GOTO( node, "Create select_a node fail.", final );
-    node = vsi_nn_sp_select_b_node(graph, inputs[2], inputs[0], output_tensor[1], output_scale);
+    node = vsi_nn_sp_select_b_node(graph, inputs[2], inputs[0], output_tensor[1], output_scale, "select_1");
     CHECK_PTR_FAIL_GOTO( node, "Create select_b node fail.", final );
-    node = vsi_nn_sp_select_add_node(graph, output_tensor[0], output_tensor[1], outputs[0]);
+    node = vsi_nn_sp_select_add_node(graph, output_tensor[0], output_tensor[1], outputs[0], "select_2");
     CHECK_PTR_FAIL_GOTO( node, "Create select_add node fail.", final );
 
 final:

@@ -39,7 +39,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_maximum_node
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input0,
         vsi_nn_tensor_t             * input1,
-        vsi_nn_tensor_t             * output
+        vsi_nn_tensor_t             * output,
+        char                        * kernel_name
     )
 {
     const int32_t input_zp1 = vsi_nn_get_tensor_zero_point(input1);
@@ -156,6 +157,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_maximum_node
         spinst->sp,
         NULL);
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
 final:
     if (spinst)
     {
@@ -197,7 +201,7 @@ REGISTER_MAXIMUM_STREAM_PROCESSOR_KERNEL( maximum )
         return NULL;
     }
 
-    node = vsi_nn_sp_maximum_node(graph, inputs[0], inputs[1], outputs[0]);
+    node = vsi_nn_sp_maximum_node(graph, inputs[0], inputs[1], outputs[0], "maximum");
 
     return node;
 } /* maximum() */

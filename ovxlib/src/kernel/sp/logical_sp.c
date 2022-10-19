@@ -41,7 +41,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_logical_and_node
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input0,
         vsi_nn_tensor_t             * input1,
-        vsi_nn_tensor_t             * output
+        vsi_nn_tensor_t             * output,
+        char                        * kernel_name
     )
 {
     const int32_t spInitInstsNum = 0;
@@ -97,6 +98,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_logical_and_node
         spinst->sp,
         NULL);
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
 final:
     if (spinst)
     {
@@ -111,7 +115,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_logical_or_node
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input0,
         vsi_nn_tensor_t             * input1,
-        vsi_nn_tensor_t             * output
+        vsi_nn_tensor_t             * output,
+        char                        * kernel_name
     )
 {
     const int32_t spInitInstsNum = 0;
@@ -171,6 +176,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_logical_or_node
         spinst->sp,
         NULL);
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
 final:
     if (spinst)
     {
@@ -185,7 +193,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_logical_xor_node
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input0,
         vsi_nn_tensor_t             * input1,
-        vsi_nn_tensor_t             * output
+        vsi_nn_tensor_t             * output,
+        char                        * kernel_name
     )
 {
     const int32_t spInitInstsNum = 0;
@@ -246,6 +255,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_logical_xor_node
         spinst->sp,
         NULL);
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
 final:
     if (spinst)
     {
@@ -259,7 +271,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_logical_not_node
     (
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input,
-        vsi_nn_tensor_t             * output
+        vsi_nn_tensor_t             * output,
+        char                        * kernel_name
     )
 {
     const int32_t spInitInstsNum = 0;
@@ -314,6 +327,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_logical_not_node
         spinst->sp,
         NULL);
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
 final:
     if (spinst)
     {
@@ -359,13 +375,13 @@ REGISTER_LOGICAL_STREAM_PROCESSOR_KERNEL( logical_ops )
     switch ( ops_type )
     {
     case VSI_NN_LOGICAL_AND:
-        node = vsi_nn_sp_logical_and_node(graph, inputs[0], inputs[1], outputs[0]);
+        node = vsi_nn_sp_logical_and_node(graph, inputs[0], inputs[1], outputs[0], "logical_and");
         break;
     case VSI_NN_LOGICAL_OR:
-        node = vsi_nn_sp_logical_or_node(graph, inputs[0], inputs[1], outputs[0]);
+        node = vsi_nn_sp_logical_or_node(graph, inputs[0], inputs[1], outputs[0], "logical_or");
         break;
     case VSI_NN_LOGICAL_XOR:
-        node = vsi_nn_sp_logical_xor_node(graph, inputs[0], inputs[1], outputs[0]);
+        node = vsi_nn_sp_logical_xor_node(graph, inputs[0], inputs[1], outputs[0], "logical_xor");
         break;
     default:
         return NULL;
@@ -382,7 +398,7 @@ REGISTER_LOGICAL_STREAM_PROCESSOR_KERNEL( logical_not )
 {
     vsi_nn_kernel_node_t node = NULL;
 
-    node = vsi_nn_sp_logical_not_node(graph, inputs[0], outputs[0]);
+    node = vsi_nn_sp_logical_not_node(graph, inputs[0], outputs[0], "logical_not");
 
     return node;
 } /* logical_not() */

@@ -41,7 +41,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_r_times_h1_plus_h0_act_node
         vsi_nn_tensor_t * gate_h0,
         vsi_nn_tensor_t * gate_h1,
         vsi_nn_tensor_t * dummy_input,
-        vsi_nn_tensor_t * dummy_output
+        vsi_nn_tensor_t * dummy_output,
+        char            * kernel_name
     )
 {
     const int32_t spInitInstsNum = 0;
@@ -118,6 +119,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_r_times_h1_plus_h0_act_node
         spinst->sp,
         NULL);
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
 final:
     if (spinst)
     {
@@ -133,7 +137,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_add_sigmoid_node
         vsi_nn_tensor_t * input0,
         vsi_nn_tensor_t * input1,
         vsi_nn_tensor_t * output,
-        uint8_t           dst_vr
+        uint8_t           dst_vr,
+        char            * kernel_name
     );
 
 vsi_nn_kernel_node_t vsi_nn_sp_grucell_activation_z_h_node
@@ -142,7 +147,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_grucell_activation_z_h_node
         vsi_nn_tensor_t * hstate_in,
         vsi_nn_tensor_t * dummy_in0,
         vsi_nn_tensor_t * dummy_in1,
-        vsi_nn_tensor_t * output
+        vsi_nn_tensor_t * output,
+        char            * kernel_name
     );
 
 #define REGISTER_GRUCELL_ACTIVATION_STREAM_PROCESSOR_KERNEL( kernel_name )   \
@@ -196,16 +202,16 @@ REGISTER_GRUCELL_ACTIVATION_STREAM_PROCESSOR_KERNEL( grucell_reset_after_activat
     CHECK_PTR_FAIL_GOTO( dummy_tensor[2], "Create tensor fail.", final );
 
     node = vsi_nn_sp_add_sigmoid_node(graph, inputs[GRUCELL_ACT_I_FC_R], inputs[GRUCELL_ACT_H_FC_R],
-        dummy_tensor[0], VSI_NN_SP_VR11 );
+        dummy_tensor[0], VSI_NN_SP_VR11, "grucell_reset_after_activation_0" );
     CHECK_PTR_FAIL_GOTO( node, "Create grucell sp add sigmoid node fail.", final );
     node = vsi_nn_sp_r_times_h1_plus_h0_act_node(graph, inputs[GRUCELL_ACT_I_FC_H], inputs[GRUCELL_ACT_H_FC_H],
-        dummy_tensor[0], dummy_tensor[1] );
+        dummy_tensor[0], dummy_tensor[1], "grucell_reset_after_activation_1" );
     CHECK_PTR_FAIL_GOTO( node, "Create grucell activation sp r_times_h1_plus_h0 node fail.", final );
     node = vsi_nn_sp_add_sigmoid_node(graph, inputs[GRUCELL_ACT_I_FC_Z], inputs[GRUCELL_ACT_H_FC_Z],
-        dummy_tensor[2], VSI_NN_SP_VR11 );
+        dummy_tensor[2], VSI_NN_SP_VR11, "grucell_reset_after_activation_2" );
     CHECK_PTR_FAIL_GOTO( node, "Create grucell sp add sigmoid node fail.", final );
     vsi_nn_sp_grucell_activation_z_h_node(graph, inputs[GRUCELL_ACT_H_STATE], dummy_tensor[2],
-        dummy_tensor[1], outputs[GRUCELL_ACT_OUT_OUTPUT]);
+        dummy_tensor[1], outputs[GRUCELL_ACT_OUT_OUTPUT], "grucell_reset_after_activation_3");
     CHECK_PTR_FAIL_GOTO( node, "Create grucell sp grucell_activation_z_h node fail.", final );
 
     node = vxTensorCopyNode( graph->g, outputs[0]->t, outputs[1]->t);
