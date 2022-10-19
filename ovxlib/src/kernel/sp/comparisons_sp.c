@@ -41,7 +41,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_greater_node
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input0,
         vsi_nn_tensor_t             * input1,
-        vsi_nn_tensor_t             * output
+        vsi_nn_tensor_t             * output,
+        char                        * kernel_name
     )
 {
     const int32_t spInitInstsNum = 3;
@@ -121,6 +122,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_greater_node
         spinst->sp,
         NULL);
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
 final:
     if (spinst)
     {
@@ -135,7 +139,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_greater_equal_node
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input0,
         vsi_nn_tensor_t             * input1,
-        vsi_nn_tensor_t             * output
+        vsi_nn_tensor_t             * output,
+        char                        * kernel_name
     )
 {
     const int32_t spInitInstsNum = 3;
@@ -215,6 +220,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_greater_equal_node
         spinst->sp,
         NULL);
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
 final:
     if (spinst)
     {
@@ -229,7 +237,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_not_equal_node
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input0,
         vsi_nn_tensor_t             * input1,
-        vsi_nn_tensor_t             * output
+        vsi_nn_tensor_t             * output,
+        char                        * kernel_name
     )
 {
     const int32_t spInitInstsNum = 3;
@@ -313,6 +322,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_not_equal_node
         spinst->sp,
         NULL);
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
 final:
     if (spinst)
     {
@@ -327,7 +339,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_equal_node
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input0,
         vsi_nn_tensor_t             * input1,
-        vsi_nn_tensor_t             * output
+        vsi_nn_tensor_t             * output,
+        char                        * kernel_name
     )
 {
     const int32_t spInitInstsNum = 3;
@@ -411,6 +424,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_equal_node
         spinst->sp,
         NULL);
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
 final:
     if (spinst)
     {
@@ -456,22 +472,22 @@ REGISTER_COMPARISONS_STREAM_PROCESSOR_KERNEL( relational_ops )
     switch ( operation )
     {
     case VSI_NN_RELATIONAL_OPS_GREAT:
-        node = vsi_nn_sp_greater_node(graph, inputs[0], inputs[1], outputs[0]);
+        node = vsi_nn_sp_greater_node(graph, inputs[0], inputs[1], outputs[0], "greater");
         break;
     case VSI_NN_RELATIONAL_OPS_GREAT_EQUAL:
-        node = vsi_nn_sp_greater_equal_node(graph, inputs[0], inputs[1], outputs[0]);
+        node = vsi_nn_sp_greater_equal_node(graph, inputs[0], inputs[1], outputs[0], "greater_equal");
         break;
     case VSI_NN_RELATIONAL_OPS_LESS:
-        node = vsi_nn_sp_greater_node(graph, inputs[1], inputs[0], outputs[0]);
+        node = vsi_nn_sp_greater_node(graph, inputs[1], inputs[0], outputs[0], "less");
         break;
     case VSI_NN_RELATIONAL_OPS_LESS_EQUAL:
-        node = vsi_nn_sp_greater_equal_node(graph, inputs[1], inputs[0], outputs[0]);
+        node = vsi_nn_sp_greater_equal_node(graph, inputs[1], inputs[0], outputs[0], "less_equal");
         break;
     case VSI_NN_RELATIONAL_OPS_NOT_EQUAL:
-        node = vsi_nn_sp_not_equal_node(graph, inputs[1], inputs[0], outputs[0]);
+        node = vsi_nn_sp_not_equal_node(graph, inputs[1], inputs[0], outputs[0], "not_equal");
         break;
     case VSI_NN_RELATIONAL_OPS_EQUAL:
-        node = vsi_nn_sp_equal_node(graph, inputs[1], inputs[0], outputs[0]);
+        node = vsi_nn_sp_equal_node(graph, inputs[1], inputs[0], outputs[0], "equal");
         break;
     default:
         return NULL;

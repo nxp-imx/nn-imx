@@ -1031,6 +1031,12 @@ vsi_nn_tensor_t* vsi_nn_merge_input_zeropoint_to_bias
     vsi_nn_tensor_t * bias
     );
 
+vsi_status vsi_nn_set_sp_kernel_name
+    (
+        vsi_nn_kernel_node_t node,
+        char* kernel_name
+    );
+
 void vsi_nn_kernel_add_source_internal
     (
         vsi_nn_kernel_t * kernel,

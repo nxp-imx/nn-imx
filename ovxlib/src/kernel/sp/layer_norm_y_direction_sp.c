@@ -226,7 +226,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_moments_axis1_node
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input,
         vsi_nn_tensor_t             * output0,
-        vsi_nn_tensor_t             * output1
+        vsi_nn_tensor_t             * output1,
+        char                        * kernel_name
     )
 {
     const uint32_t input_count = 1;
@@ -236,6 +237,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_moments_axis1_node
     vx_node node = NULL;
     int32_t max_vector_depth = graph->ctx->config.sp_vector_depth;
     int32_t fifo_depth = 4;
+    vsi_status status = VSI_FAILURE;
 
     vsi_nn_spinst_t *spinst = NULL;
 
@@ -258,6 +260,10 @@ vsi_nn_kernel_node_t vsi_nn_sp_moments_axis1_node
         vxAssignNodeQueryCallback(node, moements_axis1_query);
     }
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
+final:
     if (spinst)
     {
         vsi_nn_release_spinst(&spinst);
@@ -268,14 +274,15 @@ vsi_nn_kernel_node_t vsi_nn_sp_moments_axis1_node
 
 vsi_nn_kernel_node_t vsi_nn_sp_ln_means_axis1_node
     (
-        vsi_nn_graph_t  * graph,
-        vsi_nn_tensor_t * input,
-        vsi_nn_tensor_t * output,
-        float             inv_m,
-        float             const_a,
-        float             s,
-        float             eps,
-        float             output_scale
+        vsi_nn_graph_t              * graph,
+        vsi_nn_tensor_t             * input,
+        vsi_nn_tensor_t             * output,
+        float                         inv_m,
+        float                         const_a,
+        float                         s,
+        float                         eps,
+        float                         output_scale,
+        char                        * kernel_name
     )
 {
     const int32_t spInitInstsNum = 2;
@@ -371,6 +378,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_ln_means_axis1_node
         output_count,
         spinst->sp,
         &vx_lut_params);
+
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
 
 final:
     if (spinst)
@@ -524,7 +534,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_layer_norm_axis1_node
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input0,
         vsi_nn_tensor_t             * input1,
-        vsi_nn_tensor_t             * output
+        vsi_nn_tensor_t             * output,
+        char                        * kernel_name
     )
 {
     const uint32_t input_count = 2;
@@ -535,6 +546,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_layer_norm_axis1_node
     int32_t max_vector_depth = graph->ctx->config.sp_vector_depth;
     int32_t fifo_depth = 4;
     vsi_nn_spinst_t *spinst = NULL;
+    vsi_status status = VSI_FAILURE;
 
     spinst = vsi_nn_sp_layer_norm_axis1_inst(graph->ctx->c, fifo_depth, max_vector_depth);
 
@@ -555,6 +567,10 @@ vsi_nn_kernel_node_t vsi_nn_sp_layer_norm_axis1_node
         vxAssignNodeQueryCallback(node, layer_norm_axis1_query);
     }
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
+final:
     if (spinst)
     {
         vsi_nn_release_spinst(&spinst);
@@ -568,7 +584,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_load_weight_bias_node
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * weight,
         vsi_nn_tensor_t             * bias,
-        vsi_nn_tensor_t             * dummy_output
+        vsi_nn_tensor_t             * dummy_output,
+        char                        * kernel_name
     )
 {
     const int32_t spLoopInstsNum = 2;
@@ -634,6 +651,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_load_weight_bias_node
         spinst->sp,
         NULL);
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
 final:
     if (spinst)
     {
@@ -648,7 +668,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_in_times_v11_plus_v12_node
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input,
         vsi_nn_tensor_t             * dummy_tensor,
-        vsi_nn_tensor_t             * output
+        vsi_nn_tensor_t             * output,
+        char                        * kernel_name
     )
 {
     const int32_t spLoopInstsNum = 1;
@@ -711,6 +732,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_in_times_v11_plus_v12_node
         spinst->sp,
         NULL);
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
 final:
     if (spinst)
     {
@@ -770,17 +794,17 @@ vsi_nn_kernel_node_t layer_norm_y_direction
     output_tensor[1] = vsi_nn_CreateTensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( output_tensor[1], "Create tensor fail.", final );
 
-    node = vsi_nn_sp_moments_axis1_node(graph, inputs[0], output_tensor[0], dummy_tensor[0]);
+    node = vsi_nn_sp_moments_axis1_node(graph, inputs[0], output_tensor[0], dummy_tensor[0], "layernorm_0");
     CHECK_PTR_FAIL_GOTO( node, "Create sp_moments_axis1 fail.", final );
     node = vsi_nn_sp_ln_means_axis1_node(graph, dummy_tensor[0], dummy_tensor[1],
-        inv_m, const_a, s, eps, output_scale);
+        inv_m, const_a, s, eps, output_scale, "layernorm_1");
     CHECK_PTR_FAIL_GOTO( node, "Create ln_y_dirction_means  fail.", final );
-    node = vsi_nn_sp_layer_norm_axis1_node(graph, output_tensor[0], dummy_tensor[1], output_tensor[1]);
+    node = vsi_nn_sp_layer_norm_axis1_node(graph, output_tensor[0], dummy_tensor[1], output_tensor[1], "layernorm_2");
     CHECK_PTR_FAIL_GOTO( node, "Create layer_norm_axis1 fail.", final );
 
-    node = vsi_nn_sp_load_weight_bias_node(graph, inputs[2], inputs[1], dummy_tensor[2]);
+    node = vsi_nn_sp_load_weight_bias_node(graph, inputs[2], inputs[1], dummy_tensor[2], "layernorm_3");
     CHECK_PTR_FAIL_GOTO( node, "Create mov_weight_bias fail.", final );
-    node = vsi_nn_sp_in_times_v11_plus_v12_node(graph, output_tensor[1], dummy_tensor[2], outputs[0]);
+    node = vsi_nn_sp_in_times_v11_plus_v12_node(graph, output_tensor[1], dummy_tensor[2], outputs[0], "layernorm_4");
     CHECK_PTR_FAIL_GOTO( node, "Create in_times_v11_plus_v12 fail.", final );
 
 final:

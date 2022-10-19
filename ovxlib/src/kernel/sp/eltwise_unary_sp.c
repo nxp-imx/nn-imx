@@ -43,7 +43,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_hard_sigmoid_node
         vsi_nn_tensor_t             * input,
         vsi_nn_tensor_t             * output,
         float                         alpha,
-        float                         beta
+        float                         beta,
+        char                        * kernel_name
     )
 {
     const int32_t spInitInstsNum = 0;
@@ -103,6 +104,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_hard_sigmoid_node
         spinst->sp,
         NULL);
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
 final:
     if (spinst)
     {
@@ -116,7 +120,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_exp_node
     (
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input,
-        vsi_nn_tensor_t             * output
+        vsi_nn_tensor_t             * output,
+        char                        * kernel_name
     )
 {
     const int32_t spLoopInstsNum = 2;
@@ -187,6 +192,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_exp_node
         spinst->sp,
         &vx_lut_params);
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
 final:
     if (spinst)
     {
@@ -213,7 +221,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_linear_node
         vsi_nn_tensor_t             * input,
         vsi_nn_tensor_t             * output,
         float                         a_v,
-        float                         b_v
+        float                         b_v,
+        char                        * kernel_name
     )
 {
     const int32_t spInitInstsNum = 0;
@@ -272,6 +281,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_linear_node
         spinst->sp,
         NULL);
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
 final:
     if (spinst)
     {
@@ -285,7 +297,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_abs_node
     (
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input,
-        vsi_nn_tensor_t             * output
+        vsi_nn_tensor_t             * output,
+        char                        * kernel_name
     )
 {
     const int32_t spInitInstsNum = 0;
@@ -343,6 +356,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_abs_node
         spinst->sp,
         NULL);
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
 final:
     if (spinst)
     {
@@ -356,7 +372,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_square_node
     (
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input,
-        vsi_nn_tensor_t             * output
+        vsi_nn_tensor_t             * output,
+        char                        * kernel_name
     )
 {
     const int32_t spInitInstsNum = 0;
@@ -423,6 +440,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_square_node
         spinst->sp,
         NULL);
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
 final:
     if (spinst)
     {
@@ -436,7 +456,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_neg_node
     (
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input,
-        vsi_nn_tensor_t             * output
+        vsi_nn_tensor_t             * output,
+        char                        * kernel_name
     )
 {
     const int32_t spInitInstsNum = 0;
@@ -493,6 +514,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_neg_node
         spinst->sp,
         NULL);
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
 final:
     if (spinst)
     {
@@ -508,7 +532,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_clip_node
         vsi_nn_tensor_t             * input,
         vsi_nn_tensor_t             * output,
         float                         min_val,
-        float                         max_val
+        float                         max_val,
+        char                        * kernel_name
     )
 {
     const int32_t spInitInstsNum = 0;
@@ -567,6 +592,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_clip_node
         spinst->sp,
         NULL);
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
 final:
     if (spinst)
     {
@@ -580,7 +608,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_cast_node
     (
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input,
-        vsi_nn_tensor_t             * output
+        vsi_nn_tensor_t             * output,
+        char                        * kernel_name
     )
 {
     const int32_t spInitInstsNum = 0;
@@ -650,6 +679,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_cast_node
         spinst->sp,
         NULL);
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
 final:
     if (spinst)
     {
@@ -663,7 +695,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_sign_node
     (
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input,
-        vsi_nn_tensor_t             * output
+        vsi_nn_tensor_t             * output,
+        char                        * kernel_name
     )
 {
     const int32_t spInitInstsNum = 1;
@@ -729,6 +762,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_sign_node
         spinst->sp,
         NULL);
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
 final:
     if (spinst)
     {
@@ -767,7 +803,7 @@ REGISTER_ELTWISE_UNARY_STREAM_PROCESSOR_KERNEL( hard_sigmoid )
     float alpha = vsi_nn_kernel_param_get_float32( params, "alpha" );
     float beta = vsi_nn_kernel_param_get_float32( params, "beta" );
 
-    node = vsi_nn_sp_hard_sigmoid_node(graph, inputs[0], outputs[0], alpha, beta);
+    node = vsi_nn_sp_hard_sigmoid_node(graph, inputs[0], outputs[0], alpha, beta, "hard_sigmoid");
     CHECK_PTR_FAIL_GOTO( node, "Create sp_hard_sigmoid node fail.", final );
 
 final:
@@ -779,7 +815,7 @@ REGISTER_ELTWISE_UNARY_STREAM_PROCESSOR_KERNEL( exp )
 {
     vsi_nn_kernel_node_t node = NULL;
 
-    node = vsi_nn_sp_exp_node(graph, inputs[0], outputs[0]);
+    node = vsi_nn_sp_exp_node(graph, inputs[0], outputs[0], "exp");
     CHECK_PTR_FAIL_GOTO( node, "Create sp_exp node fail.", final );
 
 final:
@@ -791,7 +827,7 @@ REGISTER_ELTWISE_UNARY_STREAM_PROCESSOR_KERNEL( abs )
 {
     vsi_nn_kernel_node_t node = NULL;
 
-    node = vsi_nn_sp_abs_node(graph, inputs[0], outputs[0]);
+    node = vsi_nn_sp_abs_node(graph, inputs[0], outputs[0], "abs");
     CHECK_PTR_FAIL_GOTO( node, "Create sp_abs node fail.", final );
 
 final:
@@ -805,7 +841,7 @@ REGISTER_ELTWISE_UNARY_STREAM_PROCESSOR_KERNEL( linear )
     float a_v = vsi_nn_kernel_param_get_float32( params, "a_v" );
     float b_v = vsi_nn_kernel_param_get_float32( params, "b_v" );
 
-    node = vsi_nn_sp_linear_node(graph, inputs[0], outputs[0], a_v, b_v);
+    node = vsi_nn_sp_linear_node(graph, inputs[0], outputs[0], a_v, b_v, "linear");
     CHECK_PTR_FAIL_GOTO( node, "Create sp_linear node fail.", final );
 
 final:
@@ -817,7 +853,7 @@ REGISTER_ELTWISE_UNARY_STREAM_PROCESSOR_KERNEL( square )
 {
     vsi_nn_kernel_node_t node = NULL;
 
-    node = vsi_nn_sp_square_node(graph, inputs[0], outputs[0]);
+    node = vsi_nn_sp_square_node(graph, inputs[0], outputs[0], "square");
     CHECK_PTR_FAIL_GOTO( node, "Create sp_square node fail.", final );
 
 final:
@@ -829,7 +865,7 @@ REGISTER_ELTWISE_UNARY_STREAM_PROCESSOR_KERNEL( neg )
 {
     vsi_nn_kernel_node_t node = NULL;
 
-    node = vsi_nn_sp_neg_node(graph, inputs[0], outputs[0]);
+    node = vsi_nn_sp_neg_node(graph, inputs[0], outputs[0], "neg");
     CHECK_PTR_FAIL_GOTO( node, "Create sp_neg node fail.", final );
 
 final:
@@ -843,7 +879,7 @@ REGISTER_ELTWISE_UNARY_STREAM_PROCESSOR_KERNEL( clip )
     float   min_value  = vsi_nn_kernel_param_get_float32( params, "min_value" );
     float   max_value  = vsi_nn_kernel_param_get_float32( params, "max_value" );
 
-    node = vsi_nn_sp_clip_node(graph, inputs[0], outputs[0], min_value, max_value);
+    node = vsi_nn_sp_clip_node(graph, inputs[0], outputs[0], min_value, max_value, "clip");
     CHECK_PTR_FAIL_GOTO( node, "Create sp_clip node fail.", final );
 
 final:
@@ -855,7 +891,7 @@ REGISTER_ELTWISE_UNARY_STREAM_PROCESSOR_KERNEL( cast )
 {
     vsi_nn_kernel_node_t node = NULL;
 
-    node = vsi_nn_sp_cast_node(graph, inputs[0], outputs[0]);
+    node = vsi_nn_sp_cast_node(graph, inputs[0], outputs[0], "cast");
     CHECK_PTR_FAIL_GOTO( node, "Create sp_cast node fail.", final );
 
 final:
@@ -867,7 +903,7 @@ REGISTER_ELTWISE_UNARY_STREAM_PROCESSOR_KERNEL( sign )
 {
     vsi_nn_kernel_node_t node = NULL;
 
-    node = vsi_nn_sp_sign_node(graph, inputs[0], outputs[0]);
+    node = vsi_nn_sp_sign_node(graph, inputs[0], outputs[0], "sign");
     CHECK_PTR_FAIL_GOTO( node, "Create sp_sign node fail.", final );
 
 final:

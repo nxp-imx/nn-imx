@@ -40,7 +40,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_sum_node
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input,
         vsi_nn_tensor_t             * dummy_output,
-        int32_t                       axis_num
+        int32_t                       axis_num,
+        char                        * kernel_name
     )
 {
     const int32_t spLoopInstsNum = 1;
@@ -120,6 +121,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_sum_node
         spinst->sp,
         NULL);
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
 final:
     if (spinst)
     {
@@ -135,7 +139,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_v11_times_scale_node
         vsi_nn_tensor_t             * input,
         vsi_nn_tensor_t             * dummy_output,
         int32_t                       axis_num,
-        float                         scale
+        float                         scale,
+        char                        * kernel_name
     )
 {
     const int32_t spLoopInstsNum = 1;
@@ -201,6 +206,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_v11_times_scale_node
         spinst->sp,
         NULL);
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
 final:
     if (spinst)
     {
@@ -256,9 +264,9 @@ REGISTER_REDUCE_MEAN_STREAM_PROCESSOR_KERNEL( reduce_mean )
     dummy_tensor[0] = vsi_nn_CreateTensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( dummy_tensor[0], "Create dummy_tensor fail.", final );
 
-    node = vsi_nn_sp_sum_node(graph, inputs[0], dummy_tensor[0], axis_num);
+    node = vsi_nn_sp_sum_node(graph, inputs[0], dummy_tensor[0], axis_num, "reduce_0");
     CHECK_PTR_FAIL_GOTO( node, "Create sp_sum node fail.", final );
-    node = vsi_nn_sp_v11_times_scale_node(graph, dummy_tensor[0], outputs[0], axis_num, scale);
+    node = vsi_nn_sp_v11_times_scale_node(graph, dummy_tensor[0], outputs[0], axis_num, scale, "reduce_1");
     CHECK_PTR_FAIL_GOTO( node, "Create v11_times_scale fail.", final );
 
 final:

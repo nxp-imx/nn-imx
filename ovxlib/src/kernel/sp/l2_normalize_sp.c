@@ -40,7 +40,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_l2_norm_sum_node
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input,
         vsi_nn_tensor_t             * output0,
-        vsi_nn_tensor_t             * output1
+        vsi_nn_tensor_t             * output1,
+        char                        * kernel_name
     )
 {
     const int32_t spLoopInstsNum = 2;
@@ -116,6 +117,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_l2_norm_sum_node
         spinst->sp,
         NULL);
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
 final:
     if (spinst)
     {
@@ -130,7 +134,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_l2_norm_rsqrt_node
         vsi_nn_graph_t  * graph,
         vsi_nn_tensor_t * input,
         vsi_nn_tensor_t * output,
-        float             scale
+        float             scale,
+        char            * kernel_name
     )
 {
     const int32_t spLoopInstsNum = 2;
@@ -214,6 +219,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_l2_norm_rsqrt_node
         spinst->sp,
         &vx_lut_params);
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
 final:
     if (spinst)
     {
@@ -239,7 +247,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_l2_norm_times_node
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input,
         vsi_nn_tensor_t             * dummy_input,
-        vsi_nn_tensor_t             * output
+        vsi_nn_tensor_t             * output,
+        char                        * kernel_name
     )
 {
     const int32_t spLoopInstsNum = 1;
@@ -295,6 +304,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_l2_norm_times_node
         spinst->sp,
         NULL);
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
 final:
     if (spinst)
     {
@@ -339,11 +351,11 @@ vsi_nn_kernel_node_t l2_norm_x_direction
     output_tensor[0] = vsi_nn_CreateTensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( output_tensor[0], "Create tensor fail.", final );
 
-    node = vsi_nn_sp_l2_norm_sum_node(graph, inputs[0], output_tensor[0], dummy_tensor[0]);
+    node = vsi_nn_sp_l2_norm_sum_node(graph, inputs[0], output_tensor[0], dummy_tensor[0], "l2norm_0");
     CHECK_PTR_FAIL_GOTO( node, "Create sp_l2_norm_sum node fail.", final );
-    node = vsi_nn_sp_l2_norm_rsqrt_node(graph, dummy_tensor[0], dummy_tensor[1], scale);
+    node = vsi_nn_sp_l2_norm_rsqrt_node(graph, dummy_tensor[0], dummy_tensor[1], scale, "l2norm_1");
     CHECK_PTR_FAIL_GOTO( node, "Create sp_l2_norm_rsqrt fail.", final );
-    node = vsi_nn_sp_l2_norm_times_node(graph, output_tensor[0], dummy_tensor[1], outputs[0]);
+    node = vsi_nn_sp_l2_norm_times_node(graph, output_tensor[0], dummy_tensor[1], outputs[0], "l2norm_1");
     CHECK_PTR_FAIL_GOTO( node, "Create sp_l2_norm_times fail.", final );
 
 final:

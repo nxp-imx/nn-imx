@@ -191,7 +191,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_l2norm_z_direction_square_node
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input,
         vsi_nn_tensor_t             * output0,
-        vsi_nn_tensor_t             * output1
+        vsi_nn_tensor_t             * output1,
+        char                        * kernel_name
     )
 {
     const int32_t spInitInstsNum = 0;
@@ -278,6 +279,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_l2norm_z_direction_square_node
         spinst->sp,
         NULL);
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
 final:
 
     if (node)
@@ -295,10 +299,11 @@ final:
 
 vsi_nn_kernel_node_t vsi_nn_sp_l2norm_z_direction_rqsrt_node
     (
-        vsi_nn_graph_t  * graph,
-        vsi_nn_tensor_t * input,
-        vsi_nn_tensor_t * output,
-        float             output_scale
+        vsi_nn_graph_t              * graph,
+        vsi_nn_tensor_t             * input,
+        vsi_nn_tensor_t             * output,
+        float                         output_scale,
+        char                        * kernel_name
     )
 {
     const int32_t spLoopInstsNum = 2;
@@ -379,6 +384,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_l2norm_z_direction_rqsrt_node
         output_count,
         spinst->sp,
         &vx_lut_params);
+
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
 
 final:
     if (spinst)
@@ -515,7 +523,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_l2norm_z_direction_times_node
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input0,
         vsi_nn_tensor_t             * input1,
-        vsi_nn_tensor_t             * output
+        vsi_nn_tensor_t             * output,
+        char                        * kernel_name
     )
 {
     const uint32_t input_count = 2;
@@ -525,6 +534,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_l2norm_z_direction_times_node
     vx_node node = NULL;
     int32_t max_vector_depth = graph->ctx->config.sp_vector_depth;
     int32_t fifo_depth = 5;
+    vsi_status status = VSI_FAILURE;
 
     vsi_nn_spinst_t *spinst = NULL;
 
@@ -547,6 +557,10 @@ vsi_nn_kernel_node_t vsi_nn_sp_l2norm_z_direction_times_node
         vxAssignNodeQueryCallback(node, l2norm_z_direction_times_query);
     }
 
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
+final:
     if (spinst)
     {
         vsi_nn_release_spinst(&spinst);
@@ -595,11 +609,11 @@ vsi_nn_kernel_node_t l2_norm_z_direction
     output_tensor[0] = vsi_nn_CreateTensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( output_tensor[0], "Create tensor fail.", final );
 
-    node = vsi_nn_sp_l2norm_z_direction_square_node(graph, inputs[0], output_tensor[0], dummy_tensor[0]);
+    node = vsi_nn_sp_l2norm_z_direction_square_node(graph, inputs[0], output_tensor[0], dummy_tensor[0], "l2norm_0");
     CHECK_PTR_FAIL_GOTO( node, "Create l2norm_z_direction_square fail.", final );
-    node = vsi_nn_sp_l2norm_z_direction_rqsrt_node(graph, dummy_tensor[0], dummy_tensor[1], output_scale);
+    node = vsi_nn_sp_l2norm_z_direction_rqsrt_node(graph, dummy_tensor[0], dummy_tensor[1], output_scale, "l2norm_1");
     CHECK_PTR_FAIL_GOTO( node, "Create l2norm_z_direction_rqsrt fail.", final );
-    node = vsi_nn_sp_l2norm_z_direction_times_node(graph, output_tensor[0], dummy_tensor[1], outputs[0]);
+    node = vsi_nn_sp_l2norm_z_direction_times_node(graph, output_tensor[0], dummy_tensor[1], outputs[0], "l2norm_2");
     CHECK_PTR_FAIL_GOTO( node, "Create l2norm_z_direction_times fail.", final );
 
 final:
