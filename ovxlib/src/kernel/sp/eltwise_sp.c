@@ -933,6 +933,7 @@ vsi_bool vsi_nn_sp_nn_alu_support_types
 {
     vsi_nn_kernel_dtype_e in0_dtype;
     vsi_nn_kernel_dtype_e in1_dtype;
+    vsi_bool support = TRUE;
 
     in0_dtype = vsi_nn_kernel_map_dtype( input0->attr.dtype.vx_type );
     in1_dtype = vsi_nn_kernel_map_dtype( input1->attr.dtype.vx_type );
@@ -944,8 +945,10 @@ vsi_bool vsi_nn_sp_nn_alu_support_types
     case I8:
     case U8:
     case I16:
-        return TRUE;
+        support = TRUE;
+        break;
     default:
+        support = FALSE;
         break;
     }
 
@@ -956,12 +959,13 @@ vsi_bool vsi_nn_sp_nn_alu_support_types
     case I8:
     case U8:
     case I16:
-        return TRUE;
+        break;
     default:
+        support = FALSE;
         break;
     }
 
-    return FALSE;
+    return support;
 }
 
 #define REGISTER_ELTWISE_STREAM_PROCESSOR_KERNEL( kernel_name )   \

@@ -67,11 +67,13 @@ static vsi_status op_compute
         vsi_size_t new_rank = 0;
         vsi_bool ret = TRUE;
         vsi_nn_kernel_param_t * param = NULL;
+        vsi_nn_context_t ctx = self->graph->ctx;
 
         param = vsi_nn_kernel_param_create();
 
         if ( vsi_nn_TypeGetBits(inputs[0]->attr.dtype.vx_type) == 4 ||
-             vsi_nn_TypeGetBits(outputs[0]->attr.dtype.vx_type) == 4 )
+             vsi_nn_TypeGetBits(outputs[0]->attr.dtype.vx_type) == 4 ||
+             ctx->config.support_stream_processor)
         {
             new_rank = inputs[0]->attr.dim_num;
             memcpy(shape, inputs[0]->attr.size, sizeof(inputs[0]->attr.size));
