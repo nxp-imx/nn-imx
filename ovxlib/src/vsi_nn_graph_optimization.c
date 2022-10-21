@@ -340,9 +340,10 @@ static vsi_status _add_graph_dataconvert_for_int8
                _add_dataconvert_node(graph, dataconvert_idx ++, VSI_NN_OPTIMIZE_FORWARD,
                    input_nodes[i], nodes_count, id, output);
             }
-            if(input_nodes[i] != NULL)
+            if (input_nodes[i] != NULL)
             {
                 free(input_nodes[i]);
+                input_nodes[i] = NULL;
             }
         }
 
