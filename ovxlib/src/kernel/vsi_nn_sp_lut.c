@@ -89,6 +89,7 @@ vsi_status vsi_nn_sp_lut
         break;
         case VSI_NN_SP_ACT_RCP:
         {
+            lut_param.pwl_sign_remove_support = param->pwl_sign_remove_support;
             lut_param.act_type = VSI_NN_KERNEL_LUT_RCP;
         }
         break;
