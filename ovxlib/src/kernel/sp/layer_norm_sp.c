@@ -166,7 +166,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_layer_norm_means_node
         graph->ctx->config.sp_exec_count;
 
     vsi_nn_spinst_t *spinst = NULL;
-    vsi_nn_spinst_inst_param sp_insts_param[7];
+    vsi_nn_spinst_inst_param sp_insts_param[5];
     vsi_nn_spinst_attr_t attr;
     vsi_nn_sp_lut_params sp_lut_params;
     vx_lut_params_s vx_lut_params;
@@ -181,7 +181,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_layer_norm_means_node
     /* loop inst0: r5 = v11 * r3 */
     status  = vsi_nn_sp_mul(&sp_insts_param[0], VSI_NN_SP_VR11, VSI_NN_SP_SR3, VSI_NN_SP_SR5);
     /* loop inst1: r5 = v12 * r3 | r6 = r5 - r4 | r10 = r1 */
-    status  = vsi_nn_sp_mul(&sp_insts_param[1], VSI_NN_SP_VR12, VSI_NN_SP_SR3, VSI_NN_SP_SR5);
+    status |= vsi_nn_sp_mul(&sp_insts_param[1], VSI_NN_SP_VR12, VSI_NN_SP_SR3, VSI_NN_SP_SR5);
     status |= vsi_nn_sp_sub(&sp_insts_param[1], VSI_NN_SP_SR5, VSI_NN_SP_SR4, VSI_NN_SP_SR6);
     status |= vsi_nn_sp_move(&sp_insts_param[1], VSI_NN_SP_SR1, VSI_NN_SP_SR10);
     /* loop inst2: r9 = pwlMul() | r7 = pwlAdd() */
@@ -227,7 +227,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_layer_norm_means_node
     inputs_tensor[0] = input->t;
     outputs_tensor[0] = output->t;
 
-    vx_lut_params.lut_function = VX_NN_ACTIVATION_RSQRT;
+    vx_lut_params.lut_function = VX_NN_ACTIVATION_CUSTOM;
     vx_lut_params.in_lut = vxCreateLUT( graph->ctx->c, VX_TYPE_FLOAT32, VSI_NN_SP_LUT_MAX_SIZE);
     vx_lut_params.out_lut = vxCreateLUT( graph->ctx->c, VX_TYPE_FLOAT32, VSI_NN_SP_LUT_MAX_SIZE);
 
