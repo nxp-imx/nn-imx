@@ -354,6 +354,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_l2norm_z_direction_rqsrt_node
     attr.num_of_v11_wr_in_flush_cycle = 5;
 
     attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_XY;
+    attr.split_tilex_equal_imgx = TRUE;
     attr.split_max_vector_depth = max_vector_depth;
 
     spinst = vsi_nn_create_spinst(graph);
