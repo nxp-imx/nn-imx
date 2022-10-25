@@ -171,7 +171,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_softmax_move_node
     attr.prog_loop_instr_num = spLoopInstsNum;
     attr.ignored_leading_outputs = 0;
     attr.flush_cycle_num = 0;
-    attr.ch0_post_redistribute = VSI_NN_SP_CH_POST_REDISTRIBUTE_VECTOR_GATHER;
+    attr.v12_reset_at_start = VSI_NN_SP_V_RESET_AT_START_RESET;
+    attr.ch1_post_redistribute = VSI_NN_SP_CH_POST_REDISTRIBUTE_VECTOR_GATHER;
 
     attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_YZ;
     attr.split_max_vector_depth = max_vector_depth;
