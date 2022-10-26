@@ -109,6 +109,11 @@ static vsi_bool op_setup
 
         for (i = 0; i < p->dim_num; i++)
         {
+            if (p->perm == NULL)
+            {
+                i = p->dim_num;
+                break;
+            }
             _axis = p->perm[i];
             if (_axis != i)
                 break;
