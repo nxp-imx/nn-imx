@@ -116,105 +116,6 @@ final:
     return (vsi_nn_kernel_node_t)node;
 }
 
-vsi_nn_kernel_node_t vsi_nn_sp_exp_node
-    (
-        vsi_nn_graph_t              * graph,
-        vsi_nn_tensor_t             * input,
-        vsi_nn_tensor_t             * output,
-        char                        * kernel_name
-    )
-{
-    const int32_t spLoopInstsNum = 2;
-    const int32_t spInstsNum = spLoopInstsNum;
-
-    const uint32_t input_count = 1;
-    const uint32_t output_count = 1;
-    vx_tensor inputs_tensor[1] = {NULL};
-    vx_tensor outputs_tensor[1] = {NULL};
-    vx_node node = NULL;
-
-    vsi_nn_spinst_t *spinst = NULL;
-    vsi_nn_spinst_inst_param sp_insts_param[2];
-    vsi_nn_spinst_attr_t attr;
-
-    vsi_nn_sp_lut_params sp_lut_params;
-    vx_lut_params_s vx_lut_params;
-
-    vsi_status status = VSI_FAILURE;
-
-    memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
-    vsi_nn_init_spinst_attr(&attr);
-    memset(&sp_lut_params, 0, sizeof(vsi_nn_sp_lut_params));
-    memset(&vx_lut_params, 0, sizeof(vx_lut_params_s));
-
-    /* loop inst0: r1 = pwlSetup(r0) || r6 = r5 * r2 || r0 = r4 + r6 || r3 = r1*/
-    status  = vsi_nn_sp_pwl_setup0(&sp_insts_param[0], VSI_NN_SP_SRIN, VSI_NN_SP_SR1);
-    status |= vsi_nn_sp_mul(&sp_insts_param[0], VSI_NN_SP_SR2, VSI_NN_SP_SR5, VSI_NN_SP_SR6);
-    status |= vsi_nn_sp_add(&sp_insts_param[0], VSI_NN_SP_SR4, VSI_NN_SP_SR6, VSI_NN_SP_SROUT);
-    status |= vsi_nn_sp_move(&sp_insts_param[0], VSI_NN_SP_SR1, VSI_NN_SP_SR3);
-    /* loop inst1: r5 = pwlMult() || r2 = pwlAdd() || r4 = r3*/
-    status |= vsi_nn_sp_mul(&sp_insts_param[1], VSI_NN_SP_PWLMUL, VSI_NN_SP_PWLMUL, VSI_NN_SP_SR5);
-    status |= vsi_nn_sp_sub(&sp_insts_param[1], VSI_NN_SP_PWLADD, VSI_NN_SP_PWLADD, VSI_NN_SP_SR2);
-    status |= vsi_nn_sp_move(&sp_insts_param[1], VSI_NN_SP_SR3, VSI_NN_SP_SR4);
-    CHECK_STATUS_FAIL_GOTO(status, final );
-
-    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_XYMERGE;
-    attr.input_setup = VSI_NN_SP_INPUT_SETUP_SINGLE_INPUT;
-
-    attr.prog_loop_instr_num = spLoopInstsNum;
-    attr.ignored_leading_outputs = 5;
-    attr.flush_cycle_num = 10;
-
-    spinst = vsi_nn_create_spinst(graph);
-    CHECK_PTR_FAIL_GOTO( spinst, "Create spInst fail.", final );
-    status  = vsi_nn_add_spinst_insts(spinst, sp_insts_param, spInstsNum);
-    status |= vsi_nn_set_spinst_attr(spinst, attr);
-    CHECK_STATUS_FAIL_GOTO(status, final );
-
-    inputs_tensor[0] = input->t;
-    outputs_tensor[0] = output->t;
-
-    vx_lut_params.lut_function = VX_NN_ACTIVATION_CUSTOM;
-    vx_lut_params.in_lut = vxCreateLUT( graph->ctx->c, VX_TYPE_FLOAT32, VSI_NN_SP_LUT_MAX_SIZE);
-    vx_lut_params.out_lut = vxCreateLUT( graph->ctx->c, VX_TYPE_FLOAT32, VSI_NN_SP_LUT_MAX_SIZE);
-
-    sp_lut_params.act_type = VSI_NN_SP_ACT_LINEAR_EXP;
-    sp_lut_params.params[0] = 1;
-    sp_lut_params.params[1] = 0;
-    vsi_nn_sp_lut(vx_lut_params.in_lut, vx_lut_params.out_lut, &sp_lut_params);
-
-    node = vxStreamProcessorNode(
-        graph->g,
-        inputs_tensor,
-        input_count,
-        outputs_tensor,
-        output_count,
-        spinst->sp,
-        &vx_lut_params);
-
-    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
-    CHECK_STATUS_FAIL_GOTO(status, final );
-
-final:
-    if (spinst)
-    {
-        vsi_nn_release_spinst(&spinst);
-    }
-
-    if (vx_lut_params.in_lut)
-    {
-        vxReleaseLUT(&vx_lut_params.in_lut);
-        vx_lut_params.in_lut = NULL;
-    }
-    if (vx_lut_params.out_lut)
-    {
-        vxReleaseLUT(&vx_lut_params.out_lut);
-        vx_lut_params.out_lut = NULL;
-    }
-
-    return (vsi_nn_kernel_node_t)node;
-}
-
 vsi_nn_kernel_node_t vsi_nn_sp_linear_node
     (
         vsi_nn_graph_t              * graph,
@@ -723,18 +624,6 @@ final:
 
     return node;
 } /* hard_sigmoid() */
-
-REGISTER_ELTWISE_UNARY_STREAM_PROCESSOR_KERNEL( exp )
-{
-    vsi_nn_kernel_node_t node = NULL;
-
-    node = vsi_nn_sp_exp_node(graph, inputs[0], outputs[0], "exp");
-    CHECK_PTR_FAIL_GOTO( node, "Create sp_exp node fail.", final );
-
-final:
-
-    return node;
-} /* exp() */
 
 REGISTER_ELTWISE_UNARY_STREAM_PROCESSOR_KERNEL( abs )
 {
