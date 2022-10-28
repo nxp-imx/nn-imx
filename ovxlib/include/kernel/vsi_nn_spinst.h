@@ -71,7 +71,7 @@ typedef enum
     VSI_SP_ATTR_SPLIT_ON_AXIS_XY    = VX_SP_ATTRIBUTE_SPLIT_ON_AXIS_XY,
     VSI_SP_ATTR_SPLIT_ON_AXIS_YZ    = VX_SP_ATTRIBUTE_SPLIT_ON_AXIS_YZ,
     VSI_SP_ATTR_SPLIT_ON_AXIS_XYZ   = VX_SP_ATTRIBUTE_SPLIT_ON_AXIS_XYZ,
-}vsi_sp_attr_split_axis_e;;
+}vsi_sp_attr_split_axis_e;
 
 /**
  * spinst attribute

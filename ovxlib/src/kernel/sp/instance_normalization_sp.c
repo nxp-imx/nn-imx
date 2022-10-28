@@ -474,6 +474,7 @@ REGISTER_INSTANCE_NORM_STREAM_PROCESSOR_KERNEL( instance_norm )
     float inv_m = 1.0f / (float)(outputs[0]->attr.size[0] * outputs[0]->attr.size[1]);
 
     memcpy( &attr, &outputs[0]->attr, sizeof(vsi_nn_tensor_attr_t) );
+    attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
     attr.dtype.vx_type = VSI_NN_TYPE_FLOAT32;
     attr.is_const = FALSE;
     attr.vtl = TRUE;
@@ -488,6 +489,7 @@ REGISTER_INSTANCE_NORM_STREAM_PROCESSOR_KERNEL( instance_norm )
     CHECK_PTR_FAIL_GOTO( dummy_tensor[2], "Create dummy_tensor fail.", final );
 
     memcpy( &attr, &outputs[0]->attr, sizeof(vsi_nn_tensor_attr_t) );
+    attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
     attr.dtype.vx_type = VSI_NN_TYPE_FLOAT32;
     attr.is_const = FALSE;
     attr.vtl = TRUE;
