@@ -232,10 +232,6 @@ REGISTER_GROUP_NORM_STREAM_PROCESSOR_KERNEL( group_norm )
     CHECK_PTR_FAIL_GOTO( dummy_tensor[2], "Create dummy_tensor fail.", final );
     dummy_tensor[3] = vsi_nn_CreateTensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( dummy_tensor[3], "Create dummy_tensor fail.", final );
-    dummy_tensor[4] = vsi_nn_CreateTensor( graph, &attr );
-    CHECK_PTR_FAIL_GOTO( dummy_tensor[4], "Create dummy_tensor fail.", final );
-    dummy_tensor[5] = vsi_nn_CreateTensor( graph, &attr );
-    CHECK_PTR_FAIL_GOTO( dummy_tensor[5], "Create dummy_tensor fail.", final );
 
     gamma = vsi_nn_dropout_tensor(graph, reshape_tensors[3], output_scale);
     beta = vsi_nn_dropout_tensor(graph, reshape_tensors[2], output_scale);
