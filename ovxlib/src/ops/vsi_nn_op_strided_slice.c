@@ -243,7 +243,9 @@ static vsi_status copy_tensor_to_view
     (
     vsi_nn_node_t   * self,
     vx_tensor         src_tensor,
-    vsi_nn_tensor_t * dst_in
+    vsi_nn_tensor_t * dst_in,
+    vsi_size_t      * shape,
+    vsi_size_t        dim_num
     )
 {
     vsi_status ret;
@@ -255,8 +257,8 @@ static vsi_status copy_tensor_to_view
     data->src_tensor = src_tensor;
     if (dst_in->t)
     {
-        data->dst_tensor = vsi_nn_safe_reshape_tensor(dst_in->t, (void*)dst_in->attr.size,
-            (vsi_size_t)dst_in->attr.dim_num, sizeof(dst_in->attr.size[0]));
+        data->dst_tensor = vsi_nn_safe_reshape_tensor(dst_in->t, (void*)shape,
+            (vsi_size_t)dst_in->attr.dim_num, sizeof(shape[0]));
     }
 
     data->is_dataconvert_op = TRUE;
@@ -734,24 +736,28 @@ static vsi_status op_optimize
     int32_t        i = 0;
     vx_tensor      in_view_tensor = NULL;
     vsi_nn_strided_slice_param *p = &(self->nn_param.strided_slice);
-    vsi_size_t       start[VSI_NN_MAX_DIM_NUM] = { 0 };
-    vsi_size_t       end[VSI_NN_MAX_DIM_NUM] = { 0 };
-    vsi_ssize_t        start_dims[VSI_NN_MAX_DIM_NUM] = { 0 };
-    vsi_ssize_t        stop_dims[VSI_NN_MAX_DIM_NUM] = { 0 };
-    vsi_ssize_t        stride_dims[VSI_NN_MAX_DIM_NUM] = { 0 };
+    vsi_size_t     start[VSI_NN_MAX_DIM_NUM] = { 0 };
+    vsi_size_t     end[VSI_NN_MAX_DIM_NUM] = { 0 };
+    vsi_ssize_t    start_dims[VSI_NN_MAX_DIM_NUM] = { 0 };
+    vsi_ssize_t    stop_dims[VSI_NN_MAX_DIM_NUM] = { 0 };
+    vsi_ssize_t    stride_dims[VSI_NN_MAX_DIM_NUM] = { 0 };
+    vsi_size_t     shape[VSI_NN_MAX_DIM_NUM] = { 0 };
+    vsi_size_t     dim_num = (vsi_size_t)inputs[0]->attr.dim_num;
     vsi_bool       is_same_quant_type = FALSE;
 
     /* Only forward run stride_slice's optimize */
-    if( direction == VSI_NN_OPTIMIZE_BACKWARD )
+    if ( direction == VSI_NN_OPTIMIZE_BACKWARD )
     {
         return status;
     }
 
-    for(i = 0; i< VSI_NN_MAX_DIM_NUM; i++)
+    for (i = 0; i< VSI_NN_MAX_DIM_NUM; i++)
     {
         start_dims[i] = p->lcl2_data->begin_dims[i];
         stop_dims[i] = p->lcl2_data->end_dims[i];
         stride_dims[i] = p->lcl2_data->stride_dims[i];
+
+        shape[i] = (vsi_size_t)stop_dims[i] - (vsi_size_t)start_dims[i];
     }
 
     if (_check_is_same_shape(inputs, start_dims, stop_dims, stride_dims) == FALSE)
@@ -782,7 +788,7 @@ static vsi_status op_optimize
     {
         VSILOGI( "stride slice copy tensor.");
         // Copy old tensor values to the new address.
-        status = copy_tensor_to_view( self, in_view_tensor, outputs[0]);
+        status = copy_tensor_to_view( self, in_view_tensor, outputs[0], shape, dim_num);
         if ( VSI_FAILURE == status )
         {
             goto OnError;
