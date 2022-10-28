@@ -185,7 +185,7 @@ REGISTER_GROUP_NORM_STREAM_PROCESSOR_KERNEL( group_norm )
     vsi_nn_kernel_node_t node = NULL;
     vsi_nn_tensor_attr_t attr;
     vsi_nn_tensor_t * reshape_tensors[4] = {NULL};
-    vsi_nn_tensor_t * dummy_tensor[6] = {NULL};
+    vsi_nn_tensor_t * dummy_tensor[4] = {NULL};
     vsi_nn_tensor_t * output_tensors[2] = {NULL};
     vsi_nn_tensor_t * gamma = NULL;
     vsi_nn_tensor_t * beta = NULL;
