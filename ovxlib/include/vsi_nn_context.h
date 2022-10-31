@@ -87,7 +87,7 @@ typedef struct _vsi_nn_context_t
     vx_context c;
     vsi_nn_hw_config_t config;
     vsi_nn_runtime_option_t options;
-} *vsi_nn_context_t;
+} VSI_PUBLIC_TYPE *vsi_nn_context_t;
 
 /**
  * Create context

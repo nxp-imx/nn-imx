@@ -29,6 +29,8 @@
 #include "vsi_nn_prv.h"
 #include "vsi_nn_tensor_util.h"
 #include "vsi_nn_error.h"
+#include "vsi_nn_tensor_util_prv.h"
+#include "vsi_nn_kernel_prv.h"
 #include "kernel/vsi_nn_kernel.h"
 #include "kernel/vsi_nn_sp_unit_operation.h"
 #include "kernel/vsi_nn_sp_lut.h"
@@ -1080,14 +1082,13 @@ vsi_nn_kernel_node_t vsi_nn_sp_lstmunit_ln_activation
     attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
     attr.is_const = FALSE;
     attr.vtl = TRUE;
-    attr.is_dummy = TRUE;
-    dummy_tensor[0] = vsi_nn_CreateTensor( graph, &attr );
+    dummy_tensor[0] = vsi_nn_create_dummy_tensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( dummy_tensor[0], "Create dummy_tensor fail.", final );
-    dummy_tensor[1] = vsi_nn_CreateTensor( graph, &attr );
+    dummy_tensor[1] = vsi_nn_create_dummy_tensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( dummy_tensor[1], "Create dummy_tensor fail.", final );
-    dummy_tensor[2] = vsi_nn_CreateTensor( graph, &attr );
+    dummy_tensor[2] = vsi_nn_create_dummy_tensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( dummy_tensor[2], "Create dummy_tensor fail.", final );
-    dummy_tensor[3] = vsi_nn_CreateTensor( graph, &attr );
+    dummy_tensor[3] = vsi_nn_create_dummy_tensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( dummy_tensor[3], "Create dummy_tensor fail.", final );
 
     if (!_is_cifg)
@@ -1195,14 +1196,13 @@ vsi_nn_kernel_node_t vsi_nn_sp_lstmunit_float_activation
     attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
     attr.is_const = FALSE;
     attr.vtl = TRUE;
-    attr.is_dummy = TRUE;
-    dummy_tensor[0] = vsi_nn_CreateTensor( graph, &attr );
+    dummy_tensor[0] = vsi_nn_create_dummy_tensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( dummy_tensor[0], "Create dummy_tensor fail.", final );
-    dummy_tensor[1] = vsi_nn_CreateTensor( graph, &attr );
+    dummy_tensor[1] = vsi_nn_create_dummy_tensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( dummy_tensor[1], "Create dummy_tensor fail.", final );
-    dummy_tensor[2] = vsi_nn_CreateTensor( graph, &attr );
+    dummy_tensor[2] = vsi_nn_create_dummy_tensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( dummy_tensor[2], "Create dummy_tensor fail.", final );
-    dummy_tensor[3] = vsi_nn_CreateTensor( graph, &attr );
+    dummy_tensor[3] = vsi_nn_create_dummy_tensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( dummy_tensor[3], "Create dummy_tensor fail.", final );
 
     memcpy( &attr, &cell_state_in->attr, sizeof(vsi_nn_tensor_attr_t) );

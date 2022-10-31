@@ -29,6 +29,8 @@
 #include "vsi_nn_prv.h"
 #include "vsi_nn_tensor_util.h"
 #include "vsi_nn_error.h"
+#include "vsi_nn_tensor_util_prv.h"
+#include "vsi_nn_kernel_prv.h"
 #include "kernel/vsi_nn_kernel.h"
 #include "kernel/vsi_nn_sp_unit_operation.h"
 #include "kernel/vsi_nn_sp_lut.h"
@@ -195,10 +197,9 @@ REGISTER_GRUCELL_ACTIVATION_STREAM_PROCESSOR_KERNEL( grucell_activation_z_h )
     attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
     attr.is_const = FALSE;
     attr.vtl = TRUE;
-    attr.is_dummy = TRUE;
-    dummy_tensor[0] = vsi_nn_CreateTensor( graph, &attr );
+    dummy_tensor[0] = vsi_nn_create_dummy_tensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( dummy_tensor[0], "Create tensor fail.", final );
-    dummy_tensor[1] = vsi_nn_CreateTensor( graph, &attr );
+    dummy_tensor[1] = vsi_nn_create_dummy_tensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( dummy_tensor[1], "Create tensor fail.", final );
 
     node = vsi_nn_sp_add_sigmoid_node(graph, inputs[GRUCELL_ACT_Z_H_I_FC_Z], inputs[GRUCELL_ACT_Z_H_H_FC_Z],

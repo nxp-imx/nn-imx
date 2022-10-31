@@ -29,6 +29,8 @@
 #include "vsi_nn_prv.h"
 #include "vsi_nn_tensor_util.h"
 #include "vsi_nn_error.h"
+#include "vsi_nn_tensor_util_prv.h"
+#include "vsi_nn_kernel_prv.h"
 #include "kernel/vsi_nn_kernel.h"
 #include "kernel/vsi_nn_sp_unit_operation.h"
 #include "kernel/vsi_nn_sp_lut.h"
@@ -221,16 +223,15 @@ REGISTER_GROUP_NORM_STREAM_PROCESSOR_KERNEL( group_norm )
     attr.dtype.vx_type = VSI_NN_TYPE_FLOAT32;
     attr.is_const = FALSE;
     attr.vtl = TRUE;
-    attr.is_dummy = TRUE;
     attr.size[0] = 1;
     attr.size[1] = 1;
-    dummy_tensor[0] = vsi_nn_CreateTensor( graph, &attr );
+    dummy_tensor[0] = vsi_nn_create_dummy_tensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( dummy_tensor[0], "Create dummy_tensor fail.", final );
-    dummy_tensor[1] = vsi_nn_CreateTensor( graph, &attr );
+    dummy_tensor[1] = vsi_nn_create_dummy_tensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( dummy_tensor[1], "Create dummy_tensor fail.", final );
-    dummy_tensor[2] = vsi_nn_CreateTensor( graph, &attr );
+    dummy_tensor[2] = vsi_nn_create_dummy_tensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( dummy_tensor[2], "Create dummy_tensor fail.", final );
-    dummy_tensor[3] = vsi_nn_CreateTensor( graph, &attr );
+    dummy_tensor[3] = vsi_nn_create_dummy_tensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( dummy_tensor[3], "Create dummy_tensor fail.", final );
 
     gamma = vsi_nn_dropout_tensor(graph, reshape_tensors[3], output_scale);

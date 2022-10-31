@@ -29,6 +29,8 @@
 #include "vsi_nn_prv.h"
 #include "vsi_nn_tensor_util.h"
 #include "vsi_nn_error.h"
+#include "vsi_nn_tensor_util_prv.h"
+#include "vsi_nn_kernel_prv.h"
 #include "kernel/vsi_nn_kernel.h"
 #include "kernel/vsi_nn_sp_unit_operation.h"
 #include "kernel/vsi_nn_sp_lut.h"
@@ -258,10 +260,9 @@ REGISTER_REDUCE_MEAN_STREAM_PROCESSOR_KERNEL( reduce_mean )
     attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
     attr.is_const = FALSE;
     attr.vtl = TRUE;
-    attr.is_dummy = TRUE;
     attr.size[0] = 1;
     attr.size[1] = axis_num > 1 ? 1 : attr.size[1];
-    dummy_tensor[0] = vsi_nn_CreateTensor( graph, &attr );
+    dummy_tensor[0] = vsi_nn_create_dummy_tensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( dummy_tensor[0], "Create dummy_tensor fail.", final );
 
     node = vsi_nn_sp_sum_node(graph, inputs[0], dummy_tensor[0], axis_num, "reduce_0");

@@ -1,6 +1,6 @@
 /****************************************************************************
 *
-*    Copyright (c) 2020 Vivante Corporation
+*    Copyright (c) 2022 Vivante Corporation
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a
 *    copy of this software and associated documentation files (the "Software"),
@@ -21,35 +21,53 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#ifndef _VSI_NN_VDATA_H
-#define _VSI_NN_VDATA_H
-
-#include <stdio.h>
-#include <stdint.h>
+/** @file */
+#ifndef _VSI_NN_TYPES_PRV_H_
+#define _VSI_NN_TYPES_PRV_H_
 
 #include "vsi_nn_graph.h"
 #include "vsi_nn_node.h"
 #include "vsi_nn_tensor.h"
 
-#ifdef __cplusplus
-extern "C" {
+#if defined(__cplusplus)
+extern "C"{
 #endif
 
-OVXLIB_API uint8_t * vsi_nn_VdataCreate
-    (
-    vsi_nn_graph_t * graph,
-    vsi_nn_node_t  * node,
-    uint32_t      * p_stream_size
-    );
+/**
+ * Internal Graph structure, internal use only.
+ */
+typedef struct _vsi_nn_graph_prv
+{
+    /** Public Ovxlib Graph(pot)*/
+    vsi_nn_graph_t pog;
 
-OVXLIB_API vsi_nn_tensor_t * vsi_nn_CreateVDataTensor
-    (
-    vsi_nn_graph_t       * graph,
-    uint8_t             * stream,
-    vsi_nn_tensor_attr_t * attr
-    );
+    // Add graph internal attribute here...
+} vsi_nn_graph_prv_t;
 
-#ifdef __cplusplus
+/** Internal Node structure, internal use only. */
+typedef struct _vsi_nn_node_prv
+{
+    /** Public Ovxlib Node(pon)*/
+    vsi_nn_node_t pon;
+
+    // Add node internal attribute here...
+} vsi_nn_node_prv_t;
+
+/**
+    * Internal Tensor structure, internal use only.
+    */
+typedef struct _vsi_nn_tensor_prv
+{
+    /** Public Ovxlib Tensor(pot)*/
+    vsi_nn_tensor_t pot;
+
+    /** Tensor handle*/
+    uint8_t* handle;
+
+    // Add tensor internal attribute here...
+} vsi_nn_tensor_prv_t;
+
+#if defined(__cplusplus)
 }
 #endif
 

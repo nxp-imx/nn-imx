@@ -45,7 +45,7 @@ typedef struct _vsi_nn_fasterrcnn_box_t
     float y2;
     float score;
     uint32_t class_id;
-}vsi_nn_fasterrcnn_box_t;
+} VSI_PUBLIC_TYPE vsi_nn_fasterrcnn_box_t;
 
 typedef struct _vsi_nn_fasterrcnn_param_t
 {
@@ -55,14 +55,14 @@ typedef struct _vsi_nn_fasterrcnn_param_t
     uint32_t classes_num;
     uint32_t rois_num;
     vsi_nn_proposal_im_info iminfo;
-}vsi_nn_fasterrcnn_param_t;
+} VSI_PUBLIC_TYPE vsi_nn_fasterrcnn_param_t;
 
 typedef struct _vsi_nn_fasterrcnn_inputs_t
 {
     vsi_nn_tensor_t *rois;
     vsi_nn_tensor_t *cls;
     vsi_nn_tensor_t *bbox;
-}vsi_nn_fasterrcnn_inputs_t;
+} VSI_PUBLIC_TYPE vsi_nn_fasterrcnn_inputs_t;
 
 OVXLIB_API vsi_status vsi_nn_FasterRCNN_PostProcess
     (

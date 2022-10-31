@@ -29,6 +29,8 @@
 #include "vsi_nn_prv.h"
 #include "vsi_nn_tensor_util.h"
 #include "vsi_nn_error.h"
+#include "vsi_nn_tensor_util_prv.h"
+#include "vsi_nn_kernel_prv.h"
 #include "kernel/vsi_nn_kernel.h"
 #include "kernel/vsi_nn_sp_unit_operation.h"
 #include "kernel/vsi_nn_sp_lut.h"
@@ -336,11 +338,10 @@ vsi_nn_kernel_node_t l2_norm_x_direction
     attr.dtype.vx_type = VSI_NN_TYPE_FLOAT32;
     attr.is_const = FALSE;
     attr.vtl = TRUE;
-    attr.is_dummy = TRUE;
     attr.size[axis] = 1;
-    dummy_tensor[0] = vsi_nn_CreateTensor( graph, &attr );
+    dummy_tensor[0] = vsi_nn_create_dummy_tensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( dummy_tensor[0], "Create dummy_tensor fail.", final );
-    dummy_tensor[1] = vsi_nn_CreateTensor( graph, &attr );
+    dummy_tensor[1] = vsi_nn_create_dummy_tensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( dummy_tensor[1], "Create dummy_tensor fail.", final );
 
     memcpy( &attr, &outputs[0]->attr, sizeof(vsi_nn_tensor_attr_t) );
