@@ -148,16 +148,18 @@ static vsi_bool op_setup
         curr->inputs[1] = inputs[i+1];
 
         /* setup output for each add */
-        if(i < input_num - 2)
+        if (i < input_num - 2)
         {
             memset(&attr, 0, sizeof(attr));
             attr.dim_num = VSI_NN_DIM_AUTO;
             attr.vtl = TRUE;
             attr.is_const = FALSE;
-            if (VSI_NN_TYPE_INT32 == outputs[0]->attr.dtype.vx_type){
+            if (VSI_NN_TYPE_INT32 == outputs[0]->attr.dtype.vx_type)
+            {
                 attr.dtype.vx_type = VSI_NN_TYPE_INT32;
             }
-            else if(_is_float32_data_format( self, inputs, outputs ))
+            else if ( _is_float32_data_format( self, inputs, outputs ) ||
+                      self->graph->ctx->config.support_stream_processor )
             {
                 attr.dtype.vx_type = VSI_NN_TYPE_FLOAT32;
             }
