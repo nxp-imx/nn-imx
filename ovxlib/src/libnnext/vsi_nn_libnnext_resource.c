@@ -43902,6 +43902,167 @@ __kernel void argmin_axis2_I32toI32_2D\n\
 \n\
 "; /* end of argmin_axis2_cl*/
 
+static const char avg_pool3d_cl[] = "#pragma OPENCL EXTENSION cl_viv_vx_extension : enable\n\
+#include \"cl_viv_vx_ext.h\"\n\
+\n\
+#define TENSOR_AVG_POOL3D(src_name, dst_name, src_type, dst_type,\\\n\
+                         readimage_type, conv_mode, writeimage_type) \\\n\
+__kernel void avg_pool3d_##src_name##to##dst_name ( \\\n\
+    __read_only image2d_array_t   input, \\\n\
+    __write_only image2d_array_t  output, \\\n\
+                 int              ksize_x, \\\n\
+                 int              ksize_y, \\\n\
+                 int              ksize_z, \\\n\
+                 int              stride_x, \\\n\
+                 int              stride_y, \\\n\
+                 int              stride_z, \\\n\
+                 int              pad_left, \\\n\
+                 int              pad_top, \\\n\
+                 int              pad_front, \\\n\
+                 int              width, \\\n\
+                 int              height, \\\n\
+                 int              depth_in, \\\n\
+                 int              depth_out, \\\n\
+                 float            inputScale, \\\n\
+                 float            inputTail, \\\n\
+                 float            outputScale, \\\n\
+                 float            outputTail, \\\n\
+                 int              count_include_pad) \\\n\
+{ \\\n\
+    int gidx = get_global_id(0); \\\n\
+    int gidy = get_global_id(1); \\\n\
+    int offsetz = get_global_id(2); \\\n\
+    int offsetz2 = offsetz / depth_out * depth_in; \\\n\
+    int d, d2, h, w, count; \\\n\
+    float sum = 0; \\\n\
+    dst_type out_data = (dst_type)(0); \\\n\
+    src_type in_data; \\\n\
+    float in_f32, out_f32; \\\n\
+    int wstart = gidx * stride_x - pad_left; \\\n\
+    int hstart = gidy * stride_y - pad_top; \\\n\
+    int wend = min(wstart + ksize_x, width); \\\n\
+    int hend = min(hstart + ksize_y, height); \\\n\
+    int dstart, dend; \\\n\
+    int4 coord_in, coord_out; \\\n\
+    wstart = max(wstart, 0); \\\n\
+    hstart = max(hstart, 0); \\\n\
+    for (d2 = 0; d2 < depth_out; d2++) \\\n\
+    { \\\n\
+        dstart = d2 * stride_z - pad_front; \\\n\
+        dend = min(dstart + ksize_z, depth_in); \\\n\
+        dstart = max(dstart, 0); \\\n\
+        coord_out = (int4)(gidx, gidy, offsetz + d2, 0); \\\n\
+        sum = 0; \\\n\
+        count = 0; \\\n\
+        for (d = dstart; d < dend; d++) \\\n\
+        { \\\n\
+            for (h = hstart; h < hend; h++) \\\n\
+            { \\\n\
+                for (w = wstart; w < wend; w++) \\\n\
+                { \\\n\
+                    coord_in = (int4)(w, h, d + offsetz2, 0); \\\n\
+                    in_data = readimage_type(input, coord_in).x; \\\n\
+                    in_f32 = convert_float(in_data) * inputScale + inputTail; \\\n\
+                    sum += in_f32; \\\n\
+                    count++; \\\n\
+                } \\\n\
+            } \\\n\
+        } \\\n\
+        if (count_include_pad == 1) \\\n\
+        { \\\n\
+            count = ksize_x * ksize_y * ksize_z; \\\n\
+        } \\\n\
+        out_f32 = (sum / count) * outputScale + outputTail; \\\n\
+        out_data.x = conv_mode(out_f32); \\\n\
+        writeimage_type(output, coord_out, out_data); \\\n\
+    } \\\n\
+}\n\
+\n\
+TENSOR_AVG_POOL3D(F32, F32, float, float4, read_imagef, convert_float, write_imagef)\n\
+TENSOR_AVG_POOL3D(F32, U32, float, uint4,  read_imagef, convert_uint,  write_imageui)\n\
+TENSOR_AVG_POOL3D(F32, I32, float, int4,   read_imagef, convert_int,   write_imagei)\n\
+\n\
+TENSOR_AVG_POOL3D(U32, U32, uint, uint4,  read_imageui, convert_uint,  write_imageui)\n\
+TENSOR_AVG_POOL3D(U32, F32, uint, float4, read_imageui, convert_float, write_imagef)\n\
+TENSOR_AVG_POOL3D(U32, I32, uint, int4,   read_imageui, convert_int,   write_imagei)\n\
+\n\
+TENSOR_AVG_POOL3D(I32, I32, int, int4,    read_imagei, convert_int,   write_imagei)\n\
+TENSOR_AVG_POOL3D(I32, F32, int, float4, read_imagei, convert_float, write_imagef)\n\
+TENSOR_AVG_POOL3D(I32, U32, int, uint4,  read_imagei, convert_uint,  write_imageui)\n\
+\n\
+__kernel void avg_pool3d_BF16toBF16 (\n\
+    __read_only image2d_array_t   input,\n\
+    __write_only image2d_array_t  output,\n\
+                 int              ksize_x,\n\
+                 int              ksize_y,\n\
+                 int              ksize_z,\n\
+                 int              stride_x,\n\
+                 int              stride_y,\n\
+                 int              stride_z,\n\
+                 int              pad_left,\n\
+                 int              pad_top,\n\
+                 int              pad_front,\n\
+                 int              width,\n\
+                 int              height,\n\
+                 int              depth_in,\n\
+                 int              depth_out,\n\
+                 float            inputScale,\n\
+                 float            inputTail,\n\
+                 float            outputScale,\n\
+                 float            outputTail,\n\
+                 int              count_include_pad)\n\
+{\n\
+    int gidx = get_global_id(0);\n\
+    int gidy = get_global_id(1);\n\
+    int offsetz = get_global_id(2);\n\
+    int offsetz2 = offsetz / depth_out * depth_in;\n\
+    int d, d2, h, w, count;\n\
+    float sum = 0;\n\
+    uint4 out_data = (uint4)(0);\n\
+    uint4 in_data;\n\
+    float in_f32, out_f32;\n\
+    int wstart = gidx * stride_x - pad_left;\n\
+    int hstart = gidy * stride_y - pad_top;\n\
+    int wend = min(wstart + ksize_x, width);\n\
+    int hend = min(hstart + ksize_y, height);\n\
+    int dstart, dend;\n\
+    int4 coord_in, coord_out;\n\
+    wstart = max(wstart, 0);\n\
+    hstart = max(hstart, 0);\n\
+    for (d2 = 0; d2 < depth_out; d2++)\n\
+    {\n\
+        dstart = d2 * stride_z - pad_front;\n\
+        dend = min(dstart + ksize_z, depth_in);\n\
+        dstart = max(dstart, 0);\n\
+        coord_out = (int4)(gidx, gidy, offsetz + d2, 0);\n\
+        sum = 0;\n\
+        count = 0;\n\
+        for (d = dstart; d < dend; d++)\n\
+        {\n\
+            for (h = hstart; h < hend; h++)\n\
+            {\n\
+                for (w = wstart; w < wend; w++)\n\
+                {\n\
+                    coord_in = (int4)(w, h, d + offsetz2, 0);\n\
+                    in_data = read_imageui(input, coord_in).x;\n\
+                    in_data = in_data << 16;\n\
+                    _viv_asm(COPY, in_f32, in_data, 16);\n\
+                    sum += in_f32;\n\
+                    count++;\n\
+                }\n\
+            }\n\
+        }\n\
+        if (count_include_pad == 1)\n\
+        {\n\
+            count = ksize_x * ksize_y * ksize_z;\n\
+        }\n\
+        out_f32 = sum / count;\n\
+        _viv_asm(COPY, out_data, out_f32, 4);\n\
+        out_data.x = out_data.x >> 16;\n\
+        write_imageui(output, coord_out, out_data);\n\
+    }\n\
+}"; /* end of avg_pool3d_cl*/
+
 static const char batchnorm_single_cl[] = "#define BN_U8_SAVE \\\n\
     uint4 dst = convert_uint4(src * output_scale + output_zp); \\\n\
     write_imageui(output, coord, dst);\n\
@@ -62169,6 +62330,7 @@ static const source_map_t cl_resource[] =
     {"argmin_axis0_cl", argmin_axis0_cl},
     {"argmin_axis1_cl", argmin_axis1_cl},
     {"argmin_axis2_cl", argmin_axis2_cl},
+    {"avg_pool3d_cl", avg_pool3d_cl},
     {"batchnorm_single_cl", batchnorm_single_cl},
     {"bucketize_cl", bucketize_cl},
     {"cast_cl", cast_cl},
