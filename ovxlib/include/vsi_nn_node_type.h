@@ -202,6 +202,7 @@
 #include "ops/vsi_nn_op_bucketize.h"
 #include "ops/vsi_nn_op_globallppool.h"
 #include "ops/vsi_nn_op_gather_nd.h"
+#include "ops/vsi_nn_op_avg_pool3d.h"
 /* custom node head define define */
 #include "custom/vsi_nn_custom_node_type.h"
 
@@ -390,6 +391,7 @@ typedef union _vsi_nn_nn_param
     vsi_nn_bucketize_param          bucketize;
     vsi_nn_globallppool_param       globallppool;
     vsi_nn_gather_nd_param          gather_nd;
+    vsi_nn_avg_pool3d_param         avg_pool3d;
     void*                         client_param;
 
     /* custom node data struct define */
