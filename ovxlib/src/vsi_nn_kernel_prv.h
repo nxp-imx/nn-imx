@@ -21,34 +21,34 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
+/** @file */
+#ifndef _VSI_NN_KERNEL_PRV_H
+#define _VSI_NN_KERNEL_PRV_H
 
-#include "vsi_nn_graph.h"
-#include "vsi_nn_node.h"
-#include "vsi_nn_tensor.h"
-#include "vsi_nn_ops.h"
-#include "vsi_nn_log.h"
-#include "utils/vsi_nn_util.h"
+/*-------------------------------------------
+                Includes
+-------------------------------------------*/
+#include "kernel/vsi_nn_kernel.h"
 
-uint8_t * vsi_nn_VdataCreate
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/**
+ * Set sp node name
+ *
+ * @param[in] node Node handle
+ * @param[in] kernel_name Kernel name.
+ * @return VSI_SUCCESS on success, or appropriate error code otherwise.
+ */
+vsi_status vsi_nn_set_sp_kernel_name
     (
-    vsi_nn_graph_t * graph,
-    vsi_nn_node_t  * node,
-    uint32_t      * p_stream_size
-    )
-{
-    return NULL;
-} /* vsi_nn_VdataCreate() */
+        vsi_nn_kernel_node_t node,
+        char* kernel_name
+    );
 
-vsi_nn_tensor_t * vsi_nn_CreateVDataTensor
-    (
-    vsi_nn_graph_t       * graph,
-    uint8_t             * stream,
-    vsi_nn_tensor_attr_t * attr
-    )
-{
-    return NULL;
-} /* vsi_nn_CreateVDataTensor() */
+#ifdef __cplusplus
+}
+#endif
 
+#endif

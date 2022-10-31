@@ -39,20 +39,20 @@ typedef struct _vsi_nn_subset_t
 {
     vsi_nn_link_list_t link_list;
     vsi_nn_subset_data_t data;
-}vsi_nn_subset_t;
+} VSI_PUBLIC_TYPE vsi_nn_subset_t;
 
 typedef struct _vsi_nn_peaks_data_t
 {
     uint32_t location[2];
     float score;
     uint32_t id;
-}vsi_nn_peaks_data_t;
+} VSI_PUBLIC_TYPE vsi_nn_peaks_data_t;
 
 typedef struct _vsi_nn_peaks_t
 {
     vsi_nn_link_list_t link_list;
     vsi_nn_peaks_data_t peak;
-}vsi_nn_peaks_t;
+} VSI_PUBLIC_TYPE vsi_nn_peaks_t;
 
 typedef struct _vsi_nn_conncection_data_t
 {
@@ -94,7 +94,7 @@ typedef struct _vsi_nn_cmupose_image_t
     uint32_t width;
     uint32_t height;
     uint32_t channel;
-}vsi_nn_cmupose_image_t;
+} VSI_PUBLIC_TYPE vsi_nn_cmupose_image_t;
 
 typedef struct _vsi_nn_cmupose_scale_search_t
 {
@@ -107,7 +107,7 @@ typedef struct _vsi_nn_cmupose_model_t
     uint32_t boxsize;
     uint32_t stride;
     uint32_t padValue;
-}vsi_nn_cmupose_model_t;
+} VSI_PUBLIC_TYPE vsi_nn_cmupose_model_t;
 
 typedef struct _vsi_nn_cmupose_param_t
 {
@@ -116,12 +116,12 @@ typedef struct _vsi_nn_cmupose_param_t
     float thre3;
     uint32_t mid_num;
     vsi_nn_cmupose_scale_search_t scale_search;
-}vsi_nn_cmupose_param_t;
+} VSI_PUBLIC_TYPE vsi_nn_cmupose_param_t;
 
 typedef struct _vsi_nn_cmupose_inputs_t
 {
     vsi_nn_tensor_t *net_out;
-}vsi_nn_cmupose_inputs_t;
+} VSI_PUBLIC_TYPE vsi_nn_cmupose_inputs_t;
 
 typedef struct _vsi_nn_cmupose_config_t
 {
@@ -129,7 +129,7 @@ typedef struct _vsi_nn_cmupose_config_t
     vsi_nn_cmupose_param_t  param;
     vsi_nn_cmupose_model_t  model;
     vsi_nn_cmupose_image_t  image;
-}vsi_nn_cmupose_config_t;
+} VSI_PUBLIC_TYPE vsi_nn_cmupose_config_t;
 
 OVXLIB_API vsi_status vsi_nn_CMUPose_Post_Process
     (

@@ -37,7 +37,6 @@
 #include "vsi_nn_internal_node.h"
 #include "vsi_nn_version.h"
 #include "utils/vsi_nn_util.h"
-#include "utils/vsi_nn_vdata.h"
 #include "utils/vsi_nn_map.h"
 #include "utils/vsi_nn_dtype_util.h"
 #include "vsi_nn_graph_optimization.h"
@@ -955,7 +954,7 @@ static vsi_nn_tensor_id_t _add_tensor
         }
         else
         {
-            tensor = vsi_nn_CreateVDataTensor( graph, data, attr );
+            VSILOGE("VDATA mode is no longer be supported!");
         }
     }
     else if( NULL != data )
@@ -1881,6 +1880,8 @@ vsi_status vsi_nn_TrySetupCompleteSignalNode
         signal_tensor_attr.dim_num = 2;
         signal_tensor_attr.dtype.vx_type = VSI_NN_TYPE_UINT8;
         signal_tensor_attr.vtl = FALSE;
+        signal_tensor_attr.is_created_from_handle = TRUE;
+        signal_tensor_attr.is_handle_malloc_by_ovxlib = FALSE;
         /* Setup signal node */
         signal_node = vsi_nn_CreateNode( graph, VSI_NN_OP_EXTRA_ENDING );
         TEST_CHECK_PTR( signal_node, final );

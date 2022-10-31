@@ -16,10 +16,14 @@ def find_files(folder, pattern):
     return res
 
 def build_data():
-    header_folder = 'include'
-    source_folder = 'src'
-    header = sorted(find_files(header_folder, ".*\.h$"))
-    source = sorted(find_files(source_folder, ".*\.c$"))
+    header_folders = ['include', 'src']
+    source_folders = ['src']
+    header = []
+    source = []
+    for folder in header_folders:
+        header += sorted(find_files(folder, ".*\.h$"))
+    for folder in source_folders:
+        source += sorted(find_files(folder, ".*\.c$"))
     return (header, source)
 
 def update_vs_project(resources, vcxproj='ovxlib.vcxproj'):
@@ -116,9 +120,14 @@ def update_vs_project(resources, vcxproj='ovxlib.vcxproj'):
                 item.clear(keep_tail=True)
                 item.text = '\n' + s_space * 2
                 for i,h in enumerate(header):
-                    path = os.path.dirname(
-                            h.replace('\\', '/').replace('include/','')).replace('/','\\')
-                    path = 'Header Files\\' + path
+                    if h.startswith('src\\'):
+                        path = os.path.dirname(h.replace('\\', '/').replace('src/', '')).replace('/', '\\')
+                        path = 'Source Files\\' + path
+                    elif h.startswith('include\\'):
+                        path = os.path.dirname(h.replace('\\', '/').replace('include/', '')).replace('/', '\\')
+                        path = 'Header Files\\' + path
+                    else:
+                        raise NotImplementedError("Couldn't handle folder '{}'".format(h))
                     if path[-1] == '\\':
                         path = path[:-1]
                     e = ET.Element('ClInclude', Include=h)
@@ -145,7 +154,7 @@ def update_vs_project(resources, vcxproj='ovxlib.vcxproj'):
                     e = ET.Element('ClCompile', Include=s)
                     item.append(e)
                     e.text = '\n' + s_space * 3
-                    fill_tail(e, 2, i == len(header) - 1)
+                    fill_tail(e, 2, i == len(source) - 1)
                     e2 = ET.Element('Filter')
                     e2.text = path
                     e.append(e2)

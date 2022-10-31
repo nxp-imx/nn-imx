@@ -29,6 +29,8 @@
 #include "vsi_nn_prv.h"
 #include "vsi_nn_tensor_util.h"
 #include "vsi_nn_error.h"
+#include "vsi_nn_tensor_util_prv.h"
+#include "vsi_nn_kernel_prv.h"
 #include "kernel/vsi_nn_kernel.h"
 #include "kernel/vsi_nn_sp_unit_operation.h"
 #include "kernel/vsi_nn_sp_lut.h"
@@ -530,20 +532,18 @@ vsi_nn_kernel_node_t layer_norm_x_direction
     attr.dtype.vx_type = VSI_NN_TYPE_FLOAT32;
     attr.is_const = FALSE;
     attr.vtl = TRUE;
-    attr.is_dummy = TRUE;
     attr.size[0] = 1;
-    dummy_tensor[0] = vsi_nn_CreateTensor( graph, &attr );
+    dummy_tensor[0] = vsi_nn_create_dummy_tensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( dummy_tensor[0], "Create dummy_tensor fail.", final );
-    dummy_tensor[1] = vsi_nn_CreateTensor( graph, &attr );
+    dummy_tensor[1] = vsi_nn_create_dummy_tensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( dummy_tensor[1], "Create dummy_tensor fail.", final );
-    dummy_tensor[2] = vsi_nn_CreateTensor( graph, &attr );
+    dummy_tensor[2] = vsi_nn_create_dummy_tensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( dummy_tensor[2], "Create dummy_tensor fail.", final );
 
     memcpy( attr.size, outputs[0]->attr.size, sizeof(attr.size) );
     attr.dtype.vx_type = VSI_NN_TYPE_FLOAT32;
     attr.is_const = TRUE;
     attr.vtl = FALSE;
-    attr.is_dummy = FALSE;
 
     gamma = vsi_nn_pad_layer_norm_const_tensor(graph, inputs[2], attr, output_scale);
     CHECK_PTR_FAIL_GOTO( gamma, "Create gamma fail.", final );

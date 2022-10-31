@@ -21,67 +21,59 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#ifndef _VSI_PYCC_INTERFACE_H
-#define _VSI_PYCC_INTERFACE_H
+/** @file */
+#ifndef _VSI_NN_TENSOR_UTIL_PRV_H
+#define _VSI_NN_TENSOR_UTIL_PRV_H
 
-#include <stdint.h>
-
-#include "vsi_nn_tensor.h"
+/*-------------------------------------------
+                Includes
+-------------------------------------------*/
+#include "vsi_nn_types.h"
+#include "vsi_nn_types_prv.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef struct _vsi_pycc_params_t
-{
-    uint32_t   op;
-    uint32_t   weights;
-
-    uint32_t   ksize_h;
-    uint32_t   ksize_w;
-    uint32_t   stride_h;
-    uint32_t   stride_w;
-    uint32_t   pad_left;
-    uint32_t   pad_right;
-    uint32_t   pad_top;
-    uint32_t   pad_bottom;
-    uint32_t   dilation_h;
-    uint32_t   dilation_w;
-
-    uint32_t   pool_type;
-    vsi_nn_round_type_e   pool_round_type;
-    uint32_t   pool_ksize_h;
-    uint32_t   pool_ksize_w;
-    uint32_t   pool_stride_h;
-    uint32_t   pool_stride_w;
-    uint32_t   pool_pad_left;
-    uint32_t   pool_pad_right;
-    uint32_t   pool_pad_top;
-    uint32_t   pool_pad_bottom;
-
-    int32_t    enable_relu;
-
-    uint8_t  * weight_stream;
-    uint32_t   weight_stream_size;
-    uint8_t  * bias_stream;
-    uint32_t   bias_stream_size;
-
-    vsi_nn_tensor_attr_t input_attr;
-    vsi_nn_tensor_attr_t output_attr;
-    vsi_nn_tensor_attr_t weight_attr;
-    vsi_nn_tensor_attr_t bias_attr;
-
-    int32_t    onlyHeaderStream;
-} vsi_pycc_params;
-
-void vsi_pycc_VdataGeneratorInit();
-
-void vsi_pycc_VdataGeneratorDeinit();
-
-uint32_t vsi_pycc_VdataCreate
+/**
+ * Get tensor handle
+ *
+ * @param[in] tensor, a pointer pointed to vsi_nn_tensor_prv_t.
+ *
+ * @return handle of tensor on success, or NULL otherwise.
+ */
+uint8_t* _get_tensor_handle
     (
-    vsi_pycc_params * pycc_params,
-    uint8_t * buffer
+    vsi_nn_tensor_prv_t* tensor
+    );
+
+/**
+ * Set tensor handle
+ *
+ * @param[in] tensor, a pointer pointed to vsi_nn_tensor_prv_t.
+ * @param[in] handle, a handle need to be set to tensor.
+ *
+ * @return VSI_SUCCESS on success, or VSI_FAILURE otherwise.
+ */
+vsi_status _set_tensor_handle
+    (
+    vsi_nn_tensor_prv_t* tensor,
+    uint8_t*             handle
+    );
+
+/**
+ * Create a new dummy tensor
+ * Create a new dummy tensor with given attributes.
+ *
+ * @param[in] graph Graph handle
+ * @param[in] attr Tensor attributes
+ *
+ * @return Tensor handle on success, or NULL otherwise.
+ */
+vsi_nn_tensor_t * vsi_nn_create_dummy_tensor
+    (
+    vsi_nn_graph_t       * graph,
+    vsi_nn_tensor_attr_t * attr
     );
 
 #ifdef __cplusplus

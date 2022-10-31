@@ -233,7 +233,7 @@
     <ClCompile>
       <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>include;$(AQROOT)\sdk\inc;$(ProjectDir)\inc</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>include;src;$(AQROOT)\sdk\inc;$(ProjectDir)\inc</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WINDLL;_CRT_SECURE_NO_WARNINGS;OVXLIB_API=__declspec(dllexport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <DisableSpecificWarnings>4201;4127;4200;4152;4245;4100;4310;4204</DisableSpecificWarnings>
@@ -256,7 +256,7 @@
     <ClCompile>
       <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>include;$(AQROOT)\sdk\inc;$(ProjectDir)\inc</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>include;src;$(AQROOT)\sdk\inc;$(ProjectDir)\inc</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WINDLL;_CRT_SECURE_NO_WARNINGS;OVXLIB_API=__declspec(dllexport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <DisableSpecificWarnings>4201;4127;4200;4152;4245;4100;4310;4204</DisableSpecificWarnings>
@@ -279,7 +279,7 @@
     <ClCompile>
       <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>include;$(AQROOT)\sdk\inc;$(ProjectDir)\inc;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>include;src;$(AQROOT)\sdk\inc;$(ProjectDir)\inc;</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WINDLL;_CRT_SECURE_NO_WARNINGS;OVXLIB_API=__declspec(dllexport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <DisableSpecificWarnings>4201;4127;4200;4152;4245;4100;4310;4204</DisableSpecificWarnings>
@@ -302,7 +302,7 @@
     <ClCompile>
       <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>include;$(AQROOT)\sdk\inc;$(ProjectDir)\inc;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>include;src;$(AQROOT)\sdk\inc;$(ProjectDir)\inc;</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WINDLL;_CRT_SECURE_NO_WARNINGS;OVXLIB_API=__declspec(dllexport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <TreatWarningAsError>true</TreatWarningAsError>
@@ -325,7 +325,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>include;$(AQROOT)\sdk\inc;$(ProjectDir)\inc;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>include;src;$(AQROOT)\sdk\inc;$(ProjectDir)\inc;</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WINDLL;_CRT_SECURE_NO_WARNINGS;VSI_CFG_NNAPI_0_4;OVXLIB_API=__declspec(dllexport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -346,7 +346,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>include;$(AQROOT)\sdk\inc;$(ProjectDir)\inc;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>include;src;$(AQROOT)\sdk\inc;$(ProjectDir)\inc;</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WINDLL;_CRT_SECURE_NO_WARNINGS;VSI_CFG_NNAPI_0_4;OVXLIB_API=__declspec(dllexport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -367,7 +367,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>include;$(AQROOT)\sdk\inc;$(ProjectDir)\inc;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>include;src;$(AQROOT)\sdk\inc;$(ProjectDir)\inc;</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WINDLL;_CRT_SECURE_NO_WARNINGS;VSI_CFG_NNAPI_0_3;OVXLIB_API=__declspec(dllexport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -388,7 +388,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>include;$(AQROOT)\sdk\inc;$(ProjectDir)\inc;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>include;src;$(AQROOT)\sdk\inc;$(ProjectDir)\inc;</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WINDLL;_CRT_SECURE_NO_WARNINGS;VSI_CFG_NNAPI_0_3;OVXLIB_API=__declspec(dllexport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -449,7 +449,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(VIV_SDK_PATH)\include;$(SolutionDir)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(OVXLIB_PATH)\src;$(VIV_SDK_PATH)\include;$(SolutionDir)\include</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WINDLL;OVXLIB_API=__declspec(dllexport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -469,7 +469,7 @@
     <ClCompile>
       <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(VIV_SDK_PATH)\include;$(SolutionDir)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(OVXLIB_PATH)\src;$(VIV_SDK_PATH)\include;$(SolutionDir)\include</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WINDLL;OVXLIB_API=__declspec(dllexport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <TreatWarningAsError>true</TreatWarningAsError>
@@ -689,7 +689,6 @@
     <ClInclude Include="include\ops\vsi_nn_op_variable.h"/>
     <ClInclude Include="include\post\vsi_nn_post_cmupose.h"/>
     <ClInclude Include="include\post\vsi_nn_post_fasterrcnn.h"/>
-    <ClInclude Include="include\pycc\vsi_pycc_interface.h"/>
     <ClInclude Include="include\quantization\vsi_nn_asymmetric_affine.h"/>
     <ClInclude Include="include\quantization\vsi_nn_dynamic_fixed_point.h"/>
     <ClInclude Include="include\quantization\vsi_nn_perchannel_symmetric_affine.h"/>
@@ -707,7 +706,6 @@
     <ClInclude Include="include\utils\vsi_nn_shape_util.h"/>
     <ClInclude Include="include\utils\vsi_nn_tensor_op.h"/>
     <ClInclude Include="include\utils\vsi_nn_util.h"/>
-    <ClInclude Include="include\utils\vsi_nn_vdata.h"/>
     <ClInclude Include="include\vip\virtual_device.h"/>
     <ClInclude Include="include\vsi_nn_assert.h"/>
     <ClInclude Include="include\vsi_nn_client_op.h"/>
@@ -738,6 +736,10 @@
     <ClInclude Include="include\vsi_nn_test.h"/>
     <ClInclude Include="include\vsi_nn_types.h"/>
     <ClInclude Include="include\vsi_nn_version.h"/>
+    <ClInclude Include="src\vip\virtual_device_private.h"/>
+    <ClInclude Include="src\vsi_nn_kernel_prv.h"/>
+    <ClInclude Include="src\vsi_nn_tensor_util_prv.h"/>
+    <ClInclude Include="src\vsi_nn_types_prv.h"/>
   </ItemGroup>
   <ItemGroup>
     <None Include="include\custom\custom_node_type.def"/>
@@ -2183,9 +2185,6 @@
     <ClCompile Include="src\post\vsi_nn_post_fasterrcnn.c">
       <ObjectFileName>$(IntDir)\src\post\</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="src\pycc\vsi_pycc_interface.c">
-      <ObjectFileName>$(IntDir)\src\pycc\</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="src\quantization\vsi_nn_asymmetric_affine.c">
       <ObjectFileName>$(IntDir)\src\quantization\</ObjectFileName>
     </ClCompile>
@@ -2235,9 +2234,6 @@
       <ObjectFileName>$(IntDir)\src\utils\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\utils\vsi_nn_util.c">
-      <ObjectFileName>$(IntDir)\src\utils\</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="src\utils\vsi_nn_vdata.c">
       <ObjectFileName>$(IntDir)\src\utils\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\vsi_nn_client_op.c">

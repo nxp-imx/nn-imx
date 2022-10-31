@@ -37,9 +37,6 @@
     <Filter Include="Header Files\post">
       <UniqueIdentifier>{b87f43b4-b95e-33be-85de-0860ec243ce4}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\pycc">
-      <UniqueIdentifier>{7e4a9f31-2c64-30c5-a9d5-2565fb8872ef}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\quantization">
       <UniqueIdentifier>{10d843b4-8ec1-3a6e-a778-7ebd39dfdeb1}</UniqueIdentifier>
     </Filter>
@@ -94,14 +91,14 @@
     <Filter Include="Source Files\post">
       <UniqueIdentifier>{66706e5b-54b6-30ab-b4b5-f963edecd35f}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\pycc">
-      <UniqueIdentifier>{cd87064c-df55-3569-8448-805dffd32010}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\quantization">
       <UniqueIdentifier>{4b970fd8-1bb6-38c9-82a7-e32308a408b7}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\utils">
       <UniqueIdentifier>{28374633-e4c5-3557-9da2-dd71e103460c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\vip">
+      <UniqueIdentifier>{cfec9ab3-c329-35a5-80b9-b0f947962cb6}</UniqueIdentifier>
     </Filter>
     </ItemGroup>
   <ItemGroup>
@@ -846,7 +843,7 @@
     <ClCompile Include="src\kernel\evis\swish_evis.c">
       <Filter>Source Files\kernel\evis</Filter>
     </ClCompile>
-  <ClCompile Include="src\kernel\evis\tensorstackconcat_evis.c">
+    <ClCompile Include="src\kernel\evis\tensorstackconcat_evis.c">
       <Filter>Source Files\kernel\evis</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\tile_evis.c">
@@ -1542,9 +1539,6 @@
     <ClCompile Include="src\post\vsi_nn_post_fasterrcnn.c">
       <Filter>Source Files\post</Filter>
     </ClCompile>
-    <ClCompile Include="src\pycc\vsi_pycc_interface.c">
-      <Filter>Source Files\pycc</Filter>
-    </ClCompile>
     <ClCompile Include="src\quantization\vsi_nn_asymmetric_affine.c">
       <Filter>Source Files\quantization</Filter>
     </ClCompile>
@@ -1596,9 +1590,6 @@
     <ClCompile Include="src\utils\vsi_nn_util.c">
       <Filter>Source Files\utils</Filter>
     </ClCompile>
-    <ClCompile Include="src\utils\vsi_nn_vdata.c">
-      <Filter>Source Files\utils</Filter>
-    </ClCompile>
     <ClCompile Include="src\vsi_nn_client_op.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -1644,7 +1635,7 @@
     <ClCompile Include="src\vsi_nn_version.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    </ItemGroup>
+  </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\cpu_backend\npuref_interface.h">
       <Filter>Header Files\cpu_backend</Filter>
@@ -2240,9 +2231,6 @@
     <ClInclude Include="include\post\vsi_nn_post_fasterrcnn.h">
       <Filter>Header Files\post</Filter>
     </ClInclude>
-    <ClInclude Include="include\pycc\vsi_pycc_interface.h">
-      <Filter>Header Files\pycc</Filter>
-    </ClInclude>
     <ClInclude Include="include\quantization\vsi_nn_asymmetric_affine.h">
       <Filter>Header Files\quantization</Filter>
     </ClInclude>
@@ -2292,9 +2280,6 @@
       <Filter>Header Files\utils</Filter>
     </ClInclude>
     <ClInclude Include="include\utils\vsi_nn_util.h">
-      <Filter>Header Files\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="include\utils\vsi_nn_vdata.h">
       <Filter>Header Files\utils</Filter>
     </ClInclude>
     <ClInclude Include="include\vip\virtual_device.h">
@@ -2386,6 +2371,18 @@
     </ClInclude>
     <ClInclude Include="include\vsi_nn_version.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\vip\virtual_device_private.h">
+      <Filter>Source Files\vip</Filter>
+    </ClInclude>
+    <ClInclude Include="src\vsi_nn_kernel_prv.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\vsi_nn_tensor_util_prv.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\vsi_nn_types_prv.h">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

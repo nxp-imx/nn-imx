@@ -29,6 +29,8 @@
 #include "vsi_nn_prv.h"
 #include "vsi_nn_tensor_util.h"
 #include "vsi_nn_error.h"
+#include "vsi_nn_tensor_util_prv.h"
+#include "vsi_nn_kernel_prv.h"
 #include "kernel/vsi_nn_kernel.h"
 #include "kernel/vsi_nn_sp_unit_operation.h"
 #include "kernel/vsi_nn_sp_lut.h"
@@ -1097,8 +1099,7 @@ REGISTER_ELTWISE_STREAM_PROCESSOR_KERNEL( mul )
         attr.dim_num = inputs[1]->attr.dim_num;
         attr.dtype.vx_type = VSI_NN_TYPE_FLOAT32;
         attr.vtl = TRUE;
-        attr.is_dummy = TRUE;
-        dummy_tensor = vsi_nn_CreateTensor( graph, &attr );
+        dummy_tensor = vsi_nn_create_dummy_tensor( graph, &attr );
         CHECK_PTR_FAIL_GOTO( dummy_tensor, "Create dummy_tensor fail.", final );
 
         node = vsi_nn_sp_preload_node(graph, inputs[1], dummy_tensor, "tensormul_0");
@@ -1140,8 +1141,7 @@ REGISTER_ELTWISE_STREAM_PROCESSOR_KERNEL( div )
     attr.dtype.vx_type = VSI_NN_TYPE_FLOAT32;
     attr.is_const = FALSE;
     attr.vtl = TRUE;
-    attr.is_dummy = TRUE;
-    output_tensor[0] = vsi_nn_CreateTensor( graph, &attr );
+    output_tensor[0] = vsi_nn_create_dummy_tensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( output_tensor[0], "Create tensor fail.", final );
 
     node = vsi_nn_sp_rcp_to_v11_node(graph, inputs[1], output_tensor[0], "tensordiv_0");
