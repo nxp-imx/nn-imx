@@ -303,6 +303,9 @@ static const uint8_t* _load_internal_executable
         case VSI_NN_KERNEL_TYPE_CL:
             return _load_bin( source_name, size,
                 vx_bin_resource_items_cl, vx_bin_resource_items_cl_cnt, "_cl" );
+        default:
+            VSILOGE("Unsupported source format %d", type);
+            break;
     }
 #endif
     return NULL;
@@ -321,7 +324,7 @@ static char* _load_source_code_from_file
     source = NULL;
     //TODO: Pack new name
     fp = vsi_nn_fopen( source_name, "rb" );
-    if( NULL == fp )
+    if ( NULL == fp )
     {
         VSILOGE("Open program file %s fail.", source_name);
         *size = 0;
@@ -330,17 +333,17 @@ static char* _load_source_code_from_file
     fseek( fp, 0, SEEK_END );
     total_bytes = ftell( fp );
     fseek( fp, 0, SEEK_SET );
-    if( total_bytes == 0 )
+    if ( total_bytes == 0 )
     {
         VSILOGE("Program file %s is empty.", source_name);
         *size = 0;
         goto final;
     }
     source = (char*)malloc( total_bytes + 1 );
-    if( source )
+    if ( source )
     {
         read_bytes = 0;
-        while( total_bytes - read_bytes > 0 )
+        while ( total_bytes - read_bytes > 0 )
         {
             read_bytes += fread( &source[read_bytes], 1, total_bytes - read_bytes, fp );
         }
@@ -348,7 +351,11 @@ static char* _load_source_code_from_file
         *size = read_bytes;
     }
 final:
-    if (fp) fclose( fp );
+    if (fp)
+    {
+        fclose( fp );
+    }
+
     return source;
 } /* _load_source_code_from_file() */
 
@@ -1457,7 +1464,7 @@ vsi_nn_kernel_tensor_attr_t * vsi_nn_kernel_tensor_attr_create
         attr->scale = attr->asymm.scale;
         attr->zero_point = attr->asymm.zero_point;
     }
-    break;
+        break;
     default:
         attr->scale = 1.0f;
         break;
@@ -1468,21 +1475,21 @@ vsi_nn_kernel_tensor_attr_t * vsi_nn_kernel_tensor_attr_create
 void vsi_nn_kernel_tensor_attr_release
     ( vsi_nn_kernel_tensor_attr_t ** p_attr )
 {
-    if( p_attr && *p_attr )
+    if ( p_attr && *p_attr )
     {
         vsi_nn_kernel_tensor_attr_t * attr = *p_attr;
         vsi_size_array_release( &attr->shape );
-        if( attr->quant == VSI_NN_KERNEL_QUANT_ASYMM_PERCHANNEL )
+        if ( attr->quant == VSI_NN_KERNEL_QUANT_ASYMM_PERCHANNEL )
         {
             vsi_float_array_release( &attr->asymm_v.scale );
             vsi_int_array_release( &attr->asymm_v.zero_point );
         }
-        else if( attr->quant == VSI_NN_KERNEL_QUANT_SYMM_PERCHANNEL )
+        else if ( attr->quant == VSI_NN_KERNEL_QUANT_SYMM_PERCHANNEL )
         {
             //TODO:
         }
-        free( attr );
-        *p_attr = NULL;
+
+        vsi_nn_safe_free(*p_attr);
     }
 } /* vsi_nn_kernel_tensor_attr_release() */
 
