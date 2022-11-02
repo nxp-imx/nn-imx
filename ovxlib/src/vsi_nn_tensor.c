@@ -106,7 +106,7 @@ static void print_tensor
     }
     vsi_nn_ShapeToString( tensor->attr.size, tensor->attr.dim_num,
         shape, _SHAPE_BUF_SZ, TRUE );
-    vsi_nn_FormatToString( tensor, format, _SHAPE_BUF_SZ );
+    vsi_nn_FormatToString( tensor, format, _ATTR_BUF_SZ );
 
     /* Process quantize parameters */
     switch( tensor->attr.dtype.qnt_type )
