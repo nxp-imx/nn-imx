@@ -30,6 +30,7 @@
 #include "vsi_nn_tensor_util.h"
 #include "vsi_nn_error.h"
 #include "vsi_nn_kernel_prv.h"
+#include "vsi_nn_tensor_util_prv.h"
 #include "kernel/vsi_nn_kernel.h"
 #include "kernel/vsi_nn_sp_unit_operation.h"
 #include "kernel/vsi_nn_sp_lut.h"
@@ -257,7 +258,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_add_node
 
 REGISTER_GRUCELL_ACTIVATION_STREAM_PROCESSOR_KERNEL( grucell_h_times_activation_r )
 {
-    vsi_nn_kernel_node_t node = NULL;
+    vsi_nn_kernel_node_t node[2] = {NULL};
     vsi_nn_tensor_attr_t attr;
     int32_t  recurrent_activation;
     vsi_nn_tensor_t *gate_r = NULL;
@@ -279,25 +280,26 @@ REGISTER_GRUCELL_ACTIVATION_STREAM_PROCESSOR_KERNEL( grucell_h_times_activation_
     gate_r = vsi_nn_CreateTensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( gate_r, "Create tensor fail.", final );
 
-    node = vsi_nn_sp_add_node(graph, inputs[1], inputs[2], gate_r, "grucell_h_times_activation_r_0");
-    CHECK_PTR_FAIL_GOTO( node, "Create grucell activation sp add node fail.", final );
+    node[0] = vsi_nn_sp_add_node(graph, inputs[1], inputs[2], gate_r, "grucell_h_times_activation_r_0");
+    CHECK_PTR_FAIL_GOTO( node[0] , "Create grucell activation sp add node fail.", final );
 
     if (hstate_scale == 1 && const2 == 0)
     {
-        node = vsi_nn_sp_grucell_r_times_h_node(graph, gate_r, inputs[0], outputs[0],
+        node[1]  = vsi_nn_sp_grucell_r_times_h_node(graph, gate_r, inputs[0], outputs[0],
             "grucell_h_times_activation_r_1");
     }
     else
     {
-        node = vsi_nn_sp_grucell_r_times_h_qnt_node(graph, gate_r, inputs[0], outputs[0],
+        node[1]  = vsi_nn_sp_grucell_r_times_h_qnt_node(graph, gate_r, inputs[0], outputs[0],
             "grucell_h_times_activation_r_1");
     }
-    CHECK_PTR_FAIL_GOTO( node, "Create grucell activation sp r_times_h node fail.", final );
+    CHECK_PTR_FAIL_GOTO( node[1] , "Create grucell activation sp r_times_h node fail.", final );
 
 final:
+    vsi_safe_release_node(node[0]);
     vsi_safe_release_tensor(gate_r);
 
-    return node;
+    return node[1];
 } /* grucell_h_times_activation_r() */
 
 #undef REGISTER_GRUCELL_ACTIVATION_STREAM_PROCESSOR_KERNEL

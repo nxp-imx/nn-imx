@@ -801,7 +801,7 @@ vsi_nn_kernel_node_t layer_norm_y_direction
     const vsi_nn_kernel_param_t * params
     )
 {
-    vsi_nn_kernel_node_t node = NULL;
+    vsi_nn_kernel_node_t node[5] = {NULL};
     vsi_nn_tensor_attr_t attr;
     vsi_nn_tensor_t * dummy_tensor[3] = {NULL};
     vsi_nn_tensor_t * output_tensor[2] = {NULL};
@@ -835,27 +835,33 @@ vsi_nn_kernel_node_t layer_norm_y_direction
     output_tensor[1] = vsi_nn_CreateTensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( output_tensor[1], "Create tensor fail.", final );
 
-    node = vsi_nn_sp_moments_axis1_node(graph, inputs[0], output_tensor[0], dummy_tensor[0], "layernorm_0");
-    CHECK_PTR_FAIL_GOTO( node, "Create sp_moments_axis1 fail.", final );
-    node = vsi_nn_sp_ln_means_axis1_node(graph, dummy_tensor[0], dummy_tensor[1],
+    node[0] = vsi_nn_sp_moments_axis1_node(graph, inputs[0], output_tensor[0], dummy_tensor[0], "layernorm_0");
+    CHECK_PTR_FAIL_GOTO( node[0], "Create sp_moments_axis1 fail.", final );
+    node[1] = vsi_nn_sp_ln_means_axis1_node(graph, dummy_tensor[0], dummy_tensor[1],
         inv_m, eps, output_scale, "layernorm_1");
-    CHECK_PTR_FAIL_GOTO( node, "Create ln_y_dirction_means  fail.", final );
-    node = vsi_nn_sp_layer_norm_axis1_node(graph, output_tensor[0], dummy_tensor[1], output_tensor[1], "layernorm_2");
-    CHECK_PTR_FAIL_GOTO( node, "Create layer_norm_axis1 fail.", final );
+    CHECK_PTR_FAIL_GOTO( node[1], "Create ln_y_dirction_means  fail.", final );
+    node[2] = vsi_nn_sp_layer_norm_axis1_node(graph, output_tensor[0], dummy_tensor[1],
+        output_tensor[1], "layernorm_2");
+    CHECK_PTR_FAIL_GOTO( node[2], "Create layer_norm_axis1 fail.", final );
 
-    node = vsi_nn_sp_load_weight_bias_node(graph, inputs[2], inputs[1], dummy_tensor[2], "layernorm_3");
-    CHECK_PTR_FAIL_GOTO( node, "Create mov_weight_bias fail.", final );
-    node = vsi_nn_sp_in_times_v11_plus_v12_node(graph, output_tensor[1], dummy_tensor[2], outputs[0], "layernorm_4");
-    CHECK_PTR_FAIL_GOTO( node, "Create in_times_v11_plus_v12 fail.", final );
+    node[3] = vsi_nn_sp_load_weight_bias_node(graph, inputs[2], inputs[1], dummy_tensor[2], "layernorm_3");
+    CHECK_PTR_FAIL_GOTO( node[3], "Create mov_weight_bias fail.", final );
+    node[4] = vsi_nn_sp_in_times_v11_plus_v12_node(graph, output_tensor[1],
+        dummy_tensor[2], outputs[0], "layernorm_4");
+    CHECK_PTR_FAIL_GOTO( node[4], "Create in_times_v11_plus_v12 fail.", final );
 
 final:
+    vsi_safe_release_node(node[0]);
+    vsi_safe_release_node(node[1]);
+    vsi_safe_release_node(node[2]);
+    vsi_safe_release_node(node[3]);
     vsi_safe_release_tensor(dummy_tensor[0]);
     vsi_safe_release_tensor(dummy_tensor[1]);
     vsi_safe_release_tensor(dummy_tensor[2]);
     vsi_safe_release_tensor(output_tensor[0]);
     vsi_safe_release_tensor(output_tensor[1]);
 
-    return node;
+    return node[4];
 } /* layer_norm_y_direction() */
 
 

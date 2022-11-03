@@ -245,7 +245,7 @@ final:
 
 REGISTER_REDUCE_MEAN_STREAM_PROCESSOR_KERNEL( reduce_mean )
 {
-    vsi_nn_kernel_node_t node = NULL;
+    vsi_nn_kernel_node_t node[2] = {NULL};
     vsi_nn_tensor_attr_t attr;
     vsi_nn_tensor_t * dummy_tensor[1] = {NULL};
     int32_t axis_num = vsi_nn_kernel_param_get_int32( params, "axis_num" );
@@ -265,15 +265,16 @@ REGISTER_REDUCE_MEAN_STREAM_PROCESSOR_KERNEL( reduce_mean )
     dummy_tensor[0] = vsi_nn_create_dummy_tensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( dummy_tensor[0], "Create dummy_tensor fail.", final );
 
-    node = vsi_nn_sp_sum_node(graph, inputs[0], dummy_tensor[0], axis_num, "reduce_0");
-    CHECK_PTR_FAIL_GOTO( node, "Create sp_sum node fail.", final );
-    node = vsi_nn_sp_v11_times_scale_node(graph, dummy_tensor[0], outputs[0], axis_num, scale, "reduce_1");
-    CHECK_PTR_FAIL_GOTO( node, "Create v11_times_scale fail.", final );
+    node[0] = vsi_nn_sp_sum_node(graph, inputs[0], dummy_tensor[0], axis_num, "reduce_0");
+    CHECK_PTR_FAIL_GOTO( node[0], "Create sp_sum node fail.", final );
+    node[1] = vsi_nn_sp_v11_times_scale_node(graph, dummy_tensor[0], outputs[0], axis_num, scale, "reduce_1");
+    CHECK_PTR_FAIL_GOTO( node[1], "Create v11_times_scale fail.", final );
 
 final:
+    vsi_safe_release_node(node[0]);
     vsi_safe_release_tensor(dummy_tensor[0]);
 
-    return node;
+    return node[1];
 } /* reduce_mean() */
 
 #undef REGISTER_REDUCE_MEAN_STREAM_PROCESSOR_KERNEL

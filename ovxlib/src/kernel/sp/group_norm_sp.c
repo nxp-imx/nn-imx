@@ -184,7 +184,7 @@ final:
 REGISTER_GROUP_NORM_STREAM_PROCESSOR_KERNEL( group_norm )
 {
     vsi_status status = VSI_FAILURE;
-    vsi_nn_kernel_node_t node = NULL;
+    vsi_nn_kernel_node_t node[5] = {NULL};
     vsi_nn_tensor_attr_t attr;
     vsi_nn_tensor_t * reshape_tensors[4] = {NULL};
     vsi_nn_tensor_t * dummy_tensor[4] = {NULL};
@@ -237,22 +237,26 @@ REGISTER_GROUP_NORM_STREAM_PROCESSOR_KERNEL( group_norm )
     gamma = vsi_nn_dropout_tensor(graph, reshape_tensors[3], output_scale);
     beta = vsi_nn_dropout_tensor(graph, reshape_tensors[2], output_scale);
 
-    node = vsi_nn_sp_moments_sums_node(graph, reshape_tensors[0],
+    node[0] = vsi_nn_sp_moments_sums_node(graph, reshape_tensors[0],
         output_tensors[0], dummy_tensor[0], "groupnorm_0");
-    CHECK_PTR_FAIL_GOTO( node, "Create moments_sums fail.", final );
-    node = vsi_nn_sp_moments_means_node(graph, dummy_tensor[0], dummy_tensor[1],
+    CHECK_PTR_FAIL_GOTO( node[0], "Create moments_sums fail.", final );
+    node[1] = vsi_nn_sp_moments_means_node(graph, dummy_tensor[0], dummy_tensor[1],
         inv_m, eps, "groupnorm_1");
-    CHECK_PTR_FAIL_GOTO( node, "Create moments_means fail.", final );
-    node = vsi_nn_sp_a_minus_v11_times_v12_node(graph, output_tensors[0], dummy_tensor[1],
+    CHECK_PTR_FAIL_GOTO( node[1], "Create moments_means fail.", final );
+    node[2] = vsi_nn_sp_a_minus_v11_times_v12_node(graph, output_tensors[0], dummy_tensor[1],
         output_tensors[1], "groupnorm_2");
-    CHECK_PTR_FAIL_GOTO( node, "Create a_minus_v11_times_v12 fail.", final );
-    node = vsi_nn_sp_bn_mov_weight_bias_node(graph, gamma, beta, dummy_tensor[2], dummy_tensor[3], "groupnorm_3");
-    CHECK_PTR_FAIL_GOTO( node, "Create mov_weight_bias fail.", final );
-    node = vsi_nn_sp_bn_in_times_v11_plus_v12_node(graph, reshape_tensors[1], dummy_tensor[2],
+    CHECK_PTR_FAIL_GOTO( node[2], "Create a_minus_v11_times_v12 fail.", final );
+    node[3] = vsi_nn_sp_bn_mov_weight_bias_node(graph, gamma, beta, dummy_tensor[2], dummy_tensor[3], "groupnorm_3");
+    CHECK_PTR_FAIL_GOTO( node[3], "Create mov_weight_bias fail.", final );
+    node[4] = vsi_nn_sp_bn_in_times_v11_plus_v12_node(graph, reshape_tensors[1], dummy_tensor[2],
         dummy_tensor[3], outputs[0], "groupnorm_4");
-    CHECK_PTR_FAIL_GOTO( node, "Create in_times_v11_plus_v12 fail.", final );
+    CHECK_PTR_FAIL_GOTO( node[4], "Create in_times_v11_plus_v12 fail.", final );
 
 final:
+    vsi_safe_release_node(node[0]);
+    vsi_safe_release_node(node[1]);
+    vsi_safe_release_node(node[2]);
+    vsi_safe_release_node(node[3]);
     vsi_safe_release_tensor(dummy_tensor[0]);
     vsi_safe_release_tensor(dummy_tensor[1]);
     vsi_safe_release_tensor(dummy_tensor[2]);
@@ -266,7 +270,7 @@ final:
     vsi_safe_release_tensor(reshape_tensors[2]);
     vsi_safe_release_tensor(reshape_tensors[3]);
 
-    return node;
+    return node[4];
 } /* group_norm() */
 
 #undef REGISTER_GROUP_NORM_STREAM_PROCESSOR_KERNEL

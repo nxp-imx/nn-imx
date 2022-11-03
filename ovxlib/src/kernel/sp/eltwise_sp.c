@@ -1057,6 +1057,7 @@ final:
 REGISTER_ELTWISE_STREAM_PROCESSOR_KERNEL( mul )
 {
     vsi_nn_kernel_node_t node = NULL;
+    vsi_nn_kernel_node_t tmp_node = NULL;
     vsi_nn_tensor_attr_t attr;
     float scale = 0;
     int32_t axis[2] = {0 , 1};
@@ -1102,8 +1103,8 @@ REGISTER_ELTWISE_STREAM_PROCESSOR_KERNEL( mul )
         dummy_tensor = vsi_nn_create_dummy_tensor( graph, &attr );
         CHECK_PTR_FAIL_GOTO( dummy_tensor, "Create dummy_tensor fail.", final );
 
-        node = vsi_nn_sp_preload_node(graph, inputs[1], dummy_tensor, "tensormul_0");
-        CHECK_PTR_FAIL_GOTO( node, "Create sp_preload node fail.", final );
+        tmp_node = vsi_nn_sp_preload_node(graph, inputs[1], dummy_tensor, "tensormul_0");
+        CHECK_PTR_FAIL_GOTO( tmp_node, "Create sp_preload node fail.", final );
 
         node = vsi_nn_sp_mul_per_channel_node(graph, inputs[0], dummy_tensor, outputs[0],
             scale, "tensormul_1");
@@ -1118,6 +1119,7 @@ REGISTER_ELTWISE_STREAM_PROCESSOR_KERNEL( mul )
 
 final:
 #undef _swap_tensor
+    vsi_safe_release_node(tmp_node);
     vsi_safe_release_tensor(dummy_tensor);
 
     return node;
@@ -1125,7 +1127,7 @@ final:
 
 REGISTER_ELTWISE_STREAM_PROCESSOR_KERNEL( div )
 {
-    vsi_nn_kernel_node_t node = NULL;
+    vsi_nn_kernel_node_t node[2] = {NULL};
     float scale = vsi_nn_kernel_param_get_float32(params, "scale");
 
     vsi_nn_tensor_attr_t attr;
@@ -1144,20 +1146,21 @@ REGISTER_ELTWISE_STREAM_PROCESSOR_KERNEL( div )
     output_tensor[0] = vsi_nn_create_dummy_tensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( output_tensor[0], "Create tensor fail.", final );
 
-    node = vsi_nn_sp_rcp_to_v11_node(graph, inputs[1], output_tensor[0], "tensordiv_0");
-    CHECK_PTR_FAIL_GOTO( node, "Create sp_div node fail.", final );
-    node = vsi_nn_sp_mul_times_v11_node(graph, inputs[0], output_tensor[0], outputs[0], scale, "tensordiv_1");
-    CHECK_PTR_FAIL_GOTO( node, "Create sp_div node fail.", final );
+    node[0] = vsi_nn_sp_rcp_to_v11_node(graph, inputs[1], output_tensor[0], "tensordiv_0");
+    CHECK_PTR_FAIL_GOTO( node[0], "Create sp_div node fail.", final );
+    node[1] = vsi_nn_sp_mul_times_v11_node(graph, inputs[0], output_tensor[0], outputs[0], scale, "tensordiv_1");
+    CHECK_PTR_FAIL_GOTO( node[1], "Create sp_div node fail.", final );
 
 final:
+    vsi_safe_release_node(node[0]);
     vsi_safe_release_tensor(output_tensor[0]);
 
-    return node;
+    return node[1];
 } /* div() */
 
 REGISTER_ELTWISE_STREAM_PROCESSOR_KERNEL( select )
 {
-    vsi_nn_kernel_node_t node = NULL;
+    vsi_nn_kernel_node_t node[3] = {NULL};
     vsi_nn_tensor_attr_t attr;
     vsi_nn_tensor_t * output_tensor[2] = {NULL};
     float output_scale = vsi_nn_get_tensor_scale(outputs[0]);
@@ -1177,18 +1180,20 @@ REGISTER_ELTWISE_STREAM_PROCESSOR_KERNEL( select )
     output_tensor[1] = vsi_nn_CreateTensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( output_tensor[1], "Create tensor fail.", final );
 
-    node = vsi_nn_sp_select_a_node(graph, inputs[1], inputs[0], output_tensor[0], output_scale, "select_0");
-    CHECK_PTR_FAIL_GOTO( node, "Create select_a node fail.", final );
-    node = vsi_nn_sp_select_b_node(graph, inputs[2], inputs[0], output_tensor[1], output_scale, "select_1");
-    CHECK_PTR_FAIL_GOTO( node, "Create select_b node fail.", final );
-    node = vsi_nn_sp_select_add_node(graph, output_tensor[0], output_tensor[1], outputs[0], "select_2");
-    CHECK_PTR_FAIL_GOTO( node, "Create select_add node fail.", final );
+    node[0] = vsi_nn_sp_select_a_node(graph, inputs[1], inputs[0], output_tensor[0], output_scale, "select_0");
+    CHECK_PTR_FAIL_GOTO( node[0], "Create select_a node fail.", final );
+    node[1] = vsi_nn_sp_select_b_node(graph, inputs[2], inputs[0], output_tensor[1], output_scale, "select_1");
+    CHECK_PTR_FAIL_GOTO( node[1], "Create select_b node fail.", final );
+    node[2] = vsi_nn_sp_select_add_node(graph, output_tensor[0], output_tensor[1], outputs[0], "select_2");
+    CHECK_PTR_FAIL_GOTO( node[2], "Create select_add node fail.", final );
 
 final:
+    vsi_safe_release_node(node[0]);
+    vsi_safe_release_node(node[1]);
     vsi_safe_release_tensor(output_tensor[0]);
     vsi_safe_release_tensor(output_tensor[1]);
 
-    return node;
+    return node[2];
 } /* select() */
 
 __END_DECLS

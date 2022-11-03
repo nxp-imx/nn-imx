@@ -1074,6 +1074,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_lstmunit_ln_activation
     )
 {
     vsi_nn_kernel_node_t node = NULL;
+    vsi_nn_kernel_node_t temp_node[5] = {NULL};
     vsi_nn_tensor_attr_t attr;
     vsi_nn_tensor_t * dummy_tensor[4] = {NULL};
 
@@ -1093,7 +1094,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_lstmunit_ln_activation
 
     if (!_is_cifg)
     {
-        node = vsi_nn_sp_sigmoid_node
+        temp_node[0] = vsi_nn_sp_sigmoid_node
         (
             graph,
             input_i,
@@ -1101,11 +1102,11 @@ vsi_nn_kernel_node_t vsi_nn_sp_lstmunit_ln_activation
             VSI_NN_SP_VR11,
             "lstmunit_activation_ln_0"
         );
-        CHECK_PTR_FAIL_GOTO( node, "Create lstmunit_activation sp node fail.", final );
+        CHECK_PTR_FAIL_GOTO( temp_node[0], "Create lstmunit_activation sp node fail.", final );
 
         if (forget_bias == 0)
         {
-            node = vsi_nn_sp_sigmoid_node
+            temp_node[1] = vsi_nn_sp_sigmoid_node
             (
                 graph,
                 input_f,
@@ -1113,11 +1114,10 @@ vsi_nn_kernel_node_t vsi_nn_sp_lstmunit_ln_activation
                 VSI_NN_SP_VR12,
                 "lstmunit_activation_ln_1"
             );
-            CHECK_PTR_FAIL_GOTO( node, "Create lstmunit_activation sp sigmoid node fail.", final );
         }
         else
         {
-            node = vsi_nn_sp_linear_sigmoid_node
+            temp_node[1] = vsi_nn_sp_linear_sigmoid_node
             (
                 graph,
                 input_f,
@@ -1126,19 +1126,21 @@ vsi_nn_kernel_node_t vsi_nn_sp_lstmunit_ln_activation
                 "lstmunit_activation_ln_1"
             );
         }
+        CHECK_PTR_FAIL_GOTO( temp_node[1], "Create lstmunit_activation sp sigmoid node fail.", final );
+
     }
     else
     {
-        vsi_nn_sp_cifg_linear_sigmoid_node(graph, input_f, dummy_tensor[0], dummy_tensor[1],
+        temp_node[0] = vsi_nn_sp_cifg_linear_sigmoid_node(graph, input_f, dummy_tensor[0], dummy_tensor[1],
             forget_bias, "lstmunit_activation_ln_cifg_0");
-        CHECK_PTR_FAIL_GOTO( node, "Create lstmunit_activation sp cifg_linear_sigmoid node fail.", final );
+        CHECK_PTR_FAIL_GOTO( temp_node[0], "Create lstmunit_activation sp cifg_linear_sigmoid node fail.", final );
     }
 
-    vsi_nn_sp_get_cell_status_node(graph, input_c, cell_state_in,
+    temp_node[2] = vsi_nn_sp_get_cell_status_node(graph, input_c, cell_state_in,
         dummy_tensor[0], dummy_tensor[1], cell_state_out, dummy_tensor[2], "lstmunit_activation_ln_2");
-    CHECK_PTR_FAIL_GOTO( node, "Create lstmunit_activation sp get_cell_status node fail.", final );
+    CHECK_PTR_FAIL_GOTO( temp_node[2], "Create lstmunit_activation sp get_cell_status node fail.", final );
 
-    node = vsi_nn_sp_sigmoid_node
+    temp_node[3] = vsi_nn_sp_sigmoid_node
         (
         graph,
         input_o,
@@ -1146,18 +1148,25 @@ vsi_nn_kernel_node_t vsi_nn_sp_lstmunit_ln_activation
         VSI_NN_SP_VR11,
         "lstmunit_activation_ln_3"
         );
-    CHECK_PTR_FAIL_GOTO( node, "Create lstmunit_activation sp sigmoid node fail.", final );
+    CHECK_PTR_FAIL_GOTO( temp_node[3], "Create lstmunit_activation sp sigmoid node fail.", final );
 
     node = vsi_nn_sp_get_output_node(graph, dummy_tensor[2], dummy_tensor[3], output, "lstmunit_activation_ln_4");
     CHECK_PTR_FAIL_GOTO( node, "Create lstmunit_activation sp sigmoid node fail.", final );
 
     if (!_is_proj)
     {
+        temp_node[4] = node;
+
         node = vxTensorCopyNode( graph->g, output->t, hstate_out->t);
         CHECK_PTR_FAIL_GOTO( node, "Create lstmunit_activation dataconvert node fail.", final );
     }
 
 final:
+    vsi_safe_release_node(temp_node[0]);
+    vsi_safe_release_node(temp_node[1]);
+    vsi_safe_release_node(temp_node[2]);
+    vsi_safe_release_node(temp_node[3]);
+    vsi_safe_release_node(temp_node[4]);
     vsi_safe_release_tensor(dummy_tensor[0]);
     vsi_safe_release_tensor(dummy_tensor[1]);
     vsi_safe_release_tensor(dummy_tensor[2]);
@@ -1187,6 +1196,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_lstmunit_float_activation
     )
 {
     vsi_nn_kernel_node_t node = NULL;
+    vsi_nn_kernel_node_t temp_node[6] = {NULL};
     vsi_nn_tensor_attr_t attr;
     vsi_nn_tensor_t * dummy_tensor[4] = {NULL};
     vsi_nn_tensor_t * ifco_tensor[4] = {NULL};
@@ -1221,7 +1231,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_lstmunit_float_activation
 
     if (!_is_cifg)
     {
-        node = vsi_nn_sp_add_sigmoid_node
+        temp_node[0] = vsi_nn_sp_add_sigmoid_node
         (
             graph,
             input_i,
@@ -1230,11 +1240,11 @@ vsi_nn_kernel_node_t vsi_nn_sp_lstmunit_float_activation
             VSI_NN_SP_VR11,
             "lstmunit_activation_0"
         );
-        CHECK_PTR_FAIL_GOTO( node, "Create lstmunit_activation sp add node fail.", final );
+        CHECK_PTR_FAIL_GOTO( temp_node[0], "Create lstmunit_activation sp add node fail.", final );
 
         if (forget_bias == 0)
         {
-            node = vsi_nn_sp_add_sigmoid_node
+            temp_node[1] = vsi_nn_sp_add_sigmoid_node
             (
                 graph,
                 input_f,
@@ -1243,11 +1253,10 @@ vsi_nn_kernel_node_t vsi_nn_sp_lstmunit_float_activation
                 VSI_NN_SP_VR12,
                 "lstmunit_activation_1"
             );
-            CHECK_PTR_FAIL_GOTO( node, "Create lstmunit_activation sp add sigmoid node fail.", final );
         }
         else
         {
-            node = vsi_nn_sp_add_sigmoid_ext_node
+            temp_node[1] = vsi_nn_sp_add_sigmoid_ext_node
             (
                 graph,
                 input_f,
@@ -1257,10 +1266,11 @@ vsi_nn_kernel_node_t vsi_nn_sp_lstmunit_float_activation
                 "lstmunit_activation_1"
             );
         }
+        CHECK_PTR_FAIL_GOTO( temp_node[1], "Create lstmunit_activation sp add sigmoid node fail.", final );
     }
     else
     {
-        node = vsi_nn_sp_lstm_add_node
+        temp_node[0] = vsi_nn_sp_lstm_add_node
         (
             graph,
             input_f,
@@ -1268,13 +1278,13 @@ vsi_nn_kernel_node_t vsi_nn_sp_lstmunit_float_activation
             ifco_tensor[1],
             "lstmunit_activation_0"
         );
-        CHECK_PTR_FAIL_GOTO( node, "Create lstmunit_activation sp add node fail.", final );
-        vsi_nn_sp_cifg_linear_sigmoid_node(graph, ifco_tensor[1], dummy_tensor[0],
+        CHECK_PTR_FAIL_GOTO( temp_node[0], "Create lstmunit_activation sp add node fail.", final );
+        temp_node[1] = vsi_nn_sp_cifg_linear_sigmoid_node(graph, ifco_tensor[1], dummy_tensor[0],
             dummy_tensor[1], forget_bias, "lstmunit_activation_1");
-        CHECK_PTR_FAIL_GOTO( node, "Create lstmunit_activation sp linear_sigmoid node fail.", final );
+        CHECK_PTR_FAIL_GOTO( temp_node[1], "Create lstmunit_activation sp linear_sigmoid node fail.", final );
     }
 
-    node = vsi_nn_sp_lstm_add_node
+    temp_node[2] = vsi_nn_sp_lstm_add_node
     (
         graph,
         input_c,
@@ -1282,13 +1292,13 @@ vsi_nn_kernel_node_t vsi_nn_sp_lstmunit_float_activation
         ifco_tensor[2],
         "lstmunit_activation_2"
     );
-    CHECK_PTR_FAIL_GOTO( node, "Create lstmunit_activation sp add node fail.", final );
+    CHECK_PTR_FAIL_GOTO( temp_node[2], "Create lstmunit_activation sp add node fail.", final );
 
-    vsi_nn_sp_get_cell_status_node(graph, ifco_tensor[2], cell_state_in,
+    temp_node[3] = vsi_nn_sp_get_cell_status_node(graph, ifco_tensor[2], cell_state_in,
         dummy_tensor[0], dummy_tensor[1], cell_state_out, dummy_tensor[2], "lstmunit_activation_3");
-    CHECK_PTR_FAIL_GOTO( node, "Create lstmunit_activation sp get_cell_status node fail.", final );
+    CHECK_PTR_FAIL_GOTO( temp_node[3], "Create lstmunit_activation sp get_cell_status node fail.", final );
 
-    node = vsi_nn_sp_add_sigmoid_node
+    temp_node[4] = vsi_nn_sp_add_sigmoid_node
         (
         graph,
         input_o,
@@ -1297,18 +1307,26 @@ vsi_nn_kernel_node_t vsi_nn_sp_lstmunit_float_activation
         VSI_NN_SP_VR11,
         "lstmunit_activation_4"
         );
-    CHECK_PTR_FAIL_GOTO( node, "Create lstmunit_activation sp add sigmoid node fail.", final );
+    CHECK_PTR_FAIL_GOTO( temp_node[4], "Create lstmunit_activation sp add sigmoid node fail.", final );
 
     node = vsi_nn_sp_get_output_node(graph, dummy_tensor[2], dummy_tensor[3], output, "lstmunit_activation_5");
     CHECK_PTR_FAIL_GOTO( node, "Create lstmunit_activation sp sigmoid node fail.", final );
 
     if (!_is_proj)
     {
+        temp_node[5] = node;
+
         node = vxTensorCopyNode( graph->g, output->t, hstate_out->t);
         CHECK_PTR_FAIL_GOTO( node, "Create lstmunit_activation dataconvert node fail.", final );
     }
 
 final:
+    vsi_safe_release_node(temp_node[0]);
+    vsi_safe_release_node(temp_node[1]);
+    vsi_safe_release_node(temp_node[2]);
+    vsi_safe_release_node(temp_node[3]);
+    vsi_safe_release_node(temp_node[4]);
+    vsi_safe_release_node(temp_node[5]);
     vsi_safe_release_tensor(dummy_tensor[0]);
     vsi_safe_release_tensor(dummy_tensor[1]);
     vsi_safe_release_tensor(dummy_tensor[2]);

@@ -180,7 +180,7 @@ final:
 
 REGISTER_GRUCELL_ACTIVATION_STREAM_PROCESSOR_KERNEL( grucell_activation_z_h )
 {
-    vsi_nn_kernel_node_t node = NULL;
+    vsi_nn_kernel_node_t node[4] = {NULL};
     vsi_nn_tensor_attr_t attr;
     int32_t recurrent_activation = vsi_nn_kernel_param_get_int32( params, "recurrent_activation" );
     int32_t activation = vsi_nn_kernel_param_get_int32( params, "activation" );
@@ -202,24 +202,28 @@ REGISTER_GRUCELL_ACTIVATION_STREAM_PROCESSOR_KERNEL( grucell_activation_z_h )
     dummy_tensor[1] = vsi_nn_create_dummy_tensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( dummy_tensor[1], "Create tensor fail.", final );
 
-    node = vsi_nn_sp_add_sigmoid_node(graph, inputs[GRUCELL_ACT_Z_H_I_FC_Z], inputs[GRUCELL_ACT_Z_H_H_FC_Z],
+    node[0] = vsi_nn_sp_add_sigmoid_node(graph, inputs[GRUCELL_ACT_Z_H_I_FC_Z], inputs[GRUCELL_ACT_Z_H_H_FC_Z],
         dummy_tensor[0], VSI_NN_SP_VR11, "grucell_activation_z_h_0" );
-    CHECK_PTR_FAIL_GOTO( node, "Create grucell sp add sigmoid node fail.", final );
-    node = vsi_nn_sp_add_tanh_node(graph, inputs[GRUCELL_ACT_Z_H_I_FC_H], inputs[GRUCELL_ACT_Z_H_H_FC_H],
+    CHECK_PTR_FAIL_GOTO( node[0], "Create grucell sp add sigmoid node fail.", final );
+    node[1] = vsi_nn_sp_add_tanh_node(graph, inputs[GRUCELL_ACT_Z_H_I_FC_H], inputs[GRUCELL_ACT_Z_H_H_FC_H],
         dummy_tensor[1], VSI_NN_SP_VR12, "grucell_activation_z_h_1" );
-    CHECK_PTR_FAIL_GOTO( node, "Create grucell sp add sigmoid node fail.", final );
+    CHECK_PTR_FAIL_GOTO( node[1], "Create grucell sp add sigmoid node fail.", final );
 
-    vsi_nn_sp_grucell_activation_z_h_node(graph, inputs[GRUCELL_ACT_Z_H_HSTATE], dummy_tensor[0],
+    node[2] = vsi_nn_sp_grucell_activation_z_h_node(graph, inputs[GRUCELL_ACT_Z_H_HSTATE], dummy_tensor[0],
         dummy_tensor[1], outputs[GRUCELL_ACT_Z_H_OUT_OUTPUT], "grucell_activation_z_h_2");
+    CHECK_PTR_FAIL_GOTO( node[2], "Create grucell sp z h node fail.", final );
 
-    node = vxTensorCopyNode( graph->g, outputs[0]->t, outputs[1]->t);
-    CHECK_PTR_FAIL_GOTO( node, "Create grucell dataconvert node fail.", final );
+    node[3] = vxTensorCopyNode( graph->g, outputs[0]->t, outputs[1]->t);
+    CHECK_PTR_FAIL_GOTO( node[3], "Create grucell dataconvert node fail.", final );
 
 final:
+    vsi_safe_release_node(node[0]);
+    vsi_safe_release_node(node[1]);
+    vsi_safe_release_node(node[2]);
     vsi_safe_release_tensor(dummy_tensor[0]);
     vsi_safe_release_tensor(dummy_tensor[1]);
 
-    return node;
+    return node[3];
 } /* grucell_activation_z_h() */
 
 #undef REGISTER_GRUCELL_ACTIVATION_STREAM_PROCESSOR_KERNEL

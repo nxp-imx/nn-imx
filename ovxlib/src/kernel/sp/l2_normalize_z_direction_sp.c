@@ -585,7 +585,7 @@ vsi_nn_kernel_node_t l2_norm_z_direction
     const vsi_nn_kernel_param_t * params
     )
 {
-    vsi_nn_kernel_node_t node = NULL;
+    vsi_nn_kernel_node_t node[3] = {NULL};
     vsi_nn_tensor_attr_t attr;
     vsi_nn_tensor_t * dummy_tensor[2] = {NULL};
     vsi_nn_tensor_t * output_tensor[1] = {NULL};
@@ -611,19 +611,24 @@ vsi_nn_kernel_node_t l2_norm_z_direction
     output_tensor[0] = vsi_nn_CreateTensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( output_tensor[0], "Create tensor fail.", final );
 
-    node = vsi_nn_sp_l2norm_z_direction_square_node(graph, inputs[0], output_tensor[0], dummy_tensor[0], "l2norm_0");
-    CHECK_PTR_FAIL_GOTO( node, "Create l2norm_z_direction_square fail.", final );
-    node = vsi_nn_sp_l2norm_z_direction_rqsrt_node(graph, dummy_tensor[0], dummy_tensor[1], output_scale, "l2norm_1");
-    CHECK_PTR_FAIL_GOTO( node, "Create l2norm_z_direction_rqsrt fail.", final );
-    node = vsi_nn_sp_l2norm_z_direction_times_node(graph, output_tensor[0], dummy_tensor[1], outputs[0], "l2norm_2");
-    CHECK_PTR_FAIL_GOTO( node, "Create l2norm_z_direction_times fail.", final );
+    node[0] = vsi_nn_sp_l2norm_z_direction_square_node(graph, inputs[0],
+        output_tensor[0], dummy_tensor[0], "l2norm_0");
+    CHECK_PTR_FAIL_GOTO( node[0], "Create l2norm_z_direction_square fail.", final );
+    node[1] = vsi_nn_sp_l2norm_z_direction_rqsrt_node(graph, dummy_tensor[0],
+        dummy_tensor[1], output_scale, "l2norm_1");
+    CHECK_PTR_FAIL_GOTO( node[1], "Create l2norm_z_direction_rqsrt fail.", final );
+    node[2] = vsi_nn_sp_l2norm_z_direction_times_node(graph, output_tensor[0],
+        dummy_tensor[1], outputs[0], "l2norm_2");
+    CHECK_PTR_FAIL_GOTO( node[2], "Create l2norm_z_direction_times fail.", final );
 
 final:
+    vsi_safe_release_node(node[0]);
+    vsi_safe_release_node(node[1]);
     vsi_safe_release_tensor(dummy_tensor[0]);
     vsi_safe_release_tensor(dummy_tensor[1]);
     vsi_safe_release_tensor(output_tensor[0]);
 
-    return node;
+    return node[2];
 } /* softmax_z_direction() */
 
 #endif
