@@ -463,7 +463,7 @@ final:
 
 REGISTER_INSTANCE_NORM_STREAM_PROCESSOR_KERNEL( instance_norm )
 {
-    vsi_nn_kernel_node_t node = NULL;
+    vsi_nn_kernel_node_t node[4] = {NULL};
     vsi_nn_tensor_attr_t attr;
     vsi_nn_tensor_t * reshape_tensors[2] = {NULL};
     vsi_size_t shape[VSI_NN_MAX_DIM_NUM] = { 0 };
@@ -508,19 +508,22 @@ REGISTER_INSTANCE_NORM_STREAM_PROCESSOR_KERNEL( instance_norm )
     reshape_tensors[1] = vsi_nn_reshape_tensor( graph,
                 gamma, shape, 3 );
 
-    node = vsi_nn_sp_moments_sums_node(graph, inputs[0], output_tensor[0], dummy_tensor[0], "instancenorm_0");
-    CHECK_PTR_FAIL_GOTO( node, "Create sp_instance_norm_sums  fail.", final );
-    node = vsi_nn_sp_moments_means_node(graph, dummy_tensor[0],
+    node[0] = vsi_nn_sp_moments_sums_node(graph, inputs[0], output_tensor[0], dummy_tensor[0], "instancenorm_0");
+    CHECK_PTR_FAIL_GOTO( node[0], "Create sp_instance_norm_sums  fail.", final );
+    node[1] = vsi_nn_sp_moments_means_node(graph, dummy_tensor[0],
         dummy_tensor[1], inv_m, eps, "instancenorm_1");
-    CHECK_PTR_FAIL_GOTO( node, "Create sp_instance_norm_means  fail.", final );
-    node = vsi_nn_sp_instance_norm_alpha_beta_node(graph, reshape_tensors[0], reshape_tensors[1],
+    CHECK_PTR_FAIL_GOTO( node[1], "Create sp_instance_norm_means  fail.", final );
+    node[2] = vsi_nn_sp_instance_norm_alpha_beta_node(graph, reshape_tensors[0], reshape_tensors[1],
         dummy_tensor[1], dummy_tensor[2], "instancenorm_2");
-    CHECK_PTR_FAIL_GOTO( node, "Create sp_instance_norm_alpha_beta  fail.", final );
-    node = vsi_nn_sp_instance_norm_node(graph, output_tensor[0], dummy_tensor[2],
+    CHECK_PTR_FAIL_GOTO( node[2], "Create sp_instance_norm_alpha_beta  fail.", final );
+    node[3] = vsi_nn_sp_instance_norm_node(graph, output_tensor[0], dummy_tensor[2],
         outputs[0], "instancenorm_3");
-    CHECK_PTR_FAIL_GOTO( node, "Create sp_instance_norm  fail.", final );
+    CHECK_PTR_FAIL_GOTO( node[3], "Create sp_instance_norm  fail.", final );
 
 final:
+    vsi_safe_release_node(node[0]);
+    vsi_safe_release_node(node[1]);
+    vsi_safe_release_node(node[2]);
     vsi_safe_release_tensor(dummy_tensor[0]);
     vsi_safe_release_tensor(dummy_tensor[1]);
     vsi_safe_release_tensor(dummy_tensor[2]);
@@ -530,7 +533,7 @@ final:
     vsi_safe_release_tensor(reshape_tensors[0]);
     vsi_safe_release_tensor(reshape_tensors[1]);
 
-    return node;
+    return node[3];
 } /* instance_norm() */
 
 #undef REGISTER_INSTANCE_NORM_STREAM_PROCESSOR_KERNEL

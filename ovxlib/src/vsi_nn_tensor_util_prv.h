@@ -35,6 +35,8 @@
 extern "C" {
 #endif
 
+#define vsi_safe_release_node(_n) if(_n){vxReleaseNode( &((vx_node)_n) ); _n = NULL;}
+
 /**
  * Get tensor handle
  *

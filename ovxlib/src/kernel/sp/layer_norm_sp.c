@@ -516,7 +516,7 @@ vsi_nn_kernel_node_t layer_norm_x_direction
     const vsi_nn_kernel_param_t * params
     )
 {
-    vsi_nn_kernel_node_t node = NULL;
+    vsi_nn_kernel_node_t node[4] = {NULL};
     vsi_nn_tensor_attr_t attr;
     vsi_nn_tensor_t * dummy_tensor[3] = {NULL};
     vsi_nn_tensor_t * output_tensor[2] = {NULL};
@@ -556,17 +556,20 @@ vsi_nn_kernel_node_t layer_norm_x_direction
     output_tensor[1] = vsi_nn_CreateTensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( output_tensor[1], "Create tensor fail.", final );
 
-    node = vsi_nn_sp_moments_axis0_node(graph, inputs[0], output_tensor[0], dummy_tensor[0], "layernorm_0");
-    CHECK_PTR_FAIL_GOTO( node, "Create sp_moments_axis0 fail.", final );
-    node = vsi_nn_sp_layer_norm_means_node(graph, dummy_tensor[0], dummy_tensor[1],
+    node[0] = vsi_nn_sp_moments_axis0_node(graph, inputs[0], output_tensor[0], dummy_tensor[0], "layernorm_0");
+    CHECK_PTR_FAIL_GOTO( node[0], "Create sp_moments_axis0 fail.", final );
+    node[1] = vsi_nn_sp_layer_norm_means_node(graph, dummy_tensor[0], dummy_tensor[1],
                                             inv_m, eps, "layernorm_1");
-    CHECK_PTR_FAIL_GOTO( node, "Create sp_moments_norm_means  fail.", final );
-    node = vsi_nn_sp_layer_norm_scale_node(graph, output_tensor[0], gamma,
+    CHECK_PTR_FAIL_GOTO( node[1], "Create sp_moments_norm_means  fail.", final );
+    node[2] = vsi_nn_sp_layer_norm_scale_node(graph, output_tensor[0], gamma,
         dummy_tensor[1], output_tensor[1], "layernorm_2");
-    CHECK_PTR_FAIL_GOTO( node, "Create sp_layer_norm  fail.", final );
-    node = vsi_nn_sp_ln_add_node(graph, output_tensor[1], beta, outputs[0], "layernorm_3");
-    CHECK_PTR_FAIL_GOTO( node, "Create sp_add_norm  fail.", final );
+    CHECK_PTR_FAIL_GOTO( node[2], "Create sp_layer_norm  fail.", final );
+    node[3] = vsi_nn_sp_ln_add_node(graph, output_tensor[1], beta, outputs[0], "layernorm_3");
+    CHECK_PTR_FAIL_GOTO( node[3], "Create sp_add_norm  fail.", final );
 final:
+    vsi_safe_release_node(node[0]);
+    vsi_safe_release_node(node[1]);
+    vsi_safe_release_node(node[2]);
     vsi_safe_release_tensor(dummy_tensor[0]);
     vsi_safe_release_tensor(dummy_tensor[1]);
     vsi_safe_release_tensor(dummy_tensor[2]);
@@ -575,7 +578,7 @@ final:
     vsi_safe_release_tensor(output_tensor[0]);
     vsi_safe_release_tensor(output_tensor[1]);
 
-    return node;
+    return node[3];
 } /* layer_norm_x_direction() */
 
 #define REGISTER_LAYER_NORM_STREAM_PROCESSOR_KERNEL( kernel_name )   \

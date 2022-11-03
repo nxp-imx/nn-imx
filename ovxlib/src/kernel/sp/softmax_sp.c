@@ -538,7 +538,7 @@ vsi_nn_kernel_node_t softmax_x_direction
     const vsi_nn_kernel_param_t * params
     )
 {
-    vsi_nn_kernel_node_t node = NULL;
+    vsi_nn_kernel_node_t node[5] = {NULL};
     vsi_nn_tensor_attr_t attr;
     vsi_nn_tensor_t * dummy_tensor[4] = {NULL};
     vsi_nn_tensor_t * output_tensor[2] = {NULL};
@@ -571,20 +571,24 @@ vsi_nn_kernel_node_t softmax_x_direction
     output_tensor[1] = vsi_nn_CreateTensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( output_tensor[1], "Create tensor fail.", final );
 
-    node = vsi_nn_sp_softmax_max_node(graph, inputs[0], output_tensor[0], dummy_tensor[0], "softmax_0");
-    CHECK_PTR_FAIL_GOTO( node, "Create sp softmax node fail.", final );
-    node = vsi_nn_sp_softmax_move_node(graph, dummy_tensor[0], dummy_tensor[1], "softmax_1");
-    CHECK_PTR_FAIL_GOTO( node, "Create sp softmax node fail.", final );
+    node[0] = vsi_nn_sp_softmax_max_node(graph, inputs[0], output_tensor[0], dummy_tensor[0], "softmax_0");
+    CHECK_PTR_FAIL_GOTO( node[0], "Create sp softmax node fail.", final );
+    node[1] = vsi_nn_sp_softmax_move_node(graph, dummy_tensor[0], dummy_tensor[1], "softmax_1");
+    CHECK_PTR_FAIL_GOTO( node[1], "Create sp softmax node fail.", final );
 
-    node = vsi_nn_sp_softmax_exp_node(graph, output_tensor[0], dummy_tensor[1],
+    node[2] = vsi_nn_sp_softmax_exp_node(graph, output_tensor[0], dummy_tensor[1],
                         output_tensor[1], dummy_tensor[2], beta, "softmax_2");
-    CHECK_PTR_FAIL_GOTO( node, "Create sp softmax node fail.", final );
-    node = vsi_nn_sp_softmax_rcp_node(graph, dummy_tensor[2], dummy_tensor[3], output_scale, "softmax_3");
-    CHECK_PTR_FAIL_GOTO( node, "Create sp_softmax_rcp fail.", final );
-    node = vsi_nn_sp_softmax_times_node(graph, output_tensor[1], dummy_tensor[3], outputs[0], "softmax_4");
-    CHECK_PTR_FAIL_GOTO( node, "Create softmax_times fail.", final );
+    CHECK_PTR_FAIL_GOTO( node[2], "Create sp softmax node fail.", final );
+    node[3] = vsi_nn_sp_softmax_rcp_node(graph, dummy_tensor[2], dummy_tensor[3], output_scale, "softmax_3");
+    CHECK_PTR_FAIL_GOTO( node[3], "Create sp_softmax_rcp fail.", final );
+    node[4] = vsi_nn_sp_softmax_times_node(graph, output_tensor[1], dummy_tensor[3], outputs[0], "softmax_4");
+    CHECK_PTR_FAIL_GOTO( node[4], "Create softmax_times fail.", final );
 
 final:
+    vsi_safe_release_node(node[0]);
+    vsi_safe_release_node(node[1]);
+    vsi_safe_release_node(node[2]);
+    vsi_safe_release_node(node[3]);
     vsi_safe_release_tensor(dummy_tensor[0]);
     vsi_safe_release_tensor(dummy_tensor[1]);
     vsi_safe_release_tensor(dummy_tensor[2]);
@@ -592,7 +596,7 @@ final:
     vsi_safe_release_tensor(output_tensor[0]);
     vsi_safe_release_tensor(output_tensor[1]);
 
-    return node;
+    return node[4];
 } /* softmax_x_direction() */
 
 vsi_nn_kernel_node_t softmax_y_direction
@@ -603,7 +607,7 @@ vsi_nn_kernel_node_t softmax_y_direction
     const vsi_nn_kernel_param_t * params
     )
 {
-    vsi_nn_kernel_node_t node = NULL;
+    vsi_nn_kernel_node_t node[3] = {NULL};
     vsi_nn_tensor_attr_t attr;
     vsi_size_t shape[VSI_NN_MAX_DIM_NUM] = { 0 };
     vsi_nn_tensor_t * trans_tensor[2] = {NULL};
@@ -627,7 +631,7 @@ vsi_nn_kernel_node_t softmax_y_direction
     attr.vtl = TRUE;
     trans_tensor[1] = vsi_nn_CreateTensor( graph, &attr );
 
-    node = vxTensorPermuteNode
+    node[0] = vxTensorPermuteNode
         (
         graph->g,
         inputs[0]->t,
@@ -635,11 +639,12 @@ vsi_nn_kernel_node_t softmax_y_direction
         perm[0],
         inputs[0]->attr.dim_num
         );
-    CHECK_PTR_FAIL_GOTO( node, "Create vxTensorPermuteNode fail.", final );
+    CHECK_PTR_FAIL_GOTO( node[0], "Create vxTensorPermuteNode fail.", final );
 
-    softmax_x_direction(graph, trans_tensor, &trans_tensor[1], params);
+    node[1] = softmax_x_direction(graph, trans_tensor, &trans_tensor[1], params);
+    CHECK_PTR_FAIL_GOTO( node[1], "Create softmax_x_direction fail.", final );
 
-    node = vxTensorPermuteNode
+    node[2] = vxTensorPermuteNode
         (
         graph->g,
         trans_tensor[1]->t,
@@ -647,13 +652,15 @@ vsi_nn_kernel_node_t softmax_y_direction
         perm[1],
         outputs[0]->attr.dim_num
         );
-    CHECK_PTR_FAIL_GOTO( node, "Create vxTensorPermuteNode fail.", final );
+    CHECK_PTR_FAIL_GOTO( node[2], "Create vxTensorPermuteNode fail.", final );
 
 final:
+    vsi_safe_release_node(node[0]);
+    vsi_safe_release_node(node[1]);
     vsi_safe_release_tensor(trans_tensor[0]);
     vsi_safe_release_tensor(trans_tensor[1]);
 
-    return node;
+    return node[2];
 } /* softmax_y_direction() */
 
 vsi_nn_kernel_node_t softmax_z_direction

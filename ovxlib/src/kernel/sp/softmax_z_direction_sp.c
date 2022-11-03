@@ -904,7 +904,7 @@ vsi_nn_kernel_node_t softmax_z_direction
     const vsi_nn_kernel_param_t * params
     )
 {
-    vsi_nn_kernel_node_t node = NULL;
+    vsi_nn_kernel_node_t node[4] = {NULL};
     vsi_nn_tensor_attr_t attr;
     vsi_nn_tensor_t * dummy_tensor[3] = {NULL};
     vsi_nn_tensor_t * output_tensor[2] = {NULL};
@@ -935,24 +935,28 @@ vsi_nn_kernel_node_t softmax_z_direction
     output_tensor[1] = vsi_nn_CreateTensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( output_tensor[1], "Create tensor fail.", final );
 
-    node = vsi_nn_sp_max_axis2_node(graph, inputs[0], output_tensor[0], dummy_tensor[0], "softmax_0");
-    CHECK_PTR_FAIL_GOTO( node, "Create sp_max_axis2 fail.", final );
-    node = vsi_nn_sp_softmax_z_direction_exp_node(graph, output_tensor[0], dummy_tensor[0],
+    node[0] = vsi_nn_sp_max_axis2_node(graph, inputs[0], output_tensor[0], dummy_tensor[0], "softmax_0");
+    CHECK_PTR_FAIL_GOTO( node[0], "Create sp_max_axis2 fail.", final );
+    node[1] = vsi_nn_sp_softmax_z_direction_exp_node(graph, output_tensor[0], dummy_tensor[0],
         output_tensor[1], dummy_tensor[1], beta, "softmax_1");
     CHECK_PTR_FAIL_GOTO( node, "Create exp_y_direction fail.", final );
-    node = vsi_nn_sp_rcp_node(graph, dummy_tensor[1], dummy_tensor[2], output_scale, "softmax_2");
-    CHECK_PTR_FAIL_GOTO( node, "Create sp_rcp fail.", final );
-    node = vsi_nn_sp_softmax_z_direction_times_node(graph, output_tensor[1], dummy_tensor[2], outputs[0], "softmax_3");
-    CHECK_PTR_FAIL_GOTO( node, "Create softmax_times fail.", final );
+    node[2] = vsi_nn_sp_rcp_node(graph, dummy_tensor[1], dummy_tensor[2], output_scale, "softmax_2");
+    CHECK_PTR_FAIL_GOTO( node[2], "Create sp_rcp fail.", final );
+    node[3] = vsi_nn_sp_softmax_z_direction_times_node(graph, output_tensor[1],
+        dummy_tensor[2], outputs[0], "softmax_3");
+    CHECK_PTR_FAIL_GOTO( node[3], "Create softmax_times fail.", final );
 
 final:
+    vsi_safe_release_node(node[0]);
+    vsi_safe_release_node(node[1]);
+    vsi_safe_release_node(node[2]);
     vsi_safe_release_tensor(dummy_tensor[0]);
     vsi_safe_release_tensor(dummy_tensor[1]);
     vsi_safe_release_tensor(dummy_tensor[2]);
     vsi_safe_release_tensor(output_tensor[0]);
     vsi_safe_release_tensor(output_tensor[1]);
 
-    return node;
+    return node[3];
 } /* softmax_z_direction() */
 
 #endif
