@@ -23,8 +23,8 @@ inline float roi_align_1x1
             int2 xy_low  = convert_int2(pos);
             int2 xy_high = xy_low + 1;
 
-            if (xy_low.x > max_spatial_dims.x || max_spatial_dims.x < -1 ||
-                xy_low.y > max_spatial_dims.y || max_spatial_dims.y < -1 )
+            if (pos.x > max_spatial_dims.x || pos.x < -1 ||
+                pos.y > max_spatial_dims.y || pos.y < -1 )
             {
                 continue;
             }
@@ -168,41 +168,41 @@ inline float roi_align_1x1_U8toF32
         {
             float2 ixy = (float2)(ix + 0.5f, iy + 0.5f);
             float2 pos = region_start + ixy * bin_size * rcp_of_grid_size;
-    
+
             int2 xy_low  = convert_int2(pos);
             int2 xy_high = xy_low + 1;
-    
+
             float2 lxy = pos - floor(pos);
             float2 zero = 0;
-    
-            if (xy_low.x > max_spatial_dims.x || max_spatial_dims.x < -1 ||
-                xy_low.y > max_spatial_dims.y || max_spatial_dims.y < -1 )
+
+            if (pos.x > max_spatial_dims.x || pos.x < -1 ||
+                pos.y > max_spatial_dims.y || pos.y < -1 )
             {
                 continue;
             }
-    
+
             lxy = xy_low >= max_spatial_dims.zw ? 0.0 : lxy;
-    
+
             float hy = 1.0f - lxy.y;
             float hx = 1.0f - lxy.x;
-    
+
             float w1 = hy * hx;
             float w2 = lxy.x - lxy.x * lxy.y;
             float w3 = lxy.y - lxy.x * lxy.y;
             float w4 = lxy.y * lxy.x;
-    
+
             uint4 data;
             data.x = read_imageui(input, (int4)(xy_low.x, xy_low.y, pz, 0)).x;
             data.y = read_imageui(input, (int4)(xy_high.x, xy_low.y, pz, 0)).x;
             data.z = read_imageui(input, (int4)(xy_low.x, xy_high.y, pz, 0)).x;
             data.w = read_imageui(input, (int4)(xy_high.x, xy_high.y, pz, 0)).x;
-    
+
             float4 value = convert_float4(data) * input_scale + input_tail;
-    
+
             sum = sum + w1 * value.x + w2 * value.y + w3 * value.z + w4 * value.w;
         }
     }
-    
+
     return (float)(sum * rcp_of_grid_size.x * rcp_of_grid_size.y);
 
 }
@@ -283,7 +283,7 @@ __kernel void roi_align_U8_U16toU8
 
         Tensor out_t =  create_tensor_from_image2d_array(output, 1);
         uchar *output_ptr = (uchar *)get_tensor_ptr_from_coord(out_t, (int4)(px, py, kz1, 0));
-        
+
         output_ptr[0] = dst;
     }
 }

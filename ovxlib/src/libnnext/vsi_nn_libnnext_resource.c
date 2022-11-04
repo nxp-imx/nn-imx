@@ -59191,8 +59191,8 @@ inline float roi_align_1x1\n\
             int2 xy_low  = convert_int2(pos);\n\
             int2 xy_high = xy_low + 1;\n\
 \n\
-            if (xy_low.x > max_spatial_dims.x || max_spatial_dims.x < -1 ||\n\
-                xy_low.y > max_spatial_dims.y || max_spatial_dims.y < -1 )\n\
+            if (pos.x > max_spatial_dims.x || pos.x < -1 ||\n\
+                pos.y > max_spatial_dims.y || pos.y < -1 )\n\
             {\n\
                 continue;\n\
             }\n\
@@ -59336,41 +59336,41 @@ inline float roi_align_1x1_U8toF32\n\
         {\n\
             float2 ixy = (float2)(ix + 0.5f, iy + 0.5f);\n\
             float2 pos = region_start + ixy * bin_size * rcp_of_grid_size;\n\
-    \n\
+\n\
             int2 xy_low  = convert_int2(pos);\n\
             int2 xy_high = xy_low + 1;\n\
-    \n\
+\n\
             float2 lxy = pos - floor(pos);\n\
             float2 zero = 0;\n\
-    \n\
-            if (xy_low.x > max_spatial_dims.x || max_spatial_dims.x < -1 ||\n\
-                xy_low.y > max_spatial_dims.y || max_spatial_dims.y < -1 )\n\
+\n\
+            if (pos.x > max_spatial_dims.x || pos.x < -1 ||\n\
+                pos.y > max_spatial_dims.y || pos.y < -1 )\n\
             {\n\
                 continue;\n\
             }\n\
-    \n\
+\n\
             lxy = xy_low >= max_spatial_dims.zw ? 0.0 : lxy;\n\
-    \n\
+\n\
             float hy = 1.0f - lxy.y;\n\
             float hx = 1.0f - lxy.x;\n\
-    \n\
+\n\
             float w1 = hy * hx;\n\
             float w2 = lxy.x - lxy.x * lxy.y;\n\
             float w3 = lxy.y - lxy.x * lxy.y;\n\
             float w4 = lxy.y * lxy.x;\n\
-    \n\
+\n\
             uint4 data;\n\
             data.x = read_imageui(input, (int4)(xy_low.x, xy_low.y, pz, 0)).x;\n\
             data.y = read_imageui(input, (int4)(xy_high.x, xy_low.y, pz, 0)).x;\n\
             data.z = read_imageui(input, (int4)(xy_low.x, xy_high.y, pz, 0)).x;\n\
             data.w = read_imageui(input, (int4)(xy_high.x, xy_high.y, pz, 0)).x;\n\
-    \n\
+\n\
             float4 value = convert_float4(data) * input_scale + input_tail;\n\
-    \n\
+\n\
             sum = sum + w1 * value.x + w2 * value.y + w3 * value.z + w4 * value.w;\n\
         }\n\
     }\n\
-    \n\
+\n\
     return (float)(sum * rcp_of_grid_size.x * rcp_of_grid_size.y);\n\
 \n\
 }\n\
@@ -59451,7 +59451,7 @@ __kernel void roi_align_U8_U16toU8\n\
 \n\
         Tensor out_t =  create_tensor_from_image2d_array(output, 1);\n\
         uchar *output_ptr = (uchar *)get_tensor_ptr_from_coord(out_t, (int4)(px, py, kz1, 0));\n\
-        \n\
+\n\
         output_ptr[0] = dst;\n\
     }\n\
 }"; /* end of roi_align_cl*/
