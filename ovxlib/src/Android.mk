@@ -43,7 +43,6 @@ LOCAL_SRC_FILES +=      \
              utils/vsi_nn_dtype_util.c   \
              utils/vsi_nn_shape_util.c   \
              utils/vsi_nn_limits.c   \
-             utils/vsi_nn_vdata.c   \
              utils/vsi_nn_tensor_op.c   \
              utils/vsi_nn_util.c \
              utils/vsi_nn_dlfcn.c \
@@ -54,10 +53,6 @@ LOCAL_SRC_FILES +=      \
              quantization/vsi_nn_dynamic_fixed_point.c   \
              quantization/vsi_nn_asymmetric_affine.c   \
              quantization/vsi_nn_perchannel_symmetric_affine.c   \
-
-
-LOCAL_SRC_FILES +=      \
-             pycc/vsi_pycc_interface.c
 
 
 LOCAL_SRC_FILES +=      \
@@ -126,7 +121,8 @@ LOCAL_C_INCLUDES += \
     $(LOCAL_PATH)/../include/infernce \
     $(LOCAL_PATH)/../include/client \
     $(LOCAL_PATH)/../include/cpu_backend \
-    $(LOCAL_PATH)/../include/libnnext
+    $(LOCAL_PATH)/../include/libnnext \
+    $(LOCAL_PATH)/../src
 
 LOCAL_CFLAGS :=  \
     -DLINUX \
