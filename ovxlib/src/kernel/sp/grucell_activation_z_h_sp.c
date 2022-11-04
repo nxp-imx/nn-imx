@@ -89,11 +89,11 @@ vsi_nn_kernel_node_t vsi_nn_sp_grucell_activation_z_h_node
     memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
     vsi_nn_init_spinst_attr(&attr);
 
-    /* loop inst0: r1 = in * r3 || r2 = r1 - v12 || r5 = v12 */
+    /* loop inst0: r1 = in * r3 | r2 = r1 - v12 | r5 = v12 */
     status  = vsi_nn_sp_mul(&sp_insts_param[0], VSI_NN_SP_SRIN, VSI_NN_SP_SR3, VSI_NN_SP_SR1);
     status |= vsi_nn_sp_sub(&sp_insts_param[0], VSI_NN_SP_SR1, VSI_NN_SP_VR12, VSI_NN_SP_SR2);
     status |= vsi_nn_sp_move(&sp_insts_param[0], VSI_NN_SP_VR12, VSI_NN_SP_SR5);
-    /* loop inst1: r6 = v11 * r2 || r7 = r6 + r8 || r8 = r5 */
+    /* loop inst1: r6 = v11 * r2 | r7 = r6 + r8 | r8 = r5 */
     status |= vsi_nn_sp_mul(&sp_insts_param[1], VSI_NN_SP_VR11, VSI_NN_SP_SR2, VSI_NN_SP_SR6);
     status |= vsi_nn_sp_add(&sp_insts_param[1], VSI_NN_SP_SR6, VSI_NN_SP_SR8, VSI_NN_SP_SR7);
     status |= vsi_nn_sp_move(&sp_insts_param[1], VSI_NN_SP_SR5, VSI_NN_SP_SR8);

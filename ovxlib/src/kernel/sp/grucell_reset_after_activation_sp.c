@@ -67,16 +67,16 @@ vsi_nn_kernel_node_t vsi_nn_sp_r_times_h1_plus_h0_act_node
     memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
     vsi_nn_init_spinst_attr(&attr);
 
-    /* loop inst0: r2 = in * r3 || r5 = r2 + r4 || r10 = r9 */
+    /* loop inst0: r2 = in * r3 | r5 = r2 + r4 | r10 = r9 */
     status  = vsi_nn_sp_mul(&sp_insts_param[0], VSI_NN_SP_SRIN, VSI_NN_SP_SR3, VSI_NN_SP_SR2);
     status |= vsi_nn_sp_add(&sp_insts_param[0], VSI_NN_SP_SR2, VSI_NN_SP_SR4, VSI_NN_SP_SR5);
     status |= vsi_nn_sp_move(&sp_insts_param[0], VSI_NN_SP_SR9, VSI_NN_SP_SR10);
     /* loop inst1: r4 = in * v11 */
     status |= vsi_nn_sp_mul(&sp_insts_param[1], VSI_NN_SP_SRIN, VSI_NN_SP_VR11, VSI_NN_SP_SR4);
-    /* loop inst2: r6 = pwlMul() || r7 = pwlAdd() || r8 = in*/
+    /* loop inst2: r6 = pwlMul() | r7 = pwlAdd() | r8 = in*/
     status |= vsi_nn_sp_mul(&sp_insts_param[2], VSI_NN_SP_PWLMUL, VSI_NN_SP_PWLMUL, VSI_NN_SP_SR6);
     status |= vsi_nn_sp_sub(&sp_insts_param[2], VSI_NN_SP_PWLADD, VSI_NN_SP_PWLADD, VSI_NN_SP_SR7);
-    /* loop inst3: r1 = pwl_tanh(r5) || r8 = r6 * r7 || v12 = r8 + r10 || r9 = r1*/
+    /* loop inst3: r1 = pwl_tanh(r5) | r8 = r6 * r7 | v12 = r8 + r10 | r9 = r1*/
     status |= vsi_nn_sp_pwl_tanh(&sp_insts_param[3], VSI_NN_SP_SR5, VSI_NN_SP_SR1);
     status |= vsi_nn_sp_mul(&sp_insts_param[3], VSI_NN_SP_SR6, VSI_NN_SP_SR7, VSI_NN_SP_SR8);
     status |= vsi_nn_sp_add(&sp_insts_param[3], VSI_NN_SP_SR8, VSI_NN_SP_SR10, VSI_NN_SP_VR12);
