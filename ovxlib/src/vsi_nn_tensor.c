@@ -550,6 +550,18 @@ static vsi_bool _init_tensor
     {
         tensor->t = vxCreateVirtualTensor2( graph->g,
             &params, sizeof( vx_tensor_create_params_t ) );
+
+        if ((!vsi_nn_IsGraphFastMode(graph))
+            && (tensor->t != NULL)
+            && (params.data_format == VX_TYPE_FLOAT32))
+        {
+
+            vx_enum precision = VX_TENSOR_PRECISION_HIGH;
+            vxSetTensorAttribute(tensor->t,
+                                      VX_TENSOR_PRECISION,
+                                      &precision,
+                                      sizeof(vx_enum));
+        }
     }
     if ( NULL == tensor->t )
     {
