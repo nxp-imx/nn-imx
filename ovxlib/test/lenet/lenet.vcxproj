@@ -261,7 +261,7 @@ $(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(VIVANTE_SDK_DIR)\lib;$(VIVANTE_SDK_DIR)\bin;$(SolutionDir)$(Configuration);</AdditionalLibraryDirectories>
-      <AdditionalDependencies>%(AdditionalDependencies)libCLC.lib;libOpenCL.lib;libVSC.lib;libOpenVX.lib;libopenvxu.lib;libovxlib.lib;jpeg.lib;</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)libCLC.lib;libVSC.lib;libOpenVX.lib;libopenvxu.lib;libovxlib.lib;jpeg.lib;</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -275,7 +275,7 @@ $(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(VIVANTE_SDK_DIR)\lib;$(VIVANTE_SDK_DIR)\bin;$(SolutionDir)$(Configuration);</AdditionalLibraryDirectories>
-      <AdditionalDependencies>%(AdditionalDependencies)libCLC.lib;libOpenCL.lib;libVSC.lib;libOpenVX.lib;libopenvxu.lib;libovxlib.lib;jpeg.lib;</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)libCLC.lib;libVSC.lib;libOpenVX.lib;libopenvxu.lib;libovxlib.lib;jpeg.lib;</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_dynamic|Win32'">
@@ -289,7 +289,7 @@ $(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(VIVANTE_SDK_DIR)\lib;$(VIVANTE_SDK_DIR)\bin;$(SolutionDir)$(Configuration);</AdditionalLibraryDirectories>
-      <AdditionalDependencies>%(AdditionalDependencies)libCLC.lib;libOpenCL.lib;libVSC.lib;libOpenVX.lib;libopenvxu.lib;libovxlib.lib;jpeg.lib;</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)libCLC.lib;libVSC.lib;libOpenVX.lib;libopenvxu.lib;libovxlib.lib;jpeg.lib;</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_dynamic|x64'">
@@ -303,7 +303,7 @@ $(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(VIVANTE_SDK_DIR)\lib;$(VIVANTE_SDK_DIR)\bin;$(SolutionDir)$(Configuration);</AdditionalLibraryDirectories>
-      <AdditionalDependencies>%(AdditionalDependencies)libCLC.lib;libOpenCL.lib;libVSC.lib;libOpenVX.lib;libopenvxu.lib;libovxlib.lib;jpeg.lib;</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)libCLC.lib;libVSC.lib;libOpenVX.lib;libopenvxu.lib;libovxlib.lib;jpeg.lib;</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Jenkins-Debug|Win32'">
@@ -317,7 +317,7 @@ $(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)$(Configuration);$(VIV_SDK_PATH)\lib\win32;</AdditionalLibraryDirectories>
-      <AdditionalDependencies>%(AdditionalDependencies)libCLC.lib;libOpenCL.lib;libVSC.lib;libOpenVX.lib;libopenvxu.lib;libovxlib.lib;jpeg.lib;</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)libCLC.lib;libVSC.lib;libOpenVX.lib;libopenvxu.lib;libovxlib.lib;jpeg.lib;</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Jenkins-Debug|x64'">
@@ -331,7 +331,7 @@ $(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)$(Configuration);$(VIV_SDK_PATH)\lib\win32;</AdditionalLibraryDirectories>
-      <AdditionalDependencies>%(AdditionalDependencies)libCLC.lib;libOpenCL.lib;libVSC.lib;libOpenVX.lib;libopenvxu.lib;libovxlib.lib;jpeg.lib;</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)libCLC.lib;libVSC.lib;libOpenVX.lib;libopenvxu.lib;libovxlib.lib;jpeg.lib;</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Jenkins-Debug-NNApi0.4|Win32'">
@@ -345,7 +345,7 @@ $(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)$(Configuration);$(VIV_SDK_PATH)\lib\win32;</AdditionalLibraryDirectories>
-      <AdditionalDependencies>%(AdditionalDependencies)libCLC.lib;libOpenCL.lib;libVSC.lib;libOpenVX.lib;libopenvxu.lib;libovxlib.lib;jpeg.lib;</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)libCLC.lib;libVSC.lib;libOpenVX.lib;libopenvxu.lib;libovxlib.lib;jpeg.lib;</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Jenkins-Debug-NNApi0.4|x64'">
@@ -359,7 +359,7 @@ $(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)$(Configuration);$(VIV_SDK_PATH)\lib\win32;</AdditionalLibraryDirectories>
-      <AdditionalDependencies>%(AdditionalDependencies)libCLC.lib;libOpenCL.lib;libVSC.lib;libOpenVX.lib;libopenvxu.lib;libovxlib.lib;jpeg.lib;</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)libCLC.lib;libVSC.lib;libOpenVX.lib;libopenvxu.lib;libovxlib.lib;jpeg.lib;</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -374,7 +374,7 @@ $(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(VIV_SDK_PATH)\lib\win32;$(SolutionDir)$(Configuration)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>%(AdditionalDependencies)libCLC.lib;libOpenCL.lib;libVSC.lib;libOpenVX.lib;libopenvxu.lib;libovxlib.lib;jpeg.lib;</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)libCLC.lib;libVSC.lib;libOpenVX.lib;libopenvxu.lib;libovxlib.lib;jpeg.lib;</AdditionalDependencies>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
@@ -391,7 +391,7 @@ $(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(VIV_SDK_PATH)\lib\win32;$(SolutionDir)$(Configuration)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>%(AdditionalDependencies)libCLC.lib;libOpenCL.lib;libVSC.lib;libOpenVX.lib;libopenvxu.lib;libovxlib.lib;jpeg.lib;</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)libCLC.lib;libVSC.lib;libOpenVX.lib;libopenvxu.lib;libovxlib.lib;jpeg.lib;</AdditionalDependencies>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
