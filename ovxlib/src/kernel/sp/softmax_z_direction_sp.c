@@ -196,6 +196,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_max_axis2_node
         vsi_nn_tensor_t             * input,
         vsi_nn_tensor_t             * output0,
         vsi_nn_tensor_t             * output1,
+        float                         beta,
         char                        * kernel_name
     )
 {
@@ -217,7 +218,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_max_axis2_node
     int32_t max_vector_depth = graph->ctx->config.sp_vector_depth;
     uint32_t f32_min = 0xff800000;
     float flt_min = *(float*)&f32_min;
-    float input_scale = vsi_nn_get_tensor_scale(input);
+    float input_scale = vsi_nn_get_tensor_scale(input) * beta;
     float clamp_min = 0;
     float clamp_max = 0;
 
@@ -474,7 +475,6 @@ vsi_nn_kernel_node_t vsi_nn_sp_softmax_z_direction_exp_node
         vsi_nn_tensor_t             * input1,
         vsi_nn_tensor_t             * output0,
         vsi_nn_tensor_t             * output1,
-        float                         beta,
         char                        * kernel_name
     )
 {
@@ -564,7 +564,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_softmax_z_direction_exp_node
     vx_lut_params.out_lut = vxCreateLUT( graph->ctx->c, VX_TYPE_FLOAT32, VSI_NN_SP_LUT_MAX_SIZE);
 
     sp_lut_params.act_type = VSI_NN_SP_ACT_LINEAR_EXP;
-    sp_lut_params.params[0] = beta;
+    sp_lut_params.params[0] = 1;
     sp_lut_params.params[1] = 0;
     vsi_nn_sp_lut(vx_lut_params.in_lut, vx_lut_params.out_lut, &sp_lut_params);
 
@@ -935,10 +935,10 @@ vsi_nn_kernel_node_t softmax_z_direction
     output_tensor[1] = vsi_nn_CreateTensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( output_tensor[1], "Create tensor fail.", final );
 
-    node[0] = vsi_nn_sp_max_axis2_node(graph, inputs[0], output_tensor[0], dummy_tensor[0], "softmax_0");
+    node[0] = vsi_nn_sp_max_axis2_node(graph, inputs[0], output_tensor[0], dummy_tensor[0], beta, "softmax_0");
     CHECK_PTR_FAIL_GOTO( node[0], "Create sp_max_axis2 fail.", final );
     node[1] = vsi_nn_sp_softmax_z_direction_exp_node(graph, output_tensor[0], dummy_tensor[0],
-        output_tensor[1], dummy_tensor[1], beta, "softmax_1");
+        output_tensor[1], dummy_tensor[1], "softmax_1");
     CHECK_PTR_FAIL_GOTO( node, "Create exp_y_direction fail.", final );
     node[2] = vsi_nn_sp_rcp_node(graph, dummy_tensor[1], dummy_tensor[2], output_scale, "softmax_2");
     CHECK_PTR_FAIL_GOTO( node[2], "Create sp_rcp fail.", final );

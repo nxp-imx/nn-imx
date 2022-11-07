@@ -66,7 +66,7 @@ static vsi_ssize_t _expand_offset
             }
             else
             {
-                offset += (vsi_ssize_t)strides[i] * 2 * ( index % out_shape[i] );
+                offset += (vsi_ssize_t)shape[i - 1] * ( index % out_shape[i] );
             }
         }
         else if ( shape[i] == out_shape[i] )
