@@ -516,6 +516,7 @@
     <ClInclude Include="include\ops\vsi_nn_op_addn.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_argmax.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_argmin.h"/>
+    <ClInclude Include="include\ops\vsi_nn_op_avg_pool3d.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_axis_aligned_bbox_transform.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_batch2space.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_batch_norm.h"/>
@@ -679,7 +680,6 @@
     <ClInclude Include="include\ops\vsi_nn_op_swish.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_tanh.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_tensor_add_mean_stddev_norm.h"/>
-    <ClInclude Include="include\ops\vsi_nn_op_avg_pool3d.h" />
     <ClInclude Include="include\ops\vsi_nn_op_tensorstackconcat.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_tile.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_topk.h"/>
@@ -1559,6 +1559,9 @@
     <ClCompile Include="src\kernel\sp\minimum_sp.c">
       <ObjectFileName>$(IntDir)\src\kernel\sp\</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="src\kernel\sp\reduce_max_sp.c">
+      <ObjectFileName>$(IntDir)\src\kernel\sp\</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="src\kernel\sp\reduce_mean_sp.c">
       <ObjectFileName>$(IntDir)\src\kernel\sp\</ObjectFileName>
     </ClCompile>
@@ -1662,6 +1665,9 @@
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_argmaxmin.c">
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_avg_pool3d.c">
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_axis_aligned_bbox_transform.c">
@@ -2181,9 +2187,6 @@
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_upsamplescale.c">
-      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="src\ops\vsi_nn_op_avg_pool3d.c" >
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_variable.c">

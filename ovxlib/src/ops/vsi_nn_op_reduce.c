@@ -33,7 +33,6 @@
 #include "utils/vsi_nn_util.h"
 #include "vsi_nn_prv.h"
 #include "vsi_nn_log.h"
-#include "libnnext/vsi_nn_vxkernel.h"
 #include "vsi_nn_internal_node.h"
 #include "utils/vsi_nn_dtype_util.h"
 #include "kernel/vsi_nn_kernel_gpu_shape_optimize.h"
@@ -170,7 +169,7 @@ static vsi_bool _check_is_sp_supported_type
     vsi_bool ret = FALSE;
 
     if ( !self->graph->ctx->config.support_stream_processor ||
-         (type != VSI_NN_REDUCE_SUM && type != VSI_NN_REDUCE_MEAN) )
+         (type != VSI_NN_REDUCE_SUM && type != VSI_NN_REDUCE_MEAN && type != VSI_NN_REDUCE_MAX) )
     {
         return FALSE;
     }
@@ -774,12 +773,24 @@ static vsi_bool op_set_reduce_axis(
         }
         *out_rank_x = inputs[0]->attr.dim_num;
     }
-    else
+    else if (!self->graph->ctx->config.support_stream_processor ||
+             resolved_dim_count > 2)
     {
         optimzation_input_size(
             inputs[0]->attr.size, inputs[0]->attr.dim_num,
             out_shape_x, out_rank_x, (vsi_size_t*)resolved_dim, resolved_dim_count,
             (vsi_size_t*)resolved_dim2,  &resolved_dim_count2 );
+    }
+    else
+    {
+        resolved_dim2[0] = resolved_dim[0];
+        resolved_dim2[1] = resolved_dim[1];
+        resolved_dim_count2 = resolved_dim_count;
+        for (i = 0; i < inputs[0]->attr.dim_num; i++)
+        {
+            out_shape_x[i] = (int32_t)(inputs[0]->attr.size[i]);
+        }
+        *out_rank_x = inputs[0]->attr.dim_num;
     }
 
     for (i = 0; i < (uint32_t)resolved_dim_count2; i++)
@@ -853,6 +864,7 @@ static vsi_bool op_set_sp_reduce_internal
     new_output = vsi_nn_reshape_tensor(self->graph, outputs[0], shapes, outputs[0]->attr.dim_num);
 
     tmp_inode = vsi_nn_internal_new_node(self, VSI_NN_OP_REDUCE_MEAN_INTERNAL, 0, 0 );
+
     new_axis = (int32_t *)vsi_nn_internal_new_node_param(tmp_inode,
         axes_num * sizeof(int32_t));
     for (i = 0; i < axes_num; i++)
@@ -863,13 +875,15 @@ static vsi_bool op_set_sp_reduce_internal
     tmp_inode->outputs[0] = new_output;
     tmp_inode->node->nn_param.reduce_mean_internal.axis = new_axis;
     tmp_inode->node->nn_param.reduce_mean_internal.axis_num = axes_num;
+    tmp_inode->node->nn_param.reduce_mean_internal.type = type_name;
     if (type_name == VSI_NN_REDUCE_SUM)
     {
         tmp_inode->node->nn_param.reduce_mean_internal.scale = 1.0f;
     }
     else
     {
-        tmp_inode->node->nn_param.reduce_mean_internal.scale = 1.0f / (float)reduce_size;
+        tmp_inode->node->nn_param.reduce_mean_internal.scale =
+            1.0f / (float)reduce_size;
     }
     vsi_nn_internal_setup_node(self, tmp_inode);
 
