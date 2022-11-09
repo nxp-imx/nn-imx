@@ -159,9 +159,6 @@
     <ClInclude Include="include\libnnext\vsi_nn_libnnext_resource.h">
       <Filter>Header Files\libnnext</Filter>
     </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_avg_pool3d.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
     <ClInclude Include="include\libnnext\vsi_nn_vxkernel.h">
       <Filter>Header Files\libnnext</Filter>
     </ClInclude>
@@ -181,6 +178,9 @@
       <Filter>Header Files\ops</Filter>
     </ClInclude>
     <ClInclude Include="include\ops\vsi_nn_op_argmin.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_avg_pool3d.h">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
     <ClInclude Include="include\ops\vsi_nn_op_axis_aligned_bbox_transform.h">
@@ -1115,10 +1115,10 @@
     <ClCompile Include="src\kernel\cpu\argmin_cpu.c">
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
-    <ClCompile Include="src\kernel\cpu\axis_aligned_bbox_transform_cpu.c">
+    <ClCompile Include="src\kernel\cpu\avg_pool3d_cpu.c">
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
-    <ClCompile Include="src\kernel\cpu\avg_pool3d_cpu.c">
+    <ClCompile Include="src\kernel\cpu\axis_aligned_bbox_transform_cpu.c">
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\batchnorm_single_cpu.c">
@@ -1667,6 +1667,9 @@
     <ClCompile Include="src\kernel\sp\minimum_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
+    <ClCompile Include="src\kernel\sp\reduce_max_sp.c">
+      <Filter>Source Files\kernel\sp</Filter>
+    </ClCompile>
     <ClCompile Include="src\kernel\sp\reduce_mean_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
@@ -1757,9 +1760,6 @@
     <ClCompile Include="src\libnnext\vsi_nn_libnnext_resource.c">
       <Filter>Source Files\libnnext</Filter>
     </ClCompile>
-    <ClCompile Include="src\ops\vsi_nn_op_avg_pool3d.c">
-      <Filter>Source Files\ops</Filter>
-    </ClCompile>
     <ClCompile Include="src\libnnext\vsi_nn_vxkernel.c">
       <Filter>Source Files\libnnext</Filter>
     </ClCompile>
@@ -1773,6 +1773,9 @@
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_argmaxmin.c">
+      <Filter>Source Files\ops</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_avg_pool3d.c">
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_axis_aligned_bbox_transform.c">

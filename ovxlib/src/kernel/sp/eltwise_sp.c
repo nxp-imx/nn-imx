@@ -462,7 +462,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_mul_times_v11_node
     /* loop inst0: r1 = clamp(in * r3, r7, r6) | r2 = v11 */
     status  = vsi_nn_sp_mul_clamp(&sp_insts_param[0], VSI_NN_SP_SRIN, VSI_NN_SP_SR3, VSI_NN_SP_SR1);
     status |= vsi_nn_sp_move(&sp_insts_param[0], VSI_NN_SP_VR11, VSI_NN_SP_SR2);
-    /* loop inst1: out = v11 * r1 */
+    /* loop inst1: out = r1 * r2 */
     status |= vsi_nn_sp_mul(&sp_insts_param[1], VSI_NN_SP_SR1, VSI_NN_SP_SR2, VSI_NN_SP_SROUT);
     CHECK_STATUS_FAIL_GOTO(status, final );
 
