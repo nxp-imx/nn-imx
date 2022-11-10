@@ -151,6 +151,11 @@ float eltwise_unary_softsign(float val, float alpha, float rcp_alpha)
     return val / (1.0f + fabs(val));
 }
 
+float eltwise_unary_atan(float x, float alpha, float beta)
+{
+    return atan(x);
+}
+
 #define ELTWISE_UNARY_F32_2D(func_name) \
 __kernel void func_name##_F32toF32_2D \
     ( \
@@ -188,6 +193,7 @@ ELTWISE_UNARY_F32_2D(celu)
 ELTWISE_UNARY_F32_2D(rcp)
 ELTWISE_UNARY_F32_2D(sign)
 ELTWISE_UNARY_F32_2D(softsign)
+ELTWISE_UNARY_F32_2D(atan)
 
 #define ELTWISE_UNARY_U8_2D(func_name) \
 __kernel void func_name##_U8toU8_2D \
@@ -227,6 +233,7 @@ ELTWISE_UNARY_U8_2D(celu)
 ELTWISE_UNARY_U8_2D(rcp)
 ELTWISE_UNARY_U8_2D(sign)
 ELTWISE_UNARY_U8_2D(softsign)
+ELTWISE_UNARY_U8_2D(atan)
 
 #define ELTWISE_UNARY_U8toF32_2D(func_name) \
 __kernel void func_name##_U8toF32_2D \
@@ -265,6 +272,7 @@ ELTWISE_UNARY_U8toF32_2D(celu)
 ELTWISE_UNARY_U8toF32_2D(rcp)
 ELTWISE_UNARY_U8toF32_2D(sign)
 ELTWISE_UNARY_U8toF32_2D(softsign)
+ELTWISE_UNARY_U8toF32_2D(atan)
 
 __kernel void neg_I32toI32_2D
     (

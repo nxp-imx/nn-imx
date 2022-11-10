@@ -224,6 +224,11 @@ static float linear_sigmoid_eval(float x, vsi_nn_kernel_lut_params *lut_param)
     return 1.0f / (1 + expf(a * x + b));;
 }
 
+static float atan_eval(float x)
+{
+    return atanf(x);;
+}
+
 static float vsi_nn_kernel_lut_activation(float data, vsi_nn_kernel_lut_params *lut_param)
 {
     float result = 0;
@@ -286,6 +291,9 @@ static float vsi_nn_kernel_lut_activation(float data, vsi_nn_kernel_lut_params *
         break;
     case VSI_NN_KERNEL_LUT_LINEAR_SIGMOID:
         result = linear_sigmoid_eval(data, lut_param);
+        break;
+    case VSI_NN_KERNEL_LUT_ATAN:
+        result = atan_eval(data);
         break;
     default:
         VSILOGE( "unsupported activation function:%d", lut_param->act_type );
