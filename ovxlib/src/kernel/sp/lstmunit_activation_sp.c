@@ -241,6 +241,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_add_sigmoid_node
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input0,
         vsi_nn_tensor_t             * input1,
+        vsi_nn_tensor_t             * input2,
         vsi_nn_tensor_t             * dummy_output,
         uint8_t                       dst_vr,
         char                        * kernel_name
@@ -250,9 +251,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_add_sigmoid_node
     const int32_t spLoopInstsNum = 3;
     const int32_t spInstsNum = spInitInstsNum + spLoopInstsNum;
 
-    const uint32_t input_count = 2;
+    const uint32_t input_count = input2 == NULL ? 2 : 3;
     const uint32_t output_count = 1;
-    vx_tensor inputs_tensor[2] = {NULL};
+    vx_tensor inputs_tensor[3] = {NULL};
     vx_tensor outputs_tensor[1] = {NULL};
     vx_node node = NULL;
     int32_t max_vector_depth = graph->ctx->config.sp_vector_depth;
@@ -314,6 +315,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_add_sigmoid_node
 
     inputs_tensor[0] = input0->t;
     inputs_tensor[1] = input1->t;
+    if (input2)
+        inputs_tensor[2] = input2->t;
     outputs_tensor[0] = dummy_output->t;
 
     node = vxStreamProcessorNode(
@@ -1236,6 +1239,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_lstmunit_float_activation
             graph,
             input_i,
             hstate_i,
+            NULL,
             dummy_tensor[0],
             VSI_NN_SP_VR11,
             "lstmunit_activation_0"
@@ -1249,6 +1253,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_lstmunit_float_activation
                 graph,
                 input_f,
                 hstate_f,
+                NULL,
                 dummy_tensor[1],
                 VSI_NN_SP_VR12,
                 "lstmunit_activation_1"
@@ -1303,6 +1308,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_lstmunit_float_activation
         graph,
         input_o,
         hstate_o,
+        dummy_tensor[2],
         dummy_tensor[3],
         VSI_NN_SP_VR11,
         "lstmunit_activation_4"
