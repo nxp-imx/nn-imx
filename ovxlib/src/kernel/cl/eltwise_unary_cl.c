@@ -56,6 +56,7 @@ typedef enum
     UNARY_RCP,
     UNARY_SIGN,
     UNARY_SOFTSIGN,
+    UNARY_ATAN,
 } unary_type_e;
 
 /*
@@ -100,10 +101,15 @@ typedef enum
 #define RCP_OPERATION           rcp
 #define SIGN_OPERATION          sign
 #define SOFTSIGN_OPERATION      softsign
+#define ATAN_OPERATION          atan
 
-#define ADD_UNARY_SH_KERNELS(name, src_type, dst_type) \
-    TENSOR_UNARY_KERNELS_3D(name##_OPERATION, UNARY_##name, src_type, dst_type) \
-    TENSOR_UNARY_KERNELS_2D(name##_OPERATION, UNARY_##name, src_type, dst_type)
+#define ADD_UNARY_SH_KERNELS(name) \
+    TENSOR_UNARY_KERNELS_3D(name##_OPERATION, UNARY_##name, F32, F32) \
+    TENSOR_UNARY_KERNELS_2D(name##_OPERATION, UNARY_##name, F32, F32) \
+    TENSOR_UNARY_KERNELS_3D(name##_OPERATION, UNARY_##name, U8,  U8) \
+    TENSOR_UNARY_KERNELS_2D(name##_OPERATION, UNARY_##name, U8,  U8) \
+    TENSOR_UNARY_KERNELS_3D(name##_OPERATION, UNARY_##name, U8,  F32) \
+    TENSOR_UNARY_KERNELS_2D(name##_OPERATION, UNARY_##name, U8,  F32)
 
 static const struct {
         uint32_t key;
@@ -111,55 +117,25 @@ static const struct {
         const char* source_name;
     } kernel_map[] =
 {
-    ADD_UNARY_SH_KERNELS(SIN,      F32, F32)
-    ADD_UNARY_SH_KERNELS(COS,      F32, F32)
-    ADD_UNARY_SH_KERNELS(EXP,      F32, F32)
-    ADD_UNARY_SH_KERNELS(LOG,      F32, F32)
-    ADD_UNARY_SH_KERNELS(NEG,      F32, F32)
-    ADD_UNARY_SH_KERNELS(HSIGMOID, F32, F32)
-    ADD_UNARY_SH_KERNELS(MISH,     F32, F32)
-    ADD_UNARY_SH_KERNELS(ROUND,    F32, F32)
-    ADD_UNARY_SH_KERNELS(GELU,     F32, F32)
-    ADD_UNARY_SH_KERNELS(HGELU,    F32, F32)
-    ADD_UNARY_SH_KERNELS(SELU,     F32, F32)
-    ADD_UNARY_SH_KERNELS(CELU,     F32, F32)
-    ADD_UNARY_SH_KERNELS(RCP,      F32, F32)
-    ADD_UNARY_SH_KERNELS(SIGN,     F32, F32)
-    ADD_UNARY_SH_KERNELS(SOFTSIGN, F32, F32)
+    ADD_UNARY_SH_KERNELS(SIN)
+    ADD_UNARY_SH_KERNELS(COS)
+    ADD_UNARY_SH_KERNELS(EXP)
+    ADD_UNARY_SH_KERNELS(LOG)
+    ADD_UNARY_SH_KERNELS(NEG)
+    ADD_UNARY_SH_KERNELS(HSIGMOID)
+    ADD_UNARY_SH_KERNELS(MISH)
+    ADD_UNARY_SH_KERNELS(ROUND)
+    ADD_UNARY_SH_KERNELS(GELU)
+    ADD_UNARY_SH_KERNELS(HGELU)
+    ADD_UNARY_SH_KERNELS(SELU)
+    ADD_UNARY_SH_KERNELS(CELU)
+    ADD_UNARY_SH_KERNELS(RCP)
+    ADD_UNARY_SH_KERNELS(SIGN)
+    ADD_UNARY_SH_KERNELS(SOFTSIGN)
+    ADD_UNARY_SH_KERNELS(ATAN)
 
-    ADD_UNARY_SH_KERNELS(SIN,      U8,  U8)
-    ADD_UNARY_SH_KERNELS(COS,      U8,  U8)
-    ADD_UNARY_SH_KERNELS(EXP,      U8,  U8)
-    ADD_UNARY_SH_KERNELS(LOG,      U8,  U8)
-    ADD_UNARY_SH_KERNELS(NEG,      U8,  U8)
-    ADD_UNARY_SH_KERNELS(HSIGMOID, U8,  U8)
-    ADD_UNARY_SH_KERNELS(MISH,     U8,  U8)
-    ADD_UNARY_SH_KERNELS(ROUND,    U8,  U8)
-    ADD_UNARY_SH_KERNELS(GELU,     U8,  U8)
-    ADD_UNARY_SH_KERNELS(HGELU,    U8,  U8)
-    ADD_UNARY_SH_KERNELS(SELU,     U8,  U8)
-    ADD_UNARY_SH_KERNELS(CELU,     U8,  U8)
-    ADD_UNARY_SH_KERNELS(RCP,      U8,  U8)
-    ADD_UNARY_SH_KERNELS(SIGN,     U8,  U8)
-    ADD_UNARY_SH_KERNELS(SOFTSIGN, U8,  U8)
-
-    ADD_UNARY_SH_KERNELS(SIN,      U8,  F32)
-    ADD_UNARY_SH_KERNELS(COS,      U8,  F32)
-    ADD_UNARY_SH_KERNELS(EXP,      U8,  F32)
-    ADD_UNARY_SH_KERNELS(LOG,      U8,  F32)
-    ADD_UNARY_SH_KERNELS(NEG,      U8,  F32)
-    ADD_UNARY_SH_KERNELS(HSIGMOID, U8,  F32)
-    ADD_UNARY_SH_KERNELS(MISH,     U8,  F32)
-    ADD_UNARY_SH_KERNELS(ROUND,    U8,  F32)
-    ADD_UNARY_SH_KERNELS(GELU,     U8,  F32)
-    ADD_UNARY_SH_KERNELS(HGELU,    U8,  F32)
-    ADD_UNARY_SH_KERNELS(SELU,     U8,  F32)
-    ADD_UNARY_SH_KERNELS(CELU,     U8,  F32)
-    ADD_UNARY_SH_KERNELS(RCP,      U8,  F32)
-    ADD_UNARY_SH_KERNELS(SIGN,     U8,  F32)
-    ADD_UNARY_SH_KERNELS(SOFTSIGN, U8,  F32)
-
-    ADD_UNARY_SH_KERNELS(NEG,      I32, I32)
+    TENSOR_UNARY_KERNELS_3D(NEG_OPERATION, UNARY_NEG, I32, I32)
+    TENSOR_UNARY_KERNELS_2D(NEG_OPERATION, UNARY_NEG, I32, I32)
 };
 
 #undef SIN_OPERATION
@@ -177,6 +153,7 @@ static const struct {
 #undef RCP_OPERATION
 #undef SIGN_OPERATION
 #undef SOFTSIGN_OPERATION
+#undef ATAN_OPERATION
 /*
  * Kernel params
  */
@@ -350,7 +327,7 @@ static vsi_nn_kernel_node_t _setup
     ret = vsi_nn_kernel_optimize_element_shape(
             inputs[0]->attr.size, inputs[0]->attr.dim_num,
             shape, &new_rank );
-    if( ret )
+    if ( ret )
     {
         rs_tensors[0] = vsi_nn_reshape_tensor( graph,
                 inputs[0], shape, new_rank );
@@ -358,7 +335,7 @@ static vsi_nn_kernel_node_t _setup
                 outputs[0], shape, new_rank );
     }
 
-    if( !vsi_nn_kernel_gpu_check_shape( rs_tensors[0]->attr.size,
+    if ( !vsi_nn_kernel_gpu_check_shape( rs_tensors[0]->attr.size,
                 rs_tensors[0]->attr.dim_num ) )
     {
         return NULL;
@@ -368,11 +345,11 @@ static vsi_nn_kernel_node_t _setup
 
     image_2d = (rs_tensors[0]->attr.dim_num == 2 || rs_tensors[0]->attr.size[2] == 1);
     status = _query_kernel( rs_tensors, &rs_tensors[1], unary_type, image_2d, kernel );
-    if( VSI_SUCCESS == status)
+    if ( VSI_SUCCESS == status)
     {
         node = vsi_nn_kernel_create_node( graph, kernel );
 
-        if( node )
+        if ( node )
         {
             vsi_nn_kernel_node_pack_io( node_params, _CL_PARAM_NUM,
                     rs_tensors, 1, &rs_tensors[1], 1 );
@@ -472,5 +449,6 @@ REGISTER_ELTWISE_UNARY_BACKEND_CL( celu,         UNARY_CELU )
 REGISTER_ELTWISE_UNARY_BACKEND_CL( rcp,          UNARY_RCP )
 REGISTER_ELTWISE_UNARY_BACKEND_CL( sign,         UNARY_SIGN )
 REGISTER_ELTWISE_UNARY_BACKEND_CL( softsign,     UNARY_SOFTSIGN )
+REGISTER_ELTWISE_UNARY_BACKEND_CL( atan,         UNARY_ATAN )
 
 __END_DECLS

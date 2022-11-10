@@ -66,6 +66,11 @@ float4 eltwise_unary_softsign(float4 val)
     return val * _rcp;
 }
 
+float4 eltwise_unary_atan(float4 val)
+{
+    return atan(val);
+}
+
 _viv_uniform float inputScale;
 _viv_uniform float inputTail;
 _viv_uniform float outputScale;
@@ -176,3 +181,6 @@ ADD_ELTSISE_UNARY_3D(rcp)
 ADD_ELTSISE_UNARY_3D(sign)
 //SOFTSIGN
 ADD_ELTSISE_UNARY_3D(softsign)
+//ATAN
+ADD_ELTSISE_UNARY_3D(atan)
+
