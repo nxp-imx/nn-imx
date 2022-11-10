@@ -42,6 +42,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_add_sigmoid_node
         vsi_nn_graph_t  * graph,
         vsi_nn_tensor_t * input0,
         vsi_nn_tensor_t * input1,
+        vsi_nn_tensor_t * input2,
         vsi_nn_tensor_t * output,
         uint8_t           dst_vr,
         char            * kernel_name
@@ -202,7 +203,7 @@ REGISTER_GRUCELL_ACTIVATION_STREAM_PROCESSOR_KERNEL( grucell_activation_z_h )
     dummy_tensor[1] = vsi_nn_create_dummy_tensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( dummy_tensor[1], "Create tensor fail.", final );
 
-    node[0] = vsi_nn_sp_add_sigmoid_node(graph, inputs[GRUCELL_ACT_Z_H_I_FC_Z], inputs[GRUCELL_ACT_Z_H_H_FC_Z],
+    node[0] = vsi_nn_sp_add_sigmoid_node(graph, inputs[GRUCELL_ACT_Z_H_I_FC_Z], inputs[GRUCELL_ACT_Z_H_H_FC_Z], NULL,
         dummy_tensor[0], VSI_NN_SP_VR11, "grucell_activation_z_h_0" );
     CHECK_PTR_FAIL_GOTO( node[0], "Create grucell sp add sigmoid node fail.", final );
     node[1] = vsi_nn_sp_add_tanh_node(graph, inputs[GRUCELL_ACT_Z_H_I_FC_H], inputs[GRUCELL_ACT_Z_H_H_FC_H],
