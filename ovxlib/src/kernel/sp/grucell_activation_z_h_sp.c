@@ -120,15 +120,15 @@ vsi_nn_kernel_node_t vsi_nn_sp_grucell_activation_z_h_node
     attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_XYZ;
     attr.split_max_vector_depth = max_vector_depth;
 
+    VSI_NN_SP_ATTR_SET_CONST_TO_SR3(attr, input_scale);
+    VSI_NN_SP_ATTR_SET_CONST_TO_SR4(attr, 1.0f / output_scale);
+    VSI_NN_SP_ATTR_SET_CONST_TO_SR5_LOW_PRECISION(attr, 1.0f);
+
     spinst = vsi_nn_create_spinst(graph);
     CHECK_PTR_FAIL_GOTO( spinst, "Create spInst fail.", final );
     status  = vsi_nn_add_spinst_insts(spinst, sp_insts_param, spInstsNum);
     status |= vsi_nn_set_spinst_attr(spinst, attr);
     CHECK_STATUS_FAIL_GOTO(status, final );
-
-    VSI_NN_SP_ATTR_SET_CONST_TO_SR3(attr, input_scale);
-    VSI_NN_SP_ATTR_SET_CONST_TO_SR4(attr, 1.0f / output_scale);
-    VSI_NN_SP_ATTR_SET_CONST_TO_SR5_LOW_PRECISION(attr, 1.0f);
 
     inputs_tensor[0] = hstate_in->t;
     inputs_tensor[1] = dummy_in0->t;
