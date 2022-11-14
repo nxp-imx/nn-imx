@@ -47088,6 +47088,119 @@ __kernel void gather_F32toF32(\n\
 }\n\
 "; /* end of gather_cl*/
 
+static const char gather_array_cl[] = "__kernel void gather_array_U8toU8(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int block_num,\n\
+    int axis_num,\n\
+    int indices_num,\n\
+    int batch\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // indices_num\n\
+    int gidz = get_global_id(2);  // block_num\n\
+\n\
+    int4 coord_in = (int4)(gidy, 0, gidx, 0);\n\
+    int4 indice = read_imagei(input1, coord_in.xy);\n\
+    coord_in.w = gidz * axis_num + indice.x;\n\
+\n\
+    Image img1 = create_image_from_image2d(input0, 1);\n\
+    Image img2 = create_image_from_image2d(output, 1);\n\
+    __global uchar* input_ptr = get_image_ptr_from_coord(img1, coord_in.zw);\n\
+    uchar data = input_ptr[0];\n\
+    int2 coord = (int2)(gidx, gidz * indices_num + gidy);\n\
+    __global uchar* output_ptr = get_image_ptr_from_coord(img2, coord);\n\
+    output_ptr[0] = data;\n\
+}\n\
+\n\
+__kernel void gather_array_F16toF16(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int block_num,\n\
+    int axis_num,\n\
+    int indices_num,\n\
+    int batch\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // indices_num\n\
+    int gidz = get_global_id(2);  // block_num\n\
+\n\
+    int4 coord_in = (int4)(gidy, 0, gidx, 0);\n\
+    int4 indice = read_imagei(input1, coord_in.xy);\n\
+    coord_in.w = gidz * axis_num + indice.x;\n\
+\n\
+    Image img1 = create_image_from_image2d(input0, 2);\n\
+    Image img2 = create_image_from_image2d(output, 2);\n\
+    __global short* input_ptr = (__global short*)get_image_ptr_from_coord(img1, coord_in.zw);\n\
+    short data = input_ptr[0];\n\
+    int2 coord = (int2)(gidx, gidz * indices_num + gidy);\n\
+    __global short* output_ptr = (__global short*)get_image_ptr_from_coord(img2, coord);\n\
+    output_ptr[0] = data;\n\
+}\n\
+\n\
+__kernel void gather_array_I32toI32(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int block_num,\n\
+    int axis_num,\n\
+    int indices_num,\n\
+    int batch\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // indices_num\n\
+    int gidz = get_global_id(2);  // block_num\n\
+\n\
+    int4 coord_in = (int4)(gidy, 0, gidx, 0);\n\
+    int4 indice = read_imagei(input1, coord_in.xy);\n\
+    coord_in.w = gidz * axis_num + indice.x;\n\
+\n\
+    Image img1 = create_image_from_image2d(input0, 4);\n\
+    Image img2 = create_image_from_image2d(output, 4);\n\
+    __global int* input_ptr = (__global int*)get_image_ptr_from_coord(img1, coord_in.zw);\n\
+    int data = input_ptr[0];\n\
+    int2 coord = (int2)(gidx, gidz * indices_num + gidy);\n\
+    __global int* output_ptr = (__global int*)get_image_ptr_from_coord(img2, coord);\n\
+    output_ptr[0] = data;\n\
+}\n\
+\n\
+__kernel void gather_array_F32toF32(\n\
+    __read_only image2d_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_t  output,\n\
+    int block_size,\n\
+    int block_num,\n\
+    int axis_num,\n\
+    int indices_num,\n\
+    int batch\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);  // block_size\n\
+    int gidy = get_global_id(1);  // indices_num\n\
+    int gidz = get_global_id(2);  // block_num\n\
+\n\
+    int4 coord_in = (int4)(gidy, 0, gidx, 0);\n\
+    int4 indice = read_imagei(input1, coord_in.xy);\n\
+    coord_in.w = gidz * axis_num + indice.x;\n\
+\n\
+    Image img1 = create_image_from_image2d(input0, 4);\n\
+    Image img2 = create_image_from_image2d(output, 4);\n\
+    __global float* input_ptr = (__global float*)get_image_ptr_from_coord(img1, coord_in.zw);\n\
+    float data = input_ptr[0];\n\
+    int2 coord = (int2)(gidx, gidz * indices_num + gidy);\n\
+    __global float* output_ptr = (__global float*)get_image_ptr_from_coord(img2, coord);\n\
+    output_ptr[0] = data;\n\
+}\n\
+"; /* end of gather_array_cl*/
+
 static const char gather_batch_cl[] = "__kernel void gather_batch_U8toU8(\n\
     __read_only image2d_array_t   input0,\n\
     __read_only image2d_t   input1,\n\
@@ -62437,6 +62550,7 @@ static const source_map_t cl_resource[] =
     {"erf_cl", erf_cl},
     {"floordiv_cl", floordiv_cl},
     {"gather_cl", gather_cl},
+    {"gather_array_cl", gather_array_cl},
     {"gather_batch_cl", gather_batch_cl},
     {"gather_elements_cl", gather_elements_cl},
     {"gather_nd_cl", gather_nd_cl},
