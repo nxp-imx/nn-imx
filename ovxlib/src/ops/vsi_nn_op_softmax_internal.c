@@ -150,7 +150,7 @@ vsi_status op_compute
         self->n = (vx_node)vsi_nn_kernel_selector( self->graph,
                 "softmax",
                 inputs, 1,
-                outputs, 1, kernel_param );;
+                outputs, 1, kernel_param );
 
         if( NULL != self->n )
         {
