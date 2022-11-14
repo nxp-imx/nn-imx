@@ -59197,7 +59197,8 @@ __kernel void resize_nearest_U8toU8(\n\
 }\n\
 "; /* end of resize_nearest_cl*/
 
-static const char roi_align_cl[] = "\n\
+static const char roi_align_cl[] = "#define VSI_NN_ROI_ALIGN_ANDROID 0\n\
+\n\
 inline float roi_align_1x1\n\
 (\n\
     __read_only  image2d_array_t  input,\n\
@@ -59207,7 +59208,8 @@ inline float roi_align_1x1\n\
                  int2   grid_size,\n\
                  float2 rcp_of_grid_size,\n\
                  int    pz,\n\
-                 int4   max_spatial_dims\n\
+                 int4   max_spatial_dims,\n\
+                 int    platform_type\n\
 )\n\
 {\n\
     float sum = 0;\n\
@@ -59222,10 +59224,21 @@ inline float roi_align_1x1\n\
             int2 xy_low  = convert_int2(pos);\n\
             int2 xy_high = xy_low + 1;\n\
 \n\
-            if (pos.x > max_spatial_dims.x || pos.x < -1 ||\n\
-                pos.y > max_spatial_dims.y || pos.y < -1 )\n\
+            if (VSI_NN_ROI_ALIGN_ANDROID == platform_type)\n\
             {\n\
-                continue;\n\
+                if (xy_low.x > max_spatial_dims.x || xy_low.x < -1 ||\n\
+                    xy_low.y > max_spatial_dims.y || xy_low.y < -1 )\n\
+                {\n\
+                    continue;\n\
+                }\n\
+            }\n\
+            else\n\
+            {\n\
+                if (pos.x > max_spatial_dims.x || pos.x < -1 ||\n\
+                    pos.y > max_spatial_dims.y || pos.y < -1 )\n\
+                {\n\
+                    continue;\n\
+                }\n\
             }\n\
 \n\
             float2 lxy = pos - floor(pos);\n\
@@ -59275,7 +59288,8 @@ __kernel void roi_align_F32_F32toF32\n\
                  float           sampling_x_ratio,\n\
                  float           sampling_y_ratio,\n\
                  int             depth,\n\
-                 int             dtype\n\
+                 int             dtype,\n\
+                 int             platform_type\n\
 )\n\
 {\n\
     int px = get_global_id(0);\n\
@@ -59321,7 +59335,8 @@ __kernel void roi_align_F32_F32toF32\n\
                        grid_size_xy,\n\
                        rcp_of_grid_size,\n\
                        kz,\n\
-                       max_spatial_dims);\n\
+                       max_spatial_dims,\n\
+                       platform_type);\n\
 \n\
         if (dtype == TYPE_FLOAT16)\n\
         {\n\
@@ -59356,7 +59371,8 @@ inline float roi_align_1x1_U8toF32\n\
                 int2             grid_size,\n\
                 float2           rcp_of_grid_size,\n\
                 int              pz,\n\
-                int4             max_spatial_dims\n\
+                int4             max_spatial_dims,\n\
+                int              platform_type\n\
 )\n\
 {\n\
     float sum = 0;\n\
@@ -59374,10 +59390,21 @@ inline float roi_align_1x1_U8toF32\n\
             float2 lxy = pos - floor(pos);\n\
             float2 zero = 0;\n\
 \n\
-            if (pos.x > max_spatial_dims.x || pos.x < -1 ||\n\
-                pos.y > max_spatial_dims.y || pos.y < -1 )\n\
+            if (VSI_NN_ROI_ALIGN_ANDROID == platform_type)\n\
             {\n\
-                continue;\n\
+                if (xy_low.x > max_spatial_dims.x || xy_low.x < -1 ||\n\
+                    xy_low.y > max_spatial_dims.y || xy_low.x < -1 )\n\
+                {\n\
+                    continue;\n\
+                }\n\
+            }\n\
+            else\n\
+            {\n\
+                if (pos.x > max_spatial_dims.x || pos.x < -1 ||\n\
+                    pos.y > max_spatial_dims.y || pos.y < -1 )\n\
+                {\n\
+                    continue;\n\
+                }\n\
             }\n\
 \n\
             lxy = xy_low >= max_spatial_dims.zw ? 0.0 : lxy;\n\
@@ -59425,7 +59452,8 @@ __kernel void roi_align_U8_U16toU8\n\
                  float           sampling_x_ratio,\n\
                  float           sampling_y_ratio,\n\
                  int             depth,\n\
-                 int             dtype\n\
+                 int             dtype,\n\
+                 int             platform_type\n\
 )\n\
 {\n\
     int px = get_global_id(0);\n\
@@ -59473,7 +59501,8 @@ __kernel void roi_align_U8_U16toU8\n\
                        grid_size_xy,\n\
                        rcp_of_grid_size,\n\
                        kz,\n\
-                       max_spatial_dims);\n\
+                       max_spatial_dims,\n\
+                       platform_type);\n\
 \n\
         uchar dst;\n\
         interp.x = interp.x * output_scale + output_zp;\n\
