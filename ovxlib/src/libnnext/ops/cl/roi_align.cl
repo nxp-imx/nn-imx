@@ -1,3 +1,4 @@
+#define VSI_NN_ROI_ALIGN_ANDROID 0
 
 inline float roi_align_1x1
 (
@@ -8,7 +9,8 @@ inline float roi_align_1x1
                  int2   grid_size,
                  float2 rcp_of_grid_size,
                  int    pz,
-                 int4   max_spatial_dims
+                 int4   max_spatial_dims,
+                 int    platform_type
 )
 {
     float sum = 0;
@@ -23,10 +25,21 @@ inline float roi_align_1x1
             int2 xy_low  = convert_int2(pos);
             int2 xy_high = xy_low + 1;
 
-            if (pos.x > max_spatial_dims.x || pos.x < -1 ||
-                pos.y > max_spatial_dims.y || pos.y < -1 )
+            if (VSI_NN_ROI_ALIGN_ANDROID == platform_type)
             {
-                continue;
+                if (xy_low.x > max_spatial_dims.x || xy_low.x < -1 ||
+                    xy_low.y > max_spatial_dims.y || xy_low.y < -1 )
+                {
+                    continue;
+                }
+            }
+            else
+            {
+                if (pos.x > max_spatial_dims.x || pos.x < -1 ||
+                    pos.y > max_spatial_dims.y || pos.y < -1 )
+                {
+                    continue;
+                }
             }
 
             float2 lxy = pos - floor(pos);
@@ -76,7 +89,8 @@ __kernel void roi_align_F32_F32toF32
                  float           sampling_x_ratio,
                  float           sampling_y_ratio,
                  int             depth,
-                 int             dtype
+                 int             dtype,
+                 int             platform_type
 )
 {
     int px = get_global_id(0);
@@ -122,7 +136,8 @@ __kernel void roi_align_F32_F32toF32
                        grid_size_xy,
                        rcp_of_grid_size,
                        kz,
-                       max_spatial_dims);
+                       max_spatial_dims,
+                       platform_type);
 
         if (dtype == TYPE_FLOAT16)
         {
@@ -157,7 +172,8 @@ inline float roi_align_1x1_U8toF32
                 int2             grid_size,
                 float2           rcp_of_grid_size,
                 int              pz,
-                int4             max_spatial_dims
+                int4             max_spatial_dims,
+                int              platform_type
 )
 {
     float sum = 0;
@@ -175,10 +191,21 @@ inline float roi_align_1x1_U8toF32
             float2 lxy = pos - floor(pos);
             float2 zero = 0;
 
-            if (pos.x > max_spatial_dims.x || pos.x < -1 ||
-                pos.y > max_spatial_dims.y || pos.y < -1 )
+            if (VSI_NN_ROI_ALIGN_ANDROID == platform_type)
             {
-                continue;
+                if (xy_low.x > max_spatial_dims.x || xy_low.x < -1 ||
+                    xy_low.y > max_spatial_dims.y || xy_low.x < -1 )
+                {
+                    continue;
+                }
+            }
+            else
+            {
+                if (pos.x > max_spatial_dims.x || pos.x < -1 ||
+                    pos.y > max_spatial_dims.y || pos.y < -1 )
+                {
+                    continue;
+                }
             }
 
             lxy = xy_low >= max_spatial_dims.zw ? 0.0 : lxy;
@@ -226,7 +253,8 @@ __kernel void roi_align_U8_U16toU8
                  float           sampling_x_ratio,
                  float           sampling_y_ratio,
                  int             depth,
-                 int             dtype
+                 int             dtype,
+                 int             platform_type
 )
 {
     int px = get_global_id(0);
@@ -274,7 +302,8 @@ __kernel void roi_align_U8_U16toU8
                        grid_size_xy,
                        rcp_of_grid_size,
                        kz,
-                       max_spatial_dims);
+                       max_spatial_dims,
+                       platform_type);
 
         uchar dst;
         interp.x = interp.x * output_scale + output_zp;

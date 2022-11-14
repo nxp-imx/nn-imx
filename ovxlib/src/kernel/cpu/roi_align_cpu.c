@@ -59,12 +59,14 @@ static vx_param_description_t _roi_align_kernel_param_def[] =
     {VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
 };
 #define _ROI_ALIGN_PARAM_NUM  _cnt_of_array( _roi_align_kernel_param_def )
 #define SCALAR_X_RATIO          (4)
 #define SCALAR_Y_RATIO          (5)
 #define SCALAR_X_SAMPLE         (6)
 #define SCALAR_Y_SAMPLE         (7)
+#define PLATFORM_TYPE           (8)
 
 /*
  * Kernel function
@@ -86,7 +88,8 @@ static float _roi_align_1x1(float *input_ptr,
                            float   region_start_y,
                            float   bin_size_y,
                            int32_t grid_size_y,
-                           float   region_end_y)
+                           float   region_end_y,
+                           int32_t platform_type)
 {
     float avg = 0;
     int32_t iy = 0;
@@ -124,7 +127,14 @@ static float _roi_align_1x1(float *input_ptr,
             const float data4 = *(input_ptr + y_high * width + x_high);
 
             /* onnx: inverse elements are out of feature map boundary */
-            if (x > width || x < -1 || y > height || y < -1) continue;
+            if (platform_type == VSI_NN_ROI_ALIGN_ANDROID)
+            {
+                if (x_low > width || x_low < -1 || y_low > height || y_low < -1) continue;
+            }
+            else
+            {
+                if (x > width || x < -1 || y > height || y < -1) continue;
+            }
 
             x = x_low >= width - 1 ? x_low : x;
             y = y_low >= height - 1 ? y_low : y;
@@ -172,6 +182,7 @@ DEF_KERNEL_EXECUTOR(_compute)
     float     height_ratio      = 0.0f;
     int32_t   width_sample_num  = 0;
     int32_t   height_sample_num = 0;
+    int32_t   platform_type     = 0;
     uint32_t  n                 = 0;
     vsi_size_t  num_rois          = 0;
     vsi_ssize_t   inHeight          = 0;
@@ -206,6 +217,7 @@ DEF_KERNEL_EXECUTOR(_compute)
     vsi_nn_kernel_scalar_read_float32((vsi_nn_kernel_scalar_t)param[SCALAR_Y_RATIO], &(height_ratio));
     vsi_nn_kernel_scalar_read_int32((vsi_nn_kernel_scalar_t)param[SCALAR_X_SAMPLE], &(width_sample_num));
     vsi_nn_kernel_scalar_read_int32((vsi_nn_kernel_scalar_t)param[SCALAR_Y_SAMPLE], &(height_sample_num));
+    vsi_nn_kernel_scalar_read_int32((vsi_nn_kernel_scalar_t)param[PLATFORM_TYPE], &(platform_type));
 
     width_scale = 1.0f / width_ratio;
     height_scale = 1.0f / height_ratio;
@@ -265,7 +277,7 @@ DEF_KERNEL_EXECUTOR(_compute)
                     out_val = _roi_align_1x1(
                         input_ptr, (int32_t)inWidth, (int32_t)inHeight, region_start_x, bin_size_x,
                         roi_bin_grid_x, region_end_x, region_start_y, bin_size_y,
-                        roi_bin_grid_y, region_end_y);
+                        roi_bin_grid_y, region_end_y, platform_type);
 
                     f32_out_buffer[0][out_index++] = out_val;
                 }
@@ -352,6 +364,7 @@ static vsi_nn_kernel_node_t _setup
     float   height_ratio        = vsi_nn_kernel_param_get_float32( params, "height_ratio" );
     int32_t width_sample_num    = vsi_nn_kernel_param_get_int32( params, "width_sample_num" );
     int32_t height_sample_num   = vsi_nn_kernel_param_get_int32( params, "height_sample_num" );
+    int32_t platform_type       = vsi_nn_kernel_param_get_int32( params, "platform_type" );
 
     status = _query_kernel( kernel, inputs, outputs );
     if( VSI_SUCCESS == status)
@@ -366,6 +379,7 @@ static vsi_nn_kernel_node_t _setup
             node_params[SCALAR_Y_RATIO] = vsi_nn_kernel_scalar_create( graph, F32, &height_ratio );
             node_params[SCALAR_X_SAMPLE] = vsi_nn_kernel_scalar_create( graph, I32, &width_sample_num );
             node_params[SCALAR_Y_SAMPLE] = vsi_nn_kernel_scalar_create( graph, I32, &height_sample_num );
+            node_params[PLATFORM_TYPE] = vsi_nn_kernel_scalar_create( graph, I32, &platform_type );
             /* Pass parameters to node. */
             status  = vsi_nn_kernel_node_pass_param( node, node_params, _ROI_ALIGN_PARAM_NUM );
             VSI_ASSERT( status == VSI_SUCCESS );
@@ -373,6 +387,7 @@ static vsi_nn_kernel_node_t _setup
             vsi_nn_kernel_scalar_release( &node_params[SCALAR_Y_RATIO] );
             vsi_nn_kernel_scalar_release( &node_params[SCALAR_X_SAMPLE] );
             vsi_nn_kernel_scalar_release( &node_params[SCALAR_Y_SAMPLE] );
+            vsi_nn_kernel_scalar_release( &node_params[PLATFORM_TYPE] );
         }
     }
 

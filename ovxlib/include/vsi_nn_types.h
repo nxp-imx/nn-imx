@@ -262,6 +262,12 @@ typedef enum _vsi_nn_nv_type
     VSI_NN_YUV_TYPE_NV21
 }vsi_nn_nv_type;
 
+typedef enum _vsi_nn_roi_align_type_e
+{
+    VSI_NN_ROI_ALIGN_ANDROID,
+    VSI_NN_ROI_ALIGN
+} vsi_nn_roi_align_type_e;
+
 /** Deprecated */
 typedef uint32_t vsi_nn_size_t;
 
