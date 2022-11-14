@@ -71,6 +71,11 @@ float4 eltwise_unary_atan(float4 val)
     return atan(val);
 }
 
+float4 eltwise_unary_atanh(float4 val)
+{
+    return atanh(val);
+}
+
 _viv_uniform float inputScale;
 _viv_uniform float inputTail;
 _viv_uniform float outputScale;
@@ -183,4 +188,6 @@ ADD_ELTSISE_UNARY_3D(sign)
 ADD_ELTSISE_UNARY_3D(softsign)
 //ATAN
 ADD_ELTSISE_UNARY_3D(atan)
+//ATANH
+ADD_ELTSISE_UNARY_3D(atanh)
 

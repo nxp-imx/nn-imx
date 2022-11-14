@@ -54,6 +54,7 @@ typedef enum
     UNARY_SIGN,
     UNARY_SOFTSIGN,
     UNARY_ATAN,
+    UNARY_ATANH,
 } unary_type_e;
 
 
@@ -169,6 +170,11 @@ static float softsign_eval(float x)
     return x / (1.0f + vsi_abs(x));
 }
 
+static float atanh_eval(float x)
+{
+    return (log_eval(1 + x) - log_eval(1 - x)) / 2;
+}
+
 DEF_KERNEL_EXECUTOR(_eltwise_unary_exec)
     (
     vsi_nn_kernel_node_t node,
@@ -262,6 +268,9 @@ DEF_KERNEL_EXECUTOR(_eltwise_unary_exec)
             break;
         case UNARY_ATAN:
             data = atan_eval(data);
+            break;
+        case UNARY_ATANH:
+            data = atanh_eval(data);
             break;
         default:
             break;
@@ -401,3 +410,4 @@ REGISTER_ELTWISE_UNARY_BACKEND_CPU( rcp,          UNARY_RCP )
 REGISTER_ELTWISE_UNARY_BACKEND_CPU( sign,         UNARY_SIGN )
 REGISTER_ELTWISE_UNARY_BACKEND_CPU( softsign,     UNARY_SOFTSIGN )
 REGISTER_ELTWISE_UNARY_BACKEND_CPU( atan,         UNARY_ATAN )
+REGISTER_ELTWISE_UNARY_BACKEND_CPU( atanh,        UNARY_ATANH )

@@ -138,8 +138,8 @@ DEF_KERNEL_EXECUTOR(_compute)
             rsqrt = 1.0f / sqrtf(vsi_nn_max(sum, epsilon));
             for (i = 0; i < (uint32_t)axisSize; ++i) {
                 index      = (outer * axisSize + i) * innerSize + inner;
-                tmpValue   = f32_in_buffer[0][index];;
-                scaleValue = f32_in_buffer[1][i];;
+                tmpValue   = f32_in_buffer[0][index];
+                scaleValue = f32_in_buffer[1][i];
                 l2Value    = tmpValue * rsqrt * scaleValue;
                 f32_out_buffer[0][index] = l2Value;
             }
