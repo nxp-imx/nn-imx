@@ -59422,7 +59422,7 @@ inline float roi_align_1x1_U8toF32\n\
             if (VSI_NN_ROI_ALIGN_ANDROID == platform_type)\n\
             {\n\
                 if (xy_low.x > max_spatial_dims.x || xy_low.x < -1 ||\n\
-                    xy_low.y > max_spatial_dims.y || xy_low.x < -1 )\n\
+                    xy_low.y > max_spatial_dims.y || xy_low.y < -1 )\n\
                 {\n\
                     continue;\n\
                 }\n\
