@@ -226,7 +226,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_moments_axis1_node
     vx_tensor outputs_tensor[2] = {NULL};
     vx_node node = NULL;
     int32_t fifo_depth = 4;
-    int32_t max_vector_depth = graph->ctx->config.sp_exec_count;
+    int32_t max_vector_depth = graph->ctx->config.sp_vector_depth;
 
     vsi_nn_spinst_t *spinst = NULL;
     vsi_nn_spinst_inst_param sp_insts_param[3];
