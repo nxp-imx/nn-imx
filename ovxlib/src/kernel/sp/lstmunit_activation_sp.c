@@ -540,6 +540,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_get_cell_status_node
         vsi_nn_tensor_t             * cell_status_in,
         vsi_nn_tensor_t             * dummy0_input,
         vsi_nn_tensor_t             * dummy1_input,
+        vsi_nn_tensor_t             * dummy2_input,
         vsi_nn_tensor_t             * cell_status_out,
         vsi_nn_tensor_t             * dummy_output,
         char                        * kernel_name
@@ -549,9 +550,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_get_cell_status_node
     const int32_t spLoopInstsNum = 4;
     const int32_t spInstsNum = spInitInstsNum + spLoopInstsNum;
 
-    const uint32_t input_count = 4;
+    const uint32_t input_count = dummy2_input == NULL ? 4 : 5;
     const uint32_t output_count = 2;
-    vx_tensor inputs_tensor[4] = {NULL};
+    vx_tensor inputs_tensor[5] = {NULL};
     vx_tensor outputs_tensor[2] = {NULL};
     vx_node node = NULL;
     int32_t max_vector_depth = graph->ctx->config.sp_vector_depth;
@@ -567,20 +568,20 @@ vsi_nn_kernel_node_t vsi_nn_sp_get_cell_status_node
 
     /* init inst0: r10 = 0 */
     status  = vsi_nn_sp_move_constant(&sp_insts_param[0], 0, VSI_NN_SP_SR10);
-    /* loop inst0: r1 = pwlSetup(in) || r7 = v12 * r6 || r9 = r5 + r8 || r4 = r1*/
+    /* loop inst0: r1 = pwlSetup(in) | r7 = v12 * r6 | r9 = r5 + r8 | r4 = r1 */
     status |= vsi_nn_sp_pwl_tanh(&sp_insts_param[1], VSI_NN_SP_SRIN, VSI_NN_SP_SR1);
     status |= vsi_nn_sp_mul(&sp_insts_param[1], VSI_NN_SP_VR12, VSI_NN_SP_SR6, VSI_NN_SP_SR7);
     status |= vsi_nn_sp_add(&sp_insts_param[1], VSI_NN_SP_SR5, VSI_NN_SP_SR8, VSI_NN_SP_SR9);
     status |= vsi_nn_sp_move(&sp_insts_param[1], VSI_NN_SP_SR1, VSI_NN_SP_SR4);
-    /* loop inst1: r5 = r5 * v11 || out = r9 + r10 || v12 = r9 */
+    /* loop inst1: r5 = r5 * v11 | out = r9 + r10 | v12 = r9 */
     status |= vsi_nn_sp_mul(&sp_insts_param[2], VSI_NN_SP_SR5, VSI_NN_SP_VR11, VSI_NN_SP_SR5);
     status |= vsi_nn_sp_add(&sp_insts_param[2], VSI_NN_SP_SR9, VSI_NN_SP_SR10, VSI_NN_SP_SROUT);
-    status |= vsi_nn_sp_move(&sp_insts_param[2], VSI_NN_SP_VR12, VSI_NN_SP_SR9);
-    /* loop inst2: r3 = r1 * r2 || r5 = r3 + r4 || r6 = in */
+    status |= vsi_nn_sp_move(&sp_insts_param[2], VSI_NN_SP_SR9, VSI_NN_SP_VR12);
+    /* loop inst2: r3 = r1 * r2 | r5 = r3 + r4 | r6 = in */
     status |= vsi_nn_sp_mul(&sp_insts_param[3], VSI_NN_SP_SR1, VSI_NN_SP_SR2, VSI_NN_SP_SR3);
     status |= vsi_nn_sp_add(&sp_insts_param[3], VSI_NN_SP_SR3, VSI_NN_SP_SR4, VSI_NN_SP_SR5);
     status |= vsi_nn_sp_move(&sp_insts_param[3], VSI_NN_SP_SRIN, VSI_NN_SP_SR6);
-    /* loop inst3: r8 = pwlMul * pwlMul || r2 = pwlAdd + pwlAdd || r8 = r7 */
+    /* loop inst3: r8 = pwlMul * pwlMul | r2 = pwlAdd + pwlAdd | r8 = r7 */
     status |= vsi_nn_sp_mul(&sp_insts_param[4], VSI_NN_SP_PWLMUL, VSI_NN_SP_PWLMUL, VSI_NN_SP_SR8);
     status |= vsi_nn_sp_sub(&sp_insts_param[4], VSI_NN_SP_PWLADD, VSI_NN_SP_PWLADD, VSI_NN_SP_SR2);
     status |= vsi_nn_sp_move(&sp_insts_param[4], VSI_NN_SP_SR7, VSI_NN_SP_SR8);
@@ -615,6 +616,11 @@ vsi_nn_kernel_node_t vsi_nn_sp_get_cell_status_node
     inputs_tensor[1] = cell_status_in->t;
     inputs_tensor[2] = dummy0_input->t;
     inputs_tensor[3] = dummy1_input->t;
+    if (dummy2_input)
+    {
+        inputs_tensor[4] = dummy2_input->t;
+    }
+
     outputs_tensor[0] = cell_status_out->t;
     outputs_tensor[1] = dummy_output->t;
 
@@ -968,7 +974,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_lstm_add_node
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input0,
         vsi_nn_tensor_t             * input1,
-        vsi_nn_tensor_t             * output,
+        vsi_nn_tensor_t             * output0,
+        vsi_nn_tensor_t             * output1,
         char                        * kernel_name
     )
 {
@@ -977,9 +984,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_lstm_add_node
     const int32_t spInstsNum = spInitInstsNum + spLoopInstsNum;
 
     const uint32_t input_count = 2;
-    const uint32_t output_count = 1;
+    const uint32_t output_count = 2;
     vx_tensor inputs_tensor[2] = {NULL};
-    vx_tensor outputs_tensor[1] = {NULL};
+    vx_tensor outputs_tensor[2] = {NULL};
     vx_node node = NULL;
     int32_t max_vector_depth = graph->ctx->config.sp_vector_depth;
 
@@ -990,7 +997,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_lstm_add_node
     vsi_status status = VSI_FAILURE;
     float input0_scale = vsi_nn_get_tensor_scale(input0);
     float input1_scale = vsi_nn_get_tensor_scale(input1);
-    float output_scale = vsi_nn_get_tensor_scale(output);
+    float output_scale = vsi_nn_get_tensor_scale(output0);
     float scale0 = input0_scale / output_scale;
     float scale1 = input1_scale / output_scale;
     float const2 = -scale1 * (float)vsi_nn_get_tensor_zero_point(input1);
@@ -1038,7 +1045,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_lstm_add_node
 
     inputs_tensor[0] = input0->t;
     inputs_tensor[1] = input1->t;
-    outputs_tensor[0] = output->t;
+    outputs_tensor[0] = output0->t;
+    outputs_tensor[1] = output1->t;
     node = vxStreamProcessorNode(
         graph->g,
         inputs_tensor,
@@ -1140,7 +1148,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_lstmunit_ln_activation
     }
 
     temp_node[2] = vsi_nn_sp_get_cell_status_node(graph, input_c, cell_state_in,
-        dummy_tensor[0], dummy_tensor[1], cell_state_out, dummy_tensor[2], "lstmunit_activation_ln_2");
+        dummy_tensor[0], dummy_tensor[1], NULL, cell_state_out, dummy_tensor[2], "lstmunit_activation_ln_2");
     CHECK_PTR_FAIL_GOTO( temp_node[2], "Create lstmunit_activation sp get_cell_status node fail.", final );
 
     temp_node[3] = vsi_nn_sp_sigmoid_node
@@ -1201,7 +1209,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_lstmunit_float_activation
     vsi_nn_kernel_node_t node = NULL;
     vsi_nn_kernel_node_t temp_node[6] = {NULL};
     vsi_nn_tensor_attr_t attr;
-    vsi_nn_tensor_t * dummy_tensor[4] = {NULL};
+    vsi_nn_tensor_t * dummy_tensor[5] = {NULL};
     vsi_nn_tensor_t * ifco_tensor[4] = {NULL};
 
     memcpy( &attr, &cell_state_in->attr, sizeof(vsi_nn_tensor_attr_t) );
@@ -1217,6 +1225,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_lstmunit_float_activation
     CHECK_PTR_FAIL_GOTO( dummy_tensor[2], "Create dummy_tensor fail.", final );
     dummy_tensor[3] = vsi_nn_create_dummy_tensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( dummy_tensor[3], "Create dummy_tensor fail.", final );
+    dummy_tensor[4] = vsi_nn_create_dummy_tensor( graph, &attr );
+    CHECK_PTR_FAIL_GOTO( dummy_tensor[4], "Create dummy_tensor fail.", final );
 
     memcpy( &attr, &cell_state_in->attr, sizeof(vsi_nn_tensor_attr_t) );
     attr.dtype.vx_type = VSI_NN_TYPE_FLOAT32;
@@ -1234,85 +1244,42 @@ vsi_nn_kernel_node_t vsi_nn_sp_lstmunit_float_activation
 
     if (!_is_cifg)
     {
-        temp_node[0] = vsi_nn_sp_add_sigmoid_node
-        (
-            graph,
-            input_i,
-            hstate_i,
-            NULL,
-            dummy_tensor[0],
-            VSI_NN_SP_VR11,
-            "lstmunit_activation_0"
-        );
+        temp_node[0] = vsi_nn_sp_add_sigmoid_node(graph, input_i, hstate_i, NULL,
+            dummy_tensor[0], VSI_NN_SP_VR11, "lstmunit_activation_0");
         CHECK_PTR_FAIL_GOTO( temp_node[0], "Create lstmunit_activation sp add node fail.", final );
 
         if (forget_bias == 0)
         {
-            temp_node[1] = vsi_nn_sp_add_sigmoid_node
-            (
-                graph,
-                input_f,
-                hstate_f,
-                NULL,
-                dummy_tensor[1],
-                VSI_NN_SP_VR12,
-                "lstmunit_activation_1"
-            );
+            temp_node[1] = vsi_nn_sp_add_sigmoid_node(graph, input_f, hstate_f, NULL,
+                dummy_tensor[1], VSI_NN_SP_VR12, "lstmunit_activation_1");
         }
         else
         {
-            temp_node[1] = vsi_nn_sp_add_sigmoid_ext_node
-            (
-                graph,
-                input_f,
-                hstate_f,
-                dummy_tensor[1],
-                forget_bias,
-                "lstmunit_activation_1"
-            );
+            temp_node[1] = vsi_nn_sp_add_sigmoid_ext_node(graph, input_f, hstate_f,
+                dummy_tensor[1], forget_bias, "lstmunit_activation_1");
         }
         CHECK_PTR_FAIL_GOTO( temp_node[1], "Create lstmunit_activation sp add sigmoid node fail.", final );
     }
     else
     {
-        temp_node[0] = vsi_nn_sp_lstm_add_node
-        (
-            graph,
-            input_f,
-            hstate_f,
-            ifco_tensor[1],
-            "lstmunit_activation_0"
-        );
+        temp_node[0] = vsi_nn_sp_lstm_add_node(graph, input_f, hstate_f,
+            ifco_tensor[1], dummy_tensor[4], "lstmunit_activation_0");
         CHECK_PTR_FAIL_GOTO( temp_node[0], "Create lstmunit_activation sp add node fail.", final );
         temp_node[1] = vsi_nn_sp_cifg_linear_sigmoid_node(graph, ifco_tensor[1], dummy_tensor[0],
             dummy_tensor[1], forget_bias, "lstmunit_activation_1");
         CHECK_PTR_FAIL_GOTO( temp_node[1], "Create lstmunit_activation sp linear_sigmoid node fail.", final );
     }
 
-    temp_node[2] = vsi_nn_sp_lstm_add_node
-    (
-        graph,
-        input_c,
-        hstate_c,
-        ifco_tensor[2],
-        "lstmunit_activation_2"
-    );
+    temp_node[2] = vsi_nn_sp_lstm_add_node(graph, input_c, hstate_c,
+        ifco_tensor[2], dummy_tensor[4], "lstmunit_activation_2");
     CHECK_PTR_FAIL_GOTO( temp_node[2], "Create lstmunit_activation sp add node fail.", final );
 
     temp_node[3] = vsi_nn_sp_get_cell_status_node(graph, ifco_tensor[2], cell_state_in,
-        dummy_tensor[0], dummy_tensor[1], cell_state_out, dummy_tensor[2], "lstmunit_activation_3");
+        dummy_tensor[0], dummy_tensor[1], dummy_tensor[4], cell_state_out, dummy_tensor[2], "lstmunit_activation_3");
     CHECK_PTR_FAIL_GOTO( temp_node[3], "Create lstmunit_activation sp get_cell_status node fail.", final );
 
-    temp_node[4] = vsi_nn_sp_add_sigmoid_node
-        (
-        graph,
-        input_o,
-        hstate_o,
-        dummy_tensor[2],
-        dummy_tensor[3],
-        VSI_NN_SP_VR11,
-        "lstmunit_activation_4"
-        );
+    temp_node[4] = vsi_nn_sp_add_sigmoid_node(graph, input_o, hstate_o,
+        dummy_tensor[2], dummy_tensor[3], VSI_NN_SP_VR11,"lstmunit_activation_4");
     CHECK_PTR_FAIL_GOTO( temp_node[4], "Create lstmunit_activation sp add sigmoid node fail.", final );
 
     node = vsi_nn_sp_get_output_node(graph, dummy_tensor[2], dummy_tensor[3], output, "lstmunit_activation_5");
@@ -1337,6 +1304,7 @@ final:
     vsi_safe_release_tensor(dummy_tensor[1]);
     vsi_safe_release_tensor(dummy_tensor[2]);
     vsi_safe_release_tensor(dummy_tensor[3]);
+    vsi_safe_release_tensor(dummy_tensor[4]);
 
     vsi_safe_release_tensor(ifco_tensor[0]);
     vsi_safe_release_tensor(ifco_tensor[1]);
