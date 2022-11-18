@@ -53,6 +53,7 @@ typedef int32_t vsi_nn_kernel_lut_act_e; enum
     VSI_NN_KERNEL_LUT_LINEAR_SIGMOID   = 19,
     VSI_NN_KERNEL_LUT_ATAN             = 20,
     VSI_NN_KERNEL_LUT_ATANH            = 21,
+    VSI_NN_KERNEL_LUT_ACOSH            = 22,
 
 };
 
