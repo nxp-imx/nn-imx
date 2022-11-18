@@ -75,6 +75,12 @@ float4 eltwise_unary_atanh(float4 val)
 {
     return atanh(val);
 }
+
+float4 eltwise_unary_acosh(float4 val)
+{
+    return acosh(val);
+}
+
 _viv_uniform float inputScale;
 _viv_uniform float inputTail;
 _viv_uniform float outputScale;
@@ -190,3 +196,6 @@ ADD_ELTSISE_UNARY_2D(softsign)
 ADD_ELTSISE_UNARY_2D(atan)
 //ATANH
 ADD_ELTSISE_UNARY_2D(atanh)
+//ACOSH
+ADD_ELTSISE_UNARY_2D(acosh)
+

@@ -234,6 +234,11 @@ static float atanh_eval(float x)
     return (log_eval(1 + x) - log_eval(1 - x)) / 2;
 }
 
+static float acosh_eval(float x)
+{
+    return (log_eval(x + (float)sqrt(x * x - 1)));
+}
+
 static float vsi_nn_kernel_lut_activation(float data, vsi_nn_kernel_lut_params *lut_param)
 {
     float result = 0;
@@ -302,6 +307,9 @@ static float vsi_nn_kernel_lut_activation(float data, vsi_nn_kernel_lut_params *
         break;
     case VSI_NN_KERNEL_LUT_ATANH:
         result = atanh_eval(data);
+        break;
+    case VSI_NN_KERNEL_LUT_ACOSH:
+        result = acosh_eval(data);
         break;
     default:
         VSILOGE( "unsupported activation function:%d", lut_param->act_type );
