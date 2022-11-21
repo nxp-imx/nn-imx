@@ -61537,6 +61537,10 @@ __kernel __attribute__((reqd_work_group_size(LOCAL_SIZE0, 1, 1))) void topk_stag
   __read_only  image2d_t input, \\\n\
   __write_only image2d_t output, \\\n\
   __write_only image2d_t indices, \\\n\
+               float     input_scale, \\\n\
+               float     input_tail, \\\n\
+               float     output_scale, \\\n\
+               float     output_tail, \\\n\
                int       num_stages, \\\n\
                int       width \\\n\
   ) \\\n\
@@ -61621,6 +61625,10 @@ __kernel __attribute__((reqd_work_group_size(LOCAL_SIZE0, 1, 1))) void topk_stag
   __read_only  image2d_t input, \\\n\
   __write_only image2d_t output, \\\n\
   __write_only image2d_t indices, \\\n\
+               float     input_scale, \\\n\
+               float     input_tail, \\\n\
+               float     output_scale, \\\n\
+               float     output_tail, \\\n\
                int       num_stages, \\\n\
                int       width \\\n\
   ) \\\n\
@@ -61705,6 +61713,10 @@ __kernel __attribute__((reqd_work_group_size(LOCAL_SIZE0, 1, 1))) void topk_stag
   __read_only  image2d_t input, \\\n\
   __write_only image2d_t output, \\\n\
   __write_only image2d_t indices, \\\n\
+               float     input_scale, \\\n\
+               float     input_tail, \\\n\
+               float     output_scale, \\\n\
+               float     output_tail, \\\n\
                int       num_stages, \\\n\
                int       width \\\n\
   ) \\\n\
@@ -61782,7 +61794,182 @@ TOPK_I32(1 << 3, 3)\n\
 TOPK_I32(1 << 4, 4)\n\
 TOPK_I32(1 << 5, 5)\n\
 TOPK_I32(1 << 6, 6)\n\
-"; /* end of topk_cl*/
+\n\
+#define TOPK_F32toU32(LOCAL_SIZE0, STAGES) \\\n\
+__kernel __attribute__((reqd_work_group_size(LOCAL_SIZE0, 1, 1))) void topk_stage##STAGES##_F32toU32_I32 \\\n\
+ ( \\\n\
+  __read_only  image2d_t input, \\\n\
+  __write_only image2d_t output, \\\n\
+  __write_only image2d_t indices, \\\n\
+               float     input_scale, \\\n\
+               float     input_tail, \\\n\
+               float     output_scale, \\\n\
+               float     output_tail, \\\n\
+               int       num_stages, \\\n\
+               int       width \\\n\
+  ) \\\n\
+ { \\\n\
+    uint local_id = get_local_id(0); \\\n\
+    uint work_group_size = get_local_size(0); \\\n\
+    uint offset = 0; \\\n\
+ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(0), get_global_id(1)); \\\n\
+ \\\n\
+    __local float local_data[128]; \\\n\
+    __local uint local_indices[128]; \\\n\
+ \\\n\
+    float left = read_imagef(input, coord.xy).x; \\\n\
+    coord.z += work_group_size; \\\n\
+    float data = read_imagef(input, coord.zy).x; \\\n\
+    float right = coord.z < width ? data : -2147483647.0f; \\\n\
+ \\\n\
+    local_data[local_id] = left; \\\n\
+    local_indices[local_id] = local_id; \\\n\
+    local_data[local_id + work_group_size] = right; \\\n\
+    local_indices[local_id + work_group_size] = local_id + work_group_size; \\\n\
+ \\\n\
+    barrier(CLK_LOCAL_MEM_FENCE); \\\n\
+ \\\n\
+    for (uint stage = 0; stage < num_stages + 1; ++stage) \\\n\
+    { \\\n\
+        uint signo = (local_id >> stage) & 1; \\\n\
+ \\\n\
+        for (uint passOfStage = 0; passOfStage < stage + 1; ++passOfStage) \\\n\
+        { \\\n\
+            uint postShift = (stage - passOfStage); \\\n\
+            uint pairDistance = 1 << postShift; \\\n\
+ \\\n\
+            uint left_id = ( (local_id >> postShift) << (postShift + 1)) + (local_id & (pairDistance - 1)); \\\n\
+            uint right_id = left_id + pairDistance; \\\n\
+ \\\n\
+            uint left_idx = local_indices[left_id]; \\\n\
+            uint right_idx = local_indices[right_id]; \\\n\
+ \\\n\
+            float left_elem = local_data[left_id]; \\\n\
+            float right_elem = local_data[right_id]; \\\n\
+ \\\n\
+            if ((left_elem < right_elem) ^ signo) \\\n\
+            { \\\n\
+                local_data[left_id] = right_elem; \\\n\
+                local_data[right_id] = left_elem; \\\n\
+ \\\n\
+                local_indices[left_id] = right_idx; \\\n\
+                local_indices[right_id] = left_idx; \\\n\
+            } \\\n\
+ \\\n\
+            barrier(CLK_LOCAL_MEM_FENCE); \\\n\
+        } \\\n\
+    } \\\n\
+ \\\n\
+    uint4 dst; \\\n\
+    dst.x = convert_uint(local_data[local_id] * output_scale + output_tail); \\\n\
+    dst.y = convert_uint(local_data[local_id + work_group_size] * output_scale + output_tail); \\\n\
+    write_imageui(output, coord.xy, dst.xxxx); \\\n\
+    write_imageui(output, coord.zy, dst.yyyy); \\\n\
+ \\\n\
+    int4 index; \\\n\
+    index.x = ((int*)local_indices)[local_id]; \\\n\
+    index.y = ((int*)local_indices)[local_id + work_group_size]; \\\n\
+ \\\n\
+    write_imagei(indices, coord.xy, index.xxxx); \\\n\
+    write_imagei(indices, coord.zy, index.yyyy); \\\n\
+ }\n\
+\n\
+TOPK_F32toU32(1 << 0, 0)\n\
+TOPK_F32toU32(1 << 1, 1)\n\
+TOPK_F32toU32(1 << 2, 2)\n\
+TOPK_F32toU32(1 << 3, 3)\n\
+TOPK_F32toU32(1 << 4, 4)\n\
+TOPK_F32toU32(1 << 5, 5)\n\
+TOPK_F32toU32(1 << 6, 6)\n\
+\n\
+#define TOPK_F32toI32(LOCAL_SIZE0, STAGES) \\\n\
+__kernel __attribute__((reqd_work_group_size(LOCAL_SIZE0, 1, 1))) void topk_stage##STAGES##_F32toI32_I32 \\\n\
+ ( \\\n\
+  __read_only  image2d_t input, \\\n\
+  __write_only image2d_t output, \\\n\
+  __write_only image2d_t indices, \\\n\
+               float     input_scale, \\\n\
+               float     input_tail, \\\n\
+               float     output_scale, \\\n\
+               float     output_tail, \\\n\
+               int       num_stages, \\\n\
+               int       width \\\n\
+  ) \\\n\
+ { \\\n\
+    uint local_id = get_local_id(0); \\\n\
+    uint work_group_size = get_local_size(0); \\\n\
+    uint offset = 0; \\\n\
+ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(0), get_global_id(1)); \\\n\
+ \\\n\
+    __local float local_data[128]; \\\n\
+    __local uint local_indices[128]; \\\n\
+ \\\n\
+    float left = read_imagef(input, coord.xy).x; \\\n\
+    coord.z += work_group_size; \\\n\
+    float data = read_imagef(input, coord.zy).x; \\\n\
+    float right = coord.z < width ? data : -2147483647.0f; \\\n\
+ \\\n\
+    local_data[local_id] = left; \\\n\
+    local_indices[local_id] = local_id; \\\n\
+    local_data[local_id + work_group_size] = right; \\\n\
+    local_indices[local_id + work_group_size] = local_id + work_group_size; \\\n\
+ \\\n\
+    barrier(CLK_LOCAL_MEM_FENCE); \\\n\
+ \\\n\
+    for (uint stage = 0; stage < num_stages + 1; ++stage) \\\n\
+    { \\\n\
+        uint signo = (local_id >> stage) & 1; \\\n\
+ \\\n\
+        for (uint passOfStage = 0; passOfStage < stage + 1; ++passOfStage) \\\n\
+        { \\\n\
+            uint postShift = (stage - passOfStage); \\\n\
+            uint pairDistance = 1 << postShift; \\\n\
+ \\\n\
+            uint left_id = ( (local_id >> postShift) << (postShift + 1)) + (local_id & (pairDistance - 1)); \\\n\
+            uint right_id = left_id + pairDistance; \\\n\
+ \\\n\
+            uint left_idx = local_indices[left_id]; \\\n\
+            uint right_idx = local_indices[right_id]; \\\n\
+ \\\n\
+            float left_elem = local_data[left_id]; \\\n\
+            float right_elem = local_data[right_id]; \\\n\
+ \\\n\
+            if ((left_elem < right_elem) ^ signo) \\\n\
+            { \\\n\
+                local_data[left_id] = right_elem; \\\n\
+                local_data[right_id] = left_elem; \\\n\
+ \\\n\
+                local_indices[left_id] = right_idx; \\\n\
+                local_indices[right_id] = left_idx; \\\n\
+            } \\\n\
+ \\\n\
+            barrier(CLK_LOCAL_MEM_FENCE); \\\n\
+        } \\\n\
+    } \\\n\
+ \\\n\
+    int4 dst; \\\n\
+    dst.x = convert_int(local_data[local_id] * output_scale + output_tail); \\\n\
+    dst.y = convert_int(local_data[local_id + work_group_size] * output_scale + output_tail); \\\n\
+    write_imagei(output, coord.xy, dst.xxxx); \\\n\
+    write_imagei(output, coord.zy, dst.yyyy); \\\n\
+ \\\n\
+    int4 index; \\\n\
+    index.x = ((int*)local_indices)[local_id]; \\\n\
+    index.y = ((int*)local_indices)[local_id + work_group_size]; \\\n\
+ \\\n\
+    write_imagei(indices, coord.xy, index.xxxx); \\\n\
+    write_imagei(indices, coord.zy, index.yyyy); \\\n\
+ }\n\
+\n\
+TOPK_F32toI32(1 << 0, 0)\n\
+TOPK_F32toI32(1 << 1, 1)\n\
+TOPK_F32toI32(1 << 2, 2)\n\
+TOPK_F32toI32(1 << 3, 3)\n\
+TOPK_F32toI32(1 << 4, 4)\n\
+TOPK_F32toI32(1 << 5, 5)\n\
+TOPK_F32toI32(1 << 6, 6)"; /* end of topk_cl*/
 
 static const char topk_odd_even_sort_cl[] = "#define LOCAL_SIZE_X    (32)\n\
 __kernel __attribute__((reqd_work_group_size(LOCAL_SIZE_X, 1, 1))) void topk_odd_even_sort_F32toF32_I32\n\
@@ -61792,6 +61979,10 @@ __kernel __attribute__((reqd_work_group_size(LOCAL_SIZE_X, 1, 1))) void topk_odd
                image2d_t indices_t,\n\
   __write_only image2d_t output,\n\
   __write_only image2d_t indices,\n\
+               float     input_scale,\n\
+               float     input_tail,\n\
+               float     output_scale,\n\
+               float     output_tail,\n\
                int       width\n\
   )\n\
  {\n\
@@ -61901,6 +62092,10 @@ __kernel __attribute__((reqd_work_group_size(LOCAL_SIZE_X, 1, 1))) void topk_odd
                image2d_t indices_t,\n\
   __write_only image2d_t output,\n\
   __write_only image2d_t indices,\n\
+               float     input_scale,\n\
+               float     input_tail,\n\
+               float     output_scale,\n\
+               float     output_tail,\n\
                int       width\n\
   )\n\
  {\n\
@@ -62010,6 +62205,10 @@ __kernel __attribute__((reqd_work_group_size(LOCAL_SIZE_X, 1, 1))) void topk_odd
                image2d_t indices_t,\n\
   __write_only image2d_t output,\n\
   __write_only image2d_t indices,\n\
+               float     input_scale,\n\
+               float     input_tail,\n\
+               float     output_scale,\n\
+               float     output_tail,\n\
                int       width\n\
   )\n\
  {\n\
@@ -62110,7 +62309,239 @@ __kernel __attribute__((reqd_work_group_size(LOCAL_SIZE_X, 1, 1))) void topk_odd
         write_imagei(output, coord.xy, data);\n\
         write_imagei(indices, coord.xy, index);\n\
     }\n\
-}"; /* end of topk_odd_even_sort_cl*/
+}\n\
+"; /* end of topk_odd_even_sort_cl*/
+
+static const char topk_odd_even_sort2_cl[] = "#define LOCAL_SIZE_X    (32)\n\
+__kernel __attribute__((reqd_work_group_size(LOCAL_SIZE_X, 1, 1))) void topk_odd_even_sort_F32toU32_I32\n\
+ (\n\
+  __read_only  image2d_t input,\n\
+               image2d_t input_t,\n\
+               image2d_t indices_t,\n\
+  __write_only image2d_t output,\n\
+  __write_only image2d_t indices,\n\
+               float     input_scale,\n\
+               float     input_tail,\n\
+               float     output_scale,\n\
+               float     output_tail,\n\
+               int       width\n\
+  )\n\
+ {\n\
+    uint lid = get_local_id(0);\n\
+    uint work_group_size = get_local_size(0);\n\
+    uint offset = 0;\n\
+\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(0), get_global_id(1));\n\
+\n\
+    for (coord.x = lid; coord.x < width; coord.x += LOCAL_SIZE_X)\n\
+    {\n\
+        float4 data = read_imagef(input, coord.xy);\n\
+\n\
+        write_imagef(input_t, coord.xy, data);\n\
+        write_imagei(indices_t, coord.xy, coord.xxxx);\n\
+    }\n\
+\n\
+    __local int sorted[1];\n\
+    int width_minus_one = width - 1;\n\
+    int num_pixels_per_thread = (width_minus_one + LOCAL_SIZE_X) / LOCAL_SIZE_X;\n\
+    num_pixels_per_thread = num_pixels_per_thread + (num_pixels_per_thread & 1);\n\
+\n\
+    int x_start = lid * num_pixels_per_thread;\n\
+    int x_end = min(lid * num_pixels_per_thread + num_pixels_per_thread, width_minus_one);\n\
+\n\
+    sorted[0] = 0;\n\
+\n\
+    while (1)\n\
+    {\n\
+        if (lid == 0)\n\
+        {\n\
+            *sorted = 0;\n\
+        }\n\
+        int swapped = 0;\n\
+        barrier(CLK_GLOBAL_MEM_FENCE);\n\
+\n\
+        // odd-even\n\
+        coord.x = x_start;\n\
+        coord.z = x_start + 1;\n\
+        for (; coord.x < x_end; )\n\
+        {\n\
+            float4 left = read_imagef(input_t, coord.xy);\n\
+            float4 right = read_imagef(input_t, coord.zy);\n\
+\n\
+            if (left.x < right.x)\n\
+            {\n\
+                int4 l_index = read_imagei(indices_t, coord.xy);\n\
+                int4 r_index = read_imagei(indices_t, coord.zy);\n\
+                swapped = 1;\n\
+\n\
+                write_imagef(input_t, coord.xy, right);\n\
+                write_imagef(input_t, coord.zy, left);\n\
+\n\
+                write_imagei(indices_t, coord.xy, r_index);\n\
+                write_imagei(indices_t, coord.zy, l_index);\n\
+            }\n\
+\n\
+            coord.xz = coord.xz + 2;\n\
+        }\n\
+\n\
+        // even-odd\n\
+        coord.x = x_start + 1;\n\
+        coord.z = x_start + 2;\n\
+        for (; coord.x < x_end; )\n\
+        {\n\
+            float4 left = read_imagef(input_t, coord.xy);\n\
+            float4 right = read_imagef(input_t, coord.zy);\n\
+\n\
+            if (left.x < right.x)\n\
+            {\n\
+                int4 l_index = read_imagei(indices_t, coord.xy);\n\
+                int4 r_index = read_imagei(indices_t, coord.zy);\n\
+                swapped = 1;\n\
+\n\
+                write_imagef(input_t, coord.xy, right);\n\
+                write_imagef(input_t, coord.zy, left);\n\
+\n\
+                write_imagei(indices_t, coord.xy, r_index);\n\
+                write_imagei(indices_t, coord.zy, l_index);\n\
+            }\n\
+\n\
+            coord.xz = coord.xz + 2;\n\
+        }\n\
+\n\
+        atomic_add(sorted, swapped);\n\
+        barrier(CLK_GLOBAL_MEM_FENCE);\n\
+\n\
+        if (*sorted == 0)\n\
+            break;\n\
+        barrier(CLK_GLOBAL_MEM_FENCE);\n\
+    }\n\
+\n\
+    for (coord.x = lid; coord.x < width; coord.x += LOCAL_SIZE_X)\n\
+    {\n\
+        float4 data = read_imagef(input_t, coord.xy);\n\
+        int4 index = read_imagei(indices_t, coord.xy);\n\
+\n\
+        uint4 dst;\n\
+        dst = convert_uint4(data * output_scale + output_tail);\n\
+        write_imageui(output, coord.xy, dst);\n\
+        write_imagei(indices, coord.xy, index);\n\
+    }\n\
+}\n\
+\n\
+__kernel __attribute__((reqd_work_group_size(LOCAL_SIZE_X, 1, 1))) void topk_odd_even_sort_F32toI32_I32\n\
+ (\n\
+  __read_only  image2d_t input,\n\
+               image2d_t input_t,\n\
+               image2d_t indices_t,\n\
+  __write_only image2d_t output,\n\
+  __write_only image2d_t indices,\n\
+               float     input_scale,\n\
+               float     input_tail,\n\
+               float     output_scale,\n\
+               float     output_tail,\n\
+               int       width\n\
+  )\n\
+ {\n\
+    uint lid = get_local_id(0);\n\
+    uint work_group_size = get_local_size(0);\n\
+    uint offset = 0;\n\
+\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(0), get_global_id(1));\n\
+\n\
+    for (coord.x = lid; coord.x < width; coord.x += LOCAL_SIZE_X)\n\
+    {\n\
+        float4 data = read_imagef(input, coord.xy);\n\
+\n\
+        write_imagef(input_t, coord.xy, data);\n\
+        write_imagei(indices_t, coord.xy, coord.xxxx);\n\
+    }\n\
+\n\
+    __local int sorted[1];\n\
+    int width_minus_one = width - 1;\n\
+    int num_pixels_per_thread = (width_minus_one + LOCAL_SIZE_X) / LOCAL_SIZE_X;\n\
+    num_pixels_per_thread = num_pixels_per_thread + (num_pixels_per_thread & 1);\n\
+\n\
+    int x_start = lid * num_pixels_per_thread;\n\
+    int x_end = min(lid * num_pixels_per_thread + num_pixels_per_thread, width_minus_one);\n\
+\n\
+    sorted[0] = 0;\n\
+\n\
+    while (1)\n\
+    {\n\
+        if (lid == 0)\n\
+        {\n\
+            *sorted = 0;\n\
+        }\n\
+        int swapped = 0;\n\
+        barrier(CLK_GLOBAL_MEM_FENCE);\n\
+\n\
+        // odd-even\n\
+        coord.x = x_start;\n\
+        coord.z = x_start + 1;\n\
+        for (; coord.x < x_end; )\n\
+        {\n\
+            float4 left = read_imagef(input_t, coord.xy);\n\
+            float4 right = read_imagef(input_t, coord.zy);\n\
+\n\
+            if (left.x < right.x)\n\
+            {\n\
+                int4 l_index = read_imagei(indices_t, coord.xy);\n\
+                int4 r_index = read_imagei(indices_t, coord.zy);\n\
+                swapped = 1;\n\
+\n\
+                write_imagef(input_t, coord.xy, right);\n\
+                write_imagef(input_t, coord.zy, left);\n\
+\n\
+                write_imagei(indices_t, coord.xy, r_index);\n\
+                write_imagei(indices_t, coord.zy, l_index);\n\
+            }\n\
+\n\
+            coord.xz = coord.xz + 2;\n\
+        }\n\
+\n\
+        // even-odd\n\
+        coord.x = x_start + 1;\n\
+        coord.z = x_start + 2;\n\
+        for (; coord.x < x_end; )\n\
+        {\n\
+            float4 left = read_imagef(input_t, coord.xy);\n\
+            float4 right = read_imagef(input_t, coord.zy);\n\
+\n\
+            if (left.x < right.x)\n\
+            {\n\
+                int4 l_index = read_imagei(indices_t, coord.xy);\n\
+                int4 r_index = read_imagei(indices_t, coord.zy);\n\
+                swapped = 1;\n\
+\n\
+                write_imagef(input_t, coord.xy, right);\n\
+                write_imagef(input_t, coord.zy, left);\n\
+\n\
+                write_imagei(indices_t, coord.xy, r_index);\n\
+                write_imagei(indices_t, coord.zy, l_index);\n\
+            }\n\
+\n\
+            coord.xz = coord.xz + 2;\n\
+        }\n\
+\n\
+        atomic_add(sorted, swapped);\n\
+        barrier(CLK_GLOBAL_MEM_FENCE);\n\
+\n\
+        if (*sorted == 0)\n\
+            break;\n\
+        barrier(CLK_GLOBAL_MEM_FENCE);\n\
+    }\n\
+\n\
+    for (coord.x = lid; coord.x < width; coord.x += LOCAL_SIZE_X)\n\
+    {\n\
+        float4 data = read_imagef(input_t, coord.xy);\n\
+        int4 index = read_imagei(indices_t, coord.xy);\n\
+\n\
+        int4 dst;\n\
+        dst = convert_int4(data * output_scale + output_tail);\n\
+        write_imagei(output, coord.xy, dst);\n\
+        write_imagei(indices, coord.xy, index);\n\
+    }\n\
+}"; /* end of topk_odd_even_sort2_cl*/
 
 static const char upsample_cl[] = "\n\
 #define UPSAMPLE_PROCESS(data_type, read_fun, write_fun) \\\n\
@@ -62684,6 +63115,7 @@ static const source_map_t cl_resource[] =
     {"tile_cl", tile_cl},
     {"topk_cl", topk_cl},
     {"topk_odd_even_sort_cl", topk_odd_even_sort_cl},
+    {"topk_odd_even_sort2_cl", topk_odd_even_sort2_cl},
     {"upsample_cl", upsample_cl},
 };
 
