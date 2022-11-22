@@ -1722,7 +1722,7 @@ static vsi_bool _check_stream_process_support
         return FALSE;
     }
 
-    if (inputs && input_num > 0 &&
+    if (inputs && input_num > 0 && inputs[0] &&
         inputs[0]->attr.dtype.vx_type == VSI_NN_TYPE_INT32)
     {
         return FALSE;
