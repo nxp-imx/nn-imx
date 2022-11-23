@@ -175,6 +175,39 @@ static vsi_status _static_batchnorm
     return status;
 }
 
+static void _expand_dims_for_param
+    (
+    vsi_nn_tensor_attr_t* attr,
+    uint32_t dim_num,
+    vsi_size_t* shapes_expand
+    )
+{
+    uint32_t i = 0;
+
+    if (attr->dim_num == 1 && dim_num > 2)
+    {
+        /* [C] reshape to [1, 1, C, 1] */
+        for (i = 0; i < dim_num; i++)
+        {
+            if (i == dim_num - 2)
+            {
+                shapes_expand[i] = attr->size[0];
+            }
+            else
+            {
+                shapes_expand[i] = 1;
+            }
+        }
+    }
+    else
+    {
+        for (i = 0; i < attr->dim_num; i++)
+        {
+            shapes_expand[i] = attr->size[i];
+        }
+    }
+}
+
 static vsi_status _dynamic_batchnorm
     (
     vsi_nn_node_t * self,
@@ -185,7 +218,8 @@ static vsi_status _dynamic_batchnorm
     vsi_status status = VSI_FAILURE;
     vsi_nn_kernel_param_t * param = NULL;
     vsi_size_t  shapes[4][VSI_NN_MAX_DIM_NUM] = {{ 1 }};
-    vsi_size_t* shapes_ptr[4] = {NULL};
+    vsi_size_t  shapes_expand[2][VSI_NN_MAX_DIM_NUM] = {{ 0 }};
+    vsi_size_t  *shapes_ptr[4] = {NULL};
     vsi_size_t  *shapes_in[3] = {NULL};
     vsi_size_t rank_in[3] = {0};
     uint32_t new_rank = 0;
@@ -197,11 +231,16 @@ static vsi_status _dynamic_batchnorm
     vsi_nn_kernel_param_add_float32( param, "eps", self->nn_param.batch_norm.eps );
 
     rank_in[0] = (vsi_size_t)inputs[0]->attr.dim_num;
-    rank_in[1] = (vsi_size_t)inputs[1]->attr.dim_num;
-    rank_in[2] = (vsi_size_t)inputs[3]->attr.dim_num;
+    rank_in[1] = (vsi_size_t)inputs[0]->attr.dim_num;
+    rank_in[2] = (vsi_size_t)inputs[0]->attr.dim_num;
+
+    /* [C] reshape to [1, 1, C, 1] if need */
+    _expand_dims_for_param(&(inputs[1]->attr), inputs[0]->attr.dim_num, shapes_expand[0]);
+    _expand_dims_for_param(&(inputs[3]->attr), inputs[0]->attr.dim_num, shapes_expand[1]);
+
     shapes_in[0] = inputs[0]->attr.size;
-    shapes_in[1] = inputs[1]->attr.size;
-    shapes_in[2] = inputs[3]->attr.size;
+    shapes_in[1] = shapes_expand[0];
+    shapes_in[2] = shapes_expand[1];
     for (i = 0; i < 4; i++)
     {
         shapes_ptr[i] = shapes[i];
