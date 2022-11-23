@@ -62,10 +62,10 @@ vsi_nn_spinst_t * vsi_nn_sp_l2norm_z_direction_square_inst
         status  = vsi_nn_sp_mul_clamp(&sp_insts_param[0], VSI_NN_SP_SR3, VSI_NN_SP_SRIN, VSI_NN_SP_SR1);
         status |= vsi_nn_sp_add(&sp_insts_param[0], VSI_NN_SP_SR4, VSI_NN_SP_SR5, VSI_NN_SP_VR11);
         status |= vsi_nn_sp_move(&sp_insts_param[0], VSI_NN_SP_VR11, VSI_NN_SP_SR5);
-        /* loop inst1: r4 = r1 * r1 | r6 = r1 + r5 | out = r1 */
+        /* loop inst1: r4 = r1 * r1 | r8 = r1 + r5 | out = r8 */
         status |= vsi_nn_sp_mul(&sp_insts_param[1], VSI_NN_SP_SR1, VSI_NN_SP_SR1, VSI_NN_SP_SR4);
-        status |= vsi_nn_sp_add(&sp_insts_param[1], VSI_NN_SP_SR1, VSI_NN_SP_SR5, VSI_NN_SP_SR6);
-        status |= vsi_nn_sp_move(&sp_insts_param[1], VSI_NN_SP_SR1, VSI_NN_SP_SROUT);
+        status |= vsi_nn_sp_add(&sp_insts_param[1], VSI_NN_SP_SR1, VSI_NN_SP_SR5, VSI_NN_SP_SR8);
+        status |= vsi_nn_sp_move(&sp_insts_param[1], VSI_NN_SP_SR8, VSI_NN_SP_SROUT);
         CHECK_STATUS_FAIL_GOTO(status, final );
 
         attr.flush_cycle_num = 6;
