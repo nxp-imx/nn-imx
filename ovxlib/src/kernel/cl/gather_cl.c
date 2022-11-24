@@ -226,8 +226,7 @@ DEF_KERNEL_INITIALIZER(_gather_initializer)
     gpu_param.global_scale[1]  = 1;
     gpu_param.global_scale[2]  = 1;
 
-    gpu_param.global_size[0]   = gpu_align_p2((block_size + gpu_param.global_scale[0] - 1)
-                                        / gpu_param.global_scale[0], 4);
+    gpu_param.global_size[0]   = block_size;
     gpu_param.global_size[1]   = indices_num;
     gpu_param.global_size[2]   = block_num;
 
