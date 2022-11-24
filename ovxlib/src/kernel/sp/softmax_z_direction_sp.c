@@ -275,9 +275,6 @@ vsi_nn_kernel_node_t vsi_nn_sp_max_axis2_node
     VSI_NN_SP_ATTR_SET_CONST_TO_SR6(attr, clamp_max);
     VSI_NN_SP_ATTR_SET_CONST_TO_SR7(attr, clamp_min);
 
-    attr.prog_init_instr_num = spInitInstsNum;
-    attr.prog_loop_instr_num = spLoopInstsNum;
-
     spinst = vsi_nn_create_spinst(graph);
     CHECK_PTR_FAIL_GOTO( spinst, "Create spInst fail.", final );
     status  = vsi_nn_add_spinst_insts(spinst, sp_insts_param, spInstsNum);
@@ -549,9 +546,6 @@ vsi_nn_kernel_node_t vsi_nn_sp_softmax_z_direction_exp_node
     attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_XY;
     attr.split_tilex_equal_imgx = TRUE;
     attr.split_max_vector_depth = max_vector_depth;
-
-    attr.prog_init_instr_num = spInitInstsNum;
-    attr.prog_loop_instr_num = spLoopInstsNum;
 
     spinst = vsi_nn_create_spinst(graph);
     CHECK_PTR_FAIL_GOTO( spinst, "Create spInst fail.", final );
