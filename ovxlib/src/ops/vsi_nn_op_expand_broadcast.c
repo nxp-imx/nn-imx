@@ -118,9 +118,12 @@ static vsi_bool op_setup
 
     memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
     attr.dim_num = p->dim_num;
-    if (inputs[0]->attr.dtype.vx_type == VSI_NN_TYPE_INT32) {
+    if (inputs[0]->attr.dtype.qnt_type == VSI_NN_QNT_TYPE_NONE &&
+        (inputs[0]->attr.dtype.vx_type == VSI_NN_TYPE_INT32 ||
+        inputs[0]->attr.dtype.vx_type == VSI_NN_TYPE_INT16)) {
         attr.dtype.vx_type = VSI_NN_TYPE_INT32;
-    } else {
+    }
+    else {
         attr.dtype.vx_type = VSI_NN_TYPE_FLOAT16;
     }
     attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
