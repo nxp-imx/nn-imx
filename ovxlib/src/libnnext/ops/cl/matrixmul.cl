@@ -221,3 +221,175 @@ __kernel void gemm_transb_F32I8toF32_3D(
     coord_a.z = get_global_id(2);
     write_imagef(output, coord_a, sum);
 }
+
+__kernel void gemm_I8I8toI8_2D(
+    __read_only image2d_t   inputA,
+    __read_only image2d_t   inputB,
+    __write_only image2d_t  output,
+    int M,
+    int K,
+    int N,
+    int ac2zero,
+    int bc2zero,
+    float scale_a,
+    float zp_a,
+    float scale_b,
+    float zp_b,
+    float scale_out,
+    float zp_out
+    )
+{
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), 0, 0);
+    float4 sum = (float4)(0);
+    int4 dst;
+
+    for(; coord.z < K;)
+    {
+        float4 tempA0;
+        float4 tempB0;
+
+        tempA0 = convert_float4(read_imagei(inputA, coord.zy));
+        tempB0 = convert_float4(read_imagei(inputB, coord.xz));
+        tempA0.x = (tempA0.x - zp_a) * scale_a;
+        tempB0.x = (tempB0.x - zp_b) * scale_b;
+        coord.z++;
+
+        sum = sum + tempA0 * tempB0;
+    }
+    sum.x = sum.x * scale_out + zp_out;
+    dst = convert_int4(sum);
+
+    write_imagei(output, coord.xy, dst);
+}
+
+
+__kernel void gemm_I8I8toI8_3D(
+    __read_only image2d_array_t   inputA,
+    __read_only image2d_array_t   inputB,
+    __write_only image2d_array_t  output,
+    int M,
+    int K,
+    int N,
+    int ac2zero,
+    int bc2zero,
+    float scale_a,
+    float zp_a,
+    float scale_b,
+    float zp_b,
+    float scale_out,
+    float zp_out
+    )
+{
+    int4 coord_a = (int4)(0, get_global_id(1), (ac2zero ? 0 : get_global_id(2)), 0);
+    int4 coord_b = (int4)(get_global_id(0), 0, (bc2zero ? 0 : get_global_id(2)), 0);
+
+    float4 sum = (float4)(0);
+    int4 dst;
+
+    for(; coord_a.x < K;)
+    {
+        float4 tempA0;
+        float4 tempB0;
+
+        tempA0 = convert_float4(read_imagei(inputA, coord_a));
+        tempB0 = convert_float4(read_imagei(inputB, coord_b));
+        tempA0.x = (tempA0.x - zp_a) * scale_a;
+        tempB0.x = (tempB0.x - zp_b) * scale_b;
+
+        coord_a.x++;
+        coord_b.y++;
+
+        sum = sum + tempA0 * tempB0;
+    }
+    sum.x = sum.x * scale_out + zp_out;
+    dst = convert_int4(sum);
+
+    coord_b.y = get_global_id(1);
+    coord_b.z = get_global_id(2);
+    write_imagei(output, coord_b, dst);
+}
+
+__kernel void gemm_transb_I8I8toI8_2D(
+    __read_only image2d_t   inputA,
+    __read_only image2d_t   inputB,
+    __write_only image2d_t  output,
+    int M,
+    int K,
+    int N,
+    int ac2zero,
+    int bc2zero,
+    float scale_a,
+    float zp_a,
+    float scale_b,
+    float zp_b,
+    float scale_out,
+    float zp_out
+    )
+{
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), 0, 0);
+    float4 sum = (float4)(0);
+    int4 dst;
+
+    for(; coord.z < K;)
+    {
+        float4 tempA0;
+        float4 tempB0;
+
+        tempA0 = convert_float4(read_imagei(inputA, coord.zy));
+        tempB0 = convert_float4(read_imagei(inputB, coord.zx));
+        tempA0.x = (tempA0.x - zp_a) * scale_a;
+        tempB0.x = (tempB0.x - zp_b) * scale_b;
+        coord.z++;
+
+        sum = sum + tempA0 * tempB0;
+    }
+    sum.x = sum.x * scale_out + zp_out;
+    dst = convert_int4(sum);
+
+    write_imagei(output, coord.xy, dst);
+}
+
+__kernel void gemm_transb_I8I8toI8_3D(
+    __read_only image2d_array_t   inputA,
+    __read_only image2d_array_t   inputB,
+    __write_only image2d_array_t  output,
+    int M,
+    int K,
+    int N,
+    int ac2zero,
+    int bc2zero,
+    float scale_a,
+    float zp_a,
+    float scale_b,
+    float zp_b,
+    float scale_out,
+    float zp_out
+    )
+{
+    int4 coord_a = (int4)(0, get_global_id(1), (ac2zero ? 0 : get_global_id(2)), 0);
+    int4 coord_b = (int4)(0, get_global_id(0), (bc2zero ? 0 : get_global_id(2)), 0);
+
+    float4 sum = (float4)(0);
+    int4 dst;
+
+    for(; coord_a.x < K;)
+    {
+        float4 tempA0;
+        float4 tempB0;
+
+        tempA0 = convert_float4(read_imagei(inputA, coord_a));
+        tempB0 = convert_float4(read_imagei(inputB, coord_b));
+        tempA0.x = (tempA0.x - zp_a) * scale_a;
+        tempB0.x = (tempB0.x - zp_b) * scale_b;
+        coord_a.x++;
+        coord_b.x++;
+
+        sum = sum + tempA0 * tempB0;
+    }
+    sum.x = sum.x * scale_out + zp_out;
+    dst = convert_int4(sum);
+
+    coord_a.x = get_global_id(0);
+    coord_a.z = get_global_id(2);
+    write_imagei(output, coord_a, dst);
+}
