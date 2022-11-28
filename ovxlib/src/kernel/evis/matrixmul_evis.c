@@ -1058,10 +1058,6 @@ DEF_KERNEL_INITIALIZER(_matrix_mul_initializer)
                     "uniConvertUint8SubZpToFp32B_4x4", &uniConvertUint8SubZpToFp32B_4x4 );
                 status |= vsi_nn_kernel_gpu_add_param( node,
                     "uniConvertInt32toUint8_2x8", &uniConvertInt32toUint8_2x8 );
-                status |= vsi_nn_kernel_gpu_add_param( node,
-                    "uniI16MulI16SumtoI32_16x1", &uniI16MulI16SumtoI32_16x1 );
-                status |= vsi_nn_kernel_gpu_add_param( node,
-                    "uniI16MulI16SumtoI32B_16x1", &uniI16MulI16SumtoI32B_16x1 );
                 status |= vsi_nn_kernel_gpu_add_param( node, "input0_ZP", &src0ZP );
                 status |= vsi_nn_kernel_gpu_add_param( node, "input1_ZP", &src1ZP );
                 status |= vsi_nn_kernel_gpu_add_param( node, "outputScale", &reScaleOut );
