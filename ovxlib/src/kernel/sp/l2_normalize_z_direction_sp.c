@@ -59,15 +59,15 @@ vsi_nn_spinst_t * vsi_nn_sp_l2norm_z_direction_square_inst
     if (fifo_depth > 3)
     {
         /* init inst0: r2 = 0 */
-        status  = vsi_nn_sp_move(&sp_insts_param[0], 0, VSI_NN_SP_SR2);
-        /* loop inst0: r1 = clamp(r3 * in, r6, r7) | v11 = r4 + r5 | r5 = v11 */
+        status  = vsi_nn_sp_move_constant(&sp_insts_param[0], 0, VSI_NN_SP_SR2);
+        /* loop inst0: r1 = clamp(r3 * in, r6, r7) | v11 = r4 + r5 | out = r8 */
         status |= vsi_nn_sp_mul_clamp(&sp_insts_param[1], VSI_NN_SP_SR3, VSI_NN_SP_SRIN, VSI_NN_SP_SR1);
         status |= vsi_nn_sp_add(&sp_insts_param[1], VSI_NN_SP_SR4, VSI_NN_SP_SR5, VSI_NN_SP_VR11);
-        status |= vsi_nn_sp_move(&sp_insts_param[1], VSI_NN_SP_VR11, VSI_NN_SP_SR5);
-        /* loop inst1: r4 = r1 * r1 | r8 = r1 + r2 | out = r8 */
+        status |= vsi_nn_sp_move(&sp_insts_param[1], VSI_NN_SP_SR8, VSI_NN_SP_SROUT);
+        /* loop inst1: r4 = r1 * r1 | r8 = r1 + r2 | r5 = v11 */
         status |= vsi_nn_sp_mul(&sp_insts_param[2], VSI_NN_SP_SR1, VSI_NN_SP_SR1, VSI_NN_SP_SR4);
         status |= vsi_nn_sp_add(&sp_insts_param[2], VSI_NN_SP_SR1, VSI_NN_SP_SR2, VSI_NN_SP_SR8);
-        status |= vsi_nn_sp_move(&sp_insts_param[2], VSI_NN_SP_SR8, VSI_NN_SP_SROUT);
+        status |= vsi_nn_sp_move(&sp_insts_param[2], VSI_NN_SP_VR11, VSI_NN_SP_SR5);
         CHECK_STATUS_FAIL_GOTO(status, final );
 
         attr.flush_cycle_num = 6;
@@ -229,15 +229,15 @@ vsi_nn_kernel_node_t vsi_nn_sp_l2norm_z_direction_square_node
     clamp_max = clamp_max * input_scale;
 
     /* loop inst0: r2 = 0 */
-    status  = vsi_nn_sp_move(&sp_insts_param[0], 0, VSI_NN_SP_SR2);
-    /* loop inst0: r1 = clamp(r3 * in, r6, r7) | v11 = r4 + r5 | r5 = v11 */
+    status  = vsi_nn_sp_move_constant(&sp_insts_param[0], 0, VSI_NN_SP_SR2);
+    /* loop inst0: r1 = clamp(r3 * in, r6, r7) | v11 = r4 + r5 | out = r8 */
     status  = vsi_nn_sp_mul_clamp(&sp_insts_param[1], VSI_NN_SP_SR3, VSI_NN_SP_SRIN, VSI_NN_SP_SR1);
     status |= vsi_nn_sp_add(&sp_insts_param[1], VSI_NN_SP_SR4, VSI_NN_SP_SR5, VSI_NN_SP_VR11);
-    status |= vsi_nn_sp_move(&sp_insts_param[1], VSI_NN_SP_VR11, VSI_NN_SP_SR5);
-    /* loop inst1: r4 = r1 * r1 | r8 = r1 + r2 | out = r8 */
+    status |= vsi_nn_sp_move(&sp_insts_param[1], VSI_NN_SP_SR8, VSI_NN_SP_SROUT);
+    /* loop inst1: r4 = r1 * r1 | r8 = r1 + r2 | r5 = v11 */
     status |= vsi_nn_sp_mul(&sp_insts_param[2], VSI_NN_SP_SR1, VSI_NN_SP_SR1, VSI_NN_SP_SR4);
     status |= vsi_nn_sp_add(&sp_insts_param[2], VSI_NN_SP_SR1, VSI_NN_SP_SR2, VSI_NN_SP_SR8);
-    status |= vsi_nn_sp_move(&sp_insts_param[2], VSI_NN_SP_SR8, VSI_NN_SP_SROUT);
+    status |= vsi_nn_sp_move(&sp_insts_param[2], VSI_NN_SP_VR11, VSI_NN_SP_SR5);
     CHECK_STATUS_FAIL_GOTO(status, final );
 
     attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_XYMERGE;
