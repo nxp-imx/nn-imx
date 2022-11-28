@@ -340,6 +340,111 @@ final:
     return (vsi_nn_kernel_node_t)node;
 }
 
+vsi_nn_kernel_node_t vsi_nn_sp_add_hsigmoid_node
+    (
+        vsi_nn_graph_t              * graph,
+        vsi_nn_tensor_t             * input0,
+        vsi_nn_tensor_t             * input1,
+        vsi_nn_tensor_t             * input2,
+        vsi_nn_tensor_t             * output,
+        uint8_t                       dst_vr,
+        char                        * kernel_name
+    )
+{
+    const int32_t spInitInstsNum = 0;
+    const int32_t spLoopInstsNum = 2;
+    const int32_t spInstsNum = spInitInstsNum + spLoopInstsNum;
+
+    const uint32_t input_count = input2 == NULL ? 2 : 3;
+    const uint32_t output_count = 1;
+    vx_tensor inputs_tensor[3] = {NULL};
+    vx_tensor outputs_tensor[1] = {NULL};
+    vx_node node = NULL;
+    int32_t max_vector_depth = graph->ctx->config.sp_vector_depth;
+
+    vsi_nn_spinst_t *spinst = NULL;
+    vsi_nn_spinst_inst_param sp_insts_param[2];
+    vsi_nn_spinst_attr_t attr;
+    float alpha = 0.2f;
+    float beta = 0.5f;
+    float input_scale = vsi_nn_get_tensor_scale(input0);
+
+    vsi_status status = VSI_FAILURE;
+
+    memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
+    vsi_nn_init_spinst_attr(&attr);
+
+    /* loop inst0: r1 = in * r3 | r2 = r1 + r2 */
+    status  = vsi_nn_sp_mul(&sp_insts_param[0], VSI_NN_SP_SRIN, VSI_NN_SP_SR3, VSI_NN_SP_SR1);
+    status |= vsi_nn_sp_add(&sp_insts_param[0], VSI_NN_SP_SR1, VSI_NN_SP_SR2, VSI_NN_SP_SR2);
+    /* loop inst1: v11/v12 = clamp(r4 * r2, r6, r7) | r2 = in + r5 */
+    status |= vsi_nn_sp_mul_clamp(&sp_insts_param[1], VSI_NN_SP_SR4, VSI_NN_SP_SR2, dst_vr);
+    status |= vsi_nn_sp_add(&sp_insts_param[1], VSI_NN_SP_SRIN, VSI_NN_SP_SR5, VSI_NN_SP_SR2);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
+    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_XYMERGE;
+
+    attr.input_setup = VSI_NN_SP_INPUT_SETUP_INTERLEAVE_TWO_INPUT;
+    attr.prog_init_instr_num = spInitInstsNum;
+    attr.prog_loop_instr_num = spLoopInstsNum;
+    attr.flush_cycle_num = 6;
+    VSI_NN_SP_ATTR_SET_CONST_TO_SR3(attr, input_scale);
+    VSI_NN_SP_ATTR_SET_CONST_TO_SR4(attr, alpha);
+    VSI_NN_SP_ATTR_SET_CONST_TO_SR5_LOW_PRECISION(attr, beta / alpha);
+    VSI_NN_SP_ATTR_SET_CONST_TO_SR6(attr, 1);
+    VSI_NN_SP_ATTR_SET_CONST_TO_SR7(attr, 0);
+
+    if (dst_vr == VSI_NN_SP_VR11)
+    {
+        attr.ignored_leading_v11_wr = 3;
+        attr.v11_reset_at_start = VX_SP_ATTRIBUTE_V_RESET_AT_START_RESET;
+
+        attr.num_of_v11_wr_in_flush_cycle = 3;
+    }
+    else
+    {
+        attr.ignored_leading_v12_wr = 3;
+        attr.v12_reset_at_start = VX_SP_ATTRIBUTE_V_RESET_AT_START_RESET;
+
+        attr.num_of_v12_wr_in_flush_cycle = 3;
+    }
+
+    attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_XYZ;
+    attr.split_max_vector_depth = max_vector_depth;
+
+    spinst = vsi_nn_create_spinst(graph);
+    CHECK_PTR_FAIL_GOTO( spinst, "Create spInst fail.", final );
+    status  = vsi_nn_add_spinst_insts(spinst, sp_insts_param, spInstsNum);
+    status |= vsi_nn_set_spinst_attr(spinst, attr);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
+    inputs_tensor[0] = input0->t;
+    inputs_tensor[1] = input1->t;
+    if (input2)
+        inputs_tensor[2] = input2->t;
+    outputs_tensor[0] = output->t;
+
+    node = vxStreamProcessorNode(
+        graph->g,
+        inputs_tensor,
+        input_count,
+        outputs_tensor,
+        output_count,
+        spinst->sp,
+        NULL);
+
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
+final:
+    if (spinst)
+    {
+        vsi_nn_release_spinst(&spinst);
+    }
+
+    return (vsi_nn_kernel_node_t)node;
+}
+
 vsi_nn_kernel_node_t vsi_nn_sp_add_tanh_node
     (
         vsi_nn_graph_t              * graph,
@@ -535,6 +640,98 @@ final:
     return (vsi_nn_kernel_node_t)node;
 }
 
+vsi_nn_kernel_node_t vsi_nn_sp_add_hsigmoid_ext_node
+    (
+        vsi_nn_graph_t              * graph,
+        vsi_nn_tensor_t             * input0,
+        vsi_nn_tensor_t             * input1,
+        vsi_nn_tensor_t             * dummy_output,
+        float                         forget_bias,
+        char                        * kernel_name
+    )
+{
+    const int32_t spInitInstsNum = 0;
+    const int32_t spLoopInstsNum = 4;
+    const int32_t spInstsNum = spInitInstsNum + spLoopInstsNum;
+
+    const uint32_t input_count = 2;
+    const uint32_t output_count = 1;
+    vx_tensor inputs_tensor[2] = {NULL};
+    vx_tensor outputs_tensor[1] = {NULL};
+    vx_node node = NULL;
+    int32_t max_vector_depth = graph->ctx->config.sp_vector_depth;
+    float input0_scale = vsi_nn_get_tensor_scale(input0);
+
+    vsi_nn_spinst_t *spinst = NULL;
+    vsi_nn_spinst_inst_param sp_insts_param[5];
+    vsi_nn_spinst_attr_t attr;
+    float alpha = 0.2f;
+    float beta = 0.5f;
+
+    vsi_status status = VSI_FAILURE;
+
+    memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
+    vsi_nn_init_spinst_attr(&attr);
+
+    /* loop inst0: r1 = in * r3 | r2 = r1 + r2 */
+    status  = vsi_nn_sp_mul(&sp_insts_param[0], VSI_NN_SP_SRIN, VSI_NN_SP_SR3, VSI_NN_SP_SR1);
+    status |= vsi_nn_sp_add(&sp_insts_param[0], VSI_NN_SP_SR1, VSI_NN_SP_SR2, VSI_NN_SP_SR2);
+    /* loop inst1: v11/v12 = clamp(r2 * r5, r6, r7) | r2 = in + r4 */
+    status |= vsi_nn_sp_mul_clamp(&sp_insts_param[1], VSI_NN_SP_SR4, VSI_NN_SP_SR2, VSI_NN_SP_VR12);
+    status |= vsi_nn_sp_add(&sp_insts_param[1], VSI_NN_SP_SRIN, VSI_NN_SP_SR5, VSI_NN_SP_SR2);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
+    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_XYMERGE;
+
+    attr.input_setup = VSI_NN_SP_INPUT_SETUP_INTERLEAVE_TWO_INPUT;
+    attr.prog_init_instr_num = spInitInstsNum;
+    attr.prog_loop_instr_num = spLoopInstsNum;
+    attr.flush_cycle_num = 6;
+    attr.ignored_leading_v12_wr = 3;
+    attr.v12_reset_at_start = VX_SP_ATTRIBUTE_V_RESET_AT_START_RESET;
+
+    attr.num_of_v12_wr_in_flush_cycle = 3;
+
+    attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_XYZ;
+    attr.split_max_vector_depth = max_vector_depth;
+
+    VSI_NN_SP_ATTR_SET_CONST_TO_SR3(attr, input0_scale);
+    VSI_NN_SP_ATTR_SET_CONST_TO_SR4(attr, forget_bias + beta / alpha);
+    VSI_NN_SP_ATTR_SET_CONST_TO_SR5_LOW_PRECISION(attr, alpha);
+    VSI_NN_SP_ATTR_SET_CONST_TO_SR6(attr, 1 + forget_bias);
+    VSI_NN_SP_ATTR_SET_CONST_TO_SR7(attr, forget_bias);
+
+    spinst = vsi_nn_create_spinst(graph);
+    CHECK_PTR_FAIL_GOTO( spinst, "Create spInst fail.", final );
+    status  = vsi_nn_add_spinst_insts(spinst, sp_insts_param, spInstsNum);
+    status |= vsi_nn_set_spinst_attr(spinst, attr);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
+    inputs_tensor[0] = input0->t;
+    inputs_tensor[1] = input1->t;
+    outputs_tensor[0] = dummy_output->t;
+
+    node = vxStreamProcessorNode(
+        graph->g,
+        inputs_tensor,
+        input_count,
+        outputs_tensor,
+        output_count,
+        spinst->sp,
+        NULL);
+
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
+final:
+    if (spinst)
+    {
+        vsi_nn_release_spinst(&spinst);
+    }
+
+    return (vsi_nn_kernel_node_t)node;
+}
+
 vsi_nn_kernel_node_t vsi_nn_sp_get_cell_status_node
     (
         vsi_nn_graph_t              * graph,
@@ -676,14 +873,14 @@ vsi_nn_kernel_node_t vsi_nn_sp_get_float_output_node
     memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
     vsi_nn_init_spinst_attr(&attr);
 
-    /* loop inst0: r1 = pwlSetup(v12) || r2 = pwlMul * pwlMul || r3 = pwlAdd + pwlAdd */
+    /* loop inst0: r1 = pwlSetup(v12) | r2 = pwlMul * pwlMul | r3 = pwlAdd + pwlAdd */
     status  = vsi_nn_sp_pwl_tanh(&sp_insts_param[0], VSI_NN_SP_VR12, VSI_NN_SP_SR1);
     status |= vsi_nn_sp_mul(&sp_insts_param[0], VSI_NN_SP_PWLMUL, VSI_NN_SP_PWLMUL, VSI_NN_SP_SR2);
     status |= vsi_nn_sp_sub(&sp_insts_param[0], VSI_NN_SP_PWLADD, VSI_NN_SP_PWLADD, VSI_NN_SP_SR3);
-    /* loop inst1: r5 = r2 * r3 || r6 = r5 + r4 */
+    /* loop inst1: r5 = r2 * r3 | r6 = r5 + r4 */
     status |= vsi_nn_sp_mul(&sp_insts_param[1], VSI_NN_SP_SR2, VSI_NN_SP_SR3, VSI_NN_SP_SR5);
     status |= vsi_nn_sp_add(&sp_insts_param[1], VSI_NN_SP_SR5, VSI_NN_SP_SR4, VSI_NN_SP_SR6);
-    /* loop inst2: out = r6 * v11 || r4 = r1 */
+    /* loop inst2: out = r6 * v11 | r4 = r1 */
     status |= vsi_nn_sp_mul(&sp_insts_param[2], VSI_NN_SP_SR6, VSI_NN_SP_VR11, VSI_NN_SP_SROUT);
     status |= vsi_nn_sp_move(&sp_insts_param[2], VSI_NN_SP_SR1, VSI_NN_SP_SR4);
     CHECK_STATUS_FAIL_GOTO(status, final );
@@ -1547,6 +1744,121 @@ final:
     return node;
 }
 
+vsi_nn_kernel_node_t vsi_nn_sp_lstmunit_hsigmoid_activation
+    (
+        vsi_nn_graph_t              * graph,
+        vsi_nn_tensor_t             * input_i,
+        vsi_nn_tensor_t             * input_f,
+        vsi_nn_tensor_t             * input_c,
+        vsi_nn_tensor_t             * input_o,
+        vsi_nn_tensor_t             * cell_state_in,
+        vsi_nn_tensor_t             * hstate_i,
+        vsi_nn_tensor_t             * hstate_f,
+        vsi_nn_tensor_t             * hstate_c,
+        vsi_nn_tensor_t             * hstate_o,
+        vsi_nn_tensor_t             * output,
+        vsi_nn_tensor_t             * cell_state_out,
+        vsi_nn_tensor_t             * hstate_out,
+        int32_t                      _is_cifg,
+        int32_t                      _is_proj,
+        float                        forget_bias
+    )
+{
+    vsi_nn_kernel_node_t node = NULL;
+    vsi_nn_kernel_node_t temp_node[6] = {NULL};
+    vsi_nn_tensor_attr_t attr;
+    vsi_nn_tensor_t * dummy_tensor[5] = {NULL};
+
+    memcpy( &attr, &cell_state_in->attr, sizeof(vsi_nn_tensor_attr_t) );
+    attr.dtype.vx_type = VSI_NN_TYPE_FLOAT32;
+    attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
+    attr.is_const = FALSE;
+    attr.vtl = TRUE;
+    dummy_tensor[0] = vsi_nn_create_dummy_tensor( graph, &attr );
+    CHECK_PTR_FAIL_GOTO( dummy_tensor[0], "Create dummy_tensor fail.", final );
+    dummy_tensor[1] = vsi_nn_create_dummy_tensor( graph, &attr );
+    CHECK_PTR_FAIL_GOTO( dummy_tensor[1], "Create dummy_tensor fail.", final );
+    dummy_tensor[2] = vsi_nn_create_dummy_tensor( graph, &attr );
+    CHECK_PTR_FAIL_GOTO( dummy_tensor[2], "Create dummy_tensor fail.", final );
+    dummy_tensor[3] = vsi_nn_create_dummy_tensor( graph, &attr );
+    CHECK_PTR_FAIL_GOTO( dummy_tensor[3], "Create dummy_tensor fail.", final );
+    dummy_tensor[4] = vsi_nn_create_dummy_tensor( graph, &attr );
+    CHECK_PTR_FAIL_GOTO( dummy_tensor[4], "Create dummy_tensor fail.", final );
+
+    if (!_is_cifg)
+    {
+        temp_node[0] = vsi_nn_sp_add_hsigmoid_node(graph, input_i, hstate_i, NULL,
+            dummy_tensor[0], VSI_NN_SP_VR11, "lstmunit_activation_0");
+        CHECK_PTR_FAIL_GOTO( temp_node[0], "Create lstmunit_activation sp add node fail.", final );
+
+        if (forget_bias == 0)
+        {
+            temp_node[1] = vsi_nn_sp_add_hsigmoid_node(graph, input_f, hstate_f, NULL,
+                dummy_tensor[1], VSI_NN_SP_VR12, "lstmunit_activation_1");
+        }
+        else
+        {
+            temp_node[1] = vsi_nn_sp_add_hsigmoid_ext_node(graph, input_f, hstate_f,
+                dummy_tensor[1], forget_bias, "lstmunit_activation_1");
+        }
+        CHECK_PTR_FAIL_GOTO( temp_node[1], "Create lstmunit_activation sp add sigmoid node fail.", final );
+    }
+    else
+    {
+        if (forget_bias == 0)
+        {
+            temp_node[0] = vsi_nn_sp_add_hsigmoid_node(graph, input_f, hstate_f, NULL,
+                dummy_tensor[0], VSI_NN_SP_VR12, "lstmunit_activation_0");
+        }
+        else
+        {
+            temp_node[0] = vsi_nn_sp_add_hsigmoid_ext_node(graph, input_f, hstate_f,
+                dummy_tensor[0], forget_bias, "lstmunit_activation_0");
+        }
+        CHECK_PTR_FAIL_GOTO( temp_node[0], "Create lstmunit_activation sp add node fail.", final );
+
+        temp_node[1] = vsi_nn_sp_lstm_one_minus_v12_node(graph, dummy_tensor[0],
+            dummy_tensor[1], "lstmunit_activation_1");
+        CHECK_PTR_FAIL_GOTO( temp_node[1], "Create lstmunit_activation sp one_minus_v12 node fail.", final );
+    }
+
+    temp_node[2] = vsi_nn_sp_lstm_cell_times_v11_node(graph, cell_state_in, dummy_tensor[1],
+        dummy_tensor[2], "lstmunit_activation_2");
+    CHECK_PTR_FAIL_GOTO( temp_node[2], "Create lstmunit_activation sp node fail.", final );
+    temp_node[3] = vsi_nn_sp_lstm_cell_gate_times_v11_plus_v12_node(graph, input_c, hstate_c,
+        dummy_tensor[0], dummy_tensor[2], cell_state_out, dummy_tensor[3], "lstmunit_activation_3");
+
+    temp_node[4] = vsi_nn_sp_add_hsigmoid_node(graph, input_o, hstate_o,
+        dummy_tensor[3], dummy_tensor[4], VSI_NN_SP_VR11,"lstmunit_activation_4");
+    CHECK_PTR_FAIL_GOTO( temp_node[4], "Create lstmunit_activation sp add sigmoid node fail.", final );
+
+    node = vsi_nn_sp_get_output_node(graph, dummy_tensor[2], dummy_tensor[4], output, "lstmunit_activation_5");
+    CHECK_PTR_FAIL_GOTO( node, "Create lstmunit_activation sp sigmoid node fail.", final );
+
+    if (!_is_proj)
+    {
+        temp_node[5] = node;
+
+        node = vxTensorCopyNode( graph->g, output->t, hstate_out->t);
+        CHECK_PTR_FAIL_GOTO( node, "Create lstmunit_activation dataconvert node fail.", final );
+    }
+
+final:
+    vsi_safe_release_node(temp_node[0]);
+    vsi_safe_release_node(temp_node[1]);
+    vsi_safe_release_node(temp_node[2]);
+    vsi_safe_release_node(temp_node[3]);
+    vsi_safe_release_node(temp_node[4]);
+    vsi_safe_release_node(temp_node[5]);
+    vsi_safe_release_tensor(dummy_tensor[0]);
+    vsi_safe_release_tensor(dummy_tensor[1]);
+    vsi_safe_release_tensor(dummy_tensor[2]);
+    vsi_safe_release_tensor(dummy_tensor[3]);
+    vsi_safe_release_tensor(dummy_tensor[4]);
+
+    return node;
+}
+
 #define REGISTER_LSTMUNIT_ACTIVATION_STREAM_PROCESSOR_KERNEL( kernel_name )   \
     static vsi_nn_kernel_node_t _##kernel_name##setup \
         ( \
@@ -1590,9 +1902,9 @@ REGISTER_LSTMUNIT_ACTIVATION_STREAM_PROCESSOR_KERNEL( lstmunit_activation )
     recurrent_activation = vsi_nn_kernel_param_get_int32( params, "recurrent_activation" );
     forget_bias          = vsi_nn_kernel_param_get_float32(params, "forget_bias");
 
-    if ( _is_hybrid || _is_peephole
-        || recurrent_activation == VSI_NN_ACT_HARD_SIGMOID
-        || in_dtype == U8 )
+    if ( _is_hybrid || _is_peephole ||
+        ( recurrent_activation == VSI_NN_ACT_HARD_SIGMOID && _is_ln) ||
+        in_dtype == U8 )
     {
         return NULL;
     }
@@ -1607,6 +1919,28 @@ REGISTER_LSTMUNIT_ACTIVATION_STREAM_PROCESSOR_KERNEL( lstmunit_activation )
             inputs[LSTMUNIT_ACT_INPUT_FC_C],
             inputs[LSTMUNIT_ACT_INPUT_FC_O],
             inputs[LSTMUNIT_ACT_CSTATE_IN],
+            outputs[LSTMUNIT_ACT_OUTPUT],
+            outputs[LSTMUNIT_ACT_CSTATE_OUT],
+            outputs[LSTMUNIT_ACT_HSTATE_OUT],
+            _is_cifg,
+            _is_proj,
+            forget_bias
+        );
+    }
+    else if (recurrent_activation == VSI_NN_ACT_HARD_SIGMOID)
+    {
+        node = vsi_nn_sp_lstmunit_hsigmoid_activation
+        (
+            graph,
+            inputs[LSTMUNIT_ACT_INPUT_FC_I],
+            inputs[LSTMUNIT_ACT_INPUT_FC_F],
+            inputs[LSTMUNIT_ACT_INPUT_FC_C],
+            inputs[LSTMUNIT_ACT_INPUT_FC_O],
+            inputs[LSTMUNIT_ACT_CSTATE_IN],
+            inputs[LSTMUNIT_ACT_HSTATE_FC_I],
+            inputs[LSTMUNIT_ACT_HSTATE_FC_F],
+            inputs[LSTMUNIT_ACT_HSTATE_FC_C],
+            inputs[LSTMUNIT_ACT_HSTATE_FC_O],
             outputs[LSTMUNIT_ACT_OUTPUT],
             outputs[LSTMUNIT_ACT_CSTATE_OUT],
             outputs[LSTMUNIT_ACT_HSTATE_OUT],
