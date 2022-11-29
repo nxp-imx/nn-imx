@@ -14524,7 +14524,7 @@ static const char layer_normalization_3_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 /**************************layernorm float16***********************************/\n\
 _viv_uniform int width;\n\
-_viv_uniform float dimRatio;\n\
+_viv_uniform float inv_multiplier;\n\
 _viv_uniform VXC_512Bits uniConvBF16toF32_Part0_2x8;\n\
 _viv_uniform VXC_512Bits uniConvBF16toF32_Part1_2x8;\n\
 _viv_uniform VXC_512Bits uniExtractOddData_2x8;\n\
@@ -14568,9 +14568,9 @@ __kernel void layer_norm_BF16F32toBF16(\n\
         sqr += dot(srcA * srcA, ones) + dot(srcB * srcB, ones);\n\
     }\n\
     vxc_float mean;\n\
-    mean = sum * dimRatio;\n\
+    mean = sum * inv_multiplier;\n\
     vxc_float vari;\n\
-    vari = sqr*dimRatio - mean*mean;\n\
+    vari = sqr*inv_multiplier - mean*mean;\n\
     vari += eps;\n\
     vari = rsqrt(vari);\n\
     vxc_float4 bias_f0, bias_f1, scale_f0, scale_f1;\n\
@@ -14641,9 +14641,9 @@ __kernel void layer_norm_BF16F32toBF16_2D(\n\
         sqr += dot(srcA * srcA, ones) + dot(srcB * srcB, ones);\n\
     }\n\
     vxc_float mean;\n\
-    mean = sum * dimRatio;\n\
+    mean = sum * inv_multiplier;\n\
     vxc_float vari;\n\
-    vari = sqr*dimRatio - mean*mean;\n\
+    vari = sqr*inv_multiplier - mean*mean;\n\
     vari += eps;\n\
     vari = rsqrt(vari);\n\
     vxc_float4 bias_f0, bias_f1, scale_f0, scale_f1;\n\
