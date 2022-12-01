@@ -55503,6 +55503,139 @@ __kernel void maxpoolwithargmax_I32toI32_I32_2D(\n\
 }\n\
 "; /* end of maxpoolwithargmax_2d_cl*/
 
+static const char maxunpool_cl[] = "\n\
+#define MAXUNPOOL(name, read_type, read_image_type, write_type, convert_type, writeimage_type) \\\n\
+__kernel void maxunpool_##name( \\\n\
+    __read_only  image2d_array_t  input0, \\\n\
+    __read_only  image2d_array_t  input1, \\\n\
+    __write_only image2d_array_t  output, \\\n\
+                 int              width_nopad, \\\n\
+                 int              height_nopad, \\\n\
+                 int              width_in, \\\n\
+                 int              height_in, \\\n\
+                 int              batch, \\\n\
+                 int              pad_left, \\\n\
+                 int              pad_top, \\\n\
+                 float            inputScale, \\\n\
+                 float            inputTail, \\\n\
+                 float            outputScale, \\\n\
+                 float            outputTail \\\n\
+    ) \\\n\
+{ \\\n\
+    uint gidx = get_global_id(0); \\\n\
+    uint gidy = get_global_id(1); \\\n\
+    uint gidz = get_global_id(2); \\\n\
+    int gidx_in, gidy_in, gidz_in; \\\n\
+    int4 coord_out = (int4)(gidx, gidy, gidz, 0); \\\n\
+    write_type dst = (write_type)(0); \\\n\
+    float4 dst_temp = (float4)(0); \\\n\
+    int i,j,k; \\\n\
+    if (gidx < pad_left || gidx >= width_nopad + pad_left || \\\n\
+        gidy < pad_top || gidy >= height_nopad + pad_top) \\\n\
+    { \\\n\
+        dst_temp.x = outputTail; \\\n\
+        dst = convert_type(dst_temp); \\\n\
+        writeimage_type(output, coord_out, dst); \\\n\
+        return; \\\n\
+    } \\\n\
+    gidx_in = gidx - pad_left; \\\n\
+    gidy_in = gidy - pad_top; \\\n\
+    gidz_in = gidz; \\\n\
+    int index = gidz_in * height_nopad * width_nopad + gidy_in * width_nopad + gidx_in; \\\n\
+    for (k = 0;k < batch;k++) \\\n\
+    { \\\n\
+        for (j = 0;j < height_in; j++) \\\n\
+        { \\\n\
+            for (i = 0;i < width_in; i++) \\\n\
+            { \\\n\
+                int index_useful = read_imagei(input1, (int4)(i,j,k,0)).x; \\\n\
+                if (index_useful == index) \\\n\
+                { \\\n\
+                    read_type src = read_image_type(input0, (int4)(i,j,k,0)); \\\n\
+                    dst_temp = convert_float4(src) * inputScale + inputTail; \\\n\
+                    dst = convert_type(dst_temp * outputScale + outputTail); \\\n\
+                    writeimage_type(output, coord_out, dst); \\\n\
+                    return; \\\n\
+                } \\\n\
+            } \\\n\
+        } \\\n\
+    } \\\n\
+    dst_temp.x = outputTail; \\\n\
+    dst = convert_type(dst_temp); \\\n\
+    writeimage_type(output, coord_out, dst); \\\n\
+}\n\
+MAXUNPOOL(F32toF32,float4,read_imagef,float4,convert_float4,write_imagef)\n\
+MAXUNPOOL(F32toU32,float4,read_imagef,uint4, convert_uint4, write_imageui)\n\
+MAXUNPOOL(F32toI32,float4,read_imagef,int4,  convert_int4,  write_imagei)\n\
+\n\
+MAXUNPOOL(U32toU32,uint4,read_imageui,uint4, convert_uint4, write_imageui)\n\
+MAXUNPOOL(U32toF32,uint4,read_imageui,float4,convert_float4,write_imagef)\n\
+MAXUNPOOL(U32toI32,uint4,read_imageui,int4,  convert_int4,  write_imagei)\n\
+\n\
+MAXUNPOOL(I32toU32,int4,read_imagei,uint4, convert_uint4, write_imageui)\n\
+MAXUNPOOL(I32toF32,int4,read_imagei,float4,convert_float4,write_imagef)\n\
+MAXUNPOOL(I32toI32,int4,read_imagei,int4,  convert_int4,  write_imagei)\n\
+\n\
+__kernel void maxunpool_BF16toBF16(\n\
+    __read_only  image2d_array_t  input0,\n\
+    __read_only  image2d_array_t  input1,\n\
+    __write_only image2d_array_t  output,\n\
+                 int              width_nopad,\n\
+                 int              height_nopad,\n\
+                 int              width_in,\n\
+                 int              height_in,\n\
+                 int              batch,\n\
+                 int              pad_left,\n\
+                 int              pad_top,\n\
+                 float            inputScale,\n\
+                 float            inputTail,\n\
+                 float            outputScale,\n\
+                 float            outputTail\n\
+    )\n\
+{\n\
+    uint gidx = get_global_id(0);\n\
+    uint gidy = get_global_id(1);\n\
+    uint gidz = get_global_id(2);\n\
+    int gidx_in, gidy_in, gidz_in;\n\
+    int4 coord_out = (int4)(gidx, gidy, gidz, 0);\n\
+    uint4 dst = (uint4)(0);\n\
+    float4 dst_temp = (float4)(0);\n\
+    int i,j,k;\n\
+    if (gidx < pad_left || gidx >= width_nopad + pad_left ||\n\
+        gidy < pad_top || gidy >= height_nopad + pad_top)\n\
+    {\n\
+        dst_temp.x = 0;\n\
+        _viv_asm(COPY, dst, dst_temp, 16);\n\
+        dst.x = dst.x >> 16;\n\
+        write_imageui(output, coord_out, dst);\n\
+        return;\n\
+    }\n\
+    gidx_in = gidx - pad_left;\n\
+    gidy_in = gidy - pad_top;\n\
+    gidz_in = gidz;\n\
+    int index = gidz_in * height_nopad * width_nopad + gidy_in * width_nopad + gidx_in;\n\
+    for (k = 0;k < batch;k++)\n\
+    {\n\
+        for (j = 0;j < height_in; j++)\n\
+        {\n\
+            for (i = 0;i < width_in; i++)\n\
+            {\n\
+                int index_useful = read_imagei(input1, (int4)(i,j,k,0)).x;\n\
+                if (index_useful == index)\n\
+                {\n\
+                    uint4 src = read_imageui(input0, (int4)(i,j,k,0));\n\
+                    write_imageui(output, coord_out, src);\n\
+                    return;\n\
+                }\n\
+            }\n\
+        }\n\
+    }\n\
+    dst_temp.x = 0;\n\
+    _viv_asm(COPY, dst, dst_temp, 16);\n\
+    dst.x = dst.x >> 16;\n\
+    write_imageui(output, coord_out, dst);\n\
+}"; /* end of maxunpool_cl*/
+
 static const char minimum_cl[] = "__kernel void minimum_FP32FP32toFP32\n\
     (\n\
     __read_only  image2d_array_t    input0,\n\
@@ -63531,6 +63664,7 @@ static const source_map_t cl_resource[] =
     {"maximum_cl", maximum_cl},
     {"maxpoolwithargmax_cl", maxpoolwithargmax_cl},
     {"maxpoolwithargmax_2d_cl", maxpoolwithargmax_2d_cl},
+    {"maxunpool_cl", maxunpool_cl},
     {"minimum_cl", minimum_cl},
     {"mod_cl", mod_cl},
     {"moments_axis0_cl", moments_axis0_cl},
