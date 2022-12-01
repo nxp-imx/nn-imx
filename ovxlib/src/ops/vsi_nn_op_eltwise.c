@@ -37,6 +37,7 @@
 #include "kernel/vsi_nn_kernel.h"
 #include "kernel/vsi_nn_kernel_eltwise.h"
 #include "utils/vsi_nn_constraint_check.h"
+#include "vsi_nn_tensor_util_prv.h"
 
 vsi_bool vsi_nn_kernel_is_supported_types
     (
@@ -209,6 +210,11 @@ static vsi_bool op_check_minimum
     vsi_nn_tensor_t ** outputs
     )
 {
+    if (vsi_nn_is_stream_process_supported_types(self->graph, inputs, self->input.num))
+    {
+        return TRUE;
+    }
+
     /* check inputs outputs data type */
     BEGIN_IO_TYPE_DECL(MINIMUM, 2, 1)
         IO_TYPE(D_F16,          D_F16,          D_F16)
@@ -267,7 +273,8 @@ static vsi_bool op_check_minimum
         IO_TYPE(D_I16|Q_SYM,    D_F16,          D_I16|Q_SYM)
         IO_TYPE(D_I16|Q_SYM,    D_I16|Q_ASYM,   D_I16|Q_SYM)
     END_IO_TYPE_DECL(MINIMUM)
-    if(!VALIDATE_OP_IO_TYPES(MINIMUM, self, inputs, self->input.num, outputs, self->output.num)) {
+    if (!VALIDATE_OP_IO_TYPES(MINIMUM, self, inputs, self->input.num, outputs, self->output.num))
+    {
         char* desc = generate_op_io_types_desc(inputs,
                 self->input.num, outputs, self->output.num);
         VSILOGE("Inputs/Outputs data type not support: %s", desc);
@@ -285,6 +292,11 @@ static vsi_bool op_check_maximum
     vsi_nn_tensor_t ** outputs
     )
 {
+    if (vsi_nn_is_stream_process_supported_types(self->graph, inputs, self->input.num))
+    {
+        return TRUE;
+    }
+
     /* check inputs outputs data type */
     BEGIN_IO_TYPE_DECL(MAXIMUM, 2, 1)
         IO_TYPE(D_F16,          D_F16,          D_F16)
@@ -437,6 +449,11 @@ static vsi_bool op_check_add
     vsi_nn_tensor_t ** outputs
     )
 {
+    if (vsi_nn_is_stream_process_supported_types(self->graph, inputs, self->input.num))
+    {
+        return TRUE;
+    }
+
     /* check inputs outputs data type */
     BEGIN_IO_TYPE_DECL(ADD, 2, 1)
         IO_TYPE(D_BF16,         D_BF16,         D_BF16)
@@ -603,6 +620,11 @@ static vsi_bool op_check_div
     vsi_nn_tensor_t ** outputs
     )
 {
+    if (vsi_nn_is_stream_process_supported_types(self->graph, inputs, self->input.num))
+    {
+        return TRUE;
+    }
+
     /* check inputs outputs data type */
     BEGIN_IO_TYPE_DECL(DIVIDE, 2, 1)
         IO_TYPE(D_BF16,         D_BF16,         D_BF16)
@@ -681,6 +703,11 @@ static vsi_bool op_check_mul
     vsi_nn_tensor_t ** outputs
     )
 {
+    if (vsi_nn_is_stream_process_supported_types(self->graph, inputs, self->input.num))
+    {
+        return TRUE;
+    }
+
     /* check inputs outputs data type */
     BEGIN_IO_TYPE_DECL(MULTIPLY, 2, 1)
         IO_TYPE(D_BF16,         D_BF16,         D_BF16)

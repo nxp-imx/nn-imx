@@ -35,6 +35,7 @@
 #include "utils/vsi_nn_util.h"
 #include "utils/vsi_nn_constraint_check.h"
 #include "kernel/vsi_nn_kernel.h"
+#include "vsi_nn_tensor_util_prv.h"
 
 static vsi_status op_compute
     (
@@ -63,6 +64,11 @@ static vsi_bool op_check
     vsi_nn_tensor_t ** outputs
     )
 {
+    if (vsi_nn_is_stream_process_supported_types(self->graph, inputs, self->input.num))
+    {
+        return TRUE;
+    }
+
     BEGIN_IO_TYPE_DECL(RSQRT, 1, 1)
         IO_TYPE(D_F16,          D_F16)
         IO_TYPE(D_F16,          D_I16|Q_DFP)

@@ -1528,3 +1528,34 @@ vsi_bool vsi_nn_is_3d_tensor
         return FALSE;
     }
 }
+
+vsi_bool vsi_nn_is_stream_process_supported_types
+    (
+    vsi_nn_graph_t* graph,
+    vsi_nn_tensor_t** inputs,
+    size_t input_num
+    )
+{
+    size_t i = 0;
+
+    if ( graph->ctx->config.support_stream_processor == 0 )
+    {
+        return FALSE;
+    }
+
+    if ( graph->ctx->config.sp_exec_count == 0 )
+    {
+        return FALSE;
+    }
+
+    for (i = 0; i < input_num; i++)
+    {
+        if (inputs && input_num > 0 && inputs[i] &&
+            inputs[i]->attr.dtype.vx_type == VSI_NN_TYPE_INT32)
+        {
+            return FALSE;
+        }
+    }
+
+    return TRUE;
+}

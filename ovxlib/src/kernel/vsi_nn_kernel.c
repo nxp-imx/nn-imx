@@ -36,6 +36,7 @@
 #include "utils/vsi_nn_math.h"
 #include "vsi_nn_tensor_util.h"
 #include "utils/vsi_nn_dtype_util.h"
+#include "vsi_nn_tensor_util_prv.h"
 
 #include "libnnext/vsi_nn_libnnext_resource.h"
 #if VSI_USE_VXC_BINARY
@@ -118,13 +119,6 @@ static void _kernel_clear_source
     ( vsi_nn_kernel_t * kernel );
 
 static vsi_bool _check_shader_support(vsi_nn_graph_t* graph);
-
-static vsi_bool _check_stream_process_support
-    (
-    vsi_nn_graph_t* graph,
-    vsi_nn_tensor_t** inputs,
-    size_t input_num
-    );
 
 vsi_bool vsi_nn_kernel_is_supported_types
     (
@@ -1250,7 +1244,7 @@ vsi_nn_kernel_node_t vsi_nn_kernel_selector
 
             /* Skip StreamProcesor if not support */
             if( type == VSI_NN_KERNEL_TYPE_SP &&
-                _check_stream_process_support(graph, inputs, input_num) == FALSE )
+                vsi_nn_is_stream_process_supported_types(graph, inputs, input_num) == FALSE )
             {
                 continue;
             }
@@ -1700,32 +1694,6 @@ vsi_bool vsi_nn_kernel_is_supported_types
         {
             return FALSE;
         }
-    }
-
-    return TRUE;
-}
-
-static vsi_bool _check_stream_process_support
-    (
-    vsi_nn_graph_t* graph,
-    vsi_nn_tensor_t** inputs,
-    size_t input_num
-    )
-{
-    if ( graph->ctx->config.support_stream_processor == 0 )
-    {
-        return FALSE;
-    }
-
-    if ( graph->ctx->config.sp_exec_count == 0 )
-    {
-        return FALSE;
-    }
-
-    if (inputs && input_num > 0 && inputs[0] &&
-        inputs[0]->attr.dtype.vx_type == VSI_NN_TYPE_INT32)
-    {
-        return FALSE;
     }
 
     return TRUE;

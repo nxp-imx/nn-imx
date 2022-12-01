@@ -36,6 +36,7 @@
 #include "vsi_nn_internal_node.h"
 #include "utils/vsi_nn_math.h"
 #include "utils/vsi_nn_constraint_check.h"
+#include "vsi_nn_tensor_util_prv.h"
 
 static vsi_status op_compute
     (
@@ -54,6 +55,11 @@ static vsi_bool op_check
     vsi_nn_tensor_t ** outputs
     )
 {
+    if (vsi_nn_is_stream_process_supported_types(self->graph, inputs, self->input.num))
+    {
+        return TRUE;
+    }
+
     /* check inputs outputs data type */
     BEGIN_IO_TYPE_DECL(SOFTMAX, 1, 1)
         /* IO_TYPE(INPUT, OUTPUT) */

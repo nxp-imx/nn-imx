@@ -83,6 +83,7 @@ switch( dtype->vx_type )
             }
         break;
     case VSI_NN_TYPE_UINT8:
+    case VSI_NN_TYPE_UINT16:
         error = dtype->scale;
         break;
     }
