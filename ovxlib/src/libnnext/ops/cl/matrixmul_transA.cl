@@ -160,5 +160,5 @@ __kernel void gemm_transa_I8I8toI8_3D(
 
     coord_b.y = gidy;
     coord_b.z = get_global_id(2);
-    write_imagei(output, coord_b, sum);
+    write_imagei(output, coord_b, dst);
 }

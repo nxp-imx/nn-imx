@@ -54957,7 +54957,7 @@ __kernel void gemm_transa_I8I8toI8_3D(\n\
 \n\
     coord_b.y = gidy;\n\
     coord_b.z = get_global_id(2);\n\
-    write_imagei(output, coord_b, sum);\n\
+    write_imagei(output, coord_b, dst);\n\
 }"; /* end of matrixmul_transA_cl*/
 
 static const char maximum_cl[] = "__kernel void maximum_FP32FP32toFP32\n\
