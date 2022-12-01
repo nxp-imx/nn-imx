@@ -78,6 +78,13 @@ vsi_nn_tensor_t * vsi_nn_create_dummy_tensor
     vsi_nn_tensor_attr_t * attr
     );
 
+vsi_bool vsi_nn_is_stream_process_supported_types
+    (
+    vsi_nn_graph_t* graph,
+    vsi_nn_tensor_t** inputs,
+    size_t input_num
+    );
+
 #ifdef __cplusplus
 }
 #endif

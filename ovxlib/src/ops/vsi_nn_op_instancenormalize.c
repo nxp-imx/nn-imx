@@ -34,6 +34,7 @@
 #include "vsi_nn_tensor_util.h"
 #include "vsi_nn_prv.h"
 #include "vsi_nn_log.h"
+#include "vsi_nn_tensor_util_prv.h"
 #include "kernel/vsi_nn_kernel.h"
 #include "utils/vsi_nn_constraint_check.h"
 #include "kernel/vsi_nn_kernel_gpu_shape_optimize.h"
@@ -173,6 +174,11 @@ static vsi_bool op_check
     vsi_nn_tensor_t ** outputs
     )
 {
+    if (vsi_nn_is_stream_process_supported_types(self->graph, inputs, self->input.num))
+    {
+        return TRUE;
+    }
+
     BEGIN_IO_TYPE_DECL(INSTANCE_NORM, 3, 1)
         IO_TYPE(D_F16,        D_F32,  D_F16,  D_F16)
         IO_TYPE(D_F16,        D_F32,  D_F32,  D_F16)

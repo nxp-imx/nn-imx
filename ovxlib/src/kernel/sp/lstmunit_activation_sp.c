@@ -1401,7 +1401,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_lstm_cell_gate_times_v11_plus_v12_node
     status |= vsi_nn_sp_mul(&sp_insts_param[2], VSI_NN_SP_PWLMUL, VSI_NN_SP_PWLMUL, VSI_NN_SP_SR1);
     status |= vsi_nn_sp_sub(&sp_insts_param[2], VSI_NN_SP_PWLADD, VSI_NN_SP_PWLADD, VSI_NN_SP_SR4);
     status |= vsi_nn_sp_move(&sp_insts_param[2], VSI_NN_SP_SR9, VSI_NN_SP_VR12);
-    /* loop inst2: r1 = tanh(r4) | r8 = v11 * r7 | r9 = r8 + v12 | out = r9 */
+    /* loop inst3: r1 = tanh(r4) | r8 = v11 * r7 | r9 = r8 + v12 | out = r9 */
     status |= vsi_nn_sp_pwl_tanh(&sp_insts_param[3], VSI_NN_SP_SR4, VSI_NN_SP_SR1);
     status |= vsi_nn_sp_mul(&sp_insts_param[3], VSI_NN_SP_VR11, VSI_NN_SP_SR7, VSI_NN_SP_SR8);
     status |= vsi_nn_sp_add(&sp_insts_param[3], VSI_NN_SP_SR8, VSI_NN_SP_VR12, VSI_NN_SP_SR9);
