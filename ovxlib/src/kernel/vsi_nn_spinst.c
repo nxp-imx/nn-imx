@@ -288,4 +288,46 @@ void vsi_nn_init_spinst_attr
     attrs->split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_XYZ;
 } /* vsi_nn_init_spinst_attr() */
 
+void vsi_nn_release_vxspinst
+    (
+    vsi_nn_spinst_t * spinst
+    )
+{
+    if( NULL != spinst && NULL != spinst->sp )
+    {
+        vxReleaseSPINST( &spinst->sp );
+        spinst->sp = NULL;
+    }
+} /* vsi_nn_release_vxspinst() */
+
+vsi_status vsi_nn_get_constant_from_spinst
+    (
+    vsi_nn_spinst_t * spinst,
+    float constant[5]
+    )
+{
+    vsi_status status;
+    uint32_t constant_data[5] = {0};
+
+    status = VSI_SUCCESS;
+    if( NULL == spinst )
+    {
+        return VSI_FAILURE;
+    }
+
+    status  = vxGetAttributeToSPINST(spinst->sp, VSI_NN_SP_ATTRIBUTE_CONST0, &constant_data[0]);
+    status |= vxGetAttributeToSPINST(spinst->sp, VSI_NN_SP_ATTRIBUTE_CONST1, &constant_data[1]);
+    status |= vxGetAttributeToSPINST(spinst->sp, VSI_NN_SP_ATTRIBUTE_CONST2, &constant_data[2]);
+    status |= vxGetAttributeToSPINST(spinst->sp, VSI_NN_SP_ATTRIBUTE_CONST3, &constant_data[3]);
+    status |= vxGetAttributeToSPINST(spinst->sp, VSI_NN_SP_ATTRIBUTE_CONST4, &constant_data[4]);
+
+    constant[0] = *(float *)&constant_data[0];
+    constant[1] = *(float *)&constant_data[1];
+    constant[2] = *(float *)&constant_data[2];
+    constant[3] = *(float *)&constant_data[3];
+    constant[4] = *(float *)&constant_data[4];
+
+    return status;
+}
+
 #endif
