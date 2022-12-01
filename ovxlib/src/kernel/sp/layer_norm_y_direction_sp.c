@@ -40,6 +40,7 @@
 vsi_nn_spinst_t * vsi_nn_sp_moments_axis1_inst
     (
         vx_context                context,
+        vsi_nn_spinst_t         * prev_spinst,
         int32_t                   fifo_depth,
         int32_t                   max_vector_depth
     )
@@ -53,6 +54,7 @@ vsi_nn_spinst_t * vsi_nn_sp_moments_axis1_inst
     vsi_nn_spinst_t *spinst = NULL;
     vsi_nn_spinst_inst_param sp_insts_param[8];
     vsi_nn_spinst_attr_t attr;
+    float constant[5] = {0};
 
     memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
     vsi_nn_init_spinst_attr(&attr);
@@ -144,6 +146,15 @@ vsi_nn_spinst_t * vsi_nn_sp_moments_axis1_inst
         attr.num_of_v12_wr_in_flush_cycle = 3;
     }
 
+    status = vsi_nn_get_constant_from_spinst(prev_spinst, constant);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
+    VSI_NN_SP_ATTR_SET_CONST_TO_SR3(attr, constant[0]);
+    VSI_NN_SP_ATTR_SET_CONST_TO_SR4(attr, constant[1]);
+    VSI_NN_SP_ATTR_SET_CONST_TO_SR5_LOW_PRECISION(attr, constant[2]);
+    VSI_NN_SP_ATTR_SET_CONST_TO_SR6(attr, constant[3]);
+    VSI_NN_SP_ATTR_SET_CONST_TO_SR7(attr, constant[4]);
+
     attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_YZMERGE;
     attr.input_setup = VSI_NN_SP_INPUT_SETUP_SINGLE_INPUT;
 
@@ -178,9 +189,11 @@ DEF_SP_KERNEL_QUERY(moements_axis1_query)
     vsi_nn_spinst_t *spinst = NULL;
     int32_t fifo_depth = 0;
     int32_t max_vector_depth = 0;
+    vsi_nn_spinst_t pre_spinst;
     vx_context  ctx = vxGetContext((vx_reference)node);
     vx_hardware_caps_params_ext2_t hw_param;
 
+    memset(&pre_spinst, 0, sizeof(pre_spinst));
     memset(&hw_param, 0, sizeof(vx_hardware_caps_params_ext2_t));
     status = vxQueryHardwareCaps(ctx, (vx_hardware_caps_params_t*)(&hw_param), sizeof(vx_hardware_caps_params_ext2_t));
     CHECK_STATUS_FAIL_GOTO( status, final );
@@ -189,11 +202,13 @@ DEF_SP_KERNEL_QUERY(moements_axis1_query)
     CHECK_STATUS_FAIL_GOTO( status, final );
     status = vxQueryNode(node, VX_NODE_SPINST_INDEX, &index, sizeof(index));
     CHECK_STATUS_FAIL_GOTO( status, final );
+    status = vxQueryNode(node, VX_NODE_SPINST, &pre_spinst.sp, sizeof(pre_spinst.sp));
+    CHECK_STATUS_FAIL_GOTO( status, final );
 
     fifo_depth = (int32_t)ceil((float)tile_size[0] / (float)hw_param.streamProcessorExecCount);
     max_vector_depth = hw_param.streamProcessorVectorSize;
 
-    spinst = vsi_nn_sp_moments_axis1_inst(ctx, fifo_depth, max_vector_depth);
+    spinst = vsi_nn_sp_moments_axis1_inst(ctx, &pre_spinst, fifo_depth, max_vector_depth);
 
     status = vxSetParameterByIndex( node, (uint32_t)index, (vx_reference)spinst->sp );
     CHECK_STATUS_FAIL_GOTO( status, final );
@@ -203,6 +218,8 @@ final:
     {
         vsi_nn_release_spinst(&spinst);
     }
+
+    vsi_nn_release_vxspinst(&pre_spinst);
 
     return status;
 }

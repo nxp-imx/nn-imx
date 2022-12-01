@@ -318,6 +318,17 @@ void vsi_nn_init_spinst_attr
     vsi_nn_spinst_attr_t * attrs
     );
 
+void vsi_nn_release_vxspinst
+    (
+    vsi_nn_spinst_t * spinst
+    );
+
+vsi_status vsi_nn_get_constant_from_spinst
+    (
+    vsi_nn_spinst_t * spinst,
+    float constant[5]
+    );
+
 __END_DECLS
 
 #endif
