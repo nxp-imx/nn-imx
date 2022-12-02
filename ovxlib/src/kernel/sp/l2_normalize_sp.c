@@ -168,12 +168,12 @@ vsi_nn_kernel_node_t vsi_nn_sp_l2_norm_rsqrt_node
 
     if (scale == 1)
     {
-        /* loop inst0: r1 = pwlSetup(v11) || r6 = r5 * r2 || v11 = r4 + r6 || r3 = r1*/
+        /* loop inst0: r1 = pwlSetup(v11) | r6 = r5 * r2 | v11 = r4 + r6 | r3 = r1*/
         status  = vsi_nn_sp_pwl_setup0(&sp_insts_param[0], VSI_NN_SP_VR11, VSI_NN_SP_SR1);
         status |= vsi_nn_sp_mul(&sp_insts_param[0], VSI_NN_SP_SR5, VSI_NN_SP_SR2, VSI_NN_SP_SR6);
         status |= vsi_nn_sp_add(&sp_insts_param[0], VSI_NN_SP_SR4, VSI_NN_SP_SR6, VSI_NN_SP_VR11);
         status |= vsi_nn_sp_move(&sp_insts_param[0], VSI_NN_SP_SR1, VSI_NN_SP_SR3);
-        /* loop inst1: r5 = pwlMul() || r2 = pwlAdd() || r4 = r3*/
+        /* loop inst1: r5 = pwlMul() | r2 = pwlAdd() | r4 = r3*/
         status |= vsi_nn_sp_mul(&sp_insts_param[1], VSI_NN_SP_PWLMUL, VSI_NN_SP_PWLMUL, VSI_NN_SP_SR5);
         status |= vsi_nn_sp_sub(&sp_insts_param[1], VSI_NN_SP_PWLADD, VSI_NN_SP_PWLADD, VSI_NN_SP_SR2);
         status |= vsi_nn_sp_move(&sp_insts_param[1], VSI_NN_SP_SR3, VSI_NN_SP_SR4);
@@ -203,7 +203,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_l2_norm_rsqrt_node
         attr.flush_cycle_num = 14;
     }
 
-    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_XYMERGE;
+    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_YZMERGE;
 
     attr.input_setup = VSI_NN_SP_INPUT_SETUP_V11;
     attr.prog_loop_instr_num = spLoopInstsNum;
