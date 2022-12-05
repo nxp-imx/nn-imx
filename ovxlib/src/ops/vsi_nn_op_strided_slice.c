@@ -245,7 +245,7 @@ static vsi_status copy_tensor_to_view
     vx_tensor         src_tensor,
     vsi_nn_tensor_t * dst_in,
     vsi_size_t      * shape,
-    vsi_size_t        dim_num
+    vsi_bool          is_same_shape
     )
 {
     vsi_status ret;
@@ -255,10 +255,15 @@ static vsi_status copy_tensor_to_view
     /* Malloc ptr */
     data = self->nn_param.strided_slice.lcl2_data;
     data->src_tensor = src_tensor;
-    if (dst_in->t)
+    data->is_same_shape = is_same_shape;
+    if (dst_in->t && !is_same_shape)
     {
         data->dst_tensor = vsi_nn_safe_reshape_tensor(dst_in->t, (void*)shape,
             (vsi_size_t)dst_in->attr.dim_num, sizeof(shape[0]));
+    }
+    else if (dst_in->t)
+    {
+        data->dst_tensor = dst_in->t;
     }
 
     data->is_dataconvert_op = TRUE;
@@ -742,8 +747,8 @@ static vsi_status op_optimize
     vsi_ssize_t    stop_dims[VSI_NN_MAX_DIM_NUM] = { 0 };
     vsi_ssize_t    stride_dims[VSI_NN_MAX_DIM_NUM] = { 0 };
     vsi_size_t     shape[VSI_NN_MAX_DIM_NUM] = { 0 };
-    vsi_size_t     dim_num = (vsi_size_t)inputs[0]->attr.dim_num;
     vsi_bool       is_same_quant_type = FALSE;
+    vsi_bool       is_same_shape = TRUE;
 
     /* Only forward run stride_slice's optimize */
     if ( direction == VSI_NN_OPTIMIZE_BACKWARD )
@@ -758,6 +763,11 @@ static vsi_status op_optimize
         stride_dims[i] = p->lcl2_data->stride_dims[i];
 
         shape[i] = (vsi_size_t)stop_dims[i] - (vsi_size_t)start_dims[i];
+        if (shape[i] != outputs[0]->attr.size[i] &&
+            i < (int32_t)outputs[0]->attr.dim_num)
+        {
+            is_same_shape = FALSE;
+        }
     }
 
     if (_check_is_same_shape(inputs, start_dims, stop_dims, stride_dims) == FALSE)
@@ -788,7 +798,7 @@ static vsi_status op_optimize
     {
         VSILOGI( "stride slice copy tensor.");
         // Copy old tensor values to the new address.
-        status = copy_tensor_to_view( self, in_view_tensor, outputs[0], shape, dim_num);
+        status = copy_tensor_to_view( self, in_view_tensor, outputs[0], shape, is_same_shape);
         if ( VSI_FAILURE == status )
         {
             goto OnError;
@@ -841,7 +851,7 @@ static vsi_status op_deinit
         vxReleaseTensor( &lcl2_data->src_tensor );
     }
 
-    if (lcl2_data->dst_tensor)
+    if (lcl2_data->dst_tensor && !lcl2_data->is_same_shape)
     {
         vxReleaseTensor( &lcl2_data->dst_tensor );
     }
