@@ -383,9 +383,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_ln_add_node
     vsi_status status = VSI_FAILURE;
     float input0_scale = vsi_nn_get_tensor_scale(input0);
     float input1_scale = vsi_nn_get_tensor_scale(input1);
-    float output_scale = vsi_nn_get_tensor_scale(output);
-    float scale0 = input0_scale / output_scale;
-    float scale1 = input1_scale / output_scale;
+    float scale0 = input0_scale;
+    float scale1 = input1_scale;
     float const2 = -scale1 * (float)vsi_nn_get_tensor_zero_point(input1);
     float clamp_min = 0;
     float clamp_max = 0;
@@ -397,10 +396,10 @@ vsi_nn_kernel_node_t vsi_nn_sp_ln_add_node
     clamp_min = clamp_min * scale0;
     clamp_max = clamp_max * scale0;
 
-    /* loop inst0: r1 = clamp(in * r3, r7, r6) || r2 = r1 + r2 */
+    /* loop inst0: r1 = clamp(in * r3, r7, r6) | r2 = r1 + r2 */
     status  = vsi_nn_sp_mul_clamp(&sp_insts_param[0], VSI_NN_SP_SRIN, VSI_NN_SP_SR3, VSI_NN_SP_SR1);
     status |= vsi_nn_sp_add(&sp_insts_param[0], VSI_NN_SP_SR1, VSI_NN_SP_SR2, VSI_NN_SP_SR2);
-    /* loop inst1: r2 = in * r4 || out = r2 + r5 */
+    /* loop inst1: r2 = in * r4 | out = r2 + r5 */
     status |= vsi_nn_sp_mul(&sp_insts_param[1], VSI_NN_SP_SRIN, VSI_NN_SP_SR4, VSI_NN_SP_SR2);
     status |= vsi_nn_sp_add(&sp_insts_param[1], VSI_NN_SP_SR2, VSI_NN_SP_SR5, VSI_NN_SP_SROUT);
     CHECK_STATUS_FAIL_GOTO(status, final );
