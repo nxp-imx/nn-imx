@@ -83,7 +83,7 @@ static vsi_status _try_set_high_presision_tensor
     return status;
 }
 
-static vsi_bool _is_3d_batchnorm
+static vsi_bool _require_reshape
     (
     vsi_nn_node_t * self,
     vsi_nn_tensor_t ** inputs
@@ -96,17 +96,7 @@ static vsi_bool _is_3d_batchnorm
     {
         return FALSE;
     }
-    else
-    {
-        if ( 3 == inputs[0]->attr.dim_num )
-        {
-            return TRUE;
-        }
-        else
-        {
-            return FALSE;
-        }
-    }
+    return (3 == inputs[0]->attr.dim_num)||(5 == inputs[0]->attr.dim_num);
 }
 
 static vsi_bool _is_dynamic_batchnorm
@@ -141,7 +131,7 @@ static vsi_status _static_batchnorm
         VSILOGE("Set tensor attr of high presision fail");
         return status;
     }
-    if(_is_3d_batchnorm(self, inputs))
+    if(_require_reshape(self, inputs))
     {
         reshape_tensors[0] = self->nn_param.batch_norm.local->reshaped_input;
         reshape_tensors[5] = self->nn_param.batch_norm.local->reshaped_output;
@@ -337,7 +327,7 @@ static vsi_status op_optimize
     char tensor_name[128];
 
     dim = inputs[0]->attr.dim_num;
-    if(_is_3d_batchnorm(self, inputs) == FALSE)
+    if(_require_reshape(self, inputs) == FALSE)
     {
         return VSI_SUCCESS;
     }
@@ -347,11 +337,21 @@ static vsi_status op_optimize
         reshape 3d input (xcn) --> 4d input (whcn)
         reshape 3d output(xcn) --> 4d output(whcn)
     */
-    shape[0] = inputs[0]->attr.size[0];
-    shape[1] = 1;
-    shape[2] = inputs[0]->attr.size[1];
-    shape[3] = inputs[0]->attr.size[2];
     dim = 4;
+    if (3 == inputs[0]->attr.dim_num)
+    {
+        shape[0] = inputs[0]->attr.size[0];
+        shape[1] = 1;
+        shape[2] = inputs[0]->attr.size[1];
+        shape[3] = inputs[0]->attr.size[2];
+    }
+    else if (5 == inputs[0]->attr.dim_num)
+    {
+        shape[0] = inputs[0]->attr.size[0] * inputs[0]->attr.size[1];
+        shape[1] = inputs[0]->attr.size[2];
+        shape[2] = inputs[0]->attr.size[3];
+        shape[3] = inputs[0]->attr.size[4];
+    }
     local = self->nn_param.batch_norm.local;
     if (VSI_NN_OPTIMIZE_BACKWARD == direction)
     {
@@ -509,7 +509,7 @@ static vsi_bool op_setup
             VSI_NN_MAX_DIM_NUM * sizeof(vsi_size_t) );
     }
 
-    if(_is_3d_batchnorm(self, inputs))
+    if(_require_reshape(self, inputs))
     {
         local = (vsi_nn_batcnnorm_lcl_data *)malloc(sizeof(vsi_nn_batcnnorm_lcl_data));
         if(NULL == local)
