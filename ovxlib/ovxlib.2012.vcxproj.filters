@@ -579,6 +579,9 @@
     <ClInclude Include="include\ops\vsi_nn_op_reverse.h">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_reversesequence.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
     <ClInclude Include="include\ops\vsi_nn_op_rnn.h">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
@@ -1073,6 +1076,9 @@
     <ClCompile Include="src\kernel\cl\resize_nearest_cl.c">
       <Filter>Source Files\kernel\cl</Filter>
     </ClCompile>
+    <ClCompile Include="src\kernel\cl\reversesequence_cl.c">
+      <Filter>Source Files\kernel\cl</Filter>
+    </ClCompile>
     <ClCompile Include="src\kernel\cl\roi_align_cl.c">
       <Filter>Source Files\kernel\cl</Filter>
     </ClCompile>
@@ -1338,6 +1344,9 @@
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\resize_nearest_cpu.c">
+      <Filter>Source Files\kernel\cpu</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\cpu\reversesequence_cpu.c">
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\roi_align_cpu.c">
@@ -2187,6 +2196,9 @@
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_reverse.c">
+      <Filter>Source Files\ops</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_reversesequence.c">
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_rnn.c">

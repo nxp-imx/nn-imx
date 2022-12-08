@@ -59966,6 +59966,162 @@ __kernel void resize_nearest_U8toU8(\n\
 }\n\
 "; /* end of resize_nearest_cl*/
 
+static const char reversesequence_cl[] = "#define REVERSESEQUENCE_axis2(name,src_type,readimage_type,\\\n\
+                    convert_type,dst_type,writeimage_type) \\\n\
+__kernel void reversesequence_##name( \\\n\
+    __read_only  image2d_array_t  input0, \\\n\
+    __read_only  image2d_t        input1, \\\n\
+    __write_only image2d_array_t  output, \\\n\
+                 float            inoutScale, \\\n\
+                 float            inoutTail \\\n\
+    ) \\\n\
+{ \\\n\
+    uint gidx = get_global_id(0); \\\n\
+    uint gidy = get_global_id(1); \\\n\
+    uint gidz = get_global_id(2); \\\n\
+\\\n\
+    int4 coord_in = (int4)(gidx, gidy, gidz, 0); \\\n\
+    int4 coord_out = coord_in; \\\n\
+    src_type src = readimage_type(input0, coord_in); \\\n\
+    int src_index = read_imagei(input1, (int2)(gidz, 0)).x; \\\n\
+    float4 src_temp = convert_float4(src); \\\n\
+    dst_type dst = convert_type(src_temp * inoutScale + inoutTail); \\\n\
+    if (gidy >= src_index) \\\n\
+    { \\\n\
+        writeimage_type(output, coord_out, dst); \\\n\
+    } \\\n\
+    else \\\n\
+    { \\\n\
+        coord_out.y = src_index - 1 - coord_out.y; \\\n\
+        writeimage_type(output, coord_out, dst); \\\n\
+    } \\\n\
+}\n\
+REVERSESEQUENCE_axis2(F32toF32_axis2,float4,read_imagef,\\\n\
+                      convert_float4,float4,write_imagef)\n\
+REVERSESEQUENCE_axis2(F32toU32_axis2,float4,read_imagef,\\\n\
+                      convert_uint4, uint4, write_imageui)\n\
+REVERSESEQUENCE_axis2(F32toI32_axis2,float4,read_imagef,\\\n\
+                       convert_int4,  int4,  write_imagei)\n\
+REVERSESEQUENCE_axis2(I32toF32_axis2,int4,  read_imagei,\\\n\
+                       convert_float4,float4,write_imagef)\n\
+REVERSESEQUENCE_axis2(I32toU32_axis2,int4,  read_imagei,\\\n\
+                     convert_uint4, uint4, write_imageui)\n\
+REVERSESEQUENCE_axis2(I32toI32_axis2,int4,  read_imagei,\\\n\
+                      convert_int4,  int4,  write_imagei)\n\
+REVERSESEQUENCE_axis2(U32toF32_axis2,uint4, read_imageui,\\\n\
+                      convert_float4,float4,write_imagef)\n\
+REVERSESEQUENCE_axis2(U32toU32_axis2,uint4, read_imageui,\\\n\
+                     convert_uint4, uint4, write_imageui)\n\
+REVERSESEQUENCE_axis2(U32toI32_axis2,uint4, read_imageui,\\\n\
+                        convert_int4,  int4,  write_imagei)\n\
+\n\
+__kernel void reversesequence_BF16toBF16_axis2(\n\
+    __read_only  image2d_array_t  input0,\n\
+    __read_only  image2d_t        input1,\n\
+    __write_only image2d_array_t  output,\n\
+                 float            inoutScale,\n\
+                 float            inoutTail\n\
+    )\n\
+{\n\
+    uint gidx = get_global_id(0);\n\
+    uint gidy = get_global_id(1);\n\
+    uint gidz = get_global_id(2);\n\
+\n\
+    int4 coord_in = (int4)(gidx, gidy, gidz, 0);\n\
+    int4 coord_out = coord_in;\n\
+    uint4 src = read_imageui(input0, coord_in);\n\
+    int src_index = read_imagei(input1, (int2)(gidz, 0)).x;\n\
+    uint4 dst = src;\n\
+    if (gidy >= src_index)\n\
+    {\n\
+        write_imageui(output, coord_out, dst);\n\
+    }\n\
+    else\n\
+    {\n\
+        coord_out.y = src_index - 1 - coord_out.y;\n\
+        write_imageui(output, coord_out, dst);\n\
+    }\n\
+}\n\
+\n\
+\n\
+#define REVERSESEQUENCE_axis1(name,src_type,readimage_type,\\\n\
+                             convert_type,dst_type,writeimage_type) \\\n\
+__kernel void reversesequence_##name( \\\n\
+    __read_only  image2d_array_t  input0, \\\n\
+    __read_only  image2d_t        input1, \\\n\
+    __write_only image2d_array_t  output, \\\n\
+                 float            inoutScale, \\\n\
+                 float            inoutTail \\\n\
+    ) \\\n\
+{ \\\n\
+    uint gidx = get_global_id(0); \\\n\
+    uint gidy = get_global_id(1); \\\n\
+    uint gidz = get_global_id(2); \\\n\
+\\\n\
+    int4 coord_in = (int4)(gidx, gidy, gidz, 0); \\\n\
+    int4 coord_out = coord_in; \\\n\
+    src_type src = readimage_type(input0, coord_in); \\\n\
+    int src_index = read_imagei(input1, (int2)(gidy, 0)).x; \\\n\
+    float4 src_temp = convert_float4(src); \\\n\
+    dst_type dst = convert_type(src_temp * inoutScale + inoutTail ); \\\n\
+    if (gidz >= src_index) \\\n\
+    { \\\n\
+        writeimage_type(output, coord_out, dst); \\\n\
+    } \\\n\
+    else \\\n\
+    { \\\n\
+        coord_out.z = src_index - 1 - coord_out.z; \\\n\
+        writeimage_type(output, coord_out, dst); \\\n\
+    } \\\n\
+}\n\
+REVERSESEQUENCE_axis1(F32toF32_axis1,float4,read_imagef,\\\n\
+                     convert_float4,float4,write_imagef)\n\
+REVERSESEQUENCE_axis1(F32toU32_axis1,float4,read_imagef,\\\n\
+                     convert_uint4, uint4, write_imageui)\n\
+REVERSESEQUENCE_axis1(F32toI32_axis1,float4,read_imagef,\\\n\
+                     convert_int4,  int4,  write_imagei)\n\
+REVERSESEQUENCE_axis1(I32toF32_axis1,int4,  read_imagei,\\\n\
+                     convert_float4,float4,write_imagef)\n\
+REVERSESEQUENCE_axis1(I32toU32_axis1,int4,  read_imagei,\\\n\
+                     convert_uint4, uint4, write_imageui)\n\
+REVERSESEQUENCE_axis1(I32toI32_axis1,int4,  read_imagei,\\\n\
+                     convert_int4,  int4,  write_imagei)\n\
+REVERSESEQUENCE_axis1(U32toF32_axis1,uint4, read_imageui,\\\n\
+                     convert_float4,float4,write_imagef)\n\
+REVERSESEQUENCE_axis1(U32toU32_axis1,uint4, read_imageui,\\\n\
+                     convert_uint4, uint4, write_imageui)\n\
+REVERSESEQUENCE_axis1(U32toI32_axis1,uint4, read_imageui,\\\n\
+                      convert_int4,  int4,  write_imagei)\n\
+\n\
+__kernel void reversesequence_BF16toBF16_axis1(\n\
+    __read_only  image2d_array_t  input0,\n\
+    __read_only  image2d_t        input1,\n\
+    __write_only image2d_array_t  output,\n\
+                 float            inoutScale,\n\
+                 float            inoutTail\n\
+    )\n\
+{\n\
+    uint gidx = get_global_id(0);\n\
+    uint gidy = get_global_id(1);\n\
+    uint gidz = get_global_id(2);\n\
+\n\
+    int4 coord_in = (int4)(gidx, gidy, gidz, 0);\n\
+    int4 coord_out = coord_in;\n\
+    uint4 src = read_imageui(input0, coord_in);\n\
+    int src_index = read_imagei(input1, (int2)(gidy, 0)).x;\n\
+    uint4 dst = src;\n\
+    if (gidz >= src_index)\n\
+    {\n\
+        write_imageui(output, coord_out, dst);\n\
+    }\n\
+    else\n\
+    {\n\
+        coord_out.z = src_index - 1 - coord_out.z;\n\
+        write_imageui(output, coord_out, dst);\n\
+    }\n\
+}\n\
+"; /* end of reversesequence_cl*/
+
 static const char roi_align_cl[] = "#define VSI_NN_ROI_ALIGN_ANDROID 0\n\
 \n\
 inline float roi_align_1x1\n\
@@ -63699,6 +63855,7 @@ static const source_map_t cl_resource[] =
     {"resize_1d_nearest_cl", resize_1d_nearest_cl},
     {"resize_bilinear_cl", resize_bilinear_cl},
     {"resize_nearest_cl", resize_nearest_cl},
+    {"reversesequence_cl", reversesequence_cl},
     {"roi_align_cl", roi_align_cl},
     {"scatter_elements_cl", scatter_elements_cl},
     {"scatter_elements_add_cl", scatter_elements_add_cl},
