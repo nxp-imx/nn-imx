@@ -37,7 +37,7 @@
 
 #if (VX_STREAM_PROCESSOR_SUPPORT)
 
-vsi_nn_spinst_t * vsi_nn_sp_max_axis2_inst
+vsi_nn_spinst_t * vsi_nn_sp_max_axis1_inst
     (
         vx_context                context,
         vsi_nn_spinst_t         * prev_spinst,
@@ -65,7 +65,7 @@ vsi_nn_spinst_t * vsi_nn_sp_max_axis2_inst
     status |= vsi_nn_sp_move_constant(&sp_insts_param[1], 0, VSI_NN_SP_SR10);
     /* init inst2: r4 = 1 */
     status |= vsi_nn_sp_move_constant(&sp_insts_param[2], 1, VSI_NN_SP_SR4);
-    /* init inst3: r9 = -INF */
+    /* init inst3: nop */
     status = vsi_nn_sp_move_constant(&sp_insts_param[3], clampMin, VSI_NN_SP_SR9);
     CHECK_STATUS_FAIL_GOTO(status, final);
 
@@ -153,7 +153,6 @@ vsi_nn_spinst_t * vsi_nn_sp_max_axis2_inst
         CHECK_STATUS_FAIL_GOTO(status, final );
 
         spLoopInstsNum = 11;
-
         attr.ignored_leading_outputs = 0;
         attr.ignored_leading_v11_rd = fifo_depth;
         attr.ignored_leading_v11_wr = 0;
@@ -175,14 +174,14 @@ vsi_nn_spinst_t * vsi_nn_sp_max_axis2_inst
     VSI_NN_SP_ATTR_SET_CONST_TO_SR6(attr, constant[3]);
     VSI_NN_SP_ATTR_SET_CONST_TO_SR7(attr, constant[4]);
 
-    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_XYMERGE;
+    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_YZMERGE;
     attr.input_setup = VSI_NN_SP_INPUT_SETUP_SINGLE_INPUT;
 
     attr.prog_init_instr_num = spInitInstsNum;
     attr.prog_loop_instr_num = spLoopInstsNum;
     attr.v11_reset_at_start = VSI_NN_SP_V_RESET_AT_START_RESET;
 
-    attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_XY;
+    attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_X;
     attr.split_tilex_equal_imgx = TRUE;
     attr.split_max_vector_depth = max_vector_depth;
 
@@ -196,7 +195,7 @@ final:
     return spinst;
 }
 
-DEF_SP_KERNEL_QUERY(max_axis2_query)
+DEF_SP_KERNEL_QUERY(max_axis1_query)
     (
     vsi_nn_kernel_node_t        node
     )
@@ -223,10 +222,10 @@ DEF_SP_KERNEL_QUERY(max_axis2_query)
     status = vxQueryNode(node, VX_NODE_SPINST, &pre_spinst.sp, sizeof(pre_spinst.sp));
     CHECK_STATUS_FAIL_GOTO( status, final );
 
-    fifo_depth = (int32_t)ceil((float)(tile_size[0] * tile_size[1]) / (float)hw_param.streamProcessorExecCount);
+    fifo_depth = (int32_t)ceil((float)(tile_size[0]) / (float)hw_param.streamProcessorExecCount);
     max_vector_depth = hw_param.streamProcessorVectorSize;
 
-    spinst = vsi_nn_sp_max_axis2_inst(ctx, &pre_spinst, fifo_depth, max_vector_depth);
+    spinst = vsi_nn_sp_max_axis1_inst(ctx, &pre_spinst, fifo_depth, max_vector_depth);
 
     status = vxSetParameterByIndex( node, (uint32_t)index, (vx_reference)spinst->sp );
     CHECK_STATUS_FAIL_GOTO( status, final );
@@ -242,7 +241,7 @@ final:
     return status;
 }
 
-vsi_nn_kernel_node_t vsi_nn_sp_max_axis2_node
+vsi_nn_kernel_node_t vsi_nn_sp_max_axis1_node
     (
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input,
@@ -291,7 +290,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_max_axis2_node
     status |= vsi_nn_sp_nop(&sp_insts_param[3]);
     CHECK_STATUS_FAIL_GOTO(status, final);
 
-    /* loop inst0: r1 = clamp(r3 * in, r6, r7) | r2 = v11 + r10 | v11 = r5 ? r8 : r9 */
+    /* loop inst0: r1 = clamp(r3 * in, r6, r7) | r2 = v11 + r10 | r9 = r2 */
     status  = vsi_nn_sp_mul_clamp(&sp_insts_param[4], VSI_NN_SP_SR3, VSI_NN_SP_SRIN, VSI_NN_SP_SR1);
     status |= vsi_nn_sp_add(&sp_insts_param[4], VSI_NN_SP_VR11, VSI_NN_SP_SR10, VSI_NN_SP_SR2);
     status |= vsi_nn_sp_move_sel0(&sp_insts_param[4], VSI_NN_SP_SR5, VSI_NN_SP_SR8, VSI_NN_SP_VR11);
@@ -307,7 +306,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_max_axis2_node
     status |= vsi_nn_sp_move(&sp_insts_param[7], VSI_NN_SP_SR8, VSI_NN_SP_SROUT);
     CHECK_STATUS_FAIL_GOTO(status, final );
 
-    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_XYMERGE;
+    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_YZMERGE;
     attr.input_setup = VSI_NN_SP_INPUT_SETUP_SINGLE_INPUT;
 
     attr.prog_init_instr_num = spInitInstsNum;
@@ -315,7 +314,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_max_axis2_node
     attr.v11_reset_at_start = VSI_NN_SP_V_RESET_AT_START_RESET;
     attr.num_of_elements_per_loop_per_input = 2;
 
-    attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_XY;
+    attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_X;
     attr.split_tilex_equal_imgx = TRUE;
     attr.split_max_vector_depth = max_vector_depth;
 
@@ -357,7 +356,7 @@ final:
 
     if (node)
     {
-        vxAssignNodeQueryCallback(node, max_axis2_query);
+        vxAssignNodeQueryCallback(node, max_axis1_query);
     }
 
     if (spinst)
@@ -368,7 +367,7 @@ final:
     return (vsi_nn_kernel_node_t)node;
 }
 
-vsi_nn_spinst_t * vsi_nn_sp_exp_z_direction_inst
+static vsi_nn_spinst_t * vsi_nn_sp_exp_y_direction_inst
     (
         vx_context                context,
         int32_t                   fifo_depth,
@@ -461,14 +460,14 @@ vsi_nn_spinst_t * vsi_nn_sp_exp_z_direction_inst
         attr.flush_cycle_num = 15;
     }
 
-    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_XYMERGE;
+    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_YZMERGE;
     attr.input_setup = VSI_NN_SP_INPUT_SETUP_SINGLE_INPUT;
 
     attr.prog_init_instr_num = spInitInstsNum;
     attr.prog_loop_instr_num = spLoopInstsNum;
     attr.v12_reset_at_start = VSI_NN_SP_V_RESET_AT_START_RESET;
 
-    attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_XY;
+    attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_X;
     attr.split_tilex_equal_imgx = TRUE;
     attr.split_max_vector_depth = max_vector_depth;
 
@@ -482,7 +481,7 @@ final:
     return spinst;
 }
 
-DEF_SP_KERNEL_QUERY(softmax_z_direction_exp_query)
+DEF_SP_KERNEL_QUERY(softmax_y_direction_exp_query)
     (
     vsi_nn_kernel_node_t        node
     )
@@ -505,10 +504,10 @@ DEF_SP_KERNEL_QUERY(softmax_z_direction_exp_query)
     status = vxQueryNode(node, VX_NODE_SPINST_INDEX, &index, sizeof(index));
     CHECK_STATUS_FAIL_GOTO( status, final );
 
-    fifo_depth = (int32_t)ceil((float)(tile_size[0] * tile_size[1])/ (float)hw_param.streamProcessorExecCount);
+    fifo_depth = (int32_t)ceil((float)(tile_size[0])/ (float)hw_param.streamProcessorExecCount);
     max_vector_depth = hw_param.streamProcessorVectorSize;
 
-    spinst = vsi_nn_sp_exp_z_direction_inst(ctx, fifo_depth, max_vector_depth);
+    spinst = vsi_nn_sp_exp_y_direction_inst(ctx, fifo_depth, max_vector_depth);
 
     status = vxSetParameterByIndex( node, (uint32_t)index, (vx_reference)spinst->sp );
     CHECK_STATUS_FAIL_GOTO( status, final );
@@ -522,7 +521,7 @@ final:
     return status;
 }
 
-vsi_nn_kernel_node_t vsi_nn_sp_softmax_z_direction_exp_node
+vsi_nn_kernel_node_t vsi_nn_sp_softmax_y_direction_exp_node
     (
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input0,
@@ -593,14 +592,14 @@ vsi_nn_kernel_node_t vsi_nn_sp_softmax_z_direction_exp_node
     attr.num_of_v12_rd_in_flush_cycle = 4;
     attr.num_of_v12_wr_in_flush_cycle = 5;
 
-    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_XYMERGE;
+    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_YZMERGE;
     attr.input_setup = VSI_NN_SP_INPUT_SETUP_SINGLE_INPUT;
 
     attr.prog_init_instr_num = spInitInstsNum;
     attr.prog_loop_instr_num = spLoopInstsNum;
     attr.v12_reset_at_start = VSI_NN_SP_V_RESET_AT_START_RESET;
 
-    attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_XY;
+    attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_X;
     attr.split_tilex_equal_imgx = TRUE;
     attr.split_max_vector_depth = max_vector_depth;
 
@@ -638,7 +637,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_softmax_z_direction_exp_node
 final:
     if (node)
     {
-        vxAssignNodeQueryCallback(node, softmax_z_direction_exp_query);
+        vxAssignNodeQueryCallback(node, softmax_y_direction_exp_query);
     }
 
     if (spinst)
@@ -660,7 +659,7 @@ final:
 
     return (vsi_nn_kernel_node_t)node;
 }
-vsi_nn_kernel_node_t vsi_nn_sp_rcp_node
+vsi_nn_kernel_node_t vsi_nn_sp_rcp_y_direction_node
     (
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input,
@@ -706,7 +705,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_rcp_node
     status |= vsi_nn_sp_mul(&sp_insts_param[2], VSI_NN_SP_SR7, VSI_NN_SP_SR3, VSI_NN_SP_VR12);
     CHECK_STATUS_FAIL_GOTO(status, final );
 
-    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_XYMERGE;
+    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_YZMERGE;
 
     attr.input_setup = VSI_NN_SP_INPUT_SETUP_V12;
     attr.prog_loop_instr_num = spLoopInstsNum;
@@ -716,7 +715,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_rcp_node
 
     attr.num_of_v12_wr_in_flush_cycle = 5;
 
-    attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_XY;
+    attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_X;
     attr.split_tilex_equal_imgx = TRUE;
     attr.split_max_vector_depth = max_vector_depth;
 
@@ -822,7 +821,7 @@ static vsi_nn_spinst_t * vsi_nn_sp_times_inst
         CHECK_STATUS_FAIL_GOTO(status, final );
     }
 
-    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_XYMERGE;
+    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_YZMERGE;
     attr.input_setup = VSI_NN_SP_INPUT_SETUP_SINGLE_INPUT;
 
     attr.prog_init_instr_num = spInitInstsNum;
@@ -837,7 +836,7 @@ static vsi_nn_spinst_t * vsi_nn_sp_times_inst
     attr.num_of_v11_rd_in_flush_cycle = 0;
     attr.num_of_v11_wr_in_flush_cycle = 0;
 
-    attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_XY;
+    attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_X;
     attr.split_tilex_equal_imgx = TRUE;
     attr.split_max_vector_depth = max_vector_depth;
 
@@ -851,7 +850,7 @@ final:
     return spinst;
 }
 
-DEF_SP_KERNEL_QUERY(times_query)
+DEF_SP_KERNEL_QUERY(times_y_direction_query)
     (
     vsi_nn_kernel_node_t        node
     )
@@ -874,7 +873,7 @@ DEF_SP_KERNEL_QUERY(times_query)
     status = vxQueryNode(node, VX_NODE_SPINST_INDEX, &index, sizeof(index));
     CHECK_STATUS_FAIL_GOTO( status, final );
 
-    fifo_depth = (int32_t)ceil((float)(tile_size[0] * tile_size[1]) / (float)hw_param.streamProcessorExecCount);
+    fifo_depth = (int32_t)ceil((float)(tile_size[0]) / (float)hw_param.streamProcessorExecCount);
     max_vector_depth = hw_param.streamProcessorVectorSize;
 
     spinst = vsi_nn_sp_times_inst(ctx, fifo_depth, max_vector_depth);
@@ -891,7 +890,7 @@ final:
     return status;
 }
 
-vsi_nn_kernel_node_t vsi_nn_sp_softmax_z_direction_times_node
+vsi_nn_kernel_node_t vsi_nn_sp_softmax_y_direction_times_node
     (
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input0,
@@ -927,7 +926,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_softmax_z_direction_times_node
 
     if (node)
     {
-        vxAssignNodeQueryCallback(node, times_query);
+        vxAssignNodeQueryCallback(node, times_y_direction_query);
     }
 
     status = vsi_nn_set_sp_kernel_name(node, kernel_name);
@@ -943,11 +942,11 @@ final:
 }
 
 /*
-** This program requires sum operation in the z dimension.
+** This program requires sum operation in the y dimension.
 ** Instead of using the SUM Engine, the sum needs to be performed
 ** by Stream Processor instructions.
 */
-vsi_nn_kernel_node_t softmax_z_direction
+vsi_nn_kernel_node_t softmax_y_opt_direction
     (
     vsi_nn_graph_t              * graph,
     vsi_nn_tensor_t            ** inputs,
@@ -959,7 +958,7 @@ vsi_nn_kernel_node_t softmax_z_direction
     vsi_nn_tensor_attr_t attr;
     vsi_nn_tensor_t * dummy_tensor[3] = {NULL};
     vsi_nn_tensor_t * output_tensor[2] = {NULL};
-    int32_t axis = 2;
+    int32_t axis = 1;
     float beta = vsi_nn_kernel_param_get_float32( params, "beta" );
     float output_scale = vsi_nn_get_tensor_scale(outputs[0]);
 
@@ -986,14 +985,14 @@ vsi_nn_kernel_node_t softmax_z_direction
     output_tensor[1] = vsi_nn_CreateTensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( output_tensor[1], "Create tensor fail.", final );
 
-    node[0] = vsi_nn_sp_max_axis2_node(graph, inputs[0], output_tensor[0], dummy_tensor[0], beta, "softmax_0");
+    node[0] = vsi_nn_sp_max_axis1_node(graph, inputs[0], output_tensor[0], dummy_tensor[0], beta, "softmax_0");
     CHECK_PTR_FAIL_GOTO( node[0], "Create sp_max_axis2 fail.", final );
-    node[1] = vsi_nn_sp_softmax_z_direction_exp_node(graph, output_tensor[0], dummy_tensor[0],
+    node[1] = vsi_nn_sp_softmax_y_direction_exp_node(graph, output_tensor[0], dummy_tensor[0],
         output_tensor[1], dummy_tensor[1], "softmax_1");
     CHECK_PTR_FAIL_GOTO( node, "Create exp_y_direction fail.", final );
-    node[2] = vsi_nn_sp_rcp_node(graph, dummy_tensor[1], dummy_tensor[2], output_scale, "softmax_2");
+    node[2] = vsi_nn_sp_rcp_y_direction_node(graph, dummy_tensor[1], dummy_tensor[2], output_scale, "softmax_2");
     CHECK_PTR_FAIL_GOTO( node[2], "Create sp_rcp fail.", final );
-    node[3] = vsi_nn_sp_softmax_z_direction_times_node(graph, output_tensor[1],
+    node[3] = vsi_nn_sp_softmax_y_direction_times_node(graph, output_tensor[1],
         dummy_tensor[2], outputs[0], "softmax_3");
     CHECK_PTR_FAIL_GOTO( node[3], "Create softmax_times fail.", final );
 
@@ -1008,6 +1007,6 @@ final:
     vsi_safe_release_tensor(output_tensor[1]);
 
     return node[3];
-} /* softmax_z_direction() */
+} /* softmax_y_direction() */
 
 #endif
