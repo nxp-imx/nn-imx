@@ -234,7 +234,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_moments_axis1_node
     )
 {
     const int32_t spInitInstsNum = 0;
-    const int32_t spLoopInstsNum = 2;
+    const int32_t spLoopInstsNum = 3;
     const int32_t spInstsNum = spInitInstsNum + spLoopInstsNum;
 
     const uint32_t input_count = 1;
@@ -258,7 +258,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_moments_axis1_node
     clamp_min = clamp_min * input_scale;
     clamp_max = clamp_max * input_scale;
 
-    memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
+    memset(sp_insts_param, 0, sizeof(sp_insts_param));
     vsi_nn_init_spinst_attr(&attr);
 
     /* loop inst0: r1 = clamp(r3 * in, r6, r7) | r4 = v12*/
@@ -268,7 +268,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_moments_axis1_node
     status |= vsi_nn_sp_mul(&sp_insts_param[1], VSI_NN_SP_SR1, VSI_NN_SP_SR1, VSI_NN_SP_SR8);
     status |= vsi_nn_sp_add(&sp_insts_param[1], VSI_NN_SP_SR8, VSI_NN_SP_SR4, VSI_NN_SP_VR12);
     status |= vsi_nn_sp_move(&sp_insts_param[1], VSI_NN_SP_VR11, VSI_NN_SP_SR5);
-    /* loop inst1: v11 = r1 + r5 | out = r1 */
+    /* loop inst2: v11 = r1 + r5 | out = r1 */
     status |= vsi_nn_sp_add(&sp_insts_param[2], VSI_NN_SP_SR1, VSI_NN_SP_SR5, VSI_NN_SP_VR11);
     status |= vsi_nn_sp_move(&sp_insts_param[2], VSI_NN_SP_SR1, VSI_NN_SP_SROUT);
     CHECK_STATUS_FAIL_GOTO(status, final );
