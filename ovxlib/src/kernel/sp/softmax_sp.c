@@ -671,6 +671,14 @@ vsi_nn_kernel_node_t softmax_z_direction
     const vsi_nn_kernel_param_t * params
     );
 
+vsi_nn_kernel_node_t softmax_y_opt_direction
+    (
+    vsi_nn_graph_t              * graph,
+    vsi_nn_tensor_t            ** inputs,
+    vsi_nn_tensor_t            ** outputs,
+    const vsi_nn_kernel_param_t * params
+    );
+
 #define REGISTER_SOFTMAX_STREAM_PROCESSOR_KERNEL( kernel_name )   \
     static vsi_nn_kernel_node_t _##kernel_name##setup \
         ( \
@@ -703,13 +711,17 @@ REGISTER_SOFTMAX_STREAM_PROCESSOR_KERNEL( softmax )
     {
         node = softmax_x_direction(graph, inputs, outputs, params);
     }
+    else if (axis == 1 && inputs[0]->attr.size[2] == 1)
+    {
+        node = softmax_y_opt_direction(graph, inputs, outputs, params);
+    }
+    else if (axis == 2 || (axis == 1 && inputs[0]->attr.size[2] == 1))
+    {
+        node = softmax_z_direction(graph, inputs, outputs, params);
+    }
     else if (axis == 1)
     {
         node = softmax_y_direction(graph, inputs, outputs, params);
-    }
-    else if (axis == 2)
-    {
-        node = softmax_z_direction(graph, inputs, outputs, params);
     }
 
     return node;
