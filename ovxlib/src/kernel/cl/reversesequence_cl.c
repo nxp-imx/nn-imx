@@ -198,9 +198,16 @@ static vsi_status _query_kernel
     case _PACK_SELECT_KEY(F32, I16):
         key = REVERSESEQUENCE_HASH_KEY( F32, I32, I32, axis_type);
         break;
+    case _PACK_SELECT_KEY(U8, U8):
+        key = REVERSESEQUENCE_HASH_KEY( U32, I32, U32, axis_type);
+        break;
     case _PACK_SELECT_KEY(U8, F16):
     case _PACK_SELECT_KEY(U8, F32):
         key = REVERSESEQUENCE_HASH_KEY( U32, I32, F32, axis_type);
+        break;
+    case _PACK_SELECT_KEY(I8, I8):
+    case _PACK_SELECT_KEY(I16, I16):
+        key = REVERSESEQUENCE_HASH_KEY( I32, I32, I32, axis_type);
         break;
     case _PACK_SELECT_KEY(I8, F16):
     case _PACK_SELECT_KEY(I8, F32):
