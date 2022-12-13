@@ -47,8 +47,8 @@ vsi_nn_spinst_t * vsi_nn_sp_max_axis2_inst
 {
     vsi_status status = VSI_FAILURE;
     const int32_t spInitInstsNum = 4;
-    const int32_t spLoopInstsNum = fifo_depth > 4 ? 3 : 11;
-    const int32_t spInstsNum = spInitInstsNum + spLoopInstsNum;
+    int32_t spLoopInstsNum = fifo_depth >= 7 ? 4 : 11;
+    int32_t spInstsNum = spInitInstsNum + spLoopInstsNum;
     uint32_t f32_min = 0xff800000;
     float clampMin = *(float*)&f32_min;
     vsi_nn_spinst_t *spinst = NULL;
@@ -56,7 +56,7 @@ vsi_nn_spinst_t * vsi_nn_sp_max_axis2_inst
     vsi_nn_spinst_attr_t attr;
     float constant[5] = {0};
 
-    memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
+    memset(sp_insts_param, 0, sizeof(sp_insts_param));
     vsi_nn_init_spinst_attr(&attr);
 
     /* init inst0: r2 = -INF */
@@ -65,24 +65,55 @@ vsi_nn_spinst_t * vsi_nn_sp_max_axis2_inst
     status |= vsi_nn_sp_move_constant(&sp_insts_param[1], 0, VSI_NN_SP_SR10);
     /* init inst2: r4 = 1 */
     status |= vsi_nn_sp_move_constant(&sp_insts_param[2], 1, VSI_NN_SP_SR4);
-    /* init inst3: nop */
-    status |= vsi_nn_sp_nop(&sp_insts_param[3]);
+    /* init inst3: r9 = -INF */
+    status = vsi_nn_sp_move_constant(&sp_insts_param[3], clampMin, VSI_NN_SP_SR9);
     CHECK_STATUS_FAIL_GOTO(status, final);
 
-    if (fifo_depth > 4)
+    if (fifo_depth >= 7)
+    {
+        /* loop inst0: r1 = clamp(r3 * in, r6, r7) | r2 = v11 + r10 | v11 = r5 ? r8 : r9 */
+        status  = vsi_nn_sp_mul_clamp(&sp_insts_param[4], VSI_NN_SP_SR3, VSI_NN_SP_SRIN, VSI_NN_SP_SR1);
+        status |= vsi_nn_sp_add(&sp_insts_param[4], VSI_NN_SP_VR11, VSI_NN_SP_SR10, VSI_NN_SP_SR2);
+        status |= vsi_nn_sp_move_sel0(&sp_insts_param[4], VSI_NN_SP_SR5, VSI_NN_SP_SR8, VSI_NN_SP_VR11);
+        /* loop inst1: r5 = r8 - r9 | out = r1 */
+        status |= vsi_nn_sp_sub(&sp_insts_param[5], VSI_NN_SP_SR8, VSI_NN_SP_SR9, VSI_NN_SP_SR5);
+        status |= vsi_nn_sp_move(&sp_insts_param[5], VSI_NN_SP_SR1, VSI_NN_SP_SROUT);
+        /* loop inst2: r8 = clamp(r3 * in, r6, r7) | r9 = v11 + r10 | v11 = r5 ? r1 : r2 */
+        status |= vsi_nn_sp_mul_clamp(&sp_insts_param[6], VSI_NN_SP_SR3, VSI_NN_SP_SRIN, VSI_NN_SP_SR8);
+        status |= vsi_nn_sp_add(&sp_insts_param[6], VSI_NN_SP_VR11, VSI_NN_SP_SR10, VSI_NN_SP_SR9);
+        status |= vsi_nn_sp_move_sel0(&sp_insts_param[6], VSI_NN_SP_SR5, VSI_NN_SP_SR1, VSI_NN_SP_VR11);
+        /* loop inst3: r5 = r1 - r2 | out = r8 */
+        status |= vsi_nn_sp_sub(&sp_insts_param[7], VSI_NN_SP_SR1, VSI_NN_SP_SR2, VSI_NN_SP_SR5);
+        status |= vsi_nn_sp_move(&sp_insts_param[7], VSI_NN_SP_SR8, VSI_NN_SP_SROUT);
+        CHECK_STATUS_FAIL_GOTO(status, final );
+
+        spLoopInstsNum = 4;
+
+        attr.flush_cycle_num = 6;
+
+        attr.ignored_leading_outputs = 2;
+        attr.ignored_leading_v11_rd = fifo_depth;
+        attr.ignored_leading_v11_wr = 3;
+
+        attr.num_of_v11_rd_in_flush_cycle = 0;
+        attr.num_of_v11_wr_in_flush_cycle = 3;
+        attr.num_of_elements_per_loop_per_input = 2;
+    }
+    else if (fifo_depth > 4)
     {
         /* loop inst0: r1 = clamp(r3 * in, r6, r7) | r2 = v11 + r10 | r9 = r2 */
         status  = vsi_nn_sp_mul_clamp(&sp_insts_param[4], VSI_NN_SP_SR3, VSI_NN_SP_SRIN, VSI_NN_SP_SR1);
         status |= vsi_nn_sp_add(&sp_insts_param[4], VSI_NN_SP_VR11, VSI_NN_SP_SR10, VSI_NN_SP_SR2);
         status |= vsi_nn_sp_move(&sp_insts_param[4], VSI_NN_SP_SR2, VSI_NN_SP_SR9);
         /* loop inst1: r8 = r1 * r4 | r5 = r1 - r2 | v11 = r5 ? r8 : r9 */
-        status |= vsi_nn_sp_mul(&sp_insts_param[5], VSI_NN_SP_SR1, VSI_NN_SP_SR3, VSI_NN_SP_SR8);
+        status |= vsi_nn_sp_mul(&sp_insts_param[5], VSI_NN_SP_SR1, VSI_NN_SP_SR4, VSI_NN_SP_SR8);
         status |= vsi_nn_sp_sub(&sp_insts_param[5], VSI_NN_SP_SR1, VSI_NN_SP_SR2, VSI_NN_SP_SR5);
         status |= vsi_nn_sp_move_sel0(&sp_insts_param[5], VSI_NN_SP_SR5, VSI_NN_SP_SR8, VSI_NN_SP_VR11);
         /* loop inst2: out = r1 */
         status |= vsi_nn_sp_move(&sp_insts_param[6], VSI_NN_SP_SR1, VSI_NN_SP_SROUT);
         CHECK_STATUS_FAIL_GOTO(status, final );
 
+        spLoopInstsNum = 3;
         attr.flush_cycle_num = 7;
 
         attr.ignored_leading_outputs = 1;
@@ -121,6 +152,8 @@ vsi_nn_spinst_t * vsi_nn_sp_max_axis2_inst
         status |= vsi_nn_sp_nop(&sp_insts_param[14]);
         CHECK_STATUS_FAIL_GOTO(status, final );
 
+        spLoopInstsNum = 11;
+
         attr.ignored_leading_outputs = 0;
         attr.ignored_leading_v11_rd = fifo_depth;
         attr.ignored_leading_v11_wr = 0;
@@ -130,6 +163,8 @@ vsi_nn_spinst_t * vsi_nn_sp_max_axis2_inst
 
         attr.flush_cycle_num = 10;
     }
+
+    spInstsNum = spInitInstsNum + spLoopInstsNum;
 
     status = vsi_nn_get_constant_from_spinst(prev_spinst, constant);
     CHECK_STATUS_FAIL_GOTO(status, final );
@@ -218,7 +253,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_max_axis2_node
     )
 {
     const int32_t spInitInstsNum = 4;
-    const int32_t spLoopInstsNum = 3;
+    const int32_t spLoopInstsNum = 4;
     const int32_t spInstsNum = spInitInstsNum + spLoopInstsNum;
 
     const uint32_t input_count = 1;
@@ -228,7 +263,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_max_axis2_node
     vx_node node = NULL;
 
     vsi_nn_spinst_t *spinst = NULL;
-    vsi_nn_spinst_inst_param sp_insts_param[7];
+    vsi_nn_spinst_inst_param sp_insts_param[8];
     vsi_nn_spinst_attr_t attr;
 
     vsi_status status = VSI_FAILURE;
@@ -256,16 +291,20 @@ vsi_nn_kernel_node_t vsi_nn_sp_max_axis2_node
     status |= vsi_nn_sp_nop(&sp_insts_param[3]);
     CHECK_STATUS_FAIL_GOTO(status, final);
 
-    /* loop inst0: r1 = clamp(r3 * in, r6, r7) | r2 = v11 + r10 | r9 = r2 */
+    /* loop inst0: r1 = clamp(r3 * in, r6, r7) | r2 = v11 + r10 | v11 = r5 ? r8 : r9 */
     status  = vsi_nn_sp_mul_clamp(&sp_insts_param[4], VSI_NN_SP_SR3, VSI_NN_SP_SRIN, VSI_NN_SP_SR1);
     status |= vsi_nn_sp_add(&sp_insts_param[4], VSI_NN_SP_VR11, VSI_NN_SP_SR10, VSI_NN_SP_SR2);
-    status |= vsi_nn_sp_move(&sp_insts_param[4], VSI_NN_SP_SR2, VSI_NN_SP_SR9);
-    /* loop inst1: r8 = r1 * r4 | r5 = r1 - r2 | v11 = r5 ? r8 : r9 */
-    status |= vsi_nn_sp_mul(&sp_insts_param[5], VSI_NN_SP_SR1, VSI_NN_SP_SR3, VSI_NN_SP_SR8);
-    status |= vsi_nn_sp_sub(&sp_insts_param[5], VSI_NN_SP_SR1, VSI_NN_SP_SR2, VSI_NN_SP_SR5);
-    status |= vsi_nn_sp_move_sel0(&sp_insts_param[5], VSI_NN_SP_SR5, VSI_NN_SP_SR8, VSI_NN_SP_VR11);
-    /* loop inst2: out = r1 */
-    status |= vsi_nn_sp_move(&sp_insts_param[6], VSI_NN_SP_SR1, VSI_NN_SP_SROUT);
+    status |= vsi_nn_sp_move_sel0(&sp_insts_param[4], VSI_NN_SP_SR5, VSI_NN_SP_SR8, VSI_NN_SP_VR11);
+    /* loop inst1: r5 = r8 - r9 | out = r1 */
+    status |= vsi_nn_sp_sub(&sp_insts_param[5], VSI_NN_SP_SR8, VSI_NN_SP_SR9, VSI_NN_SP_SR5);
+    status |= vsi_nn_sp_move(&sp_insts_param[5], VSI_NN_SP_SR1, VSI_NN_SP_SROUT);
+    /* loop inst2: r8 = clamp(r3 * in, r6, r7) | r9 = v11 + r10 | v11 = r5 ? r1 : r2 */
+    status |= vsi_nn_sp_mul_clamp(&sp_insts_param[6], VSI_NN_SP_SR3, VSI_NN_SP_SRIN, VSI_NN_SP_SR8);
+    status |= vsi_nn_sp_add(&sp_insts_param[6], VSI_NN_SP_VR11, VSI_NN_SP_SR10, VSI_NN_SP_SR9);
+    status |= vsi_nn_sp_move_sel0(&sp_insts_param[6], VSI_NN_SP_SR5, VSI_NN_SP_SR1, VSI_NN_SP_VR11);
+    /* loop inst3: r5 = r1 - r2 | out = r8 */
+    status |= vsi_nn_sp_sub(&sp_insts_param[7], VSI_NN_SP_SR1, VSI_NN_SP_SR2, VSI_NN_SP_SR5);
+    status |= vsi_nn_sp_move(&sp_insts_param[7], VSI_NN_SP_SR8, VSI_NN_SP_SROUT);
     CHECK_STATUS_FAIL_GOTO(status, final );
 
     attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_XYMERGE;
@@ -274,6 +313,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_max_axis2_node
     attr.prog_init_instr_num = spInitInstsNum;
     attr.prog_loop_instr_num = spLoopInstsNum;
     attr.v11_reset_at_start = VSI_NN_SP_V_RESET_AT_START_RESET;
+    attr.num_of_elements_per_loop_per_input = 2;
 
     attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_XY;
     attr.split_tilex_equal_imgx = TRUE;
@@ -281,9 +321,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_max_axis2_node
 
     attr.flush_cycle_num = 7;
 
-    attr.ignored_leading_outputs = 1;
+    attr.ignored_leading_outputs = 2;
     attr.ignored_leading_v11_rd = 5;
-    attr.ignored_leading_v11_wr = 2;
+    attr.ignored_leading_v11_wr = 3;
 
     attr.num_of_v11_rd_in_flush_cycle = 0;
     attr.num_of_v11_wr_in_flush_cycle = 3;
