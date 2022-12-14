@@ -1,4 +1,29 @@
 ############################################################################
+Release notes for Ovxlib 1.1.69
+
+New Features:
+    1. Add 'globallppool', 'pre_process_nv21', 'avg_pool3d', 'atan',
+       'atanh', 'acosh', 'maxunpool', 'reversesequence'
+
+Feature Refine:
+    1. Support batch_dims for gather_nd.
+    2. Modified the calculation formula of YUV to RGB
+    3. Refine for driver API change vxSwapTensorHandle, vxInvalidateHandle
+    4. Support 'keep_dims' for argmax, argmin
+    5. Support 5D input for batchnormalize
+
+Bug Fixing:
+    1. Fix eltwise random fail issue
+    2. Fix output wrong issue for pre_process_nv12
+    3. Fix space2batch operation parameters issue
+    4. Fi resize1d operatoer evis path issue
+    5. Fix reduce operation reshape mismatch issue
+    6. Fix clip operation fail issue
+    7. Fix strided_slice inconsitent shape issue
+    8. Fix precision issue for gather
+    9. Fix crash issue of layernormalization
+
+############################################################################
 Release notes for Ovxlib 1.1.57
 
 New Features:
