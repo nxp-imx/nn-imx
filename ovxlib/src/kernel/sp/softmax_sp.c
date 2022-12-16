@@ -87,6 +87,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_softmax_max_node
     attr.prog_init_instr_num = spInitInstsNum;
     attr.prog_loop_instr_num = spLoopInstsNum;
     attr.ignored_leading_outputs = 3;
+    attr.ignored_leading_acc_out = 3;
     attr.flush_cycle_num = 3;
     attr.accelerator_input_select = VSI_NN_SP_ACCELERATOR_IN_FROM_OUTPUT;
     attr.sum_engine_reset = VSI_NN_SP_SUM_ENGINE_RESET_START_FROM_MINIMUM;
@@ -263,6 +264,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_softmax_exp_node
 
     attr.prog_loop_instr_num = spLoopInstsNum;
     attr.ignored_leading_outputs = 4;
+    attr.ignored_leading_acc_out = 4;
     attr.flush_cycle_num = 14;
     attr.accelerator_input_select = VSI_NN_SP_ACCELERATOR_IN_FROM_OUTPUT;
     attr.sum_engine_reset = VSI_NN_SP_SUM_ENGINE_RESET_START_FROM_ZERO;
