@@ -326,7 +326,7 @@ REGISTER_GROUP_NORM_STREAM_PROCESSOR_KERNEL( group_norm )
     float inv_m = 1.0f / (float)(outputs[0]->attr.size[0] * outputs[0]->attr.size[1] * group_size);
 
     status =  vsi_nn_kernel_optimize_group_norm_shape( (const vsi_size_t*)inputs[0]->attr.size,
-        inputs[0]->attr.dim_num, group_num, 0, shapes[0]);
+        inputs[0]->attr.dim_num, group_num, 1, shapes[0]);
     CHECK_STATUS_FAIL_GOTO(status, final);
     reshape_tensors[0] = vsi_nn_reshape_tensor(graph, inputs[0], shapes[0], 4);
     shapes[1][2] = inputs[0]->attr.size[2];
@@ -346,7 +346,7 @@ REGISTER_GROUP_NORM_STREAM_PROCESSOR_KERNEL( group_norm )
     reshape_tensors[1] = vsi_nn_reshape_tensor(graph, output_tensors[1],
         outputs[0]->attr.size, outputs[0]->attr.dim_num);
 
-    memcpy( &attr, &reshape_tensors[1]->attr, sizeof(vsi_nn_tensor_attr_t) );
+    memcpy( &attr, &reshape_tensors[0]->attr, sizeof(vsi_nn_tensor_attr_t) );
     attr.dtype.vx_type = VSI_NN_TYPE_FLOAT32;
     attr.is_const = FALSE;
     attr.vtl = TRUE;
@@ -356,6 +356,12 @@ REGISTER_GROUP_NORM_STREAM_PROCESSOR_KERNEL( group_norm )
     CHECK_PTR_FAIL_GOTO( dummy_tensor[0], "Create dummy_tensor fail.", final );
     dummy_tensor[1] = vsi_nn_create_dummy_tensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( dummy_tensor[1], "Create dummy_tensor fail.", final );
+    memcpy( &attr, &reshape_tensors[1]->attr, sizeof(vsi_nn_tensor_attr_t) );
+    attr.dtype.vx_type = VSI_NN_TYPE_FLOAT32;
+    attr.is_const = FALSE;
+    attr.vtl = TRUE;
+    attr.size[0] = 1;
+    attr.size[1] = 1;
     dummy_tensor[2] = vsi_nn_create_dummy_tensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( dummy_tensor[2], "Create dummy_tensor fail.", final );
     dummy_tensor[3] = vsi_nn_create_dummy_tensor( graph, &attr );
