@@ -170,14 +170,12 @@ vsi_nn_kernel_node_t vsi_nn_sp_layer_norm_means_node
     vsi_nn_spinst_t *spinst = NULL;
     vsi_nn_spinst_inst_param sp_insts_param[5];
     vsi_nn_spinst_attr_t attr;
-    vsi_nn_sp_lut_params sp_lut_params;
     vx_lut_params_s vx_lut_params;
 
     vsi_status status = VSI_FAILURE;
 
     memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
     vsi_nn_init_spinst_attr(&attr);
-    memset(&sp_lut_params, 0, sizeof(vsi_nn_sp_lut_params));
     memset(&vx_lut_params, 0, sizeof(vx_lut_params_s));
 
     /* loop inst0: r5 = v11 * r3 */
@@ -229,16 +227,10 @@ vsi_nn_kernel_node_t vsi_nn_sp_layer_norm_means_node
     inputs_tensor[0] = input->t;
     outputs_tensor[0] = output->t;
 
-    vx_lut_params.lut_function = VX_NN_ACTIVATION_CUSTOM;
-    vx_lut_params.in_lut = vxCreateLUT( graph->ctx->c, VX_TYPE_FLOAT32, VSI_NN_SP_LUT_MAX_SIZE);
-    vx_lut_params.out_lut = vxCreateLUT( graph->ctx->c, VX_TYPE_FLOAT32, VSI_NN_SP_LUT_MAX_SIZE);
-
-    sp_lut_params.act_type = VSI_NN_SP_ACT_LINEAR_RSQRT;
-    sp_lut_params.pwl_sign_remove_support = TRUE;
-    sp_lut_params.params[0] = 1;
-    sp_lut_params.params[1] = eps;
-    sp_lut_params.params[2] = 1.0f;
-    vsi_nn_sp_lut(vx_lut_params.in_lut, vx_lut_params.out_lut, &sp_lut_params);
+    vx_lut_params.lut_function = VX_NN_ACTIVATION_RSQRT;
+    vx_lut_params.float_values[0] = 0;
+    vx_lut_params.float_values[1] = eps;
+    vx_lut_params.fvalues_count = 2;
 
     node = vxStreamProcessorNode(
         graph->g,
@@ -256,17 +248,6 @@ final:
     if (spinst)
     {
         vsi_nn_release_spinst(&spinst);
-    }
-
-    if (vx_lut_params.in_lut)
-    {
-        vxReleaseLUT(&vx_lut_params.in_lut);
-        vx_lut_params.in_lut = NULL;
-    }
-    if (vx_lut_params.out_lut)
-    {
-        vxReleaseLUT(&vx_lut_params.out_lut);
-        vx_lut_params.out_lut = NULL;
     }
 
     return (vsi_nn_kernel_node_t)node;
