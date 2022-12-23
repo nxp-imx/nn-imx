@@ -21,8 +21,9 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#ifndef _VSI_NN_OP_ROI_ALIGN_H
-#define _VSI_NN_OP_ROI_ALIGN_H
+
+#ifndef _VSI_NN_OP_BUCKETIZE_H
+#define _VSI_NN_OP_BUCKETIZE_H
 
 #include "vsi_nn_types.h"
 
@@ -30,19 +31,18 @@
 extern "C" {
 #endif
 
-typedef struct _vsi_nn_roi_align_param
+typedef struct _vsi_nn_bucketize_param
 {
-    int32_t output_height;
-    int32_t output_width;
-    float height_ratio;
-    float width_ratio;
-    int32_t height_sample_num;
-    int32_t width_sample_num;
-    vsi_nn_roi_align_type_e platform_type;
-} vsi_nn_roi_align_param;
+    struct _bucketize_local_data_t* local;
+    // Add parameters here
+    vsi_bool right;
+} vsi_nn_bucketize_param;
+_compiler_assert(offsetof(vsi_nn_bucketize_param, local) == 0, \
+    vsi_nn_bucketize_h );
 
 #ifdef __cplusplus
 }
 #endif
 
 #endif
+

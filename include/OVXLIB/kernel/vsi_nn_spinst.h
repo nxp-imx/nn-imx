@@ -71,7 +71,7 @@ typedef enum
     VSI_SP_ATTR_SPLIT_ON_AXIS_XY    = VX_SP_ATTRIBUTE_SPLIT_ON_AXIS_XY,
     VSI_SP_ATTR_SPLIT_ON_AXIS_YZ    = VX_SP_ATTRIBUTE_SPLIT_ON_AXIS_YZ,
     VSI_SP_ATTR_SPLIT_ON_AXIS_XYZ   = VX_SP_ATTRIBUTE_SPLIT_ON_AXIS_XYZ,
-}vsi_sp_attr_split_axis_e;;
+}vsi_sp_attr_split_axis_e;
 
 /**
  * spinst attribute
@@ -108,10 +108,15 @@ typedef struct _vsi_nn_spinst_attr
     uint32_t sum_engine_control;
     uint32_t sum_engine_num_ch_minus_one;
     uint32_t sum_engine_2d_accum_storeage;
+    uint32_t sum_engine_op_select;
     uint32_t num_of_elements_per_loop_per_input;
     uint32_t split_axis;
     uint32_t split_max_vector_depth;
     vsi_bool split_tilex_equal_imgx;
+    uint32_t num_of_v11_rd_in_flush_cycle;
+    uint32_t num_of_v12_rd_in_flush_cycle;
+    uint32_t num_of_v11_wr_in_flush_cycle;
+    uint32_t num_of_v12_wr_in_flush_cycle;
 
     float init_r3;
     float init_r4;
@@ -174,6 +179,7 @@ typedef enum
     VSI_NN_SP_ATTRIBUTE_SUM_ENGINE_CONTROL          = VX_SP_ATTRIBUTE_SUM_ENGINE_CONTROL,
     VSI_NN_SP_ATTRIBUTE_SUM_ENGINE_NUM_CH_MINUS_ONE = VX_SP_ATTRIBUTE_SUM_ENGINE_NUM_CH_MINUS_ONE,
     VSI_NN_SP_ATTRIBUTE_SUM_ENGINE_2D_ACCUM_STORAGE = VX_SP_ATTRIBUTE_SUM_ENGINE_2D_ACCUM_STORAGE,
+    VSI_NN_SP_ATTRIBUTE_SUM_ENGINE_OP_SELECT        = VX_SP_ATTRIBUTE_SUM_ENGINE_OP_SELECT,
     VSI_NN_SP_ATTRIBUTE_NUM_OF_ELEMENTS_PER_LOOP_PER_INPUT = VX_SP_ATTRIBUTE_NUM_OF_ELEMENTS_PER_LOOP_PER_INPUT,
 
     VSI_NN_SP_ATTRIBUTE_CONST0                      = VX_SP_ATTRIBUTE_CONST0,
@@ -185,6 +191,11 @@ typedef enum
     VSI_NN_SP_ATTRIBUTE_SPLIT_AXIS                  = VX_SP_ATTRIBUTE_SPLIT_AXIS,
     VSI_NN_SP_ATTRIBUTE_SPLIT_MAX_SIZE              = VX_SP_ATTRIBUTE_SPLIT_MAX_SIZE,
     VSI_NN_SP_ATTRIBUTE_TILEX_EQUAL_IMGX            = VX_SP_ATTRIBUTE_SPLIT_TILEX_EQUAL_INIMAGEX,
+
+    VSI_NN_SP_ATTRIBUTE_NUM_OF_V11_RD_IN_FLUSH_CYCLE = VX_SP_ATTRIBUTE_NUM_OF_V11_RD_IN_FLUSH_CYCLE,
+    VSI_NN_SP_ATTRIBUTE_NUM_OF_V12_RD_IN_FLUSH_CYCLE = VX_SP_ATTRIBUTE_NUM_OF_V12_RD_IN_FLUSH_CYCLE,
+    VSI_NN_SP_ATTRIBUTE_NUM_OF_V11_WR_IN_FLUSH_CYCLE = VX_SP_ATTRIBUTE_NUM_OF_V11_WR_IN_FLUSH_CYCLE,
+    VSI_NN_SP_ATTRIBUTE_NUM_OF_V12_WR_IN_FLUSH_CYCLE = VX_SP_ATTRIBUTE_NUM_OF_V12_WR_IN_FLUSH_CYCLE,
 
     VSI_NN_SP_ATTRIBUTE_COUNT                       = VX_SP_ATTRIBUTE_TOTAL_COUNT,
 } vsi_nn_sp_attribute_e;

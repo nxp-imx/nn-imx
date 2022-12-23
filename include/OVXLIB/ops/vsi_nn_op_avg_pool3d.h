@@ -21,8 +21,9 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#ifndef _VSI_NN_OP_ROI_ALIGN_H
-#define _VSI_NN_OP_ROI_ALIGN_H
+
+#ifndef _VSI_NN_OP_AVG_POOL3D_H
+#define _VSI_NN_OP_AVG_POOL3D_H
 
 #include "vsi_nn_types.h"
 
@@ -30,19 +31,23 @@
 extern "C" {
 #endif
 
-typedef struct _vsi_nn_roi_align_param
+typedef struct _vsi_nn_avg_pool3d_param
 {
-    int32_t output_height;
-    int32_t output_width;
-    float height_ratio;
-    float width_ratio;
-    int32_t height_sample_num;
-    int32_t width_sample_num;
-    vsi_nn_roi_align_type_e platform_type;
-} vsi_nn_roi_align_param;
+    /* round_type is used to calculate the output shape */
+    vsi_nn_round_type_e round_type;
+    uint32_t     ksize[3];
+    uint32_t     stride[3];
+    /* Pad left, right, top, bottom, front, end */
+    uint32_t     pad[6];
+    /* Pad type default value shall be AUTO */
+    vsi_nn_pad_e pad_type;
+    /* Whether include pad pixels when calculating value for the edges */
+    int32_t      count_include_pad;
+} vsi_nn_avg_pool3d_param;
 
 #ifdef __cplusplus
 }
 #endif
 
 #endif
+

@@ -21,8 +21,9 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#ifndef _VSI_NN_OP_ROI_ALIGN_H
-#define _VSI_NN_OP_ROI_ALIGN_H
+
+#ifndef _VSI_NN_OP_PRE_PROCESS_YUV422_H
+#define _VSI_NN_OP_PRE_PROCESS_YUV422_H
 
 #include "vsi_nn_types.h"
 
@@ -30,19 +31,51 @@
 extern "C" {
 #endif
 
-typedef struct _vsi_nn_roi_align_param
+#define _VSI_NN_PRE_PROCESS_YUV422_LOCAL_TENSOR_NUM 2
+
+typedef struct _vsi_nn_pre_process_yuv422_lcl_data
 {
-    int32_t output_height;
-    int32_t output_width;
-    float height_ratio;
-    float width_ratio;
-    int32_t height_sample_num;
-    int32_t width_sample_num;
-    vsi_nn_roi_align_type_e platform_type;
-} vsi_nn_roi_align_param;
+    int32_t scale_x;
+    int32_t scale_y;
+    vsi_bool enable_copy;
+    vsi_bool enable_perm;
+    vx_tensor   local_tensor[_VSI_NN_PRE_PROCESS_YUV422_LOCAL_TENSOR_NUM];
+} vsi_nn_pre_process_yuv422_lcl_data;
+
+typedef struct _vsi_nn_pre_process_yuv422_param
+{
+    vsi_nn_pre_process_yuv422_lcl_data* local;
+
+    vsi_nn_yuv_type yuv422_type;
+
+    struct
+    {
+        uint32_t left;
+        uint32_t top;
+        uint32_t width;
+        uint32_t height;
+    } rect;
+
+    struct
+    {
+        vsi_size_t   *size;
+        uint32_t   dim_num;
+    } output_attr;
+
+    uint32_t * perm;
+    uint32_t   dim_num;
+
+    float r_mean;
+    float g_mean;
+    float b_mean;
+    float rgb_scale;
+
+    vsi_bool reverse_channel;
+} vsi_nn_pre_process_yuv422_param;
 
 #ifdef __cplusplus
 }
 #endif
 
 #endif
+

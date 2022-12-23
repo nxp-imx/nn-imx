@@ -21,8 +21,9 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#ifndef _VSI_NN_OP_ROI_ALIGN_H
-#define _VSI_NN_OP_ROI_ALIGN_H
+
+#ifndef _VSI_NN_OP_LPPOOL_H
+#define _VSI_NN_OP_LPPOOL_H
 
 #include "vsi_nn_types.h"
 
@@ -30,16 +31,13 @@
 extern "C" {
 #endif
 
-typedef struct _vsi_nn_roi_align_param
-{
-    int32_t output_height;
-    int32_t output_width;
-    float height_ratio;
-    float width_ratio;
-    int32_t height_sample_num;
-    int32_t width_sample_num;
-    vsi_nn_roi_align_type_e platform_type;
-} vsi_nn_roi_align_param;
+typedef struct _vsi_nn_lppool_param {
+    vsi_nn_pad_e pad_type;
+    uint32_t ksize[2];
+    int32_t p;
+    uint32_t pad[4];
+    uint32_t stride[2];
+} vsi_nn_lppool_param;
 
 #ifdef __cplusplus
 }
