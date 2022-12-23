@@ -27,7 +27,6 @@
 
 #include <stdint.h>
 #include "vsi_nn_platform.h"
-#include "vsi_nn_feature_config.h"
 
 #if defined(__cplusplus)
 extern "C"{
@@ -109,7 +108,15 @@ typedef enum
     VSI_NN_PAD_AUTO,
     VSI_NN_PAD_VALID,
     VSI_NN_PAD_SAME
-} vsi_nn_pad_e;
+} VSI_PUBLIC_TYPE vsi_nn_pad_e;
+
+/** reduce type enum */
+typedef enum
+{
+    VSI_NN_REDUCTION_TYPE_NONE,
+    VSI_NN_REDUCTION_TYPE_ADD,
+    VSI_NN_REDUCTION_TYPE_MUL
+} vsi_nn_reduction_type_e;
 
 /** Pad mode enum */
 typedef enum {
@@ -134,14 +141,14 @@ typedef enum
 {
     VSI_NN_ROUND_CEIL,
     VSI_NN_ROUND_FLOOR
-} vsi_nn_round_type_e;
+} VSI_PUBLIC_TYPE vsi_nn_round_type_e;
 
 /** Optimize driction */
 typedef enum
 {
     VSI_NN_OPTIMIZE_FORWARD,
     VSI_NN_OPTIMIZE_BACKWARD
-} vsi_nn_opt_direction_e;
+} VSI_PUBLIC_TYPE vsi_nn_opt_direction_e;
 #ifdef VX_CREATE_TENSOR_SUPPORT_PHYSICAL
 typedef enum
 {
@@ -187,7 +194,7 @@ typedef enum
 #endif
     VSI_NN_TYPE_VDATA = VX_TYPE_USER_STRUCT_START + 0x1,
 
-}vsi_nn_type_e;
+} VSI_PUBLIC_TYPE vsi_nn_type_e;
 
 typedef int32_t vsi_nn_activation_e; enum
 {
@@ -228,7 +235,7 @@ typedef enum
 {
     VSI_NN_GRAPH_PRELOAD_VIPSRAM,
     VSI_NN_GRAPH_PRELOAD_AXISRAM
-} vsi_nn_graph_attr_preload_type_e;
+} VSI_PUBLIC_TYPE vsi_nn_graph_attr_preload_type_e;
 
 typedef enum _vsi_nn_node_attr_preload_type_e
 {
@@ -243,23 +250,41 @@ typedef enum _vsi_nn_con2d_lstm_dataformat
     CONV2D_LSTM_CHANNELS_FIRST
 } vsi_nn_con2d_lstm_dataformat;
 
+typedef enum _vsi_nn_yuv_type
+{
+    VSI_NN_YUV_TYPE_YUYV422,
+    VSI_NN_YUV_TYPE_UYUV422
+}vsi_nn_yuv_type;
+
+typedef enum _vsi_nn_nv_type
+{
+    VSI_NN_YUV_TYPE_NV12,
+    VSI_NN_YUV_TYPE_NV21
+}vsi_nn_nv_type;
+
+typedef enum _vsi_nn_roi_align_type_e
+{
+    VSI_NN_ROI_ALIGN_ANDROID,
+    VSI_NN_ROI_ALIGN
+} vsi_nn_roi_align_type_e;
+
 /** Deprecated */
 typedef uint32_t vsi_nn_size_t;
 
 /** Tensor id type */
-typedef uint32_t vsi_nn_tensor_id_t;
+typedef uint32_t VSI_PUBLIC_TYPE vsi_nn_tensor_id_t;
 
 /** Node id type */
 typedef uint32_t vsi_nn_node_id_t;
 
 /** @see _vsi_nn_graph */
-typedef struct _vsi_nn_graph vsi_nn_graph_t;
+typedef struct _vsi_nn_graph VSI_PUBLIC_TYPE vsi_nn_graph_t;
 
 /** @see _vsi_nn_node */
-typedef struct _vsi_nn_node vsi_nn_node_t;
+typedef struct _vsi_nn_node VSI_PUBLIC_TYPE vsi_nn_node_t;
 
 /** @see _vsi_nn_tensor */
-typedef struct _vsi_nn_tensor vsi_nn_tensor_t;
+typedef struct _vsi_nn_tensor VSI_PUBLIC_TYPE vsi_nn_tensor_t;
 
 #if defined(__cplusplus)
 }

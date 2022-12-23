@@ -21,8 +21,8 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#ifndef _VSI_NN_OP_ROI_ALIGN_H
-#define _VSI_NN_OP_ROI_ALIGN_H
+#ifndef _VSI_NN_OP_GATHER_ND_H
+#define _VSI_NN_OP_GATHER_ND_H
 
 #include "vsi_nn_types.h"
 
@@ -30,19 +30,14 @@
 extern "C" {
 #endif
 
-typedef struct _vsi_nn_roi_align_param
+typedef struct _vsi_nn_gather_nd_param
 {
-    int32_t output_height;
-    int32_t output_width;
-    float height_ratio;
-    float width_ratio;
-    int32_t height_sample_num;
-    int32_t width_sample_num;
-    vsi_nn_roi_align_type_e platform_type;
-} vsi_nn_roi_align_param;
+    int32_t     batch_dims;
+} vsi_nn_gather_nd_param;
 
 #ifdef __cplusplus
 }
 #endif
 
 #endif
+

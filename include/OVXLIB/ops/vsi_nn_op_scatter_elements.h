@@ -21,8 +21,9 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#ifndef _VSI_NN_OP_ROI_ALIGN_H
-#define _VSI_NN_OP_ROI_ALIGN_H
+
+#ifndef _VSI_NN_OP_SCATTER_ELEMENTS_H
+#define _VSI_NN_OP_SCATTER_ELEMENTS_H
 
 #include "vsi_nn_types.h"
 
@@ -30,19 +31,19 @@
 extern "C" {
 #endif
 
-typedef struct _vsi_nn_roi_align_param
+typedef struct _vsi_nn_scatter_elements_param
 {
-    int32_t output_height;
-    int32_t output_width;
-    float height_ratio;
-    float width_ratio;
-    int32_t height_sample_num;
-    int32_t width_sample_num;
-    vsi_nn_roi_align_type_e platform_type;
-} vsi_nn_roi_align_param;
+    struct _scatter_elements_local_data_t* local;
+    // Add parameters here
+    int32_t axis;
+    vsi_nn_reduction_type_e reduction;
+} vsi_nn_scatter_elements_param;
+_compiler_assert(offsetof(vsi_nn_scatter_elements_param, local) == 0, \
+    vsi_nn_scatter_elements_h );
 
 #ifdef __cplusplus
 }
 #endif
 
 #endif
+

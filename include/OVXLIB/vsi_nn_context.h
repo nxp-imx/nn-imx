@@ -76,6 +76,7 @@ typedef struct _vsi_nn_runtime_option_t
     int32_t enable_opcheck;
     int32_t enable_concat_optimize;
     int32_t enable_asymi8_to_u8;
+    int32_t enable_dataconvert_optimize;
 } vsi_nn_runtime_option_t;
 
 /**
@@ -86,7 +87,7 @@ typedef struct _vsi_nn_context_t
     vx_context c;
     vsi_nn_hw_config_t config;
     vsi_nn_runtime_option_t options;
-} *vsi_nn_context_t;
+} VSI_PUBLIC_TYPE *vsi_nn_context_t;
 
 /**
  * Create context
