@@ -31264,7 +31264,7 @@ __kernel void pre_process_yuv422_scale_##name \\\n\
     uint dy = (convert_uint(gidy) * yrIntFloat_16) >> 16; \\\n\
     uint4 dx = (convert_uint4(gidx) * xrIntFloat_16) >> 16; \\\n\
     int sy = convert_int(dy) + (*yOffset); \\\n\
-    int4 sx = convert_int4(dx)+ (*xOffset * 2); \\\n\
+    int4 sx = (convert_int4(dx)+ *xOffset) * 2; \\\n\
  \\\n\
     vxc_uchar4 Y; \\\n\
     vxc_uchar8 UV; \\\n\
@@ -31282,19 +31282,19 @@ __kernel void pre_process_yuv422_scale_##name \\\n\
         v_offset = 2; \\\n\
     } \\\n\
 \\\n\
-    int4 coord_Y = (int4)(sx.x * 2 + y_offset, sy, 0, 0); \\\n\
-    int4 coord_U = (int4)((sx.x >> 1) * 4 + u_offset, sy, 0, 0); \\\n\
-    int4 coord_V = (int4)((sx.x >> 1) * 4 + v_offset, sy, 0, 0); \\\n\
+    int4 coord_Y = (int4)(sx.x + y_offset, sy, 0, 0); \\\n\
+    int4 coord_U = (int4)((sx.x >> 1) * 2 + u_offset, sy, 0, 0); \\\n\
+    int4 coord_V = (int4)((sx.x >> 1) * 2 + v_offset, sy, 0, 0); \\\n\
 \\\n\
     VXC_ReadImage2DArray(Y, input, coord_Y, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
-    coord_Y.x = sx.y * 2 + y_offset; \\\n\
+    coord_Y.x = sx.y + y_offset; \\\n\
     VXC_ReadImage2DArray(Y, input, coord_Y, 0, VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 0)); \\\n\
-    coord_Y.x = sx.z * 2 + y_offset; \\\n\
+    coord_Y.x = sx.z + y_offset; \\\n\
     VXC_ReadImage2DArray(Y, input, coord_Y, 0, VXC_MODIFIER(2, 2, 0, VXC_RM_TowardZero, 0)); \\\n\
-    coord_Y.x = sx.w * 2 + y_offset; \\\n\
+    coord_Y.x = sx.w + y_offset; \\\n\
     VXC_ReadImage2DArray(Y, input, coord_Y, 0, VXC_MODIFIER(3, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
  \\\n\
-    sx = (sx >> 1) * 4 + u_offset; \\\n\
+    sx = (sx >> 1) * 2 + u_offset; \\\n\
     VXC_ReadImage2DArray(UV, input, coord_U, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
     coord_U.x = sx.y; \\\n\
     VXC_ReadImage2DArray(UV, input, coord_U, 0, VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 0)); \\\n\
