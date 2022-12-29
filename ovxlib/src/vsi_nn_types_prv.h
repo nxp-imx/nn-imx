@@ -64,6 +64,9 @@ typedef struct _vsi_nn_tensor_prv
     /** Tensor handle*/
     uint8_t* handle;
 
+    /** is scalar*/
+    int8_t is_scalar;
+
     // Add tensor internal attribute here...
 } vsi_nn_tensor_prv_t;
 

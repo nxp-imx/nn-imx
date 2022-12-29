@@ -147,22 +147,24 @@ static void print_tensor
 
     if(ext_str)
     {
-        VSILOGD("%s id[%4u] vtl[%d] const[%d] shape[%-18s] fmt[%s] qnt[%s]",
+        VSILOGD("%s id[%4u] vtl[%d] const[%d] shape[%-18s] is_scalar[%d] fmt[%s] qnt[%s]",
             ext_str,
             id,
             tensor->attr.vtl,
             tensor->attr.is_const,
             shape,
+            vsi_nn_GetTensorIsScalar(tensor),
             format,
             ext_attr);
     }
     else
     {
-        VSILOGD("id[%4u] vtl[%d] const[%d] shape[%-18s] fmt[%s] qnt[%s]",
+        VSILOGD("id[%4u] vtl[%d] const[%d] shape[%-18s] is_scalar[%d] fmt[%s] qnt[%s]",
             id,
             tensor->attr.vtl,
             tensor->attr.is_const,
             shape,
+            vsi_nn_GetTensorIsScalar(tensor),
             format,
             ext_attr);
     }
@@ -1664,6 +1666,23 @@ vsi_status vsi_nn_GetTensorHandle
     }
 } /* vsi_nn_GetTensorHandle() */
 
+vsi_status vsi_nn_SetTensorIsScalar
+(
+    vsi_nn_tensor_t* tensor,
+    int8_t is_scalar
+)
+{
+    return _set_tensor_is_scalar((vsi_nn_tensor_prv_t*)tensor, is_scalar);
+}
+
+int8_t vsi_nn_GetTensorIsScalar
+(
+    vsi_nn_tensor_t* tensor
+)
+{
+    return _get_tensor_is_scalar((vsi_nn_tensor_prv_t*)tensor);
+}
+
 vsi_status vsi_nn_CopyRawDataToTensor
     (
     vsi_nn_graph_t*         graph,
@@ -2943,6 +2962,41 @@ vsi_status _set_tensor_handle
     tensor->handle = handle;
 
 final:
+    return status;
+}
+
+int8_t _get_tensor_is_scalar
+(
+    vsi_nn_tensor_prv_t* tensor
+)
+{
+    int8_t is_scalar = FALSE;
+    if (NULL == tensor)
+    {
+        VSILOGE("To get is_scalar, tensor pointer SHOULD NOT be NULL.");
+        goto final;
+    }
+    is_scalar = tensor->is_scalar;
+
+    final:
+    return is_scalar;
+}
+
+vsi_status _set_tensor_is_scalar
+(
+    vsi_nn_tensor_prv_t* tensor,
+    int8_t is_salar
+)
+{
+    vsi_status status = VSI_SUCCESS;
+    if (NULL == tensor)
+    {
+        status = VSI_FAILURE;
+        goto final;
+    }
+    tensor->is_scalar = is_salar;
+
+    final:
     return status;
 }
 
