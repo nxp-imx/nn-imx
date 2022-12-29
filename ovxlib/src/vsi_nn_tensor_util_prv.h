@@ -37,7 +37,7 @@ extern "C" {
 
 #define vsi_safe_release_node(_n) if(_n){vxReleaseNode( ((vx_node*)&_n) ); _n = NULL;}
 
-#define VSI_NN_SUPPORT_LSTM_GRU_SP_IMPL      (0)
+#define VSI_NN_SUPPORT_LSTM_GRU_SP_IMPL      (1)
 /**
  * Get tensor handle
  *
