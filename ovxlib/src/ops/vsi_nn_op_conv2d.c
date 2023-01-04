@@ -89,8 +89,6 @@ static vsi_bool op_check
     ret = vsi_nn_QuantCheck(inputs[0], inputs[1], inputs[2]);
 
     if (ret) {
-        vsi_size_t kx = 1;
-        vsi_size_t ky = 1;
         /* check inputs outputs data type */
         BEGIN_IO_TYPE_DECL(CONV2D, 2, 0)
             /* IO_TYPE(INPUT, WEIGHT) */
@@ -192,13 +190,6 @@ static vsi_bool op_check
             return FALSE;
         }
 
-        /* check parameters */
-        kx = inputs[1]->attr.size[0];
-        ky = inputs[1]->attr.dim_num == 3 ? 1 : inputs[1]->attr.size[1];
-        if (kx * ky > 6400) {
-            VSILOGE("Kernel size should <= 6400.");
-            return FALSE;
-        }
     }
 
     return ret;
