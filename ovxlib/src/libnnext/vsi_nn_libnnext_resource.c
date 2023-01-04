@@ -54793,7 +54793,180 @@ __kernel void gemm_transb_I8I8toI8_3D(\n\
     coord_a.x = get_global_id(0);\n\
     coord_a.z = get_global_id(2);\n\
     write_imagei(output, coord_a, dst);\n\
-}"; /* end of matrixmul_cl*/
+}\n\
+\n\
+__kernel void gemm_U8U8toU8_2D(\n\
+    __read_only image2d_t   inputA,\n\
+    __read_only image2d_t   inputB,\n\
+    __write_only image2d_t  output,\n\
+    int M,\n\
+    int K,\n\
+    int N,\n\
+    int ac2zero,\n\
+    int bc2zero,\n\
+    float scale_a,\n\
+    float zp_a,\n\
+    float scale_b,\n\
+    float zp_b,\n\
+    float scale_out,\n\
+    float zp_out\n\
+    )\n\
+{\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), 0, 0);\n\
+    float4 sum = (float4)(0);\n\
+    uint4 dst;\n\
+\n\
+    for(; coord.z < K;)\n\
+    {\n\
+        float4 tempA0;\n\
+        float4 tempB0;\n\
+\n\
+        tempA0 = convert_float4(read_imageui(inputA, coord.zy));\n\
+        tempB0 = convert_float4(read_imageui(inputB, coord.xz));\n\
+        tempA0.x = (tempA0.x - zp_a) * scale_a;\n\
+        tempB0.x = (tempB0.x - zp_b) * scale_b;\n\
+        coord.z++;\n\
+\n\
+        sum = sum + tempA0 * tempB0;\n\
+    }\n\
+    sum.x = sum.x * scale_out + zp_out;\n\
+    dst = convert_uint4(sum);\n\
+\n\
+    write_imageui(output, coord.xy, dst);\n\
+}\n\
+\n\
+\n\
+__kernel void gemm_U8U8toU8_3D(\n\
+    __read_only image2d_array_t   inputA,\n\
+    __read_only image2d_array_t   inputB,\n\
+    __write_only image2d_array_t  output,\n\
+    int M,\n\
+    int K,\n\
+    int N,\n\
+    int ac2zero,\n\
+    int bc2zero,\n\
+    float scale_a,\n\
+    float zp_a,\n\
+    float scale_b,\n\
+    float zp_b,\n\
+    float scale_out,\n\
+    float zp_out\n\
+    )\n\
+{\n\
+    int4 coord_a = (int4)(0, get_global_id(1), (ac2zero ? 0 : get_global_id(2)), 0);\n\
+    int4 coord_b = (int4)(get_global_id(0), 0, (bc2zero ? 0 : get_global_id(2)), 0);\n\
+\n\
+    float4 sum = (float4)(0);\n\
+    uint4 dst;\n\
+\n\
+    for(; coord_a.x < K;)\n\
+    {\n\
+        float4 tempA0;\n\
+        float4 tempB0;\n\
+\n\
+        tempA0 = convert_float4(read_imageui(inputA, coord_a));\n\
+        tempB0 = convert_float4(read_imageui(inputB, coord_b));\n\
+        tempA0.x = (tempA0.x - zp_a) * scale_a;\n\
+        tempB0.x = (tempB0.x - zp_b) * scale_b;\n\
+\n\
+        coord_a.x++;\n\
+        coord_b.y++;\n\
+\n\
+        sum = sum + tempA0 * tempB0;\n\
+    }\n\
+    sum.x = sum.x * scale_out + zp_out;\n\
+    dst = convert_uint4(sum);\n\
+\n\
+    coord_b.y = get_global_id(1);\n\
+    coord_b.z = get_global_id(2);\n\
+    write_imageui(output, coord_b, dst);\n\
+}\n\
+\n\
+__kernel void gemm_transb_U8U8toU8_2D(\n\
+    __read_only image2d_t   inputA,\n\
+    __read_only image2d_t   inputB,\n\
+    __write_only image2d_t  output,\n\
+    int M,\n\
+    int K,\n\
+    int N,\n\
+    int ac2zero,\n\
+    int bc2zero,\n\
+    float scale_a,\n\
+    float zp_a,\n\
+    float scale_b,\n\
+    float zp_b,\n\
+    float scale_out,\n\
+    float zp_out\n\
+    )\n\
+{\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), 0, 0);\n\
+    float4 sum = (float4)(0);\n\
+    uint4 dst;\n\
+\n\
+    for(; coord.z < K;)\n\
+    {\n\
+        float4 tempA0;\n\
+        float4 tempB0;\n\
+\n\
+        tempA0 = convert_float4(read_imageui(inputA, coord.zy));\n\
+        tempB0 = convert_float4(read_imageui(inputB, coord.zx));\n\
+        tempA0.x = (tempA0.x - zp_a) * scale_a;\n\
+        tempB0.x = (tempB0.x - zp_b) * scale_b;\n\
+        coord.z++;\n\
+\n\
+        sum = sum + tempA0 * tempB0;\n\
+    }\n\
+    sum.x = sum.x * scale_out + zp_out;\n\
+    dst = convert_uint4(sum);\n\
+\n\
+    write_imageui(output, coord.xy, dst);\n\
+}\n\
+\n\
+__kernel void gemm_transb_U8U8toU8_3D(\n\
+    __read_only image2d_array_t   inputA,\n\
+    __read_only image2d_array_t   inputB,\n\
+    __write_only image2d_array_t  output,\n\
+    int M,\n\
+    int K,\n\
+    int N,\n\
+    int ac2zero,\n\
+    int bc2zero,\n\
+    float scale_a,\n\
+    float zp_a,\n\
+    float scale_b,\n\
+    float zp_b,\n\
+    float scale_out,\n\
+    float zp_out\n\
+    )\n\
+{\n\
+    int4 coord_a = (int4)(0, get_global_id(1), (ac2zero ? 0 : get_global_id(2)), 0);\n\
+    int4 coord_b = (int4)(0, get_global_id(0), (bc2zero ? 0 : get_global_id(2)), 0);\n\
+\n\
+    float4 sum = (float4)(0);\n\
+    uint4 dst;\n\
+\n\
+    for(; coord_a.x < K;)\n\
+    {\n\
+        float4 tempA0;\n\
+        float4 tempB0;\n\
+\n\
+        tempA0 = convert_float4(read_imageui(inputA, coord_a));\n\
+        tempB0 = convert_float4(read_imageui(inputB, coord_b));\n\
+        tempA0.x = (tempA0.x - zp_a) * scale_a;\n\
+        tempB0.x = (tempB0.x - zp_b) * scale_b;\n\
+        coord_a.x++;\n\
+        coord_b.x++;\n\
+\n\
+        sum = sum + tempA0 * tempB0;\n\
+    }\n\
+    sum.x = sum.x * scale_out + zp_out;\n\
+    dst = convert_uint4(sum);\n\
+\n\
+    coord_a.x = get_global_id(0);\n\
+    coord_a.z = get_global_id(2);\n\
+    write_imageui(output, coord_a, dst);\n\
+}\n\
+"; /* end of matrixmul_cl*/
 
 static const char matrixmul_transA_cl[] = "__kernel void gemm_transa_F32F32toF32_2D(\n\
     __read_only image2d_t   inputA,\n\
@@ -54958,7 +55131,96 @@ __kernel void gemm_transa_I8I8toI8_3D(\n\
     coord_b.y = gidy;\n\
     coord_b.z = get_global_id(2);\n\
     write_imagei(output, coord_b, dst);\n\
-}"; /* end of matrixmul_transA_cl*/
+}\n\
+\n\
+__kernel void gemm_transa_U8U8toU8_2D(\n\
+    __read_only image2d_t   inputA,\n\
+    __read_only image2d_t   inputB,\n\
+    __write_only image2d_t  output,\n\
+    int M,\n\
+    int K,\n\
+    int N,\n\
+    int ac2zero,\n\
+    int bc2zero,\n\
+    float scale_a,\n\
+    float zp_a,\n\
+    float scale_b,\n\
+    float zp_b,\n\
+    float scale_out,\n\
+    float zp_out\n\
+    )\n\
+{\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), 0, 0);\n\
+    float4 sum = (float4)(0);\n\
+    uint4 dst;\n\
+\n\
+    for(; coord.z < K;)\n\
+    {\n\
+        float4 tempA0;\n\
+        float4 tempB0;\n\
+\n\
+        tempA0 = convert_float4(read_imageui(inputA, coord.yz));\n\
+        tempB0 = convert_float4(read_imageui(inputB, coord.xz));\n\
+        tempA0.x = (tempA0.x - zp_a) * scale_a;\n\
+        tempB0.x = (tempB0.x - zp_b) * scale_b;\n\
+        coord.z++;\n\
+\n\
+        sum = sum + tempA0 * tempB0;\n\
+    }\n\
+    sum.x = sum.x * scale_out + zp_out;\n\
+    dst = convert_uint4(sum);\n\
+\n\
+    write_imageui(output, coord.xy, dst);\n\
+}\n\
+\n\
+__kernel void gemm_transa_U8U8toU8_3D(\n\
+    __read_only image2d_array_t   inputA,\n\
+    __read_only image2d_array_t   inputB,\n\
+    __write_only image2d_array_t  output,\n\
+    int M,\n\
+    int K,\n\
+    int N,\n\
+    int ac2zero,\n\
+    int bc2zero,\n\
+    float scale_a,\n\
+    float zp_a,\n\
+    float scale_b,\n\
+    float zp_b,\n\
+    float scale_out,\n\
+    float zp_out\n\
+    )\n\
+{\n\
+    int gidx = get_global_id(0);\n\
+    int gidy = get_global_id(1);\n\
+\n\
+    int4 coord_a = (int4)(gidy, 0, (ac2zero ? 0 : get_global_id(2)), 0);\n\
+    int4 coord_b = (int4)(gidx, 0, (bc2zero ? 0 : get_global_id(2)), 0);\n\
+\n\
+    float4 sum = (float4)(0);\n\
+    uint4 dst;\n\
+\n\
+    for(; coord_a.y < K;)\n\
+    {\n\
+        float4 tempA0;\n\
+        float4 tempB0;\n\
+\n\
+        tempA0 = convert_float4(read_imageui(inputA, coord_a));\n\
+        tempB0 = convert_float4(read_imageui(inputB, coord_b));\n\
+        tempA0.x = (tempA0.x - zp_a) * scale_a;\n\
+        tempB0.x = (tempB0.x - zp_b) * scale_b;\n\
+        coord_a.y++;\n\
+        coord_b.y++;\n\
+\n\
+        sum = sum + tempA0 * tempB0;\n\
+    }\n\
+    sum.x = sum.x * scale_out + zp_out;\n\
+    dst = convert_uint4(sum);\n\
+\n\
+    coord_b.y = gidy;\n\
+    coord_b.z = get_global_id(2);\n\
+    write_imageui(output, coord_b, dst);\n\
+}\n\
+"; /* end of matrixmul_transA_cl*/
 
 static const char maximum_cl[] = "__kernel void maximum_FP32FP32toFP32\n\
     (\n\

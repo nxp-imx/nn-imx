@@ -97,6 +97,12 @@ static const struct {
     TENSOR_MATRIXMUL_TRANSA_KERNELS(I8, I8, I8, _3D,    KERNEL_SOURCE_2)
     TENSOR_MATRIXMUL_TRANSB_KERNELS(I8, I8, I8, _2D,    KERNEL_SOURCE_1)
     TENSOR_MATRIXMUL_TRANSB_KERNELS(I8, I8, I8, _3D,    KERNEL_SOURCE_1)
+    TENSOR_MATRIXMUL_KERNELS(U8, U8, U8, _2D,           KERNEL_SOURCE_1)
+    TENSOR_MATRIXMUL_KERNELS(U8, U8, U8, _3D,           KERNEL_SOURCE_1)
+    TENSOR_MATRIXMUL_TRANSA_KERNELS(U8, U8, U8, _2D,    KERNEL_SOURCE_2)
+    TENSOR_MATRIXMUL_TRANSA_KERNELS(U8, U8, U8, _3D,    KERNEL_SOURCE_2)
+    TENSOR_MATRIXMUL_TRANSB_KERNELS(U8, U8, U8, _2D,    KERNEL_SOURCE_1)
+    TENSOR_MATRIXMUL_TRANSB_KERNELS(U8, U8, U8, _3D,    KERNEL_SOURCE_1)
 };
 
 /*
@@ -208,6 +214,10 @@ static vsi_status _query_kernel
     {
         input0_dtype = F32;
     }
+    else if (input0_dtype == U32)
+    {
+        input0_dtype = U8;
+    }
 
     if (input1_dtype == I16 || input1_dtype == I32)
     {
@@ -217,6 +227,10 @@ static vsi_status _query_kernel
     {
         input1_dtype = F32;
     }
+    else if (input1_dtype == U32)
+    {
+        input1_dtype = U8;
+    }
 
     if (output_dtype == I16 || output_dtype == I32)
     {
@@ -225,6 +239,10 @@ static vsi_status _query_kernel
     else if (output_dtype == F16)
     {
         output_dtype = F32;
+    }
+    else if (output_dtype == U32)
+    {
+        output_dtype = U8;
     }
 
     key = HASH_MATRIXMUL_KEY( input0_dtype, input1_dtype, output_dtype, dim_type, transa );
