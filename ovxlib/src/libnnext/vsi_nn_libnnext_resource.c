@@ -57720,7 +57720,11 @@ static const char pow_cl[] = "__kernel void pow_FP32FP32toFP32\n\
     (\n\
     __read_only  image2d_array_t    input0,\n\
     __read_only  image2d_array_t    input1,\n\
-    __write_only image2d_array_t    output\n\
+    __write_only image2d_array_t    output,\n\
+                 float              inputScale,\n\
+                 float              inputTail,\n\
+                 float              outputScale,\n\
+                 float              outputTail\n\
     )\n\
 {\n\
     int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
@@ -57733,7 +57737,8 @@ static const char pow_cl[] = "__kernel void pow_FP32FP32toFP32\n\
     float4  s0 = sign(src0);\n\
     int4 t0 = convert_int4(src1) & 1;\n\
     s0 = s0 == -1 ? convert_float4(t0) == 1.0f ? -1.0f : 1.0f : s0;\n\
-    dst.x = (src0.x == 0 && src1.x == 0) ? 1.0f : (src0.x != 0 ? (s0.x * exp2(src1.x * log2(fabs(src0.x)))) : 0.0f);\n\
+    dst.x = (src0.x == 0 && src1.x == 0) ? 1.0f : (src0.x != 0 ?\n\
+         (s0.x * exp2(src1.x * log2(fabs(src0.x)))) : 0.0f);\n\
 \n\
     write_imagef(output, coord, dst);\n\
 }\n\
@@ -57742,7 +57747,11 @@ __kernel void pow_FP32FP32toFP32_2D\n\
     (\n\
     __read_only  image2d_t    input0,\n\
     __read_only  image2d_t    input1,\n\
-    __write_only image2d_t    output\n\
+    __write_only image2d_t    output,\n\
+                 float        inputScale,\n\
+                 float        inputTail,\n\
+                 float        outputScale,\n\
+                 float        outputTail\n\
     )\n\
 {\n\
     int2 coord =  (int2)(get_global_id(0), get_global_id(1));\n\
@@ -57756,10 +57765,72 @@ __kernel void pow_FP32FP32toFP32_2D\n\
     int4 t0 = convert_int4(src1) & 1;\n\
     s0 = s0 == -1 ? convert_float4(t0) == 1.0f ? -1.0f : 1.0f : s0;\n\
 \n\
-    dst.x = (src0.x == 0 && src1.x == 0) ? 1.0f : (src0.x != 0 ? (s0.x * exp2(src1.x * log2(fabs(src0.x)))) : 0.0f);\n\
+    dst.x = (src0.x == 0 && src1.x == 0) ? 1.0f : (src0.x != 0 ?\n\
+           (s0.x * exp2(src1.x * log2(fabs(src0.x)))) : 0.0f);\n\
 \n\
     write_imagef(output, coord, dst);\n\
 }\n\
+\n\
+__kernel void pow_U32F32toU32(\n\
+    __read_only  image2d_array_t    input0,\n\
+    __read_only  image2d_array_t    input1,\n\
+    __write_only image2d_array_t    output,\n\
+                 float              inputScale,\n\
+                 float              inputTail,\n\
+                 float              outputScale,\n\
+                 float              outputTail\n\
+    )\n\
+{\n\
+    int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+\n\
+    uint4 src0, dst;\n\
+    float4 src0_f, src1, dst_f;\n\
+    READ_IMAGEUI_2DARRAY(src0, input0, coord);\n\
+    READ_IMAGEF_2DARRAY(src1, input1, coord);\n\
+\n\
+    src0_f = convert_float4(src0) * inputScale + inputTail;\n\
+    float4  s0 = sign(src0_f);\n\
+    int4 t0 = convert_int4(src1) & 1;\n\
+    s0 = s0 == -1 ? convert_float4(t0) == 1.0f ? -1.0f : 1.0f : s0;\n\
+    dst_f.x = (src0.x == 0 && src1.x == 0) ? 1.0f : (src0.x != 0 ?\n\
+           (s0.x * exp2(src1.x * log2(fabs(src0.x)))) : 0.0f);\n\
+    dst.x = convert_uint(dst_f.x * outputScale + outputTail);\n\
+\n\
+    write_imageui(output, coord, dst);\n\
+}\n\
+\n\
+__kernel void pow_U32F32toU32_2D\n\
+    (\n\
+    __read_only  image2d_t    input0,\n\
+    __read_only  image2d_t    input1,\n\
+    __write_only image2d_t    output,\n\
+                 float        inputScale,\n\
+                 float        inputTail,\n\
+                 float        outputScale,\n\
+                 float        outputTail\n\
+    )\n\
+{\n\
+    int2 coord =  (int2)(get_global_id(0), get_global_id(1));\n\
+\n\
+    uint4  src0 = read_imageui(input0, coord);\n\
+    float4 src1 = read_imagef(input1, coord);\n\
+\n\
+    float4 src0_f = (float4)(0);\n\
+    float4 dst_f  = (float4)(0);\n\
+    uint4  dst    = (uint4)(0);\n\
+\n\
+    src0_f.x = convert_float(src0.x) * inputScale + inputTail;\n\
+    float4  s0 = sign(src0_f);\n\
+    int4 t0 = convert_int4(src1) & 1;\n\
+    s0 = s0 == -1 ? convert_float4(t0) == 1.0f ? -1.0f : 1.0f : s0;\n\
+\n\
+    dst_f.x = (src0.x == 0 && src1.x == 0) ? 1.0f : (src0.x != 0 ?\n\
+         (s0.x * exp2(src1.x * log2(fabs(src0.x)))) : 0.0f);\n\
+    dst.x = convert_uint(dst_f.x * outputScale + outputTail);\n\
+\n\
+    write_imageui(output, coord, dst);\n\
+}\n\
+\n\
 "; /* end of pow_cl*/
 
 static const char prelu_cl[] = "__kernel void prelu_FP32FP32toFP32\n\
