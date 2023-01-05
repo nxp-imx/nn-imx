@@ -151,13 +151,16 @@ static vsi_bool _argmaxmin_op_setup
     if ( VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num )
     {
         uint32_t i = 0;
+        uint32_t i_rank = inputs[0]->attr.dim_num;
+        uint32_t o_rank = keep_dims ? i_rank : i_rank - 1;
+        int8_t   is_scalar = o_rank == 0;
 
-        outputs[0]->attr.dim_num = keep_dims ?
-                    inputs[0]->attr.dim_num : inputs[0]->attr.dim_num - 1;
+        outputs[0]->attr.dim_num = is_scalar ? 1 : o_rank;
+        vsi_nn_SetTensorIsScalar(outputs[0], is_scalar);
 
         for (i = 0; i < inputs[0]->attr.dim_num; i++)
         {
-            outputs[0]->attr.size[i] = inputs[0]->attr.size[i];
+            outputs[0]->attr.size[i] = is_scalar ? 1 : inputs[0]->attr.size[i];
         }
 
         if (keep_dims)
@@ -168,7 +171,7 @@ static vsi_bool _argmaxmin_op_setup
         {
             for (i = axis; i < outputs[0]->attr.dim_num; i++)
             {
-                outputs[0]->attr.size[i] = inputs[0]->attr.size[i + 1];
+                outputs[0]->attr.size[i] = is_scalar ? 1 : inputs[0]->attr.size[i + 1];
             }
         }
 
