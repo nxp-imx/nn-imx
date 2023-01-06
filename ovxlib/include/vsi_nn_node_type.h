@@ -205,6 +205,8 @@
 #include "ops/vsi_nn_op_avg_pool3d.h"
 #include "ops/vsi_nn_op_maxunpool.h"
 #include "ops/vsi_nn_op_reversesequence.h"
+#include "ops/vsi_nn_op_grid_sample.h"
+#include "ops/vsi_nn_op_bilinear_grid_sample.h"
 /* custom node head define define */
 #include "custom/vsi_nn_custom_node_type.h"
 #include "ops/vsi_nn_op_inverse_sigmoid.h"
@@ -398,6 +400,8 @@ typedef union _vsi_nn_nn_param
     vsi_nn_maxunpool_param          maxunpool;
     vsi_nn_reversesequence_param    reversesequence;
     vsi_nn_inverse_sigmoid_param       inverse_sigmoid;
+    vsi_nn_grid_sample_param        gridsample;
+    vsi_nn_bilinear_grid_sample_param bilinear_grid_sample;
     void*                         client_param;
 
     /* custom node data struct define */
