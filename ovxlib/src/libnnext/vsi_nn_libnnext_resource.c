@@ -62285,7 +62285,42 @@ __kernel void swish_I32toI32_2D(\n\
     int2 coord =  (int2)(get_global_id(0), get_global_id(1));\n\
     SWISH_I32_I32_PROCESS()\n\
 }\n\
-"; /* end of swish_cl*/
+\n\
+#define SWISH_F32_U8_PROCESS() \\\n\
+    float4 src, tmp, data; \\\n\
+    src = read_imagef(input, coord); \\\n\
+    tmp.x = sigmoid_(src.x * beta, logE); \\\n\
+    data.x = src.x * tmp.x; \\\n\
+    uint4 dst = convert_uint4(data * outputScale + outputZP); \\\n\
+    write_imageui(output, coord, dst);\n\
+\n\
+__kernel void swish_F32toU8(\n\
+    __read_only  image2d_array_t  input,\n\
+    __write_only image2d_array_t  output,\n\
+                 float            inputScale,\n\
+                 float            inputTail,\n\
+                 float            outputScale,\n\
+                 float            outputZP,\n\
+                 float            beta,\n\
+                 float            logE)\n\
+{\n\
+    int4 coord =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+    SWISH_F32_U8_PROCESS()\n\
+}\n\
+\n\
+__kernel void swish_F32toU8_2D(\n\
+    __read_only  image2d_t        input,\n\
+    __write_only image2d_t        output,\n\
+                 float            inputScale,\n\
+                 float            inputTail,\n\
+                 float            outputScale,\n\
+                 float            outputZP,\n\
+                 float            beta,\n\
+                 float            logE)\n\
+{\n\
+    int2 coord =  (int2)(get_global_id(0), get_global_id(1));\n\
+    SWISH_F32_U8_PROCESS()\n\
+}"; /* end of swish_cl*/
 
 static const char tile_cl[] = "\n\
 #define TILE_3D(name0, name1, data_type, read_image_func, write_image_func) \\\n\
