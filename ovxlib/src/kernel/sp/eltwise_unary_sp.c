@@ -567,6 +567,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_sign_node
     attr.prog_loop_instr_num = spLoopInstsNum;
     attr.ignored_leading_outputs = 3;
     attr.flush_cycle_num = 6;
+    attr.not_merge_with_conv2d = TRUE;
 
     VSI_NN_SP_ATTR_SET_CONST_TO_SR3(attr, 0);
     VSI_NN_SP_ATTR_SET_CONST_TO_SR4(attr, -output_scale);

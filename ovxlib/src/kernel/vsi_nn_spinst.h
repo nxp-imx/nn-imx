@@ -130,7 +130,7 @@ typedef struct _vsi_nn_spinst_attr
     uint32_t num_of_v12_rd_in_flush_cycle;
     uint32_t num_of_v11_wr_in_flush_cycle;
     uint32_t num_of_v12_wr_in_flush_cycle;
-    vsi_bool support_merge_with_pcq_conv2d;
+    vsi_bool not_merge_with_conv2d;
     vsi_bool update_const0_to_pcq_coef_tensor;
     union
     {
@@ -219,7 +219,7 @@ typedef enum
     VSI_NN_SP_ATTRIBUTE_SPLIT_AXIS                  = VX_SP_ATTRIBUTE_SPLIT_AXIS,
     VSI_NN_SP_ATTRIBUTE_SPLIT_MAX_SIZE              = VX_SP_ATTRIBUTE_SPLIT_MAX_SIZE,
     VSI_NN_SP_ATTRIBUTE_TILEX_EQUAL_IMGX            = VX_SP_ATTRIBUTE_SPLIT_TILEX_EQUAL_INIMAGEX,
-    VSI_NN_SP_ATTRIBUTE_MERGE_PCQ_CONVSP            = VX_SP_ATTRIBUTE_MERGE_PCQ_CONVSP,
+    VSI_NN_SP_ATTRIBUTE_NOT_MERGE_CONVSP            = VX_SP_ATTRIBUTE_NOT_MERGE_CONVSP,
     VSI_NN_SP_ATTRIBUTE_UPDATE_CONST0_TO_PCQ_COEF_TENSOR            = VX_SP_ATTRIBUTE_UPDATE_CONST0_TO_PCQ_COEF_TENSOR,
     VSI_NN_SP_ATTRIBUTE_RESHAPE_ARRAY               = VX_SP_ATTRIBUTE_RESHAPE_ARRAY,
 
