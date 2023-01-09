@@ -1313,7 +1313,7 @@ void vsi_nn_SaveTensorToTextByFp32
         ptr += stride;
 
         count += snprintf( (char *)&buf[count], _TENSOR_TMPBUF_SZ - count,
-            "%f%s", write_data, seperator );
+            "%.16f%s", write_data, seperator );
         if ( count > _TENSOR_TMPBUF_SZ )
         {
             VSILOGW( "tensor buffer overflow!" );
