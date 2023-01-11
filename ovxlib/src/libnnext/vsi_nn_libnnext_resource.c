@@ -49699,7 +49699,6 @@ static const char instance_normalization_i32_cl[] = "__kernel void instance_norm
     int4 coord = (int4)(gidx, 0, gidz, 0);\n\
     int4 data;\n\
     float2 sum_x_x2 = 0;\n\
-    int2 _sum_x_x2 = 0;\n\
 \n\
     __local float lcl_sum[16];\n\
     __local float lcl_sqr[16];\n\
@@ -49710,10 +49709,10 @@ static const char instance_normalization_i32_cl[] = "__kernel void instance_norm
         {\n\
             data = read_imagei(input, coord);\n\
             coord.y++;\n\
-            _sum_x_x2.x = _sum_x_x2.x + data.x;\n\
-            _sum_x_x2.y = _sum_x_x2.y + data.x * data.x;\n\
+            float in = convert_float(data.x);\n\
+            sum_x_x2.x = sum_x_x2.x + in;\n\
+            sum_x_x2.y = sum_x_x2.y + in * in;\n\
         }\n\
-        sum_x_x2 = convert_float2(_sum_x_x2);\n\
     }\n\
     lcl_sum[lidx] = sum_x_x2.x;\n\
     lcl_sqr[lidx] = sum_x_x2.y;\n\
@@ -49759,7 +49758,6 @@ __kernel void instance_norm_sums_I32_2D(\n\
     int2 coord = (int2)(gidx, gidy);\n\
     int4 data;\n\
     float2 sum_x_x2 = 0;\n\
-    int2 _sum_x_x2 = 0;\n\
 \n\
     __local float lcl_sum[16];\n\
     __local float lcl_sqr[16];\n\
@@ -49771,10 +49769,10 @@ __kernel void instance_norm_sums_I32_2D(\n\
         {\n\
             data = read_imagei(input, coord);\n\
             coord.y++;\n\
-            _sum_x_x2.x = _sum_x_x2.x + data.x;\n\
-            _sum_x_x2.y = _sum_x_x2.y + data.x * data.x;\n\
+            float in = convert_float(data.x);\n\
+            sum_x_x2.x = sum_x_x2.x + in;\n\
+            sum_x_x2.y = sum_x_x2.y + in * in;\n\
         }\n\
-        sum_x_x2 = convert_float2(_sum_x_x2);\n\
     }\n\
     lcl_sum[lidx] = sum_x_x2.x;\n\
     lcl_sqr[lidx] = sum_x_x2.y;\n\
