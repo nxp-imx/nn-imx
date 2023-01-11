@@ -922,6 +922,21 @@ static vsi_nn_kernel_node_t _setup
         goto final;
     }
 
+    /* a = input_scale * output_scale * alpha * mean
+      b = (beta - scale * mean) * output_scale + output_zp - input * alpha  */
+    status = _query_kernel( ikernels[MEANS_INDEX], inputs, outputs, reshape_flg, INTERNAL_KERNEL_MEANS );
+    if ( VSI_SUCCESS != status )
+    {
+        goto final;
+    }
+
+    /* dst = x * a + b  */
+    status = _query_kernel( kernel, inputs, outputs, reshape_flg, INTERNAL_KERNEL_NORMS );
+    if ( VSI_SUCCESS != status )
+    {
+        goto final;
+    }
+
     sums_node = vsi_nn_kernel_create_node( graph, ikernels[SUMS_INDEX] );
     if (sums_node)
     {
@@ -952,14 +967,6 @@ static vsi_nn_kernel_node_t _setup
         }
     }
 
-    /* a = input_scale * output_scale * alpha * mean
-      b = (beta - scale * mean) * output_scale + output_zp - input * alpha  */
-    status = _query_kernel( ikernels[MEANS_INDEX], inputs, outputs, reshape_flg, INTERNAL_KERNEL_MEANS );
-    if ( VSI_SUCCESS != status )
-    {
-        goto final;
-    }
-
     means_node = vsi_nn_kernel_create_node( graph, ikernels[MEANS_INDEX] );
     if (means_node)
     {
@@ -988,12 +995,6 @@ static vsi_nn_kernel_node_t _setup
         vsi_nn_kernel_scalar_release( &means_node_params[MEANS_GROUP_NUM_SCL] );
     }
 
-    /* dst = x * a + b  */
-    status = _query_kernel( kernel, inputs, outputs, reshape_flg, INTERNAL_KERNEL_NORMS );
-    if ( VSI_SUCCESS != status )
-    {
-        goto final;
-    }
     norms_node = vsi_nn_kernel_create_node( graph, kernel );
     if (norms_node)
     {
