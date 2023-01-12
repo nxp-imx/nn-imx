@@ -475,19 +475,19 @@ vsi_nn_kernel_node_t vsi_nn_sp_add_tanh_node
     memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
     vsi_nn_init_spinst_attr(&attr);
 
-    /* loop inst0: r8 = in * r3 || v11/v12 = r4 + r6 || r7 = r1 */
+    /* loop inst0: r8 = in * r3 | v11/v12 = r4 + r6 | r7 = r1 */
     status  = vsi_nn_sp_mul(&sp_insts_param[0], VSI_NN_SP_SRIN, VSI_NN_SP_SR3, VSI_NN_SP_SR8);
     status |= vsi_nn_sp_add(&sp_insts_param[0], VSI_NN_SP_SR4, VSI_NN_SP_SR6, dst_vr);
     status |= vsi_nn_sp_move(&sp_insts_param[0], VSI_NN_SP_SR1, VSI_NN_SP_SR7);
-    /* loop inst1: r1 = pwl_tanh(r10) || r6 = r5 * r2 || r10 = r8 + r9 || r9 = in*/
+    /* loop inst1: r1 = pwl_tanh(r10) | r6 = r5 * r2 | r10 = r8 + r9 | r9 = in*/
     status |= vsi_nn_sp_pwl_tanh(&sp_insts_param[1], VSI_NN_SP_SR10, VSI_NN_SP_SR1);
     status |= vsi_nn_sp_mul(&sp_insts_param[1], VSI_NN_SP_SR5, VSI_NN_SP_SR2, VSI_NN_SP_SR6);
     status |= vsi_nn_sp_add(&sp_insts_param[1], VSI_NN_SP_SR8, VSI_NN_SP_SR9, VSI_NN_SP_SR10);
     status |= vsi_nn_sp_move(&sp_insts_param[1], VSI_NN_SP_SRIN, VSI_NN_SP_SR9);
-    /* loop inst2: r5 = pwlMul() || r2 = pwlAdd() || r7 = r4*/
+    /* loop inst2: r5 = pwlMul() | r2 = pwlAdd() | r4 = r7*/
     status |= vsi_nn_sp_mul(&sp_insts_param[2], VSI_NN_SP_PWLMUL, VSI_NN_SP_PWLMUL, VSI_NN_SP_SR5);
     status |= vsi_nn_sp_sub(&sp_insts_param[2], VSI_NN_SP_PWLADD, VSI_NN_SP_PWLADD, VSI_NN_SP_SR2);
-    status |= vsi_nn_sp_move(&sp_insts_param[2], VSI_NN_SP_SR4, VSI_NN_SP_SR7);
+    status |= vsi_nn_sp_move(&sp_insts_param[2], VSI_NN_SP_SR7, VSI_NN_SP_SR4);
     CHECK_STATUS_FAIL_GOTO(status, final );
 
     attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_XYMERGE;
