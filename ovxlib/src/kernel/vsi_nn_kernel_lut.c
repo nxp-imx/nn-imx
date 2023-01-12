@@ -319,7 +319,7 @@ static float vsi_nn_kernel_lut_activation(float data, vsi_nn_kernel_lut_params *
     return result;
 }
 
-vsi_status vsi_nn_kernel_lut
+vsi_status vsi_nn_kernel_lut_positive
     (
     vx_lut index_lut,
     vx_lut output_lut,
@@ -329,6 +329,7 @@ vsi_status vsi_nn_kernel_lut
     vsi_status status = VSI_SUCCESS;
     vsi_nn_kernel_lut_t *lut = NULL;
     uint32_t i = 0;
+    float clamp_min = 0;
     float index[VSI_NN_KERNEL_LUT_MAX_SIZE] = {0};
     float value[VSI_NN_KERNEL_LUT_MAX_SIZE] = {0};
 
@@ -341,13 +342,81 @@ vsi_status vsi_nn_kernel_lut
     CHECK_PTR_FAIL_GOTO( lut, "Create LUT buffer fail.", final );
     memset(lut, 0, sizeof(vsi_nn_kernel_lut_t) * VSI_NN_KERNEL_LUT_MAX_SIZE);
 
+    clamp_min = param->clamp_min;
+
+    for ( i = 0; i < VSI_NN_KERNEL_LUT_MAX_SIZE; i++)
+    {
+        int16_t val = (int16_t)(i << 5);
+        float fidx = fp16_to_fp32(val);
+
+        if (val < 0)
+        {
+            continue;
+        }
+
+        if (param->pwl_sign_remove_support && fidx < clamp_min)
+        {
+            fidx = clamp_min;
+        }
+
+        lut[i].index = fidx;
+        lut[i].val = vsi_nn_kernel_lut_activation(lut[i].index, param);
+    }
+
+    for (i = 992; i < VSI_NN_KERNEL_LUT_MAX_SIZE; i++)
+    {
+        lut[i].index = VSI_NN_KERNEL_LUT_FP16_MAX;
+        lut[i].val = vsi_nn_kernel_lut_activation(lut[i].index, param);
+    }
+
+    qsort(lut, VSI_NN_KERNEL_LUT_MAX_SIZE, sizeof(vsi_nn_kernel_lut_t), _comparator);
+
+    for ( i = 0; i < VSI_NN_KERNEL_LUT_MAX_SIZE; i++)
+    {
+        index[i] = lut[i].index;
+        value[i] = lut[i].val;
+    }
+
+    status  = vxCopyLUT(index_lut, (void*)&index, VX_WRITE_ONLY, VX_MEMORY_TYPE_HOST);
+    status |= vxCopyLUT(output_lut, (void*)&value, VX_WRITE_ONLY, VX_MEMORY_TYPE_HOST);
+final:
+    vsi_nn_safe_free(lut);
+
+    return status;
+}
+
+vsi_status vsi_nn_kernel_lut_all
+    (
+    vx_lut index_lut,
+    vx_lut output_lut,
+    vsi_nn_kernel_lut_params *param
+    )
+{
+    vsi_status status = VSI_SUCCESS;
+    vsi_nn_kernel_lut_t *lut = NULL;
+    uint32_t i = 0;
+    float clamp_min = 0;
+    float index[VSI_NN_KERNEL_LUT_MAX_SIZE] = {0};
+    float value[VSI_NN_KERNEL_LUT_MAX_SIZE] = {0};
+
+    if (index_lut == NULL || output_lut == NULL || param == NULL)
+    {
+        return VSI_FAILURE;
+    }
+
+    lut = (vsi_nn_kernel_lut_t *)calloc(VSI_NN_KERNEL_LUT_MAX_SIZE, sizeof(vsi_nn_kernel_lut_t));
+    CHECK_PTR_FAIL_GOTO( lut, "Create LUT buffer fail.", final );
+    memset(lut, 0, sizeof(vsi_nn_kernel_lut_t) * VSI_NN_KERNEL_LUT_MAX_SIZE);
+
+    clamp_min = param->clamp_min;
+
     for ( i = 0; i < VSI_NN_KERNEL_LUT_MAX_SIZE; i++)
     {
         int16_t val = (int16_t)(i << 6);
         float fidx = fp16_to_fp32(val);
-        if (param->pwl_sign_remove_support && fidx < 0)
+        if (param->pwl_sign_remove_support && fidx < clamp_min)
         {
-            fidx = 0;
+            fidx = clamp_min;
         }
 
         lut[i].index = fidx;
@@ -356,7 +425,13 @@ vsi_status vsi_nn_kernel_lut
 
     for (i = 0x0; i < 0x10; i++)
     {
-        lut[i].index = 0;
+        float fidx = 0;
+        if (param->pwl_sign_remove_support && fidx < clamp_min)
+        {
+            fidx = clamp_min;
+        }
+
+        lut[i].index = fidx;
         lut[i].val = vsi_nn_kernel_lut_activation(lut[i].index, param);
     }
 
@@ -370,7 +445,7 @@ vsi_status vsi_nn_kernel_lut
     {
         if (param->pwl_sign_remove_support)
         {
-            lut[i].index = 0;
+            lut[i].index = clamp_min;
         }
         else
         {
@@ -392,6 +467,35 @@ vsi_status vsi_nn_kernel_lut
     status |= vxCopyLUT(output_lut, (void*)&value, VX_WRITE_ONLY, VX_MEMORY_TYPE_HOST);
 final:
     vsi_nn_safe_free(lut);
+
+    return status;
+}
+
+vsi_status vsi_nn_kernel_lut
+    (
+    vx_lut index_lut,
+    vx_lut output_lut,
+    vsi_nn_kernel_lut_params *param
+    )
+{
+    vsi_status status = VSI_SUCCESS;
+    float clamp_min = 0;
+
+    if (param == NULL)
+    {
+        return VSI_FAILURE;
+    }
+
+    clamp_min = param->clamp_min;
+
+    if (param->pwl_sign_remove_support && clamp_min >= 0)
+    {
+        status = vsi_nn_kernel_lut_positive(index_lut, output_lut, param);
+    }
+    else
+    {
+        status = vsi_nn_kernel_lut_all(index_lut, output_lut, param);
+    }
 
     return status;
 }

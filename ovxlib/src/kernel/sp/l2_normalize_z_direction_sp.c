@@ -745,6 +745,7 @@ final:
     vsi_safe_release_node(nodes[2]);
     vsi_safe_release_tensor(dummy_tensor[0]);
     vsi_safe_release_tensor(dummy_tensor[1]);
+    vsi_safe_release_tensor(dummy_tensor[2]);
     vsi_safe_release_tensor(output_tensor[0]);
 
     return node;

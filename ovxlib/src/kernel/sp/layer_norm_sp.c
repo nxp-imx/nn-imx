@@ -286,7 +286,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_layer_norm_scale_node
     /* loop inst0: out = r1 * r2 | r1 = in - v11 */
     status  = vsi_nn_sp_mul(&sp_insts_param[0], VSI_NN_SP_SR1, VSI_NN_SP_SR2, VSI_NN_SP_SROUT);
     status |= vsi_nn_sp_sub(&sp_insts_param[0], VSI_NN_SP_SRIN, VSI_NN_SP_VR11, VSI_NN_SP_SR1);
-    /* loop inst1: out = r1 * r2 */
+    /* loop inst1: r2 = r1 * r2 */
     status |= vsi_nn_sp_mul(&sp_insts_param[1], VSI_NN_SP_SRIN, VSI_NN_SP_VR12, VSI_NN_SP_SR2);
 
     CHECK_STATUS_FAIL_GOTO(status, final );

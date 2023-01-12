@@ -76,6 +76,11 @@ static vsi_nn_kernel_node_t _setup
     {
         lut_param.params[0] = vsi_nn_kernel_param_get_float32( params, "alpha" );
     }
+    else if (lut_type == VSI_NN_KERNEL_LUT_ACOSH)
+    {
+        lut_param.pwl_sign_remove_support = TRUE;
+        lut_param.clamp_min = 1;
+    }
 
     if ( inputs[0]->attr.dtype.vx_type == VSI_NN_TYPE_INT32   ||
          outputs[0]->attr.dtype.vx_type == VSI_NN_TYPE_INT32  )
