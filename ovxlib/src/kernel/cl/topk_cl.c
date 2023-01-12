@@ -140,10 +140,6 @@ static vx_param_description_t _topk_kernel_param_def[] =
     // Add kererl parameters here
 };
 #define _TOPK_PARAM_NUM  _cnt_of_array( _topk_kernel_param_def )
-#define INPUT_SCALE             (3)
-#define INPUT_TAIL              (4)
-#define OUTPUT_SCALE            (5)
-#define OUTPUT_TAIL             (6)
 #define SCALAR_INPUT_NUM_STAGES (7)
 #define SCALAR_INPUT_WIDTH      (8)
 
@@ -504,14 +500,15 @@ static vsi_nn_kernel_node_t _setup
         node = vsi_nn_kernel_create_node( graph, kernel );
         if ( node )
         {
-            /* Set inputs and outputs */
+            uint32_t index = (uint32_t)(input_num + output_num);
+            /* Set inputs and outputs  */
             vsi_nn_kernel_node_pack_io( node_params, param_num,
                     rs_tensors, input_num, &rs_tensors[input_num], output_num );
             /* Pass parameters to node. */
-            node_params[INPUT_SCALE]  = vsi_nn_kernel_scalar_create(graph, I32, &inputScale );
-            node_params[INPUT_TAIL]   = vsi_nn_kernel_scalar_create(graph, I32, &inputTail );
-            node_params[OUTPUT_SCALE] = vsi_nn_kernel_scalar_create(graph, I32, &outputScale );
-            node_params[OUTPUT_TAIL]  = vsi_nn_kernel_scalar_create(graph, I32, &outputTail );
+            node_params[index++]  = vsi_nn_kernel_scalar_create(graph, I32, &inputScale );
+            node_params[index++]   = vsi_nn_kernel_scalar_create(graph, I32, &inputTail );
+            node_params[index++] = vsi_nn_kernel_scalar_create(graph, I32, &outputScale );
+            node_params[index++]  = vsi_nn_kernel_scalar_create(graph, I32, &outputTail );
             if (is_odd_even_sort)
             {
                 node_params[SCALAR_INPUT_SIZE] = vsi_nn_kernel_scalar_create(
@@ -535,25 +532,25 @@ final:
     vsi_safe_release_tensor(rs_tensors[2]);
     vsi_safe_release_tensor(rs_tensors[3]);
     vsi_safe_release_tensor(rs_tensors[4]);
-    if (node_params[INPUT_SCALE])
-    {
-        vsi_nn_kernel_scalar_release( &node_params[INPUT_SCALE] );
-    }
-    if (node_params[INPUT_TAIL])
-    {
-        vsi_nn_kernel_scalar_release( &node_params[INPUT_TAIL] );
-    }
-    if (node_params[OUTPUT_SCALE])
-    {
-        vsi_nn_kernel_scalar_release( &node_params[OUTPUT_SCALE] );
-    }
-    if (node_params[OUTPUT_TAIL])
-    {
-        vsi_nn_kernel_scalar_release( &node_params[OUTPUT_TAIL] );
-    }
 
     if (is_odd_even_sort)
     {
+        if (node_params[5])
+        {
+            vsi_nn_kernel_scalar_release( &node_params[5] );
+        }
+        if (node_params[6])
+        {
+            vsi_nn_kernel_scalar_release( &node_params[6] );
+        }
+        if (node_params[7])
+        {
+            vsi_nn_kernel_scalar_release( &node_params[7] );
+        }
+        if (node_params[8])
+        {
+            vsi_nn_kernel_scalar_release( &node_params[8] );
+        }
         if (node_params[SCALAR_INPUT_SIZE])
         {
             vsi_nn_kernel_scalar_release( &node_params[SCALAR_INPUT_SIZE] );
@@ -561,6 +558,22 @@ final:
     }
     else
     {
+        if (node_params[3])
+        {
+            vsi_nn_kernel_scalar_release( &node_params[3] );
+        }
+        if (node_params[4])
+        {
+            vsi_nn_kernel_scalar_release( &node_params[4] );
+        }
+        if (node_params[5])
+        {
+            vsi_nn_kernel_scalar_release( &node_params[5] );
+        }
+        if (node_params[6])
+        {
+            vsi_nn_kernel_scalar_release( &node_params[6] );
+        }
         if (node_params[SCALAR_INPUT_NUM_STAGES])
         {
             vsi_nn_kernel_scalar_release( &node_params[SCALAR_INPUT_NUM_STAGES] );
