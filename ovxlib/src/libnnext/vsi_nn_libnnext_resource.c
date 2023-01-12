@@ -60371,10 +60371,9 @@ __kernel void roi_align_F32_F32toF32\n\
         }\n\
         else\n\
         {\n\
-            Tensor out_t =  create_tensor_from_image2d_array(output, 4);\n\
-            float *output_ptr = (float *)get_tensor_ptr_from_coord(out_t, (int4)(px, py, kz1, 0));\n\
-\n\
-            output_ptr[0] = interp.x;\n\
+            float4 dst = (float4)(interp.x,0,0,0);\n\
+            int4 coord_dst = (int4)(px, py, kz1, 0);\n\
+            write_imagef(output,coord_dst,dst_f);\n\
         }\n\
     }\n\
 }\n\

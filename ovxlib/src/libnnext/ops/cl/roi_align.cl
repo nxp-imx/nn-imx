@@ -153,10 +153,9 @@ __kernel void roi_align_F32_F32toF32
         }
         else
         {
-            Tensor out_t =  create_tensor_from_image2d_array(output, 4);
-            float *output_ptr = (float *)get_tensor_ptr_from_coord(out_t, (int4)(px, py, kz1, 0));
-
-            output_ptr[0] = interp.x;
+            float4 dst = (float4)(interp.x,0,0,0);
+            int4 coord_dst = (int4)(px, py, kz1, 0);
+            write_imagef(output,coord_dst,dst_f);
         }
     }
 }
