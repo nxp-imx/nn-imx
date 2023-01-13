@@ -47,7 +47,7 @@ __kernel void swish_F32toF32_2D(
     src   = convert_float4(src0) * inputScale - inputTail; \
     tmp.x = sigmoid_(src.x * beta, logE); \
     data.x = src.x * tmp.x; \
-    uint4 dst = convert_uint4(data * outputScale + outputZP); \
+    uint4 dst = convert_uint4_rte(data * outputScale + outputZP); \
     write_imageui(output, coord, dst);
 
 __kernel void swish_U8toU8(
