@@ -58,7 +58,7 @@ typedef int32_t vsi_nn_kernel_lut_act_e; enum
 };
 
 #define VSI_NN_KERNEL_LUT_MAX_SIZE  (1024)
-#define VSI_NN_KERNEL_LUT_FP16_MAX  (65504)
+#define VSI_NN_KERNEL_LUT_FP16_MAX  (57344)
 #define VSI_NN_KERNEL_LUT_FP16_MIN  (-57344)
 
 typedef struct _vsi_nn_kernel_lut_
