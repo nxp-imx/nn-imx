@@ -2897,13 +2897,19 @@ vsi_nn_tensor_t * vsi_nn_dropout_tensor
     vsi_size_t size = 0;
     vsi_size_t i = 0;
     float* data   = NULL;
+    vsi_nn_tensor_attr_t attr;
 
     if (NULL == input || NULL == graph)
     {
         return NULL;
     }
 
-    output = vsi_nn_CreateTensor(graph, &input->attr);
+    memset(&attr, 0, sizeof(attr));
+    memcpy(&attr, &input->attr, sizeof(attr));
+    attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
+    attr.dtype.vx_type = VSI_NN_TYPE_FLOAT32;
+
+    output = vsi_nn_CreateTensor(graph, &attr);
     if ( !output )
     {
         VSILOGE("create tensor failed.");
@@ -2923,7 +2929,7 @@ vsi_nn_tensor_t * vsi_nn_dropout_tensor
         data[i] = data[i] * rate;
     }
 
-    vsi_nn_CopyRawDataToTensor( graph, (uint8_t *)data, &input->attr.dtype, output );
+    vsi_nn_CopyRawDataToTensor( graph, (uint8_t *)data, &attr.dtype, output );
 
 final:
     vsi_nn_safe_free(data);
