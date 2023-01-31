@@ -286,6 +286,8 @@ static vsi_bool op_check
         IO_TYPE(D_I4|Q_SYM,   D_U8|Q_ASYM)
         IO_TYPE(D_U8|Q_ASYM,  D_I4|Q_ASYM)
         IO_TYPE(D_U8|Q_ASYM,  D_I4|Q_SYM)
+        IO_TYPE(D_U8|Q_ASYM,  D_U16|Q_ASYM)
+        IO_TYPE(D_U16|Q_ASYM, D_U8|Q_ASYM)
 
         /* HW 9.0.1 */
         IO_TYPE(D_I8|Q_DFP,   D_BF16)
