@@ -1,0 +1,9 @@
+Package:                     nn-imx.git
+Version:                     1.3.0
+Outgoing License:            MIT 
+License File:                LICENSE
+Type of Content:             source
+Description and comments:    i.MX Neural Networks Accelerator Plugin
+Release Location:            https://github.com/nxp-imx/nn-imx -b lf-6.1.1-1.0.0
+Origin:                      NXP (MIT)
+                             Vivante Corporation (MIT)
