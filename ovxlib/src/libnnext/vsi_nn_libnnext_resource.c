@@ -50379,6 +50379,7 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void l2normalizescale_a
     rsqrt_sum = (sum == 0 ? rsEps : rsqrt(sum));\n\
     for (coord.x = gidx; coord.x < axis_size; coord.x += 16)\n\
     {\n\
+        coord_scale.x = coord.x;\n\
         src         = read_imagef(input, coord);\n\
         scale_value = read_imagef(scale, coord_scale);\n\
         result      = src * rsqrt_sum * scale_value;\n\
@@ -50421,6 +50422,7 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void l2normalizescale_a
     rsqrt_sum = (sum == 0 ? rsEps : rsqrt(sum));\n\
     for (coord.x = gidx; coord.x < axis_size; coord.x += 16)\n\
     {\n\
+        coord_scale.x = coord.x;\n\
         src         = convert_float4(read_imageui(input, coord))  * inputScale + inputTail;\n\
         scale_value = read_imagef(scale, coord_scale);\n\
         result      = src * rsqrt_sum * scale_value;\n\
@@ -50464,6 +50466,7 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void l2normalizescale_a
     rsqrt_sum = (sum == 0 ? rsEps : rsqrt(sum));\n\
     for (coord.x = gidx; coord.x < axis_size; coord.x += 16)\n\
     {\n\
+        coord_scale.x = coord.x;\n\
         src         = convert_float4(read_imagei(input, coord))  * inputScale + inputTail;\n\
         scale_value = read_imagef(scale, coord_scale);\n\
         result      = src * rsqrt_sum * scale_value;\n\
@@ -50509,6 +50512,7 @@ __kernel __attribute__((reqd_work_group_size(1, 16, 1))) void l2normalizescale_a
     rsqrt_sum = (sum == 0 ? rsEps : rsqrt(sum));\n\
     for (coord.y = gidy; coord.y < axis_size; coord.y += 16)\n\
     {\n\
+        coord_scale.x = coord.y;\n\
         src         = read_imagef(input, coord);\n\
         scale_value = read_imagef(scale, coord_scale);\n\
         result      = src * rsqrt_sum * scale_value;\n\
@@ -50551,6 +50555,7 @@ __kernel __attribute__((reqd_work_group_size(1, 16, 1))) void l2normalizescale_a
     rsqrt_sum = (sum == 0 ? rsEps : rsqrt(sum));\n\
     for (coord.y = gidy; coord.y < axis_size; coord.y += 16)\n\
     {\n\
+        coord_scale.x = coord.y;\n\
         src         = convert_float4(read_imageui(input, coord))  * inputScale + inputTail;\n\
         scale_value = read_imagef(scale, coord_scale);\n\
         result      = src * rsqrt_sum * scale_value;\n\
@@ -50594,6 +50599,7 @@ __kernel __attribute__((reqd_work_group_size(1, 16, 1))) void l2normalizescale_a
     rsqrt_sum = (sum == 0 ? rsEps : rsqrt(sum));\n\
     for (coord.y = gidy; coord.y < axis_size; coord.y += 16)\n\
     {\n\
+        coord_scale.x = coord.y;\n\
         src         = convert_float4(read_imagei(input, coord)) * inputScale + inputTail;\n\
         scale_value = read_imagef(scale, coord_scale);\n\
         result      = src * rsqrt_sum * scale_value;\n\
