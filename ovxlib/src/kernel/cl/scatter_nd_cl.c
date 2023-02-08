@@ -239,6 +239,9 @@ static vsi_status _query_kernel
         coord_type = _3D;
     }
 
+    input1_dtype = input1_dtype == F16 ? F32 : input1_dtype;
+    output_dtype = output_dtype == F16 ? F32 : output_dtype;
+
     key = HASH_SCATTER_ND_KEY( I32, input1_dtype, output_dtype, coord_type );
 
     for( i = 0; i < _cnt_of_array(scatter_nd_map); i ++ )
