@@ -390,6 +390,34 @@ OVXLIB_API vsi_status vsi_nn_GetTensorHandle
     void** ptr
     );
 
+/**
+ * Get Tensor is_scalar
+ * Get the is_scalar of the tensor
+ *
+ * @param[in] tensor Tensor.
+ *
+ * @return is_scalar flag of the tensor.
+ */
+OVXLIB_API int8_t vsi_nn_GetTensorIsScalar
+(
+    vsi_nn_tensor_t* tensor
+);
+
+/**
+ * Set Tensor is_scalar
+ * Set the is_scalar for the tensor
+ *
+ * @param[in] tensor Tensor.
+ * @param[in] new is_scalar value of the tensor.
+ *
+ * @return VSI_SUCCESS on success, or error core otherwise.
+ */
+OVXLIB_API vsi_status vsi_nn_SetTensorIsScalar
+(
+    vsi_nn_tensor_t* tensor,
+    int8_t is_scalar
+);
+
 OVXLIB_API vsi_status vsi_nn_CopyRawDataToTensor
     (
     vsi_nn_graph_t*         graph,
