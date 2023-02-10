@@ -79,7 +79,7 @@ static vsi_nn_kernel_node_t _setup
     else if (lut_type == VSI_NN_KERNEL_LUT_ACOSH)
     {
         lut_param.pwl_sign_remove_support = TRUE;
-        lut_param.clamp_min = 1;
+        lut_param.clamp_min = 0;
     }
 
     if ( inputs[0]->attr.dtype.vx_type == VSI_NN_TYPE_INT32   ||
@@ -156,8 +156,6 @@ REGISTER_ELTWISE_UNARY_LUT_OPENVX_KERNEL( celu,         VSI_NN_KERNEL_LUT_CELU )
 REGISTER_ELTWISE_UNARY_LUT_OPENVX_KERNEL( rcp,          VSI_NN_KERNEL_LUT_RCP )
 REGISTER_ELTWISE_UNARY_LUT_OPENVX_KERNEL( softsign,     VSI_NN_KERNEL_LUT_SOFTSIGN )
 REGISTER_ELTWISE_UNARY_LUT_OPENVX_KERNEL( atan,         VSI_NN_KERNEL_LUT_ATAN )
-//REGISTER_ELTWISE_UNARY_LUT_OPENVX_KERNEL( atanh,        VSI_NN_KERNEL_LUT_ATANH )
-REGISTER_ELTWISE_UNARY_LUT_OPENVX_KERNEL( acosh,        VSI_NN_KERNEL_LUT_ACOSH )
 
 #undef REGISTER_ELTWISE_UNARY_LUT_OPENVX_KERNEL
 
