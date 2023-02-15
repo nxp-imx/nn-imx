@@ -4,6 +4,6 @@ Outgoing License:            MIT
 License File:                LICENSE
 Type of Content:             source
 Description and comments:    i.MX Neural Networks Accelerator Plugin
-Release Location:            https://github.com/nxp-imx/nn-imx -b lf-6.1.1-1.0.0
+Release Location:            https://github.com/nxp-imx/nn-imx -b lf-5.15.71-2.2.1
 Origin:                      NXP (MIT)
                              Vivante Corporation (MIT)
