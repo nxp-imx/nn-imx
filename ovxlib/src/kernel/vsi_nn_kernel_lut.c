@@ -239,6 +239,17 @@ static float acosh_eval(float x)
     return (log_eval(x + (float)sqrt(x * x - 1)));
 }
 
+static float inverse_sigmoid_eval(float x, vsi_nn_kernel_lut_params *lut_param)
+{
+    float eps = lut_param->params[0];
+    float x1, x2;
+    x = vsi_nn_clamp(x, 0, 1);
+    x1 = vsi_nn_clamp(x, eps, 1);
+    x2 = vsi_nn_clamp((1 - x), eps, 1);
+
+    return log_eval(x1 / x2);
+}
+
 static float vsi_nn_kernel_lut_activation(float data, vsi_nn_kernel_lut_params *lut_param)
 {
     float result = 0;
@@ -310,6 +321,9 @@ static float vsi_nn_kernel_lut_activation(float data, vsi_nn_kernel_lut_params *
         break;
     case VSI_NN_KERNEL_LUT_ACOSH:
         result = acosh_eval(data);
+        break;
+    case VSI_NN_KERNEL_LUT_INVERSE_SIGMOID:
+        result = inverse_sigmoid_eval(data, lut_param);
         break;
     default:
         VSILOGE( "unsupported activation function:%d", lut_param->act_type );

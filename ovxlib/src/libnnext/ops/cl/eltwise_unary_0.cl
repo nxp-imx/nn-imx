@@ -166,6 +166,17 @@ float eltwise_unary_acosh(float x, float alpha, float beta)
     return acosh(x);
 }
 
+float eltwise_unary_inverse_sigmoid(float x, float alpha, float beta)
+{
+    float x1, x2;
+    x = clamp(x, 0, 1);
+    x1 = x > alpha ? x : alpha;
+    x2 = 1 - x;
+    x2 = x2 > alpha ? x2 : alpha;
+    return log(x1 / x2);
+}
+
+
 #define ELTWISE_UNARY_F32_2D(func_name) \
 __kernel void func_name##_F32toF32_2D \
     ( \
@@ -206,6 +217,7 @@ ELTWISE_UNARY_F32_2D(softsign)
 ELTWISE_UNARY_F32_2D(atan)
 ELTWISE_UNARY_F32_2D(atanh)
 ELTWISE_UNARY_F32_2D(acosh)
+ELTWISE_UNARY_F32_2D(inverse_sigmoid)
 
 #define ELTWISE_UNARY_U8_2D(func_name) \
 __kernel void func_name##_U8toU8_2D \
@@ -248,6 +260,7 @@ ELTWISE_UNARY_U8_2D(softsign)
 ELTWISE_UNARY_U8_2D(atan)
 ELTWISE_UNARY_U8_2D(atanh)
 ELTWISE_UNARY_U8_2D(acosh)
+ELTWISE_UNARY_U8_2D(inverse_sigmoid)
 
 #define ELTWISE_UNARY_U8toF32_2D(func_name) \
 __kernel void func_name##_U8toF32_2D \
@@ -289,6 +302,7 @@ ELTWISE_UNARY_U8toF32_2D(softsign)
 ELTWISE_UNARY_U8toF32_2D(atan)
 ELTWISE_UNARY_U8toF32_2D(atanh)
 ELTWISE_UNARY_U8toF32_2D(acosh)
+ELTWISE_UNARY_U8toF32_2D(inverse_sigmoid)
 
 __kernel void neg_I32toI32_2D
     (
