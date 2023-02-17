@@ -207,6 +207,7 @@
 #include "ops/vsi_nn_op_reversesequence.h"
 /* custom node head define define */
 #include "custom/vsi_nn_custom_node_type.h"
+#include "ops/vsi_nn_op_inverse_sigmoid.h"
 
 #if defined(__cplusplus)
 extern "C"{
@@ -396,6 +397,7 @@ typedef union _vsi_nn_nn_param
     vsi_nn_avg_pool3d_param         avg_pool3d;
     vsi_nn_maxunpool_param          maxunpool;
     vsi_nn_reversesequence_param    reversesequence;
+    vsi_nn_inverse_sigmoid_param       inverse_sigmoid;
     void*                         client_param;
 
     /* custom node data struct define */
