@@ -59,6 +59,24 @@ static int32_t _get_input_num
     return num;
 }
 
+static vsi_bool _has_norm_input
+    (
+    vsi_nn_node_t   * self,
+    vsi_nn_tensor_t ** inputs
+    )
+{
+    uint32_t i,num;
+    num = _get_input_num(self, inputs);
+    for(i = 0; i < num; i++)
+    {
+        if(inputs[i]->attr.vtl == FALSE && inputs[i]->attr.is_const == FALSE)
+        {
+            return TRUE;
+        }
+    }
+    return FALSE;
+} /* _has_norm_input() */
+
 static vsi_bool _is_same_quant
     (
     vsi_nn_node_t   * self,
@@ -244,7 +262,9 @@ static vsi_status op_compute
 
     status = VSI_SUCCESS;
     self->n = NULL;
-    if(_is_highest_dimension(self, outputs) && _is_same_quant(self, inputs, outputs)
+    if(_is_highest_dimension(self, outputs)
+        && _is_same_quant(self, inputs, outputs)
+        && (_has_norm_input(self, inputs) == FALSE)
         && self->graph->ctx->options.enable_concat_optimize)
     {
         iter = self->nn_param.concat.lcl_data;
@@ -400,6 +420,7 @@ static vsi_status op_optimize
     /* we don't create tensor view if the axis is not the highest dimension */
     if (_is_highest_dimension(self, outputs) == FALSE ||
         _is_same_quant(self, inputs, outputs) == FALSE ||
+        _has_norm_input(self, inputs) == TRUE ||
         self->graph->ctx->options.enable_concat_optimize == 0)
     {
         return status;
