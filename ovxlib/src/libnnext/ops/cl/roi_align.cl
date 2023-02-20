@@ -155,7 +155,7 @@ __kernel void roi_align_F32_F32toF32
         {
             float4 dst = (float4)(interp.x,0,0,0);
             int4 coord_dst = (int4)(px, py, kz1, 0);
-            write_imagef(output,coord_dst,dst_f);
+            write_imagef(output,coord_dst,dst);
         }
     }
 }
