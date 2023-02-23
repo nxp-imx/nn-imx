@@ -92,48 +92,53 @@ DEF_KERNEL_EXECUTOR(_scatter_nd_exec)
     CHECK_PTR_FAIL_GOTO( buffer[1], "Create output buffer fail.", final );
     memset( buffer[1], 0, out_elements * sizeof(float) );
 
-    if(coord_dim <= 3)
+    if (coord_dim <= VSI_NN_MAX_DIM_NUM)
     {
-        vsi_ssize_t stride[3] = {0, 0, 0};
-        vsi_ssize_t new_shape[3] = {1, 1, 1};
+        vsi_ssize_t stride[VSI_NN_MAX_DIM_NUM] = {0, 0, 0, 0, 0, 0, 0, 0};
+        vsi_ssize_t new_shape[VSI_NN_MAX_DIM_NUM] = {1, 1, 1, 1, 1, 1, 1, 1};
         vsi_ssize_t merge_dim = (vsi_ssize_t)attr[2]->shape->size - coord_dim + 1;
 
-        for(i = 0; i < merge_dim; ++i)
+        for (i = 0; i < merge_dim; ++i)
         {
             new_shape[0] *= attr[2]->shape->data[i];
         }
         stride[0] = new_shape[0] / block_size;
 
-        for(i = 1; i < coord_dim; ++i)
+        for (i = 1; i < coord_dim; ++i)
         {
             new_shape[i] = attr[2]->shape->data[merge_dim + i - 1];
 
             stride[i] = stride[i - 1] * new_shape[i];
         }
 
-        for(i = 0; i < indices_num; i++)
+        for (i = 0; i < indices_num; i++)
         {
             uint32_t in_index = i * block_size;
             vsi_size_t out_index = 0;
-            uint32_t coord[3] = {0};
+            vsi_size_t tmp_index = 0;
+            uint32_t coord[VSI_NN_MAX_DIM_NUM] = {0};
             int32_t byd_flg = 0;
 
-            for(j = 0; j < coord_dim; j++)
+            for (j = 0; j < coord_dim; j++)
             {
                 coord[j] = para_buffer[0][i * coord_dim + coord_dim - j - 1];
-                if(coord[j] >= (uint32_t)new_shape[j])
+                if (coord[j] >= (uint32_t)new_shape[j])
                 {
                     byd_flg = 1;
                     break;
                 }
             }
-            if(byd_flg)
+            if (byd_flg)
             {
                 continue;
             }
-
-            out_index = (coord[2] * stride[1] + coord[1] * stride[0] + coord[0]) * block_size;
-            for(j = 0; j < block_size; j++)
+            tmp_index = coord[0];
+            for (j = 0; j < coord_dim - 1; j++)
+            {
+                tmp_index += coord[j + 1] * stride[j];
+            }
+            out_index = tmp_index * block_size;
+            for (j = 0; j < block_size; j++)
             {
                 buffer[1][out_index + j] += buffer[0][in_index + j];
             }
@@ -150,20 +155,20 @@ DEF_KERNEL_EXECUTOR(_scatter_nd_exec)
     CHECK_STATUS_FAIL_GOTO( status, final );
 
 final:
-    if( para_buffer[0] )
+    if ( para_buffer[0] )
     {
         free( para_buffer[0] );
     }
-    for( i = 0; i < 2; i ++ )
+    for ( i = 0; i < 2; i ++ )
     {
-        if( buffer[i] )
+        if ( buffer[i] )
         {
             free( buffer[i] );
         }
     }
-    for( i = 0; i < _CPU_IO_NUM; i ++ )
+    for ( i = 0; i < _CPU_IO_NUM; i ++ )
     {
-        if(attr[i]) { vsi_nn_kernel_tensor_attr_release( &attr[i] ); }
+        if (attr[i]) { vsi_nn_kernel_tensor_attr_release( &attr[i] ); }
     }
     return status;
 } /* _scatter_nd_exec() */
@@ -215,10 +220,10 @@ static vsi_nn_kernel_node_t _setup
     int32_t idx_num  = vsi_nn_kernel_param_get_int32( params, "idx_num" );
 
     status = _query_kernel( inputs, outputs, kernel );
-    if( VSI_SUCCESS == status)
+    if ( VSI_SUCCESS == status)
     {
         node = vsi_nn_kernel_create_node( graph, kernel );
-        if( node )
+        if ( node )
         {
             uint32_t index = 3;
             /* Set inputs and outputs */

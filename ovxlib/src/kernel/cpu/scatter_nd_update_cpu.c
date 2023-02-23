@@ -104,34 +104,34 @@ DEF_KERNEL_EXECUTOR(_scatter_nd_update_exec)
     mask = (uint32_t *)malloc( mask_len * sizeof(uint32_t) );
     memset(mask, 0, mask_len * sizeof(uint32_t));
 
-    if (coord_dim <= 5)
+    if (coord_dim <= VSI_NN_MAX_DIM_NUM)
     {
-        vsi_ssize_t stride[5] = {0, 0, 0, 0, 0};
-        vsi_ssize_t new_shape[5] = {1, 1, 1, 1, 1};
+        vsi_ssize_t stride[VSI_NN_MAX_DIM_NUM] = {0, 0, 0, 0, 0, 0, 0, 0};
+        vsi_ssize_t new_shape[VSI_NN_MAX_DIM_NUM] = {1, 1, 1, 1, 1, 1, 1, 1};
         vsi_ssize_t merge_dim = (vsi_ssize_t)attr[3]->shape->size - coord_dim + 1;
 
-        for(i = 0; i < merge_dim; ++i)
+        for (i = 0; i < merge_dim; ++i)
         {
             new_shape[0] *= attr[3]->shape->data[i];
         }
         stride[0] = new_shape[0] / block_size;
 
-        for(i = 1; i < coord_dim; ++i)
+        for (i = 1; i < coord_dim; ++i)
         {
             new_shape[i] = attr[3]->shape->data[merge_dim + i - 1];
 
             stride[i] = stride[i - 1] * new_shape[i];
         }
 
-        for(i = 0; i < indices_num; i++)
+        for (i = 0; i < indices_num; i++)
         {
             uint32_t in_index = i * block_size;
             vsi_size_t out_index = 0;
-            uint32_t coord[5] = {0};
+            uint32_t coord[VSI_NN_MAX_DIM_NUM] = {0};
             int32_t byd_flg = 0;
             vsi_ssize_t  mask_idx = 0;
 
-            for(j = 0; j < coord_dim; j++)
+            for (j = 0; j < coord_dim; j++)
             {
                 coord[j] = para_buffer[0][i * coord_dim + coord_dim - j - 1];
                 if (coord[j] >= (uint32_t)new_shape[j])
@@ -144,16 +144,18 @@ DEF_KERNEL_EXECUTOR(_scatter_nd_update_exec)
             {
                 continue;
             }
-
-            mask_idx = coord[4] * stride[3] + coord[3] * stride[2] +
-                            coord[2] * stride[1] + coord[1] * stride[0] + coord[0];
+            mask_idx = coord[0];
+            for (j = 0; j < coord_dim - 1; j++)
+            {
+                mask_idx += coord[j + 1] * stride[j];
+            }
             out_index = mask_idx * block_size;
             if (mask[mask_idx] == 0)
             {
                 memset(buffer[2] + out_index, 0, block_size * sizeof(float));
                 mask[mask_idx] = 1;
             }
-            for(j = 0; j < block_size; j++)
+            for (j = 0; j < block_size; j++)
             {
                 buffer[2][out_index + j] += buffer[1][in_index + j];
             }
@@ -179,14 +181,14 @@ final:
     {
         free(mask);
     }
-    for( i = 0; i < 3; i ++ )
+    for ( i = 0; i < 3; i ++ )
     {
         if ( buffer[i] )
         {
             free( buffer[i] );
         }
     }
-    for( i = 0; i < 4; i ++ )
+    for ( i = 0; i < 4; i ++ )
     {
         if (attr[i]) { vsi_nn_kernel_tensor_attr_release( &attr[i] ); }
     }
