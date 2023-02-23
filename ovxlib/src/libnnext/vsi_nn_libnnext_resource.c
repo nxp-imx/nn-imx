@@ -45673,13 +45673,117 @@ __kernel void batch_norm_I32to##TYPE##_2D \\\n\
 BATCH_NORM_I32_SH_IMPL_2D(I32)\n\
 BATCH_NORM_I32_SH_IMPL_2D(F32)"; /* end of batchnorm_single_cl*/
 
-static const char bilinear_grid_sample_cl[] = "__kernel void bilinear_grid_sample(\n\
-    __read_only image2d_array_t   input,\n\
-    __write_only image2d_array_t  output)\n\
+static const char bilinear_grid_sample_cl[] = "__kernel void bilinear_grid_sample_F32_F32toF32(\n\
+    __read_only  image2d_array_t  input0,\n\
+    __read_only  image2d_t        input1,\n\
+    __write_only image2d_array_t  output,\n\
+                           float  half_input0_w,\n\
+                           float  half_input0_h,\n\
+                           float  add_float_value_w,\n\
+                           float  add_float_value_h,\n\
+                           int    depth\n\
+                           )\n\
 {\n\
+    int4   coord_out    =  (int4)(get_global_id(0), get_global_id(1), 0, 0);\n\
+    int2   coord_in1    =  (int2)(get_global_id(0) * 2, get_global_id(1));\n\
+    int2   coord_add    = (int2)(-1, 1);\n\
 \n\
+    float fx = read_imagef(input1, coord_in1).x;\n\
+    coord_in1.x = coord_in1.x + 1;\n\
+    float fy = read_imagef(input1, coord_in1).x;\n\
+\n\
+    fx = fx * half_input0_w + add_float_value_w;\n\
+    fy = fy * half_input0_h + add_float_value_h;\n\
+    float x_f = floor(fx);\n\
+    float y_f = floor(fy);\n\
+    float x_lerp  = fx - x_f;\n\
+    float y_lerp  = fy - y_f;\n\
+    int   x_index = convert_int(x_f);\n\
+    int   y_index = convert_int(y_f);\n\
+    int4   coord_in     = (int4)(x_index, y_index, 0, 0);\n\
+\n\
+    float4 top_l, top_r, bottom_l, bottom_r, top, bottom, dst;\n\
+\n\
+    while (coord_in.z < depth){\n\
+        top_l    = read_imagef(input0, coord_in);\n\
+        coord_in.y++;\n\
+        bottom_l = read_imagef(input0, coord_in);\n\
+        coord_in.x++;\n\
+        bottom_r = read_imagef(input0, coord_in);\n\
+        coord_in.y--;\n\
+        top_r    = read_imagef(input0, coord_in);\n\
+        top_r    = top_r - top_l;\n\
+        top      = top_l + x_lerp * top_r;\n\
+        bottom_r = bottom_r - bottom_l;\n\
+        bottom   = bottom_l + x_lerp * bottom_r;\n\
+        bottom   = bottom - top;\n\
+        dst      = top + y_lerp * bottom;\n\
+        write_imagef(output, coord_out, dst);\n\
+        coord_in.xz = coord_in.xz + coord_add;\n\
+        coord_out.z++;\n\
+    }\n\
 }\n\
-"; /* end of bilinear_grid_sample_cl*/
+\n\
+\n\
+__kernel void bilinear_grid_sample_U8_U8toU8(\n\
+    __read_only  image2d_array_t  input0,\n\
+    __read_only  image2d_t        input1,\n\
+    __write_only image2d_array_t  output,\n\
+                           float  half_input0_w,\n\
+                           float  half_input0_h,\n\
+                           float  add_float_value_w,\n\
+                           float  add_float_value_h,\n\
+                           int    depth,\n\
+                           float  in0_scale,\n\
+                           float  in0_tail,\n\
+                           float  in1_scale,\n\
+                           float  in1_tail,\n\
+                           float  out_scale,\n\
+                           float  out_tail\n\
+                           )\n\
+{\n\
+    int4   coord_out    =  (int4)(get_global_id(0), get_global_id(1), 0, 0);\n\
+    int2   coord_in1    =  (int2)(get_global_id(0) * 2, get_global_id(1));\n\
+    int2   coord_add    = (int2)(-1, 1);\n\
+\n\
+    float fx    = convert_float4(read_imageui(input1, coord_in1)).x * in1_scale + in1_tail;\n\
+    coord_in1.x = coord_in1.x + 1;\n\
+    float fy    = convert_float4(read_imageui(input1, coord_in1)).x * in1_scale + in1_tail;\n\
+\n\
+    fx = fx * half_input0_w + add_float_value_w;\n\
+    fy = fy * half_input0_h + add_float_value_h;\n\
+    float x_f = floor(fx);\n\
+    float y_f = floor(fy);\n\
+    float x_lerp  = fx - x_f;\n\
+    float y_lerp  = fy - y_f;\n\
+    int   x_index = convert_int(x_f);\n\
+    int   y_index = convert_int(y_f);\n\
+    int4   coord_in     = (int4)(x_index, y_index, 0, 0);\n\
+\n\
+    float4 top_l, top_r, bottom_l, bottom_r, top, bottom;\n\
+    uint4  dst;\n\
+\n\
+    while (coord_in.z < depth){\n\
+        top_l    = convert_float4(read_imageui(input0, coord_in)) * in0_scale + in0_tail;\n\
+        coord_in.y++;\n\
+        bottom_l = convert_float4(read_imageui(input0, coord_in)) * in0_scale + in0_tail;\n\
+        coord_in.x++;\n\
+        bottom_r = convert_float4(read_imageui(input0, coord_in)) * in0_scale + in0_tail;\n\
+        coord_in.y--;\n\
+        top_r    = convert_float4(read_imageui(input0, coord_in)) * in0_scale + in0_tail;\n\
+        top_r    = top_r - top_l;\n\
+        top      = top_l + x_lerp * top_r;\n\
+        bottom_r = bottom_r - bottom_l;\n\
+        bottom   = bottom_l + x_lerp * bottom_r;\n\
+        bottom   = bottom - top;\n\
+        top      = top + y_lerp * bottom;\n\
+        dst      = convert_uint4_rte(top * out_scale + out_tail);\n\
+        write_imageui(output, coord_out, dst);\n\
+        coord_in.xz = coord_in.xz + coord_add;\n\
+        coord_out.z++;\n\
+    }\n\
+\n\
+}"; /* end of bilinear_grid_sample_cl*/
 
 static const char bucketize_cl[] = "#pragma OPENCL EXTENSION CL_VIV_asm : enable\n\
 \n\
