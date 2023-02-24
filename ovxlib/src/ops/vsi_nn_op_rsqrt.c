@@ -178,6 +178,7 @@ static vsi_bool op_check
             IO_TYPE(D_BF16,         D_U4|Q_ASYM)
             IO_TYPE(D_BF16,         D_I4|Q_ASYM)
             IO_TYPE(D_BF16,         D_I4|Q_SYM)
+            IO_TYPE(D_I32,          D_I32)
 
         END_IO_TYPE_DECL(RSQRT)
         if (!VALIDATE_OP_IO_TYPES(RSQRT, self, inputs, self->input.num, outputs, self->output.num))
