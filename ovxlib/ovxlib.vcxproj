@@ -1613,15 +1613,6 @@
     <ClCompile Include="src\kernel\sp\reduce_mean_sp.c">
       <ObjectFileName>$(IntDir)\src\kernel\sp\</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="src\kernel\sp\softmax_sp.c">
-      <ObjectFileName>$(IntDir)\src\kernel\sp\</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="src\kernel\sp\softmax_y_direction_sp.c">
-      <ObjectFileName>$(IntDir)\src\kernel\sp\</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="src\kernel\sp\softmax_z_direction_sp.c">
-      <ObjectFileName>$(IntDir)\src\kernel\sp\</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="src\kernel\vsi_nn_gpu.c">
       <ObjectFileName>$(IntDir)\src\kernel\</ObjectFileName>
     </ClCompile>
