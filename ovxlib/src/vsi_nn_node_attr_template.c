@@ -204,6 +204,7 @@ static _node_template s_template[] =
     /* AVG_POOL3D */            NULL,
     /* MAXUNPOOL */             NULL,
     /* REVERSESEQUENCE */       NULL,
+    /* LPNORM */                NULL,
 };
 //_compiler_assert( _cnt_of_array(s_template) == VSI_NN_OP_NUM, vsi_nn_node_attr_template_c );
 
