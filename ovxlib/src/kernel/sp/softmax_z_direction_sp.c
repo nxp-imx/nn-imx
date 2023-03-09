@@ -133,7 +133,7 @@ vsi_nn_spinst_t * vsi_nn_sp_max_axis2_inst
         /* loop inst2: nop */
         status |= vsi_nn_sp_nop(&sp_insts_param[6]);
         /* loop inst3: r8 = r1 * r4 | r5 = r1 - r2 | v11 = r5 ? r8 : r9 */
-        status |= vsi_nn_sp_mul(&sp_insts_param[7], VSI_NN_SP_SR1, VSI_NN_SP_SR3, VSI_NN_SP_SR8);
+        status |= vsi_nn_sp_mul(&sp_insts_param[7], VSI_NN_SP_SR1, VSI_NN_SP_SR4, VSI_NN_SP_SR8);
         status |= vsi_nn_sp_sub(&sp_insts_param[7], VSI_NN_SP_SR1, VSI_NN_SP_SR2, VSI_NN_SP_SR5);
         status |= vsi_nn_sp_move(&sp_insts_param[7], VSI_NN_SP_SR2, VSI_NN_SP_SR9);
         /* loop inst4: out = r1 */
