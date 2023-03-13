@@ -1551,7 +1551,8 @@ vsi_bool vsi_nn_is_stream_process_supported_types
     for (i = 0; i < input_num; i++)
     {
         if (inputs && input_num > 0 && inputs[i] &&
-            inputs[i]->attr.dtype.vx_type == VSI_NN_TYPE_INT32)
+            ( inputs[i]->attr.dtype.vx_type == VSI_NN_TYPE_INT32 ||
+              inputs[i]->attr.dtype.vx_type == VSI_NN_TYPE_UINT32))
         {
             return FALSE;
         }
