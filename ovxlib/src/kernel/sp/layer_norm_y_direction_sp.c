@@ -595,14 +595,15 @@ vsi_nn_kernel_node_t vsi_nn_sp_layer_norm_axis1_node
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input0,
         vsi_nn_tensor_t             * input1,
-        vsi_nn_tensor_t             * output,
+        vsi_nn_tensor_t             * output0,
+        vsi_nn_tensor_t             * output1,
         char                        * kernel_name
     )
 {
     const uint32_t input_count = 2;
-    const uint32_t output_count = 1;
+    const uint32_t output_count = 2;
     vx_tensor inputs_tensor[2] = {NULL};
-    vx_tensor outputs_tensor[1] = {NULL};
+    vx_tensor outputs_tensor[2] = {NULL};
     vx_node node = NULL;
     int32_t max_vector_depth = graph->ctx->config.sp_vector_depth;
     int32_t fifo_depth = 4;
@@ -613,7 +614,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_layer_norm_axis1_node
 
     inputs_tensor[0] = input0->t;
     inputs_tensor[1] = input1->t;
-    outputs_tensor[0] = output->t;
+    outputs_tensor[0] = output0->t;
+    outputs_tensor[1] = output1->t;
     node = vxStreamProcessorNode(
         graph->g,
         inputs_tensor,
@@ -645,6 +647,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_load_weight_bias_node
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * weight,
         vsi_nn_tensor_t             * bias,
+        vsi_nn_tensor_t             * dummy_input,
         vsi_nn_tensor_t             * dummy_output,
         char                        * kernel_name
     )
@@ -652,9 +655,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_load_weight_bias_node
     const int32_t spLoopInstsNum = 2;
     const int32_t spInstsNum = spLoopInstsNum;
 
-    const uint32_t input_count = 2;
+    const uint32_t input_count = 3;
     const uint32_t output_count = 1;
-    vx_tensor inputs_tensor[2] = {NULL};
+    vx_tensor inputs_tensor[3] = {NULL};
     vx_tensor outputs_tensor[2] = {NULL};
     vx_node node = NULL;
     int32_t max_vector_depth = graph->ctx->config.sp_vector_depth /
@@ -705,6 +708,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_load_weight_bias_node
 
     inputs_tensor[0] = weight->t;
     inputs_tensor[1] = bias->t;
+    inputs_tensor[2] = dummy_input->t;
     outputs_tensor[0] = dummy_output->t;
 
     node = vxStreamProcessorNode(
@@ -824,7 +828,7 @@ vsi_nn_kernel_node_t layer_norm_y_direction
 {
     vsi_nn_kernel_node_t node[5] = {NULL};
     vsi_nn_tensor_attr_t attr;
-    vsi_nn_tensor_t * dummy_tensor[3] = {NULL};
+    vsi_nn_tensor_t * dummy_tensor[4] = {NULL};
     vsi_nn_tensor_t * output_tensor[2] = {NULL};
     int32_t axis = vsi_nn_kernel_param_get_int32( params, "axis" );
     float output_scale = 1.0f / vsi_nn_get_tensor_scale(outputs[0]);
@@ -841,10 +845,12 @@ vsi_nn_kernel_node_t layer_norm_y_direction
     CHECK_PTR_FAIL_GOTO( dummy_tensor[0], "Create dummy_tensor fail.", final );
     dummy_tensor[1] = vsi_nn_create_dummy_tensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( dummy_tensor[1], "Create dummy_tensor fail.", final );
+    dummy_tensor[2] = vsi_nn_create_dummy_tensor( graph, &attr );
+    CHECK_PTR_FAIL_GOTO( dummy_tensor[2], "Create dummy_tensor fail.", final );
     memcpy( &attr.size, &inputs[2]->attr.size, sizeof(inputs[2]->attr.size) );
     attr.dim_num = inputs[2]->attr.dim_num;
-    dummy_tensor[2] = vsi_nn_CreateTensor( graph, &attr );
-    CHECK_PTR_FAIL_GOTO( dummy_tensor[2], "Create dummy_tensor fail.", final );
+    dummy_tensor[3] = vsi_nn_CreateTensor( graph, &attr );
+    CHECK_PTR_FAIL_GOTO( dummy_tensor[3], "Create dummy_tensor fail.", final );
 
     memcpy( &attr, &outputs[0]->attr, sizeof(vsi_nn_tensor_attr_t) );
     attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
@@ -862,13 +868,14 @@ vsi_nn_kernel_node_t layer_norm_y_direction
         inv_m, eps, output_scale, "layernorm_1");
     CHECK_PTR_FAIL_GOTO( node[1], "Create ln_y_dirction_means  fail.", final );
     node[2] = vsi_nn_sp_layer_norm_axis1_node(graph, output_tensor[0], dummy_tensor[1],
-        output_tensor[1], "layernorm_2");
+        output_tensor[1], dummy_tensor[2], "layernorm_2");
     CHECK_PTR_FAIL_GOTO( node[2], "Create layer_norm_axis1 fail.", final );
 
-    node[3] = vsi_nn_sp_load_weight_bias_node(graph, inputs[2], inputs[1], dummy_tensor[2], "layernorm_3");
+    node[3] = vsi_nn_sp_load_weight_bias_node(graph, inputs[2], inputs[1],
+        dummy_tensor[2], dummy_tensor[3], "layernorm_3");
     CHECK_PTR_FAIL_GOTO( node[3], "Create mov_weight_bias fail.", final );
     node[4] = vsi_nn_sp_in_times_v11_plus_v12_node(graph, output_tensor[1],
-        dummy_tensor[2], outputs[0], "layernorm_4");
+        dummy_tensor[3], outputs[0], "layernorm_4");
     CHECK_PTR_FAIL_GOTO( node[4], "Create in_times_v11_plus_v12 fail.", final );
 
 final:
@@ -879,6 +886,7 @@ final:
     vsi_safe_release_tensor(dummy_tensor[0]);
     vsi_safe_release_tensor(dummy_tensor[1]);
     vsi_safe_release_tensor(dummy_tensor[2]);
+    vsi_safe_release_tensor(dummy_tensor[3]);
     vsi_safe_release_tensor(output_tensor[0]);
     vsi_safe_release_tensor(output_tensor[1]);
 
