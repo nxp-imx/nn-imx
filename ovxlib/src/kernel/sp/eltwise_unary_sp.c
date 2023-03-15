@@ -58,7 +58,7 @@ static vsi_nn_kernel_node_t _setup
         a_v = vsi_nn_kernel_param_get_float32( params, "min_value" );
         b_v = vsi_nn_kernel_param_get_float32( params, "max_value" );
     }
-    else
+    else if (act_function != VX_CONVOLUTIONAL_NETWORK_ACTIVATION_ERF)
     {
         a_v = vsi_nn_kernel_param_get_float32( params, "alpha" );
         b_v = vsi_nn_kernel_param_get_float32( params, "beta" );
