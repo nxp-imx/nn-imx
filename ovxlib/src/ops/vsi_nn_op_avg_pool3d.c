@@ -243,7 +243,7 @@ static vsi_bool op_setup
             0,
             self->nn_param.avg_pool3d.round_type
             );
-        for (i = 2; i < outputs[0]->attr.dim_num; i++)
+        for (i = 3; i < outputs[0]->attr.dim_num; i++)
         {
             outputs[0]->attr.size[i] = inputs[0]->attr.size[i];
         }
