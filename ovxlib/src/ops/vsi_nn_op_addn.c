@@ -33,6 +33,7 @@
 #include "vsi_nn_tensor_util.h"
 #include "vsi_nn_internal_node.h"
 #include "utils/vsi_nn_constraint_check.h"
+#include "vsi_nn_kernel_prv.h"
 
 static int32_t _get_input_num
     (
@@ -126,11 +127,15 @@ static vsi_bool op_setup
     vsi_nn_tensor_attr_t attr;
     vsi_nn_internal_node_t* curr = NULL;
     vsi_nn_internal_tensor_t* temp_output_tensor = NULL;
+    vsi_bool is_sp_supported = vx_false_e;
     uint32_t input_num = 0;
 
     vsi_nn_internal_init_node_wksp( self );
 
     input_num = _get_input_num(self, inputs);
+
+    is_sp_supported = vsi_nn_is_sp_supported_broadcast(self->graph, inputs, input_num, outputs[0]);
+
     for(i = 0; i < input_num -1; i++)
     {
         /* loop call add for input_num -1 times */
@@ -159,7 +164,7 @@ static vsi_bool op_setup
                 attr.dtype.vx_type = VSI_NN_TYPE_INT32;
             }
             else if ( _is_float32_data_format( self, inputs, outputs ) ||
-                      self->graph->ctx->config.support_stream_processor )
+                      is_sp_supported )
             {
                 attr.dtype.vx_type = VSI_NN_TYPE_FLOAT32;
             }

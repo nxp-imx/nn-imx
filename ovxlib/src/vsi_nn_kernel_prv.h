@@ -47,6 +47,14 @@ vsi_status vsi_nn_set_sp_kernel_name
         char* kernel_name
     );
 
+vsi_bool vsi_nn_is_sp_supported_broadcast
+    (
+        vsi_nn_graph_t*   graph,
+        vsi_nn_tensor_t** inputs,
+        uint32_t          input_num,
+        vsi_nn_tensor_t*  output
+    );
+
 #ifdef __cplusplus
 }
 #endif
