@@ -21,15 +21,15 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#ifndef _VSI_NN_CUSTOM_NODE_TYPE_H_
-#define _VSI_NN_CUSTOM_NODE_TYPE_H_
-/*
-    custom op head files
-*/
-#include "custom/ops/vsi_nn_op_custom_softmax.h"
-#include "custom/ops/vsi_nn_op_custom_ainr_denoise_postprocess.h"
-#include "custom/ops/vsi_nn_op_custom_warp_affine.h"
-#include "custom/ops/vsi_nn_op_custom_warp_perspective.h"
-#include "custom/ops/vsi_nn_op_custom_sample.h"
+#ifndef _VSI_NN_OP_CUSTOM_SAMPLE_H
+#define _VSI_NN_OP_CUSTOM_SAMPLE_H
+
+#include "vsi_nn_platform.h"
+#include "vsi_nn_types.h"
+
+typedef struct _vsi_nn_custom_sample_param
+{
+    int32_t axis;
+} vsi_nn_custom_sample_param;
 
 #endif

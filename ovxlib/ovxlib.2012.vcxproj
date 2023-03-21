@@ -494,6 +494,7 @@
     <ClInclude Include="include\cpu_backend\npuref_interface.h"/>
     <ClInclude Include="include\cpu_backend\vsi_nn_cpu_backend.h"/>
     <ClInclude Include="include\custom\ops\vsi_nn_op_custom_ainr_denoise_postprocess.h"/>
+    <ClInclude Include="include\custom\ops\vsi_nn_op_custom_sample.h"/>
     <ClInclude Include="include\custom\ops\vsi_nn_op_custom_softmax.h"/>
     <ClInclude Include="include\custom\ops\vsi_nn_op_custom_warp_affine.h"/>
     <ClInclude Include="include\custom\ops\vsi_nn_op_custom_warp_perspective.h"/>
@@ -765,6 +766,9 @@
     <ClCompile Include="src\cpu_backend\vsi_nn_cpu_backend_deconv2d.c">
       <ObjectFileName>$(IntDir)\src\cpu_backend\</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="src\custom\ops\kernel\cpu\custom_sample_cpu.c">
+      <ObjectFileName>$(IntDir)\src\custom\ops\kernel\cpu\</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="src\custom\ops\kernel\cpu\custom_softmax_cpu.c">
       <ObjectFileName>$(IntDir)\src\custom\ops\kernel\cpu\</ObjectFileName>
     </ClCompile>
@@ -784,6 +788,9 @@
       <ObjectFileName>$(IntDir)\src\custom\ops\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\custom\ops\op_custom_ainr_denoise_postprocess.c">
+      <ObjectFileName>$(IntDir)\src\custom\ops\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\custom\ops\op_custom_sample.c">
       <ObjectFileName>$(IntDir)\src\custom\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\custom\ops\op_custom_softmax.c">
