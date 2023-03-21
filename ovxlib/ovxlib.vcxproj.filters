@@ -1683,6 +1683,12 @@
     <ClCompile Include="src\kernel\evis\bilinear_grid_sample_evis.c">
       <Filter>Source Files\kernel\evis</Filter>
     </ClCompile>
+    <ClCompile Include="src\custom\ops\op_custom_sample.c">
+      <Filter>Source Files\custom\ops</Filter>
+    </ClCompile>
+    <ClCompile Include="src\custom\ops\kernel\cpu\custom_sample_cpu.c">
+      <Filter>Source Files\custom\ops\kernel\cpu</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\cpu_backend\npuref_interface.h">
@@ -2446,6 +2452,9 @@
     </ClInclude>
     <ClInclude Include="src\vsi_nn_types_prv.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\custom\ops\vsi_nn_op_custom_sample.h">
+      <Filter>Header Files\custom\ops</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
