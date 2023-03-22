@@ -396,7 +396,7 @@ REGISTER_GROUP_NORM_STREAM_PROCESSOR_KERNEL( group_norm )
     vsi_nn_tensor_t * beta = NULL;
     vsi_size_t shapes[2][VSI_NN_MAX_DIM_NUM] = { {1, 1, 1, 1}, {1, 1, 1, 1} };
     int32_t group_num  = vsi_nn_kernel_param_get_int32( params, "group_num" );
-    int32_t group_size = outputs[0]->attr.size[2] / group_num;
+    int32_t group_size = (int32_t)outputs[0]->attr.size[2] / group_num;
     float output_scale = 1.0f / vsi_nn_get_tensor_scale(outputs[0]);
     float eps = vsi_nn_kernel_param_get_float32( params, "eps" );
     float inv_m = 1.0f / (float)(outputs[0]->attr.size[0] * outputs[0]->attr.size[1] * group_size);
