@@ -87,6 +87,18 @@ typedef enum
 }vsi_sp_attr_reshape_e;
 
 /**
+ * stream processor tile size align with sp core number attribute
+ */
+typedef enum
+{
+    VSI_SP_ATTR_TILE_ALIGN_SP_CORE_NONE = VX_SP_ATTRIBUTE_TILE_ALIGN_SP_CORE_NONE,
+    VSI_SP_ATTR_TILE_ALIGN_SP_CORE_WITH_AXIS_X = VX_SP_ATTRIBUTE_TILE_ALIGN_SP_CORE_WITH_AXIS_X,
+    VSI_SP_ATTR_TILE_ALIGN_SP_CORE_WITH_AXIS_Y = VX_SP_ATTRIBUTE_TILE_ALIGN_SP_CORE_WITH_AXIS_Y,
+    VSI_SP_ATTR_TILE_ALIGN_SP_CORE_WITH_AXIS_XY = VX_SP_ATTRIBUTE_TILE_ALIGN_SP_CORE_WITH_AXIS_XY,
+}
+vsi_sp_attr_tile_align_sp_core_e;
+
+/**
  * spinst attribute
  */
 typedef struct _vsi_nn_spinst_attr
@@ -132,6 +144,7 @@ typedef struct _vsi_nn_spinst_attr
     uint32_t num_of_v12_wr_in_flush_cycle;
     vsi_bool not_merge_with_conv2d;
     vsi_bool update_const0_to_pcq_coef_tensor;
+    uint32_t align_sp_core_axis;
     union
     {
         uint32_t reshape_array;
@@ -222,6 +235,7 @@ typedef enum
     VSI_NN_SP_ATTRIBUTE_NOT_MERGE_CONVSP            = VX_SP_ATTRIBUTE_NOT_MERGE_CONVSP,
     VSI_NN_SP_ATTRIBUTE_UPDATE_CONST0_TO_PCQ_COEF_TENSOR            = VX_SP_ATTRIBUTE_UPDATE_CONST0_TO_PCQ_COEF_TENSOR,
     VSI_NN_SP_ATTRIBUTE_RESHAPE_ARRAY               = VX_SP_ATTRIBUTE_RESHAPE_ARRAY,
+    VSI_NN_SP_ATTRIBUTE_ALIGN_SP_CORE_AXIS          = VX_SP_ATTRIBUTE_ALIGN_SP_CORE_AXIS,
 
     VSI_NN_SP_ATTRIBUTE_NUM_OF_V11_RD_IN_FLUSH_CYCLE = VX_SP_ATTRIBUTE_NUM_OF_V11_RD_IN_FLUSH_CYCLE,
     VSI_NN_SP_ATTRIBUTE_NUM_OF_V12_RD_IN_FLUSH_CYCLE = VX_SP_ATTRIBUTE_NUM_OF_V12_RD_IN_FLUSH_CYCLE,
