@@ -840,7 +840,7 @@ vsi_nn_kernel_node_t layer_norm_y_direction
     CHECK_PTR_FAIL_GOTO( dummy_tensor[1], "Create dummy_tensor fail.", final );
     memcpy( &attr.size, &inputs[2]->attr.size, sizeof(inputs[2]->attr.size) );
     attr.dim_num = inputs[2]->attr.dim_num;
-    dummy_tensor[2] = vsi_nn_CreateTensor( graph, &attr );
+    dummy_tensor[2] = vsi_nn_create_dummy_tensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( dummy_tensor[2], "Create dummy_tensor fail.", final );
 
     memcpy( &attr, &outputs[0]->attr, sizeof(vsi_nn_tensor_attr_t) );
