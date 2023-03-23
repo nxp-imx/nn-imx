@@ -47025,96 +47025,101 @@ static const char cumsum_cl[] = "__kernel void cumsum_F32toF32_axis2(\n\
     }\n\
 }\n\
 \n\
-__kernel void cumsum_U8toU8_axis2(\n\
-    __read_only image2d_array_t  input,\n\
-    __write_only image2d_array_t  output,\n\
-    int axis,\n\
-    int exclusive,\n\
-    int rev,\n\
-    int width,\n\
-    int height,\n\
-    int channel,\n\
-    int input_zp,\n\
-    float in_out_scale,\n\
-    float in_out_zp_scale,\n\
-    float output_zp\n\
-    )\n\
-{\n\
-    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
-    int4 coord_out = coord;\n\
-\n\
-    uint4 sum = (uint4)(0);\n\
-    uint4 dst = (uint4)(0);\n\
-\n\
-    float cnt = 0.0f;\n\
-\n\
-    if(exclusive && rev)\n\
-    {\n\
-        coord_out.z = channel - 1;\n\
-        write_imageui(output, coord_out, dst);\n\
-        for(coord.z = channel - 1; coord.z > 0; coord.z--)\n\
-        {\n\
-            uint4 data = read_imageui(input, coord);\n\
-            coord_out.z--;\n\
-            cnt += 1.0f;\n\
-            sum += data;\n\
-\n\
-            float tmpAlpha = cnt * in_out_zp_scale + output_zp;\n\
-            float tmpSum = sum.x * in_out_scale + tmpAlpha;\n\
-\n\
-            dst.x = (uint)convert_int_rte(tmpSum);\n\
-            write_imageui(output, coord_out, dst);\n\
-        }\n\
-    }\n\
-    else if(exclusive)\n\
-    {\n\
-        coord_out.z = 0;\n\
-        write_imageui(output, coord_out, dst);\n\
-        for(coord.z = 0; coord.z < channel - 1; coord.z++)\n\
-        {\n\
-            uint4 data = read_imageui(input, coord);\n\
-            coord_out.z++;\n\
-            cnt += 1.0f;\n\
-            sum += data;\n\
-\n\
-            float tmpAlpha = cnt * in_out_zp_scale + output_zp;\n\
-            float tmpSum = sum.x * in_out_scale + tmpAlpha;\n\
-\n\
-            dst.x = (uint)convert_int_rte(tmpSum);\n\
-            write_imageui(output, coord_out, dst);\n\
-        }\n\
-    }\n\
-    else if(rev)\n\
-    {\n\
-        for(coord.z = channel - 1; coord.z >= 0; coord.z--)\n\
-        {\n\
-            uint4 data = read_imageui(input, coord);\n\
-            cnt += 1.0f;\n\
-            sum += data;\n\
-\n\
-            float tmpAlpha = cnt * in_out_zp_scale + output_zp;\n\
-            float tmpSum = sum.x * in_out_scale + tmpAlpha;\n\
-\n\
-            dst.x = (uint)convert_int_rte(tmpSum);\n\
-            write_imageui(output, coord, dst);\n\
-        }\n\
-    }\n\
-    else\n\
-    {\n\
-        for(coord.z = 0; coord.z < channel; coord.z++)\n\
-        {\n\
-            uint4 data = read_imageui(input, coord);\n\
-            cnt += 1.0f;\n\
-            sum += data;\n\
-\n\
-            float tmpAlpha = cnt * in_out_zp_scale + output_zp;\n\
-            float tmpSum = sum.x * in_out_scale + tmpAlpha;\n\
-\n\
-            dst.x = (uint)convert_int_rte(tmpSum);\n\
-            write_imageui(output, coord, dst);\n\
-        }\n\
-    }\n\
+#define CUMSUM_toU8_AXIS2_SH(name, src_type, read_image_type) \\\n\
+__kernel void cumsum_##name##toU8_axis2( \\\n\
+    __read_only image2d_array_t  input, \\\n\
+    __write_only image2d_array_t  output, \\\n\
+    int axis, \\\n\
+    int exclusive, \\\n\
+    int rev, \\\n\
+    int width, \\\n\
+    int height, \\\n\
+    int channel, \\\n\
+    int input_zp, \\\n\
+    float in_out_scale, \\\n\
+    float in_out_zp_scale, \\\n\
+    float output_zp \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
+    int4 coord_out = coord; \\\n\
+ \\\n\
+    src_type sum = (src_type)(0); \\\n\
+    uint4 dst = (uint4)(0); \\\n\
+ \\\n\
+    float cnt = 0.0f; \\\n\
+ \\\n\
+    if(exclusive && rev) \\\n\
+    { \\\n\
+        coord_out.z = channel - 1; \\\n\
+        write_imageui(output, coord_out, dst); \\\n\
+        for(coord.z = channel - 1; coord.z > 0; coord.z--) \\\n\
+        { \\\n\
+            src_type data = read_image_type(input, coord); \\\n\
+            coord_out.z--; \\\n\
+            cnt += 1.0f; \\\n\
+            sum += data; \\\n\
+ \\\n\
+            float tmpAlpha = cnt * in_out_zp_scale + output_zp; \\\n\
+            float tmpSum = sum.x * in_out_scale + tmpAlpha; \\\n\
+ \\\n\
+            dst.x = (uint)convert_int_rte(tmpSum); \\\n\
+            write_imageui(output, coord_out, dst); \\\n\
+        } \\\n\
+    } \\\n\
+    else if(exclusive) \\\n\
+    { \\\n\
+        coord_out.z = 0; \\\n\
+        write_imageui(output, coord_out, dst); \\\n\
+        for(coord.z = 0; coord.z < channel - 1; coord.z++) \\\n\
+        { \\\n\
+            src_type data = read_image_type(input, coord); \\\n\
+            coord_out.z++; \\\n\
+            cnt += 1.0f; \\\n\
+            sum += data; \\\n\
+ \\\n\
+            float tmpAlpha = cnt * in_out_zp_scale + output_zp; \\\n\
+            float tmpSum = sum.x * in_out_scale + tmpAlpha; \\\n\
+ \\\n\
+            dst.x = (uint)convert_int_rte(tmpSum); \\\n\
+            write_imageui(output, coord_out, dst); \\\n\
+        } \\\n\
+    } \\\n\
+    else if(rev) \\\n\
+    { \\\n\
+        for(coord.z = channel - 1; coord.z >= 0; coord.z--) \\\n\
+        { \\\n\
+            src_type data = read_image_type(input, coord); \\\n\
+            cnt += 1.0f; \\\n\
+            sum += data; \\\n\
+ \\\n\
+            float tmpAlpha = cnt * in_out_zp_scale + output_zp; \\\n\
+            float tmpSum = sum.x * in_out_scale + tmpAlpha; \\\n\
+ \\\n\
+            dst.x = (uint)convert_int_rte(tmpSum); \\\n\
+            write_imageui(output, coord, dst); \\\n\
+        } \\\n\
+    } \\\n\
+    else \\\n\
+    { \\\n\
+        for(coord.z = 0; coord.z < channel; coord.z++) \\\n\
+        { \\\n\
+            src_type data = read_image_type(input, coord); \\\n\
+            cnt += 1.0f; \\\n\
+            sum += data; \\\n\
+ \\\n\
+            float tmpAlpha = cnt * in_out_zp_scale + output_zp; \\\n\
+            float tmpSum = sum.x * in_out_scale + tmpAlpha; \\\n\
+ \\\n\
+            dst.x = (uint)convert_int_rte(tmpSum); \\\n\
+            write_imageui(output, coord, dst); \\\n\
+        } \\\n\
+    } \\\n\
 }\n\
+CUMSUM_toU8_AXIS2_SH(U8,uint4,read_imageui)\n\
+CUMSUM_toU8_AXIS2_SH(F32,float4,read_imagef)\n\
+\n\
+\n\
 \n\
 __kernel void cumsum_F32toF32_axis1(\n\
     __read_only image2d_array_t  input,\n\
@@ -47184,97 +47189,101 @@ __kernel void cumsum_F32toF32_axis1(\n\
     }\n\
 }\n\
 \n\
-__kernel void cumsum_U8toU8_axis1(\n\
-    __read_only image2d_array_t  input,\n\
-    __write_only image2d_array_t  output,\n\
-    int axis,\n\
-    int exclusive,\n\
-    int rev,\n\
-    int width,\n\
-    int height,\n\
-    int channel,\n\
-    int input_zp,\n\
-    float in_out_scale,\n\
-    float in_out_zp_scale,\n\
-    float output_zp\n\
-    )\n\
-{\n\
-    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
-    int4 coord_out = coord;\n\
-\n\
-    uint4 sum = (uint4)(0);\n\
-    uint4 dst = (uint4)(0);\n\
-\n\
-    float cnt = 0;\n\
-\n\
-    if(exclusive && rev)\n\
-    {\n\
-        coord_out.y = height - 1;\n\
-        write_imageui(output, coord_out, dst);\n\
-\n\
-        for(coord.y = height - 1; coord.y > 0; coord.y--)\n\
-        {\n\
-            uint4 data = read_imageui(input, coord);\n\
-            cnt += 1.0f;\n\
-            coord_out.y--;\n\
-            sum += data;\n\
-\n\
-            float tmpAlpha = cnt * in_out_zp_scale + output_zp;\n\
-            float tmpSum = sum.x * in_out_scale + tmpAlpha;\n\
-\n\
-            dst.x = (uint)convert_int_rte(tmpSum);\n\
-            write_imageui(output, coord_out, dst);\n\
-        }\n\
-    }\n\
-    else if(exclusive)\n\
-    {\n\
-        coord_out.y = 0;\n\
-        write_imageui(output, coord_out, dst);\n\
-        for(coord.y = 0; coord.y < height - 1; coord.y++)\n\
-        {\n\
-            uint4 data = read_imageui(input, coord);\n\
-            cnt += 1.0f;\n\
-            coord_out.y++;\n\
-            sum += data;\n\
-\n\
-            float tmpAlpha = cnt * in_out_zp_scale + output_zp;\n\
-            float tmpSum = sum.x * in_out_scale + tmpAlpha;\n\
-\n\
-            dst.x = (uint)convert_int_rte(tmpSum);\n\
-            write_imageui(output, coord_out, dst);\n\
-        }\n\
-    }\n\
-    else if(rev)\n\
-    {\n\
-        for(coord.y = height - 1; coord.y >= 0; coord.y--)\n\
-        {\n\
-            uint4 data = read_imageui(input, coord);\n\
-            cnt += 1.0f;\n\
-            sum += data;\n\
-\n\
-            float tmpAlpha = cnt * in_out_zp_scale + output_zp;\n\
-            float tmpSum = sum.x * in_out_scale + tmpAlpha;\n\
-\n\
-            dst.x = (uint)convert_int_rte(tmpSum);\n\
-            write_imageui(output, coord, dst);\n\
-        }\n\
-    }\n\
-    else\n\
-    {\n\
-        for(coord.y = 0; coord.y < height; coord.y++)\n\
-        {\n\
-            uint4 data = read_imageui(input, coord);\n\
-            cnt += 1.0f;\n\
-            sum += data;\n\
-\n\
-            float tmpAlpha = cnt * in_out_zp_scale + output_zp;\n\
-            float tmpSum = sum.x * in_out_scale + tmpAlpha;\n\
-\n\
-            dst.x = (uint)convert_int_rte(tmpSum);\n\
-            write_imageui(output, coord, dst);\n\
-        }\n\
-    }\n\
+#define CUMSUM_toU8_AXIS1_SH(name, src_type, read_image_type) \\\n\
+__kernel void cumsum_##name##toU8_axis1( \\\n\
+    __read_only image2d_array_t  input, \\\n\
+    __write_only image2d_array_t  output, \\\n\
+    int axis, \\\n\
+    int exclusive, \\\n\
+    int rev, \\\n\
+    int width, \\\n\
+    int height, \\\n\
+    int channel, \\\n\
+    int input_zp, \\\n\
+    float in_out_scale, \\\n\
+    float in_out_zp_scale, \\\n\
+    float output_zp \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
+    int4 coord_out = coord; \\\n\
+ \\\n\
+    src_type sum = (src_type)(0); \\\n\
+    uint4 dst = (uint4)(0); \\\n\
+ \\\n\
+    float cnt = 0; \\\n\
+ \\\n\
+    if(exclusive && rev) \\\n\
+    { \\\n\
+        coord_out.y = height - 1; \\\n\
+        write_imageui(output, coord_out, dst); \\\n\
+ \\\n\
+        for(coord.y = height - 1; coord.y > 0; coord.y--) \\\n\
+        { \\\n\
+            src_type data = read_image_type(input, coord); \\\n\
+            cnt += 1.0f; \\\n\
+            coord_out.y--; \\\n\
+            sum += data; \\\n\
+ \\\n\
+            float tmpAlpha = cnt * in_out_zp_scale + output_zp; \\\n\
+            float tmpSum = sum.x * in_out_scale + tmpAlpha; \\\n\
+ \\\n\
+            dst.x = (uint)convert_int_rte(tmpSum); \\\n\
+            write_imageui(output, coord_out, dst); \\\n\
+        } \\\n\
+    } \\\n\
+    else if(exclusive) \\\n\
+    { \\\n\
+        coord_out.y = 0; \\\n\
+        write_imageui(output, coord_out, dst); \\\n\
+        for(coord.y = 0; coord.y < height - 1; coord.y++) \\\n\
+        { \\\n\
+            src_type data = read_image_type(input, coord); \\\n\
+            cnt += 1.0f; \\\n\
+            coord_out.y++; \\\n\
+            sum += data; \\\n\
+ \\\n\
+            float tmpAlpha = cnt * in_out_zp_scale + output_zp; \\\n\
+            float tmpSum = sum.x * in_out_scale + tmpAlpha; \\\n\
+ \\\n\
+            dst.x = (uint)convert_int_rte(tmpSum); \\\n\
+            write_imageui(output, coord_out, dst); \\\n\
+        } \\\n\
+    } \\\n\
+    else if(rev) \\\n\
+    { \\\n\
+        for(coord.y = height - 1; coord.y >= 0; coord.y--) \\\n\
+        { \\\n\
+            src_type data = read_image_type(input, coord); \\\n\
+            cnt += 1.0f; \\\n\
+            sum += data; \\\n\
+ \\\n\
+            float tmpAlpha = cnt * in_out_zp_scale + output_zp; \\\n\
+            float tmpSum = sum.x * in_out_scale + tmpAlpha; \\\n\
+ \\\n\
+            dst.x = (uint)convert_int_rte(tmpSum); \\\n\
+            write_imageui(output, coord, dst); \\\n\
+        } \\\n\
+    } \\\n\
+    else \\\n\
+    { \\\n\
+        for(coord.y = 0; coord.y < height; coord.y++) \\\n\
+        { \\\n\
+            src_type data = read_image_type(input, coord); \\\n\
+            cnt += 1.0f; \\\n\
+            sum += data; \\\n\
+ \\\n\
+            float tmpAlpha = cnt * in_out_zp_scale + output_zp; \\\n\
+            float tmpSum = sum.x * in_out_scale + tmpAlpha; \\\n\
+ \\\n\
+            dst.x = (uint)convert_int_rte(tmpSum); \\\n\
+            write_imageui(output, coord, dst); \\\n\
+        } \\\n\
+    } \\\n\
 }\n\
+CUMSUM_toU8_AXIS1_SH(U8,uint4,read_imageui)\n\
+CUMSUM_toU8_AXIS1_SH(F32,float4,read_imagef)\n\
+\n\
 \n\
 __kernel void cumsum_F32toF32_axis0(\n\
     __read_only image2d_array_t  input,\n\
@@ -47344,97 +47353,99 @@ __kernel void cumsum_F32toF32_axis0(\n\
     }\n\
 }\n\
 \n\
-__kernel void cumsum_U8toU8_axis0(\n\
-    __read_only image2d_array_t  input,\n\
-    __write_only image2d_array_t  output,\n\
-    int axis,\n\
-    int exclusive,\n\
-    int rev,\n\
-    int width,\n\
-    int height,\n\
-    int channel,\n\
-    int input_zp,\n\
-    float in_out_scale,\n\
-    float in_out_zp_scale,\n\
-    float output_zp\n\
-    )\n\
-{\n\
-    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
-    int4 coord_out = coord;\n\
-\n\
-    uint4 sum = (uint4)(0);\n\
-    uint4 dst = (uint4)(0);\n\
-\n\
-    float cnt = 0;\n\
-\n\
-    if(exclusive && rev)\n\
-    {\n\
-        coord_out.x = width - 1;\n\
-        write_imageui(output, coord_out, dst);\n\
-        for(coord.x = width - 1; coord.x > 0; coord.x--)\n\
-        {\n\
-            uint4 data = read_imageui(input, coord);\n\
-            coord_out.x--;\n\
-            cnt += 1.0f;\n\
-            sum += data;\n\
-\n\
-            float tmpAlpha = cnt * in_out_zp_scale + output_zp;\n\
-            float tmpSum = sum.x * in_out_scale + tmpAlpha;\n\
-\n\
-            dst.x = (uint)convert_int_rte(tmpSum);\n\
-            write_imageui(output, coord_out, dst);\n\
-        }\n\
-    }\n\
-    else if(exclusive)\n\
-    {\n\
-        coord_out.x = 0;\n\
-        write_imageui(output, coord_out, dst);\n\
-        for(coord.x = 0; coord.x < width - 1; coord.x++)\n\
-        {\n\
-            uint4 data = read_imageui(input, coord);\n\
-            coord_out.x++;\n\
-            cnt += 1.0f;\n\
-            sum += data;\n\
-\n\
-            float tmpAlpha = cnt * in_out_zp_scale + output_zp;\n\
-            float tmpSum = sum.x * in_out_scale + tmpAlpha;\n\
-\n\
-            dst.x = (uint)convert_int_rte(tmpSum);\n\
-            write_imageui(output, coord_out, dst);\n\
-        }\n\
-    }\n\
-    else if(rev)\n\
-    {\n\
-        for(coord.x = width - 1; coord.x >= 0; coord.x--)\n\
-        {\n\
-            uint4 data = read_imageui(input, coord);\n\
-            cnt += 1.0f;\n\
-            sum += data;\n\
-\n\
-            float tmpAlpha = cnt * in_out_zp_scale + output_zp;\n\
-            float tmpSum = sum.x * in_out_scale + tmpAlpha;\n\
-\n\
-            dst.x = (uint)convert_int_rte(tmpSum);\n\
-            write_imageui(output, coord, dst);\n\
-        }\n\
-    }\n\
-    else\n\
-    {\n\
-        for(coord.x = 0; coord.x < width; coord.x++)\n\
-        {\n\
-            uint4 data = read_imageui(input, coord);\n\
-            cnt += 1.0f;\n\
-            sum += data;\n\
-\n\
-            float tmpAlpha = cnt * in_out_zp_scale + output_zp;\n\
-            float tmpSum = sum.x * in_out_scale + tmpAlpha;\n\
-\n\
-            dst.x = (uint)convert_int_rte(tmpSum);\n\
-            write_imageui(output, coord, dst);\n\
-        }\n\
-    }\n\
+#define CUMSUM_toU8_AXIS0_SH(name, src_type, read_image_type) \\\n\
+__kernel void cumsum_##name##toU8_axis0( \\\n\
+    __read_only image2d_array_t  input, \\\n\
+    __write_only image2d_array_t  output, \\\n\
+    int axis, \\\n\
+    int exclusive, \\\n\
+    int rev, \\\n\
+    int width, \\\n\
+    int height, \\\n\
+    int channel, \\\n\
+    int input_zp, \\\n\
+    float in_out_scale, \\\n\
+    float in_out_zp_scale, \\\n\
+    float output_zp \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
+    int4 coord_out = coord; \\\n\
+ \\\n\
+    src_type sum = (src_type)(0); \\\n\
+    uint4 dst = (uint4)(0); \\\n\
+ \\\n\
+    float cnt = 0; \\\n\
+ \\\n\
+    if(exclusive && rev) \\\n\
+    { \\\n\
+        coord_out.x = width - 1; \\\n\
+        write_imageui(output, coord_out, dst); \\\n\
+        for(coord.x = width - 1; coord.x > 0; coord.x--) \\\n\
+        { \\\n\
+            src_type data = read_image_type(input, coord); \\\n\
+            coord_out.x--; \\\n\
+            cnt += 1.0f; \\\n\
+            sum += data; \\\n\
+ \\\n\
+            float tmpAlpha = cnt * in_out_zp_scale + output_zp; \\\n\
+            float tmpSum = sum.x * in_out_scale + tmpAlpha; \\\n\
+ \\\n\
+            dst.x = (uint)convert_int_rte(tmpSum); \\\n\
+            write_imageui(output, coord_out, dst); \\\n\
+        } \\\n\
+    } \\\n\
+    else if(exclusive) \\\n\
+    { \\\n\
+        coord_out.x = 0; \\\n\
+        write_imageui(output, coord_out, dst); \\\n\
+        for(coord.x = 0; coord.x < width - 1; coord.x++) \\\n\
+        { \\\n\
+            src_type data = read_image_type(input, coord); \\\n\
+            coord_out.x++; \\\n\
+            cnt += 1.0f; \\\n\
+            sum += data; \\\n\
+ \\\n\
+            float tmpAlpha = cnt * in_out_zp_scale + output_zp; \\\n\
+            float tmpSum = sum.x * in_out_scale + tmpAlpha; \\\n\
+ \\\n\
+            dst.x = (uint)convert_int_rte(tmpSum); \\\n\
+            write_imageui(output, coord_out, dst); \\\n\
+        } \\\n\
+    } \\\n\
+    else if(rev) \\\n\
+    { \\\n\
+        for(coord.x = width - 1; coord.x >= 0; coord.x--) \\\n\
+        { \\\n\
+            src_type data = read_image_type(input, coord); \\\n\
+            cnt += 1.0f; \\\n\
+            sum += data; \\\n\
+ \\\n\
+            float tmpAlpha = cnt * in_out_zp_scale + output_zp; \\\n\
+            float tmpSum = sum.x * in_out_scale + tmpAlpha; \\\n\
+ \\\n\
+            dst.x = (uint)convert_int_rte(tmpSum); \\\n\
+            write_imageui(output, coord, dst); \\\n\
+        } \\\n\
+    } \\\n\
+    else \\\n\
+    { \\\n\
+        for(coord.x = 0; coord.x < width; coord.x++) \\\n\
+        { \\\n\
+            src_type data = read_image_type(input, coord); \\\n\
+            cnt += 1.0f; \\\n\
+            sum += data; \\\n\
+ \\\n\
+            float tmpAlpha = cnt * in_out_zp_scale + output_zp; \\\n\
+            float tmpSum = sum.x * in_out_scale + tmpAlpha; \\\n\
+ \\\n\
+            dst.x = (uint)convert_int_rte(tmpSum); \\\n\
+            write_imageui(output, coord, dst); \\\n\
+        } \\\n\
+    } \\\n\
 }\n\
-"; /* end of cumsum_cl*/
+CUMSUM_toU8_AXIS0_SH(U8,uint4,read_imageui)\n\
+CUMSUM_toU8_AXIS0_SH(F32,float4,read_imagef)"; /* end of cumsum_cl*/
 
 static const char cumsum_2d_cl[] = "\n\
 __kernel void cumsum_F32toF32_axis1_2D(\n\
@@ -47580,6 +47591,95 @@ __kernel void cumsum_U8toU8_axis1_2D(\n\
         for(coord.y = 0; coord.y < height; coord.y++)\n\
         {\n\
             uint4 data = read_imageui(input, coord.xy);\n\
+            cnt += 1.0f;\n\
+            sum += data;\n\
+\n\
+            float tmpAlpha = cnt * in_out_zp_scale + output_zp;\n\
+            float tmpSum = sum.x * in_out_scale + tmpAlpha;\n\
+\n\
+            dst.x = (uint)convert_int_rte(tmpSum);\n\
+            write_imageui(output, coord.xy, dst);\n\
+        }\n\
+    }\n\
+}\n\
+\n\
+__kernel void cumsum_F32toU8_axis1_2D(\n\
+    __read_only image2d_t  input,\n\
+    __write_only image2d_t  output,\n\
+    int axis,\n\
+    int exclusive,\n\
+    int rev,\n\
+    int width,\n\
+    int height,\n\
+    int chn,\n\
+    int input_zp,\n\
+    float in_out_scale,\n\
+    float in_out_zp_scale,\n\
+    float output_zp\n\
+    )\n\
+{\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(0), get_global_id(1));\n\
+\n\
+    float4 sum = (float4)(0);\n\
+    uint4 dst = (uint4)(0);\n\
+\n\
+    float cnt = 0;\n\
+\n\
+    if(exclusive && rev)\n\
+    {\n\
+        coord.w = height - 1;\n\
+        write_imageui(output, coord.zw, dst);\n\
+        for(coord.y = height - 1; coord.y > 0; coord.y--)\n\
+        {\n\
+            float4 data = read_imagef(input, coord.xy);\n\
+            cnt += 1.0f;\n\
+            coord.w--;\n\
+            sum += data;\n\
+\n\
+            float tmpAlpha = cnt * in_out_zp_scale + output_zp;\n\
+            float tmpSum = sum.x * in_out_scale + tmpAlpha;\n\
+\n\
+            dst.x = (uint)convert_int_rte(tmpSum);\n\
+            write_imageui(output, coord.zw, dst);\n\
+        }\n\
+    }\n\
+    else if(exclusive)\n\
+    {\n\
+        write_imageui(output, coord.zw, dst);\n\
+        for(coord.y = 0; coord.y < height - 1; coord.y++)\n\
+        {\n\
+            float4 data = read_imagef(input, coord.xy);\n\
+            cnt += 1.0f;\n\
+            coord.w++;\n\
+            sum += data;\n\
+\n\
+            float tmpAlpha = cnt * in_out_zp_scale + output_zp;\n\
+            float tmpSum = sum.x * in_out_scale + tmpAlpha;\n\
+\n\
+            dst.x = (uint)convert_int_rte(tmpSum);\n\
+            write_imageui(output, coord.zw, dst);\n\
+        }\n\
+    }\n\
+    else if(rev)\n\
+    {\n\
+        for(coord.y = height - 1; coord.y >= 0; coord.y--)\n\
+        {\n\
+            float4 data = read_imagef(input, coord.xy);\n\
+            cnt += 1.0f;\n\
+            sum += data;\n\
+\n\
+            float tmpAlpha = cnt * in_out_zp_scale + output_zp;\n\
+            float tmpSum = sum.x * in_out_scale + tmpAlpha;\n\
+\n\
+            dst.x = (uint)convert_int_rte(tmpSum);\n\
+            write_imageui(output, coord.xy, dst);\n\
+        }\n\
+    }\n\
+    else\n\
+    {\n\
+        for(coord.y = 0; coord.y < height; coord.y++)\n\
+        {\n\
+            float4 data = read_imagef(input, coord.xy);\n\
             cnt += 1.0f;\n\
             sum += data;\n\
 \n\
@@ -47750,7 +47850,97 @@ __kernel void cumsum_U8toU8_axis0_2D(\n\
         }\n\
     }\n\
 }\n\
-"; /* end of cumsum_2d_cl*/
+\n\
+__kernel void cumsum_F32toU8_axis0_2D(\n\
+    __read_only image2d_t  input,\n\
+    __write_only image2d_t  output,\n\
+    int axis,\n\
+    int exclusive,\n\
+    int rev,\n\
+    int width,\n\
+    int height,\n\
+    int chn,\n\
+    int input_zp,\n\
+    float in_out_scale,\n\
+    float in_out_zp_scale,\n\
+    float output_zp\n\
+    )\n\
+{\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(0), get_global_id(1));\n\
+\n\
+    float4 sum = (float4)(0);\n\
+    uint4 dst = (uint4)(0);\n\
+\n\
+    float cnt = 0.0f;\n\
+\n\
+    if(exclusive && rev)\n\
+    {\n\
+        coord.x = width - 1;\n\
+        coord.z = coord.x;\n\
+        write_imageui(output, coord.zw, dst);\n\
+        for(; coord.x > 0; coord.x--)\n\
+        {\n\
+            float4 data = read_imagef(input, coord.xy);\n\
+            coord.z--;\n\
+            cnt += 1.0;\n\
+            sum += data;\n\
+\n\
+            float tmpAlpha = cnt * in_out_zp_scale + output_zp;\n\
+            float tmpSum = sum.x * in_out_scale + tmpAlpha;\n\
+\n\
+            dst.x = (uint)convert_int_rte(tmpSum);\n\
+            write_imageui(output, coord.zw, dst);\n\
+        }\n\
+    }\n\
+    else if(exclusive)\n\
+    {\n\
+        coord.z = 0;\n\
+        write_imageui(output, coord.zw, dst);\n\
+        for(coord.x = 0; coord.x < width - 1; coord.x++)\n\
+        {\n\
+            float4 data = read_imagef(input, coord.xy);\n\
+            cnt += 1.0f;\n\
+            coord.z++;\n\
+            sum += data;\n\
+\n\
+            float tmpAlpha = cnt * in_out_zp_scale + output_zp;\n\
+            float tmpSum = sum.x * in_out_scale + tmpAlpha;\n\
+\n\
+            dst.x = (uint)convert_int_rte(tmpSum);\n\
+            write_imageui(output, coord.zw, dst);\n\
+        }\n\
+    }\n\
+    else if(rev)\n\
+    {\n\
+        for(coord.x = width - 1; coord.x >= 0; coord.x--)\n\
+        {\n\
+            float4 data = read_imagef(input, coord.xy);\n\
+            cnt += 1.0f;\n\
+            sum += data;\n\
+\n\
+            float tmpAlpha = cnt * in_out_zp_scale + output_zp;\n\
+            float tmpSum = sum.x * in_out_scale + tmpAlpha;\n\
+\n\
+            dst.x = (uint)convert_int_rte(tmpSum);\n\
+            write_imageui(output, coord.xy, dst);\n\
+        }\n\
+    }\n\
+    else\n\
+    {\n\
+        for(coord.x = 0; coord.x < width; coord.x++)\n\
+        {\n\
+            float4 data = read_imagef(input, coord.xy);\n\
+            cnt += 1.0f;\n\
+            sum += data;\n\
+\n\
+            float tmpAlpha = cnt * in_out_zp_scale + output_zp;\n\
+            float tmpSum = sum.x * in_out_scale + tmpAlpha;\n\
+\n\
+            dst.x = (uint)convert_int_rte(tmpSum);\n\
+            write_imageui(output, coord.xy, dst);\n\
+        }\n\
+    }\n\
+}"; /* end of cumsum_2d_cl*/
 
 static const char depth2space_crd_cl[] = "\n\
 __kernel void depth2space_crd_F32toF32(\n\
