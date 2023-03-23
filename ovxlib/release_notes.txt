@@ -1,4 +1,25 @@
 ############################################################################
+Release notes for Ovxlib 1.1.74
+
+New Features:
+    1. Add new ops 'inverse_sigmoid', 'grid_sample', 'lpnorm'
+    2. Support is_scalar attribute for tensor
+
+Feature Refine:
+    1. Add suuported data type combination for add, pow, matmul, swish,
+       dataconvert, rsqrt
+    2. Support per-channel quantization for grouped_conv1d
+    3. Disable tensorview to do concat with input tensor from DDR
+    4. Support using tensorview to do concant on any dim
+
+Bug Fixing:
+    1. Fix pre_process_yuv422 issue
+    2. Fix unibidirectional_sequence_rnn precision issue
+    3. Fix instance_norm overflow issue, constant tensor data type issue
+    4. Fix bug of l2normalizescale
+    5. Fix avg_pool3d shape inference issue
+
+############################################################################
 Release notes for Ovxlib 1.1.69
 
 New Features:
