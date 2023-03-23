@@ -838,6 +838,16 @@ static vsi_nn_kernel_node_t _setup
         new_shape[3] = batch;
         rank = 4;
     }
+#define LOCAL_GROUP_PIXEL_SIZE_U8  (256)
+    else if (new_shape[0] < LOCAL_GROUP_PIXEL_SIZE_U8 &&
+            (new_shape[0] * new_shape[1]) % LOCAL_GROUP_PIXEL_SIZE_U8 == 0)
+    {
+        if (vsi_nn_TypeGetBits(outputs[i]->attr.dtype.vx_type) == 8)
+        {
+            new_shape[0] = LOCAL_GROUP_PIXEL_SIZE_U8;
+            new_shape[1] = inputs[0]->attr.size[0] * inputs[0]->attr.size[1] / LOCAL_GROUP_PIXEL_SIZE_U8;
+        }
+    }
 
     reshape_tensor[0] = vsi_nn_reshape_tensor( graph,
             inputs[0], new_shape, rank );
