@@ -41,6 +41,30 @@
  Declare number of input and output.
  */
 
+static vsi_bool _is_supported_axis(vsi_size_t* multiples, vsi_size_t multiples_num)
+{
+    vsi_size_t i = 0;
+
+    if ( multiples_num < 4)
+    {
+        return TRUE;
+    }
+    else if ( multiples_num > 4)
+    {
+        return FALSE;
+    }
+
+    for ( i = 3;  i < multiples_num;  i++)
+    {
+        if (multiples[i] > 1)
+        {
+            return FALSE;
+        }
+    }
+
+    return TRUE;
+}
+
 static vsi_status _tile_op_compute
     (
     const char * kernel_name,
@@ -50,17 +74,52 @@ static vsi_status _tile_op_compute
     )
 {
     vsi_status status = VSI_FAILURE;
+    vsi_size_t shapes[3][VSI_NN_MAX_DIM_NUM] = {{0}};
+    vsi_size_t new_rank = 0;
+    vsi_bool ret = FALSE;
+    vsi_size_t* multiples = (vsi_size_t*)self->nn_param.tile.multiples;
+    vsi_nn_tensor_t* temp_tensors[1] = { NULL };
+    vsi_nn_tensor_attr_t attr;
 
-    self->n = (vx_node)vsi_nn_kernel_selector( self->graph,
-        kernel_name,
-        &inputs[0], 1,
-        &outputs[0], 1, NULL );
+    ret = vsi_nn_kernel_optimize_tile_shape(
+            inputs[0]->attr.size, inputs[0]->attr.dim_num,
+            multiples, inputs[0]->attr.dim_num,
+            outputs[0]->attr.size, outputs[0]->attr.dim_num,
+            shapes[0], shapes[1], shapes[2], &new_rank );
 
-    if( self->n )
+    if (ret)
+    {
+        if (_is_supported_axis(shapes[1], new_rank) == FALSE)
+        {
+            memcpy( &attr, &inputs[0]->attr, sizeof(attr));
+            attr.is_const = FALSE;
+            attr.vtl = TRUE;
+            attr.size[0] = outputs[0]->attr.size[0];
+            attr.size[1] = outputs[0]->attr.size[1];
+
+            temp_tensors[0] = vsi_nn_CreateTensor( self->graph, &attr );
+
+            self->n = (vx_node)vsi_nn_kernel_selector(
+                self->graph, kernel_name, &inputs[0], 1, &temp_tensors[0], 1, NULL);
+            self->n = (vx_node)vsi_nn_kernel_selector(
+                self->graph, kernel_name, &temp_tensors[0], 1, &outputs[0], 1, NULL);
+        }
+        else
+        {
+            self->n = (vx_node)vsi_nn_kernel_selector(
+                self->graph, kernel_name, &inputs[0], 1, &outputs[0], 1, NULL);
+        }
+    }
+
+    if ( self->n )
     {
         status = VSI_SUCCESS;
     }
 
+    if ( temp_tensors[0] )
+    {
+        vsi_nn_ReleaseTensor( &temp_tensors[0] );
+    }
     return status;
 } /* _tile_op_compute() */
 
@@ -71,7 +130,7 @@ static vsi_bool op_check
     vsi_nn_tensor_t ** outputs
     )
 {
-    /*TODO: Check tensor shapes. */
+    /*TODO: Check tensor shapes.  */
     vsi_nn_tile_param * p;
 
     BEGIN_IO_TYPE_DECL(TILE, 1, 1)

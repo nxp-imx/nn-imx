@@ -361,6 +361,9 @@ static vsi_nn_kernel_node_t _setup
             vsi_nn_kernel_node_pack_io( node_params, _CL_PARAM_NUM,
                     &reshape_tensors[0], 1, &reshape_tensors[1], 1 );
 
+            shapes[1][2] = shapes[1][2] == 0 ? 1 : shapes[1][2];
+            shapes[1][3] = shapes[1][3] == 0 ? 1 : shapes[1][3];
+
             /* Pass parameters to node. */
             node_params[SCALAR_INPUT_BATCH_IN] = vsi_nn_kernel_scalar_create(
                     graph, I32, &batchIn );
@@ -369,13 +372,13 @@ static vsi_nn_kernel_node_t _setup
             node_params[SCALAR_INPUT_DEPTH_OUT] = vsi_nn_kernel_scalar_create(
                     graph, I32, &depthOut );
             node_params[SCALAR_INPUT_MULTIPLES_0] = vsi_nn_kernel_scalar_create(
-                    graph, I32, &multiples[0] );
+                    graph, I32, &shapes[1][0] );
             node_params[SCALAR_INPUT_MULTIPLES_1] = vsi_nn_kernel_scalar_create(
-                    graph, I32, &multiples[1] );
+                    graph, I32, &shapes[1][1] );
             node_params[SCALAR_INPUT_MULTIPLES_2] = vsi_nn_kernel_scalar_create(
-                    graph, I32, &multiples[2] );
+                    graph, I32, &shapes[1][2] );
             node_params[SCALAR_INPUT_MULTIPLES_3] = vsi_nn_kernel_scalar_create(
-                    graph, I32, &multiples[3] );
+                    graph, I32, &shapes[1][3] );
             node_params[IN_OUT_SCALE] = vsi_nn_kernel_scalar_create(
                     graph, F32, &inoutScale );
             node_params[IN_OUT_TAIL] = vsi_nn_kernel_scalar_create(
