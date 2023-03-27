@@ -64556,7 +64556,7 @@ __kernel void swish_F32toU8_2D(\n\
 }"; /* end of swish_cl*/
 
 static const char tile_cl[] = "\n\
-#define TILE_3D(name0, name1, data_type, read_image_func, write_image_func) \\\n\
+#define TILE_3D(name0, name1, src_type, dst_type, conv_type, read_image_func, write_image_func) \\\n\
 __kernel void tile_##name0##to##name1 \\\n\
     ( \\\n\
     __read_only  image2d_array_t input, \\\n\
@@ -64567,7 +64567,9 @@ __kernel void tile_##name0##to##name1 \\\n\
                              int multiples_0, \\\n\
                              int multiples_1, \\\n\
                              int multiples_2, \\\n\
-                             int multiples_3 \\\n\
+                             int multiples_3, \\\n\
+                             float inoutscale, \\\n\
+                             float inouttail \\\n\
     ) \\\n\
 { \\\n\
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
@@ -64575,7 +64577,9 @@ __kernel void tile_##name0##to##name1 \\\n\
     int width = get_image_width(input); \\\n\
     int height = get_image_height(input); \\\n\
  \\\n\
-    data_type src; \\\n\
+    src_type src; \\\n\
+    dst_type dst; \\\n\
+ \\\n\
     read_image_func(src, input, coord); \\\n\
  \\\n\
     int batch_id = (short)coord.z / (short)depthIn; \\\n\
@@ -64597,17 +64601,19 @@ __kernel void tile_##name0##to##name1 \\\n\
                 for (int x = 0; x < multiples_0; x++) \\\n\
                 { \\\n\
                     coord_out.x = coord.x + x * width; \\\n\
-                    write_image_func(output, coord_out.xyzw, src); \\\n\
+                    dst = conv_type(convert_float4(src) * inoutscale + inouttail); \\\n\
+                    write_image_func(output, coord_out.xyzw, dst); \\\n\
                 } \\\n\
             } \\\n\
         } \\\n\
     } \\\n\
 }\n\
-TILE_3D(I32, I32, int4,   READ_IMAGEI_2DARRAY,  write_imagei)\n\
-TILE_3D(U32, U32, uint4,  READ_IMAGEUI_2DARRAY, write_imageui)\n\
-TILE_3D(F32, F32, float4, READ_IMAGEF_2DARRAY,  write_imagef)\n\
+TILE_3D(I32, I32, int4,   int4,  convert_int4_rte,  READ_IMAGEI_2DARRAY,  write_imagei)\n\
+TILE_3D(U32, U32, uint4,  uint4, convert_uint4_rte, READ_IMAGEUI_2DARRAY, write_imageui)\n\
+TILE_3D(F32, F32, float4, float4,convert_float4_rte,READ_IMAGEF_2DARRAY,  write_imagef)\n\
+TILE_3D(F32, U32, float4, uint4, convert_uint4_rte, READ_IMAGEF_2DARRAY,  write_imageui)\n\
 \n\
-#define TILE_2D(name0, name1, data_type, read_image_func, write_image_func) \\\n\
+#define TILE_2D(name0, name1, src_type, dst_type, conv_type, read_image_func, write_image_func) \\\n\
 __kernel void tile_##name0##to##name1##_2D \\\n\
     ( \\\n\
     __read_only  image2d_t input, \\\n\
@@ -64618,7 +64624,9 @@ __kernel void tile_##name0##to##name1##_2D \\\n\
                        int multiples_0, \\\n\
                        int multiples_1, \\\n\
                        int multiples_2, \\\n\
-                       int multiples_3 \\\n\
+                       int multiples_3, \\\n\
+                       float inoutscale, \\\n\
+                       float inouttail \\\n\
     ) \\\n\
 { \\\n\
     int2 coord = (int2)(get_global_id(0), get_global_id(1)); \\\n\
@@ -64627,22 +64635,25 @@ __kernel void tile_##name0##to##name1##_2D \\\n\
     int output_width = get_image_width(output); \\\n\
     int output_height = get_image_height(output); \\\n\
  \\\n\
-    data_type src = read_image_func(input, coord); \\\n\
+    src_type src = read_image_func(input, coord); \\\n\
+    dst_type dst; \\\n\
  \\\n\
     do \\\n\
     { \\\n\
         do \\\n\
         { \\\n\
-            write_image_func(output, coord, src); \\\n\
+            dst = conv_type(convert_float4(src) * inoutscale + inouttail); \\\n\
+            write_image_func(output, coord, dst); \\\n\
             coord.x += width; \\\n\
         } while (coord.x < output_width); \\\n\
         coord.x = get_global_id(0); \\\n\
         coord.y += height; \\\n\
     } while (coord.y < output_height); \\\n\
 }\n\
-TILE_2D(I32, I32, int4,   read_imagei,  write_imagei)\n\
-TILE_2D(U32, U32, uint4,  read_imageui, write_imageui)\n\
-TILE_2D(F32, F32, float4, read_imagef,  write_imagef)\n\
+TILE_2D(I32, I32, int4,   int4,  convert_int4_rte,  read_imagei,  write_imagei)\n\
+TILE_2D(U32, U32, uint4,  uint4, convert_uint4_rte, read_imageui, write_imageui)\n\
+TILE_2D(F32, F32, float4, float4,convert_float4_rte,read_imagef,  write_imagef)\n\
+TILE_2D(F32, U32, float4, uint4, convert_uint4_rte, read_imagef,  write_imageui)\n\
 \n\
 \n\
 \n\
