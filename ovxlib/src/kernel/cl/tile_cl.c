@@ -106,6 +106,7 @@ static const struct {
     TENSOR_TILE_AXIS0_UINT32(U32, U32)
     TENSOR_TILE_AXIS0_FLOAT(F16,  F16)
     TENSOR_TILE_AXIS0_FLOAT(F32,  F32)
+    TENSOR_TILE_AXIS0_KERNELS(F32, U32)
 
     TENSOR_TILE_AXIS0_INT32_2D(I8,   I8)
     TENSOR_TILE_AXIS0_INT32_2D(I16,  I16)
@@ -114,6 +115,7 @@ static const struct {
     TENSOR_TILE_AXIS0_UINT32_2D(U32, U32)
     TENSOR_TILE_AXIS0_FLOAT_2D(F16,  F16)
     TENSOR_TILE_AXIS0_FLOAT_2D(F32,  F32)
+    TENSOR_TILE_AXIS0_KERNELS_2D(F32, U32)
 };
 
 /*
@@ -123,6 +125,8 @@ static vx_param_description_t kernel_param_def[] =
 {
     {VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
@@ -140,6 +144,8 @@ static vx_param_description_t kernel_param_def[] =
 #define SCALAR_INPUT_MULTIPLES_1    (6)
 #define SCALAR_INPUT_MULTIPLES_2    (7)
 #define SCALAR_INPUT_MULTIPLES_3    (8)
+#define IN_OUT_SCALE                (9)
+#define IN_OUT_TAIL                 (10)
 
 /*
  * Kernel initializer
@@ -209,6 +215,25 @@ static vsi_status _query_kernel
 
     input_dtype = vsi_nn_kernel_map_dtype( inputs[0]->attr.dtype.vx_type );
     output_dtype = vsi_nn_kernel_map_dtype( outputs[0]->attr.dtype.vx_type );
+    if (input_dtype == F16)
+    {
+        input_dtype = F32;
+    }
+    else if (input_dtype == U8)
+    {
+        input_dtype = U32;
+    }
+
+    if (output_dtype == F16)
+    {
+        output_dtype = F32;
+    }
+    else if (output_dtype == U8)
+    {
+        output_dtype = U32;
+    }
+
+
     key = HASH_TILE_AXIS0_KEY( input_dtype, output_dtype, image_2d );
 
     for( i = 0; i < _cnt_of_array(kernel_map); i ++ )
@@ -280,6 +305,12 @@ static vsi_nn_kernel_node_t _setup
     vsi_bool ret = FALSE;
     uint32_t dim = inputs[0]->attr.dim_num;
     vsi_size_t multiples[VSI_NN_MAX_DIM_NUM] = { 1, 1, 1, 1 };
+    float outputScale = vsi_nn_get_tensor_scale(outputs[0]);
+    float outputTail  = (float)vsi_nn_get_tensor_zero_point(outputs[0]);
+    float inputScale = vsi_nn_get_tensor_scale(inputs[0]);
+    float inputTail  = (float)vsi_nn_get_tensor_zero_point(inputs[0]);
+    float inoutScale = inputScale / outputScale;
+    float inoutTail = outputTail - inputTail * inoutScale;
 
     for ( i = 0;  i < dim;  i++)
     {
@@ -345,7 +376,10 @@ static vsi_nn_kernel_node_t _setup
                     graph, I32, &multiples[2] );
             node_params[SCALAR_INPUT_MULTIPLES_3] = vsi_nn_kernel_scalar_create(
                     graph, I32, &multiples[3] );
-
+            node_params[IN_OUT_SCALE] = vsi_nn_kernel_scalar_create(
+                    graph, F32, &inoutScale );
+            node_params[IN_OUT_TAIL] = vsi_nn_kernel_scalar_create(
+                    graph, F32, &inoutTail );
             status  = vsi_nn_kernel_node_pass_param( node, node_params, _CL_PARAM_NUM );
             VSI_ASSERT( status == VSI_SUCCESS );
 
@@ -356,6 +390,8 @@ static vsi_nn_kernel_node_t _setup
             vsi_nn_kernel_scalar_release( &node_params[SCALAR_INPUT_MULTIPLES_1] );
             vsi_nn_kernel_scalar_release( &node_params[SCALAR_INPUT_MULTIPLES_2] );
             vsi_nn_kernel_scalar_release( &node_params[SCALAR_INPUT_MULTIPLES_3] );
+            vsi_nn_kernel_scalar_release( &node_params[IN_OUT_SCALE] );
+            vsi_nn_kernel_scalar_release( &node_params[IN_OUT_TAIL] );
         }
     }
 
