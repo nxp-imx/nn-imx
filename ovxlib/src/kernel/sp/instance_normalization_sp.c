@@ -555,17 +555,36 @@ REGISTER_INSTANCE_NORM_STREAM_PROCESSOR_KERNEL( instance_norm )
 {
     vsi_nn_kernel_node_t node[5] = {NULL};
     vsi_nn_tensor_attr_t attr;
-    vsi_nn_tensor_t * reshape_tensors[2] = {NULL};
+    vsi_nn_tensor_t * reshape_tensors[4] = {NULL};
     vsi_size_t shape[VSI_NN_MAX_DIM_NUM] = { 0 };
+    vsi_size_t shapes[2][VSI_NN_MAX_DIM_NUM] = { 0 };
     vsi_nn_tensor_t * dummy_tensor[5] = {NULL};
     vsi_nn_tensor_t * output_tensor[1] = {NULL};
     vsi_nn_tensor_t * gamma = NULL;
     vsi_nn_tensor_t * beta = NULL;
+    vsi_size_t rank_in = (vsi_size_t)inputs[0]->attr.dim_num;
+    vsi_size_t rank = 0;
+    vx_bool ret = FALSE;
     float output_scale = 1.0f / vsi_nn_get_tensor_scale(outputs[0]);
     float eps = vsi_nn_kernel_param_get_float32( params, "eps" );
     float inv_m = 1.0f / (float)(outputs[0]->attr.size[0] * outputs[0]->attr.size[1]);
 
-    memcpy( &attr, &outputs[0]->attr, sizeof(vsi_nn_tensor_attr_t) );
+#define NN_INPUT_SIZE_MAX      ((1 << 13) - 1)
+    memcpy(shapes[0], inputs[0]->attr.size, 2 * sizeof(vsi_size_t));
+
+    ret = vsi_nn_kernel_optimize_element_shape_with_max_rank(shapes[0], 2, shapes[1], &rank, NN_INPUT_SIZE_MAX);
+
+    if (ret == FALSE || rank > 2 || rank_in > 4)
+    {
+        return FALSE;
+    }
+
+    memcpy(&shapes[1][2], &inputs[0]->attr.size[2], (rank_in - 2) * sizeof(vsi_size_t));
+
+    reshape_tensors[0] = vsi_nn_reshape_tensor( graph, inputs[0], shapes[1], inputs[0]->attr.dim_num );
+    reshape_tensors[1] = vsi_nn_reshape_tensor( graph, outputs[0], shapes[1], inputs[0]->attr.dim_num );
+
+    memcpy( &attr, &reshape_tensors[1]->attr, sizeof(vsi_nn_tensor_attr_t) );
     attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
     attr.dtype.vx_type = VSI_NN_TYPE_FLOAT32;
     attr.is_const = FALSE;
@@ -581,7 +600,7 @@ REGISTER_INSTANCE_NORM_STREAM_PROCESSOR_KERNEL( instance_norm )
     dummy_tensor[3] = vsi_nn_create_dummy_tensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( dummy_tensor[3], "Create dummy_tensor fail.", final );
 
-    memcpy( &attr, &outputs[0]->attr, sizeof(vsi_nn_tensor_attr_t) );
+    memcpy( &attr, &reshape_tensors[1]->attr, sizeof(vsi_nn_tensor_attr_t) );
     attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
     attr.dtype.vx_type = VSI_NN_TYPE_FLOAT32;
     attr.is_const = FALSE;
@@ -595,23 +614,24 @@ REGISTER_INSTANCE_NORM_STREAM_PROCESSOR_KERNEL( instance_norm )
     shape[0] = 1;
     shape[1] = 1;
     shape[2] = outputs[0]->attr.size[2];
-    reshape_tensors[0] = vsi_nn_reshape_tensor( graph,
+    reshape_tensors[2] = vsi_nn_reshape_tensor( graph,
                 beta, shape, 3 );
-    reshape_tensors[1] = vsi_nn_reshape_tensor( graph,
+    reshape_tensors[3] = vsi_nn_reshape_tensor( graph,
                 gamma, shape, 3 );
 
-    node[0] = vsi_nn_sp_moments_sums_node(graph, inputs[0], output_tensor[0], dummy_tensor[0], "instancenorm_0");
+    node[0] = vsi_nn_sp_moments_sums_node(graph, reshape_tensors[0], output_tensor[0],
+        dummy_tensor[0], "instancenorm_0");
     CHECK_PTR_FAIL_GOTO( node[0], "Create sp_instance_norm_sums  fail.", final );
     node[1] = vsi_nn_sp_means_node(graph, dummy_tensor[0],
         dummy_tensor[1], inv_m, eps, "instancenorm_1");
     CHECK_PTR_FAIL_GOTO( node[1], "Create sp_instance_norm_means  fail.", final );
     node[2] = vsi_nn_sp_rsqrt_node(graph, dummy_tensor[1], dummy_tensor[3], "instancenorm_2");
     CHECK_PTR_FAIL_GOTO( node[2], "Create moments_means fail.", final );
-    node[3] = vsi_nn_sp_instance_norm_alpha_beta_node(graph, reshape_tensors[0], reshape_tensors[1],
+    node[3] = vsi_nn_sp_instance_norm_alpha_beta_node(graph, reshape_tensors[2], reshape_tensors[3],
         dummy_tensor[3], dummy_tensor[2], "instancenorm_3");
     CHECK_PTR_FAIL_GOTO( node[3], "Create sp_instance_norm_alpha_beta  fail.", final );
     node[4] = vsi_nn_sp_instance_norm_node(graph, output_tensor[0], dummy_tensor[2],
-        outputs[0], "instancenorm_4");
+        reshape_tensors[1], "instancenorm_4");
     CHECK_PTR_FAIL_GOTO( node[4], "Create sp_instance_norm  fail.", final );
 
 final:
@@ -628,6 +648,8 @@ final:
     vsi_safe_release_tensor(beta);
     vsi_safe_release_tensor(reshape_tensors[0]);
     vsi_safe_release_tensor(reshape_tensors[1]);
+    vsi_safe_release_tensor(reshape_tensors[2]);
+    vsi_safe_release_tensor(reshape_tensors[3]);
 
     return node[4];
 } /* instance_norm() */
