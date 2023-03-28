@@ -145,6 +145,7 @@ typedef struct _vsi_nn_spinst_attr
     vsi_bool not_merge_with_conv2d;
     vsi_bool update_const0_to_pcq_coef_tensor;
     uint32_t align_sp_core_axis;
+    vsi_bool keep_tile_size;
     union
     {
         uint32_t reshape_array;
@@ -222,6 +223,7 @@ typedef enum
     VSI_NN_SP_ATTRIBUTE_SUM_ENGINE_2D_ACCUM_STORAGE = VX_SP_ATTRIBUTE_SUM_ENGINE_2D_ACCUM_STORAGE,
     VSI_NN_SP_ATTRIBUTE_SUM_ENGINE_OP_SELECT        = VX_SP_ATTRIBUTE_SUM_ENGINE_OP_SELECT,
     VSI_NN_SP_ATTRIBUTE_NUM_OF_ELEMENTS_PER_LOOP_PER_INPUT = VX_SP_ATTRIBUTE_NUM_OF_ELEMENTS_PER_LOOP_PER_INPUT,
+    VSI_NN_SP_ATTRIBUTE_KEEP_TILE_SIZE              = VX_SP_ATTRIBUTE_KEEP_TILE_SIZE,
 
     VSI_NN_SP_ATTRIBUTE_CONST0                      = VX_SP_ATTRIBUTE_CONST0,
     VSI_NN_SP_ATTRIBUTE_CONST1                      = VX_SP_ATTRIBUTE_CONST1,

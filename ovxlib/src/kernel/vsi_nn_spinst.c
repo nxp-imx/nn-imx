@@ -181,6 +181,8 @@ vsi_status vsi_nn_set_spinst_attr
         attrs.sum_engine_op_select);
     status |= vxSetAttributeToSPINST(spinst->sp, VSI_NN_SP_ATTRIBUTE_NUM_OF_ELEMENTS_PER_LOOP_PER_INPUT,
         attrs.num_of_elements_per_loop_per_input);
+    status |= vxSetAttributeToSPINST(spinst->sp, VSI_NN_SP_ATTRIBUTE_KEEP_TILE_SIZE,
+        attrs.keep_tile_size);
 
     constant_data[0] = *(uint32_t *)&attrs.init_r3;
     constant_data[1] = *(uint32_t *)&attrs.init_r4;
