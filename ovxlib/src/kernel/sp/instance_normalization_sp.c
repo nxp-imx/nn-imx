@@ -557,7 +557,7 @@ REGISTER_INSTANCE_NORM_STREAM_PROCESSOR_KERNEL( instance_norm )
     vsi_nn_tensor_attr_t attr;
     vsi_nn_tensor_t * reshape_tensors[4] = {NULL};
     vsi_size_t shape[VSI_NN_MAX_DIM_NUM] = { 0 };
-    vsi_size_t shapes[2][VSI_NN_MAX_DIM_NUM] = { 0 };
+    vsi_size_t shapes[2][VSI_NN_MAX_DIM_NUM] = { { 0 } };
     vsi_nn_tensor_t * dummy_tensor[5] = {NULL};
     vsi_nn_tensor_t * output_tensor[1] = {NULL};
     vsi_nn_tensor_t * gamma = NULL;

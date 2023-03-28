@@ -90,7 +90,7 @@ vsi_nn_spinst_t * vsi_nn_sp_l2norm_z_direction_square_inst
         status |= vsi_nn_sp_nop(&sp_insts_param[1]);
         /* loop inst2: v11 = r4 + r5 */
         status |= vsi_nn_sp_add(&sp_insts_param[2], VSI_NN_SP_SR4, VSI_NN_SP_SR5, VSI_NN_SP_VR11);
-        /* loop inst1: r4 = r1 * r1 | r5 = v11 */
+        /* loop inst3: r4 = r1 * r1 | r5 = v11 */
         status |= vsi_nn_sp_mul(&sp_insts_param[3], VSI_NN_SP_SR1, VSI_NN_SP_SR1, VSI_NN_SP_SR4);
         status |= vsi_nn_sp_move(&sp_insts_param[3], VSI_NN_SP_VR11, VSI_NN_SP_SR5);
         CHECK_STATUS_FAIL_GOTO(status, final );
