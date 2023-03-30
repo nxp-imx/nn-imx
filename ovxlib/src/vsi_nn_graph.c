@@ -1259,9 +1259,14 @@ vsi_bool vsi_nn_SetGraphInputs
     vsi_bool ret;
     ret = FALSE;
 
-    if( NULL == graph || tensor_num == 0 )
+    if( NULL == graph )
     {
         return ret;
+    }
+
+    if ( tensor_num == 0 )
+    {
+        return TRUE;
     }
 
     graph->input.tensors = (vsi_nn_tensor_id_t *)malloc(
