@@ -45,6 +45,14 @@ vsi_nn_kernel_node_t layer_norm_y_direction
     const vsi_nn_kernel_param_t * params
     );
 
+vsi_nn_kernel_node_t layer_norm_z_direction
+    (
+    vsi_nn_graph_t              * graph,
+    vsi_nn_tensor_t            ** inputs,
+    vsi_nn_tensor_t            ** outputs,
+    const vsi_nn_kernel_param_t * params
+    );
+
 vsi_nn_kernel_node_t vsi_nn_sp_moments_axis0_node
     (
         vsi_nn_graph_t              * graph,
@@ -593,9 +601,14 @@ REGISTER_LAYER_NORM_STREAM_PROCESSOR_KERNEL( layer_norm )
     {
         node = layer_norm_x_direction(graph, inputs, outputs, params);
     }
-    else
+    else if ( axis == 1 &&
+             (inputs[0]->attr.dim_num < 3 || inputs[0]->attr.size[2] == 1) )
     {
         node = layer_norm_y_direction(graph, inputs, outputs, params);
+    }
+    else if (axis == 2)
+    {
+        node = layer_norm_z_direction(graph, inputs, outputs, params);
     }
 
     return node;

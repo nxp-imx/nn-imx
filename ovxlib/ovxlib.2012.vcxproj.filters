@@ -159,15 +159,6 @@
     <ClInclude Include="include\libnnext\vsi_nn_libnnext_resource.h">
       <Filter>Header Files\libnnext</Filter>
     </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_grid_sample.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_bilinear_grid_sample.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ops\vsi_nn_op_lpnorm.h">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
     <ClInclude Include="include\libnnext\vsi_nn_vxkernel.h">
       <Filter>Header Files\libnnext</Filter>
     </ClInclude>
@@ -208,6 +199,9 @@
       <Filter>Header Files\ops</Filter>
     </ClInclude>
     <ClInclude Include="include\ops\vsi_nn_op_bidirectional_sequence_rnn.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_bilinear_grid_sample.h">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
     <ClInclude Include="include\ops\vsi_nn_op_box_with_nms_limit.h">
@@ -327,6 +321,9 @@
     <ClInclude Include="include\ops\vsi_nn_op_globallppool.h">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_grid_sample.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
     <ClInclude Include="include\ops\vsi_nn_op_grouped_conv1d.h">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
@@ -378,6 +375,9 @@
     <ClInclude Include="include\ops\vsi_nn_op_interp.h">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_inverse_sigmoid.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
     <ClInclude Include="include\ops\vsi_nn_op_l2_normalize.h">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
@@ -400,6 +400,9 @@
       <Filter>Header Files\ops</Filter>
     </ClInclude>
     <ClInclude Include="include\ops\vsi_nn_op_logical_ops.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_lpnorm.h">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
     <ClInclude Include="include\ops\vsi_nn_op_lppool.h">
@@ -938,6 +941,9 @@
     <ClCompile Include="src\kernel\cl\batchnorm_single_cl.c">
       <Filter>Source Files\kernel\cl</Filter>
     </ClCompile>
+    <ClCompile Include="src\kernel\cl\bilinear_grid_sample_cl.c">
+      <Filter>Source Files\kernel\cl</Filter>
+    </ClCompile>
     <ClCompile Include="src\kernel\cl\bucketize_cl.c">
       <Filter>Source Files\kernel\cl</Filter>
     </ClCompile>
@@ -1004,6 +1010,9 @@
     <ClCompile Include="src\kernel\cl\instance_normalization_cl.c">
       <Filter>Source Files\kernel\cl</Filter>
     </ClCompile>
+    <ClCompile Include="src\kernel\cl\l1norm_cl.c">
+      <Filter>Source Files\kernel\cl</Filter>
+    </ClCompile>
     <ClCompile Include="src\kernel\cl\l2normalizescale_cl.c">
       <Filter>Source Files\kernel\cl</Filter>
     </ClCompile>
@@ -1020,9 +1029,6 @@
       <Filter>Source Files\kernel\cl</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\lppool_cl.c">
-      <Filter>Source Files\kernel\cl</Filter>
-    </ClCompile>
-    <ClCompile Include="src\kernel\cl\l1norm_cl.c">
       <Filter>Source Files\kernel\cl</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\lstmunit_activation_cl.c">
@@ -1157,6 +1163,9 @@
     <ClCompile Include="src\kernel\cpu\batchnorm_single_cpu.c">
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
+    <ClCompile Include="src\kernel\cpu\bilinear_grid_sample_cpu.c">
+      <Filter>Source Files\kernel\cpu</Filter>
+    </ClCompile>
     <ClCompile Include="src\kernel\cpu\box_with_nms_limit_cpu.c">
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
@@ -1247,6 +1256,9 @@
     <ClCompile Include="src\kernel\cpu\instance_normalization_cpu.c">
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
+    <ClCompile Include="src\kernel\cpu\l1norm_cpu.c">
+      <Filter>Source Files\kernel\cpu</Filter>
+    </ClCompile>
     <ClCompile Include="src\kernel\cpu\l2normalizescale_cpu.c">
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
@@ -1263,9 +1275,6 @@
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\lppool_cpu.c">
-      <Filter>Source Files\kernel\cpu</Filter>
-    </ClCompile>
-    <ClCompile Include="src\kernel\cpu\l1norm_cpu.c">
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\lstmunit_activation_cpu.c">
@@ -1437,6 +1446,9 @@
       <Filter>Source Files\kernel\evis</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\batchnorm_single_evis.c">
+      <Filter>Source Files\kernel\evis</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\evis\bilinear_grid_sample_evis.c">
       <Filter>Source Files\kernel\evis</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\bucketize_evis.c">
@@ -1700,6 +1712,9 @@
     <ClCompile Include="src\kernel\sp\layer_norm_y_direction_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
+    <ClCompile Include="src\kernel\sp\layer_norm_z_direction_sp.c">
+      <Filter>Source Files\kernel\sp</Filter>
+    </ClCompile>
     <ClCompile Include="src\kernel\sp\logical_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
@@ -1808,15 +1823,6 @@
     <ClCompile Include="src\libnnext\vsi_nn_libnnext_resource.c">
       <Filter>Source Files\libnnext</Filter>
     </ClCompile>
-    <ClCompile Include="src\ops\vsi_nn_op_grid_sample.c">
-      <Filter>Source Files\ops</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ops\vsi_nn_op_bilinear_grid_sample.c">
-      <Filter>Source Files\ops</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ops\vsi_nn_op_lpnorm.c">
-      <Filter>Source Files\ops</Filter>
-    </ClCompile>
     <ClCompile Include="src\libnnext\vsi_nn_vxkernel.c">
       <Filter>Source Files\libnnext</Filter>
     </ClCompile>
@@ -1851,6 +1857,9 @@
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_bidirectional_sequence_rnn.c">
+      <Filter>Source Files\ops</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_bilinear_grid_sample.c">
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_box_with_nms_limit.c">
@@ -1979,6 +1988,9 @@
     <ClCompile Include="src\ops\vsi_nn_op_globallppool.c">
       <Filter>Source Files\ops</Filter>
     </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_grid_sample.c">
+      <Filter>Source Files\ops</Filter>
+    </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_grouped_conv1d.c">
       <Filter>Source Files\ops</Filter>
     </ClCompile>
@@ -2052,6 +2064,9 @@
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_logical_ops.c">
+      <Filter>Source Files\ops</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_lpnorm.c">
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_lppool.c">
