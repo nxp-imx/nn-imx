@@ -35,6 +35,7 @@
 #include "utils/vsi_nn_util.h"
 #include "kernel/vsi_nn_kernel.h"
 #include "libnnext/vx_lib_nnext.h"
+#include "kernel/vsi_nn_kernel_eltwise.h"
 
 __BEGIN_DECLS
 
@@ -61,6 +62,10 @@ typedef enum _internal_img_dim_e
         { SELECT_HASH_KEY(COND_DTYPE, IN0_DTYPE, IN1_DTYPE, OUT_DTYPE, IMAGE_2D), \
         CVIVANTE_NAMESPACE("cl.select_"STR(COND_DTYPE)"_"STR(IN0_DTYPE)"_"STR(IN1_DTYPE)"to"STR(OUT_DTYPE)"_2D"), \
         _SELECT_KERNEL_SOURCE}
+
+#define _INPUT_NUM          (3)
+#define _OUTPUT_NUM         (1)
+#define _IO_NUM             (_INPUT_NUM + _OUTPUT_NUM)
 
 typedef struct
 {
@@ -247,19 +252,71 @@ static vsi_nn_kernel_node_t _setup
     float   input1Scale  = vsi_nn_get_tensor_scale(inputs[2]);
     float   input1Tail   = (float)vsi_nn_get_tensor_zero_point(inputs[2]);
 
+    vsi_nn_tensor_t* reshape_tensors[_IO_NUM] = { NULL };
+    vsi_size_t shapes[_IO_NUM][VSI_NN_MAX_DIM_NUM] = {{ 1 }};
+    vsi_size_t* shapes_ptr[_IO_NUM];
+    vsi_size_t* shapes_in[_INPUT_NUM];
+    vsi_size_t rank_in[_INPUT_NUM];
+    uint32_t new_rank = 0;
+    uint32_t i = 0;
+    vsi_bool ret = FALSE;
+
     input0Scale = input0Scale / outputScale;
     input1Scale = input1Scale / outputScale;
     input0Tail  = outputZP - input0Tail * input0Scale;
     input1Tail  = outputZP - input1Tail * input1Scale;
 
-    if( !vsi_nn_kernel_gpu_check_shape( outputs[0]->attr.size,
-                outputs[0]->attr.dim_num ) )
+
+    for (i = 0; i < _IO_NUM; i++)
+    {
+        shapes_ptr[i] = shapes[i];
+    }
+
+    for (i = 0; i < _INPUT_NUM; i++)
+    {
+        shapes_in[i] = inputs[i]->attr.size;
+        rank_in[i]   = (vsi_size_t)inputs[i]->attr.dim_num;
+    }
+
+    ret = vsi_nn_kernel_optimize_broadcast_shape(
+            (const vsi_size_t**)shapes_in, rank_in, _INPUT_NUM,
+            outputs[0]->attr.size, outputs[0]->attr.dim_num,
+            shapes_ptr, shapes[_INPUT_NUM], &new_rank);
+
+    if ( ret )
+    {
+        for (i = 0; i < _INPUT_NUM; i++)
+        {
+            reshape_tensors[i] = vsi_nn_reshape_tensor( graph,
+                    inputs[i], shapes[i], new_rank );
+        }
+
+        for (i = 0; i < _OUTPUT_NUM; i++)
+        {
+            reshape_tensors[i + _INPUT_NUM] = vsi_nn_reshape_tensor( graph,
+                    outputs[i], shapes[i + _INPUT_NUM], new_rank );
+        }
+    }
+    else
+    {
+        for (i = 0; i < _INPUT_NUM; i++)
+        {
+            reshape_tensors[i] = inputs[i];
+        }
+        for (i = 0; i < _OUTPUT_NUM; i++)
+        {
+            reshape_tensors[i + _INPUT_NUM] = outputs[i];
+        }
+    }
+
+    if ( !vsi_nn_kernel_gpu_check_shape( reshape_tensors[3]->attr.size,
+                reshape_tensors[3]->attr.dim_num ) )
     {
         return NULL;
     }
 
-    image_2d = (outputs[0]->attr.dim_num == 2 || outputs[0]->attr.size[2] == 1);
-    status = _query_kernel( kernel, inputs, outputs, image_2d);
+    image_2d = (reshape_tensors[3]->attr.dim_num == 2);
+    status = _query_kernel( kernel, inputs, &reshape_tensors[3], image_2d);
 
     if( VSI_SUCCESS == status)
     {
@@ -268,7 +325,7 @@ static vsi_nn_kernel_node_t _setup
         {
             /* Set inputs and outputs */
             vsi_nn_kernel_node_pack_io( node_params, _SELECT_PARAM_NUM,
-                    inputs, input_num, outputs, output_num );
+                    &reshape_tensors[0], input_num, &reshape_tensors[3], output_num );
             node_params[SCALAR_INPUT0_SCALE] = vsi_nn_kernel_scalar_create( graph, F32, &input0Scale );
             node_params[SCALAR_INPUT0_TAIL] = vsi_nn_kernel_scalar_create(graph, F32, &input0Tail );
             node_params[SCALAR_INPUT1_SCALE] = vsi_nn_kernel_scalar_create( graph, F32, &input1Scale );
@@ -283,6 +340,15 @@ static vsi_nn_kernel_node_t _setup
             vsi_nn_kernel_scalar_release( &node_params[SCALAR_INPUT1_TAIL] );
         }
     }
+
+    if (ret)
+    {
+        for (i = 0; i < _IO_NUM; i++)
+        {
+            vsi_safe_release_tensor( reshape_tensors[i] );
+        }
+    }
+
     return node;
 } /* _setup() */
 
