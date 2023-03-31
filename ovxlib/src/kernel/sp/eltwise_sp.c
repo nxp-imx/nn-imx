@@ -641,7 +641,11 @@ REGISTER_ELTWISE_STREAM_PROCESSOR_KERNEL( div )
 {
     vsi_nn_kernel_node_t node[2] = {NULL};
     float scale = vsi_nn_kernel_param_get_float32(params, "scale");
-
+    vsi_nn_tensor_t * reshape_tensors[3] = {NULL};
+    vsi_size_t rank_in = (vsi_size_t)inputs[0]->attr.dim_num;
+    vsi_size_t rank = 0;
+    vsi_bool ret = TRUE;
+    vsi_size_t shape[VSI_NN_MAX_DIM_NUM] = { 0 };
     vsi_nn_tensor_attr_t attr;
     vsi_nn_tensor_t * output_tensor[] = {NULL};
 
@@ -650,7 +654,26 @@ REGISTER_ELTWISE_STREAM_PROCESSOR_KERNEL( div )
         return NULL;
     }
 
-    memcpy( &attr, &outputs[0]->attr, sizeof(vsi_nn_tensor_attr_t) );
+#define NN_INPUT_SIZE_MAX      ((1 << 13) - 1)
+    memcpy(shape, inputs[0]->attr.size, rank_in * sizeof(vsi_size_t));
+
+    ret = vsi_nn_kernel_optimize_element_shape_with_max_rank(
+                                inputs[0]->attr.size, rank_in, shape, &rank, NN_INPUT_SIZE_MAX);
+    if (ret)
+    {
+        reshape_tensors[0] = vsi_nn_reshape_tensor(graph, inputs[0], shape, rank);
+        CHECK_PTR_FAIL_GOTO( reshape_tensors[0], "Reshape tensor fail.", final );
+        reshape_tensors[1] = vsi_nn_reshape_tensor(graph, inputs[1], shape, rank);
+        CHECK_PTR_FAIL_GOTO( reshape_tensors[1], "Reshape tensor fail.", final );
+        reshape_tensors[2] = vsi_nn_reshape_tensor(graph, outputs[0], shape, rank);
+        CHECK_PTR_FAIL_GOTO( reshape_tensors[2], "Reshape tensor fail.", final );
+    }
+    else
+    {
+        return NULL;
+    }
+
+    memcpy( &attr, &reshape_tensors[2]->attr, sizeof(vsi_nn_tensor_attr_t) );
     attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
     attr.dtype.vx_type = VSI_NN_TYPE_FLOAT32;
     attr.is_const = FALSE;
@@ -658,14 +681,18 @@ REGISTER_ELTWISE_STREAM_PROCESSOR_KERNEL( div )
     output_tensor[0] = vsi_nn_create_dummy_tensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( output_tensor[0], "Create tensor fail.", final );
 
-    node[0] = vsi_nn_sp_rcp_to_v11_node(graph, inputs[1], output_tensor[0], "tensordiv_0");
+    node[0] = vsi_nn_sp_rcp_to_v11_node(graph, reshape_tensors[1], output_tensor[0], "tensordiv_0");
     CHECK_PTR_FAIL_GOTO( node[0], "Create sp_div node fail.", final );
-    node[1] = vsi_nn_sp_mul_times_v11_node(graph, inputs[0], output_tensor[0], outputs[0], scale, "tensordiv_1");
+    node[1] = vsi_nn_sp_mul_times_v11_node(graph, reshape_tensors[0], output_tensor[0],
+        reshape_tensors[2], scale, "tensordiv_1");
     CHECK_PTR_FAIL_GOTO( node[1], "Create sp_div node fail.", final );
 
 final:
     vsi_safe_release_node(node[0]);
     vsi_safe_release_tensor(output_tensor[0]);
+    vsi_safe_release_tensor(reshape_tensors[0]);
+    vsi_safe_release_tensor(reshape_tensors[1]);
+    vsi_safe_release_tensor(reshape_tensors[2]);
 
     return node[1];
 } /* div() */
