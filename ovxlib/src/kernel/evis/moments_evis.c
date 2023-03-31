@@ -162,7 +162,7 @@ static vx_param_description_t _moments_kernel_param_def[] =
 };
 #define _MOMENTS_PARAM_NUM  _cnt_of_array( _moments_kernel_param_def )
 
-static int32_t set_constant_border
+static int32_t _set_constant_border
     (
     vsi_nn_kernel_node_t node,
     int32_t value
@@ -172,9 +172,6 @@ static int32_t set_constant_border
     vx_border_t border;
     border.mode = VX_BORDER_CONSTANT;
     border.constant_value.S32 = value;
-    border.constant_value.U32 = (vx_uint32)value;
-    border.constant_value.S16 = (vx_int16)value;
-    border.constant_value.U8 = (vx_uint8)value;
     status = vxSetNodeAttribute( (vx_node)node, VX_NODE_BORDER, &border, sizeof(border) );
     return status;
 }
@@ -901,7 +898,7 @@ static vsi_nn_kernel_node_t _setup
     reshape_tensors[2] = vsi_nn_reshape_tensor( graph,
         outputs[1], shapes[1], rank_out );
 
-    if( !vsi_nn_kernel_gpu_check_shape( reshape_tensors[1]->attr.size,
+    if ( !vsi_nn_kernel_gpu_check_shape( reshape_tensors[1]->attr.size,
         reshape_tensors[1]->attr.dim_num ) )
     {
         return NULL;
@@ -911,10 +908,10 @@ static vsi_nn_kernel_node_t _setup
     axis_first = new_axis[0];
 
     status = _query_kernel( inputs, outputs, kernel, params, new_axis, axis_size, image_2d );
-    if( VSI_SUCCESS == status)
+    if ( VSI_SUCCESS == status)
     {
         node = vsi_nn_kernel_create_node( graph, kernel );
-        if( node )
+        if ( node )
         {
             uint32_t index = 3;
             /* Pass parameters to node. */
@@ -926,17 +923,14 @@ static vsi_nn_kernel_node_t _setup
             CHECK_STATUS(status);
             vsi_nn_kernel_scalar_release( &node_params[3] );
             vsi_nn_kernel_scalar_release( &node_params[4] );
-            status = set_constant_border(node, vsi_nn_get_tensor_zero_point(inputs[0]));
+            status = _set_constant_border(node, 0);
             CHECK_STATUS(status);
         }
     }
 
-    for(i = 0; i < 3; i++)
+    for (i = 0; i < 3; i++)
     {
-        if(reshape_tensors[i])
-        {
-            vsi_nn_ReleaseTensor(&reshape_tensors[i]);
-        }
+        vsi_safe_release_tensor(reshape_tensors[i]);
     }
 
     return node;
