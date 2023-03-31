@@ -330,11 +330,11 @@ static vsi_bool _init_tensor
 
     memset( &params, 0, sizeof( vx_tensor_create_params_t ) );
     params.num_of_dims = tensor->attr.dim_num;
-    for(i = 0; i < VSI_NN_MAX_DIM_NUM; i++)
+    for(i = 0; i < tensor->attr.dim_num; i++)
     {
         size_vxsize[i] = -1 == tensor->attr.size[i] ? -1 : (vx_size)tensor->attr.size[i];
     }
-    for(i = 0; i < VSI_NN_MAX_DIM_NUM; i++)
+    for(i = 0; i < tensor->attr.dim_num; i++)
     {
         size_u32[i] = -1 == tensor->attr.size[i] ? -1 : (vx_uint32)tensor->attr.size[i];
     }
