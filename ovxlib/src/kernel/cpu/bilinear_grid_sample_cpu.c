@@ -86,7 +86,8 @@ DEF_KERNEL_EXECUTOR(_compute)
     vsi_size_t output_batch_size;
     vsi_size_t b = 0, c = 0, w = 0, h = 0;
     /* prepare data */
-    for (i = 0; i < _INPUT_NUM; i++) {
+    for (i = 0; i < _INPUT_NUM; i++)
+    {
         input[i] = (vsi_nn_kernel_tensor_t)param[i];
         in_attr[i] = vsi_nn_kernel_tensor_attr_create(input[i]);
         f32_in_buffer[i] = (float*)vsi_nn_kernel_tensor_create_buffer(
@@ -94,7 +95,8 @@ DEF_KERNEL_EXECUTOR(_compute)
         CHECK_PTR_FAIL_GOTO(
             f32_in_buffer[i], "Create input0 buffer fail.", final);
     }
-    for (i = 0; i < _OUTPUT_NUM; i++) {
+    for (i = 0; i < _OUTPUT_NUM; i++)
+    {
         output[i] = (vsi_nn_kernel_tensor_t)param[i + _INPUT_NUM];
         out_attr[i] = vsi_nn_kernel_tensor_attr_create(output[i]);
         vsi_nn_kernel_tensor_attr_get_stride(out_attr[i], out_stride_size[i]);
@@ -123,17 +125,23 @@ DEF_KERNEL_EXECUTOR(_compute)
         float* input1_ptr = f32_in_buffer[1] + b * input1_batch_size;
         float* output_ptr = f32_out_buffer[0] + b * output_batch_size;
 
-        for (h = 0; h < input1_gh; h++) {
-            for (w = 0; w < input1_gw; w++) {
+        for (h = 0; h < input1_gh; h++)
+        {
+            for (w = 0; w < input1_gw; w++)
+            {
                 vsi_size_t input1_index = 2 * (h * input1_gw + w);
                 float x_f = input1_ptr[input1_index];
                 float y_f = input1_ptr[input1_index + 1];
                 int x0, y0, x1, y1;
                 float wa, wb, wc, wd;
-                if (align_corners) {
+
+                if (align_corners)
+                {
                     x_f = ((x_f + 1.0f) / 2.0f) * (input0_w - 1);
                     y_f = ((y_f + 1.0f) / 2.0f) * (input0_h - 1);
-                } else {
+                }
+                else
+                {
                     x_f = ((x_f + 1.0f) * input0_w - 1.0f) / 2.0f;
                     y_f = ((y_f + 1.0f) * input0_h - 1.0f) / 2.0f;
                 }
@@ -150,13 +158,16 @@ DEF_KERNEL_EXECUTOR(_compute)
                 x1 = x1 >= (int)input0_w ? -1 : x1;
                 y0 = y0 >= (int)input0_h ? -1 : y0;
                 y1 = y1 >= (int)input0_h ? -1 : y1;
-                for (c = 0; c < input0_c; c++) {
+                for (c = 0; c < input0_c; c++)
+                {
                     vsi_size_t output_index =
                         c * input1_gh * input1_gw + h * input1_gw + w;
                     vsi_size_t input0_base_index;
-                    input0_base_index = c * input0_w * input0_h;
-                    float* input0_c_ptr = input0_ptr + input0_base_index;
+                    float* input0_c_ptr = NULL;
                     float v_00, v_01, v_10, v_11;
+
+                    input0_base_index = c * input0_w * input0_h;
+                    input0_c_ptr = input0_ptr + input0_base_index;
                     v_00 = x0 < 0
                                ? 0
                                : y0 < 0 ? 0 : input0_c_ptr[y0 * input0_w + x0];
@@ -177,21 +188,26 @@ DEF_KERNEL_EXECUTOR(_compute)
     }
 
     /* save data */
-    for (i = 0; i < _OUTPUT_NUM; i++) {
+    for (i = 0; i < _OUTPUT_NUM; i++)
+    {
         status = vsi_nn_kernel_tensor_write_from_float(
             output[i], out_attr[i], f32_out_buffer[i], out_elements[i]);
         CHECK_STATUS_FAIL_GOTO(status, final);
     }
 final:
-    for (i = 0; i < _INPUT_NUM; i++) {
-        if (f32_in_buffer[i]) {
+    for (i = 0; i < _INPUT_NUM; i++)
+    {
+        if (f32_in_buffer[i])
+        {
             free(f32_in_buffer[i]);
             f32_in_buffer[i] = NULL;
         }
         vsi_nn_kernel_tensor_attr_release(&in_attr[i]);
     }
-    for (i = 0; i < _OUTPUT_NUM; i++) {
-        if (f32_out_buffer[i]) {
+    for (i = 0; i < _OUTPUT_NUM; i++)
+    {
+        if (f32_out_buffer[i])
+        {
             free(f32_out_buffer[i]);
             f32_out_buffer[i] = NULL;
         }
