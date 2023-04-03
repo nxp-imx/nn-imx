@@ -78,7 +78,7 @@ static vsi_status _tile_op_compute
     vsi_size_t new_rank = 0;
     vsi_bool ret = FALSE;
     vsi_size_t* multiples = (vsi_size_t*)self->nn_param.tile.multiples;
-    vsi_nn_tensor_t* temp_tensors[1] = { NULL };
+    vsi_nn_tensor_t* temp_tensors[2] = { NULL };
     vsi_nn_tensor_attr_t attr;
 
     ret = vsi_nn_kernel_optimize_tile_shape(
@@ -86,6 +86,22 @@ static vsi_status _tile_op_compute
             multiples, inputs[0]->attr.dim_num,
             outputs[0]->attr.size, outputs[0]->attr.dim_num,
             shapes[0], shapes[1], shapes[2], &new_rank );
+
+    if (vsi_nn_is_same_type(inputs[0], outputs[0]) == FALSE)
+    {
+        VSILOGW("tile is no_range_change operation! \
+            Insert DataConvert Operation when the quantization parameters of input and output are inconsistent!");
+
+        memcpy( &attr, &outputs[0]->attr, sizeof(attr));
+        memcpy( &attr.dtype, &inputs[0]->attr.dtype, sizeof(attr.dtype));
+        attr.is_const = FALSE;
+        attr.vtl = TRUE;
+        temp_tensors[1] = vsi_nn_CreateTensor( self->graph, &attr );
+    }
+    else
+    {
+        temp_tensors[1] = outputs[0];
+    }
 
     if (ret)
     {
@@ -102,12 +118,20 @@ static vsi_status _tile_op_compute
             self->n = (vx_node)vsi_nn_kernel_selector(
                 self->graph, kernel_name, &inputs[0], 1, &temp_tensors[0], 1, NULL);
             self->n = (vx_node)vsi_nn_kernel_selector(
-                self->graph, kernel_name, &temp_tensors[0], 1, &outputs[0], 1, NULL);
+                self->graph, kernel_name, &temp_tensors[0], 1, &temp_tensors[1], 1, NULL);
+
+            vsi_safe_release_tensor(temp_tensors[0]);
         }
         else
         {
             self->n = (vx_node)vsi_nn_kernel_selector(
-                self->graph, kernel_name, &inputs[0], 1, &outputs[0], 1, NULL);
+                self->graph, kernel_name, &inputs[0], 1, &temp_tensors[1], 1, NULL);
+        }
+
+        if (vsi_nn_is_same_type(inputs[0], outputs[0]) == FALSE)
+        {
+            self->n = vxTensorCopyNode( self->graph->g, temp_tensors[1]->t, outputs[0]->t);
+            vsi_safe_release_tensor(temp_tensors[1]);
         }
     }
 
@@ -116,10 +140,6 @@ static vsi_status _tile_op_compute
         status = VSI_SUCCESS;
     }
 
-    if ( temp_tensors[0] )
-    {
-        vsi_nn_ReleaseTensor( &temp_tensors[0] );
-    }
     return status;
 } /* _tile_op_compute() */
 

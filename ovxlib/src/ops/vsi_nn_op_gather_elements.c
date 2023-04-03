@@ -58,6 +58,7 @@ static vsi_status op_compute
 {
     vsi_status status = VSI_FAILURE;
     vsi_nn_tensor_t* reshape_tensors[3] = { NULL };
+    vsi_nn_tensor_t* temp_tensors = NULL;
     vsi_size_t shapes[2][VSI_NN_MAX_DIM_NUM] = { { 0 } };
     uint32_t rank_in = 0;
     int32_t axis = 0;
@@ -86,6 +87,24 @@ static vsi_status op_compute
     // Add params
     param = vsi_nn_kernel_param_create();
 
+    if (vsi_nn_is_same_type(inputs[0], outputs[0]) == FALSE)
+    {
+        vsi_nn_tensor_attr_t attr;
+
+        VSILOGW("gather_element is no_range_change operation! \
+            Insert DataConvert Operation when the quantization parameters of input and output are inconsistent!");
+
+        memcpy( &attr, &outputs[0]->attr, sizeof(attr));
+        memcpy( &attr.dtype, &inputs[0]->attr.dtype, sizeof(attr.dtype));
+        attr.is_const = FALSE;
+        attr.vtl = TRUE;
+        temp_tensors = vsi_nn_CreateTensor( self->graph, &attr );
+    }
+    else
+    {
+        temp_tensors = outputs[0];
+    }
+
     if ( ret && new_axis0 == new_axis1 )
     {
         vsi_nn_kernel_param_add_int32( param, "axis", new_axis0 );
@@ -95,7 +114,7 @@ static vsi_status op_compute
         reshape_tensors[1] = vsi_nn_reshape_tensor( self->graph,
                 inputs[1], shapes[1], rank_in );
         reshape_tensors[2] = vsi_nn_reshape_tensor( self->graph,
-                outputs[0], shapes[1], rank_in );
+                temp_tensors, shapes[1], rank_in );
 
         self->n = (vx_node)vsi_nn_kernel_selector( self->graph,
                 "gather_elements",
@@ -112,7 +131,13 @@ static vsi_status op_compute
         self->n = (vx_node)vsi_nn_kernel_selector( self->graph,
                 "gather_elements",
                 inputs, 2,
-                outputs, 1, param );
+                &temp_tensors, 1, param );
+    }
+
+    if (vsi_nn_is_same_type(inputs[0], outputs[0]) == FALSE)
+    {
+        self->n = vxTensorCopyNode( self->graph->g, temp_tensors->t, outputs[0]->t);
+        vsi_safe_release_tensor(temp_tensors);
     }
 
     vsi_nn_kernel_param_release( &param );
