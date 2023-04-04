@@ -459,13 +459,11 @@ vsi_nn_kernel_node_t vsi_nn_sp_l2norm_z_direction_mul_node
     vsi_nn_spinst_t *spinst = NULL;
     vsi_nn_spinst_inst_param sp_insts_param[1];
     vsi_nn_spinst_attr_t attr;
-    vx_lut_params_s vx_lut_params;
 
     vsi_status status = VSI_FAILURE;
 
     memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
     vsi_nn_init_spinst_attr(&attr);
-    memset(&vx_lut_params, 0, sizeof(vx_lut_params_s));
 
     /* loop inst0: v11 = r3 * v11 */
     status = vsi_nn_sp_mul(&sp_insts_param[0], VSI_NN_SP_SR3, VSI_NN_SP_VR11, VSI_NN_SP_VR11);
@@ -497,11 +495,6 @@ vsi_nn_kernel_node_t vsi_nn_sp_l2norm_z_direction_mul_node
     inputs_tensor[0] = input->t;
     outputs_tensor[0] = output->t;
 
-    vx_lut_params.lut_function = VX_NN_ACTIVATION_RSQRT;
-    vx_lut_params.float_values[0] = 0;
-    vx_lut_params.float_values[1] = 0;
-    vx_lut_params.fvalues_count = 2;
-
     node = vxStreamProcessorNode(
         graph->g,
         inputs_tensor,
@@ -509,7 +502,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_l2norm_z_direction_mul_node
         outputs_tensor,
         output_count,
         spinst->sp,
-        &vx_lut_params);
+        NULL);
 
     status = vsi_nn_set_sp_kernel_name(node, kernel_name);
     CHECK_STATUS_FAIL_GOTO(status, final );
