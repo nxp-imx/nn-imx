@@ -212,7 +212,7 @@ static vsi_bool op_setup
                 outputs[0]->attr.size[j] = inputs[0]->attr.size[i];
                 j++;
             }
-            for (i = 0; i < inputs[1]->attr.dim_num; i++)
+            for (i = 0; i < q_rank; i++)
             {
                 outputs[0]->attr.size[j] = inputs[1]->attr.size[i];
                 j++;
