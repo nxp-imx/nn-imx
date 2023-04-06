@@ -698,7 +698,17 @@ vsi_status vsi_nn_add_single_postproc_node
     }
 
     /* Reconnect node tensors */
+    if (NULL == node->input.tensors)
+    {
+        status = VSI_FAILURE;
+        goto final;
+    }
     node->input.tensors[0] = postproc_input;
+    if (NULL == node->output.tensors)
+    {
+        status = VSI_FAILURE;
+        goto final;
+    }
     node->output.tensors[0] = postproc_output;
     for(i = 0; i < last_node->output.num; i++)
     {
