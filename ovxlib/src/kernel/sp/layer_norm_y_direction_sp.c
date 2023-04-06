@@ -725,7 +725,7 @@ final:
     return (vsi_nn_kernel_node_t)node;
 }
 
-vsi_nn_kernel_node_t vsi_nn_sp_in_times_v11_plus_v12_node
+static vsi_nn_kernel_node_t vsi_nn_sp_in_times_v11_plus_v12_node
     (
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input,
