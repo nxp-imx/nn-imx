@@ -70,7 +70,7 @@ DEF_KERNEL_EXECUTOR(_pow_exec)
     size_t param_size
     )
 {
-    vsi_status status = VX_SUCCESS;
+    vsi_status status = VSI_FAILURE;
     vsi_nn_kernel_tensor_t tensors[_CPU_IO_NUM] = { NULL };
     float * buffer[_CPU_IO_NUM] = { NULL };
     vsi_size_t out_elements = 0;

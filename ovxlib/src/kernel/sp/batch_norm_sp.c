@@ -50,7 +50,7 @@ static vsi_status vsi_nn_get_bn_weight_bias
     vsi_nn_tensor_t  **bias_t
     )
 {
-    vsi_status status = VX_SUCCESS;
+    vsi_status status = VSI_FAILURE;
     vsi_nn_tensor_attr_t attr;
     float* f32_in_buffer[4] = {NULL};
     float* f32_out_buffer[2]  = {NULL};
@@ -61,14 +61,14 @@ static vsi_status vsi_nn_get_bn_weight_bias
     for (i = 0; i < 4; i++)
     {
         f32_in_buffer[i] = (float *)malloc(element_count * sizeof(float));
-        CHECK_PTR_FAIL_GOTO( f32_in_buffer[i], "Create tensor attr buffer fail.", final );
+        CHECK_PTR_FAIL_GOTO( f32_in_buffer[i], "Create tensor buffer fail.", final );
     }
 
     for (i = 0; i < 2; i++)
     {
         vsi_size_t o_size = axis == 0 ? input_element_count : element_count;
         f32_out_buffer[i] = (float *)malloc(o_size * sizeof(float));
-        CHECK_PTR_FAIL_GOTO( f32_out_buffer[i], "Create tensor attr buffer fail.", final );
+        CHECK_PTR_FAIL_GOTO( f32_out_buffer[i], "Create tensor buffer fail.", final );
     }
 
     f32_in_buffer[0] = vsi_nn_ConvertTensorToFloat32Data(graph, inputs[0]);
@@ -489,7 +489,7 @@ final:
 
 REGISTER_BATCH_NORM_STREAM_PROCESSOR_KERNEL( batch_norm )
 {
-    vsi_status status = VX_SUCCESS;
+    vsi_status status = VSI_FAILURE;
     vsi_nn_kernel_node_t node[2] = {NULL};
     vsi_nn_tensor_attr_t attr;
     vsi_nn_tensor_t * weight = NULL;

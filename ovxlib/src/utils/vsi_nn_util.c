@@ -306,7 +306,7 @@ vsi_size_t vsi_nn_GetStrideSizeBySize
     type_bits = vsi_nn_TypeGetBits( type);
     stride[0] = type_bits / BITS_PER_BYTE;
     total_bytes = stride[0];
-    if( type_bits < BITS_PER_BYTE )
+    if( type_bits < BITS_PER_BYTE && type_bits != 0 )
     {
         total_bytes = 1;
         if( size[0] % (BITS_PER_BYTE / type_bits) == 0 )
@@ -708,9 +708,10 @@ vsi_bool vsi_nn_CreateTensorGroup
     vsi_size_t end[VSI_NN_MAX_DIM_NUM];
     vsi_nn_tensor_attr_t attr;
 
-    if( NULL == graph || NULL == in_tensor
+    if ( NULL == graph || NULL == in_tensor
         || NULL == out_tensors || 0 == group_number
-        || 0 == in_tensor->attr.size[axis] )
+        || 0 == in_tensor->attr.size[axis] ||
+        axis > VSI_NN_MAX_DIM_NUM )
     {
         VSILOGW( "Create tensor group fail." );
         return FALSE;
@@ -906,6 +907,10 @@ uint8_t * vsi_nn_MallocAlignedBuffer
     sz = sizeof(aligned_header) + mem_size +
         align_start_size + align_block_size + END_GUARD_SIZE;
     raw_addr = (uint8_t *)malloc( sz * sizeof( uint8_t ) );
+    if (raw_addr)
+    {
+        return NULL;
+    }
     memset(raw_addr, 0, sizeof( uint8_t ) * sz);
     p = raw_addr + sizeof(aligned_header);
 

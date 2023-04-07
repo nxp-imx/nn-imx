@@ -1310,6 +1310,7 @@ static vsi_nn_kernel_node_t _setup
             if (is_run_opt_kernel)
             {
                 scale = _create_scale_tensor(graph, inputs[0], outputs[0], align_corners, half_pixel_centers);
+                CHECK_PTR_FAIL_GOTO( scale, "Create tensor fail.", final );
                 node_params[SCALAR_TENSOR_SCALE] = (vsi_nn_kernel_node_param_t)(scale->t);
                 node_params_num = _RESIZE_1D_BILINEAR_PARAM_NUM;
             }
@@ -1325,16 +1326,18 @@ static vsi_nn_kernel_node_t _setup
             {
                 vsi_nn_kernel_scalar_release( &node_params[SCALAR_SCALE_TYPE] );
             }
-
-            if (is_run_opt_kernel)
-            {
-                if (scale)
-                {
-                    vsi_nn_ReleaseTensor(&scale);
-                }
-            }
         }
     }
+
+final:
+    if (is_run_opt_kernel)
+    {
+        if (scale)
+        {
+            vsi_nn_ReleaseTensor(&scale);
+        }
+    }
+
     return node;
 } /* _setup() */
 

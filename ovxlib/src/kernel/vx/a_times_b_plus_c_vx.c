@@ -29,6 +29,7 @@
 #include "vsi_nn_prv.h"
 #include "vsi_nn_tensor_util.h"
 #include "kernel/vsi_nn_kernel.h"
+#include "vsi_nn_error.h"
 
 #define REGISTER_A_TIMES_B_PLUS_C_OPENVX_KERNEL( kernel_name )   \
     static vsi_nn_kernel_node_t _##kernel_name##setup \
@@ -70,7 +71,7 @@ REGISTER_A_TIMES_B_PLUS_C_OPENVX_KERNEL( a_times_b_plus_c )
     if(!scale_s)
     {
         VSILOGE("CreateScalar fail\n");
-        goto OnError;
+        goto final;
     }
 
     memset(&attr, 0, sizeof(attr));
@@ -79,6 +80,7 @@ REGISTER_A_TIMES_B_PLUS_C_OPENVX_KERNEL( a_times_b_plus_c )
     attr.vtl = TRUE;
     attr.dtype.vx_type = VSI_NN_TYPE_FLOAT16;
     a_times_b = vsi_nn_CreateTensor(graph, &attr);
+    CHECK_PTR_FAIL_GOTO( a_times_b, "Create tensor fail.", final );
 
     node = vxTensorMultiplyNode( graph->g,
         inputs[0]->t, inputs[1]->t,
@@ -89,7 +91,7 @@ REGISTER_A_TIMES_B_PLUS_C_OPENVX_KERNEL( a_times_b_plus_c )
     if( NULL == node )
     {
         VSILOGE("Call vxTensorMultiplyNode fail.(a_times_b_plus_c)");
-        goto OnError;
+        goto final;
     }
 
     node = vxTensorAddNode( graph->g, a_times_b->t, inputs[2]->t,
@@ -97,10 +99,10 @@ REGISTER_A_TIMES_B_PLUS_C_OPENVX_KERNEL( a_times_b_plus_c )
     if( NULL == node )
     {
         VSILOGE("Call vxTensorAddNode fail.(a_times_b_plus_c)");
-        goto OnError;
+        goto final;
     }
 
-OnError:
+final:
     if (scale_s) vxReleaseScalar(&scale_s);
     if (a_times_b) vsi_nn_ReleaseTensor(&a_times_b);
 

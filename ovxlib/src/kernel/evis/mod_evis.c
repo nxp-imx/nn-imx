@@ -119,7 +119,7 @@ DEF_KERNEL_INITIALIZER(_mod_initializer)
         {0, 0, 0},
         {0, 0, 0}
         };
-    vx_status     status             = VX_FAILURE;
+    vsi_status    status              = VSI_FAILURE;
     vx_tensor     input0              = (vx_tensor)param[0];
     vx_tensor     input1              = (vx_tensor)param[1];
     vx_tensor     output              = (vx_tensor)param[2];

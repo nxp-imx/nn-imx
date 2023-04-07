@@ -736,6 +736,7 @@ static vsi_nn_kernel_node_t _setup
     if ( VSI_SUCCESS == status)
     {
         node_params = (vsi_nn_kernel_node_param_t *)malloc(sizeof(vsi_nn_kernel_node_param_t) * param_count);
+        CHECK_PTR_FAIL_GOTO( node_params, "Create buffer fail.", final );
         node = vsi_nn_kernel_create_node( graph, kernel );
         if ( node )
         {
@@ -772,6 +773,7 @@ static vsi_nn_kernel_node_t _setup
         }
     }
 
+final:
     vsi_nn_safe_free(node_params);
 
     return node;

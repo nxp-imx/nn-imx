@@ -33,6 +33,7 @@
 #include "libnnext/vsi_nn_vxkernel.h"
 #include "kernel/vsi_nn_kernel.h"
 #include "libnnext/vsi_nn_libnnext_resource.h"
+#include "vsi_nn_error.h"
 
 static char s_vx_resource_path[VSI_NN_MAX_PATH] = "VX";
 
@@ -63,6 +64,11 @@ uint8_t * vsi_nn_LoadBinarySource
     fseek( fp, 0, SEEK_SET );
 
     buf = (uint8_t *)malloc( len + 1 );
+    if (buf == NULL)
+    {
+        fclose( fp );
+        return NULL;
+    }
     n = (int32_t)fread( buf, 1, len, fp );
     fclose( fp );
 
@@ -208,7 +214,10 @@ static vsi_status vsi_nn_RegisterVXKernel
     evis = context->config.evis.ver;
 
     program_src = (const char**)malloc(kernel_info->resource_num * sizeof(char *));
+    CHECK_PTR_FAIL_GOTO( program_src, "Create buffer fail.", final );
     program_len = (vx_size*)malloc(kernel_info->resource_num * sizeof(vx_size));
+    CHECK_PTR_FAIL_GOTO( program_len, "Create buffer fail.", final );
+
     for (i = 0; i < kernel_info->resource_num; i++)
     {
         program_src[i] = vsi_nn_resource_load_source_code(
@@ -228,7 +237,7 @@ static vsi_status vsi_nn_RegisterVXKernel
     {
         VSILOGE("[%s : %d] vxCreateProgramWithSource() Error!\n", __FILE__, __LINE__);
         status = VSI_FAILURE;
-        goto OnError;
+        goto final;
     }
 
     if(evis == VSI_NN_HW_EVIS_NONE)
@@ -267,7 +276,7 @@ static vsi_status vsi_nn_RegisterVXKernel
     {
         VSILOGE( "Add kernel %s fail.", kernel->name );
     }
-OnError:
+final:
     for (i = 0; i < kernel_info->resource_num; i++)
     {
         if (program_src[i] && load_from_file)
@@ -277,6 +286,7 @@ OnError:
     }
     if(program_src) free((char**)program_src);
     if(program_len) free(program_len);
+
     return status;
 }
 
@@ -286,7 +296,7 @@ static vsi_status vsi_nn_RegisterBinKernel
     vsi_nn_kernel_info_t * kernel_info
     )
 {
-    vsi_status status;
+    vsi_status status = VSI_FAILURE;
     vx_kernel obj;
     vx_program program = NULL;
     vx_size program_len = 0;
@@ -308,6 +318,11 @@ static vsi_status vsi_nn_RegisterBinKernel
 
     program_ptr = vsi_nn_VxBinResourceGetResource(
             kernel_info->resource_name[kernel_info->resource_num - 1], &program_len);
+    if (program_ptr == NULL)
+    {
+        VSILOGE("[%s : %d] vsi_nn_VxBinResourceGetResource() Error!\n", __FILE__, __LINE__);
+        return status;
+    }
     program = vxCreateProgramWithBinary(ctx, (const vx_uint8 *)program_ptr, program_len);
 
     status = vxGetStatus((vx_reference)program);

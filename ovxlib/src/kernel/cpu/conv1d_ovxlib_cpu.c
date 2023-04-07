@@ -91,9 +91,13 @@ DEF_KERNEL_EXECUTOR(_compute)
     tensors[3] = (vsi_nn_kernel_tensor_t)param[3];
 
     attr[0] = vsi_nn_kernel_tensor_attr_create( tensors[0] );
+    CHECK_PTR_FAIL_GOTO( attr[0], "Create tensor attr buffer fail.", final );
     attr[1] = vsi_nn_kernel_tensor_attr_create( tensors[1] );
+    CHECK_PTR_FAIL_GOTO( attr[1], "Create tensor attr buffer fail.", final );
     attr[2] = vsi_nn_kernel_tensor_attr_create( tensors[2] );
+    CHECK_PTR_FAIL_GOTO( attr[2], "Create tensor attr buffer fail.", final );
     attr[3] = vsi_nn_kernel_tensor_attr_create( tensors[3] );
+    CHECK_PTR_FAIL_GOTO( attr[3], "Create tensor attr buffer fail.", final );
 
     buffer[0] = (float*)vsi_nn_kernel_tensor_create_buffer( tensors[0], attr[0], TRUE );
     CHECK_PTR_FAIL_GOTO( buffer[0], "Create input buffer fail.", final );

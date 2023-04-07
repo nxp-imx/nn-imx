@@ -35,9 +35,9 @@
 #include "vsi_nn_ops.h"
 #include "vsi_nn_tensor.h"
 #include "vsi_nn_tensor_util.h"
-#include "libnnext/vsi_nn_vxkernel.h"
 #include "vsi_nn_internal_node.h"
 #include "vsi_nn_rnn_helper.h"
+#include "vsi_nn_error.h"
 
 static vsi_bool setup_op_shapes
     (
@@ -168,6 +168,7 @@ static vsi_bool op_setup
     vsi_size_t batch_size = 0;
     vsi_size_t time_step = 0;
     uint32_t i = 0;
+    vsi_bool ret = FALSE;
 
     memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
 
@@ -198,9 +199,11 @@ static vsi_bool op_setup
 
     /* split input tensor */
     split_output_tensors = (vsi_nn_tensor_t **)malloc(time_step * sizeof(vsi_nn_tensor_t **));
+    CHECK_PTR_FAIL_GOTO( split_output_tensors, "Create buffer fail.", final );
     memset( split_output_tensors, 0x00, time_step * sizeof(vsi_nn_tensor_t **));
     rnncell_reshape_output_tensors = (vsi_nn_tensor_t **)malloc(time_step *
         sizeof(vsi_nn_tensor_t **));
+    CHECK_PTR_FAIL_GOTO( rnncell_reshape_output_tensors, "Create buffer fail.", final );
     memset( rnncell_reshape_output_tensors, 0x00, time_step * sizeof(vsi_nn_tensor_t **));
 
     vsi_nn_rnn_split_input_tensor(self, input_tensor, split_output_tensors, (uint32_t)time_step, use_virtual_tensor);
@@ -208,6 +211,7 @@ static vsi_bool op_setup
     vsi_nn_rnn_data_check_aligned(self, split_output_tensors, (uint32_t)time_step, use_virtual_tensor);
 
     last_step_h_state = inputs[RNN_INPUT_H_STATE];
+
     for( i = 0; i < time_step; i++ )
     {
         vsi_nn_tensor_t* reshape_output = NULL;
@@ -294,7 +298,7 @@ static vsi_bool op_setup
         curr->inputs[i] = rnncell_reshape_output_tensors[i];
     }
     curr->outputs[0] = tensor;
-    vsi_nn_internal_setup_node( self, curr );
+    ret = vsi_nn_internal_setup_node( self, curr );
 
     if( !curr_param->time_major )
     {
@@ -303,10 +307,11 @@ static vsi_bool op_setup
             tensor, outputs[RNN_OUTPUT_OUTPUT], use_virtual_tensor);
     }
 
+final:
     vsi_nn_safe_free( split_output_tensors );
     vsi_nn_safe_free( rnncell_reshape_output_tensors );
 
-    return TRUE;
+    return ret;
 } /* op_setup() */
 
 static vsi_status op_deinit

@@ -942,6 +942,7 @@ static vsi_nn_kernel_node_t _setup_axis01
     rs_output = vsi_nn_kernel_tensor_reshape(outputs[0]->t, new_shape[0], rank_in);
 
     kernel_sums = vsi_nn_kernel_create( VSI_NN_KERNEL_TYPE_EVIS );
+    CHECK_PTR_FAIL_GOTO( kernel_sums, "Create kernel fail.", final );
     // Assign unique_id
     kernel_sums->unique_id = kernel->unique_id;
 
@@ -961,6 +962,7 @@ static vsi_nn_kernel_node_t _setup_axis01
     attr.size[3] = new_shape[0][3];
     attr.dim_num = rank_in;
     tensor_sums = vsi_nn_CreateTensor( graph, &attr );
+    CHECK_PTR_FAIL_GOTO( tensor_sums, "Create tensor fail.", final );
 
     status = _query_kernel_axis01(inputs, outputs, kernel_sums, kernel);
     if ( VSI_SUCCESS != status )
@@ -972,6 +974,7 @@ static vsi_nn_kernel_node_t _setup_axis01
     ** sum(x) and sumsq(x*x)
     */
     sums_node = vsi_nn_kernel_create_node(graph, kernel_sums);
+    CHECK_PTR_FAIL_GOTO( sums_node, "Create kernel fail.", final );
     if (sums_node)
     {
         sums_node_params[0] = rs_input;
@@ -992,6 +995,7 @@ static vsi_nn_kernel_node_t _setup_axis01
     }
 
     node = vsi_nn_kernel_create_node( graph, kernel );
+    CHECK_PTR_FAIL_GOTO( node, "Create kernel fail.", final );
     if (node)
     {
         uint32_t index = 0;

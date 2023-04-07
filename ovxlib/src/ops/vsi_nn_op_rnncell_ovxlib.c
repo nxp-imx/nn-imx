@@ -298,6 +298,12 @@ static vsi_bool op_setup
 
     if (inputs[RNNCELL_INPUT_AUX_INPUT] != NULL)
     {
+        if (aux_input_gate_fc_outputs == NULL ||
+            input_add_hstate_outputs == NULL)
+        {
+            return FALSE;
+        }
+
         gate_fc_outputs = vsi_nn_rnn_create_tensor_add(self,
                             input_add_hstate_outputs->t,
                             aux_input_gate_fc_outputs->t,

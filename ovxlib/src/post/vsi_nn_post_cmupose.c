@@ -348,7 +348,7 @@ static vx_status resize_binlinear
         }
     }
 
-    return VX_SUCCESS;
+    return VSI_SUCCESS;
 }
 #endif
 
@@ -947,6 +947,7 @@ static vsi_nn_con_candidate_t *_get_connection_candidate
             {
                 con_candidate = (vsi_nn_con_candidate_t *)
                     vsi_nn_LinkListNewNode(sizeof(vsi_nn_con_candidate_t), _init_candidate);
+                CHECK_PTR_FAIL_GOTO( con_candidate, "null point.", final );
 
                 sum++;
                 con_candidate->data.i = i;
@@ -963,6 +964,8 @@ static vsi_nn_con_candidate_t *_get_connection_candidate
     }
 
     *candidate_sum = sum;
+
+final:
     return con_candidate_list;
 }
 
@@ -1319,6 +1322,8 @@ static vsi_nn_subset_t *_compute_subset
                 {
                     sig_subset= (vsi_nn_subset_t *)
                         vsi_nn_LinkListGetIndexNode((vsi_nn_link_list_t *)subset_list, j);
+                    CHECK_PTR_FAIL_GOTO( sig_subset, "null point.", final );
+
                     if(sig_subset->data.idx[indexA] == partAs[i] ||
                        sig_subset->data.idx[indexB] == partBs[i])
                     {
@@ -1338,6 +1343,8 @@ static vsi_nn_subset_t *_compute_subset
                         int32_t ii = partBs[i];
                         sig_connect = (vsi_nn_connection_t *)
                             vsi_nn_LinkListGetIndexNode((vsi_nn_link_list_t *)connection_k, i);
+                        CHECK_PTR_FAIL_GOTO( sig_connect, "get point fail.", final );
+
                         sig_subset->data.idx[indexB] = (float)ii;
                         sig_subset->data.idx[20 - 1] += 1;
                         sig_subset->data.idx[20 - 2] +=
@@ -1362,6 +1369,8 @@ static vsi_nn_subset_t *_compute_subset
                         vsi_nn_subset_t *j2_iter = j2_subset;
                         sig_connect = (vsi_nn_connection_t *)
                             vsi_nn_LinkListGetIndexNode((vsi_nn_link_list_t *)connection_k, i);
+                        CHECK_PTR_FAIL_GOTO( sig_connect, "get point fail.", final );
+
                         for(ii=0; ii<(20-2); ii++)
                         {
                             j1_iter->data.idx[ii] += j2_iter->data.idx[ii] + 1;
@@ -1380,6 +1389,8 @@ static vsi_nn_subset_t *_compute_subset
                         int32_t ii = partBs[i];
                         sig_connect = (vsi_nn_connection_t *)
                             vsi_nn_LinkListGetIndexNode((vsi_nn_link_list_t *)connection_k, i);
+                        CHECK_PTR_FAIL_GOTO( sig_connect, "get point fail.", final );
+
                         sum = candidate[ii].score + sig_connect->data.score;
                         j1_subset->data.idx[indexB] = (float)ii;
                         j1_subset->data.idx[20 - 1] += 1;
@@ -1413,7 +1424,7 @@ static vsi_nn_subset_t *_compute_subset
 
                     subset = (vsi_nn_subset_t *)
                         vsi_nn_LinkListNewNode(sizeof(vsi_nn_subset_t), _init_subset);
-
+                    CHECK_PTR_FAIL_GOTO( subset, "null point.", final );
                     memcpy(&subset->data, row, sizeof(float) * 20);
 
                     vsi_nn_LinkListPushEnd(
@@ -1433,6 +1444,7 @@ static vsi_nn_subset_t *_compute_subset
     memset(deleteIdx, -1, sizeof(uint32_t) * num);
 
     subset = subset_list;
+    CHECK_PTR_FAIL_GOTO( subset, "null point.", final );
     for(i=0,j=0; i<num; i++)
     {
         float tmp1 = subset->data.idx[20 - 1];
@@ -1451,21 +1463,6 @@ static vsi_nn_subset_t *_compute_subset
             num--;
         }
     }
-
-    #if 0
-    n = 0;
-    subset = subset_list;
-    while (subset)
-    {
-        printf("================= n=%u\n", n);
-        for(i=0; i<20; i++)
-        {
-            printf("[%d] = %f\n", i, subset->data.idx[i]);
-        }
-        subset = (vsi_nn_subset_t *)vsi_nn_LinkListNext( (vsi_nn_link_list_t *)subset);
-        n++;
-    }
-    #endif
 
 final:
     if(deleteIdx)free(deleteIdx);
@@ -1836,6 +1833,7 @@ vsi_status vsi_nn_CMUPose_Post_Process
     _fill_paf_avg(net_out, config, paf_avg);
 
     all_peaks = _compute_all_peaks(heatmap_avg, config, &peak_counter, &peak_list_num);
+    CHECK_PTR_FAIL_GOTO( all_peaks, "Create buffer fail.", final );
 #if 0
     for(n=0; n<peak_list_num; n++)
     {
@@ -1851,6 +1849,7 @@ vsi_status vsi_nn_CMUPose_Post_Process
 #endif
 
     all_connection = _compute_all_connetion(paf_avg, all_peaks, config, &connection_list_num, &special_k);
+    CHECK_PTR_FAIL_GOTO( all_connection, "Create buffer fail.", final );
 #if 0
     for(n=0; n<connection_list_num; n++)
     {
@@ -1888,9 +1887,11 @@ vsi_status vsi_nn_CMUPose_Post_Process
     *peak_candidate_num_out = peak_counter;
     status = VSI_SUCCESS;
 
+final:
     _cmupose_deinit(&multiplier, heatmap_avg, paf_avg);
     _release_all_connection(all_connection, connection_list_num);
-    if(special_k)free(special_k);
+    vsi_nn_safe_free(special_k);
+
     return status;
 }
 

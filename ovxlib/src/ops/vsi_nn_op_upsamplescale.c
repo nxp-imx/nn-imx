@@ -56,8 +56,8 @@ static vsi_status op_compute
     )
 {
     vsi_status status = VSI_FAILURE;
-    int32_t stride = self->nn_param.upsamplescale.stride;
-    float   scale  = self->nn_param.upsamplescale.scale;
+    int32_t stride = 0;
+    float   scale  = 0;
     vsi_nn_kernel_param_t * param = NULL;
 
     if( NULL == self )
@@ -65,12 +65,15 @@ static vsi_status op_compute
         return VSI_FAILURE;
     }
 
+    stride = self->nn_param.upsamplescale.stride;
+    scale  = self->nn_param.upsamplescale.scale;
+
     if (stride == 1 || vsi_nn_abs(scale - 1.0f) == _EPSILON)
     {
         return vsi_nn_internal_compute_node( self );
     }
 
-    param =vsi_nn_kernel_param_create();
+    param = vsi_nn_kernel_param_create();
 
     vsi_nn_kernel_param_add_int32( param, "stride", stride );
     vsi_nn_kernel_param_add_float32( param, "scale", scale );
@@ -82,7 +85,7 @@ static vsi_status op_compute
 
     vsi_nn_kernel_param_release( &param );
 
-    if( self->n )
+    if ( self->n )
     {
         status = VSI_SUCCESS;
     }

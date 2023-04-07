@@ -109,7 +109,7 @@ DEF_KERNEL_INITIALIZER(_a_times_b_plus_c_initializer)
 {
 #define _PACK_A_TIMES_B_PLUS_C_KEY( IN0_TYPE, IN1_TYPE, IN2_TYPE, OUT_TYPE )    \
         (( IN2_TYPE << 24) | ( IN1_TYPE << 16) | ( IN0_TYPE << 8) | ( OUT_TYPE))
-    vsi_status status = VX_SUCCESS;
+    vsi_status status = VSI_FAILURE;
     // Alignment with a power of two value.
     gpu_param_t gpu_param = {
         3,

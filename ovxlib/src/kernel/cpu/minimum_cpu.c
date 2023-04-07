@@ -82,7 +82,7 @@ DEF_KERNEL_EXECUTOR(_minimum_exec)
     size_t param_size
     )
 {
-    vsi_status status = VX_SUCCESS;
+    vsi_status status = VSI_FAILURE;
     vsi_nn_kernel_tensor_t tensors[_CPU_IO_NUM] = { NULL };
     float * buffer[_CPU_IO_NUM] = { NULL };
     vsi_size_t out_elements = 0;
@@ -95,8 +95,11 @@ DEF_KERNEL_EXECUTOR(_minimum_exec)
     tensors[2]  = (vsi_nn_kernel_tensor_t)param[2];
 
     attr[0] = vsi_nn_kernel_tensor_attr_create( tensors[0] );
+    CHECK_PTR_FAIL_GOTO( attr[0], "Create tensor attr buffer fail.", final );
     attr[1] = vsi_nn_kernel_tensor_attr_create( tensors[1] );
+    CHECK_PTR_FAIL_GOTO( attr[1], "Create tensor attr buffer fail.", final );
     attr[2] = vsi_nn_kernel_tensor_attr_create( tensors[2] );
+    CHECK_PTR_FAIL_GOTO( attr[2], "Create tensor attr buffer fail.", final );
 
     vsi_nn_kernel_tensor_attr_get_stride( attr[0], stride_size[0] );
     vsi_nn_kernel_tensor_attr_get_stride( attr[1], stride_size[1] );

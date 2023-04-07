@@ -96,6 +96,7 @@ DEF_KERNEL_EXECUTOR(_compute)
     {
         input[i] = (vsi_nn_kernel_tensor_t)param[i];
         in_attr[i] = vsi_nn_kernel_tensor_attr_create( input[i] );
+        CHECK_PTR_FAIL_GOTO( in_attr[i], "Create tensor attr buffer fail.", final );
         if (1 == i)
         {
             in_attr[1]->quant = VSI_NN_KERNEL_QUANT_NONE;
@@ -107,6 +108,7 @@ DEF_KERNEL_EXECUTOR(_compute)
     {
         output[i] = (vsi_nn_kernel_tensor_t)param[i + _INPUT_NUM];
         out_attr[i] = vsi_nn_kernel_tensor_attr_create( output[i] );
+        CHECK_PTR_FAIL_GOTO( out_attr[i], "Create tensor attr buffer fail.", final );
         vsi_nn_kernel_tensor_attr_get_stride( out_attr[i], out_stride_size[i] );
         out_elements[i] = vsi_nn_kernel_tensor_attr_get_size( out_attr[i] );
         out_bytes[i] = out_elements[i] * sizeof(float);

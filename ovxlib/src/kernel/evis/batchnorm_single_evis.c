@@ -188,7 +188,7 @@ DEF_KERNEL_INITIALIZER(_batch_norm_initializer)
 #define _PACK_BATCH_NORM_KEY( IN_TYPE, OUT_TYPE )    \
         ( ( IN_TYPE << 16) | ( OUT_TYPE ) )
 
-    vsi_status status = VX_SUCCESS;
+    vsi_status status = VSI_FAILURE;
     // Alignment with a power of two value.
     gpu_param_t gpu_param = {
         3,

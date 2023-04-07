@@ -71,7 +71,9 @@ DEF_KERNEL_EXECUTOR(_argmin_exec)
     tensors[1]  = (vsi_nn_kernel_tensor_t)param[1];
 
     attr[0] = vsi_nn_kernel_tensor_attr_create( tensors[0] );
+    CHECK_PTR_FAIL_GOTO( attr[0], "Create tensor attr buffer fail.", final );
     attr[1] = vsi_nn_kernel_tensor_attr_create( tensors[1] );
+    CHECK_PTR_FAIL_GOTO( attr[1], "Create tensor attr buffer fail.", final );
 
     status = vsi_nn_kernel_scalar_read_int32((vsi_nn_kernel_scalar_t)param[2], &axis);
     CHECK_STATUS_FAIL_GOTO(status, final );

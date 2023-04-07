@@ -33,6 +33,7 @@
 #include "utils/vsi_nn_dtype_util.h"
 #include "utils/vsi_nn_util.h"
 #include "vsi_nn_rnn_helper.h"
+#include "vsi_nn_error.h"
 
 vsi_bool vsi_nn_rnn_find_best_kernel_size
     (
@@ -351,6 +352,8 @@ vsi_nn_internal_tensor_t* vsi_nn_rnn_create_tp_fc
         /* create zero bias for NN/TP */
         tensor1 = vsi_nn_internal_create_zero_bias_tensor(
             self, &input->attr, &weight->attr, VSI_NN_OP_FCL, FALSE);
+        CHECK_PTR_FAIL_GOTO( tensor1, "Create tensor fail.", final );
+
         tensor = tensor1->t;
     }
     vsi_nn_internal_init_tensor_attr(&attr, output_dtype, use_virtual_tensor);
@@ -370,6 +373,7 @@ vsi_nn_internal_tensor_t* vsi_nn_rnn_create_tp_fc
         tensor2 = NULL;
     }
 
+final:
     return tensor2;
 }
 
@@ -400,6 +404,7 @@ vsi_nn_internal_tensor_t* vsi_nn_rnn_create_nn_fc
         /* create zero bias for NN/TP */
         tensor1 = vsi_nn_internal_create_zero_bias_tensor(
             self, &input->attr, &weight->attr, VSI_NN_OP_FCL, FALSE);
+        CHECK_PTR_FAIL_GOTO( tensor1, "Create tensor fail.", final );
         tensor = tensor1->t;
     }
 
@@ -432,6 +437,7 @@ vsi_nn_internal_tensor_t* vsi_nn_rnn_create_nn_fc
         tensor2 = NULL;
     }
 
+final:
     return tensor2;
 }
 
@@ -499,6 +505,8 @@ vsi_nn_internal_tensor_t* vsi_nn_rnn_create_nn_fc_relu
         /* create zero bias for NN/TP */
         tensor1 = vsi_nn_internal_create_zero_bias_tensor(
             self, &input->attr, &weight->attr, VSI_NN_OP_FCL, FALSE);
+
+        CHECK_PTR_FAIL_GOTO( tensor1, "Create tensor fail.", final );
         tensor = tensor1->t;
     }
 
@@ -536,6 +544,7 @@ vsi_nn_internal_tensor_t* vsi_nn_rnn_create_nn_fc_relu
         tensor2 = NULL;
     }
 
+final:
     return tensor2;
 }
 

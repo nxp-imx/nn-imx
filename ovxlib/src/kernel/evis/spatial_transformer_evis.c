@@ -565,42 +565,46 @@ static vsi_nn_kernel_node_t _setup
 
     // Get Matrix
     node = vsi_nn_kernel_create_node( graph, ikernels[MATRIX_INDEX] );
-    vsi_nn_kernel_node_pack_io( node_params, _GET_MATRIX_PARAM_NUM,
-            &inputs[1], 1, &tensors[0], 1 );
-    node_params[HAS_THETA_1_1] = vsi_nn_kernel_scalar_create( graph, I32, &has_theta_1_1 );
-    node_params[HAS_THETA_1_2] = vsi_nn_kernel_scalar_create( graph, I32, &has_theta_1_2 );
-    node_params[HAS_THETA_1_3] = vsi_nn_kernel_scalar_create( graph, I32, &has_theta_1_3 );
-    node_params[HAS_THETA_2_1] = vsi_nn_kernel_scalar_create( graph, I32, &has_theta_2_1 );
-    node_params[HAS_THETA_2_2] = vsi_nn_kernel_scalar_create( graph, I32, &has_theta_2_2 );
-    node_params[HAS_THETA_2_3] = vsi_nn_kernel_scalar_create( graph, I32, &has_theta_2_3 );
-    node_params[THETA_1_1] = vsi_nn_kernel_scalar_create( graph, F32, &theta_1_1 );
-    node_params[THETA_1_2] = vsi_nn_kernel_scalar_create( graph, F32, &theta_1_2 );
-    node_params[THETA_1_3] = vsi_nn_kernel_scalar_create( graph, F32, &theta_1_3 );
-    node_params[THETA_2_1] = vsi_nn_kernel_scalar_create( graph, F32, &theta_2_1 );
-    node_params[THETA_2_2] = vsi_nn_kernel_scalar_create( graph, F32, &theta_2_2 );
-    node_params[THETA_2_3] = vsi_nn_kernel_scalar_create( graph, F32, &theta_2_3 );
-    node_params[I_WIDTH] = vsi_nn_kernel_scalar_create( graph, F32, &input_w );
-    node_params[I_HEIGHT] = vsi_nn_kernel_scalar_create( graph, F32, &input_h );
-    node_params[O_WIDTH] = vsi_nn_kernel_scalar_create( graph, F32, &output_w );
-    node_params[O_HEIGHT] = vsi_nn_kernel_scalar_create( graph, F32, &output_h );
-    status  = vsi_nn_kernel_node_pass_param( node, node_params, _GET_MATRIX_PARAM_NUM );
-    vsi_nn_kernel_scalar_release( &node_params[HAS_THETA_1_1] );
-    vsi_nn_kernel_scalar_release( &node_params[HAS_THETA_1_2] );
-    vsi_nn_kernel_scalar_release( &node_params[HAS_THETA_1_3] );
-    vsi_nn_kernel_scalar_release( &node_params[HAS_THETA_2_1] );
-    vsi_nn_kernel_scalar_release( &node_params[HAS_THETA_2_2] );
-    vsi_nn_kernel_scalar_release( &node_params[HAS_THETA_2_3] );
-    vsi_nn_kernel_scalar_release( &node_params[THETA_1_1] );
-    vsi_nn_kernel_scalar_release( &node_params[THETA_1_2] );
-    vsi_nn_kernel_scalar_release( &node_params[THETA_1_3] );
-    vsi_nn_kernel_scalar_release( &node_params[THETA_2_1] );
-    vsi_nn_kernel_scalar_release( &node_params[THETA_2_2] );
-    vsi_nn_kernel_scalar_release( &node_params[THETA_2_3] );
-    vsi_nn_kernel_scalar_release( &node_params[I_WIDTH] );
-    vsi_nn_kernel_scalar_release( &node_params[I_HEIGHT] );
-    vsi_nn_kernel_scalar_release( &node_params[O_WIDTH] );
-    vsi_nn_kernel_scalar_release( &node_params[O_HEIGHT] );
-    vsi_nn_kernel_node_release( &node );
+
+    if (node)
+    {
+        vsi_nn_kernel_node_pack_io( node_params, _GET_MATRIX_PARAM_NUM,
+                &inputs[1], 1, &tensors[0], 1 );
+        node_params[HAS_THETA_1_1] = vsi_nn_kernel_scalar_create( graph, I32, &has_theta_1_1 );
+        node_params[HAS_THETA_1_2] = vsi_nn_kernel_scalar_create( graph, I32, &has_theta_1_2 );
+        node_params[HAS_THETA_1_3] = vsi_nn_kernel_scalar_create( graph, I32, &has_theta_1_3 );
+        node_params[HAS_THETA_2_1] = vsi_nn_kernel_scalar_create( graph, I32, &has_theta_2_1 );
+        node_params[HAS_THETA_2_2] = vsi_nn_kernel_scalar_create( graph, I32, &has_theta_2_2 );
+        node_params[HAS_THETA_2_3] = vsi_nn_kernel_scalar_create( graph, I32, &has_theta_2_3 );
+        node_params[THETA_1_1] = vsi_nn_kernel_scalar_create( graph, F32, &theta_1_1 );
+        node_params[THETA_1_2] = vsi_nn_kernel_scalar_create( graph, F32, &theta_1_2 );
+        node_params[THETA_1_3] = vsi_nn_kernel_scalar_create( graph, F32, &theta_1_3 );
+        node_params[THETA_2_1] = vsi_nn_kernel_scalar_create( graph, F32, &theta_2_1 );
+        node_params[THETA_2_2] = vsi_nn_kernel_scalar_create( graph, F32, &theta_2_2 );
+        node_params[THETA_2_3] = vsi_nn_kernel_scalar_create( graph, F32, &theta_2_3 );
+        node_params[I_WIDTH] = vsi_nn_kernel_scalar_create( graph, F32, &input_w );
+        node_params[I_HEIGHT] = vsi_nn_kernel_scalar_create( graph, F32, &input_h );
+        node_params[O_WIDTH] = vsi_nn_kernel_scalar_create( graph, F32, &output_w );
+        node_params[O_HEIGHT] = vsi_nn_kernel_scalar_create( graph, F32, &output_h );
+        status  = vsi_nn_kernel_node_pass_param( node, node_params, _GET_MATRIX_PARAM_NUM );
+        vsi_nn_kernel_scalar_release( &node_params[HAS_THETA_1_1] );
+        vsi_nn_kernel_scalar_release( &node_params[HAS_THETA_1_2] );
+        vsi_nn_kernel_scalar_release( &node_params[HAS_THETA_1_3] );
+        vsi_nn_kernel_scalar_release( &node_params[HAS_THETA_2_1] );
+        vsi_nn_kernel_scalar_release( &node_params[HAS_THETA_2_2] );
+        vsi_nn_kernel_scalar_release( &node_params[HAS_THETA_2_3] );
+        vsi_nn_kernel_scalar_release( &node_params[THETA_1_1] );
+        vsi_nn_kernel_scalar_release( &node_params[THETA_1_2] );
+        vsi_nn_kernel_scalar_release( &node_params[THETA_1_3] );
+        vsi_nn_kernel_scalar_release( &node_params[THETA_2_1] );
+        vsi_nn_kernel_scalar_release( &node_params[THETA_2_2] );
+        vsi_nn_kernel_scalar_release( &node_params[THETA_2_3] );
+        vsi_nn_kernel_scalar_release( &node_params[I_WIDTH] );
+        vsi_nn_kernel_scalar_release( &node_params[I_HEIGHT] );
+        vsi_nn_kernel_scalar_release( &node_params[O_WIDTH] );
+        vsi_nn_kernel_scalar_release( &node_params[O_HEIGHT] );
+        vsi_nn_kernel_node_release( &node );
+    }
 
     // Warp Affine
     node = vsi_nn_kernel_create_node( graph, ikernels[WARP_AFFINE_INDEX] );
@@ -617,19 +621,26 @@ static vsi_nn_kernel_node_t _setup
             border.constant_value.U8 = (vx_uint8)inputs[0]->attr.dtype.zero_point;
         }
         status  = vsi_nn_kernel_node_set_border( node, &border );
-        VSI_ASSERT( status == VSI_SUCCESS );
+        if ( VSI_SUCCESS != status )
+        {
+            goto final;
+        }
+        vsi_nn_kernel_node_pack_io( warp_affine_node_params, _WARP_AFFINE_PARAM_NUM,
+                warp_affine_tensors, 2, outputs, 1 );
+        status  = vsi_nn_kernel_node_pass_param( node, warp_affine_node_params, _WARP_AFFINE_PARAM_NUM );
+        if ( VSI_SUCCESS != status )
+        {
+            goto final;
+        }
     }
-    vsi_nn_kernel_node_pack_io( warp_affine_node_params, _WARP_AFFINE_PARAM_NUM,
-            warp_affine_tensors, 2, outputs, 1 );
-    status  = vsi_nn_kernel_node_pass_param( node, warp_affine_node_params, _WARP_AFFINE_PARAM_NUM );
 final:
-    for( i = 0; i < INTERNAL_KERNEL_SIZE; i ++ )
+    for ( i = 0; i < INTERNAL_KERNEL_SIZE; i ++ )
     {
-        if( ikernels[i] )
+        if ( ikernels[i] )
         {
             vsi_nn_kernel_release( &ikernels[i] );
         }
-        if( tensors[i] )
+        if ( tensors[i] )
         {
             vsi_nn_ReleaseTensor( &tensors[i] );
         }

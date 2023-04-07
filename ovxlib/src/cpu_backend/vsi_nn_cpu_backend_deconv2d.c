@@ -27,6 +27,7 @@
 #include "vsi_nn_log.h"
 #include "kernel/vsi_nn_kernel.h"
 #include "ops/vsi_nn_op_deconvolution.h"
+#include "vsi_nn_error.h"
 
 #define _INPUT_NUM          (3)
 #define _OUTPUT_NUM         (1)
@@ -47,6 +48,7 @@ static vsi_status op_compute
     vsi_nn_kernel_param_t * param = NULL;
 
     param = vsi_nn_kernel_param_create();
+    CHECK_PTR_FAIL_GOTO( param, "Create kernel param fail.", final );
 
     vsi_nn_kernel_param_add_buffer( param, "stride", self->nn_param.deconv.stride, 2 );
     vsi_nn_kernel_param_add_buffer( param, "pad", self->nn_param.deconv.pad, 4 );
@@ -68,6 +70,7 @@ static vsi_status op_compute
         status = InternalDeconv2DOp.compute( self, inputs, outputs );
     }
 
+final:
     vsi_nn_kernel_param_release( &param );
     return status;
 } /* op_compute() */

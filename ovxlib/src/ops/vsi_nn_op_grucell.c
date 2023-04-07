@@ -39,6 +39,7 @@
 #include "utils/vsi_nn_tensor_op.h"
 #include "utils/vsi_nn_util.h"
 #include "ops/vsi_nn_op_grucell.h"
+#include "vsi_nn_error.h"
 
 typedef struct _vsi_nn_grucell_local
 {
@@ -64,6 +65,7 @@ static vsi_nn_internal_tensor_t * _create_fc
     {
         /* create zero bias for NN/TP */
         tmp_tensor = vsi_nn_internal_create_zero_bias_tensor(self, &input->attr, &weight->attr, VSI_NN_OP_FCL, FALSE);
+        CHECK_PTR_FAIL_GOTO( tmp_tensor, "Create tensor fail.", final );
         bias_tensor = tmp_tensor->t;
     }
     else
@@ -95,6 +97,7 @@ static vsi_nn_internal_tensor_t * _create_fc
     fc_node->outputs[0] = fc_out->t;
     vsi_nn_internal_setup_node(self, fc_node);
 
+final:
     return fc_out;
 } /* () */
 

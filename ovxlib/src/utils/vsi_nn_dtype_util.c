@@ -408,7 +408,7 @@ vsi_bool vsi_nn_QuantCheck
             VSILOGE("input_fl[%d] + weight_fl[%d] != bias_fl[%d]",
                 input->attr.dtype.fl,
                 weight->attr.dtype.fl,
-                bias->attr.dtype.fl);
+                bias ? bias->attr.dtype.fl : 0);
         }
         break;
     case VSI_NN_QNT_TYPE_AFFINE_SYMMETRIC:

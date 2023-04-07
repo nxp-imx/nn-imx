@@ -446,8 +446,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_l2norm_z_direction_mul_node
     )
 {
     const int32_t spInitInstsNum = 0;
-    const int32_t spLoopInstsNum = 1;
-    const int32_t spInstsNum = spInitInstsNum + spLoopInstsNum;
+    int32_t spLoopInstsNum = 1;
+    int32_t spInstsNum = spInitInstsNum + spLoopInstsNum;
 
     const uint32_t input_count = 1;
     const uint32_t output_count = 1;
@@ -465,9 +465,17 @@ vsi_nn_kernel_node_t vsi_nn_sp_l2norm_z_direction_mul_node
     memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
     vsi_nn_init_spinst_attr(&attr);
 
-    /* loop inst0: v11 = r3 * v11 */
-    status = vsi_nn_sp_mul(&sp_insts_param[0], VSI_NN_SP_SR3, VSI_NN_SP_VR11, VSI_NN_SP_VR11);
-    CHECK_STATUS_FAIL_GOTO(status, final );
+    if (output_scale == 1.0f)
+    {
+        spLoopInstsNum = 0;
+        spInstsNum = spInitInstsNum + spLoopInstsNum;
+    }
+    else
+    {
+        /* loop inst0: v11 = r3 * v11 */
+        status = vsi_nn_sp_mul(&sp_insts_param[0], VSI_NN_SP_SR3, VSI_NN_SP_VR11, VSI_NN_SP_VR11);
+        CHECK_STATUS_FAIL_GOTO(status, final );
+    }
 
     attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_XYMERGE;
 

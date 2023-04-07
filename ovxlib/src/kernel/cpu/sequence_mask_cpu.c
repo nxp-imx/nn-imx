@@ -53,7 +53,7 @@ DEF_KERNEL_EXECUTOR(_sequence_mask_exec)
     size_t param_size
     )
 {
-    vsi_status status = VX_SUCCESS;
+    vsi_status status = VSI_FAILURE;
     vsi_nn_kernel_tensor_t tensors[_CPU_IO_NUM] = { NULL };
     float * buffer_in = NULL;
     float * buffer = NULL;
@@ -65,7 +65,9 @@ DEF_KERNEL_EXECUTOR(_sequence_mask_exec)
     tensors[1]  = (vsi_nn_kernel_tensor_t)param[1];
 
     attr[0] = vsi_nn_kernel_tensor_attr_create( tensors[0] );
+    CHECK_PTR_FAIL_GOTO( attr[0], "Create tensor attr buffer fail.", final );
     attr[1] = vsi_nn_kernel_tensor_attr_create( tensors[1] );
+    CHECK_PTR_FAIL_GOTO( attr[1], "Create tensor attr buffer fail.", final );
 
     out_elements = vsi_nn_kernel_tensor_attr_get_size( attr[1] );
 

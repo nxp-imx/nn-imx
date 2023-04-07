@@ -54,7 +54,7 @@ static vsi_nn_tensor_t* _expand_scale_tensor
     vsi_size_t          scale_size_out
     )
 {
-    vsi_status status = VX_SUCCESS;
+    vsi_status status = VSI_FAILURE;
     float* f32_in_buffer   = NULL;
     float* f32_out_buffer  = NULL;
     vsi_size_t  i = 0;
@@ -144,13 +144,7 @@ static vsi_bool _check_value_is_equal_to_one
         }
     }
 
-    if ( !tensor->attr.is_created_from_handle )
-    {
-        if ( tensor_data )
-        {
-            free(tensor_data);
-        }
-    }
+    vsi_nn_safe_free(tensor_data);
 
     return ret;
 }

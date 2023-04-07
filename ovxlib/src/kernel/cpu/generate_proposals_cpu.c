@@ -206,12 +206,16 @@ DEF_KERNEL_EXECUTOR(_compute)
     int32_t postNmsTopN;
     float iouThreshold;
     float minSize;
+    float * roiBuffer = NULL;
+    float * roiTransformedBuffer = NULL;
+    uint32_t* select = NULL;
 
     /* prepare data */
     for (i = 0; i < _INPUT_NUM; i ++)
     {
         input[i] = (vsi_nn_kernel_tensor_t)param[i];
         in_attr[i] = vsi_nn_kernel_tensor_attr_create( input[i] );
+        CHECK_PTR_FAIL_GOTO( in_attr[i], "Create tensor attr buffer fail.", final );
         f32_in_buffer[i] = (float*)vsi_nn_kernel_tensor_create_buffer( input[i], in_attr[i], TRUE );
         CHECK_PTR_FAIL_GOTO( f32_in_buffer[i], "Create input0 buffer fail.", final );
     }
@@ -219,6 +223,7 @@ DEF_KERNEL_EXECUTOR(_compute)
     {
         output[i] = (vsi_nn_kernel_tensor_t)param[i + _INPUT_NUM];
         out_attr[i] = vsi_nn_kernel_tensor_attr_create( output[i] );
+        CHECK_PTR_FAIL_GOTO( out_attr[i], "Create tensor attr buffer fail.", final );
         vsi_nn_kernel_tensor_attr_get_stride( out_attr[i], out_stride_size[i] );
         out_elements[i] = vsi_nn_kernel_tensor_attr_get_size( out_attr[i] );
         out_bytes[i] = out_elements[i] * sizeof(float);
@@ -252,15 +257,19 @@ DEF_KERNEL_EXECUTOR(_compute)
         vsi_size_t batchSize = height * width * numAnchors;
         vsi_size_t roiBufferSize = batchSize * kRoiDim;
 
-        float * roiBuffer = (float*)malloc(roiBufferSize * sizeof(float));
-        float * roiTransformedBuffer = (float*)malloc(roiBufferSize * sizeof(float));
-        uint32_t* select = (uint32_t*)malloc(batchSize * sizeof(uint32_t));
         uint32_t index = 0;
         vsi_size_t scores_index = 0;
         vsi_size_t bboxDeltas_index = 0;
         vsi_size_t imageInfo_index = 0;
         uint32_t scores_out_index = 0;
         uint32_t roi_out_index = 0;
+
+        roiBuffer = (float*)malloc(roiBufferSize * sizeof(float));
+        CHECK_PTR_FAIL_GOTO( roiBuffer, "Create roiBuffer buffer fail.", final );
+        roiTransformedBuffer = (float*)malloc(roiBufferSize * sizeof(float));
+        CHECK_PTR_FAIL_GOTO( roiTransformedBuffer, "Create roiTransformedBuffer buffer fail.", final );
+        select = (uint32_t*)malloc(batchSize * sizeof(uint32_t));
+        CHECK_PTR_FAIL_GOTO( select, "Create select buffer fail.", final );
 
         // Compute the roi region for each anchor.
         for(h = 0; h < height; h++)
@@ -383,10 +392,6 @@ DEF_KERNEL_EXECUTOR(_compute)
             bboxDeltas_index += roiBufferSize;
             imageInfo_index += imageInfoLength;
         }
-
-        vsi_nn_safe_free(roiBuffer);
-        vsi_nn_safe_free(roiTransformedBuffer);
-        vsi_nn_safe_free(select);
     }
 
     /* save data */
@@ -398,13 +403,14 @@ DEF_KERNEL_EXECUTOR(_compute)
     }
 
 final:
+    vsi_nn_safe_free(roiBuffer);
+    vsi_nn_safe_free(roiTransformedBuffer);
+    vsi_nn_safe_free(select);
+
     for (i = 0; i < _INPUT_NUM; i++)
     {
-        if (f32_in_buffer[i])
-        {
-            free(f32_in_buffer[i]);
-            f32_in_buffer[i] = NULL;
-        }
+        vsi_nn_safe_free(f32_in_buffer[i]);
+
         if (in_attr[i])
         {
             vsi_nn_kernel_tensor_attr_release( &in_attr[i] );
@@ -412,11 +418,8 @@ final:
     }
     for(i = 0; i < _OUTPUT_NUM; i++)
     {
-        if (f32_out_buffer[i])
-        {
-            free(f32_out_buffer[i]);
-            f32_out_buffer[i] = NULL;
-        }
+        vsi_nn_safe_free(f32_out_buffer[i]);
+
         if (out_attr[i])
         {
             vsi_nn_kernel_tensor_attr_release( &out_attr[i] );
