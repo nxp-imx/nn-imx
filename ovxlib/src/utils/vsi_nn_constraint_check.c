@@ -162,7 +162,7 @@ vsi_bool validate_op_io_types
 {
     vsi_bool matched = FALSE;
 
-    if(self && self->attr.enable_op_constraint_check) {
+    if(self && self->attr.enable_op_constraint_check && op_constraint_reg) {
         uint32_t i = 0;
         int32_t j = 0;
         int32_t reg_tensor_num = op_constraint_reg->reg_input_num + op_constraint_reg->reg_output_num;
@@ -218,14 +218,20 @@ char* generate_op_io_types_desc
     char* desc = NULL;
 
     for(i = 0; i < inputs_num; i++) {
-        if(inputs[i]) {
+        if (inputs[i] &&
+            _get_qtype_name(inputs[i]->attr.dtype.qnt_type) &&
+            _get_dtype_name(inputs[i]->attr.dtype.vx_type))
+        {
             total_sz += snprintf(NULL, 0, "%s %s, ",
                     _get_qtype_name(inputs[i]->attr.dtype.qnt_type),
                     _get_dtype_name(inputs[i]->attr.dtype.vx_type));
         }
     }
     for(i = 0; i < outputs_num; i++) {
-        if(outputs[i]) {
+        if (outputs[i] &&
+            _get_qtype_name(outputs[i]->attr.dtype.qnt_type) &&
+            _get_dtype_name(outputs[i]->attr.dtype.vx_type))
+        {
             total_sz += snprintf(NULL, 0, "%s %s, ",
                     _get_qtype_name(outputs[i]->attr.dtype.qnt_type),
                     _get_dtype_name(outputs[i]->attr.dtype.vx_type));
@@ -234,17 +240,24 @@ char* generate_op_io_types_desc
 
     total_sz += 1; /* terminator */
     desc = (char*)malloc(sizeof(char) * total_sz);
+    CHECK_PTR_FAIL_GOTO( desc, "Create buffer fail.", final );
     memset(desc, 0x00, sizeof(char) * total_sz);
 
     for(i = 0; i < inputs_num; i++) {
-        if(inputs[i] && total_sz >= used_sz) {
+        if (inputs[i] && total_sz >= used_sz &&
+            _get_qtype_name(inputs[i]->attr.dtype.qnt_type) &&
+            _get_dtype_name(inputs[i]->attr.dtype.vx_type))
+        {
             used_sz += snprintf(desc + used_sz, total_sz - used_sz, "%s %s, ",
                     _get_qtype_name(inputs[i]->attr.dtype.qnt_type),
                     _get_dtype_name(inputs[i]->attr.dtype.vx_type));
         }
     }
     for(i = 0; i < outputs_num; i++) {
-        if(outputs[i] && total_sz >= used_sz) {
+        if (outputs[i] && total_sz >= used_sz &&
+            _get_qtype_name(outputs[i]->attr.dtype.qnt_type) &&
+            _get_dtype_name(outputs[i]->attr.dtype.vx_type))
+        {
             used_sz += snprintf(desc + used_sz, total_sz - used_sz, "%s %s, ",
                     _get_qtype_name(outputs[i]->attr.dtype.qnt_type),
                     _get_dtype_name(outputs[i]->attr.dtype.vx_type));
@@ -255,6 +268,7 @@ char* generate_op_io_types_desc
         desc[used_sz - 2] = '\0';
     }
 
+final:
     return desc;
 }
 

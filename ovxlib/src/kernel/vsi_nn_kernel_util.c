@@ -30,6 +30,7 @@
 #include "vsi_nn_error.h"
 #include "vsi_nn_tensor_util.h"
 #include "kernel/vsi_nn_kernel.h"
+#include "vsi_nn_error.h"
 
 typedef enum
 {
@@ -73,6 +74,11 @@ vsi_status vsi_nn_kernel_copy_tensor_veiw_patch
         vx_trensor_addressing addr = NULL;
         vx_size dim_sizes[VSI_NN_MAX_DIM_NUM], strides[VSI_NN_MAX_DIM_NUM];
         addr = (vx_trensor_addressing)malloc(sizeof(vx_tensorpatch_addressing_t));
+        if ( NULL == addr )
+        {
+            VSILOGE("Call vxCreateTensorAddressing fail");
+            return status;
+        }
         addr->num_of_dims = (vx_uint32)attr->shape->size;
 
         for (i = 0; i < dim; i++)
@@ -138,6 +144,7 @@ vsi_status vsi_nn_kernel_copy_tensor_veiw_patch
         }
     }
 #endif
+
     return status;
 } /* vsi_nn_kernel_copy_tensor_veiw_patch() */
 
@@ -377,10 +384,12 @@ vsi_status vsi_nn_kernel_tensor_write_from_float
         vsi_size_t sz = 0;
         sz = vsi_nn_kernel_tensor_attr_get_size( attr );
         internal_buffer0 = malloc( sz );
+        CHECK_PTR_FAIL_GOTO( internal_buffer0, "Create buffer fail.", final );
     }
     else
     {
         internal_buffer0 = malloc( bytes );
+        CHECK_PTR_FAIL_GOTO( internal_buffer0, "Create buffer fail.", final );
         internal_buffer = internal_buffer0;
     }
 
@@ -422,6 +431,7 @@ vsi_status vsi_nn_kernel_tensor_write_from_float
             if ( attr->dtype == I4 || attr->dtype == U4 )
             {
                 internal_buffer = malloc( bytes );
+                CHECK_PTR_FAIL_GOTO( internal_buffer, "Create buffer fail.", final );
                 status = vsi_nn_kernel_pack_4bit_data(attr, (uint8_t*)internal_buffer0, (uint8_t*)internal_buffer);
             }
         }
@@ -442,7 +452,7 @@ final:
     {
         vsi_nn_kernel_tensor_attr_release( &internal_attr );
     }
-    if ( attr->dtype == I4 || attr->dtype == U4 )
+    if ( attr && (attr->dtype == I4 || attr->dtype == U4) )
     {
         vsi_nn_safe_free(internal_buffer0);
     }
@@ -764,6 +774,7 @@ vsi_nn_tensor_t* vsi_nn_merge_input_zeropoint_to_bias
     uint32_t  i, j;
     memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
     weight_data = vsi_nn_ConvertTensorToData(graph, weight);
+    CHECK_PTR_FAIL_GOTO( weight_data, "Create buffer fail.", final );
 
     if (bias == NULL)
     {
@@ -787,9 +798,11 @@ vsi_nn_tensor_t* vsi_nn_merge_input_zeropoint_to_bias
             attr.dim_num  = 2;
         }
         bias_data = (int32_t *)vsi_nn_ConvertTensorToData(graph, bias);
+        CHECK_PTR_FAIL_GOTO( new_bias_data_ptr, "Create buffer fail.", final );
     }
 
     new_bias_data_ptr = (int32_t *)malloc(attr.size[0] * sizeof(int32_t));
+    CHECK_PTR_FAIL_GOTO( new_bias_data_ptr, "Create buffer fail.", final );
     memset((void *)new_bias_data_ptr, 0, sizeof(int32_t) * attr.size[0]);
 
     if (input->attr.dtype.zero_point != 0)
@@ -815,6 +828,7 @@ vsi_nn_tensor_t* vsi_nn_merge_input_zeropoint_to_bias
 
     new_bias = vsi_nn_CreateTensorFromData(graph, (uint8_t *)new_bias_data_ptr, &attr);
 
+final:
     vsi_nn_safe_free( new_bias_data_ptr );
     vsi_nn_safe_free( bias_data );
     vsi_nn_safe_free( weight_data );

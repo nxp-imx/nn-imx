@@ -35,12 +35,12 @@
 #include "vsi_nn_ops.h"
 #include "vsi_nn_tensor.h"
 #include "vsi_nn_tensor_util.h"
-#include "libnnext/vsi_nn_vxkernel.h"
 #include "ops/vsi_nn_op_grucell_ovxlib.h"
 #include "vsi_nn_internal_node.h"
 #include "vsi_nn_rnn_helper.h"
 #include "utils/vsi_nn_tensor_op.h"
 #include "utils/vsi_nn_util.h"
+#include "vsi_nn_error.h"
 
 #define USE_GRUCELL_ACTIVATION
 
@@ -629,6 +629,7 @@ static vsi_bool op_setup_float_cudnn_v2
     vsi_nn_internal_tensor_t* tensor_r = NULL;
     vsi_nn_internal_tensor_t* concated_input = NULL;
     vsi_nn_tensor_attr_t attr;
+    vsi_bool ret = FALSE;
 
     /* input to r,z */
     p->local->weights_update = vsi_nn_ConcatTensor(self->graph, 1/* axis */,
@@ -671,6 +672,15 @@ static vsi_bool op_setup_float_cudnn_v2
     tmp_tensor = vsi_nn_rnn_create_tp_fc(self, concated_input->t, p->local->weights_input,
         p->local->bias_z_r, &dtype, use_virtual_tensor);
 
+    {
+        uint32_t _slices[] = { (uint32_t)inputs[GRUCELL_INPUT_INPUT]->attr.size[0],
+            (uint32_t)inputs[GRUCELL_INPUT_H_STATE]->attr.size[0] };
+        splited_input_fc_output_tensors = vsi_nn_create_split(self, concated_input->t,
+            0, 2, _slices, use_virtual_tensor);
+        CHECK_PTR_FAIL_GOTO( splited_input_fc_output_tensors, "Create tensor fail.", final );
+        ret = TRUE;
+    }
+
     dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
     if ( splited_input_fc_output_tensors[0]->t->attr.dtype.vx_type == VSI_NN_TYPE_BFLOAT16 ||
          splited_input_fc_output_tensors[0]->t->attr.dtype.vx_type == VSI_NN_TYPE_FLOAT32 )
@@ -681,12 +691,7 @@ static vsi_bool op_setup_float_cudnn_v2
     {
         dtype.vx_type = VSI_NN_TYPE_FLOAT16;
     }
-    {
-        uint32_t _slices[] = { (uint32_t)inputs[GRUCELL_INPUT_INPUT]->attr.size[0],
-            (uint32_t)inputs[GRUCELL_INPUT_H_STATE]->attr.size[0] };
-        splited_input_fc_output_tensors = vsi_nn_create_split(self, concated_input->t,
-            0, 2, _slices, use_virtual_tensor);
-    }
+
     input2cand_output = vsi_nn_rnn_create_tp_fc(self, splited_input_fc_output_tensors[0]->t,
         inputs[GRUCELL_INPUT_WEIGHT_I2C], inputs[GRUCELL_INPUT_BIAS_I2C], &dtype, use_virtual_tensor);
 
@@ -769,7 +774,8 @@ static vsi_bool op_setup_float_cudnn_v2
     vsi_nn_internal_setup_node(self, curr);
 #endif
 
-    return TRUE;
+final:
+    return ret;
 }
 
 static vsi_bool op_setup_default
@@ -1041,8 +1047,18 @@ static vsi_bool op_setup_default
             }
 
             wei_r2c_tensor = vsi_nn_ConvertTensorDtype(self->graph, inputs[GRUCELL_INPUT_WEIGHT_H2C], &(attr.dtype));
+            if (wei_r2c_tensor == NULL)
+            {
+                VSILOGE("Convert tensor dtype fail (GRUCELL).\n");
+                goto error;
+            }
             attr.dtype.vx_type = VSI_NN_TYPE_FLOAT32;
             bias_r2c_tensor = vsi_nn_ConvertTensorDtype(self->graph, inputs[GRUCELL_INPUT_BIAS_H2C], &(attr.dtype));
+            if (bias_r2c_tensor == NULL)
+            {
+                VSILOGE("Convert tensor dtype fail (GRUCELL).\n");
+                goto error;
+            }
             rh_cand_fc_output = vsi_nn_rnn_create_tp_fc(self,
                                     rh_mul_outputs->t,
                                     wei_r2c_tensor,

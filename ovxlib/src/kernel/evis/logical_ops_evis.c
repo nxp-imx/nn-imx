@@ -109,7 +109,7 @@ DEF_KERNEL_INITIALIZER(_logical_ops_initializer)
     size_t                              param_size
     )
 {
-    vsi_status status = VX_FAILURE;
+    vsi_status status = VSI_FAILURE;
     // Alignment with a power of two value.
     gpu_param_t gpu_param = {
         3,

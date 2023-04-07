@@ -424,7 +424,7 @@ static vsi_nn_kernel_node_t _setup
     )
 {
     vsi_status status = VSI_FAILURE;
-    vsi_nn_kernel_node_param_t node_params[_TOPK_ODD_EVEN_SORT_PARAM_NUM];
+    vsi_nn_kernel_node_param_t node_params[_TOPK_ODD_EVEN_SORT_PARAM_NUM] = {NULL};
     vsi_nn_kernel_node_t node = NULL;
     vsi_size_t block_size = inputs[0]->attr.size[0];
     vsi_size_t block_num = 1;
@@ -505,10 +505,10 @@ static vsi_nn_kernel_node_t _setup
             vsi_nn_kernel_node_pack_io( node_params, param_num,
                     rs_tensors, input_num, &rs_tensors[input_num], output_num );
             /* Pass parameters to node. */
-            node_params[index++]  = vsi_nn_kernel_scalar_create(graph, I32, &inputScale );
-            node_params[index++]   = vsi_nn_kernel_scalar_create(graph, I32, &inputTail );
+            node_params[index++] = vsi_nn_kernel_scalar_create(graph, I32, &inputScale );
+            node_params[index++] = vsi_nn_kernel_scalar_create(graph, I32, &inputTail );
             node_params[index++] = vsi_nn_kernel_scalar_create(graph, I32, &outputScale );
-            node_params[index++]  = vsi_nn_kernel_scalar_create(graph, I32, &outputTail );
+            node_params[index++] = vsi_nn_kernel_scalar_create(graph, I32, &outputTail );
             if (is_odd_even_sort)
             {
                 node_params[SCALAR_INPUT_SIZE] = vsi_nn_kernel_scalar_create(

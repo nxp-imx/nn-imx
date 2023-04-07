@@ -166,7 +166,7 @@ DEF_KERNEL_EXECUTOR(_compute)
     size_t                              param_size
     )
 {
-    vsi_status status = VX_SUCCESS;
+    vsi_status status = VSI_FAILURE;
     vsi_nn_kernel_tensor_t tensors[_INPUT_NUM] = { NULL };
     vsi_nn_kernel_tensor_t output[_OUTPUT_NUM] = {NULL};
     float * buffer[_INPUT_NUM] = { NULL };
@@ -207,6 +207,7 @@ DEF_KERNEL_EXECUTOR(_compute)
     {
         tensors[i]  = (vsi_nn_kernel_tensor_t)param[i];
         attr[i] = vsi_nn_kernel_tensor_attr_create( tensors[i] );
+        CHECK_PTR_FAIL_GOTO( attr[i], "Create tensor attr buffer fail.", final );
 
         vsi_nn_kernel_tensor_attr_get_stride( attr[i], stride_size[i] );
         buffer[i] = (float*)vsi_nn_kernel_tensor_create_buffer( tensors[i], attr[i], TRUE );
@@ -217,6 +218,7 @@ DEF_KERNEL_EXECUTOR(_compute)
     {
         output[i] = (vsi_nn_kernel_tensor_t)param[i + _INPUT_NUM];
         out_attr[i] = vsi_nn_kernel_tensor_attr_create( output[i] );
+        CHECK_PTR_FAIL_GOTO( out_attr[i], "Create tensor attr buffer fail.", final );
 
         out_elements[i] = vsi_nn_kernel_tensor_attr_get_size( out_attr[i] );
         f32_out_buffer[i] = (float *)malloc( out_elements[i] * sizeof(float) );

@@ -497,7 +497,7 @@ static vsi_nn_kernel_node_t _setup
     attr.size[1] = 1;
     attr.dim_num = 2;
     tensor_preprocess = vsi_nn_CreateTensor( graph, &attr );
-
+    CHECK_PTR_FAIL_GOTO( tensor_preprocess, "Create tensor fail.", final );
     // preprocess
     tmp_node = vsi_nn_kernel_create_node( graph, kernel_preprocess );
     if (tmp_node)

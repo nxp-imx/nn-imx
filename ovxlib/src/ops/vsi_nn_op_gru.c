@@ -39,6 +39,7 @@
 #include "utils/vsi_nn_tensor_op.h"
 #include "utils/vsi_nn_util.h"
 #include "ops/vsi_nn_op_gru.h"
+#include "vsi_nn_error.h"
 
 typedef struct _vsi_nn_gru_local
 {
@@ -215,8 +216,10 @@ static vsi_bool op_setup
     }
 
     split_outputs = (vsi_nn_tensor_t **)malloc(timestep * sizeof(vsi_nn_tensor_t *));
+    CHECK_PTR_FAIL_GOTO( split_outputs, "Create buffer fail.", final );
     memset(split_outputs, 0, timestep * sizeof(vsi_nn_tensor_t *));
     gru_step_outputs = (vsi_nn_tensor_t **)malloc(timestep * sizeof(vsi_nn_tensor_t *));
+    CHECK_PTR_FAIL_GOTO( gru_step_outputs, "Create buffer fail.", final );
     memset(gru_step_outputs, 0, timestep * sizeof(vsi_nn_tensor_t *));
 
     vsi_nn_rnn_split_input_tensor(self, input_tensor, split_outputs, (uint32_t)timestep, use_virtual_tensor);
@@ -326,6 +329,7 @@ static vsi_bool op_setup
         }
     }
 
+final:
     vsi_nn_safe_free( split_outputs );
     vsi_nn_safe_free( gru_step_outputs );
 

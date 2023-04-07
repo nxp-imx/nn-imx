@@ -36,6 +36,7 @@
 #include "vsi_nn_tensor_util.h"
 #include "vsi_nn_internal_node.h"
 #include "utils/vsi_nn_util.h"
+#include "vsi_nn_error.h"
 
 static vsi_status op_compute
     (
@@ -44,8 +45,24 @@ static vsi_status op_compute
     vsi_nn_tensor_t ** outputs
     )
 {
-    vsi_status status = vsi_nn_internal_compute_node( self );
-    self->n = vsi_nn_internal_get_node_by_uid(self, 1)->node->n;
+    vsi_status status = VSI_SUCCESS;
+    vsi_nn_internal_node_t* interal_node = NULL;
+
+    status = vsi_nn_internal_compute_node( self );
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
+    interal_node = vsi_nn_internal_get_node_by_uid(self, 1);
+
+    if (interal_node)
+    {
+        self->n = interal_node->node->n;
+    }
+    else
+    {
+        status = VSI_FAILURE;
+    }
+
+final:
     return status;
 } /* op_compute() */
 

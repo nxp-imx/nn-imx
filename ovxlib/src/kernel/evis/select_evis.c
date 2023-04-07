@@ -143,7 +143,7 @@ DEF_KERNEL_INITIALIZER(_select_initializer)
         (( IN0_TYPE << 24) | ( IN1_TYPE << 16) | ( OUT_TYPE << 8))
 #define MAX_MULTIPLIER_NUM      (65535)
 #define MAX_POST_SHIFT_BITS     (31)
-    vsi_status status = VX_SUCCESS;
+    vsi_status status = VSI_FAILURE;
     // Alignment with a power of two value.
     gpu_param_t gpu_param = {
         3,

@@ -54,7 +54,7 @@ DEF_KERNEL_EXECUTOR(_softmax_exec)
     size_t param_size
     )
 {
-    vsi_status status = VX_SUCCESS;
+    vsi_status status = VSI_FAILURE;
     float* buffer[_CPU_IO_NUM] = { NULL };
     vsi_nn_kernel_tensor_t tensors[_CPU_IO_NUM] = { NULL };
     vsi_nn_kernel_tensor_attr_t* attr[_CPU_IO_NUM] = { NULL };
@@ -68,7 +68,9 @@ DEF_KERNEL_EXECUTOR(_softmax_exec)
     tensors[1] = (vsi_nn_kernel_tensor_t)param[1];
 
     attr[0] = vsi_nn_kernel_tensor_attr_create( tensors[0] );
+    CHECK_PTR_FAIL_GOTO( attr[0], "Create tensor attr buffer fail.", final );
     attr[1] = vsi_nn_kernel_tensor_attr_create( tensors[1] );
+    CHECK_PTR_FAIL_GOTO( attr[1], "Create tensor attr buffer fail.", final );
 
     status = vsi_nn_kernel_scalar_read_int32((vsi_nn_kernel_scalar_t)param[2], &sf_axis);
     CHECK_STATUS_FAIL_GOTO(status, final );

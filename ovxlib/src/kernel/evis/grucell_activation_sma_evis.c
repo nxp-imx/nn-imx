@@ -110,7 +110,7 @@ DEF_KERNEL_INITIALIZER(_grucell_activation_sma_initializer)
 {
 #define _PACK_A_GRUCELL_ACTIVATION_SMA_KEY( IN0_TYPE, IN1_TYPE, IN2_TYPE, OUT_TYPE )    \
         (( IN1_TYPE << 24) | ( IN1_TYPE << 16) | ( IN0_TYPE << 8) | ( OUT_TYPE))
-    vsi_status status = VX_SUCCESS;
+    vsi_status status = VSI_FAILURE;
     // Alignment with a power of two value.
     gpu_param_t gpu_param = {
         3,

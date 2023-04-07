@@ -518,8 +518,10 @@ static vx_program _create_program_from_executable
 
     program_info.data = _load_internal_executable(
             source_info->data[0], &program_info.size, kernel->type);
+    CHECK_PTR_FAIL_GOTO( program_info.data, "Create buffer fail.", final );
     program = vxCreateProgramWithBinary( graph->ctx->c,
             (const vx_uint8 *)program_info.data, program_info.size );
+final:
     return program;
 } /* _create_program_from_executable() */
 

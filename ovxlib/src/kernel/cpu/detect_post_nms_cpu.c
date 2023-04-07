@@ -212,12 +212,16 @@ DEF_KERNEL_EXECUTOR(_compute)
     float   iou_threshold    = 0.0f;
     int32_t is_bg_in_label   = 0;
     vsi_size_t numOutDetection = 0;
+    uint32_t* select = NULL;
+    float* maxScores = NULL;
+    uint32_t* scoreInds = NULL;
 
     /* prepare data */
     for ( i = 0; i < _INPUT_NUM; i++ )
     {
         input[i] = (vsi_nn_kernel_tensor_t)param[i];
         in_attr[i] = vsi_nn_kernel_tensor_attr_create( input[i] );
+        CHECK_PTR_FAIL_GOTO( in_attr[i], "Create tensor attr buffer fail.", final );
         f32_in_buffer[i] = (float*)vsi_nn_kernel_tensor_create_buffer( input[i], in_attr[i], TRUE );
         CHECK_PTR_FAIL_GOTO( f32_in_buffer[i], "Create input0 buffer fail.", final );
     }
@@ -225,6 +229,7 @@ DEF_KERNEL_EXECUTOR(_compute)
     {
         output[i] = (vsi_nn_kernel_tensor_t)param[i + _INPUT_NUM];
         out_attr[i] = vsi_nn_kernel_tensor_attr_create( output[i] );
+        CHECK_PTR_FAIL_GOTO( out_attr[i], "Create tensor attr buffer fail.", final );
         vsi_nn_kernel_tensor_attr_get_stride( out_attr[i], out_stride_size[i] );
         out_elements[i] = vsi_nn_kernel_tensor_attr_get_size( out_attr[i] );
         out_bytes[i] = out_elements[i] * sizeof(float);
@@ -252,9 +257,13 @@ DEF_KERNEL_EXECUTOR(_compute)
         uint32_t kRoiDim = 4;
         vsi_size_t roi_out_index = 0;
         vsi_size_t class_out_index = 0;
-        uint32_t* select = (uint32_t*)malloc(numAnchors * numClasses * sizeof(uint32_t));
-        float* maxScores = (float*)malloc(numAnchors * sizeof(float));
-        uint32_t* scoreInds = (uint32_t*)malloc((numClasses - 1) * sizeof(uint32_t));
+
+        select = (uint32_t*)malloc(numAnchors * numClasses * sizeof(uint32_t));
+        CHECK_PTR_FAIL_GOTO( select, "Create buffer fail.", final );
+        maxScores = (float*)malloc(numAnchors * sizeof(float));
+        CHECK_PTR_FAIL_GOTO( maxScores, "Create buffer fail.", final );
+        scoreInds = (uint32_t*)malloc((numClasses - 1) * sizeof(uint32_t));
+        CHECK_PTR_FAIL_GOTO( scoreInds, "Create buffer fail.", final );
 
         for ( n = 0; n < numBatches; n++ )
         {
@@ -403,9 +412,6 @@ DEF_KERNEL_EXECUTOR(_compute)
             class_out_index += numOutDetection;
         }
 
-        if (select) free(select);
-        if (maxScores) free(maxScores);
-        if (scoreInds) free(scoreInds);
     }
     /* save data */
     for ( i = 0; i < _OUTPUT_NUM; i++ )
@@ -416,6 +422,10 @@ DEF_KERNEL_EXECUTOR(_compute)
     }
 
 final:
+    vsi_nn_safe_free(select);
+    vsi_nn_safe_free(maxScores);
+    vsi_nn_safe_free(scoreInds);
+
     for (i = 0; i < _INPUT_NUM; i++)
     {
         if (f32_in_buffer[i])

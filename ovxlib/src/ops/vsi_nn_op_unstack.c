@@ -34,8 +34,8 @@
 #include "vsi_nn_tensor_util.h"
 #include "vsi_nn_prv.h"
 #include "vsi_nn_log.h"
-#include "libnnext/vsi_nn_vxkernel.h"
 #include "vsi_nn_internal_node.h"
+#include "vsi_nn_error.h"
 
 #define _INPUT_NUM          (1)
 #define _OUTPUT_NUM         (VSI_NN_UNSTACK_MAX_OUTPUTS)
@@ -94,6 +94,7 @@ static vsi_bool op_setup
     uint32_t i = 0, j = 0;
     uint32_t rank = inputs[0]->attr.dim_num;
     int8_t is_scalar = (rank - 1) == 0 ? TRUE : FALSE;
+    vsi_bool ret = FALSE;
 
     vsi_nn_internal_init_node_wksp( self );
 
@@ -194,6 +195,8 @@ static vsi_bool op_setup
     curr->node->nn_param.split.slices_num = tensor_num;
     curr->inputs[0] = input_tensor->t;
     output_tensors = (vsi_nn_internal_tensor_t**)malloc(tensor_num * sizeof(vsi_nn_internal_tensor_t*));
+    CHECK_PTR_FAIL_GOTO( output_tensors, "Create tensor fail.", final );
+
     for (i = 0; i < tensor_num; i++)
     {
         slices[i] = 1;
@@ -202,7 +205,7 @@ static vsi_bool op_setup
         output_tensors[i] = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
         curr->outputs[i] = output_tensors[i]->t;
     }
-    vsi_nn_internal_setup_node( self, curr );
+    ret = vsi_nn_internal_setup_node( self, curr );
 
     for (i = 0; i < tensor_num; i++)
     {
@@ -221,9 +224,10 @@ static vsi_bool op_setup
         vsi_nn_internal_setup_node( self, curr );
     }
 
+final:
     vsi_nn_safe_free(output_tensors);
 
-    return TRUE;
+    return ret;
 } /* op_setup() */
 
 static vsi_status op_deinit

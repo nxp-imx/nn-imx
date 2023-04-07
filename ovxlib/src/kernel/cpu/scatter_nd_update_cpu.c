@@ -102,6 +102,7 @@ DEF_KERNEL_EXECUTOR(_scatter_nd_update_exec)
 
     mask_len = (int32_t)out_elements / block_size;
     mask = (uint32_t *)malloc( mask_len * sizeof(uint32_t) );
+    CHECK_PTR_FAIL_GOTO( mask, "Create mask buffer fail.", final );
     memset(mask, 0, mask_len * sizeof(uint32_t));
 
     if (coord_dim <= VSI_NN_MAX_DIM_NUM)
@@ -172,10 +173,8 @@ DEF_KERNEL_EXECUTOR(_scatter_nd_update_exec)
     CHECK_STATUS_FAIL_GOTO( status, final );
 
 final:
-    if ( para_buffer[0] )
-    {
-        free( para_buffer[0] );
-    }
+    vsi_nn_safe_free( para_buffer[0] );
+    vsi_nn_safe_free( mask );
 
     if (mask)
     {
@@ -183,10 +182,7 @@ final:
     }
     for ( i = 0; i < 3; i ++ )
     {
-        if ( buffer[i] )
-        {
-            free( buffer[i] );
-        }
+        vsi_nn_safe_free( buffer[i] );
     }
     for ( i = 0; i < 4; i ++ )
     {

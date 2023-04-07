@@ -637,6 +637,10 @@ static vsi_bool op_setup
             use_virtual_tensor = inputs[LSTMUNIT_INPUT_BIAS_PROJ]->attr.vtl;
             input_tensor = vsi_nn_internal_create_zero_bias_tensor(self, &output_tensor->t->attr,
                 &inputs[LSTMUNIT_INPUT_WEIGHT_PROJ]->attr, VSI_NN_OP_FCL, FALSE);
+            if (input_tensor == NULL)
+            {
+                return FALSE;
+            }
             zero_bias_tensor = input_tensor->t;
 
             if (use_virtual_tensor)

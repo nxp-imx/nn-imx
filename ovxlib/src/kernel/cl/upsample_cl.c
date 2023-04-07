@@ -123,7 +123,7 @@ DEF_KERNEL_INITIALIZER(_upsample_initializer)
         {0, 0, 0}
         };
 
-    vx_status    status             = VX_FAILURE;
+    vsi_status   status             = VSI_FAILURE;
     vx_tensor    input              = (vx_tensor)param[0];
     vsi_nn_kernel_tensor_attr_t * attr_in = NULL;
     vsi_size_array_t * in_shape   = NULL;

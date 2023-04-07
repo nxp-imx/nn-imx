@@ -879,7 +879,7 @@ static VSI_INLINE_API void vsi_nn_kernel_tensor_attr_get_stride
     shape = attr->shape->data;
     type_bits = vsi_nn_kernel_dtype_get_bits( attr->dtype );
 
-    if ( type_bits < BITS_PER_BYTE )
+    if ( type_bits < BITS_PER_BYTE && type_bits != 0)
     {
         vsi_size_t i;
 

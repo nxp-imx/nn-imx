@@ -197,12 +197,12 @@ DEF_KERNEL_INITIALIZER(_l1norm_initializer_axis)
     }
     else if (axis == 1)
     {
-        gpu_param.global_size[0] = (width + gpu_param.global_scale[0] - 1) / gpu_param.global_scale[0];;
+        gpu_param.global_size[0] = (width + gpu_param.global_scale[0] - 1) / gpu_param.global_scale[0];
         gpu_param.global_size[1] = depth;
     }
     else if (axis == 2)
     {
-        gpu_param.global_size[0] = (width + gpu_param.global_scale[0] - 1) / gpu_param.global_scale[0];;
+        gpu_param.global_size[0] = (width + gpu_param.global_scale[0] - 1) / gpu_param.global_scale[0];
         gpu_param.global_size[1] = height;
     }
 

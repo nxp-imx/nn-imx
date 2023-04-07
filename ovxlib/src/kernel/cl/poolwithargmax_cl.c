@@ -111,7 +111,7 @@ DEF_KERNEL_INITIALIZER(_poolwithargmax_initializer)
         {0, 0, 0}
         };
 
-    vx_status    status             = VX_FAILURE;
+    vsi_status   status             = VSI_FAILURE;
     vx_tensor    output             = (vx_tensor)param[1];
     vsi_nn_kernel_tensor_attr_t * attr_out = NULL;
     vsi_size_array_t * out_shape   = NULL;

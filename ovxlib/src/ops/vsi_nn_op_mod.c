@@ -59,12 +59,14 @@ static vsi_status op_compute
     vsi_size_t new_rank = 0;
     vsi_bool ret;
     vsi_nn_kernel_param_t * param = NULL;
-    int32_t isfmod = (int32_t)self->nn_param.mod.fmod;
+    int32_t isfmod = 0;
 
     if (NULL == self)
     {
         return VSI_FAILURE;
     }
+
+    isfmod = (int32_t)self->nn_param.mod.fmod;
 
     param = vsi_nn_kernel_param_create();
 

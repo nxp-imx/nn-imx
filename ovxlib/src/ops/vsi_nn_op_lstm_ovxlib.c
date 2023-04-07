@@ -35,9 +35,9 @@
 #include "vsi_nn_ops.h"
 #include "vsi_nn_tensor.h"
 #include "vsi_nn_tensor_util.h"
-#include "libnnext/vsi_nn_vxkernel.h"
 #include "vsi_nn_internal_node.h"
 #include "vsi_nn_rnn_helper.h"
+#include "vsi_nn_error.h"
 
 static vsi_bool setup_op_shapes
     (
@@ -211,6 +211,7 @@ static vsi_bool op_setup
     uint32_t batch_size = 0;
     uint32_t time_step = 0;
     uint32_t i = 0;
+    vsi_bool ret = FALSE;
 
     memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
     vsi_nn_internal_init_node_wksp( self );
@@ -241,9 +242,11 @@ static vsi_bool op_setup
     /* split input tensor */
     split_output_tensors = (vsi_nn_tensor_t **)malloc(time_step * \
         sizeof(vsi_nn_tensor_t *));
+    CHECK_PTR_FAIL_GOTO( split_output_tensors, "Create buffer fail.", final );
     memset( split_output_tensors, 0x00, time_step * sizeof(vsi_nn_tensor_t *));
     lstmunit_reshape_output_tensors = (vsi_nn_tensor_t **)malloc(time_step * \
         sizeof(vsi_nn_tensor_t *));
+    CHECK_PTR_FAIL_GOTO( lstmunit_reshape_output_tensors, "Create buffer fail.", final );
     memset( lstmunit_reshape_output_tensors, 0x00, time_step * sizeof(vsi_nn_tensor_t *));
 
     vsi_nn_rnn_split_input_tensor(self, input_tensor,
@@ -374,7 +377,7 @@ static vsi_bool op_setup
             curr->inputs[i] = lstmunit_reshape_output_tensors[i];
         }
         curr->outputs[0] = tensor;
-        vsi_nn_internal_setup_node( self, curr );
+        ret = vsi_nn_internal_setup_node( self, curr );
 
         if( !curr_param->time_major )
         {
@@ -384,10 +387,11 @@ static vsi_bool op_setup
         }
     }
 
+final:
     vsi_nn_safe_free( split_output_tensors );
     vsi_nn_safe_free( lstmunit_reshape_output_tensors );
 
-    return TRUE;
+    return ret;
 } /* op_setup() */
 
 static vsi_status op_deinit

@@ -27,6 +27,7 @@
 #include "vsi_nn_types.h"
 #include "vsi_nn_math.h"
 #include "vsi_nn_tensor.h"
+#include "vsi_nn_log.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -111,7 +112,8 @@ static VSI_INLINE_API uint32_t type_get_bytes
     case VSI_NN_TYPE_FLOAT64:
         return 8;
     default:
-        return 0;
+        VSILOGE("unsupported type: %d", type);
+        return 1;
     }
 } /* type_get_bytes() */
 
@@ -143,7 +145,8 @@ static VSI_INLINE_API uint32_t type_get_bits
     case VSI_NN_TYPE_FLOAT64:
         return 64;
     default:
-        return 0;
+        VSILOGE("unsupported type: %d", type);
+        return 1;
     }
 } /* type_get_bits() */
 

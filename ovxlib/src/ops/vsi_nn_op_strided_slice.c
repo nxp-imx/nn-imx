@@ -841,32 +841,32 @@ static vsi_status op_deinit
     vsi_nn_safe_free( params->end_dims );
     vsi_nn_safe_free( params->stride_dims );
 
-    if (lcl2_data->cp_node)
+    if (lcl2_data && lcl2_data->cp_node)
     {
         vxReleaseNode( &lcl2_data->cp_node );
     }
 
-    if (lcl2_data->src_tensor)
+    if (lcl2_data && lcl2_data->src_tensor)
     {
         vxReleaseTensor( &lcl2_data->src_tensor );
     }
 
-    if (lcl2_data->dst_tensor && !lcl2_data->is_same_shape)
+    if (lcl2_data && lcl2_data->dst_tensor && !lcl2_data->is_same_shape)
     {
         vxReleaseTensor( &lcl2_data->dst_tensor );
     }
 
-    if (lcl2_data->begin_dims)
+    if (lcl2_data && lcl2_data->begin_dims)
     {
         free(lcl2_data->begin_dims);
     }
 
-    if (lcl2_data->end_dims)
+    if (lcl2_data && lcl2_data->end_dims)
     {
         free(lcl2_data->end_dims);
     }
 
-    if (lcl2_data->stride_dims)
+    if (lcl2_data && lcl2_data->stride_dims)
     {
         free(lcl2_data->stride_dims);
     }

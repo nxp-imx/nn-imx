@@ -55,7 +55,7 @@ DEF_KERNEL_EXECUTOR(_depth2space_crd_exec)
     size_t param_size
     )
 {
-    vsi_status status = VX_FAILURE;
+    vsi_status status = VSI_FAILURE;
     vsi_nn_kernel_tensor_t tensors[_CPU_IO_NUM] = { NULL };
     float * buffer[2] = { NULL };
     size_t out_elements = 0;
@@ -175,7 +175,7 @@ static vsi_nn_kernel_node_t _setup
     vsi_nn_kernel_t             * kernel
     )
 {
-    vsi_status status = VX_FAILURE;
+    vsi_status status = VSI_FAILURE;
     vsi_nn_kernel_node_param_t backend_params[_CPU_PARAM_NUM] = {NULL};
     vsi_nn_kernel_node_t node = NULL;
 

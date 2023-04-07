@@ -122,8 +122,8 @@ DEF_KERNEL_INITIALIZER(_floordiv_initializer)
         {0, 0, 0},
         {0, 0, 0}
         };
-    vx_status     status             = VX_FAILURE;
-    vx_tensor     output              = (vx_tensor)param[2];
+    vsi_status    status             = VSI_FAILURE;
+    vx_tensor     output             = (vx_tensor)param[2];
     vsi_nn_kernel_tensor_attr_t *output_attr  = NULL;
     vsi_size_array_t             *output_shape = NULL;
 

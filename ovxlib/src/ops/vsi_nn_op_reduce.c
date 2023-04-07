@@ -36,6 +36,7 @@
 #include "vsi_nn_internal_node.h"
 #include "utils/vsi_nn_dtype_util.h"
 #include "kernel/vsi_nn_kernel_gpu_shape_optimize.h"
+#include "vsi_nn_error.h"
 
 #define _ARG_NUM            (6)
 #define _INPUT_NUM          (1)
@@ -230,6 +231,9 @@ static vsi_status op_compute
         vsi_nn_tensor_t *reshaped_output1 = self->nn_param.reduce.local2->reshaped_output1;
         char tensor_name[128];
 
+        CHECK_PTR_FAIL_GOTO( reshaped_input1, "check tensor pointer.", final );
+        CHECK_PTR_FAIL_GOTO( reshaped_output1, "check tensor pointer.", final );
+
         memset(tensor_name, 0, sizeof(tensor_name));
         snprintf(tensor_name,
                  sizeof(tensor_name),
@@ -240,11 +244,20 @@ static vsi_status op_compute
         {
             VSILOGW("Set uid %u reduce reshaped output name fail",
                     self->uid);
-            return VSI_FAILURE;
+
+            status = VSI_FAILURE;
+            goto final;
         }
 
 
         resolved_dim_count = self->nn_param.reduce.local2->axes_num;
+        if (resolved_dim_count > VSI_NN_MAX_DIM_NUM)
+        {
+            VSILOGE("resolved_dim_count greater than VSI_NN_MAX_DIM_NUM");
+
+            status = VSI_FAILURE;
+            goto final;
+        }
 
         for (i = 0; i < (uint32_t)resolved_dim_count; i++)
         {
@@ -433,6 +446,8 @@ static vsi_status op_compute
             attr2.size[resolved_dim[1]] = 1;
             attr2.vtl = FALSE;
             mean_tmp_tensor = vsi_nn_CreateTensor(self->graph, &attr2);
+            CHECK_PTR_FAIL_GOTO( mean_tmp_tensor, "Create tensor fail.", final );
+
             self->nn_param.reduce.local2->reshaped_tmp = mean_tmp_tensor;
             re_sizes[resolved_dim[0]] = 1;
             re_sizes[resolved_dim[1]] = 1;
@@ -446,11 +461,8 @@ static vsi_status op_compute
                 self->graph,
                 (uint8_t *)&resolved_dim[0],
                 &attr);
-            if( NULL == axis_tensor )
-            {
-                VSILOGE("Create axis_tensor fail.(reduce)");
-                return VSI_FAILURE;
-            }
+            CHECK_PTR_FAIL_GOTO( axis_tensor, "Create tensor fail.", final );
+
             self->nn_param.reduce.local.axis_tensor = axis_tensor;
             status = op_comput_reduce_mean(self,
                                             axis_tensor,
@@ -512,6 +524,7 @@ static vsi_status op_compute
         }
     }
 
+final:
     return status;
 } /* op_compute() */
 

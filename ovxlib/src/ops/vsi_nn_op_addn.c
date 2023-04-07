@@ -174,7 +174,10 @@ static vsi_bool op_setup
             }
 
             temp_output_tensor = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
-
+            if (temp_output_tensor == NULL)
+            {
+                return FALSE;
+            }
             curr->outputs[0] = temp_output_tensor->t;
         }
         else
@@ -184,6 +187,7 @@ static vsi_bool op_setup
 
         vsi_nn_internal_setup_node( self, curr );
     }
+
     return ret;
 } /* op_setup() */
 

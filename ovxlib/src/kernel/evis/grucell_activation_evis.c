@@ -783,7 +783,9 @@ static vsi_nn_kernel_node_t _setup
     if( VSI_SUCCESS == status)
     {
         _inputs = (vsi_nn_tensor_t**)malloc(input_count * sizeof(vsi_nn_tensor_t**));
+        CHECK_PTR_FAIL_GOTO( _inputs, "Create buffer fail.", final );
         node_params = (vsi_nn_kernel_node_param_t *)malloc(sizeof(vsi_nn_kernel_node_param_t) * param_count);
+        CHECK_PTR_FAIL_GOTO( node_params, "Create buffer fail.", final );
 
         if (use_cudnn)
         {
@@ -896,6 +898,7 @@ static vsi_nn_kernel_node_t _setup
         }
     }
 
+final:
     vsi_nn_safe_free(_inputs);
     vsi_nn_safe_free(node_params);
 

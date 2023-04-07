@@ -268,7 +268,7 @@ static void _set_preproc_node_input_attr
 
     if(*source_format == VSI_NN_SOURCE_FORMAT_IMAGE_RGB888_PLANAR || *source_format == VSI_NN_SOURCE_FORMAT_IMAGE_GRAY)
     {
-        if(*source_layout == VSI_NN_SOURCE_LAYOUT_NHWC)
+        if(*source_layout == VSI_NN_SOURCE_LAYOUT_NHWC && input_size != NULL)
         {
             input_attr->size[0] = input_size->w;
             input_attr->size[1] = input_size->h;
@@ -509,9 +509,16 @@ vsi_status vsi_nn_add_single_preproc_node
        }
     }
 
-    if(source_layout == NULL)
+    if (source_layout == NULL)
     {
         VSILOGE("Preprocess source layout need to be set!");
+        status = VSI_FAILURE;
+        TEST_CHECK_STATUS(status, final);
+    }
+
+    if (source_format == NULL)
+    {
+        VSILOGE("Preprocess source source format need to be set!");
         status = VSI_FAILURE;
         TEST_CHECK_STATUS(status, final);
     }
@@ -530,6 +537,7 @@ vsi_status vsi_nn_add_single_preproc_node
     }
 
     node = vsi_nn_AddNode(graph, VSI_NN_OP_PRE_PROCESS, node_input_num, 1, NULL);
+    TEST_CHECK_PTR(node, final);
     node->uid = (uint32_t)(VSI_NN_PREPROC_NODE_UID_BASE) + input_idx;
 
     /* Set preprocess node parameters */
@@ -889,6 +897,7 @@ vsi_status vsi_nn_AddBinaryGraphInputsWithCropParam
         vsi_bool enabled = FALSE;
         uint32_t nodes_count = 0;
         tensor = vsi_nn_GetTensor(graph, graph->input.tensors[i]);
+        TEST_CHECK_PTR( tensor, final );
         vsi_nn_get_tensor_consumers(graph, graph->input.tensors[i], NULL, &nodes_count);
         if (nodes_count != 0)
         {
@@ -947,19 +956,22 @@ vsi_status vsi_nn_AddBinaryGraphInputsWithCropParam
                                     vx_enum data_type = 0;
 
                                     param = vxGetParameterByIndex(prenode, p);
-                                    vxQueryParameter(param,
-                                                     VX_PARAMETER_TYPE,
-                                                     &type,
-                                                     sizeof(vx_enum));
-                                    vxQueryParameter(param,
-                                                     VX_PARAMETER_DIRECTION,
-                                                     &direction,
-                                                     sizeof(vx_enum));
-                                    if (direction != VX_INPUT) continue;
-                                    vxQueryParameter(param,
-                                                     VX_PARAMETER_REF,
-                                                     &ref,
-                                                     sizeof(vx_reference));
+                                    if (param)
+                                    {
+                                        vxQueryParameter(param,
+                                                         VX_PARAMETER_TYPE,
+                                                         &type,
+                                                         sizeof(vx_enum));
+                                        vxQueryParameter(param,
+                                                         VX_PARAMETER_DIRECTION,
+                                                         &direction,
+                                                         sizeof(vx_enum));
+                                        if (direction != VX_INPUT) continue;
+                                        vxQueryParameter(param,
+                                                         VX_PARAMETER_REF,
+                                                         &ref,
+                                                         sizeof(vx_reference));
+                                    }
                                     if (type == VX_TYPE_TENSOR)
                                     {
                                         graph_inputs[j++] = ref;
@@ -1073,7 +1085,7 @@ vsi_status vsi_nn_UpdateCropParamsForBinaryGraph
     uint32_t i, j;
     uint32_t numParams = 0;
     int32_t scalar_value[4] = {0};
-    vsi_status status = VSI_FAILURE;
+    vsi_status status = VSI_SUCCESS;
     uint32_t input_idx = enabled_crop_input_idx;
     scalar_value[0] = (int32_t)((crop_w << 15) / dst_w);
     scalar_value[1] = (int32_t)((crop_h << 15) / dst_h);
@@ -1091,16 +1103,19 @@ vsi_status vsi_nn_UpdateCropParamsForBinaryGraph
             uint32_t scalar_idx = 0;
             uint32_t scalar_value_idx = 0;
             int32_t temp_value = 0;
-            status = vxQueryNode(node->n, VX_NODE_PARAMETERS, &numParams, sizeof(numParams));
+            status |= vxQueryNode(node->n, VX_NODE_PARAMETERS, &numParams, sizeof(numParams));
             for (j = 0; j < numParams; j++)
             {
-
                 param = vxGetParameterByIndex(node->n, j);
-                status = vxQueryParameter(param, VX_PARAMETER_TYPE, &type, sizeof(vx_enum));
-                if (type == VX_TYPE_SCALAR)
+
+                if (param)
                 {
-                    scalar_idx = j;
-                    break;
+                    status |= vxQueryParameter(param, VX_PARAMETER_TYPE, &type, sizeof(vx_enum));
+                    if (type == VX_TYPE_SCALAR)
+                    {
+                        scalar_idx = j;
+                        break;
+                    }
                 }
             }
             while (input_idx > 0)
@@ -1109,12 +1124,15 @@ vsi_status vsi_nn_UpdateCropParamsForBinaryGraph
                 for (j = tensor_idx; j < numParams; j++)
                 {
                     param = vxGetParameterByIndex(node->n, j);
-                    status = vxQueryParameter(
-                        param, VX_PARAMETER_TYPE, &type, sizeof(vx_enum));
-                    if (type == VX_TYPE_SCALAR)
+                    if (param)
                     {
-                        scalar_idx = j;
-                        break;
+                        status |= vxQueryParameter(
+                            param, VX_PARAMETER_TYPE, &type, sizeof(vx_enum));
+                        if (type == VX_TYPE_SCALAR)
+                        {
+                            scalar_idx = j;
+                            break;
+                        }
                     }
                 }
                 input_idx--;
@@ -1123,12 +1141,15 @@ vsi_status vsi_nn_UpdateCropParamsForBinaryGraph
             {
                 temp_value = scalar_value[scalar_value_idx++];
                 param = vxGetParameterByIndex(node->n, j);
-                status = vxQueryParameter(param, VX_PARAMETER_TYPE, &type, sizeof(vx_enum));
-                if (type == VX_TYPE_SCALAR)
+                if (param)
                 {
-                    status = vxQueryParameter(param, VX_PARAMETER_REF, &ref, sizeof(vx_reference));
-                    status = vxWriteScalarValue((vx_scalar)ref, &temp_value);
-                    status = vxSetParameterByIndex(node->n, j, ref);
+                    status |= vxQueryParameter(param, VX_PARAMETER_TYPE, &type, sizeof(vx_enum));
+                    if (type == VX_TYPE_SCALAR)
+                    {
+                        status |= vxQueryParameter(param, VX_PARAMETER_REF, &ref, sizeof(vx_reference));
+                        status |= vxWriteScalarValue((vx_scalar)ref, &temp_value);
+                        status |= vxSetParameterByIndex(node->n, j, ref);
+                    }
                 }
             }
 

@@ -49,7 +49,7 @@ static vsi_status op_compute
     vsi_nn_tensor_t ** outputs
     )
 {
-    vsi_status status = VX_FAILURE;
+    vsi_status status = VSI_FAILURE;
     vsi_nn_kernel_param_t * param = NULL;
     int32_t _is_ln= 0;
     int32_t _is_cifg= 0;
