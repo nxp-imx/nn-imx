@@ -907,7 +907,7 @@ uint8_t * vsi_nn_MallocAlignedBuffer
     sz = sizeof(aligned_header) + mem_size +
         align_start_size + align_block_size + END_GUARD_SIZE;
     raw_addr = (uint8_t *)malloc( sz * sizeof( uint8_t ) );
-    if (raw_addr)
+    if (raw_addr == NULL)
     {
         return NULL;
     }
