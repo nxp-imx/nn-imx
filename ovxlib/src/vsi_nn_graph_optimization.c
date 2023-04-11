@@ -528,7 +528,7 @@ vsi_status vsi_nn_CopyDataToRawTensor
     }
     else
     {
-        status = vsi_nn_copy_tensor_patch(tensor, &attr, data, VX_WRITE_ONLY);
+        status = vsi_nn_copy_tensor_patch(tensor, &attr, data, VX_WRITE_ONLY, NULL, NULL);
     }
 
     _try_set_const_raw_tensor(tensor, attr);

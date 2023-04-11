@@ -1016,6 +1016,70 @@ vsi_nn_tensor_id_t vsi_nn_AddTensorFromHandle
     return _add_tensor(graph, id, attr, data);
 }
 
+vsi_nn_tensor_id_t vsi_nn_AddTensorFromView
+(
+    vsi_nn_graph_t* graph,
+    vsi_nn_tensor_id_t parent_id,
+    vsi_size_t* start,
+    vsi_size_t* end
+)
+{
+    uint32_t i = 0;
+    vx_tensor view_vxt = NULL;
+    vsi_nn_tensor_t* parent_tensor = NULL;
+    vsi_nn_tensor_t* new_tensor =NULL;
+    vsi_nn_tensor_id_t id = VSI_NN_TENSOR_ID_NA;
+    vsi_nn_tensor_attr_t attr;
+
+    memset(&attr, 0x0, sizeof(vsi_nn_tensor_attr_t));
+    parent_tensor = vsi_nn_GetTensor(graph, parent_id);
+    if (NULL == parent_tensor)
+    {
+        VSILOGE("Create view tensor failed, parent tensor is invalid.");
+        id = VSI_NN_TENSOR_ID_NA;
+        goto final;
+    }
+
+    /* new tensor's all attribuites are inherited from parent tensor except 'size' */
+    attr = parent_tensor->attr;
+    for (i = 0; i < attr.dim_num; i++)
+    {
+        attr.size[i] = end[i] - start[i];
+    }
+    id = _add_tensor(graph, VSI_NN_TENSOR_ID_AUTO, &attr, NULL);
+    if (VSI_NN_TENSOR_ID_NA == id)
+    {
+        VSILOGE("Create view tensor failed, new tensor could not be created.");
+        goto final;
+    }
+
+    new_tensor = vsi_nn_GetTensor(graph, id);
+    if (new_tensor && new_tensor->t)
+    {
+        vxReleaseTensor(&(new_tensor->t));
+    }
+    else
+    {
+        VSILOGE("Create view tensor failed, new tensor or vxTensor is NULL.");
+        id = VSI_NN_TENSOR_ID_NA;
+        goto final;
+    }
+
+    view_vxt = vsi_nn_CreateViewTensor(graph, start, end, parent_tensor);
+    if ( NULL != view_vxt)
+    {
+        new_tensor->t = view_vxt;
+    }
+    else
+    {
+        VSILOGE("Create view tensor failed, view vxTensor could not be created.");
+        id = VSI_NN_TENSOR_ID_NA;
+        goto final;
+    }
+final:
+    return id;
+}
+
 vsi_nn_tensor_id_t vsi_nn_AttachTensorToGraph
     (
     vsi_nn_graph_t       * graph,

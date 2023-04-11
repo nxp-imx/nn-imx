@@ -991,7 +991,7 @@ vsi_size_t vsi_nn_CopyTensorToBuffer
     sz = 0;
     status = VSI_FAILURE;
 
-    status = vsi_nn_copy_tensor_patch(tensor->t, &tensor->attr, buffer, VX_READ_ONLY);
+    status = vsi_nn_copy_tensor_patch(tensor->t, &tensor->attr, buffer, VX_READ_ONLY, NULL, NULL);
     if(VSI_SUCCESS == status)
     {
         sz = vsi_nn_GetStrideSize( &tensor->attr, stride_size );
@@ -1131,7 +1131,7 @@ uint8_t * vsi_nn_ConvertTensorToData
     {
         if( NULL != data )
         {
-            status = vsi_nn_copy_tensor_patch(tensor->t, &tensor->attr, data, VX_READ_ONLY);
+            status = vsi_nn_copy_tensor_patch(tensor->t, &tensor->attr, data, VX_READ_ONLY, NULL, NULL);
         }
         if(VSI_SUCCESS != status)
         {
@@ -1214,7 +1214,7 @@ uint8_t * vsi_nn_ConvertRawTensorToData
         {
             return data;
         }
-        status = vsi_nn_copy_tensor_patch(tensor, &attr, data, VX_READ_ONLY);
+        status = vsi_nn_copy_tensor_patch(tensor, &attr, data, VX_READ_ONLY, NULL, NULL);
         if( VSI_SUCCESS != status )
         {
             VSILOGE("Read tensor data fail");
@@ -1291,7 +1291,7 @@ uint8_t * vsi_nn_ConvertRawTensorToData2
         {
             return data;
         }
-        status = vsi_nn_copy_tensor_patch(tensor, attr, data, VX_READ_ONLY);
+        status = vsi_nn_copy_tensor_patch(tensor, attr, data, VX_READ_ONLY, NULL, NULL);
         if( VSI_SUCCESS != status )
         {
             VSILOGE("Read tensor data fail");
@@ -1632,11 +1632,11 @@ vsi_status vsi_nn_CopyDataToTensor
             new_data = (uint8_t*)malloc( dest_size );
             CHECK_PTR_FAIL_GOTO( new_data, "Create buffer fail.", final );
             status = vsi_nn_Pack4bitData(tensor, (uint8_t*)data, new_data);
-            status = vsi_nn_copy_tensor_patch( tensor->t, &tensor->attr, new_data, VX_WRITE_ONLY );
+            status = vsi_nn_copy_tensor_patch( tensor->t, &tensor->attr, new_data, VX_WRITE_ONLY, NULL, NULL );
         }
         else
         {
-            status = vsi_nn_copy_tensor_patch( tensor->t, &tensor->attr, data, VX_WRITE_ONLY );
+            status = vsi_nn_copy_tensor_patch( tensor->t, &tensor->attr, data, VX_WRITE_ONLY, NULL, NULL );
         }
     }
 
@@ -2526,7 +2526,7 @@ uint8_t *vsi_nn_vxCopyTensorToData
         }
     }
 
-    status = vsi_nn_copy_tensor_patch(tensor, attr, data, VX_READ_ONLY);
+    status = vsi_nn_copy_tensor_patch(tensor, attr, data, VX_READ_ONLY, NULL, NULL);
     if(VSI_SUCCESS != status)
     {
         VSILOGE("Copy tensor to data fail");
@@ -2556,7 +2556,7 @@ vsi_status vsi_nn_vxCopyDataToTensor
 
     memset(stride_size, 0, sizeof(vsi_size_t) * VSI_NN_MAX_DIM_NUM);
     vsi_nn_GetStrideSize(attr, stride_size);
-    status = vsi_nn_copy_tensor_patch(tensor, attr, data, VX_WRITE_ONLY);
+    status = vsi_nn_copy_tensor_patch(tensor, attr, data, VX_WRITE_ONLY, NULL, NULL);
     if(VSI_SUCCESS != status)
     {
         VSILOGE("Copy data to tensor fail");
@@ -2677,24 +2677,39 @@ vsi_status vsi_nn_copy_tensor_patch
     vx_tensor tensor,
     vsi_nn_tensor_attr_t *attr,
     void * user_ptr,
-    vsi_enum usage
+    vsi_enum usage,
+    vsi_size_t* start,
+    vsi_size_t* end
     )
 {
-    vsi_size_t start[VSI_NN_MAX_DIM_NUM],end[VSI_NN_MAX_DIM_NUM],stride[VSI_NN_MAX_DIM_NUM];
+    vsi_size_t tmp_start[VSI_NN_MAX_DIM_NUM],tmp_end[VSI_NN_MAX_DIM_NUM],stride[VSI_NN_MAX_DIM_NUM];
     vsi_status status = VSI_FAILURE;
-    uint32_t i;
+
     if(NULL == tensor || NULL == user_ptr)
     {
         VSILOGE("Invalid parameter");
         return status;
     }
     vsi_nn_GetStrideSize(attr, stride);
-    memset(start, 0, sizeof(vsi_size_t) * VSI_NN_MAX_DIM_NUM);
-    for(i = 0; i < VSI_NN_MAX_DIM_NUM; i++)
+    if (NULL == start)
     {
-        end[i] = attr->size[i];
+        memset(tmp_start, 0, sizeof(vsi_size_t) * VSI_NN_MAX_DIM_NUM);
     }
-    status = vsi_nn_copy_tensor_veiw_patch(tensor, attr, user_ptr, start, end, stride, usage, 0);
+    else
+    {
+        memcpy(tmp_start, start, sizeof(vsi_size_t) * VSI_NN_MAX_DIM_NUM);
+    }
+
+    if (NULL == end)
+    {
+        memcpy(tmp_end, attr->size, sizeof(vsi_size_t) * VSI_NN_MAX_DIM_NUM);
+    }
+    else
+    {
+        memcpy(tmp_end, end, sizeof(vsi_size_t) * VSI_NN_MAX_DIM_NUM);
+    }
+
+    status = vsi_nn_copy_tensor_veiw_patch(tensor, attr, user_ptr, tmp_start, tmp_end, stride, usage, 0);
     return status;
 } /* vsi_nn_copy_tensor_patch() */
 
