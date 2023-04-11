@@ -28961,6 +28961,791 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void moments_axis01_BF1
     }\n\
 }"; /* end of moments_u8_axis012_vx*/
 
+static const char nearest_grid_sample_BF16_to_BF16_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+_viv_uniform float2 half_input0_wh;\n\
+_viv_uniform float2 add_float_value;\n\
+_viv_uniform int depth;\n\
+\n\
+_viv_uniform VXC_512Bits uniBF16toFp32_part0_2x8;\n\
+_viv_uniform VXC_512Bits uniBF16toFp32_part1_2x8;\n\
+\n\
+#define GRID_SAMPLE_BF16_PROCESS() \\\n\
+    fxy0 = fxy0 * half_input0_wh.xyxy + add_float_value.xyxy; \\\n\
+    fxy1 = fxy1 * half_input0_wh.xyxy + add_float_value.xyxy; \\\n\
+    float4 in_x        = (float4)(fxy0.xz, fxy1.xz); \\\n\
+    int4   x_idx       = convert_int4(in_x); \\\n\
+    float4  in_y        = (float4)(fxy0.yw, fxy1.yw); \\\n\
+    int4    y_idx        = convert_int4(in_y); \\\n\
+    int4 coord_in = (int4)(x_idx.x, y_idx.x, 0, 0); \\\n\
+    int8 input_desc; \\\n\
+    _viv_asm(COPY, input_desc, input0, sizeof(input_desc)); \\\n\
+    int baseAddr = input_desc.s0; \\\n\
+    _viv_asm(MOV, coord_in.w, baseAddr); \\\n\
+    vxc_short8 src; \\\n\
+    VXC_OP4(img_load_3d, src, input0, coord_in.xywz, \\\n\
+    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
+    coord_in.x = x_idx.y; \\\n\
+    coord_in.y = y_idx.y; \\\n\
+    VXC_OP4(img_load_3d, src, input0, coord_in.xywz, \\\n\
+    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 0)); \\\n\
+    coord_in.x = x_idx.z; \\\n\
+    coord_in.y = y_idx.z; \\\n\
+    VXC_OP4(img_load_3d, src, input0, coord_in.xywz, \\\n\
+    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(2, 2, 0, VXC_RM_TowardZero, 0)); \\\n\
+    coord_in.x = x_idx.w; \\\n\
+    coord_in.y = y_idx.w; \\\n\
+    VXC_OP4(img_load_3d, src, input0, coord_in.xywz, \\\n\
+    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(3, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+    int8 output_desc; \\\n\
+    _viv_asm(COPY, output_desc, output, sizeof(output_desc)); \\\n\
+    baseAddr = (int)coord_out.z * output_desc.s4 + output_desc.s0; \\\n\
+    _viv_asm(MOV, coord_out.w, baseAddr); \\\n\
+    int loop = depth - 1; \\\n\
+    while (coord_in.z < loop) \\\n\
+    { \\\n\
+        VXC_OP4_NoDest(img_store_3d, output, coord_out.xywz, src, VXC_MODIFIER(0, 3, 0,VXC_RM_TowardZero, 0)); \\\n\
+        coord_out.zw = coord_out.zw + (int2)(1, output_desc.s4); \\\n\
+        coord_in.zw = coord_in.zw + (int2)(1, input_desc.s4); \\\n\
+        coord_in.x = x_idx.x; \\\n\
+        coord_in.y = y_idx.x; \\\n\
+        VXC_OP4(img_load_3d, src, input0, coord_in.xywz, \\\n\
+        VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
+        coord_in.x = x_idx.y; \\\n\
+        coord_in.y = y_idx.y; \\\n\
+        VXC_OP4(img_load_3d, src, input0, coord_in.xywz, \\\n\
+        VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 0)); \\\n\
+        coord_in.x = x_idx.z; \\\n\
+        coord_in.y = y_idx.z; \\\n\
+        VXC_OP4(img_load_3d, src, input0, coord_in.xywz, \\\n\
+        VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(2, 2, 0, VXC_RM_TowardZero, 0)); \\\n\
+        coord_in.x = x_idx.w; \\\n\
+        coord_in.y = y_idx.w; \\\n\
+        VXC_OP4(img_load_3d, src, input0, coord_in.xywz, \\\n\
+        VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(3, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+    } \\\n\
+    VXC_OP4_NoDest(img_store_3d, output, coord_out.xywz, src, VXC_MODIFIER(0, 3, 0,VXC_RM_TowardZero, 0));\n\
+\n\
+\n\
+\n\
+\n\
+__kernel void nearest_grid_sample_BF16_BF16toBF16(\n\
+    __read_only image2d_array_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_array_t  output,\n\
+    int align_corners)\n\
+{\n\
+    int4 coord_out = (int4)(get_global_id(0), get_global_id(1), 0, 0);\n\
+    int4 coord_in1 = coord_out.xyxy;\n\
+\n\
+    coord_in1.xz = coord_in1.xz * 2;\n\
+\n\
+    vxc_short8 read_val;\n\
+    vxc_short8 zero = (vxc_short8)(0, 0, 0, 0, 0, 0, 0, 0);\n\
+    VXC_ReadImage(read_val, input1, coord_in1.xy, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+\n\
+    float4 fxy0;\n\
+    float4 fxy1;\n\
+\n\
+    vxc_short8 read_src;\n\
+    VXC_DP2x8(read_src, read_val, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniBF16toFp32_part0_2x8);\n\
+    _viv_asm(COPY, fxy0, read_src, 16);\n\
+    VXC_DP2x8(read_src, read_val, zero, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniBF16toFp32_part1_2x8);\n\
+    _viv_asm(COPY, fxy1, read_src, 16);\n\
+\n\
+\n\
+\n\
+    GRID_SAMPLE_BF16_PROCESS();\n\
+\n\
+}\n\
+"; /* end of nearest_grid_sample_BF16_to_BF16_vx*/
+
+static const char nearest_grid_sample_F16_to_F16_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+_viv_uniform float2 half_input0_wh;\n\
+_viv_uniform float2 add_float_value;\n\
+_viv_uniform int depth;\n\
+_viv_uniform VXC_512Bits uniEvenBintoFp32_4x4;\n\
+_viv_uniform VXC_512Bits uniOddSubEvenBin_4x4;\n\
+_viv_uniform VXC_512Bits uniExtactHalf8_2x8;\n\
+\n\
+#define GRID_SAMPLE_F16_PROCESS() \\\n\
+    fxy0 = fxy0 * half_input0_wh.xyxy + add_float_value.xyxy; \\\n\
+    fxy1 = fxy1 * half_input0_wh.xyxy + add_float_value.xyxy; \\\n\
+    float4 in_x        = (float4)(fxy0.xz, fxy1.xz); \\\n\
+    int4   x_idx       = convert_int4(in_x); \\\n\
+    float4  in_y        = (float4)(fxy0.yw, fxy1.yw); \\\n\
+    int4    y_idx        = convert_int4(in_y); \\\n\
+    int4 coord_in = (int4)(x_idx.x, y_idx.x, 0, 0); \\\n\
+    int8 input_desc; \\\n\
+    _viv_asm(COPY, input_desc, input0, sizeof(input_desc)); \\\n\
+    int baseAddr = input_desc.s0; \\\n\
+    _viv_asm(MOV, coord_in.w, baseAddr); \\\n\
+    vxc_short8 src; \\\n\
+    VXC_OP4(img_load_3d, src, input0, coord_in.xywz, \\\n\
+    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
+    coord_in.x = x_idx.y; \\\n\
+    coord_in.y = y_idx.y; \\\n\
+    VXC_OP4(img_load_3d, src, input0, coord_in.xywz, \\\n\
+    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 0)); \\\n\
+    coord_in.x = x_idx.z; \\\n\
+    coord_in.y = y_idx.z; \\\n\
+    VXC_OP4(img_load_3d, src, input0, coord_in.xywz, \\\n\
+    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(2, 2, 0, VXC_RM_TowardZero, 0)); \\\n\
+    coord_in.x = x_idx.w; \\\n\
+    coord_in.y = y_idx.w; \\\n\
+    VXC_OP4(img_load_3d, src, input0, coord_in.xywz, \\\n\
+    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(3, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+    int8 output_desc; \\\n\
+    _viv_asm(COPY, output_desc, output, sizeof(output_desc)); \\\n\
+    baseAddr = (int)coord_out.z * output_desc.s4 + output_desc.s0; \\\n\
+    _viv_asm(MOV, coord_out.w, baseAddr); \\\n\
+    int loop = depth - 1; \\\n\
+    while (coord_in.z < loop) \\\n\
+    { \\\n\
+        VXC_OP4_NoDest(img_store_3d, output, coord_out.xywz, src, VXC_MODIFIER(0, 3, 0,VXC_RM_TowardZero, 0)); \\\n\
+        coord_out.zw = coord_out.zw + (int2)(1, output_desc.s4); \\\n\
+        coord_in.zw = coord_in.zw + (int2)(1, input_desc.s4); \\\n\
+        coord_in.x = x_idx.x; \\\n\
+        coord_in.y = y_idx.x; \\\n\
+        VXC_OP4(img_load_3d, src, input0, coord_in.xywz, \\\n\
+        VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
+        coord_in.x = x_idx.y; \\\n\
+        coord_in.y = y_idx.y; \\\n\
+        VXC_OP4(img_load_3d, src, input0, coord_in.xywz, \\\n\
+        VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 0)); \\\n\
+        coord_in.x = x_idx.z; \\\n\
+        coord_in.y = y_idx.z; \\\n\
+        VXC_OP4(img_load_3d, src, input0, coord_in.xywz, \\\n\
+        VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(2, 2, 0, VXC_RM_TowardZero, 0)); \\\n\
+        coord_in.x = x_idx.w; \\\n\
+        coord_in.y = y_idx.w; \\\n\
+        VXC_OP4(img_load_3d, src, input0, coord_in.xywz, \\\n\
+        VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(3, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+    } \\\n\
+    VXC_OP4_NoDest(img_store_3d, output, coord_out.xywz, src, VXC_MODIFIER(0, 3, 0,VXC_RM_TowardZero, 0));\n\
+\n\
+\n\
+\n\
+__kernel void nearest_grid_sample_F16_F32toF16(\n\
+    __read_only image2d_array_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_array_t  output,\n\
+    int align_corners)\n\
+{\n\
+    int4 coord_out = (int4)(get_global_id(0), get_global_id(1), 0, 0);\n\
+    int4 coord_in1 = coord_out.xyxy;\n\
+\n\
+    coord_in1.xz = coord_in1.xz * 2;\n\
+    coord_in1.z  = coord_in1.z + 4;\n\
+\n\
+    float4 fxy0 = read_imagef(input1, coord_in1.xy);\n\
+    float4 fxy1 = read_imagef(input1, coord_in1.zw);\n\
+\n\
+    GRID_SAMPLE_F16_PROCESS();\n\
+\n\
+}\n\
+\n\
+_viv_uniform int input1_ZP;\n\
+_viv_uniform float input1Scale;\n\
+_viv_uniform VXC_512Bits uniU8SubZPtoFp32_part0_4x4;\n\
+_viv_uniform VXC_512Bits uniU8SubZPtoFp32_part1_4x4;\n\
+\n\
+__kernel void nearest_grid_sample_F16_U8toF16(\n\
+    __read_only image2d_array_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_array_t  output,\n\
+    int align_corners)\n\
+{\n\
+    int4 coord_out = (int4)(get_global_id(0), get_global_id(1), 0, 0);\n\
+    int4 coord_in1 = coord_out.xyxy;\n\
+    coord_in1.xz = coord_in1.xz * 2;\n\
+    vxc_uchar16 read_coord;\n\
+    VXC_ReadImage(read_coord, input1, coord_in1.xy, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+    float4 fxy0;\n\
+    float4 fxy1;\n\
+    unsigned char input1ZP;\n\
+    _viv_asm(COPY, input1ZP, input1_ZP, 4);\n\
+    VXC_DP4x4(fxy0, read_coord, input1ZP, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniU8SubZPtoFp32_part0_4x4);\n\
+    VXC_DP4x4(fxy1, read_coord, input1ZP, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniU8SubZPtoFp32_part1_4x4);\n\
+    fxy0 = fxy0 * input1Scale;\n\
+    fxy1 = fxy1 * input1Scale;\n\
+\n\
+    GRID_SAMPLE_F16_PROCESS();\n\
+\n\
+}\n\
+\n\
+\n\
+_viv_uniform VXC_512Bits uniFp16toFp32_part0_4x4;\n\
+_viv_uniform VXC_512Bits uniFp16toFp32_part1_4x4;\n\
+\n\
+__kernel void nearest_grid_sample_F16_F16toF16(\n\
+    __read_only image2d_array_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_array_t  output,\n\
+    int align_corners)\n\
+{\n\
+    int4 coord_out = (int4)(get_global_id(0), get_global_id(1), 0, 0);\n\
+    int4 coord_in1 = coord_out.xyxy;\n\
+\n\
+    coord_in1.xz = coord_in1.xz * 2;\n\
+\n\
+    vxc_short8 read_val;\n\
+    vxc_half8  read_coord;\n\
+\n\
+    VXC_ReadImage(read_val, input1, coord_in1.xy, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    _viv_asm(COPY, read_coord, read_val, 16);\n\
+\n\
+    float4 fxy0;\n\
+    float4 fxy1;\n\
+\n\
+    VXC_DP4x4(fxy0, read_coord, read_coord, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniFp16toFp32_part0_4x4);\n\
+    VXC_DP4x4(fxy1, read_coord, read_coord, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniFp16toFp32_part1_4x4);\n\
+\n\
+    GRID_SAMPLE_F16_PROCESS();\n\
+\n\
+}\n\
+"; /* end of nearest_grid_sample_F16_to_F16_vx*/
+
+static const char nearest_grid_sample_F16_to_U8_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+_viv_uniform float2 half_input0_wh;\n\
+_viv_uniform float2 add_float_value;\n\
+_viv_uniform int depth;\n\
+\n\
+_viv_uniform VXC_512Bits uniExtact8Bit_2x8;\n\
+_viv_uniform float uint8Scale;\n\
+_viv_uniform float output_ZP;\n\
+\n\
+_viv_uniform VXC_512Bits uniFp16toFp32_part0_4x4;\n\
+_viv_uniform VXC_512Bits uniFp16toFp32_part1_4x4;\n\
+\n\
+#define GRID_SAMPLE_F16_to_U8_PROCESS() \\\n\
+    fxy0 = fxy0 * half_input0_wh.xyxy + add_float_value.xyxy; \\\n\
+    fxy1 = fxy1 * half_input0_wh.xyxy + add_float_value.xyxy; \\\n\
+    float4 in_x        = (float4)(fxy0.xz, fxy1.xz); \\\n\
+    int4   x_idx       = convert_int4(in_x); \\\n\
+    float4  in_y        = (float4)(fxy0.yw, fxy1.yw); \\\n\
+    int4    y_idx        = convert_int4(in_y); \\\n\
+    int4 coord_in = (int4)(x_idx.x, y_idx.x, 0, 0); \\\n\
+    int8 input_desc; \\\n\
+    _viv_asm(COPY, input_desc, input0, sizeof(input_desc)); \\\n\
+    int baseAddr = input_desc.s0; \\\n\
+    _viv_asm(MOV, coord_in.w, baseAddr); \\\n\
+    vxc_short8 s0; \\\n\
+    vxc_uchar16 result; \\\n\
+    vxc_half8 src; \\\n\
+    VXC_OP4(img_load_3d, s0, input0, coord_in.xywz, \\\n\
+    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
+    coord_in.x = x_idx.y; \\\n\
+    coord_in.y = y_idx.y; \\\n\
+    VXC_OP4(img_load_3d, s0, input0, coord_in.xywz, \\\n\
+    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 0)); \\\n\
+    coord_in.x = x_idx.z; \\\n\
+    coord_in.y = y_idx.z; \\\n\
+    VXC_OP4(img_load_3d, s0, input0, coord_in.xywz, \\\n\
+    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(2, 2, 0, VXC_RM_TowardZero, 0)); \\\n\
+    coord_in.x = x_idx.w; \\\n\
+    coord_in.y = y_idx.w; \\\n\
+    VXC_OP4(img_load_3d, s0, input0, coord_in.xywz, \\\n\
+    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(3, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+    _viv_asm(COPY, src, s0, 16); \\\n\
+    int8 output_desc; \\\n\
+    _viv_asm(COPY, output_desc, output, sizeof(output_desc)); \\\n\
+    baseAddr = (int)coord_out.z * output_desc.s4 + output_desc.s0; \\\n\
+    _viv_asm(MOV, coord_out.w, baseAddr); \\\n\
+    int loop = depth - 1; \\\n\
+    float4 dst4; \\\n\
+    int4 dst; \\\n\
+    while (coord_in.z < loop) \\\n\
+    { \\\n\
+        VXC_DP4x4(dst4, src, src, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniFp16toFp32_part0_4x4); \\\n\
+        dst4         = dst4 * uint8Scale + output_ZP; \\\n\
+        dst     = convert_int4_rte(dst4); \\\n\
+        VXC_DP2x8(result, dst, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), uniExtact8Bit_2x8); \\\n\
+        VXC_OP4_NoDest(img_store_3d, output, coord_out.xywz, \\\n\
+        result, VXC_MODIFIER(0, 3, 0,VXC_RM_TowardZero, 0)); \\\n\
+        coord_out.zw = coord_out.zw + (int2)(1, output_desc.s4); \\\n\
+        coord_in.zw = coord_in.zw + (int2)(1, input_desc.s4); \\\n\
+        coord_in.x = x_idx.x; \\\n\
+        coord_in.y = y_idx.x; \\\n\
+        VXC_OP4(img_load_3d, s0, input0, coord_in.xywz, \\\n\
+        VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
+        coord_in.x = x_idx.y; \\\n\
+        coord_in.y = y_idx.y; \\\n\
+        VXC_OP4(img_load_3d, s0, input0, coord_in.xywz, \\\n\
+        VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 0)); \\\n\
+        coord_in.x = x_idx.z; \\\n\
+        coord_in.y = y_idx.z; \\\n\
+        VXC_OP4(img_load_3d, s0, input0, coord_in.xywz, \\\n\
+        VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(2, 2, 0, VXC_RM_TowardZero, 0)); \\\n\
+        coord_in.x = x_idx.w; \\\n\
+        coord_in.y = y_idx.w; \\\n\
+        VXC_OP4(img_load_3d, s0, input0, coord_in.xywz, \\\n\
+        VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(3, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+        _viv_asm(COPY, src, s0, 16); \\\n\
+    } \\\n\
+    VXC_DP4x4(dst4, src, src, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniFp16toFp32_part0_4x4); \\\n\
+    dst4         = dst4 * uint8Scale + output_ZP; \\\n\
+    dst     = convert_int4_rte(dst4); \\\n\
+    VXC_DP2x8(result, dst, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), uniExtact8Bit_2x8); \\\n\
+    VXC_OP4_NoDest(img_store_3d, output, coord_out.xywz, result, VXC_MODIFIER(0, 3, 0,VXC_RM_TowardZero, 0));\n\
+\n\
+\n\
+__kernel void nearest_grid_sample_F16_F32toU8(\n\
+    __read_only image2d_array_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_array_t  output,\n\
+    int align_corners)\n\
+{\n\
+    int4 coord_out = (int4)(get_global_id(0), get_global_id(1), 0, 0);\n\
+    int4 coord_in1 = coord_out.xyxy;\n\
+\n\
+    coord_in1.xz = coord_in1.xz * 2;\n\
+    coord_in1.z  = coord_in1.z + 4;\n\
+\n\
+    float4 fxy0 = read_imagef(input1, coord_in1.xy);\n\
+    float4 fxy1 = read_imagef(input1, coord_in1.zw);\n\
+    GRID_SAMPLE_F16_to_U8_PROCESS();\n\
+\n\
+}\n\
+\n\
+_viv_uniform int input1_ZP;\n\
+_viv_uniform float input1Scale;\n\
+_viv_uniform VXC_512Bits uniU8SubZPtoFp32_part0_4x4;\n\
+_viv_uniform VXC_512Bits uniU8SubZPtoFp32_part1_4x4;\n\
+\n\
+\n\
+__kernel void nearest_grid_sample_F16_U8toU8(\n\
+    __read_only image2d_array_t   input0,\n\
+    __read_only image2d_array_t   input1,\n\
+    __write_only image2d_array_t  output,\n\
+    int align_corners)\n\
+{\n\
+    int4 coord_out = (int4)(get_global_id(0), get_global_id(1), 0, 0);\n\
+    int4 coord_in1 = coord_out.xyxy;\n\
+\n\
+    coord_in1.xz = coord_in1.xz * 2;\n\
+\n\
+    vxc_uchar16 read_coord;\n\
+\n\
+    VXC_ReadImage(read_coord, input1, coord_in1.xy, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    float4 fxy0;\n\
+    float4 fxy1;\n\
+\n\
+    unsigned char input1ZP;\n\
+    _viv_asm(COPY, input1ZP, input1_ZP, 4);\n\
+\n\
+    VXC_DP4x4(fxy0, read_coord, input1ZP, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniU8SubZPtoFp32_part0_4x4);\n\
+    VXC_DP4x4(fxy1, read_coord, input1ZP, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniU8SubZPtoFp32_part1_4x4);\n\
+\n\
+    fxy0 = fxy0 * input1Scale;\n\
+    fxy1 = fxy1 * input1Scale;\n\
+\n\
+    GRID_SAMPLE_F16_to_U8_PROCESS();\n\
+\n\
+}\n\
+\n\
+\n\
+__kernel void nearest_grid_sample_F16_F16toU8(\n\
+    __read_only image2d_array_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_array_t  output,\n\
+    int align_corners)\n\
+{\n\
+    int4 coord_out = (int4)(get_global_id(0), get_global_id(1), 0, 0);\n\
+    int4 coord_in1 = coord_out.xyxy;\n\
+\n\
+    coord_in1.xz = coord_in1.xz * 2;\n\
+\n\
+    vxc_short8 read_val;\n\
+    vxc_half8  read_coord;\n\
+\n\
+    VXC_ReadImage(read_val, input1, coord_in1.xy, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    _viv_asm(COPY, read_coord, read_val, 16);\n\
+\n\
+    float4 fxy0;\n\
+    float4 fxy1;\n\
+\n\
+    VXC_DP4x4(fxy0, read_coord, read_coord, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniFp16toFp32_part0_4x4);\n\
+    VXC_DP4x4(fxy1, read_coord, read_coord, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniFp16toFp32_part1_4x4);\n\
+\n\
+    GRID_SAMPLE_F16_to_U8_PROCESS();\n\
+\n\
+}\n\
+\n\
+"; /* end of nearest_grid_sample_F16_to_U8_vx*/
+
+static const char nearest_grid_sample_I16_to_I16_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+_viv_uniform float2 half_input0_wh;\n\
+_viv_uniform float2 add_float_value;\n\
+_viv_uniform int depth;\n\
+\n\
+_viv_uniform VXC_512Bits uniDFPtoFp32_part0_4x4;\n\
+_viv_uniform VXC_512Bits uniDFPtoFp32_part1_4x4;\n\
+_viv_uniform float input1_scale;\n\
+_viv_uniform VXC_512Bits uniConvertI8toI8_2x8;\n\
+\n\
+\n\
+#define GRID_SAMPLE_I16_PROCESS() \\\n\
+    fxy0 = fxy0 * half_input0_wh.xyxy + add_float_value.xyxy; \\\n\
+    fxy1 = fxy1 * half_input0_wh.xyxy + add_float_value.xyxy; \\\n\
+    float4 in_x        = (float4)(fxy0.xz, fxy1.xz); \\\n\
+    int4   x_idx       = convert_int4(in_x); \\\n\
+    float4  in_y        = (float4)(fxy0.yw, fxy1.yw); \\\n\
+    int4    y_idx        = convert_int4(in_y); \\\n\
+    int4 coord_in = (int4)(x_idx.x, y_idx.x, 0, 0); \\\n\
+    int8 input_desc; \\\n\
+    _viv_asm(COPY, input_desc, input0, sizeof(input_desc)); \\\n\
+    int baseAddr = input_desc.s0; \\\n\
+    _viv_asm(MOV, coord_in.w, baseAddr); \\\n\
+    vxc_short8 src, dst; \\\n\
+    VXC_OP4(img_load_3d, src, input0, coord_in.xywz, \\\n\
+    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
+    coord_in.x = x_idx.y; \\\n\
+    coord_in.y = y_idx.y; \\\n\
+    VXC_OP4(img_load_3d, src, input0, coord_in.xywz, \\\n\
+    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 0)); \\\n\
+    coord_in.x = x_idx.z; \\\n\
+    coord_in.y = y_idx.z; \\\n\
+    VXC_OP4(img_load_3d, src, input0, coord_in.xywz, \\\n\
+    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(2, 2, 0, VXC_RM_TowardZero, 0)); \\\n\
+    coord_in.x = x_idx.w; \\\n\
+    coord_in.y = y_idx.w; \\\n\
+    VXC_OP4(img_load_3d, src, input0, coord_in.xywz, \\\n\
+    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(3, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+    int8 output_desc; \\\n\
+    _viv_asm(COPY, output_desc, output, sizeof(output_desc)); \\\n\
+    baseAddr = (int)coord_out.z * output_desc.s4 + output_desc.s0; \\\n\
+    _viv_asm(MOV, coord_out.w, baseAddr); \\\n\
+    int loop = depth - 1; \\\n\
+    while (coord_in.z < loop) \\\n\
+    { \\\n\
+        VXC_DP2x8(dst, src, src, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), uniConvertI8toI8_2x8); \\\n\
+        VXC_OP4_NoDest(img_store_3d, output, coord_out.xywz, dst, VXC_MODIFIER(0, 3, 0,VXC_RM_TowardZero, 0)); \\\n\
+        coord_out.zw = coord_out.zw + (int2)(1, output_desc.s4); \\\n\
+        coord_in.zw = coord_in.zw + (int2)(1, input_desc.s4); \\\n\
+        coord_in.x = x_idx.x; \\\n\
+        coord_in.y = y_idx.x; \\\n\
+        VXC_OP4(img_load_3d, src, input0, coord_in.xywz, \\\n\
+        VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
+        coord_in.x = x_idx.y; \\\n\
+        coord_in.y = y_idx.y; \\\n\
+        VXC_OP4(img_load_3d, src, input0, coord_in.xywz, \\\n\
+        VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 0)); \\\n\
+        coord_in.x = x_idx.z; \\\n\
+        coord_in.y = y_idx.z; \\\n\
+        VXC_OP4(img_load_3d, src, input0, coord_in.xywz, \\\n\
+        VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(2, 2, 0, VXC_RM_TowardZero, 0)); \\\n\
+        coord_in.x = x_idx.w; \\\n\
+        coord_in.y = y_idx.w; \\\n\
+        VXC_OP4(img_load_3d, src, input0, coord_in.xywz, \\\n\
+        VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(3, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+    } \\\n\
+    VXC_DP2x8(dst, src, src, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), uniConvertI8toI8_2x8); \\\n\
+    VXC_OP4_NoDest(img_store_3d, output, coord_out.xywz, dst, VXC_MODIFIER(0, 3, 0,VXC_RM_TowardZero, 0));\n\
+\n\
+\n\
+\n\
+__kernel void nearest_grid_sample_I16_I16toI16(\n\
+    __read_only image2d_array_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_array_t  output,\n\
+    int align_corners)\n\
+{\n\
+    int4 coord_out = (int4)(get_global_id(0), get_global_id(1), 0, 0);\n\
+    int4 coord_in1 = coord_out.xyxy;\n\
+\n\
+    coord_in1.xz = coord_in1.xz * 2;\n\
+    vxc_short8 read_coord;\n\
+    VXC_ReadImage(read_coord, input1, coord_in1.xy, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    float4 fxy0;\n\
+    float4 fxy1;\n\
+\n\
+    VXC_DP4x4(fxy0, read_coord, read_coord, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDFPtoFp32_part0_4x4);\n\
+    VXC_DP4x4(fxy1, read_coord, read_coord, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDFPtoFp32_part1_4x4);\n\
+\n\
+    fxy0 = fxy0 * input1_scale;\n\
+    fxy1 = fxy1 * input1_scale;\n\
+\n\
+    GRID_SAMPLE_I16_PROCESS();\n\
+\n\
+}\n\
+"; /* end of nearest_grid_sample_I16_to_I16_vx*/
+
+static const char nearest_grid_sample_I8_to_I8_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+_viv_uniform float2 half_input0_wh;\n\
+_viv_uniform float2 add_float_value;\n\
+_viv_uniform int depth;\n\
+\n\
+\n\
+_viv_uniform float input1_scale;\n\
+_viv_uniform VXC_512Bits uniDFPtoFp32_part0_4x4;\n\
+_viv_uniform VXC_512Bits uniDFPtoFp32_part1_4x4;\n\
+_viv_uniform VXC_512Bits uniConvertI8toI8_2x8;\n\
+\n\
+#define GRID_SAMPLE_I8_PROCESS() \\\n\
+    fxy0 = fxy0 * half_input0_wh.xyxy + add_float_value.xyxy; \\\n\
+    fxy1 = fxy1 * half_input0_wh.xyxy + add_float_value.xyxy; \\\n\
+    float4 in_x        = (float4)(fxy0.xz, fxy1.xz); \\\n\
+    int4   x_idx       = convert_int4(in_x); \\\n\
+    float4  in_y        = (float4)(fxy0.yw, fxy1.yw); \\\n\
+    int4    y_idx        = convert_int4(in_y); \\\n\
+    int4 coord_in = (int4)(x_idx.x, y_idx.x, 0, 0); \\\n\
+    int8 input_desc; \\\n\
+    _viv_asm(COPY, input_desc, input0, sizeof(input_desc)); \\\n\
+    int baseAddr = input_desc.s0; \\\n\
+    _viv_asm(MOV, coord_in.w, baseAddr); \\\n\
+    vxc_char16 src, dst; \\\n\
+    VXC_OP4(img_load_3d, src, input0, coord_in.xywz, \\\n\
+    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
+    coord_in.x = x_idx.y; \\\n\
+    coord_in.y = y_idx.y; \\\n\
+    VXC_OP4(img_load_3d, src, input0, coord_in.xywz, \\\n\
+    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 0)); \\\n\
+    coord_in.x = x_idx.z; \\\n\
+    coord_in.y = y_idx.z; \\\n\
+    VXC_OP4(img_load_3d, src, input0, coord_in.xywz, \\\n\
+    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(2, 2, 0, VXC_RM_TowardZero, 0)); \\\n\
+    coord_in.x = x_idx.w; \\\n\
+    coord_in.y = y_idx.w; \\\n\
+    VXC_OP4(img_load_3d, src, input0, coord_in.xywz, \\\n\
+    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(3, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+    int8 output_desc; \\\n\
+    _viv_asm(COPY, output_desc, output, sizeof(output_desc)); \\\n\
+    baseAddr = (int)coord_out.z * output_desc.s4 + output_desc.s0; \\\n\
+    _viv_asm(MOV, coord_out.w, baseAddr); \\\n\
+    int loop = depth - 1; \\\n\
+    while (coord_in.z < loop) \\\n\
+    { \\\n\
+        VXC_DP2x8(dst, src, src, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), uniConvertI8toI8_2x8); \\\n\
+        VXC_OP4_NoDest(img_store_3d, output, coord_out.xywz, dst, VXC_MODIFIER(0, 3, 0,VXC_RM_TowardZero, 0)); \\\n\
+        coord_out.zw = coord_out.zw + (int2)(1, output_desc.s4); \\\n\
+        coord_in.zw = coord_in.zw + (int2)(1, input_desc.s4); \\\n\
+        coord_in.x = x_idx.x; \\\n\
+        coord_in.y = y_idx.x; \\\n\
+        VXC_OP4(img_load_3d, src, input0, coord_in.xywz, \\\n\
+        VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
+        coord_in.x = x_idx.y; \\\n\
+        coord_in.y = y_idx.y; \\\n\
+        VXC_OP4(img_load_3d, src, input0, coord_in.xywz, \\\n\
+        VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 0)); \\\n\
+        coord_in.x = x_idx.z; \\\n\
+        coord_in.y = y_idx.z; \\\n\
+        VXC_OP4(img_load_3d, src, input0, coord_in.xywz, \\\n\
+        VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(2, 2, 0, VXC_RM_TowardZero, 0)); \\\n\
+        coord_in.x = x_idx.w; \\\n\
+        coord_in.y = y_idx.w; \\\n\
+        VXC_OP4(img_load_3d, src, input0, coord_in.xywz, \\\n\
+        VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(3, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+    } \\\n\
+    VXC_DP2x8(dst, src, src, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), uniConvertI8toI8_2x8); \\\n\
+    VXC_OP4_NoDest(img_store_3d, output, coord_out.xywz, dst, VXC_MODIFIER(0, 3, 0,VXC_RM_TowardZero, 0));\n\
+\n\
+\n\
+__kernel void nearest_grid_sample_I8_I8toI8(\n\
+    __read_only image2d_array_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_array_t  output,\n\
+    int align_corners)\n\
+{\n\
+    int4 coord_out = (int4)(get_global_id(0), get_global_id(1), 0, 0);\n\
+    int4 coord_in1 = coord_out.xyxy;\n\
+\n\
+    coord_in1.xz = coord_in1.xz * 2;\n\
+    vxc_char16 read_coord;\n\
+    VXC_ReadImage(read_coord, input1, coord_in1.xy, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    float4 fxy0;\n\
+    float4 fxy1;\n\
+\n\
+    VXC_DP4x4(fxy0, read_coord, read_coord, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDFPtoFp32_part0_4x4);\n\
+    VXC_DP4x4(fxy1, read_coord, read_coord, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDFPtoFp32_part1_4x4);\n\
+\n\
+    fxy0 = fxy0 * input1_scale;\n\
+    fxy1 = fxy1 * input1_scale;\n\
+\n\
+    GRID_SAMPLE_I8_PROCESS();\n\
+\n\
+}\n\
+"; /* end of nearest_grid_sample_I8_to_I8_vx*/
+
+static const char nearest_grid_sample_U8_to_U8_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
+\n\
+_viv_uniform float2 half_input0_wh;\n\
+_viv_uniform float2 add_float_value;\n\
+_viv_uniform int depth;\n\
+\n\
+_viv_uniform int input1_ZP;\n\
+_viv_uniform float input1Scale;\n\
+_viv_uniform VXC_512Bits uniU8SubZPtoFp32_part0_4x4;\n\
+_viv_uniform VXC_512Bits uniU8SubZPtoFp32_part1_4x4;\n\
+\n\
+_viv_uniform VXC_512Bits uniMultiplyAndPostShift_2x8;\n\
+_viv_uniform int2 multAndoutZP;//[0:15] multiplier, [31:63] output zp\n\
+\n\
+#define GRID_SAMPLE_U8_PROCESS() \\\n\
+    fxy0 = fxy0 * half_input0_wh.xyxy + add_float_value.xyxy; \\\n\
+    fxy1 = fxy1 * half_input0_wh.xyxy + add_float_value.xyxy; \\\n\
+    float4 in_x        = (float4)(fxy0.xz, fxy1.xz); \\\n\
+    int4   x_idx       = convert_int4(in_x); \\\n\
+    float4  in_y        = (float4)(fxy0.yw, fxy1.yw); \\\n\
+    int4    y_idx        = convert_int4(in_y); \\\n\
+    int4 coord_in = (int4)(x_idx.x, y_idx.x, 0, 0); \\\n\
+    int8 input_desc; \\\n\
+    _viv_asm(COPY, input_desc, input0, sizeof(input_desc)); \\\n\
+    int baseAddr = input_desc.s0; \\\n\
+    _viv_asm(MOV, coord_in.w, baseAddr); \\\n\
+    vxc_uchar16 src, dst; \\\n\
+    VXC_OP4(img_load_3d, src, input0, coord_in.xywz, \\\n\
+    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
+    coord_in.x = x_idx.y; \\\n\
+    coord_in.y = y_idx.y; \\\n\
+    VXC_OP4(img_load_3d, src, input0, coord_in.xywz, \\\n\
+    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 0)); \\\n\
+    coord_in.x = x_idx.z; \\\n\
+    coord_in.y = y_idx.z; \\\n\
+    VXC_OP4(img_load_3d, src, input0, coord_in.xywz, \\\n\
+    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(2, 2, 0, VXC_RM_TowardZero, 0)); \\\n\
+    coord_in.x = x_idx.w; \\\n\
+    coord_in.y = y_idx.w; \\\n\
+    VXC_OP4(img_load_3d, src, input0, coord_in.xywz, \\\n\
+    VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(3, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+    int8 output_desc; \\\n\
+    _viv_asm(COPY, output_desc, output, sizeof(output_desc)); \\\n\
+    baseAddr = (int)coord_out.z * output_desc.s4 + output_desc.s0; \\\n\
+    _viv_asm(MOV, coord_out.w, baseAddr); \\\n\
+    int loop = depth - 1; \\\n\
+    vxc_ushort8 multiplier; \\\n\
+    _viv_asm(COPY, multiplier, multAndoutZP, 16); \\\n\
+    while (coord_in.z < loop) \\\n\
+    { \\\n\
+        VXC_DP2x8(dst, src, multiplier, \\\n\
+        VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), uniMultiplyAndPostShift_2x8); \\\n\
+        VXC_OP4_NoDest(img_store_3d, output, coord_out.xywz, dst, VXC_MODIFIER(0, 3, 0,VXC_RM_TowardZero, 0)); \\\n\
+        coord_out.zw = coord_out.zw + (int2)(1, output_desc.s4); \\\n\
+        coord_in.zw = coord_in.zw + (int2)(1, input_desc.s4); \\\n\
+        coord_in.x = x_idx.x; \\\n\
+        coord_in.y = y_idx.x; \\\n\
+        VXC_OP4(img_load_3d, src, input0, coord_in.xywz, \\\n\
+        VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0)); \\\n\
+        coord_in.x = x_idx.y; \\\n\
+        coord_in.y = y_idx.y; \\\n\
+        VXC_OP4(img_load_3d, src, input0, coord_in.xywz, \\\n\
+        VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(1, 1, 0, VXC_RM_TowardZero, 0)); \\\n\
+        coord_in.x = x_idx.z; \\\n\
+        coord_in.y = y_idx.z; \\\n\
+        VXC_OP4(img_load_3d, src, input0, coord_in.xywz, \\\n\
+        VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(2, 2, 0, VXC_RM_TowardZero, 0)); \\\n\
+        coord_in.x = x_idx.w; \\\n\
+        coord_in.y = y_idx.w; \\\n\
+        VXC_OP4(img_load_3d, src, input0, coord_in.xywz, \\\n\
+        VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(3, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+    } \\\n\
+    VXC_DP2x8(dst, src, multiplier, \\\n\
+    VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), uniMultiplyAndPostShift_2x8); \\\n\
+    VXC_OP4_NoDest(img_store_3d, output, coord_out.xywz, dst, VXC_MODIFIER(0, 3, 0,VXC_RM_TowardZero, 0));\n\
+\n\
+\n\
+__kernel void nearest_grid_sample_U8_F32toU8(\n\
+    __read_only image2d_array_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_array_t  output,\n\
+    int align_corners)\n\
+{\n\
+    int4 coord_out = (int4)(get_global_id(0), get_global_id(1), 0, 0);\n\
+    int4 coord_in1 = coord_out.xyxy;\n\
+\n\
+    coord_in1.xz = coord_in1.xz * 2;\n\
+    coord_in1.z  = coord_in1.z + 4;\n\
+\n\
+    float4 fxy0 = read_imagef(input1, coord_in1.xy);\n\
+    float4 fxy1 = read_imagef(input1, coord_in1.zw);\n\
+    GRID_SAMPLE_U8_PROCESS();\n\
+\n\
+}\n\
+\n\
+\n\
+__kernel void nearest_grid_sample_U8_U8toU8(\n\
+    __read_only image2d_array_t   input0,\n\
+    __read_only image2d_array_t   input1,\n\
+    __write_only image2d_array_t  output,\n\
+    int align_corners)\n\
+{\n\
+    int4 coord_out = (int4)(get_global_id(0), get_global_id(1), 0, 0);\n\
+    int4 coord_in1 = coord_out.xyxy;\n\
+\n\
+    coord_in1.xz = coord_in1.xz * 2;\n\
+\n\
+    vxc_uchar16 read_coord;\n\
+\n\
+    VXC_ReadImage(read_coord, input1, coord_in1.xy, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    float4 fxy0;\n\
+    float4 fxy1;\n\
+\n\
+    unsigned char input1ZP;\n\
+    _viv_asm(COPY, input1ZP, input1_ZP, 4);\n\
+\n\
+    VXC_DP4x4(fxy0, read_coord, input1ZP, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniU8SubZPtoFp32_part0_4x4);\n\
+    VXC_DP4x4(fxy1, read_coord, input1ZP, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniU8SubZPtoFp32_part1_4x4);\n\
+\n\
+    fxy0 = fxy0 * input1Scale;\n\
+    fxy1 = fxy1 * input1Scale;\n\
+\n\
+    GRID_SAMPLE_U8_PROCESS();\n\
+\n\
+}\n\
+\n\
+_viv_uniform VXC_512Bits uniFp16toFp32_part0_4x4;\n\
+_viv_uniform VXC_512Bits uniFp16toFp32_part1_4x4;\n\
+\n\
+__kernel void nearest_grid_sample_U8_F16toU8(\n\
+    __read_only image2d_array_t   input0,\n\
+    __read_only image2d_t   input1,\n\
+    __write_only image2d_array_t  output,\n\
+    int align_corners)\n\
+{\n\
+    int4 coord_out = (int4)(get_global_id(0), get_global_id(1), 0, 0);\n\
+    int4 coord_in1 = coord_out.xyxy;\n\
+\n\
+    coord_in1.xz = coord_in1.xz * 2;\n\
+\n\
+    vxc_short8 read_val;\n\
+    vxc_half8  read_coord;\n\
+\n\
+    VXC_ReadImage(read_val, input1, coord_in1.xy, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    _viv_asm(COPY, read_coord, read_val, 16);\n\
+\n\
+    float4 fxy0;\n\
+    float4 fxy1;\n\
+\n\
+    VXC_DP4x4(fxy0, read_coord, read_coord, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniFp16toFp32_part0_4x4);\n\
+    VXC_DP4x4(fxy1, read_coord, read_coord, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniFp16toFp32_part1_4x4);\n\
+\n\
+    GRID_SAMPLE_U8_PROCESS();\n\
+\n\
+}\n\
+\n\
+"; /* end of nearest_grid_sample_U8_to_U8_vx*/
+
 static const char one_hot_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 _viv_uniform VXC_512Bits uniDataConvert_0_4x4;\n\
@@ -61207,6 +61992,85 @@ __kernel void moments_axis2_BF16toF32(\n\
 }\n\
 "; /* end of moments_axis2_cl*/
 
+static const char nearest_grid_sample_cl[] = "__kernel void nearest_grid_sample_F32_F32toF32(\n\
+    __read_only  image2d_array_t  input0,\n\
+    __read_only  image2d_t        input1,\n\
+    __write_only image2d_array_t  output,\n\
+                           float  half_input0_w,\n\
+                           float  half_input0_h,\n\
+                           float  add_float_value_w,\n\
+                           float  add_float_value_h,\n\
+                           int    depth\n\
+                           )\n\
+{\n\
+    int4   coord_out    =  (int4)(get_global_id(0), get_global_id(1), 0, 0);\n\
+    int2   coord_in1    =  (int2)(get_global_id(0) * 2, get_global_id(1));\n\
+\n\
+    float fx = read_imagef(input1, coord_in1).x;\n\
+    coord_in1.x = coord_in1.x + 1;\n\
+    float fy = read_imagef(input1, coord_in1).x;\n\
+\n\
+    fx = fx * half_input0_w + add_float_value_w;\n\
+    fy = fy * half_input0_h + add_float_value_h;\n\
+    int   x_index = convert_int(fx);\n\
+    int   y_index = convert_int(fy);\n\
+    int4   coord_in     = (int4)(x_index, y_index, 0, 0);\n\
+\n\
+    float4  dst;\n\
+\n\
+    while (coord_in.z < depth){\n\
+        dst    = read_imagef(input0, coord_in);\n\
+        write_imagef(output, coord_out, dst);\n\
+        coord_in.z++;\n\
+        coord_out.z++;\n\
+    }\n\
+}\n\
+\n\
+\n\
+__kernel void nearest_grid_sample_U8_U8toU8(\n\
+    __read_only  image2d_array_t  input0,\n\
+    __read_only  image2d_t        input1,\n\
+    __write_only image2d_array_t  output,\n\
+                           float  half_input0_w,\n\
+                           float  half_input0_h,\n\
+                           float  add_float_value_w,\n\
+                           float  add_float_value_h,\n\
+                           int    depth,\n\
+                           float  in0_scale,\n\
+                           float  in0_tail,\n\
+                           float  in1_scale,\n\
+                           float  in1_tail,\n\
+                           float  out_scale,\n\
+                           float  out_tail\n\
+                           )\n\
+{\n\
+    int4   coord_out    =  (int4)(get_global_id(0), get_global_id(1), 0, 0);\n\
+    int2   coord_in1    =  (int2)(get_global_id(0) * 2, get_global_id(1));\n\
+\n\
+    float fx    = convert_float4(read_imageui(input1, coord_in1)).x * in1_scale + in1_tail;\n\
+    coord_in1.x = coord_in1.x + 1;\n\
+    float fy    = convert_float4(read_imageui(input1, coord_in1)).x * in1_scale + in1_tail;\n\
+\n\
+    fx = fx * half_input0_w + add_float_value_w;\n\
+    fy = fy * half_input0_h + add_float_value_h;\n\
+    int   x_index = convert_int(fx);\n\
+    int   y_index = convert_int(fy);\n\
+    int4   coord_in     = (int4)(x_index, y_index, 0, 0);\n\
+\n\
+    float4 val;\n\
+    uint4  dst;\n\
+\n\
+    while (coord_in.z < depth){\n\
+        val    = convert_float4(read_imageui(input0, coord_in)) * in0_scale + in0_tail;\n\
+        dst      = convert_uint4_rte(val * out_scale + out_tail);\n\
+        write_imageui(output, coord_out, dst);\n\
+        coord_in.z++;\n\
+        coord_out.z++;\n\
+    }\n\
+\n\
+}\n\
+"; /* end of nearest_grid_sample_cl*/
+
 static const char one_hot_cl[] = "__kernel void one_hot_F32toF32\n\
     (\n\
         __read_only  image2d_t       input,\n\
@@ -67912,6 +68776,12 @@ static const source_map_t evis_resource[] =
     {"moments_axis2_vx", moments_axis2_vx},
     {"moments_u8_vx", moments_u8_vx},
     {"moments_u8_axis012_vx", moments_u8_axis012_vx},
+    {"nearest_grid_sample_BF16_to_BF16_vx", nearest_grid_sample_BF16_to_BF16_vx},
+    {"nearest_grid_sample_F16_to_F16_vx", nearest_grid_sample_F16_to_F16_vx},
+    {"nearest_grid_sample_F16_to_U8_vx", nearest_grid_sample_F16_to_U8_vx},
+    {"nearest_grid_sample_I16_to_I16_vx", nearest_grid_sample_I16_to_I16_vx},
+    {"nearest_grid_sample_I8_to_I8_vx", nearest_grid_sample_I8_to_I8_vx},
+    {"nearest_grid_sample_U8_to_U8_vx", nearest_grid_sample_U8_to_U8_vx},
     {"one_hot_vx", one_hot_vx},
     {"poolwithargmax_F16_vx", poolwithargmax_F16_vx},
     {"poolwithargmax_I16_vx", poolwithargmax_I16_vx},
@@ -68105,6 +68975,7 @@ static const source_map_t cl_resource[] =
     {"moments_axis012_cl", moments_axis012_cl},
     {"moments_axis1_cl", moments_axis1_cl},
     {"moments_axis2_cl", moments_axis2_cl},
+    {"nearest_grid_sample_cl", nearest_grid_sample_cl},
     {"one_hot_cl", one_hot_cl},
     {"poolwithargmax_cl", poolwithargmax_cl},
     {"pow_cl", pow_cl},
