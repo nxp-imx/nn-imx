@@ -771,7 +771,8 @@ static vsi_nn_kernel_node_t vsi_nn_sp_in_times_v11_plus_v12_node
 
     attr.split_axis = VSI_SP_ATTR_SPLIT_ON_AXIS_YZ;
     attr.split_max_vector_depth = max_vector_depth;
-    attr.keep_tile_size = TRUE;
+    attr.keep_tile_size = VSI_SP_ATTR_KEEP_TILE_SIZE_WITH_AXIS_X;
+    attr.align_sp_core_axis = VSI_SP_ATTR_TILE_ALIGN_SP_CORE_WITH_AXIS_Y;
 
     spinst = vsi_nn_create_spinst(graph);
     CHECK_PTR_FAIL_GOTO( spinst, "Create spInst fail.", final );

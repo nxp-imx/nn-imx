@@ -98,6 +98,15 @@ typedef enum
 }
 vsi_sp_attr_tile_align_sp_core_e;
 
+typedef enum
+{
+    VSI_SP_ATTR_KEEP_TILE_SIZE_NONE = VX_SP_ATTRIBUTE_KEEP_TILE_SIZE_NONE,
+    VSI_SP_ATTR_KEEP_TILE_SIZE_WITH_AXIS_X = VX_SP_ATTRIBUTE_KEEP_TILE_SIZE_WITH_AXIS_X,
+    VSI_SP_ATTR_KEEP_TILE_SIZE_WITH_AXIS_Y = VX_SP_ATTRIBUTE_KEEP_TILE_SIZE_WITH_AXIS_Y,
+    VSI_SP_ATTR_KEEP_TILE_SIZE_WITH_AXIS_XY = VX_SP_ATTRIBUTE_KEEP_TILE_SIZE_WITH_AXIS_XY,
+}
+vsi_sp_attr_keep_tile_size_e;
+
 /**
  * spinst attribute
  */
@@ -145,7 +154,7 @@ typedef struct _vsi_nn_spinst_attr
     vsi_bool not_merge_with_conv2d;
     vsi_bool update_const0_to_pcq_coef_tensor;
     uint32_t align_sp_core_axis;
-    vsi_bool keep_tile_size;
+    uint32_t keep_tile_size;
     union
     {
         uint32_t reshape_array;

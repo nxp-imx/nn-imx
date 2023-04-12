@@ -601,7 +601,7 @@ vsi_nn_spinst_t * vsi_nn_sp_times_v11_plus_v12_inst
         CHECK_STATUS_FAIL_GOTO(status, final );
 
         attr.flush_cycle_num = 5;
-        attr.ignored_leading_outputs = 2;
+        attr.ignored_leading_outputs = 1;
 
         attr.ignored_leading_v11_rd = 0;
         attr.ignored_leading_v12_rd = 0;
