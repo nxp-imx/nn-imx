@@ -13,9 +13,6 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Header Files\cpu_backend">
-      <UniqueIdentifier>{934dce2e-54fa-396b-9121-19d6a6cdafe5}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\custom">
       <UniqueIdentifier>{8810b432-c744-3ac5-ab9d-c78c22bd7bf9}</UniqueIdentifier>
     </Filter>
@@ -45,9 +42,6 @@
     </Filter>
     <Filter Include="Header Files\vip">
       <UniqueIdentifier>{b29a2c7d-9d91-3e41-b0e1-3b59e3fee3a5}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\cpu_backend">
-      <UniqueIdentifier>{7c56ad9f-b1ad-32c5-906c-4c7fc9b7e160}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\custom">
       <UniqueIdentifier>{1ea99dd9-ac3b-3d68-a0b5-2f5f9a0850dc}</UniqueIdentifier>
@@ -105,12 +99,6 @@
     <Text Include="ReadMe.txt"/>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\cpu_backend\npuref_interface.h">
-      <Filter>Header Files\cpu_backend</Filter>
-    </ClInclude>
-    <ClInclude Include="include\cpu_backend\vsi_nn_cpu_backend.h">
-      <Filter>Header Files\cpu_backend</Filter>
-    </ClInclude>
     <ClInclude Include="include\custom\ops\vsi_nn_op_custom_ainr_denoise_postprocess.h">
       <Filter>Header Files\custom\ops</Filter>
     </ClInclude>
@@ -878,18 +866,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\cpu_backend\npuref_interface.c">
-      <Filter>Source Files\cpu_backend</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpu_backend\vsi_nn_cpu_backend.c">
-      <Filter>Source Files\cpu_backend</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpu_backend\vsi_nn_cpu_backend_conv2d.c">
-      <Filter>Source Files\cpu_backend</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpu_backend\vsi_nn_cpu_backend_deconv2d.c">
-      <Filter>Source Files\cpu_backend</Filter>
-    </ClCompile>
     <ClCompile Include="src\custom\ops\kernel\cpu\custom_sample_cpu.c">
       <Filter>Source Files\custom\ops\kernel\cpu</Filter>
     </ClCompile>
@@ -1184,19 +1160,10 @@
     <ClCompile Include="src\kernel\cpu\conv1d_ovxlib_cpu.c">
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
-    <ClCompile Include="src\kernel\cpu\cpu_backend_conv2d_cpu.c">
-      <Filter>Source Files\kernel\cpu</Filter>
-    </ClCompile>
-    <ClCompile Include="src\kernel\cpu\cpu_backend_deconv2d_cpu.c">
-      <Filter>Source Files\kernel\cpu</Filter>
-    </ClCompile>
     <ClCompile Include="src\kernel\cpu\cumsum_cpu.c">
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\depth2space_internal_cpu.c">
-      <Filter>Source Files\kernel\cpu</Filter>
-    </ClCompile>
-    <ClCompile Include="src\kernel\cpu\depthwise_conv1d_cpu.c">
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\detect_post_box_cpu.c">

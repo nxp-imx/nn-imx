@@ -226,7 +226,7 @@ static vsi_bool op_setup
         curr = vsi_nn_internal_new_node( self, VSI_NN_OP_RESHAPE2, 0, 0 );
         reshape_pool_size = vsi_nn_internal_new_node_param(curr,
             VSI_NN_MAX_DIM_NUM * sizeof(vsi_size_t));
-        reshape_pool_size[0] = -1;
+        reshape_pool_size[0] = (vsi_size_t)-1;
         reshape_pool_size[1] = inputs[0]->attr.size[2];
         reshape_pool_size[2] = 1;
         for (i = 3; i < inputs[0]->attr.dim_num; i++)

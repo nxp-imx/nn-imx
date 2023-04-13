@@ -146,7 +146,7 @@ vsi_nn_internal_tensor_t* vsi_nn_rnn_process_input_for_nn_fc
         c = tensor1->t->attr.size[1];
 
         reshape_size[2] = tensor1->t->attr.size[3];
-        reshape_size[1] = -1;
+        reshape_size[1] = (vsi_size_t)-1;
         reshape_size[0] = tensor1->t->attr.size[0];
         tensor0 = vsi_nn_rnn_create_reshape(self, tensor1->t, NULL, reshape_size, 3, use_virtual_tensor);
 
@@ -209,7 +209,7 @@ vsi_nn_internal_tensor_t* vsi_nn_rnn_process_output_for_nn_fc
         c = tensor->attr.size[1];
 
         reshape_size[2] = tensor->attr.size[3];
-        reshape_size[1] = -1;
+        reshape_size[1] = (vsi_size_t)-1;
         reshape_size[0] = tensor->attr.size[0];
         tensor0 = vsi_nn_rnn_create_reshape(self, tensor, NULL, reshape_size, 3, use_virtual_tensor);
 
@@ -286,7 +286,7 @@ vsi_bool vsi_nn_rnn_process_output_for_nn_fc2
         c = tensor->attr.size[1];
 
         reshape_size[2] = tensor->attr.size[3];
-        reshape_size[1] = -1;
+        reshape_size[1] = (vsi_size_t)-1;
         reshape_size[0] = tensor->attr.size[0];
         tensor0 = vsi_nn_rnn_create_reshape(self, tensor, NULL, reshape_size, 3, use_virtual_tensor);
 
@@ -780,7 +780,7 @@ vsi_nn_internal_tensor_t* vsi_nn_rnn_reshape_split_output
     curr = vsi_nn_internal_new_node( self, VSI_NN_OP_RESHAPE2, 0, 0 );
     reshape_split_size = (vsi_size_t *)vsi_nn_internal_new_node_param(curr,
         VSI_NN_MAX_DIM_NUM * sizeof(vsi_size_t));
-    reshape_split_size[0] = -1;
+    reshape_split_size[0] = (vsi_size_t)-1;
     reshape_split_size[1] = batch_size;
 
     curr->node->nn_param.reshape2.size = reshape_split_size;
@@ -819,7 +819,7 @@ vsi_nn_internal_tensor_t* vsi_nn_rnn_reshape_cell_output
     curr = vsi_nn_internal_new_node( self, VSI_NN_OP_RESHAPE2, 0, 0 );
     reshape_grucell_output_size = (vsi_size_t*)vsi_nn_internal_new_node_param(curr,
         VSI_NN_MAX_DIM_NUM * sizeof(vsi_size_t));
-    reshape_grucell_output_size[0] = -1;
+    reshape_grucell_output_size[0] = (vsi_size_t)-1;
     reshape_grucell_output_size[1] = batch_size;
     reshape_grucell_output_size[2] = 1;
 

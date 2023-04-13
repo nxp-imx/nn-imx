@@ -303,11 +303,11 @@ static vsi_bool _auto_cal_shape
     }
     if( FALSE == ret  )
     {
-        shape[neg_idx] = -1;
+        shape[neg_idx] = (vsi_size_t)-1;
     }
     else if(neg_idx != -1)
     {
-        shape[neg_idx] = (uint32_t)total_size;
+        shape[neg_idx] = (vsi_size_t)total_size;
     }
     return ret;
 } /* _auto_cal_shape() */

@@ -51,9 +51,6 @@ vpath %.c libnnext
 OBJECTS += $(OBJ_DIR)/vsi_nn_libnnext_resource.o \
 			$(OBJ_DIR)/vsi_nn_vxkernel.o
 
-vpath %.c cpu_backend
-SRCS += ${notdir ${wildcard cpu_backend/*.c}}
-
 vpath %.c libnnext/ops/kernel
 SRCS += ${notdir ${wildcard libnnext/ops/kernel/*.c}}
 
@@ -111,7 +108,6 @@ INCLUDES=-I. -I$(VIVANTE_SDK_DIR)/include/ \
  -I$(VIVANTE_SDK_DIR)/include/VX \
  -I../include/ops -I../include/utils -I../include/inference \
  -I../include/client -I../include -I../include/libnnext \
- -I../include/cpu_backend \
  -I../src
 
 ifeq (1,$(DEBUG))
@@ -200,7 +196,6 @@ OVX_INC ?= $(SDKTARGETSYSROOT)/usr/include
 INCLUDE += -I $(OVX_INC)
 INCLUDE += -I../include/ops -I../include/utils -I../include/inference
 INCLUDE += -I../include/client -I../include -I../include/libnnext
-INCLUDE += -I../include/cpu_backend
 INCLUDE += -I../src
 
 CFLAGS += $(INCLUDE)
