@@ -262,7 +262,7 @@
       <PreprocessorDefinitions>WIN32;_WINDLL;_CRT_SECURE_NO_WARNINGS;OVXLIB_API=__declspec(dllexport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <DisableSpecificWarnings>4201;4127;4200;4152;4245;4100;4310;4204</DisableSpecificWarnings>
-      <TreatWarningAsError>false</TreatWarningAsError>
+      <TreatWarningAsError>true</TreatWarningAsError>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
     </ClCompile>
