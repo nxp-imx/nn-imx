@@ -59,12 +59,6 @@ LOCAL_SRC_FILES +=      \
             post/vsi_nn_post_fasterrcnn.c   \
             post/vsi_nn_post_cmupose.c
 
-LOCAL_SRC_FILES +=      \
-            cpu_backend/vsi_nn_cpu_backend.c   \
-            cpu_backend/vsi_nn_cpu_backend_conv2d.c   \
-            cpu_backend/vsi_nn_cpu_backend_deconv2d.c   \
-            cpu_backend/npuref_interface.c
-
 
 LOCAL_SRC_FILES += libnnext/vsi_nn_libnnext_resource.c \
                    libnnext/vsi_nn_vxkernel.c
@@ -120,7 +114,6 @@ LOCAL_C_INCLUDES += \
     $(LOCAL_PATH)/../include/utils \
     $(LOCAL_PATH)/../include/infernce \
     $(LOCAL_PATH)/../include/client \
-    $(LOCAL_PATH)/../include/cpu_backend \
     $(LOCAL_PATH)/../include/libnnext \
     $(LOCAL_PATH)/../src
 

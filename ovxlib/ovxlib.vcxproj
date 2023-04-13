@@ -238,7 +238,7 @@
       <AdditionalIncludeDirectories>include;src;$(AQROOT)\sdk\inc;$(ProjectDir)\inc</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WINDLL;_CRT_SECURE_NO_WARNINGS;OVXLIB_API=__declspec(dllexport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <DisableSpecificWarnings>4201;4127;4200;4152;4245;4100;4310;4204</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4201;4200;4100;4310;4204</DisableSpecificWarnings>
       <TreatWarningAsError>true</TreatWarningAsError>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
@@ -261,7 +261,7 @@
       <AdditionalIncludeDirectories>include;src;$(AQROOT)\sdk\inc;$(ProjectDir)\inc</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WINDLL;_CRT_SECURE_NO_WARNINGS;OVXLIB_API=__declspec(dllexport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <DisableSpecificWarnings>4201;4127;4200;4152;4245;4100;4310;4204</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4201;4200;4100;4310;4204</DisableSpecificWarnings>
       <TreatWarningAsError>true</TreatWarningAsError>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
@@ -284,7 +284,7 @@
       <AdditionalIncludeDirectories>include;src;$(AQROOT)\sdk\inc;$(ProjectDir)\inc;</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WINDLL;_CRT_SECURE_NO_WARNINGS;OVXLIB_API=__declspec(dllexport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
-      <DisableSpecificWarnings>4201;4127;4200;4152;4245;4100;4310;4204</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4201;4200;4100;4310;4204</DisableSpecificWarnings>
       <TreatWarningAsError>true</TreatWarningAsError>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
@@ -308,7 +308,7 @@
       <PreprocessorDefinitions>WIN32;_WINDLL;_CRT_SECURE_NO_WARNINGS;OVXLIB_API=__declspec(dllexport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <DisableSpecificWarnings>4201;4127;4200;4152;4245;4100;4310;4204</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4201;4200;4100;4310;4204</DisableSpecificWarnings>
       <MinimalRebuild>false</MinimalRebuild>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
@@ -475,7 +475,7 @@
       <PreprocessorDefinitions>WIN32;_WINDLL;OVXLIB_API=__declspec(dllexport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <DisableSpecificWarnings>4201;4127;4200;4152;4245;4100;4310;4204</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4201;4200;4100;4310;4204</DisableSpecificWarnings>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
     </ClCompile>
@@ -493,8 +493,6 @@
     <Text Include="ReadMe.txt"/>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\cpu_backend\npuref_interface.h"/>
-    <ClInclude Include="include\cpu_backend\vsi_nn_cpu_backend.h"/>
     <ClInclude Include="include\custom\ops\vsi_nn_op_custom_ainr_denoise_postprocess.h"/>
     <ClInclude Include="include\custom\ops\vsi_nn_op_custom_sample.h"/>
     <ClInclude Include="include\custom\ops\vsi_nn_op_custom_softmax.h"/>
@@ -758,18 +756,6 @@
     <None Include="include\interface\ops.def"/>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\cpu_backend\npuref_interface.c">
-      <ObjectFileName>$(IntDir)\src\cpu_backend\</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="src\cpu_backend\vsi_nn_cpu_backend.c">
-      <ObjectFileName>$(IntDir)\src\cpu_backend\</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="src\cpu_backend\vsi_nn_cpu_backend_conv2d.c">
-      <ObjectFileName>$(IntDir)\src\cpu_backend\</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="src\cpu_backend\vsi_nn_cpu_backend_deconv2d.c">
-      <ObjectFileName>$(IntDir)\src\cpu_backend\</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="src\custom\ops\kernel\cpu\custom_sample_cpu.c">
       <ObjectFileName>$(IntDir)\src\custom\ops\kernel\cpu\</ObjectFileName>
     </ClCompile>
@@ -1064,19 +1050,10 @@
     <ClCompile Include="src\kernel\cpu\conv1d_ovxlib_cpu.c">
       <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="src\kernel\cpu\cpu_backend_conv2d_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="src\kernel\cpu\cpu_backend_deconv2d_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="src\kernel\cpu\cumsum_cpu.c">
       <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\depth2space_internal_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="src\kernel\cpu\depthwise_conv1d_cpu.c">
       <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\detect_post_box_cpu.c">

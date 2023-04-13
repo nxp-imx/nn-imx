@@ -25,24 +25,16 @@
 #include "vsi_nn_daemon.h"
 #include "vsi_nn_log.h"
 #include "kernel/vsi_nn_kernel.h"
-#include "cpu_backend/vsi_nn_cpu_backend.h"
-#include "cpu_backend/npuref_interface.h"
 
 _INITIALIZER( daemon_start )
 {
     //VSILOGD("OVXLIB init ... ");
     vsi_nn_kernel_backend_init();
-
-    if( vsi_nn_CpuBackendEnabled() )
-    {
-        //npuref_init();
-    }
 } /* _daemon_start() */
 
 _DEINITIALIZER( daemon_shutdown )
 {
     //VSILOGD("OVXLIB shutdown ... ");
     vsi_nn_kernel_backend_deinit();
-    npuref_shutdown();
 } /* vsi_nn_daemen_shutdown() */
 

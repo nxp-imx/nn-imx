@@ -634,7 +634,7 @@ static vsi_bool op_setup_optimized
     vsi_nn_internal_setup_node(self, curr);
 
     reshape_size[0] = batch_size;
-    reshape_size[1] = -1;
+    reshape_size[1] = (vsi_size_t)-1;
     reshape_size[2] = time_step;
     tmp_tensor = vsi_nn_rnn_create_reshape(self, tmp_tensor->t, NULL, reshape_size, 3, use_virtual_tensor);
 
