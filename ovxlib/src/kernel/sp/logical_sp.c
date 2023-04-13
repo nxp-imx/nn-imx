@@ -368,6 +368,10 @@ REGISTER_LOGICAL_STREAM_PROCESSOR_KERNEL( logical_ops )
     int32_t ops_type  = vsi_nn_kernel_param_get_int32( params, "ops_type" );
     vsi_nn_kernel_node_t node = NULL;
 
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(output_num);
+    VSI_UNREFERENCED(kernel);
+
     if ( vsi_nn_is_broadcast_operaton(inputs, input_num, outputs[0]) )
     {
         return NULL;
@@ -398,6 +402,11 @@ final:
 REGISTER_LOGICAL_STREAM_PROCESSOR_KERNEL( logical_not )
 {
     vsi_nn_kernel_node_t node = NULL;
+
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(output_num);
+    VSI_UNREFERENCED(kernel);
+    VSI_UNREFERENCED(params);
 
     node = vsi_nn_sp_logical_not_node(graph, inputs[0], outputs[0], "logical_not");
 

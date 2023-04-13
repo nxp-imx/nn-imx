@@ -254,6 +254,10 @@ REGISTER_REDUCE_MAX_STREAM_PROCESSOR_KERNEL( reduce_max )
     int32_t axis_num = vsi_nn_kernel_param_get_int32( params, "axis_num" );
     float output_scale = vsi_nn_get_tensor_scale(outputs[0]);
 
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(output_num);
+    VSI_UNREFERENCED(kernel);
+
     if (axis_num > 2)
     {
         return NULL;

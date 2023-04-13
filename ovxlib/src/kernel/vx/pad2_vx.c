@@ -69,6 +69,10 @@ REGISTER_PAD2_OPENVX_KERNEL( pad2 )
     vsi_bool release_intermediate_tensor = TRUE;
     float const_val = vsi_nn_kernel_param_get_float32(params, "const_val");
 
+    VSI_UNREFERENCED(kernel);
+    VSI_UNREFERENCED(output_num);
+    VSI_UNREFERENCED(input_num);
+
     memset(&param, 0, sizeof(param));
     memset(pad_front_array, 0, sizeof(int32_t) * VSI_NN_MAX_DIM_NUM);
     memset(pad_back_array, 0, sizeof(int32_t) * VSI_NN_MAX_DIM_NUM);

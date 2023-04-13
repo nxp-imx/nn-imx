@@ -142,6 +142,8 @@ DEF_KERNEL_INITIALIZER(_prelu_initializer)
     vx_context                  ctx       = vxGetContext((vx_reference)node);
     vx_hardware_caps_params_t   hw_param;
 
+    VSI_UNREFERENCED(param_size);
+
     memset(&hw_param, 0, sizeof(vx_hardware_caps_params_t));
     status = vxQueryHardwareCaps(ctx, &hw_param, sizeof(vx_hardware_caps_params_t));
     CHECK_STATUS_FAIL_GOTO(status, final);
@@ -582,6 +584,9 @@ static vsi_nn_kernel_node_t _setup
     vsi_size_t new_rank = 0;
     vsi_bool ret;
     int32_t is_per_channel_alpha = 0;
+
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(output_num);
 
     is_per_channel_alpha = vsi_nn_kernel_param_get_int32(params, "is_per_channel_alpha");
 

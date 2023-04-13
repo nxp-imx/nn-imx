@@ -80,6 +80,10 @@ REGISTER_SOFTMAX_OPENVX_KERNEL( softmax )
     base.beta = beta;
 #endif
 
+    VSI_UNREFERENCED(kernel);
+    VSI_UNREFERENCED(output_num);
+    VSI_UNREFERENCED(input_num);
+
 #if VX_STREAM_PROCESSOR_SUPPORT
     node = vxSoftmaxLayer2( graph->g,
         inputs[0]->t,

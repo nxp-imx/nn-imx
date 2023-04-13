@@ -85,6 +85,9 @@ DEF_KERNEL_EXECUTOR(_compute)
     int32_t rounding_policy = 0;
     int32_t down_scale_size_rounding = 0;
 
+    VSI_UNREFERENCED(node);
+    VSI_UNREFERENCED(param_size);
+
     tensors[0] = (vsi_nn_kernel_tensor_t)param[0];
     tensors[1] = (vsi_nn_kernel_tensor_t)param[1];
     tensors[2] = (vsi_nn_kernel_tensor_t)param[2];
@@ -198,6 +201,8 @@ static vsi_status _query_kernel
     /* Add extra params */
     )
 {
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
     snprintf( kernel->info.name, VX_MAX_KERNEL_NAME, "%s",  _KERNEL_NAME );
     kernel->info.function    = _compute;
     kernel->info.parameters  = _conv1d_ovxlib_kernel_param_def;

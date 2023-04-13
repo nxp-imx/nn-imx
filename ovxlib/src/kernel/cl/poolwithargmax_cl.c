@@ -117,6 +117,8 @@ DEF_KERNEL_INITIALIZER(_poolwithargmax_initializer)
     vsi_size_array_t * out_shape   = NULL;
     vsi_bool          image_2d    = FALSE;
 
+    VSI_UNREFERENCED(param_size);
+
     attr_out = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)output );
     CHECK_PTR_FAIL_GOTO( attr_out, "vsi_nn_kernel_tensor_attr_create fail.", final );
 

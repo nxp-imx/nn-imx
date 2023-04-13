@@ -209,6 +209,9 @@ DEF_KERNEL_EXECUTOR(_eltwise_unary_exec)
     float beta = 0;
     int32_t unary_type = 0;
 
+    VSI_UNREFERENCED(node);
+    VSI_UNREFERENCED(param_size);
+
     tensors[0]  = (vsi_nn_kernel_tensor_t)param[0];
     tensors[1]  = (vsi_nn_kernel_tensor_t)param[1];
 
@@ -341,6 +344,8 @@ static vsi_status _query_kernel
     vsi_nn_kernel_t* kernel
     )
 {
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
     snprintf( kernel->info.name, VX_MAX_KERNEL_NAME, "%s",  _KERNEL_NAME );
     kernel->info.function    = _eltwise_unary_exec;
     kernel->info.parameters  = kernel_param_def;
@@ -366,6 +371,9 @@ static vsi_nn_kernel_node_t _setup
     vsi_nn_kernel_node_t node = NULL;
     float alpha = vsi_nn_kernel_param_get_float32( params, "alpha" );
     float beta = vsi_nn_kernel_param_get_float32( params, "beta" );
+
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(output_num);
 
     status = _query_kernel( inputs, outputs, kernel );
     if( VSI_SUCCESS == status)

@@ -71,6 +71,9 @@ static vsi_status op_compute
 {
     vsi_status status = VSI_FAILURE;
 
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
+
     status = vsi_nn_internal_compute_node( self );
 
     return status;
@@ -102,6 +105,9 @@ static vsi_bool op_check
     vsi_nn_tensor_t ** outputs
     )
 {
+    VSI_UNREFERENCED(self);
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
     return TRUE;
 } /* op_check() */
 
@@ -172,6 +178,8 @@ static vsi_status op_init
     vsi_nn_node_t* self
     )
 {
+    VSI_UNREFERENCED(self);
+
     return VSI_SUCCESS;
 } /* op_init() */
 

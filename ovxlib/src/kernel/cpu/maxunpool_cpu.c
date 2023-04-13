@@ -83,6 +83,9 @@ DEF_KERNEL_EXECUTOR(_maxunpool_exec)
     input[0] = (vsi_nn_kernel_tensor_t)param[0];
     input[1] = (vsi_nn_kernel_tensor_t)param[1];
     output[0] = (vsi_nn_kernel_tensor_t)param[2];
+
+    VSI_UNREFERENCED(node);
+    VSI_UNREFERENCED(param_size);
     attr[0] = vsi_nn_kernel_tensor_attr_create( input[0] );
     CHECK_PTR_FAIL_GOTO( attr[0], "Create tensor attr buffer fail.", final );
     attr[1] = vsi_nn_kernel_tensor_attr_create( input[1] );
@@ -157,6 +160,8 @@ static vsi_status _query_kernel
     )
 {
     vsi_status status = VSI_FAILURE;
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
     snprintf( kernel->info.name, VX_MAX_KERNEL_NAME, "%s",  _KERNEL_NAME );
     kernel->info.function    = _maxunpool_exec;
     kernel->info.parameters  = _maxunpool_kernel_param_def;

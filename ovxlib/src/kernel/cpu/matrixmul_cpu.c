@@ -65,6 +65,9 @@ DEF_KERNEL_EXECUTOR(_matrixmul_exec)
     int32_t transposeA = 0, transposeB = 0;
     size_t strides0[2] = {0, 0}, strides1[2] = {0, 0};
 
+    VSI_UNREFERENCED(node);
+    VSI_UNREFERENCED(param_size);
+
     tensors[0]  = (vsi_nn_kernel_tensor_t)param[0];
     tensors[1]  = (vsi_nn_kernel_tensor_t)param[1];
     tensors[2]  = (vsi_nn_kernel_tensor_t)param[2];
@@ -196,6 +199,8 @@ static vsi_status _query_kernel
     vsi_nn_kernel_t* kernel
     )
 {
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
     snprintf( kernel->info.name, VX_MAX_KERNEL_NAME, "%s",  _KERNEL_NAME );
     kernel->info.function    = _matrixmul_exec;
     kernel->info.parameters  = _matrixmul_kernel_param_def;
@@ -220,6 +225,9 @@ static vsi_nn_kernel_node_t _setup
     vsi_nn_kernel_node_t node = NULL;
     int32_t transposeA  = vsi_nn_kernel_param_get_int32( params, "transposeA" );
     int32_t transposeB  = vsi_nn_kernel_param_get_int32( params, "transposeB" );
+
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(output_num);
 
     status = _query_kernel( inputs, outputs, kernel );
     if( VSI_SUCCESS == status)

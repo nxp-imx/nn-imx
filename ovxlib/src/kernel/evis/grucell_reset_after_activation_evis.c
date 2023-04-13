@@ -123,6 +123,8 @@ DEF_KERNEL_INITIALIZER(_grucell_reset_after_activation_initializer)
 #define _PACK_SELECT_KEY( hstate_type, fc_type, output_type )    \
         (hstate_type | (fc_type << 8) | (output_type << 16))
 
+    VSI_UNREFERENCED(param_size);
+
 
     output = (vsi_nn_kernel_tensor_t)param[GRUCELL_ACT_IN_CNT + GRUCELL_ACT_OUT_OUTPUT];
     hstate_out = (vsi_nn_kernel_tensor_t)param[GRUCELL_ACT_IN_CNT + GRUCELL_ACT_OUT_H_STATE];

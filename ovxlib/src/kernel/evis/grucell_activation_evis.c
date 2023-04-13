@@ -227,6 +227,8 @@ DEF_KERNEL_INITIALIZER(_grucell_activation_initializer)
     vsi_size_array_t * output_shape          = NULL;
     vsi_nn_kernel_tensor_attr_t * attr[4]   = { NULL, NULL, NULL, NULL };
 
+    VSI_UNREFERENCED(param_size);
+
     attr[0] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[0] );
     CHECK_PTR_FAIL_GOTO( attr[0], "Create tensor attr buffer fail.", final );
     attr[1] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[1] );
@@ -764,6 +766,8 @@ static vsi_nn_kernel_node_t _setup
     int32_t input_category = vsi_nn_kernel_param_get_int32( params, "input_category" );
     int32_t use_cudnn = vsi_nn_kernel_param_get_int32( params, "use_cudnn_implementation" );
     int32_t input_layout = vsi_nn_kernel_param_get_int32( params, "input_layout" );
+
+    VSI_UNREFERENCED(input_num);
 
     gate_activation = vsi_nn_kernel_param_get_int32( params, "gate_activation" );
     candidate_activation = vsi_nn_kernel_param_get_int32( params, "candidate_activation" );

@@ -153,6 +153,8 @@ DEF_KERNEL_INITIALIZER(_multinomial_initializer)
     vsi_nn_kernel_tensor_attr_t * attr  = NULL;
     vsi_size_array_t * in_shape          = NULL;
 
+    VSI_UNREFERENCED(param_size);
+
     attr = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[0] );
     CHECK_PTR_FAIL_GOTO( attr, "Create tensor attr buffer fail.", final );
 
@@ -196,6 +198,8 @@ DEF_KERNEL_INITIALIZER(_cdf_initializer)
     vsi_size_array_t * in_shape          = NULL;
     vsi_size_t      batch                 = 0;
 
+    VSI_UNREFERENCED(param_size);
+
     attr = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[0] );
     CHECK_PTR_FAIL_GOTO( attr, "Create tensor attr buffer fail.", final );
 
@@ -234,6 +238,9 @@ DEF_KERNEL_INITIALIZER(_seed_initializer)
         {0, 0, 0},
         {0, 0, 0}
         };
+
+    VSI_UNREFERENCED(param);
+    VSI_UNREFERENCED(param_size);
 
     gpu_param.global_scale[0] = 1;
     gpu_param.global_scale[1] = 1;
@@ -350,6 +357,10 @@ static vsi_nn_kernel_node_t _setup
     uint32_t iteration      = (uint32_t)((outputs[0]->attr.size[0] + 3) / 4);
     float    rand_max       = (float)(pow(2.0,32));
     float    re_rand_max    = 1 / rand_max;
+
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(output_num);
+    VSI_UNREFERENCED(params);
 
     // Check if gpu can support the size
     if( !vsi_nn_kernel_gpu_check_shape(

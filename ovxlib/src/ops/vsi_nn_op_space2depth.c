@@ -103,6 +103,8 @@ static vsi_status op_optimize
     vsi_nn_opt_direction_e direction
     )
 {
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
     if (self->nn_param.space2depth.block_size[0] != self->nn_param.space2depth.block_size[1])
     {
         return vsi_nn_internal_optimize_node(self, direction );

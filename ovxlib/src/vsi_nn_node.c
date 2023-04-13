@@ -232,6 +232,8 @@ vsi_status vsi_nn_update_node_attr
 {
     vsi_status status = VSI_FAILURE;
 
+    VSI_UNREFERENCED(node);
+
 #if(defined(VX_PRELOAD_CONST_TENSOR_SUPPORT) && VX_PRELOAD_CONST_TENSOR_SUPPORT)
     if(node)
     {

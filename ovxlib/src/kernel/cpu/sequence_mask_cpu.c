@@ -61,6 +61,9 @@ DEF_KERNEL_EXECUTOR(_sequence_mask_exec)
     vsi_nn_kernel_tensor_attr_t * attr[_CPU_IO_NUM] = { NULL };
     uint32_t i = 0;
 
+    VSI_UNREFERENCED(node);
+    VSI_UNREFERENCED(param_size);
+
     tensors[0]  = (vsi_nn_kernel_tensor_t)param[0];
     tensors[1]  = (vsi_nn_kernel_tensor_t)param[1];
 
@@ -129,6 +132,8 @@ static vsi_status _query_kernel
     vsi_nn_kernel_t* kernel
     )
 {
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
     snprintf( kernel->info.name, VX_MAX_KERNEL_NAME, "%s",  _KERNEL_NAME );
     kernel->info.function    = _sequence_mask_exec;
     kernel->info.parameters  = kernel_param_def;
@@ -189,6 +194,9 @@ static vsi_nn_kernel_node_t _setup
     vsi_nn_kernel_tensor_t rs_input = NULL, rs_output = NULL;
     vsi_size_t new_shape[2][VSI_NN_MAX_DIM_NUM] = {{ 1, 1, 1, 1 }};
     int32_t max_len  = vsi_nn_kernel_param_get_int32( params, "max_len" );
+
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(output_num);
 
     status = _optimize_mask_shape(inputs, outputs, max_len, new_shape[0], new_shape[1]);
     if ( VSI_SUCCESS != status )

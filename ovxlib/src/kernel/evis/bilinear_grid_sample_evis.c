@@ -139,6 +139,8 @@ DEF_KERNEL_INITIALIZER(_bilinear_grid_sample_initializer)
     float   output_scale    = 1.0;
     int32_t outputZP        = 0;
 
+    VSI_UNREFERENCED(param_size);
+
     input_attr[0] =
         vsi_nn_kernel_tensor_attr_create((vsi_nn_kernel_tensor_t)param[0]);
     CHECK_PTR_FAIL_GOTO(

@@ -99,6 +99,9 @@ DEF_KERNEL_EXECUTOR(_compute)
     vsi_ssize_t inner_size = 1;
     float pad_val = 0;
 
+    VSI_UNREFERENCED(node);
+    VSI_UNREFERENCED(param_size);
+
     /* prepare data */
     for (i = 0; i < _INPUT_NUM; i ++)
     {
@@ -231,6 +234,8 @@ static vsi_status _query_kernel
     )
 {
     vsi_status status = VSI_FAILURE;
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
     snprintf( kernel->info.name, VX_MAX_KERNEL_NAME, "%s",  _KERNEL_NAME );
     kernel->info.function    = _compute;
     kernel->info.parameters  = _signal_frame_kernel_param_def;

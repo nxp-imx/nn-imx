@@ -204,6 +204,8 @@ DEF_KERNEL_INITIALIZER(_matrix_mul_initializer)
     uint32_t  evis2 = 0;
     vx_context  ctx        = vxGetContext((vx_reference)node);
     vx_hardware_caps_params_t   hw_param;
+
+    VSI_UNREFERENCED(param_size);
     memset(&hw_param, 0, sizeof(vx_hardware_caps_params_t));
     status = vxQueryHardwareCaps(ctx, &hw_param, sizeof(vx_hardware_caps_params_t));
     CHECK_STATUS_FAIL_GOTO(status, OnError );
@@ -1166,6 +1168,9 @@ static vsi_nn_kernel_node_t _setup
     vsi_size_t K = inputs[0]->attr.size[0];
     vsi_size_t N = inputs[1]->attr.size[0];
     vsi_size_t depthA = 1, depthB = 1;
+
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(output_num);
 
     if ((inputs[0]->attr.dtype.vx_type == VSI_NN_TYPE_FLOAT32
         && inputs[1]->attr.dtype.vx_type == VSI_NN_TYPE_FLOAT32

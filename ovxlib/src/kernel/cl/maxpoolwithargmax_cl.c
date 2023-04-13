@@ -120,6 +120,8 @@ DEF_KERNEL_INITIALIZER(_maxpoolwithargmax_initializer)
     vsi_nn_kernel_tensor_attr_t * attr_out = NULL;
     vsi_size_array_t * out_shape   = NULL;
 
+    VSI_UNREFERENCED(param_size);
+
     attr_out = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)output );
     CHECK_PTR_FAIL_GOTO( attr_out, "vsi_nn_kernel_tensor_attr_create fail.", final );
 

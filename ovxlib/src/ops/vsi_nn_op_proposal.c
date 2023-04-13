@@ -213,6 +213,9 @@ static vsi_bool op_check
     vsi_nn_tensor_t ** outputs
     )
 {
+    VSI_UNREFERENCED(self);
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
     return TRUE;
 } /* op_check() */
 
@@ -276,6 +279,8 @@ static vsi_status op_optimize
     vsi_size_t size[VSI_NN_MAX_DIM_NUM];
     uint32_t dim;
     vx_tensor rois_tmp, score_tmp;
+
+    VSI_UNREFERENCED(inputs);
 
     rois_tmp = NULL, score_tmp = NULL;
     if( direction == VSI_NN_OPTIMIZE_BACKWARD )

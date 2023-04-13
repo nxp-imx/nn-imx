@@ -516,6 +516,10 @@ vsi_status VX_CALLBACK vsi_nn_KernelValidator
     vx_meta_format metas[]
 )
 {
+    VSI_UNREFERENCED(node);
+    VSI_UNREFERENCED(parameters);
+    VSI_UNREFERENCED(num);
+    VSI_UNREFERENCED(metas);
     return VSI_SUCCESS;
 } /* vsi_nn_KernelValidator() */
 
@@ -526,6 +530,9 @@ vsi_status VX_CALLBACK vsi_nn_KernelInitializer
     uint32_t paraNum
     )
 {
+    VSI_UNREFERENCED(nodObj);
+    VSI_UNREFERENCED(paramObj);
+    VSI_UNREFERENCED(paraNum);
     return VSI_SUCCESS;
 } /* vsi_nn_KernelInitializer() */
 
@@ -536,6 +543,9 @@ vsi_status VX_CALLBACK vsi_nn_KernelDeinitializer
     uint32_t paraNum
     )
 {
+    VSI_UNREFERENCED(nodObj);
+    VSI_UNREFERENCED(paraObj);
+    VSI_UNREFERENCED(paraNum);
     return VSI_SUCCESS;
 } /* vsi_nn_KernelDeinitializer() */
 
@@ -558,6 +568,8 @@ const uint8_t * vsi_nn_VxBinResourceGetResource
     vx_size *len
     )
 {
+    VSI_UNREFERENCED(name);
+    VSI_UNREFERENCED(len);
     return NULL;
 } /* vsi_nn_VxResourceGetBinResource() */
 

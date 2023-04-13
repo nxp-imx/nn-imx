@@ -250,6 +250,8 @@ DEF_KERNEL_INITIALIZER(_layernorm_initializer)
     float inv_multiplier = 0;
     int32_t height = 0, width = 0, chn = 0;
 
+    VSI_UNREFERENCED(param_size);
+
     attr[0] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[0] );
     CHECK_PTR_FAIL_GOTO( attr[0], "Create tensor attr buffer fail.", OnError );
     attr[1] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[2] );
@@ -539,6 +541,8 @@ DEF_KERNEL_INITIALIZER(_layernorm_axis01_sums_initializer)
     int32_t height = 0;
     int32_t chn = 0;
 
+    VSI_UNREFERENCED(param_size);
+
     attr[0] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[0] );
     CHECK_PTR_FAIL_GOTO( attr[0], "Create tensor attr buffer fail.", OnError );
     attr[1] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[1] );
@@ -652,6 +656,8 @@ DEF_KERNEL_INITIALIZER(_layernorm_axis01_initializer)
     float inv_multiplier = 0;
     vx_uint32 group_num = 0;
     vx_int32 height = 0, width = 0, chn = 0;
+
+    VSI_UNREFERENCED(param_size);
 
     attr[0] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[0] );
     CHECK_PTR_FAIL_GOTO( attr[0], "Create tensor attr buffer fail.", OnError );
@@ -917,6 +923,9 @@ static vsi_nn_kernel_node_t _setup_axis01
     uint32_t axis_size = 0;
     uint32_t rank_in = 0, rank_para = 0;
 
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(output_num);
+
     status = vsi_nn_kernel_optimize_tensor_shape(
         inputs[0]->attr.size, inputs[0]->attr.dim_num,
         axis, axis_num, new_shape[0], &rank_in, new_axis, &axis_size);
@@ -1068,6 +1077,9 @@ static vsi_nn_kernel_node_t _setup_axis0
     uint32_t axis_size = 0;
     uint32_t rank_in = 0;
     int32_t is_img2d_input = 0;
+
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(output_num);
 
     status = vsi_nn_kernel_optimize_tensor_shape(
         inputs[0]->attr.size, inputs[0]->attr.dim_num,

@@ -977,6 +977,9 @@ vsi_size_t vsi_nn_CopyTensorToBuffer
     vsi_size_t     sz;
     vsi_size_t     stride_size[VSI_NN_MAX_DIM_NUM];
     vsi_status     status;
+
+    VSI_UNREFERENCED(graph);
+
     if( NULL == tensor || NULL == buffer )
     {
         return 0;
@@ -1076,6 +1079,9 @@ uint8_t * vsi_nn_ConvertTensorToData
     vsi_size_t     buf_sz;
     vsi_size_t     stride_size[VSI_NN_MAX_DIM_NUM];
     vsi_status     status;
+
+    VSI_UNREFERENCED(graph);
+
     if( NULL == tensor )
     {
         return NULL;
@@ -1175,6 +1181,9 @@ uint8_t * vsi_nn_ConvertRawTensorToData
     vsi_size_t     buf_sz;
     vsi_status     status;
     vsi_nn_tensor_attr_t attr;
+
+    VSI_UNREFERENCED(addr);
+
     if( NULL == tensor || NULL == context )
     {
         return NULL;
@@ -1230,6 +1239,8 @@ uint8_t * vsi_nn_ConvertRawTensorToData2
     uint8_t * data;
     vsi_size_t buf_sz;
     vsi_status status;
+
+    VSI_UNREFERENCED(addr);
 
     if( NULL == tensor || NULL == context )
     {
@@ -1577,6 +1588,8 @@ vsi_status vsi_nn_CopyDataToTensor
 {
     vsi_status         status = VSI_FAILURE;
     uint8_t* new_data = NULL;
+
+    VSI_UNREFERENCED(graph);
 
     if( NULL == data || NULL == tensor )
     {
@@ -2850,6 +2863,7 @@ vsi_status vsi_nn_SwapHandle
     )
 {
     vsi_status status = VSI_FAILURE;
+    VSI_UNREFERENCED(is_new_ptr_malloc_by_ovxlib);
     if (!tensor)
     {
         return VSI_FAILURE;
@@ -3064,6 +3078,8 @@ static vsi_bool _init_dummy_tensor
     vx_uint32 size_u32[VSI_NN_MAX_DIM_NUM] = {0};
     size_t i = 0;
     ret = TRUE;
+
+    VSI_UNREFERENCED(graph);
 
     memset( &params, 0, sizeof( vx_tensor_create_params_t ) );
     params.num_of_dims = tensor->attr.dim_num;

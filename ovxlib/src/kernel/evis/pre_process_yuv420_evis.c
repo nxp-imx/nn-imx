@@ -128,6 +128,8 @@ DEF_KERNEL_INITIALIZER(_pre_process_yuv420_copy_initializer)
     vsi_nn_kernel_tensor_attr_t * attr[1] = { NULL };
     vsi_size_array_t * out_shape = NULL;
 
+    VSI_UNREFERENCED(param_size);
+
     attr[0] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[3] );
     CHECK_PTR_FAIL_GOTO( attr[0], "Create tensor attr buffer fail.", OnError );
 
@@ -495,6 +497,8 @@ DEF_KERNEL_INITIALIZER(_pre_process_yuv420_initializer)
 
     vsi_nn_kernel_tensor_attr_t * attr[1] = { NULL };
     vsi_size_array_t * out_shape = NULL;
+
+    VSI_UNREFERENCED(param_size);
 
     attr[0] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[3] );
     CHECK_PTR_FAIL_GOTO( attr[0], "Create tensor attr buffer fail.", OnError );
@@ -899,6 +903,9 @@ static vsi_nn_kernel_node_t _setup
     vsi_nn_kernel_node_t node = NULL;
     vsi_nn_tensor_t* reshape_tensors[1] = {NULL};
     int32_t trans = 0;
+
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(output_num);
 
     if ( !vsi_nn_kernel_gpu_check_shape( outputs[0]->attr.size,
                 outputs[0]->attr.dim_num ) )

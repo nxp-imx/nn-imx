@@ -293,6 +293,14 @@ REGISTER_CONV_OPENVX_KERNEL( conv1d )
     vx_tensor temp_tensors[3] = { NULL };
     uint32_t i = 0;
 
+    VSI_UNREFERENCED(graph);
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(outputs);
+    VSI_UNREFERENCED(output_num);
+    VSI_UNREFERENCED(params);
+    VSI_UNREFERENCED(kernel);
+
     _build_vx_conv2d_param(
             &vxparam,
             1, vsi_nn_kernel_param_get_int32(params, "stride"),
@@ -368,6 +376,14 @@ REGISTER_CONV_OPENVX_KERNEL( depthwise_conv1d )
     vx_tensor temp_tensors[3] = { NULL };
     uint32_t i = 0;
     vsi_bool need_explicit_padding = FALSE;
+
+    VSI_UNREFERENCED(graph);
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(outputs);
+    VSI_UNREFERENCED(output_num);
+    VSI_UNREFERENCED(params);
+    VSI_UNREFERENCED(kernel);
 
     _build_vx_conv2d_param(
             &vxparam,
@@ -486,6 +502,14 @@ REGISTER_CONV_OPENVX_KERNEL( conv2d )
     vx_node node = NULL;
     vx_nn_convolution_params_ext2_t vxparam;
 
+    VSI_UNREFERENCED(graph);
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(outputs);
+    VSI_UNREFERENCED(output_num);
+    VSI_UNREFERENCED(params);
+    VSI_UNREFERENCED(kernel);
+
     _build_vx_conv2d_param(
             &vxparam,
             vsi_nn_kernel_param_get_int32(params, "stride_h"),
@@ -517,6 +541,14 @@ REGISTER_CONV_OPENVX_KERNEL( depthwise_conv2d )
 {
     vx_node node = NULL;
     vx_nn_convolution_params_ext2_t vxparam;
+
+    VSI_UNREFERENCED(graph);
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(outputs);
+    VSI_UNREFERENCED(output_num);
+    VSI_UNREFERENCED(params);
+    VSI_UNREFERENCED(kernel);
 
     _build_vx_conv2d_param(
             &vxparam,
@@ -551,6 +583,14 @@ REGISTER_CONV_OPENVX_KERNEL( deconvolution1d )
     vx_nn_deconvolution_params_ext2_t vxparam;
     vx_tensor temp_tensors[2] = { NULL };
     int i;
+
+    VSI_UNREFERENCED(graph);
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(outputs);
+    VSI_UNREFERENCED(output_num);
+    VSI_UNREFERENCED(params);
+    VSI_UNREFERENCED(kernel);
 
     _build_vx_deconv2d_param(
             &vxparam,
@@ -595,6 +635,7 @@ REGISTER_CONV_OPENVX_KERNEL( conv3d )
     vx_node node = NULL;
 #if VX_CONV_3D_API_SUPPORT
     vx_nn_convolution_3d_params_t vxparam;
+
     memset(&vxparam, 0, sizeof(vxparam));
 
     _build_vx_conv3d_param(
@@ -625,14 +666,23 @@ REGISTER_CONV_OPENVX_KERNEL( conv3d )
         outputs[0]->t
         );
 #endif
+    VSI_UNREFERENCED(graph);
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(outputs);
+    VSI_UNREFERENCED(output_num);
+    VSI_UNREFERENCED(params);
+    VSI_UNREFERENCED(kernel);
     return (vsi_nn_kernel_node_t)node;
 } /* depthwise_conv2d*/
 
 REGISTER_CONV_OPENVX_KERNEL( deconv3d )
 {
     vx_node node = NULL;
+
 #if VX_DECONV_3D_API_SUPPORT
     vx_nn_deconvolution_3d_params_t vxparam;
+
     memset(&vxparam, 0, sizeof(vxparam));
 
     _build_vx_deconv3d_param(
@@ -662,6 +712,13 @@ REGISTER_CONV_OPENVX_KERNEL( deconv3d )
         outputs[0]->t
         );
 #endif
+    VSI_UNREFERENCED(graph);
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(outputs);
+    VSI_UNREFERENCED(output_num);
+    VSI_UNREFERENCED(params);
+    VSI_UNREFERENCED(kernel);
     return (vsi_nn_kernel_node_t)node;
 } /* deconv3d */
 

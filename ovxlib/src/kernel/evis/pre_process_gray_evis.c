@@ -124,6 +124,8 @@ DEF_KERNEL_INITIALIZER(_pre_process_gray_copy_initializer)
     vsi_nn_kernel_tensor_attr_t * attr[1] = { NULL };
     vsi_size_array_t * out_shape = NULL;
 
+    VSI_UNREFERENCED(param_size);
+
     attr[0] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[1] );
     CHECK_PTR_FAIL_GOTO( attr[0], "Create tensor attr buffer fail.", OnError );
 
@@ -223,6 +225,8 @@ DEF_KERNEL_INITIALIZER(_pre_process_gray_initializer)
 
     vsi_nn_kernel_tensor_attr_t * attr[1] = { NULL };
     vsi_size_array_t * out_shape = NULL;
+
+    VSI_UNREFERENCED(param_size);
 
     attr[0] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[1] );
     CHECK_PTR_FAIL_GOTO( attr[0], "Create tensor attr buffer fail.", OnError );
@@ -387,6 +391,8 @@ DEF_KERNEL_INITIALIZER(_resize_gray_initializer)
     vsi_bool    is_4_over_3 = 0;
     vsi_nn_kernel_tensor_attr_t * attr[2] = { NULL };
     vsi_size_array_t * out_shape = NULL;
+
+    VSI_UNREFERENCED(param_size);
 
     attr[0] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[0] );
     CHECK_PTR_FAIL_GOTO( attr[0], "Create tensor attr buffer fail.", OnError );
@@ -604,6 +610,9 @@ static vsi_nn_kernel_node_t _setup
     float mean       = vsi_nn_kernel_param_get_float32( params, "mean" );
     float scale      = vsi_nn_kernel_param_get_float32( params, "scale" );
     vsi_bool is_no_range_change = FALSE;
+
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(output_num);
 
     if( !vsi_nn_kernel_gpu_check_shape( outputs[0]->attr.size,
                 outputs[0]->attr.dim_num ) )

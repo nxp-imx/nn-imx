@@ -133,6 +133,8 @@ DEF_KERNEL_INITIALIZER(_pre_process_yuv422_copy_initializer)
     vsi_nn_kernel_tensor_attr_t * attr[1] = { NULL };
     vsi_size_array_t * out_shape = NULL;
 
+    VSI_UNREFERENCED(param_size);
+
     attr[0] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[1] );
     CHECK_PTR_FAIL_GOTO( attr[0], "Create tensor attr buffer fail.", OnError );
 
@@ -314,6 +316,8 @@ DEF_KERNEL_INITIALIZER(_pre_process_yuv422_initializer)
 
     vsi_nn_kernel_tensor_attr_t * attr[1] = { NULL };
     vsi_size_array_t * out_shape = NULL;
+
+    VSI_UNREFERENCED(param_size);
 
     attr[0] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[1] );
     CHECK_PTR_FAIL_GOTO( attr[0], "Create tensor attr buffer fail.", OnError );
@@ -506,6 +510,8 @@ static vsi_status _query_kernel
     int i = 0;
     vsi_bool enable_copy  = vsi_nn_kernel_param_get_int32( params, "enable_copy" );
 
+    VSI_UNREFERENCED(scale_x);
+
     input0_dtype = vsi_nn_kernel_map_dtype( inputs[0]->attr.dtype.vx_type );
     output_dtype = vsi_nn_kernel_map_dtype( outputs[0]->attr.dtype.vx_type );
 
@@ -569,6 +575,9 @@ static vsi_nn_kernel_node_t _setup
     vsi_nn_tensor_t* reshape_tensors[1] = {NULL};
     int32_t trans = 0;
     int32_t scale_x  = vsi_nn_kernel_param_get_int32( params, "scale_x" );
+
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(output_num);
 
     if ( !vsi_nn_kernel_gpu_check_shape( outputs[0]->attr.size,
                 outputs[0]->attr.dim_num ) )

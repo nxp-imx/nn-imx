@@ -87,6 +87,9 @@ DEF_KERNEL_EXECUTOR(_compute)
     vsi_ssize_t  outer     = 0;
     float    prodValue  = 0.0f;
 
+    VSI_UNREFERENCED(node);
+    VSI_UNREFERENCED(param_size);
+
     for(i = 0; i < _INPUT_NUM; i ++)
     {
         input[i] = (vsi_nn_kernel_tensor_t)param[i];
@@ -186,6 +189,8 @@ static vsi_status _query_kernel
     )
 {
     vsi_status status = VSI_FAILURE;
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
     snprintf( kernel->info.name, VX_MAX_KERNEL_NAME, "%s",  _KERNEL_NAME );
     kernel->info.function    = _compute;
     kernel->info.parameters  = _reduceprod_internal_kernel_param_def;

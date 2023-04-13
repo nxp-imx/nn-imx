@@ -63,6 +63,11 @@ REGISTER_A_TIMES_B_PLUS_C_OPENVX_KERNEL( a_times_b_plus_c )
     vsi_nn_tensor_t * a_times_b = NULL;
     vsi_nn_tensor_attr_t attr;
 
+    VSI_UNREFERENCED(kernel);
+    VSI_UNREFERENCED(params);
+    VSI_UNREFERENCED(output_num);
+    VSI_UNREFERENCED(input_num);
+
     scale = 1.0;
     overflow_policy = VX_CONVERT_POLICY_SATURATE;
     rounding_policy = VX_ROUND_POLICY_TO_ZERO;

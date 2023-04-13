@@ -85,6 +85,9 @@ DEF_KERNEL_EXECUTOR(_swish_compute)
     float    beta = 1.0f;
     uint32_t  i;
 
+    VSI_UNREFERENCED(node);
+    VSI_UNREFERENCED(param_size);
+
     /* prepare data */
     for(i = 0; i < _INPUT_NUM; i ++)
     {
@@ -166,6 +169,9 @@ DEF_KERNEL_EXECUTOR(_hswish_compute)
     vsi_size_t   out_elements[_OUTPUT_NUM] = {0};
     uint32_t  i;
 
+    VSI_UNREFERENCED(node);
+    VSI_UNREFERENCED(param_size);
+
     /* prepare data */
     for(i = 0; i < _INPUT_NUM; i ++)
     {
@@ -240,6 +246,8 @@ static vsi_status _query_kernel
     /* Add extra params */
     )
 {
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
     snprintf( kernel->info.name, VX_MAX_KERNEL_NAME, "%s",  _KERNEL_NAME );
     if (VSI_NN_SWISH == swish_type)
     {

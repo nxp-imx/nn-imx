@@ -268,7 +268,7 @@ static vsi_status op_init
     //self->nn_param.deconv3d.local = \
     //    (deconv3d_local_data_t*)malloc(sizeof(deconv3d_local_data_t));
     */
-
+    VSI_UNREFERENCED(self);
     return VSI_SUCCESS;
 } /* op_init() */
 

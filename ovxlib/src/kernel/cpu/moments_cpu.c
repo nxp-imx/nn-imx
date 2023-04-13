@@ -65,6 +65,9 @@ DEF_KERNEL_EXECUTOR(_moments_exec)
     int32_t axis_num = 0;
     uint32_t mask = 0;
 
+    VSI_UNREFERENCED(node);
+    VSI_UNREFERENCED(param_size);
+
     tensors[0]  = (vsi_nn_kernel_tensor_t)param[0];
     tensors[1]  = (vsi_nn_kernel_tensor_t)param[1];
     tensors[2]  = (vsi_nn_kernel_tensor_t)param[2];
@@ -224,6 +227,8 @@ static vsi_status _query_kernel
     vsi_nn_kernel_t* kernel
     )
 {
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
     snprintf( kernel->info.name, VX_MAX_KERNEL_NAME, "%s",  _KERNEL_NAME );
     kernel->info.function    = _moments_exec;
     kernel->info.parameters  = _moments_kernel_param_def;
@@ -252,6 +257,9 @@ static vsi_nn_kernel_node_t _setup
     vsi_bool is_continue_axis = TRUE;
     uint32_t mask = 0;
     int32_t i = 0;
+
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(output_num);
 
     axis_num = (int32_t)axis_num_temp;
 

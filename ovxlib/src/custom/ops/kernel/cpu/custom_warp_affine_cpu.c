@@ -135,6 +135,9 @@ DEF_KERNEL_EXECUTOR(_compute)
     vsi_size_t height = 0;
     vsi_size_t outer_size = 1;
 
+    VSI_UNREFERENCED(node);
+    VSI_UNREFERENCED(param_size);
+
     tensors[0] = (vsi_nn_kernel_tensor_t)param[0];
     tensors[1] = (vsi_nn_kernel_tensor_t)param[1];
 
@@ -235,6 +238,8 @@ static vsi_status _query_kernel
     )
 {
     vsi_status status = VSI_FAILURE;
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
     snprintf( kernel->info.name, VX_MAX_KERNEL_NAME, "%s",  _KERNEL_NAME );
     kernel->info.function    = _compute;
     kernel->info.parameters  = _custom_warp_affine_kernel_param_def;

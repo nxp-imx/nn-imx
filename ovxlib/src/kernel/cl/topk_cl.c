@@ -181,6 +181,8 @@ DEF_KERNEL_INITIALIZER(_topk_initializer)
     vsi_size_array_t * in_shape                = NULL;
     int32_t num_stages = 0;
 
+    VSI_UNREFERENCED(param_size);
+
     input_attr = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[0] );
     CHECK_PTR_FAIL_GOTO( input_attr, "Create tensor attr buffer fail.", final );
 
@@ -221,6 +223,8 @@ DEF_KERNEL_INITIALIZER(_topk_odd_even_sort_initializer)
         };
     vsi_nn_kernel_tensor_attr_t * input_attr   = NULL;
     vsi_size_array_t * in_shape                = NULL;
+
+    VSI_UNREFERENCED(param_size);
 
     input_attr = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[0] );
     CHECK_PTR_FAIL_GOTO( input_attr, "Create tensor attr buffer fail.", final );

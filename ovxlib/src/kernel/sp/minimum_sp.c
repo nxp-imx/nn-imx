@@ -197,6 +197,11 @@ REGISTER_MINIMUM_STREAM_PROCESSOR_KERNEL( minimum )
 {
     vsi_nn_kernel_node_t node = NULL;
 
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(output_num);
+    VSI_UNREFERENCED(kernel);
+    VSI_UNREFERENCED(params);
+
     if (vsi_nn_is_broadcast_operaton(inputs, input_num, outputs[0]))
     {
         return NULL;

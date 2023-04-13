@@ -90,6 +90,9 @@ DEF_KERNEL_EXECUTOR(_minimum_exec)
     vsi_nn_kernel_tensor_attr_t * attr[_CPU_IO_NUM] = { NULL };
     uint32_t i;
 
+    VSI_UNREFERENCED(node);
+    VSI_UNREFERENCED(param_size);
+
     tensors[0]  = (vsi_nn_kernel_tensor_t)param[0];
     tensors[1]  = (vsi_nn_kernel_tensor_t)param[1];
     tensors[2]  = (vsi_nn_kernel_tensor_t)param[2];
@@ -164,6 +167,8 @@ static vsi_status _query_kernel
     vsi_nn_kernel_t* kernel
     )
 {
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
     snprintf( kernel->info.name, VX_MAX_KERNEL_NAME, "%s",  _KERNEL_NAME );
     kernel->info.function    = _minimum_exec;
     kernel->info.parameters  = kernel_param_def;
@@ -186,6 +191,10 @@ static vsi_nn_kernel_node_t _setup
     vsi_status status = VSI_SUCCESS;
     vsi_nn_kernel_node_param_t backend_params[_CPU_PARAM_NUM] = {NULL};
     vsi_nn_kernel_node_t node = NULL;
+
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(output_num);
+    VSI_UNREFERENCED(params);
 
     status = _query_kernel( inputs, outputs, kernel );
     if( VSI_SUCCESS == status)

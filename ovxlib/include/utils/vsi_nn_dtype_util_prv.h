@@ -239,6 +239,7 @@ static VSI_INLINE_API float affine_to_fp32
     )
 {
     float data;
+    VSI_UNREFERENCED(type);
     data = ( (float)val - zero_point ) * scale;
     return data;
 } /* affine_to_fp32() */
@@ -282,6 +283,7 @@ static VSI_INLINE_API float dfp_to_fp32
     )
 {
     float result;
+    VSI_UNREFERENCED(type);
     if( fl > 0 )
     {
         result = (float)val * ( 1.0f / ( (float) ( (int64_t)1 << fl ) ) );

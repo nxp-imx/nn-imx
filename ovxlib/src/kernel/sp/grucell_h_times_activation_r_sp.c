@@ -265,6 +265,10 @@ REGISTER_GRUCELL_ACTIVATION_STREAM_PROCESSOR_KERNEL( grucell_h_times_activation_
     float hstate_scale = vsi_nn_get_tensor_scale(inputs[0]);
     float const2 = (float)vsi_nn_get_tensor_zero_point(inputs[0]);
 
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(output_num);
+    VSI_UNREFERENCED(kernel);
+
     recurrent_activation = vsi_nn_kernel_param_get_int32( params, "recurrent_activation" );
 
     if ( recurrent_activation != VSI_NN_ACT_SIGMOID )

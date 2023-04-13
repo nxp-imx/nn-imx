@@ -92,6 +92,9 @@ DEF_KERNEL_EXECUTOR(_compute)
     float mean[3] = {0}, scale = 1;
     vsi_bool is_rgb888 = tensors[1] == NULL;
 
+    VSI_UNREFERENCED(node);
+    VSI_UNREFERENCED(param_size);
+
     for (i = 0; i < _CPU_IO_NUM; i++)
     {
         tensors[i] = (vsi_nn_kernel_tensor_t)param[i];
@@ -238,6 +241,8 @@ static vsi_status _query_kernel
     )
 {
     vsi_status status = VSI_SUCCESS;
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
     snprintf( kernel->info.name, VX_MAX_KERNEL_NAME, "%s",  _KERNEL_NAME );
     kernel->info.function    = _compute;
     kernel->info.parameters  = _pre_process_rgb888_planar_kernel_param_def;

@@ -65,6 +65,9 @@ DEF_KERNEL_EXECUTOR(_group_norm_exec)
     int32_t spaceOrg = 0;
     float eps = .0f;
 
+    VSI_UNREFERENCED(node);
+    VSI_UNREFERENCED(param_size);
+
     tensors[0]  = (vsi_nn_kernel_tensor_t)param[0];
     tensors[1]  = (vsi_nn_kernel_tensor_t)param[1];
     tensors[2]  = (vsi_nn_kernel_tensor_t)param[2];
@@ -193,6 +196,8 @@ static vsi_status _query_kernel
     vsi_nn_kernel_t* kernel
     )
 {
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
     snprintf( kernel->info.name, VX_MAX_KERNEL_NAME, "%s",  _KERNEL_NAME );
     kernel->info.function    = _group_norm_exec;
     kernel->info.parameters  = _group_normalization_kernel_param_def;
@@ -250,6 +255,9 @@ static vsi_nn_kernel_node_t _setup
     int32_t group_num  = vsi_nn_kernel_param_get_int32( params, "group_num" );
     vsi_size_t group_size  = inputs[0]->attr.size[2] / group_num;
     int32_t spaceOrg = (int32_t)(inputs[0]->attr.size[0] * inputs[0]->attr.size[1]);
+
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(output_num);
 
     status = _optimize_gn_shape_cpu(inputs, group_size, group_num, new_shape);
     if ( VSI_SUCCESS != status )

@@ -103,6 +103,9 @@ DEF_KERNEL_EXECUTOR(_compute)
     vsi_nn_kernel_tensor_t tensors[_IO_COUNT_DEFAULT] = { NULL };
     vsi_nn_kernel_tensor_attr_t* attr[_IO_COUNT_DEFAULT] = { NULL };
 
+    VSI_UNREFERENCED(node);
+    VSI_UNREFERENCED(param_size);
+
     tensors[0] = (vsi_nn_kernel_tensor_t)param[0];
     tensors[1] = (vsi_nn_kernel_tensor_t)param[1];
     tensors[2] = (vsi_nn_kernel_tensor_t)param[2];
@@ -191,6 +194,9 @@ DEF_KERNEL_EXECUTOR(_compute_separated)
     float i_r = 0.f, i_u = 0.f, i_c = 0.f, r_r = 0.f, r_u = 0.f, r_c = 0.f;
     float bias_r = 0.f, bias_u = 0.f, bias_c = 0.f;
     float r = 0.f, u = 0.f, c = 0.f, state = 0.f;
+
+    VSI_UNREFERENCED(node);
+    VSI_UNREFERENCED(param_size);
 
     for(i = 0; i < _IO_COUNT_SEPARATED; i++)
     {
@@ -420,6 +426,11 @@ static vsi_status _query_kernel
     )
 {
     vsi_status status = VSI_FAILURE;
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
+    VSI_UNREFERENCED(gate_activation);
+    VSI_UNREFERENCED(candidate_activation);
+    VSI_UNREFERENCED(use_cudnn_implementation);
     if(input_category == 0)
     {
         snprintf( kernel->info.name, VX_MAX_KERNEL_NAME, "%s",  _KERNEL_NAME );
@@ -470,6 +481,9 @@ static vsi_nn_kernel_node_t _setup
     int32_t use_cudnn_implementation = vsi_nn_kernel_param_get_int32( params, "use_cudnn_implementation" );
     grucell_activation_input_layout_e input_layout = vsi_nn_kernel_param_get_int32( params, "input_layout" );
     vsi_nn_tensor_t** _inputs = NULL;
+
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(output_num);
 
     status = _query_kernel( kernel, inputs, outputs, gate_activation, candidate_activation,
         input_category, use_cudnn_implementation, &param_count, &input_count, &output_count );

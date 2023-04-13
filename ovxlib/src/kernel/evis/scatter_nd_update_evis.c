@@ -488,6 +488,8 @@ DEF_KERNEL_INITIALIZER(_scatter_nd_update_initializer)
     int32_t     dstZP      = 0;
     float       dstScale   = 1;
 
+    VSI_UNREFERENCED(param_size);
+
     attr[0] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[0] );
     CHECK_PTR_FAIL_GOTO( attr[0], "Create tensor attr buffer fail.", OnError );
     attr[1] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[1] );
@@ -761,6 +763,8 @@ DEF_KERNEL_INITIALIZER(_scatter_nd_update_big_initializer)
     int32_t     dstZP      = 0;
     float       dstScale   = 1;
 
+    VSI_UNREFERENCED(param_size);
+
     attr[0] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[0] );
     CHECK_PTR_FAIL_GOTO( attr[0], "Create tensor attr buffer fail.", OnError );
     attr[1] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[1] );
@@ -995,6 +999,8 @@ DEF_KERNEL_INITIALIZER(_scatter_nd_update_pre_initializer)
     int32_t     src0ZP     = 0;
     float       src0Scale  = 1;
 
+    VSI_UNREFERENCED(param_size);
+
     attr[0] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[0] );
     CHECK_PTR_FAIL_GOTO( attr[0], "Create tensor attr buffer fail.", OnError );
     attr[1] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[1] );
@@ -1145,6 +1151,8 @@ DEF_KERNEL_INITIALIZER(_scatter_nd_update_post_initializer)
     float       src2Scale  = 1;
     int32_t     dstZP      = 0;
     float       dstScale   = 1;
+
+    VSI_UNREFERENCED(param_size);
 
     attr[0] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[0] );  // ref
     CHECK_PTR_FAIL_GOTO( attr[0], "Create tensor attr buffer fail.", OnError );
@@ -1348,6 +1356,8 @@ DEF_KERNEL_INITIALIZER(_scatter_nd_update_reset_initializer)
     int32_t     height = 0;
     int32_t     count_width = 0;
 
+    VSI_UNREFERENCED(param_size);
+
     attr[0] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[1] );
     CHECK_PTR_FAIL_GOTO( attr[0], "Create tensor attr buffer fail.", OnError );
 
@@ -1406,6 +1416,8 @@ DEF_KERNEL_INITIALIZER(_scatter_nd_update_ref_initializer)
     float   output_scale = 1.0f;
 
     uint32_t pack_key = 0;
+
+    VSI_UNREFERENCED(param_size);
 
     attr[0] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[0] );
     CHECK_PTR_FAIL_GOTO( attr[0], "Create tensor attr buffer fail.", OnError );
@@ -1539,6 +1551,8 @@ DEF_KERNEL_INITIALIZER(_scatter_nd_update_update_initializer)
     int32_t     output_zp    = 0;
     float       output_scale = 1.0f;
     uint32_t    pack_key = 0;
+
+    VSI_UNREFERENCED(param_size);
 
     attr[0] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[0] );
     CHECK_PTR_FAIL_GOTO( attr[0], "Create tensor attr buffer fail.", OnError );
@@ -1730,6 +1744,8 @@ DEF_KERNEL_INITIALIZER(_scatter_nd_update_copy_initializer)
     int32_t     width = 0;
     int32_t     height = 0;
 
+    VSI_UNREFERENCED(param_size);
+
     attr[0] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[0] );
     CHECK_PTR_FAIL_GOTO( attr[0], "Create tensor attr buffer fail.", OnError );
 
@@ -1784,6 +1800,8 @@ static vsi_status _query_kernel
     vsi_nn_kernel_dtype_e output_dtype = U8;
     uint32_t key = 0;
     int i = 0;
+
+    VSI_UNREFERENCED(coord_dim);
 
     input0_dtype = vsi_nn_kernel_map_dtype( inputs[0]->attr.dtype.vx_type );
     input2_dtype = vsi_nn_kernel_map_dtype( inputs[2]->attr.dtype.vx_type );
@@ -2063,6 +2081,9 @@ static vsi_nn_kernel_node_t _setup
     int32_t special_flg = (block_size % 16 == 0 && type_flg)  ? 1 : 0;
     int32_t i = 0;
     int32_t isRepeat = 0;
+
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(output_num);
 
     if (coord_dim > 4 && input_size[dims_num - 1] > 1)
     {

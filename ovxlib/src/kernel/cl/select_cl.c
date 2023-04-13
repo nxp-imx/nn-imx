@@ -130,6 +130,8 @@ DEF_KERNEL_INITIALIZER(_select_initializer)
     vsi_nn_kernel_tensor_attr_t *output_attr   = NULL;
     vsi_size_array_t             *output_shape  = NULL;
 
+    VSI_UNREFERENCED(param_size);
+
     output_attr  = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)output);
     CHECK_PTR_FAIL_GOTO( output_attr, "vsi_nn_kernel_tensor_attr_create fail.", final );
 
@@ -260,6 +262,8 @@ static vsi_nn_kernel_node_t _setup
     uint32_t new_rank = 0;
     uint32_t i = 0;
     vsi_bool ret = FALSE;
+
+    VSI_UNREFERENCED(params);
 
     input0Scale = input0Scale / outputScale;
     input1Scale = input1Scale / outputScale;

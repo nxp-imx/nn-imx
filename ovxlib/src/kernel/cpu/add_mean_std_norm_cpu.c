@@ -84,6 +84,10 @@ DEF_KERNEL_EXECUTOR(_compute)
     int32_t  i;
     float mean = .0f, stddev_inv = .0f, variance = .0f, input_d = .0f, data = .0f, eps = .0f;
     vsi_ssize_t v_size, n_batch, batch;
+
+    VSI_UNREFERENCED(node);
+    VSI_UNREFERENCED(param_size);
+
     /* prepare data */
     for(i = 0; i < _INPUT_NUM; i ++)
     {
@@ -196,6 +200,8 @@ static vsi_status _query_kernel
     )
 {
     vsi_status status = VSI_FAILURE;
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
     snprintf( kernel->info.name, VX_MAX_KERNEL_NAME, "%s",  _KERNEL_NAME );
     kernel->info.function    = _compute;
     kernel->info.parameters  = _add_mean_std_norm_kernel_param_def;

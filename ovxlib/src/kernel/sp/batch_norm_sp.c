@@ -502,6 +502,10 @@ REGISTER_BATCH_NORM_STREAM_PROCESSOR_KERNEL( batch_norm )
     vsi_size_t element_count = vsi_nn_vxGetTensorElementNum(&inputs[1]->attr);
     uint32_t axis = inputs[0]->attr.dim_num < 3 ? 0 : 2;
 
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(output_num);
+    VSI_UNREFERENCED(kernel);
+
     memcpy( &attr, &inputs[0], sizeof(vsi_nn_tensor_attr_t) );
     attr.dtype.vx_type = VSI_NN_TYPE_FLOAT32;
     attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;

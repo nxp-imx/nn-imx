@@ -109,6 +109,8 @@ static vsi_status op_optimize
     vsi_nn_opt_direction_e direction
     )
 {
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
     if (self->nn_param.depth2space.mode == VSI_NN_DEPTH2SPACE_CRD)
     {
         return vsi_nn_internal_optimize_node(self, direction );

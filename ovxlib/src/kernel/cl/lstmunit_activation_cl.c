@@ -942,6 +942,8 @@ DEF_KERNEL_INITIALIZER(_lstmunit_activation_CL_initializer)
     vsi_nn_kernel_tensor_t       output                 = NULL;
     vsi_nn_kernel_tensor_attr_t* output_attr;
 
+    VSI_UNREFERENCED(param_size);
+
     output = (vsi_nn_kernel_tensor_t)param[CL_OUTPUT];
 
     output_attr = vsi_nn_kernel_tensor_attr_create( output );
@@ -983,6 +985,8 @@ DEF_KERNEL_INITIALIZER(_lstmunit_activation_CB_initializer)
     vsi_status                   status                 = VSI_FAILURE;
     vsi_nn_kernel_tensor_t       output                 = NULL;
     vsi_nn_kernel_tensor_attr_t* output_attr;
+
+    VSI_UNREFERENCED(param_size);
 
     output = (vsi_nn_kernel_tensor_t)param[CB_OUTPUT];
     output_attr = vsi_nn_kernel_tensor_attr_create( output );
@@ -1027,6 +1031,8 @@ DEF_KERNEL_INITIALIZER(_lstmunit_activation_CS_initializer)
     vsi_status                   status                 = VSI_FAILURE;
     vsi_nn_kernel_tensor_t       output                 = NULL;
     vsi_nn_kernel_tensor_attr_t* output_attr;
+
+    VSI_UNREFERENCED(param_size);
 
     output = (vsi_nn_kernel_tensor_t)param[CS_OUTPUT];
 
@@ -1074,6 +1080,8 @@ DEF_KERNEL_INITIALIZER(_lstmunit_activation_L_initializer)
     vsi_nn_kernel_tensor_t       output                 = NULL;
     vsi_nn_kernel_tensor_attr_t* output_attr;
 
+    VSI_UNREFERENCED(param_size);
+
     output = (vsi_nn_kernel_tensor_t)param[L_OUTPUT];
 
     output_attr = vsi_nn_kernel_tensor_attr_create( output );
@@ -1118,6 +1126,8 @@ DEF_KERNEL_INITIALIZER(_lstmunit_activation_B_initializer)
     vsi_status                   status                 = VSI_FAILURE;
     vsi_nn_kernel_tensor_t       output                 = NULL;
     vsi_nn_kernel_tensor_attr_t* output_attr;
+
+    VSI_UNREFERENCED(param_size);
 
     output = (vsi_nn_kernel_tensor_t)param[B_OUTPUT];
 
@@ -1164,6 +1174,8 @@ DEF_KERNEL_INITIALIZER(_lstmunit_activation_S_initializer)
     vsi_status                   status                 = VSI_FAILURE;
     vsi_nn_kernel_tensor_t       output                 = NULL;
     vsi_nn_kernel_tensor_attr_t* output_attr;
+
+    VSI_UNREFERENCED(param_size);
 
     output = (vsi_nn_kernel_tensor_t)param[S_OUTPUT];
 

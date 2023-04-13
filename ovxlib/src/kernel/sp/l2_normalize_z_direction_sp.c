@@ -706,6 +706,8 @@ vsi_nn_kernel_node_t l2_norm_z_direction
     int32_t axis = 2;
     float output_scale = vsi_nn_get_tensor_scale(outputs[0]);
 
+    VSI_UNREFERENCED(params);
+
     memcpy( &attr, &outputs[0]->attr, sizeof(vsi_nn_tensor_attr_t) );
     attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
     attr.dtype.vx_type = VSI_NN_TYPE_FLOAT32;

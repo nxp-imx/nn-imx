@@ -128,6 +128,8 @@ DEF_KERNEL_INITIALIZER(_a_times_b_plus_c_initializer)
     vsi_size_array_t             *output_shape   = NULL;
     uint32_t pack_key                           = 0;
 
+    VSI_UNREFERENCED(param_size);
+
 
     attr[0]  = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)input0);
     CHECK_PTR_FAIL_GOTO( attr[0], "vsi_nn_kernel_tensor_attr_create fail.", final );
@@ -330,6 +332,8 @@ static vsi_nn_kernel_node_t _setup
     int32_t  i        = 0;
     vsi_bool ret      = FALSE;
     vsi_nn_tensor_t* reshape_tensors[_IO_NUM] = { NULL };
+
+    VSI_UNREFERENCED(params);
 
     for (i = 0; i < _IO_NUM; i++)
     {

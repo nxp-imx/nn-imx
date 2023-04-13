@@ -236,6 +236,8 @@ static vsi_status op_compute
     vsi_nn_tensor_t ** outputs
     )
 {
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
     return vsi_nn_internal_compute_node( self );
 } /* op_compute() */
 
@@ -246,6 +248,9 @@ static vsi_bool op_check
     vsi_nn_tensor_t ** outputs
     )
 {
+    VSI_UNREFERENCED(self);
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
     /*TODO: Check tensor shapes. */
     return TRUE;
 } /* op_check() */
@@ -258,6 +263,8 @@ static vsi_status op_optimize
     vsi_nn_opt_direction_e direction
     )
 {
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
     return vsi_nn_internal_optimize_node( self, direction );
 } /* op_optimize() */
 
