@@ -171,6 +171,8 @@ DEF_KERNEL_INITIALIZER(_select_initializer)
     uint16_t in1_M0                         = 0;
     int32_t  in1_postShift                  = 0;
     uint32_t pack_key                       = 0;
+
+    VSI_UNREFERENCED(param_size);
     input0_attr  = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)input0);
     CHECK_PTR_FAIL_GOTO( input0_attr, "vsi_nn_kernel_tensor_attr_create fail.", final );
     input1_attr  = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)input1);
@@ -457,6 +459,8 @@ static vsi_nn_kernel_node_t _setup
     uint32_t new_rank = 0;
     uint32_t i = 0;
     vsi_bool ret = FALSE;
+
+    VSI_UNREFERENCED(params);
 
     for (i = 0; i < _IO_NUM; i++)
     {

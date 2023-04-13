@@ -162,6 +162,8 @@ vsi_bool validate_op_io_types
 {
     vsi_bool matched = FALSE;
 
+    VSI_UNREFERENCED(name);
+
     if(self && self->attr.enable_op_constraint_check && op_constraint_reg) {
         uint32_t i = 0;
         int32_t j = 0;

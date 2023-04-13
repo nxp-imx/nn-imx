@@ -88,6 +88,8 @@ static vsi_status _add_forward_node
     uint32_t i = 0;
     uint32_t j = 0;
 
+    VSI_UNREFERENCED(graph);
+
     /* Reconnect node tensors */
     for(i = 0; i < nodes_count; i++)
     {
@@ -116,6 +118,8 @@ static vsi_status _add_backward_node
     )
 {
     uint32_t i = 0;
+
+    VSI_UNREFERENCED(graph);
 
     /* Reconnect node output tensors */
     for(i = 0; i < (int32_t)last_node->output.num; i++)

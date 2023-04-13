@@ -50,6 +50,9 @@ static vsi_status op_compute
 {
     vsi_status status = VSI_SUCCESS;
 
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
+
     status = vsi_nn_internal_compute_node( self );
 
     return status;
@@ -63,6 +66,9 @@ static vsi_bool op_check
     )
 {
     vsi_nn_interp_param *p = NULL;
+
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
 
     p = &self->nn_param.interp;
 
@@ -242,6 +248,9 @@ static vsi_status op_optimize
     )
 {
     vsi_status     status;
+
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
 
     status = VSI_SUCCESS;
     vsi_nn_internal_optimize_node( self, direction );

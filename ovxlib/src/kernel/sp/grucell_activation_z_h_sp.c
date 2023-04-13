@@ -187,6 +187,10 @@ REGISTER_GRUCELL_ACTIVATION_STREAM_PROCESSOR_KERNEL( grucell_activation_z_h )
     int32_t activation = vsi_nn_kernel_param_get_int32( params, "activation" );
     vsi_nn_tensor_t * dummy_tensor[2] = {NULL};
 
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(output_num);
+    VSI_UNREFERENCED(kernel);
+
     if ( recurrent_activation != VSI_NN_ACT_SIGMOID ||
          activation != VSI_NN_ACT_TANH )
     {

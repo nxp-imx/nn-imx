@@ -1894,6 +1894,10 @@ REGISTER_LSTMUNIT_ACTIVATION_STREAM_PROCESSOR_KERNEL( lstmunit_activation )
     float    forget_bias;
     vsi_nn_kernel_dtype_e in_dtype = vsi_nn_kernel_map_dtype( inputs[LSTMUNIT_ACT_INPUT_FC_F]->attr.dtype.vx_type );
 
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(output_num);
+    VSI_UNREFERENCED(kernel);
+
     _is_ln               = vsi_nn_kernel_param_get_int32( params, "_is_ln" );
     _is_cifg             = vsi_nn_kernel_param_get_int32( params, "_is_cifg" );
     _is_proj             = vsi_nn_kernel_param_get_int32( params, "_is_proj" );

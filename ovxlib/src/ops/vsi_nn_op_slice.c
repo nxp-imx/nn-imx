@@ -136,6 +136,8 @@ static vsi_status op_optimize
     vsi_nn_opt_direction_e direction
     )
 {
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
     if (self->input.num > 1)
     {
         return VSI_SUCCESS;

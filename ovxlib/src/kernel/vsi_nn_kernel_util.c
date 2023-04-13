@@ -160,6 +160,9 @@ vsi_status vsi_nn_kernel_copy_tensor_patch
     vsi_size_t start[VSI_NN_MAX_DIM_NUM],end[VSI_NN_MAX_DIM_NUM],stride[VSI_NN_MAX_DIM_NUM];
     vsi_status status = VSI_FAILURE;
     uint32_t i;
+
+    VSI_UNREFERENCED(buffer_size);
+
     if (NULL == tensor || NULL == user_ptr)
     {
         VSILOGE("Invalid parameter");
@@ -681,6 +684,8 @@ vsi_nn_tensor_t* vsi_nn_pad_tensor
     vsi_size_t output_batch = 1;
     vsi_nn_dtype_t  dst_type;
     vsi_nn_tensor_t *output = NULL;
+
+    VSI_UNREFERENCED(mode);
 
     input_data_ptr = vsi_nn_ConvertTensorToFloat32Data(graph, input);
     CHECK_PTR_FAIL_GOTO( input_data_ptr, "Create data ptr fail.", final );

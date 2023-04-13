@@ -67,6 +67,9 @@ DEF_KERNEL_EXECUTOR(_scatter_nd_update_exec)
     int32_t coord_dim = 1;
     int32_t mask_len = 0;
 
+    VSI_UNREFERENCED(node);
+    VSI_UNREFERENCED(param_size);
+
     tensors[0]  = (vsi_nn_kernel_tensor_t)param[0]; // ref
     tensors[1]  = (vsi_nn_kernel_tensor_t)param[1]; // idx    int
     tensors[2]  = (vsi_nn_kernel_tensor_t)param[2]; // update
@@ -212,6 +215,8 @@ static vsi_status _query_kernel
     vsi_nn_kernel_t* kernel
     )
 {
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
     snprintf( kernel->info.name, VX_MAX_KERNEL_NAME, "%s",  _KERNEL_NAME );
     kernel->info.function    = _scatter_nd_update_exec;
     kernel->info.parameters  = _scatter_nd_update_kernel_param_def;
@@ -237,6 +242,9 @@ static vsi_nn_kernel_node_t _setup
     int32_t block_size  = vsi_nn_kernel_param_get_int32( params, "block_size" );
     int32_t coord_dim  = vsi_nn_kernel_param_get_int32( params, "coord_dim" );
     int32_t idx_num  = vsi_nn_kernel_param_get_int32( params, "idx_num" );
+
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(output_num);
 
     status = _query_kernel( inputs, outputs, kernel );
     if ( VSI_SUCCESS == status)

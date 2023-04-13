@@ -93,6 +93,9 @@ DEF_KERNEL_EXECUTOR(_avg_pool3d_exec)
     int32_t depth_in = 0, depth_out = 0, count_include_pad = 0;
     int32_t i;
 
+    VSI_UNREFERENCED(node);
+    VSI_UNREFERENCED(param_size);
+
     input[0] = (vsi_nn_kernel_tensor_t)param[0];
     output[0] = (vsi_nn_kernel_tensor_t)param[1];
     attr[0] = vsi_nn_kernel_tensor_attr_create( input[0] );
@@ -213,6 +216,8 @@ static vsi_status _query_kernel
     )
 {
     vsi_status status = VSI_FAILURE;
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
     snprintf( kernel->info.name, VX_MAX_KERNEL_NAME, "%s",  _KERNEL_NAME );
     kernel->info.function    = _avg_pool3d_exec;
     kernel->info.parameters  = _avg_pool3d_kernel_param_def;

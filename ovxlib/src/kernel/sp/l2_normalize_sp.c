@@ -420,6 +420,8 @@ vsi_nn_kernel_node_t l2_norm_x_direction
     float output_scale = vsi_nn_get_tensor_scale(outputs[0]);
     int32_t axis = 0;
 
+    VSI_UNREFERENCED(params);
+
     memcpy( &attr, &outputs[0]->attr, sizeof(vsi_nn_tensor_attr_t) );
     attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
     attr.dtype.vx_type = VSI_NN_TYPE_FLOAT32;
@@ -565,6 +567,10 @@ REGISTER_L2_NORMALIZE_STREAM_PROCESSOR_KERNEL( l2_norm )
     vsi_nn_kernel_node_t node = NULL;
 
     uint32_t axis = vsi_nn_kernel_param_get_int32( params, "axis" );
+
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(output_num);
+    VSI_UNREFERENCED(kernel);
 
     if (axis == 0)
     {

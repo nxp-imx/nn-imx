@@ -51,6 +51,9 @@ static vsi_status op_compute
 {
     vsi_status status = VSI_FAILURE;
 
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
+
     status = vsi_nn_internal_compute_node(self);
 
     return status;
@@ -63,6 +66,8 @@ static vsi_bool op_check
     vsi_nn_tensor_t ** outputs
     )
 {
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
     if (VSI_NN_INTERPOLATION_BILINEAR != self->nn_param.gridsample.mode) {
         VSILOGE("Only support bilinear_grid_sample now!");
         return FALSE;
@@ -129,7 +134,7 @@ static vsi_status op_init
     //self->nn_param.grid_sample.local = \
     //    (grid_sample_local_data_t*)malloc(sizeof(grid_sample_local_data_t));
     */
-
+    VSI_UNREFERENCED(self);
     return VSI_SUCCESS;
 } /* op_init() */
 

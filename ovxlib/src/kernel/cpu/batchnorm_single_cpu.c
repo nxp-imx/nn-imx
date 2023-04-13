@@ -82,6 +82,8 @@ DEF_KERNEL_EXECUTOR(_batch_norm_exec)
     uint32_t i = 0;
     float eps = 0.f;
 
+    VSI_UNREFERENCED(node);
+
     status = vsi_nn_kernel_scalar_read_float32((vsi_nn_kernel_scalar_t)param[param_size - 1], &eps);
     CHECK_STATUS_FAIL_GOTO(status, final );
 
@@ -168,6 +170,8 @@ static vsi_status _query_kernel
     vsi_nn_kernel_t* kernel
     )
 {
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
     snprintf( kernel->info.name, VX_MAX_KERNEL_NAME, "%s",  _KERNEL_NAME );
     kernel->info.function    = _batch_norm_exec;
     kernel->info.parameters  = kernel_param_def;
@@ -191,6 +195,9 @@ static vsi_nn_kernel_node_t _setup
     vsi_nn_kernel_node_param_t backend_params[_CPU_PARAM_NUM] = {NULL};
     vsi_nn_kernel_node_t node = NULL;
     float eps = 0;
+
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(output_num);
 
     eps = vsi_nn_kernel_param_get_float32(params, "eps");
 

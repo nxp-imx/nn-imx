@@ -257,6 +257,8 @@ DEF_KERNEL_INITIALIZER(_gather_nd_initializer)
 
     uint32_t pack_key = 0;
 
+    VSI_UNREFERENCED(param_size);
+
     attr[0] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[0] );
     CHECK_PTR_FAIL_GOTO( attr[0], "Create tensor attr buffer fail.", OnError );
     attr[1] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[1] );
@@ -494,6 +496,9 @@ static vsi_nn_kernel_node_t _setup
     int32_t block_size  = vsi_nn_kernel_param_get_int32( params, "block_size" );
     int32_t coord_dim   = vsi_nn_kernel_param_get_int32( params, "coord_dim" );
     int32_t rs_in_dim = 0, rs_idx_dim = 0, rs_out_dim = 0;
+
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(output_num);
 
     status = get_gather_nd_tensor_reshape_size(&inputs[0], shapes[0], block_size, coord_dim, &rs_in_dim, batch_dims);
     status |= get_gather_nd_tensor_reshape_size(&inputs[1], shapes[1], coord_dim, 0, &rs_idx_dim, batch_dims);

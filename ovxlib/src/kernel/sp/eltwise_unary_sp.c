@@ -53,6 +53,10 @@ static vsi_nn_kernel_node_t _setup
     float a_v = 0;
     float b_v = 0;
 
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(output_num);
+    VSI_UNREFERENCED(kernel);
+
     if (act_function == VX_CONVOLUTIONAL_NETWORK_ACTIVATION_CLIP)
     {
         a_v = vsi_nn_kernel_param_get_float32( params, "min_value" );

@@ -197,6 +197,8 @@ DEF_KERNEL_INITIALIZER(_depthwise_conv1d_initializer)
     vx_context                  ctx             = vxGetContext((vx_reference)node);
     uint64_t                    pack_key        = 0;
 
+    VSI_UNREFERENCED(param_size);
+
     memset(&hw_param, 0, sizeof(vx_hardware_caps_params_t));
     status = vxQueryHardwareCaps(ctx, &hw_param, sizeof(vx_hardware_caps_params_t));
     CHECK_STATUS_FAIL_GOTO(status, final);

@@ -125,6 +125,8 @@ DEF_KERNEL_INITIALIZER(_logical_ops_initializer)
     vsi_nn_kernel_tensor_attr_t *input_attr = NULL, *output_attr = NULL;
     vsi_size_array_t             *output_shape  = NULL;
 
+    VSI_UNREFERENCED(param_size);
+
     input_attr  = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)input);
     CHECK_PTR_FAIL_GOTO( input_attr, "vsi_nn_kernel_tensor_attr_create fail.", final );
 

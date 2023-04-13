@@ -75,6 +75,9 @@ DEF_KERNEL_EXECUTOR(_compute)
     vsi_nn_kernel_tensor_t tensors[_IO_NUM] = { NULL };
     vsi_nn_kernel_tensor_attr_t* attr[_IO_NUM] = { NULL };
 
+    VSI_UNREFERENCED(node);
+    VSI_UNREFERENCED(param_size);
+
     tensors[0] = (vsi_nn_kernel_tensor_t)param[0];
     tensors[1] = (vsi_nn_kernel_tensor_t)param[1];
     tensors[2] = (vsi_nn_kernel_tensor_t)param[2];
@@ -140,6 +143,8 @@ static vsi_status _query_kernel
     )
 {
     vsi_status status = VSI_FAILURE;
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
     snprintf( kernel->info.name, VX_MAX_KERNEL_NAME, "%s",  _KERNEL_NAME );
     kernel->info.function    = _compute;
     kernel->info.parameters  = _grucell_activation_sma_kernel_param_def;
@@ -163,6 +168,8 @@ static vsi_nn_kernel_node_t _setup
     vsi_status status = VSI_FAILURE;
     vsi_nn_kernel_node_param_t node_params[_GRUCELL_ACTIVATION_SMA_PARAM_NUM] = {NULL};
     vsi_nn_kernel_node_t node = NULL;
+
+    VSI_UNREFERENCED(params);
 
     status = _query_kernel( kernel, inputs, outputs /* Add extra params */ );
     if( VSI_SUCCESS == status)

@@ -104,6 +104,9 @@ DEF_KERNEL_EXECUTOR(_compute)
     vsi_size_t out_bytes[_OUTPUT_NUM] = {0};
     uint32_t i;
 
+    VSI_UNREFERENCED(node);
+    VSI_UNREFERENCED(param_size);
+
     /* prepare data */
     vsi_nn_kernel_scalar_read_int32((vsi_nn_kernel_scalar_t)param[3], &isfmod);
     for (i = 0; i < _INPUT_NUM; i++) {
@@ -200,6 +203,8 @@ static vsi_status _query_kernel
     vsi_nn_tensor_t * const * const outputs
     )
 {
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
     snprintf( kernel->info.name, VX_MAX_KERNEL_NAME, "%s",  _KERNEL_NAME );
     kernel->info.function    = _compute;
     kernel->info.parameters  = _mod_kernel_param_def;

@@ -160,6 +160,8 @@ static vsi_bool op_setup
     uint32_t i = 0;
     vsi_nn_scatter_nd_param * p = &(self->nn_param.scatter_nd);
 
+    VSI_UNREFERENCED(inputs);
+
     if ( VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num )
     {
         if (p->shape == NULL)

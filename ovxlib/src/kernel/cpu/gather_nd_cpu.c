@@ -67,6 +67,9 @@ DEF_KERNEL_EXECUTOR(_gather_nd_exec)
     vsi_ssize_t indices_num = 1;
     int32_t coord_stride = 1;
 
+    VSI_UNREFERENCED(node);
+    VSI_UNREFERENCED(param_size);
+
     tensors[0]  = (vsi_nn_kernel_tensor_t)param[0];
     tensors[1]  = (vsi_nn_kernel_tensor_t)param[1];
     tensors[2]  = (vsi_nn_kernel_tensor_t)param[2];
@@ -182,6 +185,8 @@ static vsi_status _query_kernel
     vsi_nn_kernel_t* kernel
     )
 {
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
     snprintf( kernel->info.name, VX_MAX_KERNEL_NAME, "%s",  _KERNEL_NAME );
     kernel->info.function    = _gather_nd_exec;
     kernel->info.parameters  = _gather_nd_kernel_param_def;
@@ -207,6 +212,9 @@ static vsi_nn_kernel_node_t _setup
     int32_t batch_dims  = vsi_nn_kernel_param_get_int32( params, "batch_dims" );
     int32_t block_size  = vsi_nn_kernel_param_get_int32( params, "block_size" );
     int32_t coord_dim   = vsi_nn_kernel_param_get_int32( params, "coord_dim" );
+
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(output_num);
 
     status = _query_kernel( inputs, outputs, kernel );
     if ( VSI_SUCCESS == status)

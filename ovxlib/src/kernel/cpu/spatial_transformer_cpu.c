@@ -148,6 +148,9 @@ DEF_KERNEL_EXECUTOR(_compute)
     int32_t  align_corners = 0;
     float    theta[6] = {0};
 
+    VSI_UNREFERENCED(node);
+    VSI_UNREFERENCED(param_size);
+
     /* prepare data */
     for (i = 0; i < _INPUT_NUM; i ++)
     {
@@ -306,6 +309,8 @@ static vsi_status _query_kernel
     /* Add extra params */
     )
 {
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
     snprintf( kernel->info.name, VX_MAX_KERNEL_NAME, "%s",  _KERNEL_NAME );
     kernel->info.function    = _compute;
     kernel->info.parameters  = _spatial_transformer_kernel_param_def;

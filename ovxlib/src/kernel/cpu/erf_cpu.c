@@ -79,6 +79,9 @@ DEF_KERNEL_EXECUTOR(_compute)
     vsi_size_t   out_bytes[_OUTPUT_NUM] = {0};
     size_t i = 0;
 
+    VSI_UNREFERENCED(node);
+    VSI_UNREFERENCED(param_size);
+
     /* prepare data */
     for (i = 0; i < _INPUT_NUM; i ++)
     {
@@ -157,6 +160,8 @@ static vsi_status _query_kernel
     )
 {
     vsi_status status = VSI_FAILURE;
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
     snprintf( kernel->info.name, VX_MAX_KERNEL_NAME, "%s",  _KERNEL_NAME );
     kernel->info.function    = _compute;
     kernel->info.parameters  = _erf_kernel_param_def;
@@ -181,6 +186,8 @@ static vsi_nn_kernel_node_t _setup
     vsi_status status = VSI_FAILURE;
     vsi_nn_kernel_node_param_t node_params[_ERF_PARAM_NUM];
     vsi_nn_kernel_node_t node = NULL;
+
+    VSI_UNREFERENCED(params);
 
 
     status = _query_kernel( kernel, inputs, outputs);

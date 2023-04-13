@@ -113,6 +113,8 @@ DEF_KERNEL_INITIALIZER(_add_mean_std_norm_initializer)
     vsi_nn_kernel_tensor_attr_t *input0_attr = NULL;
     vsi_size_array_t             *input_shape = NULL;
 
+    VSI_UNREFERENCED(param_size);
+
     input0_attr  = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)input0);
     CHECK_PTR_FAIL_GOTO( input0_attr, "vsi_nn_kernel_tensor_attr_create fail.", final );
     input_shape   = input0_attr->shape;

@@ -89,6 +89,9 @@ DEF_KERNEL_EXECUTOR(_maxpoolwithargmax_exec)
     int32_t pad_left = 0, pad_right = 0, pad_top = 0, pad_bottom = 0;
     int32_t i = 0;
 
+    VSI_UNREFERENCED(node);
+    VSI_UNREFERENCED(param_size);
+
     tensors[0]  = (vsi_nn_kernel_tensor_t)param[0];
     tensors[1]  = (vsi_nn_kernel_tensor_t)param[1];
     tensors[2]  = (vsi_nn_kernel_tensor_t)param[2];
@@ -212,6 +215,8 @@ static vsi_status _query_kernel
     )
 {
     vsi_status status = VSI_FAILURE;
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
     snprintf( kernel->info.name, VX_MAX_KERNEL_NAME, "%s",  _KERNEL_NAME );
     kernel->info.function    = _maxpoolwithargmax_exec;
     kernel->info.parameters  = _maxpoolwithargmax_kernel_param_def;

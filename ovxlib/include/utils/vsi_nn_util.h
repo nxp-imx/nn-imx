@@ -58,6 +58,8 @@ extern "C" {
 
 #define BITS_PER_BYTE 8
 
+#define VSI_UNREFERENCED( param ) ( ( void ) ( param ) )
+
 #define VSI_NN_STRINGIZE(X) VSI_NN_DO_STRINGIZE(X)
 #define VSI_NN_DO_STRINGIZE(X) #X
 

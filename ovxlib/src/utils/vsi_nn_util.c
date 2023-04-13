@@ -600,6 +600,8 @@ void vsi_nn_ComputePadWithPadType
     vsi_size_t   * out_pad
     )
 {
+    VSI_UNREFERENCED(in_dim_num);
+    VSI_UNREFERENCED(rounding);
     vsi_nn_compute_padding(in_shape, ksize, stride, NULL, pad_type, out_pad);
 } /* vsi_nn_ComputePadWithPadType() */
 
@@ -651,6 +653,8 @@ void vsi_nn_ComputePadWithPadTypeForConv1D
     vsi_size_t   * out_pad
     )
 {
+    VSI_UNREFERENCED(in_dim_num);
+    VSI_UNREFERENCED(rounding);
     vsi_nn_compute_padding_conv1d(in_shape, ksize, stride, NULL, pad_type, out_pad);
 } /* vsi_nn_ComputePadWithPadTypeForConv1D() */
 
@@ -836,6 +840,7 @@ int32_t vsi_nn_Mkdir
     int32_t mode
     )
 {
+    VSI_UNREFERENCED(mode);
     if(NULL == path)
     {
         return -1;

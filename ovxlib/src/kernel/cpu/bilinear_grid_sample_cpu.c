@@ -85,6 +85,9 @@ DEF_KERNEL_EXECUTOR(_compute)
     vsi_size_t input1_gh, input1_gw, input1_dim0, input1_batch_size;
     vsi_size_t output_batch_size;
     vsi_size_t b = 0, c = 0, w = 0, h = 0;
+
+    VSI_UNREFERENCED(node);
+    VSI_UNREFERENCED(param_size);
     /* prepare data */
     for (i = 0; i < _INPUT_NUM; i++)
     {
@@ -231,6 +234,8 @@ static vsi_status _query_kernel
     )
 {
     vsi_status status = VSI_FAILURE;
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
     snprintf( kernel->info.name, VX_MAX_KERNEL_NAME, "%s",  _KERNEL_NAME );
     kernel->info.function    = _compute;
     kernel->info.parameters  = _bilinear_grid_sample_kernel_param_def;

@@ -84,6 +84,9 @@ static vsi_bool op_check
     vsi_nn_tensor_t ** outputs
     )
 {
+    VSI_UNREFERENCED(self);
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
     /*TODO: Check tensor shapes. */
     return TRUE;
 } /* op_check() */
@@ -121,7 +124,7 @@ static vsi_status op_init
     //self->nn_param.bilinear_grid_sample.local = \
     //    (bilinear_grid_sample_local_data_t*)malloc(sizeof(bilinear_grid_sample_local_data_t));
     */
-
+    VSI_UNREFERENCED(self);
     return VSI_SUCCESS;
 } /* op_init() */
 

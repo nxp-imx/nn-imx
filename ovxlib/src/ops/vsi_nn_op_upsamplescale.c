@@ -144,6 +144,9 @@ static vsi_status op_optimize
     int32_t stride = self->nn_param.upsamplescale.stride;
     float scale = self->nn_param.upsamplescale.scale;
 
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
+
     if (stride == 1 && vsi_nn_abs(scale - 1.0f) == _EPSILON)
     {
         return vsi_nn_internal_optimize_node( self, direction );
@@ -219,6 +222,8 @@ static vsi_status op_init
     vsi_nn_node_t* self
     )
 {
+    VSI_UNREFERENCED(self);
+
     return VSI_SUCCESS;
 } /* op_init() */
 

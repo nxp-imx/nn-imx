@@ -208,6 +208,8 @@ DEF_KERNEL_INITIALIZER(_batch_norm_initializer)
     float    output_zp                          = 0;
     uint32_t pack_key                           = 0;
 
+    VSI_UNREFERENCED(param_size);
+
     input_attr  = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)input);
     CHECK_PTR_FAIL_GOTO( input_attr, "vsi_nn_kernel_tensor_attr_create fail.", final );
     output_attr  = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)output);

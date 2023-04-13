@@ -152,6 +152,8 @@ DEF_KERNEL_INITIALIZER(_upsamplescale_initializer)
     uint32_t  pack_key        = 0;
     _internal_upscale_e flag  = UP_ORG;
 
+    VSI_UNREFERENCED(param_size);
+
     input_attr = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[0] );
     CHECK_PTR_FAIL_GOTO( input_attr, "Create tensor attr buffer fail.", final );
     output_attr = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[1] );

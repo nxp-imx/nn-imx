@@ -158,6 +158,8 @@ DEF_KERNEL_INITIALIZER(_matrixmul_initializer)
     vsi_ssize_t height = 0;
     vsi_ssize_t chn = 0;
 
+    VSI_UNREFERENCED(param_size);
+
     attr[0] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[2] );
     CHECK_PTR_FAIL_GOTO( attr[0], "Create tensor attr buffer fail.", final );
 
@@ -307,6 +309,9 @@ static vsi_nn_kernel_node_t _setup
     float    zp_b = (float)vsi_nn_get_tensor_zero_point(inputs[1]);
     float    scale_out = vsi_nn_get_tensor_scale(outputs[0]);
     float    zp_out = (float)vsi_nn_get_tensor_zero_point(outputs[0]);
+
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(output_num);
 
     scale_out = 1 / scale_out;
 

@@ -77,6 +77,8 @@ static vsi_status op_compute
     vsi_nn_tensor_t ** outputs
     )
 {
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
     return vsi_nn_internal_compute_node( self );
 } /* op_compute() */
 

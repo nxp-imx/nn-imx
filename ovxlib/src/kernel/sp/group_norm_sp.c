@@ -401,6 +401,10 @@ REGISTER_GROUP_NORM_STREAM_PROCESSOR_KERNEL( group_norm )
     float eps = vsi_nn_kernel_param_get_float32( params, "eps" );
     float inv_m = 1.0f / (float)(outputs[0]->attr.size[0] * outputs[0]->attr.size[1] * group_size);
 
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(output_num);
+    VSI_UNREFERENCED(kernel);
+
     status =  vsi_nn_kernel_optimize_group_norm_shape( (const vsi_size_t*)inputs[0]->attr.size,
         inputs[0]->attr.dim_num, group_num, 1, shapes[0]);
     CHECK_STATUS_FAIL_GOTO(status, final);

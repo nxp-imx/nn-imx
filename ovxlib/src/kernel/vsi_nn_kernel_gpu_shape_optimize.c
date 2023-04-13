@@ -132,6 +132,9 @@ vsi_bool vsi_nn_kernel_optimize_reduce_shape
     vsi_size_t  outerSize                  = 1;
     vsi_size_t  axisSize                   = 1;
 
+    VSI_UNREFERENCED(shape_output);
+    VSI_UNREFERENCED(rank_output);
+
     for (i = 0; i < axis_size; i++)
     {
         axisSize *= shape_x[axis[i]];
@@ -461,6 +464,10 @@ vsi_bool vsi_nn_kernel_optimize_tile_shape
         a = b; \
         b = tmp; \
     } while(0)
+
+    VSI_UNREFERENCED(rank_x);
+    VSI_UNREFERENCED(rank);
+
     for( i = 0; i < rank_output; i++ )
     {
         sx = shape_x[i];

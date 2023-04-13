@@ -165,6 +165,8 @@ DEF_KERNEL_INITIALIZER(_get_matrix_initializer)
     float    output_h = 1.0f;
     float    scale[4] = {0};
 
+    VSI_UNREFERENCED(param_size);
+
     attr = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[0] );
     CHECK_PTR_FAIL_GOTO( attr, "Create tensor attr buffer fail.", final );
 
@@ -255,6 +257,8 @@ DEF_KERNEL_INITIALIZER(_warp_affine_initializer)
     float    input_tail  = 0;
     float    output_scale = 1.0f;
     float    output_zp  = 0;
+
+    VSI_UNREFERENCED(param_size);
 
     attr[0] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[0] );
     CHECK_PTR_FAIL_GOTO( attr[0], "Create tensor attr buffer fail.", final );
@@ -501,6 +505,9 @@ static vsi_nn_kernel_node_t _setup
     float output_w   = (float)outputs[0]->attr.size[0];
     float output_h   = (float)outputs[0]->attr.size[1];
     int32_t i = 0;
+
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(output_num);
 
     if (align_corners && output_w > 1)
     {

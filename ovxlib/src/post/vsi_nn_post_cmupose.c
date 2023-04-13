@@ -536,6 +536,9 @@ static void set_cols
     )
 {
     uint32_t w;
+
+    VSI_UNREFERENCED(height);
+
     if(NULL == data || cols == NULL)
     {
         return ;
@@ -1279,6 +1282,8 @@ static vsi_nn_subset_t *_compute_subset
     vsi_nn_subset_t *subset_list = NULL, *subset = NULL;
     uint32_t *deleteIdx = NULL;
 
+    VSI_UNREFERENCED(all_connection_num);
+
     if(NULL == all_connection ||
        NULL == candidate ||
        NULL == special_k ||
@@ -1946,6 +1951,10 @@ static vsi_status _auto_fill_cmupose
     vsi_status status;
     vsi_nn_tensor_t *net_in = NULL;
     static float default_scale_search[1] = {1};
+
+    VSI_UNREFERENCED(image);
+    VSI_UNREFERENCED(param);
+    VSI_UNREFERENCED(model);
 
     status = VSI_FAILURE;
     if(NULL == graph)

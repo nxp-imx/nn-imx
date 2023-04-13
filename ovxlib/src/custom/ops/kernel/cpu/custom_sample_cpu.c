@@ -61,6 +61,9 @@ DEF_KERNEL_EXECUTOR(_softmax_compute)
     uint32_t i = 0, out_elements = 0;
     int32_t axis;
 
+    VSI_UNREFERENCED(node);
+    VSI_UNREFERENCED(param_size);
+
     tensors[0] = (vsi_nn_kernel_tensor_t)param[0]; // input0
     tensors[1] = (vsi_nn_kernel_tensor_t)param[1]; // input1
     tensors[2] = (vsi_nn_kernel_tensor_t)param[2]; // output
@@ -136,6 +139,8 @@ static vsi_status _query_kernel
     vsi_nn_kernel_t* kernel
     )
 {
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
     memmove( &kernel->info, &_kernel_info, sizeof(vx_kernel_description_t) );
     return VSI_SUCCESS;
 }
@@ -155,6 +160,9 @@ static vsi_nn_kernel_node_t _setup
     vsi_nn_kernel_node_param_t backend_params[_CPU_PARAM_NUM] = {NULL};
     vsi_nn_kernel_node_t node = NULL;
     int32_t axis = 0;
+
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(output_num);
 
     axis = vsi_nn_kernel_param_get_int32(params, "axis");
     status = _query_kernel(inputs, outputs, kernel);

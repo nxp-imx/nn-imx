@@ -197,6 +197,9 @@ vsi_nn_internal_tensor_t* vsi_nn_rnn_process_output_for_nn_fc
     vsi_nn_tensor_t* tensor = input;
     vsi_bool ret = FALSE;
 
+    VSI_UNREFERENCED(kernel_h);
+    VSI_UNREFERENCED(kernel_w);
+
     memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
     vsi_nn_internal_init_tensor_attr(&attr, &input->attr.dtype, use_virtual_tensor);
 
@@ -273,6 +276,9 @@ vsi_bool vsi_nn_rnn_process_output_for_nn_fc2
     uint32_t* permute_in_perm = NULL;
     vsi_nn_internal_node_t* tmp_inode = NULL;
     vsi_nn_tensor_t* tensor = input;
+
+    VSI_UNREFERENCED(kernel_h);
+    VSI_UNREFERENCED(kernel_w);
 
     memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
     vsi_nn_internal_init_tensor_attr(&attr, &input->attr.dtype, use_virtual_tensor);
@@ -887,6 +893,8 @@ vsi_nn_internal_tensor_t* vsi_nn_rnn_create_concat_impl
     vsi_nn_internal_node_t* inode = NULL;
     int tensor_count = 1;
     vsi_bool ret = FALSE;
+
+    VSI_UNREFERENCED(axis);
 
     va_start(args, tensor);
 

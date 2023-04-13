@@ -177,6 +177,15 @@ vsi_bool vsi_nn_dtype_convert_float_to_quantize_symm8_perchannel
     int8_t * out_buffer
     )
 {
+    VSI_UNREFERENCED(size);
+    VSI_UNREFERENCED(shape);
+    VSI_UNREFERENCED(rank);
+    VSI_UNREFERENCED(scale);
+    VSI_UNREFERENCED(scale_size);
+    VSI_UNREFERENCED(zero_point);
+    VSI_UNREFERENCED(zero_point_size);
+    VSI_UNREFERENCED(channel_dim);
+
     if( !buffer || !out_buffer )
     {
         return FALSE;
@@ -195,6 +204,15 @@ vsi_bool vsi_nn_dtype_convert_quantize_symm8_perchannel_to_float
     float * out_buffer
     )
 {
+    VSI_UNREFERENCED(size);
+    VSI_UNREFERENCED(shape);
+    VSI_UNREFERENCED(rank);
+    VSI_UNREFERENCED(scale);
+    VSI_UNREFERENCED(scale_size);
+    VSI_UNREFERENCED(zero_point);
+    VSI_UNREFERENCED(zero_point_size);
+    VSI_UNREFERENCED(channel_dim);
+
     if( !buffer || !out_buffer )
     {
         return FALSE;

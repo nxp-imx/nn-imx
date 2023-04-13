@@ -1020,6 +1020,10 @@ REGISTER_LAYER_NORM_STREAM_PROCESSOR_KERNEL( layer_norm )
     vsi_nn_kernel_node_t node = NULL;
     int32_t axis = vsi_nn_kernel_param_get_int32( params, "axis" );
 
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(output_num);
+    VSI_UNREFERENCED(kernel);
+
     if (axis == 0)
     {
         node = layer_norm_x_direction(graph, inputs, outputs, params);

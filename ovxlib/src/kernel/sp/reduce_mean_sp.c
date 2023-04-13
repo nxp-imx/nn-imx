@@ -253,6 +253,10 @@ REGISTER_REDUCE_MEAN_STREAM_PROCESSOR_KERNEL( reduce_mean )
     float output_scale = vsi_nn_get_tensor_scale(outputs[0]);
     float scale = vsi_nn_kernel_param_get_float32( params, "scale" );
 
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(output_num);
+    VSI_UNREFERENCED(kernel);
+
     scale = scale * input_scale / output_scale;
 
     memcpy( &attr, &inputs[0]->attr, sizeof(vsi_nn_tensor_attr_t) );

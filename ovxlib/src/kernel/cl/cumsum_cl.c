@@ -135,6 +135,8 @@ DEF_KERNEL_INITIALIZER(_cumsum_initializer)
     int32_t       c         = 1;
     uint32_t      dim       = 1;
 
+    VSI_UNREFERENCED(param_size);
+
     attr[0] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[0] );
     CHECK_PTR_FAIL_GOTO( attr[0], "Create tensor attr buffer fail.", final );
 
@@ -289,6 +291,9 @@ static vsi_nn_kernel_node_t _setup
     int32_t height     = 0;
     int32_t channel    = 1;
     int32_t i = 0;
+
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(output_num);
 
     vsi_nn_kernel_optimize_softmax_shape(
                 inputs[0]->attr.size, inputs[0]->attr.dim_num, axis,

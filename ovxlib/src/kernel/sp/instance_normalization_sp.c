@@ -569,6 +569,10 @@ REGISTER_INSTANCE_NORM_STREAM_PROCESSOR_KERNEL( instance_norm )
     float eps = vsi_nn_kernel_param_get_float32( params, "eps" );
     float inv_m = 1.0f / (float)(outputs[0]->attr.size[0] * outputs[0]->attr.size[1]);
 
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(output_num);
+    VSI_UNREFERENCED(kernel);
+
 #define NN_INPUT_SIZE_MAX      ((1 << 13) - 1)
     memcpy(shapes[0], inputs[0]->attr.size, 2 * sizeof(vsi_size_t));
 

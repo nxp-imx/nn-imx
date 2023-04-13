@@ -104,6 +104,9 @@ DEF_KERNEL_EXECUTOR(_compute)
     uint32_t  i;
     uint32_t  ops_type_int = 0;
     vsi_nn_logical_ops_type_t  ops_type = VSI_NN_LOGICAL_OR;
+
+    VSI_UNREFERENCED(node);
+    VSI_UNREFERENCED(param_size);
     /* prepare data */
     for(i = 0; i < _INPUT_NUM; i ++)
     {
@@ -214,6 +217,8 @@ static vsi_status _query_kernel
     )
 {
     vsi_status status = VSI_FAILURE;
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
     snprintf( kernel->info.name, VX_MAX_KERNEL_NAME, "%s",  _KERNEL_NAME );
     kernel->info.function    = _compute;
     kernel->info.parameters  = _logical_ops_kernel_param_def;

@@ -113,6 +113,9 @@ static vsi_bool op_setup
     /* TODO: Add code to comput outputs' shape. */
     vsi_nn_pre_process_yuv420_param * p = NULL;
     uint32_t i = 0;
+
+    VSI_UNREFERENCED(inputs);
+
     p = (vsi_nn_pre_process_yuv420_param *)&(self->nn_param.pre_process_yuv420);
 
     if (p->rect.width == 0 || p->rect.height == 0)

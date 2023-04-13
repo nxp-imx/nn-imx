@@ -74,6 +74,7 @@ static vx_param_description_t _roi_align_kernel_param_def[] =
 static float _compute_region_coordinate(int32_t p, float bin_size, float roi_anchor, float max_value)
 {
     const float region_start = p * bin_size + roi_anchor;
+    VSI_UNREFERENCED(max_value);
 
     return region_start;
 }
@@ -94,6 +95,8 @@ static float _roi_align_1x1(float *input_ptr,
     float avg = 0;
     int32_t iy = 0;
     int32_t ix = 0;
+    VSI_UNREFERENCED(region_end_x);
+    VSI_UNREFERENCED(region_end_y);
     // Iterate through the aligned pooling region
     for (iy = 0; iy < grid_size_y; ++iy)
     {
@@ -192,6 +195,9 @@ DEF_KERNEL_EXECUTOR(_compute)
     vsi_ssize_t   outWidth          = 0;
     uint32_t  kRoiDim           = 4;
     uint32_t  out_index         = 0;
+
+    VSI_UNREFERENCED(node);
+    VSI_UNREFERENCED(param_size);
 
     /* prepare data */
     for (i = 0; i < _INPUT_NUM; i ++)
@@ -337,6 +343,8 @@ static vsi_status _query_kernel
     )
 {
     vsi_status status = VSI_FAILURE;
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
 
     snprintf( kernel->info.name, VX_MAX_KERNEL_NAME, "%s",  _KERNEL_NAME );
     kernel->info.function    = _compute;

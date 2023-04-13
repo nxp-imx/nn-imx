@@ -571,6 +571,9 @@ vsi_nn_graph_t * vsi_nn_CreateGraph
     vsi_nn_graph_t * graph;
     graph = NULL;
 
+    VSI_UNREFERENCED(max_tensor_num);
+    VSI_UNREFERENCED(max_node_num);
+
     VSILOGI( "%s", vsi_nn_GetVersion() );
 
     if( NULL == ctx )
@@ -1195,6 +1198,8 @@ vsi_nn_node_t * vsi_nn_AddExternalNode
     vsi_nn_node_id_t id;
     vsi_nn_op_proc_t * node_proc;
 
+    VSI_UNREFERENCED(node_id);
+
     node_proc = (vsi_nn_op_proc_t*)proc;
 
     if( NULL == graph )
@@ -1562,6 +1567,8 @@ void vsi_nn_DumpGraphNodeOutputsEx
     vsi_nn_node_id_t * nodes;
     vsi_nn_node_t    * node;
     vsi_nn_tensor_t  * tensor;
+
+    VSI_UNREFERENCED(data_fmt);
 
     if(vsi_nn_CheckFilePath(path) == FALSE)
     {
@@ -2247,6 +2254,10 @@ vsi_status vsi_nn_SetGraphPreloadSize
     vsi_status status;
     status = VSI_FAILURE;
 
+    VSI_UNREFERENCED(graph);
+    VSI_UNREFERENCED(attr);
+    VSI_UNREFERENCED(size);
+
 #if(defined(VX_PRELOAD_CONST_TENSOR_SUPPORT) && VX_PRELOAD_CONST_TENSOR_SUPPORT)
     if(graph && graph->g)
     {
@@ -2308,6 +2319,8 @@ vsi_status vsi_nn_SetGraphPriority
     )
 {
     vsi_status status = VSI_FAILURE;
+    VSI_UNREFERENCED(graph);
+    VSI_UNREFERENCED(priority);
 #ifdef VX_GRAPH_PREEMPTION_SUPPORT
     if(graph && graph->g)
     {

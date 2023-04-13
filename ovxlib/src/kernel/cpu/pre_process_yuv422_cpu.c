@@ -86,6 +86,9 @@ DEF_KERNEL_EXECUTOR(_pre_process_yuv422_exec)
     float rMean = 0, gMean = 0, bMean = 0, var = 0;
     int32_t order = 0, trans = 0, yuv422_type = 0;
 
+    VSI_UNREFERENCED(node);
+    VSI_UNREFERENCED(param_size);
+
     tensors[0]  = (vsi_nn_kernel_tensor_t)param[0];
     tensors[1]  = (vsi_nn_kernel_tensor_t)param[1];
 
@@ -320,6 +323,8 @@ static vsi_status _query_kernel
     )
 {
     vsi_status status = VSI_FAILURE;
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
     snprintf( kernel->info.name, VX_MAX_KERNEL_NAME, "%s",  _KERNEL_NAME );
     kernel->info.function    = _pre_process_yuv422_exec;
     kernel->info.parameters  = kernel_param_def;
@@ -343,6 +348,9 @@ static vsi_nn_kernel_node_t _setup
     vsi_status status = VSI_FAILURE;
     vsi_nn_kernel_node_param_t node_params[_CPU_PARAM_NUM];
     vsi_nn_kernel_node_t node = NULL;
+
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(output_num);
     status = _query_kernel( kernel, inputs, outputs);
     if ( VSI_SUCCESS == status)
     {

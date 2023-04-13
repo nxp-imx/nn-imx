@@ -161,6 +161,8 @@ DEF_KERNEL_INITIALIZER(_cumsum_initializer)
 
     uint32_t pack_key = 0;
 
+    VSI_UNREFERENCED(param_size);
+
     attr[0] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[0] );
     CHECK_PTR_FAIL_GOTO( attr[0], "Create tensor attr buffer fail.", OnError );
     attr[1] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[1] );
@@ -664,6 +666,8 @@ static vsi_status _query_kernel
     uint32_t key = 0;
     int i = 0;
 
+    VSI_UNREFERENCED(params);
+
     input0_dtype = vsi_nn_kernel_map_dtype( inputs[0]->attr.dtype.vx_type );
     output_dtype = vsi_nn_kernel_map_dtype( outputs[0]->attr.dtype.vx_type );
 
@@ -717,6 +721,9 @@ static vsi_nn_kernel_node_t _setup
     int32_t is_2d      = 0;
     uint32_t rs_dim    = 2;
     int32_t i          = 0;
+
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(output_num);
 
     vsi_nn_kernel_optimize_softmax_shape(
                 inputs[0]->attr.size, inputs[0]->attr.dim_num, axis,

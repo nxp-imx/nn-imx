@@ -71,6 +71,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_add_node
     float clamp_min = 0;
     float clamp_max = 0;
 
+    VSI_UNREFERENCED(kernel_name);
+
     memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
     vsi_nn_init_spinst_attr(&attr);
 
@@ -359,6 +361,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_select_a_node
     float clamp_min = 0;
     float clamp_max = 0;
 
+    VSI_UNREFERENCED(kernel_name);
+
     memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
     vsi_nn_init_spinst_attr(&attr);
 
@@ -444,6 +448,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_select_b_node
     float clamp_min = 0;
     float clamp_max = 0;
 
+    VSI_UNREFERENCED(kernel_name);
+
     memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
     vsi_nn_init_spinst_attr(&attr);
 
@@ -524,6 +530,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_select_add_node
 
     vsi_status status = VSI_FAILURE;
 
+    VSI_UNREFERENCED(kernel_name);
+
     memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
     vsi_nn_init_spinst_attr(&attr);
 
@@ -580,6 +588,8 @@ vsi_bool vsi_nn_sp_nn_alu_support_types
     vsi_nn_kernel_dtype_e in0_dtype;
     vsi_nn_kernel_dtype_e in1_dtype;
     vsi_bool support = TRUE;
+
+    VSI_UNREFERENCED(output);
 
     in0_dtype = vsi_nn_kernel_map_dtype( input0->attr.dtype.vx_type );
     in1_dtype = vsi_nn_kernel_map_dtype( input1->attr.dtype.vx_type );
@@ -649,6 +659,10 @@ REGISTER_ELTWISE_STREAM_PROCESSOR_KERNEL( div )
     vsi_nn_tensor_attr_t attr;
     vsi_nn_tensor_t * output_tensor[] = {NULL};
 
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(output_num);
+    VSI_UNREFERENCED(kernel);
+
     if (vsi_nn_is_broadcast_operaton(inputs, input_num, outputs[0]))
     {
         return NULL;
@@ -703,6 +717,11 @@ REGISTER_ELTWISE_STREAM_PROCESSOR_KERNEL( select )
     vsi_nn_tensor_attr_t attr;
     vsi_nn_tensor_t * output_tensor[2] = {NULL};
     float output_scale = vsi_nn_get_tensor_scale(outputs[0]);
+
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(output_num);
+    VSI_UNREFERENCED(kernel);
+    VSI_UNREFERENCED(params);
 
     if (vsi_nn_is_broadcast_operaton(inputs, input_num, outputs[0]))
     {

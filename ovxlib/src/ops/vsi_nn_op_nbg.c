@@ -167,6 +167,9 @@ static vsi_bool op_check
     vsi_nn_tensor_t ** outputs
     )
 {
+    VSI_UNREFERENCED(self);
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
     return TRUE;
 } /* op_check() */
 
@@ -180,6 +183,9 @@ static vsi_bool op_setup
     /*
      * Network Binary Graph node do not need to calculate output shape
      */
+    VSI_UNREFERENCED(self);
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
     return TRUE;
 } /* op_setup() */
 

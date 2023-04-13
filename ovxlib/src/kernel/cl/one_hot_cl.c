@@ -121,6 +121,8 @@ DEF_KERNEL_INITIALIZER(_one_hot_initializer)
     vsi_nn_kernel_tensor_attr_t * attr[2] = { NULL };
     vsi_size_array_t * in_shape = NULL;
 
+    VSI_UNREFERENCED(param_size);
+
     attr[0] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[0] );
     CHECK_PTR_FAIL_GOTO( attr[0], "Create tensor attr buffer fail.", final );
     attr[1] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[1] );

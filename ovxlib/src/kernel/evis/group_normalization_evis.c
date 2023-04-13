@@ -246,6 +246,8 @@ DEF_KERNEL_INITIALIZER(_groupnorm_sums_initializer)
     float sum_x2_tail1 = 1;
     float work_item_pixels = 1;
 
+    VSI_UNREFERENCED(param_size);
+
     attr[0] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[0] );
     CHECK_PTR_FAIL_GOTO( attr[0], "Create tensor attr buffer fail.", OnError );
     attr[1] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[1] );
@@ -381,6 +383,8 @@ DEF_KERNEL_INITIALIZER(_groupnorm_means_initializer)
     int32_t chn = 0;
     int32_t group_stride = 0;
 
+    VSI_UNREFERENCED(param_size);
+
     attr[0] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[0] );
     CHECK_PTR_FAIL_GOTO( attr[0], "Create tensor attr buffer fail.", OnError );
 
@@ -449,6 +453,8 @@ DEF_KERNEL_INITIALIZER(_groupnorm_initializer)
     float output_zp = 0;
     int32_t height = 0, width = 0, chn = 0;
     int32_t is2D = 0;
+
+    VSI_UNREFERENCED(param_size);
 
     attr[0] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[0] );
     CHECK_PTR_FAIL_GOTO( attr[0], "Create tensor attr buffer fail.", OnError );
@@ -775,6 +781,9 @@ static vsi_nn_kernel_node_t _setup
     int32_t group_num = vsi_nn_kernel_param_get_int32( params, "group_num" );
     vsi_size_t group_size = inputs[0]->attr.size[2] / group_num;
     float group_ratio = 1.0f / (inputs[0]->attr.size[0] * inputs[0]->attr.size[1] * group_size);
+
+    VSI_UNREFERENCED(input_num);
+    VSI_UNREFERENCED(output_num);
 
     // Check if gpu can support the size
     if ( !vsi_nn_kernel_gpu_check_shape(
