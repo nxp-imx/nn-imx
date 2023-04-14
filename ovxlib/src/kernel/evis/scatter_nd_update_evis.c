@@ -1799,7 +1799,7 @@ static vsi_status _query_kernel
     vsi_nn_kernel_dtype_e input2_dtype = U8;
     vsi_nn_kernel_dtype_e output_dtype = U8;
     uint32_t key = 0;
-    int i = 0;
+    size_t i = 0;
 
     VSI_UNREFERENCED(coord_dim);
 
@@ -1854,7 +1854,7 @@ static vsi_status _query_kernel_large
     vsi_nn_kernel_dtype_e input2_dtype = F16;
     vsi_nn_kernel_dtype_e output_dtype = U8;
     uint32_t key = 0;
-    int i = 0;
+    size_t i = 0;
 
     input0_dtype = vsi_nn_kernel_map_dtype( inputs[0]->attr.dtype.vx_type );
     input2_dtype = vsi_nn_kernel_map_dtype( inputs[2]->attr.dtype.vx_type );
@@ -1959,7 +1959,7 @@ static vsi_status _query_kernel_special
     vsi_nn_kernel_dtype_e input2_dtype = F16;
     vsi_nn_kernel_dtype_e output_dtype = U8;
     uint32_t key = 0;
-    int i = 0;
+    size_t i = 0;
 
     input0_dtype = vsi_nn_kernel_map_dtype( inputs[0]->attr.dtype.vx_type );
     input2_dtype = vsi_nn_kernel_map_dtype( inputs[2]->attr.dtype.vx_type );

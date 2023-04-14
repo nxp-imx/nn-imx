@@ -124,7 +124,7 @@ static vsi_bool op_setup
             {
                 int32_t rank = self->nn_param.squeeze.axis[i];
 
-                rank = rank < 0 ? rank + inputs[0]->attr.dim_num : rank;
+                rank = rank < 0 ? rank + (int32_t)inputs[0]->attr.dim_num : rank;
 
                 if ( !shouldSqueeze[rank] )
                 {

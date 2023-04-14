@@ -214,8 +214,8 @@ DEF_KERNEL_EXECUTOR(_compute)
 
                     // use mirroring for out of bound indexing
                     // need to ensure heatmapSize >= 2
-                    h = h < 0 ? 1 : (h >= (vsi_ssize_t)heatmapSize ? heatmapSize - 2 : h);
-                    w = w < 0 ? 1 : (w >= (vsi_ssize_t)heatmapSize ? heatmapSize - 2 : w);
+                    h = h < 0 ? 1 : (h >= (vsi_ssize_t)heatmapSize ? (vsi_ssize_t)heatmapSize - 2 : h);
+                    w = w < 0 ? 1 : (w >= (vsi_ssize_t)heatmapSize ? (vsi_ssize_t)heatmapSize - 2 : w);
 
                     heatmapIndex = i * heatmapSize * heatmapSize * numKeypoints +
                         (vsi_size_t)(h) * heatmapSize * numKeypoints +

@@ -533,7 +533,7 @@ static vsi_status _query_kernel
     vsi_nn_shader_type_e  sh_type = image_2d ? (input_fl >= output_fl ? _2D_OPT : _2D) : _3D;
     vsi_status status = VSI_FAILURE;
     uint32_t key;
-    int i;
+    size_t i;
 
     input0_dtype = vsi_nn_kernel_map_dtype( inputs[0]->attr.dtype.vx_type );
     input1_dtype = vsi_nn_kernel_map_dtype( inputs[1]->attr.dtype.vx_type );

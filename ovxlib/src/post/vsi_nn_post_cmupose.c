@@ -1462,7 +1462,7 @@ static vsi_nn_subset_t *_compute_subset
     }
     for(i=0; i<num; i++)
     {
-        if(deleteIdx[i] != -1)
+        if(deleteIdx[i] != (uint32_t)-1)
         {
             vsi_nn_LinkListDelIndexNode((vsi_nn_link_list_t **)&subset_list, deleteIdx[i]);
             num--;

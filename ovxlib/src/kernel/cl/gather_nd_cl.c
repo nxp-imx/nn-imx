@@ -268,7 +268,7 @@ static vsi_status _query_kernel
     vsi_nn_kernel_dtype_e output_dtype = U8;
     vsi_nn_kernel_coord_type_e coord_type = _error;
     uint32_t key = 0;
-    int i = 0;
+    size_t i = 0;
 
     input0_dtype = vsi_nn_kernel_map_dtype( inputs[0]->attr.dtype.vx_type );
     output_dtype = vsi_nn_kernel_map_dtype( outputs[0]->attr.dtype.vx_type );

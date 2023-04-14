@@ -247,7 +247,7 @@ static vsi_bool op_setup
         if ( reshape_output->attr.dtype.vx_type == VSI_NN_TYPE_BFLOAT16 ||
              reshape_output->attr.dtype.vx_type == VSI_NN_TYPE_FLOAT32 )
         {
-            int32_t k = 0;
+            size_t k = 0;
             for (k = 0; k < _cnt_of_array( curr_param->internal_dtype ); k++)
             {
                 if (curr_param->internal_dtype[k].vx_type == VSI_NN_TYPE_NONE)
