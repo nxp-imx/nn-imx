@@ -267,7 +267,7 @@ static vsi_bool _auto_cal_shape
     ret = TRUE;
     neg_idx = -1;
     total_size = vsi_nn_ShapeProduct( input_shape, input_dim );
-    if (-1 == *dim_num)
+    if ((vsi_size_t)-1 == *dim_num)
     {
         *dim_num = 1;
         shape[0] = total_size;
@@ -333,11 +333,11 @@ static vsi_bool _init_tensor
     params.num_of_dims = tensor->attr.dim_num;
     for(i = 0; i < tensor->attr.dim_num; i++)
     {
-        size_vxsize[i] = -1 == tensor->attr.size[i] ? -1 : (vx_size)tensor->attr.size[i];
+        size_vxsize[i] = (vsi_size_t)-1 == tensor->attr.size[i] ? (vx_size)-1 : (vx_size)tensor->attr.size[i];
     }
     for(i = 0; i < tensor->attr.dim_num; i++)
     {
-        size_u32[i] = -1 == tensor->attr.size[i] ? -1 : (vx_uint32)tensor->attr.size[i];
+        size_u32[i] = (vsi_size_t)-1 == tensor->attr.size[i] ? (vx_uint32)-1 : (vx_uint32)tensor->attr.size[i];
     }
 #ifdef VSI_40BIT_VA_SUPPORT
     params.sizes = size_vxsize;
@@ -477,11 +477,13 @@ static vsi_bool _init_tensor
                     vx_size stride_size_vxsize[_cnt_of_array(stride_size)] = {0};
                     for(i = 0; i < _cnt_of_array(tensor->attr.size); i++)
                     {
-                        size_vxsize2[i] = -1 == tensor->attr.size[i] ? -1 : (vx_size)tensor->attr.size[i];
+                        size_vxsize2[i] = (vsi_size_t)-1 == tensor->attr.size[i] ? \
+                            (vx_size)-1 : (vx_size)tensor->attr.size[i];
                     }
                     for(i = 0; i < _cnt_of_array(stride_size); i++)
                     {
-                        stride_size_vxsize[i] = -1 == stride_size[i] ? -1 : (vx_size)stride_size[i];
+                        stride_size_vxsize[i] = (vsi_size_t)-1 == stride_size[i] ? \
+                            (vx_size)-1 : (vx_size)stride_size[i];
                     }
                     addr = vxCreateTensorAddressing(graph->ctx->c,
                         size_vxsize2, stride_size_vxsize, (vx_size)tensor->attr.dim_num);
@@ -493,11 +495,13 @@ static vsi_bool _init_tensor
                     uint32_t stride_size_32bit[_cnt_of_array(stride_size)] = {0};
                     for(i = 0; i < _cnt_of_array(tensor->attr.size); i++)
                     {
-                        size_32bit[i] = -1 == tensor->attr.size[i] ? -1 : (uint32_t)tensor->attr.size[i];
+                        size_32bit[i] = (vsi_size_t)-1 == tensor->attr.size[i] ? \
+                            (uint32_t)-1 : (uint32_t)tensor->attr.size[i];
                     }
                     for(i = 0; i < _cnt_of_array(stride_size); i++)
                     {
-                        stride_size_32bit[i] = -1 == stride_size[i] ? -1 : (uint32_t)stride_size[i];
+                        stride_size_32bit[i] = (vsi_size_t)-1 == stride_size[i] ? \
+                            (uint32_t)-1 : (uint32_t)stride_size[i];
                     }
                     addr = vxCreateTensorAddressing(graph->ctx->c,
                         size_32bit, stride_size_32bit, (uint8_t)tensor->attr.dim_num);
@@ -1977,7 +1981,8 @@ vx_tensor vsi_nn_safe_reshape_tensor
                 vsi_size_t i = 0;
                 for(i = 0; i < VSI_NN_MAX_DIM_NUM; i++)
                 {
-                    new_shape_int32[i] = -1 == num_of_dims_vxsize[i] ? -1 : (int32_t)num_of_dims_vxsize[i];
+                    new_shape_int32[i] = (vx_size)-1 == num_of_dims_vxsize[i] ? \
+                        (int32_t)-1 : (int32_t)num_of_dims_vxsize[i];
                 }
                 return vxReshapeTensor( tensor, new_shape_int32, (uint32_t)sizes );
             }
@@ -1992,7 +1997,7 @@ vx_tensor vsi_nn_safe_reshape_tensor
                 vsi_size_t i = 0;
                 for(i = 0; i < VSI_NN_MAX_DIM_NUM; i++)
                 {
-                    new_shape_vxsize[i] = -1 == num_of_dims_int32[i] ? -1 : (vx_size)num_of_dims_int32[i];
+                    new_shape_vxsize[i] = -1 == num_of_dims_int32[i] ? (vx_size)-1 : (vx_size)num_of_dims_int32[i];
                 }
                 return vxReshapeTensor( tensor, new_shape_vxsize, (vx_size)sizes );
             }
@@ -3085,11 +3090,11 @@ static vsi_bool _init_dummy_tensor
     params.num_of_dims = tensor->attr.dim_num;
     for(i = 0; i < VSI_NN_MAX_DIM_NUM; i++)
     {
-        size_vxsize[i] = -1 == tensor->attr.size[i] ? -1 : (vx_size)tensor->attr.size[i];
+        size_vxsize[i] = (vsi_size_t)-1 == tensor->attr.size[i] ? (vx_size)-1 : (vx_size)tensor->attr.size[i];
     }
     for(i = 0; i < VSI_NN_MAX_DIM_NUM; i++)
     {
-        size_u32[i] = -1 == tensor->attr.size[i] ? -1 : (vx_uint32)tensor->attr.size[i];
+        size_u32[i] = (vsi_size_t)-1 == tensor->attr.size[i] ? (vx_uint32)-1 : (vx_uint32)tensor->attr.size[i];
     }
 #ifdef VSI_40BIT_VA_SUPPORT
     params.sizes = size_vxsize;

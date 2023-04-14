@@ -609,7 +609,7 @@ static vsi_status _query_kernel
     _internal_scale_e scale_type = SCALE;
     vsi_status status = VSI_FAILURE;
     uint32_t key = 0;
-    int32_t i = 0;
+    size_t i = 0;
     vsi_bool is_4_over_3 = FALSE;
     vsi_bool is_half_scale = FALSE;
     vsi_bool enable_copy = vsi_nn_kernel_param_get_int32( params, "enable_copy" );
@@ -705,7 +705,7 @@ static vsi_nn_kernel_node_t _setup
     vsi_status status = VSI_FAILURE;
     vsi_nn_kernel_node_param_t* node_params = NULL;
     vsi_nn_kernel_node_t node = NULL;
-    int32_t param_count = _PRE_PROCESS_RGB888_PLANAR_SEP_PARAM_NUM;
+    size_t param_count = _PRE_PROCESS_RGB888_PLANAR_SEP_PARAM_NUM;
     int32_t width  = vsi_nn_kernel_param_get_int32( params, "width" );
     int32_t height = vsi_nn_kernel_param_get_int32( params, "height" );
     float r_mean = vsi_nn_kernel_param_get_float32( params, "r_mean" );

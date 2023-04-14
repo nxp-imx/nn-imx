@@ -410,7 +410,7 @@ static vsi_status _query_kernel
     vsi_nn_kernel_dtype_e output_dtype;
     vsi_status status = VSI_FAILURE;
     uint32_t key;
-    int32_t i = 0;
+    size_t i = 0;
     int32_t dim0_size1 = inputs[0]->attr.size[0] == 1 ? 1 : 0;
 
     input_dtype = vsi_nn_kernel_map_dtype( inputs[0]->attr.dtype.vx_type );

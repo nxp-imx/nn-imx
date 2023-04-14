@@ -541,7 +541,7 @@ static vsi_status _query_kernel
     vsi_nn_kernel_convert_type_e convert_type = SCALE;
     vsi_status status = VSI_FAILURE;
     uint32_t key = 0;
-    int i = 0;
+    size_t i = 0;
     vsi_bool enable_copy  = vsi_nn_kernel_param_get_int32( params, "enable_copy" );
     vsi_size_t dstWidth = outputs[0]->attr.size[0];
     float scaleVal = (float)dstWidth / ((scale_x * dstWidth) >> 15);

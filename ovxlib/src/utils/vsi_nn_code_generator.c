@@ -567,7 +567,7 @@ void vsi_nn_GenGraphCCode
             }
         }
         // write node params
-        if( node->op < _cnt_of_array( s_op_gen ) )
+        if( node->op < (vsi_nn_op_t)_cnt_of_array( s_op_gen ) )
         {
             if( NULL != s_op_gen[node->op] )
             {

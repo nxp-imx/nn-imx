@@ -278,7 +278,7 @@ static vsi_bool op_setup_default
         curr->node->nn_param.grucell_ovxlib.linear_before_reset = curr_param->linear_before_reset;
         if ( reshape_output->attr.dtype.vx_type == VSI_NN_TYPE_BFLOAT16 )
         {
-            int32_t k = 0;
+            size_t k = 0;
             for (k = 0; k < _cnt_of_array( curr_param->internal_dtype ); k++)
             {
                 if (curr_param->internal_dtype[k].vx_type == VSI_NN_TYPE_NONE)

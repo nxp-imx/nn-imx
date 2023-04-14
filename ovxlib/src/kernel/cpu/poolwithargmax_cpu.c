@@ -201,7 +201,7 @@ DEF_KERNEL_EXECUTOR(_compute)
                             if (d > d_f32)
                             {
                                 d_f32 = d;
-                                max_index = is_relative_coord ? cur_index : index;
+                                max_index = is_relative_coord ? (vsi_ssize_t)cur_index : index;
                             }
                             cur_index++;
                         }

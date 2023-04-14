@@ -733,7 +733,7 @@ static vsi_bool op_set_reduce_axis(
     for (i = 0; i < self->nn_param.reduce.axis_num; i++)
     {
         vx_int32 current_axis = self->nn_param.reduce.axis[i] < 0 ? \
-        inputs[0]->attr.dim_num + self->nn_param.reduce.axis[i] : self->nn_param.reduce.axis[i];
+        (int32_t)inputs[0]->attr.dim_num + self->nn_param.reduce.axis[i] : self->nn_param.reduce.axis[i];
 
         if (current_axis < 0 || current_axis >= (vx_int32)inputs[0]->attr.dim_num)
         {

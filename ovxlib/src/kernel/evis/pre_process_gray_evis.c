@@ -522,7 +522,7 @@ static vsi_status _query_kernel
     vsi_nn_gray_convert_type_e convert_type = SCALE;
     vsi_status status = VSI_FAILURE;
     uint32_t key = 0;
-    int32_t i = 0;
+    size_t i = 0;
     vsi_bool is_4_over_3 = FALSE;
     vsi_bool is_half_scale = FALSE;
     vsi_bool enable_copy = vsi_nn_kernel_param_get_int32( params, "enable_copy" );

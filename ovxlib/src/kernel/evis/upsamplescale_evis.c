@@ -346,7 +346,7 @@ static vsi_status _query_kernel
     _internal_upscale_e flag = (stride == 2 && scale >= 0 ) ? UP_K2 : UP_ORG;
 
     uint32_t key = 0;
-    int i;
+    size_t i;
 
     in_dtype  = vsi_nn_kernel_map_dtype( inputs[0]->attr.dtype.vx_type );
     out_dtype = vsi_nn_kernel_map_dtype( outputs[0]->attr.dtype.vx_type );
