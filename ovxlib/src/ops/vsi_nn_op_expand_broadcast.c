@@ -85,6 +85,7 @@ static vsi_bool op_check
         IO_TYPE(D_BF16,         D_F32)
         IO_TYPE(D_I32|Q_DFP,    D_I32|Q_DFP)
         IO_TYPE(D_I32|Q_ASYM,   D_I32|Q_ASYM)
+        IO_TYPE(D_BOOL8,        D_BOOL8)
     END_IO_TYPE_DECL(EXPAND_BROADCAST)
     if (!VALIDATE_OP_IO_TYPES(EXPAND_BROADCAST, self, inputs, self->input.num, outputs, self->output.num))
     {
@@ -120,21 +121,28 @@ static vsi_bool op_setup
     attr.dim_num = p->dim_num;
     if (inputs[0]->attr.dtype.qnt_type == VSI_NN_QNT_TYPE_NONE &&
         (inputs[0]->attr.dtype.vx_type == VSI_NN_TYPE_INT32 ||
-        inputs[0]->attr.dtype.vx_type == VSI_NN_TYPE_INT16)) {
+        inputs[0]->attr.dtype.vx_type == VSI_NN_TYPE_INT16))
+    {
         attr.dtype.vx_type = VSI_NN_TYPE_INT32;
     }
-    else {
+    else if (inputs[0]->attr.dtype.vx_type == VSI_NN_TYPE_BOOL8)
+    {
+        attr.dtype.vx_type = VSI_NN_TYPE_BOOL8;
+    }
+    else
+    {
         attr.dtype.vx_type = VSI_NN_TYPE_FLOAT16;
     }
     attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
     attr.is_const = TRUE;
-    for(i = 0; i < p->dim_num; i++)
+    for (i = 0; i < p->dim_num; i++)
     {
         attr.size[i] = p->shape[i];
     }
     input_1 = vsi_nn_internal_new_tensor( self, &attr, 1.0f );
 
-    if (p->dimensions_num > 0) {
+    if (p->dimensions_num > 0)
+    {
         vsi_nn_internal_node_t* reshape_node = NULL;
         vsi_size_t* reshape_input_size = NULL;
         memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
@@ -143,10 +151,12 @@ static vsi_bool op_setup
         reshape_node = vsi_nn_internal_new_node( self, VSI_NN_OP_RESHAPE2, 0, 0 );
         reshape_input_size = (vsi_size_t*)vsi_nn_internal_new_node_param(reshape_node,
             VSI_NN_MAX_DIM_NUM * sizeof(vsi_size_t));
-        for(i = 0; i < p->dim_num; i++) {
+        for (i = 0; i < p->dim_num; i++)
+        {
             reshape_input_size[i] = 1;
         }
-        for (i = 0; i < p->dimensions_num; i++) {
+        for (i = 0; i < p->dimensions_num; i++)
+        {
             reshape_input_size[p->dimensions[i]] = p->shape[p->dimensions[i]];
         }
 
@@ -156,7 +166,9 @@ static vsi_bool op_setup
         reshape_node->outputs[0] = input_0->t;
         vsi_nn_internal_setup_node( self, reshape_node );
         mul_input = input_0->t;
-    } else {
+    }
+    else
+    {
         mul_input = inputs[0];
     }
 
