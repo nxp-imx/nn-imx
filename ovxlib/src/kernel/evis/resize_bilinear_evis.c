@@ -1494,7 +1494,7 @@ static vsi_nn_tensor_t* _create_scale_tensor
     vsi_size_t   width                = output->attr.size[0];
     vsi_size_t   height               = output->attr.size[1];
     vsi_size_t   batch                = dims > 3 ? output->attr.size[3] : 1;
-    vsi_size_t   sizes[4]             = {width * 4, height, 1, batch};
+    vsi_size_t   sizes[4]             = { 0, 0, 0, 0 };
     vsi_size_t   item_count           = width * 4 * height * batch;
     vsi_size_t   input_width          = input->attr.size[0];
     vsi_size_t   input_height         = input->attr.size[1];
@@ -1505,6 +1505,10 @@ static vsi_nn_tensor_t* _create_scale_tensor
     float      height_scale         = 1.0f;
     uint16_t  *scale_data_ptr       = NULL;
 
+    sizes[0] = width * 4;
+    sizes[1] = height;
+    sizes[2] = 1;
+    sizes[3] = batch;
     if (align_corners && width > 1)
     {
         width_scale = ((float)(input_width - 1) * 1.0f) / (float)(width - 1);

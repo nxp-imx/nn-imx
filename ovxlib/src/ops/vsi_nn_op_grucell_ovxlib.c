@@ -680,8 +680,9 @@ static vsi_bool op_setup_float_cudnn_v2
         p->local->bias_z_r, &dtype, use_virtual_tensor);
 
     {
-        uint32_t _slices[] = { (uint32_t)inputs[GRUCELL_INPUT_INPUT]->attr.size[0],
-            (uint32_t)inputs[GRUCELL_INPUT_H_STATE]->attr.size[0] };
+        uint32_t _slices[] = { 0, 0 };
+        _slices[0] = (uint32_t)inputs[GRUCELL_INPUT_INPUT]->attr.size[0];
+        _slices[1] = (uint32_t)inputs[GRUCELL_INPUT_H_STATE]->attr.size[0];
         splited_input_fc_output_tensors = vsi_nn_create_split(self, concated_input->t,
             0, 2, _slices, use_virtual_tensor);
         CHECK_PTR_FAIL_GOTO( splited_input_fc_output_tensors, "Create tensor fail.", final );
