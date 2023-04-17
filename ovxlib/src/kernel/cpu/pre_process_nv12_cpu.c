@@ -219,8 +219,12 @@ DEF_KERNEL_EXECUTOR(_pre_process_nv12_exec)
 
     if(trans)
     {
-        vsi_size_t shape[] = {attr[2]->shape->data[0], attr[2]->shape->data[1], attr[2]->shape->data[2], 1};
+        vsi_size_t shape[] = { 0, 0, 0, 0 };
         vsi_size_t perm[] = {1, 2, 0, 3};
+        shape[0] = attr[2]->shape->data[0];
+        shape[1] = attr[2]->shape->data[1];
+        shape[2] = attr[2]->shape->data[2];
+        shape[3] = 1;
         vsi_nn_Transpose((uint8_t*)outBuffer, (uint8_t*)buffer[2],
                         shape, (uint32_t)attr[2]->shape->size, perm, VSI_NN_TYPE_FLOAT32);
 
