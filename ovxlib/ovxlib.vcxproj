@@ -241,7 +241,7 @@
       <AdditionalIncludeDirectories>include;src;$(AQROOT)\sdk\inc;$(ProjectDir)\inc</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WINDLL;_CRT_SECURE_NO_WARNINGS;OVXLIB_API=__declspec(dllexport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <DisableSpecificWarnings>4201;4200</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4201</DisableSpecificWarnings>
       <TreatWarningAsError>true</TreatWarningAsError>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
@@ -264,7 +264,7 @@
       <AdditionalIncludeDirectories>include;src;$(AQROOT)\sdk\inc;$(ProjectDir)\inc</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WINDLL;_CRT_SECURE_NO_WARNINGS;OVXLIB_API=__declspec(dllexport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <DisableSpecificWarnings>4201;4200</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4201</DisableSpecificWarnings>
       <TreatWarningAsError>true</TreatWarningAsError>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
@@ -287,7 +287,7 @@
       <AdditionalIncludeDirectories>include;src;$(AQROOT)\sdk\inc;$(ProjectDir)\inc;</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WINDLL;_CRT_SECURE_NO_WARNINGS;OVXLIB_API=__declspec(dllexport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
-      <DisableSpecificWarnings>4201;4200</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4201</DisableSpecificWarnings>
       <TreatWarningAsError>true</TreatWarningAsError>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
@@ -311,7 +311,7 @@
       <PreprocessorDefinitions>WIN32;_WINDLL;_CRT_SECURE_NO_WARNINGS;OVXLIB_API=__declspec(dllexport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <DisableSpecificWarnings>4201;4200</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4201</DisableSpecificWarnings>
       <MinimalRebuild>false</MinimalRebuild>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
@@ -480,7 +480,7 @@
       <PreprocessorDefinitions>WIN32;_WINDLL;OVXLIB_API=__declspec(dllexport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <DisableSpecificWarnings>4201;4200</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4201</DisableSpecificWarnings>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
     </ClCompile>
