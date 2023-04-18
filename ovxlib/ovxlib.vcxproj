@@ -225,11 +225,14 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Jenkins-Debug-NNApi0.4|Win32'">
     <TargetName>libovxlib</TargetName>
     <TargetExt>.dll</TargetExt>
-    <IntDir>$(SolutionDir)$(Configuration)\objs\$(ProjectName)\</IntDir>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Jenkins-Debug-NNApi0.4|x64'">
     <TargetName>libovxlib</TargetName>
     <TargetExt>.dll</TargetExt>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
