@@ -37,7 +37,7 @@
 
 #if (VX_STREAM_PROCESSOR_SUPPORT)
 
-vsi_nn_spinst_t * vsi_nn_sp_moments_axis2_inst
+vsi_nn_spinst_t * vsi_nn_sp_sums_axis2_inst
     (
         vx_context                context,
         vsi_nn_spinst_t         * prev_spinst,
@@ -178,7 +178,7 @@ final:
     return spinst;
 }
 
-DEF_SP_KERNEL_QUERY(moments_axis2_query)
+DEF_SP_KERNEL_QUERY(sums_axis2_query)
     (
     vsi_nn_kernel_node_t        node
     )
@@ -208,7 +208,7 @@ DEF_SP_KERNEL_QUERY(moments_axis2_query)
     fifo_depth = (int32_t)ceil((float)(tile_size[0] * tile_size[1]) / (float)hw_param.streamProcessorExecCount);
     max_vector_depth = hw_param.streamProcessorVectorSize;
 
-    spinst = vsi_nn_sp_moments_axis2_inst(ctx, &pre_spinst, fifo_depth, max_vector_depth);
+    spinst = vsi_nn_sp_sums_axis2_inst(ctx, &pre_spinst, fifo_depth, max_vector_depth);
 
     status = vxSetParameterByIndex( node, (uint32_t)index, (vx_reference)spinst->sp );
     CHECK_STATUS_FAIL_GOTO( status, final );
@@ -224,7 +224,7 @@ final:
     return status;
 }
 
-vsi_nn_kernel_node_t vsi_nn_sp_moments_axis2_node
+vsi_nn_kernel_node_t vsi_nn_sp_sums_axis2_node
     (
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input,
@@ -322,7 +322,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_moments_axis2_node
 
     if (node)
     {
-        vxAssignNodeQueryCallback(node, moments_axis2_query);
+        vxAssignNodeQueryCallback(node, sums_axis2_query);
     }
 
     status = vsi_nn_set_sp_kernel_name(node, kernel_name);
@@ -337,14 +337,13 @@ final:
     return (vsi_nn_kernel_node_t)node;
 }
 
-vsi_nn_kernel_node_t vsi_nn_sp_ln_means_axis2_node
+vsi_nn_kernel_node_t vsi_nn_sp_means_axis2_node
     (
         vsi_nn_graph_t              * graph,
         vsi_nn_tensor_t             * input,
         vsi_nn_tensor_t             * output,
         float                         inv_m,
         float                         eps,
-        float                         output_scale,
         char                        * kernel_name
     )
 {
@@ -362,14 +361,12 @@ vsi_nn_kernel_node_t vsi_nn_sp_ln_means_axis2_node
     vsi_nn_spinst_t *spinst = NULL;
     vsi_nn_spinst_inst_param sp_insts_param[5];
     vsi_nn_spinst_attr_t attr;
-    vsi_nn_sp_lut_params sp_lut_params;
     vx_lut_params_s vx_lut_params;
 
     vsi_status status = VSI_FAILURE;
 
     memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
     vsi_nn_init_spinst_attr(&attr);
-    memset(&sp_lut_params, 0, sizeof(vsi_nn_sp_lut_params));
     memset(&vx_lut_params, 0, sizeof(vx_lut_params_s));
 
     /* loop inst0: r5 = v11 * r3 */
@@ -420,16 +417,10 @@ vsi_nn_kernel_node_t vsi_nn_sp_ln_means_axis2_node
     inputs_tensor[0] = input->t;
     outputs_tensor[0] = output->t;
 
-    vx_lut_params.lut_function = VX_NN_ACTIVATION_CUSTOM;
-    vx_lut_params.in_lut = vxCreateLUT( graph->ctx->c, VX_TYPE_FLOAT32, VSI_NN_SP_LUT_MAX_SIZE);
-    vx_lut_params.out_lut = vxCreateLUT( graph->ctx->c, VX_TYPE_FLOAT32, VSI_NN_SP_LUT_MAX_SIZE);
-
-    sp_lut_params.act_type = VSI_NN_SP_ACT_LINEAR_RSQRT;
-    sp_lut_params.pwl_sign_remove_support = TRUE;
-    sp_lut_params.params[0] = 1;
-    sp_lut_params.params[1] = eps;
-    sp_lut_params.params[2] = output_scale;
-    vsi_nn_sp_lut(vx_lut_params.in_lut, vx_lut_params.out_lut, &sp_lut_params);
+    vx_lut_params.lut_function = VX_NN_ACTIVATION_RSQRT;
+    vx_lut_params.float_values[0] = 0;
+    vx_lut_params.float_values[1] = eps;
+    vx_lut_params.fvalues_count = 2;
 
     node = vxStreamProcessorNode(
         graph->g,
@@ -447,17 +438,6 @@ final:
     if (spinst)
     {
         vsi_nn_release_spinst(&spinst);
-    }
-
-    if (vx_lut_params.in_lut)
-    {
-        vxReleaseLUT(&vx_lut_params.in_lut);
-        vx_lut_params.in_lut = NULL;
-    }
-    if (vx_lut_params.out_lut)
-    {
-        vxReleaseLUT(&vx_lut_params.out_lut);
-        vx_lut_params.out_lut = NULL;
     }
 
     return (vsi_nn_kernel_node_t)node;
@@ -646,6 +626,7 @@ vsi_nn_kernel_node_t vsi_nn_sp_load_weight_bias_axis2_node
         vsi_nn_tensor_t             * weight,
         vsi_nn_tensor_t             * bias,
         vsi_nn_tensor_t             * dummy_output,
+        float                         output_scale,
         char                        * kernel_name
     )
 {
@@ -669,10 +650,10 @@ vsi_nn_kernel_node_t vsi_nn_sp_load_weight_bias_axis2_node
     memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
     vsi_nn_init_spinst_attr(&attr);
 
-    /* loop inst0: v11 = in*/
-    status  = vsi_nn_sp_move(&sp_insts_param[0], VSI_NN_SP_SRIN, VSI_NN_SP_VR11);
-    /* loop inst1: v12 = in*/
-    status |= vsi_nn_sp_move(&sp_insts_param[1], VSI_NN_SP_SRIN, VSI_NN_SP_VR12);
+    /* loop inst0: v11 = in * output_scale */
+    status  = vsi_nn_sp_mul(&sp_insts_param[0], VSI_NN_SP_SRIN, VSI_NN_SP_SR4, VSI_NN_SP_VR11);
+    /* loop inst1: v12 = in * output_scale */
+    status |= vsi_nn_sp_mul(&sp_insts_param[1], VSI_NN_SP_SRIN, VSI_NN_SP_SR4, VSI_NN_SP_VR12);
     CHECK_STATUS_FAIL_GOTO(status, final );
 
     attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_XYMERGE;
@@ -696,6 +677,8 @@ vsi_nn_kernel_node_t vsi_nn_sp_load_weight_bias_axis2_node
     attr.input0_reshape = VX_SP_ATTRIBUTE_RESHAPE_CHW2HWC;
     attr.input1_reshape = VX_SP_ATTRIBUTE_RESHAPE_CHW2HWC;
     attr.output_reshape = VX_SP_ATTRIBUTE_RESHAPE_CHW2HWC;
+
+    VSI_NN_SP_ATTR_SET_CONST_TO_SR4(attr, output_scale);
 
     spinst = vsi_nn_create_spinst(graph);
     CHECK_PTR_FAIL_GOTO( spinst, "Create spInst fail.", final );
@@ -826,7 +809,7 @@ vsi_nn_kernel_node_t layer_norm_z_direction
     int32_t axis = vsi_nn_kernel_param_get_int32( params, "axis" );
     float output_scale = 1.0f / vsi_nn_get_tensor_scale(outputs[0]);
     float eps = vsi_nn_kernel_param_get_float32( params, "eps" );
-    float inv_m = 1.0f / (float)(outputs[0]->attr.size[0]);
+    float inv_m = 1.0f / (float)(outputs[0]->attr.size[2]);
 
     memcpy( &attr, &outputs[0]->attr, sizeof(vsi_nn_tensor_attr_t) );
     attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
@@ -853,16 +836,17 @@ vsi_nn_kernel_node_t layer_norm_z_direction
     output_tensor[1] = vsi_nn_CreateTensor( graph, &attr );
     CHECK_PTR_FAIL_GOTO( output_tensor[1], "Create tensor fail.", final );
 
-    node[0] = vsi_nn_sp_moments_axis2_node(graph, inputs[0], output_tensor[0], dummy_tensor[0], "layernorm_0");
+    node[0] = vsi_nn_sp_sums_axis2_node(graph, inputs[0], output_tensor[0], dummy_tensor[0], "layernorm_0");
     CHECK_PTR_FAIL_GOTO( node[0], "Create sp_moments_axis1 fail.", final );
-    node[1] = vsi_nn_sp_ln_means_axis2_node(graph, dummy_tensor[0], dummy_tensor[1],
-        inv_m, eps, output_scale, "layernorm_1");
+    node[1] = vsi_nn_sp_means_axis2_node(graph, dummy_tensor[0], dummy_tensor[1],
+        inv_m, eps, "layernorm_1");
     CHECK_PTR_FAIL_GOTO( node[1], "Create ln_y_dirction_means  fail.", final );
     node[2] = vsi_nn_sp_layer_norm_axis2_node(graph, output_tensor[0], dummy_tensor[1],
         output_tensor[1], "layernorm_2");
     CHECK_PTR_FAIL_GOTO( node[2], "Create layer_norm_axis1 fail.", final );
 
-    node[3] = vsi_nn_sp_load_weight_bias_axis2_node(graph, inputs[2], inputs[1], dummy_tensor[2], "layernorm_3");
+    node[3] = vsi_nn_sp_load_weight_bias_axis2_node(graph, inputs[2], inputs[1],
+        dummy_tensor[2], output_scale, "layernorm_3");
     CHECK_PTR_FAIL_GOTO( node[3], "Create mov_weight_bias fail.", final );
     node[4] = vsi_nn_sp_in_times_v11_plus_v12_axis2_node(graph, output_tensor[1],
         dummy_tensor[2], outputs[0], "layernorm_4");
