@@ -231,7 +231,92 @@ vsi_nn_kernel_node_t vsi_nn_sp_add_node
         vsi_nn_tensor_t             * input1,
         vsi_nn_tensor_t             * output,
         char                        * kernel_name
-    );
+    )
+{
+    const int32_t spInitInstsNum = 1;
+    const int32_t spLoopInstsNum = 2;
+    const int32_t spInstsNum = spInitInstsNum + spLoopInstsNum;
+
+    const uint32_t input_count = 2;
+    const uint32_t output_count = 1;
+    vx_tensor inputs_tensor[2] = {NULL};
+    vx_tensor outputs_tensor[1] = {NULL};
+    vx_node node = NULL;
+
+    vsi_nn_spinst_t *spinst = NULL;
+    vsi_nn_spinst_inst_param sp_insts_param[3];
+    vsi_nn_spinst_attr_t attr;
+
+    vsi_status status = VSI_FAILURE;
+    float input0_scale = vsi_nn_get_tensor_scale(input0);
+    float input1_scale = vsi_nn_get_tensor_scale(input1);
+    float output_scale = vsi_nn_get_tensor_scale(output);
+    float scale0 = input0_scale / output_scale;
+    float scale1 = input1_scale / output_scale;
+    float const2 = -scale1 * (float)vsi_nn_get_tensor_zero_point(input1);
+    float clamp_min = 0;
+    float clamp_max = 0;
+
+    memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
+    vsi_nn_init_spinst_attr(&attr);
+
+    vsi_nn_get_tensor_clamp_min_max(input0, &clamp_min, &clamp_max);
+    clamp_min = clamp_min * scale0;
+    clamp_max = clamp_max * scale0;
+
+    /* init inst0: r5 = const2 */
+    status  = vsi_nn_sp_move_constant(&sp_insts_param[0], const2, VSI_NN_SP_SR5);
+    /* loop inst0: r1 = clamp(in * r3, r7, r6) | r2 = r1 + r2 */
+    status |= vsi_nn_sp_mul_clamp(&sp_insts_param[1], VSI_NN_SP_SRIN, VSI_NN_SP_SR3, VSI_NN_SP_SR1);
+    status |= vsi_nn_sp_add(&sp_insts_param[1], VSI_NN_SP_SR1, VSI_NN_SP_SR2, VSI_NN_SP_SR2);
+    /* loop inst1: r2 = in * r4 | out = r2 + r5 */
+    status |= vsi_nn_sp_mul(&sp_insts_param[2], VSI_NN_SP_SRIN, VSI_NN_SP_SR4, VSI_NN_SP_SR2);
+    status |= vsi_nn_sp_add(&sp_insts_param[2], VSI_NN_SP_SR2, VSI_NN_SP_SR5, VSI_NN_SP_SROUT);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
+    attr.ignored_leading_outputs = 3;
+    attr.flush_cycle_num = 6;
+
+    VSI_NN_SP_ATTR_SET_CONST_TO_SR3(attr, scale0);
+    VSI_NN_SP_ATTR_SET_CONST_TO_SR4(attr, scale1);
+    VSI_NN_SP_ATTR_SET_CONST_TO_SR6(attr, clamp_max);
+    VSI_NN_SP_ATTR_SET_CONST_TO_SR7(attr, clamp_min);
+
+    attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_XYMERGE;
+    attr.input_setup = VSI_NN_SP_INPUT_SETUP_INTERLEAVE_TWO_INPUT;
+
+    attr.prog_init_instr_num = spInitInstsNum;
+    attr.prog_loop_instr_num = spLoopInstsNum;
+
+    spinst = vsi_nn_create_spinst(graph);
+    CHECK_PTR_FAIL_GOTO( spinst, "Create spInst fail.", final );
+    status  = vsi_nn_add_spinst_insts(spinst, sp_insts_param, spInstsNum);
+    status |= vsi_nn_set_spinst_attr(spinst, attr);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
+    inputs_tensor[0] = input0->t;
+    inputs_tensor[1] = input1->t;
+    outputs_tensor[0] = output->t;
+    node = vxStreamProcessorNode(
+        graph->g,
+        inputs_tensor,
+        input_count,
+        outputs_tensor,
+        output_count,
+        spinst->sp,
+        NULL);
+
+    status = vsi_nn_set_sp_kernel_name(node, kernel_name);
+    CHECK_STATUS_FAIL_GOTO(status, final );
+
+final:
+    if (spinst)
+    {
+        vsi_nn_release_spinst(&spinst);
+    }
+
+    return (vsi_nn_kernel_node_t)node;
+}
 
 #define REGISTER_GRUCELL_ACTIVATION_STREAM_PROCESSOR_KERNEL( kernel_name )   \
     static vsi_nn_kernel_node_t _##kernel_name##setup \

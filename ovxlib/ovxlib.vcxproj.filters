@@ -870,9 +870,6 @@
     <ClCompile Include="src\kernel\evis\upsamplescale_evis.c">
       <Filter>Source Files\kernel\evis</Filter>
     </ClCompile>
-    <ClCompile Include="src\kernel\sp\batch_norm_sp.c">
-      <Filter>Source Files\kernel\sp</Filter>
-    </ClCompile>
     <ClCompile Include="src\kernel\sp\comparisons_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
