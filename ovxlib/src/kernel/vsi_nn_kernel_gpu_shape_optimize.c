@@ -459,11 +459,11 @@ vsi_bool vsi_nn_kernel_optimize_tile_shape
     tile_axis_state_e next_state        = TILE_STATE_EMPTY;
 
 #define _swap_size(a, b, tmp)  \
-    do { \
+    { \
         tmp = a; \
         a = b; \
         b = tmp; \
-    } while(0)
+    }
 
     VSI_UNREFERENCED(rank_x);
     VSI_UNREFERENCED(rank);

@@ -310,11 +310,11 @@ static vsi_nn_kernel_node_t _setup
                 outputs[0], shapes[2], new_rank );
 
 #define _swap_tensor(a, b, tmp)  \
-    do { \
+    { \
         tmp = a; \
         a = b; \
         b = tmp; \
-    } while(0)
+    }
 
         if (shapes[1][3] > shapes[0][3] && new_rank == 4)
         {

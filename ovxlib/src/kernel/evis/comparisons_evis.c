@@ -367,7 +367,6 @@ DEF_KERNEL_INITIALIZER(_comparisons_initializer)
             / gpu_param.global_scale[1]);
     gpu_param.global_size[2] = out_shape->size > 2 ? out_shape->data[2] : 1;
 
-    if (1)
     {
             gpu_dp_inst_t uniExtractInteger_2x8 = {{
                 0x33333333, // TCfg
@@ -548,11 +547,11 @@ static vsi_nn_kernel_node_t _setup
                 outputs[0], shapes[2], new_rank );
 
 #define _swap_tensor(a, b, tmp)  \
-    do { \
+    { \
         tmp = a; \
         a = b; \
         b = tmp; \
-    } while(0)
+    }
 
         if (shapes[1][3] > shapes[0][3] && new_rank == 4)
         {
