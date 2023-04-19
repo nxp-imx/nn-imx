@@ -53,14 +53,13 @@ extern "C" {
 #define DEFINE_ARRAY_TYPE( NAME, TYPE ) \
     typedef struct { \
         size_t size; \
-        TYPE data[1]; \
+        TYPE *data; \
     } vsi_##NAME##_array_t; \
     static VSI_INLINE_API vsi_##NAME##_array_t * vsi_##NAME##_array_create( size_t size ) { \
         vsi_##NAME##_array_t * array = NULL; \
-        if (size == 0) return NULL; \
-        array = (vsi_##NAME##_array_t *)malloc( \
-                sizeof(vsi_##NAME##_array_t) + sizeof(TYPE) * (size - 1) ); \
+        array = (vsi_##NAME##_array_t *)malloc( sizeof(vsi_##NAME##_array_t) + sizeof(TYPE) * size ); \
         if (array == NULL) return NULL; \
+        array->data = (TYPE *)(((TYPE**)(&(array->data))) + 1); \
         array->size = size; \
         return array; \
     } \
