@@ -177,11 +177,11 @@ vsi_bool vsi_nn_kernel_optimize_eltwise_shape
     eltwise_broadcast_state_e prv_state = ELTWISE_BROADCAST_STATE_EMPTY;
 
 #define _swap_size(a, b, tmp)  \
-    do { \
+    { \
         tmp = a; \
         a = b; \
         b = tmp; \
-    } while(0)
+    }
     for( i = 0; i < rank_output; i++ )
     {
         sx = i < rank_x ? shape_x[i] : 1;
@@ -412,11 +412,11 @@ vsi_bool vsi_nn_kernel_optimize_broadcast_shape
     int32_t  prv_state_mask                   = -1;
 
 #define _swap_size(a, b, tmp)  \
-    do { \
+    { \
         tmp = a; \
         a = b; \
         b = tmp; \
-    } while(0)
+    }
 
     if (input_num > MAX_INPUT_NUM)
     {

@@ -41,9 +41,9 @@
 /**********************************************************
 * MACROS
 **********************************************************/
-#define LINKLIST_APPEND( _HEAD, _ITEM ) do {                \
+#define LINKLIST_APPEND( _HEAD, _ITEM ) {                \
     vsi_nn_LinkListPushEnd((vsi_nn_link_list_t **)&(_HEAD), \
-    (vsi_nn_link_list_t *)(_ITEM) ); } while( 0 )
+    (vsi_nn_link_list_t *)(_ITEM) ); }
 
 #define WKSP(_NODE_PTR) ((vsi_nn_internal_node_wksp_t *)    \
     ((_NODE_PTR)->internal_node_wksp))

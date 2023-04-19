@@ -585,16 +585,7 @@ static vsi_bool op_setup_optimized
 
         curr = vsi_nn_internal_new_node( self, VSI_NN_OP_GRUCELL_ACTIVATION_INTERNAL, 0, 0 );
         curr->inputs[GRUCELL_ACTIVATION_INPUT_H_STATE] = last_step_h_state;
-        if(0)
-        {
-            curr->inputs[GRUCELL_ACTIVATION_INPUT_INPUT_FC_R] = input_fc_output;
-            curr->inputs[GRUCELL_ACTIVATION_INPUT_INPUT_FC_Z] = NULL;
-            curr->inputs[GRUCELL_ACTIVATION_INPUT_INPUT_FC_C] = NULL;
-            curr->inputs[GRUCELL_ACTIVATION_INPUT_RECURRENT_FC_R] = recurrent_fc_output;
-            curr->inputs[GRUCELL_ACTIVATION_INPUT_RECURRENT_FC_Z] = NULL;
-            curr->inputs[GRUCELL_ACTIVATION_INPUT_RECURRENT_FC_C] = NULL;
-        }
-        else
+
         {
             splited_input_fc_output_tensors = vsi_nn_create_split(self,
                 input_fc_output, 1, 3, NULL, use_virtual_tensor);

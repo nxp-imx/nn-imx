@@ -313,7 +313,6 @@ DEF_KERNEL_INITIALIZER(_warp_affine_initializer)
     gpu_param.global_size[1] = out_shape->data[1];
     gpu_param.global_size[2] = out_shape->size > 2 ? out_shape->data[2] : 1;
 
-    do
     {
         gpu_dp_inst_t uniConvertDatatoF32_0_4x4 = {{
             0x01010101, // TCfg
@@ -373,7 +372,7 @@ DEF_KERNEL_INITIALIZER(_warp_affine_initializer)
                 "uniExtract8Data_2x8", &uniExtractInteger_2x8 );
         }
         CHECK_STATUS_FAIL_GOTO(status, final );
-    }while(0);
+    }
 
 
     status = vsi_nn_kernel_gpu_config( node, &gpu_param );
