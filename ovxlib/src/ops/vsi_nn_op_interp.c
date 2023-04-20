@@ -34,6 +34,7 @@
 #include "vsi_nn_tensor.h"
 #include "utils/vsi_nn_util.h"
 #include "kernel/vsi_nn_kernel.h"
+#include "vsi_nn_error.h"
 
 /*
  Declare number of input and output.
@@ -172,6 +173,7 @@ static vsi_bool op_setup
         memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
         vsi_nn_internal_init_tensor_attr(&attr, &inputs[0]->attr.dtype, use_virtual_tensor);
         crop_tensor = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
+        CHECK_PTR_FAIL_GOTO(crop_tensor, "Create internal tensor failed", final);
         crop_in_tensor = crop_tensor->t;
         curr = vsi_nn_internal_new_node( self, VSI_NN_OP_STRIDED_SLICE, 1, 1 );
         curr->node->nn_param.strided_slice.begin_dims_num = inputs[0]->attr.dim_num;
@@ -183,10 +185,13 @@ static vsi_bool op_setup
         curr->node->nn_param.strided_slice.new_axis_mask = 0;
         begin_dims = (vsi_ssize_t *)vsi_nn_internal_new_node_param(curr,
             VSI_NN_MAX_DIM_NUM * sizeof(vsi_ssize_t));
+        CHECK_PTR_FAIL_GOTO(begin_dims, "Create internal buffer failed", final);
         end_dims   = (vsi_ssize_t *)vsi_nn_internal_new_node_param(curr,
             VSI_NN_MAX_DIM_NUM * sizeof(vsi_ssize_t));
+        CHECK_PTR_FAIL_GOTO(end_dims, "Create internal buffer failed", final);
         stride_dims  = (vsi_ssize_t *)vsi_nn_internal_new_node_param(curr,
             VSI_NN_MAX_DIM_NUM * sizeof(vsi_ssize_t));
+        CHECK_PTR_FAIL_GOTO(stride_dims, "Create internal buffer failed", final);
         for (i = 0; i < inputs[0]->attr.dim_num; i++)
         {
             stride_dims[i] = 1;
@@ -237,6 +242,8 @@ static vsi_bool op_setup
     }
 
     return TRUE;
+final:
+    return FALSE;
 } /* op_setup() */
 
 static vsi_status op_optimize

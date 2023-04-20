@@ -113,6 +113,7 @@ static vsi_size_t eltwise_fill_dim
         vsi_size_t divisor = 0;
         vsi_size_t remainder = 0;
         compute_gpu_divisor( size_output, GPU_TENSOR_MAX_WIDTH, 1, &divisor );
+        VSI_ASSERT( divisor != 0 );
         remainder = size_output / divisor;
         if( remainder > GPU_TENSOR_MAX_WIDTH || rank >= max_rank )
         {
@@ -352,6 +353,7 @@ static vsi_size_t broadcast_fill_dim
         vsi_size_t divisor = 0;
         vsi_size_t remainder = 0;
         compute_gpu_divisor( size_output, GPU_TENSOR_MAX_WIDTH, 1, &divisor );
+        VSI_ASSERT( divisor != 0 );
         remainder = size_output / divisor;
         if( remainder > GPU_TENSOR_MAX_WIDTH || rank >= max_rank )
         {

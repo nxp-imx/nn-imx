@@ -46,7 +46,7 @@ typedef struct _vsi_nn_gru_local
     void * placeholder;
 } vsi_nn_gru_local;
 
-static void create_state_tensor
+static vsi_status create_state_tensor
     (
     vsi_nn_node_t * self,
     vsi_nn_tensor_t ** inputs,
@@ -55,6 +55,7 @@ static void create_state_tensor
     vsi_size_t hidden_size
     )
 {
+    vsi_status status = VSI_FAILURE;
     vsi_nn_tensor_attr_t attr;
     vsi_nn_internal_tensor_t * tensor = NULL;
 
@@ -68,6 +69,7 @@ static void create_state_tensor
         attr.vtl = TRUE;
         attr.is_const = FALSE;
         tensor = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
+        CHECK_PTR_FAIL_GOTO(tensor, "Create internal tensor failed", final);
         outputs[GRU_OUT_H_STATE] = tensor->t;
     }
 
@@ -81,9 +83,13 @@ static void create_state_tensor
         attr.is_const = TRUE;
 
         tensor = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
+        CHECK_PTR_FAIL_GOTO(tensor, "Create internal tensor failed", final);
         inputs[GRU_IN_H_STATE] = tensor->t;
     }
 
+    status = VSI_SUCCESS;
+final:
+    return status;
 } /* create_state_tensor() */
 
 static vsi_bool setup_op_shapes
@@ -93,8 +99,10 @@ static vsi_bool setup_op_shapes
     vsi_nn_tensor_t ** outputs
     )
 {
+    vsi_status status = VSI_FAILURE;
     vsi_nn_gru_param * p = &self->nn_param.gru;
     vsi_size_t batch_size = 0, hidden_size = 0, timesetp = 0;
+    vsi_bool ret = FALSE;
 
     hidden_size = p->num_units;
     if(p->time_major)
@@ -138,7 +146,8 @@ static vsi_bool setup_op_shapes
     }
 
     /* create hstate input/output if app doesn't provide them */
-    create_state_tensor(self, inputs, outputs, batch_size, hidden_size);
+    status = create_state_tensor(self, inputs, outputs, batch_size, hidden_size);
+    CHECK_STATUS_FAIL_GOTO(status, final);
 
     /* hstate output */
     if(VSI_NN_DIM_AUTO == outputs[GRU_OUT_H_STATE]->attr.dim_num)
@@ -148,7 +157,9 @@ static vsi_bool setup_op_shapes
         outputs[GRU_OUT_H_STATE]->attr.size[1] = batch_size;
     }
 
-    return TRUE;
+    ret = TRUE;
+final:
+    return ret;
 } /* setup_op_shapes() */
 
 static vsi_status op_compute
@@ -193,6 +204,8 @@ static vsi_bool op_setup
     vsi_nn_tensor_t ** gru_step_outputs = NULL;
     vsi_nn_internal_tensor_t * tmp_tensor = NULL;
     vsi_nn_tensor_attr_t attr;
+    vsi_bool ret = FALSE;
+    vsi_status status = VSI_FAILURE;
 
     memset(&attr, 0, sizeof(attr));
     vsi_nn_internal_init_node_wksp( self );
@@ -227,7 +240,8 @@ static vsi_bool op_setup
     CHECK_PTR_FAIL_GOTO( gru_step_outputs, "Create buffer fail.", final );
     memset(gru_step_outputs, 0, timestep * sizeof(vsi_nn_tensor_t *));
 
-    vsi_nn_rnn_split_input_tensor(self, input_tensor, split_outputs, (uint32_t)timestep, use_virtual_tensor);
+    status = vsi_nn_rnn_split_input_tensor(self, input_tensor, split_outputs, (uint32_t)timestep, use_virtual_tensor);
+    CHECK_STATUS_FAIL_GOTO(status, final);
 
     //vsi_nn_rnn_data_check_aligned(self, split_outputs, timestep, use_virtual_tensor); ??
 
@@ -241,6 +255,7 @@ static vsi_bool op_setup
         /* reshape split_outputs to cell_input */
         tmp_tensor = vsi_nn_rnn_reshape_split_output(
             self, split_outputs[i], (uint32_t)batch_size, use_virtual_tensor);
+        CHECK_PTR_FAIL_GOTO(tmp_tensor, "Create internal tensor failed", final);
         reshape_output = tmp_tensor->t;
 
         /* grucell output */
@@ -253,6 +268,7 @@ static vsi_bool op_setup
             vsi_nn_internal_init_tensor_attr(&attr,
                 &outputs[GRU_OUT_OUTPUT]->attr.dtype, use_virtual_tensor);
             tmp_tensor = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
+            CHECK_PTR_FAIL_GOTO(tmp_tensor, "Create internal tensor failed", final);
             cell_out0 = tmp_tensor->t;
         }
 
@@ -262,6 +278,7 @@ static vsi_bool op_setup
             vsi_nn_internal_init_tensor_attr(&attr,
                 &outputs[GRU_OUTPUT_H_STATE]->attr.dtype, use_virtual_tensor);
             tmp_tensor = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
+            CHECK_PTR_FAIL_GOTO(tmp_tensor, "Create internal tensor failed", final);
             cell_out1 = tmp_tensor->t;
         }
         else
@@ -300,6 +317,7 @@ static vsi_bool op_setup
             /* reshape every step output to 3-dims for GRU_OUTPUT */
             tmp_tensor = vsi_nn_rnn_reshape_cell_output(self,
                 cell_out0, (uint32_t)batch_size, use_virtual_tensor);
+            CHECK_PTR_FAIL_GOTO(tmp_tensor, "Create internal tensor failed", final);
             gru_step_outputs[i] = tmp_tensor->t;
         }
     } /* for(i = 0; i < timestep; i++) end */
@@ -313,6 +331,7 @@ static vsi_bool op_setup
             vsi_nn_internal_init_tensor_attr(&attr,
                 &outputs[GRU_OUTPUT_OUTPUT]->attr.dtype, use_virtual_tensor);
             tmp_tensor = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
+            CHECK_PTR_FAIL_GOTO(tmp_tensor, "Create internal tensor failed", final);
             output_tensor = tmp_tensor->t;
         }
 
@@ -334,11 +353,12 @@ static vsi_bool op_setup
         }
     }
 
+    ret = TRUE;
 final:
     vsi_nn_safe_free( split_outputs );
     vsi_nn_safe_free( gru_step_outputs );
 
-    return TRUE;
+    return ret;
 }
 
 static vsi_status op_deinit

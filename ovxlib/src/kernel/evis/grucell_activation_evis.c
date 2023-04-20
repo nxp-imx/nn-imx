@@ -637,7 +637,7 @@ static vsi_status _query_kernel
     int32_t input_category,
     int32_t input_layout,
     int32_t use_cudnn,
-    int32_t* param_count,
+    vsi_size_t* param_count,
     int32_t* input_count,
     int32_t* output_count
     /* Add extra params */
@@ -758,7 +758,7 @@ static vsi_nn_kernel_node_t _setup
     int32_t k = 0;
     vsi_size_t input_size = inputs[0]->attr.size[0];
     vsi_size_t batch = inputs[0]->attr.size[1];
-    int32_t param_count = 0;
+    vsi_size_t param_count = 0;
     int32_t input_count = 0;
     int32_t output_count = 0;
     int32_t gate_activation = 0;

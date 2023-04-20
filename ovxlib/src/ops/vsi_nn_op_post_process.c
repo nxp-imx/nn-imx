@@ -34,7 +34,7 @@
 #include "vsi_nn_ops.h"
 #include "vsi_nn_tensor.h"
 #include "vsi_nn_tensor_util.h"
-#include "libnnext/vsi_nn_vxkernel.h"
+#include "vsi_nn_error.h"
 #include "utils/vsi_nn_dtype_util.h"
 #include "vsi_nn_internal_node.h"
 
@@ -104,7 +104,7 @@ static vsi_bool op_setup
     vsi_nn_tensor_t ** outputs
     )
 {
-    vsi_bool ret;
+    vsi_bool ret = FALSE;
     uint32_t i;
     uint32_t axis;
     vsi_nn_tensor_attr_t attr;
@@ -121,7 +121,6 @@ static vsi_bool op_setup
         return FALSE;
     }
 
-    ret = TRUE;
     /* output */
     if( VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num )
     {
@@ -196,6 +195,7 @@ static vsi_bool op_setup
         attr.vtl = use_virtual_tensor;
         attr.is_const = FALSE;
         output_tensor = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
+        CHECK_PTR_FAIL_GOTO(output_tensor, "Create internal tensor failed", final);
 
         curr = vsi_nn_internal_new_node( self, VSI_NN_OP_PERMUTE, 0, 0 );
         curr->node->nn_param.permute.perm = self->nn_param.post_process.perm;
@@ -212,6 +212,8 @@ static vsi_bool op_setup
         vsi_nn_internal_setup_node(self, curr);
     }
 
+    ret = TRUE;
+final:
     return ret;
 } /* op_setup() */
 

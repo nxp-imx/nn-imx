@@ -106,7 +106,7 @@ static vsi_bool op_setup
     /* TODO: Add code to comput outputs' shape. */
     vsi_nn_internal_node_t* curr = NULL;
     vsi_nn_pre_process_param * p = NULL;
-    vsi_bool ret = TRUE;
+    vsi_bool ret = FALSE;
     vsi_nn_internal_tensor_t* preprocess_tensor = NULL;
     vsi_nn_preprocess_dest_layout_e layout = VSI_NN_DEST_LAYOUT_NCHW;
 
@@ -162,6 +162,7 @@ static vsi_bool op_setup
             attr.is_const = FALSE;
 
             preprocess_tensor = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
+            CHECK_PTR_FAIL_GOTO(preprocess_tensor, "Create internal tensor failed", final);
         }
     }
 
@@ -177,7 +178,7 @@ static vsi_bool op_setup
             curr->inputs[0] = inputs[PRE_PROCESS_INPUT0];
             curr->outputs[0] = outputs[PRE_PROCESS_OUTPUT];
 
-            vsi_nn_internal_setup_node(self, curr);
+            ret = vsi_nn_internal_setup_node(self, curr);
         }
         break;
     case VSI_NN_SOURCE_FORMAT_IMAGE_GRAY:
@@ -203,7 +204,7 @@ static vsi_bool op_setup
                 curr->outputs[0] = outputs[PRE_PROCESS_OUTPUT];
             }
 
-            vsi_nn_internal_setup_node(self, curr);
+            ret = vsi_nn_internal_setup_node(self, curr);
         }
         break;
     case VSI_NN_SOURCE_FORMAT_IMAGE_RGB:
@@ -244,7 +245,7 @@ static vsi_bool op_setup
                 curr->outputs[0] = outputs[PRE_PROCESS_OUTPUT];
             }
 
-            vsi_nn_internal_setup_node(self, curr);
+            ret = vsi_nn_internal_setup_node(self, curr);
         }
         break;
     case VSI_NN_SOURCE_FORMAT_IMAGE_YUV420:
@@ -287,7 +288,7 @@ static vsi_bool op_setup
                 curr->outputs[0] = outputs[PRE_PROCESS_OUTPUT];
             }
 
-            vsi_nn_internal_setup_node(self, curr);
+            ret = vsi_nn_internal_setup_node(self, curr);
         }
         break;
     case VSI_NN_SOURCE_FORMAT_IMAGE_BGRA:
@@ -328,7 +329,7 @@ static vsi_bool op_setup
                 curr->outputs[0] = outputs[PRE_PROCESS_OUTPUT];
             }
 
-            vsi_nn_internal_setup_node(self, curr);
+            ret = vsi_nn_internal_setup_node(self, curr);
         }
         break;
     case VSI_NN_SOURCE_FORMAT_IMAGE_RGB888_PLANAR:
@@ -354,8 +355,11 @@ static vsi_bool op_setup
             attr.vtl = TRUE;
             attr.is_const = FALSE;
             output_tensor_group[0] = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
+            CHECK_PTR_FAIL_GOTO(output_tensor_group[0], "Create internal tensor failed", final);
             output_tensor_group[1] = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
+            CHECK_PTR_FAIL_GOTO(output_tensor_group[1], "Create internal tensor failed", final);
             output_tensor_group[2] = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
+            CHECK_PTR_FAIL_GOTO(output_tensor_group[2], "Create internal tensor failed", final);
             for(i = 0; i < VSI_NN_MAX_DIM_NUM; i++)
             {
                 size_32bit[i] = attr.size[i];
@@ -407,7 +411,7 @@ static vsi_bool op_setup
             curr->node->nn_param.pre_process_rgb888_planar.rect.height = p->rect.height;
             curr->node->nn_param.pre_process_rgb888_planar.output_attr.size = size_32bit;
             curr->node->nn_param.pre_process_rgb888_planar.output_attr.dim_num = p->output_attr.dim_num;
-            vsi_nn_internal_setup_node(self, curr);
+            ret = vsi_nn_internal_setup_node(self, curr);
 
             curr = vsi_nn_internal_new_node( self, VSI_NN_OP_CONCAT, 3, 1 );
 
@@ -424,7 +428,7 @@ static vsi_bool op_setup
                 curr->outputs[0] = outputs[PRE_PROCESS_OUTPUT];
             }
 
-            vsi_nn_internal_setup_node(self, curr);
+            ret &= vsi_nn_internal_setup_node(self, curr);
         }
         break;
     case VSI_NN_SOURCE_FORMAT_IMAGE_YUV444:
@@ -467,7 +471,7 @@ static vsi_bool op_setup
                 curr->outputs[0] = outputs[PRE_PROCESS_OUTPUT];
             }
 
-            vsi_nn_internal_setup_node(self, curr);
+            ret = vsi_nn_internal_setup_node(self, curr);
         }
         break;
     case VSI_NN_SOURCE_FORMAT_IMAGE_NV21:
@@ -519,7 +523,7 @@ static vsi_bool op_setup
                 curr->outputs[0] = outputs[PRE_PROCESS_OUTPUT];
             }
 
-            vsi_nn_internal_setup_node(self, curr);
+            ret = vsi_nn_internal_setup_node(self, curr);
         }
         break;
     case VSI_NN_SOURCE_FORMAT_IMAGE_YUYV422:
@@ -570,13 +574,13 @@ static vsi_bool op_setup
                 curr->outputs[0] = outputs[PRE_PROCESS_OUTPUT];
             }
 
-            vsi_nn_internal_setup_node(self, curr);
+            ret = vsi_nn_internal_setup_node(self, curr);
         }
         break;
     default:
         {
             VSILOGE( "Not support this type!(PRE_PROCESS)\n");
-            ret = FALSE;
+            goto final;
         }
         break;
     }
@@ -602,10 +606,11 @@ static vsi_bool op_setup
             curr->inputs[0] = preprocess_tensor->t;
             curr->outputs[0] = outputs[PRE_PROCESS_OUTPUT];
 
-            vsi_nn_internal_setup_node( self, curr );
+            ret = vsi_nn_internal_setup_node( self, curr );
         }
     }
 
+final:
     return ret;
 } /* op_setup() */
 

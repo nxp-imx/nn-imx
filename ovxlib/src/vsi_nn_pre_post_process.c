@@ -884,6 +884,7 @@ vsi_status vsi_nn_AddBinaryGraphInputsWithCropParam
                     }
                 }
             }
+            vsi_nn_safe_free(nodes);
         }
     }
 
@@ -1008,6 +1009,7 @@ vsi_status vsi_nn_AddBinaryGraphInputsWithCropParam
                     }
                 }
             }
+            vsi_nn_safe_free(nodes);
         }
     }
     num_of_graph_outputs = graph->output.num;

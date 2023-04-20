@@ -429,7 +429,7 @@ vsi_bool vsi_nn_QuantCheck
         VSILOGE("input_scale[%.12lf] * weight_scale[%.12lf] != bias_scale[%.12lf]",
           input->attr.dtype.scale,
           weight->attr.dtype.scale,
-          bias->attr.dtype.scale);
+          bias ? bias->attr.dtype.scale : 0);
       }
     }
         break;

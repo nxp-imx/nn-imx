@@ -141,6 +141,12 @@ static vsi_bool op_setup
 
     input_num = _get_input_num(self, inputs);
 
+    if (input_num < 2)
+    {
+        VSILOGE( "Wrong input tensor number = %u.", input_num );
+        return FALSE;
+    }
+
     is_sp_supported = vsi_nn_is_sp_supported_broadcast(self->graph, inputs, input_num, outputs[0]);
 
     for(i = 0; i < input_num -1; i++)

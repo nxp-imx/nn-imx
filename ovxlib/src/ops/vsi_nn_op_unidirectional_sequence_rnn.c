@@ -80,6 +80,7 @@ static vsi_bool setup_op_shapes
         attr.is_const = TRUE;
 
         output_tensor = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
+        CHECK_PTR_FAIL_GOTO(output_tensor, "Create internal tensor failed", final);
         inputs[RNN_INPUT_H_STATE] = output_tensor->t;
     }
 
@@ -91,6 +92,7 @@ static vsi_bool setup_op_shapes
         attr.vtl = use_virtual_tensor;
         attr.is_const = FALSE;
         output_tensor = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
+        CHECK_PTR_FAIL_GOTO(output_tensor, "Create internal tensor failed", final);
         outputs[RNN_OUTPUT_H_STATE] = output_tensor->t;
     }
 
@@ -112,6 +114,8 @@ static vsi_bool setup_op_shapes
     }
 
     return TRUE;
+final:
+    return FALSE;
 }
 
 static vsi_status op_compute
@@ -176,6 +180,7 @@ static vsi_bool op_setup
     vsi_size_t time_step = 0;
     uint32_t i = 0;
     vsi_bool ret = FALSE;
+    vsi_status status = VSI_FAILURE;
 
     memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
 
@@ -201,6 +206,7 @@ static vsi_bool op_setup
         /* transpose to time_major */
         output_tensor = vsi_nn_rnn_transpose_time_major(self,
             inputs[RNN_INPUT_INPUT], NULL, use_virtual_tensor);
+        CHECK_PTR_FAIL_GOTO(output_tensor, "Create internal tensor failed", final);
         input_tensor = output_tensor->t;
     }
 
@@ -213,9 +219,12 @@ static vsi_bool op_setup
     CHECK_PTR_FAIL_GOTO( rnncell_reshape_output_tensors, "Create buffer fail.", final );
     memset( rnncell_reshape_output_tensors, 0x00, time_step * sizeof(vsi_nn_tensor_t **));
 
-    vsi_nn_rnn_split_input_tensor(self, input_tensor, split_output_tensors, (uint32_t)time_step, use_virtual_tensor);
+    status = vsi_nn_rnn_split_input_tensor(self, input_tensor, split_output_tensors,
+        (uint32_t)time_step, use_virtual_tensor);
+    CHECK_STATUS_FAIL_GOTO(status, final);
 
-    vsi_nn_rnn_data_check_aligned(self, split_output_tensors, (uint32_t)time_step, use_virtual_tensor);
+    status = vsi_nn_rnn_data_check_aligned(self, split_output_tensors, (uint32_t)time_step, use_virtual_tensor);
+    CHECK_STATUS_FAIL_GOTO(status, final);
 
     last_step_h_state = inputs[RNN_INPUT_H_STATE];
 
@@ -228,18 +237,21 @@ static vsi_bool op_setup
         /* reshape for split output */
         output_tensor = vsi_nn_rnn_reshape_split_output(self,
             split_output_tensors[i], (uint32_t)batch_size, use_virtual_tensor);
+        CHECK_PTR_FAIL_GOTO( output_tensor, "Create internal tensor fail.", final );
         reshape_output = output_tensor->t;
 
         /* rnncell output */
         vsi_nn_internal_init_tensor_attr(&attr,
             &outputs[RNN_OUTPUT_OUTPUT]->attr.dtype, use_virtual_tensor);
         output_tensor = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
+        CHECK_PTR_FAIL_GOTO( output_tensor, "Create internal tensor fail.", final );
         rnncell_out0 = output_tensor->t;
 
         /* rnncell output h_state */
         vsi_nn_internal_init_tensor_attr(&attr,
             &outputs[RNN_OUTPUT_H_STATE]->attr.dtype, use_virtual_tensor);
         output_tensor = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
+        CHECK_PTR_FAIL_GOTO( output_tensor, "Create internal tensor fail.", final );
         rnncell_out1 = output_tensor->t;
 
         curr = vsi_nn_internal_new_node( self, VSI_NN_OP_RNNCELL_OVXLIB, 0, 0 );
@@ -285,6 +297,7 @@ static vsi_bool op_setup
         vsi_nn_internal_init_tensor_attr(&attr,
             &outputs[RNN_OUTPUT_OUTPUT]->attr.dtype, use_virtual_tensor);
         output_tensor = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
+        CHECK_PTR_FAIL_GOTO( output_tensor, "Create internal tensor fail.", final );
 
         tensor = output_tensor->t;
     }

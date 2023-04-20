@@ -87,6 +87,7 @@ static vsi_nn_internal_tensor_t * _create_fc
     attr.vtl = TRUE;
     attr.is_const = FALSE;
     fc_out = vsi_nn_internal_new_tensor(self, &attr, 0.0f);
+    CHECK_PTR_FAIL_GOTO(fc_out, "Create internal tensor failed", final);
 
     fc_node = vsi_nn_internal_new_node(self, VSI_NN_OP_FCL, 0, 0 );
     fc_node->node->nn_param.fcl.axis = 0;
@@ -210,6 +211,7 @@ static vsi_bool op_setup_default
             inputs[GRUCELL_IN_KERNEL_I2Z + i],
             inputs[GRUCELL_IN_BIAS_I2Z + i]
         );
+        CHECK_PTR_FAIL_GOTO(input_fc_outputs[i], "Create internal tensor failed", final);
     }
 
     /* create hstate fc */
@@ -221,6 +223,7 @@ static vsi_bool op_setup_default
             inputs[GRUCELL_IN_KERNEL_R2Z + i],
             inputs[GRUCELL_IN_BIAS_R2Z + i]
         );
+        CHECK_PTR_FAIL_GOTO(hstate_fc_outputs[i], "Create internal tensor failed", final);
     }
 
     memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
@@ -238,6 +241,7 @@ static vsi_bool op_setup_default
     attr.vtl = TRUE;
     attr.is_const = FALSE;
     h_times_r = vsi_nn_internal_new_tensor(self, &attr, 0.0f);
+    CHECK_PTR_FAIL_GOTO(h_times_r, "Create internal tensor failed", final);
 
     curr = vsi_nn_internal_new_node( self, VSI_NN_OP_GRUCELL_H_TIMES_ACTIVATION_R, 3, 1 );
     curr->node->nn_param.grucell_h_times_activation_r.recurrent_activation = p->recurrent_activation;
@@ -253,6 +257,7 @@ static vsi_bool op_setup_default
         inputs[GRUCELL_IN_KERNEL_R2H],
         inputs[GRUCELL_IN_BIAS_R2H]
     );
+    CHECK_PTR_FAIL_GOTO(hstate_fc_outputs[GRUCELL_GATES_H], "Create internal tensor failed", final);
 
     curr = vsi_nn_internal_new_node( self, VSI_NN_OP_GRUCELL_ACTIVATION_Z_H, 0, 0 );
     curr->node->nn_param.grucell_activation_z_h.activation = p->activation;
@@ -267,6 +272,8 @@ static vsi_bool op_setup_default
     vsi_nn_internal_setup_node(self, curr);
 
     return TRUE;
+final:
+    return FALSE;
 }
 #endif
 
@@ -297,6 +304,7 @@ static vsi_bool op_setup_reset_after
             inputs[GRUCELL_IN_KERNEL_I2Z + i],
             inputs[GRUCELL_IN_BIAS_I2Z + i]
         );
+        CHECK_PTR_FAIL_GOTO(input_fc_outputs[i], "Create internal tensor failed", final);
     }
 
     /* create hstate fc */
@@ -308,6 +316,7 @@ static vsi_bool op_setup_reset_after
             inputs[GRUCELL_IN_KERNEL_R2Z + i],
             inputs[GRUCELL_IN_BIAS_R2Z + i]
         );
+        CHECK_PTR_FAIL_GOTO(hstate_fc_outputs[i], "Create internal tensor failed", final);
     }
 
     curr = vsi_nn_internal_new_node( self, VSI_NN_OP_GRUCELL_ACTIVATION, 0, 0 );
@@ -325,6 +334,8 @@ static vsi_bool op_setup_reset_after
     vsi_nn_internal_setup_node(self, curr);
 
     return TRUE;
+final:
+    return FALSE;
 }
 
 static vsi_bool op_setup

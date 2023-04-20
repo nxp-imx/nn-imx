@@ -455,14 +455,15 @@ static void _convolve_same
     float *input,
     uint32_t input_size,
     double *kernel,
-    uint32_t kernel_size,
+    int32_t kernel_size,
     float *output
     )
 {
-    uint32_t pad,pad_input_size;
-    uint32_t i,k,offset;
+    uint32_t pad = 0, pad_input_size = 0;
+    uint32_t i = 0, offset = 0;
+    int32_t k = 0;
     float *pad_input = NULL;
-    double sum;
+    double sum = 0;
 
     uint32_t pad_input_sizef,input_sizef;
     if(NULL == input || NULL == kernel || NULL == output)
@@ -1501,6 +1502,7 @@ static vsi_nn_connection_t **_compute_all_connetion
     score_mid = (float *)malloc(sizeof(float) * height * width * score_mid_depth);
     CHECK_PTR_FAIL_GOTO( score_mid, "Create buffer fail.", final );
     connection_all = (vsi_nn_connection_t **)malloc(sizeof(vsi_nn_connection_t *) * mapIdx_len);
+    CHECK_PTR_FAIL_GOTO( connection_all, "Create buffer fail.", final );
     special_k = (int32_t *)malloc(sizeof(int32_t) * mapIdx_len);
     CHECK_PTR_FAIL_GOTO( special_k, "Create buffer fail.", final );
 
@@ -1894,7 +1896,10 @@ vsi_status vsi_nn_CMUPose_Post_Process
 
 final:
     _cmupose_deinit(&multiplier, heatmap_avg, paf_avg);
-    _release_all_connection(all_connection, connection_list_num);
+    if (all_connection)
+    {
+        _release_all_connection(all_connection, connection_list_num);
+    }
     vsi_nn_safe_free(special_k);
 
     return status;
