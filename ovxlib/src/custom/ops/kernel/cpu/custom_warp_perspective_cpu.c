@@ -95,7 +95,7 @@ static vsi_bool _read_pixel
     )
 {
     vsi_size_t width = attr->shape->data[0];
-    vsi_size_t height = attr->shape->data[1];
+    vsi_size_t height = attr->shape->size > 1 ? attr->shape->data[1] : 1;
     vsi_bool out_of_bounds = (x < 0 || y < 0 || x >= width || y >= height);
     vsi_size_t bx = 0, by = 0;
 

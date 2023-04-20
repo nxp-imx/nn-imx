@@ -36,6 +36,7 @@
 #include "vsi_nn_log.h"
 #include "utils/vsi_nn_dtype_util.h"
 #include "utils/vsi_nn_constraint_check.h"
+#include "vsi_nn_error.h"
 
 #define _INPUT_NUM          (1)
 #define _OUTPUT_NUM         (1)
@@ -183,7 +184,7 @@ static vsi_bool op_setup
     vsi_nn_tensor_t ** outputs
     )
 {
-    vsi_bool ret = TRUE;
+    vsi_bool ret = FALSE;
     vsi_nn_internal_node_t* curr = NULL;
 
     vsi_nn_internal_init_node_wksp(self);
@@ -201,6 +202,7 @@ static vsi_bool op_setup
         attr.vtl = TRUE;
         attr.is_const = FALSE;
         output_tensor = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
+        CHECK_PTR_FAIL_GOTO(output_tensor, "Create internal tensor failed", final);
 
         curr = vsi_nn_internal_new_node(self, VSI_NN_OP_REVERSE, 0, 0);
         curr->inputs[0] = inputs[0];
@@ -216,6 +218,8 @@ static vsi_bool op_setup
     }
 
     return ret;
+final:
+    return FALSE;
 } /* op_setup() */
 
 #ifdef __cplusplus

@@ -329,6 +329,12 @@ static vsi_bool _init_tensor
     size_t i = 0;
     ret = TRUE;
 
+    if (tensor->attr.dim_num > VSI_NN_MAX_DIM_NUM)
+    {
+        VSILOGE( "tensor rank greater than %d.", VSI_NN_MAX_DIM_NUM );
+        return FALSE;
+    }
+
     memset( &params, 0, sizeof( vx_tensor_create_params_t ) );
     params.num_of_dims = tensor->attr.dim_num;
     for(i = 0; i < tensor->attr.dim_num; i++)
@@ -1824,6 +1830,12 @@ vsi_nn_tensor_t *vsi_nn_reshape_tensor
     {
         return NULL;
     }
+
+    if (dim_num > VSI_NN_MAX_DIM_NUM)
+    {
+        VSILOGE( "tensor rank greater than %d.", VSI_NN_MAX_DIM_NUM );
+        return NULL;
+    }
     /* New a ovxlib tensor struct */
     memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
     memcpy(&attr, &input->attr, sizeof(vsi_nn_tensor_attr_t));
@@ -2344,6 +2356,11 @@ vsi_nn_tensor_rel_t *vsi_nn_CreateTensorRelevance
         for(j = 0; j < graph->node_num; j++)
         {
             node = vsi_nn_GetNode( graph, (vsi_nn_node_id_t)j );
+            if (node == NULL)
+            {
+                continue;
+            }
+
             for(k = 0; k < node->output.num; k++)
             {
                 if(node->output.tensors[k] == i)

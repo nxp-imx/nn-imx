@@ -92,10 +92,14 @@ static void _transform_affine(int32_t dst_x, int32_t dst_y, const float m[], flo
 static float _read_pixel(float *base, vsi_nn_kernel_tensor_attr_t *attr,
                           float x, float y, int32_t z, int32_t b)
 {
-    vsi_bool out_of_bounds = (x < 0 || y < 0 || x >= attr->shape->data[0] || y >= attr->shape->data[1]);
+    vsi_bool out_of_bounds = FALSE;
     vsi_ssize_t bx, by;
     vsi_ssize_t offset = (b * attr->shape->data[2] + z) * attr->shape->data[0] * attr->shape->data[1];
     float pixel = 0;
+    vsi_size_t width = attr->shape->data[0];
+    vsi_size_t height = attr->shape->size > 1 ? attr->shape->data[0] : 1;
+
+    out_of_bounds = (x < 0 || y < 0 || x >= width || y >= height);
 
     if (out_of_bounds)
     {

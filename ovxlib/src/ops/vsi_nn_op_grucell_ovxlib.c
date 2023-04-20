@@ -78,6 +78,7 @@ static vsi_nn_internal_tensor_t* create_multiply
     memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
     vsi_nn_internal_init_tensor_attr(&attr, output_dtype, use_virtual_tensor);
     tensor1 = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
+    CHECK_PTR_FAIL_GOTO(tensor1, "Create internal tensor failed", final);
 
     tmp_inode = vsi_nn_internal_new_node(self, VSI_NN_OP_MULTIPLY, 0, 0 );
 
@@ -89,6 +90,7 @@ static vsi_nn_internal_tensor_t* create_multiply
     tmp_inode->outputs[0] = tensor1->t;
     vsi_nn_internal_setup_node(self, tmp_inode);
 
+final:
     return tensor1;
 }
 
@@ -125,6 +127,7 @@ static vsi_bool setup_op_shapes
         attr.is_const = FALSE;
 
         output_tensor = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
+        CHECK_PTR_FAIL_GOTO(output_tensor, "Create internal tensor failed", final);
         inputs[GRUCELL_INPUT_H_STATE] = output_tensor->t;
     }
 
@@ -133,6 +136,7 @@ static vsi_bool setup_op_shapes
         vsi_nn_internal_init_tensor_attr(&attr,
             &outputs[GRUCELL_OUTPUT_OUTPUT]->attr.dtype, TRUE);
         output_tensor = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
+        CHECK_PTR_FAIL_GOTO(output_tensor, "Create internal tensor failed", final);
         outputs[GRUCELL_OUTPUT_H_STATE] = output_tensor->t;
     }
 
@@ -156,6 +160,8 @@ static vsi_bool setup_op_shapes
     }
 
     return TRUE;
+final:
+    return FALSE;
 }
 
 static vsi_status op_compute
@@ -212,24 +218,31 @@ static vsi_bool op_setup_float
     vsi_nn_internal_tensor_t* tensor_rt = NULL;
     vsi_nn_internal_tensor_t* input_hstate = NULL;
     vsi_nn_internal_tensor_t** splited_tensors = NULL;
+    vsi_bool ret = FALSE;
 
     p->local->weights_update = vsi_nn_ConcatTensor(self->graph, 0,
         inputs[GRUCELL_INPUT_WEIGHT_I2Z], inputs[GRUCELL_INPUT_WEIGHT_H2Z]);
+    CHECK_PTR_FAIL_GOTO(p->local->weights_update, "Create tensor failed", final);
     p->local->weights_reset = vsi_nn_ConcatTensor(self->graph, 0,
         inputs[GRUCELL_INPUT_WEIGHT_I2R], inputs[GRUCELL_INPUT_WEIGHT_H2R]);
+    CHECK_PTR_FAIL_GOTO(p->local->weights_reset, "Create tensor failed", final);
     p->local->bias_z = vsi_nn_ConstTensorAdd(self->graph, inputs[GRUCELL_INPUT_BIAS_I2Z]->attr,
         inputs[GRUCELL_INPUT_BIAS_I2Z], inputs[GRUCELL_INPUT_BIAS_H2Z]);
+    CHECK_PTR_FAIL_GOTO(p->local->bias_z, "Create tensor failed", final);
     p->local->bias_r = vsi_nn_ConstTensorAdd(self->graph, inputs[GRUCELL_INPUT_BIAS_I2R]->attr,
         inputs[GRUCELL_INPUT_BIAS_I2R], inputs[GRUCELL_INPUT_BIAS_H2R]);
+    CHECK_PTR_FAIL_GOTO(p->local->bias_r, "Create tensor failed", final);
     p->local->bias_z_r = vsi_nn_ConcatTensor(self->graph, 0, p->local->bias_z, p->local->bias_r);
+    CHECK_PTR_FAIL_GOTO(p->local->bias_z_r, "Create tensor failed", final);
     p->local->weights_z_r = vsi_nn_ConcatTensor(self->graph, 1, p->local->weights_update, p->local->weights_reset);
+    CHECK_PTR_FAIL_GOTO(p->local->weights_z_r, "Create tensor failed", final);
     p->local->weights_c = vsi_nn_ConcatTensor(self->graph, 0,
         inputs[GRUCELL_INPUT_WEIGHT_I2C], inputs[GRUCELL_INPUT_WEIGHT_H2C]);
+    CHECK_PTR_FAIL_GOTO(p->local->weights_c, "Create tensor failed", final);
     p->local->bias_c = vsi_nn_ConstTensorAdd(self->graph, inputs[GRUCELL_INPUT_BIAS_I2C]->attr,
         inputs[GRUCELL_INPUT_BIAS_I2C], inputs[GRUCELL_INPUT_BIAS_H2C]);
+    CHECK_PTR_FAIL_GOTO(p->local->bias_c, "Create tensor failed", final);
 
-    vsi_safe_release_tensor(p->local->bias_z);
-    vsi_safe_release_tensor(p->local->bias_r);
     p->local->bias_z_r->attr.is_const = TRUE;
     vsi_nn_SetTensorAttr(p->local->bias_z_r, VSI_NN_TENSOR_ATTR_CONST);
     p->local->weights_z_r->attr.is_const = TRUE;
@@ -241,6 +254,7 @@ static vsi_bool op_setup_float
 
     input_hstate = vsi_nn_rnn_create_concat(self, 0,
         use_virtual_tensor, inputs[GRUCELL_INPUT_INPUT], inputs[GRUCELL_INPUT_H_STATE]);
+    CHECK_PTR_FAIL_GOTO(input_hstate, "Create internal tensor failed", final);
 
     dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
     if ( input_hstate->t->attr.dtype.vx_type == VSI_NN_TYPE_BFLOAT16 ||
@@ -254,8 +268,10 @@ static vsi_bool op_setup_float
     }
     tmp_tensor = vsi_nn_rnn_create_tp_fc(self, input_hstate->t,
         p->local->weights_z_r, p->local->bias_z_r, &dtype, use_virtual_tensor);
+    CHECK_PTR_FAIL_GOTO(tmp_tensor, "Create internal tensor failed", final);
 
     splited_tensors = vsi_nn_create_split(self, tmp_tensor->t, 0, 2, NULL, use_virtual_tensor);
+    CHECK_PTR_FAIL_GOTO(splited_tensors, "Create internal tensor failed", final);
 
     /* reset Gate activations */
     tensor_rt = vsi_nn_rnn_create_activation(self,
@@ -263,6 +279,7 @@ static vsi_bool op_setup_float
                         p->local->gate_activation,
                         &splited_tensors[1]->t->attr.dtype,
                         use_virtual_tensor);
+    CHECK_PTR_FAIL_GOTO(tensor_rt, "Create internal tensor failed", final);
 
     /* if linear_before_reset=0:  ht=g(input*w_ic + (r.hstate)*w_hc + b_ic + b_hc)*/
     if ( p->linear_before_reset == 0 )
@@ -270,10 +287,12 @@ static vsi_bool op_setup_float
         /* r{t} * h{t-1}*/
         tensor_rt = vsi_nn_rnn_create_binary_operator(self, VSI_NN_OP_MULTIPLY,
             tensor_rt->t, inputs[GRUCELL_INPUT_H_STATE], &tensor_rt->t->attr.dtype, use_virtual_tensor);
+        CHECK_PTR_FAIL_GOTO(tensor_rt, "Create internal tensor failed", final);
 
         /* [x{t}, r{t}] */
         tmp_tensor = vsi_nn_rnn_create_concat(self, 0, use_virtual_tensor,
             inputs[GRUCELL_INPUT_INPUT], tensor_rt->t);
+        CHECK_PTR_FAIL_GOTO(tmp_tensor, "Create internal tensor failed", final);
 
         dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
         if ( tmp_tensor->t->attr.dtype.vx_type == VSI_NN_TYPE_BFLOAT16 ||
@@ -288,6 +307,7 @@ static vsi_bool op_setup_float
         /* W{c} x [x{t}, r{t}] */
         tmp_tensor = vsi_nn_rnn_create_tp_fc(self, tmp_tensor->t, p->local->weights_c, p->local->bias_c,
             &dtype, use_virtual_tensor);
+        CHECK_PTR_FAIL_GOTO(tmp_tensor, "Create internal tensor failed", final);
     }
     /* if linear_before_reset!=0: ht=g(input*w_ic + (r.(hstate*w_hc + b_hc)) + b_ic)*/
     else
@@ -305,14 +325,18 @@ static vsi_bool op_setup_float
         /* r.(hstate*w_hc + b_hc) */
         tmp_tensor = vsi_nn_rnn_create_tp_fc(self, inputs[GRUCELL_INPUT_H_STATE], inputs[GRUCELL_INPUT_WEIGHT_H2C],
             inputs[GRUCELL_INPUT_BIAS_H2C], &dtype, use_virtual_tensor);
+        CHECK_PTR_FAIL_GOTO(tmp_tensor, "Create internal tensor failed", final);
         tensor_rt = vsi_nn_rnn_create_binary_operator(self, VSI_NN_OP_MULTIPLY,
             tensor_rt->t, tmp_tensor->t, &tensor_rt->t->attr.dtype, use_virtual_tensor);
+        CHECK_PTR_FAIL_GOTO(tensor_rt, "Create internal tensor failed", final);
         /* input*w_ic + b_ic */
         tmp_tensor = vsi_nn_rnn_create_tp_fc(self, inputs[GRUCELL_INPUT_INPUT], inputs[GRUCELL_INPUT_WEIGHT_I2C],
             inputs[GRUCELL_INPUT_BIAS_I2C], &dtype, use_virtual_tensor);
+        CHECK_PTR_FAIL_GOTO(tmp_tensor, "Create internal tensor failed", final);
 
         tmp_tensor = vsi_nn_rnn_create_binary_operator(self, VSI_NN_OP_ADD,
             tensor_rt->t, tmp_tensor->t, &tensor_rt->t->attr.dtype, use_virtual_tensor);
+        CHECK_PTR_FAIL_GOTO(tmp_tensor, "Create internal tensor failed", final);
     }
 
 #define USE_GRUCELL_ACTIVATION
@@ -361,7 +385,12 @@ static vsi_bool op_setup_float
     vsi_nn_internal_setup_node(self, curr);
 #endif
 
-    return TRUE;
+
+    ret = TRUE;
+final:
+    vsi_safe_release_tensor(p->local->bias_z);
+    vsi_safe_release_tensor(p->local->bias_r);
+    return ret;
 }
 
 static vsi_bool op_setup_float_cudnn
@@ -386,24 +415,29 @@ static vsi_bool op_setup_float_cudnn
 
     p->local->weights_input = vsi_nn_ConcatTensor(self->graph, 1, inputs[GRUCELL_INPUT_WEIGHT_I2R],
                 inputs[GRUCELL_INPUT_WEIGHT_I2Z], inputs[GRUCELL_INPUT_WEIGHT_I2C]);
+    CHECK_PTR_FAIL_GOTO(p->local->weights_input, "Create tensor failed", final);
     p->local->weights_input->attr.is_const = TRUE;
     vsi_nn_SetTensorAttr(p->local->weights_input, VSI_NN_TENSOR_ATTR_CONST);
 
     p->local->weights_recurrent = vsi_nn_ConcatTensor(self->graph, 1, inputs[GRUCELL_INPUT_WEIGHT_H2R],
                 inputs[GRUCELL_INPUT_WEIGHT_H2Z], inputs[GRUCELL_INPUT_WEIGHT_H2C]);
+    CHECK_PTR_FAIL_GOTO(p->local->weights_recurrent, "Create tensor failed", final);
     p->local->weights_recurrent->attr.is_const = TRUE;
     vsi_nn_SetTensorAttr(p->local->weights_recurrent, VSI_NN_TENSOR_ATTR_CONST);
 
     p->local->bias_r = vsi_nn_ConstTensorAdd(self->graph, inputs[GRUCELL_INPUT_BIAS_I2R]->attr,
         inputs[GRUCELL_INPUT_BIAS_I2R], inputs[GRUCELL_INPUT_BIAS_H2R]);
+    CHECK_PTR_FAIL_GOTO(p->local->bias_r, "Create tensor failed", final);
     p->local->bias_r->attr.is_const = TRUE;
     vsi_nn_SetTensorAttr(p->local->bias_r, VSI_NN_TENSOR_ATTR_CONST);
     p->local->bias_z = vsi_nn_ConstTensorAdd(self->graph, inputs[GRUCELL_INPUT_BIAS_I2Z]->attr,
         inputs[GRUCELL_INPUT_BIAS_I2Z], inputs[GRUCELL_INPUT_BIAS_H2Z]);
+    CHECK_PTR_FAIL_GOTO(p->local->bias_z, "Create tensor failed", final);
     p->local->bias_z->attr.is_const = TRUE;
     vsi_nn_SetTensorAttr(p->local->bias_z, VSI_NN_TENSOR_ATTR_CONST);
     p->local->bias_c = vsi_nn_ConstTensorAdd(self->graph, inputs[GRUCELL_INPUT_BIAS_I2C]->attr,
         inputs[GRUCELL_INPUT_BIAS_I2C], inputs[GRUCELL_INPUT_BIAS_H2C]);
+    CHECK_PTR_FAIL_GOTO(p->local->bias_c, "Create tensor failed", final);
     p->local->bias_c->attr.is_const = TRUE;
     vsi_nn_SetTensorAttr(p->local->bias_c, VSI_NN_TENSOR_ATTR_CONST);
 
@@ -419,16 +453,19 @@ static vsi_bool op_setup_float_cudnn
         /* reshape and transpose input */
         input_tensor = vsi_nn_rnn_process_input_for_nn_fc(self, inputs[GRUCELL_INPUT_INPUT],
                                                 p->local->multi_batch, kernel_h, kernel_w, use_virtual_tensor);
-
+        CHECK_PTR_FAIL_GOTO(input_tensor, "Create internal tensor failed", final);
         tmp = vsi_nn_rnn_create_nn_fc(self, input_tensor->t, p->local->weights_input,
             NULL, kernel_h, kernel_w,
             &p->internal_dtype[GRUCELL_CUDNN_QUANTIZE_PARAM_INPUT],
             use_virtual_tensor);
+        CHECK_PTR_FAIL_GOTO(tmp, "Create internal tensor failed", final);
+
         /* transpose and reshape output */
         reshaped_size[0] = inputs[GRUCELL_INPUT_INPUT]->attr.size[1];
         reshaped_size[1] = p->local->weights_input->attr.size[1];
         input_fc_output = vsi_nn_rnn_create_reshape(self, tmp->t, NULL,
             reshaped_size, 2, use_virtual_tensor);
+        CHECK_PTR_FAIL_GOTO(input_fc_output, "Create internal tensor failed", final);
 
         grucell_activation_input_layout = GRUCELL_ACTIVATION_INPUT_LAYOUT_INPUT_NC_FC_CN;
     }
@@ -437,6 +474,7 @@ static vsi_bool op_setup_float_cudnn
         input_fc_output = vsi_nn_rnn_create_tp_fc(self, inputs[GRUCELL_INPUT_INPUT],
             p->local->weights_input, NULL,
             &p->internal_dtype[GRUCELL_CUDNN_QUANTIZE_PARAM_INPUT], use_virtual_tensor);
+        CHECK_PTR_FAIL_GOTO(input_fc_output, "Create internal tensor failed", final);
         grucell_activation_input_layout = GRUCELL_ACTIVATION_INPUT_LAYOUT_ALL_NC;
     }
 
@@ -451,21 +489,26 @@ static vsi_bool op_setup_float_cudnn
         /* reshape and transpose input */
         input_tensor = vsi_nn_rnn_process_input_for_nn_fc(self, inputs[GRUCELL_INPUT_H_STATE],
                                                 p->local->multi_batch, kernel_h, kernel_w, use_virtual_tensor);
+        CHECK_PTR_FAIL_GOTO(input_tensor, "Create internal tensor failed", final);
 
         tmp = vsi_nn_rnn_create_nn_fc(self, input_tensor->t, p->local->weights_recurrent,
                                         NULL, kernel_h, kernel_w,
                                         &p->internal_dtype[GRUCELL_CUDNN_QUANTIZE_PARAM_HIDDEN], use_virtual_tensor);
+        CHECK_PTR_FAIL_GOTO(tmp, "Create internal tensor failed", final);
+
         /* transpose and reshape output */
         reshaped_size[0] = inputs[GRUCELL_INPUT_H_STATE]->attr.size[1];
         reshaped_size[1] = p->local->weights_recurrent->attr.size[1];
         recurrent_fc_output = vsi_nn_rnn_create_reshape(self, tmp->t, NULL,
             reshaped_size, 2, use_virtual_tensor);
+        CHECK_PTR_FAIL_GOTO(recurrent_fc_output, "Create internal tensor failed", final);
     }
     else
     {
         recurrent_fc_output = vsi_nn_rnn_create_tp_fc(self, inputs[GRUCELL_INPUT_H_STATE],
             p->local->weights_recurrent, NULL,
             &p->internal_dtype[GRUCELL_CUDNN_QUANTIZE_PARAM_HIDDEN], use_virtual_tensor);
+        CHECK_PTR_FAIL_GOTO(recurrent_fc_output, "Create internal tensor failed", final);
     }
 
 #ifdef USE_GRUCELL_ACTIVATION
@@ -487,8 +530,10 @@ static vsi_bool op_setup_float_cudnn
         {
             splited_input_fc_output_tensors = vsi_nn_create_split(self,
                 input_fc_output->t, 1, 3, NULL, use_virtual_tensor);
+            CHECK_PTR_FAIL_GOTO(splited_input_fc_output_tensors, "Create internal tensor failed", final);
             splited_recurrent_fc_output_tensors = vsi_nn_create_split(self,
                 recurrent_fc_output->t, 1, 3, NULL, use_virtual_tensor);
+            CHECK_PTR_FAIL_GOTO(splited_recurrent_fc_output_tensors, "Create internal tensor failed", final);
             curr->inputs[GRUCELL_ACTIVATION_INPUT_INPUT_FC_R] = splited_input_fc_output_tensors[0]->t;
             curr->inputs[GRUCELL_ACTIVATION_INPUT_INPUT_FC_Z] = splited_input_fc_output_tensors[1]->t;
             curr->inputs[GRUCELL_ACTIVATION_INPUT_INPUT_FC_C] = splited_input_fc_output_tensors[2]->t;
@@ -501,8 +546,10 @@ static vsi_bool op_setup_float_cudnn
     {
         splited_input_fc_output_tensors = vsi_nn_create_split(self,
             input_fc_output->t, 0, 3, NULL, use_virtual_tensor);
+        CHECK_PTR_FAIL_GOTO(splited_input_fc_output_tensors, "Create internal tensor failed", final);
         splited_recurrent_fc_output_tensors = vsi_nn_create_split(self,
             recurrent_fc_output->t, 0, 3, NULL, use_virtual_tensor);
+        CHECK_PTR_FAIL_GOTO(splited_recurrent_fc_output_tensors, "Create internal tensor failed", final);
         curr->inputs[GRUCELL_ACTIVATION_INPUT_INPUT_FC_R] = splited_input_fc_output_tensors[0]->t;
         curr->inputs[GRUCELL_ACTIVATION_INPUT_INPUT_FC_Z] = splited_input_fc_output_tensors[1]->t;
         curr->inputs[GRUCELL_ACTIVATION_INPUT_INPUT_FC_C] = splited_input_fc_output_tensors[2]->t;
@@ -613,6 +660,8 @@ static vsi_bool op_setup_float_cudnn
 #endif
 
     return TRUE;
+final:
+    return FALSE;
 }
 
 /*
@@ -641,30 +690,33 @@ static vsi_bool op_setup_float_cudnn_v2
     /* input to r,z */
     p->local->weights_update = vsi_nn_ConcatTensor(self->graph, 1/* axis */,
         inputs[GRUCELL_INPUT_WEIGHT_I2R], inputs[GRUCELL_INPUT_WEIGHT_I2Z]);
+    CHECK_PTR_FAIL_GOTO(p->local->weights_update, "Create tensor failed", final);
     /* recurrent to r,z */
     p->local->weights_reset = vsi_nn_ConcatTensor(self->graph, 1/* axis */,
         inputs[GRUCELL_INPUT_WEIGHT_H2R], inputs[GRUCELL_INPUT_WEIGHT_H2Z]);
+    CHECK_PTR_FAIL_GOTO(p->local->weights_reset, "Create tensor failed", final);
     /* [input, recurrent] to r,z */
     p->local->weights_input = vsi_nn_ConcatTensor(self->graph, 0/* axis */,
         p->local->weights_update, p->local->weights_reset);
+    CHECK_PTR_FAIL_GOTO(p->local->weights_input, "Create tensor failed", final);
     p->local->weights_input->attr.is_const = TRUE;
     vsi_nn_SetTensorAttr(p->local->weights_input, VSI_NN_TENSOR_ATTR_CONST);
-    vsi_safe_release_tensor(p->local->weights_update);
-    vsi_safe_release_tensor(p->local->weights_reset);
 
     p->local->bias_z = vsi_nn_ConstTensorAdd(self->graph, inputs[GRUCELL_INPUT_BIAS_I2Z]->attr,
         inputs[GRUCELL_INPUT_BIAS_I2Z], inputs[GRUCELL_INPUT_BIAS_H2Z]);
+    CHECK_PTR_FAIL_GOTO(p->local->bias_z, "Create tensor failed", final);
     p->local->bias_r = vsi_nn_ConstTensorAdd(self->graph, inputs[GRUCELL_INPUT_BIAS_I2R]->attr,
         inputs[GRUCELL_INPUT_BIAS_I2R], inputs[GRUCELL_INPUT_BIAS_H2R]);
+    CHECK_PTR_FAIL_GOTO(p->local->bias_r, "Create tensor failed", final);
     p->local->bias_z_r = vsi_nn_ConcatTensor(self->graph, 0/* axis */,
         p->local->bias_r, p->local->bias_z);
+    CHECK_PTR_FAIL_GOTO(p->local->bias_z_r, "Create tensor failed", final);
     p->local->bias_z_r->attr.is_const = TRUE;
     vsi_nn_SetTensorAttr(p->local->bias_z_r, VSI_NN_TENSOR_ATTR_CONST);
-    vsi_safe_release_tensor(p->local->bias_z);
-    vsi_safe_release_tensor(p->local->bias_r);
 
     concated_input = vsi_nn_rnn_create_concat(self, 0/* axis */,
         use_virtual_tensor, inputs[GRUCELL_INPUT_INPUT], inputs[GRUCELL_INPUT_H_STATE]);
+    CHECK_PTR_FAIL_GOTO(concated_input, "Create internal tensor failed", final);
 
     dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
     if ( concated_input->t->attr.dtype.vx_type == VSI_NN_TYPE_BFLOAT16 ||
@@ -678,6 +730,7 @@ static vsi_bool op_setup_float_cudnn_v2
     }
     tmp_tensor = vsi_nn_rnn_create_tp_fc(self, concated_input->t, p->local->weights_input,
         p->local->bias_z_r, &dtype, use_virtual_tensor);
+    CHECK_PTR_FAIL_GOTO(tmp_tensor, "Create internal tensor failed", final);
 
     {
         uint32_t _slices[] = { 0, 0 };
@@ -685,8 +738,7 @@ static vsi_bool op_setup_float_cudnn_v2
         _slices[1] = (uint32_t)inputs[GRUCELL_INPUT_H_STATE]->attr.size[0];
         splited_input_fc_output_tensors = vsi_nn_create_split(self, concated_input->t,
             0, 2, _slices, use_virtual_tensor);
-        CHECK_PTR_FAIL_GOTO( splited_input_fc_output_tensors, "Create tensor fail.", final );
-        ret = TRUE;
+        CHECK_PTR_FAIL_GOTO( splited_input_fc_output_tensors, "Create internal tensor fail.", final );
     }
 
     dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
@@ -702,6 +754,7 @@ static vsi_bool op_setup_float_cudnn_v2
 
     input2cand_output = vsi_nn_rnn_create_tp_fc(self, splited_input_fc_output_tensors[0]->t,
         inputs[GRUCELL_INPUT_WEIGHT_I2C], inputs[GRUCELL_INPUT_BIAS_I2C], &dtype, use_virtual_tensor);
+    CHECK_PTR_FAIL_GOTO(input2cand_output, "Create internal tensor failed", final);
 
     dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
     if ( inputs[GRUCELL_INPUT_H_STATE]->attr.dtype.vx_type == VSI_NN_TYPE_BFLOAT16 ||
@@ -715,14 +768,17 @@ static vsi_bool op_setup_float_cudnn_v2
     }
     recurrent2cand_output = vsi_nn_rnn_create_tp_fc(self, inputs[GRUCELL_INPUT_H_STATE],
         inputs[GRUCELL_INPUT_WEIGHT_H2C], inputs[GRUCELL_INPUT_BIAS_H2C], &dtype, use_virtual_tensor);
+    CHECK_PTR_FAIL_GOTO(recurrent2cand_output, "Create internal tensor failed", final);
 
     tmp_tensor = vsi_nn_rnn_create_activation(self, tmp_tensor->t, p->local->gate_activation,
         &tmp_tensor->t->attr.dtype, use_virtual_tensor);
+    CHECK_PTR_FAIL_GOTO(tmp_tensor, "Create internal tensor failed", final);
 
     /* split for combined FC outputs, r_t, z_t */
     splited_input_fc_output_tensors = vsi_nn_create_split(self, tmp_tensor->t,
         0/* axis */,
         2/* dim num */, NULL, use_virtual_tensor);
+    CHECK_PTR_FAIL_GOTO(splited_input_fc_output_tensors, "Create internal tensor failed", final);
 
     memset( &attr, 0x00, sizeof(attr) );
     attr.dim_num = VSI_NN_DIM_AUTO;
@@ -739,6 +795,7 @@ static vsi_bool op_setup_float_cudnn_v2
         dtype.vx_type = VSI_NN_TYPE_FLOAT16;
     }
     tmp_tensor = vsi_nn_internal_new_tensor(self, &attr, 0.0f);
+    CHECK_PTR_FAIL_GOTO(tmp_tensor, "Create internal tensor failed", final);
 
     curr = vsi_nn_internal_new_node( self, VSI_NN_OP_A_TIMES_B_PLUS_C, 0, 0 );
     curr->inputs[0] = splited_input_fc_output_tensors[0]->t;
@@ -781,8 +838,12 @@ static vsi_bool op_setup_float_cudnn_v2
     curr->outputs[0] = outputs[GRUCELL_OUTPUT_H_STATE];
     vsi_nn_internal_setup_node(self, curr);
 #endif
-
+    ret = TRUE;
 final:
+    vsi_safe_release_tensor(p->local->bias_z);
+    vsi_safe_release_tensor(p->local->bias_r);
+    vsi_safe_release_tensor(p->local->weights_update);
+    vsi_safe_release_tensor(p->local->weights_reset);
     return ret;
 }
 
@@ -818,6 +879,8 @@ static vsi_bool op_setup_default
     uint32_t kernel_h = 1;
     uint32_t kernel_w = 1;
     int32_t i = 0;
+    vsi_nn_tensor_t* wei_r2c_tensor = NULL;
+    vsi_nn_tensor_t* bias_r2c_tensor = NULL;
 
     memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
     memset( &attr, 0x00, sizeof( attr ) );
@@ -867,6 +930,7 @@ static vsi_bool op_setup_default
                                                 inputs[GRUCELL_INPUT_BIAS_I2R + i],
                                                 &p->internal_dtype[GRUCELL_QUANTIZE_PARAM_I2R + i],
                                                 use_virtual_tensor);
+            CHECK_PTR_FAIL_GOTO(input_gate_fc_outputs[i], "Create internal tensor failed", final);
         }
     }
     else
@@ -876,6 +940,7 @@ static vsi_bool op_setup_default
             (uint32_t)inputs[GRUCELL_INPUT_INPUT]->attr.size[0], &kernel_h, &kernel_w);
         input_tensor = vsi_nn_rnn_process_input_for_nn_fc(self, inputs[GRUCELL_INPUT_INPUT],
                                                 p->local->multi_batch, kernel_h, kernel_w, use_virtual_tensor);
+        CHECK_PTR_FAIL_GOTO(input_tensor, "Create internal tensor failed", final);
 
         for( i = 0; i < GRUCELL_RZ_GATE_COUNT; i++)
         {
@@ -886,9 +951,11 @@ static vsi_bool op_setup_default
                                                 kernel_h, kernel_w,
                                                 &p->internal_dtype[GRUCELL_QUANTIZE_PARAM_I2R + i],
                                                 use_virtual_tensor);
+            CHECK_PTR_FAIL_GOTO(tmp, "Create internal tensor failed", final);
             /* transpose and reshape output */
             input_gate_fc_outputs[i] = vsi_nn_rnn_process_output_for_nn_fc(self,
                 tmp->t, p->local->multi_batch, kernel_h, kernel_w, use_virtual_tensor);
+            CHECK_PTR_FAIL_GOTO(input_gate_fc_outputs[i], "Create internal tensor failed", final);
         }
     }
 
@@ -903,10 +970,7 @@ static vsi_bool op_setup_default
                                                 inputs[GRUCELL_INPUT_BIAS_H2R + i],
                                                 &p->internal_dtype[GRUCELL_QUANTIZE_PARAM_H2R + i],
                                                 use_virtual_tensor);
-            if (hstate_gate_fc_outputs[i] == NULL)
-            {
-                goto error;
-            }
+            CHECK_PTR_FAIL_GOTO(hstate_gate_fc_outputs[i], "Create internal tensor failed", final);
         }
     }
     else
@@ -916,6 +980,7 @@ static vsi_bool op_setup_default
             (uint32_t)inputs[GRUCELL_INPUT_H_STATE]->attr.size[0], &kernel_h, &kernel_w);
         hstate_input_tensor = vsi_nn_rnn_process_input_for_nn_fc(self,
             inputs[GRUCELL_INPUT_H_STATE], p->local->multi_batch, kernel_h, kernel_w, use_virtual_tensor);
+        CHECK_PTR_FAIL_GOTO(hstate_input_tensor, "Create internal tensor failed", final);
 
         for( i = 0; i < GRUCELL_RZ_GATE_COUNT; i++)
         {
@@ -926,9 +991,11 @@ static vsi_bool op_setup_default
                                                 kernel_h, kernel_w,
                                                 &p->internal_dtype[GRUCELL_QUANTIZE_PARAM_H2R + i],
                                                 use_virtual_tensor);
+            CHECK_PTR_FAIL_GOTO(tmp, "Create internal tensor failed", final);
             /* transpose and reshape output */
             hstate_gate_fc_outputs[i] = vsi_nn_rnn_process_output_for_nn_fc(self,
                 tmp->t, p->local->multi_batch, kernel_h, kernel_w, use_virtual_tensor);
+            CHECK_PTR_FAIL_GOTO(hstate_gate_fc_outputs[i], "Create internal tensor failed", final);
         }
     }
 
@@ -940,6 +1007,7 @@ static vsi_bool op_setup_default
                                  hstate_gate_fc_outputs[i]->t,
                                  &p->internal_dtype[GRUCELL_QUANTIZE_PARAM_I2R + i],
                                  use_virtual_tensor);
+        CHECK_PTR_FAIL_GOTO(gate_fc_outputs[i], "Create internal tensor failed", final);
     }
 
     /* Gate activations */
@@ -950,6 +1018,7 @@ static vsi_bool op_setup_default
                                   p->local->gate_activation,
                                   &p->internal_dtype[GRUCELL_QUANTIZE_PARAM_I2R + i],
                                   use_virtual_tensor);
+        CHECK_PTR_FAIL_GOTO(gate_act_outputs[i], "Create internal tensor failed", final);
     }
 
     /* Candidate FC */
@@ -962,6 +1031,7 @@ static vsi_bool op_setup_default
                              inputs[GRUCELL_INPUT_H_STATE],
                              &p->internal_dtype[GRUCELL_QUANTIZE_PARAM_H2R],
                              use_virtual_tensor);
+        CHECK_PTR_FAIL_GOTO(rh_mul_outputs, "Create internal tensor failed", final);
     }
     else
     {
@@ -971,6 +1041,7 @@ static vsi_bool op_setup_default
             inputs[GRUCELL_INPUT_H_STATE]->attr.size,
             inputs[GRUCELL_INPUT_H_STATE]->attr.dim_num,
             use_virtual_tensor);
+        CHECK_PTR_FAIL_GOTO(rh_mul_outputs, "Create internal tensor failed", final);
     }
 
     if( inputs[GRUCELL_INPUT_INPUT]->attr.dtype.qnt_type
@@ -1013,6 +1084,7 @@ static vsi_bool op_setup_default
                                    inputs[GRUCELL_INPUT_BIAS_I2C],
                                    &p->internal_dtype[GRUCELL_QUANTIZE_PARAM_I2C],
                                    use_virtual_tensor);
+        CHECK_PTR_FAIL_GOTO(input_cand_fc_output, "Create internal tensor failed", final);
     }
     else
     {
@@ -1022,6 +1094,8 @@ static vsi_bool op_setup_default
             (uint32_t)inputs[GRUCELL_INPUT_INPUT]->attr.size[0], &kernel_h, &kernel_w);
         input_tensor = vsi_nn_rnn_process_input_for_nn_fc(self, inputs[GRUCELL_INPUT_INPUT],
                                                 p->local->multi_batch, kernel_h, kernel_w, use_virtual_tensor);
+        CHECK_PTR_FAIL_GOTO(input_tensor, "Create internal tensor failed", final);
+
         tmp = vsi_nn_rnn_create_nn_fc(self,
                   input_tensor->t,
                   inputs[GRUCELL_INPUT_WEIGHT_I2C],
@@ -1029,9 +1103,11 @@ static vsi_bool op_setup_default
                   kernel_h, kernel_w,
                   &p->internal_dtype[GRUCELL_QUANTIZE_PARAM_I2C],
                   use_virtual_tensor);
+        CHECK_PTR_FAIL_GOTO(tmp, "Create internal tensor failed", final);
         /* transpose and reshape output */
         input_cand_fc_output = vsi_nn_rnn_process_output_for_nn_fc(self,
             tmp->t, p->local->multi_batch, kernel_h, kernel_w, use_virtual_tensor);
+        CHECK_PTR_FAIL_GOTO(input_cand_fc_output, "Create internal tensor failed", final);
     }
     if ( is_hstate_cand_fc_op_tp )
     {
@@ -1039,9 +1115,6 @@ static vsi_bool op_setup_default
         if ((rh_mul_outputs->t->attr.dtype.vx_type) != (inputs[GRUCELL_INPUT_WEIGHT_H2C]->attr.dtype.vx_type)
             && (p->local->multi_batch))
         {
-            vsi_nn_tensor_t* wei_r2c_tensor = NULL;
-            vsi_nn_tensor_t* bias_r2c_tensor = NULL;
-
             memcpy(&attr, &(inputs[GRUCELL_INPUT_WEIGHT_H2C]->attr), sizeof(attr));
             attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
             if ( rh_mul_outputs->t->attr.dtype.vx_type == VSI_NN_TYPE_BFLOAT16 ||
@@ -1055,24 +1128,18 @@ static vsi_bool op_setup_default
             }
 
             wei_r2c_tensor = vsi_nn_ConvertTensorDtype(self->graph, inputs[GRUCELL_INPUT_WEIGHT_H2C], &(attr.dtype));
-            if (wei_r2c_tensor == NULL)
-            {
-                VSILOGE("Convert tensor dtype fail (GRUCELL).\n");
-                goto error;
-            }
+            CHECK_PTR_FAIL_GOTO(wei_r2c_tensor, "Create tensor failed", final);
             attr.dtype.vx_type = VSI_NN_TYPE_FLOAT32;
             bias_r2c_tensor = vsi_nn_ConvertTensorDtype(self->graph, inputs[GRUCELL_INPUT_BIAS_H2C], &(attr.dtype));
-            if (bias_r2c_tensor == NULL)
-            {
-                VSILOGE("Convert tensor dtype fail (GRUCELL).\n");
-                goto error;
-            }
+            CHECK_PTR_FAIL_GOTO(bias_r2c_tensor, "Create tensor failed", final);
+
             rh_cand_fc_output = vsi_nn_rnn_create_tp_fc(self,
                                     rh_mul_outputs->t,
                                     wei_r2c_tensor,
                                     bias_r2c_tensor,
                                     &p->internal_dtype[GRUCELL_QUANTIZE_PARAM_H2C],
                                     use_virtual_tensor);
+            CHECK_PTR_FAIL_GOTO(rh_cand_fc_output, "Create internal tensor failed", final);
         }
         else
         {
@@ -1082,6 +1149,7 @@ static vsi_bool op_setup_default
                                     inputs[GRUCELL_INPUT_BIAS_H2C],
                                     &p->internal_dtype[GRUCELL_QUANTIZE_PARAM_H2C],
                                     use_virtual_tensor);
+            CHECK_PTR_FAIL_GOTO(rh_cand_fc_output, "Create internal tensor failed", final);
         }
     }
     else
@@ -1092,6 +1160,8 @@ static vsi_bool op_setup_default
             (uint32_t)rh_mul_outputs->t->attr.size[0], &kernel_h, &kernel_w);
         hstate_input_tensor = vsi_nn_rnn_process_input_for_nn_fc(self, rh_mul_outputs->t,
                                                 p->local->multi_batch, kernel_h, kernel_w, use_virtual_tensor);
+        CHECK_PTR_FAIL_GOTO(hstate_input_tensor, "Create internal tensor failed", final);
+
         tmp = vsi_nn_rnn_create_nn_fc(self,
                   hstate_input_tensor->t,
                   inputs[GRUCELL_INPUT_WEIGHT_H2C],
@@ -1099,9 +1169,11 @@ static vsi_bool op_setup_default
                   kernel_h, kernel_w,
                   &p->internal_dtype[GRUCELL_QUANTIZE_PARAM_H2C],
                   use_virtual_tensor);
+        CHECK_PTR_FAIL_GOTO(tmp, "Create internal tensor failed", final);
         /* transpose and reshape output */
         rh_cand_fc_output = vsi_nn_rnn_process_output_for_nn_fc(self,
             tmp->t, p->local->multi_batch, kernel_h, kernel_w, use_virtual_tensor);
+        CHECK_PTR_FAIL_GOTO(rh_cand_fc_output, "Create internal tensor failed", final);
     }
 
     if ( p->linear_before_reset == 0 )
@@ -1115,6 +1187,7 @@ static vsi_bool op_setup_default
                                     rh_cand_fc_output->t,
                                     &p->internal_dtype[GRUCELL_QUANTIZE_PARAM_H2C],
                                     use_virtual_tensor);
+        CHECK_PTR_FAIL_GOTO(r_mul_hcand_fc_output, "Create internal tensor failed", final);
     }
     /* Candidate input FC add r*h FC */
     cand_fc_output = vsi_nn_rnn_create_tensor_add(self,
@@ -1122,6 +1195,7 @@ static vsi_bool op_setup_default
                          r_mul_hcand_fc_output->t,
                          &p->internal_dtype[GRUCELL_QUANTIZE_PARAM_I2C],
                          use_virtual_tensor);
+    CHECK_PTR_FAIL_GOTO(cand_fc_output, "Create internal tensor failed", final);
 
     /* Candidate activation */
     cand_act_output = vsi_nn_rnn_create_activation(self,
@@ -1129,6 +1203,7 @@ static vsi_bool op_setup_default
                                   p->local->candidate_activation,
                                   &p->internal_dtype[GRUCELL_QUANTIZE_PARAM_I2C],
                                   use_virtual_tensor);
+    CHECK_PTR_FAIL_GOTO(cand_act_output, "Create internal tensor failed", final);
 
     /* GRU cell output */
     memcpy( &attr.dtype, &gate_act_outputs[GRUCELL_GATE_Z]->t->attr.dtype, sizeof( attr.dtype ) );
@@ -1137,6 +1212,7 @@ static vsi_bool op_setup_default
     attr.vtl = use_virtual_tensor;
     attr.is_const = TRUE;
     input_tensor = vsi_nn_internal_new_tensor(self, &attr, 1.0f);
+    CHECK_PTR_FAIL_GOTO(input_tensor, "Create internal tensor failed", final);
 
     memset( &attr, 0x00, sizeof(attr) );
     //memset( attr.size, 0, VSI_NN_MAX_DIM_NUM * sizeof(vsi_size_t));
@@ -1155,6 +1231,7 @@ static vsi_bool op_setup_default
     }
 
     tmp_tensor = vsi_nn_internal_new_tensor(self, &attr, 0.0f);
+    CHECK_PTR_FAIL_GOTO(tmp_tensor, "Create internal tensor failed", final);
 
     /* create internal tensor sub node (1-zt)*c */
     curr = vsi_nn_internal_new_node( self, VSI_NN_OP_SUBTRACT, 0, 0 );
@@ -1170,6 +1247,7 @@ static vsi_bool op_setup_default
                         cand_act_output->t,
                         &p->internal_dtype[GRUCELL_QUANTIZE_PARAM_I2C],
                         use_virtual_tensor);
+     CHECK_PTR_FAIL_GOTO(output_tensor, "Create internal tensor failed", final);
 
     /* create internal multiply node zt*hstate */
     tmp_tensor = create_multiply(self,
@@ -1177,6 +1255,7 @@ static vsi_bool op_setup_default
                      inputs[GRUCELL_INPUT_H_STATE],
                      &p->internal_dtype[GRUCELL_QUANTIZE_PARAM_H2Z],
                      use_virtual_tensor);
+    CHECK_PTR_FAIL_GOTO(tmp_tensor, "Create internal tensor failed", final);
 
      /* create internal tensor add node (1-zt)*c + zt*hstate */
     curr = vsi_nn_internal_new_node( self, VSI_NN_OP_ADD, 0, 0 );
@@ -1194,7 +1273,9 @@ static vsi_bool op_setup_default
 
     return TRUE;
 
-error:
+final:
+    vsi_safe_release_tensor(wei_r2c_tensor);
+    vsi_safe_release_tensor(bias_r2c_tensor);
     return FALSE;
 
 } /* op_setup() */

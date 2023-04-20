@@ -311,28 +311,12 @@ static vsi_status op_deinit
 
     p = &(self->nn_param.split);
 
-    if (p->lcl_data->begin_dims)
+    if (p && p->lcl_data)
     {
-        free(p->lcl_data->begin_dims);
-        p->lcl_data->begin_dims = NULL;
-    }
-
-    if (p->lcl_data->end_dims)
-    {
-        free(p->lcl_data->end_dims);
-        p->lcl_data->end_dims = NULL;
-    }
-
-    if (p->lcl_data->stride_dims)
-    {
-        free(p->lcl_data->stride_dims);
-        p->lcl_data->stride_dims = NULL;
-    }
-
-    if (p->lcl_data)
-    {
-        free(p->lcl_data);
-        p->lcl_data = NULL;
+        vsi_nn_safe_free(p->lcl_data->begin_dims);
+        vsi_nn_safe_free(p->lcl_data->end_dims);
+        vsi_nn_safe_free(p->lcl_data->stride_dims);
+        vsi_nn_safe_free(p->lcl_data);
     }
 
     vsi_nn_internal_deinit_node_wksp( self );

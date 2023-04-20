@@ -419,7 +419,7 @@ static vsi_status _query_kernel
     int32_t candidate_activation,
     int32_t input_category,
     vsi_bool use_cudnn_implementation,
-    int32_t* param_count,
+    uint32_t* param_count,
     int32_t* input_count,
     int32_t* output_count
     /* Add extra params */
@@ -472,7 +472,7 @@ static vsi_nn_kernel_node_t _setup
     vsi_nn_kernel_node_t node = NULL;
     int32_t i = 0;
     int32_t j = 0;
-    int32_t param_count = 0;
+    uint32_t param_count = 0;
     int32_t input_count = 0;
     int32_t output_count = 0;
     int32_t gate_activation = vsi_nn_kernel_param_get_int32( params, "gate_activation" );

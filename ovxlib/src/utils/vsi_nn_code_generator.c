@@ -548,6 +548,10 @@ void vsi_nn_GenGraphCCode
             node_id = i;
         }
         node = vsi_nn_GetNode( graph, node_id );
+        if (node == NULL)
+        {
+            continue;
+        }
         _write_code( "node[%u] = vsi_nn_AppendNode( graph, %#x, NULL );",
             i, node->op );
         for( j = 0; j < node->input.num; j ++ )

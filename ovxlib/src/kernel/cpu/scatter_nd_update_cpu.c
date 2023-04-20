@@ -122,9 +122,13 @@ DEF_KERNEL_EXECUTOR(_scatter_nd_update_exec)
 
         for (i = 1; i < coord_dim; ++i)
         {
-            new_shape[i] = attr[3]->shape->data[merge_dim + i - 1];
+            vsi_ssize_t idx = merge_dim + (vsi_ssize_t)i - 1;
 
-            stride[i] = stride[i - 1] * new_shape[i];
+            if (idx >= 0)
+            {
+                new_shape[i] = attr[3]->shape->data[idx];
+                stride[i] = stride[i - 1] * new_shape[i];
+            }
         }
 
         for (i = 0; i < indices_num; i++)

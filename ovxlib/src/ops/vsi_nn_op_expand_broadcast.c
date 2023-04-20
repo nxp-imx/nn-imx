@@ -35,6 +35,7 @@
 #include "utils/vsi_nn_dtype_util_prv.h"
 #include "utils/vsi_nn_math.h"
 #include "utils/vsi_nn_constraint_check.h"
+#include "vsi_nn_error.h"
 
 static vsi_status op_compute
     (
@@ -142,6 +143,7 @@ static vsi_bool op_setup
         attr.size[i] = p->shape[i];
     }
     input_1 = vsi_nn_internal_new_tensor( self, &attr, 1.0f );
+    CHECK_PTR_FAIL_GOTO(input_1, "Create tensor failed", final);
 
     if (p->dimensions_num > 0)
     {
@@ -150,9 +152,11 @@ static vsi_bool op_setup
         memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
         vsi_nn_internal_init_tensor_attr(&attr, &inputs[0]->attr.dtype, use_virtual_tensor);
         input_0 = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
+        CHECK_PTR_FAIL_GOTO(input_0, "Create internal tensor failed", final);
         reshape_node = vsi_nn_internal_new_node( self, VSI_NN_OP_RESHAPE2, 0, 0 );
         reshape_input_size = (vsi_size_t*)vsi_nn_internal_new_node_param(reshape_node,
             VSI_NN_MAX_DIM_NUM * sizeof(vsi_size_t));
+        CHECK_PTR_FAIL_GOTO(reshape_input_size, "Create internal buffer failed", final);
         for (i = 0; i < p->dim_num; i++)
         {
             reshape_input_size[i] = 1;
@@ -184,6 +188,8 @@ static vsi_bool op_setup
     vsi_nn_internal_setup_node(self, mul_node);
 
     return TRUE;
+final:
+    return FALSE;
 }
 
 static vsi_status op_deinit

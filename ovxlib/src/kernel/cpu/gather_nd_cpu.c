@@ -107,12 +107,18 @@ DEF_KERNEL_EXECUTOR(_gather_nd_exec)
     if (coord_stride <= 4) // reshape 3D
     {
         vsi_ssize_t stride[4] = { 0, 0, 0, 0 };
-        int32_t     start_dim = (int32_t)attr[0]->shape->size - coord_stride - batch_dims;
-        int32_t     exlude_batch = 1;
+        vsi_ssize_t start_dim = (vsi_ssize_t)attr[0]->shape->size -
+            (vsi_ssize_t)coord_stride - (vsi_ssize_t)batch_dims;
+        int32_t exlude_batch = 1;
         stride[0] = block_size;
         for (i = 1; i < coord_stride; ++i)
         {
-            stride[i] = stride[i - 1] * attr[0]->shape->data[start_dim + i - 1];
+            vsi_ssize_t idx = start_dim + (vsi_ssize_t)i - 1;
+
+            if (idx >= 0)
+            {
+                stride[i] = stride[i - 1] * attr[0]->shape->data[idx];
+            }
         }
 
         for (i = 0; i < (int32_t)attr[0]->shape->size - 1; ++i)

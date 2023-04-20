@@ -318,7 +318,7 @@ static vsi_bool op_setup
     vsi_nn_tensor_t ** outputs
     )
 {
-    vsi_bool ret = TRUE;
+    vsi_bool ret = FALSE;
     vsi_nn_internal_node_t* curr = NULL;
 
     if( NULL == self )
@@ -346,7 +346,7 @@ static vsi_bool op_setup
         curr->node->nn_param.l2_normalize.axis = self->nn_param.l2normalizescale.axis;
         curr->inputs[0] = inputs[0];
         curr->outputs[0] = outputs[0];
-        vsi_nn_internal_setup_node( self, curr );
+        ret = vsi_nn_internal_setup_node( self, curr );
     }
     else if ( ( inputs[0]->attr.dtype.vx_type == VSI_NN_TYPE_BFLOAT16 &&
                 outputs[0]->attr.dtype.vx_type == VSI_NN_TYPE_BFLOAT16 ) ||
@@ -364,6 +364,7 @@ static vsi_bool op_setup
         attr.vtl = TRUE;
         attr.is_const = FALSE;
         output_tensor = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
+        CHECK_PTR_FAIL_GOTO(output_tensor, "Create internal tensor failed", final);
 
         curr = vsi_nn_internal_new_node(self, VSI_NN_OP_L2_NORMALIZE, 0, 0);
         curr->node->nn_param.l2_normalize.axis = self->nn_param.l2normalizescale.axis;
@@ -383,6 +384,8 @@ static vsi_bool op_setup
             attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
         }
         reshape_tensor = vsi_nn_internal_new_tensor(self, &attr, 0.0f);
+        CHECK_PTR_FAIL_GOTO(reshape_tensor, "Create internal tensor failed", final);
+
         vsi_nn_ConvertTensor(self->graph, inputs[1], reshape_tensor->t);
 
         curr = vsi_nn_internal_new_node(self, VSI_NN_OP_MULTIPLY, 0, 0);
@@ -392,13 +395,14 @@ static vsi_bool op_setup
         curr->node->vx_param.overflow_policy = VX_CONVERT_POLICY_SATURATE;
         curr->node->vx_param.rounding_policy = VX_ROUND_POLICY_TO_NEAREST_EVEN;
         curr->outputs[0] = outputs[0];
-        vsi_nn_internal_setup_node( self, curr );
+        ret = vsi_nn_internal_setup_node( self, curr );
     }
     else
     {
         ret = vsi_nn_op_common_setup(self, inputs, outputs);
     }
 
+final:
     return ret;
 }
 

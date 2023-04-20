@@ -279,7 +279,7 @@ static vsi_status vsi_nn_RegisterVXKernel
 final:
     for (i = 0; i < kernel_info->resource_num; i++)
     {
-        if (program_src[i] && load_from_file)
+        if (load_from_file && program_src[i])
         {
             free((char *)program_src[i]);
         }

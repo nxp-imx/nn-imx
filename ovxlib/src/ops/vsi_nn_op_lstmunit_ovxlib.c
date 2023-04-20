@@ -35,7 +35,7 @@
 #include "vsi_nn_ops.h"
 #include "vsi_nn_tensor.h"
 #include "vsi_nn_tensor_util.h"
-#include "libnnext/vsi_nn_vxkernel.h"
+#include "vsi_nn_error.h"
 #include "ops/vsi_nn_op_lstmunit_ovxlib.h"
 #include "vsi_nn_internal_node.h"
 #include "vsi_nn_rnn_helper.h"
@@ -64,6 +64,7 @@ static vsi_nn_internal_tensor_t* create_tp_fc
 
     vsi_nn_internal_init_tensor_attr(&attr, output_dtype, use_virtual_tensor);
     tensor2 = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
+    CHECK_PTR_FAIL_GOTO(tensor2, "Create internal tensor failed", final);
 
     tmp_inode = vsi_nn_internal_new_node(self, VSI_NN_OP_FCL, 0, 0 );
     tmp_inode->node->nn_param.fcl.axis = 0;
@@ -75,6 +76,7 @@ static vsi_nn_internal_tensor_t* create_tp_fc
     tmp_inode->outputs[0] = tensor2->t;
     vsi_nn_internal_setup_node(self, tmp_inode);
 
+final:
     return tensor2;
 }
 
@@ -105,6 +107,7 @@ static vsi_nn_internal_tensor_t* create_nn_fc
 
     vsi_nn_internal_init_tensor_attr(&attr, output_dtype, use_virtual_tensor);
     tensor2 = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
+    CHECK_PTR_FAIL_GOTO(tensor2, "Create internal tensor failed", final);
 
     reshaped_weight_shape[3] = weight->attr.size[1];
     reshaped_weight_shape[2] = weight->attr.size[0] / ( kernel_h * kernel_w );
@@ -118,6 +121,7 @@ static vsi_nn_internal_tensor_t* create_nn_fc
     memcpy( &attr.dtype, &weight->attr.dtype, sizeof(attr.dtype) );
     memcpy( &attr.size, &reshaped_weight_shape, sizeof(attr.size));
     reshaped_weight_tensor = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
+    CHECK_PTR_FAIL_GOTO(reshaped_weight_tensor, "Create internal tensor failed", final);
 
     vsi_nn_ReshapeTensor( self->graph, weight, reshaped_weight_tensor->t, reshaped_weight_shape, 4 );
 
@@ -141,10 +145,11 @@ static vsi_nn_internal_tensor_t* create_nn_fc
     tmp_inode->outputs[0] = tensor2->t;
     vsi_nn_internal_setup_node(self, tmp_inode);
 
+final:
     return tensor2;
 }
 
-static void create_peephole
+static vsi_status create_peephole
     (
     vsi_nn_node_t * self,
     vsi_nn_tensor_t * input,
@@ -153,6 +158,7 @@ static void create_peephole
     vsi_bool use_virtual_tensor
     )
 {
+    vsi_status status = VSI_FAILURE;
     vsi_nn_tensor_attr_t attr;
     vsi_nn_internal_tensor_t* input_tensor0 = NULL;
     vsi_nn_internal_tensor_t* input_tensor1 = NULL;
@@ -164,6 +170,7 @@ static void create_peephole
     attr.is_const = FALSE;
     memcpy(&(attr.dtype), &((*input_fc)->t->attr.dtype), sizeof(vsi_nn_dtype_t));
     input_tensor0 = vsi_nn_internal_new_tensor(self, &attr, 0.0f);
+    CHECK_PTR_FAIL_GOTO(input_tensor0, "Create internal tensor failed", final);
     /* create internal nodes */
     curr = vsi_nn_internal_new_node( self, VSI_NN_OP_MULTIPLY, 0, 0 );
     curr->node->nn_param.multiply.scale = 1.0f;
@@ -174,6 +181,7 @@ static void create_peephole
     curr->outputs[0] = input_tensor0->t;
     vsi_nn_internal_setup_node(self, curr);
     input_tensor1 = vsi_nn_internal_new_tensor(self, &attr, 0.0f);
+    CHECK_PTR_FAIL_GOTO( input_tensor1, "Create internal tensor fail.", final );
     /* create internal nodes */
     curr = vsi_nn_internal_new_node( self, VSI_NN_OP_ADD, 0, 0 );
     curr->inputs[0] = (*input_fc)->t;
@@ -181,6 +189,10 @@ static void create_peephole
     curr->outputs[0] = input_tensor1->t;
     vsi_nn_internal_setup_node(self, curr);
     *input_fc = input_tensor1;
+
+    status = VSI_SUCCESS;
+final:
+    return status;
 }
 
 static vsi_bool setup_op_shapes
@@ -371,6 +383,7 @@ static vsi_bool op_setup
                                                 bias_tensors[i],
                                                 &p->internal_dtype[LSTMUNIT_QUANTIZE_PARAM_I2I + i],
                                                 use_virtual_tensor);
+            CHECK_PTR_FAIL_GOTO( input_fc_outputs[i], "Create tensor fail.", final );
         }
         if (inputs[LSTMUNIT_INPUT_AUX_INPUT] != NULL)
         {
@@ -382,6 +395,7 @@ static vsi_bool op_setup
                                                     NULL,
                                                     &p->internal_dtype_aux[LSTMUNIT_QUANTIZE_PARAM_AUX_I2I + i],
                                                     use_virtual_tensor);
+                CHECK_PTR_FAIL_GOTO( aux_input_fc_outputs[i], "Create tensor fail.", final );
             }
         }
     }
@@ -392,6 +406,7 @@ static vsi_bool op_setup
             (uint32_t)inputs[LSTMUNIT_INPUT_INPUT]->attr.size[0], &kernel_h, &kernel_w);
         input_tensor = vsi_nn_rnn_process_input_for_nn_fc(self, inputs[LSTMUNIT_INPUT_INPUT],
                                                 p->local->multi_batch, kernel_h, kernel_w, use_virtual_tensor);
+        CHECK_PTR_FAIL_GOTO( input_tensor, "Create tensor fail.", final );
 
         for( i = ifco_start_index; i < LSTMUNIT_IFCO_GATE_COUNT; i++)
         {
@@ -402,9 +417,11 @@ static vsi_bool op_setup
                                                 kernel_h, kernel_w,
                                                 &p->internal_dtype[LSTMUNIT_QUANTIZE_PARAM_I2I + i],
                                                 use_virtual_tensor);
+            CHECK_PTR_FAIL_GOTO( tmp, "Create tensor fail.", final );
             /* transpose and reshape output */
             input_fc_outputs[i] = vsi_nn_rnn_process_output_for_nn_fc(self,
                 tmp->t, p->local->multi_batch, kernel_h, kernel_w, use_virtual_tensor);
+            CHECK_PTR_FAIL_GOTO( input_fc_outputs[i], "Create tensor fail.", final );
         }
         if (inputs[LSTMUNIT_INPUT_AUX_INPUT] != NULL)
         {
@@ -413,6 +430,7 @@ static vsi_bool op_setup
                 (uint32_t)inputs[LSTMUNIT_INPUT_AUX_INPUT]->attr.size[0], &kernel_h, &kernel_w);
             input_tensor = vsi_nn_rnn_process_input_for_nn_fc(self, inputs[LSTMUNIT_INPUT_AUX_INPUT],
                                                     p->local->multi_batch, kernel_h, kernel_w, use_virtual_tensor);
+            CHECK_PTR_FAIL_GOTO( input_tensor, "Create tensor fail.", final );
 
             for( i = ifco_start_index; i < LSTMUNIT_IFCO_GATE_COUNT; i++)
             {
@@ -423,9 +441,11 @@ static vsi_bool op_setup
                                                     kernel_h, kernel_w,
                                                     &p->internal_dtype_aux[LSTMUNIT_QUANTIZE_PARAM_AUX_I2I + i],
                                                     use_virtual_tensor);
+                CHECK_PTR_FAIL_GOTO( tmp, "Create tensor fail.", final );
                 /* transpose and reshape output */
                 aux_input_fc_outputs[i] = vsi_nn_rnn_process_output_for_nn_fc(self,
                     tmp->t, p->local->multi_batch, kernel_h, kernel_w, use_virtual_tensor);
+                CHECK_PTR_FAIL_GOTO( aux_input_fc_outputs[i], "Create tensor fail.", final );
             }
         }
     }
@@ -439,6 +459,7 @@ static vsi_bool op_setup
                                                     aux_input_fc_outputs[i]->t,
                                                     &p->internal_dtype[LSTMUNIT_QUANTIZE_PARAM_I2I],
                                                     use_virtual_tensor);
+            CHECK_PTR_FAIL_GOTO( input_add_aux_input_fc_outputs[i], "Create tensor fail.", final );
             input_fc_outputs[i] = input_add_aux_input_fc_outputs[i];
         }
     }
@@ -454,6 +475,7 @@ static vsi_bool op_setup
                                                 NULL,
                                                 &p->internal_dtype[LSTMUNIT_QUANTIZE_PARAM_R2I + i],
                                                 use_virtual_tensor);
+            CHECK_PTR_FAIL_GOTO( recurrent_fc_outputs[i], "Create tensor fail.", final );
         }
     }
     else
@@ -463,6 +485,7 @@ static vsi_bool op_setup
             (uint32_t)inputs[LSTMUNIT_INPUT_H_STATE]->attr.size[0], &kernel_h, &kernel_w);
         recurrent_input_tensor = vsi_nn_rnn_process_input_for_nn_fc(self,
             inputs[LSTMUNIT_INPUT_H_STATE], p->local->multi_batch, kernel_h, kernel_w, use_virtual_tensor);
+        CHECK_PTR_FAIL_GOTO( recurrent_input_tensor, "Create tensor fail.", final );
 
         for( i = ifco_start_index; i < LSTMUNIT_IFCO_GATE_COUNT; i++)
         {
@@ -473,31 +496,37 @@ static vsi_bool op_setup
                                                 kernel_h, kernel_w,
                                                 &p->internal_dtype[LSTMUNIT_QUANTIZE_PARAM_R2I + i],
                                                 use_virtual_tensor);
+            CHECK_PTR_FAIL_GOTO( tmp, "Create tensor fail.", final );
             /* transpose and reshape output */
             recurrent_fc_outputs[i] = vsi_nn_rnn_process_output_for_nn_fc(self,
                 tmp->t, p->local->multi_batch, kernel_h, kernel_w, use_virtual_tensor);
+            CHECK_PTR_FAIL_GOTO( recurrent_fc_outputs[i], "Create tensor fail.", final );
         }
     }
 
     if (p->local->use_peephole)
     {
+        vsi_status status = VSI_FAILURE;
         /* update input gate */
         if (!p->local->use_cifg)
         {
-            create_peephole(self, inputs[LSTMUNIT_INPUT_C_STATE],
+            status = create_peephole(self, inputs[LSTMUNIT_INPUT_C_STATE],
                 inputs[LSTMUNIT_INPUT_WEIGHT_C2I], &(input_fc_outputs[0]),
                 use_virtual_tensor);
+            CHECK_STATUS_FAIL_GOTO( status, final );
         }
 
         /* update forget gate */
-        create_peephole(self, inputs[LSTMUNIT_INPUT_C_STATE],
+        status = create_peephole(self, inputs[LSTMUNIT_INPUT_C_STATE],
                 inputs[LSTMUNIT_INPUT_WEIGHT_C2F], &(input_fc_outputs[1]),
                 use_virtual_tensor);
+        CHECK_STATUS_FAIL_GOTO( status, final );
 
         /* update output gate */
-        create_peephole(self, inputs[LSTMUNIT_INPUT_C_STATE],
+        status = create_peephole(self, inputs[LSTMUNIT_INPUT_C_STATE],
                 inputs[LSTMUNIT_INPUT_WEIGHT_C2O], &(input_fc_outputs[3]),
                 use_virtual_tensor);
+        CHECK_STATUS_FAIL_GOTO( status, final );
     }
 
     /* layernorm */
@@ -514,6 +543,7 @@ static vsi_bool op_setup
                 attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
                 attr.dtype.vx_type = VSI_NN_TYPE_FLOAT16;
                 add_tensor = vsi_nn_internal_new_tensor(self, &attr, 0.0f);
+                CHECK_PTR_FAIL_GOTO( add_tensor, "Create tensor fail.", final );
                 /* create internal nodes */
                 curr = vsi_nn_internal_new_node( self, VSI_NN_OP_ADD, 0, 0 );
                 curr->inputs[0] = input_fc_outputs[i]->t;
@@ -523,6 +553,7 @@ static vsi_bool op_setup
 
                 /* create internal nodes */
                 input_tensor = vsi_nn_internal_new_tensor(self, &attr, 0.0f);
+                CHECK_PTR_FAIL_GOTO( input_tensor, "Create tensor fail.", final );
                 curr = vsi_nn_internal_new_node( self, VSI_NN_OP_LAYER_NORM, 0, 0 );
                 curr->node->nn_param.layernorm.eps = (float)1e-8;
                 curr->inputs[0] = add_tensor->t;
@@ -542,6 +573,7 @@ static vsi_bool op_setup
                 attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
                 attr.dtype.vx_type = VSI_NN_TYPE_FLOAT16;
                 input_tensor = vsi_nn_internal_new_tensor(self, &attr, 0.0f);
+                CHECK_PTR_FAIL_GOTO( input_tensor, "Create tensor fail.", final );
 
                 /* create internal nodes */
                 curr = vsi_nn_internal_new_node( self, VSI_NN_OP_TENSOR_ADD_MEAN_STDDEV_NORM, 0, 0 );
@@ -623,6 +655,7 @@ static vsi_bool op_setup
             attr.dtype.vx_type = VSI_NN_TYPE_FLOAT16;
         }
         output_tensor = vsi_nn_internal_new_tensor(self, &attr, 0.0f);
+        CHECK_PTR_FAIL_GOTO( output_tensor, "Create tensor fail.", final );
 
         curr->outputs[LSTMUNIT_ACT_OUTPUT] = output_tensor->t;
         curr->outputs[LSTMUNIT_ACT_CSTATE_OUT] = outputs[LSTMUNIT_OUTPUT_C_STATE];
@@ -644,10 +677,8 @@ static vsi_bool op_setup
             use_virtual_tensor = inputs[LSTMUNIT_INPUT_BIAS_PROJ]->attr.vtl;
             input_tensor = vsi_nn_internal_create_zero_bias_tensor(self, &output_tensor->t->attr,
                 &inputs[LSTMUNIT_INPUT_WEIGHT_PROJ]->attr, VSI_NN_OP_FCL, FALSE);
-            if (input_tensor == NULL)
-            {
-                return FALSE;
-            }
+            CHECK_PTR_FAIL_GOTO( input_tensor, "Create tensor fail.", final );
+
             zero_bias_tensor = input_tensor->t;
 
             if (use_virtual_tensor)
@@ -667,6 +698,8 @@ static vsi_bool op_setup
         {
             input_tensor = vsi_nn_internal_create_zero_bias_tensor(self, &output_tensor->t->attr,
                 &inputs[LSTMUNIT_INPUT_WEIGHT_PROJ]->attr, VSI_NN_OP_FCL, FALSE);
+            CHECK_PTR_FAIL_GOTO( input_tensor, "Create tensor fail.", final );
+
             zero_bias_tensor = input_tensor->t;
         }
         else
@@ -695,6 +728,8 @@ static vsi_bool op_setup
     }
 
     return TRUE;
+final:
+    return FALSE;
 } /* op_setup() */
 
 static vsi_status op_deinit
