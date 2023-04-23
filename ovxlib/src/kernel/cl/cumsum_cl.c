@@ -298,7 +298,7 @@ static vsi_nn_kernel_node_t _setup
     vsi_nn_kernel_optimize_softmax_shape(
                 inputs[0]->attr.size, inputs[0]->attr.dim_num, axis,
                 shapes[0], &rs_dim, &axis_new);
-    if (rs_dim > 3)
+    if (exclusive || reverse || rs_dim > 3)
     {
         return NULL;
     }
