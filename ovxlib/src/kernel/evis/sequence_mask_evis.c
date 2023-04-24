@@ -301,11 +301,11 @@ static int32_t _optimize_mask_shape
     vsi_status status = VSI_SUCCESS;
     vsi_size_t in_shape[VSI_NN_MAX_DIM_NUM] = {0};
     vsi_size_t new_rank = 0;
-    uint32_t i = 0;
+    vsi_size_t i = 0;
 
     VSI_UNREFERENCED(outputs);
 
-    for(i = 0; i < inputs[0]->attr.dim_num; i++)
+    for (i = 0; i < (vsi_size_t)inputs[0]->attr.dim_num; i++)
     {
         in_shape[i] = inputs[0]->attr.size[i];
     }
@@ -317,7 +317,7 @@ static int32_t _optimize_mask_shape
     }
 
     opt_shape_out[0] = max_len;
-    for(i = 0; i < (uint32_t)new_rank; i++)
+    for (i = 0; i < new_rank; i++)
     {
         opt_shape_out[i + 1] = opt_shape_in[i];
     }
