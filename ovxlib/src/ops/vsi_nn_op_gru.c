@@ -351,9 +351,8 @@ static vsi_bool op_setup
         if(p->time_major == FALSE)
         {
             /* transpose time_major to batch_major */
-            CHECK_PTR_FAIL_GOTO(vsi_nn_rnn_transpose_time_major(self,
-                output_tensor, outputs[GRU_OUTPUT_OUTPUT], use_virtual_tensor),
-                "Create internal tensor failed", final);
+            vsi_nn_rnn_transpose_time_major(self,
+                output_tensor, outputs[GRU_OUTPUT_OUTPUT], use_virtual_tensor);
         }
     }
 
