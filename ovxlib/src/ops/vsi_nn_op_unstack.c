@@ -183,9 +183,10 @@ static vsi_bool op_setup
     CHECK_PTR_FAIL_GOTO(input_tensor, "Create internal tensor failed", final);
 
     curr = vsi_nn_internal_new_node( self, VSI_NN_OP_RESHAPE2, 0, 0 );
+    CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
     reshape_input_size = (vsi_size_t*)vsi_nn_internal_new_node_param(curr,
         VSI_NN_MAX_DIM_NUM * sizeof(vsi_size_t));
-    CHECK_PTR_FAIL_GOTO(reshape_input_size, "Create internal buffer failed", final);
+    CHECK_PTR_FAIL_GOTO_RLS_INTERNAL_NODE(reshape_input_size, curr, "Create internal buffer failed", final);
     reshape_input_size[0] = block_size;
     reshape_input_size[1] = tensor_num;
     reshape_input_size[2] = block_num;
@@ -196,16 +197,17 @@ static vsi_bool op_setup
     curr->outputs[0] = input_tensor->t;
     vsi_nn_internal_setup_node( self, curr );
 
+    curr = vsi_nn_internal_new_node( self, VSI_NN_OP_SPLIT, 1, tensor_num );
+    CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
     slices = (uint32_t *)vsi_nn_internal_new_node_param(curr,
         tensor_num * sizeof(uint32_t));
-    CHECK_PTR_FAIL_GOTO(slices, "Create internal buffer failed", final);
-    curr = vsi_nn_internal_new_node( self, VSI_NN_OP_SPLIT, 1, tensor_num );
+    CHECK_PTR_FAIL_GOTO_RLS_INTERNAL_NODE(slices, curr, "Create internal buffer failed", final);
     curr->node->nn_param.split.axis = 1;
     curr->node->nn_param.split.slices = slices;
     curr->node->nn_param.split.slices_num = tensor_num;
     curr->inputs[0] = input_tensor->t;
     output_tensors = (vsi_nn_internal_tensor_t**)malloc(tensor_num * sizeof(vsi_nn_internal_tensor_t*));
-    CHECK_PTR_FAIL_GOTO( output_tensors, "Create tensor fail.", final );
+    CHECK_PTR_FAIL_GOTO_RLS_INTERNAL_NODE( output_tensors, curr, "Create tensor fail.", final );
 
     for (i = 0; i < tensor_num; i++)
     {
@@ -224,11 +226,12 @@ static vsi_bool op_setup
 
         output_size = (vsi_size_t *)vsi_nn_internal_new_node_param(curr,
             VSI_NN_MAX_DIM_NUM * sizeof(vsi_size_t));
-        CHECK_PTR_FAIL_GOTO(output_size, "Create internal buffer failed", final);
+        CHECK_PTR_FAIL_GOTO_RLS_INTERNAL_NODE(output_size, curr, "Create internal buffer failed", final);
 
         memcpy(output_size, outputs[i]->attr.size, VSI_NN_MAX_DIM_NUM * sizeof(vsi_size_t));
 
         curr = vsi_nn_internal_new_node( self, VSI_NN_OP_RESHAPE2, 0, 0 );
+        CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
         curr->node->nn_param.reshape2.size = output_size;
         curr->node->nn_param.reshape2.dim_num = outputs[i]->attr.dim_num;
         curr->inputs[0] = output_tensors[i]->t;

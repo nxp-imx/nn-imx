@@ -343,6 +343,7 @@ static vsi_bool op_setup
     {
         self->nn_param.l2normalizescale.local.use_internal_node = TRUE;
         curr = vsi_nn_internal_new_node(self, VSI_NN_OP_L2_NORMALIZE, 0, 0);
+        CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
         curr->node->nn_param.l2_normalize.axis = self->nn_param.l2normalizescale.axis;
         curr->inputs[0] = inputs[0];
         curr->outputs[0] = outputs[0];
@@ -367,6 +368,7 @@ static vsi_bool op_setup
         CHECK_PTR_FAIL_GOTO(output_tensor, "Create internal tensor failed", final);
 
         curr = vsi_nn_internal_new_node(self, VSI_NN_OP_L2_NORMALIZE, 0, 0);
+        CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
         curr->node->nn_param.l2_normalize.axis = self->nn_param.l2normalizescale.axis;
         curr->inputs[0] = inputs[0];
         curr->outputs[0] = output_tensor->t;
@@ -389,6 +391,7 @@ static vsi_bool op_setup
         vsi_nn_ConvertTensor(self->graph, inputs[1], reshape_tensor->t);
 
         curr = vsi_nn_internal_new_node(self, VSI_NN_OP_MULTIPLY, 0, 0);
+        CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
         curr->inputs[0] = output_tensor->t;
         curr->inputs[1] = reshape_tensor->t;
         curr->node->nn_param.multiply.scale = 1.0f;

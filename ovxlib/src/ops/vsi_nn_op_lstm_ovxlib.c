@@ -250,6 +250,7 @@ static vsi_bool op_setup
         /* transpose to time_major */
         output_tensor = vsi_nn_rnn_transpose_time_major(self,
             inputs[LSTM_INPUT_INPUT], NULL, use_virtual_tensor);
+        CHECK_PTR_FAIL_GOTO(output_tensor, "Create internal tensor failed", final);
         input_tensor = output_tensor->t;
     }
 
@@ -322,6 +323,7 @@ static vsi_bool op_setup
         }
 
         curr = vsi_nn_internal_new_node( self, VSI_NN_OP_LSTMUNIT_OVXLIB, 0, 0 );
+        CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
         curr->node->nn_param.lstmunit_ovxlib.activation = curr_param->activation;
         curr->node->nn_param.lstmunit_ovxlib.cell_clip = curr_param->cell_clip;
         curr->node->nn_param.lstmunit_ovxlib.forget_bias = curr_param->forget_bias;
@@ -393,6 +395,7 @@ static vsi_bool op_setup
 
         /* concat */
         curr = vsi_nn_internal_new_node( self, VSI_NN_OP_CONCAT, time_step, 1 );
+        CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
         curr->node->nn_param.concat.axis = 2;
         for( i = 0; i < time_step; i++ )
         {
@@ -404,8 +407,9 @@ static vsi_bool op_setup
         if( !curr_param->time_major )
         {
             /* transpose time_major to batch_major*/
-            vsi_nn_rnn_transpose_time_major(self,
-                tensor, outputs[LSTM_OUTPUT_OUTPUT], use_virtual_tensor);
+            CHECK_PTR_FAIL_GOTO(vsi_nn_rnn_transpose_time_major(self,
+                tensor, outputs[LSTM_OUTPUT_OUTPUT], use_virtual_tensor),
+                "Create internal tensor failed", final);
         }
     }
 

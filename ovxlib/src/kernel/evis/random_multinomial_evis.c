@@ -35,7 +35,6 @@
 #include "vsi_nn_error.h"
 #include "utils/vsi_nn_util.h"
 #include "kernel/vsi_nn_kernel.h"
-#include "libnnext/vx_lib_nnext.h"
 
 __BEGIN_DECLS
 
@@ -436,19 +435,19 @@ static vsi_nn_kernel_node_t _setup
     VSI_UNREFERENCED(params);
 
     // Check if gpu can support the size
-    if( !vsi_nn_kernel_gpu_check_shape(
+    if ( !vsi_nn_kernel_gpu_check_shape(
         outputs[0]->attr.size, outputs[0]->attr.dim_num ) )
     {
         return NULL;
     }
 
-    for( i = 0; i < INTERNAL_KERNEL_SIZE; i ++ )
+    for ( i = 0; i < INTERNAL_KERNEL_SIZE; i ++ )
     {
         ikernels[i] = vsi_nn_kernel_create( VSI_NN_KERNEL_TYPE_EVIS );
         // Assign unique_id
         ikernels[i]->unique_id = kernel->unique_id;
     }
-    if( inputs[0]->attr.dtype.vx_type == VSI_NN_TYPE_FLOAT32 )
+    if ( inputs[0]->attr.dtype.vx_type == VSI_NN_TYPE_FLOAT32 )
     {
         class_max_stride = (int32_t)gpu_align_p2(inputs[0]->attr.size[0], 4);
     }
@@ -463,17 +462,20 @@ static vsi_nn_kernel_node_t _setup
     attr.is_const = FALSE;
     attr.vtl = TRUE;
     tensors[SEED_INDEX] = vsi_nn_CreateTensor( graph, &attr );
+    CHECK_PTR_FAIL_GOTO(tensors[SEED_INDEX], "Create tensor failed", final);
 
     attr.size[0] = class_max_stride * inputs[0]->attr.size[1];
     attr.size[1] = inputs[0]->attr.size[1];
     attr.dim_num = 2;
     tensors[CDF_INDEX] = vsi_nn_CreateTensor( graph, &attr );
+    CHECK_PTR_FAIL_GOTO(tensors[CDF_INDEX], "Create tensor failed", final);
 
     memcpy( &attr, &(inputs[1]->attr), sizeof(vsi_nn_tensor_attr_t) );
     attr.size[1] = 1;
     attr.dim_num = 2;
     tensors[SEEDS_INDEX] = vsi_nn_reshape_tensor( graph,
                 inputs[1], attr.size, attr.dim_num );
+    CHECK_PTR_FAIL_GOTO(tensors[SEEDS_INDEX], "Create tensor failed", final);
 
     in0_dtype = vsi_nn_kernel_map_dtype( inputs[0]->attr.dtype.vx_type );
     in1_dtype = vsi_nn_kernel_map_dtype( inputs[1]->attr.dtype.vx_type );
@@ -484,17 +486,17 @@ static vsi_nn_kernel_node_t _setup
     hashkey = MULTINOMIAL_HASH_KEY( F32, F32, out_dtype );
 
     status = _query_kernel( ikernels[SEED_INDEX], hashkeys[SEED_INDEX], INTERNAL_KERNEL_SEED );
-    if( VSI_SUCCESS != status )
+    if ( VSI_SUCCESS != status )
     {
         goto final;
     }
     status = _query_kernel( ikernels[CDF_INDEX], hashkeys[CDF_INDEX], INTERNAL_KERNEL_CDF );
-    if( VSI_SUCCESS != status )
+    if ( VSI_SUCCESS != status )
     {
         goto final;
     }
     status = _query_kernel( kernel, hashkey, INTERNAL_KERNEL_MULTINOMIAL );
-    if( VSI_SUCCESS != status )
+    if ( VSI_SUCCESS != status )
     {
         goto final;
     }
@@ -528,13 +530,13 @@ static vsi_nn_kernel_node_t _setup
 
     /* Pass parameters to node. */
 final:
-    for( i = 0; i < INTERNAL_KERNEL_SIZE; i ++ )
+    for ( i = 0; i < INTERNAL_KERNEL_SIZE; i ++ )
     {
-        if( ikernels[i] )
+        if ( ikernels[i] )
         {
             vsi_nn_kernel_release( &ikernels[i] );
         }
-        if( tensors[i] )
+        if ( tensors[i] )
         {
             vsi_nn_ReleaseTensor( &tensors[i] );
         }

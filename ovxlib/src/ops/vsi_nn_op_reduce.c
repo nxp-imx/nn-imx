@@ -328,7 +328,7 @@ static vsi_status op_compute
                                            input_t,
                                            output_t);
         }
-        else if (3 == resolved_dim[resolved_dim_count - 1] && resolved_dim_count < 3)
+        else if (resolved_dim_count > 0 && 3 == resolved_dim[resolved_dim_count - 1] && resolved_dim_count < 3)
         {
             if (1 == resolved_dim_count)
             {
@@ -855,9 +855,10 @@ static vsi_bool op_set_sp_reduce_internal
     CHECK_PTR_FAIL_GOTO(tensor1, "Create internal tensor failed", final);
 
     tmp_inode = vsi_nn_internal_new_node(self, VSI_NN_OP_PERMUTE, 0, 0 );
+    CHECK_PTR_FAIL_GOTO(tmp_inode, "Create internal node failed", final);
     permute_in_perm = (uint32_t *)vsi_nn_internal_new_node_param(tmp_inode,
         inputs[0]->attr.dim_num * sizeof(uint32_t));
-    CHECK_PTR_FAIL_GOTO(permute_in_perm, "Create buffer failed", final);
+    CHECK_PTR_FAIL_GOTO_RLS_INTERNAL_NODE(permute_in_perm, tmp_inode, "Create buffer failed", final);
 
     for ( i = 0;  i < axes_num; i++)
     {
@@ -889,12 +890,13 @@ static vsi_bool op_set_sp_reduce_internal
 
     new_output = vsi_nn_reshape_tensor(self->graph, outputs[0], shapes, outputs[0]->attr.dim_num);
     CHECK_PTR_FAIL_GOTO(new_output, "Create tensor failed", final);
+    self->nn_param.reduce.local2->reshaped_output = new_output;
 
     tmp_inode = vsi_nn_internal_new_node(self, VSI_NN_OP_REDUCE_MEAN_INTERNAL, 0, 0 );
-
+    CHECK_PTR_FAIL_GOTO(tmp_inode, "Create internal node failed", final);
     new_axis = (int32_t *)vsi_nn_internal_new_node_param(tmp_inode,
         axes_num * sizeof(int32_t));
-    CHECK_PTR_FAIL_GOTO(new_axis, "Create buffer failed", final);
+    CHECK_PTR_FAIL_GOTO_RLS_INTERNAL_NODE(new_axis, tmp_inode, "Create buffer failed", final);
     for (i = 0; i < axes_num; i++)
     {
         new_axis[i] = i;
@@ -914,8 +916,6 @@ static vsi_bool op_set_sp_reduce_internal
             1.0f / (float)reduce_size;
     }
     ret = vsi_nn_internal_setup_node(self, tmp_inode);
-
-    self->nn_param.reduce.local2->reshaped_output = new_output;
 
 final:
     return ret;
@@ -1006,6 +1006,7 @@ static vsi_bool op_set_reduce_internal
         }
 
         curr = vsi_nn_internal_new_node( self, type_name, 0, 0 );
+        CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
         op_set_reduce_param_value(&(curr->node->nn_param), type_name,
         axes, 1, self->nn_param.reduce.keep_dim);
         if (self->nn_param.reduce.local2->reshaped_input)
@@ -1036,6 +1037,7 @@ static vsi_bool op_set_reduce_internal
         re_sizes[axes[0]] = 1;
 
         curr = vsi_nn_internal_new_node( self, type_name, 0, 0 );
+        CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
         op_set_reduce_param_value(&(curr->node->nn_param), type_name,
         &(axes[0]), 1, vx_true_e);
         curr->inputs[0]  = inputs[POST_PROCESS_INPUT];
@@ -1066,8 +1068,11 @@ static vsi_bool op_set_reduce_internal
             re_sizes[axes[1]] = 1;
             new_output = vsi_nn_reshape_tensor(self->graph, outputs[0], re_sizes, dim_num);
         }
+        CHECK_PTR_FAIL_GOTO(new_output, "Reshape tensor failed", final);
+        self->nn_param.reduce.local2->reshaped_output = new_output;
 
         curr = vsi_nn_internal_new_node( self, type_name, 0, 0 );
+        CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
         op_set_reduce_param_value(&(curr->node->nn_param), type_name,
         &(axes[1]), 1, vx_true_e);
         if (self->nn_param.reduce.local2->reshaped_input)
@@ -1079,7 +1084,6 @@ static vsi_bool op_set_reduce_internal
             curr->inputs[0]  = tmp_output_tensor[0]->t;
         }
         curr->outputs[0] = new_output;
-        self->nn_param.reduce.local2->reshaped_output = new_output;
         vsi_nn_internal_setup_node(self, curr);
     }
     else if (3 == resolved_dim_count)
@@ -1096,6 +1100,7 @@ static vsi_bool op_set_reduce_internal
         re_sizes[axes[1]] = 1;
 
         curr = vsi_nn_internal_new_node( self, type_name, 0, 0 );
+        CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
         op_set_reduce_param_value(&(curr->node->nn_param), type_name,
         &(axes[0]), 1, vx_true_e);
         curr->inputs[0]  = inputs[POST_PROCESS_INPUT];
@@ -1103,6 +1108,7 @@ static vsi_bool op_set_reduce_internal
         vsi_nn_internal_setup_node( self, curr );
 
         curr = vsi_nn_internal_new_node( self, type_name, 0, 0 );
+        CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
         op_set_reduce_param_value(&(curr->node->nn_param), type_name,
         &(axes[1]), 1, vx_true_e);
         curr->inputs[0]  = tmp_output_tensor[0]->t;
@@ -1134,6 +1140,7 @@ static vsi_bool op_set_reduce_internal
         }
 
         curr = vsi_nn_internal_new_node( self, type_name, 0, 0 );
+        CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
         op_set_reduce_param_value(&(curr->node->nn_param), type_name,
         &(axes[2]), 1, vx_true_e);
         if (self->nn_param.reduce.local2->reshaped_input)

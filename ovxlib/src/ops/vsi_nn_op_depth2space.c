@@ -36,6 +36,7 @@
 #include "utils/vsi_nn_util.h"
 #include "vsi_nn_internal_node.h"
 #include "utils/vsi_nn_math.h"
+#include "vsi_nn_error.h"
 
 static vsi_status vsi_nn_depth2space_compute
     (
@@ -162,18 +163,20 @@ static vsi_bool op_set_depth2space_internal
     vsi_nn_op_t  type_name
     )
 {
-    vsi_bool retn = TRUE;
+    vsi_bool retn = FALSE;
     vsi_nn_internal_node_t* curr = NULL;
 
     vsi_nn_internal_init_node_wksp( self );
 
     curr = vsi_nn_internal_new_node( self, type_name, 0, 0 );
+    CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
     op_set_depth2space_param_value(&(curr->node->nn_param), type_name,
         self->nn_param.depth2space.mode, self->nn_param.depth2space.block_size);
     curr->inputs[0]  = inputs[0];
     curr->outputs[0] = outputs[0];
     retn = vsi_nn_internal_setup_node(self, curr);
 
+final:
     return retn;
 }
 

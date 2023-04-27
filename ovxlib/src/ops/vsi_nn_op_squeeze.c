@@ -35,6 +35,7 @@
 #include "kernel/vsi_nn_kernel.h"
 #include "vsi_nn_tensor_util.h"
 #include "vsi_nn_internal_node.h"
+#include "vsi_nn_error.h"
 
 /*
  Declare number of input and output.
@@ -108,6 +109,7 @@ static vsi_bool op_setup
     vsi_bool shouldSqueeze[VSI_NN_MAX_DIM_NUM] = {FALSE};
     uint32_t numDimsSqueezed = 0;
     vsi_nn_internal_node_t* curr = NULL;
+    vsi_bool ret = FALSE;
 
     if( VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num )
     {
@@ -147,13 +149,15 @@ static vsi_bool op_setup
 
     vsi_nn_internal_init_node_wksp( self );
     curr = vsi_nn_internal_new_node( self, VSI_NN_OP_RESHAPE2, 0, 0 );
+    CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
     curr->node->nn_param.reshape2.size = outputs[0]->attr.size;
     curr->node->nn_param.reshape2.dim_num = outputs[0]->attr.dim_num;
     curr->inputs[0] = inputs[0];
     curr->outputs[0] = outputs[0];
-    vsi_nn_internal_setup_node( self, curr );
+    ret = vsi_nn_internal_setup_node( self, curr );
 
-    return TRUE;
+final:
+    return ret;
 } /* op_setup() */
 
 static vsi_status op_deinit

@@ -154,9 +154,11 @@ static vsi_bool op_setup
         input_0 = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
         CHECK_PTR_FAIL_GOTO(input_0, "Create internal tensor failed", final);
         reshape_node = vsi_nn_internal_new_node( self, VSI_NN_OP_RESHAPE2, 0, 0 );
+        CHECK_PTR_FAIL_GOTO(reshape_node, "Create internal node failed", final);
         reshape_input_size = (vsi_size_t*)vsi_nn_internal_new_node_param(reshape_node,
             VSI_NN_MAX_DIM_NUM * sizeof(vsi_size_t));
-        CHECK_PTR_FAIL_GOTO(reshape_input_size, "Create internal buffer failed", final);
+        CHECK_PTR_FAIL_GOTO_RLS_INTERNAL_NODE(reshape_input_size, reshape_node,
+            "Create internal buffer failed", final);
         for (i = 0; i < p->dim_num; i++)
         {
             reshape_input_size[i] = 1;
@@ -179,6 +181,7 @@ static vsi_bool op_setup
     }
 
     mul_node = vsi_nn_internal_new_node(self, VSI_NN_OP_MULTIPLY, 0, 0 );
+    CHECK_PTR_FAIL_GOTO(mul_node, "Create internal node failed", final);
     mul_node->inputs[0] = mul_input;
     mul_node->inputs[1] = input_1->t;
     mul_node->node->nn_param.multiply.scale = 1.0f;

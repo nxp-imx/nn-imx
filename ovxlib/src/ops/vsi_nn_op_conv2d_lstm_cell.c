@@ -102,6 +102,7 @@ static vsi_nn_internal_tensor_t * create_input_conv
     CHECK_PTR_FAIL_GOTO(input_conv_out, "Create internal tensor failed", final);
 
     input_conv = vsi_nn_internal_new_node(self, VSI_NN_OP_CONV2D, 0, 0 );
+    CHECK_PTR_FAIL_GOTO(input_conv, "Create internal node failed", final);
     input_conv->node->nn_param.conv2d.group = 1;
     input_conv->node->nn_param.conv2d.ksize[0] = p->conv2d.ksize[0];
     input_conv->node->nn_param.conv2d.ksize[1] = p->conv2d.ksize[1];
@@ -181,6 +182,7 @@ static vsi_nn_internal_tensor_t * create_recurrent_conv
     CHECK_PTR_FAIL_GOTO(recurrent_conv_out, "Create internal tensor failed", final);
 
     recurrent_conv = vsi_nn_internal_new_node(self, VSI_NN_OP_CONV2D, 0, 0 );
+    CHECK_PTR_FAIL_GOTO(recurrent_conv, "Create internal node failed", final);
     recurrent_conv->node->nn_param.conv2d.pad_type = VSI_NN_PAD_SAME;
     recurrent_conv->node->nn_param.conv2d.group = 1;
     recurrent_conv->node->nn_param.conv2d.ksize[0] = p->conv2d.ksize[0];
@@ -388,6 +390,7 @@ static vsi_bool op_setup
 
     /* activations */
     curr = vsi_nn_internal_new_node( self, VSI_NN_OP_LSTMUNIT_ACTIVATION, 0, 0 );
+    CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
     curr->node->nn_param.lstmunit_activation.cell_clip = 0;
     curr->node->nn_param.lstmunit_activation.proj_clip = 0;
     curr->node->nn_param.lstmunit_activation.forget_bias = 0;
@@ -399,7 +402,7 @@ static vsi_bool op_setup
     curr->node->nn_param.lstmunit_activation.recurrent_activation = p->recurrent_activation;
 
     reshape_cell_in = reshape_tensor_to_act(self, inputs[CONV2D_LSTM_CELL_IN_C_STATE]);
-    CHECK_PTR_FAIL_GOTO(reshape_cell_in, "Create internal tensor failed", final);
+    CHECK_PTR_FAIL_GOTO_RLS_INTERNAL_NODE(reshape_cell_in, curr, "Create internal tensor failed", final);
     curr->inputs[LSTMUNIT_ACT_CSTATE_IN] = reshape_cell_in->t;
     for(i = 0; i < CONV2D_LSTM_CELL_GATE_NUM; i++)
     {
@@ -408,11 +411,11 @@ static vsi_bool op_setup
         curr->inputs[LSTMUNIT_ACT_HSTATE_FC_I + i] = recurrent_conv_outputs[i]->t;
     }
     reshape_out = reshape_tensor_to_act(self, outputs[CONV2D_LSTM_CELL_OUT_OUTPUT]);
-    CHECK_PTR_FAIL_GOTO(reshape_out, "Create internal tensor failed", final);
+    CHECK_PTR_FAIL_GOTO_RLS_INTERNAL_NODE(reshape_out, curr, "Create internal tensor failed", final);
     reshape_h_out = reshape_tensor_to_act(self, outputs[CONV2D_LSTM_CELL_OUT_H_STATE]);
-    CHECK_PTR_FAIL_GOTO(reshape_h_out, "Create internal tensor failed", final);
+    CHECK_PTR_FAIL_GOTO_RLS_INTERNAL_NODE(reshape_h_out, curr, "Create internal tensor failed", final);
     reshape_c_out = reshape_tensor_to_act(self, outputs[CONV2D_LSTM_CELL_OUT_C_STATE]);
-    CHECK_PTR_FAIL_GOTO(reshape_c_out, "Create internal tensor failed", final);
+    CHECK_PTR_FAIL_GOTO_RLS_INTERNAL_NODE(reshape_c_out, curr, "Create internal tensor failed", final);
 
     curr->outputs[LSTMUNIT_ACT_OUTPUT] = reshape_out->t;
     curr->outputs[LSTMUNIT_ACT_CSTATE_OUT] = reshape_c_out->t;

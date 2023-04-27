@@ -176,6 +176,7 @@ static vsi_bool op_setup
         CHECK_PTR_FAIL_GOTO(crop_tensor, "Create internal tensor failed", final);
         crop_in_tensor = crop_tensor->t;
         curr = vsi_nn_internal_new_node( self, VSI_NN_OP_STRIDED_SLICE, 1, 1 );
+        CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
         curr->node->nn_param.strided_slice.begin_dims_num = inputs[0]->attr.dim_num;
         curr->node->nn_param.strided_slice.end_dims_num = inputs[0]->attr.dim_num;
         curr->node->nn_param.strided_slice.stride_dims_num = inputs[0]->attr.dim_num;
@@ -185,13 +186,13 @@ static vsi_bool op_setup
         curr->node->nn_param.strided_slice.new_axis_mask = 0;
         begin_dims = (vsi_ssize_t *)vsi_nn_internal_new_node_param(curr,
             VSI_NN_MAX_DIM_NUM * sizeof(vsi_ssize_t));
-        CHECK_PTR_FAIL_GOTO(begin_dims, "Create internal buffer failed", final);
+        CHECK_PTR_FAIL_GOTO_RLS_INTERNAL_NODE(begin_dims, curr, "Create internal buffer failed", final);
         end_dims   = (vsi_ssize_t *)vsi_nn_internal_new_node_param(curr,
             VSI_NN_MAX_DIM_NUM * sizeof(vsi_ssize_t));
-        CHECK_PTR_FAIL_GOTO(end_dims, "Create internal buffer failed", final);
+        CHECK_PTR_FAIL_GOTO_RLS_INTERNAL_NODE(end_dims, curr, "Create internal buffer failed", final);
         stride_dims  = (vsi_ssize_t *)vsi_nn_internal_new_node_param(curr,
             VSI_NN_MAX_DIM_NUM * sizeof(vsi_ssize_t));
-        CHECK_PTR_FAIL_GOTO(stride_dims, "Create internal buffer failed", final);
+        CHECK_PTR_FAIL_GOTO_RLS_INTERNAL_NODE(stride_dims, curr, "Create internal buffer failed", final);
         for (i = 0; i < inputs[0]->attr.dim_num; i++)
         {
             stride_dims[i] = 1;
@@ -226,6 +227,7 @@ static vsi_bool op_setup
             && (height_in_eff_ == (vsi_ssize_t)outputs[0]->attr.size[1]))
     {
         curr = vsi_nn_internal_new_node( self, VSI_NN_OP_DATACONVERT, 1, 1 );
+        CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
         curr->inputs[0]  = crop_in_tensor;
         curr->outputs[0] = outputs[0];
         vsi_nn_internal_setup_node(self, curr);
@@ -233,6 +235,7 @@ static vsi_bool op_setup
     else
     {
         curr = vsi_nn_internal_new_node( self, VSI_NN_OP_RESIZE_INTERNAL, 1, 1 );
+        CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
         curr->node->nn_param.resize_internal.align_corners = vx_true_e;
         curr->node->nn_param.resize_internal.factor = factor;
         curr->node->nn_param.resize_internal.half_pixel_centers = vx_false_e;

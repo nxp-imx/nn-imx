@@ -284,6 +284,7 @@ static vsi_bool op_setup_default
         }
 
         curr = vsi_nn_internal_new_node( self, VSI_NN_OP_GRUCELL_OVXLIB, 0, 0 );
+        CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
         curr->node->nn_param.grucell_ovxlib.num_units = curr_param->num_units;
         curr->node->nn_param.grucell_ovxlib.activation = curr_param->activation;
         curr->node->nn_param.grucell_ovxlib.recurrent_activation = curr_param->recurrent_activation;
@@ -355,6 +356,7 @@ static vsi_bool op_setup_default
 
         /* concat grucell output, the gru's output is 3-dims */
         curr = vsi_nn_internal_new_node( self, VSI_NN_OP_CONCAT, (uint32_t)time_step, 1 );
+        CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
         curr->node->nn_param.concat.axis = 2;
         for( i = 0; i < time_step; i++ )
         {
@@ -366,8 +368,9 @@ static vsi_bool op_setup_default
         if( !curr_param->time_major )
         {
             /* transpose time_major to batch_major*/
-            vsi_nn_rnn_transpose_time_major(self,
-                tensor, outputs[GRU_OUTPUT_OUTPUT], use_virtual_tensor);
+            CHECK_PTR_FAIL_GOTO(vsi_nn_rnn_transpose_time_major(self,
+                tensor, outputs[GRU_OUTPUT_OUTPUT], use_virtual_tensor),
+                "Create internal tensor failed", final);
         }
     }
 
@@ -476,6 +479,7 @@ static vsi_bool op_setup_optimized
     permute_in_perm[1] = 2;
     permute_in_perm[2] = 0;
     tmp_tensor = vsi_nn_rnn_create_permute(self, input_tensor, NULL, permute_in_perm, 3, use_virtual_tensor);
+    CHECK_PTR_FAIL_GOTO( tmp_tensor, "Create internal tensor fail.", final );
 
     reshape_size[0] = tmp_tensor->t->attr.size[0];
     reshape_size[1] = tmp_tensor->t->attr.size[1];
@@ -493,6 +497,7 @@ static vsi_bool op_setup_optimized
     CHECK_PTR_FAIL_GOTO(output_tensor, "Create internal tensor failed", final);
 
     curr = vsi_nn_internal_new_node(self, VSI_NN_OP_CONV2D, 0, 0 );
+    CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
     curr->node->nn_param.conv2d.ksize[0] = 1;
     curr->node->nn_param.conv2d.ksize[1] = 1;
     curr->node->nn_param.conv2d.stride[0] = 1;
@@ -583,6 +588,7 @@ static vsi_bool op_setup_optimized
         CHECK_PTR_FAIL_GOTO(tmp_tensor, "Create internal tensor failed", final);
 
         curr = vsi_nn_internal_new_node(self, VSI_NN_OP_CONV2D, 0, 0 );
+        CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
         curr->node->nn_param.conv2d.ksize[0] = 1;
         curr->node->nn_param.conv2d.ksize[1] = 1;
         curr->node->nn_param.conv2d.stride[0] = 1;
@@ -623,15 +629,17 @@ static vsi_bool op_setup_optimized
         grucell_out1 = output_tensor->t;
 
         curr = vsi_nn_internal_new_node( self, VSI_NN_OP_GRUCELL_ACTIVATION_INTERNAL, 0, 0 );
+        CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
         curr->inputs[GRUCELL_ACTIVATION_INPUT_H_STATE] = last_step_h_state;
-
         {
             splited_input_fc_output_tensors = vsi_nn_create_split(self,
                 input_fc_output, 1, 3, NULL, use_virtual_tensor);
-            CHECK_PTR_FAIL_GOTO(splited_input_fc_output_tensors, "Create internal tensor failed", final);
+            CHECK_PTR_FAIL_GOTO_RLS_INTERNAL_NODE(splited_input_fc_output_tensors, curr,
+                "Create internal tensor failed", final);
             splited_recurrent_fc_output_tensors = vsi_nn_create_split(self,
                 recurrent_fc_output, 1, 3, NULL, use_virtual_tensor);
-            CHECK_PTR_FAIL_GOTO(splited_recurrent_fc_output_tensors, "Create internal tensor failed", final);
+            CHECK_PTR_FAIL_GOTO_RLS_INTERNAL_NODE(splited_recurrent_fc_output_tensors, curr,
+                "Create internal tensor failed", final);
             curr->inputs[GRUCELL_ACTIVATION_INPUT_INPUT_FC_R] = splited_input_fc_output_tensors[0]->t;
             curr->inputs[GRUCELL_ACTIVATION_INPUT_INPUT_FC_Z] = splited_input_fc_output_tensors[1]->t;
             curr->inputs[GRUCELL_ACTIVATION_INPUT_INPUT_FC_C] = splited_input_fc_output_tensors[2]->t;
@@ -665,6 +673,7 @@ static vsi_bool op_setup_optimized
     CHECK_PTR_FAIL_GOTO(tmp_tensor, "Create internal tensor failed", final);
 
     curr = vsi_nn_internal_new_node(self, VSI_NN_OP_CONCAT, (uint32_t)time_step, 1);
+    CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
     curr->node->nn_param.concat.axis = 1;
     for( i = 0; i < time_step; i++ )
     {

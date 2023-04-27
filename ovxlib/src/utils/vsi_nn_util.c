@@ -714,8 +714,8 @@ vsi_bool vsi_nn_CreateTensorGroup
 
     if ( NULL == graph || NULL == in_tensor
         || NULL == out_tensors || 0 == group_number
-        || 0 == in_tensor->attr.size[axis] ||
-        axis > VSI_NN_MAX_DIM_NUM )
+        || axis >= VSI_NN_MAX_DIM_NUM ||
+        0 == in_tensor->attr.size[axis] )
     {
         VSILOGW( "Create tensor group fail." );
         return FALSE;

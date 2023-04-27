@@ -105,6 +105,7 @@ static vsi_bool op_setup
 {
     vsi_nn_internal_node_t* curr = NULL;
     vsi_nn_grouped_conv1d_param* p = &self->nn_param.grouped_conv1d;
+    vsi_bool ret = FALSE;
 
     vsi_nn_internal_init_node_wksp(self);
 
@@ -161,6 +162,7 @@ static vsi_bool op_setup
 
 
     curr = vsi_nn_internal_new_node(self, VSI_NN_OP_GROUPED_CONV2D, 0, 0);
+    CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
     curr->inputs[0] = p->local->input;
     curr->inputs[1] = p->local->weight;
     curr->inputs[2] = inputs[2];
@@ -181,10 +183,10 @@ static vsi_bool op_setup
     curr->node->nn_param.grouped_conv2d.pad_type = p->pad_type;
     curr->node->nn_param.grouped_conv2d.pad_mode = p->pad_mode;
 
-    vsi_nn_internal_setup_node(self, curr);
+    ret = vsi_nn_internal_setup_node(self, curr);
 
 final:
-    return TRUE;
+    return ret;
 } /* op_setup() */
 
 static vsi_status op_init

@@ -259,10 +259,10 @@ static vsi_bool _auto_cal_shape
     vsi_size_t * dim_num
     )
 {
-    vsi_bool   ret;
+    vsi_bool ret;
     vsi_ssize_t  neg_idx;
-    vsi_size_t i;
-    vsi_size_t total_size;
+    vsi_size_t i = 0;
+    vsi_size_t total_size = 1;
 
     ret = TRUE;
     neg_idx = -1;
@@ -284,7 +284,7 @@ static vsi_bool _auto_cal_shape
                 {
                     VSILOGE( "Wrong shape '%"VSI_SSIZE_T_SPECIFIER"' ", (vsi_ssize_t)shape[i] );
                     ret = FALSE;
-                    break;
+                    goto final;
                 }
                 shape[i] = input_shape[i];
             }
@@ -298,17 +298,16 @@ static vsi_bool _auto_cal_shape
         {
             VSILOGE( "Wrong shape '%"VSI_SSIZE_T_SPECIFIER"' ", (vsi_ssize_t)shape[i] );
             ret = FALSE;
-            break;
+            goto final;
         }
     }
-    if( FALSE == ret  )
-    {
-        shape[neg_idx] = (vsi_size_t)-1;
-    }
-    else if(neg_idx != -1)
+
+    if (-1 != neg_idx)
     {
         shape[neg_idx] = (vsi_size_t)total_size;
     }
+
+final:
     return ret;
 } /* _auto_cal_shape() */
 
@@ -2301,8 +2300,10 @@ void vsi_nn_ReleaseTensorRelevance
     )
 {
     uint32_t i;
-    if(NULL == tensor_ref || NULL == graph)
+    if (NULL == tensor_ref || NULL == graph)
     {
+        vsi_nn_safe_free(tensor_ref);
+
         return ;
     }
 
@@ -2320,11 +2321,7 @@ void vsi_nn_ReleaseTensorRelevance
         }
     }
 
-    if(tensor_ref)
-    {
-        free(tensor_ref);
-        tensor_ref = NULL;
-    }
+    vsi_nn_safe_free(tensor_ref);
 } /* vsi_nn_ReleaseTensorRelevance() */
 
 vsi_nn_tensor_rel_t *vsi_nn_CreateTensorRelevance

@@ -113,7 +113,12 @@ static vsi_size_t eltwise_fill_dim
         vsi_size_t divisor = 0;
         vsi_size_t remainder = 0;
         compute_gpu_divisor( size_output, GPU_TENSOR_MAX_WIDTH, 1, &divisor );
-        VSI_ASSERT( divisor != 0 );
+        if (divisor == 0)
+        {
+            VSILOGE( "divisor might be used in a division by zero." );
+            cost_size =  (vsi_size_t)-1;
+            goto final;
+        }
         remainder = size_output / divisor;
         if( remainder > GPU_TENSOR_MAX_WIDTH || rank >= max_rank )
         {
@@ -153,6 +158,7 @@ static vsi_size_t eltwise_fill_dim
             shape_output[rank + 1] = remainder;
         }
     }
+final:
     return cost_size;
 } /* eltwise_fill_dim() */
 
@@ -353,7 +359,12 @@ static vsi_size_t broadcast_fill_dim
         vsi_size_t divisor = 0;
         vsi_size_t remainder = 0;
         compute_gpu_divisor( size_output, GPU_TENSOR_MAX_WIDTH, 1, &divisor );
-        VSI_ASSERT( divisor != 0 );
+        if (divisor == 0)
+        {
+            VSILOGE( "divisor might be used in a division by zero." );
+            cost_size =  (vsi_size_t)-1;
+            goto final;
+        }
         remainder = size_output / divisor;
         if( remainder > GPU_TENSOR_MAX_WIDTH || rank >= max_rank )
         {
@@ -388,6 +399,7 @@ static vsi_size_t broadcast_fill_dim
             shape_output[rank + 1] = remainder;
         }
     }
+final:
     return cost_size;
 } /* broadcast_fill_dim() */
 

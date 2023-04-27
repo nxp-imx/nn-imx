@@ -1293,6 +1293,7 @@ vsi_nn_node_t * vsi_nn_AddExternalNode
         if ( NULL == node->output.tensors )
         {
             VSILOGE("Create output tensor id %s. fail", vsi_nn_OpGetName(op));
+            vsi_nn_safe_free(node);
             return NULL;
         }
         vsi_nn_InitTensorsId( node->output.tensors, node_proc->output_num );
@@ -1304,6 +1305,8 @@ vsi_nn_node_t * vsi_nn_AddExternalNode
         if ( NULL == node->input.tensors )
         {
             VSILOGE("Create input tensor id %s. fail", vsi_nn_OpGetName(op));
+            vsi_nn_safe_free(node->output.tensors);
+            vsi_nn_safe_free(node);
             return NULL;
         }
         vsi_nn_InitTensorsId( node->input.tensors, node_proc->input_num );

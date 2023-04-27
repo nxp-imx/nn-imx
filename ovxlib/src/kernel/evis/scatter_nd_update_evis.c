@@ -2081,10 +2081,11 @@ static vsi_nn_kernel_node_t _setup
     int32_t special_flg = (block_size % 16 == 0 && type_flg)  ? 1 : 0;
     int32_t i = 0;
     int32_t isRepeat = 0;
+    vsi_nn_tensor_t * tensors[3] = { NULL };
+    vsi_nn_kernel_t * ikernels[2] = { NULL };
 
     VSI_UNREFERENCED(input_num);
     VSI_UNREFERENCED(output_num);
-
     if (coord_dim > 4 && input_size[dims_num - 1] > 1)
     {
         return NULL;
@@ -2111,8 +2112,6 @@ static vsi_nn_kernel_node_t _setup
         vsi_nn_kernel_node_param_t ref_params[_SCATTER_ND_UPDATE_REF_PARAM_NUM] = { NULL };
         vsi_nn_kernel_node_param_t node_params[_SCATTER_ND_UPDATE_UPDATE_PARAM_NUM] = { NULL };
         vsi_nn_kernel_node_param_t cpy_params[_SCATTER_ND_UPDATE_COPY_PARAM_NUM] = { NULL };
-        vsi_nn_kernel_t * ikernels[2] = { NULL };
-        vsi_nn_tensor_t * tensors[3] = { NULL };
 
         ikernels[0] = vsi_nn_kernel_create( VSI_NN_KERNEL_TYPE_EVIS );
         ikernels[0]->unique_id = kernel->unique_id;
@@ -2224,12 +2223,12 @@ static vsi_nn_kernel_node_t _setup
         vsi_nn_kernel_node_param_t pre_params[_SCATTER_ND_UPDATE_PRE_PARAM_NUM] = { NULL };
         vsi_nn_kernel_node_param_t node_params[_SCATTER_ND_UPDATE_POST_PARAM_NUM] = { NULL };
         vsi_nn_kernel_node_param_t reset_params[_SCATTER_ND_UPDATE_RESET_PARAM_NUM] = { NULL };
-        vsi_nn_kernel_t * ikernels[2] = { NULL };
-        vsi_nn_tensor_t * tensors[3] = { NULL };
 
         ikernels[0] = vsi_nn_kernel_create( VSI_NN_KERNEL_TYPE_EVIS );
+        CHECK_PTR_FAIL_GOTO(ikernels[0], "Create kernel failed", final);
         ikernels[0]->unique_id = kernel->unique_id;
         ikernels[1] = vsi_nn_kernel_create( VSI_NN_KERNEL_TYPE_EVIS );
+        CHECK_PTR_FAIL_GOTO(ikernels[1], "Create kernel failed", final);
         ikernels[1]->unique_id = kernel->unique_id;
 
         memset( &attr, 0, sizeof(vsi_nn_tensor_attr_t) );
@@ -2245,10 +2244,13 @@ static vsi_nn_kernel_node_t _setup
         attr.dim_num = rs_out_dim;
 
         tensors[0] = vsi_nn_CreateTensor( graph, &attr );
+        CHECK_PTR_FAIL_GOTO(tensors[0], "Create tensor failed", final);
         attr.size[0] = 1;
         tensors[1] = vsi_nn_CreateTensor( graph, &attr );
+        CHECK_PTR_FAIL_GOTO(tensors[1], "Create tensor failed", final);
         attr.size[1] = 1;
         tensors[2] = vsi_nn_CreateTensor( graph, &attr );
+        CHECK_PTR_FAIL_GOTO(tensors[2], "Create tensor failed", final);
 
         status = _query_kernel_large( inputs, outputs, ikernels[0], ikernels[1], kernel);
         if ( VSI_SUCCESS == status)
@@ -2319,26 +2321,6 @@ static vsi_nn_kernel_node_t _setup
             }
         }
 
-        if ( ikernels[0] )
-        {
-            vsi_nn_kernel_release( &ikernels[0] );
-        }
-        if ( ikernels[1] )
-        {
-            vsi_nn_kernel_release( &ikernels[1] );
-        }
-        if ( tensors[0] )
-        {
-            vsi_nn_ReleaseTensor( &tensors[0] );
-        }
-        if ( tensors[1] )
-        {
-            vsi_nn_ReleaseTensor( &tensors[1] );
-        }
-        if ( tensors[2] )
-        {
-            vsi_nn_ReleaseTensor( &tensors[2] );
-        }
         if (reset_node) {vsi_nn_kernel_node_release( &reset_node );}
         if (tmp_node) {vsi_nn_kernel_node_release( &tmp_node );}
     }
@@ -2374,6 +2356,20 @@ static vsi_nn_kernel_node_t _setup
             }
         }
     }
+
+final:
+    if (ikernels[0])
+    {
+        vsi_nn_kernel_release(&ikernels[0]);
+    }
+    if (ikernels[1])
+    {
+        vsi_nn_kernel_release(&ikernels[1]);
+    }
+    vsi_safe_release_tensor(tensors[0]);
+    vsi_safe_release_tensor(tensors[1]);
+    vsi_safe_release_tensor(tensors[2]);
+
     return node;
 } /* _setup() */
 

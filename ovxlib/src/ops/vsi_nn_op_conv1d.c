@@ -328,12 +328,13 @@ static vsi_bool op_setup
                 CHECK_PTR_FAIL_GOTO( tensor, "Create tensor fail.", final );
 
                 curr = vsi_nn_internal_new_node(self, VSI_NN_OP_PAD, 0, 0);
+                CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
                 front_data = (uint32_t*)\
                     vsi_nn_internal_new_node_param(curr, sizeof(uint32_t) * inputs[0]->attr.dim_num);
-                CHECK_PTR_FAIL_GOTO(front_data, "Create internal buffer failed", final);
+                CHECK_PTR_FAIL_GOTO_RLS_INTERNAL_NODE(front_data, curr, "Create internal buffer failed", final);
                 back_data = (uint32_t*)\
                     vsi_nn_internal_new_node_param(curr, sizeof(uint32_t) * inputs[0]->attr.dim_num);
-                CHECK_PTR_FAIL_GOTO(back_data, "Create internal buffer failed", final);
+                CHECK_PTR_FAIL_GOTO_RLS_INTERNAL_NODE(back_data, curr, "Create internal buffer failed", final);
 
                 front_data[0] = p->pad[0];
                 front_data[1] = 0;
