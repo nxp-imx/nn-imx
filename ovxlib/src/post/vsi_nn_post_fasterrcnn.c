@@ -139,7 +139,7 @@ static vsi_status _fill_fasterrcnn_param
     {
         node = vsi_nn_GetNode( graph, (vsi_nn_node_id_t)i );
         //printf("i[%u] op[%s]\n", i, vsi_nn_OpGetName(node->op));
-        if(node->op == VSI_NN_OP_PROPOSAL)
+        if (node && node->op == VSI_NN_OP_PROPOSAL)
         {
             memcpy(&param->iminfo, &node->nn_param.proposal.im_info,
                     sizeof(vsi_nn_proposal_im_info));

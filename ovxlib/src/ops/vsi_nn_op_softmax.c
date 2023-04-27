@@ -37,6 +37,7 @@
 #include "utils/vsi_nn_math.h"
 #include "utils/vsi_nn_constraint_check.h"
 #include "vsi_nn_tensor_util_prv.h"
+#include "vsi_nn_error.h"
 
 static vsi_status op_compute
     (
@@ -178,7 +179,9 @@ static vsi_bool op_setup
     )
 {
     vsi_nn_internal_node_t* curr = NULL;
-    if( NULL == self )
+    vsi_bool ret = FALSE;
+
+    if ( NULL == self )
     {
         return FALSE;
     }
@@ -206,13 +209,15 @@ static vsi_bool op_setup
 
     vsi_nn_internal_init_node_wksp(self);
     curr = vsi_nn_internal_new_node(self, VSI_NN_OP_SOFTMAX_INTERNAL, 0, 0);
+    CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
     curr->inputs[0] = inputs[0];
     curr->outputs[0] = outputs[0];
     curr->node->nn_param.softmax_internal.beta = self->nn_param.softmax.beta;
     curr->node->nn_param.softmax_internal.axis = self->nn_param.softmax.axis;
-    vsi_nn_internal_setup_node(self, curr);
+    ret = vsi_nn_internal_setup_node(self, curr);
 
-    return TRUE;
+final:
+    return ret;
 }
 
 #ifdef __cplusplus

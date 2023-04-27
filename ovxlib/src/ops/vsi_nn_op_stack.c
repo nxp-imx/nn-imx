@@ -37,7 +37,7 @@
 #include "utils/vsi_nn_util.h"
 #include "utils/vsi_nn_link_list.h"
 #include "utils/vsi_nn_dtype_util.h"
-#include "libnnext/vsi_nn_vxkernel.h"
+#include "vsi_nn_error.h"
 
 #define _ARG_NUM            (1)
 #define _INPUT_NUM          VSI_NN_STACK_MAX_INPUTS
@@ -89,7 +89,7 @@ static vsi_bool op_setup
     vsi_nn_internal_node_t* curr = NULL;
     vsi_nn_tensor_t *output_rs = NULL;
     vsi_nn_stack_lcl_data * data = NULL;
-    vsi_bool ret = TRUE;
+    vsi_bool ret = FALSE;
     vx_int8 is_scalar = vsi_nn_GetTensorIsScalar(inputs[0]);
 
     vsi_nn_internal_init_node_wksp( node );
@@ -127,10 +127,12 @@ static vsi_bool op_setup
     if (1 == node->input.num)
     {
         curr = vsi_nn_internal_new_node( node, VSI_NN_OP_RESHAPE2, 1, 1);
+        CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
         curr->inputs[0] = inputs[0];
         curr->outputs[0] = outputs[0];
         curr->node->nn_param.reshape2.dim_num = outputs[0]->attr.dim_num;
         curr->node->nn_param.reshape2.size = outputs[0]->attr.size;
+        ret = vsi_nn_internal_setup_node(node, curr);
         goto final;
     }
 
@@ -138,17 +140,13 @@ static vsi_bool op_setup
     input_shape[1] = block_num;
 
     curr = vsi_nn_internal_new_node( node, VSI_NN_OP_CONCAT, node->input.num, node->output.num );
+    CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
     for (i = 0; i < node->input.num; i++)
     {
         vsi_nn_tensor_t *input_rs = NULL;
         /* Malloc ptr */
         data = (vsi_nn_stack_lcl_data *)malloc( sizeof(vsi_nn_stack_lcl_data) );
-        if( NULL == data )
-        {
-            VSILOGE( "Create stack local data fail." );
-            ret = FALSE;
-            goto final;
-        }
+        CHECK_PTR_FAIL_GOTO_RLS_INTERNAL_NODE(data, curr, "Create buffer failed", final);
         memset( data, 0, sizeof(vsi_nn_stack_lcl_data) );
 
         input_rs = vsi_nn_reshape_tensor(node->graph, inputs[i], input_shape, 2);
@@ -176,16 +174,18 @@ static vsi_bool op_setup
 
     /* Malloc ptr */
     data = (vsi_nn_stack_lcl_data *)malloc( sizeof(vsi_nn_stack_lcl_data) );
-    if( NULL == data )
-    {
-        VSILOGE( "Create stack local data fail." );
-        ret = FALSE;
-        goto final;
-    }
+    CHECK_PTR_FAIL_GOTO_RLS_INTERNAL_NODE(data, curr, "Create buffer failed", final);
     memset( data, 0, sizeof(vsi_nn_stack_lcl_data) );
 
     output_rs = vsi_nn_reshape_tensor(node->graph, outputs[0], output_shape, 2);
-    data->src_in     = output_rs;
+    if (output_rs == NULL)
+    {
+        vsi_nn_internal_release_node(&curr);
+        VSILOGD("Create reshape tensor failed\n");
+        vsi_nn_safe_free(data);
+        goto final;
+    }
+    data->src_in = output_rs;
     /* Store node, ptr */
     vsi_nn_LinkListPushStart(
         (vsi_nn_link_list_t **)&node->nn_param.stack.lcl_data,
@@ -193,10 +193,9 @@ static vsi_bool op_setup
 
     curr->outputs[0] = output_rs;
     curr->node->nn_param.concat.axis = axis;
+    ret = vsi_nn_internal_setup_node(node, curr);
 
 final:
-    vsi_nn_internal_setup_node(node, curr);
-
     return ret;
 } /* op_setup() */
 

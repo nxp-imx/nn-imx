@@ -81,6 +81,7 @@ static vsi_nn_internal_tensor_t* create_multiply
     CHECK_PTR_FAIL_GOTO(tensor1, "Create internal tensor failed", final);
 
     tmp_inode = vsi_nn_internal_new_node(self, VSI_NN_OP_MULTIPLY, 0, 0 );
+    CHECK_PTR_FAIL_GOTO(tmp_inode, "Create internal node failed", final);
 
     tmp_inode->inputs[0] = input1;
     tmp_inode->inputs[1] = input2;
@@ -342,6 +343,7 @@ static vsi_bool op_setup_float
 #define USE_GRUCELL_ACTIVATION
 #ifdef USE_GRUCELL_ACTIVATION
     curr = vsi_nn_internal_new_node( self, VSI_NN_OP_GRUCELL_ACTIVATION_INTERNAL, 0, 0 );
+    CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
     curr->inputs[0] = splited_tensors[0]->t;
     curr->inputs[1] = tmp_tensor->t;
     curr->inputs[2] = inputs[GRUCELL_INPUT_H_STATE];
@@ -373,6 +375,7 @@ static vsi_bool op_setup_float
     tmp_tensor = vsi_nn_rnn_create_binary_operator(self, VSI_NN_OP_MULTIPLY,
         tensor_zt->t, tmp_tensor->t, &tensor_ht_->t->attr.dtype, use_virtual_tensor);
     curr = vsi_nn_internal_new_node( self, VSI_NN_OP_ADD, 0, 0 );
+    CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
     curr->inputs[0] = tmp_tensor->t;
     curr->inputs[1] = tensor_ht_->t;
     curr->outputs[0] = outputs[GRUCELL_OUTPUT_OUTPUT];
@@ -380,6 +383,7 @@ static vsi_bool op_setup_float
     }
 
     curr = vsi_nn_internal_new_node( self, VSI_NN_OP_DATACONVERT, 0, 0 );
+    CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
     curr->inputs[0] = outputs[GRUCELL_OUTPUT_OUTPUT];
     curr->outputs[0] = outputs[GRUCELL_OUTPUT_H_STATE];
     vsi_nn_internal_setup_node(self, curr);
@@ -513,6 +517,7 @@ static vsi_bool op_setup_float_cudnn
 
 #ifdef USE_GRUCELL_ACTIVATION
     curr = vsi_nn_internal_new_node( self, VSI_NN_OP_GRUCELL_ACTIVATION_INTERNAL, 0, 0 );
+    CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
     curr->inputs[GRUCELL_ACTIVATION_INPUT_H_STATE] = inputs[GRUCELL_INPUT_H_STATE];
 
     if(p->local->multi_batch)
@@ -530,10 +535,12 @@ static vsi_bool op_setup_float_cudnn
         {
             splited_input_fc_output_tensors = vsi_nn_create_split(self,
                 input_fc_output->t, 1, 3, NULL, use_virtual_tensor);
-            CHECK_PTR_FAIL_GOTO(splited_input_fc_output_tensors, "Create internal tensor failed", final);
+            CHECK_PTR_FAIL_GOTO_RLS_INTERNAL_NODE(splited_input_fc_output_tensors, curr,
+                "Create internal tensor failed", final);
             splited_recurrent_fc_output_tensors = vsi_nn_create_split(self,
                 recurrent_fc_output->t, 1, 3, NULL, use_virtual_tensor);
-            CHECK_PTR_FAIL_GOTO(splited_recurrent_fc_output_tensors, "Create internal tensor failed", final);
+            CHECK_PTR_FAIL_GOTO_RLS_INTERNAL_NODE(splited_recurrent_fc_output_tensors, curr,
+                "Create internal tensor failed", final);
             curr->inputs[GRUCELL_ACTIVATION_INPUT_INPUT_FC_R] = splited_input_fc_output_tensors[0]->t;
             curr->inputs[GRUCELL_ACTIVATION_INPUT_INPUT_FC_Z] = splited_input_fc_output_tensors[1]->t;
             curr->inputs[GRUCELL_ACTIVATION_INPUT_INPUT_FC_C] = splited_input_fc_output_tensors[2]->t;
@@ -546,10 +553,12 @@ static vsi_bool op_setup_float_cudnn
     {
         splited_input_fc_output_tensors = vsi_nn_create_split(self,
             input_fc_output->t, 0, 3, NULL, use_virtual_tensor);
-        CHECK_PTR_FAIL_GOTO(splited_input_fc_output_tensors, "Create internal tensor failed", final);
+        CHECK_PTR_FAIL_GOTO_RLS_INTERNAL_NODE(splited_input_fc_output_tensors, curr,
+            "Create internal tensor failed", final);
         splited_recurrent_fc_output_tensors = vsi_nn_create_split(self,
             recurrent_fc_output->t, 0, 3, NULL, use_virtual_tensor);
-        CHECK_PTR_FAIL_GOTO(splited_recurrent_fc_output_tensors, "Create internal tensor failed", final);
+        CHECK_PTR_FAIL_GOTO_RLS_INTERNAL_NODE(splited_recurrent_fc_output_tensors, curr,
+            "Create internal tensor failed", final);
         curr->inputs[GRUCELL_ACTIVATION_INPUT_INPUT_FC_R] = splited_input_fc_output_tensors[0]->t;
         curr->inputs[GRUCELL_ACTIVATION_INPUT_INPUT_FC_Z] = splited_input_fc_output_tensors[1]->t;
         curr->inputs[GRUCELL_ACTIVATION_INPUT_INPUT_FC_C] = splited_input_fc_output_tensors[2]->t;
@@ -647,12 +656,14 @@ static vsi_bool op_setup_float_cudnn
             tensor_u->t, tmp_tensor->t, &tmp_tensor->t->attr.dtype, use_virtual_tensor);
 
         curr = vsi_nn_internal_new_node( self, VSI_NN_OP_ADD, 0, 0 );
+        CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
         curr->inputs[0] = tmp_tensor->t;
         curr->inputs[1] = tensor_c->t;
         curr->outputs[0] = outputs[GRUCELL_OUTPUT_OUTPUT];
         vsi_nn_internal_setup_node(self, curr);
 
         curr = vsi_nn_internal_new_node( self, VSI_NN_OP_DATACONVERT, 0, 0 );
+        CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
         curr->inputs[0] = outputs[GRUCELL_OUTPUT_OUTPUT];
         curr->outputs[0] = outputs[GRUCELL_OUTPUT_H_STATE];
         vsi_nn_internal_setup_node(self, curr);
@@ -798,6 +809,7 @@ static vsi_bool op_setup_float_cudnn_v2
     CHECK_PTR_FAIL_GOTO(tmp_tensor, "Create internal tensor failed", final);
 
     curr = vsi_nn_internal_new_node( self, VSI_NN_OP_A_TIMES_B_PLUS_C, 0, 0 );
+    CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
     curr->inputs[0] = splited_input_fc_output_tensors[0]->t;
     curr->inputs[1] = recurrent2cand_output->t;
     curr->inputs[2] = input2cand_output->t;
@@ -806,10 +818,12 @@ static vsi_bool op_setup_float_cudnn_v2
 
     tensor_r = vsi_nn_rnn_create_activation(self, tmp_tensor->t,
         p->local->candidate_activation, &tmp_tensor->t->attr.dtype, use_virtual_tensor);
+    CHECK_PTR_FAIL_GOTO_RLS_INTERNAL_NODE(tensor_r, curr, "Create internal tensor failed", final);
 
 #define USE_GRUCELL_ACTIVATION_SMA
 #ifdef USE_GRUCELL_ACTIVATION_SMA
     curr = vsi_nn_internal_new_node( self, VSI_NN_OP_GRUCELL_ACTIVATION_INTERNAL_SMA, 0, 0 );
+    CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
     curr->inputs[GRUCELL_ACTIVATION_SMA_INPUT_H_STATE] = inputs[GRUCELL_INPUT_H_STATE];
     curr->inputs[GRUCELL_ACTIVATION_SMA_INPUT_H_T_] = tensor_r->t;
     curr->inputs[GRUCELL_ACTIVATION_SMA_INPUT_Z_T] = splited_input_fc_output_tensors[1]->t;
@@ -828,12 +842,14 @@ static vsi_bool op_setup_float_cudnn_v2
         tmp_tensor->t, &tmp_tensor->t->attr.dtype, use_virtual_tensor);
 
     curr = vsi_nn_internal_new_node( self, VSI_NN_OP_ADD, 0, 0 );
+    CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
     curr->inputs[0] = tmp_tensor->t;
     curr->inputs[1] = tensor_r->t;
     curr->outputs[0] = outputs[GRUCELL_OUTPUT_OUTPUT];
     vsi_nn_internal_setup_node(self, curr);
 
     curr = vsi_nn_internal_new_node( self, VSI_NN_OP_DATACONVERT, 0, 0 );
+    CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
     curr->inputs[0] = outputs[GRUCELL_OUTPUT_OUTPUT];
     curr->outputs[0] = outputs[GRUCELL_OUTPUT_H_STATE];
     vsi_nn_internal_setup_node(self, curr);
@@ -1235,6 +1251,7 @@ static vsi_bool op_setup_default
 
     /* create internal tensor sub node (1-zt)*c */
     curr = vsi_nn_internal_new_node( self, VSI_NN_OP_SUBTRACT, 0, 0 );
+    CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
     curr->inputs[0] = input_tensor->t;
     curr->inputs[1] = gate_act_outputs[GRUCELL_GATE_Z]->t;
     curr->outputs[0] = tmp_tensor->t;
@@ -1259,6 +1276,7 @@ static vsi_bool op_setup_default
 
      /* create internal tensor add node (1-zt)*c + zt*hstate */
     curr = vsi_nn_internal_new_node( self, VSI_NN_OP_ADD, 0, 0 );
+    CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
     curr->inputs[0] = output_tensor->t;
     curr->inputs[1] = tmp_tensor->t;
     curr->outputs[0] = outputs[GRUCELL_OUTPUT_OUTPUT];
@@ -1267,6 +1285,7 @@ static vsi_bool op_setup_default
 
     /* copy output to h_state  */
     curr = vsi_nn_internal_new_node( self, VSI_NN_OP_DATACONVERT, 0, 0 );
+    CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
     curr->inputs[0] = outputs[GRUCELL_OUTPUT_OUTPUT];
     curr->outputs[0] = outputs[GRUCELL_OUTPUT_H_STATE];
     vsi_nn_internal_setup_node(self, curr);

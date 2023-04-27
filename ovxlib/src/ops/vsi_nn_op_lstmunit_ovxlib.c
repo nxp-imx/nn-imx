@@ -67,6 +67,7 @@ static vsi_nn_internal_tensor_t* create_tp_fc
     CHECK_PTR_FAIL_GOTO(tensor2, "Create internal tensor failed", final);
 
     tmp_inode = vsi_nn_internal_new_node(self, VSI_NN_OP_FCL, 0, 0 );
+    CHECK_PTR_FAIL_GOTO(tmp_inode, "Create internal node failed", final);
     tmp_inode->node->nn_param.fcl.axis = 0;
     tmp_inode->node->nn_param.fcl.weights = (uint32_t)weight->attr.size[1];
 
@@ -126,6 +127,7 @@ static vsi_nn_internal_tensor_t* create_nn_fc
     vsi_nn_ReshapeTensor( self->graph, weight, reshaped_weight_tensor->t, reshaped_weight_shape, 4 );
 
     tmp_inode = vsi_nn_internal_new_node(self, VSI_NN_OP_CONV2D, 0, 0 );
+    CHECK_PTR_FAIL_GOTO(tmp_inode, "Create internal node failed", final);
     tmp_inode->node->nn_param.conv2d.ksize[0] = kernel_w;
     tmp_inode->node->nn_param.conv2d.ksize[1] = kernel_h;
     tmp_inode->node->nn_param.conv2d.stride[0] = 1;
@@ -173,6 +175,7 @@ static vsi_status create_peephole
     CHECK_PTR_FAIL_GOTO(input_tensor0, "Create internal tensor failed", final);
     /* create internal nodes */
     curr = vsi_nn_internal_new_node( self, VSI_NN_OP_MULTIPLY, 0, 0 );
+    CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
     curr->node->nn_param.multiply.scale = 1.0f;
     curr->node->vx_param.overflow_policy = VX_CONVERT_POLICY_SATURATE;
     curr->node->vx_param.rounding_policy = VX_ROUND_POLICY_TO_NEAREST_EVEN;
@@ -184,6 +187,7 @@ static vsi_status create_peephole
     CHECK_PTR_FAIL_GOTO( input_tensor1, "Create internal tensor fail.", final );
     /* create internal nodes */
     curr = vsi_nn_internal_new_node( self, VSI_NN_OP_ADD, 0, 0 );
+    CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
     curr->inputs[0] = (*input_fc)->t;
     curr->inputs[1] = input_tensor0->t;
     curr->outputs[0] = input_tensor1->t;
@@ -546,6 +550,7 @@ static vsi_bool op_setup
                 CHECK_PTR_FAIL_GOTO( add_tensor, "Create tensor fail.", final );
                 /* create internal nodes */
                 curr = vsi_nn_internal_new_node( self, VSI_NN_OP_ADD, 0, 0 );
+                CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
                 curr->inputs[0] = input_fc_outputs[i]->t;
                 curr->inputs[1] = recurrent_fc_outputs[i]->t;
                 curr->outputs[0] = add_tensor->t;
@@ -555,6 +560,7 @@ static vsi_bool op_setup
                 input_tensor = vsi_nn_internal_new_tensor(self, &attr, 0.0f);
                 CHECK_PTR_FAIL_GOTO( input_tensor, "Create tensor fail.", final );
                 curr = vsi_nn_internal_new_node( self, VSI_NN_OP_LAYER_NORM, 0, 0 );
+                CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
                 curr->node->nn_param.layernorm.eps = (float)1e-8;
                 curr->inputs[0] = add_tensor->t;
                 curr->inputs[1] = inputs[LSTMUNIT_INPUT_BIAS_I + i];
@@ -577,6 +583,7 @@ static vsi_bool op_setup
 
                 /* create internal nodes */
                 curr = vsi_nn_internal_new_node( self, VSI_NN_OP_TENSOR_ADD_MEAN_STDDEV_NORM, 0, 0 );
+                CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
                 curr->node->nn_param.tensor_add_mean_stddev_norm.eps = (float)1e-8;
                 curr->inputs[0] = input_fc_outputs[i]->t;
                 curr->inputs[1] = recurrent_fc_outputs[i]->t;
@@ -590,6 +597,7 @@ static vsi_bool op_setup
 
     /* activations */
     curr = vsi_nn_internal_new_node( self, VSI_NN_OP_LSTMUNIT_ACTIVATION, 0, 0 );
+    CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
     curr->node->nn_param.lstmunit_activation.cell_clip = p->cell_clip;
     curr->node->nn_param.lstmunit_activation.proj_clip = p->proj_clip;
     curr->node->nn_param.lstmunit_activation.forget_bias = p->forget_bias;
@@ -655,7 +663,7 @@ static vsi_bool op_setup
             attr.dtype.vx_type = VSI_NN_TYPE_FLOAT16;
         }
         output_tensor = vsi_nn_internal_new_tensor(self, &attr, 0.0f);
-        CHECK_PTR_FAIL_GOTO( output_tensor, "Create tensor fail.", final );
+        CHECK_PTR_FAIL_GOTO_RLS_INTERNAL_NODE( output_tensor, curr, "Create tensor fail.", final );
 
         curr->outputs[LSTMUNIT_ACT_OUTPUT] = output_tensor->t;
         curr->outputs[LSTMUNIT_ACT_CSTATE_OUT] = outputs[LSTMUNIT_OUTPUT_C_STATE];
@@ -684,6 +692,7 @@ static vsi_bool op_setup
             if (use_virtual_tensor)
             {
                 curr = vsi_nn_internal_new_node( self, VSI_NN_OP_DATACONVERT, 0, 0 );
+                CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
                 curr->inputs[0] = inputs[LSTMUNIT_INPUT_BIAS_PROJ];
                 curr->outputs[0] = zero_bias_tensor;
 
@@ -708,6 +717,7 @@ static vsi_bool op_setup
         }
 
         curr = vsi_nn_internal_new_node( self, VSI_NN_OP_FCL, 0, 0 );
+        CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
         curr->node->nn_param.fcl.axis = 0;
         curr->node->nn_param.fcl.weights = (uint32_t)inputs[LSTMUNIT_INPUT_WEIGHT_PROJ]->attr.size[1];
 
@@ -722,6 +732,7 @@ static vsi_bool op_setup
 
         /* copy h_state to output */
         curr = vsi_nn_internal_new_node( self, VSI_NN_OP_DATACONVERT, 0, 0 );
+        CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
         curr->inputs[0] = outputs[LSTMUNIT_OUTPUT_H_STATE];
         curr->outputs[0] = outputs[LSTMUNIT_OUTPUT_OUTPUT];
         vsi_nn_internal_setup_node(self, curr);

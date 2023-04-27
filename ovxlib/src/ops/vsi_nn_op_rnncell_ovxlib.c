@@ -346,6 +346,7 @@ static vsi_bool op_setup
 
     /* activation */
     curr = vsi_nn_internal_new_node( self, vsi_nn_rnn_get_act_op_type(p->activation), 0, 0 );
+    CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
     curr->node->nn_param.tanh.scale_a = 1.0;
     curr->node->nn_param.tanh.scale_b = 1.0;
     curr->inputs[0] = gate_fc_outputs->t;
@@ -355,6 +356,7 @@ static vsi_bool op_setup
     if (outputs[RNNCELL_OUTPUT_H_STATE] != NULL)
     {
         curr = vsi_nn_internal_new_node( self, VSI_NN_OP_DATACONVERT, 0, 0 );
+        CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
         curr->inputs[0] = outputs[RNNCELL_OUTPUT_OUTPUT];
         curr->outputs[0] = outputs[RNNCELL_OUTPUT_H_STATE];
         vsi_nn_internal_setup_node(self, curr);

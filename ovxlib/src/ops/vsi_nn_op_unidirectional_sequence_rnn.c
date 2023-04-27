@@ -255,6 +255,7 @@ static vsi_bool op_setup
         rnncell_out1 = output_tensor->t;
 
         curr = vsi_nn_internal_new_node( self, VSI_NN_OP_RNNCELL_OVXLIB, 0, 0 );
+        CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
         curr->node->nn_param.rnncell_ovxlib.activation = curr_param->activation;
         if ( reshape_output->attr.dtype.vx_type == VSI_NN_TYPE_BFLOAT16 ||
              reshape_output->attr.dtype.vx_type == VSI_NN_TYPE_FLOAT32 )
@@ -305,6 +306,7 @@ static vsi_bool op_setup
     if (outputs[RNN_OUTPUT_H_STATE] != NULL)
     {
         curr = vsi_nn_internal_new_node( self, VSI_NN_OP_DATACONVERT, 0, 0 );
+        CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
         curr->inputs[0] = last_step_h_state;
         curr->outputs[0] = outputs[RNN_OUTPUT_H_STATE];
         vsi_nn_internal_setup_node(self, curr);
@@ -312,6 +314,7 @@ static vsi_bool op_setup
 
     /* concat rnncell output, the rnn's output is 3-dims */
     curr = vsi_nn_internal_new_node( self, VSI_NN_OP_CONCAT, (uint32_t)time_step, 1 );
+    CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
     curr->node->nn_param.concat.axis = 2;
     for( i = 0; i < time_step; i++ )
     {
@@ -323,8 +326,9 @@ static vsi_bool op_setup
     if( !curr_param->time_major )
     {
         /* transpose time_major to batch_major*/
-        vsi_nn_rnn_transpose_time_major(self,
-            tensor, outputs[RNN_OUTPUT_OUTPUT], use_virtual_tensor);
+        CHECK_PTR_FAIL_GOTO(vsi_nn_rnn_transpose_time_major(self,
+            tensor, outputs[RNN_OUTPUT_OUTPUT], use_virtual_tensor),
+            "Create internal tensor failed", final);
     }
 
 final:

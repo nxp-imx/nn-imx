@@ -60,4 +60,13 @@
         } \
     }
 
+#define CHECK_PTR_FAIL_GOTO_RLS_INTERNAL_NODE( pointer, node, msg, lbl ) \
+    { \
+        if( pointer == NULL ) { \
+            vsi_nn_internal_release_node(&node);\
+            VSILOGD("CHECK POINTER %s", msg); \
+            goto lbl; \
+        } \
+    }
+
 #endif

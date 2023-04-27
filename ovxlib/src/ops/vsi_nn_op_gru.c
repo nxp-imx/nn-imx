@@ -230,6 +230,7 @@ static vsi_bool op_setup
         /* transpose to time_major */
         tmp_tensor = vsi_nn_rnn_transpose_time_major(self,
             inputs[GRU_INPUT_INPUT], NULL, use_virtual_tensor);
+        CHECK_PTR_FAIL_GOTO(tmp_tensor, "Create internal tensor failed", final);
         input_tensor = tmp_tensor->t;
     }
 
@@ -288,6 +289,7 @@ static vsi_bool op_setup
 
         /* create a grucell */
         curr = vsi_nn_internal_new_node( self, VSI_NN_OP_GRUCELL, 0, 0 );
+        CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
         curr->node->nn_param.grucell.num_units = p->num_units;
         curr->node->nn_param.grucell.activation = p->activation;
         curr->node->nn_param.grucell.recurrent_activation = p->recurrent_activation;
@@ -337,6 +339,7 @@ static vsi_bool op_setup
 
         /* concat all grucell output0, the reshaped grucell output shape: [hidden_size, batch, 1] */
         curr = vsi_nn_internal_new_node( self, VSI_NN_OP_CONCAT, timestep, 1 );
+        CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
         curr->node->nn_param.concat.axis = 2; /* concat the cell_outs in timestep */
         for( i = 0; i < timestep; i++ )
         {
@@ -348,8 +351,9 @@ static vsi_bool op_setup
         if(p->time_major == FALSE)
         {
             /* transpose time_major to batch_major */
-            vsi_nn_rnn_transpose_time_major(self,
-                output_tensor, outputs[GRU_OUTPUT_OUTPUT], use_virtual_tensor);
+            CHECK_PTR_FAIL_GOTO(vsi_nn_rnn_transpose_time_major(self,
+                output_tensor, outputs[GRU_OUTPUT_OUTPUT], use_virtual_tensor),
+                "Create internal tensor failed", final);
         }
     }
 

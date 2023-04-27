@@ -37,6 +37,7 @@
 #include "utils/vsi_nn_link_list.h"
 #include "vsi_nn_internal_node.h"
 #include "utils/vsi_nn_constraint_check.h"
+#include "vsi_nn_error.h"
 
 static vsi_status op_compute
     (
@@ -180,9 +181,9 @@ static vsi_bool op_setup
     vsi_nn_tensor_t ** outputs
     )
 {
-    vsi_bool ret;
-    uint32_t i, num;
-    vsi_size_t average;
+    vsi_bool ret = FALSE;
+    uint32_t i = 0, num = 0;
+    vsi_size_t average = 1;
     vsi_size_t start[VSI_NN_MAX_DIM_NUM] = { 0 };
     vsi_size_t end[VSI_NN_MAX_DIM_NUM] = { 0 };
     uint32_t axis = self->nn_param.split.axis;
@@ -191,8 +192,6 @@ static vsi_bool op_setup
     vsi_nn_split_param * p = NULL;
     vsi_nn_internal_node_t* curr = NULL;
 
-    ret = TRUE;
-    average = 1;
     /* compute the output tensor number */
     num = (uint32_t)(self->output.num - 1);
     while ( NULL == outputs[num] )
@@ -239,6 +238,7 @@ static vsi_bool op_setup
             p->lcl_data->end_dims[j] = (int32_t)end[j];
         }
         curr = vsi_nn_internal_new_node( self, VSI_NN_OP_STRIDED_SLICE, 0, 0 );
+        CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
         curr->node->nn_param.strided_slice.begin_dims = p->lcl_data->begin_dims;
         curr->node->nn_param.strided_slice.begin_dims_num = inputs[0]->attr.dim_num;
         curr->node->nn_param.strided_slice.end_dims = p->lcl_data->end_dims;
@@ -251,10 +251,12 @@ static vsi_bool op_setup
         curr->node->nn_param.strided_slice.new_axis_mask = 0;
         curr->inputs[0] = inputs[0];
         curr->outputs[0] = outputs[i];
-        vsi_nn_internal_setup_node( self, curr );
+        ret = vsi_nn_internal_setup_node( self, curr );
     }
 
     return ret;
+final:
+    return FALSE;
 } /* op_setup() */
 
 static vsi_status op_init

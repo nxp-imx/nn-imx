@@ -160,6 +160,7 @@ static vsi_bool op_setup
         self->nn_param.pre_process_tensor.local.enable_perm == FALSE)
     {
         curr = vsi_nn_internal_new_node( self, VSI_NN_OP_RESHAPE2, 0, 0 );
+        CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
         curr->node->nn_param.reshape2.size = outputs[0]->attr.size;
         curr->node->nn_param.reshape2.dim_num = outputs[0]->attr.dim_num;
         curr->inputs[0] = inputs[PRE_PROCESS_TENSOR_INPUT];
@@ -171,6 +172,7 @@ static vsi_bool op_setup
         self->nn_param.pre_process_tensor.local.enable_perm == FALSE)
     {
         curr = vsi_nn_internal_new_node( self, VSI_NN_OP_DATACONVERT, 0, 0 );
+        CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
         curr->inputs[0] = inputs[PRE_PROCESS_TENSOR_INPUT];
         curr->outputs[0] = outputs[PRE_PROCESS_TENSOR_OUTPUT];
 
@@ -180,6 +182,7 @@ static vsi_bool op_setup
         self->nn_param.pre_process_tensor.local.enable_perm == TRUE)
     {
         curr = vsi_nn_internal_new_node( self, VSI_NN_OP_PERMUTE, 0, 0 );
+        CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
         curr->node->nn_param.permute.perm = self->nn_param.pre_process_tensor.perm;
         curr->node->nn_param.permute.dim_num = self->nn_param.pre_process_tensor.dim_num;
         curr->inputs[0] = inputs[PRE_PROCESS_TENSOR_INPUT];
@@ -198,12 +201,14 @@ static vsi_bool op_setup
         CHECK_PTR_FAIL_GOTO(output_tensor, "Create internal tensor failed", final);
 
         curr = vsi_nn_internal_new_node( self, VSI_NN_OP_DATACONVERT, 0, 0 );
+        CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
         curr->inputs[0] = inputs[PRE_PROCESS_TENSOR_INPUT];
         curr->outputs[0] = output_tensor->t;
 
         ret = vsi_nn_internal_setup_node( self, curr );
 
         curr = vsi_nn_internal_new_node( self, VSI_NN_OP_PERMUTE, 0, 0 );
+        CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
         curr->node->nn_param.permute.perm = self->nn_param.pre_process_tensor.perm;
         curr->node->nn_param.permute.dim_num = self->nn_param.pre_process_tensor.dim_num;
         curr->inputs[0] = output_tensor->t;

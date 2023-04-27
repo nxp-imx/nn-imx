@@ -59,9 +59,10 @@ static vsi_nn_internal_tensor_t * reshape_cell_out
 
     /* reshape cell_out [w,h,c,n] to [w,h,c,1,n] */
     curr = vsi_nn_internal_new_node( self, VSI_NN_OP_RESHAPE2, 0, 0 );
+    CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
     reshape_cell_size = vsi_nn_internal_new_node_param(curr,
         VSI_NN_MAX_DIM_NUM * sizeof(vsi_size_t));
-    CHECK_PTR_FAIL_GOTO( reshape_cell_size, "Create internal buffer fail.", final );
+    CHECK_PTR_FAIL_GOTO_RLS_INTERNAL_NODE( reshape_cell_size, curr, "Create internal buffer fail.", final );
     reshape_cell_size[0] = cell_out->attr.size[0];
     reshape_cell_size[1] = cell_out->attr.size[1];
     reshape_cell_size[2] = cell_out->attr.size[2];
@@ -97,9 +98,10 @@ static vsi_nn_internal_tensor_t * reshape_split_out
 
     /* reshape [w,h,c,t,n] to [w,h,c,n] */
     curr = vsi_nn_internal_new_node( self, VSI_NN_OP_RESHAPE2, 0, 0 );
+    CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
     reshape_split_size = vsi_nn_internal_new_node_param(curr,
         VSI_NN_MAX_DIM_NUM * sizeof(vsi_size_t));
-    CHECK_PTR_FAIL_GOTO( reshape_split_size, "Create internal buffer fail.", final );
+    CHECK_PTR_FAIL_GOTO_RLS_INTERNAL_NODE( reshape_split_size, curr, "Create internal buffer fail.", final );
     reshape_split_size[0] = split_out->attr.size[0];
     reshape_split_size[1] = split_out->attr.size[1];
     reshape_split_size[2] = split_out->attr.size[2];
@@ -133,8 +135,9 @@ static vsi_status split_input_tensor
     i = 0;
     memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
     curr = vsi_nn_internal_new_node( self, VSI_NN_OP_SPLIT, 1, time_step );
+    CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
     slices = (uint32_t *)vsi_nn_internal_new_node_param(curr, time_step * sizeof(uint32_t));
-    CHECK_PTR_FAIL_GOTO(slices, "Create internal buffer failed", final);
+    CHECK_PTR_FAIL_GOTO_RLS_INTERNAL_NODE(slices, curr, "Create internal buffer failed", final);
     curr->node->nn_param.split.axis = 3; /* input_shape [w,h,c,t,n] */
     curr->node->nn_param.split.slices_num = time_step;
     curr->inputs[0] = input;
@@ -145,7 +148,7 @@ static vsi_status split_input_tensor
         slices[i] = 1;
         vsi_nn_internal_init_tensor_attr(&attr, &input->attr.dtype, TRUE);
         output_tensor = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
-        CHECK_PTR_FAIL_GOTO( output_tensor, "Create internal tensor fail.", final );
+        CHECK_PTR_FAIL_GOTO_RLS_INTERNAL_NODE( output_tensor, curr, "Create internal tensor fail.", final );
         curr->outputs[i] = output_tensor->t;
         output[i] = output_tensor->t;
     }
@@ -616,6 +619,7 @@ static vsi_bool op_setup
 
         /* create a conv2d_lstm_cell */
         curr = vsi_nn_internal_new_node( self, VSI_NN_OP_CONV2D_LSTM_CELL, 0, 0 );
+        CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
         curr->node->nn_param.conv2d_lstm_cell.filters = p->filters;
         curr->node->nn_param.conv2d_lstm_cell.activation = p->activation;
         curr->node->nn_param.conv2d_lstm_cell.recurrent_activation = p->recurrent_activation;
@@ -670,6 +674,7 @@ static vsi_bool op_setup
         }
         /* concat all step's output0 data on dimension t --- cell out0 shape: [w,h,c,t,n] */
         curr = vsi_nn_internal_new_node( self, VSI_NN_OP_CONCAT, (uint32_t)timestep, 1 );
+        CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
         curr->node->nn_param.concat.axis = 3;
         for(i = 0; i < timestep; i++)
         {

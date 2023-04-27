@@ -205,16 +205,18 @@ static vsi_bool op_setup
         CHECK_PTR_FAIL_GOTO(output_tensor, "Create internal tensor failed", final);
 
         curr = vsi_nn_internal_new_node(self, VSI_NN_OP_REVERSE, 0, 0);
+        CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
         curr->inputs[0] = inputs[0];
         curr->outputs[0] = output_tensor->t;
         curr->node->nn_param.reverse.axis = self->nn_param.reverse.axis;
         curr->node->nn_param.reverse.axis_num = self->nn_param.reverse.axis_num;
-        vsi_nn_internal_setup_node(self, curr);
+        ret &= vsi_nn_internal_setup_node(self, curr);
 
         curr = vsi_nn_internal_new_node(self, VSI_NN_OP_DATACONVERT, 0, 0);
+        CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
         curr->inputs[0] = output_tensor->t;
         curr->outputs[0] = outputs[0];
-        vsi_nn_internal_setup_node(self, curr);
+        ret &= vsi_nn_internal_setup_node(self, curr);
     }
 
     return ret;

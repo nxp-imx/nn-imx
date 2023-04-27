@@ -171,6 +171,7 @@ static vsi_bool op_setup
     case VSI_NN_SOURCE_FORMAT_TENSOR:
         {
             curr = vsi_nn_internal_new_node( self, VSI_NN_OP_PRE_PROCESS_TENSOR, 0, 0 );
+            CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
 
             curr->node->nn_param.pre_process_tensor.perm = p->perm;
             curr->node->nn_param.pre_process_tensor.dim_num = p->dim_num;
@@ -184,6 +185,7 @@ static vsi_bool op_setup
     case VSI_NN_SOURCE_FORMAT_IMAGE_GRAY:
         {
             curr = vsi_nn_internal_new_node( self, VSI_NN_OP_PRE_PROCESS_GRAY, 0, 0 );
+            CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
 
             curr->node->nn_param.pre_process_gray.mean = p->norm.mean[0];
             curr->node->nn_param.pre_process_gray.scale = p->norm.scale;
@@ -210,6 +212,7 @@ static vsi_bool op_setup
     case VSI_NN_SOURCE_FORMAT_IMAGE_RGB:
         {
             curr = vsi_nn_internal_new_node( self, VSI_NN_OP_PRE_PROCESS_RGB, 0, 0 );
+            CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
 
             if (p->reverse_channel)
             {
@@ -251,6 +254,7 @@ static vsi_bool op_setup
     case VSI_NN_SOURCE_FORMAT_IMAGE_YUV420:
         {
             curr = vsi_nn_internal_new_node( self, VSI_NN_OP_PRE_PROCESS_YUV420, 0, 0 );
+            CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
 
             if (p->reverse_channel)
             {
@@ -294,6 +298,7 @@ static vsi_bool op_setup
     case VSI_NN_SOURCE_FORMAT_IMAGE_BGRA:
         {
             curr = vsi_nn_internal_new_node( self, VSI_NN_OP_PRE_PROCESS_BGRA, 0, 0 );
+            CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
 
             if (p->reverse_channel)
             {
@@ -386,6 +391,7 @@ static vsi_bool op_setup
             }
 
             curr = vsi_nn_internal_new_node( self, VSI_NN_OP_PRE_PROCESS_RGB888_PLANAR, 0, 0 );
+            CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
             if (is_input_sep)
             {
                 curr->inputs[0] = inputs[0];
@@ -414,6 +420,7 @@ static vsi_bool op_setup
             ret = vsi_nn_internal_setup_node(self, curr);
 
             curr = vsi_nn_internal_new_node( self, VSI_NN_OP_CONCAT, 3, 1 );
+            CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
 
             curr->node->nn_param.concat.axis = axis;
             curr->inputs[0] = tmp_outputs[0]->t;
@@ -434,6 +441,7 @@ static vsi_bool op_setup
     case VSI_NN_SOURCE_FORMAT_IMAGE_YUV444:
         {
             curr = vsi_nn_internal_new_node( self, VSI_NN_OP_PRE_PROCESS_YUV444, 0, 0 );
+            CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
 
             if (p->reverse_channel)
             {
@@ -478,6 +486,7 @@ static vsi_bool op_setup
     case VSI_NN_SOURCE_FORMAT_IMAGE_NV12:
         {
             curr = vsi_nn_internal_new_node( self, VSI_NN_OP_PRE_PROCESS_NV12, 0, 0 );
+            CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
 
             if (p->reverse_channel)
             {
@@ -530,6 +539,7 @@ static vsi_bool op_setup
     case VSI_NN_SOURCE_FORMAT_IMAGE_UYVY422:
         {
             curr = vsi_nn_internal_new_node( self, VSI_NN_OP_PRE_PROCESS_YUV422, 0, 0 );
+            CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
 
             if (p->reverse_channel)
             {
@@ -601,6 +611,7 @@ static vsi_bool op_setup
         if (layout == VSI_NN_DEST_LAYOUT_NHWC)
         {
             curr = vsi_nn_internal_new_node( self, VSI_NN_OP_PERMUTE, 0, 0 );
+            CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
             curr->node->nn_param.permute.perm = p->perm;
             curr->node->nn_param.permute.dim_num = p->dim_num;
             curr->inputs[0] = preprocess_tensor->t;

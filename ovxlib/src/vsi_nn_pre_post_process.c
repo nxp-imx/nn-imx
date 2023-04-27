@@ -1097,7 +1097,7 @@ vsi_status vsi_nn_UpdateCropParamsForBinaryGraph
     for (i = 0; i < graph->node_num; i++)
     {
         vsi_nn_node_t* node = vsi_nn_GetNode(graph, i);
-        if (node->op == VSI_NN_OP_NBG)
+        if (node && node->op == VSI_NN_OP_NBG)
         {
             vx_parameter param = 0;
             vx_enum type = 0;

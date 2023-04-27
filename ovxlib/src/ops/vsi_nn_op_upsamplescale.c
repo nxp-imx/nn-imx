@@ -35,6 +35,7 @@
 #include "utils/vsi_nn_util.h"
 #include "kernel/vsi_nn_kernel.h"
 #include "utils/vsi_nn_constraint_check.h"
+#include "vsi_nn_error.h"
 
 typedef struct _upsamplescale_local_data_t {
     int32_t placeholder;
@@ -169,30 +170,34 @@ static vsi_bool op_setup
     float scale = self->nn_param.upsamplescale.scale;
     int32_t i = 0;
     vsi_nn_internal_node_t* curr = NULL;
+    vsi_bool ret = FALSE;
 
     vsi_nn_internal_init_node_wksp(self);
 
     if (stride == 1 && vsi_nn_abs(scale - 1.0f) == _EPSILON)
     {
         curr = vsi_nn_internal_new_node(self, VSI_NN_OP_DATACONVERT, 0, 0);
+        CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
         curr->inputs[0] = inputs[0];
         curr->outputs[0] = outputs[0];
 
-        vsi_nn_internal_setup_node(self, curr);
+        ret = vsi_nn_internal_setup_node(self, curr);
     }
     else if (stride == 1)
     {
         curr = vsi_nn_internal_new_node(self, VSI_NN_OP_LINEAR, 0, 0);
+        CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
         curr->node->nn_param.linear.a = scale;
         curr->node->nn_param.linear.b = 0;
         curr->inputs[0] = inputs[0];
         curr->outputs[0] = outputs[0];
 
-        vsi_nn_internal_setup_node(self, curr);
+        ret = vsi_nn_internal_setup_node(self, curr);
     }
     else if (vsi_nn_abs(scale - 1.0f) == _EPSILON)
     {
         curr = vsi_nn_internal_new_node(self, VSI_NN_OP_RESIZE, 0, 0);
+        CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
         curr->node->nn_param.resize.type = VSI_NN_INTERPOLATION_NEAREST_NEIGHBOR;
         curr->node->nn_param.resize.align_corners = FALSE;
         curr->node->nn_param.resize.half_pixel_centers = FALSE;
@@ -201,7 +206,7 @@ static vsi_bool op_setup
         curr->inputs[0] = inputs[0];
         curr->outputs[0] = outputs[0];
 
-        vsi_nn_internal_setup_node(self, curr);
+        ret = vsi_nn_internal_setup_node(self, curr);
     }
     else
     {
@@ -212,9 +217,12 @@ static vsi_bool op_setup
             outputs[0]->attr.size[i] = inputs[0]->attr.size[i];
         }
         outputs[0]->attr.dim_num = inputs[0]->attr.dim_num;
+
+        ret = TRUE;
     }
 
-    return TRUE;
+final:
+    return ret;
 } /* op_setup() */
 
 static vsi_status op_init

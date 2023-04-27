@@ -477,8 +477,10 @@ static vsi_nn_kernel_node_t _setup
 
         rs_tensors[1] = vsi_nn_reshape_tensor( graph,
             outputs[0], shape[1], 2 );
+        CHECK_PTR_FAIL_GOTO(rs_tensors[1], "Create tensor failed", final);
         rs_tensors[2] = vsi_nn_reshape_tensor( graph,
             outputs[1], shape[1], 2 );
+        CHECK_PTR_FAIL_GOTO(rs_tensors[2], "Create tensor failed", final);
     }
     else
     {
@@ -488,14 +490,17 @@ static vsi_nn_kernel_node_t _setup
 
         memcpy( &attr, &(rs_tensors[0]->attr), sizeof(vsi_nn_tensor_attr_t) );
         rs_tensors[1] = vsi_nn_CreateTensor( graph, &attr );
+        CHECK_PTR_FAIL_GOTO(rs_tensors[1], "Create tensor failed", final);
         attr.dtype.vx_type = VSI_NN_TYPE_INT32;
         attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
         rs_tensors[2] = vsi_nn_CreateTensor( graph, &attr );
-
+        CHECK_PTR_FAIL_GOTO(rs_tensors[2], "Create tensor failed", final);
         rs_tensors[3] = vsi_nn_reshape_tensor( graph,
             outputs[0], shape[1], 2 );
+        CHECK_PTR_FAIL_GOTO(rs_tensors[3], "Create tensor failed", final);
         rs_tensors[4] = vsi_nn_reshape_tensor( graph,
             outputs[1], shape[1], 2 );
+        CHECK_PTR_FAIL_GOTO(rs_tensors[4], "Create tensor failed", final);
 
         input_num = 3;
     }

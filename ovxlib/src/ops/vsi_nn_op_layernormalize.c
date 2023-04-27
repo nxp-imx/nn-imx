@@ -122,9 +122,10 @@ static vsi_bool op_setup
         CHECK_PTR_FAIL_GOTO(vari_tensor, "Create internal tensor failed", final);
 
         curr = vsi_nn_internal_new_node(self, VSI_NN_OP_MOMENTS, 0, 0);
+        CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
         axis_array = (int32_t*)\
             vsi_nn_internal_new_node_param(curr, sizeof(int32_t) * VSI_NN_MAX_DIM_NUM);
-        CHECK_PTR_FAIL_GOTO(axis_array, "Create internal buffer failed", final);
+        CHECK_PTR_FAIL_GOTO_RLS_INTERNAL_NODE(axis_array, curr, "Create internal buffer failed", final);
         axis_array[0] = axis;
 
         curr->node->nn_param.moments.axis = axis_array;
@@ -135,6 +136,7 @@ static vsi_bool op_setup
         vsi_nn_internal_setup_node( self, curr );
 
         curr = vsi_nn_internal_new_node(self, VSI_NN_OP_BATCHNORM_SINGLE, 0, 0);
+        CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
         curr->inputs[0] = inputs[0];
         curr->inputs[1] = mean_tensor->t;
         curr->inputs[2] = vari_tensor->t;
