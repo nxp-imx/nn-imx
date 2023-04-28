@@ -47,29 +47,38 @@ static vsi_status vsi_nn_depth2space_compute
 {
     vsi_status status;
     vsi_nn_tensor_t *block_size_tensor = NULL;
-    vx_nn_reorg_params_t param;
+#if (VX_DEPTH2SPACE_CRD_MODE_SUPPORT)
+    vx_nn_reorg_params_ext3_t paramExt;
+    vx_nn_reorg_params_t *param = (vx_nn_reorg_params_t *)&paramExt.base.base;
+    size_t size = sizeof(vx_nn_reorg_params_ext3_t);
+    paramExt.mode = self->nn_param.depth2space.mode;
+#else
+    vx_nn_reorg_params_t base;
+    vx_nn_reorg_params_t *param = &base;
+    size_t size = sizeof(vx_nn_reorg_params_t);
+    memset(param, 0, sizeof(vx_nn_reorg_params_t));
+#endif
 
     status = VSI_FAILURE;
-    memset(&param, 0, sizeof(vx_nn_reorg_params_t));
 
     block_size_tensor = vsi_nn_VariableToTensor(self,
         (uint8_t *)&self->nn_param.depth2space.block_size,
         VSI_NN_TYPE_INT32);
-    if( NULL == block_size_tensor )
+    if ( NULL == block_size_tensor )
     {
         VSILOGE("Create block_size_tensor fail.(depth2space)");
         return VSI_FAILURE;
     }
     self->nn_param.depth2space.local.block_size_tensor = block_size_tensor;
-    param.block_size = REQUIRED_IO(block_size_tensor);
-    param.type = VX_REORG_DEPTH_TO_SPACE;
+    param->block_size = REQUIRED_IO(block_size_tensor);
+    param->type = VX_REORG_DEPTH_TO_SPACE;
 
     self->n = vxReorgLayer2( self->graph->g,
         inputs[0]->t,
-        &param,
-        sizeof(vx_nn_reorg_params_t),
+        param,
+        size,
         outputs[0]->t);
-    if( NULL != self->n )
+    if ( NULL != self->n )
     {
         status = VSI_SUCCESS;
     }
@@ -85,6 +94,13 @@ static vsi_status op_compute
 {
     vsi_status status = VSI_FAILURE;
 
+#if (VX_DEPTH2SPACE_CRD_MODE_SUPPORT)
+    if (self->nn_param.depth2space.mode == VSI_NN_DEPTH2SPACE_DCR ||
+        self->nn_param.depth2space.mode == VSI_NN_DEPTH2SPACE_CRD)
+    {
+        status = vsi_nn_depth2space_compute(self, inputs, outputs);
+    }
+#else
     if (self->nn_param.depth2space.mode == VSI_NN_DEPTH2SPACE_DCR)
     {
         status = vsi_nn_depth2space_compute(self, inputs, outputs);
@@ -93,6 +109,7 @@ static vsi_status op_compute
     {
         status = vsi_nn_internal_compute_node( self );
     }
+#endif
     else
     {
         VSILOGE("Unknown depth2space mode.(depth2space)");
@@ -101,26 +118,6 @@ static vsi_status op_compute
 
     return status;
 } /* op_compute() */
-
-static vsi_status op_optimize
-    (
-    vsi_nn_node_t * self,
-    vsi_nn_tensor_t ** inputs,
-    vsi_nn_tensor_t ** outputs,
-    vsi_nn_opt_direction_e direction
-    )
-{
-    VSI_UNREFERENCED(inputs);
-    VSI_UNREFERENCED(outputs);
-    if (self->nn_param.depth2space.mode == VSI_NN_DEPTH2SPACE_CRD)
-    {
-        return vsi_nn_internal_optimize_node(self, direction );
-    }
-    else
-    {
-        return VSI_SUCCESS;
-    }
-} /* op_optimize() */
 
 static vsi_bool op_check
     (
@@ -142,6 +139,7 @@ static vsi_bool op_check
     return ret;
 } /* op_check() */
 
+#if !(VX_DEPTH2SPACE_CRD_MODE_SUPPORT)
 static void op_set_depth2space_param_value(vsi_nn_nn_param_t *nn_param,
                                     vsi_nn_op_t  type_name,
                                     vsi_nn_depth2space_mode_e   mode,
@@ -179,6 +177,7 @@ static vsi_bool op_set_depth2space_internal
 final:
     return retn;
 }
+#endif
 
 static vsi_status op_init
     (
@@ -204,7 +203,7 @@ static vsi_bool op_setup
 {
     vsi_bool ret = TRUE;
     uint32_t size = node->nn_param.depth2space.block_size;
-    if( VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num )
+    if ( VSI_NN_DIM_AUTO == outputs[0]->attr.dim_num )
     {
         outputs[0]->attr.dim_num = inputs[0]->attr.dim_num;
         outputs[0]->attr.size[0] = inputs[0]->attr.size[0] * size;
@@ -213,10 +212,12 @@ static vsi_bool op_setup
         outputs[0]->attr.size[3] = inputs[0]->attr.size[3];
     }
 
+#if !(VX_DEPTH2SPACE_CRD_MODE_SUPPORT)
     if (node->nn_param.depth2space.mode == VSI_NN_DEPTH2SPACE_CRD)
     {
         ret = op_set_depth2space_internal(node, inputs, outputs, VSI_NN_OP_DEPTH2SPACE_INTERNAL);
     }
+#endif
     return ret;
 } /* op_setup() */
 
@@ -230,11 +231,13 @@ static vsi_status op_deinit
         vsi_nn_ReleaseTensor(&(self->nn_param.depth2space.local.block_size_tensor));
     }
 
+#if !(VX_DEPTH2SPACE_CRD_MODE_SUPPORT)
     if (self->nn_param.depth2space.mode == VSI_NN_DEPTH2SPACE_CRD)
     {
         vsi_nn_internal_deinit_node_wksp(self);
     }
     else
+#endif
     {
         vsi_nn_op_common_deinit(self);
     }
@@ -254,7 +257,7 @@ DEF_OP_REG
     /* deinit     */ op_deinit,
     /* check      */ op_check,
     /* setup      */ op_setup,
-    /* optimize   */ op_optimize,
+    /* optimize   */ NULL,
     /* input_num  */ 1,
     /* output_num */ 1
     );
