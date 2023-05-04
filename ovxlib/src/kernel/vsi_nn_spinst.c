@@ -113,8 +113,18 @@ vsi_status vsi_nn_set_spinst_attr
     uint32_t constant_data[5] = {0};
 
     status = VSI_SUCCESS;
-    if( NULL == spinst )
+    if ( NULL == spinst )
     {
+        return VSI_FAILURE;
+    }
+
+    if (attrs.prog_init_instr_num == 0 &&
+        attrs.prog_loop_instr_num == 0 &&
+        attrs.prog_complete_instr_num == 0 &&
+        attrs.ch0_post_redistribute == VSI_NN_SP_CH_POST_REDISTRIBUTE_DIST_DISABLE &&
+        attrs.ch1_post_redistribute == VSI_NN_SP_CH_POST_REDISTRIBUTE_DIST_DISABLE)
+    {
+        VSILOGE( "Create invalid sp attribute." );
         return VSI_FAILURE;
     }
 
