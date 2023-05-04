@@ -465,17 +465,9 @@ vsi_nn_kernel_node_t vsi_nn_sp_l2norm_z_direction_mul_node
     memset(sp_insts_param, 0, sizeof(vsi_nn_spinst_inst_param) * spInstsNum);
     vsi_nn_init_spinst_attr(&attr);
 
-    if (output_scale == 1.0f)
-    {
-        spLoopInstsNum = 0;
-        spInstsNum = spInitInstsNum + spLoopInstsNum;
-    }
-    else
-    {
-        /* loop inst0: v11 = r3 * v11 */
-        status = vsi_nn_sp_mul(&sp_insts_param[0], VSI_NN_SP_SR3, VSI_NN_SP_VR11, VSI_NN_SP_VR11);
-        CHECK_STATUS_FAIL_GOTO(status, final );
-    }
+    /* loop inst0: v11 = r3 * v11 */
+    status = vsi_nn_sp_mul(&sp_insts_param[0], VSI_NN_SP_SR3, VSI_NN_SP_VR11, VSI_NN_SP_VR11);
+    CHECK_STATUS_FAIL_GOTO(status, final );
 
     attr.input_tile_mapping = VSI_NN_SP_ATTR_INPUT_TILE_MAPPING_XYMERGE;
 
@@ -735,11 +727,20 @@ vsi_nn_kernel_node_t l2_norm_z_direction
     nodes[1] = vsi_nn_sp_l2norm_z_direction_rsqrt_node(graph, dummy_tensor[0],
         dummy_tensor[1], "l2norm_1");
     CHECK_PTR_FAIL_GOTO( nodes[1], "Create l2norm_z_direction_rsqrt fail.", final );
-    nodes[2] = vsi_nn_sp_l2norm_z_direction_mul_node(graph, dummy_tensor[1],
-        dummy_tensor[2], output_scale, "l2norm_2");
-    CHECK_PTR_FAIL_GOTO( nodes[2], "Create l2norm_z_direction_mul fail.", final );
-    node = vsi_nn_sp_l2norm_z_direction_times_node(graph, output_tensor[0],
-        dummy_tensor[1], outputs[0], "l2norm_3");
+    if (output_scale != 1.0f)
+    {
+        nodes[2] = vsi_nn_sp_l2norm_z_direction_mul_node(graph, dummy_tensor[1],
+            dummy_tensor[2], output_scale, "l2norm_2");
+        CHECK_PTR_FAIL_GOTO( nodes[2], "Create l2norm_z_direction_mul fail.", final );
+
+        node = vsi_nn_sp_l2norm_z_direction_times_node(graph, output_tensor[0],
+            dummy_tensor[2], outputs[0], "l2norm_3");
+    }
+    else
+    {
+        node = vsi_nn_sp_l2norm_z_direction_times_node(graph, output_tensor[0],
+            dummy_tensor[1], outputs[0], "l2norm_2");
+    }
     CHECK_PTR_FAIL_GOTO( node, "Create l2norm_z_direction_times fail.", final );
 
 final:
