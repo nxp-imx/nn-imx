@@ -31853,9 +31853,21 @@ _viv_uniform int zp;\n\
 _viv_uniform float outputScale;\n\
 \n\
 __kernel void pre_process_bgra_scale_U8toU8(\n\
-    __read_only image2d_array_t input, __write_only image2d_array_t    output,\n\
-    global int *xRatio, global int * yRatio, global int * xOffset, global int * yOffset,\n\
-    float rMean, float gMean, float bMean, float var, int reverse_channel, int trans)\n\
+         __read_only image2d_array_t  input,\n\
+        __write_only image2d_array_t  output,\n\
+              global int *            xRatio,\n\
+              global int *            yRatio,\n\
+              global int *            xOffset,\n\
+              global int *            yOffset,\n\
+                     float            rMean,\n\
+                     float            gMean,\n\
+                     float            bMean,\n\
+                     float            r_scale,\n\
+                     int              reverse_channel,\n\
+                     int              trans,\n\
+                     float            g_scale,\n\
+                     float            b_scale\n\
+    )\n\
 {\n\
     int4 gidx = get_global_id(0);\n\
     int gidy = get_global_id(1);\n\
@@ -31911,6 +31923,7 @@ __kernel void pre_process_bgra_scale_U8toU8(\n\
     int4 tmp1, tmp2, result1, result2;\n\
     float4 tmpDst, tmp0;\n\
     float4 mean = (float4)(bMean, gMean, rMean, 0);\n\
+    float4 var = (float4)(b_scale, g_scale, r_scale, 0);\n\
     //tmpFx = (int4)(fx.x, fx.x, fx.x, fx.x);\n\
     int tmpV = 1 << 19;\n\
     vxc_short8 tmpFx;\n\
@@ -31973,9 +31986,21 @@ __kernel void pre_process_bgra_scale_U8toU8(\n\
 }\n\
 \n\
 __kernel void pre_process_bgra_copy_U8toU8(\n\
-    __read_only image2d_array_t input, __write_only image2d_array_t    output,\n\
-    global int *xRatio, global int * yRatio, global int * xOffset, global int * yOffset,\n\
-    float rMean, float gMean, float bMean, float var, int reverse_channel, int trans)\n\
+         __read_only image2d_array_t  input,\n\
+        __write_only image2d_array_t  output,\n\
+              global int *            xRatio,\n\
+              global int *            yRatio,\n\
+              global int *            xOffset,\n\
+              global int *            yOffset,\n\
+                     float            rMean,\n\
+                     float            gMean,\n\
+                     float            bMean,\n\
+                     float            r_scale,\n\
+                     int              reverse_channel,\n\
+                     int              trans,\n\
+                     float            g_scale,\n\
+                     float            b_scale\n\
+)\n\
 {\n\
     int2 pos = (int2)((get_global_id(0) + (*xOffset)) << 2, get_global_id(1) + (*yOffset));\n\
 \n\
@@ -31990,10 +32015,10 @@ __kernel void pre_process_bgra_copy_U8toU8(\n\
     VXC_DP4x4(tmpG, lineBGRA0, lineBGRA0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractGfromBgra_4x4);\n\
     VXC_DP4x4(tmpR, lineBGRA0, lineBGRA0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractRfromBgra_4x4);\n\
 \n\
-    tmpDst = (tmpB - bMean) * var;\n\
+    tmpDst = (tmpB - bMean) * b_scale;\n\
     result1 = convert_int4_rte(tmpDst * outputScale + zp);\n\
 \n\
-    tmpDst = (tmpG - gMean) * var;\n\
+    tmpDst = (tmpG - gMean) * g_scale;\n\
     result2 = convert_int4_rte(tmpDst * outputScale + zp);\n\
     VXC_DP2x8(dst, result1, result2, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniConvertInt32toUint8_2x8);\n\
 \n\
@@ -32003,7 +32028,7 @@ __kernel void pre_process_bgra_copy_U8toU8(\n\
     dstPos.z = 1;\n\
     VXC_WriteImage2DArray(output, dstPos, dst, VXC_MODIFIER(4, 7, 0, VXC_RM_TowardZero, 0));\n\
 \n\
-    tmpDst = (tmpR - rMean) * var;\n\
+    tmpDst = (tmpR - rMean) * r_scale;\n\
     result1 = convert_int4_rte(tmpDst * outputScale + zp);\n\
     VXC_DP2x8(dst, result1, result1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniConvertInt32toUint8_2x8);\n\
 \n\
@@ -32538,7 +32563,10 @@ static const char pre_process_nv12_copy_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 _viv_uniform int bOrder;\n\
 _viv_uniform int rOrder;\n\
 \n\
-_viv_uniform float outputScaleVar;\n\
+_viv_uniform float outputScaleVar_b;\n\
+_viv_uniform float outputScaleVar_g;\n\
+_viv_uniform float outputScaleVar_r;\n\
+\n\
 _viv_uniform float bMeanScaleVarZp;\n\
 _viv_uniform float gMeanScaleVarZp;\n\
 _viv_uniform float rMeanScaleVarZp;\n\
@@ -32563,10 +32591,12 @@ __kernel void pre_process_nv12_copy_##name \\\n\
                  float           rMean, \\\n\
                  float           gMean, \\\n\
                  float           bMean, \\\n\
-                 float           var, \\\n\
+                 float           r_scale, \\\n\
                  int             reverse_channel, \\\n\
                  int             trans, \\\n\
-                 int             nv_type \\\n\
+                 int             nv_type, \\\n\
+                 float           g_scale, \\\n\
+                 float           b_scale \\\n\
     ) \\\n\
 { \\\n\
     int gidx = get_global_id(0); \\\n\
@@ -32600,21 +32630,21 @@ __kernel void pre_process_nv12_copy_##name \\\n\
     dst_type dst0; \\\n\
     save_type dst; \\\n\
     int4 dstPos = (int4)(get_global_id(0), gidy, 0, 0); \\\n\
-    tmpDstB = tmpDstB * outputScaleVar + bMeanScaleVarZp; \\\n\
+    tmpDstB = tmpDstB * outputScaleVar_b + bMeanScaleVarZp; \\\n\
     _viv_asm(CONV_RTE, result, tmpDstB); \\\n\
     dstPos.z = bOrder; \\\n\
     VXC_DP2x8(dst0, result, result, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtract8Data_2x8); \\\n\
     _viv_asm(COPY, dst, dst0, copy_bytes); \\\n\
     VXC_WriteImage2DArray(output, dstPos, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
  \\\n\
-    tmpDstG = tmpDstG * outputScaleVar + gMeanScaleVarZp; \\\n\
+    tmpDstG = tmpDstG * outputScaleVar_g + gMeanScaleVarZp; \\\n\
     _viv_asm(CONV_RTE, result, tmpDstG); \\\n\
     dstPos.z = 1; \\\n\
     VXC_DP2x8(dst0, result, result, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtract8Data_2x8); \\\n\
     _viv_asm(COPY, dst, dst0, copy_bytes); \\\n\
     VXC_WriteImage2DArray(output, dstPos, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
  \\\n\
-    tmpDstR = tmpDstR * outputScaleVar + rMeanScaleVarZp; \\\n\
+    tmpDstR = tmpDstR * outputScaleVar_r + rMeanScaleVarZp; \\\n\
     _viv_asm(CONV_RTE, result, tmpDstR); \\\n\
     dstPos.z = rOrder; \\\n\
     VXC_DP2x8(dst0, result, result, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtract8Data_2x8); \\\n\
@@ -32632,7 +32662,10 @@ static const char pre_process_nv12_scale_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 _viv_uniform int bOrder;\n\
 _viv_uniform int rOrder;\n\
 \n\
-_viv_uniform float outputScaleVar;\n\
+_viv_uniform float outputScaleVar_b;\n\
+_viv_uniform float outputScaleVar_g;\n\
+_viv_uniform float outputScaleVar_r;\n\
+\n\
 _viv_uniform float bMeanScaleVarZp;\n\
 _viv_uniform float gMeanScaleVarZp;\n\
 _viv_uniform float rMeanScaleVarZp;\n\
@@ -32665,10 +32698,12 @@ __kernel void pre_process_nv12_scale_##name##_gq \\\n\
                  float           rMean, \\\n\
                  float           gMean, \\\n\
                  float           bMean, \\\n\
-                 float           var, \\\n\
+                 float           r_scale, \\\n\
                  int             reverse_channel, \\\n\
                  int             trans, \\\n\
-                 int             nv_type \\\n\
+                 int             nv_type, \\\n\
+                 float           g_scale, \\\n\
+                 float           b_scale \\\n\
     ) \\\n\
 { \\\n\
     uint4 gidx = get_global_id(0); \\\n\
@@ -32722,21 +32757,21 @@ __kernel void pre_process_nv12_scale_##name##_gq \\\n\
     dst_type dst0; \\\n\
     save_type dst; \\\n\
     int4 dstPos = (int4)(get_global_id(0), gidy, 0, 0); \\\n\
-    tmpDstB = tmpDstB * outputScaleVar + bMeanScaleVarZp; \\\n\
+    tmpDstB = tmpDstB * outputScaleVar_b + bMeanScaleVarZp; \\\n\
     _viv_asm(CONV_RTE, result, tmpDstB); \\\n\
     dstPos.z = bOrder; \\\n\
     VXC_DP2x8(dst0, result, result, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), uniExtract8Data_2x8); \\\n\
     _viv_asm(COPY, dst, dst0, copy_bytes); \\\n\
     VXC_WriteImage2DArray(output, dstPos, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
  \\\n\
-    tmpDstG = tmpDstG * outputScaleVar + gMeanScaleVarZp; \\\n\
+    tmpDstG = tmpDstG * outputScaleVar_g + gMeanScaleVarZp; \\\n\
     _viv_asm(CONV_RTE, result, tmpDstG); \\\n\
     dstPos.z = 1; \\\n\
     VXC_DP2x8(dst0, result, result, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), uniExtract8Data_2x8); \\\n\
     _viv_asm(COPY, dst, dst0, copy_bytes); \\\n\
     VXC_WriteImage2DArray(output, dstPos, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
  \\\n\
-    tmpDstR = tmpDstR * outputScaleVar + rMeanScaleVarZp; \\\n\
+    tmpDstR = tmpDstR * outputScaleVar_r + rMeanScaleVarZp; \\\n\
     _viv_asm(CONV_RTE, result, tmpDstR); \\\n\
     dstPos.z = rOrder; \\\n\
     VXC_DP2x8(dst0, result, result, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), uniExtract8Data_2x8); \\\n\
@@ -32761,10 +32796,12 @@ __kernel void pre_process_nv12_scale_##name \\\n\
                  float           rMean, \\\n\
                  float           gMean, \\\n\
                  float           bMean, \\\n\
-                 float           var, \\\n\
+                 float           r_scale, \\\n\
                  int             reverse_channel, \\\n\
                  int             trans, \\\n\
-                 int             nv_type \\\n\
+                 int             nv_type, \\\n\
+                 float           g_scale, \\\n\
+                 float           b_scale \\\n\
     ) \\\n\
 { \\\n\
     uint4 gidx = get_global_id(0); \\\n\
@@ -32816,21 +32853,21 @@ __kernel void pre_process_nv12_scale_##name \\\n\
     dst_type dst0; \\\n\
     save_type dst; \\\n\
     int4 dstPos = (int4)(get_global_id(0), gidy, 0, 0); \\\n\
-    tmpDstB = tmpDstB * outputScaleVar + bMeanScaleVarZp; \\\n\
+    tmpDstB = tmpDstB * outputScaleVar_b + bMeanScaleVarZp; \\\n\
     _viv_asm(CONV_RTE, result, tmpDstB); \\\n\
     dstPos.z = bOrder; \\\n\
     VXC_DP2x8(dst0, result, result, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), uniExtract8Data_2x8); \\\n\
     _viv_asm(COPY, dst, dst0, copy_bytes); \\\n\
     VXC_WriteImage2DArray(output, dstPos, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
  \\\n\
-    tmpDstG = tmpDstG * outputScaleVar + gMeanScaleVarZp; \\\n\
+    tmpDstG = tmpDstG * outputScaleVar_g + gMeanScaleVarZp; \\\n\
     _viv_asm(CONV_RTE, result, tmpDstG); \\\n\
     dstPos.z = 1; \\\n\
     VXC_DP2x8(dst0, result, result, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), uniExtract8Data_2x8); \\\n\
     _viv_asm(COPY, dst, dst0, copy_bytes); \\\n\
     VXC_WriteImage2DArray(output, dstPos, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
  \\\n\
-    tmpDstR = tmpDstR * outputScaleVar + rMeanScaleVarZp; \\\n\
+    tmpDstR = tmpDstR * outputScaleVar_r + rMeanScaleVarZp; \\\n\
     _viv_asm(CONV_RTE, result, tmpDstR); \\\n\
     dstPos.z = rOrder; \\\n\
     VXC_DP2x8(dst0, result, result, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), uniExtract8Data_2x8); \\\n\
@@ -33039,7 +33076,7 @@ _viv_uniform float output_scale;\n\
 _viv_uniform float output_zp;\n\
 _viv_uniform int4 rgb_order;\n\
 \n\
-#define RESIZE_BILINEAR_4X1(mean, output, _coord) \\\n\
+#define RESIZE_BILINEAR_4X1(scale, mean, output, _coord) \\\n\
     VXC_ReadImage2DArray(line0Y, input, coord_in, 0, \\\n\
         VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0)); \\\n\
     VXC_ReadImage2DArray(line1Y, input, coord_in, VXC_5BITOFFSET_XY(0, 1), \\\n\
@@ -33077,7 +33114,7 @@ _viv_uniform int4 rgb_order;\n\
     VXC_DP4x4(tmp_dst, u8_dst, u8_dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 1), \\\n\
         uniConvertIntergetoF32_4x4); \\\n\
  \\\n\
-    tmp_dst = tmp_dst * output_scale - mean * output_scale + output_zp; \\\n\
+    tmp_dst = tmp_dst * scale * output_scale - mean * scale * output_scale + output_zp; \\\n\
     _viv_asm(CONV, dst0, tmp_dst); \\\n\
     VXC_DP2x8(dst1, dst0, dst0, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), \\\n\
         uniExtract8Data_2x8); \\\n\
@@ -33097,9 +33134,11 @@ __kernel void pre_process_rgb888_planar_scale_U8to##dst_name \\\n\
                  float           rMean, \\\n\
                  float           gMean, \\\n\
                  float           bMean, \\\n\
-                 float           f32Var, \\\n\
+                 float           r_scale, \\\n\
                  int             reverse, \\\n\
-                 int             height \\\n\
+                 int             height, \\\n\
+                 float           g_scale, \\\n\
+                 float           b_scale \\\n\
     ) \\\n\
 { \\\n\
     int2 ratioXY = (int2)(*xRatio, *yRatio); \\\n\
@@ -33187,7 +33226,7 @@ __kernel void pre_process_rgb888_planar_scale_U8to##dst_name \\\n\
     conv_type dst0; \\\n\
     dst_type dst1; \\\n\
     copy_type dst; \\\n\
-    tmp_dst = tmp_dst * output_scale - rMean * output_scale + output_zp; \\\n\
+    tmp_dst = tmp_dst * r_scale * output_scale - rMean * r_scale * output_scale + output_zp; \\\n\
     _viv_asm(CONV, dst0, tmp_dst); \\\n\
     VXC_DP2x8(dst1, dst0, dst0, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), \\\n\
         uniExtract8Data_2x8); \\\n\
@@ -33195,8 +33234,8 @@ __kernel void pre_process_rgb888_planar_scale_U8to##dst_name \\\n\
     VXC_WriteImage(output, coord_out.xy, dst, \\\n\
         VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
  \\\n\
-    RESIZE_BILINEAR_4X1(gMean, output, coord_out.xz) \\\n\
-    RESIZE_BILINEAR_4X1(bMean, output, coord_out.xw) \\\n\
+    RESIZE_BILINEAR_4X1(g_scale, gMean, output, coord_out.xz) \\\n\
+    RESIZE_BILINEAR_4X1(b_scale, bMean, output, coord_out.xw) \\\n\
 }\n\
 PRE_PROCESS_RGB888_PLANAR_16BITS(F16, vxc_half8,  half4, vxc_short8)\n\
 PRE_PROCESS_RGB888_PLANAR_16BITS(I16, vxc_short8, int4,  vxc_short8)\n\
@@ -33213,9 +33252,11 @@ __kernel void pre_process_rgb888_planar_scale_U8to##dst_name \\\n\
                  float           rMean, \\\n\
                  float           gMean, \\\n\
                  float           bMean, \\\n\
-                 float           f32Var, \\\n\
+                 float           r_scale, \\\n\
                  int             reverse, \\\n\
-                 int             height \\\n\
+                 int             height, \\\n\
+                 float           g_scale, \\\n\
+                 float           b_scale \\\n\
     ) \\\n\
 { \\\n\
     int2 ratioXY = (int2)(*xRatio, *yRatio); \\\n\
@@ -33295,7 +33336,7 @@ __kernel void pre_process_rgb888_planar_scale_U8to##dst_name \\\n\
  \\\n\
     int4 dst0; \\\n\
     write_type dst; \\\n\
-    tmp_dst = tmp_dst * output_scale - rMean * output_scale + output_zp; \\\n\
+    tmp_dst = tmp_dst * r_scale * output_scale - rMean * r_scale * output_scale + output_zp; \\\n\
     dst0 = convert_int4_rte(tmp_dst); \\\n\
     VXC_DP2x8(dst, dst0, dst0, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), \\\n\
         uniExtract8Data_2x8); \\\n\
@@ -33340,7 +33381,7 @@ __kernel void pre_process_rgb888_planar_scale_U8to##dst_name \\\n\
         uniExtractBytes); \\\n\
     VXC_DP4x4(tmp_dst, u8_dst, u8_dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 1), \\\n\
         uniConvertIntergetoF32_4x4); \\\n\
-    tmp_dst = tmp_dst * output_scale - gMean * output_scale + output_zp; \\\n\
+    tmp_dst = tmp_dst * g_scale * output_scale - gMean * g_scale * output_scale + output_zp; \\\n\
     dst0 = convert_int4_rte(tmp_dst); \\\n\
     VXC_DP2x8(dst, dst0, dst0, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), \\\n\
         uniExtract8Data_2x8); \\\n\
@@ -33385,7 +33426,7 @@ __kernel void pre_process_rgb888_planar_scale_U8to##dst_name \\\n\
         uniExtractBytes); \\\n\
     VXC_DP4x4(tmp_dst, u8_dst, u8_dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 1), \\\n\
         uniConvertIntergetoF32_4x4); \\\n\
-    tmp_dst = tmp_dst * output_scale - bMean * output_scale + output_zp; \\\n\
+    tmp_dst = tmp_dst * b_scale * output_scale - bMean * b_scale * output_scale + output_zp; \\\n\
     dst0 = convert_int4_rte(tmp_dst); \\\n\
     VXC_DP2x8(dst, dst0, dst0, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), \\\n\
         uniExtract8Data_2x8); \\\n\
@@ -33417,9 +33458,11 @@ __kernel void pre_process_rgb888_planar_copy_U8to##dst_name \\\n\
                  float           rMean, \\\n\
                  float           gMean, \\\n\
                  float           bMean, \\\n\
-                 float           f32Var, \\\n\
+                 float           r_scale, \\\n\
                  int             reverse, \\\n\
-                 int             height \\\n\
+                 int             height, \\\n\
+                 float           g_scale, \\\n\
+                 float           b_scale \\\n\
     ) \\\n\
 { \\\n\
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(0), get_global_id(1)); \\\n\
@@ -33436,8 +33479,9 @@ __kernel void pre_process_rgb888_planar_copy_U8to##dst_name \\\n\
     VXC_ReadImage2DArray(src2, input, coord_in, 0, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
  \\\n\
     coord.x = coord.z + 8; \\\n\
-    float4 paramData0 = (float4)(rMean * output_scale - output_zp, rMean * output_scale - output_zp, \\\n\
-        rMean * output_scale - output_zp, output_scale); \\\n\
+    float4 paramData0 = (float4)(rMean * r_scale * output_scale - output_zp,\\\n\
+        rMean * r_scale * output_scale - output_zp, \\\n\
+        rMean * r_scale * output_scale - output_zp, r_scale * output_scale); \\\n\
  \\\n\
     half4 paramData_f16; \\\n\
     copy_type tmp_dst; \\\n\
@@ -33453,8 +33497,9 @@ __kernel void pre_process_rgb888_planar_copy_U8to##dst_name \\\n\
     _viv_asm(COPY, tmp_dst, dst1, 16); \\\n\
     VXC_WriteImage(output, coord_out.xy, tmp_dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
  \\\n\
-    float4 paramData1 = (float4)(gMean * output_scale - output_zp, gMean * output_scale - output_zp, \\\n\
-        gMean * output_scale - output_zp, output_scale); \\\n\
+    float4 paramData1 = (float4)(gMean * g_scale * output_scale - output_zp, \\\n\
+        gMean * g_scale * output_scale - output_zp, \\\n\
+        gMean * g_scale * output_scale - output_zp, g_scale * output_scale); \\\n\
     _viv_asm(CONV, paramData_f16, paramData1); \\\n\
     VXC_DP2x8(dst0, src1, paramData_f16, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), \\\n\
         uniDataMeanStddevLo_2x8); \\\n\
@@ -33465,8 +33510,9 @@ __kernel void pre_process_rgb888_planar_copy_U8to##dst_name \\\n\
     _viv_asm(COPY, tmp_dst, dst1, 16); \\\n\
     VXC_WriteImage(output, coord_out.xw, tmp_dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
  \\\n\
-    float4 paramData2 = (float4)(bMean * output_scale - output_zp, bMean * output_scale - output_zp, \\\n\
-        bMean * output_scale - output_zp, output_scale); \\\n\
+    float4 paramData2 = (float4)(bMean * b_scale * output_scale - output_zp, \\\n\
+        bMean * b_scale * output_scale - output_zp, \\\n\
+        bMean * b_scale * output_scale - output_zp, b_scale * output_scale); \\\n\
     _viv_asm(CONV, paramData_f16, paramData2); \\\n\
     VXC_DP2x8(dst0, src2, paramData_f16, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), \\\n\
         uniDataMeanStddevLo_2x8); \\\n\
@@ -33493,9 +33539,11 @@ __kernel void pre_process_rgb888_planar_copy_U8to##dst_name \\\n\
                  float           rMean, \\\n\
                  float           gMean, \\\n\
                  float           bMean, \\\n\
-                 float           f32Var, \\\n\
+                 float           r_scale, \\\n\
                  int             reverse, \\\n\
-                 int             height \\\n\
+                 int             height, \\\n\
+                 float           g_scale, \\\n\
+                 float           b_scale \\\n\
     ) \\\n\
 { \\\n\
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(0), get_global_id(1)); \\\n\
@@ -33513,8 +33561,9 @@ __kernel void pre_process_rgb888_planar_copy_U8to##dst_name \\\n\
  \\\n\
     int4 coord_out = coord; \\\n\
     coord_out.xyw = coord.www + rgb_order.xyz; \\\n\
-    float4 paramData0 = (float4)(rMean * output_scale - output_zp, rMean * output_scale - output_zp, \\\n\
-        rMean * output_scale - output_zp, output_scale); \\\n\
+    float4 paramData0 = (float4)(rMean * r_scale * output_scale - output_zp, \\\n\
+        rMean * r_scale * output_scale - output_zp, \\\n\
+        rMean * r_scale * output_scale - output_zp, r_scale * output_scale); \\\n\
  \\\n\
     half4 paramData_f16; \\\n\
     _viv_asm(CONV, paramData_f16, paramData0); \\\n\
@@ -33525,8 +33574,9 @@ __kernel void pre_process_rgb888_planar_copy_U8to##dst_name \\\n\
         uniDataMeanStddevHi_2x8); \\\n\
     VXC_WriteImage(output, coord_out.zx, dst, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
  \\\n\
-    float4 paramData1 = (float4)(gMean * output_scale - output_zp, gMean * output_scale - output_zp, \\\n\
-        gMean * output_scale - output_zp, output_scale); \\\n\
+    float4 paramData1 = (float4)(gMean * g_scale * output_scale - output_zp, \\\n\
+        gMean * g_scale * output_scale - output_zp, \\\n\
+        gMean * g_scale * output_scale - output_zp, g_scale * output_scale); \\\n\
     _viv_asm(CONV, paramData_f16, paramData1); \\\n\
  \\\n\
     VXC_DP2x8(dst, src1, paramData_f16, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), \\\n\
@@ -33535,8 +33585,9 @@ __kernel void pre_process_rgb888_planar_copy_U8to##dst_name \\\n\
         uniDataMeanStddevHi_2x8); \\\n\
     VXC_WriteImage(output, coord_out.zy, dst, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
  \\\n\
-    float4 paramData2 = (float4)(bMean * output_scale - output_zp, bMean * output_scale - output_zp, \\\n\
-        bMean * output_scale - output_zp, output_scale); \\\n\
+    float4 paramData2 = (float4)(bMean * b_scale * output_scale - output_zp, \\\n\
+        bMean * b_scale * output_scale - output_zp, \\\n\
+        bMean * b_scale * output_scale - output_zp, b_scale * output_scale); \\\n\
     _viv_asm(CONV, paramData_f16, paramData2); \\\n\
  \\\n\
     VXC_DP2x8(dst, src2, paramData_f16, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), \\\n\
@@ -33569,9 +33620,11 @@ __kernel void pre_process_rgb888_planar_4over3_U8toU8\n\
                  float           rMean,\n\
                  float           gMean,\n\
                  float           bMean,\n\
-                 float           f32Var,\n\
+                 float           r_scale,\n\
                  int             reverse,\n\
-                 int             height\n\
+                 int             height,\n\
+                 float           g_scale,\n\
+                 float           b_scale\n\
     )\n\
 {\n\
     int4 coord_in = (int4)(get_global_id(0), get_global_id(1), 0, 0);\n\
@@ -33668,9 +33721,11 @@ __kernel void pre_process_rgb888_planar_half_U8toU8\n\
                  float           rMean,\n\
                  float           gMean,\n\
                  float           bMean,\n\
-                 float           f32Var,\n\
+                 float           r_scale,\n\
                  int             reverse,\n\
-                 int             height\n\
+                 int             height,\n\
+                 float           g_scale,\n\
+                 float           b_scale\n\
     )\n\
 {\n\
     int4 coord_in = (int4)(get_global_id(0), get_global_id(1), 0, 0);\n\
@@ -33713,7 +33768,7 @@ _viv_uniform VXC_512Bits uni8BitsDataInterleave_1_2x8;\n\
 _viv_uniform float output_scale;\n\
 _viv_uniform float output_zp;\n\
 \n\
-#define RESIZE_BILINEAR_4X1(mean, output) \\\n\
+#define RESIZE_BILINEAR_4X1(scale, mean) \\\n\
     VXC_ReadImage2DArray(line0Y, input, coord_in, 0, \\\n\
         VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0)); \\\n\
     VXC_ReadImage2DArray(line1Y, input, coord_in, VXC_5BITOFFSET_XY(0, 1), \\\n\
@@ -33751,7 +33806,7 @@ _viv_uniform float output_zp;\n\
     VXC_DP4x4(tmp_dst, u8_dst, u8_dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 1), \\\n\
         uniConvertIntergetoF32_4x4); \\\n\
  \\\n\
-    tmp_dst = tmp_dst * output_scale - mean * output_scale + output_zp; \\\n\
+    tmp_dst = tmp_dst * scale * output_scale - mean * scale * output_scale + output_zp; \\\n\
     _viv_asm(CONV, dst0, tmp_dst);\n\
 #define PRE_PROCESS_RGB888_PLANAR_16BITS(dst_name, dst_type, conv_type, copy_type) \\\n\
 __kernel void pre_process_rgb888_planar_scale_U8to##dst_name##_nhwc \\\n\
@@ -33765,8 +33820,10 @@ __kernel void pre_process_rgb888_planar_scale_U8to##dst_name##_nhwc \\\n\
                  float           rMean, \\\n\
                  float           gMean, \\\n\
                  float           bMean, \\\n\
-                 float           f32Var, \\\n\
-                 int             reverse \\\n\
+                 float           r_scale, \\\n\
+                 int             reverse, \\\n\
+                 float           g_scale, \\\n\
+                 float           b_scale \\\n\
     ) \\\n\
 { \\\n\
     int2 ratioXY = (int2)(*xRatio, *yRatio); \\\n\
@@ -33855,15 +33912,15 @@ __kernel void pre_process_rgb888_planar_scale_U8to##dst_name##_nhwc \\\n\
     conv_type dst0; \\\n\
     dst_type dst1, dst2; \\\n\
     copy_type data0, data1, dst; \\\n\
-    tmp_dst = tmp_dst * output_scale - rMean * output_scale + output_zp; \\\n\
+    tmp_dst = tmp_dst * r_scale * output_scale - rMean * r_scale * output_scale + output_zp; \\\n\
     _viv_asm(CONV, dst0, tmp_dst); \\\n\
     VXC_DP2x8(dst1, dst0, dst0, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), \\\n\
         uniExtract8Data_2x8); \\\n\
  \\\n\
-    RESIZE_BILINEAR_4X1(gMean) \\\n\
+    RESIZE_BILINEAR_4X1(g_scale, gMean) \\\n\
     VXC_DP2x8(dst1, dst0, dst0, VXC_MODIFIER(4, 7, 0, VXC_RM_ToNearestEven, 1), \\\n\
         uniExtract8Data_2x8); \\\n\
-    RESIZE_BILINEAR_4X1(bMean) \\\n\
+    RESIZE_BILINEAR_4X1(b_scale, bMean) \\\n\
     VXC_DP2x8(dst2, dst0, dst0, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), \\\n\
         uniExtract8Data_2x8); \\\n\
     _viv_asm(COPY, data0, dst1, 16); \\\n\
@@ -33890,8 +33947,10 @@ __kernel void pre_process_rgb888_planar_scale_U8to##dst_name##_nhwc \\\n\
                  float           rMean, \\\n\
                  float           gMean, \\\n\
                  float           bMean, \\\n\
-                 float           f32Var, \\\n\
-                 int             reverse \\\n\
+                 float           r_scale, \\\n\
+                 int             reverse, \\\n\
+                 float           g_scale, \\\n\
+                 float           b_scale \\\n\
     ) \\\n\
 { \\\n\
     int2 ratioXY = (int2)(*xRatio, *yRatio); \\\n\
@@ -33971,7 +34030,7 @@ __kernel void pre_process_rgb888_planar_scale_U8to##dst_name##_nhwc \\\n\
  \\\n\
     int4 dst0; \\\n\
     write_type dst1, dst; \\\n\
-    tmp_dst = tmp_dst * output_scale - rMean * output_scale + output_zp; \\\n\
+    tmp_dst = tmp_dst * r_scale * output_scale - rMean * r_scale * output_scale + output_zp; \\\n\
     dst0 = convert_int4_rte(tmp_dst); \\\n\
     VXC_DP2x8(dst1, dst0, dst0, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), \\\n\
         uniExtract8Data_2x8); \\\n\
@@ -34014,7 +34073,7 @@ __kernel void pre_process_rgb888_planar_scale_U8to##dst_name##_nhwc \\\n\
         uniExtractBytes); \\\n\
     VXC_DP4x4(tmp_dst, u8_dst, u8_dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 1), \\\n\
         uniConvertIntergetoF32_4x4); \\\n\
-    tmp_dst = tmp_dst * output_scale - gMean * output_scale + output_zp; \\\n\
+    tmp_dst = tmp_dst * g_scale * output_scale - gMean * g_scale * output_scale + output_zp; \\\n\
     dst0 = convert_int4_rte(tmp_dst); \\\n\
     VXC_DP2x8(dst1, dst0, dst0, VXC_MODIFIER(4, 7, 0, VXC_RM_ToNearestEven, 1), \\\n\
         uniExtract8Data_2x8); \\\n\
@@ -34057,7 +34116,7 @@ __kernel void pre_process_rgb888_planar_scale_U8to##dst_name##_nhwc \\\n\
         uniExtractBytes); \\\n\
     VXC_DP4x4(tmp_dst, u8_dst, u8_dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 1), \\\n\
         uniConvertIntergetoF32_4x4); \\\n\
-    tmp_dst = tmp_dst * output_scale - bMean * output_scale + output_zp; \\\n\
+    tmp_dst = tmp_dst * b_scale * output_scale - bMean * b_scale * output_scale + output_zp; \\\n\
     dst0 = convert_int4_rte(tmp_dst); \\\n\
     VXC_DP2x8(dst1, dst0, dst0, VXC_MODIFIER(8, 11, 0, VXC_RM_ToNearestEven, 1), \\\n\
         uniExtract8Data_2x8); \\\n\
@@ -34096,8 +34155,10 @@ __kernel void pre_process_rgb888_planar_copy_U8to##dst_name##_nhwc \\\n\
                  float           rMean, \\\n\
                  float           gMean, \\\n\
                  float           bMean, \\\n\
-                 float           f32Var, \\\n\
-                 int             reverse \\\n\
+                 float           r_scale, \\\n\
+                 int             reverse, \\\n\
+                 float           g_scale, \\\n\
+                 float           b_scale \\\n\
     ) \\\n\
 { \\\n\
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(0), get_global_id(1)); \\\n\
@@ -34116,23 +34177,26 @@ __kernel void pre_process_rgb888_planar_copy_U8to##dst_name##_nhwc \\\n\
     int4 coord_out = coord; \\\n\
     coord_out.z = coord_out.z * 3; \\\n\
     coord_out.x = coord_out.z + 8; \\\n\
-    float4 paramData0 = (float4)(rMean * output_scale - output_zp, rMean * output_scale - output_zp, \\\n\
-        rMean * output_scale - output_zp, output_scale); \\\n\
+    float4 paramData0 = (float4)(rMean * output_scale * r_scale - output_zp, \\\n\
+        rMean * r_scale * output_scale - output_zp, \\\n\
+        rMean * r_scale * output_scale - output_zp, r_scale * output_scale); \\\n\
  \\\n\
     half4 paramData_f16; \\\n\
     copy_type data0, data1, data2, dst; \\\n\
     _viv_asm(CONV, paramData_f16, paramData0); \\\n\
     VXC_DP2x8(dst0, src0, paramData_f16, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), \\\n\
         uniDataMeanStddevLo_2x8); \\\n\
-    float4 paramData1 = (float4)(gMean * output_scale - output_zp, gMean * output_scale - output_zp, \\\n\
-        gMean * output_scale - output_zp, output_scale); \\\n\
+    float4 paramData1 = (float4)(gMean * output_scale * g_scale - output_zp,\\\n\
+        gMean * g_scale * output_scale - output_zp, \\\n\
+        gMean * g_scale * output_scale - output_zp, g_scale * output_scale); \\\n\
     _viv_asm(CONV, paramData_f16, paramData1); \\\n\
     VXC_DP2x8(dst0, src1, paramData_f16, VXC_MODIFIER(4, 7, 0, VXC_RM_TowardZero, 0), \\\n\
         uniDataMeanStddevLo_2x8); \\\n\
     _viv_asm(COPY, data0, dst0, 16); \\\n\
  \\\n\
-    float4 paramData2 = (float4)(bMean * output_scale - output_zp, bMean * output_scale - output_zp, \\\n\
-        bMean * output_scale - output_zp, output_scale); \\\n\
+    float4 paramData2 = (float4)(bMean * output_scale * b_scale - output_zp, \\\n\
+        bMean * b_scale * output_scale - output_zp, \\\n\
+        bMean * b_scale * output_scale - output_zp, b_scale * output_scale); \\\n\
     _viv_asm(CONV, paramData_f16, paramData2); \\\n\
     VXC_DP2x8(dst1, src2, paramData_f16, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), \\\n\
         uniDataMeanStddevLo_2x8); \\\n\
@@ -34159,9 +34223,11 @@ __kernel void pre_process_rgb888_planar_copy_U8to##dst_name##_nhwc \\\n\
                  float           rMean, \\\n\
                  float           gMean, \\\n\
                  float           bMean, \\\n\
-                 float           f32Var, \\\n\
+                 float           r_scale, \\\n\
                  int             reverse, \\\n\
-                 int             height \\\n\
+                 int             height, \\\n\
+                 float           g_scale, \\\n\
+                 float           b_scale \\\n\
     ) \\\n\
 { \\\n\
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(0), get_global_id(1)); \\\n\
@@ -34180,8 +34246,9 @@ __kernel void pre_process_rgb888_planar_copy_U8to##dst_name##_nhwc \\\n\
     int4 coord_out = coord; \\\n\
     coord_out.z = coord_out.z * 3; \\\n\
     coord_out.x = coord_out.z + 16; \\\n\
-    float4 paramData0 = (float4)(rMean * output_scale - output_zp, rMean * output_scale - output_zp, \\\n\
-        rMean * output_scale - output_zp, output_scale); \\\n\
+    float4 paramData0 = (float4)(rMean * r_scale * output_scale - output_zp, \\\n\
+        rMean * r_scale * output_scale - output_zp, \\\n\
+        rMean * r_scale * output_scale - output_zp, r_scale * output_scale); \\\n\
  \\\n\
     half4 paramData_f16; \\\n\
     _viv_asm(CONV, paramData_f16, paramData0); \\\n\
@@ -34189,15 +34256,17 @@ __kernel void pre_process_rgb888_planar_copy_U8to##dst_name##_nhwc \\\n\
     VXC_DP2x8(dst0, src0, paramData_f16, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), \\\n\
         uniDataMeanStddevLo_2x8); \\\n\
  \\\n\
-    float4 paramData1 = (float4)(gMean * output_scale - output_zp, gMean * output_scale - output_zp, \\\n\
-        gMean * output_scale - output_zp, output_scale); \\\n\
+    float4 paramData1 = (float4)(gMean * g_scale * output_scale - output_zp, \\\n\
+        gMean * g_scale * output_scale - output_zp, \\\n\
+        gMean * g_scale * output_scale - output_zp, g_scale * output_scale); \\\n\
     _viv_asm(CONV, paramData_f16, paramData1); \\\n\
  \\\n\
     VXC_DP2x8(dst0, src1, paramData_f16, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1), \\\n\
         uniDataMeanStddevLo_2x8); \\\n\
  \\\n\
-    float4 paramData2 = (float4)(bMean * output_scale - output_zp, bMean * output_scale - output_zp, \\\n\
-        bMean * output_scale - output_zp, output_scale); \\\n\
+    float4 paramData2 = (float4)(bMean * b_scale * output_scale - output_zp, \\\n\
+        bMean * b_scale * output_scale - output_zp, \\\n\
+        bMean * b_scale * output_scale - output_zp, b_scale * output_scale); \\\n\
     _viv_asm(CONV, paramData_f16, paramData2); \\\n\
  \\\n\
     VXC_DP2x8(dst1, src2, paramData_f16, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), \\\n\
@@ -34232,8 +34301,10 @@ __kernel void pre_process_rgb888_planar_half_U8toU8_nhwc\n\
                  float           rMean,\n\
                  float           gMean,\n\
                  float           bMean,\n\
-                 float           f32Var,\n\
-                 int             reverse\n\
+                 float           r_scale,\n\
+                 int             reverse,\n\
+                 float           g_scale,\n\
+                 float           b_scale\n\
     )\n\
 {\n\
     int4 coord_in = (int4)(get_global_id(0), get_global_id(1), 0, 0);\n\
@@ -34286,7 +34357,7 @@ _viv_uniform float output_scale;\n\
 _viv_uniform float output_zp;\n\
 _viv_uniform int4 rgb_order;\n\
 \n\
-#define RESIZE_BILINEAR_4X1(input, mean, output, _coord) \\\n\
+#define RESIZE_BILINEAR_4X1(input, scale, mean, output, _coord) \\\n\
     VXC_ReadImage(line0Y, input, coord.xw, 0, VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0)); \\\n\
     VXC_ReadImage(line0Y, input, coord.yw, 0, VXC_MODIFIER(2, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
     VXC_ReadImage(line0Y, input, coord.zw, 0, VXC_MODIFIER(4, 5, 0, VXC_RM_TowardZero, 0)); \\\n\
@@ -34316,7 +34387,7 @@ _viv_uniform int4 rgb_order;\n\
     VXC_DP4x4(tmp_dst, u8_dst, u8_dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 1), \\\n\
         uniConvertIntergetoF32_4x4); \\\n\
  \\\n\
-    tmp_dst = tmp_dst * output_scale - mean * output_scale + output_zp; \\\n\
+    tmp_dst = tmp_dst * scale * output_scale - scale * mean * output_scale + output_zp; \\\n\
     _viv_asm(CONV, dst0, tmp_dst); \\\n\
     VXC_DP2x8(dst1, dst0, dst0, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), \\\n\
         uniExtract8Data_2x8); \\\n\
@@ -34338,9 +34409,11 @@ __kernel void pre_process_rgb888_planar_sep_scale_U8to##dst_name \\\n\
                  float           rMean, \\\n\
                  float           gMean, \\\n\
                  float           bMean, \\\n\
-                 float           f32Var, \\\n\
+                 float           r_scale, \\\n\
                  int             reverse, \\\n\
-                 int             height \\\n\
+                 int             height, \\\n\
+                 float           g_scale, \\\n\
+                 float           b_scale \\\n\
     ) \\\n\
 { \\\n\
     int2 ratioXY = (int2)(*xRatio, *yRatio); \\\n\
@@ -34419,7 +34492,7 @@ __kernel void pre_process_rgb888_planar_sep_scale_U8to##dst_name \\\n\
     conv_type dst0; \\\n\
     dst_type dst1; \\\n\
     copy_type dst; \\\n\
-    tmp_dst = tmp_dst * output_scale - rMean * output_scale + output_zp; \\\n\
+    tmp_dst = tmp_dst * r_scale * output_scale - rMean * r_scale * output_scale + output_zp; \\\n\
     _viv_asm(CONV, dst0, tmp_dst); \\\n\
     VXC_DP2x8(dst1, dst0, dst0, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), \\\n\
         uniExtract8Data_2x8); \\\n\
@@ -34427,8 +34500,8 @@ __kernel void pre_process_rgb888_planar_sep_scale_U8to##dst_name \\\n\
     VXC_WriteImage(output, coord_out.xy, dst, \\\n\
         VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
  \\\n\
-    RESIZE_BILINEAR_4X1(input1, gMean, output, coord_out.xz) \\\n\
-    RESIZE_BILINEAR_4X1(input2, bMean, output, coord_out.xw) \\\n\
+    RESIZE_BILINEAR_4X1(input1, g_scale, gMean, output, coord_out.xz) \\\n\
+    RESIZE_BILINEAR_4X1(input2, b_scale, bMean, output, coord_out.xw) \\\n\
 }\n\
 RGB888_PLANAR_SEP_16BITS(F16, vxc_half8,  half4, vxc_short8)\n\
 RGB888_PLANAR_SEP_16BITS(I16, vxc_short8, int4,  vxc_short8)\n\
@@ -34447,9 +34520,11 @@ __kernel void pre_process_rgb888_planar_sep_scale_U8to##dst_name \\\n\
                  float           rMean, \\\n\
                  float           gMean, \\\n\
                  float           bMean, \\\n\
-                 float           f32Var, \\\n\
+                 float           r_scale, \\\n\
                  int             reverse, \\\n\
-                 int             height \\\n\
+                 int             height, \\\n\
+                 float           g_scale, \\\n\
+                 float           b_scale \\\n\
     ) \\\n\
 { \\\n\
     int2 ratioXY = (int2)(*xRatio, *yRatio); \\\n\
@@ -34522,7 +34597,7 @@ __kernel void pre_process_rgb888_planar_sep_scale_U8to##dst_name \\\n\
  \\\n\
     int4 dst0; \\\n\
     write_type dst; \\\n\
-    tmp_dst = tmp_dst * output_scale - rMean * output_scale + output_zp; \\\n\
+    tmp_dst = tmp_dst * r_scale * output_scale - rMean * r_scale * output_scale + output_zp; \\\n\
     dst0 = convert_int4_rte(tmp_dst); \\\n\
     VXC_DP2x8(dst, dst0, dst0, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), \\\n\
         uniExtract8Data_2x8); \\\n\
@@ -34560,7 +34635,7 @@ __kernel void pre_process_rgb888_planar_sep_scale_U8to##dst_name \\\n\
         uniExtractBytes); \\\n\
     VXC_DP4x4(tmp_dst, u8_dst, u8_dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 1), \\\n\
         uniConvertIntergetoF32_4x4); \\\n\
-    tmp_dst = tmp_dst * output_scale - gMean * output_scale + output_zp; \\\n\
+    tmp_dst = tmp_dst * g_scale * output_scale - gMean * g_scale * output_scale + output_zp; \\\n\
     dst0 = convert_int4_rte(tmp_dst); \\\n\
     VXC_DP2x8(dst, dst0, dst0, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), \\\n\
         uniExtract8Data_2x8); \\\n\
@@ -34598,7 +34673,7 @@ __kernel void pre_process_rgb888_planar_sep_scale_U8to##dst_name \\\n\
         uniExtractBytes); \\\n\
     VXC_DP4x4(tmp_dst, u8_dst, u8_dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 1), \\\n\
         uniConvertIntergetoF32_4x4); \\\n\
-    tmp_dst = tmp_dst * output_scale - bMean * output_scale + output_zp; \\\n\
+    tmp_dst = tmp_dst * b_scale * output_scale - bMean * b_scale * output_scale + output_zp; \\\n\
     dst0 = convert_int4_rte(tmp_dst); \\\n\
     VXC_DP2x8(dst, dst0, dst0, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), \\\n\
         uniExtract8Data_2x8); \\\n\
@@ -34633,9 +34708,11 @@ __kernel void pre_process_rgb888_planar_sep_copy_U8to##dst_name \\\n\
                  float           rMean, \\\n\
                  float           gMean, \\\n\
                  float           bMean, \\\n\
-                 float           f32Var, \\\n\
+                 float           r_scale, \\\n\
                  int             reverse, \\\n\
-                 int             height \\\n\
+                 int             height, \\\n\
+                 float           g_scale, \\\n\
+                 float           b_scale \\\n\
     ) \\\n\
 { \\\n\
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(0), get_global_id(1)); \\\n\
@@ -34649,8 +34726,9 @@ __kernel void pre_process_rgb888_planar_sep_copy_U8to##dst_name \\\n\
     VXC_ReadImage(src2, input2, coord.xy, 0, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
  \\\n\
     coord.x = coord.z + 8; \\\n\
-    float4 paramData0 = (float4)(rMean * output_scale - output_zp, rMean * output_scale - output_zp, \\\n\
-        rMean * output_scale - output_zp, output_scale); \\\n\
+    float4 paramData0 = (float4)(rMean * r_scale * output_scale - output_zp, \\\n\
+        rMean * r_scale * output_scale - output_zp, \\\n\
+        rMean * r_scale * output_scale - output_zp, r_scale * output_scale); \\\n\
  \\\n\
     half4 paramData_f16; \\\n\
     copy_type tmp_dst; \\\n\
@@ -34666,8 +34744,9 @@ __kernel void pre_process_rgb888_planar_sep_copy_U8to##dst_name \\\n\
     _viv_asm(COPY, tmp_dst, dst1, 16); \\\n\
     VXC_WriteImage(output, coord_out.xy, tmp_dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
  \\\n\
-    float4 paramData1 = (float4)(gMean * output_scale - output_zp, gMean * output_scale - output_zp, \\\n\
-        gMean * output_scale - output_zp, output_scale); \\\n\
+    float4 paramData1 = (float4)(gMean * g_scale * output_scale - output_zp, \\\n\
+        gMean * g_scale * output_scale - output_zp, \\\n\
+        gMean * g_scale * output_scale - output_zp, g_scale * output_scale); \\\n\
     _viv_asm(CONV, paramData_f16, paramData1); \\\n\
     VXC_DP2x8(dst0, src1, paramData_f16, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), \\\n\
         uniDataMeanStddevLo_2x8); \\\n\
@@ -34678,8 +34757,9 @@ __kernel void pre_process_rgb888_planar_sep_copy_U8to##dst_name \\\n\
     _viv_asm(COPY, tmp_dst, dst1, 16); \\\n\
     VXC_WriteImage(output, coord_out.xw, tmp_dst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
  \\\n\
-    float4 paramData2 = (float4)(bMean * output_scale - output_zp, bMean * output_scale - output_zp, \\\n\
-        bMean * output_scale - output_zp, output_scale); \\\n\
+    float4 paramData2 = (float4)(bMean * b_scale * output_scale - output_zp, \\\n\
+        bMean * b_scale * output_scale - output_zp, \\\n\
+        bMean * b_scale * output_scale - output_zp, b_scale * output_scale); \\\n\
     _viv_asm(CONV, paramData_f16, paramData2); \\\n\
     VXC_DP2x8(dst0, src2, paramData_f16, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), \\\n\
         uniDataMeanStddevLo_2x8); \\\n\
@@ -34708,9 +34788,11 @@ __kernel void pre_process_rgb888_planar_sep_copy_U8to##dst_name \\\n\
                  float           rMean, \\\n\
                  float           gMean, \\\n\
                  float           bMean, \\\n\
-                 float           f32Var, \\\n\
+                 float           r_scale, \\\n\
                  int             reverse, \\\n\
-                 int             height \\\n\
+                 int             height, \\\n\
+                 float           g_scale, \\\n\
+                 float           b_scale \\\n\
     ) \\\n\
 { \\\n\
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(0), get_global_id(1)); \\\n\
@@ -34725,8 +34807,9 @@ __kernel void pre_process_rgb888_planar_sep_copy_U8to##dst_name \\\n\
  \\\n\
     int4 coord_out = coord; \\\n\
     coord_out.xyw += rgb_order.xyz; \\\n\
-    float4 paramData0 = (float4)(rMean * output_scale - output_zp, rMean * output_scale - output_zp, \\\n\
-        rMean * output_scale - output_zp, output_scale); \\\n\
+    float4 paramData0 = (float4)(rMean * r_scale * output_scale - output_zp, \\\n\
+        rMean * r_scale * output_scale - output_zp, \\\n\
+        rMean * r_scale * output_scale - output_zp, r_scale * output_scale); \\\n\
  \\\n\
     half4 paramData_f16; \\\n\
     _viv_asm(CONV, paramData_f16, paramData0); \\\n\
@@ -34737,8 +34820,9 @@ __kernel void pre_process_rgb888_planar_sep_copy_U8to##dst_name \\\n\
         uniDataMeanStddevHi_2x8); \\\n\
     VXC_WriteImage(output, coord_out.zx, dst, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
  \\\n\
-    float4 paramData1 = (float4)(gMean * output_scale - output_zp, gMean * output_scale - output_zp, \\\n\
-        gMean * output_scale - output_zp, output_scale); \\\n\
+    float4 paramData1 = (float4)(gMean * g_scale * output_scale - output_zp, \\\n\
+        gMean * g_scale * output_scale - output_zp, \\\n\
+        gMean * g_scale * output_scale - output_zp, g_scale * output_scale); \\\n\
     _viv_asm(CONV, paramData_f16, paramData1); \\\n\
  \\\n\
     VXC_DP2x8(dst, src1, paramData_f16, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), \\\n\
@@ -34747,8 +34831,9 @@ __kernel void pre_process_rgb888_planar_sep_copy_U8to##dst_name \\\n\
         uniDataMeanStddevHi_2x8); \\\n\
     VXC_WriteImage(output, coord_out.zy, dst, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
  \\\n\
-    float4 paramData2 = (float4)(bMean * output_scale - output_zp, bMean * output_scale - output_zp, \\\n\
-        bMean * output_scale - output_zp, output_scale); \\\n\
+    float4 paramData2 = (float4)(bMean * b_scale * output_scale - output_zp, \\\n\
+        bMean * b_scale * output_scale - output_zp, \\\n\
+        bMean * b_scale * output_scale - output_zp, b_scale * output_scale); \\\n\
     _viv_asm(CONV, paramData_f16, paramData2); \\\n\
  \\\n\
     VXC_DP2x8(dst, src2, paramData_f16, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), \\\n\
@@ -34783,9 +34868,11 @@ __kernel void pre_process_rgb888_planar_sep_4over3_U8toU8\n\
                  float           rMean,\n\
                  float           gMean,\n\
                  float           bMean,\n\
-                 float           f32Var,\n\
+                 float           r_scale,\n\
                  int             reverse,\n\
-                 int             height\n\
+                 int             height,\n\
+                 float           g_scale,\n\
+                 float           b_scale\n\
     )\n\
 {\n\
     int4 coord_in = (int4)(get_global_id(0), get_global_id(1), get_global_id(1), get_global_id(1));\n\
@@ -34871,9 +34958,11 @@ __kernel void pre_process_rgb888_planar_sep_half_U8toU8\n\
                  float           rMean,\n\
                  float           gMean,\n\
                  float           bMean,\n\
-                 float           f32Var,\n\
+                 float           r_scale,\n\
                  int             reverse,\n\
-                 int             height\n\
+                 int             height,\n\
+                 float           g_scale,\n\
+                 float           b_scale\n\
     )\n\
 {\n\
     int4 coord_in = (int4)(get_global_id(0), get_global_id(1), get_global_id(1), get_global_id(1));\n\
@@ -34911,7 +35000,7 @@ _viv_uniform VXC_512Bits uni8BitsDataInterleave_1_2x8;\n\
 _viv_uniform float output_scale;\n\
 _viv_uniform float output_zp;\n\
 \n\
-#define RESIZE_BILINEAR_4X1(input, mean) \\\n\
+#define RESIZE_BILINEAR_4X1(input, scale, mean) \\\n\
     VXC_ReadImage(line0Y, input, coord.xw, 0, VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0)); \\\n\
     VXC_ReadImage(line0Y, input, coord.yw, 0, VXC_MODIFIER(2, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
     VXC_ReadImage(line0Y, input, coord.zw, 0, VXC_MODIFIER(4, 5, 0, VXC_RM_TowardZero, 0)); \\\n\
@@ -34941,7 +35030,7 @@ _viv_uniform float output_zp;\n\
     VXC_DP4x4(tmp_dst, u8_dst, u8_dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 1), \\\n\
         uniConvertIntergetoF32_4x4); \\\n\
  \\\n\
-    tmp_dst = tmp_dst * output_scale - mean * output_scale + output_zp; \\\n\
+    tmp_dst = tmp_dst * scale * output_scale - mean * scale * output_scale + output_zp; \\\n\
     _viv_asm(CONV, dst0, tmp_dst);\n\
 \n\
 #define RGB888_PLANAR_SEP_16BITS(dst_name, dst_type, conv_type, copy_type) \\\n\
@@ -34958,8 +35047,10 @@ __kernel void pre_process_rgb888_planar_sep_scale_U8to##dst_name##_nhwc \\\n\
                  float           rMean, \\\n\
                  float           gMean, \\\n\
                  float           bMean, \\\n\
-                 float           f32Var, \\\n\
-                 int             reverse \\\n\
+                 float           r_scale, \\\n\
+                 int             reverse, \\\n\
+                 float           g_scale, \\\n\
+                 float           b_scale \\\n\
     ) \\\n\
 { \\\n\
     int2 ratioXY = (int2)(*xRatio, *yRatio); \\\n\
@@ -35039,15 +35130,15 @@ __kernel void pre_process_rgb888_planar_sep_scale_U8to##dst_name##_nhwc \\\n\
     conv_type dst0; \\\n\
     dst_type dst1, dst2; \\\n\
     copy_type data0, data1, dst; \\\n\
-    tmp_dst = tmp_dst * output_scale - rMean * output_scale + output_zp; \\\n\
+    tmp_dst = tmp_dst * r_scale * output_scale - rMean * r_scale * output_scale + output_zp; \\\n\
     _viv_asm(CONV, dst0, tmp_dst); \\\n\
     VXC_DP2x8(dst1, dst0, dst0, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), \\\n\
         uniExtract8Data_2x8); \\\n\
-    RESIZE_BILINEAR_4X1(input1, gMean) \\\n\
+    RESIZE_BILINEAR_4X1(input1, g_scale, gMean) \\\n\
     VXC_DP2x8(dst1, dst0, dst0, VXC_MODIFIER(4, 7, 0, VXC_RM_ToNearestEven, 1), \\\n\
         uniExtract8Data_2x8); \\\n\
  \\\n\
-    RESIZE_BILINEAR_4X1(input2, bMean) \\\n\
+    RESIZE_BILINEAR_4X1(input2, b_scale, bMean) \\\n\
     VXC_DP2x8(dst2, dst0, dst0, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), \\\n\
         uniExtract8Data_2x8); \\\n\
     _viv_asm(COPY, data0, dst1, 16); \\\n\
@@ -35076,8 +35167,10 @@ __kernel void pre_process_rgb888_planar_sep_scale_U8to##dst_name##_nhwc \\\n\
                  float           rMean, \\\n\
                  float           gMean, \\\n\
                  float           bMean, \\\n\
-                 float           f32Var, \\\n\
-                 int             reverse \\\n\
+                 float           r_scale, \\\n\
+                 int             reverse, \\\n\
+                 float           g_scale, \\\n\
+                 float           b_scale \\\n\
     ) \\\n\
 { \\\n\
     int2 ratioXY = (int2)(*xRatio, *yRatio); \\\n\
@@ -35150,7 +35243,7 @@ __kernel void pre_process_rgb888_planar_sep_scale_U8to##dst_name##_nhwc \\\n\
  \\\n\
     int4 dst0; \\\n\
     write_type dst1, dst; \\\n\
-    tmp_dst = tmp_dst * output_scale - rMean * output_scale + output_zp; \\\n\
+    tmp_dst = tmp_dst * r_scale * output_scale - rMean * r_scale * output_scale + output_zp; \\\n\
     dst0 = convert_int4_rte(tmp_dst); \\\n\
     VXC_DP2x8(dst1, dst0, dst0, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), \\\n\
         uniExtract8Data_2x8); \\\n\
@@ -35185,7 +35278,7 @@ __kernel void pre_process_rgb888_planar_sep_scale_U8to##dst_name##_nhwc \\\n\
         uniExtractBytes); \\\n\
     VXC_DP4x4(tmp_dst, u8_dst, u8_dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 1), \\\n\
         uniConvertIntergetoF32_4x4); \\\n\
-    tmp_dst = tmp_dst * output_scale - gMean * output_scale + output_zp; \\\n\
+    tmp_dst = tmp_dst * g_scale * output_scale - gMean * g_scale * output_scale + output_zp; \\\n\
     dst0 = convert_int4_rte(tmp_dst); \\\n\
     VXC_DP2x8(dst1, dst0, dst0, VXC_MODIFIER(4, 7, 0, VXC_RM_ToNearestEven, 1), \\\n\
         uniExtract8Data_2x8); \\\n\
@@ -35220,7 +35313,7 @@ __kernel void pre_process_rgb888_planar_sep_scale_U8to##dst_name##_nhwc \\\n\
         uniExtractBytes); \\\n\
     VXC_DP4x4(tmp_dst, u8_dst, u8_dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 1), \\\n\
         uniConvertIntergetoF32_4x4); \\\n\
-    tmp_dst = tmp_dst * output_scale - bMean * output_scale + output_zp; \\\n\
+    tmp_dst = tmp_dst * b_scale * output_scale - bMean * b_scale * output_scale + output_zp; \\\n\
     dst0 = convert_int4_rte(tmp_dst); \\\n\
     VXC_DP2x8(dst1, dst0, dst0, VXC_MODIFIER(8, 11, 0, VXC_RM_ToNearestEven, 1), \\\n\
         uniExtract8Data_2x8); \\\n\
@@ -35260,8 +35353,10 @@ __kernel void pre_process_rgb888_planar_sep_copy_U8to##dst_name##_nhwc \\\n\
                  float           rMean, \\\n\
                  float           gMean, \\\n\
                  float           bMean, \\\n\
-                 float           f32Var, \\\n\
-                 int             reverse \\\n\
+                 float           r_scale, \\\n\
+                 int             reverse, \\\n\
+                 float           g_scale, \\\n\
+                 float           b_scale \\\n\
     ) \\\n\
 { \\\n\
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(0), get_global_id(1)); \\\n\
@@ -35277,23 +35372,26 @@ __kernel void pre_process_rgb888_planar_sep_copy_U8to##dst_name##_nhwc \\\n\
     int4 coord_out = coord; \\\n\
     coord_out.z = coord_out.z * 3; \\\n\
     coord_out.x = coord_out.z + 8; \\\n\
-    float4 paramData0 = (float4)(rMean * output_scale - output_zp, rMean * output_scale - output_zp, \\\n\
-        rMean * output_scale - output_zp, output_scale); \\\n\
+    float4 paramData0 = (float4)(rMean * r_scale * output_scale - output_zp,\\\n\
+        rMean * r_scale * output_scale - output_zp, \\\n\
+        rMean * r_scale * output_scale - output_zp, r_scale * output_scale); \\\n\
  \\\n\
     half4 paramData_f16; \\\n\
     copy_type data0, data1, data2, dst; \\\n\
     _viv_asm(CONV, paramData_f16, paramData0); \\\n\
     VXC_DP2x8(dst0, src0, paramData_f16, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), \\\n\
         uniDataMeanStddevLo_2x8); \\\n\
-    float4 paramData1 = (float4)(gMean * output_scale - output_zp, gMean * output_scale - output_zp, \\\n\
-        gMean * output_scale - output_zp, output_scale); \\\n\
+    float4 paramData1 = (float4)(gMean * g_scale * output_scale - output_zp,\\\n\
+        gMean * g_scale * output_scale - output_zp, \\\n\
+        gMean * g_scale * output_scale - output_zp, g_scale * output_scale); \\\n\
     _viv_asm(CONV, paramData_f16, paramData1); \\\n\
     VXC_DP2x8(dst0, src1, paramData_f16, VXC_MODIFIER(4, 7, 0, VXC_RM_TowardZero, 0), \\\n\
         uniDataMeanStddevLo_2x8); \\\n\
     _viv_asm(COPY, data0, dst0, 16); \\\n\
  \\\n\
-    float4 paramData2 = (float4)(bMean * output_scale - output_zp, bMean * output_scale - output_zp, \\\n\
-        bMean * output_scale - output_zp, output_scale); \\\n\
+    float4 paramData2 = (float4)(bMean * b_scale * output_scale - output_zp,\\\n\
+        bMean * b_scale * output_scale - output_zp, \\\n\
+        bMean * b_scale * output_scale - output_zp, b_scale * output_scale); \\\n\
     _viv_asm(CONV, paramData_f16, paramData2); \\\n\
     VXC_DP2x8(dst0, src2, paramData_f16, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), \\\n\
         uniDataMeanStddevLo_2x8); \\\n\
@@ -35322,8 +35420,10 @@ __kernel void pre_process_rgb888_planar_sep_copy_U8to##dst_name##_nhwc \\\n\
                  float           rMean, \\\n\
                  float           gMean, \\\n\
                  float           bMean, \\\n\
-                 float           f32Var, \\\n\
-                 int             reverse \\\n\
+                 float           r_scale, \\\n\
+                 int             reverse, \\\n\
+                 float           g_scale, \\\n\
+                 float           b_scale \\\n\
     ) \\\n\
 { \\\n\
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(0), get_global_id(1)); \\\n\
@@ -35339,8 +35439,9 @@ __kernel void pre_process_rgb888_planar_sep_copy_U8to##dst_name##_nhwc \\\n\
     int4 coord_out = coord; \\\n\
     coord_out.z = coord_out.z * 3; \\\n\
     coord_out.x = coord_out.z + 16; \\\n\
-    float4 paramData0 = (float4)(rMean * output_scale - output_zp, rMean * output_scale - output_zp, \\\n\
-        rMean * output_scale - output_zp, output_scale); \\\n\
+    float4 paramData0 = (float4)(rMean * r_scale * output_scale - output_zp,\\\n\
+        rMean * r_scale * output_scale - output_zp, \\\n\
+        rMean * r_scale * output_scale - output_zp, r_scale * output_scale); \\\n\
  \\\n\
     half4 paramData_f16; \\\n\
     _viv_asm(CONV, paramData_f16, paramData0); \\\n\
@@ -35348,15 +35449,17 @@ __kernel void pre_process_rgb888_planar_sep_copy_U8to##dst_name##_nhwc \\\n\
     VXC_DP2x8(dst0, src0, paramData_f16, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), \\\n\
         uniDataMeanStddevLo_2x8); \\\n\
  \\\n\
-    float4 paramData1 = (float4)(gMean * output_scale - output_zp, gMean * output_scale - output_zp, \\\n\
-        gMean * output_scale - output_zp, output_scale); \\\n\
+    float4 paramData1 = (float4)(gMean * g_scale * output_scale - output_zp,\\\n\
+        gMean * g_scale * output_scale - output_zp, \\\n\
+        gMean * g_scale * output_scale - output_zp, g_scale * output_scale); \\\n\
     _viv_asm(CONV, paramData_f16, paramData1); \\\n\
  \\\n\
     VXC_DP2x8(dst0, src1, paramData_f16, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1), \\\n\
         uniDataMeanStddevLo_2x8); \\\n\
  \\\n\
-    float4 paramData2 = (float4)(bMean * output_scale - output_zp, bMean * output_scale - output_zp, \\\n\
-        bMean * output_scale - output_zp, output_scale); \\\n\
+    float4 paramData2 = (float4)(bMean * b_scale * output_scale - output_zp,\\\n\
+        bMean * b_scale * output_scale - output_zp, \\\n\
+        bMean * b_scale * output_scale - output_zp, b_scale * output_scale); \\\n\
     _viv_asm(CONV, paramData_f16, paramData2); \\\n\
  \\\n\
     VXC_DP2x8(dst1, src2, paramData_f16, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), \\\n\
@@ -35393,8 +35496,10 @@ __kernel void pre_process_rgb888_planar_sep_half_U8toU8_nhwc\n\
                  float           rMean,\n\
                  float           gMean,\n\
                  float           bMean,\n\
-                 float           f32Var,\n\
-                 int             reverse\n\
+                 float           r_scale,\n\
+                 int             reverse,\n\
+                 float           g_scale,\n\
+                 float           b_scale\n\
     )\n\
 {\n\
     int4 coord_in = (int4)(get_global_id(0), get_global_id(1), get_global_id(1), get_global_id(1));\n\
@@ -35661,9 +35766,11 @@ __kernel void pre_process_yuv420_copy_##name \\\n\
                  float           rMean, \\\n\
                  float           gMean, \\\n\
                  float           bMean, \\\n\
-                 float           var, \\\n\
+                 float           r_scale, \\\n\
                  int             reverse_channel, \\\n\
-                 int             trans \\\n\
+                 int             trans, \\\n\
+                 float           g_scale, \\\n\
+                 float           b_scale \\\n\
     ) \\\n\
 { \\\n\
     int4 pos = (int4)(get_global_id(0) + (*xOffset), get_global_id(1) + (*yOffset), 0, 0); \\\n\
@@ -35722,17 +35829,23 @@ __kernel void pre_process_yuv420_copy_##name \\\n\
     VXC_DP4x4(B, C2, tmpV, VXC_MODIFIER(8, 11, 0, VXC_RM_ToNearestEven, 1), uniCalculateB1st_4x4); \\\n\
     VXC_DP4x4(B, C3, tmpV, VXC_MODIFIER(12, 15, 0, VXC_RM_ToNearestEven, 1), uniCalculateB1st_4x4); \\\n\
  \\\n\
-    var *= output_scale; \\\n\
-    float4  paramData = (float4)(bMean * var - output_zp, gMean * var - output_zp, \\\n\
-        rMean * var - output_zp, var); \\\n\
+    float4  paramData = (float4)(bMean * b_scale * output_scale - output_zp,\\\n\
+                                 gMean * g_scale * output_scale - output_zp, \\\n\
+                                 rMean * r_scale * output_scale - output_zp, b_scale * output_scale); \\\n\
     half4 paramData_f16; \\\n\
     _viv_asm(CONV, paramData_f16, paramData); \\\n\
  \\\n\
     VXC_DP2x8(dst0, B, paramData_f16, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniQuantU8toU8LoB_2x8); \\\n\
     VXC_DP2x8(dst0, B, paramData_f16, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1), uniQuantU8toU8HiB_2x8); \\\n\
  \\\n\
+    paramData.w = g_scale * output_scale; \\\n\
+    _viv_asm(CONV, paramData_f16, paramData); \\\n\
+ \\\n\
     VXC_DP2x8(dst1, G, paramData_f16, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniQuantU8toU8LoG_2x8); \\\n\
     VXC_DP2x8(dst1, G, paramData_f16, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1), uniQuantU8toU8HiG_2x8); \\\n\
+ \\\n\
+    paramData.w = r_scale * output_scale; \\\n\
+    _viv_asm(CONV, paramData_f16, paramData); \\\n\
  \\\n\
     VXC_DP2x8(dst2, R, paramData_f16, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniQuantU8toU8LoR_2x8); \\\n\
     VXC_DP2x8(dst2, R, paramData_f16, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1), uniQuantU8toU8HiR_2x8); \\\n\
@@ -35762,9 +35875,11 @@ __kernel void pre_process_yuv420_copy_##name \\\n\
                  float           rMean, \\\n\
                  float           gMean, \\\n\
                  float           bMean, \\\n\
-                 float           var, \\\n\
+                 float           r_scale, \\\n\
                  int             reverse_channel, \\\n\
-                 int             trans \\\n\
+                 int             trans, \\\n\
+                 float           g_scale, \\\n\
+                 float           b_scale \\\n\
     ) \\\n\
 { \\\n\
     int4 pos = (int4)(get_global_id(0) + (*xOffset), get_global_id(1) + (*yOffset), 0, 0); \\\n\
@@ -35814,18 +35929,22 @@ __kernel void pre_process_yuv420_copy_##name \\\n\
     VXC_DP4x4(B, C2, tmpV, VXC_MODIFIER(8, 11, 0, VXC_RM_ToNearestEven, 1), uniCalculateB1st_4x4); \\\n\
     VXC_DP4x4(B, C3, tmpV, VXC_MODIFIER(12, 15, 0, VXC_RM_ToNearestEven, 1), uniCalculateB1st_4x4); \\\n\
  \\\n\
-    var *= output_scale; \\\n\
-    float4  paramData = (float4)(bMean * var - output_zp, gMean * var - output_zp, \\\n\
-        rMean * var - output_zp, var); \\\n\
+    float4  paramData = (float4)(bMean * b_scale * output_scale - output_zp, \\\n\
+                                 gMean * g_scale * output_scale - output_zp, \\\n\
+                                 rMean * r_scale * output_scale - output_zp, b_scale * output_scale); \\\n\
     half4 paramData_f16; \\\n\
     _viv_asm(CONV, paramData_f16, paramData); \\\n\
  \\\n\
     VXC_DP2x8(dst0, B, paramData_f16, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniQuantU8toU8LoB_2x8); \\\n\
     VXC_DP2x8(dst1, B, paramData_f16, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniQuantU8toU8HiB_2x8); \\\n\
  \\\n\
+    paramData.w = g_scale * output_scale; \\\n\
+    _viv_asm(CONV, paramData_f16, paramData); \\\n\
     VXC_DP2x8(dst2, G, paramData_f16, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniQuantU8toU8LoG_2x8); \\\n\
     VXC_DP2x8(dst3, G, paramData_f16, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniQuantU8toU8HiG_2x8); \\\n\
  \\\n\
+    paramData.w = r_scale * output_scale; \\\n\
+    _viv_asm(CONV, paramData_f16, paramData); \\\n\
     VXC_DP2x8(dst4, R, paramData_f16, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniQuantU8toU8LoR_2x8); \\\n\
     VXC_DP2x8(dst5, R, paramData_f16, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniQuantU8toU8HiR_2x8); \\\n\
  \\\n\
@@ -35900,9 +36019,11 @@ __kernel void pre_process_yuv420_scale_##name \\\n\
                  float           rMean, \\\n\
                  float           gMean, \\\n\
                  float           bMean, \\\n\
-                 float           var, \\\n\
+                 float           r_scale, \\\n\
                  int             reverse_channel, \\\n\
-                 int             trans \\\n\
+                 int             trans, \\\n\
+                 float           g_scale, \\\n\
+                 float           b_scale \\\n\
     ) \\\n\
 { \\\n\
     int4 gidx = get_global_id(0); \\\n\
@@ -36051,7 +36172,7 @@ __kernel void pre_process_yuv420_scale_##name \\\n\
     float4 tmpDst; \\\n\
     int4 dstPos = (int4)(get_global_id(0), gidy, 0, 0); \\\n\
     VXC_DP4x4(tmpDst, result, tmpV, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), uniDescaleU8_4x4); \\\n\
-    tmpDst = (tmpDst - bMean) * var; \\\n\
+    tmpDst = (tmpDst - bMean) * b_scale; \\\n\
     dstPos.z = bOrder; \\\n\
     result = convert_int4_rte(tmpDst * output_scale + output_zp); \\\n\
     VXC_DP2x8(dst, result, result, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtract8Data_2x8); \\\n\
@@ -36065,7 +36186,7 @@ __kernel void pre_process_yuv420_scale_##name \\\n\
     temp2 = fx * tmpData0 + tmpData1; \\\n\
     result = fy * temp2 + (temp1 << 10); \\\n\
     VXC_DP4x4(tmpDst, result, tmpV, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), uniDescaleU8_4x4); \\\n\
-    tmpDst = (tmpDst - gMean) * var; \\\n\
+    tmpDst = (tmpDst - gMean) * g_scale; \\\n\
     dstPos.z = 1; \\\n\
     result = convert_int4_rte(tmpDst * output_scale + output_zp); \\\n\
     VXC_DP2x8(dst, result, result, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtract8Data_2x8); \\\n\
@@ -36079,7 +36200,7 @@ __kernel void pre_process_yuv420_scale_##name \\\n\
     temp2 = fx * tmpData0 + tmpData1; \\\n\
     result = fy * temp2 + (temp1 << 10); \\\n\
     VXC_DP4x4(tmpDst, result, tmpV, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), uniDescaleU8_4x4); \\\n\
-    tmpDst = (tmpDst - rMean) * var; \\\n\
+    tmpDst = (tmpDst - rMean) * r_scale; \\\n\
     dstPos.z = rOrder; \\\n\
     result = convert_int4_rte(tmpDst * output_scale + output_zp); \\\n\
     VXC_DP2x8(dst, result, result, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtract8Data_2x8); \\\n\
@@ -36139,9 +36260,11 @@ __kernel void pre_process_yuv420_scale_##name \\\n\
                  float           rMean, \\\n\
                  float           gMean, \\\n\
                  float           bMean, \\\n\
-                 float           var, \\\n\
+                 float           r_scale, \\\n\
                  int             reverse_channel, \\\n\
-                 int             trans \\\n\
+                 int             trans, \\\n\
+                 float           g_scale, \\\n\
+                 float           b_scale \\\n\
     ) \\\n\
 { \\\n\
     int4 gidx = get_global_id(0); \\\n\
@@ -36292,7 +36415,7 @@ __kernel void pre_process_yuv420_scale_##name \\\n\
     float4 tmpDst; \\\n\
     int4 dstPos = (int4)(get_global_id(0), gidy, 0, 0); \\\n\
     VXC_DP4x4(tmpDst, result, tmpV, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), uniDescaleU8_4x4); \\\n\
-    tmpDst = (tmpDst - bMean) * var; \\\n\
+    tmpDst = (tmpDst - bMean) * b_scale; \\\n\
     dstPos.z = bOrder; \\\n\
     tmpDst = tmpDst * output_scale + output_zp; \\\n\
     _viv_asm(CONV_RTE, tmpVal, tmpDst); \\\n\
@@ -36308,7 +36431,7 @@ __kernel void pre_process_yuv420_scale_##name \\\n\
     temp2 = fx * tmpData0 + tmpData1; \\\n\
     result = fy * temp2 + (temp1 << 10); \\\n\
     VXC_DP4x4(tmpDst, result, tmpV, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), uniDescaleU8_4x4); \\\n\
-    tmpDst = (tmpDst - gMean) * var; \\\n\
+    tmpDst = (tmpDst - gMean) * g_scale; \\\n\
     dstPos.z = 1; \\\n\
     tmpDst = tmpDst * output_scale + output_zp; \\\n\
     _viv_asm(CONV_RTE, tmpVal, tmpDst); \\\n\
@@ -36324,7 +36447,7 @@ __kernel void pre_process_yuv420_scale_##name \\\n\
     temp2 = fx * tmpData0 + tmpData1; \\\n\
     result = fy * temp2 + (temp1 << 10); \\\n\
     VXC_DP4x4(tmpDst, result, tmpV, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), uniDescaleU8_4x4); \\\n\
-    tmpDst = (tmpDst - rMean) * var; \\\n\
+    tmpDst = (tmpDst - rMean) * r_scale; \\\n\
     dstPos.z = rOrder; \\\n\
     tmpDst = tmpDst * output_scale + output_zp; \\\n\
     _viv_asm(CONV_RTE, tmpVal, tmpDst); \\\n\
@@ -36341,7 +36464,9 @@ static const char pre_process_yuv422_copy_vx[] = "#include \"cl_viv_vx_ext.h\"\n
 _viv_uniform int bOrder;\n\
 _viv_uniform int rOrder;\n\
 \n\
-_viv_uniform float outputScaleVar;\n\
+_viv_uniform float outputScaleVar_b;\n\
+_viv_uniform float outputScaleVar_g;\n\
+_viv_uniform float outputScaleVar_r;\n\
 _viv_uniform float bMeanScaleVarZp;\n\
 _viv_uniform float gMeanScaleVarZp;\n\
 _viv_uniform float rMeanScaleVarZp;\n\
@@ -36365,10 +36490,12 @@ __kernel void pre_process_yuv422_copy_##name \\\n\
                  float           rMean, \\\n\
                  float           gMean, \\\n\
                  float           bMean, \\\n\
-                 float           var, \\\n\
+                 float           r_scale, \\\n\
                  int             reverse_channel, \\\n\
                  int             trans, \\\n\
-                 int             yuv422_type \\\n\
+                 int             yuv422_type, \\\n\
+                 float           g_scale, \\\n\
+                 float           b_scale \\\n\
     ) \\\n\
 { \\\n\
     int gidx = get_global_id(0); \\\n\
@@ -36398,21 +36525,21 @@ __kernel void pre_process_yuv422_copy_##name \\\n\
     dst_type dst0; \\\n\
     save_type dst; \\\n\
     int4 dstPos = (int4)(gidx, gidy, 0, 0); \\\n\
-    tmpDstB = tmpDstB * outputScaleVar + bMeanScaleVarZp; \\\n\
+    tmpDstB = tmpDstB * outputScaleVar_b + bMeanScaleVarZp; \\\n\
     _viv_asm(CONV_RTE, result, tmpDstB); \\\n\
     dstPos.z = bOrder; \\\n\
     VXC_DP2x8(dst0, result, result, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 0), uniExtract8Data_2x8); \\\n\
     _viv_asm(COPY, dst, dst0, copy_bytes); \\\n\
     VXC_WriteImage2DArray(output, dstPos, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
  \\\n\
-    tmpDstG = tmpDstG * outputScaleVar + gMeanScaleVarZp; \\\n\
+    tmpDstG = tmpDstG * outputScaleVar_g + gMeanScaleVarZp; \\\n\
     _viv_asm(CONV_RTE, result, tmpDstG); \\\n\
     dstPos.z = 1; \\\n\
     VXC_DP2x8(dst0, result, result, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 0), uniExtract8Data_2x8); \\\n\
     _viv_asm(COPY, dst, dst0, copy_bytes); \\\n\
     VXC_WriteImage2DArray(output, dstPos, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
  \\\n\
-    tmpDstR = tmpDstR * outputScaleVar + rMeanScaleVarZp; \\\n\
+    tmpDstR = tmpDstR * outputScaleVar_r + rMeanScaleVarZp; \\\n\
     _viv_asm(CONV_RTE, result, tmpDstR); \\\n\
     dstPos.z = rOrder; \\\n\
     VXC_DP2x8(dst0, result, result, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 0), uniExtract8Data_2x8); \\\n\
@@ -36430,7 +36557,10 @@ static const char pre_process_yuv422_scale_vx[] = "#include \"cl_viv_vx_ext.h\"\
 _viv_uniform int bOrder;\n\
 _viv_uniform int rOrder;\n\
 \n\
-_viv_uniform float outputScaleVar;\n\
+_viv_uniform float outputScaleVar_b;\n\
+_viv_uniform float outputScaleVar_g;\n\
+_viv_uniform float outputScaleVar_r;\n\
+\n\
 _viv_uniform float bMeanScaleVarZp;\n\
 _viv_uniform float gMeanScaleVarZp;\n\
 _viv_uniform float rMeanScaleVarZp;\n\
@@ -36460,10 +36590,12 @@ __kernel void pre_process_yuv422_scale_##name \\\n\
                  float           rMean, \\\n\
                  float           gMean, \\\n\
                  float           bMean, \\\n\
-                 float           var, \\\n\
+                 float           r_scale, \\\n\
                  int             reverse_channel, \\\n\
                  int             trans, \\\n\
-                 int             yuv422_type \\\n\
+                 int             yuv422_type, \\\n\
+                 float           g_scale, \\\n\
+                 float           b_scale \\\n\
     ) \\\n\
 { \\\n\
     int4 gidx = get_global_id(0); \\\n\
@@ -36535,21 +36667,21 @@ __kernel void pre_process_yuv422_scale_##name \\\n\
     dst_type dst0; \\\n\
     save_type dst; \\\n\
     int4 dstPos = (int4)(gidx.x, gidy, 0, 0); \\\n\
-    tmpDstB = tmpDstB * outputScaleVar + bMeanScaleVarZp; \\\n\
+    tmpDstB = tmpDstB * outputScaleVar_b + bMeanScaleVarZp; \\\n\
     _viv_asm(CONV_RTE, result, tmpDstB); \\\n\
     dstPos.z = bOrder; \\\n\
     VXC_DP2x8(dst0, result, result, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 0), uniExtract8Data_2x8); \\\n\
     _viv_asm(COPY, dst, dst0, copy_bytes); \\\n\
     VXC_WriteImage2DArray(output, dstPos, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
  \\\n\
-    tmpDstG = tmpDstG * outputScaleVar + gMeanScaleVarZp; \\\n\
+    tmpDstG = tmpDstG * outputScaleVar_g + gMeanScaleVarZp; \\\n\
     _viv_asm(CONV_RTE, result, tmpDstG); \\\n\
     dstPos.z = 1; \\\n\
     VXC_DP2x8(dst0, result, result, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 0), uniExtract8Data_2x8); \\\n\
     _viv_asm(COPY, dst, dst0, copy_bytes); \\\n\
     VXC_WriteImage2DArray(output, dstPos, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
  \\\n\
-    tmpDstR = tmpDstR * outputScaleVar + rMeanScaleVarZp; \\\n\
+    tmpDstR = tmpDstR * outputScaleVar_r + rMeanScaleVarZp; \\\n\
     _viv_asm(CONV_RTE, result, tmpDstR); \\\n\
     dstPos.z = rOrder; \\\n\
     VXC_DP2x8(dst0, result, result, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 0), uniExtract8Data_2x8); \\\n\
@@ -36611,9 +36743,11 @@ __kernel void pre_process_yuv444_copy_U8toU8(\n\
                float                 rMean,\n\
                float                 gMean,\n\
                float                 bMean,\n\
-               float                   var,\n\
+               float               r_scale,\n\
                int         reverse_channel,\n\
-               int                   trans\n\
+               int                   trans,\n\
+               float               g_scale,\n\
+               float               b_scale\n\
     )\n\
 {\n\
     int2 pos = (int2)(get_global_id(0) + (*xOffset), get_global_id(1) + (*yOffset));\n\
@@ -36672,17 +36806,22 @@ __kernel void pre_process_yuv444_copy_U8toU8(\n\
     VXC_DP4x4(B, C2, tmpV, VXC_MODIFIER(8, 11, 0, VXC_RM_ToNearestEven, 1), uniCalculateB1st_4x4);\n\
     VXC_DP4x4(B, C3, tmpV, VXC_MODIFIER(12, 15, 0, VXC_RM_ToNearestEven, 1), uniCalculateB1st_4x4);\n\
 \n\
-    var *= outputScale;\n\
-    float4  paramData = (float4)(bMean * var - zp, gMean * var - zp,\\\n\
-        rMean * var - zp, var);\n\
+    float4  paramData = (float4)(bMean * b_scale * outputScale - zp, gMean * g_scale * outputScale - zp,\\\n\
+        rMean * r_scale * outputScale - zp, b_scale * outputScale);\n\
     half4 paramData_f16;\n\
     _viv_asm(CONV, paramData_f16, paramData);\n\
 \n\
     VXC_DP2x8(dst0, B, paramData_f16, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniQuantU8toU8LoB_2x8);\n\
     VXC_DP2x8(dst0, B, paramData_f16, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1), uniQuantU8toU8HiB_2x8);\n\
 \n\
+    paramData.w = g_scale * outputScale;\n\
+    _viv_asm(CONV, paramData_f16, paramData);\n\
+\n\
     VXC_DP2x8(dst1, G, paramData_f16, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniQuantU8toU8LoG_2x8);\n\
     VXC_DP2x8(dst1, G, paramData_f16, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1), uniQuantU8toU8HiG_2x8);\n\
+\n\
+    paramData.w = r_scale * outputScale;\n\
+    _viv_asm(CONV, paramData_f16, paramData);\n\
 \n\
     VXC_DP2x8(dst2, R, paramData_f16, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniQuantU8toU8LoR_2x8);\n\
     VXC_DP2x8(dst2, R, paramData_f16, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1), uniQuantU8toU8HiR_2x8);\n\
@@ -36707,9 +36846,11 @@ __kernel void pre_process_yuv444_copy_U8toF16(\n\
                float                 rMean,\n\
                float                 gMean,\n\
                float                 bMean,\n\
-               float                   var,\n\
+               float               r_scale,\n\
                int         reverse_channel,\n\
-               int                   trans\n\
+               int                   trans,\n\
+               float               g_scale,\n\
+               float               b_scale\n\
     )\n\
 {\n\
     int2 pos = (int2)(get_global_id(0) + (*xOffset), get_global_id(1) + (*yOffset));\n\
@@ -36769,16 +36910,22 @@ __kernel void pre_process_yuv444_copy_U8toF16(\n\
     VXC_DP4x4(B, C2, tmpV, VXC_MODIFIER(8, 11, 0, VXC_RM_ToNearestEven, 1), uniCalculateB1st_4x4);\n\
     VXC_DP4x4(B, C3, tmpV, VXC_MODIFIER(12, 15, 0, VXC_RM_ToNearestEven, 1), uniCalculateB1st_4x4);\n\
 \n\
-    float4  paramData = (float4)(bMean * var, gMean * var,\\\n\
-        rMean * var, var);\n\
+    float4  paramData = (float4)(bMean * b_scale * outputScale, gMean * g_scale * outputScale,\\\n\
+        rMean * r_scale * outputScale, b_scale * outputScale);\n\
     half4 paramData_f16;\n\
     _viv_asm(CONV, paramData_f16, paramData);\n\
 \n\
     VXC_DP2x8(dst0, B, paramData_f16, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniQuantU8toU8LoB_2x8);\n\
     VXC_DP2x8(dst1, B, paramData_f16, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniQuantU8toU8HiB_2x8);\n\
 \n\
+    paramData.w = g_scale * outputScale;\n\
+     _viv_asm(CONV, paramData_f16, paramData);\n\
+\n\
     VXC_DP2x8(dst2, G, paramData_f16, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniQuantU8toU8LoG_2x8);\n\
     VXC_DP2x8(dst3, G, paramData_f16, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniQuantU8toU8HiG_2x8);\n\
+\n\
+    paramData.w = r_scale * outputScale;\n\
+     _viv_asm(CONV, paramData_f16, paramData);\n\
 \n\
     VXC_DP2x8(dst4, R, paramData_f16, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniQuantU8toU8LoR_2x8);\n\
     VXC_DP2x8(dst5, R, paramData_f16, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniQuantU8toU8HiR_2x8);\n\
@@ -36843,7 +36990,8 @@ __kernel void pre_process_yuv444_scale_U8to##dst_name( \\\n\
     __read_only image2d_t y_img, __read_only image2d_t u_img, \\\n\
     __read_only image2d_t v_img, __write_only image2d_array_t    output, \\\n\
     global int *xRatio, global int * yRatio, global int * xOffset, global int * yOffset, \\\n\
-    float rMean, float gMean, float bMean, float var, int reverse_channel, int trans) \\\n\
+    float rMean, float gMean, float bMean, float r_scale, int reverse_channel, int trans, \\\n\
+    float g_scale, float b_scale) \\\n\
 { \\\n\
     int4 gidx = get_global_id(0); \\\n\
     int gidy = get_global_id(1); \\\n\
@@ -36955,7 +37103,7 @@ __kernel void pre_process_yuv444_scale_U8to##dst_name( \\\n\
     float4 tmpDst; \\\n\
     int4 dstPos = (int4)(get_global_id(0), gidy, 0, 0); \\\n\
     VXC_DP4x4(tmpDst, result, tmpV, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), uniDescaleU8_4x4); \\\n\
-    tmpDst = (tmpDst - bMean) * var; \\\n\
+    tmpDst = (tmpDst - bMean) * b_scale; \\\n\
     dstPos.z = bOrder; \\\n\
     result = convert_int4_rte(tmpDst * outputScale + zp); \\\n\
     VXC_DP2x8(dst, result, result, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniConvertInt32toUint8_2x8); \\\n\
@@ -36969,7 +37117,7 @@ __kernel void pre_process_yuv444_scale_U8to##dst_name( \\\n\
     temp2 = fx * tmpData0 + tmpData1; \\\n\
     result = fy * temp2 + (temp1 << 10); \\\n\
     VXC_DP4x4(tmpDst, result, tmpV, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), uniDescaleU8_4x4); \\\n\
-    tmpDst = (tmpDst - gMean) * var; \\\n\
+    tmpDst = (tmpDst - gMean) * g_scale; \\\n\
     dstPos.z = 1; \\\n\
     result = convert_int4_rte(tmpDst * outputScale + zp); \\\n\
     VXC_DP2x8(dst, result, result, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniConvertInt32toUint8_2x8); \\\n\
@@ -36983,7 +37131,7 @@ __kernel void pre_process_yuv444_scale_U8to##dst_name( \\\n\
     temp2 = fx * tmpData0 + tmpData1; \\\n\
     result = fy * temp2 + (temp1 << 10); \\\n\
     VXC_DP4x4(tmpDst, result, tmpV, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), uniDescaleU8_4x4); \\\n\
-    tmpDst = (tmpDst - rMean) * var; \\\n\
+    tmpDst = (tmpDst - rMean) * r_scale; \\\n\
     dstPos.z = rOrder; \\\n\
     result = convert_int4_rte(tmpDst * outputScale + zp); \\\n\
     VXC_DP2x8(dst, result, result, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniConvertInt32toUint8_2x8); \\\n\
@@ -37032,7 +37180,8 @@ __kernel void pre_process_yuv444_scale_U8toF16(\n\
     __read_only image2d_t y_img, __read_only image2d_t u_img,\n\
     __read_only image2d_t v_img, __write_only image2d_array_t    output,\n\
     global int *xRatio, global int * yRatio, global int * xOffset, global int * yOffset,\n\
-    float rMean, float gMean, float bMean, float var, int reverse_channel, int trans)\n\
+    float rMean, float gMean, float bMean, float r_scale, int reverse_channel, int trans,\n\
+    float g_scale, float b_scale)\n\
 {\n\
     int4 gidx = get_global_id(0);\n\
     int gidy = get_global_id(1);\n\
@@ -37152,7 +37301,7 @@ __kernel void pre_process_yuv444_scale_U8toF16(\n\
     float4 tmpDst;\n\
     int4 dstPos = (int4)(get_global_id(0), gidy, 0, 0);\n\
     VXC_DP4x4(tmpDst, result, tmpV, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), uniDescaleU8_4x4);\n\
-    tmpDst = (tmpDst - bMean) * var;\n\
+    tmpDst = (tmpDst - bMean) * b_scale;\n\
     dstPos.z = bOrder;\n\
     _viv_asm(CONV, hDst, tmpDst);\n\
     VXC_DP2x8(tmpVal, hDst, hDst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvertHalftoFp16_2x8);\n\
@@ -37167,7 +37316,7 @@ __kernel void pre_process_yuv444_scale_U8toF16(\n\
     temp2 = fx * tmpData0 + tmpData1;\n\
     result = fy * temp2 + (temp1 << 10);\n\
     VXC_DP4x4(tmpDst, result, tmpV, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), uniDescaleU8_4x4);\n\
-    tmpDst = (tmpDst - gMean) * var;\n\
+    tmpDst = (tmpDst - gMean) * g_scale;\n\
     dstPos.z = 1;\n\
     _viv_asm(CONV, hDst, tmpDst);\n\
     VXC_DP2x8(tmpVal, hDst, hDst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvertHalftoFp16_2x8);\n\
@@ -37182,7 +37331,7 @@ __kernel void pre_process_yuv444_scale_U8toF16(\n\
     temp2 = fx * tmpData0 + tmpData1;\n\
     result = fy * temp2 + (temp1 << 10);\n\
     VXC_DP4x4(tmpDst, result, tmpV, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), uniDescaleU8_4x4);\n\
-    tmpDst = (tmpDst - rMean) * var;\n\
+    tmpDst = (tmpDst - rMean) * r_scale;\n\
     dstPos.z = rOrder;\n\
     _viv_asm(CONV, hDst, tmpDst);\n\
     VXC_DP2x8(tmpVal, hDst, hDst, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvertHalftoFp16_2x8);\n\

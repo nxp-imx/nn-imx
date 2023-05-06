@@ -15,7 +15,7 @@ _viv_uniform VXC_512Bits uni8BitsDataInterleave_1_2x8;
 _viv_uniform float output_scale;
 _viv_uniform float output_zp;
 
-#define RESIZE_BILINEAR_4X1(mean, output) \
+#define RESIZE_BILINEAR_4X1(scale, mean) \
     VXC_ReadImage2DArray(line0Y, input, coord_in, 0, \
         VXC_MODIFIER(0, 1, 0, VXC_RM_TowardZero, 0)); \
     VXC_ReadImage2DArray(line1Y, input, coord_in, VXC_5BITOFFSET_XY(0, 1), \
@@ -53,7 +53,7 @@ _viv_uniform float output_zp;
     VXC_DP4x4(tmp_dst, u8_dst, u8_dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 1), \
         uniConvertIntergetoF32_4x4); \
  \
-    tmp_dst = tmp_dst * output_scale - mean * output_scale + output_zp; \
+    tmp_dst = tmp_dst * scale * output_scale - mean * scale * output_scale + output_zp; \
     _viv_asm(CONV, dst0, tmp_dst);
 #define PRE_PROCESS_RGB888_PLANAR_16BITS(dst_name, dst_type, conv_type, copy_type) \
 __kernel void pre_process_rgb888_planar_scale_U8to##dst_name##_nhwc \
@@ -67,8 +67,10 @@ __kernel void pre_process_rgb888_planar_scale_U8to##dst_name##_nhwc \
                  float           rMean, \
                  float           gMean, \
                  float           bMean, \
-                 float           f32Var, \
-                 int             reverse \
+                 float           r_scale, \
+                 int             reverse, \
+                 float           g_scale, \
+                 float           b_scale \
     ) \
 { \
     int2 ratioXY = (int2)(*xRatio, *yRatio); \
@@ -157,15 +159,15 @@ __kernel void pre_process_rgb888_planar_scale_U8to##dst_name##_nhwc \
     conv_type dst0; \
     dst_type dst1, dst2; \
     copy_type data0, data1, dst; \
-    tmp_dst = tmp_dst * output_scale - rMean * output_scale + output_zp; \
+    tmp_dst = tmp_dst * r_scale * output_scale - rMean * r_scale * output_scale + output_zp; \
     _viv_asm(CONV, dst0, tmp_dst); \
     VXC_DP2x8(dst1, dst0, dst0, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), \
         uniExtract8Data_2x8); \
  \
-    RESIZE_BILINEAR_4X1(gMean) \
+    RESIZE_BILINEAR_4X1(g_scale, gMean) \
     VXC_DP2x8(dst1, dst0, dst0, VXC_MODIFIER(4, 7, 0, VXC_RM_ToNearestEven, 1), \
         uniExtract8Data_2x8); \
-    RESIZE_BILINEAR_4X1(bMean) \
+    RESIZE_BILINEAR_4X1(b_scale, bMean) \
     VXC_DP2x8(dst2, dst0, dst0, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), \
         uniExtract8Data_2x8); \
     _viv_asm(COPY, data0, dst1, 16); \
@@ -192,8 +194,10 @@ __kernel void pre_process_rgb888_planar_scale_U8to##dst_name##_nhwc \
                  float           rMean, \
                  float           gMean, \
                  float           bMean, \
-                 float           f32Var, \
-                 int             reverse \
+                 float           r_scale, \
+                 int             reverse, \
+                 float           g_scale, \
+                 float           b_scale \
     ) \
 { \
     int2 ratioXY = (int2)(*xRatio, *yRatio); \
@@ -273,7 +277,7 @@ __kernel void pre_process_rgb888_planar_scale_U8to##dst_name##_nhwc \
  \
     int4 dst0; \
     write_type dst1, dst; \
-    tmp_dst = tmp_dst * output_scale - rMean * output_scale + output_zp; \
+    tmp_dst = tmp_dst * r_scale * output_scale - rMean * r_scale * output_scale + output_zp; \
     dst0 = convert_int4_rte(tmp_dst); \
     VXC_DP2x8(dst1, dst0, dst0, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), \
         uniExtract8Data_2x8); \
@@ -316,7 +320,7 @@ __kernel void pre_process_rgb888_planar_scale_U8to##dst_name##_nhwc \
         uniExtractBytes); \
     VXC_DP4x4(tmp_dst, u8_dst, u8_dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 1), \
         uniConvertIntergetoF32_4x4); \
-    tmp_dst = tmp_dst * output_scale - gMean * output_scale + output_zp; \
+    tmp_dst = tmp_dst * g_scale * output_scale - gMean * g_scale * output_scale + output_zp; \
     dst0 = convert_int4_rte(tmp_dst); \
     VXC_DP2x8(dst1, dst0, dst0, VXC_MODIFIER(4, 7, 0, VXC_RM_ToNearestEven, 1), \
         uniExtract8Data_2x8); \
@@ -359,7 +363,7 @@ __kernel void pre_process_rgb888_planar_scale_U8to##dst_name##_nhwc \
         uniExtractBytes); \
     VXC_DP4x4(tmp_dst, u8_dst, u8_dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 1), \
         uniConvertIntergetoF32_4x4); \
-    tmp_dst = tmp_dst * output_scale - bMean * output_scale + output_zp; \
+    tmp_dst = tmp_dst * b_scale * output_scale - bMean * b_scale * output_scale + output_zp; \
     dst0 = convert_int4_rte(tmp_dst); \
     VXC_DP2x8(dst1, dst0, dst0, VXC_MODIFIER(8, 11, 0, VXC_RM_ToNearestEven, 1), \
         uniExtract8Data_2x8); \

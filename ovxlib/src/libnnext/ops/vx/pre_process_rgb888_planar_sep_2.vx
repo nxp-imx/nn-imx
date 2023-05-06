@@ -20,9 +20,11 @@ __kernel void pre_process_rgb888_planar_sep_4over3_U8toU8
                  float           rMean,
                  float           gMean,
                  float           bMean,
-                 float           f32Var,
+                 float           r_scale,
                  int             reverse,
-                 int             height
+                 int             height,
+                 float           g_scale,
+                 float           b_scale
     )
 {
     int4 coord_in = (int4)(get_global_id(0), get_global_id(1), get_global_id(1), get_global_id(1));
@@ -108,9 +110,11 @@ __kernel void pre_process_rgb888_planar_sep_half_U8toU8
                  float           rMean,
                  float           gMean,
                  float           bMean,
-                 float           f32Var,
+                 float           r_scale,
                  int             reverse,
-                 int             height
+                 int             height,
+                 float           g_scale,
+                 float           b_scale
     )
 {
     int4 coord_in = (int4)(get_global_id(0), get_global_id(1), get_global_id(1), get_global_id(1));
