@@ -77,6 +77,8 @@ static const char* _get_qtype_name(vsi_nn_qnt_type_e type)
         case VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC: return "ASYM";
         case VSI_NN_QNT_TYPE_AFFINE_SYMMETRIC: return "SYM";
         case VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC: return "SYMM PC";
+        case VSI_NN_QNT_TYPE_SYMMETRIC_FLOAT8: return "FP8";
+        case VSI_NN_QNT_TYPE_PERCHANNEL_SYMMETRIC_FLOAT8: return "FP8 PC";
         default:
             VSILOGE("Unknown quant type: %d\n", type);
             break;

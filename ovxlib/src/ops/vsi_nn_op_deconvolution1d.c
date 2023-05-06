@@ -64,7 +64,9 @@ static vsi_status op_compute
     weight_attr.size[2] = weight_attr.size[1];
     weight_attr.size[1] = 1;
     weight_attr.dim_num = 4;
-    if (inputs[1]->attr.dtype.qnt_type != VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC)
+    if (inputs[1]->attr.dtype.qnt_type !=
+            VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC &&
+        inputs[1]->attr.dtype.qnt_type != VSI_NN_QNT_TYPE_PERCHANNEL_SYMMETRIC_FLOAT8)
     {
         weight_tensor = vsi_nn_reshape_tensor( self->graph, inputs[1], weight_attr.size, 4 );
         CHECK_PTR_FAIL_GOTO( weight_tensor, "create tensor fail.", final );

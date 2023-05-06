@@ -318,7 +318,9 @@ REGISTER_CONV_OPENVX_KERNEL( conv1d )
     temp_tensors[0] = _expand_tensor_dim( inputs[0]->t,
             (vsi_ssize_t*)inputs[0]->attr.size, inputs[0]->attr.dim_num, 1 );
     CHECK_PTR_FAIL_GOTO( temp_tensors[0], "Expand input dim fail.", final );
-    if (inputs[1]->attr.dtype.qnt_type != VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC)
+    if (inputs[1]->attr.dtype.qnt_type !=
+            VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC &&
+        inputs[1]->attr.dtype.qnt_type != VSI_NN_QNT_TYPE_PERCHANNEL_SYMMETRIC_FLOAT8)
     {
         temp_tensors[1] = _expand_tensor_dim( inputs[1]->t,
                 (vsi_ssize_t*)inputs[1]->attr.size, inputs[1]->attr.dim_num, 1 );
@@ -403,7 +405,9 @@ REGISTER_CONV_OPENVX_KERNEL( depthwise_conv1d )
             (vsi_ssize_t*)inputs[0]->attr.size, inputs[0]->attr.dim_num, 1 );
     CHECK_PTR_FAIL_GOTO( temp_tensors[0], "Expand input dim fail.", final );
 
-    if (inputs[1]->attr.dtype.qnt_type != VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC)
+    if (inputs[1]->attr.dtype.qnt_type !=
+            VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC &&
+        inputs[1]->attr.dtype.qnt_type != VSI_NN_QNT_TYPE_PERCHANNEL_SYMMETRIC_FLOAT8)
     {
         vsi_size_t new_w_shape[VSI_NN_MAX_DIM_NUM] = { 0 };
         uint32_t new_w_rank = 4;

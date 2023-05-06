@@ -731,7 +731,9 @@ static vsi_nn_kernel_node_t _setup
 
     reshape_tensors[0] = inputs[0];
 
-    if (inputs[1]->attr.dtype.qnt_type != VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC)
+    if (inputs[1]->attr.dtype.qnt_type !=
+            VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC &&
+        inputs[1]->attr.dtype.qnt_type != VSI_NN_QNT_TYPE_PERCHANNEL_SYMMETRIC_FLOAT8)
     {
         shape[0] = inputs[1]->attr.size[0];
         shape[1] = 1;
@@ -813,7 +815,9 @@ static vsi_nn_kernel_node_t _setup
     }
 
 final:
-    if (inputs[1]->attr.dtype.qnt_type != VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC)
+    if (inputs[1]->attr.dtype.qnt_type !=
+            VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC &&
+        inputs[1]->attr.dtype.qnt_type != VSI_NN_QNT_TYPE_PERCHANNEL_SYMMETRIC_FLOAT8)
     {
         vsi_nn_ReleaseTensor( &reshape_tensors[1] );
     }

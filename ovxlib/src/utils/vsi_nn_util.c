@@ -738,13 +738,14 @@ vsi_bool vsi_nn_CreateTensorGroup
     end[2] = in_tensor->attr.size[2];
     end[3] = in_tensor->attr.size[3];
     end[axis] = 0;
-
     for( i = 0; i <  group_number; i ++ )
     {
         start[axis] = end[axis];
         end[axis] += sz;
 #ifdef VSI_PERCHANNEL_QUANTIZATION_SUPPORT
-        if ( attr.dtype.qnt_type == VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC )
+        if (attr.dtype.qnt_type ==
+                VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC ||
+            attr.dtype.qnt_type == VSI_NN_QNT_TYPE_PERCHANNEL_SYMMETRIC_FLOAT8)
         {
             attr.dtype.scales = in_tensor->attr.dtype.scales + sz * i;
             attr.dtype.scale_dim = (int32_t)sz;
@@ -1185,6 +1186,7 @@ vsi_bool vsi_nn_is_same_quant_type(
             break;
         case VSI_NN_QNT_TYPE_AFFINE_SYMMETRIC:
         case VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC:
+        case VSI_NN_QNT_TYPE_SYMMETRIC_FLOAT8:
         {
             const float diff = (float)1e-5;
             if (src_dtype->zero_point != dst_dtype->zero_point)
@@ -1200,6 +1202,7 @@ vsi_bool vsi_nn_is_same_quant_type(
         }
         case VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC:
         case VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_ASYMMETRIC:
+        case VSI_NN_QNT_TYPE_PERCHANNEL_SYMMETRIC_FLOAT8:
         {
             const float diff = (float)1e-5;
             int32_t i = 0;
@@ -1350,6 +1353,7 @@ float vsi_nn_get_tensor_scale
             break;
         case VSI_NN_QNT_TYPE_AFFINE_SYMMETRIC:
         case VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC:
+        case VSI_NN_QNT_TYPE_SYMMETRIC_FLOAT8:
             scale = tensor->attr.dtype.scale;
             break;
     default:
@@ -1369,6 +1373,7 @@ int32_t vsi_nn_get_tensor_zero_point
     switch (tensor->attr.dtype.qnt_type)
     {
         case VSI_NN_QNT_TYPE_AFFINE_SYMMETRIC:
+        case VSI_NN_QNT_TYPE_SYMMETRIC_FLOAT8:
             zero_point = 0;
             break;
         case VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC:
@@ -1417,6 +1422,14 @@ void vsi_nn_get_tensor_clamp_min_max
     {
         *clampMin = - zero_point;
         *clampMax = 65535 - zero_point;
+    }
+    else if (vx_type == VSI_NN_TYPE_FLOAT8_E4M3) {
+        *clampMin = -448;
+        *clampMax = 448;
+    }
+    else if (vx_type == VSI_NN_TYPE_FLOAT8_E5M2) {
+        *clampMin = -57344;
+        *clampMax = 57344;
     }
     else
     {

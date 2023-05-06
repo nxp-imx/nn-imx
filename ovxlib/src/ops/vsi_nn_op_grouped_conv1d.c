@@ -128,7 +128,9 @@ static vsi_bool op_setup
 
     p->local->input = _expand_tensor_dim( self->graph, inputs[0],
             inputs[0]->attr.size, inputs[0]->attr.dim_num, 0 );
-    if (inputs[1]->attr.dtype.qnt_type != VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC)
+    if (inputs[1]->attr.dtype.qnt_type !=
+            VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC &&
+        inputs[1]->attr.dtype.qnt_type != VSI_NN_QNT_TYPE_PERCHANNEL_SYMMETRIC_FLOAT8)
     {
         p->local->weight = _expand_tensor_dim( self->graph, inputs[1],
             inputs[1]->attr.size, inputs[1]->attr.dim_num, 0 );

@@ -120,6 +120,8 @@ static void print_tensor
         ext_attr[count] = 0;
         break;
     case VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC:
+    case VSI_NN_QNT_TYPE_AFFINE_SYMMETRIC:
+    case VSI_NN_QNT_TYPE_SYMMETRIC_FLOAT8:
         count = snprintf( &ext_attr[0], _EXT_ATTR_BUF_SZ,
             "ASM zp=%3d, scale=%.6f",
             tensor->attr.dtype.zero_point, tensor->attr.dtype.scale );
@@ -127,6 +129,7 @@ static void print_tensor
         break;
 #ifdef VSI_PERCHANNEL_QUANTIZATION_SUPPORT
     case VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC:
+    case VSI_NN_QNT_TYPE_PERCHANNEL_SYMMETRIC_FLOAT8:
         count = snprintf( &ext_attr[0], _EXT_ATTR_BUF_SZ,
             "SYM PERCHANNEL axis=%d, count=%d",
             tensor->attr.dtype.channel_dim, tensor->attr.dtype.scale_dim );
@@ -360,11 +363,13 @@ static vsi_bool _init_tensor
         break;
     case VSI_NN_QNT_TYPE_AFFINE_SYMMETRIC:
     case VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC:
+    case VSI_NN_QNT_TYPE_SYMMETRIC_FLOAT8:
         params.quant_format = (vsi_enum)VX_QUANT_AFFINE_SCALE;
         params.quant_data.affine.scale = tensor->attr.dtype.scale;
         params.quant_data.affine.zeroPoint = (int32_t)tensor->attr.dtype.zero_point;
         break;
     case VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC:
+    case VSI_NN_QNT_TYPE_PERCHANNEL_SYMMETRIC_FLOAT8:
 #ifdef VSI_PERCHANNEL_QUANTIZATION_SUPPORT
         #ifdef VX_QUANT_AFFINE_SCALE_PER_CHANNEL
             params.quant_format = (vsi_enum)VX_QUANT_AFFINE_SCALE_PER_CHANNEL;
@@ -1275,6 +1280,7 @@ uint8_t * vsi_nn_ConvertRawTensorToData2
         break;
     case VSI_NN_QNT_TYPE_AFFINE_SYMMETRIC:
     case VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC:
+    case VSI_NN_QNT_TYPE_SYMMETRIC_FLOAT8:
         status = vxQueryTensor(tensor, VX_TENSOR_ZERO_POINT,
             &(attr->dtype.zero_point), sizeof(int32_t));
         status = vxQueryTensor(tensor, VX_TENSOR_SCALE,
@@ -2495,6 +2501,7 @@ vsi_status vsi_nn_vxGetTensorAttr
         break;
     case VSI_NN_QNT_TYPE_AFFINE_SYMMETRIC:
     case VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC:
+    case VSI_NN_QNT_TYPE_SYMMETRIC_FLOAT8:
         status = vxQueryTensor(tensor, VX_TENSOR_ZERO_POINT,
             &(attr->dtype.zero_point), sizeof(int32_t));
         TEST_CHECK_STATUS( status, final );
@@ -3141,11 +3148,13 @@ static vsi_bool _init_dummy_tensor
         break;
     case VSI_NN_QNT_TYPE_AFFINE_SYMMETRIC:
     case VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC:
+    case VSI_NN_QNT_TYPE_SYMMETRIC_FLOAT8:
         params.quant_format = (vsi_enum)VX_QUANT_AFFINE_SCALE;
         params.quant_data.affine.scale = tensor->attr.dtype.scale;
         params.quant_data.affine.zeroPoint = (int32_t)tensor->attr.dtype.zero_point;
         break;
     case VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC:
+    case VSI_NN_QNT_TYPE_PERCHANNEL_SYMMETRIC_FLOAT8:
 #ifdef VSI_PERCHANNEL_QUANTIZATION_SUPPORT
         #ifdef VX_QUANT_AFFINE_SCALE_PER_CHANNEL
             params.quant_format = (vsi_enum)VX_QUANT_AFFINE_SCALE_PER_CHANNEL;
