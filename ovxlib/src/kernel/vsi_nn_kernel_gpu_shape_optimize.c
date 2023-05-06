@@ -459,18 +459,25 @@ vsi_bool vsi_nn_kernel_optimize_tile_shape
     vsi_size_t* out_shape_output, vsi_size_t* out_rank_output
     )
 {
-    vsi_bool ret                        = TRUE;
-    vsi_bool append_dim                 = FALSE;
-    vsi_size_t   i                          = 0;
-    vsi_size_t   dims                       = 0;
+    vsi_bool    ret                        = TRUE;
+    vsi_bool    append_dim                 = FALSE;
+    vsi_size_t  i                          = 0;
+    vsi_size_t  j                          = 0;
+    vsi_size_t  dims                       = 0;
     vsi_size_t  effective_size_x           = 1;
     vsi_size_t  effective_size_y           = 1;
     vsi_size_t  effective_size_z           = 1;
     vsi_size_t  sx                         = 0;
     vsi_size_t  sy                         = 0;
     vsi_size_t  sz                         = 0;
+    int32_t     idx_start                  = -1;
+    int32_t     idx_end                    = 0;
     tile_axis_state_e state             = TILE_STATE_EMPTY;
     tile_axis_state_e next_state        = TILE_STATE_EMPTY;
+    vsi_size_t* temp_shape_x            = NULL;
+    vsi_size_t* temp_shape_y            = NULL;
+    vsi_size_t* temp_shape_output       = NULL;
+    vsi_size_t  temp_rank               = 0;
 
 #define _swap_size(a, b, tmp)  \
     { \
@@ -482,16 +489,72 @@ vsi_bool vsi_nn_kernel_optimize_tile_shape
     VSI_UNREFERENCED(rank_x);
     VSI_UNREFERENCED(rank);
 
-    for( i = 0; i < rank_output; i++ )
+    temp_shape_x = (vsi_size_t*)malloc(rank * sizeof(vsi_size_t));
+    if (temp_shape_x == NULL)
     {
-        sx = shape_x[i];
-        sy = multiples[i];
-        sz = shape_output[i];
+        VSILOGE( "malloc temp_shape_x error." );
+        ret = FALSE;
+        goto final;
+    }
+
+    temp_shape_y = (vsi_size_t*)malloc(rank * sizeof(vsi_size_t));
+    if (temp_shape_y == NULL)
+    {
+        VSILOGE( "malloc temp_shape_y error." );
+        ret = FALSE;
+        goto final;
+    }
+
+    temp_shape_output = (vsi_size_t*)malloc(rank * sizeof(vsi_size_t));
+    if (temp_shape_output == NULL)
+    {
+        VSILOGE( "malloc temp_shape_output error." );
+        ret = FALSE;
+        goto final;
+    }
+    memcpy(temp_shape_x, shape_x, rank * sizeof(vsi_size_t));
+    memcpy(temp_shape_y, multiples, rank * sizeof(vsi_size_t));
+    memcpy(temp_shape_output, shape_output, rank * sizeof(vsi_size_t));
+
+    for (i = 0, temp_rank = 0; i < rank_output; i++)
+    {
+        if (temp_shape_x[i] != 1)
+        {
+            idx_end = (int32_t)i - 1;
+            if (idx_start >= 0)
+            {
+               sx = 1;
+               sy = temp_shape_y[idx_start];
+               sz = temp_shape_output[idx_start];
+               for (j = (vsi_size_t)idx_start + 1; j <= (vsi_size_t)idx_end; j++)
+               {
+                   sy *= temp_shape_y[j];
+                   sz *= temp_shape_output[j];
+               }
+               temp_rank += tile_fill_dim( temp_shape_x, temp_shape_y, temp_shape_output,
+                       temp_rank, VSI_NN_MAX_DIM_NUM, sx, sy, sz );
+               idx_start = -1;
+            }
+            temp_shape_x[temp_rank] = temp_shape_x[i];
+            temp_shape_y[temp_rank] = temp_shape_y[i];
+            temp_shape_output[temp_rank++] = temp_shape_output[i];
+        }
+        else if (idx_start == -1)
+        {
+            idx_start = (int32_t)i;
+        }
+    }
+
+    for( i = 0; i < temp_rank; i++ )
+    {
+        sx = temp_shape_x[i];
+        sy = temp_shape_y[i];
+        sz = temp_shape_output[i];
         /*
          * Skip dim if the size is equal to 1
          * Also skip if ( sx == 1 && sy == 1 )
          */
-        if ( shape_output[i] == 1 )
+        if ( temp_shape_output[i] == 1 )
         {
             continue;
         }
@@ -511,8 +574,8 @@ vsi_bool vsi_nn_kernel_optimize_tile_shape
             VSI_ASSERT( FALSE );
         }
 
-        next_state = (i + 1) < rank_output ?
-            (multiples[i + 1] == 1 ? TILE_STATE_NO_AXIS : TILE_STATE_AXIS_X) : TILE_STATE_EMPTY;
+        next_state = (i + 1) < temp_rank ?
+            (temp_shape_y[i + 1] == 1 ? TILE_STATE_NO_AXIS : TILE_STATE_AXIS_X) : TILE_STATE_EMPTY;
 
         append_dim = FALSE;
 #define _pack_state( cur_state, next_state )    (next_state << 16 | cur_state)
@@ -569,7 +632,7 @@ vsi_bool vsi_nn_kernel_optimize_tile_shape
     if ( ret )
     {
         /* Append the last dim */
-        if ( i == rank_output )
+        if ( i == temp_rank )
         {
             sx = effective_size_x;
             sy = effective_size_y;
@@ -594,6 +657,23 @@ vsi_bool vsi_nn_kernel_optimize_tile_shape
         *out_rank_output = (uint32_t)dims;
     }
 #undef _swap_size
+final:
+    if (temp_shape_x)
+    {
+        free( temp_shape_x);
+        temp_shape_x = NULL;
+    }
+    if (temp_shape_y)
+    {
+        free( temp_shape_y);
+        temp_shape_y = NULL;
+    }
+    if (temp_shape_output)
+    {
+        free( temp_shape_output);
+        temp_shape_output = NULL;
+    }
+
     return ret;
 } /* vsi_nn_kernel_optimize_eltwise_shape() */
 

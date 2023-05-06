@@ -522,10 +522,34 @@ static vsi_nn_kernel_node_t _setup
             return NULL;
         }
 
-        reshape_tensors[0] = vsi_nn_reshape_tensor( graph,
-            inputs[0], shapes[0], new_rank );
-        reshape_tensors[1] = vsi_nn_reshape_tensor( graph,
-            outputs[0], shapes[2], new_rank );
+        if ( new_rank == 4)
+        {
+            vsi_size_t newshapes[3][VSI_NN_MAX_DIM_NUM] = {{0}};
+            newshapes[0][0] = shapes[0][0];
+            newshapes[2][0] = shapes[2][0];
+            newshapes[0][1] = shapes[0][1];
+            newshapes[2][1] = shapes[2][1];
+            newshapes[0][2] = shapes[0][2] * shapes[0][3];
+            newshapes[2][2] = shapes[2][2] * shapes[2][3];
+
+            if (newshapes[0][2] >= GPU_TENSOR_MAX_WIDTH ||
+                newshapes[2][2] >= GPU_TENSOR_MAX_WIDTH)
+            {
+                return NULL;
+            }
+
+            reshape_tensors[0] = vsi_nn_reshape_tensor( graph,
+                inputs[0], newshapes[0], 3 );
+            reshape_tensors[1] = vsi_nn_reshape_tensor( graph,
+                outputs[0], newshapes[2], 3 );
+        }
+        else
+        {
+            reshape_tensors[0] = vsi_nn_reshape_tensor( graph,
+                inputs[0], shapes[0], new_rank );
+            reshape_tensors[1] = vsi_nn_reshape_tensor( graph,
+                outputs[0], shapes[2], new_rank );
+        }
     }
     else
     {
@@ -547,9 +571,9 @@ static vsi_nn_kernel_node_t _setup
         if( node )
         {
             /* Pass parameters to node. */
-            vsi_size_t depthIn = new_rank > 2 ? reshape_tensors[0]->attr.size[2] : 1;
-            vsi_size_t depthOut = new_rank > 2 ? reshape_tensors[1]->attr.size[2] : 1;
-            vsi_size_t batchIn = new_rank > 3 ? reshape_tensors[0]->attr.size[3] : 1;
+            vsi_size_t depthIn = new_rank > 2 ? shapes[0][2] : 1;
+            vsi_size_t depthOut = new_rank > 2 ? shapes[2][2] : 1;
+            vsi_size_t batchIn = new_rank > 3 ? shapes[0][3] : 1;
 
             shapes[1][2] = shapes[1][2] == 0 ? 1 : shapes[1][2];
             shapes[1][3] = shapes[1][3] == 0 ? 1 : shapes[1][3];
