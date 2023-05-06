@@ -576,10 +576,13 @@ static vx_tensor _create_const_raw_tensor
         params.quant_data.dfp.fixed_point_pos = (uint8_t)attr.dtype.fl;
         break;
     case VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC:
+    case VSI_NN_QNT_TYPE_AFFINE_SYMMETRIC:
+    case VSI_NN_QNT_TYPE_SYMMETRIC_FLOAT8:
         params.quant_data.affine.scale = attr.dtype.scale;
         params.quant_data.affine.zeroPoint = (int32_t)attr.dtype.zero_point;
         break;
     case VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC:
+    case VSI_NN_QNT_TYPE_PERCHANNEL_SYMMETRIC_FLOAT8:
 #ifdef VSI_PERCHANNEL_QUANTIZATION_SUPPORT
         // This is a hack that driver doesn't support const scale
         scales = (float *)malloc(sizeof(float) * attr.dtype.scale_dim);
@@ -595,7 +598,8 @@ static vx_tensor _create_const_raw_tensor
         params.quant_data.affinePerChannel.zeroPointCount = attr.dtype.zero_points_dim;
         break;
 #else
-    VSILOGE( "can't support qnt_type VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC." );
+    VSILOGE( "can't support qnt_type VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC"
+        "or VSI_NN_QNT_TYPE_PERCHANNEL_SYMMETRIC_FLOAT8." );
 #endif
     default:
         break;

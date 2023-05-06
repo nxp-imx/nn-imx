@@ -575,6 +575,8 @@ static void _convert_tensor_attr_to_vx_tensor_param
         MAP_TYPE( p->data_format, F64, VSI_NN_TYPE_FLOAT64 );
         MAP_TYPE( p->data_format, BF16, VSI_NN_TYPE_BFLOAT16 );
         MAP_TYPE( p->data_format, BOOL8, VSI_NN_TYPE_BOOL8 );
+        MAP_TYPE( p->data_format, FP8_E4M3, VSI_NN_TYPE_FLOAT8_E4M3 );
+        MAP_TYPE( p->data_format, FP8_E5M2, VSI_NN_TYPE_FLOAT8_E5M2 );
         default:
             VSI_ASSERT( FALSE );
             break;
@@ -590,6 +592,12 @@ static void _convert_tensor_attr_to_vx_tensor_param
         MAP_TYPE( p->quant_format,
                 VSI_NN_KERNEL_QUANT_SYMM_PERCHANNEL,
                 VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC );
+        MAP_TYPE(p->quant_format,
+                 VSI_NN_KERNEL_QUANT_FLOAT8,
+                 VSI_NN_QNT_TYPE_SYMMETRIC_FLOAT8);
+        MAP_TYPE(p->quant_format,
+                 VSI_NN_KERNEL_QUANT_FLOAT8_PERCHANNEL,
+                 VSI_NN_QNT_TYPE_PERCHANNEL_SYMMETRIC_FLOAT8);
         default:
             VSI_ASSERT( FALSE );
             break;
