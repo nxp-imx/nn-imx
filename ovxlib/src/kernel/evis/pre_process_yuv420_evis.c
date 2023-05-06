@@ -99,6 +99,8 @@ static vx_param_description_t vxPreProcessYuv420Kernel_param_def[] =
     {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
 };
 #define _EVIS_PRE_PROCESS_YUV420_PARAM_NUM          _cnt_of_array(vxPreProcessYuv420Kernel_param_def)
 
@@ -927,7 +929,9 @@ static vsi_nn_kernel_node_t _setup
             float r_mean     = vsi_nn_kernel_param_get_float32( params, "r_mean" );
             float g_mean     = vsi_nn_kernel_param_get_float32( params, "g_mean" );
             float b_mean     = vsi_nn_kernel_param_get_float32( params, "b_mean" );
-            float rgb_scale  = vsi_nn_kernel_param_get_float32( params, "rgb_scale" );
+            float r_scale    = vsi_nn_kernel_param_get_float32( params, "r_scale" );
+            float g_scale    = vsi_nn_kernel_param_get_float32( params, "g_scale" );
+            float b_scale    = vsi_nn_kernel_param_get_float32( params, "b_scale" );
             int32_t reverse  = vsi_nn_kernel_param_get_int32( params, "reverse" );
 
             /* Pass parameters to node. */
@@ -942,9 +946,11 @@ static vsi_nn_kernel_node_t _setup
             tmp_params[index++] = vsi_nn_kernel_scalar_create( graph, F32, &r_mean );
             tmp_params[index++] = vsi_nn_kernel_scalar_create( graph, F32, &g_mean );
             tmp_params[index++] = vsi_nn_kernel_scalar_create( graph, F32, &b_mean );
-            tmp_params[index++] = vsi_nn_kernel_scalar_create( graph, F32, &rgb_scale );
+            tmp_params[index++] = vsi_nn_kernel_scalar_create( graph, F32, &r_scale );
             tmp_params[index++] = vsi_nn_kernel_scalar_create( graph, I32, &reverse );
             tmp_params[index++] = vsi_nn_kernel_scalar_create( graph, I32, &trans );
+            tmp_params[index++] = vsi_nn_kernel_scalar_create( graph, F32, &g_scale );
+            tmp_params[index++] = vsi_nn_kernel_scalar_create( graph, F32, &b_scale );
             status = vsi_nn_kernel_node_pass_param( node, tmp_params, _EVIS_PRE_PROCESS_YUV420_PARAM_NUM );
             CHECK_STATUS(status);
             vsi_nn_kernel_scalar_release( &tmp_params[4] );
@@ -957,6 +963,8 @@ static vsi_nn_kernel_node_t _setup
             vsi_nn_kernel_scalar_release( &tmp_params[11] );
             vsi_nn_kernel_scalar_release( &tmp_params[12] );
             vsi_nn_kernel_scalar_release( &tmp_params[13] );
+            vsi_nn_kernel_scalar_release( &tmp_params[14] );
+            vsi_nn_kernel_scalar_release( &tmp_params[15] );
         }
     }
     if (reshape_tensors[0])

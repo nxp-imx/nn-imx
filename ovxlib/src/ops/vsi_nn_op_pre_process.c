@@ -274,15 +274,38 @@ static vsi_bool op_setup
                 curr->node->nn_param.pre_process_yuv420.r_mean = p->norm.mean[2];
                 curr->node->nn_param.pre_process_yuv420.g_mean = p->norm.mean[1];
                 curr->node->nn_param.pre_process_yuv420.b_mean = p->norm.mean[0];
+                if (vsi_nn_compareVersion(self->graph, 1, 1, 83) == -1)
+                {
+                    curr->node->nn_param.pre_process_yuv420.r_scale = p->norm.scale;
+                    curr->node->nn_param.pre_process_yuv420.g_scale = p->norm.scale;
+                    curr->node->nn_param.pre_process_yuv420.b_scale = p->norm.scale;
+                }
+                else
+                {
+                    curr->node->nn_param.pre_process_yuv420.r_scale = p->norm2.scale[2];
+                    curr->node->nn_param.pre_process_yuv420.g_scale = p->norm2.scale[1];
+                    curr->node->nn_param.pre_process_yuv420.b_scale = p->norm2.scale[0];
+                }
             }
             else
             {
                 curr->node->nn_param.pre_process_yuv420.r_mean = p->norm.mean[0];
                 curr->node->nn_param.pre_process_yuv420.g_mean = p->norm.mean[1];
                 curr->node->nn_param.pre_process_yuv420.b_mean = p->norm.mean[2];
+                if (vsi_nn_compareVersion(self->graph, 1, 1, 83) == -1)
+                {
+                    curr->node->nn_param.pre_process_yuv420.r_scale = p->norm.scale;
+                    curr->node->nn_param.pre_process_yuv420.g_scale = p->norm.scale;
+                    curr->node->nn_param.pre_process_yuv420.b_scale = p->norm.scale;
+                }
+                else
+                {
+                    curr->node->nn_param.pre_process_yuv420.r_scale = p->norm2.scale[0];
+                    curr->node->nn_param.pre_process_yuv420.g_scale = p->norm2.scale[1];
+                    curr->node->nn_param.pre_process_yuv420.b_scale = p->norm2.scale[2];
+                }
             }
 
-            curr->node->nn_param.pre_process_yuv420.rgb_scale = p->norm.scale;
             curr->node->nn_param.pre_process_yuv420.reverse_channel = p->reverse_channel;
             curr->node->nn_param.pre_process_yuv420.rect.left = p->rect.left;
             curr->node->nn_param.pre_process_yuv420.rect.top = p->rect.top;
@@ -318,15 +341,38 @@ static vsi_bool op_setup
                 curr->node->nn_param.pre_process_bgra.r_mean = p->norm.mean[2];
                 curr->node->nn_param.pre_process_bgra.g_mean = p->norm.mean[1];
                 curr->node->nn_param.pre_process_bgra.b_mean = p->norm.mean[0];
+                if (vsi_nn_compareVersion(self->graph, 1, 1, 83) == -1)
+                {
+                    curr->node->nn_param.pre_process_bgra.r_scale = p->norm.scale;
+                    curr->node->nn_param.pre_process_bgra.g_scale = p->norm.scale;
+                    curr->node->nn_param.pre_process_bgra.b_scale = p->norm.scale;
+                }
+                else
+                {
+                    curr->node->nn_param.pre_process_bgra.r_scale = p->norm2.scale[2];
+                    curr->node->nn_param.pre_process_bgra.g_scale = p->norm2.scale[1];
+                    curr->node->nn_param.pre_process_bgra.b_scale = p->norm2.scale[0];
+                }
             }
             else
             {
                 curr->node->nn_param.pre_process_bgra.r_mean = p->norm.mean[0];
                 curr->node->nn_param.pre_process_bgra.g_mean = p->norm.mean[1];
                 curr->node->nn_param.pre_process_bgra.b_mean = p->norm.mean[2];
+                if (vsi_nn_compareVersion(self->graph, 1, 1, 83) == -1)
+                {
+                    curr->node->nn_param.pre_process_bgra.r_scale = p->norm.scale;
+                    curr->node->nn_param.pre_process_bgra.g_scale = p->norm.scale;
+                    curr->node->nn_param.pre_process_bgra.b_scale = p->norm.scale;
+                }
+                else
+                {
+                    curr->node->nn_param.pre_process_bgra.r_scale = p->norm2.scale[0];
+                    curr->node->nn_param.pre_process_bgra.g_scale = p->norm2.scale[1];
+                    curr->node->nn_param.pre_process_bgra.b_scale = p->norm2.scale[2];
+                }
             }
 
-            curr->node->nn_param.pre_process_bgra.rgb_scale = p->norm.scale;
             curr->node->nn_param.pre_process_bgra.reverse_channel = p->reverse_channel;
             curr->node->nn_param.pre_process_bgra.rect.left = p->rect.left;
             curr->node->nn_param.pre_process_bgra.rect.top = p->rect.top;
@@ -391,10 +437,41 @@ static vsi_bool op_setup
             {
                 curr->outputs[0] = outputs[PRE_PROCESS_OUTPUT];
             }
+
+            if (p->reverse_channel)
+            {
+                if (vsi_nn_compareVersion(self->graph, 1, 1, 83) == -1)
+                {
+                    curr->node->nn_param.pre_process_rgb888_planar.r_scale = p->norm.scale;
+                    curr->node->nn_param.pre_process_rgb888_planar.g_scale = p->norm.scale;
+                    curr->node->nn_param.pre_process_rgb888_planar.b_scale = p->norm.scale;
+                }
+                else
+                {
+                    curr->node->nn_param.pre_process_rgb888_planar.r_scale = p->norm2.scale[2];
+                    curr->node->nn_param.pre_process_rgb888_planar.g_scale = p->norm2.scale[1];
+                    curr->node->nn_param.pre_process_rgb888_planar.b_scale = p->norm2.scale[0];
+                }
+            }
+            else
+            {
+                if (vsi_nn_compareVersion(self->graph, 1, 1, 83) == -1)
+                {
+                    curr->node->nn_param.pre_process_rgb888_planar.r_scale = p->norm.scale;
+                    curr->node->nn_param.pre_process_rgb888_planar.g_scale = p->norm.scale;
+                    curr->node->nn_param.pre_process_rgb888_planar.b_scale = p->norm.scale;
+                }
+                else
+                {
+                    curr->node->nn_param.pre_process_rgb888_planar.r_scale = p->norm2.scale[0];
+                    curr->node->nn_param.pre_process_rgb888_planar.g_scale = p->norm2.scale[1];
+                    curr->node->nn_param.pre_process_rgb888_planar.b_scale = p->norm2.scale[2];
+                }
+            }
+
             curr->node->nn_param.pre_process_rgb888_planar.r_mean = mean[0];
             curr->node->nn_param.pre_process_rgb888_planar.g_mean = mean[1];
             curr->node->nn_param.pre_process_rgb888_planar.b_mean = mean[2];
-            curr->node->nn_param.pre_process_rgb888_planar.scale = p->norm.scale;
             curr->node->nn_param.pre_process_rgb888_planar.rect.left = p->rect.left;
             curr->node->nn_param.pre_process_rgb888_planar.rect.top = p->rect.top;
             curr->node->nn_param.pre_process_rgb888_planar.rect.width = p->rect.width;
@@ -416,15 +493,38 @@ static vsi_bool op_setup
                 curr->node->nn_param.pre_process_yuv444.r_mean = p->norm.mean[2];
                 curr->node->nn_param.pre_process_yuv444.g_mean = p->norm.mean[1];
                 curr->node->nn_param.pre_process_yuv444.b_mean = p->norm.mean[0];
+                if (vsi_nn_compareVersion(self->graph, 1, 1, 83) == -1)
+                {
+                    curr->node->nn_param.pre_process_yuv444.r_scale = p->norm.scale;
+                    curr->node->nn_param.pre_process_yuv444.g_scale = p->norm.scale;
+                    curr->node->nn_param.pre_process_yuv444.b_scale = p->norm.scale;
+                }
+                else
+                {
+                    curr->node->nn_param.pre_process_yuv444.r_scale = p->norm2.scale[2];
+                    curr->node->nn_param.pre_process_yuv444.g_scale = p->norm2.scale[1];
+                    curr->node->nn_param.pre_process_yuv444.b_scale = p->norm2.scale[0];
+                }
             }
             else
             {
                 curr->node->nn_param.pre_process_yuv444.r_mean = p->norm.mean[0];
                 curr->node->nn_param.pre_process_yuv444.g_mean = p->norm.mean[1];
                 curr->node->nn_param.pre_process_yuv444.b_mean = p->norm.mean[2];
+                if (vsi_nn_compareVersion(self->graph, 1, 1, 83) == -1)
+                {
+                    curr->node->nn_param.pre_process_yuv444.r_scale = p->norm.scale;
+                    curr->node->nn_param.pre_process_yuv444.g_scale = p->norm.scale;
+                    curr->node->nn_param.pre_process_yuv444.b_scale = p->norm.scale;
+                }
+                else
+                {
+                    curr->node->nn_param.pre_process_yuv444.r_scale = p->norm2.scale[0];
+                    curr->node->nn_param.pre_process_yuv444.g_scale = p->norm2.scale[1];
+                    curr->node->nn_param.pre_process_yuv444.b_scale = p->norm2.scale[2];
+                }
             }
 
-            curr->node->nn_param.pre_process_yuv444.rgb_scale = p->norm.scale;
             curr->node->nn_param.pre_process_yuv444.reverse_channel = p->reverse_channel;
             curr->node->nn_param.pre_process_yuv444.rect.left = p->rect.left;
             curr->node->nn_param.pre_process_yuv444.rect.top = p->rect.top;
@@ -461,12 +561,36 @@ static vsi_bool op_setup
                 curr->node->nn_param.pre_process_nv12.r_mean = p->norm.mean[2];
                 curr->node->nn_param.pre_process_nv12.g_mean = p->norm.mean[1];
                 curr->node->nn_param.pre_process_nv12.b_mean = p->norm.mean[0];
+                if (vsi_nn_compareVersion(self->graph, 1, 1, 83) == -1)
+                {
+                    curr->node->nn_param.pre_process_nv12.r_scale = p->norm.scale;
+                    curr->node->nn_param.pre_process_nv12.g_scale = p->norm.scale;
+                    curr->node->nn_param.pre_process_nv12.b_scale = p->norm.scale;
+                }
+                else
+                {
+                    curr->node->nn_param.pre_process_nv12.r_scale = p->norm2.scale[2];
+                    curr->node->nn_param.pre_process_nv12.g_scale = p->norm2.scale[1];
+                    curr->node->nn_param.pre_process_nv12.b_scale = p->norm2.scale[0];
+                }
             }
             else
             {
                 curr->node->nn_param.pre_process_nv12.r_mean = p->norm.mean[0];
                 curr->node->nn_param.pre_process_nv12.g_mean = p->norm.mean[1];
                 curr->node->nn_param.pre_process_nv12.b_mean = p->norm.mean[2];
+                if (vsi_nn_compareVersion(self->graph, 1, 1, 83) == -1)
+                {
+                    curr->node->nn_param.pre_process_nv12.r_scale = p->norm.scale;
+                    curr->node->nn_param.pre_process_nv12.g_scale = p->norm.scale;
+                    curr->node->nn_param.pre_process_nv12.b_scale = p->norm.scale;
+                }
+                else
+                {
+                    curr->node->nn_param.pre_process_nv12.r_scale = p->norm2.scale[0];
+                    curr->node->nn_param.pre_process_nv12.g_scale = p->norm2.scale[1];
+                    curr->node->nn_param.pre_process_nv12.b_scale = p->norm2.scale[2];
+                }
             }
 
             if (p->type == VSI_NN_SOURCE_FORMAT_IMAGE_NV12)
@@ -478,7 +602,6 @@ static vsi_bool op_setup
                 curr->node->nn_param.pre_process_nv12.nv_type = VSI_NN_YUV_TYPE_NV21;
             }
 
-            curr->node->nn_param.pre_process_nv12.rgb_scale = p->norm.scale;
             curr->node->nn_param.pre_process_nv12.reverse_channel = p->reverse_channel;
             curr->node->nn_param.pre_process_nv12.rect.left = p->rect.left;
             curr->node->nn_param.pre_process_nv12.rect.top = p->rect.top;
@@ -514,12 +637,36 @@ static vsi_bool op_setup
                 curr->node->nn_param.pre_process_yuv422.r_mean = p->norm.mean[2];
                 curr->node->nn_param.pre_process_yuv422.g_mean = p->norm.mean[1];
                 curr->node->nn_param.pre_process_yuv422.b_mean = p->norm.mean[0];
+                if (vsi_nn_compareVersion(self->graph, 1, 1, 83) == -1)
+                {
+                    curr->node->nn_param.pre_process_yuv422.r_scale = p->norm.scale;
+                    curr->node->nn_param.pre_process_yuv422.g_scale = p->norm.scale;
+                    curr->node->nn_param.pre_process_yuv422.b_scale = p->norm.scale;
+                }
+                else
+                {
+                    curr->node->nn_param.pre_process_yuv422.r_scale = p->norm2.scale[2];
+                    curr->node->nn_param.pre_process_yuv422.g_scale = p->norm2.scale[1];
+                    curr->node->nn_param.pre_process_yuv422.b_scale = p->norm2.scale[0];
+                }
             }
             else
             {
                 curr->node->nn_param.pre_process_yuv422.r_mean = p->norm.mean[0];
                 curr->node->nn_param.pre_process_yuv422.g_mean = p->norm.mean[1];
                 curr->node->nn_param.pre_process_yuv422.b_mean = p->norm.mean[2];
+                if (vsi_nn_compareVersion(self->graph, 1, 1, 83) == -1)
+                {
+                    curr->node->nn_param.pre_process_yuv422.r_scale = p->norm.scale;
+                    curr->node->nn_param.pre_process_yuv422.g_scale = p->norm.scale;
+                    curr->node->nn_param.pre_process_yuv422.b_scale = p->norm.scale;
+                }
+                else
+                {
+                    curr->node->nn_param.pre_process_yuv422.r_scale = p->norm2.scale[0];
+                    curr->node->nn_param.pre_process_yuv422.g_scale = p->norm2.scale[1];
+                    curr->node->nn_param.pre_process_yuv422.b_scale = p->norm2.scale[2];
+                }
             }
 
             if (p->type == VSI_NN_SOURCE_FORMAT_IMAGE_YUYV422)
@@ -531,7 +678,6 @@ static vsi_bool op_setup
                 curr->node->nn_param.pre_process_yuv422.yuv422_type = 1;
             }
 
-            curr->node->nn_param.pre_process_yuv422.rgb_scale = p->norm.scale;
             curr->node->nn_param.pre_process_yuv422.reverse_channel = p->reverse_channel;
             curr->node->nn_param.pre_process_yuv422.rect.left = p->rect.left;
             curr->node->nn_param.pre_process_yuv422.rect.top = p->rect.top;

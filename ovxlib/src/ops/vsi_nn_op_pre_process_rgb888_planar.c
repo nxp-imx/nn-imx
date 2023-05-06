@@ -73,7 +73,9 @@ static vsi_status op_compute
     vsi_nn_kernel_param_add_float32( param, "r_mean", p->r_mean );
     vsi_nn_kernel_param_add_float32( param, "g_mean", p->g_mean );
     vsi_nn_kernel_param_add_float32( param, "b_mean", p->b_mean );
-    vsi_nn_kernel_param_add_float32( param, "scale", p->scale );
+    vsi_nn_kernel_param_add_float32( param, "r_scale", p->r_scale );
+    vsi_nn_kernel_param_add_float32( param, "g_scale", p->g_scale );
+    vsi_nn_kernel_param_add_float32( param, "b_scale", p->b_scale );
     vsi_nn_kernel_param_add_int32( param, "enable_copy", p->local->enable_copy );
     vsi_nn_kernel_param_add_int32( param, "reverse", p->reverse_channel );
 
@@ -109,11 +111,11 @@ static vsi_bool op_check
 {
     if (inputs[1] == NULL)
     {
-        BEGIN_IO_TYPE_DECL(PRE_PROCESS_RGB888_PLANAR, 1, 3)
-            IO_TYPE(D_U8, D_U8|Q_ASYM, D_U8|Q_ASYM, D_U8|Q_ASYM)
-            IO_TYPE(D_U8, D_I8|Q_DFP,  D_I8|Q_DFP,  D_I8|Q_DFP)
-            IO_TYPE(D_U8, D_I16|Q_DFP, D_I16|Q_DFP, D_I16|Q_DFP)
-            IO_TYPE(D_U8, D_F16,       D_F16,       D_F16)
+        BEGIN_IO_TYPE_DECL(PRE_PROCESS_RGB888_PLANAR, 1, 1)
+            IO_TYPE(D_U8, D_U8|Q_ASYM)
+            IO_TYPE(D_U8, D_I8|Q_DFP)
+            IO_TYPE(D_U8, D_I16|Q_DFP)
+            IO_TYPE(D_U8, D_F16)
         END_IO_TYPE_DECL(PRE_PROCESS_RGB888_PLANAR)
 
         if (!VALIDATE_OP_IO_TYPES(PRE_PROCESS_RGB888_PLANAR, self, inputs, 1,

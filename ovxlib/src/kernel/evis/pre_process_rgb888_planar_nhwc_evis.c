@@ -131,8 +131,9 @@ static vx_param_description_t _pre_process_rgb888_planar_kernel_param_def[] =
 {
     {VX_INPUT,  VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
-    {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
-    {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
@@ -150,6 +151,8 @@ static vx_param_description_t _pre_process_rgb888_planar_sep_kernel_param_def[] 
     {VX_INPUT,  VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT,  VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
@@ -198,8 +201,7 @@ DEF_KERNEL_INITIALIZER(_pre_process_rgb888_planar_initializer)
         attr[0] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[1] );
     }
     CHECK_PTR_FAIL_GOTO( attr[0], "Create tensor attr buffer fail.", OnError );
-    status = vsi_nn_kernel_scalar_read_float32((vsi_nn_kernel_scalar_t)param[param_size - 2], &output_scale);
-    status |= vsi_nn_kernel_scalar_read_int32((vsi_nn_kernel_scalar_t)param[param_size - 1], &reverse);
+    status = vsi_nn_kernel_scalar_read_int32((vsi_nn_kernel_scalar_t)param[param_size - 3], &reverse);
     CHECK_STATUS_FAIL_GOTO(status, OnError );
 
     out_shape  = attr[0]->shape;
@@ -454,8 +456,7 @@ DEF_KERNEL_INITIALIZER(_pre_process_rgb888_planar_copy_initializer)
         attr[0] = vsi_nn_kernel_tensor_attr_create( (vsi_nn_kernel_tensor_t)param[1] );
     }
     CHECK_PTR_FAIL_GOTO( attr[0], "Create tensor attr buffer fail.", OnError );
-    status = vsi_nn_kernel_scalar_read_float32((vsi_nn_kernel_scalar_t)param[param_size - 2], &output_scale);
-    status |= vsi_nn_kernel_scalar_read_int32((vsi_nn_kernel_scalar_t)param[param_size - 1], &reverse);
+    status = vsi_nn_kernel_scalar_read_int32((vsi_nn_kernel_scalar_t)param[param_size - 3], &reverse);
     CHECK_STATUS_FAIL_GOTO(status, OnError );
 
     out_shape  = attr[0]->shape;
@@ -680,7 +681,7 @@ DEF_KERNEL_INITIALIZER(_resize_rgb888_planar_initializer)
     }
     CHECK_PTR_FAIL_GOTO( attr[1], "Create tensor attr buffer fail.", OnError );
 
-    status  = vsi_nn_kernel_scalar_read_int32((vsi_nn_kernel_scalar_t)param[param_size - 1], &reverse);
+    status  = vsi_nn_kernel_scalar_read_int32((vsi_nn_kernel_scalar_t)param[param_size - 3], &reverse);
     CHECK_STATUS_FAIL_GOTO(status, OnError );
 
     {
@@ -909,7 +910,9 @@ static vsi_nn_kernel_node_t _setup
     float r_mean = vsi_nn_kernel_param_get_float32( params, "r_mean" );
     float g_mean = vsi_nn_kernel_param_get_float32( params, "g_mean" );
     float b_mean = vsi_nn_kernel_param_get_float32( params, "b_mean" );
-    float scale = vsi_nn_kernel_param_get_float32( params, "scale" );
+    float r_scale = vsi_nn_kernel_param_get_float32( params, "r_scale" );
+    float g_scale = vsi_nn_kernel_param_get_float32( params, "g_scale" );
+    float b_scale = vsi_nn_kernel_param_get_float32( params, "b_scale" );
     int32_t reverse  = vsi_nn_kernel_param_get_int32( params, "reverse" );
     vsi_bool is_no_range_change = FALSE;
 
@@ -933,7 +936,9 @@ static vsi_nn_kernel_node_t _setup
          outputs[0]->attr.dtype.vx_type == VSI_NN_TYPE_UINT8 &&
          outputs[0]->attr.dtype.qnt_type == VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC &&
          (float)outputs[0]->attr.dtype.zero_point == r_mean && r_mean == g_mean && r_mean == b_mean &&
-         vsi_nn_abs(outputs[0]->attr.dtype.scale - scale) < 1e-8 )
+         vsi_nn_abs(outputs[0]->attr.dtype.scale - r_scale) < 1e-8 &&
+         vsi_nn_abs(outputs[0]->attr.dtype.scale - g_scale) < 1e-8 &&
+         vsi_nn_abs(outputs[0]->attr.dtype.scale - b_scale) < 1e-8)
     {
         is_no_range_change = TRUE;
     }
@@ -964,11 +969,15 @@ static vsi_nn_kernel_node_t _setup
             node_params[index++] = vsi_nn_kernel_scalar_create( graph, F32, &r_mean );
             node_params[index++] = vsi_nn_kernel_scalar_create( graph, F32, &g_mean );
             node_params[index++] = vsi_nn_kernel_scalar_create( graph, F32, &b_mean );
-            node_params[index++] = vsi_nn_kernel_scalar_create( graph, F32, &scale );
+            node_params[index++] = vsi_nn_kernel_scalar_create( graph, F32, &r_scale );
             node_params[index++] = vsi_nn_kernel_scalar_create( graph, I32, &reverse );
+            node_params[index++] = vsi_nn_kernel_scalar_create( graph, F32, &g_scale );
+            node_params[index++] = vsi_nn_kernel_scalar_create( graph, F32, &b_scale );
             /* Pass parameters to node. */
             status  = vsi_nn_kernel_node_pass_param( node, node_params, param_count );
             index = scalar_index;
+            vsi_nn_kernel_scalar_release( &node_params[index++] );
+            vsi_nn_kernel_scalar_release( &node_params[index++] );
             vsi_nn_kernel_scalar_release( &node_params[index++] );
             vsi_nn_kernel_scalar_release( &node_params[index++] );
             vsi_nn_kernel_scalar_release( &node_params[index++] );

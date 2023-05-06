@@ -65,6 +65,8 @@ static vx_param_description_t _pre_process_rgb888_planar_kernel_param_def[] =
     {VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
 };
 #define _PRE_PROCESS_RGB888_PLANAR_PARAM_NUM  _cnt_of_array( _pre_process_rgb888_planar_kernel_param_def )
 
@@ -86,7 +88,8 @@ DEF_KERNEL_EXECUTOR(_compute)
     vsi_nn_kernel_tensor_attr_t * attr[_CPU_IO_NUM] = { NULL };
     uint32_t i = 0;
     int32_t xRatio = 0, yRatio = 0, xOffset = 0, yOffset = 0;
-    float mean[3] = {0}, scale = 1;
+    float mean[3] = {0};
+    float r_scale = 1, g_scale = 1, b_scale = 1;
     vsi_bool is_rgb888 = FALSE;
     int32_t reverse = 0;
 
@@ -115,8 +118,10 @@ DEF_KERNEL_EXECUTOR(_compute)
     status |= vsi_nn_kernel_scalar_read_float32((vsi_nn_kernel_scalar_t)param[i++], &mean[0]);
     status |= vsi_nn_kernel_scalar_read_float32((vsi_nn_kernel_scalar_t)param[i++], &mean[1]);
     status |= vsi_nn_kernel_scalar_read_float32((vsi_nn_kernel_scalar_t)param[i++], &mean[2]);
-    status |= vsi_nn_kernel_scalar_read_float32((vsi_nn_kernel_scalar_t)param[i++], &scale);
+    status |= vsi_nn_kernel_scalar_read_float32((vsi_nn_kernel_scalar_t)param[i++], &r_scale);
     status |= vsi_nn_kernel_scalar_read_int32((vsi_nn_kernel_scalar_t)param[i++], &reverse);
+    status |= vsi_nn_kernel_scalar_read_float32((vsi_nn_kernel_scalar_t)param[i++], &g_scale);
+    status |= vsi_nn_kernel_scalar_read_float32((vsi_nn_kernel_scalar_t)param[i++], &b_scale);
     CHECK_STATUS_FAIL_GOTO(status, final );
 
     for (i = 0; i < 3; i++)
@@ -142,6 +147,10 @@ DEF_KERNEL_EXECUTOR(_compute)
         uint8_t result = 0;
         int32_t offset = 0;
         int32_t index = 0;
+        float scale[3] = {0};
+        scale[0] = r_scale;
+        scale[1] = g_scale;
+        scale[2] = b_scale;
 
         for ( idx = 0; idx < 3; idx ++)
         {
@@ -203,14 +212,16 @@ DEF_KERNEL_EXECUTOR(_compute)
                         temp2 = fx * (line2[1] - line2[0]) + (line2[0] << 10);
                         temp1 = fy * (temp2 - temp1) + (temp1 << 10);
                         result = (uint8_t)(DESCALE(temp1));
-                        finalVal = (result - mean[idx]) * scale;
+                        finalVal = (result - mean[idx]) * scale[idx];
+
                         buffer[3][output_index] = finalVal;
                     }
                     else
                     {
                         int32_t ofset = xOffset + yOffset * src_width;
                         source_index = dx + dy * src_width + ofset + offset;
-                        finalVal = (buffer[index][source_index] - mean[idx]) * scale;
+                        finalVal = (buffer[index][source_index] - mean[idx]) * scale[idx];
+
                         buffer[3][output_index] = finalVal;
                     }
                 }
@@ -285,10 +296,12 @@ static vsi_nn_kernel_node_t _setup
         int32_t left     = vsi_nn_kernel_param_get_int32( params, "left" );
         int32_t top      = vsi_nn_kernel_param_get_int32( params, "top" );
         int32_t reverse  = vsi_nn_kernel_param_get_int32( params, "reverse" );
-        float r_mean = vsi_nn_kernel_param_get_float32( params, "r_mean" );
-        float g_mean = vsi_nn_kernel_param_get_float32( params, "g_mean" );
-        float b_mean = vsi_nn_kernel_param_get_float32( params, "b_mean" );
-        float scale      = vsi_nn_kernel_param_get_float32( params, "scale" );
+        float r_mean     = vsi_nn_kernel_param_get_float32( params, "r_mean" );
+        float g_mean     = vsi_nn_kernel_param_get_float32( params, "g_mean" );
+        float b_mean     = vsi_nn_kernel_param_get_float32( params, "b_mean" );
+        float r_scale    = vsi_nn_kernel_param_get_float32( params, "r_scale" );
+        float g_scale    = vsi_nn_kernel_param_get_float32( params, "g_scale" );
+        float b_scale    = vsi_nn_kernel_param_get_float32( params, "b_scale" );
 
         node = vsi_nn_kernel_create_node( graph, kernel );
         if ( node )
@@ -303,8 +316,10 @@ static vsi_nn_kernel_node_t _setup
             node_params[index++] = vsi_nn_kernel_scalar_create( graph, F32, &r_mean );
             node_params[index++] = vsi_nn_kernel_scalar_create( graph, F32, &g_mean );
             node_params[index++] = vsi_nn_kernel_scalar_create( graph, F32, &b_mean );
-            node_params[index++] = vsi_nn_kernel_scalar_create( graph, F32, &scale );
+            node_params[index++] = vsi_nn_kernel_scalar_create( graph, F32, &r_scale );
             node_params[index++] = vsi_nn_kernel_scalar_create( graph, I32, &reverse );
+            node_params[index++] = vsi_nn_kernel_scalar_create( graph, F32, &g_scale );
+            node_params[index++] = vsi_nn_kernel_scalar_create( graph, F32, &b_scale );
             /* Pass parameters to node. */
             status  = vsi_nn_kernel_node_pass_param( node, node_params, _PRE_PROCESS_RGB888_PLANAR_PARAM_NUM );
             vsi_nn_kernel_scalar_release( &node_params[4] );
@@ -316,6 +331,8 @@ static vsi_nn_kernel_node_t _setup
             vsi_nn_kernel_scalar_release( &node_params[10] );
             vsi_nn_kernel_scalar_release( &node_params[11] );
             vsi_nn_kernel_scalar_release( &node_params[12] );
+            vsi_nn_kernel_scalar_release( &node_params[13] );
+            vsi_nn_kernel_scalar_release( &node_params[14] );
         }
     }
     return node;

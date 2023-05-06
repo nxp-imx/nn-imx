@@ -17,8 +17,10 @@ __kernel void pre_process_rgb888_planar_sep_half_U8toU8_nhwc
                  float           rMean,
                  float           gMean,
                  float           bMean,
-                 float           f32Var,
-                 int             reverse
+                 float           r_scale,
+                 int             reverse,
+                 float           g_scale,
+                 float           b_scale
     )
 {
     int4 coord_in = (int4)(get_global_id(0), get_global_id(1), get_global_id(1), get_global_id(1));
