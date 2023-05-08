@@ -702,22 +702,48 @@ vsi_status vsi_nn_internal_optimize_node
 {
     vsi_status status = VSI_SUCCESS;
     vsi_nn_internal_node_t* curr = NULL;
+    int32_t n = 0;
 
     curr = WKSP(node)->nodes;
-    while( NULL != curr )
+    n = (int32_t)vsi_nn_LinkListGetNodeNumber((vsi_nn_link_list_t *)WKSP(node));
+
+    if (direction == VSI_NN_OPTIMIZE_BACKWARD)
     {
-        VSILOGD("Optimize node uid[%u] sub_uid[%u] op[%s]",
-            node->uid, curr->node->uid, vsi_nn_OpGetName(curr->node->op));
+        int32_t i = 0;
 
-        status = vsi_nn_OpOptimize( curr->node->op, curr->node,
-            curr->inputs, curr->outputs, direction );
-        if( VSI_SUCCESS != status )
+        for ( i = n - 1; i >= 0; i-- )
         {
-            VSILOGE("op_optimize fail %d", curr->node->op);
-            break;
-        }
+            curr = (vsi_nn_internal_node_t *)vsi_nn_LinkListGetIndexNode((vsi_nn_link_list_t *)WKSP(node), i);
+            VSILOGD("Optimize backward for node uid[%u] sub_uid[%u] op[%s]",
+                node->uid, curr->node->uid, vsi_nn_OpGetName(curr->node->op));
 
-        curr = (vsi_nn_internal_node_t *)vsi_nn_LinkListNext( (vsi_nn_link_list_t *)curr );
+            status = vsi_nn_OpOptimize( curr->node->op, curr->node,
+                curr->inputs, curr->outputs, direction );
+            if ( VSI_SUCCESS != status )
+            {
+                VSILOGE("op_optimize backward fail %d", curr->node->op);
+                break;
+            }
+
+        }
+    }
+    else
+    {
+        while( NULL != curr )
+        {
+            VSILOGD("Optimize forward for node uid[%u] sub_uid[%u] op[%s]",
+                node->uid, curr->node->uid, vsi_nn_OpGetName(curr->node->op));
+
+            status = vsi_nn_OpOptimize( curr->node->op, curr->node,
+                curr->inputs, curr->outputs, direction );
+            if( VSI_SUCCESS != status )
+            {
+                VSILOGE("op_optimize forward fail %d", curr->node->op);
+                break;
+            }
+
+            curr = (vsi_nn_internal_node_t *)vsi_nn_LinkListNext( (vsi_nn_link_list_t *)curr );
+        }
     }
 
     return status;
