@@ -1563,12 +1563,6 @@
     <ClCompile Include="src\kernel\sp\layer_norm_sp.c">
       <ObjectFileName>$(IntDir)\src\kernel\sp\</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="src\kernel\sp\layer_norm_y_direction_sp.c">
-      <ObjectFileName>$(IntDir)\src\kernel\sp\</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="src\kernel\sp\layer_norm_z_direction_sp.c">
-      <ObjectFileName>$(IntDir)\src\kernel\sp\</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="src\kernel\sp\logical_sp.c">
       <ObjectFileName>$(IntDir)\src\kernel\sp\</ObjectFileName>
     </ClCompile>
