@@ -518,7 +518,31 @@ vsi_bool vsi_nn_kernel_optimize_tile_shape
 
     for (i = 0, temp_rank = 0; i < rank_output; i++)
     {
-        if (temp_shape_x[i] != 1)
+        if (i == rank_output - 1 && temp_shape_x[i] == 1)
+        {
+            if (idx_start >= 0)
+            {
+               sx = 1;
+               sy = temp_shape_y[idx_start];
+               sz = temp_shape_output[idx_start];
+               idx_end = (int32_t)i ;
+               for (j = (vsi_size_t)idx_start + 1; j <= (vsi_size_t)idx_end; j++)
+               {
+                   sy *= temp_shape_y[j];
+                   sz *= temp_shape_output[j];
+               }
+               temp_rank += tile_fill_dim( temp_shape_x, temp_shape_y, temp_shape_output,
+                       temp_rank, VSI_NN_MAX_DIM_NUM, sx, sy, sz );
+               idx_start = -1;
+            }
+            else
+            {
+                temp_shape_x[temp_rank] = temp_shape_x[i];
+                temp_shape_y[temp_rank] = temp_shape_y[i];
+                temp_shape_output[temp_rank++] = temp_shape_output[i];
+            }
+        }
+        else if (temp_shape_x[i] != 1)
         {
             idx_end = (int32_t)i - 1;
             if (idx_start >= 0)
