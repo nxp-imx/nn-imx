@@ -28,6 +28,7 @@
 #include "vsi_nn_error.h"
 #include "utils/vsi_nn_math.h"
 #include "kernel/vsi_nn_kernel_gpu_shape_optimize.h"
+#include "kernel/vsi_nn_kernel_eltwise.h"
 
 static vsi_bool compute_gpu_divisor
     (
@@ -880,3 +881,147 @@ vsi_bool vsi_nn_kernel_optimize_scatter_elements_shape
 
     return ret;
 } /* vsi_nn_kernel_optimize_scatter_elements_shape() */
+
+
+vsi_bool vsi_nn_kernel_optimize_matrixmul_broadcast_shape
+    (
+    const vsi_size_t * shape_x,
+    const vsi_size_t * shape_y,
+    const vsi_size_t * shape_output,
+    vsi_size_t dim_x,
+    vsi_size_t dim_y,
+    vsi_size_t dim_out,
+    vsi_size_t* out_shape_x,
+    vsi_size_t* out_shape_y,
+    vsi_size_t* out_shape_output,
+    uint32_t* new_rank_out
+    )
+{
+    vsi_bool     ret = FALSE;
+    vsi_size_t   rank_in[2] = {0, 0};
+    vsi_size_t   rank_out = 0;
+    vsi_size_t   shapes_in_broadcast_part[2][VSI_NN_MAX_DIM_NUM] = {{1}};
+    vsi_size_t*  shapes_in_broadcast_part_ptr[2]                 = {NULL, NULL};
+    vsi_size_t   shapes_out_broadcast_part[VSI_NN_MAX_DIM_NUM]   = {1};
+    vsi_size_t   out_shape_in[2][VSI_NN_MAX_DIM_NUM]             = {{1}};
+    vsi_size_t*  out_shape_in_ptr[2]                             = {NULL, NULL};
+    vsi_size_t   out_shape_boradcast_output[VSI_NN_MAX_DIM_NUM]  = {1};
+    uint32_t     new_rank   = 0;
+    uint32_t     i          = 0;
+
+    if (dim_x == 1 && dim_y > 1)
+    {
+        out_shape_x[0]    = shape_x[0];
+        out_shape_x[1]    = 1;
+
+        out_shape_y[0]    = shape_y[0];
+        out_shape_y[1]    = shape_y[1];
+
+        out_shape_output[0]   = shape_output[0];
+        out_shape_output[1]   = 1;
+
+        if (dim_y > 2)
+        {
+            shapes_in_broadcast_part[0][0] = 1;
+            rank_in[0] = 1;
+
+            for (i = 2; i <= dim_y; i++)
+            {
+                shapes_in_broadcast_part[1][i - 2] = shape_y[i];
+            }
+            rank_in[1] = dim_y - 2;
+
+            for(i = 1; i <= dim_out; i++)
+            {
+                shapes_out_broadcast_part[i - 1] = shape_output[i];
+            }
+            rank_out = dim_out - 1;
+        }
+    }
+    else if (dim_y == 1 && dim_x > 1)
+    {
+        out_shape_y[0]    = 1;
+        out_shape_y[1]    = shape_y[0];
+
+        out_shape_x[0]    = shape_x[0];
+        out_shape_x[1]    = shape_x[1];
+
+        out_shape_output[0]   = 1;
+        out_shape_output[1]   = shape_output[0];
+
+        if (dim_x > 2)
+        {
+            shapes_in_broadcast_part[1][0] = 1;
+            rank_in[1] = 1;
+
+            for (i = 2; i <= dim_x; i++)
+            {
+                shapes_in_broadcast_part[0][i - 2] = shape_x[i];
+            }
+            rank_in[0] = dim_x - 2;
+
+            for(i = 1; i <= dim_out; i++)
+            {
+                shapes_out_broadcast_part[i - 1] = shape_output[i];
+            }
+            rank_out = dim_out - 1;
+        }
+    }
+    else
+    {
+        out_shape_x[0]    = shape_x[0];
+        out_shape_x[1]    = shape_x[1];
+
+        out_shape_y[0]    = shape_y[0];
+        out_shape_y[1]    = shape_y[1];
+
+        out_shape_output[0]    = shape_output[0];
+        out_shape_output[1]    = shape_output[1];
+
+        for (i = 2; i < dim_x; i++)
+        {
+            shapes_in_broadcast_part[0][i - 2] = shape_x[i];
+        }
+        for (i = 2; i < dim_y; i++)
+        {
+            shapes_in_broadcast_part[1][i - 2] = shape_y[i];
+        }
+        for (i = 2; i < dim_out; i++)
+        {
+            shapes_out_broadcast_part[i - 2] = shape_output[i];
+        }
+        rank_in[0] = dim_x - 2;
+        rank_in[1] = dim_y - 2;
+        rank_out = dim_out - 2;
+
+    }
+
+    shapes_in_broadcast_part_ptr[0] = shapes_in_broadcast_part[0];
+    shapes_in_broadcast_part_ptr[1] = shapes_in_broadcast_part[1];
+    out_shape_in_ptr[0] = out_shape_in[0];
+    out_shape_in_ptr[1] = out_shape_in[1];
+
+    ret = vsi_nn_kernel_optimize_broadcast_shape(
+            (const vsi_size_t **)shapes_in_broadcast_part_ptr, rank_in, 2,
+            shapes_out_broadcast_part, rank_out,
+            (vsi_size_t **)out_shape_in_ptr, out_shape_boradcast_output, &new_rank);
+
+    if (ret)
+    {
+        if (out_shape_in[0][new_rank - 1] == 1 &&
+            out_shape_in[1][new_rank - 1] == 1 &&
+            out_shape_boradcast_output[new_rank - 1] == 1)
+        {
+            new_rank = new_rank - 1;
+        }
+        *new_rank_out = new_rank;
+        for (i = 0; i < new_rank; i++)
+        {
+            out_shape_x[i + 2] = out_shape_in[0][i];
+            out_shape_y[i + 2] = out_shape_in[1][i];
+            out_shape_output[i + 2] = out_shape_boradcast_output[i];
+        }
+    }
+
+    return ret;
+}
