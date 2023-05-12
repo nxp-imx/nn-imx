@@ -108,6 +108,15 @@
     <ClInclude Include="include\custom\ops\vsi_nn_op_custom_softmax.h">
       <Filter>Header Files\custom\ops</Filter>
     </ClInclude>
+    <ClInclude Include="include\custom\ops\vsi_nn_op_custom_tiny_yolov4_postprocess.h">
+      <Filter>Header Files\custom\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\custom\ops\vsi_nn_op_custom_tiny_yolov4_postprocess_box.h">
+      <Filter>Header Files\custom\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="include\custom\ops\vsi_nn_op_custom_tiny_yolov4_postprocess_confidence.h">
+      <Filter>Header Files\custom\ops</Filter>
+    </ClInclude>
     <ClInclude Include="include\custom\ops\vsi_nn_op_custom_warp_affine.h">
       <Filter>Header Files\custom\ops</Filter>
     </ClInclude>
@@ -866,6 +875,15 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\custom\ops\custom_tiny_yolov4_postprocess.c">
+      <Filter>Source Files\custom\ops</Filter>
+    </ClCompile>
+    <ClCompile Include="src\custom\ops\custom_tiny_yolov4_postprocess_box.c">
+      <Filter>Source Files\custom\ops</Filter>
+    </ClCompile>
+    <ClCompile Include="src\custom\ops\custom_tiny_yolov4_postprocess_confidence.c">
+      <Filter>Source Files\custom\ops</Filter>
+    </ClCompile>
     <ClCompile Include="src\custom\ops\kernel\cpu\custom_sample_cpu.c">
       <Filter>Source Files\custom\ops\kernel\cpu</Filter>
     </ClCompile>
@@ -879,6 +897,12 @@
       <Filter>Source Files\custom\ops\kernel\cpu</Filter>
     </ClCompile>
     <ClCompile Include="src\custom\ops\kernel\evis\custom_softmax_evis.c">
+      <Filter>Source Files\custom\ops\kernel\evis</Filter>
+    </ClCompile>
+    <ClCompile Include="src\custom\ops\kernel\evis\custom_tiny_yolov4_postprocess_box_evis.c">
+      <Filter>Source Files\custom\ops\kernel\evis</Filter>
+    </ClCompile>
+    <ClCompile Include="src\custom\ops\kernel\evis\custom_tiny_yolov4_postprocess_confidence_evis.c">
       <Filter>Source Files\custom\ops\kernel\evis</Filter>
     </ClCompile>
     <ClCompile Include="src\custom\ops\kernel\evis\custom_warp_affine_evis.c">
