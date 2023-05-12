@@ -32121,9 +32121,11 @@ __write_only image2d_array_t output, \\\n\
                float         rMean, \\\n\
                float         gMean, \\\n\
                float         bMean, \\\n\
-               float         f32Var, \\\n\
+               float         r_scale, \\\n\
                int           reverse_channel, \\\n\
-               int           trans \\\n\
+               int           trans, \\\n\
+               float         g_scale, \\\n\
+               float         b_scale \\\n\
     ) \\\n\
 { \\\n\
     int2 ratioXY = (int2)(*xRatio, *yRatio); \\\n\
@@ -32172,7 +32174,7 @@ __write_only image2d_array_t output, \\\n\
  \\\n\
     float4 bgrMean = (float4)(bMean, gMean, rMean, 0); \\\n\
  \\\n\
-    bgrMean *= f32Var; \\\n\
+    bgrMean *= (float4)(b_scale, g_scale, r_scale, 0); \\\n\
  \\\n\
     int4 test01, temp1; \\\n\
     int4 test02, temp2; \\\n\
@@ -32205,7 +32207,7 @@ __write_only image2d_array_t output, \\\n\
  \\\n\
     /*convert U8 to dst*/ \\\n\
     dst_type dst; \\\n\
-    tmp_dst = tmp_dst * f32Var - bgrMean.zzzz; \\\n\
+    tmp_dst = tmp_dst * r_scale - bgrMean.zzzz; \\\n\
     tmp_dst = tmp_dst * outputScale + outputZP; \\\n\
     conv_type dst0; \\\n\
     _viv_asm(CONV_RTE, dst0, tmp_dst); \\\n\
@@ -32232,7 +32234,7 @@ __write_only image2d_array_t output, \\\n\
     VXC_DP4x4(tmp_dst, u8_dst, u8_dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 1), \\\n\
             uniConvertIntergetoF32_4x4); \\\n\
  \\\n\
-    tmp_dst = tmp_dst * f32Var - bgrMean.y; \\\n\
+    tmp_dst = tmp_dst * g_scale - bgrMean.y; \\\n\
     tmp_dst = tmp_dst * outputScale + outputZP; \\\n\
     _viv_asm(CONV_RTE, dst0, tmp_dst); \\\n\
     VXC_DP2x8(dst, dst0, dst0, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), uniExtract8Data_2x8); \\\n\
@@ -32257,7 +32259,7 @@ __write_only image2d_array_t output, \\\n\
     VXC_DP4x4(tmp_dst, u8_dst, u8_dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 1), \\\n\
         uniConvertIntergetoF32_4x4); \\\n\
  \\\n\
-    tmp_dst = tmp_dst * f32Var - bgrMean.x; \\\n\
+    tmp_dst = tmp_dst * b_scale - bgrMean.x; \\\n\
     tmp_dst = tmp_dst * outputScale + outputZP; \\\n\
     _viv_asm(CONV_RTE, dst0, tmp_dst); \\\n\
     VXC_DP2x8(dst, dst0, dst0, VXC_MODIFIER(0, 3, 0, VXC_RM_ToNearestEven, 1), uniExtract8Data_2x8); \\\n\
@@ -33542,6 +33544,8 @@ _viv_uniform VXC_512Bits uniExtractBtoF32_part1_4x4;\n\
 _viv_uniform VXC_512Bits uniExtractBtoF32_part2_4x4;\n\
 _viv_uniform VXC_512Bits uniExtractBtoF32_part3_4x4;\n\
 _viv_uniform VXC_512Bits uniExtract8Data_2x8;\n\
+_viv_uniform float4 param_data;\n\
+_viv_uniform float4 rgb_scale;\n\
 \n\
 #define IMAGE_PRE_PROCESS_COPY_16BITS(dst_name, dst_type, copy_type, convert_type) \\\n\
 __kernel void pre_process_rgb_copy_U8to##dst_name \\\n\
@@ -33555,9 +33559,11 @@ __kernel void pre_process_rgb_copy_U8to##dst_name \\\n\
                 float            rMean, \\\n\
                 float            gMean, \\\n\
                 float            bMean, \\\n\
-                float            f32Var, \\\n\
+                float            r_scale, \\\n\
                 int              reverse_channel, \\\n\
-                int              trans \\\n\
+                int              trans, \\\n\
+                float            g_scale, \\\n\
+                float            b_scale \\\n\
     ) \\\n\
 { \\\n\
     int2 coord      = (int2)(get_global_id(0) * 3, get_global_id(1)); \\\n\
@@ -33572,18 +33578,14 @@ __kernel void pre_process_rgb_copy_U8to##dst_name \\\n\
     VXC_ReadImage(src1, input, coord.xy, VXC_5BITOFFSET_XY(0, 0), \\\n\
         VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
  \\\n\
-    f32Var *= outputScale; \\\n\
-    float4 paramData = (float4)(rMean * f32Var - outputZP, gMean * f32Var - outputZP, \\\n\
-        bMean * f32Var - outputZP, f32Var); \\\n\
- \\\n\
     int4 coord_out = (int4)(get_global_id(0), get_global_id(1), r_order, 0); \\\n\
     float4 tmp0, tmp1; \\\n\
     convert_type result0, result1; \\\n\
  \\\n\
     VXC_DP4x4(tmp0, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractRtoF32_part0_4x4); \\\n\
     VXC_DP4x4(tmp1, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractRtoF32_part1_4x4); \\\n\
-    tmp0 = tmp0 * paramData.w - paramData.x; \\\n\
-    tmp1 = tmp1 * paramData.w - paramData.x; \\\n\
+    tmp0 = tmp0 * rgb_scale.x - param_data.x; \\\n\
+    tmp1 = tmp1 * rgb_scale.x - param_data.x; \\\n\
     _viv_asm(CONV_RTE, result0, tmp0); \\\n\
     _viv_asm(CONV_RTE, result1, tmp1); \\\n\
     VXC_DP2x8(dst0, result0, result1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtract8Data_2x8); \\\n\
@@ -33593,8 +33595,8 @@ __kernel void pre_process_rgb_copy_U8to##dst_name \\\n\
     coord_out.z = 1; \\\n\
     VXC_DP4x4(tmp0, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractGtoF32_part0_4x4); \\\n\
     VXC_DP4x4(tmp1, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractGtoF32_part1_4x4); \\\n\
-    tmp0 = tmp0 * paramData.w - paramData.y; \\\n\
-    tmp1 = tmp1 * paramData.w - paramData.y; \\\n\
+    tmp0 = tmp0 * rgb_scale.y - param_data.y; \\\n\
+    tmp1 = tmp1 * rgb_scale.y - param_data.y; \\\n\
     _viv_asm(CONV_RTE, result0, tmp0); \\\n\
     _viv_asm(CONV_RTE, result1, tmp1); \\\n\
     VXC_DP2x8(dst0, result0, result1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtract8Data_2x8); \\\n\
@@ -33604,8 +33606,8 @@ __kernel void pre_process_rgb_copy_U8to##dst_name \\\n\
     coord_out.z = b_order; \\\n\
     VXC_DP4x4(tmp0, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractBtoF32_part0_4x4); \\\n\
     VXC_DP4x4(tmp1, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractBtoF32_part1_4x4); \\\n\
-    tmp0 = tmp0 * paramData.w - paramData.z; \\\n\
-    tmp1 = tmp1 * paramData.w - paramData.z; \\\n\
+    tmp0 = tmp0 * rgb_scale.z - param_data.z; \\\n\
+    tmp1 = tmp1 * rgb_scale.z - param_data.z; \\\n\
     _viv_asm(CONV_RTE, result0, tmp0); \\\n\
     _viv_asm(CONV_RTE, result1, tmp1); \\\n\
     VXC_DP2x8(dst0, result0, result1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtract8Data_2x8); \\\n\
@@ -33627,9 +33629,11 @@ __kernel void pre_process_rgb_copy_U8to##dst_name \\\n\
                 float            rMean, \\\n\
                 float            gMean, \\\n\
                 float            bMean, \\\n\
-                float            f32Var, \\\n\
+                float            r_scale, \\\n\
                 int              reverse_channel, \\\n\
-                int              trans \\\n\
+                int              trans, \\\n\
+                float            g_scale, \\\n\
+                float            b_scale \\\n\
     ) \\\n\
 { \\\n\
     int2 coord      = (int2)(get_global_id(0) * 3, get_global_id(1)); \\\n\
@@ -33645,25 +33649,21 @@ __kernel void pre_process_rgb_copy_U8to##dst_name \\\n\
     VXC_ReadImage(src2, input, coord.xy, VXC_5BITOFFSET_XY(0, 0), \\\n\
         VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
  \\\n\
-    f32Var *= outputScale; \\\n\
-    float4 paramData = (float4)(rMean * f32Var - outputZP, gMean * f32Var - outputZP, \\\n\
-        bMean * f32Var - outputZP, f32Var); \\\n\
- \\\n\
     int4 coord_out = (int4)(get_global_id(0), get_global_id(1), r_order, 0); \\\n\
     float4 tmp0, tmp1; \\\n\
     int4 result0, result1; \\\n\
  \\\n\
     VXC_DP4x4(tmp0, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractRtoF32_part0_4x4); \\\n\
     VXC_DP4x4(tmp1, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractRtoF32_part1_4x4); \\\n\
-    tmp0 = tmp0 * paramData.w - paramData.x; \\\n\
-    tmp1 = tmp1 * paramData.w - paramData.x; \\\n\
+    tmp0 = tmp0 * rgb_scale.x - param_data.x; \\\n\
+    tmp1 = tmp1 * rgb_scale.x - param_data.x; \\\n\
     result0 = convert_int4_rte(tmp0); \\\n\
     result1 = convert_int4_rte(tmp1); \\\n\
     VXC_DP2x8(dst, result0, result1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtract8Data_2x8); \\\n\
     VXC_DP4x4(tmp0, src1, src2, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractRtoF32_part2_4x4); \\\n\
     VXC_DP4x4(tmp1, src1, src2, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractRtoF32_part3_4x4); \\\n\
-    tmp0 = tmp0 * paramData.w - paramData.x; \\\n\
-    tmp1 = tmp1 * paramData.w - paramData.x; \\\n\
+    tmp0 = tmp0 * rgb_scale.x - param_data.x; \\\n\
+    tmp1 = tmp1 * rgb_scale.x - param_data.x; \\\n\
     result0 = convert_int4_rte(tmp0); \\\n\
     result1 = convert_int4_rte(tmp1); \\\n\
     VXC_DP2x8(dst, result0, result1, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1), uniExtract8Data_2x8); \\\n\
@@ -33672,15 +33672,15 @@ __kernel void pre_process_rgb_copy_U8to##dst_name \\\n\
     coord_out.z = 1; \\\n\
     VXC_DP4x4(tmp0, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractGtoF32_part0_4x4); \\\n\
     VXC_DP4x4(tmp1, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractGtoF32_part1_4x4); \\\n\
-    tmp0 = tmp0 * paramData.w - paramData.y; \\\n\
-    tmp1 = tmp1 * paramData.w - paramData.y; \\\n\
+    tmp0 = tmp0 * rgb_scale.y - param_data.y; \\\n\
+    tmp1 = tmp1 * rgb_scale.y - param_data.y; \\\n\
     result0 = convert_int4_rte(tmp0); \\\n\
     result1 = convert_int4_rte(tmp1); \\\n\
     VXC_DP2x8(dst, result0, result1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtract8Data_2x8); \\\n\
     VXC_DP4x4(tmp0, src1, src2, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractGtoF32_part2_4x4); \\\n\
     VXC_DP4x4(tmp1, src1, src2, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractGtoF32_part3_4x4); \\\n\
-    tmp0 = tmp0 * paramData.w - paramData.y; \\\n\
-    tmp1 = tmp1 * paramData.w - paramData.y; \\\n\
+    tmp0 = tmp0 * rgb_scale.y - param_data.y; \\\n\
+    tmp1 = tmp1 * rgb_scale.y - param_data.y; \\\n\
     result0 = convert_int4_rte(tmp0); \\\n\
     result1 = convert_int4_rte(tmp1); \\\n\
     VXC_DP2x8(dst, result0, result1, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1), uniExtract8Data_2x8); \\\n\
@@ -33689,15 +33689,15 @@ __kernel void pre_process_rgb_copy_U8to##dst_name \\\n\
     coord_out.z = b_order; \\\n\
     VXC_DP4x4(tmp0, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractBtoF32_part0_4x4); \\\n\
     VXC_DP4x4(tmp1, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractBtoF32_part1_4x4); \\\n\
-    tmp0 = tmp0 * paramData.w - paramData.z; \\\n\
-    tmp1 = tmp1 * paramData.w - paramData.z; \\\n\
+    tmp0 = tmp0 * rgb_scale.z - param_data.z; \\\n\
+    tmp1 = tmp1 * rgb_scale.z - param_data.z; \\\n\
     result0 = convert_int4_rte(tmp0); \\\n\
     result1 = convert_int4_rte(tmp1); \\\n\
     VXC_DP2x8(dst, result0, result1, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1), uniExtract8Data_2x8); \\\n\
     VXC_DP4x4(tmp0, src1, src2, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractBtoF32_part2_4x4); \\\n\
     VXC_DP4x4(tmp1, src1, src2, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractBtoF32_part3_4x4); \\\n\
-    tmp0 = tmp0 * paramData.w - paramData.z; \\\n\
-    tmp1 = tmp1 * paramData.w - paramData.z; \\\n\
+    tmp0 = tmp0 * rgb_scale.z - param_data.z; \\\n\
+    tmp1 = tmp1 * rgb_scale.z - param_data.z; \\\n\
     result0 = convert_int4_rte(tmp0); \\\n\
     result1 = convert_int4_rte(tmp1); \\\n\
     VXC_DP2x8(dst, result0, result1, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1), uniExtract8Data_2x8); \\\n\
