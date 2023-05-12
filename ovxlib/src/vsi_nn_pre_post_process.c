@@ -170,26 +170,44 @@ static void _set_preproc_node_rect_params
 static void _set_preproc_node_norm_params
     (
     vsi_nn_node_t* node,
-    vsi_nn_preprocess_mean_and_scale_t* mean_and_scale,
-    vsi_nn_tensor_attr_t* attr
+    vsi_nn_preprocess_type_e type,
+    void* mean_and_scale
     )
 {
     int32_t i = 0;
     if(mean_and_scale != NULL)
     {
-        for(i = 0; i < mean_and_scale->channel_len; i++)
+        if (type == VSI_NN_PREPROCESS_MEAN_AND_SCALE)
         {
-            node->nn_param.pre_process.norm.mean[i] = mean_and_scale->channel_mean[i];
+            vsi_nn_preprocess_mean_and_scale_t* means_and_single_scale =
+            (vsi_nn_preprocess_mean_and_scale_t*)mean_and_scale;
+            node->nn_param.pre_process.norm.scale = means_and_single_scale->scale;
+            for(i = 0; i < means_and_single_scale->channel_len; i++)
+            {
+                node->nn_param.pre_process.norm.mean[i] = means_and_single_scale->channel_mean[i];
+            }
         }
-        node->nn_param.pre_process.norm.scale = mean_and_scale->scale;
+        else if (type == VSI_NN_PREPROCESS_MEANS_AND_SCALES)
+        {
+            vsi_nn_preprocess_means_and_scales_t* means_and_scales =
+            (vsi_nn_preprocess_means_and_scales_t*)mean_and_scale;
+            for (i = 0; i < means_and_scales->scale_len; i++)
+            {
+                node->nn_param.pre_process.norm2.scale[i] = means_and_scales->scale[i];
+            }
+            for(i = 0; i < means_and_scales->channel_len; i++)
+            {
+                node->nn_param.pre_process.norm.mean[i] = means_and_scales->channel_mean[i];
+            }
+        }
     }
     else
     {
-        for(i = 0; i < (int32_t)attr->dim_num - 1; i++)
+        for(i = 0; i < 3; i++)
         {
             node->nn_param.pre_process.norm.mean[i] = 0;
+            node->nn_param.pre_process.norm2.scale[i] = 1.0f;
         }
-        node->nn_param.pre_process.norm.scale = 1.0f;
     }
 } /* _set_preproc_node_norm_params() */
 
@@ -453,7 +471,7 @@ vsi_status vsi_nn_add_single_preproc_node
     vsi_nn_node_t* node = NULL;
     vsi_nn_preprocess_image_size_t* input_size = NULL;
     vsi_nn_preprocess_crop_t* crop = NULL;
-    vsi_nn_preprocess_mean_and_scale_t* mean_and_scale = NULL;
+    void* mean_and_scale = NULL;
     vsi_nn_preprocess_permute_t* permute = NULL;
     vsi_nn_preprocess_image_resize_t* image_resize = NULL;
     vsi_nn_preprocess_dtype_convert_t* data_convert = NULL;
@@ -462,6 +480,7 @@ vsi_status vsi_nn_add_single_preproc_node
     vsi_nn_tensor_id_t preproc_inputs[3] = {0};
     vsi_nn_tensor_id_t preproc_output;
     vsi_nn_tensor_t* org_norm_tensor = NULL;
+    vsi_nn_preprocess_type_e mean_and_scale_type = VSI_NN_PREPROCESS_MEAN_AND_SCALE;
     uint32_t node_input_num = 1;
     int32_t reverse_channel = 0;
     uint32_t i = 0;
@@ -501,6 +520,11 @@ vsi_status vsi_nn_add_single_preproc_node
 
        else if(preprocess[idx].type == VSI_NN_PREPROCESS_IMAGE_SIZE)
            input_size = (vsi_nn_preprocess_image_size_t*)preprocess[idx].param;
+       else if(preprocess[idx].type == VSI_NN_PREPROCESS_MEANS_AND_SCALES)
+       {
+           mean_and_scale = (vsi_nn_process_means_and_scales_t*)preprocess[idx].param;
+           mean_and_scale_type  = VSI_NN_PREPROCESS_MEANS_AND_SCALES;
+       }
        else
        {
            VSILOGE("preprocess[%d] type is not support, please have a check!", idx);
@@ -545,7 +569,7 @@ vsi_status vsi_nn_add_single_preproc_node
     TEST_CHECK_STATUS(status, final);
 
     _set_preproc_node_rect_params(node, crop, input_size, source_format);
-    _set_preproc_node_norm_params(node, mean_and_scale, &org_norm_tensor->attr);
+    _set_preproc_node_norm_params(node, mean_and_scale_type, mean_and_scale);
 
     if(permute != NULL)
     {
