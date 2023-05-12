@@ -44625,6 +44625,167 @@ TILE_2D_MIX(U8, F16, 7, 6, vxc_uchar8, vxc_short8)\n\
 TILE_2D_MIX(U8, F16, 0, 7, vxc_uchar8, vxc_short8)\n\
 "; /* end of tile_mix_vx*/
 
+static const char tiny_yolov4_postprocess_box_vx[] = "#pragma OPENCL EXTENSION cl_viv_vx_extension : enable\n\
+#include \"cl_viv_vx_ext.h\"\n\
+\n\
+#define logE    (1.44269502f)\n\
+\n\
+float4 sigmoid4(float4 x)\n\
+{\n\
+    x *= -logE;\n\
+    x = 1 + exp2(x);\n\
+    return 1 / x;\n\
+}\n\
+\n\
+float4 exp4(float4 x)\n\
+{\n\
+    x *= logE;\n\
+    return exp2(x);\n\
+}\n\
+\n\
+#define CONST0      (1.0499999523162842f)\n\
+#define CONST1      (0.0250000003725290f)\n\
+\n\
+_viv_uniform VXC_512Bits uniDatatoFloat32_0_4x4;\n\
+_viv_uniform VXC_512Bits uniDatatoFloat32_1_4x4;\n\
+_viv_uniform VXC_512Bits uniExtract8Data_2x8;\n\
+_viv_uniform VXC_512Bits uniDataTranspose_0_2x8;\n\
+_viv_uniform VXC_512Bits uniDataTranspose_1_2x8;\n\
+_viv_uniform float input0_scale;\n\
+_viv_uniform float input0_tail;\n\
+_viv_uniform float input1_scale;\n\
+_viv_uniform float input1_tail;\n\
+_viv_uniform float output_scale;\n\
+_viv_uniform float output_zp;\n\
+_viv_uniform float CONST2;\n\
+__kernel void tiny_yolov4_postprocess_box_U8_U8toU8\n\
+    (\n\
+    __read_only  image2d_array_t  input0,\n\
+    __read_only  image2d_array_t  input1,\n\
+    __write_only image2d_array_t  output,\n\
+                 float            bias_0,\n\
+                 float            bias_1\n\
+    )\n\
+{\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(0), get_global_id(0));\n\
+\n\
+    vxc_uchar16 src0, src1, src2, src3;\n\
+    VXC_ReadImage(src0, input0, coord.xy, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(src0, input0, coord.xy, VXC_5BITOFFSET_XY(0, 1), VXC_MODIFIER(4, 7, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(src1, input0, coord.xy, VXC_5BITOFFSET_XY(0, 2), VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(src1, input0, coord.xy, VXC_5BITOFFSET_XY(0, 3), VXC_MODIFIER(4, 7, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    VXC_ReadImage(src2, input1, coord.xy, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(src3, input1, coord.xy, VXC_5BITOFFSET_XY(0, 1), VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    coord.zw += (int2)(2, 3);\n\
+\n\
+    float4 data0, data1, data2, data3, data;\n\
+    VXC_DP4x4(data0, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDatatoFloat32_0_4x4);\n\
+    data0 = data0 * input0_scale + input0_tail;\n\
+    data0 = sigmoid4(data0);\n\
+    data0 = data0 * CONST0 - CONST1;\n\
+\n\
+    VXC_DP4x4(data, src2, src2, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDatatoFloat32_0_4x4);\n\
+    data = data * input1_scale + input1_tail;\n\
+    data0 = data0 * CONST2 + data * CONST2;\n\
+\n\
+    VXC_DP4x4(data1, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDatatoFloat32_1_4x4);\n\
+    data1 = data1 * input0_scale + input0_tail;\n\
+    data1 = sigmoid4(data1);\n\
+    data1 = data1 * CONST0 - CONST1;\n\
+\n\
+    VXC_DP4x4(data, src3, src3, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDatatoFloat32_0_4x4);\n\
+    data = data * input1_scale + input1_tail;\n\
+    data1 = data1 * CONST2 + data * CONST2;\n\
+\n\
+    VXC_DP4x4(data2, src1, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDatatoFloat32_0_4x4);\n\
+    data2 = data2 * input0_scale + input0_tail;\n\
+    data2 = exp4(data2) * bias_0;\n\
+\n\
+    VXC_DP4x4(data3, src1, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniDatatoFloat32_1_4x4);\n\
+    data3 = data3 * input0_scale + input0_tail;\n\
+    data3 = exp4(data3) * bias_1;\n\
+\n\
+    data0 = data0 * output_scale + output_zp;\n\
+    data1 = data1 * output_scale + output_zp;\n\
+\n\
+    int4 dst0 = convert_int4_rte(data0);\n\
+    int4 dst1 = convert_int4_rte(data1);\n\
+    VXC_DP2x8(src1, dst0, dst1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), uniExtract8Data_2x8);\n\
+    data2 = data2 * output_scale + output_zp;\n\
+    data3 = data3 * output_scale + output_zp;\n\
+    dst0 = convert_int4_rte(data2);\n\
+    dst1 = convert_int4_rte(data3);\n\
+    VXC_DP2x8(src1, dst0, dst1, VXC_MODIFIER(8, 15, 0, VXC_RM_TowardZero, 1), uniExtract8Data_2x8);\n\
+\n\
+    VXC_DP2x8(src0, src1, src1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), uniDataTranspose_0_2x8);\n\
+    VXC_DP2x8(src0, src1, src1, VXC_MODIFIER(8, 15, 0, VXC_RM_TowardZero, 1), uniDataTranspose_1_2x8);\n\
+\n\
+    VXC_WriteImage(output, coord.yx, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+    coord.x ++;\n\
+    VXC_WriteImage(output, coord.yx, src0, VXC_MODIFIER(4, 7, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_WriteImage(output, coord.yz, src0, VXC_MODIFIER(8, 11, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_WriteImage(output, coord.yw, src0, VXC_MODIFIER(12, 15, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+"; /* end of tiny_yolov4_postprocess_box_vx*/
+
+static const char tiny_yolov4_postprocess_confidence_vx[] = "#pragma OPENCL EXTENSION cl_viv_vx_extension : enable\n\
+#include \"cl_viv_vx_ext.h\"\n\
+\n\
+_viv_uniform VXC_512Bits uniU8TimesU8_0_4x4;\n\
+_viv_uniform VXC_512Bits uniU8PlusU8_trans_0_2x8;\n\
+_viv_uniform VXC_512Bits uniU8PlusU8_trans_1_2x8;\n\
+_viv_uniform VXC_512Bits uniU16TimesMultiplier_PostShift_2x8;\n\
+_viv_uniform int output_zp;\n\
+\n\
+__kernel void tiny_yolov4_postprocess_conf_U8toU8\n\
+(\n\
+    __read_only  image2d_t input,\n\
+    __write_only image2d_t output\n\
+)\n\
+{\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), 0, get_global_id(0));\n\
+\n\
+    vxc_uchar16 src0, src1, src2, src3, src4;\n\
+\n\
+    VXC_ReadImage(src0, input, coord.wz, VXC_5BITOFFSET_XY(0, 0), VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    vxc_ushort8 data0, data1;\n\
+\n\
+    VXC_ReadImage(src1, input, coord.wy, VXC_5BITOFFSET_XY(0, 1), VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(src2, input, coord.wy, VXC_5BITOFFSET_XY(0, 2), VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(src3, input, coord.wy, VXC_5BITOFFSET_XY(0, 3), VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(src4, input, coord.wy, VXC_5BITOFFSET_XY(0, 4), VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+\n\
+    coord.zw = coord.xx + (int2)(2, 3);\n\
+\n\
+    VXC_DP4x4(data0, src0, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniU8TimesU8_0_4x4);\n\
+    VXC_DP4x4(data0, src0, src2, VXC_MODIFIER(4, 7, 0, VXC_RM_TowardZero, 0), uniU8TimesU8_0_4x4);\n\
+    VXC_DP4x4(data1, src0, src3, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniU8TimesU8_0_4x4);\n\
+    VXC_DP4x4(data1, src0, src4, VXC_MODIFIER(4, 7, 0, VXC_RM_TowardZero, 0), uniU8TimesU8_0_4x4);\n\
+\n\
+    VXC_DP2x8(src1, data0, data0, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1),\n\
+        uniU16TimesMultiplier_PostShift_2x8);\n\
+    VXC_DP2x8(src1, data1, data1, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1),\n\
+        uniU16TimesMultiplier_PostShift_2x8);\n\
+\n\
+    uchar zp;\n\
+    _viv_asm(COPY, zp, output_zp, 2);\n\
+\n\
+    VXC_DP2x8(src0, src1, zp, VXC_MODIFIER(0, 7, 0, VXC_RM_ToNearestEven, 1),\n\
+        uniU8PlusU8_trans_0_2x8);\n\
+    VXC_DP2x8(src0, src1, zp, VXC_MODIFIER(8, 15, 0, VXC_RM_ToNearestEven, 1),\n\
+        uniU8PlusU8_trans_1_2x8);\n\
+\n\
+    VXC_WriteImage(output, coord.yx, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));\n\
+    coord.x ++;\n\
+    VXC_WriteImage(output, coord.yx, src0, VXC_MODIFIER(4, 7, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_WriteImage(output, coord.yz, src0, VXC_MODIFIER(8, 11, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_WriteImage(output, coord.yw, src0, VXC_MODIFIER(12, 15, 0, VXC_RM_TowardZero, 0));\n\
+}\n\
+"; /* end of tiny_yolov4_postprocess_confidence_vx*/
+
 static const char upsample_F16_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 _viv_uniform VXC_512Bits uniF16MulMultipiler_PostShft_2x8;\n\
@@ -67532,6 +67693,8 @@ static const source_map_t evis_resource[] =
     {"tensorstackconcat_vx", tensorstackconcat_vx},
     {"tile_vx", tile_vx},
     {"tile_mix_vx", tile_mix_vx},
+    {"tiny_yolov4_postprocess_box_vx", tiny_yolov4_postprocess_box_vx},
+    {"tiny_yolov4_postprocess_confidence_vx", tiny_yolov4_postprocess_confidence_vx},
     {"upsample_F16_vx", upsample_F16_vx},
     {"upsample_I16_vx", upsample_I16_vx},
     {"upsample_I8_vx", upsample_I8_vx},
