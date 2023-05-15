@@ -181,6 +181,8 @@ DEF_KERNEL_INITIALIZER(_matrix_mul_initializer)
     int32_t       width  = 0;
     int32_t       height = 0;
     int32_t       chn    = 0;
+    int32_t       a_depth = 0;
+    int32_t       b_depth = 0;
 
     int32_t     src0ZP     = 0;
     float       src0Scale  = 0;
@@ -296,15 +298,14 @@ DEF_KERNEL_INITIALIZER(_matrix_mul_initializer)
     mulKIn0In1Zp = (float)((int)(K + 3) / 4 * 4 * src1ZP * src0ZP);
     inOutScale =  src0Scale * src1Scale / dstScale;
 
-    if ((attr[0]->shape->size > attr[1]->shape->size) ||
-        (attr[0]->shape->data[2] > attr[1]->shape->data[2]
-    && attr[0]->shape->size > 2 && attr[1]->shape->size > 2))
+    a_depth = (int32_t)(attr[0]->shape->size > 2 ? attr[0]->shape->data[2] : 1);
+    b_depth = (int32_t)(attr[1]->shape->size > 2 ? attr[1]->shape->data[2] : 1);
+
+    if (b_depth == 1)
     {
         bc2zero = 1;
     }
-    else if ((attr[1]->shape->size > attr[0]->shape->size) ||
-        (attr[1]->shape->data[2] > attr[0]->shape->data[2]
-    && attr[0]->shape->size > 2 && attr[1]->shape->size > 2))
+    if (a_depth == 1)
     {
         ac2zero = 1;
     }

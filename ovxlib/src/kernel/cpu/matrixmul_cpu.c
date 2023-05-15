@@ -100,7 +100,7 @@ DEF_KERNEL_EXECUTOR(_matrixmul_exec)
     M = attr[2]->shape->data[1];
     N = attr[2]->shape->data[0];
 
-    if(transposeA)
+    if (transposeA)
     {
         K = attr[0]->shape->data[1];
     }
@@ -113,6 +113,8 @@ DEF_KERNEL_EXECUTOR(_matrixmul_exec)
 
     {
         vsi_size_t batch   = attr[2]->shape->size > 3 ? attr[2]->shape->data[3] : 1;
+        vsi_size_t a_batch = attr[0]->shape->size > 3 ? attr[0]->shape->data[3] : 1;
+        vsi_size_t b_batch = attr[1]->shape->size > 3 ? attr[1]->shape->data[3] : 1;
         vsi_size_t depth   = attr[2]->shape->size > 2 ? attr[2]->shape->data[2] : 1;
         vsi_size_t a_depth = attr[0]->shape->size > 2 ? attr[0]->shape->data[2] : 1;
         vsi_size_t b_depth = attr[1]->shape->size > 2 ? attr[1]->shape->data[2] : 1;
@@ -120,33 +122,41 @@ DEF_KERNEL_EXECUTOR(_matrixmul_exec)
         vsi_size_t offsetA = 0, offsetB = 0, offsetD = 0;
         vsi_size_t ac2zero = 1;
         vsi_size_t bc2zero = 1;
+        vsi_size_t ad2zero = 1;
+        vsi_size_t bd2zero = 1;
 
-        if((attr[0]->shape->size > attr[1]->shape->size) ||
-            (attr[0]->shape->data[2] > attr[1]->shape->data[2]
-            && attr[0]->shape->size > 2 && attr[1]->shape->size > 2))
+        if (b_depth == 1)
         {
             bc2zero = 0;
         }
-        else if((attr[1]->shape->size > attr[0]->shape->size) ||
-            (attr[1]->shape->data[2] > attr[0]->shape->data[2]
-            && attr[0]->shape->size > 2 && attr[1]->shape->size > 2))
+        else if (a_depth == 1)
         {
             ac2zero = 0;
         }
 
-        for(b = 0; b < batch; b++)
+        if (a_batch == 1)
         {
-            for(c = 0; c < depth; c++)
+            ad2zero = 0;
+        }
+        else if (b_batch == 1)
+        {
+            bd2zero = 0;
+        }
+
+
+        for (b = 0; b < batch; b++)
+        {
+            for (c = 0; c < depth; c++)
             {
-                offsetA = c * M * K * ac2zero + b * M * K * a_depth;
-                offsetB = c * N * K * bc2zero + b * N * K * b_depth;
+                offsetA = c * M * K * ac2zero + b * M * K * a_depth * ad2zero;
+                offsetB = c * N * K * bc2zero + b * N * K * b_depth * bd2zero;
                 offsetD = c * M * N + b * M * N * depth;
-                for(i = 0 ; i < M; i++)
+                for (i = 0 ; i < M; i++)
                 {
-                    for(j = 0; j < N; j++)
+                    for (j = 0; j < N; j++)
                     {
                         float sum = 0;
-                        for(y = 0; y < K; y++)
+                        for (y = 0; y < K; y++)
                         {
                             float dataA = buffer[0][i * strides0[0] + y * strides0[1] + offsetA];
                             float dataB = buffer[1][y * strides1[0] + j * strides1[1] + offsetB];
@@ -165,16 +175,16 @@ DEF_KERNEL_EXECUTOR(_matrixmul_exec)
     CHECK_STATUS_FAIL_GOTO( status, final );
 
 final:
-    for( i = 0; i < 3; i ++ )
+    for ( i = 0; i < 3; i ++ )
     {
-        if( buffer[i] )
+        if ( buffer[i] )
         {
             free( buffer[i] );
         }
     }
-    for( i = 0; i < _CPU_IO_NUM; i ++ )
+    for ( i = 0; i < _CPU_IO_NUM; i ++ )
     {
-        if(attr[i]) { vsi_nn_kernel_tensor_attr_release( &attr[i] ); }
+        if (attr[i]) { vsi_nn_kernel_tensor_attr_release( &attr[i] ); }
     }
     return status;
 } /* _pre_process_yuv420_exec() */
