@@ -300,6 +300,8 @@ static vsi_nn_kernel_node_t _setup
     vsi_size_t M = inputs[0]->attr.size[1];
     vsi_size_t K = inputs[0]->attr.size[0];
     vsi_size_t N = inputs[1]->attr.size[0];
+    vsi_size_t a_depth = 0;
+    vsi_size_t b_depth = 0;
     vsi_size_t depth = outputs[0]->attr.dim_num > 2 ? outputs[0]->attr.size[2] : 1;
     uint32_t ac2zero = 0;
     uint32_t bc2zero = 0;
@@ -334,15 +336,14 @@ static vsi_nn_kernel_node_t _setup
         transFlg = 1;
     }
 
-    if ((inputs[0]->attr.dim_num > inputs[1]->attr.dim_num) ||
-       (inputs[0]->attr.size[2] > inputs[1]->attr.size[2]
-            && inputs[0]->attr.dim_num > 2 && inputs[1]->attr.dim_num > 2))
+    a_depth = inputs[0]->attr.dim_num > 2 ? inputs[0]->attr.size[2] : 1;
+    b_depth = inputs[1]->attr.dim_num > 2 ? inputs[1]->attr.size[2] : 1;
+
+    if (b_depth == 1)
     {
         bc2zero = 1;
     }
-    else if ((inputs[1]->attr.dim_num > inputs[0]->attr.dim_num) ||
-       (inputs[1]->attr.size[2] > inputs[0]->attr.size[2]
-            && inputs[0]->attr.dim_num > 2 && inputs[1]->attr.dim_num > 2))
+    if (a_depth == 1)
     {
         ac2zero = 1;
     }
