@@ -79,12 +79,11 @@ REGISTER_LAYER_NORM_STREAM_PROCESSOR_KERNEL( layer_norm )
         eps,
         axis,
         inputs_tensor,
-        input_num,
+        (uint32_t)input_num,
         output_tensor
         );
     CHECK_PTR_FAIL_GOTO( node, "Create layer_norm node  fail.", final );
 
-    VSI_UNREFERENCED(input_num);
     VSI_UNREFERENCED(output_num);
     VSI_UNREFERENCED(kernel);
 final:
