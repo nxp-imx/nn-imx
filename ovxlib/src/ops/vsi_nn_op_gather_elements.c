@@ -67,6 +67,8 @@ static vsi_status op_compute
     vsi_bool ret = FALSE;
     vsi_nn_kernel_param_t * param = NULL;
     vsi_nn_gather_elements_param * p = NULL;
+    vsi_size_t depth0 = inputs[0]->attr.dim_num > 2 ? inputs[0]->attr.size[2] : 1;
+    vsi_size_t depth1 = inputs[1]->attr.dim_num > 2 ? inputs[1]->attr.size[2] : 1;
 
     if ( NULL == self )
     {
@@ -105,7 +107,13 @@ static vsi_status op_compute
         temp_tensors = outputs[0];
     }
 
-    if ( ret && new_axis0 == new_axis1 )
+    if ( ret && new_axis0 == new_axis1 &&
+        inputs[0]->attr.size[0] < GPU_TENSOR_MAX_WIDTH &&
+        inputs[0]->attr.size[1] < GPU_TENSOR_MAX_WIDTH &&
+        inputs[1]->attr.size[0] < GPU_TENSOR_MAX_WIDTH &&
+        inputs[1]->attr.size[1] < GPU_TENSOR_MAX_WIDTH &&
+        depth0 < GPU_TENSOR_MAX_WIDTH &&
+        depth1 < GPU_TENSOR_MAX_WIDTH)
     {
         vsi_nn_kernel_param_add_int32( param, "axis", new_axis0 );
 

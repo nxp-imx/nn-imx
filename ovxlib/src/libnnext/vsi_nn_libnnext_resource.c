@@ -9856,6 +9856,12 @@ __kernel void gather_batch_F16toF16_axis0(\n\
 static const char gather_elements_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 _viv_uniform int axis_size;\n\
+_viv_uniform uint width0;\n\
+_viv_uniform uint height0;\n\
+_viv_uniform uint width1;\n\
+_viv_uniform uint height1;\n\
+_viv_uniform uint width_out;\n\
+_viv_uniform uint height_out;\n\
 \n\
 #define GATHER_ELEMENTS_AXIS0_2D(name, data_type) \\\n\
 __kernel void gather_elements_axis0_##name##_I32to##name##_2D \\\n\
@@ -10006,6 +10012,144 @@ GATHER_ELEMENTS_AXIS2(F16, vxc_short4)\n\
 GATHER_ELEMENTS_AXIS2(I16, vxc_short4)\n\
 GATHER_ELEMENTS_AXIS2(I8,  vxc_char4)\n\
 GATHER_ELEMENTS_AXIS2(U8,  vxc_uchar4)\n\
+\n\
+#define GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS0(name, data_type, data_type_ptr, stride) \\\n\
+__kernel void gather_elements_beyond_maxwidth_axis0_##name##_I32to##name \\\n\
+    ( \\\n\
+    __read_only  image2d_array_t input0, \\\n\
+    __read_only  image2d_array_t input1, \\\n\
+    __write_only image2d_array_t output, \\\n\
+    int    axis \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), get_global_id(2)); \\\n\
+    Tensor index_tensor = create_tensor_from_image2d_array(input1, 4); \\\n\
+    int* index_ptr = (int*)index_tensor.ptr; \\\n\
+    int index = index_ptr[coord.x + coord.y * width1 + coord.z * width1 * height1]; \\\n\
+ \\\n\
+    Tensor input_tensor = create_tensor_from_image2d_array(input0, stride); \\\n\
+    data_type_ptr input_ptr = (data_type_ptr)input_tensor.ptr; \\\n\
+    data_type data = input_ptr[index + coord.y * width0 + coord.z * width0 * height0]; \\\n\
+ \\\n\
+    Tensor output_tensor = create_tensor_from_image2d_array(output, stride); \\\n\
+    data_type_ptr output_ptr = (data_type_ptr)output_tensor.ptr; \\\n\
+    output_ptr[coord.x + coord.y * width_out + coord.z * width_out * height_out] = data; \\\n\
+}\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS0(F16, short, short*, 2)\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS0(I16, short, short*, 2)\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS0(I8,  char,  char*,  1)\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS0(U8,  uchar, uchar*, 1)\n\
+\n\
+#define GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS1(name, data_type, data_type_ptr, stride) \\\n\
+__kernel void gather_elements_beyond_maxwidth_axis1_##name##_I32to##name \\\n\
+    ( \\\n\
+    __read_only  image2d_array_t input0, \\\n\
+    __read_only  image2d_array_t input1, \\\n\
+    __write_only image2d_array_t output, \\\n\
+    int    axis \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), get_global_id(2)); \\\n\
+    Tensor index_tensor = create_tensor_from_image2d_array(input1, 4); \\\n\
+    int* index_ptr = (int*)index_tensor.ptr; \\\n\
+    int index = index_ptr[coord.x + coord.y * width1 + coord.z * width1 * height1]; \\\n\
+ \\\n\
+    Tensor input_tensor = create_tensor_from_image2d_array(input0, stride); \\\n\
+    data_type_ptr input_ptr = (data_type_ptr)input_tensor.ptr; \\\n\
+    data_type data = input_ptr[coord.x + index * width0 + coord.z * width0 * height0]; \\\n\
+ \\\n\
+    Tensor output_tensor = create_tensor_from_image2d_array(output, stride); \\\n\
+    data_type_ptr output_ptr = (data_type_ptr)output_tensor.ptr; \\\n\
+    output_ptr[coord.x + coord.y * width_out + coord.z * width_out * height_out] = data; \\\n\
+}\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS1(F16, short, short*, 2)\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS1(I16, short, short*, 2)\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS1(I8,  char,  char*,  1)\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS1(U8,  uchar, uchar*, 1)\n\
+\n\
+#define GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS2(name, data_type, data_type_ptr, stride) \\\n\
+__kernel void gather_elements_beyond_maxwidth_axis2_##name##_I32to##name \\\n\
+    ( \\\n\
+    __read_only  image2d_array_t input0, \\\n\
+    __read_only  image2d_array_t input1, \\\n\
+    __write_only image2d_array_t output, \\\n\
+    int    axis \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), get_global_id(2)); \\\n\
+    Tensor index_tensor = create_tensor_from_image2d_array(input1, 4); \\\n\
+    int* index_ptr = (int*)index_tensor.ptr; \\\n\
+    int index = index_ptr[coord.x + coord.y * width1 + coord.z * width1 * height1]; \\\n\
+ \\\n\
+    Tensor input_tensor = create_tensor_from_image2d_array(input0, stride); \\\n\
+    data_type_ptr input_ptr = (data_type_ptr)input_tensor.ptr; \\\n\
+    data_type data = input_ptr[coord.x + coord.y * width0 + index * width0 * height0]; \\\n\
+ \\\n\
+    Tensor output_tensor = create_tensor_from_image2d_array(output, stride); \\\n\
+    data_type_ptr output_ptr = (data_type_ptr)output_tensor.ptr; \\\n\
+    output_ptr[coord.x + coord.y * width_out + coord.z * width_out * height_out] = data; \\\n\
+}\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS2(F16, short, short*, 2)\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS2(I16, short, short*, 2)\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS2(I8,  char,  char*,  1)\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS2(U8,  uchar, uchar*, 1)\n\
+\n\
+\n\
+#define GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS0_2D(name, data_type, data_type_ptr, stride) \\\n\
+__kernel void gather_elements_beyond_maxwidth_axis0_##name##_I32to##name##_2D \\\n\
+    ( \\\n\
+    __read_only  image2d_t input0, \\\n\
+    __read_only  image2d_t input1, \\\n\
+    __write_only image2d_t output, \\\n\
+    int    axis \\\n\
+    ) \\\n\
+{ \\\n\
+    int2 coord = (int2)(get_global_id(0), get_global_id(1)); \\\n\
+    Image index_img = create_image_from_image2d(input1, 4); \\\n\
+    int* index_ptr = (int*)index_img.ptr; \\\n\
+    int index = index_ptr[coord.x + coord.y * width1]; \\\n\
+ \\\n\
+    Image input_img = create_image_from_image2d(input0, stride); \\\n\
+    data_type_ptr input_ptr = (data_type_ptr)input_img.ptr; \\\n\
+    data_type data = input_ptr[index + coord.y * width0]; \\\n\
+ \\\n\
+    Image output_img = create_image_from_image2d(output, stride); \\\n\
+    data_type_ptr output_ptr = (data_type_ptr)output_img.ptr; \\\n\
+    output_ptr[coord.x + coord.y * width_out] = data; \\\n\
+}\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS0_2D(F16, short, short*, 2)\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS0_2D(I16, short, short*, 2)\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS0_2D(I8,  char,  char*,  1)\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS0_2D(U8,  uchar, uchar*, 1)\n\
+\n\
+#define GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS1_2D(name, data_type, data_type_ptr, stride) \\\n\
+__kernel void gather_elements_beyond_maxwidth_axis1_##name##_I32to##name##_2D \\\n\
+    ( \\\n\
+    __read_only  image2d_t input0, \\\n\
+    __read_only  image2d_t input1, \\\n\
+    __write_only image2d_t output, \\\n\
+    int    axis \\\n\
+    ) \\\n\
+{ \\\n\
+    int2 coord = (int2)(get_global_id(0), get_global_id(1)); \\\n\
+    Image index_img = create_image_from_image2d(input1, 4); \\\n\
+    int* index_ptr = (int*)index_img.ptr; \\\n\
+    int index = index_ptr[coord.x + coord.y * width1]; \\\n\
+ \\\n\
+    Image input_img = create_image_from_image2d(input0, stride); \\\n\
+    data_type_ptr input_ptr = (data_type_ptr)input_img.ptr; \\\n\
+    data_type data = input_ptr[coord.x + index  * width0]; \\\n\
+ \\\n\
+    Image output_img = create_image_from_image2d(output, stride); \\\n\
+    data_type_ptr output_ptr = (data_type_ptr)output_img.ptr; \\\n\
+    output_ptr[coord.x + coord.y * width_out] = data; \\\n\
+}\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS1_2D(F16, short, short*, 2)\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS1_2D(I16, short, short*, 2)\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS1_2D(I8,  char,  char*,  1)\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS1_2D(U8,  uchar, uchar*, 1)\n\
+\n\
+\n\
 "; /* end of gather_elements_vx*/
 
 static const char gather_mix_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
@@ -51101,7 +51245,15 @@ __kernel void gather_batch_F32toF32(\n\
 }\n\
 "; /* end of gather_batch_cl*/
 
-static const char gather_elements_cl[] = "\n\
+static const char gather_elements_cl[] = "#pragma OPENCL EXTENSION cl_viv_vx_extension : enable\n\
+\n\
+_viv_uniform uint width0;\n\
+_viv_uniform uint height0;\n\
+_viv_uniform uint width1;\n\
+_viv_uniform uint height1;\n\
+_viv_uniform uint width_out;\n\
+_viv_uniform uint height_out;\n\
+\n\
 #define GATHER_ELEMENTS_AXIS0_2D(name, data_type, read_func, write_func, conv_func) \\\n\
 __kernel void gather_elements_axis0_##name##_I32to##name##_2D \\\n\
     ( \\\n\
@@ -51236,6 +51388,162 @@ __kernel void gather_elements_axis2_##name##_I32to##name \\\n\
 GATHER_ELEMENTS_AXIS2(F32, float4, read_imagef,  write_imagef,  convert_float4)\n\
 GATHER_ELEMENTS_AXIS2(I32, int4,   read_imagei,  write_imagei,  convert_int4_rte)\n\
 GATHER_ELEMENTS_AXIS2(U32, uint4,  read_imageui, write_imageui, convert_uint4_rte)\n\
+\n\
+#define GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS0(name, data_type, data_type_ptr, stride) \\\n\
+__kernel void gather_elements_beyond_maxwidth_axis0_##name##_I32to##name \\\n\
+    ( \\\n\
+    __read_only  image2d_array_t input0, \\\n\
+    __read_only  image2d_array_t input1, \\\n\
+    __write_only image2d_array_t output, \\\n\
+                 float           input_scale, \\\n\
+                 float           input_tail, \\\n\
+                 int             axis_size \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), get_global_id(2)); \\\n\
+    Tensor index_tensor = create_tensor_from_image2d_array(input1, 4); \\\n\
+    int* index_ptr = (int*)index_tensor.ptr; \\\n\
+    int index = index_ptr[coord.x + coord.y * width1 + coord.z * width1 * height1]; \\\n\
+ \\\n\
+    Tensor input_tensor = create_tensor_from_image2d_array(input0, stride); \\\n\
+    data_type_ptr input_ptr = (data_type_ptr)input_tensor.ptr; \\\n\
+    data_type data = input_ptr[index + coord.y * width0 + coord.z * width0 * height0]; \\\n\
+ \\\n\
+    Tensor output_tensor = create_tensor_from_image2d_array(output, stride); \\\n\
+    data_type_ptr output_ptr = (data_type_ptr)output_tensor.ptr; \\\n\
+    output_ptr[coord.x + coord.y * width_out + coord.z * width_out * height_out] = data; \\\n\
+}\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS0(F32, float, float*, 4)\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS0(I32, int,   int*,   4)\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS0(F16, short, short*, 2)\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS0(I16, short, short*, 2)\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS0(I8,  char,  char*,  1)\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS0(U8,  uchar, uchar*, 1)\n\
+\n\
+#define GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS1(name, data_type, data_type_ptr, stride) \\\n\
+__kernel void gather_elements_beyond_maxwidth_axis1_##name##_I32to##name \\\n\
+    ( \\\n\
+    __read_only  image2d_array_t input0, \\\n\
+    __read_only  image2d_array_t input1, \\\n\
+    __write_only image2d_array_t output, \\\n\
+                 float           input_scale, \\\n\
+                 float           input_tail, \\\n\
+                 int             axis_size \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), get_global_id(2)); \\\n\
+    Tensor index_tensor = create_tensor_from_image2d_array(input1, 4); \\\n\
+    int* index_ptr = (int*)index_tensor.ptr; \\\n\
+    int index = index_ptr[coord.x + coord.y * width1 + coord.z * width1 * height1]; \\\n\
+ \\\n\
+    Tensor input_tensor = create_tensor_from_image2d_array(input0, stride); \\\n\
+    data_type_ptr input_ptr = (data_type_ptr)input_tensor.ptr; \\\n\
+    data_type data = input_ptr[coord.x + index * width0 + coord.z * width0 * height0]; \\\n\
+ \\\n\
+    Tensor output_tensor = create_tensor_from_image2d_array(output, stride); \\\n\
+    data_type_ptr output_ptr = (data_type_ptr)output_tensor.ptr; \\\n\
+    output_ptr[coord.x + coord.y * width_out + coord.z * width_out * height_out] = data; \\\n\
+}\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS1(F32, float, float*, 4)\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS1(I32, int,   int*,   4)\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS1(F16, short, short*, 2)\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS1(I16, short, short*, 2)\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS1(I8,  char,  char*,  1)\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS1(U8,  uchar, uchar*, 1)\n\
+\n\
+#define GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS2(name, data_type, data_type_ptr, stride) \\\n\
+__kernel void gather_elements_beyond_maxwidth_axis2_##name##_I32to##name \\\n\
+    ( \\\n\
+    __read_only  image2d_array_t input0, \\\n\
+    __read_only  image2d_array_t input1, \\\n\
+    __write_only image2d_array_t output, \\\n\
+                 float           input_scale, \\\n\
+                 float           input_tail, \\\n\
+                 int             axis_size \\\n\
+    ) \\\n\
+{ \\\n\
+    int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), get_global_id(2)); \\\n\
+    Tensor index_tensor = create_tensor_from_image2d_array(input1, 4); \\\n\
+    int* index_ptr = (int*)index_tensor.ptr; \\\n\
+    int index = index_ptr[coord.x + coord.y * width1 + coord.z * width1 * height1]; \\\n\
+ \\\n\
+    Tensor input_tensor = create_tensor_from_image2d_array(input0, stride); \\\n\
+    data_type_ptr input_ptr = (data_type_ptr)input_tensor.ptr; \\\n\
+    data_type data = input_ptr[coord.x + coord.y * width0 + index * width0 * height0]; \\\n\
+ \\\n\
+    Tensor output_tensor = create_tensor_from_image2d_array(output, stride); \\\n\
+    data_type_ptr output_ptr = (data_type_ptr)output_tensor.ptr; \\\n\
+    output_ptr[coord.x + coord.y * width_out + coord.z * width_out * height_out] = data; \\\n\
+}\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS2(F32, float, float*, 4)\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS2(I32, int,   int*,   4)\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS2(F16, short, short*, 2)\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS2(I16, short, short*, 2)\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS2(I8,  char,  char*,  1)\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS2(U8,  uchar, uchar*, 1)\n\
+\n\
+\n\
+#define GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS0_2D(name, data_type, data_type_ptr, stride) \\\n\
+__kernel void gather_elements_beyond_maxwidth_axis0_##name##_I32to##name##_2D \\\n\
+    ( \\\n\
+    __read_only  image2d_t input0, \\\n\
+    __read_only  image2d_t input1, \\\n\
+    __write_only image2d_t output, \\\n\
+                 float           input_scale, \\\n\
+                 float           input_tail, \\\n\
+                 int             axis_size \\\n\
+    ) \\\n\
+{ \\\n\
+    int2 coord = (int2)(get_global_id(0), get_global_id(1)); \\\n\
+    Image index_img = create_image_from_image2d(input1, 4); \\\n\
+    int* index_ptr = (int*)index_img.ptr; \\\n\
+    int index = index_ptr[coord.x + coord.y * width1]; \\\n\
+ \\\n\
+    Image input_img = create_image_from_image2d(input0, stride); \\\n\
+    data_type_ptr input_ptr = (data_type_ptr)input_img.ptr; \\\n\
+    data_type data = input_ptr[index + coord.y * width0]; \\\n\
+ \\\n\
+    Image output_img = create_image_from_image2d(output, stride); \\\n\
+    data_type_ptr output_ptr = (data_type_ptr)output_img.ptr; \\\n\
+    output_ptr[coord.x + coord.y * width_out] = data; \\\n\
+}\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS0_2D(F32, float, float*, 4)\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS0_2D(I32, int,   int*,   4)\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS0_2D(F16, short, short*, 2)\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS0_2D(I16, short, short*, 2)\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS0_2D(I8,  char,  char*,  1)\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS0_2D(U8,  uchar, uchar*, 1)\n\
+\n\
+#define GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS1_2D(name, data_type, data_type_ptr, stride) \\\n\
+__kernel void gather_elements_beyond_maxwidth_axis1_##name##_I32to##name##_2D \\\n\
+    ( \\\n\
+    __read_only  image2d_t input0, \\\n\
+    __read_only  image2d_t input1, \\\n\
+    __write_only image2d_t output, \\\n\
+                 float           input_scale, \\\n\
+                 float           input_tail, \\\n\
+                 int             axis_size \\\n\
+    ) \\\n\
+{ \\\n\
+    int2 coord = (int2)(get_global_id(0), get_global_id(1)); \\\n\
+    Image index_img = create_image_from_image2d(input1, 4); \\\n\
+    int* index_ptr = (int*)index_img.ptr; \\\n\
+    int index = index_ptr[coord.x + coord.y * width1]; \\\n\
+ \\\n\
+    Image input_img = create_image_from_image2d(input0, stride); \\\n\
+    data_type_ptr input_ptr = (data_type_ptr)input_img.ptr; \\\n\
+    data_type data = input_ptr[coord.x + index  * width0]; \\\n\
+ \\\n\
+    Image output_img = create_image_from_image2d(output, stride); \\\n\
+    data_type_ptr output_ptr = (data_type_ptr)output_img.ptr; \\\n\
+    output_ptr[coord.x + coord.y * width_out] = data; \\\n\
+}\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS1_2D(F32, float, float*, 4)\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS1_2D(I32, int,   int*,   4)\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS1_2D(F16, short, short*, 2)\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS1_2D(I16, short, short*, 2)\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS1_2D(I8,  char,  char*,  1)\n\
+GATHER_ELEMENTS_BEYOND_MAXWIDTH_AXIS1_2D(U8,  uchar, uchar*, 1)\n\
 "; /* end of gather_elements_cl*/
 
 static const char gather_nd_cl[] = "__kernel void gather_nd_U8toU8_1D(\n\
