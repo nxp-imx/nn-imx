@@ -376,7 +376,7 @@ static vsi_nn_kernel_node_t _setup
         goto final;
     }
 
-    image_2d = ((reshape_tensors[0]->attr.dim_num == 2 || reshape_tensors[0]->attr.size[2] == 1));
+    image_2d = reshape_tensors[0]->attr.dim_num == 2;
     status = _query_kernel( &reshape_tensors[0], &reshape_tensors[1], image_2d, kernel );
     if( VSI_SUCCESS == status)
     {
