@@ -698,7 +698,7 @@ REGISTER_CONV_OPENVX_KERNEL( deconv3d )
             vsi_nn_kernel_param_get_int32(params, "pad_right"),
             vsi_nn_kernel_param_get_int32(params, "outpadding_w"),
             vsi_nn_kernel_param_get_int32(params, "outpadding_h"),
-            vsi_nn_kernel_param_get_int32(params, "outpadding_w"),
+            vsi_nn_kernel_param_get_int32(params, "outpadding_d"),
             vsi_nn_kernel_param_get_int32(params, "group"),
             vsi_nn_kernel_param_get_int32(params, "overflow_policy"),
             vsi_nn_kernel_param_get_int32(params, "rounding_policy"),
