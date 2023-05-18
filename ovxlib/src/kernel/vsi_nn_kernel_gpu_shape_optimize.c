@@ -616,9 +616,13 @@ vsi_bool vsi_nn_kernel_optimize_tile_shape
              * ...,x1,x2,...
              * ...,y1,y2,...
              */
+            case _pack_state( TILE_STATE_AXIS_X, TILE_STATE_EMPTY ):
+                effective_size_x = sx;
+                effective_size_y = sy;
+                effective_size_z = sz;
+                break;
             case _pack_state( TILE_STATE_AXIS_X, TILE_STATE_AXIS_X ):
             case _pack_state( TILE_STATE_AXIS_X, TILE_STATE_NO_AXIS ):
-            case _pack_state( TILE_STATE_AXIS_X, TILE_STATE_EMPTY ):
                 append_dim = TRUE;
                 break;
             /*
