@@ -921,9 +921,6 @@
     <ClCompile Include="src\kernel\sp\l2_normalize_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
-    <ClCompile Include="src\kernel\sp\l2_normalize_z_direction_sp.c">
-      <Filter>Source Files\kernel\sp</Filter>
-    </ClCompile>
     <ClCompile Include="src\kernel\sp\layer_norm_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
