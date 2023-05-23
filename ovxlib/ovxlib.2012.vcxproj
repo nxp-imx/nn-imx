@@ -1583,9 +1583,6 @@
     <ClCompile Include="src\kernel\sp\l2_normalize_sp.c">
       <ObjectFileName>$(IntDir)\src\kernel\sp\</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="src\kernel\sp\l2_normalize_z_direction_sp.c">
-      <ObjectFileName>$(IntDir)\src\kernel\sp\</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="src\kernel\sp\layer_norm_sp.c">
       <ObjectFileName>$(IntDir)\src\kernel\sp\</ObjectFileName>
     </ClCompile>
