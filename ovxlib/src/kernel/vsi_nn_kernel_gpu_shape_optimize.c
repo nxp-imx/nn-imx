@@ -898,7 +898,10 @@ vsi_bool vsi_nn_kernel_optimize_matrixmul_broadcast_shape
     vsi_size_t* out_shape_x,
     vsi_size_t* out_shape_y,
     vsi_size_t* out_shape_output,
-    uint32_t* new_rank_out
+    uint32_t* new_rank_out,
+    uint32_t* cross_flg,
+    uint32_t* size_axis_inner_outer,
+    uint32_t* strides_axis_inner_outer
     )
 {
     vsi_bool     ret = FALSE;
@@ -912,8 +915,256 @@ vsi_bool vsi_nn_kernel_optimize_matrixmul_broadcast_shape
     vsi_size_t   out_shape_boradcast_output[VSI_NN_MAX_DIM_NUM]  = {1};
     uint32_t     new_rank   = 0;
     uint32_t     i          = 0;
+    vsi_size_t   outer0 = 1;
+    vsi_size_t   outer1 = 1;
+    vsi_size_t   outer2 = 1;
+    vsi_size_t   axis_size = 0;
+    vsi_size_t   inner_size = 1;
+    vsi_size_t   outer_size = 1;
+    vsi_size_t   axis_size0 = 1;
+    vsi_size_t   axis_size1 = 1;
+    vsi_size_t   axis_size2 = 1;
+    vsi_size_t   inner_size0 = 0;
+    vsi_size_t   inner_size1 = 0;
+    vsi_size_t   inner_size2 = 0;
+    vsi_size_t   outer_size0 = 0;
+    vsi_size_t   outer_size1 = 0;
+    vsi_size_t   outer_size2 = 0;
+    uint32_t ne_flg = 0;
+    uint32_t axis = 0;
+    uint32_t outer_flg = 0;
+    uint32_t outer_axis = 0;
+    uint32_t first_flg = 0;
+    cross_flg[0] = 0;
 
-    if (dim_x == 1 && dim_y > 1)
+    if (dim_x > 2 && dim_y > 2)
+    {
+        for (i = 2; i < dim_x; i++)
+        {
+            outer0 *= shape_x[i];
+        }
+        for (i = 2; i < dim_y; i++)
+        {
+            outer1 *= shape_y[i];
+        }
+        for (i = 2; i < dim_out; i++)
+        {
+            outer2 *= shape_output[i];
+        }
+
+        for (i = 2; i < vsi_nn_min(dim_x, dim_y); i++)
+        {
+            if (shape_x[i] != shape_y[i] && first_flg == 0)
+            {
+                if (shape_x[i] == 1)
+                {
+                    ne_flg = 1;
+                    inner_size = shape_y[i];
+                }
+                else
+                {
+                    ne_flg = 2;
+                    inner_size = shape_x[i];
+                }
+                first_flg = 1;
+                continue;
+            }
+            else if (ne_flg == 1 && shape_x[i] != shape_y[i] && shape_x[i] == 1 && first_flg == 1)
+            {
+                inner_size *= shape_y[i];
+            }
+            else if (ne_flg == 2 && shape_x[i] != shape_y[i] && shape_y[i] == 1 && first_flg == 1)
+            {
+                inner_size *= shape_x[i];
+            }
+            else if (ne_flg == 1 && shape_x[i] != shape_y[i] && shape_x[i] != 1 && first_flg == 1)
+            {
+                outer_flg = 1;
+                outer_axis = i;
+                break;
+            }
+            else if (ne_flg == 2 && shape_x[i] != shape_y[i] && shape_y[i] != 1 && first_flg == 1)
+            {
+                outer_flg = 2;
+                outer_axis = i;
+                break;
+            }
+            else if (i > 2 && shape_x[i] == shape_y[i] && shape_y[i] != 1 && first_flg == 1)
+            {
+                first_flg = 2;
+            }
+            else if (shape_x[i] != shape_y[i] && shape_x[i] != 1 && first_flg == 2)
+            {
+                outer_flg = 1;
+                outer_axis = i;
+                break;
+            }
+            else if (shape_x[i] != shape_y[i] && shape_y[i] != 1 && first_flg == 2)
+            {
+                outer_flg = 2;
+                outer_axis = i;
+                break;
+            }
+            else if (i == 2 && shape_x[i] == shape_y[i] && shape_y[i] != 1)
+            {
+                /*axis = 2;
+                axis_size = shape_x[i];*/
+            }
+        }
+
+        if (ne_flg > 0 && outer0 > 1 && outer1 > 1)
+        {
+            for (i = 2; i < vsi_nn_min(dim_x, dim_y); i++)
+            {
+                if (shape_x[i] == shape_y[i] && shape_x[i] != 1)
+                {
+                    cross_flg[0] = 1;
+                    axis = i;
+                    axis_size = shape_x[i];
+                    break;
+                }
+            }
+        }
+
+        if (cross_flg[0] == 1) // cross
+        {
+            if (outer_flg == 1)
+            {
+                for (i = outer_axis; i < dim_x; i++)
+                {
+                    outer_size *= shape_x[i];
+                }
+            }
+            else if (outer_flg == 2)
+            {
+                for (i = outer_axis; i < dim_y; i++)
+                {
+                    outer_size *= shape_y[i];
+                }
+            }
+            else
+            {
+                outer_size = 1;
+            }
+
+            axis_size0 = 1;
+            axis_size1 = 1;
+            axis_size2 = 1;
+            if (axis > 2 && ne_flg == 1)
+            {
+                axis_size1 = inner_size;
+                axis_size2 = inner_size;
+            }
+            else if (axis > 2 && ne_flg == 2)
+            {
+                axis_size0 = inner_size;
+                axis_size2 = inner_size;
+            }
+
+            inner_size0 = 0;
+            inner_size1 = 0;
+            inner_size2 = 1;
+            if (axis == 2 && ne_flg == 1)
+            {
+                inner_size1 = axis_size;
+                inner_size2 = axis_size;
+            }
+            else if (axis > 2 && ne_flg == 1)
+            {
+                inner_size1 = 1;
+            }
+            else if (axis == 2 && ne_flg == 2)
+            {
+                inner_size0 = axis_size;
+                inner_size2 = axis_size;
+            }
+            else if (axis > 2 && ne_flg == 2)
+            {
+                inner_size0 = 1;
+            }
+
+            outer_size0 = 0;
+            outer_size1 = 0;
+            outer_size2 = axis_size * inner_size;
+            if (outer_flg == 1)
+            {
+                outer_size0 = axis_size0 * axis_size;
+            }
+            else if (outer_flg == 2)
+            {
+                outer_size1 = axis_size1 * axis_size;
+            }
+
+            for (i = 0; i < 2; i++)
+            {
+                out_shape_x[i] = shape_x[i];
+                out_shape_y[i] = shape_y[i];
+                out_shape_output[i] = shape_output[i];
+            }
+            out_shape_x[2] = outer0;
+            out_shape_x[3] = 1;
+            out_shape_y[2] = outer1;
+            out_shape_output[2] = outer2;
+            new_rank_out[0] = 4;
+            new_rank_out[1] = 3;
+            new_rank_out[2] = 3;
+
+            size_axis_inner_outer[0] = (uint32_t)axis_size;
+            size_axis_inner_outer[1] = (uint32_t)inner_size;
+            size_axis_inner_outer[2] = (uint32_t)outer_size;
+
+            strides_axis_inner_outer[0] = (uint32_t)axis_size0;
+            strides_axis_inner_outer[1] = (uint32_t)inner_size0;
+            strides_axis_inner_outer[2] = (uint32_t)outer_size0;
+
+            strides_axis_inner_outer[3] = (uint32_t)axis_size1;
+            strides_axis_inner_outer[4] = (uint32_t)inner_size1;
+            strides_axis_inner_outer[5] = (uint32_t)outer_size1;
+
+            strides_axis_inner_outer[6] = (uint32_t)axis_size2;
+            strides_axis_inner_outer[7] = (uint32_t)inner_size2;
+            strides_axis_inner_outer[8] = (uint32_t)outer_size2;
+
+            return TRUE;
+        }
+        else if (outer0 > 1 && outer1 > 1 && ne_flg > 0 && cross_flg[0] == 0)
+        {
+            cross_flg[0] = 2;
+        }
+    }
+
+    if (cross_flg[0] == 2) // merge
+    {
+        for (i = 0; i < 2; i++)
+        {
+            out_shape_x[i] = shape_x[i];
+            out_shape_y[i] = shape_y[i];
+            out_shape_output[i] = shape_output[i];
+        }
+        out_shape_output[2] = outer2;
+        new_rank_out[2] = 3;
+        if (ne_flg == 1)
+        {
+            out_shape_x[2] = outer0;
+            out_shape_x[3] = 1;
+            out_shape_y[2] = outer1;
+
+            new_rank_out[0] = 4;
+            new_rank_out[1] = 3;
+        }
+        else if (ne_flg == 2)
+        {
+            out_shape_x[2] = outer0;
+            out_shape_y[2] = outer1;
+            out_shape_y[3] = 1;
+
+            new_rank_out[0] = 3;
+            new_rank_out[1] = 4;
+        }
+
+        return TRUE;
+    }
+    else if (dim_x == 1 && dim_y > 1)
     {
         out_shape_x[0]    = shape_x[0];
         out_shape_x[1]    = 1;
