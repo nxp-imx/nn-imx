@@ -65,6 +65,10 @@ static vsi_status op_compute
     int32_t adjointA    = self->nn_param.matrixmul.adjoint[0];
     int32_t adjointB    = self->nn_param.matrixmul.adjoint[1];
 
+    uint32_t cross_flg = 0;
+    uint32_t size_axis_inner_outer[3] = {0};
+    uint32_t stride_axis_inner_outer[9] = {0};
+
     param = vsi_nn_kernel_param_create();
 
     vsi_nn_kernel_param_add_int32( param, "transposeA", transposeA );
@@ -80,10 +84,15 @@ static vsi_status op_compute
                                        inputs[0]->attr.dim_num,
                                        inputs[1]->attr.dim_num,
                                        outputs[0]->attr.dim_num,
-                                       shapes[0], shapes[1], shapes[2], new_rank);
+                                       shapes[0], shapes[1], shapes[2], new_rank,
+                                       &cross_flg, size_axis_inner_outer, stride_axis_inner_outer);
 
     if (ret)
     {
+        vsi_nn_kernel_param_add_int32( param, "cross_flg", cross_flg );
+        vsi_nn_kernel_param_add_buffer( param, "size_axis_inner_outer", size_axis_inner_outer, 3);
+        vsi_nn_kernel_param_add_buffer( param, "stride_axis_inner_outer", stride_axis_inner_outer, 9);
+
         tmp_inputs[0] = vsi_nn_reshape_tensor(self->graph, inputs[0], shapes[0], new_rank[0]);
         tmp_inputs[1] = vsi_nn_reshape_tensor(self->graph, inputs[1], shapes[1], new_rank[1]);
         tmp_outputs[0] = vsi_nn_reshape_tensor(self->graph, outputs[0], shapes[2], new_rank[2]);
@@ -262,32 +271,17 @@ static vsi_bool op_setup
                 outputs[0]->attr.size[i] = inputs[0]->attr.size[i + 1];
             }
         }
-        else if (inputs[0]->attr.dim_num > inputs[1]->attr.dim_num)
-        {
-            for (i = 2; i < inputs[0]->attr.dim_num; i++)
-            {
-                outputs[0]->attr.size[i] = inputs[0]->attr.size[i];
-            }
-        }
-        else if (inputs[1]->attr.dim_num > inputs[0]->attr.dim_num)
-        {
-            for (i = 2; i < inputs[1]->attr.dim_num; i++)
-            {
-                outputs[0]->attr.size[i] = inputs[1]->attr.size[i];
-            }
-        }
-        else if (inputs[0]->attr.size[2] >= inputs[1]->attr.size[2])
-        {
-            for (i = 2; i < inputs[0]->attr.dim_num; i++)
-            {
-                outputs[0]->attr.size[i] = inputs[0]->attr.size[i];
-            }
-        }
         else
         {
-            for (i = 2; i < inputs[1]->attr.dim_num; i++)
+            uint32_t rank0 = inputs[0]->attr.dim_num;
+            uint32_t rank1 = inputs[1]->attr.dim_num;
+            for (i = 2; i < outputs[0]->attr.dim_num; i++)
             {
-                outputs[0]->attr.size[i] = inputs[1]->attr.size[i];
+                vsi_size_t sz0 = i < rank0 ? inputs[0]->attr.size[i] : 1;
+                vsi_size_t sz1 = i < rank1 ? inputs[1]->attr.size[i] : 1;
+                vsi_size_t sz2 = vsi_nn_max(sz0, sz1);
+
+                outputs[0]->attr.size[i] = sz2;
             }
         }
     }

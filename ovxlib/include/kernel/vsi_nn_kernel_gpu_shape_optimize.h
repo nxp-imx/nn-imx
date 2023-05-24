@@ -102,7 +102,10 @@ vsi_bool vsi_nn_kernel_optimize_matrixmul_broadcast_shape
     vsi_size_t* out_shape_x,
     vsi_size_t* out_shape_y,
     vsi_size_t* out_shape_output,
-    uint32_t* new_rank
+    uint32_t* new_rank,
+    uint32_t* cross_flg,
+    uint32_t* size_axis_inner_outer,
+    uint32_t* strides_axis_inner_outer
     );
 
 #endif
