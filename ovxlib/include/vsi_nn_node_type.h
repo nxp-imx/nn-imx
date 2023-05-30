@@ -207,6 +207,7 @@
 #include "ops/vsi_nn_op_reversesequence.h"
 #include "ops/vsi_nn_op_grid_sample.h"
 #include "ops/vsi_nn_op_lpnorm.h"
+#include "ops/vsi_nn_op_resize_3d.h"
 /* custom node head define define */
 #include "custom/vsi_nn_custom_node_type.h"
 #include "ops/vsi_nn_op_inverse_sigmoid.h"
@@ -402,6 +403,7 @@ typedef union _vsi_nn_nn_param
     vsi_nn_inverse_sigmoid_param       inverse_sigmoid;
     vsi_nn_grid_sample_param        gridsample;
     vsi_nn_lpnorm_param             lpnorm;
+    vsi_nn_resize_3d_param          resize_3d;
     void*                         client_param;
 
     /* custom node data struct define */
