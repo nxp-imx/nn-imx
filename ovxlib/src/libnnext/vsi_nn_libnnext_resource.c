@@ -66934,6 +66934,290 @@ __kernel void resize_1d_nearest_U8toU8(\n\
 }\n\
 "; /* end of resize_1d_nearest_cl*/
 
+static const char resize_3d_bilinear_cl[] = "#pragma OPENCL EXTENSION CL_VIV_asm : enable\n\
+\n\
+#define RESIZE_3D(in_name, out_name, read_image_type, dst_type, convert_type, write_image_type) \\\n\
+__kernel void resize_3d_bilinear_##in_name##to##out_name( \\\n\
+    __read_only  image2d_array_t  input, \\\n\
+    __write_only image2d_array_t  output, \\\n\
+                           float  scale_x, \\\n\
+                           float  scale_y, \\\n\
+                           float  scale_z, \\\n\
+                           float  half_pixel_value, \\\n\
+                           uint   in_width, \\\n\
+                           uint   in_height, \\\n\
+                           uint   in_depth, \\\n\
+                           float  in_scale, \\\n\
+                           float  in_tail, \\\n\
+                           float  out_scale, \\\n\
+                           float  out_tail \\\n\
+                           ) \\\n\
+{ \\\n\
+    int4   coord_out    =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
+    float  in_x         = (convert_float(coord_out.x) + half_pixel_value) * scale_x - half_pixel_value; \\\n\
+    float  left_x_f     = fmax(floor(in_x), 0); \\\n\
+    float  x_lerp       = in_x - left_x_f; \\\n\
+    int    left_x_idx   = convert_int(left_x_f); \\\n\
+    float  in_y         = (convert_float(coord_out.y) + half_pixel_value) * scale_y - half_pixel_value; \\\n\
+    float  top_y_f      = fmax(floor(in_y), 0); \\\n\
+    float  y_lerp       = in_y - top_y_f; \\\n\
+    int    top_y_idx    = convert_int(top_y_f); \\\n\
+    float  in_z         = (convert_float(coord_out.z) + half_pixel_value) * scale_z - half_pixel_value; \\\n\
+    float  front_z_f    = fmax(floor(in_z), 0); \\\n\
+    float  z_lerp       = in_z - front_z_f; \\\n\
+    int    front_z_idx  = convert_int(front_z_f); \\\n\
+    int4   coord_in     = (int4)(left_x_idx, top_y_idx, front_z_idx, 0); \\\n\
+    float4 data_000, data_100, data_010, data_110, data_001, data_011, data_101, data_111; \\\n\
+    dst_type  dst; \\\n\
+ \\\n\
+    int dx, dy, dz; \\\n\
+    dx = in_x < 0 ? 0 : (left_x_f < in_width - 1 ? 1 : 0); \\\n\
+    dy = in_y < 0 ? 0 : (top_y_f < in_height - 1 ? 1 : 0); \\\n\
+    dz = in_z < 0 ? 0 : (front_z_idx < in_depth - 1 ? 1 : 0); \\\n\
+ \\\n\
+    data_000 = convert_float4(read_image_type(input, coord_in)) * in_scale + in_tail; \\\n\
+    coord_in.y = coord_in.y + dy; \\\n\
+    data_010 = convert_float4(read_image_type(input, coord_in)) * in_scale + in_tail; \\\n\
+    coord_in.x = coord_in.x + dx; \\\n\
+    data_110 = convert_float4(read_image_type(input, coord_in)) * in_scale + in_tail; \\\n\
+    coord_in.y = coord_in.y - dy; \\\n\
+    data_100 = convert_float4(read_image_type(input, coord_in)) * in_scale + in_tail; \\\n\
+    coord_in.z = coord_in.z + dz; \\\n\
+    data_101 = convert_float4(read_image_type(input, coord_in)) * in_scale + in_tail; \\\n\
+    coord_in.y = coord_in.y + dy; \\\n\
+    data_111 = convert_float4(read_image_type(input, coord_in)) * in_scale + in_tail; \\\n\
+    coord_in.x = coord_in.x - dx; \\\n\
+    data_011 = convert_float4(read_image_type(input, coord_in)) * in_scale + in_tail; \\\n\
+    coord_in.y = coord_in.y - dy; \\\n\
+    data_001 = convert_float4(read_image_type(input, coord_in)) * in_scale + in_tail; \\\n\
+ \\\n\
+    data_000 = data_000 + (data_100 - data_000) * x_lerp; \\\n\
+    data_010 = data_010 + (data_110 - data_010) * x_lerp; \\\n\
+    data_000 = data_000 + (data_010 - data_000) * y_lerp; \\\n\
+ \\\n\
+    data_001 = data_001 + (data_101 - data_001) * x_lerp; \\\n\
+    data_011 = data_011 + (data_111 - data_011) * x_lerp; \\\n\
+    data_001 = data_001 + (data_011 - data_001) * y_lerp; \\\n\
+    data_000 = data_000 + (data_001 - data_000) * z_lerp; \\\n\
+ \\\n\
+    dst      = convert_type(data_000 * out_scale + out_tail); \\\n\
+ \\\n\
+    write_image_type(output, coord_out, dst); \\\n\
+}\n\
+RESIZE_3D(F32, F32, read_imagef,  float4, convert_float4, write_imagef)\n\
+RESIZE_3D(F32, U8,  read_imagef,  uint4,  convert_uint4,  write_imageui)\n\
+RESIZE_3D(U8,  F32, read_imageui, float4, convert_float4, write_imagef)\n\
+RESIZE_3D(U8,  U8,  read_imageui, uint4,  convert_uint4,  write_imageui)\n\
+RESIZE_3D(I8,  I8,  read_imagei,  int4,   convert_int4,   write_imagei)\n\
+\n\
+__kernel void resize_3d_bilinear_BF16toBF16(\n\
+    __read_only  image2d_array_t  input,\n\
+    __write_only image2d_array_t  output,\n\
+                           float  scale_x,\n\
+                           float  scale_y,\n\
+                           float  scale_z,\n\
+                           float  half_pixel_value,\n\
+                           uint   in_width,\n\
+                           uint   in_height,\n\
+                           uint   in_depth,\n\
+                           float  in_scale,\n\
+                           float  in_tail,\n\
+                           float  out_scale,\n\
+                           float  out_tail\n\
+                           )\n\
+{\n\
+    int4   coord_out    =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+    float  in_x         = (convert_float(coord_out.x) + half_pixel_value) * scale_x - half_pixel_value;\n\
+    float  left_x_f     = fmax(floor(in_x), 0);\n\
+    float  x_lerp       = in_x - left_x_f;\n\
+    int    left_x_idx   = convert_int(left_x_f);\n\
+    float  in_y         = (convert_float(coord_out.y) + half_pixel_value) * scale_y - half_pixel_value;\n\
+    float  top_y_f      = fmax(floor(in_y), 0);\n\
+    float  y_lerp       = in_y - top_y_f;\n\
+    int    top_y_idx    = convert_int(top_y_f);\n\
+    float  in_z         = (convert_float(coord_out.z) + half_pixel_value) * scale_z - half_pixel_value;\n\
+    float  front_z_f    = fmax(floor(in_z), 0);\n\
+    float  z_lerp       = in_z - front_z_f;\n\
+    int    front_z_idx  = convert_int(front_z_f);\n\
+    int4   coord_in     = (int4)(left_x_idx, top_y_idx, front_z_idx, 0);\n\
+    uint4 data_000, data_100, data_010, data_110, data_001, data_011, data_101, data_111;\n\
+    float4 data_000_f, data_100_f, data_010_f, data_110_f, data_001_f, data_011_f, data_101_f, data_111_f;\n\
+    uint4  dst;\n\
+\n\
+    int dx, dy, dz;\n\
+    dx = in_x < 0 ? 0 : (left_x_f < in_width - 1 ? 1 : 0);\n\
+    dy = in_y < 0 ? 0 : (top_y_f < in_height - 1 ? 1 : 0);\n\
+    dz = in_z < 0 ? 0 : (front_z_idx < in_depth - 1 ? 1 : 0);\n\
+\n\
+    data_000 = read_imageui(input, coord_in);\n\
+    data_000 = data_000 << 16;\n\
+    coord_in.y = coord_in.y + dy;\n\
+    data_010 = read_imageui(input, coord_in);\n\
+    data_010 = data_010 << 16;\n\
+    coord_in.x = coord_in.x + dx;\n\
+    data_110 = read_imageui(input, coord_in);\n\
+    data_110 = data_110 << 16;\n\
+    coord_in.y = coord_in.y - dy;\n\
+    data_100 = read_imageui(input, coord_in);\n\
+    data_100 = data_100 << 16;\n\
+    coord_in.z = coord_in.z + dz;\n\
+    data_101 = read_imageui(input, coord_in);\n\
+    data_101 = data_101 << 16;\n\
+    coord_in.y = coord_in.y + dy;\n\
+    data_111 = read_imageui(input, coord_in);\n\
+    data_111 = data_111 << 16;\n\
+    coord_in.x = coord_in.x - dx;\n\
+    data_011 = read_imageui(input, coord_in);\n\
+    data_011 = data_011 << 16;\n\
+    coord_in.y = coord_in.y - dy;\n\
+    data_001 = read_imageui(input, coord_in);\n\
+    data_001 = data_001 << 16;\n\
+\n\
+    _viv_asm(COPY, data_000_f, data_000, 16);\n\
+    _viv_asm(COPY, data_010_f, data_010, 16);\n\
+    _viv_asm(COPY, data_110_f, data_110, 16);\n\
+    _viv_asm(COPY, data_100_f, data_100, 16);\n\
+    _viv_asm(COPY, data_101_f, data_101, 16);\n\
+    _viv_asm(COPY, data_111_f, data_111, 16);\n\
+    _viv_asm(COPY, data_011_f, data_011, 16);\n\
+    _viv_asm(COPY, data_001_f, data_001, 16);\n\
+\n\
+    data_000_f = data_000_f + (data_100_f - data_000_f) * x_lerp;\n\
+    data_010_f = data_010_f + (data_110_f - data_010_f) * x_lerp;\n\
+    data_000_f = data_000_f + (data_010_f - data_000_f) * y_lerp;\n\
+\n\
+    data_001_f = data_001_f + (data_101_f - data_001_f) * x_lerp;\n\
+    data_011_f = data_011_f + (data_111_f - data_011_f) * x_lerp;\n\
+    data_001_f = data_001_f + (data_011_f - data_001_f) * y_lerp;\n\
+    data_000_f = data_000_f + (data_001_f - data_000_f) * z_lerp;\n\
+\n\
+    _viv_asm(COPY, dst, data_000_f, 16);\n\
+    dst = dst >> 16;\n\
+    write_imageui(output, coord_out, dst);\n\
+}\n\
+"; /* end of resize_3d_bilinear_cl*/
+
+static const char resize_3d_nearest_cl[] = "\n\
+#define NEAREST_INDEX_PROCESS() \\\n\
+    int4   coord_out  = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
+    float  in_x       = (convert_float(coord_out.x) + half_pixel_value) * scale_x + round_value; \\\n\
+    int    in_x_idx   = convert_int(in_x); \\\n\
+    float  in_y       = (convert_float(coord_out.y) + half_pixel_value) * scale_y + round_value; \\\n\
+    int    in_y_idx   = convert_int(in_y); \\\n\
+    float  in_z       = (convert_float(coord_out.z) + half_pixel_value) * scale_z + round_value; \\\n\
+    int    in_z_idx   = convert_int(in_z); \\\n\
+\n\
+__kernel void resize_3d_nearest_F32toF32(\n\
+    __read_only  image2d_array_t  input,\n\
+    __write_only image2d_array_t  output,\n\
+                           float  scale_x,\n\
+                           float  scale_y,\n\
+                           float  scale_z,\n\
+                           float  half_pixel_value,\n\
+                           float  round_value,\n\
+                           float  output_scale,\n\
+                           float  output_tail)\n\
+{\n\
+    NEAREST_INDEX_PROCESS()\n\
+    int4 coord_in = (int4)(in_x_idx, in_y_idx, in_z_idx, 0);\n\
+    float4 dst;\n\
+    dst    = read_imagef(input, coord_in);\n\
+    write_imagef(output, coord_out, dst);\n\
+}\n\
+\n\
+\n\
+__kernel void resize_3d_nearest_U8toU8(\n\
+    __read_only  image2d_array_t  input,\n\
+    __write_only image2d_array_t  output,\n\
+                           float  scale_x,\n\
+                           float  scale_y,\n\
+                           float  scale_z,\n\
+                           float  half_pixel_value,\n\
+                           float  round_value,\n\
+                           float  output_scale,\n\
+                           float  output_tail)\n\
+{\n\
+    NEAREST_INDEX_PROCESS()\n\
+    int4 coord_in = (int4)(in_x_idx, in_y_idx, in_z_idx, 0);\n\
+    uint4 dst;\n\
+    dst    = convert_uint4(convert_float4(read_imageui(input, coord_in)) * output_scale + output_tail);\n\
+    write_imageui(output, coord_out, dst);\n\
+}\n\
+\n\
+__kernel void resize_3d_nearest_U8toF32(\n\
+    __read_only  image2d_array_t  input,\n\
+    __write_only image2d_array_t  output,\n\
+                           float  scale_x,\n\
+                           float  scale_y,\n\
+                           float  scale_z,\n\
+                           float  half_pixel_value,\n\
+                           float  round_value,\n\
+                           float  output_scale,\n\
+                           float  output_tail)\n\
+{\n\
+    NEAREST_INDEX_PROCESS()\n\
+    int4 coord_in = (int4)(in_x_idx, in_y_idx, in_z_idx, 0);\n\
+    float4 dst;\n\
+    dst    = convert_float4(read_imageui(input, coord_in)) * output_scale + output_tail;\n\
+    write_imagef(output, coord_out, dst);\n\
+}\n\
+\n\
+__kernel void resize_3d_nearest_F32toU8(\n\
+    __read_only  image2d_array_t  input,\n\
+    __write_only image2d_array_t  output,\n\
+                           float  scale_x,\n\
+                           float  scale_y,\n\
+                           float  scale_z,\n\
+                           float  half_pixel_value,\n\
+                           float  round_value,\n\
+                           float  output_scale,\n\
+                           float  output_tail)\n\
+{\n\
+    NEAREST_INDEX_PROCESS()\n\
+    int4 coord_in = (int4)(in_x_idx, in_y_idx, in_z_idx, 0);\n\
+    uint4 dst;\n\
+    dst    = convert_uint4(read_imagef(input, coord_in) * output_scale + output_tail);\n\
+    write_imageui(output, coord_out, dst);\n\
+}\n\
+\n\
+__kernel void resize_3d_nearest_I8toI8(\n\
+    __read_only  image2d_array_t  input,\n\
+    __write_only image2d_array_t  output,\n\
+                           float  scale_x,\n\
+                           float  scale_y,\n\
+                           float  scale_z,\n\
+                           float  half_pixel_value,\n\
+                           float  round_value,\n\
+                           float  output_scale,\n\
+                           float  output_tail)\n\
+{\n\
+    NEAREST_INDEX_PROCESS()\n\
+    int4 coord_in = (int4)(in_x_idx, in_y_idx, in_z_idx, 0);\n\
+    int4 dst;\n\
+    dst    = convert_int4(convert_float4(read_imagei(input, coord_in)) * output_scale);\n\
+    write_imagei(output, coord_out, dst);\n\
+}\n\
+\n\
+__kernel void resize_3d_nearest_BF16toBF16(\n\
+    __read_only  image2d_array_t  input,\n\
+    __write_only image2d_array_t  output,\n\
+                           float  scale_x,\n\
+                           float  scale_y,\n\
+                           float  scale_z,\n\
+                           float  half_pixel_value,\n\
+                           float  round_value,\n\
+                           float  output_scale,\n\
+                           float  output_tail)\n\
+{\n\
+    NEAREST_INDEX_PROCESS()\n\
+    int4 coord_in = (int4)(in_x_idx, in_y_idx, in_z_idx, 0);\n\
+    uint4 dst;\n\
+    dst = read_imageui(input, coord_in);\n\
+    write_imageui(output, coord_out, dst);\n\
+}\n\
+\n\
+"; /* end of resize_3d_nearest_cl*/
+
 static const char resize_bilinear_cl[] = "__kernel void resize_bilinear_F32toF32(\n\
     __read_only  image2d_array_t  input,\n\
     __write_only image2d_array_t  output,\n\
@@ -71030,6 +71314,8 @@ static const source_map_t cl_resource[] =
     {"repeat_cl", repeat_cl},
     {"resize_1d_bilinear_cl", resize_1d_bilinear_cl},
     {"resize_1d_nearest_cl", resize_1d_nearest_cl},
+    {"resize_3d_bilinear_cl", resize_3d_bilinear_cl},
+    {"resize_3d_nearest_cl", resize_3d_nearest_cl},
     {"resize_bilinear_cl", resize_bilinear_cl},
     {"resize_nearest_cl", resize_nearest_cl},
     {"reversesequence_cl", reversesequence_cl},
