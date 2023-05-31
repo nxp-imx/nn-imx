@@ -44,13 +44,12 @@ __BEGIN_DECLS
 #define _CPU_INPUT_NUM      (3)
 #define _CPU_OUTPUT_NUM     (1)
 #define _CPU_IO_NUM         (_CPU_INPUT_NUM + _CPU_OUTPUT_NUM)
-#define _KERNEL_NAME        CVIVANTE_NAMESPACE("cpu.pre_process_rgb888_planar")
+#define _KERNEL_NAME        CVIVANTE_NAMESPACE("cpu.pre_process_rgb888_planar_nhwc")
 
-#define DESCALE(x) (((x) + (1<<19)) >> 20)
 /*
  * Kernel params
  */
-static vx_param_description_t _pre_process_rgb888_planar_kernel_param_def[] =
+static vx_param_description_t _pre_process_rgb888_planar_nhwc_kernel_param_def[] =
 {
     {VX_INPUT,  VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT,  VX_TYPE_TENSOR, VX_PARAMETER_STATE_OPTIONAL},
@@ -66,7 +65,7 @@ static vx_param_description_t _pre_process_rgb888_planar_kernel_param_def[] =
     {VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
 };
-#define _PRE_PROCESS_RGB888_PLANAR_PARAM_NUM  _cnt_of_array( _pre_process_rgb888_planar_kernel_param_def )
+#define _PRE_PROCESS_RGB888_PLANAR_NHWC_PARAM_NUM  _cnt_of_array( _pre_process_rgb888_planar_nhwc_kernel_param_def )
 
 
 /*
@@ -89,6 +88,11 @@ DEF_KERNEL_EXECUTOR(_compute)
     float mean[3] = {0}, scale = 1;
     vsi_bool is_rgb888 = FALSE;
     int32_t reverse = 0;
+    vsi_size_t dx = 0, dy = 0;
+    vsi_size_t src_width = 0;
+    vsi_size_t src_height= 0;
+    vsi_size_t dst_width = 0;
+    vsi_size_t dst_height= 0;
 
     VSI_UNREFERENCED(node);
     VSI_UNREFERENCED(param_size);
@@ -132,91 +136,132 @@ DEF_KERNEL_EXECUTOR(_compute)
     CHECK_PTR_FAIL_GOTO( buffer[3], "Create output buffer fail.", final );
     memset( buffer[3], 0, out_elements * sizeof(float) );
 
+    src_width = attr[0]->shape->data[0];
+    src_height = attr[0]->shape->data[1];
+    dst_width = attr[3]->shape->data[1];
+    dst_height = attr[3]->shape->data[2];
+
+    for ( dy = 0; dy < dst_height; dy ++)
     {
-        int32_t line1[2], line2[2];
-        int32_t dx = 0, dy = 0, idx = 0;
-        int32_t src_width = (int32_t)attr[0]->shape->data[0];
-        int32_t src_height = (int32_t)attr[0]->shape->data[1];
-        int32_t dst_width = (int32_t)attr[3]->shape->data[0];
-        int32_t dst_height = (int32_t)attr[3]->shape->data[1];
-        uint8_t result = 0;
-        int32_t offset = 0;
-        int32_t index = 0;
-
-        for ( idx = 0; idx < 3; idx ++)
+        for ( dx = 0; dx < dst_width; dx ++)
         {
-            int32_t slice_offset = idx * dst_width * dst_height;
+            int32_t line1[2] = {0}, line2[2] = {0};
+            vsi_size_t src_index = 0;
+            vsi_size_t dst_index = dx * 3 + dy * dst_width * 3;
+            float rgb_value[3] = {0};
 
-            if (reverse)
+            if (xRatio != (1 << 15) && yRatio != (1 << 15))
             {
-                slice_offset = idx == 0 ? 2 * dst_width * dst_height : slice_offset;
-                slice_offset = idx == 2 ? 0 : slice_offset;
-            }
+                int32_t fx = ((int32_t)dx * xRatio + (xRatio >> 1)) - (1 << 14);
+                int32_t sx = fx & 0xffff8000; // Floor
+                int32_t fy = 0, sy = 0;
+                int32_t temp1 = 0;
+                int32_t temp2 = 0;
 
-            offset = is_rgb888 ? idx * src_width * src_height : 0;
-            index = is_rgb888 ? 0 : idx;
-            for ( dy = 0; dy < (int32_t)dst_height; dy ++)
-            {
-                for ( dx = 0; dx < (int32_t)dst_width; dx ++)
+                fx -= sx;
+                sx = sx >> 15;
+
+                sx = sx < 0 ? 0 : sx;
+                sx = sx > (int32_t)src_width ? (int32_t)src_width - 1: sx;
+
+                fx = (fx +(1 << 4)) >> 5;
+
+                // for y
+                fy = ((int32_t)dy * yRatio + (yRatio >> 1)) - (1<< 14);
+                sy = fy & 0xffff8000; // Floor
+                fy -= sy;
+                sy = sy >> 15;
+
+                sy = sy < 0 ? 0 : sy;
+                fy = fy < 0 ? 0 : fy;
+
+                fy = (fy + (1<< 4)) >> 5;
+
+                sx += xOffset;
+                sy += yOffset;
+                src_index = (sx + sy * src_width);
+
+#define DESCALE(x) (((x) + (1<<19)) >> 20)
+                if (is_rgb888)
                 {
-                    int32_t source_index = 0;
-                    int32_t output_index = dx + dy * dst_width + slice_offset;
-                    float finalVal = 0.0f;
-
-                    if(xRatio != (1 << 15) || yRatio != (1 << 15))
+                    int32_t c = 0;
+                    for ( c = 0; c < 3; c++ )
                     {
-                        int32_t fx = (dx * xRatio + (xRatio >> 1)) - (1 << 14);
-                        int32_t sx = fx & 0xffff8000; // Floor
-                        int32_t fy = 0, sy = 0;
-                        int32_t temp1 = 0;
-                        int32_t temp2 = 0;
+                        vsi_size_t offset = src_width * src_height * c;
+                        uint8_t result = 0;
 
-                        fx -= sx;
-                        sx = sx >> 15;
-
-                        sx = sx < 0 ? 0 : sx;
-                        sx = sx > src_width ? src_width - 1: sx;
-
-                        fx = (fx +(1 << 4)) >> 5;
-
-                        // for y
-                        fy = (dy * yRatio + (yRatio >> 1)) - (1<< 14);
-                        sy = fy & 0xffff8000; // Floor
-                        fy -= sy;
-                        sy = sy >> 15;
-
-                        sy = sy < 0 ? 0 : sy;
-                        fy = fy < 0 ? 0 : fy;
-
-                        fy = (fy + (1<< 4)) >> 5;
-
-                        sx += xOffset;
-                        sy += yOffset;
-                        source_index = (sx + sy * src_width);
-
-                        line1[0] = (int32_t)buffer[index][source_index + offset];
-                        line1[1] = (int32_t)buffer[index][source_index + 1 + offset];
-                        line2[0] = (int32_t)buffer[index][source_index + src_width + offset];
-                        line2[1] = (int32_t)buffer[index][source_index + src_width + 1 + offset];
+                        line1[0] = (int32_t)buffer[0][src_index + offset];
+                        line1[1] = (int32_t)buffer[0][src_index + 1 + offset];
+                        line2[0] = (int32_t)buffer[0][src_index + src_width + offset];
+                        line2[1] = (int32_t)buffer[0][src_index + src_width + 1 + offset];
 
                         temp1 = fx * (line1[1] - line1[0]) + (line1[0] << 10);
                         temp2 = fx * (line2[1] - line2[0]) + (line2[0] << 10);
                         temp1 = fy * (temp2 - temp1) + (temp1 << 10);
                         result = (uint8_t)(DESCALE(temp1));
-                        finalVal = (result - mean[idx]) * scale;
-                        buffer[3][output_index] = finalVal;
+                        rgb_value[c] = (result - mean[c]) * scale;
                     }
-                    else
+                }
+                else
+                {
+                    int32_t c = 0;
+                    for ( c = 0; c < 3; c++ )
                     {
-                        int32_t ofset = xOffset + yOffset * src_width;
-                        source_index = dx + dy * src_width + ofset + offset;
-                        finalVal = (buffer[index][source_index] - mean[idx]) * scale;
-                        buffer[3][output_index] = finalVal;
+                        uint8_t result = 0;
+                        line1[0] = (int32_t)buffer[c][src_index];
+                        line1[1] = (int32_t)buffer[c][src_index + 1];
+                        line2[0] = (int32_t)buffer[c][src_index + src_width];
+                        line2[1] = (int32_t)buffer[c][src_index + src_width + 1];
+
+                        temp1 = fx * (line1[1] - line1[0]) + (line1[0] << 10);
+                        temp2 = fx * (line2[1] - line2[0]) + (line2[0] << 10);
+                        temp1 = fy * (temp2 - temp1) + (temp1 << 10);
+                        result = (uint8_t)(DESCALE(temp1));
+                        rgb_value[c] = (result - mean[c]) * scale;
+                    }
+                }
+#undef DESCALE
+            }
+            else
+            {
+                int32_t ofset = xOffset + yOffset * (int32_t)src_width;
+                src_index = dx + dy * src_width + ofset;
+
+                if (is_rgb888)
+                {
+                    int32_t c = 0;
+                    for ( c = 0; c < 3; c++ )
+                    {
+                        vsi_size_t offset = src_width * src_height * c;
+
+                        rgb_value[c] = (buffer[0][src_index + offset] - mean[c]) * scale;
+                    }
+                }
+                else
+                {
+                    int32_t c = 0;
+                    for ( c = 0; c < 3; c++ )
+                    {
+                        rgb_value[c] = (buffer[c][src_index] - mean[c]) * scale;
                     }
                 }
             }
+
+            if (reverse)
+            {
+                buffer[3][dst_index + 2] = rgb_value[0];
+                buffer[3][dst_index + 1] = rgb_value[1];
+                buffer[3][dst_index + 0] = rgb_value[2];
+            }
+            else
+            {
+                buffer[3][dst_index + 0] = rgb_value[0];
+                buffer[3][dst_index + 1] = rgb_value[1];
+                buffer[3][dst_index + 2] = rgb_value[2];
+            }
         }
     }
+
     for (i = 3; i < _CPU_IO_NUM; i++)
     {
         status = vsi_nn_kernel_tensor_write_from_float( tensors[i], attr[i],
@@ -252,10 +297,11 @@ static vsi_status _query_kernel
     vsi_status status = VSI_SUCCESS;
     VSI_UNREFERENCED(inputs);
     VSI_UNREFERENCED(outputs);
+
     snprintf( kernel->info.name, VX_MAX_KERNEL_NAME, "%s",  _KERNEL_NAME );
     kernel->info.function    = _compute;
-    kernel->info.parameters  = _pre_process_rgb888_planar_kernel_param_def;
-    kernel->info.numParams   = _cnt_of_array( _pre_process_rgb888_planar_kernel_param_def );
+    kernel->info.parameters  = _pre_process_rgb888_planar_nhwc_kernel_param_def;
+    kernel->info.numParams   = _cnt_of_array( _pre_process_rgb888_planar_nhwc_kernel_param_def );
 
     return status;
 } /* _query_kernel() */
@@ -273,7 +319,7 @@ static vsi_nn_kernel_node_t _setup
     )
 {
     vsi_status status = VSI_FAILURE;
-    vsi_nn_kernel_node_param_t node_params[_PRE_PROCESS_RGB888_PLANAR_PARAM_NUM];
+    vsi_nn_kernel_node_param_t node_params[_PRE_PROCESS_RGB888_PLANAR_NHWC_PARAM_NUM];
     vsi_nn_kernel_node_t node = NULL;
 
     status = _query_kernel( kernel, inputs, outputs /* Add extra params */ );
@@ -294,7 +340,7 @@ static vsi_nn_kernel_node_t _setup
         if ( node )
         {
             /* Set inputs and outputs */
-            vsi_nn_kernel_node_pack_io( node_params, _PRE_PROCESS_RGB888_PLANAR_PARAM_NUM,
+            vsi_nn_kernel_node_pack_io( node_params, _PRE_PROCESS_RGB888_PLANAR_NHWC_PARAM_NUM,
                     inputs, input_num, outputs, output_num );
             node_params[index++] = vsi_nn_kernel_scalar_create( graph, I32, &scale_x );
             node_params[index++] = vsi_nn_kernel_scalar_create( graph, I32, &scale_y );
@@ -306,7 +352,7 @@ static vsi_nn_kernel_node_t _setup
             node_params[index++] = vsi_nn_kernel_scalar_create( graph, F32, &scale );
             node_params[index++] = vsi_nn_kernel_scalar_create( graph, I32, &reverse );
             /* Pass parameters to node. */
-            status  = vsi_nn_kernel_node_pass_param( node, node_params, _PRE_PROCESS_RGB888_PLANAR_PARAM_NUM );
+            status  = vsi_nn_kernel_node_pass_param( node, node_params, _PRE_PROCESS_RGB888_PLANAR_NHWC_PARAM_NUM );
             vsi_nn_kernel_scalar_release( &node_params[4] );
             vsi_nn_kernel_scalar_release( &node_params[5] );
             vsi_nn_kernel_scalar_release( &node_params[6] );
@@ -323,4 +369,5 @@ static vsi_nn_kernel_node_t _setup
 
 __END_DECLS
 
-REGISTER_BACKEND_CPU( pre_process_rgb888_planar, _setup )
+REGISTER_BACKEND_CPU( pre_process_rgb888_planar_nhwc, _setup )
+

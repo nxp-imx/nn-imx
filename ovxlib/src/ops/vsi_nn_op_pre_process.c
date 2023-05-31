@@ -109,6 +109,7 @@ static vsi_bool op_setup
     vsi_bool ret = FALSE;
     vsi_nn_internal_tensor_t* preprocess_tensor = NULL;
     vsi_nn_preprocess_dest_layout_e layout = VSI_NN_DEST_LAYOUT_NCHW;
+    vsi_bool enable_rgb88_planar_nhwc = FALSE;
 
     p = (vsi_nn_pre_process_param *)&(self->nn_param.pre_process);
 
@@ -147,11 +148,18 @@ static vsi_bool op_setup
         if (i != self->nn_param.pre_process_rgb.dim_num)
         {
             layout = VSI_NN_DEST_LAYOUT_NHWC;
+
+            if (p->type == VSI_NN_SOURCE_FORMAT_IMAGE_RGB888_PLANAR ||
+                p->type == VSI_NN_SOURCE_FORMAT_IMAGE_RGB888_PLANAR_SEP)
+            {
+                enable_rgb88_planar_nhwc = self->graph->ctx->options.enable_rgb88_planar_nhwc;
+            }
         }
 
-        if (layout == VSI_NN_DEST_LAYOUT_NHWC)
+        if (layout == VSI_NN_DEST_LAYOUT_NHWC && !enable_rgb88_planar_nhwc)
         {
             memcpy( &attr, &outputs[PRE_PROCESS_OUTPUT]->attr, sizeof( attr ) );
+
             attr.size[0] = p->output_attr.size[1];
             attr.size[1] = p->output_attr.size[2];
             attr.size[2] = p->output_attr.size[0];
@@ -161,7 +169,7 @@ static vsi_bool op_setup
             attr.vtl = use_virtual_tensor;
             attr.is_const = FALSE;
 
-            preprocess_tensor = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
+            preprocess_tensor = vsi_nn_internal_new_tensor(self, &attr, 0.0f);
             CHECK_PTR_FAIL_GOTO(preprocess_tensor, "Create internal tensor failed", final);
         }
     }
@@ -363,54 +371,20 @@ static vsi_bool op_setup
     case VSI_NN_SOURCE_FORMAT_IMAGE_RGB888_PLANAR:
     case VSI_NN_SOURCE_FORMAT_IMAGE_RGB888_PLANAR_SEP:
         {
-            uint32_t i = 0;
-            uint32_t axis = 2;
             vsi_bool is_input_sep = p->type == VSI_NN_SOURCE_FORMAT_IMAGE_RGB888_PLANAR ? FALSE : TRUE;
-            vsi_nn_internal_tensor_t * output_tensor_group[3] = {NULL};
-            vsi_nn_internal_tensor_t* tmp_outputs[3] = { NULL };
-            vsi_nn_tensor_attr_t attr;
             float mean[3] = {0};
-            vsi_size_t size_32bit[VSI_NN_MAX_DIM_NUM] = {0};
-
-            memset(&attr, 0, sizeof(vsi_nn_tensor_attr_t));
-            memcpy(&attr, &outputs[0]->attr, sizeof(vsi_nn_tensor_attr_t));
-            for(i = 0; i < p->output_attr.dim_num; i++)
-            {
-                attr.size[i] = (vsi_size_t)-1 == p->output_attr.size[i] ? \
-                    (vsi_size_t)-1 : (vsi_size_t)p->output_attr.size[i];
-            }
-            attr.size[axis] = 1;
-            attr.vtl = TRUE;
-            attr.is_const = FALSE;
-            output_tensor_group[0] = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
-            CHECK_PTR_FAIL_GOTO(output_tensor_group[0], "Create internal tensor failed", final);
-            output_tensor_group[1] = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
-            CHECK_PTR_FAIL_GOTO(output_tensor_group[1], "Create internal tensor failed", final);
-            output_tensor_group[2] = vsi_nn_internal_new_tensor( self, &attr, 0.0f );
-            CHECK_PTR_FAIL_GOTO(output_tensor_group[2], "Create internal tensor failed", final);
-            for(i = 0; i < VSI_NN_MAX_DIM_NUM; i++)
-            {
-                size_32bit[i] = attr.size[i];
-            }
 
             if (p->reverse_channel)
             {
-                int32_t order[3] = {2, 1, 0};
-
                 mean[0] = p->norm.mean[2];
                 mean[1] = p->norm.mean[1];
                 mean[2] = p->norm.mean[0];
-
-                vsi_nn_reorder_tensor( (vsi_nn_tensor_t **)output_tensor_group, order,
-                        3, (vsi_nn_tensor_t **)tmp_outputs );
             }
             else
             {
                 mean[0] = p->norm.mean[0];
                 mean[1] = p->norm.mean[1];
                 mean[2] = p->norm.mean[2];
-
-                memmove( tmp_outputs, output_tensor_group, sizeof(vsi_nn_tensor_t*) * 3 );
             }
 
             curr = vsi_nn_internal_new_node( self, VSI_NN_OP_PRE_PROCESS_RGB888_PLANAR, 0, 0 );
@@ -427,9 +401,14 @@ static vsi_bool op_setup
                 curr->inputs[1] = NULL;
                 curr->inputs[2] = NULL;
             }
-            curr->outputs[0] = output_tensor_group[0]->t;
-            curr->outputs[1] = output_tensor_group[1]->t;
-            curr->outputs[2] = output_tensor_group[2]->t;
+            if (layout == VSI_NN_DEST_LAYOUT_NHWC && !enable_rgb88_planar_nhwc)
+            {
+                curr->outputs[0] = preprocess_tensor->t;
+            }
+            else
+            {
+                curr->outputs[0] = outputs[PRE_PROCESS_OUTPUT];
+            }
             curr->node->nn_param.pre_process_rgb888_planar.r_mean = mean[0];
             curr->node->nn_param.pre_process_rgb888_planar.g_mean = mean[1];
             curr->node->nn_param.pre_process_rgb888_planar.b_mean = mean[2];
@@ -438,27 +417,11 @@ static vsi_bool op_setup
             curr->node->nn_param.pre_process_rgb888_planar.rect.top = p->rect.top;
             curr->node->nn_param.pre_process_rgb888_planar.rect.width = p->rect.width;
             curr->node->nn_param.pre_process_rgb888_planar.rect.height = p->rect.height;
-            curr->node->nn_param.pre_process_rgb888_planar.output_attr.size = size_32bit;
+            curr->node->nn_param.pre_process_rgb888_planar.output_attr.size = p->output_attr.size;
             curr->node->nn_param.pre_process_rgb888_planar.output_attr.dim_num = p->output_attr.dim_num;
+            curr->node->nn_param.pre_process_rgb888_planar.reverse_channel = p->reverse_channel;
+            curr->node->nn_param.pre_process_rgb888_planar.enable_rgb88_planar_nhwc = enable_rgb88_planar_nhwc;
             ret = vsi_nn_internal_setup_node(self, curr);
-
-            curr = vsi_nn_internal_new_node( self, VSI_NN_OP_CONCAT, 3, 1 );
-            CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
-
-            curr->node->nn_param.concat.axis = axis;
-            curr->inputs[0] = tmp_outputs[0]->t;
-            curr->inputs[1] = tmp_outputs[1]->t;
-            curr->inputs[2] = tmp_outputs[2]->t;
-            if (layout == VSI_NN_DEST_LAYOUT_NHWC)
-            {
-                curr->outputs[0] = preprocess_tensor->t;
-            }
-            else
-            {
-                curr->outputs[0] = outputs[PRE_PROCESS_OUTPUT];
-            }
-
-            ret &= vsi_nn_internal_setup_node(self, curr);
         }
         break;
     case VSI_NN_SOURCE_FORMAT_IMAGE_YUV444:
@@ -627,8 +590,8 @@ static vsi_bool op_setup
          p->type == VSI_NN_SOURCE_FORMAT_IMAGE_RGB           ||
          p->type == VSI_NN_SOURCE_FORMAT_IMAGE_BGRA          ||
          p->type == VSI_NN_SOURCE_FORMAT_IMAGE_GRAY          ||
-         p->type == VSI_NN_SOURCE_FORMAT_IMAGE_RGB888_PLANAR ||
-         p->type == VSI_NN_SOURCE_FORMAT_IMAGE_RGB888_PLANAR_SEP
+         (p->type == VSI_NN_SOURCE_FORMAT_IMAGE_RGB888_PLANAR && !enable_rgb88_planar_nhwc) ||
+         (p->type == VSI_NN_SOURCE_FORMAT_IMAGE_RGB888_PLANAR_SEP && !enable_rgb88_planar_nhwc)
         )
     {
         if (layout == VSI_NN_DEST_LAYOUT_NHWC)
