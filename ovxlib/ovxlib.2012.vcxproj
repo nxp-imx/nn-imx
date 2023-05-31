@@ -1580,9 +1580,6 @@
     <ClCompile Include="src\kernel\sp\instance_normalization_sp.c">
       <ObjectFileName>$(IntDir)\src\kernel\sp\</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="src\kernel\sp\l2_normalize_sp.c">
-      <ObjectFileName>$(IntDir)\src\kernel\sp\</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="src\kernel\sp\layer_norm_sp.c">
       <ObjectFileName>$(IntDir)\src\kernel\sp\</ObjectFileName>
     </ClCompile>
