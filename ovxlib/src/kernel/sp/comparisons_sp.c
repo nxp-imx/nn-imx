@@ -67,7 +67,6 @@ REGISTER_COMPARISONS_STREAM_PROCESSOR_KERNEL( relational_ops )
     vx_tensor inputs_tensor[2] = {NULL};
     vx_tensor output_tensor = NULL;
 
-
     inputs_tensor[0] = inputs[0]->t;
     inputs_tensor[1] = inputs[1]->t;
     output_tensor = outputs[0]->t;
@@ -79,7 +78,7 @@ REGISTER_COMPARISONS_STREAM_PROCESSOR_KERNEL( relational_ops )
         graph->g,
         operation,
         inputs_tensor,
-        input_num,
+        (uint32_t)input_num,
         output_tensor
         );
     CHECK_PTR_FAIL_GOTO( node, "Create logical ops node  fail.", final );
