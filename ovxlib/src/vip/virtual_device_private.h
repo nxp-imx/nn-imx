@@ -99,6 +99,9 @@ class Device {
         std::array<std::thread, 2> threads_;
         std::unique_ptr<GraphQueue> graphqueue_;
         std::unique_ptr<Worker> worker_;
+        std::condition_variable cv_;
+        std::mutex idle_mtx_;
+        int submit_num_ = 0;
 };
 
 }  // namespace vip
