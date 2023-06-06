@@ -227,36 +227,18 @@ static vsi_bool op_setup
                 curr->node->nn_param.pre_process_rgb.r_mean = p->norm.mean[2];
                 curr->node->nn_param.pre_process_rgb.g_mean = p->norm.mean[1];
                 curr->node->nn_param.pre_process_rgb.b_mean = p->norm.mean[0];
-                if (vsi_nn_compareVersion(self->graph, 1, 1, 79) == -1)
-                {
-                    curr->node->nn_param.pre_process_rgb.r_scale = p->norm.scale;
-                    curr->node->nn_param.pre_process_rgb.g_scale = p->norm.scale;
-                    curr->node->nn_param.pre_process_rgb.b_scale = p->norm.scale;
-                }
-                else
-                {
-                    curr->node->nn_param.pre_process_rgb.r_scale = p->norm2.scale[2];
-                    curr->node->nn_param.pre_process_rgb.g_scale = p->norm2.scale[1];
-                    curr->node->nn_param.pre_process_rgb.b_scale = p->norm2.scale[0];
-                }
+                curr->node->nn_param.pre_process_rgb.r_scale = p->norm2.scale[2];
+                curr->node->nn_param.pre_process_rgb.g_scale = p->norm2.scale[1];
+                curr->node->nn_param.pre_process_rgb.b_scale = p->norm2.scale[0];
             }
             else
             {
                 curr->node->nn_param.pre_process_rgb.r_mean = p->norm.mean[0];
                 curr->node->nn_param.pre_process_rgb.g_mean = p->norm.mean[1];
                 curr->node->nn_param.pre_process_rgb.b_mean = p->norm.mean[2];
-                if (vsi_nn_compareVersion(self->graph, 1, 1, 79) == -1)
-                {
-                    curr->node->nn_param.pre_process_rgb.r_scale = p->norm.scale;
-                    curr->node->nn_param.pre_process_rgb.g_scale = p->norm.scale;
-                    curr->node->nn_param.pre_process_rgb.b_scale = p->norm.scale;
-                }
-                else
-                {
-                    curr->node->nn_param.pre_process_rgb.r_scale = p->norm2.scale[0];
-                    curr->node->nn_param.pre_process_rgb.g_scale = p->norm2.scale[1];
-                    curr->node->nn_param.pre_process_rgb.b_scale = p->norm2.scale[2];
-                }
+                curr->node->nn_param.pre_process_rgb.r_scale = p->norm2.scale[0];
+                curr->node->nn_param.pre_process_rgb.g_scale = p->norm2.scale[1];
+                curr->node->nn_param.pre_process_rgb.b_scale = p->norm2.scale[2];
             }
 
             curr->node->nn_param.pre_process_rgb.reverse_channel = p->reverse_channel;
