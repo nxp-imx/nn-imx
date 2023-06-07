@@ -1459,7 +1459,8 @@ void vsi_nn_SaveDataToText
         write_data = vsi_nn_DataAsFloat32( &data[stride * i],
             type );
         if( type == VSI_NN_TYPE_UINT8 || type == VSI_NN_TYPE_INT8 ||
-            type == VSI_NN_TYPE_UINT4 || type == VSI_NN_TYPE_INT4 )
+            type == VSI_NN_TYPE_UINT4 || type == VSI_NN_TYPE_INT4 ||
+            type == VSI_NN_TYPE_FLOAT8_E4M3 || type == VSI_NN_TYPE_FLOAT8_E5M2 )
         {
             count += snprintf( (char *)&buf[count], _TENSOR_TMPBUF_SZ - count,
                 "%d%s", (int32_t)write_data, seperator );
