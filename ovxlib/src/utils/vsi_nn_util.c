@@ -375,6 +375,8 @@ float vsi_nn_DataAsFloat32
         val = (float)((int8_t*)data)[0];
         break;
     case VSI_NN_TYPE_UINT8:
+    case VSI_NN_TYPE_FLOAT8_E4M3:
+    case VSI_NN_TYPE_FLOAT8_E5M2:
         val = (float)data[0];
         break;
     case VSI_NN_TYPE_INT16:
