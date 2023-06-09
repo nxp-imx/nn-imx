@@ -9268,6 +9268,7 @@ __kernel void gather_I8toI8(\n\
 \n\
     int4 coord_in = (int4)(gidy, 0, gidx, 0);\n\
     int4 indice = read_imagei(input1, coord_in.xy);\n\
+    indice.x = indice.x >= 0 ? indice.x : indice.x + axis_num;\n\
     coord_in.w = gidz * axis_num + indice.x;\n\
 \n\
     vxc_char16 src;\n\
@@ -9292,6 +9293,7 @@ __kernel void gather_U8toU8(\n\
 \n\
     int4 coord_in = (int4)(gidy, 0, gidx, 0);\n\
     int4 indice = read_imagei(input1, coord_in.xy);\n\
+    indice.x = indice.x >= 0 ? indice.x : indice.x + axis_num;\n\
     coord_in.w = gidz * axis_num + indice.x;\n\
 \n\
     vxc_uchar16 src;\n\
@@ -9316,8 +9318,8 @@ __kernel void gather_I16toI16(\n\
 \n\
     int4 coord_in = (int4)(gidy, 0, gidx, 0);\n\
 \n\
-\n\
     int4 indice = read_imagei(input1, coord_in.xy);\n\
+    indice.x = indice.x >= 0 ? indice.x : indice.x + axis_num;\n\
     coord_in.w = gidz * axis_num + indice.x;\n\
 \n\
     vxc_short8 src;\n\
@@ -9342,6 +9344,7 @@ __kernel void gather_F16toF16(\n\
 \n\
     int4 coord_in = (int4)(gidy, 0, gidx, 0);\n\
     int4 indice = read_imagei(input1, coord_in.xy);\n\
+    indice.x = indice.x >= 0 ? indice.x : indice.x + axis_num;\n\
     coord_in.w = gidz * axis_num + indice.x;\n\
 \n\
     vxc_short8 src;\n\
@@ -9362,6 +9365,7 @@ __kernel void gather_I8toI8_axis0(\n\
 {\n\
     int2 coord = (int2)(get_global_id(0), get_global_id(1));\n\
     int4 indices = read_imagei(input1, coord.xx);\n\
+    indices = indices >= 0 ? indices : indices + axis_num;\n\
     int2 coord_in = (int2)(indices.x, get_global_id(1));\n\
 \n\
     vxc_char16 src, dst;\n\
@@ -9388,6 +9392,7 @@ __kernel void gather_U8toU8_axis0(\n\
 {\n\
     int2 coord = (int2)(get_global_id(0), get_global_id(1));\n\
     int4 indices = read_imagei(input1, coord.xx);\n\
+    indices = indices >= 0 ? indices : indices + axis_num;\n\
     int2 coord_in = (int2)(indices.x, get_global_id(1));\n\
 \n\
     vxc_uchar16 src, dst;\n\
@@ -9414,6 +9419,7 @@ __kernel void gather_I16toI16_axis0(\n\
 {\n\
     int2 coord = (int2)(get_global_id(0), get_global_id(1));\n\
     int4 indices = read_imagei(input1, coord.xx);\n\
+    indices = indices >= 0 ? indices : indices + axis_num;\n\
     int2 coord_in = (int2)(indices.x, get_global_id(1));\n\
 \n\
     vxc_short8 src, dst;\n\
@@ -9440,6 +9446,7 @@ __kernel void gather_F16toF16_axis0(\n\
 {\n\
     int2 coord = (int2)(get_global_id(0), get_global_id(1));\n\
     int4 indices = read_imagei(input1, coord.xx);\n\
+    indices = indices >= 0 ? indices : indices + axis_num;\n\
     int2 coord_in = (int2)(indices.x, get_global_id(1));\n\
 \n\
     vxc_short8 src, dst;\n\
@@ -9476,6 +9483,7 @@ __kernel void gather_I8toI8_array(\n\
 \n\
     int4 coord_in = (int4)(gidy, 0, gidx, 0);\n\
     int4 indice = read_imagei(input1, coord_in.xy);\n\
+    indice.x = indice.x >= 0 ? indice.x : indice.x + axis_num;\n\
     coord_in.w = gidz * axis_num + indice.x;\n\
 \n\
     Image img1 = create_image_from_image2d(input0, 1);\n\
@@ -9504,6 +9512,7 @@ __kernel void gather_U8toU8_array(\n\
 \n\
     int4 coord_in = (int4)(gidy, 0, gidx, 0);\n\
     int4 indice = read_imagei(input1, coord_in.xy);\n\
+    indice.x = indice.x >= 0 ? indice.x : indice.x + axis_num;\n\
     coord_in.w = gidz * axis_num + indice.x;\n\
 \n\
     Image img1 = create_image_from_image2d(input0, 1);\n\
@@ -9532,8 +9541,8 @@ __kernel void gather_I16toI16_array(\n\
 \n\
     int4 coord_in = (int4)(gidy, 0, gidx, 0);\n\
 \n\
-\n\
     int4 indice = read_imagei(input1, coord_in.xy);\n\
+    indice.x = indice.x >= 0 ? indice.x : indice.x + axis_num;\n\
     coord_in.w = gidz * axis_num + indice.x;\n\
 \n\
     Image img1 = create_image_from_image2d(input0, 2);\n\
@@ -9563,6 +9572,7 @@ __kernel void gather_F16toF16_array(\n\
     int4 coord_in = (int4)(gidy, 0, gidx, 0);\n\
 \n\
     int4 indice = read_imagei(input1, coord_in.xy);\n\
+    indice.x = indice.x >= 0 ? indice.x : indice.x + axis_num;\n\
     coord_in.w = gidz * axis_num + indice.x;\n\
 \n\
     Image img1 = create_image_from_image2d(input0, 2);\n\
@@ -9600,6 +9610,7 @@ __kernel void gather_##src0_type_name##to##src0_type_name##_axis0_array( \\\n\
     uchar* output_ptr = get_image_ptr_from_coord(img2, coord.xy); \\\n\
     __global data_type* data_ptr = (__global data_type*)input_ptr; \\\n\
     __global write_type* out_ptr = (__global write_type*)output_ptr; \\\n\
+    indices = indices >= 0 ? indices : indices + axis_num; \\\n\
     src.s0 = data_ptr[indices.x]; \\\n\
     src.s1 = data_ptr[indices.y]; \\\n\
     src.s2 = data_ptr[indices.z]; \\\n\
@@ -9640,6 +9651,7 @@ __kernel void gather_batch_I8toI8(\n\
     {\n\
         int4 indice = read_imagei(input1, coord_idx);\n\
         coord_idx.y++;\n\
+        indice.x = indice.x >= 0 ? indice.x : indice.x + axis_num;\n\
         coord_in.y = gidz * axis_num + indice.x;\n\
 \n\
         vxc_char16 src;\n\
@@ -9670,6 +9682,7 @@ __kernel void gather_batch_U8toU8(\n\
     {\n\
         int4 indice = read_imagei(input1, coord_idx);\n\
         coord_idx.y++;\n\
+        indice.x = indice.x >= 0 ? indice.x : indice.x + axis_num;\n\
         coord_in.y = gidz * axis_num + indice.x;\n\
 \n\
         vxc_uchar16 src;\n\
@@ -9700,6 +9713,7 @@ __kernel void gather_batch_I16toI16(\n\
     {\n\
         int4 indice = read_imagei(input1, coord_idx);\n\
         coord_idx.y++;\n\
+        indice.x = indice.x >= 0 ? indice.x : indice.x + axis_num;\n\
         coord_in.y = gidz * axis_num + indice.x;\n\
 \n\
         vxc_short8 src;\n\
@@ -9730,6 +9744,7 @@ __kernel void gather_batch_F16toF16(\n\
     {\n\
         int4 indice = read_imagei(input1, coord_idx);\n\
         coord_idx.y++;\n\
+        indice.x = indice.x >= 0 ? indice.x : indice.x + axis_num;\n\
         coord_in.y = gidz * axis_num + indice.x;\n\
 \n\
         vxc_short8 src;\n\
@@ -9751,6 +9766,7 @@ __kernel void gather_batch_I8toI8_axis0(\n\
 {\n\
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
     int4 indices = read_imagei(input1, coord.xz);\n\
+    indices = indices >= 0 ? indices : indices + axis_num;\n\
     int4 coord_in = (int4)(indices.x, get_global_id(1), get_global_id(2), 0);\n\
 \n\
     vxc_char16 src, dst;\n\
@@ -9779,6 +9795,7 @@ __kernel void gather_batch_U8toU8_axis0(\n\
 {\n\
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
     int4 indices = read_imagei(input1, coord.xz);\n\
+    indices = indices >= 0 ? indices : indices + axis_num;\n\
     int4 coord_in = (int4)(indices.x, get_global_id(1), get_global_id(2), 0);\n\
 \n\
     vxc_uchar16 src, dst;\n\
@@ -9807,6 +9824,7 @@ __kernel void gather_batch_I16toI16_axis0(\n\
 {\n\
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
     int4 indices = read_imagei(input1, coord.xz);\n\
+    indices = indices >= 0 ? indices : indices + axis_num;\n\
     int4 coord_in = (int4)(indices.x, get_global_id(1), get_global_id(2), 0);\n\
 \n\
     vxc_short8 src, dst;\n\
@@ -9835,6 +9853,7 @@ __kernel void gather_batch_F16toF16_axis0(\n\
 {\n\
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
     int4 indices = read_imagei(input1, coord.xz);\n\
+    indices = indices >= 0 ? indices : indices + axis_num;\n\
     int4 coord_in = (int4)(indices.x, get_global_id(1), get_global_id(2), 0);\n\
 \n\
     vxc_short8 src, dst;\n\
@@ -10178,6 +10197,7 @@ __kernel void gather_##src0_type_name##toF16( \\\n\
  \\\n\
     int4 coord_in = (int4)(gidy, 0, gidx, 0); \\\n\
     int4 indice = read_imagei(input1, coord_in.xy); \\\n\
+    indice.x = indice.x >= 0 ? indice.x : indice.x + axis_num; \\\n\
     coord_in.w = gidz * axis_num + indice.x; \\\n\
  \\\n\
     read_type src; \\\n\
@@ -10214,6 +10234,7 @@ __kernel void gather_F16to##src1_type_name( \\\n\
     int4 coord_in = (int4)(gidy, 0, gidx, 0); \\\n\
  \\\n\
     int4 indice = read_imagei(input1, coord_in.xy); \\\n\
+    indice.x = indice.x >= 0 ? indice.x : indice.x + axis_num; \\\n\
     coord_in.w = gidz * axis_num + indice.x; \\\n\
  \\\n\
     vxc_short8 src; \\\n\
@@ -10246,6 +10267,7 @@ __kernel void gather_I16toF16(\n\
 \n\
     int4 coord_in = (int4)(gidy, 0, gidx, 0);\n\
     int4 indice = read_imagei(input1, coord_in.xy);\n\
+    indice.x = indice.x >= 0 ? indice.x : indice.x + axis_num;\n\
     coord_in.w = gidz * axis_num + indice.x;\n\
 \n\
     vxc_short8 src;\n\
@@ -10276,6 +10298,7 @@ __kernel void gather_##src0_type_name##toF16_axis0( \\\n\
 { \\\n\
     int2 coord = (int2)(get_global_id(0), get_global_id(1)); \\\n\
     int4 indices = read_imagei(input1, coord.xx); \\\n\
+    indices = indices >= 0 ? indices : indices + axis_num; \\\n\
     int2 coord_in = (int2)(indices.x, get_global_id(1)); \\\n\
  \\\n\
     read_type src; \\\n\
@@ -10307,6 +10330,7 @@ __kernel void gather_F16to##src1_type_name##_axis0( \\\n\
 { \\\n\
     int2 coord = (int2)(get_global_id(0), get_global_id(1)); \\\n\
     int4 indices = read_imagei(input1, coord.xx); \\\n\
+    indices = indices >= 0 ? indices : indices + axis_num; \\\n\
     int2 coord_in = (int2)(indices.x, get_global_id(1)); \\\n\
  \\\n\
     vxc_short8 src; \\\n\
@@ -10338,6 +10362,7 @@ __kernel void gather_I16toF16_axis0(\n\
 {\n\
     int2 coord = (int2)(get_global_id(0), get_global_id(1));\n\
     int4 indices = read_imagei(input1, coord.xx);\n\
+    indices = indices >= 0 ? indices : indices + axis_num;\n\
     int2 coord_in = (int2)(indices.x, get_global_id(1));\n\
 \n\
     vxc_short8 src;\n\
@@ -10394,6 +10419,7 @@ __kernel void gather_batch_##src0_type_name##toF16( \\\n\
     { \\\n\
         int4 indice = read_imagei(input1, coord_idx); \\\n\
         coord_idx.y++; \\\n\
+        indice.x = indice.x >= 0 ? indice.x : indice.x + axis_num; \\\n\
         coord_in.y = gidz * axis_num + indice.x; \\\n\
  \\\n\
         read_type src; \\\n\
@@ -10439,6 +10465,7 @@ __kernel void gather_batch_F16to##src1_type_name( \\\n\
     { \\\n\
         int4 indice = read_imagei(input1, coord_idx); \\\n\
         coord_idx.y++; \\\n\
+        indice.x = indice.x >= 0 ? indice.x : indice.x + axis_num; \\\n\
         coord_in.y = gidz * axis_num + indice.x; \\\n\
  \\\n\
         vxc_short8 src; \\\n\
@@ -10481,6 +10508,7 @@ __kernel void gather_batch_I16toF16(\n\
     {\n\
         int4 indice = read_imagei(input1, coord_idx);\n\
         coord_idx.y++;\n\
+        indice.x = indice.x >= 0 ? indice.x : indice.x + axis_num;\n\
         coord_in.y = gidz * axis_num + indice.x;\n\
 \n\
         vxc_short8 src;\n\
@@ -10506,6 +10534,7 @@ __kernel void gather_batch_##src0_type_name##toF16_axis0( \\\n\
 { \\\n\
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
     int4 indices = read_imagei(input1, coord.xz); \\\n\
+    indices = indices >= 0 ? indices : indices + axis_num; \\\n\
     int4 coord_in = (int4)(indices.x, get_global_id(1), get_global_id(2), 0); \\\n\
  \\\n\
     read_type src; \\\n\
@@ -10540,6 +10569,7 @@ __kernel void gather_batch_F16to##src1_type_name##_axis0( \\\n\
 { \\\n\
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
     int4 indices = read_imagei(input1, coord.xz); \\\n\
+    indices = indices >= 0 ? indices : indices + axis_num; \\\n\
     int4 coord_in = (int4)(indices.x, get_global_id(1), get_global_id(2), 0); \\\n\
  \\\n\
     vxc_short8 src; \\\n\
@@ -10574,6 +10604,7 @@ __kernel void gather_batch_I16toF16_axis0(\n\
 {\n\
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
     int4 indices = read_imagei(input1, coord.xz);\n\
+    indices = indices >= 0 ? indices : indices + axis_num;\n\
     int4 coord_in = (int4)(indices.x, get_global_id(1), get_global_id(2), 0);\n\
 \n\
     vxc_short8 src, dst;\n\
@@ -53364,6 +53395,8 @@ static const char gather_cl[] = "__kernel void gather_U8toU8(\n\
 \n\
     int4 coord_in = (int4)(gidy, 0, gidx, 0);\n\
     int4 indice = read_imagei(input1, coord_in.xy);\n\
+\n\
+    indice.x = indice.x >= 0 ? indice.x : indice.x + axis_num;\n\
     coord_in.w = gidz * axis_num + indice.x;\n\
 \n\
     uint4 data = read_imageui(input0, coord_in.zw);\n\
@@ -53389,6 +53422,8 @@ __kernel void gather_F16toF16(\n\
 \n\
     int4 coord_in = (int4)(gidy, 0, gidx, 0);\n\
     int4 indice = read_imagei(input1, coord_in.xy);\n\
+\n\
+    indice.x = indice.x >= 0 ? indice.x : indice.x + axis_num;\n\
     coord_in.w = gidz * axis_num + indice.x;\n\
 \n\
     float4 data = read_imagef(input0, coord_in.zw);\n\
@@ -53414,6 +53449,8 @@ __kernel void gather_I32toI32(\n\
 \n\
     int4 coord_in = (int4)(gidy, 0, gidx, 0);\n\
     int4 indice = read_imagei(input1, coord_in.xy);\n\
+\n\
+    indice.x = indice.x >= 0 ? indice.x : indice.x + axis_num;\n\
     coord_in.w = gidz * axis_num + indice.x;\n\
 \n\
     int4 data = read_imagei(input0, coord_in.zw);\n\
@@ -53439,6 +53476,8 @@ __kernel void gather_F32toF32(\n\
 \n\
     int4 coord_in = (int4)(gidy, 0, gidx, 0);\n\
     int4 indice = read_imagei(input1, coord_in.xy);\n\
+\n\
+    indice.x = indice.x >= 0 ? indice.x : indice.x + axis_num;\n\
     coord_in.w = gidz * axis_num + indice.x;\n\
 \n\
     float4 data = read_imagef(input0, coord_in.zw);\n\
@@ -53465,6 +53504,7 @@ static const char gather_array_cl[] = "__kernel void gather_array_U8toU8(\n\
 \n\
     int4 coord_in = (int4)(gidy, 0, gidx, 0);\n\
     int4 indice = read_imagei(input1, coord_in.xy);\n\
+    indice.x = indice.x >= 0 ? indice.x : indice.x + axis_num;\n\
     coord_in.w = gidz * axis_num + indice.x;\n\
 \n\
     Image img1 = create_image_from_image2d(input0, 1);\n\
@@ -53493,6 +53533,7 @@ __kernel void gather_array_F16toF16(\n\
 \n\
     int4 coord_in = (int4)(gidy, 0, gidx, 0);\n\
     int4 indice = read_imagei(input1, coord_in.xy);\n\
+    indice.x = indice.x >= 0 ? indice.x : indice.x + axis_num;\n\
     coord_in.w = gidz * axis_num + indice.x;\n\
 \n\
     Image img1 = create_image_from_image2d(input0, 2);\n\
@@ -53521,6 +53562,7 @@ __kernel void gather_array_I32toI32(\n\
 \n\
     int4 coord_in = (int4)(gidy, 0, gidx, 0);\n\
     int4 indice = read_imagei(input1, coord_in.xy);\n\
+    indice.x = indice.x >= 0 ? indice.x : indice.x + axis_num;\n\
     coord_in.w = gidz * axis_num + indice.x;\n\
 \n\
     Image img1 = create_image_from_image2d(input0, 4);\n\
@@ -53549,6 +53591,7 @@ __kernel void gather_array_F32toF32(\n\
 \n\
     int4 coord_in = (int4)(gidy, 0, gidx, 0);\n\
     int4 indice = read_imagei(input1, coord_in.xy);\n\
+    indice.x = indice.x >= 0 ? indice.x : indice.x + axis_num;\n\
     coord_in.w = gidz * axis_num + indice.x;\n\
 \n\
     Image img1 = create_image_from_image2d(input0, 4);\n\
@@ -53583,6 +53626,7 @@ static const char gather_batch_cl[] = "__kernel void gather_batch_U8toU8(\n\
     {\n\
         int4 indice = read_imagei(input1, coord_idx);\n\
         coord_idx.y++;\n\
+        indice.x = indice.x >= 0 ? indice.x : indice.x + axis_num;\n\
         coord_in.y = gidz * axis_num + indice.x;\n\
 \n\
         uint4 data = read_imageui(input0, coord_in);\n\
@@ -53614,6 +53658,7 @@ __kernel void gather_batch_F16toF16(\n\
     {\n\
         int4 indice = read_imagei(input1, coord_idx);\n\
         coord_idx.y++;\n\
+        indice.x = indice.x >= 0 ? indice.x : indice.x + axis_num;\n\
         coord_in.y = gidz * axis_num + indice.x;\n\
 \n\
         float4 data = read_imagef(input0, coord_in);\n\
@@ -53645,6 +53690,7 @@ __kernel void gather_batch_I32toI32(\n\
     {\n\
         int4 indice = read_imagei(input1, coord_idx);\n\
         coord_idx.y++;\n\
+        indice.x = indice.x >= 0 ? indice.x : indice.x + axis_num;\n\
         coord_in.y = gidz * axis_num + indice.x;\n\
 \n\
         int4 data = read_imagei(input0, coord_in);\n\
@@ -53676,6 +53722,7 @@ __kernel void gather_batch_F32toF32(\n\
     {\n\
         int4 indice = read_imagei(input1, coord_idx);\n\
         coord_idx.y++;\n\
+        indice.x = indice.x >= 0 ? indice.x : indice.x + axis_num;\n\
         coord_in.y = gidz * axis_num + indice.x;\n\
 \n\
         float4 data = read_imagef(input0, coord_in);\n\
