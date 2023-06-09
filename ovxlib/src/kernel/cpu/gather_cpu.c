@@ -128,8 +128,12 @@ DEF_KERNEL_EXECUTOR(_gather_exec)
             {
                 for (j = 0; j < indices_num; j++)
                 {
-                    uint32_t indice = buffer_idx[j + indices_num * b];
-                    vsi_size_t in_index = (i * axis_num + indice) * block_size + b * in_stride;
+                    int32_t indice = buffer_idx[j + indices_num * b];
+                    vsi_size_t in_index = 0;
+
+                    indice = indice >= 0 ? indice : indice + axis_num;
+
+                    in_index = (i * axis_num + indice) * block_size + b * in_stride;
                     if (in_index < in_elements)
                     {
                         vsi_size_t out_index = (i * indices_num + j) * block_size + b * out_stride;
