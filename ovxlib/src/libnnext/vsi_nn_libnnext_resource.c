@@ -40610,7 +40610,6 @@ static const char resize_1d_bilinear_F16_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 _viv_uniform VXC_512Bits uniExtact8Bit_2x8;\n\
 _viv_uniform VXC_512Bits uniFp16toFp32_4x4;\n\
-_viv_uniform VXC_512Bits uniRightSubLeft_4x4;\n\
 _viv_uniform VXC_512Bits uniExtactHalf8_2x8;\n\
 _viv_uniform float scale_x;\n\
 _viv_uniform int out_height;\n\
@@ -40671,8 +40670,10 @@ __kernel void resize_1d_bilinear_F16toF16_DOWN\n\
 \n\
         _viv_asm(COPY, src_half, src, 16);\n\
 \n\
-        VXC_DP4x4(left4,  src, src, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertFp2FP32_left_4x4);\n\
-        VXC_DP4x4(right4, src, src, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertFp2FP32_right_4x4);\n\
+        VXC_DP4x4(left4,  src_half, src_half, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\n\
+            uniConvertFp2FP32_left_4x4);\n\
+        VXC_DP4x4(right4, src_half, src_half, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\n\
+            uniConvertFp2FP32_right_4x4);\n\
         right4      -= left4;\n\
         float4 dst4  = right4 * x_lerp + left4;\n\
 \n\
@@ -40737,8 +40738,10 @@ __kernel void resize_1d_bilinear_F16toU8_DOWN\n\
 \n\
         _viv_asm(COPY, src_half, src, 16);\n\
 \n\
-        VXC_DP4x4(left4,  src, src, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertFp2FP32_left_4x4);\n\
-        VXC_DP4x4(right4, src, src, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertFp2FP32_right_4x4);\n\
+        VXC_DP4x4(left4,  src_half, src_half, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\n\
+            uniConvertFp2FP32_left_4x4);\n\
+        VXC_DP4x4(right4, src_half, src_half, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0),\n\
+            uniConvertFp2FP32_right_4x4);\n\
         right4      -= left4;\n\
         float4 dst4  = right4 * x_lerp + left4;\n\
 \n\
