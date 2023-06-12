@@ -35,7 +35,6 @@
 #include "vsi_nn_tensor_util.h"
 #include "utils/vsi_nn_util.h"
 #include "kernel/vsi_nn_kernel.h"
-#include "libnnext/vx_lib_nnext.h"
 #include "utils/vsi_nn_dtype_util_prv.h"
 
 __BEGIN_DECLS
@@ -855,7 +854,6 @@ DEF_KERNEL_INITIALIZER(_resize_1d_bilinear_initializer)
         else if (F16 == output_dtype)
         {
             status  = vsi_nn_kernel_gpu_add_param( node, "uniExtactHalf8_2x8", &uniExtactHalf8_2x8);
-            status |= vsi_nn_kernel_gpu_add_param( node, "uniRightSubLeft_4x4", &uniRightSubLeft_4x4);
             status |= vsi_nn_kernel_gpu_add_param( node, "uniConvertFp2FP32_left_4x4",
                                                           &uniConvertFp2FP32_left_4x4);
             status |= vsi_nn_kernel_gpu_add_param( node, "uniConvertFp2FP32_right_4x4",
