@@ -57,11 +57,13 @@ static vsi_status op_compute
     int32_t axis_num = self->nn_param.reduce_mean_internal.axis_num;
     float scale = self->nn_param.reduce_mean_internal.scale;
     vsi_enum type = self->nn_param.reduce_mean_internal.type;
+    int32_t *axis = self->nn_param.reduce_mean_internal.axis;
     vsi_nn_kernel_param_t * param = NULL;
 
     param = vsi_nn_kernel_param_create();
     vsi_nn_kernel_param_add_int32( param, "axis_num", axis_num );
     vsi_nn_kernel_param_add_float32( param, "scale", scale );
+    vsi_nn_kernel_param_add_str( param, "axis", (const char*)axis );
 
     if (type == VSI_NN_REDUCE_MAX)
     {
