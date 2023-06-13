@@ -35,7 +35,7 @@
 #include "kernel/vsi_nn_sp_unit_operation.h"
 #include "kernel/vsi_nn_sp_lut.h"
 
-#if defined(VX_STREAM_PROCESSOR_SUPPORT) && defined(VX_REDUCE_OPS_VX_SUPPORT)
+#if defined(VX_STREAM_PROCESSOR_SUPPORT) && defined(VX_REDUCE_MAX_VX_SUPPORT)
 
 #define REGISTER_REDUCE_MAX_STREAM_PROCESSOR_KERNEL( kernel_name )   \
     static vsi_nn_kernel_node_t _##kernel_name##setup \
@@ -76,7 +76,7 @@ REGISTER_REDUCE_MAX_STREAM_PROCESSOR_KERNEL( reduce_max )
     }
     memset(&attr, 0, sizeof(attr));
     attr.dim_num = 1;
-    attr.size[0] = 2;
+    attr.size[0] = axis_num;
 
     attr.dtype.vx_type = VSI_NN_TYPE_INT32;
     attr.is_const = TRUE;

@@ -35,7 +35,7 @@
 #include "kernel/vsi_nn_sp_unit_operation.h"
 #include "kernel/vsi_nn_sp_lut.h"
 
-#if defined(VX_STREAM_PROCESSOR_SUPPORT) && defined(VX_REDUCE_OPS_VX_SUPPORT)
+#if defined(VX_STREAM_PROCESSOR_SUPPORT) && defined(VX_REDUCE_MEAN_VX_SUPPORT) && defined(VX_REDUCE_SUM_VX_SUPPORT)
 
 #define REGISTER_REDUCE_MEAN_STREAM_PROCESSOR_KERNEL( kernel_name )   \
     static vsi_nn_kernel_node_t _##kernel_name##setup \
@@ -66,8 +66,11 @@ REGISTER_REDUCE_MEAN_STREAM_PROCESSOR_KERNEL( reduce_mean )
     int32_t axis_num = vsi_nn_kernel_param_get_int32(params, "axis_num");
     const int32_t* axis =
         (const int32_t*)vsi_nn_kernel_param_get_str(params, "axis");
+    float scale = vsi_nn_kernel_param_get_float32( params, "scale" );
+
     vsi_nn_tensor_attr_t attr;
-    vx_nn_mean_params_t reduce_param;
+    vx_nn_mean_params_t reduce_mean_param;
+    vx_nn_sum_params_t reduce_sum_param;
     int32_t i = 0;
     vsi_nn_tensor_t* reduce_axis = NULL;
     int32_t data[VSI_NN_MAX_DIM_NUM] = {0};
@@ -77,24 +80,41 @@ REGISTER_REDUCE_MEAN_STREAM_PROCESSOR_KERNEL( reduce_mean )
     }
     memset(&attr, 0, sizeof(attr));
     attr.dim_num = 1;
-    attr.size[0] = 2;
+    attr.size[0] = axis_num;
 
     attr.dtype.vx_type = VSI_NN_TYPE_INT32;
     attr.is_const = TRUE;
     attr.vtl = FALSE;
     reduce_axis = vsi_nn_CreateTensorFromData(graph, (uint8_t*)data, &attr);
-    reduce_param.keep_dims = TRUE;
-    reduce_param.axis = reduce_axis->t;
 
     VSI_UNREFERENCED(input_num);
     VSI_UNREFERENCED(output_num);
     VSI_UNREFERENCED(kernel);
-    node = vxTensorMeanNode(graph->g,
-                            inputs[0]->t,
-                            &reduce_param,
-                            sizeof(reduce_param),
-                            outputs[0]->t);
-    CHECK_PTR_FAIL_GOTO(node, "Create reduce mean node fail.", final);
+
+    if (scale == 1.0f)
+    {
+        reduce_sum_param.keep_dims = TRUE;
+        reduce_sum_param.axis = reduce_axis->t;
+
+        node = vxReduceSumNode(graph->g,
+                                inputs[0]->t,
+                                &reduce_sum_param,
+                                sizeof(reduce_sum_param),
+                                outputs[0]->t);
+        CHECK_PTR_FAIL_GOTO(node, "Create reduce sum node fail.", final);
+    }
+    else
+    {
+        reduce_mean_param.keep_dims = TRUE;
+        reduce_mean_param.axis = reduce_axis->t;
+
+        node = vxTensorMeanNode(graph->g,
+                                inputs[0]->t,
+                                &reduce_mean_param,
+                                sizeof(reduce_mean_param),
+                                outputs[0]->t);
+        CHECK_PTR_FAIL_GOTO(node, "Create reduce mean node fail.", final);
+    }
 final:
     vsi_safe_release_tensor(reduce_axis);
     return (vsi_nn_kernel_node_t)node;
