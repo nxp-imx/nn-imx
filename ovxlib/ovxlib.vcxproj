@@ -1583,9 +1583,6 @@
     <ClCompile Include="src\kernel\sp\comparisons_sp.c">
       <ObjectFileName>$(IntDir)\src\kernel\sp\</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="src\kernel\sp\eltwise_sp.c">
-      <ObjectFileName>$(IntDir)\src\kernel\sp\</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="src\kernel\sp\eltwise_unary_sp.c">
       <ObjectFileName>$(IntDir)\src\kernel\sp\</ObjectFileName>
     </ClCompile>
@@ -1692,6 +1689,9 @@
       <ObjectFileName>$(IntDir)\src\kernel\vx\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\vx\resize_vx.c">
+      <ObjectFileName>$(IntDir)\src\kernel\vx\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\kernel\vx\select_vx.c">
       <ObjectFileName>$(IntDir)\src\kernel\vx\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\vx\softmax_vx.c">

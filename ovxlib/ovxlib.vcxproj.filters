@@ -915,9 +915,6 @@
     <ClCompile Include="src\kernel\sp\comparisons_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
-    <ClCompile Include="src\kernel\sp\eltwise_sp.c">
-      <Filter>Source Files\kernel\sp</Filter>
-    </ClCompile>
     <ClCompile Include="src\kernel\sp\eltwise_unary_sp.c">
       <Filter>Source Files\kernel\sp</Filter>
     </ClCompile>
@@ -1024,6 +1021,9 @@
       <Filter>Source Files\kernel\vx</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\vx\resize_vx.c">
+      <Filter>Source Files\kernel\vx</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\vx\select_vx.c">
       <Filter>Source Files\kernel\vx</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\vx\softmax_vx.c">
