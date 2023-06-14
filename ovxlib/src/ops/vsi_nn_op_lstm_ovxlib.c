@@ -411,6 +411,11 @@ static vsi_bool op_setup
                 tensor, outputs[LSTM_OUTPUT_OUTPUT], use_virtual_tensor);
         }
     }
+    else
+    {
+        /* return_sequences = False, return true to setup lstm node. */
+        ret = TRUE;
+    }
 
 final:
     vsi_nn_safe_free( split_output_tensors );
