@@ -290,15 +290,29 @@ static vsi_nn_kernel_node_t _setup
     int32_t width      = 0;
     int32_t height     = 0;
     int32_t channel    = 1;
-    int32_t i = 0;
+    uint32_t i = 0;
 
     VSI_UNREFERENCED(input_num);
     VSI_UNREFERENCED(output_num);
 
-    vsi_nn_kernel_optimize_softmax_shape(
-                inputs[0]->attr.size, inputs[0]->attr.dim_num, axis,
-                shapes[0], &rs_dim, &axis_new);
-    if (exclusive || reverse || rs_dim > 3)
+    if (axis < 0)
+    {
+        axis_new = 0;
+        shapes[0][0] = 1;
+        shapes[0][1] = 1;
+        for (i = 0; i < inputs[0]->attr.dim_num; i++)
+        {
+            shapes[0][0] *= inputs[0]->attr.size[i];
+        }
+        rs_dim = 2;
+    }
+    else
+    {
+        vsi_nn_kernel_optimize_softmax_shape(
+                    inputs[0]->attr.size, inputs[0]->attr.dim_num, axis,
+                    shapes[0], &rs_dim, &axis_new);
+    }
+    if (rs_dim > 3)
     {
         return NULL;
     }
