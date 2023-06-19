@@ -79,6 +79,8 @@ typedef enum
     BOOL8,
     I4,
     U4,
+    FP8_E4M3,
+    FP8_E5M2,
 } VSI_PUBLIC_TYPE vsi_nn_kernel_dtype_e;
 
 typedef enum
@@ -89,6 +91,8 @@ typedef enum
     VSI_NN_KERNEL_QUANT_ASYMM_PERCHANNEL,
     VSI_NN_KERNEL_QUANT_SYMM,
     VSI_NN_KERNEL_QUANT_SYMM_PERCHANNEL,
+    VSI_NN_KERNEL_QUANT_FLOAT8,
+    VSI_NN_KERNEL_QUANT_FLOAT8_PERCHANNEL,
     VSI_NN_KERNEL_QUANT_TYPE_NUM
 } vsi_nn_kernel_quant_type_e;
 
@@ -879,7 +883,7 @@ static VSI_INLINE_API void vsi_nn_kernel_tensor_attr_get_stride
     shape = attr->shape->data;
     type_bits = vsi_nn_kernel_dtype_get_bits( attr->dtype );
 
-    if ( type_bits < BITS_PER_BYTE )
+    if ( type_bits < BITS_PER_BYTE && type_bits != 0)
     {
         vsi_size_t i;
 
