@@ -1,4 +1,38 @@
 ############################################################################
+Release notes for Ovxlib 1.1.84
+
+New Features:
+    1. Add new ops 'reisize_3d'
+    2. Support create tensor from view
+    3. Support tiny_yolov4 post process operations
+    4. Support per-channel scale for pre-process nodes
+    5. Support 'group' for operation 'deconvolution'
+    6. Support netative indices for 'gather'
+
+Feature Refine:
+    1. Add suported data type combination for 'expand_broadcast'
+    2. Refine operation 'tile'
+    3. Refine no range change layer with inconsitent input/output quant params
+    4. Support more activation for 'grucell'
+    5. Support 'axis' for operation 'topk'
+    6. Refine 'scatter_nd_update' to support 5 dimensions
+    7. Support 'nearest' mode for operation 'grid_sample'
+    8. Optimize 'strided_slice' performance when its input/output shape are the same
+
+Bug Fixing:
+    1. Fix 'moments' border value issue
+    2. Fix 'select' issue
+    3. Fix 'gather' shape inference issue
+    4. Fix 'poolwithargmax' shape inference issue
+    5. Fix 'cumsum' precision issue
+    6. Fix 'reversesequence' prcision issue
+    7. Fix 'sequence_mask' precision issue
+    8. Fix 'matrixmul' issue
+    9. Fix bug of 'gather_elements'
+    10.Fix 'resize_1d' crash issue
+    11.Fix 'lstm' crash issue
+
+############################################################################
 Release notes for Ovxlib 1.1.74
 
 New Features:
