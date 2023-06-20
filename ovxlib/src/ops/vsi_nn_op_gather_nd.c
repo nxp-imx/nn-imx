@@ -51,17 +51,19 @@ static vsi_status op_compute
     vsi_nn_kernel_param_t * param = NULL;
     vsi_nn_kernel_node_t    n = NULL;
     vsi_size_t i = 0;
-    int32_t batch_dims = self->nn_param.gather_nd.batch_dims == 0 ? 0 : 1;
+    int32_t batch_dims = self->nn_param.gather_nd.batch_dims;
     vsi_size_t block_size = 1, coord_dim = 1;
     vsi_size_t *input_size = inputs[0]->attr.size;
     vsi_size_t dims_num = inputs[0]->attr.dim_num;
+
+    batch_dims = batch_dims < 0 ? 0 : batch_dims;
 
     if (inputs[1]->attr.dim_num > 1)
     {
         coord_dim = inputs[1]->attr.size[0];
     }
     if (coord_dim > 4 || (coord_dim > 3 && input_size[dims_num - 1] != 1)
-        || (batch_dims && coord_dim >= 3))
+        || (batch_dims && coord_dim >= 3) || (batch_dims >= (int32_t)vsi_nn_min(dims_num, inputs[1]->attr.dim_num)))
     {
         return status;
     }
