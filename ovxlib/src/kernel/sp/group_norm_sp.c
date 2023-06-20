@@ -32,8 +32,6 @@
 #include "vsi_nn_tensor_util_prv.h"
 #include "vsi_nn_kernel_prv.h"
 #include "kernel/vsi_nn_kernel.h"
-#include "kernel/vsi_nn_sp_unit_operation.h"
-#include "kernel/vsi_nn_sp_lut.h"
 #include "kernel/vsi_nn_kernel_gpu_shape_optimize.h"
 
 #if defined(VX_STREAM_PROCESSOR_SUPPORT) && defined(VX_GROUP_NORMALIZATION_VX_SUPPORT)
