@@ -749,6 +749,8 @@ static vsi_status op_optimize
     vsi_size_t     shape[VSI_NN_MAX_DIM_NUM] = { 0 };
     vsi_bool       is_same_quant_type = FALSE;
     vsi_bool       is_same_shape = TRUE;
+    vsi_size_t     input_elements = 0;
+    vsi_size_t     output_elements = 0;
 
     /* Only forward run stride_slice's optimize */
     if ( direction == VSI_NN_OPTIMIZE_BACKWARD )
@@ -778,7 +780,10 @@ static vsi_status op_optimize
     self->nn_param.strided_slice.lcl2_data->is_optimized = TRUE;
 
     is_same_quant_type = _is_same_quant(inputs, outputs);
-    if (NULL != outputs[0]->t && NULL == inputs[0]->t && is_same_quant_type)
+    input_elements = vsi_nn_GetElementNum( inputs[0] );
+    output_elements = vsi_nn_GetElementNum( outputs[0] );
+    if (NULL != outputs[0]->t && NULL == inputs[0]->t &&
+        is_same_quant_type && input_elements == output_elements)
     {
         inputs[0]->t = vsi_nn_safe_reshape_tensor( outputs[0]->t,
             (void*)inputs[0]->attr.size, (vsi_size_t)inputs[0]->attr.dim_num,
