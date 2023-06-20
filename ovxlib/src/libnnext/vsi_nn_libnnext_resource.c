@@ -11094,95 +11094,98 @@ static const char gather_nd_batch_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 __kernel void gather_nd_batch_I8toI8_1D(\n\
     __read_only image2d_t   input0,\n\
-    __read_only image2d_t   input1,\n\
-    __write_only image2d_t  output,\n\
+    __read_only image2d_array_t   input1,\n\
+    __write_only image2d_array_t  output,\n\
     int block_size,\n\
     int coord_dim\n\
     )\n\
 {\n\
     int gidx = get_global_id(0);  // block_size\n\
-    int gidy = get_global_id(1);  // batch\n\
+    int gidy = get_global_id(1);  // index num\n\
+    int gidz = get_global_id(2);  // batch num\n\
 \n\
-    int4 coord = (int4)(gidx, gidy, 0, 0);\n\
-    Image img = create_image_from_image2d(input1, 4);\n\
-    uchar* indice_ptr = get_image_ptr_from_coord(img, coord.wy);\n\
+    int4 coord = (int4)(gidx, gidy, gidz, 0);\n\
+    Tensor img = create_tensor_from_image2d_array(input1, 4);\n\
+    uchar* indice_ptr = get_tensor_ptr_from_coord(img, coord.wyzw);\n\
     int4 indice = ((int4 *)indice_ptr)[0];\n\
-\n\
-    coord.z = indice.x * block_size + gidx;\n\
+    int2 coord0 = (int2)(indice.x * block_size + gidx, gidz);\n\
 \n\
     vxc_char16 src;\n\
-    VXC_ReadImage(src, input0, coord.zy, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(src, input0, coord0, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
 \n\
-    VXC_WriteImage(output, coord.xy, src, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_WriteImage2DArray(output, coord, src, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
 }\n\
 \n\
 __kernel void gather_nd_batch_U8toU8_1D(\n\
     __read_only image2d_t   input0,\n\
-    __read_only image2d_t   input1,\n\
-    __write_only image2d_t  output,\n\
+    __read_only image2d_array_t   input1,\n\
+    __write_only image2d_array_t  output,\n\
     int block_size,\n\
     int coord_dim\n\
     )\n\
 {\n\
     int gidx = get_global_id(0);  // block_size\n\
-    int gidy = get_global_id(1);  // batch num\n\
+    int gidy = get_global_id(1);  // index num\n\
+    int gidz = get_global_id(2);  // batch num\n\
 \n\
-    int4 coord = (int4)(gidx, gidy, 0, 0);\n\
-    Image img = create_image_from_image2d(input1, 4);\n\
-    uchar* indice_ptr = get_image_ptr_from_coord(img, coord.wy);\n\
+    int4 coord = (int4)(gidx, gidy, gidz, 0);\n\
+    Tensor img = create_tensor_from_image2d_array(input1, 4);\n\
+    uchar* indice_ptr = get_tensor_ptr_from_coord(img, coord.wyzw);\n\
     int4 indice = ((int4 *)indice_ptr)[0];\n\
 \n\
-    coord.z = indice.x * block_size + gidx;\n\
+    int2 coord0 = (int2)(indice.x * block_size + gidx, gidz);\n\
 \n\
     vxc_uchar16 src;\n\
-    VXC_ReadImage(src, input0, coord.zy, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
-    VXC_WriteImage(output, coord.xy, src, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(src, input0, coord0, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_WriteImage2DArray(output, coord, src, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
 }\n\
 \n\
 __kernel void gather_nd_batch_I16toI16_1D(\n\
     __read_only image2d_t   input0,\n\
-    __read_only image2d_t   input1,\n\
-    __write_only image2d_t  output,\n\
+    __read_only image2d_array_t   input1,\n\
+    __write_only image2d_array_t  output,\n\
     int block_size,\n\
     int coord_dim\n\
     )\n\
 {\n\
     int gidx = get_global_id(0);  // block_size\n\
-    int gidy = get_global_id(1);  // batch num\n\
+    int gidy = get_global_id(1);  // index num\n\
+    int gidz = get_global_id(2);  // batch num\n\
 \n\
-    int4 coord = (int4)(gidx, gidy, 0, 0);\n\
-    Image img = create_image_from_image2d(input1, 4);\n\
-    uchar* indice_ptr = get_image_ptr_from_coord(img, coord.wy);\n\
+    int4 coord = (int4)(gidx, gidy, gidz, 0);\n\
+    Tensor img = create_tensor_from_image2d_array(input1, 4);\n\
+    uchar* indice_ptr = get_tensor_ptr_from_coord(img, coord.wyzw);\n\
     int4 indice = ((int4 *)indice_ptr)[0];\n\
 \n\
-    coord.z = indice.x * block_size + gidx;\n\
+    int2 coord0 = (int2)(indice.x * block_size + gidx, gidz);\n\
 \n\
     vxc_short8 src;\n\
-    VXC_ReadImage(src, input0, coord.zy, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
-    VXC_WriteImage(output, coord.xy, src, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(src, input0, coord0, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_WriteImage2DArray(output, coord, src, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
 }\n\
 \n\
 __kernel void gather_nd_batch_F16toF16_1D(\n\
     __read_only image2d_t   input0,\n\
-    __read_only image2d_t   input1,\n\
-    __write_only image2d_t  output,\n\
+    __read_only image2d_array_t   input1,\n\
+    __write_only image2d_array_t  output,\n\
     int block_size,\n\
     int coord_dim\n\
     )\n\
 {\n\
     int gidx = get_global_id(0);  // block_size\n\
-    int gidy = get_global_id(1);  // batch num\n\
+    int gidy = get_global_id(1);  // index num\n\
+    int gidz = get_global_id(2);  // batch num\n\
 \n\
-    int4 coord = (int4)(gidx, gidy, 0, 0);\n\
-    Image img = create_image_from_image2d(input1, 4);\n\
-    uchar* indice_ptr = get_image_ptr_from_coord(img, coord.wy);\n\
+    int4 coord = (int4)(gidx, gidy, gidz, 0);\n\
+    Tensor img = create_tensor_from_image2d_array(input1, 4);\n\
+    uchar* indice_ptr = get_tensor_ptr_from_coord(img, coord.wyzw);\n\
     int4 indice = ((int4 *)indice_ptr)[0];\n\
 \n\
-    coord.z = indice.x * block_size + gidx;\n\
+    int2 coord0 = (int2)(indice.x * block_size + gidx, gidz);\n\
 \n\
     vxc_short8 src;\n\
-    VXC_ReadImage(src, input0, coord.zy, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
-    VXC_WriteImage(output, coord.xy, src, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_ReadImage(src, input0, coord0, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_WriteImage2DArray(output, coord, src, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
 }\n\
 "; /* end of gather_nd_batch_vx*/
 
@@ -11190,18 +11193,19 @@ static const char gather_nd_batch_2d_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 __kernel void gather_nd_batch_I8toI8_2D(\n\
     __read_only image2d_array_t   input0,\n\
-    __read_only image2d_t   input1,\n\
-    __write_only image2d_t  output,\n\
+    __read_only image2d_array_t   input1,\n\
+    __write_only image2d_array_t  output,\n\
     int block_size,\n\
     int coord_dim\n\
     )\n\
 {\n\
     int gidx = get_global_id(0);  // block_size\n\
-    int gidy = get_global_id(1);  // batch num\n\
+    int gidy = get_global_id(1);  // index num\n\
+    int gidz = get_global_id(2);  // batch num\n\
 \n\
-    int4 coord = (int4)(gidx, 0, gidy, 0);\n\
-    Image img = create_image_from_image2d(input1, 4);\n\
-    uchar* indice_ptr = get_image_ptr_from_coord(img, coord.wz);\n\
+    int4 coord = (int4)(gidx, gidy, gidz, 0);\n\
+    Tensor img = create_tensor_from_image2d_array(input1, 4);\n\
+    uchar* indice_ptr = get_tensor_ptr_from_coord(img, coord.wyzw);\n\
     int4 indice = ((int4 *)indice_ptr)[0];\n\
 \n\
     indice.x = indice.x * block_size + gidx;\n\
@@ -11210,23 +11214,24 @@ __kernel void gather_nd_batch_I8toI8_2D(\n\
     vxc_char16 src;\n\
     VXC_ReadImage2DArray(src, input0, indice, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
 \n\
-    VXC_WriteImage(output, coord.xz, src, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_WriteImage2DArray(output, coord, src, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
 }\n\
 \n\
 __kernel void gather_nd_U8toU8_2D(\n\
     __read_only image2d_array_t   input0,\n\
-    __read_only image2d_t   input1,\n\
-    __write_only image2d_t  output,\n\
+    __read_only image2d_array_t   input1,\n\
+    __write_only image2d_array_t  output,\n\
     int block_size,\n\
     int coord_dim\n\
     )\n\
 {\n\
     int gidx = get_global_id(0);  // block_size\n\
-    int gidy = get_global_id(1);  // batch num\n\
+    int gidy = get_global_id(1);  // index num\n\
+    int gidz = get_global_id(2);  // batch num\n\
 \n\
-    int4 coord = (int4)(gidx, 0, gidy, 0);\n\
-    Image img = create_image_from_image2d(input1, 4);\n\
-    uchar* indice_ptr = get_image_ptr_from_coord(img, coord.wz);\n\
+    int4 coord = (int4)(gidx, gidy, gidz, 0);\n\
+    Tensor img = create_tensor_from_image2d_array(input1, 4);\n\
+    uchar* indice_ptr = get_tensor_ptr_from_coord(img, coord.wyzw);\n\
     int4 indice = ((int4 *)indice_ptr)[0];\n\
 \n\
     indice.x = indice.x * block_size + gidx;\n\
@@ -11234,23 +11239,24 @@ __kernel void gather_nd_U8toU8_2D(\n\
 \n\
     vxc_uchar16 src;\n\
     VXC_ReadImage2DArray(src, input0, indice, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
-    VXC_WriteImage(output, coord.xz, src, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_WriteImage2DArray(output, coord, src, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
 }\n\
 \n\
 __kernel void gather_nd_I16toI16_2D(\n\
     __read_only image2d_array_t   input0,\n\
-    __read_only image2d_t   input1,\n\
-    __write_only image2d_t  output,\n\
+    __read_only image2d_array_t   input1,\n\
+    __write_only image2d_array_t  output,\n\
     int block_size,\n\
     int coord_dim\n\
     )\n\
 {\n\
     int gidx = get_global_id(0);  // block_size\n\
-    int gidy = get_global_id(1);  // batch num\n\
+    int gidy = get_global_id(1);  // index num\n\
+    int gidz = get_global_id(2);  // batch num\n\
 \n\
-    int4 coord = (int4)(gidx, 0, gidy, 0);\n\
-    Image img = create_image_from_image2d(input1, 4);\n\
-    uchar* indice_ptr = get_image_ptr_from_coord(img, coord.wz);\n\
+    int4 coord = (int4)(gidx, gidy, gidz, 0);\n\
+    Tensor img = create_tensor_from_image2d_array(input1, 4);\n\
+    uchar* indice_ptr = get_tensor_ptr_from_coord(img, coord.wyzw);\n\
     int4 indice = ((int4 *)indice_ptr)[0];\n\
 \n\
     indice.x = indice.x * block_size + gidx;\n\
@@ -11258,23 +11264,24 @@ __kernel void gather_nd_I16toI16_2D(\n\
 \n\
     vxc_short8 src;\n\
     VXC_ReadImage2DArray(src, input0, indice, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
-    VXC_WriteImage(output, coord.xz, src, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_WriteImage2DArray(output, coord, src, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
 }\n\
 \n\
 __kernel void gather_nd_F16toF16_2D(\n\
     __read_only image2d_array_t   input0,\n\
-    __read_only image2d_t   input1,\n\
-    __write_only image2d_t  output,\n\
+    __read_only image2d_array_t   input1,\n\
+    __write_only image2d_array_t  output,\n\
     int block_size,\n\
     int coord_dim\n\
     )\n\
 {\n\
     int gidx = get_global_id(0);  // block_size\n\
-    int gidy = get_global_id(1);  // batch num\n\
+    int gidy = get_global_id(1);  // index num\n\
+    int gidz = get_global_id(2);  // batch num\n\
 \n\
-    int4 coord = (int4)(gidx, 0, gidy, 0);\n\
-    Image img = create_image_from_image2d(input1, 4);\n\
-    uchar* indice_ptr = get_image_ptr_from_coord(img, coord.wz);\n\
+    int4 coord = (int4)(gidx, gidy, gidz, 0);\n\
+    Tensor img = create_tensor_from_image2d_array(input1, 4);\n\
+    uchar* indice_ptr = get_tensor_ptr_from_coord(img, coord.wyzw);\n\
     int4 indice = ((int4 *)indice_ptr)[0];\n\
 \n\
     indice.x = indice.x * block_size + gidx;\n\
@@ -11282,7 +11289,7 @@ __kernel void gather_nd_F16toF16_2D(\n\
 \n\
     vxc_short8 src;\n\
     VXC_ReadImage2DArray(src, input0, indice, 0, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
-    VXC_WriteImage(output, coord.xz, src, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
+    VXC_WriteImage2DArray(output, coord, src, VXC_MODIFIER(0, 0, 0, VXC_RM_TowardZero, 0));\n\
 }\n\
 "; /* end of gather_nd_batch_2d_vx*/
 
