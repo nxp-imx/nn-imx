@@ -514,8 +514,6 @@
     <ClInclude Include="include\kernel\vsi_nn_kernel_gpu_shape_optimize.h"/>
     <ClInclude Include="include\kernel\vsi_nn_kernel_lut.h"/>
     <ClInclude Include="include\kernel\vsi_nn_kernel_node.h"/>
-    <ClInclude Include="include\kernel\vsi_nn_sp_lut.h"/>
-    <ClInclude Include="include\kernel\vsi_nn_sp_unit_operation.h"/>
     <ClInclude Include="include\libnnext\vsi_nn_libnnext_resource.h"/>
     <ClInclude Include="include\libnnext\vsi_nn_vxkernel.h"/>
     <ClInclude Include="include\libnnext\vx_bin\vxc_binaries.h"/>
@@ -658,6 +656,7 @@
     <ClInclude Include="include\ops\vsi_nn_op_resize_1d.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_resize_1d_bilinear_internal.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_resize_1d_nearest_internal.h"/>
+    <ClInclude Include="include\ops\vsi_nn_op_resize_3d.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_resize_internal.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_resize_nearest_internal.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_reverse.h"/>
@@ -693,7 +692,6 @@
     <ClInclude Include="include\ops\vsi_nn_op_swish.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_tanh.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_tensor_add_mean_stddev_norm.h"/>
-    <ClInclude Include="include\ops\vsi_nn_op_resize_3d.h" />
     <ClInclude Include="include\ops\vsi_nn_op_tensorstackconcat.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_tile.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_topk.h"/>
@@ -751,7 +749,6 @@
     <ClInclude Include="include\vsi_nn_test.h"/>
     <ClInclude Include="include\vsi_nn_types.h"/>
     <ClInclude Include="include\vsi_nn_version.h"/>
-    <ClInclude Include="src\kernel\vsi_nn_spinst.h"/>
     <ClInclude Include="src\vip\virtual_device_private.h"/>
     <ClInclude Include="src\vsi_nn_kernel_prv.h"/>
     <ClInclude Include="src\vsi_nn_tensor_util_prv.h"/>
@@ -1652,15 +1649,6 @@
     <ClCompile Include="src\kernel\vsi_nn_kernel_util.c">
       <ObjectFileName>$(IntDir)\src\kernel\</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="src\kernel\vsi_nn_sp_lut.c">
-      <ObjectFileName>$(IntDir)\src\kernel\</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="src\kernel\vsi_nn_sp_unit_operation.c">
-      <ObjectFileName>$(IntDir)\src\kernel\</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="src\kernel\vsi_nn_spinst.c">
-      <ObjectFileName>$(IntDir)\src\kernel\</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="src\kernel\vx\a_times_b_plus_c_vx.c">
       <ObjectFileName>$(IntDir)\src\kernel\vx\</ObjectFileName>
     </ClCompile>
@@ -2123,6 +2111,9 @@
     <ClCompile Include="src\ops\vsi_nn_op_resize_1d_nearest_internal.c">
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_resize_3d.c">
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_resize_internal.c">
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
@@ -2253,9 +2244,6 @@
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_upsamplescale.c">
-      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="src\ops\vsi_nn_op_resize_3d.c" >
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_variable.c">
