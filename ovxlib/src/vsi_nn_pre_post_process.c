@@ -844,7 +844,7 @@ vsi_status vsi_nn_AddBinaryGraphInputsWithCropParam
     uint32_t num_of_graph_outputs;
     uint32_t num_of_graph_real_outputs;
     vx_reference* graph_outputs = NULL;
-    vsi_nn_tensor_t* tensor;
+    vsi_nn_tensor_t* tensor = NULL;
     vsi_nn_node_t** nodes = NULL;
     vsi_nn_node_t* node = NULL;
     vsi_nn_node_id_t* processed_node_id_list = NULL;
@@ -916,6 +916,7 @@ vsi_status vsi_nn_AddBinaryGraphInputsWithCropParam
 
     graph_inputs = (vx_reference*)malloc(num_of_graph_real_inputs * sizeof(vx_reference));
     TEST_CHECK_PTR( graph_inputs, final );
+    memset(graph_inputs,  0, num_of_graph_inputs * sizeof(vx_reference));
     memset(processed_node_id_list,  0, num_of_graph_inputs * sizeof(vsi_nn_node_id_t));
     processed_idx = 0;
     for (i = 0, j=0; i < num_of_graph_inputs; i++)
@@ -1053,6 +1054,8 @@ vsi_status vsi_nn_AddBinaryGraphInputsWithCropParam
     }
     graph_outputs = (vx_reference*)malloc(num_of_graph_real_outputs * sizeof(vx_reference));
     TEST_CHECK_PTR( graph_outputs, final );
+    memset(graph_outputs,  0, num_of_graph_real_outputs * sizeof(vx_reference));
+
     for (i = 0, j = 0; i < num_of_graph_outputs; i++)
     {
         tensor = vsi_nn_GetTensor(graph, graph->output.tensors[i]);

@@ -411,10 +411,19 @@ vx_node vsi_nn_RegisterClientKernelAndNewNode
     )
 {
     vsi_status status;
-    vx_context ctx;
-    vx_kernel obj;
-    vx_node node;
-    vx_kernel_description_t * kernel = kernel_info->kernel[kernel_info->kernel_index];
+    vx_context ctx = NULL;
+    vx_kernel obj = NULL;
+    vx_node node = NULL;
+    vx_kernel_description_t * kernel = NULL;
+
+    if (kernel_info->kernel)
+    {
+        kernel = kernel_info->kernel[kernel_info->kernel_index];
+    }
+    else
+    {
+        goto final;
+    }
 
     ctx = vxGetContext( (vx_reference)graph->g );
 
@@ -459,6 +468,8 @@ vx_node vsi_nn_RegisterClientKernelAndNewNode
             kernel->name, status );
         return NULL;
     }
+
+final:
     return node;
 } /* vsi_nn_RegisterClientKernelAndNewNode() */
 

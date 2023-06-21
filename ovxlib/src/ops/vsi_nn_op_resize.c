@@ -84,7 +84,7 @@ static vsi_status op_compute
     }
     else
     {
-        char kernel_name[128];
+        char kernel_name[128] = {0};
         vsi_nn_kernel_param_t * param = NULL;
         int32_t align_corners = self->nn_param.resize.align_corners;
         int32_t half_pixel_centers = self->nn_param.resize.half_pixel_centers;
