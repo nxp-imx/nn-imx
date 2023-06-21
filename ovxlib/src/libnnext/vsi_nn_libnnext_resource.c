@@ -54982,127 +54982,136 @@ __kernel void gather_nd_F32toF32_3D(\n\
 
 static const char gather_nd_batch_cl[] = "__kernel void gather_nd_batch_U8toU8_1D(\n\
     __read_only image2d_t   input0,\n\
-    __read_only image2d_t   input1,\n\
-    __write_only image2d_t  output,\n\
+    __read_only image2d_array_t   input1,\n\
+    __write_only image2d_array_t  output,\n\
     int block_size,\n\
     int coord_dim\n\
     )\n\
 {\n\
     int gidx = get_global_id(0);  // block_size\n\
-    int gidy = get_global_id(1);  // batch_num\n\
+    int gidy = get_global_id(1);  // index_num\n\
+    int gidz = get_global_id(2);  // batch_num\n\
 \n\
-    int4 coord = (int4)(gidx, gidy, 0, 0);\n\
-    int4 indice = read_imagei(input1, coord.wy);\n\
-    coord.z = indice.x * block_size + gidx;\n\
+    int4 coord = (int4)(gidx, gidy, gidz, 0);\n\
+    int4 indice = read_imagei(input1, coord.wyzw);\n\
+    int2 coord0 = (int2)(indice.x * block_size + gidx, gidz);\n\
 \n\
-    uint4 data = read_imageui(input0, coord.zy);\n\
-    write_imageui(output, coord.xy, data);\n\
+    uint4 data = read_imageui(input0, coord0);\n\
+    write_imageui(output, coord, data);\n\
 }\n\
 \n\
 __kernel void gather_nd_batch_F16toF16_1D(\n\
     __read_only image2d_t   input0,\n\
-    __read_only image2d_t   input1,\n\
-    __write_only image2d_t  output,\n\
+    __read_only image2d_array_t   input1,\n\
+    __write_only image2d_array_t  output,\n\
     int block_size,\n\
     int coord_dim\n\
     )\n\
 {\n\
     int gidx = get_global_id(0);  // block_size\n\
-    int gidy = get_global_id(1);  // batch_num\n\
+    int gidy = get_global_id(1);  // index_num\n\
+    int gidz = get_global_id(2);  // batch_num\n\
 \n\
-    int4 coord = (int4)(gidx, gidy, 0, 0);\n\
-    int4 indice = read_imagei(input1, coord.wy);\n\
-    coord.z = indice.x * block_size + gidx;\n\
+    int4 coord = (int4)(gidx, gidy, gidz, 0);\n\
+    int4 indice = read_imagei(input1, coord.wyzw);\n\
+    int2 coord0 = (int2)(indice.x * block_size + gidx, gidz);\n\
 \n\
-    float4 data = read_imagef(input0, coord.zy);\n\
-    write_imagef(output, coord.xy, data);\n\
+    float4 data = read_imagef(input0, coord0);\n\
+    write_imagef(output, coord, data);\n\
 }\n\
 \n\
 __kernel void gather_nd_batch_I8toI8_1D(\n\
     __read_only image2d_t   input0,\n\
-    __read_only image2d_t   input1,\n\
-    __write_only image2d_t  output,\n\
+    __read_only image2d_array_t   input1,\n\
+    __write_only image2d_array_t  output,\n\
     int block_size,\n\
     int coord_dim\n\
     )\n\
 {\n\
     int gidx = get_global_id(0);  // block_size\n\
-    int gidy = get_global_id(1);  // batch_num\n\
+    int gidy = get_global_id(1);  // index_num\n\
+    int gidz = get_global_id(2);  // batch_num\n\
 \n\
-    int4 coord = (int4)(gidx, gidy, 0, 0);\n\
-    int4 indice = read_imagei(input1, coord.wy);\n\
-    coord.z = indice.x * block_size + gidx;\n\
+    int4 coord = (int4)(gidx, gidy, gidz, 0);\n\
+    int4 indice = read_imagei(input1, coord.wyzw);\n\
+    int2 coord0 = (int2)(indice.x * block_size + gidx, gidz);\n\
 \n\
-    int4 data = read_imagei(input0, coord.zy);\n\
-    write_imagei(output, coord.xy, data);\n\
+    int4 data = read_imagei(input0, coord0);\n\
+    write_imagei(output, coord, data);\n\
 }\n\
 \n\
 //2D\n\
 __kernel void gather_nd_batch_U8toU8_2D(\n\
     __read_only image2d_array_t   input0,\n\
-    __read_only image2d_t   input1,\n\
-    __write_only image2d_t  output,\n\
+    __read_only image2d_array_t   input1,\n\
+    __write_only image2d_array_t  output,\n\
     int block_size,\n\
     int coord_dim\n\
     )\n\
 {\n\
     int gidx = get_global_id(0);  // block_size\n\
-    int gidy = get_global_id(1);  // batch_num\n\
+    int gidy = get_global_id(1);  // index_num\n\
+    int gidz = get_global_id(2);  // batch_num\n\
 \n\
-    int4 coord = (int4)(0, gidy, gidx, 1);\n\
-    int4 indice = read_imagei(input1, coord.xy);\n\
-    int4 indice1 = read_imagei(input1, coord.wy);\n\
+    int4 coord = (int4)(1, gidy, gidz, 0);\n\
+    int4 indice = read_imagei(input1, coord.wyzw);\n\
+    int4 indice1 = read_imagei(input1, coord.xyzw);\n\
     indice.x = indice.x * block_size + gidx;\n\
     indice.y = indice1.x;\n\
-    indice.zw = coord.yx;\n\
+    indice.zw = coord.zw;\n\
 \n\
     uint4 data = read_imageui(input0, indice);\n\
-    write_imageui(output, coord.zy, data);\n\
+    coord.x = gidx;\n\
+    write_imageui(output, coord, data);\n\
 }\n\
 \n\
 __kernel void gather_nd_batch_F16toF16_2D(\n\
     __read_only image2d_array_t   input0,\n\
-    __read_only image2d_t   input1,\n\
-    __write_only image2d_t  output,\n\
+    __read_only image2d_array_t   input1,\n\
+    __write_only image2d_array_t  output,\n\
     int block_size,\n\
     int coord_dim\n\
     )\n\
 {\n\
     int gidx = get_global_id(0);  // block_size\n\
-    int gidy = get_global_id(1);  // batch_num\n\
+    int gidy = get_global_id(1);  // index_num\n\
+    int gidz = get_global_id(2);  // batch_num\n\
 \n\
-    int4 coord = (int4)(0, gidy, gidx, 1);\n\
-    int4 indice = read_imagei(input1, coord.xy);\n\
-    int4 indice1 = read_imagei(input1, coord.wy);\n\
+    int4 coord = (int4)(1, gidy, gidz, 0);\n\
+    int4 indice = read_imagei(input1, coord.wyzw);\n\
+    int4 indice1 = read_imagei(input1, coord.xyzw);\n\
     indice.x = indice.x * block_size + gidx;\n\
     indice.y = indice1.x;\n\
-    indice.zw = coord.yx;\n\
+    indice.zw = coord.zw;\n\
 \n\
     float4 data = read_imagef(input0, indice);\n\
-    write_imagef(output, coord.zy, data);\n\
+    coord.x = gidx;\n\
+    write_imagef(output, coord, data);\n\
 }\n\
 \n\
 __kernel void gather_nd_batch_I8toI8_2D(\n\
     __read_only image2d_array_t   input0,\n\
-    __read_only image2d_t   input1,\n\
-    __write_only image2d_t  output,\n\
+    __read_only image2d_array_t   input1,\n\
+    __write_only image2d_array_t  output,\n\
     int block_size,\n\
     int coord_dim\n\
     )\n\
 {\n\
     int gidx = get_global_id(0);  // block_size\n\
-    int gidy = get_global_id(1);  // batch_num\n\
+    int gidy = get_global_id(1);  // index_num\n\
+    int gidz = get_global_id(2);  // batch_num\n\
 \n\
-    int4 coord = (int4)(0, gidy, gidx, 1);\n\
-    int4 indice = read_imagei(input1, coord.xy);\n\
-    int4 indice1 = read_imagei(input1, coord.wy);\n\
+    int4 coord = (int4)(1, gidy, gidz, 0);\n\
+    int4 indice = read_imagei(input1, coord.wyzw);\n\
+    int4 indice1 = read_imagei(input1, coord.xyzw);\n\
     indice.x = indice.x * block_size + gidx;\n\
     indice.y = indice1.x;\n\
     indice.y = indice1.x;\n\
-    indice.zw = coord.yx;\n\
+    indice.zw = coord.zw;\n\
 \n\
     int4 data = read_imagei(input0, indice);\n\
-    write_imagei(output, coord.zy, data);\n\
+    coord.x = gidx;\n\
+    write_imagei(output, coord, data);\n\
 }\n\
 "; /* end of gather_nd_batch_cl*/
 

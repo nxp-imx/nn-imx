@@ -119,7 +119,7 @@ static vsi_status cal_gather_nd_tensor_reshape_size
     uint32_t block_size,
     uint32_t coordDim,
     int32_t* newDim,
-    int32_t  batch_dims
+    uint32_t  batch_dims
     )
 {
     vsi_status status = VSI_FAILURE;
@@ -146,17 +146,23 @@ static vsi_status cal_gather_nd_tensor_reshape_size
 
         if (batch_dims)
         {
+            int32_t rank = 1;
             for (i = 0; i < offset; i++)
             {
                 sizes[0] *= input_size[i];
             }
 
-            for (i = 0; i < coordDim; i++)
+            for (i = 0; i < coordDim - 1; i++)
             {
-                sizes[i + 1] = input_size[i + offset];
+                sizes[rank++] = input_size[i + offset];
             }
 
-            newDim[0] = coordDim == 1 ? 2 : 3;
+            for (i = 0; i < batch_dims; i++)
+            {
+                sizes[rank] *= input_size[dims_num - i - 1];
+            }
+
+            newDim[0] = rank + 1;
         }
         else
         {
@@ -186,12 +192,26 @@ static vsi_status cal_gather_nd_tensor_reshape_size
     }
     else  // indices&output reshape
     {
-        if ((elementCnt / block_size) < VSI_NN_MAX_IMAGE_WIDTH)
+        if ((elementCnt / block_size) < VSI_NN_MAX_IMAGE_WIDTH && batch_dims == 0)
         {
             sizes[0] = block_size;
             sizes[1] = elementCnt / block_size;
             status = VSI_SUCCESS;
             newDim[0] = 2;
+        }
+        else if (batch_dims > 0)
+        {
+            vsi_size_t batch_cnt = 1;
+            for (i = 0; i < batch_dims; ++i)
+            {
+                batch_cnt *= input_size[dims_num - i - 1];
+            }
+
+            sizes[0] = block_size;
+            sizes[1] = (elementCnt / block_size) / batch_cnt;
+            sizes[2] = batch_cnt;
+            status = VSI_SUCCESS;
+            newDim[0] = 3;
         }
     }
 #undef VSI_NN_MAX_IMAGE_WIDTH
@@ -220,7 +240,8 @@ DEF_KERNEL_INITIALIZER(_gather_nd_initializer)
 
     vsi_nn_kernel_tensor_attr_t * attr[1] = { NULL };
     int32_t       block_size  = 0;
-    vsi_ssize_t       indices_num = 1;
+    vsi_size_t    indices_num = 1;
+    vsi_size_t    batch_num   = 1;
 
     VSI_UNREFERENCED(node);
     VSI_UNREFERENCED(param_size);
@@ -232,6 +253,7 @@ DEF_KERNEL_INITIALIZER(_gather_nd_initializer)
     CHECK_STATUS_FAIL_GOTO(status, final );
 
     indices_num = attr[0]->shape->data[1];
+    batch_num = (attr[0]->shape->size > 2 ? attr[0]->shape->data[2] : 1);
 
     gpu_param.global_scale[0]  = 1;
     gpu_param.global_scale[1]  = 1;
@@ -240,7 +262,7 @@ DEF_KERNEL_INITIALIZER(_gather_nd_initializer)
     gpu_param.global_size[0]   = gpu_align_p2((block_size + gpu_param.global_scale[0] - 1)
                                         / gpu_param.global_scale[0], 4);
     gpu_param.global_size[1]   = indices_num;
-    gpu_param.global_size[2]   = 1;
+    gpu_param.global_size[2]   = batch_num;
 
     status = vsi_nn_kernel_gpu_config( node, &gpu_param );
     CHECK_STATUS_FAIL_GOTO(status, final);
@@ -268,6 +290,7 @@ static vsi_status _query_kernel
     vsi_nn_kernel_dtype_e output_dtype = U8;
     vsi_nn_kernel_coord_type_e coord_type = _error;
     uint32_t key = 0;
+    int32_t batch_flg = batch_dims > 0 ? 1 : 0;
     size_t i = 0;
 
     input0_dtype = vsi_nn_kernel_map_dtype( inputs[0]->attr.dtype.vx_type );
@@ -304,7 +327,7 @@ static vsi_status _query_kernel
         coord_type = _3D;
     }
 
-    key = HASH_GATHER_ND_KEY( input0_dtype, I32, output_dtype, coord_type, batch_dims );
+    key = HASH_GATHER_ND_KEY( input0_dtype, I32, output_dtype, coord_type, batch_flg );
 
     for ( i = 0; i < _cnt_of_array(gather_nd_map); i ++ )
     {
