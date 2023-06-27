@@ -907,11 +907,11 @@ static vsi_nn_kernel_node_t _setup
     if (node)
     {
         uint32_t index = 0;
-        int32_t  pStride = 0;
+        float  pStride = 0;
         if (!is2D_flg)
         {
-            pStride = (int32_t)(inputs[1]->attr.size[0] / new_shape[1]);
-            rSpaceOrg = 1.0f / (new_shape[0] / pStride);
+            pStride = (float)inputs[1]->attr.size[0] / (float)new_shape[1];
+            rSpaceOrg = pStride < 1.0f ? 0.0f : 1.0f / (new_shape[0] / pStride);
         }
         node_params[index++] = rs_input;
         node_params[index++] = (vsi_nn_kernel_node_param_t)inputs[1]->t;
@@ -921,7 +921,7 @@ static vsi_nn_kernel_node_t _setup
         node_params[index++] = vsi_nn_kernel_scalar_create( graph, F32, &eps );
         node_params[index++] = vsi_nn_kernel_scalar_create( graph, I32, &is2D_flg );
         node_params[index++] = vsi_nn_kernel_scalar_create( graph, F32, &rSpaceOrg );
-        node_params[index++] = vsi_nn_kernel_scalar_create( graph, I32, &pStride );
+        node_params[index++] = vsi_nn_kernel_scalar_create( graph, F32, &pStride );
 
         status  = vsi_nn_kernel_node_pass_param( node, node_params,
             _GROUPNORM_PARAM_NUM );

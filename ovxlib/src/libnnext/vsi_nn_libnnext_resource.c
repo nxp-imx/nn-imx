@@ -12068,12 +12068,13 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_##name(
     __read_only  image2d_array_t scale, \\\n\
     __read_only  image2d_t       meanVari, \\\n\
     __write_only image2d_array_t output, \\\n\
-    float eps, int is2D, float rSpaceOrg, int pStride) \\\n\
+    float eps, int is2D, float rSpaceOrg, float pStride) \\\n\
 { \\\n\
+    int gidx = get_global_id(0); \\\n\
     int gidy = get_global_id(1); \\\n\
     int gidz = get_global_id(2); \\\n\
-    int4 coord = (int4)(get_global_id(0), gidy, gidz, 0); \\\n\
-    int4 coord_para = (int4)((convert_int(get_global_id(0) * rSpaceOrg) + gidy * pStride), gidz, 0, 0); \\\n\
+    int4 coord = (int4)(gidx, gidy, gidz, 0); \\\n\
+    int4 coord_para = (int4)((convert_int(gidx * rSpaceOrg) + convert_int(gidy * pStride)), gidz, 0, 0); \\\n\
     src_type src0; \\\n\
     dst_type dst; \\\n\
     vxc_short8 src1; \\\n\
@@ -12119,7 +12120,7 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_##name#
     __read_only  image2d_array_t scale, \\\n\
     __read_only  image2d_t       meanVari, \\\n\
     __write_only image2d_array_t output, \\\n\
-    float eps, int is2D, float rSpaceOrg, int pStride) \\\n\
+    float eps, int is2D, float rSpaceOrg, float pStride) \\\n\
 { \\\n\
     int gidz = get_global_id(1); \\\n\
     int2 coord = (int2)(get_global_id(0), gidz); \\\n\
@@ -12169,12 +12170,13 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_##name(
     __read_only  image2d_t       scale, \\\n\
     __read_only  image2d_t       meanVari, \\\n\
     __write_only image2d_array_t output, \\\n\
-    float eps, int is2D, float rSpaceOrg, int pStride) \\\n\
+    float eps, int is2D, float rSpaceOrg, float pStride) \\\n\
 { \\\n\
+    int gidx = get_global_id(0); \\\n\
     int gidy = get_global_id(1); \\\n\
     int gidz = get_global_id(2); \\\n\
-    int4 coord = (int4)(get_global_id(0), gidy, gidz, 0); \\\n\
-    int4 coord_para = (int4)((convert_int(get_global_id(0) * rSpaceOrg) + gidy * pStride), gidz, 0, 0); \\\n\
+    int4 coord = (int4)(gidx, gidy, gidz, 0); \\\n\
+    int4 coord_para = (int4)((convert_int(gidx * rSpaceOrg) + convert_int(gidy * pStride)), gidz, 0, 0); \\\n\
     src_type src0; \\\n\
     dst_type dst; \\\n\
     float scale_vari, bias_val; \\\n\
@@ -12215,7 +12217,7 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_##name#
     __read_only  image2d_t       scale, \\\n\
     __read_only  image2d_t       meanVari, \\\n\
     __write_only image2d_array_t output, \\\n\
-    float eps, int is2D, float rSpaceOrg, int pStride) \\\n\
+    float eps, int is2D, float rSpaceOrg, float pStride) \\\n\
 { \\\n\
     int gidz = get_global_id(1); \\\n\
     int2 coord = (int2)(get_global_id(0), gidz); \\\n\
@@ -12273,12 +12275,13 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_##name(
     __read_only  image2d_array_t scale, \\\n\
     __read_only  image2d_t       meanVari, \\\n\
     __write_only image2d_array_t output, \\\n\
-    float eps, int is2D, float rSpaceOrg, int pStride) \\\n\
+    float eps, int is2D, float rSpaceOrg, float pStride) \\\n\
 { \\\n\
+    int gidx = get_global_id(0); \\\n\
     int gidy = get_global_id(1); \\\n\
     int gidz = get_global_id(2); \\\n\
-    int4 coord = (int4)(get_global_id(0), gidy, gidz, 0); \\\n\
-    int4 coord_para = (int4)((convert_int(get_global_id(0) * rSpaceOrg) + gidy * pStride), gidz, 0, 0); \\\n\
+    int4 coord = (int4)(gidx, gidy, gidz, 0); \\\n\
+    int4 coord_para = (int4)((convert_int(gidx * rSpaceOrg) + convert_int(gidy * pStride)), gidz, 0, 0); \\\n\
     src_type src0; \\\n\
     vxc_short8 src1, outval; \\\n\
     vxc_half8 scale_h, dst; \\\n\
@@ -12331,7 +12334,7 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_##name#
     __read_only  image2d_array_t scale, \\\n\
     __read_only  image2d_t       meanVari, \\\n\
     __write_only image2d_array_t output, \\\n\
-    float eps, int is2D, float rSpaceOrg, int pStride) \\\n\
+    float eps, int is2D, float rSpaceOrg, float pStride) \\\n\
 { \\\n\
     int gidz = get_global_id(1); \\\n\
     int2 coord = (int2)(get_global_id(0), gidz); \\\n\
@@ -12388,12 +12391,13 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_##name(
     __read_only  image2d_t       scale, \\\n\
     __read_only  image2d_t       meanVari, \\\n\
     __write_only image2d_array_t output, \\\n\
-    float eps, int is2D, float rSpaceOrg, int pStride) \\\n\
+    float eps, int is2D, float rSpaceOrg, float pStride) \\\n\
 { \\\n\
+    int gidx = get_global_id(0); \\\n\
     int gidy = get_global_id(1); \\\n\
     int gidz = get_global_id(2); \\\n\
-    int4 coord = (int4)(get_global_id(0), gidy, gidz, 0); \\\n\
-    int4 coord_para = (int4)((convert_int(get_global_id(0) * rSpaceOrg) + gidy * pStride), gidz, 0, 0); \\\n\
+    int4 coord = (int4)(gidx, gidy, gidz, 0); \\\n\
+    int4 coord_para = (int4)((convert_int(gidx * rSpaceOrg) + convert_int(gidy * pStride)), gidz, 0, 0); \\\n\
     src_type src0; \\\n\
     vxc_short8 outval; \\\n\
     vxc_half8 dst; \\\n\
@@ -12442,7 +12446,7 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_##name#
     __read_only  image2d_t       scale, \\\n\
     __read_only  image2d_t       meanVari, \\\n\
     __write_only image2d_array_t output, \\\n\
-    float eps, int is2D, float rSpaceOrg, int pStride) \\\n\
+    float eps, int is2D, float rSpaceOrg, float pStride) \\\n\
 { \\\n\
     int gidz = get_global_id(1); \\\n\
     int2 coord = (int2)(get_global_id(0), gidz); \\\n\
@@ -12629,12 +12633,13 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_##name(
     __read_only  image2d_array_t scale, \\\n\
     __read_only  image2d_t       meanVari, \\\n\
     __write_only image2d_array_t output, \\\n\
-    float eps, int is2D, float rSpaceOrg, int pStride) \\\n\
+    float eps, int is2D, float rSpaceOrg, float pStride) \\\n\
 { \\\n\
+    int gidx = get_global_id(0); \\\n\
     int gidy = get_global_id(1); \\\n\
     int gidz = get_global_id(2); \\\n\
-    int4 coord = (int4)(get_global_id(0), gidy, gidz, 0); \\\n\
-    int4 coord_para = (int4)((convert_int(get_global_id(0) * rSpaceOrg) + gidy * pStride), gidz, 0, 0); \\\n\
+    int4 coord = (int4)(gidx, gidy, gidz, 0); \\\n\
+    int4 coord_para = (int4)((convert_int(gidx* rSpaceOrg) + convert_int(gidy * pStride)), gidz, 0, 0); \\\n\
     vxc_short8 src0; \\\n\
     vxc_short8 src1; \\\n\
     vxc_half8 scale_h; \\\n\
@@ -12686,7 +12691,7 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_##name#
     __read_only  image2d_array_t scale, \\\n\
     __read_only  image2d_t       meanVari, \\\n\
     __write_only image2d_array_t output, \\\n\
-    float eps, int is2D, float rSpaceOrg, int pStride) \\\n\
+    float eps, int is2D, float rSpaceOrg, float pStride) \\\n\
 { \\\n\
     int gidz = get_global_id(1); \\\n\
     int2 coord = (int2)(get_global_id(0), gidz); \\\n\
@@ -12741,12 +12746,13 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_##name(
     __read_only  image2d_t       scale, \\\n\
     __read_only  image2d_t       meanVari, \\\n\
     __write_only image2d_array_t output, \\\n\
-    float eps, int is2D, float rSpaceOrg, int pStride) \\\n\
+    float eps, int is2D, float rSpaceOrg, float pStride) \\\n\
 { \\\n\
+    int gidx = get_global_id(0); \\\n\
     int gidy = get_global_id(1); \\\n\
     int gidz = get_global_id(2); \\\n\
-    int4 coord = (int4)(get_global_id(0), gidy, gidz, 0); \\\n\
-    int4 coord_para = (int4)((convert_int(get_global_id(0) * rSpaceOrg) + gidy * pStride), gidz, 0, 0); \\\n\
+    int4 coord = (int4)(gidx, gidy, gidz, 0); \\\n\
+    int4 coord_para = (int4)((convert_int(gidx * rSpaceOrg) + convert_int(gidy * pStride)), gidz, 0, 0); \\\n\
     vxc_short8 src0; \\\n\
     src_type in_h; \\\n\
     float scale_vari, bias_val; \\\n\
@@ -12793,7 +12799,7 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void group_norm_##name#
     __read_only  image2d_t       scale, \\\n\
     __read_only  image2d_t       meanVari, \\\n\
     __write_only image2d_array_t output, \\\n\
-    float eps, int is2D, float rSpaceOrg, int pStride) \\\n\
+    float eps, int is2D, float rSpaceOrg, float pStride) \\\n\
 { \\\n\
     int gidz = get_global_id(1); \\\n\
     int2 coord = (int2)(get_global_id(0), gidz); \\\n\
