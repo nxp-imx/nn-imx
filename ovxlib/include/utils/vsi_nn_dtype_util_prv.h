@@ -96,6 +96,9 @@ static VSI_INLINE_API uint32_t type_get_bytes
 {
     switch( type )
     {
+    case VSI_NN_TYPE_INT4:
+    case VSI_NN_TYPE_UINT4:
+        return 0;
     case VSI_NN_TYPE_INT8:
     case VSI_NN_TYPE_UINT8:
     case VSI_NN_TYPE_BOOL8:
