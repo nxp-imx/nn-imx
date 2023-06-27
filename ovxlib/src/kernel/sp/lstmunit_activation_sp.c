@@ -59,7 +59,8 @@
         )
 
 REGISTER_LSTMUNIT_ACTIVATION_STREAM_PROCESSOR_KERNEL(lstmunit_activation) {
-    vsi_nn_kernel_node_t node[2] = {NULL};
+    vsi_nn_kernel_node_t nodes[2] = {NULL};
+    vsi_nn_kernel_node_t node = NULL;
     int32_t _is_ln = 0;
     int32_t _is_cifg = 0;
     int32_t _is_proj = 0;
@@ -74,10 +75,13 @@ REGISTER_LSTMUNIT_ACTIVATION_STREAM_PROCESSOR_KERNEL(lstmunit_activation) {
     vx_tensor outputs_tensor[2] = {NULL};
     size_t i = 0;
     uint32_t input_real_num = 0;
-    for (i = 0; i < input_num; i++) {
-        if (inputs[i]) {
+    for (i = 0; i < input_num; i++)
+    {
+        if (inputs[i] && inputs[i]->t)
+        {
+            inputs_tensor[input_real_num] = inputs[i]->t;
+
             input_real_num++;
-            inputs_tensor[i] = inputs[i]->t;
         }
     }
 
@@ -108,18 +112,28 @@ REGISTER_LSTMUNIT_ACTIVATION_STREAM_PROCESSOR_KERNEL(lstmunit_activation) {
     lstm_activation_param.is_peephole = _is_peephole;
     lstm_activation_param.recurrent_activation = recurrent_activation;
     lstm_activation_param.forget_bias = forget_bias;
-    node[0] = vxLSTMActivationLayer(graph->g,
+    nodes[0] = vxLSTMActivationLayer(graph->g,
                                     inputs_tensor,
                                     input_real_num,
                                     &lstm_activation_param,
                                     outputs_tensor,
                                     2);
-    CHECK_PTR_FAIL_GOTO( node, "Create vxLSTMActivationLayer node  fail.", final );
+    CHECK_PTR_FAIL_GOTO( nodes[0], "Create vxLSTMActivationLayer node  fail.", final );
 
-    node[1] = vxTensorCopyNode(graph->g, outputs[0]->t, outputs[2]->t);
-    CHECK_PTR_FAIL_GOTO( node, "Create vxTensorCopyNode node  fail.", final );
+    if (outputs[2] && outputs[2]->t)
+    {
+        nodes[1] = vxTensorCopyNode(graph->g, outputs[0]->t, outputs[2]->t);
+        CHECK_PTR_FAIL_GOTO( nodes[1], "Create vxTensorCopyNode node  fail.", final );
+
+        node = nodes[1];
+    }
+    else
+    {
+        node = nodes[0];
+    }
+
 final:
-    return node[1];
+    return node;
 } /* lstmunit_activation() */
 
 #undef REGISTER_LSTMUNIT_ACTIVATION_STREAM_PROCESSOR_KERNEL
