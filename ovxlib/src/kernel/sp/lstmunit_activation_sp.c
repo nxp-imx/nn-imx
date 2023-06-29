@@ -99,9 +99,10 @@ REGISTER_LSTMUNIT_ACTIVATION_STREAM_PROCESSOR_KERNEL(lstmunit_activation) {
         vsi_nn_kernel_param_get_int32(params, "recurrent_activation");
     forget_bias = vsi_nn_kernel_param_get_float32(params, "forget_bias");
 
-    if (_is_hybrid || _is_peephole ||
+    if (_is_hybrid || _is_peephole || _is_ln ||
         (recurrent_activation == VSI_NN_ACT_HARD_SIGMOID && _is_ln) ||
-        in_dtype == U8) {
+        in_dtype == U8)
+    {
         return NULL;
     }
 

@@ -295,7 +295,6 @@ static vsi_bool op_setup
     vsi_nn_tensor_attr_t attr;
     vsi_bool is_input_fc_on_tp = FALSE;
     vsi_bool is_recurrent_fc_on_tp = FALSE;
-    vsi_nn_internal_tensor_t* add_tensor = NULL;
     vsi_nn_internal_tensor_t* input_tensor = NULL;
     vsi_nn_internal_tensor_t* output_tensor = NULL;
     vsi_nn_internal_tensor_t* recurrent_input_tensor = NULL;
@@ -538,60 +537,25 @@ static vsi_bool op_setup
     {
         for( i = ifco_start_index; i < LSTMUNIT_IFCO_GATE_COUNT; i++ )
         {
-            if (self->graph->ctx->config.support_stream_processor)
-            {
-                memset( attr.size, 0, VSI_NN_MAX_DIM_NUM * sizeof(vsi_size_t));
-                attr.dim_num = VSI_NN_DIM_AUTO;
-                attr.vtl = use_virtual_tensor;
-                attr.is_const = FALSE;
-                attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
-                attr.dtype.vx_type = VSI_NN_TYPE_FLOAT16;
-                add_tensor = vsi_nn_internal_new_tensor(self, &attr, 0.0f);
-                CHECK_PTR_FAIL_GOTO( add_tensor, "Create tensor fail.", final );
-                /* create internal nodes */
-                curr = vsi_nn_internal_new_node( self, VSI_NN_OP_ADD, 0, 0 );
-                CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
-                curr->inputs[0] = input_fc_outputs[i]->t;
-                curr->inputs[1] = recurrent_fc_outputs[i]->t;
-                curr->outputs[0] = add_tensor->t;
-                vsi_nn_internal_setup_node(self, curr);
+            memset( attr.size, 0, VSI_NN_MAX_DIM_NUM * sizeof(vsi_size_t));
+            attr.dim_num = VSI_NN_DIM_AUTO;
+            attr.vtl = use_virtual_tensor;
+            attr.is_const = FALSE;
+            attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
+            attr.dtype.vx_type = VSI_NN_TYPE_FLOAT16;
+            input_tensor = vsi_nn_internal_new_tensor(self, &attr, 0.0f);
+            CHECK_PTR_FAIL_GOTO( input_tensor, "Create tensor fail.", final );
 
-                /* create internal nodes */
-                input_tensor = vsi_nn_internal_new_tensor(self, &attr, 0.0f);
-                CHECK_PTR_FAIL_GOTO( input_tensor, "Create tensor fail.", final );
-                curr = vsi_nn_internal_new_node( self, VSI_NN_OP_LAYER_NORM, 0, 0 );
-                CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
-                curr->node->nn_param.layernorm.eps = (float)1e-8;
-                curr->inputs[0] = add_tensor->t;
-                curr->inputs[1] = inputs[LSTMUNIT_INPUT_BIAS_I + i];
-                curr->inputs[2] = inputs[LSTMUNIT_INPUT_LAYERNORM_I + i];
-                curr->outputs[0] = input_tensor->t;
-                vsi_nn_internal_setup_node(self, curr);
+            /* create internal nodes */
+            curr = vsi_nn_internal_new_node( self, VSI_NN_OP_TENSOR_ADD_MEAN_STDDEV_NORM, 0, 0 );
+            CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
+            curr->node->nn_param.tensor_add_mean_stddev_norm.eps = (float)1e-8;
+            curr->inputs[0] = input_fc_outputs[i]->t;
+            curr->inputs[1] = recurrent_fc_outputs[i]->t;
+            curr->outputs[0] = input_tensor->t;
+            vsi_nn_internal_setup_node(self, curr);
 
-                layernorm_outputs[i] = input_tensor;
-            }
-            else
-            {
-                memset( attr.size, 0, VSI_NN_MAX_DIM_NUM * sizeof(vsi_size_t));
-                attr.dim_num = VSI_NN_DIM_AUTO;
-                attr.vtl = use_virtual_tensor;
-                attr.is_const = FALSE;
-                attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
-                attr.dtype.vx_type = VSI_NN_TYPE_FLOAT16;
-                input_tensor = vsi_nn_internal_new_tensor(self, &attr, 0.0f);
-                CHECK_PTR_FAIL_GOTO( input_tensor, "Create tensor fail.", final );
-
-                /* create internal nodes */
-                curr = vsi_nn_internal_new_node( self, VSI_NN_OP_TENSOR_ADD_MEAN_STDDEV_NORM, 0, 0 );
-                CHECK_PTR_FAIL_GOTO(curr, "Create internal node failed", final);
-                curr->node->nn_param.tensor_add_mean_stddev_norm.eps = (float)1e-8;
-                curr->inputs[0] = input_fc_outputs[i]->t;
-                curr->inputs[1] = recurrent_fc_outputs[i]->t;
-                curr->outputs[0] = input_tensor->t;
-                vsi_nn_internal_setup_node(self, curr);
-
-                layernorm_outputs[i] = input_tensor;
-            }
+            layernorm_outputs[i] = input_tensor;
         }
     }
 
@@ -609,10 +573,9 @@ static vsi_bool op_setup
     curr->node->nn_param.lstmunit_activation.recurrent_activation = p->recurrent_activation;
 
     curr->inputs[LSTMUNIT_ACT_CSTATE_IN] = inputs[LSTMUNIT_INPUT_C_STATE];
-    for( i = ifco_start_index; i < LSTMUNIT_IFCO_GATE_COUNT; i++ )
+    for ( i = ifco_start_index; i < LSTMUNIT_IFCO_GATE_COUNT; i++ )
     {
-        if( (p->local->use_layer_norm && !self->graph->ctx->config.support_stream_processor) ||
-            p->local->use_hybrid )
+        if( p->local->use_layer_norm || p->local->use_hybrid )
         {
             curr->inputs[LSTMUNIT_ACT_DATA_BI + i] = inputs[LSTMUNIT_INPUT_BIAS_I + i];
         }
@@ -620,14 +583,7 @@ static vsi_bool op_setup
         if( p->local->use_layer_norm )
         {
             /* Pass layernorm weights to VSI_NN_OP_LSTMUNIT_ACTIVATION */
-            if (self->graph->ctx->config.support_stream_processor)
-            {
-                curr->inputs[LSTMUNIT_ACT_LN_WI + i] = NULL;
-            }
-            else
-            {
-                curr->inputs[LSTMUNIT_ACT_LN_WI + i] = inputs[LSTMUNIT_INPUT_LAYERNORM_I + i];
-            }
+            curr->inputs[LSTMUNIT_ACT_LN_WI + i] = inputs[LSTMUNIT_INPUT_LAYERNORM_I + i];
             curr->inputs[LSTMUNIT_ACT_INPUT_FC_I + i] = layernorm_outputs[i]->t;
             curr->inputs[LSTMUNIT_ACT_HSTATE_FC_I + i] = NULL;
         }
