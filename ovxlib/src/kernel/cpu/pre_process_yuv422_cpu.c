@@ -153,10 +153,16 @@ DEF_KERNEL_EXECUTOR(_pre_process_yuv422_exec)
         int32_t rOffset = 0;
         int32_t gOffset = 1 * stride;
         int32_t bOffset = 2 * stride;
-        float D0, D1, E0, E1;
-        float R0, G0, B0, R1, G1, B1;
-        float min = 0;
-        float max = 255;
+        float D0 = 0;
+        float D1 = 0;
+        float E0 = 0;
+        float E1 = 0;
+        uint32_t R0 = 0;
+        uint32_t G0 = 0;
+        uint32_t B0 = 0;
+        uint32_t R1 = 0;
+        uint32_t G1 = 0;
+        uint32_t B1 = 0;
         float* src_y_slice = NULL;
 
         uint32_t roi_width = (xRatio * dst_width) >> 15;
@@ -164,17 +170,6 @@ DEF_KERNEL_EXECUTOR(_pre_process_yuv422_exec)
         uint32_t xrIntFloat_16 = (roi_width << 16) / dst_width + 1;
         uint32_t yrIntFloat_16 = (roi_height << 16) / dst_height + 1;
         uint32_t srcy = 0, srcx = 0;
-
-        if(attr[1]->dtype == I8)
-        {
-            min = -128;
-            max = 127;
-        }
-        else if(attr[1]->dtype == I16 || attr[1]->dtype == F16)
-        {
-            min = -32768;
-            max = 32767;
-        }
 
         if(order)
         {
@@ -253,13 +248,13 @@ DEF_KERNEL_EXECUTOR(_pre_process_yuv422_exec)
                     D1 = (tmpU1 - 128);
                     E1 = (tmpV1 - 128);
 
-                    B0 = (float)vsi_clamp((1.164*(tmpY0 - 16) + 2.017 * D0), min, max);
-                    G0 = (float)vsi_clamp((1.164*(tmpY0 - 16) - 0.392 * D0 - 0.813 * E0), min, max);
-                    R0 = (float)vsi_clamp((1.164*(tmpY0 - 16) + 1.596 * E0), min, max);
+                    B0 = (uint32_t)vsi_clamp((1.164*(tmpY0 - 16) + 2.017 * D0 + 0.5), 0, 255);
+                    G0 = (uint32_t)vsi_clamp((1.164*(tmpY0 - 16) - 0.392 * D0 - 0.813 * E0 + 0.5), 0, 255);
+                    R0 = (uint32_t)vsi_clamp((1.164*(tmpY0 - 16) + 1.596 * E0 + 0.5), 0, 255);
 
-                    B1 = (float)vsi_clamp((1.164*(tmpY1 - 16) + 2.017 * D1), min, max);
-                    G1 = (float)vsi_clamp((1.164*(tmpY1 - 16) - 0.392 * D1 - 0.813 * E1), min, max);
-                    R1 = (float)vsi_clamp((1.164*(tmpY1 - 16) + 1.596 * E1), min, max);
+                    B1 = (uint32_t)vsi_clamp((1.164*(tmpY1 - 16) + 2.017 * D1 + 0.5), 0, 255);
+                    G1 = (uint32_t)vsi_clamp((1.164*(tmpY1 - 16) - 0.392 * D1 - 0.813 * E1 + 0.5), 0, 255);
+                    R1 = (uint32_t)vsi_clamp((1.164*(tmpY1 - 16) + 1.596 * E1 + 0.5), 0, 255);
 
                     output_index = dx + dy * dst_width;
 

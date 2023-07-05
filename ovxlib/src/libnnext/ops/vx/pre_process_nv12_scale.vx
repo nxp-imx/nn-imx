@@ -22,6 +22,7 @@ _viv_uniform VXC_512Bits uniConvertHalftoFp16_2x8;
 
 _viv_uniform VXC_512Bits uniExtract8Data_2x8;
 _viv_uniform VXC_512Bits uniConvertUVtoCharSub128_2x8;
+_viv_uniform VXC_512Bits uniConvertYtoShortSub16_2x8;
 
 _viv_uniform VXC_512Bits uniCalculateYShift_2x8;
 _viv_uniform VXC_512Bits uniCalculateUVShift_2x8;
@@ -85,14 +86,23 @@ __kernel void pre_process_nv12_scale_##name##_gq \
     VXC_BitExtract(Y, Y, Y, maskShift, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \
     VXC_BitExtract(UV, UV, UV, maskShiftUv, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \
  \
+    vxc_short8 tmpY; \
     vxc_char16 tmpUV; \
-    short tmpVal = 128; \
+    short tmpVal = 16; \
+    VXC_DP2x8(tmpY, Y, tmpVal, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvertYtoShortSub16_2x8); \
+    tmpVal = 128; \
     VXC_DP2x8(tmpUV, UV, tmpVal, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvertUVtoCharSub128_2x8); \
  \
     float4 tmpDstB, tmpDstG, tmpDstR; \
-    VXC_DP4x4(tmpDstB, Y, tmpUV, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertNV12toB_4x4); \
-    VXC_DP4x4(tmpDstG, Y, tmpUV, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertNV12toG_4x4); \
-    VXC_DP4x4(tmpDstR, Y, tmpUV, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertNV12toR_4x4); \
+    VXC_DP4x4(tmpDstB, tmpY, tmpUV, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertNV12toB_4x4); \
+    VXC_DP4x4(tmpDstG, tmpY, tmpUV, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertNV12toG_4x4); \
+    VXC_DP4x4(tmpDstR, tmpY, tmpUV, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertNV12toR_4x4); \
+    tmpDstB = clamp(tmpDstB,0,255); \
+    tmpDstG = clamp(tmpDstG,0,255); \
+    tmpDstR = clamp(tmpDstR,0,255); \
+    tmpDstB = floor(tmpDstB + 0.5); \
+    tmpDstG = floor(tmpDstG + 0.5); \
+    tmpDstR = floor(tmpDstR + 0.5); \
  \
     conv_type result; \
     dst_type dst0; \
@@ -181,14 +191,23 @@ __kernel void pre_process_nv12_scale_##name \
         UV.s01234567 = UV.s10325476; \
     } \
  \
+    vxc_short8 tmpY; \
     vxc_char16 tmpUV; \
-    short tmpVal = 128; \
+    short tmpVal = 16; \
+    VXC_DP2x8(tmpY, Y, tmpVal, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvertYtoShortSub16_2x8); \
+    tmpVal = 128; \
     VXC_DP2x8(tmpUV, UV, tmpVal, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0), uniConvertUVtoCharSub128_2x8); \
  \
     float4 tmpDstB, tmpDstG, tmpDstR; \
-    VXC_DP4x4(tmpDstB, Y, tmpUV, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertNV12toB_4x4); \
-    VXC_DP4x4(tmpDstG, Y, tmpUV, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertNV12toG_4x4); \
-    VXC_DP4x4(tmpDstR, Y, tmpUV, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertNV12toR_4x4); \
+    VXC_DP4x4(tmpDstB, tmpY, tmpUV, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertNV12toB_4x4); \
+    VXC_DP4x4(tmpDstG, tmpY, tmpUV, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertNV12toG_4x4); \
+    VXC_DP4x4(tmpDstR, tmpY, tmpUV, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertNV12toR_4x4); \
+    tmpDstB = clamp(tmpDstB,0,255); \
+    tmpDstG = clamp(tmpDstG,0,255); \
+    tmpDstR = clamp(tmpDstR,0,255); \
+    tmpDstB = floor(tmpDstB + 0.5); \
+    tmpDstG = floor(tmpDstG + 0.5); \
+    tmpDstR = floor(tmpDstR + 0.5); \
  \
     conv_type result; \
     dst_type dst0; \

@@ -59,6 +59,12 @@ __kernel void pre_process_yuv422_copy_##name \
     VXC_DP4x4(tmpDstB, tmpYUV, tmpYUV, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertYUV422toB_4x4); \
     VXC_DP4x4(tmpDstG, tmpYUV, tmpYUV, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertYUV422toG_4x4); \
     VXC_DP4x4(tmpDstR, tmpYUV, tmpYUV, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertYUV422toR_4x4); \
+    tmpDstB = clamp(tmpDstB,0,255); \
+    tmpDstG = clamp(tmpDstG,0,255); \
+    tmpDstR = clamp(tmpDstR,0,255); \
+    tmpDstB = floor(tmpDstB + 0.5); \
+    tmpDstG = floor(tmpDstG + 0.5); \
+    tmpDstR = floor(tmpDstR + 0.5); \
  \
     conv_type result; \
     dst_type dst0; \
