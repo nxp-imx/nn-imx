@@ -2547,3 +2547,25 @@ final:
     vsi_nn_safe_free(data);
     return status;
 } /* vsi_nn_ExecuteGraphLoop() */
+
+
+vsi_status vsi_nn_SetGraphTransformOption
+    (
+    vsi_nn_graph_t* graph,
+    const char* ctrl_str,
+    size_t size
+    )
+{
+    vsi_status status = VSI_FAILURE;
+    VSI_UNREFERENCED(graph);
+    VSI_UNREFERENCED(ctrl_str);
+    VSI_UNREFERENCED(size);
+#ifdef VX_GRAPH_TRANSFORM_OPTION_SUPPORT
+
+    if(graph && graph->g)
+    {
+        status = vxSetGraphAttribute(graph->g, VX_GRAPH_VSI_TRANSFORM_OPTIONS, ctrl_str, size);
+    }
+#endif
+    return status;
+}

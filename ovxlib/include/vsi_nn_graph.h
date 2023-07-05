@@ -788,6 +788,14 @@ OVXLIB_API vsi_status vsi_nn_ExecuteGraphLoop
     vsi_nn_graph_t* graph,
     vsi_nn_tensor_t *max_iteration_tensor
     );
+
+OVXLIB_API vsi_status vsi_nn_SetGraphTransformOption
+    (
+    vsi_nn_graph_t* graph,
+    const char* ctrl_str,
+    size_t size
+    );
+
 #ifdef __cplusplus
 }
 #endif
