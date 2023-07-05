@@ -44,6 +44,17 @@ __BEGIN_DECLS
 
 #define DESCALE(x) (((x) + (1<<19)) >> 20)
 
+static vsi_bool _check_nv12_type_from_env()
+{
+    vsi_bool ret = FALSE;
+    char* env_s = vsi_nn_getenv("VSI_NN_ENABLE_OCV_NV12");
+    if (env_s)
+    {
+        ret = TRUE;
+    }
+    return ret;
+}
+
 DEF_KERNEL_EXECUTOR(_pre_process_nv12_exec)
     (
     vsi_nn_kernel_node_t node,
@@ -133,10 +144,11 @@ DEF_KERNEL_EXECUTOR(_pre_process_nv12_exec)
         int32_t rOffset = 0;
         int32_t gOffset = 1 * stride;
         int32_t bOffset = 2 * stride;
-        float D, E;
-        float R, G, B;
-        float min = 0;
-        float max = 255;
+        float D = 0;
+        float E = 0;
+        uint32_t R = 0;
+        uint32_t G = 0;
+        uint32_t B = 0;
         float* src_y_slice = NULL;
         float* src_uv_yScanline = NULL;
 
@@ -145,17 +157,7 @@ DEF_KERNEL_EXECUTOR(_pre_process_nv12_exec)
         uint32_t xrIntFloat_16 = (roi_width << 16) / dst_width + 1;
         uint32_t yrIntFloat_16 = (roi_height << 16) / dst_height + 1;
         uint32_t srcy = 0, srcx = 0;
-
-        if(attr[2]->dtype == I8)
-        {
-            min = -128;
-            max = 127;
-        }
-        else if(attr[2]->dtype == I16 || attr[2]->dtype == F16)
-        {
-            min = -65536;
-            max = 65535;
-        }
+        vsi_bool ocv_nv12 = _check_nv12_type_from_env();
 
         if(order)
         {
@@ -196,12 +198,18 @@ DEF_KERNEL_EXECUTOR(_pre_process_nv12_exec)
                     D = (tmpU - 128);
                     E = (tmpV - 128);
 
-                    // B
-                    B = (float)vsi_clamp((tmpY + (1.7790 * D)), min, max);
-                    //G
-                    G = (float)vsi_clamp((tmpY - 0.3455 * D - 0.7169 * E), min, max);
-                    //R
-                    R = (float)vsi_clamp((tmpY + 1.4065 * E), min, max);
+                    if (ocv_nv12)
+                    {
+                        B = (uint32_t)vsi_clamp((1.164 * (tmpY - 16) + 2.018 * D + 0.5), 0, 255);
+                        G = (uint32_t)vsi_clamp((1.164 * (tmpY - 16) - 0.391 * D - 0.813 * E + 0.5), 0, 255);
+                        R = (uint32_t)vsi_clamp((1.164 * (tmpY - 16) + 1.596 * E + 0.5), 0, 255);
+                    }
+                    else
+                    {
+                        B = (uint32_t)vsi_clamp((tmpY + (1.7790 * D)), 0, 255);
+                        G = (uint32_t)vsi_clamp((tmpY - 0.3455 * D - 0.7169 * E), 0, 255);
+                        R = (uint32_t)vsi_clamp((tmpY + 1.4065 * E), 0, 255);
+                    }
 
                     output_index = dx + dy * dst_width;
 
