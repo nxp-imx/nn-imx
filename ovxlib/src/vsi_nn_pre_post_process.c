@@ -837,6 +837,28 @@ vsi_status vsi_nn_AddBinaryGraphInputsWithCropParam
     uint32_t enable_nodes_count
 )
 {
+    vsi_bool* crop_set_start_only = NULL;
+    vsi_status status = VSI_FAILURE;
+    crop_set_start_only = (vsi_bool*)malloc(enable_nodes_count * sizeof(vsi_bool));
+    memset(crop_set_start_only, 0, enable_nodes_count * sizeof(vsi_bool));
+    status = vsi_nn_AddBinaryGraphInputsWithCropParamForCropOnly(graph, enable_nodes,
+                                                                 crop_set_start_only, enable_nodes_count);
+    if(crop_set_start_only)
+    {
+        free(crop_set_start_only);
+        crop_set_start_only = NULL;
+    }
+    return status;
+} /* vs_nn_AddBinaryGraphInputsWithCropParam() */
+
+vsi_status vsi_nn_AddBinaryGraphInputsWithCropParamForCropOnly
+(
+    vsi_nn_graph_t* graph,
+    vsi_nn_node_id_t* enable_nodes,
+    vsi_bool* crop_set_start_only,
+    uint32_t enable_nodes_count
+)
+{
     uint32_t i, j, k, idx, p;
     vsi_status status = VSI_FAILURE;
     uint32_t num_of_graph_inputs;
@@ -906,7 +928,14 @@ vsi_status vsi_nn_AddBinaryGraphInputsWithCropParam
                         //}
                         //else
                         //{
-                        num_of_graph_real_inputs += 4;
+                        if (crop_set_start_only[j])
+                        {
+                            num_of_graph_real_inputs += 2;
+                        }
+                        else
+                        {
+                            num_of_graph_real_inputs += 4;
+                        }
                         //}
                     }
                 }
@@ -1011,14 +1040,27 @@ vsi_status vsi_nn_AddBinaryGraphInputsWithCropParam
                                                       VX_SCALAR_TYPE,
                                                       &data_type,
                                                       sizeof(vx_enum));
-                                        /*scale_x,scale_y,left,top are int32
-                                         * and index <4 type,mean and
-                                         * scarlar are float*/
-                                        if (data_type != VX_TYPE_INT32 ||
-                                            scalar_index >= 4)
-                                            continue;
-                                        graph_inputs[j++] = ref;
-                                        scalar_index++;
+                                        /*corp w, h, start_x, start_y are int32 type,
+                                         * and index <4 , mean and scale are float*/
+                                        if (crop_set_start_only[k])
+                                        {
+                                            if (data_type != VX_TYPE_INT32)
+                                                continue;
+                                            if (scalar_index < 4 && scalar_index >=2)
+                                            {
+                                                graph_inputs[j++] = ref;
+                                            }
+                                            scalar_index++;
+                                        }
+                                        else
+                                        {
+                                            if (data_type == VX_TYPE_INT32 &&
+                                                scalar_index < 4)
+                                            {
+                                                graph_inputs[j++] = ref;
+                                                scalar_index++;
+                                            }
+                                        }
                                     }
                                 }
                                 break;
@@ -1056,7 +1098,6 @@ vsi_status vsi_nn_AddBinaryGraphInputsWithCropParam
     graph_outputs = (vx_reference*)malloc(num_of_graph_real_outputs * sizeof(vx_reference));
     TEST_CHECK_PTR( graph_outputs, final );
     memset(graph_outputs,  0, num_of_graph_real_outputs * sizeof(vx_reference));
-
     for (i = 0, j = 0; i < num_of_graph_outputs; i++)
     {
         tensor = vsi_nn_GetTensor(graph, graph->output.tensors[i]);
@@ -1100,7 +1141,7 @@ final:
         free(graph_outputs);
     }
     return status;
-} /* vs_nn_AddBinaryGraphInputsWithCropParam() */
+} /* vs_nn_AddBinaryGraphInputsWithCropParamForCropOnly() */
 
 vsi_status vsi_nn_UpdateCropParamsForBinaryGraph
 (
