@@ -840,9 +840,11 @@ vsi_status vsi_nn_AddBinaryGraphInputsWithCropParam
     vsi_bool* crop_set_start_only = NULL;
     vsi_status status = VSI_FAILURE;
     crop_set_start_only = (vsi_bool*)malloc(enable_nodes_count * sizeof(vsi_bool));
+    TEST_CHECK_PTR( crop_set_start_only, final );
     memset(crop_set_start_only, 0, enable_nodes_count * sizeof(vsi_bool));
     status = vsi_nn_AddBinaryGraphInputsWithCropParamForCropOnly(graph, enable_nodes,
                                                                  crop_set_start_only, enable_nodes_count);
+final:
     if(crop_set_start_only)
     {
         free(crop_set_start_only);
