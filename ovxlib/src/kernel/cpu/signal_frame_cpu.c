@@ -96,7 +96,6 @@ DEF_KERNEL_EXECUTOR(_compute)
     vsi_ssize_t num_frames = 0;
     vsi_ssize_t inner_dim = 1;
     vsi_ssize_t outer_dim = 1;
-    vsi_ssize_t inner_size = 1;
     float pad_val = 0;
 
     VSI_UNREFERENCED(node);
@@ -139,11 +138,6 @@ DEF_KERNEL_EXECUTOR(_compute)
     for (i = axis + 1; i < (int32_t)in_attr[0]->shape->size; i++)
     {
         outer_dim *= in_attr[0]->shape->data[i];
-    }
-
-    for (i = 0; i < axis + 1; i++)
-    {
-        inner_size *= out_attr[0]->shape->data[i];
     }
 
     num_frames = (length_samples + frame_step - 1) / frame_step;
