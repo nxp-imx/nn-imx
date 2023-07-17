@@ -692,6 +692,7 @@
     <ClInclude Include="include\ops\vsi_nn_op_swish.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_tanh.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_tensor_add_mean_stddev_norm.h"/>
+    <ClInclude Include="include\ops\vsi_nn_op_reducel2.h" />
     <ClInclude Include="include\ops\vsi_nn_op_tensorstackconcat.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_tile.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_topk.h"/>
@@ -2253,6 +2254,9 @@
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_upsamplescale.c">
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_reducel2.c" >
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_variable.c">
