@@ -72,6 +72,11 @@ REGISTER_COMPARISONS_STREAM_PROCESSOR_KERNEL( relational_ops )
     VSI_UNREFERENCED(kernel);
     VSI_UNREFERENCED(output_num);
 
+    if (vsi_nn_is_broadcast_operaton(inputs, input_num, outputs[0]))
+    {
+        return NULL;
+    }
+
     node = vxRelationalLayer(
         graph->g,
         operation,
