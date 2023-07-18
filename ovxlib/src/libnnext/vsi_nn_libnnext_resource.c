@@ -46316,37 +46316,40 @@ __kernel void scatter_nd_update_reset_##name0##to##name1( \\\n\
     Image img1 = create_image_from_image2d(input_ref, size0); \\\n\
     Image img2 = create_image_from_image2d(temp_ref, size1); \\\n\
     Image img3 = create_image_from_image2d(temp_buf_int, 4); \\\n\
-    __global ptr0* input_ptr = (__global ptr0*)img1.ptr; \\\n\
-    __global ptr1* output_ptr = (__global ptr1*)img2.ptr; \\\n\
     __global int* tmp_update_ptr = (__global int*)img3.ptr; \\\n\
-    ptr0 tmpData = input_ptr[gidx]; \\\n\
-    int4 zeros = (int4)(0); \\\n\
-    int loc2 = gidx * 8; \\\n\
     type0 src; \\\n\
     type1 tmpDst; \\\n\
-    ptr1 dst; \\\n\
     vxc_ushort8 ms0; \\\n\
     _viv_asm(COPY, ms0, multAndoutZP0, 16); \\\n\
-    _viv_asm(COPY, src, tmpData, len0); \\\n\
-    VXC_DP2x8(tmpDst, src, ms0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), \\\n\
-                uniU8MulAndPostShift_0_Lo_2x8); \\\n\
-    _viv_asm(COPY, dst, tmpDst, len1); \\\n\
-    output_ptr[gidx] = dst; \\\n\
-    vstore4(zeros, 0, tmp_update_ptr + loc2); \\\n\
-    vstore4(zeros, 1, tmp_update_ptr + loc2); \\\n\
-    if(gidx < res) \\\n\
+    if(length > 0) \\\n\
     { \\\n\
-        __global ptr2* input_ptr1 = (__global ptr2*)img1.ptr; \\\n\
-        __global ptr3* output_ptr1 = (__global ptr3*)img2.ptr; \\\n\
-        ptr2 tmpData1 = input_ptr1[length + gidx]; \\\n\
+        __global ptr0* input_ptr = (__global ptr0*)img1.ptr; \\\n\
+        __global ptr1* output_ptr = (__global ptr1*)img2.ptr; \\\n\
+        ptr0 tmpData = input_ptr[gidx]; \\\n\
+        int4 zeros = (int4)(0); \\\n\
+        int loc2 = gidx * 8; \\\n\
+        ptr1 dst; \\\n\
+        _viv_asm(COPY, src, tmpData, len0); \\\n\
+        VXC_DP2x8(tmpDst, src, ms0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), \\\n\
+                    uniU8MulAndPostShift_0_Lo_2x8); \\\n\
+        _viv_asm(COPY, dst, tmpDst, len1); \\\n\
+        output_ptr[gidx] = dst; \\\n\
+        vstore4(zeros, 0, tmp_update_ptr + loc2); \\\n\
+        vstore4(zeros, 1, tmp_update_ptr + loc2); \\\n\
+    } \\\n\
+    __global ptr2* input_ptr1 = (__global ptr2*)img1.ptr; \\\n\
+    __global ptr3* output_ptr1 = (__global ptr3*)img2.ptr; \\\n\
+    for(int i = gidx; i < res; i += get_global_size(0)) \\\n\
+    { \\\n\
+        ptr2 tmpData1 = input_ptr1[length + i]; \\\n\
         ptr3 dst1; \\\n\
         dst1 ^= dst1; \\\n\
-        tmp_update_ptr[length + gidx] = 0; \\\n\
+        tmp_update_ptr[length + i] = 0; \\\n\
         _viv_asm(COPY, src, tmpData1, 4); \\\n\
         VXC_DP2x8(tmpDst, src, ms0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), \\\n\
                 uniU8MulAndPostShift_0_Lo_2x8); \\\n\
         _viv_asm(COPY, dst1, tmpDst, len3); \\\n\
-        output_ptr1[length + gidx] = dst1; \\\n\
+        output_ptr1[length + i] = dst1; \\\n\
     } \\\n\
 }\n\
 SCATTER_RESET(U8,  U8,  vxc_uchar8, vxc_uchar8, vxc_uchar8, vxc_uchar8, 8, 8, 1, 1, uchar, uchar, 1)\n\
@@ -46534,14 +46537,17 @@ __kernel void scatter_nd_update_copy_##src0_type( \\\n\
     int gidx = get_global_id(0); \\\n\
     Image img1 = create_image_from_image2d(temp_ref, element_size); \\\n\
     Image img2 = create_image_from_image2d(output, element_size); \\\n\
-    __global ptr_type* input_ptr = (__global ptr_type*)img1.ptr; \\\n\
-    __global ptr_type* output_ptr = (__global ptr_type*)img2.ptr; \\\n\
-    output_ptr[gidx] = input_ptr[gidx]; \\\n\
-    if(gidx < res) \\\n\
+    if(length > 0) \\\n\
     { \\\n\
-        __global ptr_type1* input_ptr1 = (__global ptr_type1*)img1.ptr; \\\n\
-        __global ptr_type1* output_ptr1 = (__global ptr_type1*)img2.ptr; \\\n\
-        output_ptr1[length + gidx] = input_ptr1[length + gidx]; \\\n\
+        __global ptr_type* input_ptr = (__global ptr_type*)img1.ptr; \\\n\
+        __global ptr_type* output_ptr = (__global ptr_type*)img2.ptr; \\\n\
+        output_ptr[gidx] = input_ptr[gidx]; \\\n\
+    } \\\n\
+    __global ptr_type1* input_ptr1 = (__global ptr_type1*)img1.ptr; \\\n\
+    __global ptr_type1* output_ptr1 = (__global ptr_type1*)img2.ptr; \\\n\
+    for(int i = gidx; i < res; i += get_global_size(0)) \\\n\
+    { \\\n\
+        output_ptr1[length + i] = input_ptr1[length + i]; \\\n\
     } \\\n\
 }\n\
 SCATTER_ND_UPDATE_COPY(U8,  vxc_uchar8, 1, uchar)\n\

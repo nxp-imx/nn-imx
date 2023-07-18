@@ -933,9 +933,14 @@ DEF_KERNEL_INITIALIZER(_scatter_nd_update_reset_initializer)
     gpu_param.global_scale[0]  = 1;
     gpu_param.global_scale[1]  = 1;
     gpu_param.global_scale[2]  = 1;
-
-    gpu_param.global_size[0]   = gpu_align_p2((width + gpu_param.global_scale[0] - 1)
-                                        / gpu_param.global_scale[0], 4);
+    if (element_size < 8)
+    {
+        gpu_param.global_size[0]   = element_size;
+    }
+    else
+    {
+        gpu_param.global_size[0]   = width;
+    }
     gpu_param.global_size[1]   = 1;
     gpu_param.global_size[2]   = 1;
 
@@ -1337,9 +1342,14 @@ DEF_KERNEL_INITIALIZER(_scatter_nd_update_copy_initializer)
     gpu_param.global_scale[0]  = 1;
     gpu_param.global_scale[1]  = 1;
     gpu_param.global_scale[2]  = 1;
-
-    gpu_param.global_size[0]   = gpu_align_p2((width + gpu_param.global_scale[0] - 1)
-                                        / gpu_param.global_scale[0], 4);
+    if (element_size < 8)
+    {
+        gpu_param.global_size[0]   = element_size;
+    }
+    else
+    {
+        gpu_param.global_size[0]   = width;
+    }
     gpu_param.global_size[1]   = 1;
     gpu_param.global_size[2]   = 1;
 
