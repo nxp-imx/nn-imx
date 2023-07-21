@@ -114,6 +114,7 @@ static const _kernel_map_type moments_map[] =
     TENSOR_MOMENTS_TWO_AXIS_KERNELS(F32, F32, 0, 1,         KERNEL_SOURCE_4)
     TENSOR_MOMENTS_TWO_AXIS_KERNELS(I32, F32, 0, 1,         KERNEL_SOURCE_4)
     TENSOR_MOMENTS_TWO_AXIS_KERNELS(BF16,F32, 0, 1,         KERNEL_SOURCE_4)
+    TENSOR_MOMENTS_TWO_AXIS_KERNELS(U8,  F32, 1, 2,         KERNEL_SOURCE_4)
     TENSOR_MOMENTS_THREE_AXIS_KERNELS(U8,  F32, 0, 1, 2,    KERNEL_SOURCE_5)
     TENSOR_MOMENTS_THREE_AXIS_KERNELS(F32, F32, 0, 1, 2,    KERNEL_SOURCE_5)
     TENSOR_MOMENTS_THREE_AXIS_KERNELS(I32, F32, 0, 1, 2,    KERNEL_SOURCE_5)
@@ -247,26 +248,39 @@ DEF_KERNEL_INITIALIZER(_moments_initializer)
         gpu_param.global_size[0]   = gpu_align_p2((height + gpu_param.global_scale[0] - 1)
             / gpu_param.global_scale[0], 4);
         gpu_param.global_size[1]   = chn;
+        gpu_param.global_size[2]   = 1;
     }
     else if (axis_num == 1 && axis == 1)
     {
         gpu_param.global_size[0]   = gpu_align_p2((width + gpu_param.global_scale[0] - 1)
             / gpu_param.global_scale[0], 4);
         gpu_param.global_size[1]   = chn;
+        gpu_param.global_size[2]   = 1;
     }
     else if (axis_num == 1 && axis == 2)
     {
         gpu_param.global_size[0]   = gpu_align_p2((width + gpu_param.global_scale[0] - 1)
             / gpu_param.global_scale[0], 4);
         gpu_param.global_size[1]   = height;
+        gpu_param.global_size[2]   = 1;
     }
-    else if (axis_num == 2)
+    else if (axis_num == 2 && axis == 0)
     {
         gpu_param.local_size[0]  = 16;
         gpu_param.local_size[1]  = 1;
         gpu_param.local_size[2]  = 1;
         gpu_param.global_size[0]   = 16;
         gpu_param.global_size[1]   = chn;
+        gpu_param.global_size[2]   = 1;
+    }
+    else if (axis_num == 2 && axis == 1)
+    {
+        gpu_param.local_size[0]  = 8;
+        gpu_param.local_size[1]  = 8;
+        gpu_param.local_size[2]  = 1;
+        gpu_param.global_size[0] = 8;
+        gpu_param.global_size[1] = 8;
+        gpu_param.global_size[2] = width;
     }
     else if (axis_num == 3)
     {
@@ -275,8 +289,8 @@ DEF_KERNEL_INITIALIZER(_moments_initializer)
         gpu_param.local_size[2]  = 1;
         gpu_param.global_size[0]   = 16;
         gpu_param.global_size[1]   = 1;
+        gpu_param.global_size[2]   = 1;
     }
-    gpu_param.global_size[2]   = 1;
 
     status = vsi_nn_kernel_gpu_config( node, &gpu_param );
     CHECK_STATUS_FAIL_GOTO(status, final);
@@ -405,6 +419,10 @@ static vsi_nn_kernel_node_t _setup
     else if (axis_num == 2 && axis[0] == 0 && axis[1] == 1)
     {
         dim_ratio = (float)1.0 / (float)(width * height);
+    }
+    else if (axis_num == 2 && axis[0] == 1 && axis[1] == 2)
+    {
+        dim_ratio = (float)1.0 / (float)(chn * height);
     }
     else if (axis_num == 3)
     {
