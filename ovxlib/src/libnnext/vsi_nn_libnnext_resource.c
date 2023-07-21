@@ -63978,6 +63978,69 @@ __kernel void moments_axis01_BF16toF32(\n\
         write_imagef(output_vari, coord_out, vari);\n\
     }\n\
 }\n\
+\n\
+__kernel __attribute__((reqd_work_group_size(8, 8, 1))) void moments_axis12_U8toF32(\n\
+    image2d_array_t   input, image2d_array_t  output_mean, image2d_array_t  output_vari,\n\
+    int axis, int axis_num, int input_zp, float input_scale,\n\
+    int width, int height, int chn, float dimRatio\n\
+    )\n\
+{\n\
+    int lidx = get_local_id(0);\n\
+    int lidy = get_local_id(1);\n\
+    int gidz = get_global_id(2); // width\n\
+\n\
+    int4 coord = (int4)(gidz, lidx, lidy, 0);\n\
+    uint4 data;\n\
+    float sum = 0, sqr = 0;\n\
+    float e2InScale = input_scale * input_scale;\n\
+\n\
+    __local uint lcl_sumSqr[128];\n\
+    __local uint lcl_sumSqr1[32];\n\
+\n\
+    uint2 tmpSumSqr = 0;\n\
+    for(coord.z = lidy; coord.z < chn; coord.z += 8)\n\
+    {\n\
+        for(coord.y = lidx; coord.y < height;)\n\
+        {\n\
+            data = read_imageui(input, coord);\n\
+            coord.y += 8;\n\
+            tmpSumSqr = tmpSumSqr + (uint2)(data.x, data.x * data.x);\n\
+        }\n\
+        //sqr += (tmpSqr - 2 * input_zp * tmpSum + height * input_zp * input_zp) * e2InScale;\n\
+        //sum += (tmpSum - height * input_zp) * input_scale;\n\
+    }\n\
+    int index = lidx + lidy * 8;\n\
+    vstore2(tmpSumSqr, index, lcl_sumSqr);\n\
+    barrier(CLK_LOCAL_MEM_FENCE);\n\
+    if(index < 16)\n\
+    {\n\
+        uint4 val0 = vload4(index, lcl_sumSqr);\n\
+        uint4 val1 = vload4(index, lcl_sumSqr + 64);\n\
+        val0 += val1;\n\
+        uint2 val2 = val0.xy + val0.zw;\n\
+        vstore2(val2, index, lcl_sumSqr1);\n\
+    }\n\
+    barrier(CLK_LOCAL_MEM_FENCE);\n\
+    if(index == 0)\n\
+    {\n\
+        uint4 val0 = 0;\n\
+        for(int i = 0; i < 8; i++)\n\
+        {\n\
+            val0 += vload4(i, lcl_sumSqr1);\n\
+        }\n\
+\n\
+        float2 tmpVal = convert_float2(val0.xy + val0.zw);\n\
+        sum = (tmpVal.x - height * chn * input_zp) * input_scale;\n\
+        sqr = (tmpVal.y - 2 * input_zp * tmpVal.x + height * chn * input_zp * input_zp) * e2InScale;\n\
+        float4 mean, vari;\n\
+        mean.x = sum * dimRatio;\n\
+        vari.x = sqr * dimRatio;\n\
+        vari.x = vari.x - mean.x * mean.x;\n\
+\n\
+        write_imagef(output_mean, coord.xwww, mean);\n\
+        write_imagef(output_vari, coord.xwww, vari);\n\
+    }\n\
+}\n\
 "; /* end of moments_axis01_cl*/
 
 static const char moments_axis012_cl[] = "__kernel void moments_axis012_U8toF32(\n\
