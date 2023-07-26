@@ -238,6 +238,11 @@ ifneq ($(gcdSTATIC_LINK), 1)
         LIBS += -L$(TCMALLOC_DIR)/.libs -ltcmalloc
     endif
 endif
+
+ifeq ($(OVXLIB_CODE_COVERAGE), 1)
+CFLAGS += -fprofile-arcs -ftest-coverage
+LIBS += -lgcov
+endif
 #############################################################################
 
 # installation directory
