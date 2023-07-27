@@ -51982,6 +51982,8 @@ __kernel void cumsum_##name##toU8_axis2( \\\n\
  \\\n\
     src_type sum = (src_type)(0); \\\n\
     uint4 dst = (uint4)(0); \\\n\
+    int tmp_zp = convert_int_rte(output_zp); \\\n\
+    dst.x = convert_uint_sat(tmp_zp); \\\n\
  \\\n\
     float cnt = 0.0f; \\\n\
  \\\n\
@@ -52146,6 +52148,8 @@ __kernel void cumsum_##name##toU8_axis1( \\\n\
  \\\n\
     src_type sum = (src_type)(0); \\\n\
     uint4 dst = (uint4)(0); \\\n\
+    int tmp_zp = convert_int_rte(output_zp); \\\n\
+    dst.x = convert_uint_sat(tmp_zp); \\\n\
  \\\n\
     float cnt = 0; \\\n\
  \\\n\
@@ -52310,6 +52314,8 @@ __kernel void cumsum_##name##toU8_axis0( \\\n\
  \\\n\
     src_type sum = (src_type)(0); \\\n\
     uint4 dst = (uint4)(0); \\\n\
+    int tmp_zp = convert_int_rte(output_zp); \\\n\
+    dst.x = convert_uint_sat(tmp_zp); \\\n\
  \\\n\
     float cnt = 0; \\\n\
  \\\n\
@@ -52381,7 +52387,8 @@ __kernel void cumsum_##name##toU8_axis0( \\\n\
     } \\\n\
 }\n\
 CUMSUM_toU8_AXIS0_SH(U8,uint4,read_imageui)\n\
-CUMSUM_toU8_AXIS0_SH(F32,float4,read_imagef)"; /* end of cumsum_cl*/
+CUMSUM_toU8_AXIS0_SH(F32,float4,read_imagef)\n\
+"; /* end of cumsum_cl*/
 
 static const char cumsum_2d_cl[] = "\n\
 __kernel void cumsum_F32toF32_axis1_2D(\n\
@@ -52470,12 +52477,15 @@ __kernel void cumsum_U8toU8_axis1_2D(\n\
     uint4 sum = (uint4)(0);\n\
     uint4 dst = (uint4)(0);\n\
 \n\
+    int tmp_zp = convert_int_rte(output_zp);\n\
+    dst.x = convert_uint_sat(tmp_zp);\n\
+\n\
     float cnt = 0;\n\
 \n\
     if(exclusive && rev)\n\
     {\n\
         coord.w = height - 1;\n\
-        write_imageui(output, coord.zw, sum);\n\
+        write_imageui(output, coord.zw, dst);\n\
         for(coord.y = height - 1; coord.y > 0; coord.y--)\n\
         {\n\
             uint4 data = read_imageui(input, coord.xy);\n\
@@ -52492,7 +52502,7 @@ __kernel void cumsum_U8toU8_axis1_2D(\n\
     }\n\
     else if(exclusive)\n\
     {\n\
-        write_imageui(output, coord.zw, sum);\n\
+        write_imageui(output, coord.zw, dst);\n\
         for(coord.y = 0; coord.y < height - 1; coord.y++)\n\
         {\n\
             uint4 data = read_imageui(input, coord.xy);\n\
@@ -52558,6 +52568,8 @@ __kernel void cumsum_F32toU8_axis1_2D(\n\
 \n\
     float4 sum = (float4)(0);\n\
     uint4 dst = (uint4)(0);\n\
+    int tmp_zp = convert_int_rte(output_zp);\n\
+    dst.x = convert_uint_sat(tmp_zp);\n\
 \n\
     float cnt = 0;\n\
 \n\
@@ -52716,13 +52728,16 @@ __kernel void cumsum_U8toU8_axis0_2D(\n\
     uint4 sum = (uint4)(0);\n\
     uint4 dst = (uint4)(0);\n\
 \n\
+    int tmp_zp = convert_int_rte(output_zp);\n\
+    dst.x = convert_uint_sat(tmp_zp);\n\
+\n\
     float cnt = 0.0f;\n\
 \n\
     if(exclusive && rev)\n\
     {\n\
         coord.x = width - 1;\n\
         coord.z = coord.x;\n\
-        write_imageui(output, coord.zw, sum);\n\
+        write_imageui(output, coord.zw, dst);\n\
         for(; coord.x > 0; coord.x--)\n\
         {\n\
             uint4 data = read_imageui(input, coord.xy);\n\
@@ -52740,7 +52755,7 @@ __kernel void cumsum_U8toU8_axis0_2D(\n\
     else if(exclusive)\n\
     {\n\
         coord.z = 0;\n\
-        write_imageui(output, coord.zw, sum);\n\
+        write_imageui(output, coord.zw, dst);\n\
         for(coord.x = 0; coord.x < width - 1; coord.x++)\n\
         {\n\
             uint4 data = read_imageui(input, coord.xy);\n\
@@ -52806,9 +52821,10 @@ __kernel void cumsum_F32toU8_axis0_2D(\n\
 \n\
     float4 sum = (float4)(0);\n\
     uint4 dst = (uint4)(0);\n\
+    int tmp_zp = convert_int_rte(output_zp);\n\
+    dst.x = convert_uint_sat(tmp_zp);\n\
 \n\
     float cnt = 0.0f;\n\
-\n\
     if(exclusive && rev)\n\
     {\n\
         coord.x = width - 1;\n\
@@ -52876,7 +52892,8 @@ __kernel void cumsum_F32toU8_axis0_2D(\n\
             write_imageui(output, coord.xy, dst);\n\
         }\n\
     }\n\
-}"; /* end of cumsum_2d_cl*/
+}\n\
+"; /* end of cumsum_2d_cl*/
 
 static const char depth2space_crd_cl[] = "\n\
 __kernel void depth2space_crd_F32toF32(\n\
