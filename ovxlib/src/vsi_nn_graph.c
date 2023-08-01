@@ -1160,7 +1160,7 @@ vsi_nn_node_t * vsi_nn_GetNode
         node = vsi_nn_MapGet( graph->node_table, (vsi_nn_map_key_t)id );
     }
     return node;
-} /* vsi_nn_GetTensor() */
+} /* vsi_nn_GetNode() */
 
 void vsi_nn_GetTensors
     (
