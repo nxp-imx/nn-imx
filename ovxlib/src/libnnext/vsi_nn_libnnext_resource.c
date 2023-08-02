@@ -62187,6 +62187,72 @@ GEMM_TRANSB_3D(U8U8toF32,float4,read_imageui,convert_float4,write_imagef);\n\
 \n\
 "; /* end of matrixmul_cl*/
 
+static const char matrixmul_4x_cl[] = "#pragma OPENCL EXTENSION CL_VIV_asm : enable\n\
+\n\
+__kernel void gemm_4x_F32F32toF32_2D(\n\
+    __read_only image2d_t   inputA,\n\
+    __read_only image2d_t   inputB,\n\
+    __write_only image2d_t  output,\n\
+    int M,\n\
+    int K,\n\
+    int N,\n\
+    int ac2zero,\n\
+    int bc2zero,\n\
+    float scale_a,\n\
+    float zp_a,\n\
+    float scale_b,\n\
+    float zp_b,\n\
+    float scale_out,\n\
+    float zp_out\n\
+    )\n\
+{\n\
+    int offset0 = get_global_id(0) * K;\n\
+    int offset1 = offset0 + K;\n\
+    int offset2 = offset1 + K;\n\
+    int offset3 = offset2 + K;\n\
+    int out_offset = get_global_id(0);\n\
+    int z = 0;\n\
+    float4 sum = (float4)(0, 0, 0, 0);\n\
+\n\
+    Image in0_tensor = create_image_from_image2d(inputA, 4);\n\
+    __global float* in0_ptr = (__global float*)in0_tensor.ptr;\n\
+    __global float* in0_ptr0 = in0_ptr + offset0;\n\
+    __global float* in0_ptr1 = in0_ptr + offset1;\n\
+    __global float* in0_ptr2 = in0_ptr + offset2;\n\
+    __global float* in0_ptr3 = in0_ptr + offset3;\n\
+\n\
+    Image in1_tensor = create_image_from_image2d(inputB, 4);\n\
+    __global float* in1_ptr = (__global float*)in1_tensor.ptr;\n\
+\n\
+    Image o_tensor = create_image_from_image2d(output, 4);\n\
+    __global float* output_ptr = (__global float*)o_tensor.ptr + out_offset;\n\
+\n\
+    int step = K >> 2;\n\
+    for(z = 0; z < step; z++)\n\
+    {\n\
+        float4 tempA0, tempA1, tempA2, tempA3;\n\
+        float4 tempB0;\n\
+\n\
+        tempB0 = vload4(z, in1_ptr);\n\
+        tempA0 = vload4(z, in0_ptr0);\n\
+        tempA1 = vload4(z, in0_ptr1);\n\
+        tempA2 = vload4(z, in0_ptr2);\n\
+        tempA3 = vload4(z, in0_ptr3);\n\
+\n\
+        sum.x += dot(tempA0, tempB0);\n\
+        sum.y += dot(tempA1, tempB0);\n\
+        sum.z += dot(tempA2, tempB0);\n\
+        sum.w += dot(tempA3, tempB0);\n\
+    }\n\
+\n\
+    vstore4(sum, 0, output_ptr);\n\
+\n\
+}\n\
+\n\
+\n\
+\n\
+"; /* end of matrixmul_4x_cl*/
+
 static const char matrixmul_cross_cl[] = "__kernel void gemm_F32F32toF32_merge(\n\
     __read_only image2d_array_t   inputA,\n\
     __read_only image2d_array_t   inputB,\n\
@@ -71891,6 +71957,7 @@ static const source_map_t cl_resource[] =
     {"lstmunit_activation_S_F32_cl", lstmunit_activation_S_F32_cl},
     {"lstmunit_activation_S_U8_cl", lstmunit_activation_S_U8_cl},
     {"matrixmul_cl", matrixmul_cl},
+    {"matrixmul_4x_cl", matrixmul_4x_cl},
     {"matrixmul_cross_cl", matrixmul_cross_cl},
     {"matrixmul_transA_cl", matrixmul_transA_cl},
     {"maximum_cl", maximum_cl},
