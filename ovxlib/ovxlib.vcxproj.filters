@@ -999,6 +999,9 @@
     <ClCompile Include="src\kernel\vx\eltwise_vx.c">
       <Filter>Source Files\kernel\vx</Filter>
     </ClCompile>
+    <ClCompile Include="src\kernel\vx\gather_vx.c">
+      <Filter>Source Files\kernel\vx</Filter>
+    </ClCompile>
     <ClCompile Include="src\kernel\vx\l2_normalize_vx.c">
       <Filter>Source Files\kernel\vx</Filter>
     </ClCompile>
@@ -1009,6 +1012,12 @@
       <Filter>Source Files\kernel\vx</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\vx\prelu_vx.c">
+      <Filter>Source Files\kernel\vx</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\vx\pow_vx.c">
+      <Filter>Source Files\kernel\vx</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\vx\relationalops_vx.c">
       <Filter>Source Files\kernel\vx</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\vx\resize_vx.c">
