@@ -229,10 +229,25 @@ static vsi_nn_kernel_node_t _setup
         if ( node )
         {
             uint32_t index = 3;
-            int32_t block_size   = vsi_nn_kernel_param_get_int32( params, "block_size" );
-            int32_t block_num    = vsi_nn_kernel_param_get_int32( params, "block_num" );
-            int32_t axis_num     = vsi_nn_kernel_param_get_int32( params, "axis_num" );
+            int32_t block_size   = 1;
+            int32_t block_num    = 1;
+            int32_t axis_num     = 0;
             int32_t batch_dims   = vsi_nn_kernel_param_get_int32( params, "batch_dims" );
+            int32_t axis         = vsi_nn_kernel_param_get_int32( params, "axis" );
+            vsi_size_t *input_size = inputs[0]->attr.size;
+            uint32_t r_rank = vsi_nn_GetTensorIsScalar(inputs[0]) ? 0 : inputs[0]->attr.dim_num;
+            uint32_t i = 0;
+
+            for (i = 0; i < (uint32_t)axis; ++i)
+            {
+                block_size *= (int32_t)input_size[i];
+            }
+
+            axis_num = (int32_t)input_size[axis];
+            for (i = axis + 1; i < r_rank - batch_dims; ++i)
+            {
+                block_num *= (int32_t)input_size[i];
+            }
 
             /* Set inputs and outputs */
             vsi_nn_kernel_node_pack_io( backend_params, _CPU_PARAM_NUM,
