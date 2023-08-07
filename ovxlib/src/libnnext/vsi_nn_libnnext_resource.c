@@ -40064,8 +40064,8 @@ __kernel void func_name##_##src0_type_name##src1_type_name##toBOOL8_2D( \\\n\
     int2 coord = (int2)(get_global_id(0), get_global_id(1)); \\\n\
     src0_type      src0; \\\n\
     src0_copy_type srcA; \\\n\
-    src0_type      src1; \\\n\
-    src0_copy_type srcB; \\\n\
+    src1_type      src1; \\\n\
+    src1_copy_type srcB; \\\n\
     VXC_ReadImage(src0, input0, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
     _viv_asm(COPY, srcA, src0, 16); \\\n\
     VXC_ReadImage(src1, input1, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
@@ -40221,8 +40221,8 @@ __kernel void func_name##_##src0_type_name##src1_type_name##toBOOL8( \\\n\
     int4 coord = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
     src0_type      src0; \\\n\
     src0_copy_type srcA; \\\n\
-    src0_type      src1; \\\n\
-    src0_copy_type srcB; \\\n\
+    src1_type      src1; \\\n\
+    src1_copy_type srcB; \\\n\
     VXC_ReadImage2DArray(src0, input0, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
     _viv_asm(COPY, srcA, src0, 16); \\\n\
     VXC_ReadImage2DArray(src1, input1, coord, 0, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 0)); \\\n\
