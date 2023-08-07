@@ -33,6 +33,21 @@
 extern "C"{
 #endif
 
+typedef struct _vsi_nn_swap_handle_cache_item
+{
+    vsi_nn_link_list_t link_list;
+    vsi_nn_node_t* node;
+    vsi_nn_tensor_t* tensor;
+    uint32_t idx;
+} vsi_nn_swap_handle_cache_item_t;
+
+typedef struct _vsi_nn_swap_handle_cache
+{
+    int8_t is_feature_on;
+    int8_t is_cached;
+    vsi_nn_swap_handle_cache_item_t* cache_list;
+} vsi_nn_swap_handle_cache_t;
+
 /**
  * Internal Graph structure, internal use only.
  */
@@ -42,6 +57,7 @@ typedef struct _vsi_nn_graph_prv
     vsi_nn_graph_t pog;
 
     // Add graph internal attribute here...
+    vsi_nn_swap_handle_cache_t swap_handle_cache;
 } vsi_nn_graph_prv_t;
 
 /** Internal Node structure, internal use only. */
