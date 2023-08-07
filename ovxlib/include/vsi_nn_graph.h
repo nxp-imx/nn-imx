@@ -241,7 +241,7 @@ OVXLIB_API vsi_status vsi_nn_VerifyGraph
  */
 OVXLIB_API vsi_status vsi_nn_RunGraph
     (
-    const vsi_nn_graph_t * graph
+    vsi_nn_graph_t * graph
     );
 
 /**
@@ -273,7 +273,7 @@ OVXLIB_API vsi_status vsi_nn_AsyncRunGraph
 
 OVXLIB_API vsi_status vsi_nn_AsyncRunWait
     (
-        vsi_nn_graph_t * graph
+    vsi_nn_graph_t * graph
     );
 
 /**
