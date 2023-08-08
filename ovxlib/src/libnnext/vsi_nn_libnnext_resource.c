@@ -62249,6 +62249,69 @@ __kernel void gemm_4x_F32F32toF32_2D(\n\
 \n\
 }\n\
 \n\
+__kernel void gemm_4x_transa_F32F32toF32_2D(\n\
+    __read_only image2d_t   inputA,\n\
+    __read_only image2d_t   inputB,\n\
+    __write_only image2d_t  output,\n\
+    int M,\n\
+    int K,\n\
+    int N,\n\
+    int ac2zero,\n\
+    int bc2zero,\n\
+    float scale_a,\n\
+    float zp_a,\n\
+    float scale_b,\n\
+    float zp_b,\n\
+    float scale_out,\n\
+    float zp_out\n\
+    )\n\
+{\n\
+    int offset0 = get_global_id(0);\n\
+    int offset1 = M << 2;\n\
+\n\
+    int z = 0;\n\
+    float4 sum = (float4)(0, 0, 0, 0);\n\
+\n\
+    Image in0_tensor = create_image_from_image2d(inputA, 4);\n\
+    __global float* in0_ptr0 = (__global float*)in0_tensor.ptr + offset0;\n\
+    __global float* in0_ptr1 = in0_ptr0 + M;\n\
+    __global float* in0_ptr2 = in0_ptr1 + M;\n\
+    __global float* in0_ptr3 = in0_ptr2 + M;\n\
+\n\
+    Image in1_tensor = create_image_from_image2d(inputB, 4);\n\
+    __global float* in1_ptr = (__global float*)in1_tensor.ptr;\n\
+\n\
+    Image o_tensor = create_image_from_image2d(output, 4);\n\
+    __global float* output_ptr = (__global float*)o_tensor.ptr + offset0;\n\
+\n\
+    int step = K >> 2;\n\
+    for(z = 0; z < step; z++)\n\
+    {\n\
+        float4 tempA0, tempA1, tempA2, tempA3;\n\
+        float4 tempB0;\n\
+\n\
+        tempB0 = vload4(z, in1_ptr);\n\
+        tempA0 = vload4(0, in0_ptr0);\n\
+        tempA1 = vload4(0, in0_ptr1);\n\
+        tempA2 = vload4(0, in0_ptr2);\n\
+        tempA3 = vload4(0, in0_ptr3);\n\
+\n\
+        sum += tempA0 * tempB0.x;\n\
+        sum += tempA1 * tempB0.y;\n\
+        sum += tempA2 * tempB0.z;\n\
+        sum += tempA3 * tempB0.w;\n\
+\n\
+        in0_ptr0 = in0_ptr0 + offset1;\n\
+        in0_ptr1 = in0_ptr1 + offset1;\n\
+        in0_ptr2 = in0_ptr2 + offset1;\n\
+        in0_ptr3 = in0_ptr3 + offset1;\n\
+\n\
+    }\n\
+\n\
+    vstore4(sum, 0, output_ptr);\n\
+\n\
+}\n\
+\n\
 \n\
 \n\
 "; /* end of matrixmul_4x_cl*/
