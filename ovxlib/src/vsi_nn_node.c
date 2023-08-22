@@ -193,6 +193,8 @@ void vsi_nn_PrintNode
     uint32_t i;
     int count;
     char buf[_MAX_PRINT_BUF_SZ];
+    vsi_bool is_out_of_bound = FALSE;
+    int temp = 0;
 
     if( NULL == node )
     {
@@ -201,28 +203,43 @@ void vsi_nn_PrintNode
     count = snprintf( &buf[0], _MAX_PRINT_BUF_SZ, "%s", "[in:" );
     for( i = 0; i < node->input.num; i ++ )
     {
-        if( count >= _MAX_PRINT_BUF_SZ )
-        {
-            break;
-        }
-        count += snprintf( &buf[count], _MAX_PRINT_BUF_SZ - count,
+        temp = snprintf( &buf[count], _MAX_PRINT_BUF_SZ - count,
             " %d,", node->input.tensors[i] );
+        if ( temp >= _MAX_PRINT_BUF_SZ - count || temp == -1 )
+        {
+            is_out_of_bound = TRUE;
+            goto final;
+        }
+        count += temp;
     }
-    count --;
-    count += snprintf( &buf[count], _MAX_PRINT_BUF_SZ - count,
+    temp = snprintf( &buf[count], _MAX_PRINT_BUF_SZ - count,
         "%s", " ], [out:" );
+    if ( temp >= _MAX_PRINT_BUF_SZ - count || temp == -1 )
+    {
+            is_out_of_bound = TRUE;
+            goto final;
+    }
+    count += temp;
     for( i = 0; i < node->output.num; i ++ )
     {
-        if( count >= _MAX_PRINT_BUF_SZ )
+        /* -3 means reserve memory for ending symbols --" ]" */
+        temp = snprintf( &buf[count], _MAX_PRINT_BUF_SZ - count - 3,
+            " %d,", node->input.tensors[i] );
+        if ( temp >= _MAX_PRINT_BUF_SZ - count - 3 || temp == -1 )
         {
-            break;
+            is_out_of_bound = TRUE;
+            goto final;
         }
-        count += snprintf( &buf[count], _MAX_PRINT_BUF_SZ - count,
-            " %d,", node->output.tensors[i] );
+        count += temp;
     }
-    count --;
     count += snprintf( &buf[count], _MAX_PRINT_BUF_SZ - count,
         "%s", " ]" );
+final:
+    if ( is_out_of_bound )
+    {
+        VSILOGW("Buffer is already full, cannot print all messages for (%16s)node[%u] [%08x]",
+            vsi_nn_OpGetName(node->op), id, node->n );
+    }
     VSILOGI( "(%16s)node[%u] %s [%08x]", vsi_nn_OpGetName(node->op), id, buf, node->n );
 } /* vsi_nn_PrintNode() */
 
