@@ -943,6 +943,9 @@
     <ClCompile Include="src\kernel\cl\one_hot_cl.c">
       <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="src\kernel\cl\pool_cl.c">
+      <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="src\kernel\cl\poolwithargmax_cl.c">
       <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
@@ -1190,6 +1193,9 @@
       <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\one_hot_cpu.c">
+      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\kernel\cpu\pool_cpu.c">
       <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\poolwithargmax_cpu.c">
@@ -1457,6 +1463,9 @@
       <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\one_hot_evis.c">
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\kernel\evis\pool_evis.c">
       <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\poolwithargmax_evis.c">
