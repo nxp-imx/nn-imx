@@ -556,7 +556,7 @@ OVXLIB_API vsi_bool vsi_nn_SetGraphOutputs
  * @param[in] graph Graph handle
  * @param[in] id Node id to be removed.
  */
-void vsi_nn_RemoveNode
+OVXLIB_API void vsi_nn_RemoveNode
     (
     vsi_nn_graph_t      * graph,
     vsi_nn_node_id_t      id
