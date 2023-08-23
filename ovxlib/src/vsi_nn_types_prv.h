@@ -66,6 +66,12 @@ typedef struct _vsi_nn_node_prv
     /** Public Ovxlib Node(pon)*/
     vsi_nn_node_t pon;
 
+    /** some op will adjust its const tensors in op_setup,
+     * this field is to indicate whether the const tensors
+     * are processed in op_setup phase, this adjustment cannot
+     * be done more than once */
+    int8_t processed;
+
     // Add node internal attribute here...
 } vsi_nn_node_prv_t;
 
