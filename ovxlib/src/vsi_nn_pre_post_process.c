@@ -181,6 +181,7 @@ static void _set_preproc_node_norm_params
         {
             vsi_nn_preprocess_mean_and_scale_t* means_and_single_scale =
             (vsi_nn_preprocess_mean_and_scale_t*)mean_and_scale;
+            node->nn_param.pre_process.norm.scale = means_and_single_scale->scale;
             node->nn_param.pre_process.norm2.scale[0] = means_and_single_scale->scale;
             node->nn_param.pre_process.norm2.scale[1] = means_and_single_scale->scale;
             node->nn_param.pre_process.norm2.scale[2] = means_and_single_scale->scale;
