@@ -115,6 +115,13 @@ static vsi_bool op_setup
 
     vsi_nn_internal_init_node_wksp( self );
 
+    if (vsi_nn_compareVersion(self->graph, 1, 1, 83) == -1)
+    {
+        p->norm2.scale[0] = p->norm.scale;
+        p->norm2.scale[1] = p->norm.scale;
+        p->norm2.scale[2] = p->norm.scale;
+    }
+
     if ( p->type == VSI_NN_SOURCE_FORMAT_IMAGE_YUV420        ||
          p->type == VSI_NN_SOURCE_FORMAT_IMAGE_YUV444        ||
          p->type == VSI_NN_SOURCE_FORMAT_IMAGE_NV12          ||
@@ -673,6 +680,7 @@ static vsi_status op_init
     {
         return  VX_ERROR_NO_MEMORY;
     }
+
     memset(self->nn_param.pre_process.local, 0, sizeof(vsi_nn_pre_process_lcl_data));
 
     return status;
