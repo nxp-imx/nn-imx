@@ -153,6 +153,9 @@
     <ClInclude Include="include\ops\vsi_nn_op_reducel2.h">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
+    <ClInclude Include="include\ops\vsi_nn_op_crop_and_resize.h">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
     <ClInclude Include="include\libnnext\vsi_nn_vxkernel.h">
       <Filter>Header Files\libnnext</Filter>
     </ClInclude>
@@ -950,6 +953,9 @@
     <ClCompile Include="src\kernel\cl\comparisons_cl.c">
       <Filter>Source Files\kernel\cl</Filter>
     </ClCompile>
+    <ClCompile Include="src\kernel\cl\crop_and_resize_cl.c">
+      <Filter>Source Files\kernel\cl</Filter>
+    </ClCompile>
     <ClCompile Include="src\kernel\cl\cumsum_cl.c">
       <Filter>Source Files\kernel\cl</Filter>
     </ClCompile>
@@ -1191,6 +1197,9 @@
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\conv1d_ovxlib_cpu.c">
+      <Filter>Source Files\kernel\cpu</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\cpu\crop_and_reisze_cpu.c">
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\cumsum_cpu.c">
@@ -1482,6 +1491,9 @@
       <Filter>Source Files\kernel\evis</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\conv1d_ovxlib_evis.c">
+      <Filter>Source Files\kernel\evis</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\evis\crop_and_resize_evis.c">
       <Filter>Source Files\kernel\evis</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\cumsum_evis.c">
@@ -1836,6 +1848,9 @@
       <Filter>Source Files\libnnext</Filter>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_reducel2.c">
+      <Filter>Source Files\ops</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_crop_and_resize.c">
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="src\libnnext\vsi_nn_vxkernel.c">
