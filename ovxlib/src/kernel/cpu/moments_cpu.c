@@ -99,7 +99,7 @@ DEF_KERNEL_EXECUTOR(_moments_exec)
     CHECK_PTR_FAIL_GOTO( buffer[2], "Create output buffer fail.", final );
     memset( buffer[2], 0, out_elements * sizeof(float) );
 
-    if(mask == 0)
+    if (mask == 0)
     {
         vsi_size_t  outerSize = 1;
         vsi_size_t  axisSize  = 1;
@@ -158,19 +158,19 @@ DEF_KERNEL_EXECUTOR(_moments_exec)
         vsi_size_t  axisSize  = width * channel;
         vsi_size_t  vol = width_o * height_o * channel_o;
 
-        for(b = 0; b < batch; b++)
+        for (b = 0; b < batch; b++)
         {
-            for(h = 0; h < height; h++)
+            for (h = 0; h < height; h++)
             {
                 float sum = .0f;
                 float sumsq = .0f;
                 float mean = .0f;
                 float vari = .0f;
                 vsi_size_t h_offset = h * width;
-                for(c = 0; c < channel; c++)
+                for (c = 0; c < channel; c++)
                 {
                     vsi_size_t offset = h_offset + c * wh_offset;
-                    for(i = 0; i < width; i++)
+                    for (i = 0; i < width; i++)
                     {
                         float value = buffer[0][i + offset];
                         sum += value;
@@ -192,14 +192,14 @@ DEF_KERNEL_EXECUTOR(_moments_exec)
     CHECK_STATUS_FAIL_GOTO( status, final );
 
 final:
-    for( i = 0; i < _CPU_IO_NUM; i ++ )
+    for ( i = 0; i < _CPU_IO_NUM; i ++ )
     {
-        if( buffer[i] )
+        if ( buffer[i] )
         {
             free( buffer[i] );
         }
     }
-    for( i = 0; i < _CPU_IO_NUM; i ++ )
+    for ( i = 0; i < _CPU_IO_NUM; i ++ )
     {
         if(attr[i]) { vsi_nn_kernel_tensor_attr_release( &attr[i] ); }
     }
@@ -274,17 +274,17 @@ static vsi_nn_kernel_node_t _setup
 
     if (is_continue_axis == FALSE)
     {
-        for(i = 0; i < axis_num; i++)
+        for (i = 0; i < axis_num; i++)
         {
             mask |= (1 << axis[i]);
         }
     }
 
     status = _query_kernel( inputs, outputs, kernel );
-    if( VSI_SUCCESS == status)
+    if ( VSI_SUCCESS == status)
     {
         node = vsi_nn_kernel_create_node( graph, kernel );
-        if( node )
+        if ( node )
         {
             int32_t axis_first  = axis[0];
             /* Set inputs and outputs */

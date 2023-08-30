@@ -37,29 +37,25 @@
 #define _INPUT_NUM    1
 #define _OUTPUT_NUM   2
 
-static void _squeeze_axis
+static vsi_bool _is_continue_axis
     (
-    vsi_nn_tensor_t *input,
     const int32_t* axis_in,
-    int32_t axis_num,
-    int32_t* axis_out,
-    int32_t *axis_num_out
+    int32_t axis_num
     )
 {
     int32_t i = 0;
+    vsi_bool is_continue_axis = TRUE;
 
-    memcpy(axis_out, axis_in, sizeof(int32_t) * axis_num);
-    *axis_num_out = axis_num;
-
-    for (i = 0; i < axis_num; i++)
+    for ( i = 1; i < axis_num; i++)
     {
-        if (axis_in[i] == 3 && input->attr.size[3] == 1)
+        if ( axis_in[i] != (axis_in[i - 1] + 1) && axis_in[0] == 0)
         {
-            *axis_num_out = axis_num - 1;
-            axis_out[i] = 0;
+            is_continue_axis = FALSE;
             break;
         }
     }
+
+    return is_continue_axis;
 }
 
 static vsi_status op_compute
@@ -72,16 +68,13 @@ static vsi_status op_compute
     vsi_status status = VSI_FAILURE;
     vsi_nn_kernel_param_t * param = NULL;
     vsi_nn_kernel_node_t    n = NULL;
-    int32_t axes_copy[VSI_NN_MAX_DIM_NUM] = { 0 };
-    const int32_t* axis = self->nn_param.moments.axis;
+    int32_t* axis = (int32_t* )self->nn_param.moments.axis;
     int32_t axis_num = self->nn_param.moments.axis_num;
     int32_t keep_dim = self->nn_param.moments.keep_dim ? 1 : 0;
 
-    _squeeze_axis(inputs[0], axis, axis_num, axes_copy, &axis_num);
-
     param = vsi_nn_kernel_param_create();
 
-    vsi_nn_kernel_param_add_buffer( param, "axis", axes_copy, axis_num);
+    vsi_nn_kernel_param_add_buffer( param, "axis", axis, axis_num);
     vsi_nn_kernel_param_add_int32( param, "keep_dim", keep_dim);
     n = vsi_nn_kernel_selector( self->graph, "moments", inputs, _INPUT_NUM, outputs, _OUTPUT_NUM, param );
     if (n != NULL)
@@ -105,9 +98,7 @@ static vsi_bool op_check
     vsi_nn_tensor_t ** outputs
     )
 {
-    int32_t axes_copy[VSI_NN_MAX_DIM_NUM] = { 0 };
-    int32_t axes_num = 0;
-    int32_t i = 0;
+    vsi_bool is_continue_axis = FALSE;
 
     BEGIN_IO_TYPE_DECL(MOMENTS, 1, 2)
         IO_TYPE(D_U8|Q_ASYM,  D_F16,        D_F16)
@@ -140,19 +131,14 @@ static vsi_bool op_check
         return FALSE;
     }
 
-    _squeeze_axis(inputs[0], self->nn_param.moments.axis,
-        self->nn_param.moments.axis_num, axes_copy, &axes_num);
+    is_continue_axis = _is_continue_axis(self->nn_param.moments.axis, self->nn_param.moments.axis_num);
 
-    for (i = 0; i < axes_num; i++)
+    if (!is_continue_axis)
     {
-        if (axes_copy[i] > 2)
-        {
-            VSILOGE("moments shader path not support axis: %d", axes_copy[i]);
-            return FALSE;
-        }
+        VSILOGE("moments shader path not support discontinuous axis");
     }
 
-    return TRUE;
+    return is_continue_axis;
 } /* op_check() */
 
 static vsi_bool op_setup
