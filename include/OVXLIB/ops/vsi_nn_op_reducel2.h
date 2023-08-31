@@ -22,8 +22,8 @@
 *
 *****************************************************************************/
 
-#ifndef _VSI_NN_OP_PRE_PROCESS_RGB888_PLANAR_H
-#define _VSI_NN_OP_PRE_PROCESS_RGB888_PLANAR_H
+#ifndef _VSI_NN_OP_REDUCEL2_H
+#define _VSI_NN_OP_REDUCEL2_H
 
 #include "vsi_nn_types.h"
 
@@ -31,43 +31,17 @@
 extern "C" {
 #endif
 
-typedef struct _vsi_nn_pre_process_rgb888_planar_param
+typedef struct _vsi_nn_reducel2_param
 {
-    struct _pre_process_rgb888_planar_local_data_t* local;
-    // Add parameters here
-    struct
-    {
-        uint32_t left;
-        uint32_t top;
-        uint32_t width;
-        uint32_t height;
-    } rect;
-
-    struct
-    {
-        vsi_size_t *size;
-        uint32_t   dim_num;
-    } output_attr;
-
-    float r_mean;
-    float g_mean;
-    float b_mean;
-    float scale;
-
-
-    vsi_bool reverse_channel;
-    vsi_bool enable_rgb88_planar_nhwc;
-
-    float r_scale;
-    float g_scale;
-    float b_scale;
-
-} vsi_nn_pre_process_rgb888_planar_param;
-_compiler_assert(offsetof(vsi_nn_pre_process_rgb888_planar_param, local) == 0, \
-    vsi_nn_pre_process_rgb888_planar_h );
+    struct _reducel2_local_data_t * lcl;
+    vx_int32   *axis;
+    vx_uint32  axis_num;
+    vx_bool    keep_dim;
+} vsi_nn_reducel2_param;
 
 #ifdef __cplusplus
 }
 #endif
 
 #endif
+
