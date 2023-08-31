@@ -526,6 +526,10 @@ static VSI_INLINE_API vsi_nn_kernel_dtype_e vsi_nn_kernel_map_dtype
         return BF16;
     case VSI_NN_TYPE_FLOAT32:
         return F32;
+    case VSI_NN_TYPE_FLOAT8_E4M3:
+        return FP8_E4M3;
+    case VSI_NN_TYPE_FLOAT8_E5M2:
+        return FP8_E5M2;
     default:
         VSILOGE("error data type %d", dtype);
         break;
@@ -583,6 +587,8 @@ static VSI_INLINE_API size_t vsi_nn_kernel_dtype_get_bytes
         case I8:
         case U8:
         case BOOL8:
+        case FP8_E4M3:
+        case FP8_E5M2:
             return sizeof(int8_t);
         case I16:
         case U16:
@@ -615,6 +621,8 @@ static VSI_INLINE_API vsi_size_t vsi_nn_kernel_dtype_get_bits
         case I8:
         case U8:
         case BOOL8:
+        case FP8_E4M3:
+        case FP8_E5M2:
             return 8;
         case I16:
         case U16:
