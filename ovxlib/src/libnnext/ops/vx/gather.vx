@@ -185,6 +185,37 @@ __kernel void gather_I16toI16_axis0(
     VXC_WriteImage(output, coord, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0));
 }
 
+#define GATHER_AXIS0_OUT_OF_BORDER(name, data_type_ptr, stride) \
+__kernel void gather_##name##_axis0_out( \
+    __read_only image2d_t   input0, \
+    __read_only image2d_t   input1, \
+    __write_only image2d_t  output, \
+    int block_size, \
+    int block_num, \
+    int axis_num \
+    ) \
+{ \
+    int2 coord = (int2)(get_global_id(0), get_global_id(1)); \
+    int indices = read_imagei(input1, coord.xx).x; \
+    indices = indices >= 0 ? indices : indices + axis_num; \
+ \
+    int2 coord_in = (int2)(0, get_global_id(1)); \
+    Image img0 = create_image_from_image2d(input0, stride); \
+    uchar* _input0_ptr = get_image_ptr_from_coord(img0, coord_in); \
+    data_type_ptr input0_ptr = (data_type_ptr)_input0_ptr; \
+ \
+    Image img2 = create_image_from_image2d(output, stride); \
+    uchar* _output_ptr = get_image_ptr_from_coord(img2, coord); \
+    data_type_ptr output_ptr = (data_type_ptr)_output_ptr; \
+ \
+    output_ptr[0] = input0_ptr[indices]; \
+}
+GATHER_AXIS0_OUT_OF_BORDER(U8toU8, uchar*, 1)
+GATHER_AXIS0_OUT_OF_BORDER(I8toI8, char*,  1)
+GATHER_AXIS0_OUT_OF_BORDER(I16toI16, short*, 2)
+GATHER_AXIS0_OUT_OF_BORDER(F16toF16, short*, 2)
+
+
 __kernel void gather_F16toF16_axis0(
     __read_only image2d_t   input0,
     __read_only image2d_t   input1,
