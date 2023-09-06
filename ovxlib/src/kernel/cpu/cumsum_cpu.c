@@ -241,6 +241,11 @@ static vsi_nn_kernel_node_t _setup
             int32_t exclusive = vsi_nn_kernel_param_get_int32( params, "exclusive" );
             int32_t reverse   = vsi_nn_kernel_param_get_int32( params, "reverse" );
 
+            if (axis < 0)
+            {
+                axis += (int32_t)inputs[0]->attr.dim_num;
+            }
+
             /* Set inputs and outputs */
             vsi_nn_kernel_node_pack_io( backend_params, _CPU_PARAM_NUM,
                     inputs, _CPU_INPUT_NUM, outputs, _CPU_OUTPUT_NUM );
