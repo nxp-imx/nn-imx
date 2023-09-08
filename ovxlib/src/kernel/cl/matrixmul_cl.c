@@ -35,6 +35,7 @@
 #include "utils/vsi_nn_util.h"
 #include "kernel/vsi_nn_kernel.h"
 #include "kernel/vsi_nn_kernel_eltwise.h"
+#include "kernel/vsi_nn_kernel_gpu_shape_optimize.h"
 
 __BEGIN_DECLS
 
@@ -437,7 +438,6 @@ static vsi_nn_kernel_node_t _setup
     vsi_nn_kernel_node_t node = NULL;
     int32_t transposeA  = vsi_nn_kernel_param_get_int32( params, "transposeA" );
     int32_t transposeB  = vsi_nn_kernel_param_get_int32( params, "transposeB" );
-    int32_t cross_flg  = vsi_nn_kernel_param_get_int32( params, "cross_flg" );
     int32_t transFlg    = 0;
     int32_t flag_4x = 0;
     vsi_size_t M = inputs[0]->attr.size[1];
@@ -464,6 +464,13 @@ static vsi_nn_kernel_node_t _setup
     vsi_nn_kernel_dtype_e input0_dtype = U8;
     vsi_nn_kernel_dtype_e input1_dtype = U8;
     vsi_nn_kernel_dtype_e output_dtype = U8;
+    vsi_size_t shapes[3][VSI_NN_MAX_DIM_NUM] = {{0}};
+    uint32_t new_rank[3] = {0};
+    uint32_t cross_flg = 0;
+    uint32_t size_axis_in_out[3] = {0};
+    uint32_t stride_axis_in_out[9] = {0};
+    vsi_nn_tensor_t* tmp_inputs[2]  = {NULL};
+    vsi_nn_tensor_t* tmp_outputs[1] = {NULL};
 
     VSI_UNREFERENCED(input_num);
     VSI_UNREFERENCED(output_num);
@@ -474,6 +481,33 @@ static vsi_nn_kernel_node_t _setup
                 outputs[0]->attr.dim_num ) )
     {
         return NULL;
+    }
+
+    status = vsi_nn_kernel_optimize_matrixmul_broadcast_shape(
+                                       inputs[0]->attr.size,
+                                       inputs[1]->attr.size,
+                                       outputs[0]->attr.size,
+                                       inputs[0]->attr.dim_num,
+                                       inputs[1]->attr.dim_num,
+                                       outputs[0]->attr.dim_num,
+                                       shapes[0], shapes[1], shapes[2], new_rank,
+                                       &cross_flg, size_axis_in_out, stride_axis_in_out);
+    if (status)
+    {
+        tmp_inputs[0] = vsi_nn_reshape_tensor(graph, inputs[0], shapes[0], new_rank[0]);
+        tmp_inputs[1] = vsi_nn_reshape_tensor(graph, inputs[1], shapes[1], new_rank[1]);
+        tmp_outputs[0] = vsi_nn_reshape_tensor(graph, outputs[0], shapes[2], new_rank[2]);
+
+        M = tmp_inputs[0]->attr.size[1];
+        K = tmp_inputs[0]->attr.size[0];
+        N = tmp_inputs[1]->attr.size[0];
+        depth = tmp_outputs[0]->attr.dim_num > 2 ? tmp_outputs[0]->attr.size[2] : 1;
+    }
+    else
+    {
+        VSILOGE("illegal inputs shape");
+        status = VSI_FAILURE;
+        goto final;
     }
 
     if (transposeB)
@@ -489,8 +523,8 @@ static vsi_nn_kernel_node_t _setup
         transFlg = 1;
     }
 
-    a_depth = inputs[0]->attr.dim_num > 2 ? inputs[0]->attr.size[2] : 1;
-    b_depth = inputs[1]->attr.dim_num > 2 ? inputs[1]->attr.size[2] : 1;
+    a_depth = tmp_inputs[0]->attr.dim_num > 2 ? tmp_inputs[0]->attr.size[2] : 1;
+    b_depth = tmp_inputs[1]->attr.dim_num > 2 ? tmp_inputs[1]->attr.size[2] : 1;
 
     if (b_depth == 1)
     {
@@ -501,14 +535,14 @@ static vsi_nn_kernel_node_t _setup
         ac2zero = 1;
     }
 
-    if (inputs[0]->attr.dim_num == 4 && inputs[1]->attr.dim_num == 3
+    if (tmp_inputs[0]->attr.dim_num == 4 && tmp_inputs[1]->attr.dim_num == 3
         && a_depth > 1 && b_depth > 1 && cross_flg == 2)
     {
         ac2zero = 1;
         bc2zero = 0;
         outer = (int32_t)a_depth;
     }
-    else if (inputs[1]->attr.dim_num == 4 && inputs[0]->attr.dim_num == 3
+    else if (tmp_inputs[1]->attr.dim_num == 4 && tmp_inputs[0]->attr.dim_num == 3
         && a_depth > 1 && b_depth > 1 && cross_flg == 2)
     {
         ac2zero = 0;
@@ -516,46 +550,46 @@ static vsi_nn_kernel_node_t _setup
         outer = (int32_t)b_depth;
     }
 
-    final_in_tensors[0]  = inputs[0];
-    final_in_tensors[1]  = inputs[1];
-    final_out_tensors[0] = outputs[0];
+    final_in_tensors[0]  = tmp_inputs[0];
+    final_in_tensors[1]  = tmp_inputs[1];
+    final_out_tensors[0] = tmp_outputs[0];
 
-    input0_dtype = vsi_nn_kernel_map_dtype(inputs[0]->attr.dtype.vx_type);
-    input1_dtype = vsi_nn_kernel_map_dtype(inputs[1]->attr.dtype.vx_type);
-    output_dtype = vsi_nn_kernel_map_dtype(outputs[0]->attr.dtype.vx_type);
+    input0_dtype = vsi_nn_kernel_map_dtype(tmp_inputs[0]->attr.dtype.vx_type);
+    input1_dtype = vsi_nn_kernel_map_dtype(tmp_inputs[1]->attr.dtype.vx_type);
+    output_dtype = vsi_nn_kernel_map_dtype(tmp_outputs[0]->attr.dtype.vx_type);
 
 
     if (((transFlg == 0) || (transFlg == 1)) && (cross_flg == 0) &&
-        (F32 == input0_dtype) &&
-        (F32 == input1_dtype) && (F32 == output_dtype)) {
-        vsi_size_t in1_w = inputs[1]->attr.size[0];
-        vsi_size_t in1_h = inputs[1]->attr.size[1];
-        vsi_size_t in1_c = inputs[1]->attr.dim_num > 2 ? inputs[1]->attr.size[2] : 1;
-        vsi_size_t in1_n = inputs[1]->attr.dim_num > 3 ? inputs[1]->attr.size[3] : 1;
-        vsi_size_t out_w = outputs[0]->attr.size[0];
-        vsi_size_t out_h = outputs[0]->attr.size[1];
-        vsi_size_t out_c = outputs[0]->attr.dim_num > 2 ? outputs[0]->attr.size[2] : 1;
-        vsi_size_t out_n = outputs[0]->attr.dim_num > 3 ? outputs[0]->attr.size[3] : 1;
+        (F32 == input0_dtype) && (F32 == input1_dtype) && (F32 == output_dtype))
+    {
+        vsi_size_t in1_w = tmp_inputs[1]->attr.size[0];
+        vsi_size_t in1_h = tmp_inputs[1]->attr.size[1];
+        vsi_size_t in1_c = tmp_inputs[1]->attr.dim_num > 2 ? tmp_inputs[1]->attr.size[2] : 1;
+        vsi_size_t in1_n = tmp_inputs[1]->attr.dim_num > 3 ? tmp_inputs[1]->attr.size[3] : 1;
+        vsi_size_t out_w = tmp_outputs[0]->attr.size[0];
+        vsi_size_t out_h = tmp_outputs[0]->attr.size[1];
+        vsi_size_t out_c = tmp_outputs[0]->attr.dim_num > 2 ? tmp_outputs[0]->attr.size[2] : 1;
+        vsi_size_t out_n = tmp_outputs[0]->attr.dim_num > 3 ? tmp_outputs[0]->attr.size[3] : 1;
         if ((in1_w == 1) && (in1_h % 4 == 0) && (in1_c == 1) && (in1_n == 1) &&
-            (out_w == 1) && (out_h % 4 == 0) && (out_c == 1) && (out_n == 1)) {
+            (out_w == 1) && (out_h % 4 == 0) && (out_c == 1) && (out_n == 1))
+        {
             final_shape[0] = in1_h;
             final_shape[1] = in1_w;
             final_rank = 2;
-            rs_in_tensors = vsi_nn_reshape_tensor(graph, inputs[1], final_shape, final_rank);
+            rs_in_tensors = vsi_nn_reshape_tensor(graph, tmp_inputs[1], final_shape, final_rank);
             final_in_tensors[1] = rs_in_tensors;
 
             final_shape[0] = out_h;
             final_shape[1] = out_w;
             final_rank = 2;
-            rs_out_tensors = vsi_nn_reshape_tensor(graph, outputs[0], final_shape, final_rank);
+            rs_out_tensors = vsi_nn_reshape_tensor(graph, tmp_outputs[0], final_shape, final_rank);
             final_out_tensors[0] = rs_out_tensors;
 
             flag_4x = 1;
         }
     }
 
-    status = _query_kernel(
-        kernel, inputs, outputs, depth, flag_4x, transFlg, cross_flg);
+    status = _query_kernel(kernel, tmp_inputs, tmp_outputs, depth, flag_4x, transFlg, cross_flg);
     if ( VSI_SUCCESS == status)
     {
         node = vsi_nn_kernel_create_node( graph, kernel );
@@ -602,6 +636,10 @@ static vsi_nn_kernel_node_t _setup
         }
     }
 
+final:
+    vsi_safe_release_tensor(tmp_inputs[0]);
+    vsi_safe_release_tensor(tmp_inputs[1]);
+    vsi_safe_release_tensor(tmp_outputs[0]);
     vsi_safe_release_tensor(rs_in_tensors);
     vsi_safe_release_tensor(rs_out_tensors);
 
