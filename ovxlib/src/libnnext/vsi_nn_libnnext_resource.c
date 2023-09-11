@@ -65606,7 +65606,135 @@ __kernel void gemm_4x_transa_F32F32toF32_2D(\n\
 \n\
 }\n\
 \n\
+__kernel __attribute__((reqd_work_group_size(1, 64, 1)))\n\
+    void gemm_4x_transa_local_F32F32toF32_2D(\n\
+    __read_only  image2d_t inputA,\n\
+    __read_only  image2d_t inputB,\n\
+    __write_only image2d_t output,\n\
+    int M,\n\
+    int K,\n\
+    int N,\n\
+    int ac2zero,\n\
+    int bc2zero,\n\
+    float scale_a,\n\
+    float zp_a,\n\
+    float scale_b,\n\
+    float zp_b,\n\
+    float scale_out,\n\
+    float zp_out\n\
+    )\n\
+{\n\
+    int offset0 = get_global_id(0);\n\
+    int lid = get_local_id(1);\n\
 \n\
+    int stride = 0;\n\
+\n\
+    int z = 0;\n\
+    int offset1 = M << 2;\n\
+    int step = K >> 8;\n\
+    int lid2 = lid * 4 * step;\n\
+\n\
+    Image in0_tensor = create_image_from_image2d(inputA, 4);\n\
+    __global float* in0_ptr0 = (__global float*)in0_tensor.ptr + offset0 + lid2 * M;\n\
+    __global float* in0_ptr1 = in0_ptr0 + M;\n\
+    __global float* in0_ptr2 = in0_ptr1 + M;\n\
+    __global float* in0_ptr3 = in0_ptr2 + M;\n\
+\n\
+    Image in1_tensor = create_image_from_image2d(inputB, 4);\n\
+    __global float* in1_ptr = (__global float*)in1_tensor.ptr + lid2;\n\
+\n\
+    Image o_tensor = create_image_from_image2d(output, 4);\n\
+    __global float* output_ptr = (__global float*)o_tensor.ptr + offset0;\n\
+\n\
+    __local float4 sum_vec4_0[64];\n\
+    __local float4 sum_vec4_1[64];\n\
+    __local float4 sum_vec4_2[64];\n\
+    __local float4 sum_vec4_3[64];\n\
+\n\
+    float4 sum0 = (float4)(0.0, 0.0, 0.0, 0.0);\n\
+    float4 sum1 = (float4)(0.0, 0.0, 0.0, 0.0);\n\
+    float4 sum2 = (float4)(0.0, 0.0, 0.0, 0.0);\n\
+    float4 sum3 = (float4)(0.0, 0.0, 0.0, 0.0);\n\
+\n\
+    float4 tempA0, tempA1, tempA2, tempA3;\n\
+    float4 tempA4, tempA5, tempA6, tempA7;\n\
+    float4 tempB0;\n\
+\n\
+    for(z = 0; z < step; z++)\n\
+    {\n\
+        tempB0 = vload4(z, in1_ptr);\n\
+        tempA0 = vload4(0, in0_ptr0);\n\
+        tempA1 = vload4(0, in0_ptr1);\n\
+        tempA2 = vload4(0, in0_ptr2);\n\
+        tempA3 = vload4(0, in0_ptr3);\n\
+        tempA4 = vload4(1, in0_ptr0);\n\
+        tempA5 = vload4(1, in0_ptr1);\n\
+        tempA6 = vload4(1, in0_ptr2);\n\
+        tempA7 = vload4(1, in0_ptr3);\n\
+\n\
+        sum0 = sum0 + tempA0 * tempB0.x;\n\
+        sum0 = sum0 + tempA1 * tempB0.y;\n\
+        sum0 = sum0 + tempA2 * tempB0.z;\n\
+        sum0 = sum0 + tempA3 * tempB0.w;\n\
+        sum1 = sum1 + tempA4 * tempB0.x;\n\
+        sum1 = sum1 + tempA5 * tempB0.y;\n\
+        sum1 = sum1 + tempA6 * tempB0.z;\n\
+        sum1 = sum1 + tempA7 * tempB0.w;\n\
+\n\
+        tempA0 = vload4(2, in0_ptr0);\n\
+        tempA1 = vload4(2, in0_ptr1);\n\
+        tempA2 = vload4(2, in0_ptr2);\n\
+        tempA3 = vload4(2, in0_ptr3);\n\
+        tempA4 = vload4(3, in0_ptr0);\n\
+        tempA5 = vload4(3, in0_ptr1);\n\
+        tempA6 = vload4(3, in0_ptr2);\n\
+        tempA7 = vload4(3, in0_ptr3);\n\
+\n\
+        in0_ptr0 = in0_ptr0 + offset1;\n\
+        in0_ptr1 = in0_ptr1 + offset1;\n\
+        in0_ptr2 = in0_ptr2 + offset1;\n\
+        in0_ptr3 = in0_ptr3 + offset1;\n\
+\n\
+        sum2 = sum2 + tempA0 * tempB0.x;\n\
+        sum2 = sum2 + tempA1 * tempB0.y;\n\
+        sum2 = sum2 + tempA2 * tempB0.z;\n\
+        sum2 = sum2 + tempA3 * tempB0.w;\n\
+        sum3 = sum3 + tempA4 * tempB0.x;\n\
+        sum3 = sum3 + tempA5 * tempB0.y;\n\
+        sum3 = sum3 + tempA6 * tempB0.z;\n\
+        sum3 = sum3 + tempA7 * tempB0.w;\n\
+    }\n\
+    sum_vec4_0[lid] = sum0;\n\
+    sum_vec4_1[lid] = sum1;\n\
+    sum_vec4_2[lid] = sum2;\n\
+    sum_vec4_3[lid] = sum3;\n\
+\n\
+    barrier(CLK_LOCAL_MEM_FENCE);\n\
+\n\
+    for (stride = 32; stride > 0; stride >>= 1)\n\
+    {\n\
+        if (lid < stride)\n\
+        {\n\
+            sum_vec4_0[lid] += sum_vec4_0[lid + stride];\n\
+            sum_vec4_1[lid] += sum_vec4_1[lid + stride];\n\
+            sum_vec4_2[lid] += sum_vec4_2[lid + stride];\n\
+            sum_vec4_3[lid] += sum_vec4_3[lid + stride];\n\
+        }\n\
+        barrier(CLK_LOCAL_MEM_FENCE);\n\
+    }\n\
+\n\
+    if (lid == 0)\n\
+    {\n\
+        sum0 = sum_vec4_0[0];\n\
+        sum1 = sum_vec4_1[0];\n\
+        sum2 = sum_vec4_2[0];\n\
+        sum3 = sum_vec4_3[0];\n\
+        vstore4(sum0, 0, output_ptr);\n\
+        vstore4(sum1, 1, output_ptr);\n\
+        vstore4(sum2, 2, output_ptr);\n\
+        vstore4(sum3, 3, output_ptr);\n\
+    }\n\
+}\n\
 \n\
 "; /* end of matrixmul_4x_cl*/
 
