@@ -1011,7 +1011,7 @@ DEF_KERNEL_INITIALIZER(_scatter_nd_update_update_initializer)
     int32_t     coord_dim  = 0;
     int32_t     strides[VSI_NN_MAX_DIM_NUM] = {0};
     int32_t     coord_strides[8]  = {0};
-    int32_t     *coord_strides1 = coord_strides + 4;
+    int32_t     coord_strides1[4] = {0};
     int32_t     input2_zp = 0;
     int32_t     i = 0;
 
@@ -1058,6 +1058,7 @@ DEF_KERNEL_INITIALIZER(_scatter_nd_update_update_initializer)
     {
         coord_strides[i] = strides[coord_dim - 2 - i];
     }
+    memcpy(coord_strides1, coord_strides + 4, 4 * sizeof(int32_t));
 
     gpu_param.global_scale[0]  = 1;
     gpu_param.global_scale[1]  = 1;
@@ -1170,7 +1171,7 @@ DEF_KERNEL_INITIALIZER(_scatter_nd_update_ref_initializer)
     int32_t     coord_dim  = 0;
     int32_t     strides[VSI_NN_MAX_DIM_NUM] = {0};
     int32_t     coord_strides[8]  = {0};
-    int32_t     *coord_strides1 = coord_strides + 4;
+    int32_t     coord_strides1[4] = {0};
     float       output_zp = 0;
     float       input_scale = 1.0f;
     float       output_scale = 1.0f;
@@ -1225,6 +1226,7 @@ DEF_KERNEL_INITIALIZER(_scatter_nd_update_ref_initializer)
     {
         coord_strides[i] = strides[coord_dim - 2 - i];
     }
+    memcpy(coord_strides1, coord_strides + 4, 4 * sizeof(int32_t));
 
     width = block_size;
     if (block_size % 4 == 0)

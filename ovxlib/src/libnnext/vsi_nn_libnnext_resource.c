@@ -61151,23 +61151,21 @@ __kernel __attribute__((reqd_work_group_size(16, 1, 1))) void layer_norm_U8toU8(
 }\n\
 "; /* end of layer_normalization_cl*/
 
-static const char log_softmax_axis0_cl[] = "#define rlogE    (0.693147182f)\n\
+static const char log_softmax_axis0_cl[] = "#pragma OPENCL EXTENSION cl_viv_vx_extension : enable\n\
+#include \"cl_viv_vx_ext.h\"\n\
+\n\
+#define rlogE    (0.693147182f)\n\
 float LOG(float x)\n\
 {\n\
     x = log2(x);\n\
     return x * rlogE;\n\
 }\n\
 \n\
-__kernel void log_softmax_axis0_F32toF32\n\
-    (\n\
+__kernel void log_softmax_axis0_F32toF32(\n\
     __read_only   image2d_array_t input,\n\
     __write_only  image2d_array_t output,\n\
-                            int   axis,\n\
-                            float beta,\n\
-                            float scale,\n\
-                            float scaleOut,\n\
-                            float zpOut\n\
-    )\n\
+    int   axis, float beta,\n\
+    float scale, float scaleOut, float zpOut)\n\
 {\n\
     int x = get_global_id(0);\n\
     int y = get_global_id(1);\n\
@@ -61211,16 +61209,11 @@ __kernel void log_softmax_axis0_F32toF32\n\
     }\n\
 }\n\
 \n\
-__kernel void log_softmax_axis0_F32toF32_2D\n\
-    (\n\
+__kernel void log_softmax_axis0_F32toF32_2D(\n\
     __read_only   image2d_t input,\n\
     __write_only  image2d_t output,\n\
-                      int   axis,\n\
-                      float beta,\n\
-                      float scale,\n\
-                      float scaleOut,\n\
-                      float zpOut\n\
-    )\n\
+    int   axis, float beta,\n\
+    float scale, float scaleOut, float zpOut)\n\
 {\n\
     int x = get_global_id(0);\n\
     int y = get_global_id(1);\n\
@@ -61263,16 +61256,11 @@ __kernel void log_softmax_axis0_F32toF32_2D\n\
     }\n\
 }\n\
 \n\
-__kernel void log_softmax_axis0_U8toU8\n\
-    (\n\
+__kernel void log_softmax_axis0_U8toU8(\n\
     __read_only  image2d_array_t input,\n\
     __write_only image2d_array_t output,\n\
-                           int   axis,\n\
-                           float beta,\n\
-                           float scale,\n\
-                           float scaleOut,\n\
-                           float zpOut\n\
-    )\n\
+    int   axis, float beta,\n\
+    float scale, float scaleOut, float zpOut)\n\
 {\n\
     int x = get_global_id(0);\n\
     int y = get_global_id(1);\n\
@@ -61318,16 +61306,11 @@ __kernel void log_softmax_axis0_U8toU8\n\
     }\n\
 }\n\
 \n\
-__kernel void log_softmax_axis0_U8toU8_2D\n\
-    (\n\
+__kernel void log_softmax_axis0_U8toU8_2D(\n\
     __read_only  image2d_t input,\n\
     __write_only image2d_t output,\n\
-                     int   axis,\n\
-                     float beta,\n\
-                     float scale,\n\
-                     float scaleOut,\n\
-                     float zpOut\n\
-    )\n\
+    int   axis, float beta,\n\
+    float scale, float scaleOut, float zpOut)\n\
 {\n\
     int x = get_global_id(0);\n\
     int y = get_global_id(1);\n\
@@ -61370,10 +61353,118 @@ __kernel void log_softmax_axis0_U8toU8_2D\n\
         coord_in.x++;\n\
     }\n\
 }\n\
+\n\
+__kernel void log_softmax_axis0_BF16toBF16(\n\
+    __read_only   image2d_array_t input,\n\
+    __write_only  image2d_array_t output,\n\
+    int   axis, float beta,\n\
+    float scale, float scaleOut, float zpOut)\n\
+{\n\
+    int x = get_global_id(0);\n\
+    int y = get_global_id(1);\n\
+    int z = get_global_id(2);\n\
+    int width = get_image_width(input);\n\
+    int4 coord_in = (int4)(0, y, z, 0);\n\
+    float4 maxValue, src, dst = {0.0};\n\
+    uint4 data, val, out;\n\
+\n\
+    data = read_imageui(input, coord_in);\n\
+    data = data << 16;\n\
+    _viv_asm(COPY, maxValue, data, 16);\n\
+    for (coord_in.x = 1; coord_in.x < width; )\n\
+    {\n\
+        data = read_imageui(input, coord_in);\n\
+        coord_in.x++;\n\
+        data = data << 16;\n\
+        _viv_asm(COPY, src, data, 16);\n\
+\n\
+        maxValue = maxValue > src ? maxValue : src;\n\
+    }\n\
+\n\
+    float sum = 0.f;\n\
+    for (coord_in.x = 0; coord_in.x < width; )\n\
+    {\n\
+        data = read_imageui(input, coord_in);\n\
+        coord_in.x++;\n\
+        data = data << 16;\n\
+        _viv_asm(COPY, src, data, 16);\n\
+\n\
+        sum += exp2((src.x - maxValue.x) * scale);\n\
+    }\n\
+\n\
+    float logSum = LOG(sum);\n\
+    for (coord_in.x = 0; coord_in.x < width; )\n\
+    {\n\
+        data = read_imageui(input, coord_in);\n\
+        data = data << 16;\n\
+        _viv_asm(COPY, src, data, 16);\n\
+\n\
+        dst.x = (src.x - maxValue.x) * beta - logSum;\n\
+        _viv_asm(COPY, val, dst, 16);\n\
+        out = val >> 16;\n\
+        write_imageui(output, coord_in, out);\n\
+        coord_in.x++;\n\
+    }\n\
+}\n\
+\n\
+__kernel void log_softmax_axis0_BF16toBF16_2D(\n\
+    __read_only   image2d_t input,\n\
+    __write_only  image2d_t output,\n\
+    int   axis, float beta,\n\
+    float scale, float scaleOut, float zpOut)\n\
+{\n\
+    int x = get_global_id(0);\n\
+    int y = get_global_id(1);\n\
+    int width = get_image_width(input);\n\
+    int2 coord_in = (int2)(0, y);\n\
+    float4 maxValue, src, dst = {0.0};\n\
+    uint4 data, val, out;\n\
+\n\
+    data = read_imageui(input, coord_in);\n\
+    data = data << 16;\n\
+    _viv_asm(COPY, maxValue, data, 16);\n\
+    for (coord_in.x = 1; coord_in.x < width; )\n\
+    {\n\
+        data = read_imageui(input, coord_in);\n\
+        coord_in.x++;\n\
+        data = data << 16;\n\
+        _viv_asm(COPY, src, data, 16);\n\
+\n\
+        maxValue = maxValue > src ? maxValue : src;\n\
+    }\n\
+\n\
+    float sum = 0.0f;\n\
+    for (coord_in.x = 0; coord_in.x < width; )\n\
+    {\n\
+        data = read_imageui(input, coord_in);\n\
+        coord_in.x++;\n\
+        data = data << 16;\n\
+        _viv_asm(COPY, src, data, 16);\n\
+\n\
+        sum += exp2((src.x - maxValue.x) * scale);\n\
+    }\n\
+\n\
+    float logSum = LOG(sum);\n\
+    for (coord_in.x = 0; coord_in.x < width; )\n\
+    {\n\
+        data = read_imageui(input, coord_in);\n\
+        data = data << 16;\n\
+        _viv_asm(COPY, src, data, 16);\n\
+\n\
+        dst.x = (src.x - maxValue.x) * beta - logSum;\n\
+        _viv_asm(COPY, val, dst, 16);\n\
+        out = val >> 16;\n\
+        write_imageui(output, coord_in, out);\n\
+        coord_in.x++;\n\
+    }\n\
+}\n\
 #undef rlogE\n\
 "; /* end of log_softmax_axis0_cl*/
 
-static const char log_softmax_axis1_cl[] = "#define rlogE    (0.693147182f)\n\
+static const char log_softmax_axis1_cl[] = "#pragma OPENCL EXTENSION cl_viv_vx_extension : enable\n\
+#include \"cl_viv_vx_ext.h\"\n\
+\n\
+#define rlogE    (0.693147182f)\n\
 \n\
 float LOG(float x)\n\
 {\n\
@@ -61381,16 +61472,11 @@ float LOG(float x)\n\
     return x * rlogE;\n\
 }\n\
 \n\
-__kernel void log_softmax_axis1_F32toF32\n\
-    (\n\
+__kernel void log_softmax_axis1_F32toF32(\n\
     __read_only   image2d_array_t input,\n\
     __write_only  image2d_array_t output,\n\
-                            int   axis,\n\
-                            float beta,\n\
-                            float scale,\n\
-                            float scaleOut,\n\
-                            float zpOut\n\
-    )\n\
+    int axis, float beta,\n\
+    float scale, float scaleOut, float zpOut)\n\
 {\n\
     int x = get_global_id(0);\n\
     int y = get_global_id(1);\n\
@@ -61434,16 +61520,11 @@ __kernel void log_softmax_axis1_F32toF32\n\
     }\n\
 }\n\
 \n\
-__kernel void log_softmax_axis1_F32toF32_2D\n\
-    (\n\
+__kernel void log_softmax_axis1_F32toF32_2D(\n\
     __read_only   image2d_t input,\n\
     __write_only  image2d_t output,\n\
-                      int   axis,\n\
-                      float beta,\n\
-                      float scale,\n\
-                      float scaleOut,\n\
-                      float zpOut\n\
-    )\n\
+    int axis, float beta,\n\
+    float scale, float scaleOut, float zpOut)\n\
 {\n\
     int x = get_global_id(0);\n\
     int y = get_global_id(1);\n\
@@ -61486,16 +61567,11 @@ __kernel void log_softmax_axis1_F32toF32_2D\n\
     }\n\
 }\n\
 \n\
-__kernel void log_softmax_axis1_U8toU8\n\
-    (\n\
+__kernel void log_softmax_axis1_U8toU8(\n\
     __read_only  image2d_array_t input,\n\
     __write_only image2d_array_t output,\n\
-                           int   axis,\n\
-                           float beta,\n\
-                           float scale,\n\
-                           float scaleOut,\n\
-                           float zpOut\n\
-    )\n\
+    int axis, float beta,\n\
+    float scale, float scaleOut, float zpOut)\n\
 {\n\
     int x = get_global_id(0);\n\
     int y = get_global_id(1);\n\
@@ -61541,16 +61617,11 @@ __kernel void log_softmax_axis1_U8toU8\n\
     }\n\
 }\n\
 \n\
-__kernel void log_softmax_axis1_U8toU8_2D\n\
-    (\n\
+__kernel void log_softmax_axis1_U8toU8_2D(\n\
     __read_only  image2d_t input,\n\
     __write_only image2d_t output,\n\
-                     int   axis,\n\
-                     float beta,\n\
-                     float scale,\n\
-                     float scaleOut,\n\
-                     float zpOut\n\
-    )\n\
+    int axis, float beta,\n\
+    float scale, float scaleOut, float zpOut)\n\
 {\n\
     int x = get_global_id(0);\n\
     int y = get_global_id(1);\n\
@@ -61593,10 +61664,120 @@ __kernel void log_softmax_axis1_U8toU8_2D\n\
         coord_in.y++;\n\
     }\n\
 }\n\
+\n\
+__kernel void log_softmax_axis1_BF16oBF16(\n\
+    __read_only   image2d_array_t input,\n\
+    __write_only  image2d_array_t output,\n\
+        int axis, float beta,\n\
+        float scale, float scaleOut, float zpOut)\n\
+{\n\
+    int x = get_global_id(0);\n\
+    int y = get_global_id(1);\n\
+    int z = get_global_id(2);\n\
+    int height = get_image_height(input);\n\
+    int4 coord_in = (int4)(x, 0, z, 0);\n\
+    float4 maxValue, src, dst = {0.0};\n\
+    uint4 data, val, out;\n\
+\n\
+    data = read_imageui(input, coord_in);\n\
+    data = data << 16;\n\
+    _viv_asm(COPY, maxValue, data, 16);\n\
+    for (coord_in.y = 1; coord_in.y < height; )\n\
+    {\n\
+        data = read_imageui(input, coord_in);\n\
+        coord_in.y++;\n\
+        data = data << 16;\n\
+        _viv_asm(COPY, src, data, 16);\n\
+\n\
+        maxValue = maxValue > src ? maxValue : src;\n\
+    }\n\
+\n\
+    float sum = 0.f;\n\
+    for (coord_in.y = 0; coord_in.y < height; )\n\
+    {\n\
+        data = read_imageui(input, coord_in);\n\
+        coord_in.y++;\n\
+        data = data << 16;\n\
+        _viv_asm(COPY, src, data, 16);\n\
+\n\
+        sum += exp2((src.x - maxValue.x) * scale);\n\
+    }\n\
+\n\
+    float logSum = LOG(sum);\n\
+    for (coord_in.y = 0; coord_in.y < height; )\n\
+    {\n\
+        data = read_imageui(input, coord_in);\n\
+        data = data << 16;\n\
+        _viv_asm(COPY, src, data, 16);\n\
+\n\
+        dst.x = (src.x - maxValue.x) * beta - logSum;\n\
+\n\
+        _viv_asm(COPY, val, dst, 16);\n\
+        out = val >> 16;\n\
+\n\
+        write_imageui(output, coord_in, out);\n\
+        coord_in.y++;\n\
+    }\n\
+}\n\
+\n\
+__kernel void log_softmax_axis1_BF16toBF16_2D(\n\
+    __read_only   image2d_t input,\n\
+    __write_only  image2d_t output,\n\
+        int axis, float beta,\n\
+        float scale, float scaleOut, float zpOut)\n\
+{\n\
+    int x = get_global_id(0);\n\
+    int y = get_global_id(1);\n\
+    int height = get_image_height(input);\n\
+    int2 coord_in = (int2)(x, 0);\n\
+    float4 maxValue, src, dst = {0.0};\n\
+    uint4 data, val, out;\n\
+\n\
+    data = read_imageui(input, coord_in);\n\
+    data = data << 16;\n\
+    _viv_asm(COPY, maxValue, data, 16);\n\
+    for (coord_in.y = 1; coord_in.y < height; )\n\
+    {\n\
+        data = read_imageui(input, coord_in);\n\
+        coord_in.y++;\n\
+        data = data << 16;\n\
+        _viv_asm(COPY, src, data, 16);\n\
+\n\
+        maxValue = maxValue > src ? maxValue : src;\n\
+    }\n\
+\n\
+    float sum = 0.0f;\n\
+    for (coord_in.y = 0; coord_in.y < height; )\n\
+    {\n\
+        data = read_imageui(input, coord_in);\n\
+        coord_in.y++;\n\
+        data = data << 16;\n\
+        _viv_asm(COPY, src, data, 16);\n\
+\n\
+        sum += exp2((src.x - maxValue.x) * scale);\n\
+    }\n\
+\n\
+    float logSum = 1.0f * LOG(sum);\n\
+    for (coord_in.y = 0; coord_in.y < height; )\n\
+    {\n\
+        data = read_imageui(input, coord_in);\n\
+        data = data << 16;\n\
+        _viv_asm(COPY, src, data, 16);\n\
+\n\
+        dst.x = (src.x - maxValue.x) * beta - logSum;\n\
+        _viv_asm(COPY, val, dst, 16);\n\
+        out = val >> 16;\n\
+        write_imageui(output, coord_in, out);\n\
+        coord_in.y++;\n\
+    }\n\
+}\n\
 #undef rlogE\n\
 "; /* end of log_softmax_axis1_cl*/
 
-static const char log_softmax_axis2_cl[] = "#define rlogE    (0.693147182f)\n\
+static const char log_softmax_axis2_cl[] = "#pragma OPENCL EXTENSION cl_viv_vx_extension : enable\n\
+#include \"cl_viv_vx_ext.h\"\n\
+\n\
+#define rlogE    (0.693147182f)\n\
 float LOG(float x)\n\
 {\n\
     x = log2(x);\n\
@@ -61707,6 +61888,70 @@ __kernel void log_softmax_axis2_U8toU8\n\
         dst.x = convert_uint(((src.x - maxValue.x) * beta - logSum) * scaleOut + zpOut);\n\
 \n\
         write_imageui(output, coord_in, dst);\n\
+        coord_in.z++;\n\
+    }\n\
+}\n\
+\n\
+__kernel void log_softmax_axis2_BF16toBF16\n\
+    (\n\
+    __read_only   image2d_array_t input,\n\
+    __write_only  image2d_array_t output,\n\
+                            int   axis,\n\
+                            float beta,\n\
+                            float scale,\n\
+                            float scaleOut,\n\
+                            float zpOut\n\
+    )\n\
+{\n\
+    int x = get_global_id(0);\n\
+    int y = get_global_id(1);\n\
+    int z = get_global_id(2);\n\
+    int depth = get_image_array_size(input);\n\
+    int4 coord_in = (int4)(x, y, 0, 0);\n\
+    float4 maxValue;\n\
+    float4 src, dst = {0.0};\n\
+    uint4 data, val, out;\n\
+\n\
+    // Find max element value which we'll use to ensure numerical stability\n\
+    // taking advantage of the following equality:\n\
+    // exp(x[i])/sum(exp(x[i])) == exp(x[i]+C)/sum(exp(x[i]+C))\n\
+    data = read_imageui(input, coord_in);\n\
+    data = data << 16;\n\
+    _viv_asm(COPY, maxValue, data, 16);\n\
+    for (coord_in.z = 1; coord_in.z < depth; )\n\
+    {\n\
+        data = read_imageui(input, coord_in);\n\
+        coord_in.z++;\n\
+        data = data << 16;\n\
+        _viv_asm(COPY, src, data, 16);\n\
+\n\
+        maxValue = maxValue > src ? maxValue : src;\n\
+    }\n\
+\n\
+    // Compute sum.\n\
+    float sum = 0.f;\n\
+    for (coord_in.z = 0; coord_in.z < depth; )\n\
+    {\n\
+        data = read_imageui(input, coord_in);\n\
+        coord_in.z++;\n\
+        data = data << 16;\n\
+        _viv_asm(COPY, src, data, 16);\n\
+\n\
+        sum += exp2((src.x - maxValue.x) * scale);\n\
+    }\n\
+\n\
+    // Compute result.\n\
+    float logSum = LOG(sum);\n\
+    for (coord_in.z = 0; coord_in.z < depth; )\n\
+    {\n\
+        data = read_imageui(input, coord_in);\n\
+        data = data << 16;\n\
+        _viv_asm(COPY, src, data, 16);\n\
+\n\
+        dst.x = (src.x - maxValue.x) * beta - logSum;\n\
+        _viv_asm(COPY, val, dst, 16);\n\
+        out = val >> 16;\n\
+        write_imageui(output, coord_in, out);\n\
         coord_in.z++;\n\
     }\n\
 }\n\
