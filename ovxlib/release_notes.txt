@@ -1,4 +1,30 @@
 ############################################################################
+Release notes for Ovxlib 1.1.88
+
+New Features:
+    1. Add new op 'reducel2'
+    2. Support setup graph multiple times
+
+Feature Refine:
+    1. Add suported data type combination for 'argmax', 'argmin'
+    2. Add API vsi_nn_AddBinaryGraphInputsWithCropParamForCropOnly(),vsi_nn_SetGraphTransformOption()
+    3. Change 'deconvolution' pad type from uint32_t to int32_t
+    4. Support dilation for max_pool
+    5. Support more axis for 'moments''
+    6. Support bfloat16 data type for 'log_softmax'
+
+Bug Fixing:
+    1. Fix some memory leak issue
+    2. Fix 'gather_nd' precision issue
+    3. Fix 'group_normalization' crash issue
+    4. Fix crash issue of 'LSTM', 'LSTMUNIT'
+    5. Fix bug of 'pre_process' node
+    6. Fix 'scatter_nd_update' precision issue
+    7. Fix precision issue of 'cumsum'
+    8. Fix print node information crash issue
+    9. Fix bug of 'gather'
+
+############################################################################
 Release notes for Ovxlib 1.1.84
 
 New Features:
