@@ -789,7 +789,7 @@ static vsi_status op_optimize
             (void*)inputs[0]->attr.size, (vsi_size_t)inputs[0]->attr.dim_num,
             sizeof(inputs[0]->attr.size[0]) );
     }
-    else
+    else if (inputs[0]->attr.dim_num == outputs[0]->attr.dim_num)
     {
         if ( NULL == inputs[0]->t )
         {
