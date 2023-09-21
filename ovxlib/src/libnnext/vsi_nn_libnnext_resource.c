@@ -38190,7 +38190,7 @@ __kernel void pre_process_rgb888_planar_sep_copy_U8to##dst_name \\\n\
     VXC_ReadImage(src1, input1, coord.xy, 0, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
     VXC_ReadImage(src2, input2, coord.xy, 0, VXC_MODIFIER(0, 15, 0, VXC_RM_TowardZero, 0)); \\\n\
  \\\n\
-    int4 coord_out = coord; \\\n\
+    int4 coord_out = coord.wwzw; \\\n\
     coord_out.xyw += rgb_order.xyz; \\\n\
     float4 paramData0 = (float4)(rMean * r_scale * output_scale - output_zp, \\\n\
         rMean * r_scale * output_scale - output_zp, \\\n\
