@@ -55,10 +55,12 @@ static vsi_status op_compute
     float eps = self->nn_param.layernorm.eps;
     int32_t axis = self->nn_param.layernorm.axis;
 
+#if (!VX_LAYER_NORMALIZATION_VX_SUPPORT_EXT)
     if ( self->nn_param.layernorm.local->use_internal_node )
     {
         return vsi_nn_internal_compute_node( self );
     }
+#endif
 
     param = vsi_nn_kernel_param_create();
 
@@ -89,7 +91,10 @@ static vsi_bool op_setup
 {
     vsi_bool ret = TRUE;
     int32_t axis = 0;
+
+#if (!VX_LAYER_NORMALIZATION_VX_SUPPORT_EXT)
     vsi_nn_internal_node_t* curr = NULL;
+#endif
 
     if ( NULL == self )
     {
@@ -98,6 +103,7 @@ static vsi_bool op_setup
 
     axis = self->nn_param.layernorm.axis;
 
+#if (!VX_LAYER_NORMALIZATION_VX_SUPPORT_EXT)
     vsi_nn_internal_init_node_wksp( self );
 
     if ( axis != 0 && !self->graph->ctx->config.support_stream_processor)
@@ -147,11 +153,14 @@ static vsi_bool op_setup
         ret = vsi_nn_internal_setup_node( self, curr );
     }
     else
+#endif
     {
         ret = vsi_nn_op_common_setup(self, inputs, outputs);
     }
 
+#if (!VX_LAYER_NORMALIZATION_VX_SUPPORT_EXT)
 final:
+#endif
     return ret;
 }
 
@@ -236,9 +245,11 @@ static vsi_status op_init
 
     self->nn_param.layernorm.axis = 0;
 
+#if (!VX_LAYER_NORMALIZATION_VX_SUPPORT_EXT)
     self->nn_param.layernorm.local = (vsi_nn_layernorm_lcl_data *)malloc(sizeof(vsi_nn_layernorm_lcl_data));
     memset(self->nn_param.layernorm.local, 0x00, sizeof(vsi_nn_layernorm_lcl_data));
     self->nn_param.layernorm.local->use_internal_node = FALSE;
+#endif
 
     return status;
 }
@@ -250,7 +261,9 @@ static vsi_status op_deinit
 {
     vsi_nn_safe_free(self->nn_param.layernorm.local);
 
+#if (!VX_LAYER_NORMALIZATION_VX_SUPPORT_EXT)
     vsi_nn_internal_deinit_node_wksp( self );
+#endif
 
     vsi_nn_op_common_deinit(self);
 

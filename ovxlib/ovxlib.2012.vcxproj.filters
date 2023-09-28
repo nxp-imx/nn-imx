@@ -1787,6 +1787,9 @@
     <ClCompile Include="src\kernel\vx\l2_normalize_vx.c">
       <Filter>Source Files\kernel\vx</Filter>
     </ClCompile>
+    <ClCompile Include="src\kernel\vx\layer_norm_vx.c">
+      <Filter>Source Files\kernel\vx</Filter>
+    </ClCompile>
     <ClCompile Include="src\kernel\vx\matrixmul_vx.c">
       <Filter>Source Files\kernel\vx</Filter>
     </ClCompile>

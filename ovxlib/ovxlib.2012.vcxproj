@@ -1675,6 +1675,9 @@
     <ClCompile Include="src\kernel\vx\l2_normalize_vx.c">
       <ObjectFileName>$(IntDir)\src\kernel\vx\</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="src\kernel\vx\layer_norm_vx.c">
+      <ObjectFileName>$(IntDir)\src\kernel\vx\</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="src\kernel\vx\matrixmul_vx.c">
       <ObjectFileName>$(IntDir)\src\kernel\vx\</ObjectFileName>
     </ClCompile>
