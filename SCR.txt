@@ -1,9 +1,12 @@
-Package:                     nn-imx.git
-Version:                     1.3.0
-Outgoing License:            MIT 
-License File:                LICENSE
-Type of Content:             source
-Description and comments:    i.MX Neural Networks Accelerator Plugin
-Release Location:            https://github.com/nxp-imx/nn-imx -b lf-5.15.71-2.2.1
-Origin:                      NXP (MIT)
-                             Vivante Corporation (MIT)
+Repository:                nn-imx.git
+Outgoing License:          MIT
+License File:              LICENSE
+Release Location:          https://github.com/nxp-imx/nn-imx
+Description and comments:  i.MX Neural Networks Accelerator Plugin
+Origin:                    NXP (MIT)
+                           Vivante Corporation (MIT)
+                           Boost Software (Boost) - https://www.boost.org/
+                           Android Open Source Project (Apache 2.0) - https://developer.android.com/index.html
+                           OpenCV (BSD-3-clause) - https://github.com/opencv/opencv/
+                           JSON-CPP (public domain) - https://github.com/open-source-parsers/jsoncpp/
+                           libjpeg (IJG) - http://www.ijg.org/
