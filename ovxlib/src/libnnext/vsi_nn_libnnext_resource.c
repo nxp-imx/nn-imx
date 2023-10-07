@@ -13891,6 +13891,9 @@ static const char grucell_activation_z_h_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 _viv_uniform VXC_512Bits uniConvBF16toF32_Part0_2x8;\n\
 _viv_uniform VXC_512Bits uniExtractOddData_2x8;\n\
 \n\
+_viv_uniform float output_scale1;\n\
+_viv_uniform float output_zp1;\n\
+\n\
 float4 sigmoid_func(float4 x)\n\
 {\n\
     x *= -logE;\n\
@@ -14002,13 +14005,15 @@ __kernel void grucell_activation_z_h_##name0##_F16to##name1##_##act_name( \\\n\
     VXC_DP4x4(h_tm, src3, src3, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniConvertF16_0_4x4); \\\n\
     h_tm = h_tm * hstate_in_scale + hstate_in_tail; \\\n\
     float4 result = (1 - z) * h + z * h_tm; \\\n\
-    result = result * output_scale + output_zp; \\\n\
-    int4 dst0; \\\n\
-    _viv_asm(CONV_RTE, dst0, result); \\\n\
+    float4 out0 = result * output_scale + output_zp; \\\n\
+    float4 out1 = result * output_scale1 + output_zp1; \\\n\
+    int4 dst0, dst1; \\\n\
+    _viv_asm(CONV_RTE, dst0, out0); \\\n\
+    _viv_asm(CONV_RTE, dst1, out1); \\\n\
     dst_type dst; \\\n\
-    VXC_DP2x8(dst, dst0, dst0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 1), uniExtract8Data_2x8); \\\n\
+    VXC_DP2x8(dst, dst0, dst1, VXC_MODIFIER(0, 7, 0, VXC_RM_TowardZero, 1), uniExtract8Data_2x8); \\\n\
     VXC_WriteImage(output, coord_in, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
-    VXC_WriteImage(hstate_out, coord_in, dst, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+    VXC_WriteImage(hstate_out, coord_in, dst.s4567, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
 }\n\
 GRUCELL_QNT_F16TO_QNT(U8,  U8,  SIGMOID,  sigmoid_func, vxc_uchar8, vxc_uchar8)\n\
 GRUCELL_QNT_F16TO_QNT(I8,  I8,  SIGMOID,  sigmoid_func, vxc_char8,  vxc_char8)\n\
@@ -59180,7 +59185,8 @@ __kernel void grucell_activation_z_h_U8_F32toU8_##act_name( \\\n\
     __read_only  image2d_t        hstate_h_conv, \\\n\
     __write_only image2d_t        output, \\\n\
     __write_only image2d_t        hstate_out, \\\n\
-    float input_scale, float input_tail, float output_scale, float output_zp) \\\n\
+    float input_scale, float input_tail, float output_scale, float output_zp, \\\n\
+    float output_scale1, float output_zp1) \\\n\
 { \\\n\
     int2 coord_in = (int2)(get_global_id(0), get_global_id(1)); \\\n\
     float4  src0, src1, src2, src3; \\\n\
@@ -59197,10 +59203,12 @@ __kernel void grucell_activation_z_h_U8_F32toU8_##act_name( \\\n\
     z.x = act_func(z.x); \\\n\
     h = tanh_func(h.x); \\\n\
     float4 dst = (1 - z ) * h + z * h_tm; \\\n\
-    dst = dst * output_scale + output_zp; \\\n\
-    uint4 result = convert_uint4_sat_rte(dst); \\\n\
+    float4 out0 = dst * output_scale + output_zp; \\\n\
+    float4 out1 = dst * output_scale1 + output_zp1; \\\n\
+    uint4 result = convert_uint4_sat_rte(out0); \\\n\
+    uint4 result1 = convert_uint4_sat_rte(out1); \\\n\
     write_imageui(output, coord_in.xy, result); \\\n\
-    write_imageui(hstate_out, coord_in.xy, result); \\\n\
+    write_imageui(hstate_out, coord_in.xy, result1); \\\n\
 }\n\
 GRUCELL_ACTIVATION_U8_F32_U8(SIGMOID, sigmoid)\n\
 //GRUCELL_ACTIVATION_U8_F32_U8(HARD_SIGMOID, hard_sigmoid)\n\
@@ -59214,7 +59222,8 @@ __kernel void grucell_activation_z_h_F32_F32toF32_##act_name( \\\n\
     __read_only  image2d_t        hstate_h_conv, \\\n\
     __write_only image2d_t        output, \\\n\
     __write_only image2d_t        hstate_out, \\\n\
-    float input_scale, float input_tail, float output_scale, float output_zp) \\\n\
+    float input_scale, float input_tail, float output_scale, float output_zp, \\\n\
+    float output_scale1, float output_zp1) \\\n\
 { \\\n\
     int2 coord_in = (int2)(get_global_id(0), get_global_id(1)); \\\n\
     float4  src0, src1, src2, src3; \\\n\
@@ -59246,7 +59255,8 @@ __kernel void grucell_activation_z_h_I32_F32toI32_##act_name( \\\n\
     __read_only  image2d_t        hstate_h_conv, \\\n\
     __write_only image2d_t        output, \\\n\
     __write_only image2d_t        hstate_out, \\\n\
-    float input_scale, float input_tail, float output_scale, float output_zp) \\\n\
+    float input_scale, float input_tail, float output_scale, float output_zp, \\\n\
+    float output_scale1, float output_zp1) \\\n\
 { \\\n\
     int2 coord_in = (int2)(get_global_id(0), get_global_id(1)); \\\n\
     float4  src0, src1, src2, src3; \\\n\
@@ -59263,13 +59273,16 @@ __kernel void grucell_activation_z_h_I32_F32toI32_##act_name( \\\n\
     z.x = act_func(z.x); \\\n\
     h = tanh_func(h.x); \\\n\
     float4 dst = (1 - z ) * h + z * h_tm; \\\n\
-    dst = dst * output_scale + output_zp; \\\n\
-    int4 result = convert_int4_sat_rte(dst); \\\n\
+    float4 out0 = dst * output_scale + output_zp; \\\n\
+    float4 out1 = dst * output_scale1 + output_zp1; \\\n\
+    int4 result = convert_int4_sat_rte(out0); \\\n\
+    int4 result1 = convert_int4_sat_rte(out1); \\\n\
     write_imagei(output, coord_in.xy, result); \\\n\
-    write_imagei(hstate_out, coord_in.xy, result); \\\n\
+    write_imagei(hstate_out, coord_in.xy, result1); \\\n\
 }\n\
 GRUCELL_ACTIVATION_I32_F32_I32(SIGMOID, sigmoid)\n\
-//GRUCELL_ACTIVATION_U8_F32_U8(HARD_SIGMOID, hard_sigmoid)"; /* end of grucell_activation_z_h_cl*/
+//GRUCELL_ACTIVATION_U8_F32_U8(HARD_SIGMOID, hard_sigmoid)\n\
+"; /* end of grucell_activation_z_h_cl*/
 
 static const char grucell_h_times_activation_r_cl[] = "#define logE        (1.44269502f)\n\
 #define twoLogE     (logE * 2.0f)\n\
