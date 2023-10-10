@@ -181,6 +181,9 @@ static vsi_status op_optimize
     status = VSI_SUCCESS;
 #ifdef VX_REMOVE_RESHAPE_SUPPORT
     self->nn_param.reshape2.local->initialized = FALSE;
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
+    VSI_UNREFERENCED(direction);
 #else
     if ( vsi_nn_DtypeCompare(&inputs[0]->attr.dtype, &outputs[0]->attr.dtype) == FALSE)
     {
