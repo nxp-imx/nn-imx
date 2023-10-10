@@ -101,6 +101,7 @@ static const char* ENV_ENABLE_I8TOU8 = "vendor.VSI_NN_ENABLE_I8TOU8";
 static const char* ENV_ENABLE_DATACONVERT_OPTIMIZE = "vendor.VSI_NN_ENABLE_DATACONVERT_OPTIMIZE";
 static const char* ENV_ENABLE_STREAM_PROCESSOR = "vendor.VSI_VX_ENABLE_STREAM_PROCESSOR";
 static const char* ENV_FORCE_RGB888_OUT_NHWC = "vendor.VSI_NN_FORCE_RGB888_OUT_NHWC";
+static const char* ENV_ENABLE_SLICE_OPTIMIZE = "vendor.VSI_NN_ENABLE_SLICE_OPTIMIZE";
 #else
 static const char* ENV_ENABLE_SHADER = "VIV_VX_ENABLE_SHADER";
 static const char* ENV_ENABLE_OPCHECK = "VSI_NN_ENABLE_OPCHECK";
@@ -109,6 +110,7 @@ static const char* ENV_ENABLE_I8TOU8 = "VSI_NN_ENABLE_I8TOU8";
 static const char* ENV_ENABLE_DATACONVERT_OPTIMIZE = "VSI_NN_ENABLE_DATACONVERT_OPTIMIZE";
 static const char* ENV_ENABLE_STREAM_PROCESSOR = "VSI_VX_ENABLE_STREAM_PROCESSOR";
 static const char* ENV_FORCE_RGB888_OUT_NHWC = "VSI_NN_FORCE_RGB888_OUT_NHWC";
+static const char* ENV_ENABLE_SLICE_OPTIMIZE = "VSI_NN_ENABLE_SLICE_OPTIMIZE";
 #endif
 static vsi_status vsi_nn_initOptions
     (
@@ -122,6 +124,7 @@ static vsi_status vsi_nn_initOptions
     options->enable_dataconvert_optimize = vsi_nn_getenv_asint(ENV_ENABLE_DATACONVERT_OPTIMIZE, 1);
     options->enable_stream_processor = vsi_nn_getenv_asint(ENV_ENABLE_STREAM_PROCESSOR, 1);
     options->enable_rgb88_planar_nhwc = vsi_nn_getenv_asint(ENV_FORCE_RGB888_OUT_NHWC, 0);
+    options->enable_slice_optimize = vsi_nn_getenv_asint(ENV_ENABLE_SLICE_OPTIMIZE, 1);
 
     return VSI_SUCCESS;
 }

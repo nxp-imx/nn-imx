@@ -762,7 +762,8 @@ static vsi_status op_optimize
     vsi_size_t     output_elements = 0;
 
     /* Only forward run stride_slice's optimize */
-    if ( direction == VSI_NN_OPTIMIZE_BACKWARD )
+    if ( direction == VSI_NN_OPTIMIZE_BACKWARD ||
+         !self->graph->ctx->options.enable_slice_optimize )
     {
         return status;
     }
