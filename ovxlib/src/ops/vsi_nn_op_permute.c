@@ -242,6 +242,14 @@ static vsi_status op_optimize
 
     status = VSI_SUCCESS;
 
+#if (VX_TRANSPOSE_OPT_SUPPORT)
+    VSI_UNREFERENCED(inputs);
+    VSI_UNREFERENCED(outputs);
+    VSI_UNREFERENCED(direction);
+    self->nn_param.permute.local.initialized = FALSE;
+
+    return status;
+#else
     if (_is_same_memory_shape(self, inputs, outputs) == FALSE ||
         _is_same_quant(self, inputs, outputs) == FALSE ||
         (inputs[0]->t != NULL && outputs[0]->t != NULL))
@@ -285,6 +293,7 @@ static vsi_status op_optimize
     }
 
     return status;
+#endif
 } /* op_optimize() */
 
 #ifdef __cplusplus

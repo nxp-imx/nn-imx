@@ -117,14 +117,26 @@ static vsi_status vsi_nn_initOptions
     vsi_nn_runtime_option_t *options
     )
 {
+    int32_t default_value = 1;
+
     options->enable_shader = vsi_nn_getenv_asint(ENV_ENABLE_SHADER, 1);
     options->enable_opcheck = vsi_nn_getenv_asint(ENV_ENABLE_OPCHECK, 1);
-    options->enable_concat_optimize = vsi_nn_getenv_asint(ENV_ENABLE_CONCAT_OPTIMIZE, 1);
+#if (VX_CONCAT_OPT_SUPPORT)
+    default_value = 0;
+#else
+    default_value = 1;
+#endif
+    options->enable_concat_optimize = vsi_nn_getenv_asint(ENV_ENABLE_CONCAT_OPTIMIZE, default_value);
     options->enable_asymi8_to_u8 = vsi_nn_getenv_asint(ENV_ENABLE_I8TOU8, 1);
     options->enable_dataconvert_optimize = vsi_nn_getenv_asint(ENV_ENABLE_DATACONVERT_OPTIMIZE, 1);
     options->enable_stream_processor = vsi_nn_getenv_asint(ENV_ENABLE_STREAM_PROCESSOR, 1);
     options->enable_rgb88_planar_nhwc = vsi_nn_getenv_asint(ENV_FORCE_RGB888_OUT_NHWC, 0);
-    options->enable_slice_optimize = vsi_nn_getenv_asint(ENV_ENABLE_SLICE_OPTIMIZE, 1);
+#if (VX_STRIDED_SLICE_OPT_SUPPORT)
+    default_value = 0;
+#else
+    default_value = 1;
+#endif
+    options->enable_slice_optimize = vsi_nn_getenv_asint(ENV_ENABLE_SLICE_OPTIMIZE, default_value);
 
     return VSI_SUCCESS;
 }
