@@ -37,6 +37,7 @@
 #include "utils/vsi_nn_dtype_util.h"
 #include "utils/vsi_nn_constraint_check.h"
 
+#if !(VX_TRANSPOSE_OPT_SUPPORT)
 static vsi_bool _is_same_memory_shape
     (
     vsi_nn_node_t   * self,
@@ -116,6 +117,7 @@ static vsi_bool _is_same_quant
 
     return TRUE;
 } /* _is_same_quant */
+#endif
 
 static vsi_status op_compute
     (
