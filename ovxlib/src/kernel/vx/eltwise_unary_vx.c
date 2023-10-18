@@ -154,7 +154,6 @@ final:
     REGISTER_BACKEND_OPENVX( KERNEL_NAME, _##KERNEL_NAME##_setup )
 
 REGISTER_ELTWISE_UNARY_LUT_OPENVX_KERNEL( mish,         VSI_NN_KERNEL_LUT_MISH )
-//REGISTER_ELTWISE_UNARY_LUT_OPENVX_KERNEL( exp,          VSI_NN_KERNEL_LUT_EXP )
 REGISTER_ELTWISE_UNARY_LUT_OPENVX_KERNEL( log,          VSI_NN_KERNEL_LUT_LOG )
 REGISTER_ELTWISE_UNARY_LUT_OPENVX_KERNEL( selu,         VSI_NN_KERNEL_LUT_SELU )
 REGISTER_ELTWISE_UNARY_LUT_OPENVX_KERNEL( neg,          VSI_NN_KERNEL_LUT_NEG )
@@ -411,5 +410,28 @@ REGISTER_ELTWISE_UNARY_OPENVX_KERNEL( softrelu )
 
     return (vsi_nn_kernel_node_t)node;
 } /* softrelu() */
+
+#if (VX_ACTIVATION_EXP_VX_SUPPORT_EXT)
+REGISTER_ELTWISE_UNARY_OPENVX_KERNEL( exp )
+{
+    vx_node node = NULL;
+
+    VSI_UNREFERENCED(kernel);
+    VSI_UNREFERENCED(params);
+    VSI_UNREFERENCED(output_num);
+    VSI_UNREFERENCED(input_num);
+
+    node = vxActivationLayer(
+        graph->g,
+        inputs[0]->t,
+        VX_CONVOLUTIONAL_NETWORK_ACTIVATION_EXP,
+        0,
+        0,
+        outputs[0]->t
+        );
+
+    return (vsi_nn_kernel_node_t)node;
+} /* exp() */
+#endif
 
 #undef REGISTER_ELTWISE_UNARY_OPENVX_KERNEL
