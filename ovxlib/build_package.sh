@@ -29,6 +29,8 @@ package_deliverable()
     fi
 
     # remove redundant folders and files
+    rm -rf $DELIVERABLE/src/lcov
+    rm -rf $DELIVERABLE/include/lcov
     rm -f $DELIVERABLE/ovxlib.vcxproj
     rm -f $DELIVERABLE/ovxlib.vcxproj.filters
     rm -f $DELIVERABLE/ovxlib.vcxproj.user

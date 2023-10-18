@@ -90,6 +90,11 @@ SRCS += ${notdir ${wildcard custom/ops/kernel/cpu/*.c}}
 vpath %.c custom/ops/kernel/sp
 SRCS += ${notdir ${wildcard custom/ops/kernel/sp/*.c}}
 
+ifeq ($(VSI_ENABLE_LCOV_TEST),1)
+vpath %.c lcov
+SRCS += ${notdir ${wildcard lcov/*.c}}
+endif
+
 OBJECTS +=  ${patsubst %.c, $(OBJ_DIR)/%.o, $(SRCS)}
 
 ifeq ($(USE_VIP_DEVICE),1)
@@ -242,6 +247,10 @@ endif
 ifeq ($(OVXLIB_CODE_COVERAGE), 1)
 CFLAGS += -fprofile-arcs -ftest-coverage
 LIBS += -lgcov
+endif
+
+ifeq ($(VSI_ENABLE_LCOV_TEST),1)
+CFLAGS += -DVSI_ENABLE_LCOV_TEST=1
 endif
 #############################################################################
 
