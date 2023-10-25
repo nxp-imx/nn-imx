@@ -120,10 +120,7 @@ enum
 
     BI_LSTM_FW_OUTPUT_OUTPUT      = 0,
     BI_LSTM_BW_OUTPUT_OUTPUT      = 1,
-    BI_LSTM_FW_OUTPUT_H_STATE     = 2,
-    BI_LSTM_BW_OUTPUT_H_STATE     = 3,
-    BI_LSTM_FW_OUTPUT_C_STATE     = 4,
-    BI_LSTM_BW_OUTPUT_C_STATE     = 5,
+
     BI_LSTM_OUTPUT_CNT
 };
 

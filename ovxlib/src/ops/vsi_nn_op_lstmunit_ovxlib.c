@@ -324,7 +324,7 @@ static vsi_bool op_setup
     p->local->multi_batch = ( inputs[LSTMUNIT_INPUT_INPUT]->attr.size[1] > 1 );
     p->local->use_peephole = ( NULL != inputs[LSTMUNIT_INPUT_WEIGHT_C2O] );
     ifco_start_index = p->local->use_cifg ? 1 : 0;
-    if(!inputs[LSTM_INPUT_BIAS_I] || inputs[LSTMUNIT_INPUT_WEIGHT_I2F]->attr.dtype.qnt_type
+    if( inputs[LSTMUNIT_INPUT_WEIGHT_I2F]->attr.dtype.qnt_type
         != inputs[LSTMUNIT_INPUT_BIAS_F]->attr.dtype.qnt_type )
     {
         p->local->use_hybrid = TRUE;
@@ -374,9 +374,13 @@ static vsi_bool op_setup
             {
                  bias_tensors[i] = inputs[LSTMUNIT_INPUT_BIAS_I + i];
             }
-            else
+            else if(self->input.num > LSTM_INPUT_BIAS_R2I)
             {
                  bias_tensors[i] = inputs[LSTMUNIT_INPUT_BIAS_R2I + i - LSTMUNIT_IFCO_GATE_COUNT];
+            }
+            else
+            {
+                 bias_tensors[i] = NULL;
             }
         }
     }

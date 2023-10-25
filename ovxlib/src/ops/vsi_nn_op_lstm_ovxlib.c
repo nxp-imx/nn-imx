@@ -373,10 +373,20 @@ static vsi_bool op_setup
         curr->inputs[LSTMUNIT_INPUT_LAYERNORM_C] = inputs[LSTM_INPUT_LAYERNORM_C];
         curr->inputs[LSTMUNIT_INPUT_LAYERNORM_O] = inputs[LSTM_INPUT_LAYERNORM_O];
 
-        curr->inputs[LSTMUNIT_INPUT_BIAS_R2I] = inputs[LSTM_INPUT_BIAS_R2I];
-        curr->inputs[LSTMUNIT_INPUT_BIAS_R2F] = inputs[LSTM_INPUT_BIAS_R2F];
-        curr->inputs[LSTMUNIT_INPUT_BIAS_R2C] = inputs[LSTM_INPUT_BIAS_R2C];
-        curr->inputs[LSTMUNIT_INPUT_BIAS_R2O] = inputs[LSTM_INPUT_BIAS_R2O];
+        if (self->input.num > LSTM_INPUT_BIAS_R2I)
+        {
+            curr->inputs[LSTMUNIT_INPUT_BIAS_R2I] = inputs[LSTM_INPUT_BIAS_R2I];
+            curr->inputs[LSTMUNIT_INPUT_BIAS_R2F] = inputs[LSTM_INPUT_BIAS_R2F];
+            curr->inputs[LSTMUNIT_INPUT_BIAS_R2C] = inputs[LSTM_INPUT_BIAS_R2C];
+            curr->inputs[LSTMUNIT_INPUT_BIAS_R2O] = inputs[LSTM_INPUT_BIAS_R2O];
+        }
+        else
+        {
+            curr->inputs[LSTMUNIT_INPUT_BIAS_R2I] = NULL;
+            curr->inputs[LSTMUNIT_INPUT_BIAS_R2F] = NULL;
+            curr->inputs[LSTMUNIT_INPUT_BIAS_R2C] = NULL;
+            curr->inputs[LSTMUNIT_INPUT_BIAS_R2O] = NULL;
+        }
 
         curr->outputs[LSTMUNIT_OUTPUT_OUTPUT] = lstmunit_out0;
         curr->outputs[LSTMUNIT_OUTPUT_H_STATE] = lstmunit_out1;
