@@ -532,10 +532,10 @@ DEF_KERNEL_INITIALIZER(_scatter_nd_update_special_ref_initializer)
         width = (width + 15) / 16;
     }
 
-    input0_zp     = attr[0]->asymm.zero_point;
-    input0_scale  = attr[0]->asymm.scale;
-    output_zp     = attr[1]->asymm.zero_point;
-    output_scale  = 1.0f / attr[1]->asymm.scale;
+    input0_zp     = attr[0]->zero_point;
+    input0_scale  = attr[0]->scale;
+    output_zp     = attr[1]->zero_point;
+    output_scale  = 1.0f / attr[1]->scale;
 
     gpu_param.global_scale[0]  = 1;
     gpu_param.global_scale[1]  = 1;
@@ -670,10 +670,10 @@ DEF_KERNEL_INITIALIZER(_scatter_nd_update_special_update_initializer)
     update_width = (int32_t)(attr[1]->shape->data[0]);
     index_num    = (int32_t)(attr[0]->shape->data[1]);
 
-    input1_zp     = attr[1]->asymm.zero_point;
-    input1_scale  = attr[1]->asymm.scale;
-    output_zp     = attr[2]->asymm.zero_point;
-    output_scale  = 1.0f / attr[2]->asymm.scale;
+    input1_zp     = attr[1]->zero_point;
+    input1_scale  = attr[1]->scale;
+    output_zp     = attr[2]->zero_point;
+    output_scale  = 1.0f / attr[2]->scale;
 
     if (coord_dim == 5)
     {
@@ -916,10 +916,10 @@ DEF_KERNEL_INITIALIZER(_scatter_nd_update_reset_initializer)
     }
     width = element_size / 8;
 
-    input_zp0     = attr[0]->asymm.zero_point;
-    input_scale0  = attr[0]->asymm.scale;
-    output_zp     = attr[1]->asymm.zero_point;
-    output_scale  = attr[1]->asymm.scale;
+    input_zp0     = attr[0]->zero_point;
+    input_scale0  = attr[0]->scale;
+    output_zp     = attr[1]->zero_point;
+    output_scale  = attr[1]->scale;
 
     if (attr[0]->quant == VSI_NN_KERNEL_QUANT_NONE)
     {
@@ -1051,7 +1051,7 @@ DEF_KERNEL_INITIALIZER(_scatter_nd_update_update_initializer)
         width = block_size / 4;
     }
 
-    input2_zp     = attr[1]->asymm.zero_point;
+    input2_zp     = attr[1]->zero_point;
 
     coord_strides[coord_dim - 1] = 1;
     for (i = 0; i < coord_dim - 1; i++)
@@ -1208,9 +1208,9 @@ DEF_KERNEL_INITIALIZER(_scatter_nd_update_ref_initializer)
     update_width = (int32_t)(attr[1]->shape->data[0]);
     index_num    = (int32_t)(attr[0]->shape->data[1]);
 
-    input_scale  = attr[1]->asymm.scale;
-    output_scale = attr[2]->asymm.scale;
-    output_zp    = (float)attr[2]->asymm.zero_point;
+    input_scale  = attr[1]->scale;
+    output_scale = attr[2]->scale;
+    output_zp    = (float)attr[2]->zero_point;
     if (attr[1]->quant == VSI_NN_KERNEL_QUANT_NONE)
     {
         input_scale = 1.0f;
