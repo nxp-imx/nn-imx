@@ -90,9 +90,9 @@ static vsi_bool op_setup
     )
 {
     vsi_bool ret = TRUE;
-    int32_t axis = 0;
 
 #if (!VX_LAYER_NORMALIZATION_VX_SUPPORT_EXT)
+    int32_t axis = 0;
     vsi_nn_internal_node_t* curr = NULL;
 #endif
 
@@ -101,9 +101,9 @@ static vsi_bool op_setup
         return FALSE;
     }
 
+#if (!VX_LAYER_NORMALIZATION_VX_SUPPORT_EXT)
     axis = self->nn_param.layernorm.axis;
 
-#if (!VX_LAYER_NORMALIZATION_VX_SUPPORT_EXT)
     vsi_nn_internal_init_node_wksp( self );
 
     if ( axis != 0 && !self->graph->ctx->config.support_stream_processor)
