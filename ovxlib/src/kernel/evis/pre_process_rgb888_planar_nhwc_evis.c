@@ -787,8 +787,8 @@ OnError:
     }
     if (attr[1])
     {
-        vsi_nn_kernel_tensor_attr_release( &attr[0] );
-        attr[0] = NULL;
+        vsi_nn_kernel_tensor_attr_release( &attr[1] );
+        attr[1] = NULL;
     }
 
     return status;
