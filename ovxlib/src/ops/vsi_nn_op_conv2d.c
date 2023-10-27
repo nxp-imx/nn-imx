@@ -217,7 +217,8 @@ static vsi_bool op_setup
     if( VSI_NN_DIM_FMT_NHWC == inputs[1]->attr.dtype.fmt &&
         VSI_NN_TYPE_VDATA != inputs[1]->attr.dtype.vx_type )
     {
-        if (!((vsi_nn_node_prv_t*)self)->processed) {
+        if (!((vsi_nn_tensor_prv_t*)inputs[1])->processed)
+        {
             vsi_nn_TransposeTensor(self->graph, inputs[1], perm, 4, NULL);
             inputs[1]->attr.dtype.fmt = VSI_NN_DIM_FMT_NCHW;
         }
@@ -230,7 +231,7 @@ static vsi_bool op_setup
     }
 #endif
 
-    ((vsi_nn_node_prv_t*)self)->processed = TRUE;
+    ((vsi_nn_tensor_prv_t*)inputs[1])->processed = TRUE;
 
     nn_param = &self->nn_param.conv2d;
 

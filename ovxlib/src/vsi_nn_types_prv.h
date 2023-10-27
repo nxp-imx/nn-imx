@@ -89,6 +89,12 @@ typedef struct _vsi_nn_tensor_prv
     /** is scalar*/
     int8_t is_scalar;
 
+    /** some op will adjust its const tensors in op_setup,
+     * this field is to indicate whether the const tensors
+     * are processed in op_setup phase, this adjustment cannot
+     * be done more than once */
+    int8_t processed;
+
     // Add tensor internal attribute here...
 } vsi_nn_tensor_prv_t;
 

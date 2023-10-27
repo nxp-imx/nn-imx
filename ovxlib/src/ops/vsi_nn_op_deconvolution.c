@@ -411,7 +411,8 @@ static vsi_bool op_setup
     * */
     if( VSI_NN_DIM_FMT_NHWC == inputs[1]->attr.dtype.fmt )
     {
-        if (!((vsi_nn_node_prv_t*)self)->processed) {
+        if (!((vsi_nn_tensor_prv_t*)inputs[1])->processed)
+        {
             vsi_nn_TransposeTensor(self->graph, inputs[1], perm, 4, NULL);
             inputs[1]->attr.dtype.fmt = VSI_NN_DIM_FMT_NCHW;
         }
@@ -427,7 +428,7 @@ static vsi_bool op_setup
 #ifdef VX_DECONVOLUTION_WEIGHT_LAYOUT_COMPATIBLE_KHRONOS
     if ( vsi_nn_compareVersion(self->graph, 1, 1, 21) == -1 && TRUE == inputs[1]->attr.is_const)
     {
-        if (!((vsi_nn_node_prv_t*)self)->processed) {
+        if (!((vsi_nn_tensor_prv_t*)inputs[1])->processed) {
             /* whnc->whcn */
             vsi_nn_PermuteTensor(self->graph, inputs[1], perm1, 4);
         }
@@ -435,7 +436,7 @@ static vsi_bool op_setup
     /* Rotate 180 degrees for weights data */
     if (TRUE == inputs[1]->attr.is_const)
     {
-        if (!((vsi_nn_node_prv_t*)self)->processed) {
+        if (!((vsi_nn_tensor_prv_t*)inputs[1])->processed) {
             vsi_nn_reshuffle_weight_data(self->graph, inputs[1]);
         }
     }
@@ -443,13 +444,13 @@ static vsi_bool op_setup
     if ( vsi_nn_compareVersion(self->graph, 1, 1, 21) >= 0 && TRUE == inputs[1]->attr.is_const)
     {
         /* whcn->whnc */
-        if (!((vsi_nn_node_prv_t*)self)->processed) {
+        if (!((vsi_nn_tensor_prv_t*)inputs[1])->processed) {
             vsi_nn_PermuteTensor(self->graph, inputs[1], perm1, 4);
         }
     }
 #endif
 
-    ((vsi_nn_node_prv_t*)self)->processed = TRUE;
+    ((vsi_nn_tensor_prv_t*)inputs[1])->processed = TRUE;
 
     nn_param = &self->nn_param.deconv;
 
