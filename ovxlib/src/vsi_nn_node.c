@@ -212,6 +212,7 @@ void vsi_nn_PrintNode
         }
         count += temp;
     }
+    count --;
     temp = snprintf( &buf[count], _MAX_PRINT_BUF_SZ - count,
         "%s", " ], [out:" );
     if ( temp >= _MAX_PRINT_BUF_SZ - count || temp == -1 )
@@ -224,7 +225,7 @@ void vsi_nn_PrintNode
     {
         /* -3 means reserve memory for ending symbols --" ]" */
         temp = snprintf( &buf[count], _MAX_PRINT_BUF_SZ - count - 3,
-            " %d,", node->input.tensors[i] );
+            " %d,", node->output.tensors[i] );
         if ( temp >= _MAX_PRINT_BUF_SZ - count - 3 || temp == -1 )
         {
             is_out_of_bound = TRUE;
@@ -232,6 +233,7 @@ void vsi_nn_PrintNode
         }
         count += temp;
     }
+    count --;
     count += snprintf( &buf[count], _MAX_PRINT_BUF_SZ - count,
         "%s", " ]" );
 final:
