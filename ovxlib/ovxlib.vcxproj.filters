@@ -351,6 +351,9 @@
     <ClCompile Include="src\kernel\cl\scatter_nd_update_cl.c">
       <Filter>Source Files\kernel\cl</Filter>
     </ClCompile>
+    <ClCompile Include="src\kernel\cl\scatter_nd_update_reduction_cl.c">
+      <Filter>Source Files\kernel\cl</Filter>
+    </ClCompile>
     <ClCompile Include="src\kernel\cl\select_cl.c">
       <Filter>Source Files\kernel\cl</Filter>
     </ClCompile>
@@ -633,6 +636,9 @@
     <ClCompile Include="src\kernel\cpu\scatter_nd_update_cpu.c">
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
+    <ClCompile Include="src\kernel\cpu\scatter_nd_update_reduction_cpu.c">
+      <Filter>Source Files\kernel\cpu</Filter>
+    </ClCompile>
     <ClCompile Include="src\kernel\cpu\select_cpu.c">
       <Filter>Source Files\kernel\cpu</Filter>
     </ClCompile>
@@ -886,6 +892,9 @@
       <Filter>Source Files\kernel\evis</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\scatter_nd_update_evis.c">
+      <Filter>Source Files\kernel\evis</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kernel\evis\scatter_nd_update_reduction_evis.c">
       <Filter>Source Files\kernel\evis</Filter>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\select_evis.c">

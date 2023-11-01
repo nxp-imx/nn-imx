@@ -115,7 +115,9 @@ typedef enum
 {
     VSI_NN_REDUCTION_TYPE_NONE,
     VSI_NN_REDUCTION_TYPE_ADD,
-    VSI_NN_REDUCTION_TYPE_MUL
+    VSI_NN_REDUCTION_TYPE_MUL,
+    VSI_NN_REDUCTION_TYPE_MAX,
+    VSI_NN_REDUCTION_TYPE_MIN
 } vsi_nn_reduction_type_e;
 
 /** Pad mode enum */
