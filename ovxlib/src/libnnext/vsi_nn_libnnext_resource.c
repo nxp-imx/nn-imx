@@ -50510,6 +50510,277 @@ __kernel void resize_bilinear_nhwc_bound_U8toU8_4x\n\
 }\n\
 "; /* end of resize_bilinear_nhwc_bound_vx*/
 
+static const char resize_cubic_vx[] = "#pragma OPENCL EXTENSION cl_viv_vx_extension : enable\n\
+\n\
+#include \"cl_viv_vx_ext.h\"\n\
+\n\
+_viv_uniform float input_scale;\n\
+_viv_uniform float input_tail;\n\
+_viv_uniform float output_scale;\n\
+_viv_uniform float output_tail;\n\
+_viv_uniform VXC_512Bits uniFp16ToFp32_4x4;\n\
+_viv_uniform VXC_512Bits uniExtractHalf8_2x8;\n\
+_viv_uniform VXC_512Bits uniExtract8Bit_2x8;\n\
+\n\
+#define RESIZE_CUBIC_PART0 \\\n\
+    int4   coord_out    = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
+    int4   coord_index  = coord_out; \\\n\
+    int2   coord_scalew = (int2)(4 * get_global_id(0), 0); \\\n\
+    int2   coord_scaleh = (int2)(4 * get_global_id(1), 0); \\\n\
+    float4 cubic_coeffs_y; \\\n\
+    float4 cubic_coeffs_x; \\\n\
+    int4   coord_in     = (int4)(0, 0, coord_out.z, 0); \\\n\
+    float4 src0_f,src1_f,src2_f,src3_f; \\\n\
+    float4 dst = (float4)(0,0,0,0); \\\n\
+    float  sum[4]; \\\n\
+    int i = 0; \\\n\
+ \\\n\
+    Image scalew = create_image_from_image2d(scale_w, 4); \\\n\
+    Image scaleh = create_image_from_image2d(scale_h, 4); \\\n\
+ \\\n\
+    uchar* scale_w_ptr = get_image_ptr_from_coord(scalew, coord_scalew); \\\n\
+    __global float* scale_x = (__global float*)scale_w_ptr; \\\n\
+ \\\n\
+    uchar* scale_h_ptr = get_image_ptr_from_coord(scaleh, coord_scaleh); \\\n\
+    __global float* scale_y = (__global float*)scale_h_ptr; \\\n\
+    cubic_coeffs_y = vload4(0, scale_y); \\\n\
+ \\\n\
+    int index_y = read_imagei(index_h, coord_index.yw).x; \\\n\
+    coord_in.y = index_y; \\\n\
+    int8 input_desc, output_desc; \\\n\
+    _viv_asm(COPY, input_desc, input, sizeof(input_desc)); \\\n\
+    int baseAddr = (int)coord_in.z * input_desc.s4 + input_desc.s0; \\\n\
+    _viv_asm(MOV, coord_in.w, baseAddr); \\\n\
+    _viv_asm(COPY, output_desc, output, sizeof(output_desc)); \\\n\
+    baseAddr = (int)coord_out.z * output_desc.s4 + output_desc.s0; \\\n\
+    _viv_asm(MOV, coord_out.w, baseAddr);\n\
+\n\
+#define RESIZE_CUBIC_16Bitsto16Bits(name,src_type,dst_type,temp_type) \\\n\
+__kernel void resize_cubic_##name( \\\n\
+    __read_only  image2d_array_t  input, \\\n\
+    __write_only image2d_array_t  output, \\\n\
+    __read_only  image2d_t        scale_w, \\\n\
+    __read_only  image2d_t        scale_h, \\\n\
+    __read_only  image2d_t        index_w, \\\n\
+    __read_only  image2d_t        index_h \\\n\
+                           ) \\\n\
+{ \\\n\
+    RESIZE_CUBIC_PART0; \\\n\
+    src_type     src0_h,src1_h,src2_h,src3_h; \\\n\
+    vxc_short4   src0,src1,src2,src3; \\\n\
+    for (i = 0; i < 4; i++) \\\n\
+    { \\\n\
+        coord_in.x = read_imagei(index_w, coord_index.xw).x; \\\n\
+        cubic_coeffs_x = vload4(i, scale_x); \\\n\
+        coord_index.x = coord_index.x + 1; \\\n\
+ \\\n\
+        VXC_OP4(img_load_3d, src0, input, coord_in.xywz, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                                         VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+        VXC_OP4(img_load_3d, src1, input, coord_in.xywz, VXC_5BITOFFSET_XY(0, 1), \\\n\
+                                         VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+        VXC_OP4(img_load_3d, src2, input, coord_in.xywz, VXC_5BITOFFSET_XY(0, 2), \\\n\
+                                         VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+        VXC_OP4(img_load_3d, src3, input, coord_in.xywz, VXC_5BITOFFSET_XY(0, 3), \\\n\
+                                         VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+ \\\n\
+        _viv_asm(COPY, src0_h, src0, 8); \\\n\
+        _viv_asm(COPY, src1_h, src1, 8); \\\n\
+        _viv_asm(COPY, src2_h, src2, 8); \\\n\
+        _viv_asm(COPY, src3_h, src3, 8); \\\n\
+ \\\n\
+        VXC_DP4x4(src0_f, src0_h, src0_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniFp16ToFp32_4x4); \\\n\
+        VXC_DP4x4(src1_f, src1_h, src1_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniFp16ToFp32_4x4); \\\n\
+        VXC_DP4x4(src2_f, src2_h, src2_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniFp16ToFp32_4x4); \\\n\
+        VXC_DP4x4(src3_f, src3_h, src3_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniFp16ToFp32_4x4); \\\n\
+ \\\n\
+        dst = src0_f * cubic_coeffs_y.x \\\n\
+            + src1_f * cubic_coeffs_y.y \\\n\
+            + src2_f * cubic_coeffs_y.z \\\n\
+            + src3_f * cubic_coeffs_y.w; \\\n\
+        sum[i] = dot(dst, cubic_coeffs_x); \\\n\
+    } \\\n\
+    float4 sum_f = (float4)(sum[0],sum[1],sum[2],sum[3]); \\\n\
+    temp_type tmpout; \\\n\
+    _viv_asm(CONV,tmpout,sum_f); \\\n\
+    dst_type out_h; \\\n\
+    vxc_short4 out; \\\n\
+    VXC_DP2x8(out_h, tmpout, tmpout, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractHalf8_2x8); \\\n\
+    _viv_asm(COPY, out, out_h, 8); \\\n\
+ \\\n\
+    VXC_OP4_NoDest(img_store_3d, output, coord_out.xywz, out, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+}\n\
+RESIZE_CUBIC_16Bitsto16Bits(F16toF16,vxc_half4, vxc_half4, half4)\n\
+RESIZE_CUBIC_16Bitsto16Bits(I16toI16,vxc_short4,vxc_short4,short4)\n\
+RESIZE_CUBIC_16Bitsto16Bits(F16toI16,vxc_half4, vxc_short4,short4)\n\
+RESIZE_CUBIC_16Bitsto16Bits(I16toF16,vxc_short4,vxc_half4, half4)\n\
+\n\
+\n\
+#define RESIZE_CUBIC_Quant8toQuant8(name,data_type) \\\n\
+__kernel void resize_cubic_##name( \\\n\
+    __read_only  image2d_array_t  input, \\\n\
+    __write_only image2d_array_t  output, \\\n\
+    __read_only  image2d_t        scale_w, \\\n\
+    __read_only  image2d_t        scale_h, \\\n\
+    __read_only  image2d_t        index_w, \\\n\
+    __read_only  image2d_t        index_h \\\n\
+                           ) \\\n\
+{ \\\n\
+    RESIZE_CUBIC_PART0; \\\n\
+    data_type   src0,src1,src2,src3; \\\n\
+    for (i = 0; i < 4; i++) \\\n\
+    { \\\n\
+        coord_in.x = read_imagei(index_w, coord_index.xw).x; \\\n\
+        cubic_coeffs_x = vload4(i, scale_x); \\\n\
+        coord_index.x = coord_index.x + 1; \\\n\
+ \\\n\
+        VXC_OP4(img_load_3d, src0, input, coord_in.xywz, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                                         VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+        VXC_OP4(img_load_3d, src1, input, coord_in.xywz, VXC_5BITOFFSET_XY(0, 1), \\\n\
+                                         VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+        VXC_OP4(img_load_3d, src2, input, coord_in.xywz, VXC_5BITOFFSET_XY(0, 2), \\\n\
+                                         VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+        VXC_OP4(img_load_3d, src3, input, coord_in.xywz, VXC_5BITOFFSET_XY(0, 3), \\\n\
+                                         VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+ \\\n\
+        VXC_DP4x4(src0_f, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniFp16ToFp32_4x4); \\\n\
+        VXC_DP4x4(src1_f, src1, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniFp16ToFp32_4x4); \\\n\
+        VXC_DP4x4(src2_f, src2, src2, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniFp16ToFp32_4x4); \\\n\
+        VXC_DP4x4(src3_f, src3, src3, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniFp16ToFp32_4x4); \\\n\
+        src0_f = src0_f * input_scale + input_tail; \\\n\
+        src1_f = src1_f * input_scale + input_tail; \\\n\
+        src2_f = src2_f * input_scale + input_tail; \\\n\
+        src3_f = src3_f * input_scale + input_tail; \\\n\
+ \\\n\
+        dst = src0_f * cubic_coeffs_y.x \\\n\
+            + src1_f * cubic_coeffs_y.y \\\n\
+            + src2_f * cubic_coeffs_y.z \\\n\
+            + src3_f * cubic_coeffs_y.w; \\\n\
+        sum[i] = dot(dst, cubic_coeffs_x); \\\n\
+        sum[i] = sum[i] * output_scale + output_tail; \\\n\
+    } \\\n\
+    float4 sum_f = (float4)(sum[0],sum[1],sum[2],sum[3]); \\\n\
+    int4 tmpout; \\\n\
+    _viv_asm(CONV,tmpout,sum_f); \\\n\
+    data_type out; \\\n\
+    VXC_DP2x8(out, tmpout, tmpout, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtract8Bit_2x8); \\\n\
+ \\\n\
+    VXC_OP4_NoDest(img_store_3d, output, coord_out.xywz, out, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+}\n\
+RESIZE_CUBIC_Quant8toQuant8(U8toU8,vxc_uchar4)\n\
+RESIZE_CUBIC_Quant8toQuant8(I8toI8,vxc_char4 )\n\
+\n\
+#define RESIZE_CUBIC_F16toQuant8(name,dst_type) \\\n\
+__kernel void resize_cubic_##name( \\\n\
+    __read_only  image2d_array_t  input, \\\n\
+    __write_only image2d_array_t  output, \\\n\
+    __read_only  image2d_t        scale_w, \\\n\
+    __read_only  image2d_t        scale_h, \\\n\
+    __read_only  image2d_t        index_w, \\\n\
+    __read_only  image2d_t        index_h \\\n\
+                           ) \\\n\
+{ \\\n\
+    RESIZE_CUBIC_PART0; \\\n\
+    vxc_half4    src0_h,src1_h,src2_h,src3_h; \\\n\
+    vxc_short4   src0,src1,src2,src3; \\\n\
+    for (i = 0; i < 4; i++) \\\n\
+    { \\\n\
+        coord_in.x = read_imagei(index_w, coord_index.xw).x; \\\n\
+        cubic_coeffs_x = vload4(i, scale_x); \\\n\
+        coord_index.x = coord_index.x + 1; \\\n\
+ \\\n\
+        VXC_OP4(img_load_3d, src0, input, coord_in.xywz, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                                         VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+        VXC_OP4(img_load_3d, src1, input, coord_in.xywz, VXC_5BITOFFSET_XY(0, 1), \\\n\
+                                         VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+        VXC_OP4(img_load_3d, src2, input, coord_in.xywz, VXC_5BITOFFSET_XY(0, 2), \\\n\
+                                         VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+        VXC_OP4(img_load_3d, src3, input, coord_in.xywz, VXC_5BITOFFSET_XY(0, 3), \\\n\
+                                         VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+ \\\n\
+        _viv_asm(COPY, src0_h, src0, 8); \\\n\
+        _viv_asm(COPY, src1_h, src1, 8); \\\n\
+        _viv_asm(COPY, src2_h, src2, 8); \\\n\
+        _viv_asm(COPY, src3_h, src3, 8); \\\n\
+ \\\n\
+        VXC_DP4x4(src0_f, src0_h, src0_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniFp16ToFp32_4x4); \\\n\
+        VXC_DP4x4(src1_f, src1_h, src1_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniFp16ToFp32_4x4); \\\n\
+        VXC_DP4x4(src2_f, src2_h, src2_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniFp16ToFp32_4x4); \\\n\
+        VXC_DP4x4(src3_f, src3_h, src3_h, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniFp16ToFp32_4x4); \\\n\
+ \\\n\
+        dst = src0_f * cubic_coeffs_y.x \\\n\
+            + src1_f * cubic_coeffs_y.y \\\n\
+            + src2_f * cubic_coeffs_y.z \\\n\
+            + src3_f * cubic_coeffs_y.w; \\\n\
+        sum[i] = dot(dst, cubic_coeffs_x); \\\n\
+        sum[i] = sum[i] * output_scale + output_tail; \\\n\
+    } \\\n\
+    float4 sum_f = (float4)(sum[0],sum[1],sum[2],sum[3]); \\\n\
+    int4 tmpout; \\\n\
+    _viv_asm(CONV,tmpout,sum_f); \\\n\
+    dst_type out; \\\n\
+    VXC_DP2x8(out, tmpout, tmpout, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtract8Bit_2x8); \\\n\
+ \\\n\
+    VXC_OP4_NoDest(img_store_3d, output, coord_out.xywz, out, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+}\n\
+RESIZE_CUBIC_F16toQuant8(F16toU8,vxc_uchar4)\n\
+RESIZE_CUBIC_F16toQuant8(F16toI8,vxc_char4)\n\
+\n\
+#define RESIZE_CUBIC_Quant8toF16(name,src_type) \\\n\
+__kernel void resize_cubic_##name( \\\n\
+    __read_only  image2d_array_t  input, \\\n\
+    __write_only image2d_array_t  output, \\\n\
+    __read_only  image2d_t        scale_w, \\\n\
+    __read_only  image2d_t        scale_h, \\\n\
+    __read_only  image2d_t        index_w, \\\n\
+    __read_only  image2d_t        index_h \\\n\
+                           ) \\\n\
+{ \\\n\
+    RESIZE_CUBIC_PART0; \\\n\
+    src_type src0,src1,src2,src3; \\\n\
+    for (i = 0; i < 4; i++) \\\n\
+    { \\\n\
+        coord_in.x = read_imagei(index_w, coord_index.xw).x; \\\n\
+        cubic_coeffs_x = vload4(i, scale_x); \\\n\
+        coord_index.x = coord_index.x + 1; \\\n\
+ \\\n\
+        VXC_OP4(img_load_3d, src0, input, coord_in.xywz, VXC_5BITOFFSET_XY(0, 0), \\\n\
+                                         VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+        VXC_OP4(img_load_3d, src1, input, coord_in.xywz, VXC_5BITOFFSET_XY(0, 1), \\\n\
+                                         VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+        VXC_OP4(img_load_3d, src2, input, coord_in.xywz, VXC_5BITOFFSET_XY(0, 2), \\\n\
+                                         VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+        VXC_OP4(img_load_3d, src3, input, coord_in.xywz, VXC_5BITOFFSET_XY(0, 3), \\\n\
+                                         VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+ \\\n\
+        VXC_DP4x4(src0_f, src0, src0, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniFp16ToFp32_4x4); \\\n\
+        VXC_DP4x4(src1_f, src1, src1, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniFp16ToFp32_4x4); \\\n\
+        VXC_DP4x4(src2_f, src2, src2, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniFp16ToFp32_4x4); \\\n\
+        VXC_DP4x4(src3_f, src3, src3, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniFp16ToFp32_4x4); \\\n\
+ \\\n\
+        src0_f = src0_f * input_scale + input_tail; \\\n\
+        src1_f = src1_f * input_scale + input_tail; \\\n\
+        src2_f = src2_f * input_scale + input_tail; \\\n\
+        src3_f = src3_f * input_scale + input_tail; \\\n\
+ \\\n\
+        dst = src0_f * cubic_coeffs_y.x \\\n\
+            + src1_f * cubic_coeffs_y.y \\\n\
+            + src2_f * cubic_coeffs_y.z \\\n\
+            + src3_f * cubic_coeffs_y.w; \\\n\
+        sum[i] = dot(dst, cubic_coeffs_x); \\\n\
+    } \\\n\
+    float4 sum_f = (float4)(sum[0],sum[1],sum[2],sum[3]); \\\n\
+    half4 tmpout; \\\n\
+    _viv_asm(CONV,tmpout,sum_f); \\\n\
+    vxc_half4 out_h; \\\n\
+    vxc_short4 out; \\\n\
+    VXC_DP2x8(out_h, tmpout, tmpout, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0), uniExtractHalf8_2x8); \\\n\
+    _viv_asm(COPY, out, out_h, 8); \\\n\
+ \\\n\
+    VXC_OP4_NoDest(img_store_3d, output, coord_out.xywz, out, VXC_MODIFIER(0, 3, 0, VXC_RM_TowardZero, 0)); \\\n\
+}\n\
+RESIZE_CUBIC_Quant8toF16(U8toF16,vxc_uchar4)\n\
+RESIZE_CUBIC_Quant8toF16(I8toF16,vxc_char4)"; /* end of resize_cubic_vx*/
+
 static const char resize_nearest_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
 \n\
 _viv_uniform VXC_512Bits uniMultiplyAndPostShift_2x8;\n\
@@ -75271,6 +75542,203 @@ __kernel void resize_bilinear_U8toU8(\n\
 }\n\
 "; /* end of resize_bilinear_cl*/
 
+static const char resize_cubic_cl[] = "__kernel void resize_cubic_F32toF32(\n\
+    __read_only  image2d_array_t  input,\n\
+    __write_only image2d_array_t  output,\n\
+                           float  scale_x,\n\
+                           float  scale_y,\n\
+                           float  half_pixel_value\n\
+                           )\n\
+{\n\
+    int4   coord_out    =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+    float  cubic_coeffs_y[4] = {0,0,0,0};\n\
+    float  cubic_coeffs_x[4] = {0,0,0,0};\n\
+    float  in_x         = (convert_float(coord_out.x) + half_pixel_value) * scale_x - half_pixel_value;\n\
+    float  left_x_f     = floor(in_x);\n\
+    float4 delta_x      = (float4)(0, in_x - left_x_f,0,0);\n\
+    float  in_y         = (convert_float(coord_out.y) + half_pixel_value) * scale_y - half_pixel_value;\n\
+    float  top_y_f      = floor(in_y);\n\
+    float4 delta_y      = (float4)(0, in_y - top_y_f,0,0);\n\
+    int    x_idx        = convert_int(left_x_f - 1);\n\
+    int    y_idx        = convert_int(top_y_f - 1);\n\
+    int4   coord_in     = (int4)(x_idx, y_idx, coord_out.z, 0);\n\
+    float  data00, data01, data02, data03, data10, data11, data12, data13,\n\
+           data20, data21, data22, data23, data30, data31, data32, data33;\n\
+\n\
+    delta_x.x = 1 + delta_x.y;\n\
+    delta_x.z = 1 - delta_x.y;\n\
+    delta_x.w = 2 - delta_x.y;\n\
+    cubic_coeffs_x[0] = -0.5 * ((((delta_x.x - 5) * delta_x.x + 8) * delta_x.x) - 4);\n\
+    cubic_coeffs_x[1] = (1.5 * delta_x.y - 2.5) * delta_x.y * delta_x.y + 1;\n\
+    cubic_coeffs_x[2] = (1.5 * delta_x.z - 2.5) * delta_x.z * delta_x.z + 1;\n\
+    cubic_coeffs_x[3] = -0.5 * ((((delta_x.w - 5) * delta_x.w + 8) * delta_x.w) - 4);\n\
+    delta_y.x = 1 + delta_y.y;\n\
+    delta_y.z = 1 - delta_y.y;\n\
+    delta_y.w = 2 - delta_y.y;\n\
+    cubic_coeffs_y[0] = -0.5 * ((((delta_y.x - 5) * delta_y.x + 8) * delta_y.x) - 4);\n\
+    cubic_coeffs_y[1] = (1.5 * delta_y.y - 2.5) * delta_y.y * delta_y.y + 1;\n\
+    cubic_coeffs_y[2] = (1.5 * delta_y.z - 2.5) * delta_y.z * delta_y.z + 1;\n\
+    cubic_coeffs_y[3] = -0.5 * ((((delta_y.w - 5) * delta_y.w + 8) * delta_y.w) - 4);\n\
+    float4 dst = (float4)(0,0,0,0);\n\
+\n\
+    data00   = read_imagef(input, coord_in).x;\n\
+    coord_in.x++;\n\
+    data10   = read_imagef(input, coord_in).x;\n\
+    coord_in.x++;\n\
+    data20   = read_imagef(input, coord_in).x;\n\
+    coord_in.x++;\n\
+    data30   = read_imagef(input, coord_in).x;\n\
+\n\
+    coord_in.y++;\n\
+    data31   = read_imagef(input, coord_in).x;\n\
+    coord_in.x--;\n\
+    data21   = read_imagef(input, coord_in).x;\n\
+    coord_in.x--;\n\
+    data11   = read_imagef(input, coord_in).x;\n\
+    coord_in.x--;\n\
+    data01   = read_imagef(input, coord_in).x;\n\
+\n\
+    coord_in.y++;\n\
+    data02   = read_imagef(input, coord_in).x;\n\
+    coord_in.x++;\n\
+    data12   = read_imagef(input, coord_in).x;\n\
+    coord_in.x++;\n\
+    data22   = read_imagef(input, coord_in).x;\n\
+    coord_in.x++;\n\
+    data32   = read_imagef(input, coord_in).x;\n\
+\n\
+    coord_in.y++;\n\
+    data33   = read_imagef(input, coord_in).x;\n\
+    coord_in.x--;\n\
+    data23   = read_imagef(input, coord_in).x;\n\
+    coord_in.x--;\n\
+    data13   = read_imagef(input, coord_in).x;\n\
+    coord_in.x--;\n\
+    data03   = read_imagef(input, coord_in).x;\n\
+\n\
+    dst.x = data00 * cubic_coeffs_x[0] * cubic_coeffs_y[0]\n\
+          + data01 * cubic_coeffs_x[0] * cubic_coeffs_y[1]\n\
+          + data02 * cubic_coeffs_x[0] * cubic_coeffs_y[2]\n\
+          + data03 * cubic_coeffs_x[0] * cubic_coeffs_y[3]\n\
+          + data10 * cubic_coeffs_x[1] * cubic_coeffs_y[0]\n\
+          + data11 * cubic_coeffs_x[1] * cubic_coeffs_y[1]\n\
+          + data12 * cubic_coeffs_x[1] * cubic_coeffs_y[2]\n\
+          + data13 * cubic_coeffs_x[1] * cubic_coeffs_y[3]\n\
+          + data20 * cubic_coeffs_x[2] * cubic_coeffs_y[0]\n\
+          + data21 * cubic_coeffs_x[2] * cubic_coeffs_y[1]\n\
+          + data22 * cubic_coeffs_x[2] * cubic_coeffs_y[2]\n\
+          + data23 * cubic_coeffs_x[2] * cubic_coeffs_y[3]\n\
+          + data30 * cubic_coeffs_x[3] * cubic_coeffs_y[0]\n\
+          + data31 * cubic_coeffs_x[3] * cubic_coeffs_y[1]\n\
+          + data32 * cubic_coeffs_x[3] * cubic_coeffs_y[2]\n\
+          + data33 * cubic_coeffs_x[3] * cubic_coeffs_y[3];\n\
+\n\
+    write_imagef(output, coord_out, dst);\n\
+\n\
+}\n\
+\n\
+\n\
+__kernel void resize_cubic_U8toU8(\n\
+    __read_only  image2d_array_t  input,\n\
+    __write_only image2d_array_t  output,\n\
+                           float  scale_x,\n\
+                           float  scale_y,\n\
+                           float  half_pixel_value,\n\
+                           float  in_scale,\n\
+                           float  in_tail,\n\
+                           float  out_scale,\n\
+                           float  out_tail\n\
+                           )\n\
+{\n\
+    int4   coord_out    =  (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0);\n\
+    float  cubic_coeffs_y[4] = {0,0,0,0};\n\
+    float  cubic_coeffs_x[4] = {0,0,0,0};\n\
+    float  in_x         = (convert_float(coord_out.x) + half_pixel_value) * scale_x - half_pixel_value;\n\
+    float  left_x_f     = floor(in_x);\n\
+    float4 delta_x      = (float4)(0, in_x - left_x_f,0,0);\n\
+    float  in_y         = (convert_float(coord_out.y) + half_pixel_value) * scale_y - half_pixel_value;\n\
+    float  top_y_f      = floor(in_y);\n\
+    float4 delta_y      = (float4)(0, in_y - top_y_f,0,0);\n\
+    int    x_idx        = convert_int(left_x_f - 1);\n\
+    int    y_idx        = convert_int(top_y_f - 1);\n\
+    int4   coord_in     = (int4)(x_idx, y_idx, coord_out.z, 0);\n\
+    float  data00, data01, data02, data03, data10, data11, data12, data13,\n\
+           data20, data21, data22, data23, data30, data31, data32, data33;\n\
+\n\
+    delta_x.x = 1 + delta_x.y;\n\
+    delta_x.z = 1 - delta_x.y;\n\
+    delta_x.w = 2 - delta_x.y;\n\
+    cubic_coeffs_x[0] = -0.5 * ((((delta_x.x - 5) * delta_x.x + 8) * delta_x.x) - 4);\n\
+    cubic_coeffs_x[1] = (1.5 * delta_x.y - 2.5) * delta_x.y * delta_x.y + 1;\n\
+    cubic_coeffs_x[2] = (1.5 * delta_x.z - 2.5) * delta_x.z * delta_x.z + 1;\n\
+    cubic_coeffs_x[3] = -0.5 * ((((delta_x.w - 5) * delta_x.w + 8) * delta_x.w) - 4);\n\
+    delta_y.x = 1 + delta_y.y;\n\
+    delta_y.z = 1 - delta_y.y;\n\
+    delta_y.w = 2 - delta_y.y;\n\
+    cubic_coeffs_y[0] = -0.5 * ((((delta_y.x - 5) * delta_y.x + 8) * delta_y.x) - 4);\n\
+    cubic_coeffs_y[1] = (1.5 * delta_y.y - 2.5) * delta_y.y * delta_y.y + 1;\n\
+    cubic_coeffs_y[2] = (1.5 * delta_y.z - 2.5) * delta_y.z * delta_y.z + 1;\n\
+    cubic_coeffs_y[3] = -0.5 * ((((delta_y.w - 5) * delta_y.w + 8) * delta_y.w) - 4);\n\
+    float dst = 0;\n\
+    uint4 out = (uint4)(0,0,0,0);\n\
+\n\
+    data00   = convert_float(read_imageui(input, coord_in).x) * in_scale + in_tail;\n\
+    coord_in.x++;\n\
+    data10   = convert_float(read_imageui(input, coord_in).x) * in_scale + in_tail;\n\
+    coord_in.x++;\n\
+    data20   = convert_float(read_imageui(input, coord_in).x) * in_scale + in_tail;\n\
+    coord_in.x++;\n\
+    data30   = convert_float(read_imageui(input, coord_in).x) * in_scale + in_tail;\n\
+\n\
+    coord_in.y++;\n\
+    data31   = convert_float(read_imageui(input, coord_in).x) * in_scale + in_tail;\n\
+    coord_in.x--;\n\
+    data21   = convert_float(read_imageui(input, coord_in).x) * in_scale + in_tail;\n\
+    coord_in.x--;\n\
+    data11   = convert_float(read_imageui(input, coord_in).x) * in_scale + in_tail;\n\
+    coord_in.x--;\n\
+    data01   = convert_float(read_imageui(input, coord_in).x) * in_scale + in_tail;\n\
+\n\
+    coord_in.y++;\n\
+    data02   = convert_float(read_imageui(input, coord_in).x) * in_scale + in_tail;\n\
+    coord_in.x++;\n\
+    data12   = convert_float(read_imageui(input, coord_in).x) * in_scale + in_tail;\n\
+    coord_in.x++;\n\
+    data22   = convert_float(read_imageui(input, coord_in).x) * in_scale + in_tail;\n\
+    coord_in.x++;\n\
+    data32   = convert_float(read_imageui(input, coord_in).x) * in_scale + in_tail;\n\
+\n\
+    coord_in.y++;\n\
+    data33   = convert_float(read_imageui(input, coord_in).x) * in_scale + in_tail;\n\
+    coord_in.x--;\n\
+    data23   = convert_float(read_imageui(input, coord_in).x) * in_scale + in_tail;\n\
+    coord_in.x--;\n\
+    data13   = convert_float(read_imageui(input, coord_in).x) * in_scale + in_tail;\n\
+    coord_in.x--;\n\
+    data03   = convert_float(read_imageui(input, coord_in).x) * in_scale + in_tail;\n\
+\n\
+    dst = data00 * cubic_coeffs_x[0] * cubic_coeffs_y[0]\n\
+        + data01 * cubic_coeffs_x[0] * cubic_coeffs_y[1]\n\
+        + data02 * cubic_coeffs_x[0] * cubic_coeffs_y[2]\n\
+        + data03 * cubic_coeffs_x[0] * cubic_coeffs_y[3]\n\
+        + data10 * cubic_coeffs_x[1] * cubic_coeffs_y[0]\n\
+        + data11 * cubic_coeffs_x[1] * cubic_coeffs_y[1]\n\
+        + data12 * cubic_coeffs_x[1] * cubic_coeffs_y[2]\n\
+        + data13 * cubic_coeffs_x[1] * cubic_coeffs_y[3]\n\
+        + data20 * cubic_coeffs_x[2] * cubic_coeffs_y[0]\n\
+        + data21 * cubic_coeffs_x[2] * cubic_coeffs_y[1]\n\
+        + data22 * cubic_coeffs_x[2] * cubic_coeffs_y[2]\n\
+        + data23 * cubic_coeffs_x[2] * cubic_coeffs_y[3]\n\
+        + data30 * cubic_coeffs_x[3] * cubic_coeffs_y[0]\n\
+        + data31 * cubic_coeffs_x[3] * cubic_coeffs_y[1]\n\
+        + data32 * cubic_coeffs_x[3] * cubic_coeffs_y[2]\n\
+        + data33 * cubic_coeffs_x[3] * cubic_coeffs_y[3];\n\
+    out.x = convert_uint(dst * out_scale + out_tail);\n\
+\n\
+    write_imageui(output, coord_out, out);\n\
+}\n\
+"; /* end of resize_cubic_cl*/
+
 static const char resize_nearest_cl[] = "\n\
 #define NEAREST_INDEX_PROCESS() \\\n\
     int4   coord_out  = (int4)(get_global_id(0), get_global_id(1), get_global_id(2), 0); \\\n\
@@ -79439,6 +79907,7 @@ static const source_map_t evis_resource[] =
     {"resize_bilinear_align_corners_vx", resize_bilinear_align_corners_vx},
     {"resize_bilinear_nhwc_vx", resize_bilinear_nhwc_vx},
     {"resize_bilinear_nhwc_bound_vx", resize_bilinear_nhwc_bound_vx},
+    {"resize_cubic_vx", resize_cubic_vx},
     {"resize_nearest_vx", resize_nearest_vx},
     {"scatter_nd_vx", scatter_nd_vx},
     {"scatter_nd_big_vx", scatter_nd_big_vx},
@@ -79599,6 +80068,7 @@ static const source_map_t cl_resource[] =
     {"resize_3d_bilinear_cl", resize_3d_bilinear_cl},
     {"resize_3d_nearest_cl", resize_3d_nearest_cl},
     {"resize_bilinear_cl", resize_bilinear_cl},
+    {"resize_cubic_cl", resize_cubic_cl},
     {"resize_nearest_cl", resize_nearest_cl},
     {"reversesequence_cl", reversesequence_cl},
     {"roi_align_cl", roi_align_cl},
