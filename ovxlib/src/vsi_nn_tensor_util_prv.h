@@ -112,7 +112,7 @@ vsi_nn_tensor_t * vsi_nn_kernel_insert_reshape_node
         vsi_nn_graph_t    * graph,
         vsi_nn_tensor_t   * in_tensor,
         vsi_size_t        * shape,
-        vsi_size_t          dim_num,
+        uint32_t            dim_num,
         vsi_nn_opt_direction_e direction
     );
 

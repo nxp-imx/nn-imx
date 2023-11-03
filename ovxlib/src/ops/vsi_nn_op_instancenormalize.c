@@ -132,11 +132,11 @@ static vsi_status op_compute
     vsi_nn_optimize_instance_norm_shape(inputs[0]->attr.size, inputs[0]->attr.dim_num, shape, &new_rank);
 
     tmp_tensors[0] = vsi_nn_kernel_insert_reshape_node( self->graph,
-        inputs[0], shape, new_rank, VSI_NN_OPTIMIZE_BACKWARD );
+        inputs[0], shape, (uint32_t)new_rank, VSI_NN_OPTIMIZE_BACKWARD );
     tmp_tensors[1] = inputs[1];
     tmp_tensors[2] = inputs[2];
     tmp_tensors[3] = vsi_nn_kernel_insert_reshape_node( self->graph,
-            outputs[0], shape, new_rank, VSI_NN_OPTIMIZE_FORWARD );
+            outputs[0], shape, (uint32_t)new_rank, VSI_NN_OPTIMIZE_FORWARD );
 
     status = _try_set_high_presision_tensor(tmp_tensors);
     if (status != VSI_SUCCESS)
