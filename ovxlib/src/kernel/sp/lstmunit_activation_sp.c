@@ -126,6 +126,8 @@ REGISTER_LSTMUNIT_ACTIVATION_STREAM_PROCESSOR_KERNEL(lstmunit_activation) {
         nodes[1] = vxTensorCopyNode(graph->g, outputs[0]->t, outputs[2]->t);
         CHECK_PTR_FAIL_GOTO( nodes[1], "Create vxTensorCopyNode node  fail.", final );
 
+        vsi_safe_release_node(nodes[0]);
+
         node = nodes[1];
     }
     else

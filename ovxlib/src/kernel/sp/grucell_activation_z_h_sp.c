@@ -89,7 +89,10 @@ REGISTER_GRUCELL_ACTIVATION_STREAM_PROCESSOR_KERNEL( grucell_activation_z_h )
 
     node[1] = vxTensorCopyNode( graph->g, outputs[0]->t, outputs[1]->t);
     CHECK_PTR_FAIL_GOTO( node[1], "Create vxTensorCopyNode node fail.", final );
+
 final:
+    vsi_safe_release_node(node[0]);
+
     return node[1];
 
 } /* grucell_activation_z_h() */
