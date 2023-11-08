@@ -215,7 +215,7 @@ DEF_KERNEL_INITIALIZER(_log_softmax_initializer)
     float       beta                        = 0;
     float      input_scale                  = 0;
     float      output_scale                 = 0;
-    int32_t    outputZP                     = 0;
+    float      outputZP                     = 0;
     uint32_t   inputWidth                   = 0;
     uint32_t   inputWidthRemain4            = 0;
     vsi_nn_kernel_tensor_attr_t * attr[2]   = { NULL, NULL };
@@ -443,62 +443,25 @@ DEF_KERNEL_INITIALIZER(_log_softmax_initializer)
         }
     }
 
+    outputZP = (float)attr[1]->zero_point;
+    output_scale = 1.0f / (float)(attr[1]->scale);
+
     if( attr[1]->quant == VSI_NN_KERNEL_QUANT_DFP )
     {
-        int32_t fl = attr[1]->dfp.fl;
-
-        if (fl > 0)
-        {
-            output_scale = (float)((int64_t)1 << fl);
-        }
-        else
-        {
-            output_scale = (float)1.0f / (float) ((int64_t)1 << -fl);
-        }
-
         status = vsi_nn_kernel_gpu_add_param( node,
             "outputScale", &output_scale );
         CHECK_STATUS_FAIL_GOTO(status, final );
     }
     else if (attr[1]->quant == VSI_NN_KERNEL_QUANT_ASYMM)
     {
-        float output_offset_asymmetric = 0;
-        outputZP = attr[1]->asymm.zero_point;
-        output_scale = 1.0f / (float)(attr[1]->asymm.scale);
-        output_offset_asymmetric = (float)outputZP;
-
         status = vsi_nn_kernel_gpu_add_param( node,
             "outputScale", &output_scale );
         status |= vsi_nn_kernel_gpu_add_param( node,
-            "output_offset_asymmetric", &output_offset_asymmetric );
+            "output_offset_asymmetric", &outputZP );
         CHECK_STATUS_FAIL_GOTO(status, final );
     }
-    else
-    {
-        output_scale = 1;
-        outputZP     = 0;
-    }
 
-    if( attr[0]->quant == VSI_NN_KERNEL_QUANT_DFP )
-    {
-        int32_t fl = attr[0]->dfp.fl;
-        if (fl > 0)
-        {
-            input_scale = 1.0f / (float) ((int64_t)1 << fl);
-        }
-        else
-        {
-            input_scale = (float)((int64_t)1 << -fl);
-        }
-    }
-    else if( attr[0]->quant == VSI_NN_KERNEL_QUANT_ASYMM )
-    {
-        input_scale = attr[0]->asymm.scale;
-    }
-    else
-    {
-        input_scale = 1.0f;
-    }
+    input_scale = attr[0]->scale;
 
     scaleLogE = scaleLogE * input_scale;
     beta = beta * input_scale;
@@ -780,10 +743,14 @@ DEF_KERNEL_INITIALIZER(_log_softmax_exceed_initializer)
     outputZP = (float)attr[1]->zero_point;
     output_scale = 1.0f / attr[1]->scale;
 
-    status = vsi_nn_kernel_gpu_add_param( node,
-        "outputScale", &output_scale );
-    status |= vsi_nn_kernel_gpu_add_param( node,
-        "output_offset_asymmetric", &outputZP );
+    if (attr[0]->dtype != BF16)
+    {
+        status = vsi_nn_kernel_gpu_add_param( node,
+            "outputScale", &output_scale );
+        status |= vsi_nn_kernel_gpu_add_param( node,
+            "output_offset_asymmetric", &outputZP );
+        CHECK_STATUS_FAIL_GOTO(status, final );
+    }
 
     input_scale = attr[0]->scale;
 

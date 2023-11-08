@@ -309,39 +309,10 @@ DEF_KERNEL_INITIALIZER(_gather_initializer)
     status = vsi_nn_kernel_scalar_read_int32((vsi_nn_kernel_scalar_t)param[4], &block_num);
     CHECK_STATUS_FAIL_GOTO(status, OnError );
 
-    if ( attr[0]->quant == VSI_NN_KERNEL_QUANT_DFP )
-    {
-        if (attr[0]->dfp.fl > 0)
-        {
-            src0Scale = (1.0f / ((float) ((int64_t)1 << attr[0]->dfp.fl)));
-        }
-        else
-        {
-            src0Scale = ((float) ((int64_t)1 << -attr[0]->dfp.fl));
-        }
-    }
-    else if ( attr[0]->quant == VSI_NN_KERNEL_QUANT_ASYMM )
-    {
-        src0Scale = attr[0]->asymm.scale;
-        src0ZP = attr[0]->asymm.zero_point;
-    }
-
-    if ( attr[2]->quant == VSI_NN_KERNEL_QUANT_DFP )
-    {
-        if (attr[2]->dfp.fl > 0)
-        {
-            dstScale = (float)((int64_t)1 << attr[2]->dfp.fl);
-        }
-        else
-        {
-            dstScale = (1.0f / (float)((int64_t)1 << -attr[2]->dfp.fl));
-        }
-    }
-    else if ( attr[2]->quant == VSI_NN_KERNEL_QUANT_ASYMM )
-    {
-        dstScale = 1.0f / attr[2]->asymm.scale;
-        dstZP = attr[2]->asymm.zero_point;
-    }
+    src0Scale = attr[0]->scale;
+    src0ZP    = attr[0]->zero_point;
+    dstScale  = 1.0f / attr[2]->scale;
+    dstZP     = attr[2]->zero_point;
 
     input1_shape  = attr[1]->shape;
     input_dims1   = (uint32_t)input1_shape->size;
@@ -508,39 +479,10 @@ DEF_KERNEL_INITIALIZER(_gather_axis0_initializer)
     status = vsi_nn_kernel_scalar_read_int32((vsi_nn_kernel_scalar_t)param[4], &block_num);
     CHECK_STATUS_FAIL_GOTO(status, OnError );
 
-    if ( attr[0]->quant == VSI_NN_KERNEL_QUANT_DFP )
-    {
-        if (attr[0]->dfp.fl > 0)
-        {
-            src0Scale = (1.0f / ((float) ((int64_t)1 << attr[0]->dfp.fl)));
-        }
-        else
-        {
-            src0Scale = ((float) ((int64_t)1 << -attr[0]->dfp.fl));
-        }
-    }
-    else if ( attr[0]->quant == VSI_NN_KERNEL_QUANT_ASYMM )
-    {
-        src0Scale = attr[0]->asymm.scale;
-        src0ZP = attr[0]->asymm.zero_point;
-    }
-
-    if ( attr[2]->quant == VSI_NN_KERNEL_QUANT_DFP )
-    {
-        if (attr[2]->dfp.fl > 0)
-        {
-            dstScale = (float)((int64_t)1 << attr[2]->dfp.fl);
-        }
-        else
-        {
-            dstScale = (1.0f / (float)((int64_t)1 << -attr[2]->dfp.fl));
-        }
-    }
-    else if ( attr[2]->quant == VSI_NN_KERNEL_QUANT_ASYMM )
-    {
-        dstScale = 1.0f / attr[2]->asymm.scale;
-        dstZP = attr[2]->asymm.zero_point;
-    }
+    src0Scale = attr[0]->scale;
+    src0ZP    = attr[0]->zero_point;
+    dstScale  = 1.0f / attr[2]->scale;
+    dstZP     = attr[2]->zero_point;
 
     input1_shape  = attr[1]->shape;
     input_dims1   = (uint32_t)input1_shape->size;
