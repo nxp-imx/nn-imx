@@ -434,4 +434,48 @@ REGISTER_ELTWISE_UNARY_OPENVX_KERNEL( exp )
 } /* exp() */
 #endif
 
+#if (VX_ACTIVATION_SIN_COS_VX_SUPPORT_EXT)
+REGISTER_ELTWISE_UNARY_OPENVX_KERNEL( sin )
+{
+    vx_node node = NULL;
+
+    VSI_UNREFERENCED(kernel);
+    VSI_UNREFERENCED(params);
+    VSI_UNREFERENCED(output_num);
+    VSI_UNREFERENCED(input_num);
+
+    node = vxActivationLayer(
+        graph->g,
+        inputs[0]->t,
+        VX_CONVOLUTIONAL_NETWORK_ACTIVATION_SIN,
+        0,
+        0,
+        outputs[0]->t
+        );
+
+    return (vsi_nn_kernel_node_t)node;
+} /* sin() */
+
+REGISTER_ELTWISE_UNARY_OPENVX_KERNEL( cos )
+{
+    vx_node node = NULL;
+
+    VSI_UNREFERENCED(kernel);
+    VSI_UNREFERENCED(params);
+    VSI_UNREFERENCED(output_num);
+    VSI_UNREFERENCED(input_num);
+
+    node = vxActivationLayer(
+        graph->g,
+        inputs[0]->t,
+        VX_CONVOLUTIONAL_NETWORK_ACTIVATION_COS,
+        0,
+        0,
+        outputs[0]->t
+        );
+
+    return (vsi_nn_kernel_node_t)node;
+} /* cos() */
+#endif
+
 #undef REGISTER_ELTWISE_UNARY_OPENVX_KERNEL
