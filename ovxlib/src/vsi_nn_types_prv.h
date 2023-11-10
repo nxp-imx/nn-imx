@@ -73,6 +73,10 @@ typedef struct _vsi_nn_node_prv
     int8_t processed;
 
     // Add node internal attribute here...
+#if VX_GRAPH_BATCH_OPT_SUPPORT
+    /*split the node to "split_num" on batch dim.*/
+    vsi_size_t split_num;
+#endif
 } vsi_nn_node_prv_t;
 
 /**

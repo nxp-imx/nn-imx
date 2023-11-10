@@ -796,6 +796,18 @@ OVXLIB_API vsi_status vsi_nn_SetGraphTransformOption
     size_t size
     );
 
+/**
+ * graph shape inference
+ *
+ * @param[in] graph Graph handle
+ *
+ * @return VSI_SUCCESS on success, or appropriate error code otherwise
+ * */
+OVXLIB_API vsi_status vsi_nn_InferShape
+(
+    vsi_nn_graph_t* graph
+);
+
 #ifdef __cplusplus
 }
 #endif
