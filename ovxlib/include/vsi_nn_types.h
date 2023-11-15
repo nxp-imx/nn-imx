@@ -271,7 +271,9 @@ typedef enum _vsi_nn_yuv_type
 typedef enum _vsi_nn_nv_type
 {
     VSI_NN_YUV_TYPE_NV12,
-    VSI_NN_YUV_TYPE_NV21
+    VSI_NN_YUV_TYPE_NV21,
+    VSI_NN_YUV_TYPE_NV12_RGGB,
+    VSI_NN_YUV_TYPE_NV21_BGGR
 }vsi_nn_nv_type;
 
 typedef enum _vsi_nn_roi_align_type_e
