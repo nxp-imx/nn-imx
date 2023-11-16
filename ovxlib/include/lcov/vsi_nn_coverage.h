@@ -25,6 +25,11 @@
 #define _VSI_NN_COVERAGE_H
 
 #include "lcov/vsi_nn_test_util.h"
+#include "lcov/vsi_nn_test_math.h"
+#include "lcov/vsi_nn_test_tensor_op.h"
+#include "lcov/vsi_nn_test_dtype.h"
+#include "lcov/vsi_nn_test_hashmap.h"
+#include "lcov/vsi_nn_test_constraint_check.h"
 
 #ifdef __cplusplus
 extern "C" {

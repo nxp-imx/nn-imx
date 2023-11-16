@@ -21,31 +21,20 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#include "vsi_nn_test.h"
-#include "lcov/vsi_nn_coverage.h"
+#ifndef _VSI_NN_TEST_DTYPE_H
+#define _VSI_NN_TEST_DTYPE_H
 
-vsi_status vsi_nn_TestCoverage( void )
-{
-    vsi_status status = VSI_FAILURE;
+#include "vsi_nn_types.h"
+#include "kernel/vsi_nn_kernel.h"
 
-    status = vsi_nn_test_util();
-    TEST_CHECK_STATUS(status, final);
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-    status = vsi_nn_test_tensor_op();
-    TEST_CHECK_STATUS(status, final);
+vsi_status vsi_nn_test_dtype( void );
 
-    status = vsi_nn_test_math();
-    TEST_CHECK_STATUS(status, final);
-
-    status = vsi_nn_test_dtype();
-    TEST_CHECK_STATUS(status, final);
-
-    status = vsi_nn_test_hashmap();
-    TEST_CHECK_STATUS(status, final);
-
-    status = vsi_nn_test_constraint_check();
-    TEST_CHECK_STATUS(status, final);
-
-final:
-    return status;
+#ifdef __cplusplus
 }
+#endif
+
+#endif
