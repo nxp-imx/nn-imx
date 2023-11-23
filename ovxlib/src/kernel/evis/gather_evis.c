@@ -603,8 +603,11 @@ DEF_KERNEL_INITIALIZER(_gather_axis0_initializer)
     {
         status |= vsi_nn_kernel_gpu_add_param(node, "batch", &batch);
     }
-    status |= vsi_nn_kernel_gpu_add_param(node, "width", &width);
-    status |= vsi_nn_kernel_gpu_add_param(node, "remainder", &remainder);
+    if (indices_num > GPU_TENSOR_MAX_WIDTH || block_num > GPU_TENSOR_MAX_WIDTH)
+    {
+        status |= vsi_nn_kernel_gpu_add_param(node, "width", &width);
+        status |= vsi_nn_kernel_gpu_add_param(node, "remainder", &remainder);
+    }
     CHECK_STATUS_FAIL_GOTO(status, OnError );
 
 OnError:
