@@ -111,6 +111,7 @@ static const char* ENV_ENABLE_DATACONVERT_OPTIMIZE = "VSI_NN_ENABLE_DATACONVERT_
 static const char* ENV_ENABLE_STREAM_PROCESSOR = "VSI_VX_ENABLE_STREAM_PROCESSOR";
 static const char* ENV_FORCE_RGB888_OUT_NHWC = "VSI_NN_FORCE_RGB888_OUT_NHWC";
 static const char* ENV_ENABLE_SLICE_OPTIMIZE = "VSI_NN_ENABLE_SLICE_OPTIMIZE";
+static const char* ENV_ENABLE_BATCH_OPT = "VSI_VX_ENABLE_BATCH_OPT";
 #endif
 static vsi_status vsi_nn_initOptions
     (
@@ -137,6 +138,7 @@ static vsi_status vsi_nn_initOptions
     default_value = 1;
 #endif
     options->enable_slice_optimize = vsi_nn_getenv_asint(ENV_ENABLE_SLICE_OPTIMIZE, default_value);
+    options->enable_batch_opt = vsi_nn_getenv_asint(ENV_ENABLE_BATCH_OPT, 0);
 
     return VSI_SUCCESS;
 }

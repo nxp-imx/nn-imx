@@ -1453,11 +1453,14 @@ vsi_status vsi_nn_SetupGraph
     }
 
 #if VX_GRAPH_BATCH_OPT_SUPPORT
-    /*processing batch splitting*/
-    status = batchInference_graph(graph, nodes_list);
-    if (VSI_SUCCESS != status)
+    if (graph->ctx->options.enable_batch_opt)
     {
-        goto final;
+        /*processing batch splitting*/
+        status = batchInference_graph(graph, nodes_list);
+        if (VSI_SUCCESS != status)
+        {
+            goto final;
+        }
     }
 #endif
 
