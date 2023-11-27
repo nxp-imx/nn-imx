@@ -99,6 +99,14 @@ typedef struct _vsi_nn_tensor_prv
      * be done more than once */
     int8_t processed;
 
+    /** For mapping tensor patch.
+    *   map_id The address of a vx_map_id variable where the function returns a map identifier.
+    */
+    vx_map_id map_id;
+
+    /** create tensor from axisram.*/
+    int8_t is_from_axisram;
+
     // Add tensor internal attribute here...
 } vsi_nn_tensor_prv_t;
 

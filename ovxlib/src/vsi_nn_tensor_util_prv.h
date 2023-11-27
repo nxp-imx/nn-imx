@@ -75,6 +75,17 @@ vsi_status _set_tensor_is_scalar
     int8_t is_salar
     );
 
+int8_t _get_tensor_is_from_axisram
+    (
+    vsi_nn_tensor_prv_t* tensor
+    );
+
+vsi_status _set_tensor_is_from_axisram
+    (
+    vsi_nn_tensor_prv_t* tensor,
+    int8_t is_from_axisram
+    );
+
 /**
  * Create a new dummy tensor
  * Create a new dummy tensor with given attributes.

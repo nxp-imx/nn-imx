@@ -1717,7 +1717,8 @@ static vsi_nn_tensor_id_t _add_tensor
     vsi_nn_graph_t       * graph,
     vsi_nn_tensor_id_t     id,
     vsi_nn_tensor_attr_t * attr,
-    uint8_t             * data
+    uint8_t             *  data,
+    int8_t                 is_from_axisram
     )
 {
     vsi_nn_tensor_t * tensor;
@@ -1749,11 +1750,26 @@ static vsi_nn_tensor_id_t _add_tensor
     }
     else if( NULL != data )
     {
-        tensor = vsi_nn_CreateTensorFromData( graph, data, attr );
+        if (TRUE == is_from_axisram)
+        {
+            VSILOGE("Can't create a tensor from AXI-SRAM with data.");
+        }
+        else
+        {
+            tensor = vsi_nn_CreateTensorFromData( graph, data, attr );
+        }
     }
     else
     {
-        tensor = vsi_nn_CreateTensor( graph, attr );
+        if (TRUE == is_from_axisram)
+        {
+            tensor = vsi_nn_CreateTensorFromAXISRAM(graph, attr);
+        }
+        else
+        {
+            tensor = vsi_nn_CreateTensor(graph, attr);
+        }
+
     }
 
     if( NULL != tensor )
@@ -1777,7 +1793,7 @@ vsi_nn_tensor_id_t vsi_nn_AddTensor
     )
 {
     attr->is_created_from_handle = FALSE;
-    return _add_tensor(graph, id, attr, data);
+    return _add_tensor(graph, id, attr, data, FALSE);
 } /* vsi_nn_AddTensor() */
 
 vsi_nn_tensor_id_t vsi_nn_AddTensorFromHandle
@@ -1789,7 +1805,7 @@ vsi_nn_tensor_id_t vsi_nn_AddTensorFromHandle
     )
 {
     attr->is_created_from_handle = TRUE;
-    return _add_tensor(graph, id, attr, data);
+    return _add_tensor(graph, id, attr, data, FALSE);
 }
 
 vsi_nn_tensor_id_t vsi_nn_AddTensorFromView
@@ -1822,7 +1838,7 @@ vsi_nn_tensor_id_t vsi_nn_AddTensorFromView
     {
         attr.size[i] = end[i] - start[i];
     }
-    id = _add_tensor(graph, VSI_NN_TENSOR_ID_AUTO, &attr, NULL);
+    id = _add_tensor(graph, VSI_NN_TENSOR_ID_AUTO, &attr, NULL, FALSE);
     if (VSI_NN_TENSOR_ID_NA == id)
     {
         VSILOGE("Create view tensor failed, new tensor could not be created.");
@@ -1855,6 +1871,16 @@ vsi_nn_tensor_id_t vsi_nn_AddTensorFromView
 final:
     return id;
 }
+
+vsi_nn_tensor_id_t vsi_nn_AddTensorFromAXISRAM
+    (
+    vsi_nn_graph_t       * graph,
+    vsi_nn_tensor_id_t     id,
+    vsi_nn_tensor_attr_t * attr
+    )
+{
+    return _add_tensor(graph, id, attr, NULL, TRUE);
+} /* vsi_nn_AddTensorFromAXISRAM() */
 
 vsi_nn_tensor_id_t vsi_nn_AttachTensorToGraph
     (

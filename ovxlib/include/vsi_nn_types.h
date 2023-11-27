@@ -287,6 +287,12 @@ typedef enum _vsi_nn_custom_warp_affine_type_e {
     VSI_NN_WARP_AFFINE_TYPE_RGB
 } vsi_nn_custom_warp_affine_type_e;
 
+typedef enum _vsi_nn_accessor_type_e {
+    VSI_NN_READ_ONLY = VX_READ_ONLY,
+    VSI_NN_WRITE_ONLY = VX_WRITE_ONLY,
+    VSI_NN_READ_AND_WRITE = VX_READ_AND_WRITE
+} vsi_nn_accessor_type_e;
+
 /** Deprecated */
 typedef uint32_t vsi_nn_size_t;
 
