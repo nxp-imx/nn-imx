@@ -22,7 +22,7 @@
 *
 *****************************************************************************/
 
-
+#if !(VX_TENSOR_SELECT_VX_SUPPORT)
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -243,3 +243,4 @@ static vsi_nn_kernel_node_t _setup
 __END_DECLS
 
 REGISTER_BACKEND_CPU( select, _setup )
+#endif

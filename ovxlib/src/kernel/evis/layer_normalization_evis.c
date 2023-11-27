@@ -22,6 +22,7 @@
 *
 *****************************************************************************/
 
+#if !(VX_LAYER_NORMALIZATION_VX_SUPPORT_EXT)
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -1169,3 +1170,4 @@ static vsi_nn_kernel_node_t _setup
 __END_DECLS
 
 REGISTER_BACKEND_EVIS( layer_norm, _setup )
+#endif

@@ -22,6 +22,7 @@
 *
 *****************************************************************************/
 
+#if !(VX_TENSOR_TILE_API_SUPPORT)
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -217,3 +218,4 @@ static vsi_nn_kernel_node_t _setup
 REGISTER_BACKEND_CPU( tile, _setup )
 
 __END_DECLS
+#endif

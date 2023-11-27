@@ -22,6 +22,7 @@
 *
 *****************************************************************************/
 
+#if !(VX_RELATIONAL_OPS_VX_SUPPORT_EXT)
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -585,3 +586,4 @@ final:
 REGISTER_BACKEND_EVIS( relational_ops, _setup )
 
 __END_DECLS
+#endif

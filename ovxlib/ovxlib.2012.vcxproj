@@ -538,6 +538,7 @@
     <ClInclude Include="include\ops\vsi_nn_op_conv3d.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_conv_relu.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_crop.h"/>
+    <ClInclude Include="include\ops\vsi_nn_op_crop_and_resize.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_cumsum.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_dataconvert.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_deconv3d.h"/>
@@ -635,6 +636,7 @@
     <ClInclude Include="include\ops\vsi_nn_op_reduce_mean_internal.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_reduceall_internal.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_reduceany_internal.h"/>
+    <ClInclude Include="include\ops\vsi_nn_op_reducel2.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_reducemax_internal.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_reducemin_internal.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_reduceprod_internal.h"/>
@@ -687,8 +689,6 @@
     <ClInclude Include="include\ops\vsi_nn_op_swish.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_tanh.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_tensor_add_mean_stddev_norm.h"/>
-    <ClInclude Include="include\ops\vsi_nn_op_reducel2.h" />
-    <ClInclude Include="include\ops\vsi_nn_op_crop_and_resize.h" />
     <ClInclude Include="include\ops\vsi_nn_op_tensorstackconcat.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_tile.h"/>
     <ClInclude Include="include\ops\vsi_nn_op_topk.h"/>
@@ -846,12 +846,6 @@
       <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\depth2space_internal_cl.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="src\kernel\cl\detect_post_box_cl.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="src\kernel\cl\detect_post_nms_cl.c">
       <ObjectFileName>$(IntDir)\src\kernel\cl\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cl\eltwise_unary_cl.c">
@@ -1061,16 +1055,10 @@
     <ClCompile Include="src\kernel\cpu\avg_pool3d_cpu.c">
       <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="src\kernel\cpu\axis_aligned_bbox_transform_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="src\kernel\cpu\batchnorm_single_cpu.c">
       <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\bilinear_grid_sample_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="src\kernel\cpu\box_with_nms_limit_cpu.c">
       <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\bucketize_cpu.c">
@@ -1097,12 +1085,6 @@
     <ClCompile Include="src\kernel\cpu\depth2space_internal_cpu.c">
       <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="src\kernel\cpu\detect_post_box_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="src\kernel\cpu\detect_post_nms_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="src\kernel\cpu\eltwise_unary_cpu.c">
       <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
@@ -1124,9 +1106,6 @@
     <ClCompile Include="src\kernel\cpu\gather_nd_cpu.c">
       <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="src\kernel\cpu\generate_proposals_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
-    </ClCompile>
     <ClCompile Include="src\kernel\cpu\globallppool_cpu.c">
       <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
@@ -1146,9 +1125,6 @@
       <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\grucell_reset_after_activation_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="src\kernel\cpu\heatmap_max_keypoint_cpu.c">
       <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\instance_normalization_cpu.c">
@@ -1200,9 +1176,6 @@
       <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\nearest_grid_sample_cpu.c">
-      <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="src\kernel\cpu\nms_cpu.c">
       <ObjectFileName>$(IntDir)\src\kernel\cpu\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\cpu\one_hot_cpu.c">
@@ -1581,7 +1554,7 @@
       <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\scatter_nd_update_reduction_evis.c">
-      <Filter>Source Files\kernel\evis</Filter>
+      <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\evis\select_evis.c">
       <ObjectFileName>$(IntDir)\src\kernel\evis\</ObjectFileName>
@@ -1718,10 +1691,10 @@
     <ClCompile Include="src\kernel\vx\pad2_vx.c">
       <ObjectFileName>$(IntDir)\src\kernel\vx\</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="src\kernel\vx\prelu_vx.c">
+    <ClCompile Include="src\kernel\vx\pow_vx.c">
       <ObjectFileName>$(IntDir)\src\kernel\vx\</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="src\kernel\vx\pow_vx.c">
+    <ClCompile Include="src\kernel\vx\prelu_vx.c">
       <ObjectFileName>$(IntDir)\src\kernel\vx\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\kernel\vx\relationalops_vx.c">
@@ -1830,6 +1803,9 @@
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_crop.c">
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_crop_and_resize.c">
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_cumsum.c">
@@ -2117,6 +2093,9 @@
     <ClCompile Include="src\ops\vsi_nn_op_reduce_mean_internal.c">
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="src\ops\vsi_nn_op_reducel2.c">
+      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_reducesum_internal.c">
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
@@ -2298,12 +2277,6 @@
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_upsamplescale.c">
-      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="src\ops\vsi_nn_op_reducel2.c" >
-      <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="src\ops\vsi_nn_op_crop_and_resize.c" >
       <ObjectFileName>$(IntDir)\src\ops\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="src\ops\vsi_nn_op_variable.c">

@@ -22,6 +22,7 @@
 *
 *****************************************************************************/
 
+#if !(VX_TENSOR_TILE_API_SUPPORT)
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -594,3 +595,4 @@ final:
 REGISTER_BACKEND_EVIS( tile, _setup )
 
 __END_DECLS
+#endif
