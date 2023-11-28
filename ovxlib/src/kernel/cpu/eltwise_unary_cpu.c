@@ -72,6 +72,7 @@ static float exp_eval(float data)
     return expf(data);
 }
 
+#if !(VX_ACTIVATION_SIN_COS_VX_SUPPORT_EXT)
 static float sin_eval(float data)
 {
     return sinf(data);
@@ -81,6 +82,7 @@ static float cos_eval(float data)
 {
     return cosf(data);
 }
+#endif
 
 static float log_eval(float data)
 {
@@ -119,6 +121,7 @@ static float round_eval(float data)
     return data;
 }
 
+#if !(VX_ACTIVATION_GELU_VX_SUPPORT_EXT)
 static float gelu_eval(float data)
 {
     data = (float)(0.5f * data * (1 + vsi_nn_erf_impl(data / (float)sqrt(2.0f))));
@@ -134,6 +137,7 @@ static float hgelu_eval(float data)
 
     return data * cdf;
 }
+#endif
 
 static float selu_eval(float data, float alpha, float gamma)
 {
@@ -241,15 +245,19 @@ DEF_KERNEL_EXECUTOR(_eltwise_unary_exec)
 
         switch (unary_type)
         {
+#if !(VX_ACTIVATION_SIN_COS_VX_SUPPORT_EXT)
         case UNARY_SIN:
             data = sin_eval(data);
             break;
         case UNARY_COS:
             data = cos_eval(data);
             break;
+#endif
+#if !(VX_ACTIVATION_EXP_VX_SUPPORT_EXT)
         case UNARY_EXP:
             data = exp_eval(data);
             break;
+#endif
         case UNARY_LOG:
             data = log_eval(data);
             break;
@@ -265,12 +273,14 @@ DEF_KERNEL_EXECUTOR(_eltwise_unary_exec)
         case UNARY_ROUND:
             data = round_eval(data);
             break;
+#if !(VX_ACTIVATION_GELU_VX_SUPPORT_EXT)
         case UNARY_GELU:
             data = gelu_eval(data);
             break;
         case UNARY_HGELU:
             data = hgelu_eval(data);
             break;
+#endif
         case UNARY_SELU:
             data = selu_eval(data, alpha, beta);
             break;
@@ -425,16 +435,22 @@ static vsi_nn_kernel_node_t _setup
 
 __END_DECLS
 
+#if !(VX_ACTIVATION_SIN_COS_VX_SUPPORT_EXT)
 REGISTER_ELTWISE_UNARY_BACKEND_CPU( sin,          UNARY_SIN )
 REGISTER_ELTWISE_UNARY_BACKEND_CPU( cos,          UNARY_COS )
+#endif
+#if !(VX_ACTIVATION_EXP_VX_SUPPORT_EXT)
 REGISTER_ELTWISE_UNARY_BACKEND_CPU( exp,          UNARY_EXP )
+#endif
 REGISTER_ELTWISE_UNARY_BACKEND_CPU( log,          UNARY_LOG )
 REGISTER_ELTWISE_UNARY_BACKEND_CPU( neg,          UNARY_NEG )
 REGISTER_ELTWISE_UNARY_BACKEND_CPU( hard_sigmoid, UNARY_HSIGMOID )
 REGISTER_ELTWISE_UNARY_BACKEND_CPU( mish,         UNARY_MISH )
 REGISTER_ELTWISE_UNARY_BACKEND_CPU( round,        UNARY_ROUND )
+#if !(VX_ACTIVATION_GELU_VX_SUPPORT_EXT)
 REGISTER_ELTWISE_UNARY_BACKEND_CPU( gelu,         UNARY_GELU )
 REGISTER_ELTWISE_UNARY_BACKEND_CPU( hard_gelu,    UNARY_HGELU )
+#endif
 REGISTER_ELTWISE_UNARY_BACKEND_CPU( selu,         UNARY_SELU )
 REGISTER_ELTWISE_UNARY_BACKEND_CPU( celu,         UNARY_CELU )
 REGISTER_ELTWISE_UNARY_BACKEND_CPU( rcp,          UNARY_RCP )
