@@ -946,6 +946,10 @@ static vsi_status batchInference_graph
                         outputs[j]->attr.size[k] = 0;
                     }
                 }
+                if (node->internal_node_wksp != NULL)
+                {
+                    vsi_nn_internal_init_node_wksp(node);
+                }
 
                 /*node shape inference: */
                 if (vsi_nn_OpCheck(node->op, node, inputs, outputs))
@@ -1022,6 +1026,10 @@ static vsi_status batchInference_graph
                 {
                     outputs[j]->attr.size[k] = 0;
                 }
+            }
+            if (node->internal_node_wksp != NULL)
+            {
+                vsi_nn_internal_init_node_wksp(node);
             }
 
             /*restore node output shape*/
@@ -1172,6 +1180,10 @@ vsi_status vsi_nn_InferShape
             {
                 outputs[j]->attr.size[k] = 0;
             }
+        }
+        if (node->internal_node_wksp != NULL)
+        {
+            vsi_nn_internal_init_node_wksp(node);
         }
     }
 
