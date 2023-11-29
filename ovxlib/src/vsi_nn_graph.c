@@ -1064,6 +1064,10 @@ static vsi_status batchInference_graph
                 outputs[j]->attr.size[k] = 0;
             }
         }
+        if (node->internal_node_wksp != NULL)
+        {
+            vsi_nn_internal_init_node_wksp(node);
+        }
     }
 
     free_io_buffer(inputs);
