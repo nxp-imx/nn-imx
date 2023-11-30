@@ -750,7 +750,7 @@ static vsi_status batchInference_graph
     vsi_nn_node_id_t* nodes_list
 )
 {
-    uint32_t i, j, k;
+    vsi_size_t i, j, k;
     vsi_status status;
     vsi_bool ret;
     vsi_nn_tensor_t* tensor = NULL;
@@ -759,13 +759,13 @@ static vsi_status batchInference_graph
     vsi_nn_tensor_attr_t* original_inputs_attr = NULL;
     vsi_nn_tensor_attr_t* original_outputs_attr = NULL;
     vsi_nn_tensor_id_t* approximateConstTensor = NULL;
-    uint32_t approximateConstTensor_count = 0;
+    vsi_size_t approximateConstTensor_count = 0;
     vsi_bool has_inputTensor = FALSE;
     vsi_nn_node_id_t node_id;
     vsi_nn_node_t* node;
-    uint32_t num_of_node_inputs = 0;
-    uint32_t batchCount = 0;
-    uint32_t batchNum = 1;
+    vsi_size_t num_of_node_inputs = 0;
+    vsi_size_t batchCount = 0;
+    vsi_size_t batchNum = 1;
 
     vx_hardware_caps_params_t   hw_param;
     vx_context  ctx = vxGetContext((vx_reference)graph->g);
@@ -875,9 +875,9 @@ static vsi_status batchInference_graph
 
         if (batchNum > 1 && canBatchSplit(node, original_inputs_attr[0].dim_num))
         {
-            uint32_t iterator_list_index = 0;
-            uint32_t list_index = 0;
-            uint32_t* iterator_list = (uint32_t*)malloc(sizeof(uint32_t) * (batchNum + 1));
+            vsi_size_t iterator_list_index = 0;
+            vsi_size_t list_index = 0;
+            vsi_size_t* iterator_list = (vsi_size_t*)malloc(sizeof(vsi_size_t) * (batchNum + 1));
             memset(iterator_list, 0, sizeof(uint32_t) * (batchNum + 1));
 
             if (((vsi_nn_node_prv_t*)node)->split_num > 0)
@@ -1125,7 +1125,7 @@ static vsi_status update_vxnode_batchNum
         CHECK_PTR_FAIL_GOTO(node, "Get node fail.", final);
         if (node->n != NULL)
         {
-            vxSetNodeBatch(node->n, ((vsi_nn_node_prv_t*)node)->split_num);
+            vxSetNodeBatch(node->n, (uint32_t)((vsi_nn_node_prv_t*)node)->split_num);
             if (((vsi_nn_node_prv_t*)node)->split_num > 1)
             {
                 VSILOGD("split node[%u] %s to %ds on batch dim",
@@ -1146,7 +1146,7 @@ static vsi_status update_vxnode_batchNum
             {
                 if (inode->node->n != NULL)
                 {
-                    vxSetNodeBatch(inode->node->n, ((vsi_nn_node_prv_t*)node)->split_num);
+                    vxSetNodeBatch(inode->node->n, (uint32_t)((vsi_nn_node_prv_t*)node)->split_num);
                 }
             }
         }
