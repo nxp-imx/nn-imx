@@ -74,6 +74,8 @@ LOCAL_SRC_FILES += kernel/vsi_nn_kernel.c \
                    kernel/vsi_nn_kernel_lut.c \
                    kernel/vsi_nn_gpu.c
 
+LOCAL_SRC_FILES += vip/virtual_device.cpp
+
 LIBNNEXT_KERNEL_SOURCES := $(wildcard $(LOCAL_PATH)/libnnext/ops/kernel/*.c)
 LOCAL_SRC_FILES += $(LIBNNEXT_KERNEL_SOURCES:$(LOCAL_PATH)/%=%)
 
@@ -107,12 +109,14 @@ LOCAL_C_INCLUDES += \
     vendor/nxp/fsl-proprietary/include/VX \
     vendor/nxp/fsl-proprietary/include \
     $(LOCAL_PATH)/../include \
+    $(LOCAL_PATH)/../include/vip \
     $(LOCAL_PATH)/../include/ops \
     $(LOCAL_PATH)/../include/utils \
     $(LOCAL_PATH)/../include/infernce \
     $(LOCAL_PATH)/../include/client \
     $(LOCAL_PATH)/../include/libnnext \
-    $(LOCAL_PATH)/../src
+    $(LOCAL_PATH)/../src \
+    $(LOCAL_PATH)/../src/vip
 
 LOCAL_CFLAGS :=  \
     -DLINUX \
