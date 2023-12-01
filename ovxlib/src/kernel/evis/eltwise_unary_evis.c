@@ -60,6 +60,7 @@ typedef enum
     UNARY_ATANH,
     UNARY_ACOSH,
     UNARY_INVERSE_SIGMOID,
+    UNARY_TAN,
 } unary_type_e;
 
 /*
@@ -108,6 +109,7 @@ typedef enum
 #define ATANH_OPERATION         atanh
 #define ACOSH_OPERATION         acosh
 #define INVERSE_SIGMOID_OPERATION inverse_sigmoid
+#define TAN_OPERATION           tan
 
 #define ADD_UNARY_SH_KERNELS(name, source) \
     TENSOR_UNARY_KERNELS_3D(name##_OPERATION, UNARY_##name, BF16, BF16, source##_3D) \
@@ -153,6 +155,7 @@ static const struct {
     ADD_UNARY_SH_KERNELS(ATAN,      KERNEL_SOURCE1)
     ADD_UNARY_SH_KERNELS(ATANH,     KERNEL_SOURCE1)
     ADD_UNARY_SH_KERNELS(ACOSH,     KERNEL_SOURCE1)
+    ADD_UNARY_SH_KERNELS(TAN,       KERNEL_SOURCE1)
 
     ADD_UNARY_SH_KERNELS(HSIGMOID,  KERNEL_SOURCE0)
     ADD_UNARY_SH_KERNELS(MISH,      KERNEL_SOURCE0)
@@ -177,6 +180,7 @@ static const struct {
 #undef RCP_OPERATION
 #undef SIGN_OPERATION
 #undef SOFTSIGN_OPERATION
+#undef TAN_OPERATION
 /*
  * Kernel params
  */
@@ -292,6 +296,7 @@ DEF_KERNEL_INITIALIZER(_eltwise_unary_initializer)
         case _PACK_SELECT_KEY( UNARY_ATANH, BF16, BF16 ):
         case _PACK_SELECT_KEY( UNARY_ACOSH, BF16, BF16 ):
         case _PACK_SELECT_KEY( UNARY_INVERSE_SIGMOID, BF16, BF16 ):
+        case _PACK_SELECT_KEY( UNARY_TAN, BF16, BF16 ):
         {
             gpu_dp_inst_t uniConvBF16toF32_Part0_2x8 = {{
                 0x11111111, // TCfg
@@ -614,5 +619,6 @@ REGISTER_ELTWISE_UNARY_BACKEND_EVIS( atan, UNARY_ATAN )
 REGISTER_ELTWISE_UNARY_BACKEND_EVIS( atanh, UNARY_ATANH )
 REGISTER_ELTWISE_UNARY_BACKEND_EVIS( acosh, UNARY_ACOSH )
 REGISTER_ELTWISE_UNARY_BACKEND_EVIS( inverse_sigmoid, UNARY_INVERSE_SIGMOID )
+REGISTER_ELTWISE_UNARY_BACKEND_EVIS( tan, UNARY_TAN )
 
 __END_DECLS

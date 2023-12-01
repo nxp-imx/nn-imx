@@ -9794,6 +9794,11 @@ float4 eltwise_unary_acosh(float4 val)\n\
     return acosh(val);\n\
 }\n\
 \n\
+float4 eltwise_unary_tan(float4 val)\n\
+{\n\
+    return native_tan(val);\n\
+}\n\
+\n\
 _viv_uniform float inputScale;\n\
 _viv_uniform float inputTail;\n\
 _viv_uniform float outputScale;\n\
@@ -9911,7 +9916,8 @@ ADD_ELTSISE_UNARY_2D(atan)\n\
 ADD_ELTSISE_UNARY_2D(atanh)\n\
 //ACOSH\n\
 ADD_ELTSISE_UNARY_2D(acosh)\n\
-\n\
+//TAN\n\
+ADD_ELTSISE_UNARY_2D(tan)\n\
 "; /* end of eltwise_unary_2d_1_vx*/
 
 static const char eltwise_unary_3d_0_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
@@ -10265,6 +10271,11 @@ float4 eltwise_unary_acosh(float4 val)\n\
     return acosh(val);\n\
 }\n\
 \n\
+float4 eltwise_unary_tan(float4 val)\n\
+{\n\
+    return native_tan(val);\n\
+}\n\
+\n\
 _viv_uniform float inputScale;\n\
 _viv_uniform float inputTail;\n\
 _viv_uniform float outputScale;\n\
@@ -10381,6 +10392,8 @@ ADD_ELTSISE_UNARY_3D(atan)\n\
 ADD_ELTSISE_UNARY_3D(atanh)\n\
 //ACOSH\n\
 ADD_ELTSISE_UNARY_3D(acosh)\n\
+//TAN\n\
+ADD_ELTSISE_UNARY_3D(tan)\n\
 "; /* end of eltwise_unary_3d_1_vx*/
 
 static const char erf_vx[] = "#include \"cl_viv_vx_ext.h\"\n\
@@ -60211,6 +60224,11 @@ float eltwise_unary_inverse_sigmoid(float x, float alpha, float beta)\n\
     return log(x1 / x2);\n\
 }\n\
 \n\
+float eltwise_unary_tan(float x, float alpha, float beta)\n\
+{\n\
+    return native_tan(x);\n\
+}\n\
+\n\
 \n\
 #define ELTWISE_UNARY_F32_2D(func_name) \\\n\
 __kernel void func_name##_F32toF32_2D \\\n\
@@ -60253,6 +60271,7 @@ ELTWISE_UNARY_F32_2D(atan)\n\
 ELTWISE_UNARY_F32_2D(atanh)\n\
 ELTWISE_UNARY_F32_2D(acosh)\n\
 ELTWISE_UNARY_F32_2D(inverse_sigmoid)\n\
+ELTWISE_UNARY_F32_2D(tan)\n\
 \n\
 #define ELTWISE_UNARY_U8_2D(func_name) \\\n\
 __kernel void func_name##_U8toU8_2D \\\n\
@@ -60296,6 +60315,7 @@ ELTWISE_UNARY_U8_2D(atan)\n\
 ELTWISE_UNARY_U8_2D(atanh)\n\
 ELTWISE_UNARY_U8_2D(acosh)\n\
 ELTWISE_UNARY_U8_2D(inverse_sigmoid)\n\
+ELTWISE_UNARY_U8_2D(tan)\n\
 \n\
 #define ELTWISE_UNARY_U8toF32_2D(func_name) \\\n\
 __kernel void func_name##_U8toF32_2D \\\n\
@@ -60338,6 +60358,7 @@ ELTWISE_UNARY_U8toF32_2D(atan)\n\
 ELTWISE_UNARY_U8toF32_2D(atanh)\n\
 ELTWISE_UNARY_U8toF32_2D(acosh)\n\
 ELTWISE_UNARY_U8toF32_2D(inverse_sigmoid)\n\
+ELTWISE_UNARY_U8toF32_2D(tan)\n\
 \n\
 __kernel void neg_I32toI32_2D\n\
     (\n\
@@ -60537,6 +60558,11 @@ float eltwise_unary_inverse_sigmoid(float x, float alpha, float beta)\n\
     return log(x1 / x2);\n\
 }\n\
 \n\
+float eltwise_unary_tan(float x, float alpha, float beta)\n\
+{\n\
+    return native_tan(x);\n\
+}\n\
+\n\
 #define ELTWISE_UNARY_F32(func_name) \\\n\
 __kernel void func_name##_F32toF32 \\\n\
     ( \\\n\
@@ -60578,6 +60604,7 @@ ELTWISE_UNARY_F32(atan)\n\
 ELTWISE_UNARY_F32(atanh)\n\
 ELTWISE_UNARY_F32(acosh)\n\
 ELTWISE_UNARY_F32(inverse_sigmoid)\n\
+ELTWISE_UNARY_F32(tan)\n\
 \n\
 #define ELTWISE_UNARY_U8(func_name) \\\n\
 __kernel void func_name##_U8toU8 \\\n\
@@ -60621,6 +60648,7 @@ ELTWISE_UNARY_U8(atan)\n\
 ELTWISE_UNARY_U8(atanh)\n\
 ELTWISE_UNARY_U8(acosh)\n\
 ELTWISE_UNARY_U8(inverse_sigmoid)\n\
+ELTWISE_UNARY_U8(tan)\n\
 \n\
 #define ELTWISE_UNARY_U8toF32(func_name) \\\n\
 __kernel void func_name##_U8toF32 \\\n\
@@ -60663,6 +60691,7 @@ ELTWISE_UNARY_U8toF32(atan)\n\
 ELTWISE_UNARY_U8toF32(atanh)\n\
 ELTWISE_UNARY_U8toF32(acosh)\n\
 ELTWISE_UNARY_U8toF32(inverse_sigmoid)\n\
+ELTWISE_UNARY_U8toF32(tan)\n\
 \n\
 __kernel void neg_I32toI32\n\
     (\n\

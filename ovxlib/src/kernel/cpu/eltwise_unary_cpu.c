@@ -57,6 +57,7 @@ typedef enum
     UNARY_ATANH,
     UNARY_ACOSH,
     UNARY_INVERSE_SIGMOID,
+    UNARY_TAN,
 } unary_type_e;
 
 
@@ -196,6 +197,11 @@ static float inverse_sigmoid_eval(float x, float eps)
     return log_eval(x1 / x2);
 }
 
+static float tan_eval(float x)
+{
+    return tanf(x);
+}
+
 DEF_KERNEL_EXECUTOR(_eltwise_unary_exec)
     (
     vsi_nn_kernel_node_t node,
@@ -307,6 +313,9 @@ DEF_KERNEL_EXECUTOR(_eltwise_unary_exec)
             break;
         case UNARY_INVERSE_SIGMOID:
             data = inverse_sigmoid_eval(data, alpha);
+            break;
+        case UNARY_TAN:
+            data = tan_eval(data);
             break;
         default:
             break;
@@ -460,3 +469,4 @@ REGISTER_ELTWISE_UNARY_BACKEND_CPU( atan,         UNARY_ATAN )
 REGISTER_ELTWISE_UNARY_BACKEND_CPU( atanh,        UNARY_ATANH )
 REGISTER_ELTWISE_UNARY_BACKEND_CPU( acosh,        UNARY_ACOSH )
 REGISTER_ELTWISE_UNARY_BACKEND_CPU( inverse_sigmoid, UNARY_INVERSE_SIGMOID )
+REGISTER_ELTWISE_UNARY_BACKEND_CPU( tan,          UNARY_TAN )
