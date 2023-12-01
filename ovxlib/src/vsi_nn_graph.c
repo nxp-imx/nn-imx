@@ -769,6 +769,19 @@ static vsi_status batchInference_graph
 
     vx_hardware_caps_params_t   hw_param;
     vx_context  ctx = vxGetContext((vx_reference)graph->g);
+
+    for (i = 0; i < graph->node_num; i++)
+    {
+        node_id = nodes_list[i];
+        node = vsi_nn_GetNode(graph, node_id);
+        /* For NBG node, donot infer shape*/
+        if (node && node->op == VSI_NN_OP_NBG)
+        {
+            status = VSI_SUCCESS;
+            goto final;
+        }
+    }
+
     memset(&hw_param, 0, sizeof(vx_hardware_caps_params_t));
     status = vxQueryHardwareCaps(ctx, &hw_param, sizeof(vx_hardware_caps_params_t));
 
@@ -1045,7 +1058,10 @@ static vsi_status batchInference_graph
     {
         node_id = nodes_list[i];
         node = vsi_nn_GetNode(graph, node_id);
-        CHECK_PTR_FAIL_GOTO(node, "Get node fail.", final);
+        if (node == NULL || node->op == VSI_NN_OP_NBG)
+        {
+            break;
+        }
 
         vsi_nn_GetTensors(graph, node->input.tensors,
             node->input.num, inputs);
@@ -1153,6 +1169,17 @@ vsi_status vsi_nn_InferShape
     vsi_nn_node_t* node;
     vsi_nn_node_id_t* nodes_list = NULL;
     status = VSI_SUCCESS;
+
+    for (i = 0; i < graph->node_num; i++)
+    {
+        node = vsi_nn_GetNode(graph, i);
+        /* For NBG node, donot infer shape*/
+        if (node && node->op == VSI_NN_OP_NBG)
+        {
+            status = VSI_FAILURE;
+            goto final;
+        }
+    }
 
     outputs = allocate_io_buffer(graph);
     if (NULL == outputs)
