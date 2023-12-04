@@ -25,9 +25,9 @@ __kernel void log_softmax_exceed_axis1_F32toF32(
     float4 src, dst = {0.0};
 
     maxValue = read_imagef(input, coord_in);
-    for (coord_in.y = 0; coord_in.y < height; coord_y++)
+    for (coord_in.y = 0; coord_in.y < height; coord_in.y++)
     {
-        for (coord_in.z = 0; coord_in.z < depth; coord_z++)
+        for (coord_in.z = 0; coord_in.z < depth; coord_in.z++)
         {
             src = read_imagef(input, coord_in);
             maxValue = maxValue > src ? maxValue : src;
@@ -36,9 +36,9 @@ __kernel void log_softmax_exceed_axis1_F32toF32(
 
     // Compute sum.
     float sum = 0.f;
-    for (coord_in.y = 0; coord_in.y < height; coord_y++)
+    for (coord_in.y = 0; coord_in.y < height; coord_in.y++)
     {
-        for (coord_in.z = 0; coord_in.z < depth; coord_z++)
+        for (coord_in.z = 0; coord_in.z < depth; coord_in.z++)
         {
             src = read_imagef(input, coord_in);
             sum += exp2((src.x - maxValue.x) * scale);
@@ -47,9 +47,9 @@ __kernel void log_softmax_exceed_axis1_F32toF32(
 
     // Compute result.
     float logSum = LOG(sum);
-    for (coord_in.y = 0; coord_in.y < height; coord_y++)
+    for (coord_in.y = 0; coord_in.y < height; coord_in.y++)
     {
-        for (coord_in.z = 0; coord_in.z < depth; coord_z++)
+        for (coord_in.z = 0; coord_in.z < depth; coord_in.z++)
         {
             src = read_imagef(input, coord_in);
 
@@ -73,9 +73,9 @@ __kernel void log_softmax_exceed_axis1_U8toU8(
     uint4 dst = {0};
 
     maxValue = convert_float4(read_imageui(input, coord_in));
-    for (coord_in.y = 0; coord_in.y < height; coord_y++)
+    for (coord_in.y = 0; coord_in.y < height; coord_in.y++)
     {
-        for (coord_in.z = 0; coord_in.z < depth; coord_z++)
+        for (coord_in.z = 0; coord_in.z < depth; coord_in.z++)
         {
             src = convert_float4(read_imageui(input, coord_in));
 
@@ -85,9 +85,9 @@ __kernel void log_softmax_exceed_axis1_U8toU8(
 
     // Compute sum.
     float sum = 0.f;
-    for (coord_in.y = 0; coord_in.y < height; coord_y++)
+    for (coord_in.y = 0; coord_in.y < height; coord_in.y++)
     {
-        for (coord_in.z = 0; coord_in.z < depth; coord_z++)
+        for (coord_in.z = 0; coord_in.z < depth; coord_in.z++)
         {
             src = convert_float4(read_imageui(input, coord_in));
 
@@ -97,9 +97,9 @@ __kernel void log_softmax_exceed_axis1_U8toU8(
 
     // Compute result.
     float logSum = LOG(sum);
-    for (coord_in.y = 0; coord_in.y < height; coord_y++)
+    for (coord_in.y = 0; coord_in.y < height; coord_in.y++)
     {
-        for (coord_in.z = 0; coord_in.z < depth; coord_z++)
+        for (coord_in.z = 0; coord_in.z < depth; coord_in.z++)
         {
             src = convert_float4(read_imageui(input, coord_in));
 
@@ -125,9 +125,9 @@ __kernel void log_softmax_exceed_axis1_BF16oBF16(
     data = read_imageui(input, coord_in);
     data = data << 16;
     _viv_asm(COPY, maxValue, data, 16);
-    for (coord_in.y = 0; coord_in.y < height; coord_y++)
+    for (coord_in.y = 0; coord_in.y < height; coord_in.y++)
     {
-        for (coord_in.z = 0; coord_in.z < depth; coord_z++)
+        for (coord_in.z = 0; coord_in.z < depth; coord_in.z++)
         {
             data = read_imageui(input, coord_in);
             data = data << 16;
@@ -138,9 +138,9 @@ __kernel void log_softmax_exceed_axis1_BF16oBF16(
     }
 
     float sum = 0.f;
-    for (coord_in.y = 0; coord_in.y < height; coord_y++)
+    for (coord_in.y = 0; coord_in.y < height; coord_in.y++)
     {
-        for (coord_in.z = 0; coord_in.z < depth; coord_z++)
+        for (coord_in.z = 0; coord_in.z < depth; coord_in.z++)
         {
             data = read_imageui(input, coord_in);
             data = data << 16;
@@ -151,9 +151,9 @@ __kernel void log_softmax_exceed_axis1_BF16oBF16(
     }
 
     float logSum = LOG(sum);
-    for (coord_in.y = 0; coord_in.y < height; coord_y++)
+    for (coord_in.y = 0; coord_in.y < height; coord_in.y++)
     {
-        for (coord_in.z = 0; coord_in.z < depth; coord_z++)
+        for (coord_in.z = 0; coord_in.z < depth; coord_in.z++)
         {
             data = read_imageui(input, coord_in);
             data = data << 16;

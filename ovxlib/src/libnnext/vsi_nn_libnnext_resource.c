@@ -66049,9 +66049,9 @@ __kernel void log_softmax_exceed_axis1_F32toF32(\n\
     float4 src, dst = {0.0};\n\
 \n\
     maxValue = read_imagef(input, coord_in);\n\
-    for (coord_in.y = 0; coord_in.y < height; coord_y++)\n\
+    for (coord_in.y = 0; coord_in.y < height; coord_in.y++)\n\
     {\n\
-        for (coord_in.z = 0; coord_in.z < depth; coord_z++)\n\
+        for (coord_in.z = 0; coord_in.z < depth; coord_in.z++)\n\
         {\n\
             src = read_imagef(input, coord_in);\n\
             maxValue = maxValue > src ? maxValue : src;\n\
@@ -66060,9 +66060,9 @@ __kernel void log_softmax_exceed_axis1_F32toF32(\n\
 \n\
     // Compute sum.\n\
     float sum = 0.f;\n\
-    for (coord_in.y = 0; coord_in.y < height; coord_y++)\n\
+    for (coord_in.y = 0; coord_in.y < height; coord_in.y++)\n\
     {\n\
-        for (coord_in.z = 0; coord_in.z < depth; coord_z++)\n\
+        for (coord_in.z = 0; coord_in.z < depth; coord_in.z++)\n\
         {\n\
             src = read_imagef(input, coord_in);\n\
             sum += exp2((src.x - maxValue.x) * scale);\n\
@@ -66071,9 +66071,9 @@ __kernel void log_softmax_exceed_axis1_F32toF32(\n\
 \n\
     // Compute result.\n\
     float logSum = LOG(sum);\n\
-    for (coord_in.y = 0; coord_in.y < height; coord_y++)\n\
+    for (coord_in.y = 0; coord_in.y < height; coord_in.y++)\n\
     {\n\
-        for (coord_in.z = 0; coord_in.z < depth; coord_z++)\n\
+        for (coord_in.z = 0; coord_in.z < depth; coord_in.z++)\n\
         {\n\
             src = read_imagef(input, coord_in);\n\
 \n\
@@ -66097,9 +66097,9 @@ __kernel void log_softmax_exceed_axis1_U8toU8(\n\
     uint4 dst = {0};\n\
 \n\
     maxValue = convert_float4(read_imageui(input, coord_in));\n\
-    for (coord_in.y = 0; coord_in.y < height; coord_y++)\n\
+    for (coord_in.y = 0; coord_in.y < height; coord_in.y++)\n\
     {\n\
-        for (coord_in.z = 0; coord_in.z < depth; coord_z++)\n\
+        for (coord_in.z = 0; coord_in.z < depth; coord_in.z++)\n\
         {\n\
             src = convert_float4(read_imageui(input, coord_in));\n\
 \n\
@@ -66109,9 +66109,9 @@ __kernel void log_softmax_exceed_axis1_U8toU8(\n\
 \n\
     // Compute sum.\n\
     float sum = 0.f;\n\
-    for (coord_in.y = 0; coord_in.y < height; coord_y++)\n\
+    for (coord_in.y = 0; coord_in.y < height; coord_in.y++)\n\
     {\n\
-        for (coord_in.z = 0; coord_in.z < depth; coord_z++)\n\
+        for (coord_in.z = 0; coord_in.z < depth; coord_in.z++)\n\
         {\n\
             src = convert_float4(read_imageui(input, coord_in));\n\
 \n\
@@ -66121,9 +66121,9 @@ __kernel void log_softmax_exceed_axis1_U8toU8(\n\
 \n\
     // Compute result.\n\
     float logSum = LOG(sum);\n\
-    for (coord_in.y = 0; coord_in.y < height; coord_y++)\n\
+    for (coord_in.y = 0; coord_in.y < height; coord_in.y++)\n\
     {\n\
-        for (coord_in.z = 0; coord_in.z < depth; coord_z++)\n\
+        for (coord_in.z = 0; coord_in.z < depth; coord_in.z++)\n\
         {\n\
             src = convert_float4(read_imageui(input, coord_in));\n\
 \n\
@@ -66149,9 +66149,9 @@ __kernel void log_softmax_exceed_axis1_BF16oBF16(\n\
     data = read_imageui(input, coord_in);\n\
     data = data << 16;\n\
     _viv_asm(COPY, maxValue, data, 16);\n\
-    for (coord_in.y = 0; coord_in.y < height; coord_y++)\n\
+    for (coord_in.y = 0; coord_in.y < height; coord_in.y++)\n\
     {\n\
-        for (coord_in.z = 0; coord_in.z < depth; coord_z++)\n\
+        for (coord_in.z = 0; coord_in.z < depth; coord_in.z++)\n\
         {\n\
             data = read_imageui(input, coord_in);\n\
             data = data << 16;\n\
@@ -66162,9 +66162,9 @@ __kernel void log_softmax_exceed_axis1_BF16oBF16(\n\
     }\n\
 \n\
     float sum = 0.f;\n\
-    for (coord_in.y = 0; coord_in.y < height; coord_y++)\n\
+    for (coord_in.y = 0; coord_in.y < height; coord_in.y++)\n\
     {\n\
-        for (coord_in.z = 0; coord_in.z < depth; coord_z++)\n\
+        for (coord_in.z = 0; coord_in.z < depth; coord_in.z++)\n\
         {\n\
             data = read_imageui(input, coord_in);\n\
             data = data << 16;\n\
@@ -66175,9 +66175,9 @@ __kernel void log_softmax_exceed_axis1_BF16oBF16(\n\
     }\n\
 \n\
     float logSum = LOG(sum);\n\
-    for (coord_in.y = 0; coord_in.y < height; coord_y++)\n\
+    for (coord_in.y = 0; coord_in.y < height; coord_in.y++)\n\
     {\n\
-        for (coord_in.z = 0; coord_in.z < depth; coord_z++)\n\
+        for (coord_in.z = 0; coord_in.z < depth; coord_in.z++)\n\
         {\n\
             data = read_imageui(input, coord_in);\n\
             data = data << 16;\n\
