@@ -811,7 +811,7 @@ vsi_nn_tensor_t* vsi_nn_merge_input_zeropoint_to_bias
             attr.dim_num  = 2;
         }
         bias_data = (int32_t *)vsi_nn_ConvertTensorToData(graph, bias);
-        CHECK_PTR_FAIL_GOTO( new_bias_data_ptr, "Create buffer fail.", final );
+        CHECK_PTR_FAIL_GOTO( bias_data, "ConvertTensorToData fail.", final );
     }
 
     new_bias_data_ptr = (int32_t *)malloc(attr.size[0] * sizeof(int32_t));
