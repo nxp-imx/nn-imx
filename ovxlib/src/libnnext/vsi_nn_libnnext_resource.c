@@ -22517,7 +22517,7 @@ _viv_uniform VXC_512Bits uniExtractHalf4_4x4;\n\
             write_imagef(output, coord, prob); \\\n\
             coord.x += 4; \\\n\
         } \\\n\
-    |\n\
+    }\n\
 \n\
 __kernel void log_softmax_exceed_axis0_BF16toBF16(\n\
     __read_only image2d_array_t   input,\n\
