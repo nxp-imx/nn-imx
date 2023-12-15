@@ -1,0 +1,25 @@
+1. 打AndroidSL包中patches文件夹中的两个patch，并重新编译android.hardware.neuralnetworks-shell-service-sample
+2. 用更新的ovxlib代码，编译libovxlib.so
+3. 将编译好的libovxlib.so 复制到AndroidSL文件夹下（新编译的libovxlib.so也需要push到板子中）
+4. 将ovxlib中的include文件夹复制到AndroidSL文件夹下，并重命名为ovxlib_include
+5. 在AndroidSL文件夹cmake/module/TimVxConfig.cmake 做如下修改：
+
+diff --git a/cmake/module/TimVxConfig.cmake b/cmake/module/TimVxConfig.cmake
+index 26d854d..c09af66 100644
+--- a/cmake/module/TimVxConfig.cmake
++++ b/cmake/module/TimVxConfig.cmake
+@@ -54,5 +54,8 @@ else()
+             "-DCMAKE_TOOLCHAIN_FILE:FILEPATH=${CMAKE_TOOLCHAIN_FILE}"
+             "-DANDROID_ABI=${ANDROID_ABI}"
+             "-DTIM_VX_DBG_ENABLE_TENSOR_HNDL=OFF"
++	    "-DOVXLIB_INC=${CMAKE_SOURCE_DIR}/ovxlib_include"
++	    "-DOVXLIB_LIB=${CMAKE_SOURCE_DIR}/libovxlib.so"
++	    "-DTIM_VX_USE_EXTERNAL_OVXLIB=ON"
+     )
+-endif()
+\ No newline at end of file
++endif()
+
+6. 开始编译timvx和VsiSupportLibrary：
+cmake 命令中，-DANDROID_PLATFORM=android-33 改为 -DANDROID_PLATFORM=android-34，其他不变
+
