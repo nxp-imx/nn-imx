@@ -21,27 +21,24 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#ifndef _VSI_NN_PLATFORM_H
-#define _VSI_NN_PLATFORM_H
+#ifndef _VSI_NN_COVERAGE_H
+#define _VSI_NN_COVERAGE_H
 
-#include "vsi_nn_feature_config.h"
+#include "lcov/vsi_nn_test_util.h"
+#include "lcov/vsi_nn_test_math.h"
+#include "lcov/vsi_nn_test_tensor_op.h"
+#include "lcov/vsi_nn_test_dtype.h"
+#include "lcov/vsi_nn_test_hashmap.h"
+#include "lcov/vsi_nn_test_constraint_check.h"
 
-#include <VX/vx_khr_cnn.h>
-#include <VX/vx_helper.h>
-#include <VX/vx_ext_program.h>
-#include <VX/vx_api.h>
-#include <VX/vx_compatibility.h>
-#include <VX/vx_khr_import_kernel.h>
-#if defined(VX_KHR_COMPATIBILITY) && (0x1==VX_KHR_COMPATIBILITY)
-#include <VX/vx_khr_compatible.h>
-#endif
-#ifdef VSI_CREATE_TENSOR_FROM_AXISRAM_SUPPORT
-#include <VX/vx_viv_sys.h>
+#ifdef __cplusplus
+extern "C" {
 #endif
 
-/*
-    This is a compatibility head file for backward compatibility OpenVX 1.1 spec
-*/
-#include "vsi_nn_compatibility.h"
+OVXLIB_API vsi_status vsi_nn_TestCoverage( void );
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

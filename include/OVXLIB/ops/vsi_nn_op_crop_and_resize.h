@@ -21,27 +21,27 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#ifndef _VSI_NN_PLATFORM_H
-#define _VSI_NN_PLATFORM_H
 
-#include "vsi_nn_feature_config.h"
+#ifndef _VSI_NN_OP_CROP_AND_RESIZE_H
+#define _VSI_NN_OP_CROP_AND_RESIZE_H
 
-#include <VX/vx_khr_cnn.h>
-#include <VX/vx_helper.h>
-#include <VX/vx_ext_program.h>
-#include <VX/vx_api.h>
-#include <VX/vx_compatibility.h>
-#include <VX/vx_khr_import_kernel.h>
-#if defined(VX_KHR_COMPATIBILITY) && (0x1==VX_KHR_COMPATIBILITY)
-#include <VX/vx_khr_compatible.h>
-#endif
-#ifdef VSI_CREATE_TENSOR_FROM_AXISRAM_SUPPORT
-#include <VX/vx_viv_sys.h>
+#include "vsi_nn_types.h"
+
+#ifdef __cplusplus
+extern "C" {
 #endif
 
-/*
-    This is a compatibility head file for backward compatibility OpenVX 1.1 spec
-*/
-#include "vsi_nn_compatibility.h"
+typedef struct _vsi_nn_crop_and_resize_param
+{
+    struct _crop_and_resize_local_data_t * lcl_data;
+    const int32_t* crop_size;
+    vsi_enum resize_method;
+    float extrapolation_value;
+} vsi_nn_crop_and_resize_param;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
+
